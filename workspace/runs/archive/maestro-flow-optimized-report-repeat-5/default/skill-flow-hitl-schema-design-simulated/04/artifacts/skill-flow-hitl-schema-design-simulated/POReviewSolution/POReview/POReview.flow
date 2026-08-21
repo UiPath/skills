@@ -1,0 +1,366 @@
+{
+  "id": "06152ec0-2377-4f5b-9645-869c75214a08",
+  "version": "1.8",
+  "name": "POReview",
+  "nodes": [
+    {
+      "id": "start",
+      "type": "core.trigger.manual",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Manual trigger"
+      },
+      "inputs": {
+        "entryPointId": "871ac402-221a-46f7-b304-76ae7df9a850",
+        "isDefaultEntryPoint": true
+      }
+    },
+    {
+      "id": "fetchPOData1",
+      "type": "core.script",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Fetch PO Data"
+      },
+      "inputs": {
+        "script": "// Simulate fetching purchase order details from your ERP / backend system.\n// In production, replace this with an HTTP request or Integration Service call.\nconst poNumber = $vars.start.output.poNumber || 'PO-2026-00142';\nreturn {\n  poNumber:    poNumber,\n  vendorName:  'Acme Supplies Ltd.',\n  totalAmount: 14750.00,\n  requestedBy: 'Jane Smith',\n  department:  'Operations',\n  description: 'Office equipment and consumables for Q3 2026'\n};"
+      }
+    },
+    {
+      "id": "poReview1",
+      "type": "uipath.human-in-the-loop.quick-form",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "PO Review"
+      },
+      "inputs": {
+        "title": "Purchase Order Review",
+        "recipient": {
+          "channels": ["Email", "ActionCenter"],
+          "connections": {},
+          "assignee": { "type": "group" }
+        },
+        "priority": "High",
+        "schema": {
+          "schemaId": "b7e3a1d2-5c9f-4e0b-a8d4-2f6c3e7b1a4d",
+          "fields": [
+            {
+              "id": "ponumber",
+              "label": "PO Number",
+              "type": "string",
+              "direction": "input",
+              "binding": "vars.fetchPOData1.output.poNumber"
+            },
+            {
+              "id": "vendorname",
+              "label": "Vendor Name",
+              "type": "string",
+              "direction": "input",
+              "binding": "vars.fetchPOData1.output.vendorName"
+            },
+            {
+              "id": "totalamount",
+              "label": "Total Amount",
+              "type": "number",
+              "direction": "input",
+              "binding": "vars.fetchPOData1.output.totalAmount"
+            },
+            {
+              "id": "requestedby",
+              "label": "Requested By",
+              "type": "string",
+              "direction": "input",
+              "binding": "vars.fetchPOData1.output.requestedBy"
+            },
+            {
+              "id": "department",
+              "label": "Department",
+              "type": "string",
+              "direction": "input",
+              "binding": "vars.fetchPOData1.output.department"
+            },
+            {
+              "id": "description",
+              "label": "Description",
+              "type": "string",
+              "direction": "input",
+              "binding": "vars.fetchPOData1.output.description"
+            },
+            {
+              "id": "comments",
+              "label": "Comments / Reason",
+              "type": "string",
+              "direction": "output",
+              "variable": "vars.reviewComments",
+              "required": false
+            }
+          ],
+          "outcomes": [
+            { "id": "approve", "name": "Approve", "type": "string", "isPrimary": true,  "action": "Continue" },
+            { "id": "reject",  "name": "Reject",  "type": "string", "isPrimary": false, "action": "End" }
+          ]
+        }
+      },
+      "outputs": {
+        "output": {
+          "type": "object",
+          "description": "Task result data",
+          "source": "=result",
+          "var": "output",
+          "properties": {
+            "comments": { "type": "string" },
+            "Action":   { "type": "string", "enum": ["Approve", "Reject"], "default": "Approve" }
+          }
+        },
+        "status": {
+          "type": "string",
+          "description": "Task completion status",
+          "source": "=result.Action",
+          "var": "status",
+          "enum": ["Approve", "Reject"],
+          "default": "Approve"
+        }
+      }
+    },
+    {
+      "id": "processDecision1",
+      "type": "core.script",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Process Decision"
+      },
+      "inputs": {
+        "script": "// Read the reviewer's decision and comments from the HITL node output.\nconst decision = $vars.poReview1.status;\nconst comments = $vars.poReview1.output.comments || '';\nconst poNumber = $vars.fetchPOData1.output.poNumber;\n\nif (decision === 'Approve') {\n  // TODO: call ERP / Finance system to approve the PO\n  return { result: 'approved', poNumber, comments, message: `PO ${poNumber} approved.` };\n} else {\n  // TODO: notify requester of rejection\n  return { result: 'rejected', poNumber, comments, message: `PO ${poNumber} rejected. Reason: ${comments}` };\n};"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "start-output-fetchPOData1-input",
+      "sourceNodeId": "start",
+      "sourcePort": "output",
+      "targetNodeId": "fetchPOData1",
+      "targetPort": "input"
+    },
+    {
+      "id": "fetchPOData1-output-poReview1-input",
+      "sourceNodeId": "fetchPOData1",
+      "sourcePort": "output",
+      "targetNodeId": "poReview1",
+      "targetPort": "input"
+    },
+    {
+      "id": "poReview1-completed-processDecision1-input",
+      "sourceNodeId": "poReview1",
+      "sourcePort": "completed",
+      "targetNodeId": "processDecision1",
+      "targetPort": "input"
+    }
+  ],
+  "definitions": [
+    {
+      "nodeType": "core.trigger.manual",
+      "version": "1.0",
+      "category": "trigger",
+      "description": "Start workflow manually",
+      "tags": [
+        "trigger",
+        "start",
+        "manual"
+      ],
+      "sortOrder": 40,
+      "display": {
+        "label": "Manual trigger",
+        "icon": "play",
+        "shape": "circle"
+      },
+      "handleConfiguration": [
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "output",
+              "type": "source",
+              "handleType": "output",
+              "showButton": true,
+              "constraints": {
+                "forbiddenTargetCategories": [
+                  "trigger"
+                ]
+              }
+            }
+          ],
+          "visible": true
+        }
+      ],
+      "model": {
+        "type": "bpmn:StartEvent",
+        "entryPointId": true
+      },
+      "outputDefinition": {
+        "output": {
+          "type": "object",
+          "description": "Data passed when manually triggering the workflow.",
+          "source": "null",
+          "var": "output"
+        }
+      },
+      "toolbarExtensions": {
+        "design": {
+          "actions": [
+            {
+              "id": "change-trigger-type",
+              "icon": "square-mouse-pointer",
+              "label": "Change trigger type"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "nodeType": "core.script",
+      "version": "1.0",
+      "category": "action",
+      "description": "Execute a JavaScript script",
+      "tags": ["script", "code", "javascript"],
+      "sortOrder": 10,
+      "display": {
+        "label": "Script",
+        "icon": "code",
+        "shape": "square"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            { "id": "input", "type": "target", "handleType": "input" }
+          ],
+          "visible": true
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "output",
+              "type": "source",
+              "handleType": "output",
+              "showButton": true,
+              "constraints": {
+                "forbiddenTargetCategories": ["trigger"]
+              }
+            }
+          ],
+          "visible": true
+        }
+      ],
+      "model": { "type": "bpmn:ScriptTask" },
+      "outputDefinition": {
+        "output": { "type": "object", "description": "Script return value", "source": "=result", "var": "output" }
+      }
+    },
+    {
+      "nodeType": "uipath.human-in-the-loop.quick-form",
+      "version": "1.0",
+      "category": "human-task",
+      "description": "Fast inline approvals with inline debug",
+      "tags": ["human-task", "hitl", "human-in-the-loop", "quick-form", "approval"],
+      "sortOrder": 27,
+      "display": {
+        "label": "Quick Form",
+        "icon": "users",
+        "shape": "square"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            { "id": "input", "type": "target", "handleType": "input" }
+          ],
+          "visible": true
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "completed",
+              "label": "Completed",
+              "type": "source",
+              "handleType": "output",
+              "showButton": true,
+              "constraints": { "forbiddenTargetCategories": ["trigger"] }
+            }
+          ],
+          "visible": true
+        }
+      ],
+      "model": { "type": "bpmn:UserTask", "serviceType": "Actions.HITL" },
+      "inputDefaults": {
+        "schema": {
+          "fields": [],
+          "outcomes": [
+            { "id": "submit", "name": "Submit", "type": "string", "isPrimary": true, "action": "Continue" }
+          ]
+        },
+        "recipient": {
+          "channels": ["Email", "ActionCenter"],
+          "connections": {},
+          "assignee": { "type": "group" }
+        }
+      },
+      "outputDefinition": {
+        "output": { "type": "object", "description": "Task result data", "source": "=result", "var": "output" },
+        "status": { "type": "string", "description": "Task completion status", "source": "=result.Action", "var": "status" }
+      }
+    }
+  ],
+  "variables": {
+    "nodes": [
+      {
+        "id": "start.output",
+        "type": "object",
+        "description": "Data passed when manually triggering the workflow.",
+        "binding": { "nodeId": "start", "outputId": "output" }
+      },
+      {
+        "id": "fetchPOData1.output",
+        "type": "object",
+        "description": "Script return value",
+        "binding": { "nodeId": "fetchPOData1", "outputId": "output" }
+      },
+      {
+        "id": "poReview1.output",
+        "type": "object",
+        "description": "Task result data",
+        "binding": { "nodeId": "poReview1", "outputId": "output" }
+      },
+      {
+        "id": "poReview1.status",
+        "type": "string",
+        "description": "Task completion status",
+        "binding": { "nodeId": "poReview1", "outputId": "status" }
+      },
+      {
+        "id": "processDecision1.output",
+        "type": "object",
+        "description": "Script return value",
+        "binding": { "nodeId": "processDecision1", "outputId": "output" }
+      }
+    ]
+  },
+  "layout": {
+    "nodes": {
+      "start": {
+        "position": { "x": 80, "y": 200 }
+      },
+      "fetchPOData1": {
+        "position": { "x": 280, "y": 200 }
+      },
+      "poReview1": {
+        "position": { "x": 520, "y": 200 }
+      },
+      "processDecision1": {
+        "position": { "x": 760, "y": 200 }
+      }
+    }
+  }
+}

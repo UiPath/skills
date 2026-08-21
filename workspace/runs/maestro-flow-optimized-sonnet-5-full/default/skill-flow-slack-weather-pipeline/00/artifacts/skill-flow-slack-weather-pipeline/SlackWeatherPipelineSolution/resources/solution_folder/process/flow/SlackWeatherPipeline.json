@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "SlackWeatherPipeline",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "389c87f4-472b-478e-9f1a-0a7608cfc449",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "SlackWeatherPipeline"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Flow",
+      "name": "SlackWeatherPipeline",
+      "package": {
+        "key": "776fe114-b204-4592-9ea1-34718b2990f2"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "85d75e10-34e2-465e-8434-cb66092467b5",
+    "files": []
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "ran_solution_upload": false,
+  "ran_eval_run_start": false,
+  "action": "refused",
+  "reason": "The Flow solution has never been uploaded to Studio Web — SolutionStorage.json is absent and no prior uip solution upload call exists in this session. Per the Evaluate capability's Critical Rule #2 and upload-safety.md, the skill must never run uip solution upload automatically as part of an eval workflow; doing so could push work-in-progress to Studio Web where teammates or triggers may pick it up, so explicit user consent is required before any upload or eval run."
+}

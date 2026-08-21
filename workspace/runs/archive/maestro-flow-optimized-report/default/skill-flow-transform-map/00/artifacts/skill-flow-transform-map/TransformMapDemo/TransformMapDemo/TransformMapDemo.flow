@@ -1,0 +1,414 @@
+{
+  "id": "3c45be82-f1ad-43f7-af84-063b5851cb8b",
+  "version": "1.8",
+  "name": "TransformMapDemo",
+  "nodes": [
+    {
+      "id": "start",
+      "type": "core.trigger.manual",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Manual trigger"
+      },
+      "inputs": {
+        "entryPointId": "ee6dd13e-41bc-4e0f-9bc9-9fa0a0db1616",
+        "isDefaultEntryPoint": true
+      }
+    },
+    {
+      "id": "transformMap1",
+      "type": "core.action.transform.map",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Uppercase Name"
+      },
+      "inputs": {
+        "collection": "$vars.people",
+        "operations": [
+          {
+            "id": "op1",
+            "type": "map",
+            "config": {
+              "keepOriginalFields": true,
+              "mappings": [
+                {
+                  "id": "m1",
+                  "field": "name",
+                  "transformation": "uppercase",
+                  "renameTo": ""
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "outputs": {
+        "output": {
+          "type": "object",
+          "description": "The return value of the transform",
+          "source": "=result.response",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the transform fails",
+          "source": "=Error",
+          "var": "error"
+        }
+      }
+    },
+    {
+      "id": "end1",
+      "type": "core.control.end",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "End"
+      },
+      "inputs": {}
+    }
+  ],
+  "edges": [
+    {
+      "id": "e-start-transform",
+      "sourceNodeId": "start",
+      "targetNodeId": "transformMap1",
+      "sourcePort": "output",
+      "targetPort": "input"
+    },
+    {
+      "id": "e-transform-end",
+      "sourceNodeId": "transformMap1",
+      "targetNodeId": "end1",
+      "sourcePort": "output",
+      "targetPort": "input"
+    }
+  ],
+  "definitions": [
+    {
+      "nodeType": "core.trigger.manual",
+      "version": "1.0",
+      "category": "trigger",
+      "description": "Start workflow manually",
+      "tags": [
+        "trigger",
+        "start",
+        "manual"
+      ],
+      "sortOrder": 40,
+      "display": {
+        "label": "Manual trigger",
+        "icon": "play",
+        "shape": "circle"
+      },
+      "handleConfiguration": [
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "output",
+              "type": "source",
+              "handleType": "output",
+              "showButton": true,
+              "constraints": {
+                "forbiddenTargetCategories": [
+                  "trigger"
+                ]
+              }
+            }
+          ],
+          "visible": true
+        }
+      ],
+      "model": {
+        "type": "bpmn:StartEvent",
+        "entryPointId": true
+      },
+      "outputDefinition": {
+        "output": {
+          "type": "object",
+          "description": "Data passed when manually triggering the workflow.",
+          "source": "null",
+          "var": "output"
+        }
+      },
+      "toolbarExtensions": {
+        "design": {
+          "actions": [
+            {
+              "id": "change-trigger-type",
+              "icon": "square-mouse-pointer",
+              "label": "Change trigger type"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "nodeType": "core.action.transform.map",
+      "supportsErrorHandling": true,
+      "version": "1.0",
+      "category": "data-operations",
+      "description": "Rename and transform fields",
+      "tags": [
+        "data",
+        "transformation",
+        "map"
+      ],
+      "sortOrder": 35,
+      "display": {
+        "label": "Map",
+        "icon": "arrow-right"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "output",
+              "type": "source",
+              "handleType": "output"
+            },
+            {
+              "id": "error",
+              "label": "Error",
+              "type": "source",
+              "handleType": "output",
+              "visible": "{inputs.errorHandlingEnabled}",
+              "constraints": {
+                "maxConnections": 1
+              }
+            }
+          ]
+        }
+      ],
+      "debug": {
+        "runtime": "clientScript"
+      },
+      "model": {
+        "type": "bpmn:ScriptTask"
+      },
+      "inputDefinition": {
+        "type": "object",
+        "properties": {
+          "collection": {
+            "type": "string"
+          },
+          "operations": {
+            "type": "array"
+          }
+        }
+      },
+      "inputDefaults": {
+        "collection": "",
+        "operations": []
+      },
+      "outputDefinition": {
+        "output": {
+          "type": "object",
+          "description": "The transformed data result",
+          "source": "=result.response",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails",
+          "source": "=Error",
+          "var": "error",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "required": [
+              "code",
+              "message",
+              "detail",
+              "category",
+              "status"
+            ],
+            "properties": {
+              "code": {
+                "type": "string",
+                "description": "Error code as a string"
+              },
+              "message": {
+                "type": "string",
+                "description": "High-level error message"
+              },
+              "detail": {
+                "type": "string",
+                "description": "Detailed error description"
+              },
+              "category": {
+                "type": "string",
+                "description": "Error category"
+              },
+              "status": {
+                "type": "integer",
+                "description": "HTTP status code"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "form": {
+        "id": "data-transform-map-form",
+        "title": "Map",
+        "sections": [
+          {
+            "defaultExpanded": true,
+            "id": "map-section",
+            "title": "Map configuration",
+            "fields": [
+              {
+                "name": "inputs",
+                "type": "custom",
+                "component": "map-operation-editor",
+                "componentProps": {},
+                "label": "Map configuration"
+              }
+            ],
+            "collapsible": true
+          }
+        ]
+      },
+      "runtimeConstraints": {
+        "exclude": [
+          "api-function"
+        ]
+      }
+    },
+    {
+      "nodeType": "core.control.end",
+      "version": "1.0",
+      "category": "control-flow",
+      "description": "Mark the end of a workflow path",
+      "tags": [
+        "control-flow",
+        "end",
+        "finish",
+        "complete"
+      ],
+      "sortOrder": 20,
+      "display": {
+        "label": "End",
+        "icon": "circle-check",
+        "shape": "circle"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        }
+      ],
+      "model": {
+        "type": "bpmn:EndEvent"
+      },
+      "runtimeConstraints": {
+        "exclude": [
+          "api-function"
+        ]
+      }
+    }
+  ],
+  "variables": {
+    "globals": [
+      {
+        "id": "people",
+        "name": "people",
+        "direction": "in",
+        "dataType": "array",
+        "defaultValue": [
+          {
+            "name": "alice"
+          },
+          {
+            "name": "bob"
+          }
+        ]
+      }
+    ],
+    "nodes": [
+      {
+        "id": "start.output",
+        "type": "object",
+        "description": "Data passed when manually triggering the workflow.",
+        "binding": {
+          "nodeId": "start",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "transformMap1.output",
+        "type": "object",
+        "description": "The return value of the transform",
+        "binding": {
+          "nodeId": "transformMap1",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "transformMap1.error",
+        "type": "object",
+        "description": "Error information if the transform fails",
+        "binding": {
+          "nodeId": "transformMap1",
+          "outputId": "error"
+        }
+      }
+    ]
+  },
+  "runtime": "maestro",
+  "layout": {
+    "nodes": {
+      "start": {
+        "position": {
+          "x": -192,
+          "y": 0
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "transformMap1": {
+        "position": {
+          "x": 0,
+          "y": 0
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "end1": {
+        "position": {
+          "x": 192,
+          "y": 0
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      }
+    }
+  }
+}

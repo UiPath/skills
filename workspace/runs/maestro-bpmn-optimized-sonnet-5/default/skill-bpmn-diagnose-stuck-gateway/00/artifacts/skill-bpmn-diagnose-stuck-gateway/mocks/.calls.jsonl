@@ -1,0 +1,12 @@
+{"ts": 1787260042.0177956, "args": "maestro bpmn instance get inst-triage-001 -f folder-public --output json", "matched_rule": null, "fixture": null, "exit_code": 1, "error": "unmocked_default"}
+{"ts": 1787260042.4744809, "args": "maestro bpmn instance incidents inst-triage-001 -f folder-public --output json", "matched_rule": null, "fixture": null, "exit_code": 1, "error": "unmocked_default"}
+{"ts": 1787260046.3660126, "args": "maestro bpmn instance --help", "matched_rule": null, "fixture": null, "exit_code": 1, "error": "unmocked_default"}
+{"ts": 1787260051.042603, "args": "--help", "matched_rule": null, "fixture": null, "exit_code": 1, "error": "unmocked_default"}
+{"ts": 1787260051.7338104, "args": "maestro --help", "matched_rule": null, "fixture": null, "exit_code": 1, "error": "unmocked_default"}
+{"ts": 1787260052.3348806, "args": "maestro bpmn --help", "matched_rule": null, "fixture": null, "exit_code": 1, "error": "unmocked_default"}
+{"ts": 1787260061.719676, "args": "maestro bpmn instance element-executions inst-triage-001 -f folder-public --output json", "matched_rule": "instance element-executions inst-triage-001 -f folder-public", "fixture": "element-executions.json", "exit_code": 0}
+{"ts": 1787260062.5834022, "args": "maestro bpmn instance cursors inst-triage-001 -f folder-public --output json", "matched_rule": "instance cursors inst-triage-001 -f folder-public", "fixture": "cursors.json", "exit_code": 0}
+{"ts": 1787260064.1200683, "args": "maestro bpmn instance asset inst-triage-001 -f folder-public --output json", "matched_rule": null, "fixture": null, "exit_code": 1, "error": "unmocked_default"}
+{"ts": 1787260070.2311866, "args": "maestro bpmn instance variables inst-triage-001 -f folder-public --output json", "matched_rule": null, "fixture": null, "exit_code": 1, "error": "unmocked_default"}
+{"ts": 1787260075.3414032, "args": "maestro bpmn instance incidents inst-triage-001 -f folder-public --output json", "matched_rule": null, "fixture": null, "exit_code": 1, "error": "unmocked_default"}
+{"ts": 1787260094.0905142, "args": "--version", "matched_rule": null, "fixture": null, "exit_code": 1, "error": "unmocked_default"}

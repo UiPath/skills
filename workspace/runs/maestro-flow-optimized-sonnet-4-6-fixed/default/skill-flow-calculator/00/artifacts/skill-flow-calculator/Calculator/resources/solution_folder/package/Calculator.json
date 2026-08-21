@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "Calculator",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "e0eb8a88-5188-4850-ae36-e8a278a2c1cb",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "Calculator"
+    },
+    "locks": [],
+    "key": "1ce0d280-5129-4c6c-800a-21cdfe840369",
+    "files": []
+  }
+}

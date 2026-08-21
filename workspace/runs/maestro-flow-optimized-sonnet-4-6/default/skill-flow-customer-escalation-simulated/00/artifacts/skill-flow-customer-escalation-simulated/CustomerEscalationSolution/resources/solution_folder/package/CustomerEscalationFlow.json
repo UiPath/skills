@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "CustomerEscalationFlow",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "39b77779-4b79-4706-a05a-b9ba090bed3c",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "CustomerEscalationFlow"
+    },
+    "locks": [],
+    "key": "a2b0d4bf-2586-4e8c-ae42-9888b502d24b",
+    "files": []
+  }
+}

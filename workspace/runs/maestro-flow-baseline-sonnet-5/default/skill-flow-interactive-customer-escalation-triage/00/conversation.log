@@ -1,0 +1,99 @@
+=== USER (turn 1) — simulator-generated opener ===
+Hi — I need your help building a UiPath Maestro Flow for our customer escalation triage process. The deliverable is a validated Flow project (and solution) named **CustomerEscalationTriage** before we can sign off.
+
+Here's the input/output contract — downstream systems consume these by name, so the identifiers must be used **exactly as written**, no changes:
+
+**Inputs:** `customerTier`, `productionDown`, `workaroundAvailable`, `businessImpact`, `correlationId`
+
+**Outputs:** `severity`, `engineeringNeeded`, `responseMode`, `caseKey`
+
+Now, the business logic I need encoded:
+
+- An Enterprise customer with production fully unavailable and no workaround in place is our most critical situation — Sev1.
+- Informational or routine follow-up tickets where there's no production impact at all are Sev3.
+- Engineering gets pulled in for Sev1 cases. They do NOT get pulled in for Sev3.
+- We never send acknowledgements automatically — a human always reviews first. So the response mode should always come out as **Draft**, regardless of severity.
+- The `correlationId` coming in must be carried through unchanged as the `caseKey` output, so our downstream systems can match up the run.
+
+One more thing on `businessImpact`: that field arrives as free-form text — whatever phrase or sentence the requester typed to describe the impact. It won't be a fixed code or keyword, so the wording will vary. You'll need to handle it accordingly.
+
+Feel free to ask me anything you need to clarify before you start building.
+
+=== AGENT (turn 1) — 23.8s, in=2 out=1664 ===
+Before I start building, I have a few gaps in the logic that I need you to settle — otherwise I'd be guessing at business rules:
+
+1. **Middle tier (Sev2?)** — You've defined Sev1 (Enterprise + prod down + no workaround) and Sev3 (no production impact, informational/routine). Everything else falls in between — e.g., Enterprise with a workaround in place, or a non-Enterprise customer with production fully down. Is there a Sev2, and if so what's its exact trigger condition? And is `engineeringNeeded` true or false for it?
+
+2. **How should free-form `businessImpact` actually drive branching?** You have `productionDown` (presumably boolean) already telling us if prod is down. So is `businessImpact` text:
+   - (a) purely a pass-through/logging field with no effect on severity math, or
+   - (b) something the flow must interpret (e.g., via an LLM/classification node) to detect "informational/routine" phrasing for the Sev3 check, or to catch edge cases where `productionDown=false` but the impact described is still severe?
+   
+   If (b), I'd add an LLM classification step to bucket the text — want me to do that, and if so what categories should it output?
+
+3. **Data types** — Confirming `productionDown` and `workaroundAvailable` are booleans, and `customerTier` is a string where `"Enterprise"` is the only tier that matters for Sev1 (everything else treated the same)?
+
+=== USER (turn 2) ===
+Good questions — let me clear all three at once.
+
+**1. Sev2:** Yes, there is a Sev2. The trigger is production unavailable or degraded *but* a viable workaround exists. Engineering is needed for Sev2, same as Sev1. So to summarize the ladder:
+- **Sev1** — Enterprise + prod down + no workaround → engineering needed
+- **Sev2** — prod down/degraded + workaround available → engineering needed
+- **Sev3** — no production impact, informational or routine → no engineering
+
+**2. `businessImpact` branching:** Treat it as option (a) — pass-through and logging only. The severity math runs off `productionDown`, `workaroundAvailable`, and `customerTier`. `businessImpact` is just the requester's own description for the record; no LLM classification needed.
+
+**3. Data types:** Confirmed — `productionDown` and `workaroundAvailable` are booleans. `customerTier` is a string; `"Enterprise"` is what triggers the Sev1 path. Any other tier value falls through to Sev2 or Sev3 based on the other inputs.
+
+That should cover it — go ahead and build.
+
+=== AGENT (turn 2) — 17.9s, in=2 out=1422 ===
+One more gap I spotted in the ladder: what happens when **`productionDown=true`, `workaroundAvailable=false`, but `customerTier` is NOT Enterprise**? That's prod fully down with no workaround, just not an Enterprise customer — it doesn't match Sev1 (needs Enterprise) or Sev2 as you defined it (needs workaround available), so it's currently a hole in the logic.
+
+Should that case be:
+- **Sev1** anyway (tier doesn't matter when prod is fully down with no workaround), or
+- **Sev2** (workaround-availability isn't really the Sev2 trigger — "prod impacted at all, short of the Sev1 case" is), or something else?
+
+Also, to pin down the full decision table simply: is it accurate to say —
+- `productionDown = false` → **Sev3** (regardless of tier/workaround)
+- `productionDown = true` → **Sev1** if `customerTier="Enterprise" AND workaroundAvailable=false`, else **Sev2**
+
+That reading resolves the gap by folding it into Sev2. Let me know if that's right, or if you intended something different for that edge case.
+
+=== USER (turn 3) ===
+That reading is exactly right. You've closed the gap correctly:
+
+- `productionDown = false` → **Sev3**, full stop — tier and workaround status don't matter
+- `productionDown = true` + `customerTier = "Enterprise"` + `workaroundAvailable = false` → **Sev1**
+- `productionDown = true`, anything else → **Sev2**
+
+Non-Enterprise with prod fully down and no workaround falls into Sev2. The Sev1 designation is reserved for our Enterprise accounts specifically — that's where the contractual obligations sit. Everyone else in a production-down situation is serious, but it's Sev2.
+
+Go ahead and build on that table.
+
+=== AGENT (turn 3) — 491.1s, in=44 out=43584, 32 tool calls ===
+No warnings. The flow is clean and validated.
+
+## Summary
+
+Built and validated **CustomerEscalationTriage** at `/work/output/artifacts/skill-flow-interactive-customer-escalation-triage/CustomerEscalationTriage/CustomerEscalationTriage/CustomerEscalationTriage.flow`, wrapped in the solution `CustomerEscalationTriage/CustomerEscalationTriage.uipx`.
+
+**Topology:** `start` (manual trigger) → `checkProductionDown` (decision) → either `endSev3` directly, or `checkEnterpriseNoWorkaround` (decision) → `endSev1` / `endSev2`.
+
+- **Inputs** (`customerTier`, `productionDown`, `workaroundAvailable`, `businessImpact`, `correlationId`) declared as `in` globals bound to the `start` trigger, exact names preserved.
+- **Decision ladder** implements the locked table: `productionDown === false` → Sev3; else `customerTier === "Enterprise" && workaroundAvailable === false` → Sev1, else Sev2.
+- **Three End nodes**, one per severity, each mapping all four outputs: `severity` (literal), `engineeringNeeded` (`true`/`true`/`false`), `responseMode` (always literal `"Draft"`), `caseKey` (`=js:$vars.start.output.correlationId` — unmodified pass-through).
+- `businessImpact` is declared as an input but deliberately never referenced in any branching expression — pure pass-through per your confirmation.
+
+`flow validate` → **Valid**, zero warnings. `flow format` ran after — 6 nodes, 5 edges, 17 variables, all repositioned cleanly.
+
+No connectors, mocks, or missing connections — this is a fully self-contained decision flow, so there's nothing pending configuration. Since you didn't ask about deploy targets yet, what's next:
+
+- **Publish to Studio Web** (visualize/edit in browser)
+- **Debug the solution** (executes for real — I'd confirm with you first)
+- **Deploy to Orchestrator**
+- **Something else**
+
+=== USER (turn 4) — stop token — dialog ending ===
+[ASSISTANT] 
+[RESULT - SUCCESS]
+

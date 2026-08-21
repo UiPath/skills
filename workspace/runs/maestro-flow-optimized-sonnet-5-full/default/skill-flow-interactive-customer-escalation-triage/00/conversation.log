@@ -1,0 +1,57 @@
+=== USER (turn 1) — simulator-generated opener ===
+Hi — I need your help building a UiPath Maestro Flow project. The project and solution should both be named **CustomerEscalationTriage**, and it needs to be validated before I can sign off on it (the grader will run it after validation, so please don't ask me to execute it myself).
+
+Here's the contract the flow must satisfy — the field names are used verbatim by downstream systems, so please do not rename, re-case, or abbreviate any of them:
+
+**Inputs:**
+- `customerTier`
+- `productionDown`
+- `workaroundAvailable`
+- `businessImpact`
+- `correlationId`
+
+**Outputs:**
+- `severity`
+- `engineeringNeeded`
+- `responseMode`
+- `caseKey`
+
+Here's the business policy it needs to encode:
+
+- An **Enterprise** customer with production fully unavailable and no workaround is our most critical situation — that's a **Sev1**.
+- Informational or routine follow-up items with no production impact are the lowest tier — **Sev3**.
+- Engineering gets pulled in automatically for Sev1 but not for Sev3.
+- Customer acknowledgements are **always** staged for a human reviewer — we never send them automatically. So the response mode should always be **Draft**, regardless of severity.
+- The incoming `correlationId` must be carried through unchanged as the `caseKey` so our downstream systems can correlate back to the originating request.
+
+One more thing on `businessImpact`: that field is free-form text that the requester types in their own words — it could be a short phrase or a full sentence describing what's being affected. It's not a fixed keyword or code value, so the flow shouldn't try to pattern-match on it for classification logic.
+
+Let me know if you have any questions before you start building — happy to clarify the policy details.
+
+=== AGENT (turn 1) — 231.3s, in=1305 out=19906, 16 tool calls ===
+All clean — no errors or warnings from either `flow validate` or the deeper `audit_flow.py` checks (topology, expressions, Jint constructs, bindings, runtime gaps).
+
+## Summary
+
+Built and validated the **CustomerEscalationTriage** Maestro Flow project (solution and project both named `CustomerEscalationTriage`) at:
+`/work/output/artifacts/skill-flow-interactive-customer-escalation-triage/CustomerEscalationTriage/CustomerEscalationTriage/CustomerEscalationTriage.flow`
+
+**Structure:** `start` (manual trigger) → `classify` (Script node) → `end` (End node), three nodes, two edges.
+
+**Logic (in the `classify` script node):**
+- `severity = Sev1` when `customerTier === "Enterprise" && productionDown === true && workaroundAvailable === false`
+- `severity = Sev3` when `productionDown === false`
+- `severity = Sev2` for everything else (no rule was specified for this middle ground, so I added it as the consistent default — flag if you want different handling)
+- `engineeringNeeded = (severity === "Sev1")` — true only for Sev1
+- `responseMode` is hardcoded to `"Draft"` always
+- `caseKey = correlationId`, passed through unchanged
+- `businessImpact` is declared as a flow input but never read by the classification logic — purely informational, per your instruction
+
+All five field names (inputs and outputs) are verbatim per the contract.
+
+**Validation:** `uip maestro flow validate` → `Valid`, `uip maestro flow format` → ran clean, and the skill's deeper `audit_flow.py` (topology/expressions/Jint/bindings/runtime-gaps) reports zero errors and zero warnings. I did not run `flow debug` — ready for the grader to execute.
+
+=== USER (turn 2) — stop token — dialog ending ===
+[ASSISTANT] 
+[RESULT - SUCCESS]
+

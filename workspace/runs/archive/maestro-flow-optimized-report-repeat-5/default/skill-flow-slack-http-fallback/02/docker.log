@@ -1,0 +1,6 @@
+17:52:09 [INFO   ] [default/skill-flow-slack-http-fallback/02] orchestrator: API routing: aws_bedrock
+17:56:30 [INFO   ] [default/skill-flow-slack-http-fallback/02] evaluation.checker: Criterion 'run_command' FAILED (score=0.00, threshold=1.00): Command: python3 $TASK_DIR/check_slack_http_fallback.py check_fallback
+17:56:52 [INFO   ] [default/skill-flow-slack-http-fallback/02] orchestrator: Success criteria: 3/4 passed, weighted score: 0.760
+17:56:52 [INFO   ] [default/skill-flow-slack-http-fallback/02] orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+17:56:52 [INFO   ] [default/skill-flow-slack-http-fallback/02] orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-slack-http-fallback
+17:56:52 [INFO   ] [default/skill-flow-slack-http-fallback/02] orchestrator: Task finished: status=FAILURE duration=285.3s score=0.760 iterations=1

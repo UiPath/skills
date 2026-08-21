@@ -1,0 +1,8 @@
+{
+  "goal_a_type": "llm-judge-output",
+  "goal_a_reason": "Free-text replies may be paraphrased (e.g. 'Hi Alice!' vs 'Hello, Alice!'), so semantic similarity via an LLM judge is needed; no tool-call inspection is required, ruling out trajectory types.",
+  "goal_b_type": "json-similarity",
+  "goal_b_reason": "The output is a known structured JSON object where key ordering and minor whitespace differences must be tolerated but values must match, making the deterministic tree-based json-similarity evaluator the right fit.",
+  "goal_c_type": "contains",
+  "goal_c_reason": "The pass/fail criterion is simply whether the literal substring 'deployment succeeded' appears anywhere in the output, which is exactly what the deterministic contains evaluator checks."
+}

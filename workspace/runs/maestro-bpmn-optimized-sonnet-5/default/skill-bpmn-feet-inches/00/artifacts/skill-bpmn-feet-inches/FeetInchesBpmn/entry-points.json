@@ -1,0 +1,40 @@
+{
+  "$schema": "https://cloud.uipath.com/draft/2024-12/entry-point",
+  "$id": "entry-points.json",
+  "entryPoints": [
+    {
+      "filePath": "/content/FeetInchesBpmn.bpmn#Event_start",
+      "uniqueId": "2814cd28-f423-4096-96e5-45b157921ae2",
+      "type": "ProcessOrchestration",
+      "input": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "number"
+          },
+          "direction": {
+            "type": "string"
+          }
+        }
+      },
+      "output": {
+        "type": "object",
+        "properties": {
+          "NormValue": {
+            "type": "number"
+          },
+          "NormDirection": {
+            "type": "string"
+          },
+          "ConvertedValue": {
+            "type": "number"
+          },
+          "result": {
+            "type": "string"
+          }
+        }
+      },
+      "displayName": "Manual trigger"
+    }
+  ]
+}

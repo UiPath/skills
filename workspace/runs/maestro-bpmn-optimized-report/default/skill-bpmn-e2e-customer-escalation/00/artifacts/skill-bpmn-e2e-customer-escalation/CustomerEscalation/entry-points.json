@@ -1,0 +1,36 @@
+{
+  "entryPoints": [
+    {
+      "id": "EntryPoint_ManualRequest",
+      "filePath": "/content/CustomerEscalation.bpmn#Start_ManualRequest",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "subject": {
+            "type": "string"
+          },
+          "senderDomain": {
+            "type": "string"
+          }
+        }
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "urgent": {
+            "type": "boolean"
+          },
+          "vip": {
+            "type": "boolean"
+          },
+          "ticketId": {
+            "type": "string"
+          },
+          "escalationResult": {
+            "type": "object"
+          }
+        }
+      }
+    }
+  ]
+}

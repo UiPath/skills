@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "InvoiceRouter",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "a017e3de-cb65-4ba5-a261-b14166e688fc",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "InvoiceRouter"
+    },
+    "locks": [],
+    "key": "c359ec77-2c7b-46bd-87ce-14bb1e4ed668",
+    "files": []
+  }
+}

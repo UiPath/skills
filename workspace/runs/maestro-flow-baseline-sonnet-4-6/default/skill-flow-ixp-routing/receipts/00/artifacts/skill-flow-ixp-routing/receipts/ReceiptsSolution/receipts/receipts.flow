@@ -1,0 +1,465 @@
+{
+  "id": "75d49967-23af-4e20-9b47-fd6191bfaf61",
+  "version": "1.9",
+  "name": "receipts",
+  "nodes": [
+    {
+      "id": "start",
+      "type": "core.trigger.manual",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Manual trigger"
+      },
+      "inputs": {
+        "entryPointId": "3e62cad7-2167-48d8-bbb9-b484f2429571",
+        "isDefaultEntryPoint": true
+      }
+    },
+    {
+      "id": "extractReceiptFields",
+      "type": "uipath.ixp.idp-benchmark-receipts-43af6412-ixp.9e77f71d-773c-80a0-9411-ec40d252d00d-c4359cde-55f0-4f0e-9322-c6cdce74ab4c",
+      "typeVersion": "1.0.0",
+      "display": {
+        "label": "Extract Receipt Fields"
+      },
+      "inputs": {
+        "model": {
+          "id": "9e77f71d-773c-80a0-9411-ec40d252d00d",
+          "modelName": "idp-benchmark---receipts-43af6412-ixp",
+          "modelDisplayName": "idp-benchmark---receipts-43af6412-ixp",
+          "folderKey": "c4359cde-55f0-4f0e-9322-c6cdce74ab4c",
+          "folderName": "Shared",
+          "folderPath": "c4359cde-55f0-4f0e-9322-c6cdce74ab4c",
+          "description": ""
+        },
+        "modelName": "idp-benchmark---receipts-43af6412-ixp",
+        "description": "",
+        "projectName": "idp-benchmark---receipts-43af6412-ixp",
+        "versionTag": "",
+        "folderKey": "c4359cde-55f0-4f0e-9322-c6cdce74ab4c",
+        "folderName": "Shared",
+        "fileRef": "=js:$vars.start.output.receiptImage",
+        "pageRange": ""
+      },
+      "outputs": {
+        "output": {
+          "name": "output",
+          "type": "object",
+          "source": "=this",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails",
+          "source": "=Error",
+          "var": "error"
+        }
+      }
+    },
+    {
+      "id": "parseReceiptFields",
+      "type": "core.action.script",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Parse Merchant, Date, Total"
+      },
+      "inputs": {
+        "script": "const fields = ($vars.extractReceiptFields.output.ExtractionResult && $vars.extractReceiptFields.output.ExtractionResult.ResultsDocument && $vars.extractReceiptFields.output.ExtractionResult.ResultsDocument.Fields) || [];\nconst find = (name) => fields.find(f => f.FieldName === name)?.Values?.[0] ?? null;\nreturn {\n  merchant: find('merchant') || find('Merchant') || find('vendor') || find('Vendor'),\n  date: find('date') || find('Date') || find('transaction_date') || find('TransactionDate'),\n  total: find('total') || find('Total') || find('amount') || find('Amount')\n};"
+      },
+      "outputs": {
+        "output": {
+          "name": "output",
+          "type": "object",
+          "source": "=this",
+          "var": "output"
+        }
+      }
+    },
+    {
+      "id": "end",
+      "type": "core.control.end",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "End"
+      },
+      "inputs": {},
+      "outputs": {
+        "merchant": {
+          "name": "merchant",
+          "source": "=js:$vars.parseReceiptFields.output.merchant"
+        },
+        "date": {
+          "name": "date",
+          "source": "=js:$vars.parseReceiptFields.output.date"
+        },
+        "total": {
+          "name": "total",
+          "source": "=js:$vars.parseReceiptFields.output.total"
+        }
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge_start_output_extractReceiptFields_input",
+      "sourceNodeId": "start",
+      "sourcePort": "output",
+      "targetNodeId": "extractReceiptFields",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge_extractReceiptFields_success_parseReceiptFields_input",
+      "sourceNodeId": "extractReceiptFields",
+      "sourcePort": "success",
+      "targetNodeId": "parseReceiptFields",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge_parseReceiptFields_output_end_input",
+      "sourceNodeId": "parseReceiptFields",
+      "sourcePort": "output",
+      "targetNodeId": "end",
+      "targetPort": "input"
+    }
+  ],
+  "definitions": [
+    {
+      "nodeType": "core.trigger.manual",
+      "version": "1.0",
+      "category": "trigger",
+      "description": "Start the process manually",
+      "tags": [
+        "trigger",
+        "start",
+        "manual"
+      ],
+      "sortOrder": 80,
+      "display": {
+        "label": "Manual trigger",
+        "icon": "play",
+        "shape": "circle"
+      },
+      "handleConfiguration": [
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "output",
+              "type": "source",
+              "handleType": "output",
+              "showButton": true,
+              "constraints": {
+                "forbiddenTargetCategories": [
+                  "trigger"
+                ]
+              }
+            }
+          ],
+          "visible": true
+        }
+      ],
+      "model": {
+        "type": "bpmn:StartEvent",
+        "entryPointId": true
+      },
+      "outputDefinition": {
+        "output": {
+          "type": "object",
+          "description": "Data passed when manually triggering the process.",
+          "source": "null",
+          "var": "output"
+        }
+      },
+      "toolbarExtensions": {
+        "design": {
+          "actions": [
+            {
+              "id": "change-trigger-type",
+              "icon": "square-mouse-pointer",
+              "label": "Change trigger type"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "nodeType": "uipath.ixp.idp-benchmark-receipts-43af6412-ixp.9e77f71d-773c-80a0-9411-ec40d252d00d-c4359cde-55f0-4f0e-9322-c6cdce74ab4c",
+      "version": "1.0.0",
+      "category": "document-extraction",
+      "tags": [
+        "ixp",
+        "document-understanding",
+        "extraction"
+      ],
+      "description": "(Shared)",
+      "sortOrder": 545,
+      "display": {
+        "canvasLabel": "Extract",
+        "label": "idp-benchmark---receipts-43af6412-ixp",
+        "description": "(Shared)",
+        "icon": "file-text"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "success",
+              "type": "source",
+              "handleType": "output"
+            },
+            {
+              "id": "error",
+              "label": "Error",
+              "type": "source",
+              "handleType": "output",
+              "visible": "{inputs.errorHandlingEnabled}",
+              "constraints": {
+                "maxConnections": 1
+              }
+            }
+          ]
+        }
+      ],
+      "supportsErrorHandling": true,
+      "model": {
+        "type": "bpmn:ServiceTask",
+        "serviceType": "IXP.Extraction"
+      }
+    },
+    {
+      "nodeType": "core.action.script",
+      "version": "1.0",
+      "category": "action",
+      "description": "Run a custom JavaScript script",
+      "tags": [
+        "script",
+        "javascript",
+        "code"
+      ],
+      "sortOrder": 50,
+      "display": {
+        "label": "Script",
+        "icon": "code",
+        "shape": "rectangle"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "output",
+              "type": "source",
+              "handleType": "output"
+            }
+          ]
+        }
+      ],
+      "model": {
+        "type": "bpmn:ScriptTask"
+      },
+      "inputDefinition": {
+        "type": "object",
+        "properties": {
+          "script": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "script"
+        ]
+      }
+    },
+    {
+      "nodeType": "core.control.end",
+      "version": "1.0",
+      "category": "control-flow",
+      "description": "Mark the end of a process path",
+      "tags": [
+        "control-flow",
+        "end",
+        "finish",
+        "complete"
+      ],
+      "sortOrder": 65,
+      "display": {
+        "label": "End",
+        "icon": "circle-check",
+        "shape": "circle"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        }
+      ],
+      "model": {
+        "type": "bpmn:EndEvent"
+      },
+      "runtimeConstraints": {
+        "exclude": [
+          "api-function"
+        ]
+      }
+    }
+  ],
+  "variables": {
+    "globals": [
+      {
+        "id": "receiptImage",
+        "direction": "in",
+        "type": "file",
+        "triggerNodeId": "start"
+      },
+      {
+        "id": "merchant",
+        "direction": "out",
+        "type": "string"
+      },
+      {
+        "id": "date",
+        "direction": "out",
+        "type": "string"
+      },
+      {
+        "id": "total",
+        "direction": "out",
+        "type": "string"
+      }
+    ],
+    "nodes": [
+      {
+        "id": "start.output",
+        "type": "object",
+        "description": "Data passed when manually triggering the process.",
+        "binding": {
+          "nodeId": "start",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "extractReceiptFields.output",
+        "type": "object",
+        "binding": {
+          "nodeId": "extractReceiptFields",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "extractReceiptFields.error",
+        "type": "object",
+        "description": "Error information if the node fails",
+        "binding": {
+          "nodeId": "extractReceiptFields",
+          "outputId": "error"
+        }
+      },
+      {
+        "id": "parseReceiptFields.output",
+        "type": "object",
+        "binding": {
+          "nodeId": "parseReceiptFields",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "end.merchant",
+        "type": "string",
+        "binding": {
+          "nodeId": "end",
+          "outputId": "merchant"
+        }
+      },
+      {
+        "id": "end.date",
+        "type": "string",
+        "binding": {
+          "nodeId": "end",
+          "outputId": "date"
+        }
+      },
+      {
+        "id": "end.total",
+        "type": "string",
+        "binding": {
+          "nodeId": "end",
+          "outputId": "total"
+        }
+      }
+    ]
+  },
+  "runtime": "maestro",
+  "layout": {
+    "nodes": {
+      "start": {
+        "position": {
+          "x": -192,
+          "y": 0
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        }
+      },
+      "extractReceiptFields": {
+        "position": {
+          "x": 0,
+          "y": 0
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "parseReceiptFields": {
+        "position": {
+          "x": 192,
+          "y": 0
+        },
+        "size": {
+          "width": 288,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "end": {
+        "position": {
+          "x": 576,
+          "y": 0
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      }
+    }
+  }
+}

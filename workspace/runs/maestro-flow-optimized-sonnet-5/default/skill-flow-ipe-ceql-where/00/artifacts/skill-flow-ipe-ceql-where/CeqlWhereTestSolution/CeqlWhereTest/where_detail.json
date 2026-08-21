@@ -1,0 +1,37 @@
+{
+  "_comment": "Planned --detail payload for `uip maestro flow node configure CeqlWhereTest.flow listGroupsActive1` — not yet run (no live tenant node-configuration step in this sandbox). Captured here for review before the real `node configure` call.",
+  "connectionId": "26b7ac14-424a-45ae-88ee-88ae5c8794ce",
+  "folderKey": "5da18ec0-7de1-4e57-aaf1-ddc8a369c199",
+  "method": "GET",
+  "endpoint": "/groups",
+  "filter": {
+    "groupOperator": 0,
+    "index": 0,
+    "filters": [
+      {
+        "id": "displayName",
+        "operator": "Equals",
+        "value": {
+          "value": "active",
+          "rawString": "\"active\"",
+          "isLiteral": true
+        }
+      }
+    ],
+    "groups": []
+  },
+  "_filterNotes": {
+    "filterBuilderParam": "where",
+    "fieldSource": "displayName field from `is resources describe uipath-microsoft-azureactivedirectory groups --operation List`; searchable: true, searchableOperators: ['=', 'IN']",
+    "compiledCEQL": "displayName = 'active'",
+    "runtimeSide": "inputs.detail.queryParameters.where (populated by node configure from this filter tree)",
+    "designTimeSide": "inputs.detail.configuration.essentialConfiguration.savedFilterTrees.where (populated by node configure from this filter tree)"
+  },
+  "_connectionUsed": {
+    "connectorKey": "uipath-microsoft-azureactivedirectory",
+    "connectionId": "26b7ac14-424a-45ae-88ee-88ae5c8794ce",
+    "connectionName": "Microsoft Azure Active Directory",
+    "folderKey": "5da18ec0-7de1-4e57-aaf1-ddc8a369c199",
+    "folder": "uipath-maestro-flow"
+  }
+}

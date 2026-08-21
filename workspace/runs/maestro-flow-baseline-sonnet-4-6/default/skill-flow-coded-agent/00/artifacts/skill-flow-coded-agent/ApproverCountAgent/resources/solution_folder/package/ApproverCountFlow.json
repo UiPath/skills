@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "ApproverCountFlow",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "9e3424e4-9d07-4baa-9b50-b334d6a54867",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "ApproverCountFlow"
+    },
+    "locks": [],
+    "key": "ae0238ab-eb82-49d3-bda7-7dda09441e8c",
+    "files": []
+  }
+}

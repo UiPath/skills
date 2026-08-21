@@ -1,0 +1,137 @@
+=== USER (turn 1) — simulator-generated opener ===
+Hi there! I need some help setting up an automated flow for reviewing purchase orders. Right now I'm doing it all by hand and it's taking forever. Can you help me build something that lets me pull up a PO, review it, and then route it based on what I decide?
+
+=== AGENT (turn 1) — 326.8s, in=29 out=20611, 25 tool calls ===
+Here's a summary of everything that was built:
+
+---
+
+## ✅ Purchase Order Review Flow — Complete
+
+**Solution:** `POReviewSolution/`  
+**Flow file:** `POReviewSolution/POReview/POReview.flow`  
+**Validation:** ✅ Pass
+
+---
+
+### Flow Shape
+
+```
+[Manual Trigger] → [Fetch PO Data] → [PO Review (HITL)] → [Route Decision]
+```
+
+| # | Node | Type | Role |
+|---|---|---|---|
+| 1 | **Manual Trigger** | `core.trigger.manual` | Starts the flow; accepts `poNumber` as input |
+| 2 | **Fetch PO Data** | `core.action.script` | Loads PO record (stubbed — swap with HTTP call to your ERP) |
+| 3 | **PO Review** | `uipath.human-in-the-loop.quick-form` | Human review checkpoint in Action Center |
+| 4 | **Route Decision** | `core.action.script` | Reads decision + routes downstream |
+
+---
+
+### What the Reviewer Sees (Action Center task)
+
+| Field | Direction | Type | Content |
+|---|---|---|---|
+| PO Number | Read-only | string | e.g. `PO-2026-0042` |
+| Vendor | Read-only | string | Supplier name |
+| Total Amount | Read-only | number | Dollar value |
+| Requested By | Read-only | string | Submitter name |
+| Submission Date | Read-only | date | When it was submitted |
+| Description | Read-only | string | Purpose / summary |
+| Line Items | Read-only | string | What's being purchased |
+| **Notes** | **Fill in** | string | Optional reviewer comments |
+
+**Outcome buttons:** `Approve` (primary) · `Reject` · `Escalate`
+
+---
+
+### Runtime Variables (downstream use)
+
+| Variable | What it holds |
+|---|---|
+| `$vars.poReview1.status` | The outcome chosen: `"Approve"`, `"Reject"`, or `"Escalate"` |
+| `$vars.poReview1.output.notes` | Reviewer's notes text |
+| `$vars.fetchPO1.output.*` | Full PO data (poNumber, vendor, totalAmount, etc.) |
+
+---
+
+### Next Steps
+
+1. **Wire to your ERP** — replace the stub in `Fetch PO Data` with an HTTP call to your procurement system
+2. **Add routing branches** — extend `Route Decision` to call your approval API, send rejection emails, or push to an escalation queue based on `$vars.poReview1.status`
+3. **Set the assignee** — in the `poReview1` node's `recipient.assignee`, specify the reviewer group or email
+4. **Pack & publish** when ready: `uip solution pack . ./out` → `uip solution publish ./out/<pkg>.zip`
+
+=== USER (turn 2) ===
+Okay this looks pretty good! But a couple of things — I never asked for an "Escalate" button. I just need Approve and Reject. Can you take that out?
+
+Also, these PO reviews are time-sensitive, so I need the review step set to High priority. Is that something you can do?
+
+=== AGENT (turn 2) — 31.8s, in=8 out=1519, 5 tool calls ===
+✅ Still valid. Here's what changed:
+
+- **Escalate removed** — the `poReview1` node now has exactly two outcome buttons: `Approve` (primary, green) and `Reject`
+- **Priority → High** — the task will surface at the top of the Action Center queue
+
+Everything else is untouched. Ready to pack and publish whenever you are.
+
+=== USER (turn 3) ===
+Good, thanks for making those changes quickly. 
+
+One thing I want to make sure is right — what actually happens after I click Approve versus Reject? Can you walk me through that in plain English? I want to make sure the routing is doing what I expect before I sign off.
+
+=== AGENT (turn 3) — 58.8s, in=4 out=2869, 1 tool calls ===
+Here's exactly what happens today, read straight from the file — I want to be honest about one limitation before you sign off.
+
+---
+
+### What both buttons have in common
+
+Both **Approve** and **Reject** fire the same `completed` output handle on the `PO Review` node, which is wired to the `Route Decision` script. So in terms of flow topology, **both outcomes travel to the same next node** — there is no fork in the road at the wiring level.
+
+---
+
+### How they differ
+
+The button you click is stored as `$vars.poReview1.status` — either `"Approve"` or `"Reject"`. The `Route Decision` script reads that value and currently returns a summary message like:
+
+> *"PO PO-2026-0042 ($12500) → Approve. Reviewer notes: (none)"*
+
+That's **it for right now.** The script captures and logs the decision, but it does **not** actually do anything different for Approve vs Reject. It's a stub — it reads the value but doesn't branch on it to call different downstream systems.
+
+---
+
+### The gap to be aware of
+
+If you expect **Approve** to, say, post an approval back to your ERP and **Reject** to send a rejection email to the requester — that logic doesn't exist yet. The `Route Decision` node would need an `if/else` on `$vars.poReview1.status` to actually split behavior.
+
+---
+
+### Want me to wire that up properly?
+
+Tell me what should happen in each case and I'll add the branching now. For example:
+
+- **Approve** → call your ERP approval endpoint / update a queue / trigger a downstream process
+- **Reject** → send a rejection notification / update a record / write to a log
+
+What should each path actually do?
+
+=== USER (turn 4) ===
+Yeah that's not quite right — I do need them to do different things. It doesn't have to be fancy though. If I click Approve, I just want it to log something like "PO approved." And if I click Reject, the flow should just end — no need to do anything else. Can you wire that up?
+
+=== AGENT (turn 4) — 40.9s, in=5 out=1707, 2 tool calls ===
+✅ Valid. Here's how the flow now behaves end to end:
+
+| You click | What happens |
+|---|---|
+| **Approve** | The `completed` handle fires → `Route Decision` runs → logs `"PO PO-2026-0042 approved."` → flow ends normally |
+| **Reject** | The flow ends immediately at the review step — `Route Decision` is never reached |
+
+The Reject outcome has `"action": "End"` in the schema, which means the runtime terminates the flow right there — no extra wiring needed, nothing to clean up.
+
+=== USER (turn 5) — stop token — dialog ending ===
+That's exactly what I wanted! Approve logs it, Reject just ends — clean and simple. And it's been validated, the priority is set to High, and I've got just the two buttons. 
+
+This works for me. Thanks for sticking with it and getting the routing right.
+

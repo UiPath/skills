@@ -1,0 +1,973 @@
+{
+  "task_id": "skill-flow-trigger-with-filter",
+  "task_description": "Verifies that the uipath-maestro-flow skill teaches agents to emit a structured `filter` tree. Without this, UI drops the filter silently on first open.\n",
+  "variant_id": "default",
+  "agent_type": "claude-code",
+  "model_used": "claude-sonnet-4-6",
+  "started_at": "2026-08-19T18:01:44.455301",
+  "completed_at": "2026-08-19T18:02:57.143983",
+  "duration_seconds": 72.6887059211731,
+  "final_status": "SUCCESS",
+  "max_turns_exhausted": false,
+  "weighted_score": 1.0,
+  "iteration_count": 1,
+  "success_criteria_results": [
+    {
+      "result_kind": "basic",
+      "criterion_type": "run_command",
+      "description": "trigger_detail.json is the --detail object with a top-level `filter` tree on `subject` Contains, no top-level filterExpression",
+      "score": 1.0,
+      "details": "Command: python3 $TASK_DIR/check_trigger_filter.py\nExit code: 0 (expected: 0)\nStdout:\nPASS: trigger_detail.json filter tree references `subject` and uses PascalCase `Contains`\n\nStderr: (empty)",
+      "error": null,
+      "pass_threshold": 1.0,
+      "gating": true
+    }
+  ],
+  "iterations": [
+    {
+      "iteration": 1,
+      "user_input": "Your working directory is: /work/output/artifacts/skill-flow-trigger-with-filter\n\nYou are authoring a UiPath Flow triggered by an Outlook email whose subject contains \"good day\" and sent from\nabc@xyz.com.\nDo NOT run any command that requires a live connection — this sandbox has no UiPath tenant, so you cannot configure\nthe trigger against a live connection.\nInstead, write to `trigger_detail.json` the exact JSON object you would pass to\n`uip maestro flow node configure <flow> <triggerId> --detail '<JSON>'` to configure that trigger.\nUse placeholders for any connection/folder/event ids you cannot resolve offline.\n",
+      "agent_output": "[ASSISTANT] I'll read the author capability and connector trigger references to get the exact `--detail` JSON shape for a connector trigger.\n[ASSISTANT] Now I'll read the connector-trigger plugin docs to get the exact `--detail` JSON structure.\n[ASSISTANT] I have everything I need. The impl.md shows exactly the `--detail` shape for connector triggers, including a worked example for \"Emails from a specific sender AND subject contains 'good day'\". Let me write the file.\n[ASSISTANT] `trigger_detail.json` is written. Here's a summary of what's in it and why each field is set the way it is:\n\n---\n\n### What the JSON contains\n\n| Field | Value | Why |\n|---|---|---|\n| `connectionId` | `<CONNECTION_ID>` placeholder | Must be the UUID of a live Microsoft Office 365 IS connection — resolved offline it is always a placeholder |\n| `folderKey` | `<FOLDER_KEY>` placeholder | Orchestrator folder that owns the connection — comes from the same `connections list` response |\n| `eventMode` | `<EVENT_MODE>` placeholder | `\"webhooks\"` or `\"polling\"` — read from `registry get … --connection-id` at deploy time; cannot be determined offline |\n| `eventParameters.parentFolderId` | `<INBOX_FOLDER_ID>` placeholder | The Outlook `email-received` trigger requires a mail folder ID as an event parameter; resolve with `uip is resources run list \"microsoft-office-365\" \"MailFolder\" --connection-id <id>` and match `displayName = \"Inbox\"` |\n| `filter.filters[0]` — `from / Equals / abc@xyz.com` | literal | Restricts the trigger to emails whose **From** field exactly matches `abc@xyz.com` |\n| `filter.filters[1]` — `subject / Contains / good day` | literal | Restricts the trigger to emails whose subject **contains** the phrase `good day` (case-insensitive per connector) |\n| `filter.groupOperator: 0` | `0` = AND | Both conditions must hold simultaneously |\n\n### Filter field names (`from`, `subject`)\nThese names match the worked example in the skill's `connector-trigger/impl.md`. You **must** verify them against the live `filterFields.fields[].name` response from `uip maestro flow registry get uipath.connector.trigger.microsoft-office-365.email-received --connection-id <id>` — matching is case-sensitive and the CLI silently drops an unmatched leaf (the trigger fires on everything instead of erroring).\n\n### To configure the trigger against a live tenant\n```bash\nuip is connections list \"microsoft-office-365\" --all-folders --output json\n# → grab connectionId, folderKey, ElementInstanceId\n\nuip is resources run list \"microsoft-office-365\" \"MailFolder\" \\\n  --connection-id <connectionId> --output json\n# → resolve parentFolderId for \"Inbox\"\n\nuip maestro flow registry get uipath.connector.trigger.microsoft-office-365.email-received \\\n  --connection-id <connectionId> --output json\n# → confirm eventMode and exact filterFields.fields[].name values\n\nuip maestro flow node configure <FLOW>.flow <TRIGGER_NODE_ID> \\\n  --detail \"$(cat trigger_detail.json)\" --output json\n```\n[RESULT - SUCCESS] `trigger_detail.json` is written. Here's a summary of what's in it and why each field is set the way it is:\n\n---\n\n### What the JSON contains\n\n| Field | Value | Why |\n|---|---|---|\n| `connectionId` | `<CONNECTION_ID>` placeholder | Must be the UUID of a live Microsoft Office 365 IS connection — resolved offline it is always a placeholder |\n| `folderKey` | `<FOLDER_KEY>` placeholder | Orchestrator folder that owns the connection — comes from the same `connections list` response |\n| `eventMode` | `<EVENT_MODE>` placeholder | `\"webhooks\"` or `\"polling\"` — read from `registry get … --connection-id` at deploy time; cannot be determined offline |\n| `eventParameters.parentFolderId` | `<INBOX_FOLDER_ID>` placeholder | The Outlook `email-received` trigger requires a mail folder ID as an event parameter; resolve with `uip is resources run list \"microsoft-office-365\" \"MailFolder\" --connection-id <id>` and match `displayName = \"Inbox\"` |\n| `filter.filters[0]` — `from / Equals / abc@xyz.com` | literal | Restricts the trigger to emails whose **From** field exactly matches `abc@xyz.com` |\n| `filter.filters[1]` — `subject / Contains / good day` | literal | Restricts the trigger to emails whose subject **contains** the phrase `good day` (case-insensitive per connector) |\n| `filter.groupOperator: 0` | `0` = AND | Both conditions must hold simultaneously |\n\n### Filter field names (`from`, `subject`)\nThese names match the worked example in the skill's `connector-trigger/impl.md`. You **must** verify them against the live `filterFields.fields[].name` response from `uip maestro flow registry get uipath.connector.trigger.microsoft-office-365.email-received --connection-id <id>` — matching is case-sensitive and the CLI silently drops an unmatched leaf (the trigger fires on everything instead of erroring).\n\n### To configure the trigger against a live tenant\n```bash\nuip is connections list \"microsoft-office-365\" --all-folders --output json\n# → grab connectionId, folderKey, ElementInstanceId\n\nuip is resources run list \"microsoft-office-365\" \"MailFolder\" \\\n  --connection-id <connectionId> --output json\n# → resolve parentFolderId for \"Inbox\"\n\nuip maestro flow registry get uipath.connector.trigger.microsoft-office-365.email-received \\\n  --connection-id <connectionId> --output json\n# → confirm eventMode and exact filterFields.fields[].name values\n\nuip maestro flow node configure <FLOW>.flow <TRIGGER_NODE_ID> \\\n  --detail \"$(cat trigger_detail.json)\" --output json\n```",
+      "commands": [
+        {
+          "tool_name": "Skill",
+          "tool_id": "toolu_bdrk_01YV5vxmhK4gRLVRPGSnsuKv",
+          "assistant_turn_index": 1,
+          "timestamp": "2026-08-19T18:01:52.602117",
+          "duration_ms": 38.69080901495181,
+          "generation_completed_at": "2026-08-19T18:01:52.602117",
+          "execution_started_at": "2026-08-19T18:01:52.602385",
+          "execution_completed_at": "2026-08-19T18:01:52.641076",
+          "parameters": {
+            "skill": "uipath:uipath-maestro-flow"
+          },
+          "result_status": "success",
+          "result_summary": "Launching skill: uipath:uipath-maestro-flow",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 0,
+          "result_tokens": 11
+        },
+        {
+          "tool_name": "Read",
+          "tool_id": "toolu_bdrk_01KiH9Y4vjkEsF1Zp9r1VagD",
+          "assistant_turn_index": 4,
+          "timestamp": "2026-08-19T18:01:59.298159",
+          "duration_ms": 366.8785940099042,
+          "generation_completed_at": "2026-08-19T18:01:59.298159",
+          "execution_started_at": "2026-08-19T18:01:59.298227",
+          "execution_completed_at": "2026-08-19T18:01:59.665106",
+          "parameters": {
+            "file_path": "/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/CAPABILITY.md"
+          },
+          "result_status": "success",
+          "result_summary": "1\t# Author — Create and edit `.flow` files\n2\t\n3\tCapability index for building new flows (greenfield) and editing existing flows (brownfield). Author owns everything that happens on disk, locally, without `uip login`. Authoring journeys terminate at `validate` + `format`; from there, hand off to [operate/CAPABILITY.md](../operate/CAPABILITY.md) to publish, run, or debug.\n4\t\n5\t> **Where you came from / where to go next.** Author is upstream of Operate (build the flow → ship it) and upstream of Diagnose only via Operate (build → run → diagnose). Publish/run/lifecycle lives in [operate/CAPABILITY.md](../operate/CAPABILITY.md); fault triage lives in [diagnose/CAPABILITY.md](../diagnose/CAPABILITY.md).\n6\t>\n7\t> **Inherits universal rules from [SKILL.md](../../SKILL.md)** — `--output json` + prefer `--output-filter` for extraction, no `flow debug` without consent, resource discovery order, never invoke other skills automatically, dropdown question pattern, solution layout, **plain-English narration + granular progress list (opt-in — silent by default; engage when the user asks for verbosity)**. The rules below are author-scoped and apply on top.\n8\t\n9\t## When to use this capability\n10\t\n11\t<!--skill-flavor:project-creation-scope:start-->\n12\t- Create a new Flow project with `uip maestro flow init`\n13\t<!--skill-flavor:project-creation-scope:end-->\n14\t- Edit a `.flow` file — adding nodes, edges, or logic\n15\t- Explore available node types via the registry\n16\t- Validate a Flow file locally\n17\t- Manage variables, subflows, expressions, and output wiring\n18\t- Apply Node ownership — who authors the node (see § below)\n19\t- Configure connector, connector-trigger, or managed HTTP nodes; scaffold inline-agent projects\n20\t- Plan a complex flow before building\n21\t\n22\t## Node ownership — who authors the node\n23\t\n24\tEvery node in a `.flow` file has exactly one author. The validator enforces this.\n25\t\n26\t**User-owned nodes (Edit / Write directly):**\n27\t\n28\t| Category | Node types |\n29\t| --- | --- |\n30\t| Triggers | `core.trigger.manual`, `core.trigger.scheduled` |\n31\t| Control flow | `core.logic.decision`, `core.logic.switch`, `core.logic.loop`, `core.logic.merge`, `core.control.end`, `core.logic.terminate`, `core.subflow` |\n32\t| Logic | `core.action.script`, `core.action.transform`, `core.logic.delay`, `core.logic.mock` |\n33\t| Human-in-the-loop | `uipath.human-in-the-loop.quick-form` (inline form), `uipath.human-in-the-loop.coded-action-app` (app-based) |\n34\t| Patterns | `uipath.pattern.batch-transform`, `uipath.pattern.deep-rag` |\n35\t| Agents | `uipath.agent.autonomous` (inline; after `uip agent init --inline-in-flow`) |\n36\t| Resource nodes | `uipath.core.rpa-workflow.*`, `uipath.core.agent.*`, `uipath.core.flow.*`, `uipath.core.agentic-process.*`, `uipath.core.api-workflow.*`, `uipath.core.human-task.*` |\n37\t| Document extraction | `uipath.ixp.*` — the extraction step must always land a node ([ixp/impl.md](references/plugins/ixp/impl.md#landing-the-node-when-you-cannot-fully-configure-it)) |\n38\t| Queue | `core.action.queue.create`, `core.action.queue.create-and-wait` |\n39\t\n40\t**CLI-owned nodes (`uip maestro flow node add` + `uip maestro flow node configure`):**\n41\t\n42\t| Category | Node types | Why |\n43\t| --- | --- | --- |\n44\t| Connector activities | `uipath.connector.<key>.<op>` | `inputs.detail` is a `=jsonString:essentialConfiguration` envelope. Validate rejects hand-authored shapes. |\n45\t| Connector triggers | `uipath.connector.trigger.<key>.<trigger>` | Same envelope + product-managed `bindings_v2.json` derivation. |\n46\t| Wait for events (mid-flow) | `uipath.connector.event.<key>.<event>` | Same envelope and event metadata as a trigger, but placed mid-flow (has an `input` port) instead of as the start node. See [connector-trigger/impl.md — Wait for events](references/plugins/connector-trigger/impl.md#wait-for-events-uipathconnectoreventkeyevent). |\n47\t| Managed HTTP | `core.action.http.v2` | Same envelope. |\n48\t\n49\tFor CLI-owned nodes:\n50\t\n51\t- Use `uip maestro flow node add` to insert the node and copy the definition into `definitions[]`.\n52\t- Use `uip maestro flow node configure --detail '{...}'` to populate `inputs.detail` and `bindings[]`.\n53\t- Subsequent edits to `inputs.detail` are also CLI-only — re-run `node configure` (it's a full rebuild; see [connector/impl.md](references/plugins/connector/impl.md)).\n54\t- **Never `Write` (full-file rewrite) a flow that contains CLI-owned nodes** — it silently clobbers their `bindings[]` / `inputs.detail`, leaving a corrupted connection binding that `flow validate` passes but `flow debug` fails on. `Edit` user-owned nodes in place; if a `Write` is unavoidable, re-run `node configure` for every CLI-owned node as the **last** write to touch `inputs.detail` / `bindings[]` (a later `Write` re-clobbers what `configure` just fixed).\n55\t- You may still `Edit` the node's `display.label`, edges, layout, and outputs — those are not part of the envelope.\n56\t\n57\tIf you find yourself hand-writing `inputs.detail`, a `=jsonString:` blob, or `bindings[]` entries for a connector node — stop. Use the CLI.\n58\t\n59\t## Critical rules\n60\t\n61\t1. **Always validate node types against the registry before building.** Use `registry search`/`list` for discovery and `registry get` for detailed metadata and definitions.\n62\t2. **ALWAYS follow the relevant plugin in [plugins/](references/plugins/) for every node type.** Each plugin has a `planning.md` (when to use, selection heuristics, ports) and `impl.md` (registry validation, JSON structure, CLI commands, configuration, debug). For connector nodes, the [connector](references/plugins/connector/impl.md) plugin covers connection binding, enriched metadata, and field resolution — required before building. Without this, node configuration will be wrong — errors that `flow validate` does not catch.\n63\t3. **Read the relevant Integration Service reference doc before any `uip is ...` call.** Two non-overlapping contracts:\n64\t   - **Read [/uipath:uipath-platform — connections.md](../../../uipath-platform/references/integration-service/connections.md) before any `uip is connections ...` call.** Applies to every connector activity, connector trigger, and managed HTTP node in connected mode. Single source of truth for command syntax, selection (including the personal-workspace auto-select rule), folder scoping, BYOA filtering, empty-result recovery, and ping verification. **If no healthy connection exists after following its recovery flow, STOP** and surface it in **Open Questions** during planning.\n65\t   - **Read [/uipath:uipath-platform — resources.md](../../../uipath-platform/references/integration-service/resources.md) before any `uip is resources run ...` call.** Applies to every reference-field lookup (Slack user IDs, Jira project keys, Outlook folder IDs, etc.). Single source of truth for the `Data.Pagination.HasMore` / `NextPageToken` contract and the `--query \"nextPage=<token>\"` loop. **Complete the pagination loop before reporting not-found** — do NOT abandon mid-loop to try alternative endpoints, `where=` filters the connector may not support, or asking the user. Plugin files cover node-specific configuration that follows connection binding: [connector/impl.md](references/plugins/connector/impl.md), [connector-trigger/impl.md](references/plugins/connector-trigger/impl.md), [http/impl-connector.md](references/plugins/http/impl-connector.md).\n66\t4. **Edit `<ProjectName>.flow` only** — other generated files (`bindings_v2.json`, `entry-points.json`, `operate.json`, `package-descriptor.json`) are managed by the CLI and may be overwritten. To declare flow inputs/outputs, add variables in the `.flow` file (see [shared/file-format.md](../shared/file-format.md)).\n67\t5. **`targetPort` is required on every edge** — `validate` rejects edges without it.\n68\t6. **Every node type needs a `definitions` entry** — copy from `uip maestro flow registry get <node-type>` output. Never hand-write definitions. The definition is the sole source for BPMN type (`model.type`), serviceType, event definitions, and binding/context templates — none of that belongs on the instance.\n69\t7. **Script nodes must `return` an object** — `return { key: value }`, not a bare scalar.\n70\t8. **Validate once at the end** — run `uip maestro flow validate` only after all nodes, edges, and configuration are complete. Do not validate after each individual node add or edit — intermediate states are expected to be invalid.\n71\t9. **Manage variables with `Edit` against the `.flow` file** — there are no CLI commands for variable management. Use `Edit` to add/remove/update entries in the `variables` section of the `.flow` file. See [shared/variables-and-expressions.md](../shared/variables-and-expressions.md).\n72\t10. **Every `out` variable must be mapped on every reachable End node** — missing output mappings cause runtime errors. See [shared/variables-and-expressions.md](../shared/variables-and-expressions.md).\n73\t11. **`=js:` prefix is REQUIRED on every `$vars`/`$metadata`/`$self` reference in a value field** — not on condition expressions (decision, switch, HTTP branch), which are auto-evaluated as JS. Without it, the BPMN runtime sees a literal string and `flow validate` fails with MST-9107. See [shared/node-output-wiring.md](../shared/node-output-wiring.md) for the canonical rule and per-node-type field reference, and [shared/variables-and-expressions.md](../shared/variables-and-expressions.md) for the expression system.\n74\t12. **Always run `flow format` after edits** — `uip maestro flow format <ProjectName>.flow` is the canonical layout step. Format arranges nodes horizontally, sets each node's `size` by its canvas shape (inline agents → 288×96, containers → 560×320, everything else → 96×96), and recurses into subflows (`subflows[<id>].layout`). Skipping format is the most common cause of misshapen nodes in Studio Web.\n75\t13. **Don't hand-write `layout.nodes` or `subflows[<id>].layout`** — these are owned by `flow format`. When authoring nodes, any placeholder `position` is fine (e.g. `{ x: 0, y: 0 }`); format rewrites it on save. Sticky notes (`type: \"stickyNote\"`) are the one exception — format preserves their custom size and position. See [shared/file-format.md — Layout](../shared/file-format.md#layout).\n76\t14. **Every data-producing node MUST have a matching `variables.nodes[]` entry — this is what makes `$vars.<sourceNodeId>.output` resolve.** The BPMN emitter walks `variables.nodes[]` to write the process-level `<uipath:inputOutput>` declarations the runtime needs. The instance `outputs` block is **only** consumed by BPMN serialization on end-style nodes (to map workflow-level `out` variables); for action / trigger nodes it is documentation, not behavior. Skipping `variables.nodes[]` produces a flow that passes `flow validate` but resolves `$vars.<sourceNodeId>.output` to `undefined` at runtime (MST-9972). **Always run `uip maestro flow format` after structural edits — it regenerates `variables.nodes[]` from `nodes[]` + `definitions[]`** (matching what `uip maestro flow node add` and the canvas save path do), so this becomes self-healing as long as you `format`. See [shared/file-format.md — Node outputs](../shared/file-format.md#node-outputs).\n77\t15. **Node instances have no `model` block** — BPMN type, serviceType, version, event definitions, and binding/context templates live in the node's **definition** (in the top-level `definitions[]` array, copied verbatim from `registry get`). The runtime hydrates these from the definition at serialization time. Instance-specific identity fields live under `inputs`: `entryPointId`, `isDefaultEntryPoint` (triggers), `color`/`content` (sticky notes), and `source` (every inline-agent-related node — both `uipath.agent.autonomous` and every attached `uipath.agent.resource.*` node use `inputs.source = <UUID>`; their definitions declare `model.source: true` and flow-core hoists onto the instance).\n78\t16. **Error handling is off by default — never enable it on a node that handles no stated failure.** Leave `inputs.errorHandlingEnabled` unset and add no `error` edge unless the requirements say what should happen when that node fails (\"if the call fails…\", \"return X for invalid input\", \"handle timeouts\"). An unhandled failure must fault the flow. When you do wire an `error` edge, it must reach a terminal the caller can distinguish from success — never the next happy-path node or the success End node. Without this, a failed run reports success. See [shared/file-format.md — Implicit error port on action nodes](../shared/file-format.md#implicit-error-port-on-action-nodes).\n79\t17. **Never invent the business meaning or format of a named output — elicit it.** When a request names an output (`caseKey`, `severity`, `status`, `ticketId`, …) but does not define how its value is derived, treat that as a business decision, not a coding choice — whether an identifier passes through unchanged or is reformatted (prefixed, combined, recomputed) is the user's rule to state, not yours to guess. Ask before building ([SKILL.md rule #5](../../SKILL.md#critical-rules-universal) — dropdown + \"Something else\"), or state your assumption explicitly and get confirmation. A guessed format produces a flow that passes `flow validate` yet returns the wrong value at runtime — the validator checks structure, never business correctness.\n80\t\n81\t## Workflow\n82\t\n83\t| Journey | Read |\n84\t| --- | --- |\n85\t| Create a new flow from scratch | [greenfield.md](references/greenfield.md) |\n86\t| Edit an existing flow | [brownfield.md](references/brownfield.md) |\n87\t\n88\t## Common tasks\n89\t\n90\t| I need to... | Read these |\n91\t| --- | --- |\n92\t| **Create a new flow** | [greenfield.md](references/greenfield.md) |\n93\t| **Edit an existing flow** | [brownfield.md](references/brownfield.md) + [editing-operations.md](references/editing-operations.md) |\n94\t| **Add/remove/wire nodes and edges** | [editing-operations.md](references/editing-operations.md) (strategy selection) + relevant plugin's `impl.md` (node-specific inputs) |\n95\t| **Generate a flow plan** | [planning-arch.md](references/planning-arch.md) + [planning-impl.md](references/planning-impl.md) |\n96\t| **Choose the right node type** | [planning-arch.md — Plugin Index](references/planning-arch.md#plugin-index) + relevant plugin's `planning.md` |\n97\t| **Understand the .flow JSON format** | [shared/file-format.md](../shared/file-format.md) |\n98\t| **Look up CLI commands** | [shared/cli-commands.md](../shared/cli-commands.md) |\n99\t| **Add a Script node** | [plugins/script/impl.md](references/plugins/script/impl.md) |\n100\t| **Wire nodes with edges** | [editing-operations.md](references/editing-operations.md) + [shared/file-format.md — Standard ports](../shared/file-format.md) |\n101\t| **Find the right node type** | Run `uip maestro flow registry search <keyword> --output json --output-filter \"[*].{NodeType:NodeType,DisplayName:DisplayName,Description:Description,AvailableOnTenant:AvailableOnTenant}\"` — see [shared/cli-conventions.md §3](../shared/cli-conventions.md#3-prefer---output-filter-for-extraction) for the extraction pattern and Data-shape pin |\n102\t| **Work with connector nodes** | [plugins/connector/](references/plugins/connector/) + [/uipath:uipath-platform](/uipath:uipath-platform) for Integration Service |\n103\t| **Manage variables and expressions** | [shared/variables-and-expressions.md](../shared/variables-and-expressions.md) + [Edit/Write: Variable Operations](references/editing-operations-json.md#variable-operations) |\n104\t| **Write `=js:` expressions** | [shared/variables-and-expressions.md](../shared/variables-and-expressions.md) |\n105\t| **Wire one node's output into another node's input** | [shared/node-output-wiring.md](../shared/node-output-wiring.md) |\n106\t| **Orchestrate RPA, agents, apps** | Relevant resource plugin: [rpa](references/plugins/rpa/), [agent](references/plugins/agent/), [agentic-process](references/plugins/agentic-process/), [flow](references/plugins/flow/), [api-workflow](references/plugins/api-workflow/), [hitl](references/plugins/hitl/) |\n107\t| **Embed an AI agent tightly coupled to this flow** | [plugins/inline-agent/](references/plugins/inline-agent/) |\n108\t| **Extract structured fields from documents** | [plugins/ixp/](references/plugins/ixp/) — IxP extraction models for PDFs, scanned forms, receipts, invoices, contracts |\n109\t| **List IxP models / runtime projects available in flow** | [plugins/ixp/impl.md — Listing Published Models](references/plugins/ixp/impl.md#listing-published-models) — read-only registry search, no `.flow` scaffold or edits |\n110\t| **Create a resource that doesn't exist yet** | Use `core.logic.mock` placeholder — see [Edit/Write: Replace a mock](references/editing-operations-json.md#replace-a-mock-with-a-real-resource-node) + relevant plugin's `impl.md` |\n111\t| **Add data transform nodes** | [plugins/transform/impl.md](references/plugins/transform/impl.md) |\n112\t| **Add an LLM batch transform over CSV rows** | [plugins/batch-transform/impl.md](references/plugins/batch-transform/impl.md) — `uipath.pattern.batch-transform`, gated by tenant flag `canvas.nodes.batch-transform` |\n113\t| **Summarize / synthesize one document with optional citations** | [plugins/summarize/impl.md](references/plugins/summarize/impl.md) — `uipath.pattern.deep-rag`, gated by tenant flag `canvas.nodes.summarize` |\n114\t| **Create a subflow** | [plugins/subflow/impl.md](references/plugins/subflow/impl.md) + [Edit/Write: Create a subflow](references/editing-operations-json.md#create-a-subflow) |\n115\t| **Add a delay or scheduled trigger** | [plugins/delay/](references/plugins/delay/) or [plugins/scheduled-trigger/](references/plugins/scheduled-trigger/) |\n116\t| **Use queue nodes** | [plugins/queue/impl.md](references/plugins/queue/impl.md) |\n117\t\n118\t## Anti-patterns\n119\t\n120\t<!--skill-flavor:project-creation-antipatterns:start-->\n121\t- **Prefer running `uip maestro flow init` from inside the solution you named** — run outside one it auto-scaffolds `<Project>Solution/`, but the auto name won't match your chosen solution name. Never pass `--skip-solution-registration` for a project you intend to upload (it leaves a bare single-nested layout). See [SKILL.md rule #6](../../SKILL.md#critical-rules-universal) for the required double-nested `<Solution>/<Project>/<Project>.flow` layout and the self-check.\n122\t<!--skill-flavor:project-creation-antipatterns:end-->\n123\t- **Never guess node schemas** — use `registry get` for all node types. Guessed port names or input fields cause silent wiring failures.\n124\t- **Never guess the value or format of a business output** — when a request names an output (`caseKey`, `ticketId`, `severity`, …) without saying how to derive it, elicit the rule ([SKILL.md rule #5](../../SKILL.md#critical-rules-universal)) or confirm your assumption before building. Inventing a format — e.g. prefixing an id that should pass through unchanged — yields a flow that passes `flow validate` but returns the wrong business outcome at runtime. See rule #17 above.\n125\t- **Never skip capability discovery for connector nodes** — run `registry search` to confirm the connector exists and what operations it supports before building. See [connector/planning.md](references/plugins/connector/planning.md). Skipping this is the #1 cause of designing around a connector that doesn't exist or an operation it doesn't support.\n126\t- **Never replace a registered connector operation with `core.logic.mock` because configuration cannot run** — if `registry search` / `registry get` finds `uipath.connector.<connector-key>.<operation>`, add that real connector node via `uip maestro flow node add`. Missing live connections, missing tenant access, or prompts that ask you to only plan `--detail` mean: run `node add`, write the planned `--detail` payload to a sidecar file (e.g. `<nodeId>.detail.json`), and surface \"configure pending\" as an Open Question. **Do not leave a partial `inputs.detail` on the node** — the validator rejects hand-authored envelopes, and the node will not pass `flow validate` until `node configure` is run. Studio Web and reviewers need the real connector key in the `.flow`; the agent must report this explicitly rather than letting the user discover it via a later validation failure. See [§ Node ownership](#node-ownership--who-authors-the-node) and [connector/impl.md — No-Live-Tenant / Planned Configuration](references/plugins/connector/impl.md#no-live-tenant--planned-configuration).\n127\t- **Never set `inputs.errorHandlingEnabled: true` on a node with no outgoing `error` edge** — the flag is CLI-owned (`edge add --source-port error` and `flow format` derive it from the error edges actually present). A hand-set flag with no handler suppresses the node's fault, so the failure is swallowed and the run reports success. See rule #16 above.\n128\t- **Never route an `error` port back into the happy path** — an error edge into the next happy-path node, or into the same End node the success path reaches, makes every failed run report `Completed` with success-shaped outputs. Send it to a distinct End node with an error/status output, to `core.logic.terminate`, or to a branch that genuinely recovers.\n129\t- **Never edit `content/*.bpmn`** — it is auto-generated from the `.flow` file and will be overwritten.\n130\t- **Never use `core.logic.mock` when the resource is in the same solution** — use `--local` discovery instead. Mock placeholders are only for resources that are not in the current solution and not yet published.\n131\t- **Never hand-write `definitions` entries** — always copy from registry output. Hand-written definitions have wrong port schemas and cause validation failures.\n132\t- **Never put any `model` block on node instances** — BPMN type, serviceType, event definition, binding templates, and context templates all live in the node's **definition** (copied verbatim from `registry get` into `definitions[]`). Instances carry only per-instance data: `inputs`, `outputs`, `display`. Identity fields like `entryPointId` / `isDefaultEntryPoint` (triggers) and `color` / `content` (sticky notes) live under `inputs`. This applies to every inline-agent-related node too: `uipath.agent.autonomous` plus every attached `uipath.agent.resource.*` node (tool, escalation, context) carries source identity at `inputs.source = <UUID>`. Their definitions declare `model.source: true`; flow-core hoists onto the instance.\n133\t- **Never author `model.context[]` on resource-node instances** — resource-node instances have no `model` block. For `uipath.core.*` resource nodes (rpa, agent, flow, agentic-process, api-workflow, hitl), the definition (from `registry get`) already carries `model.context[]` with `<bindings.{name}>` placeholders. Your job is to add matching entries to the top-level `bindings[]` array — two entries per resource node (`name` + `folderPath`) with `resourceKey` matching the definition's `model.bindings.resourceKey`. At BPMN emit, the runtime rewrites `<bindings.{name}>` → `=bindings.{id}` via `(resourceKey, name)` matching. Without the top-level `bindings[]` entries, `uip maestro flow validate` passes but `uip maestro flow debug` fails with \"Folder does not exist or the user does not have access to the folder.\" See the resource plugin's `impl.md`.\n134\t- **Never put a `ui` block on node instances** — position and size belong in the top-level `layout.nodes` object. Nodes with `\"ui\": { \"position\": ... }` use the wrong format and may not render correctly in Studio Web.\n135\t- **Never skip `flow format` before publish or debug** — without it, hand-written `layout` data renders as misshapen rectangles in Studio Web (the MST-9061 failure mode). See rule #12 above for the format step.\n136\t- **Never validate after every individual edit** — intermediate flow states (e.g., node added but not yet wired) are expected to be invalid. Run `uip maestro flow validate` once after the full build is complete.\n137\t- **Never use `console.log` in script nodes** — `console` is not available in the Jint runtime. Use `return { debug: value }` to inspect values.\n138\t- **Never forget output mapping on End nodes** — every `out` variable in `variables.globals` must have a `source` expression in every reachable End node's `outputs`. Missing mappings cause silent runtime failures.\n139\t- **Never update `in` variables** — only `inout` variables can be modified via `variableUpdates`. Input variables are read-only after flow start.\n140\t- **Never reference parent-scope `$vars` inside a subflow** — subflows have isolated scope. Pass values explicitly via subflow inputs.\n141\t- **Never use `core.action.http` (v1)** — the v1 node is deprecated for all HTTP requests (both connector-authenticated and manual). For connector-auth, v1's `authenticationType: \"connection\"` input does not pass IS credentials at runtime. Use `core.action.http.v2` (Managed HTTP Request) for every HTTP node. See [http/planning.md](references/plugins/http/planning.md).\n142\t- **Never hand-write `definitions[]` or `inputs.*` for managed HTTP nodes** — use `uip maestro flow node add` (with `--input` for `branches` / `timeout` / `retryCount`) and `uip maestro flow node configure` (for `inputs.detail`). These are the only supported authoring paths. Hand-written `definitions[]` strips required manifest fields; hand-written `inputs.detail` misses `essentialConfiguration` and fails at runtime. See [http/impl.md](references/plugins/http/impl.md).\n143\t- **Never write `$vars.X` (or `$metadata.X`, `$self.X`) without `=js:` in value fields** — `flow validate` flags this as MST-9107. See rule #11 above and [shared/node-output-wiring.md](../shared/node-output-wiring.md) for the per-node-type field reference.\n144\t- **Never reuse a reference ID (mailbox folder, Slack channel, Jira project, Google Sheet, etc.) from a prior flow or session** — reference IDs are scoped to the specific authenticated account behind the connection. A `parentFolderId` from one Outlook mailbox is invalid in another; a Slack channel ID from one workspace is invalid in another. A reused ID passes `flow validate` and `node configure` cleanly, then faults silently at runtime with no resolvable error. Always re-resolve via `uip is resources run list <connector-key> <objectName> --connection-id <CURRENT_CONNECTION_ID> --output json` against the connection bound to this flow — do not paste a value you saw in another flow. See [connector/impl.md — Step 4](references/plugins/connector/impl.md) and [connector-trigger/impl.md — Step 3](references/plugins/connector-trigger/impl.md).\n145\t- **Never include `[*]` literally in a connector `bodyParameters` / `queryParameters` / `pathParameters` key** — `[*]` in `requestFields[].name` is an array marker. Strip it and pass a `=js:` expression returning the array (e.g. `\"fields.labels[*]\"` → `\"fields.labels\": \"=js:(['a', 'b'])\"`). Never a literal JSON array — it validates but does not bind. Supported only when `[*]` is the name suffix; `[*]. See [connector/impl.md — Step 6b](references/plugins/connector/impl.md) for the full table including expression-value handling.\n146\t\n147\t## References\n148\t\n149\t### Author-scoped\n150\t\n151\t- [greenfield.md](references/greenfield.md) — create-new-flow journey\n152\t- [brownfield.md](references/brownfield.md) — edit-existing-flow journey\n153\t- [editing-operations.md](references/editing-operations.md) — strategy selection (user-owned nodes via Edit / Write vs CLI-owned nodes via `uip maestro flow node`)\n154\t- [editing-operations-json.md](references/editing-operations-json.md) — Edit / Write recipes (default)\n155\t- [editing-operations-cli.md](references/editing-operations-cli.md) — CLI-owned node procedures\n156\t- [planning-arch.md](references/planning-arch.md) — capability discovery, plugin index, topology design\n157\t- [planning-impl.md](references/planning-impl.md) — registry lookups, connection binding, wiring rules\n158\t- [plugins/](references/plugins/) — per-node-type planning + impl docs:\n159\t  - [connector](references/plugins/connector/) — IS connector nodes (incl. Data Fabric activities)\n160\t  - [connector-trigger](references/plugins/connector-trigger/)\n161\t  - [script](references/plugins/script/) — Jint ES2020 JavaScript\n162\t  - [http](references/plugins/http/) — `core.action.http.v2` (Managed HTTP Request)\n163\t  - [decision](references/plugins/decision/) — binary if/else\n164\t  - [switch](references/plugins/switch/) — multi-way branching\n165\t  - [loop](references/plugins/loop/) — collection iteration\n166\t  - [merge](references/plugins/merge/) — parallel branch sync\n167\t  - [end](references/plugins/end/) — graceful flow completion\n168\t  - [terminate](references/plugins/terminate/) — abort on fatal error\n169\t  - [transform](references/plugins/transform/) — declarative filter/map/group-by\n170\t  - [batch-transform](references/plugins/batch-transform/) — LLM-powered row-by-row CSV enrichment (`uipath.pattern.batch-transform`)\n171\t  - [summarize](references/plugins/summarize/) — single-document synthesis / Q&A with optional citations (`uipath.pattern.deep-rag`)\n172\t  - [delay](references/plugins/delay/) — duration or date-based pause\n173\t  - [subflow](references/plugins/subflow/) — reusable node groups\n174\t  - [scheduled-trigger](references/plugins/scheduled-trigger/) — recurring schedule\n175\t  - [rpa](references/plugins/rpa/) — published RPA processes\n176\t  - [agentic-process](references/plugins/agentic-process/) — published orchestration processes\n177\t  - [flow](references/plugins/flow/) — published flows as subprocesses\n178\t  - [api-workflow](references/plugins/api-workflow/) — published API functions\n179\t  - [hitl](references/plugins/hitl/) — human input via UiPath Apps\n180\t  - [agent](references/plugins/agent/) — published AI agent resources\n181\t  - [inline-agent](references/plugins/inline-agent/) — autonomous agent embedded in flow\n182\t  - [ixp](references/plugins/ixp/) — published IxP document-extraction models (PDFs, scanned forms, receipts, invoices, contracts)\n183\t  - [queue](references/plugins/queue/) — Orchestrator queue item creation\n184\t\n185\t### Cross-capability (shared)\n186\t\n187\t- [shared/file-format.md](../shared/file-format.md) — `.flow` JSON schema\n188\t- [shared/cli-commands.md](../shared/cli-commands.md) — flat CLI lookup\n189\t- [shared/cli-conventions.md](../shared/cli-conventions.md) — CLI mechanics every capability needs\n190\t- [shared/variables-and-expressions.md](../shared/variables-and-expressions.md) — variable system + `=js:` Jint expressions\n191\t- [shared/node-output-wiring.md](../shared/node-output-wiring.md) — canonical `=js:$vars.X.output.Y` rule\n192\t",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 1,
+          "result_tokens": 7666
+        },
+        {
+          "tool_name": "Read",
+          "tool_id": "toolu_bdrk_01DEue9D3GwfuPDA6t7vqwVN",
+          "assistant_turn_index": 7,
+          "timestamp": "2026-08-19T18:02:04.452870",
+          "duration_ms": 107.21570299938321,
+          "generation_completed_at": "2026-08-19T18:02:04.452870",
+          "execution_started_at": "2026-08-19T18:02:04.452925",
+          "execution_completed_at": "2026-08-19T18:02:04.560141",
+          "parameters": {
+            "file_path": "/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/references/plugins/connector-trigger/impl.md"
+          },
+          "result_status": "success",
+          "result_summary": "1\t# Connector Trigger Nodes — Implementation\n2\t\n3\tHow to configure connector trigger nodes: connection binding, enriched metadata, event parameter resolution, and trigger-specific `node configure` fields. This replaces the IS activity workflow (Steps 1-6 in [connector/impl.md](../connector/impl.md)) — trigger nodes have different metadata and configuration.\n4\t\n5\t> **This plugin covers two node families that share the same configuration mechanism:**\n6\t>\n7\t> - **Connector triggers** (`uipath.connector.trigger.<key>.<trigger>`) — start node; the event starts the flow. The default subject of every step below.\n8\t> - **Wait for events** (`uipath.connector.event.<key>.<event>`) — a mid-flow event node; the flow pauses and waits for the event before continuing. Same connection binding, enriched metadata, event parameter resolution, filter trees, and `node configure` fields. Only the placement and node lifecycle differ. See [Wait for events](#wait-for-events-uipathconnectoreventkeyevent) for the deltas, then apply Steps 1-6 below unchanged.\n9\t\n10\t## Configuration Workflow\n11\t\n12\tFollow these steps for every IS trigger node.\n13\t\n14\t### Step 1 — Fetch a preliminary connection and query trigger objects\n15\t\n16\tExtract the connector key from the node type (`uipath.connector.trigger.<connector-key>.<trigger-name>`) and the operation name from the `registry get` response (`model.context[].operation`).\n17\t\n18\t**1a. Get any enabled connection** — needed as `--connection-id` for `triggers objects` below.\n19\t\n20\tDiscovery call is **always**:\n21\t\n22\t```bash\n23\tuip is connections list \"<connector-key>\" --all-folders --output json\n24\t```\n25\t\n26\t`--all-folders` is mandatory. Without it the CLI returns the active folder only and hides connections in other folders the user can see. Plain `uip is connections list \"<connector-key>\"` is forbidden for discovery.\n27\t\n28\t> **MUST READ before any `uip is connections ...` call:** [/uipath:uipath-platform — connections.md](../../../../../../uipath-platform/references/integration-service/connections.md). Single source of truth for selection rules, BYOA filtering, empty-result recovery, ping verification.\n29\t\n30\tPick any enabled connection (prefer `IsDefault: Yes`) and capture its `Id` for Step 1b.\n31\t\n32\t**1b. Query trigger objects** — **mandatory** for every trigger node. Do NOT skip:\n33\t\n34\t```bash\n35\tuip is triggers objects \"<connector-key>\" \"<OPERATION>\" \\\n36\t  --connection-id \"<id>\" --output json\n37\t```\n38\t\n39\tSave the response. It carries three pieces per event object that drive later steps:\n40\t\n41\t| Field | Drives | Meaning |\n42\t|------|--------|---------|\n43\t| `byoaConnection` | Step 1c | If `true`, only BYOA connections are valid for this event |\n44\t| `isWebhookUrlVisible` | Step 6b | If `true`, retrieve and present the webhook URL |\n45\t| **`parameters[]`** | Steps 3 & 4 | Object-, query-, and path-scoped input parameters (e.g. shared mailbox, repo, owner). **NOT the complete event-parameter set** — merge with `EventParameters` from `triggers describe` (Step 1b-2). The full input set is the **union** of both; a field is required if either source marks it `required`. |\n46\t\n47\tIt may also include `design.textBlocks` with connector-specific user-facing instructions (e.g., \"Add this URL to your Slack app's Event Subscriptions\"). Surface that text verbatim when applicable — do not invent service-specific guidance.\n48\t\n49\t> `byoaConnection` and `isWebhookUrlVisible` are per event object, not per connector — some connectors require BYOA for some events but not others. `parameters[]` is per event object too: each operation has its own input fields.\n50\t\n51\t#### Reading `parameters[]`\n52\t\n53\tEach entry is one input field the user supplies when configuring the trigger (e.g., GitHub `repo`, Outlook `parentFolderId`, Slack `channelId`). For each:\n54\t\n55\t| Key | Use |\n56\t|---|---|\n57\t| `name` | Key inside the `--detail` bucket selected by `type` — see below |\n58\t| `displayName` | Label when prompting the user for a missing value |\n59\t| `dataType` | Value type (`string`, `number`, `boolean`, …) |\n60\t| `required` | Drives Step 4's required-field check |\n61\t| `reference` | Present → resolve to an ID in Step 3 (`uip is resources run list`) before configure |\n62\t| `description` | Field hint — surface verbatim when prompting |\n63\t| `design.position` | `\"primary\"` indicates a top-level input field; other positions are layout hints — safe to ignore for configure |\n64\t| `type` | Bucket selector in Step 6's `--detail`: `\"query\"` → `queryParameters`, `\"path\"` → `pathParameters`, else → `eventParameters` |\n65\t\n66\t> **Source of truth — the UNION of two calls, never one alone.** The complete event-input set = `triggers objects → parameters[]` (object/query/path scope) **∪** `triggers describe → EventParameters` (event-config scope). Configure every field that **either** marks `required: true`. `triggers describe → FilterFields` feeds the `filter` tree; `OutputFields` / `outputResponseDefinition` feed downstream `$vars`. `flow registry get`'s `eventParameters.fields` mirrors `describe` and is the offline fallback. A required field can appear in `describe → EventParameters` while absent from `parameters[]`, so **both calls are mandatory and you must merge them**. Full field semantics: [/uipath:uipath-platform — triggers.md — `parameters[]`](../../../../../../uipath-platform/references/integration-service/triggers.md#parameters--event-parameter-input-fields).\n67\t\n68\t**1b-2. Resolve the object name and fetch field metadata** — **mandatory** for every trigger node.\n69\t\n70\t> **MUST READ before this step:** [/uipath:uipath-platform — triggers.md](../../../../../../uipath-platform/references/integration-service/triggers.md). Single source of truth for fetching trigger parameters and fields — object name resolution, describe call, source-of-truth contract.\n71\t\n72\t1. Resolve `<objectName>` from the Step 1b `triggers objects` response per [/uipath:uipath-platform — triggers.md — Object Name Resolution](../../../../../../uipath-platform/references/integration-service/triggers.md#object-name-resolution). If the object name is not recognizable from the user's prompt, **ask the user** — present candidates by `displayName`. Do NOT guess.\n73\t2. Fetch field metadata:\n74\t\n75\t```bash\n76\tuip is triggers describe \"<connector-key>\" \"<OPERATION>\" \"<objectName>\" \\\n77\t  --connection-id \"<id>\" --output json\n78\t```\n79\t\n80\t> **Source of truth for node configuration — merge both responses.** Event-parameter inputs = the **union** of `triggers objects → parameters[]` (Step 1b) and `triggers describe → EventParameters` (this step). `triggers describe` also returns `FilterFields` (→ `filter` tree) and `OutputFields` (→ downstream `$vars`). Never treat `triggers describe` as \"only field metadata\" — its `EventParameters` are first-class event parameters and frequently carry required fields that `parameters[]` omits. Do NOT skip this call, and do NOT invent parameters or fields.\n81\t\n82\t### Step 1c — Select the final connection\n83\t\n84\t**If `byoaConnection: true`** — the Step 1a connection is not usable. Follow the BYOA selection workflow in [/uipath:uipath-platform — connections.md — For BYOA Connections](../../../../../../uipath-platform/references/integration-service/connections.md#for-byoa-connections-webhook-triggers) (filter with `--byoa`, `--refresh` retry, stop-and-ask if none exist).\n85\t\n86\t**If `byoaConnection: false`** — use the Step 1a connection. Verify health:\n87\t\n88\t```bash\n89\tuip is connections ping \"<connection-id>\" --output json\n90\t```\n91\t\n92\t### Step 2 — Get enriched trigger metadata\n93\t\n94\t`--connection-id` is **required** for trigger nodes. Without it, the command fails.\n95\t\n96\t```bash\n97\tuip maestro flow registry get <trigger-node-type> --connection-id <connection-id> --output json\n98\t```\n99\t\n100\tThe response contains three trigger-specific sections:\n101\t\n102\t**`eventParameters.fields`** — non-authoritative. Often empty (see Step 1b). Iterate [`parameters[]`](#reading-parameters) from Step 1b in Steps 3 and 4 — do not iterate this block.\n103\t\n104\tShape only — do not iterate:\n105\t\n106\t```json\n107\t{\n108\t  \"eventParameters\": {\n109\t    \"fields\": [\n110\t      {\n111\t        \"name\": \"parentFolderId\",\n112\t        \"displayName\": \"Email folder\",\n113\t        \"type\": \"string\",\n114\t        \"required\": true,\n115\t        \"reference\": {\n116\t          \"objectName\": \"MailFolder\",\n117\t          \"lookupValue\": \"id\",\n118\t          \"lookupNames\": [\"displayName\"],\n119\t          \"path\": \"/MailFolders\"\n120\t        }\n121\t      }\n122\t    ]\n123\t  }\n124\t}\n125\t```\n126\t\n127\t**`filterFields`** — fields used to narrow *which* events fire the trigger (e.g., only emails from a specific sender). These are optional filter criteria and are passed as a structured tree in `--detail.filter` (see [Filter Trees](#filter-trees)).\n128\t\n129\t```json\n130\t{\n131\t  \"filterFields\": {\n132\t    \"fields\": [\n133\t      {\n134\t        \"name\": \"fromAddress\",\n135\t        \"displayName\": \"From address\",\n136\t        \"type\": \"string\",\n137\t        \"required\": false\n138\t      }\n139\t    ]\n140\t  }\n141\t}\n142\t```\n143\t\n144\t**`outputResponseDefinition`** — the event payload schema (all fields the trigger outputs when it fires). **Save this** — you need it in Step 4b to know the exact field paths for downstream `$vars` expressions (e.g., `$vars.{nodeId}.output.text`, `$vars.{nodeId}.output.channel`). Do not guess output field names.\n145\t\n146\t**`eventMode`** — `\"webhooks\"` or `\"polling\"`.\n147\t\n148\tThe response (which becomes the `definitions[]` entry verbatim) includes `model.context` with:\n149\t- `connectorKey` — the connector identifier\n150\t- `operation` — the event operation name (e.g., `\"EMAIL_RECEIVED\"`, `\"ISSUE_CREATED\"`)\n151\t- `objectName` — the IS object (e.g., `\"Message\"`, `\"Issue\"`)\n152\t\n153\tThese live in the **definition**, not on the node instance. The instance carries only `inputs` (event filter fields) and `outputs`.\n154\t\n155\t### Step 3 — Resolve reference fields in event parameters\n156\t\n157\tIterate the **union** of `parameters[]` (Step 1b) and `EventParameters` (Step 1b-2). For each entry with a `reference` key, run an ID lookup — same mechanism as IS activity nodes. A referenced field can live in `describe → EventParameters` while absent from `parameters[]` — resolving only `parameters[]` misses it.\n158\t\n159\t> **Resolve every reference field freshly, against the current `--connection-id`, immediately before `node configure` (Step 6)** — even if you think you already know the ID from a previous flow. Reference IDs are connection-scoped and reused values fault silently at runtime. See [Reference IDs Are Connection-Scoped (CRITICAL)](../../../../../../uipath-platform/references/integration-service/reference-resolution.md#reference-ids-are-connection-scoped-critical) for the full mechanism and failure mode, and the top-level Anti-Patterns in [SKILL.md](../../../../../SKILL.md).\n160\t\n161\t```bash\n162\t# Example: resolve Outlook mail folder \"Inbox\" to its ID\n163\tuip is resources run list \"<connector-key>\" \"<reference.objectName>\" \\\n164\t  --connection-id \"<id>\" --output json\n165\t```\n166\t\n167\tThe `<id>` in `--connection-id \"<id>\"` MUST be the connection bound to **this** flow (the final connection from Step 1c), not any other connection you've used in another flow. Use the resolved IDs — from this very `run list` call — in the trigger's event parameter configuration.\n168\t\n169\t> **Paginate when looking up by name.** Use `Data.Pagination.HasMore` / `NextPageToken` with `--query \"nextPage=<token>\"`. Short-circuit on match. Do NOT conclude \"not found\" until `HasMore` is `\"false\"`. See [resources.md#pagination](../../../../../../uipath-platform/references/integration-service/resources.md#pagination).\n170\t\n171\t**Read [/uipath:uipath-platform — Integration Service — resources.md](../../../../../../uipath-platform/references/integration-service/resources.md) for the full reference-resolution workflow** (pagination, describe failures, fallbacks).\n172\t\n173\t### Step 4 — Validate required event parameters\n174\t\n175\tCheck every entry in the **union** of `parameters[]` (Step 1b) and `EventParameters` (Step 1b-2). Treat a field as required if **either** source marks `required: true`. All required event parameters must have values before building the flow.\n176\t\n177\t1. Collect all required entries from `parameters[]` **and** `describe → EventParameters` (dedupe by `name`); required = required in either\n178\t2. For each, check if the user's prompt provides a value\n179\t3. If any required field is missing, **ask the user** — list the missing fields with their `displayName` (and `description` if useful). Free-form input is appropriate when the value space is open-ended; when a finite set of sensible values exists, present them as options per the dropdown question rule in [SKILL.md](../../../../../SKILL.md).\n180\t4. Only proceed after all required event parameters are resolved\n181\t\n182\t> Step 6 buckets each resolved value into `eventParameters`, `queryParameters`, or `pathParameters` based on the entry's `type` — see Step 6's `--detail` table.\n183\t\n184\t### Step 4b — Map trigger output fields for downstream nodes\n185\t\n186\tBefore wiring downstream nodes, check `outputResponseDefinition` from Step 2 to know the exact field names available in `$vars.{triggerId}.output`. Do NOT guess field names — different triggers output different schemas.\n187\t\n188\tEach trigger type has a different output schema — field names like `.text`, `.subject`, or `.body.content` vary by connector. Use the actual field names from `outputResponseDefinition` when writing expressions in downstream nodes.\n189\t\n190\t### Step 5 — Replace the manual trigger with the connector trigger node\n191\t\n192\tFollow the [CLI: Replace manual trigger with connector trigger](../../editing-operations-cli.md#replace-manual-trigger-with-connector-trigger) procedure. The CLI handles edge cleanup, orphaned definition removal, and `variables.nodes` regeneration automatically. Note the generated node ID from the `node add` response — you need it for Step 6.\n193\t\n194\t### Step 6 — Configure the trigger node\n195\t\n196\t> **MUST READ before `node configure`:** [/uipath:uipath-platform — triggers.md](../../../../../../uipath-platform/references/integration-service/triggers.md). The parameters fetched there (`triggers objects` → `parameters[]`, Step 1b) and fields (`triggers describe`, Step 1b-2) are the source of truth for everything in `--detail`. If you have not run both calls, go back to Step 1b.\n197\t\n198\t**Read the `--detail` field table below before calling `node configure`.** The fields and types are strict — unknown keys or wrong types cause validation errors. Do not guess field names from other node types (e.g., activity nodes use `method`/`endpoint`/`bodyParameters`; triggers use `eventMode`/`eventParameters`/`filter`, plus `objectName` for generic triggers).\n199\t\n200\tUse `node configure` with trigger-specific `--detail` fields:\n201\t\n202\t```bash\n203\tuip maestro flow node configure <PROJECT>.flow <triggerId> --output json --detail '{\n204\t  \"connectionId\": \"<CONNECTION_ID>\",\n205\t  \"folderKey\": \"<FOLDER_KEY>\",\n206\t  \"eventMode\": \"<EVENT_MODE>\",\n207\t  \"objectName\": \"<OBJECT_NAME>\",\n208\t  \"eventParameters\": { \"<paramName>\": \"<RESOLVED_VALUE>\" },\n209\t  \"filter\": {\n210\t    \"groupOperator\": 0,\n211\t    \"index\": 0,\n212\t    \"filters\": [\n213\t      {\n214\t        \"id\": \"subject\",\n215\t        \"operator\": \"Contains\",\n216\t        \"value\": { \"value\": \"urgent\", \"rawString\": \"\\\"urgent\\\"\", \"isLiteral\": true }\n217\t      }\n218\t    ]\n219\t  }\n220\t}'\n221\t```\n222\t\n223\t**`--detail` fields for triggers:**\n224\t\n225\t| Field | Required | Description |\n226\t|---|---|---|\n227\t| `connectionId` | Yes | Connection UUID from Step 1c (the final connection — BYOA if required) |\n228\t| `folderKey` | Yes | Orchestrator folder key for the connection |\n229\t| `eventMode` | Yes | `\"webhooks\"` or `\"polling\"` — from `registry get` response |\n230\t| `objectName` | Generic triggers only | The IS object the event subscribes to (e.g. the Data Fabric entity name) — the object name resolved in Step 1b-2. **Required for generic triggers** (`activityType: \"GenericTrigger\"` in the definition's `connectorDetail.configuration` — one manifest templated across every object, so its `objectName` context entry ships empty). **Omit for curated triggers** (`activityType: \"CuratedTrigger\"`) — the manifest's baked-in objectName always wins. |\n231\t| `eventParameters`, `queryParameters`, `pathParameters` | No | JSON objects of resolved values from Steps 3-4. Bucket each `parameters[]` entry by its `type`: `\"query\"` → `queryParameters` (e.g. GitHub `{\"repo\":\"cli\"}`, Outlook `{\"sharedMailboxAddress\":\"...\"}`), `\"path\"` → `pathParameters` (e.g. GitHub `{\"owner\":\"uipath\"}`), otherwise → `eventParameters`. Within each bucket, the key is `parameters[].name`. Each must be a JSON object. |\n232\t| `filter` | No | Structured filter tree — see [Filter Trees](#filter-trees) below. Omit to trigger on all events |\n233\t\n234\tThe CLI computes the runtime JMESPath `filterExpression` from `filter` automatically and persists both into the workflow so Studio Web can re-open the trigger without losing the filter configuration. **Do not pass `filterExpression` directly — the validator rejects it.**\n235\tThe command populates `inputs.detail` (including the internal `configuration` blob with the `filter` tree and combined `filterExpression`) and creates workflow-level connection bindings.\n236\t\n237\t> **Shell quoting tip:** For complex `--detail` JSON, write it to a temp file: `uip maestro flow node configure <file> <nodeId> --detail \"$(cat /tmp/detail.json)\" --output json`\n238\t\n239\t### Step 6b — Retrieve and display webhook URL (webhooks only)\n240\t\n241\tApplies when `eventMode` is `\"webhooks\"`, regardless of `byoaConnection`.\n242\t\n243\t> **Guard:** If the trigger object's `isWebhookUrlVisible` is `false` (from Step 1b), skip this step — the connector manages webhook registration automatically and does not expose a URL. If you do not have `triggers objects` output, you skipped Step 1b — go back.\n244\t\n245\tFollow [/uipath:uipath-platform — triggers.md — Webhook URL Retrieval](../../../../../../uipath-platform/references/integration-service/triggers.md#webhook-url-retrieval) for the exact commands (`uip is connections list` → `ElementInstanceId` → `uip is webhooks config`).\n246\t\n247\t**Presenting the URL:** If the Step 1b `triggers objects` response included `design.textBlocks`, use that text verbatim (substituting `{webhookUrl}`) — it carries connector-specific registration instructions. Otherwise, use a generic message instructing the user to register the URL in their external service's app settings (e.g., Slack Event Subscriptions, Salesforce Outbound Messages). The trigger will not fire until the URL is registered and verified.\n248\t\n249\t**On failure:** if `ElementInstanceId` is empty, the connection is the wrong type — verify the `byoaConnection` flag from Step 1b and switch to a BYOA connection if required. If `webhooks config` itself fails, ping the connection (`uip is connections ping`) and re-authenticate via `uip is connections edit` if unhealthy.\n250\t\n251\t---\n252\t\n253\t## Wait for events (`uipath.connector.event.<key>.<event>`)\n254\t\n255\tA **Wait for events** node waits for an external event **mid-flow** instead of starting the flow (\"wait for the approval reply\", \"wait until the Jira issue is Done\"). Same connector event as a trigger — identical `eventParameters`, `filterFields`, `outputResponseDefinition`, `eventMode`, connection binding, reference resolution, filter trees. Apply Steps 1-6 above unchanged; only the deltas below differ.\n256\t\n257\t| Aspect | Connector **trigger** | **Wait for events** (mid-flow) |\n258\t|---|---|---|\n259\t| Node type | `uipath.connector.trigger.<key>.<trigger>` | `uipath.connector.event.<key>.<event>` |\n260\t| Position | Start node — replaces the manual trigger | Mid-flow — has an `input` port |\n261\t| Add | Step 5: [replace the manual trigger](../../editing-operations-cli.md#replace-manual-trigger-with-connector-trigger) | `node add` like an action node; do **NOT** remove the start node |\n262\t| Ports | in: — · out: `output` | in: `input` · out: `output`, `error` |\n263\t| Start trigger | Is the flow's trigger | Not a trigger — flow still needs its own start trigger |\n264\t| Discovery search | `... search \"<svc>\" trigger` | `... search \"<svc>\" event` |\n265\t| Config (Steps 1-4, 6) | Identical | Identical |\n266\t\n267\tAdd and wire:\n268\t\n269\t```bash\n270\tuip maestro flow node add <PROJECT>.flow uipath.connector.event.<key>.<event> \\\n271\t  --label \"<LABEL>\" --position 400,144 --output json\n272\t```\n273\t\n274\tWire an incoming edge into `input` and an outgoing edge from `output` per [editing-operations-json.md — Insert a node between two existing nodes](../../editing-operations-json.md#insert-a-node-between-two-existing-nodes). Downstream reads `$vars.{eventNodeId}.output` (payload) and `$vars.{eventNodeId}.error`. Wire `error` only when the requirements say what an event-wait failure should do — otherwise leave it unwired and let the failure fault the flow ([file-format.md — Default: off](../../../../shared/file-format.md#default-off--enable-only-for-a-failure-the-flow-actually-handles)).\n275\t\n276\t> **The flow still needs a separate start trigger.** A mid-flow event node does **not** start the flow. Do not remove `core.trigger.manual`/`scheduled` or the connector trigger that begins the flow.\n277\t\n278\t---\n279\t\n280\t## Filter Trees\n281\t\n282\tFilters are authored as a **structured tree**, not a string expression. The CLI compiles the tree into a JMESPath `filterExpression` using the same logic Studio Web does, and writes both forms into the flow so the trigger round-trips cleanly when re-opened in SW.\n283\t\n284\t### Tree shape\n285\t\n286\t```jsonc\n287\t{\n288\t  \"groupOperator\": 0,             // 0 = And, 1 = Or — combines sibling filters/groups\n289\t  \"index\": 0,                     // ordering index within parent (root is 0)\n290\t  \"filters\": [                    // leaf conditions at this level\n291\t    {\n292\t      \"id\": \"<fieldName>\",        // from filterFields.fields[].name\n293\t      \"operator\": \"<Operator>\",   // see operator table below\n294\t      \"value\": {\n295\t        \"value\": <typed value>,   // string / number / boolean / ISO-8601 date-time\n296\t        \"rawString\": \"\\\"...\\\"\",   // verbatim user-entered text (with quotes for strings)\n297\t        \"isLiteral\": true         // literals only — expression values are not supported\n298\t      }\n299\t    }\n300\t  ],\n301\t  \"groups\": []                    // optional: nested subgroups (same shape as root)\n302\t}\n303\t```\n304\t\n305\tA no-op filter — used when the user wants all events to fire the trigger — is `null` or `{\"groupOperator\": null, \"index\": 0, \"filters\": []}`. Prefer **omitting** the `filter` field entirely.\n306\t\n307\t### Supported operators\n308\t\n309\t| Operator | Meaning | Typical field types |\n310\t|---|---|---|\n311\t| `Equals` / `NotEquals` | Exact (in)equality | string, number, boolean |\n312\t| `LessThan` / `LessThanOrEqual` / `GreaterThan` / `GreaterThanOrEqual` | Numeric comparison | number, integer |\n313\t| `Contains` / `NotContains` | Substring match | string |\n314\t| `StartsWith` / `NotStartsWith` / `EndsWith` / `NotEndsWith` | Prefix / suffix match | string |\n315\t| `IsEmpty` / `IsNotEmpty` | Value is / is not empty string | string (no `value` needed) |\n316\t| `Is` / `IsNot` | Boolean is true / false | boolean (no `value` needed) |\n317\t| `In` / `NotIn` / `IsOneOf` / `IsNotOneOf` | Membership — pass comma-separated values in `value.value` | string, number |\n318\t| `Before` / `BeforeOrEqual` / `After` / `AfterOrEqual` / `DateTimeEquals` / `DateTimeNotEqual` | Date-time comparison (ISO-8601 strings) | date-time |\n319\t\n320\t### Examples\n321\t\n322\t**Emails containing \"urgent\" in the subject:**\n323\t\n324\t```json\n325\t{\n326\t  \"groupOperator\": 0,\n327\t  \"index\": 0,\n328\t  \"filters\": [\n329\t    { \"id\": \"subject\", \"operator\": \"Contains\",\n330\t      \"value\": { \"value\": \"urgent\", \"rawString\": \"\\\"urgent\\\"\", \"isLiteral\": true } }\n331\t  ]\n332\t}\n333\t```\n334\t\n335\t**Emails from a specific sender AND subject contains \"good day\":**\n336\t\n337\t```json\n338\t{\n339\t  \"groupOperator\": 0,\n340\t  \"index\": 0,\n341\t  \"filters\": [\n342\t    { \"id\": \"from\", \"operator\": \"Equals\",\n343\t      \"value\": { \"value\": \"boss@example.com\", \"rawString\": \"\\\"boss@example.com\\\"\", \"isLiteral\": true } },\n344\t    { \"id\": \"subject\", \"operator\": \"Contains\",\n345\t      \"value\": { \"value\": \"good day\", \"rawString\": \"\\\"good day\\\"\", \"isLiteral\": true } }\n346\t  ]\n347\t}\n348\t```\n349\t\n350\t**Multiple senders (OR) nested inside an outer AND with a subject match:**\n351\t\n352\t```json\n353\t{\n354\t  \"groupOperator\": 0,\n355\t  \"index\": 0,\n356\t  \"filters\": [\n357\t    { \"id\": \"subject\", \"operator\": \"Contains\",\n358\t      \"value\": { \"value\": \"urgent\", \"rawString\": \"\\\"urgent\\\"\", \"isLiteral\": true } }\n359\t  ],\n360\t  \"groups\": [\n361\t    {\n362\t      \"groupOperator\": 1,\n363\t      \"index\": 1,\n364\t      \"filters\": [\n365\t        { \"id\": \"from\", \"operator\": \"Equals\",\n366\t          \"value\": { \"value\": \"a@ex.com\", \"rawString\": \"\\\"a@ex.com\\\"\", \"isLiteral\": true } },\n367\t        { \"id\": \"from\", \"operator\": \"Equals\",\n368\t          \"value\": { \"value\": \"b@ex.com\", \"rawString\": \"\\\"b@ex.com\\\"\", \"isLiteral\": true } }\n369\t      ]\n370\t    }\n371\t  ]\n372\t}\n373\t```\n374\t\n375\t### How to build a filter tree from `filterFields`\n376\t\n377\t1. Run `flow registry get` with `--connection-id` (Step 2) and read the `filterFields.fields` array. Each entry has a `name` (use as the leaf `id`), a `type` (drives operator selection), and an optional `description`.\n378\t\n379\tThen follow [/uipath:uipath-platform — triggers.md > Building Filter Trees from filterFields](../../../../../../uipath-platform/references/integration-service/triggers.md#building-filter-trees-from-filterfields) for the rest of the procedure (operator selection, leaf composition, value wrapping), the mandatory-filter contract (connector-mandated values like Gmail folder go on `eventParameters`, never the freeform `filter` tree), and array-shaped field handling.\n380\t\n381\t### What NOT to generate\n382\t\n383\t| Invalid input | Why it fails | Valid replacement |\n384\t|---|---|---|\n385\t| `\"filterExpression\": \"(contains(subject, 'x'))\"` | Legacy format — the CLI now rejects `filterExpression` as an input field (see MST-8802). It is *only* an output in the generated `.flow`. | Build a `filter` tree with a `Contains` leaf. |\n386\t| `\"filter\": \"(subject == 'x')\"` | `filter` must be an object, not a string. | Structured tree with `filters: [...]`. |\n387\t| `{ \"id\": \"fields.subject\", ... }` | `fields.` prefix — use the bare field name from `filterFields.fields[].name`. | `{ \"id\": \"subject\", ... }` |\n388\t| `{ \"id\": \"subject\", \"operator\": \"contains\", ... }` | Operator is case-sensitive — use PascalCase. | `\"operator\": \"Contains\"` |\n389\t| `{ \"value\": \"urgent\" }` on a leaf | Bare string — must be wrapped in the `WorkflowValue` object. | `{ \"value\": { \"value\": \"urgent\", \"rawString\": \"\\\"urgent\\\"\", \"isLiteral\": true } }` |\n390\t| `{ \"isLiteral\": false, \"value\": \"${var}\" }` | Expression values are not yet supported by the CLI port. | Resolve the value first, then pass it as a literal. |\n391\t| Adding a freeform leaf for a connector-mandated field (e.g. Gmail folder, Slack channelId) | Mandatory filters derived from connector event metadata are emitted automatically by the CLI from `eventParameters` — duplicating them in the freeform tree double-applies the clause. | Set the value through `eventParameters` only; the CLI AND-joins the mandatory JMES clause into the top-level `inputs.detail.filterExpression` (matching SW's `combinedFilterExpression`). It is *not* persisted on `essentialConfiguration` — SW classifies it optional and rebuilds it from input field values on restore. |\n392\t\n393\t---\n394\t\n395\t## Bindings\n396\t\n397\tTrigger nodes require more binding resources than activity nodes: `Connection` + `EventTrigger` + `Property` resources. **`node configure` and the packaging pipeline handle all of these automatically:**\n398\t\n399\t- **Connection bindings** — created in the `.flow` file by `node configure` (Step 6)\n400\t- **EventTrigger + Property bindings** — generated into `bindings_v2.json` during `flow debug` or packaging from the trigger node's `inputs.detail`\n401\t\n402\tYou do **not** need to manually create or edit `bindings_v2.json` for trigger nodes.\n403\t\n404\t---\n405\t\n406\t## CLI Commands\n407\t\n408\t```bash\n409\t# Discovery\n410\tuip maestro flow registry search trigger --output json               # find trigger node types\n411\tuip maestro flow registry pull --force                                # refresh registry (requires login)\n412\t\n413\t# Enriched trigger metadata (--connection-id REQUIRED)\n414\tuip maestro flow registry get <trigger-node-type> --connection-id <connection-id> --output json\n415\t\n416\t# Node lifecycle\n417\tuip maestro flow node remove <PROJECT>.flow start --output json       # remove manual trigger\n418\tuip maestro flow node add <PROJECT>.flow <trigger-node-type> --label \"<LABEL>\" --position 200,144 --output json\n419\tuip maestro flow node configure <PROJECT>.flow <nodeId> --detail '<TRIGGER_DETAIL_JSON>' --output json\n420\t\n421\t# Trigger object metadata (MANDATORY — Steps 1b and 1b-2)\n422\tuip is triggers objects \"<connector-key>\" \"<operation>\" --connection-id \"<id>\" --output json   # Step 1b: objects + parameters[]\n423\tuip is triggers describe \"<connector-key>\" \"<operation>\" \"<objectName>\" --connection-id \"<id>\" --output json  # Step 1b-2: fields\n424\t\n425\t# Connections — see /uipath:uipath-platform — connections.md for selection rules (Native, BYOA, --refresh)\n426\tuip is connections list \"<connector-key>\" --all-folders --output json         # discover connections (--all-folders is mandatory)\n427\tuip is connections list \"<connector-key>\" --byoa --all-folders --output json  # BYOA only (Step 1c)\n428\tuip is connections ping \"<connection-id>\" --output json               # verify health\n429\t\n430\t# Reference resolution (same as IS activity)\n431\tuip is resources run list \"<connector-key>\" \"<resource>\" \\\n432\t  --connection-id \"<id>\" --output json\n433\t\n434\t# Webhook URL retrieval — see /uipath:uipath-platform — triggers.md (Step 6b, webhooks only)\n435\tuip is webhooks config \"<connector-key>\" \\\n436\t  --connection-id \"<connection-guid>\" \\\n437\t  --element-instance-id <number> --output json\n438\t```\n439\t\n440\t---\n441\t\n442\t## Testing Trigger Flows\n443\t\n444\t`uip maestro flow debug` works with trigger-based flows. Debug does **not** wait for a live event — it **pulls the most recent matching event** from the connector's lookback window and executes immediately.\n445\t\n446\t### How debug works for triggers\n447\t\n448\t1. Debug calls the connector's `/events/debug` endpoint with `maxResults=5` and a `startDate` (default: 1 hour ago)\n449\t2. The connector returns up to 5 matching events from that window, sorted most-recent-first\n450\t3. The runtime uses `FilterMatches[0]` (the most recent match) as the trigger input\n451\t4. The flow executes immediately with that event data\n452\t5. If **no matching events** exist in the lookback window, debug fails with error code `3005` (TriggerNoMatches)\n453\t\n454\t```bash\n455\tuip maestro flow debug . --output json\n456\t# → Fetches most recent matching event from the past ~1 hour\n457\t# → Flow executes immediately with that event data\n458\t```\n459\t\n460\t### Polling vs webhook triggers in debug\n461\t\n462\t| Trigger mode | Debug support | Behavior |\n463\t|---|---|---|\n464\t| `polling` | Supported | Pulls recent events via debug API, executes immediately |\n465\t| `webhooks` | **Not supported** | Webhook triggers cannot be tested in Studio debug mode — debug requires Orchestrator |\n466\t\n467\t> **If the trigger uses `webhooks` event mode**, tell the user that debug is not available for webhook triggers. They must deploy to Orchestrator and test with a real webhook event.\n468\t\n469\t### Key differences from manual-trigger debug\n470\t\n471\t| Aspect | Manual trigger | Connector trigger (polling) |\n472\t|---|---|---|\n473\t| Execution start | Immediate with user-provided inputs | Immediate with most recent matching event |\n474\t| User action needed | Provide input values | Ensure a matching event exists in the past ~1 hour |\n475\t| Failure mode | Missing required inputs | No matching events in lookback window (error 3005) |\n476\t\n477\t### Pre-debug checklist\n478\t\n479\t1. **Verify the connection is healthy** — `uip is connections ping \"<id>\"`\n480\t2. **Confirm a matching event exists** — the user should have produced the event (e.g., sent an email, created a Jira issue) within the past hour\n481\t3. **Check event mode** — if `webhooks`, debug is not supported; inform the user\n482\t\n483\t---\n484\t\n485\t## Debug\n486\t\n487\t### Common Errors\n488\t\n489\t| Error | Cause | Fix |\n490\t|---|---|---|\n491\t| `Trigger nodes require --connection-id` | Ran `registry get` without `--connection-id` | Re-run with `--connection-id <id>` — required for all trigger nodes |\n492\t| `Invalid --detail` saying `objectName is required for the trigger` — or, on older CLIs, an opaque `Error configuring node` / `Response returned an error code` on every `--detail` shape | The trigger is **generic** (`activityType: \"GenericTrigger\"`, e.g. Data Fabric `record-created`): its manifest ships the `objectName` context entry without a value, and configure needs the object to fetch trigger metadata. Older CLIs rejected `objectName` as a `--detail` key and called the metadata API with an empty object name — hence the opaque server error. | Pass the object in `--detail.objectName` (resolve it per Step 1b-2). On an older CLI that rejects the key, `Edit` the trigger **definition's** `model.context` `objectName` entry to add `\"value\": \"<object>\"`, then re-run `node configure`. Curated triggers never need this — their manifest carries the objectName. |\n493\t| No trigger nodes in registry | Not authenticated or registry not pulled | Run `uip login` then `uip maestro flow registry pull --force` |\n494\t| Connection not found in bindings | `node configure` not run or connection expired | Re-run `node configure` with valid `connectionId` and `folderKey` |\n495\t| Event parameter missing at runtime | Required event parameter not configured (commonly one returned by `triggers describe` but absent from `triggers objects → parameters[]`) | Re-run **both** `uip is triggers objects` (Step 1b) **and** `uip is triggers describe` (Step 1b-2). Configure every field marked `required` in **either** `parameters[]` or `EventParameters` (resolving references) under the correct `--detail` bucket. |\n496\t| `filterExpression is derived from the filter tree and cannot be provided directly` | Passed `filterExpression` string instead of a `filter` tree | Build a structured `filter` tree — see [Filter Trees](#filter-trees) |\n497\t| Trigger fires on events the filter should exclude; `node configure` reported Success | A leaf `id` does not match any `filterFields.fields[].name` (matching is case-sensitive). The CLI drops the unmatched leaf from the compiled `filterExpression` instead of failing | Re-run `registry get --connection-id <id>`, compare every leaf `id` against `filterFields.fields[].name`, then re-run `node configure` with the exact names |\n498\t| Trigger not firing | Event parameters point to wrong resource (e.g., wrong folder ID) | Re-resolve reference fields with `uip is resources run list` |\n499\t| Trigger faults immediately with no visible error after a clean build | Event parameter uses a reference ID scoped to a **different** connection (common when copying from a prior flow in the same session — e.g., a `parentFolderId` for mailbox A pasted into a trigger bound to mailbox B's connection) | Re-run `uip is resources run list \"<connector-key>\" \"<objectName>\" --connection-id <CURRENT_CONNECTION_ID>`, extract the fresh ID, update `eventParameters` in `--detail`, re-run `node configure`, re-debug. See Step 3 and the top-level Anti-Pattern on reference-ID reuse in [SKILL.md](../../../../../SKILL.md). |\n500\t| Definition's `model.context` missing operation | Definition not copied correctly, or node added before registry pull | Re-run `uip maestro flow registry pull --force`, then verify the `definitions[]` entry contains `model.context` with `connectorKey`/`operation`/`objectName` as returned by `registry get` |\n501\t| Trigger faults at runtime with webhook-related error | Standard (non-BYOA) connection used for a trigger that requires `byoaConnection: true` | Run `uip is triggers objects` (Step 1b) to check `byoaConnection` flag, then switch to a BYOA connection with `uip is connections list \"<connector-key>\" --byoa --output json`. If no BYOA connections exist, user must create one. |\n502\t| `connections list` returns empty but connections exist in the IS portal | CLI is using cached connection data that is stale | Retry with `--refresh` flag: `uip is connections list \"<connector-key>\" --refresh --output json` |\n503\t| `ElementInstanceId` is empty on the selected connection | Connection is not a BYOA connection, or connector does not support webhooks on this connection type | Verify the trigger requires BYOA (Step 1b `byoaConnection` flag). If `true`, switch to a BYOA connection. |\n504\t\n505\t### Debug Tips\n506\t\n507\t1. **Always verify the connection is healthy** before debugging trigger issues — run `uip is connections ping \"<id>\"`\n508\t2. **`flow validate` does NOT catch trigger-specific issues** — missing event parameters, wrong reference IDs, and expired connections are caught only at runtime\n509\t3. **Event parameters with `reference` objects** need resolved IDs, not display names — same as IS activity fields\n510\t4. **Filters are optional** — omit `filter` from `--detail` if the user wants all events to trigger the flow. Do not invent an \"empty\" expression.\n511\t5. **Bindings are auto-managed** — `node configure` creates flow-level bindings; `flow debug`/packaging generates `bindings_v2.json` from them\n512\t6. **Use `uip maestro flow node remove` to remove the manual trigger** — do NOT use `Edit` to delete the start node. The CLI automatically removes associated edges, orphaned definitions, and regenerates `variables.nodes`. Hand-editing skips these cleanup steps and can leave orphaned references.\n513\t7. **Check `outputResponseDefinition` before writing downstream expressions** — trigger output field names vary by connector. Do not assume field names like `.text` or `.subject` — verify from the enriched `registry get` response (Step 2)\n514\t8. **Validate filter field names against `filterFields` yourself** — only field names returned in `filterFields.fields[].name` are valid leaf `id`s in the filter tree, and matching is case-sensitive. The CLI no longer rejects an unknown field at configure time: it drops that leaf from the compiled `filterExpression` and reports Success. A guessed name therefore surfaces as a trigger that fires on events the filter should exclude, not as an error.\n515\t",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 2,
+          "result_tokens": 9733
+        },
+        {
+          "tool_name": "Write",
+          "tool_id": "toolu_bdrk_01Y2GgA4kNuAsStmXRNZZr6Z",
+          "assistant_turn_index": 10,
+          "timestamp": "2026-08-19T18:02:42.425745",
+          "duration_ms": 54.577316012000665,
+          "generation_completed_at": "2026-08-19T18:02:42.425745",
+          "execution_started_at": "2026-08-19T18:02:42.425811",
+          "execution_completed_at": "2026-08-19T18:02:42.480388",
+          "parameters": {
+            "file_path": "/work/output/artifacts/skill-flow-trigger-with-filter/trigger_detail.json",
+            "content": "{\n  \"_comment\": \"Pass this object as the --detail argument to: uip maestro flow node configure <FLOW>.flow <TRIGGER_NODE_ID> --detail '<JSON>'\",\n  \"_placeholders\": {\n    \"CONNECTION_ID\": \"UUID of the Microsoft Office 365 IS connection — obtain with: uip is connections list \\\"microsoft-office-365\\\" --all-folders --output json\",\n    \"FOLDER_KEY\": \"Orchestrator folder key where the connection lives — from the same connections list response\",\n    \"EVENT_MODE\": \"Either \\\"webhooks\\\" or \\\"polling\\\" — read from: uip maestro flow registry get uipath.connector.trigger.microsoft-office-365.email-received --connection-id <CONNECTION_ID> --output json (field: eventMode)\",\n    \"INBOX_FOLDER_ID\": \"Resolved ID of the Inbox mail folder — obtain with: uip is resources run list \\\"microsoft-office-365\\\" \\\"MailFolder\\\" --connection-id <CONNECTION_ID> --output json, then match displayName \\\"Inbox\\\"\",\n    \"FILTER_FIELD_from\": \"Verify the exact field name for the sender address by checking filterFields.fields[].name in the registry get response; commonly \\\"from\\\" or \\\"fromAddress\\\"\",\n    \"FILTER_FIELD_subject\": \"Verify the exact field name for email subject by checking filterFields.fields[].name in the registry get response; commonly \\\"subject\\\"\"\n  },\n  \"connectionId\": \"<CONNECTION_ID>\",\n  \"folderKey\": \"<FOLDER_KEY>\",\n  \"eventMode\": \"<EVENT_MODE>\",\n  \"eventParameters\": {\n    \"parentFolderId\": \"<INBOX_FOLDER_ID>\"\n  },\n  \"filter\": {\n    \"groupOperator\": 0,\n    \"index\": 0,\n    \"filters\": [\n      {\n        \"id\": \"from\",\n        \"operator\": \"Equals\",\n        \"value\": {\n          \"value\": \"abc@xyz.com\",\n          \"rawString\": \"\\\"abc@xyz.com\\\"\",\n          \"isLiteral\": true\n        }\n      },\n      {\n        \"id\": \"subject\",\n        \"operator\": \"Contains\",\n        \"value\": {\n          \"value\": \"good day\",\n          \"rawString\": \"\\\"good day\\\"\",\n          \"isLiteral\": true\n        }\n      }\n    ]\n  }\n}\n"
+          },
+          "result_status": "success",
+          "result_summary": "File created successfully at: /work/output/artifacts/skill-flow-trigger-with-filter/trigger_detail.json (file state is current in your context — no need to Read it back)",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 3,
+          "result_tokens": 43
+        }
+      ],
+      "timestamp": "2026-08-19T18:02:56.827161",
+      "duration_seconds": 70.3040185639984,
+      "token_usage": {
+        "uncached_input_tokens": 7,
+        "output_tokens": 3483,
+        "cache_creation_input_tokens": 30342,
+        "cache_read_input_tokens": 206330,
+        "total_cost_usd": 0.2279475,
+        "input_tokens": 236679
+      },
+      "model_used": "claude-sonnet-4-6",
+      "assistant_turn_count": 12,
+      "messages": [
+        {
+          "role": "assistant",
+          "started_at": "2026-08-19T18:01:46.522411",
+          "completed_at": "2026-08-19T18:01:52.197713",
+          "generation_duration_ms": 5675.323556002695,
+          "content_blocks": [
+            {
+              "block_type": "thinking",
+              "sequence": 0,
+              "text": null,
+              "thinking": "The user wants me to author a UiPath Flow triggered by an Outlook email with specific conditions, and write the trigger configuration JSON to `trigger_detail.json`. Let me invoke the UiPath Maestro Flow skill to understand the correct structure for this trigger configuration.",
+              "signature": "Et8DCmcIEBABGAIqQJIzGGbPvmXMwutiwd5ANUsv6WKpfxYpBbJMBMnIo1EdBQotRxBQgulv/jnEJz4LXtWMLLW6renZkeRiuRqQF+wyEWNsYXVkZS1zb25uZXQtNC02OABCCHRoaW5raW5nEgzCpV8VinY3m0PcwkoaDIV9e94d6ZAFiEDRwyIwDofGcgQQtWPAI8jW4DcNz3NWXUugADLgRwbFOnX/eALtlo7fNaQJ1wJoxRmEnQHjKqUCcta4Gv0XIpoEXV4w/dyWpAUJtm/+OrF/v3wEDiXZ8bLkHVaB0GdTt4NgYKHC3rmUyLNXQX1ScSg0lhx2iPpyALchK6XX6HkFjalOpOa3e+7TqYdFgMAPO5bFB8aJ9AxzFUcBGpjV7jdqgPAk70XPFOkx7bTqvGx3YMI5WzGtHetS4X97Plvi5ivEMF8qiCj9z8lgCXEGTTNcX0SJp32xXNEtqkSAI/RbkdwWziSklnP47s5YBcNUtXEjjQbO3L7oxFTwgCqVBymDJDJMid4yR3EclwW76feql4qbBKdL/cFrDiGWJgy8bWgHUAHMQhgLTL5h4vlIktoDPpP3EvWiCZuA0XNLcYF7D2Jz7yYihHfBBIE2LIJQgkhEnWzHavyw6RHJfmcYAQ==",
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 2,
+          "output_tokens": 116,
+          "cache_creation_tokens": 3454,
+          "cache_read_tokens": 29085,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_015uRi44yp4TLmsJswbL8nTF",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-08-19T18:01:52.197713",
+          "completed_at": "2026-08-19T18:01:52.602117",
+          "generation_duration_ms": 404.4048829819076,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01YV5vxmhK4gRLVRPGSnsuKv",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01YV5vxmhK4gRLVRPGSnsuKv"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 19,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_015uRi44yp4TLmsJswbL8nTF",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-08-19T18:01:52.641581",
+          "completed_at": "2026-08-19T18:01:57.750324",
+          "generation_duration_ms": 5108.741184987593,
+          "content_blocks": [
+            {
+              "block_type": "thinking",
+              "sequence": 0,
+              "text": null,
+              "thinking": "The user wants me to write a `trigger_detail.json` file with the exact JSON object that would be passed to `uip maestro flow node configure <flow> <triggerId> --detail '<JSON>'` to configure an Outlook email trigger with:\n- Subject contains \"good day\"\n- Sent from abc@xyz.com\n\nI need to read the skill's references about trigger configuration, specifically for connector triggers with Outlook/email filters.\n\nLet me read the relevant capability and plugin files to understand the correct structure for a connector trigger node configuration.",
+              "signature": "EugFCmcIEBABGAIqQMXqVdkWIqYRI5hazwgqxjmQW+XOXR+6Ur+aNFQ0I9U5AUXlBsaGbOSgbNSLOEZIeyyJita/u6i3pWQCh/QOeGQyEWNsYXVkZS1zb25uZXQtNC02OABCCHRoaW5raW5nEgw4ukk9m1h1JGyarlcaDGYeXZO0nQFMQarWyiIwKWs1xwMkPHw86aqK7Zm20MAC/qwsZNGh3FHi5CDP2dasoKUYk1ubqJyu86LaqHnqKq4Ei97OlV8obM4PgxDGHcJ2WMWQUp2bTi//hJxmjOMfG+In6lk3AiahxFPebsvgvOP8c1rgDk/O5F3cnmV8eNYjLt3orl70uoK3faf/LnxZiBmA+IT/mFy1kupgKOHcuvYFNOX8Iwh7V4OffM5Xoz01Hv4VVIQW+jIneIlUQKCuz42Q1TbJ+lkx+5ZPSNSIzQhm1pGPc/tQQrhH4EMn7zVucP6LKHiQJSIJIqefvpJ4hAOKlidsYTAzT6DCXPac9XzkN3qrZlNvnCjuWzVUR8l/0TmfUErde++UeT/j9LUfLkG4Ze+bB1FvfafDMlZxe5bx7XxdjmU3jSMrvpyEE1b4vT0Ado/Mvm+QJcLguxCQrAfYkggWkl2ahxPAxdVKMwHv3YjKQx+KkdND3bgUF3EbhH8y5aHHEXJWclWo94dh/y9xhASoelD/3g2wVHij7SmoE1hyUzUgySh4XIbGUOwgeJafCKlOYbOWpBniKta+utyAxTGqEvauL2xocKNWqk4FhJT2XmGy6tPaNghLkuG89m0992qrq9coQOb82RjyXdyHPPmonmDmeCEnN7ZEf4mjnIqkI8q0zjfbfpv92NTJeSmpKL2Jw3fvVdXZ6lY1sTU5DKJ1OrKIKIsriAhcf5GeVYsgQjhhZktJL/7Tvu+eL7YpUhxOJTgbYD6RFGBrl/83pPY+hbD+lOFmDj6mpmpVJ2RRqSLqAlcxUMthrCi6miO/puCkxzTzHxnTwd13GAE=",
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 2,
+          "output_tokens": 168,
+          "cache_creation_tokens": 6116,
+          "cache_read_tokens": 32539,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01KdBjxD7YvZ7jbSiumarsyX",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-08-19T18:01:57.750324",
+          "completed_at": "2026-08-19T18:01:58.512739",
+          "generation_duration_ms": 762.4139570107218,
+          "content_blocks": [
+            {
+              "block_type": "text",
+              "sequence": 0,
+              "text": "I'll read the author capability and connector trigger references to get the exact `--detail` JSON shape for a connector trigger.",
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 0,
+          "output_tokens": 40,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01KdBjxD7YvZ7jbSiumarsyX",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-08-19T18:01:58.512739",
+          "completed_at": "2026-08-19T18:01:59.298159",
+          "generation_duration_ms": 785.4199929861352,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01KiH9Y4vjkEsF1Zp9r1VagD",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01KiH9Y4vjkEsF1Zp9r1VagD"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 34,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01KdBjxD7YvZ7jbSiumarsyX",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-08-19T18:01:59.665056",
+          "completed_at": "2026-08-19T18:02:02.400080",
+          "generation_duration_ms": 2735.02410799847,
+          "content_blocks": [
+            {
+              "block_type": "thinking",
+              "sequence": 0,
+              "text": null,
+              "thinking": "Now I need to read the connector-trigger plugin's impl.md to understand the exact `--detail` JSON structure for configuring a connector trigger.",
+              "signature": "EtsCCmcIEBABGAIqQJYXZWXJDi95oypPCyUqg3YgKymBqLwU0pzjQOaekGSe4b7mVR31TSwkr//DEStMmNNwpvZjvZe/67nJkWlKW20yEWNsYXVkZS1zb25uZXQtNC02OABCCHRoaW5raW5nEgxJvfI5n9O1iSNoBxEaDPzenrR/Wc4a9Cie9SIwiUjg0KCgHGLOS8pr2jbc+OrGfVNKXlzlFsYvLnbR+aLwHkyDB30Z6wic30BAkdvrKqEBBJCIu3O+8qqPBzz00tUj+zMZOFsb/t4TWOJy79xsVean6pj6VKLzsK5VFoeTnNJSOnFbTfiKkUslGvfvecQmDmRCwGsFLG/BJ83oDGl1NftuWQUNhfwPZqMG2GRidLYOLKwRtQ+Fw0h79WNSDuMjpNlFHZDQD6GJ1+gr0v0rY73rvtJtnCiaFdMOqlCAKHflQy8d+PypanfuBNPSmmw5UAIYAQ==",
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 1,
+          "output_tokens": 60,
+          "cache_creation_tokens": 8733,
+          "cache_read_tokens": 38655,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01TyP8NCHiGGaL22tcYKC2s4",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-08-19T18:02:02.400080",
+          "completed_at": "2026-08-19T18:02:02.960924",
+          "generation_duration_ms": 560.8440910000354,
+          "content_blocks": [
+            {
+              "block_type": "text",
+              "sequence": 0,
+              "text": "Now I'll read the connector-trigger plugin docs to get the exact `--detail` JSON structure.",
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 0,
+          "output_tokens": 38,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01TyP8NCHiGGaL22tcYKC2s4",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-08-19T18:02:02.960924",
+          "completed_at": "2026-08-19T18:02:04.452870",
+          "generation_duration_ms": 1491.9462210091297,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01DEue9D3GwfuPDA6t7vqwVN",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01DEue9D3GwfuPDA6t7vqwVN"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 59,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01TyP8NCHiGGaL22tcYKC2s4",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-08-19T18:02:04.560103",
+          "completed_at": "2026-08-19T18:02:35.915130",
+          "generation_duration_ms": 31355.028969002888,
+          "content_blocks": [
+            {
+              "block_type": "thinking",
+              "sequence": 0,
+              "text": null,
+              "thinking": "Now I have all the information I need. Let me construct the exact `--detail` JSON for an Outlook email trigger where:\n- Subject contains \"good day\"\n- Sent from abc@xyz.com\n\nFrom the impl.md, the `--detail` fields for triggers are:\n- `connectionId` - Connection UUID (placeholder)\n- `folderKey` - Orchestrator folder key (placeholder)\n- `eventMode` - \"webhooks\" or \"polling\" (Outlook email received is typically webhooks, but I'll use a placeholder or best-known value)\n- `eventParameters` - event-specific parameters like `parentFolderId` (which folder to watch - Inbox)\n- `filter` - structured filter tree\n\nFor the filter tree, I need two conditions combined with AND: one checking that the sender is abc@xyz.com and another checking that the subject contains \"good day\". The Outlook connector key is likely `microsoft-office-365` or similar, with the event being something like `EMAIL_RECEIVED`, and I'll need to specify the inbox as the `parentFolderId`.\n\nSince I'm working offline, I'll use placeholders for the `connectionId`, `folderKey`, and the actual folder ID for the inbox. The `eventMode` is probably `\"webhooks\"` for real-time email triggers, though it could also be polling. The filter will use the `from` field with an Equals operator and the `subject` field with a Contains operator, pulling the field names from the connector's schema. I'll use `fromAddress` as the field name since that's what appears in the `filterFields` example from the registry response, even though I can't verify it offline—the documentation is clear that only field names from `filterFields.fields[].name` are valid for the filter tree.\n\nBuilding the trigger detail JSON... I'm working through the configuration details—the event mode would typically be webhooks for Outlook email received events, and the parent folder ID needs to point to the Inbox, though I'll use placeholders where I can't verify the exact values offline. I notice the filter examples use `from` rather than `fromAddress`, so I'll stick with that convention from the Outlook documentation, but I should note this needs verification. For the connector key and trigger node type, I'm thinking something like `microsoft-office-365` for Outlook, which would give a trigger path like `uipath.connector.trigger.microsoft-office-365.email-received`.\n\nWriting the trigger_detail.json file...",
+              "signature": "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",
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 1,
+          "output_tokens": 1112,
+          "cache_creation_tokens": 11275,
+          "cache_read_tokens": 47388,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01R8Xjfc1AaaY3Ee5mRHdLR1",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-08-19T18:02:35.915130",
+          "completed_at": "2026-08-19T18:02:35.922916",
+          "generation_duration_ms": 7.786249014316127,
+          "content_blocks": [
+            {
+              "block_type": "text",
+              "sequence": 0,
+              "text": "I have everything I need. The impl.md shows exactly the `--detail` shape for connector triggers, including a worked example for \"Emails from a specific sender AND subject contains 'good day'\". Let me write the file.",
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 0,
+          "output_tokens": 102,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01R8Xjfc1AaaY3Ee5mRHdLR1",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-08-19T18:02:35.922916",
+          "completed_at": "2026-08-19T18:02:42.425745",
+          "generation_duration_ms": 6502.827941993019,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01Y2GgA4kNuAsStmXRNZZr6Z",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01Y2GgA4kNuAsStmXRNZZr6Z"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 1048,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01R8Xjfc1AaaY3Ee5mRHdLR1",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-08-19T18:02:42.480353",
+          "completed_at": "2026-08-19T18:02:56.550722",
+          "generation_duration_ms": 14070.36914798664,
+          "content_blocks": [
+            {
+              "block_type": "text",
+              "sequence": 0,
+              "text": "`trigger_detail.json` is written. Here's a summary of what's in it and why each field is set the way it is:\n\n---\n\n### What the JSON contains\n\n| Field | Value | Why |\n|---|---|---|\n| `connectionId` | `<CONNECTION_ID>` placeholder | Must be the UUID of a live Microsoft Office 365 IS connection — resolved offline it is always a placeholder |\n| `folderKey` | `<FOLDER_KEY>` placeholder | Orchestrator folder that owns the connection — comes from the same `connections list` response |\n| `eventMode` | `<EVENT_MODE>` placeholder | `\"webhooks\"` or `\"polling\"` — read from `registry get … --connection-id` at deploy time; cannot be determined offline |\n| `eventParameters.parentFolderId` | `<INBOX_FOLDER_ID>` placeholder | The Outlook `email-received` trigger requires a mail folder ID as an event parameter; resolve with `uip is resources run list \"microsoft-office-365\" \"MailFolder\" --connection-id <id>` and match `displayName = \"Inbox\"` |\n| `filter.filters[0]` — `from / Equals / abc@xyz.com` | literal | Restricts the trigger to emails whose **From** field exactly matches `abc@xyz.com` |\n| `filter.filters[1]` — `subject / Contains / good day` | literal | Restricts the trigger to emails whose subject **contains** the phrase `good day` (case-insensitive per connector) |\n| `filter.groupOperator: 0` | `0` = AND | Both conditions must hold simultaneously |\n\n### Filter field names (`from`, `subject`)\nThese names match the worked example in the skill's `connector-trigger/impl.md`. You **must** verify them against the live `filterFields.fields[].name` response from `uip maestro flow registry get uipath.connector.trigger.microsoft-office-365.email-received --connection-id <id>` — matching is case-sensitive and the CLI silently drops an unmatched leaf (the trigger fires on everything instead of erroring).\n\n### To configure the trigger against a live tenant\n```bash\nuip is connections list \"microsoft-office-365\" --all-folders --output json\n# → grab connectionId, folderKey, ElementInstanceId\n\nuip is resources run list \"microsoft-office-365\" \"MailFolder\" \\\n  --connection-id <connectionId> --output json\n# → resolve parentFolderId for \"Inbox\"\n\nuip maestro flow registry get uipath.connector.trigger.microsoft-office-365.email-received \\\n  --connection-id <connectionId> --output json\n# → confirm eventMode and exact filterFields.fields[].name values\n\nuip maestro flow node configure <FLOW>.flow <TRIGGER_NODE_ID> \\\n  --detail \"$(cat trigger_detail.json)\" --output json\n```",
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 1,
+          "output_tokens": 687,
+          "cache_creation_tokens": 764,
+          "cache_read_tokens": 58663,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_016CW9tUTJzTqoNUNLDUsBjr",
+          "parent_tool_use_id": null
+        }
+      ],
+      "num_turns": 6,
+      "max_turns_exhausted": false,
+      "result_summary": {
+        "is_error": false,
+        "subtype": "success",
+        "stop_reason": "end_turn",
+        "result": "`trigger_detail.json` is written. Here's a summary of what's in it and why each field is set the way it is:\n\n---\n\n### What the JSON contains\n\n| Field | Value | Why |\n|---|---|---|\n| `connectionId` | `<CONNECTION_ID>` placeholder | Must be the UUID of a live Microsoft Office 365 IS connection — resolved offline it is always a placeholder |\n| `folderKey` | `<FOLDER_KEY>` placeholder | Orchestrator folder that owns the connection — comes from the same `connections list` response |\n| `eventMode` | `<EVENT_MODE>` placeholder | `\"webhooks\"` or `\"polling\"` — read from `registry get … --connection-id` at deploy time; cannot be determined offline |\n| `eventParameters.parentFolderId` | `<INBOX_FOLDER_ID>` placeholder | The Outlook `email-received` trigger requires a mail folder ID as an event parameter; resolve with `uip is resources run list \"microsoft-office-365\" \"MailFolder\" --connection-id <id>` and match `displayName = \"Inbox\"` |\n| `filter.filters[0]` — `from / Equals / abc@xyz.com` | literal | Restricts the trigger to emails whose **From** field exactly matches `abc@xyz.com` |\n| `filter.filters[1]` — `subject / Contains / good day` | literal | Restricts the trigger to emails whose subject **contains** the phrase `good day` (case-insensitive per connector) |\n| `filter.groupOperator: 0` | `0` = AND | Both conditions must hold simultaneously |\n\n### Filter field names (`from`, `subject`)\nThese names match the worked example in the skill's `connector-trigger/impl.md`. You **must** verify them against the live `filterFields.fields[].name` response from `uip maestro flow registry get uipath.connector.trigger.microsoft-office-365.email-received --connection-id <id>` — matching is case-sensitive and the CLI silently drops an unmatched leaf (the trigger fires on everything instead of erroring).\n\n### To configure the trigger against a live tenant\n```bash\nuip is connections list \"microsoft-office-365\" --all-folders --output json\n# → grab connectionId, folderKey, ElementInstanceId\n\nuip is resources run list \"microsoft-office-365\" \"MailFolder\" \\\n  --connection-id <connectionId> --output json\n# → resolve parentFolderId for \"Inbox\"\n\nuip maestro flow registry get uipath.connector.trigger.microsoft-office-365.email-received \\\n  --connection-id <connectionId> --output json\n# → confirm eventMode and exact filterFields.fields[].name values\n\nuip maestro flow node configure <FLOW>.flow <TRIGGER_NODE_ID> \\\n  --detail \"$(cat trigger_detail.json)\" --output json\n```"
+      },
+      "provider_call_costs": [],
+      "crashed": false,
+      "crash_reason": null
+    }
+  ],
+  "error_message": null,
+  "error_details": null,
+  "error_log_tail": null,
+  "environment_info": {
+    "git_commit": "unknown",
+    "skills_git_commit": "unknown",
+    "cli_version": "1.201.0-dev.8272",
+    "tool_plugins": {
+      "admin-tool": "1.201.0-dev.8272",
+      "agent-tool": "1.201.0-dev.8272",
+      "agenthub-tool": "1.201.0-dev.8272",
+      "aops-tool": "1.201.0-dev.8272",
+      "api-workflow-tool": "1.201.0-dev.8272",
+      "automation-hub-tool": "1.201.0-dev.8272",
+      "codedagent-tool": "1.201.0-dev.8272",
+      "codedapp-tool": "1.201.0-dev.8272",
+      "coder-tool": "1.201.0-dev.8272",
+      "context-grounding-tool": "1.201.0-dev.8272",
+      "conversational-tool": "1.201.0-dev.8272",
+      "data-fabric-tool": "1.201.0-dev.8272",
+      "docsai-tool": "1.201.0-dev.8272",
+      "function-tool": "1.201.0-dev.8272",
+      "gov-tool": "1.201.0-dev.8272",
+      "guardrails-tool": "1.201.0-dev.8272",
+      "insights-tool": "1.201.0-dev.8276",
+      "integrationservice-tool": "1.201.0-dev.8272",
+      "ixp-tool": "1.201.0-dev.8272",
+      "llm-gateway-tool": "1.201.0-dev.8272",
+      "llmgw-tool": "1.201.0-dev.8272",
+      "maestro-tool": "1.201.0-dev.8275",
+      "model-hub-tool": "1.201.0-dev.8272",
+      "orchestrator-tool": "1.201.0-dev.8272",
+      "platform-tool": "1.201.0-dev.8272",
+      "pm-tool": "1.201.0-dev.8272",
+      "rpa-legacy-tool": "1.201.0-dev.8272",
+      "rpa-tool": "1.201.0-dev.20260809.3",
+      "solution-tool": "1.201.0-dev.8272",
+      "tasks-tool": "1.201.0-dev.8272",
+      "test-manager-tool": "1.201.0-dev.8272",
+      "traces-tool": "1.201.0-dev.8272",
+      "vertical-solutions-tool": "1.201.0-dev.8272"
+    },
+    "coder_eval": "0.9.6",
+    "claude_code_cli": "2.1.177 (Claude Code)",
+    "uv": "uv 0.12.5 (x86_64-unknown-linux-gnu)",
+    "anthropic": "0.122.0",
+    "openai": "3.2.0",
+    "pydantic": "2.12.5",
+    "api_routing": "aws_bedrock",
+    "eval_routing": "aws_bedrock",
+    "aws_region": "us-east-2",
+    "bedrock_model": "us.anthropic.claude-sonnet-4-6",
+    "system_prompt_semantics": "append"
+  },
+  "agent_config": {
+    "type": "claude-code",
+    "model": "claude-sonnet-4-6",
+    "permission_mode": "acceptEdits",
+    "allowed_tools": [
+      "Skill",
+      "Bash",
+      "Read",
+      "Write",
+      "Edit",
+      "Glob",
+      "Grep"
+    ],
+    "disallowed_tools": null,
+    "plugins": [
+      {
+        "type": "local",
+        "path": "/home/azureuser/projects/skills/"
+      }
+    ],
+    "system_prompt": "You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted.\n",
+    "system_prompt_file": null,
+    "ignore_patterns": [],
+    "system_prompt_mode": "append",
+    "claude_settings": null,
+    "sdk_options": {},
+    "setting_sources": null
+  },
+  "sdk_options": {
+    "tools": null,
+    "allowed_tools": [
+      "Skill",
+      "Bash",
+      "Read",
+      "Write",
+      "Edit",
+      "Glob",
+      "Grep"
+    ],
+    "system_prompt": {
+      "type": "preset",
+      "preset": "claude_code",
+      "exclude_dynamic_sections": true,
+      "append": "You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted.\n"
+    },
+    "mcp_servers": {},
+    "strict_mcp_config": false,
+    "permission_mode": "acceptEdits",
+    "continue_conversation": false,
+    "resume": null,
+    "session_id": null,
+    "max_turns": 40,
+    "max_budget_usd": null,
+    "disallowed_tools": [
+      "ToolSearch"
+    ],
+    "model": "us.anthropic.claude-sonnet-4-6",
+    "fallback_model": null,
+    "betas": [],
+    "permission_prompt_tool_name": null,
+    "cwd": "/work/output/artifacts/skill-flow-trigger-with-filter",
+    "cli_path": null,
+    "settings": null,
+    "add_dirs": [],
+    "env": {
+      "PATH": "/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+      "PLUGIN_TOOLS_DIR": "/usr/lib/node_modules/@uipath",
+      "CLAUDE_CODE_USE_BEDROCK": "1",
+      "AWS_BEARER_TOKEN_BEDROCK": "***REDACTED***",
+      "AWS_REGION": "us-east-2",
+      "CLAUDE_CODE_ATTRIBUTION_HEADER": "0",
+      "ANTHROPIC_MODEL": "us.anthropic.claude-sonnet-4-6",
+      "ANTHROPIC_SMALL_FAST_MODEL": "us.anthropic.claude-sonnet-4-6"
+    },
+    "extra_args": {},
+    "max_buffer_size": null,
+    "can_use_tool": null,
+    "hooks": null,
+    "user": null,
+    "include_partial_messages": true,
+    "include_hook_events": false,
+    "fork_session": false,
+    "agents": null,
+    "setting_sources": [
+      "project"
+    ],
+    "skills": null,
+    "sandbox": null,
+    "plugins": [
+      {
+        "type": "local",
+        "path": "/home/azureuser/projects/skills"
+      }
+    ],
+    "max_thinking_tokens": null,
+    "thinking": null,
+    "effort": null,
+    "output_format": null,
+    "enable_file_checkpointing": false,
+    "session_store": null,
+    "session_store_flush": "batched",
+    "load_timeout_ms": 60000,
+    "task_budget": null
+  },
+  "sandbox_path": "/work/output/artifacts/skill-flow-trigger-with-filter",
+  "task_config": {
+    "resolved": {
+      "task_id": "skill-flow-trigger-with-filter",
+      "description": "Verifies that the uipath-maestro-flow skill teaches agents to emit a structured `filter` tree. Without this, UI drops the filter silently on first open.\n",
+      "initial_prompt": "You are authoring a UiPath Flow triggered by an Outlook email whose subject contains \"good day\" and sent from\nabc@xyz.com.\nDo NOT run any command that requires a live connection — this sandbox has no UiPath tenant, so you cannot configure\nthe trigger against a live connection.\nInstead, write to `trigger_detail.json` the exact JSON object you would pass to\n`uip maestro flow node configure <flow> <triggerId> --detail '<JSON>'` to configure that trigger.\nUse placeholders for any connection/folder/event ids you cannot resolve offline.\n",
+      "initial_prompt_file": null,
+      "tags": [
+        "uipath-maestro-flow",
+        "smoke",
+        "mode:build",
+        "lifecycle:discover",
+        "connector-trigger",
+        "uipath-microsoft-outlook365",
+        "filter",
+        "ipe"
+      ],
+      "skip": false,
+      "agent": {
+        "type": "claude-code",
+        "model": "claude-sonnet-4-6",
+        "permission_mode": "acceptEdits",
+        "allowed_tools": [
+          "Skill",
+          "Bash",
+          "Read",
+          "Write",
+          "Edit",
+          "Glob",
+          "Grep"
+        ],
+        "disallowed_tools": null,
+        "plugins": [
+          {
+            "type": "local",
+            "path": "/home/azureuser/projects/skills/"
+          }
+        ],
+        "system_prompt": "You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted.\n",
+        "system_prompt_file": null,
+        "ignore_patterns": [],
+        "system_prompt_mode": "append",
+        "claude_settings": null,
+        "sdk_options": {},
+        "setting_sources": null
+      },
+      "sandbox": {
+        "driver": "tempdir",
+        "docker": {
+          "image": "skills-image:latest",
+          "dockerfile_path": null,
+          "build": {
+            "buildkit": null,
+            "args": {},
+            "secrets": [],
+            "extra_args": []
+          },
+          "network": "bridge",
+          "working_dir": null,
+          "env_passthrough": [
+            "ANTHROPIC_API_KEY",
+            "API_BACKEND",
+            "UIPATH_LLM_BACKEND",
+            "UIPATH_ACCESS_TOKEN",
+            "UIPATH_URL",
+            "UIPATH_TENANT_ID",
+            "UIPATH_ORGANIZATION_ID",
+            "UIPATH_CLI_DISABLE_VERSION_SYNC",
+            "AWS_BEARER_TOKEN_BEDROCK",
+            "AWS_REGION",
+            "BEDROCK_MODEL",
+            "CLAUDE_CODE_USE_BEDROCK",
+            "ANTHROPIC_MODEL",
+            "LITELLM_BASE_URL",
+            "LITELLM_AUTH_TOKEN",
+            "LITELLM_MODEL",
+            "LITELLM_SMALL_MODEL",
+            "LITELLM_COST_LOG",
+            "CODEX_API_KEY",
+            "CODEX_BASE_URL",
+            "CODEX_MODEL",
+            "GEMINI_API_KEY",
+            "ANTIGRAVITY_MODEL",
+            "HOME"
+          ],
+          "env_passthrough_extra": [
+            "SKILLS_REPO_PATH",
+            "EXPERIMENT_TASKS_PATH",
+            "BEDROCK_MODEL",
+            "TASK_PARALLELISM",
+            "UIPATH_CLI_ENABLE_ENV_AUTH",
+            "UIPATH_CLI_AUTH_TOKEN",
+            "UIPATH_CLI_ORGANIZATION_NAME",
+            "UIPATH_CLI_ORGANIZATION_ID",
+            "UIPATH_CLI_TENANT_NAME",
+            "UIPATH_CLI_TENANT_ID",
+            "TRACES_SMOKE_PROCESS_KEY",
+            "CODEX_API_KEY",
+            "CODEX_BASE_URL"
+          ],
+          "extra_mounts": [
+            "~/.uipath:/.uipath:rw"
+          ]
+        },
+        "python": {
+          "env_packages": []
+        },
+        "node": null,
+        "limits": {
+          "timeout": 300,
+          "max_memory_mb": null,
+          "max_cpus": null,
+          "max_pids": null,
+          "max_disk_mb": null
+        },
+        "template_sources": null,
+        "mock_path_dirs": null,
+        "record_cli": null,
+        "ignore_patterns": []
+      },
+      "success_criteria": [
+        {
+          "type": "run_command",
+          "description": "trigger_detail.json is the --detail object with a top-level `filter` tree on `subject` Contains, no top-level filterExpression",
+          "weight": 3.0,
+          "pass_threshold": 1.0,
+          "suite_thresholds": null,
+          "command": "python3 $TASK_DIR/check_trigger_filter.py",
+          "timeout": 10,
+          "expected_exit_code": 0,
+          "expected_stdout": null,
+          "stdout_match": "exact",
+          "score_from_stdout": false
+        }
+      ],
+      "run_limits": {
+        "max_turns": 40,
+        "expected_turns": 7,
+        "task_timeout": 900,
+        "turn_timeout": 900,
+        "max_input_tokens": null,
+        "max_output_tokens": null,
+        "max_total_tokens": null,
+        "max_usd": null,
+        "count_cached_input": false,
+        "count_cache_creation": false,
+        "stop_early": null,
+        "stop_early_gate_threshold": 1.0
+      },
+      "reference": null,
+      "expected_commands": null,
+      "pre_run": [],
+      "post_run": [
+        {
+          "command": "find . -maxdepth 5 -type d \\( -name node_modules -o -name .npm-prefix -o -name .venv \\) -prune -exec rm -rf {} +",
+          "timeout": 30
+        }
+      ],
+      "dataset": null,
+      "suite_id": null,
+      "row_id": null,
+      "simulation": null
+    },
+    "source_yaml": "task_id: skill-flow-trigger-with-filter\ndescription: >\n  Verifies that the uipath-maestro-flow skill teaches agents to emit a structured `filter` tree.\n  Without this, UI drops the filter silently on first open.\ntags: [uipath-maestro-flow, smoke, mode:build, lifecycle:discover, connector-trigger, uipath-microsoft-outlook365, filter, ipe]\n\nrun_limits:\n  expected_turns: 7\n\ninitial_prompt: |\n  You are authoring a UiPath Flow triggered by an Outlook email whose subject contains \"good day\" and sent from\n  abc@xyz.com.\n  Do NOT run any command that requires a live connection — this sandbox has no UiPath tenant, so you cannot configure\n  the trigger against a live connection.\n  Instead, write to `trigger_detail.json` the exact JSON object you would pass to\n  `uip maestro flow node configure <flow> <triggerId> --detail '<JSON>'` to configure that trigger.\n  Use placeholders for any connection/folder/event ids you cannot resolve offline.\n\n\nsuccess_criteria:\n  # `check_trigger_filter.py` locates trigger_detail.json (root or nested in the\n  # flow project dir) and asserts it is the --detail object: valid JSON, no\n  # top-level filterExpression (MST-8802 guard), and a `filter` tree as a\n  # TOP-LEVEL key (numeric groupOperator + non-empty filters) with at least one\n  # leaf referencing `subject` via the PascalCase `Contains` operator. A filter\n  # wrapped under detail/inputs fails — that is not the --detail object.\n  - type: run_command\n    description: \"trigger_detail.json is the --detail object with a top-level `filter` tree on `subject` Contains, no top-level filterExpression\"\n    command: \"python3 $TASK_DIR/check_trigger_filter.py\"\n    timeout: 10\n    expected_exit_code: 0\n    weight: 3.0\n    pass_threshold: 1.0",
+    "source_file": "/home/azureuser/projects/skills/tests/tasks/uipath-maestro-flow/connector_trigger/task.yaml",
+    "lineage": {
+      "agent.type": {
+        "value": "claude-code",
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.permission_mode": {
+        "value": "acceptEdits",
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.model": {
+        "value": "claude-sonnet-4-6",
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.allowed_tools": {
+        "value": [
+          "Skill",
+          "Bash",
+          "Read",
+          "Write",
+          "Edit",
+          "Glob",
+          "Grep"
+        ],
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.plugins": {
+        "value": [
+          {
+            "type": "local",
+            "path": "/home/azureuser/projects/skills/"
+          }
+        ],
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.ignore_patterns": {
+        "value": [],
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.system_prompt": {
+        "value": "You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted.\n",
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "run_limits.max_turns": {
+        "value": 40,
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "run_limits.task_timeout": {
+        "value": 900,
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "run_limits.turn_timeout": {
+        "value": 900,
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "run_limits.expected_turns": {
+        "value": 7,
+        "source": "task",
+        "source_detail": null
+      },
+      "sandbox.driver": {
+        "value": "docker",
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "sandbox.docker": {
+        "value": {
+          "image": "skills-image:latest",
+          "env_passthrough_extra": [
+            "SKILLS_REPO_PATH",
+            "EXPERIMENT_TASKS_PATH",
+            "BEDROCK_MODEL",
+            "TASK_PARALLELISM",
+            "UIPATH_CLI_ENABLE_ENV_AUTH",
+            "UIPATH_CLI_AUTH_TOKEN",
+            "UIPATH_CLI_ORGANIZATION_NAME",
+            "UIPATH_CLI_ORGANIZATION_ID",
+            "UIPATH_CLI_TENANT_NAME",
+            "UIPATH_CLI_TENANT_ID",
+            "TRACES_SMOKE_PROCESS_KEY",
+            "CODEX_API_KEY",
+            "CODEX_BASE_URL"
+          ],
+          "extra_mounts": [
+            "~/.uipath:/.uipath:rw"
+          ]
+        },
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "repeats": {
+        "value": 1,
+        "source": "default",
+        "source_detail": null
+      }
+    }
+  },
+  "command_stats": {
+    "total_commands": 4,
+    "commands_by_tool": {
+      "Skill": 1,
+      "Read": 2,
+      "Write": 1
+    },
+    "total_command_time_ms": 567.3624220362399,
+    "avg_command_time_ms": 141.84060550905997,
+    "slowest_commands": [
+      {
+        "tool": "Read",
+        "duration_ms": 366.8785940099042,
+        "parameters": {
+          "file_path": "/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/CAPABILITY.md"
+        },
+        "tool_id": "toolu_bdrk_01KiH9Y4vjkEsF1Zp9r1VagD"
+      },
+      {
+        "tool": "Read",
+        "duration_ms": 107.21570299938321,
+        "parameters": {
+          "file_path": "/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/references/plugins/connector-trigger/impl.md"
+        },
+        "tool_id": "toolu_bdrk_01DEue9D3GwfuPDA6t7vqwVN"
+      },
+      {
+        "tool": "Write",
+        "duration_ms": 54.577316012000665,
+        "parameters": {
+          "file_path": "/work/output/artifacts/skill-flow-trigger-with-filter/trigger_detail.json",
+          "content": "{\n  \"_comment\": \"Pass this object as the --detail argument to: uip maestro flow node configure <FLOW>.flow <TRIGGER_NODE_ID> --detail '<JSON>'\",\n  \"_placeholders\": {\n    \"CONNECTION_ID\": \"UUID of the Microsoft Office 365 IS connection — obtain with: uip is connections list \\\"microsoft-office-365\\\" --all-folders --output json\",\n    \"FOLDER_KEY\": \"Orchestrator folder key where the connection lives — from the same connections list response\",\n    \"EVENT_MODE\": \"Either \\\"webhooks\\\" or \\\"polling\\\" — read from: uip maestro flow registry get uipath.connector.trigger.microsoft-office-365.email-received --connection-id <CONNECTION_ID> --output json (field: eventMode)\",\n    \"INBOX_FOLDER_ID\": \"Resolved ID of the Inbox mail folder — obtain with: uip is resources run list \\\"microsoft-office-365\\\" \\\"MailFolder\\\" --connection-id <CONNECTION_ID> --output json, then match displayName \\\"Inbox\\\"\",\n    \"FILTER_FIELD_from\": \"Verify the exact field name for the sender address by checking filterFields.fields[].name in the registry get response; commonly \\\"from\\\" or \\\"fromAddress\\\"\",\n    \"FILTER_FIELD_subject\": \"Verify the exact field name for email subject by checking filterFields.fields[].name in the registry get response; commonly \\\"subject\\\"\"\n  },\n  \"connectionId\": \"<CONNECTION_ID>\",\n  \"folderKey\": \"<FOLDER_KEY>\",\n  \"eventMode\": \"<EVENT_MODE>\",\n  \"eventParameters\": {\n    \"parentFolderId\": \"<INBOX_FOLDER_ID>\"\n  },\n  \"filter\": {\n    \"groupOperator\": 0,\n    \"index\": 0,\n    \"filters\": [\n      {\n        \"id\": \"from\",\n        \"operator\": \"Equals\",\n        \"value\": {\n          \"value\": \"abc@xyz.com\",\n          \"rawString\": \"\\\"abc@xyz.com\\\"\",\n          \"isLiteral\": true\n        }\n      },\n      {\n        \"id\": \"subject\",\n        \"operator\": \"Contains\",\n        \"value\": {\n          \"value\": \"good day\",\n          \"rawString\": \"\\\"good day\\\"\",\n          \"isLiteral\": true\n        }\n      }\n    ]\n  }\n}\n"
+        },
+        "tool_id": "toolu_bdrk_01Y2GgA4kNuAsStmXRNZZr6Z"
+      },
+      {
+        "tool": "Skill",
+        "duration_ms": 38.69080901495181,
+        "parameters": {
+          "skill": "uipath:uipath-maestro-flow"
+        },
+        "tool_id": "toolu_bdrk_01YV5vxmhK4gRLVRPGSnsuKv"
+      }
+    ],
+    "successful_commands": 4,
+    "failed_commands": 0,
+    "unknown_commands": 0,
+    "success_rate": 100.0,
+    "most_common_sequence": "Skill → Read → Read"
+  },
+  "total_token_usage": {
+    "uncached_input_tokens": 7,
+    "output_tokens": 3483,
+    "cache_creation_input_tokens": 30342,
+    "cache_read_input_tokens": 206330,
+    "total_cost_usd": 0.2279475,
+    "input_tokens": 236679
+  },
+  "total_assistant_turns": 12,
+  "expected_commands": null,
+  "actual_commands": 4,
+  "commands_efficiency": null,
+  "pre_run_results": [],
+  "post_run_results": [
+    {
+      "command": "find . -maxdepth 5 -type d \\( -name node_modules -o -name .npm-prefix -o -name .venv \\) -prune -exec rm -rf {} +",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "",
+      "duration_seconds": 0.003983736038208008,
+      "error": null
+    }
+  ],
+  "simulation": null,
+  "early_stop": null
+}

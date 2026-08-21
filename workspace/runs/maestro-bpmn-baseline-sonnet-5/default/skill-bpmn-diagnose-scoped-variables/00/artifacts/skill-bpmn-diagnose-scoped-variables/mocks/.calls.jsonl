@@ -1,0 +1,10 @@
+{"ts": 1786744117.5537825, "args": "track", "matched_rule": null, "fixture": null, "exit_code": 1, "error": "unmocked_default"}
+{"ts": 1786744125.48229, "args": "track", "matched_rule": null, "fixture": null, "exit_code": 1, "error": "unmocked_default"}
+{"ts": 1786744135.7305439, "args": "maestro bpmn instance get inst-triage-001 -f folder-public --output json", "matched_rule": null, "fixture": null, "exit_code": 1, "error": "unmocked_default"}
+{"ts": 1786744136.1533263, "args": "maestro bpmn instance variables inst-triage-001 -f folder-public --output json", "matched_rule": "instance variables inst-triage-001 -f folder-public", "fixture": "instance-variables.json", "exit_code": 0}
+{"ts": 1786744136.4213676, "args": "track", "matched_rule": null, "fixture": null, "exit_code": 1, "error": "unmocked_default"}
+{"ts": 1786744141.15128, "args": "maestro bpmn instance variables inst-triage-001 -f folder-public --parent-element-id SubProcess_TaxCalc --output json", "matched_rule": "--parent-element-id SubProcess_TaxCalc", "fixture": "instance-variables-scoped.json", "exit_code": 0}
+{"ts": 1786744141.4784558, "args": "maestro bpmn instance incidents inst-triage-001 -f folder-public --output json", "matched_rule": null, "fixture": null, "exit_code": 1, "error": "unmocked_default"}
+{"ts": 1786744141.6335483, "args": "track", "matched_rule": null, "fixture": null, "exit_code": 1, "error": "unmocked_default"}
+{"ts": 1786744145.7303429, "args": "maestro bpmn instance asset inst-triage-001 -f folder-public --output json", "matched_rule": null, "fixture": null, "exit_code": 1, "error": "unmocked_default"}
+{"ts": 1786744166.6621864, "args": "--version", "matched_rule": null, "fixture": null, "exit_code": 1, "error": "unmocked_default"}

@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+    xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+    xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+    xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+    xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+    xmlns:uipath="http://uipath.org/schema/bpmn"
+    id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn"
+    exporter="UiPath (https://bpmn.uipath.com)" exporterVersion="1.0">
+  <bpmn:process id="Process_1" isExecutable="true">
+    <bpmn:extensionElements>
+      <uipath:migrationVersion version="11.5" />
+    </bpmn:extensionElements>
+
+    <bpmn:startEvent id="StartEvent_1" name="Start">
+      <bpmn:outgoing>Flow_Start_Fork</bpmn:outgoing>
+    </bpmn:startEvent>
+
+    <bpmn:parallelGateway id="Gateway_Fork" name="Fork">
+      <bpmn:incoming>Flow_Start_Fork</bpmn:incoming>
+      <bpmn:outgoing>Flow_Fork_A</bpmn:outgoing>
+      <bpmn:outgoing>Flow_Fork_B</bpmn:outgoing>
+    </bpmn:parallelGateway>
+
+    <bpmn:endEvent id="EndEvent_Terminate" name="Terminate Instance">
+      <bpmn:incoming>Flow_Fork_A</bpmn:incoming>
+      <bpmn:terminateEventDefinition id="TerminateDef_1" />
+    </bpmn:endEvent>
+
+    <bpmn:task id="Task_B" name="Branch B Work">
+      <bpmn:incoming>Flow_Fork_B</bpmn:incoming>
+      <bpmn:outgoing>Flow_B_End</bpmn:outgoing>
+    </bpmn:task>
+
+    <bpmn:endEvent id="EndEvent_Normal" name="End">
+      <bpmn:incoming>Flow_B_End</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <bpmn:sequenceFlow id="Flow_Start_Fork" sourceRef="StartEvent_1" targetRef="Gateway_Fork" />
+    <bpmn:sequenceFlow id="Flow_Fork_A"     sourceRef="Gateway_Fork"  targetRef="EndEvent_Terminate" />
+    <bpmn:sequenceFlow id="Flow_Fork_B"     sourceRef="Gateway_Fork"  targetRef="Task_B" />
+    <bpmn:sequenceFlow id="Flow_B_End"      sourceRef="Task_B"         targetRef="EndEvent_Normal" />
+  </bpmn:process>
+
+  <bpmndi:BPMNDiagram id="Diagram_1">
+    <bpmndi:BPMNPlane id="Plane_1" bpmnElement="Process_1">
+
+      <bpmndi:BPMNShape id="S_StartEvent_1" bpmnElement="StartEvent_1">
+        <dc:Bounds x="160" y="182" width="36" height="36" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="S_Gateway_Fork" bpmnElement="Gateway_Fork">
+        <dc:Bounds x="260" y="175" width="50" height="50" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="S_EndEvent_Terminate" bpmnElement="EndEvent_Terminate">
+        <dc:Bounds x="400" y="82" width="36" height="36" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="S_Task_B" bpmnElement="Task_B">
+        <dc:Bounds x="380" y="242" width="100" height="80" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="S_EndEvent_Normal" bpmnElement="EndEvent_Normal">
+        <dc:Bounds x="540" y="264" width="36" height="36" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNEdge id="E_Flow_Start_Fork" bpmnElement="Flow_Start_Fork">
+        <di:waypoint x="196" y="200" />
+        <di:waypoint x="260" y="200" />
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="E_Flow_Fork_A" bpmnElement="Flow_Fork_A">
+        <di:waypoint x="285" y="175" />
+        <di:waypoint x="285" y="100" />
+        <di:waypoint x="400" y="100" />
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="E_Flow_Fork_B" bpmnElement="Flow_Fork_B">
+        <di:waypoint x="285" y="225" />
+        <di:waypoint x="285" y="282" />
+        <di:waypoint x="380" y="282" />
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="E_Flow_B_End" bpmnElement="Flow_B_End">
+        <di:waypoint x="480" y="282" />
+        <di:waypoint x="540" y="282" />
+      </bpmndi:BPMNEdge>
+
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

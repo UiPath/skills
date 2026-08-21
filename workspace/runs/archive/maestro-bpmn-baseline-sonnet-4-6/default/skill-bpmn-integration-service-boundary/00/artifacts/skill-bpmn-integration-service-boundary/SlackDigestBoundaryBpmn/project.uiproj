@@ -1,0 +1,11 @@
+{
+  "name": "SlackDigestBoundaryBpmn",
+  "description": "Draft Maestro BPMN: manual start, prepare digest, send via Slack Integration Service (draft boundary), end.",
+  "projectVersion": "1.0.0",
+  "main": "SlackDigestBoundaryBpmn.bpmn",
+  "contentType": "ProcessOrchestration",
+  "expressionLanguage": "javascript",
+  "studioVersion": "25.0.0",
+  "schemaVersion": "1.0",
+  "dependencies": {}
+}

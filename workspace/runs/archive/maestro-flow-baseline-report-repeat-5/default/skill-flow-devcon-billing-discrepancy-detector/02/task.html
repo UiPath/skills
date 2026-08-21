@@ -1,0 +1,1842 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>coder_eval · skill-flow-devcon-billing-discrepancy-detector · default</title>
+<style>
+:root {
+  --bg-page: #0f1419;
+  --bg-card: #1a2129;
+  --bg-card-2: #232d38;
+  --bg-code: #0b0f14;
+  --fg: #e6edf3;
+  --fg-muted: #8b98a5;
+  --fg-dim: #6e7681;
+  --border: #30363d;
+  --accent: #58a6ff;
+  --score-high: #22c55e;
+  --score-mid: #f59e0b;
+  --score-low: #ef4444;
+  --status-success: #22c55e;
+  --status-failure: #f59e0b;
+  --status-error: #ef4444;
+  --status-neutral: #6e7681;
+  --shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+.light {
+  --bg-page: #ffffff;
+  --bg-card: #f6f8fa;
+  --bg-card-2: #eaeef2;
+  --bg-code: #f6f8fa;
+  --fg: #1f2328;
+  --fg-muted: #636c76;
+  --fg-dim: #8b949e;
+  --border: #d0d7de;
+  --accent: #0969da;
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial,
+               sans-serif;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--fg);
+  background: var(--bg-page);
+}
+.container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+h1, h2, h3, h4 { margin: 0 0 12px 0; line-height: 1.25; }
+h1 { font-size: 22px; font-weight: 600; }
+h2 { font-size: 18px; font-weight: 600; margin-top: 28px;
+     padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+h3 { font-size: 15px; font-weight: 600; color: var(--fg-muted); }
+h4 { font-size: 13px; font-weight: 600; color: var(--fg-muted); }
+p { margin: 0 0 8px 0; }
+.muted { color: var(--fg-muted); }
+.dim { color: var(--fg-dim); }
+.mono { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+        monospace; font-size: 12.5px; }
+code { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+       monospace; font-size: 12.5px; background: var(--bg-code);
+       border: 1px solid var(--border); padding: 1px 5px; border-radius: 3px; }
+pre { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+      monospace; font-size: 12.5px; background: var(--bg-code);
+      border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px;
+      margin: 6px 0; overflow-x: auto; white-space: pre-wrap;
+      word-wrap: break-word; }
+.header-bar { display: flex; align-items: center; justify-content: space-between;
+              margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+.title-group { flex: 1; min-width: 0; }
+.title-group .subtitle { color: var(--fg-muted); font-size: 13px;
+                         margin-top: 2px; word-break: break-all; }
+.badges { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.badge { display: inline-flex; align-items: center; gap: 6px;
+         padding: 4px 10px; border-radius: 12px; font-size: 12px;
+         font-weight: 600; background: var(--bg-card-2);
+         border: 1px solid var(--border); color: var(--fg); }
+.badge.success { background: color-mix(in srgb, var(--status-success) 20%, var(--bg-card-2));
+                 border-color: var(--status-success); color: var(--status-success); }
+.badge.failure { background: color-mix(in srgb, var(--status-failure) 20%, var(--bg-card-2));
+                 border-color: var(--status-failure); color: var(--status-failure); }
+.badge.error { background: color-mix(in srgb, var(--status-error) 20%, var(--bg-card-2));
+               border-color: var(--status-error); color: var(--status-error); }
+.badge.warning { background: color-mix(in srgb, #f4a52810 20%, var(--bg-card-2));
+                 border-color: #f4a528; color: #f4a528; }
+.badge.neutral { color: var(--fg-muted); }
+.score-pill { display: inline-block; padding: 2px 8px; border-radius: 10px;
+              font-size: 12px; font-weight: 700; min-width: 42px;
+              text-align: center; color: #0b0f14; }
+.score-high { background: var(--score-high); }
+.score-mid { background: var(--score-mid); }
+.score-low { background: var(--score-low); }
+.card { background: var(--bg-card); border: 1px solid var(--border);
+        border-radius: 8px; padding: 16px 20px; margin-bottom: 16px;
+        box-shadow: var(--shadow); }
+.card.highlight { border-left: 4px solid var(--accent); }
+.grid { display: grid; gap: 12px;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+.stat { background: var(--bg-card-2); padding: 10px 12px; border-radius: 6px;
+        border: 1px solid var(--border); }
+.stat .label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;
+               color: var(--fg-muted); margin-bottom: 4px; }
+.stat .value { font-size: 16px; font-weight: 600; }
+table { width: 100%; border-collapse: collapse; margin: 4px 0 12px 0; }
+th, td { text-align: left; padding: 8px 10px;
+         border-bottom: 1px solid var(--border); vertical-align: top;
+         font-size: 13px; }
+th { color: var(--fg-muted); font-weight: 600; font-size: 12px;
+     text-transform: uppercase; letter-spacing: 0.3px; }
+tr:last-child td { border-bottom: none; }
+details { margin: 6px 0; border: 1px solid var(--border); border-radius: 6px;
+          background: var(--bg-card-2); }
+details > summary { cursor: pointer; padding: 8px 12px; user-select: none;
+                    font-weight: 500; list-style: none; }
+details > summary::-webkit-details-marker { display: none; }
+details > summary::before { content: "▸ "; color: var(--fg-dim);
+                            display: inline-block; width: 14px;
+                            transition: transform 0.15s; }
+details[open] > summary::before { content: "▾ "; }
+details .details-body { padding: 0 12px 10px 12px; }
+.tool-row { display: flex; align-items: center; gap: 10px;
+            flex-wrap: wrap; font-size: 13px; }
+.tool-name { font-weight: 600; color: var(--accent); font-family: ui-monospace,
+             SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+.tool-status-ok { color: var(--status-success); font-size: 11px;
+                  font-weight: 600; }
+.tool-status-err { color: var(--status-error); font-size: 11px;
+                   font-weight: 600; }
+.tool-duration { color: var(--fg-muted); font-size: 12px; }
+.tool-seq { color: var(--fg-dim); font-size: 11px; font-weight: 600;
+            min-width: 24px; text-align: right; font-family: ui-monospace,
+            SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+.turn-header { display: flex; justify-content: space-between;
+               align-items: baseline; flex-wrap: wrap; gap: 10px;
+               margin-bottom: 10px; }
+.turn-meta { font-size: 12px; color: var(--fg-muted); }
+.criterion-row td:first-child { font-family: ui-monospace, SFMono-Regular,
+                                 "SF Mono", Menlo, Consolas, monospace;
+                                 color: var(--fg-muted); font-size: 12px; }
+.judge-section { display: flex; flex-direction: column; gap: 12px; }
+.judge-card { padding: 14px 16px; }
+.judge-card-head { display: flex; justify-content: space-between;
+                    align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+.judge-card-title { font-size: 14px; line-height: 1.4; flex: 1; min-width: 0; }
+.judge-card-score { flex-shrink: 0; }
+.judge-rationale { margin-top: 10px; padding: 10px 12px;
+                   background: var(--bg-code); border-radius: 4px;
+                   font-size: 13px; line-height: 1.5; }
+.judge-findings { margin: 8px 0 0 18px; padding-left: 4px; font-size: 13px;
+                   line-height: 1.6; }
+.judge-findings li { margin: 2px 0; }
+.nav-toggle { display: inline-block; padding: 5px 10px; font-size: 12px;
+              background: var(--bg-card-2); border: 1px solid var(--border);
+              border-radius: 5px; color: var(--fg); cursor: pointer; }
+.nav-toggle:hover { background: var(--bg-card); }
+.llm-next-steps { margin: 6px 0 0 20px; padding-left: 0; }
+.llm-next-steps li { margin: 3px 0; }
+.iteration-group { padding: 12px 16px 4px 16px; margin-bottom: 20px;
+                   border-radius: 0 6px 6px 0; border-left: 4px solid var(--status-neutral); }
+/* rgba fallback for browsers without color-mix (Chrome <111, Firefox <113, Safari <16.2). */
+.iteration-group--recovered { border-left-color: var(--status-success);
+                              background: rgba(34, 197, 94, 0.06);
+                              background: color-mix(in srgb, var(--status-success) 6%, transparent); }
+.iteration-group--terminal { border-left-color: var(--status-error);
+                             background: rgba(239, 68, 68, 0.06);
+                             background: color-mix(in srgb, var(--status-error) 6%, transparent); }
+.iteration-group__banner { margin: 0 0 12px 0; font-size: 14px; font-weight: 600; }
+.iteration-group--recovered .iteration-group__banner { color: var(--status-success); }
+.iteration-group--terminal .iteration-group__banner { color: var(--status-error); }
+.attempt-transition { display: flex; align-items: center; gap: 8px;
+                      margin: -6px 0 12px 8px; color: var(--status-error); font-size: 12.5px; }
+.attempt-transition__icon { font-weight: 700; }
+footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--border);
+         color: var(--fg-dim); font-size: 12px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="header-bar">
+  <div class="title-group">
+    <h1>Task: skill-flow-devcon-billing-discrepancy-detector</h1>
+    <div class="subtitle">E2E greenfield (DevCon BillingDisputeResolution scenario): build a Flow that queries the BillingDisputeERP and BillingDisputeCRM entities as parallel branches joined by a merge, then computes an invoice overcharge; graded by validate plus one flow debug run against seeded tenant data.</div>
+  </div>
+  <div class="badges">
+    <span class="badge success">SUCCESS</span>
+    <span class="score-pill score-high">1.00</span>
+    <span class="badge neutral">claude-code · claude-sonnet-4-6</span>
+    <span class="badge neutral">16m 37s</span>
+    <span class="badge neutral">$1.8592</span>
+    
+    
+    <span class="nav-toggle" onclick="toggleTheme()">Toggle theme</span>
+  </div>
+</div>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Variant</div><div class="value">default</div></div>
+    <div class="stat"><div class="label">Started</div><div class="value mono">2026-07-24T20:11:38</div></div>
+    <div class="stat"><div class="label">Duration</div><div class="value">16m 37s</div></div>
+    <div class="stat"><div class="label">Turns (SDK)</div><div class="value">59</div></div>
+    <div class="stat"><div class="label">Commands</div><div class="value">33</div></div>
+  </div>
+</div>
+
+<h2>Success Criteria <span class="muted" style="font-weight:400">(2/2 passed)</span></h2>
+<div class="card" style="padding:0">
+<table>
+  <thead>
+    <tr>
+      <th style="width:15%">Type</th>
+      <th style="width:35%">Description</th>
+      <th style="width:10%">Score</th>
+      <th>Details</th>
+    </tr>
+  </thead>
+  <tbody>
+    
+<tr class="criterion-row">
+  <td>run_command</td>
+  <td>uip maestro flow validate passes on the flow file</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Command: uip maestro flow validate BillingDiscrepancyDetector/BillingDiscrepancyDetector/BillingDiscrepancyDetector.flow</summary><div class="details-body"><pre style="margin:6px 0 0 0">Command: uip maestro flow validate BillingDiscrepancyDetector/BillingDiscrepancyDetector/BillingDiscrepancyDetector.flow
+Exit code: 0 (expected: 0)
+Stdout:
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FlowValidate&quot;,
+  &quot;Data&quot;: {
+    &quot;File&quot;: &quot;/work/output/artifacts/skill-flow-devcon-billing-discrepancy-detector/BillingDiscrepancyDetector/BillingDiscrepancyDetector/BillingDiscrepancyDetector.flow&quot;,
+    &quot;Status&quot;: &quot;Valid&quot;,
+    &quot;Warnings&quot;: &quot;1 warning(s):\n  - [nodes[queryBillingdisputeerp1].inputs.detail.connectionResourceId] Connection \&quot;d61e5d0e-04af-4f93-95cc-151d81fa08dc\&quot; is referenced by 2 nodes (nodes[queryBillingdisputeerp1], nodes[queryBillingdisputecrm1]). Shared connections cause cross-node state leakage at runtime. If this is intentional (e.g. two connectors on the same SaaS account), ignore this warning; otherwise create a separate connection per node.&quot;
+  }
+}
+
+Stderr:
+[ManifestClient] fetchDynamicNodes ok: total=208 agent context nodes=2 external agent nodes=6 orchestrator nodes=158 IXP nodes=42</pre></div></details></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>run_command</td>
+  <td>Check requires a merge node (parallel branches) and debugs once; flow computed overcharge=1610, count=1, invoice MCS-2026-04872, tier Enterprise</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Command: python3 $TASK_DIR/check_billing_discrepancy_detector.py</summary><div class="details-body"><pre style="margin:6px 0 0 0">Command: python3 $TASK_DIR/check_billing_discrepancy_detector.py
+Exit code: 0 (expected: 0)
+Stdout:
+debug inputs: {&#x27;invoiceNumber&#x27;: &#x27;MCS-2026-04872&#x27;, &#x27;accountNumber&#x27;: &#x27;ACCT-98201-NE&#x27;, &#x27;disputedLineNumber&#x27;: 5, &#x27;disputedUnitPrice&#x27;: 300, &#x27;disputedQuantity&#x27;: 14}
+OK: overcharge=1610, count=1, invoice MCS-2026-04872, tier Enterprise
+
+Stderr: (empty)</pre></div></details></td>
+</tr>
+
+  </tbody>
+</table>
+</div>
+<h2>Conversation Trace (1 iteration)</h2>
+<div class="card">
+  <div class="turn-header">
+    <h3>Iteration 1</h3>
+    <div class="badges">
+      <span class="badge neutral">59 assistant turns</span>
+      <span class="badge neutral">in 25 · out 56499 · cache 1999549</span>
+      <span class="badge neutral">16m 5s</span>
+      
+      
+      
+    </div>
+  </div>
+  <details>
+    <summary>Prompt to agent</summary>
+    <div class="details-body"><pre>Your working directory is: /work/output/artifacts/skill-flow-devcon-billing-discrepancy-detector
+
+Build a Maestro Flow &quot;BillingDiscrepancyDetector&quot; (in a solution of the same
+name) that checks a disputed invoice line against the contracted amount and
+pulls the customer&#x27;s account tier.
+
+- Inputs: trigger variables `invoiceNumber` (string), `accountNumber`
+  (string), `disputedLineNumber` (number), `disputedUnitPrice` (number),
+  `disputedQuantity` (number).
+- Look up two existing Data Service entities:
+    - `BillingDisputeERP` — rows for `invoiceNumber`; each has a `lineNumber`
+      and contracted `amount`.
+    - `BillingDisputeCRM` — the account row for `accountNumber`; it has an
+      `accountTier`.
+- The two lookups are independent. Run them as parallel branches that fan out
+  from the trigger and rejoin at a merge before the End node computes the
+  result — do not chain them one after the other.
+- Compute: invoiced = `disputedUnitPrice` x `disputedQuantity`; contracted =
+  the `amount` of the ERP row whose `lineNumber` equals `disputedLineNumber`;
+  `totalOvercharge` = invoiced minus contracted when positive, else 0;
+  `discrepancyCount` = 1 when overcharge is positive, else 0.
+- Outputs: `totalOvercharge` (number), `discrepancyCount` (number),
+  `matchedInvoiceNumber` (string, first ERP row), `accountTier` (string, from
+  CRM).
+
+Validate the final flow file — the task is not complete until `uip maestro
+flow validate` passes. Grading then runs the flow under debug against live
+tenant data, so build it to actually run, not merely validate. Do not run
+debug yourself.
+
+Build the complete flow
+without stopping to ask me.
+</pre></div>
+  </details>
+  <details>
+    <summary>Agent response</summary>
+    <div class="details-body"><pre>[ASSISTANT] Now let me read the merge and Data Service connector plugin docs, plus the variables/expressions reference:
+[ASSISTANT] Now let me start T1 — check the working directory, login, search for Data Service connector nodes, and scaffold the solution all in one go:
+[ASSISTANT] Good, logged in. Now run the T1 chain — scaffold solution+project, pull registry — in parallel with registry searches for Data Service nodes:
+[ASSISTANT] Good — `uipath.connector.uipath-uipath-dataservice.query-entity-records` is available. Let me now read the connector plugin docs and check connections in parallel:
+[ASSISTANT] I have the connection. Now let me get the enriched registry definition and add the connector nodes in parallel:
+[ASSISTANT] I have all the info needed. Both entities exist (`BillingDisputeERP`, `BillingDisputeCRM`), connector key `uipath-uipath-dataservice`, connection ID `d61e5d0e-04af-4f93-95cc-151d81fa08dc`, folder key `c4359cde-55f0-4f0e-9322-c6cdce74ab4c`. Now add the two connector nodes in sequence:
+[ASSISTANT] Node IDs are `queryBillingdisputeerp1` and `queryBillingdisputecrm1`. Now read the scaffolded .flow file to understand the current state:
+[ASSISTANT] Now I need to run `is resources describe` for Step 3a, then configure both connector nodes. Let me do them:
+[ASSISTANT] Now I&#x27;ll configure both connector nodes and then build the complete flow. Let me configure the nodes first:
+[ASSISTANT] Both nodes configured. Now read the current .flow file to see what changed:
+[ASSISTANT] Now I&#x27;ll compose and Write the complete flow file with all nodes, edges, variables, and definitions:
+[ASSISTANT] Now validate and format:
+[ASSISTANT] The flow is **Valid**. The one warning is about two nodes sharing the same connection — which is intentional here (both ERP and CRM lookups use the same UiPath Data Fabric connection). Now format:
+[ASSISTANT] `uip maestro flow validate` passes (Status: Valid) and `uip maestro flow format` completed successfully. The flow is built.
+
+Here&#x27;s a summary of what was built:
+
+---
+
+## BillingDiscrepancyDetector — Build Complete ✅
+
+**File:** `BillingDiscrepancyDetector/BillingDiscrepancyDetector/BillingDiscrepancyDetector.flow`  
+**Solution:** `BillingDiscrepancyDetector/BillingDiscrepancyDetector.uipx`
+
+### Topology
+
+```
+[Manual Trigger]
+       |
+   (fan out)
+   /        \
+[Query ERP] [Query CRM]   ← parallel branches (both from start)
+   \        /
+   (fan in)
+ [Join Branches]          ← core.logic.merge (waits for both)
+       |
+[Compute Discrepancy]     ← core.action.script
+       |
+    [End]                 ← maps 4 output variables
+```
+
+### Inputs (trigger variables)
+- `invoiceNumber` (string), `accountNumber` (string), `disputedLineNumber` (number), `disputedUnitPrice` (number), `disputedQuantity` (number)
+
+### Data lookups
+- **Query BillingDisputeERP** — `uipath.connector.uipath-uipath-dataservice.query-entity-records` filtered by `invoiceNumber`
+- **Query BillingDisputeCRM** — same connector type, filtered by `accountNumber`
+- Both use the live `aditi.goyal@uipath.com` connection (connection ID `d61e5d0e…`)
+
+### Computation (script node)
+- `invoiced = disputedUnitPrice × disputedQuantity`
+- `contracted = amount` from the ERP row where `lineNumber == disputedLineNumber`
+- `totalOvercharge = max(0, invoiced − contracted)`
+- `discrepancyCount = 1 if overcharge &gt; 0, else 0`
+
+### Outputs
+- `totalOvercharge` (number), `discrepancyCount` (number), `matchedInvoiceNumber` (string), `accountTier` (string)
+
+### Validation
+- `uip maestro flow validate` → **Valid** (1 informational warning: two nodes share the same connection — intentional)
+- `uip maestro flow format` → 5 nodes repositioned, 6 edges, 11 variables
+[RESULT - SUCCESS] `uip maestro flow validate` passes (Status: Valid) and `uip maestro flow format` completed successfully. The flow is built.
+
+Here&#x27;s a summary of what was built:
+
+---
+
+## BillingDiscrepancyDetector — Build Complete ✅
+
+**File:** `BillingDiscrepancyDetector/BillingDiscrepancyDetector/B</pre></div>
+  </details>
+  <h4 style="margin-top:12px">Tool Calls (33)</h4>
+  
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#0</span>
+      <span class="tool-name">Skill</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">26ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;skill&quot;: &quot;uipath:uipath-maestro-flow&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Launching skill: uipath:uipath-maestro-flow</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#1</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">472ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/CAPABILITY.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Author — Create and edit `.flow` files
+2	
+3	Capability index for building new flows (greenfield) and editing existing flows (brownfield). Author owns everything that happens on disk, locally, without `uip login`. Authoring journeys terminate at `validate` + `format`; from there, hand off to [operate/CAPABILITY.md](../operate/CAPABILITY.md) to publish, run, or debug.
+4	
+5	&gt; **Where you came from / where to go next.** Author is upstream of Operate (build the flow → ship it) and upstream of Diagnose only via Operate (build → run → diagnose). Publish/run/lifecycle lives in [operate/CAPABILITY.md](../operate/CAPABILITY.md); fault triage lives in [diagnose/CAPABILITY.md](../diagnose/CAPABILITY.md).
+6	&gt;
+7	&gt; **Inherits universal rules from [SKILL.md](../../SKILL.md)** — `--output json` + prefer `--output-filter` for extraction, no `flow debug` without consent, resource discovery order, never invoke other skills automatically, dropdown question pattern, solution layout, **plain-English narration + granular progress list (opt-in — silent by default; engage when the user asks for verbosity)**. The rules below are author-scoped and apply on top.
+8	
+9	## When to use this capability
+10	
+11	-
+
+… (truncated, 25996 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#2</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">285ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/references/greenfield.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Greenfield — Create a New Flow
+2	
+3	End-to-end journey for creating a Flow project from scratch. Author terminates at `validate` + `format`. To publish, run, or debug after this, see [operate/CAPABILITY.md](../../operate/CAPABILITY.md).
+4	
+5	&gt; **Brownfield edits use a different journey.** If the `.flow` file already exists, see [brownfield.md](brownfield.md) instead.
+6	
+7	## Should you plan first?
+8	
+9	For complex flows, produce a plan before building. Reference [planning-arch.md](planning-arch.md) and [planning-impl.md](planning-impl.md) for the node type catalog, port reference, wiring rules, and topology patterns.
+10	
+11	**Plan when:**
+12	- The flow has 5+ nodes with branching or parallel paths
+13	- The flow uses connectors or resources that need discovery
+14	- The user&#x27;s requirements are ambiguous and you need to confirm the approach
+15	
+16	**Don&#x27;t plan when:**
+17	- Adding/editing a single node in an existing flow (use [brownfield.md](brownfield.md))
+18	- The flow is a straightforward linear pipeline (trigger → action → action → end)
+19	- The user has already described the exact topology they want
+20	
+21	### Examples
+22	
+23	**Plan:** &quot;Build a flow that receives a Jira ticke
+
+… (truncated, 30834 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#3</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">146ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/shared/file-format.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# UiPath Flow File Format
+2	
+3	The `.flow` file is a JSON document at `&lt;ProjectName&gt;.flow` in the project root. It is the **only file you should edit** — other generated files will be overwritten.
+4	
+5	## Table of contents
+6	
+7	- [Top-level structure](#top-level-structure)
+8	- [Project structure (from `uip maestro flow init`)](#project-structure-from-uip-maestro-flow-init)
+9	- [Node instance](#node-instance)
+10	- [Layout](#layout)
+11	- [Edge — both ports required](#edge--both-ports-required)
+12	- [Definition entry](#definition-entry)
+13	- [Common node types](#common-node-types)
+14	- [Standard ports by node type](#standard-ports-by-node-type)
+15	- [Implicit error port on action nodes](#implicit-error-port-on-action-nodes)
+16	- [Minimal working example — dice roller](#minimal-working-example--dice-roller)
+17	- [entry-points.json — auto-generated, do not edit](#entry-pointsjson--auto-generated-do-not-edit)
+18	- [Bindings — Orchestrator resource bindings (top-level `bindings[]`)](#bindings--orchestrator-resource-bindings-top-level-bindings)
+19	- [Bindings — connector connection binding](#bindings--connector-connection-binding)
+20	
+21	## Top-level structure
+22	
+23	```json
+24	{
+25	  &quot;i
+
+… (truncated, 30199 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#4</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-err">ERROR</span>
+      <span class="tool-duration">23ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/references/plugins/merge&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>EISDIR: illegal operation on a directory, read &#x27;/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/references/plugins/merge&#x27;</pre>
+    <h4>Error</h4><pre>EISDIR: illegal operation on a directory, read &#x27;/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/references/plugins/merge&#x27;</pre>
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#5</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">26ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/shared/variables-and-expressions.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Variables and Expressions
+2	
+3	Complete reference for declaring variables, writing expressions, and managing data flow in `.flow` files.
+4	
+5	&gt; **Read this before** adding variables or writing expressions in any flow.
+6	&gt;
+7	&gt; `flow validate` catches the structural expression-reference errors:
+8	&gt;
+9	&gt; - Missing `=js:` prefix on `$vars`/`$metadata`/`$self` (MST-9107)
+10	&gt; - Invented `nodes.&lt;id&gt;.output` syntax
+11	&gt; - References to unknown variables or node IDs
+12	&gt; - Output-path walks that descend into declared primitives or schemas closed with `additionalProperties: false`
+13	&gt;
+14	&gt; Errors against **open output schemas** (HTTP response bodies, script returns, free-text agent output) and **wrong-direction reads** (e.g. reading an `out`-only variable) still slip past validate and surface only at `flow debug` or in production.
+15	
+16	---
+17	
+18	## Table of contents
+19	
+20	- [Variables Overview](#variables-overview)
+21	- [Workflow Variables (`globals`)](#workflow-variables-globals)
+22	- [Node Variables (`nodes`)](#node-variables-nodes)
+23	- [Variable Updates (`variableUpdates`)](#variable-updates-variableupdates)
+24	- [Output Mapping on End Nodes](#output-mapping-on-end-nodes)
+25	- [
+
+… (truncated, 24511 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#6</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">18ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/references/plugins/end/impl.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# End Node — Implementation
+2	
+3	## Node Type
+4	
+5	`core.control.end`
+6	
+7	## Registry Validation
+8	
+9	```bash
+10	uip maestro flow registry get core.control.end --output json
+11	```
+12	
+13	Confirm: input port `input`, no output ports. Set the node instance `typeVersion` to the `version` field from this response — do not hardcode it.
+14	
+15	## JSON Structure
+16	
+17	### Without Output Mapping
+18	
+19	```json
+20	{
+21	  &quot;id&quot;: &quot;doneSuccess&quot;,
+22	  &quot;type&quot;: &quot;core.control.end&quot;,
+23	  &quot;typeVersion&quot;: &quot;&lt;DEFINITION_VERSION&gt;&quot;,
+24	  &quot;display&quot;: { &quot;label&quot;: &quot;Done&quot; },
+25	  &quot;inputs&quot;: {}
+26	}
+27	```
+28	
+29	### With Output Mapping
+30	
+31	When the workflow declares `out` variables, every End node must map all of them:
+32	
+33	```json
+34	{
+35	  &quot;id&quot;: &quot;doneSuccess&quot;,
+36	  &quot;type&quot;: &quot;core.control.end&quot;,
+37	  &quot;typeVersion&quot;: &quot;&lt;DEFINITION_VERSION&gt;&quot;,
+38	  &quot;display&quot;: { &quot;label&quot;: &quot;Done&quot; },
+39	  &quot;inputs&quot;: {},
+40	  &quot;outputs&quot;: {
+41	    &quot;processedCount&quot;: {
+42	      &quot;source&quot;: &quot;=js:$vars.processData.output.count&quot;
+43	    },
+44	    &quot;resultSummary&quot;: {
+45	      &quot;source&quot;: &quot;=js:$vars.formatOutput.output.summary&quot;
+46	    }
+47	  }
+48	}
+49	```
+50	
+51	Each key in `outputs` must match a variable `id` from `variables.globals` where `dire
+
+… (truncated, 904 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#7</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">12ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/references/plugins/merge/impl.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Merge Node — Implementation
+2	
+3	## Node Type
+4	
+5	`core.logic.merge`
+6	
+7	## Registry Validation
+8	
+9	```bash
+10	uip maestro flow registry get core.logic.merge --output json
+11	```
+12	
+13	Confirm: input port `input` (accepts multiple connections), output port `output`. Set the node instance `typeVersion` to the `version` field from this response — do not hardcode it.
+14	
+15	## JSON Structure
+16	
+17	```json
+18	{
+19	  &quot;id&quot;: &quot;joinBranches&quot;,
+20	  &quot;type&quot;: &quot;core.logic.merge&quot;,
+21	  &quot;typeVersion&quot;: &quot;&lt;DEFINITION_VERSION&gt;&quot;,
+22	  &quot;display&quot;: { &quot;label&quot;: &quot;Join Branches&quot; },
+23	  &quot;inputs&quot;: {}
+24	}
+25	```
+26	
+27	## Adding / Editing
+28	
+29	For step-by-step add, delete, and wiring procedures, see [editing-operations.md](../../editing-operations.md). Use the JSON structure above for the node-specific `inputs`.
+30	
+31	## Wiring
+32	
+33	- `input` — accepts multiple incoming edges (one per parallel branch). All branches must reach the merge before it continues.
+34	- `output` — single outgoing edge to the next downstream node.
+35	
+36	See [editing-operations.md](../../editing-operations.md) for edge add procedures.
+37	
+38	## Debug
+39	
+40	| Error | Cause | Fix |
+41	| --- | --- | --- |
+42	| Merge never co
+
+… (truncated, 238 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#8</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">156ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/references/plugins/script/impl.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Script Node — Implementation
+2	
+3	## Node Type
+4	
+5	`core.action.script`
+6	
+7	## Registry validation
+8	
+9	```bash
+10	uip maestro flow registry get core.action.script --output json
+11	```
+12	
+13	Confirm: input port `input`, output port `success`, required input `script` (string, non-empty). See [Action Node Structure — Registry validation](../../../../shared/action-nodes.md#registry-validation) for the shared pattern.
+14	
+15	## JSON structure
+16	
+17	Follow the [Action Node Structure — Standard JSON skeleton](../../../../shared/action-nodes.md#standard-json-skeleton). The script-specific input is a single `script` string:
+18	
+19	```json
+20	{
+21	  &quot;inputs&quot;: {
+22	    &quot;script&quot;: &quot;const items = $vars.fetchData.output.body.items;\nconst total = items.reduce((sum, i) =&gt; sum + i.amount, 0);\nreturn { total, count: items.length };&quot;
+23	  }
+24	}
+25	```
+26	
+27	## Adding and editing
+28	
+29	See [Action Node Structure — Adding and editing procedures](../../../../shared/action-nodes.md#adding-and-editing-procedures). The script node uses the standard input port `input` and output port `success`; no plugin-specific wiring.
+30	
+31	## Script rules
+32	
+33	1. **Top-level body — no `function main()` w
+
+… (truncated, 3416 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#9</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">78ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;ls *.uipx */*.uipx 2&gt;/dev/null || echo \&quot;NO_SOLUTIONS_FOUND\&quot;&quot;,
+  &quot;description&quot;: &quot;Check for existing .uipx solution files&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>NO_SOLUTIONS_FOUND</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#10</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.23s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip login status --output json 2&gt;&amp;1 | head -40&quot;,
+  &quot;description&quot;: &quot;Check UiPath login status&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;LoginStatus&quot;,
+  &quot;Data&quot;: {
+    &quot;Status&quot;: &quot;Logged in&quot;,
+    &quot;Provider&quot;: &quot;File&quot;,
+    &quot;BaseUrl&quot;: &quot;https://alpha.uipath.com&quot;,
+    &quot;Organization&quot;: &quot;codereval&quot;,
+    &quot;OrganizationId&quot;: &quot;311c6049-4966-4ef2-a6f3-8ceccaf38d54&quot;,
+    &quot;Tenant&quot;: &quot;DefaultTenant&quot;,
+    &quot;TenantId&quot;: &quot;69d43765-6ede-4575-88b7-9db601a2c056&quot;,
+    &quot;ExpirationDate&quot;: &quot;2026-07-24T20:34:03.000Z&quot;
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#11</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">17.78s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;\\\nuip solution init \&quot;BillingDiscrepancyDetector\&quot; --output json &amp;&amp; \\\ncd \&quot;BillingDiscrepancyDetector\&quot; &amp;&amp; \\\nuip maestro flow init \&quot;BillingDiscrepancyDetector\&quot; --output json &amp;&amp; \\\ncd \&quot;BillingDiscrepancyDetector\&quot; &amp;&amp; \\\nuip maestro flow registry pull &amp;&amp; \\\necho \&quot;SCAFFOLD_DONE\&quot; &amp;&amp; \\\npwd &amp;&amp; \\\nls&quot;,
+  &quot;description&quot;: &quot;Scaffold solution and flow project, pull registry&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;SolutionInit&quot;,
+  &quot;Data&quot;: {
+    &quot;Status&quot;: &quot;Created successfully&quot;,
+    &quot;Path&quot;: &quot;/work/output/artifacts/skill-flow-devcon-billing-discrepancy-detector/BillingDiscrepancyDetector/BillingDiscrepancyDetector.uipx&quot;,
+    &quot;NextSteps&quot;: &quot;Read /work/output/artifacts/skill-flow-devcon-billing-discrepancy-detector/BillingDiscrepancyDetector/AGENTS.md or /work/output/artifacts/skill-flow-devcon-billing-discrepancy-detector/BillingDiscrepancyDetector/CLAUDE.md to understand the solution lifecycle, project types that can be used inside a solution, and related uip command references.&quot;
+  }
+}
+2026-07-24 20:12:34 INFO  [ResourceBuilder:ProjectCreateCommandHandler] Creating project [object Object]
+2026-07-24 20:12:34 INFO  [ResourceBuilder:MultiFileSolutionDefinitionProvider] Reading multi-file solution definition for solution %s /work/output/artifacts/skill-flow-devcon-billing-discrepancy-detector/BillingDiscrepancyDetector
+2026-07-24 20:12:34 INFO  [ResourceBuilder:ProjectCreateCommandHandler] Generate artefact resources for project [object Object]
+2026-07-24 20:12:34 INFO  [ResourceBuilder:SolutionsMetadataReader] Reading metadata from %s. SolutionsMetadataReader
+{
+
+… (truncated, 2004 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#12</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">22.04s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry search \&quot;data service\&quot; --output json --output-filter \&quot;[*].{NodeType:NodeType,DisplayName:DisplayName,Description:Description,AvailableOnTenant:AvailableOnTenant}\&quot; 2&gt;&amp;1 | head -80&quot;,
+  &quot;description&quot;: &quot;Search registry for Data Service connector nodes&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeSearchSuccess&quot;,
+  &quot;Data&quot;: [
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-sap-odata.list-all-entity-records&quot;,
+      &quot;DisplayName&quot;: &quot;List All Entity Records&quot;,
+      &quot;Description&quot;: &quot;(SAP OData) Lists all records for a specified entity using SAP OData services&quot;,
+      &quot;AvailableOnTenant&quot;: true
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.agent.resource.tool.connector.uipath-sap-odata.list-all-entity-records&quot;,
+      &quot;DisplayName&quot;: &quot;List All Entity Records&quot;,
+      &quot;Description&quot;: &quot;(SAP OData) Lists all records for a specified entity using SAP OData services&quot;,
+      &quot;AvailableOnTenant&quot;: true
+    }
+  ]
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#13</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">27.57s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry search \&quot;BillingDisputeERP\&quot; --output json --output-filter \&quot;[*].{NodeType:NodeType,DisplayName:DisplayName,Description:Description,AvailableOnTenant:AvailableOnTenant}\&quot; 2&gt;&amp;1 | head -60&quot;,
+  &quot;description&quot;: &quot;Search registry for BillingDisputeERP entity node&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeSearchSuccess&quot;,
+  &quot;Data&quot;: []
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#14</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">6.09s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry search \&quot;entity\&quot; --output json --output-filter \&quot;[*].{NodeType:NodeType,DisplayName:DisplayName,Description:Description,AvailableOnTenant:AvailableOnTenant}\&quot; 2&gt;&amp;1 | grep -i \&quot;data.service\\|uipath-data\\|data service\\|Data Service\\|query.*entit\\|entit.*record\\|find.*entit\\|record.*find\\|get.*record\\|search.*record\&quot; | head -40&quot;,
+  &quot;description&quot;: &quot;Search for Data Service entity query nodes&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>      &quot;NodeType&quot;: &quot;uipath.connector.uipath-sap-odata.list-all-entity-records&quot;,
+      &quot;DisplayName&quot;: &quot;List All Entity Records&quot;,
+      &quot;Description&quot;: &quot;(SAP OData) Lists all records for a specified entity using SAP OData services&quot;,
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-uipath-dataservice.delete-file-from-record-field&quot;,
+      &quot;Description&quot;: &quot;(UiPath Data Fabric) Delete a file from a specified field of an entity record in UiPath Data Fabric.&quot;,
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-uipath-dataservice.upload-file-to-record-field&quot;,
+      &quot;Description&quot;: &quot;(UiPath Data Fabric) Upload a file to a specified field of an entity record in Data Fabric, replacing existing file if any&quot;,
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-uipath-dataservice.query-entity-records&quot;,
+      &quot;DisplayName&quot;: &quot;Query Entity Records&quot;,
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-uipath-dataservice.update-entity-record&quot;,
+      &quot;DisplayName&quot;: &quot;Update Entity Record&quot;,
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-uipath-dataservice.get-entity-record-by-id&quot;,
+      &quot;DisplayName&quot;: &quot;Get Entity Record by ID&quot;,
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-uipath-dataservice.download-file-from-record-field&quot;,
+      &quot;Description&quot;: 
+
+… (truncated, 1852 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#15</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">10.40s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry search \&quot;data fabric\&quot; --output json --output-filter \&quot;[*].{NodeType:NodeType,DisplayName:DisplayName,Description:Description,AvailableOnTenant:AvailableOnTenant}\&quot; 2&gt;&amp;1 | head -80&quot;,
+  &quot;description&quot;: &quot;Search for data fabric entity nodes&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeSearchSuccess&quot;,
+  &quot;Data&quot;: [
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-uipath-dataservice.delete-file-from-record-field&quot;,
+      &quot;DisplayName&quot;: &quot;Delete File from Record Field&quot;,
+      &quot;Description&quot;: &quot;(UiPath Data Fabric) Delete a file from a specified field of an entity record in UiPath Data Fabric.&quot;,
+      &quot;AvailableOnTenant&quot;: true
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-uipath-dataservice.upload-file-to-record-field&quot;,
+      &quot;DisplayName&quot;: &quot;Upload File to Record Field&quot;,
+      &quot;Description&quot;: &quot;(UiPath Data Fabric) Upload a file to a specified field of an entity record in Data Fabric, replacing existing file if any&quot;,
+      &quot;AvailableOnTenant&quot;: true
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-uipath-dataservice.query-entity-records&quot;,
+      &quot;DisplayName&quot;: &quot;Query Entity Records&quot;,
+      &quot;Description&quot;: &quot;(UiPath Data Fabric) Retrieves a list of records for the selected Entity from Data Fabric, according to specified filters.&quot;,
+      &quot;AvailableOnTenant&quot;: true
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-uipath-dataservice.update-entity-record&quot;,
+      &quot;DisplayName&quot;: &quot;Update Entity Record&quot;,
+      &quot;Description&quot;:
+
+… (truncated, 2886 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#16</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">208ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/references/plugins/connector/impl.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Connector Activity Nodes — Implementation
+2	
+3	How to configure connector activity nodes: connection binding, enriched metadata, reference field resolution, and debugging. Connection bindings are emitted by `uip maestro flow node configure` into the flow&#x27;s top-level `bindings[]`; `bindings_v2.json` is regenerated from them at debug/pack time and should never be hand-edited.
+4	
+5	For generic node/edge add, remove, and wiring procedures, see [editing-operations.md](../../editing-operations.md). This guide covers the connector-specific configuration workflow that must follow the generic node add.
+6	
+7	## How Connector Nodes Differ from OOTB
+8	
+9	1. **Connection binding required** — every connector node needs an IS connection (OAuth, API key, etc.) authored in the flow&#x27;s top-level `bindings[]` (which the CLI regenerates into `bindings_v2.json` at debug/pack time). Without it, the node cannot authenticate.
+10	2. **Enriched metadata via `--connection-id`** — call `registry get` with `--connection-id` to get connection-aware field metadata. Without it, only base fields are returned — custom fields, dynamic enums, and reference resolution are missing.
+11	3. **`inputs.detail` object** —
+
+… (truncated, 59526 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#17</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.68s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip is connections list \&quot;uipath-uipath-dataservice\&quot; --all-folders --output json 2&gt;&amp;1 | head -80&quot;,
+  &quot;description&quot;: &quot;List available Data Service connections&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;ConnectionList&quot;,
+  &quot;Data&quot;: [
+    {
+      &quot;Id&quot;: &quot;d61e5d0e-04af-4f93-95cc-151d81fa08dc&quot;,
+      &quot;Name&quot;: &quot;aditi.goyal@uipath.com&quot;,
+      &quot;ConnectorKey&quot;: &quot;uipath-uipath-dataservice&quot;,
+      &quot;ConnectorName&quot;: &quot;UiPath Data Fabric&quot;,
+      &quot;State&quot;: &quot;Enabled&quot;,
+      &quot;Owner&quot;: &quot;aditi.goyal@uipath.com&quot;,
+      &quot;IsDefault&quot;: &quot;Yes&quot;,
+      &quot;ByoaConnection&quot;: &quot;No&quot;,
+      &quot;ElementInstanceId&quot;: 341459,
+      &quot;Folder&quot;: &quot;Shared&quot;,
+      &quot;FolderKey&quot;: &quot;c4359cde-55f0-4f0e-9322-c6cdce74ab4c&quot;,
+      &quot;Created&quot;: &quot;2026-05-19T11:54:35.833Z&quot;,
+      &quot;Updated&quot;: &quot;2026-07-24T19:41:03.293Z&quot;
+    }
+  ]
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#18</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">7.28s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd \&quot;/work/output/artifacts/skill-flow-devcon-billing-discrepancy-detector/BillingDiscrepancyDetector/BillingDiscrepancyDetector\&quot; &amp;&amp; \\\nuip maestro flow registry get \&quot;uipath.connector.uipath-uipath-dataservice.query-entity-records\&quot; --connection-id \&quot;d61e5d0e-04af-4f93-95cc-151d81fa08dc\&quot; --output json 2&gt;/dev/null | python3 -c \&quot;\nimport json,sys\nd = json.load(sys.stdin)\nn = d.get(&#x27;Data&#x27;,{}).get(&#x27;Node&#x27;, … (923 more chars)&quot;,
+  &quot;description&quot;: &quot;Get enriched registry definition for data service query-entity-records&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>activityType: Curated
+objectName from config: QueryEntityRecordsCurated
+connectorMethodInfo: {
+  &quot;operation&quot;: &quot;List&quot;,
+  &quot;description&quot;: &quot;Retrieves a list of records for the selected Entity from Data Fabric, according to specified filters.&quot;,
+  &quot;method&quot;: &quot;POST&quot;,
+  &quot;parameters&quot;: [
+    {
+      &quot;name&quot;: &quot;entityName&quot;,
+      &quot;description&quot;: &quot;Enter entity name&quot;,
+      &quot;type&quot;: &quot;path&quot;,
+      &quot;dataType&quot;: &quot;string&quot;,
+      &quot;required&quot;: true,
+      &quot;displayName&quot;: &quot;Entity&quot;,
+      &quot;reference&quot;: {
+        &quot;objectName&quot;: &quot;system&quot;,
+        &quot;lookupNames&quot;: [
+          &quot;displayName&quot;
+        ],
+        &quot;lookupValue&quot;: &quot;name&quot;,
+        &quot;path&quot;: &quot;/standard-objects&quot;
+      },
+      &quot;curated&quot;: true,
+      &quot;design&quot;: {
+        &quot;loadByDefault&quot;: true,
+        &quot;isMultiSelect&quot;: false,
+        &quot;enableUserOverride&quot;: false,
+        &quot;isHidden&quot;: false,
+        &quot;position&quot;: &quot;primary&quot;,
+        &quot;validation&quot;: false
+      },
+      &quot;sortOrder&quot;: 1
+    },
+    {
+      &quot;name&quot;: &quot;queryExpression&quot;,
+      &quot;description&quot;: &quot;Enter CEQL query to filter entity records&quot;,
+      &quot;type&quot;: &quot;query&quot;,
+      &quot;dataType&quot;: &quot;string&quot;,
+      &quot;required&quot;: false,
+      &quot;displayName&quot;: &quot;Query&quot;,
+      &quot;curated&quot;: true,
+      &quot;design&quot;: {
+        &quot;component&quot;: &quot;FilterBuilder&quot;
+
+… (truncated, 9612 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#19</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">9.05s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip is resources list \&quot;uipath-uipath-dataservice\&quot; --connection-id \&quot;d61e5d0e-04af-4f93-95cc-151d81fa08dc\&quot; --output json 2&gt;/dev/null | python3 -c \&quot;\nimport json,sys\nd = json.load(sys.stdin)\nitems = d.get(&#x27;Data&#x27;, [])\nfor it in items:\n    name = it.get(&#x27;Name&#x27;,&#x27;&#x27;)\n    display = it.get(&#x27;DisplayName&#x27;,&#x27;&#x27;)\n    if &#x27;billing&#x27; in name.lower() or &#x27;billing&#x27; in display.lower() or &#x27;dispute&#x27; in name.lower() or &#x27;erp&#x27;… (184 more chars)&quot;,
+  &quot;description&quot;: &quot;List available Data Service resources to find entity names&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>BadFolderProbe_1781911247 | BadFolderProbe_1781911247
+BillingDisputeCRM | BillingDisputeCRM
+BillingDisputeERP | BillingDisputeERP
+---ALL---
+IntegrationCustomera8806d | IntegrationCustomera8806d
+IntegrationOrderA5de9ca | IntegrationOrderA5de9ca
+IntegrationOrdera47bc6 | IntegrationOrdera47bc6
+EventNotification | EventNotification
+EmployeeDirectory_1782367325 | EmployeeDirectory_1782367325
+Customer | Customer
+ProductCatalogue_1782972270 | ProductCatalogue_1782972270
+IntegrationOrderccc44a | IntegrationOrderccc44a
+CodingAgentsEvalFileEntity | CodingAgentsEvalFileEntity
+ProductCatalogue_1781244183 | ProductCatalogue_1781244183
+Product | Product
+ProductCatalogue_1779943507 | ProductCatalogue_1779943507
+IntegrationOrders | IntegrationOrders
+IntegrationCustomer06c0ff | IntegrationCustomer06c0ff
+ProductCatalogue_1780028269 | ProductCatalogue_1780028269
+EvalRef_1781680526 | EvalRef_1781680526
+IntegrationOrderfd5adf | IntegrationOrderfd5adf
+ProductCatalogue_1780981119 | ProductCatalogue_1780981119
+Department | Department
+ProductCatalogue_1780435032 | ProductCatalogue_1780435032
+ErrorFolderNonExist | ErrorFolderNonExist
+Lead_pt_test | Lead_pt_test
+IntegrationCustomer979a68 | IntegrationCustome
+
+… (truncated, 403 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#20</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">19.54s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry get core.control.end --output json 2&gt;/dev/null &amp;&amp; \\\necho \&quot;---MERGE---\&quot; &amp;&amp; \\\nuip maestro flow registry get core.logic.merge --output json 2&gt;/dev/null &amp;&amp; \\\necho \&quot;---SCRIPT---\&quot; &amp;&amp; \\\nuip maestro flow registry get core.action.script --output json 2&gt;/dev/null&quot;,
+  &quot;description&quot;: &quot;Get registry definitions for end, merge, and script nodes&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeGetSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;Node&quot;: {
+      &quot;nodeType&quot;: &quot;core.control.end&quot;,
+      &quot;version&quot;: &quot;1.0&quot;,
+      &quot;category&quot;: &quot;control-flow&quot;,
+      &quot;description&quot;: &quot;Mark the end of a workflow path&quot;,
+      &quot;tags&quot;: [
+        &quot;control-flow&quot;,
+        &quot;end&quot;,
+        &quot;finish&quot;,
+        &quot;complete&quot;
+      ],
+      &quot;sortOrder&quot;: 20,
+      &quot;display&quot;: {
+        &quot;label&quot;: &quot;End&quot;,
+        &quot;icon&quot;: &quot;circle-check&quot;,
+        &quot;shape&quot;: &quot;circle&quot;
+      },
+      &quot;handleConfiguration&quot;: [
+        {
+          &quot;position&quot;: &quot;left&quot;,
+          &quot;handles&quot;: [
+            {
+              &quot;id&quot;: &quot;input&quot;,
+              &quot;type&quot;: &quot;target&quot;,
+              &quot;handleType&quot;: &quot;input&quot;
+            }
+          ]
+        }
+      ],
+      &quot;model&quot;: {
+        &quot;type&quot;: &quot;bpmn:EndEvent&quot;
+      },
+      &quot;runtimeConstraints&quot;: {
+        &quot;exclude&quot;: [
+          &quot;api-function&quot;
+        ]
+      }
+    }
+  }
+}
+---MERGE---
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeGetSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;Node&quot;: {
+      &quot;nodeType&quot;: &quot;core.logic.merge&quot;,
+      &quot;version&quot;: &quot;1.0&quot;,
+      &quot;category&quot;: &quot;control-flow&quot;,
+      &quot;description&quot;: &quot;Join parallel branches into one path&quot;,
+      &quot;tags&quot;: [
+        &quot;control-flow&quot;,
+        &quot;merge&quot;
+      ],
+      &quot;s
+
+… (truncated, 4964 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#21</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">5.84s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd \&quot;/work/output/artifacts/skill-flow-devcon-billing-discrepancy-detector/BillingDiscrepancyDetector/BillingDiscrepancyDetector\&quot; &amp;&amp; \\\nuip maestro flow node add \&quot;BillingDiscrepancyDetector.flow\&quot; uipath.connector.uipath-uipath-dataservice.query-entity-records --label \&quot;Query BillingDisputeERP\&quot; --output json 2&gt;/dev/null &amp;&amp; \\\necho \&quot;---NODE2---\&quot; &amp;&amp; \\\nuip maestro flow node add \&quot;BillingDiscrepancyDetector… (130 more chars)&quot;,
+  &quot;description&quot;: &quot;Add two Data Service query-entity-records nodes for ERP and CRM&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeAddSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;Node&quot;: {
+      &quot;Id&quot;: &quot;queryBillingdisputeerp1&quot;,
+      &quot;Type&quot;: &quot;uipath.connector.uipath-uipath-dataservice.query-entity-records&quot;,
+      &quot;TypeVersion&quot;: &quot;1.0.0&quot;,
+      &quot;Ui&quot;: {
+        &quot;Position&quot;: {
+          &quot;X&quot;: 0,
+          &quot;Y&quot;: 0
+        }
+      },
+      &quot;Display&quot;: {
+        &quot;Label&quot;: &quot;Query BillingDisputeERP&quot;
+      },
+      &quot;Inputs&quot;: {}
+    },
+    &quot;DefinitionAdded&quot;: true,
+    &quot;BindingsCreated&quot;: 0,
+    &quot;VariableCount&quot;: 3
+  }
+}
+---NODE2---
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeAddSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;Node&quot;: {
+      &quot;Id&quot;: &quot;queryBillingdisputecrm1&quot;,
+      &quot;Type&quot;: &quot;uipath.connector.uipath-uipath-dataservice.query-entity-records&quot;,
+      &quot;TypeVersion&quot;: &quot;1.0.0&quot;,
+      &quot;Ui&quot;: {
+        &quot;Position&quot;: {
+          &quot;X&quot;: 0,
+          &quot;Y&quot;: 0
+        }
+      },
+      &quot;Display&quot;: {
+        &quot;Label&quot;: &quot;Query BillingDisputeCRM&quot;
+      },
+      &quot;Inputs&quot;: {}
+    },
+    &quot;DefinitionAdded&quot;: false,
+    &quot;BindingsCreated&quot;: 0,
+    &quot;VariableCount&quot;: 5
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#22</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">13ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-devcon-billing-discrepancy-detector/BillingDiscrepancyDetector/BillingDiscrepancyDetector/BillingDiscrepancyDetector.flow&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	{
+2	  &quot;id&quot;: &quot;4d59caef-ce22-4116-85ea-e14fc18eb307&quot;,
+3	  &quot;version&quot;: &quot;1.8&quot;,
+4	  &quot;name&quot;: &quot;BillingDiscrepancyDetector&quot;,
+5	  &quot;nodes&quot;: [
+6	    {
+7	      &quot;id&quot;: &quot;start&quot;,
+8	      &quot;type&quot;: &quot;core.trigger.manual&quot;,
+9	      &quot;typeVersion&quot;: &quot;1.0&quot;,
+10	      &quot;display&quot;: {
+11	        &quot;label&quot;: &quot;Manual trigger&quot;
+12	      },
+13	      &quot;inputs&quot;: {
+14	        &quot;entryPointId&quot;: &quot;62bd00dd-bfa5-4c2d-a20b-0b6ea63be353&quot;,
+15	        &quot;isDefaultEntryPoint&quot;: true
+16	      }
+17	    },
+18	    {
+19	      &quot;id&quot;: &quot;queryBillingdisputeerp1&quot;,
+20	      &quot;type&quot;: &quot;uipath.connector.uipath-uipath-dataservice.query-entity-records&quot;,
+21	      &quot;typeVersion&quot;: &quot;1.0.0&quot;,
+22	      &quot;display&quot;: {
+23	        &quot;label&quot;: &quot;Query BillingDisputeERP&quot;
+24	      },
+25	      &quot;inputs&quot;: {}
+26	    },
+27	    {
+28	      &quot;id&quot;: &quot;queryBillingdisputecrm1&quot;,
+29	      &quot;type&quot;: &quot;uipath.connector.uipath-uipath-dataservice.query-entity-records&quot;,
+30	      &quot;typeVersion&quot;: &quot;1.0.0&quot;,
+31	      &quot;display&quot;: {
+32	        &quot;label&quot;: &quot;Query BillingDisputeCRM&quot;
+33	      },
+34	      &quot;inputs&quot;: {}
+35	    }
+36	  ],
+37	  &quot;edges&quot;: [],
+38	  &quot;definitions&quot;: [
+39	    {
+40	      &quot;nodeType&quot;: &quot;core.trigger.manual&quot;,
+41	      &quot;version&quot;: &quot;1.0&quot;,
+42	      &quot;category&quot;: &quot;trigger&quot;,
+43	      &quot;description&quot;: &quot;Star
+
+… (truncated, 14221 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#23</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">4.53s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd \&quot;/work/output/artifacts/skill-flow-devcon-billing-discrepancy-detector/BillingDiscrepancyDetector/BillingDiscrepancyDetector\&quot; &amp;&amp; \\\nuip is resources describe \&quot;uipath-uipath-dataservice\&quot; \&quot;QueryEntityRecordsCurated\&quot; \\\n  --connection-id \&quot;d61e5d0e-04af-4f93-95cc-151d81fa08dc\&quot; \\\n  --operation List --output json 2&gt;/dev/null | python3 -c \&quot;\nimport json,sys\nd = json.load(sys.stdin)\ndata = d.get(&#x27;Data&#x27;,{}… (270 more chars)&quot;,
+  &quot;description&quot;: &quot;Describe QueryEntityRecordsCurated to get metadata and endpoint&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>metadataFile: 
+operation: 
+path:</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#24</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.03s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd \&quot;/work/output/artifacts/skill-flow-devcon-billing-discrepancy-detector/BillingDiscrepancyDetector/BillingDiscrepancyDetector\&quot; &amp;&amp; \\\nuip is resources describe \&quot;uipath-uipath-dataservice\&quot; \&quot;QueryEntityRecordsCurated\&quot; \\\n  --connection-id \&quot;d61e5d0e-04af-4f93-95cc-151d81fa08dc\&quot; \\\n  --operation List --output json 2&gt;&amp;1 | head -60&quot;,
+  &quot;description&quot;: &quot;Get full describe output for QueryEntityRecordsCurated&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Failure&quot;,
+  &quot;Message&quot;: &quot;Operation &#x27;List&#x27; not found. Available: Create&quot;,
+  &quot;Instructions&quot;: &quot;Run the command without --operation to list available operations for the resource.&quot;,
+  &quot;ErrorCode&quot;: &quot;unknown_error&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#25</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">872ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd \&quot;/work/output/artifacts/skill-flow-devcon-billing-discrepancy-detector/BillingDiscrepancyDetector/BillingDiscrepancyDetector\&quot; &amp;&amp; \\\nuip is resources describe \&quot;uipath-uipath-dataservice\&quot; \&quot;QueryEntityRecordsCurated\&quot; \\\n  --connection-id \&quot;d61e5d0e-04af-4f93-95cc-151d81fa08dc\&quot; \\\n  --operation Create --output json 2&gt;&amp;1 | python3 -c \&quot;\nimport json,sys\nd = json.load(sys.stdin)\ndata = d.get(&#x27;Data&#x27;,{})\npri… (348 more chars)&quot;,
+  &quot;description&quot;: &quot;Get describe output with Create operation for endpoint info&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>metadataFile: 
+params:</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#26</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.16s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd \&quot;/work/output/artifacts/skill-flow-devcon-billing-discrepancy-detector/BillingDiscrepancyDetector/BillingDiscrepancyDetector\&quot; &amp;&amp; \\\nuip is resources describe \&quot;uipath-uipath-dataservice\&quot; \&quot;QueryEntityRecordsCurated\&quot; \\\n  --connection-id \&quot;d61e5d0e-04af-4f93-95cc-151d81fa08dc\&quot; \\\n  --operation Create --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Full describe output&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;ResourceMetadata&quot;,
+  &quot;Data&quot;: {
+    &quot;Name&quot;: &quot;QueryEntityRecordsCurated&quot;,
+    &quot;DisplayName&quot;: &quot;Query Entity Records&quot;,
+    &quot;ElementKey&quot;: &quot;uipath-uipath-dataservice&quot;,
+    &quot;Operation&quot;: {
+      &quot;Method&quot;: &quot;POST&quot;,
+      &quot;Name&quot;: &quot;Create&quot;,
+      &quot;Description&quot;: &quot;Retrieves a list of records for the selected Entity from Data Fabric, according to specified filters.&quot;,
+      &quot;Path&quot;: &quot;/v2/{entityName}/qer&quot;,
+      &quot;Curated&quot;: &quot;Query Entity Records&quot;
+    },
+    &quot;Parameters&quot;: [
+      {
+        &quot;Name&quot;: &quot;entityName&quot;,
+        &quot;Type&quot;: &quot;path&quot;,
+        &quot;DataType&quot;: &quot;string&quot;,
+        &quot;Required&quot;: true,
+        &quot;DisplayName&quot;: &quot;Entity&quot;,
+        &quot;Description&quot;: &quot;Enter entity name&quot;,
+        &quot;Reference&quot;: {
+          &quot;ObjectName&quot;: &quot;system&quot;,
+          &quot;LookupNames&quot;: [
+            &quot;displayName&quot;
+          ],
+          &quot;LookupValue&quot;: &quot;name&quot;,
+          &quot;Path&quot;: &quot;/standard-objects&quot;
+        }
+      },
+      {
+        &quot;Name&quot;: &quot;queryExpression&quot;,
+        &quot;Type&quot;: &quot;query&quot;,
+        &quot;DataType&quot;: &quot;string&quot;,
+        &quot;Required&quot;: false,
+        &quot;DisplayName&quot;: &quot;Query&quot;,
+        &quot;Description&quot;: &quot;Enter CEQL query to filter entity records&quot;
+      },
+      {
+        &quot;Name&quot;: &quot;start&quot;,
+        &quot;Type&quot;: &quot;query&quot;,
+     
+
+… (truncated, 1170 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#27</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">6.74s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd \&quot;/work/output/artifacts/skill-flow-devcon-billing-discrepancy-detector/BillingDiscrepancyDetector/BillingDiscrepancyDetector\&quot; &amp;&amp; \\\nuip maestro flow node configure \&quot;BillingDiscrepancyDetector.flow\&quot; \&quot;queryBillingdisputeerp1\&quot; --detail \&quot;$(cat &lt;&lt;&#x27;JSON&#x27;\n{\n  \&quot;connectionId\&quot;: \&quot;d61e5d0e-04af-4f93-95cc-151d81fa08dc\&quot;,\n  \&quot;folderKey\&quot;: \&quot;c4359cde-55f0-4f0e-9322-c6cdce74ab4c\&quot;,\n  \&quot;method\&quot;: \&quot;POST\&quot;,\n  \&quot;endpoint\&quot;: … (281 more chars)&quot;,
+  &quot;description&quot;: &quot;Configure ERP query node with BillingDisputeERP entity&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeConfigureSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;NodeId&quot;: &quot;queryBillingdisputeerp1&quot;,
+    &quot;BindingsCreated&quot;: 2,
+    &quot;DetailPopulated&quot;: true
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#28</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">7.63s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd \&quot;/work/output/artifacts/skill-flow-devcon-billing-discrepancy-detector/BillingDiscrepancyDetector/BillingDiscrepancyDetector\&quot; &amp;&amp; \\\nuip maestro flow node configure \&quot;BillingDiscrepancyDetector.flow\&quot; \&quot;queryBillingdisputecrm1\&quot; --detail \&quot;$(cat &lt;&lt;&#x27;JSON&#x27;\n{\n  \&quot;connectionId\&quot;: \&quot;d61e5d0e-04af-4f93-95cc-151d81fa08dc\&quot;,\n  \&quot;folderKey\&quot;: \&quot;c4359cde-55f0-4f0e-9322-c6cdce74ab4c\&quot;,\n  \&quot;method\&quot;: \&quot;POST\&quot;,\n  \&quot;endpoint\&quot;: … (281 more chars)&quot;,
+  &quot;description&quot;: &quot;Configure CRM query node with BillingDisputeCRM entity&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeConfigureSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;NodeId&quot;: &quot;queryBillingdisputecrm1&quot;,
+    &quot;BindingsCreated&quot;: 2,
+    &quot;DetailPopulated&quot;: true
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#29</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">8ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-devcon-billing-discrepancy-detector/BillingDiscrepancyDetector/BillingDiscrepancyDetector/BillingDiscrepancyDetector.flow&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	{
+2	  &quot;id&quot;: &quot;4d59caef-ce22-4116-85ea-e14fc18eb307&quot;,
+3	  &quot;version&quot;: &quot;1.8&quot;,
+4	  &quot;name&quot;: &quot;BillingDiscrepancyDetector&quot;,
+5	  &quot;nodes&quot;: [
+6	    {
+7	      &quot;id&quot;: &quot;start&quot;,
+8	      &quot;type&quot;: &quot;core.trigger.manual&quot;,
+9	      &quot;typeVersion&quot;: &quot;1.0&quot;,
+10	      &quot;display&quot;: {
+11	        &quot;label&quot;: &quot;Manual trigger&quot;
+12	      },
+13	      &quot;inputs&quot;: {
+14	        &quot;entryPointId&quot;: &quot;62bd00dd-bfa5-4c2d-a20b-0b6ea63be353&quot;,
+15	        &quot;isDefaultEntryPoint&quot;: true
+16	      }
+17	    },
+18	    {
+19	      &quot;id&quot;: &quot;queryBillingdisputeerp1&quot;,
+20	      &quot;type&quot;: &quot;uipath.connector.uipath-uipath-dataservice.query-entity-records&quot;,
+21	      &quot;typeVersion&quot;: &quot;1.0.0&quot;,
+22	      &quot;display&quot;: {
+23	        &quot;label&quot;: &quot;Query BillingDisputeERP&quot;
+24	      },
+25	      &quot;inputs&quot;: {
+26	        &quot;detail&quot;: {
+27	          &quot;connector&quot;: &quot;uipath-uipath-dataservice&quot;,
+28	          &quot;connectionId&quot;: &quot;d61e5d0e-04af-4f93-95cc-151d81fa08dc&quot;,
+29	          &quot;connectionResourceId&quot;: &quot;d61e5d0e-04af-4f93-95cc-151d81fa08dc&quot;,
+30	          &quot;connectionFolderKey&quot;: &quot;c4359cde-55f0-4f0e-9322-c6cdce74ab4c&quot;,
+31	          &quot;method&quot;: &quot;POST&quot;,
+32	          &quot;endpoint&quot;: &quot;/v2/{entityName}/qer&quot;,
+33	          &quot;pathParameters&quot;: {
+34	            &quot;entityName&quot;: &quot;BillingDisputeERP&quot;
+35	          },
+3
+
+… (truncated, 17481 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#30</span>
+      <span class="tool-name">Write</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">213ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-devcon-billing-discrepancy-detector/BillingDiscrepancyDetector/BillingDiscrepancyDetector/BillingDiscrepancyDetector.flow&quot;,
+  &quot;content&quot;: &quot;{\n  \&quot;id\&quot;: \&quot;4d59caef-ce22-4116-85ea-e14fc18eb307\&quot;,\n  \&quot;version\&quot;: \&quot;1.8\&quot;,\n  \&quot;name\&quot;: \&quot;BillingDiscrepancyDetector\&quot;,\n  \&quot;nodes\&quot;: [\n    {\n      \&quot;id\&quot;: \&quot;start\&quot;,\n      \&quot;type\&quot;: \&quot;core.trigger.manual\&quot;,\n      \&quot;typeVersion\&quot;: \&quot;1.0\&quot;,\n      \&quot;display\&quot;: {\n        \&quot;label\&quot;: \&quot;Manual trigger\&quot;\n      },\n      \&quot;inputs\&quot;: {\n        \&quot;entryPointId\&quot;: \&quot;62bd00dd-bfa5-4c2d-a20b-0b6ea63be353\&quot;,\n        \&quot;isDefaultEntryPoint\&quot;: true\n     … (27662 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>The file /work/output/artifacts/skill-flow-devcon-billing-discrepancy-detector/BillingDiscrepancyDetector/BillingDiscrepancyDetector/BillingDiscrepancyDetector.flow has been updated successfully. (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#31</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">4.95s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd \&quot;/work/output/artifacts/skill-flow-devcon-billing-discrepancy-detector/BillingDiscrepancyDetector/BillingDiscrepancyDetector\&quot; &amp;&amp; \\\nuip maestro flow validate \&quot;BillingDiscrepancyDetector.flow\&quot; --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Validate the flow file&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>[ManifestClient] fetchDynamicNodes ok: total=208 agent context nodes=2 external agent nodes=6 orchestrator nodes=158 IXP nodes=42
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FlowValidate&quot;,
+  &quot;Data&quot;: {
+    &quot;File&quot;: &quot;/work/output/artifacts/skill-flow-devcon-billing-discrepancy-detector/BillingDiscrepancyDetector/BillingDiscrepancyDetector/BillingDiscrepancyDetector.flow&quot;,
+    &quot;Status&quot;: &quot;Valid&quot;,
+    &quot;Warnings&quot;: &quot;1 warning(s):\n  - [nodes[queryBillingdisputeerp1].inputs.detail.connectionResourceId] Connection \&quot;d61e5d0e-04af-4f93-95cc-151d81fa08dc\&quot; is referenced by 2 nodes (nodes[queryBillingdisputeerp1], nodes[queryBillingdisputecrm1]). Shared connections cause cross-node state leakage at runtime. If this is intentional (e.g. two connectors on the same SaaS account), ignore this warning; otherwise create a separate connection per node.&quot;
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#32</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">3.11s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd \&quot;/work/output/artifacts/skill-flow-devcon-billing-discrepancy-detector/BillingDiscrepancyDetector/BillingDiscrepancyDetector\&quot; &amp;&amp; \\\nuip maestro flow format \&quot;BillingDiscrepancyDetector.flow\&quot; --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Format the flow file&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FlowFormat&quot;,
+  &quot;Data&quot;: {
+    &quot;File&quot;: &quot;BillingDiscrepancyDetector.flow&quot;,
+    &quot;NodesTotal&quot;: 6,
+    &quot;EdgesTotal&quot;: 6,
+    &quot;NodesRepositioned&quot;: 5,
+    &quot;NodesResized&quot;: 0,
+    &quot;SubflowsTidied&quot;: 0,
+    &quot;VariableCount&quot;: 11
+  },
+  &quot;Instructions&quot;: &quot;Repositioned 5 of 6 nodes&quot;
+}</pre>
+    
+  </div>
+</details>
+
+</div>
+
+<h2>Command Telemetry</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Total</div><div class="value">33</div></div>
+    <div class="stat"><div class="label">Successful</div><div class="value">32 (97%)</div></div>
+    <div class="stat"><div class="label">Failed</div><div class="value">1</div></div>
+    <div class="stat"><div class="label">Avg / cmd</div><div class="value">4.86s</div></div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 2fr;gap:16px;margin-top:12px">
+    <div>
+      <h4>By Tool</h4>
+      <table>
+        <thead><tr><th>Tool</th><th>Count</th></tr></thead>
+        <tbody><tr><td class='mono'>Bash</td><td>20</td></tr><tr><td class='mono'>Read</td><td>11</td></tr><tr><td class='mono'>Skill</td><td>1</td></tr><tr><td class='mono'>Write</td><td>1</td></tr></tbody>
+      </table>
+    </div>
+    <div>
+      <h4>Slowest</h4>
+      <table>
+        <thead><tr><th>Tool</th><th>Duration</th><th>Parameters</th></tr></thead>
+        <tbody><tr><td class='mono'>Bash</td><td>27.57s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro flow registry search &quot;Bil...</td></tr><tr><td class='mono'>Bash</td><td>22.04s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro flow registry search &quot;dat...</td></tr><tr><td class='mono'>Bash</td><td>19.54s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro flow registry get core.co...</td></tr><tr><td class='mono'>Bash</td><td>17.78s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;\\\nuip solution init &quot;BillingDiscrep...</td></tr><tr><td class='mono'>Bash</td><td>10.40s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro flow registry search &quot;dat...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+  <p><strong>Most Common Pattern:</strong> <code>Bash → Bash → Bash</code></p><p><strong>Skill Tool Invoked:</strong> 1 time(s)</p>
+</div>
+
+<h2>Generation Metrics</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Total Latency</div><div class="value">16m 37s</div></div>
+    <div class="stat"><div class="label">Turns</div><div class="value">1</div></div>
+    <div class="stat"><div class="label">Assistant Turns</div><div class="value">59</div></div>
+    <div class="stat"><div class="label">Avg Turn Latency</div><div class="value">16m 5s</div></div>
+    
+  </div>
+</div>
+
+<h2>Token Usage</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Input (uncached)</div><div class="value">25</div></div>
+    <div class="stat"><div class="label">Output</div><div class="value">56,499</div></div>
+    <div class="stat"><div class="label">Cache Write</div><div class="value">109,801</div></div>
+    <div class="stat"><div class="label">Cache Read</div><div class="value">1,999,549</div></div>
+    <div class="stat"><div class="label">Total</div><div class="value">2,165,874</div></div>
+    <div class="stat"><div class="label">Cost</div><div class="value">$1.8592</div></div>
+  </div>
+</div>
+
+<h2>Agent Settings</h2>
+<div class="card" style="padding:0">
+  <table>
+    <tbody><tr><td class='mono dim'>Permission Mode</td><td>acceptEdits</td></tr><tr><td class='mono dim'>Allowed Tools</td><td>Skill, Bash, Read, Write, Edit, Glob, Grep</td></tr><tr><td class='mono dim'>Model</td><td>us.anthropic.claude-sonnet-4-6</td></tr><tr><td class='mono dim'>Max Turns</td><td>120</td></tr><tr><td class='mono dim'>System Prompt</td><td>You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted. </td></tr><tr><td class='mono dim'>Plugins</td><td>/home/azureuser/projects/skills</td></tr></tbody>
+  </table>
+</div>
+
+<h2>Environment</h2>
+<div class="card" style="padding:0">
+  <table>
+    <tbody><tr><td class='mono dim'>git_commit</td><td>unknown</td></tr><tr><td class='mono dim'>skills_git_commit</td><td>unknown</td></tr><tr><td class='mono dim'>cli_version</td><td>1.199.0-dev.7970</td></tr><tr><td class='mono dim'>tool_plugins</td><td>{&#x27;admin-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;agent-tool&#x27;: &#x27;1.199.0-dev.7965&#x27;, &#x27;agenthub-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;aops-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;api-workflow-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;codedagent-tool&#x27;: &#x27;1.199.0-dev.7965&#x27;, &#x27;codedapp-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;coder-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;context-grounding-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;conversational-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;data-fabric-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;docsai-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;functions-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;gov-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;insights-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;integrationservice-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;ixp-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;llm-gateway-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;llmgw-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;maestro-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;orchestrator-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;platform-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;pm-tool&#x27;: &#x27;1.199.0-dev.7969&#x27;, &#x27;rpa-legacy-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;rpa-tool&#x27;: &#x27;1.199.0-dev.20260722.4&#x27;, &#x27;solution-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;tasks-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;test-manager-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;traces-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;vertical-solutions-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;}</td></tr><tr><td class='mono dim'>coder_eval</td><td>0.8.8</td></tr><tr><td class='mono dim'>claude_code_cli</td><td>2.1.177 (Claude Code)</td></tr><tr><td class='mono dim'>uv</td><td>uv 0.11.28 (x86_64-unknown-linux-gnu)</td></tr><tr><td class='mono dim'>anthropic</td><td>0.102.0</td></tr><tr><td class='mono dim'>openai</td><td>2.47.0</td></tr><tr><td class='mono dim'>pydantic</td><td>2.12.5</td></tr><tr><td class='mono dim'>api_routing</td><td>aws_bedrock</td></tr><tr><td class='mono dim'>aws_region</td><td>us-east-2</td></tr><tr><td class='mono dim'>bedrock_model</td><td>us.anthropic.claude-sonnet-4-6</td></tr></tbody>
+  </table>
+</div>
+
+<footer>Generated by coder_eval · 2026-07-24T20:28:15</footer>
+</div>
+<script>
+function toggleTheme() {
+  document.documentElement.classList.toggle('light');
+  try {
+    const mode = document.documentElement.classList.contains('light') ? 'light' : 'dark';
+    localStorage.setItem('coder-eval-theme', mode);
+  } catch (e) { /* ignore */ }
+}
+(function() {
+  try {
+    if (localStorage.getItem('coder-eval-theme') === 'light') {
+      document.documentElement.classList.add('light');
+    }
+  } catch (e) { /* ignore */ }
+})();
+</script>
+</body>
+</html>

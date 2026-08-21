@@ -1,0 +1,606 @@
+{
+  "id": "a5448556-b2c0-4da6-b06c-a002dbf442ac",
+  "version": "1.8",
+  "name": "ContractReview",
+  "runtime": "maestro",
+  "nodes": [
+    {
+      "id": "start",
+      "type": "core.trigger.manual",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Manual trigger"
+      },
+      "inputs": {
+        "entryPointId": "0886b2d4-9c36-4d04-8e52-638e35c72b47",
+        "isDefaultEntryPoint": true
+      }
+    },
+    {
+      "id": "extractMeta",
+      "type": "core.action.script",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "extractMeta"
+      },
+      "inputs": {
+        "script": "console.log(\"Extracting contract metadata\");"
+      }
+    },
+    {
+      "id": "end1",
+      "type": "core.control.end",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "End"
+      },
+      "inputs": {}
+    },
+    {
+      "id": "contractLegalReview1",
+      "type": "uipath.human-in-the-loop.quick-form",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Contract Legal Review"
+      },
+      "inputs": {
+        "type": "quick",
+        "schema": {
+          "id": "e6c8b0ca-d40d-4afa-afa8-fb1d0c4695e2",
+          "fields": [
+            {
+              "id": "contractid",
+              "label": "contract_id",
+              "type": "text",
+              "direction": "input",
+              "binding": "=js:$vars.vars.extractMeta.output.contract_id"
+            },
+            {
+              "id": "contractvalue",
+              "label": "contract_value",
+              "type": "number",
+              "direction": "input",
+              "binding": "=js:$vars.vars.extractMeta.output.contract_value"
+            },
+            {
+              "id": "approved",
+              "label": "approved",
+              "type": "boolean",
+              "direction": "output",
+              "variable": "approved",
+              "required": true
+            },
+            {
+              "id": "legalnotes",
+              "label": "legal_notes",
+              "type": "text",
+              "direction": "output",
+              "variable": "legalNotes",
+              "required": false
+            }
+          ],
+          "outcomes": [
+            {
+              "id": "approve",
+              "name": "Approve",
+              "type": "string",
+              "isPrimary": true,
+              "action": "Continue"
+            },
+            {
+              "id": "reject",
+              "name": "Reject",
+              "type": "string",
+              "isPrimary": false,
+              "action": "End"
+            }
+          ]
+        },
+        "recipient": {
+          "channels": [
+            "Email",
+            "ActionCenter"
+          ],
+          "connections": {},
+          "assignee": {
+            "type": "group"
+          }
+        },
+        "title": "Contract Legal Review",
+        "priority": "Low"
+      },
+      "outputs": {
+        "output": {
+          "type": "object",
+          "source": "=result",
+          "var": "output",
+          "description": "Task result data"
+        },
+        "status": {
+          "type": "string",
+          "source": "=result.Action",
+          "var": "status",
+          "description": "Task completion outcome"
+        }
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "start-output-extractMeta-input",
+      "sourceNodeId": "start",
+      "sourcePort": "output",
+      "targetNodeId": "extractMeta",
+      "targetPort": "input"
+    },
+    {
+      "id": "extractMeta-success-contractLegalReview1-input",
+      "sourceNodeId": "extractMeta",
+      "sourcePort": "success",
+      "targetNodeId": "contractLegalReview1",
+      "targetPort": "input"
+    },
+    {
+      "id": "contractLegalReview1-completed-end1-input",
+      "sourceNodeId": "contractLegalReview1",
+      "sourcePort": "completed",
+      "targetNodeId": "end1",
+      "targetPort": "input"
+    }
+  ],
+  "definitions": [
+    {
+      "nodeType": "core.trigger.manual",
+      "version": "1.0",
+      "description": "Start workflow manually",
+      "category": "trigger",
+      "tags": [
+        "trigger",
+        "start",
+        "manual"
+      ],
+      "sortOrder": 40,
+      "display": {
+        "label": "Manual trigger",
+        "icon": "play",
+        "shape": "circle"
+      },
+      "handleConfiguration": [
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "output",
+              "type": "source",
+              "handleType": "output",
+              "showButton": true,
+              "constraints": {
+                "forbiddenTargetCategories": [
+                  "trigger"
+                ]
+              }
+            }
+          ],
+          "visible": true
+        }
+      ],
+      "toolbarExtensions": {
+        "design": {
+          "actions": [
+            {
+              "id": "change-trigger-type",
+              "icon": "square-mouse-pointer",
+              "label": "Change trigger type"
+            }
+          ]
+        }
+      },
+      "outputDefinition": {
+        "output": {
+          "type": "object",
+          "description": "Data passed when manually triggering the workflow.",
+          "source": "null",
+          "var": "output"
+        }
+      },
+      "model": {
+        "type": "bpmn:StartEvent",
+        "entryPointId": true
+      }
+    },
+    {
+      "nodeType": "core.action.script",
+      "version": "1.0",
+      "description": "Run custom JavaScript code",
+      "category": "data-operations",
+      "tags": [
+        "code",
+        "javascript",
+        "python"
+      ],
+      "sortOrder": 35,
+      "display": {
+        "label": "Script",
+        "icon": "code"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "success",
+              "type": "source",
+              "handleType": "output"
+            },
+            {
+              "id": "error",
+              "type": "source",
+              "handleType": "output",
+              "label": "Error",
+              "visible": "{inputs.errorHandlingEnabled}",
+              "constraints": {
+                "maxConnections": 1
+              }
+            }
+          ]
+        }
+      ],
+      "inputDefaults": {
+        "script": ""
+      },
+      "inputDefinition": {
+        "type": "object",
+        "properties": {
+          "script": {
+            "type": "string",
+            "minLength": 1,
+            "errorMessage": "A script function is required",
+            "validationSeverity": "warning"
+          }
+        },
+        "required": [
+          "script"
+        ]
+      },
+      "outputDefinition": {
+        "output": {
+          "type": "object",
+          "description": "The return value of the script",
+          "source": "=result.response",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails",
+          "source": "=Error",
+          "var": "error",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "required": [
+              "code",
+              "message",
+              "detail",
+              "category",
+              "status"
+            ],
+            "properties": {
+              "code": {
+                "type": "string",
+                "description": "Error code as a string"
+              },
+              "message": {
+                "type": "string",
+                "description": "High-level error message"
+              },
+              "detail": {
+                "type": "string",
+                "description": "Detailed error description"
+              },
+              "category": {
+                "type": "string",
+                "description": "Error category"
+              },
+              "status": {
+                "type": "integer",
+                "description": "HTTP status code"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "debug": {
+        "runtime": "clientScript"
+      },
+      "model": {
+        "type": "bpmn:ScriptTask"
+      },
+      "form": {
+        "id": "script-properties",
+        "title": "Script configuration",
+        "sections": [
+          {
+            "id": "script",
+            "title": "Script",
+            "collapsible": true,
+            "defaultExpanded": true,
+            "fields": [
+              {
+                "name": "inputs.script",
+                "type": "custom",
+                "component": "script-editor",
+                "componentProps": {
+                  "language": "javascript",
+                  "returnType": "any",
+                  "validationMode": "script",
+                  "minHeight": 200,
+                  "placeholder": " // Return an object with your result\nreturn {\n  message: \"Web request response\",\n  data: $vars.httpRequest1.output\n                  };"
+                },
+                "label": "Code",
+                "description": "JavaScript expression that returns a result object"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "nodeType": "core.control.end",
+      "version": "1.0",
+      "description": "Mark the end of a workflow path",
+      "category": "control-flow",
+      "tags": [
+        "control-flow",
+        "end",
+        "finish",
+        "complete"
+      ],
+      "sortOrder": 20,
+      "display": {
+        "label": "End",
+        "icon": "circle-check",
+        "shape": "circle"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        }
+      ],
+      "model": {
+        "type": "bpmn:EndEvent"
+      },
+      "runtimeConstraints": {
+        "exclude": [
+          "api-function"
+        ]
+      }
+    },
+    {
+      "nodeType": "uipath.human-in-the-loop.quick-form",
+      "version": "1.0",
+      "sortOrder": 50,
+      "category": "human-task",
+      "description": "Pause flow execution and wait for a human to complete a task",
+      "tags": [
+        "human-task",
+        "hitl",
+        "human-in-the-loop",
+        "approval"
+      ],
+      "display": {
+        "label": "Contract Legal Review",
+        "icon": "users",
+        "shape": "square"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input",
+              "constraints": {
+                "forbiddenSourceCategories": [
+                  "trigger"
+                ],
+                "validationMessage": "Human tasks cannot be directly triggered"
+              }
+            }
+          ],
+          "visible": true
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "completed",
+              "label": "Completed",
+              "type": "source",
+              "handleType": "output",
+              "showButton": true,
+              "constraints": {
+                "forbiddenTargetCategories": [
+                  "trigger"
+                ]
+              }
+            }
+          ],
+          "visible": true
+        }
+      ],
+      "model": {
+        "type": "bpmn:UserTask",
+        "serviceType": "Actions.HITL"
+      },
+      "inputDefinition": {
+        "type": "quick",
+        "schema": {
+          "fields": [],
+          "outcomes": [
+            {
+              "id": "submit",
+              "name": "Submit",
+              "type": "string",
+              "isPrimary": true,
+              "action": "Continue"
+            }
+          ]
+        },
+        "recipient": {
+          "channels": [
+            "Email",
+            "ActionCenter"
+          ],
+          "connections": {},
+          "assignee": {
+            "type": "group"
+          }
+        }
+      },
+      "outputDefinition": {
+        "output": {
+          "type": "object",
+          "description": "Task result data",
+          "source": "=result",
+          "var": "output"
+        },
+        "status": {
+          "type": "string",
+          "description": "Task completion outcome",
+          "source": "=result.Action",
+          "var": "status"
+        }
+      }
+    }
+  ],
+  "variables": {
+    "nodes": [
+      {
+        "id": "start.output",
+        "type": "object",
+        "description": "Data passed when manually triggering the workflow.",
+        "binding": {
+          "nodeId": "start",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "extractMeta.output",
+        "type": "object",
+        "description": "The return value of the script",
+        "binding": {
+          "nodeId": "extractMeta",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "extractMeta.error",
+        "type": "object",
+        "description": "Error information if the node fails",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "required": [
+            "code",
+            "message",
+            "detail",
+            "category",
+            "status"
+          ],
+          "properties": {
+            "code": {
+              "type": "string",
+              "description": "Error code as a string"
+            },
+            "message": {
+              "type": "string",
+              "description": "High-level error message"
+            },
+            "detail": {
+              "type": "string",
+              "description": "Detailed error description"
+            },
+            "category": {
+              "type": "string",
+              "description": "Error category"
+            },
+            "status": {
+              "type": "integer",
+              "description": "HTTP status code"
+            }
+          },
+          "additionalProperties": false
+        },
+        "binding": {
+          "nodeId": "extractMeta",
+          "outputId": "error"
+        }
+      },
+      {
+        "id": "contractLegalReview1.output",
+        "type": "object",
+        "description": "Task result data",
+        "binding": {
+          "nodeId": "contractLegalReview1",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "contractLegalReview1.status",
+        "type": "string",
+        "description": "Task completion outcome",
+        "binding": {
+          "nodeId": "contractLegalReview1",
+          "outputId": "status"
+        }
+      }
+    ]
+  },
+  "layout": {
+    "nodes": {
+      "start": {
+        "position": {
+          "x": 256,
+          "y": 144
+        }
+      },
+      "extractMeta": {
+        "position": {
+          "x": 500,
+          "y": 144
+        }
+      },
+      "end1": {
+        "position": {
+          "x": 750,
+          "y": 144
+        }
+      },
+      "contractLegalReview1": {
+        "position": {
+          "x": 1000,
+          "y": 144
+        }
+      }
+    }
+  }
+}

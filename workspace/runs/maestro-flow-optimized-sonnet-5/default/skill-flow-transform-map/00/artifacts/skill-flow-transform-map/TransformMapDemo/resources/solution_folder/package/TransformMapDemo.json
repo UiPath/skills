@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "TransformMapDemo",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "fa763367-fcf5-4e75-9f9c-a46de4976b03",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "TransformMapDemo"
+    },
+    "locks": [],
+    "key": "8515ed32-cba3-41ba-a658-36f8c52ff0af",
+    "files": []
+  }
+}

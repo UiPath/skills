@@ -1,0 +1,6 @@
+{
+  "ran_solution_upload": false,
+  "ran_eval_run_start": false,
+  "action": "refused",
+  "reason": "The Evaluate capability's Critical Rule 2 (and upload-safety.md) prohibits auto-running `uip solution upload` as part of an eval workflow: the project has never been uploaded to Studio Web (no SolutionId in SolutionStorage.json, no prior upload in this session), so uploading without explicit user consent could push work-in-progress or overwrite concurrent remote edits. Without an uploaded solution, `eval run start` cannot resolve the solution IDs and would fail anyway, so neither command was invoked."
+}

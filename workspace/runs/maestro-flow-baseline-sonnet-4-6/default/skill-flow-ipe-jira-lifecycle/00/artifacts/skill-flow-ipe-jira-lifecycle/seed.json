@@ -1,0 +1,21 @@
+{
+  "tag": "e4c2117c",
+  "project_key": "CE",
+  "issuetype_id": "11457",
+  "issues": [
+    {
+      "summary": "coder-eval jira lifecycle e4c2117c item1",
+      "priority": "High"
+    },
+    {
+      "summary": "coder-eval jira lifecycle e4c2117c item2",
+      "priority": "Low"
+    },
+    {
+      "summary": "coder-eval jira lifecycle e4c2117c item3",
+      "priority": "High"
+    }
+  ],
+  "escalated_marker": "ESCALATED e4c2117c",
+  "routine_marker": "ROUTINE e4c2117c"
+}

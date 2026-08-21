@@ -1,0 +1,21 @@
+{"ts": 1785218839.0520291, "args": "track", "matched_rule": null, "fixture": null, "exit_code": 1, "error": "unmocked_default"}
+{"ts": 1785218842.80177, "args": "--help", "matched_rule": null, "fixture": null, "exit_code": 1, "error": "unmocked_default"}
+{"ts": 1785218842.9963188, "args": "track", "matched_rule": null, "fixture": null, "exit_code": 1, "error": "unmocked_default"}
+{"ts": 1785218844.8972833, "args": "maestro bpmn --help", "matched_rule": null, "fixture": null, "exit_code": 1, "error": "unmocked_default"}
+{"ts": 1785218853.5620651, "args": "maestro bpmn job status --job-key job-triage-001 --folder-key folder-public --output json", "matched_rule": null, "fixture": null, "exit_code": 1, "error": "unmocked_default"}
+{"ts": 1785218854.1494575, "args": "maestro bpmn instance incidents --instance-id inst-triage-001 --folder-key folder-public --output json", "matched_rule": null, "fixture": null, "exit_code": 1, "error": "unmocked_default"}
+{"ts": 1785218866.9380167, "args": "maestro bpmn job status job-triage-001 --output json", "matched_rule": "maestro bpmn job status job-triage-001 --output json", "fixture": "job-status.json", "exit_code": 0}
+{"ts": 1785218867.1299863, "args": "track", "matched_rule": null, "fixture": null, "exit_code": 1, "error": "unmocked_default"}
+{"ts": 1785218867.503234, "args": "maestro bpmn instance incidents inst-triage-001 --folder-key folder-public --output json", "matched_rule": "maestro bpmn instance incidents inst-triage-001 --folder-key folder-public --output json", "fixture": "instance-incidents.json", "exit_code": 0}
+{"ts": 1785218867.696421, "args": "track", "matched_rule": null, "fixture": null, "exit_code": 1, "error": "unmocked_default"}
+{"ts": 1785218869.8878615, "args": "maestro bpmn incident get inc-triage-001 --folder-key folder-public --output json", "matched_rule": "maestro bpmn incident get inc-triage-001 --folder-key folder-public --output json", "fixture": "incident-get.json", "exit_code": 0}
+{"ts": 1785218870.0595973, "args": "maestro bpmn instance variables inst-triage-001 --folder-key folder-public --output json", "matched_rule": "maestro bpmn instance variables inst-triage-001 --folder-key folder-public --output json", "fixture": "instance-variables.json", "exit_code": 0}
+{"ts": 1785218870.0893579, "args": "track", "matched_rule": null, "fixture": null, "exit_code": 1, "error": "unmocked_default"}
+{"ts": 1785218870.2509575, "args": "track", "matched_rule": null, "fixture": null, "exit_code": 1, "error": "unmocked_default"}
+{"ts": 1785218871.8228362, "args": "maestro bpmn instance asset inst-triage-001 --folder-key folder-public --output json", "matched_rule": "maestro bpmn instance asset inst-triage-001 --folder-key folder-public --output json", "fixture": "instance-asset.json", "exit_code": 0}
+{"ts": 1785218872.0232882, "args": "track", "matched_rule": null, "fixture": null, "exit_code": 1, "error": "unmocked_default"}
+{"ts": 1785218872.4313505, "args": "maestro bpmn instance element-executions inst-triage-001 -f folder-public --output json", "matched_rule": "maestro bpmn instance element-executions inst-triage-001 -f folder-public --output json", "fixture": "element-executions.json", "exit_code": 0}
+{"ts": 1785218872.6276994, "args": "track", "matched_rule": null, "fixture": null, "exit_code": 1, "error": "unmocked_default"}
+{"ts": 1785218874.226439, "args": "maestro bpmn instance cursors inst-triage-001 -f folder-public --output json", "matched_rule": "maestro bpmn instance cursors inst-triage-001 -f folder-public --output json", "fixture": "cursors.json", "exit_code": 0}
+{"ts": 1785218874.432206, "args": "track", "matched_rule": null, "fixture": null, "exit_code": 1, "error": "unmocked_default"}
+{"ts": 1785218934.4102044, "args": "--version", "matched_rule": null, "fixture": null, "exit_code": 1, "error": "unmocked_default"}

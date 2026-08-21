@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "EvalTypeChoice",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "074e1d71-4636-420b-a3eb-521d2d87776b",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "EvalTypeChoice"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Flow",
+      "name": "EvalTypeChoice",
+      "package": {
+        "key": "036140d0-e922-4a0e-9d04-79a844b2c324"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "3fa0b088-eb23-4968-ae0e-17c31dbb198f",
+    "files": []
+  }
+}

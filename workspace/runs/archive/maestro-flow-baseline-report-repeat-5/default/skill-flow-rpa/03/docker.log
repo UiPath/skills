@@ -1,0 +1,9 @@
+20:35:55 [INFO   ] [default/skill-flow-rpa/03] orchestrator: API routing: aws_bedrock
+20:39:56 [INFO   ] [default/skill-flow-rpa/03] orchestrator: Success criteria: 2/2 passed, weighted score: 1.000
+20:39:56 [WARNING] [default/skill-flow-rpa/03] orchestrator: Visible turns (29) exceeded expected_turns (26) at iteration 1 for task skill-flow-rpa. Run continues — max_turns remains the hard cap.
+20:39:56 [INFO   ] [default/skill-flow-rpa/03] orchestrator: Running post-run command: python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/cleanup_solutions.py
+20:39:58 [WARNING] [default/skill-flow-rpa/03] orchestrator: [post_run stderr] cleanup_solutions: deleted 4366edcb-6f10-4653-4845-08dee9b1ed35 (from ProjectEulerTitle/ProjectEulerTitle.uipx)
+20:39:58 [WARNING] [default/skill-flow-rpa/03] orchestrator: [post_run stderr] cleanup_solutions: summary policy=always deleted=1 preserved=0 skipped=0 not_uploaded=0 failed=0
+20:39:58 [INFO   ] [default/skill-flow-rpa/03] orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+20:39:58 [INFO   ] [default/skill-flow-rpa/03] orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-rpa
+20:39:58 [INFO   ] [default/skill-flow-rpa/03] orchestrator: Task finished: status=SUCCESS duration=244.5s score=1.000 iterations=1

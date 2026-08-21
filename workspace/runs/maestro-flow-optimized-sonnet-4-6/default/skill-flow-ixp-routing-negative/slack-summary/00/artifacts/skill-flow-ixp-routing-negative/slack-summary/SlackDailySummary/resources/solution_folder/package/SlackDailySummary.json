@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "SlackDailySummary",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "939d2e92-04ed-40de-8cd5-715ab24a5ff9",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "SlackDailySummary"
+    },
+    "locks": [],
+    "key": "b2003896-506b-4efa-9ba6-ef30f2dab878",
+    "files": []
+  }
+}

@@ -1,0 +1,5 @@
+{"ts": 1784696482.8947191, "args": "maestro bpmn instance asset --instance-id inst-triage-001 --folder-key folder-public", "matched_rule": null, "fixture": null, "exit_code": 1, "error": "unmocked_default"}
+{"ts": 1784696485.2185452, "args": "maestro bpmn --help", "matched_rule": null, "fixture": null, "exit_code": 1, "error": "unmocked_default"}
+{"ts": 1784696486.8141458, "args": "--help", "matched_rule": null, "fixture": null, "exit_code": 1, "error": "unmocked_default"}
+{"ts": 1784696496.2975943, "args": "maestro bpmn instance asset inst-triage-001 -f folder-public --output json", "matched_rule": "instance asset inst-triage-001 -f folder-public", "fixture": "instance-asset.json", "exit_code": 0}
+{"ts": 1784696517.754581, "args": "--version", "matched_rule": null, "fixture": null, "exit_code": 1, "error": "unmocked_default"}

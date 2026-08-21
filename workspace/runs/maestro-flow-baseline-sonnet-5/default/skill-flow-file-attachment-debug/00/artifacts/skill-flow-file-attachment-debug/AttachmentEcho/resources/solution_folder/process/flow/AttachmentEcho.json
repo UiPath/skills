@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "AttachmentEcho",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "7592f6e1-c4f6-4853-8d8f-9f835505732f",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "AttachmentEcho"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Flow",
+      "name": "AttachmentEcho",
+      "package": {
+        "key": "68e942e2-a11e-4619-9b44-b2bb587c9a39"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "38b0de62-d65a-4cbc-b700-25d5bcc1fdaf",
+    "files": []
+  }
+}

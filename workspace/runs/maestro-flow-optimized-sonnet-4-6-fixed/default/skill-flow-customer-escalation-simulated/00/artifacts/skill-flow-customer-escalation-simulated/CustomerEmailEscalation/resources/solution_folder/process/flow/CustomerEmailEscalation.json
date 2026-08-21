@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "CustomerEmailEscalation",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "05eaca4d-06ee-419d-bf92-cc8c271dae0b",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "CustomerEmailEscalation"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Flow",
+      "name": "CustomerEmailEscalation",
+      "package": {
+        "key": "633c5ec9-d85c-4f37-af1b-0c8a1e83eec3"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "5f57b128-88f4-40d2-af4d-bb60b3098256",
+    "files": []
+  }
+}

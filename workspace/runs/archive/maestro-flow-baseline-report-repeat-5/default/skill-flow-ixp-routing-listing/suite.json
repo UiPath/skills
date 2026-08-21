@@ -1,0 +1,129 @@
+{
+  "suite_id": "skill-flow-ixp-routing-listing",
+  "variant_id": "default",
+  "rows_total": 50,
+  "rows_passed": 46,
+  "rows_failed": 4,
+  "rows_error": 0,
+  "pass_rate": 0.92,
+  "average_weighted_score": 0.96,
+  "criterion_stats": [
+    {
+      "criterion_type": "command_executed",
+      "rows_evaluated": 50,
+      "average_score": 0.92,
+      "error_count": 0
+    },
+    {
+      "criterion_type": "run_command",
+      "rows_evaluated": 50,
+      "average_score": 1.0,
+      "error_count": 0
+    }
+  ],
+  "failed_samples": [
+    {
+      "row_id": "r05",
+      "task_id": "skill-flow-ixp-routing-listing/r05",
+      "final_status": "FAILURE",
+      "weighted_score": 0.5,
+      "failure_reasons": [
+        "Matched 0/1 required commands (filters: tool_name=Bash, pattern=/(?i)uip\\s+maestro\\s+flow\\s+registry\\s+(list\\b|(search|list)\\b[^\\n]*\\b(ixp|document|extract))/)"
+      ],
+      "error_message": null,
+      "task_json_relpath": "default/skill-flow-ixp-routing-listing/r05/01/task.json",
+      "replicate_index": 1
+    },
+    {
+      "row_id": "r05",
+      "task_id": "skill-flow-ixp-routing-listing/r05",
+      "final_status": "FAILURE",
+      "weighted_score": 0.5,
+      "failure_reasons": [
+        "Matched 0/1 required commands (filters: tool_name=Bash, pattern=/(?i)uip\\s+maestro\\s+flow\\s+registry\\s+(list\\b|(search|list)\\b[^\\n]*\\b(ixp|document|extract))/)"
+      ],
+      "error_message": null,
+      "task_json_relpath": "default/skill-flow-ixp-routing-listing/r05/02/task.json",
+      "replicate_index": 2
+    },
+    {
+      "row_id": "r01",
+      "task_id": "skill-flow-ixp-routing-listing/r01",
+      "final_status": "FAILURE",
+      "weighted_score": 0.5,
+      "failure_reasons": [
+        "Matched 0/1 required commands (filters: tool_name=Bash, pattern=/(?i)uip\\s+maestro\\s+flow\\s+registry\\s+(list\\b|(search|list)\\b[^\\n]*\\b(ixp|document|extract))/)"
+      ],
+      "error_message": null,
+      "task_json_relpath": "default/skill-flow-ixp-routing-listing/r01/04/task.json",
+      "replicate_index": 4
+    },
+    {
+      "row_id": "r05",
+      "task_id": "skill-flow-ixp-routing-listing/r05",
+      "final_status": "FAILURE",
+      "weighted_score": 0.5,
+      "failure_reasons": [
+        "Matched 0/1 required commands (filters: tool_name=Bash, pattern=/(?i)uip\\s+maestro\\s+flow\\s+registry\\s+(list\\b|(search|list)\\b[^\\n]*\\b(ixp|document|extract))/)"
+      ],
+      "error_message": null,
+      "task_json_relpath": "default/skill-flow-ixp-routing-listing/r05/04/task.json",
+      "replicate_index": 4
+    }
+  ],
+  "criterion_aggregates": [
+    {
+      "criterion_type": "command_executed",
+      "description": "Agent searched the registry for IxP node types (listing path)",
+      "rows_total": 50,
+      "rows_excluded": 0,
+      "metrics": {
+        "count": 50.0,
+        "mean": 0.92,
+        "median": 1.0,
+        "std": 0.2712931993250107,
+        "min": 0.0,
+        "max": 1.0,
+        "completion_rate": 1.0
+      },
+      "threshold_checks": [
+        {
+          "metric": "mean",
+          "min_value": 0.85,
+          "actual_value": 0.92,
+          "passed": true
+        }
+      ],
+      "passed": true,
+      "details": {},
+      "error": null
+    },
+    {
+      "criterion_type": "run_command",
+      "description": "No .flow file was created (listing is read-only Q&A, not a build task)",
+      "rows_total": 50,
+      "rows_excluded": 0,
+      "metrics": {
+        "count": 50.0,
+        "mean": 1.0,
+        "median": 1.0,
+        "std": 0.0,
+        "min": 1.0,
+        "max": 1.0,
+        "completion_rate": 1.0
+      },
+      "threshold_checks": [
+        {
+          "metric": "mean",
+          "min_value": 0.85,
+          "actual_value": 1.0,
+          "passed": true
+        }
+      ],
+      "passed": true,
+      "details": {},
+      "error": null
+    }
+  ],
+  "passed": true
+}

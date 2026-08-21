@@ -1,0 +1,1451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>coder_eval · skill-flow-ipe-multiselect · default</title>
+<style>
+:root {
+  --bg-page: #0f1419;
+  --bg-card: #1a2129;
+  --bg-card-2: #232d38;
+  --bg-code: #0b0f14;
+  --fg: #e6edf3;
+  --fg-muted: #8b98a5;
+  --fg-dim: #6e7681;
+  --border: #30363d;
+  --accent: #58a6ff;
+  --score-high: #22c55e;
+  --score-mid: #f59e0b;
+  --score-low: #ef4444;
+  --status-success: #22c55e;
+  --status-failure: #f59e0b;
+  --status-error: #ef4444;
+  --status-neutral: #6e7681;
+  --shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+.light {
+  --bg-page: #ffffff;
+  --bg-card: #f6f8fa;
+  --bg-card-2: #eaeef2;
+  --bg-code: #f6f8fa;
+  --fg: #1f2328;
+  --fg-muted: #636c76;
+  --fg-dim: #8b949e;
+  --border: #d0d7de;
+  --accent: #0969da;
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial,
+               sans-serif;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--fg);
+  background: var(--bg-page);
+}
+.container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+h1, h2, h3, h4 { margin: 0 0 12px 0; line-height: 1.25; }
+h1 { font-size: 22px; font-weight: 600; }
+h2 { font-size: 18px; font-weight: 600; margin-top: 28px;
+     padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+h3 { font-size: 15px; font-weight: 600; color: var(--fg-muted); }
+h4 { font-size: 13px; font-weight: 600; color: var(--fg-muted); }
+p { margin: 0 0 8px 0; }
+.muted { color: var(--fg-muted); }
+.dim { color: var(--fg-dim); }
+.mono { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+        monospace; font-size: 12.5px; }
+code { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+       monospace; font-size: 12.5px; background: var(--bg-code);
+       border: 1px solid var(--border); padding: 1px 5px; border-radius: 3px; }
+pre { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+      monospace; font-size: 12.5px; background: var(--bg-code);
+      border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px;
+      margin: 6px 0; overflow-x: auto; white-space: pre-wrap;
+      word-wrap: break-word; }
+.header-bar { display: flex; align-items: center; justify-content: space-between;
+              margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+.title-group { flex: 1; min-width: 0; }
+.title-group .subtitle { color: var(--fg-muted); font-size: 13px;
+                         margin-top: 2px; word-break: break-all; }
+.badges { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.badge { display: inline-flex; align-items: center; gap: 6px;
+         padding: 4px 10px; border-radius: 12px; font-size: 12px;
+         font-weight: 600; background: var(--bg-card-2);
+         border: 1px solid var(--border); color: var(--fg); }
+.badge.success { background: color-mix(in srgb, var(--status-success) 20%, var(--bg-card-2));
+                 border-color: var(--status-success); color: var(--status-success); }
+.badge.failure { background: color-mix(in srgb, var(--status-failure) 20%, var(--bg-card-2));
+                 border-color: var(--status-failure); color: var(--status-failure); }
+.badge.error { background: color-mix(in srgb, var(--status-error) 20%, var(--bg-card-2));
+               border-color: var(--status-error); color: var(--status-error); }
+.badge.warning { background: color-mix(in srgb, #f4a52810 20%, var(--bg-card-2));
+                 border-color: #f4a528; color: #f4a528; }
+.badge.neutral { color: var(--fg-muted); }
+.score-pill { display: inline-block; padding: 2px 8px; border-radius: 10px;
+              font-size: 12px; font-weight: 700; min-width: 42px;
+              text-align: center; color: #0b0f14; }
+.score-high { background: var(--score-high); }
+.score-mid { background: var(--score-mid); }
+.score-low { background: var(--score-low); }
+.card { background: var(--bg-card); border: 1px solid var(--border);
+        border-radius: 8px; padding: 16px 20px; margin-bottom: 16px;
+        box-shadow: var(--shadow); }
+.card.highlight { border-left: 4px solid var(--accent); }
+.grid { display: grid; gap: 12px;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+.stat { background: var(--bg-card-2); padding: 10px 12px; border-radius: 6px;
+        border: 1px solid var(--border); }
+.stat .label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;
+               color: var(--fg-muted); margin-bottom: 4px; }
+.stat .value { font-size: 16px; font-weight: 600; }
+table { width: 100%; border-collapse: collapse; margin: 4px 0 12px 0; }
+th, td { text-align: left; padding: 8px 10px;
+         border-bottom: 1px solid var(--border); vertical-align: top;
+         font-size: 13px; }
+th { color: var(--fg-muted); font-weight: 600; font-size: 12px;
+     text-transform: uppercase; letter-spacing: 0.3px; }
+tr:last-child td { border-bottom: none; }
+details { margin: 6px 0; border: 1px solid var(--border); border-radius: 6px;
+          background: var(--bg-card-2); }
+details > summary { cursor: pointer; padding: 8px 12px; user-select: none;
+                    font-weight: 500; list-style: none; }
+details > summary::-webkit-details-marker { display: none; }
+details > summary::before { content: "▸ "; color: var(--fg-dim);
+                            display: inline-block; width: 14px;
+                            transition: transform 0.15s; }
+details[open] > summary::before { content: "▾ "; }
+details .details-body { padding: 0 12px 10px 12px; }
+.tool-row { display: flex; align-items: center; gap: 10px;
+            flex-wrap: wrap; font-size: 13px; }
+.tool-name { font-weight: 600; color: var(--accent); font-family: ui-monospace,
+             SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+.tool-status-ok { color: var(--status-success); font-size: 11px;
+                  font-weight: 600; }
+.tool-status-err { color: var(--status-error); font-size: 11px;
+                   font-weight: 600; }
+.tool-duration { color: var(--fg-muted); font-size: 12px; }
+.tool-seq { color: var(--fg-dim); font-size: 11px; font-weight: 600;
+            min-width: 24px; text-align: right; font-family: ui-monospace,
+            SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+.turn-header { display: flex; justify-content: space-between;
+               align-items: baseline; flex-wrap: wrap; gap: 10px;
+               margin-bottom: 10px; }
+.turn-meta { font-size: 12px; color: var(--fg-muted); }
+.criterion-row td:first-child { font-family: ui-monospace, SFMono-Regular,
+                                 "SF Mono", Menlo, Consolas, monospace;
+                                 color: var(--fg-muted); font-size: 12px; }
+.judge-section { display: flex; flex-direction: column; gap: 12px; }
+.judge-card { padding: 14px 16px; }
+.judge-card-head { display: flex; justify-content: space-between;
+                    align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+.judge-card-title { font-size: 14px; line-height: 1.4; flex: 1; min-width: 0; }
+.judge-card-score { flex-shrink: 0; }
+.judge-rationale { margin-top: 10px; padding: 10px 12px;
+                   background: var(--bg-code); border-radius: 4px;
+                   font-size: 13px; line-height: 1.5; }
+.judge-findings { margin: 8px 0 0 18px; padding-left: 4px; font-size: 13px;
+                   line-height: 1.6; }
+.judge-findings li { margin: 2px 0; }
+.nav-toggle { display: inline-block; padding: 5px 10px; font-size: 12px;
+              background: var(--bg-card-2); border: 1px solid var(--border);
+              border-radius: 5px; color: var(--fg); cursor: pointer; }
+.nav-toggle:hover { background: var(--bg-card); }
+.llm-next-steps { margin: 6px 0 0 20px; padding-left: 0; }
+.llm-next-steps li { margin: 3px 0; }
+.iteration-group { padding: 12px 16px 4px 16px; margin-bottom: 20px;
+                   border-radius: 0 6px 6px 0; border-left: 4px solid var(--status-neutral); }
+/* rgba fallback for browsers without color-mix (Chrome <111, Firefox <113, Safari <16.2). */
+.iteration-group--recovered { border-left-color: var(--status-success);
+                              background: rgba(34, 197, 94, 0.06);
+                              background: color-mix(in srgb, var(--status-success) 6%, transparent); }
+.iteration-group--terminal { border-left-color: var(--status-error);
+                             background: rgba(239, 68, 68, 0.06);
+                             background: color-mix(in srgb, var(--status-error) 6%, transparent); }
+.iteration-group__banner { margin: 0 0 12px 0; font-size: 14px; font-weight: 600; }
+.iteration-group--recovered .iteration-group__banner { color: var(--status-success); }
+.iteration-group--terminal .iteration-group__banner { color: var(--status-error); }
+.attempt-transition { display: flex; align-items: center; gap: 8px;
+                      margin: -6px 0 12px 8px; color: var(--status-error); font-size: 12.5px; }
+.attempt-transition__icon { font-weight: 700; }
+footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--border);
+         color: var(--fg-dim); font-size: 12px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="header-bar">
+  <div class="title-group">
+    <h1>Task: skill-flow-ipe-multiselect</h1>
+    <div class="subtitle">Tests the multiselect IS feature — configures a Slack group direct message node whose members field takes multiple values, using an existing tenant connection.</div>
+  </div>
+  <div class="badges">
+    <span class="badge failure">FAILURE</span>
+    <span class="score-pill score-low">0.00</span>
+    <span class="badge neutral">claude-code · claude-sonnet-5</span>
+    <span class="badge neutral">2m 37s</span>
+    <span class="badge neutral">$0.8882</span>
+    
+    
+    <span class="nav-toggle" onclick="toggleTheme()">Toggle theme</span>
+  </div>
+</div>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Variant</div><div class="value">default</div></div>
+    <div class="stat"><div class="label">Started</div><div class="value mono">2026-08-19T15:48:13</div></div>
+    <div class="stat"><div class="label">Duration</div><div class="value">2m 37s</div></div>
+    <div class="stat"><div class="label">Turns (SDK)</div><div class="value">49</div></div>
+    <div class="stat"><div class="label">Commands</div><div class="value">27</div></div>
+  </div>
+</div>
+
+<h2>Success Criteria <span class="muted" style="font-weight:400">(0/3 passed)</span></h2>
+<div class="card" style="padding:0">
+<table>
+  <thead>
+    <tr>
+      <th style="width:15%">Type</th>
+      <th style="width:35%">Description</th>
+      <th style="width:10%">Score</th>
+      <th>Details</th>
+    </tr>
+  </thead>
+  <tbody>
+    
+<tr class="criterion-row">
+  <td>run_command</td>
+  <td>A .flow file exists and is valid JSON with nodes and edges</td>
+  <td style="text-align:center"><span class="score-pill score-low">0.00</span></td>
+  <td><details><summary class="mono dim">Command: python3 -c &quot;import json,glob,sys; flows=glob.glob(&#x27;**/*.flow&#x27;,recursive=True); sys.exit(&#x27;no .flow found&#x27;) if not flows else None; f=json.load(open(flows[0])); assert &#x27;nodes&#x27; in f and &#x27;edges&#x27; in f; print(&#x27;OK: %d nodes, %d edges&#x27;%(len(f[&#x27;nodes&#x27;]),len(f[&#x27;edges&#x27;])))&quot;</summary><div class="details-body"><pre style="margin:6px 0 0 0">Command: python3 -c &quot;import json,glob,sys; flows=glob.glob(&#x27;**/*.flow&#x27;,recursive=True); sys.exit(&#x27;no .flow found&#x27;) if not flows else None; f=json.load(open(flows[0])); assert &#x27;nodes&#x27; in f and &#x27;edges&#x27; in f; print(&#x27;OK: %d nodes, %d edges&#x27;%(len(f[&#x27;nodes&#x27;]),len(f[&#x27;edges&#x27;])))&quot;
+Exit code: 1 (expected: 0)
+Stdout: (empty)
+Stderr:
+no .flow found</pre></div></details></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>run_command</td>
+  <td>Slack group-DM node present with 3 entries in the users multiselect</td>
+  <td style="text-align:center"><span class="score-pill score-low">0.00</span></td>
+  <td><details><summary class="mono dim">Command: python3 $TASK_DIR/check_multiselect_flow.py</summary><div class="details-body"><pre style="margin:6px 0 0 0">Command: python3 $TASK_DIR/check_multiselect_flow.py
+Exit code: 1 (expected: 0)
+Stdout: (empty)
+Stderr:
+no .flow file found</pre></div></details></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>command_executed</td>
+  <td>uip maestro flow validate was called</td>
+  <td style="text-align:center"><span class="score-pill score-low">0.00</span></td>
+  <td><div class="dim mono" style="white-space:pre-wrap">Matched 0/1 required commands (filters: tool_name=Bash, pattern=/(uip|\$UIP)\s+(maestro\s+)?flow\s+validate/)</div></td>
+</tr>
+
+  </tbody>
+</table>
+</div>
+<h2>Conversation Trace (1 iteration)</h2>
+<div class="card">
+  <div class="turn-header">
+    <h3>Iteration 1</h3>
+    <div class="badges">
+      <span class="badge neutral">49 assistant turns</span>
+      <span class="badge neutral">in 488 · out 9817 · cache 1534962</span>
+      <span class="badge neutral">2m 35s</span>
+      
+      
+      
+    </div>
+  </div>
+  <details>
+    <summary>Prompt to agent</summary>
+    <div class="details-body"><pre>Your working directory is: /work/output/artifacts/skill-flow-ipe-multiselect
+
+Create a flow file to create a group direct message between
+Coder Evals, IS-sandboxes and E2E-testing.
+Use the connection present in Shared/uipath-maestro-flow.
+</pre></div>
+  </details>
+  <details>
+    <summary>Agent response</summary>
+    <div class="details-body"><pre>[ASSISTANT] Found the connection: **&quot;is-sandboxes&quot;** (Slack, `uipath-salesforce-slack`) lives in folder `Shared/uipath-maestro-flow` (key `5da18ec0-7de1-4e57-aaf1-ddc8a369c199`) — that&#x27;s the one to use. Now let me check for an existing solution and search the registry for the right Slack activity.
+[ASSISTANT] I found matching Slack users for two of the three names, but **&quot;IS-sandboxes&quot; is ambiguous** — there are two users with display name &quot;IS Sandboxes&quot;:
+
+1. `U02EBQA5AD9` — real name &quot;wxpadzgv Sandboxes&quot;, email `IS-sandboxes@uipath.com` (exact hyphenated match to what you typed)
+2. `U02KHL3PVSN` — real name &quot;akieqeoo Sandboxes&quot;, email `issandboxes@gmail.com`
+
+Which one did you mean?
+
+1. **IS-sandboxes@uipath.com** (`U02EBQA5AD9`) — recommended, matches your spelling exactly
+2. **issandboxes@gmail.com** (`U02KHL3PVSN`)
+3. Something else
+
+For reference, the other two resolved cleanly:
+- **Coder Evals** → `U0BAW1WQT0F`
+- **E2E-testing** → `U0A1U64L5EG` (real name &quot;E2E-Testing&quot;)
+[RESULT - SUCCESS] I found matching Slack users for two of the three names, but **&quot;IS-sandboxes&quot; is ambiguous** — there are two users with display name &quot;IS Sandboxes&quot;:
+
+1. `U02EBQA5AD9` — real name &quot;wxpadzgv Sandboxes&quot;, email `IS-sandboxes@uipath.com` (exact hyphenated match to what you typed)
+2. `U02KHL3PVSN` — real name &quot;akieqeoo Sandboxes&quot;, email `issandboxes@gmail.com`
+
+Which one did you mean?
+
+1. **IS-sandboxes@uipath.com** (`U02EBQA5AD9`) — recommended, matches your spelling exactly
+2. **issandboxes@gmail.com** (`U02KHL3PVSN`)
+3. Something else
+
+For reference, the other two resolved cleanly:
+- **Coder Evals** → `U0BAW1WQT0F`
+- **E2E-testing** → `U0A1U64L5EG` (real name &quot;E2E-Testing&quot;)</pre></div>
+  </details>
+  <h4 style="margin-top:12px">Tool Calls (27)</h4>
+  
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#0</span>
+      <span class="tool-name">Skill</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">9ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;skill&quot;: &quot;tmp:uipath-maestro-flow&quot;,
+  &quot;args&quot;: &quot;Create a flow file to create a group direct message between \&quot;Coder Evals\&quot;, \&quot;IS-sandboxes\&quot; and \&quot;E2E-testing\&quot;. Use the connection present in Shared/uipath-maestro-flow.&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Launching skill: tmp:uipath-maestro-flow</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#1</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">42ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;find /work/output/artifacts/skill-flow-ipe-multiselect -maxdepth 4 | head -100&quot;,
+  &quot;description&quot;: &quot;List working directory contents&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/work/output/artifacts/skill-flow-ipe-multiselect
+/work/output/artifacts/skill-flow-ipe-multiselect/.venv
+/work/output/artifacts/skill-flow-ipe-multiselect/.venv/CACHEDIR.TAG
+/work/output/artifacts/skill-flow-ipe-multiselect/.venv/lib64
+/work/output/artifacts/skill-flow-ipe-multiselect/.venv/pyvenv.cfg
+/work/output/artifacts/skill-flow-ipe-multiselect/.venv/lib
+/work/output/artifacts/skill-flow-ipe-multiselect/.venv/lib/python3.13
+/work/output/artifacts/skill-flow-ipe-multiselect/.venv/lib/python3.13/site-packages
+/work/output/artifacts/skill-flow-ipe-multiselect/.venv/bin
+/work/output/artifacts/skill-flow-ipe-multiselect/.venv/bin/activate.csh
+/work/output/artifacts/skill-flow-ipe-multiselect/.venv/bin/activate.bat
+/work/output/artifacts/skill-flow-ipe-multiselect/.venv/bin/activate_this.py
+/work/output/artifacts/skill-flow-ipe-multiselect/.venv/bin/python
+/work/output/artifacts/skill-flow-ipe-multiselect/.venv/bin/pydoc.bat
+/work/output/artifacts/skill-flow-ipe-multiselect/.venv/bin/activate.ps1
+/work/output/artifacts/skill-flow-ipe-multiselect/.venv/bin/activate.xsh
+/work/output/artifacts/skill-flow-ipe-multiselect/.venv/bin/activate.nu
+/work/output/artifacts/skill-flow-ipe-mult
+
+… (truncated, 381 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#2</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">100ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;find / -maxdepth 6 -iname \&quot;*uipath-maestro-flow*\&quot; 2&gt;/dev/null&quot;,
+  &quot;description&quot;: &quot;Search filesystem for uipath-maestro-flow related paths&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/.uipath/.skills/skills/uipath-maestro-flow</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#3</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">626ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;find . -maxdepth 2 -type f -name &#x27;*.uipx&#x27; -print; echo \&quot;---\&quot;; ls -la; echo \&quot;---whoami---\&quot;; uip --version 2&gt;&amp;1; echo \&quot;---login---\&quot;; uip login status --output json 2&gt;&amp;1 | head -50&quot;,
+  &quot;description&quot;: &quot;Check for existing solution and CLI login status&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>---
+total 12
+drwxr-xr-x 3 root root 4096 Aug 19 15:48 .
+drwxr-xr-x 3 root root 4096 Aug 19 15:48 ..
+drwxr-xr-x 4 root root 4096 Aug 19 15:48 .venv
+---whoami---
+1.201.0-dev.8272
+---login---
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;LoginStatus&quot;,
+  &quot;Data&quot;: {
+    &quot;Status&quot;: &quot;Logged in&quot;,
+    &quot;Identity&quot;: &quot;zhongyi.shi@uipath.com&quot;,
+    &quot;IdentityType&quot;: &quot;User&quot;,
+    &quot;AuthFlow&quot;: &quot;Interactive&quot;,
+    &quot;CredentialSource&quot;: &quot;SavedLogin&quot;,
+    &quot;Provider&quot;: &quot;File&quot;,
+    &quot;UserId&quot;: &quot;bfda820f-4ddb-4af7-a5ec-3c332b403271&quot;,
+    &quot;UserEmail&quot;: &quot;zhongyi.shi@uipath.com&quot;,
+    &quot;UserName&quot;: &quot;zhongyi.shi@uipath.com&quot;,
+    &quot;BaseUrl&quot;: &quot;https://alpha.uipath.com&quot;,
+    &quot;Organization&quot;: &quot;codereval&quot;,
+    &quot;OrganizationId&quot;: &quot;311c6049-4966-4ef2-a6f3-8ceccaf38d54&quot;,
+    &quot;Tenant&quot;: &quot;DefaultTenant&quot;,
+    &quot;TenantId&quot;: &quot;69d43765-6ede-4575-88b7-9db601a2c056&quot;,
+    &quot;ExpirationDate&quot;: &quot;2026-08-19T16:34:30.000Z&quot;
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#4</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">218ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;find / -maxdepth 6 -iname \&quot;*Shared*\&quot; 2&gt;/dev/null | grep -v proc; echo \&quot;---\&quot;; find / -maxdepth 8 -ipath \&quot;*Shared*uipath-maestro-flow*\&quot; 2&gt;/dev/null&quot;,
+  &quot;description&quot;: &quot;Search for Shared directory referenced by user&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/usr/share/dotnet/shared
+/usr/include/c++/14/tr1/shared_ptr.h
+/usr/include/c++/14/bits/shared_ptr.h
+/usr/include/c++/14/bits/shared_ptr_base.h
+/usr/include/c++/14/bits/shared_ptr_atomic.h
+/usr/include/c++/14/shared_mutex
+/usr/include/x86_64-linux-gnu/bits/mman-shared.h
+/usr/include/x86_64-linux-gnu/bits/ptrace-shared.h
+/usr/include/x86_64-linux-gnu/bits/thread-shared-types.h
+/usr/lib/x86_64-linux-gnu/libpthread_nonshared.a
+/usr/lib/x86_64-linux-gnu/libc_nonshared.a
+/usr/lib/x86_64-linux-gnu/perl/debian-config-data-5.40.1/config.sh.shared.gz
+/usr/lib/gcc/x86_64-linux-gnu/14/libssp_nonshared.a
+/sys/kernel/mm/transparent_hugepage/khugepaged/max_ptes_shared
+/sys/kernel/mm/ksm/pages_unshared
+/sys/kernel/mm/ksm/pages_shared
+/sys/kernel/slab/shared_policy_node
+/.uipath/.skills/skills/uipath-maestro-bpmn/references/shared
+/.uipath/.skills/skills/uipath-maestro-flow/references/shared
+---</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#5</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">448ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip solution list --output json 2&gt;&amp;1 | head -100&quot;,
+  &quot;description&quot;: &quot;List solutions available via CLI&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;ValidationError&quot;,
+  &quot;ErrorCode&quot;: &quot;invalid_argument&quot;,
+  &quot;Message&quot;: &quot;error: unknown command &#x27;list&#x27;&quot;,
+  &quot;Instructions&quot;: &quot;Run &#x27;uip --help&#x27; to list available commands.&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#6</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.25s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip solution --help 2&gt;&amp;1; echo \&quot;---maestro flow---\&quot;; uip maestro flow --help 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Show solution and maestro flow CLI help&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>                                  uip solution                                  
+Manage UiPath solutions — pack, publish, deploy, and manage solution lifecycle. 
+                Use --help with nested commands for more detail.                
+
+┌─ Usage ──────────────────────────────────────────────────────────────────────┐
+│ uip solution [options] [command]                                             │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Commands ───────────────────────────────────────────────────────────────────┐
+│ cleanup     Remove unused items from every project in a UiPath solution.     │
+│             Accepts a solution directory (containing .uipx) or a .uis file.  │
+│             For a directory the project sources are modified in place. Pass  │
+│             --dry-run to only detect unused items.                           │
+│ delete      Delete a solution from Studio Web by its solution ID. The ID is  │
+│             emitted by &#x27;solution upload&#x27; and &#x27;flow debug&#x27; in their output.   │
+│ deploy      Deploy, activate, uninstall, and monitor solution deployments.   │
+│             Typical workflow: run -&gt; check status -&gt; (optional
+
+… (truncated, 9435 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#7</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.62s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip is connections list --all-folders --output json 2&gt;&amp;1 | head -200&quot;,
+  &quot;description&quot;: &quot;List all Integration Service connections across folders&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;ConnectionList&quot;,
+  &quot;Data&quot;: [
+    {
+      &quot;Id&quot;: &quot;f5273a4d-d492-4bcd-a106-5a20bf89a3ef&quot;,
+      &quot;Name&quot;: &quot;is-sandboxes-test@uipath.com-uipath-sandbox-380&quot;,
+      &quot;ConnectorKey&quot;: &quot;uipath-atlassian-jira&quot;,
+      &quot;ConnectorName&quot;: &quot;Jira&quot;,
+      &quot;State&quot;: &quot;Enabled&quot;,
+      &quot;Owner&quot;: &quot;sanjeet.manna@uipath.com&quot;,
+      &quot;IsDefault&quot;: &quot;Yes&quot;,
+      &quot;ByoaConnection&quot;: &quot;No&quot;,
+      &quot;ElementInstanceId&quot;: 336882,
+      &quot;Folder&quot;: &quot;uipath-maestro-flow&quot;,
+      &quot;FolderKey&quot;: &quot;5da18ec0-7de1-4e57-aaf1-ddc8a369c199&quot;,
+      &quot;Created&quot;: &quot;2026-05-07T14:56:28.873Z&quot;,
+      &quot;Updated&quot;: &quot;2026-08-19T15:03:59.840Z&quot;
+    },
+    {
+      &quot;Id&quot;: &quot;41943488-5cec-48b3-93cf-19048447524e&quot;,
+      &quot;Name&quot;: &quot;is.sandboxes.test@gmail.com&quot;,
+      &quot;ConnectorKey&quot;: &quot;uipath-google-drive&quot;,
+      &quot;ConnectorName&quot;: &quot;Google Drive&quot;,
+      &quot;State&quot;: &quot;Enabled&quot;,
+      &quot;Owner&quot;: &quot;sanjeet.manna@uipath.com&quot;,
+      &quot;IsDefault&quot;: &quot;No&quot;,
+      &quot;ByoaConnection&quot;: &quot;No&quot;,
+      &quot;ElementInstanceId&quot;: 337250,
+      &quot;Folder&quot;: &quot;uipath-maestro-flow&quot;,
+      &quot;FolderKey&quot;: &quot;5da18ec0-7de1-4e57-aaf1-ddc8a369c199&quot;,
+      &quot;Created&quot;: &quot;2026-05-08T14:58:39.066Z&quot;,
+      &quot;Updated&quot;: &quot;2026-08-19T15:25:03.056Z&quot;
+    },
+    {
+      &quot;Id&quot;: &quot;849e85d8-1aa9-4d52-8b
+
+… (truncated, 5744 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#8</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.05s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip is connections list --all-folders --output json 2&gt;&amp;1 &gt; /tmp/conns.json; python3 -c \&quot;\nimport json\ndata = json.load(open(&#x27;/tmp/conns.json&#x27;))\nfor c in data[&#x27;Data&#x27;]:\n    if &#x27;slack&#x27; in c.get(&#x27;ConnectorKey&#x27;,&#x27;&#x27;).lower() or &#x27;Slack&#x27; in c.get(&#x27;ConnectorName&#x27;,&#x27;&#x27;):\n        print(c)\n\&quot;\n&quot;,
+  &quot;description&quot;: &quot;Filter connections for Slack entries&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{&#x27;Id&#x27;: &#x27;849e85d8-1aa9-4d52-8bbd-20041c8f05d8&#x27;, &#x27;Name&#x27;: &#x27;is-sandboxes&#x27;, &#x27;ConnectorKey&#x27;: &#x27;uipath-salesforce-slack&#x27;, &#x27;ConnectorName&#x27;: &#x27;Slack&#x27;, &#x27;State&#x27;: &#x27;Enabled&#x27;, &#x27;Owner&#x27;: &#x27;sanjeet.manna@uipath.com&#x27;, &#x27;IsDefault&#x27;: &#x27;No&#x27;, &#x27;ByoaConnection&#x27;: &#x27;Yes&#x27;, &#x27;ElementInstanceId&#x27;: 337251, &#x27;Folder&#x27;: &#x27;uipath-maestro-flow&#x27;, &#x27;FolderKey&#x27;: &#x27;5da18ec0-7de1-4e57-aaf1-ddc8a369c199&#x27;, &#x27;Created&#x27;: &#x27;2026-05-08T14:59:09.153Z&#x27;, &#x27;Updated&#x27;: &#x27;2026-08-19T15:45:48.346Z&#x27;}
+{&#x27;Id&#x27;: &#x27;8e0e255f-ce7c-43dc-8929-83847fcd9025&#x27;, &#x27;Name&#x27;: &#x27;is-sandboxes&#x27;, &#x27;ConnectorKey&#x27;: &#x27;uipath-salesforce-slack&#x27;, &#x27;ConnectorName&#x27;: &#x27;Slack&#x27;, &#x27;State&#x27;: &#x27;Failed&#x27;, &#x27;Owner&#x27;: &#x27;System&#x27;, &#x27;IsDefault&#x27;: &#x27;No&#x27;, &#x27;ByoaConnection&#x27;: &#x27;No&#x27;, &#x27;ElementInstanceId&#x27;: 356194, &#x27;Folder&#x27;: &#x27;SlackEmojiListTest&#x27;, &#x27;FolderKey&#x27;: &#x27;c79e173d-d870-4ab6-b5f9-7627ddbae4bf&#x27;, &#x27;Created&#x27;: &#x27;2026-07-01T21:56:48.066Z&#x27;, &#x27;Updated&#x27;: &#x27;2026-07-25T01:56:12.670Z&#x27;}
+{&#x27;Id&#x27;: &#x27;e03f734e-0f80-4e8a-a7c1-0ece309b0ca4&#x27;, &#x27;Name&#x27;: &#x27;is-sandboxes&#x27;, &#x27;ConnectorKey&#x27;: &#x27;uipath-salesforce-slack&#x27;, &#x27;ConnectorName&#x27;: &#x27;Slack&#x27;, &#x27;State&#x27;: &#x27;Enabled&#x27;, &#x27;Owner&#x27;: &#x27;sanjeet.manna@uipath.com&#x27;, &#x27;IsDefault&#x27;: &#x27;Yes&#x27;, &#x27;ByoaConnection&#x27;: &#x27;Yes&#x27;, &#x27;ElementInstanceId&#x27;: 359061, &#x27;Folder&#x27;: &#x27;uipath-maestro-case&#x27;, &#x27;FolderKey&#x27;: &#x27;def71452-bad1-40fa-be08-da175e89bd1
+
+… (truncated, 81 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#9</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.06s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip --help 2&gt;&amp;1 | grep -i folder; echo \&quot;---\&quot;; uip is --help 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Check for folder-related commands in IS CLI&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>│ or                  Manage Orchestrator folders, jobs, processes, and        │
+---
+                                     uip is                                     
+  Manage Integration Service connectors, connections, triggers, and webhooks.   
+                Use --help with nested commands for more detail.                
+
+┌─ Usage ──────────────────────────────────────────────────────────────────────┐
+│ uip is [options] [command]                                                   │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Commands ───────────────────────────────────────────────────────────────────┐
+│ activities    Manage UiPath Integration Service activities                   │
+│ connections   Manage UiPath Integration Service connections                  │
+│ connectors    Manage UiPath Integration Service connectors                   │
+│ help          display help for command                                       │
+│ resources     Manage UiPath Integration Service resources                    │
+│ triggers      Manage UiPath Integration Service trigger metadata             │
+│ typecache     Fetch connectors and activities from the Stu
+
+… (truncated, 1074 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#10</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">424ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip or folder --help 2&gt;&amp;1 | head -40&quot;,
+  &quot;description&quot;: &quot;Check Orchestrator folder subcommands&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;ValidationError&quot;,
+  &quot;Message&quot;: &quot;error: unknown command &#x27;folder&#x27;&quot;,
+  &quot;Instructions&quot;: &quot;Check command arguments and options. Run &#x27;uip or --help&#x27; for available subcommands.&quot;,
+  &quot;ErrorCode&quot;: &quot;invalid_argument&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#11</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">487ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip or folder list --output json 2&gt;&amp;1 | head -100&quot;,
+  &quot;description&quot;: &quot;List Orchestrator folders to check hierarchy&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;ValidationError&quot;,
+  &quot;ErrorCode&quot;: &quot;invalid_argument&quot;,
+  &quot;Message&quot;: &quot;error: unknown command &#x27;folder&#x27;\n(Did you mean folders?)&quot;,
+  &quot;Instructions&quot;: &quot;Run &#x27;uip --help&#x27; to list available commands.&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#12</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">322ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip or folders --help 2&gt;&amp;1 | head -40&quot;,
+  &quot;description&quot;: &quot;Check folders subcommand help&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>                                 uip or folders                                 
+Manage UiPath Orchestrator folders. Folders organize and scope resources (processes, jobs, assets, queues) with role-based access. Most commands require --folder-path or --folder-key to target a specific folder.
+                Use --help with nested commands for more detail.                
+
+┌─ Usage ──────────────────────────────────────────────────────────────────────┐
+│ uip or folders [options] [command]                                           │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Commands ───────────────────────────────────────────────────────────────────┐
+│ create     Create a new folder. Folders scope processes, jobs, and resources │
+│            with separate permissions. Use --parent to nest inside an         │
+│            existing folder.                                                  │
+│ delete     Delete a folder by key (GUID) or path. Fails if the folder        │
+│            contains entities or user associations. Move or remove contents   │
+│            before deleting.                                                  │
+│ get        G
+
+… (truncated, 1930 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#13</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">822ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip or folders list --all --output json 2&gt;&amp;1 &gt; /tmp/folders.json; python3 -c \&quot;\nimport json\ndata = json.load(open(&#x27;/tmp/folders.json&#x27;))\nfor f in data[&#x27;Data&#x27;]:\n    print(f.get(&#x27;FullyQualifiedName&#x27;) or f.get(&#x27;DisplayName&#x27;), &#x27;|&#x27;, f.get(&#x27;Key&#x27;))\n\&quot; 2&gt;&amp;1 | head -60\n&quot;,
+  &quot;description&quot;: &quot;Inspect all folders to find Shared/uipath-maestro-flow path&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>None | c4359cde-55f0-4f0e-9322-c6cdce74ab4c
+None | 6cd43909-9841-4275-a72e-1d4b6a76e6b7
+None | 5da18ec0-7de1-4e57-aaf1-ddc8a369c199
+None | 040287b3-85b2-4052-a4e1-b2c14bd0c49b
+None | 6702a83b-9f53-4d14-a55a-534a39479b26
+None | 6d7d6de4-31dd-49e1-b774-1405890df355
+None | 2d526eed-342a-4c6d-9330-0d12879b3eee
+None | 7ec33f14-fd9d-499e-bafe-ec0922487a46
+None | 56736cba-668d-46b1-81a9-510df792fa31
+None | 6e6b11a1-3de1-40ba-ad5e-eb8868aaf324
+None | aa2fb329-d5e0-4eee-95b7-c7b5c369991b
+None | a596fcef-dafc-4738-be29-256038fc090f
+None | def71452-bad1-40fa-be08-da175e89bd1a
+None | 1977beec-c19e-4291-9127-f8ece8e0277b
+None | 7504f3fb-32cb-4e6c-a965-627d8b4695dc
+None | 485ef7f4-503d-488e-b908-d885f9ce648d
+None | fcf79fe1-147b-4000-82b3-9eb81b165452
+None | fc225050-4ad9-45dc-a98e-c50eb9ce09a3
+None | 7510090c-fa1e-4a5e-9087-b5a65eb3cc95
+None | d083d7d1-47c3-4833-8fb5-28458ad3c10d
+None | 97b90722-fefe-46c8-9ee2-349eae541029
+None | 78d140fa-0b07-41b6-8f86-39d58aa60de9
+None | c23e5354-4c28-4a8d-ab8e-d63844b35926
+None | 726471ba-7358-4d4e-ab6e-980698eccd1c
+None | 49f00a14-48be-405d-8568-976dbc6e1594
+None | 79a7d12e-da84-4bf4-ab60-7f34b44dd178
+None | aa52840c-acc5-44f7-ac5b-9f67f6453ed1
+None | 8a064
+
+… (truncated, 999 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#14</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">120ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 -c \&quot;\nimport json\ndata = json.load(open(&#x27;/tmp/folders.json&#x27;))\nprint(json.dumps(data[&#x27;Data&#x27;][0], indent=2))\nprint(json.dumps(data[&#x27;Data&#x27;][2], indent=2))\n\&quot;\n&quot;,
+  &quot;description&quot;: &quot;Inspect folder object schema&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Key&quot;: &quot;c4359cde-55f0-4f0e-9322-c6cdce74ab4c&quot;,
+  &quot;Name&quot;: &quot;Shared&quot;,
+  &quot;Path&quot;: &quot;Shared&quot;,
+  &quot;Description&quot;: &quot;&quot;,
+  &quot;Type&quot;: &quot;Standard&quot;,
+  &quot;ParentKey&quot;: &quot;&quot;,
+  &quot;FeedType&quot;: &quot;Processes&quot;,
+  &quot;PermissionModel&quot;: &quot;FineGrained&quot;
+}
+{
+  &quot;Key&quot;: &quot;5da18ec0-7de1-4e57-aaf1-ddc8a369c199&quot;,
+  &quot;Name&quot;: &quot;uipath-maestro-flow&quot;,
+  &quot;Path&quot;: &quot;Shared/uipath-maestro-flow&quot;,
+  &quot;Description&quot;: &quot;&quot;,
+  &quot;Type&quot;: &quot;Standard&quot;,
+  &quot;ParentKey&quot;: &quot;c4359cde-55f0-4f0e-9322-c6cdce74ab4c&quot;,
+  &quot;FeedType&quot;: &quot;Processes&quot;,
+  &quot;PermissionModel&quot;: &quot;FineGrained&quot;
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#15</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">12ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;find . -maxdepth 2 -type f -name &#x27;*.uipx&#x27; -print; echo \&quot;found_check_done\&quot;&quot;,
+  &quot;description&quot;: &quot;Confirm no existing solution in working directory&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>found_check_done</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#16</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">8.26s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry pull --force --output json 2&gt;&amp;1 | tail -20; echo \&quot;---search---\&quot;; uip maestro flow registry search \&quot;slack\&quot; --output json --output-filter \&quot;[*].{NodeType:NodeType,DisplayName:DisplayName,Description:Description,AvailableOnTenant:AvailableOnTenant}\&quot; 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Pull registry and search for slack nodes&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>[ManifestClient] fetchDynamicNodes ok: total=4880 connector nodes=3654 integration trigger nodes=896 agent context nodes=2 external agent nodes=7 orchestrator nodes=263 IXP nodes=45 IXP Models nodes=13
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodePullSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;NodesCount&quot;: 4763,
+    &quot;FromCache&quot;: false,
+    &quot;Source&quot;: &quot;authenticated&quot;,
+    &quot;CacheWritten&quot;: true,
+    &quot;Message&quot;: &quot;Synced fresh nodes&quot;
+  }
+}
+---search---
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeSearchSuccess&quot;,
+  &quot;Data&quot;: [
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-salesforce-slack.unarchive-channel&quot;,
+      &quot;DisplayName&quot;: &quot;Unarchive Channel&quot;,
+      &quot;Description&quot;: &quot;Unarchive an existing channel&quot;,
+      &quot;AvailableOnTenant&quot;: true
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-salesforce-slack.send-reply&quot;,
+      &quot;DisplayName&quot;: &quot;Send Reply&quot;,
+      &quot;Description&quot;: &quot;Send a reply to a message in a Slack channel.&quot;,
+      &quot;AvailableOnTenant&quot;: true
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-salesforce-slack.join-channel&quot;,
+      &quot;DisplayName&quot;: &quot;Join Channel&quot;,
+      &quot;Description&quot;: &quot;Join a public Slack channel as the bot user or authenticated user.&quot;,
+      &quot;AvailableOnTenant&quot;: true
+    },
+    {
+      
+
+… (truncated, 16177 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#17</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">945ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry get uipath.connector.uipath-salesforce-slack.create-group-direct-message --output json &gt; /tmp/gdm.json 2&gt;&amp;1; cat /tmp/gdm.json | head -300&quot;,
+  &quot;description&quot;: &quot;Fetch full definition for Create Group Direct Message node&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeGetSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;Node&quot;: {
+      &quot;nodeType&quot;: &quot;uipath.connector.uipath-salesforce-slack.create-group-direct-message&quot;,
+      &quot;version&quot;: &quot;1.0.0&quot;,
+      &quot;category&quot;: &quot;connector.196638&quot;,
+      &quot;tags&quot;: [
+        &quot;connector&quot;,
+        &quot;activity&quot;
+      ],
+      &quot;sortOrder&quot;: 520,
+      &quot;supportsErrorHandling&quot;: true,
+      &quot;description&quot;: &quot;Create a group direct message in Slack to facilitate sending messages to multiple users.&quot;,
+      &quot;display&quot;: {
+        &quot;label&quot;: &quot;Create Group Direct Message&quot;,
+        &quot;description&quot;: &quot;Create a group direct message in Slack to facilitate sending messages to multiple users.&quot;,
+        &quot;icon&quot;: &quot;https://alpha.uipath.com/311c6049-4966-4ef2-a6f3-8ceccaf38d54/studio_/typecache/icons/8af239e6c82c1abd57622314380112d55f7e151ac4845ba018a96d70b4d92297.svg&quot;,
+        &quot;sourceDisplayName&quot;: &quot;Slack&quot;
+      },
+      &quot;handleConfiguration&quot;: [
+        {
+          &quot;position&quot;: &quot;left&quot;,
+          &quot;handles&quot;: [
+            {
+              &quot;id&quot;: &quot;input&quot;,
+              &quot;type&quot;: &quot;target&quot;,
+              &quot;handleType&quot;: &quot;input&quot;,
+              &quot;label&quot;: &quot;&quot;
+            }
+          ]
+        },
+        {
+          &quot;position&quot;: &quot;right&quot;,
+          &quot;handl
+
+… (truncated, 8586 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#18</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">413ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/.uipath/.skills/skills/uipath-maestro-flow/references/author/references/plugins/connector/impl.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Connector Activity Nodes — Implementation
+2	
+3	How to configure connector activity nodes: connection binding, enriched metadata, reference field resolution, and debugging. Connection bindings are emitted by `uip maestro flow node configure` into the flow&#x27;s top-level `bindings[]`; `bindings_v2.json` is regenerated from them at debug/pack time and should never be hand-edited.
+4	
+5	For generic node/edge add, remove, and wiring procedures, see [editing-operations.md](../../editing-operations.md). This guide covers the connector-specific configuration workflow that must follow the generic node add.
+6	
+7	## How Connector Nodes Differ from OOTB
+8	
+9	1. **Connection binding required** — every connector node needs an IS connection (OAuth, API key, etc.) authored in the flow&#x27;s top-level `bindings[]` (which the CLI regenerates into `bindings_v2.json` at debug/pack time). Without it, the node cannot authenticate.
+10	2. **Enriched metadata via `--connection-id`** — call `registry get` with `--connection-id` to get connection-aware field metadata. Without it, only base fields are returned — custom fields, dynamic enums, and reference resolution are missing.
+11	3. **`inputs.detail` object** —
+
+… (truncated, 59521 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#19</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">525ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip is resources --help 2&gt;&amp;1 | head -40&quot;,
+  &quot;description&quot;: &quot;Check IS resources CLI subcommands for looking up curated_users&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>                                uip is resources                                
+                  Manage UiPath Integration Service resources                   
+                Use --help with nested commands for more detail.                
+
+┌─ Usage ──────────────────────────────────────────────────────────────────────┐
+│ uip is resources [options] [command]                                         │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Commands ───────────────────────────────────────────────────────────────────┐
+│ describe   Describe object fields and operations                             │
+│ help       display help for command                                          │
+│ list       List available objects for a connector                            │
+│ run        Run data operations on a connector                                │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Options ────────────────────────────────────────────────────────────────────┐
+│ -h, --help                     display help for command                      │
+│ --output                       Output format (default: json) 
+
+… (truncated, 665 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#20</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">600ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip is resources describe \&quot;uipath-salesforce-slack\&quot; \&quot;curated_users\&quot; --connection-id \&quot;849e85d8-1aa9-4d52-8bbd-20041c8f05d8\&quot; --operation List --output json 2&gt;&amp;1 | tee /tmp/describe_users.json | head -60&quot;,
+  &quot;description&quot;: &quot;Describe curated_users resource for Slack connector&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Failure&quot;,
+  &quot;Message&quot;: &quot;HTTP 404: Object metadata not found!&quot;,
+  &quot;Instructions&quot;: &quot;Response returned an error code&quot;,
+  &quot;ErrorCode&quot;: &quot;not_found&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#21</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">560ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip is resources describe \&quot;uipath-salesforce-slack\&quot; \&quot;conversations_open\&quot; --connection-id \&quot;849e85d8-1aa9-4d52-8bbd-20041c8f05d8\&quot; --operation Create --output json 2&gt;&amp;1 | tee /tmp/describe_gdm.json&quot;,
+  &quot;description&quot;: &quot;Describe conversations_open create operation metadata&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;ResourceMetadata&quot;,
+  &quot;Data&quot;: {
+    &quot;Name&quot;: &quot;conversations_open&quot;,
+    &quot;DisplayName&quot;: &quot;Conversations open&quot;,
+    &quot;ElementKey&quot;: &quot;uipath-salesforce-slack&quot;,
+    &quot;Operation&quot;: {
+      &quot;Method&quot;: &quot;POST&quot;,
+      &quot;Name&quot;: &quot;Create&quot;,
+      &quot;Description&quot;: &quot;Open a conversation&quot;,
+      &quot;Path&quot;: &quot;/conversations_open&quot;,
+      &quot;Curated&quot;: &quot;Create Group Direct Message&quot;
+    },
+    &quot;Parameters&quot;: [
+      {
+        &quot;Name&quot;: &quot;send_as&quot;,
+        &quot;Type&quot;: &quot;query&quot;,
+        &quot;DataType&quot;: &quot;string&quot;,
+        &quot;Required&quot;: true,
+        &quot;DisplayName&quot;: &quot;Create as&quot;,
+        &quot;Description&quot;: &quot;Whether to create the group DM as the App bot i.e. using Bot token or yourself i.e. using User token?&quot;,
+        &quot;DefaultValue&quot;: &quot;bot&quot;,
+        &quot;Reference&quot;: {
+          &quot;ObjectName&quot;: &quot;available_tokens&quot;,
+          &quot;LookupNames&quot;: [
+            &quot;name&quot;,
+            &quot;value&quot;
+          ],
+          &quot;LookupValue&quot;: &quot;value&quot;,
+          &quot;Path&quot;: &quot;/available_tokens&quot;
+        }
+      }
+    ],
+    &quot;RequestFields&quot;: [
+      {
+        &quot;Name&quot;: &quot;users[*]&quot;,
+        &quot;Type&quot;: &quot;string&quot;,
+        &quot;DisplayName&quot;: &quot;User IDs&quot;,
+        &quot;Description&quot;: &quot;User IDs&quot;,
+        &quot;Reference&quot;: {
+          &quot;ObjectName&quot;: &quot;curated_users&quot;,
+          &quot;Lookup
+
+… (truncated, 2744 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#22</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">704ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip is resources run list \&quot;uipath-salesforce-slack\&quot; \&quot;curated_users?fields=profile.real_name,profile.email,id\&quot; --connection-id \&quot;849e85d8-1aa9-4d52-8bbd-20041c8f05d8\&quot; --output json 2&gt;&amp;1 | tee /tmp/users.json | head -100&quot;,
+  &quot;description&quot;: &quot;List Slack curated_users to resolve display names to IDs&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;ExecuteOperation&quot;,
+  &quot;Data&quot;: {
+    &quot;items&quot;: [
+      {
+        &quot;color&quot;: &quot;9f69e7&quot;,
+        &quot;deleted&quot;: false,
+        &quot;has_2fa&quot;: false,
+        &quot;id&quot;: &quot;U01FYLMH1D3&quot;,
+        &quot;is_admin&quot;: true,
+        &quot;is_app_user&quot;: false,
+        &quot;is_bot&quot;: false,
+        &quot;is_email_confirmed&quot;: true,
+        &quot;is_owner&quot;: true,
+        &quot;is_primary_owner&quot;: true,
+        &quot;is_restricted&quot;: false,
+        &quot;is_ultra_restricted&quot;: false,
+        &quot;name&quot;: &quot;dhandu1995&quot;,
+        &quot;profile&quot;: {
+          &quot;avatar_hash&quot;: &quot;g6d998d80169&quot;,
+          &quot;display_name&quot;: &quot;&quot;,
+          &quot;display_name_normalized&quot;: &quot;&quot;,
+          &quot;email&quot;: &quot;dhandu1995@gmail.com&quot;,
+          &quot;huddle_state&quot;: &quot;default_unset&quot;,
+          &quot;image_192&quot;: &quot;https://secure.gravatar.com/avatar/6d998d801691b9d9198fe83d3f77c9f7.jpg?s=192&amp;d=https%3A%2F%2Fa.slack-edge.com%2Fdf10d%2Fimg%2Favatars%2Fava_0025-192.png&quot;,
+          &quot;image_24&quot;: &quot;https://secure.gravatar.com/avatar/6d998d801691b9d9198fe83d3f77c9f7.jpg?s=24&amp;d=https%3A%2F%2Fa.slack-edge.com%2Fdf10d%2Fimg%2Favatars%2Fava_0025-24.png&quot;,
+          &quot;image_32&quot;: &quot;https://secure.gravatar.com/avatar/6d998d801691b9d9198fe83d3f77c9f7.jpg?s=32&amp;d=https%3A%2F%2Fa.slack-edge.com%2Fdf10d%2Fimg%2F
+
+… (truncated, 3565 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#23</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-err">ERROR</span>
+      <span class="tool-duration">170ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 -c \&quot;\nimport json\ndata = json.load(open(&#x27;/tmp/users.json&#x27;))\nitems = data[&#x27;Data&#x27;][&#x27;items&#x27;]\nprint(len(items))\nfor u in items:\n    rn = u.get(&#x27;real_name&#x27;,&#x27;&#x27;)\n    dn = u.get(&#x27;profile&#x27;,{}).get(&#x27;display_name&#x27;,&#x27;&#x27;)\n    em = u.get(&#x27;profile&#x27;,{}).get(&#x27;email&#x27;,&#x27;&#x27;)\n    print(u[&#x27;id&#x27;], &#x27;|&#x27;, rn, &#x27;|&#x27;, dn, &#x27;|&#x27;, em)\n\&quot;\n&quot;,
+  &quot;description&quot;: &quot;Print all Slack users with names/emails to find target matches&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Exit code 1
+Traceback (most recent call last):
+  File &quot;&lt;string&gt;&quot;, line 3, in &lt;module&gt;
+    data = json.load(open(&#x27;/tmp/users.json&#x27;))
+  File &quot;/usr/local/lib/python3.13/json/__init__.py&quot;, line 298, in load
+    return loads(fp.read(),
+        cls=cls, object_hook=object_hook,
+        parse_float=parse_float, parse_int=parse_int,
+        parse_constant=parse_constant, object_pairs_hook=object_pairs_hook, **kw)
+  File &quot;/usr/local/lib/python3.13/json/__init__.py&quot;, line 352, in loads
+    return _default_decoder.decode(s)
+           ~~~~~~~~~~~~~~~~~~~~~~~^^^
+  File &quot;/usr/local/lib/python3.13/json/decoder.py&quot;, line 345, in decode
+    obj, end = self.raw_decode(s, idx=_w(s, 0).end())
+               ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File &quot;/usr/local/lib/python3.13/json/decoder.py&quot;, line 361, in raw_decode
+    obj, end = self.scan_once(s, idx)
+               ~~~~~~~~~~~~~~^^^^^^^^
+json.decoder.JSONDecodeError: Expecting property name enclosed in double quotes: line 506 column 10 (char 24576)</pre>
+    <h4>Error</h4><pre>Exit code 1
+Traceback (most recent call last):
+  File &quot;&lt;string&gt;&quot;, line 3, in &lt;module&gt;
+    data = json.load(open(&#x27;/tmp/users.json&#x27;))
+  File &quot;/usr/local/lib/python3.13/json/__init__.py&quot;, line 298, in load
+    return loads(fp.read(),
+        cls=cls, object_hook=object_hook,
+        parse_float=parse_float, parse_int=parse_int,
+        parse_constant=parse_constant, object_pairs_hook=object_pairs_hook, **kw)
+  File &quot;/usr/local/lib/python3.13/json/__init__.py&quot;, line 352, in loads
+    return _default_decoder.decode(s)
+           ~~~~~~~~~~~~~~~~~~~~~~~^^^
+  File &quot;/usr/local/lib/python3.13/json/decoder.py&quot;, line 345, in decode
+    obj, end = self.raw_decode(s, idx=_w(s, 0).end())
+               ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File &quot;/usr/local/lib/python3.13/json/decoder.py&quot;, line 361, in raw_decode
+    obj, end = self.scan_once(s, idx)
+               ~~~~~~~~~~~~~~^^^^^^^^
+json.decoder.JSONDecodeError: Expecting property name enclosed in double quotes: line 506 column 10 (char 24576)</pre>
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#24</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">21ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;wc -l /tmp/users.json; tail -30 /tmp/users.json&quot;,
+  &quot;description&quot;: &quot;Check file size and tail content for pagination truncation&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>505 /tmp/users.json
+        &quot;is_email_confirmed&quot;: true,
+        &quot;is_owner&quot;: false,
+        &quot;is_primary_owner&quot;: false,
+        &quot;is_restricted&quot;: false,
+        &quot;is_ultra_restricted&quot;: false,
+        &quot;name&quot;: &quot;anubhav.shankar&quot;,
+        &quot;profile&quot;: {
+          &quot;avatar_hash&quot;: &quot;172996b219ba&quot;,
+          &quot;display_name&quot;: &quot;Anubhav Shankar&quot;,
+          &quot;display_name_normalized&quot;: &quot;Anubhav Shankar&quot;,
+          &quot;email&quot;: &quot;anubhav.shankar@uipath.com&quot;,
+          &quot;image_1024&quot;: &quot;https://avatars.slack-edge.com/2021-03-11/1840165126246_172996b219ba643ede21_1024.png&quot;,
+          &quot;image_192&quot;: &quot;https://avatars.slack-edge.com/2021-03-11/1840165126246_172996b219ba643ede21_192.png&quot;,
+          &quot;image_24&quot;: &quot;https://avatars.slack-edge.com/2021-03-11/1840165126246_172996b219ba643ede21_24.png&quot;,
+          &quot;image_32&quot;: &quot;https://avatars.slack-edge.com/2021-03-11/1840165126246_172996b219ba643ede21_32.png&quot;,
+          &quot;image_48&quot;: &quot;https://avatars.slack-edge.com/2021-03-11/1840165126246_172996b219ba643ede21_48.png&quot;,
+          &quot;image_512&quot;: &quot;https://avatars.slack-edge.com/2021-03-11/1840165126246_172996b219ba643ede21_512.png&quot;,
+          &quot;image_72&quot;: &quot;https://avatars.slack-edge.com/2021-03-11/1840165126246_172996b219ba643ede21_72.
+
+… (truncated, 467 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#25</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">649ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip is resources run list \&quot;uipath-salesforce-slack\&quot; \&quot;curated_users?fields=profile.real_name,profile.email,id\&quot; --connection-id \&quot;849e85d8-1aa9-4d52-8bbd-20041c8f05d8\&quot; --output json &gt; /tmp/users.json 2&gt;/tmp/users.err; echo \&quot;exit:$?\&quot;; wc -l /tmp/users.json&quot;,
+  &quot;description&quot;: &quot;Re-fetch Slack users list to full file without early pipe closure&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>exit:0
+2247 /tmp/users.json</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#26</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">379ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 -c \&quot;\nimport json\ndata = json.load(open(&#x27;/tmp/users.json&#x27;))\nitems = data[&#x27;Data&#x27;][&#x27;items&#x27;]\nprint(&#x27;total users:&#x27;, len(items))\nprint(&#x27;HasMore:&#x27;, data[&#x27;Data&#x27;].get(&#x27;Pagination&#x27;, data[&#x27;Data&#x27;].get(&#x27;pagination&#x27;,&#x27;n/a&#x27;)))\nfor u in items:\n    rn = u.get(&#x27;real_name&#x27;,&#x27;&#x27;)\n    dn = u.get(&#x27;profile&#x27;,{}).get(&#x27;display_name&#x27;,&#x27;&#x27;)\n    em = u.get(&#x27;profile&#x27;,{}).get(&#x27;email&#x27;,&#x27;&#x27;)\n    print(u[&#x27;id&#x27;], &#x27;|&#x27;, rn, &#x27;|&#x27;, dn, … (11 more chars)&quot;,
+  &quot;description&quot;: &quot;Print all Slack users with names/emails to find target matches&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>total users: 48
+HasMore: {&#x27;HasMore&#x27;: &#x27;false&#x27;}
+U01FYLMH1D3 | dhandu1995 |  | dhandu1995@gmail.com
+U01JXFZE24B | Paul Hoeffer | Paul Hoeffer | paul.hoeffer@uipath.com
+U01JXGGDLD9 | He Feibao | He Feibao | feibao@gmail.com
+U01QDB0RE79 | Naveen Sathyamoorthy | Naveen Sathyamoorthy | naveen.sathyamoorthy@uipath.com
+U01QDB1CK63 | Abhyudai |  | Abhyudai.Chirumalla@uipath.com
+U01QE713T8E | Tushar Pandey | Tushar Pandey | tushar.pandey@uipath.com
+U01QMAX3GNS | Constantin Nastase | Constantin Nastase | constantin.nastase@uipath.com
+U01QR1SU6KF | Madalina Capata | Madalina Capata | Madalina.Capata@uipath.com
+U01QUAAKPFD | Cristina Dumitrescu | Cristina Dumitrescu | cristina.dumitrescu@uipath.com
+U01RHUNMAJU | Alexandru Filipov |  | Alexandru.filipov@uipath.com
+U01RHUNTJAC | Anubhav Shankar | Anubhav Shankar | anubhav.shankar@uipath.com
+U01RLFN0X45 | John Gillian |  | john.gillian@acme.com
+U01RVNTUNBW | Anthony Yong |  | anthony.yong@acme.com
+U01S2006RCH | John Doe |  | john.doe@email.com
+U01S26P3P3K | Cori Belch |  | cori.belch@acme.com
+U01T8GXEHSR | Brandon | Brandon | brandon.brown@uipath.com
+U01U16LN0D8 | Robert Wagner |  | robert.wagner@uipath.com
+U0241987JR5 | subrahmanyan.sankaran |  | 
+
+… (truncated, 1660 more chars)</pre>
+    
+  </div>
+</details>
+
+</div>
+
+<h2>Command Telemetry</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Total</div><div class="value">27</div></div>
+    <div class="stat"><div class="label">Successful</div><div class="value">26 (96%)</div></div>
+    <div class="stat"><div class="label">Failed</div><div class="value">1</div></div>
+    <div class="stat"><div class="label">Avg / cmd</div><div class="value">809ms</div></div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 2fr;gap:16px;margin-top:12px">
+    <div>
+      <h4>By Tool</h4>
+      <table>
+        <thead><tr><th>Tool</th><th>Count</th></tr></thead>
+        <tbody><tr><td class='mono'>Bash</td><td>25</td></tr><tr><td class='mono'>Skill</td><td>1</td></tr><tr><td class='mono'>Read</td><td>1</td></tr></tbody>
+      </table>
+    </div>
+    <div>
+      <h4>Slowest</h4>
+      <table>
+        <thead><tr><th>Tool</th><th>Duration</th><th>Parameters</th></tr></thead>
+        <tbody><tr><td class='mono'>Bash</td><td>8.26s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro flow registry pull --forc...</td></tr><tr><td class='mono'>Bash</td><td>1.62s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip is connections list --all-folders...</td></tr><tr><td class='mono'>Bash</td><td>1.25s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip solution --help 2&gt;&amp;1; echo &quot;---ma...</td></tr><tr><td class='mono'>Bash</td><td>1.06s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip --help 2&gt;&amp;1 | grep -i folder; ech...</td></tr><tr><td class='mono'>Bash</td><td>1.05s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip is connections list --all-folders...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+  <p><strong>Most Common Pattern:</strong> <code>Bash → Bash → Bash</code></p><p><strong>Skill Tool Invoked:</strong> 1 time(s)</p>
+</div>
+
+<h2>Generation Metrics</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Total Latency</div><div class="value">2m 37s</div></div>
+    <div class="stat"><div class="label">Turns</div><div class="value">1</div></div>
+    <div class="stat"><div class="label">Assistant Turns</div><div class="value">49</div></div>
+    <div class="stat"><div class="label">Avg Turn Latency</div><div class="value">2m 35s</div></div>
+    
+  </div>
+</div>
+
+<h2>Token Usage</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Input (uncached)</div><div class="value">488</div></div>
+    <div class="stat"><div class="label">Output</div><div class="value">9,817</div></div>
+    <div class="stat"><div class="label">Cache Write</div><div class="value">74,398</div></div>
+    <div class="stat"><div class="label">Cache Read</div><div class="value">1,534,962</div></div>
+    <div class="stat"><div class="label">Total</div><div class="value">1,619,665</div></div>
+    <div class="stat"><div class="label">Cost</div><div class="value">$0.8882</div></div>
+  </div>
+</div>
+
+<h2>Agent Settings</h2>
+<div class="card" style="padding:0">
+  <table>
+    <tbody><tr><td class='mono dim'>Permission Mode</td><td>acceptEdits</td></tr><tr><td class='mono dim'>Allowed Tools</td><td>Skill, Bash, Read, Write, Edit, Glob, Grep</td></tr><tr><td class='mono dim'>Model</td><td>us.anthropic.claude-sonnet-5</td></tr><tr><td class='mono dim'>Max Turns</td><td>120</td></tr><tr><td class='mono dim'>System Prompt</td><td>You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted. </td></tr><tr><td class='mono dim'>System Prompt Mode</td><td>append</td></tr><tr><td class='mono dim'>Plugins</td><td>/home/azureuser/projects/skills/tmp</td></tr></tbody>
+  </table>
+</div>
+
+<h2>Environment</h2>
+<div class="card" style="padding:0">
+  <table>
+    <tbody><tr><td class='mono dim'>git_commit</td><td>unknown</td></tr><tr><td class='mono dim'>skills_git_commit</td><td>unknown</td></tr><tr><td class='mono dim'>cli_version</td><td>1.201.0-dev.8272</td></tr><tr><td class='mono dim'>tool_plugins</td><td>{&#x27;admin-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;agent-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;agenthub-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;aops-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;api-workflow-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;automation-hub-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;codedagent-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;codedapp-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;coder-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;context-grounding-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;conversational-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;data-fabric-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;docsai-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;function-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;gov-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;guardrails-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;insights-tool&#x27;: &#x27;1.201.0-dev.8276&#x27;, &#x27;integrationservice-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;ixp-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;llm-gateway-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;llmgw-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;maestro-tool&#x27;: &#x27;1.201.0-dev.8275&#x27;, &#x27;model-hub-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;orchestrator-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;platform-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;pm-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;rpa-legacy-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;rpa-tool&#x27;: &#x27;1.201.0-dev.20260809.3&#x27;, &#x27;solution-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;tasks-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;test-manager-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;traces-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;vertical-solutions-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;}</td></tr><tr><td class='mono dim'>coder_eval</td><td>0.9.6</td></tr><tr><td class='mono dim'>claude_code_cli</td><td>2.1.177 (Claude Code)</td></tr><tr><td class='mono dim'>uv</td><td>uv 0.12.5 (x86_64-unknown-linux-gnu)</td></tr><tr><td class='mono dim'>anthropic</td><td>0.122.0</td></tr><tr><td class='mono dim'>openai</td><td>3.2.0</td></tr><tr><td class='mono dim'>pydantic</td><td>2.12.5</td></tr><tr><td class='mono dim'>api_routing</td><td>aws_bedrock</td></tr><tr><td class='mono dim'>eval_routing</td><td>aws_bedrock</td></tr><tr><td class='mono dim'>aws_region</td><td>us-east-2</td></tr><tr><td class='mono dim'>bedrock_model</td><td>us.anthropic.claude-sonnet-4-6</td></tr><tr><td class='mono dim'>system_prompt_semantics</td><td>append</td></tr></tbody>
+  </table>
+</div>
+
+<footer>Generated by coder_eval · 2026-08-19T15:50:50</footer>
+</div>
+<script>
+function toggleTheme() {
+  document.documentElement.classList.toggle('light');
+  try {
+    const mode = document.documentElement.classList.contains('light') ? 'light' : 'dark';
+    localStorage.setItem('coder-eval-theme', mode);
+  } catch (e) { /* ignore */ }
+}
+(function() {
+  try {
+    if (localStorage.getItem('coder-eval-theme') === 'light') {
+      document.documentElement.classList.add('light');
+    }
+  } catch (e) { /* ignore */ }
+})();
+</script>
+</body>
+</html>

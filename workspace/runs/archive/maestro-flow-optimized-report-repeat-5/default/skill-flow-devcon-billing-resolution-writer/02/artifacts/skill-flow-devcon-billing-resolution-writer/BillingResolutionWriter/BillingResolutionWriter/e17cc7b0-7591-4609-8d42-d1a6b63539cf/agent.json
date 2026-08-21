@@ -1,0 +1,99 @@
+{
+  "version": "1.1.0",
+  "settings": {
+    "model": "anthropic.claude-sonnet-4-6",
+    "maxTokens": 16384,
+    "temperature": 0,
+    "engine": "basic-v2",
+    "maxIterations": 3,
+    "mode": "standard"
+  },
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "start__output__customerName": {
+        "type": "string",
+        "description": "The name of the customer filing the billing dispute"
+      },
+      "start__output__invoiceNumber": {
+        "type": "string",
+        "description": "The invoice number associated with the dispute"
+      },
+      "start__output__creditAmount": {
+        "type": "number",
+        "description": "The approved credit amount to apply to the customer's account"
+      }
+    }
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "subject": {
+        "type": "string",
+        "description": "Email subject line for the resolution email"
+      },
+      "body": {
+        "type": "string",
+        "description": "Full email body text for the resolution email"
+      }
+    },
+    "required": [
+      "subject",
+      "body"
+    ]
+  },
+  "metadata": {
+    "storageVersion": "50.0.0",
+    "isConversational": false,
+    "showProjectCreationExperience": false
+  },
+  "type": "lowCode",
+  "guardrails": [],
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a customer service specialist who drafts professional billing dispute resolution emails. Your task is to compose a concise, empathetic resolution email confirming that a billing dispute has been resolved in the customer's favor. Always include the invoice number and the approved credit amount in the email body. Return a JSON object with exactly two keys: \"subject\" (a clear email subject line) and \"body\" (the complete email body text). Do not include any markdown formatting or additional commentary.",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "You are a customer service specialist who drafts professional billing dispute resolution emails. Your task is to compose a concise, empathetic resolution email confirming that a billing dispute has been resolved in the customer's favor. Always include the invoice number and the approved credit amount in the email body. Return a JSON object with exactly two keys: \"subject\" (a clear email subject line) and \"body\" (the complete email body text). Do not include any markdown formatting or additional commentary."
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "Draft a billing dispute resolution email for customer {{input.start__output__customerName}}. The disputed invoice number is {{input.start__output__invoiceNumber}} and we have approved a credit of ${{input.start__output__creditAmount}} to their account.",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "Draft a billing dispute resolution email for customer "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__customerName"
+        },
+        {
+          "type": "simpleText",
+          "rawString": ". The disputed invoice number is "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__invoiceNumber"
+        },
+        {
+          "type": "simpleText",
+          "rawString": " and we have approved a credit of $"
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__creditAmount"
+        },
+        {
+          "type": "simpleText",
+          "rawString": " to their account."
+        }
+      ]
+    }
+  ],
+  "projectId": "e17cc7b0-7591-4609-8d42-d1a6b63539cf"
+}

@@ -1,0 +1,738 @@
+{
+  "id": "b03b2ece-8727-4e86-9b97-75f975cac1b4",
+  "version": "1.9",
+  "name": "FeetInches",
+  "nodes": [
+    {
+      "id": "start",
+      "type": "core.trigger.manual",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Manual trigger"
+      },
+      "inputs": {
+        "entryPointId": "992177ec-0a70-4ce7-8044-31aaab9d0d27",
+        "isDefaultEntryPoint": true
+      }
+    },
+    {
+      "id": "routeByDirection",
+      "type": "core.logic.switch",
+      "typeVersion": "1.1",
+      "display": {
+        "label": "Route by direction"
+      },
+      "inputs": {
+        "cases": [
+          {
+            "id": "f2i",
+            "label": "Feet to Inches",
+            "expression": "$vars.direction === 'f2i'"
+          },
+          {
+            "id": "i2f",
+            "label": "Inches to Feet",
+            "expression": "$vars.direction === 'i2f'"
+          },
+          {
+            "id": "y2f",
+            "label": "Yards to Feet",
+            "expression": "$vars.direction === 'y2f'"
+          }
+        ]
+      }
+    },
+    {
+      "id": "convertF2I",
+      "type": "core.action.script",
+      "typeVersion": "1.1",
+      "display": {
+        "label": "Feet to Inches (x12)"
+      },
+      "inputs": {
+        "script": "return { converted: $vars.value * 12 };"
+      },
+      "outputs": {
+        "output": {
+          "type": "object",
+          "description": "Conversion result",
+          "source": "=result.response",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information",
+          "source": "=Error",
+          "var": "error"
+        }
+      }
+    },
+    {
+      "id": "convertI2F",
+      "type": "core.action.script",
+      "typeVersion": "1.1",
+      "display": {
+        "label": "Inches to Feet (div12)"
+      },
+      "inputs": {
+        "script": "return { converted: $vars.value / 12 };"
+      },
+      "outputs": {
+        "output": {
+          "type": "object",
+          "description": "Conversion result",
+          "source": "=result.response",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information",
+          "source": "=Error",
+          "var": "error"
+        }
+      }
+    },
+    {
+      "id": "convertY2F",
+      "type": "core.action.script",
+      "typeVersion": "1.1",
+      "display": {
+        "label": "Yards to Feet (x3)"
+      },
+      "inputs": {
+        "script": "return { converted: $vars.value * 3 };"
+      },
+      "outputs": {
+        "output": {
+          "type": "object",
+          "description": "Conversion result",
+          "source": "=result.response",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information",
+          "source": "=Error",
+          "var": "error"
+        }
+      }
+    },
+    {
+      "id": "done",
+      "type": "core.control.end",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Done"
+      },
+      "inputs": {},
+      "outputs": {
+        "result": {
+          "source": "=js:$vars.convertF2I?.output?.converted ?? $vars.convertI2F?.output?.converted ?? $vars.convertY2F?.output?.converted"
+        }
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e-start-route",
+      "sourceNodeId": "start",
+      "sourcePort": "output",
+      "targetNodeId": "routeByDirection",
+      "targetPort": "input"
+    },
+    {
+      "id": "e-route-f2i",
+      "sourceNodeId": "routeByDirection",
+      "sourcePort": "case-f2i",
+      "targetNodeId": "convertF2I",
+      "targetPort": "input"
+    },
+    {
+      "id": "e-route-i2f",
+      "sourceNodeId": "routeByDirection",
+      "sourcePort": "case-i2f",
+      "targetNodeId": "convertI2F",
+      "targetPort": "input"
+    },
+    {
+      "id": "e-route-y2f",
+      "sourceNodeId": "routeByDirection",
+      "sourcePort": "case-y2f",
+      "targetNodeId": "convertY2F",
+      "targetPort": "input"
+    },
+    {
+      "id": "e-f2i-done",
+      "sourceNodeId": "convertF2I",
+      "sourcePort": "success",
+      "targetNodeId": "done",
+      "targetPort": "input"
+    },
+    {
+      "id": "e-i2f-done",
+      "sourceNodeId": "convertI2F",
+      "sourcePort": "success",
+      "targetNodeId": "done",
+      "targetPort": "input"
+    },
+    {
+      "id": "e-y2f-done",
+      "sourceNodeId": "convertY2F",
+      "sourcePort": "success",
+      "targetNodeId": "done",
+      "targetPort": "input"
+    }
+  ],
+  "definitions": [
+    {
+      "nodeType": "core.trigger.manual",
+      "version": "1.0",
+      "category": "trigger",
+      "description": "Start the process manually",
+      "tags": [
+        "trigger",
+        "start",
+        "manual"
+      ],
+      "sortOrder": 80,
+      "display": {
+        "label": "Manual trigger",
+        "icon": "play",
+        "shape": "circle"
+      },
+      "handleConfiguration": [
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "output",
+              "type": "source",
+              "handleType": "output",
+              "showButton": true,
+              "constraints": {
+                "forbiddenTargetCategories": [
+                  "trigger"
+                ]
+              }
+            }
+          ],
+          "visible": true
+        }
+      ],
+      "model": {
+        "type": "bpmn:StartEvent",
+        "entryPointId": true
+      },
+      "outputDefinition": {
+        "output": {
+          "type": "object",
+          "description": "Data passed when manually triggering the process.",
+          "source": "null",
+          "var": "output"
+        }
+      },
+      "toolbarExtensions": {
+        "design": {
+          "actions": [
+            {
+              "id": "change-trigger-type",
+              "icon": "square-mouse-pointer",
+              "label": "Change trigger type"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "nodeType": "core.logic.switch",
+      "version": "1.1",
+      "category": "control-flow",
+      "description": "Route to one of many branches by condition",
+      "tags": [
+        "control-flow",
+        "switch",
+        "case",
+        "when"
+      ],
+      "sortOrder": 62,
+      "display": {
+        "label": "Switch",
+        "icon": "between-horizontal-start"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ],
+          "visible": true
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "case-{item.id}",
+              "type": "source",
+              "handleType": "output",
+              "label": "{item.label || 'Case ' + (index + 1)}",
+              "repeat": "inputs.cases"
+            },
+            {
+              "id": "default",
+              "type": "source",
+              "handleType": "output",
+              "label": "Default"
+            }
+          ],
+          "visible": true
+        }
+      ],
+      "debug": {
+        "runtime": "clientScript"
+      },
+      "model": {
+        "type": "bpmn:ExclusiveGateway"
+      },
+      "inputDefinition": {
+        "type": "object",
+        "properties": {
+          "cases": {
+            "type": "array",
+            "minItems": 1,
+            "errorMessage": "At least one case is required",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "label": {
+                  "type": "string"
+                },
+                "expression": {
+                  "type": "string",
+                  "minLength": 1,
+                  "errorMessage": "Add a condition"
+                }
+              },
+              "required": [
+                "expression"
+              ]
+            }
+          }
+        },
+        "required": [
+          "cases"
+        ]
+      },
+      "outputDefinition": {
+        "matchedCase": {
+          "type": "string",
+          "description": "The label of the matched case",
+          "var": "matchedCase"
+        },
+        "matchedCaseId": {
+          "type": "string",
+          "description": "The ID of the matched case (\"default\" for the default branch)",
+          "var": "matchedCaseId"
+        }
+      },
+      "inputDefaults": {
+        "cases": [
+          {
+            "id": "default-1",
+            "label": "Case 1",
+            "expression": ""
+          },
+          {
+            "id": "default-2",
+            "label": "Case 2",
+            "expression": ""
+          }
+        ]
+      },
+      "form": {
+        "id": "switch-properties",
+        "title": "Switch configuration",
+        "sections": [
+          {
+            "id": "cases",
+            "title": "Cases",
+            "description": "Each case is evaluated in order. The first condition that returns true is taken.",
+            "collapsible": true,
+            "defaultExpanded": true,
+            "fields": [
+              {
+                "name": "inputs.cases",
+                "type": "custom",
+                "label": "Switch cases",
+                "component": "case-list-editor",
+                "componentProps": {
+                  "minCases": 1,
+                  "maxCases": 10,
+                  "expressionPlaceholder": "$vars.httpRequest1.output.statusCode >= 200 && $vars.httpRequest1.output.statusCode < 300",
+                  "expressionValidationFields": [
+                    {
+                      "subPath": "expression",
+                      "validationMode": "expression",
+                      "expectedType": "boolean"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "runtimeConstraints": {
+        "exclude": [
+          "api-function"
+        ]
+      }
+    },
+    {
+      "nodeType": "core.action.script",
+      "version": "1.1",
+      "category": "data-operations",
+      "description": "Run custom JavaScript code",
+      "tags": [
+        "code",
+        "javascript",
+        "python"
+      ],
+      "sortOrder": 70,
+      "supportsErrorHandling": true,
+      "display": {
+        "label": "Script",
+        "icon": "code"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "success",
+              "type": "source",
+              "handleType": "output"
+            },
+            {
+              "id": "error",
+              "label": "Error",
+              "type": "source",
+              "handleType": "output",
+              "visible": "{inputs.errorHandlingEnabled}",
+              "constraints": {
+                "maxConnections": 1
+              }
+            }
+          ]
+        }
+      ],
+      "debug": {
+        "runtime": "clientScript"
+      },
+      "model": {
+        "type": "bpmn:ScriptTask"
+      },
+      "inputDefinition": {
+        "type": "object",
+        "properties": {
+          "script": {
+            "type": "string",
+            "minLength": 1,
+            "errorMessage": "Add a script function",
+            "validationSeverity": "warning"
+          }
+        },
+        "required": [
+          "script"
+        ]
+      },
+      "inputDefaults": {
+        "script": ""
+      },
+      "outputDefinition": {
+        "output": {
+          "type": "any",
+          "description": "The return value of the script",
+          "source": "=result.response",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails",
+          "source": "=Error",
+          "var": "error"
+        }
+      },
+      "form": {
+        "id": "script-properties",
+        "title": "Script configuration",
+        "sections": [
+          {
+            "id": "script",
+            "title": "Script",
+            "collapsible": true,
+            "defaultExpanded": true,
+            "fields": [
+              {
+                "name": "inputs.script",
+                "type": "custom",
+                "component": "script-editor",
+                "componentProps": {
+                  "language": "javascript",
+                  "returnType": "any",
+                  "validationMode": "script",
+                  "minHeight": 200,
+                  "placeholder": " // Return any value\nreturn {\n  message: \"Web request response\",\n  data: $vars.httpRequest1.output\n};"
+                },
+                "label": "Code",
+                "description": "JavaScript expression that returns a result"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "nodeType": "core.control.end",
+      "version": "1.0",
+      "category": "control-flow",
+      "description": "Mark the end of a process path",
+      "tags": [
+        "control-flow",
+        "end",
+        "finish",
+        "complete"
+      ],
+      "sortOrder": 65,
+      "display": {
+        "label": "End",
+        "icon": "circle-check",
+        "shape": "circle"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        }
+      ],
+      "model": {
+        "type": "bpmn:EndEvent"
+      },
+      "runtimeConstraints": {
+        "exclude": [
+          "api-function"
+        ]
+      }
+    }
+  ],
+  "bindings": [],
+  "variables": {
+    "globals": [
+      {
+        "id": "value",
+        "direction": "in",
+        "type": "number",
+        "description": "Input value to convert",
+        "triggerNodeId": "start"
+      },
+      {
+        "id": "direction",
+        "direction": "in",
+        "type": "string",
+        "description": "Conversion direction: f2i (feet→inches), i2f (inches→feet), y2f (yards→feet)",
+        "triggerNodeId": "start"
+      },
+      {
+        "id": "result",
+        "direction": "out",
+        "type": "number",
+        "description": "Converted value"
+      }
+    ],
+    "nodes": [
+      {
+        "id": "start.output",
+        "type": "object",
+        "description": "Data passed when manually triggering the process.",
+        "binding": {
+          "nodeId": "start",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "routeByDirection.matchedCase",
+        "type": "string",
+        "description": "The label of the matched case",
+        "binding": {
+          "nodeId": "routeByDirection",
+          "outputId": "matchedCase"
+        }
+      },
+      {
+        "id": "routeByDirection.matchedCaseId",
+        "type": "string",
+        "description": "The ID of the matched case (\"default\" for the default branch)",
+        "binding": {
+          "nodeId": "routeByDirection",
+          "outputId": "matchedCaseId"
+        }
+      },
+      {
+        "id": "convertF2I.output",
+        "type": "object",
+        "description": "Conversion result",
+        "binding": {
+          "nodeId": "convertF2I",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "convertF2I.error",
+        "type": "object",
+        "description": "Error information",
+        "binding": {
+          "nodeId": "convertF2I",
+          "outputId": "error"
+        }
+      },
+      {
+        "id": "convertI2F.output",
+        "type": "object",
+        "description": "Conversion result",
+        "binding": {
+          "nodeId": "convertI2F",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "convertI2F.error",
+        "type": "object",
+        "description": "Error information",
+        "binding": {
+          "nodeId": "convertI2F",
+          "outputId": "error"
+        }
+      },
+      {
+        "id": "convertY2F.output",
+        "type": "object",
+        "description": "Conversion result",
+        "binding": {
+          "nodeId": "convertY2F",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "convertY2F.error",
+        "type": "object",
+        "description": "Error information",
+        "binding": {
+          "nodeId": "convertY2F",
+          "outputId": "error"
+        }
+      },
+      {
+        "id": "done.result",
+        "type": "string",
+        "binding": {
+          "nodeId": "done",
+          "outputId": "result"
+        }
+      }
+    ],
+    "variableUpdates": {}
+  },
+  "runtime": "maestro",
+  "layout": {
+    "nodes": {
+      "start": {
+        "position": {
+          "x": 96,
+          "y": 208
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "routeByDirection": {
+        "position": {
+          "x": 288,
+          "y": 208
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "convertF2I": {
+        "position": {
+          "x": 480,
+          "y": 16
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "convertI2F": {
+        "position": {
+          "x": 480,
+          "y": 208
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "convertY2F": {
+        "position": {
+          "x": 480,
+          "y": 400
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "done": {
+        "position": {
+          "x": 672,
+          "y": 16
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      }
+    }
+  }
+}

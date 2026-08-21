@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "VendorPOReview",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "4bdbaedd-f5f8-4e91-840b-1c54d1557ba8",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "VendorPOReview"
+    },
+    "locks": [],
+    "key": "3d295d7c-7d7a-464e-bc39-78134da7e4f1",
+    "files": []
+  }
+}

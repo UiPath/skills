@@ -1,0 +1,121 @@
+{
+  "_comment": "Offline capture of the `uip maestro flow node configure` --detail payload for an Outlook connector trigger. In a live environment, fill every placeholder value before running `node configure`.",
+
+  "nodeType": "uipath.connector.trigger.uipath-microsoft-outlook365.email-received",
+
+  "connection": {
+    "_comment": "Obtain from: uip is connections list 'uipath-microsoft-outlook365' --all-folders --output json. Pick any enabled connection (prefer IsDefault:Yes). If byoaConnection is true on the trigger object, re-run with --byoa.",
+    "connectionId": "<OUTLOOK_CONNECTION_UUID>",
+    "folderKey": "<ORCHESTRATOR_FOLDER_KEY>"
+  },
+
+  "triggerMetadata": {
+    "_comment": "Values returned by: uip maestro flow registry get uipath.connector.trigger.uipath-microsoft-outlook365.email-received --connection-id <id> --output json",
+    "eventMode": "<webhooks|polling>",
+    "objectName": "Message",
+    "operation": "EMAIL_RECEIVED"
+  },
+
+  "eventParameters": {
+    "_comment": "Required fields collected from the UNION of `uip is triggers objects` → parameters[] AND `uip is triggers describe` → EventParameters. parentFolderId must be resolved to an ID via: uip is resources run list 'uipath-microsoft-outlook365' 'MailFolder' --connection-id <id> --output json",
+    "parentFolderId": "<RESOLVED_INBOX_FOLDER_ID>"
+  },
+
+  "queryParameters": {
+    "_comment": "Populate only if `triggers objects → parameters[]` has entries with type='query' (e.g. sharedMailboxAddress for a shared mailbox). Leave empty for a standard personal mailbox.",
+    "sharedMailboxAddress": ""
+  },
+
+  "filter": {
+    "_comment": "Structured filter tree compiled by the CLI into a JMESPath filterExpression. Both conditions are AND-joined (groupOperator=0). Field names ('subject', 'from') must match filterFields.fields[].name returned by `registry get --connection-id`. Operators are PascalCase.",
+    "groupOperator": 0,
+    "index": 0,
+    "filters": [
+      {
+        "id": "subject",
+        "operator": "Contains",
+        "value": {
+          "value": "good day",
+          "rawString": "\"good day\"",
+          "isLiteral": true
+        }
+      },
+      {
+        "id": "from",
+        "operator": "Equals",
+        "value": {
+          "value": "abc@xyz.com",
+          "rawString": "\"abc@xyz.com\"",
+          "isLiteral": true
+        }
+      }
+    ],
+    "groups": []
+  },
+
+  "applyCommand": {
+    "_comment": "The exact CLI invocation to apply this configuration once placeholders are replaced. Shell-quote the JSON or write it to a temp file and use --detail '$(cat /tmp/detail.json)'.",
+    "command": "uip maestro flow node configure <PROJECT>.flow <TRIGGER_NODE_ID> --output json --detail",
+    "detailPayload": {
+      "connectionId": "<OUTLOOK_CONNECTION_UUID>",
+      "folderKey": "<ORCHESTRATOR_FOLDER_KEY>",
+      "eventMode": "<webhooks|polling>",
+      "objectName": "Message",
+      "eventParameters": {
+        "parentFolderId": "<RESOLVED_INBOX_FOLDER_ID>"
+      },
+      "queryParameters": {},
+      "filter": {
+        "groupOperator": 0,
+        "index": 0,
+        "filters": [
+          {
+            "id": "subject",
+            "operator": "Contains",
+            "value": {
+              "value": "good day",
+              "rawString": "\"good day\"",
+              "isLiteral": true
+            }
+          },
+          {
+            "id": "from",
+            "operator": "Equals",
+            "value": {
+              "value": "abc@xyz.com",
+              "rawString": "\"abc@xyz.com\"",
+              "isLiteral": true
+            }
+          }
+        ],
+        "groups": []
+      }
+    }
+  },
+
+  "activationSteps": [
+    "1. Login: uip login",
+    "2. Pull registry: uip maestro flow registry pull --force",
+    "3. Discover connections: uip is connections list 'uipath-microsoft-outlook365' --all-folders --output json",
+    "4. Check byoaConnection flag: uip is triggers objects 'uipath-microsoft-outlook365' 'EMAIL_RECEIVED' --connection-id <id> --output json",
+    "5. If byoaConnection=true, reselect with: uip is connections list 'uipath-microsoft-outlook365' --byoa --all-folders --output json",
+    "6. Ping connection health: uip is connections ping <id> --output json",
+    "7. Fetch trigger field metadata: uip is triggers describe 'uipath-microsoft-outlook365' 'EMAIL_RECEIVED' 'Message' --connection-id <id> --output json",
+    "8. Resolve Inbox folder ID: uip is resources run list 'uipath-microsoft-outlook365' 'MailFolder' --connection-id <id> --output json  (paginate via Data.Pagination.HasMore/NextPageToken until match found)",
+    "9. Replace manual trigger: uip maestro flow node remove <PROJECT>.flow start --output json",
+    "10. Add trigger node: uip maestro flow node add <PROJECT>.flow uipath.connector.trigger.uipath-microsoft-outlook365.email-received --label 'Email Received' --position 200,144 --output json  (capture generated nodeId)",
+    "11. Apply this detail: uip maestro flow node configure <PROJECT>.flow <nodeId> --detail '$(cat trigger_detail_payload.json)' --output json",
+    "12. If eventMode=webhooks and isWebhookUrlVisible=true: retrieve URL with uip is webhooks config and register it in the external service",
+    "13. Format: uip maestro flow format <PROJECT>.flow",
+    "14. Validate: uip maestro flow validate <PROJECT>.flow"
+  ],
+
+  "openQuestions": [
+    "CONNECTION_ID: Replace <OUTLOOK_CONNECTION_UUID> with the UUID from `uip is connections list`.",
+    "FOLDER_KEY: Replace <ORCHESTRATOR_FOLDER_KEY> with the Orchestrator folder key where the connection lives.",
+    "FOLDER_ID: Replace <RESOLVED_INBOX_FOLDER_ID> with the ID resolved via `uip is resources run list ... MailFolder`.",
+    "EVENT_MODE: Fill in 'webhooks' or 'polling' from `registry get` response — webhook triggers require Orchestrator deployment for testing, polling triggers support `uip maestro flow debug`.",
+    "BYOA: If `triggers objects` returns byoaConnection=true, a Bring-Your-Own-Account (BYOA) Outlook connection is required; standard connections are not usable for that event object.",
+    "SHARED_MAILBOX: If monitoring a shared mailbox rather than a personal inbox, populate queryParameters.sharedMailboxAddress with the mailbox address."
+  ]
+}

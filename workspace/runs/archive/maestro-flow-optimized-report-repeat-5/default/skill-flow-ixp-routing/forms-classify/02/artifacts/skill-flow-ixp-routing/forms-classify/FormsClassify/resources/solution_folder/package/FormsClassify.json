@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "FormsClassify",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "572e2c60-a10b-4209-b1b2-d32564820c20",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "FormsClassify"
+    },
+    "locks": [],
+    "key": "20e868e5-8bc8-49f2-ab91-9de90ce5da8a",
+    "files": []
+  }
+}

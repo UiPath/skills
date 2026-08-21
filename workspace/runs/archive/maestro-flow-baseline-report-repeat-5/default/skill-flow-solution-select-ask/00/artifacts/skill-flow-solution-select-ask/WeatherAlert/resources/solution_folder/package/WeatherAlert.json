@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "WeatherAlert",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "a465a4e5-1968-478c-b678-39fbc224953b",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "WeatherAlert"
+    },
+    "locks": [],
+    "key": "c2dc3dfd-9e45-4b9d-82da-0defc632ae87",
+    "files": []
+  }
+}

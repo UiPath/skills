@@ -1,0 +1,12 @@
+{
+    "DocVersion": "1.0.0",
+    "StudioMinVersion": "2025.10.0",
+    "SolutionId": "7e00f935-b0b4-495f-55df-08defd62525a",
+    "Projects": [
+        {
+            "Type": "Flow",
+            "ProjectRelativePath": "SlackWeatherPipeline/project.uiproj",
+            "Id": "d18fc15f-e6a2-4bea-81de-27652b9944d6"
+        }
+    ]
+}

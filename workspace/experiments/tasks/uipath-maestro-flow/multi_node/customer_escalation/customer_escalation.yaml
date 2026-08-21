@@ -1,0 +1,61 @@
+task_id: skill-flow-customer-escalation
+description: >
+  Complex multi-branch escalation flow: Outlook email-received trigger →
+  urgency-keyword script → VIP-domain script → Decision → branches that
+  send Slack DMs + Outlook reply (VIP path) or generate a mock support
+  ticket + Outlook reply (standard path). Scoped to static validation
+  only — trigger-fired execution is not reliably testable against the
+  shared Outlook connection (see skills repo outlook_trigger_inbox task
+  notes).
+tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:multi-node, node:decision, feature:trigger, connector]
+
+run_limits:
+  expected_turns: 73
+  task_timeout: 2400
+  max_turns: 120
+  turn_timeout: 1200
+
+initial_prompt: |
+  Build a Maestro Flow called "CustomerEscalation" that triggers on new
+  Outlook inbox emails and routes each one based on two signals: whether
+  it looks urgent (decide the keyword set yourself) and whether the
+  sender is a VIP (decide the VIP rule yourself — domain allow-list,
+  tag lookup, etc.).
+
+  Use one script node for urgency classification and another for VIP
+  classification, then branch with a decision node on the combined
+  result.
+
+  - High-touch branch (urgent AND VIP): notify on Slack and reply to
+    the sender via Outlook with a fast-response acknowledgment.
+  - Standard branch: generate a support ticket in a script node and
+    reply to the sender via Outlook with the ticket details.
+
+  Validate the flow.
+  Do NOT ask for approval, confirmation, or feedback. Do NOT pause between
+  planning and implementation. Build the complete flow end-to-end in a
+  single pass.
+
+success_criteria:
+  # ── Flow file validity ────────────────────────────────────────────────
+  - type: run_command
+    description: "uip maestro flow validate passes on the flow file"
+    command: "python3 $EXPERIMENT_TASKS_PATH/uipath-maestro-flow/_shared/validate_flow.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+  # ── Structural correctness ────────────────────────────────────────────
+  # Validate-only check — sandbox has no live Outlook / Slack tenant,
+  # so the agent can't `flow debug`. The checker enforces the prompt's
+  # required shape: Outlook trigger, two classifier scripts, a decision
+  # node with two branches, and Slack + Outlook-reply references.
+  - type: run_command
+    description: "Flow has Outlook trigger, classifier scripts, decision with two branches, Slack DM and Outlook reply references"
+    command: "python3 $TASK_DIR/check_customer_escalation_flow.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 10.0
+    pass_threshold: 1.0
+

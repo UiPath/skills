@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "JiraSearchTriage",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "4c76efd2-e1b9-433b-aa95-b11a19dc6eb8",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "JiraSearchTriage"
+    },
+    "locks": [],
+    "key": "60e1d938-be66-4c8f-8ea5-dfd097a616ad",
+    "files": []
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "BatchTransformDemo",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "5e57e387-dcab-4eeb-90e6-36c12bb6f92d",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "BatchTransformDemo"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Flow",
+      "name": "BatchTransformDemo",
+      "package": {
+        "key": "cac62f7d-1ce9-41a9-9d83-42c445b7421f"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "5e91f673-440d-461e-ba52-1c7f6f809ec1",
+    "files": []
+  }
+}

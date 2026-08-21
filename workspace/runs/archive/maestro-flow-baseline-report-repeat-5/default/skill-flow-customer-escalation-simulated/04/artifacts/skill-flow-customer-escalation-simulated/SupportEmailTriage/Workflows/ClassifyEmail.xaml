@@ -1,0 +1,177 @@
+<Activity mc:Ignorable="sap sap2010" x:Class="Workflows_ClassifyEmail"
+  xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities"
+  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+  xmlns:mva="clr-namespace:Microsoft.VisualBasic.Activities;assembly=System.Activities"
+  xmlns:sap="http://schemas.microsoft.com/netfx/2009/xaml/activities/presentation"
+  xmlns:sap2010="http://schemas.microsoft.com/netfx/2010/xaml/activities/presentation"
+  xmlns:scg="clr-namespace:System.Collections.Generic;assembly=System.Private.CoreLib"
+  xmlns:sco="clr-namespace:System.Collections.ObjectModel;assembly=mscorlib"
+  xmlns:ui="http://schemas.uipath.com/workflow/activities"
+  xmlns:umm="clr-namespace:UiPath.MicrosoftOffice365.Models;assembly=UiPath.MicrosoftOffice365"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+  <x:Members>
+    <x:Property Name="in_Email" Type="InArgument(umm:Office365Message)" />
+    <x:Property Name="out_UrgencyLevel" Type="OutArgument(x:String)" />
+    <x:Property Name="out_IsVIP" Type="OutArgument(x:Boolean)" />
+  </x:Members>
+
+  <mva:VisualBasic.Settings>
+    <x:Null />
+  </mva:VisualBasic.Settings>
+
+  <TextExpression.NamespacesForImplementation>
+    <sco:Collection x:TypeArguments="x:String">
+      <x:String>System</x:String>
+      <x:String>System.Collections.Generic</x:String>
+      <x:String>System.Linq</x:String>
+      <x:String>UiPath.Core</x:String>
+      <x:String>UiPath.Core.Activities</x:String>
+      <x:String>UiPath.MicrosoftOffice365.Models</x:String>
+    </sco:Collection>
+  </TextExpression.NamespacesForImplementation>
+  <TextExpression.ReferencesForImplementation>
+    <sco:Collection x:TypeArguments="AssemblyReference">
+      <AssemblyReference>System.Activities</AssemblyReference>
+      <AssemblyReference>Microsoft.VisualBasic</AssemblyReference>
+      <AssemblyReference>System.Private.CoreLib</AssemblyReference>
+      <AssemblyReference>mscorlib</AssemblyReference>
+      <AssemblyReference>System</AssemblyReference>
+      <AssemblyReference>System.Linq</AssemblyReference>
+      <AssemblyReference>System.Core</AssemblyReference>
+      <AssemblyReference>UiPath.System.Activities</AssemblyReference>
+      <AssemblyReference>UiPath.MicrosoftOffice365.Activities</AssemblyReference>
+      <AssemblyReference>UiPath.MicrosoftOffice365</AssemblyReference>
+    </sco:Collection>
+  </TextExpression.ReferencesForImplementation>
+
+  <Sequence DisplayName="Classify Email" sap2010:WorkflowViewState.IdRef="Sequence_1">
+    <Sequence.Variables>
+      <Variable x:TypeArguments="x:String" Name="subjectLower" />
+      <Variable x:TypeArguments="x:String" Name="bodyLower" />
+      <Variable x:TypeArguments="x:String" Name="senderEmail" />
+      <Variable x:TypeArguments="x:Boolean" Name="hasUrgentKeyword" Default="False" />
+      <Variable x:TypeArguments="x:Boolean" Name="isVIPSender" Default="False" />
+      <Variable x:TypeArguments="x:Int32" Name="urgencyScore" Default="0" />
+    </Sequence.Variables>
+
+    <!-- Normalize subject and body to lowercase for keyword matching -->
+    <Assign DisplayName="Normalize Subject" sap2010:WorkflowViewState.IdRef="Assign_1">
+      <Assign.To>
+        <OutArgument x:TypeArguments="x:String">[subjectLower]</OutArgument>
+      </Assign.To>
+      <Assign.Value>
+        <InArgument x:TypeArguments="x:String">[If(in_Email Is Nothing OrElse String.IsNullOrEmpty(in_Email.Subject), "", in_Email.Subject.ToLowerInvariant())]</InArgument>
+      </Assign.Value>
+    </Assign>
+
+    <Assign DisplayName="Normalize Body" sap2010:WorkflowViewState.IdRef="Assign_2">
+      <Assign.To>
+        <OutArgument x:TypeArguments="x:String">[bodyLower]</OutArgument>
+      </Assign.To>
+      <Assign.Value>
+        <InArgument x:TypeArguments="x:String">[If(in_Email Is Nothing OrElse String.IsNullOrEmpty(in_Email.Body), "", in_Email.Body.ToLowerInvariant())]</InArgument>
+      </Assign.Value>
+    </Assign>
+
+    <Assign DisplayName="Get Sender Email" sap2010:WorkflowViewState.IdRef="Assign_3">
+      <Assign.To>
+        <OutArgument x:TypeArguments="x:String">[senderEmail]</OutArgument>
+      </Assign.To>
+      <Assign.Value>
+        <InArgument x:TypeArguments="x:String">[If(in_Email Is Nothing OrElse in_Email.From Is Nothing OrElse String.IsNullOrEmpty(in_Email.From.Address), "", in_Email.From.Address.ToLowerInvariant())]</InArgument>
+      </Assign.Value>
+    </Assign>
+
+    <!-- Check for urgent keywords in subject or body -->
+    <Assign DisplayName="Check Urgent Keywords" sap2010:WorkflowViewState.IdRef="Assign_4">
+      <Assign.To>
+        <OutArgument x:TypeArguments="x:Boolean">[hasUrgentKeyword]</OutArgument>
+      </Assign.To>
+      <Assign.Value>
+        <InArgument x:TypeArguments="x:Boolean">[(New String() {"urgent", "critical", "outage", "down", "broken", "asap", "emergency", "escalate", "not working", "failed", "failure", "immediately", "refund", "legal", "lawsuit", "complaint", "angry", "furious", "unacceptable"}).Any(Function(kw) subjectLower.Contains(kw) OrElse bodyLower.Contains(kw))]</InArgument>
+      </Assign.Value>
+    </Assign>
+
+    <!-- Check VIP sender list (customize these domains/addresses for your actual VIP customers) -->
+    <Assign DisplayName="Check VIP Sender" sap2010:WorkflowViewState.IdRef="Assign_5">
+      <Assign.To>
+        <OutArgument x:TypeArguments="x:Boolean">[isVIPSender]</OutArgument>
+      </Assign.To>
+      <Assign.Value>
+        <InArgument x:TypeArguments="x:Boolean">[(New String() {"enterprise-customer.com", "bigclient.com", "vip@example.com", "ceo@", "director@", "vp@"}).Any(Function(vip) senderEmail.Contains(vip))]</InArgument>
+      </Assign.Value>
+    </Assign>
+
+    <!-- Compute urgency score: VIP=2, urgent keyword=1 -->
+    <Assign DisplayName="Compute Urgency Score" sap2010:WorkflowViewState.IdRef="Assign_6">
+      <Assign.To>
+        <OutArgument x:TypeArguments="x:Int32">[urgencyScore]</OutArgument>
+      </Assign.To>
+      <Assign.Value>
+        <InArgument x:TypeArguments="x:Int32">[If(isVIPSender, 2, 0) + If(hasUrgentKeyword, 1, 0)]</InArgument>
+      </Assign.Value>
+    </Assign>
+
+    <!-- Output VIP flag -->
+    <Assign DisplayName="Set IsVIP Output" sap2010:WorkflowViewState.IdRef="Assign_7">
+      <Assign.To>
+        <OutArgument x:TypeArguments="x:Boolean">[out_IsVIP]</OutArgument>
+      </Assign.To>
+      <Assign.Value>
+        <InArgument x:TypeArguments="x:Boolean">[isVIPSender]</InArgument>
+      </Assign.Value>
+    </Assign>
+
+    <!-- Determine urgency level: score>=2 = Critical, score=1 = Priority, else Standard -->
+    <If Condition="[urgencyScore >= 2]" DisplayName="Is Critical?" sap2010:WorkflowViewState.IdRef="If_1">
+      <If.Then>
+        <Sequence DisplayName="Then" sap2010:WorkflowViewState.IdRef="Sequence_Then1">
+          <Assign DisplayName="Set Critical" sap2010:WorkflowViewState.IdRef="Assign_8">
+            <Assign.To>
+              <OutArgument x:TypeArguments="x:String">[out_UrgencyLevel]</OutArgument>
+            </Assign.To>
+            <Assign.Value>
+              <InArgument x:TypeArguments="x:String">["Critical"]</InArgument>
+            </Assign.Value>
+          </Assign>
+        </Sequence>
+      </If.Then>
+      <If.Else>
+        <Sequence DisplayName="Else" sap2010:WorkflowViewState.IdRef="Sequence_Else1">
+          <If Condition="[urgencyScore = 1]" DisplayName="Is Priority?" sap2010:WorkflowViewState.IdRef="If_2">
+            <If.Then>
+              <Sequence DisplayName="Then" sap2010:WorkflowViewState.IdRef="Sequence_Then2">
+                <Assign DisplayName="Set Priority" sap2010:WorkflowViewState.IdRef="Assign_9">
+                  <Assign.To>
+                    <OutArgument x:TypeArguments="x:String">[out_UrgencyLevel]</OutArgument>
+                  </Assign.To>
+                  <Assign.Value>
+                    <InArgument x:TypeArguments="x:String">["Priority"]</InArgument>
+                  </Assign.Value>
+                </Assign>
+              </Sequence>
+            </If.Then>
+            <If.Else>
+              <Sequence DisplayName="Else" sap2010:WorkflowViewState.IdRef="Sequence_Else2">
+                <Assign DisplayName="Set Standard" sap2010:WorkflowViewState.IdRef="Assign_10">
+                  <Assign.To>
+                    <OutArgument x:TypeArguments="x:String">[out_UrgencyLevel]</OutArgument>
+                  </Assign.To>
+                  <Assign.Value>
+                    <InArgument x:TypeArguments="x:String">["Standard"]</InArgument>
+                  </Assign.Value>
+                </Assign>
+              </Sequence>
+            </If.Else>
+          </If>
+        </Sequence>
+      </If.Else>
+    </If>
+
+    <ui:LogMessage DisplayName="Log Classification" Level="Info"
+      Message="[&quot;Email classified: &quot; + out_UrgencyLevel + &quot; | VIP: &quot; + out_IsVIP.ToString() + &quot; | From: &quot; + senderEmail + &quot; | Subject: &quot; + in_Email.Subject]"
+      sap2010:WorkflowViewState.IdRef="LogMessage_1" />
+
+  </Sequence>
+</Activity>

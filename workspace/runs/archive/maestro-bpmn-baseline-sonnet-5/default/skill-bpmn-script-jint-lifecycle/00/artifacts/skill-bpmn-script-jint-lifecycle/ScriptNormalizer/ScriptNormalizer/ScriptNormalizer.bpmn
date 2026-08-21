@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+    xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+    xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+    xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+    xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+    xmlns:uipath="http://uipath.org/schema/bpmn"
+    id="Definitions_ScriptNormalizer" targetNamespace="http://bpmn.io/schema/bpmn"
+    exporter="UiPath (https://bpmn.uipath.com)" exporterVersion="1.0">
+  <bpmn:process id="Process_ScriptNormalizer" name="ScriptNormalizer" isExecutable="true">
+    <bpmn:extensionElements>
+      <uipath:migrationVersion version="11.5" />
+      <uipath:variables version="v1">
+        <uipath:inputOutput id="Var_RawRequest" name="rawRequest" type="string" elementId="Start_ManualEntry" />
+        <uipath:output id="Var_NormalizedResponse" name="normalizedResponse" type="json" />
+      </uipath:variables>
+    </bpmn:extensionElements>
+    <bpmn:startEvent id="Start_ManualEntry" name="Manual Start" uipath:entryPointId="Entry_ManualStart">
+      <bpmn:outgoing>Flow_StartToNormalize</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:scriptTask id="Task_NormalizeRequest" name="Normalize Request" scriptFormat="JavaScript">
+      <bpmn:extensionElements>
+        <uipath:scriptVersion value="v3" />
+        <uipath:mapping version="v1">
+          <uipath:type value="BPMN.ScriptTask" version="v1" />
+          <uipath:input name="args" type="json" target="bodyField"><![CDATA[{"rawRequest":"=vars.Var_RawRequest"}]]></uipath:input>
+          <uipath:output name="normalizedResponse" type="json" var="Var_NormalizedResponse" source="=result.response" />
+        </uipath:mapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_StartToNormalize</bpmn:incoming>
+      <bpmn:outgoing>Flow_NormalizeToEnd</bpmn:outgoing>
+      <bpmn:script><![CDATA[
+// Deterministic, Jint-compatible request normalizer.
+// Runtime contract: Jint only (no Node.js packages, filesystem, network,
+// browser globals, or long-running async behavior). Only uipath.aggregate,
+// uipath._aggregate, uipath._pipe, and a no-op console are available beyond
+// standard synchronous JavaScript.
+//
+// "rawRequest" is the mapped top-level identifier for the args.rawRequest
+// input field (declared via uipath:input target="bodyField").
+
+function safeParseRequest(value) {
+  if (value === null || value === undefined) {
+    return {};
+  }
+  if (typeof value === "object") {
+    return value;
+  }
+  if (typeof value === "string") {
+    var trimmed = value.trim();
+    if (trimmed.length === 0) {
+      return {};
+    }
+    try {
+      var parsed = JSON.parse(trimmed);
+      if (parsed !== null && typeof parsed === "object") {
+        return parsed;
+      }
+      return { value: parsed };
+    } catch (parseError) {
+      return { text: trimmed };
+    }
+  }
+  return { value: value };
+}
+
+function normalizeKey(key) {
+  return String(key).trim().toLowerCase();
+}
+
+function normalizeValue(value) {
+  if (typeof value === "string") {
+    return value.trim();
+  }
+  return value;
+}
+
+var parsedRequest = safeParseRequest(rawRequest);
+var fieldNames = Object.keys(parsedRequest).sort();
+var normalizedFields = {};
+
+for (var i = 0; i < fieldNames.length; i++) {
+  var originalKey = fieldNames[i];
+  normalizedFields[normalizeKey(originalKey)] = normalizeValue(parsedRequest[originalKey]);
+}
+
+var normalizedResponse = {
+  status: "normalized",
+  fieldCount: fieldNames.length,
+  fields: normalizedFields
+};
+
+return { response: normalizedResponse };
+]]></bpmn:script>
+    </bpmn:scriptTask>
+    <bpmn:endEvent id="End_Success" name="Success">
+      <bpmn:incoming>Flow_NormalizeToEnd</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_StartToNormalize" sourceRef="Start_ManualEntry" targetRef="Task_NormalizeRequest" />
+    <bpmn:sequenceFlow id="Flow_NormalizeToEnd" sourceRef="Task_NormalizeRequest" targetRef="End_Success" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="Diagram_ScriptNormalizer">
+    <bpmndi:BPMNPlane id="Plane_ScriptNormalizer" bpmnElement="Process_ScriptNormalizer">
+      <bpmndi:BPMNShape id="S_Start_ManualEntry" bpmnElement="Start_ManualEntry">
+        <dc:Bounds x="160" y="100" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Task_NormalizeRequest" bpmnElement="Task_NormalizeRequest">
+        <dc:Bounds x="260" y="78" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_End_Success" bpmnElement="End_Success">
+        <dc:Bounds x="420" y="100" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_StartToNormalize" bpmnElement="Flow_StartToNormalize">
+        <di:waypoint x="196" y="118" />
+        <di:waypoint x="260" y="118" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_NormalizeToEnd" bpmnElement="Flow_NormalizeToEnd">
+        <di:waypoint x="360" y="118" />
+        <di:waypoint x="420" y="118" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

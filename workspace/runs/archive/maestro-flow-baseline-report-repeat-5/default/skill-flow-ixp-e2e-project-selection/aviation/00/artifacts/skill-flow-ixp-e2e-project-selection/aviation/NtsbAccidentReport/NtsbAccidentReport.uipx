@@ -1,0 +1,12 @@
+{
+  "DocVersion": "1.0.0",
+  "StudioMinVersion": "2025.10.0",
+  "SolutionId": "83bf8714-1fe6-443d-96ef-7b57d03de9b1",
+  "Projects": [
+    {
+      "Type": "Flow",
+      "ProjectRelativePath": "NtsbAccidentReport/project.uiproj",
+      "Id": "1f85fe43-bccd-46a9-badd-2ec6910f9230"
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "ExpenseApproval",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "79468660-ea85-4f81-863a-0e949f01a83c",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "ExpenseApproval"
+    },
+    "locks": [],
+    "key": "43945373-593c-4cd3-8b1b-a6eb98c5b95c",
+    "files": []
+  }
+}

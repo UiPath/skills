@@ -1,0 +1,143 @@
+{
+  "version": "1.1.0",
+  "settings": {
+    "model": "claude-opus-4-7",
+    "maxTokens": 4096,
+    "temperature": 0,
+    "engine": "basic-v2",
+    "maxIterations": 5,
+    "mode": "standard"
+  },
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "normalizeData__output__fields": {
+        "type": "array",
+        "description": "Normalized invoice fields extracted by IxP"
+      },
+      "crmLookup1__output__output": {
+        "type": "object",
+        "description": "CRM lookup result with customer account information"
+      },
+      "erpLookup1__output__output": {
+        "type": "object",
+        "description": "ERP lookup result with contract/invoice data"
+      },
+      "detectDiscrepancy__output__output": {
+        "type": "object",
+        "description": "Discrepancy detection result with line-item mismatches, totalOvercharge, totalUndercharge"
+      },
+      "start__output__webhookPayload": {
+        "type": "object",
+        "description": "Webhook payload with customer accountNumber, invoice number, and disputedLineItems"
+      }
+    }
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "determination": {
+        "type": "string",
+        "description": "The dispute determination (e.g., 'Overcharge confirmed', 'No discrepancy found')"
+      },
+      "recommendedAction": {
+        "type": "string",
+        "description": "One of: escalate_to_manager, auto_resolve, reject"
+      },
+      "autoResolutionEligible": {
+        "type": "boolean",
+        "description": "Whether the dispute qualifies for automatic resolution"
+      },
+      "creditAmount": {
+        "type": "number",
+        "description": "The credit amount to be issued (0 if no credit)"
+      },
+      "confidence": {
+        "type": "number",
+        "description": "Confidence score 0-1 for the determination"
+      },
+      "rationale": {
+        "type": "string",
+        "description": "Detailed rationale for the determination and recommended action"
+      }
+    },
+    "required": [
+      "determination",
+      "recommendedAction",
+      "autoResolutionEligible",
+      "creditAmount",
+      "confidence",
+      "rationale"
+    ]
+  },
+  "metadata": {
+    "storageVersion": "50.0.0",
+    "isConversational": false,
+    "showProjectCreationExperience": false
+  },
+  "type": "lowCode",
+  "guardrails": [],
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are an expert billing dispute analyst. Your role is to review disputed invoices against ERP contract data, CRM customer records, and discrepancy analysis to produce an authoritative dispute determination.\n\nRules:\n- If totalOvercharge > 0 and the discrepancy is clearly documented, recommend auto_resolve when the credit amount is <= 5000, escalate_to_manager when > 5000.\n- If totalUndercharge > 0 with no overcharge, recommend reject.\n- If no discrepancy is found (hasDiscrepancy = false), recommend reject.\n- autoResolutionEligible = true only when recommendedAction = 'auto_resolve'.\n- creditAmount equals totalOvercharge when recommending resolution, 0 otherwise.\n- confidence should reflect the clarity of the evidence (0.9+ when data is clear, lower when ambiguous).\n- Always provide a detailed rationale citing specific line items and amounts.\n\nReturn ONLY the JSON output matching the outputSchema. No additional text.",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "You are an expert billing dispute analyst. Your role is to review disputed invoices against ERP contract data, CRM customer records, and discrepancy analysis to produce an authoritative dispute determination.\n\nRules:\n- If totalOvercharge > 0 and the discrepancy is clearly documented, recommend auto_resolve when the credit amount is <= 5000, escalate_to_manager when > 5000.\n- If totalUndercharge > 0 with no overcharge, recommend reject.\n- If no discrepancy is found (hasDiscrepancy = false), recommend reject.\n- autoResolutionEligible = true only when recommendedAction = 'auto_resolve'.\n- creditAmount equals totalOvercharge when recommending resolution, 0 otherwise.\n- confidence should reflect the clarity of the evidence (0.9+ when data is clear, lower when ambiguous).\n- Always provide a detailed rationale citing specific line items and amounts.\n\nReturn ONLY the JSON output matching the outputSchema. No additional text."
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "Analyze this billing dispute:\n\nInvoice fields (extracted): {{input.normalizeData__output__fields}}\n\nCRM customer data: {{input.crmLookup1__output__output}}\n\nERP contract data: {{input.erpLookup1__output__output}}\n\nDiscrepancy analysis: {{input.detectDiscrepancy__output__output}}\n\nWebhook payload (dispute details): {{input.start__output__webhookPayload}}\n\nProvide your determination, recommendedAction (escalate_to_manager, auto_resolve, or reject), autoResolutionEligible, creditAmount, confidence, and rationale.",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "Analyze this billing dispute:\n\nInvoice fields (extracted): "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.normalizeData__output__fields"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\nCRM customer data: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.crmLookup1__output__output"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\nERP contract data: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.erpLookup1__output__output"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\nDiscrepancy analysis: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.detectDiscrepancy__output__output"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\nWebhook payload (dispute details): "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__webhookPayload"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\nProvide your determination, recommendedAction (escalate_to_manager, auto_resolve, or reject), autoResolutionEligible, creditAmount, confidence, and rationale."
+        }
+      ]
+    }
+  ],
+  "projectId": "1a7a599c-b2a2-4dde-bf7c-0016a642b07f"
+}

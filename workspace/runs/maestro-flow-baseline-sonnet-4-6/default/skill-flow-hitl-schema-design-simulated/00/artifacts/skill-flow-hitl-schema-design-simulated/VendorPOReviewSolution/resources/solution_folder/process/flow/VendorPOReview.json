@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "VendorPOReview",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "b064790f-0752-4cef-928f-987a095b68c3",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "VendorPOReview"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Flow",
+      "name": "VendorPOReview",
+      "package": {
+        "key": "9831980c-e578-4b29-986b-173c1c424685"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "c8bbfe5b-f9d6-491e-8889-f8c171bda12a",
+    "files": []
+  }
+}

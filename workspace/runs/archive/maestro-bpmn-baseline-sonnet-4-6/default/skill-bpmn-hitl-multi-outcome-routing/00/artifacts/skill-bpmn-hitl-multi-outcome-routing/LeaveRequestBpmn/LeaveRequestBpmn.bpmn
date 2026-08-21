@@ -1,0 +1,224 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+    xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+    xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+    xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+    xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:uipath="http://uipath.org/schema/bpmn"
+    id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn"
+    exporter="UiPath (https://bpmn.uipath.com)" exporterVersion="1.0">
+
+  <bpmn:process id="Process_1" isExecutable="true">
+    <bpmn:extensionElements>
+      <uipath:migrationVersion version="11.5" />
+      <uipath:variables version="v1">
+        <uipath:inputOutput id="Var_EmployeeName"  name="EmployeeName"     type="string" />
+        <uipath:inputOutput id="Var_DaysRequested" name="DaysRequested"    type="number" />
+        <uipath:output      id="Var_ManagerDecision" name="ManagerDecision" type="Actions.HITL" />
+      </uipath:variables>
+    </bpmn:extensionElements>
+
+    <!-- Manual start -->
+    <bpmn:startEvent id="Start_Manual" name="Start">
+      <bpmn:extensionElements>
+        <uipath:entryPointId value="61f8c313-f0c1-429e-a95b-d3339b5e236c" />
+      </bpmn:extensionElements>
+      <bpmn:outgoing>Flow_StartToHitl</bpmn:outgoing>
+    </bpmn:startEvent>
+
+    <!-- HITL: manager reviews leave request (read-only display fields) -->
+    <bpmn:userTask id="Task_ManagerReview" name="Manager Review">
+      <bpmn:extensionElements>
+        <uipath:activity version="v1">
+          <uipath:type value="Actions.HITL" version="v1" />
+          <uipath:context>
+            <uipath:input name="appId"       value="placeholder-app-id" />
+            <uipath:input name="appVersion"  value="1" />
+            <uipath:input name="actions"     value="approve,reject,escalate" />
+            <uipath:input name="key"         value="placeholder-folder-key" />
+            <uipath:input name="taskTitle"   value="Leave Request Review" />
+          </uipath:context>
+          <uipath:input name="HitlTaskArguments" type="json" target="bodyField"><![CDATA[{"employeeName":"=vars.Var_EmployeeName","daysRequested":"=vars.Var_DaysRequested"}]]></uipath:input>
+          <uipath:output name="Process response" type="Actions.HITL" var="Var_ManagerDecision" />
+        </uipath:activity>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_StartToHitl</bpmn:incoming>
+      <bpmn:outgoing>Flow_HitlToGateway</bpmn:outgoing>
+    </bpmn:userTask>
+
+    <!-- Exclusive gateway: route on manager's decision -->
+    <bpmn:exclusiveGateway id="Gw_Decision" name="Manager Decision?" default="Flow_Escalate">
+      <bpmn:incoming>Flow_HitlToGateway</bpmn:incoming>
+      <bpmn:outgoing>Flow_Approve</bpmn:outgoing>
+      <bpmn:outgoing>Flow_Reject</bpmn:outgoing>
+      <bpmn:outgoing>Flow_Escalate</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+
+    <!-- Approve path -->
+    <bpmn:scriptTask id="Task_Approve" name="Notify Approval" scriptFormat="JavaScript">
+      <bpmn:extensionElements>
+        <uipath:scriptVersion value="v3" />
+        <uipath:mapping version="v1">
+          <uipath:type value="BPMN.ScriptTask" version="v1" />
+          <uipath:input name="args" type="json" target="bodyField"><![CDATA[{}]]></uipath:input>
+        </uipath:mapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_Approve</bpmn:incoming>
+      <bpmn:outgoing>Flow_ApproveToEnd</bpmn:outgoing>
+      <bpmn:script><![CDATA[return { response: "Leave request approved." };]]></bpmn:script>
+    </bpmn:scriptTask>
+
+    <bpmn:endEvent id="End_Approved" name="Approved">
+      <bpmn:incoming>Flow_ApproveToEnd</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <!-- Reject path -->
+    <bpmn:scriptTask id="Task_Reject" name="Notify Rejection" scriptFormat="JavaScript">
+      <bpmn:extensionElements>
+        <uipath:scriptVersion value="v3" />
+        <uipath:mapping version="v1">
+          <uipath:type value="BPMN.ScriptTask" version="v1" />
+          <uipath:input name="args" type="json" target="bodyField"><![CDATA[{}]]></uipath:input>
+        </uipath:mapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_Reject</bpmn:incoming>
+      <bpmn:outgoing>Flow_RejectToEnd</bpmn:outgoing>
+      <bpmn:script><![CDATA[return { response: "Leave request rejected." };]]></bpmn:script>
+    </bpmn:scriptTask>
+
+    <bpmn:endEvent id="End_Rejected" name="Rejected">
+      <bpmn:incoming>Flow_RejectToEnd</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <!-- Escalate path (default) -->
+    <bpmn:scriptTask id="Task_Escalate" name="Escalate to HR" scriptFormat="JavaScript">
+      <bpmn:extensionElements>
+        <uipath:scriptVersion value="v3" />
+        <uipath:mapping version="v1">
+          <uipath:type value="BPMN.ScriptTask" version="v1" />
+          <uipath:input name="args" type="json" target="bodyField"><![CDATA[{}]]></uipath:input>
+        </uipath:mapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_Escalate</bpmn:incoming>
+      <bpmn:outgoing>Flow_EscalateToEnd</bpmn:outgoing>
+      <bpmn:script><![CDATA[return { response: "Leave request escalated to HR." };]]></bpmn:script>
+    </bpmn:scriptTask>
+
+    <bpmn:endEvent id="End_Escalated" name="Escalated">
+      <bpmn:incoming>Flow_EscalateToEnd</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <!-- Sequence flows -->
+    <bpmn:sequenceFlow id="Flow_StartToHitl"    sourceRef="Start_Manual"   targetRef="Task_ManagerReview" />
+    <bpmn:sequenceFlow id="Flow_HitlToGateway"  sourceRef="Task_ManagerReview" targetRef="Gw_Decision" />
+
+    <bpmn:sequenceFlow id="Flow_Approve" sourceRef="Gw_Decision" targetRef="Task_Approve">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=vars.Var_ManagerDecision == "approve"</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+
+    <bpmn:sequenceFlow id="Flow_Reject" sourceRef="Gw_Decision" targetRef="Task_Reject">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=vars.Var_ManagerDecision == "reject"</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+
+    <!-- Default branch: escalate (no condition) -->
+    <bpmn:sequenceFlow id="Flow_Escalate"      sourceRef="Gw_Decision"  targetRef="Task_Escalate" />
+
+    <bpmn:sequenceFlow id="Flow_ApproveToEnd"  sourceRef="Task_Approve"  targetRef="End_Approved" />
+    <bpmn:sequenceFlow id="Flow_RejectToEnd"   sourceRef="Task_Reject"   targetRef="End_Rejected" />
+    <bpmn:sequenceFlow id="Flow_EscalateToEnd" sourceRef="Task_Escalate" targetRef="End_Escalated" />
+  </bpmn:process>
+
+  <!-- BPMN Diagram Interchange -->
+  <bpmndi:BPMNDiagram id="Diagram_1">
+    <bpmndi:BPMNPlane id="Plane_1" bpmnElement="Process_1">
+
+      <!-- Start -->
+      <bpmndi:BPMNShape id="S_Start_Manual" bpmnElement="Start_Manual">
+        <dc:Bounds x="160" y="202" width="36" height="36" />
+      </bpmndi:BPMNShape>
+
+      <!-- HITL user task -->
+      <bpmndi:BPMNShape id="S_Task_ManagerReview" bpmnElement="Task_ManagerReview">
+        <dc:Bounds x="260" y="180" width="100" height="80" />
+      </bpmndi:BPMNShape>
+
+      <!-- Exclusive gateway -->
+      <bpmndi:BPMNShape id="S_Gw_Decision" bpmnElement="Gw_Decision" isMarkerVisible="true">
+        <dc:Bounds x="425" y="195" width="50" height="50" />
+      </bpmndi:BPMNShape>
+
+      <!-- Approve branch -->
+      <bpmndi:BPMNShape id="S_Task_Approve" bpmnElement="Task_Approve">
+        <dc:Bounds x="560" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_End_Approved" bpmnElement="End_Approved">
+        <dc:Bounds x="730" y="102" width="36" height="36" />
+      </bpmndi:BPMNShape>
+
+      <!-- Reject branch -->
+      <bpmndi:BPMNShape id="S_Task_Reject" bpmnElement="Task_Reject">
+        <dc:Bounds x="560" y="180" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_End_Rejected" bpmnElement="End_Rejected">
+        <dc:Bounds x="730" y="202" width="36" height="36" />
+      </bpmndi:BPMNShape>
+
+      <!-- Escalate branch -->
+      <bpmndi:BPMNShape id="S_Task_Escalate" bpmnElement="Task_Escalate">
+        <dc:Bounds x="560" y="280" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_End_Escalated" bpmnElement="End_Escalated">
+        <dc:Bounds x="730" y="302" width="36" height="36" />
+      </bpmndi:BPMNShape>
+
+      <!-- Edges -->
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_StartToHitl" bpmnElement="Flow_StartToHitl">
+        <di:waypoint x="196" y="220" />
+        <di:waypoint x="260" y="220" />
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_HitlToGateway" bpmnElement="Flow_HitlToGateway">
+        <di:waypoint x="360" y="220" />
+        <di:waypoint x="425" y="220" />
+      </bpmndi:BPMNEdge>
+
+      <!-- Gateway to Approve (up) -->
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_Approve" bpmnElement="Flow_Approve">
+        <di:waypoint x="450" y="195" />
+        <di:waypoint x="450" y="120" />
+        <di:waypoint x="560" y="120" />
+      </bpmndi:BPMNEdge>
+
+      <!-- Gateway to Reject (straight) -->
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_Reject" bpmnElement="Flow_Reject">
+        <di:waypoint x="475" y="220" />
+        <di:waypoint x="560" y="220" />
+      </bpmndi:BPMNEdge>
+
+      <!-- Gateway to Escalate (down, default) -->
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_Escalate" bpmnElement="Flow_Escalate">
+        <di:waypoint x="450" y="245" />
+        <di:waypoint x="450" y="320" />
+        <di:waypoint x="560" y="320" />
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_ApproveToEnd" bpmnElement="Flow_ApproveToEnd">
+        <di:waypoint x="660" y="120" />
+        <di:waypoint x="730" y="120" />
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_RejectToEnd" bpmnElement="Flow_RejectToEnd">
+        <di:waypoint x="660" y="220" />
+        <di:waypoint x="730" y="220" />
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_EscalateToEnd" bpmnElement="Flow_EscalateToEnd">
+        <di:waypoint x="660" y="320" />
+        <di:waypoint x="730" y="320" />
+      </bpmndi:BPMNEdge>
+
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+
+</bpmn:definitions>

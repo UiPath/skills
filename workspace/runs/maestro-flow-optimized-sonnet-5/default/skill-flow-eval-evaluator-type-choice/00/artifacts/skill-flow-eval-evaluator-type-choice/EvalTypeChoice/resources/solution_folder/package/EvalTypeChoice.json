@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "EvalTypeChoice",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "074e1d71-4636-420b-a3eb-521d2d87776b",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "EvalTypeChoice"
+    },
+    "locks": [],
+    "key": "036140d0-e922-4a0e-9d04-79a844b2c324",
+    "files": []
+  }
+}

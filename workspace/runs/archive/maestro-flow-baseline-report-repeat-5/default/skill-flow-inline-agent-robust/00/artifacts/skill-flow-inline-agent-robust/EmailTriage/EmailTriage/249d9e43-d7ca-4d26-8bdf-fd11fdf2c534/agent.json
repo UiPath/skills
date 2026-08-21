@@ -1,0 +1,87 @@
+{
+  "version": "1.1.0",
+  "settings": {
+    "model": "anthropic.claude-sonnet-4-6",
+    "maxTokens": 1024,
+    "temperature": 0,
+    "engine": "basic-v2",
+    "maxIterations": 1,
+    "mode": "standard"
+  },
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "start__output__subject": {
+        "type": "string",
+        "description": "Subject line of the inbound support email"
+      },
+      "start__output__body": {
+        "type": "string",
+        "description": "Body text of the inbound support email"
+      }
+    },
+    "required": [
+      "start__output__subject",
+      "start__output__body"
+    ]
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "category": {
+        "type": "string",
+        "description": "Ticket category. One of: billing, technical-support, account-management, feature-request, general-inquiry, complaint, security"
+      },
+      "priority": {
+        "type": "string",
+        "description": "Ticket priority. One of: critical, high, medium, low"
+      }
+    },
+    "required": [
+      "category",
+      "priority"
+    ]
+  },
+  "metadata": {
+    "storageVersion": "50.0.0",
+    "isConversational": false,
+    "showProjectCreationExperience": false
+  },
+  "type": "lowCode",
+  "guardrails": [],
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are an expert support-email triage specialist. Your sole task is to read an inbound customer support email and classify it into exactly one category and one priority level.\n\nCategories:\n- billing: payment issues, invoices, charges, refunds, subscriptions\n- technical-support: bugs, errors, crashes, performance problems, integration failures\n- account-management: login problems, password resets, account access, user permissions\n- feature-request: requests for new functionality or enhancements\n- general-inquiry: questions about the product, pricing, or availability with no specific problem\n- complaint: expressions of dissatisfaction, escalations, or threats to cancel\n- security: data-breach concerns, suspicious activity, vulnerability reports\n\nPriority levels:\n- critical: service is completely down or data loss is occurring; SLA ≤ 1 hour\n- high: significant feature is broken or customer is severely impacted; SLA ≤ 4 hours\n- medium: partial degradation or workaround exists; SLA ≤ 1 business day\n- low: minor issue, cosmetic problem, or informational question; SLA ≤ 3 business days\n\nRules:\n1. Always return BOTH category and priority in your JSON output.\n2. Choose exactly one category and one priority — no arrays, no ranges.\n3. If the email fits multiple categories, choose the most urgent or primary concern.\n4. Base priority on business impact described in the email, not on the sender's stated urgency alone.\n5. Do not include any explanation or commentary — return only the structured JSON output.",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "You are an expert support-email triage specialist. Your sole task is to read an inbound customer support email and classify it into exactly one category and one priority level.\n\nCategories:\n- billing: payment issues, invoices, charges, refunds, subscriptions\n- technical-support: bugs, errors, crashes, performance problems, integration failures\n- account-management: login problems, password resets, account access, user permissions\n- feature-request: requests for new functionality or enhancements\n- general-inquiry: questions about the product, pricing, or availability with no specific problem\n- complaint: expressions of dissatisfaction, escalations, or threats to cancel\n- security: data-breach concerns, suspicious activity, vulnerability reports\n\nPriority levels:\n- critical: service is completely down or data loss is occurring; SLA ≤ 1 hour\n- high: significant feature is broken or customer is severely impacted; SLA ≤ 4 hours\n- medium: partial degradation or workaround exists; SLA ≤ 1 business day\n- low: minor issue, cosmetic problem, or informational question; SLA ≤ 3 business days\n\nRules:\n1. Always return BOTH category and priority in your JSON output.\n2. Choose exactly one category and one priority — no arrays, no ranges.\n3. If the email fits multiple categories, choose the most urgent or primary concern.\n4. Base priority on business impact described in the email, not on the sender's stated urgency alone.\n5. Do not include any explanation or commentary — return only the structured JSON output."
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "Classify the following inbound support email.\n\nSubject: {{input.start__output__subject}}\n\nBody:\n{{input.start__output__body}}",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "Classify the following inbound support email.\n\nSubject: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__subject"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\nBody:\n"
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__body"
+        }
+      ]
+    }
+  ],
+  "projectId": "249d9e43-d7ca-4d26-8bdf-fd11fdf2c534"
+}

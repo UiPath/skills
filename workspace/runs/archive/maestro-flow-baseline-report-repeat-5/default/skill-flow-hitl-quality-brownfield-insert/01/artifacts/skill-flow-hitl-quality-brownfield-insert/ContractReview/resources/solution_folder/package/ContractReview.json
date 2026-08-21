@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "ContractReview",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "cf75ea35-92c0-4254-831d-0d9b33b59051",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "ContractReview"
+    },
+    "locks": [],
+    "key": "8e5f0a27-53eb-44c4-8876-10d52bc2167a",
+    "files": []
+  }
+}

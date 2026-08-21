@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "BillingDiscrepancyDetector",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "c050cac5-89d7-4e5b-a326-7133974fd6b7",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "BillingDiscrepancyDetector"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Flow",
+      "name": "BillingDiscrepancyDetector",
+      "package": {
+        "key": "5d5f8edc-5266-40dc-ae2a-c0b439eb083d"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "e4bd06fb-713b-449a-941d-5180c0914add",
+    "files": []
+  }
+}

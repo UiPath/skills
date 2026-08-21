@@ -1,0 +1,211 @@
+<Activity mc:Ignorable="sap sap2010" x:Class="Workflows_ProcessEmail"
+  mva:VisualBasic.Settings="{x:Null}"
+  xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities"
+  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+  xmlns:mva="clr-namespace:Microsoft.VisualBasic.Activities;assembly=System.Activities"
+  xmlns:sap="http://schemas.microsoft.com/netfx/2009/xaml/activities/presentation"
+  xmlns:sap2010="http://schemas.microsoft.com/netfx/2010/xaml/activities/presentation"
+  xmlns:scg="clr-namespace:System.Collections.Generic;assembly=System.Private.CoreLib"
+  xmlns:sco="clr-namespace:System.Collections.ObjectModel;assembly=mscorlib"
+  xmlns:ui="http://schemas.uipath.com/workflow/activities"
+  xmlns:umae="clr-namespace:UiPath.Mail.Activities.Enums;assembly=UiPath.Mail.Activities"
+  xmlns:umame="clr-namespace:UiPath.MicrosoftOffice365.Activities.Mail.Enums;assembly=UiPath.Mail.Activities"
+  xmlns:usau="clr-namespace:UiPath.Shared.Activities.Utils;assembly=UiPath.Mail.Activities"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <x:Members>
+    <x:Property Name="in_From" Type="InArgument(x:String)" />
+    <x:Property Name="in_Subject" Type="InArgument(x:String)" />
+    <x:Property Name="in_Body" Type="InArgument(x:String)" />
+    <x:Property Name="in_Category" Type="InArgument(x:String)" />
+    <x:Property Name="in_Priority" Type="InArgument(x:String)" />
+    <x:Property Name="in_SmtpServer" Type="InArgument(x:String)" />
+    <x:Property Name="in_SmtpPort" Type="InArgument(x:Int32)" />
+    <x:Property Name="in_SmtpEmail" Type="InArgument(x:String)" />
+    <x:Property Name="in_SmtpPassword" Type="InArgument(x:String)" />
+    <x:Property Name="in_QueueName" Type="InArgument(x:String)" />
+  </x:Members>
+  <TextExpression.NamespacesForImplementation>
+    <sco:Collection x:TypeArguments="x:String">
+      <x:String>System.Activities</x:String>
+      <x:String>System.Activities.Statements</x:String>
+      <x:String>Microsoft.VisualBasic</x:String>
+      <x:String>Microsoft.VisualBasic.Activities</x:String>
+      <x:String>System</x:String>
+      <x:String>System.Collections.Generic</x:String>
+      <x:String>System.Linq</x:String>
+      <x:String>UiPath.Core</x:String>
+      <x:String>UiPath.Core.Activities</x:String>
+      <x:String>UiPath.Mail.Activities.Enums</x:String>
+      <x:String>UiPath.Mail.SMTP.Activities</x:String>
+    </sco:Collection>
+  </TextExpression.NamespacesForImplementation>
+  <TextExpression.ReferencesForImplementation>
+    <sco:Collection x:TypeArguments="AssemblyReference">
+      <AssemblyReference>System.Activities</AssemblyReference>
+      <AssemblyReference>Microsoft.VisualBasic</AssemblyReference>
+      <AssemblyReference>System.Private.CoreLib</AssemblyReference>
+      <AssemblyReference>mscorlib</AssemblyReference>
+      <AssemblyReference>System</AssemblyReference>
+      <AssemblyReference>System.Linq</AssemblyReference>
+      <AssemblyReference>UiPath.System.Activities</AssemblyReference>
+      <AssemblyReference>UiPath.Mail.Activities</AssemblyReference>
+    </sco:Collection>
+  </TextExpression.ReferencesForImplementation>
+  <Sequence DisplayName="Process Email" sap2010:WorkflowViewState.IdRef="Sequence_1">
+    <Sequence.Variables>
+      <Variable x:TypeArguments="x:String" Name="autoReplyBody" Default="&quot;&quot;" />
+      <Variable x:TypeArguments="x:String" Name="queuePriority" Default="&quot;Normal&quot;" />
+    </Sequence.Variables>
+
+    <!-- Step 1: Build acknowledgment auto-reply body -->
+    <Assign x:TypeArguments="x:String" DisplayName="Build Auto-Reply Body">
+      <Assign.To>
+        <OutArgument x:TypeArguments="x:String">
+          <VisualBasicReference x:TypeArguments="x:String" ExpressionText="autoReplyBody" />
+        </OutArgument>
+      </Assign.To>
+      <Assign.Value>
+        <InArgument x:TypeArguments="x:String">
+          <VisualBasicValue x:TypeArguments="x:String" ExpressionText="&quot;Dear Customer,&quot; &amp; Environment.NewLine &amp; Environment.NewLine &amp; &quot;Thank you for reaching out to our support team. We have received your email and it has been categorized as: &quot; &amp; in_Category &amp; &quot; (Priority: &quot; &amp; in_Priority &amp; &quot;).&quot; &amp; Environment.NewLine &amp; Environment.NewLine &amp; &quot;Our team will review your request and respond as soon as possible.&quot; &amp; Environment.NewLine &amp; Environment.NewLine &amp; &quot;Best regards,&quot; &amp; Environment.NewLine &amp; &quot;Support Team&quot;" />
+        </InArgument>
+      </Assign.Value>
+    </Assign>
+
+    <!-- Step 2: Map category priority to queue priority -->
+    <If DisplayName="Map Priority to Queue Priority">
+      <If.Condition>
+        <InArgument x:TypeArguments="x:Boolean">
+          <VisualBasicValue x:TypeArguments="x:Boolean" ExpressionText="in_Priority = &quot;High&quot;" />
+        </InArgument>
+      </If.Condition>
+      <If.Then>
+        <Sequence DisplayName="Then">
+          <Assign x:TypeArguments="x:String" DisplayName="Set High Queue Priority">
+            <Assign.To>
+              <OutArgument x:TypeArguments="x:String">
+                <VisualBasicReference x:TypeArguments="x:String" ExpressionText="queuePriority" />
+              </OutArgument>
+            </Assign.To>
+            <Assign.Value>
+              <InArgument x:TypeArguments="x:String">
+                <VisualBasicValue x:TypeArguments="x:String" ExpressionText="&quot;High&quot;" />
+              </InArgument>
+            </Assign.Value>
+          </Assign>
+        </Sequence>
+      </If.Then>
+    </If>
+
+    <!-- Step 3: Send acknowledgment auto-reply via SMTP -->
+    <TryCatch DisplayName="Send Auto-Reply">
+      <TryCatch.Try>
+        <Sequence DisplayName="Try">
+          <ui:SendMail
+            Server="[in_SmtpServer]"
+            Port="[in_SmtpPort]"
+            Email="[in_SmtpEmail]"
+            Password="[in_SmtpPassword]"
+            To="[in_From]"
+            Subject="[&quot;Re: &quot; &amp; in_Subject]"
+            Body="[autoReplyBody]"
+            IsBodyHtml="False"
+            EnableSSL="True"
+            SecureConnection="Auto"
+            UseISConnection="False"
+            DisplayName="Send Acknowledgment Reply">
+            <ui:SendMail.AttachmentsBackup>
+              <usau:BackupSlot x:TypeArguments="umame:AttachmentInputMode" StoredValue="{x:Null}">
+                <usau:BackupSlot.BackupValues>
+                  <scg:Dictionary x:TypeArguments="umame:AttachmentInputMode, scg:List(x:Object)" />
+                </usau:BackupSlot.BackupValues>
+              </usau:BackupSlot>
+            </ui:SendMail.AttachmentsBackup>
+            <ui:SendMail.ConnectionDetailsBackupSlot>
+              <usau:BackupSlot x:TypeArguments="umae:ConnectionDetails" StoredValue="{x:Null}">
+                <usau:BackupSlot.BackupValues>
+                  <scg:Dictionary x:TypeArguments="umae:ConnectionDetails, scg:List(x:Object)" />
+                </usau:BackupSlot.BackupValues>
+              </usau:BackupSlot>
+            </ui:SendMail.ConnectionDetailsBackupSlot>
+            <ui:SendMail.Files>
+              <scg:List x:TypeArguments="InArgument(x:String)" Capacity="0" />
+            </ui:SendMail.Files>
+          </ui:SendMail>
+          <ui:LogMessage Level="Info" DisplayName="Log Reply Sent">
+            <ui:LogMessage.Message>
+              <InArgument x:TypeArguments="x:Object">
+                <VisualBasicValue x:TypeArguments="x:Object" ExpressionText="$&quot;Auto-reply sent to {in_From} for subject: {in_Subject}&quot;" />
+              </InArgument>
+            </ui:LogMessage.Message>
+          </ui:LogMessage>
+        </Sequence>
+      </TryCatch.Try>
+      <TryCatch.Catches>
+        <Catch x:TypeArguments="s:Exception" xmlns:s="clr-namespace:System;assembly=System.Private.CoreLib">
+          <ActivityAction x:TypeArguments="s:Exception">
+            <ActivityAction.Argument>
+              <DelegateInArgument x:TypeArguments="s:Exception" Name="ex" />
+            </ActivityAction.Argument>
+            <Sequence DisplayName="Catch">
+              <ui:LogMessage Level="Warn" DisplayName="Log Reply Failed">
+                <ui:LogMessage.Message>
+                  <InArgument x:TypeArguments="x:Object">
+                    <VisualBasicValue x:TypeArguments="x:Object" ExpressionText="$&quot;Failed to send auto-reply to {in_From}: {ex.Message}&quot;" />
+                  </InArgument>
+                </ui:LogMessage.Message>
+              </ui:LogMessage>
+            </Sequence>
+          </ActivityAction>
+        </Catch>
+      </TryCatch.Catches>
+    </TryCatch>
+
+    <!-- Step 4: Add email to Orchestrator queue for agent follow-up -->
+    <TryCatch DisplayName="Add to Orchestrator Queue">
+      <TryCatch.Try>
+        <Sequence DisplayName="Try">
+          <ui:AddQueueItem
+            QueueType="[in_QueueName]"
+            Priority="[DirectCast(System.Enum.Parse(GetType(UiPath.Core.QueueItemPriority), queuePriority), UiPath.Core.QueueItemPriority)]"
+            Reference="[in_From &amp; &quot;|&quot; &amp; DateTime.Now.ToString(&quot;yyyyMMddHHmmss&quot;)]"
+            DisplayName="Add Email to Queue">
+            <ui:AddQueueItem.ItemInformation>
+              <scg:Dictionary x:TypeArguments="x:String, InArgument" />
+            </ui:AddQueueItem.ItemInformation>
+            <ui:AddQueueItem.ItemInformationCollection>
+              <InArgument x:TypeArguments="scg:Dictionary(x:String, x:Object)">
+                <VisualBasicValue x:TypeArguments="scg:Dictionary(x:String, x:Object)" ExpressionText="New Dictionary(Of String, Object) From {{&quot;From&quot;, in_From}, {&quot;Subject&quot;, in_Subject}, {&quot;Category&quot;, in_Category}, {&quot;Priority&quot;, in_Priority}, {&quot;ReceivedAt&quot;, DateTime.Now.ToString()}}" />
+              </InArgument>
+            </ui:AddQueueItem.ItemInformationCollection>
+          </ui:AddQueueItem>
+          <ui:LogMessage Level="Info" DisplayName="Log Queue Item Added">
+            <ui:LogMessage.Message>
+              <InArgument x:TypeArguments="x:Object">
+                <VisualBasicValue x:TypeArguments="x:Object" ExpressionText="$&quot;Email added to queue '{in_QueueName}': From={in_From}, Category={in_Category}, Priority={in_Priority}&quot;" />
+              </InArgument>
+            </ui:LogMessage.Message>
+          </ui:LogMessage>
+        </Sequence>
+      </TryCatch.Try>
+      <TryCatch.Catches>
+        <Catch x:TypeArguments="s:Exception" xmlns:s="clr-namespace:System;assembly=System.Private.CoreLib">
+          <ActivityAction x:TypeArguments="s:Exception">
+            <ActivityAction.Argument>
+              <DelegateInArgument x:TypeArguments="s:Exception" Name="ex" />
+            </ActivityAction.Argument>
+            <Sequence DisplayName="Catch">
+              <ui:LogMessage Level="Warn" DisplayName="Log Queue Add Failed">
+                <ui:LogMessage.Message>
+                  <InArgument x:TypeArguments="x:Object">
+                    <VisualBasicValue x:TypeArguments="x:Object" ExpressionText="$&quot;Failed to add email to Orchestrator queue (continuing): {ex.Message}&quot;" />
+                  </InArgument>
+                </ui:LogMessage.Message>
+              </ui:LogMessage>
+            </Sequence>
+          </ActivityAction>
+        </Catch>
+      </TryCatch.Catches>
+    </TryCatch>
+
+  </Sequence>
+</Activity>

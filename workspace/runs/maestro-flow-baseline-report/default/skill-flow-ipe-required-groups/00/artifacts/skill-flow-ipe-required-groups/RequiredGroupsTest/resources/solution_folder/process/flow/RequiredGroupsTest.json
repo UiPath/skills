@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "RequiredGroupsTest",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "30fb09cb-28bb-49dd-b4c4-66df75c6e02f",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "RequiredGroupsTest"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Flow",
+      "name": "RequiredGroupsTest",
+      "package": {
+        "key": "eade78b4-19fb-432b-a024-837fb5299909"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "a1a9d0b4-e2ce-4b66-9ca2-643802d7c2a3",
+    "files": []
+  }
+}

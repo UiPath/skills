@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "GenerateSchemaTest",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "b2794cfb-39ac-460c-b8c3-2bd272589e08",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "GenerateSchemaTest"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Flow",
+      "name": "GenerateSchemaTest",
+      "package": {
+        "key": "1a62e49c-60ad-4f00-b0ed-4c32fc40eedb"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "12ac8423-0786-4939-800e-7df5da0a185b",
+    "files": []
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "TriageEval",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "1f3af62f-80c0-4dba-8e37-27e6cd582394",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "TriageEval"
+    },
+    "locks": [],
+    "key": "9de2fd29-f087-44bc-b4c7-366aca6bfb15",
+    "files": []
+  }
+}

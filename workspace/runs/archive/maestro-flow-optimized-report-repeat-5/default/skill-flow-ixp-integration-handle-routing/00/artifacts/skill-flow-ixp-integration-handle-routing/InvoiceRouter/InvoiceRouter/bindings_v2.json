@@ -1,0 +1,9 @@
+{
+  "resources": [
+    {
+      "name": "InvoiceBucket",
+      "type": "StorageBucket",
+      "description": "Storage bucket for vendor invoice PDF files"
+    }
+  ]
+}

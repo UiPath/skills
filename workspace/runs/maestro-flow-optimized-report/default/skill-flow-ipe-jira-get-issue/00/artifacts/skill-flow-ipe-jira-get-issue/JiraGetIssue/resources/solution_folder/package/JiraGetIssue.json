@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "JiraGetIssue",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "21a1a1a0-157e-40ea-930f-f2a7674255f9",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "JiraGetIssue"
+    },
+    "locks": [],
+    "key": "a7fef1a0-5095-48d2-93a8-56c5f83ba571",
+    "files": []
+  }
+}

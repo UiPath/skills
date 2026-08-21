@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+    xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+    xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+    xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+    xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+    xmlns:uipath="http://uipath.org/schema/bpmn"
+    id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn"
+    exporter="UiPath Maestro (https://uipath.com)" exporterVersion="1.200.0-dev.7984">
+  <bpmn:process id="Process_1" name="CallActivityAgenticBpmn" isExecutable="true">
+    <bpmn:extensionElements>
+      <uipath:migrationVersion version="11.5" />
+      <uipath:variables version="v1">
+        <uipath:inputOutput id="Var_AgenticProcessResponse" name="AgenticProcessResponse" type="object" />
+      </uipath:variables>
+      <uipath:bindings version="v1">
+        <uipath:binding id="Binding_AgenticProcess" resource="process" propertyAttribute="Key" default="PLACEHOLDER_PROCESS_RELEASE_KEY" />
+      </uipath:bindings>
+    </bpmn:extensionElements>
+
+    <bpmn:startEvent id="Event_start" name="core.trigger.manual">
+      <bpmn:extensionElements>
+        <uipath:entryPointId value="194bf29a-0f56-4d22-8e00-3d732a977774" />
+      </bpmn:extensionElements>
+      <bpmn:outgoing>Flow_Start_to_CallActivity</bpmn:outgoing>
+    </bpmn:startEvent>
+
+    <bpmn:callActivity id="CallActivity_AgenticProcess" name="Start Agentic Process">
+      <bpmn:extensionElements>
+        <uipath:activity version="v1">
+          <uipath:type value="Orchestrator.StartAgenticProcess" version="v1" />
+          <uipath:context>
+            <uipath:input name="releaseKey" value="PLACEHOLDER_PROCESS_RELEASE_KEY" />
+            <uipath:input name="folderId" value="PLACEHOLDER_FOLDER_ID" />
+            <uipath:input name="folderPath" value="PLACEHOLDER_FOLDER_PATH" />
+            <uipath:input name="name" value="PlaceholderAgenticProcessName" />
+          </uipath:context>
+          <uipath:input name="JobArguments" type="json" target="bodyField"><![CDATA[{}]]></uipath:input>
+          <uipath:output name="Process response" type="Orchestrator.RunJob" var="Var_AgenticProcessResponse" />
+        </uipath:activity>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_Start_to_CallActivity</bpmn:incoming>
+      <bpmn:outgoing>Flow_CallActivity_to_End</bpmn:outgoing>
+    </bpmn:callActivity>
+
+    <bpmn:endEvent id="Event_end" name="End">
+      <bpmn:incoming>Flow_CallActivity_to_End</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <bpmn:sequenceFlow id="Flow_Start_to_CallActivity" sourceRef="Event_start" targetRef="CallActivity_AgenticProcess" />
+    <bpmn:sequenceFlow id="Flow_CallActivity_to_End" sourceRef="CallActivity_AgenticProcess" targetRef="Event_end" />
+  </bpmn:process>
+
+  <bpmndi:BPMNDiagram id="Diagram_1">
+    <bpmndi:BPMNPlane id="Plane_1" bpmnElement="Process_1">
+      <bpmndi:BPMNShape id="S_Event_start" bpmnElement="Event_start">
+        <dc:Bounds x="160" y="100" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_CallActivity_AgenticProcess" bpmnElement="CallActivity_AgenticProcess">
+        <dc:Bounds x="260" y="78" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Event_end" bpmnElement="Event_end">
+        <dc:Bounds x="430" y="100" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="E_Flow_Start_to_CallActivity" bpmnElement="Flow_Start_to_CallActivity">
+        <di:waypoint x="196" y="118" />
+        <di:waypoint x="260" y="118" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_CallActivity_to_End" bpmnElement="Flow_CallActivity_to_End">
+        <di:waypoint x="360" y="118" />
+        <di:waypoint x="430" y="118" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

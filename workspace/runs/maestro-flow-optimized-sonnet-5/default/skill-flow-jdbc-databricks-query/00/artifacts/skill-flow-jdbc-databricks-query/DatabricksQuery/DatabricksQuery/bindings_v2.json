@@ -1,0 +1,24 @@
+{
+  "version": "2.0",
+  "resources": [
+    {
+      "resource": "connection",
+      "key": "4e5d613a-96be-4ba7-b86b-ebe225d192f1",
+      "id": "connection4e5d613a-96be-4ba7-b86b-ebe225d192f1",
+      "value": {
+        "ConnectionId": {
+          "defaultValue": "4e5d613a-96be-4ba7-b86b-ebe225d192f1",
+          "isExpression": false,
+          "displayName": "uipath-uipath-jdbc connection"
+        }
+      },
+      "metadata": {
+        "ActivityName": "Query Employees by Department",
+        "BindingsVersion": "2.2",
+        "DisplayLabel": "uipath-uipath-jdbc connection",
+        "UseConnectionService": "true",
+        "Connector": "uipath-uipath-jdbc"
+      }
+    }
+  ]
+}

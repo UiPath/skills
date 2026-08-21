@@ -1,0 +1,12 @@
+{
+  "DocVersion": "1.0.0",
+  "StudioMinVersion": "2025.10.0",
+  "SolutionId": "ba69c827-8a3d-47d7-a25e-ed2fc3f3ad45",
+  "Projects": [
+    {
+      "Type": "Flow",
+      "ProjectRelativePath": "DTLLoadByDefaultTrueTest/project.uiproj",
+      "Id": "4083420d-c53b-458f-a8c8-1cfeed97abe2"
+    }
+  ]
+}

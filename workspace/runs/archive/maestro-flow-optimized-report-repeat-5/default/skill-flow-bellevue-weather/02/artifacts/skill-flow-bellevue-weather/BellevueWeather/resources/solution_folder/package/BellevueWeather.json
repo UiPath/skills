@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "BellevueWeather",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "480fc975-a5a9-47b5-86da-4066961dbe0f",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "BellevueWeather"
+    },
+    "locks": [],
+    "key": "7a765728-cc9e-4a9a-99d0-6baad33b6c9e",
+    "files": []
+  }
+}

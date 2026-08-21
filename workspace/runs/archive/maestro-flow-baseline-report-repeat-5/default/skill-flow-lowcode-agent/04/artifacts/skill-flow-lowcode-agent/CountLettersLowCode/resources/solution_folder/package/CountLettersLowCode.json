@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "CountLettersLowCode",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "d5a986a4-7c90-46cf-bff0-c8994e2ea6d3",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "CountLettersLowCode"
+    },
+    "locks": [],
+    "key": "b9eb7d0a-419f-4e71-a3a4-63ec6361ce99",
+    "files": []
+  }
+}

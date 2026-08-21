@@ -1,0 +1,111 @@
+{
+  "version": "1.1.0",
+  "settings": {
+    "model": "claude-sonnet-4-6",
+    "maxTokens": 4096,
+    "temperature": 0.2,
+    "engine": "basic-v2",
+    "maxIterations": 3,
+    "mode": "standard"
+  },
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "start__output__webhookPayload": {
+        "type": "object",
+        "description": "Billing dispute webhook payload with customer and invoice details"
+      },
+      "disputeAnalystAgent__output__determination": {
+        "type": "string",
+        "description": "Analyst determination of the dispute"
+      },
+      "disputeAnalystAgent__output__creditAmount": {
+        "type": "number",
+        "description": "Approved credit amount"
+      },
+      "disputeAnalystAgent__output__rationale": {
+        "type": "string",
+        "description": "Analyst rationale for the determination"
+      }
+    }
+  },
+  "outputSchema": {
+    "type": "object",
+    "required": [
+      "subject",
+      "body"
+    ],
+    "properties": {
+      "subject": {
+        "type": "string",
+        "description": "Email subject line for the resolution notification"
+      },
+      "body": {
+        "type": "string",
+        "description": "Full email body text for the customer-facing resolution notification"
+      }
+    }
+  },
+  "metadata": {
+    "storageVersion": "50.0.0",
+    "isConversational": false,
+    "showProjectCreationExperience": false
+  },
+  "type": "lowCode",
+  "guardrails": [],
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a Customer Resolution Specialist. Your task is to draft professional, empathetic customer-facing resolution emails for billing disputes. The email must:\n1. Be professional and courteous\n2. Clearly state the invoice number and dispute outcome\n3. Cite the approved credit amount if applicable\n4. Explain the resolution clearly without technical jargon\n5. Include a professional closing\n\nReturn a JSON object with 'subject' and 'body' fields only.",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "You are a Customer Resolution Specialist. Your task is to draft professional, empathetic customer-facing resolution emails for billing disputes. The email must:\n1. Be professional and courteous\n2. Clearly state the invoice number and dispute outcome\n3. Cite the approved credit amount if applicable\n4. Explain the resolution clearly without technical jargon\n5. Include a professional closing\n\nReturn a JSON object with 'subject' and 'body' fields only."
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "Draft a customer resolution email for the following billing dispute.\n\nCustomer and Invoice Details: {{input.start__output__webhookPayload}}\n\nDetermination: {{input.disputeAnalystAgent__output__determination}}\n\nApproved Credit Amount: {{input.disputeAnalystAgent__output__creditAmount}}\n\nRationale: {{input.disputeAnalystAgent__output__rationale}}\n\nReturn the email as JSON with 'subject' and 'body' fields. The body must cite the invoice number and the approved credit amount.",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "Draft a customer resolution email for the following billing dispute.\n\nCustomer and Invoice Details: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__webhookPayload"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\nDetermination: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.disputeAnalystAgent__output__determination"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\nApproved Credit Amount: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.disputeAnalystAgent__output__creditAmount"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\nRationale: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.disputeAnalystAgent__output__rationale"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\nReturn the email as JSON with 'subject' and 'body' fields. The body must cite the invoice number and the approved credit amount."
+        }
+      ]
+    }
+  ],
+  "projectId": "0504529f-562c-4ba3-9c34-89e3c53e67bb"
+}

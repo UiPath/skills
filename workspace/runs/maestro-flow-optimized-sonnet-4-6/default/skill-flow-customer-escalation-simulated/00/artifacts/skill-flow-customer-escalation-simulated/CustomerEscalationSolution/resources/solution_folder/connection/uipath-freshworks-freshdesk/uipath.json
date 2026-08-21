@@ -1,0 +1,29 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "uipath",
+    "kind": "connection",
+    "type": "uipath-freshworks-freshdesk",
+    "apiVersion": "integrationservice.uipath.com/v1",
+    "isOverridable": true,
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "files": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "connectorName": "Freshdesk",
+      "name": "uipath",
+      "description": null,
+      "authenticationType": "AuthenticateAfterDeployment",
+      "connectorVersion": "1.2.16",
+      "connectorKey": "uipath-freshworks-freshdesk",
+      "pollingInterval": 5
+    },
+    "locks": [],
+    "key": "29aae689-111d-459f-9a4a-d1ad1d9d2761"
+  }
+}

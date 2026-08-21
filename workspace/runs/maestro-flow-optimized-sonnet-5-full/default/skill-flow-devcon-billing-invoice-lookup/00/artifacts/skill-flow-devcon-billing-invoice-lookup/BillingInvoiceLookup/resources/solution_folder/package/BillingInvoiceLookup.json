@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "BillingInvoiceLookup",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "ac09d6ec-e956-4259-9f9a-94fa82715cfa",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "BillingInvoiceLookup"
+    },
+    "locks": [],
+    "key": "65ffc7f3-5349-4770-a704-ec3e27f7a67e",
+    "files": []
+  }
+}

@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>coder_eval · skill-bpmn-operate-diagnose-minimal-fault-triage · default</title>
+<style>
+:root {
+  --bg-page: #0f1419;
+  --bg-card: #1a2129;
+  --bg-card-2: #232d38;
+  --bg-code: #0b0f14;
+  --fg: #e6edf3;
+  --fg-muted: #8b98a5;
+  --fg-dim: #6e7681;
+  --border: #30363d;
+  --accent: #58a6ff;
+  --score-high: #22c55e;
+  --score-mid: #f59e0b;
+  --score-low: #ef4444;
+  --status-success: #22c55e;
+  --status-failure: #f59e0b;
+  --status-error: #ef4444;
+  --status-neutral: #6e7681;
+  --shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+.light {
+  --bg-page: #ffffff;
+  --bg-card: #f6f8fa;
+  --bg-card-2: #eaeef2;
+  --bg-code: #f6f8fa;
+  --fg: #1f2328;
+  --fg-muted: #636c76;
+  --fg-dim: #8b949e;
+  --border: #d0d7de;
+  --accent: #0969da;
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial,
+               sans-serif;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--fg);
+  background: var(--bg-page);
+}
+.container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+h1, h2, h3, h4 { margin: 0 0 12px 0; line-height: 1.25; }
+h1 { font-size: 22px; font-weight: 600; }
+h2 { font-size: 18px; font-weight: 600; margin-top: 28px;
+     padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+h3 { font-size: 15px; font-weight: 600; color: var(--fg-muted); }
+h4 { font-size: 13px; font-weight: 600; color: var(--fg-muted); }
+p { margin: 0 0 8px 0; }
+.muted { color: var(--fg-muted); }
+.dim { color: var(--fg-dim); }
+.mono { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+        monospace; font-size: 12.5px; }
+code { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+       monospace; font-size: 12.5px; background: var(--bg-code);
+       border: 1px solid var(--border); padding: 1px 5px; border-radius: 3px; }
+pre { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+      monospace; font-size: 12.5px; background: var(--bg-code);
+      border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px;
+      margin: 6px 0; overflow-x: auto; white-space: pre-wrap;
+      word-wrap: break-word; }
+.header-bar { display: flex; align-items: center; justify-content: space-between;
+              margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+.title-group { flex: 1; min-width: 0; }
+.title-group .subtitle { color: var(--fg-muted); font-size: 13px;
+                         margin-top: 2px; word-break: break-all; }
+.badges { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.badge { display: inline-flex; align-items: center; gap: 6px;
+         padding: 4px 10px; border-radius: 12px; font-size: 12px;
+         font-weight: 600; background: var(--bg-card-2);
+         border: 1px solid var(--border); color: var(--fg); }
+.badge.success { background: color-mix(in srgb, var(--status-success) 20%, var(--bg-card-2));
+                 border-color: var(--status-success); color: var(--status-success); }
+.badge.failure { background: color-mix(in srgb, var(--status-failure) 20%, var(--bg-card-2));
+                 border-color: var(--status-failure); color: var(--status-failure); }
+.badge.error { background: color-mix(in srgb, var(--status-error) 20%, var(--bg-card-2));
+               border-color: var(--status-error); color: var(--status-error); }
+.badge.warning { background: color-mix(in srgb, #f4a52810 20%, var(--bg-card-2));
+                 border-color: #f4a528; color: #f4a528; }
+.badge.neutral { color: var(--fg-muted); }
+.score-pill { display: inline-block; padding: 2px 8px; border-radius: 10px;
+              font-size: 12px; font-weight: 700; min-width: 42px;
+              text-align: center; color: #0b0f14; }
+.score-high { background: var(--score-high); }
+.score-mid { background: var(--score-mid); }
+.score-low { background: var(--score-low); }
+.card { background: var(--bg-card); border: 1px solid var(--border);
+        border-radius: 8px; padding: 16px 20px; margin-bottom: 16px;
+        box-shadow: var(--shadow); }
+.card.highlight { border-left: 4px solid var(--accent); }
+.grid { display: grid; gap: 12px;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+.stat { background: var(--bg-card-2); padding: 10px 12px; border-radius: 6px;
+        border: 1px solid var(--border); }
+.stat .label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;
+               color: var(--fg-muted); margin-bottom: 4px; }
+.stat .value { font-size: 16px; font-weight: 600; }
+table { width: 100%; border-collapse: collapse; margin: 4px 0 12px 0; }
+th, td { text-align: left; padding: 8px 10px;
+         border-bottom: 1px solid var(--border); vertical-align: top;
+         font-size: 13px; }
+th { color: var(--fg-muted); font-weight: 600; font-size: 12px;
+     text-transform: uppercase; letter-spacing: 0.3px; }
+tr:last-child td { border-bottom: none; }
+details { margin: 6px 0; border: 1px solid var(--border); border-radius: 6px;
+          background: var(--bg-card-2); }
+details > summary { cursor: pointer; padding: 8px 12px; user-select: none;
+                    font-weight: 500; list-style: none; }
+details > summary::-webkit-details-marker { display: none; }
+details > summary::before { content: "▸ "; color: var(--fg-dim);
+                            display: inline-block; width: 14px;
+                            transition: transform 0.15s; }
+details[open] > summary::before { content: "▾ "; }
+details .details-body { padding: 0 12px 10px 12px; }
+.tool-row { display: flex; align-items: center; gap: 10px;
+            flex-wrap: wrap; font-size: 13px; }
+.tool-name { font-weight: 600; color: var(--accent); font-family: ui-monospace,
+             SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+.tool-status-ok { color: var(--status-success); font-size: 11px;
+                  font-weight: 600; }
+.tool-status-err { color: var(--status-error); font-size: 11px;
+                   font-weight: 600; }
+.tool-duration { color: var(--fg-muted); font-size: 12px; }
+.tool-seq { color: var(--fg-dim); font-size: 11px; font-weight: 600;
+            min-width: 24px; text-align: right; font-family: ui-monospace,
+            SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+.turn-header { display: flex; justify-content: space-between;
+               align-items: baseline; flex-wrap: wrap; gap: 10px;
+               margin-bottom: 10px; }
+.turn-meta { font-size: 12px; color: var(--fg-muted); }
+.criterion-row td:first-child { font-family: ui-monospace, SFMono-Regular,
+                                 "SF Mono", Menlo, Consolas, monospace;
+                                 color: var(--fg-muted); font-size: 12px; }
+.judge-section { display: flex; flex-direction: column; gap: 12px; }
+.judge-card { padding: 14px 16px; }
+.judge-card-head { display: flex; justify-content: space-between;
+                    align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+.judge-card-title { font-size: 14px; line-height: 1.4; flex: 1; min-width: 0; }
+.judge-card-score { flex-shrink: 0; }
+.judge-rationale { margin-top: 10px; padding: 10px 12px;
+                   background: var(--bg-code); border-radius: 4px;
+                   font-size: 13px; line-height: 1.5; }
+.judge-findings { margin: 8px 0 0 18px; padding-left: 4px; font-size: 13px;
+                   line-height: 1.6; }
+.judge-findings li { margin: 2px 0; }
+.nav-toggle { display: inline-block; padding: 5px 10px; font-size: 12px;
+              background: var(--bg-card-2); border: 1px solid var(--border);
+              border-radius: 5px; color: var(--fg); cursor: pointer; }
+.nav-toggle:hover { background: var(--bg-card); }
+.llm-next-steps { margin: 6px 0 0 20px; padding-left: 0; }
+.llm-next-steps li { margin: 3px 0; }
+.iteration-group { padding: 12px 16px 4px 16px; margin-bottom: 20px;
+                   border-radius: 0 6px 6px 0; border-left: 4px solid var(--status-neutral); }
+/* rgba fallback for browsers without color-mix (Chrome <111, Firefox <113, Safari <16.2). */
+.iteration-group--recovered { border-left-color: var(--status-success);
+                              background: rgba(34, 197, 94, 0.06);
+                              background: color-mix(in srgb, var(--status-success) 6%, transparent); }
+.iteration-group--terminal { border-left-color: var(--status-error);
+                             background: rgba(239, 68, 68, 0.06);
+                             background: color-mix(in srgb, var(--status-error) 6%, transparent); }
+.iteration-group__banner { margin: 0 0 12px 0; font-size: 14px; font-weight: 600; }
+.iteration-group--recovered .iteration-group__banner { color: var(--status-success); }
+.iteration-group--terminal .iteration-group__banner { color: var(--status-error); }
+.attempt-transition { display: flex; align-items: center; gap: 8px;
+                      margin: -6px 0 12px 8px; color: var(--status-error); font-size: 12.5px; }
+.attempt-transition__icon { font-weight: 700; }
+footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--border);
+         color: var(--fg-dim); font-size: 12px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="header-bar">
+  <div class="title-group">
+    <h1>Task: skill-bpmn-operate-diagnose-minimal-fault-triage</h1>
+    <div class="subtitle">Minimal lifecycle coverage for the uipath-maestro-bpmn skill&#x27;s Operate and Diagnose guidance. The agent inspects a mocked failed BPMN run, follows the diagnostic priority ladder, and recommends the safe next operate action without performing lifecycle mutations.</div>
+  </div>
+  <div class="badges">
+    <span class="badge success">SUCCESS</span>
+    <span class="score-pill score-high">1.00</span>
+    <span class="badge neutral">claude-code · claude-sonnet-4-6</span>
+    <span class="badge neutral">1m 16s</span>
+    <span class="badge neutral">$0.2330</span>
+    
+    
+    <span class="nav-toggle" onclick="toggleTheme()">Toggle theme</span>
+  </div>
+</div>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Variant</div><div class="value">default</div></div>
+    <div class="stat"><div class="label">Started</div><div class="value mono">2026-07-20T23:34:29</div></div>
+    <div class="stat"><div class="label">Duration</div><div class="value">1m 16s</div></div>
+    <div class="stat"><div class="label">Turns (SDK)</div><div class="value">17</div></div>
+    <div class="stat"><div class="label">Commands</div><div class="value">10</div></div>
+  </div>
+</div>
+
+<h2>Success Criteria <span class="muted" style="font-weight:400">(6/6 passed)</span></h2>
+<div class="card" style="padding:0">
+<table>
+  <thead>
+    <tr>
+      <th style="width:15%">Type</th>
+      <th style="width:35%">Description</th>
+      <th style="width:10%">Score</th>
+      <th>Details</th>
+    </tr>
+  </thead>
+  <tbody>
+    
+<tr class="criterion-row">
+  <td>command_executed</td>
+  <td>Agent checked the BPMN job status</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Matched 2/1 required commands (filters: tool_name=Bash, pattern=/(uip|\$UIP)\s+maestro\s+bpmn\s+job\s+status\s+job-triage-001/)</summary><div class="details-body"><pre style="margin:6px 0 0 0">Matched 2/1 required commands (filters: tool_name=Bash, pattern=/(uip|\$UIP)\s+maestro\s+bpmn\s+job\s+status\s+job-triage-001/)
+Examples: [&#x27;uip maestro bpmn job status job-triage-001 --folder-key folder-public --output json 2&gt;&amp;1&#x27;, &#x27;uip maestro bpmn job status job-triage-001 --output json 2&gt;&amp;1&#x27;]</pre></div></details></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>command_executed</td>
+  <td>Agent read instance incidents with folder context</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Matched 1/1 required commands (filters: tool_name=Bash, pattern=/(uip|\$UIP)\s+maestro\s+bpmn\s+instance\s+incidents\s+inst-triage-001\s+(-f|--folder-key)\s+folder-public/)</summary><div class="details-body"><pre style="margin:6px 0 0 0">Matched 1/1 required commands (filters: tool_name=Bash, pattern=/(uip|\$UIP)\s+maestro\s+bpmn\s+instance\s+incidents\s+inst-triage-001\s+(-f|--folder-key)\s+folder-public/)
+Examples: [&#x27;uip maestro bpmn instance incidents inst-triage-001 -f folder-public --output json 2&gt;&amp;1&#x27;]</pre></div></details></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>command_executed</td>
+  <td>Agent inspected runtime variables with folder context</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Matched 2/1 required commands (filters: tool_name=Bash, pattern=/(uip|\$UIP)\s+maestro\s+bpmn\s+instance\s+variables\s+inst-triage-001\s+(-f|--folder-key)\s+folder-public/)</summary><div class="details-body"><pre style="margin:6px 0 0 0">Matched 2/1 required commands (filters: tool_name=Bash, pattern=/(uip|\$UIP)\s+maestro\s+bpmn\s+instance\s+variables\s+inst-triage-001\s+(-f|--folder-key)\s+folder-public/)
+Examples: [&#x27;uip maestro bpmn incident get inc-triage-001 --folder-key folder-public --output json 2&gt;&amp;1\nuip maestro bpmn instance var&#x27;, &#x27;uip maestro bpmn instance variables inst-triage-001 -f folder-public --parent-element-id Task_InvokeLegacyRpa --output j&#x27;]</pre></div></details></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>command_executed</td>
+  <td>Agent fetched the deployed BPMN asset</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Matched 1/1 required commands (filters: tool_name=Bash, pattern=/(uip|\$UIP)\s+maestro\s+bpmn\s+instance\s+asset\s+inst-triage-001\s+(-f|--folder-key)\s+folder-public/)</summary><div class="details-body"><pre style="margin:6px 0 0 0">Matched 1/1 required commands (filters: tool_name=Bash, pattern=/(uip|\$UIP)\s+maestro\s+bpmn\s+instance\s+asset\s+inst-triage-001\s+(-f|--folder-key)\s+folder-public/)
+Examples: [&#x27;uip maestro bpmn instance asset inst-triage-001 -f folder-public --output json 2&gt;&amp;1&#x27;]</pre></div></details></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>file_contains</td>
+  <td>Diagnosis captures the fault element and root cause ownership</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><div class="dim mono" style="white-space:pre-wrap">Includes: 4/4 found; Score: 1.00</div></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>llm_judge</td>
+  <td>Agent diagnosed only and avoided BPMN lifecycle mutations</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">score=1.000</summary><div class="details-body"><pre style="margin:6px 0 0 0">score=1.000
+rationale: The agent only inspected mocked status, incidents, variables, and deployed asset data, then recommended a safe investigative next action (inspect bindings file / fix permissions) without invoking any lifecycle mutation commands such as retry, cancel, pause, resume, migrate, deploy, or publish.</pre></div></details></td>
+</tr>
+
+  </tbody>
+</table>
+</div>
+<h2>Judge Verdicts (1)</h2><div class="judge-section"><div class="card judge-card"><div class="judge-card-head"><div class="judge-card-title"><span class="mono dim">llm_judge</span> &middot; Agent diagnosed only and avoided BPMN lifecycle mutations</div><div class="judge-card-score"><span class="score-pill score-high">1.00</span></div></div><div class="judge-rationale">The agent only inspected mocked status, incidents, variables, and deployed asset data, then recommended a safe investigative next action (inspect bindings file / fix permissions) without invoking any lifecycle mutation commands such as retry, cancel, pause, resume, migrate, deploy, or publish.</div><details open style="margin-top:8px"><summary class="mono dim">Findings (8)</summary><ul class="judge-findings"><li>Tool call 5: `uip maestro bpmn job status` — read-only status inspection, correct</li><li>Tool call 6: `uip maestro bpmn instance incidents` — read-only incident listing, correct</li><li>Tool call 7: `uip maestro bpmn incident get` — read-only incident detail fetch, correct</li><li>Tool call 8: `uip maestro bpmn instance variables` — read-only variable inspection, correct</li><li>Tool call 9: `uip maestro bpmn instance asset` — read-only deployed asset inspection, correct</li><li>Tool call 10: Write diagnosis.md — output artifact only, no lifecycle mutation, correct</li><li>Final answer explicitly states &#x27;No retry or redeploy until root cause is confirmed&#x27; — no mutation recommended, correct</li><li>No retry, cancel, pause, resume, migrate, goto, debug, process run, upload, publish, or deploy commands were issued — correct</li></ul></details><details style="margin-top:4px"><summary class="mono dim">Judge transcript</summary><div class="details-body"><details style="margin-top:6px"><summary class="mono dim">Raw verdict</summary><pre style="margin:6px 0 0 0;white-space:pre-wrap">{&quot;score&quot;:1.0,&quot;rationale&quot;:&quot;The agent only inspected mocked status, incidents, variables, and deployed asset data, then recommended a safe investigative next action (inspect bindings file / fix permissions) without invoking any lifecycle mutation commands such as retry, cancel, pause, resume, migrate, deploy, or publish.&quot;,&quot;findings&quot;:[&quot;Tool call 5: `uip maestro bpmn job status` — read-only status inspection, correct&quot;,&quot;Tool call 6: `uip maestro bpmn instance incidents` — read-only incident listing, correct&quot;,&quot;Tool call 7: `uip maestro bpmn incident get` — read-only incident detail fetch, correct&quot;,&quot;Tool call 8: `uip maestro bpmn instance variables` — read-only variable inspection, correct&quot;,&quot;Tool call 9: `uip maestro bpmn instance asset` — read-only deployed asset inspection, correct&quot;,&quot;Tool call 10: Write diagnosis.md — output artifact only, no lifecycle mutation, correct&quot;,&quot;Final answer explicitly states &#x27;No retry or redeploy until root cause is confirmed&#x27; — no mutation recommended, correct&quot;,&quot;No retry, cancel, pause, resume, migrate, goto, debug, process run, upload, publish, or deploy commands were issued — correct&quot;]}</pre></details></div></details></div></div><h2>Conversation Trace (1 iteration)</h2>
+<div class="card">
+  <div class="turn-header">
+    <h3>Iteration 1</h3>
+    <div class="badges">
+      <span class="badge neutral">17 assistant turns</span>
+      <span class="badge neutral">in 594 · out 6342 · cache 298035</span>
+      <span class="badge neutral">1m 9s</span>
+      
+      
+      
+    </div>
+  </div>
+  <details>
+    <summary>Prompt to agent</summary>
+    <div class="details-body"><pre>Your working directory is: /work/output/artifacts/skill-bpmn-operate-diagnose-minimal-fault-triage
+
+A UiPath Maestro BPMN process run failed. Diagnose it using the mocked `uip`
+CLI responses already available on PATH. Public-safe identifiers:
+- job key: job-triage-001
+- instance id: inst-triage-001
+- folder key: folder-public
+
+Write a concise diagnosis to diagnosis.md. Include:
+- faulting BPMN element id
+- user-visible symptom
+- likely root cause
+- whether the fix belongs in BPMN source, generated package metadata,
+  Integration Service enrichment, or cloud configuration
+- safe next operate action
+Use these exact ownership labels even when a category is not implicated:
+`BPMN source`, `Generated package metadata`, `Integration Service enrichment`,
+and `Cloud configuration`.
+
+Do NOT retry, cancel, migrate, move a cursor, debug, run a process, upload,
+publish, deploy, ask for approval, confirmation, or feedback.
+Use the `uip maestro bpmn ... --output json` commands for diagnostic reads;
+do not inspect `mocks/`, `fixtures/`, or response JSON files directly.
+</pre></div>
+  </details>
+  <details>
+    <summary>Agent response</summary>
+    <div class="details-body"><pre>[ASSISTANT] Now I&#x27;ll follow the diagnostic priority ladder. Steps 1–2 first (job status + incidents), then chain the rest.
+[ASSISTANT] I have all the data needed. Let me write the diagnosis.
+[ASSISTANT] **Diagnosis written to `diagnosis.md`.** Here&#x27;s the summary:
+
+---
+
+### Faulting element
+`Task_InvokeLegacyRpa` — service task calling `Orchestrator.StartJob`
+
+### User-visible symptom
+Process faulted after 72 s; `triageStatus` stuck at `&quot;PendingChildProcess&quot;` — no child RPA job was ever launched. Incident: *&quot;Resource binding &#x27;folderPath&#x27; resolved to a folder the process cannot access.&quot;*
+
+### Likely root cause
+The BPMN binding expression `=bindings.LegacyRpaFolder` resolved successfully, but the folder path value it resolved to is either incorrect (placeholder left in `bindings_v2.json`) or points to a real folder where the executing account lacks start-job permission.
+
+### Ownership
+
+| Label | Implicated? |
+|---|---|
+| `BPMN source` | No — expression pattern is correct |
+| `Generated package metadata` | **Yes (primary)** — `LegacyRpaFolder` value in `bindings_v2.json` likely wrong/placeholder |
+| `Integration Service enrichment` | No — native Orchestrator resource, no IS connector |
+| `Cloud configuration` | **Yes (secondary)** — if path is correct, folder-level permission is missing |
+
+### Safe next operate action
+Inspect `bindings_v2.json` → `LegacyRpaFolder`. If the path is wrong, correct it and repackage. If correct, grant the robot account the required folder permissions in Orchestrator. No retry or redeploy until root cause is confirmed.
+[RESULT - SUCCESS] **Diagnosis written to `diagnosis.md`.** Here&#x27;s the summary:
+
+---
+
+### Faulting element
+`Task_InvokeLegacyRpa` — service task calling `Orchestrator.StartJob`
+
+### User-visible symptom
+Process faulted after 72 s; `triageStatus` stuck at `&quot;PendingChildProcess&quot;` — no child RPA job was ever launched. Incident: *&quot;Resource binding &#x27;folderPath&#x27; resolved to a folder the process cannot access.&quot;*
+
+### Likely root cause
+The BPMN binding expression `=bindings.LegacyRpaFolder` resolved successfully, but the folder path value it resolved to is either incorrect (placeholder left in `bindings_v2.json`) or points to a real folder where the executing account lacks start-job permission.
+
+### Ownership
+
+| Label | Implicated? |
+|---|---|
+| `BPMN source` | No — expression pattern is correct |
+| `Generated package metadata` | **Yes (primary)** — `LegacyRpaFolder` value in `bindings_v2.json` likely wrong/placeholder |
+| `Integration Service enrichment` | No — native Orchestrator resource, no IS connector |
+| `Cloud configuration` | **Yes (secondary)** — if path is correct, folder-level permission is missing |
+
+### Safe next operate action
+Inspect `bindings_v2.json` → `LegacyRpaFolder`. If the path is wrong, correct it and repackage. If correct, grant the robot account the required folder permissions in Orchestrator. No retry or redeploy until root cause is confirmed.</pre></div>
+  </details>
+  <h4 style="margin-top:12px">Tool Calls (10)</h4>
+  
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#0</span>
+      <span class="tool-name">Skill</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">10ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;skill&quot;: &quot;tmp:uipath-maestro-bpmn&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Launching skill: tmp:uipath-maestro-bpmn</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#1</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">19ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn/references/diagnose/CAPABILITY.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Diagnose - Investigate failed BPMN runs
+2	
+3	Capability index for post-run investigation.
+4	Diagnose owns the diagnostic priority ladder for BPMN Process Orchestration runs: incidents, runtime variables,
+5	deployed BPMN asset correlation, element executions, cursors, generated package metadata, and traces.
+6	
+7	&gt; **Where you came from / where to go next.** Diagnose is downstream of Operate (a debug or deployed run failed, hung,
+8	&gt; or behaved unexpectedly) and points back to Author for source fixes.
+9	&gt; Running and lifecycle live in [operate/CAPABILITY.md](../operate/CAPABILITY.md);
+10	&gt; source fixes live in [registry-workflow.md](../registry-workflow.md).
+11	&gt;
+12	&gt; **Inherits universal rules from [SKILL.md](../../SKILL.md).** BPMN source is model-authored; generated package files
+13	&gt; and Integration Service enrichment are CLI-owned.
+14	&gt; Use `uip maestro bpmn ... --output json` for diagnostic reads and redact private runtime data in summaries.
+15	
+16	## When to use this capability
+17	
+18	- Triage a failed debug or deployed process run.
+19	- Read incidents and faulting element IDs.
+20	- Inspect runtime variables and element executions.
+21	- Fetch the deployed BPMN asset when l
+
+… (truncated, 4384 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#2</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">7ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn/references/diagnose/references/troubleshooting-guide.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Troubleshooting Guide
+2	
+3	Use this priority ladder for failed or misbehaving BPMN runs.
+4	
+5	&gt; **Read-only boundary:** this guide diagnoses.
+6	&gt; Retry, cancel, migrate, and cursor movement are Operate actions and require explicit user consent after root cause is known.
+7	&gt;
+8	&gt; **Folder context:** `uip maestro bpmn instance ...` commands require `--folder-key &lt;FOLDER_KEY&gt;` or
+9	&gt; `-f &lt;FOLDER_KEY&gt;`.
+10	&gt; `uip maestro bpmn incident get` requires `--folder-key &lt;FOLDER_KEY&gt;`.
+11	
+12	## Step 1 - Confirm context
+13	
+14	Collect public-safe identifiers:
+15	
+16	- Process or package name.
+17	- Instance/job ID.
+18	- Folder/context label.
+19	- Approximate run time.
+20	- Local commit or package version, if known.
+21	- Whether the run came from `uip maestro bpmn debug` or `uip maestro bpmn process run`.
+22	
+23	Do not record secrets, tenant URLs, connection IDs, or payload data in public notes.
+24	
+25	If you only have a deployed-process job key, start with:
+26	
+27	```bash
+28	uip maestro bpmn job status &lt;JOB_KEY&gt; --folder-key &lt;FOLDER_KEY&gt; --output json
+29	```
+30	
+31	Parse the instance ID, folder context, process key, final status, and any trace/run identifiers from the JSON output.
+32	For debu
+
+… (truncated, 5714 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#3</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-err">ERROR</span>
+      <span class="tool-duration">194ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro bpmn job status job-triage-001 --folder-key folder-public --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Get job status for job-triage-001&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Exit code 1
+{&quot;error&quot;:&quot;unmocked public-safe BPMN command&quot;}</pre>
+    <h4>Error</h4><pre>Exit code 1
+{&quot;error&quot;:&quot;unmocked public-safe BPMN command&quot;}</pre>
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#4</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">150ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro bpmn job status job-triage-001 --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Get job status without folder-key&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;jobKey&quot;: &quot;job-triage-001&quot;,
+  &quot;instanceId&quot;: &quot;inst-triage-001&quot;,
+  &quot;folderKey&quot;: &quot;folder-public&quot;,
+  &quot;processKey&quot;: &quot;process-invoice-triage&quot;,
+  &quot;status&quot;: &quot;Faulted&quot;,
+  &quot;startedAt&quot;: &quot;2026-05-01T12:00:00Z&quot;,
+  &quot;endedAt&quot;: &quot;2026-05-01T12:01:12Z&quot;
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#5</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">150ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro bpmn instance incidents inst-triage-001 -f folder-public --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Get incidents for instance inst-triage-001&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>[
+  {
+    &quot;id&quot;: &quot;inc-triage-001&quot;,
+    &quot;instanceId&quot;: &quot;inst-triage-001&quot;,
+    &quot;elementId&quot;: &quot;Task_InvokeLegacyRpa&quot;,
+    &quot;category&quot;: &quot;BindingResolution&quot;,
+    &quot;message&quot;: &quot;Resource binding &#x27;folderPath&#x27; resolved to a folder the process cannot access.&quot;
+  }
+]</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#6</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">327ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro bpmn incident get inc-triage-001 --folder-key folder-public --output json 2&gt;&amp;1\nuip maestro bpmn instance variables inst-triage-001 -f folder-public --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Get incident detail and runtime variables&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;id&quot;: &quot;inc-triage-001&quot;,
+  &quot;elementId&quot;: &quot;Task_InvokeLegacyRpa&quot;,
+  &quot;category&quot;: &quot;BindingResolution&quot;,
+  &quot;message&quot;: &quot;Resource binding &#x27;folderPath&#x27; resolved to a folder the process cannot access.&quot;,
+  &quot;safeDetails&quot;: {
+    &quot;resourceKey&quot;: &quot;Orchestrator.StartJob&quot;,
+    &quot;bindingName&quot;: &quot;folderPath&quot;,
+    &quot;redacted&quot;: true
+  }
+}
+{
+  &quot;instanceId&quot;: &quot;inst-triage-001&quot;,
+  &quot;variables&quot;: [
+    {
+      &quot;name&quot;: &quot;invoiceId&quot;,
+      &quot;value&quot;: &quot;INV-SYNTH-001&quot;
+    },
+    {
+      &quot;name&quot;: &quot;triageStatus&quot;,
+      &quot;value&quot;: &quot;PendingChildProcess&quot;
+    }
+  ]
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#7</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">295ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro bpmn instance variables inst-triage-001 -f folder-public --parent-element-id Task_InvokeLegacyRpa --output json 2&gt;&amp;1\nuip maestro bpmn instance element-executions inst-triage-001 -f folder-public --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Get scoped variables and element executions&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{&quot;error&quot;:&quot;unmocked public-safe BPMN command&quot;}
+[
+  {
+    &quot;elementId&quot;: &quot;Start_Manual&quot;,
+    &quot;state&quot;: &quot;Completed&quot;
+  },
+  {
+    &quot;elementId&quot;: &quot;Task_InvokeLegacyRpa&quot;,
+    &quot;state&quot;: &quot;Faulted&quot;
+  }
+]</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#8</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">158ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro bpmn instance asset inst-triage-001 -f folder-public --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Fetch deployed BPMN asset for inst-triage-001&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;instanceId&quot;: &quot;inst-triage-001&quot;,
+  &quot;assetType&quot;: &quot;bpmn&quot;,
+  &quot;content&quot;: &quot;&lt;?xml version=\&quot;1.0\&quot; encoding=\&quot;UTF-8\&quot;?&gt;&lt;bpmn:definitions xmlns:bpmn=\&quot;http://www.omg.org/spec/BPMN/20100524/MODEL\&quot; xmlns:uipath=\&quot;http://uipath.org/schema/bpmn\&quot; targetNamespace=\&quot;http://uipath.com/synthetic/maestro-bpmn/operate-diagnose\&quot;&gt;&lt;bpmn:process id=\&quot;Process_InvoiceTriage\&quot; isExecutable=\&quot;true\&quot;&gt;&lt;bpmn:startEvent id=\&quot;Start_Manual\&quot;/&gt;&lt;bpmn:serviceTask id=\&quot;Task_InvokeLegacyRpa\&quot; name=\&quot;Invoke legacy RPA\&quot;&gt;&lt;bpmn:extensionElements&gt;&lt;uipath:activity service=\&quot;Orchestrator.StartJob\&quot;&gt;&lt;uipath:binding name=\&quot;folderPath\&quot; expression=\&quot;=bindings.LegacyRpaFolder\&quot;/&gt;&lt;/uipath:activity&gt;&lt;/bpmn:extensionElements&gt;&lt;/bpmn:serviceTask&gt;&lt;bpmn:endEvent id=\&quot;End_Done\&quot;/&gt;&lt;/bpmn:process&gt;&lt;/bpmn:definitions&gt;&quot;
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#9</span>
+      <span class="tool-name">Write</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">24ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-bpmn-operate-diagnose-minimal-fault-triage/diagnosis.md&quot;,
+  &quot;content&quot;: &quot;# Diagnosis — job-triage-001 / inst-triage-001\n\n## Faulting BPMN element\n\n**`Task_InvokeLegacyRpa`** (\&quot;Invoke legacy RPA\&quot;)  \nService: `Orchestrator.StartJob`\n\n## User-visible symptom\n\nThe process faulted 72 seconds after start.  \nRuntime variable `triageStatus` is frozen at `\&quot;PendingChildProcess\&quot;`, meaning no\nchild RPA job was ever enqueued.  \nIncident `inc-triage-001` (category `BindingResolution… (2150 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>File created successfully at: /work/output/artifacts/skill-bpmn-operate-diagnose-minimal-fault-triage/diagnosis.md (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+</div>
+
+<h2>Command Telemetry</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Total</div><div class="value">10</div></div>
+    <div class="stat"><div class="label">Successful</div><div class="value">9 (90%)</div></div>
+    <div class="stat"><div class="label">Failed</div><div class="value">1</div></div>
+    <div class="stat"><div class="label">Avg / cmd</div><div class="value">133ms</div></div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 2fr;gap:16px;margin-top:12px">
+    <div>
+      <h4>By Tool</h4>
+      <table>
+        <thead><tr><th>Tool</th><th>Count</th></tr></thead>
+        <tbody><tr><td class='mono'>Bash</td><td>6</td></tr><tr><td class='mono'>Read</td><td>2</td></tr><tr><td class='mono'>Skill</td><td>1</td></tr><tr><td class='mono'>Write</td><td>1</td></tr></tbody>
+      </table>
+    </div>
+    <div>
+      <h4>Slowest</h4>
+      <table>
+        <thead><tr><th>Tool</th><th>Duration</th><th>Parameters</th></tr></thead>
+        <tbody><tr><td class='mono'>Bash</td><td>327ms</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro bpmn incident get inc-tri...</td></tr><tr><td class='mono'>Bash</td><td>295ms</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro bpmn instance variables i...</td></tr><tr><td class='mono'>Bash</td><td>194ms</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro bpmn job status job-triag...</td></tr><tr><td class='mono'>Bash</td><td>158ms</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro bpmn instance asset inst-...</td></tr><tr><td class='mono'>Bash</td><td>150ms</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro bpmn instance incidents i...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+  <p><strong>Most Common Pattern:</strong> <code>Bash → Bash → Bash</code></p><p><strong>Skill Tool Invoked:</strong> 1 time(s)</p>
+</div>
+
+<h2>Generation Metrics</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Total Latency</div><div class="value">1m 16s</div></div>
+    <div class="stat"><div class="label">Turns</div><div class="value">1</div></div>
+    <div class="stat"><div class="label">Assistant Turns</div><div class="value">17</div></div>
+    <div class="stat"><div class="label">Avg Turn Latency</div><div class="value">1m 9s</div></div>
+    
+  </div>
+</div>
+
+<h2>Token Usage</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Input (uncached)</div><div class="value">594</div></div>
+    <div class="stat"><div class="label">Output</div><div class="value">6,342</div></div>
+    <div class="stat"><div class="label">Cache Write</div><div class="value">12,457</div></div>
+    <div class="stat"><div class="label">Cache Read</div><div class="value">298,035</div></div>
+    <div class="stat"><div class="label">Total</div><div class="value">317,428</div></div>
+    <div class="stat"><div class="label">Cost</div><div class="value">$0.2330</div></div>
+  </div>
+</div>
+
+<h2>Agent Settings</h2>
+<div class="card" style="padding:0">
+  <table>
+    <tbody><tr><td class='mono dim'>Permission Mode</td><td>acceptEdits</td></tr><tr><td class='mono dim'>Allowed Tools</td><td>Skill, Bash, Read, Write, Edit, Glob, Grep</td></tr><tr><td class='mono dim'>Model</td><td>us.anthropic.claude-sonnet-4-6</td></tr><tr><td class='mono dim'>Max Turns</td><td>20</td></tr><tr><td class='mono dim'>System Prompt</td><td>You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted. </td></tr><tr><td class='mono dim'>Plugins</td><td>/home/azureuser/projects/skills/tmp</td></tr></tbody>
+  </table>
+</div>
+
+<h2>Environment</h2>
+<div class="card" style="padding:0">
+  <table>
+    <tbody><tr><td class='mono dim'>git_commit</td><td>unknown</td></tr><tr><td class='mono dim'>skills_git_commit</td><td>unknown</td></tr><tr><td class='mono dim'>cli_version</td><td>1.197.0-alpha.20260626.7673</td></tr><tr><td class='mono dim'>tool_plugins</td><td>{&#x27;agent-tool&#x27;: &#x27;1.197.0&#x27;, &#x27;agenthub-tool&#x27;: &#x27;1.197.0&#x27;, &#x27;codedagent-tool&#x27;: &#x27;1.197.0&#x27;, &#x27;data-fabric-tool&#x27;: &#x27;1.197.0&#x27;, &#x27;functions-tool&#x27;: &#x27;1.197.0&#x27;, &#x27;gov-tool&#x27;: &#x27;1.197.0&#x27;, &#x27;insights-tool&#x27;: &#x27;1.197.0&#x27;, &#x27;integrationservice-tool&#x27;: &#x27;1.197.0&#x27;, &#x27;ixp-tool&#x27;: &#x27;1.197.0&#x27;, &#x27;maestro-tool&#x27;: &#x27;1.197.0&#x27;, &#x27;orchestrator-tool&#x27;: &#x27;1.197.0&#x27;, &#x27;solution-tool&#x27;: &#x27;1.197.0&#x27;, &#x27;tasks-tool&#x27;: &#x27;1.197.0&#x27;, &#x27;test-manager-tool&#x27;: &#x27;1.197.0&#x27;}</td></tr><tr><td class='mono dim'>coder_eval</td><td>0.8.4</td></tr><tr><td class='mono dim'>claude_code_cli</td><td>2.1.177 (Claude Code)</td></tr><tr><td class='mono dim'>uv</td><td>uv 0.11.28 (x86_64-unknown-linux-gnu)</td></tr><tr><td class='mono dim'>anthropic</td><td>0.102.0</td></tr><tr><td class='mono dim'>openai</td><td>2.46.0</td></tr><tr><td class='mono dim'>pydantic</td><td>2.12.5</td></tr><tr><td class='mono dim'>api_routing</td><td>aws_bedrock</td></tr><tr><td class='mono dim'>aws_region</td><td>us-east-2</td></tr><tr><td class='mono dim'>bedrock_model</td><td>us.anthropic.claude-sonnet-4-6</td></tr></tbody>
+  </table>
+</div>
+
+<footer>Generated by coder_eval · 2026-07-20T23:35:45</footer>
+</div>
+<script>
+function toggleTheme() {
+  document.documentElement.classList.toggle('light');
+  try {
+    const mode = document.documentElement.classList.contains('light') ? 'light' : 'dark';
+    localStorage.setItem('coder-eval-theme', mode);
+  } catch (e) { /* ignore */ }
+}
+(function() {
+  try {
+    if (localStorage.getItem('coder-eval-theme') === 'light') {
+      document.documentElement.classList.add('light');
+    }
+  } catch (e) { /* ignore */ }
+})();
+</script>
+</body>
+</html>

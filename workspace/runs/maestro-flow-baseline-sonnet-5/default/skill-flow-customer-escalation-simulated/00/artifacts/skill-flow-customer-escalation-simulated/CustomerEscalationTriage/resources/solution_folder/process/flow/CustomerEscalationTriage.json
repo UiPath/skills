@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "CustomerEscalationTriage",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "328650aa-8c5d-4850-91c5-42a4357cbdce",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "CustomerEscalationTriage"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Flow",
+      "name": "CustomerEscalationTriage",
+      "package": {
+        "key": "447cfef0-d1e8-4005-813c-decf1daffb39"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "21c0b16d-6deb-4da5-a06d-079a5a5de644",
+    "files": []
+  }
+}

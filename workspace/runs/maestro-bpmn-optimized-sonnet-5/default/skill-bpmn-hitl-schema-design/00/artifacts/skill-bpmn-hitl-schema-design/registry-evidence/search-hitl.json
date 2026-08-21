@@ -1,0 +1,29 @@
+{
+  "Result": "Success",
+  "Code": "RegistrySearchSuccess",
+  "Data": {
+    "ExtensionTypes": [
+      {
+        "ExtensionType": "Actions.HITL",
+        "Label": "Create action app task",
+        "BpmnElement": "bpmn:UserTask",
+        "ExtensionTag": "uipath:activity",
+        "InputPattern": "mergedBody",
+        "BindingPattern": "none",
+        "RequiresDiscovery": "Yes"
+      }
+    ],
+    "Connectors": [],
+    "Processes": [],
+    "ProcessesByType": {
+      "Process": 0,
+      "ProcessOrchestration": 0,
+      "Agent": 0,
+      "Flow": 0,
+      "Api": 0,
+      "Function": 0,
+      "CaseManagement": 0,
+      "BusinessRules": 0
+    }
+  }
+}

@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>coder_eval · skill-flow-trigger-with-filter · default</title>
+<style>
+:root {
+  --bg-page: #0f1419;
+  --bg-card: #1a2129;
+  --bg-card-2: #232d38;
+  --bg-code: #0b0f14;
+  --fg: #e6edf3;
+  --fg-muted: #8b98a5;
+  --fg-dim: #6e7681;
+  --border: #30363d;
+  --accent: #58a6ff;
+  --score-high: #22c55e;
+  --score-mid: #f59e0b;
+  --score-low: #ef4444;
+  --status-success: #22c55e;
+  --status-failure: #f59e0b;
+  --status-error: #ef4444;
+  --status-neutral: #6e7681;
+  --shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+.light {
+  --bg-page: #ffffff;
+  --bg-card: #f6f8fa;
+  --bg-card-2: #eaeef2;
+  --bg-code: #f6f8fa;
+  --fg: #1f2328;
+  --fg-muted: #636c76;
+  --fg-dim: #8b949e;
+  --border: #d0d7de;
+  --accent: #0969da;
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial,
+               sans-serif;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--fg);
+  background: var(--bg-page);
+}
+.container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+h1, h2, h3, h4 { margin: 0 0 12px 0; line-height: 1.25; }
+h1 { font-size: 22px; font-weight: 600; }
+h2 { font-size: 18px; font-weight: 600; margin-top: 28px;
+     padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+h3 { font-size: 15px; font-weight: 600; color: var(--fg-muted); }
+h4 { font-size: 13px; font-weight: 600; color: var(--fg-muted); }
+p { margin: 0 0 8px 0; }
+.muted { color: var(--fg-muted); }
+.dim { color: var(--fg-dim); }
+.mono { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+        monospace; font-size: 12.5px; }
+code { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+       monospace; font-size: 12.5px; background: var(--bg-code);
+       border: 1px solid var(--border); padding: 1px 5px; border-radius: 3px; }
+pre { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+      monospace; font-size: 12.5px; background: var(--bg-code);
+      border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px;
+      margin: 6px 0; overflow-x: auto; white-space: pre-wrap;
+      word-wrap: break-word; }
+.header-bar { display: flex; align-items: center; justify-content: space-between;
+              margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+.title-group { flex: 1; min-width: 0; }
+.title-group .subtitle { color: var(--fg-muted); font-size: 13px;
+                         margin-top: 2px; word-break: break-all; }
+.badges { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.badge { display: inline-flex; align-items: center; gap: 6px;
+         padding: 4px 10px; border-radius: 12px; font-size: 12px;
+         font-weight: 600; background: var(--bg-card-2);
+         border: 1px solid var(--border); color: var(--fg); }
+.badge.success { background: color-mix(in srgb, var(--status-success) 20%, var(--bg-card-2));
+                 border-color: var(--status-success); color: var(--status-success); }
+.badge.failure { background: color-mix(in srgb, var(--status-failure) 20%, var(--bg-card-2));
+                 border-color: var(--status-failure); color: var(--status-failure); }
+.badge.error { background: color-mix(in srgb, var(--status-error) 20%, var(--bg-card-2));
+               border-color: var(--status-error); color: var(--status-error); }
+.badge.warning { background: color-mix(in srgb, #f4a52810 20%, var(--bg-card-2));
+                 border-color: #f4a528; color: #f4a528; }
+.badge.neutral { color: var(--fg-muted); }
+.score-pill { display: inline-block; padding: 2px 8px; border-radius: 10px;
+              font-size: 12px; font-weight: 700; min-width: 42px;
+              text-align: center; color: #0b0f14; }
+.score-high { background: var(--score-high); }
+.score-mid { background: var(--score-mid); }
+.score-low { background: var(--score-low); }
+.card { background: var(--bg-card); border: 1px solid var(--border);
+        border-radius: 8px; padding: 16px 20px; margin-bottom: 16px;
+        box-shadow: var(--shadow); }
+.card.highlight { border-left: 4px solid var(--accent); }
+.grid { display: grid; gap: 12px;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+.stat { background: var(--bg-card-2); padding: 10px 12px; border-radius: 6px;
+        border: 1px solid var(--border); }
+.stat .label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;
+               color: var(--fg-muted); margin-bottom: 4px; }
+.stat .value { font-size: 16px; font-weight: 600; }
+table { width: 100%; border-collapse: collapse; margin: 4px 0 12px 0; }
+th, td { text-align: left; padding: 8px 10px;
+         border-bottom: 1px solid var(--border); vertical-align: top;
+         font-size: 13px; }
+th { color: var(--fg-muted); font-weight: 600; font-size: 12px;
+     text-transform: uppercase; letter-spacing: 0.3px; }
+tr:last-child td { border-bottom: none; }
+details { margin: 6px 0; border: 1px solid var(--border); border-radius: 6px;
+          background: var(--bg-card-2); }
+details > summary { cursor: pointer; padding: 8px 12px; user-select: none;
+                    font-weight: 500; list-style: none; }
+details > summary::-webkit-details-marker { display: none; }
+details > summary::before { content: "▸ "; color: var(--fg-dim);
+                            display: inline-block; width: 14px;
+                            transition: transform 0.15s; }
+details[open] > summary::before { content: "▾ "; }
+details .details-body { padding: 0 12px 10px 12px; }
+.tool-row { display: flex; align-items: center; gap: 10px;
+            flex-wrap: wrap; font-size: 13px; }
+.tool-name { font-weight: 600; color: var(--accent); font-family: ui-monospace,
+             SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+.tool-status-ok { color: var(--status-success); font-size: 11px;
+                  font-weight: 600; }
+.tool-status-err { color: var(--status-error); font-size: 11px;
+                   font-weight: 600; }
+.tool-duration { color: var(--fg-muted); font-size: 12px; }
+.tool-seq { color: var(--fg-dim); font-size: 11px; font-weight: 600;
+            min-width: 24px; text-align: right; font-family: ui-monospace,
+            SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+.turn-header { display: flex; justify-content: space-between;
+               align-items: baseline; flex-wrap: wrap; gap: 10px;
+               margin-bottom: 10px; }
+.turn-meta { font-size: 12px; color: var(--fg-muted); }
+.criterion-row td:first-child { font-family: ui-monospace, SFMono-Regular,
+                                 "SF Mono", Menlo, Consolas, monospace;
+                                 color: var(--fg-muted); font-size: 12px; }
+.judge-section { display: flex; flex-direction: column; gap: 12px; }
+.judge-card { padding: 14px 16px; }
+.judge-card-head { display: flex; justify-content: space-between;
+                    align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+.judge-card-title { font-size: 14px; line-height: 1.4; flex: 1; min-width: 0; }
+.judge-card-score { flex-shrink: 0; }
+.judge-rationale { margin-top: 10px; padding: 10px 12px;
+                   background: var(--bg-code); border-radius: 4px;
+                   font-size: 13px; line-height: 1.5; }
+.judge-findings { margin: 8px 0 0 18px; padding-left: 4px; font-size: 13px;
+                   line-height: 1.6; }
+.judge-findings li { margin: 2px 0; }
+.nav-toggle { display: inline-block; padding: 5px 10px; font-size: 12px;
+              background: var(--bg-card-2); border: 1px solid var(--border);
+              border-radius: 5px; color: var(--fg); cursor: pointer; }
+.nav-toggle:hover { background: var(--bg-card); }
+.llm-next-steps { margin: 6px 0 0 20px; padding-left: 0; }
+.llm-next-steps li { margin: 3px 0; }
+.iteration-group { padding: 12px 16px 4px 16px; margin-bottom: 20px;
+                   border-radius: 0 6px 6px 0; border-left: 4px solid var(--status-neutral); }
+/* rgba fallback for browsers without color-mix (Chrome <111, Firefox <113, Safari <16.2). */
+.iteration-group--recovered { border-left-color: var(--status-success);
+                              background: rgba(34, 197, 94, 0.06);
+                              background: color-mix(in srgb, var(--status-success) 6%, transparent); }
+.iteration-group--terminal { border-left-color: var(--status-error);
+                             background: rgba(239, 68, 68, 0.06);
+                             background: color-mix(in srgb, var(--status-error) 6%, transparent); }
+.iteration-group__banner { margin: 0 0 12px 0; font-size: 14px; font-weight: 600; }
+.iteration-group--recovered .iteration-group__banner { color: var(--status-success); }
+.iteration-group--terminal .iteration-group__banner { color: var(--status-error); }
+.attempt-transition { display: flex; align-items: center; gap: 8px;
+                      margin: -6px 0 12px 8px; color: var(--status-error); font-size: 12.5px; }
+.attempt-transition__icon { font-weight: 700; }
+footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--border);
+         color: var(--fg-dim); font-size: 12px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="header-bar">
+  <div class="title-group">
+    <h1>Task: skill-flow-trigger-with-filter</h1>
+    <div class="subtitle">Verifies that the uipath-maestro-flow skill teaches agents to emit a structured `filter` tree. Without this, UI drops the filter silently on first open.</div>
+  </div>
+  <div class="badges">
+    <span class="badge success">SUCCESS</span>
+    <span class="score-pill score-high">1.00</span>
+    <span class="badge neutral">claude-code · claude-sonnet-5</span>
+    <span class="badge neutral">51.7s</span>
+    <span class="badge neutral">$0.3881</span>
+    
+    
+    <span class="nav-toggle" onclick="toggleTheme()">Toggle theme</span>
+  </div>
+</div>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Variant</div><div class="value">default</div></div>
+    <div class="stat"><div class="label">Started</div><div class="value mono">2026-08-19T15:50:14</div></div>
+    <div class="stat"><div class="label">Duration</div><div class="value">51.7s</div></div>
+    <div class="stat"><div class="label">Turns (SDK)</div><div class="value">11</div></div>
+    <div class="stat"><div class="label">Commands</div><div class="value">6</div></div>
+  </div>
+</div>
+
+<h2>Success Criteria <span class="muted" style="font-weight:400">(1/1 passed)</span></h2>
+<div class="card" style="padding:0">
+<table>
+  <thead>
+    <tr>
+      <th style="width:15%">Type</th>
+      <th style="width:35%">Description</th>
+      <th style="width:10%">Score</th>
+      <th>Details</th>
+    </tr>
+  </thead>
+  <tbody>
+    
+<tr class="criterion-row">
+  <td>run_command</td>
+  <td>trigger_detail.json is the --detail object with a top-level `filter` tree on `subject` Contains, no top-level filterExpression</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Command: python3 $TASK_DIR/check_trigger_filter.py</summary><div class="details-body"><pre style="margin:6px 0 0 0">Command: python3 $TASK_DIR/check_trigger_filter.py
+Exit code: 0 (expected: 0)
+Stdout:
+PASS: trigger_detail.json filter tree references `subject` and uses PascalCase `Contains`
+
+Stderr: (empty)</pre></div></details></td>
+</tr>
+
+  </tbody>
+</table>
+</div>
+<h2>Conversation Trace (1 iteration)</h2>
+<div class="card">
+  <div class="turn-header">
+    <h3>Iteration 1</h3>
+    <div class="badges">
+      <span class="badge neutral">11 assistant turns</span>
+      <span class="badge neutral">in 537 · out 3990 · cache 322453</span>
+      <span class="badge neutral">50.1s</span>
+      
+      
+      
+    </div>
+  </div>
+  <details>
+    <summary>Prompt to agent</summary>
+    <div class="details-body"><pre>Your working directory is: /work/output/artifacts/skill-flow-trigger-with-filter
+
+You are authoring a UiPath Flow triggered by an Outlook email whose subject contains &quot;good day&quot; and sent from
+abc@xyz.com.
+Do NOT run any command that requires a live connection — this sandbox has no UiPath tenant, so you cannot configure
+the trigger against a live connection.
+Instead, write to `trigger_detail.json` the exact JSON object you would pass to
+`uip maestro flow node configure &lt;flow&gt; &lt;triggerId&gt; --detail &#x27;&lt;JSON&gt;&#x27;` to configure that trigger.
+Use placeholders for any connection/folder/event ids you cannot resolve offline.
+</pre></div>
+  </details>
+  <details>
+    <summary>Agent response</summary>
+    <div class="details-body"><pre>[ASSISTANT] I&#x27;ve written `trigger_detail.json` with the planned `--detail` payload for configuring the Outlook `email-received` trigger (`uipath.connector.trigger.uipath-microsoft-outlook365.email-received`).
+
+Since no live tenant connection is available, this uses placeholders that would normally be resolved via CLI calls:
+
+- `&lt;CONNECTION_ID&gt;` / `&lt;FOLDER_KEY&gt;` — from `uip is connections list &quot;uipath-microsoft-outlook365&quot; --all-folders --output json`
+- `&lt;INBOX_FOLDER_ID&gt;` — from `uip is resources run list` resolving the mail folder reference (e.g. &quot;Inbox&quot;) — Outlook&#x27;s `parentFolderId` is a required event parameter with a `reference`, not a freeform filter field
+- `eventMode: &quot;polling&quot;` — this is the connector&#x27;s declared mode from `registry get`; can&#x27;t confirm offline, so noted as an assumption
+- The `filter` tree ANDs `from = abc@xyz.com` with `subject Contains &quot;good day&quot;` — field ids (`from`, `subject`) assumed from the connector-trigger plugin&#x27;s documented Outlook example; must be verified against the actual `filterFields.fields[].name` from `registry get --connection-id` before running configure for real, since matching is case-sensitive and an unmatched leaf is silently dropped (not an error).
+
+To actually apply this, you&#x27;d run:
+```
+uip maestro flow node configure &lt;flow&gt; &lt;triggerId&gt; --detail &quot;$(cat trigger_detail.json)&quot; --output json
+```
+after resolving the placeholders against a live connection.
+[RESULT - SUCCESS] I&#x27;ve written `trigger_detail.json` with the planned `--detail` payload for configuring the Outlook `email-received` trigger (`uipath.connector.trigger.uipath-microsoft-outlook365.email-received`).
+
+Since no live tenant connection is available, this uses placeholders that would normally be resolved via CLI calls:
+
+- `&lt;CONNECTION_ID&gt;` / `&lt;FOLDER_KEY&gt;` — from `uip is connections list &quot;uipath-microsoft-outlook365&quot; --all-folders --output json`
+- `&lt;INBOX_FOLDER_ID&gt;` — from `uip is resources run list` resolving the mail folder reference (e.g. &quot;Inbox&quot;) — Outlook&#x27;s `parentFolderId` is a required event parameter with a `reference`, not a freeform filter field
+- `eventMode: &quot;polling&quot;` — this is the connector&#x27;s declared mode from `registry get`; can&#x27;t confirm offline, so noted as an assumption
+- The `filter` tree ANDs `from = abc@xyz.com` with `subject Contains &quot;good day&quot;` — field ids (`from`, `subject`) assumed from the connector-trigger plugin&#x27;s documented Outlook example; must be verified against the actual `filterFields.fields[].name` from `registry get --connection-id` before running configure for real, since matching is case-sensitive and an unmatched leaf is silently dropped (not an error).
+
+To actually apply this, you&#x27;d run:
+```
+uip maestro flow node configure &lt;flow&gt; &lt;triggerId&gt; --detail &quot;$(cat trigger_detail.json)&quot; --output json
+```
+after resolving the placeholders against a live connection.</pre></div>
+  </details>
+  <h4 style="margin-top:12px">Tool Calls (6)</h4>
+  
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#0</span>
+      <span class="tool-name">Skill</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">20ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;skill&quot;: &quot;tmp:uipath-maestro-flow&quot;,
+  &quot;args&quot;: &quot;Author the exact JSON object for `uip maestro flow node configure &lt;flow&gt; &lt;triggerId&gt; --detail &#x27;&lt;JSON&gt;&#x27;` to configure an Outlook email trigger that fires when subject contains \&quot;good day\&quot; and sender is abc@xyz.com. No live UiPath tenant connection is available, so use placeholders for connection/folder/event ids that can&#x27;t be resolved offline. Write the final JSON object to trigger_detail.json in th… (73 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Launching skill: tmp:uipath-maestro-flow</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#1</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">50ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -ril \&quot;outlook\&quot; /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/ 2&gt;/dev/null&quot;,
+  &quot;description&quot;: &quot;Search skill docs for Outlook references&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/.maintenance/README.md
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/diagnose/references/failure-modes.md
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/CAPABILITY.md
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/planning-arch.md
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/plugins/connector-trigger/planning.md
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/plugins/connector-trigger/impl.md
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/plugins/connector/planning.md</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#2</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">323ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/plugins/connector/impl.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Connector Activity Nodes — Implementation
+2	
+3	How to configure connector activity nodes: connection binding, enriched metadata, reference field resolution, and debugging. Connection bindings are emitted by `uip maestro flow node configure` into the flow&#x27;s top-level `bindings[]`; `bindings_v2.json` is regenerated from them at debug/pack time and should never be hand-edited.
+4	
+5	For generic node/edge add, remove, and wiring procedures, see [editing-operations.md](../../editing-operations.md). This guide covers the connector-specific configuration workflow that must follow the generic node add.
+6	
+7	## How Connector Nodes Differ from OOTB
+8	
+9	1. **Connection binding required** — every connector node needs an IS connection (OAuth, API key, etc.) authored in the flow&#x27;s top-level `bindings[]` (which the CLI regenerates into `bindings_v2.json` at debug/pack time). Without it, the node cannot authenticate.
+10	2. **Enriched metadata via `--connection-id`** — call `registry get` with `--connection-id` to get connection-aware field metadata. Without it, only base fields are returned — custom fields, dynamic enums, and reference resolution are missing.
+11	3. **`inputs.detail` object** —
+
+… (truncated, 66612 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#3</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">83ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/plugins/connector-trigger/impl.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Connector Trigger Nodes — Implementation
+2	
+3	How to configure connector trigger nodes: connection binding, enriched metadata, event parameter resolution, and trigger-specific `node configure` fields. This replaces the IS activity workflow (Steps 1-6 in [connector/impl.md](../connector/impl.md)) — trigger nodes have different metadata and configuration.
+4	
+5	&gt; **This plugin covers two node families that share the same configuration mechanism:**
+6	&gt;
+7	&gt; - **Connector triggers** (`uipath.connector.trigger.&lt;key&gt;.&lt;trigger&gt;`) — start node; the event starts the flow. The default subject of every step below.
+8	&gt; - **Wait for events** (`uipath.connector.event.&lt;key&gt;.&lt;event&gt;`) — a mid-flow event node; the flow pauses and waits for the event before continuing. Same connection binding, enriched metadata, event parameter resolution, filter trees, and `node configure` fields. Only the placement and node lifecycle differ. See [Wait for events](#wait-for-events-uipathconnectoreventkeyevent) for the deltas, then apply Steps 1-6 below unchanged.
+9	
+10	## Configuration Workflow
+11	
+12	Follow these steps for every IS trigger node.
+13	
+14	### Step 1 — Fetch a preliminary connection and query trigge
+
+… (truncated, 37732 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#4</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">4ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/plugins/connector-trigger/planning.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Connector Trigger Nodes — Planning
+2	
+3	Connector trigger nodes start a flow when an external event fires (e.g., &quot;email received in Outlook&quot;, &quot;issue created in Jira&quot;). They use UiPath Integration Service connectors — the same ecosystem as IS activity nodes — but replace the manual/scheduled start node with an event-driven one.
+4	
+5	&gt; **Two node families, same mechanism:**
+6	&gt;
+7	&gt; - **Connector trigger** (`uipath.connector.trigger.&lt;key&gt;.&lt;trigger&gt;`) — **starts** the flow.
+8	&gt; - **Wait for events** (`uipath.connector.event.&lt;key&gt;.&lt;event&gt;`) — **pauses a running flow** until the event arrives, then continues. Has an `input` port; NOT the start node. See [Wait for events](impl.md#wait-for-events-uipathconnectoreventkeyevent).
+9	
+10	## When to Use
+11	
+12	**Trigger** — flow should start when an external event fires.
+13	
+14	**Event** (mid-flow) — running flow must wait for an external event before proceeding (sent an approval, waits for the reply). Flow keeps its own start trigger.
+15	
+16	### Decision Order
+17	
+18	| Tier | Trigger Type | When to Use |
+19	|---|---|---|
+20	| 1 | **IS connector trigger** (this node type) | A connector exists and supports the event you need (e.g., &quot;new email
+
+… (truncated, 5875 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#5</span>
+      <span class="tool-name">Write</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">14ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-trigger-with-filter/trigger_detail.json&quot;,
+  &quot;content&quot;: &quot;{\n  \&quot;connectionId\&quot;: \&quot;&lt;CONNECTION_ID&gt;\&quot;,\n  \&quot;folderKey\&quot;: \&quot;&lt;FOLDER_KEY&gt;\&quot;,\n  \&quot;eventMode\&quot;: \&quot;polling\&quot;,\n  \&quot;eventParameters\&quot;: {\n    \&quot;parentFolderId\&quot;: \&quot;&lt;INBOX_FOLDER_ID&gt;\&quot;\n  },\n  \&quot;filter\&quot;: {\n    \&quot;groupOperator\&quot;: 0,\n    \&quot;index\&quot;: 0,\n    \&quot;filters\&quot;: [\n      {\n        \&quot;id\&quot;: \&quot;from\&quot;,\n        \&quot;operator\&quot;: \&quot;Equals\&quot;,\n        \&quot;value\&quot;: {\n          \&quot;value\&quot;: \&quot;abc@xyz.com\&quot;,\n          \&quot;rawString\&quot;: \&quot;\\\&quot;abc@xyz.com\\\&quot;\&quot;,\n        … (251 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>File created successfully at: /work/output/artifacts/skill-flow-trigger-with-filter/trigger_detail.json (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+</div>
+
+<h2>Command Telemetry</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Total</div><div class="value">6</div></div>
+    <div class="stat"><div class="label">Successful</div><div class="value">6 (100%)</div></div>
+    <div class="stat"><div class="label">Failed</div><div class="value">0</div></div>
+    <div class="stat"><div class="label">Avg / cmd</div><div class="value">82ms</div></div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 2fr;gap:16px;margin-top:12px">
+    <div>
+      <h4>By Tool</h4>
+      <table>
+        <thead><tr><th>Tool</th><th>Count</th></tr></thead>
+        <tbody><tr><td class='mono'>Read</td><td>3</td></tr><tr><td class='mono'>Skill</td><td>1</td></tr><tr><td class='mono'>Bash</td><td>1</td></tr><tr><td class='mono'>Write</td><td>1</td></tr></tbody>
+      </table>
+    </div>
+    <div>
+      <h4>Slowest</h4>
+      <table>
+        <thead><tr><th>Tool</th><th>Duration</th><th>Parameters</th></tr></thead>
+        <tbody><tr><td class='mono'>Read</td><td>323ms</td><td class='mono dim'>{&#x27;file_path&#x27;: &#x27;/home/azureuser/projects/skills/tmp...</td></tr><tr><td class='mono'>Read</td><td>83ms</td><td class='mono dim'>{&#x27;file_path&#x27;: &#x27;/home/azureuser/projects/skills/tmp...</td></tr><tr><td class='mono'>Bash</td><td>50ms</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;grep -ril &quot;outlook&quot; /home/azureuser/p...</td></tr><tr><td class='mono'>Skill</td><td>20ms</td><td class='mono dim'>{&#x27;skill&#x27;: &#x27;tmp:uipath-maestro-flow&#x27;, &#x27;args&#x27;: &#x27;Auth...</td></tr><tr><td class='mono'>Write</td><td>14ms</td><td class='mono dim'>{&#x27;file_path&#x27;: &#x27;/work/output/artifacts/skill-flow-t...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+  <p><strong>Most Common Pattern:</strong> <code>Skill → Bash → Read</code></p><p><strong>Skill Tool Invoked:</strong> 1 time(s)</p>
+</div>
+
+<h2>Generation Metrics</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Total Latency</div><div class="value">51.7s</div></div>
+    <div class="stat"><div class="label">Turns</div><div class="value">1</div></div>
+    <div class="stat"><div class="label">Assistant Turns</div><div class="value">11</div></div>
+    <div class="stat"><div class="label">Avg Turn Latency</div><div class="value">50.1s</div></div>
+    
+  </div>
+</div>
+
+<h2>Token Usage</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Input (uncached)</div><div class="value">537</div></div>
+    <div class="stat"><div class="label">Output</div><div class="value">3,990</div></div>
+    <div class="stat"><div class="label">Cache Write</div><div class="value">61,314</div></div>
+    <div class="stat"><div class="label">Cache Read</div><div class="value">322,453</div></div>
+    <div class="stat"><div class="label">Total</div><div class="value">388,294</div></div>
+    <div class="stat"><div class="label">Cost</div><div class="value">$0.3881</div></div>
+  </div>
+</div>
+
+<h2>Agent Settings</h2>
+<div class="card" style="padding:0">
+  <table>
+    <tbody><tr><td class='mono dim'>Permission Mode</td><td>acceptEdits</td></tr><tr><td class='mono dim'>Allowed Tools</td><td>Skill, Bash, Read, Write, Edit, Glob, Grep</td></tr><tr><td class='mono dim'>Model</td><td>us.anthropic.claude-sonnet-5</td></tr><tr><td class='mono dim'>Max Turns</td><td>40</td></tr><tr><td class='mono dim'>System Prompt</td><td>You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted. </td></tr><tr><td class='mono dim'>System Prompt Mode</td><td>append</td></tr><tr><td class='mono dim'>Plugins</td><td>/home/azureuser/projects/skills/tmp</td></tr></tbody>
+  </table>
+</div>
+
+<h2>Environment</h2>
+<div class="card" style="padding:0">
+  <table>
+    <tbody><tr><td class='mono dim'>git_commit</td><td>unknown</td></tr><tr><td class='mono dim'>skills_git_commit</td><td>unknown</td></tr><tr><td class='mono dim'>cli_version</td><td>1.201.0-dev.8272</td></tr><tr><td class='mono dim'>tool_plugins</td><td>{&#x27;admin-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;agent-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;agenthub-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;aops-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;api-workflow-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;automation-hub-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;codedagent-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;codedapp-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;coder-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;context-grounding-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;conversational-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;data-fabric-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;docsai-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;function-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;gov-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;guardrails-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;insights-tool&#x27;: &#x27;1.201.0-dev.8276&#x27;, &#x27;integrationservice-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;ixp-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;llm-gateway-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;llmgw-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;maestro-tool&#x27;: &#x27;1.201.0-dev.8275&#x27;, &#x27;model-hub-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;orchestrator-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;platform-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;pm-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;rpa-legacy-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;rpa-tool&#x27;: &#x27;1.201.0-dev.20260809.3&#x27;, &#x27;solution-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;tasks-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;test-manager-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;traces-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;vertical-solutions-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;}</td></tr><tr><td class='mono dim'>coder_eval</td><td>0.9.6</td></tr><tr><td class='mono dim'>claude_code_cli</td><td>2.1.177 (Claude Code)</td></tr><tr><td class='mono dim'>uv</td><td>uv 0.12.5 (x86_64-unknown-linux-gnu)</td></tr><tr><td class='mono dim'>anthropic</td><td>0.122.0</td></tr><tr><td class='mono dim'>openai</td><td>3.2.0</td></tr><tr><td class='mono dim'>pydantic</td><td>2.12.5</td></tr><tr><td class='mono dim'>api_routing</td><td>aws_bedrock</td></tr><tr><td class='mono dim'>eval_routing</td><td>aws_bedrock</td></tr><tr><td class='mono dim'>aws_region</td><td>us-east-2</td></tr><tr><td class='mono dim'>bedrock_model</td><td>us.anthropic.claude-sonnet-4-6</td></tr><tr><td class='mono dim'>system_prompt_semantics</td><td>append</td></tr></tbody>
+  </table>
+</div>
+
+<footer>Generated by coder_eval · 2026-08-19T15:51:06</footer>
+</div>
+<script>
+function toggleTheme() {
+  document.documentElement.classList.toggle('light');
+  try {
+    const mode = document.documentElement.classList.contains('light') ? 'light' : 'dark';
+    localStorage.setItem('coder-eval-theme', mode);
+  } catch (e) { /* ignore */ }
+}
+(function() {
+  try {
+    if (localStorage.getItem('coder-eval-theme') === 'light') {
+      document.documentElement.classList.add('light');
+    }
+  } catch (e) { /* ignore */ }
+})();
+</script>
+</body>
+</html>

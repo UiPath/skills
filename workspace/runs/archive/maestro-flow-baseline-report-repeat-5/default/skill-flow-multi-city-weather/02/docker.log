@@ -1,0 +1,9 @@
+20:07:44 [INFO   ] [default/skill-flow-multi-city-weather/02] orchestrator: API routing: aws_bedrock
+20:22:44 [WARNING] agents.watchdog: task_timeout (skill-flow-multi-city-weather) fired after 900.0s — hard-killing subprocess
+20:22:44 [ERROR  ] [default/skill-flow-multi-city-weather/02] orchestrator: Task timed out: Task timed out after 900s
+20:22:44 [INFO   ] [default/skill-flow-multi-city-weather/02] orchestrator: Running post-run command: python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/cleanup_solutions.py
+20:22:46 [WARNING] [default/skill-flow-multi-city-weather/02] orchestrator: [post_run stderr] cleanup_solutions: solution c1f8df32-09cd-4e0e-bf59-e39577716115 not uploaded (from MultiCityWeather/MultiCityWeather.uipx); nothing to clean up
+20:22:46 [WARNING] [default/skill-flow-multi-city-weather/02] orchestrator: [post_run stderr] cleanup_solutions: summary policy=always deleted=0 preserved=0 skipped=0 not_uploaded=1 failed=0
+20:22:46 [INFO   ] [default/skill-flow-multi-city-weather/02] orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+20:22:46 [INFO   ] [default/skill-flow-multi-city-weather/02] orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-multi-city-weather
+20:22:46 [INFO   ] [default/skill-flow-multi-city-weather/02] orchestrator: Task finished: status=TIMEOUT duration=905.3s score=0.000 iterations=1

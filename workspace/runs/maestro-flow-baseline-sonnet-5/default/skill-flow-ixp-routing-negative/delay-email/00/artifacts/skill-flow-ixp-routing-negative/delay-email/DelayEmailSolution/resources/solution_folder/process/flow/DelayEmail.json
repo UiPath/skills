@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "DelayEmail",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "5d082006-05f1-4f5f-ab5a-694dcd2996fd",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "DelayEmail"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Flow",
+      "name": "DelayEmail",
+      "package": {
+        "key": "5b1fd20e-402f-4be3-8f82-3bf42b1b88d8"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "1fbe1109-4536-4a15-bf7d-4933c4ef95e0",
+    "files": []
+  }
+}

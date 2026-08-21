@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "JiraSearchTriage",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "8c75e614-8c75-4223-9788-0aa0acf3f1b8",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "JiraSearchTriage"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Flow",
+      "name": "JiraSearchTriage",
+      "package": {
+        "key": "0f02871b-495f-4ae5-b2d8-c15609458c9b"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "40598ea6-94ff-414d-be45-387434445f06",
+    "files": []
+  }
+}

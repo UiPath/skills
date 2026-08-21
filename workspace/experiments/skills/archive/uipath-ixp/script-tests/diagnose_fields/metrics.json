@@ -1,0 +1,20 @@
+{
+  "Data": {
+    "ProjectScore": 0.62,
+    "ProjectScoreQuality": "Medium",
+    "ModelVersion": 3,
+    "ValidatedDocuments": 5,
+    "FieldGroups": [
+      {"FieldGroup": "Invoice", "F1": 0.55, "Precision": 0.60, "Recall": 0.50, "ErrorRate": 0.45, "Documents": 5},
+      {"FieldGroup": "Line Items", "F1": 0.80, "Precision": 0.82, "Recall": 0.78, "ErrorRate": 0.20, "Documents": 4}
+    ],
+    "Fields": [
+      {"FieldGroup": "Invoice", "FieldId": "f-001", "F1": 0.90, "Precision": 0.91, "Recall": 0.89, "Documents": 5, "Annotations": 45},
+      {"FieldGroup": "Invoice", "FieldId": "f-002", "F1": 0.30, "Precision": 0.20, "Recall": 0.65, "Documents": 5, "Annotations": 30},
+      {"FieldGroup": "Invoice", "FieldId": "f-003", "F1": 0.40, "Precision": 0.70, "Recall": 0.25, "Documents": 5, "Annotations": 20},
+      {"FieldGroup": "Invoice", "FieldId": "f-004", "F1": 0.50, "Precision": 0.50, "Recall": 0.50, "Documents": 5, "Annotations": 25},
+      {"FieldGroup": "Invoice", "FieldId": "f-005", "F1": 0.00, "Precision": 0.00, "Recall": 0.00, "Documents": 0, "Annotations": 0},
+      {"FieldGroup": "Line Items", "FieldId": "f-006", "F1": 0.80, "Precision": 0.82, "Recall": 0.78, "Documents": 4, "Annotations": 32}
+    ]
+  }
+}

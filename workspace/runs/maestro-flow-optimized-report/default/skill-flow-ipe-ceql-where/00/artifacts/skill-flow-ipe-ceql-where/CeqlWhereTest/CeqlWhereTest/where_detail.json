@@ -1,0 +1,33 @@
+{
+  "_comment": "Planned --detail payload for node 'listAadGroups1' (uipath.connector.uipath-microsoft-azureactivedirectory.list-groups). Cannot be applied with node configure until a live Azure AD IS connection exists. To configure: uip maestro flow node configure CeqlWhereTest.flow listAadGroups1 --detail \"$(cat where_detail.json | python3 -c 'import json,sys; d=json.load(sys.stdin); del d[\"_comment\"]; print(json.dumps(d))')\" --output json",
+  "_configureCommand": "uip maestro flow node configure CeqlWhereTest.flow listAadGroups1 --detail '{...see fields below...}' --output json",
+  "connectionId": "<AZURE_AD_CONNECTION_UUID>",
+  "folderKey": "<ORCHESTRATOR_FOLDER_KEY>",
+  "method": "GET",
+  "endpoint": "/groups",
+  "objectName": "groups",
+  "filter": {
+    "groupOperator": 0,
+    "index": 0,
+    "filters": [
+      {
+        "id": "displayName",
+        "operator": "Equals",
+        "value": {
+          "value": "active",
+          "rawString": "\"active\"",
+          "isLiteral": true
+        }
+      }
+    ],
+    "groups": []
+  },
+  "_compiledCeql": "displayName = 'active'",
+  "_notes": [
+    "connector key confirmed from registry: uipath-microsoft-azureactivedirectory",
+    "activity node: uipath.connector.uipath-microsoft-azureactivedirectory.list-groups",
+    "filter uses FilterBuilder CEQL tree — the CLI compiles this to queryParameters.where='displayName = \\'active\\'' and also saves savedFilterTrees.where for Studio Web round-trip",
+    "connectionId and folderKey must be filled from: uip is connections list uipath-microsoft-azureactivedirectory --all-folders --output json",
+    "node configure MUST run before flow validate will fully pass (inputs.detail is currently empty)"
+  ]
+}

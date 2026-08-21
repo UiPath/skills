@@ -1,0 +1,656 @@
+{
+  "Result": "Success",
+  "Code": "NodeSearchSuccess",
+  "Data": [
+    {
+      "NodeType": "core.action.http.v2",
+      "DisplayName": "HTTP Request",
+      "Description": "HTTP request with managed authentication"
+    },
+    {
+      "NodeType": "uipath.connector.uipath-http-webhook.get-trigger-event-output",
+      "DisplayName": "Get Trigger Event Output",
+      "Description": "(HTTP Webhook) Retrieves the full event response for HTTP webhook triggers created in Orchestrator"
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.uipath-activecampaign-activecampaign.activecampaign-http-request",
+      "DisplayName": "ActiveCampaign HTTP Request",
+      "Description": "(ActiveCampaign) Perform HTTP requests to interact with ActiveCampaign using existing connector and connection configuration."
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.uipath-adobe-sign.http-request",
+      "DisplayName": "HTTP Request",
+      "Description": "(Adobe Acrobat Sign) Performs HTTP requests to Adobe Acrobat Sign by using existing connector and connection configuration"
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.uipath-adobe-pdfservices.http-request",
+      "DisplayName": "HTTP Request",
+      "Description": "(Adobe PDF Services) Performs HTTP requests to Adobe PDF Services by using existing connector and connection configuration"
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.uipath-amazon-connect.amazon-connect-http-request",
+      "DisplayName": "Amazon Connect HTTP Request",
+      "Description": "(Amazon Connect) Perform HTTP requests to interact with Amazon Connect using existing connector and connection configuration."
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.uipath-amazon-polly.amazon-polly-http-request",
+      "DisplayName": "Amazon Polly HTTP Request",
+      "Description": "(Amazon Polly) Perform HTTP requests to interact with Amazon Polly using existing connector and connection configuration."
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.uipath-amazon-ses.amazon-ses-http-request",
+      "DisplayName": "Amazon SES HTTP Request",
+      "Description": "(Amazon SES) Perform HTTP requests to interact with Amazon SES using existing connector and connection configuration."
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.uipath-amazon-transcribe.http-request",
+      "DisplayName": "HTTP Request",
+      "Description": "(Amazon Transcribe) Performs HTTP requests to Amazon Transcribe by using existing connector and connection configuration"
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.uipath-anthropic-claude.anthropic-claude-http-request",
+      "DisplayName": "Anthropic Claude HTTP Request",
+      "Description": "(Anthropic Claude) Perform HTTP requests to interact with Anthropic Claude using existing connector and connection configuration."
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.uipath-asana-asana.asana-http-request",
+      "DisplayName": "Asana HTTP Request",
+      "Description": "(Asana) Perform HTTP requests to interact with Asana using existing connector and connection configuration."
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.uipath-aweber-aweber.aweber-http-request",
+      "DisplayName": "Aweber HTTP Request",
+      "Description": "(Aweber) Perform HTTP requests to interact with Aweber using existing connector and connection configuration."
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.uipath-microsoft-azureformrecognizer.azure-ai-document-intelligence-http-request",
+      "DisplayName": "Azure AI Document Intelligence HTTP Request",
+      "Description": "(Azure AI Document Intelligence) Perform HTTP requests to interact with Azure AI Document Intelligence using existing connector and connection configuration."
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.uipath-microsoft-azuremaps.azure-maps-http-request",
+      "DisplayName": "Azure Maps HTTP Request",
+      "Description": "(Azure Maps) Perform HTTP requests to interact with Azure Maps using existing connector and connection configuration."
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.uipath-bamboo-bamboohr.bamboohr-http-request",
+      "DisplayName": "BambooHR HTTP Request",
+      "Description": "(BambooHR) Perform HTTP requests to interact with BambooHR using existing connector and connection configuration."
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.uipath-box-box.box-http-request",
+      "DisplayName": "Box HTTP Request",
+      "Description": "(Box) Perform HTTP requests to interact with Box using existing connector and connection configuration."
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.uipath-brevo-brevo.brevo-http-request",
+      "DisplayName": "Brevo HTTP Request",
+      "Description": "(Brevo) Perform HTTP requests to interact with Brevo using existing connector and connection configuration."
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.uipath-calendly-calendly.calendly-http-request",
+      "DisplayName": "Calendly HTTP Request",
+      "Description": "(Calendly) Perform HTTP requests to interact with Calendly using existing connector and connection configuration."
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.uipath-campaignmonitor-campaignmonitor.campaign-monitor-http-request",
+      "DisplayName": "Campaign Monitor HTTP Request",
+      "Description": "(Campaign Monitor) Perform HTTP requests to interact with Campaign Monitor using existing connector and connection configuration."
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.uipath-cisco-webexteams.cisco-webex-teams-http-request",
+      "DisplayName": "Cisco Webex Teams HTTP Request",
+      "Description": "(Cisco Webex Teams) Perform HTTP requests to interact with Cisco Webex Teams using existing connector and connection configuration."
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.uipath-citrix-sharefile.citrix-sharefile-http-request",
+      "DisplayName": "Citrix ShareFile HTTP Request",
+      "Description": "(Citrix ShareFile) Perform HTTP requests to interact with Citrix ShareFile using existing connector and connection configuration."
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.uipath-hubspot-clearbit.clearbit-http-request",
+      "DisplayName": "Clearbit HTTP Request",
+      "Description": "(Clearbit) Perform HTTP requests to interact with Clearbit using existing connector and connection configuration."
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.uipath-atlassian-confluence.http-request",
+      "DisplayName": "HTTP Request",
+      "Description": "(Confluence Cloud) Performs HTTP requests to Confluence Cloud by using existing connector and connection configuration"
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.uipath-constantcontact-constantcontact.constant-contact-http-request",
+      "DisplayName": "Constant Contact HTTP Request",
+      "Description": "(Constant Contact) Perform HTTP requests to interact with Constant Contact using existing connector and connection configuration."
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.uipath-coupa-coupa.coupa-http-request",
+      "DisplayName": "Coupa HTTP Request",
+      "Description": "(Coupa) Perform HTTP requests to interact with Coupa using existing connector and connection configuration."
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.custom-codereval-customconnectortest.custom-connector-test-http-request",
+      "DisplayName": "custom connector test HTTP Request",
+      "Description": "(custom connector test) Perform HTTP requests to interact with custom connector test using existing connector and connection configuration."
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.uipath-customerio-customerio.customer.io-http-request",
+      "DisplayName": "Customer.io HTTP Request",
+      "Description": "(Customer.io) Perform HTTP requests to interact with Customer.io using existing connector and connection configuration."
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.uipath-datadog-datadog.http-request",
+      "DisplayName": "HTTP Request",
+      "Description": "(Datadog) Performs HTTP requests to Datadog by using existing connector and connection configuration"
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.uipath-deputy-deputy.http-request",
+      "DisplayName": "HTTP Request",
+      "Description": "(Deputy) Performs HTTP requests to Deputy by using existing connector and connection configuration"
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.uipath-docusign-docusign.docusign-http-request",
+      "DisplayName": "DocuSign HTTP Request",
+      "Description": "(DocuSign) Perform HTTP requests to interact with DocuSign using existing connector and connection configuration."
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.uipath-drip-drip.http-request",
+      "DisplayName": "HTTP Request",
+      "Description": "(Drip) Performs HTTP requests to Drip by using existing connector and connection configuration"
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.uipath-dropbox-dropbox.http-request",
+      "DisplayName": "HTTP Request",
+      "Description": "(Dropbox) Performs HTTP requests to Dropbox by using existing connector and connection configuration"
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.uipath-egnyte-egnyte.http-request",
+      "DisplayName": "HTTP Request",
+      "Description": "(Egnyte) Performs HTTP requests to Egnyte by using existing connector and connection configuration"
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.uipath-eventbrite-eventbrite.http-request",
+      "DisplayName": "HTTP Request",
+      "Description": "(Eventbrite) Performs HTTP requests to Eventbrite by using existing connector and connection configuration"
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.uipath-exchangerates-exchangerates.exchangerates-http-request",
+      "DisplayName": "Exchangerates HTTP Request",
+      "Description": "(Exchangerates) Perform HTTP requests to interact with Exchangerates using existing connector and connection configuration."
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.uipath-expensify-expensify.http-request",
+      "DisplayName": "HTTP Request",
+      "Description": "(Expensify) Performs HTTP requests to Expensify by using existing connector and connection configuration"
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.uipath-meta-facebook.facebook-http-request",
+      "DisplayName": "Facebook HTTP Request",
+      "Description": "(Facebook) Perform HTTP requests to interact with Facebook using existing connector and connection configuration."
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.uipath-freshworks-freshbooks.freshbooks-http-request",
+      "DisplayName": "FreshBooks HTTP Request",
+      "Description": "(FreshBooks) Perform HTTP requests to interact with FreshBooks using existing connector and connection configuration."
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.uipath-freshworks-freshdesk.freshdesk-http-request",
+      "DisplayName": "Freshdesk HTTP Request",
+      "Description": "(Freshdesk) Perform HTTP requests to interact with Freshdesk using existing connector and connection configuration."
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.uipath-freshworks-freshsales.http-request",
+      "DisplayName": "HTTP Request",
+      "Description": "(Freshsales) Performs HTTP requests to Freshsales by using existing connector and connection configuration"
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.uipath-freshworks-freshservice.freshservice-http-request",
+      "DisplayName": "Freshservice HTTP Request",
+      "Description": "(Freshservice) Perform HTTP requests to interact with Freshservice using existing connector and connection configuration."
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.uipath-getresponse-getresponse.getresponse-http-request",
+      "DisplayName": "GetResponse HTTP Request",
+      "Description": "(GetResponse) Perform HTTP requests to interact with GetResponse using existing connector and connection configuration."
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.uipath-microsoft-github.github-http-request",
+      "DisplayName": "GitHub HTTP Request",
+      "Description": "(GitHub) Perform HTTP requests to interact with GitHub using existing connector and connection configuration."
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.uipath-google-gmail.gmail-http-request",
+      "DisplayName": "Gmail HTTP Request",
+      "Description": "(Gmail) Perform HTTP requests to interact with Gmail using existing connector and connection configuration."
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.uipath-google-maps.google-maps-http-request",
+      "DisplayName": "Google Maps HTTP Request",
+      "Description": "(Google Maps) Perform HTTP requests to interact with Google Maps using existing connector and connection configuration."
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.uipath-google-speechtotext.http-request",
+      "DisplayName": "HTTP Request",
+      "Description": "(Google Speech-to-Text) Performs HTTP requests to Google Speech-to-Text by using existing connector and connection configuration"
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.uipath-google-texttospeech.google-text-to-speech-http-request",
+      "DisplayName": "Google Text-to-Speech HTTP Request",
+      "Description": "(Google Text-to-Speech) Perform HTTP requests to interact with Google Text-to-Speech using existing connector and connection configuration."
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.uipath-google-vertex.google-vertex-http-request",
+      "DisplayName": "Google Vertex HTTP Request",
+      "Description": "(Google Vertex) Perform HTTP requests to interact with Google Vertex using existing connector and connection configuration."
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.uipath-logmein-gotowebinar.gotowebinar-http-request",
+      "DisplayName": "GoToWebinar HTTP Request",
+      "Description": "(GoToWebinar) Perform HTTP requests to interact with GoToWebinar using existing connector and connection configuration."
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.uipath-greenhouse-greenhouse.http-request",
+      "DisplayName": "HTTP Request",
+      "Description": "(Greenhouse) Performs HTTP requests to Greenhouse by using existing connector and connection configuration"
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.uipath-hootsuite-hootsuite.hootsuite-http-request",
+      "DisplayName": "Hootsuite HTTP Request",
+      "Description": "(Hootsuite) Perform HTTP requests to interact with Hootsuite using existing connector and connection configuration."
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.uipath-http-webhook.get-trigger-event-output",
+      "DisplayName": "Get Trigger Event Output",
+      "Description": "(HTTP Webhook) Retrieves the full event response for HTTP webhook triggers created in Orchestrator"
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.uipath-hubspot-crm.http-request",
+      "DisplayName": "HTTP Request",
+      "Description": "(HubSpot CRM) Performs HTTP requests to HubSpot CRM by using existing connector and connection configuration"
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.uipath-hubspot-marketing.http-request",
+      "DisplayName": "HTTP Request",
+      "Description": "(HubSpot Marketing) Performs HTTP requests to HubSpot Marketing by using existing connector and connection configuration"
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.uipath-icertis-icertis.icertis-http-request",
+      "DisplayName": "Icertis HTTP Request",
+      "Description": "(Icertis) Perform HTTP requests to interact with Icertis using existing connector and connection configuration."
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.uipath-icontact-icontact.icontact-http-request",
+      "DisplayName": "iContact HTTP Request",
+      "Description": "(iContact) Perform HTTP requests to interact with iContact using existing connector and connection configuration."
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.uipath-insightly-insightly.http-request",
+      "DisplayName": "HTTP Request",
+      "Description": "(Insightly CRM) Performs HTTP requests to Insightly CRM by using existing connector and connection configuration"
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.uipath-intercom-intercom.http-request",
+      "DisplayName": "HTTP Request",
+      "Description": "(Intercom) Performs HTTP requests to Intercom by using existing connector and connection configuration"
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.uipath-atlassian-jira.jira-http-request",
+      "DisplayName": "Jira HTTP Request",
+      "Description": "(Jira) Perform HTTP requests to interact with Jira using existing connector and connection configuration."
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.uipath-keap-keap.keap-http-request",
+      "DisplayName": "Keap HTTP Request",
+      "Description": "(Keap) Perform HTTP requests to interact with Keap using existing connector and connection configuration."
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.uipath-klaviyo-klaviyo.klaviyo-http-request",
+      "DisplayName": "Klaviyo HTTP Request",
+      "Description": "(Klaviyo) Perform HTTP requests to interact with Klaviyo using existing connector and connection configuration."
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.uipath-microsoft-linkedin.linkedin-http-request",
+      "DisplayName": "LinkedIn HTTP Request",
+      "Description": "(LinkedIn) Perform HTTP requests to interact with LinkedIn using existing connector and connection configuration."
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.uipath-mailchimp-mailchimp.mailchimp-http-request",
+      "DisplayName": "Mailchimp HTTP Request",
+      "Description": "(Mailchimp) Perform HTTP requests to interact with Mailchimp using existing connector and connection configuration."
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.uipath-mailerlite-mailerlite.mailerlite-http-request",
+      "DisplayName": "MailerLite HTTP Request",
+      "Description": "(MailerLite) Perform HTTP requests to interact with MailerLite using existing connector and connection configuration."
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.uipath-sinch-mailgun.mailgun-http-request",
+      "DisplayName": "Mailgun HTTP Request",
+      "Description": "(Mailgun) Perform HTTP requests to interact with Mailgun using existing connector and connection configuration."
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.uipath-sinch-mailjet.mailjet-http-request",
+      "DisplayName": "Mailjet HTTP Request",
+      "Description": "(Mailjet) Perform HTTP requests to interact with Mailjet using existing connector and connection configuration."
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.uipath-adobe-marketo.http-request",
+      "DisplayName": "HTTP Request",
+      "Description": "(Marketo) Performs HTTP requests to Marketo by using existing connector and connection configuration"
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.uipath-microsoft-365.microsoft-365-http-request",
+      "DisplayName": "Microsoft 365 HTTP Request",
+      "Description": "(Microsoft 365) Perform HTTP requests to interact with Microsoft 365 using existing connector and connection configuration."
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.uipath-microsoft-azureopenai.microsoft-azure-openai-http-request",
+      "DisplayName": "Microsoft Azure OpenAI HTTP Request",
+      "Description": "(Microsoft Azure OpenAI) Perform HTTP requests to interact with Microsoft Azure OpenAI using existing connector and connection configuration."
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.uipath-microsoft-dynamicscrm.microsoft-dynamics-365-crm-http-request",
+      "DisplayName": "Microsoft Dynamics 365 CRM HTTP Request",
+      "Description": "(Microsoft Dynamics 365 CRM) Perform HTTP requests to interact with Microsoft Dynamics 365 CRM using existing connector and connection configuration."
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.uipath-microsoft-onedrive.microsoft-onedrive-sharepoint-http-request",
+      "DisplayName": "Microsoft OneDrive & SharePoint HTTP Request",
+      "Description": "(Microsoft OneDrive & SharePoint) Perform HTTP requests to interact with Microsoft OneDrive & SharePoint using existing connector and connection configuration."
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.uipath-microsoft-outlook365.microsoft-outlook-365-http-request",
+      "DisplayName": "Microsoft Outlook 365 HTTP Request",
+      "Description": "(Microsoft Outlook 365) Perform HTTP requests to interact with Microsoft Outlook 365 using existing connector and connection configuration."
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.uipath-microsoft-sentiment.microsoft-sentiment-http-request",
+      "DisplayName": "Microsoft Sentiment HTTP Request",
+      "Description": "(Microsoft Sentiment) Perform HTTP requests to interact with Microsoft Sentiment using existing connector and connection configuration."
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.uipath-microsoft-teams.microsoft-teams-http-request",
+      "DisplayName": "Microsoft Teams HTTP Request",
+      "Description": "(Microsoft Teams) Perform HTTP requests to interact with Microsoft Teams using existing connector and connection configuration."
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.uipath-microsoft-translator.microsoft-translator-http-request",
+      "DisplayName": "Microsoft Translator HTTP Request",
+      "Description": "(Microsoft Translator) Perform HTTP requests to interact with Microsoft Translator using existing connector and connection configuration."
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.uipath-microsoft-vision.microsoft-vision-http-request",
+      "DisplayName": "Microsoft Vision HTTP Request",
+      "Description": "(Microsoft Vision) Perform HTTP requests to interact with Microsoft Vision using existing connector and connection configuration."
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.uipath-miro-miro.miro-http-request",
+      "DisplayName": "Miro HTTP Request",
+      "Description": "(Miro) Perform HTTP requests to interact with Miro using existing connector and connection configuration."
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.uipath-mock-teams.mock-microsoft-teams-http-request",
+      "DisplayName": "Mock Microsoft Teams HTTP Request",
+      "Description": "(Mock Microsoft Teams) Perform HTTP requests to interact with Mock Microsoft Teams using existing connector and connection configuration."
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.uipath-mock-jira.mocked-jira-for-webhooks-http-request",
+      "DisplayName": "Mocked Jira for webhooks HTTP Request",
+      "Description": "(Mocked Jira for webhooks) Perform HTTP requests to interact with Mocked Jira for webhooks using existing connector and connection configuration."
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.uipath-okta-okta.http-request",
+      "DisplayName": "HTTP Request",
+      "Description": "(Okta) Performs HTTP requests to Okta by using existing connector and connection configuration"
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.custom-codereval-openrestapi.open-rest-api-http-request",
+      "DisplayName": "Open Rest API HTTP Request",
+      "Description": "(Open Rest API) Perform HTTP requests to interact with Open Rest API using existing connector and connection configuration."
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.custom-codereval-openmeteoapis.open-meteo-apis-http-request",
+      "DisplayName": "Open-Meteo APIs HTTP Request",
+      "Description": "(Open-Meteo APIs) Perform HTTP requests to interact with Open-Meteo APIs using existing connector and connection configuration."
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.uipath-openai-openai.openai-http-request",
+      "DisplayName": "OpenAI HTTP Request",
+      "Description": "(OpenAI) Perform HTTP requests to interact with OpenAI using existing connector and connection configuration."
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.uipath-openai-openaiv1compliant.openai-v1-compliant-llm-http-request",
+      "DisplayName": "OpenAI V1 Compliant LLM HTTP Request",
+      "Description": "(OpenAI V1 Compliant LLM) Perform HTTP requests to interact with OpenAI V1 Compliant LLM using existing connector and connection configuration."
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.uipath-oracle-eloqua.oracle-eloqua-http-request",
+      "DisplayName": "Oracle Eloqua HTTP Request",
+      "Description": "(Oracle Eloqua) Perform HTTP requests to interact with Oracle Eloqua using existing connector and connection configuration."
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.uipath-oracle-netsuite.oracle-netsuite-http-request",
+      "DisplayName": "Oracle NetSuite HTTP Request",
+      "Description": "(Oracle NetSuite) Perform HTTP requests to interact with Oracle NetSuite using existing connector and connection configuration."
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.uipath-pagerduty-pagerduty.http-request",
+      "DisplayName": "HTTP Request",
+      "Description": "(PagerDuty) Performs HTTP requests to PagerDuty by using existing connector and connection configuration"
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.uipath-paypal-paypal.http-request",
+      "DisplayName": "HTTP Request",
+      "Description": "(PayPal) Performs HTTP requests to PayPal by using existing connector and connection configuration"
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.uipath-pdfmonkey-pdfmonkey.http-request",
+      "DisplayName": "HTTP Request",
+      "Description": "(PDFMonkey) Performs HTTP requests to PDFMonkey by using existing connector and connection configuration"
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.uipath-pinecone-pinecone.pinecone-http-request",
+      "DisplayName": "Pinecone HTTP Request",
+      "Description": "(Pinecone) Perform HTTP requests to interact with Pinecone using existing connector and connection configuration."
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.uipath-pipedrive-pipedrive.pipedrive-http-request",
+      "DisplayName": "Pipedrive HTTP Request",
+      "Description": "(Pipedrive) Perform HTTP requests to interact with Pipedrive using existing connector and connection configuration."
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.uipath-intuit-quickbooksonline.quickbooks-online-http-request",
+      "DisplayName": "QuickBooks Online HTTP Request",
+      "Description": "(QuickBooks Online) Perform HTTP requests to interact with QuickBooks Online using existing connector and connection configuration."
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.uipath-salesforce-quip.quip-http-request",
+      "DisplayName": "Quip HTTP Request",
+      "Description": "(Quip) Perform HTTP requests to interact with Quip using existing connector and connection configuration."
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.uipath-salesforce-sfdc.salesforce-http-request",
+      "DisplayName": "Salesforce HTTP Request",
+      "Description": "(Salesforce) Perform HTTP requests to interact with Salesforce using existing connector and connection configuration."
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.uipath-salesforce-marketingcloud.salesforce-marketing-cloud-http-request",
+      "DisplayName": "Salesforce Marketing Cloud HTTP Request",
+      "Description": "(Salesforce Marketing Cloud) Perform HTTP requests to interact with Salesforce Marketing Cloud using existing connector and connection configuration."
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.custom-codereval-sanjeettest.sanjeet-test-http-request",
+      "DisplayName": "sanjeet test HTTP Request",
+      "Description": "(sanjeet test) Perform HTTP requests to interact with sanjeet test using existing connector and connection configuration."
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.uipath-sap-c4cv2.sap-cloud-for-customer-http-request",
+      "DisplayName": "SAP Cloud for Customer HTTP Request",
+      "Description": "(SAP Cloud for Customer) Perform HTTP requests to interact with SAP Cloud for Customer using existing connector and connection configuration."
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.uipath-sap-concur.http-request",
+      "DisplayName": "HTTP Request",
+      "Description": "(SAP Concur) Performs HTTP requests to SAP Concur by using existing connector and connection configuration"
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.uipath-sap-odata.sap-odata-http-request",
+      "DisplayName": "SAP OData HTTP Request",
+      "Description": "(SAP OData) Perform HTTP requests to interact with SAP OData using existing connector and connection configuration."
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.uipath-twilio-sendgrid.sendgrid-http-request",
+      "DisplayName": "SendGrid HTTP Request",
+      "Description": "(SendGrid) Perform HTTP requests to interact with SendGrid using existing connector and connection configuration."
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.uipath-servicenow-servicenow.servicenow-http-request",
+      "DisplayName": "ServiceNow HTTP Request",
+      "Description": "(ServiceNow) Perform HTTP requests to interact with ServiceNow using existing connector and connection configuration."
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.uipath-shopify-shopify.shopify-http-request",
+      "DisplayName": "Shopify HTTP Request",
+      "Description": "(Shopify) Perform HTTP requests to interact with Shopify using existing connector and connection configuration."
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.uipath-salesforce-slack.slack-http-request",
+      "DisplayName": "Slack HTTP Request",
+      "Description": "(Slack) Perform HTTP requests to interact with Slack using existing connector and connection configuration."
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.uipath-smartrecruiters-smartrecruiters.http-request",
+      "DisplayName": "HTTP Request",
+      "Description": "(SmartRecruiters) Performs HTTP requests to SmartRecruiters by using existing connector and connection configuration"
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.uipath-smartsheet-smartsheet.smartsheet-http-request",
+      "DisplayName": "Smartsheet HTTP Request",
+      "Description": "(Smartsheet) Perform HTTP requests to interact with Smartsheet using existing connector and connection configuration."
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.uipath-snowflake-cortex.snowflake-cortex-http-request",
+      "DisplayName": "Snowflake Cortex HTTP Request",
+      "Description": "(Snowflake Cortex) Perform HTTP requests to interact with Snowflake Cortex using existing connector and connection configuration."
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.uipath-stripe-stripe.stripe-http-request",
+      "DisplayName": "Stripe HTTP Request",
+      "Description": "(Stripe) Perform HTTP requests to interact with Stripe using existing connector and connection configuration."
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.uipath-sugar-enterprise.sugar-enterprise-http-request",
+      "DisplayName": "Sugar Enterprise HTTP Request",
+      "Description": "(Sugar Enterprise) Perform HTTP requests to interact with Sugar Enterprise using existing connector and connection configuration."
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.uipath-sugar-professional.sugar-professional-http-request",
+      "DisplayName": "Sugar Professional HTTP Request",
+      "Description": "(Sugar Professional) Perform HTTP requests to interact with Sugar Professional using existing connector and connection configuration."
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.uipath-sugar-sell.sugar-sell-http-request",
+      "DisplayName": "Sugar Sell HTTP Request",
+      "Description": "(Sugar Sell) Perform HTTP requests to interact with Sugar Sell using existing connector and connection configuration."
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.uipath-sugar-serve.sugar-serve-http-request",
+      "DisplayName": "Sugar Serve HTTP Request",
+      "Description": "(Sugar Serve) Perform HTTP requests to interact with Sugar Serve using existing connector and connection configuration."
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.uipath-tangocard-tangocard.http-request",
+      "DisplayName": "HTTP Request",
+      "Description": "(TangoCard) Performs HTTP requests to TangoCard by using existing connector and connection configuration"
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.uipath-doist-todoist.todoist-http-request",
+      "DisplayName": "Todoist HTTP Request",
+      "Description": "(Todoist) Perform HTTP requests to interact with Todoist using existing connector and connection configuration."
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.uipath-twilio-messaging.twilio-http-request",
+      "DisplayName": "Twilio HTTP Request",
+      "Description": "(Twilio) Perform HTTP requests to interact with Twilio using existing connector and connection configuration."
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.uipath-ibm-watsonx.watsonx.ai-http-request",
+      "DisplayName": "watsonx.ai HTTP Request",
+      "Description": "(watsonx.ai) Perform HTTP requests to interact with watsonx.ai using existing connector and connection configuration."
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.custom-codereval-whatsappapijoshi.whatsapp-api-joshi-http-request",
+      "DisplayName": "WhatsApp API - Joshi HTTP Request",
+      "Description": "(WhatsApp API - Joshi) Perform HTTP requests to interact with WhatsApp API - Joshi using existing connector and connection configuration."
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.uipath-meta-whatsapp.whatsapp-business-http-request",
+      "DisplayName": "WhatsApp Business HTTP Request",
+      "Description": "(WhatsApp Business) Perform HTTP requests to interact with WhatsApp Business using existing connector and connection configuration."
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.uipath-workable-workable.workable-http-request",
+      "DisplayName": "Workable HTTP Request",
+      "Description": "(Workable) Perform HTTP requests to interact with Workable using existing connector and connection configuration."
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.uipath-workday-workdayrest.workday-rest-http-request",
+      "DisplayName": "Workday REST HTTP Request",
+      "Description": "(Workday REST) Perform HTTP requests to interact with Workday REST using existing connector and connection configuration."
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.uipath-twitter-twitter.x-http-request",
+      "DisplayName": "X HTTP Request",
+      "Description": "(X) Perform HTTP requests to interact with X using existing connector and connection configuration."
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.uipath-xero-xero.xero-http-request",
+      "DisplayName": "Xero HTTP Request",
+      "Description": "(Xero) Perform HTTP requests to interact with Xero using existing connector and connection configuration."
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.uipath-google-youtube.youtube-http-request",
+      "DisplayName": "YouTube HTTP Request",
+      "Description": "(YouTube) Perform HTTP requests to interact with YouTube using existing connector and connection configuration."
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.uipath-zendesk-zendesk.zendesk-http-request",
+      "DisplayName": "Zendesk HTTP Request",
+      "Description": "(Zendesk) Perform HTTP requests to interact with Zendesk using existing connector and connection configuration."
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.uipath-zoho-campaigns.zoho-campaigns-http-request",
+      "DisplayName": "Zoho Campaigns HTTP Request",
+      "Description": "(Zoho Campaigns) Perform HTTP requests to interact with Zoho Campaigns using existing connector and connection configuration."
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.uipath-zoho-desk.zoho-desk-http-request",
+      "DisplayName": "Zoho Desk HTTP Request",
+      "Description": "(Zoho Desk) Perform HTTP requests to interact with Zoho Desk using existing connector and connection configuration."
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.uipath-zoho-mail.zoho-mail-http-request",
+      "DisplayName": "Zoho Mail HTTP Request",
+      "Description": "(Zoho Mail) Perform HTTP requests to interact with Zoho Mail using existing connector and connection configuration."
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.uipath-zoom-zoom.http-request",
+      "DisplayName": "HTTP Request",
+      "Description": "(Zoom) Performs HTTP requests to Zoom by using existing connector and connection configuration"
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.uipath-zoominfo-zoominfo.zoominfo-http-request",
+      "DisplayName": "ZoomInfo HTTP Request",
+      "Description": "(ZoomInfo) Perform HTTP requests to interact with ZoomInfo using existing connector and connection configuration."
+    },
+    {
+      "NodeType": "uipath.connector.trigger.uipath-http-webhook.http-webhook",
+      "DisplayName": "HTTP Webhook",
+      "Description": "(HTTP Webhook) Triggers instantly when an event has occured"
+    },
+    {
+      "NodeType": "uipath.connector.event.uipath-http-webhook.http-webhook",
+      "DisplayName": "HTTP Webhook",
+      "Description": "(HTTP Webhook) Triggers instantly when an event has occured"
+    }
+  ]
+}

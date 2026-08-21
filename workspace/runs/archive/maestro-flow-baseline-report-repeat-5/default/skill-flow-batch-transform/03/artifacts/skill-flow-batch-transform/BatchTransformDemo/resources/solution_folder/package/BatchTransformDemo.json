@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "BatchTransformDemo",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "4ba644cf-5fe8-4891-84ac-4befcde9febd",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "BatchTransformDemo"
+    },
+    "locks": [],
+    "key": "2e8aa8b5-23d2-463d-ade3-d6bc59eccd56",
+    "files": []
+  }
+}

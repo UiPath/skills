@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "EnhancedEnumTest",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "9ca21a6c-3c2f-4d0a-a34e-d73c90ccc6a1",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "EnhancedEnumTest"
+    },
+    "locks": [],
+    "key": "77d66b97-1d1d-4c0a-8713-5c8eb43ec11b",
+    "files": []
+  }
+}

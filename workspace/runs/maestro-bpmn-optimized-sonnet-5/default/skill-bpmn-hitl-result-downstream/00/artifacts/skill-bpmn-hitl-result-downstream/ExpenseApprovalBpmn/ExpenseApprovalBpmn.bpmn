@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+    xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+    xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+    xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+    xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:uipath="http://uipath.org/schema/bpmn"
+    id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn"
+    exporter="UiPath (https://bpmn.uipath.com)" exporterVersion="1.0">
+  <bpmn:process id="Process_ExpenseApproval" name="Expense Approval" isExecutable="true">
+    <bpmn:extensionElements>
+      <uipath:migrationVersion version="11.5" />
+      <uipath:variables version="v1">
+        <uipath:inputOutput id="Var_Amount" name="Amount" type="number" />
+        <uipath:inputOutput id="Var_Requester" name="RequesterName" type="string" />
+        <uipath:inputOutput id="Var_Category" name="Category" type="string" />
+        <uipath:inputOutput id="Var_Decision" name="Decision" type="string" />
+        <uipath:inputOutput id="Var_Comments" name="Comments" type="string" />
+        <uipath:inputOutput id="Var_ApprovalRecorded" name="ApprovalRecorded" type="boolean" />
+      </uipath:variables>
+    </bpmn:extensionElements>
+
+    <bpmn:startEvent id="Start_1" name="Expense Submitted">
+      <bpmn:outgoing>Flow_ToReview</bpmn:outgoing>
+    </bpmn:startEvent>
+
+    <bpmn:userTask id="Task_ExpenseReview" name="Review Expense">
+      <bpmn:extensionElements>
+        <uipath:activity version="v1">
+          <uipath:type value="Actions.HITL" version="v1" />
+          <uipath:context>
+            <uipath:input name="appId" value="00000000-0000-0000-0000-000000000000" />
+            <uipath:input name="appVersion" value="1" />
+            <uipath:input name="actions" value="Approve,Reject" />
+            <uipath:input name="key" value="PLACEHOLDER_FOLDER_KEY" />
+            <uipath:input name="taskTitle" value="Expense Review" />
+          </uipath:context>
+          <uipath:input name="HitlTaskArguments" type="json" target="bodyField"><![CDATA[{"in_Amount":"=vars.Var_Amount","in_RequesterName":"=vars.Var_Requester","in_Category":"=vars.Var_Category"}]]></uipath:input>
+          <uipath:output name="Decision" type="string" var="Var_Decision" />
+          <uipath:output name="Comments" type="string" var="Var_Comments" />
+        </uipath:activity>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_ToReview</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToGateway</bpmn:outgoing>
+    </bpmn:userTask>
+
+    <bpmn:exclusiveGateway id="Gateway_Decision" name="Approved?" default="Flow_Rejected">
+      <bpmn:incoming>Flow_ToGateway</bpmn:incoming>
+      <bpmn:outgoing>Flow_Approved</bpmn:outgoing>
+      <bpmn:outgoing>Flow_Rejected</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+
+    <bpmn:scriptTask id="Task_RecordApproval" name="Record Approval" scriptFormat="JavaScript">
+      <bpmn:extensionElements>
+        <uipath:scriptVersion value="v3" />
+        <uipath:mapping version="v1">
+          <uipath:type value="BPMN.ScriptTask" version="v1" />
+          <uipath:input name="args" type="json" target="bodyField"><![CDATA[{"comments":"=vars.Var_Comments"}]]></uipath:input>
+          <uipath:output name="approvalRecorded" type="boolean" var="Var_ApprovalRecorded" source="=result.response" />
+        </uipath:mapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_Approved</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToApprovedEnd</bpmn:outgoing>
+      <bpmn:script><![CDATA[
+return { response: true };
+]]></bpmn:script>
+    </bpmn:scriptTask>
+
+    <bpmn:endEvent id="End_Approved" name="Approved">
+      <bpmn:incoming>Flow_ToApprovedEnd</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <bpmn:endEvent id="End_Rejected" name="Rejected">
+      <bpmn:incoming>Flow_Rejected</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <bpmn:sequenceFlow id="Flow_ToReview" sourceRef="Start_1" targetRef="Task_ExpenseReview" />
+    <bpmn:sequenceFlow id="Flow_ToGateway" sourceRef="Task_ExpenseReview" targetRef="Gateway_Decision" />
+    <bpmn:sequenceFlow id="Flow_Approved" sourceRef="Gateway_Decision" targetRef="Task_RecordApproval">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">=vars.Var_Decision == "approved"</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_Rejected" sourceRef="Gateway_Decision" targetRef="End_Rejected" />
+    <bpmn:sequenceFlow id="Flow_ToApprovedEnd" sourceRef="Task_RecordApproval" targetRef="End_Approved" />
+  </bpmn:process>
+
+  <bpmndi:BPMNDiagram id="Diagram_1">
+    <bpmndi:BPMNPlane id="Plane_1" bpmnElement="Process_ExpenseApproval">
+      <bpmndi:BPMNShape id="S_End_Approved" bpmnElement="End_Approved"><dc:Bounds x="686" y="100" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_End_Rejected" bpmnElement="End_Rejected"><dc:Bounds x="526" y="100" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Gateway_Decision" bpmnElement="Gateway_Decision"><dc:Bounds x="416" y="100" width="50" height="50" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Start_1" bpmnElement="Start_1"><dc:Bounds x="160" y="100" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Task_ExpenseReview" bpmnElement="Task_ExpenseReview"><dc:Bounds x="256" y="100" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Task_RecordApproval" bpmnElement="Task_RecordApproval"><dc:Bounds x="526" y="210" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="E_Flow_Approved" bpmnElement="Flow_Approved"><di:waypoint x="441" y="125" /><di:waypoint x="576" y="250" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_Rejected" bpmnElement="Flow_Rejected"><di:waypoint x="441" y="125" /><di:waypoint x="544" y="118" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_ToApprovedEnd" bpmnElement="Flow_ToApprovedEnd"><di:waypoint x="576" y="250" /><di:waypoint x="704" y="118" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_ToGateway" bpmnElement="Flow_ToGateway"><di:waypoint x="306" y="140" /><di:waypoint x="441" y="125" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_ToReview" bpmnElement="Flow_ToReview"><di:waypoint x="178" y="118" /><di:waypoint x="306" y="140" /></bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

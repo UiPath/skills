@@ -1,0 +1,1417 @@
+{
+  "id": "687b035b-633b-4112-8131-0032ff2e2f1c",
+  "version": "1.9",
+  "name": "CustomerEscalationOrchestrator",
+  "nodes": [
+    {
+      "id": "classify",
+      "type": "core.action.script",
+      "typeVersion": "1.1",
+      "display": {
+        "label": "Classify Escalation"
+      },
+      "inputs": {
+        "script": "const senderDomain = $vars.start.output.senderDomain;\nconst customerMatchStatus = $vars.start.output.customerMatchStatus;\nconst isDuplicate = $vars.start.output.isDuplicate;\nconst productionDown = $vars.start.output.productionDown;\nconst workaroundAvailable = $vars.start.output.workaroundAvailable;\n\nlet escalationPath;\nif (!senderDomain || senderDomain.trim() === '') {\n  escalationPath = 'missing_domain';\n} else if (customerMatchStatus === 'none') {\n  escalationPath = 'unknown_customer';\n} else if (customerMatchStatus === 'multiple') {\n  escalationPath = 'multiple_matches';\n} else if (isDuplicate === true) {\n  escalationPath = 'duplicate';\n} else {\n  escalationPath = 'escalation';\n}\n\nlet severity = 'informational';\nlet engineeringNeeded = false;\n\nif (escalationPath === 'escalation') {\n  if (productionDown === true && workaroundAvailable !== true) {\n    severity = 'Sev1';\n  } else if (productionDown === true && workaroundAvailable === true) {\n    severity = 'Sev2';\n  } else {\n    severity = 'Sev3';\n  }\n  engineeringNeeded = (severity === 'Sev1' || severity === 'Sev2');\n}\n\nconst responseMode = escalationPath === 'escalation' ? 'Draft' : 'None';\n\nreturn { escalationPath, severity, engineeringNeeded, responseMode };"
+      },
+      "outputs": {
+        "output": {
+          "type": "object",
+          "description": "The return value of the script",
+          "source": "=result.response",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the script fails",
+          "source": "=Error",
+          "var": "error"
+        }
+      }
+    },
+    {
+      "id": "escalationDecision",
+      "type": "core.logic.decision",
+      "typeVersion": "1.2",
+      "display": {
+        "label": "Is Escalation?"
+      },
+      "inputs": {
+        "expression": "$vars.classify.output.escalationPath === 'escalation'",
+        "trueLabel": "Escalation",
+        "falseLabel": "Triage"
+      }
+    },
+    {
+      "id": "slackEscalationErrorHandler",
+      "type": "core.action.script",
+      "typeVersion": "1.1",
+      "display": {
+        "label": "Handle Escalation Slack Error"
+      },
+      "inputs": {
+        "script": "const err = $vars.slackEscalationAlert1.error;\nreturn { slackMessageId: null, errorMessage: err ? err.message : 'Slack send failed' };"
+      },
+      "outputs": {
+        "output": {
+          "type": "object",
+          "description": "The return value of the script",
+          "source": "=result.response",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the script fails",
+          "source": "=Error",
+          "var": "error"
+        }
+      }
+    },
+    {
+      "id": "slackTriageErrorHandler",
+      "type": "core.action.script",
+      "typeVersion": "1.1",
+      "display": {
+        "label": "Handle Triage Slack Error"
+      },
+      "inputs": {
+        "script": "const err = $vars.slackTriageNotice1.error;\nreturn { slackMessageId: null, errorMessage: err ? err.message : 'Slack send failed' };"
+      },
+      "outputs": {
+        "output": {
+          "type": "object",
+          "description": "The return value of the script",
+          "source": "=result.response",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the script fails",
+          "source": "=Error",
+          "var": "error"
+        }
+      }
+    },
+    {
+      "id": "endEscalation",
+      "type": "core.control.end",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "End - Escalation"
+      },
+      "inputs": {},
+      "outputs": {
+        "escalationPath": {
+          "source": "=js:$vars.classify.output.escalationPath"
+        },
+        "severity": {
+          "source": "=js:$vars.classify.output.severity"
+        },
+        "engineeringNeeded": {
+          "source": "=js:$vars.classify.output.engineeringNeeded"
+        },
+        "responseMode": {
+          "source": "=js:$vars.classify.output.responseMode"
+        },
+        "caseKey": {
+          "source": "=js:$vars.start.output.correlationId"
+        },
+        "slackMessageId": {
+          "source": "=js:($vars.slackEscalationAlert1.output && $vars.slackEscalationAlert1.output.ts) || ($vars.slackEscalationErrorHandler.output && $vars.slackEscalationErrorHandler.output.slackMessageId) || null"
+        }
+      }
+    },
+    {
+      "id": "endTriage",
+      "type": "core.control.end",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "End - Triage"
+      },
+      "inputs": {},
+      "outputs": {
+        "escalationPath": {
+          "source": "=js:$vars.classify.output.escalationPath"
+        },
+        "severity": {
+          "source": "=js:$vars.classify.output.severity"
+        },
+        "engineeringNeeded": {
+          "source": "=js:$vars.classify.output.engineeringNeeded"
+        },
+        "responseMode": {
+          "source": "=js:$vars.classify.output.responseMode"
+        },
+        "caseKey": {
+          "source": "=js:$vars.start.output.correlationId"
+        },
+        "slackMessageId": {
+          "source": "=js:($vars.slackTriageNotice1.output && $vars.slackTriageNotice1.output.ts) || ($vars.slackTriageErrorHandler.output && $vars.slackTriageErrorHandler.output.slackMessageId) || null"
+        }
+      }
+    },
+    {
+      "id": "start",
+      "type": "core.trigger.manual",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Manual trigger"
+      },
+      "inputs": {
+        "entryPointId": "f18021ab-46cd-40ca-a583-d79fb5c0e718",
+        "isDefaultEntryPoint": true
+      }
+    },
+    {
+      "id": "slackEscalationAlert1",
+      "type": "uipath.connector.uipath-salesforce-slack.send-message-to-channel",
+      "typeVersion": "1.0.0",
+      "display": {
+        "label": "Slack Escalation Alert"
+      },
+      "inputs": {
+        "errorHandlingEnabled": true,
+        "detail": {
+          "connector": "uipath-salesforce-slack",
+          "connectionId": "e03f734e-0f80-4e8a-a7c1-0ece309b0ca4",
+          "connectionResourceId": "e03f734e-0f80-4e8a-a7c1-0ece309b0ca4",
+          "connectionFolderKey": "def71452-bad1-40fa-be08-da175e89bd1a",
+          "method": "POST",
+          "endpoint": "/send_message_to_channel_v2",
+          "bodyParameters": {
+            "channel": "C0B2FDZD1M3",
+            "messageToSend": "=js:`:rotating_light: Escalation alert — path: ${$vars.classify.output.escalationPath}, correlationId: ${$vars.start.output.correlationId}`"
+          },
+          "queryParameters": {
+            "send_as": "user"
+          },
+          "uiPathActivityTypeId": "37a305b2-89b1-315d-b73f-1778839a6c47",
+          "errorState": {
+            "issues": []
+          },
+          "configuration": "=jsonString:{\"essentialConfiguration\":{\"connectorVersion\":\"2.14.8\",\"customFieldsRequestDetails\":null,\"instanceParameters\":{\"connectorKey\":\"uipath-salesforce-slack\",\"objectName\":\"send_message_to_channel_v2\",\"httpMethod\":\"POST\",\"activityType\":\"Curated\",\"version\":\"1.0.0\",\"supportsStreaming\":false,\"subType\":\"standard\"},\"objectName\":\"send_message_to_channel_v2\",\"operation\":\"create\",\"packageVersion\":\"1.0.0\",\"httpMethod\":\"POST\",\"path\":\"/send_message_to_channel_v2\",\"unifiedTypesCompatible\":true,\"savedJitInputFieldId\":\"in_send_message_to_channel_v2\"}}"
+        }
+      }
+    },
+    {
+      "id": "slackTriageNotice1",
+      "type": "uipath.connector.uipath-salesforce-slack.send-message-to-channel",
+      "typeVersion": "1.0.0",
+      "display": {
+        "label": "Slack Triage Notice"
+      },
+      "inputs": {
+        "errorHandlingEnabled": true,
+        "detail": {
+          "connector": "uipath-salesforce-slack",
+          "connectionId": "e03f734e-0f80-4e8a-a7c1-0ece309b0ca4",
+          "connectionResourceId": "e03f734e-0f80-4e8a-a7c1-0ece309b0ca4",
+          "connectionFolderKey": "def71452-bad1-40fa-be08-da175e89bd1a",
+          "method": "POST",
+          "endpoint": "/send_message_to_channel_v2",
+          "bodyParameters": {
+            "channel": "C0B2FDZD1M3",
+            "messageToSend": "=js:`Triage notice — path: ${$vars.classify.output.escalationPath}, correlationId: ${$vars.start.output.correlationId}`"
+          },
+          "queryParameters": {
+            "send_as": "user"
+          },
+          "uiPathActivityTypeId": "37a305b2-89b1-315d-b73f-1778839a6c47",
+          "errorState": {
+            "issues": []
+          },
+          "configuration": "=jsonString:{\"essentialConfiguration\":{\"connectorVersion\":\"2.14.8\",\"customFieldsRequestDetails\":null,\"instanceParameters\":{\"connectorKey\":\"uipath-salesforce-slack\",\"objectName\":\"send_message_to_channel_v2\",\"httpMethod\":\"POST\",\"activityType\":\"Curated\",\"version\":\"1.0.0\",\"supportsStreaming\":false,\"subType\":\"standard\"},\"objectName\":\"send_message_to_channel_v2\",\"operation\":\"create\",\"packageVersion\":\"1.0.0\",\"httpMethod\":\"POST\",\"path\":\"/send_message_to_channel_v2\",\"unifiedTypesCompatible\":true,\"savedJitInputFieldId\":\"in_send_message_to_channel_v2\"}}"
+        }
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e-start-classify",
+      "sourceNodeId": "start",
+      "sourcePort": "output",
+      "targetNodeId": "classify",
+      "targetPort": "input"
+    },
+    {
+      "id": "e-classify-decision",
+      "sourceNodeId": "classify",
+      "sourcePort": "success",
+      "targetNodeId": "escalationDecision",
+      "targetPort": "input"
+    },
+    {
+      "id": "e-decision-escalation",
+      "sourceNodeId": "escalationDecision",
+      "sourcePort": "true",
+      "targetNodeId": "slackEscalationAlert1",
+      "targetPort": "input"
+    },
+    {
+      "id": "e-decision-triage",
+      "sourceNodeId": "escalationDecision",
+      "sourcePort": "false",
+      "targetNodeId": "slackTriageNotice1",
+      "targetPort": "input"
+    },
+    {
+      "id": "e-escalation-success-end",
+      "sourceNodeId": "slackEscalationAlert1",
+      "sourcePort": "output",
+      "targetNodeId": "endEscalation",
+      "targetPort": "input"
+    },
+    {
+      "id": "e-escalation-error-handler",
+      "sourceNodeId": "slackEscalationAlert1",
+      "sourcePort": "error",
+      "targetNodeId": "slackEscalationErrorHandler",
+      "targetPort": "input"
+    },
+    {
+      "id": "e-escalation-handler-end",
+      "sourceNodeId": "slackEscalationErrorHandler",
+      "sourcePort": "success",
+      "targetNodeId": "endEscalation",
+      "targetPort": "input"
+    },
+    {
+      "id": "e-triage-success-end",
+      "sourceNodeId": "slackTriageNotice1",
+      "sourcePort": "output",
+      "targetNodeId": "endTriage",
+      "targetPort": "input"
+    },
+    {
+      "id": "e-triage-error-handler",
+      "sourceNodeId": "slackTriageNotice1",
+      "sourcePort": "error",
+      "targetNodeId": "slackTriageErrorHandler",
+      "targetPort": "input"
+    },
+    {
+      "id": "e-triage-handler-end",
+      "sourceNodeId": "slackTriageErrorHandler",
+      "sourcePort": "success",
+      "targetNodeId": "endTriage",
+      "targetPort": "input"
+    }
+  ],
+  "definitions": [
+    {
+      "nodeType": "core.action.script",
+      "version": "1.1",
+      "category": "data-operations",
+      "description": "Run custom JavaScript code",
+      "tags": [
+        "code",
+        "javascript",
+        "python"
+      ],
+      "sortOrder": 70,
+      "supportsErrorHandling": true,
+      "display": {
+        "label": "Script",
+        "icon": "code"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "success",
+              "type": "source",
+              "handleType": "output"
+            },
+            {
+              "id": "error",
+              "label": "Error",
+              "type": "source",
+              "handleType": "output",
+              "visible": "{inputs.errorHandlingEnabled}",
+              "constraints": {
+                "maxConnections": 1
+              }
+            }
+          ]
+        }
+      ],
+      "debug": {
+        "runtime": "clientScript"
+      },
+      "model": {
+        "type": "bpmn:ScriptTask"
+      },
+      "inputDefinition": {
+        "type": "object",
+        "properties": {
+          "script": {
+            "type": "string",
+            "minLength": 1,
+            "errorMessage": "Add a script function",
+            "validationSeverity": "warning"
+          }
+        },
+        "required": [
+          "script"
+        ]
+      },
+      "inputDefaults": {
+        "script": ""
+      },
+      "outputDefinition": {
+        "output": {
+          "type": "any",
+          "description": "The return value of the script",
+          "source": "=result.response",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails",
+          "source": "=Error",
+          "var": "error",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "required": [
+              "code",
+              "message",
+              "detail",
+              "category",
+              "status"
+            ],
+            "properties": {
+              "code": {
+                "type": "string",
+                "description": "Error code as a string"
+              },
+              "message": {
+                "type": "string",
+                "description": "High-level error message"
+              },
+              "detail": {
+                "type": "string",
+                "description": "Detailed error description"
+              },
+              "category": {
+                "type": "string",
+                "description": "Error category"
+              },
+              "status": {
+                "type": "integer",
+                "description": "HTTP status code"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "form": {
+        "id": "script-properties",
+        "title": "Script configuration",
+        "sections": [
+          {
+            "id": "script",
+            "title": "Script",
+            "collapsible": true,
+            "defaultExpanded": true,
+            "fields": [
+              {
+                "name": "inputs.script",
+                "type": "custom",
+                "component": "script-editor",
+                "componentProps": {
+                  "language": "javascript",
+                  "returnType": "any",
+                  "validationMode": "script",
+                  "minHeight": 200,
+                  "placeholder": " // Return any value\nreturn {\n  message: \"Web request response\",\n  data: $vars.httpRequest1.output\n};"
+                },
+                "label": "Code",
+                "description": "JavaScript expression that returns a result"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "nodeType": "core.logic.decision",
+      "version": "1.2",
+      "category": "control-flow",
+      "description": "Branch on a true or false condition",
+      "tags": [
+        "control-flow",
+        "if",
+        "loop",
+        "switch"
+      ],
+      "sortOrder": 61,
+      "display": {
+        "label": "Decision",
+        "icon": "trending-up-down"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ],
+          "visible": true
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "true",
+              "type": "source",
+              "handleType": "output",
+              "label": "{inputs.trueLabel}",
+              "constraints": {
+                "minConnections": 1
+              }
+            },
+            {
+              "id": "false",
+              "type": "source",
+              "handleType": "output",
+              "label": "{inputs.falseLabel}"
+            }
+          ],
+          "visible": true
+        }
+      ],
+      "debug": {
+        "runtime": "clientScript"
+      },
+      "model": {
+        "type": "bpmn:InclusiveGateway"
+      },
+      "inputDefinition": {
+        "type": "object",
+        "properties": {
+          "expression": {
+            "type": "string",
+            "minLength": 1,
+            "errorMessage": "Add a condition"
+          },
+          "trueLabel": {
+            "type": "string"
+          },
+          "falseLabel": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "expression"
+        ]
+      },
+      "outputDefinition": {
+        "matchedCase": {
+          "type": "string",
+          "description": "The label of the matched branch (true/false label)",
+          "var": "matchedCase"
+        },
+        "matchedCaseId": {
+          "type": "string",
+          "description": "The branch that was taken (true or false)",
+          "var": "matchedCaseId"
+        }
+      },
+      "inputDefaults": {
+        "trueLabel": "True",
+        "falseLabel": "False"
+      },
+      "form": {
+        "id": "decision-properties",
+        "title": "Decision configuration",
+        "sections": [
+          {
+            "id": "condition",
+            "title": "Condition",
+            "fields": [
+              {
+                "name": "inputs.expression",
+                "type": "custom",
+                "component": "code-editor",
+                "componentProps": {
+                  "singleLine": true,
+                  "mode": "expression",
+                  "toggleable": false,
+                  "language": "javascript",
+                  "returnType": "boolean",
+                  "validationMode": "expression",
+                  "showVariableButton": true,
+                  "placeholder": "$vars.httpRequest1.output.statusCode >= 200 && $vars.httpRequest1.output.statusCode < 300"
+                },
+                "label": "Condition",
+                "description": "The condition must be a JavaScript expression that evaluates to true or false."
+              },
+              {
+                "name": "inputs.trueLabel",
+                "type": "text",
+                "label": "True branch label",
+                "description": "This label appears on the true branch."
+              },
+              {
+                "name": "inputs.falseLabel",
+                "type": "text",
+                "label": "False branch label",
+                "description": "This label appears on the false branch."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "nodeType": "core.control.end",
+      "version": "1.0",
+      "category": "control-flow",
+      "description": "Mark the end of a process path",
+      "tags": [
+        "control-flow",
+        "end",
+        "finish",
+        "complete"
+      ],
+      "sortOrder": 65,
+      "display": {
+        "label": "End",
+        "icon": "circle-check",
+        "shape": "circle"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        }
+      ],
+      "model": {
+        "type": "bpmn:EndEvent"
+      },
+      "runtimeConstraints": {
+        "exclude": [
+          "api-function"
+        ]
+      }
+    },
+    {
+      "nodeType": "core.trigger.manual",
+      "version": "1.0",
+      "category": "trigger",
+      "description": "Start the process manually",
+      "tags": [
+        "trigger",
+        "start",
+        "manual"
+      ],
+      "sortOrder": 80,
+      "display": {
+        "label": "Manual trigger",
+        "icon": "play",
+        "shape": "circle"
+      },
+      "handleConfiguration": [
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "output",
+              "type": "source",
+              "handleType": "output",
+              "showButton": true,
+              "constraints": {
+                "forbiddenTargetCategories": [
+                  "trigger"
+                ]
+              }
+            }
+          ],
+          "visible": true
+        }
+      ],
+      "model": {
+        "type": "bpmn:StartEvent",
+        "entryPointId": true
+      },
+      "outputDefinition": {
+        "output": {
+          "type": "object",
+          "description": "Data passed when manually triggering the process.",
+          "source": "null",
+          "var": "output"
+        }
+      },
+      "toolbarExtensions": {
+        "design": {
+          "actions": [
+            {
+              "id": "change-trigger-type",
+              "icon": "square-mouse-pointer",
+              "label": "Change trigger type"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "nodeType": "uipath.connector.uipath-salesforce-slack.send-message-to-channel",
+      "version": "1.0.0",
+      "category": "connector.196638",
+      "tags": [
+        "connector",
+        "activity"
+      ],
+      "sortOrder": 520,
+      "supportsErrorHandling": true,
+      "description": "Send messages to public or private Slack channels.",
+      "display": {
+        "label": "Send Message to Channel",
+        "description": "Send messages to public or private Slack channels.",
+        "icon": "https://alpha.uipath.com/311c6049-4966-4ef2-a6f3-8ceccaf38d54/studio_/typecache/icons/8af239e6c82c1abd57622314380112d55f7e151ac4845ba018a96d70b4d92297.svg",
+        "sourceDisplayName": "Slack"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input",
+              "label": ""
+            }
+          ]
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "output",
+              "type": "source",
+              "handleType": "output",
+              "label": ""
+            },
+            {
+              "id": "error",
+              "label": "Error",
+              "type": "source",
+              "handleType": "output",
+              "visible": "{inputs.errorHandlingEnabled}",
+              "constraints": {
+                "maxConnections": 1
+              }
+            }
+          ]
+        }
+      ],
+      "model": {
+        "type": "bpmn:SendTask",
+        "serviceType": "Intsvc.ActivityExecution",
+        "bindings": {
+          "resource": "connection",
+          "resourceKey": "",
+          "values": [
+            {
+              "name": "uipath-salesforce-slack connection",
+              "propertyAttribute": "ConnectionId"
+            },
+            {
+              "name": "FolderKey",
+              "propertyAttribute": "FolderKey"
+            }
+          ]
+        },
+        "context": [
+          {
+            "name": "connectorKey",
+            "type": "string",
+            "value": "uipath-salesforce-slack"
+          },
+          {
+            "name": "operation",
+            "type": "string"
+          },
+          {
+            "name": "objectName",
+            "value": "send_message_to_channel_v2",
+            "type": "string"
+          },
+          {
+            "name": "method",
+            "type": "string",
+            "value": "POST"
+          },
+          {
+            "name": "connection",
+            "type": "string",
+            "value": "<bindings.uipath-salesforce-slack connection>"
+          },
+          {
+            "name": "folderKey",
+            "type": "string",
+            "value": "<bindings.FolderKey>"
+          },
+          {
+            "name": "activityConfigurationVersion",
+            "type": "string",
+            "value": "v1"
+          },
+          {
+            "name": "metadata",
+            "body": {
+              "telemetryData": {
+                "connectorKey": "uipath-salesforce-slack",
+                "connectorName": "Send Message to Channel"
+              },
+              "inputMetadata": {},
+              "errorState": {
+                "hasError": true
+              }
+            },
+            "type": "json"
+          }
+        ]
+      },
+      "form": {
+        "id": "connector-properties",
+        "title": "Connector configuration",
+        "sections": [
+          {
+            "id": "connector",
+            "title": "Connector",
+            "collapsible": true,
+            "defaultExpanded": true,
+            "fields": [
+              {
+                "label": "",
+                "name": "inputs.detail",
+                "type": "custom",
+                "component": "dap-config",
+                "componentProps": {
+                  "connectorDetail": {
+                    "isAppActivity": false,
+                    "packageId": "196638",
+                    "svgIconUrl": "icons/8af239e6c82c1abd57622314380112d55f7e151ac4845ba018a96d70b4d92297.svg",
+                    "displayName": "Send Message to Channel",
+                    "assemblyQualifiedName": "UiPath.IntegrationService.Activities.Runtime.Activities.ConnectorActivity, UiPath.IntegrationService.Activities.Runtime, Version=1.31.0.0, Culture=neutral, PublicKeyToken=null",
+                    "description": "Send messages to public or private Slack channels.",
+                    "category": "",
+                    "activityColor": "#4A154B",
+                    "configuration": "{\"connectorKey\":\"uipath-salesforce-slack\",\"objectName\":\"send_message_to_channel_v2\",\"httpMethod\":\"POST\",\"activityType\":\"Curated\",\"version\":\"1.0.0\",\"supportsStreaming\":false,\"subType\":\"standard\"}",
+                    "uiPathActivityTypeId": "37a305b2-89b1-315d-b73f-1778839a6c47",
+                    "isExperimental": false,
+                    "helpUrlTemplate": "https://docs.uipath.com/{0}/activities/other/latest/integration-service/uipath-salesforce-slack-Send-Message-To-Channel",
+                    "isEnabled": true,
+                    "targetPlatform": "CrossPlatform",
+                    "isAdvanced": false,
+                    "isRestricted": false,
+                    "hasWpfOnlyDesigner": false,
+                    "tags": [
+                      ""
+                    ]
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "inputDefinition": {},
+      "inputDefaults": {},
+      "outputDefinition": {
+        "output": {
+          "type": "object",
+          "description": "The return value of the connector.",
+          "source": "=result.response",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails",
+          "source": "=Error",
+          "var": "error",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "required": [
+              "code",
+              "message",
+              "detail",
+              "category",
+              "status"
+            ],
+            "properties": {
+              "code": {
+                "type": "string",
+                "description": "Error code as a string"
+              },
+              "message": {
+                "type": "string",
+                "description": "High-level error message"
+              },
+              "detail": {
+                "type": "string",
+                "description": "Detailed error description"
+              },
+              "category": {
+                "type": "string",
+                "description": "Error category"
+              },
+              "status": {
+                "type": "integer",
+                "description": "HTTP status code"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "debug": {
+        "runtime": "bpmnEngine"
+      }
+    }
+  ],
+  "runtime": "maestro",
+  "bindings": [
+    {
+      "id": "boz6FyAkh",
+      "name": "uipath-salesforce-slack connection",
+      "type": "string",
+      "resource": "connection",
+      "resourceKey": "e03f734e-0f80-4e8a-a7c1-0ece309b0ca4",
+      "propertyAttribute": "ConnectionId",
+      "default": "e03f734e-0f80-4e8a-a7c1-0ece309b0ca4"
+    },
+    {
+      "id": "bkd62ULXi",
+      "name": "FolderKey",
+      "type": "string",
+      "resource": "connection",
+      "resourceKey": "e03f734e-0f80-4e8a-a7c1-0ece309b0ca4",
+      "propertyAttribute": "FolderKey",
+      "default": "def71452-bad1-40fa-be08-da175e89bd1a"
+    }
+  ],
+  "variables": {
+    "globals": [
+      {
+        "id": "senderEmail",
+        "direction": "in",
+        "type": "string",
+        "triggerNodeId": "start",
+        "description": "Email address of the sender"
+      },
+      {
+        "id": "senderDomain",
+        "direction": "in",
+        "type": "string",
+        "triggerNodeId": "start",
+        "description": "Domain of the sender's email"
+      },
+      {
+        "id": "subject",
+        "direction": "in",
+        "type": "string",
+        "triggerNodeId": "start",
+        "description": "Subject of the escalation"
+      },
+      {
+        "id": "body",
+        "direction": "in",
+        "type": "string",
+        "triggerNodeId": "start",
+        "description": "Body text of the escalation"
+      },
+      {
+        "id": "customerTier",
+        "direction": "in",
+        "type": "string",
+        "triggerNodeId": "start",
+        "description": "Tier of the customer"
+      },
+      {
+        "id": "productionDown",
+        "direction": "in",
+        "type": "boolean",
+        "triggerNodeId": "start",
+        "description": "Whether production is down"
+      },
+      {
+        "id": "workaroundAvailable",
+        "direction": "in",
+        "type": "boolean",
+        "triggerNodeId": "start",
+        "description": "Whether a workaround is available"
+      },
+      {
+        "id": "hasAttachments",
+        "direction": "in",
+        "type": "boolean",
+        "triggerNodeId": "start",
+        "description": "Whether the escalation has attachments"
+      },
+      {
+        "id": "customerMatchStatus",
+        "direction": "in",
+        "type": "string",
+        "triggerNodeId": "start",
+        "description": "Customer match status: single, none, or multiple"
+      },
+      {
+        "id": "isDuplicate",
+        "direction": "in",
+        "type": "boolean",
+        "triggerNodeId": "start",
+        "description": "Whether this escalation is a duplicate"
+      },
+      {
+        "id": "correlationId",
+        "direction": "in",
+        "type": "string",
+        "triggerNodeId": "start",
+        "description": "Correlation identifier for this escalation"
+      },
+      {
+        "id": "escalationPath",
+        "direction": "out",
+        "type": "string",
+        "description": "The routing path determined by classification"
+      },
+      {
+        "id": "severity",
+        "direction": "out",
+        "type": "string",
+        "description": "Severity classification for escalation paths"
+      },
+      {
+        "id": "engineeringNeeded",
+        "direction": "out",
+        "type": "boolean",
+        "description": "Whether engineering involvement is needed"
+      },
+      {
+        "id": "responseMode",
+        "direction": "out",
+        "type": "string",
+        "description": "Draft or None depending on path"
+      },
+      {
+        "id": "caseKey",
+        "direction": "out",
+        "type": "string",
+        "description": "Case key, equal to the incoming correlationId"
+      },
+      {
+        "id": "slackMessageId",
+        "direction": "out",
+        "type": "string",
+        "description": "The Slack message id/ts posted for this run"
+      }
+    ],
+    "nodes": [
+      {
+        "id": "classify.output",
+        "type": "object",
+        "description": "The return value of the script",
+        "binding": {
+          "nodeId": "classify",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "classify.error",
+        "type": "object",
+        "description": "Error information if the script fails",
+        "binding": {
+          "nodeId": "classify",
+          "outputId": "error"
+        }
+      },
+      {
+        "id": "escalationDecision.matchedCase",
+        "type": "string",
+        "description": "The label of the matched branch (true/false label)",
+        "binding": {
+          "nodeId": "escalationDecision",
+          "outputId": "matchedCase"
+        }
+      },
+      {
+        "id": "escalationDecision.matchedCaseId",
+        "type": "string",
+        "description": "The branch that was taken (true or false)",
+        "binding": {
+          "nodeId": "escalationDecision",
+          "outputId": "matchedCaseId"
+        }
+      },
+      {
+        "id": "slackEscalationErrorHandler.output",
+        "type": "object",
+        "description": "The return value of the script",
+        "binding": {
+          "nodeId": "slackEscalationErrorHandler",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "slackEscalationErrorHandler.error",
+        "type": "object",
+        "description": "Error information if the script fails",
+        "binding": {
+          "nodeId": "slackEscalationErrorHandler",
+          "outputId": "error"
+        }
+      },
+      {
+        "id": "slackTriageErrorHandler.output",
+        "type": "object",
+        "description": "The return value of the script",
+        "binding": {
+          "nodeId": "slackTriageErrorHandler",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "slackTriageErrorHandler.error",
+        "type": "object",
+        "description": "Error information if the script fails",
+        "binding": {
+          "nodeId": "slackTriageErrorHandler",
+          "outputId": "error"
+        }
+      },
+      {
+        "id": "endEscalation.escalationPath",
+        "type": "string",
+        "binding": {
+          "nodeId": "endEscalation",
+          "outputId": "escalationPath"
+        }
+      },
+      {
+        "id": "endEscalation.severity",
+        "type": "string",
+        "binding": {
+          "nodeId": "endEscalation",
+          "outputId": "severity"
+        }
+      },
+      {
+        "id": "endEscalation.engineeringNeeded",
+        "type": "string",
+        "binding": {
+          "nodeId": "endEscalation",
+          "outputId": "engineeringNeeded"
+        }
+      },
+      {
+        "id": "endEscalation.responseMode",
+        "type": "string",
+        "binding": {
+          "nodeId": "endEscalation",
+          "outputId": "responseMode"
+        }
+      },
+      {
+        "id": "endEscalation.caseKey",
+        "type": "string",
+        "binding": {
+          "nodeId": "endEscalation",
+          "outputId": "caseKey"
+        }
+      },
+      {
+        "id": "endEscalation.slackMessageId",
+        "type": "string",
+        "binding": {
+          "nodeId": "endEscalation",
+          "outputId": "slackMessageId"
+        }
+      },
+      {
+        "id": "endTriage.escalationPath",
+        "type": "string",
+        "binding": {
+          "nodeId": "endTriage",
+          "outputId": "escalationPath"
+        }
+      },
+      {
+        "id": "endTriage.severity",
+        "type": "string",
+        "binding": {
+          "nodeId": "endTriage",
+          "outputId": "severity"
+        }
+      },
+      {
+        "id": "endTriage.engineeringNeeded",
+        "type": "string",
+        "binding": {
+          "nodeId": "endTriage",
+          "outputId": "engineeringNeeded"
+        }
+      },
+      {
+        "id": "endTriage.responseMode",
+        "type": "string",
+        "binding": {
+          "nodeId": "endTriage",
+          "outputId": "responseMode"
+        }
+      },
+      {
+        "id": "endTriage.caseKey",
+        "type": "string",
+        "binding": {
+          "nodeId": "endTriage",
+          "outputId": "caseKey"
+        }
+      },
+      {
+        "id": "endTriage.slackMessageId",
+        "type": "string",
+        "binding": {
+          "nodeId": "endTriage",
+          "outputId": "slackMessageId"
+        }
+      },
+      {
+        "id": "start.output",
+        "type": "object",
+        "description": "Data passed when manually triggering the process.",
+        "binding": {
+          "nodeId": "start",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "slackEscalationAlert1.output",
+        "type": "object",
+        "description": "The return value of the connector.",
+        "binding": {
+          "nodeId": "slackEscalationAlert1",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "slackEscalationAlert1.error",
+        "type": "object",
+        "description": "Error information if the node fails",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "required": [
+            "code",
+            "message",
+            "detail",
+            "category",
+            "status"
+          ],
+          "properties": {
+            "code": {
+              "type": "string",
+              "description": "Error code as a string"
+            },
+            "message": {
+              "type": "string",
+              "description": "High-level error message"
+            },
+            "detail": {
+              "type": "string",
+              "description": "Detailed error description"
+            },
+            "category": {
+              "type": "string",
+              "description": "Error category"
+            },
+            "status": {
+              "type": "integer",
+              "description": "HTTP status code"
+            }
+          },
+          "additionalProperties": false
+        },
+        "binding": {
+          "nodeId": "slackEscalationAlert1",
+          "outputId": "error"
+        }
+      },
+      {
+        "id": "slackTriageNotice1.output",
+        "type": "object",
+        "description": "The return value of the connector.",
+        "binding": {
+          "nodeId": "slackTriageNotice1",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "slackTriageNotice1.error",
+        "type": "object",
+        "description": "Error information if the node fails",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "required": [
+            "code",
+            "message",
+            "detail",
+            "category",
+            "status"
+          ],
+          "properties": {
+            "code": {
+              "type": "string",
+              "description": "Error code as a string"
+            },
+            "message": {
+              "type": "string",
+              "description": "High-level error message"
+            },
+            "detail": {
+              "type": "string",
+              "description": "Detailed error description"
+            },
+            "category": {
+              "type": "string",
+              "description": "Error category"
+            },
+            "status": {
+              "type": "integer",
+              "description": "HTTP status code"
+            }
+          },
+          "additionalProperties": false
+        },
+        "binding": {
+          "nodeId": "slackTriageNotice1",
+          "outputId": "error"
+        }
+      }
+    ]
+  },
+  "layout": {
+    "nodes": {
+      "classify": {
+        "position": {
+          "x": 0,
+          "y": 0
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "escalationDecision": {
+        "position": {
+          "x": 192,
+          "y": 0
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "slackEscalationErrorHandler": {
+        "position": {
+          "x": 576,
+          "y": -96
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "slackTriageErrorHandler": {
+        "position": {
+          "x": 576,
+          "y": 288
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "endEscalation": {
+        "position": {
+          "x": 576,
+          "y": -288
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "endTriage": {
+        "position": {
+          "x": 576,
+          "y": 96
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "start": {
+        "position": {
+          "x": -192,
+          "y": 0
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        }
+      },
+      "slackEscalationAlert1": {
+        "position": {
+          "x": 384,
+          "y": -192
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        }
+      },
+      "slackTriageNotice1": {
+        "position": {
+          "x": 384,
+          "y": 192
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        }
+      }
+    }
+  }
+}

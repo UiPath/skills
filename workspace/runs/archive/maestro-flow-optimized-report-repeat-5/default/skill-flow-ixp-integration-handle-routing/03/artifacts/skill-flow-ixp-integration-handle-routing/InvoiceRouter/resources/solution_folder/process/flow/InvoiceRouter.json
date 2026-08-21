@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "InvoiceRouter",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "65104d5f-5424-4a5f-b4db-5fb866b54871",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "InvoiceRouter"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Flow",
+      "name": "InvoiceRouter",
+      "package": {
+        "key": "1619cce3-acb5-4b5f-96a8-c1b8ab181ab1"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "bd7ab640-85a7-4886-8c68-b8ccfdb0a823",
+    "files": []
+  }
+}

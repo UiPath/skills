@@ -1,0 +1,12 @@
+{
+  "DocVersion": "1.0.0",
+  "StudioMinVersion": "2025.10.0",
+  "SolutionId": "fab44a7b-83fb-4160-b448-b7fc859e6529",
+  "Projects": [
+    {
+      "Type": "Flow",
+      "ProjectRelativePath": "BindingsRegression/project.uiproj",
+      "Id": "77b61e41-2506-4a8e-8d14-aa2d0aa98891"
+    }
+  ]
+}

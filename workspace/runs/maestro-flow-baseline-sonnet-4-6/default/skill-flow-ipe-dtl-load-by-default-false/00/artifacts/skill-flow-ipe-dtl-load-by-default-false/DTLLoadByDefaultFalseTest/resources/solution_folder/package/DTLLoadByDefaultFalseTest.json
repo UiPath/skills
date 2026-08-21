@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "DTLLoadByDefaultFalseTest",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "6f58bffa-e42a-47bb-b2af-9cb47a01f8f1",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "DTLLoadByDefaultFalseTest"
+    },
+    "locks": [],
+    "key": "c4753d62-79fd-43bc-b215-e33da0c82e7f",
+    "files": []
+  }
+}

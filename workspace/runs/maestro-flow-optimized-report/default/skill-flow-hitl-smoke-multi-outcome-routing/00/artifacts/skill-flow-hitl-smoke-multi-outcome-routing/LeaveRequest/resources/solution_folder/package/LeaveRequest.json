@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "LeaveRequest",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "a705145b-04b8-49d1-9f2a-3d3b9ebfe1c5",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "LeaveRequest"
+    },
+    "locks": [],
+    "key": "e8552392-88f1-44b9-8fb8-46aea5eb1185",
+    "files": []
+  }
+}

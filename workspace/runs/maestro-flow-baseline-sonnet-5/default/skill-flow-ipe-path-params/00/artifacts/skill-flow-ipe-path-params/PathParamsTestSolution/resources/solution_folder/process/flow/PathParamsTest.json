@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "PathParamsTest",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "4e7e7c77-9e28-4254-9a0e-a8a77daeb414",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "PathParamsTest"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Flow",
+      "name": "PathParamsTest",
+      "package": {
+        "key": "1de2c13b-4dca-426e-aa04-a95b5b8935ad"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "625e7905-57c1-4dcb-97dc-caa0f23f3d83",
+    "files": []
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "RequiredGroupsTest",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "14258197-53d7-42c1-8ca9-8b1d78f5024d",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "RequiredGroupsTest"
+    },
+    "locks": [],
+    "key": "93f49cb1-9bd6-46b6-bc3a-c60b4f538b3d",
+    "files": []
+  }
+}

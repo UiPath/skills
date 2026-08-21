@@ -1,0 +1,164 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://bpmn.io/20241206/moddle-package.schema.json",
+  "title": "Moddle Package Schema",
+  "type": "object",
+  "required": [
+    "name",
+    "prefix",
+    "uri",
+    "types"
+  ],
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Name of the package."
+    },
+    "$schema": {
+      "type": "string",
+      "description": "Reference to this schema"
+    },
+    "prefix": {
+      "type": "string",
+      "description": "The prefix uniquely identifies elements in a package if more multiple packages are in place."
+    },
+    "uri": {
+      "type": "string",
+      "description": "The uri field in a package definition defines the associated XML namespace URI."
+    },
+    "types": {
+      "type": "array",
+      "description": "List of types belonging to this package.",
+      "items": {
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Name of the defined type."
+          },
+          "superClass": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "description": "Name of the super type."
+            }
+          },
+          "isAbstract": {
+            "type": "boolean",
+            "description": "Can this type be instantiated."
+          },
+          "properties": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "description": "Name of the property."
+                },
+                "type": {
+                  "type": "string",
+                  "description": "Type of the property."
+                },
+                "isAttr": {
+                  "type": "boolean",
+                  "description": "Should the property be serialized as XML attribute."
+                },
+                "isBody": {
+                  "type": "boolean",
+                  "description": "Should the property be serialized as body element."
+                },
+                "isId": {
+                  "type": "boolean",
+                  "description": "Is current property map to XML node id."
+                },
+                "isMany": {
+                  "type": "boolean",
+                  "description": "Is the property an array or a single."
+                },
+                "isReference": {
+                  "type": "boolean",
+                  "description": "Is the property referencing to another element"
+                },
+                "default": {
+                  "description": "Provides default for the property.",
+                  "oneOf": [
+                    {
+                      "type": "boolean"
+                    },
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                },
+                "redefines": {
+                  "type": "string",
+                  "description": "Property name for the redefinition of existing property"
+                },
+                "replaces": {
+                  "type": "string",
+                  "description": "Property name for the replacement of existing property"
+                },
+                "xml": {
+                  "type": "object",
+                  "description": "Defines XML serialization details",
+                  "properties": {
+                    "serialize": {
+                      "type": "string",
+                      "description": "Provides XML serialization type, e.g. xsi:type"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "xml": {
+      "type": "object",
+      "description": "Defines XML serialization details.",
+      "properties": {
+        "tagAlias": {
+          "const": "lowerCase"
+        },
+        "typePrefix": {
+          "type": "string"
+        }
+      }
+    },
+    "associations": {
+      "type": "array",
+      "description": "The associations property is reserved for future use."
+    },
+    "enumerations": {
+      "description": "The enumerations property is reserved for future use.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "literalValues": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

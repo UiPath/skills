@@ -1,0 +1,12 @@
+{
+    "DocVersion": "1.0.0",
+    "StudioMinVersion": "2025.10.0",
+    "SolutionId": "0e8a3b34-97ac-468a-38f1-08dee8fa7d3e",
+    "Projects": [
+        {
+            "Type": "Flow",
+            "ProjectRelativePath": "ProjectEulerTitle/project.uiproj",
+            "Id": "ea65106b-74cf-4622-bfa5-2b48ed73b633"
+        }
+    ]
+}

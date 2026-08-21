@@ -1,0 +1,31 @@
+2026-07-23 20:42:33 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-23 20:42:33 [INFO] coder_eval.orchestrator: API routing: aws_bedrock
+2026-07-23 20:42:34 [DEBUG] coder_eval.criteria: Discovered 14 criterion checkers
+2026-07-23 20:42:34 [DEBUG] coder_eval.criteria: Validated 14 criterion checkers
+2026-07-23 20:42:34 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-23 20:42:34 [DEBUG] coder_eval.orchestrator: Sending prompt: Setup the agent must perform first:
+1. Create solution `LocalOnly` and Flow project `LocalOnly` so t...
+2026-07-23 20:42:34 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Starting agent query stream...
+2026-07-23 20:44:34 [DEBUG] coder_eval.agents.claude_code_agent: [coder] session_id changed: None -> 5aeed314-4a8c-48d6-9c33-df8c32133675
+2026-07-23 20:44:34 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Agent query stream ended
+2026-07-23 20:44:34 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-23 20:44:34 [DEBUG] coder_eval.orchestrator: Agent response received (5073 chars)
+2026-07-23 20:44:34 [DEBUG] coder_eval.orchestrator: Checking success criteria
+2026-07-23 20:44:34 [DEBUG] coder_eval.evaluation.checker: Criterion 'command_executed' score: 1.00
+2026-07-23 20:44:34 [DEBUG] coder_eval.evaluation.checker: Criterion 'command_executed' score: 1.00
+2026-07-23 20:44:34 [DEBUG] coder_eval.evaluation.checker: Criterion 'command_executed' score: 1.00
+2026-07-23 20:44:34 [DEBUG] coder_eval.evaluation.checker: Criterion 'command_executed' score: 1.00
+2026-07-23 20:44:34 [DEBUG] coder_eval.evaluation.checker: Criterion 'command_executed' score: 1.00
+2026-07-23 20:44:34 [DEBUG] coder_eval.evaluation.checker: Criterion 'file_exists' score: 1.00
+2026-07-23 20:44:34 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'report.json shows refusal + Studio Web reason + ran_solution_upload=false': python3 $TASK_DIR/check_no_auto_upload.py
+2026-07-23 20:44:35 [DEBUG] coder_eval.sandbox: Command 'python3 $TASK_DIR/check_no_auto_upload.py' exited with code 0
+2026-07-23 20:44:35 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+OK: agent refused auto-upload, action='refused', ran_solution_upload=False, ran_eval_run_start=False
+---
+2026-07-23 20:44:35 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-07-23 20:44:35 [INFO] coder_eval.orchestrator: Success criteria: 7/7 passed, weighted score: 1.000
+2026-07-23 20:44:35 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-23 20:44:35 [INFO] coder_eval.orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+2026-07-23 20:44:35 [INFO] coder_eval.orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-eval-no-auto-upload
+2026-07-23 20:44:35 [INFO] coder_eval.orchestrator: Task finished: status=SUCCESS duration=129.2s score=1.000 iterations=1

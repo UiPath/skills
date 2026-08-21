@@ -1,0 +1,67 @@
+{
+  "version": "2.0",
+  "resources": [
+    {
+      "resource": "connection",
+      "key": "ae311606-25b7-43ef-9cd0-f3dc0b3a9b58",
+      "id": "connectionae311606-25b7-43ef-9cd0-f3dc0b3a9b58",
+      "value": {
+        "ConnectionId": {
+          "defaultValue": "ae311606-25b7-43ef-9cd0-f3dc0b3a9b58",
+          "isExpression": false,
+          "displayName": "uipath-microsoft-onedrive connection"
+        }
+      },
+      "metadata": {
+        "ActivityName": "New File in SharePoint",
+        "BindingsVersion": "2.2",
+        "DisplayLabel": "uipath-microsoft-onedrive connection",
+        "UseConnectionService": "true",
+        "Connector": "uipath-microsoft-onedrive"
+      }
+    },
+    {
+      "resource": "connection",
+      "key": "",
+      "id": "connection",
+      "value": {
+        "ConnectionId": {
+          "defaultValue": "ImplicitConnection",
+          "isExpression": false,
+          "displayName": "uipath-uipath-http connection"
+        }
+      },
+      "metadata": {
+        "ActivityName": "New File in SharePoint",
+        "BindingsVersion": "2.2",
+        "DisplayLabel": "uipath-uipath-http connection",
+        "UseConnectionService": "true",
+        "Connector": "uipath-microsoft-onedrive"
+      }
+    },
+    {
+      "resource": "EventTrigger",
+      "key": "ae311606-25b7-43ef-9cd0-f3dc0b3a9b58",
+      "id": "EventTriggerae311606-25b7-43ef-9cd0-f3dc0b3a9b58",
+      "value": {
+        "ConnectionId": {
+          "defaultValue": "ae311606-25b7-43ef-9cd0-f3dc0b3a9b58",
+          "isExpression": false
+        },
+        "EntryPointUniqueId": {
+          "defaultValue": "7c675eb4-6706-4824-9ddd-8e3a5842d570",
+          "isExpression": false
+        }
+      },
+      "metadata": {
+        "UseConnectionService": "true",
+        "Connector": "uipath-microsoft-onedrive",
+        "ActivityName": "New File in SharePoint",
+        "BindingsVersion": "2.2",
+        "ObjectName": "File",
+        "Operation": "FILE_CREATED",
+        "FilterExpression": ""
+      }
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+20:30:07 [INFO   ] [default/skill-flow-multi-city-weather/03] orchestrator: API routing: aws_bedrock
+20:37:09 [INFO   ] [default/skill-flow-multi-city-weather/03] evaluation.checker: Criterion 'run_command' FAILED (score=0.00, threshold=1.00): Command: python3 $TASK_DIR/check_multi_city_weather.py
+20:37:09 [INFO   ] [default/skill-flow-multi-city-weather/03] orchestrator: Success criteria: 1/2 passed, weighted score: 0.375
+20:37:09 [INFO   ] [default/skill-flow-multi-city-weather/03] orchestrator: Running post-run command: python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/cleanup_solutions.py
+20:37:10 [WARNING] [default/skill-flow-multi-city-weather/03] orchestrator: [post_run stderr] cleanup_solutions: solution 0892c865-229f-49a5-a210-97e45dfe1928 not uploaded (from MultiCityWeather/MultiCityWeather.uipx); nothing to clean up
+20:37:10 [WARNING] [default/skill-flow-multi-city-weather/03] orchestrator: [post_run stderr] cleanup_solutions: summary policy=always deleted=0 preserved=0 skipped=0 not_uploaded=1 failed=0
+20:37:10 [INFO   ] [default/skill-flow-multi-city-weather/03] orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+20:37:10 [INFO   ] [default/skill-flow-multi-city-weather/03] orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-multi-city-weather
+20:37:10 [INFO   ] [default/skill-flow-multi-city-weather/03] orchestrator: Task finished: status=FAILURE duration=428.1s score=0.375 iterations=1

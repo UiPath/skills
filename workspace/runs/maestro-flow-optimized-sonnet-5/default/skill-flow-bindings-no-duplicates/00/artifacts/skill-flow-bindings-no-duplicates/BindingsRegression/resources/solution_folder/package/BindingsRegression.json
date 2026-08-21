@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "BindingsRegression",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "42019682-0fa8-4ab8-a147-103d48764a92",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "BindingsRegression"
+    },
+    "locks": [],
+    "key": "7dbc6630-c3bd-42fc-bf01-e084324c8475",
+    "files": []
+  }
+}

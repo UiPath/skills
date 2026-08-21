@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "TeamsDecisionFlow",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "982b2fd1-7c38-4db8-88ef-d2e357e6f69c",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "TeamsDecisionFlow"
+    },
+    "locks": [],
+    "key": "d426dcb9-758f-46ad-98f5-49296248147c",
+    "files": []
+  }
+}

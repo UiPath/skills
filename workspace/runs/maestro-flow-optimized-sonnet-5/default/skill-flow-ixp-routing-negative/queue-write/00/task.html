@@ -1,0 +1,1771 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>coder_eval · skill-flow-ixp-routing-negative/queue-write · default</title>
+<style>
+:root {
+  --bg-page: #0f1419;
+  --bg-card: #1a2129;
+  --bg-card-2: #232d38;
+  --bg-code: #0b0f14;
+  --fg: #e6edf3;
+  --fg-muted: #8b98a5;
+  --fg-dim: #6e7681;
+  --border: #30363d;
+  --accent: #58a6ff;
+  --score-high: #22c55e;
+  --score-mid: #f59e0b;
+  --score-low: #ef4444;
+  --status-success: #22c55e;
+  --status-failure: #f59e0b;
+  --status-error: #ef4444;
+  --status-neutral: #6e7681;
+  --shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+.light {
+  --bg-page: #ffffff;
+  --bg-card: #f6f8fa;
+  --bg-card-2: #eaeef2;
+  --bg-code: #f6f8fa;
+  --fg: #1f2328;
+  --fg-muted: #636c76;
+  --fg-dim: #8b949e;
+  --border: #d0d7de;
+  --accent: #0969da;
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial,
+               sans-serif;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--fg);
+  background: var(--bg-page);
+}
+.container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+h1, h2, h3, h4 { margin: 0 0 12px 0; line-height: 1.25; }
+h1 { font-size: 22px; font-weight: 600; }
+h2 { font-size: 18px; font-weight: 600; margin-top: 28px;
+     padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+h3 { font-size: 15px; font-weight: 600; color: var(--fg-muted); }
+h4 { font-size: 13px; font-weight: 600; color: var(--fg-muted); }
+p { margin: 0 0 8px 0; }
+.muted { color: var(--fg-muted); }
+.dim { color: var(--fg-dim); }
+.mono { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+        monospace; font-size: 12.5px; }
+code { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+       monospace; font-size: 12.5px; background: var(--bg-code);
+       border: 1px solid var(--border); padding: 1px 5px; border-radius: 3px; }
+pre { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+      monospace; font-size: 12.5px; background: var(--bg-code);
+      border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px;
+      margin: 6px 0; overflow-x: auto; white-space: pre-wrap;
+      word-wrap: break-word; }
+.header-bar { display: flex; align-items: center; justify-content: space-between;
+              margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+.title-group { flex: 1; min-width: 0; }
+.title-group .subtitle { color: var(--fg-muted); font-size: 13px;
+                         margin-top: 2px; word-break: break-all; }
+.badges { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.badge { display: inline-flex; align-items: center; gap: 6px;
+         padding: 4px 10px; border-radius: 12px; font-size: 12px;
+         font-weight: 600; background: var(--bg-card-2);
+         border: 1px solid var(--border); color: var(--fg); }
+.badge.success { background: color-mix(in srgb, var(--status-success) 20%, var(--bg-card-2));
+                 border-color: var(--status-success); color: var(--status-success); }
+.badge.failure { background: color-mix(in srgb, var(--status-failure) 20%, var(--bg-card-2));
+                 border-color: var(--status-failure); color: var(--status-failure); }
+.badge.error { background: color-mix(in srgb, var(--status-error) 20%, var(--bg-card-2));
+               border-color: var(--status-error); color: var(--status-error); }
+.badge.warning { background: color-mix(in srgb, #f4a52810 20%, var(--bg-card-2));
+                 border-color: #f4a528; color: #f4a528; }
+.badge.neutral { color: var(--fg-muted); }
+.score-pill { display: inline-block; padding: 2px 8px; border-radius: 10px;
+              font-size: 12px; font-weight: 700; min-width: 42px;
+              text-align: center; color: #0b0f14; }
+.score-high { background: var(--score-high); }
+.score-mid { background: var(--score-mid); }
+.score-low { background: var(--score-low); }
+.card { background: var(--bg-card); border: 1px solid var(--border);
+        border-radius: 8px; padding: 16px 20px; margin-bottom: 16px;
+        box-shadow: var(--shadow); }
+.card.highlight { border-left: 4px solid var(--accent); }
+.grid { display: grid; gap: 12px;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+.stat { background: var(--bg-card-2); padding: 10px 12px; border-radius: 6px;
+        border: 1px solid var(--border); }
+.stat .label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;
+               color: var(--fg-muted); margin-bottom: 4px; }
+.stat .value { font-size: 16px; font-weight: 600; }
+table { width: 100%; border-collapse: collapse; margin: 4px 0 12px 0; }
+th, td { text-align: left; padding: 8px 10px;
+         border-bottom: 1px solid var(--border); vertical-align: top;
+         font-size: 13px; }
+th { color: var(--fg-muted); font-weight: 600; font-size: 12px;
+     text-transform: uppercase; letter-spacing: 0.3px; }
+tr:last-child td { border-bottom: none; }
+details { margin: 6px 0; border: 1px solid var(--border); border-radius: 6px;
+          background: var(--bg-card-2); }
+details > summary { cursor: pointer; padding: 8px 12px; user-select: none;
+                    font-weight: 500; list-style: none; }
+details > summary::-webkit-details-marker { display: none; }
+details > summary::before { content: "▸ "; color: var(--fg-dim);
+                            display: inline-block; width: 14px;
+                            transition: transform 0.15s; }
+details[open] > summary::before { content: "▾ "; }
+details .details-body { padding: 0 12px 10px 12px; }
+.tool-row { display: flex; align-items: center; gap: 10px;
+            flex-wrap: wrap; font-size: 13px; }
+.tool-name { font-weight: 600; color: var(--accent); font-family: ui-monospace,
+             SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+.tool-status-ok { color: var(--status-success); font-size: 11px;
+                  font-weight: 600; }
+.tool-status-err { color: var(--status-error); font-size: 11px;
+                   font-weight: 600; }
+.tool-duration { color: var(--fg-muted); font-size: 12px; }
+.tool-seq { color: var(--fg-dim); font-size: 11px; font-weight: 600;
+            min-width: 24px; text-align: right; font-family: ui-monospace,
+            SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+.turn-header { display: flex; justify-content: space-between;
+               align-items: baseline; flex-wrap: wrap; gap: 10px;
+               margin-bottom: 10px; }
+.turn-meta { font-size: 12px; color: var(--fg-muted); }
+.criterion-row td:first-child { font-family: ui-monospace, SFMono-Regular,
+                                 "SF Mono", Menlo, Consolas, monospace;
+                                 color: var(--fg-muted); font-size: 12px; }
+.judge-section { display: flex; flex-direction: column; gap: 12px; }
+.judge-card { padding: 14px 16px; }
+.judge-card-head { display: flex; justify-content: space-between;
+                    align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+.judge-card-title { font-size: 14px; line-height: 1.4; flex: 1; min-width: 0; }
+.judge-card-score { flex-shrink: 0; }
+.judge-rationale { margin-top: 10px; padding: 10px 12px;
+                   background: var(--bg-code); border-radius: 4px;
+                   font-size: 13px; line-height: 1.5; }
+.judge-findings { margin: 8px 0 0 18px; padding-left: 4px; font-size: 13px;
+                   line-height: 1.6; }
+.judge-findings li { margin: 2px 0; }
+.nav-toggle { display: inline-block; padding: 5px 10px; font-size: 12px;
+              background: var(--bg-card-2); border: 1px solid var(--border);
+              border-radius: 5px; color: var(--fg); cursor: pointer; }
+.nav-toggle:hover { background: var(--bg-card); }
+.llm-next-steps { margin: 6px 0 0 20px; padding-left: 0; }
+.llm-next-steps li { margin: 3px 0; }
+.iteration-group { padding: 12px 16px 4px 16px; margin-bottom: 20px;
+                   border-radius: 0 6px 6px 0; border-left: 4px solid var(--status-neutral); }
+/* rgba fallback for browsers without color-mix (Chrome <111, Firefox <113, Safari <16.2). */
+.iteration-group--recovered { border-left-color: var(--status-success);
+                              background: rgba(34, 197, 94, 0.06);
+                              background: color-mix(in srgb, var(--status-success) 6%, transparent); }
+.iteration-group--terminal { border-left-color: var(--status-error);
+                             background: rgba(239, 68, 68, 0.06);
+                             background: color-mix(in srgb, var(--status-error) 6%, transparent); }
+.iteration-group__banner { margin: 0 0 12px 0; font-size: 14px; font-weight: 600; }
+.iteration-group--recovered .iteration-group__banner { color: var(--status-success); }
+.iteration-group--terminal .iteration-group__banner { color: var(--status-error); }
+.attempt-transition { display: flex; align-items: center; gap: 8px;
+                      margin: -6px 0 12px 8px; color: var(--status-error); font-size: 12.5px; }
+.attempt-transition__icon { font-weight: 700; }
+footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--border);
+         color: var(--fg-dim); font-size: 12px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="header-bar">
+  <div class="title-group">
+    <h1>Task: skill-flow-ixp-routing-negative/queue-write</h1>
+    <div class="subtitle">Negative IxP routing — verifies the agent does NOT add a uipath.ixp.* node when the user asks for a Maestro flow with no document-extraction scope. Parent uipath-maestro-flow Skill must still fire (this is in-skill plugin-routing coverage; &quot;should not fire maestro-flow at all&quot; is upstream in coder_eval/tasks/uipath_flow/triggering/triggering.jsonl).</div>
+  </div>
+  <div class="badges">
+    <span class="badge success">SUCCESS</span>
+    <span class="score-pill score-high">1.00</span>
+    <span class="badge neutral">claude-code · claude-sonnet-5</span>
+    <span class="badge neutral">4m 18s</span>
+    <span class="badge neutral">$1.1296</span>
+    
+    
+    <span class="nav-toggle" onclick="toggleTheme()">Toggle theme</span>
+  </div>
+</div>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Variant</div><div class="value">default</div></div>
+    <div class="stat"><div class="label">Started</div><div class="value mono">2026-08-19T00:12:12</div></div>
+    <div class="stat"><div class="label">Duration</div><div class="value">4m 18s</div></div>
+    <div class="stat"><div class="label">Turns (SDK)</div><div class="value">59</div></div>
+    <div class="stat"><div class="label">Commands</div><div class="value">33</div></div>
+  </div>
+</div>
+
+<h2>Success Criteria <span class="muted" style="font-weight:400">(1/1 passed)</span></h2>
+<div class="card" style="padding:0">
+<table>
+  <thead>
+    <tr>
+      <th style="width:15%">Type</th>
+      <th style="width:35%">Description</th>
+      <th style="width:10%">Score</th>
+      <th>Details</th>
+    </tr>
+  </thead>
+  <tbody>
+    
+<tr class="criterion-row">
+  <td>run_command</td>
+  <td>No uipath.ixp.* node landed in any .flow file (negative IxP routing)</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Command: ! grep -rqE &quot;\&quot;type\&quot;[[:space:]]*:[[:space:]]*\&quot;uipath\.ixp&quot; --include=&quot;*.flow&quot; .</summary><div class="details-body"><pre style="margin:6px 0 0 0">Command: ! grep -rqE &quot;\&quot;type\&quot;[[:space:]]*:[[:space:]]*\&quot;uipath\.ixp&quot; --include=&quot;*.flow&quot; .
+Exit code: 0 (expected: 0)
+Stdout: (empty)
+Stderr: (empty)</pre></div></details></td>
+</tr>
+
+  </tbody>
+</table>
+</div>
+<h2>Conversation Trace (1 iteration)</h2>
+<div class="card">
+  <div class="turn-header">
+    <h3>Iteration 1</h3>
+    <div class="badges">
+      <span class="badge neutral">59 assistant turns</span>
+      <span class="badge neutral">in 622 · out 16137 · cache 2114902</span>
+      <span class="badge neutral">4m 16s</span>
+      <span class="badge failure">max_turns exhausted</span>
+      
+      
+    </div>
+  </div>
+  <details>
+    <summary>Prompt to agent</summary>
+    <div class="details-body"><pre>Your working directory is: /work/output/artifacts/skill-flow-ixp-routing-negative/queue-write
+
+Create a flow with a manual trigger that writes a record to an Orchestrator queue.
+
+Important:
+- The `uip` CLI is already available.
+- Use `--output json` on all uip commands.
+- Work inside the stated working directory — do NOT `cd` to a parent.
+- Do NOT run `uip maestro flow debug` or `uip maestro flow deploy`.
+- Run `uip maestro flow validate` at most ONCE. If it fails, stop.
+- Do NOT iterate on validation errors or rewrite the flow to fix them. A broken flow is acceptable.
+- You do not need a working flow — a skeleton whose nodes cover the steps of the request is enough. Leave a node unconfigured rather than leaving a step out.
+</pre></div>
+  </details>
+  <details>
+    <summary>Agent response</summary>
+    <div class="details-body"><pre>[ASSISTANT] This matches the uipath-maestro-flow skill — let me invoke it to build the flow.
+[ASSISTANT] No solution exists yet. Let me read the greenfield and queue plugin docs before scaffolding.
+[ASSISTANT] Since `core.action.queue.create` exists in the registry but isn&#x27;t enabled on this tenant (`AvailableOnTenant: false`, and `node add` was rejected), I&#x27;ll follow the skill&#x27;s established fallback pattern for unavailable node types: land a `core.logic.mock` placeholder for the queue-write step rather than hand-authoring an invalid definition. Now building the flow.
+[RESULT - ERROR] </pre></div>
+  </details>
+  <h4 style="margin-top:12px">Tool Calls (33)</h4>
+  
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#0</span>
+      <span class="tool-name">Skill</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">19ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;skill&quot;: &quot;tmp:uipath-maestro-flow&quot;,
+  &quot;args&quot;: &quot;Create a flow with a manual trigger that writes a record to an Orchestrator queue. Work inside /work/output/artifacts/skill-flow-ixp-routing-negative/queue-write (do not cd to parent). Use --output json on all uip commands. Do NOT run `uip maestro flow debug` or `uip maestro flow deploy`. Run `uip maestro flow validate` at most ONCE; if it fails, stop — do not iterate or rewrite to fix errors. A s… (141 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Launching skill: tmp:uipath-maestro-flow</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#1</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">93ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;find . -maxdepth 2 -type f -name &#x27;*.uipx&#x27; -print; echo \&quot;---\&quot;; ls -la&quot;,
+  &quot;description&quot;: &quot;Check for existing solution files in working directory&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>---
+total 12
+drwxr-xr-x 3 root root 4096 Aug 19 00:12 .
+drwxr-xr-x 3 root root 4096 Aug 19 00:12 ..
+drwxr-xr-x 4 root root 4096 Aug 19 00:12 .venv</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#2</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">291ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/CAPABILITY.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Author — Create and edit `.flow` files
+2	
+3	Capability index for building new flows (greenfield) and editing existing flows (brownfield). Author owns everything that happens on disk, locally, without `uip login`. Authoring journeys terminate at `validate` + `format`; from there, hand off to [operate/CAPABILITY.md](../operate/CAPABILITY.md) to publish, run, or debug.
+4	
+5	&gt; **Where you came from / where to go next.** Author is upstream of Operate (build the flow → ship it) and upstream of Diagnose only via Operate (build → run → diagnose). Publish/run/lifecycle lives in [operate/CAPABILITY.md](../operate/CAPABILITY.md); fault triage lives in [diagnose/CAPABILITY.md](../diagnose/CAPABILITY.md).
+6	&gt;
+7	&gt; **Inherits universal rules from [SKILL.md](../../SKILL.md)** — `--output json` + prefer `--output-filter` for extraction, no `flow debug` without consent, resource discovery order, never invoke other skills automatically, dropdown question pattern, solution layout, **plain-English narration + granular progress list (opt-in — silent by default; engage when the user asks for verbosity)**. The rules below are author-scoped and apply on top.
+8	
+9	## When to use this capability
+10	
+11	&lt;
+
+… (truncated, 30449 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#3</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">93ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/greenfield.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Greenfield — Create a New Flow
+2	
+3	End-to-end journey for creating a Flow project from scratch. Author terminates at `validate` + `format`. To publish, run, or debug after this, see [operate/CAPABILITY.md](../../operate/CAPABILITY.md).
+4	
+5	&gt; **Brownfield edits use a different journey.** If the `.flow` file already exists, see [brownfield.md](brownfield.md) instead.
+6	
+7	## Should you plan first?
+8	
+9	For complex flows, produce a plan before building. Reference [planning-arch.md](planning-arch.md) and [planning-impl.md](planning-impl.md) for the node type catalog, port reference, wiring rules, and topology patterns.
+10	
+11	**Plan when:**
+12	- The flow has 5+ nodes with branching or parallel paths
+13	- The flow uses connectors or resources that need discovery
+14	- The user&#x27;s requirements are ambiguous and you need to confirm the approach
+15	
+16	**Don&#x27;t plan when:**
+17	- Adding/editing a single node in an existing flow (use [brownfield.md](brownfield.md))
+18	- The flow is a straightforward linear pipeline (trigger → action → action → end)
+19	- The user has already described the exact topology they want
+20	
+21	### Examples
+22	
+23	**Plan:** &quot;Build a flow that receives a Jira ticke
+
+… (truncated, 34831 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#4</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">6ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/plugins/queue/impl.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Queue Node — Implementation
+2	
+3	## Node Types
+4	
+5	| Node Type | Description |
+6	| --- | --- |
+7	| `core.action.queue.create` | Fire-and-forget queue item creation |
+8	| `core.action.queue.create-and-wait` | Create queue item and wait for result |
+9	
+10	## Registry Validation
+11	
+12	```bash
+13	uip maestro flow registry get core.action.queue.create --output json
+14	uip maestro flow registry get core.action.queue.create-and-wait --output json
+15	```
+16	
+17	Confirm: input port `input`, output port `success`. Set each node instance&#x27;s `typeVersion` to the `version` field from the matching response — do not hardcode it.
+18	
+19	## JSON Structure
+20	
+21	```json
+22	{
+23	  &quot;id&quot;: &quot;enqueueItem&quot;,
+24	  &quot;type&quot;: &quot;core.action.queue.create&quot;,
+25	  &quot;typeVersion&quot;: &quot;&lt;DEFINITION_VERSION&gt;&quot;,
+26	  &quot;display&quot;: { &quot;label&quot;: &quot;Enqueue Invoice&quot; },
+27	  &quot;inputs&quot;: {
+28	    &quot;queue&quot;: &quot;InvoiceProcessingQueue&quot;,
+29	    &quot;itemData&quot;: &quot;=js:JSON.stringify({ orderId: $vars.order.id, amount: $vars.order.total })&quot;,
+30	    &quot;priority&quot;: &quot;High&quot;,
+31	    &quot;reference&quot;: &quot;=js:$vars.order.id&quot;,
+32	    &quot;deferDate&quot;: &quot;2026-04-01T10:00:00Z&quot;,
+33	    &quot;dueDate&quot;: &quot;2026-04-07T17:00:00Z&quot;
+34	  },
+35	  &quot;outputs&quot;: {
+36	    &quot;error&quot;: {
+37	      &quot;type&quot;
+
+… (truncated, 1584 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#5</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">14.82s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;\\\nuip solution init \&quot;QueueWriteSolution\&quot; --output json \\\n  &amp;&amp; cd \&quot;QueueWriteSolution\&quot; \\\n  &amp;&amp; uip maestro flow init \&quot;QueueWrite\&quot; --output json \\\n  &amp;&amp; cd \&quot;QueueWrite\&quot; \\\n  &amp;&amp; uip maestro flow registry pull --output json&quot;,
+  &quot;description&quot;: &quot;Scaffold solution and flow project, then pull registry&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;SolutionInit&quot;,
+  &quot;Data&quot;: {
+    &quot;Status&quot;: &quot;Created successfully&quot;,
+    &quot;Path&quot;: &quot;/work/output/artifacts/skill-flow-ixp-routing-negative/queue-write/QueueWriteSolution/QueueWriteSolution.uipx&quot;,
+    &quot;NextSteps&quot;: &quot;Read /work/output/artifacts/skill-flow-ixp-routing-negative/queue-write/QueueWriteSolution/AGENTS.md or /work/output/artifacts/skill-flow-ixp-routing-negative/queue-write/QueueWriteSolution/CLAUDE.md to understand the solution lifecycle, project types that can be used inside a solution, and related uip command references.&quot;
+  }
+}
+2026-08-19 00:12:36 INFO  [ResourceBuilder:ProjectCreateCommandHandler] Creating project [object Object]
+2026-08-19 00:12:36 INFO  [ResourceBuilder:MultiFileSolutionDefinitionProvider] Reading multi-file solution definition for solution %s /work/output/artifacts/skill-flow-ixp-routing-negative/queue-write/QueueWriteSolution
+2026-08-19 00:12:36 INFO  [ResourceBuilder:ProjectCreateCommandHandler] Generate artefact resources for project [object Object]
+2026-08-19 00:12:36 INFO  [ResourceBuilder:SolutionsMetadataReader] Reading metadata from %s. SolutionsMetadataReader
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FlowInit&quot;,
+  &quot;Dat
+
+… (truncated, 1670 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#6</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">15.43s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry get core.control.end --output json&quot;,
+  &quot;description&quot;: &quot;Get End node definition&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeGetSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;Node&quot;: {
+      &quot;nodeType&quot;: &quot;core.control.end&quot;,
+      &quot;version&quot;: &quot;1.0&quot;,
+      &quot;category&quot;: &quot;control-flow&quot;,
+      &quot;description&quot;: &quot;Mark the end of a process path&quot;,
+      &quot;tags&quot;: [
+        &quot;control-flow&quot;,
+        &quot;end&quot;,
+        &quot;finish&quot;,
+        &quot;complete&quot;
+      ],
+      &quot;sortOrder&quot;: 65,
+      &quot;display&quot;: {
+        &quot;label&quot;: &quot;End&quot;,
+        &quot;icon&quot;: &quot;circle-check&quot;,
+        &quot;shape&quot;: &quot;circle&quot;
+      },
+      &quot;handleConfiguration&quot;: [
+        {
+          &quot;position&quot;: &quot;left&quot;,
+          &quot;handles&quot;: [
+            {
+              &quot;id&quot;: &quot;input&quot;,
+              &quot;type&quot;: &quot;target&quot;,
+              &quot;handleType&quot;: &quot;input&quot;
+            }
+          ]
+        }
+      ],
+      &quot;model&quot;: {
+        &quot;type&quot;: &quot;bpmn:EndEvent&quot;
+      },
+      &quot;runtimeConstraints&quot;: {
+        &quot;exclude&quot;: [
+          &quot;api-function&quot;
+        ]
+      }
+    }
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#7</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-err">ERROR</span>
+      <span class="tool-duration">16.18s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry get core.action.queue.create --output json&quot;,
+  &quot;description&quot;: &quot;Get Queue create node definition&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Exit code 1
+{
+  &quot;Result&quot;: &quot;Failure&quot;,
+  &quot;Message&quot;: &quot;Node not found&quot;,
+  &quot;Instructions&quot;: &quot;No node found with node type: core.action.queue.create&quot;,
+  &quot;ErrorCode&quot;: &quot;unknown_error&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}</pre>
+    <h4>Error</h4><pre>Exit code 1
+{
+  &quot;Result&quot;: &quot;Failure&quot;,
+  &quot;Message&quot;: &quot;Node not found&quot;,
+  &quot;Instructions&quot;: &quot;No node found with node type: core.action.queue.create&quot;,
+  &quot;ErrorCode&quot;: &quot;unknown_error&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}</pre>
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#8</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">740ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry search \&quot;queue\&quot; --output json --output-filter \&quot;[*].{NodeType:NodeType,DisplayName:DisplayName,Description:Description}\&quot;&quot;,
+  &quot;description&quot;: &quot;Search registry for queue-related node types&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeSearchSuccess&quot;,
+  &quot;Data&quot;: [
+    {
+      &quot;NodeType&quot;: &quot;uipath.core.rpa-workflow.ee03063b-b7bb-4c4d-a395-8f81bca73b78&quot;,
+      &quot;DisplayName&quot;: &quot;OrchestratorQueueTransaction&quot;,
+      &quot;Description&quot;: &quot;&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.agent.resource.tool.process.ee03063b-b7bb-4c4d-a395-8f81bca73b78&quot;,
+      &quot;DisplayName&quot;: &quot;OrchestratorQueueTransaction&quot;,
+      &quot;Description&quot;: &quot;&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.core.flow.1c47cc2a-cc1d-4614-8e9d-26e270f01fd3&quot;,
+      &quot;DisplayName&quot;: &quot;SupplierInvoiceEnqueue&quot;,
+      &quot;Description&quot;: &quot;&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.agent.resource.tool.flow.1c47cc2a-cc1d-4614-8e9d-26e270f01fd3&quot;,
+      &quot;DisplayName&quot;: &quot;SupplierInvoiceEnqueue&quot;,
+      &quot;Description&quot;: &quot;&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;core.action.queue.create&quot;,
+      &quot;DisplayName&quot;: &quot;Create queue item&quot;,
+      &quot;Description&quot;: &quot;Add an item to an Orchestrator queue&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;core.action.queue.create-and-wait&quot;,
+      &quot;DisplayName&quot;: &quot;Create and wait for queue item&quot;,
+      &quot;Description&quot;: &quot;Add a queue item and wait for it to complete&quot;
+    }
+  ]
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#9</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-err">ERROR</span>
+      <span class="tool-duration">702ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry get \&quot;core.action.queue.create\&quot; --output json&quot;,
+  &quot;description&quot;: &quot;Retry registry get for queue create node&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Exit code 1
+{
+  &quot;Result&quot;: &quot;Failure&quot;,
+  &quot;Message&quot;: &quot;Node not found&quot;,
+  &quot;Instructions&quot;: &quot;No node found with node type: core.action.queue.create&quot;,
+  &quot;ErrorCode&quot;: &quot;unknown_error&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}</pre>
+    <h4>Error</h4><pre>Exit code 1
+{
+  &quot;Result&quot;: &quot;Failure&quot;,
+  &quot;Message&quot;: &quot;Node not found&quot;,
+  &quot;Instructions&quot;: &quot;No node found with node type: core.action.queue.create&quot;,
+  &quot;ErrorCode&quot;: &quot;unknown_error&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}</pre>
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#10</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.81s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry get \&quot;core.action.queue.create\&quot; --local --output json; echo \&quot;---\&quot;; uip maestro flow registry search \&quot;core.action.queue.create\&quot; --output json&quot;,
+  &quot;description&quot;: &quot;Try local flag and exact search for queue create node&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Failure&quot;,
+  &quot;Message&quot;: &quot;Node not found&quot;,
+  &quot;Instructions&quot;: &quot;No node found with node type: core.action.queue.create&quot;,
+  &quot;ErrorCode&quot;: &quot;unknown_error&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}
+---
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeSearchSuccess&quot;,
+  &quot;Data&quot;: [
+    {
+      &quot;NodeType&quot;: &quot;core.action.queue.create&quot;,
+      &quot;Category&quot;: &quot;data-operations&quot;,
+      &quot;DisplayName&quot;: &quot;Create queue item&quot;,
+      &quot;Description&quot;: &quot;Add an item to an Orchestrator queue&quot;,
+      &quot;Version&quot;: &quot;1.2&quot;,
+      &quot;Tags&quot;: &quot;queue, orchestrator, create, item&quot;,
+      &quot;AvailableOnTenant&quot;: false
+    },
+    {
+      &quot;NodeType&quot;: &quot;core.action.queue.create-and-wait&quot;,
+      &quot;Category&quot;: &quot;data-operations&quot;,
+      &quot;DisplayName&quot;: &quot;Create and wait for queue item&quot;,
+      &quot;Description&quot;: &quot;Add a queue item and wait for it to complete&quot;,
+      &quot;Version&quot;: &quot;1.2&quot;,
+      &quot;Tags&quot;: &quot;queue, orchestrator, create, wait, item&quot;,
+      &quot;AvailableOnTenant&quot;: false
+    }
+  ]
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#11</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-err">ERROR</span>
+      <span class="tool-duration">2.75s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry search \&quot;core.control.end\&quot; --output json; echo \&quot;---try version flag---\&quot;; uip maestro flow registry get \&quot;core.action.queue.create\&quot; --version 1.2 --output json 2&gt;&amp;1; echo \&quot;---try create-and-wait---\&quot;; uip maestro flow registry get \&quot;core.action.queue.create-and-wait\&quot; --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Compare AvailableOnTenant flag and retry registry get with version&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Exit code 1
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeSearchSuccess&quot;,
+  &quot;Data&quot;: [
+    {
+      &quot;NodeType&quot;: &quot;core.control.end&quot;,
+      &quot;Category&quot;: &quot;control-flow&quot;,
+      &quot;DisplayName&quot;: &quot;End&quot;,
+      &quot;Description&quot;: &quot;Mark the end of a process path&quot;,
+      &quot;Version&quot;: &quot;1.0&quot;,
+      &quot;Tags&quot;: &quot;control-flow, end, finish, complete&quot;,
+      &quot;AvailableOnTenant&quot;: true
+    }
+  ]
+}
+---try version flag---
+{
+  &quot;Result&quot;: &quot;ValidationError&quot;,
+  &quot;ErrorCode&quot;: &quot;invalid_argument&quot;,
+  &quot;Message&quot;: &quot;error: unknown option &#x27;--version&#x27;&quot;,
+  &quot;Instructions&quot;: &quot;Run &#x27;uip maestro flow registry get core.action.queue.create --help&#x27; for usage information.&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}
+---try create-and-wait---
+{
+  &quot;Result&quot;: &quot;Failure&quot;,
+  &quot;Message&quot;: &quot;Node not found&quot;,
+  &quot;Instructions&quot;: &quot;No node found with node type: core.action.queue.create-and-wait&quot;,
+  &quot;ErrorCode&quot;: &quot;unknown_error&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}</pre>
+    <h4>Error</h4><pre>Exit code 1
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeSearchSuccess&quot;,
+  &quot;Data&quot;: [
+    {
+      &quot;NodeType&quot;: &quot;core.control.end&quot;,
+      &quot;Category&quot;: &quot;control-flow&quot;,
+      &quot;DisplayName&quot;: &quot;End&quot;,
+      &quot;Description&quot;: &quot;Mark the end of a process path&quot;,
+      &quot;Version&quot;: &quot;1.0&quot;,
+      &quot;Tags&quot;: &quot;control-flow, end, finish, complete&quot;,
+      &quot;AvailableOnTenant&quot;: true
+    }
+  ]
+}
+---try version flag---
+{
+  &quot;Result&quot;: &quot;ValidationError&quot;,
+  &quot;ErrorCode&quot;: &quot;invalid_argument&quot;,
+  &quot;Message&quot;: &quot;error: unknown option &#x27;--version&#x27;&quot;,
+  &quot;Instructions&quot;: &quot;Run &#x27;uip maestro flow registry get core.action.queue.create --help&#x27; for usage information.&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}
+---try create-and-wait---
+{
+  &quot;Result&quot;: &quot;Failure&quot;,
+  &quot;Message&quot;: &quot;Node not found&quot;,
+  &quot;Instructions&quot;: &quot;No node found with node type: core.action.queue.create-and-wait&quot;,
+  &quot;ErrorCode&quot;: &quot;unknown_error&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}</pre>
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#12</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">817ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry get --help 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Check registry get command help&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>                         uip maestro flow registry get                          
+Get the full schema for a single node. For connector nodes (uipath.connector.*), the base manifest is automatically enriched with live metadata from Integration Service.
+                Use --help with nested commands for more detail.                
+
+┌─ Usage ──────────────────────────────────────────────────────────────────────┐
+│ uip maestro flow registry get [options] &lt;node-type&gt;                          │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Arguments ──────────────────────────────────────────────────────────────────┐
+│ node-type   Node type identifier — get it from &#x27;uip maestro flow registry    │
+│             search&#x27;                                                          │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Options ────────────────────────────────────────────────────────────────────┐
+│ --connection-id &lt;id&gt;           Connection ID for Integration Service         │
+│                                connector node enrichment. Required for       │
+│                                connector trigger node
+
+… (truncated, 3849 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#13</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-err">ERROR</span>
+      <span class="tool-duration">5.06s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry pull --force --output json 2&gt;&amp;1; echo \&quot;---retry get---\&quot;; uip maestro flow registry get \&quot;core.action.queue.create\&quot; --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Force refresh registry cache then retry queue node get&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Exit code 1
+[ManifestClient] fetchDynamicNodes ok: total=4878 connector nodes=3654 integration trigger nodes=896 agent context nodes=2 external agent nodes=7 orchestrator nodes=261 IXP nodes=45 IXP Models nodes=13
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodePullSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;NodesCount&quot;: 4761,
+    &quot;FromCache&quot;: false,
+    &quot;Source&quot;: &quot;authenticated&quot;,
+    &quot;CacheWritten&quot;: true,
+    &quot;Message&quot;: &quot;Synced fresh nodes&quot;
+  }
+}
+---retry get---
+{
+  &quot;Result&quot;: &quot;Failure&quot;,
+  &quot;Message&quot;: &quot;Node not found&quot;,
+  &quot;Instructions&quot;: &quot;No node found with node type: core.action.queue.create&quot;,
+  &quot;ErrorCode&quot;: &quot;unknown_error&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}</pre>
+    <h4>Error</h4><pre>Exit code 1
+[ManifestClient] fetchDynamicNodes ok: total=4878 connector nodes=3654 integration trigger nodes=896 agent context nodes=2 external agent nodes=7 orchestrator nodes=261 IXP nodes=45 IXP Models nodes=13
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodePullSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;NodesCount&quot;: 4761,
+    &quot;FromCache&quot;: false,
+    &quot;Source&quot;: &quot;authenticated&quot;,
+    &quot;CacheWritten&quot;: true,
+    &quot;Message&quot;: &quot;Synced fresh nodes&quot;
+  }
+}
+---retry get---
+{
+  &quot;Result&quot;: &quot;Failure&quot;,
+  &quot;Message&quot;: &quot;Node not found&quot;,
+  &quot;Instructions&quot;: &quot;No node found with node type: core.action.queue.create&quot;,
+  &quot;ErrorCode&quot;: &quot;unknown_error&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}</pre>
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#14</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">11ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;pwd; ls -la&quot;,
+  &quot;description&quot;: &quot;Check current working directory and contents&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/work/output/artifacts/skill-flow-ixp-routing-negative/queue-write/QueueWriteSolution/QueueWrite
+total 20
+drwxr-xr-x 2 root root 4096 Aug 19 00:12 .
+drwxr-xr-x 4 root root 4096 Aug 19 00:12 ..
+-rw-r--r-- 1 root root 1980 Aug 19 00:12 QueueWrite.flow
+-rw-r--r-- 1 root root  268 Aug 19 00:12 operate.json
+-rw-r--r-- 1 root root   52 Aug 19 00:12 project.uiproj</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#15</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">789ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry list --output json --output-filter \&quot;[?NodeType==&#x27;core.action.queue.create&#x27;]\&quot; 2&gt;&amp;1 | head -50&quot;,
+  &quot;description&quot;: &quot;List registry filtered for queue create node type&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;ValidationError&quot;,
+  &quot;ErrorCode&quot;: &quot;invalid_argument&quot;,
+  &quot;Message&quot;: &quot;--output-filter requires an explicit --limit: this command defaults to --limit 20, so the filter would silently apply to only the first 20 records.&quot;,
+  &quot;Instructions&quot;: &quot;Pass --limit &lt;n&gt; to choose how many records the filter applies to. To filter over all records, pass the command&#x27;s maximum accepted --limit (see the option&#x27;s description in --help).&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#16</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">783ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry list --limit 5000 --output json --output-filter \&quot;[?NodeType==&#x27;core.action.queue.create&#x27;]\&quot; 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;List all registry nodes and filter for queue create type&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeListSuccess&quot;,
+  &quot;Data&quot;: [
+    {
+      &quot;NodeType&quot;: &quot;core.action.queue.create&quot;,
+      &quot;Category&quot;: &quot;data-operations&quot;,
+      &quot;DisplayName&quot;: &quot;Create queue item&quot;,
+      &quot;Description&quot;: &quot;Add an item to an Orchestrator queue&quot;,
+      &quot;Version&quot;: &quot;1.2&quot;,
+      &quot;Tags&quot;: &quot;queue, orchestrator, create, item&quot;,
+      &quot;AvailableOnTenant&quot;: false
+    }
+  ]
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#17</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.95s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry get \&quot;core.action.script\&quot; --output json 2&gt;&amp;1 | head -5; echo \&quot;---\&quot;; uip maestro flow registry search \&quot;script\&quot; --output json --output-filter \&quot;[?NodeType==&#x27;core.action.script&#x27;]\&quot; 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Test registry get on another OOTB node type for comparison&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeGetSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;Node&quot;: {
+---
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeSearchSuccess&quot;,
+  &quot;Data&quot;: [
+    {
+      &quot;NodeType&quot;: &quot;core.action.script&quot;,
+      &quot;Category&quot;: &quot;data-operations&quot;,
+      &quot;DisplayName&quot;: &quot;Script&quot;,
+      &quot;Description&quot;: &quot;Run custom JavaScript code&quot;,
+      &quot;Version&quot;: &quot;1.1&quot;,
+      &quot;Tags&quot;: &quot;code, javascript, python&quot;,
+      &quot;AvailableOnTenant&quot;: true
+    }
+  ]
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#18</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">2.08s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry get --help 2&gt;&amp;1 | grep -i -A2 \&quot;force\\|unavail\\|tenant\&quot;; echo \&quot;---\&quot;; uip --version 2&gt;&amp;1; uip maestro flow --help 2&gt;&amp;1 | head -30&quot;,
+  &quot;description&quot;: &quot;Check for tenant-bypass flags and CLI version&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>  uip maestro flow registry get uipath.connector.uipath-salesforce-slack.send-message --connection-id &lt;id&gt;
+  uip maestro flow registry get uipath.connector.trigger.uipath-microsoft-outlook365.email-received --connection-id &lt;id&gt;
+
+---
+1.201.0-dev.8272
+                                uip maestro flow                                
+             Create, debug, and run UiPath Flow projects and jobs.              
+                Use --help with nested commands for more detail.                
+
+┌─ Usage ──────────────────────────────────────────────────────────────────────┐
+│ uip maestro flow [options] [command]                                         │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Commands ───────────────────────────────────────────────────────────────────┐
+│ binding           Manage bindings in a Flow file                             │
+│ check             Run the authoring-time SDK analyzer on source or an        │
+│                   artifact.                                                  │
+│ compile           Compile authored TypeScript to a flow artifact.            │
+│ debug             Debug a flow project by uploading to 
+
+… (truncated, 1319 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#19</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-err">ERROR</span>
+      <span class="tool-duration">1.12s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow node add \&quot;QueueWrite.flow\&quot; core.action.queue.create --label \&quot;Add Queue Item\&quot; --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Try adding queue node directly via node add command&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Exit code 1
+{
+  &quot;Result&quot;: &quot;Failure&quot;,
+  &quot;Message&quot;: &quot;Node type &#x27;core.action.queue.create&#x27; is not enabled for this tenant.&quot;,
+  &quot;Instructions&quot;: &quot;Ask an admin to enable the feature flag for this node type, or run `uip maestro flow registry list` to see every known type with its `AvailableOnTenant` flag.&quot;,
+  &quot;ErrorCode&quot;: &quot;unknown_error&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}</pre>
+    <h4>Error</h4><pre>Exit code 1
+{
+  &quot;Result&quot;: &quot;Failure&quot;,
+  &quot;Message&quot;: &quot;Node type &#x27;core.action.queue.create&#x27; is not enabled for this tenant.&quot;,
+  &quot;Instructions&quot;: &quot;Ask an admin to enable the feature flag for this node type, or run `uip maestro flow registry list` to see every known type with its `AvailableOnTenant` flag.&quot;,
+  &quot;ErrorCode&quot;: &quot;unknown_error&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}</pre>
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#20</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">696ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry get \&quot;core.action.script\&quot; --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Get full core.action.script definition to see action-node shape&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeGetSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;Node&quot;: {
+      &quot;nodeType&quot;: &quot;core.action.script&quot;,
+      &quot;version&quot;: &quot;1.1&quot;,
+      &quot;category&quot;: &quot;data-operations&quot;,
+      &quot;description&quot;: &quot;Run custom JavaScript code&quot;,
+      &quot;tags&quot;: [
+        &quot;code&quot;,
+        &quot;javascript&quot;,
+        &quot;python&quot;
+      ],
+      &quot;sortOrder&quot;: 70,
+      &quot;supportsErrorHandling&quot;: true,
+      &quot;display&quot;: {
+        &quot;label&quot;: &quot;Script&quot;,
+        &quot;icon&quot;: &quot;code&quot;
+      },
+      &quot;handleConfiguration&quot;: [
+        {
+          &quot;position&quot;: &quot;left&quot;,
+          &quot;handles&quot;: [
+            {
+              &quot;id&quot;: &quot;input&quot;,
+              &quot;type&quot;: &quot;target&quot;,
+              &quot;handleType&quot;: &quot;input&quot;
+            }
+          ]
+        },
+        {
+          &quot;position&quot;: &quot;right&quot;,
+          &quot;handles&quot;: [
+            {
+              &quot;id&quot;: &quot;success&quot;,
+              &quot;type&quot;: &quot;source&quot;,
+              &quot;handleType&quot;: &quot;output&quot;
+            },
+            {
+              &quot;id&quot;: &quot;error&quot;,
+              &quot;label&quot;: &quot;Error&quot;,
+              &quot;type&quot;: &quot;source&quot;,
+              &quot;handleType&quot;: &quot;output&quot;,
+              &quot;visible&quot;: &quot;{inputs.errorHandlingEnabled}&quot;,
+              &quot;constraints&quot;: {
+                &quot;maxConnections&quot;: 1
+              }
+            }
+          ]
+    
+
+… (truncated, 2916 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#21</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">12ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;find /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/plugins/queue -type f 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;List all files in queue plugin directory&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/plugins/queue/planning.md
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/plugins/queue/impl.md</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#22</span>
+      <span class="tool-name">Grep</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">35ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;pattern&quot;: &quot;not enabled for this tenant|feature flag|gated|AvailableOnTenant.*false|tenant.*flag&quot;,
+  &quot;path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references&quot;,
+  &quot;output_mode&quot;: &quot;files_with_matches&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Found 17 files
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/shared/variables-and-expressions.md
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/shared/cli-commands.md
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/evaluate/references/evaluators-guide.md
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/plugins/summarize/planning.md
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/plugins/summarize/impl.md
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/plugins/loop/planning.md
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/plugins/loop/impl.md
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/plugins/ixp/planning.md
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/plugins/ixp/impl.md
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/plugins/inline-agent/impl.md
+/home/azureuser/projects/skills/tmp/skills/ui
+
+… (truncated, 752 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#23</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">3ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/plugins/queue/planning.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Queue Node — Planning
+2	
+3	## Node Types
+4	
+5	| Node Type | Description |
+6	| --- | --- |
+7	| `core.action.queue.create` | Create a queue item and continue immediately (fire-and-forget) |
+8	| `core.action.queue.create-and-wait` | Create a queue item and wait for processing to complete |
+9	
+10	## When to Use
+11	
+12	Use Queue nodes to distribute work items to robots via Orchestrator queues.
+13	
+14	### Selection Heuristics
+15	
+16	| Situation | Use Queue? |
+17	| --- | --- |
+18	| Distribute work to robots — fire-and-forget | Yes (`create`) |
+19	| Distribute work and need the result before continuing | Yes (`create-and-wait`) |
+20	| Direct process invocation with known inputs | No — use [RPA Workflow](../rpa/planning.md) |
+21	| Iterate over items sequentially in the flow | No — use [Loop](../loop/planning.md) |
+22	
+23	## Ports
+24	
+25	| Input Port | Output Port(s) |
+26	| --- | --- |
+27	| `input` | `success` |
+28	
+29	## Key Inputs
+30	
+31	| Input | Required | Description |
+32	| --- | --- | --- |
+33	| `queue` | Yes | Orchestrator queue name |
+34	| `itemData` | No | JSON payload for the queue item |
+35	| `priority` | No | `Low`, `Normal` (default), `High` |
+36	| `reference` | No | Trackin
+
+… (truncated, 307 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#24</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-err">ERROR</span>
+      <span class="tool-duration">1.37s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry get \&quot;core.action.queue.create\&quot; --local --output json 2&gt;&amp;1; echo \&quot;===with pull local flag===\&quot;; uip maestro flow registry pull --local --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Try local registry pull and get for queue node&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Exit code 3
+{
+  &quot;Result&quot;: &quot;Failure&quot;,
+  &quot;Message&quot;: &quot;Node not found&quot;,
+  &quot;Instructions&quot;: &quot;No node found with node type: core.action.queue.create&quot;,
+  &quot;ErrorCode&quot;: &quot;unknown_error&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}
+===with pull local flag===
+{
+  &quot;Result&quot;: &quot;ValidationError&quot;,
+  &quot;ErrorCode&quot;: &quot;invalid_argument&quot;,
+  &quot;Message&quot;: &quot;error: unknown option &#x27;--local&#x27;&quot;,
+  &quot;Instructions&quot;: &quot;Run &#x27;uip maestro flow registry pull --help&#x27; for usage information.&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}</pre>
+    <h4>Error</h4><pre>Exit code 3
+{
+  &quot;Result&quot;: &quot;Failure&quot;,
+  &quot;Message&quot;: &quot;Node not found&quot;,
+  &quot;Instructions&quot;: &quot;No node found with node type: core.action.queue.create&quot;,
+  &quot;ErrorCode&quot;: &quot;unknown_error&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}
+===with pull local flag===
+{
+  &quot;Result&quot;: &quot;ValidationError&quot;,
+  &quot;ErrorCode&quot;: &quot;invalid_argument&quot;,
+  &quot;Message&quot;: &quot;error: unknown option &#x27;--local&#x27;&quot;,
+  &quot;Instructions&quot;: &quot;Run &#x27;uip maestro flow registry pull --help&#x27; for usage information.&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}</pre>
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#25</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">23ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -rn \&quot;not available on tenant\\|AvailableOnTenant.*false\\|feature flag\\|not enabled for this tenant\\|core.logic.mock\&quot; /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/plugins/ixp/impl.md | head -30&quot;,
+  &quot;description&quot;: &quot;Search ixp impl doc for tenant-unavailable node handling guidance&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>53:If `uip maestro flow registry search &quot;uipath.ixp&quot;` returns `Data: []`, **no IxP extraction model is published on this tenant**. Add a `core.logic.mock` placeholder node (see [If the Model Does Not Exist Yet](#if-the-model-does-not-exist-yet)) and surface the missing model in **Open Questions**.
+61:The fallback is `core.logic.mock`, full stop. At most run one broader `registry search &quot;ixp&quot;` to confirm there are no `uipath.ixp.*` hits hidden by stricter prefix matching, then mock.
+84:- **Do NOT mock.** If `Data: []`, answer directly: no IxP models are published on this tenant. The `core.logic.mock` fallback is for build-time planning, not for listing-time Q&amp;A.
+347:- **Model published** (`registry search &quot;uipath.ixp&quot;` returns entries) → land the real `uipath.ixp.*` node. When you can&#x27;t finish configuring it this turn, still build the instance from `registry get` (copy `inputs.model` and the fixed `outputs` literal — no user input needed), set `inputs.fileRef` to a placeholder expression, and defer the model choice, `fileRef` source, and taxonomy to **Open Questions**. Do NOT downgrade to `core.logic.mock` — a published model exists, so land the real node.
+348:- **No model published
+
+… (truncated, 1012 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#26</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.30s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry search \&quot;queue\&quot; --output json 2&gt;&amp;1; echo \&quot;---\&quot;; uip maestro flow registry get --help 2&gt;&amp;1 | grep -i \&quot;disable\\|force\\|all\&quot;&quot;,
+  &quot;description&quot;: &quot;Recheck queue search full output and look for override flags&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeSearchSuccess&quot;,
+  &quot;Data&quot;: [
+    {
+      &quot;NodeType&quot;: &quot;uipath.core.rpa-workflow.ee03063b-b7bb-4c4d-a395-8f81bca73b78&quot;,
+      &quot;Category&quot;: &quot;rpa-workflow&quot;,
+      &quot;DisplayName&quot;: &quot;OrchestratorQueueTransaction&quot;,
+      &quot;Description&quot;: &quot;&quot;,
+      &quot;Version&quot;: &quot;1.0.0&quot;,
+      &quot;Tags&quot;: &quot;&quot;,
+      &quot;AvailableOnTenant&quot;: true
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.agent.resource.tool.process.ee03063b-b7bb-4c4d-a395-8f81bca73b78&quot;,
+      &quot;Category&quot;: &quot;agent.tool.rpa&quot;,
+      &quot;DisplayName&quot;: &quot;OrchestratorQueueTransaction&quot;,
+      &quot;Description&quot;: &quot;&quot;,
+      &quot;Version&quot;: &quot;1.0.0&quot;,
+      &quot;Tags&quot;: &quot;agent-tool&quot;,
+      &quot;AvailableOnTenant&quot;: true
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.core.flow.1c47cc2a-cc1d-4614-8e9d-26e270f01fd3&quot;,
+      &quot;Category&quot;: &quot;flow&quot;,
+      &quot;DisplayName&quot;: &quot;SupplierInvoiceEnqueue&quot;,
+      &quot;Description&quot;: &quot;&quot;,
+      &quot;Version&quot;: &quot;1.0.0&quot;,
+      &quot;Tags&quot;: &quot;&quot;,
+      &quot;AvailableOnTenant&quot;: true
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.agent.resource.tool.flow.1c47cc2a-cc1d-4614-8e9d-26e270f01fd3&quot;,
+      &quot;Category&quot;: &quot;agent.tool.flow&quot;,
+      &quot;DisplayName&quot;: &quot;SupplierInvoiceEnqueue&quot;,
+      &quot;Description&quot;: &quot;&quot;,
+      &quot;Version&quot;: &quot;1.0.0&quot;,
+      &quot;Tags&quot;: &quot;agent-tool&quot;,
+      &quot;AvailableOnTen
+
+… (truncated, 1153 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#27</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">667ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry get \&quot;core.logic.mock\&quot; --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Get core.logic.mock definition for placeholder node&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeGetSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;Node&quot;: {
+      &quot;nodeType&quot;: &quot;core.logic.mock&quot;,
+      &quot;version&quot;: &quot;1.0&quot;,
+      &quot;category&quot;: &quot;control-flow&quot;,
+      &quot;description&quot;: &quot;Placeholder node for prototyping&quot;,
+      &quot;tags&quot;: [
+        &quot;blank&quot;,
+        &quot;todo&quot;
+      ],
+      &quot;sortOrder&quot;: 60,
+      &quot;display&quot;: {
+        &quot;label&quot;: &quot;Mock&quot;,
+        &quot;icon&quot;: &quot;square-dashed&quot;
+      },
+      &quot;handleConfiguration&quot;: [
+        {
+          &quot;position&quot;: &quot;left&quot;,
+          &quot;handles&quot;: [
+            {
+              &quot;id&quot;: &quot;input&quot;,
+              &quot;type&quot;: &quot;target&quot;,
+              &quot;handleType&quot;: &quot;input&quot;
+            }
+          ],
+          &quot;visible&quot;: true
+        },
+        {
+          &quot;position&quot;: &quot;right&quot;,
+          &quot;handles&quot;: [
+            {
+              &quot;id&quot;: &quot;output&quot;,
+              &quot;type&quot;: &quot;source&quot;,
+              &quot;handleType&quot;: &quot;output&quot;
+            }
+          ],
+          &quot;visible&quot;: true
+        }
+      ],
+      &quot;model&quot;: {
+        &quot;type&quot;: &quot;bpmn:Task&quot;
+      },
+      &quot;outputDefinition&quot;: {
+        &quot;output&quot;: {
+          &quot;type&quot;: &quot;object&quot;,
+          &quot;description&quot;: &quot;Mock output value&quot;,
+          &quot;source&quot;: &quot;null&quot;,
+          &quot;var&quot;: &quot;output&quot;
+        }
+      },
+      &quot;runtimeConstraints&quot;: {
+       
+
+… (truncated, 68 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#28</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">3ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-ixp-routing-negative/queue-write/QueueWriteSolution/QueueWrite/QueueWrite.flow&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	{
+2	  &quot;id&quot;: &quot;78616fdf-003a-4090-b82d-c0f5c8d960f7&quot;,
+3	  &quot;version&quot;: &quot;1.9&quot;,
+4	  &quot;name&quot;: &quot;QueueWrite&quot;,
+5	  &quot;nodes&quot;: [
+6	    {
+7	      &quot;id&quot;: &quot;start&quot;,
+8	      &quot;type&quot;: &quot;core.trigger.manual&quot;,
+9	      &quot;typeVersion&quot;: &quot;1.0&quot;,
+10	      &quot;display&quot;: {
+11	        &quot;label&quot;: &quot;Manual trigger&quot;
+12	      },
+13	      &quot;inputs&quot;: {
+14	        &quot;entryPointId&quot;: &quot;f82d40bc-ba4e-4d66-8282-5a87ecfd65e2&quot;,
+15	        &quot;isDefaultEntryPoint&quot;: true
+16	      }
+17	    }
+18	  ],
+19	  &quot;edges&quot;: [],
+20	  &quot;definitions&quot;: [
+21	    {
+22	      &quot;nodeType&quot;: &quot;core.trigger.manual&quot;,
+23	      &quot;version&quot;: &quot;1.0&quot;,
+24	      &quot;category&quot;: &quot;trigger&quot;,
+25	      &quot;description&quot;: &quot;Start the process manually&quot;,
+26	      &quot;tags&quot;: [
+27	        &quot;trigger&quot;,
+28	        &quot;start&quot;,
+29	        &quot;manual&quot;
+30	      ],
+31	      &quot;sortOrder&quot;: 80,
+32	      &quot;display&quot;: {
+33	        &quot;label&quot;: &quot;Manual trigger&quot;,
+34	        &quot;icon&quot;: &quot;play&quot;,
+35	        &quot;shape&quot;: &quot;circle&quot;
+36	      },
+37	      &quot;handleConfiguration&quot;: [
+38	        {
+39	          &quot;position&quot;: &quot;right&quot;,
+40	          &quot;handles&quot;: [
+41	            {
+42	              &quot;id&quot;: &quot;output&quot;,
+43	              &quot;type&quot;: &quot;source&quot;,
+44	              &quot;handleType&quot;: &quot;output&quot;,
+45	              &quot;showButton&quot;: true,
+46	              &quot;constraints&quot;: {
+
+
+… (truncated, 1044 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#29</span>
+      <span class="tool-name">Edit</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">48ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;replace_all&quot;: false,
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-ixp-routing-negative/queue-write/QueueWriteSolution/QueueWrite/QueueWrite.flow&quot;,
+  &quot;old_string&quot;: &quot;  \&quot;nodes\&quot;: [\n    {\n      \&quot;id\&quot;: \&quot;start\&quot;,&quot;,
+  &quot;new_string&quot;: &quot;  \&quot;nodes\&quot;: [\n    {\n      \&quot;id\&quot;: \&quot;addQueueItemMock\&quot;,\n      \&quot;type\&quot;: \&quot;core.logic.mock\&quot;,\n      \&quot;typeVersion\&quot;: \&quot;1.0\&quot;,\n      \&quot;display\&quot;: {\n        \&quot;label\&quot;: \&quot;Add Queue Item to Orchestrator Queue (mock — core.action.queue.create not enabled on this tenant)\&quot;\n      }\n    },\n    {\n      \&quot;id\&quot;: \&quot;end\&quot;,\n      \&quot;type\&quot;: \&quot;core.control.end\&quot;,\n      \&quot;typeVersion\&quot;: \&quot;1.0\&quot;,\n      \&quot;display\&quot;: {\n        \&quot;label\&quot;: \&quot;End\&quot;\n      }\n… (33 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>The file /work/output/artifacts/skill-flow-ixp-routing-negative/queue-write/QueueWriteSolution/QueueWrite/QueueWrite.flow has been updated successfully. (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#30</span>
+      <span class="tool-name">Edit</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">12ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;replace_all&quot;: false,
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-ixp-routing-negative/queue-write/QueueWriteSolution/QueueWrite/QueueWrite.flow&quot;,
+  &quot;old_string&quot;: &quot;  \&quot;edges\&quot;: [],&quot;,
+  &quot;new_string&quot;: &quot;  \&quot;edges\&quot;: [\n    {\n      \&quot;id\&quot;: \&quot;edge_start_output_addQueueItemMock_input\&quot;,\n      \&quot;sourceNodeId\&quot;: \&quot;start\&quot;,\n      \&quot;sourcePort\&quot;: \&quot;output\&quot;,\n      \&quot;targetNodeId\&quot;: \&quot;addQueueItemMock\&quot;,\n      \&quot;targetPort\&quot;: \&quot;input\&quot;\n    },\n    {\n      \&quot;id\&quot;: \&quot;edge_addQueueItemMock_output_end_input\&quot;,\n      \&quot;sourceNodeId\&quot;: \&quot;addQueueItemMock\&quot;,\n      \&quot;sourcePort\&quot;: \&quot;output\&quot;,\n      \&quot;targetNodeId\&quot;: \&quot;end\&quot;,\n      \&quot;targetPort\&quot;: \&quot;input… (12 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>The file /work/output/artifacts/skill-flow-ixp-routing-negative/queue-write/QueueWriteSolution/QueueWrite/QueueWrite.flow has been updated successfully. (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#31</span>
+      <span class="tool-name">Edit</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">26ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;replace_all&quot;: false,
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-ixp-routing-negative/queue-write/QueueWriteSolution/QueueWrite/QueueWrite.flow&quot;,
+  &quot;old_string&quot;: &quot;  \&quot;definitions\&quot;: [\n    {\n      \&quot;nodeType\&quot;: \&quot;core.trigger.manual\&quot;,&quot;,
+  &quot;new_string&quot;: &quot;  \&quot;definitions\&quot;: [\n    {\n      \&quot;nodeType\&quot;: \&quot;core.logic.mock\&quot;,\n      \&quot;version\&quot;: \&quot;1.0\&quot;,\n      \&quot;category\&quot;: \&quot;control-flow\&quot;,\n      \&quot;description\&quot;: \&quot;Placeholder node for prototyping\&quot;,\n      \&quot;tags\&quot;: [\n        \&quot;blank\&quot;,\n        \&quot;todo\&quot;\n      ],\n      \&quot;sortOrder\&quot;: 60,\n      \&quot;display\&quot;: {\n        \&quot;label\&quot;: \&quot;Mock\&quot;,\n        \&quot;icon\&quot;: \&quot;square-dashed\&quot;\n      },\n      \&quot;handleConfiguration\&quot;: [\n        {\n          \&quot;positi… (1656 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>The file /work/output/artifacts/skill-flow-ixp-routing-negative/queue-write/QueueWriteSolution/QueueWrite/QueueWrite.flow has been updated successfully. (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#32</span>
+      <span class="tool-name">Edit</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">9ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;replace_all&quot;: false,
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-ixp-routing-negative/queue-write/QueueWriteSolution/QueueWrite/QueueWrite.flow&quot;,
+  &quot;old_string&quot;: &quot;  \&quot;layout\&quot;: {\n    \&quot;nodes\&quot;: {\n      \&quot;start\&quot;: {&quot;,
+  &quot;new_string&quot;: &quot;  \&quot;layout\&quot;: {\n    \&quot;nodes\&quot;: {\n      \&quot;addQueueItemMock\&quot;: {\n        \&quot;position\&quot;: {\n          \&quot;x\&quot;: 0,\n          \&quot;y\&quot;: 0\n        },\n        \&quot;size\&quot;: {\n          \&quot;width\&quot;: 96,\n          \&quot;height\&quot;: 96\n        },\n        \&quot;collapsed\&quot;: false\n      },\n      \&quot;end\&quot;: {\n        \&quot;position\&quot;: {\n          \&quot;x\&quot;: 0,\n          \&quot;y\&quot;: 0\n        },\n        \&quot;size\&quot;: {\n          \&quot;width\&quot;: 96,\n          \&quot;height\&quot;: 96\n        },\n      … (46 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>The file /work/output/artifacts/skill-flow-ixp-routing-negative/queue-write/QueueWriteSolution/QueueWrite/QueueWrite.flow has been updated successfully. (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+</div>
+
+<h2>Command Telemetry</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Total</div><div class="value">33</div></div>
+    <div class="stat"><div class="label">Successful</div><div class="value">27 (82%)</div></div>
+    <div class="stat"><div class="label">Failed</div><div class="value">6</div></div>
+    <div class="stat"><div class="label">Avg / cmd</div><div class="value">2.11s</div></div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 2fr;gap:16px;margin-top:12px">
+    <div>
+      <h4>By Tool</h4>
+      <table>
+        <thead><tr><th>Tool</th><th>Count</th></tr></thead>
+        <tbody><tr><td class='mono'>Bash</td><td>22</td></tr><tr><td class='mono'>Read</td><td>5</td></tr><tr><td class='mono'>Edit</td><td>4</td></tr><tr><td class='mono'>Skill</td><td>1</td></tr><tr><td class='mono'>Grep</td><td>1</td></tr></tbody>
+      </table>
+    </div>
+    <div>
+      <h4>Slowest</h4>
+      <table>
+        <thead><tr><th>Tool</th><th>Duration</th><th>Parameters</th></tr></thead>
+        <tbody><tr><td class='mono'>Bash</td><td>16.18s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro flow registry get core.ac...</td></tr><tr><td class='mono'>Bash</td><td>15.43s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro flow registry get core.co...</td></tr><tr><td class='mono'>Bash</td><td>14.82s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;\\\nuip solution init &quot;QueueWriteSolu...</td></tr><tr><td class='mono'>Bash</td><td>5.06s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro flow registry pull --forc...</td></tr><tr><td class='mono'>Bash</td><td>2.75s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro flow registry search &quot;cor...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+  <p><strong>Most Common Pattern:</strong> <code>Bash → Bash → Bash</code></p><p><strong>Skill Tool Invoked:</strong> 1 time(s)</p>
+</div>
+
+<h2>Generation Metrics</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Total Latency</div><div class="value">4m 18s</div></div>
+    <div class="stat"><div class="label">Turns</div><div class="value">1</div></div>
+    <div class="stat"><div class="label">Assistant Turns</div><div class="value">59</div></div>
+    <div class="stat"><div class="label">Avg Turn Latency</div><div class="value">4m 16s</div></div>
+    
+  </div>
+</div>
+
+<h2>Token Usage</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Input (uncached)</div><div class="value">622</div></div>
+    <div class="stat"><div class="label">Output</div><div class="value">16,137</div></div>
+    <div class="stat"><div class="label">Cache Write</div><div class="value">67,002</div></div>
+    <div class="stat"><div class="label">Cache Read</div><div class="value">2,114,902</div></div>
+    <div class="stat"><div class="label">Total</div><div class="value">2,198,663</div></div>
+    <div class="stat"><div class="label">Cost</div><div class="value">$1.1296</div></div>
+  </div>
+</div>
+
+<h2>Agent Settings</h2>
+<div class="card" style="padding:0">
+  <table>
+    <tbody><tr><td class='mono dim'>Permission Mode</td><td>acceptEdits</td></tr><tr><td class='mono dim'>Allowed Tools</td><td>Skill, Bash, Read, Write, Edit, Glob, Grep</td></tr><tr><td class='mono dim'>Model</td><td>us.anthropic.claude-sonnet-5</td></tr><tr><td class='mono dim'>Max Turns</td><td>25</td></tr><tr><td class='mono dim'>System Prompt</td><td>You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted. </td></tr><tr><td class='mono dim'>System Prompt Mode</td><td>append</td></tr><tr><td class='mono dim'>Plugins</td><td>/home/azureuser/projects/skills/tmp</td></tr></tbody>
+  </table>
+</div>
+
+<h2>Environment</h2>
+<div class="card" style="padding:0">
+  <table>
+    <tbody><tr><td class='mono dim'>git_commit</td><td>unknown</td></tr><tr><td class='mono dim'>skills_git_commit</td><td>unknown</td></tr><tr><td class='mono dim'>cli_version</td><td>1.201.0-dev.8272</td></tr><tr><td class='mono dim'>tool_plugins</td><td>{&#x27;admin-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;agent-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;agenthub-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;aops-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;api-workflow-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;automation-hub-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;codedagent-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;codedapp-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;coder-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;context-grounding-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;conversational-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;data-fabric-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;docsai-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;function-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;gov-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;guardrails-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;insights-tool&#x27;: &#x27;1.201.0-dev.8276&#x27;, &#x27;integrationservice-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;ixp-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;llm-gateway-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;llmgw-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;maestro-tool&#x27;: &#x27;1.201.0-dev.8275&#x27;, &#x27;model-hub-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;orchestrator-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;platform-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;pm-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;rpa-legacy-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;rpa-tool&#x27;: &#x27;1.201.0-dev.20260809.3&#x27;, &#x27;solution-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;tasks-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;test-manager-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;traces-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;vertical-solutions-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;}</td></tr><tr><td class='mono dim'>coder_eval</td><td>0.9.6</td></tr><tr><td class='mono dim'>claude_code_cli</td><td>2.1.177 (Claude Code)</td></tr><tr><td class='mono dim'>uv</td><td>uv 0.12.5 (x86_64-unknown-linux-gnu)</td></tr><tr><td class='mono dim'>anthropic</td><td>0.122.0</td></tr><tr><td class='mono dim'>openai</td><td>3.2.0</td></tr><tr><td class='mono dim'>pydantic</td><td>2.12.5</td></tr><tr><td class='mono dim'>api_routing</td><td>aws_bedrock</td></tr><tr><td class='mono dim'>eval_routing</td><td>aws_bedrock</td></tr><tr><td class='mono dim'>aws_region</td><td>us-east-2</td></tr><tr><td class='mono dim'>bedrock_model</td><td>us.anthropic.claude-sonnet-4-6</td></tr><tr><td class='mono dim'>system_prompt_semantics</td><td>append</td></tr></tbody>
+  </table>
+</div>
+
+<footer>Generated by coder_eval · 2026-08-19T00:16:29</footer>
+</div>
+<script>
+function toggleTheme() {
+  document.documentElement.classList.toggle('light');
+  try {
+    const mode = document.documentElement.classList.contains('light') ? 'light' : 'dark';
+    localStorage.setItem('coder-eval-theme', mode);
+  } catch (e) { /* ignore */ }
+}
+(function() {
+  try {
+    if (localStorage.getItem('coder-eval-theme') === 'light') {
+      document.documentElement.classList.add('light');
+    }
+  } catch (e) { /* ignore */ }
+})();
+</script>
+</body>
+</html>

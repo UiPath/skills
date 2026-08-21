@@ -1,0 +1,12 @@
+{
+    "DocVersion": "1.0.0",
+    "StudioMinVersion": "2025.10.0",
+    "SolutionId": "86fc77a9-2647-44bb-754a-08dee9b21193",
+    "Projects": [
+        {
+            "Type": "Flow",
+            "ProjectRelativePath": "Calculator/project.uiproj",
+            "Id": "f1346aee-327e-466e-91b3-a7efa4ee6762"
+        }
+    ]
+}

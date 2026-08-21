@@ -1,0 +1,24 @@
+{
+  "version": "2.0",
+  "resources": [
+    {
+      "resource": "connection",
+      "key": "197c7074-fa5e-4174-9f95-cb53aa1a2e0b",
+      "id": "connection197c7074-fa5e-4174-9f95-cb53aa1a2e0b",
+      "value": {
+        "ConnectionId": {
+          "defaultValue": "197c7074-fa5e-4174-9f95-cb53aa1a2e0b",
+          "isExpression": false,
+          "displayName": "uipath-servicenow-servicenow connection"
+        }
+      },
+      "metadata": {
+        "ActivityName": "List Acr User Records",
+        "BindingsVersion": "2.2",
+        "DisplayLabel": "uipath-servicenow-servicenow connection",
+        "UseConnectionService": "true",
+        "Connector": "uipath-servicenow-servicenow"
+      }
+    }
+  ]
+}

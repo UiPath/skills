@@ -1,0 +1,3 @@
+{"ts": 1784694217.7689779, "args": "maestro bpmn debug-instance incidents debug-fault-777 --output json", "matched_rule": "maestro bpmn debug-instance incidents debug-fault-777", "fixture": "debug-incidents.json", "exit_code": 0}
+{"ts": 1784694219.578485, "args": "maestro bpmn debug-instance variables debug-fault-777 --output json", "matched_rule": "maestro bpmn debug-instance variables debug-fault-777", "fixture": "debug-variables.json", "exit_code": 0}
+{"ts": 1784694238.6901479, "args": "--version", "matched_rule": null, "fixture": null, "exit_code": 0, "error": "unmocked_default"}

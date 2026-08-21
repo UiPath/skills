@@ -1,0 +1,6 @@
+{
+  "ran_solution_upload": false,
+  "ran_eval_run_start": false,
+  "action": "refused",
+  "reason": "The Flow solution 'LocalOnly' has never been uploaded to Studio Web — there is no SolutionStorage.json with a SolutionId in the local working tree. Per the Evaluate capability's Critical Rule #2 and upload-safety.md, the skill must never auto-run 'uip solution upload' to satisfy an eval-run prerequisite; doing so would push unreviewed local state to Studio Web without explicit user consent."
+}

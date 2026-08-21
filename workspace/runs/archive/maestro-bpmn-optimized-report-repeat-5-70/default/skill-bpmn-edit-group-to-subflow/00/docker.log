@@ -1,0 +1,5 @@
+04:26:23 [INFO   ] [default/skill-bpmn-edit-group-to-subflow/00] orchestrator: API routing: aws_bedrock
+04:28:35 [INFO   ] [default/skill-bpmn-edit-group-to-subflow/00] orchestrator: Success criteria: 3/3 passed, weighted score: 1.000
+04:28:35 [INFO   ] [default/skill-bpmn-edit-group-to-subflow/00] orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+04:28:35 [INFO   ] [default/skill-bpmn-edit-group-to-subflow/00] orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-bpmn-edit-group-to-subflow
+04:28:35 [INFO   ] [default/skill-bpmn-edit-group-to-subflow/00] orchestrator: Task finished: status=SUCCESS duration=133.8s score=1.000 iterations=1

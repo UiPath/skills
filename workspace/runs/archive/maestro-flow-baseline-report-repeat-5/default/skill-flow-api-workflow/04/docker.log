@@ -1,0 +1,7 @@
+21:01:18 [INFO   ] [default/skill-flow-api-workflow/04] orchestrator: API routing: aws_bedrock
+21:03:26 [INFO   ] [default/skill-flow-api-workflow/04] evaluation.checker: Criterion 'run_command' FAILED (score=0.00, threshold=1.00): Command: uip maestro flow validate NameToAge/NameToAge/NameToAge.flow
+21:03:26 [INFO   ] [default/skill-flow-api-workflow/04] evaluation.checker: Criterion 'run_command' FAILED (score=0.00, threshold=1.00): Command: python3 $TASK_DIR/check_api_workflow_flow.py
+21:03:26 [INFO   ] [default/skill-flow-api-workflow/04] orchestrator: Success criteria: 0/2 passed, weighted score: 0.000
+21:03:26 [INFO   ] [default/skill-flow-api-workflow/04] orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+21:03:26 [INFO   ] [default/skill-flow-api-workflow/04] orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-api-workflow
+21:03:26 [INFO   ] [default/skill-flow-api-workflow/04] orchestrator: Task finished: status=FAILURE duration=130.9s score=0.000 iterations=1

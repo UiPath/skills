@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "BindingsReconfigure",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "34098dcb-6579-4bf5-8cb2-fd62a92d74fc",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "BindingsReconfigure"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Flow",
+      "name": "BindingsReconfigure",
+      "package": {
+        "key": "fef71b6f-5277-4bac-b7d0-d4bc6eb922e9"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "57575268-7727-4023-bf80-bcbabf078bf1",
+    "files": []
+  }
+}

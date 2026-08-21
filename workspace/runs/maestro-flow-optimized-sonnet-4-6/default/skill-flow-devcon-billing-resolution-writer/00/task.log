@@ -1,0 +1,62 @@
+2026-08-19 16:59:02 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-08-19 16:59:02 [INFO] coder_eval.orchestrator: API routing: aws_bedrock
+2026-08-19 16:59:02 [DEBUG] coder_eval.criteria: Discovered 15 criterion checkers
+2026-08-19 16:59:02 [DEBUG] coder_eval.criteria: Validated 15 criterion checkers
+2026-08-19 16:59:02 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-08-19 16:59:02 [DEBUG] coder_eval.orchestrator: Sending prompt: Build a Maestro Flow "BillingResolutionWriter" (in a solution of the same
+name) whose single work no...
+2026-08-19 16:59:02 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Starting agent query stream...
+2026-08-19 17:02:10 [DEBUG] coder_eval.agents.claude_code_agent: [coder] session_id changed: None -> 43c656e7-9424-4a93-8b10-e5c2f365ce92
+2026-08-19 17:02:10 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Agent query stream ended
+2026-08-19 17:02:10 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-08-19 17:02:10 [DEBUG] coder_eval.orchestrator: Agent response received (3870 chars)
+2026-08-19 17:02:10 [DEBUG] coder_eval.orchestrator: Checking success criteria
+2026-08-19 17:02:10 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'uip maestro flow validate passes on the flow file': python3 $EXPERIMENT_TASKS_PATH/uipath-maestro-flow/_shared/validate_flow.py
+2026-08-19 17:02:18 [DEBUG] coder_eval.sandbox: Command 'python3 $EXPERIMENT_TASKS_PATH/uipath-maestro-flow/_shared/validate_flow.py' exited with code 0
+2026-08-19 17:02:18 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+Validating BillingResolutionWriter/BillingResolutionWriter/BillingResolutionWriter.flow
+{
+  "Result": "Success",
+  "Code": "FlowValidate",
+  "Data": {
+    "File": "/work/output/artifacts/skill-flow-devcon-billing-resolution-writer/BillingResolutionWriter/BillingResolutionWriter/BillingResolutionWriter.flow",
+    "Status": "Valid"
+  }
+}
+---
+2026-08-19 17:02:18 [DEBUG] coder_eval.sandbox: STDERR:
+---
+[ManifestClient] fetchDynamicNodes ok: total=317 agent context nodes=2 external agent nodes=7 orchestrator nodes=263 IXP nodes=45
+---
+2026-08-19 17:02:18 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-08-19 17:02:18 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'Check debugs the flow: an inline uipath.agent.autonomous node is present, the flow completes, and the drafted email cites invoice MCS-2026-04872': python3 $TASK_DIR/check_billing_resolution_writer.py
+2026-08-19 17:02:49 [DEBUG] coder_eval.sandbox: Command 'python3 $TASK_DIR/check_billing_resolution_writer.py' exited with code 0
+2026-08-19 17:02:49 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+OK: flow contains an inline uipath.agent.autonomous node
+OK: emailBody drafted, cites invoice MCS-2026-04872 and the approved credit
+---
+2026-08-19 17:02:49 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-08-19 17:02:49 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'Advisory: AGENT SIDECAR: the emitted agent.json carries a real model, a real system prompt, and typed outputs (not the scaffold defaults)': python3 $EXPERIMENT_TASKS_PATH/uipath-maestro-flow/_shared/check_inline_agent.py '**/agent.json'
+2026-08-19 17:02:50 [DEBUG] coder_eval.sandbox: Command 'python3 $EXPERIMENT_TASKS_PATH/uipath-maestro-flow/_shared/check_inline_agent.py '**/agent.json'' exited with code 0
+2026-08-19 17:02:50 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+OK (BillingResolutionWriter/BillingResolutionWriter/dd643c3f-e8a9-4396-bd4d-0177ecf39fce/agent.json): model=gpt-5.4 promptlen=391 fields=['subject', 'body']
+---
+2026-08-19 17:02:50 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-08-19 17:02:50 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'Advisory: STRUCTURAL (covering): exactly one INLINE agent (no published agent, no script stand-in), fed all three inputs through bindings or Flow/sidecar prompt references, both fields declared in returns, both outputs read from the agent, and no email literals': python3 $EXPERIMENT_TASKS_PATH/uipath-maestro-flow/_shared/advisory_billing_resolution_writer.py
+2026-08-19 17:02:51 [DEBUG] coder_eval.sandbox: Command 'python3 $EXPERIMENT_TASKS_PATH/uipath-maestro-flow/_shared/advisory_billing_resolution_writer.py' exited with code 0
+2026-08-19 17:02:51 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+3 nodes; one uipath.agent.autonomous (draftEmail) fed ['start__output__customerName', 'start__output__invoiceNumber', 'start__output__creditAmount'], returns ['subject', 'body']; outputs ['emailBody', 'emailSubject'] read from draftEmail; no draft literals
+---
+2026-08-19 17:02:51 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-08-19 17:02:51 [INFO] coder_eval.orchestrator: Success criteria: 4/4 passed, weighted score: 1.000
+2026-08-19 17:02:51 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-08-19 17:02:51 [INFO] coder_eval.orchestrator: Running post-run command: python3 $EXPERIMENT_TASKS_PATH/uipath-maestro-flow/_shared/cleanup_solutions.py
+2026-08-19 17:02:53 [WARNING] coder_eval.orchestrator: [post_run stderr] cleanup_solutions: deleted 3ce8cd24-3cd6-464c-c877-08defdfbb4a7 (from BillingResolutionWriter/BillingResolutionWriter.uipx)
+2026-08-19 17:02:53 [WARNING] coder_eval.orchestrator: [post_run stderr] cleanup_solutions: summary policy=always deleted=1 preserved=0 skipped=0 not_uploaded=0 failed=0
+2026-08-19 17:02:53 [INFO] coder_eval.orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+2026-08-19 17:02:53 [INFO] coder_eval.orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-devcon-billing-resolution-writer
+2026-08-19 17:02:53 [INFO] coder_eval.orchestrator: Task finished: status=SUCCESS duration=235.0s score=1.000 iterations=1

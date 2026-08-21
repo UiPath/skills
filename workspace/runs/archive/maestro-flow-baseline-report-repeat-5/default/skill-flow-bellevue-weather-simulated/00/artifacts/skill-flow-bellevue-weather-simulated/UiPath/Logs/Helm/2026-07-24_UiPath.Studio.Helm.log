@@ -1,0 +1,253 @@
+2026-07-24 19:39:39.676 +00:00 [Information] [UiPath.Studio.Helm] Helm 26.0.199-alpha.24372+Branch.develop.Sha.05660bd2185c0821fdfb3327f4ca46f1101af69e, PID=570
+2026-07-24 19:39:39.682 +00:00 [Information] [UiPath.Studio.Helm] Startup: OS=Debian GNU/Linux 13 (trixie), OSArch=X64, ProcArch=X64, Config=Release, LogLevel=Warning (from --log-level), RobotDir=(none), NoDap=False
+2026-07-24 19:39:40.011 +00:00 [Warning] [UiPath.Studio.Helm] [Trace:UiPath.Studio.Helm] Robot is not running and --robot-dir was not specified. Start UiPath Assistant or pass --robot-dir to Helm.
+2026-07-24 19:39:40.015 +00:00 [Error] [UiPath.Studio.Helm] [Trace:UiPath.Studio.Helm] Robot installation directory not found; falling back to the app's own directory: /home/azureuser/.cache/uipath/helm/1.199.0-dev.20260722.4/
+2026-07-24 19:39:40.091 +00:00 [Error] [UiPath.Studio.Helm] [Trace:UiPath.Studio.Helm] '/tmp/UiPathUserServices_root' pipe not found. Make sure the service host is started.
+2026-07-24 19:40:20.140 +00:00 [Warning] [UiPath.Studio.Helm] Failed to resolve connection settings
+  Exception: System.TimeoutException: GetResourceUrl timed out.
+ ---> System.OperationCanceledException: The operation was canceled.
+   at System.Threading.CancellationToken.ThrowOperationCanceledException()
+   at System.Threading.CancellationToken.ThrowIfCancellationRequested()
+   at System.IO.Pipes.NamedPipeClientStream.ConnectInternal(Int32 timeout, CancellationToken cancellationToken, Int32 startTime)
+   at System.Threading.ExecutionContext.RunFromThreadPoolDispatchLoop(Thread threadPoolThread, ExecutionContext executionContext, ContextCallback callback, Object state)
+--- End of stack trace from previous location ---
+   at System.Threading.ExecutionContext.RunFromThreadPoolDispatchLoop(Thread threadPoolThread, ExecutionContext executionContext, ContextCallback callback, Object state)
+   at System.Threading.Tasks.Task.ExecuteWithThreadLocal(Task& currentTaskSlot, Thread threadPoolThread)
+--- End of stack trace from previous location ---
+   at UiPath.Ipc.Transport.NamedPipe.NamedPipeClientState.Connect(IpcClient client, CancellationToken ct)
+   at UiPath.Ipc.ServiceClientProper.Connect(CancellationToken ct)
+   at UiPath.Ipc.ServiceClientProper.EnsureConnection(CancellationToken ct)
+   at UiPath.Ipc.ServiceClient.<>c__DisplayClass17_0`1.<<Invoke>g__Invoke|0>d.MoveNext()
+   --- End of inner exception stack trace ---
+   at UiPath.Ipc.TimeoutHelper.ThrowTimeout(Exception exception, String message)
+   at UiPath.Ipc.ServiceClient.<>c__DisplayClass17_0`1.<<Invoke>g__Invoke|0>d.MoveNext()
+--- End of stack trace from previous location ---
+   at UiPath.Studio.Helm.Activities.HelmAccessProvider.GetResourceUrl(String scope, CancellationToken cancellationToken)
+   at UiPath.Studio.Helm.Cloud.HelmConnectionSettingsService.GetFreshSettings(CancellationToken cancellationToken)
+2026-07-24 19:40:21.673 +00:00 [Error] [UiPath.Studio.Helm] [Trace:UiPath.Studio.Helm] UiPath.Ipc.ServerConnection 12036987 IInteropProjectService OpenProject 1. # UiPath.Studio.Helm.Project.HelmProjectLoadException: Not a UiPath project at '/work/output/artifacts/skill-flow-bellevue-weather-simulated': project.json is missing. Pass a directory containing a UiPath project.
+ ---> System.IO.FileNotFoundException: Could not find file '/work/output/artifacts/skill-flow-bellevue-weather-simulated/project.json'.
+File name: '/work/output/artifacts/skill-flow-bellevue-weather-simulated/project.json'
+   at Interop.ThrowExceptionForIoErrno(ErrorInfo errorInfo, String path, Boolean isDirError)
+   at Microsoft.Win32.SafeHandles.SafeFileHandle.Open(String path, OpenFlags flags, Int32 mode, Boolean failForSymlink, Boolean& wasSymlink, Func`4 createOpenException)
+   at Microsoft.Win32.SafeHandles.SafeFileHandle.Open(String fullPath, FileMode mode, FileAccess access, FileShare share, FileOptions options, Int64 preallocationSize, UnixFileMode openPermissions, Int64& fileLength, UnixFileMode& filePermissions, Boolean failForSymlink, Boolean& wasSymlink, Func`4 createOpenException)
+   at System.IO.Strategies.OSFileStreamStrategy..ctor(String path, FileMode mode, FileAccess access, FileShare share, FileOptions options, Int64 preallocationSize, Nullable`1 unixCreateMode)
+   at System.IO.StreamReader.ValidateArgsAndOpenPath(String path, Encoding encoding, Int32 bufferSize)
+   at System.IO.File.ReadAllText(String path, Encoding encoding)
+   at UiPath.Project.WorkflowProjectRepository.OpenProjectFromPath(String projectPath)
+   at UiPath.WorkflowCompiler.WorkflowCompilerExecutorFactory.CreateExecutor(IExecutorCommand command)
+   at UiPath.Studio.Helm.Project.HelmProjectSession.CreateExecutorContext(IServiceLocator serviceLocator, String projectDir)
+   at UiPath.Studio.Helm.Project.HelmProjectSession.LoadAsync(String projectDir, CancellationToken ct)
+   at UiPath.Studio.Helm.Interop.HelmProjectService.OpenProject(String projectDir)
+   --- End of inner exception stack trace ---
+   at UiPath.Studio.Helm.Interop.HelmProjectService.OpenProject(String projectDir)
+   at UiPath.Studio.Helm.Hosting.HelmCallScopeProxy`1.AwaitAndDisposeGeneric[TResult](Task task, IDisposable scope)
+   at UiPath.Studio.Helm.Entitlements.HelmEntitlementProxy`1.WrapGenericAsync[TResult](MethodInfo method, Object[] args)
+   at UiPath.Ipc.Server.<>c__DisplayClass19_1.<<HandleRequest>g__MethodCall|3>d.MoveNext()
+--- End of stack trace from previous location ---
+   at UiPath.Ipc.Server.<>c__DisplayClass19_0.<<HandleRequest>g__InvokeMethod|0>d.MoveNext()
+--- End of stack trace from previous location ---
+   at System.Runtime.CompilerServices.PoolingAsyncValueTaskMethodBuilder`1.StateMachineBox`1.System.Threading.Tasks.Sources.IValueTaskSource<TResult>.GetResult(Int16 token)
+   at UiPath.Ipc.Server.HandleRequest(Method method, Route route, Request request, CancellationToken cancellationToken)
+   at System.Runtime.CompilerServices.PoolingAsyncValueTaskMethodBuilder`1.StateMachineBox`1.System.Threading.Tasks.Sources.IValueTaskSource<TResult>.GetResult(Int16 token)
+   at UiPath.Ipc.Server.OnRequestReceived(Request request)
+2026-07-24 19:40:21.678 +00:00 [Error] [UiPath.Studio.Helm] [Trace:UiPath.Studio.Helm] UiPath.Ipc.ServerConnection 20554616 IInteropProjectService OpenProject 1. # UiPath.Studio.Helm.Project.HelmProjectLoadException: Not a UiPath project at '/work/output/artifacts/skill-flow-bellevue-weather-simulated': project.json is missing. Pass a directory containing a UiPath project.
+ ---> System.IO.FileNotFoundException: Could not find file '/work/output/artifacts/skill-flow-bellevue-weather-simulated/project.json'.
+File name: '/work/output/artifacts/skill-flow-bellevue-weather-simulated/project.json'
+   at Interop.ThrowExceptionForIoErrno(ErrorInfo errorInfo, String path, Boolean isDirError)
+   at Microsoft.Win32.SafeHandles.SafeFileHandle.Open(String path, OpenFlags flags, Int32 mode, Boolean failForSymlink, Boolean& wasSymlink, Func`4 createOpenException)
+   at Microsoft.Win32.SafeHandles.SafeFileHandle.Open(String fullPath, FileMode mode, FileAccess access, FileShare share, FileOptions options, Int64 preallocationSize, UnixFileMode openPermissions, Int64& fileLength, UnixFileMode& filePermissions, Boolean failForSymlink, Boolean& wasSymlink, Func`4 createOpenException)
+   at System.IO.Strategies.OSFileStreamStrategy..ctor(String path, FileMode mode, FileAccess access, FileShare share, FileOptions options, Int64 preallocationSize, Nullable`1 unixCreateMode)
+   at System.IO.StreamReader.ValidateArgsAndOpenPath(String path, Encoding encoding, Int32 bufferSize)
+   at System.IO.File.ReadAllText(String path, Encoding encoding)
+   at UiPath.Project.WorkflowProjectRepository.OpenProjectFromPath(String projectPath)
+   at UiPath.WorkflowCompiler.WorkflowCompilerExecutorFactory.CreateExecutor(IExecutorCommand command)
+   at UiPath.Studio.Helm.Project.HelmProjectSession.CreateExecutorContext(IServiceLocator serviceLocator, String projectDir)
+   at UiPath.Studio.Helm.Project.HelmProjectSession.LoadAsync(String projectDir, CancellationToken ct)
+   at UiPath.Studio.Helm.Interop.HelmProjectService.OpenProject(String projectDir)
+   --- End of inner exception stack trace ---
+   at UiPath.Studio.Helm.Interop.HelmProjectService.OpenProject(String projectDir)
+   at UiPath.Studio.Helm.Hosting.HelmCallScopeProxy`1.AwaitAndDisposeGeneric[TResult](Task task, IDisposable scope)
+   at UiPath.Studio.Helm.Entitlements.HelmEntitlementProxy`1.WrapGenericAsync[TResult](MethodInfo method, Object[] args)
+   at UiPath.Ipc.Server.<>c__DisplayClass19_1.<<HandleRequest>g__MethodCall|3>d.MoveNext()
+--- End of stack trace from previous location ---
+   at UiPath.Ipc.Server.<>c__DisplayClass19_0.<<HandleRequest>g__InvokeMethod|0>d.MoveNext()
+--- End of stack trace from previous location ---
+   at System.Runtime.CompilerServices.PoolingAsyncValueTaskMethodBuilder`1.StateMachineBox`1.System.Threading.Tasks.Sources.IValueTaskSource<TResult>.GetResult(Int16 token)
+   at UiPath.Ipc.Server.HandleRequest(Method method, Route route, Request request, CancellationToken cancellationToken)
+   at System.Runtime.CompilerServices.PoolingAsyncValueTaskMethodBuilder`1.StateMachineBox`1.System.Threading.Tasks.Sources.IValueTaskSource<TResult>.GetResult(Int16 token)
+   at UiPath.Ipc.Server.OnRequestReceived(Request request)
+2026-07-24 19:40:21.708 +00:00 [Error] [UiPath.Studio.Helm] [Trace:UiPath.Studio.Helm] UiPath.Ipc.ServerConnection 37088038 IInteropProjectService OpenProject 0. # UiPath.Studio.Helm.Project.HelmProjectLoadException: Not a UiPath project at '/work/output/artifacts/skill-flow-bellevue-weather-simulated': project.json is missing. Pass a directory containing a UiPath project.
+ ---> System.IO.FileNotFoundException: Could not find file '/work/output/artifacts/skill-flow-bellevue-weather-simulated/project.json'.
+File name: '/work/output/artifacts/skill-flow-bellevue-weather-simulated/project.json'
+   at Interop.ThrowExceptionForIoErrno(ErrorInfo errorInfo, String path, Boolean isDirError)
+   at Microsoft.Win32.SafeHandles.SafeFileHandle.Open(String path, OpenFlags flags, Int32 mode, Boolean failForSymlink, Boolean& wasSymlink, Func`4 createOpenException)
+   at Microsoft.Win32.SafeHandles.SafeFileHandle.Open(String fullPath, FileMode mode, FileAccess access, FileShare share, FileOptions options, Int64 preallocationSize, UnixFileMode openPermissions, Int64& fileLength, UnixFileMode& filePermissions, Boolean failForSymlink, Boolean& wasSymlink, Func`4 createOpenException)
+   at System.IO.Strategies.OSFileStreamStrategy..ctor(String path, FileMode mode, FileAccess access, FileShare share, FileOptions options, Int64 preallocationSize, Nullable`1 unixCreateMode)
+   at System.IO.StreamReader.ValidateArgsAndOpenPath(String path, Encoding encoding, Int32 bufferSize)
+   at System.IO.File.ReadAllText(String path, Encoding encoding)
+   at UiPath.Project.WorkflowProjectRepository.OpenProjectFromPath(String projectPath)
+   at UiPath.WorkflowCompiler.WorkflowCompilerExecutorFactory.CreateExecutor(IExecutorCommand command)
+   at UiPath.Studio.Helm.Project.HelmProjectSession.CreateExecutorContext(IServiceLocator serviceLocator, String projectDir)
+   at UiPath.Studio.Helm.Project.HelmProjectSession.LoadAsync(String projectDir, CancellationToken ct)
+   at UiPath.Studio.Helm.Interop.HelmProjectService.OpenProject(String projectDir)
+   --- End of inner exception stack trace ---
+   at UiPath.Studio.Helm.Interop.HelmProjectService.OpenProject(String projectDir)
+   at UiPath.Studio.Helm.Hosting.HelmCallScopeProxy`1.AwaitAndDisposeGeneric[TResult](Task task, IDisposable scope)
+   at UiPath.Studio.Helm.Entitlements.HelmEntitlementProxy`1.WrapGenericAsync[TResult](MethodInfo method, Object[] args)
+   at UiPath.Ipc.Server.<>c__DisplayClass19_1.<<HandleRequest>g__MethodCall|3>d.MoveNext()
+--- End of stack trace from previous location ---
+   at UiPath.Ipc.Server.<>c__DisplayClass19_0.<<HandleRequest>g__InvokeMethod|0>d.MoveNext()
+--- End of stack trace from previous location ---
+   at System.Runtime.CompilerServices.PoolingAsyncValueTaskMethodBuilder`1.StateMachineBox`1.System.Threading.Tasks.Sources.IValueTaskSource<TResult>.GetResult(Int16 token)
+   at UiPath.Ipc.Server.HandleRequest(Method method, Route route, Request request, CancellationToken cancellationToken)
+   at System.Runtime.CompilerServices.PoolingAsyncValueTaskMethodBuilder`1.StateMachineBox`1.System.Threading.Tasks.Sources.IValueTaskSource<TResult>.GetResult(Int16 token)
+   at UiPath.Ipc.Server.OnRequestReceived(Request request)
+2026-07-24 19:40:27.137 +00:00 [Error] [UiPath.Studio.Helm] [Trace:UiPath.Studio.Helm] UiPath.Ipc.ServerConnection 12240604 IInteropProjectService OpenProject 1. # UiPath.Studio.Helm.Project.HelmProjectLoadException: Failed to open project at '/work/output/artifacts/skill-flow-bellevue-weather-simulated/BellevueWeatherCheck': Cannot execute Windows projects on Linux platform
+ ---> System.InvalidOperationException: Cannot execute Windows projects on Linux platform
+   at UiPath.WorkflowCompiler.WorkflowCompilerExecutorFactory.CreateExecutor(IExecutorCommand command)
+   at UiPath.Studio.Helm.Project.HelmProjectSession.CreateExecutorContext(IServiceLocator serviceLocator, String projectDir)
+   at UiPath.Studio.Helm.Project.HelmProjectSession.LoadAsync(String projectDir, CancellationToken ct)
+   at UiPath.Studio.Helm.Interop.HelmProjectService.OpenProject(String projectDir)
+   --- End of inner exception stack trace ---
+   at UiPath.Studio.Helm.Interop.HelmProjectService.OpenProject(String projectDir)
+   at UiPath.Studio.Helm.Hosting.HelmCallScopeProxy`1.AwaitAndDisposeGeneric[TResult](Task task, IDisposable scope)
+   at UiPath.Studio.Helm.Entitlements.HelmEntitlementProxy`1.WrapGenericAsync[TResult](MethodInfo method, Object[] args)
+   at UiPath.Ipc.Server.<>c__DisplayClass19_1.<<HandleRequest>g__MethodCall|3>d.MoveNext()
+--- End of stack trace from previous location ---
+   at UiPath.Ipc.Server.<>c__DisplayClass19_0.<<HandleRequest>g__InvokeMethod|0>d.MoveNext()
+--- End of stack trace from previous location ---
+   at System.Runtime.CompilerServices.PoolingAsyncValueTaskMethodBuilder`1.StateMachineBox`1.System.Threading.Tasks.Sources.IValueTaskSource<TResult>.GetResult(Int16 token)
+   at UiPath.Ipc.Server.HandleRequest(Method method, Route route, Request request, CancellationToken cancellationToken)
+   at System.Runtime.CompilerServices.PoolingAsyncValueTaskMethodBuilder`1.StateMachineBox`1.System.Threading.Tasks.Sources.IValueTaskSource<TResult>.GetResult(Int16 token)
+   at UiPath.Ipc.Server.OnRequestReceived(Request request)
+2026-07-24 19:40:27.172 +00:00 [Error] [UiPath.Studio.Helm] [Trace:UiPath.Studio.Helm] Robot installation directory not found; falling back to the app's own directory: /home/azureuser/.cache/uipath/helm/1.199.0-dev.20260722.4/
+2026-07-24 19:40:57.339 +00:00 [Error] [UiPath.Studio.Helm] [Trace:UiPath.Studio.Helm] UiPath.Ipc.ServerConnection 5415451 IInteropProjectService OpenProject 1. # UiPath.Studio.Helm.Project.HelmProjectLoadException: Failed to open project at '/work/output/artifacts/skill-flow-bellevue-weather-simulated/BellevueWeatherCheck': Cannot execute Windows projects on Linux platform
+ ---> System.InvalidOperationException: Cannot execute Windows projects on Linux platform
+   at UiPath.WorkflowCompiler.WorkflowCompilerExecutorFactory.CreateExecutor(IExecutorCommand command)
+   at UiPath.Studio.Helm.Project.HelmProjectSession.CreateExecutorContext(IServiceLocator serviceLocator, String projectDir)
+   at UiPath.Studio.Helm.Project.HelmProjectSession.LoadAsync(String projectDir, CancellationToken ct)
+   at UiPath.Studio.Helm.Interop.HelmProjectService.OpenProject(String projectDir)
+   --- End of inner exception stack trace ---
+   at UiPath.Studio.Helm.Interop.HelmProjectService.OpenProject(String projectDir)
+   at UiPath.Studio.Helm.Hosting.HelmCallScopeProxy`1.AwaitAndDisposeGeneric[TResult](Task task, IDisposable scope)
+   at UiPath.Studio.Helm.Entitlements.HelmEntitlementProxy`1.WrapGenericAsync[TResult](MethodInfo method, Object[] args)
+   at UiPath.Ipc.Server.<>c__DisplayClass19_1.<<HandleRequest>g__MethodCall|3>d.MoveNext()
+--- End of stack trace from previous location ---
+   at UiPath.Ipc.Server.<>c__DisplayClass19_0.<<HandleRequest>g__InvokeMethod|0>d.MoveNext()
+--- End of stack trace from previous location ---
+   at System.Runtime.CompilerServices.PoolingAsyncValueTaskMethodBuilder`1.StateMachineBox`1.System.Threading.Tasks.Sources.IValueTaskSource<TResult>.GetResult(Int16 token)
+   at UiPath.Ipc.Server.HandleRequest(Method method, Route route, Request request, CancellationToken cancellationToken)
+   at System.Runtime.CompilerServices.PoolingAsyncValueTaskMethodBuilder`1.StateMachineBox`1.System.Threading.Tasks.Sources.IValueTaskSource<TResult>.GetResult(Int16 token)
+   at UiPath.Ipc.Server.OnRequestReceived(Request request)
+2026-07-24 19:40:57.362 +00:00 [Error] [UiPath.Studio.Helm] [Trace:UiPath.Studio.Helm] UiPath.Ipc.ServerConnection 18520721 IInteropProjectService OpenProject 0. # UiPath.Studio.Helm.Project.HelmProjectLoadException: Failed to open project at '/work/output/artifacts/skill-flow-bellevue-weather-simulated/BellevueWeatherCheck': Cannot execute Windows projects on Linux platform
+ ---> System.InvalidOperationException: Cannot execute Windows projects on Linux platform
+   at UiPath.WorkflowCompiler.WorkflowCompilerExecutorFactory.CreateExecutor(IExecutorCommand command)
+   at UiPath.Studio.Helm.Project.HelmProjectSession.CreateExecutorContext(IServiceLocator serviceLocator, String projectDir)
+   at UiPath.Studio.Helm.Project.HelmProjectSession.LoadAsync(String projectDir, CancellationToken ct)
+   at UiPath.Studio.Helm.Interop.HelmProjectService.OpenProject(String projectDir)
+   --- End of inner exception stack trace ---
+   at UiPath.Studio.Helm.Interop.HelmProjectService.OpenProject(String projectDir)
+   at UiPath.Studio.Helm.Hosting.HelmCallScopeProxy`1.AwaitAndDisposeGeneric[TResult](Task task, IDisposable scope)
+   at UiPath.Studio.Helm.Entitlements.HelmEntitlementProxy`1.WrapGenericAsync[TResult](MethodInfo method, Object[] args)
+   at UiPath.Ipc.Server.<>c__DisplayClass19_1.<<HandleRequest>g__MethodCall|3>d.MoveNext()
+--- End of stack trace from previous location ---
+   at UiPath.Ipc.Server.<>c__DisplayClass19_0.<<HandleRequest>g__InvokeMethod|0>d.MoveNext()
+--- End of stack trace from previous location ---
+   at System.Runtime.CompilerServices.PoolingAsyncValueTaskMethodBuilder`1.StateMachineBox`1.System.Threading.Tasks.Sources.IValueTaskSource<TResult>.GetResult(Int16 token)
+   at UiPath.Ipc.Server.HandleRequest(Method method, Route route, Request request, CancellationToken cancellationToken)
+   at System.Runtime.CompilerServices.PoolingAsyncValueTaskMethodBuilder`1.StateMachineBox`1.System.Threading.Tasks.Sources.IValueTaskSource<TResult>.GetResult(Int16 token)
+   at UiPath.Ipc.Server.OnRequestReceived(Request request)
+2026-07-24 19:41:03.493 +00:00 [Error] [UiPath.Studio.Helm] [Trace:UiPath.Studio.Helm] UiPath.Ipc.ServerConnection 57503891 IInteropProjectService OpenProject 1. # UiPath.Studio.Helm.Project.HelmProjectLoadException: Not a UiPath project at '/work/output/artifacts/skill-flow-bellevue-weather-simulated': project.json is missing. Pass a directory containing a UiPath project.
+ ---> System.IO.FileNotFoundException: Could not find file '/work/output/artifacts/skill-flow-bellevue-weather-simulated/project.json'.
+File name: '/work/output/artifacts/skill-flow-bellevue-weather-simulated/project.json'
+   at Interop.ThrowExceptionForIoErrno(ErrorInfo errorInfo, String path, Boolean isDirError)
+   at Microsoft.Win32.SafeHandles.SafeFileHandle.Open(String fullPath, FileMode mode, FileAccess access, FileShare share, FileOptions options, Int64 preallocationSize, UnixFileMode openPermissions, Int64& fileLength, UnixFileMode& filePermissions, Boolean failForSymlink, Boolean& wasSymlink, Func`4 createOpenException)
+   at System.IO.Strategies.OSFileStreamStrategy..ctor(String path, FileMode mode, FileAccess access, FileShare share, FileOptions options, Int64 preallocationSize, Nullable`1 unixCreateMode)
+   at System.IO.StreamReader.ValidateArgsAndOpenPath(String path, Encoding encoding, Int32 bufferSize)
+   at System.IO.File.ReadAllText(String path, Encoding encoding)
+   at UiPath.Project.WorkflowProjectRepository.OpenProjectFromPath(String projectPath)
+   at UiPath.WorkflowCompiler.WorkflowCompilerExecutorFactory.CreateExecutor(IExecutorCommand command)
+   at UiPath.Studio.Helm.Project.HelmProjectSession.CreateExecutorContext(IServiceLocator serviceLocator, String projectDir)
+   at UiPath.Studio.Helm.Project.HelmProjectSession.LoadAsync(String projectDir, CancellationToken ct)
+   at UiPath.Studio.Helm.Interop.HelmProjectService.OpenProject(String projectDir)
+   --- End of inner exception stack trace ---
+   at UiPath.Studio.Helm.Interop.HelmProjectService.OpenProject(String projectDir)
+   at UiPath.Studio.Helm.Hosting.HelmCallScopeProxy`1.AwaitAndDisposeGeneric[TResult](Task task, IDisposable scope)
+   at UiPath.Studio.Helm.Entitlements.HelmEntitlementProxy`1.WrapGenericAsync[TResult](MethodInfo method, Object[] args)
+   at UiPath.Ipc.Server.<>c__DisplayClass19_1.<<HandleRequest>g__MethodCall|3>d.MoveNext()
+--- End of stack trace from previous location ---
+   at UiPath.Ipc.Server.<>c__DisplayClass19_0.<<HandleRequest>g__InvokeMethod|0>d.MoveNext()
+--- End of stack trace from previous location ---
+   at System.Runtime.CompilerServices.PoolingAsyncValueTaskMethodBuilder`1.StateMachineBox`1.System.Threading.Tasks.Sources.IValueTaskSource<TResult>.GetResult(Int16 token)
+   at UiPath.Ipc.Server.HandleRequest(Method method, Route route, Request request, CancellationToken cancellationToken)
+   at System.Runtime.CompilerServices.PoolingAsyncValueTaskMethodBuilder`1.StateMachineBox`1.System.Threading.Tasks.Sources.IValueTaskSource<TResult>.GetResult(Int16 token)
+   at UiPath.Ipc.Server.OnRequestReceived(Request request)
+2026-07-24 19:41:06.723 +00:00 [Error] [UiPath.Studio.Helm] [Load > Load] [Trace:UiPath.Studio.Helm] Robot installation directory not found; falling back to the app's own directory: /home/azureuser/.cache/uipath/helm/1.199.0-dev.20260722.4/
+2026-07-24 19:41:19.733 +00:00 [Error] [UiPath.Studio.Helm] [Load > Load] [Trace:UiPath.Studio.Helm] [SAV-TRACE] AddAssemblies kept for System.Activities.ViewModels: '/home/azureuser/.cache/uipath/helm/1.199.0-dev.20260722.4/Platform/net8.0/System.Activities.ViewModels.dll'
+2026-07-24 19:41:19.733 +00:00 [Error] [UiPath.Studio.Helm] [Load > Load] [Trace:UiPath.Studio.Helm] Duplicate assembly: /home/azureuser/.nuget/packages/system.activities.viewmodels/1.20260514.1/lib/net6.0/System.Activities.ViewModels.dll
+2026-07-24 19:41:19.733 +00:00 [Error] [UiPath.Studio.Helm] [Load > Load] [Trace:UiPath.Studio.Helm] [SAV-TRACE] AddAssemblies dup for System.Activities.ViewModels: kept='/home/azureuser/.cache/uipath/helm/1.199.0-dev.20260722.4/Platform/net8.0/System.Activities.ViewModels.dll' skipped='/home/azureuser/.nuget/packages/system.activities.viewmodels/1.20260514.1/lib/net6.0/System.Activities.ViewModels.dll'
+2026-07-24 19:41:19.736 +00:00 [Error] [UiPath.Studio.Helm] [Load > Load] [Trace:UiPath.Studio.Helm] [SAV-TRACE] runtime dir = '/usr/share/dotnet/shared/Microsoft.NETCore.App/8.0.29/'
+2026-07-24 19:41:19.736 +00:00 [Error] [UiPath.Studio.Helm] [Load > Load] [Trace:UiPath.Studio.Helm] [SAV-TRACE] resolver path [project(_assemblyPaths)]: '/home/azureuser/.cache/uipath/helm/1.199.0-dev.20260722.4/Platform/net8.0/System.Activities.ViewModels.dll'
+2026-07-24 19:41:19.736 +00:00 [Error] [UiPath.Studio.Helm] [Load > Load] [Trace:UiPath.Studio.Helm] [SAV-TRACE] resolver path [project(_assemblyPaths)]: '/home/azureuser/.nuget/packages/uipath.system.activities/26.6.1/lib/net6.0/UiPath.System.Activities.ViewModels.dll'
+2026-07-24 19:41:19.777 +00:00 [Error] [UiPath.Studio.Helm] [Load > Load] [Trace:UiPath.Studio.Helm] System.IO.FileLoadException: The assembly 'System.Activities.ViewModels, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null' has already loaded been loaded into this MetadataLoadContext.
+   at System.Reflection.MetadataLoadContext.LoadFromStreamCore(Stream peStream)
+   at UiPath.WorkflowCompiler.Executor.LoadContext.ProjectAssembliesMetadata.GetAssemblyInfo(String assemblyPath), HResult -2146232799
+2026-07-24 19:41:19.918 +00:00 [Warning] [UiPath.Studio.Helm] [Load > Load] [Trace:UiPath.Studio.Helm] [AccessLock] ACQUIRED '/work/output/artifacts/skill-flow-bellevue-weather-simulated/BellevueWeatherCheck/.local/db/references-8dc4bb5e.db'
+2026-07-24 19:41:20.291 +00:00 [Error] [UiPath.Studio.Helm] [Trace:UiPath.Studio.Helm] Robot installation directory not found; falling back to the app's own directory: /home/azureuser/.cache/uipath/helm/1.199.0-dev.20260722.4/
+2026-07-24 19:41:24.073 +00:00 [Error] [UiPath.Studio.Helm] [InstallOrUpdatePackages > InstallOrUpdatePackages] [Trace:UiPath.Studio.Helm] Duplicate assembly: /home/azureuser/.cache/uipath/helm/1.199.0-dev.20260722.4/Platform/net8.0/ConnectionClient.dll
+2026-07-24 19:41:24.073 +00:00 [Error] [UiPath.Studio.Helm] [InstallOrUpdatePackages > InstallOrUpdatePackages] [Trace:UiPath.Studio.Helm] Duplicate assembly: /home/azureuser/.cache/uipath/helm/1.199.0-dev.20260722.4/Platform/net8.0/System.Activities.ViewModels.dll
+2026-07-24 19:41:24.073 +00:00 [Error] [UiPath.Studio.Helm] [InstallOrUpdatePackages > InstallOrUpdatePackages] [Trace:UiPath.Studio.Helm] [SAV-TRACE] AddAssemblies dup for System.Activities.ViewModels: kept='/home/azureuser/.cache/uipath/helm/1.199.0-dev.20260722.4/Platform/net8.0/System.Activities.ViewModels.dll' skipped='/home/azureuser/.cache/uipath/helm/1.199.0-dev.20260722.4/Platform/net8.0/System.Activities.ViewModels.dll'
+2026-07-24 19:41:24.073 +00:00 [Error] [UiPath.Studio.Helm] [InstallOrUpdatePackages > InstallOrUpdatePackages] [Trace:UiPath.Studio.Helm] Duplicate assembly: /home/azureuser/.cache/uipath/helm/1.199.0-dev.20260722.4/Platform/net8.0/System.Activities.Presentation.Common.dll
+2026-07-24 19:41:24.073 +00:00 [Error] [UiPath.Studio.Helm] [InstallOrUpdatePackages > InstallOrUpdatePackages] [Trace:UiPath.Studio.Helm] Duplicate assembly: /home/azureuser/.cache/uipath/helm/1.199.0-dev.20260722.4/Platform/net8.0/UiPath.DataService.Core.dll
+2026-07-24 19:41:24.073 +00:00 [Error] [UiPath.Studio.Helm] [InstallOrUpdatePackages > InstallOrUpdatePackages] [Trace:UiPath.Studio.Helm] Duplicate assembly: /home/azureuser/.cache/uipath/helm/1.199.0-dev.20260722.4/Platform/net8.0/UiPath.DataService.Definition.dll
+2026-07-24 19:41:24.073 +00:00 [Error] [UiPath.Studio.Helm] [InstallOrUpdatePackages > InstallOrUpdatePackages] [Trace:UiPath.Studio.Helm] Duplicate assembly: /home/azureuser/.nuget/packages/csvhelper/33.0.1/lib/net8.0/CsvHelper.dll
+2026-07-24 19:41:24.073 +00:00 [Error] [UiPath.Studio.Helm] [InstallOrUpdatePackages > InstallOrUpdatePackages] [Trace:UiPath.Studio.Helm] Duplicate assembly: /home/azureuser/.nuget/packages/dynamicexpresso.core/2.12.0/lib/netstandard2.0/DynamicExpresso.Core.dll
+2026-07-24 19:41:24.073 +00:00 [Error] [UiPath.Studio.Helm] [InstallOrUpdatePackages > InstallOrUpdatePackages] [Trace:UiPath.Studio.Helm] Duplicate assembly: /home/azureuser/.nuget/packages/microsoft.aspnet.signalr.client/2.4.3/lib/netstandard2.0/Microsoft.AspNet.SignalR.Client.dll
+2026-07-24 19:41:24.073 +00:00 [Error] [UiPath.Studio.Helm] [InstallOrUpdatePackages > InstallOrUpdatePackages] [Trace:UiPath.Studio.Helm] Duplicate assembly: /home/azureuser/.nuget/packages/microsoft.aspnetcore.connections.abstractions/6.0.36/lib/net6.0/Microsoft.AspNetCore.Connections.Abstractions.dll
+2026-07-24 19:41:24.073 +00:00 [Error] [UiPath.Studio.Helm] [InstallOrUpdatePackages > InstallOrUpdatePackages] [Trace:UiPath.Studio.Helm] Duplicate assembly: /home/azureuser/.nuget/packages/microsoft.aspnetcore.http.connections.client/6.0.36/lib/net6.0/Microsoft.AspNetCore.Http.Connections.Client.dll
+2026-07-24 19:41:24.073 +00:00 [Error] [UiPath.Studio.Helm] [InstallOrUpdatePackages > InstallOrUpdatePackages] [Trace:UiPath.Studio.Helm] Duplicate assembly: /home/azureuser/.nuget/packages/microsoft.aspnetcore.http.connections.common/6.0.36/lib/net6.0/Microsoft.AspNetCore.Http.Connections.Common.dll
+2026-07-24 19:41:24.073 +00:00 [Error] [UiPath.Studio.Helm] [InstallOrUpdatePackages > InstallOrUpdatePackages] [Trace:UiPath.Studio.Helm] Duplicate assembly: /home/azureuser/.nuget/packages/microsoft.aspnetcore.signalr.client.core/6.0.36/lib/net6.0/Microsoft.AspNetCore.SignalR.Client.Core.dll
+2026-07-24 19:41:24.073 +00:00 [Error] [UiPath.Studio.Helm] [InstallOrUpdatePackages > InstallOrUpdatePackages] [Trace:UiPath.Studio.Helm] Duplicate assembly: /home/azureuser/.nuget/packages/microsoft.aspnetcore.signalr.client/6.0.36/lib/net6.0/Microsoft.AspNetCore.SignalR.Client.dll
+2026-07-24 19:41:24.073 +00:00 [Error] [UiPath.Studio.Helm] [InstallOrUpdatePackages > InstallOrUpdatePackages] [Trace:UiPath.Studio.Helm] Duplicate assembly: /home/azureuser/.nuget/packages/microsoft.aspnetcore.signalr.common/6.0.36/lib/net6.0/Microsoft.AspNetCore.SignalR.Common.dll
+2026-07-24 19:41:24.073 +00:00 [Error] [UiPath.Studio.Helm] [InstallOrUpdatePackages > InstallOrUpdatePackages] [Trace:UiPath.Studio.Helm] Duplicate assembly: /home/azureuser/.nuget/packages/microsoft.aspnetcore.signalr.protocols.json/6.0.36/lib/net6.0/Microsoft.AspNetCore.SignalR.Protocols.Json.dll
+2026-07-24 19:41:24.073 +00:00 [Error] [UiPath.Studio.Helm] [InstallOrUpdatePackages > InstallOrUpdatePackages] [Trace:UiPath.Studio.Helm] Duplicate assembly: /home/azureuser/.nuget/packages/microsoft.codeanalysis.common/4.5.0-2.22527.10/lib/netcoreapp3.1/Microsoft.CodeAnalysis.dll
+2026-07-24 19:41:24.073 +00:00 [Error] [UiPath.Studio.Helm] [InstallOrUpdatePackages > InstallOrUpdatePackages] [Trace:UiPath.Studio.Helm] Duplicate assembly: /home/azureuser/.nuget/packages/microsoft.codeanalysis.csharp/4.5.0-2.22527.10/lib/netcoreapp3.1/Microsoft.CodeAnalysis.CSharp.dll
+2026-07-24 19:41:24.073 +00:00 [Error] [UiPath.Studio.Helm] [InstallOrUpdatePackages > InstallOrUpdatePackages] [Trace:UiPath.Studio.Helm] Duplicate assembly: /home/azureuser/.nuget/packages/microsoft.codeanalysis.visualbasic/4.5.0-2.22527.10/lib/netcoreapp3.1/Microsoft.CodeAnalysis.VisualBasic.dll
+2026-07-24 19:41:24.073 +00:00 [Error] [UiPath.Studio.Helm] [InstallOrUpdatePackages > InstallOrUpdatePackages] [Trace:UiPath.Studio.Helm] Duplicate assembly: /home/azureuser/.nuget/packages/microsoft.extensions.caching.abstractions/9.0.3/lib/net8.0/Microsoft.Extensions.Caching.Abstractions.dll
+2026-07-24 19:41:24.073 +00:00 [Error] [UiPath.Studio.Helm] [InstallOrUpdatePackages > InstallOrUpdatePackages] [Trace:UiPath.Studio.Helm] Duplicate assembly: /home/azureuser/.nuget/packages/microsoft.extensions.caching.memory/9.0.3/lib/net8.0/Microsoft.Extensions.Caching.Memory.dll
+2026-07-24 19:41:24.073 +00:00 [Error] [UiPath.Studio.Helm] [InstallOrUpdatePackages > InstallOrUpdatePackages] [Trace:UiPath.Studio.Helm] Duplicate assembly: /home/azureuser/.nuget/packages/microsoft.extensions.dependencyinjection.abstractions/9.0.3/lib/net8.0/Microsoft.Extensions.DependencyInjection.Abstractions.dll
+2026-07-24 19:41:24.073 +00:00 [Error] [UiPath.Studio.Helm] [InstallOrUpdatePackages > InstallOrUpdatePackages] [Trace:UiPath.Studio.Helm] Duplicate assembly: /home/azureuser/.nuget/packages/microsoft.extensions.dependencyinjection/6.0.2/lib/net6.0/Microsoft.Extensions.DependencyInjection.dll
+2026-07-24 19:41:24.073 +00:00 [Error] [UiPath.Studio.Helm] [InstallOrUpdatePackages > InstallOrUpdatePackages] [Trace:UiPath.Studio.Helm] Duplicate assembly: /home/azureuser/.nuget/packages/microsoft.extensions.features/6.0.36/lib/net6.0/Microsoft.Extensions.Features.dll
+2026-07-24 19:41:24.073 +00:00 [Error] [UiPath.Studio.Helm] [InstallOrUpdatePackages > InstallOrUpdatePackages] [Trace:UiPath.Studio.Helm] Duplicate assembly: /home/azureuser/.nuget/packages/microsoft.extensions.logging.abstractions/9.0.3/lib/net8.0/Microsoft.Extensions.Logging.Abstractions.dll
+2026-07-24 19:41:24.073 +00:00 [Error] [UiPath.Studio.Helm] [InstallOrUpdatePackages > InstallOrUpdatePackages] [Trace:UiPath.Studio.Helm] Duplicate assembly: /home/azureuser/.nuget/packages/microsoft.extensions.logging/6.0.1/lib/netstandard2.1/Microsoft.Extensions.Logging.dll
+2026-07-24 19:41:24.073 +00:00 [Error] [UiPath.Studio.Helm] [InstallOrUpdatePackages > InstallOrUpdatePackages] [Trace:UiPath.Studio.Helm] Duplicate assembly: /home/azureuser/.nuget/packages/microsoft.extensions.options/9.0.3/lib/net8.0/Microsoft.Extensions.Options.dll
+2026-07-24 19:41:24.073 +00:00 [Error] [UiPath.Studio.Helm] [InstallOrUpdatePackages > InstallOrUpdatePackages] [Trace:UiPath.Studio.Helm] Duplicate assembly: /home/azureuser/.nuget/packages/microsoft.extensions.primitives/9.0.3/lib/net8.0/Microsoft.Extensions.Primitives.dll
+2026-07-24 19:41:24.073 +00:00 [Error] [UiPath.Studio.Helm] [InstallOrUpdatePackages > InstallOrUpdatePackages] [Trace:UiPath.Studio.Helm] Duplicate assembly: /home/azureuser/.nuget/packages/microsoft.rest.clientruntime/2.3.24/lib/netstandard2.0/Microsoft.Rest.ClientRuntime.dll
+2026-07-24 19:41:24.073 +00:00 [Error] [UiPath.Studio.Helm] [InstallOrUpdatePackages > InstallOrUpdatePackages] [Trace:UiPath.Studio.Helm] Duplicate assembly: /home/azureuser/.nuget/packages/net.adamec.lib.common.dmn.engine/1.1.1/lib/netstandard2.0/net.adamec.lib.common.dmn.engine.dll
+2026-07-24 19:41:24.073 +00:00 [Error] [UiPath.Studio.Helm] [InstallOrUpdatePackages > InstallOrUpdatePackages] [Trace:UiPath.Studio.Helm] Duplicate assembly: /home/azureuser/.nuget/packages/nito.asyncex.context/5.1.2/lib/netstandard2.0/Nito.AsyncEx.Context.dll
+2026-07-24 19:41:24.073 +00:00 [Error] [UiPath.Studio.Helm] [InstallOrUpdatePackages > InstallOrUpdatePackages] [Trace:UiPath.Studio.Helm] Duplicate assembly: /home/azureuser/.nuget/packages/nito.asyncex.coordination/5.1.2/lib/netstandard2.0/Nito.AsyncEx.Coordination.dll
+2026-07-24 19:41:24.073 +00:00 [Error] [UiPath.Studio.Helm] [InstallOrUpdatePackages > InstallOrUpdatePackages] [Trace:UiPath.Studio.Helm] Duplicate assembly: /home/azureuser/.nuget/packages/nito.asyncex.interop.waithandles/5.1.2/lib/netstandard2.0/Nito.AsyncEx.Interop.WaitHandles.dll
+2026-07-24 19:41:24.073 +00:00 [Error] [UiPath.Studio.Helm] [InstallOrUpdatePackages > InstallOrUpdatePackages] [Trace:UiPath.Studio.Helm] Duplicate assembly: /home/azureuser/.nuget/packages/nito.asyncex.oop/5.1.2/lib/netstandard2.0/Nito.AsyncEx.Oop.dll
+2026-07-24 19:41:24.073 +00:00 [Error] [UiPath.Studio.Helm] [InstallOrUpdatePackages > InstallOrUpdatePackages] [Trace:UiPath.Studio.Helm] Duplicate assembly: /home/azureuser/.nuget/packages/nito.asyncex.tasks/5.1.2/lib/netstandard2.0/Nito.AsyncEx.Tasks.dll
+2026-07-24 19:41:24.073 +00:00 [Error] [UiPath.Studio.Helm] [InstallOrUpdatePackages > InstallOrUpdatePackages] [Trace:UiPath.Studio.Helm] Duplicate assembly: /home/azureuser/.nuget/packages/nito.cancellation/1.1.2/lib/netstandard2.0/Nito.Cancellation.dll
+2026-07-24 19:41:24.073 +00:00 [Error] [UiPath.Studio.Helm] [InstallOrUpdatePackages > InstallOrUpdatePackages] [Trace:UiPath.Studio.Helm] Duplicate assembly: /home/azureuser/.nuget/packages/nito.collections.deque/1.1.1/lib/netstandard2.0/Nito.Collections.Deque.dll
+2026-07-24 19:41:24.073 +00:00 [Error] [UiPath.Studio.Helm] [InstallOrUpdatePackages > InstallOrUpdatePackages] [Trace:UiPath.Studio.Helm] Duplicate assembly: /home/azureuser/.nuget/packages/nito.disposables/2.2.1/lib/netstandard2.1/Nito.Disposables.dll
+2026-07-24 19:41:24.073 +00:00 [Error] [UiPath.Studio.Helm] [InstallOrUpdatePackages > InstallOrUpdatePackages] [Trace:UiPath.Studio.Helm] Duplicate assembly: /home/azureuser/.nuget/packages/nlog/4.7.15/lib/netstandard2.0/NLog.dll
+2026-07-24 19:41:24.074 +00:00 [Error] [UiPath.Studio.Helm] [InstallOrUpdatePackages > InstallOrUpdatePackages] [Trace:UiPath.Studio.Helm] Duplicate assembly: /home/azureuser/.nuget/packages/radcommons.core/2.0.1/lib/netstandard2.0/net.adamec.lib.common.core.dll
+2026-07-24 19:41:24.074 +00:00 [Error] [UiPath.Studio.Helm] [InstallOrUpdatePackages > InstallOrUpdatePackages] [Trace:UiPath.Studio.Helm] Duplicate assembly: /home/azureuser/.nuget/packages/sharpziplib/1.4.2/lib/net6.0/ICSharpCode.SharpZipLib.dll
+2026-07-24 19:41:24.074 +00:00 [Error] [UiPath.Studio.Helm] [InstallOrUpdatePackages > InstallOrUpdatePackages] [Trace:UiPath.Studio.Helm] Duplicate assembly: /home/azureuser/.nuget/packages/system.activities.viewmodels/1.20260514.1/lib/net6.0/System.Activities.ViewModels.dll
+2026-07-24 19:41:24.074 +00:00 [Error] [UiPath.Studio.Helm] [InstallOrUpdatePackages > InstallOrUpdatePackages] [Trace:UiPath.Studio.Helm] [SAV-TRACE] AddAssemblies dup for System.Activities.ViewModels: kept='/home/azureuser/.cache/uipath/helm/1.199.0-dev.20260722.4/Platform/net8.0/System.Activities.ViewModels.dll' skipped='/home/azureuser/.nuget/packages/system.activities.viewmodels/1.20260514.1/lib/net6.0/System.Activities.ViewModels.dll'
+2026-07-24 19:41:24.074 +00:00 [Error] [UiPath.Studio.Helm] [InstallOrUpdatePackages > InstallOrUpdatePackages] [Trace:UiPath.Studio.Helm] Duplicate assembly: /home/azureuser/.nuget/packages/system.io.pipelines/6.0.3/lib/net6.0/System.IO.Pipelines.dll
+2026-07-24 19:41:24.074 +00:00 [Error] [UiPath.Studio.Helm] [InstallOrUpdatePackages > InstallOrUpdatePackages] [Trace:UiPath.Studio.Helm] Duplicate assembly: /home/azureuser/.nuget/packages/uipath.codedworkflows/24.10.1/lib/net6.0/UiPath.CodedWorkflows.dll
+2026-07-24 19:41:24.074 +00:00 [Error] [UiPath.Studio.Helm] [InstallOrUpdatePackages > InstallOrUpdatePackages] [Trace:UiPath.Studio.Helm] Duplicate assembly: /home/azureuser/.nuget/packages/uipath.errorinfo/25.10.2/lib/net8.0/UiPath.ErrorInfo.dll
+2026-07-24 19:41:24.074 +00:00 [Error] [UiPath.Studio.Helm] [InstallOrUpdatePackages > InstallOrUpdatePackages] [Trace:UiPath.Studio.Helm] Duplicate assembly: /home/azureuser/.nuget/packages/uipath.opentelemetry.contracts/2.9.1/lib/netstandard2.0/UiPath.OpenTelemetry.Contracts.dll
+2026-07-24 19:41:24.074 +00:00 [Error] [UiPath.Studio.Helm] [InstallOrUpdatePackages > InstallOrUpdatePackages] [Trace:UiPath.Studio.Helm] Duplicate assembly: /home/azureuser/.nuget/packages/uipath.platform/26.4.0/lib/net6.0/UiPath.Platform.dll
+2026-07-24 19:41:24.074 +00:00 [Error] [UiPath.Studio.Helm] [InstallOrUpdatePackages > InstallOrUpdatePackages] [Trace:UiPath.Studio.Helm] Duplicate assembly: /home/azureuser/.nuget/packages/uipath.plugin.activities.tracing/0.6.3/lib/net8.0/UiPath.Plugin.Activities.Tracing.dll
+2026-07-24 19:41:24.074 +00:00 [Error] [UiPath.Studio.Helm] [InstallOrUpdatePackages > InstallOrUpdatePackages] [Trace:UiPath.Studio.Helm] Duplicate assembly: /home/azureuser/.nuget/packages/uipath.system.activities.runtime.portable/26.6.1/lib/net6.0/UiPath.OrchestratorClient.dll
+2026-07-24 19:41:24.074 +00:00 [Error] [UiPath.Studio.Helm] [InstallOrUpdatePackages > InstallOrUpdatePackages] [Trace:UiPath.Studio.Helm] Duplicate assembly: /home/azureuser/.nuget/packages/uipath.system.activities.runtime.portable/26.6.1/lib/net6.0/UiPath.ServiceClients.dll
+2026-07-24 19:41:24.074 +00:00 [Error] [UiPath.Studio.Helm] [InstallOrUpdatePackages > InstallOrUpdatePackages] [Trace:UiPath.Studio.Helm] Duplicate assembly: /home/azureuser/.nuget/packages/uipath.system.activities.runtime.portable/26.6.1/lib/net6.0/UiPath.System.Activities.Api.dll
+2026-07-24 19:41:24.074 +00:00 [Error] [UiPath.Studio.Helm] [InstallOrUpdatePackages > InstallOrUpdatePackages] [Trace:UiPath.Studio.Helm] Duplicate assembly: /home/azureuser/.nuget/packages/uipath.system.activities.runtime.portable/26.6.1/lib/net6.0/UiPath.System.Activities.dll
+2026-07-24 19:41:24.074 +00:00 [Error] [UiPath.Studio.Helm] [InstallOrUpdatePackages > InstallOrUpdatePackages] [Trace:UiPath.Studio.Helm] Duplicate assembly: /home/azureuser/.nuget/packages/uipath.system.activities.runtime/26.6.1/lib/net6.0/UiPath.System.Activities.Package.Runtime.dll
+2026-07-24 19:41:24.074 +00:00 [Error] [UiPath.Studio.Helm] [InstallOrUpdatePackages > InstallOrUpdatePackages] [Trace:UiPath.Studio.Helm] Duplicate assembly: /home/azureuser/.nuget/packages/uipath.system.activities/26.6.1/lib/net6.0/UiPath.System.Activities.Rules.dll
+2026-07-24 19:41:24.074 +00:00 [Error] [UiPath.Studio.Helm] [InstallOrUpdatePackages > InstallOrUpdatePackages] [Trace:UiPath.Studio.Helm] Duplicate assembly: /home/azureuser/.nuget/packages/uipath.system.activities/26.6.1/lib/net6.0/UiPath.System.Activities.ViewModels.dll
+2026-07-24 19:41:24.074 +00:00 [Error] [UiPath.Studio.Helm] [InstallOrUpdatePackages > InstallOrUpdatePackages] [Trace:UiPath.Studio.Helm] Duplicate assembly: /home/azureuser/.nuget/packages/uipath.telemetry.client/2.9.1/lib/netstandard2.0/TelemetryClient.dll

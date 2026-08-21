@@ -1,0 +1,298 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+    xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+    xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+    xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+    xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:uipath="http://uipath.org/schema/bpmn"
+    id="Definitions_WikiPageviews"
+    targetNamespace="http://bpmn.io/schema/bpmn"
+    exporter="UiPath (https://bpmn.uipath.com)" exporterVersion="1.0">
+
+  <bpmn:process id="Process_WikiPageviews" isExecutable="true">
+    <bpmn:extensionElements>
+      <uipath:migrationVersion version="11.5" />
+      <uipath:variables version="v1">
+        <!-- Input variables bound to the manual start entry point -->
+        <uipath:inputOutput id="Var_Article"   name="article"   type="string" elementId="Start_Manual" />
+        <uipath:inputOutput id="Var_Date1"     name="date1"     type="string" elementId="Start_Manual" />
+        <uipath:inputOutput id="Var_Date2"     name="date2"     type="string" elementId="Start_Manual" />
+        <!-- Internal working variables -->
+        <uipath:output      id="Var_Valid"     name="valid"     type="boolean" />
+        <uipath:output      id="Var_Records"   name="records"   type="json" />
+        <uipath:output      id="Var_Filtered"  name="filtered"  type="json" />
+        <!-- Output variable -->
+        <uipath:output      id="Var_Total"     name="total"     type="number" />
+      </uipath:variables>
+    </bpmn:extensionElements>
+
+    <!-- ================================================================
+         START EVENT (manual, with entry point)
+    ================================================================ -->
+    <bpmn:startEvent id="Start_Manual" name="Start&#10;(article, date1, date2)">
+      <bpmn:extensionElements>
+        <uipath:entryPointId value="a1b2c3d4-e5f6-7890-abcd-ef1234567890" />
+        <uipath:mapping version="v1">
+          <uipath:type value="BPMN.Variables" version="v1" />
+        </uipath:mapping>
+      </bpmn:extensionElements>
+      <bpmn:outgoing>Flow_StartToFetch</bpmn:outgoing>
+    </bpmn:startEvent>
+
+    <!-- ================================================================
+         SCRIPT TASK: fetchPageviews
+         Produces a list of {date, views} records for the date range.
+         Sets valid=true/false based on whether the article is recognised.
+         Logic is purely local (no HTTP, no Integration Service).
+    ================================================================ -->
+    <bpmn:scriptTask id="Task_FetchPageviews" name="fetchPageviews" scriptFormat="JavaScript">
+      <bpmn:extensionElements>
+        <uipath:scriptVersion value="v3" />
+        <uipath:mapping version="v1">
+          <uipath:type value="BPMN.ScriptTask" version="v1" />
+          <uipath:input name="args" type="json" target="bodyField"><![CDATA[{"article":"=vars.Var_Article","date1":"=vars.Var_Date1","date2":"=vars.Var_Date2"}]]></uipath:input>
+          <uipath:output name="valid"   type="boolean" var="Var_Valid"   source="=result.response.valid" />
+          <uipath:output name="records" type="json"    var="Var_Records" source="=result.response.records" />
+        </uipath:mapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_StartToFetch</bpmn:incoming>
+      <bpmn:outgoing>Flow_FetchToGw</bpmn:outgoing>
+      <bpmn:script><![CDATA[
+/* Synthetic local pageview generator.
+   Known articles get daily view counts; anything else is invalid. */
+var KNOWN = {
+  "Albert_Einstein":   { base: 800, variance: 600 },
+  "Python_(language)": { base: 1200, variance: 400 },
+  "Wikipedia":         { base: 2000, variance: 800 },
+  "Marie_Curie":       { base: 700, variance: 500 }
+};
+
+if (!KNOWN[article]) {
+  return { response: { valid: false, records: [] } };
+}
+
+/* Parse YYYY-MM-DD dates and produce one record per day in range. */
+function parseDate(s) {
+  var parts = s.split("-");
+  return new Date(
+    parseInt(parts[0], 10),
+    parseInt(parts[1], 10) - 1,
+    parseInt(parts[2], 10)
+  );
+}
+
+var start = parseDate(date1);
+var end   = parseDate(date2);
+
+if (isNaN(start.getTime()) || isNaN(end.getTime()) || start > end) {
+  return { response: { valid: false, records: [] } };
+}
+
+var info    = KNOWN[article];
+var records = [];
+var cursor  = new Date(start.getTime());
+var seed    = 42;
+
+/* Deterministic pseudo-random (LCG) so output is reproducible. */
+function nextRand() {
+  seed = (seed * 1664525 + 1013904223) & 0x7fffffff;
+  return seed / 0x7fffffff;
+}
+
+while (cursor <= end) {
+  var views = Math.floor(info.base + nextRand() * info.variance);
+  var mm = cursor.getMonth() + 1;
+  var dd = cursor.getDate();
+  var dateStr = cursor.getFullYear() + "-" +
+                (mm < 10 ? "0" + mm : mm) + "-" +
+                (dd < 10 ? "0" + dd : dd);
+  records.push({ date: dateStr, views: views });
+  cursor.setDate(cursor.getDate() + 1);
+}
+
+return { response: { valid: true, records: records } };
+]]></bpmn:script>
+    </bpmn:scriptTask>
+
+    <!-- ================================================================
+         EXCLUSIVE GATEWAY: valid?
+         Default (valid path) continues to filterHighTraffic.
+         Invalid branch goes to End_NotFound.
+    ================================================================ -->
+    <bpmn:exclusiveGateway id="Gw_ValidCheck" name="valid?" default="Flow_GwToFilter">
+      <bpmn:incoming>Flow_FetchToGw</bpmn:incoming>
+      <bpmn:outgoing>Flow_GwToNotFound</bpmn:outgoing>
+      <bpmn:outgoing>Flow_GwToFilter</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+
+    <!-- ================================================================
+         END EVENT (invalid path): Article not found
+         Returns the literal "Article not found" via end-event variable mapping.
+    ================================================================ -->
+    <bpmn:endEvent id="End_NotFound" name="Article not found">
+      <bpmn:extensionElements>
+        <uipath:mapping version="v1">
+          <uipath:type value="BPMN.Variables" version="v1" />
+          <uipath:output name="result" type="string" var="Var_Total" source="=&quot;Article not found&quot;" />
+        </uipath:mapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_GwToNotFound</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <!-- ================================================================
+         SCRIPT TASK: filterHighTraffic
+         Keeps only days whose views > 500.
+    ================================================================ -->
+    <bpmn:scriptTask id="Task_FilterHighTraffic" name="filterHighTraffic" scriptFormat="JavaScript">
+      <bpmn:extensionElements>
+        <uipath:scriptVersion value="v3" />
+        <uipath:mapping version="v1">
+          <uipath:type value="BPMN.ScriptTask" version="v1" />
+          <uipath:input name="args" type="json" target="bodyField"><![CDATA[{"records":"=vars.Var_Records"}]]></uipath:input>
+          <uipath:output name="filtered" type="json" var="Var_Filtered" source="=result.response" />
+        </uipath:mapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_GwToFilter</bpmn:incoming>
+      <bpmn:outgoing>Flow_FilterToAggregate</bpmn:outgoing>
+      <bpmn:script><![CDATA[
+/* Keep only days whose views exceed 500. */
+var kept = [];
+for (var i = 0; i < records.length; i++) {
+  if (records[i].views > 500) {
+    kept.push(records[i]);
+  }
+}
+return { response: kept };
+]]></bpmn:script>
+    </bpmn:scriptTask>
+
+    <!-- ================================================================
+         SCRIPT TASK: aggregateTotal
+         Sums the surviving view counts into total.
+    ================================================================ -->
+    <bpmn:scriptTask id="Task_AggregateTotal" name="aggregateTotal" scriptFormat="JavaScript">
+      <bpmn:extensionElements>
+        <uipath:scriptVersion value="v3" />
+        <uipath:mapping version="v1">
+          <uipath:type value="BPMN.ScriptTask" version="v1" />
+          <uipath:input name="args" type="json" target="bodyField"><![CDATA[{"filtered":"=vars.Var_Filtered"}]]></uipath:input>
+          <uipath:output name="total" type="number" var="Var_Total" source="=result.response" />
+        </uipath:mapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_FilterToAggregate</bpmn:incoming>
+      <bpmn:outgoing>Flow_AggregateToEnd</bpmn:outgoing>
+      <bpmn:script><![CDATA[
+/* Sum views across all surviving days. */
+var sum = 0;
+for (var i = 0; i < filtered.length; i++) {
+  sum += filtered[i].views;
+}
+return { response: sum };
+]]></bpmn:script>
+    </bpmn:scriptTask>
+
+    <!-- ================================================================
+         END EVENT (valid path): success
+    ================================================================ -->
+    <bpmn:endEvent id="End_Success" name="Done (total)">
+      <bpmn:incoming>Flow_AggregateToEnd</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <!-- ================================================================
+         SEQUENCE FLOWS
+    ================================================================ -->
+    <bpmn:sequenceFlow id="Flow_StartToFetch"       sourceRef="Start_Manual"       targetRef="Task_FetchPageviews" />
+    <bpmn:sequenceFlow id="Flow_FetchToGw"          sourceRef="Task_FetchPageviews" targetRef="Gw_ValidCheck" />
+
+    <!-- Invalid branch: condition on valid == false -->
+    <bpmn:sequenceFlow id="Flow_GwToNotFound" sourceRef="Gw_ValidCheck" targetRef="End_NotFound">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=vars.Var_Valid == false</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+
+    <!-- Valid branch: default (no condition needed) -->
+    <bpmn:sequenceFlow id="Flow_GwToFilter"         sourceRef="Gw_ValidCheck"      targetRef="Task_FilterHighTraffic" />
+    <bpmn:sequenceFlow id="Flow_FilterToAggregate"  sourceRef="Task_FilterHighTraffic" targetRef="Task_AggregateTotal" />
+    <bpmn:sequenceFlow id="Flow_AggregateToEnd"     sourceRef="Task_AggregateTotal" targetRef="End_Success" />
+  </bpmn:process>
+
+  <!-- ================================================================
+       BPMN DIAGRAM INTERCHANGE
+       Left-to-right layout; tasks 100x80, events 36x36, gateway 50x50.
+       Y-centre line = 210.
+       Invalid branch drops to Y=320.
+  ================================================================ -->
+  <bpmndi:BPMNDiagram id="Diagram_1">
+    <bpmndi:BPMNPlane id="Plane_1" bpmnElement="Process_WikiPageviews">
+
+      <!-- Start -->
+      <bpmndi:BPMNShape id="S_Start_Manual" bpmnElement="Start_Manual">
+        <dc:Bounds x="152" y="192" width="36" height="36" />
+      </bpmndi:BPMNShape>
+
+      <!-- fetchPageviews -->
+      <bpmndi:BPMNShape id="S_Task_FetchPageviews" bpmnElement="Task_FetchPageviews">
+        <dc:Bounds x="240" y="170" width="100" height="80" />
+      </bpmndi:BPMNShape>
+
+      <!-- valid? gateway -->
+      <bpmndi:BPMNShape id="S_Gw_ValidCheck" bpmnElement="Gw_ValidCheck">
+        <dc:Bounds x="395" y="185" width="50" height="50" />
+      </bpmndi:BPMNShape>
+
+      <!-- End: Article not found (invalid path, lower lane) -->
+      <bpmndi:BPMNShape id="S_End_NotFound" bpmnElement="End_NotFound">
+        <dc:Bounds x="398" y="302" width="36" height="36" />
+      </bpmndi:BPMNShape>
+
+      <!-- filterHighTraffic -->
+      <bpmndi:BPMNShape id="S_Task_FilterHighTraffic" bpmnElement="Task_FilterHighTraffic">
+        <dc:Bounds x="500" y="170" width="100" height="80" />
+      </bpmndi:BPMNShape>
+
+      <!-- aggregateTotal -->
+      <bpmndi:BPMNShape id="S_Task_AggregateTotal" bpmnElement="Task_AggregateTotal">
+        <dc:Bounds x="660" y="170" width="100" height="80" />
+      </bpmndi:BPMNShape>
+
+      <!-- End: Done -->
+      <bpmndi:BPMNShape id="S_End_Success" bpmnElement="End_Success">
+        <dc:Bounds x="822" y="192" width="36" height="36" />
+      </bpmndi:BPMNShape>
+
+      <!-- Edges -->
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_StartToFetch" bpmnElement="Flow_StartToFetch">
+        <di:waypoint x="188" y="210" />
+        <di:waypoint x="240" y="210" />
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_FetchToGw" bpmnElement="Flow_FetchToGw">
+        <di:waypoint x="340" y="210" />
+        <di:waypoint x="395" y="210" />
+      </bpmndi:BPMNEdge>
+
+      <!-- invalid branch: down then right to End_NotFound -->
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_GwToNotFound" bpmnElement="Flow_GwToNotFound">
+        <di:waypoint x="420" y="235" />
+        <di:waypoint x="420" y="302" />
+      </bpmndi:BPMNEdge>
+
+      <!-- valid (default) branch: right to filterHighTraffic -->
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_GwToFilter" bpmnElement="Flow_GwToFilter">
+        <di:waypoint x="445" y="210" />
+        <di:waypoint x="500" y="210" />
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_FilterToAggregate" bpmnElement="Flow_FilterToAggregate">
+        <di:waypoint x="600" y="210" />
+        <di:waypoint x="660" y="210" />
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_AggregateToEnd" bpmnElement="Flow_AggregateToEnd">
+        <di:waypoint x="760" y="210" />
+        <di:waypoint x="822" y="210" />
+      </bpmndi:BPMNEdge>
+
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

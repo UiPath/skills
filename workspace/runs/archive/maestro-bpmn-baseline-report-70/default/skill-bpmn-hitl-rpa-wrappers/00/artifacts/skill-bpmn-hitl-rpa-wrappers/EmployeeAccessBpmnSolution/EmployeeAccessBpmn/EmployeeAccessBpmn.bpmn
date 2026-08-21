@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+    xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+    xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+    xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+    xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+    xmlns:uipath="http://uipath.org/schema/bpmn"
+    id="Definitions_1"
+    targetNamespace="http://bpmn.io/schema/bpmn"
+    exporter="UiPath Maestro (https://uipath.com)"
+    exporterVersion="1.200.0-dev.7984">
+
+  <bpmn:process id="Process_1" name="EmployeeAccessBpmn" isExecutable="true">
+    <bpmn:extensionElements>
+      <uipath:migrationVersion version="11.5" />
+      <uipath:variables version="v1">
+        <uipath:inputOutput id="Var_HitlResponse" name="HitlResponse" type="object" />
+        <uipath:inputOutput id="Var_JobResponse"  name="JobResponse"  type="object" />
+      </uipath:variables>
+      <uipath:bindings version="v1" />
+    </bpmn:extensionElements>
+
+    <!-- ═══════════════════════════════════════════════
+         1. Manual start
+         ═══════════════════════════════════════════════ -->
+    <bpmn:startEvent id="Event_start" name="core.trigger.manual">
+      <bpmn:extensionElements>
+        <uipath:entryPointId value="94917cf7-8ad8-4968-a69a-b2f51b5ba89d" />
+      </bpmn:extensionElements>
+      <bpmn:outgoing>Flow_1</bpmn:outgoing>
+    </bpmn:startEvent>
+
+    <!-- ═══════════════════════════════════════════════
+         2. HITL approval
+         Host element: bpmn:UserTask
+         Extension type: Actions.HITL  (registry template - placeholders filled)
+         appId / key are synthetic placeholder identifiers only.
+         ═══════════════════════════════════════════════ -->
+    <bpmn:UserTask id="Task_HitlApproval" name="Approve Employee Access">
+      <bpmn:extensionElements>
+        <uipath:activity version="v1">
+          <uipath:type value="Actions.HITL" version="v1" />
+          <uipath:context>
+            <uipath:input name="appId"       value="placeholder-app-id" />
+            <uipath:input name="appVersion"  value="" />
+            <uipath:input name="actions"     value="" />
+            <uipath:input name="key"         value="placeholder-task-key" />
+            <uipath:input name="taskTitle"   value="Employee Access Approval" />
+          </uipath:context>
+          <uipath:input name="HitlTaskArguments" type="json" target="bodyField"><![CDATA[{}]]></uipath:input>
+          <uipath:output name="Process response" type="Actions.HITL" var="Var_HitlResponse" />
+        </uipath:activity>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_1</bpmn:incoming>
+      <bpmn:outgoing>Flow_2</bpmn:outgoing>
+    </bpmn:UserTask>
+
+    <!-- ═══════════════════════════════════════════════
+         3. RPA provisioning job
+         Host element: bpmn:ServiceTask
+         Extension type: Orchestrator.StartJob  (registry template - placeholders filled)
+         releaseKey / folderPath are synthetic placeholder identifiers only.
+         ═══════════════════════════════════════════════ -->
+    <bpmn:ServiceTask id="Task_RpaProvisioning" name="Provision Access via RPA">
+      <bpmn:extensionElements>
+        <uipath:activity version="v1">
+          <uipath:type value="Orchestrator.StartJob" version="v1" />
+          <uipath:context>
+            <uipath:input name="releaseKey"  value="placeholder-release-key" />
+            <uipath:input name="folderId"    value="" />
+            <uipath:input name="folderPath"  value="PlaceholderFolder" />
+            <uipath:input name="name"        value="ProvisionAccessRobot" />
+          </uipath:context>
+          <uipath:input name="JobArguments" type="json" target="bodyField"><![CDATA[{}]]></uipath:input>
+          <uipath:output name="Process response" type="Orchestrator.RunJob" var="Var_JobResponse" />
+        </uipath:activity>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_2</bpmn:incoming>
+      <bpmn:outgoing>Flow_3</bpmn:outgoing>
+    </bpmn:ServiceTask>
+
+    <!-- ═══════════════════════════════════════════════
+         4. End
+         ═══════════════════════════════════════════════ -->
+    <bpmn:endEvent id="Event_End" name="Access Provisioned">
+      <bpmn:incoming>Flow_3</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <!-- ═══ Sequence flows ═══ -->
+    <bpmn:sequenceFlow id="Flow_1" sourceRef="Event_start"      targetRef="Task_HitlApproval" />
+    <bpmn:sequenceFlow id="Flow_2" sourceRef="Task_HitlApproval"  targetRef="Task_RpaProvisioning" />
+    <bpmn:sequenceFlow id="Flow_3" sourceRef="Task_RpaProvisioning" targetRef="Event_End" />
+  </bpmn:process>
+
+  <!-- ═══════════════════════════════════════════════════════════════════════
+       BPMN DI - one BPMNShape per node, one BPMNEdge per sequence flow
+       Layout (left-to-right, centre lane y=192):
+         Start  x=152  w=36  h=36   centre(170,192)
+         HITL   x=250  w=100 h=80   centre(300,192)
+         RPA    x=430  w=100 h=80   centre(480,192)
+         End    x=612  w=36  h=36   centre(630,192)
+       ═══════════════════════════════════════════════════════════════════════ -->
+  <bpmndi:BPMNDiagram id="Diagram_1">
+    <bpmndi:BPMNPlane id="Plane_1" bpmnElement="Process_1">
+
+      <bpmndi:BPMNShape id="S_Event_start" bpmnElement="Event_start">
+        <dc:Bounds x="152" y="174" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="126" y="217" width="88" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="S_Task_HitlApproval" bpmnElement="Task_HitlApproval">
+        <dc:Bounds x="250" y="152" width="100" height="80" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="S_Task_RpaProvisioning" bpmnElement="Task_RpaProvisioning">
+        <dc:Bounds x="430" y="152" width="100" height="80" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="S_Event_End" bpmnElement="Event_End">
+        <dc:Bounds x="612" y="174" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="590" y="217" width="80" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_1" bpmnElement="Flow_1">
+        <di:waypoint x="188" y="192" />
+        <di:waypoint x="250" y="192" />
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_2" bpmnElement="Flow_2">
+        <di:waypoint x="350" y="192" />
+        <di:waypoint x="430" y="192" />
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_3" bpmnElement="Flow_3">
+        <di:waypoint x="530" y="192" />
+        <di:waypoint x="612" y="192" />
+      </bpmndi:BPMNEdge>
+
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+
+</bpmn:definitions>

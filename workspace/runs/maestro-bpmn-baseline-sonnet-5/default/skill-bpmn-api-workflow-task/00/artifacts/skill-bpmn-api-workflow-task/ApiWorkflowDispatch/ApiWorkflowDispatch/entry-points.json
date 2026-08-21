@@ -1,0 +1,23 @@
+{
+  "entryPoints": [
+    {
+      "id": "6e7f9d2a-4b3c-4e1a-8c5f-2a9d6b4e7c10",
+      "filePath": "/content/ApiWorkflowDispatch.bpmn#Start_ManualSync",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "customerId": { "type": "string" },
+          "requestedBy": { "type": "string" }
+        }
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "syncInvocation": { "type": "object" },
+          "syncStatus": { "type": "string" },
+          "syncResult": { "type": "object" }
+        }
+      }
+    }
+  ]
+}

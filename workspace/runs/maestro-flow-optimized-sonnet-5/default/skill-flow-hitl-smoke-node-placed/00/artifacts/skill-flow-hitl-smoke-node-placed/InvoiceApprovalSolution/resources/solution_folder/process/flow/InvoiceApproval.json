@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "InvoiceApproval",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "068a29dd-3e6b-49a1-9cb9-6882c7051c58",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "InvoiceApproval"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Flow",
+      "name": "InvoiceApproval",
+      "package": {
+        "key": "a0222894-5265-45ed-b739-bb1e4d213b4a"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "a80987af-4f8c-4805-affb-fbd5ed42b8ec",
+    "files": []
+  }
+}

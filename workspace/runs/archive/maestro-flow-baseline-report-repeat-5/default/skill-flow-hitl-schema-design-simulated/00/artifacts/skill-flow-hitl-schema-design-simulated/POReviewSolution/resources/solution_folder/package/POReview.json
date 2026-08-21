@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "POReview",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "c04d7ab9-04ae-4aa7-b646-238184dc696f",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "POReview"
+    },
+    "locks": [],
+    "key": "8850c353-c760-4df6-a76d-64eb1cfd919d",
+    "files": []
+  }
+}

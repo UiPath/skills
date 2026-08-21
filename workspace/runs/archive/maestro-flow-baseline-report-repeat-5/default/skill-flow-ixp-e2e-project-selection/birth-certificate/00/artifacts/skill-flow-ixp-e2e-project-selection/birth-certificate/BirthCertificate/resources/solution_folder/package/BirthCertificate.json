@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "BirthCertificate",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "ee1df65e-32e4-4126-a3ec-6e83a99351b7",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "BirthCertificate"
+    },
+    "locks": [],
+    "key": "cc26881d-10f6-4c05-a433-493446e39f28",
+    "files": []
+  }
+}

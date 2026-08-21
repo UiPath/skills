@@ -1,0 +1,29 @@
+{
+  "connectionId": "<PLACEHOLDER_CONNECTION_ID>",
+  "folderKey": "<PLACEHOLDER_FOLDER_KEY>",
+  "method": "POST",
+  "endpoint": "/Interactions",
+  "bodyParameters": {
+    "subject": "Sales Call - Q3 Pipeline Review",
+    "type": "Phone Call",
+    "startTime": "2026-07-24T09:00:00Z",
+    "endTime": "2026-07-24T09:30:00Z",
+    "timeZone": "UTC",
+    "details": "Quarterly sales interaction recorded via UiPath ComplexArrayTest flow",
+    "isCompleted": true,
+    "contacts": [
+      {
+        "id": "contact-id-001",
+        "displayName": "Alice Johnson"
+      },
+      {
+        "id": "contact-id-002",
+        "displayName": "Bob Smith"
+      },
+      {
+        "id": "contact-id-003",
+        "displayName": "Carol Davis"
+      }
+    ]
+  }
+}

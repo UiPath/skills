@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "FeetInches",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "b0c51c7e-43fb-4bf7-8c85-b175e5fa3feb",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "FeetInches"
+    },
+    "locks": [],
+    "key": "e8daf61b-11c3-4f26-bab4-f048ef24c797",
+    "files": []
+  }
+}

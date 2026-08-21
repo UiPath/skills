@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+    xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+    xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+    xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+    xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:uipath="http://uipath.org/schema/bpmn"
+    id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn"
+    exporter="UiPath (https://bpmn.uipath.com)" exporterVersion="1.0">
+
+  <bpmn:process id="Process_1" isExecutable="true">
+    <bpmn:extensionElements>
+      <uipath:migrationVersion version="11.5" />
+    </bpmn:extensionElements>
+
+    <bpmn:startEvent id="Start_1" name="Start">
+      <bpmn:outgoing>Flow_1</bpmn:outgoing>
+    </bpmn:startEvent>
+
+    <bpmn:parallelGateway id="Fork_1" name="Fork">
+      <bpmn:incoming>Flow_1</bpmn:incoming>
+      <bpmn:outgoing>Flow_A</bpmn:outgoing>
+      <bpmn:outgoing>Flow_B</bpmn:outgoing>
+    </bpmn:parallelGateway>
+
+    <!-- Branch A: terminate end event stops the whole instance -->
+    <bpmn:endEvent id="End_Terminate" name="Terminate Instance">
+      <bpmn:incoming>Flow_A</bpmn:incoming>
+      <bpmn:terminateEventDefinition />
+    </bpmn:endEvent>
+
+    <!-- Branch B: a task followed by a normal (non-terminate) end event -->
+    <bpmn:scriptTask id="Task_B" name="Branch B Work" scriptFormat="JavaScript">
+      <bpmn:extensionElements>
+        <uipath:scriptVersion value="v3" />
+        <uipath:mapping version="v1">
+          <uipath:type value="BPMN.ScriptTask" version="v1" />
+        </uipath:mapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_B</bpmn:incoming>
+      <bpmn:outgoing>Flow_C</bpmn:outgoing>
+      <bpmn:script><![CDATA[return {};]]></bpmn:script>
+    </bpmn:scriptTask>
+
+    <bpmn:endEvent id="End_Normal" name="End">
+      <bpmn:incoming>Flow_C</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <bpmn:sequenceFlow id="Flow_1" sourceRef="Start_1" targetRef="Fork_1" />
+    <bpmn:sequenceFlow id="Flow_A" sourceRef="Fork_1" targetRef="End_Terminate" />
+    <bpmn:sequenceFlow id="Flow_B" sourceRef="Fork_1" targetRef="Task_B" />
+    <bpmn:sequenceFlow id="Flow_C" sourceRef="Task_B" targetRef="End_Normal" />
+  </bpmn:process>
+
+  <bpmndi:BPMNDiagram id="Diagram_1">
+    <bpmndi:BPMNPlane id="Plane_1" bpmnElement="Process_1">
+
+      <!-- Start event, centre y=200 -->
+      <bpmndi:BPMNShape id="S_Start_1" bpmnElement="Start_1">
+        <dc:Bounds x="150" y="182" width="36" height="36" />
+      </bpmndi:BPMNShape>
+
+      <!-- Parallel fork gateway, centre (310, 200) -->
+      <bpmndi:BPMNShape id="S_Fork_1" bpmnElement="Fork_1">
+        <dc:Bounds x="285" y="175" width="50" height="50" />
+      </bpmndi:BPMNShape>
+
+      <!-- Branch A: terminate end event, centre y=90 -->
+      <bpmndi:BPMNShape id="S_End_Terminate" bpmnElement="End_Terminate">
+        <dc:Bounds x="482" y="72" width="36" height="36" />
+      </bpmndi:BPMNShape>
+
+      <!-- Branch B: task, centre (490, 310) -->
+      <bpmndi:BPMNShape id="S_Task_B" bpmnElement="Task_B">
+        <dc:Bounds x="440" y="270" width="100" height="80" />
+      </bpmndi:BPMNShape>
+
+      <!-- Branch B: normal end event, centre (622, 310) -->
+      <bpmndi:BPMNShape id="S_End_Normal" bpmnElement="End_Normal">
+        <dc:Bounds x="604" y="292" width="36" height="36" />
+      </bpmndi:BPMNShape>
+
+      <!-- Flow_1: Start_1 right (186,200) -> Fork_1 left (285,200) -->
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_1" bpmnElement="Flow_1">
+        <di:waypoint x="186" y="200" />
+        <di:waypoint x="285" y="200" />
+      </bpmndi:BPMNEdge>
+
+      <!-- Flow_A: Fork_1 top (310,175) -> up to y=90 -> End_Terminate left (482,90) -->
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_A" bpmnElement="Flow_A">
+        <di:waypoint x="310" y="175" />
+        <di:waypoint x="310" y="90" />
+        <di:waypoint x="482" y="90" />
+      </bpmndi:BPMNEdge>
+
+      <!-- Flow_B: Fork_1 bottom (310,225) -> down to y=310 -> Task_B left (440,310) -->
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_B" bpmnElement="Flow_B">
+        <di:waypoint x="310" y="225" />
+        <di:waypoint x="310" y="310" />
+        <di:waypoint x="440" y="310" />
+      </bpmndi:BPMNEdge>
+
+      <!-- Flow_C: Task_B right (540,310) -> End_Normal left (604,310) -->
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_C" bpmnElement="Flow_C">
+        <di:waypoint x="540" y="310" />
+        <di:waypoint x="604" y="310" />
+      </bpmndi:BPMNEdge>
+
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+
+</bpmn:definitions>

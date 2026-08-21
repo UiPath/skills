@@ -1,0 +1,1739 @@
+{
+  "id": "c90dd78e-977a-44dd-bf0c-70b1100238ac",
+  "version": "1.8",
+  "name": "CustomerEscalation",
+  "nodes": [
+    {
+      "id": "alertTeamOnSlack1",
+      "type": "uipath.connector.uipath-salesforce-slack.send-message-to-channel",
+      "typeVersion": "1.0.0",
+      "display": {
+        "label": "Alert Team on Slack"
+      },
+      "inputs": {
+        "errorHandlingEnabled": true,
+        "detail": {
+          "connector": "uipath-salesforce-slack",
+          "connectionId": "849e85d8-1aa9-4d52-8bbd-20041c8f05d8",
+          "connectionResourceId": "849e85d8-1aa9-4d52-8bbd-20041c8f05d8",
+          "connectionFolderKey": "5da18ec0-7de1-4e57-aaf1-ddc8a369c199",
+          "method": "POST",
+          "endpoint": "/send_message_to_channel_v2",
+          "bodyParameters": {
+            "channel": "C041274J3N2",
+            "text": "=js:\"🚨 URGENT VIP EMAIL — \" + $vars.classifyEmail1.output.subject + \" | From: \" + $vars.classifyEmail1.output.senderEmail + \" | Immediate action required.\""
+          },
+          "uiPathActivityTypeId": "37a305b2-89b1-315d-b73f-1778839a6c47",
+          "errorState": {
+            "issues": []
+          },
+          "configuration": "=jsonString:{\"essentialConfiguration\":{\"instanceParameters\":{\"connectorKey\":\"uipath-salesforce-slack\",\"objectName\":\"send_message_to_channel_v2\",\"httpMethod\":\"POST\",\"activityType\":\"Curated\",\"version\":\"1.0.0\",\"supportsStreaming\":false,\"subType\":\"standard\"},\"objectName\":\"send_message_to_channel_v2\",\"operation\":\"create\",\"httpMethod\":\"POST\",\"path\":\"/send_message_to_channel_v2\",\"packageVersion\":\"1.0.0\",\"connectorVersion\":null,\"executionType\":null,\"customFieldsRequestDetails\":null,\"unifiedTypesCompatible\":true,\"savedJitInputFieldId\":\"in_send_message_to_channel_v2\"}}"
+        }
+      }
+    },
+    {
+      "id": "replyUrgentVip1",
+      "type": "uipath.connector.uipath-microsoft-outlook365.reply-to-email",
+      "typeVersion": "1.0.0",
+      "display": {
+        "label": "Reply Urgent VIP"
+      },
+      "inputs": {
+        "errorHandlingEnabled": true,
+        "detail": {
+          "connector": "uipath-microsoft-outlook365",
+          "connectionId": "75dfafb4-3717-470c-a5f6-bdc144757a67",
+          "connectionResourceId": "75dfafb4-3717-470c-a5f6-bdc144757a67",
+          "connectionFolderKey": "5da18ec0-7de1-4e57-aaf1-ddc8a369c199",
+          "method": "POST",
+          "endpoint": "/ReplyToEmailV2",
+          "bodyParameters": {
+            "messageId": "=js:$vars.emailReceived1.output.id",
+            "comment": "Thank you for reaching out. We have flagged your email as a top-priority escalation and our team is responding immediately. A dedicated support engineer has been assigned to your case. We appreciate your patience."
+          },
+          "uiPathActivityTypeId": "da9976dd-3d71-35b4-bb8c-509419cb46eb",
+          "errorState": {
+            "issues": []
+          },
+          "configuration": "=jsonString:{\"essentialConfiguration\":{\"instanceParameters\":{\"connectorKey\":\"uipath-microsoft-outlook365\",\"objectName\":\"ReplyToEmailV2\",\"httpMethod\":\"POST\",\"activityType\":\"Curated\",\"version\":\"1.0.0\",\"supportsStreaming\":false,\"subType\":\"standard\"},\"objectName\":\"ReplyToEmailV2\",\"operation\":\"create\",\"httpMethod\":\"POST\",\"path\":\"/ReplyToEmailV2\",\"packageVersion\":\"1.0.0\",\"connectorVersion\":null,\"executionType\":null,\"customFieldsRequestDetails\":null,\"unifiedTypesCompatible\":true}}",
+          "multipartParameters": [
+            {
+              "name": "file",
+              "dataType": "file"
+            },
+            {
+              "name": "body",
+              "dataType": "string"
+            }
+          ],
+          "inputMetadata": {
+            "type": "multipart",
+            "multipart": {
+              "bodyFieldName": "body"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "replyStandard1",
+      "type": "uipath.connector.uipath-microsoft-outlook365.reply-to-email",
+      "typeVersion": "1.0.0",
+      "display": {
+        "label": "Reply Standard"
+      },
+      "inputs": {
+        "errorHandlingEnabled": true,
+        "detail": {
+          "connector": "uipath-microsoft-outlook365",
+          "connectionId": "75dfafb4-3717-470c-a5f6-bdc144757a67",
+          "connectionResourceId": "75dfafb4-3717-470c-a5f6-bdc144757a67",
+          "connectionFolderKey": "5da18ec0-7de1-4e57-aaf1-ddc8a369c199",
+          "method": "POST",
+          "endpoint": "/ReplyToEmailV2",
+          "bodyParameters": {
+            "messageId": "=js:$vars.emailReceived1.output.id",
+            "comment": "=js:\"Thank you for contacting support. A ticket has been created for your request (Ticket ID: \" + ($vars.createTicket1.output && $vars.createTicket1.output.ticketId ? $vars.createTicket1.output.ticketId : \"PENDING\") + \"). Our support team will be in touch shortly. Thank you for your patience.\""
+          },
+          "uiPathActivityTypeId": "da9976dd-3d71-35b4-bb8c-509419cb46eb",
+          "errorState": {
+            "issues": []
+          },
+          "configuration": "=jsonString:{\"essentialConfiguration\":{\"instanceParameters\":{\"connectorKey\":\"uipath-microsoft-outlook365\",\"objectName\":\"ReplyToEmailV2\",\"httpMethod\":\"POST\",\"activityType\":\"Curated\",\"version\":\"1.0.0\",\"supportsStreaming\":false,\"subType\":\"standard\"},\"objectName\":\"ReplyToEmailV2\",\"operation\":\"create\",\"httpMethod\":\"POST\",\"path\":\"/ReplyToEmailV2\",\"packageVersion\":\"1.0.0\",\"connectorVersion\":null,\"executionType\":null,\"customFieldsRequestDetails\":null,\"unifiedTypesCompatible\":true}}",
+          "multipartParameters": [
+            {
+              "name": "file",
+              "dataType": "file"
+            },
+            {
+              "name": "body",
+              "dataType": "string"
+            }
+          ],
+          "inputMetadata": {
+            "type": "multipart",
+            "multipart": {
+              "bodyFieldName": "body"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "emailReceived1",
+      "type": "uipath.connector.trigger.uipath-microsoft-outlook365.email-received",
+      "typeVersion": "1.0.0",
+      "display": {
+        "label": "Email Received"
+      },
+      "inputs": {
+        "entryPointId": "ecd89649-5035-45ea-9e12-df0958db04d2",
+        "isDefaultEntryPoint": true,
+        "detail": {
+          "connector": "uipath-microsoft-outlook365",
+          "connectionId": "75dfafb4-3717-470c-a5f6-bdc144757a67",
+          "connectionResourceId": "75dfafb4-3717-470c-a5f6-bdc144757a67",
+          "connectionFolderKey": "5da18ec0-7de1-4e57-aaf1-ddc8a369c199",
+          "eventParameters": {
+            "parentFolderId": "AAMkAGNiNDVjZmJmLTczOTEtNDQ2MS04Njc2LTUwM2I3ZDgxOWQwMAAuAAAAAAAJJRkzOJfsTKZfQqhMUHzlAQAJDKUrZhoLQZ5wELpOfJPCAAAAAAEMAAA="
+          },
+          "objectName": "Message",
+          "eventType": "EMAIL_RECEIVED",
+          "eventMode": "polling",
+          "filterExpression": "(parentFolderId == 'AAMkAGNiNDVjZmJmLTczOTEtNDQ2MS04Njc2LTUwM2I3ZDgxOWQwMAAuAAAAAAAJJRkzOJfsTKZfQqhMUHzlAQAJDKUrZhoLQZ5wELpOfJPCAAAAAAEMAAA=')",
+          "configuration": "=jsonString:{\"essentialConfiguration\":{\"instanceParameters\":{\"connectorKey\":\"uipath-microsoft-outlook365\",\"objectName\":\"Message\",\"activityType\":\"CuratedTrigger\",\"version\":\"1.0.0\",\"eventOperation\":\"EMAIL_RECEIVED\",\"eventMode\":\"polling\",\"supportsStreaming\":false},\"objectName\":\"Message\",\"packageVersion\":\"1.0.0\",\"connectorVersion\":null,\"executionType\":null,\"httpMethod\":null,\"path\":null,\"filter\":null}}",
+          "uiPathActivityTypeId": "d76ca053-6e7e-3472-b98c-3094b802d83c",
+          "errorState": {
+            "issues": []
+          }
+        }
+      }
+    },
+    {
+      "id": "classifyEmail1",
+      "type": "core.action.script",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Classify Email"
+      },
+      "inputs": {
+        "script": "const email = $vars.emailReceived1.output || {};\nconst urgencyKeywords = [\n  'urgent','critical','emergency','asap','sla breach',\n  'down','outage','production issue','high priority','immediately',\n  'system failure','data loss','security breach','breach','p1','blocker'\n];\nconst subject = (email.subject || '').toLowerCase();\nconst bodyContent = (email.body && email.body.content) ? email.body.content.toLowerCase() : '';\nconst isHighImportance = email.importance === 'high';\nconst isUrgent = isHighImportance ||\n  urgencyKeywords.some(function(kw){ return subject.indexOf(kw) !== -1 || bodyContent.indexOf(kw) !== -1; });\n\nconst vipDomains = [\n  'enterprise-corp.com','vip-corp.com','bigclient.io',\n  'premier.com','globetech.com','acmecorp.com','megacorp.com'\n];\nconst senderAddress = (email.from && email.from.emailAddress && email.from.emailAddress.address)\n  ? email.from.emailAddress.address.toLowerCase() : '';\nconst senderDomain = senderAddress.indexOf('@') !== -1 ? senderAddress.split('@')[1] : '';\nconst isVIP = vipDomains.indexOf(senderDomain) !== -1;\n\nreturn { isUrgent: isUrgent, isVIP: isVIP, senderEmail: senderAddress, subject: email.subject || '' };",
+        "errorHandlingEnabled": true
+      }
+    },
+    {
+      "id": "decideEscalation1",
+      "type": "core.logic.decision",
+      "typeVersion": "1.1",
+      "display": {
+        "label": "Urgent AND VIP?"
+      },
+      "inputs": {
+        "expression": "$vars.classifyEmail1.output.isUrgent === true && $vars.classifyEmail1.output.isVIP === true",
+        "trueLabel": "Urgent + VIP",
+        "falseLabel": "All Other"
+      }
+    },
+    {
+      "id": "createTicket1",
+      "type": "core.logic.mock",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Create Support Ticket"
+      },
+      "inputs": {}
+    },
+    {
+      "id": "logError1",
+      "type": "core.action.script",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Log Error"
+      },
+      "inputs": {
+        "script": "const errs = [];\nif ($vars.classifyEmail1 && $vars.classifyEmail1.error) errs.push($vars.classifyEmail1.error);\nif ($vars.alertTeamOnSlack1 && $vars.alertTeamOnSlack1.error) errs.push($vars.alertTeamOnSlack1.error);\nif ($vars.replyUrgentVip1 && $vars.replyUrgentVip1.error) errs.push($vars.replyUrgentVip1.error);\nif ($vars.replyStandard1 && $vars.replyStandard1.error) errs.push($vars.replyStandard1.error);\nconst errorDetail = errs.length > 0 ? errs[0] : { message: 'Unknown error in escalation flow' };\nreturn { logged: true, errorDetail: errorDetail };"
+      }
+    },
+    {
+      "id": "endEscalated1",
+      "type": "core.control.end",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "End — Escalated"
+      },
+      "inputs": {}
+    },
+    {
+      "id": "endStandard1",
+      "type": "core.control.end",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "End — Standard"
+      },
+      "inputs": {}
+    },
+    {
+      "id": "endError1",
+      "type": "core.control.end",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "End — Error"
+      },
+      "inputs": {}
+    }
+  ],
+  "edges": [
+    {
+      "id": "e_trigger_classify",
+      "sourceNodeId": "emailReceived1",
+      "sourcePort": "output",
+      "targetNodeId": "classifyEmail1",
+      "targetPort": "input"
+    },
+    {
+      "id": "e_classify_decide",
+      "sourceNodeId": "classifyEmail1",
+      "sourcePort": "success",
+      "targetNodeId": "decideEscalation1",
+      "targetPort": "input"
+    },
+    {
+      "id": "e_classify_error",
+      "sourceNodeId": "classifyEmail1",
+      "sourcePort": "error",
+      "targetNodeId": "logError1",
+      "targetPort": "input"
+    },
+    {
+      "id": "e_decide_slack",
+      "sourceNodeId": "decideEscalation1",
+      "sourcePort": "true",
+      "targetNodeId": "alertTeamOnSlack1",
+      "targetPort": "input"
+    },
+    {
+      "id": "e_decide_ticket",
+      "sourceNodeId": "decideEscalation1",
+      "sourcePort": "false",
+      "targetNodeId": "createTicket1",
+      "targetPort": "input"
+    },
+    {
+      "id": "e_slack_replyurgent",
+      "sourceNodeId": "alertTeamOnSlack1",
+      "sourcePort": "output",
+      "targetNodeId": "replyUrgentVip1",
+      "targetPort": "input"
+    },
+    {
+      "id": "e_slack_error",
+      "sourceNodeId": "alertTeamOnSlack1",
+      "sourcePort": "error",
+      "targetNodeId": "logError1",
+      "targetPort": "input"
+    },
+    {
+      "id": "e_replyurgent_end",
+      "sourceNodeId": "replyUrgentVip1",
+      "sourcePort": "output",
+      "targetNodeId": "endEscalated1",
+      "targetPort": "input"
+    },
+    {
+      "id": "e_replyurgent_error",
+      "sourceNodeId": "replyUrgentVip1",
+      "sourcePort": "error",
+      "targetNodeId": "logError1",
+      "targetPort": "input"
+    },
+    {
+      "id": "e_ticket_replystandard",
+      "sourceNodeId": "createTicket1",
+      "sourcePort": "output",
+      "targetNodeId": "replyStandard1",
+      "targetPort": "input"
+    },
+    {
+      "id": "e_replystandard_end",
+      "sourceNodeId": "replyStandard1",
+      "sourcePort": "output",
+      "targetNodeId": "endStandard1",
+      "targetPort": "input"
+    },
+    {
+      "id": "e_replystandard_error",
+      "sourceNodeId": "replyStandard1",
+      "sourcePort": "error",
+      "targetNodeId": "logError1",
+      "targetPort": "input"
+    },
+    {
+      "id": "e_logerror_end",
+      "sourceNodeId": "logError1",
+      "sourcePort": "success",
+      "targetNodeId": "endError1",
+      "targetPort": "input"
+    }
+  ],
+  "definitions": [
+    {
+      "nodeType": "uipath.connector.uipath-salesforce-slack.send-message-to-channel",
+      "version": "1.0.0",
+      "category": "connector.196638",
+      "tags": [
+        "connector",
+        "activity"
+      ],
+      "sortOrder": 515,
+      "supportsErrorHandling": true,
+      "description": "(Slack) Send messages to public or private Slack channels.",
+      "display": {
+        "label": "Send Message to Channel",
+        "description": "(Slack) Send messages to public or private Slack channels.",
+        "icon": "https://alpha.uipath.com/311c6049-4966-4ef2-a6f3-8ceccaf38d54/studio_/typecache/icons/8af239e6c82c1abd57622314380112d55f7e151ac4845ba018a96d70b4d92297.svg"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input",
+              "label": ""
+            }
+          ]
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "output",
+              "type": "source",
+              "handleType": "output",
+              "label": ""
+            },
+            {
+              "id": "error",
+              "label": "Error",
+              "type": "source",
+              "handleType": "output",
+              "visible": "{inputs.errorHandlingEnabled}",
+              "constraints": {
+                "maxConnections": 1
+              }
+            }
+          ]
+        }
+      ],
+      "model": {
+        "type": "bpmn:SendTask",
+        "serviceType": "Intsvc.ActivityExecution",
+        "bindings": {
+          "resource": "connection",
+          "resourceKey": "",
+          "values": [
+            {
+              "name": "uipath-salesforce-slack connection",
+              "propertyAttribute": "ConnectionId"
+            },
+            {
+              "name": "FolderKey",
+              "propertyAttribute": "FolderKey"
+            }
+          ]
+        },
+        "context": [
+          {
+            "name": "connectorKey",
+            "type": "string",
+            "value": "uipath-salesforce-slack"
+          },
+          {
+            "name": "operation",
+            "type": "string"
+          },
+          {
+            "name": "objectName",
+            "value": "send_message_to_channel_v2",
+            "type": "string"
+          },
+          {
+            "name": "method",
+            "type": "string",
+            "value": "POST"
+          },
+          {
+            "name": "connection",
+            "type": "string",
+            "value": "<bindings.uipath-salesforce-slack connection>"
+          },
+          {
+            "name": "folderKey",
+            "type": "string",
+            "value": "<bindings.FolderKey>"
+          },
+          {
+            "name": "activityConfigurationVersion",
+            "type": "string",
+            "value": "v1"
+          },
+          {
+            "name": "metadata",
+            "body": {
+              "telemetryData": {
+                "connectorKey": "uipath-salesforce-slack",
+                "connectorName": "Send Message to Channel"
+              },
+              "inputMetadata": {},
+              "errorState": {
+                "hasError": true
+              }
+            },
+            "type": "json"
+          }
+        ]
+      },
+      "form": {
+        "id": "connector-properties",
+        "title": "Connector configuration",
+        "sections": [
+          {
+            "id": "connector",
+            "title": "Connector",
+            "collapsible": true,
+            "defaultExpanded": true,
+            "fields": [
+              {
+                "label": "",
+                "name": "inputs.detail",
+                "type": "custom",
+                "component": "dap-config",
+                "componentProps": {
+                  "connectorDetail": {
+                    "isAppActivity": false,
+                    "packageId": "196638",
+                    "svgIconUrl": "icons/8af239e6c82c1abd57622314380112d55f7e151ac4845ba018a96d70b4d92297.svg",
+                    "displayName": "Send Message to Channel",
+                    "assemblyQualifiedName": "UiPath.IntegrationService.Activities.Runtime.Activities.ConnectorActivity, UiPath.IntegrationService.Activities.Runtime, Version=1.30.0.0, Culture=neutral, PublicKeyToken=null",
+                    "description": "Send messages to public or private Slack channels.",
+                    "category": "",
+                    "activityColor": "#4A154B",
+                    "configuration": "{\"connectorKey\":\"uipath-salesforce-slack\",\"objectName\":\"send_message_to_channel_v2\",\"httpMethod\":\"POST\",\"activityType\":\"Curated\",\"version\":\"1.0.0\",\"supportsStreaming\":false,\"subType\":\"standard\"}",
+                    "uiPathActivityTypeId": "37a305b2-89b1-315d-b73f-1778839a6c47",
+                    "isExperimental": false,
+                    "helpUrlTemplate": "https://docs.uipath.com/{0}/activities/other/latest/integration-service/uipath-salesforce-slack-Send-Message-To-Channel",
+                    "isEnabled": true,
+                    "targetPlatform": "CrossPlatform",
+                    "isAdvanced": false,
+                    "isRestricted": false,
+                    "hasWpfOnlyDesigner": false,
+                    "tags": [
+                      ""
+                    ]
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "inputDefinition": {},
+      "inputDefaults": {},
+      "outputDefinition": {
+        "output": {
+          "type": "object",
+          "description": "The return value of the connector.",
+          "source": "=result.response",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails",
+          "source": "=Error",
+          "var": "error",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "required": [
+              "code",
+              "message",
+              "detail",
+              "category",
+              "status"
+            ],
+            "properties": {
+              "code": {
+                "type": "string",
+                "description": "Error code as a string"
+              },
+              "message": {
+                "type": "string",
+                "description": "High-level error message"
+              },
+              "detail": {
+                "type": "string",
+                "description": "Detailed error description"
+              },
+              "category": {
+                "type": "string",
+                "description": "Error category"
+              },
+              "status": {
+                "type": "integer",
+                "description": "HTTP status code"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "debug": {
+        "runtime": "bpmnEngine"
+      }
+    },
+    {
+      "nodeType": "uipath.connector.uipath-microsoft-outlook365.reply-to-email",
+      "version": "1.0.0",
+      "category": "connector.196656",
+      "tags": [
+        "connector",
+        "activity",
+        "API.File.Upload.Optional"
+      ],
+      "sortOrder": 515,
+      "supportsErrorHandling": true,
+      "description": "(Microsoft Outlook 365) Reply to specified email with provided information",
+      "display": {
+        "label": "Reply To Email",
+        "description": "(Microsoft Outlook 365) Reply to specified email with provided information",
+        "icon": "https://alpha.uipath.com/311c6049-4966-4ef2-a6f3-8ceccaf38d54/studio_/typecache/icons/160499b52f7cea190b530fe6f40da7ee03455a8d3fb72dd7f4f68d61e7865a3a.svg"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input",
+              "label": ""
+            }
+          ]
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "output",
+              "type": "source",
+              "handleType": "output",
+              "label": ""
+            },
+            {
+              "id": "error",
+              "label": "Error",
+              "type": "source",
+              "handleType": "output",
+              "visible": "{inputs.errorHandlingEnabled}",
+              "constraints": {
+                "maxConnections": 1
+              }
+            }
+          ]
+        }
+      ],
+      "model": {
+        "type": "bpmn:SendTask",
+        "serviceType": "Intsvc.ActivityExecution",
+        "bindings": {
+          "resource": "connection",
+          "resourceKey": "",
+          "values": [
+            {
+              "name": "uipath-microsoft-outlook365 connection",
+              "propertyAttribute": "ConnectionId"
+            },
+            {
+              "name": "FolderKey",
+              "propertyAttribute": "FolderKey"
+            }
+          ]
+        },
+        "context": [
+          {
+            "name": "connectorKey",
+            "type": "string",
+            "value": "uipath-microsoft-outlook365"
+          },
+          {
+            "name": "operation",
+            "type": "string"
+          },
+          {
+            "name": "objectName",
+            "value": "ReplyToEmailV2",
+            "type": "string"
+          },
+          {
+            "name": "method",
+            "type": "string",
+            "value": "POST"
+          },
+          {
+            "name": "connection",
+            "type": "string",
+            "value": "<bindings.uipath-microsoft-outlook365 connection>"
+          },
+          {
+            "name": "folderKey",
+            "type": "string",
+            "value": "<bindings.FolderKey>"
+          },
+          {
+            "name": "activityConfigurationVersion",
+            "type": "string",
+            "value": "v1"
+          },
+          {
+            "name": "metadata",
+            "body": {
+              "telemetryData": {
+                "connectorKey": "uipath-microsoft-outlook365",
+                "connectorName": "Reply To Email"
+              },
+              "inputMetadata": {},
+              "errorState": {
+                "hasError": true
+              }
+            },
+            "type": "json"
+          }
+        ]
+      },
+      "form": {
+        "id": "connector-properties",
+        "title": "Connector configuration",
+        "sections": [
+          {
+            "id": "connector",
+            "title": "Connector",
+            "collapsible": true,
+            "defaultExpanded": true,
+            "fields": [
+              {
+                "label": "",
+                "name": "inputs.detail",
+                "type": "custom",
+                "component": "dap-config",
+                "componentProps": {
+                  "connectorDetail": {
+                    "isAppActivity": false,
+                    "packageId": "196656",
+                    "svgIconUrl": "icons/160499b52f7cea190b530fe6f40da7ee03455a8d3fb72dd7f4f68d61e7865a3a.svg",
+                    "displayName": "Reply To Email",
+                    "assemblyQualifiedName": "UiPath.IntegrationService.Activities.Runtime.Activities.ConnectorActivity, UiPath.IntegrationService.Activities.Runtime, Version=1.30.0.0, Culture=neutral, PublicKeyToken=null",
+                    "description": "Reply to specified email with provided information",
+                    "category": "",
+                    "activityColor": "#E56D5C",
+                    "configuration": "{\"connectorKey\":\"uipath-microsoft-outlook365\",\"objectName\":\"ReplyToEmailV2\",\"httpMethod\":\"POST\",\"activityType\":\"Curated\",\"version\":\"1.0.0\",\"supportsStreaming\":false,\"subType\":\"standard\"}",
+                    "uiPathActivityTypeId": "da9976dd-3d71-35b4-bb8c-509419cb46eb",
+                    "isExperimental": false,
+                    "helpUrlTemplate": "https://docs.uipath.com/{0}/activities/other/latest/integration-service/uipath-microsoft-outlook365-Reply-To-Email",
+                    "isEnabled": true,
+                    "targetPlatform": "CrossPlatform",
+                    "isAdvanced": false,
+                    "isRestricted": false,
+                    "hasWpfOnlyDesigner": false,
+                    "tags": [
+                      "API.File.Upload.Optional"
+                    ]
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "inputDefinition": {},
+      "inputDefaults": {},
+      "outputDefinition": {
+        "output": {
+          "type": "object",
+          "description": "The return value of the connector.",
+          "source": "=result.response",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails",
+          "source": "=Error",
+          "var": "error",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "required": [
+              "code",
+              "message",
+              "detail",
+              "category",
+              "status"
+            ],
+            "properties": {
+              "code": {
+                "type": "string",
+                "description": "Error code as a string"
+              },
+              "message": {
+                "type": "string",
+                "description": "High-level error message"
+              },
+              "detail": {
+                "type": "string",
+                "description": "Detailed error description"
+              },
+              "category": {
+                "type": "string",
+                "description": "Error category"
+              },
+              "status": {
+                "type": "integer",
+                "description": "HTTP status code"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "debug": {
+        "runtime": "bpmnEngine"
+      }
+    },
+    {
+      "nodeType": "uipath.connector.trigger.uipath-microsoft-outlook365.email-received",
+      "version": "1.0.0",
+      "category": "trigger.196656",
+      "tags": [
+        "connector",
+        "trigger",
+        "Trigger.Integrated"
+      ],
+      "sortOrder": 540,
+      "description": "(Microsoft Outlook 365) Triggers when an e-mail is received in your Inbox.",
+      "display": {
+        "label": "Email Received",
+        "description": "(Microsoft Outlook 365) Triggers when an e-mail is received in your Inbox.",
+        "icon": "https://alpha.uipath.com/311c6049-4966-4ef2-a6f3-8ceccaf38d54/studio_/typecache/icons/160499b52f7cea190b530fe6f40da7ee03455a8d3fb72dd7f4f68d61e7865a3a.svg",
+        "shape": "circle"
+      },
+      "handleConfiguration": [
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "output",
+              "type": "source",
+              "handleType": "output",
+              "showButton": true,
+              "constraints": {
+                "forbiddenTargetCategories": [
+                  "trigger"
+                ]
+              }
+            }
+          ],
+          "visible": true
+        }
+      ],
+      "model": {
+        "type": "bpmn:StartEvent",
+        "entryPointId": true,
+        "serviceType": "Intsvc.EventTrigger",
+        "eventDefinition": "bpmn:MessageEventDefinition",
+        "bindings": {
+          "resource": "connection",
+          "resourceKey": "",
+          "values": [
+            {
+              "name": "uipath-microsoft-outlook365 connection",
+              "propertyAttribute": "ConnectionId"
+            },
+            {
+              "name": "FolderKey",
+              "propertyAttribute": "FolderKey"
+            }
+          ]
+        },
+        "context": [
+          {
+            "name": "connectorKey",
+            "type": "string",
+            "value": "uipath-microsoft-outlook365"
+          },
+          {
+            "name": "operation",
+            "value": "EMAIL_RECEIVED",
+            "type": "string"
+          },
+          {
+            "name": "objectName",
+            "value": "Message",
+            "type": "string"
+          },
+          {
+            "name": "method",
+            "type": "string"
+          },
+          {
+            "name": "connection",
+            "type": "string",
+            "value": "<bindings.uipath-microsoft-outlook365 connection>"
+          },
+          {
+            "name": "folderKey",
+            "type": "string",
+            "value": "<bindings.FolderKey>"
+          },
+          {
+            "name": "activityConfigurationVersion",
+            "type": "string",
+            "value": "v1"
+          },
+          {
+            "name": "metadata",
+            "body": {
+              "telemetryData": {
+                "connectorKey": "uipath-microsoft-outlook365",
+                "connectorName": "Email Received"
+              },
+              "inputMetadata": {},
+              "errorState": {
+                "hasError": true
+              }
+            },
+            "type": "json"
+          }
+        ]
+      },
+      "form": {
+        "id": "connector-properties",
+        "title": "Connector configuration",
+        "sections": [
+          {
+            "id": "connector",
+            "title": "Connector",
+            "collapsible": true,
+            "defaultExpanded": true,
+            "fields": [
+              {
+                "label": "",
+                "name": "inputs.detail",
+                "type": "custom",
+                "component": "dap-config",
+                "componentProps": {
+                  "connectorDetail": {
+                    "type": "Integrated",
+                    "packageId": "196656",
+                    "svgIconUrl": "icons/160499b52f7cea190b530fe6f40da7ee03455a8d3fb72dd7f4f68d61e7865a3a.svg",
+                    "displayName": "Email Received",
+                    "assemblyQualifiedName": "UiPath.IntegrationService.Activities.Runtime.Activities.ConnectorTriggerActivity, UiPath.IntegrationService.Activities.Runtime, Version=1.30.0.0, Culture=neutral, PublicKeyToken=null",
+                    "description": "Triggers when an e-mail is received in your Inbox.",
+                    "category": "Microsoft Outlook 365.Triggers",
+                    "activityColor": "#E56D5C",
+                    "configuration": "{\"connectorKey\":\"uipath-microsoft-outlook365\",\"objectName\":\"Message\",\"activityType\":\"CuratedTrigger\",\"version\":\"1.0.0\",\"eventOperation\":\"EMAIL_RECEIVED\",\"eventMode\":\"polling\",\"supportsStreaming\":false}",
+                    "uiPathActivityTypeId": "d76ca053-6e7e-3472-b98c-3094b802d83c",
+                    "isExperimental": false,
+                    "helpUrlTemplate": "https://docs.uipath.com/{0}/activities/other/latest/integration-service/uipath-microsoft-outlook365-Email-Received",
+                    "isEnabled": true,
+                    "targetPlatform": "CrossPlatform",
+                    "isAdvanced": false,
+                    "isRestricted": false,
+                    "hasWpfOnlyDesigner": false,
+                    "tags": [
+                      "Trigger.Integrated"
+                    ]
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "inputDefinition": {},
+      "outputDefinition": {
+        "output": {
+          "type": "object",
+          "description": "The return value of the connector trigger.",
+          "source": "=result.response",
+          "var": "output"
+        }
+      },
+      "toolbarExtensions": {
+        "design": {
+          "actions": [
+            {
+              "id": "change-trigger-type",
+              "icon": "square-mouse-pointer",
+              "label": "Change trigger type"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "nodeType": "core.action.script",
+      "version": "1.0",
+      "category": "data-operations",
+      "description": "Run custom JavaScript code",
+      "tags": [
+        "code",
+        "javascript",
+        "python"
+      ],
+      "sortOrder": 35,
+      "supportsErrorHandling": true,
+      "display": {
+        "label": "Script",
+        "icon": "code"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "success",
+              "type": "source",
+              "handleType": "output"
+            },
+            {
+              "id": "error",
+              "label": "Error",
+              "type": "source",
+              "handleType": "output",
+              "visible": "{inputs.errorHandlingEnabled}",
+              "constraints": {
+                "maxConnections": 1
+              }
+            }
+          ]
+        }
+      ],
+      "debug": {
+        "runtime": "clientScript"
+      },
+      "model": {
+        "type": "bpmn:ScriptTask"
+      },
+      "inputDefinition": {
+        "type": "object",
+        "properties": {
+          "script": {
+            "type": "string",
+            "minLength": 1,
+            "errorMessage": "A script function is required",
+            "validationSeverity": "warning"
+          }
+        },
+        "required": [
+          "script"
+        ]
+      },
+      "inputDefaults": {
+        "script": ""
+      },
+      "outputDefinition": {
+        "output": {
+          "type": "object",
+          "description": "The return value of the script",
+          "source": "=result.response",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails",
+          "source": "=Error",
+          "var": "error",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "required": [
+              "code",
+              "message",
+              "detail",
+              "category",
+              "status"
+            ],
+            "properties": {
+              "code": {
+                "type": "string",
+                "description": "Error code as a string"
+              },
+              "message": {
+                "type": "string",
+                "description": "High-level error message"
+              },
+              "detail": {
+                "type": "string",
+                "description": "Detailed error description"
+              },
+              "category": {
+                "type": "string",
+                "description": "Error category"
+              },
+              "status": {
+                "type": "integer",
+                "description": "HTTP status code"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "form": {
+        "id": "script-properties",
+        "title": "Script configuration",
+        "sections": [
+          {
+            "id": "script",
+            "title": "Script",
+            "collapsible": true,
+            "defaultExpanded": true,
+            "fields": [
+              {
+                "name": "inputs.script",
+                "type": "custom",
+                "component": "script-editor",
+                "componentProps": {
+                  "language": "javascript",
+                  "returnType": "any",
+                  "validationMode": "script",
+                  "minHeight": 200,
+                  "placeholder": " // Return an object with your result\nreturn {\n  message: \"Web request response\",\n  data: $vars.httpRequest1.output\n                  };"
+                },
+                "label": "Code",
+                "description": "JavaScript expression that returns a result object"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "nodeType": "core.logic.decision",
+      "version": "1.1",
+      "category": "control-flow",
+      "description": "Branch based on a true/false condition",
+      "tags": [
+        "control-flow",
+        "if",
+        "loop",
+        "switch"
+      ],
+      "sortOrder": 20,
+      "display": {
+        "label": "Decision",
+        "icon": "trending-up-down"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ],
+          "visible": true
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "true",
+              "type": "source",
+              "handleType": "output",
+              "label": "{inputs.trueLabel}",
+              "constraints": {
+                "minConnections": 1
+              }
+            },
+            {
+              "id": "false",
+              "type": "source",
+              "handleType": "output",
+              "label": "{inputs.falseLabel}"
+            }
+          ],
+          "visible": true
+        }
+      ],
+      "debug": {
+        "runtime": "clientScript"
+      },
+      "model": {
+        "type": "bpmn:InclusiveGateway"
+      },
+      "inputDefinition": {
+        "type": "object",
+        "properties": {
+          "expression": {
+            "type": "string",
+            "minLength": 1,
+            "errorMessage": "A condition expression is required"
+          },
+          "trueLabel": {
+            "type": "string"
+          },
+          "falseLabel": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "expression"
+        ]
+      },
+      "outputDefinition": {
+        "matchedCase": {
+          "type": "string",
+          "description": "The label of the matched branch (true/false label)",
+          "var": "matchedCase"
+        },
+        "matchedCaseId": {
+          "type": "string",
+          "description": "The branch that was taken (true or false)",
+          "var": "matchedCaseId"
+        }
+      },
+      "inputDefaults": {
+        "trueLabel": "True",
+        "falseLabel": "False"
+      },
+      "form": {
+        "id": "decision-properties",
+        "title": "Decision configuration",
+        "sections": [
+          {
+            "id": "condition",
+            "title": "Condition",
+            "fields": [
+              {
+                "name": "inputs.expression",
+                "type": "custom",
+                "component": "script-editor",
+                "componentProps": {
+                  "language": "javascript",
+                  "returnType": "boolean",
+                  "validationMode": "expression",
+                  "minHeight": 100,
+                  "placeholder": "e.g., $vars.data.status === \"approved\" && $vars.data.amount > 1000"
+                },
+                "label": "Expression",
+                "description": "JavaScript expression that evaluates to true or false"
+              },
+              {
+                "name": "inputs.trueLabel",
+                "type": "text",
+                "label": "True branch label",
+                "description": "Label shown when condition is true"
+              },
+              {
+                "name": "inputs.falseLabel",
+                "type": "text",
+                "label": "False branch label",
+                "description": "Label shown when condition is false"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "nodeType": "core.logic.mock",
+      "version": "1.0",
+      "category": "control-flow",
+      "description": "Placeholder node for prototyping",
+      "tags": [
+        "blank",
+        "todo"
+      ],
+      "sortOrder": 20,
+      "display": {
+        "label": "Mock",
+        "icon": "square-dashed"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ],
+          "visible": true
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "output",
+              "type": "source",
+              "handleType": "output"
+            }
+          ],
+          "visible": true
+        }
+      ],
+      "model": {
+        "type": "bpmn:Task"
+      },
+      "outputDefinition": {
+        "output": {
+          "type": "object",
+          "description": "Mock output value",
+          "source": "null",
+          "var": "output"
+        }
+      },
+      "runtimeConstraints": {
+        "exclude": [
+          "api-function"
+        ]
+      }
+    },
+    {
+      "nodeType": "core.control.end",
+      "version": "1.0",
+      "category": "control-flow",
+      "description": "Mark the end of a workflow path",
+      "tags": [
+        "control-flow",
+        "end",
+        "finish",
+        "complete"
+      ],
+      "sortOrder": 20,
+      "display": {
+        "label": "End",
+        "icon": "circle-check",
+        "shape": "circle"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        }
+      ],
+      "model": {
+        "type": "bpmn:EndEvent"
+      },
+      "runtimeConstraints": {
+        "exclude": [
+          "api-function"
+        ]
+      }
+    }
+  ],
+  "runtime": "maestro",
+  "bindings": [
+    {
+      "id": "b2HZuK9xt",
+      "name": "uipath-salesforce-slack connection",
+      "type": "string",
+      "resource": "connection",
+      "resourceKey": "849e85d8-1aa9-4d52-8bbd-20041c8f05d8",
+      "propertyAttribute": "ConnectionId",
+      "default": "849e85d8-1aa9-4d52-8bbd-20041c8f05d8"
+    },
+    {
+      "id": "b4jrz0STO",
+      "name": "FolderKey",
+      "type": "string",
+      "resource": "connection",
+      "resourceKey": "75dfafb4-3717-470c-a5f6-bdc144757a67",
+      "propertyAttribute": "FolderKey",
+      "default": "5da18ec0-7de1-4e57-aaf1-ddc8a369c199"
+    },
+    {
+      "id": "bYYXwZ1og",
+      "name": "uipath-microsoft-outlook365 connection",
+      "type": "string",
+      "resource": "connection",
+      "resourceKey": "75dfafb4-3717-470c-a5f6-bdc144757a67",
+      "propertyAttribute": "ConnectionId",
+      "default": "75dfafb4-3717-470c-a5f6-bdc144757a67"
+    }
+  ],
+  "variables": {
+    "nodes": [
+      {
+        "id": "alertTeamOnSlack1.output",
+        "type": "object",
+        "description": "The return value of the connector.",
+        "binding": {
+          "nodeId": "alertTeamOnSlack1",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "alertTeamOnSlack1.error",
+        "type": "object",
+        "description": "Error information if the node fails",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "required": [
+            "code",
+            "message",
+            "detail",
+            "category",
+            "status"
+          ],
+          "properties": {
+            "code": {
+              "type": "string",
+              "description": "Error code as a string"
+            },
+            "message": {
+              "type": "string",
+              "description": "High-level error message"
+            },
+            "detail": {
+              "type": "string",
+              "description": "Detailed error description"
+            },
+            "category": {
+              "type": "string",
+              "description": "Error category"
+            },
+            "status": {
+              "type": "integer",
+              "description": "HTTP status code"
+            }
+          },
+          "additionalProperties": false
+        },
+        "binding": {
+          "nodeId": "alertTeamOnSlack1",
+          "outputId": "error"
+        }
+      },
+      {
+        "id": "replyUrgentVip1.output",
+        "type": "object",
+        "description": "The return value of the connector.",
+        "binding": {
+          "nodeId": "replyUrgentVip1",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "replyUrgentVip1.error",
+        "type": "object",
+        "description": "Error information if the node fails",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "required": [
+            "code",
+            "message",
+            "detail",
+            "category",
+            "status"
+          ],
+          "properties": {
+            "code": {
+              "type": "string",
+              "description": "Error code as a string"
+            },
+            "message": {
+              "type": "string",
+              "description": "High-level error message"
+            },
+            "detail": {
+              "type": "string",
+              "description": "Detailed error description"
+            },
+            "category": {
+              "type": "string",
+              "description": "Error category"
+            },
+            "status": {
+              "type": "integer",
+              "description": "HTTP status code"
+            }
+          },
+          "additionalProperties": false
+        },
+        "binding": {
+          "nodeId": "replyUrgentVip1",
+          "outputId": "error"
+        }
+      },
+      {
+        "id": "replyStandard1.output",
+        "type": "object",
+        "description": "The return value of the connector.",
+        "binding": {
+          "nodeId": "replyStandard1",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "replyStandard1.error",
+        "type": "object",
+        "description": "Error information if the node fails",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "required": [
+            "code",
+            "message",
+            "detail",
+            "category",
+            "status"
+          ],
+          "properties": {
+            "code": {
+              "type": "string",
+              "description": "Error code as a string"
+            },
+            "message": {
+              "type": "string",
+              "description": "High-level error message"
+            },
+            "detail": {
+              "type": "string",
+              "description": "Detailed error description"
+            },
+            "category": {
+              "type": "string",
+              "description": "Error category"
+            },
+            "status": {
+              "type": "integer",
+              "description": "HTTP status code"
+            }
+          },
+          "additionalProperties": false
+        },
+        "binding": {
+          "nodeId": "replyStandard1",
+          "outputId": "error"
+        }
+      },
+      {
+        "id": "emailReceived1.output",
+        "type": "object",
+        "description": "The return value of the connector trigger.",
+        "binding": {
+          "nodeId": "emailReceived1",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "classifyEmail1.output",
+        "type": "object",
+        "description": "The return value of the script",
+        "binding": {
+          "nodeId": "classifyEmail1",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "classifyEmail1.error",
+        "type": "object",
+        "description": "Error information if the node fails",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "required": [
+            "code",
+            "message",
+            "detail",
+            "category",
+            "status"
+          ],
+          "properties": {
+            "code": {
+              "type": "string",
+              "description": "Error code as a string"
+            },
+            "message": {
+              "type": "string",
+              "description": "High-level error message"
+            },
+            "detail": {
+              "type": "string",
+              "description": "Detailed error description"
+            },
+            "category": {
+              "type": "string",
+              "description": "Error category"
+            },
+            "status": {
+              "type": "integer",
+              "description": "HTTP status code"
+            }
+          },
+          "additionalProperties": false
+        },
+        "binding": {
+          "nodeId": "classifyEmail1",
+          "outputId": "error"
+        }
+      },
+      {
+        "id": "decideEscalation1.matchedCase",
+        "type": "string",
+        "description": "The label of the matched branch (true/false label)",
+        "binding": {
+          "nodeId": "decideEscalation1",
+          "outputId": "matchedCase"
+        }
+      },
+      {
+        "id": "decideEscalation1.matchedCaseId",
+        "type": "string",
+        "description": "The branch that was taken (true or false)",
+        "binding": {
+          "nodeId": "decideEscalation1",
+          "outputId": "matchedCaseId"
+        }
+      },
+      {
+        "id": "createTicket1.output",
+        "type": "object",
+        "description": "Mock output value",
+        "binding": {
+          "nodeId": "createTicket1",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "logError1.output",
+        "type": "object",
+        "description": "The return value of the script",
+        "binding": {
+          "nodeId": "logError1",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "logError1.error",
+        "type": "object",
+        "description": "Error information if the node fails",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "required": [
+            "code",
+            "message",
+            "detail",
+            "category",
+            "status"
+          ],
+          "properties": {
+            "code": {
+              "type": "string",
+              "description": "Error code as a string"
+            },
+            "message": {
+              "type": "string",
+              "description": "High-level error message"
+            },
+            "detail": {
+              "type": "string",
+              "description": "Detailed error description"
+            },
+            "category": {
+              "type": "string",
+              "description": "Error category"
+            },
+            "status": {
+              "type": "integer",
+              "description": "HTTP status code"
+            }
+          },
+          "additionalProperties": false
+        },
+        "binding": {
+          "nodeId": "logError1",
+          "outputId": "error"
+        }
+      }
+    ]
+  },
+  "layout": {
+    "nodes": {
+      "alertTeamOnSlack1": {
+        "position": {
+          "x": 672,
+          "y": 160
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        }
+      },
+      "replyUrgentVip1": {
+        "position": {
+          "x": 864,
+          "y": 160
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        }
+      },
+      "replyStandard1": {
+        "position": {
+          "x": 864,
+          "y": 448
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        }
+      },
+      "emailReceived1": {
+        "position": {
+          "x": 96,
+          "y": 304
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        }
+      },
+      "classifyEmail1": {
+        "position": {
+          "x": 288,
+          "y": 304
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        }
+      },
+      "decideEscalation1": {
+        "position": {
+          "x": 480,
+          "y": 304
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        }
+      },
+      "createTicket1": {
+        "position": {
+          "x": 672,
+          "y": 448
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        }
+      },
+      "logError1": {
+        "position": {
+          "x": 1056,
+          "y": 256
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        }
+      },
+      "endEscalated1": {
+        "position": {
+          "x": 1056,
+          "y": 64
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        }
+      },
+      "endStandard1": {
+        "position": {
+          "x": 1056,
+          "y": 448
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        }
+      },
+      "endError1": {
+        "position": {
+          "x": 1248,
+          "y": 256
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        }
+      }
+    }
+  }
+}

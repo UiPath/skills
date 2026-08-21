@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "OutlookTriggerInbox",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "fa6f7d62-505a-4276-8a10-461bda7f15e5",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "OutlookTriggerInbox"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Flow",
+      "name": "OutlookTriggerInbox",
+      "package": {
+        "key": "6fb07bda-3026-4ae8-8a42-78075ee60f32"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "1d7c519c-9595-413b-817d-a7dac94401f4",
+    "files": []
+  }
+}

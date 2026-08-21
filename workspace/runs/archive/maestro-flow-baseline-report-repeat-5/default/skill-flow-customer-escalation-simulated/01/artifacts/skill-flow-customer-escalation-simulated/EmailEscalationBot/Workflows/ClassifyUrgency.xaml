@@ -1,0 +1,563 @@
+<Activity mc:Ignorable="sap sap2010" x:Class="Workflows_ClassifyUrgency"
+  xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities"
+  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+  xmlns:mva="clr-namespace:Microsoft.VisualBasic.Activities;assembly=System.Activities"
+  xmlns:sap="http://schemas.microsoft.com/netfx/2009/xaml/activities/presentation"
+  xmlns:sap2010="http://schemas.microsoft.com/netfx/2010/xaml/activities/presentation"
+  xmlns:sco="clr-namespace:System.Collections.ObjectModel;assembly=System.Private.CoreLib"
+  xmlns:ui="http://schemas.uipath.com/workflow/activities"
+  xmlns:umo365="clr-namespace:UiPath.MicrosoftOffice365.Models;assembly=UiPath.MicrosoftOffice365"
+  xmlns:s="clr-namespace:System;assembly=System.Private.CoreLib"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+  mva:VisualBasic.Settings="{x:Null}">
+
+  <x:Members>
+    <x:Property Name="in_Email" Type="InArgument(umo365:Office365Message)" />
+    <x:Property Name="out_UrgencyScore" Type="OutArgument(x:Int32)" />
+    <x:Property Name="out_UrgencyTier" Type="OutArgument(x:String)" />
+    <x:Property Name="out_ClassificationReason" Type="OutArgument(x:String)" />
+  </x:Members>
+
+  <TextExpression.NamespacesForImplementation>
+    <sco:Collection x:TypeArguments="x:String">
+      <x:String>System</x:String>
+      <x:String>System.Collections.Generic</x:String>
+      <x:String>System.Linq</x:String>
+      <x:String>System.Text.RegularExpressions</x:String>
+      <x:String>UiPath.Core</x:String>
+      <x:String>UiPath.Core.Activities</x:String>
+      <x:String>UiPath.MicrosoftOffice365.Models</x:String>
+    </sco:Collection>
+  </TextExpression.NamespacesForImplementation>
+  <TextExpression.ReferencesForImplementation>
+    <sco:Collection x:TypeArguments="AssemblyReference">
+      <AssemblyReference>System.Activities</AssemblyReference>
+      <AssemblyReference>System.Private.CoreLib</AssemblyReference>
+      <AssemblyReference>System.Linq</AssemblyReference>
+      <AssemblyReference>UiPath.System.Activities</AssemblyReference>
+      <AssemblyReference>UiPath.MicrosoftOffice365.Activities</AssemblyReference>
+      <AssemblyReference>UiPath.MicrosoftOffice365</AssemblyReference>
+    </sco:Collection>
+  </TextExpression.ReferencesForImplementation>
+
+  <Sequence DisplayName="Classify Email Urgency" sap2010:WorkflowViewState.IdRef="Sequence_1">
+    <Sequence.Variables>
+      <!-- Urgency scoring variables -->
+      <Variable x:TypeArguments="x:Int32" Name="urgencyScore" Default="0" />
+      <Variable x:TypeArguments="x:String" Name="subjectLower" Default="&quot;&quot;" />
+      <Variable x:TypeArguments="x:String" Name="bodyLower" Default="&quot;&quot;" />
+      <Variable x:TypeArguments="x:String" Name="senderAddress" Default="&quot;&quot;" />
+      <Variable x:TypeArguments="x:String" Name="reasonParts" Default="&quot;&quot;" />
+      <!-- Urgency keyword lists -->
+      <Variable x:TypeArguments="x:String" Name="criticalKeywords" Default="&quot;outage,down,critical,emergency,urgent,escalate,blocked,broken,data loss,security breach,hack,compromised,fraud,refund,legal,lawsuit,not working,system failure,production issue,p1,priority 1,sev1&quot;" />
+      <Variable x:TypeArguments="x:String" Name="highKeywords" Default="&quot;asap,immediate,important,cannot,can't,won't work,error,bug,issue,problem,help,stuck,failed,failure,losing,lost,angry,frustrated,disappointed,unacceptable,terrible,awful,worst,never again,cancel,cancellation,account,billing dispute,overcharged,wrong charge&quot;" />
+      <Variable x:TypeArguments="x:String" Name="importanceFlag" Default="&quot;&quot;" />
+    </Sequence.Variables>
+
+    <!-- Step 1: Fail-fast guard -->
+    <If DisplayName="Guard: email must not be null">
+      <If.Condition>
+        <InArgument x:TypeArguments="x:Boolean">
+          <VisualBasicValue x:TypeArguments="x:Boolean" ExpressionText="in_Email Is Nothing" />
+        </InArgument>
+      </If.Condition>
+      <If.Then>
+        <Sequence DisplayName="Then">
+          <Throw DisplayName="Throw BusinessRuleException">
+            <Throw.Exception>
+              <InArgument x:TypeArguments="s:Exception">
+                <VisualBasicValue x:TypeArguments="s:Exception" ExpressionText="New BusinessRuleException(&quot;ClassifyUrgency: in_Email argument is Nothing&quot;)" />
+              </InArgument>
+            </Throw.Exception>
+          </Throw>
+        </Sequence>
+      </If.Then>
+    </If>
+
+    <!-- Step 2: Normalise text fields to lowercase for matching -->
+    <Assign x:TypeArguments="x:String" DisplayName="Assign subjectLower">
+      <Assign.To>
+        <OutArgument x:TypeArguments="x:String">
+          <VisualBasicReference x:TypeArguments="x:String" ExpressionText="subjectLower" />
+        </OutArgument>
+      </Assign.To>
+      <Assign.Value>
+        <InArgument x:TypeArguments="x:String">
+          <VisualBasicValue x:TypeArguments="x:String" ExpressionText="If(in_Email.Subject, &quot;&quot;).ToLowerInvariant()" />
+        </InArgument>
+      </Assign.Value>
+    </Assign>
+
+    <Assign x:TypeArguments="x:String" DisplayName="Assign bodyLower">
+      <Assign.To>
+        <OutArgument x:TypeArguments="x:String">
+          <VisualBasicReference x:TypeArguments="x:String" ExpressionText="bodyLower" />
+        </OutArgument>
+      </Assign.To>
+      <Assign.Value>
+        <InArgument x:TypeArguments="x:String">
+          <VisualBasicValue x:TypeArguments="x:String" ExpressionText="If(in_Email.BodyPreview, &quot;&quot;).ToLowerInvariant()" />
+        </InArgument>
+      </Assign.Value>
+    </Assign>
+
+    <Assign x:TypeArguments="x:String" DisplayName="Assign senderAddress">
+      <Assign.To>
+        <OutArgument x:TypeArguments="x:String">
+          <VisualBasicReference x:TypeArguments="x:String" ExpressionText="senderAddress" />
+        </OutArgument>
+      </Assign.To>
+      <Assign.Value>
+        <InArgument x:TypeArguments="x:String">
+          <VisualBasicValue x:TypeArguments="x:String" ExpressionText="If(in_Email.FromAddress, &quot;&quot;).ToLowerInvariant()" />
+        </InArgument>
+      </Assign.Value>
+    </Assign>
+
+    <!-- Step 3: Check O365 Importance flag (High = +30 pts, Low = -5 pts) -->
+    <Assign x:TypeArguments="x:String" DisplayName="Assign importanceFlag">
+      <Assign.To>
+        <OutArgument x:TypeArguments="x:String">
+          <VisualBasicReference x:TypeArguments="x:String" ExpressionText="importanceFlag" />
+        </OutArgument>
+      </Assign.To>
+      <Assign.Value>
+        <InArgument x:TypeArguments="x:String">
+          <VisualBasicValue x:TypeArguments="x:String" ExpressionText="If(in_Email.Importance.HasValue, in_Email.Importance.Value.ToString().ToLowerInvariant(), &quot;normal&quot;)" />
+        </InArgument>
+      </Assign.Value>
+    </Assign>
+
+    <If DisplayName="Score: O365 Importance High (+30)">
+      <If.Condition>
+        <InArgument x:TypeArguments="x:Boolean">
+          <VisualBasicValue x:TypeArguments="x:Boolean" ExpressionText="importanceFlag = &quot;high&quot;" />
+        </InArgument>
+      </If.Condition>
+      <If.Then>
+        <Sequence DisplayName="Then">
+          <Assign x:TypeArguments="x:Int32" DisplayName="Add 30">
+            <Assign.To>
+              <OutArgument x:TypeArguments="x:Int32">
+                <VisualBasicReference x:TypeArguments="x:Int32" ExpressionText="urgencyScore" />
+              </OutArgument>
+            </Assign.To>
+            <Assign.Value>
+              <InArgument x:TypeArguments="x:Int32">
+                <VisualBasicValue x:TypeArguments="x:Int32" ExpressionText="urgencyScore + 30" />
+              </InArgument>
+            </Assign.Value>
+          </Assign>
+          <Assign x:TypeArguments="x:String" DisplayName="Append reason">
+            <Assign.To>
+              <OutArgument x:TypeArguments="x:String">
+                <VisualBasicReference x:TypeArguments="x:String" ExpressionText="reasonParts" />
+              </OutArgument>
+            </Assign.To>
+            <Assign.Value>
+              <InArgument x:TypeArguments="x:String">
+                <VisualBasicValue x:TypeArguments="x:String" ExpressionText="reasonParts &amp; &quot;[O365 High Importance] &quot;" />
+              </InArgument>
+            </Assign.Value>
+          </Assign>
+        </Sequence>
+      </If.Then>
+      <If.Else>
+        <Sequence DisplayName="Else: check Low">
+          <If DisplayName="Score: O365 Importance Low (-5)">
+            <If.Condition>
+              <InArgument x:TypeArguments="x:Boolean">
+                <VisualBasicValue x:TypeArguments="x:Boolean" ExpressionText="importanceFlag = &quot;low&quot;" />
+              </InArgument>
+            </If.Condition>
+            <If.Then>
+              <Sequence DisplayName="Then">
+                <Assign x:TypeArguments="x:Int32" DisplayName="Subtract 5">
+                  <Assign.To>
+                    <OutArgument x:TypeArguments="x:Int32">
+                      <VisualBasicReference x:TypeArguments="x:Int32" ExpressionText="urgencyScore" />
+                    </OutArgument>
+                  </Assign.To>
+                  <Assign.Value>
+                    <InArgument x:TypeArguments="x:Int32">
+                      <VisualBasicValue x:TypeArguments="x:Int32" ExpressionText="urgencyScore - 5" />
+                    </InArgument>
+                  </Assign.Value>
+                </Assign>
+              </Sequence>
+            </If.Then>
+          </If>
+        </Sequence>
+      </If.Else>
+    </If>
+
+    <!-- Step 4: Check critical keywords in subject (+50) -->
+    <If DisplayName="Score: Critical keywords in subject (+50)">
+      <If.Condition>
+        <InArgument x:TypeArguments="x:Boolean">
+          <VisualBasicValue x:TypeArguments="x:Boolean" ExpressionText="criticalKeywords.Split(&quot;,&quot;c).Any(Function(kw) subjectLower.Contains(kw.Trim()))" />
+        </InArgument>
+      </If.Condition>
+      <If.Then>
+        <Sequence DisplayName="Then">
+          <Assign x:TypeArguments="x:Int32" DisplayName="Add 50">
+            <Assign.To>
+              <OutArgument x:TypeArguments="x:Int32">
+                <VisualBasicReference x:TypeArguments="x:Int32" ExpressionText="urgencyScore" />
+              </OutArgument>
+            </Assign.To>
+            <Assign.Value>
+              <InArgument x:TypeArguments="x:Int32">
+                <VisualBasicValue x:TypeArguments="x:Int32" ExpressionText="urgencyScore + 50" />
+              </InArgument>
+            </Assign.Value>
+          </Assign>
+          <Assign x:TypeArguments="x:String" DisplayName="Append reason">
+            <Assign.To>
+              <OutArgument x:TypeArguments="x:String">
+                <VisualBasicReference x:TypeArguments="x:String" ExpressionText="reasonParts" />
+              </OutArgument>
+            </Assign.To>
+            <Assign.Value>
+              <InArgument x:TypeArguments="x:String">
+                <VisualBasicValue x:TypeArguments="x:String" ExpressionText="reasonParts &amp; &quot;[Critical keyword in Subject] &quot;" />
+              </InArgument>
+            </Assign.Value>
+          </Assign>
+        </Sequence>
+      </If.Then>
+    </If>
+
+    <!-- Step 5: Check critical keywords in body (+30) -->
+    <If DisplayName="Score: Critical keywords in body (+30)">
+      <If.Condition>
+        <InArgument x:TypeArguments="x:Boolean">
+          <VisualBasicValue x:TypeArguments="x:Boolean" ExpressionText="criticalKeywords.Split(&quot;,&quot;c).Any(Function(kw) bodyLower.Contains(kw.Trim()))" />
+        </InArgument>
+      </If.Condition>
+      <If.Then>
+        <Sequence DisplayName="Then">
+          <Assign x:TypeArguments="x:Int32" DisplayName="Add 30">
+            <Assign.To>
+              <OutArgument x:TypeArguments="x:Int32">
+                <VisualBasicReference x:TypeArguments="x:Int32" ExpressionText="urgencyScore" />
+              </OutArgument>
+            </Assign.To>
+            <Assign.Value>
+              <InArgument x:TypeArguments="x:Int32">
+                <VisualBasicValue x:TypeArguments="x:Int32" ExpressionText="urgencyScore + 30" />
+              </InArgument>
+            </Assign.Value>
+          </Assign>
+          <Assign x:TypeArguments="x:String" DisplayName="Append reason">
+            <Assign.To>
+              <OutArgument x:TypeArguments="x:String">
+                <VisualBasicReference x:TypeArguments="x:String" ExpressionText="reasonParts" />
+              </OutArgument>
+            </Assign.To>
+            <Assign.Value>
+              <InArgument x:TypeArguments="x:String">
+                <VisualBasicValue x:TypeArguments="x:String" ExpressionText="reasonParts &amp; &quot;[Critical keyword in Body] &quot;" />
+              </InArgument>
+            </Assign.Value>
+          </Assign>
+        </Sequence>
+      </If.Then>
+    </If>
+
+    <!-- Step 6: Check high-urgency keywords in subject (+25) -->
+    <If DisplayName="Score: High-urgency keywords in subject (+25)">
+      <If.Condition>
+        <InArgument x:TypeArguments="x:Boolean">
+          <VisualBasicValue x:TypeArguments="x:Boolean" ExpressionText="highKeywords.Split(&quot;,&quot;c).Any(Function(kw) subjectLower.Contains(kw.Trim()))" />
+        </InArgument>
+      </If.Condition>
+      <If.Then>
+        <Sequence DisplayName="Then">
+          <Assign x:TypeArguments="x:Int32" DisplayName="Add 25">
+            <Assign.To>
+              <OutArgument x:TypeArguments="x:Int32">
+                <VisualBasicReference x:TypeArguments="x:Int32" ExpressionText="urgencyScore" />
+              </OutArgument>
+            </Assign.To>
+            <Assign.Value>
+              <InArgument x:TypeArguments="x:Int32">
+                <VisualBasicValue x:TypeArguments="x:Int32" ExpressionText="urgencyScore + 25" />
+              </InArgument>
+            </Assign.Value>
+          </Assign>
+          <Assign x:TypeArguments="x:String" DisplayName="Append reason">
+            <Assign.To>
+              <OutArgument x:TypeArguments="x:String">
+                <VisualBasicReference x:TypeArguments="x:String" ExpressionText="reasonParts" />
+              </OutArgument>
+            </Assign.To>
+            <Assign.Value>
+              <InArgument x:TypeArguments="x:String">
+                <VisualBasicValue x:TypeArguments="x:String" ExpressionText="reasonParts &amp; &quot;[High-urgency keyword in Subject] &quot;" />
+              </InArgument>
+            </Assign.Value>
+          </Assign>
+        </Sequence>
+      </If.Then>
+    </If>
+
+    <!-- Step 7: Check high-urgency keywords in body (+15) -->
+    <If DisplayName="Score: High-urgency keywords in body (+15)">
+      <If.Condition>
+        <InArgument x:TypeArguments="x:Boolean">
+          <VisualBasicValue x:TypeArguments="x:Boolean" ExpressionText="highKeywords.Split(&quot;,&quot;c).Any(Function(kw) bodyLower.Contains(kw.Trim()))" />
+        </InArgument>
+      </If.Condition>
+      <If.Then>
+        <Sequence DisplayName="Then">
+          <Assign x:TypeArguments="x:Int32" DisplayName="Add 15">
+            <Assign.To>
+              <OutArgument x:TypeArguments="x:Int32">
+                <VisualBasicReference x:TypeArguments="x:Int32" ExpressionText="urgencyScore" />
+              </OutArgument>
+            </Assign.To>
+            <Assign.Value>
+              <InArgument x:TypeArguments="x:Int32">
+                <VisualBasicValue x:TypeArguments="x:Int32" ExpressionText="urgencyScore + 15" />
+              </InArgument>
+            </Assign.Value>
+          </Assign>
+          <Assign x:TypeArguments="x:String" DisplayName="Append reason">
+            <Assign.To>
+              <OutArgument x:TypeArguments="x:String">
+                <VisualBasicReference x:TypeArguments="x:String" ExpressionText="reasonParts" />
+              </OutArgument>
+            </Assign.To>
+            <Assign.Value>
+              <InArgument x:TypeArguments="x:String">
+                <VisualBasicValue x:TypeArguments="x:String" ExpressionText="reasonParts &amp; &quot;[High-urgency keyword in Body] &quot;" />
+              </InArgument>
+            </Assign.Value>
+          </Assign>
+        </Sequence>
+      </If.Then>
+    </If>
+
+    <!-- Step 8: Check for ALL-CAPS subject (angry tone +20) -->
+    <If DisplayName="Score: ALL-CAPS subject (angry tone +20)">
+      <If.Condition>
+        <InArgument x:TypeArguments="x:Boolean">
+          <VisualBasicValue x:TypeArguments="x:Boolean" ExpressionText="in_Email.Subject IsNot Nothing AndAlso in_Email.Subject.Length > 5 AndAlso in_Email.Subject = in_Email.Subject.ToUpperInvariant() AndAlso in_Email.Subject &lt;&gt; in_Email.Subject.ToLowerInvariant()" />
+        </InArgument>
+      </If.Condition>
+      <If.Then>
+        <Sequence DisplayName="Then">
+          <Assign x:TypeArguments="x:Int32" DisplayName="Add 20">
+            <Assign.To>
+              <OutArgument x:TypeArguments="x:Int32">
+                <VisualBasicReference x:TypeArguments="x:Int32" ExpressionText="urgencyScore" />
+              </OutArgument>
+            </Assign.To>
+            <Assign.Value>
+              <InArgument x:TypeArguments="x:Int32">
+                <VisualBasicValue x:TypeArguments="x:Int32" ExpressionText="urgencyScore + 20" />
+              </InArgument>
+            </Assign.Value>
+          </Assign>
+          <Assign x:TypeArguments="x:String" DisplayName="Append reason">
+            <Assign.To>
+              <OutArgument x:TypeArguments="x:String">
+                <VisualBasicReference x:TypeArguments="x:String" ExpressionText="reasonParts" />
+              </OutArgument>
+            </Assign.To>
+            <Assign.Value>
+              <InArgument x:TypeArguments="x:String">
+                <VisualBasicValue x:TypeArguments="x:String" ExpressionText="reasonParts &amp; &quot;[ALL-CAPS subject] &quot;" />
+              </InArgument>
+            </Assign.Value>
+          </Assign>
+        </Sequence>
+      </If.Then>
+    </If>
+
+    <!-- Step 9: Check multiple exclamation/question marks in subject (+10) -->
+    <If DisplayName="Score: Multiple !! or ?? in subject (+10)">
+      <If.Condition>
+        <InArgument x:TypeArguments="x:Boolean">
+          <VisualBasicValue x:TypeArguments="x:Boolean" ExpressionText="in_Email.Subject IsNot Nothing AndAlso (in_Email.Subject.Contains(&quot;!!&quot;) OrElse in_Email.Subject.Contains(&quot;??&quot;) OrElse in_Email.Subject.Count(Function(c) c = &quot;!&quot;c) >= 2)" />
+        </InArgument>
+      </If.Condition>
+      <If.Then>
+        <Sequence DisplayName="Then">
+          <Assign x:TypeArguments="x:Int32" DisplayName="Add 10">
+            <Assign.To>
+              <OutArgument x:TypeArguments="x:Int32">
+                <VisualBasicReference x:TypeArguments="x:Int32" ExpressionText="urgencyScore" />
+              </OutArgument>
+            </Assign.To>
+            <Assign.Value>
+              <InArgument x:TypeArguments="x:Int32">
+                <VisualBasicValue x:TypeArguments="x:Int32" ExpressionText="urgencyScore + 10" />
+              </InArgument>
+            </Assign.Value>
+          </Assign>
+          <Assign x:TypeArguments="x:String" DisplayName="Append reason">
+            <Assign.To>
+              <OutArgument x:TypeArguments="x:String">
+                <VisualBasicReference x:TypeArguments="x:String" ExpressionText="reasonParts" />
+              </OutArgument>
+            </Assign.To>
+            <Assign.Value>
+              <InArgument x:TypeArguments="x:String">
+                <VisualBasicValue x:TypeArguments="x:String" ExpressionText="reasonParts &amp; &quot;[Emotional punctuation in Subject] &quot;" />
+              </InArgument>
+            </Assign.Value>
+          </Assign>
+        </Sequence>
+      </If.Then>
+    </If>
+
+    <!-- Step 10: Check known VIP domains in sender address (+35)
+         NOTE: Configure your real VIP domains in this variable. Defaults cover common enterprise patterns. -->
+    <If DisplayName="Score: VIP/executive sender domain (+35)">
+      <If.Condition>
+        <InArgument x:TypeArguments="x:Boolean">
+          <VisualBasicValue x:TypeArguments="x:Boolean" ExpressionText="(senderAddress.Contains(&quot;ceo@&quot;) OrElse senderAddress.Contains(&quot;cto@&quot;) OrElse senderAddress.Contains(&quot;cfo@&quot;) OrElse senderAddress.Contains(&quot;president@&quot;) OrElse senderAddress.Contains(&quot;vp@&quot;) OrElse subjectLower.Contains(&quot;from ceo&quot;) OrElse subjectLower.Contains(&quot;from the ceo&quot;) OrElse subjectLower.Contains(&quot;executive&quot;) OrElse subjectLower.Contains(&quot;board&quot;))" />
+        </InArgument>
+      </If.Condition>
+      <If.Then>
+        <Sequence DisplayName="Then">
+          <Assign x:TypeArguments="x:Int32" DisplayName="Add 35">
+            <Assign.To>
+              <OutArgument x:TypeArguments="x:Int32">
+                <VisualBasicReference x:TypeArguments="x:Int32" ExpressionText="urgencyScore" />
+              </OutArgument>
+            </Assign.To>
+            <Assign.Value>
+              <InArgument x:TypeArguments="x:Int32">
+                <VisualBasicValue x:TypeArguments="x:Int32" ExpressionText="urgencyScore + 35" />
+              </InArgument>
+            </Assign.Value>
+          </Assign>
+          <Assign x:TypeArguments="x:String" DisplayName="Append reason">
+            <Assign.To>
+              <OutArgument x:TypeArguments="x:String">
+                <VisualBasicReference x:TypeArguments="x:String" ExpressionText="reasonParts" />
+              </OutArgument>
+            </Assign.To>
+            <Assign.Value>
+              <InArgument x:TypeArguments="x:String">
+                <VisualBasicValue x:TypeArguments="x:String" ExpressionText="reasonParts &amp; &quot;[VIP/Executive sender] &quot;" />
+              </InArgument>
+            </Assign.Value>
+          </Assign>
+        </Sequence>
+      </If.Then>
+    </If>
+
+    <!-- Step 11: Output the score -->
+    <Assign x:TypeArguments="x:Int32" DisplayName="Set out_UrgencyScore">
+      <Assign.To>
+        <OutArgument x:TypeArguments="x:Int32">
+          <VisualBasicReference x:TypeArguments="x:Int32" ExpressionText="out_UrgencyScore" />
+        </OutArgument>
+      </Assign.To>
+      <Assign.Value>
+        <InArgument x:TypeArguments="x:Int32">
+          <VisualBasicValue x:TypeArguments="x:Int32" ExpressionText="urgencyScore" />
+        </InArgument>
+      </Assign.Value>
+    </Assign>
+
+    <!-- Step 12: Determine urgency tier based on score
+         HIGH  = score >= 50   → immediate personal attention
+         MEDIUM = score 25-49  → elevated standard queue
+         STANDARD = score < 25 → standard queue -->
+    <If DisplayName="Tier: HIGH (score >= 50)">
+      <If.Condition>
+        <InArgument x:TypeArguments="x:Boolean">
+          <VisualBasicValue x:TypeArguments="x:Boolean" ExpressionText="urgencyScore >= 50" />
+        </InArgument>
+      </If.Condition>
+      <If.Then>
+        <Sequence DisplayName="Then">
+          <Assign x:TypeArguments="x:String" DisplayName="Set tier HIGH">
+            <Assign.To>
+              <OutArgument x:TypeArguments="x:String">
+                <VisualBasicReference x:TypeArguments="x:String" ExpressionText="out_UrgencyTier" />
+              </OutArgument>
+            </Assign.To>
+            <Assign.Value>
+              <InArgument x:TypeArguments="x:String">
+                <VisualBasicValue x:TypeArguments="x:String" ExpressionText="&quot;HIGH&quot;" />
+              </InArgument>
+            </Assign.Value>
+          </Assign>
+        </Sequence>
+      </If.Then>
+      <If.Else>
+        <Sequence DisplayName="Else">
+          <If DisplayName="Tier: MEDIUM (score 25-49)">
+            <If.Condition>
+              <InArgument x:TypeArguments="x:Boolean">
+                <VisualBasicValue x:TypeArguments="x:Boolean" ExpressionText="urgencyScore >= 25" />
+              </InArgument>
+            </If.Condition>
+            <If.Then>
+              <Sequence DisplayName="Then">
+                <Assign x:TypeArguments="x:String" DisplayName="Set tier MEDIUM">
+                  <Assign.To>
+                    <OutArgument x:TypeArguments="x:String">
+                      <VisualBasicReference x:TypeArguments="x:String" ExpressionText="out_UrgencyTier" />
+                    </OutArgument>
+                  </Assign.To>
+                  <Assign.Value>
+                    <InArgument x:TypeArguments="x:String">
+                      <VisualBasicValue x:TypeArguments="x:String" ExpressionText="&quot;MEDIUM&quot;" />
+                    </InArgument>
+                  </Assign.Value>
+                </Assign>
+              </Sequence>
+            </If.Then>
+            <If.Else>
+              <Sequence DisplayName="Else">
+                <Assign x:TypeArguments="x:String" DisplayName="Set tier STANDARD">
+                  <Assign.To>
+                    <OutArgument x:TypeArguments="x:String">
+                      <VisualBasicReference x:TypeArguments="x:String" ExpressionText="out_UrgencyTier" />
+                    </OutArgument>
+                  </Assign.To>
+                  <Assign.Value>
+                    <InArgument x:TypeArguments="x:String">
+                      <VisualBasicValue x:TypeArguments="x:String" ExpressionText="&quot;STANDARD&quot;" />
+                    </InArgument>
+                  </Assign.Value>
+                </Assign>
+              </Sequence>
+            </If.Else>
+          </If>
+        </Sequence>
+      </If.Else>
+    </If>
+
+    <!-- Step 13: Output classification reason -->
+    <Assign x:TypeArguments="x:String" DisplayName="Set out_ClassificationReason">
+      <Assign.To>
+        <OutArgument x:TypeArguments="x:String">
+          <VisualBasicReference x:TypeArguments="x:String" ExpressionText="out_ClassificationReason" />
+        </OutArgument>
+      </Assign.To>
+      <Assign.Value>
+        <InArgument x:TypeArguments="x:String">
+          <VisualBasicValue x:TypeArguments="x:String" ExpressionText="If(String.IsNullOrWhiteSpace(reasonParts), &quot;No urgency signals detected&quot;, reasonParts.Trim())" />
+        </InArgument>
+      </Assign.Value>
+    </Assign>
+
+    <!-- Step 14: Audit log -->
+    <ui:LogMessage Level="Info" DisplayName="Log: Classification result">
+      <ui:LogMessage.Message>
+        <InArgument x:TypeArguments="x:Object">
+          <VisualBasicValue x:TypeArguments="x:Object" ExpressionText="$&quot;[ClassifyUrgency] Tier={out_UrgencyTier} Score={out_UrgencyScore} From={in_Email.FromAddress} Subject={in_Email.Subject} Reason={out_ClassificationReason}&quot;" />
+        </InArgument>
+      </ui:LogMessage.Message>
+    </ui:LogMessage>
+
+  </Sequence>
+</Activity>

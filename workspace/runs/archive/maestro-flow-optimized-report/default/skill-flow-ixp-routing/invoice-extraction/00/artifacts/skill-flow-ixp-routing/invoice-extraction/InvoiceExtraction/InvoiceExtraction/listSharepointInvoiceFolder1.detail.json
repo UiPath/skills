@@ -1,0 +1,10 @@
+{
+  "connectionId": "PLACEHOLDER_CONNECTION_ID",
+  "folderKey": "PLACEHOLDER_FOLDER_KEY",
+  "method": "GET",
+  "endpoint": "/drives/{driveId}/items/root:/Invoices:/children",
+  "objectName": "GetFilesFolders",
+  "queryParameters": {
+    "filter": "endsWith(name, '.pdf')"
+  }
+}

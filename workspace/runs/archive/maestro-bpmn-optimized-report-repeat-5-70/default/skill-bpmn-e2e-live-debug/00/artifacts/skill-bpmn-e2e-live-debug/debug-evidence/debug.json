@@ -1,0 +1,7 @@
+{
+  "Result": "Failure",
+  "Message": "Not logged in. Run 'uip login' first.",
+  "Instructions": "Run 'uip login' to authenticate. To inspect the current session, run 'uip whoami'.",
+  "ErrorCode": "unknown_error",
+  "Retry": "RetryWillNotFix"
+}

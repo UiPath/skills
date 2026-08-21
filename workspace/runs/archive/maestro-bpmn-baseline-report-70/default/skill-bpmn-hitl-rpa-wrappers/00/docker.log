@@ -1,0 +1,8 @@
+06:05:36 [INFO   ] [default/skill-bpmn-hitl-rpa-wrappers/00] orchestrator: API routing: aws_bedrock
+06:09:22 [INFO   ] [default/skill-bpmn-hitl-rpa-wrappers/00] evaluation.checker: Criterion 'file_exists' FAILED (score=0.00, threshold=1.00): File 'EmployeeAccessBpmn/EmployeeAccessBpmn.bpmn' does not exist
+06:09:22 [INFO   ] [default/skill-bpmn-hitl-rpa-wrappers/00] evaluation.checker: Criterion 'run_command' FAILED (score=0.00, threshold=1.00): Command: python3 $TASK_DIR/check_hitl_rpa_wrappers.py
+06:09:22 [INFO   ] [default/skill-bpmn-hitl-rpa-wrappers/00] orchestrator: Success criteria: 0/2 passed, weighted score: 0.000
+06:09:22 [WARNING] [default/skill-bpmn-hitl-rpa-wrappers/00] orchestrator: Visible turns (22) exceeded expected_turns (14) at iteration 1 for task skill-bpmn-hitl-rpa-wrappers. Run continues — max_turns remains the hard cap.
+06:09:22 [INFO   ] [default/skill-bpmn-hitl-rpa-wrappers/00] orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+06:09:22 [INFO   ] [default/skill-bpmn-hitl-rpa-wrappers/00] orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-bpmn-hitl-rpa-wrappers
+06:09:22 [INFO   ] [default/skill-bpmn-hitl-rpa-wrappers/00] orchestrator: Task finished: status=FAILURE duration=233.3s score=0.000 iterations=1

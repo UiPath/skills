@@ -1,0 +1,2680 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>coder_eval · skill-bpmn-script-jint-guidance · default</title>
+<style>
+:root {
+  --bg-page: #0f1419;
+  --bg-card: #1a2129;
+  --bg-card-2: #232d38;
+  --bg-code: #0b0f14;
+  --fg: #e6edf3;
+  --fg-muted: #8b98a5;
+  --fg-dim: #6e7681;
+  --border: #30363d;
+  --accent: #58a6ff;
+  --score-high: #22c55e;
+  --score-mid: #f59e0b;
+  --score-low: #ef4444;
+  --status-success: #22c55e;
+  --status-failure: #f59e0b;
+  --status-error: #ef4444;
+  --status-neutral: #6e7681;
+  --shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+.light {
+  --bg-page: #ffffff;
+  --bg-card: #f6f8fa;
+  --bg-card-2: #eaeef2;
+  --bg-code: #f6f8fa;
+  --fg: #1f2328;
+  --fg-muted: #636c76;
+  --fg-dim: #8b949e;
+  --border: #d0d7de;
+  --accent: #0969da;
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial,
+               sans-serif;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--fg);
+  background: var(--bg-page);
+}
+.container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+h1, h2, h3, h4 { margin: 0 0 12px 0; line-height: 1.25; }
+h1 { font-size: 22px; font-weight: 600; }
+h2 { font-size: 18px; font-weight: 600; margin-top: 28px;
+     padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+h3 { font-size: 15px; font-weight: 600; color: var(--fg-muted); }
+h4 { font-size: 13px; font-weight: 600; color: var(--fg-muted); }
+p { margin: 0 0 8px 0; }
+.muted { color: var(--fg-muted); }
+.dim { color: var(--fg-dim); }
+.mono { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+        monospace; font-size: 12.5px; }
+code { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+       monospace; font-size: 12.5px; background: var(--bg-code);
+       border: 1px solid var(--border); padding: 1px 5px; border-radius: 3px; }
+pre { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+      monospace; font-size: 12.5px; background: var(--bg-code);
+      border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px;
+      margin: 6px 0; overflow-x: auto; white-space: pre-wrap;
+      word-wrap: break-word; }
+.header-bar { display: flex; align-items: center; justify-content: space-between;
+              margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+.title-group { flex: 1; min-width: 0; }
+.title-group .subtitle { color: var(--fg-muted); font-size: 13px;
+                         margin-top: 2px; word-break: break-all; }
+.badges { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.badge { display: inline-flex; align-items: center; gap: 6px;
+         padding: 4px 10px; border-radius: 12px; font-size: 12px;
+         font-weight: 600; background: var(--bg-card-2);
+         border: 1px solid var(--border); color: var(--fg); }
+.badge.success { background: color-mix(in srgb, var(--status-success) 20%, var(--bg-card-2));
+                 border-color: var(--status-success); color: var(--status-success); }
+.badge.failure { background: color-mix(in srgb, var(--status-failure) 20%, var(--bg-card-2));
+                 border-color: var(--status-failure); color: var(--status-failure); }
+.badge.error { background: color-mix(in srgb, var(--status-error) 20%, var(--bg-card-2));
+               border-color: var(--status-error); color: var(--status-error); }
+.badge.warning { background: color-mix(in srgb, #f4a52810 20%, var(--bg-card-2));
+                 border-color: #f4a528; color: #f4a528; }
+.badge.neutral { color: var(--fg-muted); }
+.score-pill { display: inline-block; padding: 2px 8px; border-radius: 10px;
+              font-size: 12px; font-weight: 700; min-width: 42px;
+              text-align: center; color: #0b0f14; }
+.score-high { background: var(--score-high); }
+.score-mid { background: var(--score-mid); }
+.score-low { background: var(--score-low); }
+.card { background: var(--bg-card); border: 1px solid var(--border);
+        border-radius: 8px; padding: 16px 20px; margin-bottom: 16px;
+        box-shadow: var(--shadow); }
+.card.highlight { border-left: 4px solid var(--accent); }
+.grid { display: grid; gap: 12px;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+.stat { background: var(--bg-card-2); padding: 10px 12px; border-radius: 6px;
+        border: 1px solid var(--border); }
+.stat .label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;
+               color: var(--fg-muted); margin-bottom: 4px; }
+.stat .value { font-size: 16px; font-weight: 600; }
+table { width: 100%; border-collapse: collapse; margin: 4px 0 12px 0; }
+th, td { text-align: left; padding: 8px 10px;
+         border-bottom: 1px solid var(--border); vertical-align: top;
+         font-size: 13px; }
+th { color: var(--fg-muted); font-weight: 600; font-size: 12px;
+     text-transform: uppercase; letter-spacing: 0.3px; }
+tr:last-child td { border-bottom: none; }
+details { margin: 6px 0; border: 1px solid var(--border); border-radius: 6px;
+          background: var(--bg-card-2); }
+details > summary { cursor: pointer; padding: 8px 12px; user-select: none;
+                    font-weight: 500; list-style: none; }
+details > summary::-webkit-details-marker { display: none; }
+details > summary::before { content: "▸ "; color: var(--fg-dim);
+                            display: inline-block; width: 14px;
+                            transition: transform 0.15s; }
+details[open] > summary::before { content: "▾ "; }
+details .details-body { padding: 0 12px 10px 12px; }
+.tool-row { display: flex; align-items: center; gap: 10px;
+            flex-wrap: wrap; font-size: 13px; }
+.tool-name { font-weight: 600; color: var(--accent); font-family: ui-monospace,
+             SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+.tool-status-ok { color: var(--status-success); font-size: 11px;
+                  font-weight: 600; }
+.tool-status-err { color: var(--status-error); font-size: 11px;
+                   font-weight: 600; }
+.tool-duration { color: var(--fg-muted); font-size: 12px; }
+.tool-seq { color: var(--fg-dim); font-size: 11px; font-weight: 600;
+            min-width: 24px; text-align: right; font-family: ui-monospace,
+            SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+.turn-header { display: flex; justify-content: space-between;
+               align-items: baseline; flex-wrap: wrap; gap: 10px;
+               margin-bottom: 10px; }
+.turn-meta { font-size: 12px; color: var(--fg-muted); }
+.criterion-row td:first-child { font-family: ui-monospace, SFMono-Regular,
+                                 "SF Mono", Menlo, Consolas, monospace;
+                                 color: var(--fg-muted); font-size: 12px; }
+.judge-section { display: flex; flex-direction: column; gap: 12px; }
+.judge-card { padding: 14px 16px; }
+.judge-card-head { display: flex; justify-content: space-between;
+                    align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+.judge-card-title { font-size: 14px; line-height: 1.4; flex: 1; min-width: 0; }
+.judge-card-score { flex-shrink: 0; }
+.judge-rationale { margin-top: 10px; padding: 10px 12px;
+                   background: var(--bg-code); border-radius: 4px;
+                   font-size: 13px; line-height: 1.5; }
+.judge-findings { margin: 8px 0 0 18px; padding-left: 4px; font-size: 13px;
+                   line-height: 1.6; }
+.judge-findings li { margin: 2px 0; }
+.nav-toggle { display: inline-block; padding: 5px 10px; font-size: 12px;
+              background: var(--bg-card-2); border: 1px solid var(--border);
+              border-radius: 5px; color: var(--fg); cursor: pointer; }
+.nav-toggle:hover { background: var(--bg-card); }
+.llm-next-steps { margin: 6px 0 0 20px; padding-left: 0; }
+.llm-next-steps li { margin: 3px 0; }
+.iteration-group { padding: 12px 16px 4px 16px; margin-bottom: 20px;
+                   border-radius: 0 6px 6px 0; border-left: 4px solid var(--status-neutral); }
+/* rgba fallback for browsers without color-mix (Chrome <111, Firefox <113, Safari <16.2). */
+.iteration-group--recovered { border-left-color: var(--status-success);
+                              background: rgba(34, 197, 94, 0.06);
+                              background: color-mix(in srgb, var(--status-success) 6%, transparent); }
+.iteration-group--terminal { border-left-color: var(--status-error);
+                             background: rgba(239, 68, 68, 0.06);
+                             background: color-mix(in srgb, var(--status-error) 6%, transparent); }
+.iteration-group__banner { margin: 0 0 12px 0; font-size: 14px; font-weight: 600; }
+.iteration-group--recovered .iteration-group__banner { color: var(--status-success); }
+.iteration-group--terminal .iteration-group__banner { color: var(--status-error); }
+.attempt-transition { display: flex; align-items: center; gap: 8px;
+                      margin: -6px 0 12px 8px; color: var(--status-error); font-size: 12.5px; }
+.attempt-transition__icon { font-weight: 700; }
+footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--border);
+         color: var(--fg-dim); font-size: 12px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="header-bar">
+  <div class="title-group">
+    <h1>Task: skill-bpmn-script-jint-guidance</h1>
+    <div class="subtitle">Script task eval: agent authors a BPMN script task that follows the Jint runtime boundary instead of Node.js, browser, filesystem, or network APIs.</div>
+  </div>
+  <div class="badges">
+    <span class="badge success">SUCCESS</span>
+    <span class="score-pill score-high">1.00</span>
+    <span class="badge neutral">claude-code · claude-sonnet-5</span>
+    <span class="badge neutral">12m 35s</span>
+    <span class="badge neutral">$3.0747</span>
+    <span class="badge warning">expected_turns exceeded (72/15)</span>
+    
+    <span class="nav-toggle" onclick="toggleTheme()">Toggle theme</span>
+  </div>
+</div>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Variant</div><div class="value">default</div></div>
+    <div class="stat"><div class="label">Started</div><div class="value mono">2026-08-14T21:48:19</div></div>
+    <div class="stat"><div class="label">Duration</div><div class="value">12m 35s</div></div>
+    <div class="stat"><div class="label">Turns (SDK)</div><div class="value">121</div></div>
+    <div class="stat"><div class="label">Commands</div><div class="value">71</div></div>
+  </div>
+</div>
+
+<h2>Success Criteria <span class="muted" style="font-weight:400">(2/2 passed)</span></h2>
+<div class="card" style="padding:0">
+<table>
+  <thead>
+    <tr>
+      <th style="width:15%">Type</th>
+      <th style="width:35%">Description</th>
+      <th style="width:10%">Score</th>
+      <th>Details</th>
+    </tr>
+  </thead>
+  <tbody>
+    
+<tr class="criterion-row">
+  <td>run_command</td>
+  <td>BPMN source was created</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Command: find . -type f -name &#x27;*.bpmn&#x27; -path &#x27;*RiskScoreScriptBpmn*&#x27; | grep -q .</summary><div class="details-body"><pre style="margin:6px 0 0 0">Command: find . -type f -name &#x27;*.bpmn&#x27; -path &#x27;*RiskScoreScriptBpmn*&#x27; | grep -q .
+Exit code: 0 (expected: 0)
+Stdout: (empty)
+Stderr: (empty)</pre></div></details></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>run_command</td>
+  <td>Script task follows Jint-compatible BPMN guidance</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Command: python3 $TASK_DIR/check_script_jint_guidance.py</summary><div class="details-body"><pre style="margin:6px 0 0 0">Command: python3 $TASK_DIR/check_script_jint_guidance.py
+Exit code: 0 (expected: 0)
+Stdout:
+OK: RiskScoreScriptBpmn/RiskScoreScriptBpmn.bpmn contains a Jint-compatible BPMN script task
+
+Stderr: (empty)</pre></div></details></td>
+</tr>
+
+  </tbody>
+</table>
+</div>
+<h2>Conversation Trace (1 iteration)</h2>
+<div class="card">
+  <div class="turn-header">
+    <h3>Iteration 1</h3>
+    <div class="badges">
+      <span class="badge neutral">121 assistant turns</span>
+      <span class="badge neutral">in 102 · out 63697 · cache 5371021</span>
+      <span class="badge neutral">12m 26s</span>
+      <span class="badge failure">max_turns exhausted</span>
+      
+      
+    </div>
+  </div>
+  <details>
+    <summary>Prompt to agent</summary>
+    <div class="details-body"><pre>Your working directory is: /work/output/artifacts/skill-bpmn-script-jint-guidance
+
+Create a local BPMN project named &quot;RiskScoreScriptBpmn&quot;.
+The process should manually start with `amount` and `daysOverdue` inputs,
+calculate a risk score in a BPMN script task, and end with a `riskScore`
+output.
+
+Requirements:
+- Use the documented UiPath BPMN extension namespace
+  `http://uipath.org/schema/bpmn`; do not use workflow-activities
+  namespaces for BPMN extension XML.
+- Declare root `uipath:variables version=&quot;v1&quot;` entries for `amount`,
+  `daysOverdue`, and `riskScore` inside `bpmn:process` /
+  `bpmn:extensionElements`.
+- Use `bpmn:scriptTask` with `scriptFormat=&quot;JavaScript&quot;`.
+- Include the UiPath script version metadata and prefer version `v3`.
+- Map script inputs through `uipath:input name=&quot;args&quot;`, but write the script
+  body using top-level identifiers such as `amount` and `daysOverdue`, not
+  `args.amount` or `args.daysOverdue`.
+- Use UiPath variable-id expressions in input mappings, for example
+  `=vars.&lt;amount variable id&gt;`, not bare expressions such as `=amount`.
+- Map the script result back to the declared `riskScore` output variable with
+  a `uipath:output` mapping whose `var` attribute is the declared `riskScore`
+  variable id. Do not put the target variable id in the output `name`.
+- Write script content that is compatible with the Jint runtime. Do not use
+  Node.js modules, filesystem APIs, network APIs, browser globals, packages,
+  timers, or long-running async behavior.
+- Include BPMN DI for every visible node and sequence flow.
+- Do not upload, publish, deploy, debug, or run the process.
+</pre></div>
+  </details>
+  <details>
+    <summary>Agent response</summary>
+    <div class="details-body"><pre>[ASSISTANT] Good, registry is available. Let me get the templates for `BPMN.Variables` and `BPMN.ScriptTask`.
+[ASSISTANT] It scaffolded the project. Let&#x27;s inspect what it produced.
+[ASSISTANT] No dedicated variable-declaration schema for entries beyond what&#x27;s in structural-bpmn.md. I have enough now. Let me check `uip maestro bpmn validate --help` and understand the entry point structure more before authoring the full file.
+[ASSISTANT] Now let&#x27;s write the full BPMN file per requirements.
+[ASSISTANT] Now let&#x27;s validate the file.
+[ASSISTANT] Validation passes. Now let&#x27;s update the local metadata files (entry-points.json etc.) to match the current BPMN, since I changed the flow structure and added variables.
+[ASSISTANT] Everything validates cleanly. Let me double check the entry-points.json output schema — it currently lists `amount`/`daysOverdue`/`riskScore` all under `output` (since they&#x27;re `inputOutput`/`output` variables without `elementId` scoping to the start event). Let&#x27;s verify this matches expectations reasonably, and do a final review of all files.
+[ASSISTANT] The entry-points.json currently puts `amount`/`daysOverdue` into the output schema instead of input, and the input schema is empty. That doesn&#x27;t match &quot;manually start with amount and daysOverdue inputs.&quot; Let me check how entry-point input binding works — likely needs `elementId` scoping to the start event.
+[ASSISTANT] Still valid. Now regenerate metadata to check the entry-points.json input/output split.
+[ASSISTANT] This now correctly reflects `amount`/`daysOverdue` as inputs and `riskScore` as output. Let&#x27;s do a final full read-through and re-validate.
+[ASSISTANT] This is exactly what&#x27;s required. Final validate run to confirm.
+[ASSISTANT] The project is complete and validates cleanly. Summary:
+
+**Created:** `RiskScoreScriptBpmn/` at `/work/output/artifacts/skill-bpmn-script-jint-guidance/RiskScoreScriptBpmn/`
+
+- `RiskScoreScriptBpmn.bpmn` — the process:
+  - Uses `xmlns:uipath=&quot;http://uipath.org/schema/bpmn&quot;` (documented Maestro namespace, not a workflow-activities namespace)
+  - Root `uipath:variables version=&quot;v1&quot;` declares `amount` and `daysOverdue` as `uipath:input` (each with `elementId=&quot;Event_start&quot;`, driving the manual-trigger input schema) and `riskScore` as a root `uipath:output` (no `elementId`, so it&#x27;s globally visible)
+  - A manual-trigger `bpmn:startEvent` (`core.trigger.manual`) with a `uipath:entryPointId`
+  - A `bpmn:scriptTask scriptFormat=&quot;JavaScript&quot;` with `uipath:scriptVersion value=&quot;v3&quot;`, a `BPMN.ScriptTask` mapping, `uipath:input name=&quot;args&quot;` mapping `amount`/`daysOverdue` via `=vars.Var_Amount` / `=vars.Var_DaysOverdue`, and a `uipath:output` whose `var=&quot;Var_RiskScore&quot;` (the declared `riskScore` variable id) reads `=result.response`
+  - The script body reads `amount`/`daysOverdue` as top-level identifiers (not `args.*`), does only plain arithmetic/`Math.round` (Jint-safe — no Node/browser/network/FS/timers), and returns `{ response: &lt;score&gt; }`
+  - Full `bpmndi:BPMNDiagram` with a shape for every node (start event, script task, end event) and an edge for every sequence flow
+- `project.uiproj`, `operate.json`, `entry-points.json`, `bindings_v2.json`, `package-descriptor.json` — regenerated via `uip maestro bpmn update-metadata` so local metadata matches the BPMN (entry point correctly shows `amount`/`daysOverdue` in its input schema and `riskScore` in its output schema)
+
+Validated with `uip maestro bpmn validate` → `Status: Valid` (also confirmed the XML is well-formed). No upload, publish, deploy, debug, or run was performed — only local authoring and local validation/metadata generation.
+[RESULT - SUCCESS] The project is complete and validates cleanly. Summary:
+
+**Created:** `RiskScoreScriptBpmn/` at `/work/output/artifacts/skill-bpmn-script-jint-guidance/RiskScoreScriptBpmn/`
+
+- `RiskScoreScriptBpmn.bpmn` — the process:
+  - Uses `xmlns:uipath=&quot;http://uipath.org/schema/bpmn&quot;` (documented Maestro namespace, not a workflow-activities namespace)</pre></div>
+  </details>
+  <h4 style="margin-top:12px">Tool Calls (71)</h4>
+  
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#0</span>
+      <span class="tool-name">Skill</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">75ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;skill&quot;: &quot;uipath:uipath-maestro-bpmn&quot;,
+  &quot;args&quot;: &quot;Create a local BPMN project named \&quot;RiskScoreScriptBpmn\&quot; in the current working directory (/work/output/artifacts/skill-bpmn-script-jint-guidance).\n\nRequirements:\n- Process manually starts with `amount` and `daysOverdue` inputs, calculates a risk score in a BPMN script task, and ends with a `riskScore` output.\n- Use the documented UiPath BPMN extension namespace `http://uipath.org/schema/bpmn`; do … (1205 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Launching skill: uipath:uipath-maestro-bpmn</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#1</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">56ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cat /home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/structural-bpmn.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre># Structural BPMN (what the registry does not emit)
+
+The registry&#x27;s `xmlTemplate`s give you the `uipath:*` payload for each node
+(see [registry-workflow.md](registry-workflow.md)). They do **not** give you the
+structural BPMN that holds those nodes together. This file is the ground truth
+for everything you author by hand around the templates.
+
+Two sources define the contract:
+
+- the registry spec `bpmn-spec.json` — enumerates which BPMN element types and
+  event definitions exist, via its `bpmnElements` section;
+- the Studio Web canvas serializer
+  (`PO.Frontend/src/services/serialization/`) — defines how that XML must be
+  shaped to import and round-trip.
+
+Where the registry stops, the canvas serializer is authoritative. Each
+gap below is labelled **REGISTRY GAP** — the registry exposes no template for
+it, so author it from this reference.
+
+BPMN XML element names are case-sensitive. Use the exact lower-camel BPMN tag
+names the serializer emits, such as `&lt;bpmn:startEvent&gt;`,
+`&lt;bpmn:intermediateCatchEvent&gt;`, `&lt;bpmn:scriptTask&gt;`, and `&lt;bpmn:endEvent&gt;`.
+Do not use PascalCase variants like `&lt;bpmn:IntermediateCatchEvent&gt;`; XML accepts
+them syntactically, but BPMN tools do not treat them 
+
+… (truncated, 28702 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#2</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">20ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cat /home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/registry-workflow.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre># Registry workflow
+
+Every `uipath:*` payload in a Maestro `.bpmn` comes from the registry — never
+from prose, never hand-written. This file is the loop for turning user intent
+into registry-backed XML.
+
+## 1. Sync and discover
+
+```bash
+uip maestro bpmn registry pull            # sync + cache (login for connectors/processes)
+uip maestro bpmn registry list --limit -1 --output json   # all extension types
+uip maestro bpmn registry search &lt;keyword&gt; --output json  # find a type by intent
+uip is connections list --all-folders --output json   # live IS connections (all folders)
+```
+
+Map the user&#x27;s intent to an extension type from the list. Confirm the choice
+with the user (and the specific connection / process / queue) before authoring.
+**Never fabricate an identifier** — see [cli-conventions.md](cli-conventions.md).
+
+**Connection discovery must be exhaustive.** Always pass `--all-folders` to
+`uip is connections list` — connections live in many folders and a folder-scoped
+listing silently misses them. An empty or unmatched result from a missing
+`--all-folders`, or from a connector key guessed from a brand name rather than
+found via `registry search`, is a **false negative** — never concl
+
+… (truncated, 11068 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#3</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">61ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cat /home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/shared/project-layout.md 2&gt;/dev/null | head -100&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre># Project Layout
+
+Maestro BPMN Process Orchestration projects use BPMN XML as source and generated JSON files as package/runtime metadata.
+
+## Canonical source files
+
+- `&lt;project&gt;.bpmn` - BPMN process source and UiPath extension XML. For a new
+  project, keep the BPMN source basename exactly aligned with the project
+  directory/name. For example, `InvoiceTriageBpmn/InvoiceTriageBpmn.bpmn`, not
+  `InvoiceTriageBpmn/invoice-triage-bpmn.bpmn`.
+- `project.uiproj` - UiPath project metadata. Keep it in the same project
+  directory as the main BPMN file: `InvoiceTriageBpmn/project.uiproj`, not next
+  to the project directory.
+
+For a new local project, place source files under a single project directory.
+`uip maestro bpmn init &lt;ProjectName&gt; --output json` nests that directory inside
+a solution. Inside a solution it registers the project with the parent `.uipx`;
+outside any solution it auto-scaffolds `&lt;ProjectName&gt;Solution/` and nests the
+project inside (the response adds `Data.AutoCreatedSolution` =
+`{ Name, Path, SolutionFile }` and reports `SolutionRegistration.Status:
+Registered`; re-running is idempotent and reports `AlreadyRegistered`):
+
+```text
+ProjectNameSolution/             ← auto
+
+… (truncated, 2928 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#4</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">506ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;which uip &amp;&amp; uip --version 2&gt;&amp;1 | head -5&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/usr/bin/uip
+1.201.0-dev.8272</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#5</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">147ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;pwd; ls -la /work/output/artifacts/skill-bpmn-script-jint-guidance&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/work/output/artifacts/skill-bpmn-script-jint-guidance
+total 12
+drwxr-xr-x 3 root root 4096 Aug 14 21:48 .
+drwxr-xr-x 3 root root 4096 Aug 14 21:48 ..
+drwxr-xr-x 4 root root 4096 Aug 14 21:48 .venv</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#6</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">5.14s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro bpmn registry pull --output json 2&gt;&amp;1 | tail -30&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;RegistryPullSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;ExtensionTypeCount&quot;: 30,
+    &quot;ConnectorCount&quot;: 27,
+    &quot;ProcessCount&quot;: 138,
+    &quot;ProcessCountsByType&quot;: {
+      &quot;Process&quot;: 24,
+      &quot;ProcessOrchestration&quot;: 21,
+      &quot;Agent&quot;: 15,
+      &quot;Flow&quot;: 38,
+      &quot;Api&quot;: 23,
+      &quot;Function&quot;: 6,
+      &quot;CaseManagement&quot;: 11,
+      &quot;BusinessRules&quot;: 0
+    },
+    &quot;FromCache&quot;: false,
+    &quot;CacheWritten&quot;: true,
+    &quot;Message&quot;: &quot;Synced fresh registry&quot;
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#7</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">3.10s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro bpmn registry get BPMN.Variables --output json 2&gt;&amp;1&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;RegistryGetSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;ExtensionType&quot;: {
+      &quot;ExtensionType&quot;: &quot;BPMN.Variables&quot;,
+      &quot;Label&quot;: &quot;BPMN Variables&quot;,
+      &quot;BpmnElement&quot;: &quot;bpmn:Task&quot;,
+      &quot;Placements&quot;: {},
+      &quot;ExtensionTag&quot;: &quot;uipath:mapping&quot;,
+      &quot;ContextFields&quot;: [],
+      &quot;InputPattern&quot;: &quot;none&quot;,
+      &quot;OutputSource&quot;: null,
+      &quot;OutputType&quot;: null,
+      &quot;BindingPattern&quot;: &quot;none&quot;,
+      &quot;RequiresDiscovery&quot;: false,
+      &quot;IsDynamic&quot;: false,
+      &quot;XmlTemplate&quot;: &quot;&lt;bpmn:Task id=\&quot;{id}\&quot; name=\&quot;{name}\&quot;&gt;\n  &lt;bpmn:extensionElements&gt;\n    &lt;uipath:mapping version=\&quot;v1\&quot;&gt;\n      &lt;uipath:type value=\&quot;BPMN.Variables\&quot; version=\&quot;v1\&quot; /&gt;\n    &lt;/uipath:mapping&gt;\n  &lt;/bpmn:extensionElements&gt;\n  &lt;bpmn:incoming&gt;{incomingEdge}&lt;/bpmn:incoming&gt;\n  &lt;bpmn:outgoing&gt;{outgoingEdge}&lt;/bpmn:outgoing&gt;\n&lt;/bpmn:Task&gt;&quot;,
+      &quot;InputNotes&quot;: &quot;Variable mappings use uipath:mapping with direct input/output elements, not a jsonBody pattern&quot;,
+      &quot;BpmnElementNotes&quot;: &quot;Also used on bpmn:StartEvent, bpmn:EndEvent, bpmn:ScriptTask, and bpmn:SubProcess for variable mappings. On bpmn:Task with no serviceType, defaults to BPMN.Variables.&quot;,
+      &quot;ExtensionTagNotes&quot;: &quot;Uses uipath:mapping (not uipath:act
+
+… (truncated, 124 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#8</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">6.59s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro bpmn registry get BPMN.ScriptTask --output json 2&gt;&amp;1&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;RegistryGetSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;ExtensionType&quot;: {
+      &quot;ExtensionType&quot;: &quot;BPMN.ScriptTask&quot;,
+      &quot;Label&quot;: &quot;Execute script&quot;,
+      &quot;BpmnElement&quot;: &quot;bpmn:ScriptTask&quot;,
+      &quot;Placements&quot;: {},
+      &quot;ExtensionTag&quot;: &quot;uipath:mapping&quot;,
+      &quot;ContextFields&quot;: [],
+      &quot;InputPattern&quot;: &quot;scriptArgs&quot;,
+      &quot;InputName&quot;: &quot;args&quot;,
+      &quot;InputTarget&quot;: &quot;bodyField&quot;,
+      &quot;OutputSource&quot;: null,
+      &quot;OutputType&quot;: null,
+      &quot;BindingPattern&quot;: &quot;none&quot;,
+      &quot;RequiresDiscovery&quot;: false,
+      &quot;IsDynamic&quot;: false,
+      &quot;XmlTemplate&quot;: &quot;&lt;bpmn:ScriptTask id=\&quot;{id}\&quot; name=\&quot;{name}\&quot;&gt;\n  &lt;bpmn:extensionElements&gt;\n    &lt;uipath:mapping version=\&quot;v1\&quot;&gt;\n      &lt;uipath:type value=\&quot;BPMN.ScriptTask\&quot; version=\&quot;v1\&quot; /&gt;\n      &lt;uipath:input name=\&quot;args\&quot; type=\&quot;json\&quot; target=\&quot;bodyField\&quot;&gt;&lt;![CDATA[{}]]&gt;&lt;/uipath:input&gt;\n    &lt;/uipath:mapping&gt;\n  &lt;/bpmn:extensionElements&gt;\n  &lt;bpmn:incoming&gt;{incomingEdge}&lt;/bpmn:incoming&gt;\n  &lt;bpmn:outgoing&gt;{outgoingEdge}&lt;/bpmn:outgoing&gt;\n&lt;/bpmn:ScriptTask&gt;&quot;,
+      &quot;InputNotes&quot;: &quot;Inputs are merged into a single json input named &#x27;args&#x27; with target &#x27;bodyField&#x27;. An inputSchema is created from the input variables.&quot;,
+      &quot;ExtensionTagNotes&quot;: &quot;bpmn:S
+
+… (truncated, 170 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#9</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">23ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cat /home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/expression-authoring.md 2&gt;&amp;1 | head -150&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre># Expression Authoring
+
+Use this reference whenever pass 2 writes Maestro runtime expressions in BPMN
+XML. Pass 1 may use business-readable placeholder conditions; pass 2 replaces
+them with expressions only after the variables and scopes exist.
+
+## Stored expression shape
+
+- Use a leading `=` where Maestro expects expression content.
+- Treat values without `=` as literals.
+- Read BPMN variables through `vars.&lt;variableId&gt;`, for example
+  `=vars.Var_RequestId`.
+- Do not use bare variable names such as `=requestId` in generated runtime XML.
+- Context bindings use `=bindings.&lt;bindingId&gt;`.
+- Current element outputs use `result` only in output mappings for that
+  element. For new BPMN script tasks, return an object and expose its value
+  through `result.response`: use `return { response: value };` with
+  `source=&quot;=result.response&quot;` for a scalar variable, or return a nested object
+  and use `source=&quot;=result.response.&lt;field&gt;&quot;` for a field. Do not use
+  `source=&quot;=result&quot;` with a bare scalar return in live debug/runtime BPMN; the
+  run can complete while the mapped variable reads back empty.
+- Multi-instance task bodies read the current item from `iterator.item`.
+- Multi-instance subprocess 
+
+… (truncated, 4147 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#10</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">54ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -rn \&quot;entryPointId\\|entryPoint\\|manual start\\|StartEvent\&quot; /home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/*.md /home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/shared/*.md 2&gt;&amp;1 | grep -i entry&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/structural-bpmn.md:495:  `uipath:entryPointId`, and declare input/output variables whose `elementId`
+/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/shared/local-metadata-regeneration-guide.md:32:- Root-level `bpmn:startEvent` elements with `uipath:entryPointId`.
+/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/shared/local-metadata-regeneration-guide.md:98:  &quot;entryPoints&quot;: [
+/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/shared/local-metadata-regeneration-guide.md:137:For each root start event with `uipath:entryPointId`, generated `entry-points.json` must include:
+/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/shared/local-metadata-regeneration-guide.md:139:- `id` equal to the `uipath:entryPointId` value.</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#11</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">24ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;sed -n &#x27;1,160p&#x27; /home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/shared/local-metadata-regeneration-guide.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre># Local Metadata Regeneration
+
+Use this guide when BPMN source changed and local package metadata must be refreshed or verified before packaging, upload, debug, publish, or deploy.
+
+## Ownership
+
+- `.bpmn` is the source of record for process structure, root variables, root bindings, entry point IDs, mappings, diagrams, and documented non-Integration-Service UiPath XML.
+- `entry-points.json`, `bindings_v2.json`, `operate.json`, and `package-descriptor.json` are derived package metadata unless a CLI contract explicitly marks a field as user-authored.
+- Connector-backed or dynamically schematized `Intsvc.*` activity and event payloads are executable only after registry-backed enrichment supplies connector metadata, connection binding references, dynamic schemas, and generated package resources. Confirmed plain connectionless HTTP follows the documented pass-2 authoring recipe instead.
+
+## Local Synthetic Project Contract
+
+When no CLI generator is available and you must author a local-only synthetic
+BPMN project, make the project executable and package-shaped before packing:
+
+- The root process must be `&lt;bpmn:process ... isExecutable=&quot;true&quot;&gt;`.
+- `project.uiproj` must use lowercase `&quot;ma
+
+… (truncated, 5546 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#12</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">30ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -n \&quot;uipath:input\\b\\|uipath:output\\b\\|uipath:inputOutput\\|elementId\&quot; /home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/structural-bpmn.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>92:        &lt;uipath:inputOutput id=&quot;Var_Amount&quot; name=&quot;Amount&quot; type=&quot;number&quot; /&gt;
+93:        &lt;uipath:inputOutput id=&quot;Var_Tier&quot; name=&quot;Tier&quot; type=&quot;string&quot; /&gt;
+102:          &lt;uipath:input name=&quot;args&quot; type=&quot;json&quot; target=&quot;bodyField&quot;&gt;&lt;![CDATA[{&quot;amount&quot;:&quot;=vars.Var_Amount&quot;}]]&gt;&lt;/uipath:input&gt;
+103:          &lt;uipath:output name=&quot;tier&quot; type=&quot;string&quot; var=&quot;Var_Tier&quot; source=&quot;=result.response&quot; /&gt;
+147:`&lt;uipath:output id=&quot;...&quot; name=&quot;...&quot; type=&quot;...&quot; /&gt;`; preserve the exact id and
+148:target that same id from `uipath:output var=&quot;...&quot;`.
+165:  id (`=vars.Var_Amount`). Include `&lt;uipath:input name=&quot;args&quot; type=&quot;json&quot;
+166:  target=&quot;bodyField&quot;&gt;&lt;![CDATA[{}]]&gt;&lt;/uipath:input&gt;` even when there are no
+187:  `uipath:output` mapping to write it to the declared variable. Direct mutation
+196:      &lt;uipath:input name=&quot;args&quot; type=&quot;json&quot; target=&quot;bodyField&quot;&gt;&lt;![CDATA[{&quot;amount&quot;:&quot;=vars.Var_Amount&quot;,&quot;daysOverdue&quot;:&quot;=vars.Var_DaysOverdue&quot;}]]&gt;&lt;/uipath:input&gt;
+197:      &lt;uipath:output name=&quot;riskScore&quot; type=&quot;number&quot; var=&quot;Var_RiskScore&quot; source=&quot;=result.response&quot; /&gt;
+495:  `uipath:entryPointId`, and declare input/output variables whose `elementId`</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#13</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">23ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -rn \&quot;uipath:input \\|uipath:output \\|uipath:inputOutput\\|elementId=\&quot; /home/azureuser/projects/skills/skills/uipath-maestro-bpmn/validator/bpmn-spec.json 2&gt;/dev/null | head -40&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>79:      &quot;xmlTemplate&quot;: &quot;&lt;bpmn:UserTask id=\&quot;{id}\&quot; name=\&quot;{name}\&quot;&gt;\n  &lt;bpmn:extensionElements&gt;\n    &lt;uipath:activity version=\&quot;v1\&quot;&gt;\n      &lt;uipath:type value=\&quot;Actions.HITL\&quot; version=\&quot;v1\&quot; /&gt;\n      &lt;uipath:context&gt;\n        &lt;uipath:input name=\&quot;appId\&quot; value=\&quot;{appId}\&quot; /&gt;\n        &lt;uipath:input name=\&quot;appVersion\&quot; value=\&quot;{appVersion}\&quot; /&gt;\n        &lt;uipath:input name=\&quot;actions\&quot; value=\&quot;{actions}\&quot; /&gt;\n        &lt;uipath:input name=\&quot;key\&quot; value=\&quot;{key}\&quot; /&gt;\n        &lt;uipath:input name=\&quot;taskTitle\&quot; value=\&quot;{taskTitle}\&quot; /&gt;\n      &lt;/uipath:context&gt;\n      &lt;uipath:input name=\&quot;HitlTaskArguments\&quot; type=\&quot;json\&quot; target=\&quot;bodyField\&quot;&gt;&lt;![CDATA[{}]]&gt;&lt;/uipath:input&gt;\n      &lt;uipath:output name=\&quot;Process response\&quot; type=\&quot;Actions.HITL\&quot; var=\&quot;{varId}\&quot; /&gt;\n    &lt;/uipath:activity&gt;\n  &lt;/bpmn:extensionElements&gt;\n  &lt;bpmn:incoming&gt;{incomingEdge}&lt;/bpmn:incoming&gt;\n  &lt;bpmn:outgoing&gt;{outgoingEdge}&lt;/bpmn:outgoing&gt;\n&lt;/bpmn:UserTask&gt;&quot;,
+153:      &quot;xmlTemplate&quot;: &quot;&lt;bpmn:ServiceTask id=\&quot;{id}\&quot; name=\&quot;{name}\&quot;&gt;\n  &lt;bpmn:extensionElements&gt;\n    &lt;uipath:activity version=\&quot;v1\&quot;&gt;\n      &lt;uipath:type value=\&quot;Orchestrator.StartJob\&quot; version=\&quot;v1\&quot; /&gt;\n      &lt;uipath:context&gt;\n        &lt;uipath:input name=\&quot;releas
+
+… (truncated, 22710 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#14</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">24ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -n \&quot;entryPointId\\|uipath:variables\\|uipath:input id=\\|uipath:output id=\\|uipath:inputOutput id=\&quot; /home/azureuser/projects/skills/skills/uipath-maestro-bpmn/validator/bpmn-spec.json | head -40&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>(Bash completed with no output)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#15</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">15ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -rn \&quot;entryPointId\&quot; /home/azureuser/projects/skills/skills/uipath-maestro-bpmn/ 2&gt;/dev/null&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/diagnose/references/failure-modes.md:20:`uipath:entryPointId` or the ID is duplicated.
+/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/structural-bpmn.md:495:  `uipath:entryPointId`, and declare input/output variables whose `elementId`
+/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/shared/local-metadata-regeneration-guide.md:32:- Root-level `bpmn:startEvent` elements with `uipath:entryPointId`.
+/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/shared/local-metadata-regeneration-guide.md:137:For each root start event with `uipath:entryPointId`, generated `entry-points.json` must include:
+/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/shared/local-metadata-regeneration-guide.md:139:- `id` equal to the `uipath:entryPointId` value.</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#16</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">21ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -in \&quot;entrypoint\&quot; /home/azureuser/projects/skills/skills/uipath-maestro-bpmn/validator/bpmn-spec.json | head -20&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>(Bash completed with no output)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#17</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">36ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;find /home/azureuser/projects/skills/skills/uipath-maestro-bpmn -iname \&quot;*.bpmn\&quot; 2&gt;/dev/null&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>(Bash completed with no output)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#18</span>
+      <span class="tool-name">Grep</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">21ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;pattern&quot;: &quot;entryPointId|entryPoint&quot;,
+  &quot;path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-bpmn&quot;,
+  &quot;output_mode&quot;: &quot;content&quot;,
+  &quot;-C&quot;: 5
+}</pre>
+    <h4>Result</h4>
+    <pre>/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/shared/local-metadata-regeneration-guide.md-27-
+/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/shared/local-metadata-regeneration-guide.md-28-## Regeneration Inputs
+/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/shared/local-metadata-regeneration-guide.md-29-
+/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/shared/local-metadata-regeneration-guide.md-30-Local regeneration reads:
+/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/shared/local-metadata-regeneration-guide.md-31-
+/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/shared/local-metadata-regeneration-guide.md:32:- Root-level `bpmn:startEvent` elements with `uipath:entryPointId`.
+/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/shared/local-metadata-regeneration-guide.md-33-- Root `uipath:variables` for entry point input/output schemas.
+/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/shared/local-metadata-regeneration-guide.md-34-- Root `uipath:bindings` for package resources.
+/home/azureuser/projects/skills/
+
+… (truncated, 7591 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#19</span>
+      <span class="tool-name">Grep</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">14ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;pattern&quot;: &quot;elementId&quot;,
+  &quot;path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/validator/bpmn-spec.json&quot;,
+  &quot;output_mode&quot;: &quot;content&quot;,
+  &quot;-C&quot;: 3
+}</pre>
+    <h4>Result</h4>
+    <pre>No matches found</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#20</span>
+      <span class="tool-name">Grep</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">12ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;pattern&quot;: &quot;manualStart|ManualStart|manual start|entry point|EntryPoint&quot;,
+  &quot;path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-bpmn&quot;,
+  &quot;-i&quot;: true,
+  &quot;output_mode&quot;: &quot;files_with_matches&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Found 8 files
+/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/diagnose/references/troubleshooting-guide.md
+/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/expression-authoring.md
+/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/shared/local-metadata-regeneration-guide.md
+/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/shared/project-layout.md
+/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/structural-bpmn.md
+/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/SKILL.md
+/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/operate/references/ship.md
+/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/diagnose/references/failure-modes.md</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#21</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">12ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -n \&quot;manualStart\\|ManualStart\\|entry point\\|EntryPoint\\|entryPointId\&quot; -i /home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/operate/references/ship.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>15:2. Confirm local Author validation has run for XML parse, diagram presence, entry points, bindings,
+23:   checks that connect BPMN source, entry points, bindings, and `Intsvc.*` payload enrichment.
+93:- `entry-points.json` for start-event entry points, schemas, and BPMN file references.
+107:- Correlate import errors to BPMN diagrams, start events, entry point IDs, bindings, and package descriptor entries.</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#22</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">26ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -n \&quot;manualStart\\|ManualStart\\|entry point\\|EntryPoint\\|entryPointId\&quot; -i /home/azureuser/projects/skills/skills/uipath-maestro-bpmn/SKILL.md /home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/diagnose/references/troubleshooting-guide.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/SKILL.md:117:   shows variables, the entry point, a branch, and the diagram. **Do not
+/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/diagnose/references/troubleshooting-guide.md:111:If the failure is binding, entry point, package, or runtime metadata related, inspect generated JSON:</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#23</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">15ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -in \&quot;manual\&quot; /home/azureuser/projects/skills/skills/uipath-maestro-bpmn/validator/bpmn-spec.json | head -20&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>420:          &quot;defaultValue&quot;: &quot;manual&quot;
+481:      &quot;xmlTemplate&quot;: &quot;&lt;bpmn:SendTask id=\&quot;{id}\&quot; name=\&quot;{name}\&quot;&gt;\n  &lt;bpmn:extensionElements&gt;\n    &lt;uipath:activity version=\&quot;v1\&quot;&gt;\n      &lt;uipath:type value=\&quot;Intsvc.HttpExecution\&quot; version=\&quot;v1\&quot; /&gt;\n      &lt;uipath:context&gt;\n        &lt;uipath:input name=\&quot;mode\&quot; value=\&quot;manual\&quot; /&gt;\n        &lt;uipath:input name=\&quot;method\&quot; value=\&quot;GET\&quot; /&gt;\n        &lt;uipath:input name=\&quot;url\&quot; value=\&quot;=bindings.{bindingId}\&quot; /&gt;\n        &lt;uipath:input name=\&quot;headers\&quot; value=\&quot;=bindings.{bindingId}\&quot; /&gt;\n        &lt;uipath:input name=\&quot;parameters\&quot; value=\&quot;=bindings.{bindingId}\&quot; /&gt;\n        &lt;uipath:input name=\&quot;body\&quot; value=\&quot;=bindings.{bindingId}\&quot; /&gt;\n      &lt;/uipath:context&gt;\n      &lt;uipath:output name=\&quot;response\&quot; type=\&quot;jsonSchema\&quot; source=\&quot;=response\&quot; var=\&quot;{varId}\&quot; /&gt;\n    &lt;/uipath:activity&gt;\n  &lt;/bpmn:extensionElements&gt;\n  &lt;bpmn:incoming&gt;{incomingEdge}&lt;/bpmn:incoming&gt;\n  &lt;bpmn:outgoing&gt;{outgoingEdge}&lt;/bpmn:outgoing&gt;\n&lt;/bpmn:SendTask&gt;&quot;,
+503:          &quot;defaultValue&quot;: &quot;manual&quot;
+565:      &quot;xmlTemplate&quot;: &quot;&lt;bpmn:SendTask id=\&quot;{id}\&quot; name=\&quot;{name}\&quot;&gt;\n  &lt;bpmn:extensionElements&gt;\n    &lt;uipath:activity version=\&quot;v1\&quot;&gt;\n      &lt;uipath:type value=\&quot;Intsvc.UnifiedHttpReques
+
+… (truncated, 829 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#24</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">12ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -n \&quot;uipath:entryPointId\\|entryPointId=\&quot; -r /home/azureuser/projects/skills/skills/uipath-maestro-bpmn/ 2&gt;/dev/null&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/diagnose/references/failure-modes.md:20:`uipath:entryPointId` or the ID is duplicated.
+/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/structural-bpmn.md:495:  `uipath:entryPointId`, and declare input/output variables whose `elementId`
+/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/shared/local-metadata-regeneration-guide.md:32:- Root-level `bpmn:startEvent` elements with `uipath:entryPointId`.
+/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/shared/local-metadata-regeneration-guide.md:137:For each root start event with `uipath:entryPointId`, generated `entry-points.json` must include:
+/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/shared/local-metadata-regeneration-guide.md:139:- `id` equal to the `uipath:entryPointId` value.</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#25</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">607ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro bpmn init --help 2&gt;&amp;1 | head -40&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>                             uip maestro bpmn init                              
+Create a new Maestro project with boilerplate files. If run outside an existing solution, a parent &#x27;&lt;name&gt;Solution&#x27; is scaffolded automatically and the maestro project is nested inside it. If run inside an existing solution, the project is added to that solution.
+                Use --help with nested commands for more detail.                
+
+┌─ Usage ──────────────────────────────────────────────────────────────────────┐
+│ uip maestro bpmn init [options] &lt;name&gt;                                       │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Arguments ──────────────────────────────────────────────────────────────────┐
+│ name   Maestro project name                                                  │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Options ────────────────────────────────────────────────────────────────────┐
+│ --process-id &lt;id&gt;              BPMN process id to write into the generated   │
+│                                template (default: Process_1)                 │
+│ --force                        Force ini
+
+… (truncated, 1821 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#26</span>
+      <span class="tool-name">Grep</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">10ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;pattern&quot;: &quot;uipath:variables|uipath:input |uipath:output |uipath:inputOutput|inputOutput|\&quot;variables\&quot;&quot;,
+  &quot;path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/validator/bpmn-spec.json&quot;,
+  &quot;output_mode&quot;: &quot;content&quot;,
+  &quot;-C&quot;: 2,
+  &quot;head_limit&quot;: 150
+}</pre>
+    <h4>Result</h4>
+    <pre>77-      &quot;requiresDiscovery&quot;: true,
+78-      &quot;isDynamic&quot;: true,
+79:[Omitted long matching line]
+80-      &quot;discoveryNotes&quot;: &quot;Uses getSupportedHumanTasks(search, systemName) to list available action app tasks&quot;,
+81-      &quot;contextFieldNotes&quot;: &quot;Note: &#x27;folderKey&#x27; field in design schema has name=&#x27;key&#x27; (the actual XML context input name)&quot;
+--
+151-      &quot;requiresDiscovery&quot;: true,
+152-      &quot;isDynamic&quot;: true,
+153:[Omitted long matching line]
+154-      &quot;discoveryNotes&quot;: &quot;Uses getSupportedOrchestratorTasks(&#x27;process&#x27;, search) to list available processes&quot;
+155-    },
+--
+224-      &quot;requiresDiscovery&quot;: true,
+225-      &quot;isDynamic&quot;: true,
+226:[Omitted long matching line]
+227-      &quot;discoveryNotes&quot;: &quot;Uses getSupportedOrchestratorTasks(&#x27;agent&#x27;, search) to list available agents&quot;
+228-    },
+--
+297-      &quot;requiresDiscovery&quot;: true,
+298-      &quot;isDynamic&quot;: true,
+299:[Omitted long matching line]
+300-      &quot;discoveryNotes&quot;: &quot;Uses getOrchestratorBusinessRules() to list available business rules&quot;
+301-    },
+--
+394-      &quot;requiresDiscovery&quot;: true,
+395-      &quot;isDynamic&quot;: true,
+396:[Omitted long matching line]
+397-      &quot;discoveryNotes&quot;: &quot;Uses getConnectorConnections(connectorKey) to list available connections. Activ
+
+… (truncated, 8482 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#27</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">604ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro bpmn init RiskScoreScriptBpmn --skip-solution-registration --output json 2&gt;&amp;1&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;MaestroInit&quot;,
+  &quot;Data&quot;: {
+    &quot;Status&quot;: &quot;Created successfully&quot;,
+    &quot;Path&quot;: &quot;/work/output/artifacts/skill-bpmn-script-jint-guidance/RiskScoreScriptBpmn&quot;,
+    &quot;SolutionRegistration&quot;: {
+      &quot;Status&quot;: &quot;OptedOut&quot;,
+      &quot;Message&quot;: &quot;Solution auto-registration skipped (--skip-solution-registration).&quot;,
+      &quot;Instructions&quot;: &quot;Automatic solution registration was skipped because --skip-solution-registration was passed.\nTo register this project later, run &#x27;uip solution projects add \&quot;/work/output/artifacts/skill-bpmn-script-jint-guidance/RiskScoreScriptBpmn\&quot; &lt;SolutionName&gt;.uipx&#x27; from within the solution.&quot;
+    },
+    &quot;NextSteps&quot;: &quot;Automatic solution registration was skipped because --skip-solution-registration was passed.\nTo register this project later, run &#x27;uip solution projects add \&quot;/work/output/artifacts/skill-bpmn-script-jint-guidance/RiskScoreScriptBpmn\&quot; &lt;SolutionName&gt;.uipx&#x27; from within the solution.&quot;
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#28</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">15ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;find /work/output/artifacts/skill-bpmn-script-jint-guidance/RiskScoreScriptBpmn -type f | sort&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/work/output/artifacts/skill-bpmn-script-jint-guidance/RiskScoreScriptBpmn/RiskScoreScriptBpmn.bpmn
+/work/output/artifacts/skill-bpmn-script-jint-guidance/RiskScoreScriptBpmn/bindings_v2.json
+/work/output/artifacts/skill-bpmn-script-jint-guidance/RiskScoreScriptBpmn/entry-points.json
+/work/output/artifacts/skill-bpmn-script-jint-guidance/RiskScoreScriptBpmn/operate.json
+/work/output/artifacts/skill-bpmn-script-jint-guidance/RiskScoreScriptBpmn/package-descriptor.json
+/work/output/artifacts/skill-bpmn-script-jint-guidance/RiskScoreScriptBpmn/project.uiproj</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#29</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">6ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-bpmn-script-jint-guidance/RiskScoreScriptBpmn/RiskScoreScriptBpmn.bpmn&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;
+2	&lt;bpmn:definitions xmlns:bpmn=&quot;http://www.omg.org/spec/BPMN/20100524/MODEL&quot; xmlns:uipath=&quot;http://uipath.org/schema/bpmn&quot; xmlns:bpmndi=&quot;http://www.omg.org/spec/BPMN/20100524/DI&quot; xmlns:dc=&quot;http://www.omg.org/spec/DD/20100524/DC&quot; exporter=&quot;UiPath Maestro (https://uipath.com)&quot; exporterVersion=&quot;1.201.0-dev.8275&quot;&gt;
+3	  &lt;bpmn:process id=&quot;Process_1&quot; name=&quot;Maestro Process&quot;&gt;
+4	    &lt;bpmn:extensionElements&gt;
+5	      &lt;uipath:variables version=&quot;v1&quot; /&gt;
+6	      &lt;uipath:bindings version=&quot;v1&quot; /&gt;
+7	    &lt;/bpmn:extensionElements&gt;
+8	    &lt;bpmn:startEvent id=&quot;Event_start&quot; name=&quot;core.trigger.manual&quot;&gt;
+9	      &lt;bpmn:extensionElements&gt;
+10	        &lt;uipath:entryPointId value=&quot;fd2dd4b6-16a2-4f1a-a0b8-deede5bd68e9&quot; /&gt;
+11	      &lt;/bpmn:extensionElements&gt;
+12	      &lt;bpmn:outgoing&gt;_Implicit_EndEvent_Flow&lt;/bpmn:outgoing&gt;
+13	    &lt;/bpmn:startEvent&gt;
+14	    &lt;bpmn:endEvent id=&quot;_Implicit_EndEvent&quot;&gt;
+15	      &lt;bpmn:incoming&gt;_Implicit_EndEvent_Flow&lt;/bpmn:incoming&gt;
+16	    &lt;/bpmn:endEvent&gt;
+17	    &lt;bpmn:sequenceFlow id=&quot;_Implicit_EndEvent_Flow&quot; sourceRef=&quot;Event_start&quot; targetRef=&quot;_Implicit_EndEvent&quot; /&gt;
+18	  &lt;/bpmn:process&gt;
+19	  &lt;bpmndi:BPMNDiagram id=&quot;Diagram_1&quot;&gt;
+20	    &lt;bpmndi:BPMNPlane id=&quot;
+
+… (truncated, 407 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#30</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">4ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-bpmn-script-jint-guidance/RiskScoreScriptBpmn/project.uiproj&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	{
+2	  &quot;Name&quot;: &quot;RiskScoreScriptBpmn&quot;,
+3	  &quot;ProjectType&quot;: &quot;ProcessOrchestration&quot;
+4	}
+5	</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#31</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">4ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-bpmn-script-jint-guidance/RiskScoreScriptBpmn/entry-points.json&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	{
+2	  &quot;$schema&quot;: &quot;https://cloud.uipath.com/draft/2024-12/entry-point&quot;,
+3	  &quot;$id&quot;: &quot;entry-points.json&quot;,
+4	  &quot;entryPoints&quot;: [
+5	    {
+6	      &quot;filePath&quot;: &quot;/content/RiskScoreScriptBpmn.bpmn#Event_start&quot;,
+7	      &quot;uniqueId&quot;: &quot;fd2dd4b6-16a2-4f1a-a0b8-deede5bd68e9&quot;,
+8	      &quot;type&quot;: &quot;ProcessOrchestration&quot;,
+9	      &quot;input&quot;: {
+10	        &quot;type&quot;: &quot;object&quot;,
+11	        &quot;properties&quot;: {}
+12	      },
+13	      &quot;output&quot;: {
+14	        &quot;type&quot;: &quot;object&quot;,
+15	        &quot;properties&quot;: {}
+16	      },
+17	      &quot;displayName&quot;: &quot;Manual trigger&quot;
+18	    }
+19	  ]
+20	}
+21	</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#32</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">3ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-bpmn-script-jint-guidance/RiskScoreScriptBpmn/operate.json&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	{
+2	  &quot;$schema&quot;: &quot;https://cloud.uipath.com/draft/2024-12/operate&quot;,
+3	  &quot;projectId&quot;: &quot;b26c15dc-b251-46ec-bcbe-4bc720ff2fb5&quot;,
+4	  &quot;main&quot;: &quot;/content/RiskScoreScriptBpmn.bpmn#Event_start&quot;,
+5	  &quot;contentType&quot;: &quot;ProcessOrchestration&quot;,
+6	  &quot;targetFramework&quot;: &quot;Portable&quot;,
+7	  &quot;runtimeOptions&quot;: {
+8	    &quot;requiresUserInteraction&quot;: false,
+9	    &quot;isAttended&quot;: false
+10	  }
+11	}
+12	</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#33</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">6ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-bpmn-script-jint-guidance/RiskScoreScriptBpmn/package-descriptor.json&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	{
+2	  &quot;$schema&quot;: &quot;https://cloud.uipath.com/draft/2024-12/package-descriptor&quot;,
+3	  &quot;files&quot;: {
+4	    &quot;operate.json&quot;: &quot;operate.json&quot;,
+5	    &quot;entry-points.json&quot;: &quot;entry-points.json&quot;,
+6	    &quot;bindings.json&quot;: &quot;bindings_v2.json&quot;,
+7	    &quot;RiskScoreScriptBpmn.bpmn&quot;: &quot;RiskScoreScriptBpmn.bpmn&quot;
+8	  }
+9	}
+10	</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#34</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">6ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-bpmn-script-jint-guidance/RiskScoreScriptBpmn/bindings_v2.json&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	{
+2	  &quot;version&quot;: &quot;2.0&quot;,
+3	  &quot;resources&quot;: []
+4	}
+5	</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#35</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">13ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -n \&quot;\\\&quot;variables\\\&quot;\\|VariableDefinition\\|inputOutput\\|\\\&quot;uipath:input\\\&quot;\\|\\\&quot;uipath:output\\\&quot;\\|variableTypes\\|elementId\&quot; /home/azureuser/projects/skills/skills/uipath-maestro-bpmn/validator/bpmn-spec.json | head -60&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>(Bash completed with no output)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#36</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">81ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 -c \&quot;\nimport json\nd = json.load(open(&#x27;/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/validator/bpmn-spec.json&#x27;))\nprint(list(d.keys()))\n\&quot;&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>[&#x27;version&#x27;, &#x27;source&#x27;, &#x27;extractedFrom&#x27;, &#x27;extensionTypes&#x27;, &#x27;bpmnElements&#x27;, &#x27;serializationRules&#x27;]</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#37</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">85ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 -c \&quot;\nimport json\nd = json.load(open(&#x27;/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/validator/bpmn-spec.json&#x27;))\nprint(json.dumps(d[&#x27;serializationRules&#x27;], indent=2)[:6000])\n\&quot;&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;extensionTagResolution&quot;: {
+    &quot;description&quot;: &quot;How the frontend determines which XML extension tag to use&quot;,
+    &quot;rules&quot;: [
+      &quot;If serviceType is in isEvents array [Intsvc.WaitForEvent, Intsvc.EventTrigger, Maestro.ReceiveMessageEvent, Maestro.SendMessageEvent] =&gt; uipath:event&quot;,
+      &quot;If serviceType is BPMN.Variables on bpmn:StartEvent, bpmn:EndEvent, or bpmn:Task =&gt; uipath:mapping&quot;,
+      &quot;If nodeType is bpmn:ScriptTask or bpmn:SubProcess =&gt; uipath:mapping&quot;,
+      &quot;Otherwise =&gt; uipath:activity&quot;
+    ]
+  },
+  &quot;isEventsArray&quot;: [
+    &quot;Intsvc.WaitForEvent&quot;,
+    &quot;Intsvc.EventTrigger&quot;,
+    &quot;Maestro.ReceiveMessageEvent&quot;,
+    &quot;Maestro.SendMessageEvent&quot;
+  ],
+  &quot;isExecutionArray&quot;: [
+    &quot;Intsvc.ActivityExecution&quot;,
+    &quot;Intsvc.AsyncExecution&quot;,
+    &quot;Intsvc.SyncAgentExecution&quot;,
+    &quot;Intsvc.AsyncAgentExecution&quot;,
+    &quot;Intsvc.SyncWorkflowExecution&quot;,
+    &quot;Intsvc.AsyncWorkflowExecution&quot;,
+    &quot;Intsvc.UnifiedHttpRequest&quot;
+  ],
+  &quot;isSplitInputsEventsArray&quot;: [
+    &quot;Maestro.SendMessageEvent&quot;
+  ]
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#38</span>
+      <span class="tool-name">Grep</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">11ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;pattern&quot;: &quot;uipath:input id=|uipath:output id=|uipath:inputOutput&quot;,
+  &quot;path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-bpmn&quot;,
+  &quot;output_mode&quot;: &quot;content&quot;,
+  &quot;-C&quot;: 2
+}</pre>
+    <h4>Result</h4>
+    <pre>/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/structural-bpmn.md-90-      &lt;uipath:migrationVersion version=&quot;11.5&quot; /&gt;
+/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/structural-bpmn.md-91-      &lt;uipath:variables version=&quot;v1&quot;&gt;
+/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/structural-bpmn.md:92:        &lt;uipath:inputOutput id=&quot;Var_Amount&quot; name=&quot;Amount&quot; type=&quot;number&quot; /&gt;
+/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/structural-bpmn.md:93:        &lt;uipath:inputOutput id=&quot;Var_Tier&quot; name=&quot;Tier&quot; type=&quot;string&quot; /&gt;
+/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/structural-bpmn.md-94-      &lt;/uipath:variables&gt;
+/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/structural-bpmn.md-95-    &lt;/bpmn:extensionElements&gt;
+--
+/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/structural-bpmn.md-145-Sub-process-scoped variables go in that sub-process&#x27;s own `&lt;uipath:variables&gt;`.
+/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/structural-bpmn.md-146-For a value produced only by a task output, prefer root
+/home/azureuser/projects/skills/sk
+
+… (truncated, 2630 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#39</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-err">ERROR</span>
+      <span class="tool-duration">121ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 -c \&quot;\nimport json\nd = json.load(open(&#x27;/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/validator/bpmn-spec.json&#x27;))\nfor et in d[&#x27;extensionTypes&#x27;]:\n    if et.get(&#x27;extensionType&#x27;)==&#x27;BPMN.Variables&#x27;:\n        print(json.dumps(et, indent=2))\n\&quot;&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Exit code 1
+Traceback (most recent call last):
+  File &quot;&lt;string&gt;&quot;, line 5, in &lt;module&gt;
+    if et.get(&#x27;extensionType&#x27;)==&#x27;BPMN.Variables&#x27;:
+       ^^^^^^
+AttributeError: &#x27;str&#x27; object has no attribute &#x27;get&#x27;</pre>
+    <h4>Error</h4><pre>Exit code 1
+Traceback (most recent call last):
+  File &quot;&lt;string&gt;&quot;, line 5, in &lt;module&gt;
+    if et.get(&#x27;extensionType&#x27;)==&#x27;BPMN.Variables&#x27;:
+       ^^^^^^
+AttributeError: &#x27;str&#x27; object has no attribute &#x27;get&#x27;</pre>
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#40</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">103ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 -c \&quot;\nimport json\nd = json.load(open(&#x27;/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/validator/bpmn-spec.json&#x27;))\nprint(type(d[&#x27;extensionTypes&#x27;]))\nif isinstance(d[&#x27;extensionTypes&#x27;], dict):\n    print(list(d[&#x27;extensionTypes&#x27;].keys())[:20])\n\&quot;&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>&lt;class &#x27;dict&#x27;&gt;
+[&#x27;Actions.HITL&#x27;, &#x27;Orchestrator.StartJob&#x27;, &#x27;Orchestrator.StartAgentJob&#x27;, &#x27;Orchestrator.BusinessRules&#x27;, &#x27;Intsvc.ActivityExecution&#x27;, &#x27;Intsvc.HttpExecution&#x27;, &#x27;Intsvc.UnifiedHttpRequest&#x27;, &#x27;Intsvc.WaitForEvent&#x27;, &#x27;Intsvc.EventTrigger&#x27;, &#x27;Intsvc.AsyncExecution&#x27;, &#x27;Intsvc.SyncAgentExecution&#x27;, &#x27;Intsvc.AsyncAgentExecution&#x27;, &#x27;Intsvc.SyncWorkflowExecution&#x27;, &#x27;Intsvc.AsyncWorkflowExecution&#x27;, &#x27;Orchestrator.ExecuteApiWorkflowAsync&#x27;, &#x27;Orchestrator.CreateQueueItem&#x27;, &#x27;Orchestrator.CreateAndWaitForQueueItem&#x27;, &#x27;Orchestrator.StartAgenticProcess&#x27;, &#x27;Orchestrator.StartAgenticProcessAsync&#x27;, &#x27;Orchestrator.StartCaseMgmtProcess&#x27;]</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#41</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">107ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 -c \&quot;\nimport json\nd = json.load(open(&#x27;/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/validator/bpmn-spec.json&#x27;))\nprint(list(d[&#x27;extensionTypes&#x27;].keys()))\n\&quot;&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>[&#x27;Actions.HITL&#x27;, &#x27;Orchestrator.StartJob&#x27;, &#x27;Orchestrator.StartAgentJob&#x27;, &#x27;Orchestrator.BusinessRules&#x27;, &#x27;Intsvc.ActivityExecution&#x27;, &#x27;Intsvc.HttpExecution&#x27;, &#x27;Intsvc.UnifiedHttpRequest&#x27;, &#x27;Intsvc.WaitForEvent&#x27;, &#x27;Intsvc.EventTrigger&#x27;, &#x27;Intsvc.AsyncExecution&#x27;, &#x27;Intsvc.SyncAgentExecution&#x27;, &#x27;Intsvc.AsyncAgentExecution&#x27;, &#x27;Intsvc.SyncWorkflowExecution&#x27;, &#x27;Intsvc.AsyncWorkflowExecution&#x27;, &#x27;Orchestrator.ExecuteApiWorkflowAsync&#x27;, &#x27;Orchestrator.CreateQueueItem&#x27;, &#x27;Orchestrator.CreateAndWaitForQueueItem&#x27;, &#x27;Orchestrator.StartAgenticProcess&#x27;, &#x27;Orchestrator.StartAgenticProcessAsync&#x27;, &#x27;Orchestrator.StartCaseMgmtProcess&#x27;, &#x27;Orchestrator.StartCaseMgmtProcessAsync&#x27;, &#x27;A2A.AgentExecution&#x27;, &#x27;BPMN.Variables&#x27;, &#x27;BPMN.ScriptTask&#x27;, &#x27;Intsvc.TimerTrigger&#x27;, &#x27;Maestro.ReceiveMessageEvent&#x27;, &#x27;Maestro.SendMessageEvent&#x27;, &#x27;Maestro.CaseRulesEvaluator&#x27;, &#x27;Maestro.CaseManagerGuardrails&#x27;]</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#42</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">589ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro bpmn validate --help 2&gt;&amp;1 | head -30&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>                           uip maestro bpmn validate                            
+                   Validate a Maestro BPMN .bpmn or .xml file                   
+                Use --help with nested commands for more detail.                
+
+┌─ Usage ──────────────────────────────────────────────────────────────────────┐
+│ uip maestro bpmn validate [options] &lt;file&gt;                                   │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Arguments ──────────────────────────────────────────────────────────────────┐
+│ file   Path to the .bpmn or .xml file to validate                            │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Options ────────────────────────────────────────────────────────────────────┐
+│ -h, --help                     display help for command                      │
+│ --output                       Output format (default: json)                 │
+│ &lt;table|json|yaml|plain&gt;                                                      │
+│ --output-filter &lt;expression&gt;   JMESPath expression applied to the Data field │
+│                                of the response envelope      
+
+… (truncated, 909 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#43</span>
+      <span class="tool-name">Grep</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">13ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;pattern&quot;: &quot;core.trigger.manual|entryPointId|uipath:input.*elementId|elementId=&quot;,
+  &quot;path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-bpmn&quot;,
+  &quot;output_mode&quot;: &quot;content&quot;,
+  &quot;-C&quot;: 3
+}</pre>
+    <h4>Result</h4>
+    <pre>/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/expression-authoring.md-81-  reachable by control flow.
+/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/expression-authoring.md-82-- An output variable you intend to expose in runtime inspection (via
+/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/expression-authoring.md-83-  `debug-instance variables-all` or `instance variables`) must be root-scoped —
+/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/expression-authoring.md:84:  declare its `uipath:output` or `uipath:inputOutput` WITHOUT an `elementId`. A
+/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/expression-authoring.md-85-  variable scoped with `elementId` is bound to that element and is not surfaced
+/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/expression-authoring.md-86-  as a root/global runtime variable. Preserve exact variable ids: if the
+/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/expression-authoring.md-87-  requested variable id is `product`, declare `id=&quot;product&quot;` and map to
+--
+/home/azureuser/projects/skills/ski
+
+… (truncated, 4651 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#44</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">567ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro bpmn --help 2&gt;&amp;1 | head -60&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>                                uip maestro bpmn                                
+             Create, debug, and run BPMN Maestro projects and jobs.             
+                Use --help with nested commands for more detail.                
+
+┌─ Usage ──────────────────────────────────────────────────────────────────────┐
+│ uip maestro bpmn [options] [command]                                         │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Commands ───────────────────────────────────────────────────────────────────┐
+│ check             Run the authoring-time SDK analyzer on source or an        │
+│                   artifact.                                                  │
+│ compile           Compile authored TypeScript to a bpmn artifact.            │
+│ debug             Debug a maestro project by uploading to Studio Web and     │
+│                   running a debug session                                    │
+│ debug-instance    Manage Maestro debug instance operations                   │
+│ format            Generate or replace the bpmndi:BPMNDiagram layout section  │
+│                   in a BPMN file using a left-to-right BFS lay
+
+… (truncated, 3014 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#45</span>
+      <span class="tool-name">Grep</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">7ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;pattern&quot;: &quot;uipath:input |uipath:output |uipath:inputOutput |elementId&quot;,
+  &quot;path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/expression-authoring.md&quot;,
+  &quot;output_mode&quot;: &quot;content&quot;,
+  &quot;-C&quot;: 2
+}</pre>
+    <h4>Result</h4>
+    <pre>41-
+42-```xml
+43:&lt;uipath:input name=&quot;JobArguments&quot; type=&quot;json&quot; target=&quot;bodyField&quot;&gt;&lt;![CDATA[
+44-{&quot;startRow&quot;:&quot;=js:iterator[0].loopCounter * vars.Var_RowsPerShard&quot;,
+45- &quot;endRow&quot;:&quot;=js:(iterator[0].loopCounter + 1) * vars.Var_RowsPerShard - 1&quot;}
+--
+82-- An output variable you intend to expose in runtime inspection (via
+83-  `debug-instance variables-all` or `instance variables`) must be root-scoped —
+84:  declare its `uipath:output` or `uipath:inputOutput` WITHOUT an `elementId`. A
+85:  variable scoped with `elementId` is bound to that element and is not surfaced
+86-  as a root/global runtime variable. Preserve exact variable ids: if the
+87-  requested variable id is `product`, declare `id=&quot;product&quot;` and map to
+--
+96-  `uipath:inputOutput` variable and an explicit mapping from the entry input.
+97-- Trigger-bound values are commonly represented as `uipath:inputOutput`
+98:  variables scoped with `elementId` so the trigger can write them during
+99-  execution.
+100-</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#46</span>
+      <span class="tool-name">Grep</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">17ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;pattern&quot;: &quot;amount|daysOverdue|riskScore|elementId=&quot;,
+  &quot;path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-bpmn&quot;,
+  &quot;output_mode&quot;: &quot;content&quot;,
+  &quot;-i&quot;: true
+}</pre>
+    <h4>Result</h4>
+    <pre>/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/structural-bpmn.md:92:        &lt;uipath:inputOutput id=&quot;Var_Amount&quot; name=&quot;Amount&quot; type=&quot;number&quot; /&gt;
+/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/structural-bpmn.md:102:          &lt;uipath:input name=&quot;args&quot; type=&quot;json&quot; target=&quot;bodyField&quot;&gt;&lt;![CDATA[{&quot;amount&quot;:&quot;=vars.Var_Amount&quot;}]]&gt;&lt;/uipath:input&gt;
+/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/structural-bpmn.md:107:      &lt;bpmn:script&gt;&lt;![CDATA[return { response: amount &gt; 1000 ? &quot;high&quot; : &quot;low&quot; };]]&gt;&lt;/bpmn:script&gt;
+/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/structural-bpmn.md:163:  (`amount`, not `args.amount`); the input mapping itself stays `name=&quot;args&quot;`
+/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/structural-bpmn.md:165:  id (`=vars.Var_Amount`). Include `&lt;uipath:input name=&quot;args&quot; type=&quot;json&quot;
+/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/structural-bpmn.md:191:&lt;bpmn:scriptTask id=&quot;Task_RiskScore&quot; name=&quot;Risk Score&quot; scriptFormat=&quot;JavaScript&quot;&gt;
+/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/structural-bpmn.md:196:      &lt;uipath:input
+
+… (truncated, 470 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#47</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">46ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-bpmn-script-jint-guidance/RiskScoreScriptBpmn &amp;&amp; python3 -c \&quot;print(&#x27;ok&#x27;)\&quot;&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>ok</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#48</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">628ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro bpmn update-metadata --help 2&gt;&amp;1 | head -40&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>                        uip maestro bpmn update-metadata                        
+Write (or check) project.uiproj, operate.json, entry-points.json, bindings_v2.json, and package-descriptor.json from a BPMN file. Refreshes only the fields derived from the BPMN and preserves everything else already in those files. Pass --dry-run to report drift without writing.
+                Use --help with nested commands for more detail.                
+
+┌─ Usage ──────────────────────────────────────────────────────────────────────┐
+│ uip maestro bpmn update-metadata [options] &lt;bpmn&gt;                            │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Arguments ──────────────────────────────────────────────────────────────────┐
+│ bpmn   Path to the .bpmn file                                                │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Options ────────────────────────────────────────────────────────────────────┐
+│ --output-dir &lt;dir&gt;             Directory for the metadata JSON files         │
+│                                (default: directory of &lt;bpmn&gt;). In --dry-run  │
+│                         
+
+… (truncated, 1918 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#49</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">703ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro bpmn format --help 2&gt;&amp;1 | head -40&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>                            uip maestro bpmn format                             
+Generate or replace the bpmndi:BPMNDiagram layout section in a BPMN file using a left-to-right BFS layout.
+                Use --help with nested commands for more detail.                
+
+┌─ Usage ──────────────────────────────────────────────────────────────────────┐
+│ uip maestro bpmn format [options] &lt;bpmn&gt;                                     │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Arguments ──────────────────────────────────────────────────────────────────┐
+│ bpmn   Path to the .bpmn file                                                │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Options ────────────────────────────────────────────────────────────────────┐
+│ --output-file &lt;file&gt;           Output path (default: overwrite &lt;bpmn&gt;)       │
+│ -h, --help                     display help for command                      │
+│ --output                       Output format (default: json)                 │
+│ &lt;table|json|yaml|plain&gt;                                                      │
+│ --output-filter &lt;expression&gt;   JMES
+
+… (truncated, 1259 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#50</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">909ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro bpmn check --help 2&gt;&amp;1 | head -30&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>                             uip maestro bpmn check                             
+         Run the authoring-time SDK analyzer on source or an artifact.          
+                Use --help with nested commands for more detail.                
+
+┌─ Usage ──────────────────────────────────────────────────────────────────────┐
+│ uip maestro bpmn check [options] &lt;input&gt;                                     │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Options ────────────────────────────────────────────────────────────────────┐
+│ --source                       Check authored TypeScript                     │
+│ --compiled                     Check the compiled artifact                   │
+│ -h, --help                     display help for command                      │
+│ --output                       Output format (default: json)                 │
+│ &lt;table|json|yaml|plain&gt;                                                      │
+│ --output-filter &lt;expression&gt;   JMESPath expression applied to the Data field │
+│                                of the response envelope                      │
+│ --log-level                    Log level threshold (default: i
+
+… (truncated, 908 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#51</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">97ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 -c \&quot;\nimport json\nd = json.load(open(&#x27;/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/validator/bpmn-spec.json&#x27;))\nimport re\ns = json.dumps(d)\n\&quot; \ngrep -n \&quot;\\\&quot;type\\\&quot;: \\\&quot;integer\\\&quot;\\|\\\&quot;integer\\\&quot;\\|variableTypes\\|VariableType\&quot; /home/azureuser/projects/skills/skills/uipath-maestro-bpmn/validator/bpmn-spec.json | head -20&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>(Bash completed with no output)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#52</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">120ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -rn \&quot;core.trigger\&quot; /home/azureuser/projects/skills/skills/uipath-maestro-bpmn/ 2&gt;/dev/null; python3 -c \&quot;\nimport json\nd=json.load(open(&#x27;/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/validator/bpmn-spec.json&#x27;))\ns=json.dumps(d)\nprint(&#x27;core.trigger&#x27; in s)\n\&quot;&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>False</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#53</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">20ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -o &#x27;value=\&quot;[a-f0-9-]\\{36\\}\&quot;&#x27; RiskScoreScriptBpmn.bpmn&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>value=&quot;fd2dd4b6-16a2-4f1a-a0b8-deede5bd68e9&quot;</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#54</span>
+      <span class="tool-name">Write</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">22ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-bpmn-script-jint-guidance/RiskScoreScriptBpmn/RiskScoreScriptBpmn.bpmn&quot;,
+  &quot;content&quot;: &quot;&lt;?xml version=\&quot;1.0\&quot; encoding=\&quot;UTF-8\&quot;?&gt;\n&lt;bpmn:definitions xmlns:bpmn=\&quot;http://www.omg.org/spec/BPMN/20100524/MODEL\&quot; xmlns:uipath=\&quot;http://uipath.org/schema/bpmn\&quot; xmlns:bpmndi=\&quot;http://www.omg.org/spec/BPMN/20100524/DI\&quot; xmlns:dc=\&quot;http://www.omg.org/spec/DD/20100524/DC\&quot; xmlns:di=\&quot;http://www.omg.org/spec/DD/20100524/DI\&quot; xmlns:xsi=\&quot;http://www.w3.org/2001/XMLSchema-instance\&quot; exporter=\&quot;UiPath Maestro (https… (3353 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>The file /work/output/artifacts/skill-bpmn-script-jint-guidance/RiskScoreScriptBpmn/RiskScoreScriptBpmn.bpmn has been updated successfully. (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#55</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">612ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro bpmn validate RiskScoreScriptBpmn.bpmn --output json 2&gt;&amp;1&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;BpmnValidate&quot;,
+  &quot;Data&quot;: {
+    &quot;File&quot;: &quot;/work/output/artifacts/skill-bpmn-script-jint-guidance/RiskScoreScriptBpmn/RiskScoreScriptBpmn.bpmn&quot;,
+    &quot;Status&quot;: &quot;Valid&quot;,
+    &quot;ProcessCount&quot;: 1,
+    &quot;StartEventCount&quot;: 1,
+    &quot;UiPathExtensionCount&quot;: 9
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#56</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">560ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro bpmn update-metadata RiskScoreScriptBpmn.bpmn --output json 2&gt;&amp;1&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;MaestroBpmnUpdateMetadata&quot;,
+  &quot;Data&quot;: {
+    &quot;DryRun&quot;: false,
+    &quot;ProjectName&quot;: &quot;RiskScoreScriptBpmn&quot;,
+    &quot;OutDir&quot;: &quot;/work/output/artifacts/skill-bpmn-script-jint-guidance/RiskScoreScriptBpmn&quot;,
+    &quot;FilesWritten&quot;: [
+      &quot;project.uiproj&quot;,
+      &quot;operate.json&quot;,
+      &quot;entry-points.json&quot;,
+      &quot;bindings_v2.json&quot;,
+      &quot;package-descriptor.json&quot;
+    ],
+    &quot;EntryPointCount&quot;: 1
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#57</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">5ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-bpmn-script-jint-guidance/RiskScoreScriptBpmn/entry-points.json&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	{
+2	  &quot;$schema&quot;: &quot;https://cloud.uipath.com/draft/2024-12/entry-point&quot;,
+3	  &quot;$id&quot;: &quot;entry-points.json&quot;,
+4	  &quot;entryPoints&quot;: [
+5	    {
+6	      &quot;filePath&quot;: &quot;/content/RiskScoreScriptBpmn.bpmn#Event_start&quot;,
+7	      &quot;uniqueId&quot;: &quot;fd2dd4b6-16a2-4f1a-a0b8-deede5bd68e9&quot;,
+8	      &quot;type&quot;: &quot;ProcessOrchestration&quot;,
+9	      &quot;input&quot;: {
+10	        &quot;type&quot;: &quot;object&quot;,
+11	        &quot;properties&quot;: {}
+12	      },
+13	      &quot;output&quot;: {
+14	        &quot;type&quot;: &quot;object&quot;,
+15	        &quot;properties&quot;: {
+16	          &quot;amount&quot;: {
+17	            &quot;type&quot;: &quot;number&quot;
+18	          },
+19	          &quot;daysOverdue&quot;: {
+20	            &quot;type&quot;: &quot;number&quot;
+21	          },
+22	          &quot;riskScore&quot;: {
+23	            &quot;type&quot;: &quot;number&quot;
+24	          }
+25	        }
+26	      },
+27	      &quot;displayName&quot;: &quot;Manual trigger&quot;
+28	    }
+29	  ]
+30	}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#58</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">3ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-bpmn-script-jint-guidance/RiskScoreScriptBpmn/project.uiproj&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	{
+2	  &quot;Name&quot;: &quot;RiskScoreScriptBpmn&quot;,
+3	  &quot;ProjectType&quot;: &quot;ProcessOrchestration&quot;
+4	}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#59</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">4ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-bpmn-script-jint-guidance/RiskScoreScriptBpmn/operate.json&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	{
+2	  &quot;$schema&quot;: &quot;https://cloud.uipath.com/draft/2024-12/operate&quot;,
+3	  &quot;projectId&quot;: &quot;b26c15dc-b251-46ec-bcbe-4bc720ff2fb5&quot;,
+4	  &quot;main&quot;: &quot;/content/RiskScoreScriptBpmn.bpmn#Event_start&quot;,
+5	  &quot;contentType&quot;: &quot;ProcessOrchestration&quot;,
+6	  &quot;targetFramework&quot;: &quot;Portable&quot;,
+7	  &quot;runtimeOptions&quot;: {
+8	    &quot;requiresUserInteraction&quot;: false,
+9	    &quot;isAttended&quot;: false
+10	  }
+11	}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#60</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">4ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-bpmn-script-jint-guidance/RiskScoreScriptBpmn/package-descriptor.json&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	{
+2	  &quot;$schema&quot;: &quot;https://cloud.uipath.com/draft/2024-12/package-descriptor&quot;,
+3	  &quot;files&quot;: {
+4	    &quot;operate.json&quot;: &quot;operate.json&quot;,
+5	    &quot;entry-points.json&quot;: &quot;entry-points.json&quot;,
+6	    &quot;bindings.json&quot;: &quot;bindings_v2.json&quot;,
+7	    &quot;RiskScoreScriptBpmn.bpmn&quot;: &quot;RiskScoreScriptBpmn.bpmn&quot;
+8	  }
+9	}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#61</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">4ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-bpmn-script-jint-guidance/RiskScoreScriptBpmn/bindings_v2.json&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	{
+2	  &quot;version&quot;: &quot;2.0&quot;,
+3	  &quot;resources&quot;: []
+4	}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#62</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">3ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-bpmn-script-jint-guidance/RiskScoreScriptBpmn/RiskScoreScriptBpmn.bpmn&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;
+2	&lt;bpmn:definitions xmlns:bpmn=&quot;http://www.omg.org/spec/BPMN/20100524/MODEL&quot; xmlns:uipath=&quot;http://uipath.org/schema/bpmn&quot; xmlns:bpmndi=&quot;http://www.omg.org/spec/BPMN/20100524/DI&quot; xmlns:dc=&quot;http://www.omg.org/spec/DD/20100524/DC&quot; xmlns:di=&quot;http://www.omg.org/spec/DD/20100524/DI&quot; xmlns:xsi=&quot;http://www.w3.org/2001/XMLSchema-instance&quot; exporter=&quot;UiPath Maestro (https://uipath.com)&quot; exporterVersion=&quot;1.201.0-dev.8275&quot;&gt;
+3	  &lt;bpmn:process id=&quot;Process_1&quot; name=&quot;Maestro Process&quot; isExecutable=&quot;true&quot;&gt;
+4	    &lt;bpmn:extensionElements&gt;
+5	      &lt;uipath:variables version=&quot;v1&quot;&gt;
+6	        &lt;uipath:inputOutput id=&quot;Var_Amount&quot; name=&quot;amount&quot; type=&quot;number&quot; /&gt;
+7	        &lt;uipath:inputOutput id=&quot;Var_DaysOverdue&quot; name=&quot;daysOverdue&quot; type=&quot;number&quot; /&gt;
+8	        &lt;uipath:output id=&quot;Var_RiskScore&quot; name=&quot;riskScore&quot; type=&quot;number&quot; /&gt;
+9	      &lt;/uipath:variables&gt;
+10	      &lt;uipath:bindings version=&quot;v1&quot; /&gt;
+11	    &lt;/bpmn:extensionElements&gt;
+12	    &lt;bpmn:startEvent id=&quot;Event_start&quot; name=&quot;core.trigger.manual&quot;&gt;
+13	      &lt;bpmn:extensionElements&gt;
+14	        &lt;uipath:entryPointId value=&quot;fd2dd4b6-16a2-4f1a-a0b8-deede5bd68e9&quot; /&gt;
+15	      &lt;/bpmn:extensionElements&gt;
+16	      &lt;bpmn:outgoing&gt;Flow_ToSc
+
+… (truncated, 2772 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#63</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">697ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 -c \&quot;import xml.etree.ElementTree as ET; ET.parse(&#x27;RiskScoreScriptBpmn.bpmn&#x27;); print(&#x27;well-formed OK&#x27;)\&quot;\nuip maestro bpmn validate RiskScoreScriptBpmn.bpmn --output json 2&gt;&amp;1&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>well-formed OK
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;BpmnValidate&quot;,
+  &quot;Data&quot;: {
+    &quot;File&quot;: &quot;/work/output/artifacts/skill-bpmn-script-jint-guidance/RiskScoreScriptBpmn/RiskScoreScriptBpmn.bpmn&quot;,
+    &quot;Status&quot;: &quot;Valid&quot;,
+    &quot;ProcessCount&quot;: 1,
+    &quot;StartEventCount&quot;: 1,
+    &quot;UiPathExtensionCount&quot;: 9
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#64</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">14ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -n \&quot;\\\&quot;number\\\&quot;\\|\\\&quot;string\\\&quot;\\|\\\&quot;boolean\\\&quot;\\|\\\&quot;integer\\\&quot;\\|\\\&quot;json\\\&quot;\\|variableType\\|VariableType\&quot; /home/azureuser/projects/skills/skills/uipath-maestro-bpmn/validator/bpmn-spec.json | head -20&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>25:          &quot;type&quot;: &quot;string&quot;,
+34:          &quot;type&quot;: &quot;number&quot;,
+43:          &quot;type&quot;: &quot;string&quot;,
+52:          &quot;type&quot;: &quot;string&quot;,
+61:          &quot;type&quot;: &quot;string&quot;,
+97:          &quot;type&quot;: &quot;string&quot;,
+111:          &quot;type&quot;: &quot;string&quot;,
+120:          &quot;type&quot;: &quot;string&quot;,
+129:          &quot;type&quot;: &quot;string&quot;,
+170:          &quot;type&quot;: &quot;string&quot;,
+184:          &quot;type&quot;: &quot;string&quot;,
+193:          &quot;type&quot;: &quot;string&quot;,
+202:          &quot;type&quot;: &quot;string&quot;,
+243:          &quot;type&quot;: &quot;string&quot;,
+257:          &quot;type&quot;: &quot;string&quot;,
+266:          &quot;type&quot;: &quot;string&quot;,
+275:          &quot;type&quot;: &quot;string&quot;,
+328:          &quot;type&quot;: &quot;string&quot;,
+338:          &quot;type&quot;: &quot;string&quot;,
+348:          &quot;type&quot;: &quot;string&quot;,</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#65</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">20ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;ls -la &amp;&amp; echo \&quot;---\&quot; &amp;&amp; for f in *.json; do echo \&quot;== $f ==\&quot;; cat \&quot;$f\&quot;; echo; done&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>total 32
+drwxr-xr-x 2 root root 4096 Aug 14 21:58 .
+drwxr-xr-x 4 root root 4096 Aug 14 21:50 ..
+-rw-r--r-- 1 root root 3753 Aug 14 21:58 RiskScoreScriptBpmn.bpmn
+-rw-r--r-- 1 root root   41 Aug 14 21:59 bindings_v2.json
+-rw-r--r-- 1 root root  699 Aug 14 21:59 entry-points.json
+-rw-r--r-- 1 root root  342 Aug 14 21:59 operate.json
+-rw-r--r-- 1 root root  276 Aug 14 21:59 package-descriptor.json
+-rw-r--r-- 1 root root   76 Aug 14 21:59 project.uiproj
+---
+== bindings_v2.json ==
+{
+  &quot;version&quot;: &quot;2.0&quot;,
+  &quot;resources&quot;: []
+}
+== entry-points.json ==
+{
+  &quot;$schema&quot;: &quot;https://cloud.uipath.com/draft/2024-12/entry-point&quot;,
+  &quot;$id&quot;: &quot;entry-points.json&quot;,
+  &quot;entryPoints&quot;: [
+    {
+      &quot;filePath&quot;: &quot;/content/RiskScoreScriptBpmn.bpmn#Event_start&quot;,
+      &quot;uniqueId&quot;: &quot;fd2dd4b6-16a2-4f1a-a0b8-deede5bd68e9&quot;,
+      &quot;type&quot;: &quot;ProcessOrchestration&quot;,
+      &quot;input&quot;: {
+        &quot;type&quot;: &quot;object&quot;,
+        &quot;properties&quot;: {}
+      },
+      &quot;output&quot;: {
+        &quot;type&quot;: &quot;object&quot;,
+        &quot;properties&quot;: {
+          &quot;amount&quot;: {
+            &quot;type&quot;: &quot;number&quot;
+          },
+          &quot;daysOverdue&quot;: {
+            &quot;type&quot;: &quot;number&quot;
+          },
+          &quot;riskScore&quot;: {
+            &quot;type&quot;: &quot;number&quot;
+          }
+        }
+      },
+   
+
+… (truncated, 715 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#66</span>
+      <span class="tool-name">Edit</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">24ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;replace_all&quot;: false,
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-bpmn-script-jint-guidance/RiskScoreScriptBpmn/RiskScoreScriptBpmn.bpmn&quot;,
+  &quot;old_string&quot;: &quot;      &lt;uipath:variables version=\&quot;v1\&quot;&gt;\n        &lt;uipath:inputOutput id=\&quot;Var_Amount\&quot; name=\&quot;amount\&quot; type=\&quot;number\&quot; /&gt;\n        &lt;uipath:inputOutput id=\&quot;Var_DaysOverdue\&quot; name=\&quot;daysOverdue\&quot; type=\&quot;number\&quot; /&gt;\n        &lt;uipath:output id=\&quot;Var_RiskScore\&quot; name=\&quot;riskScore\&quot; type=\&quot;number\&quot; /&gt;\n      &lt;/uipath:variables&gt;&quot;,
+  &quot;new_string&quot;: &quot;      &lt;uipath:variables version=\&quot;v1\&quot;&gt;\n        &lt;uipath:input id=\&quot;Var_Amount\&quot; name=\&quot;amount\&quot; type=\&quot;number\&quot; elementId=\&quot;Event_start\&quot; /&gt;\n        &lt;uipath:input id=\&quot;Var_DaysOverdue\&quot; name=\&quot;daysOverdue\&quot; type=\&quot;number\&quot; elementId=\&quot;Event_start\&quot; /&gt;\n        &lt;uipath:output id=\&quot;Var_RiskScore\&quot; name=\&quot;riskScore\&quot; type=\&quot;number\&quot; /&gt;\n      &lt;/uipath:variables&gt;&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>The file /work/output/artifacts/skill-bpmn-script-jint-guidance/RiskScoreScriptBpmn/RiskScoreScriptBpmn.bpmn has been updated successfully. (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#67</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">569ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro bpmn validate RiskScoreScriptBpmn.bpmn --output json 2&gt;&amp;1&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;BpmnValidate&quot;,
+  &quot;Data&quot;: {
+    &quot;File&quot;: &quot;/work/output/artifacts/skill-bpmn-script-jint-guidance/RiskScoreScriptBpmn/RiskScoreScriptBpmn.bpmn&quot;,
+    &quot;Status&quot;: &quot;Valid&quot;,
+    &quot;ProcessCount&quot;: 1,
+    &quot;StartEventCount&quot;: 1,
+    &quot;UiPathExtensionCount&quot;: 8
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#68</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">539ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro bpmn update-metadata RiskScoreScriptBpmn.bpmn --output json 2&gt;&amp;1\necho \&quot;---entry-points---\&quot;\ncat entry-points.json&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;MaestroBpmnUpdateMetadata&quot;,
+  &quot;Data&quot;: {
+    &quot;DryRun&quot;: false,
+    &quot;ProjectName&quot;: &quot;RiskScoreScriptBpmn&quot;,
+    &quot;OutDir&quot;: &quot;/work/output/artifacts/skill-bpmn-script-jint-guidance/RiskScoreScriptBpmn&quot;,
+    &quot;FilesWritten&quot;: [
+      &quot;project.uiproj&quot;,
+      &quot;operate.json&quot;,
+      &quot;entry-points.json&quot;,
+      &quot;bindings_v2.json&quot;,
+      &quot;package-descriptor.json&quot;
+    ],
+    &quot;EntryPointCount&quot;: 1
+  }
+}
+---entry-points---
+{
+  &quot;$schema&quot;: &quot;https://cloud.uipath.com/draft/2024-12/entry-point&quot;,
+  &quot;$id&quot;: &quot;entry-points.json&quot;,
+  &quot;entryPoints&quot;: [
+    {
+      &quot;filePath&quot;: &quot;/content/RiskScoreScriptBpmn.bpmn#Event_start&quot;,
+      &quot;uniqueId&quot;: &quot;fd2dd4b6-16a2-4f1a-a0b8-deede5bd68e9&quot;,
+      &quot;type&quot;: &quot;ProcessOrchestration&quot;,
+      &quot;input&quot;: {
+        &quot;type&quot;: &quot;object&quot;,
+        &quot;properties&quot;: {
+          &quot;amount&quot;: {
+            &quot;type&quot;: &quot;number&quot;
+          },
+          &quot;daysOverdue&quot;: {
+            &quot;type&quot;: &quot;number&quot;
+          }
+        }
+      },
+      &quot;output&quot;: {
+        &quot;type&quot;: &quot;object&quot;,
+        &quot;properties&quot;: {
+          &quot;riskScore&quot;: {
+            &quot;type&quot;: &quot;number&quot;
+          }
+        }
+      },
+      &quot;displayName&quot;: &quot;Manual trigger&quot;
+    }
+  ]
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#69</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">4ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-bpmn-script-jint-guidance/RiskScoreScriptBpmn/RiskScoreScriptBpmn.bpmn&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;
+2	&lt;bpmn:definitions xmlns:bpmn=&quot;http://www.omg.org/spec/BPMN/20100524/MODEL&quot; xmlns:uipath=&quot;http://uipath.org/schema/bpmn&quot; xmlns:bpmndi=&quot;http://www.omg.org/spec/BPMN/20100524/DI&quot; xmlns:dc=&quot;http://www.omg.org/spec/DD/20100524/DC&quot; xmlns:di=&quot;http://www.omg.org/spec/DD/20100524/DI&quot; xmlns:xsi=&quot;http://www.w3.org/2001/XMLSchema-instance&quot; exporter=&quot;UiPath Maestro (https://uipath.com)&quot; exporterVersion=&quot;1.201.0-dev.8275&quot;&gt;
+3	  &lt;bpmn:process id=&quot;Process_1&quot; name=&quot;Maestro Process&quot; isExecutable=&quot;true&quot;&gt;
+4	    &lt;bpmn:extensionElements&gt;
+5	      &lt;uipath:variables version=&quot;v1&quot;&gt;
+6	        &lt;uipath:input id=&quot;Var_Amount&quot; name=&quot;amount&quot; type=&quot;number&quot; elementId=&quot;Event_start&quot; /&gt;
+7	        &lt;uipath:input id=&quot;Var_DaysOverdue&quot; name=&quot;daysOverdue&quot; type=&quot;number&quot; elementId=&quot;Event_start&quot; /&gt;
+8	        &lt;uipath:output id=&quot;Var_RiskScore&quot; name=&quot;riskScore&quot; type=&quot;number&quot; /&gt;
+9	      &lt;/uipath:variables&gt;
+10	      &lt;uipath:bindings version=&quot;v1&quot; /&gt;
+11	    &lt;/bpmn:extensionElements&gt;
+12	    &lt;bpmn:startEvent id=&quot;Event_start&quot; name=&quot;core.trigger.manual&quot;&gt;
+13	      &lt;bpmn:extensionElements&gt;
+14	        &lt;uipath:entryPointId value=&quot;fd2dd4b6-16a2-4f1a-a0b8-deede5bd68e9&quot; /&gt;
+15	      &lt;/bpmn:extensionElement
+
+… (truncated, 2808 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#70</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">708ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro bpmn validate RiskScoreScriptBpmn.bpmn --output json &amp;&amp; echo \&quot;---\&quot; &amp;&amp; python3 -c \&quot;import xml.etree.ElementTree as ET; ET.parse(&#x27;RiskScoreScriptBpmn.bpmn&#x27;); print(&#x27;XML well-formed&#x27;)\&quot; &amp;&amp; echo \&quot;---files---\&quot; &amp;&amp; ls -la&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;BpmnValidate&quot;,
+  &quot;Data&quot;: {
+    &quot;File&quot;: &quot;/work/output/artifacts/skill-bpmn-script-jint-guidance/RiskScoreScriptBpmn/RiskScoreScriptBpmn.bpmn&quot;,
+    &quot;Status&quot;: &quot;Valid&quot;,
+    &quot;ProcessCount&quot;: 1,
+    &quot;StartEventCount&quot;: 1,
+    &quot;UiPathExtensionCount&quot;: 8
+  }
+}
+---
+XML well-formed
+---files---
+total 32
+drwxr-xr-x 2 root root 4096 Aug 14 22:00 .
+drwxr-xr-x 4 root root 4096 Aug 14 21:50 ..
+-rw-r--r-- 1 root root 3789 Aug 14 22:00 RiskScoreScriptBpmn.bpmn
+-rw-r--r-- 1 root root   41 Aug 14 22:00 bindings_v2.json
+-rw-r--r-- 1 root root  707 Aug 14 22:00 entry-points.json
+-rw-r--r-- 1 root root  342 Aug 14 22:00 operate.json
+-rw-r--r-- 1 root root  276 Aug 14 22:00 package-descriptor.json
+-rw-r--r-- 1 root root   76 Aug 14 22:00 project.uiproj</pre>
+    
+  </div>
+</details>
+
+</div>
+
+<h2>Command Telemetry</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Total</div><div class="value">71</div></div>
+    <div class="stat"><div class="label">Successful</div><div class="value">70 (99%)</div></div>
+    <div class="stat"><div class="label">Failed</div><div class="value">1</div></div>
+    <div class="stat"><div class="label">Avg / cmd</div><div class="value">357ms</div></div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 2fr;gap:16px;margin-top:12px">
+    <div>
+      <h4>By Tool</h4>
+      <table>
+        <thead><tr><th>Tool</th><th>Count</th></tr></thead>
+        <tbody><tr><td class='mono'>Bash</td><td>47</td></tr><tr><td class='mono'>Read</td><td>13</td></tr><tr><td class='mono'>Grep</td><td>8</td></tr><tr><td class='mono'>Skill</td><td>1</td></tr><tr><td class='mono'>Write</td><td>1</td></tr><tr><td class='mono'>Edit</td><td>1</td></tr></tbody>
+      </table>
+    </div>
+    <div>
+      <h4>Slowest</h4>
+      <table>
+        <thead><tr><th>Tool</th><th>Duration</th><th>Parameters</th></tr></thead>
+        <tbody><tr><td class='mono'>Bash</td><td>6.59s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro bpmn registry get BPMN.Sc...</td></tr><tr><td class='mono'>Bash</td><td>5.14s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro bpmn registry pull --outp...</td></tr><tr><td class='mono'>Bash</td><td>3.10s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro bpmn registry get BPMN.Va...</td></tr><tr><td class='mono'>Bash</td><td>909ms</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro bpmn check --help 2&gt;&amp;1 | ...</td></tr><tr><td class='mono'>Bash</td><td>708ms</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro bpmn validate RiskScoreSc...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+  <p><strong>Most Common Pattern:</strong> <code>Bash → Bash → Bash</code></p><p><strong>Skill Tool Invoked:</strong> 1 time(s)</p>
+</div>
+
+<h2>Generation Metrics</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Total Latency</div><div class="value">12m 35s</div></div>
+    <div class="stat"><div class="label">Turns</div><div class="value">1</div></div>
+    <div class="stat"><div class="label">Assistant Turns</div><div class="value">121</div></div>
+    <div class="stat"><div class="label">Avg Turn Latency</div><div class="value">12m 26s</div></div>
+    
+  </div>
+</div>
+
+<h2>Token Usage</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Input (uncached)</div><div class="value">102</div></div>
+    <div class="stat"><div class="label">Output</div><div class="value">63,697</div></div>
+    <div class="stat"><div class="label">Cache Write</div><div class="value">135,363</div></div>
+    <div class="stat"><div class="label">Cache Read</div><div class="value">5,371,021</div></div>
+    <div class="stat"><div class="label">Total</div><div class="value">5,570,183</div></div>
+    <div class="stat"><div class="label">Cost</div><div class="value">$3.0747</div></div>
+  </div>
+</div>
+
+<h2>Agent Settings</h2>
+<div class="card" style="padding:0">
+  <table>
+    <tbody><tr><td class='mono dim'>Permission Mode</td><td>acceptEdits</td></tr><tr><td class='mono dim'>Allowed Tools</td><td>Skill, Bash, Read, Write, Edit, Glob, Grep</td></tr><tr><td class='mono dim'>Model</td><td>us.anthropic.claude-sonnet-5</td></tr><tr><td class='mono dim'>Max Turns</td><td>60</td></tr><tr><td class='mono dim'>System Prompt</td><td>You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted. </td></tr><tr><td class='mono dim'>Plugins</td><td>/home/azureuser/projects/skills</td></tr></tbody>
+  </table>
+</div>
+
+<h2>Environment</h2>
+<div class="card" style="padding:0">
+  <table>
+    <tbody><tr><td class='mono dim'>git_commit</td><td>unknown</td></tr><tr><td class='mono dim'>skills_git_commit</td><td>unknown</td></tr><tr><td class='mono dim'>cli_version</td><td>1.201.0-dev.8272</td></tr><tr><td class='mono dim'>tool_plugins</td><td>{&#x27;admin-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;agent-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;agenthub-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;aops-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;api-workflow-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;automation-hub-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;codedagent-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;codedapp-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;coder-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;context-grounding-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;conversational-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;data-fabric-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;docsai-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;function-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;gov-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;guardrails-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;insights-tool&#x27;: &#x27;1.201.0-dev.8276&#x27;, &#x27;integrationservice-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;ixp-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;llm-gateway-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;llmgw-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;maestro-tool&#x27;: &#x27;1.201.0-dev.8275&#x27;, &#x27;model-hub-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;orchestrator-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;platform-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;pm-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;rpa-legacy-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;rpa-tool&#x27;: &#x27;1.201.0-dev.20260809.3&#x27;, &#x27;solution-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;tasks-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;test-manager-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;traces-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;vertical-solutions-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;}</td></tr><tr><td class='mono dim'>coder_eval</td><td>0.8.8</td></tr><tr><td class='mono dim'>claude_code_cli</td><td>2.1.177 (Claude Code)</td></tr><tr><td class='mono dim'>uv</td><td>uv 0.11.28 (x86_64-unknown-linux-gnu)</td></tr><tr><td class='mono dim'>anthropic</td><td>0.122.0</td></tr><tr><td class='mono dim'>openai</td><td>3.0.0</td></tr><tr><td class='mono dim'>pydantic</td><td>2.12.5</td></tr><tr><td class='mono dim'>api_routing</td><td>aws_bedrock</td></tr><tr><td class='mono dim'>aws_region</td><td>us-east-2</td></tr><tr><td class='mono dim'>bedrock_model</td><td>us.anthropic.claude-sonnet-4-6</td></tr></tbody>
+  </table>
+</div>
+
+<footer>Generated by coder_eval · 2026-08-14T22:00:55</footer>
+</div>
+<script>
+function toggleTheme() {
+  document.documentElement.classList.toggle('light');
+  try {
+    const mode = document.documentElement.classList.contains('light') ? 'light' : 'dark';
+    localStorage.setItem('coder-eval-theme', mode);
+  } catch (e) { /* ignore */ }
+}
+(function() {
+  try {
+    if (localStorage.getItem('coder-eval-theme') === 'light') {
+      document.documentElement.classList.add('light');
+    }
+  } catch (e) { /* ignore */ }
+})();
+</script>
+</body>
+</html>

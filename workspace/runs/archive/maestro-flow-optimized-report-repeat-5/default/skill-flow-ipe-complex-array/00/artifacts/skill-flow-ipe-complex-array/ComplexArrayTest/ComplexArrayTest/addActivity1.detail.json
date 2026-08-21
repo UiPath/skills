@@ -1,0 +1,16 @@
+{
+  "_comment": "Planned --detail for `uip maestro flow node configure ComplexArrayTest.flow addActivity1`. Replace connectionId and folderKey with real values from `uip is connections list uipath-act-act365 --all-folders --output json` before running.",
+  "connectionId": "<ACT365_CONNECTION_UUID>",
+  "folderKey": "<ORCHESTRATOR_FOLDER_KEY>",
+  "method": "POST",
+  "endpoint": "/Interactions",
+  "bodyParameters": {
+    "subject": "Sales Call",
+    "type": "Call",
+    "startTime": "2026-07-24T09:00:00Z",
+    "endTime": "2026-07-24T10:00:00Z",
+    "timeZone": "UTC",
+    "details": "Discussed Q3 pipeline and next steps",
+    "contacts": "=js:[{\"id\":\"contact-001\",\"displayName\":\"Alice Smith\"},{\"id\":\"contact-002\",\"displayName\":\"Bob Jones\"},{\"id\":\"contact-003\",\"displayName\":\"Carol Davis\"}]"
+  }
+}

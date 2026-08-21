@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "ExpenseApproval",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "0966d186-3896-4923-a731-cdec41326666",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "ExpenseApproval"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Flow",
+      "name": "ExpenseApproval",
+      "package": {
+        "key": "5ea5bf44-ccac-42ed-85db-7698098b53d9"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "f9756b7f-d397-478e-985f-a5eca3a0d2e4",
+    "files": []
+  }
+}

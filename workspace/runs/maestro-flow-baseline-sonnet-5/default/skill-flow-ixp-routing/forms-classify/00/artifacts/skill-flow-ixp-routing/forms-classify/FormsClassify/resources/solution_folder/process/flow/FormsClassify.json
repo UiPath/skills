@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "FormsClassify",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "37ae0d12-eb3b-4ee9-bf50-dd69906ea5dd",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "FormsClassify"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Flow",
+      "name": "FormsClassify",
+      "package": {
+        "key": "82588602-1856-4b1c-bb84-14536de67fb0"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "779231eb-6aaf-4352-9ea8-cfd2839efd09",
+    "files": []
+  }
+}

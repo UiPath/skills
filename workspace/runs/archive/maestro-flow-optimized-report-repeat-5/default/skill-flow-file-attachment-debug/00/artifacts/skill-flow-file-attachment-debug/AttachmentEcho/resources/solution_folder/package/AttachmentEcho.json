@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "AttachmentEcho",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "e1068c33-472d-4ae7-bc52-79fed9a3fa7e",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "AttachmentEcho"
+    },
+    "locks": [],
+    "key": "331ccf5a-0a46-4fe3-93d6-a814135e31be",
+    "files": []
+  }
+}

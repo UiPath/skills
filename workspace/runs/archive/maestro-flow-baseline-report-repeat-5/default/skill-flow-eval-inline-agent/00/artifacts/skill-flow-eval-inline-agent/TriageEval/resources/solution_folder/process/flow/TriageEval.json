@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "TriageEval",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "758e75ba-a7c7-4ff9-90f8-70b7f996681b",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "TriageEval"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Flow",
+      "name": "TriageEval",
+      "package": {
+        "key": "10952fef-569d-495a-b5f8-c8e59ea29f7c"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "78cdf685-c145-47ca-b42d-8024999d91ba",
+    "files": []
+  }
+}

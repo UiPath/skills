@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "AcrUserList",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "9975ec4e-5e86-41a6-8238-66b4b1101800",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "AcrUserList"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Flow",
+      "name": "AcrUserList",
+      "package": {
+        "key": "971df8da-01e9-41a8-a7fe-9706460a626a"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "5c00fed1-beb7-4925-9d20-233feeb920cc",
+    "files": []
+  }
+}

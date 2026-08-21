@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "PurchaseApproval",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "9dc7ce8f-696c-4392-8b5b-04f416fbe7ca",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "PurchaseApproval"
+    },
+    "locks": [],
+    "key": "f15997ae-08e3-49e3-9b11-3eba34f47ab4",
+    "files": []
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "SummarizeDemo",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "bd0556fe-bb53-4cdd-bcf6-ba1e240fd6bb",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "SummarizeDemo"
+    },
+    "locks": [],
+    "key": "8a51374c-ea51-46ba-867b-264c863fb968",
+    "files": []
+  }
+}

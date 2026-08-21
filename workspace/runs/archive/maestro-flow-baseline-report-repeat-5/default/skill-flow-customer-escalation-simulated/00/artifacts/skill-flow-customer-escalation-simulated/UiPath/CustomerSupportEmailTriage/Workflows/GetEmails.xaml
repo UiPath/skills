@@ -1,0 +1,117 @@
+<Activity mc:Ignorable="sap sap2010" x:Class="Workflows_GetEmails"
+  xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities"
+  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+  xmlns:mva="clr-namespace:Microsoft.VisualBasic.Activities;assembly=System.Activities"
+  xmlns:sap="http://schemas.microsoft.com/netfx/2009/xaml/activities/presentation"
+  xmlns:sap2010="http://schemas.microsoft.com/netfx/2010/xaml/activities/presentation"
+  xmlns:scg="clr-namespace:System.Collections.Generic;assembly=System.Private.CoreLib"
+  xmlns:sco="clr-namespace:System.Collections.ObjectModel;assembly=System.Private.CoreLib"
+  xmlns:ui="http://schemas.uipath.com/workflow/activities"
+  xmlns:umae="clr-namespace:UiPath.Mail.Activities.Enums;assembly=UiPath.Mail.Activities"
+  xmlns:uipm="clr-namespace:UiPath.Mail;assembly=UiPath.Mail"
+  xmlns:usau="clr-namespace:UiPath.Shared.Activities.Utils;assembly=UiPath.Mail.Activities"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+  <x:Members>
+    <!-- IN: IMAP server host name, e.g. "imap.gmail.com" -->
+    <x:Property Name="in_MailServer" Type="InArgument(x:String)" />
+    <!-- IN: IMAP port number, e.g. 993 -->
+    <x:Property Name="in_MailPort" Type="InArgument(x:Int32)" />
+    <!-- IN: Email account address -->
+    <x:Property Name="in_EmailAddress" Type="InArgument(x:String)" />
+    <!-- IN: Email account password (use Orchestrator Asset in production) -->
+    <x:Property Name="in_Password" Type="InArgument(x:String)" />
+    <!-- IN: Maximum number of unread emails to fetch -->
+    <x:Property Name="in_Top" Type="InArgument(x:Int32)" />
+    <!-- OUT: List of retrieved mail messages -->
+    <x:Property Name="out_Messages" Type="OutArgument(scg:List(uipm:UiPathMailMessage))" />
+  </x:Members>
+
+  <mva:VisualBasic.Settings>
+    <x:Null />
+  </mva:VisualBasic.Settings>
+
+  <TextExpression.NamespacesForImplementation>
+    <sco:Collection x:TypeArguments="x:String">
+      <x:String>System</x:String>
+      <x:String>System.Collections.Generic</x:String>
+      <x:String>UiPath.Mail</x:String>
+      <x:String>UiPath.Core</x:String>
+      <x:String>UiPath.Core.Activities</x:String>
+      <x:String>UiPath.Mail.Activities.Enums</x:String>
+    </sco:Collection>
+  </TextExpression.NamespacesForImplementation>
+  <TextExpression.ReferencesForImplementation>
+    <sco:Collection x:TypeArguments="AssemblyReference">
+      <AssemblyReference>System</AssemblyReference>
+      <AssemblyReference>System.Activities</AssemblyReference>
+      <AssemblyReference>System.Private.CoreLib</AssemblyReference>
+      <AssemblyReference>UiPath.System.Activities</AssemblyReference>
+      <AssemblyReference>UiPath.Mail.Activities</AssemblyReference>
+      <AssemblyReference>UiPath.Mail</AssemblyReference>
+    </sco:Collection>
+  </TextExpression.ReferencesForImplementation>
+
+  <Sequence DisplayName="Get Emails" sap2010:WorkflowViewState.IdRef="Sequence_1">
+    <Sequence.Variables>
+      <Variable x:TypeArguments="scg:List(uipm:UiPathMailMessage)" Name="retrievedMessages" />
+    </Sequence.Variables>
+
+    <ui:LogMessage Level="Info" DisplayName="Log: Fetching emails">
+      <ui:LogMessage.Message>
+        <InArgument x:TypeArguments="x:Object">
+          <VisualBasicValue x:TypeArguments="x:Object" ExpressionText="&quot;[GetEmails] Connecting to &quot; &amp; in_MailServer &amp; &quot; to fetch up to &quot; &amp; in_Top.ToString() &amp; &quot; unread messages&quot;" />
+        </InArgument>
+      </ui:LogMessage.Message>
+    </ui:LogMessage>
+
+    <!-- Retrieve unread emails from IMAP inbox -->
+    <ui:GetIMAPMailMessages
+      DisplayName="Get IMAP Mail Messages"
+      sap2010:WorkflowViewState.IdRef="GetIMAPMailMessages_1"
+      EnableSSL="True"
+      IgnoreCRL="False"
+      MailFolder="Inbox"
+      OnlyUnreadMessages="True"
+      OrderByDate="NewestFirst"
+      SecureConnection="Auto"
+      UseISConnection="False"
+      Server="[in_MailServer]"
+      Port="[in_MailPort]"
+      Email="[in_EmailAddress]"
+      Password="[in_Password]"
+      Top="[in_Top]"
+      Messages="[retrievedMessages]">
+      <ui:GetIMAPMailMessages.ConnectionDetailsBackupSlot>
+        <usau:BackupSlot x:TypeArguments="umae:ConnectionDetails" StoredValue="{x:Null}">
+          <usau:BackupSlot.BackupValues>
+            <scg:Dictionary x:TypeArguments="umae:ConnectionDetails, scg:List(x:Object)" />
+          </usau:BackupSlot.BackupValues>
+        </usau:BackupSlot>
+      </ui:GetIMAPMailMessages.ConnectionDetailsBackupSlot>
+    </ui:GetIMAPMailMessages>
+
+    <!-- Assign output argument -->
+    <Assign x:TypeArguments="scg:List(uipm:UiPathMailMessage)" DisplayName="Assign out_Messages">
+      <Assign.To>
+        <OutArgument x:TypeArguments="scg:List(uipm:UiPathMailMessage)">
+          <VisualBasicReference x:TypeArguments="scg:List(uipm:UiPathMailMessage)" ExpressionText="out_Messages" />
+        </OutArgument>
+      </Assign.To>
+      <Assign.Value>
+        <InArgument x:TypeArguments="scg:List(uipm:UiPathMailMessage)">
+          <VisualBasicValue x:TypeArguments="scg:List(uipm:UiPathMailMessage)" ExpressionText="retrievedMessages" />
+        </InArgument>
+      </Assign.Value>
+    </Assign>
+
+    <ui:LogMessage Level="Info" DisplayName="Log: Email count">
+      <ui:LogMessage.Message>
+        <InArgument x:TypeArguments="x:Object">
+          <VisualBasicValue x:TypeArguments="x:Object" ExpressionText="&quot;[GetEmails] Retrieved &quot; &amp; If(retrievedMessages IsNot Nothing, retrievedMessages.Count, 0).ToString() &amp; &quot; emails&quot;" />
+        </InArgument>
+      </ui:LogMessage.Message>
+    </ui:LogMessage>
+
+  </Sequence>
+</Activity>

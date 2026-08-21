@@ -1,0 +1,59 @@
+{
+  "_comment": "Planned --detail payload for node configure on listAadGroups1. Connector key: uipath-microsoft-azureactivedirectory. Cannot run node configure without a live tenant; supply connectionId + folderKey from a real IS connection before running uip maestro flow node configure.",
+  "nodeId": "listAadGroups1",
+  "connectorKey": "uipath-microsoft-azureactivedirectory",
+  "nodeType": "uipath.connector.uipath-microsoft-azureactivedirectory.list-groups",
+  "plannedDetail": {
+    "connectionId": "<REPLACE_WITH_CONNECTION_UUID>",
+    "folderKey": "<REPLACE_WITH_FOLDER_KEY>",
+    "method": "GET",
+    "endpoint": "/groups",
+    "filter": {
+      "groupOperator": 0,
+      "index": 0,
+      "filters": [
+        {
+          "id": "displayName",
+          "operator": "Equals",
+          "value": {
+            "value": "active",
+            "rawString": "\"active\"",
+            "isLiteral": true
+          }
+        }
+      ],
+      "groups": []
+    }
+  },
+  "compiledCEQL": "displayName = 'active'",
+  "filterParamName": "where",
+  "runtimeEffect": {
+    "queryParameters": {
+      "where": "displayName = 'active'"
+    },
+    "essentialConfiguration_savedFilterTrees": {
+      "where": {
+        "groupOperator": 0,
+        "index": 0,
+        "filters": [
+          {
+            "id": "displayName",
+            "operator": "Equals",
+            "value": {
+              "value": "active",
+              "rawString": "\"active\"",
+              "isLiteral": true
+            }
+          }
+        ],
+        "groups": []
+      }
+    }
+  },
+  "configureCommand": "uip maestro flow node configure CeqlWhereTest.flow listAadGroups1 --detail '{\"connectionId\":\"<UUID>\",\"folderKey\":\"<FOLDER_KEY>\",\"method\":\"GET\",\"endpoint\":\"/groups\",\"filter\":{\"groupOperator\":0,\"index\":0,\"filters\":[{\"id\":\"displayName\",\"operator\":\"Equals\",\"value\":{\"value\":\"active\",\"rawString\":\"\\\"active\\\"\",\"isLiteral\":true}}],\"groups\":[]}}' --output json",
+  "openQuestions": [
+    "connectionId — run: uip is connections list uipath-microsoft-azureactivedirectory --all-folders --output json",
+    "folderKey — read Data[0].FolderKey from the connections list output",
+    "displayName field must be searchable=true in IS metadata for the where FilterBuilder parameter to be valid; verify with: uip is resources describe uipath-microsoft-azureactivedirectory groups --connection-id <UUID> --operation List --output json"
+  ]
+}

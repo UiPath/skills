@@ -1,0 +1,29 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "Productivity O365 OneDrive",
+    "kind": "connection",
+    "type": "uipath-microsoft-onedrive",
+    "apiVersion": "integrationservice.uipath.com/v1",
+    "isOverridable": true,
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "files": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "connectorName": "Microsoft OneDrive & SharePoint",
+      "name": "Productivity O365 OneDrive",
+      "description": null,
+      "authenticationType": "AuthenticateAfterDeployment",
+      "connectorVersion": "1.35.0",
+      "connectorKey": "uipath-microsoft-onedrive",
+      "pollingInterval": 5
+    },
+    "locks": [],
+    "key": "ae311606-25b7-43ef-9cd0-f3dc0b3a9b58"
+  }
+}

@@ -1,0 +1,33 @@
+{
+  "connectionId": "<OUTLOOK_CONNECTION_ID>",
+  "folderKey": "<ORCHESTRATOR_FOLDER_KEY>",
+  "eventMode": "<EVENT_MODE_FROM_REGISTRY_GET>",
+  "eventParameters": {
+    "parentFolderId": "<INBOX_FOLDER_ID_FROM_IS_RESOURCES>"
+  },
+  "filter": {
+    "groupOperator": 0,
+    "index": 0,
+    "filters": [
+      {
+        "id": "fromAddress",
+        "operator": "Equals",
+        "value": {
+          "value": "abc@xyz.com",
+          "rawString": "\"abc@xyz.com\"",
+          "isLiteral": true
+        }
+      },
+      {
+        "id": "subject",
+        "operator": "Contains",
+        "value": {
+          "value": "good day",
+          "rawString": "\"good day\"",
+          "isLiteral": true
+        }
+      }
+    ],
+    "groups": []
+  }
+}

@@ -1,0 +1,633 @@
+{
+  "id": "3cde0e51-3e0a-49c5-9fb5-f461147e3526",
+  "version": "1.9",
+  "name": "Smoke",
+  "nodes": [
+    {
+      "id": "start",
+      "type": "core.trigger.manual",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Manual trigger"
+      },
+      "inputs": {
+        "entryPointId": "c402f5ad-6f6d-4cb0-b80b-5637156b0c8b",
+        "isDefaultEntryPoint": true
+      }
+    },
+    {
+      "id": "extractInvoice",
+      "type": "uipath.ixp.idp-benchmark-invoices-c735405a-ixp.f6df6382-0af4-80b4-9690-e540cf2af19a-c4359cde-55f0-4f0e-9322-c6cdce74ab4c",
+      "typeVersion": "1.0.0",
+      "display": {
+        "label": "Extract Invoice"
+      },
+      "inputs": {
+        "model": {
+          "id": "f6df6382-0af4-80b4-9690-e540cf2af19a",
+          "modelName": "idp-benchmark---invoices-c735405a-ixp",
+          "modelDisplayName": "idp-benchmark---invoices-c735405a-ixp",
+          "folderKey": "c4359cde-55f0-4f0e-9322-c6cdce74ab4c",
+          "folderName": "Shared",
+          "folderPath": "c4359cde-55f0-4f0e-9322-c6cdce74ab4c",
+          "description": ""
+        },
+        "modelName": "idp-benchmark---invoices-c735405a-ixp",
+        "description": "",
+        "projectName": "idp-benchmark---invoices-c735405a-ixp",
+        "versionTag": "",
+        "folderKey": "c4359cde-55f0-4f0e-9322-c6cdce74ab4c",
+        "folderName": "Shared",
+        "fileRef": "=js:$vars.start.output.invoice",
+        "pageRange": ""
+      },
+      "outputs": {
+        "output": {
+          "name": "output",
+          "type": "object",
+          "source": "=this",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails",
+          "source": "=Error",
+          "var": "error"
+        }
+      }
+    },
+    {
+      "id": "logOk",
+      "type": "core.action.script",
+      "typeVersion": "1.1",
+      "display": {
+        "label": "Log OK"
+      },
+      "inputs": {
+        "script": "const result = $vars.extractInvoice.output;\nreturn { ok: true, extractionResult: result };"
+      },
+      "outputs": {
+        "output": {
+          "type": "object",
+          "description": "The return value of the script",
+          "source": "=result.response",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the script fails",
+          "source": "=Error",
+          "var": "error"
+        }
+      }
+    },
+    {
+      "id": "end",
+      "type": "core.control.end",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "End"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge_start_output_extractInvoice_input",
+      "sourceNodeId": "start",
+      "sourcePort": "output",
+      "targetNodeId": "extractInvoice",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge_extractInvoice_success_logOk_input",
+      "sourceNodeId": "extractInvoice",
+      "sourcePort": "success",
+      "targetNodeId": "logOk",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge_logOk_success_end_input",
+      "sourceNodeId": "logOk",
+      "sourcePort": "success",
+      "targetNodeId": "end",
+      "targetPort": "input"
+    }
+  ],
+  "definitions": [
+    {
+      "nodeType": "core.trigger.manual",
+      "version": "1.0",
+      "category": "trigger",
+      "description": "Start the process manually",
+      "tags": [
+        "trigger",
+        "start",
+        "manual"
+      ],
+      "sortOrder": 80,
+      "display": {
+        "label": "Manual trigger",
+        "icon": "play",
+        "shape": "circle"
+      },
+      "handleConfiguration": [
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "output",
+              "type": "source",
+              "handleType": "output",
+              "showButton": true,
+              "constraints": {
+                "forbiddenTargetCategories": [
+                  "trigger"
+                ]
+              }
+            }
+          ],
+          "visible": true
+        }
+      ],
+      "model": {
+        "type": "bpmn:StartEvent",
+        "entryPointId": true
+      },
+      "outputDefinition": {
+        "output": {
+          "type": "object",
+          "description": "Data passed when manually triggering the process.",
+          "source": "null",
+          "var": "output"
+        }
+      },
+      "toolbarExtensions": {
+        "design": {
+          "actions": [
+            {
+              "id": "change-trigger-type",
+              "icon": "square-mouse-pointer",
+              "label": "Change trigger type"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "nodeType": "uipath.ixp.idp-benchmark-invoices-c735405a-ixp.f6df6382-0af4-80b4-9690-e540cf2af19a-c4359cde-55f0-4f0e-9322-c6cdce74ab4c",
+      "version": "1.0.0",
+      "category": "document-extraction",
+      "tags": [
+        "ixp",
+        "document-understanding",
+        "extraction"
+      ],
+      "description": "(Shared)",
+      "sortOrder": 545,
+      "display": {
+        "canvasLabel": "Extract",
+        "label": "idp-benchmark---invoices-c735405a-ixp",
+        "description": "(Shared)",
+        "icon": "file-text"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "success",
+              "type": "source",
+              "handleType": "output"
+            },
+            {
+              "id": "error",
+              "label": "Error",
+              "type": "source",
+              "handleType": "output",
+              "visible": "{inputs.errorHandlingEnabled}",
+              "constraints": {
+                "maxConnections": 1
+              }
+            }
+          ]
+        }
+      ],
+      "supportsErrorHandling": true,
+      "model": {
+        "type": "bpmn:ServiceTask",
+        "serviceType": "IXP.Extraction",
+        "section": "Published",
+        "bindings": {
+          "resource": "ixpDeployment",
+          "entityType": "ixpDeployment",
+          "resourceSubType": null,
+          "resourceKey": "f6df6382-0af4-80b4-9690-e540cf2af19a",
+          "name": "idp-benchmark---invoices-c735405a-ixp",
+          "values": [
+            {
+              "name": "name",
+              "propertyAttribute": "name",
+              "default": "idp-benchmark---invoices-c735405a-ixp"
+            },
+            {
+              "name": "folderPath",
+              "propertyAttribute": "folderPath",
+              "default": "Shared"
+            }
+          ]
+        }
+      },
+      "form": {
+        "id": "ixp-standalone-form",
+        "title": "IXP",
+        "sections": [
+          {
+            "id": "ixp-model",
+            "title": "Configuration",
+            "fields": [
+              {
+                "name": "inputs.model",
+                "type": "custom",
+                "component": "ixp-model-folder-selector",
+                "label": ""
+              }
+            ]
+          },
+          {
+            "id": "ixp-file-upload",
+            "title": "File input",
+            "collapsible": true,
+            "defaultExpanded": true,
+            "fields": [
+              {
+                "name": "inputs.fileRef",
+                "type": "file",
+                "label": "File",
+                "description": "File to extract data from",
+                "validation": {
+                  "required": true,
+                  "messages": {
+                    "required": "A file is required for extraction"
+                  }
+                }
+              },
+              {
+                "name": "inputs.pageRange",
+                "type": "text",
+                "label": "Page range",
+                "placeholder": "e.g. 1-5",
+                "description": "Optional page range to process."
+              }
+            ]
+          },
+          {
+            "id": "schema-definition",
+            "title": "Schema definition",
+            "collapsible": false,
+            "fields": [
+              {
+                "name": "inputs.model",
+                "type": "custom",
+                "component": "ixp-model-taxonomy",
+                "label": ""
+              }
+            ]
+          }
+        ]
+      },
+      "debug": {
+        "runtime": "bpmnEngine"
+      },
+      "inputDefinition": {
+        "type": "object",
+        "properties": {
+          "projectName": {
+            "type": "string"
+          },
+          "projectId": {
+            "type": "string"
+          },
+          "versionTag": {
+            "type": "string"
+          },
+          "folderKey": {
+            "type": "string",
+            "minLength": 1
+          },
+          "folderName": {
+            "type": "string"
+          },
+          "model": {
+            "type": "object"
+          },
+          "modelName": {
+            "type": "string",
+            "minLength": 1
+          },
+          "fileRef": {
+            "type": "string",
+            "minLength": 1
+          },
+          "pageRange": {
+            "type": "string"
+          },
+          "attachmentConfig": {
+            "type": "object"
+          },
+          "attachment": {
+            "type": "object",
+            "description": "File to extract data from.",
+            "properties": {
+              "ID": {
+                "type": "string",
+                "description": "Orchestrator attachment key"
+              },
+              "FullName": {
+                "type": "string",
+                "description": "File name"
+              },
+              "MimeType": {
+                "type": "string",
+                "description": "The MIME type of the content"
+              },
+              "Metadata": {
+                "type": "object",
+                "description": "Dictionary of metadata",
+                "additionalProperties": {
+                  "type": "string"
+                }
+              }
+            },
+            "required": [
+              "ID"
+            ]
+          }
+        },
+        "required": [
+          "fileRef",
+          "modelName",
+          "folderKey"
+        ]
+      },
+      "inputDefaults": {
+        "model": {
+          "id": "f6df6382-0af4-80b4-9690-e540cf2af19a",
+          "modelName": null,
+          "modelDisplayName": "idp-benchmark---invoices-c735405a-ixp",
+          "folderKey": "c4359cde-55f0-4f0e-9322-c6cdce74ab4c",
+          "folderName": "Shared",
+          "folderPath": "c4359cde-55f0-4f0e-9322-c6cdce74ab4c",
+          "description": ""
+        },
+        "modelName": "idp-benchmark---invoices-c735405a-ixp",
+        "description": "",
+        "projectName": "idp-benchmark---invoices-c735405a-ixp",
+        "versionTag": "",
+        "folderKey": "c4359cde-55f0-4f0e-9322-c6cdce74ab4c",
+        "folderName": "Shared",
+        "fileRef": "",
+        "pageRange": ""
+      }
+    },
+    {
+      "nodeType": "core.action.script",
+      "version": "1.1",
+      "category": "data-operations",
+      "description": "Run custom JavaScript code",
+      "tags": [
+        "code",
+        "javascript",
+        "python"
+      ],
+      "sortOrder": 70,
+      "supportsErrorHandling": true,
+      "display": {
+        "label": "Script",
+        "icon": "code"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "success",
+              "type": "source",
+              "handleType": "output"
+            },
+            {
+              "id": "error",
+              "label": "Error",
+              "type": "source",
+              "handleType": "output",
+              "visible": "{inputs.errorHandlingEnabled}",
+              "constraints": {
+                "maxConnections": 1
+              }
+            }
+          ]
+        }
+      ],
+      "debug": {
+        "runtime": "clientScript"
+      },
+      "model": {
+        "type": "bpmn:ScriptTask"
+      },
+      "inputDefinition": {
+        "type": "object",
+        "properties": {
+          "script": {
+            "type": "string",
+            "minLength": 1,
+            "errorMessage": "Add a script function",
+            "validationSeverity": "warning"
+          }
+        },
+        "required": [
+          "script"
+        ]
+      },
+      "inputDefaults": {
+        "script": ""
+      },
+      "outputDefinition": {
+        "output": {
+          "type": "any",
+          "description": "The return value of the script",
+          "source": "=result.response",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the script fails",
+          "source": "=Error",
+          "var": "error"
+        }
+      }
+    },
+    {
+      "nodeType": "core.control.end",
+      "version": "1.0",
+      "category": "control-flow",
+      "description": "Mark the end of a process path",
+      "tags": [
+        "control-flow",
+        "end",
+        "finish",
+        "complete"
+      ],
+      "sortOrder": 65,
+      "display": {
+        "label": "End",
+        "icon": "circle-check",
+        "shape": "circle"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        }
+      ],
+      "model": {
+        "type": "bpmn:EndEvent"
+      },
+      "runtimeConstraints": {
+        "exclude": [
+          "api-function"
+        ]
+      }
+    }
+  ],
+  "variables": {
+    "globals": [
+      {
+        "id": "invoice",
+        "direction": "in",
+        "type": "file",
+        "triggerNodeId": "start"
+      }
+    ],
+    "nodes": [
+      {
+        "id": "start.output",
+        "type": "object",
+        "description": "Data passed when manually triggering the process.",
+        "binding": {
+          "nodeId": "start",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "extractInvoice.output",
+        "type": "object",
+        "binding": {
+          "nodeId": "extractInvoice",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "extractInvoice.error",
+        "type": "object",
+        "description": "Error information if the node fails",
+        "binding": {
+          "nodeId": "extractInvoice",
+          "outputId": "error"
+        }
+      },
+      {
+        "id": "logOk.output",
+        "type": "object",
+        "description": "The return value of the script",
+        "binding": {
+          "nodeId": "logOk",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "logOk.error",
+        "type": "object",
+        "description": "Error information if the script fails",
+        "binding": {
+          "nodeId": "logOk",
+          "outputId": "error"
+        }
+      }
+    ]
+  },
+  "bindings": [],
+  "runtime": "maestro",
+  "layout": {
+    "nodes": {
+      "start": {
+        "position": {
+          "x": -192,
+          "y": 0
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "extractInvoice": {
+        "position": {
+          "x": 0,
+          "y": 0
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "logOk": {
+        "position": {
+          "x": 192,
+          "y": 0
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "end": {
+        "position": {
+          "x": 384,
+          "y": 0
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      }
+    }
+  }
+}

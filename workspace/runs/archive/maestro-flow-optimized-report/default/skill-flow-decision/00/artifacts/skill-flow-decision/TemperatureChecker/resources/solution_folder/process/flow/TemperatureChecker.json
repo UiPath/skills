@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "TemperatureChecker",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "c6dec2d2-4add-4b1a-a750-98996c3b16cb",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "TemperatureChecker"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Flow",
+      "name": "TemperatureChecker",
+      "package": {
+        "key": "9529b8a9-5de3-48cd-8dcc-828b8799df2c"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "6a27501d-0148-4449-bcf0-34365136f8cd",
+    "files": []
+  }
+}

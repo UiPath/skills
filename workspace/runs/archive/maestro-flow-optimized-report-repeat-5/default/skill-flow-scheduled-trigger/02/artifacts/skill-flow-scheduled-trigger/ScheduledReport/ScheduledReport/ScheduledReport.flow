@@ -1,0 +1,156 @@
+{
+  "id": "a1d0e2c1-40a9-49d7-906f-4c524aa8c8bd",
+  "version": "1.8",
+  "name": "ScheduledReport",
+  "nodes": [
+    {
+      "id": "start",
+      "type": "core.trigger.scheduled",
+      "typeVersion": "1.2",
+      "display": {
+        "label": "Every Hour"
+      },
+      "inputs": {
+        "entryPointId": "3258d34e-e711-4ba3-ab82-45ec8e284470",
+        "isDefaultEntryPoint": true,
+        "timerType": "timeCycle",
+        "timerPreset": "R/PT1H",
+        "timerValue": "R/PT1H"
+      }
+    }
+  ],
+  "edges": [],
+  "definitions": [
+    {
+      "nodeType": "core.trigger.scheduled",
+      "runtimeConstraints": {
+        "exclude": [
+          "api-function"
+        ]
+      },
+      "version": "1.2",
+      "category": "trigger",
+      "description": "Start workflow on a schedule or interval",
+      "tags": [
+        "trigger",
+        "start",
+        "event",
+        "schedule",
+        "timer",
+        "cron"
+      ],
+      "sortOrder": 40,
+      "display": {
+        "label": "Scheduled trigger",
+        "icon": "calendar-clock",
+        "shape": "circle"
+      },
+      "handleConfiguration": [
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "output",
+              "type": "source",
+              "handleType": "output",
+              "showButton": true,
+              "constraints": {
+                "forbiddenTargetCategories": [
+                  "trigger"
+                ]
+              }
+            }
+          ],
+          "visible": true
+        }
+      ],
+      "model": {
+        "type": "bpmn:StartEvent",
+        "entryPointId": true,
+        "eventDefinition": "bpmn:TimerEventDefinition",
+        "values": {
+          "timerType": "inputs.timerType",
+          "timerValue": "inputs.timerValue"
+        }
+      },
+      "toolbarExtensions": {
+        "design": {
+          "actions": [
+            {
+              "id": "change-trigger-type",
+              "icon": "square-mouse-pointer",
+              "label": "Change trigger type"
+            }
+          ]
+        }
+      },
+      "inputDefinition": {
+        "type": "object",
+        "properties": {
+          "timerType": {
+            "type": "string",
+            "minLength": 1
+          },
+          "timerValue": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "^(?:R\\d*\\/(?:P(?:[1-9][0-9]{0,3}Y|(?:[1-9]|1[0-2])M|(?:[1-9]|[1-4][0-9]|5[0-2])W|(?:[1-9]|[12][0-9]|3[01])D|T(?:(?:[1-9]|1[0-9]|2[0-3])H|(?:[1-9]|[1-5][0-9])M|(?:[1-9]|[1-5][0-9])S))(?:\\/\\d{4}-\\d{2}-\\d{2}(?:T\\d{2}:\\d{2}(?::\\d{2}(?:\\.\\d+)?)?(?:Z|[+-]\\d{2}:\\d{2})?)?)?|\\d{4}-\\d{2}-\\d{2}(?:T\\d{2}:\\d{2}(?::\\d{2}(?:\\.\\d+)?)?(?:Z|[+-]\\d{2}:\\d{2})?)?\\/P(?:[1-9][0-9]{0,3}Y|(?:[1-9]|1[0-2])M|(?:[1-9]|[1-4][0-9]|5[0-2])W|(?:[1-9]|[12][0-9]|3[01])D|T(?:(?:[1-9]|1[0-9]|2[0-3])H|(?:[1-9]|[1-5][0-9])M|(?:[1-9]|[1-5][0-9])S)))|(?:\\d+[LW]?|[A-Z]{3}|LW|L|W|\\?|\\*)(?:[,/#-](?:\\d+[LW]?|[A-Z]{3}|LW|L|W|\\?|\\*))*(?:\\s+(?:\\d+[LW]?|[A-Z]{3}|LW|L|W|\\?|\\*)(?:[,/#-](?:\\d+[LW]?|[A-Z]{3}|LW|L|W|\\?|\\*))*){5,6})$",
+            "errorMessage": {
+              "minLength": "Cycle expression is required",
+              "pattern": "Cycle expression must be either an ISO 8601 repeating interval (e.g., R/PT1H, R/P1D, R/2026-05-14T09:00:00Z/P1W) or a Quartz cron expression (e.g., 0 0 */1 * * ? *)"
+            }
+          }
+        },
+        "required": [
+          "timerValue"
+        ]
+      },
+      "inputDefaults": {
+        "timerType": "timeCycle",
+        "timerValue": "R/PT1H"
+      },
+      "form": {
+        "id": "scheduled-trigger-properties",
+        "title": "Scheduled trigger",
+        "sections": [
+          {
+            "id": "schedule",
+            "title": "Schedule",
+            "collapsible": false,
+            "defaultExpanded": true,
+            "fields": [
+              {
+                "name": "inputs.timerValue",
+                "type": "custom",
+                "component": "iso-expression-field",
+                "label": "",
+                "placeholder": "R/PT1H",
+                "componentProps": {
+                  "expressionType": "repeating-interval"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "runtime": "maestro",
+  "variables": {
+    "nodes": []
+  },
+  "layout": {
+    "nodes": {
+      "start": {
+        "position": {
+          "x": 256,
+          "y": 144
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        }
+      }
+    }
+  }
+}

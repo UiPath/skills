@@ -1,0 +1,92 @@
+=== USER (turn 1) — simulator-generated opener ===
+Hi — I need your help building a UiPath Maestro Flow project. The project and solution should both be named **CustomerEscalationTriage**, and it needs to be validated before we can sign off on it (the grader will run it after validation, so please don't try to execute it yourself).
+
+Here's the contract the flow has to honor — downstream systems consume these names exactly, so do not rename, abbreviate, or re-case any of them:
+
+**Inputs:**
+- `customerTier`
+- `productionDown`
+- `workaroundAvailable`
+- `businessImpact`
+- `correlationId`
+
+**Outputs:**
+- `severity`
+- `engineeringNeeded`
+- `responseMode`
+- `caseKey`
+
+Here's the business policy it needs to encode, in plain English:
+
+1. An Enterprise customer with production completely unavailable and no workaround is our most critical situation — that's **Sev1**.
+2. Informational or routine follow-up with no production impact is low priority — **Sev3**.
+3. Engineering gets pulled in for Sev1, but not for Sev3.
+4. We always draft an acknowledgement for a human to review — we never auto-send anything. So `responseMode` should always be **Draft**.
+5. Whatever `correlationId` comes in must be passed straight through as `caseKey` so our downstream systems can correlate the run.
+
+One more thing on `businessImpact`: that's a free-form text field where the requester writes a short phrase or sentence in their own words describing the impact. It won't be a fixed keyword or code — wording will vary every time.
+
+That's the core of what I need. Feel free to ask me anything before you start building — I'd rather answer questions up front than have to rework things later.
+
+=== AGENT (turn 1) — 45.9s, in=1264 out=2005, 3 tool calls ===
+Before building, I have two critical questions about the business logic that aren't fully specified — answering these now will prevent rework.
+
+**Question 1 — Middle-tier severity**
+
+Your rules define Sev1 and Sev3 explicitly, but not every ticket will fit either. For example: an Enterprise customer with production down *but a workaround is available*, or a non-Enterprise customer with production down. What severity should those cases get?
+
+1. **Sev2** (there's a middle tier — all cases not matching Sev1 or Sev3 rules are Sev2)
+2. **Sev3** (default low-priority unless the Sev1 conditions are all met)
+3. **Something else** (describe the middle-tier rule)
+
+---
+
+**Question 2 — `engineeringNeeded` output type and middle-case value**
+
+You specified engineering for Sev1 and not for Sev3. What is the expected type/value for this output, and what should it be for the middle tier (if one exists)?
+
+1. **Boolean** (`true`/`false`) — `true` for Sev1, `false` for Sev3 (and for Sev2 if applicable)
+2. **Boolean** (`true`/`false`) — `true` for Sev1, `false` for Sev3, `true` for Sev2
+3. **Something else** (e.g. a string, or a different value set)
+
+=== USER (turn 2) ===
+Good questions — happy to clarify both before you start.
+
+**On middle-tier severity:** Yes, there is a Sev2. The rule is: production is unavailable or degraded *but* a viable workaround exists. That's the middle case. So production down with a workaround in place = Sev2, not Sev1. Anything that doesn't meet Sev1 or Sev2 criteria falls to Sev3.
+
+**On `engineeringNeeded`:** Boolean is the right type. Engineering gets pulled in for both Sev1 and Sev2 — so `true` for those two, `false` for Sev3. Your option 2 matches that.
+
+Go ahead and build it.
+
+=== AGENT (turn 2) — 235.9s, in=13 out=14759, 15 tool calls ===
+Validation passes with **no warnings**. The flow is complete.
+
+---
+
+**Build complete — `CustomerEscalationTriage`**
+
+**File:** `CustomerEscalationTriage/CustomerEscalationTriage/CustomerEscalationTriage.flow`
+
+**What was built:**
+
+| Node | Purpose |
+|---|---|
+| `start` (Manual trigger) | Accepts all 5 inputs: `customerTier`, `productionDown`, `workaroundAvailable`, `businessImpact`, `correlationId` |
+| `checkSev1` (Decision) | `customerTier === "Enterprise" && productionDown === true && workaroundAvailable === false` |
+| `checkSev2` (Decision) | `productionDown === true && workaroundAvailable === true` |
+| `setSev1/2/3` (Script) | Returns severity, `engineeringNeeded` (true/true/false), `responseMode: "Draft"`, `caseKey` = pass-through of `correlationId` |
+| `endSev1/2/3` (End) | Each maps all 4 output variables |
+
+**Validation:** ✓ `Status: Valid`, 0 warnings  
+**Format:** ✓ Run, all nodes positioned  
+**No mock placeholders, no connector nodes, no missing connections.**
+
+What's next?
+
+1. **Publish to Studio Web** — push the solution for browser visualization/editing
+2. **Deploy to Orchestrator** — pack and publish directly
+3. **Something else**
+
+=== USER (turn 3) — stop token — dialog ending ===
+That's everything I needed — validation passing with no warnings is the sign-off criteria. The grader takes it from here.
+

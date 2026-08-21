@@ -1,0 +1,160 @@
+{
+  "version": "1.1.0",
+  "settings": {
+    "model": "anthropic.claude-sonnet-4-6",
+    "maxTokens": 64000,
+    "temperature": 0,
+    "engine": "basic-v2",
+    "maxIterations": 5,
+    "mode": "standard"
+  },
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "start__output__webhookPayload": {
+        "type": "object",
+        "description": "The billing dispute webhook payload with customer, invoice, and dispute fields"
+      },
+      "discrepancyDetection1__output__discrepancies": {
+        "type": "array",
+        "description": "List of detected billing discrepancies"
+      },
+      "discrepancyDetection1__output__totalOvercharge": {
+        "type": "number",
+        "description": "Total overcharge amount detected"
+      },
+      "discrepancyDetection1__output__totalUndercharge": {
+        "type": "number",
+        "description": "Total undercharge amount detected"
+      },
+      "discrepancyDetection1__output__netDiscrepancy": {
+        "type": "number",
+        "description": "Net discrepancy amount (overcharge minus undercharge)"
+      },
+      "discrepancyDetection1__output__crmData": {
+        "type": "array",
+        "description": "CRM customer account data"
+      }
+    }
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "determination": {
+        "type": "string",
+        "description": "The dispute determination: valid_dispute, invalid_dispute, or partial_dispute"
+      },
+      "recommendedAction": {
+        "type": "string",
+        "description": "Recommended action: escalate_to_manager, auto_resolve, or reject",
+        "enum": [
+          "escalate_to_manager",
+          "auto_resolve",
+          "reject"
+        ]
+      },
+      "autoResolutionEligible": {
+        "type": "boolean",
+        "description": "Whether the dispute is eligible for automatic resolution"
+      },
+      "creditAmount": {
+        "type": "number",
+        "description": "Recommended credit amount to apply to the account"
+      },
+      "confidence": {
+        "type": "number",
+        "description": "Confidence score for the determination (0.0 to 1.0)"
+      },
+      "rationale": {
+        "type": "string",
+        "description": "Detailed explanation of the determination and recommended action"
+      }
+    },
+    "required": [
+      "determination",
+      "recommendedAction",
+      "autoResolutionEligible",
+      "creditAmount",
+      "confidence",
+      "rationale"
+    ]
+  },
+  "metadata": {
+    "storageVersion": "50.0.0",
+    "isConversational": false,
+    "showProjectCreationExperience": false
+  },
+  "type": "lowCode",
+  "guardrails": [],
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are an expert billing dispute analyst at a financial services company. Your role is to review billing disputes, compare the disputed charges against verified ERP data, and make a fair determination based on company policy and the Billing Dispute SOP.\n\nYour analysis must:\n1. Review the disputed line items and compare against ERP records\n2. Assess the validity and severity of each discrepancy\n3. Apply the Billing Dispute SOP guidelines to determine the appropriate course of action\n4. Recommend one of three actions: escalate_to_manager (for disputes over $500 or complex cases), auto_resolve (for clear overcharges under $500 with strong evidence), or reject (for invalid or unsupported disputes)\n5. Calculate the appropriate credit amount if resolution is warranted\n6. Provide a confidence score based on the quality of evidence\n\nAlways be fair, accurate, and grounded in the evidence provided. Use the Billing Dispute SOP Index for policy guidance.",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "You are an expert billing dispute analyst at a financial services company. Your role is to review billing disputes, compare the disputed charges against verified ERP data, and make a fair determination based on company policy and the Billing Dispute SOP.\n\nYour analysis must:\n1. Review the disputed line items and compare against ERP records\n2. Assess the validity and severity of each discrepancy\n3. Apply the Billing Dispute SOP guidelines to determine the appropriate course of action\n4. Recommend one of three actions: escalate_to_manager (for disputes over $500 or complex cases), auto_resolve (for clear overcharges under $500 with strong evidence), or reject (for invalid or unsupported disputes)\n5. Calculate the appropriate credit amount if resolution is warranted\n6. Provide a confidence score based on the quality of evidence\n\nAlways be fair, accurate, and grounded in the evidence provided. Use the Billing Dispute SOP Index for policy guidance."
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "Please analyze this billing dispute and provide your determination.\n\nDispute Payload:\n{{input.start__output__webhookPayload}}\n\nDetected Discrepancies:\n{{input.discrepancyDetection1__output__discrepancies}}\n\nTotal Overcharge: {{input.discrepancyDetection1__output__totalOvercharge}}\nTotal Undercharge: {{input.discrepancyDetection1__output__totalUndercharge}}\nNet Discrepancy: {{input.discrepancyDetection1__output__netDiscrepancy}}\n\nCRM Customer Data:\n{{input.discrepancyDetection1__output__crmData}}\n\nBased on the above data and the Billing Dispute SOP, provide your structured determination.",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "Please analyze this billing dispute and provide your determination.\n\nDispute Payload:\n"
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__webhookPayload"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\nDetected Discrepancies:\n"
+        },
+        {
+          "type": "variable",
+          "rawString": "input.discrepancyDetection1__output__discrepancies"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\nTotal Overcharge: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.discrepancyDetection1__output__totalOvercharge"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\nTotal Undercharge: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.discrepancyDetection1__output__totalUndercharge"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\nNet Discrepancy: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.discrepancyDetection1__output__netDiscrepancy"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\nCRM Customer Data:\n"
+        },
+        {
+          "type": "variable",
+          "rawString": "input.discrepancyDetection1__output__crmData"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\nBased on the above data and the Billing Dispute SOP, provide your structured determination."
+        }
+      ]
+    }
+  ],
+  "projectId": "58bf81e3-62f5-4181-a82e-c282463a6f91"
+}

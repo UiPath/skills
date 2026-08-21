@@ -1,0 +1,129 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "CustomerEscalation",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "01e2f9cc-045d-4a3d-9a38-9416b2d6adef",
+    "isOverridable": true,
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "CustomerEscalation"
+      }
+    ],
+    "runtimeDependencies": [
+      {
+        "bindingType": "connection",
+        "bindingKey": "00000000-0000-0000-0000-000000000000",
+        "bindingValues": {
+          "connectionId": {
+            "defaultValue": "00000000-0000-0000-0000-000000000000",
+            "isExpression": false
+          }
+        },
+        "bindingMetadata": {
+          "activityName": "Email Received",
+          "bindingsVersion": "2.2",
+          "connector": "uipath-mock-outlook",
+          "useConnectionService": "true"
+        },
+        "resourceKind": "Connection",
+        "resourceType": "uipath-mock-outlook",
+        "resourceKey": "00000000-0000-0000-0000-000000000000",
+        "resourceName": "00000000-0000-0000-0000-000000000000",
+        "folderKey": "266a0d11-5995-5740-50a6-d54ca13f62c8"
+      },
+      {
+        "bindingType": "connection",
+        "bindingKey": "849e85d8-1aa9-4d52-8bbd-20041c8f05d8",
+        "bindingValues": {
+          "connectionId": {
+            "defaultValue": "849e85d8-1aa9-4d52-8bbd-20041c8f05d8",
+            "isExpression": false
+          }
+        },
+        "bindingMetadata": {
+          "activityName": "Slack Alert to Team",
+          "bindingsVersion": "2.2",
+          "connector": "uipath-salesforce-slack",
+          "useConnectionService": "true"
+        },
+        "resourceKind": "Connection",
+        "resourceType": "uipath-salesforce-slack",
+        "resourceKey": "849e85d8-1aa9-4d52-8bbd-20041c8f05d8",
+        "resourceName": "is-sandboxes",
+        "folderKey": "5da18ec0-7de1-4e57-aaf1-ddc8a369c199"
+      },
+      {
+        "bindingType": "connection",
+        "bindingKey": "f5273a4d-d492-4bcd-a106-5a20bf89a3ef",
+        "bindingValues": {
+          "connectionId": {
+            "defaultValue": "f5273a4d-d492-4bcd-a106-5a20bf89a3ef",
+            "isExpression": false
+          }
+        },
+        "bindingMetadata": {
+          "activityName": "Create Jira Ticket",
+          "bindingsVersion": "2.2",
+          "connector": "uipath-atlassian-jira",
+          "useConnectionService": "true"
+        },
+        "resourceKind": "Connection",
+        "resourceType": "uipath-atlassian-jira",
+        "resourceKey": "f5273a4d-d492-4bcd-a106-5a20bf89a3ef",
+        "resourceName": "is-sandboxes-test@uipath.com-uipath-sandbox-380",
+        "folderKey": "5da18ec0-7de1-4e57-aaf1-ddc8a369c199"
+      },
+      {
+        "bindingType": "EventTrigger",
+        "bindingKey": "00000000-0000-0000-0000-000000000000",
+        "bindingValues": {
+          "connectionId": {
+            "defaultValue": "00000000-0000-0000-0000-000000000000",
+            "isExpression": false
+          },
+          "entryPointUniqueId": {
+            "defaultValue": "bf2377fe-0910-4b66-821d-2a30e2175f1a",
+            "isExpression": false
+          }
+        },
+        "bindingMetadata": {
+          "activityName": "Email Received",
+          "bindingsVersion": "2.2",
+          "connector": "uipath-mock-outlook",
+          "operation": "EMAIL_RECEIVED",
+          "objectName": "Message",
+          "filterExpression": ""
+        },
+        "resourceKind": "Connection",
+        "resourceType": "uipath-mock-outlook",
+        "resourceKey": "00000000-0000-0000-0000-000000000000",
+        "resourceName": "00000000-0000-0000-0000-000000000000",
+        "folderKey": "266a0d11-5995-5740-50a6-d54ca13f62c8"
+      }
+    ],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Flow",
+      "name": "CustomerEscalation",
+      "package": {
+        "key": "8b7616c5-3f94-48c3-880e-841c50adcab9"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "32f0c9ce-6c1d-4d19-afc2-51b46a1f0999",
+    "files": []
+  }
+}

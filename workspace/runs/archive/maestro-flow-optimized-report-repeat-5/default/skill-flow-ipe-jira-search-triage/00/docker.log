@@ -1,0 +1,11 @@
+17:16:09 [INFO   ] [default/skill-flow-ipe-jira-search-triage/00] orchestrator: API routing: aws_bedrock
+17:16:09 [INFO   ] [default/skill-flow-ipe-jira-search-triage/00] orchestrator: Running pre-run command: python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/e2e/jira_search_triage/seed_jira.py
+17:16:20 [INFO   ] [default/skill-flow-ipe-jira-search-triage/00] orchestrator: [pre_run stdout] OK: seeded 2 issues ['CE-152', 'CE-153'] (tag=bf3cd48a) for JQL search
+17:22:52 [INFO   ] [default/skill-flow-ipe-jira-search-triage/00] evaluation.checker: Criterion 'run_command' FAILED (score=0.00, threshold=1.00): Command: python3 $TASK_DIR/check_jira_search_triage.py
+17:22:52 [INFO   ] [default/skill-flow-ipe-jira-search-triage/00] orchestrator: Success criteria: 1/2 passed, weighted score: 0.286
+17:22:52 [INFO   ] [default/skill-flow-ipe-jira-search-triage/00] orchestrator: Running post-run command: python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/e2e/jira_search_triage/teardown_jira.py
+17:22:56 [INFO   ] [default/skill-flow-ipe-jira-search-triage/00] orchestrator: [post_run stdout] OK: deleted CE-152
+17:22:57 [INFO   ] [default/skill-flow-ipe-jira-search-triage/00] orchestrator: [post_run stdout] OK: deleted CE-153
+17:22:57 [INFO   ] [default/skill-flow-ipe-jira-search-triage/00] orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+17:22:57 [INFO   ] [default/skill-flow-ipe-jira-search-triage/00] orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-ipe-jira-search-triage
+17:22:57 [INFO   ] [default/skill-flow-ipe-jira-search-triage/00] orchestrator: Task finished: status=FAILURE duration=413.3s score=0.286 iterations=1

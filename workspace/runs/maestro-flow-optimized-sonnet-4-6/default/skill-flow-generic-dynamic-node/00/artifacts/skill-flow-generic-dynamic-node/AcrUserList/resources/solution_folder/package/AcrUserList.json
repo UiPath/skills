@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "AcrUserList",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "8e6efd2e-0d29-4211-bcf7-96e6aff570e0",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "AcrUserList"
+    },
+    "locks": [],
+    "key": "be462ebc-6cf9-4bc0-bc2d-07ffad966abb",
+    "files": []
+  }
+}

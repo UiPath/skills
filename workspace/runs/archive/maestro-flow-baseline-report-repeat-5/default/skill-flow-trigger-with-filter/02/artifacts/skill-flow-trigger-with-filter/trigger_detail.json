@@ -1,0 +1,95 @@
+{
+  "_comment": [
+    "Trigger configuration for: UiPath Maestro Flow — Outlook 365 email-received connector trigger.",
+    "Node type:  uipath.connector.trigger.uipath-microsoft-outlook365.email-received",
+    "This file captures every field that would be passed to:",
+    "  uip maestro flow node configure <PROJECT>.flow <triggerId> --detail '<this JSON>'",
+    "All PLACEHOLDER values must be replaced before the flow can be packed / debugged.",
+    "",
+    "Discovery commands (run against a live tenant to resolve placeholders):",
+    "  # 1. Find connector key + node type",
+    "  uip maestro flow registry search 'outlook trigger' --output json",
+    "",
+    "  # 2. List available connections",
+    "  uip is connections list 'uipath-microsoft-outlook365' --all-folders --output json",
+    "",
+    "  # 3. Query trigger objects (required — yields parameters[] and byoaConnection flag)",
+    "  uip is triggers objects 'uipath-microsoft-outlook365' 'EMAIL_RECEIVED' \\",
+    "    --connection-id '<CONNECTION_ID>' --output json",
+    "",
+    "  # 4. Fetch enriched metadata (filterFields + eventParameters + outputResponseDefinition)",
+    "  uip is triggers describe 'uipath-microsoft-outlook365' 'EMAIL_RECEIVED' 'Message' \\",
+    "    --connection-id '<CONNECTION_ID>' --output json",
+    "",
+    "  # 5. Resolve Inbox folder ID (parentFolderId is a reference field)",
+    "  uip is resources run list 'uipath-microsoft-outlook365' 'MailFolder' \\",
+    "    --connection-id '<CONNECTION_ID>' --output json",
+    "",
+    "  # 6. Get enriched registry definition (requires --connection-id for trigger nodes)",
+    "  uip maestro flow registry get uipath.connector.trigger.uipath-microsoft-outlook365.email-received \\",
+    "    --connection-id '<CONNECTION_ID>' --output json"
+  ],
+
+  "connectionId": "<CONNECTION_ID>",
+  "_connectionId_note": "UUID of the IS connection for Microsoft Outlook 365. Obtain from 'uip is connections list uipath-microsoft-outlook365 --all-folders --output json'. Prefer the connection where IsDefault is 'Yes'. If the trigger object returns byoaConnection:true, use a BYOA connection only (filter with --byoa flag).",
+
+  "folderKey": "<ORCHESTRATOR_FOLDER_KEY>",
+  "_folderKey_note": "Orchestrator folder key (numeric string) where the connection lives. Shown in the 'uip is connections list' output as 'FolderKey'. Use the key that matches the connection selected above.",
+
+  "eventMode": "<EVENT_MODE>",
+  "_eventMode_note": "Either 'webhooks' or 'polling'. Returned by 'uip maestro flow registry get ... --connection-id ...' under the top-level 'eventMode' field. Typically 'polling' for Outlook 365 email-received, but verify from the live registry response. If 'webhooks', flow debug is not supported — deployment to Orchestrator is required.",
+
+  "eventParameters": {
+    "parentFolderId": "<INBOX_FOLDER_ID>",
+    "_parentFolderId_note": "ID of the Outlook mailbox folder to watch (e.g. Inbox). This is a reference field: resolve the ID with 'uip is resources run list uipath-microsoft-outlook365 MailFolder --connection-id <id> --output json'. Paginate (HasMore / nextPage token) until the target folder is found. Do NOT reuse an ID from another flow or session — reference IDs are connection-scoped."
+  },
+  "_eventParameters_note": "JSON object of event-scoped input fields. Keys come from the UNION of 'triggers objects → parameters[]' and 'triggers describe → EventParameters', bucketed by the field's 'type' value: type='query' → queryParameters, type='path' → pathParameters, otherwise → eventParameters. The parentFolderId field (Email folder) is the primary required event parameter for email-received. If a shared mailbox address is needed, add 'sharedMailboxAddress' here (type='query', so it would move to queryParameters — verify bucket from 'triggers objects' response).",
+
+  "filter": {
+    "_comment": "Structured filter tree. The CLI compiles this into a JMESPath filterExpression automatically. Do NOT pass filterExpression directly — it is rejected. Field names (leaf 'id') must match entries in filterFields.fields[].name returned by 'registry get --connection-id'. Verify the exact names from the live response before configuring.",
+    "groupOperator": 0,
+    "_groupOperator_note": "0 = AND (all conditions must match), 1 = OR. Both filters below are joined with AND — the email must have subject containing 'good day' AND be from abc@xyz.com.",
+    "index": 0,
+    "filters": [
+      {
+        "id": "subject",
+        "_id_note": "Filter field name for email subject line. Expected name from the Outlook 365 connector's filterFields. Verify against 'filterFields.fields[].name' in the enriched registry response.",
+        "operator": "Contains",
+        "_operator_note": "Substring match — fires when the subject includes 'good day' anywhere (case-sensitivity depends on the connector). Use 'Equals' instead for an exact-match requirement.",
+        "value": {
+          "value": "good day",
+          "rawString": "\"good day\"",
+          "isLiteral": true
+        }
+      },
+      {
+        "id": "fromAddress",
+        "_id_note": "Filter field name for the sender's email address. The Outlook 365 connector's filterFields example shows 'fromAddress' (displayName: 'From address'). Confirm the exact name from 'filterFields.fields[].name' in the live registry response — the name in the filter tree 'id' must match exactly.",
+        "operator": "Equals",
+        "_operator_note": "Exact match on the sender address abc@xyz.com. Change to 'Contains' or 'EndsWith' for domain-level filtering.",
+        "value": {
+          "value": "abc@xyz.com",
+          "rawString": "\"abc@xyz.com\"",
+          "isLiteral": true
+        }
+      }
+    ],
+    "groups": []
+  },
+  "_filter_note": "The filter tree is optional — omit the 'filter' key entirely to fire on ALL incoming emails. When present, the CLI AND-joins any connector-mandated JMES clauses (derived from eventParameters) with the freeform filter tree automatically. Do NOT duplicate eventParameters fields (e.g. parentFolderId) in the filter tree — the CLI handles that merge internally.",
+
+  "_full_node_configure_command": "uip maestro flow node configure <PROJECT>.flow <TRIGGER_NODE_ID> --output json --detail \"$(cat trigger_detail_runtime.json)\"",
+  "_full_node_configure_note": "At configure time, strip all '_comment' and '_*_note' keys from this file (they are documentation only). Pass the clean JSON via a temp file to avoid shell-quoting issues with complex filter trees.",
+
+  "_node_add_command": "uip maestro flow node add <PROJECT>.flow uipath.connector.trigger.uipath-microsoft-outlook365.email-received --label 'Email Received (good day from abc@xyz.com)' --position 200,144 --output json",
+  "_node_add_note": "Run BEFORE node configure. This replaces the manual trigger. The CLI removes the manual start node, its edges, its orphaned definition, and regenerates variables.nodes automatically. Capture the generated node ID from the response — it is required for --detail configure.",
+
+  "_bindings_note": "Do NOT manually author bindings_v2.json or flow-level bindings[] for trigger nodes. 'node configure' writes Connection bindings into the .flow file; 'flow debug' and the packaging pipeline generate the EventTrigger + Property bindings into bindings_v2.json automatically.",
+
+  "_post_configure_steps": [
+    "1. Run 'uip maestro flow validate <PROJECT>.flow --output json' — resolve all warnings before publishing.",
+    "2. Run 'uip maestro flow format <PROJECT>.flow' — required for correct canvas layout in Studio Web.",
+    "3. If eventMode is 'webhooks' and isWebhookUrlVisible is true (from triggers objects response): retrieve the webhook URL with 'uip is webhooks config uipath-microsoft-outlook365 --connection-id <id> --element-instance-id <ElementInstanceId> --output json' and register it in the Microsoft app/connector settings.",
+    "4. If eventMode is 'polling': test with 'uip maestro flow debug .' after sending a test email matching the filter criteria (within the past ~1 hour lookback window)."
+  ]
+}

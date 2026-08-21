@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "BillingResolutionWriter",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "548babc2-c929-44ef-99e7-25f2a71ad892",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "BillingResolutionWriter"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Flow",
+      "name": "BillingResolutionWriter",
+      "package": {
+        "key": "c88e9d4e-7ec1-489d-bff1-1de9b3b20b9e"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "61b22589-03c8-48d4-a0e0-d3fe198b4b88",
+    "files": []
+  }
+}

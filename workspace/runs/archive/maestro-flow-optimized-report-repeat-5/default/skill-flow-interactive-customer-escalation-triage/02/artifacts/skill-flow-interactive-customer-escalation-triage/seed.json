@@ -1,0 +1,37 @@
+{
+  "run_id": "d76b5c59c24f",
+  "cases": [
+    {
+      "name": "enterprise-production-down",
+      "inputs": {
+        "customerTier": "Enterprise",
+        "productionDown": true,
+        "workaroundAvailable": false,
+        "businessImpact": "All production users are blocked",
+        "correlationId": "E2E-d76b5c59c24f-SEV1"
+      },
+      "expected": {
+        "severity": "Sev1",
+        "engineeringNeeded": true,
+        "responseMode": "Draft",
+        "caseKey": "E2E-d76b5c59c24f-SEV1"
+      }
+    },
+    {
+      "name": "informational-follow-up",
+      "inputs": {
+        "customerTier": "Standard",
+        "productionDown": false,
+        "workaroundAvailable": true,
+        "businessImpact": "Informational product question only",
+        "correlationId": "E2E-d76b5c59c24f-SEV3"
+      },
+      "expected": {
+        "severity": "Sev3",
+        "engineeringNeeded": false,
+        "responseMode": "Draft",
+        "caseKey": "E2E-d76b5c59c24f-SEV3"
+      }
+    }
+  ]
+}

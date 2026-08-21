@@ -1,0 +1,6 @@
+20:35:31 [INFO   ] [default/skill-flow-hitl-smoke-node-placed/03] orchestrator: API routing: aws_bedrock
+20:38:26 [INFO   ] [default/skill-flow-hitl-smoke-node-placed/03] orchestrator: Success criteria: 3/3 passed, weighted score: 1.000
+20:38:26 [WARNING] [default/skill-flow-hitl-smoke-node-placed/03] orchestrator: Visible turns (22) exceeded expected_turns (21) at iteration 1 for task skill-flow-hitl-smoke-node-placed. Run continues — max_turns remains the hard cap.
+20:38:26 [INFO   ] [default/skill-flow-hitl-smoke-node-placed/03] orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+20:38:26 [INFO   ] [default/skill-flow-hitl-smoke-node-placed/03] orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-hitl-smoke-node-placed
+20:38:26 [INFO   ] [default/skill-flow-hitl-smoke-node-placed/03] orchestrator: Task finished: status=SUCCESS duration=177.2s score=1.000 iterations=1

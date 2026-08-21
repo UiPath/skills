@@ -1,0 +1,597 @@
+{
+  "id": "c559515d-0445-44c5-84a3-dad1c7a63120",
+  "version": "1.8",
+  "name": "TerminateParallel",
+  "nodes": [
+    {
+      "id": "start",
+      "type": "core.trigger.manual",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Manual trigger"
+      },
+      "inputs": {
+        "entryPointId": "5e5c695d-9fd1-4ce9-aae5-bd6901d052c0",
+        "isDefaultEntryPoint": true
+      }
+    },
+    {
+      "id": "terminateA",
+      "type": "core.logic.terminate",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Terminate (Branch A)"
+      },
+      "inputs": {},
+      "outputs": {
+        "message": {
+          "source": "=js:null"
+        }
+      }
+    },
+    {
+      "id": "delay10s",
+      "type": "core.logic.delay",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Wait 10 seconds"
+      },
+      "inputs": {
+        "timerType": "timeDuration",
+        "timerPreset": "custom",
+        "timerValue": "PT10S"
+      }
+    },
+    {
+      "id": "endB",
+      "type": "core.control.end",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Done"
+      },
+      "inputs": {},
+      "outputs": {
+        "message": {
+          "source": "=js:\"done\""
+        }
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge-start-terminateA",
+      "sourceNodeId": "start",
+      "sourcePort": "output",
+      "sourceHandle": "output",
+      "targetNodeId": "terminateA",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge-start-delay10s",
+      "sourceNodeId": "start",
+      "sourcePort": "output",
+      "sourceHandle": "output",
+      "targetNodeId": "delay10s",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge-delay10s-endB",
+      "sourceNodeId": "delay10s",
+      "sourcePort": "output",
+      "sourceHandle": "output",
+      "targetNodeId": "endB",
+      "targetPort": "input"
+    }
+  ],
+  "definitions": [
+    {
+      "nodeType": "core.trigger.manual",
+      "version": "1.0",
+      "category": "trigger",
+      "description": "Start workflow manually",
+      "tags": [
+        "trigger",
+        "start",
+        "manual"
+      ],
+      "sortOrder": 40,
+      "display": {
+        "label": "Manual trigger",
+        "icon": "play",
+        "shape": "circle"
+      },
+      "handleConfiguration": [
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "output",
+              "type": "source",
+              "handleType": "output",
+              "showButton": true,
+              "constraints": {
+                "forbiddenTargetCategories": [
+                  "trigger"
+                ]
+              }
+            }
+          ],
+          "visible": true
+        }
+      ],
+      "model": {
+        "type": "bpmn:StartEvent",
+        "entryPointId": true
+      },
+      "outputDefinition": {
+        "output": {
+          "type": "object",
+          "description": "Data passed when manually triggering the workflow.",
+          "source": "null",
+          "var": "output"
+        }
+      },
+      "toolbarExtensions": {
+        "design": {
+          "actions": [
+            {
+              "id": "change-trigger-type",
+              "icon": "square-mouse-pointer",
+              "label": "Change trigger type"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "nodeType": "core.logic.terminate",
+      "version": "1.0",
+      "category": "control-flow",
+      "description": "Stop the entire workflow immediately",
+      "tags": [
+        "control-flow",
+        "end",
+        "stop",
+        "terminate"
+      ],
+      "sortOrder": 20,
+      "display": {
+        "label": "Terminate",
+        "icon": "circle-x",
+        "shape": "circle"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        }
+      ],
+      "model": {
+        "type": "bpmn:EndEvent",
+        "eventDefinition": "bpmn:TerminateEventDefinition"
+      },
+      "runtimeConstraints": {
+        "exclude": [
+          "api-function"
+        ]
+      }
+    },
+    {
+      "nodeType": "core.logic.delay",
+      "version": "1.0",
+      "category": "control-flow",
+      "description": "Pause execution for a duration or until a date",
+      "tags": [
+        "control",
+        "flow",
+        "logic",
+        "delay",
+        "timer",
+        "wait"
+      ],
+      "sortOrder": 20,
+      "display": {
+        "label": "Delay",
+        "icon": "timer"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "output",
+              "type": "source",
+              "handleType": "output"
+            }
+          ]
+        }
+      ],
+      "model": {
+        "type": "bpmn:IntermediateCatchEvent",
+        "eventDefinition": "bpmn:TimerEventDefinition",
+        "values": {
+          "timerType": "inputs.timerType",
+          "timerValue": "inputs.timerValue",
+          "timerPreset": "inputs.timerPreset",
+          "timerDate": "inputs.timerDate"
+        }
+      },
+      "inputDefinition": {
+        "type": "object",
+        "properties": {
+          "timerType": {
+            "type": "string",
+            "minLength": 1,
+            "errorMessage": "Timer type is required"
+          },
+          "timerPreset": {
+            "type": "string",
+            "minLength": 1,
+            "errorMessage": "Duration is required"
+          },
+          "timerValue": {
+            "type": "string"
+          },
+          "timerDate": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "timerType",
+          "timerPreset"
+        ],
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "timerType": {
+                  "const": "timeDuration"
+                },
+                "timerPreset": {
+                  "const": "custom"
+                }
+              },
+              "required": [
+                "timerType",
+                "timerPreset"
+              ]
+            },
+            "then": {
+              "properties": {
+                "timerValue": {
+                  "type": "string",
+                  "minLength": 1,
+                  "pattern": "^P(?!$)(\\d+Y)?(\\d+M)?(\\d+W)?(\\d+D)?(T(?=\\d)(\\d+H)?(\\d+M)?(\\d+S)?)?$",
+                  "errorMessage": "Custom duration is required (ISO 8601 format, e.g., PT15M, PT1H, P1D)"
+                }
+              },
+              "required": [
+                "timerValue"
+              ]
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "timerType": {
+                  "const": "timeDate"
+                }
+              },
+              "required": [
+                "timerType"
+              ]
+            },
+            "then": {
+              "properties": {
+                "timerDate": {
+                  "type": "string",
+                  "minLength": 1,
+                  "errorMessage": "Date is required"
+                }
+              },
+              "required": [
+                "timerDate"
+              ]
+            }
+          }
+        ]
+      },
+      "inputDefaults": {
+        "timerType": "timeDuration",
+        "timerPreset": "PT15M"
+      },
+      "form": {
+        "id": "delay-properties",
+        "title": "Delay",
+        "sections": [
+          {
+            "id": "timer",
+            "title": "Timer",
+            "collapsible": true,
+            "defaultExpanded": true,
+            "fields": [
+              {
+                "name": "inputs.timerType",
+                "type": "select",
+                "label": "Type",
+                "options": [
+                  {
+                    "label": "Duration",
+                    "value": "timeDuration"
+                  },
+                  {
+                    "label": "Date",
+                    "value": "timeDate"
+                  }
+                ]
+              },
+              {
+                "name": "inputs.timerPreset",
+                "type": "select",
+                "label": "Duration",
+                "options": [
+                  {
+                    "label": "5 seconds",
+                    "value": "PT5S"
+                  },
+                  {
+                    "label": "15 seconds",
+                    "value": "PT15S"
+                  },
+                  {
+                    "label": "30 seconds",
+                    "value": "PT30S"
+                  },
+                  {
+                    "label": "1 minute",
+                    "value": "PT1M"
+                  },
+                  {
+                    "label": "5 minutes",
+                    "value": "PT5M"
+                  },
+                  {
+                    "label": "15 minutes",
+                    "value": "PT15M"
+                  },
+                  {
+                    "label": "30 minutes",
+                    "value": "PT30M"
+                  },
+                  {
+                    "label": "1 hour",
+                    "value": "PT1H"
+                  },
+                  {
+                    "label": "6 hours",
+                    "value": "PT6H"
+                  },
+                  {
+                    "label": "12 hours",
+                    "value": "PT12H"
+                  },
+                  {
+                    "label": "1 day",
+                    "value": "P1D"
+                  },
+                  {
+                    "label": "1 week",
+                    "value": "P1W"
+                  },
+                  {
+                    "label": "Custom",
+                    "value": "custom"
+                  }
+                ],
+                "rules": [
+                  {
+                    "id": "duration-presets",
+                    "conditions": [
+                      {
+                        "when": "inputs.timerType",
+                        "is": "timeDuration"
+                      }
+                    ],
+                    "effects": {
+                      "visible": true
+                    }
+                  }
+                ]
+              },
+              {
+                "name": "inputs.timerValue",
+                "type": "custom",
+                "component": "iso-expression-field",
+                "label": "Custom duration",
+                "placeholder": "PT15M",
+                "description": "ISO 8601 duration - use the AI button to generate from natural language",
+                "componentProps": {
+                  "expressionType": "duration",
+                  "supportsExpressions": true
+                },
+                "rules": [
+                  {
+                    "id": "custom-duration",
+                    "conditions": [
+                      {
+                        "when": "inputs.timerType",
+                        "is": "timeDuration"
+                      },
+                      {
+                        "when": "inputs.timerPreset",
+                        "is": "custom"
+                      }
+                    ],
+                    "effects": {
+                      "visible": true
+                    }
+                  }
+                ]
+              },
+              {
+                "name": "inputs.timerDate",
+                "type": "datetime",
+                "label": "Value",
+                "description": "The date and time when the workflow should continue",
+                "rules": [
+                  {
+                    "id": "date-format",
+                    "conditions": [
+                      {
+                        "when": "inputs.timerType",
+                        "is": "timeDate"
+                      }
+                    ],
+                    "effects": {
+                      "visible": true
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "nodeType": "core.control.end",
+      "version": "1.0",
+      "category": "control-flow",
+      "description": "Mark the end of a workflow path",
+      "tags": [
+        "control-flow",
+        "end",
+        "finish",
+        "complete"
+      ],
+      "sortOrder": 20,
+      "display": {
+        "label": "End",
+        "icon": "circle-check",
+        "shape": "circle"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        }
+      ],
+      "model": {
+        "type": "bpmn:EndEvent"
+      },
+      "runtimeConstraints": {
+        "exclude": [
+          "api-function"
+        ]
+      }
+    }
+  ],
+  "variables": {
+    "globals": [
+      {
+        "id": "message",
+        "direction": "out",
+        "type": "string",
+        "description": "Completion message output by Branch B"
+      }
+    ],
+    "nodes": [
+      {
+        "id": "start.output",
+        "type": "object",
+        "description": "Data passed when manually triggering the workflow.",
+        "binding": {
+          "nodeId": "start",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "terminateA.message",
+        "type": "string",
+        "binding": {
+          "nodeId": "terminateA",
+          "outputId": "message"
+        }
+      },
+      {
+        "id": "endB.message",
+        "type": "string",
+        "binding": {
+          "nodeId": "endB",
+          "outputId": "message"
+        }
+      }
+    ],
+    "variableUpdates": {}
+  },
+  "runtime": "maestro",
+  "layout": {
+    "nodes": {
+      "start": {
+        "position": {
+          "x": -192,
+          "y": 96
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        }
+      },
+      "terminateA": {
+        "position": {
+          "x": 0,
+          "y": 0
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "delay10s": {
+        "position": {
+          "x": 0,
+          "y": 192
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "endB": {
+        "position": {
+          "x": 192,
+          "y": 192
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      }
+    }
+  }
+}

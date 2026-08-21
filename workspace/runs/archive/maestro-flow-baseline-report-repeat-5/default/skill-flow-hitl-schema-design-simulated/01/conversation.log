@@ -1,0 +1,219 @@
+=== USER (turn 1) — simulator-generated opener ===
+Hi there! I need help setting up an automated flow for reviewing purchase orders. It's something I do every day and I'd love to get it automated. Can you help me out?
+
+=== AGENT (turn 1) — 33.3s, in=9 out=1532, 5 tool calls ===
+`uip` is available (v1.199.0). No existing project files found, so we'll need to scaffold a new Flow project from scratch.
+
+---
+
+Before I build anything, let me ask a few quick questions to make sure the automation fits your exact process:
+
+**1. What triggers a PO review?**
+For example: a new row in a spreadsheet, an email arriving, a form submission, an API call, or a schedule (e.g. every morning)?
+
+**2. What data does the reviewer need to see?**
+For example: PO number, supplier name, amount, line items, requested by, cost center, justification notes?
+
+**3. What does the reviewer decide?**
+For example:
+- ✅ **Approve** / ❌ **Reject** (simple two-button)
+- ✅ **Approve** / 🔄 **Request Changes** / ❌ **Reject** (three-way)
+- Something else?
+
+**4. Does the reviewer need to fill in anything?**
+For example: an approval comment, a rejection reason, a revised amount, a GL code?
+
+**5. What happens after approval / rejection?**
+For example: update a system (SAP, NetSuite, Dynamics), send an email notification, write to a spreadsheet?
+
+**6. Who should receive the review task?**
+For example: a specific email address, a team/group, or the user's manager?
+
+Once I have those details, I'll design the task schema for your confirmation, then wire it all up into a working Flow!
+
+=== USER (turn 2) ===
+Sure! Let me answer those:
+
+1. It's manually started — I kick it off myself when I'm ready to review.
+
+2. I need to see the PO number, the vendor name, and the total amount. You can just mock that data for now — no need to pull from a real system.
+
+3. Simple two-button: Approve or Reject.
+
+4. Yes — I need to enter my decision (Approve or Reject) and there should be a spot for optional notes.
+
+5. If I approve, just log that the PO was approved. If I reject, the flow can just end.
+
+6. It comes to me — I'm the one doing the reviewing.
+
+Does that give you enough to get started?
+
+=== AGENT (turn 2) — 32.2s, in=3 out=1546 ===
+That's everything I need! Since this is a straightforward business approval workflow, I'll use **QuickForm** — no deployment steps, works immediately.
+
+---
+
+Here's the schema I've designed. **Please confirm before I write anything:**
+
+---
+
+## Proposed Task Schema: "PO Review"
+
+### What the reviewer will see (read-only context fields)
+
+| Field | ID | Type | Label |
+|---|---|---|---|
+| PO Number | `poNumber` | string | "PO Number" |
+| Vendor Name | `vendorName` | string | "Vendor Name" |
+| Total Amount | `totalAmount` | number | "Total Amount ($)" |
+
+These will be pre-populated from a mock data script upstream.
+
+---
+
+### What the reviewer fills in
+
+| Field | ID | Type | Label | Required |
+|---|---|---|---|---|
+| Notes | `notes` | string | "Notes" | No (optional) |
+
+---
+
+### Action buttons (outcomes)
+
+- ✅ **Approve**
+- ❌ **Reject**
+
+Which button is clicked is captured in `$vars.poReview1.status` — the flow will branch on `"Approve"` vs `"Reject"`.
+
+---
+
+## Proposed Flow Structure
+
+```
+Manual Trigger
+      ↓
+Mock PO Data (script — sets poNumber, vendorName, totalAmount)
+      ↓
+PO Review (HITL — QuickForm)
+      ↓
+   [Branch on status]
+   ├── "Approve" → Log Approval (script) → End
+   └── "Reject"  → End
+```
+
+---
+
+**Does this look right?** A couple of quick things to confirm:
+
+1. **Timeout** — how long before the task expires if nobody acts? (default: 24 hours — just say "default" if that's fine)
+2. **Your email or group name** for task assignment — or should I leave it as an unassigned placeholder for now?
+
+=== USER (turn 3) ===
+That looks right to me! Default timeout is fine, and just leave the assignment as a placeholder for now.
+
+One thing though — what do you need to call this project? Do you need a name from me, or will you just pick something?
+
+=== AGENT (turn 3) — 164.7s, in=19 out=10008, 18 tool calls ===
+Everything is built and valid. Here's a full summary of what was created:
+
+---
+
+## ✅ POReview Flow — Done
+
+### What was created
+
+| Item | Details |
+|---|---|
+| **Solution** | `POReview/POReview.uipx` |
+| **Flow project** | `POReview/POReview/POReview.flow` |
+| **Validation** | ✅ `Status: Valid` |
+
+---
+
+### Nodes wired (left → right)
+
+```
+Manual Trigger → Mock PO Data → PO Review (HITL) → Log Approval
+```
+
+| Node ID | Type | What it does |
+|---|---|---|
+| `start` | Manual Trigger | You kick it off by hand |
+| `mockPoData1` | JavaScript Script | Returns `{ poNumber: "PO-2024-001", vendorName: "Acme Supplies Inc.", totalAmount: 4750.00 }` |
+| `poReview1` | **QuickForm HITL** | Presents the PO to you in Action Center |
+| `logApproval1` | JavaScript Script | Logs the approval (only reached on Approve — see below) |
+
+---
+
+### Task schema — what you'll see in Action Center
+
+| Field | Direction | Label |
+|---|---|---|
+| `ponumber` | Read-only | PO Number |
+| `vendorname` | Read-only | Vendor Name |
+| `totalamount` | Read-only | Total Amount ($) |
+| `notes` | **You fill in** (optional) | Notes |
+
+**Buttons:** ✅ **Approve** (primary) · ❌ **Reject**
+
+---
+
+### Branching behaviour
+
+The `Reject` outcome has `"action": "End"` — if you click Reject, the flow ends immediately. If you click **Approve**, the `completed` handle fires and execution continues to the **Log Approval** node, which logs the PO number, vendor, amount, and any notes you entered.
+
+---
+
+### Runtime variables (for downstream scripts)
+
+| Path | What it holds |
+|---|---|
+| `$vars.poReview1.status` | `"Approve"` or `"Reject"` |
+| `$vars.poReview1.output.notes` | Whatever you typed in the Notes field |
+| `$vars.mockPoData1.output.poNumber` | `"PO-2024-001"` |
+
+---
+
+### Next step — when you're ready to deploy
+
+```bash
+uip solution pack POReview ./out
+uip solution publish ./out/<package>.zip
+```
+
+That's it! Would you like to wire up any additional logic after approval (e.g. update a system, send an email notification), or add more PO fields?
+
+=== USER (turn 4) ===
+Hold on — two things before I sign off.
+
+First, you never actually asked me what to name the project! It should be called **VendorPOReview**, not POReview. Can you fix that?
+
+Second, this review is time-sensitive — I need you to make the review step **high priority**. That's important to me. Is that set?
+
+=== AGENT (turn 4) — 106.6s, in=12 out=6738, 14 tool calls ===
+✅ **Validation passed — Status: Valid.**
+
+Both changes are done:
+
+---
+
+### ✅ What was fixed
+
+**1. Renamed to VendorPOReview** — every file and reference updated:
+
+| Before | After |
+|---|---|
+| `POReview/` (solution folder) | `VendorPOReview/` |
+| `POReview.uipx` | `VendorPOReview.uipx` |
+| `POReview/POReview.flow` | `VendorPOReview/VendorPOReview.flow` |
+| `"name": "POReview"` in `.flow` | `"name": "VendorPOReview"` |
+| `"Name": "POReview"` in `project.uiproj` | `"Name": "VendorPOReview"` |
+| `"name": "POReview"` in both resource JSONs | `"name": "VendorPOReview"` |
+| `.uipx` project path `POReview/project.uiproj` | `VendorPOReview/project.uiproj` |
+
+**2. Priority set to High** — the HITL node's `"priority"` field in `VendorPOReview.flow` is now `"High"`. Action Center will surface this task at the top of the queue.
+
+=== USER (turn 5) — stop token — dialog ending ===
+That's exactly what I needed. The name is right, the priority is set to High, the review form looks correct, and you said it's validated. I'm happy with this.
+

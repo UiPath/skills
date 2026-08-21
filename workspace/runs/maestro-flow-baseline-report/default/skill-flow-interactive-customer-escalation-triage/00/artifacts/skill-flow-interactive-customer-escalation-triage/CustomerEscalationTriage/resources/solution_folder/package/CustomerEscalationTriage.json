@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "CustomerEscalationTriage",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "30be565a-71d6-468a-a9da-7c46d37af795",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "CustomerEscalationTriage"
+    },
+    "locks": [],
+    "key": "a6d7c1d1-1c8d-4400-86d7-0e73c433f55c",
+    "files": []
+  }
+}

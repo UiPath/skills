@@ -1,0 +1,172 @@
+{
+  "version": "1.1.0",
+  "settings": {
+    "model": "anthropic.claude-sonnet-4-20250514-v1:0",
+    "maxTokens": 64000,
+    "temperature": 0,
+    "engine": "basic-v2",
+    "maxIterations": 10,
+    "mode": "standard"
+  },
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "start__output__webhookPayload": {
+        "type": "object",
+        "description": "Webhook payload with customer, invoice, and dispute details"
+      },
+      "normalizeData__output__fields": {
+        "type": "array",
+        "description": "Normalized IxP extraction fields from the disputed invoice PDF"
+      },
+      "crmLookup1__output": {
+        "type": "object",
+        "description": "CRM customer account data"
+      },
+      "erpLookup1__output": {
+        "type": "object",
+        "description": "ERP contract/invoice line item data"
+      },
+      "detectDiscrepancies__output__mismatches": {
+        "type": "array",
+        "description": "Per-line pricing mismatches found between disputed items and ERP contract rows"
+      },
+      "detectDiscrepancies__output__totalOvercharge": {
+        "type": "number",
+        "description": "Total amount overcharged across all disputed line items"
+      },
+      "detectDiscrepancies__output__totalUndercharge": {
+        "type": "number",
+        "description": "Total amount undercharged across all disputed line items"
+      }
+    }
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "determination": {
+        "type": "string",
+        "description": "The analyst's overall determination: e.g. 'overcharge confirmed', 'dispute valid', 'no discrepancy found', etc."
+      },
+      "recommendedAction": {
+        "type": "string",
+        "enum": [
+          "escalate_to_manager",
+          "auto_resolve",
+          "reject"
+        ],
+        "description": "Recommended resolution action"
+      },
+      "autoResolutionEligible": {
+        "type": "boolean",
+        "description": "Whether the dispute meets criteria for automatic resolution without human review"
+      },
+      "creditAmount": {
+        "type": "number",
+        "description": "Dollar amount of credit to be issued (0 if none)"
+      },
+      "confidence": {
+        "type": "number",
+        "description": "Confidence score 0.0-1.0 for the determination"
+      },
+      "rationale": {
+        "type": "string",
+        "description": "Detailed explanation supporting the determination and recommended action"
+      }
+    },
+    "required": [
+      "determination",
+      "recommendedAction",
+      "autoResolutionEligible",
+      "creditAmount",
+      "confidence",
+      "rationale"
+    ]
+  },
+  "metadata": {
+    "storageVersion": "50.0.0",
+    "isConversational": false,
+    "showProjectCreationExperience": false
+  },
+  "type": "lowCode",
+  "guardrails": [],
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a billing dispute analyst agent for a B2B SaaS company. Your role is to review billing disputes by analyzing invoice extraction data, CRM customer records, ERP contract line items, and discrepancy reports. You apply the Billing Dispute SOP to reach a fair, accurate determination.\n\nDecision rules (from SOP):\n- If totalOvercharge > 0 and all mismatches are attributable to a known pricing discrepancy, recommend auto_resolve and set creditAmount = totalOvercharge\n- If totalOvercharge > 500 or confidence < 0.75 or ambiguous contract terms exist, recommend escalate_to_manager\n- If mismatches array is empty and no overcharge exists, recommend reject with determination 'no discrepancy found'\n- autoResolutionEligible = true only when recommendedAction == 'auto_resolve'\n\nReturn valid JSON matching the output schema with fields: determination, recommendedAction (escalate_to_manager|auto_resolve|reject), autoResolutionEligible (boolean), creditAmount (number), confidence (0.0-1.0), rationale (string).",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "You are a billing dispute analyst agent for a B2B SaaS company. Your role is to review billing disputes by analyzing invoice extraction data, CRM customer records, ERP contract line items, and discrepancy reports. You apply the Billing Dispute SOP to reach a fair, accurate determination.\n\nDecision rules (from SOP):\n- If totalOvercharge > 0 and all mismatches are attributable to a known pricing discrepancy, recommend auto_resolve and set creditAmount = totalOvercharge\n- If totalOvercharge > 500 or confidence < 0.75 or ambiguous contract terms exist, recommend escalate_to_manager\n- If mismatches array is empty and no overcharge exists, recommend reject with determination 'no discrepancy found'\n- autoResolutionEligible = true only when recommendedAction == 'auto_resolve'\n\nReturn valid JSON matching the output schema with fields: determination, recommendedAction (escalate_to_manager|auto_resolve|reject), autoResolutionEligible (boolean), creditAmount (number), confidence (0.0-1.0), rationale (string)."
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "Analyze the following billing dispute and return your structured determination.\n\nCustomer account: {{input.start__output__webhookPayload}}\nExtracted invoice fields: {{input.normalizeData__output__fields}}\nCRM data: {{input.crmLookup1__output}}\nERP contract data: {{input.erpLookup1__output}}\nLine-item mismatches: {{input.detectDiscrepancies__output__mismatches}}\nTotal overcharge: {{input.detectDiscrepancies__output__totalOvercharge}}\nTotal undercharge: {{input.detectDiscrepancies__output__totalUndercharge}}\n\nReturn a JSON object with: determination, recommendedAction, autoResolutionEligible, creditAmount, confidence, rationale.",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "Analyze the following billing dispute and return your structured determination.\n\nCustomer account: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__webhookPayload"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\nExtracted invoice fields: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.normalizeData__output__fields"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\nCRM data: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.crmLookup1__output"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\nERP contract data: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.erpLookup1__output"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\nLine-item mismatches: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.detectDiscrepancies__output__mismatches"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\nTotal overcharge: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.detectDiscrepancies__output__totalOvercharge"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\nTotal undercharge: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.detectDiscrepancies__output__totalUndercharge"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\nReturn a JSON object with: determination, recommendedAction, autoResolutionEligible, creditAmount, confidence, rationale."
+        }
+      ]
+    }
+  ],
+  "projectId": "45c67604-fb88-4cd7-834f-3175fb4345eb"
+}

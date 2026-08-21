@@ -1,0 +1,15 @@
+{
+  "connectionId": "<PENDING-CONNECTION-UUID>",
+  "folderKey": "<PENDING-FOLDER-KEY>",
+  "method": "POST",
+  "endpoint": "/normalised-teams/{team_id}/channels/{channel_id}/messages/{message_id}/replies-v2/drive/item",
+  "pathParameters": {
+    "team_id": "<PENDING-TEAM-ID>",
+    "channel_id": "<PENDING-CHANNEL-ID>",
+    "message_id": "<PENDING-MESSAGE-ID>"
+  },
+  "bodyParameters": {
+    "body.content": "Here are the requested files.",
+    "attachmentIds": "=js:(['<PENDING-SHAREPOINT-FILE-ID-1>', '<PENDING-SHAREPOINT-FILE-ID-2>'])"
+  }
+}

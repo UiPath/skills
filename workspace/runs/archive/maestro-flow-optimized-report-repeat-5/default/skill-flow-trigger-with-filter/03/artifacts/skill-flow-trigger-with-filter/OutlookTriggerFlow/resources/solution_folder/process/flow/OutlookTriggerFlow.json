@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "OutlookTriggerFlow",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "bb56e98e-7b08-408f-88ca-73070c3fbbed",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "OutlookTriggerFlow"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Flow",
+      "name": "OutlookTriggerFlow",
+      "package": {
+        "key": "f98930ee-1eab-4a25-825d-05c5ff86b0e2"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "2c5bf121-89f8-4d4b-b0e2-8d26846fb268",
+    "files": []
+  }
+}

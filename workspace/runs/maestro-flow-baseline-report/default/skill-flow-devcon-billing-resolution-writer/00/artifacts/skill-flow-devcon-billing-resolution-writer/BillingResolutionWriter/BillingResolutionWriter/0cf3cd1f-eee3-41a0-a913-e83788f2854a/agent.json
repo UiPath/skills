@@ -1,0 +1,99 @@
+{
+  "version": "1.1.0",
+  "settings": {
+    "model": "gpt-5.4",
+    "maxTokens": 128000,
+    "temperature": 0,
+    "engine": "basic-v2",
+    "maxIterations": 3,
+    "mode": "standard"
+  },
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "start__output__customerName": {
+        "type": "string",
+        "description": "The customer's full name"
+      },
+      "start__output__invoiceNumber": {
+        "type": "string",
+        "description": "The invoice number for the billing dispute"
+      },
+      "start__output__creditAmount": {
+        "type": "number",
+        "description": "The approved credit amount"
+      }
+    }
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "subject": {
+        "type": "string",
+        "description": "The email subject line"
+      },
+      "body": {
+        "type": "string",
+        "description": "The full email body text"
+      }
+    },
+    "required": [
+      "subject",
+      "body"
+    ]
+  },
+  "metadata": {
+    "storageVersion": "50.0.0",
+    "isConversational": false,
+    "showProjectCreationExperience": false
+  },
+  "type": "lowCode",
+  "guardrails": [],
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a professional customer service agent drafting billing dispute resolution emails. Your task is to write a courteous, clear, and concise email to the customer acknowledging their billing dispute and informing them of the approved credit. You must always state the exact invoice number and the exact approved credit amount in the email body. Return a JSON object with exactly two string fields: 'subject' (the email subject line) and 'body' (the full email body text). Do not include any explanation outside the JSON object.",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "You are a professional customer service agent drafting billing dispute resolution emails. Your task is to write a courteous, clear, and concise email to the customer acknowledging their billing dispute and informing them of the approved credit. You must always state the exact invoice number and the exact approved credit amount in the email body. Return a JSON object with exactly two string fields: 'subject' (the email subject line) and 'body' (the full email body text). Do not include any explanation outside the JSON object."
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "Draft a billing dispute resolution email for the following:\n- Customer Name: {{input.start__output__customerName}}\n- Invoice Number: {{input.start__output__invoiceNumber}}\n- Approved Credit Amount: ${{input.start__output__creditAmount}}\n\nThe email body must clearly state the invoice number and the approved credit amount.",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "Draft a billing dispute resolution email for the following:\n- Customer Name: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__customerName"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n- Invoice Number: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__invoiceNumber"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n- Approved Credit Amount: $"
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__creditAmount"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\nThe email body must clearly state the invoice number and the approved credit amount."
+        }
+      ]
+    }
+  ],
+  "projectId": "0cf3cd1f-eee3-41a0-a913-e83788f2854a"
+}

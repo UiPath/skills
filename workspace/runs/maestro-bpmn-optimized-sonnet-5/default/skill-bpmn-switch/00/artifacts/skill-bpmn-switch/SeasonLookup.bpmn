@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+    xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+    xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+    xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+    xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:uipath="http://uipath.org/schema/bpmn"
+    id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn"
+    exporter="UiPath (https://bpmn.uipath.com)" exporterVersion="1.0">
+  <bpmn:process id="Process_1" isExecutable="true">
+    <bpmn:extensionElements>
+      <uipath:migrationVersion version="11.5" />
+      <uipath:variables version="v1">
+        <uipath:inputOutput id="Var_Quarter" name="Quarter" type="number" />
+        <uipath:inputOutput id="Var_Season" name="Season" type="string" />
+      </uipath:variables>
+    </bpmn:extensionElements>
+    <bpmn:startEvent id="StartEvent_1" name="Start">
+      <bpmn:outgoing>Flow_StartToGateway</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:exclusiveGateway id="Gateway_Quarter" name="Quarter?" default="Flow_ToWinter">
+      <bpmn:incoming>Flow_StartToGateway</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToSpring</bpmn:outgoing>
+      <bpmn:outgoing>Flow_ToSummer</bpmn:outgoing>
+      <bpmn:outgoing>Flow_ToFall</bpmn:outgoing>
+      <bpmn:outgoing>Flow_ToWinter</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:endEvent id="EndEvent_Spring" name="Spring">
+      <bpmn:incoming>Flow_ToSpring</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:endEvent id="EndEvent_Summer" name="Summer">
+      <bpmn:incoming>Flow_ToSummer</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:endEvent id="EndEvent_Fall" name="Fall">
+      <bpmn:incoming>Flow_ToFall</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:endEvent id="EndEvent_Winter" name="Winter">
+      <bpmn:incoming>Flow_ToWinter</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_StartToGateway" sourceRef="StartEvent_1" targetRef="Gateway_Quarter" />
+    <bpmn:sequenceFlow id="Flow_ToSpring" sourceRef="Gateway_Quarter" targetRef="EndEvent_Spring">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=vars.Var_Quarter == 1</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_ToSummer" sourceRef="Gateway_Quarter" targetRef="EndEvent_Summer">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=vars.Var_Quarter == 2</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_ToFall" sourceRef="Gateway_Quarter" targetRef="EndEvent_Fall">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=vars.Var_Quarter == 3</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_ToWinter" sourceRef="Gateway_Quarter" targetRef="EndEvent_Winter" />
+  </bpmn:process>
+
+  <bpmndi:BPMNDiagram id="Diagram_1">
+    <bpmndi:BPMNPlane id="Plane_1" bpmnElement="Process_1">
+      <bpmndi:BPMNShape id="S_EndEvent_Fall" bpmnElement="EndEvent_Fall"><dc:Bounds x="366" y="100" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_EndEvent_Spring" bpmnElement="EndEvent_Spring"><dc:Bounds x="366" y="166" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_EndEvent_Summer" bpmnElement="EndEvent_Summer"><dc:Bounds x="366" y="232" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_EndEvent_Winter" bpmnElement="EndEvent_Winter"><dc:Bounds x="366" y="298" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Gateway_Quarter" bpmnElement="Gateway_Quarter"><dc:Bounds x="256" y="100" width="50" height="50" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_StartEvent_1" bpmnElement="StartEvent_1"><dc:Bounds x="160" y="100" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="E_Flow_StartToGateway" bpmnElement="Flow_StartToGateway"><di:waypoint x="178" y="118" /><di:waypoint x="281" y="125" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_ToFall" bpmnElement="Flow_ToFall"><di:waypoint x="281" y="125" /><di:waypoint x="384" y="118" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_ToSpring" bpmnElement="Flow_ToSpring"><di:waypoint x="281" y="125" /><di:waypoint x="384" y="184" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_ToSummer" bpmnElement="Flow_ToSummer"><di:waypoint x="281" y="125" /><di:waypoint x="384" y="250" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_ToWinter" bpmnElement="Flow_ToWinter"><di:waypoint x="281" y="125" /><di:waypoint x="384" y="316" /></bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

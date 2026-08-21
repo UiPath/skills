@@ -1,0 +1,43 @@
+{
+  "version": "2.0",
+  "resources": [
+    {
+      "resource": "connection",
+      "key": "ae311606-25b7-43ef-9cd0-f3dc0b3a9b58",
+      "id": "connectionae311606-25b7-43ef-9cd0-f3dc0b3a9b58",
+      "value": {
+        "ConnectionId": {
+          "defaultValue": "ae311606-25b7-43ef-9cd0-f3dc0b3a9b58",
+          "isExpression": false,
+          "displayName": "uipath-microsoft-onedrive connection"
+        }
+      },
+      "metadata": {
+        "ActivityName": "List Invoice Files",
+        "BindingsVersion": "2.2",
+        "DisplayLabel": "uipath-microsoft-onedrive connection",
+        "UseConnectionService": "true",
+        "Connector": "uipath-microsoft-onedrive"
+      }
+    },
+    {
+      "resource": "connection",
+      "key": "",
+      "id": "connection",
+      "value": {
+        "ConnectionId": {
+          "defaultValue": "ImplicitConnection",
+          "isExpression": false,
+          "displayName": "uipath-uipath-http connection"
+        }
+      },
+      "metadata": {
+        "ActivityName": "List Invoice Files",
+        "BindingsVersion": "2.2",
+        "DisplayLabel": "uipath-uipath-http connection",
+        "UseConnectionService": "true",
+        "Connector": "uipath-microsoft-onedrive"
+      }
+    }
+  ]
+}

@@ -1,0 +1,67 @@
+{
+  "version": "2.0",
+  "resources": [
+    {
+      "resource": "connection",
+      "key": "ae311606-25b7-43ef-9cd0-f3dc0b3a9b58",
+      "id": "connectionae311606-25b7-43ef-9cd0-f3dc0b3a9b58",
+      "value": {
+        "ConnectionId": {
+          "defaultValue": "ae311606-25b7-43ef-9cd0-f3dc0b3a9b58",
+          "isExpression": false,
+          "displayName": "uipath-microsoft-onedrive connection"
+        }
+      },
+      "metadata": {
+        "ActivityName": "New Invoice in SharePoint",
+        "BindingsVersion": "2.2",
+        "DisplayLabel": "uipath-microsoft-onedrive connection",
+        "UseConnectionService": "true",
+        "Connector": "uipath-microsoft-onedrive"
+      }
+    },
+    {
+      "resource": "connection",
+      "key": "",
+      "id": "connection",
+      "value": {
+        "ConnectionId": {
+          "defaultValue": "ImplicitConnection",
+          "isExpression": false,
+          "displayName": "uipath-uipath-http connection"
+        }
+      },
+      "metadata": {
+        "ActivityName": "New Invoice in SharePoint",
+        "BindingsVersion": "2.2",
+        "DisplayLabel": "uipath-uipath-http connection",
+        "UseConnectionService": "true",
+        "Connector": "uipath-microsoft-onedrive"
+      }
+    },
+    {
+      "resource": "EventTrigger",
+      "key": "ae311606-25b7-43ef-9cd0-f3dc0b3a9b58_newInvoiceInSharepoint1",
+      "id": "EventTriggerae311606-25b7-43ef-9cd0-f3dc0b3a9b58_newInvoiceInSharepoint1",
+      "value": {
+        "ConnectionId": {
+          "defaultValue": "ae311606-25b7-43ef-9cd0-f3dc0b3a9b58",
+          "isExpression": false
+        },
+        "EntryPointUniqueId": {
+          "defaultValue": "68817a57-8301-468a-9b30-cbeb2f26a7c5",
+          "isExpression": false
+        }
+      },
+      "metadata": {
+        "UseConnectionService": "true",
+        "Connector": "uipath-microsoft-onedrive",
+        "ActivityName": "New Invoice in SharePoint",
+        "BindingsVersion": "2.2",
+        "ObjectName": "ListItem",
+        "Operation": "LIST_ITEM_ADDED",
+        "FilterExpression": ""
+      }
+    }
+  ]
+}

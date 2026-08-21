@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "ApproverCountAgent",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "6d662e25-806c-4502-aa48-b2eac832f38e",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "ApproverCountAgent"
+    },
+    "locks": [],
+    "key": "3971b905-7fe3-4764-bea2-edc5e240b2b0",
+    "files": []
+  }
+}

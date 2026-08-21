@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "LoopMultiply",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "c927f63f-c1fe-4f06-bc13-a0743ac23dc1",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "LoopMultiply"
+    },
+    "locks": [],
+    "key": "ac2b88aa-0964-41e9-9fcf-deec0316cdf8",
+    "files": []
+  }
+}

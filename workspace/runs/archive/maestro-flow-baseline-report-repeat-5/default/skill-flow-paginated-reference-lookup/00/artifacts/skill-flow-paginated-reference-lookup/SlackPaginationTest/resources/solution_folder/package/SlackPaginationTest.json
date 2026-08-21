@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "SlackPaginationTest",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "832dc33d-3967-4ae1-b95c-ff84fed6367e",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "SlackPaginationTest"
+    },
+    "locks": [],
+    "key": "7e04b44a-d072-4b01-be3b-51bc72cf9e92",
+    "files": []
+  }
+}

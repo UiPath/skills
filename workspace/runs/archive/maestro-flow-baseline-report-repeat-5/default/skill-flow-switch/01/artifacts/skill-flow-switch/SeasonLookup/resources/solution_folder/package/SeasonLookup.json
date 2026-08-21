@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "SeasonLookup",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "b18664fe-dcee-42ce-8c34-52b745ce22cb",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "SeasonLookup"
+    },
+    "locks": [],
+    "key": "dd380eb5-1f13-492a-9c91-6e9d8e48b602",
+    "files": []
+  }
+}

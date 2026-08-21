@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "TerminateParallel",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "e080d34d-4648-4121-a634-7a6dee8b8a66",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "TerminateParallel"
+    },
+    "locks": [],
+    "key": "a43bc780-9ba5-44f9-a344-3c8b0de67f16",
+    "files": []
+  }
+}

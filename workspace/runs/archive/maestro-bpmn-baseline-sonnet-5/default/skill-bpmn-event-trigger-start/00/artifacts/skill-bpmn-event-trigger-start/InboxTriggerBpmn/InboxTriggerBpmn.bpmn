@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+    xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+    xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+    xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+    xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+    xmlns:uipath="http://uipath.org/schema/bpmn"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    id="Definitions_InboxTriggerBpmn" targetNamespace="http://bpmn.io/schema/bpmn"
+    exporter="UiPath (https://bpmn.uipath.com)" exporterVersion="1.0">
+  <bpmn:process id="Process_InboxTriggerBpmn" name="InboxTriggerBpmn" isExecutable="true">
+    <bpmn:extensionElements>
+      <uipath:migrationVersion version="11.5" />
+      <uipath:variables version="v1">
+        <uipath:inputOutput id="Var_InboxEvent" name="InboxEvent" type="custom" />
+        <uipath:inputOutput id="Var_HandleResult" name="HandleResult" type="string" />
+      </uipath:variables>
+    </bpmn:extensionElements>
+
+    <!-- DRAFT: Intsvc.EventTrigger below is registry-authored but intentionally left unenriched.
+         CLI-owned enrichment still required: connection binding, the concrete connector key and
+         trigger object/operation (e.g. the inbox "email received" event), dynamic trigger
+         schemas, and generated package metadata (bindings_v2.json, entry-points.json,
+         operate.json, package-descriptor.json). None of these are hand-authored here. -->
+    <bpmn:startEvent id="StartEvent_InboxEmailReceived" name="Email received in inbox">
+      <bpmn:extensionElements>
+        <uipath:event version="v1">
+          <uipath:type value="Intsvc.EventTrigger" version="v1" />
+          <uipath:output name="result" type="custom" source="." var="Var_InboxEvent" />
+        </uipath:event>
+      </bpmn:extensionElements>
+      <bpmn:messageEventDefinition />
+      <bpmn:outgoing>Flow_ToHandle</bpmn:outgoing>
+    </bpmn:startEvent>
+
+    <bpmn:scriptTask id="Task_HandleMessage" name="Handle message" scriptFormat="JavaScript">
+      <bpmn:extensionElements>
+        <uipath:scriptVersion value="v3" />
+        <uipath:mapping version="v1">
+          <uipath:type value="BPMN.ScriptTask" version="v1" />
+          <uipath:input name="args" type="json" target="bodyField"><![CDATA[{"inboxEvent":"=vars.Var_InboxEvent"}]]></uipath:input>
+          <uipath:output name="handled" type="string" var="Var_HandleResult" source="=result.response" />
+        </uipath:mapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_ToHandle</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToEnd</bpmn:outgoing>
+      <bpmn:script><![CDATA[
+return { response: "handled" };
+]]></bpmn:script>
+    </bpmn:scriptTask>
+
+    <bpmn:endEvent id="EndEvent_1" name="End">
+      <bpmn:incoming>Flow_ToEnd</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <bpmn:sequenceFlow id="Flow_ToHandle" sourceRef="StartEvent_InboxEmailReceived" targetRef="Task_HandleMessage" />
+    <bpmn:sequenceFlow id="Flow_ToEnd" sourceRef="Task_HandleMessage" targetRef="EndEvent_1" />
+  </bpmn:process>
+
+  <bpmndi:BPMNDiagram id="Diagram_InboxTriggerBpmn">
+    <bpmndi:BPMNPlane id="Plane_InboxTriggerBpmn" bpmnElement="Process_InboxTriggerBpmn">
+      <bpmndi:BPMNShape id="S_StartEvent_InboxEmailReceived" bpmnElement="StartEvent_InboxEmailReceived">
+        <dc:Bounds x="160" y="100" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Task_HandleMessage" bpmnElement="Task_HandleMessage">
+        <dc:Bounds x="260" y="78" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_EndEvent_1" bpmnElement="EndEvent_1">
+        <dc:Bounds x="420" y="100" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_ToHandle" bpmnElement="Flow_ToHandle">
+        <di:waypoint x="196" y="118" />
+        <di:waypoint x="260" y="118" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_ToEnd" bpmnElement="Flow_ToEnd">
+        <di:waypoint x="360" y="118" />
+        <di:waypoint x="420" y="118" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

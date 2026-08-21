@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "CustomerEscalation",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "b07cf649-db72-49a5-b927-40da070b7982",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "CustomerEscalation"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Flow",
+      "name": "CustomerEscalation",
+      "package": {
+        "key": "f967d430-7a9d-464d-807f-e14fba43be35"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "953aecb6-41bf-4d64-83bf-97025d3601c9",
+    "files": []
+  }
+}

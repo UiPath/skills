@@ -1,0 +1,45 @@
+2026-07-23 20:42:37 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-23 20:42:37 [INFO] coder_eval.orchestrator: API routing: aws_bedrock
+2026-07-23 20:42:37 [DEBUG] coder_eval.criteria: Discovered 14 criterion checkers
+2026-07-23 20:42:37 [DEBUG] coder_eval.criteria: Validated 14 criterion checkers
+2026-07-23 20:42:37 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-23 20:42:38 [DEBUG] coder_eval.orchestrator: Sending prompt: Add a script node called "convertToCelsius" between getWeather and formatSummary that converts the t...
+2026-07-23 20:42:38 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Starting agent query stream...
+2026-07-23 20:45:29 [DEBUG] coder_eval.agents.claude_code_agent: [coder] session_id changed: None -> 663a0b0c-d233-42c7-88ad-aa0edc817e16
+2026-07-23 20:45:29 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Agent query stream ended
+2026-07-23 20:45:29 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-23 20:45:29 [DEBUG] coder_eval.orchestrator: Agent response received (3037 chars)
+2026-07-23 20:45:29 [DEBUG] coder_eval.orchestrator: Checking success criteria
+2026-07-23 20:45:29 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'uip maestro flow validate passes on the flow file': uip maestro flow validate BellevueWeather/BellevueWeather/BellevueWeather.flow
+2026-07-23 20:45:33 [DEBUG] coder_eval.sandbox: Command 'uip maestro flow validate BellevueWeather/BellevueWeather/BellevueWeather.flow' exited with code 0
+2026-07-23 20:45:33 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+{
+  "Result": "Success",
+  "Code": "FlowValidate",
+  "Data": {
+    "File": "/work/output/artifacts/skill-flow-add-node/BellevueWeather/BellevueWeather/BellevueWeather.flow",
+    "Status": "Valid"
+  }
+}
+---
+2026-07-23 20:45:33 [DEBUG] coder_eval.sandbox: STDERR:
+---
+[ManifestClient] fetchDynamicNodes ok: total=206 agent context nodes=2 external agent nodes=6 orchestrator nodes=159 IXP nodes=39
+---
+2026-07-23 20:45:33 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-07-23 20:45:33 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'Flow debug runs and output contains Celsius conversion': python3 $TASK_DIR/check_add_node.py
+2026-07-23 20:45:58 [DEBUG] coder_eval.sandbox: Command 'python3 $TASK_DIR/check_add_node.py' exited with code 0
+2026-07-23 20:45:58 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+OK: convertToCelsius node present, wired correctly, debug output valid
+---
+2026-07-23 20:45:58 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-07-23 20:45:58 [INFO] coder_eval.orchestrator: Success criteria: 2/2 passed, weighted score: 1.000
+2026-07-23 20:45:58 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-23 20:45:58 [INFO] coder_eval.orchestrator: Running post-run command: python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/cleanup_solutions.py
+2026-07-23 20:46:01 [WARNING] coder_eval.orchestrator: [post_run stderr] cleanup_solutions: deleted b0ee6d64-4e7a-4d67-36f9-08dee8fa7d3e (from BellevueWeather/BellevueWeather.uipx)
+2026-07-23 20:46:01 [WARNING] coder_eval.orchestrator: [post_run stderr] cleanup_solutions: summary policy=always deleted=1 preserved=0 skipped=0 not_uploaded=0 failed=0
+2026-07-23 20:46:01 [INFO] coder_eval.orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+2026-07-23 20:46:01 [INFO] coder_eval.orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-add-node
+2026-07-23 20:46:01 [INFO] coder_eval.orchestrator: Task finished: status=SUCCESS duration=213.2s score=1.000 iterations=1

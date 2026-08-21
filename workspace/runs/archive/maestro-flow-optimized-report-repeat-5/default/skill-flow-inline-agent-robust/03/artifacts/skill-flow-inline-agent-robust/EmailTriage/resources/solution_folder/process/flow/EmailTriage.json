@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "EmailTriage",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "7e6de454-ccd5-4fe3-9c9a-5b3aeaa33de6",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "EmailTriage"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Flow",
+      "name": "EmailTriage",
+      "package": {
+        "key": "88c68c95-7db5-48da-b976-01134402f47e"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "db66eea3-3834-406c-a046-accd7bfb7c57",
+    "files": []
+  }
+}

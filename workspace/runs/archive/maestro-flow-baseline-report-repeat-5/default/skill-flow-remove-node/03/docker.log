@@ -1,0 +1,9 @@
+20:22:22 [INFO   ] [default/skill-flow-remove-node/03] orchestrator: API routing: aws_bedrock
+20:24:07 [INFO   ] [default/skill-flow-remove-node/03] orchestrator: Success criteria: 2/2 passed, weighted score: 1.000
+20:24:08 [WARNING] [default/skill-flow-remove-node/03] orchestrator: Visible turns (19) exceeded expected_turns (14) at iteration 1 for task skill-flow-remove-node. Run continues — max_turns remains the hard cap.
+20:24:08 [INFO   ] [default/skill-flow-remove-node/03] orchestrator: Running post-run command: python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/cleanup_solutions.py
+20:24:09 [WARNING] [default/skill-flow-remove-node/03] orchestrator: [post_run stderr] cleanup_solutions: deleted 1f63619f-11e9-480a-75b1-08dee9b21193 (from BellevueWeather/BellevueWeather.uipx)
+20:24:09 [WARNING] [default/skill-flow-remove-node/03] orchestrator: [post_run stderr] cleanup_solutions: summary policy=always deleted=1 preserved=0 skipped=0 not_uploaded=0 failed=0
+20:24:09 [INFO   ] [default/skill-flow-remove-node/03] orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+20:24:09 [INFO   ] [default/skill-flow-remove-node/03] orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-remove-node
+20:24:09 [INFO   ] [default/skill-flow-remove-node/03] orchestrator: Task finished: status=SUCCESS duration=108.9s score=1.000 iterations=1

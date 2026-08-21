@@ -1,0 +1,24 @@
+{
+  "version": "2.0",
+  "resources": [
+    {
+      "resource": "connection",
+      "key": "5a1a639e-8395-4dc8-b043-6dc7d82de499",
+      "id": "connection5a1a639e-8395-4dc8-b043-6dc7d82de499",
+      "value": {
+        "ConnectionId": {
+          "defaultValue": "5a1a639e-8395-4dc8-b043-6dc7d82de499",
+          "isExpression": false,
+          "displayName": "uipath-google-gmail connection"
+        }
+      },
+      "metadata": {
+        "ActivityName": "Send Email",
+        "BindingsVersion": "2.2",
+        "DisplayLabel": "uipath-google-gmail connection",
+        "UseConnectionService": "true",
+        "Connector": "uipath-google-gmail"
+      }
+    }
+  ]
+}

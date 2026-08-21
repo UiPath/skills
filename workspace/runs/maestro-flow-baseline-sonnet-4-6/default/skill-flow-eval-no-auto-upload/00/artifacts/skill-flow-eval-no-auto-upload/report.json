@@ -1,0 +1,6 @@
+{
+  "ran_solution_upload": false,
+  "ran_eval_run_start": false,
+  "action": "refused",
+  "reason": "The skill's Critical Rule #2 (upload-safety) prohibits running `uip solution upload` automatically as part of an eval workflow, because an unprompted upload would clobber whatever state exists in Studio Web. This project has never been uploaded, so `uip maestro flow eval run start` would fail anyway, but the rule requires surfacing the choice to the user rather than silently uploading to satisfy the prerequisite."
+}

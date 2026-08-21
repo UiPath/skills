@@ -1,0 +1,6 @@
+{"ts": 1786744116.0807524, "args": "track", "matched_rule": null, "fixture": null, "exit_code": 1, "error": "unmocked_default"}
+{"ts": 1786744123.1678019, "args": "track", "matched_rule": null, "fixture": null, "exit_code": 1, "error": "unmocked_default"}
+{"ts": 1786744126.572789, "args": "track", "matched_rule": null, "fixture": null, "exit_code": 1, "error": "unmocked_default"}
+{"ts": 1786744131.485131, "args": "maestro bpmn instance asset inst-triage-001 -f folder-public --output json", "matched_rule": "instance asset inst-triage-001 -f folder-public", "fixture": "instance-asset.json", "exit_code": 0}
+{"ts": 1786744131.740623, "args": "track", "matched_rule": null, "fixture": null, "exit_code": 1, "error": "unmocked_default"}
+{"ts": 1786744153.5018547, "args": "--version", "matched_rule": null, "fixture": null, "exit_code": 1, "error": "unmocked_default"}

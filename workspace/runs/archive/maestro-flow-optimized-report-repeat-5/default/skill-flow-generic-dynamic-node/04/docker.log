@@ -1,0 +1,9 @@
+18:28:10 [INFO   ] [default/skill-flow-generic-dynamic-node/04] orchestrator: API routing: aws_bedrock
+18:37:30 [INFO   ] [default/skill-flow-generic-dynamic-node/04] evaluation.checker: Criterion 'run_command' FAILED (score=0.00, threshold=1.00): Command: python3 $TASK_DIR/check_generic_dynamic_node.py
+18:37:30 [INFO   ] [default/skill-flow-generic-dynamic-node/04] orchestrator: Success criteria: 2/3 passed, weighted score: 0.429
+18:37:30 [INFO   ] [default/skill-flow-generic-dynamic-node/04] orchestrator: Running post-run command: python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/cleanup_solutions.py
+18:37:32 [WARNING] [default/skill-flow-generic-dynamic-node/04] orchestrator: [post_run stderr] cleanup_solutions: deleted 921c7222-4a47-483d-7486-08dee9b21193 (from AcrUserList/AcrUserList.uipx)
+18:37:32 [WARNING] [default/skill-flow-generic-dynamic-node/04] orchestrator: [post_run stderr] cleanup_solutions: summary policy=always deleted=1 preserved=0 skipped=0 not_uploaded=0 failed=0
+18:37:32 [INFO   ] [default/skill-flow-generic-dynamic-node/04] orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+18:37:32 [INFO   ] [default/skill-flow-generic-dynamic-node/04] orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-generic-dynamic-node
+18:37:32 [INFO   ] [default/skill-flow-generic-dynamic-node/04] orchestrator: Task finished: status=FAILURE duration=564.6s score=0.429 iterations=1

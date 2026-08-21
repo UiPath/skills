@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "UpdateOpenOpportunities",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "39f13b4f-8785-4c6b-a6c3-cce134c950b0",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "UpdateOpenOpportunities"
+    },
+    "locks": [],
+    "key": "5cff19f2-a988-4a11-a21e-262eaf0a6848",
+    "files": []
+  }
+}

@@ -1,0 +1,864 @@
+{
+  "task_id": "skill-flow-ixp-routing-listing/r07",
+  "task_description": "IxP listing routing — user asks what IxP models / runtime projects are available from a Maestro flow. Read-only Q&A, not a build task.\nAsserts the agent ran the IxP registry-search listing command (per references/plugins/ixp/impl.md — Listing Published Models). Also asserts the agent did NOT take the build path: no .flow file should be created for a listing question.\nFailure here is signal about the IxP plugin's Listing Published Models / Listing Available Models sections — do NOT relax assertions, tighten the copy.\n",
+  "variant_id": "default",
+  "agent_type": "claude-code",
+  "model_used": "claude-sonnet-4-6",
+  "started_at": "2026-08-19T20:57:47.999269",
+  "completed_at": "2026-08-19T20:58:53.776244",
+  "duration_seconds": 65.77700448036194,
+  "final_status": "SUCCESS",
+  "max_turns_exhausted": false,
+  "weighted_score": 1.0,
+  "iteration_count": 1,
+  "success_criteria_results": [
+    {
+      "result_kind": "basic",
+      "criterion_type": "command_executed",
+      "description": "Agent searched the registry for IxP node types (listing path)",
+      "score": 1.0,
+      "details": "Matched 1/1 required commands (filters: tool_name=Bash, pattern=/(?i)uip\\s+maestro\\s+flow\\s+registry\\s+(list\\b|(search|list)\\b[^\\n]*\\b(ixp|document|extract))/)\nExamples: ['uip maestro flow registry search \"document\" --output json --output-filter \"[?contains(NodeType, \\'ixp\\') || contains(NodeT']",
+      "error": null,
+      "pass_threshold": 0.9,
+      "gating": true
+    },
+    {
+      "result_kind": "basic",
+      "criterion_type": "run_command",
+      "description": "No .flow file was created (listing is read-only Q&A, not a build task)",
+      "score": 1.0,
+      "details": "Command: ! find . -name \"*.flow\" -type f | grep -q .\nExit code: 0 (expected: 0)\nStdout: (empty)\nStderr: (empty)",
+      "error": null,
+      "pass_threshold": 0.9,
+      "gating": true
+    }
+  ],
+  "iterations": [
+    {
+      "iteration": 1,
+      "user_input": "Your working directory is: /work/output/artifacts/skill-flow-ixp-routing-listing/r07\n\nWhich document-extraction models can this flow call?\n\nImportant:\n- The `uip` CLI is already available.\n- Use `--output json` on all uip commands.\n",
+      "agent_output": "[ASSISTANT] I'll find the flow file and check the registry for available document-extraction models in parallel.\n[ASSISTANT] There is no `.flow` file in this working directory. The registry shows **13 IXP document-extraction models** available on this tenant that a flow could call (node type prefix `uipath.ixp.*`):\n\n| Display Name | Node Type (truncated) | Available In |\n|---|---|---|\n| InvoiceIXP | `uipath.ixp.invoiceixp-cef0d447-ixp.*` | Shared |\n| invoices-billing | `uipath.ixp.invoices-billing-f0c606f9-ixp.*` | Shared/uipath-maestro-flow/BillingDispute |\n| birth_certificates_oob-6252526a-ixp | `uipath.ixp.birth-certificates-oob-6252526a-ixp.*` | Shared |\n| death_certificates_oob-56f11e28-ixp | `uipath.ixp.death-certificates-oob-56f11e28-ixp.*` | Shared |\n| health_insurance_cards_oob-c28ec12f-ixp | `uipath.ixp.health-insurance-cards-oob-c28ec12f-ixp.*` | Shared |\n| employment-agreements-d4ee40a0-ixp | `uipath.ixp.employment-agreements-d4ee40a0-ixp.*` | Shared |\n| aviation-investigation-final-report-demo | `uipath.ixp.aviation-investigation-final-report-demo-a42b1d4d-ixp.*` | Shared |\n| IDP Benchmark - Invoices | `uipath.ixp.idp-benchmark-invoices-c735405a-ixp.*` | Shared |\n| IDP Benchmark - Bank Statements | `uipath.ixp.idp-benchmark-bank-statements-819106fb-ixp.*` | Shared |\n| IDP Benchmark - Receipts | `uipath.ixp.idp-benchmark-receipts-43af6412-ixp.*` | Shared |\n| IDP Benchmark - Passports | `uipath.ixp.idp-benchmark-passports-6b2a616e-ixp.*` | Shared |\n| ixp-uniform-residential-loan-application (Fannie Mae 1003) | `uipath.ixp.ixp-uniform-residential-loan-application-fannie-mae-form-1003-ec9bb5b0-ixp.*` | Shared |\n| ixp-icao-air-transport-monthly-monitor | `uipath.ixp.ixp-icao-air-transport-monthly-monitor-customer-facing-friendly-2520735a-ixp.*` | Shared |\n\nNote: there is no `.flow` file in `/work/output/artifacts/skill-flow-ixp-routing-listing/r07`, so this list reflects all IXP extraction models available on the tenant — not models referenced by a specific flow.\n[RESULT - SUCCESS] There is no `.flow` file in this working directory. The registry shows **13 IXP document-extraction models** available on this tenant that a flow could call (node type prefix `uipath.ixp.*`):\n\n| Display Name | Node Type (truncated) | Available In |\n|---|---|---|\n| InvoiceIXP | `uipath.ixp.invoiceixp-cef0d447-ixp.*` | Shared |\n| invoices-billing | `uipath.ixp.invoices-billing-f0c606f9-ixp.*` | Shared/uipath-maestro-flow/BillingDispute |\n| birth_certificates_oob-6252526a-ixp | `uipath.ixp.birth-certificates-oob-6252526a-ixp.*` | Shared |\n| death_certificates_oob-56f11e28-ixp | `uipath.ixp.death-certificates-oob-56f11e28-ixp.*` | Shared |\n| health_insurance_cards_oob-c28ec12f-ixp | `uipath.ixp.health-insurance-cards-oob-c28ec12f-ixp.*` | Shared |\n| employment-agreements-d4ee40a0-ixp | `uipath.ixp.employment-agreements-d4ee40a0-ixp.*` | Shared |\n| aviation-investigation-final-report-demo | `uipath.ixp.aviation-investigation-final-report-demo-a42b1d4d-ixp.*` | Shared |\n| IDP Benchmark - Invoices | `uipath.ixp.idp-benchmark-invoices-c735405a-ixp.*` | Shared |\n| IDP Benchmark - Bank Statements | `uipath.ixp.idp-benchmark-bank-statements-819106fb-ixp.*` | Shared |\n| IDP Benchmark - Receipts | `uipath.ixp.idp-benchmark-receipts-43af6412-ixp.*` | Shared |\n| IDP Benchmark - Passports | `uipath.ixp.idp-benchmark-passports-6b2a616e-ixp.*` | Shared |\n| ixp-uniform-residential-loan-application (Fannie Mae 1003) | `uipath.ixp.ixp-uniform-residential-loan-application-fannie-mae-form-1003-ec9bb5b0-ixp.*` | Shared |\n| ixp-icao-air-transport-monthly-monitor | `uipath.ixp.ixp-icao-air-transport-monthly-monitor-customer-facing-friendly-2520735a-ixp.*` | Shared |\n\nNote: there is no `.flow` file in `/work/output/artifacts/skill-flow-ixp-routing-listing/r07`, so this list reflects all IXP extraction models available on the tenant — not models referenced by a specific flow.",
+      "commands": [
+        {
+          "tool_name": "Skill",
+          "tool_id": "toolu_bdrk_01SHTGBbVto1NpEwt6BD5ThV",
+          "assistant_turn_index": 1,
+          "timestamp": "2026-08-19T20:58:14.495690",
+          "duration_ms": 27.436280011897907,
+          "generation_completed_at": "2026-08-19T20:58:14.495690",
+          "execution_started_at": "2026-08-19T20:58:14.495931",
+          "execution_completed_at": "2026-08-19T20:58:14.523367",
+          "parameters": {
+            "skill": "tmp:uipath-maestro-flow"
+          },
+          "result_status": "success",
+          "result_summary": "Launching skill: tmp:uipath-maestro-flow",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 0,
+          "result_tokens": 10
+        },
+        {
+          "tool_name": "Glob",
+          "tool_id": "toolu_bdrk_01SWjhcCAqFRKnzWELJ4SChG",
+          "assistant_turn_index": 4,
+          "timestamp": "2026-08-19T20:58:18.672830",
+          "duration_ms": 25.764391000848264,
+          "generation_completed_at": "2026-08-19T20:58:18.672830",
+          "execution_started_at": "2026-08-19T20:58:18.672890",
+          "execution_completed_at": "2026-08-19T20:58:18.698654",
+          "parameters": {
+            "pattern": "**/*.flow"
+          },
+          "result_status": "success",
+          "result_summary": "No files found",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 1,
+          "result_tokens": 4
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_01WSVriDHiQNEenhhmgHWH5P",
+          "assistant_turn_index": 5,
+          "timestamp": "2026-08-19T20:58:20.189362",
+          "duration_ms": 12140.261791006196,
+          "generation_completed_at": "2026-08-19T20:58:20.189362",
+          "execution_started_at": "2026-08-19T20:58:20.189456",
+          "execution_completed_at": "2026-08-19T20:58:32.329718",
+          "parameters": {
+            "command": "uip maestro flow registry search \"document\" --output json --output-filter \"[?contains(NodeType, 'ixp') || contains(NodeType, 'document')].{NodeType:NodeType,DisplayName:DisplayName,Description:Description}\""
+          },
+          "result_status": "success",
+          "result_summary": "[ManifestClient] fetchDynamicNodes ok: total=4880 connector nodes=3654 integration trigger nodes=896 agent context nodes=2 external agent nodes=7 orchestrator nodes=263 IXP nodes=45 IXP Models nodes=13\n{\n  \"Result\": \"Success\",\n  \"Code\": \"NodeSearchSuccess\",\n  \"Data\": [\n    {\n      \"NodeType\": \"uipath.connector.uipath-adobe-sign.upload-transient-document\",\n      \"DisplayName\": \"Upload Transient Document\",\n      \"Description\": \"Upload a document for use in agreement creation with Adobe Acrobat Sign.\"\n    },\n    {\n      \"NodeType\": \"uipath.connector.uipath-adobe-pdfservices.create-a-word-or-pdf-document\",\n      \"DisplayName\": \"Create a Word or PDF Document\",\n      \"Description\": \"Merge JSON data with Word templates to create dynamic documents using Adobe PDF Services.\"\n    },\n    {\n      \"NodeType\": \"uipath.connector.uipath-microsoft-azureformrecognizer.analyze-document\",\n      \"DisplayName\": \"Analyze Document\",\n      \"Description\": \"Asynchronously analyze or extract data from a document using Azure AI Document Intelligence.\"\n    },\n    {\n      \"NodeType\": \"uipath.connector.uipath-docusign-docusign.add-document-to-envelope\",\n      \"DisplayName\": \"Add Document to Envelope\",\n      \"Description\": \"Add a document to an existing envelope in DocuSign.\"\n    },\n    {\n      \"NodeType\": \"uipath.connector.uipath-docusign-docusign.list-documents-in-envelope\",\n      \"DisplayName\": \"List documents in envelope\",\n      \"Description\": \"Lists all documents in an envelope\"\n    },\n    {\n      \"NodeType\": \"uipath.connector.uipath-docusign-docusign.download-documents-of-envelope\",\n      \"DisplayName\": \"Download Documents of Envelope\",\n      \"Description\": \"Download all documents from a DocuSign envelope.\"\n    },\n    {\n      \"NodeType\": \"uipath.connector.uipath-pdfmonkey-pdfmonkey.delete-a-document\",\n      \"DisplayName\": \"Delete a Document\",\n      \"Description\": \"Delete a document in PDFMonkey.\"\n    },\n    {\n      \"NodeType\": \"uipath.connector.uipath-pdfmonkey-pdfmonkey.find-documents\",\n      \"DisplayName\": \"Find Documents\",\n      \"Description\": \"Locate documents using specific templates and status in PDFMonkey.\"\n    },\n    {\n      \"NodeType\": \"uipath.connector.uipath-pdfmonkey-pdfmonkey.download-document\",\n      \"DisplayName\": \"Download Document\",\n      \"Description\": \"Download documents from PDFMonkey.\"\n    },\n    {\n      \"NodeType\": \"uipath.connector.uipath-pdfmonkey-pdfmonkey.generate-document\",\n      \"DisplayName\": \"Generate Document\",\n      \"Description\": \"Generate a PDF document using PDFMonkey.\"\n    },\n    {\n      \"NodeType\": \"uipath.connector.uipath-pdfmonkey-pdfmonkey.get-document-status\",\n      \"DisplayName\": \"Get Document Status\",\n      \"Description\": \"Retrieve the status of a document by ID in PDFMonkey.\"\n    },\n    {\n      \"NodeType\": \"uipath.connector.uipath-salesforce-quip.create-document-in-private-folder\",\n      \"DisplayName\": \"Create Document in Private Folder\",\n      \"Description\": \"Create a document as a thread in a private folder in Quip.\"\n    },\n    {\n      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-microsoft-azureformrecognizer.azure-ai-document-intelligence-http-request\",\n      \"DisplayName\": \"Azure AI Document Intelligence HTTP Request\",\n      \"Description\": \"Perform HTTP requests to interact with Azure AI Document Intelligence using existing connector and connection configuration.\"\n    },\n    {\n      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-microsoft-azureformrecognizer.analyze-document\",\n      \"DisplayName\": \"Analyze Document\",\n      \"Description\": \"Asynchronously analyze or extract data from a document using Azure AI Document Intelligence.\"\n    },\n    {\n      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-docusign-docusign.list-documents-in-envelope\",\n      \"DisplayName\": \"List documents in envelope\",\n      \"Description\": \"Lists all documents in an envelope\"\n    },\n    {\n      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-pdfmonkey-pdfmonkey.delete-a-document\",\n      \"DisplayName\": \"Delete a Document\",\n      \"Description\": \"Delete a document in PDFMonkey.\"\n    },\n    {\n      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-pdfmonkey-pdfmonkey.find-documents\",\n      \"DisplayName\": \"Find Documents\",\n      \"Description\": \"Locate documents using specific templates and status in PDFMonkey.\"\n    },\n    {\n      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-pdfmonkey-pdfmonkey.generate-document\",\n      \"DisplayName\": \"Generate Document\",\n      \"Description\": \"Generate a PDF document using PDFMonkey.\"\n    },\n    {\n      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-pdfmonkey-pdfmonkey.get-document-status\",\n      \"DisplayName\": \"Get Document Status\",\n      \"Description\": \"Retrieve the status of a document by ID in PDFMonkey.\"\n    },\n    {\n      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-salesforce-quip.create-document-in-private-folder\",\n      \"DisplayName\": \"Create Document in Private Folder\",\n      \"Description\": \"Create a document as a thread in a private folder in Quip.\"\n    },\n    {\n      \"NodeType\": \"uipath.connector.trigger.uipath-google-docs.when-a-document-is-moved-to-trash\",\n      \"DisplayName\": \"When a Document Is Moved to Trash\",\n      \"Description\": \"Triggers when an existing document is moved to trash from the drive.\"\n    },\n    {\n      \"NodeType\": \"uipath.connector.event.uipath-google-docs.when-a-document-is-moved-to-trash\",\n      \"DisplayName\": \"When a Document Is Moved to Trash\",\n      \"Description\": \"Triggers when an existing document is moved to trash from the drive.\"\n    },\n    {\n      \"NodeType\": \"uipath.connector.trigger.uipath-google-docs.when-a-new-document-is-created\",\n      \"DisplayName\": \"When a New Document Is Created\",\n      \"Description\": \"Triggers when a new document is created in the drive.\"\n    },\n    {\n      \"NodeType\": \"uipath.connector.event.uipath-google-docs.when-a-new-document-is-created\",\n      \"DisplayName\": \"When a New Document Is Created\",\n      \"Description\": \"Triggers when a new document is created in the drive.\"\n    },\n    {\n      \"NodeType\": \"uipath.connector.trigger.uipath-google-docs.when-a-document-is-updated\",\n      \"DisplayName\": \"When a Document Is Updated\",\n      \"Description\": \"Triggers when an existing document is updated in the drive.\"\n    },\n    {\n      \"NodeType\": \"uipath.connector.event.uipath-google-docs.when-a-document-is-updated\",\n      \"DisplayName\": \"When a Document Is Updated\",\n      \"Description\": \"Triggers when an existing document is updated in the drive.\"\n    },\n    {\n      \"NodeType\": \"uipath.connector.trigger.uipath-pdfmonkey-pdfmonkey.document-created\",\n      \"DisplayName\": \"Document Created\",\n      \"Description\": \"Trigger when a new document is created in PDFMonkey.\"\n    },\n    {\n      \"NodeType\": \"uipath.connector.event.uipath-pdfmonkey-pdfmonkey.document-created\",\n      \"DisplayName\": \"Document Created\",\n      \"Description\": \"Trigger when a new document is created in PDFMonkey.\"\n    },\n    {\n      \"NodeType\": \"uipath.agent.resource.tool.ixp.codereval-integ-resolve-wrpcf5zs.73a7ab8e-79d6-8006-80db-5080b0fcc22b\",\n      \"DisplayName\": \"codereval-integ-resolve-wrpcf5zs\",\n      \"Description\": \"\"\n    },\n    {\n      \"NodeType\": \"uipath.agent.resource.tool.ixp.ixp-icao-air-transport-monthly-monitor-customer-facing-friendly-77400e2f.ac56cd06-4605-80f7-9ee9-12208795464e\",\n      \"DisplayName\": \"ixp-icao-air-transport-monthly-monitor-customer-facing-friendly--77400e2f\",\n      \"Description\": \"\"\n    },\n    {\n      \"NodeType\": \"uipath.agent.resource.tool.ixp.codereval-integ-taxonomy-52516487.68b7e81c-1c04-80a6-94d1-b2a07ab1c835\",\n      \"DisplayName\": \"codereval-integ-taxonomy-52516487\",\n      \"Description\": \"\"\n    },\n    {\n      \"NodeType\": \"uipath.agent.resource.tool.ixp.codereval-integ-resolve-test1.33af5997-6460-808a-9148-3f40b63c1f86\",\n      \"DisplayName\": \"codereval-integ-resolve-test1\",\n      \"Description\": \"\"\n    },\n    {\n      \"NodeType\": \"uipath.agent.resource.tool.ixp.test-project.df6bc57e-5947-802d-85a0-6d60a8acbfd6\",\n      \"DisplayName\": \"test project\",\n      \"Description\": \"\"\n    },\n    {\n      \"NodeType\": \"uipath.agent.resource.tool.ixp.vendor-invoices.50eabda0-7098-80be-97c4-a6c09109c62d\",\n      \"DisplayName\": \"Vendor Invoices\",\n      \"Description\": \"\"\n    },\n    {\n      \"NodeType\": \"uipath.agent.resource.tool.ixp.idp-benchmark-bank-statements.60c77d2f-6a20-80b2-9651-dc00fe0d06dd\",\n      \"DisplayName\": \"IDP Benchmark - Bank Statements\",\n      \"Description\": \"\"\n    },\n    {\n      \"NodeType\": \"uipath.agent.resource.tool.ixp.codereval-test-simple-abc.a7178d97-59db-802a-855a-a0c03227742f\",\n      \"DisplayName\": \"codereval-test-simple-abc\",\n      \"Description\": \"\"\n    },\n    {\n      \"NodeType\": \"uipath.agent.resource.tool.ixp.codereval-integ-labelling-5e1f8d81.d9ccbdd9-0ea5-809f-93fa-dec0d5f3d6f2\",\n      \"DisplayName\": \"codereval-integ-labelling-5e1f8d81\",\n      \"Description\": \"\"\n    },\n    {\n      \"NodeType\": \"uipath.agent.resource.tool.ixp.idp-benchmark-receipts.3104ccc3-26af-8099-9327-cd00673d9ea5\",\n      \"DisplayName\": \"IDP Benchmark - Receipts\",\n      \"Description\": \"\"\n    },\n    {\n      \"NodeType\": \"uipath.agent.resource.tool.ixp.vendor-invoices.b8d3ea65-59c5-8021-8427-a0406ce6218b\",\n      \"DisplayName\": \"Vendor Invoices\",\n      \"Description\": \"\"\n    },\n    {\n      \"NodeType\": \"uipath.agent.resource.tool.ixp.codereval-e2e-0ae381f7.6c552232-2707-80a4-948a-2a40d2860b66\",\n      \"DisplayName\": \"codereval-e2e-0ae381f7\",\n      \"Description\": \"\"\n    },\n    {\n      \"NodeType\": \"uipath.agent.resource.tool.ixp.codereval-integ-labelling-b457387b.ee0548a1-39c0-8056-8ac4-25404d6f3290\",\n      \"DisplayName\": \"codereval-integ-labelling-b457387b\",\n      \"Description\": \"\"\n    },\n    {\n      \"NodeType\": \"uipath.agent.resource.tool.ixp.invoices-billing.b1a160ac-7277-80b8-9718-a48005c04c59\",\n      \"DisplayName\": \"invoices-billing\",\n      \"Description\": \"\"\n    },\n    {\n      \"NodeType\": \"uipath.agent.resource.tool.ixp.codereval-e2e-a3be5d.5f3769d7-7ca8-80dc-9b80-2c207674d427\",\n      \"DisplayName\": \"codereval-e2e-a3be5d\",\n      \"Description\": \"\"\n    },\n    {\n      \"NodeType\": \"uipath.agent.resource.tool.ixp.health-insurance-cards-oob-c28ec12f.70cdd6e2-30b1-8032-8647-a3606a9b7a04\",\n      \"DisplayName\": \"health_insurance_cards_oob-c28ec12f\",\n      \"Description\": \"\"\n    },\n    {\n      \"NodeType\": \"uipath.agent.resource.tool.ixp.codereval-e2e-stl88a2h.2885ad0f-09cc-8072-8e5a-01201b6e9579\",\n      \"DisplayName\": \"codereval-e2e-stl88a2h\",\n      \"Description\": \"\"\n    },\n    {\n      \"NodeType\": \"uipath.agent.resource.tool.ixp.employment-agreements-8d4447ff.3586d04a-2437-8015-82aa-51000debbc0a\",\n      \"DisplayName\": \"employment-agreements-8d4447ff\",\n      \"Description\": \"\"\n    },\n    {\n      \"NodeType\": \"uipath.agent.resource.tool.ixp.aviation-investigation-final-report-demo-25cc120c.a4fa6394-073e-80dd-9bb3-8d808dbb9821\",\n      \"DisplayName\": \"aviation-investigation-final-report-demo-25cc120c\",\n      \"Description\": \"\"\n    },\n    {\n      \"NodeType\": \"uipath.agent.resource.tool.ixp.ap-invoices.c7e11cc7-204b-80d7-9af9-bea050295dde\",\n      \"DisplayName\": \"ap-invoices\",\n      \"Description\": \"\"\n    },\n    {\n      \"NodeType\": \"uipath.agent.resource.tool.ixp.codereval-integ-publish-99c54111.171c7983-56a1-8045-88b1-1da060590ef2\",\n      \"DisplayName\": \"codereval-integ-publish-99c54111\",\n      \"Description\": \"\"\n    },\n    {\n      \"NodeType\": \"uipath.agent.resource.tool.ixp.ixp-it-publish-555.4b40c5d8-448e-8000-8002-92e0ae6f3dc4\",\n      \"DisplayName\": \"ixp-it-publish-555\",\n      \"Description\": \"\"\n    },\n    {\n      \"NodeType\": \"uipath.agent.resource.tool.ixp.idp-benchmark-invoices.f4791493-0541-809c-9383-6aa097040e93\",\n      \"DisplayName\": \"IDP Benchmark - Invoices\",\n      \"Description\": \"\"\n    },\n    {\n      \"NodeType\": \"uipath.agent.resource.tool.ixp.test.4135ba0e-4377-804e-89cf-7b0028a18595\",\n      \"DisplayName\": \"test\",\n      \"Description\": \"\"\n    },\n    {\n      \"NodeType\": \"uipath.agent.resource.tool.ixp.codereval-e2e-k8qqqe.ad7f58c4-391f-801c-8390-ac80a128c243\",\n      \"DisplayName\": \"codereval-e2e-k8qqqe\",\n      \"Description\": \"\"\n    },\n    {\n      \"NodeType\": \"uipath.agent.resource.tool.ixp.codereval-integ-publish-444cb85e5e.ae342ddb-1574-8073-8e71-478002ef6515\",\n      \"DisplayName\": \"codereval-integ-publish-444cb85e5e\",\n      \"Description\": \"\"\n    },\n    {\n      \"NodeType\": \"uipath.agent.resource.tool.ixp.codereval-e2e-o06qmflr.d6b8bed3-3c44-80f9-9f38-e0e0d03d1d98\",\n      \"DisplayName\": \"codereval-e2e-o06qmflr\",\n      \"Description\": \"\"\n    },\n    {\n      \"NodeType\": \"uipath.agent.resource.tool.ixp.idp-benchmark-passports.dab2303e-320c-80a5-94b8-7ce07e9dda7d\",\n      \"DisplayName\": \"IDP Benchmark - Passports\",\n      \"Description\": \"\"\n    },\n    {\n      \"NodeType\": \"uipath.agent.resource.tool.ixp.birth-certificates-oob-6252526a.5551ec5e-5347-8001-803c-1dc02c5fd026\",\n      \"DisplayName\": \"birth_certificates_oob-6252526a\",\n      \"Description\": \"\"\n    },\n    {\n      \"NodeType\": \"uipath.agent.resource.tool.ixp.codereval-integ-labelling-dc6c9t4j.762a8845-1109-805a-8b47-ae20602ce29f\",\n      \"DisplayName\": \"codereval-integ-labelling-dc6c9t4j\",\n      \"Description\": \"\"\n    },\n    {\n      \"NodeType\": \"uipath.agent.resource.tool.ixp.codereval-e2e-d30f566c.fca223d0-7a89-80ff-9ff9-2b005fd755ba\",\n      \"DisplayName\": \"codereval-e2e-d30f566c\",\n      \"Description\": \"\"\n    },\n    {\n      \"NodeType\": \"uipath.agent.resource.tool.ixp.codereval-integ-taxonomy-84eef91b.743e88e8-74e2-8067-8cf0-06a04b24c2b3\",\n      \"DisplayName\": \"codereval-integ-taxonomy-84eef91b\",\n      \"Description\": \"\"\n    },\n    {\n      \"NodeType\": \"uipath.agent.resource.tool.ixp.invoice-lifecycle.b237a1cc-6598-80eb-9d74-8e005e28b3c6\",\n      \"DisplayName\": \"invoice-lifecycle\",\n      \"Description\": \"\"\n    },\n    {\n      \"NodeType\": \"uipath.agent.resource.tool.ixp.codereval-integ-taxonomy-2ae8da26.a710c6af-38dc-8077-8eed-09603dd3def6\",\n      \"DisplayName\": \"codereval-integ-taxonomy-2ae8da26\",\n      \"Description\": \"\"\n    },\n    {\n      \"NodeType\": \"uipath.agent.resource.tool.ixp.codereval-integ-publish-015f46d9.2c63b7c4-5229-80af-95f1-e6c0f40606d8\",\n      \"DisplayName\": \"codereval-integ-publish-015f46d9\",\n      \"Description\": \"\"\n    },\n    {\n      \"NodeType\": \"uipath.agent.resource.tool.ixp.codereval-integ-taxonomy-27de410d.ad5f2770-35f1-807c-8f81-cca050e67f19\",\n      \"DisplayName\": \"codereval-integ-taxonomy-27de410d\",\n      \"Description\": \"\"\n    },\n    {\n      \"NodeType\": \"uipath.agent.resource.tool.ixp.demo-invoices-alpha.7726812a-546c-80d4-9a95-6320b4e56249\",\n      \"DisplayName\": \"demo_invoices_alpha\",\n      \"Description\": \"\"\n    },\n    {\n      \"NodeType\": \"uipath.agent.resource.tool.ixp.codereval-integ-resolve-wkep2u5a.0c485fd0-64a7-80a3-9476-a2a0b69f1490\",\n      \"DisplayName\": \"codereval-integ-resolve-wkep2u5a\",\n      \"Description\": \"\"\n    },\n    {\n      \"NodeType\": \"uipath.agent.resource.tool.ixp.death-certificates-oob-56f11e28.1882c4d8-0952-805c-8b82-fc80d837bdf1\",\n      \"DisplayName\": \"death_certificates_oob-56f11e28\",\n      \"Description\": \"\"\n    },\n    {\n      \"NodeType\": \"uipath.agent.resource.tool.ixp.ixp-it-labelling-a2dc03ec.3235eae3-5977-805e-8bcf-db40d1b00cd1\",\n      \"DisplayName\": \"ixp-it-labelling-a2dc03ec\",\n      \"Description\": \"\"\n    },\n    {\n      \"NodeType\": \"uipath.agent.resource.tool.ixp.my-invoices.764a74e3-58ed-8040-8814-4b2003f15dc6\",\n      \"DisplayName\": \"My Invoices\",\n      \"Description\": \"\"\n    },\n    {\n      \"NodeType\": \"uipath.agent.resource.tool.ixp.codereval-e2e-fdbabb7d.e601877b-2e96-809e-93c8-8b20baeb264c\",\n      \"DisplayName\": \"codereval-e2e-fdbabb7d\",\n      \"Description\": \"\"\n    },\n    {\n      \"NodeType\": \"uipath.agent.resource.tool.ixp.ixp-it-versions-295f6c1d.9316c155-2895-807e-8fdb-d8e0d2ae77f2\",\n      \"DisplayName\": \"ixp-it-versions-295f6c1d\",\n      \"Description\": \"\"\n    },\n    {\n      \"NodeType\": \"uipath.agent.resource.tool.ixp.codereval-integ-taxonomy-.b2692e49-42df-80ea-9d52-1de05b3f0815\",\n      \"DisplayName\": \"codereval-integ-taxonomy-\",\n      \"Description\": \"\"\n    },\n    {\n      \"NodeType\": \"uipath.agent.resource.tool.ixp.ixp-uniform-residential-loan-application-fannie-mae-form-1003-e0a43a74.083c60ee-6d85-8033-8664-09c0dc88f803\",\n      \"DisplayName\": \"ixp-uniform-residential-loan-application-fannie-mae-form-1003--e0a43a74\",\n      \"Description\": \"\"\n    },\n    {\n      \"NodeType\": \"uipath.ixp.aviation-investigation-final-report-demo-a42b1d4d-ixp.937c414b-7879-8059-8b29-e8401d2dd3ba-c4359cde-55f0-4f0e-9322-c6cdce74ab4c\",\n      \"DisplayName\": \"aviation-investigation-final-report-demo-a42b1d4d-ixp\",\n      \"Description\": \"(Shared)\"\n    },\n    {\n      \"NodeType\": \"uipath.ixp.birth-certificates-oob-6252526a-ixp.a05c7655-1a1c-80a5-94a0-b1609d34dc10-c4359cde-55f0-4f0e-9322-c6cdce74ab4c\",\n      \"DisplayName\": \"birth_certificates_oob-6252526a-ixp\",\n      \"Description\": \"(Shared)\"\n    },\n    {\n      \"NodeType\": \"uipath.ixp.death-certificates-oob-56f11e28-ixp.fb2bf1b7-2e43-80ec-9d87-f380183f3550-c4359cde-55f0-4f0e-9322-c6cdce74ab4c\",\n      \"DisplayName\": \"death_certificates_oob-56f11e28-ixp\",\n      \"Description\": \"(Shared)\"\n    },\n    {\n      \"NodeType\": \"uipath.ixp.employment-agreements-d4ee40a0-ixp.97f6f1c4-2b0d-8044-8892-c8809e742924-c4359cde-55f0-4f0e-9322-c6cdce74ab4c\",\n      \"DisplayName\": \"employment-agreements-d4ee40a0-ixp\",\n      \"Description\": \"(Shared)\"\n    },\n    {\n      \"NodeType\": \"uipath.ixp.health-insurance-cards-oob-c28ec12f-ixp.e0290ca9-2150-8041-8834-8b00e74c60ab-c4359cde-55f0-4f0e-9322-c6cdce74ab4c\",\n      \"DisplayName\": \"health_insurance_cards_oob-c28ec12f-ixp\",\n      \"Description\": \"(Shared)\"\n    },\n    {\n      \"NodeType\": \"uipath.ixp.idp-benchmark-bank-statements-819106fb-ixp.193ec581-7710-8092-9259-2320edf184e8-c4359cde-55f0-4f0e-9322-c6cdce74ab4c\",\n      \"DisplayName\": \"idp-benchmark---bank-statements-819106fb-ixp\",\n      \"Description\": \"(Shared)\"\n    },\n    {\n      \"NodeType\": \"uipath.ixp.idp-benchmark-invoices-c735405a-ixp.f6df6382-0af4-80b4-9690-e540cf2af19a-c4359cde-55f0-4f0e-9322-c6cdce74ab4c\",\n      \"DisplayName\": \"idp-benchmark---invoices-c735405a-ixp\",\n      \"Description\": \"(Shared)\"\n    },\n    {\n      \"NodeType\": \"uipath.ixp.idp-benchmark-passports-6b2a616e-ixp.f9e69498-67c2-800b-8163-0920e3fbaa06-c4359cde-55f0-4f0e-9322-c6cdce74ab4c\",\n      \"DisplayName\": \"idp-benchmark---passports-6b2a616e-ixp\",\n      \"Description\": \"(Shared)\"\n    },\n    {\n      \"NodeType\": \"uipath.ixp.idp-benchmark-receipts-43af6412-ixp.9e77f71d-773c-80a0-9411-ec40d252d00d-c4359cde-55f0-4f0e-9322-c6cdce74ab4c\",\n      \"DisplayName\": \"idp-benchmark---receipts-43af6412-ixp\",\n      \"Description\": \"(Shared)\"\n    },\n    {\n      \"NodeType\": \"uipath.ixp.invoiceixp-cef0d447-ixp.ff973488-5d89-8035-86ac-f980b4be6deb-c4359cde-55f0-4f0e-9322-c6cdce74ab4c\",\n      \"DisplayName\": \"InvoiceIXP\",\n      \"Description\": \"(Shared)\"\n    },\n    {\n      \"NodeType\": \"uipath.ixp.invoices-billing-f0c606f9-ixp.99f5bbfa-5f29-8033-8662-25001b6bb18e-79a7d12e-da84-4bf4-ab60-7f34b44dd178\",\n      \"DisplayName\": \"invoices-billing\",\n      \"Description\": \"(Shared/uipath-maestro-flow/BillingDispute)\"\n    },\n    {\n      \"NodeType\": \"uipath.ixp.ixp-icao-air-transport-monthly-monitor-customer-facing-friendly-2520735a-ixp.e2b2a5db-3949-80d2-9a4d-bd20c18544b1-c4359cde-55f0-4f0e-9322-c6cdce74ab4c\",\n      \"DisplayName\": \"ixp-icao-air-transport-monthly-monitor-customer-facing-friendly-2520735a-ixp\",\n      \"Description\": \"(Shared)\"\n    },\n    {\n      \"NodeType\": \"uipath.ixp.ixp-uniform-residential-loan-application-fannie-mae-form-1003-ec9bb5b0-ixp.589568b1-5ea1-80ed-9db4-ada0d51cdc8d-c4359cde-55f0-4f0e-9322-c6cdce74ab4c\",\n      \"DisplayName\": \"ixp-uniform-residential-loan-application-fannie-mae-form-1003-ec9bb5b0-ixp\",\n      \"Description\": \"(Shared)\"\n    },\n    {\n      \"NodeType\": \"uipath.human-in-the-loop.document-validation\",\n      \"DisplayName\": \"Document Validation\",\n      \"Description\": \"Native or custom validation station for document tasks\"\n    }\n  ]\n}",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 2,
+          "result_tokens": 4974
+        }
+      ],
+      "timestamp": "2026-08-19T20:58:53.659848",
+      "duration_seconds": 49.895363826013636,
+      "token_usage": {
+        "uncached_input_tokens": 447,
+        "output_tokens": 2295,
+        "cache_creation_input_tokens": 19194,
+        "cache_read_input_tokens": 100995,
+        "total_cost_usd": 0.138042,
+        "input_tokens": 120636
+      },
+      "model_used": "claude-sonnet-4-6",
+      "assistant_turn_count": 8,
+      "messages": [
+        {
+          "role": "assistant",
+          "started_at": "2026-08-19T20:58:03.761496",
+          "completed_at": "2026-08-19T20:58:14.102013",
+          "generation_duration_ms": 10340.540489007253,
+          "content_blocks": [
+            {
+              "block_type": "thinking",
+              "sequence": 0,
+              "text": null,
+              "thinking": "The user wants to know which document-extraction models a flow can call. Let me use the UiPath Maestro Flow skill to help with this task.",
+              "signature": "EtQCCmcIEBABGAIqQH1Kq56CiG7wElXhu7DzLv6iIGaaAFysf+VxTzDItSYlh0b6GSWlHsWI/OlY91sV75z5ZYt++PlXjLTV3mdYcCMyEWNsYXVkZS1zb25uZXQtNC02OABCCHRoaW5raW5nEgwOzItWNvi09BU3UOEaDCQbw9fdb83QA23xDyIw8IIeqTd+UgrwJH5nElHyCv6SZ4303H5AtbnNkS9JFX59TzVw3wdH3jjYDkQ2hORpKpoBe9pTgApCawrxatkm/Pg4weLP00D4TT7tNYvmtTIxdjLKMdmyZYu81gYmjLGwp03LTViGNyr2A4SJ70stQlfAGmmIUJTmoohM2cFw0Z8fRAurGrsBv/uxrt/STBHVN5N/iHjz7MJrAgWCo+DZi2GMgeJYurqTqQXU/517IPDfEXeoTMk6C+IJ2zht18GQEs/plsM3lgN5FLRFuBgB",
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 2,
+          "output_tokens": 84,
+          "cache_creation_tokens": 2608,
+          "cache_read_tokens": 29085,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_0144CCE6xAH4BnNXzEMAHiiR",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-08-19T20:58:14.102013",
+          "completed_at": "2026-08-19T20:58:14.495690",
+          "generation_duration_ms": 393.67688199854456,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01SHTGBbVto1NpEwt6BD5ThV",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01SHTGBbVto1NpEwt6BD5ThV"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 25,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_0144CCE6xAH4BnNXzEMAHiiR",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-08-19T20:58:14.559776",
+          "completed_at": "2026-08-19T20:58:17.848881",
+          "generation_duration_ms": 3289.104541996494,
+          "content_blocks": [
+            {
+              "block_type": "thinking",
+              "sequence": 0,
+              "text": null,
+              "thinking": "The user wants to know which document-extraction models this flow can call. I need to look at the flow file first to understand what's there, then use the registry to list available IxP/document-extraction models.\n\nLet me start by finding the flow file and then checking the registry for available IxP models.",
+              "signature": "EoAECmcIEBABGAIqQMwttFHBTRhgoFxCR9zYHw18WrpG9Jpvs4KrzybqBAOrciza2wASSeRwujPOwAAzFWLxieQX7kHgHO5MObb0GRQyEWNsYXVkZS1zb25uZXQtNC02OABCCHRoaW5raW5nEgxsZgUq2wwWmRYNHHEaDCLTimKO2n7pt36IPSIwbpHzKaxQiATCHtNFzuR3xDVZDzAIeVod9dlc+nXcUnvJboB/SIrz07OhZG9fIGfsKsYCHab8Q6R3swunToq8L6gzU3KZ35SrivlVVn5usfEgeB+OoZrYobt6L9J/XWbMkVsvIe42oRoLAikSdk2A0f6bNuh/0EmXiun51h0d7ofy4u+TNdj7EYO9m4HZZwjruRaAeD2Nx//WhLe8OXo9Bo8OXTIbdzki+J4ouRExypEEfC1ZKuDSUAydUVP9j/emn7sJyXyxlZL2AbS58LcEERZ0hEvqcMCkbGijsMVLGDHHRFrAXbbdvj8btuphcRzzOCI0zaQDxCQURvznMkYysk3fHINkw9IFnboKPyI7X3Yx9somIQwyrqfZ8Enc2TqUiWhVZqv1VC4FkV3loAqI3c8/DmO6Gp1OhXPdoFUcatXvbxNV+h7CsGJoxG1XAVH15DUzsTW6z9dkkJuKMS+127DanTRykESsLxc0plUPz1qSOvZqC+AOLpgYAQ==",
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 2,
+          "output_tokens": 115,
+          "cache_creation_tokens": 8524,
+          "cache_read_tokens": 31693,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_019pNXKJ5uhXciWMZFFTDiFx",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-08-19T20:58:17.848881",
+          "completed_at": "2026-08-19T20:58:18.305907",
+          "generation_duration_ms": 457.026379997842,
+          "content_blocks": [
+            {
+              "block_type": "text",
+              "sequence": 0,
+              "text": "I'll find the flow file and check the registry for available document-extraction models in parallel.",
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 0,
+          "output_tokens": 37,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_019pNXKJ5uhXciWMZFFTDiFx",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-08-19T20:58:18.305907",
+          "completed_at": "2026-08-19T20:58:18.672830",
+          "generation_duration_ms": 366.9225300254766,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01SWjhcCAqFRKnzWELJ4SChG",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01SWjhcCAqFRKnzWELJ4SChG"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 11,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_019pNXKJ5uhXciWMZFFTDiFx",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-08-19T20:58:18.698613",
+          "completed_at": "2026-08-19T20:58:20.189362",
+          "generation_duration_ms": 1490.7488989992999,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01WSVriDHiQNEenhhmgHWH5P",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01WSVriDHiQNEenhhmgHWH5P"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 85,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_019pNXKJ5uhXciWMZFFTDiFx",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-08-19T20:58:32.329641",
+          "completed_at": "2026-08-19T20:58:48.134232",
+          "generation_duration_ms": 15804.592661006609,
+          "content_blocks": [
+            {
+              "block_type": "thinking",
+              "sequence": 0,
+              "text": null,
+              "thinking": "There's no .flow file in the working directory. The question asks \"which document-extraction models can this flow call?\" - but there's no flow file present. I need to clarify what the question is actually asking.\n\nWait - looking at the question again: \"Which document-extraction models can this flow call?\" - this might be asking about what IxP document-extraction models are available on this tenant that a flow could call, not about a specific flow file.\n\nSince there's no .flow file in the working directory, and the question asks what models \"this flow\" can call, I think the question is really asking about what IxP models are available to Maestro Flow through the flow registry. The skill instruction says to use `uip maestro flow registry search` to list IxP models.\nI should search specifically for IXP models using the \"ixp\" keyword to filter the registry results. Looking at what comes back, there are two categories of IXP nodes - the direct `uipath.ixp.*` extraction nodes (13 total) and the `uipath.agent.resource.tool.ixp.*` agent resource tools that wrap them. The direct IXP nodes are what a flow would call for document extraction.\n\nNow I'm seeing the list of available IXP extraction models - these include aviation investigation reports, birth certificates, death certificates, employment agreements, and health insurance cards, each with their own unique identifiers and marked as shared resources. Continuing through the mapping list...\n\nThat accounts for all 13 IXP nodes from the manifest. Since there's no local .flow file to work with, I'm looking at what's actually available on this tenant—these 13 document-extraction model nodes.",
+              "signature": "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",
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 1,
+          "output_tokens": 901,
+          "cache_creation_tokens": 8062,
+          "cache_read_tokens": 40217,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_013Zsg5xtqjasVQWwQ8a6ejA",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-08-19T20:58:48.134232",
+          "completed_at": "2026-08-19T20:58:53.475776",
+          "generation_duration_ms": 5341.543729999103,
+          "content_blocks": [
+            {
+              "block_type": "text",
+              "sequence": 0,
+              "text": "There is no `.flow` file in this working directory. The registry shows **13 IXP document-extraction models** available on this tenant that a flow could call (node type prefix `uipath.ixp.*`):\n\n| Display Name | Node Type (truncated) | Available In |\n|---|---|---|\n| InvoiceIXP | `uipath.ixp.invoiceixp-cef0d447-ixp.*` | Shared |\n| invoices-billing | `uipath.ixp.invoices-billing-f0c606f9-ixp.*` | Shared/uipath-maestro-flow/BillingDispute |\n| birth_certificates_oob-6252526a-ixp | `uipath.ixp.birth-certificates-oob-6252526a-ixp.*` | Shared |\n| death_certificates_oob-56f11e28-ixp | `uipath.ixp.death-certificates-oob-56f11e28-ixp.*` | Shared |\n| health_insurance_cards_oob-c28ec12f-ixp | `uipath.ixp.health-insurance-cards-oob-c28ec12f-ixp.*` | Shared |\n| employment-agreements-d4ee40a0-ixp | `uipath.ixp.employment-agreements-d4ee40a0-ixp.*` | Shared |\n| aviation-investigation-final-report-demo | `uipath.ixp.aviation-investigation-final-report-demo-a42b1d4d-ixp.*` | Shared |\n| IDP Benchmark - Invoices | `uipath.ixp.idp-benchmark-invoices-c735405a-ixp.*` | Shared |\n| IDP Benchmark - Bank Statements | `uipath.ixp.idp-benchmark-bank-statements-819106fb-ixp.*` | Shared |\n| IDP Benchmark - Receipts | `uipath.ixp.idp-benchmark-receipts-43af6412-ixp.*` | Shared |\n| IDP Benchmark - Passports | `uipath.ixp.idp-benchmark-passports-6b2a616e-ixp.*` | Shared |\n| ixp-uniform-residential-loan-application (Fannie Mae 1003) | `uipath.ixp.ixp-uniform-residential-loan-application-fannie-mae-form-1003-ec9bb5b0-ixp.*` | Shared |\n| ixp-icao-air-transport-monthly-monitor | `uipath.ixp.ixp-icao-air-transport-monthly-monitor-customer-facing-friendly-2520735a-ixp.*` | Shared |\n\nNote: there is no `.flow` file in `/work/output/artifacts/skill-flow-ixp-routing-listing/r07`, so this list reflects all IXP extraction models available on the tenant — not models referenced by a specific flow.",
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 0,
+          "output_tokens": 1021,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_013Zsg5xtqjasVQWwQ8a6ejA",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "reconciliation",
+          "input_tokens": 442,
+          "output_tokens": 16,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "note": "Tokens the agent billed but never surfaced as a generation (fixed prompt overhead + sub-agent input/cache the stream doesn't bubble up). Booked here so the transcript reconciles to the turn total."
+        }
+      ],
+      "num_turns": 5,
+      "max_turns_exhausted": false,
+      "result_summary": {
+        "is_error": false,
+        "subtype": "success",
+        "stop_reason": "end_turn",
+        "result": "There is no `.flow` file in this working directory. The registry shows **13 IXP document-extraction models** available on this tenant that a flow could call (node type prefix `uipath.ixp.*`):\n\n| Display Name | Node Type (truncated) | Available In |\n|---|---|---|\n| InvoiceIXP | `uipath.ixp.invoiceixp-cef0d447-ixp.*` | Shared |\n| invoices-billing | `uipath.ixp.invoices-billing-f0c606f9-ixp.*` | Shared/uipath-maestro-flow/BillingDispute |\n| birth_certificates_oob-6252526a-ixp | `uipath.ixp.birth-certificates-oob-6252526a-ixp.*` | Shared |\n| death_certificates_oob-56f11e28-ixp | `uipath.ixp.death-certificates-oob-56f11e28-ixp.*` | Shared |\n| health_insurance_cards_oob-c28ec12f-ixp | `uipath.ixp.health-insurance-cards-oob-c28ec12f-ixp.*` | Shared |\n| employment-agreements-d4ee40a0-ixp | `uipath.ixp.employment-agreements-d4ee40a0-ixp.*` | Shared |\n| aviation-investigation-final-report-demo | `uipath.ixp.aviation-investigation-final-report-demo-a42b1d4d-ixp.*` | Shared |\n| IDP Benchmark - Invoices | `uipath.ixp.idp-benchmark-invoices-c735405a-ixp.*` | Shared |\n| IDP Benchmark - Bank Statements | `uipath.ixp.idp-benchmark-bank-statements-819106fb-ixp.*` | Shared |\n| IDP Benchmark - Receipts | `uipath.ixp.idp-benchmark-receipts-43af6412-ixp.*` | Shared |\n| IDP Benchmark - Passports | `uipath.ixp.idp-benchmark-passports-6b2a616e-ixp.*` | Shared |\n| ixp-uniform-residential-loan-application (Fannie Mae 1003) | `uipath.ixp.ixp-uniform-residential-loan-application-fannie-mae-form-1003-ec9bb5b0-ixp.*` | Shared |\n| ixp-icao-air-transport-monthly-monitor | `uipath.ixp.ixp-icao-air-transport-monthly-monitor-customer-facing-friendly-2520735a-ixp.*` | Shared |\n\nNote: there is no `.flow` file in `/work/output/artifacts/skill-flow-ixp-routing-listing/r07`, so this list reflects all IXP extraction models available on the tenant — not models referenced by a specific flow."
+      },
+      "provider_call_costs": [],
+      "crashed": false,
+      "crash_reason": null
+    }
+  ],
+  "error_message": null,
+  "error_details": null,
+  "error_log_tail": null,
+  "environment_info": {
+    "git_commit": "unknown",
+    "skills_git_commit": "unknown",
+    "cli_version": "1.201.0-dev.8272",
+    "tool_plugins": {
+      "admin-tool": "1.201.0-dev.8272",
+      "agent-tool": "1.201.0-dev.8272",
+      "agenthub-tool": "1.201.0-dev.8272",
+      "aops-tool": "1.201.0-dev.8272",
+      "api-workflow-tool": "1.201.0-dev.8272",
+      "automation-hub-tool": "1.201.0-dev.8272",
+      "codedagent-tool": "1.201.0-dev.8272",
+      "codedapp-tool": "1.201.0-dev.8272",
+      "coder-tool": "1.201.0-dev.8272",
+      "context-grounding-tool": "1.201.0-dev.8272",
+      "conversational-tool": "1.201.0-dev.8272",
+      "data-fabric-tool": "1.201.0-dev.8272",
+      "docsai-tool": "1.201.0-dev.8272",
+      "function-tool": "1.201.0-dev.8272",
+      "gov-tool": "1.201.0-dev.8272",
+      "guardrails-tool": "1.201.0-dev.8272",
+      "insights-tool": "1.201.0-dev.8276",
+      "integrationservice-tool": "1.201.0-dev.8272",
+      "ixp-tool": "1.201.0-dev.8272",
+      "llm-gateway-tool": "1.201.0-dev.8272",
+      "llmgw-tool": "1.201.0-dev.8272",
+      "maestro-tool": "1.201.0-dev.8275",
+      "model-hub-tool": "1.201.0-dev.8272",
+      "orchestrator-tool": "1.201.0-dev.8272",
+      "platform-tool": "1.201.0-dev.8272",
+      "pm-tool": "1.201.0-dev.8272",
+      "rpa-legacy-tool": "1.201.0-dev.8272",
+      "rpa-tool": "1.201.0-dev.20260809.3",
+      "solution-tool": "1.201.0-dev.8272",
+      "tasks-tool": "1.201.0-dev.8272",
+      "test-manager-tool": "1.201.0-dev.8272",
+      "traces-tool": "1.201.0-dev.8272",
+      "vertical-solutions-tool": "1.201.0-dev.8272"
+    },
+    "coder_eval": "0.9.6",
+    "claude_code_cli": "2.1.177 (Claude Code)",
+    "uv": "uv 0.12.5 (x86_64-unknown-linux-gnu)",
+    "anthropic": "0.122.0",
+    "openai": "3.2.0",
+    "pydantic": "2.12.5",
+    "api_routing": "aws_bedrock",
+    "eval_routing": "aws_bedrock",
+    "aws_region": "us-east-2",
+    "bedrock_model": "us.anthropic.claude-sonnet-4-6",
+    "system_prompt_semantics": "append"
+  },
+  "agent_config": {
+    "type": "claude-code",
+    "model": "claude-sonnet-4-6",
+    "permission_mode": "acceptEdits",
+    "allowed_tools": [
+      "Skill",
+      "Bash",
+      "Read",
+      "Write",
+      "Edit",
+      "Glob",
+      "Grep"
+    ],
+    "disallowed_tools": null,
+    "plugins": [
+      {
+        "type": "local",
+        "path": "/home/azureuser/projects/skills/tmp/"
+      }
+    ],
+    "system_prompt": "You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted.\n",
+    "system_prompt_file": null,
+    "ignore_patterns": [],
+    "system_prompt_mode": "append",
+    "claude_settings": null,
+    "sdk_options": {},
+    "setting_sources": null
+  },
+  "sdk_options": {
+    "tools": null,
+    "allowed_tools": [
+      "Skill",
+      "Bash",
+      "Read",
+      "Write",
+      "Edit",
+      "Glob",
+      "Grep"
+    ],
+    "system_prompt": {
+      "type": "preset",
+      "preset": "claude_code",
+      "exclude_dynamic_sections": true,
+      "append": "You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted.\n"
+    },
+    "mcp_servers": {},
+    "strict_mcp_config": false,
+    "permission_mode": "acceptEdits",
+    "continue_conversation": false,
+    "resume": null,
+    "session_id": null,
+    "max_turns": 20,
+    "max_budget_usd": null,
+    "disallowed_tools": [
+      "ToolSearch"
+    ],
+    "model": "us.anthropic.claude-sonnet-4-6",
+    "fallback_model": null,
+    "betas": [],
+    "permission_prompt_tool_name": null,
+    "cwd": "/work/output/artifacts/skill-flow-ixp-routing-listing/r07",
+    "cli_path": null,
+    "settings": null,
+    "add_dirs": [],
+    "env": {
+      "PATH": "/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+      "PLUGIN_TOOLS_DIR": "/usr/lib/node_modules/@uipath",
+      "CLAUDE_CODE_USE_BEDROCK": "1",
+      "AWS_BEARER_TOKEN_BEDROCK": "***REDACTED***",
+      "AWS_REGION": "us-east-2",
+      "CLAUDE_CODE_ATTRIBUTION_HEADER": "0",
+      "ANTHROPIC_MODEL": "us.anthropic.claude-sonnet-4-6",
+      "ANTHROPIC_SMALL_FAST_MODEL": "us.anthropic.claude-sonnet-4-6"
+    },
+    "extra_args": {},
+    "max_buffer_size": null,
+    "can_use_tool": null,
+    "hooks": null,
+    "user": null,
+    "include_partial_messages": true,
+    "include_hook_events": false,
+    "fork_session": false,
+    "agents": null,
+    "setting_sources": [
+      "project"
+    ],
+    "skills": null,
+    "sandbox": null,
+    "plugins": [
+      {
+        "type": "local",
+        "path": "/home/azureuser/projects/skills/tmp"
+      }
+    ],
+    "max_thinking_tokens": null,
+    "thinking": null,
+    "effort": null,
+    "output_format": null,
+    "enable_file_checkpointing": false,
+    "session_store": null,
+    "session_store_flush": "batched",
+    "load_timeout_ms": 60000,
+    "task_budget": null
+  },
+  "sandbox_path": "/work/output/artifacts/skill-flow-ixp-routing-listing/r07",
+  "task_config": {
+    "resolved": {
+      "task_id": "skill-flow-ixp-routing-listing/r07",
+      "description": "IxP listing routing — user asks what IxP models / runtime projects are available from a Maestro flow. Read-only Q&A, not a build task.\nAsserts the agent ran the IxP registry-search listing command (per references/plugins/ixp/impl.md — Listing Published Models). Also asserts the agent did NOT take the build path: no .flow file should be created for a listing question.\nFailure here is signal about the IxP plugin's Listing Published Models / Listing Available Models sections — do NOT relax assertions, tighten the copy.\n",
+      "initial_prompt": "Which document-extraction models can this flow call?\n\nImportant:\n- The `uip` CLI is already available.\n- Use `--output json` on all uip commands.\n",
+      "initial_prompt_file": null,
+      "tags": [
+        "uipath-maestro-flow",
+        "integration",
+        "mode:operate",
+        "lifecycle:discover",
+        "node:ixp"
+      ],
+      "skip": false,
+      "agent": {
+        "type": "claude-code",
+        "model": "claude-sonnet-4-6",
+        "permission_mode": "acceptEdits",
+        "allowed_tools": [
+          "Skill",
+          "Bash",
+          "Read",
+          "Write",
+          "Edit",
+          "Glob",
+          "Grep"
+        ],
+        "disallowed_tools": null,
+        "plugins": [
+          {
+            "type": "local",
+            "path": "/home/azureuser/projects/skills/tmp/"
+          }
+        ],
+        "system_prompt": "You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted.\n",
+        "system_prompt_file": null,
+        "ignore_patterns": [],
+        "system_prompt_mode": "append",
+        "claude_settings": null,
+        "sdk_options": {},
+        "setting_sources": null
+      },
+      "sandbox": {
+        "driver": "tempdir",
+        "docker": {
+          "image": "skills-image:latest",
+          "dockerfile_path": null,
+          "build": {
+            "buildkit": null,
+            "args": {},
+            "secrets": [],
+            "extra_args": []
+          },
+          "network": "bridge",
+          "working_dir": null,
+          "env_passthrough": [
+            "ANTHROPIC_API_KEY",
+            "API_BACKEND",
+            "UIPATH_LLM_BACKEND",
+            "UIPATH_ACCESS_TOKEN",
+            "UIPATH_URL",
+            "UIPATH_TENANT_ID",
+            "UIPATH_ORGANIZATION_ID",
+            "UIPATH_CLI_DISABLE_VERSION_SYNC",
+            "AWS_BEARER_TOKEN_BEDROCK",
+            "AWS_REGION",
+            "BEDROCK_MODEL",
+            "CLAUDE_CODE_USE_BEDROCK",
+            "ANTHROPIC_MODEL",
+            "LITELLM_BASE_URL",
+            "LITELLM_AUTH_TOKEN",
+            "LITELLM_MODEL",
+            "LITELLM_SMALL_MODEL",
+            "LITELLM_COST_LOG",
+            "CODEX_API_KEY",
+            "CODEX_BASE_URL",
+            "CODEX_MODEL",
+            "GEMINI_API_KEY",
+            "ANTIGRAVITY_MODEL",
+            "HOME"
+          ],
+          "env_passthrough_extra": [
+            "SKILLS_REPO_PATH",
+            "EXPERIMENT_TASKS_PATH",
+            "BEDROCK_MODEL",
+            "TASK_PARALLELISM",
+            "UIPATH_CLI_ENABLE_ENV_AUTH",
+            "UIPATH_CLI_AUTH_TOKEN",
+            "UIPATH_CLI_ORGANIZATION_NAME",
+            "UIPATH_CLI_ORGANIZATION_ID",
+            "UIPATH_CLI_TENANT_NAME",
+            "UIPATH_CLI_TENANT_ID",
+            "TRACES_SMOKE_PROCESS_KEY",
+            "CODEX_API_KEY",
+            "CODEX_BASE_URL"
+          ],
+          "extra_mounts": [
+            "~/.uipath:/.uipath:rw",
+            "/home/azureuser/projects/skills/tests/tasks/uipath-maestro-flow:/home/azureuser/projects/skills/tests/tasks/uipath-maestro-flow:ro"
+          ]
+        },
+        "python": {
+          "env_packages": []
+        },
+        "node": null,
+        "limits": {
+          "timeout": 300,
+          "max_memory_mb": null,
+          "max_cpus": null,
+          "max_pids": null,
+          "max_disk_mb": null
+        },
+        "template_sources": null,
+        "mock_path_dirs": null,
+        "record_cli": null,
+        "ignore_patterns": []
+      },
+      "success_criteria": [
+        {
+          "type": "command_executed",
+          "description": "Agent searched the registry for IxP node types (listing path)",
+          "weight": 1.0,
+          "pass_threshold": 0.9,
+          "suite_thresholds": {
+            "mean": 0.85
+          },
+          "stop_early": null,
+          "tool_name": "Bash",
+          "command_pattern": "(?i)uip\\s+maestro\\s+flow\\s+registry\\s+(list\\b|(search|list)\\b[^\\n]*\\b(ixp|document|extract))",
+          "min_count": 1,
+          "max_count": null,
+          "require_success": false,
+          "exclude_pattern": null
+        },
+        {
+          "type": "run_command",
+          "description": "No .flow file was created (listing is read-only Q&A, not a build task)",
+          "weight": 1.0,
+          "pass_threshold": 0.9,
+          "suite_thresholds": {
+            "mean": 0.85
+          },
+          "command": "! find . -name \"*.flow\" -type f | grep -q .",
+          "timeout": 30,
+          "expected_exit_code": 0,
+          "expected_stdout": null,
+          "stdout_match": "exact",
+          "score_from_stdout": false
+        }
+      ],
+      "run_limits": {
+        "max_turns": 20,
+        "expected_turns": null,
+        "task_timeout": 300,
+        "turn_timeout": 300,
+        "max_input_tokens": null,
+        "max_output_tokens": null,
+        "max_total_tokens": null,
+        "max_usd": null,
+        "count_cached_input": false,
+        "count_cache_creation": false,
+        "stop_early": null,
+        "stop_early_gate_threshold": 1.0
+      },
+      "reference": null,
+      "expected_commands": null,
+      "pre_run": [],
+      "post_run": [
+        {
+          "command": "find . -maxdepth 5 -type d \\( -name node_modules -o -name .npm-prefix -o -name .venv \\) -prune -exec rm -rf {} +",
+          "timeout": 30
+        }
+      ],
+      "dataset": null,
+      "suite_id": "skill-flow-ixp-routing-listing",
+      "row_id": "r07",
+      "simulation": null
+    },
+    "source_yaml": "task_id: skill-flow-ixp-routing-listing\ndescription: >\n  IxP listing routing — user asks what IxP models / runtime projects are\n  available from a Maestro flow. Read-only Q&A, not a build task.\n\n  Asserts the agent ran the IxP registry-search listing command (per\n  references/plugins/ixp/impl.md — Listing Published Models). Also asserts the\n  agent did NOT take the build path: no .flow file should be created for a\n  listing question.\n\n  Failure here is signal about the IxP plugin's Listing Published Models /\n  Listing Available Models sections — do NOT relax assertions, tighten the\n  copy.\n\ntags: [uipath-maestro-flow, integration, mode:operate, lifecycle:discover, node:ixp]\n\ndataset:\n  rows:\n    - id: r01\n      prompt: \"What IxP models can I access in maestro?\"\n    - id: r02\n      prompt: \"What document extractors can I add to this flow?\"\n    - id: r03\n      prompt: \"List the published IxP extractors available to my .flow\"\n    - id: r04\n      prompt: \"Which IxP runtime projects can I wire into a Maestro flow node?\"\n    - id: r05\n      prompt: \"What extraction models are available to my Maestro flow?\"\n    - id: r06\n      prompt: \"Show me the IxP document-understanding models I can use in maestro\"\n    - id: r07\n      prompt: \"Which document-extraction models can this flow call?\"\n    - id: r08\n      prompt: \"What are my options for IxP nodes in a Maestro flow?\"\n    - id: r09\n      prompt: \"Can you list the IxP models I can add to my flow?\"\n    - id: r10\n      prompt: \"What published IxP extractors can a flow node reference?\"\n\ninitial_prompt: |\n  ${row.prompt}\n\n  Important:\n  - The `uip` CLI is already available.\n  - Use `--output json` on all uip commands.\n\nsuccess_criteria:\n  # IxP registry-search check (omits `get`) — see routing.yaml for the pattern breakdown.\n  - type: command_executed\n    description: \"Agent searched the registry for IxP node types (listing path)\"\n    tool_name: \"Bash\"\n    command_pattern: '(?i)uip\\s+maestro\\s+flow\\s+registry\\s+(list\\b|(search|list)\\b[^\\n]*\\b(ixp|document|extract))'\n    min_count: 1\n    suite_thresholds: {mean: 0.85}\n\n  # Inverted check: a listing/Q&A task should NOT create a .flow file.\n  # `! find ... | grep -q .` exits 0 when no .flow file is found (PASS)\n  # and 1 when one exists (FAIL).\n  - type: run_command\n    description: \"No .flow file was created (listing is read-only Q&A, not a build task)\"\n    command: '! find . -name \"*.flow\" -type f | grep -q .'\n    expected_exit_code: 0\n    suite_thresholds: {mean: 0.85}\n\nrun_limits:\n  max_turns: 20\n  turn_timeout: 300\n  task_timeout: 300\n",
+    "source_file": "/home/azureuser/projects/skills/tmp/experiments/tasks/uipath-maestro-flow/ixp/task.yaml",
+    "lineage": {
+      "agent.type": {
+        "value": "claude-code",
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.permission_mode": {
+        "value": "acceptEdits",
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.model": {
+        "value": "claude-sonnet-4-6",
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.allowed_tools": {
+        "value": [
+          "Skill",
+          "Bash",
+          "Read",
+          "Write",
+          "Edit",
+          "Glob",
+          "Grep"
+        ],
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.plugins": {
+        "value": [
+          {
+            "type": "local",
+            "path": "/home/azureuser/projects/skills/tmp/"
+          }
+        ],
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.ignore_patterns": {
+        "value": [],
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.system_prompt": {
+        "value": "You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted.\n",
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "run_limits.max_turns": {
+        "value": 20,
+        "source": "task",
+        "source_detail": null
+      },
+      "run_limits.task_timeout": {
+        "value": 300,
+        "source": "task",
+        "source_detail": null
+      },
+      "run_limits.turn_timeout": {
+        "value": 300,
+        "source": "task",
+        "source_detail": null
+      },
+      "sandbox.driver": {
+        "value": "docker",
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "sandbox.docker": {
+        "value": {
+          "image": "skills-image:latest",
+          "env_passthrough_extra": [
+            "SKILLS_REPO_PATH",
+            "EXPERIMENT_TASKS_PATH",
+            "BEDROCK_MODEL",
+            "TASK_PARALLELISM",
+            "UIPATH_CLI_ENABLE_ENV_AUTH",
+            "UIPATH_CLI_AUTH_TOKEN",
+            "UIPATH_CLI_ORGANIZATION_NAME",
+            "UIPATH_CLI_ORGANIZATION_ID",
+            "UIPATH_CLI_TENANT_NAME",
+            "UIPATH_CLI_TENANT_ID",
+            "TRACES_SMOKE_PROCESS_KEY",
+            "CODEX_API_KEY",
+            "CODEX_BASE_URL"
+          ],
+          "extra_mounts": [
+            "~/.uipath:/.uipath:rw",
+            "/home/azureuser/projects/skills/tests/tasks/uipath-maestro-flow:/home/azureuser/projects/skills/tests/tasks/uipath-maestro-flow:ro"
+          ]
+        },
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "repeats": {
+        "value": 1,
+        "source": "default",
+        "source_detail": null
+      }
+    }
+  },
+  "command_stats": {
+    "total_commands": 3,
+    "commands_by_tool": {
+      "Skill": 1,
+      "Glob": 1,
+      "Bash": 1
+    },
+    "total_command_time_ms": 12193.462462018942,
+    "avg_command_time_ms": 4064.4874873396475,
+    "slowest_commands": [
+      {
+        "tool": "Bash",
+        "duration_ms": 12140.261791006196,
+        "parameters": {
+          "command": "uip maestro flow registry search \"document\" --output json --output-filter \"[?contains(NodeType, 'ixp') || contains(NodeType, 'document')].{NodeType:NodeType,DisplayName:DisplayName,Description:Description}\""
+        },
+        "tool_id": "toolu_bdrk_01WSVriDHiQNEenhhmgHWH5P"
+      },
+      {
+        "tool": "Skill",
+        "duration_ms": 27.436280011897907,
+        "parameters": {
+          "skill": "tmp:uipath-maestro-flow"
+        },
+        "tool_id": "toolu_bdrk_01SHTGBbVto1NpEwt6BD5ThV"
+      },
+      {
+        "tool": "Glob",
+        "duration_ms": 25.764391000848264,
+        "parameters": {
+          "pattern": "**/*.flow"
+        },
+        "tool_id": "toolu_bdrk_01SWjhcCAqFRKnzWELJ4SChG"
+      }
+    ],
+    "successful_commands": 3,
+    "failed_commands": 0,
+    "unknown_commands": 0,
+    "success_rate": 100.0,
+    "most_common_sequence": "Skill → Glob → Bash"
+  },
+  "total_token_usage": {
+    "uncached_input_tokens": 447,
+    "output_tokens": 2295,
+    "cache_creation_input_tokens": 19194,
+    "cache_read_input_tokens": 100995,
+    "total_cost_usd": 0.138042,
+    "input_tokens": 120636
+  },
+  "total_assistant_turns": 8,
+  "expected_commands": null,
+  "actual_commands": 3,
+  "commands_efficiency": null,
+  "pre_run_results": [],
+  "post_run_results": [
+    {
+      "command": "find . -maxdepth 5 -type d \\( -name node_modules -o -name .npm-prefix -o -name .venv \\) -prune -exec rm -rf {} +",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "",
+      "duration_seconds": 0.09419918060302734,
+      "error": null
+    }
+  ],
+  "simulation": null,
+  "early_stop": null
+}

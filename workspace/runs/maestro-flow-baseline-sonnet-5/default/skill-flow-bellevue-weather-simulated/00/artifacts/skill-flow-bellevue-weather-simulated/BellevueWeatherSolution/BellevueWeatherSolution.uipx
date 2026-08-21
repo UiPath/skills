@@ -1,0 +1,12 @@
+{
+    "DocVersion": "1.0.0",
+    "StudioMinVersion": "2025.10.0",
+    "SolutionId": "48bb7695-f2ce-4939-9630-08defd628c60",
+    "Projects": [
+        {
+            "Type": "Flow",
+            "ProjectRelativePath": "BellevueWeatherFlow/project.uiproj",
+            "Id": "76e776ec-6f1b-43fb-bfb2-26587e63243e"
+        }
+    ]
+}

@@ -1,0 +1,178 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+    xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+    xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+    xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+    xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:uipath="http://uipath.org/schema/bpmn"
+    id="Definitions_ExpenseApprovalBpmn" targetNamespace="http://bpmn.io/schema/bpmn"
+    exporter="UiPath (https://bpmn.uipath.com)" exporterVersion="1.0">
+  <bpmn:process id="Process_ExpenseApprovalBpmn" name="ExpenseApprovalBpmn" isExecutable="true">
+    <bpmn:extensionElements>
+      <uipath:migrationVersion version="11.5" />
+      <uipath:variables version="v1">
+        <uipath:input id="Var_ExpenseId" name="expenseId" type="string"
+            description="Unique identifier of the expense claim submitted for approval."
+            elementId="Start_ManualTrigger" />
+        <uipath:input id="Var_Amount" name="amount" type="number"
+            description="Requested reimbursement amount for the expense claim, in the claim's base currency. Drives the high-amount routing decision."
+            elementId="Start_ManualTrigger" />
+        <uipath:output id="Var_Decision" name="decision" type="string" default="pending-review"
+            description="Final approval decision for the expense claim. Value is 'approved' when auto-approved by the script task, or remains 'pending-review' while a queue item is outstanding for high-amount claims." />
+        <uipath:output id="Var_TriageResult" name="triageResult" type="object"
+            description="Raw job response returned by the triage agent that reviewed the expense claim." />
+        <uipath:output id="Var_QueueItemResult" name="queueItemResult" type="object"
+            description="Raw response returned when a review queue item is created for a high-amount expense claim." />
+      </uipath:variables>
+      <uipath:bindings version="v1">
+        <uipath:binding id="Binding_TriageAgentName" resource="process" resourceSubType="Agent"
+            propertyAttribute="name" default="SYNTHETIC_EXPENSE_TRIAGE_AGENT" />
+        <uipath:binding id="Binding_TriageAgentFolderPath" resource="process" resourceSubType="Agent"
+            propertyAttribute="folderPath" default="SYNTHETIC_AGENTS_FOLDER" />
+      </uipath:bindings>
+    </bpmn:extensionElements>
+
+    <bpmn:startEvent id="Start_ManualTrigger" name="Start expense approval">
+      <bpmn:extensionElements>
+        <uipath:entryPointId value="dad60c66-67d7-4fb0-a7da-753ea620b247" />
+      </bpmn:extensionElements>
+      <bpmn:outgoing>Flow_StartToTriage</bpmn:outgoing>
+    </bpmn:startEvent>
+
+    <bpmn:serviceTask id="Task_TriageExpense" name="Triage expense via agent">
+      <bpmn:extensionElements>
+        <uipath:activity version="v1">
+          <uipath:type value="Orchestrator.StartAgentJob" version="v1" />
+          <uipath:context>
+            <uipath:input name="name" value="=bindings.Binding_TriageAgentName" />
+            <uipath:input name="folderPath" value="=bindings.Binding_TriageAgentFolderPath" />
+          </uipath:context>
+          <uipath:input name="JobArguments" type="json" target="bodyField"><![CDATA[{"expenseId":"=vars.Var_ExpenseId","amount":"=vars.Var_Amount"}]]></uipath:input>
+          <uipath:output name="Process response" type="Orchestrator.RunJob" var="Var_TriageResult" />
+        </uipath:activity>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_StartToTriage</bpmn:incoming>
+      <bpmn:outgoing>Flow_TriageToGateway</bpmn:outgoing>
+    </bpmn:serviceTask>
+
+    <bpmn:exclusiveGateway id="Gateway_AmountCheck" name="Amount &gt;= 1000?" default="Flow_GatewayToAutoApprove">
+      <bpmn:incoming>Flow_TriageToGateway</bpmn:incoming>
+      <bpmn:outgoing>Flow_GatewayToQueue</bpmn:outgoing>
+      <bpmn:outgoing>Flow_GatewayToAutoApprove</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+
+    <bpmn:sendTask id="Task_CreateQueueItem" name="Create review queue item">
+      <bpmn:extensionElements>
+        <uipath:activity version="v1">
+          <uipath:type value="Orchestrator.CreateQueueItem" version="v1" />
+          <uipath:context>
+            <uipath:input name="queueName" value="SYNTHETIC_EXPENSE_REVIEW_QUEUE" />
+            <uipath:input name="folderId" value="SYNTHETIC_QUEUE_FOLDER_ID" />
+            <uipath:input name="folderPath" value="SYNTHETIC_QUEUE_FOLDER" />
+          </uipath:context>
+          <uipath:input name="ItemData" type="json" target="body"><![CDATA[{"expenseId":"=vars.Var_ExpenseId","amount":"=vars.Var_Amount"}]]></uipath:input>
+          <uipath:output name="response" type="Orchestrator.CreateQueueItem" var="Var_QueueItemResult" />
+        </uipath:activity>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_GatewayToQueue</bpmn:incoming>
+      <bpmn:outgoing>Flow_QueueToConverge</bpmn:outgoing>
+    </bpmn:sendTask>
+
+    <bpmn:scriptTask id="Task_AutoApprove" name="Auto-approve request" scriptFormat="JavaScript">
+      <bpmn:extensionElements>
+        <uipath:scriptVersion value="v3" />
+        <uipath:mapping version="v1">
+          <uipath:type value="BPMN.ScriptTask" version="v1" />
+          <uipath:input name="args" type="json" target="bodyField"><![CDATA[{"expenseId":"=vars.Var_ExpenseId","amount":"=vars.Var_Amount"}]]></uipath:input>
+          <uipath:output name="decision" type="string" var="Var_Decision" source="=result.response" />
+        </uipath:mapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_GatewayToAutoApprove</bpmn:incoming>
+      <bpmn:outgoing>Flow_AutoApproveToConverge</bpmn:outgoing>
+      <bpmn:script><![CDATA[
+var approvedDecision = "approved";
+return { response: approvedDecision };
+]]></bpmn:script>
+    </bpmn:scriptTask>
+
+    <bpmn:exclusiveGateway id="Gateway_Converge" name="Join">
+      <bpmn:incoming>Flow_QueueToConverge</bpmn:incoming>
+      <bpmn:incoming>Flow_AutoApproveToConverge</bpmn:incoming>
+      <bpmn:outgoing>Flow_ConvergeToEnd</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+
+    <bpmn:endEvent id="End_ExpenseApprovalComplete" name="Expense approval complete">
+      <bpmn:incoming>Flow_ConvergeToEnd</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <bpmn:sequenceFlow id="Flow_StartToTriage" sourceRef="Start_ManualTrigger" targetRef="Task_TriageExpense" />
+    <bpmn:sequenceFlow id="Flow_TriageToGateway" sourceRef="Task_TriageExpense" targetRef="Gateway_AmountCheck" />
+    <bpmn:sequenceFlow id="Flow_GatewayToQueue" sourceRef="Gateway_AmountCheck" targetRef="Task_CreateQueueItem">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=vars.Var_Amount &gt;= 1000</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_GatewayToAutoApprove" sourceRef="Gateway_AmountCheck" targetRef="Task_AutoApprove" />
+    <bpmn:sequenceFlow id="Flow_QueueToConverge" sourceRef="Task_CreateQueueItem" targetRef="Gateway_Converge" />
+    <bpmn:sequenceFlow id="Flow_AutoApproveToConverge" sourceRef="Task_AutoApprove" targetRef="Gateway_Converge" />
+    <bpmn:sequenceFlow id="Flow_ConvergeToEnd" sourceRef="Gateway_Converge" targetRef="End_ExpenseApprovalComplete" />
+  </bpmn:process>
+
+  <bpmndi:BPMNDiagram id="Diagram_ExpenseApprovalBpmn">
+    <bpmndi:BPMNPlane id="Plane_ExpenseApprovalBpmn" bpmnElement="Process_ExpenseApprovalBpmn">
+      <bpmndi:BPMNShape id="S_Start_ManualTrigger" bpmnElement="Start_ManualTrigger">
+        <dc:Bounds x="80" y="200" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Task_TriageExpense" bpmnElement="Task_TriageExpense">
+        <dc:Bounds x="170" y="178" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Gateway_AmountCheck" bpmnElement="Gateway_AmountCheck">
+        <dc:Bounds x="330" y="193" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Task_CreateQueueItem" bpmnElement="Task_CreateQueueItem">
+        <dc:Bounds x="430" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Task_AutoApprove" bpmnElement="Task_AutoApprove">
+        <dc:Bounds x="430" y="300" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Gateway_Converge" bpmnElement="Gateway_Converge">
+        <dc:Bounds x="590" y="193" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_End_ExpenseApprovalComplete" bpmnElement="End_ExpenseApprovalComplete">
+        <dc:Bounds x="700" y="200" width="36" height="36" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNEdge id="E_Flow_StartToTriage" bpmnElement="Flow_StartToTriage">
+        <di:waypoint x="116" y="218" />
+        <di:waypoint x="170" y="218" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_TriageToGateway" bpmnElement="Flow_TriageToGateway">
+        <di:waypoint x="270" y="218" />
+        <di:waypoint x="330" y="218" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_GatewayToQueue" bpmnElement="Flow_GatewayToQueue">
+        <di:waypoint x="355" y="193" />
+        <di:waypoint x="355" y="120" />
+        <di:waypoint x="430" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_GatewayToAutoApprove" bpmnElement="Flow_GatewayToAutoApprove">
+        <di:waypoint x="355" y="243" />
+        <di:waypoint x="355" y="340" />
+        <di:waypoint x="430" y="340" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_QueueToConverge" bpmnElement="Flow_QueueToConverge">
+        <di:waypoint x="530" y="120" />
+        <di:waypoint x="615" y="120" />
+        <di:waypoint x="615" y="193" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_AutoApproveToConverge" bpmnElement="Flow_AutoApproveToConverge">
+        <di:waypoint x="530" y="340" />
+        <di:waypoint x="615" y="340" />
+        <di:waypoint x="615" y="243" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_ConvergeToEnd" bpmnElement="Flow_ConvergeToEnd">
+        <di:waypoint x="640" y="218" />
+        <di:waypoint x="700" y="218" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

@@ -1,0 +1,83 @@
+{
+  "version": "1.1.0",
+  "settings": {
+    "model": "anthropic.claude-sonnet-4-6",
+    "maxTokens": 64000,
+    "temperature": 0,
+    "engine": "basic-v2",
+    "maxIterations": 5,
+    "mode": "standard"
+  },
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "start__output__subject": {
+        "type": "string",
+        "description": "The email subject line"
+      },
+      "start__output__body": {
+        "type": "string",
+        "description": "The full email body text"
+      }
+    }
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "category": {
+        "type": "string",
+        "description": "Support category: one of billing, technical, account, feature-request, or other"
+      },
+      "priority": {
+        "type": "string",
+        "description": "Urgency level: one of critical, high, medium, or low"
+      }
+    },
+    "required": [
+      "category",
+      "priority"
+    ]
+  },
+  "metadata": {
+    "storageVersion": "50.0.0",
+    "isConversational": false,
+    "showProjectCreationExperience": false
+  },
+  "type": "lowCode",
+  "guardrails": [],
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a support-email triage specialist. Your only job is to read an inbound support email (subject + body) and return two fields:\n- category: classify the email into exactly one of: billing, technical, account, feature-request, other\n- priority: assign exactly one urgency level: critical (service down / data loss / security breach), high (significant impact, no workaround), medium (degraded experience, workaround exists), low (question / suggestion / non-urgent)\n\nRules:\n1. Base your decision solely on the email text provided.\n2. If the body is empty or too short to classify, default category to \"other\" and priority to \"low\".\n3. Never ask follow-up questions. Return the two fields and stop — one determination per run.\n4. Do not include any explanation, preamble, or markdown in your output — return only the JSON object the outputSchema requires.",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "You are a support-email triage specialist. Your only job is to read an inbound support email (subject + body) and return two fields:\n- category: classify the email into exactly one of: billing, technical, account, feature-request, other\n- priority: assign exactly one urgency level: critical (service down / data loss / security breach), high (significant impact, no workaround), medium (degraded experience, workaround exists), low (question / suggestion / non-urgent)\n\nRules:\n1. Base your decision solely on the email text provided.\n2. If the body is empty or too short to classify, default category to \"other\" and priority to \"low\".\n3. Never ask follow-up questions. Return the two fields and stop — one determination per run.\n4. Do not include any explanation, preamble, or markdown in your output — return only the JSON object the outputSchema requires."
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "Subject: {{input.start__output__subject}}\n\n{{input.start__output__body}}",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "Subject: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__subject"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\n"
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__body"
+        }
+      ]
+    }
+  ],
+  "projectId": "9877f1a7-dafd-4d81-bfe7-1f13404e1081"
+}

@@ -1,0 +1,226 @@
+<Activity mc:Ignorable="sap sap2010" x:Class="Main" mva:VisualBasic.Settings="{x:Null}"
+  xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities"
+  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+  xmlns:mva="clr-namespace:Microsoft.VisualBasic.Activities;assembly=System.Activities"
+  xmlns:s="clr-namespace:System;assembly=System.Private.CoreLib"
+  xmlns:sap="http://schemas.microsoft.com/netfx/2009/xaml/activities/presentation"
+  xmlns:sap2010="http://schemas.microsoft.com/netfx/2010/xaml/activities/presentation"
+  xmlns:scg="clr-namespace:System.Collections.Generic;assembly=System.Private.CoreLib"
+  xmlns:sco="clr-namespace:System.Collections.ObjectModel;assembly=mscorlib"
+  xmlns:ui="http://schemas.uipath.com/workflow/activities"
+  xmlns:umame="clr-namespace:UiPath.MicrosoftOffice365.Activities.Mail.Enums;assembly=UiPath.MicrosoftOffice365.Activities"
+  xmlns:umamm="clr-namespace:UiPath.MicrosoftOffice365.Activities.Mail.Models;assembly=UiPath.MicrosoftOffice365.Activities"
+  xmlns:umamt="clr-namespace:UiPath.MicrosoftOffice365.Activities.Mail.Triggers;assembly=UiPath.MicrosoftOffice365.Activities"
+  xmlns:umm="clr-namespace:UiPath.MicrosoftOffice365.Models;assembly=UiPath.MicrosoftOffice365"
+  xmlns:usau="clr-namespace:UiPath.Shared.Activities.Utils;assembly=UiPath.MicrosoftOffice365.Activities"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+  <TextExpression.NamespacesForImplementation>
+    <sco:Collection x:TypeArguments="x:String">
+      <x:String>System</x:String>
+      <x:String>System.Collections.Generic</x:String>
+      <x:String>System.Linq</x:String>
+      <x:String>UiPath.Core</x:String>
+      <x:String>UiPath.Core.Activities</x:String>
+      <x:String>UiPath.MicrosoftOffice365.Models</x:String>
+      <x:String>UiPath.MicrosoftOffice365.Activities.Mail.Triggers</x:String>
+    </sco:Collection>
+  </TextExpression.NamespacesForImplementation>
+  <TextExpression.ReferencesForImplementation>
+    <sco:Collection x:TypeArguments="AssemblyReference">
+      <AssemblyReference>System.Activities</AssemblyReference>
+      <AssemblyReference>Microsoft.VisualBasic</AssemblyReference>
+      <AssemblyReference>System.Private.CoreLib</AssemblyReference>
+      <AssemblyReference>mscorlib</AssemblyReference>
+      <AssemblyReference>System</AssemblyReference>
+      <AssemblyReference>System.Linq</AssemblyReference>
+      <AssemblyReference>System.Core</AssemblyReference>
+      <AssemblyReference>UiPath.System.Activities</AssemblyReference>
+      <AssemblyReference>UiPath.MicrosoftOffice365.Activities</AssemblyReference>
+      <AssemblyReference>UiPath.MicrosoftOffice365</AssemblyReference>
+    </sco:Collection>
+  </TextExpression.ReferencesForImplementation>
+
+  <!--
+    ╔══════════════════════════════════════════════════════════════╗
+    ║  SupportEmailTriage — Main.xaml                              ║
+    ║  Trigger: NewEmailReceived (O365 Inbox)                      ║
+    ║  Flow:                                                       ║
+    ║   1. Classify email → urgency (Critical/Priority/Standard)   ║
+    ║   2. Route email → tagged forward to support queue           ║
+    ║   3. If Critical → AlertTeam (team lead notification)        ║
+    ╚══════════════════════════════════════════════════════════════╝
+
+    SETUP REQUIRED before running:
+    ─────────────────────────────────────────────────────────────
+    1. Replace "00000000-0000-0000-0000-000000000000" in
+       NewEmailReceived.ConnectionId with your real O365
+       Integration Service Connection GUID.
+       Run: uip is connections list uipath-microsoft-outlook365
+    2. Set TEAM_LEAD_EMAIL to your team lead's address.
+    3. Set SUPPORT_QUEUE_EMAIL to your support inbox address.
+    4. Open ClassifyEmail.xaml and update the VIP domains/addresses.
+  -->
+
+  <Sequence DisplayName="Main Sequence" sap2010:WorkflowViewState.IdRef="Sequence_1">
+    <Sequence.Variables>
+      <Variable x:TypeArguments="umm:Office365Message" Name="receivedEmail" />
+      <Variable x:TypeArguments="x:String" Name="urgencyLevel" />
+      <Variable x:TypeArguments="x:Boolean" Name="isVIP" Default="False" />
+      <Variable x:TypeArguments="x:String" Name="routeDescription" />
+      <!-- ═══ CONFIGURE THESE ═══ -->
+      <!-- Replace with your O365 Integration Service Connection ID -->
+      <Variable x:TypeArguments="x:String" Name="o365ConnectionId" Default="&quot;00000000-0000-0000-0000-000000000000&quot;" />
+      <!-- Replace with your team lead's email address -->
+      <Variable x:TypeArguments="x:String" Name="teamLeadEmail" Default="&quot;teamlead@yourcompany.com&quot;" />
+      <!-- Replace with your support queue / shared mailbox -->
+      <Variable x:TypeArguments="x:String" Name="supportQueueEmail" Default="&quot;support-queue@yourcompany.com&quot;" />
+    </Sequence.Variables>
+
+    <!-- ═══════════════════════════════════════════════════════
+         STEP 1 — TRIGGER: fire when a new email arrives in Inbox
+         ════════════════════════════════════════════════════════
+         Integration trigger — MUST be first activity in this Sequence.
+         Orchestrator subscribes via the ConnectionId and dispatches
+         a fresh job per email. Replace ConnectionId placeholder below. -->
+    <umamt:NewEmailReceived
+      BrowserFolderName="{x:Null}"
+      ConnectionAccountName="{x:Null}"
+      ConnectionId="00000000-0000-0000-0000-000000000000"
+      ContinueOnError="{x:Null}"
+      Filter="{x:Null}"
+      FilterExpression="(parentFolderId==&apos;INBOX&apos;)"
+      JobData="{x:Null}"
+      Mailbox="{x:Null}"
+      MailboxBackup="{x:Reference __ReferenceID0}"
+      Result="[receivedEmail]"
+      UiPathEvent="{x:Null}"
+      UiPathEventConnector="{x:Null}"
+      UiPathEventObjectId="{x:Null}"
+      UiPathEventObjectType="{x:Null}"
+      AuthScopesInvalid="False"
+      BodyAsHtml="False"
+      DisplayName="New Email Received"
+      IncludeAttachments="False"
+      MarkAsRead="True"
+      UseConnectionService="True"
+      UseSharedMailbox="False"
+      WithAttachmentsOnly="False"
+      sap2010:WorkflowViewState.IdRef="NewEmailReceived_1">
+      <umamt:NewEmailReceived.MailFolderArg>
+        <umamm:TriggerMailFolderArgument BrowserFolderId="{x:Null}" ConnectionDescriptor="{x:Null}" ConnectionKey="{x:Null}" FolderName="{x:Null}" IsBound="False" SelectionMode="Browse">
+          <umamm:TriggerMailFolderArgument.Backup>
+            <usau:BackupSlot x:TypeArguments="umame:ItemSelectionMode" StoredValue="{x:Null}">
+              <usau:BackupSlot.BackupValues>
+                <scg:Dictionary x:TypeArguments="umame:ItemSelectionMode, scg:List(x:Object)" />
+              </usau:BackupSlot.BackupValues>
+            </usau:BackupSlot>
+          </umamm:TriggerMailFolderArgument.Backup>
+        </umamm:TriggerMailFolderArgument>
+      </umamt:NewEmailReceived.MailFolderArg>
+      <umamt:NewEmailReceived.MailboxArg>
+        <umamm:TriggerMailboxArgument SharedMailbox="{x:Null}" UseSharedMailbox="False">
+          <umamm:TriggerMailboxArgument.Backup>
+            <usau:BackupSlot x:TypeArguments="umame:MailboxSelectionMode" StoredValue="{x:Null}" x:Name="__ReferenceID0">
+              <usau:BackupSlot.BackupValues>
+                <scg:Dictionary x:TypeArguments="umame:MailboxSelectionMode, scg:List(x:Object)" />
+              </usau:BackupSlot.BackupValues>
+            </usau:BackupSlot>
+          </umamm:TriggerMailboxArgument.Backup>
+        </umamm:TriggerMailboxArgument>
+      </umamt:NewEmailReceived.MailboxArg>
+    </umamt:NewEmailReceived>
+
+    <ui:LogMessage DisplayName="Log: Email Received" Level="Info"
+      Message="[&quot;New email received — Subject: &quot; &amp; If(receivedEmail Is Nothing, &quot;(null)&quot;, receivedEmail.Subject)]"
+      sap2010:WorkflowViewState.IdRef="LogMessage_1" />
+
+    <!-- ═══════════════════════════════════════════════════════
+         STEP 2 — CLASSIFY: score urgency + detect VIP sender
+         ════════════════════════════════════════════════════════ -->
+    <TryCatch DisplayName="Triage Email" sap2010:WorkflowViewState.IdRef="TryCatch_1">
+      <TryCatch.Try>
+        <Sequence DisplayName="Try" sap2010:WorkflowViewState.IdRef="Seq_Try">
+
+          <!-- 2a. Classify the email -->
+          <ui:InvokeWorkflowFile
+            WorkflowFileName="Workflows\ClassifyEmail.xaml"
+            UnSafe="False"
+            DisplayName="Classify Email"
+            sap2010:WorkflowViewState.IdRef="Invoke_Classify">
+            <ui:InvokeWorkflowFile.Arguments>
+              <scg:Dictionary x:TypeArguments="x:String, Argument">
+                <InArgument x:TypeArguments="umm:Office365Message" x:Key="in_Email">[receivedEmail]</InArgument>
+                <OutArgument x:TypeArguments="x:String" x:Key="out_UrgencyLevel">[urgencyLevel]</OutArgument>
+                <OutArgument x:TypeArguments="x:Boolean" x:Key="out_IsVIP">[isVIP]</OutArgument>
+              </scg:Dictionary>
+            </ui:InvokeWorkflowFile.Arguments>
+          </ui:InvokeWorkflowFile>
+
+          <!-- 2b. Route (forward) email to support queue with triage tag -->
+          <ui:InvokeWorkflowFile
+            WorkflowFileName="Workflows\RouteEmail.xaml"
+            UnSafe="False"
+            DisplayName="Route Email"
+            sap2010:WorkflowViewState.IdRef="Invoke_Route">
+            <ui:InvokeWorkflowFile.Arguments>
+              <scg:Dictionary x:TypeArguments="x:String, Argument">
+                <InArgument x:TypeArguments="umm:Office365Message" x:Key="in_Email">[receivedEmail]</InArgument>
+                <InArgument x:TypeArguments="x:String" x:Key="in_UrgencyLevel">[urgencyLevel]</InArgument>
+                <InArgument x:TypeArguments="x:Boolean" x:Key="in_IsVIP">[isVIP]</InArgument>
+                <InArgument x:TypeArguments="x:String" x:Key="in_ConnectionId">[o365ConnectionId]</InArgument>
+                <InArgument x:TypeArguments="x:String" x:Key="in_SupportQueueEmail">[supportQueueEmail]</InArgument>
+                <OutArgument x:TypeArguments="x:String" x:Key="out_RouteDescription">[routeDescription]</OutArgument>
+              </scg:Dictionary>
+            </ui:InvokeWorkflowFile.Arguments>
+          </ui:InvokeWorkflowFile>
+
+          <!-- 2c. If Critical: also alert the team lead immediately -->
+          <If Condition="[String.Equals(urgencyLevel, &quot;Critical&quot;, StringComparison.OrdinalIgnoreCase)]"
+              DisplayName="Is Critical Escalation?" sap2010:WorkflowViewState.IdRef="If_Critical">
+            <If.Then>
+              <Sequence DisplayName="Then" sap2010:WorkflowViewState.IdRef="Seq_Alert">
+                <ui:InvokeWorkflowFile
+                  WorkflowFileName="Workflows\AlertTeam.xaml"
+                  UnSafe="False"
+                  DisplayName="Alert Team Lead"
+                  sap2010:WorkflowViewState.IdRef="Invoke_Alert">
+                  <ui:InvokeWorkflowFile.Arguments>
+                    <scg:Dictionary x:TypeArguments="x:String, Argument">
+                      <InArgument x:TypeArguments="umm:Office365Message" x:Key="in_Email">[receivedEmail]</InArgument>
+                      <InArgument x:TypeArguments="x:String" x:Key="in_UrgencyLevel">[urgencyLevel]</InArgument>
+                      <InArgument x:TypeArguments="x:Boolean" x:Key="in_IsVIP">[isVIP]</InArgument>
+                      <InArgument x:TypeArguments="x:String" x:Key="in_ConnectionId">[o365ConnectionId]</InArgument>
+                      <InArgument x:TypeArguments="x:String" x:Key="in_TeamLeadEmail">[teamLeadEmail]</InArgument>
+                    </scg:Dictionary>
+                  </ui:InvokeWorkflowFile.Arguments>
+                </ui:InvokeWorkflowFile>
+              </Sequence>
+            </If.Then>
+          </If>
+
+          <ui:LogMessage DisplayName="Log: Triage Complete" Level="Info"
+            Message="[&quot;Triage complete — &quot; &amp; urgencyLevel &amp; &quot; | VIP: &quot; &amp; isVIP.ToString() &amp; &quot; | Route: &quot; &amp; routeDescription]"
+            sap2010:WorkflowViewState.IdRef="LogMessage_2" />
+
+        </Sequence>
+      </TryCatch.Try>
+      <TryCatch.Catches>
+        <Catch x:TypeArguments="s:Exception">
+          <ActivityAction x:TypeArguments="s:Exception">
+            <ActivityAction.Argument>
+              <DelegateInArgument x:TypeArguments="s:Exception" Name="triageException" />
+            </ActivityAction.Argument>
+            <Sequence DisplayName="Catch" sap2010:WorkflowViewState.IdRef="Seq_Catch">
+              <ui:LogMessage DisplayName="Log: Triage Error" Level="Error"
+                Message="[&quot;Triage failed for email '&quot; &amp; If(receivedEmail Is Nothing, &quot;(null)&quot;, receivedEmail.Subject) &amp; &quot;': &quot; &amp; triageException.Message]"
+                sap2010:WorkflowViewState.IdRef="LogMessage_3" />
+              <Rethrow DisplayName="Rethrow" sap2010:WorkflowViewState.IdRef="Rethrow_1" />
+            </Sequence>
+          </ActivityAction>
+        </Catch>
+      </TryCatch.Catches>
+    </TryCatch>
+
+  </Sequence>
+</Activity>

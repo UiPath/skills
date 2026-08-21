@@ -1,0 +1,35 @@
+{
+  "Result": "Success",
+  "Code": "MaestroDebug",
+  "Data": {
+    "JobKey": "bf266802-b9de-4a93-9cc8-e4b161e6a22b",
+    "InstanceId": "bf266802-b9de-4a93-9cc8-e4b161e6a22b",
+    "RunId": "01a002d7-72d7-7732-9158-e9c49d9de254",
+    "FinalStatus": "Completed",
+    "SolutionId": "bcb79388-ba99-4793-adba-08defa3f12b0",
+    "ElementExecutions": [
+      {
+        "ElementId": "Event_start",
+        "ElementType": "StartEvent",
+        "Status": "Completed",
+        "StartedAt": "2026-08-15T00:34:32.3705658Z",
+        "CompletedAt": "2026-08-15T00:34:32.5781808Z"
+      },
+      {
+        "ElementId": "Task_Multiply",
+        "ElementType": "ScriptTask",
+        "Status": "Completed",
+        "StartedAt": "2026-08-15T00:34:33.058717Z",
+        "CompletedAt": "2026-08-15T00:34:33.3498342Z"
+      },
+      {
+        "ElementId": "Event_end",
+        "ElementType": "EndEvent",
+        "Status": "Completed",
+        "StartedAt": "2026-08-15T00:34:33.6074928Z",
+        "CompletedAt": "2026-08-15T00:34:33.8109728Z"
+      }
+    ]
+  },
+  "Instructions": "Debug completed with status: Completed"
+}

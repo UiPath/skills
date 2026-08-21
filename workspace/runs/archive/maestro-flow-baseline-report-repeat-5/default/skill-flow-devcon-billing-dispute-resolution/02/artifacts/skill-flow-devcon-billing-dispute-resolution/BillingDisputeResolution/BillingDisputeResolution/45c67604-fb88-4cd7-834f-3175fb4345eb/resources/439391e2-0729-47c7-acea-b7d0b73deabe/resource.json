@@ -1,0 +1,25 @@
+{
+  "$resourceType": "context",
+  "id": "439391e2-0729-47c7-acea-b7d0b73deabe",
+  "referenceKey": null,
+  "name": "Billing Dispute SOP Index",
+  "description": "Billing Dispute Standard Operating Procedures — grounding knowledge base for the Dispute Analyst agent.",
+  "contextType": "index",
+  "folderPath": "Shared/uipath-maestro-flow/BillingDispute",
+  "indexName": "Billing Dispute SOP Index",
+  "settings": {
+    "retrievalMode": "semantic",
+    "query": {
+      "variant": "dynamic",
+      "description": "Retrieve billing dispute SOP policies and resolution guidelines"
+    },
+    "folderPathPrefix": {
+      "variant": "static"
+    },
+    "fileExtension": {
+      "value": "All"
+    },
+    "threshold": 0,
+    "resultCount": 3
+  }
+}

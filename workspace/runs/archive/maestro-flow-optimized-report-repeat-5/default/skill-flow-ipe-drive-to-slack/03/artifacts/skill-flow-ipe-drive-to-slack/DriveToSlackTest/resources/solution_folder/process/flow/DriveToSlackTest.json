@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "DriveToSlackTest",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "2b908fd6-c939-4277-8529-3c7058dcff03",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "DriveToSlackTest"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Flow",
+      "name": "DriveToSlackTest",
+      "package": {
+        "key": "c4316aad-9eb2-4037-90f2-8c8383705d93"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "588df6ee-bff4-4c7e-b414-84881e59d691",
+    "files": []
+  }
+}

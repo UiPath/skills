@@ -1,0 +1,13 @@
+{
+  "_comment": "PLANNED — not yet applied via `node configure`. No SAP OData connection exists on this tenant yet (uip is connections list uipath-sap-odata --all-folders returned none). Also missing: target SAP entity name (objectName) and field mapping from IXP-extracted invoice fields.",
+  "connectionId": "<SAP_ODATA_CONNECTION_ID>",
+  "folderKey": "<SAP_ODATA_CONNECTION_FOLDER_KEY>",
+  "method": "POST",
+  "endpoint": "/<SAP_ENTITY_SET>",
+  "objectName": "<SAP_ENTITY_NAME>",
+  "bodyParameters": {
+    "InvoiceNumber": "=js:$vars.extractInvoiceFields.output.ExtractionResult.ResultsDocument.Fields.find(f => f.FieldName === 'InvoiceNumber')?.Values?.[0]",
+    "VendorName": "=js:$vars.extractInvoiceFields.output.ExtractionResult.ResultsDocument.Fields.find(f => f.FieldName === 'VendorName')?.Values?.[0]",
+    "TotalAmount": "=js:$vars.extractInvoiceFields.output.ExtractionResult.ResultsDocument.Fields.find(f => f.FieldName === 'InvoiceTotal')?.Values?.[0]"
+  }
+}

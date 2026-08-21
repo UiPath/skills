@@ -1,0 +1,27 @@
+{
+  "entryPoints": [
+    {
+      "id": "ep_ExpenseApproval",
+      "filePath": "/content/ExpenseApprovalBpmn.bpmn#Start_ManualExpense",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "expenseId": {
+            "type": "string"
+          },
+          "amount": {
+            "type": "number"
+          }
+        }
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "decision": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  ]
+}

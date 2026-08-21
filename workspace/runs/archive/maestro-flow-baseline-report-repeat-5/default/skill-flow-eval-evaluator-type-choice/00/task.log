@@ -1,0 +1,33 @@
+2026-07-24 19:30:11 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-24 19:30:11 [INFO] coder_eval.orchestrator: API routing: aws_bedrock
+2026-07-24 19:30:11 [DEBUG] coder_eval.criteria: Discovered 14 criterion checkers
+2026-07-24 19:30:11 [DEBUG] coder_eval.criteria: Validated 14 criterion checkers
+2026-07-24 19:30:11 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-24 19:30:11 [DEBUG] coder_eval.orchestrator: Sending prompt: Scaffold a
+project and add three evaluators — one per goal — picking the correct
+`--type` for each.
+...
+2026-07-24 19:30:11 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Starting agent query stream...
+2026-07-24 19:32:01 [DEBUG] coder_eval.agents.claude_code_agent: [coder] session_id changed: None -> 2a79b2f1-02d4-4477-9a0f-7cc6b67ce3b9
+2026-07-24 19:32:01 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Agent query stream ended
+2026-07-24 19:32:01 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-24 19:32:01 [DEBUG] coder_eval.orchestrator: Agent response received (3916 chars)
+2026-07-24 19:32:01 [DEBUG] coder_eval.orchestrator: Checking success criteria
+2026-07-24 19:32:01 [DEBUG] coder_eval.evaluation.checker: Criterion 'command_executed' score: 1.00
+2026-07-24 19:32:01 [DEBUG] coder_eval.evaluation.checker: Criterion 'command_executed' score: 1.00
+2026-07-24 19:32:01 [DEBUG] coder_eval.evaluation.checker: Criterion 'command_executed' score: 1.00
+2026-07-24 19:32:01 [DEBUG] coder_eval.evaluation.checker: Criterion 'command_executed' score: 1.00
+2026-07-24 19:32:01 [DEBUG] coder_eval.evaluation.checker: Criterion 'command_executed' score: 1.00
+2026-07-24 19:32:01 [DEBUG] coder_eval.evaluation.checker: Criterion 'file_exists' score: 1.00
+2026-07-24 19:32:01 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'report.json reasoning matches the chosen types': python3 $TASK_DIR/check_type_choice.py
+2026-07-24 19:32:01 [DEBUG] coder_eval.sandbox: Command 'python3 $TASK_DIR/check_type_choice.py' exited with code 0
+2026-07-24 19:32:01 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+OK: all 3 evaluator-type choices match expected (['llm-judge-output', 'json-similarity', 'contains'])
+---
+2026-07-24 19:32:01 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-07-24 19:32:01 [INFO] coder_eval.orchestrator: Success criteria: 7/7 passed, weighted score: 1.000
+2026-07-24 19:32:01 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-24 19:32:01 [INFO] coder_eval.orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+2026-07-24 19:32:01 [INFO] coder_eval.orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-eval-evaluator-type-choice
+2026-07-24 19:32:01 [INFO] coder_eval.orchestrator: Task finished: status=SUCCESS duration=111.9s score=1.000 iterations=1

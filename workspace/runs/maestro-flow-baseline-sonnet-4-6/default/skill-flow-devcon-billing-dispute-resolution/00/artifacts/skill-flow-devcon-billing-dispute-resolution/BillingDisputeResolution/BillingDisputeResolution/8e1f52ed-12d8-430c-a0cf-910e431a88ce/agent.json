@@ -1,0 +1,143 @@
+{
+  "version": "1.1.0",
+  "settings": {
+    "model": "anthropic.claude-sonnet-4-5-20250929-v1:0",
+    "maxTokens": 8192,
+    "temperature": 0,
+    "engine": "basic-v2",
+    "maxIterations": 5,
+    "mode": "standard"
+  },
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "start__output__webhookPayload": {
+        "type": "object",
+        "description": "Webhook payload with customer, invoice, and dispute details"
+      },
+      "discrepancyDetection1__output__discrepancies": {
+        "type": "object",
+        "description": "List of detected line item discrepancies"
+      },
+      "discrepancyDetection1__output__creditAmount": {
+        "type": "number",
+        "description": "Total overcharge amount eligible for credit"
+      },
+      "normalizeData1__output__normalizedInvoiceNumber": {
+        "type": "string",
+        "description": "Normalized invoice number with MCS- prefix"
+      },
+      "crmLookup1__output__value": {
+        "type": "object",
+        "description": "CRM customer account record"
+      }
+    }
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "determination": {
+        "type": "string",
+        "description": "Dispute determination: valid_dispute, invalid_dispute, or partial_dispute"
+      },
+      "recommendedAction": {
+        "type": "string",
+        "description": "Recommended action: auto_resolve, escalate_to_manager, or reject"
+      },
+      "autoResolutionEligible": {
+        "type": "boolean",
+        "description": "Whether the dispute qualifies for automatic resolution"
+      },
+      "creditAmount": {
+        "type": "number",
+        "description": "Credit amount to be applied in USD"
+      },
+      "confidence": {
+        "type": "number",
+        "description": "Confidence score 0.0-1.0"
+      },
+      "rationale": {
+        "type": "string",
+        "description": "Explanation of the determination and recommended action"
+      }
+    },
+    "required": [
+      "determination",
+      "recommendedAction",
+      "autoResolutionEligible",
+      "creditAmount",
+      "confidence",
+      "rationale"
+    ]
+  },
+  "metadata": {
+    "storageVersion": "50.0.0",
+    "isConversational": false,
+    "showProjectCreationExperience": false
+  },
+  "type": "lowCode",
+  "guardrails": [],
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a Billing Dispute Analyst. Analyze billing disputes using the Billing Dispute SOP Index (call it at most 3 times). After the last retrieval, stop retrieving and decide with the evidence you already have. If retrieved content does not cover a detail, lower your confidence score and still return every outputSchema field. Never end a run without a determination.\n\nYour task: review the disputed invoice line items, compare them against the detected discrepancies, and determine whether the dispute is valid, invalid, or partial. Then recommend one of: auto_resolve (clear overcharge ≤ $500 and autoResolutionEligible), escalate_to_manager (ambiguous or > $500), or reject (no valid discrepancy found).\n\nAlways return all six fields: determination, recommendedAction, autoResolutionEligible, creditAmount, confidence, rationale.",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "You are a Billing Dispute Analyst. Analyze billing disputes using the Billing Dispute SOP Index (call it at most 3 times). After the last retrieval, stop retrieving and decide with the evidence you already have. If retrieved content does not cover a detail, lower your confidence score and still return every outputSchema field. Never end a run without a determination.\n\nYour task: review the disputed invoice line items, compare them against the detected discrepancies, and determine whether the dispute is valid, invalid, or partial. Then recommend one of: auto_resolve (clear overcharge ≤ $500 and autoResolutionEligible), escalate_to_manager (ambiguous or > $500), or reject (no valid discrepancy found).\n\nAlways return all six fields: determination, recommendedAction, autoResolutionEligible, creditAmount, confidence, rationale."
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "Account: {{input.start__output__webhookPayload}}\nInvoice Number: {{input.normalizeData1__output__normalizedInvoiceNumber}}\nDiscrepancies: {{input.discrepancyDetection1__output__discrepancies}}\nCredit Amount: {{input.discrepancyDetection1__output__creditAmount}}\nCRM Record: {{input.crmLookup1__output__value}}\n\nAnalyze this billing dispute and return your determination.",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "Account: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__webhookPayload"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\nInvoice Number: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.normalizeData1__output__normalizedInvoiceNumber"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\nDiscrepancies: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.discrepancyDetection1__output__discrepancies"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\nCredit Amount: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.discrepancyDetection1__output__creditAmount"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\nCRM Record: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.crmLookup1__output__value"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\nAnalyze this billing dispute and return your determination."
+        }
+      ]
+    }
+  ],
+  "projectId": "8e1f52ed-12d8-430c-a0cf-910e431a88ce"
+}

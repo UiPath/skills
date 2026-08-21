@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "SfOpportunityUpdate",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "db22f71f-338a-49be-944a-806f6874c037",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "SfOpportunityUpdate"
+    },
+    "locks": [],
+    "key": "54be6648-0b03-4c1d-aa1f-cecc2aba9222",
+    "files": []
+  }
+}

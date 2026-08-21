@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "InvoiceSapFlow",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "d4207512-109f-47d9-980b-bf6ff02e1c78",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "InvoiceSapFlow"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Flow",
+      "name": "InvoiceSapFlow",
+      "package": {
+        "key": "75ac37d3-bfae-4469-9f80-fc837673d7e6"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "2e744558-22a5-48fd-bb1b-7087ce1e677f",
+    "files": []
+  }
+}

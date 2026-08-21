@@ -1,0 +1,213 @@
+#!/usr/bin/env python3
+"""Verify the deterministic eval-run e2e produced a clean 1.0.
+
+Reads `eval-results.json` (the JSON the agent saved from
+`uip maestro flow eval run results <run_id> --verbose --output json`) and
+asserts:
+
+  1. Top-level `Code` is the eval-run-results envelope code. Accept both the
+     current `FlowEvalRunResults` and the legacy `MaestroFlowEvalRunResults`
+     the CLI emitted before the `eval run *` codes dropped the `Maestro`
+     prefix.
+  2. There is at least 1 per-data-point row.
+  3. Every row has `Status == "Completed"`.
+  4. No row has a non-empty `Error`.
+  5. For each row, every entry in `EvaluatorScores` (or its singular
+     equivalent) reports a score of 1.0 — the agent + evaluator were both
+     deterministic, so anything else is a regression.
+
+When the Studio Web eval run does not complete, the agent should still save
+`eval-run-status.json`; this checker uses it to fail with the dependent run's
+status/error instead of a generic missing-results message.
+
+The CLI's exact field names may evolve; we tolerate both `EvaluatorScores`
+(list/dict of evaluator entries) and a flat per-row `Score` field. Anything
+that surfaces a numeric score gets checked.
+"""
+from __future__ import annotations
+
+import json
+import sys
+from pathlib import Path
+
+RESULTS_PATH = Path("eval-results.json")
+STATUS_PATH = Path("eval-run-status.json")
+EXPECTED_DATA_POINTS = 1
+# Current CLI emits `FlowEvalRunResults`; older versions emitted the
+# `Maestro`-prefixed code. Accept both so the checker survives the rename.
+RESULTS_CODES = ("FlowEvalRunResults", "MaestroFlowEvalRunResults")
+
+
+def _fail(msg: str) -> None:
+    sys.exit(f"FAIL: {msg}")
+
+
+def _load() -> dict:
+    if not RESULTS_PATH.is_file():
+        if STATUS_PATH.is_file():
+            _fail(
+                f"Missing {RESULTS_PATH}; latest eval-run status was "
+                f"{_status_summary(_load_json(STATUS_PATH))}"
+            )
+        _fail(f"Missing {RESULTS_PATH} and {STATUS_PATH}")
+    return _load_json(RESULTS_PATH)
+
+
+def _load_json(path: Path) -> dict:
+    try:
+        doc = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as e:
+        _fail(f"{path} is not valid JSON: {e}")
+    except OSError as e:
+        _fail(f"Could not read {path}: {e}")
+    if not isinstance(doc, dict):
+        _fail(f"{path} should contain a JSON object, got {type(doc).__name__}")
+    return doc
+
+
+def _first_text(container: dict, keys: tuple[str, ...]) -> str | None:
+    for key in keys:
+        value = container.get(key)
+        if value not in (None, ""):
+            return str(value)
+    return None
+
+
+def _status_summary(doc: dict) -> str:
+    data = doc.get("Data") if isinstance(doc.get("Data"), dict) else {}
+    status = _first_text(
+        data,
+        (
+            "Status",
+            "status",
+            "State",
+            "state",
+            "RunStatus",
+            "runStatus",
+            "ExecutionStatus",
+            "executionStatus",
+        ),
+    )
+    error = _first_text(
+        data,
+        (
+            "Error",
+            "error",
+            "FailureReason",
+            "failureReason",
+            "Message",
+            "message",
+            "StatusMessage",
+            "statusMessage",
+        ),
+    )
+    if not error:
+        error = _first_text(doc, ("Error", "error", "Message", "message"))
+    parts = [f"Code={doc.get('Code')!r}"]
+    if status:
+        parts.append(f"Status={status!r}")
+    if error:
+        parts.append(f"Error={error!r}")
+    return ", ".join(parts)
+
+
+def _extract_rows(doc: dict) -> list[dict]:
+    """The results envelope is `{ Code, Data: ... }`. The current CLI returns
+    `Data` as a flat list of per-data-point row objects; older shapes nested
+    the rows under `Data.Results` / `DataPoints` / `Rows`. Tolerate both.
+    """
+    code = doc.get("Code")
+    if code not in RESULTS_CODES:
+        _fail(
+            f'eval-results.json `Code` should be one of {RESULTS_CODES}, '
+            f'got {code!r}'
+        )
+    data = doc.get("Data")
+    if isinstance(data, list) and data:
+        return data
+    if isinstance(data, dict):
+        for key in ("Results", "DataPoints", "Rows"):
+            rows = data.get(key)
+            if isinstance(rows, list) and rows:
+                return rows
+        _fail(
+            f'eval-results.json has no Results/DataPoints/Rows list under Data. '
+            f'Top-level keys: {list(doc.keys())}, Data keys: {list(data.keys())}'
+        )
+    _fail(
+        f'eval-results.json Data is empty or an unexpected type '
+        f'({type(data).__name__}); top-level keys: {list(doc.keys())}'
+    )
+    return []  # unreachable
+
+
+def _row_scores(row: dict) -> list[float]:
+    """Pull every numeric score this row reports, regardless of shape."""
+    scores: list[float] = []
+    flat = row.get("Score")
+    if isinstance(flat, (int, float)):
+        scores.append(float(flat))
+    es = row.get("EvaluatorScores")
+    if isinstance(es, list):
+        for e in es:
+            if isinstance(e, dict):
+                v = e.get("Score")
+                if v is None:
+                    v = e.get("score")
+                if isinstance(v, (int, float)):
+                    scores.append(float(v))
+    elif isinstance(es, dict):
+        for v in es.values():
+            if isinstance(v, (int, float)):
+                scores.append(float(v))
+            elif isinstance(v, dict):
+                inner = v.get("Score")
+                if inner is None:
+                    inner = v.get("score")
+                if isinstance(inner, (int, float)):
+                    scores.append(float(inner))
+    return scores
+
+
+def main() -> None:
+    doc = _load()
+    rows = _extract_rows(doc)
+    if len(rows) < EXPECTED_DATA_POINTS:
+        _fail(
+            f"expected at least {EXPECTED_DATA_POINTS} data-point rows, got {len(rows)}"
+        )
+    print(f"OK: eval-results.json has {len(rows)} data-point rows")
+
+    failures: list[str] = []
+    for row in rows:
+        name = row.get("DataPoint") or row.get("Name") or "?"
+        status = row.get("Status")
+        err = row.get("Error")
+        if str(status).lower() != "completed":
+            failures.append(f"{name!r}: Status={status!r} (expected Completed)")
+            continue
+        if err:
+            failures.append(f"{name!r}: Error={err!r}")
+            continue
+        scores = _row_scores(row)
+        if not scores:
+            failures.append(
+                f"{name!r}: no numeric score found (row keys: {list(row.keys())})"
+            )
+            continue
+        bad = [s for s in scores if s != 1.0]
+        if bad:
+            failures.append(
+                f"{name!r}: scored {bad!r} (expected 1.0 from exact-match)"
+            )
+
+    if failures:
+        _fail(" | ".join(failures))
+    print(
+        f"OK: every data point Completed with score 1.0 across "
+        f"{sum(len(_row_scores(r)) for r in rows)} evaluator run(s)"
+    )
+
+
+if __name__ == "__main__":
+    main()

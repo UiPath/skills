@@ -1,0 +1,23 @@
+{
+  "entryPoints": [
+    {
+      "id": "EP_SlackDigest",
+      "filePath": "/content/SlackDigestBoundaryBpmn.bpmn#Start_Manual",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "DigestText": {
+            "type": "string"
+          },
+          "SlackResult": {
+            "type": "object"
+          }
+        }
+      }
+    }
+  ]
+}

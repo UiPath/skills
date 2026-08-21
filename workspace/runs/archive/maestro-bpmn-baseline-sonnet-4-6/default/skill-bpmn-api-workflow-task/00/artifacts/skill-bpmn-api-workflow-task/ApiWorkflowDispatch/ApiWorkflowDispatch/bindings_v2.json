@@ -1,0 +1,17 @@
+{
+  "version": "2.0",
+  "resources": [
+    {
+      "id": "Binding_CustomerSyncApi",
+      "kind": "Process",
+      "name": "CustomerSyncApiWorkflow",
+      "resourceKey": "<CUSTOMER_SYNC_API_RELEASE_KEY>",
+      "propertyAttribute": "Key",
+      "metadata": {
+        "BindingsVersion": "2.0",
+        "DisplayLabel": "Customer Sync API Workflow",
+        "SubType": "Api"
+      }
+    }
+  ]
+}

@@ -1,0 +1,1040 @@
+{
+  "id": "4ae36b42-244c-4365-866b-7891a00548ca",
+  "version": "1.8",
+  "name": "ContractExtraction",
+  "nodes": [
+    {
+      "id": "start",
+      "type": "core.trigger.manual",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Manual trigger"
+      },
+      "inputs": {
+        "entryPointId": "b3c6937c-0853-4e57-9dae-eb2ca2e9543c",
+        "isDefaultEntryPoint": true
+      },
+      "outputs": {
+        "output": {
+          "type": "object",
+          "description": "Data passed when manually triggering the workflow.",
+          "source": "null",
+          "var": "output"
+        }
+      }
+    },
+    {
+      "id": "extractContractFields",
+      "type": "uipath.ixp.employment-agreements-d4ee40a0-ixp.97f6f1c4-2b0d-8044-8892-c8809e742924-c4359cde-55f0-4f0e-9322-c6cdce74ab4c",
+      "typeVersion": "1.0.0",
+      "display": {
+        "label": "Extract Contract Fields"
+      },
+      "inputs": {
+        "model": {
+          "id": "97f6f1c4-2b0d-8044-8892-c8809e742924",
+          "modelName": "employment-agreements-d4ee40a0-ixp",
+          "modelDisplayName": "employment-agreements-d4ee40a0-ixp",
+          "folderKey": "c4359cde-55f0-4f0e-9322-c6cdce74ab4c",
+          "folderName": "Shared",
+          "folderPath": "c4359cde-55f0-4f0e-9322-c6cdce74ab4c",
+          "description": ""
+        },
+        "modelName": "employment-agreements-d4ee40a0-ixp",
+        "description": "",
+        "projectName": "employment-agreements-d4ee40a0-ixp",
+        "versionTag": "",
+        "folderKey": "c4359cde-55f0-4f0e-9322-c6cdce74ab4c",
+        "folderName": "Shared",
+        "fileRef": "=js:$vars.start.output.contractFile",
+        "pageRange": ""
+      },
+      "outputs": {
+        "output": {
+          "name": "output",
+          "type": "object",
+          "source": "=this.result",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails",
+          "source": "=Error",
+          "var": "error"
+        }
+      }
+    },
+    {
+      "id": "parseContractData",
+      "type": "core.action.script",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Parse Contract Data"
+      },
+      "inputs": {
+        "script": "var fields = $vars.extractContractFields.output.ExtractionResult.ResultsDocument.Fields || [];\nvar partyNames = fields.filter(function(f) { return f.FieldName === 'Party Name' || f.FieldName === 'Employee' || f.FieldName === 'Employer'; }).map(function(f) { return f.Values && f.Values[0]; });\nvar effField = fields.find(function(f) { return f.FieldName === 'Effective Date' || f.FieldName === 'Start Date'; });\nvar termField = fields.find(function(f) { return f.FieldName === 'Termination Clause' || f.FieldName === 'Termination' || f.FieldName === 'Notice Period'; });\nreturn {\n  partyNames: partyNames,\n  effectiveDate: effField && effField.Values ? effField.Values[0] : null,\n  terminationClause: termField && termField.Values ? termField.Values[0] : null\n};"
+      },
+      "outputs": {
+        "output": {
+          "type": "object",
+          "description": "The return value of the script",
+          "source": "=result.response",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the script fails",
+          "source": "=Error",
+          "var": "error"
+        }
+      }
+    },
+    {
+      "id": "contractApproval",
+      "type": "uipath.human-in-the-loop.quick-form",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Contract Approval"
+      },
+      "inputs": {
+        "schema": {
+          "schemaId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+          "fields": [
+            {
+              "id": "partyNames",
+              "label": "Party Names",
+              "type": "text",
+              "direction": "input",
+              "binding": "vars.parseContractData.output.partyNames"
+            },
+            {
+              "id": "effectiveDate",
+              "label": "Effective Date",
+              "type": "text",
+              "direction": "input",
+              "binding": "vars.parseContractData.output.effectiveDate"
+            },
+            {
+              "id": "terminationClause",
+              "label": "Termination Clause",
+              "type": "text",
+              "direction": "input",
+              "binding": "vars.parseContractData.output.terminationClause"
+            },
+            {
+              "id": "approverNote",
+              "label": "Approver Note",
+              "type": "text",
+              "direction": "output",
+              "variable": "vars.approverNote"
+            }
+          ],
+          "outcomes": [
+            {
+              "id": "approve",
+              "name": "Approve",
+              "type": "string",
+              "isPrimary": true,
+              "action": "Continue"
+            },
+            {
+              "id": "reject",
+              "name": "Reject",
+              "type": "string",
+              "isPrimary": false,
+              "action": "End"
+            }
+          ]
+        },
+        "recipient": {
+          "channels": [
+            "Email",
+            "ActionCenter"
+          ],
+          "connections": {},
+          "assignee": {
+            "type": "group"
+          }
+        },
+        "priority": "Medium"
+      },
+      "outputs": {
+        "output": {
+          "type": "object",
+          "description": "Task result data",
+          "source": "=result",
+          "var": "output",
+          "properties": {
+            "approverNote": {
+              "type": "string"
+            },
+            "Action": {
+              "type": "string",
+              "enum": [
+                "Approve",
+                "Reject"
+              ],
+              "default": "Approve"
+            }
+          }
+        },
+        "status": {
+          "type": "string",
+          "description": "Task completion status",
+          "source": "=result.Action",
+          "var": "status",
+          "enum": [
+            "Approve",
+            "Reject"
+          ],
+          "default": "Approve"
+        }
+      }
+    },
+    {
+      "id": "end",
+      "type": "core.control.end",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "End"
+      },
+      "inputs": {}
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge-start-extract",
+      "sourceNodeId": "start",
+      "sourcePort": "output",
+      "targetNodeId": "extractContractFields",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge-extract-parse",
+      "sourceNodeId": "extractContractFields",
+      "sourcePort": "success",
+      "targetNodeId": "parseContractData",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge-parse-approval",
+      "sourceNodeId": "parseContractData",
+      "sourcePort": "success",
+      "targetNodeId": "contractApproval",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge-approval-end",
+      "sourceNodeId": "contractApproval",
+      "sourcePort": "completed",
+      "targetNodeId": "end",
+      "targetPort": "input"
+    }
+  ],
+  "definitions": [
+    {
+      "nodeType": "core.trigger.manual",
+      "version": "1.0",
+      "category": "trigger",
+      "description": "Start workflow manually",
+      "tags": [
+        "trigger",
+        "start",
+        "manual"
+      ],
+      "sortOrder": 40,
+      "display": {
+        "label": "Manual trigger",
+        "icon": "play",
+        "shape": "circle"
+      },
+      "handleConfiguration": [
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "output",
+              "type": "source",
+              "handleType": "output",
+              "showButton": true,
+              "constraints": {
+                "forbiddenTargetCategories": [
+                  "trigger"
+                ]
+              }
+            }
+          ],
+          "visible": true
+        }
+      ],
+      "model": {
+        "type": "bpmn:StartEvent",
+        "entryPointId": true
+      },
+      "outputDefinition": {
+        "output": {
+          "type": "object",
+          "description": "Data passed when manually triggering the workflow.",
+          "source": "null",
+          "var": "output"
+        }
+      },
+      "toolbarExtensions": {
+        "design": {
+          "actions": [
+            {
+              "id": "change-trigger-type",
+              "icon": "square-mouse-pointer",
+              "label": "Change trigger type"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "nodeType": "uipath.ixp.employment-agreements-d4ee40a0-ixp.97f6f1c4-2b0d-8044-8892-c8809e742924-c4359cde-55f0-4f0e-9322-c6cdce74ab4c",
+      "version": "1.0.0",
+      "category": "document-extraction",
+      "tags": [
+        "ixp",
+        "document-understanding",
+        "extraction"
+      ],
+      "description": "(Shared)",
+      "sortOrder": 537,
+      "display": {
+        "canvasLabel": "Extract",
+        "label": "employment-agreements-d4ee40a0-ixp",
+        "description": "(Shared)",
+        "icon": "file-text"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "success",
+              "type": "source",
+              "handleType": "output"
+            },
+            {
+              "id": "error",
+              "label": "Error",
+              "type": "source",
+              "handleType": "output",
+              "visible": "{inputs.errorHandlingEnabled}",
+              "constraints": {
+                "maxConnections": 1
+              }
+            }
+          ]
+        }
+      ],
+      "supportsErrorHandling": true,
+      "model": {
+        "type": "bpmn:ServiceTask",
+        "serviceType": "IXP.Extraction",
+        "bindings": {
+          "resource": "ixpDeployment",
+          "entityType": "ixpDeployment",
+          "resourceSubType": null,
+          "resourceKey": "97f6f1c4-2b0d-8044-8892-c8809e742924",
+          "name": "employment-agreements-d4ee40a0-ixp",
+          "values": [
+            {
+              "name": "name",
+              "propertyAttribute": "name",
+              "default": "employment-agreements-d4ee40a0-ixp"
+            },
+            {
+              "name": "folderPath",
+              "propertyAttribute": "folderPath",
+              "default": "Shared"
+            }
+          ]
+        }
+      },
+      "form": {
+        "id": "ixp-standalone-form",
+        "title": "IXP",
+        "sections": [
+          {
+            "id": "ixp-model",
+            "title": "Configuration",
+            "fields": [
+              {
+                "name": "inputs.modelName",
+                "type": "text",
+                "label": "IXP model",
+                "rules": [
+                  {
+                    "id": "always-disabled",
+                    "conditions": [],
+                    "effects": {
+                      "disabled": true
+                    }
+                  }
+                ]
+              },
+              {
+                "name": "inputs.folderName",
+                "type": "text",
+                "label": "Folder",
+                "rules": [
+                  {
+                    "id": "always-disabled",
+                    "conditions": [],
+                    "effects": {
+                      "disabled": true
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "ixp-file-upload",
+            "title": "File input",
+            "collapsible": true,
+            "defaultExpanded": true,
+            "fields": [
+              {
+                "name": "inputs.fileRef",
+                "type": "file",
+                "label": "File",
+                "description": "File to extract data from",
+                "validation": {
+                  "required": true,
+                  "messages": {
+                    "required": "A file is required for extraction"
+                  }
+                }
+              },
+              {
+                "name": "inputs.pageRange",
+                "type": "text",
+                "label": "Page range",
+                "placeholder": "e.g. 1-5",
+                "description": "Optional page range to process."
+              }
+            ]
+          },
+          {
+            "id": "schema-definition",
+            "title": "Schema definition",
+            "collapsible": false,
+            "fields": [
+              {
+                "name": "inputs.model",
+                "type": "custom",
+                "component": "ixp-model-taxonomy",
+                "label": ""
+              }
+            ]
+          }
+        ]
+      },
+      "debug": {
+        "runtime": "bpmnEngine"
+      },
+      "inputDefinition": {
+        "type": "object",
+        "properties": {
+          "projectName": {
+            "type": "string"
+          },
+          "projectId": {
+            "type": "string"
+          },
+          "versionTag": {
+            "type": "string"
+          },
+          "folderKey": {
+            "type": "string"
+          },
+          "folderName": {
+            "type": "string"
+          },
+          "model": {
+            "type": "object"
+          },
+          "modelName": {
+            "type": "string"
+          },
+          "fileRef": {
+            "type": "string"
+          },
+          "pageRange": {
+            "type": "string"
+          },
+          "attachmentConfig": {
+            "type": "object"
+          },
+          "attachment": {
+            "type": "object",
+            "description": "File to extract data from.",
+            "properties": {
+              "ID": {
+                "type": "string",
+                "description": "Orchestrator attachment key"
+              },
+              "FullName": {
+                "type": "string",
+                "description": "File name"
+              },
+              "MimeType": {
+                "type": "string",
+                "description": "The MIME type of the content"
+              },
+              "Metadata": {
+                "type": "object",
+                "description": "Dictionary of metadata",
+                "additionalProperties": {
+                  "type": "string"
+                }
+              }
+            },
+            "required": [
+              "ID"
+            ]
+          }
+        },
+        "required": [
+          "fileRef"
+        ]
+      },
+      "inputDefaults": {
+        "model": {
+          "id": "97f6f1c4-2b0d-8044-8892-c8809e742924",
+          "modelName": null,
+          "modelDisplayName": "employment-agreements-d4ee40a0-ixp",
+          "folderKey": "c4359cde-55f0-4f0e-9322-c6cdce74ab4c",
+          "folderName": "Shared",
+          "folderPath": "c4359cde-55f0-4f0e-9322-c6cdce74ab4c",
+          "description": ""
+        },
+        "modelName": "employment-agreements-d4ee40a0-ixp",
+        "description": "",
+        "projectName": "employment-agreements-d4ee40a0-ixp",
+        "versionTag": "",
+        "folderKey": "c4359cde-55f0-4f0e-9322-c6cdce74ab4c",
+        "folderName": "Shared",
+        "fileRef": "",
+        "pageRange": ""
+      },
+      "outputDefinition": {
+        "output": {
+          "name": "output",
+          "type": "object",
+          "source": "=this.result",
+          "var": "output",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "properties": {
+              "ExtractionResult": {
+                "type": "object",
+                "properties": {
+                  "DocumentId": {
+                    "type": "string"
+                  },
+                  "ResultsVersion": {
+                    "type": "integer"
+                  },
+                  "ResultsDocument": {
+                    "type": "object",
+                    "properties": {
+                      "Fields": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "FieldId": {
+                              "type": "string"
+                            },
+                            "FieldName": {
+                              "type": "string"
+                            },
+                            "FieldType": {
+                              "type": "string"
+                            },
+                            "IsMissing": {
+                              "type": "boolean"
+                            },
+                            "DataSource": {
+                              "type": "string"
+                            },
+                            "Values": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            },
+                            "DataVersion": {
+                              "type": "integer"
+                            },
+                            "OperatorConfirmed": {
+                              "type": "boolean"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails",
+          "source": "=Error",
+          "var": "error",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "required": [
+              "code",
+              "message",
+              "detail",
+              "category",
+              "status"
+            ],
+            "properties": {
+              "code": {
+                "type": "string"
+              },
+              "message": {
+                "type": "string"
+              },
+              "detail": {
+                "type": "string"
+              },
+              "category": {
+                "type": "string"
+              },
+              "status": {
+                "type": "integer"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      }
+    },
+    {
+      "nodeType": "core.action.script",
+      "version": "1.0",
+      "category": "data-operations",
+      "description": "Run custom JavaScript code",
+      "tags": [
+        "code",
+        "javascript",
+        "python"
+      ],
+      "sortOrder": 35,
+      "supportsErrorHandling": true,
+      "display": {
+        "label": "Script",
+        "icon": "code"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "success",
+              "type": "source",
+              "handleType": "output"
+            },
+            {
+              "id": "error",
+              "label": "Error",
+              "type": "source",
+              "handleType": "output",
+              "visible": "{inputs.errorHandlingEnabled}",
+              "constraints": {
+                "maxConnections": 1
+              }
+            }
+          ]
+        }
+      ],
+      "debug": {
+        "runtime": "clientScript"
+      },
+      "model": {
+        "type": "bpmn:ScriptTask"
+      },
+      "inputDefinition": {
+        "type": "object",
+        "properties": {
+          "script": {
+            "type": "string",
+            "minLength": 1,
+            "errorMessage": "A script function is required",
+            "validationSeverity": "warning"
+          }
+        },
+        "required": [
+          "script"
+        ]
+      },
+      "inputDefaults": {
+        "script": ""
+      },
+      "outputDefinition": {
+        "output": {
+          "type": "object",
+          "description": "The return value of the script",
+          "source": "=result.response",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails",
+          "source": "=Error",
+          "var": "error",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "required": [
+              "code",
+              "message",
+              "detail",
+              "category",
+              "status"
+            ],
+            "properties": {
+              "code": {
+                "type": "string"
+              },
+              "message": {
+                "type": "string"
+              },
+              "detail": {
+                "type": "string"
+              },
+              "category": {
+                "type": "string"
+              },
+              "status": {
+                "type": "integer"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "form": {
+        "id": "script-properties",
+        "title": "Script configuration",
+        "sections": [
+          {
+            "id": "script",
+            "title": "Script",
+            "collapsible": true,
+            "defaultExpanded": true,
+            "fields": [
+              {
+                "name": "inputs.script",
+                "type": "custom",
+                "component": "script-editor",
+                "componentProps": {
+                  "language": "javascript",
+                  "returnType": "any",
+                  "validationMode": "script",
+                  "minHeight": 200
+                },
+                "label": "Code",
+                "description": "JavaScript expression that returns a result object"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "nodeType": "uipath.human-in-the-loop.quick-form",
+      "version": "1.0",
+      "category": "human-task",
+      "description": "Fast inline approvals with inline debug",
+      "tags": [
+        "human-task",
+        "hitl",
+        "human-in-the-loop",
+        "quick-form",
+        "approval"
+      ],
+      "sortOrder": 27,
+      "display": {
+        "label": "Quick Form",
+        "icon": "users",
+        "shape": "square"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ],
+          "visible": true
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "completed",
+              "type": "source",
+              "handleType": "output",
+              "showButton": true,
+              "constraints": {
+                "forbiddenTargetCategories": [
+                  "trigger"
+                ]
+              }
+            }
+          ],
+          "visible": true
+        }
+      ],
+      "model": {
+        "type": "bpmn:UserTask",
+        "serviceType": "Actions.HITL"
+      },
+      "inputDefaults": {
+        "schema": {
+          "fields": [],
+          "outcomes": [
+            {
+              "id": "submit",
+              "name": "Submit",
+              "type": "string",
+              "isPrimary": true,
+              "action": "Continue"
+            }
+          ]
+        },
+        "recipient": {
+          "channels": [
+            "Email",
+            "ActionCenter"
+          ],
+          "connections": {},
+          "assignee": {
+            "type": "group"
+          }
+        }
+      },
+      "outputDefinition": {
+        "output": {
+          "type": "object",
+          "description": "Task result data",
+          "source": "=result",
+          "var": "output"
+        },
+        "status": {
+          "type": "string",
+          "description": "Task completion status (completed, cancelled, timeout)",
+          "source": "=result.Action",
+          "var": "status"
+        }
+      },
+      "runtimeConstraints": {
+        "exclude": [
+          "api-function"
+        ]
+      }
+    },
+    {
+      "nodeType": "core.control.end",
+      "version": "1.0",
+      "category": "control-flow",
+      "description": "Mark the end of a workflow path",
+      "tags": [
+        "control-flow",
+        "end",
+        "finish",
+        "complete"
+      ],
+      "sortOrder": 20,
+      "display": {
+        "label": "End",
+        "icon": "circle-check",
+        "shape": "circle"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        }
+      ],
+      "model": {
+        "type": "bpmn:EndEvent"
+      },
+      "runtimeConstraints": {
+        "exclude": [
+          "api-function"
+        ]
+      }
+    }
+  ],
+  "bindings": [],
+  "variables": {
+    "nodes": [
+      {
+        "id": "start.output",
+        "type": "object",
+        "description": "Data passed when manually triggering the workflow.",
+        "binding": {
+          "nodeId": "start",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "extractContractFields.output",
+        "type": "object",
+        "binding": {
+          "nodeId": "extractContractFields",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "extractContractFields.error",
+        "type": "object",
+        "description": "Error information if the node fails",
+        "binding": {
+          "nodeId": "extractContractFields",
+          "outputId": "error"
+        }
+      },
+      {
+        "id": "parseContractData.output",
+        "type": "object",
+        "description": "The return value of the script",
+        "binding": {
+          "nodeId": "parseContractData",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "parseContractData.error",
+        "type": "object",
+        "description": "Error information if the script fails",
+        "binding": {
+          "nodeId": "parseContractData",
+          "outputId": "error"
+        }
+      },
+      {
+        "id": "contractApproval.output",
+        "type": "object",
+        "description": "Task result data",
+        "binding": {
+          "nodeId": "contractApproval",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "contractApproval.status",
+        "type": "string",
+        "description": "Task completion status",
+        "binding": {
+          "nodeId": "contractApproval",
+          "outputId": "status"
+        }
+      }
+    ]
+  },
+  "runtime": "maestro",
+  "layout": {
+    "nodes": {
+      "start": {
+        "position": {
+          "x": 256,
+          "y": 144
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "extractContractFields": {
+        "position": {
+          "x": 448,
+          "y": 144
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "parseContractData": {
+        "position": {
+          "x": 640,
+          "y": 144
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "contractApproval": {
+        "position": {
+          "x": 832,
+          "y": 144
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "end": {
+        "position": {
+          "x": 1024,
+          "y": 144
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      }
+    }
+  }
+}

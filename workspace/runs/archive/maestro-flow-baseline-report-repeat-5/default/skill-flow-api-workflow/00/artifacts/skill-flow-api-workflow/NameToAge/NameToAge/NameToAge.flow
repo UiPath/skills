@@ -1,0 +1,460 @@
+{
+  "id": "0928a7d9-943e-487f-98e9-d56c36721103",
+  "version": "1.8",
+  "name": "NameToAge",
+  "nodes": [
+    {
+      "id": "start",
+      "type": "core.trigger.manual",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Manual trigger"
+      },
+      "inputs": {
+        "entryPointId": "96431dc7-f766-45f3-b992-7059f15c0140",
+        "isDefaultEntryPoint": true
+      }
+    },
+    {
+      "id": "callNameToAge",
+      "type": "uipath.core.api-workflow.8d578fb1-4f4d-465d-81f9-9192fa233e70",
+      "typeVersion": "1.0.0",
+      "display": {
+        "label": "NameToAgeFixed"
+      },
+      "inputs": {
+        "name": "tomasz"
+      },
+      "outputs": {
+        "output": {
+          "type": "object",
+          "description": "The return value of the API workflow",
+          "source": "=result.response",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the API workflow fails",
+          "source": "=result.Error",
+          "var": "error"
+        }
+      }
+    },
+    {
+      "id": "end",
+      "type": "core.control.end",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "End"
+      },
+      "inputs": {},
+      "outputs": {
+        "age": {
+          "source": "=js:$vars.callNameToAge.output.EstimatedAge"
+        }
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge-start-callNameToAge",
+      "sourceNodeId": "start",
+      "sourcePort": "output",
+      "targetNodeId": "callNameToAge",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge-callNameToAge-end",
+      "sourceNodeId": "callNameToAge",
+      "sourcePort": "output",
+      "targetNodeId": "end",
+      "targetPort": "input"
+    }
+  ],
+  "definitions": [
+    {
+      "nodeType": "core.trigger.manual",
+      "version": "1.0",
+      "category": "trigger",
+      "description": "Start workflow manually",
+      "tags": [
+        "trigger",
+        "start",
+        "manual"
+      ],
+      "sortOrder": 40,
+      "display": {
+        "label": "Manual trigger",
+        "icon": "play",
+        "shape": "circle"
+      },
+      "handleConfiguration": [
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "output",
+              "type": "source",
+              "handleType": "output",
+              "showButton": true,
+              "constraints": {
+                "forbiddenTargetCategories": [
+                  "trigger"
+                ]
+              }
+            }
+          ],
+          "visible": true
+        }
+      ],
+      "model": {
+        "type": "bpmn:StartEvent",
+        "entryPointId": true
+      },
+      "outputDefinition": {
+        "output": {
+          "type": "object",
+          "description": "Data passed when manually triggering the workflow.",
+          "source": "null",
+          "var": "output"
+        }
+      },
+      "toolbarExtensions": {
+        "design": {
+          "actions": [
+            {
+              "id": "change-trigger-type",
+              "icon": "square-mouse-pointer",
+              "label": "Change trigger type"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "nodeType": "uipath.core.api-workflow.8d578fb1-4f4d-465d-81f9-9192fa233e70",
+      "version": "1.0.0",
+      "category": "api-workflow",
+      "runtimeConstraints": {
+        "exclude": [
+          "api-function"
+        ]
+      },
+      "description": "(Shared/uipath-maestro-case/NameToAgeFixed)",
+      "tags": [],
+      "sortOrder": 510,
+      "supportsErrorHandling": true,
+      "display": {
+        "label": "NameToAgeFixed",
+        "icon": "api"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "output",
+              "type": "source",
+              "handleType": "output"
+            },
+            {
+              "id": "error",
+              "label": "Error",
+              "type": "source",
+              "handleType": "output",
+              "visible": "{inputs.errorHandlingEnabled}",
+              "constraints": {
+                "maxConnections": 1
+              }
+            }
+          ]
+        }
+      ],
+      "model": {
+        "type": "bpmn:ServiceTask",
+        "serviceType": "Orchestrator.ExecuteApiWorkflowAsync",
+        "version": "v2",
+        "section": "Published",
+        "bindings": {
+          "resource": "process",
+          "resourceSubType": "Api",
+          "resourceKey": "Shared/uipath-maestro-case/NameToAgeFixed.NameToAgeFixed",
+          "orchestratorType": "api",
+          "values": [
+            {
+              "name": "name",
+              "propertyAttribute": "name",
+              "default": "NameToAgeFixed"
+            },
+            {
+              "name": "folderPath",
+              "propertyAttribute": "folderPath",
+              "default": "Shared/uipath-maestro-case/NameToAgeFixed"
+            }
+          ]
+        },
+        "context": [
+          {
+            "name": "name",
+            "type": "string",
+            "value": "<bindings.name>"
+          },
+          {
+            "name": "folderPath",
+            "type": "string",
+            "value": "<bindings.folderPath>"
+          },
+          {
+            "name": "_label",
+            "type": "string",
+            "value": "NameToAgeFixed"
+          }
+        ]
+      },
+      "form": {
+        "id": "activity-properties",
+        "title": "API workflow",
+        "sections": [
+          {
+            "id": "inputs",
+            "title": "Inputs",
+            "collapsible": true,
+            "defaultExpanded": true,
+            "fields": [
+              {
+                "name": "inputs.name",
+                "type": "text",
+                "label": "name"
+              }
+            ]
+          }
+        ]
+      },
+      "inputDefinition": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "inputDefaults": {
+        "name": ""
+      },
+      "outputDefinition": {
+        "output": {
+          "type": "object",
+          "source": "=this",
+          "var": "output",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "EstimatedAge": {
+                "type": "number"
+              }
+            }
+          }
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails",
+          "source": "=Error",
+          "var": "error",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "required": [
+              "code",
+              "message",
+              "detail",
+              "category",
+              "status"
+            ],
+            "properties": {
+              "code": {
+                "type": "string",
+                "description": "Error code as a string"
+              },
+              "message": {
+                "type": "string",
+                "description": "High-level error message"
+              },
+              "detail": {
+                "type": "string",
+                "description": "Detailed error description"
+              },
+              "category": {
+                "type": "string",
+                "description": "Error category"
+              },
+              "status": {
+                "type": "integer",
+                "description": "HTTP status code"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "debug": {
+        "runtime": "bpmnEngine"
+      }
+    },
+    {
+      "nodeType": "core.control.end",
+      "version": "1.0",
+      "category": "control-flow",
+      "description": "Mark the end of a workflow path",
+      "tags": [
+        "control-flow",
+        "end",
+        "finish",
+        "complete"
+      ],
+      "sortOrder": 20,
+      "display": {
+        "label": "End",
+        "icon": "circle-check",
+        "shape": "circle"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        }
+      ],
+      "model": {
+        "type": "bpmn:EndEvent"
+      },
+      "runtimeConstraints": {
+        "exclude": [
+          "api-function"
+        ]
+      }
+    }
+  ],
+  "bindings": [
+    {
+      "id": "bCallNameToAgeName",
+      "name": "name",
+      "type": "string",
+      "resource": "process",
+      "resourceKey": "Shared/uipath-maestro-case/NameToAgeFixed.NameToAgeFixed",
+      "default": "NameToAgeFixed",
+      "propertyAttribute": "name",
+      "resourceSubType": "Api"
+    },
+    {
+      "id": "bCallNameToAgeFolderPath",
+      "name": "folderPath",
+      "type": "string",
+      "resource": "process",
+      "resourceKey": "Shared/uipath-maestro-case/NameToAgeFixed.NameToAgeFixed",
+      "default": "Shared/uipath-maestro-case/NameToAgeFixed",
+      "propertyAttribute": "folderPath",
+      "resourceSubType": "Api"
+    }
+  ],
+  "variables": {
+    "globals": [
+      {
+        "id": "age",
+        "direction": "out",
+        "type": "number",
+        "description": "The estimated age for the given name"
+      }
+    ],
+    "nodes": [
+      {
+        "id": "start.output",
+        "type": "object",
+        "description": "Data passed when manually triggering the workflow.",
+        "binding": {
+          "nodeId": "start",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "callNameToAge.output",
+        "type": "object",
+        "description": "The return value of the API workflow",
+        "binding": {
+          "nodeId": "callNameToAge",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "callNameToAge.error",
+        "type": "object",
+        "description": "Error information if the API workflow fails",
+        "binding": {
+          "nodeId": "callNameToAge",
+          "outputId": "error"
+        }
+      },
+      {
+        "id": "end.age",
+        "type": "string",
+        "binding": {
+          "nodeId": "end",
+          "outputId": "age"
+        }
+      }
+    ],
+    "variableUpdates": {}
+  },
+  "runtime": "maestro",
+  "layout": {
+    "nodes": {
+      "start": {
+        "position": {
+          "x": 256,
+          "y": 144
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "callNameToAge": {
+        "position": {
+          "x": 448,
+          "y": 144
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "end": {
+        "position": {
+          "x": 640,
+          "y": 144
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      }
+    }
+  }
+}

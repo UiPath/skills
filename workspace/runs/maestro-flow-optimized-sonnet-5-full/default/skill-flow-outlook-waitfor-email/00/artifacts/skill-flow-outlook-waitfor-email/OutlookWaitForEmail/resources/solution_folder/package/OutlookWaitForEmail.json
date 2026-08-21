@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "OutlookWaitForEmail",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "079a4d87-d624-4044-976e-c5b93be11980",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "OutlookWaitForEmail"
+    },
+    "locks": [],
+    "key": "42a9f54c-728e-47aa-8f6d-9515aff9daf4",
+    "files": []
+  }
+}

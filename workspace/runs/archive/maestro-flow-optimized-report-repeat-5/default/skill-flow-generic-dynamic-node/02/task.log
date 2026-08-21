@@ -1,0 +1,155 @@
+2026-07-24 17:48:14 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-24 17:48:14 [INFO] coder_eval.orchestrator: API routing: aws_bedrock
+2026-07-24 17:48:14 [DEBUG] coder_eval.criteria: Discovered 14 criterion checkers
+2026-07-24 17:48:14 [DEBUG] coder_eval.criteria: Validated 14 criterion checkers
+2026-07-24 17:48:14 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-24 17:48:14 [DEBUG] coder_eval.orchestrator: Sending prompt: Create a UiPath Flow project named "AcrUserList" with a manual trigger.
+The process must call Servic...
+2026-07-24 17:48:14 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Starting agent query stream...
+2026-07-24 17:55:02 [DEBUG] coder_eval.agents.claude_code_agent: [coder] session_id changed: None -> e7592870-a4a0-47a9-aaf3-ac69003a1fda
+2026-07-24 17:55:02 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Agent query stream ended
+2026-07-24 17:55:02 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-24 17:55:02 [DEBUG] coder_eval.orchestrator: Agent response received (7276 chars)
+2026-07-24 17:55:02 [DEBUG] coder_eval.orchestrator: Checking success criteria
+2026-07-24 17:55:02 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'uip maestro flow validate passes on the flow file': uip maestro flow validate AcrUserList/AcrUserList/AcrUserList.flow
+2026-07-24 17:55:08 [DEBUG] coder_eval.sandbox: Command 'uip maestro flow validate AcrUserList/AcrUserList/AcrUserList.flow' exited with code 0
+2026-07-24 17:55:08 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+{
+  "Result": "Success",
+  "Code": "FlowValidate",
+  "Data": {
+    "File": "/work/output/artifacts/skill-flow-generic-dynamic-node/AcrUserList/AcrUserList/AcrUserList.flow",
+    "Status": "Valid"
+  }
+}
+---
+2026-07-24 17:55:08 [DEBUG] coder_eval.sandbox: STDERR:
+---
+[ManifestClient] fetchDynamicNodes ok: total=207 agent context nodes=2 external agent nodes=6 orchestrator nodes=158 IXP nodes=41
+---
+2026-07-24 17:55:08 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-07-24 17:55:08 [DEBUG] coder_eval.evaluation.checker: Criterion 'command_executed' score: 1.00
+2026-07-24 17:55:08 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'ServiceNow list-all-records node on acr_user executes and surfaces an array output': python3 $TASK_DIR/check_generic_dynamic_node.py
+2026-07-24 17:55:30 [DEBUG] coder_eval.sandbox: Command 'python3 $TASK_DIR/check_generic_dynamic_node.py' exited with code 1
+2026-07-24 17:55:30 [DEBUG] coder_eval.sandbox: STDERR:
+---
+FAIL: flow debug exit 1
+stdout: {
+  "Result": "Failure",
+  "Code": "FlowDebug",
+  "Message": "Debug session Faulted. [102002] Integration Services operation failed (element listAcrUserRecords1)",
+  "Instructions": "Incident(s):\n  - [102002] Integration Services operation failed (element listAcrUserRecords1)\nRun 'uip maestro flow debug-instance incidents 75f13b18-0db3-4c0a-ac72-ef0e39070373' for the full backend payload (incidentId, errorDetails, AI summary). traceId=75f13b180db34c0aac72ef0e39070373.",
+  "Context": {
+    "ErrorCode": "102002",
+    "TraceId": "75f13b180db34c0aac72ef0e39070373"
+  },
+  "Data": {
+    "jobKey": "75f13b18-0db3-4c0a-ac72-ef0e39070373",
+    "instanceId": "75f13b18-0db3-4c0a-ac72-ef0e39070373",
+    "runId": "019f9544-6e15-72cb-afc4-20684cbb3bf7",
+    "folderKey": "410fae2d-89b3-4cd1-a991-7359bda90c0b",
+    "finalStatus": "Faulted",
+    "solutionId": "3c946e58-a043-4f8f-dca6-08dee9aa0ab7",
+    "studioWebUrl": "https://alpha.uipath.com/codereval/studio_/designer/0122dd45-7a79-499a-a69b-3cd138630e03?solutionId=3c946e58-a043-4f8f-dca6-08dee9aa0ab7",
+    "elementExecutions": [
+      {
+        "elementId": "start",
+        "elementType": "StartEvent",
+        "status": "Completed",
+        "startedAt": "2026-07-24T17:55:20.2326937Z",
+        "completedAt": "2026-07-24T17:55:20.5226748Z"
+      },
+      {
+        "elementId": "listAcrUserRecords1",
+        "elementType": "SendTask",
+        "status": "Failed",
+        "startedAt": "2026-07-24T17:55:20.7196234Z"
+      }
+    ],
+    "variables": {
+      "elements": [
+        {
+          "elementId": "start",
+          "elementRunId": "4033b576-5a9d-4b35-8f33-f3b2c125c608",
+          "isMarker": false,
+          "inputs": {},
+          "inputDefinitions": {},
+          "outputs": {}
+        },
+        {
+          "elementId": "listAcrUserRecords1",
+          "elementRunId": "90daea3b-56a1-44c7-9e37-c984d8b36921",
+          "isMarker": false,
+          "inputs": {},
+          "inputDefinitions": {},
+          "outputs": {}
+        }
+      ],
+      "globals": {
+        "listAcrUserRecords1.output": null,
+        "records": null
+      },
+      "instanceId": "75f13b18-0db3-4c0a-ac72-ef0e39070373",
+      "workflowId": "75f13b18-0db3-4c0a-ac72-ef0e39070373/BpmnGenericWorkflow",
+      "parentElementId": null,
+      "globalDefinitions": {
+        "listAcrUserRecords1.output": {
+          "name": "output",
+          "type": "jsonSchema"
+        },
+        "records": {
+          "name": "records",
+          "type": "object"
+        }
+      }
+    },
+    "incidents": [
+      {
+        "id": "ce54e893-c93a-4182-b768-3657e8677144",
+        "tenantId": "69d43765-6ede-4575-88b7-9db601a2c056",
+        "organizationId": "311c6049-4966-4ef2-a6f3-8ceccaf38d54",
+        "instanceId": "75f13b18-0db3-4c0a-ac72-ef0e39070373",
+        "runId": "019f9544-74f6-7a0d-8a86-ca3d720c32a9",
+        "elementId": "listAcrUserRecords1",
+        "elementRunId": "90daea3b-56a1-44c7-9e37-c984d8b36921",
+        "folderKey": "410fae2d-89b3-4cd1-a991-7359bda90c0b",
+        "processKey": null,
+        "packageVersion": "",
+        "incidentId": "90daea3b-56a1-44c7-9e37-c984d8b36921",
+        "incidentStatus": "Open",
+        "incidentType": "User",
+        "errorCode": "102002",
+        "errorMessage": "Integration Services operation failed",
+        "errorTimeUtc": "2026-07-24T17:55:26.3923634Z",
+        "errorDetails": "Request to Integration Services failed with status code '403', message:  {\"providerErrorMessage\":\"\\n        <div class=\\\"instance-hibernating-page\\\">\\n            <h1>your instance is hibernating<\\/h1>\\n            <img class=\\\"resting-image\\\" src=\\\"https://sndevstore.blob.core.windows.net/images/hibernating-page_resting-image-asset.svg\\\" alt=\\\"texture_image\\\" width=\\\"500\\\" height=\\\"300\\\">\\n            <p class=\\\"information\\\">sign in to the site to wake your instance<\\/p>\\n            <button onclick=\\\"location.href='https://developer.servicenow.com/dev.do#!/home?wu=true';\\\" class =\\\"button-text\\\">sign in\\n                <span class=\\\"button-arrow\\\">\\n                    <svg xmlns=\\\"http://www.w3.org/2000/svg\\\" aria-hidden=\\\"true\\\" viewbox=\\\"0 0 12 12\\\" style=\\\"width: 0.75rem; height: 0.75rem;\\\">\\n                        <g stroke=\\\"none\\\" fill=\\\"none\\\"><path fill=\\\"currentcolor\\\" d=\\\"m9.11 6l5.815 2.704l.707-.708l11 6.475l-4.479 4.479-.707-.708l9.061 7h1.003v6z\\\"><\\/path><\\/g>\\n                    <\\/svg>\\n                <\\/span>\\n            <\\/button>\\n            <p class=\\\"information\\\">\\n                want to find out why instances hibernate? read more about instances in the\\n                <a href=\\\"https://developer.servicenow.com/dev.do#!/guides/latest/developer-program/pdi-guide/personal-developer-instance-guide-introduction\\\" target=\\\"_blank\\\">\\n                    <span class=\\\"external-link\\\">\\n                        personal developer instance guide\\n                    <\\/span>\\n                    <svg xmlns=\\\"http://www.w3.org/2000/svg\\\" aria-hidden=\\\"true\\\" viewbox=\\\"0 0 16 16\\\" style=\\\"width: 1rem; height: 1rem;\\\">\\n                        <g stroke=\\\"none\\\" fill=\\\"none\\\">\\n                            <path fill=\\\"currentcolor\\\" d=\\\"m5 3v1h6.293l-8.651 8.648.707.707l12 4.707v6.294h1v3z\\\">\\n                            <\\/path>\\n                        <\\/g>\\n                    <\\/svg>\\n                <\\/a>\\n            <\\/p>\\n            <p class=\\\"redirection-text\\\">you'll be automatically redirected to the servicenow developer site shortly<\\/p>\\n            <img class=\\\"texture-image\\\" src=\\\"https://sndevstore.blob.core.windows.net/images/hibernating-page_texture-image-asset.png\\\" alt=\\\"circles\\\">\\n        <\\/div>\\n    \",\"providerStatusCode\":\"401\",\"requestId\":\"6a63a70de4b03832e2235ddd\",\"name\":\"3501bd5b-fcc9-4dca-b121-f593795525fd\",\"message\":\"Your connection has been temporarily disabled due to multiple unsuccessful attempts. To restore access, please reauthenticate\"}",
+        "comment": null,
+        "userUpdated": null,
+        "debugMode": "Default",
+        "incidentUpdateTimeUtc": null,
+        "traceId": "75f13b180db34c0aac72ef0e39070373",
+        "dependentFaultCode": null,
+        "incidentSeverity": "Error",
+        "aiSummary": null,
+        "aiRecommendations": null,
+        "processType": null,
+        "sourceElementId": null
+      }
+    ]
+  },
+  "ErrorCode": "unknown_error",
+  "Retry": "RetryWillNotFix"
+}
+
+stderr:
+---
+2026-07-24 17:55:30 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 0.00
+2026-07-24 17:55:30 [INFO] coder_eval.evaluation.checker: Criterion 'run_command' FAILED (score=0.00, threshold=1.00): Command: python3 $TASK_DIR/check_generic_dynamic_node.py
+2026-07-24 17:55:30 [INFO] coder_eval.orchestrator: Success criteria: 2/3 passed, weighted score: 0.429
+2026-07-24 17:55:30 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-24 17:55:30 [INFO] coder_eval.orchestrator: Running post-run command: python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/cleanup_solutions.py
+2026-07-24 17:55:32 [WARNING] coder_eval.orchestrator: [post_run stderr] cleanup_solutions: deleted 3c946e58-a043-4f8f-dca6-08dee9aa0ab7 (from AcrUserList/AcrUserList.uipx)
+2026-07-24 17:55:32 [WARNING] coder_eval.orchestrator: [post_run stderr] cleanup_solutions: summary policy=always deleted=1 preserved=0 skipped=0 not_uploaded=0 failed=0
+2026-07-24 17:55:32 [INFO] coder_eval.orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+2026-07-24 17:55:32 [INFO] coder_eval.orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-generic-dynamic-node
+2026-07-24 17:55:32 [INFO] coder_eval.orchestrator: Task finished: status=FAILURE duration=439.7s score=0.429 iterations=1

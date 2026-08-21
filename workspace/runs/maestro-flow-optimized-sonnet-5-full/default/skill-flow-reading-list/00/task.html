@@ -1,0 +1,1455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>coder_eval · skill-flow-reading-list · default</title>
+<style>
+:root {
+  --bg-page: #0f1419;
+  --bg-card: #1a2129;
+  --bg-card-2: #232d38;
+  --bg-code: #0b0f14;
+  --fg: #e6edf3;
+  --fg-muted: #8b98a5;
+  --fg-dim: #6e7681;
+  --border: #30363d;
+  --accent: #58a6ff;
+  --score-high: #22c55e;
+  --score-mid: #f59e0b;
+  --score-low: #ef4444;
+  --status-success: #22c55e;
+  --status-failure: #f59e0b;
+  --status-error: #ef4444;
+  --status-neutral: #6e7681;
+  --shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+.light {
+  --bg-page: #ffffff;
+  --bg-card: #f6f8fa;
+  --bg-card-2: #eaeef2;
+  --bg-code: #f6f8fa;
+  --fg: #1f2328;
+  --fg-muted: #636c76;
+  --fg-dim: #8b949e;
+  --border: #d0d7de;
+  --accent: #0969da;
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial,
+               sans-serif;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--fg);
+  background: var(--bg-page);
+}
+.container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+h1, h2, h3, h4 { margin: 0 0 12px 0; line-height: 1.25; }
+h1 { font-size: 22px; font-weight: 600; }
+h2 { font-size: 18px; font-weight: 600; margin-top: 28px;
+     padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+h3 { font-size: 15px; font-weight: 600; color: var(--fg-muted); }
+h4 { font-size: 13px; font-weight: 600; color: var(--fg-muted); }
+p { margin: 0 0 8px 0; }
+.muted { color: var(--fg-muted); }
+.dim { color: var(--fg-dim); }
+.mono { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+        monospace; font-size: 12.5px; }
+code { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+       monospace; font-size: 12.5px; background: var(--bg-code);
+       border: 1px solid var(--border); padding: 1px 5px; border-radius: 3px; }
+pre { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+      monospace; font-size: 12.5px; background: var(--bg-code);
+      border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px;
+      margin: 6px 0; overflow-x: auto; white-space: pre-wrap;
+      word-wrap: break-word; }
+.header-bar { display: flex; align-items: center; justify-content: space-between;
+              margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+.title-group { flex: 1; min-width: 0; }
+.title-group .subtitle { color: var(--fg-muted); font-size: 13px;
+                         margin-top: 2px; word-break: break-all; }
+.badges { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.badge { display: inline-flex; align-items: center; gap: 6px;
+         padding: 4px 10px; border-radius: 12px; font-size: 12px;
+         font-weight: 600; background: var(--bg-card-2);
+         border: 1px solid var(--border); color: var(--fg); }
+.badge.success { background: color-mix(in srgb, var(--status-success) 20%, var(--bg-card-2));
+                 border-color: var(--status-success); color: var(--status-success); }
+.badge.failure { background: color-mix(in srgb, var(--status-failure) 20%, var(--bg-card-2));
+                 border-color: var(--status-failure); color: var(--status-failure); }
+.badge.error { background: color-mix(in srgb, var(--status-error) 20%, var(--bg-card-2));
+               border-color: var(--status-error); color: var(--status-error); }
+.badge.warning { background: color-mix(in srgb, #f4a52810 20%, var(--bg-card-2));
+                 border-color: #f4a528; color: #f4a528; }
+.badge.neutral { color: var(--fg-muted); }
+.score-pill { display: inline-block; padding: 2px 8px; border-radius: 10px;
+              font-size: 12px; font-weight: 700; min-width: 42px;
+              text-align: center; color: #0b0f14; }
+.score-high { background: var(--score-high); }
+.score-mid { background: var(--score-mid); }
+.score-low { background: var(--score-low); }
+.card { background: var(--bg-card); border: 1px solid var(--border);
+        border-radius: 8px; padding: 16px 20px; margin-bottom: 16px;
+        box-shadow: var(--shadow); }
+.card.highlight { border-left: 4px solid var(--accent); }
+.grid { display: grid; gap: 12px;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+.stat { background: var(--bg-card-2); padding: 10px 12px; border-radius: 6px;
+        border: 1px solid var(--border); }
+.stat .label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;
+               color: var(--fg-muted); margin-bottom: 4px; }
+.stat .value { font-size: 16px; font-weight: 600; }
+table { width: 100%; border-collapse: collapse; margin: 4px 0 12px 0; }
+th, td { text-align: left; padding: 8px 10px;
+         border-bottom: 1px solid var(--border); vertical-align: top;
+         font-size: 13px; }
+th { color: var(--fg-muted); font-weight: 600; font-size: 12px;
+     text-transform: uppercase; letter-spacing: 0.3px; }
+tr:last-child td { border-bottom: none; }
+details { margin: 6px 0; border: 1px solid var(--border); border-radius: 6px;
+          background: var(--bg-card-2); }
+details > summary { cursor: pointer; padding: 8px 12px; user-select: none;
+                    font-weight: 500; list-style: none; }
+details > summary::-webkit-details-marker { display: none; }
+details > summary::before { content: "▸ "; color: var(--fg-dim);
+                            display: inline-block; width: 14px;
+                            transition: transform 0.15s; }
+details[open] > summary::before { content: "▾ "; }
+details .details-body { padding: 0 12px 10px 12px; }
+.tool-row { display: flex; align-items: center; gap: 10px;
+            flex-wrap: wrap; font-size: 13px; }
+.tool-name { font-weight: 600; color: var(--accent); font-family: ui-monospace,
+             SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+.tool-status-ok { color: var(--status-success); font-size: 11px;
+                  font-weight: 600; }
+.tool-status-err { color: var(--status-error); font-size: 11px;
+                   font-weight: 600; }
+.tool-duration { color: var(--fg-muted); font-size: 12px; }
+.tool-seq { color: var(--fg-dim); font-size: 11px; font-weight: 600;
+            min-width: 24px; text-align: right; font-family: ui-monospace,
+            SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+.turn-header { display: flex; justify-content: space-between;
+               align-items: baseline; flex-wrap: wrap; gap: 10px;
+               margin-bottom: 10px; }
+.turn-meta { font-size: 12px; color: var(--fg-muted); }
+.criterion-row td:first-child { font-family: ui-monospace, SFMono-Regular,
+                                 "SF Mono", Menlo, Consolas, monospace;
+                                 color: var(--fg-muted); font-size: 12px; }
+.judge-section { display: flex; flex-direction: column; gap: 12px; }
+.judge-card { padding: 14px 16px; }
+.judge-card-head { display: flex; justify-content: space-between;
+                    align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+.judge-card-title { font-size: 14px; line-height: 1.4; flex: 1; min-width: 0; }
+.judge-card-score { flex-shrink: 0; }
+.judge-rationale { margin-top: 10px; padding: 10px 12px;
+                   background: var(--bg-code); border-radius: 4px;
+                   font-size: 13px; line-height: 1.5; }
+.judge-findings { margin: 8px 0 0 18px; padding-left: 4px; font-size: 13px;
+                   line-height: 1.6; }
+.judge-findings li { margin: 2px 0; }
+.nav-toggle { display: inline-block; padding: 5px 10px; font-size: 12px;
+              background: var(--bg-card-2); border: 1px solid var(--border);
+              border-radius: 5px; color: var(--fg); cursor: pointer; }
+.nav-toggle:hover { background: var(--bg-card); }
+.llm-next-steps { margin: 6px 0 0 20px; padding-left: 0; }
+.llm-next-steps li { margin: 3px 0; }
+.iteration-group { padding: 12px 16px 4px 16px; margin-bottom: 20px;
+                   border-radius: 0 6px 6px 0; border-left: 4px solid var(--status-neutral); }
+/* rgba fallback for browsers without color-mix (Chrome <111, Firefox <113, Safari <16.2). */
+.iteration-group--recovered { border-left-color: var(--status-success);
+                              background: rgba(34, 197, 94, 0.06);
+                              background: color-mix(in srgb, var(--status-success) 6%, transparent); }
+.iteration-group--terminal { border-left-color: var(--status-error);
+                             background: rgba(239, 68, 68, 0.06);
+                             background: color-mix(in srgb, var(--status-error) 6%, transparent); }
+.iteration-group__banner { margin: 0 0 12px 0; font-size: 14px; font-weight: 600; }
+.iteration-group--recovered .iteration-group__banner { color: var(--status-success); }
+.iteration-group--terminal .iteration-group__banner { color: var(--status-error); }
+.attempt-transition { display: flex; align-items: center; gap: 8px;
+                      margin: -6px 0 12px 8px; color: var(--status-error); font-size: 12.5px; }
+.attempt-transition__icon { font-weight: 700; }
+footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--border);
+         color: var(--fg-dim); font-size: 12px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="header-bar">
+  <div class="title-group">
+    <h1>Task: skill-flow-reading-list</h1>
+    <div class="subtitle">Create a UiPath Flow that curates a reading list from a catalog of math/ML/stats books using declarative transform operations (filter + map). Tests whether the agent selects transform nodes over script nodes for standard data wrangling, and correctly configures filter conditions and map transformations.</div>
+  </div>
+  <div class="badges">
+    <span class="badge success">SUCCESS</span>
+    <span class="score-pill score-high">1.00</span>
+    <span class="badge neutral">claude-code · claude-sonnet-5</span>
+    <span class="badge neutral">4m 47s</span>
+    <span class="badge neutral">$1.5150</span>
+    <span class="badge warning">expected_turns exceeded (30/20)</span>
+    
+    <span class="nav-toggle" onclick="toggleTheme()">Toggle theme</span>
+  </div>
+</div>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Variant</div><div class="value">default</div></div>
+    <div class="stat"><div class="label">Started</div><div class="value mono">2026-08-19T15:47:52</div></div>
+    <div class="stat"><div class="label">Duration</div><div class="value">4m 47s</div></div>
+    <div class="stat"><div class="label">Turns (SDK)</div><div class="value">52</div></div>
+    <div class="stat"><div class="label">Commands</div><div class="value">29</div></div>
+  </div>
+</div>
+
+<h2>Success Criteria <span class="muted" style="font-weight:400">(2/2 passed)</span></h2>
+<div class="card" style="padding:0">
+<table>
+  <thead>
+    <tr>
+      <th style="width:15%">Type</th>
+      <th style="width:35%">Description</th>
+      <th style="width:10%">Score</th>
+      <th>Details</th>
+    </tr>
+  </thead>
+  <tbody>
+    
+<tr class="criterion-row">
+  <td>run_command</td>
+  <td>uip maestro flow validate passes on the flow file</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Command: python3 $EXPERIMENT_TASKS_PATH/uipath-maestro-flow/_shared/validate_flow.py</summary><div class="details-body"><pre style="margin:6px 0 0 0">Command: python3 $EXPERIMENT_TASKS_PATH/uipath-maestro-flow/_shared/validate_flow.py
+Exit code: 0 (expected: 0)
+Stdout:
+Validating ReadingList/ReadingList/ReadingList.flow
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FlowValidate&quot;,
+  &quot;Data&quot;: {
+    &quot;File&quot;: &quot;/work/output/artifacts/skill-flow-reading-list/ReadingList/ReadingList/ReadingList.flow&quot;,
+    &quot;Status&quot;: &quot;Valid&quot;
+  }
+}
+
+Stderr:
+[ManifestClient] fetchDynamicNodes ok: total=317 agent context nodes=2 external agent nodes=7 orchestrator nodes=263 IXP nodes=45</pre></div></details></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>run_command</td>
+  <td>Flow debug runs and transform output contains the 3 curated books</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Command: python3 $TASK_DIR/check_reading_list.py</summary><div class="details-body"><pre style="margin:6px 0 0 0">Command: python3 $TASK_DIR/check_reading_list.py
+Exit code: 0 (expected: 0)
+Stdout:
+OK: Transform node present; 3 correct books with uppercased titles
+
+Stderr: (empty)</pre></div></details></td>
+</tr>
+
+  </tbody>
+</table>
+</div>
+<h2>Conversation Trace (1 iteration)</h2>
+<div class="card">
+  <div class="turn-header">
+    <h3>Iteration 1</h3>
+    <div class="badges">
+      <span class="badge neutral">52 assistant turns</span>
+      <span class="badge neutral">in 1012 · out 22234 · cache 2649908</span>
+      <span class="badge neutral">4m 28s</span>
+      
+      
+      
+    </div>
+  </div>
+  <details>
+    <summary>Prompt to agent</summary>
+    <div class="details-body"><pre>Your working directory is: /work/output/artifacts/skill-flow-reading-list
+
+Create a UiPath Flow project named &quot;ReadingList&quot; that curates a reading list
+from a catalog of math and data science books.
+
+The catalog is this JSON array. Hardcode it in the flow as static data; do not
+require the user to provide it as a runtime input.
+
+[
+  {&quot;title&quot;: &quot;Linear Algebra Done Right&quot;, &quot;author&quot;: &quot;Axler&quot;, &quot;field&quot;: &quot;math&quot;, &quot;difficulty&quot;: 6, &quot;pages&quot;: 340},
+  {&quot;title&quot;: &quot;Deep Learning&quot;, &quot;author&quot;: &quot;Goodfellow&quot;, &quot;field&quot;: &quot;ml&quot;, &quot;difficulty&quot;: 9, &quot;pages&quot;: 800},
+  {&quot;title&quot;: &quot;Statistical Learning&quot;, &quot;author&quot;: &quot;James&quot;, &quot;field&quot;: &quot;data science&quot;, &quot;difficulty&quot;: 4, &quot;pages&quot;: 440},
+  {&quot;title&quot;: &quot;Elements of Statistical Learning&quot;, &quot;author&quot;: &quot;Hastie&quot;, &quot;field&quot;: &quot;stats&quot;, &quot;difficulty&quot;: 9, &quot;pages&quot;: 745},
+  {&quot;title&quot;: &quot;Bayesian Data Analysis&quot;, &quot;author&quot;: &quot;Gelman&quot;, &quot;field&quot;: &quot;stats&quot;, &quot;difficulty&quot;: 8, &quot;pages&quot;: 580},
+  {&quot;title&quot;: &quot;Python for Data Analysis&quot;, &quot;author&quot;: &quot;McKinney&quot;, &quot;field&quot;: &quot;data science&quot;, &quot;difficulty&quot;: 3, &quot;pages&quot;: 550},
+  {&quot;title&quot;: &quot;Probability Theory&quot;, &quot;author&quot;: &quot;Jaynes&quot;, &quot;field&quot;: &quot;math&quot;, &quot;difficulty&quot;: 10, &quot;pages&quot;: 753},
+  {&quot;title&quot;: &quot;Information Theory&quot;, &quot;author&quot;: &quot;MacKay&quot;, &quot;field&quot;: &quot;ml&quot;, &quot;difficulty&quot;: 7, &quot;pages&quot;: 540}
+]
+
+The flow should:
+1. Filter to books with difficulty greater than 5 AND under 600 pages
+2. Transform the results to show only the book title (uppercased) and author
+3. Output the curated reading list as a result variable
+
+Use a SINGLE generic `core.action.transform` node (the Generic Transform
+shape) that CHAINS the filter operation and then the map operation in its
+`operations` list — not separate `core.action.transform.filter` and
+`core.action.transform.map` variant nodes, and not script nodes. Transform
+collection inputs must reference a variable path (e.g. `$vars.catalog`), not
+an inline `=js:[...]` array or `=js:$vars.&lt;path&gt;` expression.
+
+Validate the flow.
+Do NOT ask for approval, confirmation, or feedback. Do NOT pause between planning and implementation. Build the complete flo</pre></div>
+  </details>
+  <details>
+    <summary>Agent response</summary>
+    <div class="details-body"><pre>[ASSISTANT] I already read this file earlier via Bash cat. Let me use Read to satisfy the tool requirement, then Write.
+[ASSISTANT] Audit is clean. Now run the official CLI validate and format.
+[ASSISTANT] Now clean. Let&#x27;s run format and re-audit.
+[ASSISTANT] Format ran successfully. Let&#x27;s do a final validate + audit pass to confirm everything is clean after formatting.
+[ASSISTANT] The **ReadingList** Flow project is built and passes validation cleanly (no errors or warnings).
+
+**Location:** `/work/output/artifacts/skill-flow-reading-list/ReadingList/ReadingList/ReadingList.flow`
+
+**What was built:**
+- **Manual trigger** → **`transformChain`** (a single `core.action.transform` node, Generic Transform shape) → **End**
+- The catalog is hardcoded as the `defaultValue` of an `inout` workflow variable `catalog` (not a runtime input), and the transform&#x27;s `collection` input points at `$vars.catalog` (a variable path, not an inline array or `=js:`-wrapped expression)
+- `transformChain.operations` chains two steps in one node:
+  1. `filter` — `difficulty greater_than 5` AND `pages less_than 600`
+  2. `map` — keeps only `title` (uppercased) and `author`
+- The result is exposed as the `out` variable `readingList`, mapped on the End node from `$vars.transformChain.output`
+
+**Validation:** `uip maestro flow validate` → `Status: Valid`, no warnings. The skill&#x27;s deeper `audit_flow.py` (topology/expressions/jint/bindings/runtime-gaps) also reports clean. `flow format` was run to finalize layout.
+[RESULT - SUCCESS] The **ReadingList** Flow project is built and passes validation cleanly (no errors or warnings).
+
+**Location:** `/work/output/artifacts/skill-flow-reading-list/ReadingList/ReadingList/ReadingList.flow`
+
+**What was built:**
+- **Manual trigger** → **`transformChain`** (a single `core.action.transform` node, Generic Transform shape) → **End**
+- The catalog is hardcoded as the `defaultValue` of an `inout` workflow variable `catalog` (not a runtime input), and the transform&#x27;s `collection` input points at `$vars.catalog` (a variable path, not an inline array or `=js:`-wrapped expression)
+- `transformChain.operations` chains two steps in one node:
+  1. `filter` — `difficulty greater_than 5` AND `pages less_than 600`
+  2. `map` — keeps only `title` (uppercased) and `author`
+- The result is exposed as the `out` variable `readingList`, mapped on the End node from `$vars.transformChain.output`
+
+**Validation:** `uip maestro flow validate` → `Status: Valid`, no warnings. The skill&#x27;s deeper `audit_flow.py` (topology/expressions/jint/bindings/runtime-gaps) also reports clean. `flow format` was run to finalize layout.</pre></div>
+  </details>
+  <h4 style="margin-top:12px">Tool Calls (29)</h4>
+  
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#0</span>
+      <span class="tool-name">Skill</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">34ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;skill&quot;: &quot;tmp:uipath-maestro-flow&quot;,
+  &quot;args&quot;: &quot;Create a UiPath Flow project named \&quot;ReadingList\&quot; in /work/output/artifacts/skill-flow-reading-list.\n\nRequirements:\n- Hardcode this catalog as static data in the flow (do not make it a runtime input):\n[\n  {\&quot;title\&quot;: \&quot;Linear Algebra Done Right\&quot;, \&quot;author\&quot;: \&quot;Axler\&quot;, \&quot;field\&quot;: \&quot;math\&quot;, \&quot;difficulty\&quot;: 6, \&quot;pages\&quot;: 340},\n  {\&quot;title\&quot;: \&quot;Deep Learning\&quot;, \&quot;author\&quot;: \&quot;Goodfellow\&quot;, \&quot;field\&quot;: \&quot;ml\&quot;, \&quot;difficulty\&quot;: 9, \&quot;pag… (1492 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Launching skill: tmp:uipath-maestro-flow</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#1</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">76ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow &amp;&amp; find . -maxdepth 3 -type f -name &#x27;*.uipx&#x27; -print; echo \&quot;---\&quot;; find /work/output/artifacts/skill-flow-reading-list -maxdepth 3 2&gt;/dev/null; echo \&quot;---cwd---\&quot;; pwd&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>---
+/work/output/artifacts/skill-flow-reading-list
+/work/output/artifacts/skill-flow-reading-list/.venv
+/work/output/artifacts/skill-flow-reading-list/.venv/CACHEDIR.TAG
+/work/output/artifacts/skill-flow-reading-list/.venv/lib64
+/work/output/artifacts/skill-flow-reading-list/.venv/pyvenv.cfg
+/work/output/artifacts/skill-flow-reading-list/.venv/lib
+/work/output/artifacts/skill-flow-reading-list/.venv/lib/python3.13
+/work/output/artifacts/skill-flow-reading-list/.venv/bin
+/work/output/artifacts/skill-flow-reading-list/.venv/bin/activate.csh
+/work/output/artifacts/skill-flow-reading-list/.venv/bin/activate.bat
+/work/output/artifacts/skill-flow-reading-list/.venv/bin/activate_this.py
+/work/output/artifacts/skill-flow-reading-list/.venv/bin/python
+/work/output/artifacts/skill-flow-reading-list/.venv/bin/pydoc.bat
+/work/output/artifacts/skill-flow-reading-list/.venv/bin/activate.ps1
+/work/output/artifacts/skill-flow-reading-list/.venv/bin/activate.xsh
+/work/output/artifacts/skill-flow-reading-list/.venv/bin/activate.nu
+/work/output/artifacts/skill-flow-reading-list/.venv/bin/python3.13
+/work/output/artifacts/skill-flow-reading-list/.venv/bin/activate
+/work/output/artifacts/skill-flow-rea
+
+… (truncated, 377 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#2</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">403ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/CAPABILITY.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Author — Create and edit `.flow` files
+2	
+3	Capability index for building new flows (greenfield) and editing existing flows (brownfield). Author owns everything that happens on disk, locally, without `uip login`. Authoring journeys terminate at `validate` + `format`; from there, hand off to [operate/CAPABILITY.md](../operate/CAPABILITY.md) to publish, run, or debug.
+4	
+5	&gt; **Where you came from / where to go next.** Author is upstream of Operate (build the flow → ship it) and upstream of Diagnose only via Operate (build → run → diagnose). Publish/run/lifecycle lives in [operate/CAPABILITY.md](../operate/CAPABILITY.md); fault triage lives in [diagnose/CAPABILITY.md](../diagnose/CAPABILITY.md).
+6	&gt;
+7	&gt; **Inherits universal rules from [SKILL.md](../../SKILL.md)** — `--output json` + prefer `--output-filter` for extraction, no `flow debug` without consent, resource discovery order, never invoke other skills automatically, dropdown question pattern, solution layout, **plain-English narration + granular progress list (opt-in — silent by default; engage when the user asks for verbosity)**. The rules below are author-scoped and apply on top.
+8	
+9	## When to use this capability
+10	
+11	&lt;
+
+… (truncated, 30449 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#3</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">91ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/greenfield.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Greenfield — Create a New Flow
+2	
+3	End-to-end journey for creating a Flow project from scratch. Author terminates at `validate` + `format`. To publish, run, or debug after this, see [operate/CAPABILITY.md](../../operate/CAPABILITY.md).
+4	
+5	&gt; **Brownfield edits use a different journey.** If the `.flow` file already exists, see [brownfield.md](brownfield.md) instead.
+6	
+7	## Should you plan first?
+8	
+9	For complex flows, produce a plan before building. Reference [planning-arch.md](planning-arch.md) and [planning-impl.md](planning-impl.md) for the node type catalog, port reference, wiring rules, and topology patterns.
+10	
+11	**Plan when:**
+12	- The flow has 5+ nodes with branching or parallel paths
+13	- The flow uses connectors or resources that need discovery
+14	- The user&#x27;s requirements are ambiguous and you need to confirm the approach
+15	
+16	**Don&#x27;t plan when:**
+17	- Adding/editing a single node in an existing flow (use [brownfield.md](brownfield.md))
+18	- The flow is a straightforward linear pipeline (trigger → action → action → end)
+19	- The user has already described the exact topology they want
+20	
+21	### Examples
+22	
+23	**Plan:** &quot;Build a flow that receives a Jira ticke
+
+… (truncated, 34831 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#4</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">6ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/plugins/transform/impl.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Transform Node — Implementation
+2	
+3	## Node Types
+4	
+5	- `core.action.transform` — generic (chains multiple operations)
+6	- `core.action.transform.filter` — filter only
+7	- `core.action.transform.map` — map only
+8	- `core.action.transform.group-by` — group-by only
+9	
+10	## Registry Validation
+11	
+12	```bash
+13	uip maestro flow registry get core.action.transform --output json
+14	uip maestro flow registry get core.action.transform.filter --output json
+15	uip maestro flow registry get core.action.transform.map --output json
+16	uip maestro flow registry get core.action.transform.group-by --output json
+17	```
+18	
+19	Confirm: input port `input`, output ports `output` and `error`, required inputs `collection` and `operations`. Set each node instance&#x27;s `typeVersion` to the `version` field from the matching response — do not hardcode it.
+20	
+21	## Adding / Editing
+22	
+23	For step-by-step add, delete, and wiring procedures, see [editing-operations.md](../../editing-operations.md). Use the JSON structures below for the node-specific `inputs` and `model` fields.
+24	
+25	## Collection Input Contract
+26	
+27	`inputs.collection` is a transform-specific path field, not a general `=js:` value fi
+
+… (truncated, 10616 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#5</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">4ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/shared/variables-and-expressions.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Variables and Expressions
+2	
+3	Complete reference for declaring variables, writing expressions, and managing data flow in `.flow` files.
+4	
+5	&gt; **Read this before** adding variables or writing expressions in any flow.
+6	&gt;
+7	&gt; `flow validate` catches the structural expression-reference errors:
+8	&gt;
+9	&gt; - Missing `=js:` prefix on `$vars`/`$metadata`/`$self` (MST-9107)
+10	&gt; - Invented `nodes.&lt;id&gt;.output` syntax
+11	&gt; - References to unknown variables or node IDs
+12	&gt; - Output-path walks that descend into declared primitives or schemas closed with `additionalProperties: false`
+13	&gt;
+14	&gt; Errors against **open output schemas** (HTTP response bodies, script returns, free-text agent output) and **wrong-direction reads** (e.g. reading an `out`-only variable) still slip past validate and surface only at `flow debug` or in production.
+15	
+16	---
+17	
+18	## Table of contents
+19	
+20	- [Variables Overview](#variables-overview)
+21	- [Workflow Variables (`globals`)](#workflow-variables-globals)
+22	- [Node Variables (`nodes`)](#node-variables-nodes)
+23	- [Variable Updates (`variableUpdates`)](#variable-updates-variableupdates)
+24	- [Output Mapping on End Nodes](#output-mapping-on-end-nodes)
+25	- [
+
+… (truncated, 24870 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#6</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">86ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/shared/file-format.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# UiPath Flow File Format
+2	
+3	The `.flow` file is a JSON document at `&lt;ProjectName&gt;.flow` in the project root. It is the **only file you should edit** — other generated files will be overwritten.
+4	
+5	## Table of contents
+6	
+7	- [Top-level structure](#top-level-structure)
+8	- [Project structure (generated scaffold)](#project-structure-generated-scaffold)
+9	- [Node instance](#node-instance)
+10	- [Layout](#layout)
+11	- [Edge — both ports required](#edge--both-ports-required)
+12	- [Definition entry](#definition-entry)
+13	- [Common node types](#common-node-types)
+14	- [Standard ports by node type](#standard-ports-by-node-type)
+15	- [Implicit error port on action nodes](#implicit-error-port-on-action-nodes)
+16	- [Minimal working example — dice roller](#minimal-working-example--dice-roller)
+17	- [entry-points.json — auto-generated, do not edit](#entry-pointsjson--auto-generated-do-not-edit)
+18	- [Bindings — Orchestrator resource bindings (top-level `bindings[]`)](#bindings--orchestrator-resource-bindings-top-level-bindings)
+19	- [Bindings — connector connection binding](#bindings--connector-connection-binding)
+20	
+21	## Top-level structure
+22	
+23	```json
+24	{
+25	  &quot;id&quot;: &quot;&lt;uuid&gt;&quot;,
+26	 
+
+… (truncated, 35296 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#7</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">329ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;find . -maxdepth 2 -type f -name &#x27;*.uipx&#x27; -print; echo \&quot;---\&quot;; which uip; uip --version 2&gt;&amp;1 | head -5&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>---
+/usr/bin/uip
+1.201.0-dev.8272</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#8</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">12.31s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;set -e\ncd /work/output/artifacts/skill-flow-reading-list\nuip solution init \&quot;ReadingList\&quot; --output json \\\n  &amp;&amp; cd \&quot;ReadingList\&quot; \\\n  &amp;&amp; uip maestro flow init \&quot;ReadingList\&quot; --output json \\\n  &amp;&amp; cd \&quot;ReadingList\&quot; \\\n  &amp;&amp; uip maestro flow registry pull --output json\necho \&quot;PWD_AFTER: $(pwd)\&quot;\n&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;SolutionInit&quot;,
+  &quot;Data&quot;: {
+    &quot;Status&quot;: &quot;Created successfully&quot;,
+    &quot;Path&quot;: &quot;/work/output/artifacts/skill-flow-reading-list/ReadingList/ReadingList.uipx&quot;,
+    &quot;NextSteps&quot;: &quot;Read /work/output/artifacts/skill-flow-reading-list/ReadingList/AGENTS.md or /work/output/artifacts/skill-flow-reading-list/ReadingList/CLAUDE.md to understand the solution lifecycle, project types that can be used inside a solution, and related uip command references.&quot;
+  }
+}
+2026-08-19 15:48:56 INFO  [ResourceBuilder:ProjectCreateCommandHandler] Creating project [object Object]
+2026-08-19 15:48:56 INFO  [ResourceBuilder:MultiFileSolutionDefinitionProvider] Reading multi-file solution definition for solution %s /work/output/artifacts/skill-flow-reading-list/ReadingList
+2026-08-19 15:48:56 INFO  [ResourceBuilder:ProjectCreateCommandHandler] Generate artefact resources for project [object Object]
+2026-08-19 15:48:56 INFO  [ResourceBuilder:SolutionsMetadataReader] Reading metadata from %s. SolutionsMetadataReader
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FlowInit&quot;,
+  &quot;Data&quot;: {
+    &quot;Status&quot;: &quot;Created successfully&quot;,
+    &quot;Path&quot;: &quot;/work/output/artifacts/skill-flow-reading-list/ReadingList
+
+… (truncated, 1524 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#9</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">12.25s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry get core.control.end --output json &gt; /tmp/end_def.json 2&gt;&amp;1\nuip maestro flow registry get core.action.transform --output json &gt; /tmp/transform_def.json 2&gt;&amp;1\necho done&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>done</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#10</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">14ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;ls -la &amp;&amp; echo \&quot;---FLOW---\&quot; &amp;&amp; cat ReadingList.flow&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>total 20
+drwxr-xr-x 2 root root 4096 Aug 19 15:48 .
+drwxr-xr-x 4 root root 4096 Aug 19 15:48 ..
+-rw-r--r-- 1 root root 1981 Aug 19 15:48 ReadingList.flow
+-rw-r--r-- 1 root root  268 Aug 19 15:48 operate.json
+-rw-r--r-- 1 root root   53 Aug 19 15:48 project.uiproj
+---FLOW---
+{
+  &quot;id&quot;: &quot;1330da04-94c0-41b3-9bc0-7e9511050b90&quot;,
+  &quot;version&quot;: &quot;1.9&quot;,
+  &quot;name&quot;: &quot;ReadingList&quot;,
+  &quot;nodes&quot;: [
+    {
+      &quot;id&quot;: &quot;start&quot;,
+      &quot;type&quot;: &quot;core.trigger.manual&quot;,
+      &quot;typeVersion&quot;: &quot;1.0&quot;,
+      &quot;display&quot;: {
+        &quot;label&quot;: &quot;Manual trigger&quot;
+      },
+      &quot;inputs&quot;: {
+        &quot;entryPointId&quot;: &quot;ceac0ae0-cfef-4af7-b821-835b2b5a82f9&quot;,
+        &quot;isDefaultEntryPoint&quot;: true
+      }
+    }
+  ],
+  &quot;edges&quot;: [],
+  &quot;definitions&quot;: [
+    {
+      &quot;nodeType&quot;: &quot;core.trigger.manual&quot;,
+      &quot;version&quot;: &quot;1.0&quot;,
+      &quot;category&quot;: &quot;trigger&quot;,
+      &quot;description&quot;: &quot;Start the process manually&quot;,
+      &quot;tags&quot;: [
+        &quot;trigger&quot;,
+        &quot;start&quot;,
+        &quot;manual&quot;
+      ],
+      &quot;sortOrder&quot;: 80,
+      &quot;display&quot;: {
+        &quot;label&quot;: &quot;Manual trigger&quot;,
+        &quot;icon&quot;: &quot;play&quot;,
+        &quot;shape&quot;: &quot;circle&quot;
+      },
+      &quot;handleConfiguration&quot;: [
+        {
+          &quot;position&quot;: &quot;right&quot;,
+          &quot;handles&quot;: [
+            {
+              &quot;id&quot;
+
+… (truncated, 1056 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#11</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">84ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 -c \&quot;\nimport json\nd=json.load(open(&#x27;/tmp/end_def.json&#x27;))\nprint(json.dumps(d, indent=2)[:3000])\n\&quot;&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeGetSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;Node&quot;: {
+      &quot;nodeType&quot;: &quot;core.control.end&quot;,
+      &quot;version&quot;: &quot;1.0&quot;,
+      &quot;category&quot;: &quot;control-flow&quot;,
+      &quot;description&quot;: &quot;Mark the end of a process path&quot;,
+      &quot;tags&quot;: [
+        &quot;control-flow&quot;,
+        &quot;end&quot;,
+        &quot;finish&quot;,
+        &quot;complete&quot;
+      ],
+      &quot;sortOrder&quot;: 65,
+      &quot;display&quot;: {
+        &quot;label&quot;: &quot;End&quot;,
+        &quot;icon&quot;: &quot;circle-check&quot;,
+        &quot;shape&quot;: &quot;circle&quot;
+      },
+      &quot;handleConfiguration&quot;: [
+        {
+          &quot;position&quot;: &quot;left&quot;,
+          &quot;handles&quot;: [
+            {
+              &quot;id&quot;: &quot;input&quot;,
+              &quot;type&quot;: &quot;target&quot;,
+              &quot;handleType&quot;: &quot;input&quot;
+            }
+          ]
+        }
+      ],
+      &quot;model&quot;: {
+        &quot;type&quot;: &quot;bpmn:EndEvent&quot;
+      },
+      &quot;runtimeConstraints&quot;: {
+        &quot;exclude&quot;: [
+          &quot;api-function&quot;
+        ]
+      }
+    }
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#12</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">90ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 -c \&quot;\nimport json\nd=json.load(open(&#x27;/tmp/transform_def.json&#x27;))\nprint(json.dumps(d, indent=2)[:6000])\n\&quot;&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeGetSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;Node&quot;: {
+      &quot;nodeType&quot;: &quot;core.action.transform&quot;,
+      &quot;supportsErrorHandling&quot;: true,
+      &quot;version&quot;: &quot;1.1&quot;,
+      &quot;category&quot;: &quot;data&quot;,
+      &quot;description&quot;: &quot;Reshape and convert data with operations&quot;,
+      &quot;tags&quot;: [
+        &quot;data&quot;,
+        &quot;transformation&quot;
+      ],
+      &quot;sortOrder&quot;: 34,
+      &quot;display&quot;: {
+        &quot;label&quot;: &quot;Transform&quot;,
+        &quot;icon&quot;: &quot;a-large-small&quot;
+      },
+      &quot;handleConfiguration&quot;: [
+        {
+          &quot;position&quot;: &quot;left&quot;,
+          &quot;handles&quot;: [
+            {
+              &quot;id&quot;: &quot;input&quot;,
+              &quot;type&quot;: &quot;target&quot;,
+              &quot;handleType&quot;: &quot;input&quot;
+            }
+          ]
+        },
+        {
+          &quot;position&quot;: &quot;right&quot;,
+          &quot;handles&quot;: [
+            {
+              &quot;id&quot;: &quot;output&quot;,
+              &quot;type&quot;: &quot;source&quot;,
+              &quot;handleType&quot;: &quot;output&quot;
+            },
+            {
+              &quot;id&quot;: &quot;error&quot;,
+              &quot;label&quot;: &quot;Error&quot;,
+              &quot;type&quot;: &quot;source&quot;,
+              &quot;handleType&quot;: &quot;output&quot;,
+              &quot;visible&quot;: &quot;{inputs.errorHandlingEnabled}&quot;,
+              &quot;constraints&quot;: {
+                &quot;maxConnections&quot;: 1
+              }
+            }
+          ]
+ 
+
+… (truncated, 2556 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#13</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">23ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cat entry-points.json 2&gt;/dev/null; echo \&quot;---operate---\&quot;; cat operate.json&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>---operate---
+{
+  &quot;$schema&quot;: &quot;https://cloud.uipath.com/draft/2024-12/operate&quot;,
+  &quot;projectId&quot;: &quot;1330da04-94c0-41b3-9bc0-7e9511050b90&quot;,
+  &quot;contentType&quot;: &quot;Flow&quot;,
+  &quot;targetFramework&quot;: &quot;Portable&quot;,
+  &quot;runtimeOptions&quot;: {
+    &quot;requiresUserInteraction&quot;: false,
+    &quot;isAttended&quot;: false
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#14</span>
+      <span class="tool-name">Write</span>
+      <span class="tool-status-err">ERROR</span>
+      <span class="tool-duration">3ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-reading-list/ReadingList/ReadingList/ReadingList.flow&quot;,
+  &quot;content&quot;: &quot;{\n  \&quot;id\&quot;: \&quot;1330da04-94c0-41b3-9bc0-7e9511050b90\&quot;,\n  \&quot;version\&quot;: \&quot;1.9\&quot;,\n  \&quot;name\&quot;: \&quot;ReadingList\&quot;,\n  \&quot;nodes\&quot;: [\n    {\n      \&quot;id\&quot;: \&quot;start\&quot;,\n      \&quot;type\&quot;: \&quot;core.trigger.manual\&quot;,\n      \&quot;typeVersion\&quot;: \&quot;1.0\&quot;,\n      \&quot;display\&quot;: {\n        \&quot;label\&quot;: \&quot;Manual trigger\&quot;\n      },\n      \&quot;inputs\&quot;: {\n        \&quot;entryPointId\&quot;: \&quot;ceac0ae0-cfef-4af7-b821-835b2b5a82f9\&quot;,\n        \&quot;isDefaultEntryPoint\&quot;: true\n      },\n      \&quot;outp… (10730 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>&lt;tool_use_error&gt;File has not been read yet. Read it first before writing to it.&lt;/tool_use_error&gt;</pre>
+    <h4>Error</h4><pre>&lt;tool_use_error&gt;File has not been read yet. Read it first before writing to it.&lt;/tool_use_error&gt;</pre>
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#15</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">3ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-reading-list/ReadingList/ReadingList/ReadingList.flow&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	{
+2	  &quot;id&quot;: &quot;1330da04-94c0-41b3-9bc0-7e9511050b90&quot;,
+3	  &quot;version&quot;: &quot;1.9&quot;,
+4	  &quot;name&quot;: &quot;ReadingList&quot;,
+5	  &quot;nodes&quot;: [
+6	    {
+7	      &quot;id&quot;: &quot;start&quot;,
+8	      &quot;type&quot;: &quot;core.trigger.manual&quot;,
+9	      &quot;typeVersion&quot;: &quot;1.0&quot;,
+10	      &quot;display&quot;: {
+11	        &quot;label&quot;: &quot;Manual trigger&quot;
+12	      },
+13	      &quot;inputs&quot;: {
+14	        &quot;entryPointId&quot;: &quot;ceac0ae0-cfef-4af7-b821-835b2b5a82f9&quot;,
+15	        &quot;isDefaultEntryPoint&quot;: true
+16	      }
+17	    }
+18	  ],
+19	  &quot;edges&quot;: [],
+20	  &quot;definitions&quot;: [
+21	    {
+22	      &quot;nodeType&quot;: &quot;core.trigger.manual&quot;,
+23	      &quot;version&quot;: &quot;1.0&quot;,
+24	      &quot;category&quot;: &quot;trigger&quot;,
+25	      &quot;description&quot;: &quot;Start the process manually&quot;,
+26	      &quot;tags&quot;: [
+27	        &quot;trigger&quot;,
+28	        &quot;start&quot;,
+29	        &quot;manual&quot;
+30	      ],
+31	      &quot;sortOrder&quot;: 80,
+32	      &quot;display&quot;: {
+33	        &quot;label&quot;: &quot;Manual trigger&quot;,
+34	        &quot;icon&quot;: &quot;play&quot;,
+35	        &quot;shape&quot;: &quot;circle&quot;
+36	      },
+37	      &quot;handleConfiguration&quot;: [
+38	        {
+39	          &quot;position&quot;: &quot;right&quot;,
+40	          &quot;handles&quot;: [
+41	            {
+42	              &quot;id&quot;: &quot;output&quot;,
+43	              &quot;type&quot;: &quot;source&quot;,
+44	              &quot;handleType&quot;: &quot;output&quot;,
+45	              &quot;showButton&quot;: true,
+46	              &quot;constraints&quot;: {
+
+… (truncated, 1045 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#16</span>
+      <span class="tool-name">Write</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">18ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-reading-list/ReadingList/ReadingList/ReadingList.flow&quot;,
+  &quot;content&quot;: &quot;{\n  \&quot;id\&quot;: \&quot;1330da04-94c0-41b3-9bc0-7e9511050b90\&quot;,\n  \&quot;version\&quot;: \&quot;1.9\&quot;,\n  \&quot;name\&quot;: \&quot;ReadingList\&quot;,\n  \&quot;nodes\&quot;: [\n    {\n      \&quot;id\&quot;: \&quot;start\&quot;,\n      \&quot;type\&quot;: \&quot;core.trigger.manual\&quot;,\n      \&quot;typeVersion\&quot;: \&quot;1.0\&quot;,\n      \&quot;display\&quot;: {\n        \&quot;label\&quot;: \&quot;Manual trigger\&quot;\n      },\n      \&quot;inputs\&quot;: {\n        \&quot;entryPointId\&quot;: \&quot;ceac0ae0-cfef-4af7-b821-835b2b5a82f9\&quot;,\n        \&quot;isDefaultEntryPoint\&quot;: true\n      },\n      \&quot;outp… (10730 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>The file /work/output/artifacts/skill-flow-reading-list/ReadingList/ReadingList/ReadingList.flow has been updated successfully. (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#17</span>
+      <span class="tool-name">Edit</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">50ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;replace_all&quot;: false,
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-reading-list/ReadingList/ReadingList/ReadingList.flow&quot;,
+  &quot;old_string&quot;: &quot;        \&quot;id\&quot;: \&quot;catalog\&quot;,\n        \&quot;direction\&quot;: \&quot;inout\&quot;,&quot;,
+  &quot;new_string&quot;: &quot;        \&quot;id\&quot;: \&quot;catalog\&quot;,\n        \&quot;direction\&quot;: \&quot;in\&quot;,&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>The file /work/output/artifacts/skill-flow-reading-list/ReadingList/ReadingList/ReadingList.flow has been updated successfully. (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#18</span>
+      <span class="tool-name">Edit</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">16ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;replace_all&quot;: false,
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-reading-list/ReadingList/ReadingList/ReadingList.flow&quot;,
+  &quot;old_string&quot;: &quot;        \&quot;id\&quot;: \&quot;catalog\&quot;,\n        \&quot;direction\&quot;: \&quot;in\&quot;,&quot;,
+  &quot;new_string&quot;: &quot;        \&quot;id\&quot;: \&quot;catalog\&quot;,\n        \&quot;direction\&quot;: \&quot;inout\&quot;,&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>The file /work/output/artifacts/skill-flow-reading-list/ReadingList/ReadingList/ReadingList.flow has been updated successfully. (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#19</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">122ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 -c \&quot;import json; json.load(open(&#x27;ReadingList.flow&#x27;)); print(&#x27;valid json&#x27;)\&quot;&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>valid json</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#20</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">33ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;find /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/scripts -name &#x27;*.py&#x27; | xargs -I{} basename {}&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>node_ownership.py
+audit_expressions.py
+lint_jint.py
+check_runtime_gaps.py
+flow_compose.py
+check_bindings.py
+wire_agent_inputs.py
+encode_parameter_values.py
+diagnose_run.py
+check_topology.py
+audit_flow.py
+validate_mermaid.py
+flow_lib.py
+flow_edit.py</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#21</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">160ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/scripts/audit_flow.py ReadingList.flow --json-out /tmp/findings.json; echo \&quot;EXIT:$?\&quot;&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>topology      0 error(s), 0 warning(s), 0 info
+expressions   0 error(s), 0 warning(s), 0 info
+jint          0 error(s), 0 warning(s), 0 info
+bindings      0 error(s), 0 warning(s), 0 info
+runtime-gaps  1 error(s), 0 warning(s), 0 info
+    error   MISSING_NODE_VARIABLE      start                                    no variables.nodes[] entry &#x27;start.output&#x27;; $vars.start.output resolves to undefined at runtime even though validate passes. `uip maestro flow format` regenerates it
+full findings: /tmp/findings.json
+audit: FAIL (1 error(s))
+EXIT:1</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#22</span>
+      <span class="tool-name">Edit</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">40ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;replace_all&quot;: false,
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-reading-list/ReadingList/ReadingList/ReadingList.flow&quot;,
+  &quot;old_string&quot;: &quot;    \&quot;nodes\&quot;: [\n      {\n        \&quot;id\&quot;: \&quot;transformChain.output\&quot;,&quot;,
+  &quot;new_string&quot;: &quot;    \&quot;nodes\&quot;: [\n      {\n        \&quot;id\&quot;: \&quot;start.output\&quot;,\n        \&quot;type\&quot;: \&quot;object\&quot;,\n        \&quot;description\&quot;: \&quot;Data passed when manually triggering the process.\&quot;,\n        \&quot;binding\&quot;: {\n          \&quot;nodeId\&quot;: \&quot;start\&quot;,\n          \&quot;outputId\&quot;: \&quot;output\&quot;\n        }\n      },\n      {\n        \&quot;id\&quot;: \&quot;transformChain.output\&quot;,&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>The file /work/output/artifacts/skill-flow-reading-list/ReadingList/ReadingList/ReadingList.flow has been updated successfully. (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#23</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">178ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/scripts/audit_flow.py ReadingList.flow --json-out /tmp/findings.json; echo \&quot;EXIT:$?\&quot;&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>topology      0 error(s), 0 warning(s), 0 info
+expressions   0 error(s), 0 warning(s), 0 info
+jint          0 error(s), 0 warning(s), 0 info
+bindings      0 error(s), 0 warning(s), 0 info
+runtime-gaps  0 error(s), 0 warning(s), 0 info
+full findings: /tmp/findings.json
+audit: clean
+EXIT:0</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#24</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">3.35s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow validate ReadingList.flow --output json&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>[ManifestClient] fetchDynamicNodes ok: total=317 agent context nodes=2 external agent nodes=7 orchestrator nodes=263 IXP nodes=45
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FlowValidate&quot;,
+  &quot;Data&quot;: {
+    &quot;File&quot;: &quot;/work/output/artifacts/skill-flow-reading-list/ReadingList/ReadingList/ReadingList.flow&quot;,
+    &quot;Status&quot;: &quot;Valid&quot;,
+    &quot;Warnings&quot;: &quot;1 warning(s):\n  - [nodes[end].outputs.catalog.source] [MISSING_OUTPUT_MAPPING] \&quot;End\&quot; is missing output mapping for \&quot;catalog\&quot;&quot;
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#25</span>
+      <span class="tool-name">Edit</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">26ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;replace_all&quot;: false,
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-reading-list/ReadingList/ReadingList/ReadingList.flow&quot;,
+  &quot;old_string&quot;: &quot;      \&quot;outputs\&quot;: {\n        \&quot;readingList\&quot;: {\n          \&quot;source\&quot;: \&quot;=js:$vars.transformChain.output\&quot;\n        }\n      }&quot;,
+  &quot;new_string&quot;: &quot;      \&quot;outputs\&quot;: {\n        \&quot;readingList\&quot;: {\n          \&quot;source\&quot;: \&quot;=js:$vars.transformChain.output\&quot;\n        },\n        \&quot;catalog\&quot;: {\n          \&quot;source\&quot;: \&quot;=js:$vars.catalog\&quot;\n        }\n      }&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>The file /work/output/artifacts/skill-flow-reading-list/ReadingList/ReadingList/ReadingList.flow has been updated successfully. (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#26</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">2.88s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow validate ReadingList.flow --output json&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>[ManifestClient] fetchDynamicNodes ok: total=317 agent context nodes=2 external agent nodes=7 orchestrator nodes=263 IXP nodes=45
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FlowValidate&quot;,
+  &quot;Data&quot;: {
+    &quot;File&quot;: &quot;/work/output/artifacts/skill-flow-reading-list/ReadingList/ReadingList/ReadingList.flow&quot;,
+    &quot;Status&quot;: &quot;Valid&quot;
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#27</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.02s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow format ReadingList.flow --output json&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FlowFormat&quot;,
+  &quot;Data&quot;: {
+    &quot;File&quot;: &quot;ReadingList.flow&quot;,
+    &quot;NodesTotal&quot;: 3,
+    &quot;EdgesTotal&quot;: 2,
+    &quot;NodesRepositioned&quot;: 2,
+    &quot;NodesResized&quot;: 0,
+    &quot;SubflowsTidied&quot;: 0,
+    &quot;VariableCount&quot;: 5
+  },
+  &quot;Instructions&quot;: &quot;Repositioned 2 of 3 nodes&quot;
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#28</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">3.55s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow validate ReadingList.flow --output json &amp;&amp; python3 /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/scripts/audit_flow.py ReadingList.flow&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>[ManifestClient] fetchDynamicNodes ok: total=317 agent context nodes=2 external agent nodes=7 orchestrator nodes=263 IXP nodes=45
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FlowValidate&quot;,
+  &quot;Data&quot;: {
+    &quot;File&quot;: &quot;/work/output/artifacts/skill-flow-reading-list/ReadingList/ReadingList/ReadingList.flow&quot;,
+    &quot;Status&quot;: &quot;Valid&quot;
+  }
+}
+topology      0 error(s), 0 warning(s), 0 info
+expressions   0 error(s), 0 warning(s), 0 info
+jint          0 error(s), 0 warning(s), 0 info
+bindings      0 error(s), 0 warning(s), 0 info
+runtime-gaps  0 error(s), 0 warning(s), 0 info
+audit: clean</pre>
+    
+  </div>
+</details>
+
+</div>
+
+<h2>Command Telemetry</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Total</div><div class="value">29</div></div>
+    <div class="stat"><div class="label">Successful</div><div class="value">28 (97%)</div></div>
+    <div class="stat"><div class="label">Failed</div><div class="value">1</div></div>
+    <div class="stat"><div class="label">Avg / cmd</div><div class="value">1.28s</div></div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 2fr;gap:16px;margin-top:12px">
+    <div>
+      <h4>By Tool</h4>
+      <table>
+        <thead><tr><th>Tool</th><th>Count</th></tr></thead>
+        <tbody><tr><td class='mono'>Bash</td><td>16</td></tr><tr><td class='mono'>Read</td><td>6</td></tr><tr><td class='mono'>Edit</td><td>4</td></tr><tr><td class='mono'>Write</td><td>2</td></tr><tr><td class='mono'>Skill</td><td>1</td></tr></tbody>
+      </table>
+    </div>
+    <div>
+      <h4>Slowest</h4>
+      <table>
+        <thead><tr><th>Tool</th><th>Duration</th><th>Parameters</th></tr></thead>
+        <tbody><tr><td class='mono'>Bash</td><td>12.31s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;set -e\ncd /work/output/artifacts/ski...</td></tr><tr><td class='mono'>Bash</td><td>12.25s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro flow registry get core.co...</td></tr><tr><td class='mono'>Bash</td><td>3.55s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro flow validate ReadingList...</td></tr><tr><td class='mono'>Bash</td><td>3.35s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro flow validate ReadingList...</td></tr><tr><td class='mono'>Bash</td><td>2.88s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro flow validate ReadingList...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+  <p><strong>Most Common Pattern:</strong> <code>Bash → Bash → Bash</code></p><p><strong>Skill Tool Invoked:</strong> 1 time(s)</p>
+</div>
+
+<h2>Generation Metrics</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Total Latency</div><div class="value">4m 47s</div></div>
+    <div class="stat"><div class="label">Turns</div><div class="value">1</div></div>
+    <div class="stat"><div class="label">Assistant Turns</div><div class="value">52</div></div>
+    <div class="stat"><div class="label">Avg Turn Latency</div><div class="value">4m 28s</div></div>
+    
+  </div>
+</div>
+
+<h2>Token Usage</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Input (uncached)</div><div class="value">1,012</div></div>
+    <div class="stat"><div class="label">Output</div><div class="value">22,234</div></div>
+    <div class="stat"><div class="label">Cache Write</div><div class="value">102,253</div></div>
+    <div class="stat"><div class="label">Cache Read</div><div class="value">2,649,908</div></div>
+    <div class="stat"><div class="label">Total</div><div class="value">2,775,407</div></div>
+    <div class="stat"><div class="label">Cost</div><div class="value">$1.5150</div></div>
+  </div>
+</div>
+
+<h2>Agent Settings</h2>
+<div class="card" style="padding:0">
+  <table>
+    <tbody><tr><td class='mono dim'>Permission Mode</td><td>acceptEdits</td></tr><tr><td class='mono dim'>Allowed Tools</td><td>Skill, Bash, Read, Write, Edit, Glob, Grep</td></tr><tr><td class='mono dim'>Model</td><td>us.anthropic.claude-sonnet-5</td></tr><tr><td class='mono dim'>Max Turns</td><td>40</td></tr><tr><td class='mono dim'>System Prompt</td><td>You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted. </td></tr><tr><td class='mono dim'>System Prompt Mode</td><td>append</td></tr><tr><td class='mono dim'>Plugins</td><td>/home/azureuser/projects/skills/tmp</td></tr></tbody>
+  </table>
+</div>
+
+<h2>Environment</h2>
+<div class="card" style="padding:0">
+  <table>
+    <tbody><tr><td class='mono dim'>git_commit</td><td>unknown</td></tr><tr><td class='mono dim'>skills_git_commit</td><td>unknown</td></tr><tr><td class='mono dim'>cli_version</td><td>1.201.0-dev.8272</td></tr><tr><td class='mono dim'>tool_plugins</td><td>{&#x27;admin-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;agent-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;agenthub-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;aops-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;api-workflow-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;automation-hub-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;codedagent-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;codedapp-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;coder-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;context-grounding-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;conversational-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;data-fabric-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;docsai-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;function-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;gov-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;guardrails-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;insights-tool&#x27;: &#x27;1.201.0-dev.8276&#x27;, &#x27;integrationservice-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;ixp-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;llm-gateway-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;llmgw-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;maestro-tool&#x27;: &#x27;1.201.0-dev.8275&#x27;, &#x27;model-hub-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;orchestrator-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;platform-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;pm-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;rpa-legacy-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;rpa-tool&#x27;: &#x27;1.201.0-dev.20260809.3&#x27;, &#x27;solution-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;tasks-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;test-manager-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;traces-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;vertical-solutions-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;}</td></tr><tr><td class='mono dim'>coder_eval</td><td>0.9.6</td></tr><tr><td class='mono dim'>claude_code_cli</td><td>2.1.177 (Claude Code)</td></tr><tr><td class='mono dim'>uv</td><td>uv 0.12.5 (x86_64-unknown-linux-gnu)</td></tr><tr><td class='mono dim'>anthropic</td><td>0.122.0</td></tr><tr><td class='mono dim'>openai</td><td>3.2.0</td></tr><tr><td class='mono dim'>pydantic</td><td>2.12.5</td></tr><tr><td class='mono dim'>api_routing</td><td>aws_bedrock</td></tr><tr><td class='mono dim'>eval_routing</td><td>aws_bedrock</td></tr><tr><td class='mono dim'>aws_region</td><td>us-east-2</td></tr><tr><td class='mono dim'>bedrock_model</td><td>us.anthropic.claude-sonnet-4-6</td></tr><tr><td class='mono dim'>system_prompt_semantics</td><td>append</td></tr></tbody>
+  </table>
+</div>
+
+<footer>Generated by coder_eval · 2026-08-19T15:52:39</footer>
+</div>
+<script>
+function toggleTheme() {
+  document.documentElement.classList.toggle('light');
+  try {
+    const mode = document.documentElement.classList.contains('light') ? 'light' : 'dark';
+    localStorage.setItem('coder-eval-theme', mode);
+  } catch (e) { /* ignore */ }
+}
+(function() {
+  try {
+    if (localStorage.getItem('coder-eval-theme') === 'light') {
+      document.documentElement.classList.add('light');
+    }
+  } catch (e) { /* ignore */ }
+})();
+</script>
+</body>
+</html>

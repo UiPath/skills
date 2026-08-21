@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+    xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+    xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+    xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+    xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:uipath="http://uipath.org/schema/bpmn"
+    id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn"
+    exporter="UiPath (https://bpmn.uipath.com)" exporterVersion="1.0">
+
+  <bpmn:message id="Message_OrderReady" name="OrderReady" />
+
+  <bpmn:process id="Process_1" isExecutable="true">
+    <bpmn:extensionElements>
+      <uipath:migrationVersion version="11.5" />
+      <uipath:variables version="v1">
+        <uipath:inputOutput id="Var_OrderPacket" name="OrderPacket" type="string" />
+        <uipath:inputOutput id="Var_SendResponse" name="SendResponse" type="json" />
+        <uipath:inputOutput id="Var_ReceiveResponse" name="ReceiveResponse" type="json" />
+      </uipath:variables>
+    </bpmn:extensionElements>
+
+    <bpmn:startEvent id="Start_1" name="Start">
+      <bpmn:outgoing>Flow_1</bpmn:outgoing>
+    </bpmn:startEvent>
+
+    <bpmn:scriptTask id="Task_PrepareOrder" name="Prepare Order Packet" scriptFormat="JavaScript">
+      <bpmn:extensionElements>
+        <uipath:scriptVersion value="v3" />
+        <uipath:mapping version="v1">
+          <uipath:type value="BPMN.ScriptTask" version="v1" />
+          <uipath:input name="args" type="json" target="bodyField"><![CDATA[{}]]></uipath:input>
+          <uipath:output name="orderPacket" type="string" var="Var_OrderPacket" source="=result.response" />
+        </uipath:mapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_1</bpmn:incoming>
+      <bpmn:outgoing>Flow_2</bpmn:outgoing>
+      <bpmn:script><![CDATA[return { response: JSON.stringify({ orderId: "ORD-001", items: ["item-a", "item-b"], status: "prepared" }) };]]></bpmn:script>
+    </bpmn:scriptTask>
+
+    <bpmn:intermediateThrowEvent id="Throw_OrderReady" name="Order Ready">
+      <bpmn:extensionElements>
+        <uipath:event version="v1">
+          <uipath:type value="Maestro.SendMessageEvent" version="v1" />
+          <uipath:context>
+            <uipath:input name="name" value="OrderReady" />
+            <uipath:input name="_label" value="Order Ready" />
+            <uipath:input name="inputSchema" value="{}" />
+          </uipath:context>
+          <uipath:input name="Reference" type="string" target="body" value="=vars.Var_OrderPacket" />
+          <uipath:input name="SpecificContent" type="json" target="body"><![CDATA[{}]]></uipath:input>
+          <uipath:input name="TimeToLive" type="duration" target="body" value="" />
+          <uipath:output name="response" type="Maestro.SendMessageEvent" var="Var_SendResponse" />
+        </uipath:event>
+      </bpmn:extensionElements>
+      <bpmn:messageEventDefinition messageRef="Message_OrderReady" />
+      <bpmn:incoming>Flow_2</bpmn:incoming>
+      <bpmn:outgoing>Flow_3</bpmn:outgoing>
+    </bpmn:intermediateThrowEvent>
+
+    <bpmn:intermediateCatchEvent id="Catch_OrderReady" name="Await Order Ready">
+      <bpmn:extensionElements>
+        <uipath:event version="v1">
+          <uipath:type value="Maestro.ReceiveMessageEvent" version="v1" />
+          <uipath:context>
+            <uipath:input name="name" value="OrderReady" />
+            <uipath:input name="_label" value="Await Order Ready" />
+          </uipath:context>
+          <uipath:input name="Reference" type="string" target="bodyField" value="=vars.Var_OrderPacket" />
+          <uipath:output name="response" type="Maestro.ReceiveMessageEvent" var="Var_ReceiveResponse" />
+        </uipath:event>
+      </bpmn:extensionElements>
+      <bpmn:messageEventDefinition messageRef="Message_OrderReady" />
+      <bpmn:incoming>Flow_3</bpmn:incoming>
+      <bpmn:outgoing>Flow_4</bpmn:outgoing>
+    </bpmn:intermediateCatchEvent>
+
+    <bpmn:endEvent id="End_1" name="End">
+      <bpmn:incoming>Flow_4</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <bpmn:sequenceFlow id="Flow_1" sourceRef="Start_1" targetRef="Task_PrepareOrder" />
+    <bpmn:sequenceFlow id="Flow_2" sourceRef="Task_PrepareOrder" targetRef="Throw_OrderReady" />
+    <bpmn:sequenceFlow id="Flow_3" sourceRef="Throw_OrderReady" targetRef="Catch_OrderReady" />
+    <bpmn:sequenceFlow id="Flow_4" sourceRef="Catch_OrderReady" targetRef="End_1" />
+  </bpmn:process>
+
+  <bpmndi:BPMNDiagram id="Diagram_1">
+    <bpmndi:BPMNPlane id="Plane_1" bpmnElement="Process_1">
+      <bpmndi:BPMNShape id="S_Start_1" bpmnElement="Start_1">
+        <dc:Bounds x="160" y="100" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Task_PrepareOrder" bpmnElement="Task_PrepareOrder">
+        <dc:Bounds x="248" y="78" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Throw_OrderReady" bpmnElement="Throw_OrderReady">
+        <dc:Bounds x="410" y="100" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Catch_OrderReady" bpmnElement="Catch_OrderReady">
+        <dc:Bounds x="508" y="100" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_End_1" bpmnElement="End_1">
+        <dc:Bounds x="606" y="100" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_1" bpmnElement="Flow_1">
+        <di:waypoint x="196" y="118" />
+        <di:waypoint x="248" y="118" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_2" bpmnElement="Flow_2">
+        <di:waypoint x="348" y="118" />
+        <di:waypoint x="410" y="118" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_3" bpmnElement="Flow_3">
+        <di:waypoint x="446" y="118" />
+        <di:waypoint x="508" y="118" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_4" bpmnElement="Flow_4">
+        <di:waypoint x="544" y="118" />
+        <di:waypoint x="606" y="118" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

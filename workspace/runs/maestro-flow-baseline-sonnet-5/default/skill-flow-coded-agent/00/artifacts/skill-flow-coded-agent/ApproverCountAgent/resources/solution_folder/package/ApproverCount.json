@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "ApproverCount",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "dbbfb231-7917-43f1-9f3a-9df35157981d",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "ApproverCount"
+    },
+    "locks": [],
+    "key": "485f13d2-26e2-4025-bc0b-2fc43d639ecb",
+    "files": []
+  }
+}

@@ -1,0 +1,2608 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>coder_eval · skill-flow-lowcode-agent · default</title>
+<style>
+:root {
+  --bg-page: #0f1419;
+  --bg-card: #1a2129;
+  --bg-card-2: #232d38;
+  --bg-code: #0b0f14;
+  --fg: #e6edf3;
+  --fg-muted: #8b98a5;
+  --fg-dim: #6e7681;
+  --border: #30363d;
+  --accent: #58a6ff;
+  --score-high: #22c55e;
+  --score-mid: #f59e0b;
+  --score-low: #ef4444;
+  --status-success: #22c55e;
+  --status-failure: #f59e0b;
+  --status-error: #ef4444;
+  --status-neutral: #6e7681;
+  --shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+.light {
+  --bg-page: #ffffff;
+  --bg-card: #f6f8fa;
+  --bg-card-2: #eaeef2;
+  --bg-code: #f6f8fa;
+  --fg: #1f2328;
+  --fg-muted: #636c76;
+  --fg-dim: #8b949e;
+  --border: #d0d7de;
+  --accent: #0969da;
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial,
+               sans-serif;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--fg);
+  background: var(--bg-page);
+}
+.container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+h1, h2, h3, h4 { margin: 0 0 12px 0; line-height: 1.25; }
+h1 { font-size: 22px; font-weight: 600; }
+h2 { font-size: 18px; font-weight: 600; margin-top: 28px;
+     padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+h3 { font-size: 15px; font-weight: 600; color: var(--fg-muted); }
+h4 { font-size: 13px; font-weight: 600; color: var(--fg-muted); }
+p { margin: 0 0 8px 0; }
+.muted { color: var(--fg-muted); }
+.dim { color: var(--fg-dim); }
+.mono { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+        monospace; font-size: 12.5px; }
+code { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+       monospace; font-size: 12.5px; background: var(--bg-code);
+       border: 1px solid var(--border); padding: 1px 5px; border-radius: 3px; }
+pre { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+      monospace; font-size: 12.5px; background: var(--bg-code);
+      border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px;
+      margin: 6px 0; overflow-x: auto; white-space: pre-wrap;
+      word-wrap: break-word; }
+.header-bar { display: flex; align-items: center; justify-content: space-between;
+              margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+.title-group { flex: 1; min-width: 0; }
+.title-group .subtitle { color: var(--fg-muted); font-size: 13px;
+                         margin-top: 2px; word-break: break-all; }
+.badges { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.badge { display: inline-flex; align-items: center; gap: 6px;
+         padding: 4px 10px; border-radius: 12px; font-size: 12px;
+         font-weight: 600; background: var(--bg-card-2);
+         border: 1px solid var(--border); color: var(--fg); }
+.badge.success { background: color-mix(in srgb, var(--status-success) 20%, var(--bg-card-2));
+                 border-color: var(--status-success); color: var(--status-success); }
+.badge.failure { background: color-mix(in srgb, var(--status-failure) 20%, var(--bg-card-2));
+                 border-color: var(--status-failure); color: var(--status-failure); }
+.badge.error { background: color-mix(in srgb, var(--status-error) 20%, var(--bg-card-2));
+               border-color: var(--status-error); color: var(--status-error); }
+.badge.warning { background: color-mix(in srgb, #f4a52810 20%, var(--bg-card-2));
+                 border-color: #f4a528; color: #f4a528; }
+.badge.neutral { color: var(--fg-muted); }
+.score-pill { display: inline-block; padding: 2px 8px; border-radius: 10px;
+              font-size: 12px; font-weight: 700; min-width: 42px;
+              text-align: center; color: #0b0f14; }
+.score-high { background: var(--score-high); }
+.score-mid { background: var(--score-mid); }
+.score-low { background: var(--score-low); }
+.card { background: var(--bg-card); border: 1px solid var(--border);
+        border-radius: 8px; padding: 16px 20px; margin-bottom: 16px;
+        box-shadow: var(--shadow); }
+.card.highlight { border-left: 4px solid var(--accent); }
+.grid { display: grid; gap: 12px;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+.stat { background: var(--bg-card-2); padding: 10px 12px; border-radius: 6px;
+        border: 1px solid var(--border); }
+.stat .label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;
+               color: var(--fg-muted); margin-bottom: 4px; }
+.stat .value { font-size: 16px; font-weight: 600; }
+table { width: 100%; border-collapse: collapse; margin: 4px 0 12px 0; }
+th, td { text-align: left; padding: 8px 10px;
+         border-bottom: 1px solid var(--border); vertical-align: top;
+         font-size: 13px; }
+th { color: var(--fg-muted); font-weight: 600; font-size: 12px;
+     text-transform: uppercase; letter-spacing: 0.3px; }
+tr:last-child td { border-bottom: none; }
+details { margin: 6px 0; border: 1px solid var(--border); border-radius: 6px;
+          background: var(--bg-card-2); }
+details > summary { cursor: pointer; padding: 8px 12px; user-select: none;
+                    font-weight: 500; list-style: none; }
+details > summary::-webkit-details-marker { display: none; }
+details > summary::before { content: "▸ "; color: var(--fg-dim);
+                            display: inline-block; width: 14px;
+                            transition: transform 0.15s; }
+details[open] > summary::before { content: "▾ "; }
+details .details-body { padding: 0 12px 10px 12px; }
+.tool-row { display: flex; align-items: center; gap: 10px;
+            flex-wrap: wrap; font-size: 13px; }
+.tool-name { font-weight: 600; color: var(--accent); font-family: ui-monospace,
+             SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+.tool-status-ok { color: var(--status-success); font-size: 11px;
+                  font-weight: 600; }
+.tool-status-err { color: var(--status-error); font-size: 11px;
+                   font-weight: 600; }
+.tool-duration { color: var(--fg-muted); font-size: 12px; }
+.tool-seq { color: var(--fg-dim); font-size: 11px; font-weight: 600;
+            min-width: 24px; text-align: right; font-family: ui-monospace,
+            SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+.turn-header { display: flex; justify-content: space-between;
+               align-items: baseline; flex-wrap: wrap; gap: 10px;
+               margin-bottom: 10px; }
+.turn-meta { font-size: 12px; color: var(--fg-muted); }
+.criterion-row td:first-child { font-family: ui-monospace, SFMono-Regular,
+                                 "SF Mono", Menlo, Consolas, monospace;
+                                 color: var(--fg-muted); font-size: 12px; }
+.judge-section { display: flex; flex-direction: column; gap: 12px; }
+.judge-card { padding: 14px 16px; }
+.judge-card-head { display: flex; justify-content: space-between;
+                    align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+.judge-card-title { font-size: 14px; line-height: 1.4; flex: 1; min-width: 0; }
+.judge-card-score { flex-shrink: 0; }
+.judge-rationale { margin-top: 10px; padding: 10px 12px;
+                   background: var(--bg-code); border-radius: 4px;
+                   font-size: 13px; line-height: 1.5; }
+.judge-findings { margin: 8px 0 0 18px; padding-left: 4px; font-size: 13px;
+                   line-height: 1.6; }
+.judge-findings li { margin: 2px 0; }
+.nav-toggle { display: inline-block; padding: 5px 10px; font-size: 12px;
+              background: var(--bg-card-2); border: 1px solid var(--border);
+              border-radius: 5px; color: var(--fg); cursor: pointer; }
+.nav-toggle:hover { background: var(--bg-card); }
+.llm-next-steps { margin: 6px 0 0 20px; padding-left: 0; }
+.llm-next-steps li { margin: 3px 0; }
+.iteration-group { padding: 12px 16px 4px 16px; margin-bottom: 20px;
+                   border-radius: 0 6px 6px 0; border-left: 4px solid var(--status-neutral); }
+/* rgba fallback for browsers without color-mix (Chrome <111, Firefox <113, Safari <16.2). */
+.iteration-group--recovered { border-left-color: var(--status-success);
+                              background: rgba(34, 197, 94, 0.06);
+                              background: color-mix(in srgb, var(--status-success) 6%, transparent); }
+.iteration-group--terminal { border-left-color: var(--status-error);
+                             background: rgba(239, 68, 68, 0.06);
+                             background: color-mix(in srgb, var(--status-error) 6%, transparent); }
+.iteration-group__banner { margin: 0 0 12px 0; font-size: 14px; font-weight: 600; }
+.iteration-group--recovered .iteration-group__banner { color: var(--status-success); }
+.iteration-group--terminal .iteration-group__banner { color: var(--status-error); }
+.attempt-transition { display: flex; align-items: center; gap: 8px;
+                      margin: -6px 0 12px 8px; color: var(--status-error); font-size: 12.5px; }
+.attempt-transition__icon { font-weight: 700; }
+footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--border);
+         color: var(--fg-dim); font-size: 12px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="header-bar">
+  <div class="title-group">
+    <h1>Task: skill-flow-lowcode-agent</h1>
+    <div class="subtitle">Create a UiPath Flow that wires in the existing CountLetters low-code agent (published to the tenant) to count the number of r&#x27;s in &#x27;arrow&#x27; and return the answer. The agent already exists, so the skill must DISCOVER it via the registry and wire it as a published agent resource node (uipath.core.agent.{key}) — NOT scaffold a new inline agent (uipath.agent.autonomous). Exercises published agent resource node discovery and wiring. A correct answer from an inline agent does not satisfy the test: the node-type check below requires the published-resource node.</div>
+  </div>
+  <div class="badges">
+    <span class="badge failure">MAX_TURNS_EXHAUSTED</span>
+    <span class="score-pill score-low">0.00</span>
+    <span class="badge neutral">claude-code · claude-sonnet-5</span>
+    <span class="badge neutral">9m 13s</span>
+    <span class="badge neutral">$1.9489</span>
+    <span class="badge warning">expected_turns exceeded (50/30)</span>
+    
+    <span class="nav-toggle" onclick="toggleTheme()">Toggle theme</span>
+  </div>
+</div>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Variant</div><div class="value">default</div></div>
+    <div class="stat"><div class="label">Started</div><div class="value mono">2026-08-19T00:19:23</div></div>
+    <div class="stat"><div class="label">Duration</div><div class="value">9m 13s</div></div>
+    <div class="stat"><div class="label">Turns (SDK)</div><div class="value">89</div></div>
+    <div class="stat"><div class="label">Commands</div><div class="value">50</div></div>
+  </div>
+</div>
+
+<h2>Success Criteria <span class="muted" style="font-weight:400">(0/2 passed)</span></h2>
+<div class="card" style="padding:0">
+<table>
+  <thead>
+    <tr>
+      <th style="width:15%">Type</th>
+      <th style="width:35%">Description</th>
+      <th style="width:10%">Score</th>
+      <th>Details</th>
+    </tr>
+  </thead>
+  <tbody>
+    
+<tr class="criterion-row">
+  <td>run_command</td>
+  <td>uip maestro flow validate passes on the flow file</td>
+  <td style="text-align:center"><span class="score-pill score-low">0.00</span></td>
+  <td><details><summary class="mono dim">Command: python3 $EXPERIMENT_TASKS_PATH/uipath-maestro-flow/_shared/validate_flow.py</summary><div class="details-body"><pre style="margin:6px 0 0 0">Command: python3 $EXPERIMENT_TASKS_PATH/uipath-maestro-flow/_shared/validate_flow.py
+Exit code: 1 (expected: 0)
+Stdout:
+Validating CountLettersLowCodeSolution/CountLettersLowCode/CountLettersLowCode.flow
+{
+  &quot;Result&quot;: &quot;Failure&quot;,
+  &quot;Message&quot;: &quot;Validation failed for /work/output/artifacts/skill-flow-lowcode-agent/CountLettersLowCodeSolution/CountLettersLowCode/CountLettersLowCode.flow&quot;,
+  &quot;Instructions&quot;: &quot;Found 1 error(s):\n  - [error] [nodes[countLettersAgent].bindings] Resource node \&quot;countLettersAgent\&quot; (type uipath.core.agent.6a47dc5b-5fd4-461f-b97d-6c1817abcaaa) references binding key \&quot;Shared/uipath-maestro-flow/CountLetters LowCode.CountLetters LowCode Agent\&quot; that is not declared in workflow.bindings. Add the binding entry; otherwise the runtime fails as \&quot;Failure in the Orchestrator Job\&quot;.&quot;,
+  &quot;ErrorCode&quot;: &quot;unknown_error&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}
+
+Stderr:
+[ManifestClient] fetchDynamicNodes ok: total=315 agent context nodes=2 external agent nodes=7 orchestrator nodes=261 IXP nodes=45</pre></div></details></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>run_command</td>
+  <td>Flow has an agent node and debug returns the letter count</td>
+  <td style="text-align:center"><span class="score-pill score-low">0.00</span></td>
+  <td><details><summary class="mono dim">Command: python3 $TASK_DIR/check_lowcode_agent_flow.py</summary><div class="details-body"><pre style="margin:6px 0 0 0">Command: python3 $TASK_DIR/check_lowcode_agent_flow.py
+Exit code: 1 (expected: 0)
+Stdout: (empty)
+Stderr:
+=== FLOW_DEBUG_RAW_CAPTURE BEGIN (No output equals expected 2) ===
+SUMMARY: {&quot;finalStatus&quot;: &quot;Completed&quot;, &quot;globals&quot;: {&quot;countLettersAgent.output&quot;: null, &quot;countLettersAgent.error&quot;: null}, &quot;globalVariables&quot;: null, &quot;elementOutputs&quot;: [{&quot;id&quot;: &quot;start&quot;, &quot;outputs&quot;: {}}], &quot;elementExecutions&quot;: [{&quot;id&quot;: &quot;start&quot;, &quot;type&quot;: &quot;StartEvent&quot;, &quot;status&quot;: &quot;Completed&quot;}], &quot;incidents&quot;: null}
+RAW: {
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FlowDebug&quot;,
+  &quot;Data&quot;: {
+    &quot;jobKey&quot;: &quot;8f53f24c-c07b-40f5-835a-56cee4ef3877&quot;,
+    &quot;instanceId&quot;: &quot;8f53f24c-c07b-40f5-835a-56cee4ef3877&quot;,
+    &quot;runId&quot;: &quot;01a0176b-68d7-7b2b-a091-4ca935952814&quot;,
+    &quot;folderKey&quot;: &quot;410fae2d-89b3-4cd1-a991-7359bda90c0b&quot;,
+    &quot;finalStatus&quot;: &quot;Completed&quot;,
+    &quot;solutionId&quot;: &quot;04109de2-b594-47b3-96fd-08defd628c60&quot;,
+    &quot;studioWebUrl&quot;: &quot;https://alpha.uipath.com/codereval/studio_/designer/f0e6ef81-177a-4383-8101-b3a7315e1dfa?solutionId=04109de2-b594-47b3-96fd-08defd628c60&quot;,
+    &quot;elementExecutions&quot;: [
+      {
+        &quot;elementId&quot;: &quot;start&quot;,
+        &quot;elementType&quot;: &quot;StartEvent&quot;,
+        &quot;status&quot;: &quot;Completed&quot;,
+        &quot;startedAt&quot;: &quot;2026-08-19T00:28:32.6944906Z&quot;,
+        &quot;completedAt&quot;: &quot;2026-08-19T00:28:32.8538551Z&quot;
+      }
+    ],
+    &quot;variables&quot;: {
+      &quot;elements&quot;: [
+        {
+          &quot;elementId&quot;: &quot;start&quot;,
+          &quot;elementRunId&quot;: &quot;a9cb17a6-97a1-4bd4-bd0f-51cce47b9b3f&quot;,
+          &quot;isMarker&quot;: false,
+          &quot;inputs&quot;: {},
+          &quot;inputDefinitions&quot;: {},
+          &quot;outputs&quot;: {}
+        }
+      ],
+      &quot;globals&quot;: {
+        &quot;countLettersAgent.output&quot;: null,
+        &quot;countLettersAgent.error&quot;: null
+      },
+      &quot;instanceId&quot;: &quot;8f53f24c-c07b-40f5-835a-56cee4ef3877&quot;,
+      &quot;workflowId&quot;: &quot;8f53f24c-c07b-40f5-835a-56cee4ef3877/BpmnGenericWorkflow&quot;,
+      &quot;parentElementId&quot;: null,
+      &quot;globalDefinitions&quot;: {
+        &quot;countLettersAgent.output&quot;: {
+          &quot;name&quot;: &quot;output&quot;,
+          &quot;type&quot;: &quot;jsonSchema&quot;
+        },
+        &quot;countLettersAgent.error&quot;: {
+          &quot;name&quot;: &quot;error&quot;,
+          &quot;type&quot;: &quot;object&quot;
+        }
+      }
+    }
+  },
+  &quot;Instructions&quot;: &quot;Debug completed with status: Completed&quot;
+}
+=== FLOW_DEBUG_RAW_CAPTURE END ===
+FAIL: No output equals expected 2
+Outputs: [null, null]</pre></div></details></td>
+</tr>
+
+  </tbody>
+</table>
+</div>
+<h2>Conversation Trace (1 iteration)</h2>
+<div class="card">
+  <div class="turn-header">
+    <h3>Iteration 1</h3>
+    <div class="badges">
+      <span class="badge neutral">89 assistant turns</span>
+      <span class="badge neutral">in 582 · out 38756 · cache 3510576</span>
+      <span class="badge neutral">8m 50s</span>
+      <span class="badge failure">max_turns exhausted</span>
+      
+      
+    </div>
+  </div>
+  <details>
+    <summary>Prompt to agent</summary>
+    <div class="details-body"><pre>Your working directory is: /work/output/artifacts/skill-flow-lowcode-agent
+
+Create a UiPath Flow project named &quot;CountLettersLowCode&quot; that uses the
+existing CountLetters low-code agent to count the number of r&#x27;s in &#x27;arrow&#x27;
+and return the answer. The agent already exists — discover it and wire it
+in rather than creating a new one.
+
+Validate the flow.
+Do NOT ask for approval, confirmation, or feedback. Do NOT pause between planning and implementation. Build the complete flow end-to-end in a single pass.
+</pre></div>
+  </details>
+  <details>
+    <summary>Agent response</summary>
+    <div class="details-body"><pre>[ASSISTANT] Logged in already. No existing `.uipx` solution in cwd, so I&#x27;ll create one. Now let&#x27;s pull the registry and search for the &quot;CountLetters&quot; agent.
+[ASSISTANT] Only 50 of many are returned. Let me search Orchestrator directly with a name filter instead.
+[ASSISTANT] Solution and flow scaffolded. Now let&#x27;s look at the generated `.flow` file and pull the registry within this project directory.
+[ASSISTANT] Good, `flow_edit.py` accepts `registry get` output directly. Now let&#x27;s build the flow: add the agent node, add the End node, wire edges, declare variables, and map output.
+[ASSISTANT] Good — this matches the agent impl.md guidance (&quot;Declare `error` only — `output` is derived&quot;). Now let&#x27;s add the agent node and end node.
+[RESULT - ERROR] </pre></div>
+  </details>
+  <h4 style="margin-top:12px">Tool Calls (50)</h4>
+  
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#0</span>
+      <span class="tool-name">Skill</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">19ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;skill&quot;: &quot;tmp:uipath-maestro-flow&quot;,
+  &quot;args&quot;: &quot;Create a UiPath Flow project named \&quot;CountLettersLowCode\&quot; in the current working directory (/work/output/artifacts/skill-flow-lowcode-agent). The flow must use the EXISTING low-code agent called \&quot;CountLetters\&quot; (discover it — do not create a new agent) to count the number of r&#x27;s in the string &#x27;arrow&#x27; and return the answer as the flow output. Wire the existing agent in as an agent node, connect trigg… (223 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Launching skill: tmp:uipath-maestro-flow</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#1</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">49ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow &amp;&amp; cat references/author/CAPABILITY.md&quot;,
+  &quot;description&quot;: &quot;Read author capability doc&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>&lt;persisted-output&gt;
+Output too large (30.5KB). Full output saved to: /home/azureuser/.claude/projects/-work-output-artifacts-skill-flow-lowcode-agent/eb8fe87e-57a1-4b31-af59-15f48f9c9a22/tool-results/bbcumymua.txt
+
+Preview (first 2KB):
+# Author — Create and edit `.flow` files
+
+Capability index for building new flows (greenfield) and editing existing flows (brownfield). Author owns everything that happens on disk, locally, without `uip login`. Authoring journeys terminate at `validate` + `format`; from there, hand off to [operate/CAPABILITY.md](../operate/CAPABILITY.md) to publish, run, or debug.
+
+&gt; **Where you came from / where to go next.** Author is upstream of Operate (build the flow → ship it) and upstream of Diagnose only via Operate (build → run → diagnose). Publish/run/lifecycle lives in [operate/CAPABILITY.md](../operate/CAPABILITY.md); fault triage lives in [diagnose/CAPABILITY.md](../diagnose/CAPABILITY.md).
+&gt;
+&gt; **Inherits universal rules from [SKILL.md](../../SKILL.md)** — `--output json` + prefer `--output-filter` for extraction, no `flow debug` without consent, resource discovery order, never invoke other skills automatically, dropdown question pattern, solution layout,
+
+… (truncated, 1121 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#2</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">36ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow &amp;&amp; cat references/author/references/plugins/agent/impl.md&quot;,
+  &quot;description&quot;: &quot;Read agent plugin impl doc&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre># Agent Node — Implementation
+
+Agent nodes invoke UiPath AI agents via node type `uipath.core.agent.{key}`. Coded (Python) agents always use this plugin; low-code (`agent.json`) agents use it only when they are a standalone project (in-solution sibling or published). Inline low-code agents (embedded as a UUID subdirectory inside the flow project) use `uipath.agent.autonomous` — see the [inline-agent plugin](../inline-agent/impl.md).
+
+The agent lives in one of two places:
+
+- **In this solution** — sibling project inside the current solution. `{key}` is the local `resource.key` minted by `uip solution projects add` (written to `resources/solution_folder/process/agent/&lt;CodedAgentProject&gt;.json`). The runtime resolves the node via the Studio Web projects API after `uip solution upload`. The manifest in `definitions[]` carries `model.section: &quot;In this solution&quot;`.
+- **Published** — deployed to Orchestrator as a tenant resource. `{key}` is the Orchestrator-assigned resource key. Discoverable via `uip maestro flow registry search`. The manifest in `definitions[]` carries `model.section: &quot;Published&quot;`.
+
+The node-instance shape (in `nodes[]`) is identical across the two variants — only the man
+
+… (truncated, 9228 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#3</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">59ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow &amp;&amp; cat references/author/references/greenfield.md&quot;,
+  &quot;description&quot;: &quot;Read greenfield build doc&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>&lt;persisted-output&gt;
+Output too large (34.1KB). Full output saved to: /home/azureuser/.claude/projects/-work-output-artifacts-skill-flow-lowcode-agent/eb8fe87e-57a1-4b31-af59-15f48f9c9a22/tool-results/b0knnz4vl.txt
+
+Preview (first 2KB):
+# Greenfield — Create a New Flow
+
+End-to-end journey for creating a Flow project from scratch. Author terminates at `validate` + `format`. To publish, run, or debug after this, see [operate/CAPABILITY.md](../../operate/CAPABILITY.md).
+
+&gt; **Brownfield edits use a different journey.** If the `.flow` file already exists, see [brownfield.md](brownfield.md) instead.
+
+## Should you plan first?
+
+For complex flows, produce a plan before building. Reference [planning-arch.md](planning-arch.md) and [planning-impl.md](planning-impl.md) for the node type catalog, port reference, wiring rules, and topology patterns.
+
+**Plan when:**
+- The flow has 5+ nodes with branching or parallel paths
+- The flow uses connectors or resources that need discovery
+- The user&#x27;s requirements are ambiguous and you need to confirm the approach
+
+**Don&#x27;t plan when:**
+- Adding/editing a single node in an existing flow (use [brownfield.md](brownfield.md))
+- The flow is a straightforward li
+
+… (truncated, 1051 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#4</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">15ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;find . -maxdepth 3 -print&quot;,
+  &quot;description&quot;: &quot;List current directory contents&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>.
+./.venv
+./.venv/CACHEDIR.TAG
+./.venv/lib64
+./.venv/pyvenv.cfg
+./.venv/lib
+./.venv/lib/python3.13
+./.venv/bin
+./.venv/bin/activate.csh
+./.venv/bin/activate.bat
+./.venv/bin/activate_this.py
+./.venv/bin/python
+./.venv/bin/pydoc.bat
+./.venv/bin/activate.ps1
+./.venv/bin/activate.xsh
+./.venv/bin/activate.nu
+./.venv/bin/python3.13
+./.venv/bin/activate
+./.venv/bin/activate.fish
+./.venv/bin/python3
+./.venv/bin/deactivate.bat
+./.venv/.gitignore</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#5</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">866ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;find . -maxdepth 2 -type f -name &#x27;*.uipx&#x27; -print; uip --version 2&gt;&amp;1 | head -5; uip whoami 2&gt;&amp;1 | head -20&quot;,
+  &quot;description&quot;: &quot;Check for existing solution files and CLI login state&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1.201.0-dev.8272
+{
+  &quot;Result&quot;: &quot;ValidationError&quot;,
+  &quot;ErrorCode&quot;: &quot;invalid_argument&quot;,
+  &quot;Message&quot;: &quot;error: unknown command &#x27;whoami&#x27;&quot;,
+  &quot;Instructions&quot;: &quot;Run &#x27;uip --help&#x27; to list available commands.&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#6</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">768ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip auth status --output json 2&gt;&amp;1 | head -30; echo \&quot;---\&quot;; uip config get --output json 2&gt;&amp;1 | head -30&quot;,
+  &quot;description&quot;: &quot;Check login/auth status&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;ValidationError&quot;,
+  &quot;ErrorCode&quot;: &quot;invalid_argument&quot;,
+  &quot;Message&quot;: &quot;error: unknown command &#x27;auth&#x27;\n(Did you mean ah?)&quot;,
+  &quot;Instructions&quot;: &quot;Run &#x27;uip --help&#x27; to list available commands.&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}
+---
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;ConfigList&quot;,
+  &quot;Data&quot;: {
+    &quot;Config&quot;: {
+      &quot;Core&quot;: {}
+    }
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#7</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">244ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;find / -maxdepth 6 -iname &#x27;*.uipx&#x27; 2&gt;/dev/null; echo \&quot;---agent search---\&quot;; find / -maxdepth 8 -iname &#x27;agent.json&#x27; 2&gt;/dev/null | grep -v node_modules | head -50&quot;,
+  &quot;description&quot;: &quot;Search filesystem for solution files and agent.json&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>---agent search---</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#8</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">333ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip --help 2&gt;&amp;1 | head -60&quot;,
+  &quot;description&quot;: &quot;List uip top-level commands&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>  UiPath CLI 1.201.0-dev.8272
+  Build automations, agents, and orchestrations from your terminal.
+
+  Usage: uip &lt;command&gt; [options]
+         uip &lt;tool&gt; &lt;command&gt; [options]
+
+┌─ Commands ───────────────────────────────────────────────────────────────────┐
+│ login      Login to UiPath Cloud                                             │
+│ logout     Logout from UiPath Cloud by removing credentials                  │
+│ config     View or update CLI configuration preferences                      │
+│ tools      Manage CLI tools                                                  │
+│ skills     Install and manage UiPath skills for AI coding agents.            │
+│ mcp        Model Context Protocol (MCP) server                               │
+│ feedback   Send bug reports and improvement suggestions                      │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Installed Tools ────────────────────────────────────────────────────────────┐
+│ admin               Manage UiPath admin resources — Identity Server,         │
+│                     Resource Catalog Service, Audit Service, VPN Gateway.    │
+│ agent               cli plugin for creating and mana
+
+… (truncated, 3266 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#9</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.34s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip login --help 2&gt;&amp;1 | head -30; echo \&quot;---\&quot;; uip maestro flow registry --help 2&gt;&amp;1 | head -40&quot;,
+  &quot;description&quot;: &quot;Check login and registry command help&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>                                   uip login                                    
+                             Login to UiPath Cloud                              
+                Use --help with nested commands for more detail.                
+
+┌─ Usage ──────────────────────────────────────────────────────────────────────┐
+│ uip login [options] [command]                                                │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Commands ───────────────────────────────────────────────────────────────────┐
+│ refresh   Refresh the access token proactively and emit a machine-readable   │
+│           session payload (access token, org/tenant identity, expiration).   │
+│           Programmatic consumers (e.g. the Flow VSCode extension) call this  │
+│           to guarantee the returned token will still be valid for the next N │
+│           minutes. `login status`, by contrast, is a status report — it only │
+│           rotates tokens incidentally when the stored access token is        │
+│           already past its expiry, and never performs proactive refresh.     │
+│ status    Show current login status and session information   
+
+… (truncated, 3897 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#10</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">309ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip login status --output json 2&gt;&amp;1 | head -40&quot;,
+  &quot;description&quot;: &quot;Check login status&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;LoginStatus&quot;,
+  &quot;Data&quot;: {
+    &quot;Status&quot;: &quot;Logged in&quot;,
+    &quot;Identity&quot;: &quot;zhongyi.shi@uipath.com&quot;,
+    &quot;IdentityType&quot;: &quot;User&quot;,
+    &quot;AuthFlow&quot;: &quot;Interactive&quot;,
+    &quot;CredentialSource&quot;: &quot;SavedLogin&quot;,
+    &quot;Provider&quot;: &quot;File&quot;,
+    &quot;UserId&quot;: &quot;bfda820f-4ddb-4af7-a5ec-3c332b403271&quot;,
+    &quot;UserEmail&quot;: &quot;zhongyi.shi@uipath.com&quot;,
+    &quot;UserName&quot;: &quot;zhongyi.shi@uipath.com&quot;,
+    &quot;BaseUrl&quot;: &quot;https://alpha.uipath.com&quot;,
+    &quot;Organization&quot;: &quot;codereval&quot;,
+    &quot;OrganizationId&quot;: &quot;311c6049-4966-4ef2-a6f3-8ceccaf38d54&quot;,
+    &quot;Tenant&quot;: &quot;DefaultTenant&quot;,
+    &quot;TenantId&quot;: &quot;69d43765-6ede-4575-88b7-9db601a2c056&quot;,
+    &quot;ExpirationDate&quot;: &quot;2026-08-19T01:07:32.000Z&quot;
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#11</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">8.71s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry pull --force --output json 2&gt;&amp;1 | tail -30&quot;,
+  &quot;description&quot;: &quot;Pull fresh registry data from tenant&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>[ManifestClient] fetchDynamicNodes ok: total=4878 connector nodes=3654 integration trigger nodes=896 agent context nodes=2 external agent nodes=7 orchestrator nodes=261 IXP nodes=45 IXP Models nodes=13
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodePullSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;NodesCount&quot;: 4761,
+    &quot;FromCache&quot;: false,
+    &quot;Source&quot;: &quot;authenticated&quot;,
+    &quot;CacheWritten&quot;: true,
+    &quot;Message&quot;: &quot;Synced fresh nodes&quot;
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#12</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">900ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry search \&quot;CountLetters\&quot; --output json 2&gt;&amp;1 | head -100&quot;,
+  &quot;description&quot;: &quot;Search registry for CountLetters agent&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeSearchSuccess&quot;,
+  &quot;Data&quot;: [
+    {
+      &quot;NodeType&quot;: &quot;uipath.core.agent.19677045-6c7c-406f-be8b-48bd1eb06414&quot;,
+      &quot;Category&quot;: &quot;agent&quot;,
+      &quot;DisplayName&quot;: &quot;CountLetters&quot;,
+      &quot;Description&quot;: &quot;Converted from low code project CountLetters LowCode Agent&quot;,
+      &quot;Version&quot;: &quot;1.0.0&quot;,
+      &quot;Tags&quot;: &quot;&quot;,
+      &quot;AvailableOnTenant&quot;: true
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.agent.resource.tool.agent.19677045-6c7c-406f-be8b-48bd1eb06414&quot;,
+      &quot;Category&quot;: &quot;agent.tool.agent&quot;,
+      &quot;DisplayName&quot;: &quot;CountLetters&quot;,
+      &quot;Description&quot;: &quot;Converted from low code project CountLetters LowCode Agent&quot;,
+      &quot;Version&quot;: &quot;1.0.0&quot;,
+      &quot;Tags&quot;: &quot;agent-tool&quot;,
+      &quot;AvailableOnTenant&quot;: true
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.core.agent.f5cc005e-4daa-4e32-b6a5-2ecb536d4361&quot;,
+      &quot;Category&quot;: &quot;agent&quot;,
+      &quot;DisplayName&quot;: &quot;CountLetters&quot;,
+      &quot;Description&quot;: &quot;&quot;,
+      &quot;Version&quot;: &quot;1.0.0&quot;,
+      &quot;Tags&quot;: &quot;&quot;,
+      &quot;AvailableOnTenant&quot;: true
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.agent.resource.tool.agent.f5cc005e-4daa-4e32-b6a5-2ecb536d4361&quot;,
+      &quot;Category&quot;: &quot;agent.tool.agent&quot;,
+      &quot;DisplayName&quot;: &quot;CountLetters&quot;,
+      &quot;Description&quot;: &quot;&quot;,
+      &quot;Version&quot;: &quot;1.0
+
+… (truncated, 648 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#13</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">3.98s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;for t in \&quot;uipath.core.agent.19677045-6c7c-406f-be8b-48bd1eb06414\&quot; \&quot;uipath.core.agent.f5cc005e-4daa-4e32-b6a5-2ecb536d4361\&quot; \&quot;uipath.core.agent.6a47dc5b-5fd4-461f-b97d-6c1817abcaaa\&quot;; do\necho \&quot;=== $t ===\&quot;;\nuip maestro flow registry get \&quot;$t\&quot; --output json 2&gt;&amp;1 | python3 -c \&quot;\nimport json,sys\nd=json.load(sys.stdin)\nn=d.get(&#x27;Data&#x27;,{}).get(&#x27;Node&#x27;,d.get(&#x27;Data&#x27;,{}))\nmodel=n.get(&#x27;model&#x27;,{})\nprint(&#x27;DisplayNam… (243 more chars)&quot;,
+  &quot;description&quot;: &quot;Inspect each CountLetters agent candidate&#x27;s manifest details&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>=== uipath.core.agent.19677045-6c7c-406f-be8b-48bd1eb06414 ===
+DisplayName: None
+Description: Converted from low code project CountLetters LowCode Agent
+Version: 1.0.0
+section: Published
+bindings: {&#x27;resource&#x27;: &#x27;process&#x27;, &#x27;resourceSubType&#x27;: &#x27;Agent&#x27;, &#x27;resourceKey&#x27;: &#x27;Shared/uipath-maestro-flow/CountLetters CodedAgent.CountLetters&#x27;, &#x27;orchestratorType&#x27;: &#x27;agent&#x27;, &#x27;values&#x27;: [{&#x27;name&#x27;: &#x27;name&#x27;, &#x27;propertyAttribute&#x27;: &#x27;name&#x27;, &#x27;default&#x27;: &#x27;CountLetters&#x27;}, {&#x27;name&#x27;: &#x27;folderPath&#x27;, &#x27;propertyAttribute&#x27;: &#x27;folderPath&#x27;, &#x27;default&#x27;: &#x27;Shared/uipath-maestro-flow/CountLetters CodedAgent&#x27;}]}
+serviceType: Orchestrator.StartAgentJob
+=== uipath.core.agent.f5cc005e-4daa-4e32-b6a5-2ecb536d4361 ===
+DisplayName: None
+Description: 
+Version: 1.0.0
+section: Published
+bindings: {&#x27;resource&#x27;: &#x27;process&#x27;, &#x27;resourceSubType&#x27;: &#x27;Agent&#x27;, &#x27;resourceKey&#x27;: &#x27;Shared.CountLetters&#x27;, &#x27;orchestratorType&#x27;: &#x27;agent&#x27;, &#x27;values&#x27;: [{&#x27;name&#x27;: &#x27;name&#x27;, &#x27;propertyAttribute&#x27;: &#x27;name&#x27;, &#x27;default&#x27;: &#x27;CountLetters&#x27;}, {&#x27;name&#x27;: &#x27;folderPath&#x27;, &#x27;propertyAttribute&#x27;: &#x27;folderPath&#x27;, &#x27;default&#x27;: &#x27;Shared&#x27;}]}
+serviceType: Orchestrator.StartAgentJob
+=== uipath.core.agent.6a47dc5b-5fd4-461f-b97d-6c1817abcaaa ===
+DisplayName: None
+Description: 
+Version: 1.0.0
+section: Publish
+
+… (truncated, 447 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#14</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">754ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip agent --help 2&gt;&amp;1 | head -40&quot;,
+  &quot;description&quot;: &quot;Check agent CLI tool commands&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>                                   uip agent                                    
+          UiPath Agent Tool for creating and managing low-code agents           
+                Use --help with nested commands for more detail.                
+
+┌─ Usage ──────────────────────────────────────────────────────────────────────┐
+│ uip agent [options] [command]                                                │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Commands ───────────────────────────────────────────────────────────────────┐
+│ config       [DEPRECATED] View or update agent configuration                 │
+│ context      [DEPRECATED] Manage agent context resources (RAG)               │
+│ debug        Debug a low-code agent by running it on Studio Web and          │
+│              streaming the result                                            │
+│ deploy       [DEPRECATED] Deploy a published agent solution to Orchestrator  │
+│              (creates folder, process, and connections)                      │
+│ escalation   [DEPRECATED] Manage agent escalation resources                  │
+│ eval         Manage evaluators, evaluation sets, and test case
+
+… (truncated, 1879 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#15</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.24s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry get \&quot;uipath.core.agent.f5cc005e-4daa-4e32-b6a5-2ecb536d4361\&quot; --output json 2&gt;&amp;1 | python3 -m json.tool | head -150&quot;,
+  &quot;description&quot;: &quot;Full manifest for candidate 2&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+    &quot;Result&quot;: &quot;Success&quot;,
+    &quot;Code&quot;: &quot;NodeGetSuccess&quot;,
+    &quot;Data&quot;: {
+        &quot;Node&quot;: {
+            &quot;nodeType&quot;: &quot;uipath.core.agent.f5cc005e-4daa-4e32-b6a5-2ecb536d4361&quot;,
+            &quot;version&quot;: &quot;1.0.0&quot;,
+            &quot;category&quot;: &quot;agent&quot;,
+            &quot;runtimeConstraints&quot;: {
+                &quot;exclude&quot;: [
+                    &quot;api-function&quot;
+                ]
+            },
+            &quot;description&quot;: &quot;&quot;,
+            &quot;tags&quot;: [],
+            &quot;sortOrder&quot;: 510,
+            &quot;supportsErrorHandling&quot;: true,
+            &quot;display&quot;: {
+                &quot;label&quot;: &quot;CountLetters&quot;,
+                &quot;icon&quot;: &quot;coded-agent&quot;
+            },
+            &quot;handleConfiguration&quot;: [
+                {
+                    &quot;position&quot;: &quot;left&quot;,
+                    &quot;handles&quot;: [
+                        {
+                            &quot;id&quot;: &quot;input&quot;,
+                            &quot;type&quot;: &quot;target&quot;,
+                            &quot;handleType&quot;: &quot;input&quot;
+                        }
+                    ]
+                },
+                {
+                    &quot;position&quot;: &quot;right&quot;,
+                    &quot;handles&quot;: [
+                        {
+                            &quot;id&quot;: &quot;output&quot;,
+                            &quot;type&quot;: &quot;source&quot;,
+                
+
+… (truncated, 4284 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#16</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.55s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;echo \&quot;=== 19677 (CountLetters, converted from low code project &#x27;CountLetters LowCode Agent&#x27;) ===\&quot;\nuip maestro flow registry get \&quot;uipath.core.agent.19677045-6c7c-406f-be8b-48bd1eb06414\&quot; --output json 2&gt;&amp;1 | python3 -c \&quot;\nimport json,sys\nd=json.load(sys.stdin)\nn=d[&#x27;Data&#x27;][&#x27;Node&#x27;]\nprint(&#x27;display:&#x27;, n.get(&#x27;display&#x27;))\nprint(&#x27;inputDefinition:&#x27;, json.dumps(n.get(&#x27;inputDefinition&#x27;), indent=2))\nprint(&#x27;outpu… (487 more chars)&quot;,
+  &quot;description&quot;: &quot;Compare candidate agent manifests for input/output schema&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>=== 19677 (CountLetters, converted from low code project &#x27;CountLetters LowCode Agent&#x27;) ===
+display: {&#x27;label&#x27;: &#x27;CountLetters&#x27;, &#x27;icon&#x27;: &#x27;coded-agent&#x27;}
+inputDefinition: {
+  &quot;type&quot;: &quot;object&quot;,
+  &quot;properties&quot;: {
+    &quot;inputString&quot;: {
+      &quot;type&quot;: &quot;string&quot;
+    }
+  }
+}
+outputDefinition: {
+  &quot;output&quot;: {
+    &quot;type&quot;: &quot;object&quot;,
+    &quot;source&quot;: &quot;=this&quot;,
+    &quot;var&quot;: &quot;output&quot;,
+    &quot;schema&quot;: {
+      &quot;type&quot;: &quot;object&quot;,
+      &quot;properties&quot;: {
+        &quot;count&quot;: {
+          &quot;type&quot;: &quot;integer&quot;,
+          &quot;description&quot;: &quot;The total number of occurrences of the letter &#x27;r&#x27; (case-insensitive, counting both &#x27;r&#x27; and &#x27;R&#x27;) found in the input string. Always a non-negative integer.&quot;
+        },
+        &quot;inputString&quot;: {
+          &quot;type&quot;: &quot;string&quot;,
+          &quot;description&quot;: &quot;The original input string that was analyzed, echoed back for reference.&quot;
+        }
+      }
+    }
+  },
+  &quot;error&quot;: {
+    &quot;type&quot;: &quot;object&quot;,
+    &quot;description&quot;: &quot;Error information if the node fails&quot;,
+    &quot;source&quot;: &quot;=Error&quot;,
+    &quot;var&quot;: &quot;error&quot;,
+    &quot;schema&quot;: {
+      &quot;$schema&quot;: &quot;http://json-schema.org/draft-07/schema#&quot;,
+      &quot;type&quot;: &quot;object&quot;,
+      &quot;required&quot;: [
+        &quot;code&quot;,
+        &quot;message&quot;,
+        &quot;detail&quot;,
+        &quot;category&quot;,
+        &quot;status&quot;
+      ],
+
+… (truncated, 2406 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#17</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">2.18s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;for t in \&quot;uipath.core.agent.19677045-6c7c-406f-be8b-48bd1eb06414\&quot; \&quot;uipath.core.agent.f5cc005e-4daa-4e32-b6a5-2ecb536d4361\&quot; \&quot;uipath.core.agent.6a47dc5b-5fd4-461f-b97d-6c1817abcaaa\&quot;; do\necho \&quot;=== $t ===\&quot;\nuip maestro flow registry get \&quot;$t\&quot; --output json 2&gt;&amp;1 &gt; /tmp/full_$t.json\npython3 -c \&quot;\nimport json\nd=json.load(open(&#x27;/tmp/full_$t.json&#x27;))\nn=d[&#x27;Data&#x27;][&#x27;Node&#x27;]\nprint(json.dumps({k:v for k,v in n.items… (102 more chars)&quot;,
+  &quot;description&quot;: &quot;Dump full manifest minus large fields for all three candidates&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>=== uipath.core.agent.19677045-6c7c-406f-be8b-48bd1eb06414 ===
+{
+  &quot;nodeType&quot;: &quot;uipath.core.agent.19677045-6c7c-406f-be8b-48bd1eb06414&quot;,
+  &quot;version&quot;: &quot;1.0.0&quot;,
+  &quot;category&quot;: &quot;agent&quot;,
+  &quot;runtimeConstraints&quot;: {
+    &quot;exclude&quot;: [
+      &quot;api-function&quot;
+    ]
+  },
+  &quot;description&quot;: &quot;Converted from low code project CountLetters LowCode Agent&quot;,
+  &quot;tags&quot;: [],
+  &quot;sortOrder&quot;: 510,
+  &quot;supportsErrorHandling&quot;: true,
+  &quot;display&quot;: {
+    &quot;label&quot;: &quot;CountLetters&quot;,
+    &quot;icon&quot;: &quot;coded-agent&quot;
+  },
+  &quot;model&quot;: {
+    &quot;type&quot;: &quot;bpmn:ServiceTask&quot;,
+    &quot;serviceType&quot;: &quot;Orchestrator.StartAgentJob&quot;,
+    &quot;version&quot;: &quot;v2&quot;,
+    &quot;section&quot;: &quot;Published&quot;,
+    &quot;listingVersion&quot;: &quot;1.0.0&quot;,
+    &quot;bindings&quot;: {
+      &quot;resource&quot;: &quot;process&quot;,
+      &quot;resourceSubType&quot;: &quot;Agent&quot;,
+      &quot;resourceKey&quot;: &quot;Shared/uipath-maestro-flow/CountLetters CodedAgent.CountLetters&quot;,
+      &quot;orchestratorType&quot;: &quot;agent&quot;,
+      &quot;values&quot;: [
+        {
+          &quot;name&quot;: &quot;name&quot;,
+          &quot;propertyAttribute&quot;: &quot;name&quot;,
+          &quot;default&quot;: &quot;CountLetters&quot;
+        },
+        {
+          &quot;name&quot;: &quot;folderPath&quot;,
+          &quot;propertyAttribute&quot;: &quot;folderPath&quot;,
+          &quot;default&quot;: &quot;Shared/uipath-maestro-flow/CountLetters CodedAgent&quot;
+        }
+      ]
+    },
+    &quot;context&quot;: [
+ 
+
+… (truncated, 3513 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#18</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.21s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip codedagent --help 2&gt;&amp;1 | head -30\necho \&quot;---\&quot;\nuip agent list --help 2&gt;&amp;1 | head -20\necho \&quot;---\&quot;\nuip orchestrator --help 2&gt;&amp;1 | head -30 2&gt;&amp;1 || true&quot;,
+  &quot;description&quot;: &quot;Explore CLI tools for listing agents/processes with type info&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>                                 uip codedagent                                 
+                   Build, run, deploy, and manage AI Agents.                    
+                Use --help with nested commands for more detail.                
+
+┌─ Usage ──────────────────────────────────────────────────────────────────────┐
+│ uip codedagent [options] [command]                                           │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Commands ───────────────────────────────────────────────────────────────────┐
+│ add           Create a local resource.                                       │
+│ debug         Debug the project interactively.                               │
+│ deploy        Pack and publish the project.                                  │
+│ dev           Launch UiPath Developer Console.                               │
+│ eval          Run an evaluation set against the agent.                       │
+│ help          display help for command                                       │
+│ init          Initialize or regenerate the project.                          │
+│ invoke        Invoke an agent published in my workspace.      
+
+… (truncated, 5139 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#19</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">332ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip or processes --help 2&gt;&amp;1 | head -30&quot;,
+  &quot;description&quot;: &quot;Check orchestrator processes subcommand help&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>                                uip or processes                                
+Manage UiPath processes (runnable bindings of packages to folders). Processes are what you execute with &#x27;jobs start&#x27;. Use &#x27;packages&#x27; to manage the uploaded automation code.
+                Use --help with nested commands for more detail.                
+
+┌─ Usage ──────────────────────────────────────────────────────────────────────┐
+│ uip or processes [options] [command]                                         │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Commands ───────────────────────────────────────────────────────────────────┐
+│ create            Create a new process by binding a package to a folder.     │
+│                   Requires --folder-path or --folder-key. Use the package Id │
+│                   from &#x27;packages list&#x27; or &#x27;packages get&#x27;, and &#x27;packages      │
+│                   versions&#x27; to find available versions. After creation,      │
+│                   start the process with &#x27;jobs start &lt;process-key&gt;&#x27;.         │
+│ delete            Delete a process binding by key (GUID). This removes the   │
+│                   release binding from its folder a
+
+… (truncated, 1161 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#20</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-err">ERROR</span>
+      <span class="tool-duration">1.29s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip or folders list --output json 2&gt;&amp;1 | python3 -c \&quot;\nimport json,sys\nd=json.load(sys.stdin)\nfor f in d.get(&#x27;Data&#x27;,{}).get(&#x27;Items&#x27;, d.get(&#x27;Data&#x27;,[])) if isinstance(d.get(&#x27;Data&#x27;), (list,dict)) else []:\n    pass\nprint(json.dumps(d, indent=2)[:3000])\n\&quot;&quot;,
+  &quot;description&quot;: &quot;List orchestrator folders to find relevant ones&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Exit code 1
+Traceback (most recent call last):
+  File &quot;&lt;string&gt;&quot;, line 4, in &lt;module&gt;
+    for f in d.get(&#x27;Data&#x27;,{}).get(&#x27;Items&#x27;, d.get(&#x27;Data&#x27;,[])) if isinstance(d.get(&#x27;Data&#x27;), (list,dict)) else []:
+             ^^^^^^^^^^^^^^^^^^^^
+AttributeError: &#x27;list&#x27; object has no attribute &#x27;get&#x27;</pre>
+    <h4>Error</h4><pre>Exit code 1
+Traceback (most recent call last):
+  File &quot;&lt;string&gt;&quot;, line 4, in &lt;module&gt;
+    for f in d.get(&#x27;Data&#x27;,{}).get(&#x27;Items&#x27;, d.get(&#x27;Data&#x27;,[])) if isinstance(d.get(&#x27;Data&#x27;), (list,dict)) else []:
+             ^^^^^^^^^^^^^^^^^^^^
+AttributeError: &#x27;list&#x27; object has no attribute &#x27;get&#x27;</pre>
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#21</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">2.97s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip or processes list --all-folders --output json 2&gt;&amp;1 | python3 -c \&quot;\nimport json,sys\nd=json.load(sys.stdin)\nitems = d.get(&#x27;Data&#x27;)\nif isinstance(items, dict):\n    items = items.get(&#x27;Items&#x27;) or items.get(&#x27;items&#x27;) or []\nfor it in items:\n    name = it.get(&#x27;Name&#x27;) or it.get(&#x27;name&#x27;)\n    if name and &#x27;countletters&#x27; in name.lower():\n        print(json.dumps(it, indent=2))\n\&quot; 2&gt;&amp;1 | head -150&quot;,
+  &quot;description&quot;: &quot;Search orchestrator processes for CountLetters entries&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>(Bash completed with no output)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#22</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">4.17s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip or processes list --all-folders --output json 2&gt;&amp;1 &gt; /tmp/procs.json\npython3 -c \&quot;\nimport json\nd=json.load(open(&#x27;/tmp/procs.json&#x27;))\nprint(type(d.get(&#x27;Data&#x27;)))\nprint(json.dumps(d, indent=2)[:2000])\n\&quot;&quot;,
+  &quot;description&quot;: &quot;Inspect raw processes list output structure&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>&lt;class &#x27;list&#x27;&gt;
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;ProcessList&quot;,
+  &quot;Pagination&quot;: {
+    &quot;Returned&quot;: 50,
+    &quot;Limit&quot;: 50,
+    &quot;Offset&quot;: 0,
+    &quot;HasMore&quot;: true
+  },
+  &quot;Data&quot;: [
+    {
+      &quot;Key&quot;: &quot;4CB9C25B-09F8-48AA-9638-830D26C92429&quot;,
+      &quot;Name&quot;: &quot;NameToGender&quot;,
+      &quot;ProcessKey&quot;: &quot;NameToAgeFixed.api.NameToGender&quot;,
+      &quot;ProcessVersion&quot;: &quot;1.0.3&quot;,
+      &quot;Description&quot;: &quot;&quot;,
+      &quot;IsLatestVersion&quot;: true,
+      &quot;RetentionPeriod&quot;: 30,
+      &quot;RetentionAction&quot;: &quot;Delete&quot;,
+      &quot;FolderKey&quot;: &quot;485ef7f4-503d-488e-b908-d885f9ce648d&quot;,
+      &quot;FolderPath&quot;: &quot;Shared/uipath-maestro-case/NameToAgeFixed2&quot;,
+      &quot;FolderId&quot;: 2857138
+    },
+    {
+      &quot;Key&quot;: &quot;1C47CC2A-CC1D-4614-8E9D-26E270F01FD3&quot;,
+      &quot;Name&quot;: &quot;SupplierInvoiceEnqueue&quot;,
+      &quot;ProcessKey&quot;: &quot;SupplierInvoiceEnqueue.flow.Flow&quot;,
+      &quot;ProcessVersion&quot;: &quot;1.0.0&quot;,
+      &quot;Description&quot;: &quot;&quot;,
+      &quot;IsLatestVersion&quot;: true,
+      &quot;RetentionPeriod&quot;: 30,
+      &quot;RetentionAction&quot;: &quot;Delete&quot;,
+      &quot;FolderKey&quot;: &quot;c4359cde-55f0-4f0e-9322-c6cdce74ab4c&quot;,
+      &quot;FolderPath&quot;: &quot;Shared&quot;,
+      &quot;FolderId&quot;: 2815972
+    },
+    {
+      &quot;Key&quot;: &quot;328E7ACC-1AB4-4BAD-90A2-A6E74F21F681&quot;,
+      &quot;Name&quot;: &quot;traces-diagnose-fault-fixture&quot;,
+      &quot;ProcessKey&quot;: &quot;traces-diagnos
+
+… (truncated, 815 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#23</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">346ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip or processes list --all-folders --help 2&gt;&amp;1 | head -40&quot;,
+  &quot;description&quot;: &quot;Check filter options for processes list&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>                             uip or processes list                              
+List processes in a folder, or use --all-folders for a tenant-wide audit. Returns process key (GUID), name, version, and type. Use the process key with &#x27;jobs start&#x27; to execute a process.
+                Use --help with nested commands for more detail.                
+
+┌─ Usage ──────────────────────────────────────────────────────────────────────┐
+│ uip or processes list [options]                                              │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Options ────────────────────────────────────────────────────────────────────┐
+│ --folder-path &lt;path&gt;           Folder path (e.g., &#x27;Shared&#x27;)                  │
+│ --folder-key &lt;key&gt;             Folder key (GUID)                             │
+│ --all-folders                  List processes across all folders in the      │
+│                                tenant                                        │
+│ -n, --name &lt;name&gt;              Filter by process name (contains match)       │
+│ --process-type &lt;type&gt;          Filter by process type (Process, Agent, Flow, │
+│                                etc.) 
+
+… (truncated, 1905 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#24</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">2.93s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip or processes list --all-folders --name \&quot;CountLetters\&quot; --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Search orchestrator for CountLetters process by name&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;ProcessList&quot;,
+  &quot;Pagination&quot;: {
+    &quot;Returned&quot;: 3,
+    &quot;Limit&quot;: 50,
+    &quot;Offset&quot;: 0,
+    &quot;HasMore&quot;: false
+  },
+  &quot;Data&quot;: [
+    {
+      &quot;Key&quot;: &quot;F5CC005E-4DAA-4E32-B6A5-2ECB536D4361&quot;,
+      &quot;Name&quot;: &quot;CountLetters&quot;,
+      &quot;ProcessKey&quot;: &quot;CountLetters.CodedAgent.agent.CountLetters&quot;,
+      &quot;ProcessVersion&quot;: &quot;1.0.0&quot;,
+      &quot;Description&quot;: &quot;&quot;,
+      &quot;IsLatestVersion&quot;: true,
+      &quot;RetentionPeriod&quot;: 30,
+      &quot;RetentionAction&quot;: &quot;Delete&quot;,
+      &quot;FolderKey&quot;: &quot;c4359cde-55f0-4f0e-9322-c6cdce74ab4c&quot;,
+      &quot;FolderPath&quot;: &quot;Shared&quot;,
+      &quot;FolderId&quot;: 2815972
+    },
+    {
+      &quot;Key&quot;: &quot;6A47DC5B-5FD4-461F-B97D-6C1817ABCAAA&quot;,
+      &quot;Name&quot;: &quot;CountLetters LowCode Agent&quot;,
+      &quot;ProcessKey&quot;: &quot;CountLetters.LowCode.agent.CountLetters.LowCode.Agent&quot;,
+      &quot;ProcessVersion&quot;: &quot;1.0.0&quot;,
+      &quot;Description&quot;: &quot;&quot;,
+      &quot;IsLatestVersion&quot;: true,
+      &quot;RetentionPeriod&quot;: 30,
+      &quot;RetentionAction&quot;: &quot;Delete&quot;,
+      &quot;FolderKey&quot;: &quot;6d7d6de4-31dd-49e1-b774-1405890df355&quot;,
+      &quot;FolderPath&quot;: &quot;Shared/uipath-maestro-flow/CountLetters LowCode&quot;,
+      &quot;FolderId&quot;: 2825255
+    },
+    {
+      &quot;Key&quot;: &quot;19677045-6C7C-406F-BE8B-48BD1EB06414&quot;,
+      &quot;Name&quot;: &quot;CountLetters&quot;,
+      &quot;ProcessKey&quot;: &quot;Count
+
+… (truncated, 421 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#25</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">7.63s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;\\\nuip solution init \&quot;CountLettersLowCodeSolution\&quot; --output json 2&gt;&amp;1 &amp;&amp; \\\ncd \&quot;CountLettersLowCodeSolution\&quot; &amp;&amp; \\\nuip maestro flow init \&quot;CountLettersLowCode\&quot; --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Scaffold solution and flow project&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;SolutionInit&quot;,
+  &quot;Data&quot;: {
+    &quot;Status&quot;: &quot;Created successfully&quot;,
+    &quot;Path&quot;: &quot;/work/output/artifacts/skill-flow-lowcode-agent/CountLettersLowCodeSolution/CountLettersLowCodeSolution.uipx&quot;,
+    &quot;NextSteps&quot;: &quot;Read /work/output/artifacts/skill-flow-lowcode-agent/CountLettersLowCodeSolution/AGENTS.md or /work/output/artifacts/skill-flow-lowcode-agent/CountLettersLowCodeSolution/CLAUDE.md to understand the solution lifecycle, project types that can be used inside a solution, and related uip command references.&quot;
+  }
+}
+2026-08-19 00:22:55 INFO  [ResourceBuilder:ProjectCreateCommandHandler] Creating project [object Object]
+2026-08-19 00:22:55 INFO  [ResourceBuilder:MultiFileSolutionDefinitionProvider] Reading multi-file solution definition for solution %s /work/output/artifacts/skill-flow-lowcode-agent/CountLettersLowCodeSolution
+2026-08-19 00:22:55 INFO  [ResourceBuilder:ProjectCreateCommandHandler] Generate artefact resources for project [object Object]
+2026-08-19 00:22:55 INFO  [ResourceBuilder:SolutionsMetadataReader] Reading metadata from %s. SolutionsMetadataReader
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FlowInit&quot;,
+  &quot;Data&quot;: {
+    &quot;Status&quot;: &quot;Created su
+
+… (truncated, 1211 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#26</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">24ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-lowcode-agent/CountLettersLowCodeSolution/CountLettersLowCode &amp;&amp; find . -maxdepth 2 -type f &amp;&amp; echo \&quot;---\&quot; &amp;&amp; cat CountLettersLowCode.flow&quot;,
+  &quot;description&quot;: &quot;Inspect scaffolded flow project and file&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>./CountLettersLowCode.flow
+./project.uiproj
+./operate.json
+---
+{
+  &quot;id&quot;: &quot;f7b14ce8-16a4-4512-9ce3-f82d7bbf8180&quot;,
+  &quot;version&quot;: &quot;1.9&quot;,
+  &quot;name&quot;: &quot;CountLettersLowCode&quot;,
+  &quot;nodes&quot;: [
+    {
+      &quot;id&quot;: &quot;start&quot;,
+      &quot;type&quot;: &quot;core.trigger.manual&quot;,
+      &quot;typeVersion&quot;: &quot;1.0&quot;,
+      &quot;display&quot;: {
+        &quot;label&quot;: &quot;Manual trigger&quot;
+      },
+      &quot;inputs&quot;: {
+        &quot;entryPointId&quot;: &quot;0796d2a1-738a-4418-843d-952216a6fcb2&quot;,
+        &quot;isDefaultEntryPoint&quot;: true
+      }
+    }
+  ],
+  &quot;edges&quot;: [],
+  &quot;definitions&quot;: [
+    {
+      &quot;nodeType&quot;: &quot;core.trigger.manual&quot;,
+      &quot;version&quot;: &quot;1.0&quot;,
+      &quot;category&quot;: &quot;trigger&quot;,
+      &quot;description&quot;: &quot;Start the process manually&quot;,
+      &quot;tags&quot;: [
+        &quot;trigger&quot;,
+        &quot;start&quot;,
+        &quot;manual&quot;
+      ],
+      &quot;sortOrder&quot;: 80,
+      &quot;display&quot;: {
+        &quot;label&quot;: &quot;Manual trigger&quot;,
+        &quot;icon&quot;: &quot;play&quot;,
+        &quot;shape&quot;: &quot;circle&quot;
+      },
+      &quot;handleConfiguration&quot;: [
+        {
+          &quot;position&quot;: &quot;right&quot;,
+          &quot;handles&quot;: [
+            {
+              &quot;id&quot;: &quot;output&quot;,
+              &quot;type&quot;: &quot;source&quot;,
+              &quot;handleType&quot;: &quot;output&quot;,
+              &quot;showButton&quot;: true,
+              &quot;constraints&quot;: {
+                &quot;forbiddenTargetCategories&quot;: [
+          
+
+… (truncated, 852 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#27</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">5.33s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip or processes list --all-folders --name \&quot;CountLetters\&quot; --all-fields --output json 2&gt;&amp;1 | python3 -m json.tool | head -200&quot;,
+  &quot;description&quot;: &quot;Get all fields for CountLetters processes to determine type&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+    &quot;Result&quot;: &quot;Success&quot;,
+    &quot;Code&quot;: &quot;ProcessList&quot;,
+    &quot;Pagination&quot;: {
+        &quot;Returned&quot;: 3,
+        &quot;Limit&quot;: 50,
+        &quot;Offset&quot;: 0,
+        &quot;HasMore&quot;: false
+    },
+    &quot;Data&quot;: [
+        {
+            &quot;RetentionAction&quot;: &quot;Delete&quot;,
+            &quot;RetentionPeriod&quot;: 30,
+            &quot;StaleRetentionAction&quot;: &quot;Delete&quot;,
+            &quot;StaleRetentionPeriod&quot;: 180,
+            &quot;OrganizationUnitType&quot;: &quot;Standard&quot;,
+            &quot;Key&quot;: &quot;F5CC005E-4DAA-4E32-B6A5-2ECB536D4361&quot;,
+            &quot;ProcessKey&quot;: &quot;CountLetters.CodedAgent.agent.CountLetters&quot;,
+            &quot;ProcessVersion&quot;: &quot;1.0.0&quot;,
+            &quot;ProjectKey&quot;: &quot;987242be-5de9-4e4c-8e58-97a4b2e8e9b1&quot;,
+            &quot;IsLatestVersion&quot;: true,
+            &quot;IsProcessDeleted&quot;: false,
+            &quot;Name&quot;: &quot;CountLetters&quot;,
+            &quot;EntryPointId&quot;: 815908,
+            &quot;EnvironmentVariables&quot;: &quot;&quot;,
+            &quot;ProcessType&quot;: &quot;Agent&quot;,
+            &quot;SupportsMultipleEntryPoints&quot;: true,
+            &quot;RequiresUserInteraction&quot;: false,
+            &quot;IsConversational&quot;: false,
+            &quot;IsAttended&quot;: false,
+            &quot;IsCompiled&quot;: true,
+            &quot;Arguments&quot;: {},
+            &quot;AutoUpdate&quot;: false,
+            &quot;HiddenForAttendedUser&quot;: false,
+            &quot;FeedId&quot;: &quot;001c61
+
+… (truncated, 4237 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#28</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">15ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow &amp;&amp; sed -n &#x27;1,400p&#x27; references/shared/file-format.md | grep -n \&quot;inputDefinition\\|form\\|inputs\\.\&quot; &quot;,
+  &quot;description&quot;: &quot;Search file-format.md for inputs pattern documentation&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>26:  &quot;version&quot;: &quot;&lt;scaffolded file-format version&gt;&quot;,
+43:&lt;!--skill-flavor:flow-format-version-source:start--&gt;
+44:**Top-level `version`** = workflow file-format version. **Use the exact value `uip maestro flow init` scaffolds** — do not hand-pick, hardcode, or downgrade it. It is not a semver string; the schema gates on an exact literal for the current file-format version, so an older value (e.g. `&quot;1.0&quot;`, `&quot;1.0.0&quot;`) that worked for a legacy parser will fail for a new flow. `init` always writes the accepted value; preserve it. To see the current value, scaffold a throwaway flow with `init` and read its top-level `version`, or read it from an existing `init`-generated `.flow`.
+45:&lt;!--skill-flavor:flow-format-version-source:end--&gt;
+47:&gt; **Don&#x27;t confuse top-level `version` with `definitions[].version` / `typeVersion`.** Node-definition `version` (and matching node-instance `typeVersion`) are validated by `versionSchema`, a regex that accepts both `x.y` and `x.y.z` (`/^\d+\.\d+(\.\d+)?$/`, error `&#x27;Version must be in format &quot;x.y&quot; or &quot;x.y.z&quot;&#x27;`). Both layers are canonically `x.y`, but the node-level regex still accepts legacy 3-part strings so registry definitions (`&quot;1.0&quot;`) and older scaffolde
+
+… (truncated, 5471 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#29</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">19ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow &amp;&amp; grep -n \&quot;Bindings\\b\&quot; -A 60 references/shared/file-format.md | head -120&quot;,
+  &quot;description&quot;: &quot;Read bindings section of file-format doc&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>18:- [Bindings — Orchestrator resource bindings (top-level `bindings[]`)](#bindings--orchestrator-resource-bindings-top-level-bindings)
+19:- [Bindings — connector connection binding](#bindings--connector-connection-binding)
+20-
+21-## Top-level structure
+22-
+23-```json
+24-{
+25-  &quot;id&quot;: &quot;&lt;uuid&gt;&quot;,
+26-  &quot;version&quot;: &quot;&lt;scaffolded file-format version&gt;&quot;,
+27-  &quot;name&quot;: &quot;MyFlow&quot;,
+28-  &quot;nodes&quot;: [],
+29-  &quot;edges&quot;: [],
+30-  &quot;definitions&quot;: [],
+31-  &quot;bindings&quot;: [],
+32-  &quot;variables&quot;: {},
+33-  &quot;layout&quot;: {
+34-    &quot;nodes&quot;: {}
+35-  }
+36-}
+37-```
+38-
+39-&gt; **Key order is NOT guaranteed — never anchor edits on it.** The skeleton above is illustrative; the CLI does not commit to a stable top-level key sequence or to which optional keys are present. Real flows vary: `runtime` may appear (and has been observed *before* `nodes`, not after `definitions`) or be absent entirely; `bindings`, `variables`, `solutionId`, `projectId`, and a trailing `metadata` object surface in different positions depending on CLI version and what the flow contains. When editing a `.flow`, anchor each `Edit` on the **target array&#x27;s own key** (`&quot;nodes&quot;: [`, `&quot;edges&quot;: [`, `&quot;definitions&quot;: [`, or `layout.nodes`) located in the text you just
+
+… (truncated, 7732 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#30</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">715ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-lowcode-agent/CountLettersLowCodeSolution/CountLettersLowCode &amp;&amp; \\\nuip maestro flow registry get core.control.end --output json &gt; /tmp/end.json 2&gt;&amp;1 &amp;&amp; cat /tmp/end.json&quot;,
+  &quot;description&quot;: &quot;Fetch End node registry definition&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeGetSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;Node&quot;: {
+      &quot;nodeType&quot;: &quot;core.control.end&quot;,
+      &quot;version&quot;: &quot;1.0&quot;,
+      &quot;category&quot;: &quot;control-flow&quot;,
+      &quot;description&quot;: &quot;Mark the end of a process path&quot;,
+      &quot;tags&quot;: [
+        &quot;control-flow&quot;,
+        &quot;end&quot;,
+        &quot;finish&quot;,
+        &quot;complete&quot;
+      ],
+      &quot;sortOrder&quot;: 65,
+      &quot;display&quot;: {
+        &quot;label&quot;: &quot;End&quot;,
+        &quot;icon&quot;: &quot;circle-check&quot;,
+        &quot;shape&quot;: &quot;circle&quot;
+      },
+      &quot;handleConfiguration&quot;: [
+        {
+          &quot;position&quot;: &quot;left&quot;,
+          &quot;handles&quot;: [
+            {
+              &quot;id&quot;: &quot;input&quot;,
+              &quot;type&quot;: &quot;target&quot;,
+              &quot;handleType&quot;: &quot;input&quot;
+            }
+          ]
+        }
+      ],
+      &quot;model&quot;: {
+        &quot;type&quot;: &quot;bpmn:EndEvent&quot;
+      },
+      &quot;runtimeConstraints&quot;: {
+        &quot;exclude&quot;: [
+          &quot;api-function&quot;
+        ]
+      }
+    }
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#31</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">27ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow &amp;&amp; grep -n \&quot;output mapping\\|add-output-mapping\\|flow output\\|Flow Output\&quot; -A 20 references/shared/*.md references/author/references/*.md 2&gt;/dev/null | head -150&quot;,
+  &quot;description&quot;: &quot;Search docs for flow output mapping pattern&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>references/shared/file-format.md:330:| ✗ | The same End node the success path reaches | Success path&#x27;s output mappings run against the failed node&#x27;s empty output |
+references/shared/file-format.md-331-| ✓ | A **distinct** End node mapping an error/status `out` variable | Caller can tell failure from success |
+references/shared/file-format.md-332-| ✓ | `core.logic.terminate` | Aborts the flow when recovery is impossible — see [terminate/impl.md](../author/references/plugins/terminate/impl.md) |
+references/shared/file-format.md-333-| ✓ | A recovery branch that rejoins **only after obtaining valid data** — a retry that succeeded, or a fallback source that returned data | Downstream runs on real data, not on the failed node&#x27;s empty output |
+references/shared/file-format.md-334-
+references/shared/file-format.md-335-```text
+references/shared/file-format.md-336-Trigger -&gt; HTTP Request
+references/shared/file-format.md-337-  |-- default -&gt; Process -&gt; End (success — status: &quot;ok&quot;)
+references/shared/file-format.md-338-  |-- error   -&gt; Log Error -&gt; End (failure — status: &quot;failed&quot;, message from $vars.httpCall.error)
+references/shared/file-format.md-339-```
+references/shared/file-format.md-340-
+r
+
+… (truncated, 13514 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#32</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">23ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow &amp;&amp; sed -n &#x27;1,140p&#x27; references/shared/variables-and-expressions.md&quot;,
+  &quot;description&quot;: &quot;Read variables-and-expressions doc top section&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre># Variables and Expressions
+
+Complete reference for declaring variables, writing expressions, and managing data flow in `.flow` files.
+
+&gt; **Read this before** adding variables or writing expressions in any flow.
+&gt;
+&gt; `flow validate` catches the structural expression-reference errors:
+&gt;
+&gt; - Missing `=js:` prefix on `$vars`/`$metadata`/`$self` (MST-9107)
+&gt; - Invented `nodes.&lt;id&gt;.output` syntax
+&gt; - References to unknown variables or node IDs
+&gt; - Output-path walks that descend into declared primitives or schemas closed with `additionalProperties: false`
+&gt;
+&gt; Errors against **open output schemas** (HTTP response bodies, script returns, free-text agent output) and **wrong-direction reads** (e.g. reading an `out`-only variable) still slip past validate and surface only at `flow debug` or in production.
+
+---
+
+## Table of contents
+
+- [Variables Overview](#variables-overview)
+- [Workflow Variables (`globals`)](#workflow-variables-globals)
+- [Node Variables (`nodes`)](#node-variables-nodes)
+- [Variable Updates (`variableUpdates`)](#variable-updates-variableupdates)
+- [Output Mapping on End Nodes](#output-mapping-on-end-nodes)
+- [Expression System](#expression-system)
+- [Available Globals](#avai
+
+… (truncated, 2934 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#33</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.02s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry get \&quot;uipath.core.agent.6a47dc5b-5fd4-461f-b97d-6c1817abcaaa\&quot; --output json &gt; /tmp/agent_def.json\ncat /tmp/agent_def.json | python3 -m json.tool&quot;,
+  &quot;description&quot;: &quot;Full manifest for the chosen low-code agent&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+    &quot;Result&quot;: &quot;Success&quot;,
+    &quot;Code&quot;: &quot;NodeGetSuccess&quot;,
+    &quot;Data&quot;: {
+        &quot;Node&quot;: {
+            &quot;nodeType&quot;: &quot;uipath.core.agent.6a47dc5b-5fd4-461f-b97d-6c1817abcaaa&quot;,
+            &quot;version&quot;: &quot;1.0.0&quot;,
+            &quot;category&quot;: &quot;agent&quot;,
+            &quot;runtimeConstraints&quot;: {
+                &quot;exclude&quot;: [
+                    &quot;api-function&quot;
+                ]
+            },
+            &quot;description&quot;: &quot;&quot;,
+            &quot;tags&quot;: [],
+            &quot;sortOrder&quot;: 510,
+            &quot;supportsErrorHandling&quot;: true,
+            &quot;display&quot;: {
+                &quot;label&quot;: &quot;CountLetters LowCode Agent&quot;,
+                &quot;icon&quot;: &quot;autonomous-agent&quot;
+            },
+            &quot;handleConfiguration&quot;: [
+                {
+                    &quot;position&quot;: &quot;left&quot;,
+                    &quot;handles&quot;: [
+                        {
+                            &quot;id&quot;: &quot;input&quot;,
+                            &quot;type&quot;: &quot;target&quot;,
+                            &quot;handleType&quot;: &quot;input&quot;
+                        }
+                    ]
+                },
+                {
+                    &quot;position&quot;: &quot;right&quot;,
+                    &quot;handles&quot;: [
+                        {
+                            &quot;id&quot;: &quot;output&quot;,
+                            &quot;type&quot;: &quot;source
+
+… (truncated, 6031 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#34</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">5ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-lowcode-agent/CountLettersLowCodeSolution/CountLettersLowCode/CountLettersLowCode.flow&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	{
+2	  &quot;id&quot;: &quot;f7b14ce8-16a4-4512-9ce3-f82d7bbf8180&quot;,
+3	  &quot;version&quot;: &quot;1.9&quot;,
+4	  &quot;name&quot;: &quot;CountLettersLowCode&quot;,
+5	  &quot;nodes&quot;: [
+6	    {
+7	      &quot;id&quot;: &quot;start&quot;,
+8	      &quot;type&quot;: &quot;core.trigger.manual&quot;,
+9	      &quot;typeVersion&quot;: &quot;1.0&quot;,
+10	      &quot;display&quot;: {
+11	        &quot;label&quot;: &quot;Manual trigger&quot;
+12	      },
+13	      &quot;inputs&quot;: {
+14	        &quot;entryPointId&quot;: &quot;0796d2a1-738a-4418-843d-952216a6fcb2&quot;,
+15	        &quot;isDefaultEntryPoint&quot;: true
+16	      }
+17	    }
+18	  ],
+19	  &quot;edges&quot;: [],
+20	  &quot;definitions&quot;: [
+21	    {
+22	      &quot;nodeType&quot;: &quot;core.trigger.manual&quot;,
+23	      &quot;version&quot;: &quot;1.0&quot;,
+24	      &quot;category&quot;: &quot;trigger&quot;,
+25	      &quot;description&quot;: &quot;Start the process manually&quot;,
+26	      &quot;tags&quot;: [
+27	        &quot;trigger&quot;,
+28	        &quot;start&quot;,
+29	        &quot;manual&quot;
+30	      ],
+31	      &quot;sortOrder&quot;: 80,
+32	      &quot;display&quot;: {
+33	        &quot;label&quot;: &quot;Manual trigger&quot;,
+34	        &quot;icon&quot;: &quot;play&quot;,
+35	        &quot;shape&quot;: &quot;circle&quot;
+36	      },
+37	      &quot;handleConfiguration&quot;: [
+38	        {
+39	          &quot;position&quot;: &quot;right&quot;,
+40	          &quot;handles&quot;: [
+41	            {
+42	              &quot;id&quot;: &quot;output&quot;,
+43	              &quot;type&quot;: &quot;source&quot;,
+44	              &quot;handleType&quot;: &quot;output&quot;,
+45	              &quot;showButton&quot;: true,
+46	              &quot;constra
+
+… (truncated, 1053 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#35</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">246ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cat /tmp/end.json | python3 -c \&quot;import json,sys; d=json.load(sys.stdin); print(json.dumps(d[&#x27;Data&#x27;][&#x27;Node&#x27;], indent=2))\&quot; &gt; /tmp/end_def.json\ncat /tmp/agent_def.json | python3 -c \&quot;import json,sys; d=json.load(sys.stdin); print(json.dumps(d[&#x27;Data&#x27;][&#x27;Node&#x27;], indent=2))\&quot; &gt; /tmp/agent_def_clean.json\ncat /tmp/end_def.json\necho \&quot;---\&quot;\ncat /tmp/agent_def_clean.json | head -5&quot;,
+  &quot;description&quot;: &quot;Extract clean Node manifests for end and agent&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;nodeType&quot;: &quot;core.control.end&quot;,
+  &quot;version&quot;: &quot;1.0&quot;,
+  &quot;category&quot;: &quot;control-flow&quot;,
+  &quot;description&quot;: &quot;Mark the end of a process path&quot;,
+  &quot;tags&quot;: [
+    &quot;control-flow&quot;,
+    &quot;end&quot;,
+    &quot;finish&quot;,
+    &quot;complete&quot;
+  ],
+  &quot;sortOrder&quot;: 65,
+  &quot;display&quot;: {
+    &quot;label&quot;: &quot;End&quot;,
+    &quot;icon&quot;: &quot;circle-check&quot;,
+    &quot;shape&quot;: &quot;circle&quot;
+  },
+  &quot;handleConfiguration&quot;: [
+    {
+      &quot;position&quot;: &quot;left&quot;,
+      &quot;handles&quot;: [
+        {
+          &quot;id&quot;: &quot;input&quot;,
+          &quot;type&quot;: &quot;target&quot;,
+          &quot;handleType&quot;: &quot;input&quot;
+        }
+      ]
+    }
+  ],
+  &quot;model&quot;: {
+    &quot;type&quot;: &quot;bpmn:EndEvent&quot;
+  },
+  &quot;runtimeConstraints&quot;: {
+    &quot;exclude&quot;: [
+      &quot;api-function&quot;
+    ]
+  }
+}
+---
+{
+  &quot;nodeType&quot;: &quot;uipath.core.agent.6a47dc5b-5fd4-461f-b97d-6c1817abcaaa&quot;,
+  &quot;version&quot;: &quot;1.0.0&quot;,
+  &quot;category&quot;: &quot;agent&quot;,
+  &quot;runtimeConstraints&quot;: {</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#36</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">173ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;ls /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/scripts/\npython3 /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/scripts/flow_edit.py --help 2&gt;&amp;1 | head -40&quot;,
+  &quot;description&quot;: &quot;List skill scripts and check flow_edit help&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>audit_expressions.py
+audit_flow.py
+check_bindings.py
+check_runtime_gaps.py
+check_topology.py
+diagnose_run.py
+encode_parameter_values.py
+flow_compose.py
+flow_edit.py
+flow_lib.py
+lint_jint.py
+node_ownership.py
+requirements.txt
+validate_mermaid.py
+wire_agent_inputs.py
+usage: flow_edit.py [-h]
+                    {add-node,delete-node,add-edge,delete-edge,set-input,add-variable,add-output-mapping,add-variable-update} ...
+
+Primitive `.flow` mutations: node/edge CRUD, variables, output mappings.
+
+Each subcommand touches every array the operation implies (nodes, edges, definitions,
+variables.nodes, variables.variableUpdates, layout.nodes) in one pass and writes the file
+back with 2-space indent.
+
+positional arguments:
+  {add-node,delete-node,add-edge,delete-edge,set-input,add-variable,add-output-mapping,add-variable-update}
+    add-node            insert a node + definition + variables.nodes + layout
+                        entry
+    delete-node         remove a node and cascade
+                        edges/variables/updates/layout/definition
+    add-edge            add an edge with both ports; sets errorHandlingEnabled
+                        for error edges
+    delete-edge         remo
+
+… (truncated, 446 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#37</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">369ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow &amp;&amp; python3 scripts/node_ownership.py --type \&quot;uipath.core.agent.6a47dc5b-5fd4-461f-b97d-6c1817abcaaa\&quot;\npython3 scripts/node_ownership.py --type \&quot;core.control.end\&quot;\npython3 scripts/node_ownership.py --type \&quot;core.trigger.manual\&quot;&quot;,
+  &quot;description&quot;: &quot;Check node ownership for agent, end, and trigger node types&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>EDIT uipath.core.agent.6a47dc5b-5fd4-461f-b97d-6c1817abcaaa user-owned: author the .flow JSON with Edit (or Write when no CLI-owned node is present)
+tools: user-owned -&gt; Edit / Write on &lt;Project&gt;.flow; CLI-owned -&gt; uip maestro flow node add + uip maestro flow node configure
+EDIT core.control.end                               user-owned: author the .flow JSON with Edit (or Write when no CLI-owned node is present)
+tools: user-owned -&gt; Edit / Write on &lt;Project&gt;.flow; CLI-owned -&gt; uip maestro flow node add + uip maestro flow node configure
+EDIT core.trigger.manual                            user-owned: author the .flow JSON with Edit (or Write when no CLI-owned node is present)
+tools: user-owned -&gt; Edit / Write on &lt;Project&gt;.flow; CLI-owned -&gt; uip maestro flow node add + uip maestro flow node configure
+Shell cwd was reset to /work/output/artifacts/skill-flow-lowcode-agent</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#38</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">26ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow &amp;&amp; sed -n &#x27;140/1,240p&#x27; references/shared/variables-and-expressions.md 2&gt;/dev/null; sed -n &#x27;140,260p&#x27; references/shared/variables-and-expressions.md&quot;,
+  &quot;description&quot;: &quot;Read node variables section&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>```json
+{
+  &quot;id&quot;: &quot;emailList&quot;,
+  &quot;direction&quot;: &quot;in&quot;,
+  &quot;type&quot;: &quot;array&quot;,
+  &quot;subType&quot;: &quot;string&quot;,
+  &quot;defaultValue&quot;: [&quot;admin@example.com&quot;]
+}
+```
+
+**Input associated with a trigger:**
+```json
+{
+  &quot;id&quot;: &quot;webhookPayload&quot;,
+  &quot;direction&quot;: &quot;in&quot;,
+  &quot;type&quot;: &quot;object&quot;,
+  &quot;triggerNodeId&quot;: &quot;start&quot;
+}
+```
+Accessed in expressions as `$vars.{triggerNodeId}.output.{id}` (the variable is nested under the trigger node&#x27;s output — NOT `$vars.{id}`).
+
+&lt;a id=&quot;file-input&quot;&gt;&lt;/a&gt;
+**File input (`type: &quot;file&quot;`):**
+```json
+{
+  &quot;id&quot;: &quot;inputDoc&quot;,
+  &quot;direction&quot;: &quot;in&quot;,
+  &quot;type&quot;: &quot;file&quot;,
+  &quot;description&quot;: &quot;Document uploaded at trigger / bound via --attachment&quot;,
+  &quot;triggerNodeId&quot;: &quot;start&quot;
+}
+```
+
+&gt; **Runtime shape of a `file` variable.** At runtime a `file` variable is an **object** (the *Flow Attachment* object), not a string. A Script node reading `$vars.start.output.inputDoc` receives:
+&gt;
+&gt; ```json
+&gt; { &quot;ID&quot;: &quot;&lt;uuid&gt;&quot;, &quot;FullName&quot;: &quot;report.pdf&quot;, &quot;MimeType&quot;: &quot;application/pdf&quot;, &quot;Metadata&quot;: { &quot;size&quot;: &quot;1024&quot; } }
+&gt; ```
+&gt;
+&gt; The uploaded file&#x27;s name is **`.FullName`**. Property access is **case-sensitive** at runtime — these exact casings resolve, others return `undefined`/`null`: `.ID` (uppercase, not `.Id`), `.FullName`, `.MimeT
+
+… (truncated, 2681 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#39</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">483ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow &amp;&amp; python3 scripts/flow_edit.py add-node --help 2&gt;&amp;1\necho \&quot;---edge---\&quot;\npython3 scripts/flow_edit.py add-edge --help 2&gt;&amp;1\necho \&quot;---var---\&quot;\npython3 scripts/flow_edit.py add-variable --help 2&gt;&amp;1\necho \&quot;---mapping---\&quot;\npython3 scripts/flow_edit.py add-output-mapping --help 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Read help for flow_edit subcommands&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>usage: flow_edit.py add-node [-h] --flow FLOW --id ID --type TYPE
+                             [--type-version TYPE_VERSION] [--label LABEL]
+                             [--definition-file DEFINITION_FILE]
+                             [--inputs INPUTS] [--outputs OUTPUTS]
+                             [--allow-cli-owned]
+
+options:
+  -h, --help            show this help message and exit
+  --flow FLOW
+  --id ID               camelCase, must start with a letter
+  --type TYPE
+  --type-version TYPE_VERSION
+                        omit when --definition-file supplies it
+  --label LABEL
+  --definition-file DEFINITION_FILE
+                        `uip maestro flow registry get &lt;type&gt; --output json`
+                        saved to a file
+  --inputs INPUTS       JSON object for inputs
+  --outputs OUTPUTS     auto | none | comma-separated output ids
+  --allow-cli-owned     override the CLI-owned refusal
+---edge---
+usage: flow_edit.py add-edge [-h] --flow FLOW --source SOURCE
+                             --source-port SOURCE_PORT --target TARGET
+                             --target-port TARGET_PORT [--id ID]
+
+options:
+  -h, --help            show this help message and exit
+  --flow FLOW
+  --s
+
+… (truncated, 1297 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#40</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">23ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow &amp;&amp; sed -n &#x27;1,400p&#x27; scripts/flow_edit.py | grep -n \&quot;outputs\\|def add_node\\|derive_outputs\\|auto\&quot; | head -60&quot;,
+  &quot;description&quot;: &quot;Inspect flow_edit.py add_node output logic&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>29:def _skeleton_outputs(ntype, outputs):
+30:    if fl.is_terminal(ntype) or not outputs:
+51:    for out in outputs:
+69:def _sync_node_variables(flow, nid, outputs):
+71:    for out in outputs:
+80:def add_node(args):
+110:    if args.outputs == &quot;auto&quot;:
+111:        outputs = fl.declared_outputs(definition) if definition else []
+112:        if not outputs and not fl.is_terminal(args.type):
+113:            outputs = [&quot;output&quot;] if fl.is_trigger(args.type) else [&quot;output&quot;, &quot;error&quot;]
+114:    elif args.outputs == &quot;none&quot;:
+115:        outputs = []
+117:        outputs = [o.strip() for o in args.outputs.split(&quot;,&quot;) if o.strip()]
+118:    block = _skeleton_outputs(args.type, outputs)
+120:        node[&quot;outputs&quot;] = block
+128:        _sync_node_variables(flow, args.id, outputs)
+136:        args.id, args.type, version, &quot;added&quot; if added_def else &quot;reused/absent&quot;, len(outputs)))
+279:    node.setdefault(&quot;outputs&quot;, {})[args.var] = {&quot;source&quot;: args.source}
+315:    a.add_argument(&quot;--outputs&quot;, default=&quot;auto&quot;, help=&quot;auto | none | comma-separated output ids&quot;)
+Shell cwd was reset to /work/output/artifacts/skill-flow-lowcode-agent</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#41</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">14ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow &amp;&amp; sed -n &#x27;1,80p&#x27; scripts/flow_edit.py&quot;,
+  &quot;description&quot;: &quot;Read top of flow_edit.py for output skeleton logic&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>#!/usr/bin/env python3
+&quot;&quot;&quot;Primitive `.flow` mutations: node/edge CRUD, variables, output mappings.
+
+Each subcommand touches every array the operation implies (nodes, edges, definitions,
+variables.nodes, variables.variableUpdates, layout.nodes) in one pass and writes the file
+back with 2-space indent.
+&quot;&quot;&quot;
+import argparse
+import json
+import re
+import sys
+
+import flow_lib as fl
+
+ID_RE = re.compile(r&quot;^[A-Za-z]&quot;)
+
+
+def _check_id(kind, value):
+    if not ID_RE.match(value or &quot;&quot;):
+        fl.die(&quot;%s id %r must start with a letter (XML NCName); never a bare UUID or leading digit&quot; % (kind, value))
+
+
+def _load_definition(path):
+    with open(path) as fh:
+        payload = json.load(fh)
+    return fl.unwrap_definition(payload)
+
+
+def _skeleton_outputs(ntype, outputs):
+    if fl.is_terminal(ntype) or not outputs:
+        return {}
+    if fl.is_trigger(ntype):
+        return {
+            &quot;output&quot;: {
+                &quot;type&quot;: &quot;object&quot;,
+                &quot;description&quot;: &quot;Data passed when triggering the process.&quot;,
+                &quot;source&quot;: &quot;null&quot;,
+                &quot;var&quot;: &quot;output&quot;,
+            }
+        }
+    if fl.is_orch_job(ntype):
+        return {
+            &quot;error&quot;: {
+                &quot;type&quot;: &quot;objec
+
+… (truncated, 1171 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#42</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">23ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow &amp;&amp; grep -n \&quot;declared_outputs\\|def is_terminal\\|def is_trigger\&quot; scripts/flow_lib.py&quot;,
+  &quot;description&quot;: &quot;Check flow_lib helper functions&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>56:def is_trigger(ntype):
+60:def is_terminal(ntype):
+119:def declared_outputs(definition):
+Shell cwd was reset to /work/output/artifacts/skill-flow-lowcode-agent</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#43</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">33ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow &amp;&amp; grep -n \&quot;def is_orch_job\&quot; -A 15 scripts/flow_lib.py&quot;,
+  &quot;description&quot;: &quot;Check is_orch_job detection logic&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>198:def is_orch_job(ntype):
+199-    return ntype.startswith(ORCH_JOB_PREFIXES)
+Shell cwd was reset to /work/output/artifacts/skill-flow-lowcode-agent</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#44</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">41ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow &amp;&amp; grep -n \&quot;def unwrap_definition\&quot; -A 15 scripts/flow_lib.py&quot;,
+  &quot;description&quot;: &quot;Check unwrap_definition handling&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>99:def unwrap_definition(payload):
+100-    &quot;&quot;&quot;Accept `registry get` output (Data.Node), a bare Data object, or the node manifest itself.&quot;&quot;&quot;
+101-    if not isinstance(payload, dict):
+102-        die(&quot;definition payload must be a JSON object&quot;)
+103-    for path in ((&quot;Data&quot;, &quot;Node&quot;), (&quot;Data&quot;,), (&quot;Node&quot;,)):
+104-        cur = payload
+105-        ok = True
+106-        for key in path:
+107-            if isinstance(cur, dict) and key in cur:
+108-                cur = cur[key]
+109-            else:
+110-                ok = False
+111-                break
+112-        if ok and isinstance(cur, dict) and (cur.get(&quot;nodeType&quot;) or cur.get(&quot;type&quot;)):
+113-            return cur
+114-    if payload.get(&quot;nodeType&quot;) or payload.get(&quot;type&quot;):
+Shell cwd was reset to /work/output/artifacts/skill-flow-lowcode-agent</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#45</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.50s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-lowcode-agent/CountLettersLowCodeSolution/CountLettersLowCode &amp;&amp; \\\nuip maestro flow registry get \&quot;uipath.core.agent.6a47dc5b-5fd4-461f-b97d-6c1817abcaaa\&quot; --output json &gt; /tmp/agent_reg.json &amp;&amp; \\\nuip maestro flow registry get core.control.end --output json &gt; /tmp/end_reg.json &amp;&amp; \\\ncat /tmp/agent_reg.json | head -3 &amp;&amp; cat /tmp/end_reg.json | head -3&quot;,
+  &quot;description&quot;: &quot;Save registry definitions to files for flow_edit&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeGetSuccess&quot;,
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeGetSuccess&quot;,</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#46</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">15ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow &amp;&amp; grep -n \&quot;ORCH_JOB_PREFIXES\&quot; -A 5 scripts/flow_lib.py&quot;,
+  &quot;description&quot;: &quot;Check ORCH_JOB_PREFIXES definition&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>180:ORCH_JOB_PREFIXES = (
+181-    &quot;uipath.core.api-workflow.&quot;,
+182-    &quot;uipath.core.rpa-workflow.&quot;,
+183-    &quot;uipath.core.agent.&quot;,
+184-    &quot;uipath.core.agentic-process.&quot;,
+185-    &quot;uipath.core.function.&quot;,
+--
+199:    return ntype.startswith(ORCH_JOB_PREFIXES)
+Shell cwd was reset to /work/output/artifacts/skill-flow-lowcode-agent</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#47</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">156ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-lowcode-agent/CountLettersLowCodeSolution/CountLettersLowCode &amp;&amp; \\\npython3 /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/scripts/flow_edit.py add-node \\\n  --flow CountLettersLowCode.flow \\\n  --id countLettersAgent \\\n  --type \&quot;uipath.core.agent.6a47dc5b-5fd4-461f-b97d-6c1817abcaaa\&quot; \\\n  --definition-file /tmp/agent_reg.json \\\n  --label \&quot;CountLett… (42 more chars)&quot;,
+  &quot;description&quot;: &quot;Add the CountLetters agent node to the flow&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>added node countLettersAgent (uipath.core.agent.6a47dc5b-5fd4-461f-b97d-6c1817abcaaa v1.0.0); definition added; variables.nodes +2</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#48</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">11ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-lowcode-agent/CountLettersLowCodeSolution/CountLettersLowCode/CountLettersLowCode.flow&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	{
+2	  &quot;id&quot;: &quot;f7b14ce8-16a4-4512-9ce3-f82d7bbf8180&quot;,
+3	  &quot;version&quot;: &quot;1.9&quot;,
+4	  &quot;name&quot;: &quot;CountLettersLowCode&quot;,
+5	  &quot;nodes&quot;: [
+6	    {
+7	      &quot;id&quot;: &quot;start&quot;,
+8	      &quot;type&quot;: &quot;core.trigger.manual&quot;,
+9	      &quot;typeVersion&quot;: &quot;1.0&quot;,
+10	      &quot;display&quot;: {
+11	        &quot;label&quot;: &quot;Manual trigger&quot;
+12	      },
+13	      &quot;inputs&quot;: {
+14	        &quot;entryPointId&quot;: &quot;0796d2a1-738a-4418-843d-952216a6fcb2&quot;,
+15	        &quot;isDefaultEntryPoint&quot;: true
+16	      }
+17	    },
+18	    {
+19	      &quot;id&quot;: &quot;countLettersAgent&quot;,
+20	      &quot;type&quot;: &quot;uipath.core.agent.6a47dc5b-5fd4-461f-b97d-6c1817abcaaa&quot;,
+21	      &quot;typeVersion&quot;: &quot;1.0.0&quot;,
+22	      &quot;display&quot;: {
+23	        &quot;label&quot;: &quot;CountLetters LowCode Agent&quot;
+24	      },
+25	      &quot;inputs&quot;: {},
+26	      &quot;outputs&quot;: {
+27	        &quot;error&quot;: {
+28	          &quot;type&quot;: &quot;object&quot;,
+29	          &quot;description&quot;: &quot;Error information if the node fails.&quot;,
+30	          &quot;source&quot;: &quot;=Error&quot;,
+31	          &quot;var&quot;: &quot;error&quot;
+32	        }
+33	      }
+34	    }
+35	  ],
+36	  &quot;edges&quot;: [],
+37	  &quot;definitions&quot;: [
+38	    {
+39	      &quot;nodeType&quot;: &quot;core.trigger.manual&quot;,
+40	      &quot;version&quot;: &quot;1.0&quot;,
+41	      &quot;category&quot;: &quot;trigger&quot;,
+42	      &quot;description&quot;: &quot;Start the process manually&quot;,
+43	      &quot;tags&quot;: [
+44	        &quot;trigger&quot;,
+45	 
+
+… (truncated, 8203 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#49</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">148ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow &amp;&amp; python3 scripts/flow_edit.py set-input --help 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Check set-input subcommand help&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>usage: flow_edit.py set-input [-h] --flow FLOW --node NODE --key KEY
+                              --value VALUE [--json] [--allow-cli-owned]
+
+options:
+  -h, --help         show this help message and exit
+  --flow FLOW
+  --node NODE
+  --key KEY          e.g. expression or detail.queryParameters.recordId
+  --value VALUE
+  --json             parse --value as JSON
+  --allow-cli-owned
+Shell cwd was reset to /work/output/artifacts/skill-flow-lowcode-agent</pre>
+    
+  </div>
+</details>
+
+</div>
+
+<h2>Command Telemetry</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Total</div><div class="value">50</div></div>
+    <div class="stat"><div class="label">Successful</div><div class="value">49 (98%)</div></div>
+    <div class="stat"><div class="label">Failed</div><div class="value">1</div></div>
+    <div class="stat"><div class="label">Avg / cmd</div><div class="value">1.09s</div></div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 2fr;gap:16px;margin-top:12px">
+    <div>
+      <h4>By Tool</h4>
+      <table>
+        <thead><tr><th>Tool</th><th>Count</th></tr></thead>
+        <tbody><tr><td class='mono'>Bash</td><td>47</td></tr><tr><td class='mono'>Read</td><td>2</td></tr><tr><td class='mono'>Skill</td><td>1</td></tr></tbody>
+      </table>
+    </div>
+    <div>
+      <h4>Slowest</h4>
+      <table>
+        <thead><tr><th>Tool</th><th>Duration</th><th>Parameters</th></tr></thead>
+        <tbody><tr><td class='mono'>Bash</td><td>8.71s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro flow registry pull --forc...</td></tr><tr><td class='mono'>Bash</td><td>7.63s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;\\\nuip solution init &quot;CountLettersLo...</td></tr><tr><td class='mono'>Bash</td><td>5.33s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip or processes list --all-folders -...</td></tr><tr><td class='mono'>Bash</td><td>4.17s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip or processes list --all-folders -...</td></tr><tr><td class='mono'>Bash</td><td>3.98s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;for t in &quot;uipath.core.agent.19677045-...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+  <p><strong>Most Common Pattern:</strong> <code>Bash → Bash → Bash</code></p><p><strong>Skill Tool Invoked:</strong> 1 time(s)</p>
+</div>
+
+<h2>Generation Metrics</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Total Latency</div><div class="value">9m 13s</div></div>
+    <div class="stat"><div class="label">Turns</div><div class="value">1</div></div>
+    <div class="stat"><div class="label">Assistant Turns</div><div class="value">89</div></div>
+    <div class="stat"><div class="label">Avg Turn Latency</div><div class="value">8m 50s</div></div>
+    
+  </div>
+</div>
+
+<h2>Token Usage</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Input (uncached)</div><div class="value">582</div></div>
+    <div class="stat"><div class="label">Output</div><div class="value">38,756</div></div>
+    <div class="stat"><div class="label">Cache Write</div><div class="value">83,377</div></div>
+    <div class="stat"><div class="label">Cache Read</div><div class="value">3,510,576</div></div>
+    <div class="stat"><div class="label">Total</div><div class="value">3,633,291</div></div>
+    <div class="stat"><div class="label">Cost</div><div class="value">$1.9489</div></div>
+  </div>
+</div>
+
+<h2>Agent Settings</h2>
+<div class="card" style="padding:0">
+  <table>
+    <tbody><tr><td class='mono dim'>Permission Mode</td><td>acceptEdits</td></tr><tr><td class='mono dim'>Allowed Tools</td><td>Skill, Bash, Read, Write, Edit, Glob, Grep</td></tr><tr><td class='mono dim'>Model</td><td>us.anthropic.claude-sonnet-5</td></tr><tr><td class='mono dim'>Max Turns</td><td>40</td></tr><tr><td class='mono dim'>System Prompt</td><td>You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted. </td></tr><tr><td class='mono dim'>System Prompt Mode</td><td>append</td></tr><tr><td class='mono dim'>Plugins</td><td>/home/azureuser/projects/skills/tmp</td></tr></tbody>
+  </table>
+</div>
+
+<h2>Environment</h2>
+<div class="card" style="padding:0">
+  <table>
+    <tbody><tr><td class='mono dim'>git_commit</td><td>unknown</td></tr><tr><td class='mono dim'>skills_git_commit</td><td>unknown</td></tr><tr><td class='mono dim'>cli_version</td><td>1.201.0-dev.8272</td></tr><tr><td class='mono dim'>tool_plugins</td><td>{&#x27;admin-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;agent-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;agenthub-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;aops-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;api-workflow-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;automation-hub-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;codedagent-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;codedapp-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;coder-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;context-grounding-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;conversational-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;data-fabric-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;docsai-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;function-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;gov-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;guardrails-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;insights-tool&#x27;: &#x27;1.201.0-dev.8276&#x27;, &#x27;integrationservice-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;ixp-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;llm-gateway-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;llmgw-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;maestro-tool&#x27;: &#x27;1.201.0-dev.8275&#x27;, &#x27;model-hub-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;orchestrator-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;platform-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;pm-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;rpa-legacy-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;rpa-tool&#x27;: &#x27;1.201.0-dev.20260809.3&#x27;, &#x27;solution-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;tasks-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;test-manager-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;traces-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;vertical-solutions-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;}</td></tr><tr><td class='mono dim'>coder_eval</td><td>0.9.6</td></tr><tr><td class='mono dim'>claude_code_cli</td><td>2.1.177 (Claude Code)</td></tr><tr><td class='mono dim'>uv</td><td>uv 0.12.5 (x86_64-unknown-linux-gnu)</td></tr><tr><td class='mono dim'>anthropic</td><td>0.122.0</td></tr><tr><td class='mono dim'>openai</td><td>3.2.0</td></tr><tr><td class='mono dim'>pydantic</td><td>2.12.5</td></tr><tr><td class='mono dim'>api_routing</td><td>aws_bedrock</td></tr><tr><td class='mono dim'>eval_routing</td><td>aws_bedrock</td></tr><tr><td class='mono dim'>aws_region</td><td>us-east-2</td></tr><tr><td class='mono dim'>bedrock_model</td><td>us.anthropic.claude-sonnet-4-6</td></tr><tr><td class='mono dim'>system_prompt_semantics</td><td>append</td></tr></tbody>
+  </table>
+</div>
+
+<footer>Generated by coder_eval · 2026-08-19T00:28:36</footer>
+</div>
+<script>
+function toggleTheme() {
+  document.documentElement.classList.toggle('light');
+  try {
+    const mode = document.documentElement.classList.contains('light') ? 'light' : 'dark';
+    localStorage.setItem('coder-eval-theme', mode);
+  } catch (e) { /* ignore */ }
+}
+(function() {
+  try {
+    if (localStorage.getItem('coder-eval-theme') === 'light') {
+      document.documentElement.classList.add('light');
+    }
+  } catch (e) { /* ignore */ }
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "SubflowDemo",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "f8449eda-87ac-4f5f-a035-ce791a63ea56",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "SubflowDemo"
+    },
+    "locks": [],
+    "key": "68d1f4e9-14ae-4346-af42-dc2c0ab53e12",
+    "files": []
+  }
+}

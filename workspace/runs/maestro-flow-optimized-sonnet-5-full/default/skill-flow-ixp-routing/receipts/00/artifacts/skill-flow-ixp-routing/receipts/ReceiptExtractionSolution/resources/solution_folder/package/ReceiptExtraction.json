@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "ReceiptExtraction",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "b652e79c-498d-4de2-a74a-bc77291c8e4c",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "ReceiptExtraction"
+    },
+    "locks": [],
+    "key": "7015b0f7-25ea-4002-8008-54674badbc4a",
+    "files": []
+  }
+}

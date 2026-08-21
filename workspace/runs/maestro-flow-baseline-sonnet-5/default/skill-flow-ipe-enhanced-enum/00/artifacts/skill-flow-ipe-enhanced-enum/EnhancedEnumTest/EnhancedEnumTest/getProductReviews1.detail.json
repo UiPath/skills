@@ -1,0 +1,9 @@
+{
+  "connectionId": "<PENDING_CONNECTION_ID>",
+  "folderKey": "<PENDING_FOLDER_KEY>",
+  "method": "GET",
+  "endpoint": "/search_product_review",
+  "queryParameters": {
+    "order": "=js:$vars.mapSortOrder.output.order"
+  }
+}

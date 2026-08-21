@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "WikiPageviews",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "387a0274-3f50-4a06-a0de-bd712adddf73",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "WikiPageviews"
+    },
+    "locks": [],
+    "key": "d541ee96-0760-4300-9ad3-5744d76144a8",
+    "files": []
+  }
+}

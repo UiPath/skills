@@ -1,0 +1,173 @@
+{
+  "run_id": "0af9fd34ab5d",
+  "cases": [
+    {
+      "name": "sev1-standard-production-down",
+      "expect_slack": true,
+      "inputs": {
+        "senderEmail": "jane.doe@acmecorp.com",
+        "senderDomain": "acmecorp.com",
+        "hasAttachments": false,
+        "subject": "Production down: checkout 500s",
+        "body": "Critical urgent outage, all users blocked",
+        "customerTier": "Standard",
+        "productionDown": true,
+        "workaroundAvailable": false,
+        "customerMatchStatus": "single",
+        "isDuplicate": false,
+        "correlationId": "ORCH-0af9fd34ab5d-SEV1"
+      },
+      "expected": {
+        "escalationPath": "escalation",
+        "severity": "Sev1",
+        "engineeringNeeded": true,
+        "responseMode": "Draft",
+        "caseKey": "ORCH-0af9fd34ab5d-SEV1"
+      }
+    },
+    {
+      "name": "sev2-degraded-with-workaround",
+      "expect_slack": true,
+      "inputs": {
+        "senderEmail": "jane.doe@acmecorp.com",
+        "senderDomain": "acmecorp.com",
+        "hasAttachments": false,
+        "subject": "Degraded checkout",
+        "body": "Slow but a workaround exists",
+        "customerTier": "Standard",
+        "productionDown": true,
+        "workaroundAvailable": true,
+        "customerMatchStatus": "single",
+        "isDuplicate": false,
+        "correlationId": "ORCH-0af9fd34ab5d-SEV2"
+      },
+      "expected": {
+        "escalationPath": "escalation",
+        "severity": "Sev2",
+        "engineeringNeeded": true,
+        "responseMode": "Draft",
+        "caseKey": "ORCH-0af9fd34ab5d-SEV2"
+      }
+    },
+    {
+      "name": "sev3-no-production-impact",
+      "expect_slack": true,
+      "inputs": {
+        "senderEmail": "jane.doe@acmecorp.com",
+        "senderDomain": "acmecorp.com",
+        "hasAttachments": false,
+        "subject": "Report formatting off",
+        "body": "The export looks wrong",
+        "customerTier": "Standard",
+        "productionDown": false,
+        "workaroundAvailable": false,
+        "customerMatchStatus": "single",
+        "isDuplicate": false,
+        "correlationId": "ORCH-0af9fd34ab5d-SEV3"
+      },
+      "expected": {
+        "escalationPath": "escalation",
+        "severity": "Sev3",
+        "engineeringNeeded": false,
+        "responseMode": "Draft",
+        "caseKey": "ORCH-0af9fd34ab5d-SEV3"
+      }
+    },
+    {
+      "name": "duplicate-escalation",
+      "expect_slack": true,
+      "inputs": {
+        "senderEmail": "jane.doe@acmecorp.com",
+        "senderDomain": "acmecorp.com",
+        "hasAttachments": false,
+        "subject": "Prod down",
+        "body": "urgent",
+        "customerTier": "Enterprise",
+        "productionDown": true,
+        "workaroundAvailable": false,
+        "customerMatchStatus": "single",
+        "isDuplicate": true,
+        "correlationId": "ORCH-0af9fd34ab5d-DUP"
+      },
+      "expected": {
+        "escalationPath": "duplicate",
+        "severity": "informational",
+        "engineeringNeeded": false,
+        "responseMode": "None",
+        "caseKey": "ORCH-0af9fd34ab5d-DUP"
+      }
+    },
+    {
+      "name": "unknown-customer",
+      "expect_slack": true,
+      "inputs": {
+        "senderEmail": "jane.doe@acmecorp.com",
+        "senderDomain": "acmecorp.com",
+        "hasAttachments": false,
+        "subject": "Help",
+        "body": "an issue",
+        "customerTier": "Standard",
+        "productionDown": false,
+        "workaroundAvailable": false,
+        "customerMatchStatus": "none",
+        "isDuplicate": false,
+        "correlationId": "ORCH-0af9fd34ab5d-UNK"
+      },
+      "expected": {
+        "escalationPath": "unknown_customer",
+        "severity": "informational",
+        "engineeringNeeded": false,
+        "responseMode": "None",
+        "caseKey": "ORCH-0af9fd34ab5d-UNK"
+      }
+    },
+    {
+      "name": "missing-domain",
+      "expect_slack": true,
+      "inputs": {
+        "senderEmail": "jane.doe@acmecorp.com",
+        "senderDomain": "",
+        "hasAttachments": false,
+        "subject": "Help",
+        "body": "an issue",
+        "customerTier": "Standard",
+        "productionDown": false,
+        "workaroundAvailable": false,
+        "customerMatchStatus": "single",
+        "isDuplicate": false,
+        "correlationId": "ORCH-0af9fd34ab5d-MD"
+      },
+      "expected": {
+        "escalationPath": "missing_domain",
+        "severity": "informational",
+        "engineeringNeeded": false,
+        "responseMode": "None",
+        "caseKey": "ORCH-0af9fd34ab5d-MD"
+      }
+    },
+    {
+      "name": "multiple-matches",
+      "expect_slack": true,
+      "inputs": {
+        "senderEmail": "jane.doe@acmecorp.com",
+        "senderDomain": "acmecorp.com",
+        "hasAttachments": false,
+        "subject": "Help",
+        "body": "an issue",
+        "customerTier": "Standard",
+        "productionDown": false,
+        "workaroundAvailable": false,
+        "customerMatchStatus": "multiple",
+        "isDuplicate": false,
+        "correlationId": "ORCH-0af9fd34ab5d-MULTI"
+      },
+      "expected": {
+        "escalationPath": "multiple_matches",
+        "severity": "informational",
+        "engineeringNeeded": false,
+        "responseMode": "None",
+        "caseKey": "ORCH-0af9fd34ab5d-MULTI"
+      }
+    }
+  ]
+}

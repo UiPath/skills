@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "EnumTest",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "dfa2ba9b-b6fb-4f34-a0a6-a83be1c3f4d2",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "EnumTest"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Flow",
+      "name": "EnumTest",
+      "package": {
+        "key": "1db889d9-703a-446c-9a16-6ea65d25e915"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "fab67ec3-774a-41df-bc8f-2dae7da94e9b",
+    "files": []
+  }
+}

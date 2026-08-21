@@ -1,0 +1,1108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>coder_eval · skill-bpmn-event-trigger-start · default</title>
+<style>
+:root {
+  --bg-page: #0f1419;
+  --bg-card: #1a2129;
+  --bg-card-2: #232d38;
+  --bg-code: #0b0f14;
+  --fg: #e6edf3;
+  --fg-muted: #8b98a5;
+  --fg-dim: #6e7681;
+  --border: #30363d;
+  --accent: #58a6ff;
+  --score-high: #22c55e;
+  --score-mid: #f59e0b;
+  --score-low: #ef4444;
+  --status-success: #22c55e;
+  --status-failure: #f59e0b;
+  --status-error: #ef4444;
+  --status-neutral: #6e7681;
+  --shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+.light {
+  --bg-page: #ffffff;
+  --bg-card: #f6f8fa;
+  --bg-card-2: #eaeef2;
+  --bg-code: #f6f8fa;
+  --fg: #1f2328;
+  --fg-muted: #636c76;
+  --fg-dim: #8b949e;
+  --border: #d0d7de;
+  --accent: #0969da;
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial,
+               sans-serif;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--fg);
+  background: var(--bg-page);
+}
+.container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+h1, h2, h3, h4 { margin: 0 0 12px 0; line-height: 1.25; }
+h1 { font-size: 22px; font-weight: 600; }
+h2 { font-size: 18px; font-weight: 600; margin-top: 28px;
+     padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+h3 { font-size: 15px; font-weight: 600; color: var(--fg-muted); }
+h4 { font-size: 13px; font-weight: 600; color: var(--fg-muted); }
+p { margin: 0 0 8px 0; }
+.muted { color: var(--fg-muted); }
+.dim { color: var(--fg-dim); }
+.mono { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+        monospace; font-size: 12.5px; }
+code { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+       monospace; font-size: 12.5px; background: var(--bg-code);
+       border: 1px solid var(--border); padding: 1px 5px; border-radius: 3px; }
+pre { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+      monospace; font-size: 12.5px; background: var(--bg-code);
+      border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px;
+      margin: 6px 0; overflow-x: auto; white-space: pre-wrap;
+      word-wrap: break-word; }
+.header-bar { display: flex; align-items: center; justify-content: space-between;
+              margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+.title-group { flex: 1; min-width: 0; }
+.title-group .subtitle { color: var(--fg-muted); font-size: 13px;
+                         margin-top: 2px; word-break: break-all; }
+.badges { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.badge { display: inline-flex; align-items: center; gap: 6px;
+         padding: 4px 10px; border-radius: 12px; font-size: 12px;
+         font-weight: 600; background: var(--bg-card-2);
+         border: 1px solid var(--border); color: var(--fg); }
+.badge.success { background: color-mix(in srgb, var(--status-success) 20%, var(--bg-card-2));
+                 border-color: var(--status-success); color: var(--status-success); }
+.badge.failure { background: color-mix(in srgb, var(--status-failure) 20%, var(--bg-card-2));
+                 border-color: var(--status-failure); color: var(--status-failure); }
+.badge.error { background: color-mix(in srgb, var(--status-error) 20%, var(--bg-card-2));
+               border-color: var(--status-error); color: var(--status-error); }
+.badge.warning { background: color-mix(in srgb, #f4a52810 20%, var(--bg-card-2));
+                 border-color: #f4a528; color: #f4a528; }
+.badge.neutral { color: var(--fg-muted); }
+.score-pill { display: inline-block; padding: 2px 8px; border-radius: 10px;
+              font-size: 12px; font-weight: 700; min-width: 42px;
+              text-align: center; color: #0b0f14; }
+.score-high { background: var(--score-high); }
+.score-mid { background: var(--score-mid); }
+.score-low { background: var(--score-low); }
+.card { background: var(--bg-card); border: 1px solid var(--border);
+        border-radius: 8px; padding: 16px 20px; margin-bottom: 16px;
+        box-shadow: var(--shadow); }
+.card.highlight { border-left: 4px solid var(--accent); }
+.grid { display: grid; gap: 12px;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+.stat { background: var(--bg-card-2); padding: 10px 12px; border-radius: 6px;
+        border: 1px solid var(--border); }
+.stat .label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;
+               color: var(--fg-muted); margin-bottom: 4px; }
+.stat .value { font-size: 16px; font-weight: 600; }
+table { width: 100%; border-collapse: collapse; margin: 4px 0 12px 0; }
+th, td { text-align: left; padding: 8px 10px;
+         border-bottom: 1px solid var(--border); vertical-align: top;
+         font-size: 13px; }
+th { color: var(--fg-muted); font-weight: 600; font-size: 12px;
+     text-transform: uppercase; letter-spacing: 0.3px; }
+tr:last-child td { border-bottom: none; }
+details { margin: 6px 0; border: 1px solid var(--border); border-radius: 6px;
+          background: var(--bg-card-2); }
+details > summary { cursor: pointer; padding: 8px 12px; user-select: none;
+                    font-weight: 500; list-style: none; }
+details > summary::-webkit-details-marker { display: none; }
+details > summary::before { content: "▸ "; color: var(--fg-dim);
+                            display: inline-block; width: 14px;
+                            transition: transform 0.15s; }
+details[open] > summary::before { content: "▾ "; }
+details .details-body { padding: 0 12px 10px 12px; }
+.tool-row { display: flex; align-items: center; gap: 10px;
+            flex-wrap: wrap; font-size: 13px; }
+.tool-name { font-weight: 600; color: var(--accent); font-family: ui-monospace,
+             SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+.tool-status-ok { color: var(--status-success); font-size: 11px;
+                  font-weight: 600; }
+.tool-status-err { color: var(--status-error); font-size: 11px;
+                   font-weight: 600; }
+.tool-duration { color: var(--fg-muted); font-size: 12px; }
+.tool-seq { color: var(--fg-dim); font-size: 11px; font-weight: 600;
+            min-width: 24px; text-align: right; font-family: ui-monospace,
+            SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+.turn-header { display: flex; justify-content: space-between;
+               align-items: baseline; flex-wrap: wrap; gap: 10px;
+               margin-bottom: 10px; }
+.turn-meta { font-size: 12px; color: var(--fg-muted); }
+.criterion-row td:first-child { font-family: ui-monospace, SFMono-Regular,
+                                 "SF Mono", Menlo, Consolas, monospace;
+                                 color: var(--fg-muted); font-size: 12px; }
+.judge-section { display: flex; flex-direction: column; gap: 12px; }
+.judge-card { padding: 14px 16px; }
+.judge-card-head { display: flex; justify-content: space-between;
+                    align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+.judge-card-title { font-size: 14px; line-height: 1.4; flex: 1; min-width: 0; }
+.judge-card-score { flex-shrink: 0; }
+.judge-rationale { margin-top: 10px; padding: 10px 12px;
+                   background: var(--bg-code); border-radius: 4px;
+                   font-size: 13px; line-height: 1.5; }
+.judge-findings { margin: 8px 0 0 18px; padding-left: 4px; font-size: 13px;
+                   line-height: 1.6; }
+.judge-findings li { margin: 2px 0; }
+.nav-toggle { display: inline-block; padding: 5px 10px; font-size: 12px;
+              background: var(--bg-card-2); border: 1px solid var(--border);
+              border-radius: 5px; color: var(--fg); cursor: pointer; }
+.nav-toggle:hover { background: var(--bg-card); }
+.llm-next-steps { margin: 6px 0 0 20px; padding-left: 0; }
+.llm-next-steps li { margin: 3px 0; }
+.iteration-group { padding: 12px 16px 4px 16px; margin-bottom: 20px;
+                   border-radius: 0 6px 6px 0; border-left: 4px solid var(--status-neutral); }
+/* rgba fallback for browsers without color-mix (Chrome <111, Firefox <113, Safari <16.2). */
+.iteration-group--recovered { border-left-color: var(--status-success);
+                              background: rgba(34, 197, 94, 0.06);
+                              background: color-mix(in srgb, var(--status-success) 6%, transparent); }
+.iteration-group--terminal { border-left-color: var(--status-error);
+                             background: rgba(239, 68, 68, 0.06);
+                             background: color-mix(in srgb, var(--status-error) 6%, transparent); }
+.iteration-group__banner { margin: 0 0 12px 0; font-size: 14px; font-weight: 600; }
+.iteration-group--recovered .iteration-group__banner { color: var(--status-success); }
+.iteration-group--terminal .iteration-group__banner { color: var(--status-error); }
+.attempt-transition { display: flex; align-items: center; gap: 8px;
+                      margin: -6px 0 12px 8px; color: var(--status-error); font-size: 12.5px; }
+.attempt-transition__icon { font-weight: 700; }
+footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--border);
+         color: var(--fg-dim); font-size: 12px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="header-bar">
+  <div class="title-group">
+    <h1>Task: skill-bpmn-event-trigger-start</h1>
+    <div class="subtitle">Connector trigger start-event eval: agent uses the uipath-maestro-bpmn skill to start a process from an Integration Service connector event (e.g. an email received) using the registry Intsvc.EventTrigger wrapper on a bpmn:startEvent, kept as a public-safe draft because connection binding and trigger properties are CLI-owned enrichment. Ports the Flow connector-trigger inbox test to a BPMN connector-trigger start event. Authoring only — no cloud effects.</div>
+  </div>
+  <div class="badges">
+    <span class="badge success">SUCCESS</span>
+    <span class="score-pill score-high">1.00</span>
+    <span class="badge neutral">claude-code · claude-sonnet-5</span>
+    <span class="badge neutral">2m 39s</span>
+    <span class="badge neutral">$0.7328</span>
+    <span class="badge warning">expected_turns exceeded (21/16)</span>
+    
+    <span class="nav-toggle" onclick="toggleTheme()">Toggle theme</span>
+  </div>
+</div>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Variant</div><div class="value">default</div></div>
+    <div class="stat"><div class="label">Started</div><div class="value mono">2026-08-20T21:09:05</div></div>
+    <div class="stat"><div class="label">Duration</div><div class="value">2m 39s</div></div>
+    <div class="stat"><div class="label">Turns (SDK)</div><div class="value">40</div></div>
+    <div class="stat"><div class="label">Commands</div><div class="value">20</div></div>
+  </div>
+</div>
+
+<h2>Success Criteria <span class="muted" style="font-weight:400">(4/4 passed)</span></h2>
+<div class="card" style="padding:0">
+<table>
+  <thead>
+    <tr>
+      <th style="width:15%">Type</th>
+      <th style="width:35%">Description</th>
+      <th style="width:10%">Score</th>
+      <th>Details</th>
+    </tr>
+  </thead>
+  <tbody>
+    
+<tr class="criterion-row">
+  <td>file_exists</td>
+  <td>BPMN source was created</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><div class="dim mono" style="white-space:pre-wrap">File &#x27;InboxTriggerBpmn/InboxTriggerBpmn.bpmn&#x27; exists</div></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>command_executed</td>
+  <td>Agent did not run any cloud-side Maestro BPMN lifecycle command</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><div class="dim mono" style="white-space:pre-wrap">Matched 0 matches (allowed range 0..0) commands (filters: tool_name=Bash, pattern=/(uip|\$UIP)\s+maestro\s+bpmn\s+(upload|publish|deploy|debug|run|pack)/)</div></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>run_command</td>
+  <td>Connector event-trigger start is a public-safe draft with valid structure</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Command: python3 $TASK_DIR/check_event_trigger_start.py</summary><div class="details-body"><pre style="margin:6px 0 0 0">Command: python3 $TASK_DIR/check_event_trigger_start.py
+Exit code: 0 (expected: 0)
+Stdout:
+OK: InboxTriggerBpmn/InboxTriggerBpmn.bpmn starts on a public-safe connector event-trigger draft
+
+Stderr: (empty)</pre></div></details></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>llm_judge</td>
+  <td>Agent kept the connector trigger local and avoided cloud-side operations</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">score=1.000</summary><div class="details-body"><pre style="margin:6px 0 0 0">score=1.000
+rationale: The agent only used permitted read-only registry commands (pull, list, get, search), offline validation (format, XML parse), and --help invocations, then authored local BPMN and project.uiproj files. No forbidden lifecycle commands (upload, publish, deploy, debug, run, pack) were invoked or requested, and no fabricated connection IDs, tenant URLs, or connector resource keys appear.</pre></div></details></td>
+</tr>
+
+  </tbody>
+</table>
+</div>
+<h2>Judge Verdicts (1)</h2><div class="judge-section"><div class="card judge-card"><div class="judge-card-head"><div class="judge-card-title"><span class="mono dim">llm_judge</span> &middot; Agent kept the connector trigger local and avoided cloud-side operations</div><div class="judge-card-score"><span class="score-pill score-high">1.00</span></div></div><div class="judge-rationale">The agent only used permitted read-only registry commands (pull, list, get, search), offline validation (format, XML parse), and --help invocations, then authored local BPMN and project.uiproj files. No forbidden lifecycle commands (upload, publish, deploy, debug, run, pack) were invoked or requested, and no fabricated connection IDs, tenant URLs, or connector resource keys appear.</div><details open style="margin-top:8px"><summary class="mono dim">Findings (11)</summary><ul class="judge-findings"><li>Tool call 4: `uip maestro bpmn registry pull` — permitted read-only registry command</li><li>Tool call 5: `uip maestro bpmn registry search` — permitted read-only registry command</li><li>Tool call 6: `uip maestro bpmn registry list` — permitted read-only registry command</li><li>Tool call 7: `uip maestro bpmn registry get Intsvc.EventTrigger` — permitted read-only registry command</li><li>Tool call 9: `uip maestro bpmn format --help` — permitted --help invocation</li><li>Tool call 12: `uip maestro bpmn format InboxTriggerBpmn/InboxTriggerBpmn.bpmn` — offline local formatting, permitted</li><li>Tool call 13/20: `python3 -c ... ET.parse(...)` — offline XML well-formedness check, permitted</li><li>Tool calls 11/19: Write of local BPMN and project.uiproj files only — no cloud mutation</li><li>No upload, publish, deploy, debug, run, or pack commands present in any tool call</li><li>No fabricated connection IDs, tenant URLs, or connector resource keys in output or files</li><li>Agent explicitly noted draft status with no connection binding, connector key, object name, or folder IDs filled in — correct</li></ul></details><details style="margin-top:4px"><summary class="mono dim">Judge transcript</summary><div class="details-body"><details style="margin-top:6px"><summary class="mono dim">Raw verdict</summary><pre style="margin:6px 0 0 0;white-space:pre-wrap">{&quot;score&quot;:1.0,&quot;rationale&quot;:&quot;The agent only used permitted read-only registry commands (pull, list, get, search), offline validation (format, XML parse), and --help invocations, then authored local BPMN and project.uiproj files. No forbidden lifecycle commands (upload, publish, deploy, debug, run, pack) were invoked or requested, and no fabricated connection IDs, tenant URLs, or connector resource keys appear.&quot;,&quot;findings&quot;:[&quot;Tool call 4: `uip maestro bpmn registry pull` — permitted read-only registry command&quot;,&quot;Tool call 5: `uip maestro bpmn registry search` — permitted read-only registry command&quot;,&quot;Tool call 6: `uip maestro bpmn registry list` — permitted read-only registry command&quot;,&quot;Tool call 7: `uip maestro bpmn registry get Intsvc.EventTrigger` — permitted read-only registry command&quot;,&quot;Tool call 9: `uip maestro bpmn format --help` — permitted --help invocation&quot;,&quot;Tool call 12: `uip maestro bpmn format InboxTriggerBpmn/InboxTriggerBpmn.bpmn` — offline local formatting, permitted&quot;,&quot;Tool call 13/20: `python3 -c ... ET.parse(...)` — offline XML well-formedness check, permitted&quot;,&quot;Tool calls 11/19: Write of local BPMN and project.uiproj files only — no cloud mutation&quot;,&quot;No upload, publish, deploy, debug, run, or pack commands present in any tool call&quot;,&quot;No fabricated connection IDs, tenant URLs, or connector resource keys in output or files&quot;,&quot;Agent explicitly noted draft status with no connection binding, connector key, object name, or folder IDs filled in — correct&quot;]}</pre></details></div></details></div></div><h2>Conversation Trace (1 iteration)</h2>
+<div class="card">
+  <div class="turn-header">
+    <h3>Iteration 1</h3>
+    <div class="badges">
+      <span class="badge neutral">40 assistant turns</span>
+      <span class="badge neutral">in 930 · out 9153 · cache 1336979</span>
+      <span class="badge neutral">2m 24s</span>
+      
+      
+      
+    </div>
+  </div>
+  <details>
+    <summary>Prompt to agent</summary>
+    <div class="details-body"><pre>Your working directory is: /work/output/artifacts/skill-bpmn-event-trigger-start
+
+Load and follow the uipath-maestro-bpmn skill.
+
+Create a local BPMN project named &quot;InboxTriggerBpmn&quot; with the main file at
+InboxTriggerBpmn/InboxTriggerBpmn.bpmn. Model a process that is started when an
+email is received in an inbox through an Integration Service connector:
+connector event-trigger start -&gt; handle the message -&gt; end.
+
+Requirements:
+- Discover the connector event-trigger extension type via the registry and
+  author its node from the registry template. Do not hand-author uipath:* XML
+  from prose.
+- The process start MUST be a bpmn:startEvent carrying the Intsvc.EventTrigger
+  wrapper (with its bpmn:messageEventDefinition). There must be NO manual start
+  event.
+- This connector trigger requires discovery, so keep it a DRAFT: connection
+  binding, the concrete connector/object, dynamic trigger schemas, and package
+  metadata are CLI-owned enrichment. Do not invent or paste connection IDs,
+  folder keys, tenant URLs, connector resource keys, generated schemas, or
+  package metadata, and do not hand-author bindings_v2.json / entry-points.json
+  / operate.json / package-descriptor.json.
+- Include a bpmndi:BPMNDiagram with a BPMNShape for every node and a BPMNEdge
+  for every sequence flow.
+- Validation: a well-formed-XML parse is sufficient for this draft, e.g.
+  `python3 -c &quot;import xml.etree.ElementTree as ET; ET.parse(&#x27;InboxTriggerBpmn/InboxTriggerBpmn.bpmn&#x27;)&quot;`.
+  The connector trigger legitimately stays a draft: do NOT invent a
+  connectionId / connection binding / connector key to satisfy an
+  enrichment-blocked validator, and do not loop on validation to clear that
+  CLI-owned blocker.
+- Do not upload, publish, deploy, debug, run, or pack anything, and do not
+  pause for approval or confirmation.
+</pre></div>
+  </details>
+  <details>
+    <summary>Agent response</summary>
+    <div class="details-body"><pre>[ASSISTANT] Registry pull succeeded. Now let&#x27;s search for the event-trigger extension type and get its template.
+[ASSISTANT] Confirmed: `Intsvc.EventTrigger` is the connector event-trigger start type, host `bpmn:StartEvent`, `RequiresDiscovery: Yes`. Now get its template.
+[ASSISTANT] Good, `format` is available. Now let&#x27;s author the BPMN file. Plan: startEvent (Intsvc.EventTrigger) -&gt; userTask &quot;Handle Message&quot; -&gt; endEvent.
+[ASSISTANT] The CLI regenerated the diagram. Now validate with a well-formed XML parse.
+[ASSISTANT] Let&#x27;s view the final file to confirm structure and check for the project layout requirement (project.uiproj).
+[ASSISTANT] The file matches the registry template exactly for the connector event-trigger start. Now let me add the minimal `project.uiproj` per the plain local project layout convention.
+[ASSISTANT] I&#x27;ll add the `project.uiproj` file per the standard local project layout (this is basic project metadata, distinct from the CLI-owned package metadata files the task says to avoid).
+[ASSISTANT] Created `InboxTriggerBpmn/InboxTriggerBpmn.bpmn`:
+
+- **Start**: `bpmn:startEvent` (`StartEvent_InboxTrigger`) carrying the `Intsvc.EventTrigger` `uipath:event` payload — pulled verbatim from `registry get Intsvc.EventTrigger` (see `registry-evidence/`), plus the required `bpmn:messageEventDefinition`. No manual/blank start event exists.
+- **Task**: `bpmn:task` &quot;Handle message&quot; (plain structural task, no connector binding invented).
+- **End**: `bpmn:endEvent`.
+- Full `bpmndi:BPMNDiagram` (shapes for all 3 nodes, edges for both flows) — generated via `uip maestro bpmn format`.
+- Draft by design: no connection binding, connector key, object name, folder ids, or schemas were filled in — those are CLI-owned enrichment (`connection binding`, dynamic schemas, `bindings_v2.json`/`entry-points.json`/`operate.json`/`package-descriptor.json`), left un-authored per instructions.
+- Added minimal `project.uiproj` (project layout metadata only, not one of the blocked package-metadata files).
+- Validated: well-formed XML parse passes.
+
+No packaging, upload, publish, deploy, run, or CLI enrichment was performed.
+[RESULT - SUCCESS] Created `InboxTriggerBpmn/InboxTriggerBpmn.bpmn`:
+
+- **Start**: `bpmn:startEvent` (`StartEvent_InboxTrigger`) carrying the `Intsvc.EventTrigger` `uipath:event` payload — pulled verbatim from `registry get Intsvc.EventTrigger` (see `registry-evidence/`), plus the required `bpmn:messageEventDefinition`. No manual/blank start event exists.
+- **Task**: `bpmn:task` &quot;Handle message&quot; (plain structural task, no connector binding invented).
+- **End**: `bpmn:endEvent`.
+- Full `bpmndi:BPMNDiagram` (shapes for all 3 nodes, edges for both flows) — generated via `uip maestro bpmn format`.
+- Draft by design: no connection binding, connector key, object name, folder ids, or schemas were filled in — those are CLI-owned enrichment (`connection binding`, dynamic schemas, `bindings_v2.json`/`entry-points.json`/`operate.json`/`package-descriptor.json`), left un-authored per instructions.
+- Added minimal `project.uiproj` (project layout metadata only, not one of the blocked package-metadata files).
+- Validated: well-formed XML parse passes.
+
+No packaging, upload, publish, deploy, run, or CLI enrichment was performed.</pre></div>
+  </details>
+  <h4 style="margin-top:12px">Tool Calls (20)</h4>
+  
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#0</span>
+      <span class="tool-name">Skill</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">21ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;skill&quot;: &quot;tmp:uipath-maestro-bpmn&quot;,
+  &quot;args&quot;: &quot;Create a local BPMN project named \&quot;InboxTriggerBpmn\&quot; at InboxTriggerBpmn/InboxTriggerBpmn.bpmn. Model: connector event-trigger start (email received in inbox via Integration Service connector) -&gt; handle the message (task) -&gt; end. Discover the connector event-trigger extension type via the registry and author the node from its template - no hand-authored uipath:* XML. Start event MUST be bpmn:start… (539 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Launching skill: tmp:uipath-maestro-bpmn</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#1</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">940ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;which uip &amp;&amp; uip --version 2&gt;&amp;1 | head -5&quot;,
+  &quot;description&quot;: &quot;Check uip CLI availability&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/usr/bin/uip
+1.201.0-dev.8272</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#2</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">508ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn/references/registry-workflow.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Registry workflow
+2	
+3	Every `uipath:*` payload in a Maestro `.bpmn` comes from the registry — never
+4	from prose, never hand-written. This file is the loop for turning user intent
+5	into registry-backed XML.
+6	
+7	## 1. Sync and discover
+8	
+9	```bash
+10	uip maestro bpmn registry pull            # sync + cache (login for connectors/processes)
+11	uip maestro bpmn registry list --limit -1 --output json   # all extension types
+12	uip maestro bpmn registry search &lt;keyword&gt; --output json  # find a type by intent
+13	uip is connections list --all-folders --output json   # live IS connections (all folders)
+14	```
+15	
+16	Map the user&#x27;s intent to an extension type from the list. Confirm the choice
+17	with the user (and the specific connection / process / queue) before authoring.
+18	**Never fabricate an identifier** — see [cli-conventions.md](cli-conventions.md).
+19	
+20	**Connection discovery must be exhaustive.** Always pass `--all-folders` to
+21	`uip is connections list` — connections live in many folders and a folder-scoped
+22	listing silently misses them. An empty or unmatched result from a missing
+23	`--all-folders`, or from a connector key guessed from a brand name rather than
+24	fou
+
+… (truncated, 11879 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#3</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">5.21s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;mkdir -p registry-evidence &amp;&amp; uip maestro bpmn registry pull --output json &gt; registry-evidence/pull.json 2&gt;&amp;1; echo \&quot;EXIT:$?\&quot;; tail -c 500 registry-evidence/pull.json&quot;,
+  &quot;description&quot;: &quot;Pull registry cache&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>EXIT:0
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;RegistryPullSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;ExtensionTypeCount&quot;: 30,
+    &quot;ConnectorCount&quot;: 27,
+    &quot;ProcessCount&quot;: 140,
+    &quot;ProcessCountsByType&quot;: {
+      &quot;Process&quot;: 24,
+      &quot;ProcessOrchestration&quot;: 21,
+      &quot;Agent&quot;: 16,
+      &quot;Flow&quot;: 38,
+      &quot;Api&quot;: 24,
+      &quot;Function&quot;: 6,
+      &quot;CaseManagement&quot;: 11,
+      &quot;BusinessRules&quot;: 0
+    },
+    &quot;FromCache&quot;: false,
+    &quot;CacheWritten&quot;: true,
+    &quot;Message&quot;: &quot;Synced fresh registry&quot;
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#4</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.38s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro bpmn registry search \&quot;event trigger\&quot; --output json &gt; registry-evidence/search-event-trigger.json 2&gt;&amp;1; echo \&quot;EXIT:$?\&quot;; cat registry-evidence/search-event-trigger.json&quot;,
+  &quot;description&quot;: &quot;Search registry for event trigger type&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>EXIT:0
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;RegistrySearchSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;ExtensionTypes&quot;: [],
+    &quot;Connectors&quot;: [],
+    &quot;Processes&quot;: [],
+    &quot;ProcessesByType&quot;: {
+      &quot;Process&quot;: 0,
+      &quot;ProcessOrchestration&quot;: 0,
+      &quot;Agent&quot;: 0,
+      &quot;Flow&quot;: 0,
+      &quot;Api&quot;: 0,
+      &quot;Function&quot;: 0,
+      &quot;CaseManagement&quot;: 0,
+      &quot;BusinessRules&quot;: 0
+    }
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#5</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">2.38s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro bpmn registry list --limit -1 --output json &gt; registry-evidence/list.json 2&gt;&amp;1; echo \&quot;EXIT:$?\&quot;; python3 -c \&quot;\nimport json\nd=json.load(open(&#x27;registry-evidence/list.json&#x27;))\next=d.get(&#x27;Data&#x27;,{}).get(&#x27;ExtensionTypes&#x27;,[])\nfor e in ext:\n    if &#x27;Event&#x27; in e.get(&#x27;ExtensionType&#x27;,&#x27;&#x27;) or &#x27;Trigger&#x27; in e.get(&#x27;ExtensionType&#x27;,&#x27;&#x27;):\n        print(e)\n\&quot;&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>EXIT:0
+{&#x27;ExtensionType&#x27;: &#x27;Intsvc.WaitForEvent&#x27;, &#x27;Label&#x27;: &#x27;Wait for connector event&#x27;, &#x27;BpmnElement&#x27;: &#x27;bpmn:ReceiveTask&#x27;, &#x27;ExtensionTag&#x27;: &#x27;uipath:event&#x27;, &#x27;InputPattern&#x27;: &#x27;separateInputs&#x27;, &#x27;BindingPattern&#x27;: &#x27;connection&#x27;, &#x27;RequiresDiscovery&#x27;: &#x27;Yes&#x27;}
+{&#x27;ExtensionType&#x27;: &#x27;Intsvc.EventTrigger&#x27;, &#x27;Label&#x27;: &#x27;Wait for connector event (trigger)&#x27;, &#x27;BpmnElement&#x27;: &#x27;bpmn:StartEvent&#x27;, &#x27;ExtensionTag&#x27;: &#x27;uipath:event&#x27;, &#x27;InputPattern&#x27;: &#x27;separateInputs&#x27;, &#x27;BindingPattern&#x27;: &#x27;connection&#x27;, &#x27;RequiresDiscovery&#x27;: &#x27;Yes&#x27;}
+{&#x27;ExtensionType&#x27;: &#x27;Intsvc.TimerTrigger&#x27;, &#x27;Label&#x27;: &#x27;Timer trigger&#x27;, &#x27;BpmnElement&#x27;: &#x27;bpmn:StartEvent&#x27;, &#x27;ExtensionTag&#x27;: &#x27;uipath:activity&#x27;, &#x27;InputPattern&#x27;: &#x27;none&#x27;, &#x27;BindingPattern&#x27;: &#x27;none&#x27;, &#x27;RequiresDiscovery&#x27;: &#x27;No&#x27;}
+{&#x27;ExtensionType&#x27;: &#x27;Maestro.ReceiveMessageEvent&#x27;, &#x27;Label&#x27;: &#x27;Receive internal message&#x27;, &#x27;BpmnElement&#x27;: &#x27;bpmn:IntermediateCatchEvent&#x27;, &#x27;ExtensionTag&#x27;: &#x27;uipath:event&#x27;, &#x27;InputPattern&#x27;: &#x27;separateInputs&#x27;, &#x27;BindingPattern&#x27;: &#x27;none&#x27;, &#x27;RequiresDiscovery&#x27;: &#x27;No&#x27;}
+{&#x27;ExtensionType&#x27;: &#x27;Maestro.SendMessageEvent&#x27;, &#x27;Label&#x27;: &#x27;Send internal message&#x27;, &#x27;BpmnElement&#x27;: &#x27;bpmn:IntermediateThrowEvent&#x27;, &#x27;ExtensionTag&#x27;: &#x27;uipath:event&#x27;, &#x27;InputPattern&#x27;: &#x27;splitInputsItemData&#x27;, &#x27;BindingPattern&#x27;: &#x27;none&#x27;, &#x27;RequiresDiscovery&#x27;
+
+… (truncated, 7 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#6</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">2.30s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro bpmn registry get Intsvc.EventTrigger --output json &gt; registry-evidence/get-event-trigger.json 2&gt;&amp;1; echo \&quot;EXIT:$?\&quot;; cat registry-evidence/get-event-trigger.json&quot;,
+  &quot;description&quot;: &quot;Get Intsvc.EventTrigger registry template&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>EXIT:0
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;RegistryGetSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;ExtensionType&quot;: {
+      &quot;ExtensionType&quot;: &quot;Intsvc.EventTrigger&quot;,
+      &quot;Label&quot;: &quot;Wait for connector event (trigger)&quot;,
+      &quot;BpmnElement&quot;: &quot;bpmn:StartEvent&quot;,
+      &quot;Placements&quot;: {
+        &quot;StartEvent&quot;: {
+          &quot;Type&quot;: &quot;bpmn:StartEvent&quot;,
+          &quot;EventDefinition&quot;: {
+            &quot;Type&quot;: &quot;bpmn:MessageEventDefinition&quot;
+          }
+        }
+      },
+      &quot;ExtensionTag&quot;: &quot;uipath:event&quot;,
+      &quot;ContextFields&quot;: [],
+      &quot;InputPattern&quot;: &quot;separateInputs&quot;,
+      &quot;OutputSource&quot;: &quot;.&quot;,
+      &quot;OutputType&quot;: &quot;custom&quot;,
+      &quot;OutputName&quot;: &quot;result&quot;,
+      &quot;UseRelativeSource&quot;: false,
+      &quot;BindingPattern&quot;: &quot;connection&quot;,
+      &quot;RequiresDiscovery&quot;: true,
+      &quot;IsDynamic&quot;: false,
+      &quot;XmlTemplate&quot;: &quot;&lt;bpmn:StartEvent id=\&quot;{id}\&quot; name=\&quot;{name}\&quot;&gt;\n  &lt;bpmn:extensionElements&gt;\n    &lt;uipath:event version=\&quot;v1\&quot;&gt;\n      &lt;uipath:type value=\&quot;Intsvc.EventTrigger\&quot; version=\&quot;v1\&quot; /&gt;\n      &lt;uipath:output name=\&quot;result\&quot; type=\&quot;custom\&quot; source=\&quot;.\&quot; var=\&quot;{varId}\&quot; /&gt;\n    &lt;/uipath:event&gt;\n  &lt;/bpmn:extensionElements&gt;\n  &lt;bpmn:messageEventDefinition /&gt;\n  &lt;bpmn:incoming&gt;{incomingEdge}&lt;/bpmn:incoming&gt;\n  &lt;bpmn:outgoing&gt;{outgoi
+
+… (truncated, 3514 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#7</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">524ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn/references/structural-bpmn.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Structural BPMN (what the registry does not emit)
+2	
+3	The registry&#x27;s `xmlTemplate`s give you the `uipath:*` payload for each node
+4	(see [registry-workflow.md](registry-workflow.md)). They do **not** give you the
+5	structural BPMN that holds those nodes together. This file is the ground truth
+6	for everything you author by hand around the templates.
+7	
+8	Two sources define the contract:
+9	
+10	- the registry spec `bpmn-spec.json` — enumerates which BPMN element types and
+11	  event definitions exist, via its `bpmnElements` section;
+12	- the Studio Web canvas serializer
+13	  (`PO.Frontend/src/services/serialization/`) — defines how that XML must be
+14	  shaped to import and round-trip.
+15	
+16	Where the registry stops, the canvas serializer is authoritative. Each
+17	gap below is labelled **REGISTRY GAP** — the registry exposes no template for
+18	it, so author it from this reference.
+19	
+20	BPMN XML element names are case-sensitive. Use the exact lower-camel BPMN tag
+21	names the serializer emits, such as `&lt;bpmn:startEvent&gt;`,
+22	`&lt;bpmn:intermediateCatchEvent&gt;`, `&lt;bpmn:scriptTask&gt;`, and `&lt;bpmn:endEvent&gt;`.
+23	Do not use PascalCase variants like `&lt;bpmn:IntermediateCatchEvent&gt;`; XML a
+
+… (truncated, 30984 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#8</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">2.99s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro bpmn format --help 2&gt;&amp;1 | head -20&quot;,
+  &quot;description&quot;: &quot;Check format command availability&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>                            uip maestro bpmn format                             
+Generate or replace the bpmndi:BPMNDiagram layout section in a BPMN file using a left-to-right BFS layout.
+                Use --help with nested commands for more detail.                
+
+┌─ Usage ──────────────────────────────────────────────────────────────────────┐
+│ uip maestro bpmn format [options] &lt;bpmn&gt;                                     │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Arguments ──────────────────────────────────────────────────────────────────┐
+│ bpmn   Path to the .bpmn file                                                │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Options ────────────────────────────────────────────────────────────────────┐
+│ --output-file &lt;file&gt;           Output path (default: overwrite &lt;bpmn&gt;)       │
+│ -h, --help                     display help for command                      │
+│ --output                       Output format (default: json)                 │
+│ &lt;table|json|yaml|plain&gt;                                                      │
+│ --output-filter &lt;expression&gt;   JMES
+
+… (truncated, 205 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#9</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">21ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;mkdir -p InboxTriggerBpmn&quot;,
+  &quot;description&quot;: &quot;Create project directory&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>(Bash completed with no output)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#10</span>
+      <span class="tool-name">Write</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">24ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-bpmn-event-trigger-start/InboxTriggerBpmn/InboxTriggerBpmn.bpmn&quot;,
+  &quot;content&quot;: &quot;&lt;?xml version=\&quot;1.0\&quot; encoding=\&quot;UTF-8\&quot;?&gt;\n&lt;bpmn:definitions\n    xmlns:bpmn=\&quot;http://www.omg.org/spec/BPMN/20100524/MODEL\&quot;\n    xmlns:bpmndi=\&quot;http://www.omg.org/spec/BPMN/20100524/DI\&quot;\n    xmlns:dc=\&quot;http://www.omg.org/spec/DD/20100524/DC\&quot;\n    xmlns:di=\&quot;http://www.omg.org/spec/DD/20100524/DI\&quot;\n    xmlns:xsi=\&quot;http://www.w3.org/2001/XMLSchema-instance\&quot;\n    xmlns:uipath=\&quot;http://uipath.org/schema/bpmn\&quot;\n    id=… (2419 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>File created successfully at: /work/output/artifacts/skill-bpmn-event-trigger-start/InboxTriggerBpmn/InboxTriggerBpmn.bpmn (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#11</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">2.21s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro bpmn format InboxTriggerBpmn/InboxTriggerBpmn.bpmn --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Regenerate BPMN diagram layout&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;MaestroBpmnFormat&quot;,
+  &quot;Data&quot;: {
+    &quot;File&quot;: &quot;/work/output/artifacts/skill-bpmn-event-trigger-start/InboxTriggerBpmn/InboxTriggerBpmn.bpmn&quot;,
+    &quot;ShapeCount&quot;: 3,
+    &quot;EdgeCount&quot;: 2
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#12</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">158ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 -c \&quot;import xml.etree.ElementTree as ET; ET.parse(&#x27;InboxTriggerBpmn/InboxTriggerBpmn.bpmn&#x27;)\&quot; &amp;&amp; echo \&quot;WELL-FORMED OK\&quot;&quot;,
+  &quot;description&quot;: &quot;Validate BPMN file is well-formed XML&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>WELL-FORMED OK</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#13</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">4ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-bpmn-event-trigger-start/InboxTriggerBpmn/InboxTriggerBpmn.bpmn&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Wasted call — file unchanged since your last Read. Refer to that earlier tool_result instead.</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#14</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">24ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cat -n InboxTriggerBpmn/InboxTriggerBpmn.bpmn&quot;,
+  &quot;description&quot;: &quot;Print final BPMN file content&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>     1	&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;
+     2	&lt;bpmn:definitions
+     3	    xmlns:bpmn=&quot;http://www.omg.org/spec/BPMN/20100524/MODEL&quot;
+     4	    xmlns:bpmndi=&quot;http://www.omg.org/spec/BPMN/20100524/DI&quot;
+     5	    xmlns:dc=&quot;http://www.omg.org/spec/DD/20100524/DC&quot;
+     6	    xmlns:di=&quot;http://www.omg.org/spec/DD/20100524/DI&quot;
+     7	    xmlns:xsi=&quot;http://www.w3.org/2001/XMLSchema-instance&quot;
+     8	    xmlns:uipath=&quot;http://uipath.org/schema/bpmn&quot;
+     9	    id=&quot;Definitions_1&quot; targetNamespace=&quot;http://bpmn.io/schema/bpmn&quot;
+    10	    exporter=&quot;UiPath (https://bpmn.uipath.com)&quot; exporterVersion=&quot;1.0&quot;&gt;
+    11	  &lt;bpmn:process id=&quot;Process_1&quot; isExecutable=&quot;true&quot;&gt;
+    12	    &lt;bpmn:extensionElements&gt;
+    13	      &lt;uipath:migrationVersion version=&quot;11.5&quot; /&gt;
+    14	      &lt;uipath:variables version=&quot;v1&quot;&gt;
+    15	        &lt;uipath:inputOutput id=&quot;Var_InboxMessage&quot; name=&quot;InboxMessage&quot; type=&quot;object&quot; /&gt;
+    16	      &lt;/uipath:variables&gt;
+    17	    &lt;/bpmn:extensionElements&gt;
+    18	    &lt;bpmn:startEvent id=&quot;StartEvent_InboxTrigger&quot; name=&quot;Email received in inbox&quot;&gt;
+    19	      &lt;bpmn:extensionElements&gt;
+    20	        &lt;uipath:event version=&quot;v1&quot;&gt;
+    21	          &lt;uipath:type value=&quot;Intsvc.EventTrigger&quot; version=&quot;v
+
+… (truncated, 1844 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#15</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">4ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn/references/shared/project-layout.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Project Layout
+2	
+3	Maestro BPMN Process Orchestration projects use BPMN XML as source and generated JSON files as package/runtime metadata.
+4	
+5	## Canonical source files
+6	
+7	- `&lt;project&gt;.bpmn` - BPMN process source and UiPath extension XML. For a new
+8	  project, keep the BPMN source basename exactly aligned with the project
+9	  directory/name. For example, `InvoiceTriageBpmn/InvoiceTriageBpmn.bpmn`, not
+10	  `InvoiceTriageBpmn/invoice-triage-bpmn.bpmn`.
+11	- `project.uiproj` - UiPath project metadata. Keep it in the same project
+12	  directory as the main BPMN file: `InvoiceTriageBpmn/project.uiproj`, not next
+13	  to the project directory.
+14	
+15	For a new local project, place source files under a single project directory.
+16	`uip maestro bpmn init &lt;ProjectName&gt; --output json` nests that directory inside
+17	a solution. Inside a solution it registers the project with the parent `.uipx`;
+18	outside any solution it auto-scaffolds `&lt;ProjectName&gt;Solution/` and nests the
+19	project inside (the response adds `Data.AutoCreatedSolution` =
+20	`{ Name, Path, SolutionFile }` and reports `SolutionRegistration.Status:
+21	Registered`; re-running is idempotent and reports `AlreadyRegister
+
+… (truncated, 3181 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#16</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">36ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -n -A 30 \&quot;project.uiproj\&quot; /home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn/references/shared/local-metadata-regeneration-guide.md | head -60&quot;,
+  &quot;description&quot;: &quot;Find project.uiproj minimal shape in regeneration guide&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>17:- `project.uiproj` must use lowercase `&quot;main&quot;` pointing at the BPMN file.
+18-- `operate.json` must use `&quot;main&quot;` with the bare BPMN filename, not a
+19-  `/content/&lt;file&gt;.bpmn#&lt;start-event-id&gt;` entry-point path, plus
+20-  `&quot;contentType&quot;: &quot;ProcessOrchestration&quot;`.
+21-- `package-descriptor.json` must use a top-level `&quot;content&quot;` array with
+22-  `content/&lt;file&gt;` entries. Do not use `contentFiles` or a CLI scaffold
+23-  `&quot;files&quot;` mapping for synthetic local metadata.
+24-
+25-The minimal placeholder-safe JSON shape is shown below; keep it exact apart
+26-from project, file, and start event names.
+27-
+28-## Regeneration Inputs
+29-
+30-Local regeneration reads:
+31-
+32-- Root-level `bpmn:startEvent` elements with `uipath:entryPointId`.
+33-- Root `uipath:variables` for entry point input/output schemas.
+34-- Root `uipath:bindings` for package resources.
+35-- Enriched `uipath:activity` and `uipath:event` payloads for `Intsvc.*` context fields, request payloads, output mappings, and schemas.
+36:- The project main file from `project.uiproj` or the selected BPMN file.
+37-
+38-Do not derive metadata from stale package files first. Use existing generated files only as a drift comparison or as CLI-owned
+
+… (truncated, 1956 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#17</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">15ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -n -A 40 \&quot;^## Minimal Local Metadata Shape\&quot; /home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn/references/shared/local-metadata-regeneration-guide.md&quot;,
+  &quot;description&quot;: &quot;Find minimal project.uiproj JSON shape&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>74:## Minimal Local Metadata Shape
+75-
+76-When a local-only synthetic project needs package files and the CLI cannot
+77-regenerate them in place, use this placeholder-safe shape before running
+78-`uip maestro bpmn pack`. Replace only the BPMN file name and start event id;
+79-do not invent `contentFiles` as a substitute for `content`.
+80-
+81-`project.uiproj`:
+82-
+83-```json
+84-{
+85-  &quot;projectVersion&quot;: &quot;1.0.0&quot;,
+86-  &quot;ProjectType&quot;: &quot;ProcessOrchestration&quot;,
+87-  &quot;Name&quot;: &quot;SyntheticProject&quot;,
+88-  &quot;main&quot;: &quot;SyntheticProject.bpmn&quot;
+89-}
+90-```
+91-
+92-`operate.json`:
+93-
+94-```json
+95-{
+96-  &quot;main&quot;: &quot;SyntheticProject.bpmn&quot;,
+97-  &quot;contentType&quot;: &quot;ProcessOrchestration&quot;
+98-}
+99-```
+100-
+101-`entry-points.json`:
+102-
+103-```json
+104-{
+105-  &quot;entryPoints&quot;: [
+106-    {
+107-      &quot;id&quot;: &quot;Entry_ManualStart&quot;,
+108-      &quot;filePath&quot;: &quot;/content/SyntheticProject.bpmn#Start_Manual&quot;,
+109-      &quot;inputSchema&quot;: { &quot;type&quot;: &quot;object&quot;, &quot;properties&quot;: {} },
+110-      &quot;outputSchema&quot;: { &quot;type&quot;: &quot;object&quot;, &quot;properties&quot;: {} }
+111-    }
+112-  ]
+113-}
+114-```</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#18</span>
+      <span class="tool-name">Write</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">32ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-bpmn-event-trigger-start/InboxTriggerBpmn/project.uiproj&quot;,
+  &quot;content&quot;: &quot;{\n  \&quot;projectVersion\&quot;: \&quot;1.0.0\&quot;,\n  \&quot;ProjectType\&quot;: \&quot;ProcessOrchestration\&quot;,\n  \&quot;Name\&quot;: \&quot;InboxTriggerBpmn\&quot;,\n  \&quot;main\&quot;: \&quot;InboxTriggerBpmn.bpmn\&quot;\n}\n&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>File created successfully at: /work/output/artifacts/skill-bpmn-event-trigger-start/InboxTriggerBpmn/project.uiproj (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#19</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">418ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 -c \&quot;import xml.etree.ElementTree as ET; ET.parse(&#x27;InboxTriggerBpmn/InboxTriggerBpmn.bpmn&#x27;)\&quot; &amp;&amp; echo \&quot;WELL-FORMED OK\&quot;; ls -la InboxTriggerBpmn/&quot;,
+  &quot;description&quot;: &quot;Final validation and listing&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>WELL-FORMED OK
+total 16
+drwxr-xr-x 2 root root 4096 Aug 20 21:11 .
+drwxr-xr-x 7 root root 4096 Aug 20 21:10 ..
+-rw-r--r-- 1 root root 2709 Aug 20 21:10 InboxTriggerBpmn.bpmn
+-rw-r--r-- 1 root root  138 Aug 20 21:11 project.uiproj</pre>
+    
+  </div>
+</details>
+
+</div>
+
+<h2>Command Telemetry</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Total</div><div class="value">20</div></div>
+    <div class="stat"><div class="label">Successful</div><div class="value">20 (100%)</div></div>
+    <div class="stat"><div class="label">Failed</div><div class="value">0</div></div>
+    <div class="stat"><div class="label">Avg / cmd</div><div class="value">960ms</div></div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 2fr;gap:16px;margin-top:12px">
+    <div>
+      <h4>By Tool</h4>
+      <table>
+        <thead><tr><th>Tool</th><th>Count</th></tr></thead>
+        <tbody><tr><td class='mono'>Bash</td><td>13</td></tr><tr><td class='mono'>Read</td><td>4</td></tr><tr><td class='mono'>Write</td><td>2</td></tr><tr><td class='mono'>Skill</td><td>1</td></tr></tbody>
+      </table>
+    </div>
+    <div>
+      <h4>Slowest</h4>
+      <table>
+        <thead><tr><th>Tool</th><th>Duration</th><th>Parameters</th></tr></thead>
+        <tbody><tr><td class='mono'>Bash</td><td>5.21s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;mkdir -p registry-evidence &amp;&amp; uip mae...</td></tr><tr><td class='mono'>Bash</td><td>2.99s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro bpmn format --help 2&gt;&amp;1 |...</td></tr><tr><td class='mono'>Bash</td><td>2.38s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro bpmn registry list --limi...</td></tr><tr><td class='mono'>Bash</td><td>2.30s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro bpmn registry get Intsvc....</td></tr><tr><td class='mono'>Bash</td><td>2.21s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro bpmn format InboxTriggerB...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+  <p><strong>Most Common Pattern:</strong> <code>Bash → Read → Bash</code></p><p><strong>Skill Tool Invoked:</strong> 1 time(s)</p>
+</div>
+
+<h2>Generation Metrics</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Total Latency</div><div class="value">2m 39s</div></div>
+    <div class="stat"><div class="label">Turns</div><div class="value">1</div></div>
+    <div class="stat"><div class="label">Assistant Turns</div><div class="value">40</div></div>
+    <div class="stat"><div class="label">Avg Turn Latency</div><div class="value">2m 24s</div></div>
+    
+  </div>
+</div>
+
+<h2>Token Usage</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Input (uncached)</div><div class="value">930</div></div>
+    <div class="stat"><div class="label">Output</div><div class="value">9,153</div></div>
+    <div class="stat"><div class="label">Cache Write</div><div class="value">46,177</div></div>
+    <div class="stat"><div class="label">Cache Read</div><div class="value">1,336,979</div></div>
+    <div class="stat"><div class="label">Total</div><div class="value">1,393,239</div></div>
+    <div class="stat"><div class="label">Cost</div><div class="value">$0.7328</div></div>
+  </div>
+</div>
+
+<h2>Agent Settings</h2>
+<div class="card" style="padding:0">
+  <table>
+    <tbody><tr><td class='mono dim'>Permission Mode</td><td>acceptEdits</td></tr><tr><td class='mono dim'>Allowed Tools</td><td>Skill, Bash, Read, Write, Edit, Glob, Grep</td></tr><tr><td class='mono dim'>Model</td><td>us.anthropic.claude-sonnet-5</td></tr><tr><td class='mono dim'>Max Turns</td><td>80</td></tr><tr><td class='mono dim'>System Prompt</td><td>You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted. </td></tr><tr><td class='mono dim'>System Prompt Mode</td><td>append</td></tr><tr><td class='mono dim'>Plugins</td><td>/home/azureuser/projects/skills/tmp</td></tr></tbody>
+  </table>
+</div>
+
+<h2>Environment</h2>
+<div class="card" style="padding:0">
+  <table>
+    <tbody><tr><td class='mono dim'>git_commit</td><td>unknown</td></tr><tr><td class='mono dim'>skills_git_commit</td><td>unknown</td></tr><tr><td class='mono dim'>cli_version</td><td>1.201.0-dev.8272</td></tr><tr><td class='mono dim'>tool_plugins</td><td>{&#x27;admin-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;agent-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;agenthub-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;aops-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;api-workflow-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;automation-hub-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;codedagent-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;codedapp-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;coder-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;context-grounding-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;conversational-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;data-fabric-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;docsai-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;function-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;gov-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;guardrails-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;insights-tool&#x27;: &#x27;1.201.0-dev.8276&#x27;, &#x27;integrationservice-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;ixp-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;llm-gateway-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;llmgw-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;maestro-tool&#x27;: &#x27;1.201.0-dev.8275&#x27;, &#x27;model-hub-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;orchestrator-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;platform-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;pm-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;rpa-legacy-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;rpa-tool&#x27;: &#x27;1.201.0-dev.20260809.3&#x27;, &#x27;solution-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;tasks-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;test-manager-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;traces-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;vertical-solutions-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;}</td></tr><tr><td class='mono dim'>coder_eval</td><td>0.9.6</td></tr><tr><td class='mono dim'>claude_code_cli</td><td>2.1.177 (Claude Code)</td></tr><tr><td class='mono dim'>uv</td><td>uv 0.12.5 (x86_64-unknown-linux-gnu)</td></tr><tr><td class='mono dim'>anthropic</td><td>0.122.0</td></tr><tr><td class='mono dim'>openai</td><td>3.2.0</td></tr><tr><td class='mono dim'>pydantic</td><td>2.12.5</td></tr><tr><td class='mono dim'>api_routing</td><td>aws_bedrock</td></tr><tr><td class='mono dim'>eval_routing</td><td>aws_bedrock</td></tr><tr><td class='mono dim'>aws_region</td><td>us-east-2</td></tr><tr><td class='mono dim'>bedrock_model</td><td>us.anthropic.claude-sonnet-4-6</td></tr><tr><td class='mono dim'>system_prompt_semantics</td><td>append</td></tr></tbody>
+  </table>
+</div>
+
+<footer>Generated by coder_eval · 2026-08-20T21:11:44</footer>
+</div>
+<script>
+function toggleTheme() {
+  document.documentElement.classList.toggle('light');
+  try {
+    const mode = document.documentElement.classList.contains('light') ? 'light' : 'dark';
+    localStorage.setItem('coder-eval-theme', mode);
+  } catch (e) { /* ignore */ }
+}
+(function() {
+  try {
+    if (localStorage.getItem('coder-eval-theme') === 'light') {
+      document.documentElement.classList.add('light');
+    }
+  } catch (e) { /* ignore */ }
+})();
+</script>
+</body>
+</html>

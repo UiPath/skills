@@ -1,0 +1,15 @@
+{
+  "connectionId": "<ACT365_CONNECTION_UUID>",
+  "folderKey": "<ORCHESTRATOR_FOLDER_KEY>",
+  "method": "POST",
+  "endpoint": "/Interactions",
+  "bodyParameters": {
+    "subject": "Sales Interaction",
+    "type": "Call",
+    "startTime": "2026-07-24T09:00:00Z",
+    "endTime": "2026-07-24T10:00:00Z",
+    "timeZone": "America/New_York",
+    "details": "Sales call with multiple contacts",
+    "contacts": "=js:[$vars.start.output.contacts[0], $vars.start.output.contacts[1], $vars.start.output.contacts[2]]"
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "OpenMeteoWeather",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "7a12bdc6-bbd0-4da5-a7f7-9ad7d96b5716",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "OpenMeteoWeather"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Flow",
+      "name": "OpenMeteoWeather",
+      "package": {
+        "key": "3c775124-197e-446c-ad3e-5ce66c655650"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "f512426c-59e0-415f-b459-be832ff5bb59",
+    "files": []
+  }
+}

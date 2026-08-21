@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "SfOpportunityUpdate",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "d6f71eb3-2885-47bb-85e7-f503a96fee6a",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "SfOpportunityUpdate"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Flow",
+      "name": "SfOpportunityUpdate",
+      "package": {
+        "key": "51dddb04-16a9-4677-9e64-9c60042b6e78"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "26fe956b-b457-4d75-a08b-5d345772ad5a",
+    "files": []
+  }
+}

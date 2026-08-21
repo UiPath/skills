@@ -1,0 +1,12 @@
+{
+  "connectionId": "<REPLACE_WITH_CONNECTION_UUID>",
+  "folderKey": "<REPLACE_WITH_FOLDER_KEY>",
+  "method": "POST",
+  "endpoint": "/CuratedContacts",
+  "bodyParameters": {
+    "firstName": "Jane",
+    "lastName": "Doe",
+    "emailAddress": "jane.doe@example.com",
+    "groups": ["Alpha Team", "Beta Group", "Gamma Squad"]
+  }
+}

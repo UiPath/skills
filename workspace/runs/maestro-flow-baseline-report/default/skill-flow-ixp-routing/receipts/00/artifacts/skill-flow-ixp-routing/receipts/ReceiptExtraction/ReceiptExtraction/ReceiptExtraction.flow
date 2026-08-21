@@ -1,0 +1,644 @@
+{
+  "id": "ef4e4d50-30ad-4e5e-b793-12849b3c6c60",
+  "version": "1.8",
+  "name": "ReceiptExtraction",
+  "nodes": [
+    {
+      "id": "start",
+      "type": "core.trigger.manual",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Manual trigger"
+      },
+      "inputs": {
+        "entryPointId": "8cedc770-a3e3-4126-adf2-808ae6afe267",
+        "isDefaultEntryPoint": true
+      }
+    },
+    {
+      "id": "extractReceiptFields",
+      "type": "uipath.ixp.idp-benchmark-receipts-43af6412-ixp.9e77f71d-773c-80a0-9411-ec40d252d00d-c4359cde-55f0-4f0e-9322-c6cdce74ab4c",
+      "typeVersion": "1.0.0",
+      "display": {
+        "label": "Extract Receipt Fields"
+      },
+      "inputs": {
+        "model": {
+          "id": "9e77f71d-773c-80a0-9411-ec40d252d00d",
+          "modelName": "idp-benchmark---receipts-43af6412-ixp",
+          "modelDisplayName": "idp-benchmark---receipts-43af6412-ixp",
+          "folderKey": "c4359cde-55f0-4f0e-9322-c6cdce74ab4c",
+          "folderName": "Shared",
+          "folderPath": "c4359cde-55f0-4f0e-9322-c6cdce74ab4c",
+          "description": ""
+        },
+        "modelName": "idp-benchmark---receipts-43af6412-ixp",
+        "projectName": "idp-benchmark---receipts-43af6412-ixp",
+        "folderKey": "c4359cde-55f0-4f0e-9322-c6cdce74ab4c",
+        "folderName": "Shared",
+        "versionTag": "",
+        "pageRange": "",
+        "fileRef": "=js:$vars.start.output.receiptFile"
+      },
+      "outputs": {
+        "output": {
+          "name": "output",
+          "type": "object",
+          "source": "=this.result",
+          "var": "output",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "properties": {
+              "ExtractionResult": {
+                "type": "object",
+                "properties": {
+                  "DocumentId": { "type": "string" },
+                  "ResultsVersion": { "type": "integer" },
+                  "ResultsDocument": {
+                    "type": "object",
+                    "properties": {
+                      "Fields": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "FieldId": { "type": "string" },
+                            "FieldName": { "type": "string" },
+                            "FieldType": { "type": "string" },
+                            "IsMissing": { "type": "boolean" },
+                            "Values": { "type": "array", "items": { "type": "string" } },
+                            "Confidence": { "type": "integer" }
+                          }
+                        }
+                      },
+                      "Tables": { "type": "array", "items": { "type": "object" } }
+                    }
+                  }
+                }
+              },
+              "ExtractorPayloads": { "type": "object" },
+              "BusinessrulesResults": { "type": "array", "items": { "type": "object" } }
+            }
+          }
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails",
+          "source": "=Error",
+          "var": "error",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "required": ["code", "message", "detail", "category", "status"],
+            "properties": {
+              "code": { "type": "string" },
+              "message": { "type": "string" },
+              "detail": { "type": "string" },
+              "category": { "type": "string" },
+              "status": { "type": "integer" }
+            },
+            "additionalProperties": false
+          }
+        }
+      }
+    },
+    {
+      "id": "parseReceiptData",
+      "type": "core.action.script",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Parse Merchant, Date & Total"
+      },
+      "inputs": {
+        "script": "const fields = ($vars.extractReceiptFields.output.ExtractionResult && $vars.extractReceiptFields.output.ExtractionResult.ResultsDocument && $vars.extractReceiptFields.output.ExtractionResult.ResultsDocument.Fields) || [];\nconst findField = (name) => (fields.find(f => f.FieldName === name) || {}).Values && fields.find(f => f.FieldName === name).Values[0];\nconst merchant = findField('vendor_name') || findField('merchant_name') || findField('VendorName') || findField('MerchantName') || null;\nconst date = findField('purchase_date') || findField('receipt_date') || findField('PurchaseDate') || findField('Date') || null;\nconst total = findField('total_amount') || findField('total') || findField('TotalAmount') || findField('Total') || null;\nreturn { merchant, date, total };"
+      },
+      "outputs": {
+        "output": {
+          "type": "object",
+          "description": "The return value of the script",
+          "source": "=result.response",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails",
+          "source": "=Error",
+          "var": "error",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "required": ["code", "message", "detail", "category", "status"],
+            "properties": {
+              "code": { "type": "string" },
+              "message": { "type": "string" },
+              "detail": { "type": "string" },
+              "category": { "type": "string" },
+              "status": { "type": "integer" }
+            },
+            "additionalProperties": false
+          }
+        }
+      }
+    },
+    {
+      "id": "end",
+      "type": "core.control.end",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "End"
+      },
+      "inputs": {},
+      "outputs": {}
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge-start-to-extract",
+      "sourceNodeId": "start",
+      "sourceHandle": "output",
+      "targetNodeId": "extractReceiptFields",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge-extract-to-parse",
+      "sourceNodeId": "extractReceiptFields",
+      "sourceHandle": "success",
+      "targetNodeId": "parseReceiptData",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge-parse-to-end",
+      "sourceNodeId": "parseReceiptData",
+      "sourceHandle": "success",
+      "targetNodeId": "end",
+      "targetPort": "input"
+    }
+  ],
+  "variables": {
+    "globals": [],
+    "nodes": [
+      {
+        "nodeId": "start",
+        "output": {
+          "type": "object",
+          "var": "output"
+        }
+      },
+      {
+        "nodeId": "extractReceiptFields",
+        "output": {
+          "type": "object",
+          "var": "output"
+        }
+      },
+      {
+        "nodeId": "parseReceiptData",
+        "output": {
+          "type": "object",
+          "var": "output"
+        }
+      }
+    ]
+  },
+  "definitions": [
+    {
+      "nodeType": "core.trigger.manual",
+      "version": "1.0",
+      "category": "trigger",
+      "description": "Start workflow manually",
+      "tags": [
+        "trigger",
+        "start",
+        "manual"
+      ],
+      "sortOrder": 40,
+      "display": {
+        "label": "Manual trigger",
+        "icon": "play",
+        "shape": "circle"
+      },
+      "handleConfiguration": [
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "output",
+              "type": "source",
+              "handleType": "output",
+              "showButton": true,
+              "constraints": {
+                "forbiddenTargetCategories": [
+                  "trigger"
+                ]
+              }
+            }
+          ],
+          "visible": true
+        }
+      ],
+      "model": {
+        "type": "bpmn:StartEvent",
+        "entryPointId": true
+      },
+      "outputDefinition": {
+        "output": {
+          "type": "object",
+          "description": "Data passed when manually triggering the workflow.",
+          "source": "null",
+          "var": "output"
+        }
+      },
+      "toolbarExtensions": {
+        "design": {
+          "actions": [
+            {
+              "id": "change-trigger-type",
+              "icon": "square-mouse-pointer",
+              "label": "Change trigger type"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "nodeType": "uipath.ixp.idp-benchmark-receipts-43af6412-ixp.9e77f71d-773c-80a0-9411-ec40d252d00d-c4359cde-55f0-4f0e-9322-c6cdce74ab4c",
+      "version": "1.0.0",
+      "category": "document-extraction",
+      "tags": [
+        "ixp",
+        "document-understanding",
+        "extraction"
+      ],
+      "description": "(Shared)",
+      "sortOrder": 537,
+      "display": {
+        "canvasLabel": "Extract",
+        "label": "idp-benchmark---receipts-43af6412-ixp",
+        "description": "(Shared)",
+        "icon": "file-text"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "success",
+              "type": "source",
+              "handleType": "output"
+            },
+            {
+              "id": "error",
+              "label": "Error",
+              "type": "source",
+              "handleType": "output",
+              "visible": "{inputs.errorHandlingEnabled}",
+              "constraints": {
+                "maxConnections": 1
+              }
+            }
+          ]
+        }
+      ],
+      "supportsErrorHandling": true,
+      "model": {
+        "type": "bpmn:ServiceTask",
+        "serviceType": "IXP.Extraction",
+        "bindings": {
+          "resource": "ixpDeployment",
+          "entityType": "ixpDeployment",
+          "resourceSubType": null,
+          "resourceKey": "9e77f71d-773c-80a0-9411-ec40d252d00d",
+          "name": "idp-benchmark---receipts-43af6412-ixp",
+          "values": [
+            {
+              "name": "name",
+              "propertyAttribute": "name",
+              "default": "idp-benchmark---receipts-43af6412-ixp"
+            },
+            {
+              "name": "folderPath",
+              "propertyAttribute": "folderPath",
+              "default": "Shared"
+            }
+          ]
+        }
+      },
+      "form": {
+        "id": "ixp-standalone-form",
+        "title": "IXP",
+        "sections": [
+          {
+            "id": "ixp-model",
+            "title": "Configuration",
+            "fields": [
+              {
+                "name": "inputs.modelName",
+                "type": "text",
+                "label": "IXP model",
+                "rules": [
+                  {
+                    "id": "always-disabled",
+                    "conditions": [],
+                    "effects": {
+                      "disabled": true
+                    }
+                  }
+                ]
+              },
+              {
+                "name": "inputs.folderName",
+                "type": "text",
+                "label": "Folder",
+                "rules": [
+                  {
+                    "id": "always-disabled",
+                    "conditions": [],
+                    "effects": {
+                      "disabled": true
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "ixp-file-upload",
+            "title": "File input",
+            "collapsible": true,
+            "defaultExpanded": true,
+            "fields": [
+              {
+                "name": "inputs.fileRef",
+                "type": "file",
+                "label": "File",
+                "description": "File to extract data from",
+                "validation": {
+                  "required": true,
+                  "messages": {
+                    "required": "A file is required for extraction"
+                  }
+                }
+              },
+              {
+                "name": "inputs.pageRange",
+                "type": "text",
+                "label": "Page range",
+                "placeholder": "e.g. 1-5",
+                "description": "Optional page range to process."
+              }
+            ]
+          },
+          {
+            "id": "schema-definition",
+            "title": "Schema definition",
+            "collapsible": false,
+            "fields": [
+              {
+                "name": "inputs.model",
+                "type": "custom",
+                "component": "ixp-model-taxonomy",
+                "label": ""
+              }
+            ]
+          }
+        ]
+      },
+      "debug": {
+        "runtime": "bpmnEngine"
+      },
+      "inputDefinition": {
+        "type": "object",
+        "properties": {
+          "projectName": { "type": "string" },
+          "projectId": { "type": "string" },
+          "versionTag": { "type": "string" },
+          "folderKey": { "type": "string" },
+          "folderName": { "type": "string" },
+          "model": { "type": "object" },
+          "modelName": { "type": "string" },
+          "fileRef": { "type": "string" },
+          "pageRange": { "type": "string" },
+          "attachmentConfig": { "type": "object" },
+          "attachment": {
+            "type": "object",
+            "properties": {
+              "ID": { "type": "string" },
+              "FullName": { "type": "string" },
+              "MimeType": { "type": "string" },
+              "Metadata": { "type": "object", "additionalProperties": { "type": "string" } }
+            },
+            "required": ["ID"]
+          }
+        },
+        "required": ["fileRef"]
+      },
+      "inputDefaults": {
+        "model": {
+          "id": "9e77f71d-773c-80a0-9411-ec40d252d00d",
+          "modelName": null,
+          "modelDisplayName": "idp-benchmark---receipts-43af6412-ixp",
+          "folderKey": "c4359cde-55f0-4f0e-9322-c6cdce74ab4c",
+          "folderName": "Shared",
+          "folderPath": "c4359cde-55f0-4f0e-9322-c6cdce74ab4c",
+          "description": ""
+        },
+        "modelName": "idp-benchmark---receipts-43af6412-ixp",
+        "description": "",
+        "projectName": "idp-benchmark---receipts-43af6412-ixp",
+        "versionTag": "",
+        "folderKey": "c4359cde-55f0-4f0e-9322-c6cdce74ab4c",
+        "folderName": "Shared",
+        "fileRef": "",
+        "pageRange": ""
+      },
+      "outputDefinition": {
+        "output": {
+          "name": "output",
+          "type": "object",
+          "source": "=this.result",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails",
+          "source": "=Error",
+          "var": "error"
+        }
+      }
+    },
+    {
+      "nodeType": "core.action.script",
+      "version": "1.0",
+      "category": "data-operations",
+      "description": "Run custom JavaScript code",
+      "tags": [
+        "code",
+        "javascript",
+        "python"
+      ],
+      "sortOrder": 35,
+      "supportsErrorHandling": true,
+      "display": {
+        "label": "Script",
+        "icon": "code"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "success",
+              "type": "source",
+              "handleType": "output"
+            },
+            {
+              "id": "error",
+              "label": "Error",
+              "type": "source",
+              "handleType": "output",
+              "visible": "{inputs.errorHandlingEnabled}",
+              "constraints": {
+                "maxConnections": 1
+              }
+            }
+          ]
+        }
+      ],
+      "debug": {
+        "runtime": "clientScript"
+      },
+      "model": {
+        "type": "bpmn:ScriptTask"
+      },
+      "inputDefinition": {
+        "type": "object",
+        "properties": {
+          "script": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": ["script"]
+      },
+      "inputDefaults": {
+        "script": ""
+      },
+      "outputDefinition": {
+        "output": {
+          "type": "object",
+          "description": "The return value of the script",
+          "source": "=result.response",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails",
+          "source": "=Error",
+          "var": "error"
+        }
+      }
+    },
+    {
+      "nodeType": "core.control.end",
+      "version": "1.0",
+      "category": "control-flow",
+      "description": "Mark the end of a workflow path",
+      "tags": [
+        "control-flow",
+        "end",
+        "finish",
+        "complete"
+      ],
+      "sortOrder": 20,
+      "display": {
+        "label": "End",
+        "icon": "circle-check",
+        "shape": "circle"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        }
+      ],
+      "model": {
+        "type": "bpmn:EndEvent"
+      },
+      "runtimeConstraints": {
+        "exclude": [
+          "api-function"
+        ]
+      }
+    }
+  ],
+  "layout": {
+    "nodes": {
+      "end": {
+        "position": {
+          "x": 0,
+          "y": 0
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "extractReceiptFields": {
+        "position": {
+          "x": 0,
+          "y": 0
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "parseReceiptData": {
+        "position": {
+          "x": 0,
+          "y": 0
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "start": {
+        "position": {
+          "x": 256,
+          "y": 144
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "DocVersion": "1.0.0",
+  "StudioMinVersion": "2025.10.0",
+  "SolutionId": "68726e38-5092-455a-8c43-861ea0eed354",
+  "Projects": [
+    {
+      "Type": "Flow",
+      "ProjectRelativePath": "SfOpportunityUpdate/project.uiproj",
+      "Id": "17ac12e4-f120-4dbe-8d30-e46128eb5ceb"
+    }
+  ]
+}

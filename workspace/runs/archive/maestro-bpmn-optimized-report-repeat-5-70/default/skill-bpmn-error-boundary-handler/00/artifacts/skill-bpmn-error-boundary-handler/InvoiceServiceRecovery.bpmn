@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+    xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+    xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+    xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+    xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:uipath="http://uipath.org/schema/bpmn"
+    id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn"
+    exporter="UiPath (https://bpmn.uipath.com)" exporterVersion="1.0">
+
+  <bpmn:error id="Error_ServiceFailure" name="ServiceFailure" errorCode="SERVICE_FAILURE" />
+
+  <bpmn:process id="Process_1" isExecutable="true">
+    <bpmn:extensionElements>
+      <uipath:migrationVersion version="11.5" />
+      <uipath:variables version="v1">
+        <uipath:inputOutput id="Var_InvoicePayload" name="InvoicePayload" type="json" />
+        <uipath:inputOutput id="Var_ServiceResponse" name="ServiceResponse" type="json" />
+        <uipath:inputOutput id="Var_RecoveryStatus" name="RecoveryStatus" type="string" />
+      </uipath:variables>
+    </bpmn:extensionElements>
+
+    <bpmn:startEvent id="Start_1" name="Start">
+      <bpmn:outgoing>Flow_Start_Post</bpmn:outgoing>
+    </bpmn:startEvent>
+
+    <bpmn:sendTask id="Task_PostInvoice" name="Post Invoice">
+      <bpmn:extensionElements>
+        <uipath:activity version="v1">
+          <uipath:type value="Intsvc.HttpExecution" version="v1" />
+          <uipath:context>
+            <uipath:input name="mode" value="manual" />
+            <uipath:input name="method" value="POST" />
+            <uipath:input name="url" value="https://invoice-service.example.com/api/invoices" />
+            <uipath:input name="headers" value="{&quot;Content-Type&quot;:&quot;application/json&quot;}" />
+            <uipath:input name="parameters" value="{}" />
+            <uipath:input name="body" value="=vars.Var_InvoicePayload" />
+          </uipath:context>
+          <uipath:output name="response" type="jsonSchema" source="=response" var="Var_ServiceResponse" />
+        </uipath:activity>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_Start_Post</bpmn:incoming>
+      <bpmn:outgoing>Flow_Post_HappyEnd</bpmn:outgoing>
+    </bpmn:sendTask>
+
+    <bpmn:boundaryEvent id="Boundary_ServiceError" attachedToRef="Task_PostInvoice" cancelActivity="true">
+      <bpmn:errorEventDefinition errorRef="Error_ServiceFailure" />
+      <bpmn:outgoing>Flow_Error_Recovery</bpmn:outgoing>
+    </bpmn:boundaryEvent>
+
+    <bpmn:endEvent id="End_Happy" name="Invoice Posted">
+      <bpmn:incoming>Flow_Post_HappyEnd</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <bpmn:scriptTask id="Task_Recovery" name="Handle Service Failure" scriptFormat="JavaScript">
+      <bpmn:extensionElements>
+        <uipath:scriptVersion value="v3" />
+        <uipath:mapping version="v1">
+          <uipath:type value="BPMN.ScriptTask" version="v1" />
+          <uipath:input name="args" type="json" target="bodyField"><![CDATA[{}]]></uipath:input>
+          <uipath:output name="status" type="string" var="Var_RecoveryStatus" source="=result.response" />
+        </uipath:mapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_Error_Recovery</bpmn:incoming>
+      <bpmn:outgoing>Flow_Recovery_End</bpmn:outgoing>
+      <bpmn:script><![CDATA[return { response: "recovered" };]]></bpmn:script>
+    </bpmn:scriptTask>
+
+    <bpmn:endEvent id="End_Recovery" name="Recovery Complete">
+      <bpmn:incoming>Flow_Recovery_End</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <bpmn:sequenceFlow id="Flow_Start_Post" sourceRef="Start_1" targetRef="Task_PostInvoice" />
+    <bpmn:sequenceFlow id="Flow_Post_HappyEnd" sourceRef="Task_PostInvoice" targetRef="End_Happy" />
+    <bpmn:sequenceFlow id="Flow_Error_Recovery" sourceRef="Boundary_ServiceError" targetRef="Task_Recovery" />
+    <bpmn:sequenceFlow id="Flow_Recovery_End" sourceRef="Task_Recovery" targetRef="End_Recovery" />
+  </bpmn:process>
+
+
+  <bpmndi:BPMNDiagram id="Diagram_1">
+    <bpmndi:BPMNPlane id="Plane_1" bpmnElement="Process_1">
+      <!-- Happy path row (y-center 118) -->
+      <bpmndi:BPMNShape id="S_Start_1" bpmnElement="Start_1"><dc:Bounds x="160" y="100" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Task_PostInvoice" bpmnElement="Task_PostInvoice"><dc:Bounds x="260" y="78" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_End_Happy" bpmnElement="End_Happy"><dc:Bounds x="430" y="100" width="36" height="36" /></bpmndi:BPMNShape>
+      <!-- Boundary event anchored to bottom-centre of Task_PostInvoice -->
+      <bpmndi:BPMNShape id="S_Boundary_ServiceError" bpmnElement="Boundary_ServiceError"><dc:Bounds x="292" y="140" width="36" height="36" /></bpmndi:BPMNShape>
+      <!-- Recovery row (y-center 290) -->
+      <bpmndi:BPMNShape id="S_Task_Recovery" bpmnElement="Task_Recovery"><dc:Bounds x="260" y="250" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_End_Recovery" bpmnElement="End_Recovery"><dc:Bounds x="430" y="272" width="36" height="36" /></bpmndi:BPMNShape>
+      <!-- Sequence flow edges -->
+      <bpmndi:BPMNEdge id="E_Flow_Start_Post" bpmnElement="Flow_Start_Post"><di:waypoint x="196" y="118" /><di:waypoint x="260" y="118" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_Post_HappyEnd" bpmnElement="Flow_Post_HappyEnd"><di:waypoint x="360" y="118" /><di:waypoint x="430" y="118" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_Error_Recovery" bpmnElement="Flow_Error_Recovery"><di:waypoint x="310" y="176" /><di:waypoint x="310" y="250" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_Recovery_End" bpmnElement="Flow_Recovery_End"><di:waypoint x="360" y="290" /><di:waypoint x="430" y="290" /></bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

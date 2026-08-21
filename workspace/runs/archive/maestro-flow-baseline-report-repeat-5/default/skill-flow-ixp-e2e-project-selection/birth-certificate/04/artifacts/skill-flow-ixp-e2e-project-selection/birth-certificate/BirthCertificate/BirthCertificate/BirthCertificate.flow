@@ -1,0 +1,760 @@
+{
+  "id": "43439b85-2467-4b33-95a3-241f159bbde7",
+  "version": "1.8",
+  "name": "BirthCertificate",
+  "nodes": [
+    {
+      "id": "start",
+      "type": "core.trigger.manual",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Manual trigger"
+      },
+      "inputs": {
+        "entryPointId": "d10792bf-b34d-4151-8122-3b4f08e17a9a",
+        "isDefaultEntryPoint": true
+      },
+      "outputs": {
+        "output": {
+          "type": "object",
+          "description": "Data passed when manually triggering the workflow.",
+          "source": "null",
+          "var": "output"
+        }
+      }
+    },
+    {
+      "id": "extractBirthCertificate",
+      "type": "uipath.ixp.birth-certificates-oob-6252526a-ixp.a05c7655-1a1c-80a5-94a0-b1609d34dc10-c4359cde-55f0-4f0e-9322-c6cdce74ab4c",
+      "typeVersion": "1.0.0",
+      "display": {
+        "label": "Extract Birth Certificate"
+      },
+      "inputs": {
+        "model": {
+          "id": "a05c7655-1a1c-80a5-94a0-b1609d34dc10",
+          "modelName": "birth_certificates_oob-6252526a-ixp",
+          "modelDisplayName": "birth_certificates_oob-6252526a-ixp",
+          "folderKey": "c4359cde-55f0-4f0e-9322-c6cdce74ab4c",
+          "folderName": "Shared",
+          "folderPath": "c4359cde-55f0-4f0e-9322-c6cdce74ab4c",
+          "description": ""
+        },
+        "modelName": "birth_certificates_oob-6252526a-ixp",
+        "projectName": "birth_certificates_oob-6252526a-ixp",
+        "folderKey": "c4359cde-55f0-4f0e-9322-c6cdce74ab4c",
+        "folderName": "Shared",
+        "versionTag": "",
+        "fileRef": "=js:$vars.start.output.certificate",
+        "pageRange": ""
+      },
+      "outputs": {
+        "output": {
+          "name": "output",
+          "type": "object",
+          "source": "=this.result",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails",
+          "source": "=Error",
+          "var": "error"
+        }
+      }
+    },
+    {
+      "id": "logChildName",
+      "type": "core.action.script",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Log Child Full Name"
+      },
+      "inputs": {
+        "script": "const fields = ($vars.extractBirthCertificate.output.ExtractionResult && $vars.extractBirthCertificate.output.ExtractionResult.ResultsDocument && $vars.extractBirthCertificate.output.ExtractionResult.ResultsDocument.Fields) ? $vars.extractBirthCertificate.output.ExtractionResult.ResultsDocument.Fields : [];\nconst childFullName = (fields.find(function(f) { return f.FieldName === 'Child Full Name'; }) || fields.find(function(f) { return f.FieldName === 'child_full_name'; }) || fields.find(function(f) { return f.FieldName === 'ChildName'; }) || fields.find(function(f) { return f.FieldName === 'Full Name'; }) || {});\nconst dateOfBirth = (fields.find(function(f) { return f.FieldName === 'Date of Birth'; }) || fields.find(function(f) { return f.FieldName === 'date_of_birth'; }) || fields.find(function(f) { return f.FieldName === 'DateOfBirth'; }) || {});\nconst placeOfBirth = (fields.find(function(f) { return f.FieldName === 'Place of Birth'; }) || fields.find(function(f) { return f.FieldName === 'place_of_birth'; }) || fields.find(function(f) { return f.FieldName === 'PlaceOfBirth'; }) || {});\nconst fatherName = (fields.find(function(f) { return f.FieldName === \"Father's Name\"; }) || fields.find(function(f) { return f.FieldName === 'father_name'; }) || fields.find(function(f) { return f.FieldName === 'FatherName'; }) || {});\nconst motherName = (fields.find(function(f) { return f.FieldName === \"Mother's Name\"; }) || fields.find(function(f) { return f.FieldName === 'mother_name'; }) || fields.find(function(f) { return f.FieldName === 'MotherName'; }) || {});\nconst childFullNameValue = (childFullName.Values && childFullName.Values[0]) ? childFullName.Values[0] : null;\nconst dateOfBirthValue = (dateOfBirth.Values && dateOfBirth.Values[0]) ? dateOfBirth.Values[0] : null;\nconst placeOfBirthValue = (placeOfBirth.Values && placeOfBirth.Values[0]) ? placeOfBirth.Values[0] : null;\nconst fatherNameValue = (fatherName.Values && fatherName.Values[0]) ? fatherName.Values[0] : null;\nconst motherNameValue = (motherName.Values && motherName.Values[0]) ? motherName.Values[0] : null;\nreturn {\n  childFullName: childFullNameValue,\n  dateOfBirth: dateOfBirthValue,\n  placeOfBirth: placeOfBirthValue,\n  fatherName: fatherNameValue,\n  motherName: motherNameValue\n};"
+      },
+      "outputs": {
+        "output": {
+          "type": "object",
+          "description": "The return value of the script",
+          "source": "=result.response",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the script fails",
+          "source": "=result.Error",
+          "var": "error"
+        }
+      }
+    },
+    {
+      "id": "end",
+      "type": "core.control.end",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "End"
+      },
+      "inputs": {}
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge-start-extract",
+      "sourceNodeId": "start",
+      "sourcePort": "output",
+      "targetNodeId": "extractBirthCertificate",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge-extract-log",
+      "sourceNodeId": "extractBirthCertificate",
+      "sourcePort": "success",
+      "targetNodeId": "logChildName",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge-log-end",
+      "sourceNodeId": "logChildName",
+      "sourcePort": "success",
+      "targetNodeId": "end",
+      "targetPort": "input"
+    }
+  ],
+  "definitions": [
+    {
+      "nodeType": "core.trigger.manual",
+      "version": "1.0",
+      "category": "trigger",
+      "description": "Start workflow manually",
+      "tags": [
+        "trigger",
+        "start",
+        "manual"
+      ],
+      "sortOrder": 40,
+      "display": {
+        "label": "Manual trigger",
+        "icon": "play",
+        "shape": "circle"
+      },
+      "handleConfiguration": [
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "output",
+              "type": "source",
+              "handleType": "output",
+              "showButton": true,
+              "constraints": {
+                "forbiddenTargetCategories": [
+                  "trigger"
+                ]
+              }
+            }
+          ],
+          "visible": true
+        }
+      ],
+      "model": {
+        "type": "bpmn:StartEvent",
+        "entryPointId": true
+      },
+      "outputDefinition": {
+        "output": {
+          "type": "object",
+          "description": "Data passed when manually triggering the workflow.",
+          "source": "null",
+          "var": "output"
+        }
+      },
+      "toolbarExtensions": {
+        "design": {
+          "actions": [
+            {
+              "id": "change-trigger-type",
+              "icon": "square-mouse-pointer",
+              "label": "Change trigger type"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "nodeType": "uipath.ixp.birth-certificates-oob-6252526a-ixp.a05c7655-1a1c-80a5-94a0-b1609d34dc10-c4359cde-55f0-4f0e-9322-c6cdce74ab4c",
+      "version": "1.0.0",
+      "category": "document-extraction",
+      "tags": [
+        "ixp",
+        "document-understanding",
+        "extraction"
+      ],
+      "description": "(Shared)",
+      "sortOrder": 537,
+      "display": {
+        "canvasLabel": "Extract",
+        "label": "birth_certificates_oob-6252526a-ixp",
+        "description": "(Shared)",
+        "icon": "file-text"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "success",
+              "type": "source",
+              "handleType": "output"
+            },
+            {
+              "id": "error",
+              "label": "Error",
+              "type": "source",
+              "handleType": "output",
+              "visible": "{inputs.errorHandlingEnabled}",
+              "constraints": {
+                "maxConnections": 1
+              }
+            }
+          ]
+        }
+      ],
+      "supportsErrorHandling": true,
+      "model": {
+        "type": "bpmn:ServiceTask",
+        "serviceType": "IXP.Extraction",
+        "bindings": {
+          "resource": "ixpDeployment",
+          "entityType": "ixpDeployment",
+          "resourceSubType": null,
+          "resourceKey": "a05c7655-1a1c-80a5-94a0-b1609d34dc10",
+          "name": "birth_certificates_oob-6252526a-ixp",
+          "values": [
+            {
+              "name": "name",
+              "propertyAttribute": "name",
+              "default": "birth_certificates_oob-6252526a-ixp"
+            },
+            {
+              "name": "folderPath",
+              "propertyAttribute": "folderPath",
+              "default": "Shared"
+            }
+          ]
+        }
+      },
+      "form": {
+        "id": "ixp-standalone-form",
+        "title": "IXP",
+        "sections": [
+          {
+            "id": "ixp-model",
+            "title": "Configuration",
+            "fields": [
+              {
+                "name": "inputs.modelName",
+                "type": "text",
+                "label": "IXP model",
+                "rules": [
+                  {
+                    "id": "always-disabled",
+                    "conditions": [],
+                    "effects": {
+                      "disabled": true
+                    }
+                  }
+                ]
+              },
+              {
+                "name": "inputs.folderName",
+                "type": "text",
+                "label": "Folder",
+                "rules": [
+                  {
+                    "id": "always-disabled",
+                    "conditions": [],
+                    "effects": {
+                      "disabled": true
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "ixp-file-upload",
+            "title": "File input",
+            "collapsible": true,
+            "defaultExpanded": true,
+            "fields": [
+              {
+                "name": "inputs.fileRef",
+                "type": "file",
+                "label": "File",
+                "description": "File to extract data from",
+                "validation": {
+                  "required": true,
+                  "messages": {
+                    "required": "A file is required for extraction"
+                  }
+                }
+              },
+              {
+                "name": "inputs.pageRange",
+                "type": "text",
+                "label": "Page range",
+                "placeholder": "e.g. 1-5",
+                "description": "Optional page range to process."
+              }
+            ]
+          },
+          {
+            "id": "schema-definition",
+            "title": "Schema definition",
+            "collapsible": false,
+            "fields": [
+              {
+                "name": "inputs.model",
+                "type": "custom",
+                "component": "ixp-model-taxonomy",
+                "label": ""
+              }
+            ]
+          }
+        ]
+      },
+      "debug": {
+        "runtime": "bpmnEngine"
+      },
+      "inputDefinition": {
+        "type": "object",
+        "properties": {
+          "projectName": {
+            "type": "string"
+          },
+          "projectId": {
+            "type": "string"
+          },
+          "versionTag": {
+            "type": "string"
+          },
+          "folderKey": {
+            "type": "string"
+          },
+          "folderName": {
+            "type": "string"
+          },
+          "model": {
+            "type": "object"
+          },
+          "modelName": {
+            "type": "string"
+          },
+          "fileRef": {
+            "type": "string"
+          },
+          "pageRange": {
+            "type": "string"
+          },
+          "attachmentConfig": {
+            "type": "object"
+          },
+          "attachment": {
+            "type": "object",
+            "description": "File to extract data from.",
+            "properties": {
+              "ID": {
+                "type": "string",
+                "description": "Orchestrator attachment key"
+              },
+              "FullName": {
+                "type": "string",
+                "description": "File name"
+              },
+              "MimeType": {
+                "type": "string",
+                "description": "The MIME type of the content"
+              },
+              "Metadata": {
+                "type": "object",
+                "description": "Dictionary of metadata",
+                "additionalProperties": {
+                  "type": "string"
+                }
+              }
+            },
+            "required": [
+              "ID"
+            ]
+          }
+        },
+        "required": [
+          "fileRef"
+        ]
+      },
+      "inputDefaults": {
+        "model": {
+          "id": "a05c7655-1a1c-80a5-94a0-b1609d34dc10",
+          "modelName": null,
+          "modelDisplayName": "birth_certificates_oob-6252526a-ixp",
+          "folderKey": "c4359cde-55f0-4f0e-9322-c6cdce74ab4c",
+          "folderName": "Shared",
+          "folderPath": "c4359cde-55f0-4f0e-9322-c6cdce74ab4c",
+          "description": ""
+        },
+        "modelName": "birth_certificates_oob-6252526a-ixp",
+        "description": "",
+        "projectName": "birth_certificates_oob-6252526a-ixp",
+        "versionTag": "",
+        "folderKey": "c4359cde-55f0-4f0e-9322-c6cdce74ab4c",
+        "folderName": "Shared",
+        "fileRef": "",
+        "pageRange": ""
+      },
+      "outputDefinition": {
+        "output": {
+          "name": "output",
+          "type": "object",
+          "source": "=this.result",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails",
+          "source": "=Error",
+          "var": "error",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "required": [
+              "code",
+              "message",
+              "detail",
+              "category",
+              "status"
+            ],
+            "properties": {
+              "code": {
+                "type": "string",
+                "description": "Error code as a string"
+              },
+              "message": {
+                "type": "string",
+                "description": "High-level error message"
+              },
+              "detail": {
+                "type": "string",
+                "description": "Detailed error description"
+              },
+              "category": {
+                "type": "string",
+                "description": "Error category"
+              },
+              "status": {
+                "type": "integer",
+                "description": "HTTP status code"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      }
+    },
+    {
+      "nodeType": "core.action.script",
+      "version": "1.0",
+      "category": "data-operations",
+      "description": "Run custom JavaScript code",
+      "tags": [
+        "code",
+        "javascript",
+        "python"
+      ],
+      "sortOrder": 35,
+      "supportsErrorHandling": true,
+      "display": {
+        "label": "Script",
+        "icon": "code"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "success",
+              "type": "source",
+              "handleType": "output"
+            },
+            {
+              "id": "error",
+              "label": "Error",
+              "type": "source",
+              "handleType": "output",
+              "visible": "{inputs.errorHandlingEnabled}",
+              "constraints": {
+                "maxConnections": 1
+              }
+            }
+          ]
+        }
+      ],
+      "debug": {
+        "runtime": "clientScript"
+      },
+      "model": {
+        "type": "bpmn:ScriptTask"
+      },
+      "inputDefinition": {
+        "type": "object",
+        "properties": {
+          "script": {
+            "type": "string",
+            "minLength": 1,
+            "errorMessage": "A script function is required",
+            "validationSeverity": "warning"
+          }
+        },
+        "required": [
+          "script"
+        ]
+      },
+      "inputDefaults": {
+        "script": ""
+      },
+      "outputDefinition": {
+        "output": {
+          "type": "object",
+          "description": "The return value of the script",
+          "source": "=result.response",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails",
+          "source": "=Error",
+          "var": "error",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "required": [
+              "code",
+              "message",
+              "detail",
+              "category",
+              "status"
+            ],
+            "properties": {
+              "code": {
+                "type": "string",
+                "description": "Error code as a string"
+              },
+              "message": {
+                "type": "string",
+                "description": "High-level error message"
+              },
+              "detail": {
+                "type": "string",
+                "description": "Detailed error description"
+              },
+              "category": {
+                "type": "string",
+                "description": "Error category"
+              },
+              "status": {
+                "type": "integer",
+                "description": "HTTP status code"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "form": {
+        "id": "script-properties",
+        "title": "Script configuration",
+        "sections": [
+          {
+            "id": "script",
+            "title": "Script",
+            "collapsible": true,
+            "defaultExpanded": true,
+            "fields": [
+              {
+                "name": "inputs.script",
+                "type": "custom",
+                "component": "script-editor",
+                "componentProps": {
+                  "language": "javascript",
+                  "returnType": "any",
+                  "validationMode": "script",
+                  "minHeight": 200,
+                  "placeholder": " // Return an object with your result\nreturn {\n  message: \"Web request response\",\n  data: $vars.httpRequest1.output\n                  };"
+                },
+                "label": "Code",
+                "description": "JavaScript expression that returns a result object"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "nodeType": "core.control.end",
+      "version": "1.0",
+      "category": "control-flow",
+      "description": "Mark the end of a workflow path",
+      "tags": [
+        "control-flow",
+        "end",
+        "finish",
+        "complete"
+      ],
+      "sortOrder": 20,
+      "display": {
+        "label": "End",
+        "icon": "circle-check",
+        "shape": "circle"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        }
+      ],
+      "model": {
+        "type": "bpmn:EndEvent"
+      },
+      "runtimeConstraints": {
+        "exclude": [
+          "api-function"
+        ]
+      }
+    }
+  ],
+  "bindings": [],
+  "variables": {
+    "nodes": [
+      {
+        "id": "start.output",
+        "type": "object",
+        "description": "Data passed when manually triggering the workflow.",
+        "binding": {
+          "nodeId": "start",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "extractBirthCertificate.output",
+        "type": "object",
+        "binding": {
+          "nodeId": "extractBirthCertificate",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "extractBirthCertificate.error",
+        "type": "object",
+        "description": "Error information if the node fails",
+        "binding": {
+          "nodeId": "extractBirthCertificate",
+          "outputId": "error"
+        }
+      },
+      {
+        "id": "logChildName.output",
+        "type": "object",
+        "description": "The return value of the script",
+        "binding": {
+          "nodeId": "logChildName",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "logChildName.error",
+        "type": "object",
+        "description": "Error information if the script fails",
+        "binding": {
+          "nodeId": "logChildName",
+          "outputId": "error"
+        }
+      }
+    ],
+    "globals": []
+  },
+  "runtime": "maestro",
+  "layout": {
+    "nodes": {
+      "start": {
+        "position": {
+          "x": 256,
+          "y": 144
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "extractBirthCertificate": {
+        "position": {
+          "x": 448,
+          "y": 144
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "logChildName": {
+        "position": {
+          "x": 640,
+          "y": 144
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "end": {
+        "position": {
+          "x": 832,
+          "y": 144
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      }
+    }
+  }
+}

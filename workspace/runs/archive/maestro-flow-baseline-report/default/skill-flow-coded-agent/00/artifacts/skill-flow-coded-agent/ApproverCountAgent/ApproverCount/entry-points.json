@@ -1,0 +1,74 @@
+{
+    "$schema": "https://cloud.uipath.com/draft/2024-12/entry-point",
+    "$id": "entry-points.json",
+    "entryPoints": [
+        {
+            "filePath": "agent",
+            "uniqueId": "08e56054-6d39-46fd-b180-2e02632f028c",
+            "type": "agent",
+            "input": {
+                "type": "object",
+                "properties": {
+                    "sentence": {
+                        "description": "A sentence describing the outcome of a proposal review round",
+                        "title": "Sentence",
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "sentence"
+                ]
+            },
+            "output": {
+                "type": "object",
+                "properties": {
+                    "approver_count": {
+                        "description": "The number of people who approved the proposal",
+                        "title": "Approver Count",
+                        "type": "integer"
+                    }
+                },
+                "required": [
+                    "approver_count"
+                ]
+            },
+            "graph": {
+                "nodes": [
+                    {
+                        "id": "__start__",
+                        "name": "__start__",
+                        "type": "__start__",
+                        "subgraph": null,
+                        "metadata": {}
+                    },
+                    {
+                        "id": "count_approvers",
+                        "name": "count_approvers",
+                        "type": "node",
+                        "subgraph": null,
+                        "metadata": {}
+                    },
+                    {
+                        "id": "__end__",
+                        "name": "__end__",
+                        "type": "__end__",
+                        "subgraph": null,
+                        "metadata": {}
+                    }
+                ],
+                "edges": [
+                    {
+                        "source": "__start__",
+                        "target": "count_approvers",
+                        "label": null
+                    },
+                    {
+                        "source": "count_approvers",
+                        "target": "__end__",
+                        "label": null
+                    }
+                ]
+            }
+        }
+    ]
+}

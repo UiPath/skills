@@ -1,0 +1,20 @@
+{
+  "version": 2,
+  "_doc": "Mocked public-safe BPMN incidents for root-cause vs downstream-noise triage.",
+  "rules": [
+    { "match": "incident get inc-root-001 --folder-key folder-public", "file": "incident-root.json", "exit_code": 0 },
+    { "match": "incident get inc-root-001 -f folder-public", "file": "incident-root.json", "exit_code": 0 },
+    { "match": "incident get inc-root-001", "file": "incident-root.json", "exit_code": 0 },
+    { "match": "incident get inc-noise-002 --folder-key folder-public", "file": "incident-noise.json", "exit_code": 0 },
+    { "match": "incident get inc-noise-002 -f folder-public", "file": "incident-noise.json", "exit_code": 0 },
+    { "match": "incident get inc-noise-002", "file": "incident-noise.json", "exit_code": 0 },
+    { "match": "incident summary", "file": "incident-summary.json", "exit_code": 0 },
+    { "match": "instance incidents inst-triage-001 -f folder-public", "file": "instance-incidents.json", "exit_code": 0 },
+    { "match": "instance incidents inst-triage-001 --folder-key folder-public", "file": "instance-incidents.json", "exit_code": 0 },
+    { "match": "instance incidents inst-triage-001", "file": "instance-incidents.json", "exit_code": 0 }
+  ],
+  "unmocked_default": {
+    "response": "{\"error\":\"unmocked public-safe BPMN command\"}\n",
+    "exit_code": 1
+  }
+}

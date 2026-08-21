@@ -1,0 +1,167 @@
+2026-07-24 17:57:08 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-24 17:57:08 [INFO] coder_eval.orchestrator: API routing: aws_bedrock
+2026-07-24 17:57:08 [DEBUG] coder_eval.criteria: Discovered 14 criterion checkers
+2026-07-24 17:57:08 [DEBUG] coder_eval.criteria: Validated 14 criterion checkers
+2026-07-24 17:57:08 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-24 17:57:09 [DEBUG] coder_eval.orchestrator: Sending prompt: Create a UiPath Flow project named "SubflowDemo" that takes a string input
+called "text" and reverse...
+2026-07-24 17:57:09 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Starting agent query stream...
+2026-07-24 18:00:02 [DEBUG] coder_eval.agents.claude_code_agent: [coder] session_id changed: None -> d3f7b8a7-b9d8-4056-bcd3-ac7b7270c9d1
+2026-07-24 18:00:02 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Agent query stream ended
+2026-07-24 18:00:02 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-24 18:00:02 [DEBUG] coder_eval.orchestrator: Agent response received (5193 chars)
+2026-07-24 18:00:02 [DEBUG] coder_eval.orchestrator: Checking success criteria
+2026-07-24 18:00:02 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'uip maestro flow validate passes on the flow file': uip maestro flow validate SubflowDemo/SubflowDemo/SubflowDemo.flow
+2026-07-24 18:00:10 [DEBUG] coder_eval.sandbox: Command 'uip maestro flow validate SubflowDemo/SubflowDemo/SubflowDemo.flow' exited with code 0
+2026-07-24 18:00:10 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+{
+  "Result": "Success",
+  "Code": "FlowValidate",
+  "Data": {
+    "File": "/work/output/artifacts/skill-flow-subflow/SubflowDemo/SubflowDemo/SubflowDemo.flow",
+    "Status": "Valid"
+  }
+}
+---
+2026-07-24 18:00:10 [DEBUG] coder_eval.sandbox: STDERR:
+---
+[ManifestClient] fetchDynamicNodes ok: total=207 agent context nodes=2 external agent nodes=6 orchestrator nodes=158 IXP nodes=41
+---
+2026-07-24 18:00:10 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-07-24 18:00:10 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'Flow has correct subflow structure and debug reverses 'hello' to 'olleh'': python3 $TASK_DIR/check_subflow_flow.py
+2026-07-24 18:00:26 [DEBUG] coder_eval.sandbox: Command 'python3 $TASK_DIR/check_subflow_flow.py' exited with code 1
+2026-07-24 18:00:26 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+OK: Subflow 'reverseSubflow' structure valid (3 nodes, 1 in, 1 out)
+---
+2026-07-24 18:00:26 [DEBUG] coder_eval.sandbox: STDERR:
+---
+=== FLOW_DEBUG_RAW_CAPTURE BEGIN (Outputs missing all of ['olleh']; present=[]; missing=['olleh']) ===
+SUMMARY: {"finalStatus": "Completed", "globals": {"reverseSubflow.output": {"reversed": null}, "reversedText": null, "start.output.text": "hello"}, "globalVariables": null, "elementOutputs": [{"id": "start", "outputs": {}}, {"id": "reverseSubflow", "outputs": {"subflowStart.output.text": "hello"}}, {"id": "end", "outputs": {}}], "elementExecutions": [{"id": "start", "type": "StartEvent", "status": "Completed"}, {"id": "reverseSubflow", "type": "SubProcess", "status": "Completed"}, {"id": "subflowStart", "type": "StartEvent", "status": "Completed"}, {"id": "scriptReverse", "type": "ScriptTask", "status": "Completed"}, {"id": "subflowEnd", "type": "EndEvent", "status": "Completed"}, {"id": "end", "type": "EndEvent", "status": "Completed"}], "incidents": null}
+RAW: {
+  "Result": "Success",
+  "Code": "FlowDebug",
+  "Data": {
+    "jobKey": "354eba08-00c1-4a0a-9edf-44e8ee3d1e8d",
+    "instanceId": "354eba08-00c1-4a0a-9edf-44e8ee3d1e8d",
+    "runId": "019f9549-0346-723f-b992-1327cf0be7b8",
+    "folderKey": "410fae2d-89b3-4cd1-a991-7359bda90c0b",
+    "finalStatus": "Completed",
+    "solutionId": "77a59e06-41d4-4487-4e07-08dee9abf020",
+    "studioWebUrl": "https://alpha.uipath.com/codereval/studio_/designer/41d3356a-961a-4e4e-8f93-509677985a5e?solutionId=77a59e06-41d4-4487-4e07-08dee9abf020",
+    "elementExecutions": [
+      {
+        "elementId": "start",
+        "elementType": "StartEvent",
+        "status": "Completed",
+        "startedAt": "2026-07-24T18:00:21.0996954Z",
+        "completedAt": "2026-07-24T18:00:21.5692151Z"
+      },
+      {
+        "elementId": "reverseSubflow",
+        "elementType": "SubProcess",
+        "status": "Completed",
+        "startedAt": "2026-07-24T18:00:21.7586749Z",
+        "completedAt": "2026-07-24T18:00:24.0821418Z"
+      },
+      {
+        "elementId": "subflowStart",
+        "elementType": "StartEvent",
+        "status": "Completed",
+        "startedAt": "2026-07-24T18:00:22.1026556Z",
+        "completedAt": "2026-07-24T18:00:22.4769004Z"
+      },
+      {
+        "elementId": "scriptReverse",
+        "elementType": "ScriptTask",
+        "status": "Completed",
+        "startedAt": "2026-07-24T18:00:22.7270697Z",
+        "completedAt": "2026-07-24T18:00:22.9893052Z"
+      },
+      {
+        "elementId": "subflowEnd",
+        "elementType": "EndEvent",
+        "status": "Completed",
+        "startedAt": "2026-07-24T18:00:23.2289978Z",
+        "completedAt": "2026-07-24T18:00:23.5162744Z"
+      },
+      {
+        "elementId": "end",
+        "elementType": "EndEvent",
+        "status": "Completed",
+        "startedAt": "2026-07-24T18:00:24.3713357Z",
+        "completedAt": "2026-07-24T18:00:24.6318963Z"
+      }
+    ],
+    "variables": {
+      "elements": [
+        {
+          "elementId": "start",
+          "elementRunId": "bd1ae96e-37f8-49ad-a7ba-5c8a459fe963",
+          "isMarker": false,
+          "inputs": {},
+          "inputDefinitions": {},
+          "outputs": {}
+        },
+        {
+          "elementId": "reverseSubflow",
+          "elementRunId": "b833b3f7-0c2e-469b-b0c4-a3c16d761748",
+          "isMarker": false,
+          "inputs": {},
+          "inputDefinitions": {},
+          "outputs": {
+            "subflowStart.output.text": "hello"
+          }
+        },
+        {
+          "elementId": "end",
+          "elementRunId": "c7c4c4a4-70a2-4084-b618-2c7b6ffb7c7f",
+          "isMarker": false,
+          "inputs": {},
+          "inputDefinitions": {},
+          "outputs": {}
+        }
+      ],
+      "globals": {
+        "reverseSubflow.output": {
+          "reversed": null
+        },
+        "reversedText": null,
+        "start.output.text": "hello"
+      },
+      "instanceId": "354eba08-00c1-4a0a-9edf-44e8ee3d1e8d",
+      "workflowId": "354eba08-00c1-4a0a-9edf-44e8ee3d1e8d/BpmnGenericWorkflow",
+      "parentElementId": null,
+      "globalDefinitions": {
+        "reverseSubflow.output": {
+          "name": "output",
+          "type": "object"
+        },
+        "reversedText": {
+          "name": "reversedText",
+          "type": "string"
+        },
+        "start.output.text": {
+          "name": "text",
+          "type": "string"
+        }
+      }
+    }
+  },
+  "Instructions": "Debug completed with status: Completed"
+}
+=== FLOW_DEBUG_RAW_CAPTURE END ===
+FAIL: Outputs missing all of ['olleh']; present=[]; missing=['olleh']
+Outputs: [null, null, "hello", "hello"]
+---
+2026-07-24 18:00:26 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 0.00
+2026-07-24 18:00:26 [INFO] coder_eval.evaluation.checker: Criterion 'run_command' FAILED (score=0.00, threshold=1.00): Command: python3 $TASK_DIR/check_subflow_flow.py
+2026-07-24 18:00:26 [INFO] coder_eval.orchestrator: Success criteria: 1/2 passed, weighted score: 0.375
+2026-07-24 18:00:26 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-24 18:00:26 [INFO] coder_eval.orchestrator: Running post-run command: python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/cleanup_solutions.py
+2026-07-24 18:00:28 [WARNING] coder_eval.orchestrator: [post_run stderr] cleanup_solutions: deleted 77a59e06-41d4-4487-4e07-08dee9abf020 (from SubflowDemo/SubflowDemo.uipx)
+2026-07-24 18:00:28 [WARNING] coder_eval.orchestrator: [post_run stderr] cleanup_solutions: summary policy=always deleted=1 preserved=0 skipped=0 not_uploaded=0 failed=0
+2026-07-24 18:00:28 [INFO] coder_eval.orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+2026-07-24 18:00:28 [INFO] coder_eval.orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-subflow
+2026-07-24 18:00:28 [INFO] coder_eval.orchestrator: Task finished: status=FAILURE duration=202.2s score=0.375 iterations=1

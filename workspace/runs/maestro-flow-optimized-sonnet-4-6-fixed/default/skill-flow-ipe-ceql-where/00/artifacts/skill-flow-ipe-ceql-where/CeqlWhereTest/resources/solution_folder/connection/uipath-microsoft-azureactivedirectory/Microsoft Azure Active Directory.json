@@ -1,0 +1,29 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "Microsoft Azure Active Directory",
+    "kind": "connection",
+    "type": "uipath-microsoft-azureactivedirectory",
+    "apiVersion": "integrationservice.uipath.com/v1",
+    "isOverridable": true,
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "files": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "connectorName": "Microsoft Azure Active Directory",
+      "name": "Microsoft Azure Active Directory",
+      "description": null,
+      "authenticationType": "AuthenticateAfterDeployment",
+      "connectorVersion": "1.12.10",
+      "connectorKey": "uipath-microsoft-azureactivedirectory",
+      "pollingInterval": 5
+    },
+    "locks": [],
+    "key": "26b7ac14-424a-45ae-88ee-88ae5c8794ce"
+  }
+}

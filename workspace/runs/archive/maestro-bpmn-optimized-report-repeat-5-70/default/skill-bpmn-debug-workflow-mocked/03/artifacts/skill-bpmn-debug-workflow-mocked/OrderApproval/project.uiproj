@@ -1,0 +1,8 @@
+{
+  "name": "OrderApproval",
+  "projectId": "00000000-0000-0000-0000-0000000009001",
+  "description": "Public-safe fixture BPMN project for the mocked debug-workflow eval.",
+  "main": "OrderApproval.bpmn",
+  "projectType": "Process",
+  "targetFramework": "Portable"
+}

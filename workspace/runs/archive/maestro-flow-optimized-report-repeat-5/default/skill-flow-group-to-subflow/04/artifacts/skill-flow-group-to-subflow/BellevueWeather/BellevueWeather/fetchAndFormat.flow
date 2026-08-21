@@ -1,0 +1,509 @@
+{
+  "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "version": "1.6",
+  "name": "fetchAndFormat",
+  "nodes": [
+    {
+      "id": "start",
+      "type": "core.trigger.manual",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Manual trigger"
+      },
+      "inputs": {},
+      "outputs": {
+        "output": {
+          "type": "object",
+          "description": "The return value of the trigger.",
+          "source": {
+            "type": "literal",
+            "expression": "=result.response",
+            "fieldType": "string"
+          },
+          "var": "output"
+        }
+      },
+      "model": {
+        "type": "bpmn:StartEvent",
+        "entryPointId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+      }
+    },
+    {
+      "id": "getWeather",
+      "type": "core.action.http",
+      "typeVersion": "1.2",
+      "display": {
+        "label": "Get Bellevue Weather"
+      },
+      "inputs": {
+        "mode": "manual",
+        "method": "GET",
+        "url": "https://api.open-meteo.com/v1/forecast?latitude=47.6101&longitude=-122.2015&current=temperature_2m&temperature_unit=fahrenheit",
+        "headers": {},
+        "queryParams": {},
+        "body": {
+          "type": "literal",
+          "expression": "",
+          "fieldType": "object"
+        },
+        "contentType": "application/json",
+        "timeout": "PT15M",
+        "retryCount": 0,
+        "branches": []
+      },
+      "outputs": {
+        "output": {
+          "type": "object",
+          "description": "The return value of the HTTP request",
+          "source": {
+            "type": "literal",
+            "expression": "=result.response",
+            "fieldType": "string"
+          },
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the HTTP request fails",
+          "source": {
+            "type": "literal",
+            "expression": "=result.Error",
+            "fieldType": "string"
+          },
+          "var": "error"
+        }
+      },
+      "model": {
+        "type": "bpmn:ServiceTask"
+      }
+    },
+    {
+      "id": "formatSummary",
+      "type": "core.action.script",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Format Weather Summary"
+      },
+      "inputs": {
+        "script": "const tempF = $vars.getWeather.output.body.current.temperature_2m;\nconst time = $vars.getWeather.output.body.current.time;\nreturn {\n  temperatureF: tempF,\n  summary: 'Bellevue weather today: ' + tempF + 'F at ' + time\n};"
+      },
+      "outputs": {
+        "output": {
+          "type": "object",
+          "description": "The return value of the script",
+          "source": {
+            "type": "literal",
+            "expression": "=result.response",
+            "fieldType": "string"
+          },
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the script fails",
+          "source": {
+            "type": "literal",
+            "expression": "=result.Error",
+            "fieldType": "string"
+          },
+          "var": "error"
+        }
+      },
+      "model": {
+        "type": "bpmn:ScriptTask"
+      }
+    },
+    {
+      "id": "end",
+      "type": "core.control.end",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "End"
+      },
+      "inputs": {},
+      "outputs": {
+        "temperatureF": {
+          "source": {
+            "type": "jsExpression",
+            "expression": "$vars.formatSummary.output.temperatureF",
+            "fieldType": "number"
+          }
+        }
+      },
+      "model": {
+        "type": "bpmn:EndEvent"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge-start-getWeather",
+      "sourceNodeId": "start",
+      "sourcePort": "output",
+      "targetNodeId": "getWeather",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge-getWeather-formatSummary",
+      "sourceNodeId": "getWeather",
+      "sourcePort": "default",
+      "targetNodeId": "formatSummary",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge-formatSummary-end",
+      "sourceNodeId": "formatSummary",
+      "sourcePort": "success",
+      "targetNodeId": "end",
+      "targetPort": "input"
+    }
+  ],
+  "definitions": [
+    {
+      "nodeType": "core.trigger.manual",
+      "version": "1.0",
+      "description": "Start workflow manually",
+      "category": "trigger",
+      "tags": [
+        "trigger",
+        "start",
+        "manual"
+      ],
+      "sortOrder": 40,
+      "display": {
+        "label": "Manual trigger",
+        "icon": "play",
+        "shape": "circle",
+        "iconBackground": "linear-gradient(225deg, #FAFAFB 0%, #ECEDEF 100%)",
+        "iconBackgroundDark": "linear-gradient(225deg, #526069 0%, rgba(50, 60, 66, 0.6) 100%)"
+      },
+      "handleConfiguration": [
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "output",
+              "type": "source",
+              "handleType": "output",
+              "showButton": true,
+              "constraints": {
+                "forbiddenTargetCategories": [
+                  "trigger"
+                ]
+              }
+            }
+          ],
+          "visible": true
+        }
+      ],
+      "toolbarExtensions": {
+        "design": {
+          "actions": [
+            {
+              "id": "change-trigger-type",
+              "icon": "replace",
+              "label": "Change trigger type"
+            }
+          ]
+        }
+      },
+      "outputDefinition": {
+        "output": {
+          "type": "object",
+          "description": "Data passed when manually triggering the workflow.",
+          "source": "null",
+          "var": "output"
+        }
+      },
+      "model": {
+        "type": "bpmn:StartEvent",
+        "entryPointId": true
+      }
+    },
+    {
+      "nodeType": "core.action.http",
+      "version": "1.2",
+      "category": "data-operations",
+      "description": "Make API calls with branching and retry",
+      "tags": [
+        "connector",
+        "http",
+        "api",
+        "rest",
+        "request"
+      ],
+      "sortOrder": 35,
+      "supportsErrorHandling": true,
+      "display": {
+        "label": "HTTP Request",
+        "icon": "app-window"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ],
+          "visible": true
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "branch-{item.id}",
+              "type": "source",
+              "handleType": "output",
+              "label": "{item.name}",
+              "repeat": "inputs.branches"
+            },
+            {
+              "id": "default",
+              "type": "source",
+              "handleType": "output",
+              "label": ""
+            }
+          ],
+          "visible": true
+        }
+      ],
+      "debug": {
+        "runtime": "bpmnEngine"
+      },
+      "model": {
+        "type": "bpmn:ServiceTask"
+      },
+      "inputDefinition": {
+        "type": "object",
+        "properties": {
+          "mode": { "type": "string" },
+          "method": { "type": "string", "minLength": 1, "errorMessage": "Method is required" },
+          "url": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "^(.*\\.\\S.*|.*\\$vars.*)$",
+            "errorMessage": { "minLength": "URL is required", "pattern": "URL must be a valid URL or variable expression" }
+          },
+          "headers": { "type": "object" },
+          "queryParams": { "type": "object" },
+          "body": { "type": "object" },
+          "contentType": { "type": "string" },
+          "timeout": { "type": "string" },
+          "retryCount": { "type": "number" },
+          "branches": { "type": "array" }
+        },
+        "required": ["method", "url"]
+      },
+      "inputDefaults": {
+        "mode": "manual",
+        "method": "GET",
+        "url": "",
+        "headers": {},
+        "queryParams": {},
+        "body": {},
+        "contentType": "application/json",
+        "timeout": "PT15M",
+        "retryCount": 0,
+        "branches": []
+      },
+      "outputDefinition": {
+        "output": {
+          "type": "object",
+          "description": "HTTP response object",
+          "source": "=response",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails",
+          "source": "=Error",
+          "var": "error"
+        }
+      }
+    },
+    {
+      "nodeType": "core.action.script",
+      "version": "1.0",
+      "description": "Run custom JavaScript code",
+      "category": "data-operations",
+      "tags": [
+        "code",
+        "javascript",
+        "python"
+      ],
+      "sortOrder": 35,
+      "display": {
+        "label": "Script",
+        "icon": "code",
+        "iconBackground": "linear-gradient(225deg, #FAFAFB 0%, #ECEDEF 100%)",
+        "iconBackgroundDark": "linear-gradient(225deg, #526069 0%, rgba(50, 60, 66, 0.6) 100%)"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "success",
+              "type": "source",
+              "handleType": "output"
+            }
+          ]
+        }
+      ],
+      "inputDefaults": {
+        "script": ""
+      },
+      "inputDefinition": {
+        "type": "object",
+        "properties": {
+          "script": {
+            "type": "string",
+            "minLength": 1,
+            "errorMessage": "A script function is required",
+            "validationSeverity": "warning"
+          }
+        },
+        "required": ["script"]
+      },
+      "outputDefinition": {
+        "output": {
+          "type": "object",
+          "description": "The return value of the script",
+          "source": "=result.response",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the script fails",
+          "source": "=result.Error",
+          "var": "error"
+        }
+      },
+      "debug": {
+        "runtime": "clientScript"
+      },
+      "model": {
+        "type": "bpmn:ScriptTask"
+      }
+    },
+    {
+      "nodeType": "core.control.end",
+      "version": "1.0",
+      "description": "Mark the end of a workflow path",
+      "category": "control-flow",
+      "tags": [
+        "control-flow",
+        "end",
+        "finish",
+        "complete"
+      ],
+      "sortOrder": 20,
+      "display": {
+        "label": "End",
+        "icon": "circle-check",
+        "shape": "circle"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        }
+      ],
+      "model": {
+        "type": "bpmn:EndEvent"
+      }
+    }
+  ],
+  "bindings": [],
+  "variables": {
+    "globals": [
+      {
+        "id": "temperatureF",
+        "direction": "out",
+        "type": "number",
+        "description": "The temperature in Fahrenheit from the weather API"
+      }
+    ],
+    "nodes": [
+      {
+        "id": "getWeather.output",
+        "type": "object",
+        "description": "HTTP response from open-meteo API",
+        "binding": {
+          "nodeId": "getWeather",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "getWeather.error",
+        "type": "object",
+        "description": "Error if weather fetch fails",
+        "binding": {
+          "nodeId": "getWeather",
+          "outputId": "error"
+        }
+      },
+      {
+        "id": "formatSummary.output",
+        "type": "object",
+        "description": "Formatted weather summary with temperature and description",
+        "binding": {
+          "nodeId": "formatSummary",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "formatSummary.error",
+        "type": "object",
+        "description": "Error if formatting script fails",
+        "binding": {
+          "nodeId": "formatSummary",
+          "outputId": "error"
+        }
+      }
+    ]
+  },
+  "layout": {
+    "nodes": {
+      "start": {
+        "position": { "x": 200, "y": 144 },
+        "size": { "width": 96, "height": 96 },
+        "collapsed": false
+      },
+      "getWeather": {
+        "position": { "x": 450, "y": 144 },
+        "size": { "width": 96, "height": 96 },
+        "collapsed": false
+      },
+      "formatSummary": {
+        "position": { "x": 700, "y": 144 },
+        "size": { "width": 96, "height": 96 },
+        "collapsed": false
+      },
+      "end": {
+        "position": { "x": 950, "y": 144 },
+        "size": { "width": 96, "height": 96 },
+        "collapsed": false
+      }
+    }
+  }
+}

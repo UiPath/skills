@@ -1,0 +1,33 @@
+{
+  "Data": {
+    "dataset": {
+      "entity_defs": [],
+      "label_groups": [
+        {
+          "label_defs": [
+            {
+              "name": "Invoice",
+              "field_defs": [
+                {"field_id": "f-001", "name": "Invoice Number"},
+                {"field_id": "f-002", "name": "Invoice Date"},
+                {"field_id": "f-003", "name": "Vendor Address"},
+                {"field_id": "f-004", "name": "Total Amount"},
+                {"field_id": "f-005", "name": "Discount"}
+              ]
+            }
+          ]
+        },
+        {
+          "label_defs": [
+            {
+              "name": "Line Items",
+              "field_defs": [
+                {"field_id": "f-006", "name": "Description"}
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

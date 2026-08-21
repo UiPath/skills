@@ -1,0 +1,87 @@
+{
+  "version": "1.1.0",
+  "settings": {
+    "model": "anthropic.claude-sonnet-5",
+    "maxTokens": 4096,
+    "temperature": 0,
+    "engine": "basic-v2",
+    "maxIterations": 5,
+    "mode": "standard"
+  },
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "start__output__disputeDescription": {
+        "type": "string",
+        "description": "Bound from $vars.start.output.disputeDescription"
+      },
+      "start__output__invoiceNumber": {
+        "type": "string",
+        "description": "Bound from $vars.start.output.invoiceNumber"
+      }
+    }
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "determination": {
+        "type": "string",
+        "description": "The dispute determination, e.g. approved, denied, or partial-credit, with a one-line label"
+      },
+      "rationale": {
+        "type": "string",
+        "description": "The reasoning behind the determination, grounded in the retrieved SOP content"
+      }
+    },
+    "required": [
+      "determination",
+      "rationale"
+    ]
+  },
+  "metadata": {
+    "storageVersion": "50.0.0",
+    "isConversational": false,
+    "showProjectCreationExperience": false
+  },
+  "type": "lowCode",
+  "guardrails": [],
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a Billing Dispute Analyst for a billing operations team. Analyze a customer's billing dispute and produce a grounded determination.\n\nScope:\n- In scope: reviewing the dispute description and invoice number, retrieving relevant SOP guidance from the billing dispute knowledge base, and deciding a determination.\n- Out of scope: issuing refunds, contacting the customer, or taking any action beyond returning a determination and rationale.\n\nTools:\n- Billing Dispute SOP Index (context): call at most 3 times to retrieve SOP guidance relevant to the dispute. After the last call, stop retrieving and decide with the evidence you already have.\n- If the retrieved content does not cover a detail, say so in rationale and still return every outputSchema field. Never end a run without a determination.\n\nOutput:\n- Return a result conforming to the output schema. determination must be a short label (e.g. approved, denied, partial-credit) describing the outcome. rationale must explain the reasoning, citing the SOP guidance that supports it.\n- Never invent policy details not grounded in the retrieved SOP content or the dispute input.\n\nUncertainty:\n- If the dispute description or invoice number is missing or ambiguous, state that in rationale and set determination to \"needs-more-information\" rather than guessing.",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "You are a Billing Dispute Analyst for a billing operations team. Analyze a customer's billing dispute and produce a grounded determination.\n\nScope:\n- In scope: reviewing the dispute description and invoice number, retrieving relevant SOP guidance from the billing dispute knowledge base, and deciding a determination.\n- Out of scope: issuing refunds, contacting the customer, or taking any action beyond returning a determination and rationale.\n\nTools:\n- Billing Dispute SOP Index (context): call at most 3 times to retrieve SOP guidance relevant to the dispute. After the last call, stop retrieving and decide with the evidence you already have.\n- If the retrieved content does not cover a detail, say so in rationale and still return every outputSchema field. Never end a run without a determination.\n\nOutput:\n- Return a result conforming to the output schema. determination must be a short label (e.g. approved, denied, partial-credit) describing the outcome. rationale must explain the reasoning, citing the SOP guidance that supports it.\n- Never invent policy details not grounded in the retrieved SOP content or the dispute input.\n\nUncertainty:\n- If the dispute description or invoice number is missing or ambiguous, state that in rationale and set determination to \"needs-more-information\" rather than guessing."
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "A customer has filed a billing dispute. Analyze it against the Billing Dispute SOP guidance and return a determination and rationale.\n\nInvoice Number: {{input.start__output__invoiceNumber}}\nDispute Description: {{input.start__output__disputeDescription}}\n\nReturn the determination and rationale fields as defined in the output schema.",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "A customer has filed a billing dispute. Analyze it against the Billing Dispute SOP guidance and return a determination and rationale.\n\nInvoice Number: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__invoiceNumber"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\nDispute Description: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__disputeDescription"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\nReturn the determination and rationale fields as defined in the output schema."
+        }
+      ]
+    }
+  ],
+  "projectId": "62ee6755-cb8e-43e0-bd67-b715cc047b24"
+}

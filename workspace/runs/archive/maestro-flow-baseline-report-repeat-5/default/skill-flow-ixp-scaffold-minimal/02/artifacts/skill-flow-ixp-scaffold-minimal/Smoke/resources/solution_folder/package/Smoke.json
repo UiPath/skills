@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "Smoke",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "f78d9bbc-24fc-43d2-9124-5e4a01ed105a",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "Smoke"
+    },
+    "locks": [],
+    "key": "40b3f4b9-2100-4bcb-adea-d66c99bf5bed",
+    "files": []
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "ran_solution_upload": false,
+  "ran_eval_run_start": false,
+  "action": "asked-user",
+  "reason": "No SolutionStorage.json with a SolutionId exists and the project has never been uploaded via 'uip solution upload' or logged in via 'uip login', so per the skill's upload-safety rule I must not auto-run 'uip solution upload' to satisfy the eval-run prerequisite -- an unprompted upload could create an unintended Studio Web solution or clobber remote state, and 'eval run start' would fail without a Studio Web-resolvable solution anyway."
+}

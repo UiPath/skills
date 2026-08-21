@@ -1,0 +1,21 @@
+{
+  "entryPoints": [
+    {
+      "id": "8dd06e30-45df-47a2-aa55-d72035a2a449",
+      "filePath": "/content/BusinessRuleDecision.bpmn#Start_Manual",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "ApplicantScore": { "type": "number" },
+          "RequestedAmount": { "type": "number" }
+        }
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "RuleOutcome": { "type": "string" }
+        }
+      }
+    }
+  ]
+}

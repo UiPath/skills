@@ -1,0 +1,15 @@
+{
+  "connectionId": "<ACT365_CONNECTION_ID>",
+  "folderKey": "<ORCHESTRATOR_FOLDER_KEY>",
+  "method": "POST",
+  "endpoint": "/Interactions",
+  "bodyParameters": {
+    "subject": "Sales Interaction",
+    "type": "PhoneCall",
+    "startTime": "2026-07-24T09:00:00Z",
+    "endTime": "2026-07-24T09:30:00Z",
+    "timeZone": "America/New_York",
+    "details": "Sales call discussing Q3 pipeline with multiple contacts",
+    "contacts": "=js:[{\"id\": \"contact-001\", \"displayName\": \"Alice Smith\"}, {\"id\": \"contact-002\", \"displayName\": \"Bob Jones\"}, {\"id\": \"contact-003\", \"displayName\": \"Carol White\"}]"
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "DocVersion": "1.0.0",
+  "StudioMinVersion": "2025.10.0",
+  "SolutionId": "21a7af02-e6fe-4e36-b566-083b0b13e977",
+  "Projects": [
+    {
+      "Type": "Flow",
+      "ProjectRelativePath": "DelayDemo/project.uiproj",
+      "Id": "fa7b88ff-3f11-4ede-8c7f-7501b7d204a1"
+    }
+  ]
+}

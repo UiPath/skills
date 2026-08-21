@@ -1,0 +1,1747 @@
+{
+  "id": "7d41871e-294e-4866-99b0-020a6f475bca",
+  "version": "1.8",
+  "name": "InvoiceProcessing",
+  "nodes": [
+    {
+      "id": "newInvoiceInSharepoint1",
+      "type": "uipath.connector.trigger.uipath-microsoft-onedrive.file-created",
+      "typeVersion": "1.0.0",
+      "display": {
+        "label": "New Invoice in SharePoint"
+      },
+      "inputs": {
+        "entryPointId": "64517913-7d48-4d75-b108-ba3829ea1b10",
+        "detail": {
+          "connector": "uipath-microsoft-onedrive",
+          "connectionId": "ae311606-25b7-43ef-9cd0-f3dc0b3a9b58",
+          "connectionResourceId": "ae311606-25b7-43ef-9cd0-f3dc0b3a9b58",
+          "connectionFolderKey": "c4359cde-55f0-4f0e-9322-c6cdce74ab4c",
+          "eventParameters": {},
+          "objectName": "File",
+          "eventType": "FILE_CREATED",
+          "eventMode": "polling",
+          "filterExpression": "",
+          "pathParameters": {
+            "ParentDriveID": "b!NqflADV1F0OyTPKj8kXJf9qob1-JXAtJovOyZmUVjnp3MSH5K3ABSIKgQEloSUDs"
+          },
+          "configuration": "=jsonString:{\"essentialConfiguration\":{\"instanceParameters\":{\"connectorKey\":\"uipath-microsoft-onedrive\",\"objectName\":\"File\",\"activityType\":\"CuratedTrigger\",\"version\":\"1.0.0\",\"eventOperation\":\"FILE_CREATED\",\"eventMode\":\"polling\",\"supportsStreaming\":false},\"objectName\":\"File\",\"packageVersion\":\"1.0.0\",\"connectorVersion\":null,\"executionType\":null,\"httpMethod\":null,\"path\":null,\"filter\":null}}",
+          "uiPathActivityTypeId": "3579e230-6ba6-39f9-9870-d6afd1e17512",
+          "errorState": {
+            "issues": []
+          }
+        }
+      }
+    },
+    {
+      "id": "downloadInvoicePdf1",
+      "type": "uipath.connector.uipath-microsoft-onedrive.download-file",
+      "typeVersion": "1.0.0",
+      "display": {
+        "label": "Download Invoice PDF"
+      },
+      "inputs": {
+        "errorHandlingEnabled": true,
+        "detail": {
+          "connector": "uipath-microsoft-onedrive",
+          "connectionId": "ae311606-25b7-43ef-9cd0-f3dc0b3a9b58",
+          "connectionResourceId": "ae311606-25b7-43ef-9cd0-f3dc0b3a9b58",
+          "connectionFolderKey": "c4359cde-55f0-4f0e-9322-c6cdce74ab4c",
+          "method": "GET",
+          "endpoint": "/DownloadFile",
+          "queryParameters": {
+            "referenceID": "=js:$vars.newInvoiceInSharepoint1.output.ReferenceID"
+          },
+          "uiPathActivityTypeId": "c0ed899b-e170-3111-bda7-fdae448fa4e5",
+          "errorState": {
+            "issues": []
+          },
+          "configuration": "=jsonString:{\"essentialConfiguration\":{\"instanceParameters\":{\"connectorKey\":\"uipath-microsoft-onedrive\",\"objectName\":\"DownloadFile\",\"httpMethod\":\"GET\",\"activityType\":\"Curated\",\"version\":\"1.0.0\",\"supportsStreaming\":false,\"subType\":\"standard\"},\"objectName\":\"DownloadFile\",\"operation\":\"retrieve\",\"httpMethod\":\"GET\",\"path\":\"/DownloadFile\",\"packageVersion\":\"1.0.0\",\"connectorVersion\":null,\"executionType\":null,\"customFieldsRequestDetails\":null,\"unifiedTypesCompatible\":true}}"
+        }
+      }
+    },
+    {
+      "id": "extractInvoiceFields1",
+      "type": "uipath.ixp.invoiceixp-cef0d447-ixp.ff973488-5d89-8035-86ac-f980b4be6deb-c4359cde-55f0-4f0e-9322-c6cdce74ab4c",
+      "typeVersion": "1.0.0",
+      "display": {
+        "label": "Extract Invoice Fields"
+      },
+      "inputs": {
+        "model": {
+          "id": "ff973488-5d89-8035-86ac-f980b4be6deb",
+          "modelName": "invoiceixp-cef0d447-ixp",
+          "modelDisplayName": "InvoiceIXP",
+          "folderKey": "c4359cde-55f0-4f0e-9322-c6cdce74ab4c",
+          "folderName": "Shared",
+          "folderPath": "c4359cde-55f0-4f0e-9322-c6cdce74ab4c",
+          "description": ""
+        },
+        "modelName": "invoiceixp-cef0d447-ixp",
+        "projectName": "invoiceixp-cef0d447-ixp",
+        "versionTag": "",
+        "folderKey": "c4359cde-55f0-4f0e-9322-c6cdce74ab4c",
+        "folderName": "Shared",
+        "fileRef": "=js:$vars.downloadInvoicePdf1.output",
+        "pageRange": "",
+        "errorHandlingEnabled": true
+      }
+    },
+    {
+      "id": "parseInvoiceFields1",
+      "type": "core.action.script",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Parse Invoice Fields"
+      },
+      "inputs": {
+        "script": "const fields = ($vars.extractInvoiceFields1.output && $vars.extractInvoiceFields1.output.ExtractionResult && $vars.extractInvoiceFields1.output.ExtractionResult.ResultsDocument) ? ($vars.extractInvoiceFields1.output.ExtractionResult.ResultsDocument.Fields || []) : [];\nconst getField = function(name) {\n  var f = fields.find(function(field) { return field.FieldName === name; });\n  return (f && f.Values && f.Values.length > 0) ? f.Values[0] : null;\n};\nreturn {\n  VendorName: getField('VendorName') || getField('Vendor') || getField('SupplierName') || '',\n  InvoiceNumber: getField('InvoiceNumber') || getField('InvoiceId') || getField('InvoiceNo') || '',\n  InvoiceDate: getField('InvoiceDate') || getField('Date') || '',\n  TotalAmount: getField('TotalAmount') || getField('Amount') || getField('GrossAmount') || '',\n  Currency: getField('Currency') || getField('CurrencyCode') || '',\n  PurchaseOrderNumber: getField('PurchaseOrderNumber') || getField('PONumber') || ''\n};",
+        "errorHandlingEnabled": true
+      }
+    },
+    {
+      "id": "createSapInvoiceRecord1",
+      "type": "uipath.connector.uipath-sap-odata.insert-record",
+      "typeVersion": "1.0.0",
+      "display": {
+        "label": "Create SAP Invoice Record"
+      },
+      "inputs": {
+        "errorHandlingEnabled": true,
+        "bodyParameters": "=js:$vars.parseInvoiceFields1.output"
+      }
+    },
+    {
+      "id": "invoiceProcessedEnd1",
+      "type": "core.control.end",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Invoice Processed"
+      },
+      "inputs": {}
+    },
+    {
+      "id": "downloadFailTerminate1",
+      "type": "core.logic.terminate",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Download Failed"
+      },
+      "inputs": {}
+    },
+    {
+      "id": "extractionFailTerminate1",
+      "type": "core.logic.terminate",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Extraction Failed"
+      },
+      "inputs": {}
+    },
+    {
+      "id": "sapFailTerminate1",
+      "type": "core.logic.terminate",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "SAP Write Failed"
+      },
+      "inputs": {}
+    }
+  ],
+  "edges": [
+    {
+      "id": "e-trigger-download",
+      "source": "newInvoiceInSharepoint1",
+      "sourceHandle": "output",
+      "target": "downloadInvoicePdf1",
+      "targetHandle": "input"
+    },
+    {
+      "id": "e-download-extract",
+      "source": "downloadInvoicePdf1",
+      "sourceHandle": "output",
+      "target": "extractInvoiceFields1",
+      "targetHandle": "input"
+    },
+    {
+      "id": "e-download-err",
+      "source": "downloadInvoicePdf1",
+      "sourceHandle": "error",
+      "target": "downloadFailTerminate1",
+      "targetHandle": "input"
+    },
+    {
+      "id": "e-extract-parse",
+      "source": "extractInvoiceFields1",
+      "sourceHandle": "success",
+      "target": "parseInvoiceFields1",
+      "targetHandle": "input"
+    },
+    {
+      "id": "e-extract-err",
+      "source": "extractInvoiceFields1",
+      "sourceHandle": "error",
+      "target": "extractionFailTerminate1",
+      "targetHandle": "input"
+    },
+    {
+      "id": "e-parse-sap",
+      "source": "parseInvoiceFields1",
+      "sourceHandle": "success",
+      "target": "createSapInvoiceRecord1",
+      "targetHandle": "input"
+    },
+    {
+      "id": "e-parse-err",
+      "source": "parseInvoiceFields1",
+      "sourceHandle": "error",
+      "target": "extractionFailTerminate1",
+      "targetHandle": "input"
+    },
+    {
+      "id": "e-sap-end",
+      "source": "createSapInvoiceRecord1",
+      "sourceHandle": "output",
+      "target": "invoiceProcessedEnd1",
+      "targetHandle": "input"
+    },
+    {
+      "id": "e-sap-err",
+      "source": "createSapInvoiceRecord1",
+      "sourceHandle": "error",
+      "target": "sapFailTerminate1",
+      "targetHandle": "input"
+    }
+  ],
+  "definitions": [
+    {
+      "nodeType": "uipath.connector.trigger.uipath-microsoft-onedrive.file-created",
+      "version": "1.0.0",
+      "category": "trigger.196549",
+      "tags": [
+        "connector",
+        "trigger",
+        "Trigger.Integrated"
+      ],
+      "sortOrder": 540,
+      "description": "(Microsoft OneDrive & SharePoint) Triggers when a new file is created in the drive.",
+      "display": {
+        "label": "File Created",
+        "description": "(Microsoft OneDrive & SharePoint) Triggers when a new file is created in the drive.",
+        "icon": "https://alpha.uipath.com/311c6049-4966-4ef2-a6f3-8ceccaf38d54/studio_/typecache/icons/446b7cebc39ca4493877cbc53272aa7c685bfa43b8b4af6eb2dca0f39e2d1fc1.svg",
+        "shape": "circle"
+      },
+      "handleConfiguration": [
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "output",
+              "type": "source",
+              "handleType": "output",
+              "showButton": true,
+              "constraints": {
+                "forbiddenTargetCategories": [
+                  "trigger"
+                ]
+              }
+            }
+          ],
+          "visible": true
+        }
+      ],
+      "model": {
+        "type": "bpmn:StartEvent",
+        "entryPointId": true,
+        "serviceType": "Intsvc.EventTrigger",
+        "eventDefinition": "bpmn:MessageEventDefinition",
+        "bindings": {
+          "resource": "connection",
+          "resourceKey": "",
+          "values": [
+            {
+              "name": "uipath-microsoft-onedrive connection",
+              "propertyAttribute": "ConnectionId"
+            },
+            {
+              "name": "FolderKey",
+              "propertyAttribute": "FolderKey"
+            }
+          ]
+        },
+        "context": [
+          {
+            "name": "connectorKey",
+            "type": "string",
+            "value": "uipath-microsoft-onedrive"
+          },
+          {
+            "name": "operation",
+            "value": "FILE_CREATED",
+            "type": "string"
+          },
+          {
+            "name": "objectName",
+            "value": "File",
+            "type": "string"
+          },
+          {
+            "name": "method",
+            "type": "string"
+          },
+          {
+            "name": "connection",
+            "type": "string",
+            "value": "<bindings.uipath-microsoft-onedrive connection>"
+          },
+          {
+            "name": "folderKey",
+            "type": "string",
+            "value": "<bindings.FolderKey>"
+          },
+          {
+            "name": "activityConfigurationVersion",
+            "type": "string",
+            "value": "v1"
+          },
+          {
+            "name": "metadata",
+            "body": {
+              "telemetryData": {
+                "connectorKey": "uipath-microsoft-onedrive",
+                "connectorName": "File Created"
+              },
+              "inputMetadata": {},
+              "errorState": {
+                "hasError": true
+              }
+            },
+            "type": "json"
+          }
+        ]
+      },
+      "form": {
+        "id": "connector-properties",
+        "title": "Connector configuration",
+        "sections": [
+          {
+            "id": "connector",
+            "title": "Connector",
+            "collapsible": true,
+            "defaultExpanded": true,
+            "fields": [
+              {
+                "label": "",
+                "name": "inputs.detail",
+                "type": "custom",
+                "component": "dap-config",
+                "componentProps": {
+                  "connectorDetail": {
+                    "type": "Integrated",
+                    "packageId": "196549",
+                    "svgIconUrl": "icons/446b7cebc39ca4493877cbc53272aa7c685bfa43b8b4af6eb2dca0f39e2d1fc1.svg",
+                    "displayName": "File Created",
+                    "assemblyQualifiedName": "UiPath.IntegrationService.Activities.Runtime.Activities.ConnectorTriggerActivity, UiPath.IntegrationService.Activities.Runtime, Version=1.30.0.0, Culture=neutral, PublicKeyToken=null",
+                    "description": "Triggers when a new file is created in the drive.",
+                    "category": "Microsoft OneDrive & SharePoint.Triggers",
+                    "activityColor": "#00A3EE",
+                    "configuration": "{\"connectorKey\":\"uipath-microsoft-onedrive\",\"objectName\":\"File\",\"activityType\":\"CuratedTrigger\",\"version\":\"1.0.0\",\"eventOperation\":\"FILE_CREATED\",\"eventMode\":\"polling\",\"supportsStreaming\":false}",
+                    "uiPathActivityTypeId": "3579e230-6ba6-39f9-9870-d6afd1e17512",
+                    "isExperimental": false,
+                    "helpUrlTemplate": "https://docs.uipath.com/{0}/activities/other/latest/integration-service/uipath-microsoft-onedrive-File-Created",
+                    "isEnabled": true,
+                    "targetPlatform": "CrossPlatform",
+                    "isAdvanced": false,
+                    "isRestricted": false,
+                    "hasWpfOnlyDesigner": false,
+                    "tags": [
+                      "Trigger.Integrated"
+                    ]
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "inputDefinition": {},
+      "outputDefinition": {
+        "output": {
+          "type": "object",
+          "description": "The return value of the connector trigger.",
+          "source": "=result.response",
+          "var": "output"
+        }
+      },
+      "toolbarExtensions": {
+        "design": {
+          "actions": [
+            {
+              "id": "change-trigger-type",
+              "icon": "square-mouse-pointer",
+              "label": "Change trigger type"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "nodeType": "uipath.connector.uipath-microsoft-onedrive.download-file",
+      "version": "1.0.0",
+      "category": "connector.196549",
+      "tags": [
+        "connector",
+        "activity",
+        "API.File.Download"
+      ],
+      "sortOrder": 515,
+      "supportsErrorHandling": true,
+      "description": "(Microsoft OneDrive & SharePoint) Downloads a file or folder from OneDrive & SharePoint",
+      "display": {
+        "label": "Download File",
+        "description": "(Microsoft OneDrive & SharePoint) Downloads a file or folder from OneDrive & SharePoint",
+        "icon": "https://alpha.uipath.com/311c6049-4966-4ef2-a6f3-8ceccaf38d54/studio_/typecache/icons/446b7cebc39ca4493877cbc53272aa7c685bfa43b8b4af6eb2dca0f39e2d1fc1.svg"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input",
+              "label": ""
+            }
+          ]
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "output",
+              "type": "source",
+              "handleType": "output",
+              "label": ""
+            },
+            {
+              "id": "error",
+              "label": "Error",
+              "type": "source",
+              "handleType": "output",
+              "visible": "{inputs.errorHandlingEnabled}",
+              "constraints": {
+                "maxConnections": 1
+              }
+            }
+          ]
+        }
+      ],
+      "model": {
+        "type": "bpmn:SendTask",
+        "serviceType": "Intsvc.ActivityExecution",
+        "bindings": {
+          "resource": "connection",
+          "resourceKey": "",
+          "values": [
+            {
+              "name": "uipath-microsoft-onedrive connection",
+              "propertyAttribute": "ConnectionId"
+            },
+            {
+              "name": "FolderKey",
+              "propertyAttribute": "FolderKey"
+            }
+          ]
+        },
+        "context": [
+          {
+            "name": "connectorKey",
+            "type": "string",
+            "value": "uipath-microsoft-onedrive"
+          },
+          {
+            "name": "operation",
+            "type": "string"
+          },
+          {
+            "name": "objectName",
+            "value": "DownloadFile",
+            "type": "string"
+          },
+          {
+            "name": "method",
+            "type": "string",
+            "value": "GET"
+          },
+          {
+            "name": "connection",
+            "type": "string",
+            "value": "<bindings.uipath-microsoft-onedrive connection>"
+          },
+          {
+            "name": "folderKey",
+            "type": "string",
+            "value": "<bindings.FolderKey>"
+          },
+          {
+            "name": "activityConfigurationVersion",
+            "type": "string",
+            "value": "v1"
+          },
+          {
+            "name": "metadata",
+            "body": {
+              "telemetryData": {
+                "connectorKey": "uipath-microsoft-onedrive",
+                "connectorName": "Download File"
+              },
+              "inputMetadata": {},
+              "errorState": {
+                "hasError": true
+              }
+            },
+            "type": "json"
+          }
+        ]
+      },
+      "form": {
+        "id": "connector-properties",
+        "title": "Connector configuration",
+        "sections": [
+          {
+            "id": "connector",
+            "title": "Connector",
+            "collapsible": true,
+            "defaultExpanded": true,
+            "fields": [
+              {
+                "label": "",
+                "name": "inputs.detail",
+                "type": "custom",
+                "component": "dap-config",
+                "componentProps": {
+                  "connectorDetail": {
+                    "isAppActivity": false,
+                    "packageId": "196549",
+                    "svgIconUrl": "icons/446b7cebc39ca4493877cbc53272aa7c685bfa43b8b4af6eb2dca0f39e2d1fc1.svg",
+                    "displayName": "Download File",
+                    "assemblyQualifiedName": "UiPath.IntegrationService.Activities.Runtime.Activities.ConnectorActivity, UiPath.IntegrationService.Activities.Runtime, Version=1.30.0.0, Culture=neutral, PublicKeyToken=null",
+                    "description": "Downloads a file or folder from OneDrive & SharePoint",
+                    "category": "",
+                    "activityColor": "#00A3EE",
+                    "configuration": "{\"connectorKey\":\"uipath-microsoft-onedrive\",\"objectName\":\"DownloadFile\",\"httpMethod\":\"GET\",\"activityType\":\"Curated\",\"version\":\"1.0.0\",\"supportsStreaming\":false,\"subType\":\"standard\"}",
+                    "uiPathActivityTypeId": "c0ed899b-e170-3111-bda7-fdae448fa4e5",
+                    "isExperimental": false,
+                    "helpUrlTemplate": "https://docs.uipath.com/{0}/activities/other/latest/integration-service/uipath-microsoft-onedrive-Download-File",
+                    "isEnabled": true,
+                    "targetPlatform": "CrossPlatform",
+                    "isAdvanced": false,
+                    "isRestricted": false,
+                    "hasWpfOnlyDesigner": false,
+                    "tags": [
+                      "API.File.Download"
+                    ]
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "inputDefinition": {},
+      "inputDefaults": {},
+      "outputDefinition": {
+        "output": {
+          "type": "file",
+          "description": "The return value of the connector.",
+          "source": "=result.response",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails",
+          "source": "=Error",
+          "var": "error",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "required": [
+              "code",
+              "message",
+              "detail",
+              "category",
+              "status"
+            ],
+            "properties": {
+              "code": {
+                "type": "string",
+                "description": "Error code as a string"
+              },
+              "message": {
+                "type": "string",
+                "description": "High-level error message"
+              },
+              "detail": {
+                "type": "string",
+                "description": "Detailed error description"
+              },
+              "category": {
+                "type": "string",
+                "description": "Error category"
+              },
+              "status": {
+                "type": "integer",
+                "description": "HTTP status code"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "debug": {
+        "runtime": "bpmnEngine"
+      }
+    },
+    {
+      "nodeType": "uipath.connector.uipath-sap-odata.insert-record",
+      "version": "1.0.0",
+      "category": "connector.196641",
+      "tags": [
+        "connector",
+        "activity"
+      ],
+      "sortOrder": 515,
+      "supportsErrorHandling": true,
+      "description": "(SAP OData) Insert a new record in SAP OData",
+      "display": {
+        "label": "Insert Record",
+        "description": "(SAP OData) Insert a new record in SAP OData",
+        "icon": "https://alpha.uipath.com/311c6049-4966-4ef2-a6f3-8ceccaf38d54/studio_/typecache/icons/8d0745fdec44b4cca821afaed36bdf2a935e3973438dae2b4464d0909a271060.svg"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input",
+              "label": ""
+            }
+          ]
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "output",
+              "type": "source",
+              "handleType": "output",
+              "label": ""
+            },
+            {
+              "id": "error",
+              "label": "Error",
+              "type": "source",
+              "handleType": "output",
+              "visible": "{inputs.errorHandlingEnabled}",
+              "constraints": {
+                "maxConnections": 1
+              }
+            }
+          ]
+        }
+      ],
+      "model": {
+        "type": "bpmn:SendTask",
+        "serviceType": "Intsvc.ActivityExecution",
+        "bindings": {
+          "resource": "connection",
+          "resourceKey": "",
+          "values": [
+            {
+              "name": "uipath-sap-odata connection",
+              "propertyAttribute": "ConnectionId"
+            },
+            {
+              "name": "FolderKey",
+              "propertyAttribute": "FolderKey"
+            }
+          ]
+        },
+        "context": [
+          {
+            "name": "connectorKey",
+            "type": "string",
+            "value": "uipath-sap-odata"
+          },
+          {
+            "name": "operation",
+            "type": "string"
+          },
+          {
+            "name": "objectName",
+            "type": "string"
+          },
+          {
+            "name": "method",
+            "type": "string"
+          },
+          {
+            "name": "connection",
+            "type": "string",
+            "value": "<bindings.uipath-sap-odata connection>"
+          },
+          {
+            "name": "folderKey",
+            "type": "string",
+            "value": "<bindings.FolderKey>"
+          },
+          {
+            "name": "activityConfigurationVersion",
+            "type": "string",
+            "value": "v1"
+          },
+          {
+            "name": "metadata",
+            "body": {
+              "telemetryData": {
+                "connectorKey": "uipath-sap-odata",
+                "connectorName": "Insert Record"
+              },
+              "inputMetadata": {},
+              "errorState": {
+                "hasError": true
+              }
+            },
+            "type": "json"
+          }
+        ]
+      },
+      "form": {
+        "id": "connector-properties",
+        "title": "Connector configuration",
+        "sections": [
+          {
+            "id": "connector",
+            "title": "Connector",
+            "collapsible": true,
+            "defaultExpanded": true,
+            "fields": [
+              {
+                "label": "",
+                "name": "inputs.detail",
+                "type": "custom",
+                "component": "dap-config",
+                "componentProps": {
+                  "connectorDetail": {
+                    "isAppActivity": false,
+                    "packageId": "196641",
+                    "svgIconUrl": "icons/8d0745fdec44b4cca821afaed36bdf2a935e3973438dae2b4464d0909a271060.svg",
+                    "displayName": "Insert Record",
+                    "assemblyQualifiedName": "UiPath.IntegrationService.Activities.Runtime.Activities.ConnectorActivity, UiPath.IntegrationService.Activities.Runtime, Version=1.30.0.0, Culture=neutral, PublicKeyToken=null",
+                    "description": "Insert a new record in SAP OData",
+                    "category": "SAP OData.Advanced",
+                    "activityColor": "#00b9f2",
+                    "configuration": "{\"connectorKey\":\"uipath-sap-odata\",\"activityType\":\"Generic\",\"version\":\"1.0.0\",\"operation\":\"Create\",\"supportsStreaming\":false}",
+                    "uiPathActivityTypeId": "cbf4fb45-f3bb-3c2a-935b-622c67dae7e0",
+                    "isExperimental": false,
+                    "helpUrlTemplate": "https://docs.uipath.com/{0}/activities/other/latest/integration-service/uipath-sap-odata-Insert-Record",
+                    "isEnabled": true,
+                    "targetPlatform": "CrossPlatform",
+                    "isAdvanced": false,
+                    "isRestricted": false,
+                    "hasWpfOnlyDesigner": false,
+                    "tags": [
+                      ""
+                    ]
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "inputDefinition": {},
+      "inputDefaults": {},
+      "outputDefinition": {
+        "output": {
+          "type": "object",
+          "description": "The return value of the connector.",
+          "source": "=result.response",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails",
+          "source": "=Error",
+          "var": "error",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "required": [
+              "code",
+              "message",
+              "detail",
+              "category",
+              "status"
+            ],
+            "properties": {
+              "code": {
+                "type": "string",
+                "description": "Error code as a string"
+              },
+              "message": {
+                "type": "string",
+                "description": "High-level error message"
+              },
+              "detail": {
+                "type": "string",
+                "description": "Detailed error description"
+              },
+              "category": {
+                "type": "string",
+                "description": "Error category"
+              },
+              "status": {
+                "type": "integer",
+                "description": "HTTP status code"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "debug": {
+        "runtime": "bpmnEngine"
+      }
+    },
+    {
+      "nodeType": "uipath.ixp.invoiceixp-cef0d447-ixp.ff973488-5d89-8035-86ac-f980b4be6deb-c4359cde-55f0-4f0e-9322-c6cdce74ab4c",
+      "version": "1.0.0",
+      "category": "document-extraction",
+      "tags": [
+        "ixp",
+        "document-understanding",
+        "extraction"
+      ],
+      "description": "(Shared)",
+      "sortOrder": 537,
+      "display": {
+        "canvasLabel": "Extract",
+        "label": "InvoiceIXP",
+        "description": "(Shared)",
+        "icon": "file-text"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "success",
+              "type": "source",
+              "handleType": "output"
+            },
+            {
+              "id": "error",
+              "label": "Error",
+              "type": "source",
+              "handleType": "output",
+              "visible": "{inputs.errorHandlingEnabled}",
+              "constraints": {
+                "maxConnections": 1
+              }
+            }
+          ]
+        }
+      ],
+      "supportsErrorHandling": true,
+      "model": {
+        "type": "bpmn:ServiceTask",
+        "serviceType": "IXP.Extraction",
+        "bindings": {
+          "resource": "ixpDeployment",
+          "entityType": "ixpDeployment",
+          "resourceSubType": null,
+          "resourceKey": "ff973488-5d89-8035-86ac-f980b4be6deb",
+          "name": "InvoiceIXP",
+          "values": [
+            {
+              "name": "name",
+              "propertyAttribute": "name",
+              "default": "InvoiceIXP"
+            },
+            {
+              "name": "folderPath",
+              "propertyAttribute": "folderPath",
+              "default": "Shared"
+            }
+          ]
+        }
+      },
+      "form": {
+        "id": "ixp-standalone-form",
+        "title": "IXP",
+        "sections": [
+          {
+            "id": "ixp-model",
+            "title": "Configuration",
+            "fields": [
+              {
+                "name": "inputs.modelName",
+                "type": "text",
+                "label": "IXP model",
+                "rules": [
+                  {
+                    "id": "always-disabled",
+                    "conditions": [],
+                    "effects": {
+                      "disabled": true
+                    }
+                  }
+                ]
+              },
+              {
+                "name": "inputs.folderName",
+                "type": "text",
+                "label": "Folder",
+                "rules": [
+                  {
+                    "id": "always-disabled",
+                    "conditions": [],
+                    "effects": {
+                      "disabled": true
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "ixp-file-upload",
+            "title": "File input",
+            "collapsible": true,
+            "defaultExpanded": true,
+            "fields": [
+              {
+                "name": "inputs.fileRef",
+                "type": "file",
+                "label": "File",
+                "description": "File to extract data from",
+                "validation": {
+                  "required": true,
+                  "messages": {
+                    "required": "A file is required for extraction"
+                  }
+                }
+              },
+              {
+                "name": "inputs.pageRange",
+                "type": "text",
+                "label": "Page range",
+                "placeholder": "e.g. 1-5",
+                "description": "Optional page range to process."
+              }
+            ]
+          },
+          {
+            "id": "schema-definition",
+            "title": "Schema definition",
+            "collapsible": false,
+            "fields": [
+              {
+                "name": "inputs.model",
+                "type": "custom",
+                "component": "ixp-model-taxonomy",
+                "label": ""
+              }
+            ]
+          }
+        ]
+      },
+      "debug": {
+        "runtime": "bpmnEngine"
+      },
+      "inputDefinition": {
+        "type": "object",
+        "properties": {
+          "projectName": {
+            "type": "string"
+          },
+          "projectId": {
+            "type": "string"
+          },
+          "versionTag": {
+            "type": "string"
+          },
+          "folderKey": {
+            "type": "string"
+          },
+          "folderName": {
+            "type": "string"
+          },
+          "model": {
+            "type": "object"
+          },
+          "modelName": {
+            "type": "string"
+          },
+          "fileRef": {
+            "type": "string"
+          },
+          "pageRange": {
+            "type": "string"
+          },
+          "attachmentConfig": {
+            "type": "object"
+          },
+          "attachment": {
+            "type": "object",
+            "description": "File to extract data from.",
+            "properties": {
+              "ID": {
+                "type": "string",
+                "description": "Orchestrator attachment key"
+              },
+              "FullName": {
+                "type": "string",
+                "description": "File name"
+              },
+              "MimeType": {
+                "type": "string",
+                "description": "The MIME type of the content"
+              },
+              "Metadata": {
+                "type": "object",
+                "description": "Dictionary of metadata",
+                "additionalProperties": {
+                  "type": "string"
+                }
+              }
+            },
+            "required": [
+              "ID"
+            ]
+          }
+        },
+        "required": [
+          "fileRef"
+        ]
+      },
+      "inputDefaults": {
+        "model": {
+          "id": "ff973488-5d89-8035-86ac-f980b4be6deb",
+          "modelName": "invoiceixp-cef0d447-ixp",
+          "modelDisplayName": "InvoiceIXP",
+          "folderKey": "c4359cde-55f0-4f0e-9322-c6cdce74ab4c",
+          "folderName": "Shared",
+          "folderPath": "c4359cde-55f0-4f0e-9322-c6cdce74ab4c",
+          "description": ""
+        },
+        "modelName": "invoiceixp-cef0d447-ixp",
+        "description": "",
+        "projectName": "invoiceixp-cef0d447-ixp",
+        "versionTag": "",
+        "folderKey": "c4359cde-55f0-4f0e-9322-c6cdce74ab4c",
+        "folderName": "Shared",
+        "fileRef": "",
+        "pageRange": ""
+      },
+      "outputDefinition": {
+        "output": {
+          "name": "output",
+          "type": "object",
+          "source": "=this.result",
+          "var": "output",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "properties": {
+              "ExtractionResult": {
+                "type": "object",
+                "properties": {
+                  "DocumentId": {
+                    "type": "string"
+                  },
+                  "ResultsVersion": {
+                    "type": "integer"
+                  },
+                  "ResultsDocument": {
+                    "type": "object",
+                    "properties": {
+                      "Bounds": {
+                        "type": "object",
+                        "properties": {
+                          "PageCount": {
+                            "type": "integer"
+                          },
+                          "PageRange": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      "Language": {
+                        "type": "string"
+                      },
+                      "DocumentGroup": {
+                        "type": "string"
+                      },
+                      "DocumentCategory": {
+                        "type": "string"
+                      },
+                      "DocumentTypeId": {
+                        "type": "string"
+                      },
+                      "DocumentTypeName": {
+                        "type": "string"
+                      },
+                      "DocumentTypeDataVersion": {
+                        "type": "string"
+                      },
+                      "DataVersion": {
+                        "type": "string"
+                      },
+                      "DocumentTypeSource": {
+                        "type": "string"
+                      },
+                      "Fields": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "FieldId": {
+                              "type": "string"
+                            },
+                            "FieldName": {
+                              "type": "string"
+                            },
+                            "FieldType": {
+                              "type": "string"
+                            },
+                            "IsMissing": {
+                              "type": "boolean"
+                            },
+                            "DataSource": {
+                              "type": "string"
+                            },
+                            "Values": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            },
+                            "DataVersion": {
+                              "type": "integer"
+                            },
+                            "OperatorConfirmed": {
+                              "type": "boolean"
+                            },
+                            "ValidatorNotes": {
+                              "type": "string"
+                            },
+                            "ValidatorNotesInfo": {
+                              "type": "string"
+                            }
+                          }
+                        }
+                      },
+                      "Tables": {
+                        "type": "array",
+                        "items": {
+                          "type": "object"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails",
+          "source": "=Error",
+          "var": "error",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "required": [
+              "code",
+              "message",
+              "detail",
+              "category",
+              "status"
+            ],
+            "properties": {
+              "code": {
+                "type": "string",
+                "description": "Error code as a string"
+              },
+              "message": {
+                "type": "string",
+                "description": "High-level error message"
+              },
+              "detail": {
+                "type": "string",
+                "description": "Detailed error description"
+              },
+              "category": {
+                "type": "string",
+                "description": "Error category"
+              },
+              "status": {
+                "type": "integer",
+                "description": "HTTP status code"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      }
+    },
+    {
+      "nodeType": "core.action.script",
+      "version": "1.0",
+      "category": "data-operations",
+      "description": "Run custom JavaScript code",
+      "tags": [
+        "code",
+        "javascript",
+        "python"
+      ],
+      "sortOrder": 35,
+      "supportsErrorHandling": true,
+      "display": {
+        "label": "Script",
+        "icon": "code"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "success",
+              "type": "source",
+              "handleType": "output"
+            },
+            {
+              "id": "error",
+              "label": "Error",
+              "type": "source",
+              "handleType": "output",
+              "visible": "{inputs.errorHandlingEnabled}",
+              "constraints": {
+                "maxConnections": 1
+              }
+            }
+          ]
+        }
+      ],
+      "debug": {
+        "runtime": "clientScript"
+      },
+      "model": {
+        "type": "bpmn:ScriptTask"
+      },
+      "inputDefinition": {
+        "type": "object",
+        "properties": {
+          "script": {
+            "type": "string",
+            "minLength": 1,
+            "errorMessage": "A script function is required",
+            "validationSeverity": "warning"
+          }
+        },
+        "required": [
+          "script"
+        ]
+      },
+      "inputDefaults": {
+        "script": ""
+      },
+      "outputDefinition": {
+        "output": {
+          "type": "object",
+          "description": "The return value of the script",
+          "source": "=result.response",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails",
+          "source": "=Error",
+          "var": "error",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "required": [
+              "code",
+              "message",
+              "detail",
+              "category",
+              "status"
+            ],
+            "properties": {
+              "code": {
+                "type": "string",
+                "description": "Error code as a string"
+              },
+              "message": {
+                "type": "string",
+                "description": "High-level error message"
+              },
+              "detail": {
+                "type": "string",
+                "description": "Detailed error description"
+              },
+              "category": {
+                "type": "string",
+                "description": "Error category"
+              },
+              "status": {
+                "type": "integer",
+                "description": "HTTP status code"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "form": {
+        "id": "script-properties",
+        "title": "Script configuration",
+        "sections": [
+          {
+            "id": "script",
+            "title": "Script",
+            "collapsible": true,
+            "defaultExpanded": true,
+            "fields": [
+              {
+                "name": "inputs.script",
+                "type": "custom",
+                "component": "script-editor",
+                "componentProps": {
+                  "language": "javascript",
+                  "returnType": "any",
+                  "validationMode": "script",
+                  "minHeight": 200,
+                  "placeholder": " // Return an object with your result\nreturn {\n  message: \"Web request response\",\n  data: $vars.httpRequest1.output\n                  };"
+                },
+                "label": "Code",
+                "description": "JavaScript expression that returns a result object"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "nodeType": "core.control.end",
+      "version": "1.0",
+      "category": "control-flow",
+      "description": "Mark the end of a workflow path",
+      "tags": [
+        "control-flow",
+        "end",
+        "finish",
+        "complete"
+      ],
+      "sortOrder": 20,
+      "display": {
+        "label": "End",
+        "icon": "circle-check",
+        "shape": "circle"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        }
+      ],
+      "model": {
+        "type": "bpmn:EndEvent"
+      },
+      "runtimeConstraints": {
+        "exclude": [
+          "api-function"
+        ]
+      }
+    },
+    {
+      "nodeType": "core.logic.terminate",
+      "version": "1.0",
+      "category": "control-flow",
+      "description": "Stop the entire workflow immediately",
+      "tags": [
+        "control-flow",
+        "end",
+        "stop",
+        "terminate"
+      ],
+      "sortOrder": 20,
+      "display": {
+        "label": "Terminate",
+        "icon": "circle-x",
+        "shape": "circle"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        }
+      ],
+      "model": {
+        "type": "bpmn:EndEvent",
+        "eventDefinition": "bpmn:TerminateEventDefinition"
+      },
+      "runtimeConstraints": {
+        "exclude": [
+          "api-function"
+        ]
+      }
+    }
+  ],
+  "runtime": "maestro",
+  "bindings": [
+    {
+      "id": "bQAt6MbgM",
+      "name": "uipath-microsoft-onedrive connection",
+      "type": "string",
+      "resource": "connection",
+      "resourceKey": "ae311606-25b7-43ef-9cd0-f3dc0b3a9b58",
+      "propertyAttribute": "ConnectionId",
+      "default": "ae311606-25b7-43ef-9cd0-f3dc0b3a9b58"
+    },
+    {
+      "id": "bCMis6T1V",
+      "name": "FolderKey",
+      "type": "string",
+      "resource": "connection",
+      "resourceKey": "ae311606-25b7-43ef-9cd0-f3dc0b3a9b58",
+      "propertyAttribute": "FolderKey",
+      "default": "c4359cde-55f0-4f0e-9322-c6cdce74ab4c"
+    },
+    {
+      "id": "bDgN64hgy",
+      "name": "uipath-sap-odata connection",
+      "type": "string",
+      "resource": "connection",
+      "resourceKey": "",
+      "propertyAttribute": "ConnectionId"
+    }
+  ],
+  "variables": {
+    "nodes": [
+      {
+        "id": "newInvoiceInSharepoint1.output",
+        "type": "object",
+        "description": "The return value of the connector trigger.",
+        "binding": {
+          "nodeId": "newInvoiceInSharepoint1",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "downloadInvoicePdf1.output",
+        "type": "object",
+        "description": "The return value of the connector.",
+        "binding": {
+          "nodeId": "downloadInvoicePdf1",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "downloadInvoicePdf1.error",
+        "type": "object",
+        "description": "Error information if the node fails",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "required": [
+            "code",
+            "message",
+            "detail",
+            "category",
+            "status"
+          ],
+          "properties": {
+            "code": {
+              "type": "string",
+              "description": "Error code as a string"
+            },
+            "message": {
+              "type": "string",
+              "description": "High-level error message"
+            },
+            "detail": {
+              "type": "string",
+              "description": "Detailed error description"
+            },
+            "category": {
+              "type": "string",
+              "description": "Error category"
+            },
+            "status": {
+              "type": "integer",
+              "description": "HTTP status code"
+            }
+          },
+          "additionalProperties": false
+        },
+        "binding": {
+          "nodeId": "downloadInvoicePdf1",
+          "outputId": "error"
+        }
+      },
+      {
+        "id": "extractInvoiceFields1.output",
+        "type": "object",
+        "description": "The extraction result from InvoiceIXP.",
+        "binding": {
+          "nodeId": "extractInvoiceFields1",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "extractInvoiceFields1.error",
+        "type": "object",
+        "description": "Error information if the IxP extraction fails",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "required": [
+            "code",
+            "message",
+            "detail",
+            "category",
+            "status"
+          ],
+          "properties": {
+            "code": {
+              "type": "string",
+              "description": "Error code as a string"
+            },
+            "message": {
+              "type": "string",
+              "description": "High-level error message"
+            },
+            "detail": {
+              "type": "string",
+              "description": "Detailed error description"
+            },
+            "category": {
+              "type": "string",
+              "description": "Error category"
+            },
+            "status": {
+              "type": "integer",
+              "description": "HTTP status code"
+            }
+          },
+          "additionalProperties": false
+        },
+        "binding": {
+          "nodeId": "extractInvoiceFields1",
+          "outputId": "error"
+        }
+      },
+      {
+        "id": "parseInvoiceFields1.output",
+        "type": "object",
+        "description": "The parsed invoice field map returned by the script.",
+        "binding": {
+          "nodeId": "parseInvoiceFields1",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "parseInvoiceFields1.error",
+        "type": "object",
+        "description": "Error information if the script node fails",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "required": [
+            "code",
+            "message",
+            "detail",
+            "category",
+            "status"
+          ],
+          "properties": {
+            "code": {
+              "type": "string",
+              "description": "Error code as a string"
+            },
+            "message": {
+              "type": "string",
+              "description": "High-level error message"
+            },
+            "detail": {
+              "type": "string",
+              "description": "Detailed error description"
+            },
+            "category": {
+              "type": "string",
+              "description": "Error category"
+            },
+            "status": {
+              "type": "integer",
+              "description": "HTTP status code"
+            }
+          },
+          "additionalProperties": false
+        },
+        "binding": {
+          "nodeId": "parseInvoiceFields1",
+          "outputId": "error"
+        }
+      },
+      {
+        "id": "createSapInvoiceRecord1.output",
+        "type": "object",
+        "description": "The return value of the connector.",
+        "binding": {
+          "nodeId": "createSapInvoiceRecord1",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "createSapInvoiceRecord1.error",
+        "type": "object",
+        "description": "Error information if the node fails",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "required": [
+            "code",
+            "message",
+            "detail",
+            "category",
+            "status"
+          ],
+          "properties": {
+            "code": {
+              "type": "string",
+              "description": "Error code as a string"
+            },
+            "message": {
+              "type": "string",
+              "description": "High-level error message"
+            },
+            "detail": {
+              "type": "string",
+              "description": "Detailed error description"
+            },
+            "category": {
+              "type": "string",
+              "description": "Error category"
+            },
+            "status": {
+              "type": "integer",
+              "description": "HTTP status code"
+            }
+          },
+          "additionalProperties": false
+        },
+        "binding": {
+          "nodeId": "createSapInvoiceRecord1",
+          "outputId": "error"
+        }
+      }
+    ]
+  },
+  "layout": {
+    "nodes": {
+      "newInvoiceInSharepoint1": {
+        "position": {
+          "x": 100,
+          "y": 300
+        }
+      },
+      "downloadInvoicePdf1": {
+        "position": {
+          "x": 360,
+          "y": 300
+        }
+      },
+      "extractInvoiceFields1": {
+        "position": {
+          "x": 620,
+          "y": 300
+        }
+      },
+      "parseInvoiceFields1": {
+        "position": {
+          "x": 880,
+          "y": 300
+        }
+      },
+      "createSapInvoiceRecord1": {
+        "position": {
+          "x": 1140,
+          "y": 300
+        }
+      },
+      "invoiceProcessedEnd1": {
+        "position": {
+          "x": 1400,
+          "y": 300
+        }
+      },
+      "downloadFailTerminate1": {
+        "position": {
+          "x": 360,
+          "y": 520
+        }
+      },
+      "extractionFailTerminate1": {
+        "position": {
+          "x": 750,
+          "y": 520
+        }
+      },
+      "sapFailTerminate1": {
+        "position": {
+          "x": 1140,
+          "y": 520
+        }
+      }
+    }
+  }
+}

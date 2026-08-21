@@ -1,0 +1,12 @@
+{
+  "Result": "Success",
+  "Data": {
+    "Id": "proj-8f3a2c11-ixp",
+    "Name": "vendor-invoices-f8a3c211-ixp",
+    "Title": "Vendor Invoices",
+    "CreatedAt": "2024-03-30T09:00:00Z",
+    "Model": "gemini_2_5_flash",
+    "Preprocessing": "table_mini",
+    "Status": "Active"
+  }
+}

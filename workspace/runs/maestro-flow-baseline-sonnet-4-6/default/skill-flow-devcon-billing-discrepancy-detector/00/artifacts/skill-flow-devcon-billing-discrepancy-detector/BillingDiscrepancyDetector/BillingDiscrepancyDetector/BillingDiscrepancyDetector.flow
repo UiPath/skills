@@ -1,0 +1,988 @@
+{
+  "id": "4df0baf9-7f01-4f60-a2f0-d0d4e03b16c3",
+  "version": "1.9",
+  "name": "BillingDiscrepancyDetector",
+  "nodes": [
+    {
+      "id": "start",
+      "type": "core.trigger.manual",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Manual trigger"
+      },
+      "inputs": {
+        "entryPointId": "a662865e-1762-4e0e-a2eb-49e68eb7854c",
+        "isDefaultEntryPoint": true
+      },
+      "outputs": {
+        "output": {
+          "type": "object",
+          "description": "Data passed when manually triggering the process.",
+          "source": "null",
+          "var": "output"
+        }
+      }
+    },
+    {
+      "id": "queryErpRecords1",
+      "type": "uipath.connector.uipath-uipath-dataservice.query-entity-records",
+      "typeVersion": "1.0.0",
+      "display": {
+        "label": "Query ERP Records"
+      },
+      "inputs": {
+        "detail": {
+          "connector": "uipath-uipath-dataservice",
+          "connectionId": "d61e5d0e-04af-4f93-95cc-151d81fa08dc",
+          "connectionResourceId": "d61e5d0e-04af-4f93-95cc-151d81fa08dc",
+          "connectionFolderKey": "c4359cde-55f0-4f0e-9322-c6cdce74ab4c",
+          "method": "POST",
+          "endpoint": "/v2/{entityName}/qer",
+          "queryParameters": {
+            "queryExpression": "=js:\"invoiceNumber = '\" + String($vars.start.output.invoiceNumber) + \"'\""
+          },
+          "pathParameters": {
+            "entityName": "BillingDisputeERP"
+          },
+          "uiPathActivityTypeId": "703065b9-a310-33b8-9d4d-12df0a6f520b",
+          "errorState": {
+            "issues": []
+          },
+          "configuration": "=jsonString:{\"essentialConfiguration\":{\"connectorVersion\":\"1.73.0-dev.2\",\"customFieldsRequestDetails\":{\"objectActionName\":\"GenerateSchema\",\"parameterValues\":[[\"entityName\",\"BillingDisputeERP\"]]},\"instanceParameters\":{\"connectorKey\":\"uipath-uipath-dataservice\",\"objectName\":\"QueryEntityRecordsCurated\",\"httpMethod\":\"POST\",\"activityType\":\"Curated\",\"version\":\"1.0.0\",\"supportsStreaming\":false,\"subType\":\"standard\"},\"objectName\":\"QueryEntityRecordsCurated\",\"operation\":\"list\",\"packageVersion\":\"1.0.0\",\"httpMethod\":\"POST\",\"path\":\"/v2/{entityName}/qer\",\"unifiedTypesCompatible\":true}}",
+          "inputMetadata": {
+            "operation": "list",
+            "pagination": {
+              "maxPageSize": 1000
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "queryCrmAccount1",
+      "type": "uipath.connector.uipath-uipath-dataservice.query-entity-records",
+      "typeVersion": "1.0.0",
+      "display": {
+        "label": "Query CRM Account"
+      },
+      "inputs": {
+        "detail": {
+          "connector": "uipath-uipath-dataservice",
+          "connectionId": "d61e5d0e-04af-4f93-95cc-151d81fa08dc",
+          "connectionResourceId": "d61e5d0e-04af-4f93-95cc-151d81fa08dc",
+          "connectionFolderKey": "c4359cde-55f0-4f0e-9322-c6cdce74ab4c",
+          "method": "POST",
+          "endpoint": "/v2/{entityName}/qer",
+          "queryParameters": {
+            "queryExpression": "=js:\"accountNumber = '\" + String($vars.start.output.accountNumber) + \"'\""
+          },
+          "pathParameters": {
+            "entityName": "BillingDisputeCRM"
+          },
+          "uiPathActivityTypeId": "703065b9-a310-33b8-9d4d-12df0a6f520b",
+          "errorState": {
+            "issues": []
+          },
+          "configuration": "=jsonString:{\"essentialConfiguration\":{\"connectorVersion\":\"1.73.0-dev.2\",\"customFieldsRequestDetails\":{\"objectActionName\":\"GenerateSchema\",\"parameterValues\":[[\"entityName\",\"BillingDisputeCRM\"]]},\"instanceParameters\":{\"connectorKey\":\"uipath-uipath-dataservice\",\"objectName\":\"QueryEntityRecordsCurated\",\"httpMethod\":\"POST\",\"activityType\":\"Curated\",\"version\":\"1.0.0\",\"supportsStreaming\":false,\"subType\":\"standard\"},\"objectName\":\"QueryEntityRecordsCurated\",\"operation\":\"list\",\"packageVersion\":\"1.0.0\",\"httpMethod\":\"POST\",\"path\":\"/v2/{entityName}/qer\",\"unifiedTypesCompatible\":true}}",
+          "inputMetadata": {
+            "operation": "list",
+            "pagination": {
+              "maxPageSize": 1000
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "mergeBranches",
+      "type": "core.logic.merge",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Merge Branches"
+      },
+      "inputs": {}
+    },
+    {
+      "id": "computeResult",
+      "type": "core.action.script",
+      "typeVersion": "1.1",
+      "display": {
+        "label": "Compute Discrepancy"
+      },
+      "inputs": {
+        "script": "var erpRecords = $vars.queryErpRecords1.output;\nvar crmRecords = $vars.queryCrmAccount1.output;\nvar disputedLineNumber = $vars.start.output.disputedLineNumber;\nvar disputedUnitPrice = $vars.start.output.disputedUnitPrice;\nvar disputedQuantity = $vars.start.output.disputedQuantity;\nvar invoiceNumber = $vars.start.output.invoiceNumber;\nvar erpList = Array.isArray(erpRecords) ? erpRecords : (erpRecords && erpRecords.value ? erpRecords.value : []);\nvar crmList = Array.isArray(crmRecords) ? crmRecords : (crmRecords && crmRecords.value ? crmRecords.value : []);\nvar matchedLine = null;\nfor (var i = 0; i < erpList.length; i++) {\n  if (Number(erpList[i].lineNumber) === Number(disputedLineNumber)) {\n    matchedLine = erpList[i];\n    break;\n  }\n}\nvar contracted = matchedLine ? Number(matchedLine.amount) : 0;\nvar invoiced = Number(disputedUnitPrice) * Number(disputedQuantity);\nvar diff = invoiced - contracted;\nvar totalOvercharge = diff > 0 ? diff : 0;\nvar discrepancyCount = diff > 0 ? 1 : 0;\nvar matchedInvoiceNumber = erpList.length > 0 ? String(erpList[0].invoiceNumber || invoiceNumber) : String(invoiceNumber);\nvar accountTier = crmList.length > 0 ? String(crmList[0].accountTier || '') : '';\nreturn { totalOvercharge: totalOvercharge, discrepancyCount: discrepancyCount, matchedInvoiceNumber: matchedInvoiceNumber, accountTier: accountTier };"
+      },
+      "outputs": {
+        "output": {
+          "type": "object",
+          "description": "Computed discrepancy result",
+          "source": "=result.response",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the script fails",
+          "source": "=Error",
+          "var": "error"
+        }
+      }
+    },
+    {
+      "id": "endSuccess",
+      "type": "core.control.end",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "End"
+      },
+      "inputs": {},
+      "outputs": {
+        "totalOvercharge": {
+          "source": "=js:$vars.computeResult.output.totalOvercharge"
+        },
+        "discrepancyCount": {
+          "source": "=js:$vars.computeResult.output.discrepancyCount"
+        },
+        "matchedInvoiceNumber": {
+          "source": "=js:$vars.computeResult.output.matchedInvoiceNumber"
+        },
+        "accountTier": {
+          "source": "=js:$vars.computeResult.output.accountTier"
+        }
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e-start-erp",
+      "sourceNodeId": "start",
+      "sourcePort": "output",
+      "targetNodeId": "queryErpRecords1",
+      "targetPort": "input"
+    },
+    {
+      "id": "e-start-crm",
+      "sourceNodeId": "start",
+      "sourcePort": "output",
+      "targetNodeId": "queryCrmAccount1",
+      "targetPort": "input"
+    },
+    {
+      "id": "e-erp-merge",
+      "sourceNodeId": "queryErpRecords1",
+      "sourcePort": "output",
+      "targetNodeId": "mergeBranches",
+      "targetPort": "input"
+    },
+    {
+      "id": "e-crm-merge",
+      "sourceNodeId": "queryCrmAccount1",
+      "sourcePort": "output",
+      "targetNodeId": "mergeBranches",
+      "targetPort": "input"
+    },
+    {
+      "id": "e-merge-compute",
+      "sourceNodeId": "mergeBranches",
+      "sourcePort": "output",
+      "targetNodeId": "computeResult",
+      "targetPort": "input"
+    },
+    {
+      "id": "e-compute-end",
+      "sourceNodeId": "computeResult",
+      "sourcePort": "success",
+      "targetNodeId": "endSuccess",
+      "targetPort": "input"
+    }
+  ],
+  "definitions": [
+    {
+      "nodeType": "core.logic.merge",
+      "version": "1.0",
+      "category": "control-flow",
+      "description": "Join parallel branches into one path",
+      "tags": [
+        "control-flow",
+        "merge"
+      ],
+      "sortOrder": 64,
+      "display": {
+        "label": "Merge",
+        "icon": "merge"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ],
+          "visible": true
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "output",
+              "type": "source",
+              "handleType": "output"
+            }
+          ],
+          "visible": true
+        }
+      ],
+      "model": {
+        "type": "bpmn:ParallelGateway"
+      },
+      "runtimeConstraints": {
+        "exclude": [
+          "api-function"
+        ]
+      }
+    },
+    {
+      "nodeType": "core.action.script",
+      "version": "1.1",
+      "category": "data-operations",
+      "description": "Run custom JavaScript code",
+      "tags": [
+        "code",
+        "javascript",
+        "python"
+      ],
+      "sortOrder": 70,
+      "supportsErrorHandling": true,
+      "display": {
+        "label": "Script",
+        "icon": "code"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "success",
+              "type": "source",
+              "handleType": "output"
+            },
+            {
+              "id": "error",
+              "label": "Error",
+              "type": "source",
+              "handleType": "output",
+              "visible": "{inputs.errorHandlingEnabled}",
+              "constraints": {
+                "maxConnections": 1
+              }
+            }
+          ]
+        }
+      ],
+      "debug": {
+        "runtime": "clientScript"
+      },
+      "model": {
+        "type": "bpmn:ScriptTask"
+      },
+      "inputDefinition": {
+        "type": "object",
+        "properties": {
+          "script": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "script"
+        ]
+      },
+      "inputDefaults": {
+        "script": ""
+      },
+      "outputDefinition": {
+        "output": {
+          "type": "any",
+          "description": "The return value of the script",
+          "source": "=result.response",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails",
+          "source": "=Error",
+          "var": "error"
+        }
+      },
+      "form": {
+        "id": "script-properties",
+        "title": "Script configuration",
+        "sections": [
+          {
+            "id": "script",
+            "title": "Script",
+            "collapsible": true,
+            "defaultExpanded": true,
+            "fields": [
+              {
+                "name": "inputs.script",
+                "type": "custom",
+                "component": "script-editor",
+                "componentProps": {
+                  "language": "javascript",
+                  "returnType": "any",
+                  "validationMode": "script",
+                  "minHeight": 200
+                },
+                "label": "Code",
+                "description": "JavaScript expression that returns a result"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "nodeType": "core.control.end",
+      "version": "1.0",
+      "category": "control-flow",
+      "description": "Mark the end of a process path",
+      "tags": [
+        "control-flow",
+        "end",
+        "finish",
+        "complete"
+      ],
+      "sortOrder": 65,
+      "display": {
+        "label": "End",
+        "icon": "circle-check",
+        "shape": "circle"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        }
+      ],
+      "model": {
+        "type": "bpmn:EndEvent"
+      },
+      "runtimeConstraints": {
+        "exclude": [
+          "api-function"
+        ]
+      }
+    },
+    {
+      "nodeType": "core.trigger.manual",
+      "version": "1.0",
+      "category": "trigger",
+      "description": "Start the process manually",
+      "tags": [
+        "trigger",
+        "start",
+        "manual"
+      ],
+      "sortOrder": 80,
+      "display": {
+        "label": "Manual trigger",
+        "icon": "play",
+        "shape": "circle"
+      },
+      "handleConfiguration": [
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "output",
+              "type": "source",
+              "handleType": "output",
+              "showButton": true,
+              "constraints": {
+                "forbiddenTargetCategories": [
+                  "trigger"
+                ]
+              }
+            }
+          ],
+          "visible": true
+        }
+      ],
+      "model": {
+        "type": "bpmn:StartEvent",
+        "entryPointId": true
+      },
+      "outputDefinition": {
+        "output": {
+          "type": "object",
+          "description": "Data passed when manually triggering the process.",
+          "source": "null",
+          "var": "output"
+        }
+      },
+      "toolbarExtensions": {
+        "design": {
+          "actions": [
+            {
+              "id": "change-trigger-type",
+              "icon": "square-mouse-pointer",
+              "label": "Change trigger type"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "nodeType": "uipath.connector.uipath-uipath-dataservice.query-entity-records",
+      "version": "1.0.0",
+      "category": "connector.196550",
+      "tags": [
+        "connector",
+        "activity"
+      ],
+      "sortOrder": 520,
+      "supportsErrorHandling": true,
+      "description": "Retrieves a list of records for the selected Entity from Data Fabric, according to specified filters.",
+      "display": {
+        "label": "Query Entity Records",
+        "description": "Retrieves a list of records for the selected Entity from Data Fabric, according to specified filters.",
+        "icon": "https://alpha.uipath.com/311c6049-4966-4ef2-a6f3-8ceccaf38d54/studio_/typecache/icons/98381fa079bbcf73264f551006d6ef7580fb53992f3d9f94361eb5d9e06040cb.svg",
+        "sourceDisplayName": "UiPath Data Fabric"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input",
+              "label": ""
+            }
+          ]
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "output",
+              "type": "source",
+              "handleType": "output",
+              "label": ""
+            },
+            {
+              "id": "error",
+              "label": "Error",
+              "type": "source",
+              "handleType": "output",
+              "visible": "{inputs.errorHandlingEnabled}",
+              "constraints": {
+                "maxConnections": 1
+              }
+            }
+          ]
+        }
+      ],
+      "model": {
+        "type": "bpmn:SendTask",
+        "serviceType": "Intsvc.ActivityExecution",
+        "bindings": {
+          "resource": "connection",
+          "resourceKey": "",
+          "values": [
+            {
+              "name": "uipath-uipath-dataservice connection",
+              "propertyAttribute": "ConnectionId"
+            },
+            {
+              "name": "FolderKey",
+              "propertyAttribute": "FolderKey"
+            }
+          ]
+        },
+        "context": [
+          {
+            "name": "connectorKey",
+            "type": "string",
+            "value": "uipath-uipath-dataservice"
+          },
+          {
+            "name": "operation",
+            "type": "string"
+          },
+          {
+            "name": "objectName",
+            "value": "QueryEntityRecordsCurated",
+            "type": "string"
+          },
+          {
+            "name": "method",
+            "type": "string",
+            "value": "POST"
+          },
+          {
+            "name": "connection",
+            "type": "string",
+            "value": "<bindings.uipath-uipath-dataservice connection>"
+          },
+          {
+            "name": "folderKey",
+            "type": "string",
+            "value": "<bindings.FolderKey>"
+          },
+          {
+            "name": "activityConfigurationVersion",
+            "type": "string",
+            "value": "v1"
+          },
+          {
+            "name": "metadata",
+            "body": {
+              "telemetryData": {
+                "connectorKey": "uipath-uipath-dataservice",
+                "connectorName": "Query Entity Records"
+              },
+              "inputMetadata": {},
+              "errorState": {
+                "hasError": true
+              }
+            },
+            "type": "json"
+          }
+        ]
+      },
+      "form": {
+        "id": "connector-properties",
+        "title": "Connector configuration",
+        "sections": [
+          {
+            "id": "connector",
+            "title": "Connector",
+            "collapsible": true,
+            "defaultExpanded": true,
+            "fields": [
+              {
+                "label": "",
+                "name": "inputs.detail",
+                "type": "custom",
+                "component": "dap-config",
+                "componentProps": {
+                  "connectorDetail": {
+                    "isAppActivity": false,
+                    "packageId": "196550",
+                    "svgIconUrl": "icons/98381fa079bbcf73264f551006d6ef7580fb53992f3d9f94361eb5d9e06040cb.svg",
+                    "displayName": "Query Entity Records",
+                    "assemblyQualifiedName": "UiPath.IntegrationService.Activities.Runtime.Activities.ConnectorActivity, UiPath.IntegrationService.Activities.Runtime, Version=1.31.0.0, Culture=neutral, PublicKeyToken=null",
+                    "description": "Retrieves a list of records for the selected Entity from Data Fabric, according to specified filters.",
+                    "category": "",
+                    "activityColor": "#E56D5C",
+                    "configuration": "{\"connectorKey\":\"uipath-uipath-dataservice\",\"objectName\":\"QueryEntityRecordsCurated\",\"httpMethod\":\"POST\",\"activityType\":\"Curated\",\"version\":\"1.0.0\",\"supportsStreaming\":false,\"subType\":\"standard\"}",
+                    "uiPathActivityTypeId": "703065b9-a310-33b8-9d4d-12df0a6f520b",
+                    "isExperimental": false,
+                    "helpUrlTemplate": "https://docs.uipath.com/{0}/activities/other/latest/integration-service/uipath-uipath-dataservice-Query-Entity-Records",
+                    "isEnabled": true,
+                    "targetPlatform": "CrossPlatform",
+                    "isAdvanced": false,
+                    "isRestricted": false,
+                    "hasWpfOnlyDesigner": false,
+                    "tags": [
+                      ""
+                    ]
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "inputDefinition": {},
+      "inputDefaults": {},
+      "outputDefinition": {
+        "output": {
+          "type": "object",
+          "description": "The return value of the connector.",
+          "source": "=result.response",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails",
+          "source": "=Error",
+          "var": "error",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "required": [
+              "code",
+              "message",
+              "detail",
+              "category",
+              "status"
+            ],
+            "properties": {
+              "code": {
+                "type": "string",
+                "description": "Error code as a string"
+              },
+              "message": {
+                "type": "string",
+                "description": "High-level error message"
+              },
+              "detail": {
+                "type": "string",
+                "description": "Detailed error description"
+              },
+              "category": {
+                "type": "string",
+                "description": "Error category"
+              },
+              "status": {
+                "type": "integer",
+                "description": "HTTP status code"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "debug": {
+        "runtime": "bpmnEngine"
+      }
+    }
+  ],
+  "runtime": "maestro",
+  "bindings": [
+    {
+      "id": "bxnJKQXoC",
+      "name": "uipath-uipath-dataservice connection",
+      "type": "string",
+      "resource": "connection",
+      "resourceKey": "d61e5d0e-04af-4f93-95cc-151d81fa08dc",
+      "propertyAttribute": "ConnectionId",
+      "default": "d61e5d0e-04af-4f93-95cc-151d81fa08dc"
+    },
+    {
+      "id": "bOMfjCR2G",
+      "name": "FolderKey",
+      "type": "string",
+      "resource": "connection",
+      "resourceKey": "d61e5d0e-04af-4f93-95cc-151d81fa08dc",
+      "propertyAttribute": "FolderKey",
+      "default": "c4359cde-55f0-4f0e-9322-c6cdce74ab4c"
+    }
+  ],
+  "variables": {
+    "globals": [
+      {
+        "id": "invoiceNumber",
+        "direction": "in",
+        "type": "string",
+        "description": "Invoice number to look up",
+        "triggerNodeId": "start"
+      },
+      {
+        "id": "accountNumber",
+        "direction": "in",
+        "type": "string",
+        "description": "Account number to look up",
+        "triggerNodeId": "start"
+      },
+      {
+        "id": "disputedLineNumber",
+        "direction": "in",
+        "type": "number",
+        "description": "Line number being disputed",
+        "triggerNodeId": "start"
+      },
+      {
+        "id": "disputedUnitPrice",
+        "direction": "in",
+        "type": "number",
+        "description": "Disputed unit price",
+        "triggerNodeId": "start"
+      },
+      {
+        "id": "disputedQuantity",
+        "direction": "in",
+        "type": "number",
+        "description": "Disputed quantity",
+        "triggerNodeId": "start"
+      },
+      {
+        "id": "totalOvercharge",
+        "direction": "out",
+        "type": "number",
+        "description": "Total overcharge amount"
+      },
+      {
+        "id": "discrepancyCount",
+        "direction": "out",
+        "type": "number",
+        "description": "Number of discrepancies found"
+      },
+      {
+        "id": "matchedInvoiceNumber",
+        "direction": "out",
+        "type": "string",
+        "description": "Invoice number from matched ERP row"
+      },
+      {
+        "id": "accountTier",
+        "direction": "out",
+        "type": "string",
+        "description": "Account tier from CRM"
+      }
+    ],
+    "nodes": [
+      {
+        "id": "start.output",
+        "type": "object",
+        "description": "Data passed when manually triggering the process.",
+        "binding": {
+          "nodeId": "start",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "queryErpRecords1.output",
+        "type": "object",
+        "description": "The return value of the connector.",
+        "binding": {
+          "nodeId": "queryErpRecords1",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "queryErpRecords1.error",
+        "type": "object",
+        "description": "Error information if the node fails",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "required": [
+            "code",
+            "message",
+            "detail",
+            "category",
+            "status"
+          ],
+          "properties": {
+            "code": {
+              "type": "string",
+              "description": "Error code as a string"
+            },
+            "message": {
+              "type": "string",
+              "description": "High-level error message"
+            },
+            "detail": {
+              "type": "string",
+              "description": "Detailed error description"
+            },
+            "category": {
+              "type": "string",
+              "description": "Error category"
+            },
+            "status": {
+              "type": "integer",
+              "description": "HTTP status code"
+            }
+          },
+          "additionalProperties": false
+        },
+        "binding": {
+          "nodeId": "queryErpRecords1",
+          "outputId": "error"
+        }
+      },
+      {
+        "id": "queryCrmAccount1.output",
+        "type": "object",
+        "description": "The return value of the connector.",
+        "binding": {
+          "nodeId": "queryCrmAccount1",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "queryCrmAccount1.error",
+        "type": "object",
+        "description": "Error information if the node fails",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "required": [
+            "code",
+            "message",
+            "detail",
+            "category",
+            "status"
+          ],
+          "properties": {
+            "code": {
+              "type": "string",
+              "description": "Error code as a string"
+            },
+            "message": {
+              "type": "string",
+              "description": "High-level error message"
+            },
+            "detail": {
+              "type": "string",
+              "description": "Detailed error description"
+            },
+            "category": {
+              "type": "string",
+              "description": "Error category"
+            },
+            "status": {
+              "type": "integer",
+              "description": "HTTP status code"
+            }
+          },
+          "additionalProperties": false
+        },
+        "binding": {
+          "nodeId": "queryCrmAccount1",
+          "outputId": "error"
+        }
+      },
+      {
+        "id": "computeResult.output",
+        "type": "object",
+        "description": "Computed discrepancy result",
+        "binding": {
+          "nodeId": "computeResult",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "computeResult.error",
+        "type": "object",
+        "description": "Error information if the script fails",
+        "binding": {
+          "nodeId": "computeResult",
+          "outputId": "error"
+        }
+      },
+      {
+        "id": "endSuccess.totalOvercharge",
+        "type": "string",
+        "binding": {
+          "nodeId": "endSuccess",
+          "outputId": "totalOvercharge"
+        }
+      },
+      {
+        "id": "endSuccess.discrepancyCount",
+        "type": "string",
+        "binding": {
+          "nodeId": "endSuccess",
+          "outputId": "discrepancyCount"
+        }
+      },
+      {
+        "id": "endSuccess.matchedInvoiceNumber",
+        "type": "string",
+        "binding": {
+          "nodeId": "endSuccess",
+          "outputId": "matchedInvoiceNumber"
+        }
+      },
+      {
+        "id": "endSuccess.accountTier",
+        "type": "string",
+        "binding": {
+          "nodeId": "endSuccess",
+          "outputId": "accountTier"
+        }
+      }
+    ]
+  },
+  "layout": {
+    "nodes": {
+      "start": {
+        "position": {
+          "x": -192,
+          "y": 96
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        }
+      },
+      "queryErpRecords1": {
+        "position": {
+          "x": 0,
+          "y": 0
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        }
+      },
+      "queryCrmAccount1": {
+        "position": {
+          "x": 0,
+          "y": 192
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        }
+      },
+      "mergeBranches": {
+        "position": {
+          "x": 192,
+          "y": 0
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "computeResult": {
+        "position": {
+          "x": 384,
+          "y": 0
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "endSuccess": {
+        "position": {
+          "x": 576,
+          "y": 0
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      }
+    }
+  }
+}

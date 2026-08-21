@@ -1,0 +1,152 @@
+{
+  "version": "1.1.0",
+  "settings": {
+    "model": "anthropic.claude-sonnet-5",
+    "maxTokens": 64000,
+    "temperature": 0,
+    "engine": "basic-v2",
+    "maxIterations": 25,
+    "mode": "standard"
+  },
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "normalizeData1__output__fields": {
+        "type": "array",
+        "description": "Normalized invoice fields extracted from the disputed invoice, as [{Id, Name, Value, Type, IsMissing, Confidence}]."
+      },
+      "crmLookup1__output": {
+        "type": "array",
+        "description": "CRM records for the disputing customer's account (BillingDisputeCRM), including account tier, prior dispute history, and account manager contact."
+      },
+      "erpLookup1__output": {
+        "type": "array",
+        "description": "ERP contract line records for the invoice (BillingDisputeERP) — the source of truth for contracted rates and quantities per line."
+      },
+      "discrepancyDetection1__output": {
+        "type": "object",
+        "description": "Precomputed per-line pricing mismatches between the disputed line items and the ERP contract rows, plus totalOvercharge and totalUndercharge."
+      },
+      "start__output__webhookPayload": {
+        "type": "object",
+        "description": "The original billing-dispute submission event, including customer.accountNumber, invoice.invoiceNumber, and dispute.disputedLineItems[]."
+      }
+    },
+    "required": [
+      "discrepancyDetection1__output",
+      "start__output__webhookPayload"
+    ]
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "determination": {
+        "type": "string",
+        "description": "A concise statement of what was found and decided about this billing dispute."
+      },
+      "recommendedAction": {
+        "type": "string",
+        "description": "One of: escalate_to_manager, auto_resolve, reject.",
+        "enum": [
+          "escalate_to_manager",
+          "auto_resolve",
+          "reject"
+        ]
+      },
+      "autoResolutionEligible": {
+        "type": "boolean",
+        "description": "True if the dispute qualifies for automatic resolution without manager approval, per the SOP."
+      },
+      "creditAmount": {
+        "type": "number",
+        "description": "The credit amount (in the invoice's currency) to issue to the customer. 0 if no credit is warranted."
+      },
+      "confidence": {
+        "type": "number",
+        "description": "Confidence in this determination, from 0 to 1."
+      },
+      "rationale": {
+        "type": "string",
+        "description": "The reasoning behind the determination, citing specific line items, contract data, and SOP guidance."
+      }
+    },
+    "required": [
+      "determination",
+      "recommendedAction",
+      "autoResolutionEligible",
+      "creditAmount",
+      "confidence",
+      "rationale"
+    ]
+  },
+  "metadata": {
+    "storageVersion": "50.0.0",
+    "isConversational": false,
+    "showProjectCreationExperience": false
+  },
+  "type": "lowCode",
+  "guardrails": [],
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are the Billing Dispute Analyst for the finance operations team. You review a customer's billing dispute against the invoice extraction, CRM account context, ERP contract records, and a precomputed discrepancy summary, then decide how the dispute should be resolved.\n\nScope:\n- In scope: determining whether the disputed charges are valid, invalid, or partially valid; deciding the recommended action; computing the credit amount owed.\n- Out of scope: contacting the customer, posting financial transactions, or approving your own escalations — those happen downstream.\n\nTools:\n- Billing Dispute SOP Index (context): query it to ground your determination in the company's dispute-resolution SOP (thresholds for auto-resolution, escalation criteria, valid dispute reasons). Call at most 3 times for a single determination. After the last call, stop retrieving and decide with the evidence you already have.\n- If the retrieved SOP content does not cover a detail, say so in rationale, lower confidence, and still return every outputSchema field. Never end a run without a determination.\n\nOutput:\n- Return a result conforming to the output schema.\n- determination: one or two sentences stating what you found (valid overcharge, invalid dispute, partial validity, etc).\n- recommendedAction: exactly one of escalate_to_manager | auto_resolve | reject. Use the SOP's thresholds — typically small, clearly-supported overcharges are auto_resolve; large amounts, ambiguous evidence, or missing contract data are escalate_to_manager; disputes contradicted by the ERP contract data with no supporting discrepancy are reject.\n- autoResolutionEligible: true only when the SOP's auto-resolution criteria are fully met.\n- creditAmount: the dollar amount to credit the customer, derived from the discrepancy summary's totalOvercharge for the validated lines. 0 if recommendedAction is reject.\n- confidence: 0 to 1, reflecting how well the evidence (discrepancy data, ERP/CRM records, SOP) supports the determination.\n- rationale: cite specific line numbers, amounts, and SOP provisions that drove the decision.\n- Never invent line items, amounts, or SOP rules not grounded in the provided data or the context index.\n\nUncertainty:\n- If contract data for a disputed line is missing (contractFound is false), treat that line's validity as unresolved, note it in rationale, and lean toward escalate_to_manager rather than guessing.\n- If you cannot reach a determination, still return every field with recommendedAction=escalate_to_manager, confidence near 0, and rationale explaining what is missing — never fabricate an answer.",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "You are the Billing Dispute Analyst for the finance operations team. You review a customer's billing dispute against the invoice extraction, CRM account context, ERP contract records, and a precomputed discrepancy summary, then decide how the dispute should be resolved.\n\nScope:\n- In scope: determining whether the disputed charges are valid, invalid, or partially valid; deciding the recommended action; computing the credit amount owed.\n- Out of scope: contacting the customer, posting financial transactions, or approving your own escalations — those happen downstream.\n\nTools:\n- Billing Dispute SOP Index (context): query it to ground your determination in the company's dispute-resolution SOP (thresholds for auto-resolution, escalation criteria, valid dispute reasons). Call at most 3 times for a single determination. After the last call, stop retrieving and decide with the evidence you already have.\n- If the retrieved SOP content does not cover a detail, say so in rationale, lower confidence, and still return every outputSchema field. Never end a run without a determination.\n\nOutput:\n- Return a result conforming to the output schema.\n- determination: one or two sentences stating what you found (valid overcharge, invalid dispute, partial validity, etc).\n- recommendedAction: exactly one of escalate_to_manager | auto_resolve | reject. Use the SOP's thresholds — typically small, clearly-supported overcharges are auto_resolve; large amounts, ambiguous evidence, or missing contract data are escalate_to_manager; disputes contradicted by the ERP contract data with no supporting discrepancy are reject.\n- autoResolutionEligible: true only when the SOP's auto-resolution criteria are fully met.\n- creditAmount: the dollar amount to credit the customer, derived from the discrepancy summary's totalOvercharge for the validated lines. 0 if recommendedAction is reject.\n- confidence: 0 to 1, reflecting how well the evidence (discrepancy data, ERP/CRM records, SOP) supports the determination.\n- rationale: cite specific line numbers, amounts, and SOP provisions that drove the decision.\n- Never invent line items, amounts, or SOP rules not grounded in the provided data or the context index.\n\nUncertainty:\n- If contract data for a disputed line is missing (contractFound is false), treat that line's validity as unresolved, note it in rationale, and lean toward escalate_to_manager rather than guessing.\n- If you cannot reach a determination, still return every field with recommendedAction=escalate_to_manager, confidence near 0, and rationale explaining what is missing — never fabricate an answer."
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "Analyze this billing dispute and return your determination.\n\nWebhook payload (customer + invoice + disputed line items):\n{{input.start__output__webhookPayload}}\n\nNormalized invoice fields (from document extraction):\n{{input.normalizeData1__output__fields}}\n\nCRM records for this account:\n{{input.crmLookup1__output}}\n\nERP contract records for this invoice:\n{{input.erpLookup1__output}}\n\nPrecomputed discrepancy summary (per-line mismatches, total overcharge, total undercharge):\n{{input.discrepancyDetection1__output}}\n\nGround your decision in the Billing Dispute SOP Index. Return determination, recommendedAction, autoResolutionEligible, creditAmount, confidence, and rationale.",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "Analyze this billing dispute and return your determination.\n\nWebhook payload (customer + invoice + disputed line items):\n"
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__webhookPayload"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\nNormalized invoice fields (from document extraction):\n"
+        },
+        {
+          "type": "variable",
+          "rawString": "input.normalizeData1__output__fields"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\nCRM records for this account:\n"
+        },
+        {
+          "type": "variable",
+          "rawString": "input.crmLookup1__output"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\nERP contract records for this invoice:\n"
+        },
+        {
+          "type": "variable",
+          "rawString": "input.erpLookup1__output"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\nPrecomputed discrepancy summary (per-line mismatches, total overcharge, total undercharge):\n"
+        },
+        {
+          "type": "variable",
+          "rawString": "input.discrepancyDetection1__output"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\nGround your decision in the Billing Dispute SOP Index. Return determination, recommendedAction, autoResolutionEligible, creditAmount, confidence, and rationale."
+        }
+      ]
+    }
+  ],
+  "projectId": "37f80fdf-0d93-4f09-a3be-6cbd24773620"
+}

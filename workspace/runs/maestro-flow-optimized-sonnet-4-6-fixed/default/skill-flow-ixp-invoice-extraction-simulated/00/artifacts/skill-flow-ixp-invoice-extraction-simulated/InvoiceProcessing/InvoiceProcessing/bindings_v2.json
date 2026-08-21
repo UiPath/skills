@@ -1,0 +1,46 @@
+{
+  "version": "2.0",
+  "resources": [
+    {
+      "resource": "connection",
+      "key": "",
+      "id": "connection",
+      "value": {
+        "ConnectionId": {
+          "isExpression": false,
+          "displayName": "uipath-microsoft-onedrive connection"
+        }
+      },
+      "metadata": {
+        "ActivityName": "New File in New Vendor",
+        "BindingsVersion": "2.2",
+        "DisplayLabel": "uipath-microsoft-onedrive connection",
+        "UseConnectionService": "true",
+        "Connector": "uipath-microsoft-onedrive"
+      }
+    },
+    {
+      "resource": "EventTrigger",
+      "key": "newFileInNewVendor1",
+      "id": "EventTriggernewFileInNewVendor1",
+      "value": {
+        "ConnectionId": {
+          "isExpression": false
+        },
+        "EntryPointUniqueId": {
+          "defaultValue": "850cd3e2-a535-4cf4-95b2-314ac25249a0",
+          "isExpression": false
+        }
+      },
+      "metadata": {
+        "UseConnectionService": "true",
+        "Connector": "uipath-microsoft-onedrive",
+        "ActivityName": "New File in New Vendor",
+        "BindingsVersion": "2.2",
+        "ObjectName": "ListItem",
+        "Operation": "LIST_ITEM_ADDED",
+        "FilterExpression": ""
+      }
+    }
+  ]
+}

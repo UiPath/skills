@@ -1,0 +1,6 @@
+{
+  "Name": "EmailEscalationBot",
+  "ProjectType": "Process",
+  "Description": "Monitors Outlook inbox, classifies email urgency via rules-based AI logic, routes high-priority emails for immediate attention and low-priority to standard queue, with auto-acknowledgement replies",
+  "MainFile": "Main.xaml"
+}

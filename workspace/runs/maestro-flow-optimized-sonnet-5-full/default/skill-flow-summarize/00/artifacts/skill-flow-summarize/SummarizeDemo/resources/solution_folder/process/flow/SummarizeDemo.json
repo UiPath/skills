@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "SummarizeDemo",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "b0f964a0-072f-465b-ae76-e78e8406096d",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "SummarizeDemo"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Flow",
+      "name": "SummarizeDemo",
+      "package": {
+        "key": "15426594-ea7a-4416-86df-059db7e7dad2"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "47f1fd93-f2b1-4d9a-a4d8-fa4beaa5fd73",
+    "files": []
+  }
+}

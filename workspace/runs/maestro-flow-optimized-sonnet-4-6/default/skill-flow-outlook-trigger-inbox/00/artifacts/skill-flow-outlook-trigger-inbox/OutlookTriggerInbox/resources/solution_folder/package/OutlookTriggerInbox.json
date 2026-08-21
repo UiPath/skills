@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "OutlookTriggerInbox",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "a6c7afd9-e7a6-49e2-b75c-b874702c7ec8",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "OutlookTriggerInbox"
+    },
+    "locks": [],
+    "key": "a87fc546-bcb2-4651-b541-6b349e951324",
+    "files": []
+  }
+}

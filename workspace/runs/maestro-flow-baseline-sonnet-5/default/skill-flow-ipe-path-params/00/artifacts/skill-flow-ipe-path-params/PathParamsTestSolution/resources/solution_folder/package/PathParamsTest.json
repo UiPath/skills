@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "PathParamsTest",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "4e7e7c77-9e28-4254-9a0e-a8a77daeb414",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "PathParamsTest"
+    },
+    "locks": [],
+    "key": "1de2c13b-4dca-426e-aa04-a95b5b8935ad",
+    "files": []
+  }
+}

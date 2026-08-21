@@ -1,0 +1,285 @@
+<Activity mc:Ignorable="sap sap2010" x:Class="Main"
+  xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities"
+  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+  xmlns:mva="clr-namespace:Microsoft.VisualBasic.Activities;assembly=System.Activities"
+  xmlns:sap="http://schemas.microsoft.com/netfx/2009/xaml/activities/presentation"
+  xmlns:sap2010="http://schemas.microsoft.com/netfx/2010/xaml/activities/presentation"
+  xmlns:sc="clr-namespace:System.Collections;assembly=System.Private.CoreLib"
+  xmlns:scg="clr-namespace:System.Collections.Generic;assembly=System.Private.CoreLib"
+  xmlns:sco="clr-namespace:System.Collections.ObjectModel;assembly=System.Private.CoreLib"
+  xmlns:ui="http://schemas.uipath.com/workflow/activities"
+  xmlns:uipm="clr-namespace:UiPath.Mail;assembly=UiPath.Mail"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+  <mva:VisualBasic.Settings>
+    <x:Null />
+  </mva:VisualBasic.Settings>
+
+  <TextExpression.NamespacesForImplementation>
+    <sco:Collection x:TypeArguments="x:String">
+      <x:String>System</x:String>
+      <x:String>System.Collections</x:String>
+      <x:String>System.Collections.Generic</x:String>
+      <x:String>System.Linq</x:String>
+      <x:String>UiPath.Mail</x:String>
+      <x:String>UiPath.Core</x:String>
+      <x:String>UiPath.Core.Activities</x:String>
+    </sco:Collection>
+  </TextExpression.NamespacesForImplementation>
+  <TextExpression.ReferencesForImplementation>
+    <sco:Collection x:TypeArguments="AssemblyReference">
+      <AssemblyReference>System</AssemblyReference>
+      <AssemblyReference>System.Activities</AssemblyReference>
+      <AssemblyReference>System.Private.CoreLib</AssemblyReference>
+      <AssemblyReference>System.Linq</AssemblyReference>
+      <AssemblyReference>System.Net.Mail</AssemblyReference>
+      <AssemblyReference>UiPath.System.Activities</AssemblyReference>
+      <AssemblyReference>UiPath.Mail.Activities</AssemblyReference>
+      <AssemblyReference>UiPath.Mail</AssemblyReference>
+    </sco:Collection>
+  </TextExpression.ReferencesForImplementation>
+
+  <!-- ══════════════════════════════════════════════════════════════════
+       CUSTOMER SUPPORT EMAIL TRIAGE — Main Orchestrator
+       ──────────────────────────────────────────────────────────────────
+       Reads unread emails from an IMAP inbox, classifies each one by
+       category (Billing / Technical / Account / Returns / General) and
+       priority (High / Normal / Low), sends an auto-acknowledgement
+       reply to the sender, and moves the email to the matching
+       Support/<Category> folder.
+
+       CONFIGURATION — set these variables or replace with Orchestrator Assets:
+         - mailServer     : IMAP host (e.g. "imap.gmail.com")
+         - mailPort       : IMAP port (e.g. 993)
+         - smtpServer     : SMTP host (e.g. "smtp.gmail.com")
+         - smtpPort       : SMTP port (e.g. 587)
+         - emailAddress   : your support inbox address
+         - emailPassword  : your email password / app password
+         - batchSize      : how many unread emails to fetch per run
+       ══════════════════════════════════════════════════════════════════ -->
+
+  <Sequence DisplayName="Main Sequence" sap2010:WorkflowViewState.IdRef="Sequence_1">
+    <Sequence.Variables>
+      <!-- ── CONFIG: update these values before running ── -->
+      <Variable x:TypeArguments="x:String"  Name="mailServer"   Default="&quot;imap.gmail.com&quot;" />
+      <Variable x:TypeArguments="x:Int32"   Name="mailPort"     Default="993" />
+      <Variable x:TypeArguments="x:String"  Name="smtpServer"   Default="&quot;smtp.gmail.com&quot;" />
+      <Variable x:TypeArguments="x:Int32"   Name="smtpPort"     Default="587" />
+      <Variable x:TypeArguments="x:String"  Name="emailAddress" Default="&quot;support@yourcompany.com&quot;" />
+      <Variable x:TypeArguments="x:String"  Name="emailPassword" Default="&quot;YOUR_PASSWORD_HERE&quot;" />
+      <Variable x:TypeArguments="x:Int32"   Name="batchSize"    Default="30" />
+
+      <!-- ── RUNTIME ── -->
+      <Variable x:TypeArguments="scg:List(uipm:UiPathMailMessage)" Name="emails" />
+      <Variable x:TypeArguments="x:String"  Name="emailCategory" Default="&quot;General&quot;" />
+      <Variable x:TypeArguments="x:String"  Name="emailPriority" Default="&quot;Normal&quot;" />
+      <Variable x:TypeArguments="x:Int32"   Name="processedCount" Default="0" />
+      <Variable x:TypeArguments="x:Int32"   Name="errorCount"    Default="0" />
+    </Sequence.Variables>
+
+    <ui:LogMessage Level="Info" DisplayName="Log: Process start">
+      <ui:LogMessage.Message>
+        <InArgument x:TypeArguments="x:Object">
+          <VisualBasicValue x:TypeArguments="x:Object" ExpressionText="&quot;CustomerSupportEmailTriage started. Target inbox: &quot; &amp; emailAddress" />
+        </InArgument>
+      </ui:LogMessage.Message>
+    </ui:LogMessage>
+
+    <!-- STEP 1: Retrieve unread emails -->
+    <TryCatch DisplayName="Try Fetch Emails">
+      <TryCatch.Try>
+        <Sequence DisplayName="Try">
+          <ui:InvokeWorkflowFile WorkflowFileName="Workflows\GetEmails.xaml"
+            DisplayName="Invoke GetEmails"
+            sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_1">
+            <ui:InvokeWorkflowFile.Arguments>
+              <scg:Dictionary x:TypeArguments="x:String, Argument">
+                <InArgument x:TypeArguments="x:String" x:Key="in_MailServer">[mailServer]</InArgument>
+                <InArgument x:TypeArguments="x:Int32"  x:Key="in_MailPort">[mailPort]</InArgument>
+                <InArgument x:TypeArguments="x:String" x:Key="in_EmailAddress">[emailAddress]</InArgument>
+                <InArgument x:TypeArguments="x:String" x:Key="in_Password">[emailPassword]</InArgument>
+                <InArgument x:TypeArguments="x:Int32"  x:Key="in_Top">[batchSize]</InArgument>
+                <OutArgument x:TypeArguments="scg:List(uipm:UiPathMailMessage)" x:Key="out_Messages">[emails]</OutArgument>
+              </scg:Dictionary>
+            </ui:InvokeWorkflowFile.Arguments>
+          </ui:InvokeWorkflowFile>
+        </Sequence>
+      </TryCatch.Try>
+      <TryCatch.Catches>
+        <Catch x:TypeArguments="s:Exception"
+          xmlns:s="clr-namespace:System;assembly=System.Private.CoreLib">
+          <ActivityAction x:TypeArguments="s:Exception">
+            <ActivityAction.Argument>
+              <DelegateInArgument x:TypeArguments="s:Exception" Name="ex" />
+            </ActivityAction.Argument>
+            <Sequence DisplayName="Catch - Fetch Failed">
+              <ui:LogMessage Level="Error" DisplayName="Log: Fetch failed">
+                <ui:LogMessage.Message>
+                  <InArgument x:TypeArguments="x:Object">
+                    <VisualBasicValue x:TypeArguments="x:Object" ExpressionText="&quot;Failed to retrieve emails: &quot; &amp; ex.ToString()" />
+                  </InArgument>
+                </ui:LogMessage.Message>
+              </ui:LogMessage>
+              <Throw DisplayName="Rethrow fetch error">
+                <Throw.Exception>
+                  <InArgument x:TypeArguments="s:Exception"
+                    xmlns:s="clr-namespace:System;assembly=System.Private.CoreLib">
+                    <VisualBasicValue x:TypeArguments="s:Exception" ExpressionText="ex" />
+                  </InArgument>
+                </Throw.Exception>
+              </Throw>
+            </Sequence>
+          </ActivityAction>
+        </Catch>
+      </TryCatch.Catches>
+    </TryCatch>
+
+    <!-- STEP 2: Check if any emails were retrieved -->
+    <If DisplayName="Any emails to process?">
+      <If.Condition>
+        <InArgument x:TypeArguments="x:Boolean">
+          <VisualBasicValue x:TypeArguments="x:Boolean" ExpressionText="emails IsNot Nothing AndAlso emails.Count > 0" />
+        </InArgument>
+      </If.Condition>
+      <If.Then>
+        <Sequence DisplayName="Process email batch">
+
+          <ui:LogMessage Level="Info" DisplayName="Log: Processing count">
+            <ui:LogMessage.Message>
+              <InArgument x:TypeArguments="x:Object">
+                <VisualBasicValue x:TypeArguments="x:Object" ExpressionText="&quot;Processing &quot; &amp; emails.Count.ToString() &amp; &quot; email(s)...&quot;" />
+              </InArgument>
+            </ui:LogMessage.Message>
+          </ui:LogMessage>
+
+          <!-- STEP 3: Loop through each email -->
+          <ui:ForEach x:TypeArguments="uipm:UiPathMailMessage" DisplayName="For Each Email">
+            <ui:ForEach.Values>
+              <InArgument x:TypeArguments="sc:IEnumerable">
+                <VisualBasicValue x:TypeArguments="sc:IEnumerable" ExpressionText="emails" />
+              </InArgument>
+            </ui:ForEach.Values>
+            <ui:ForEach.Body>
+              <ActivityAction x:TypeArguments="uipm:UiPathMailMessage">
+                <ActivityAction.Argument>
+                  <DelegateInArgument x:TypeArguments="uipm:UiPathMailMessage" Name="currentEmail" />
+                </ActivityAction.Argument>
+                <Sequence DisplayName="Process single email">
+
+                  <!-- 3a: Classify the email -->
+                  <TryCatch DisplayName="Try Classify + Route">
+                    <TryCatch.Try>
+                      <Sequence DisplayName="Try">
+
+                        <ui:InvokeWorkflowFile WorkflowFileName="Workflows\ClassifyEmail.xaml"
+                          DisplayName="Invoke ClassifyEmail"
+                          sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_2">
+                          <ui:InvokeWorkflowFile.Arguments>
+                            <scg:Dictionary x:TypeArguments="x:String, Argument">
+                              <InArgument x:TypeArguments="uipm:UiPathMailMessage" x:Key="in_Email">[currentEmail]</InArgument>
+                              <OutArgument x:TypeArguments="x:String" x:Key="out_Category">[emailCategory]</OutArgument>
+                              <OutArgument x:TypeArguments="x:String" x:Key="out_Priority">[emailPriority]</OutArgument>
+                            </scg:Dictionary>
+                          </ui:InvokeWorkflowFile.Arguments>
+                        </ui:InvokeWorkflowFile>
+
+                        <!-- 3b: Route the email (send ack + move to folder) -->
+                        <ui:InvokeWorkflowFile WorkflowFileName="Workflows\RouteEmail.xaml"
+                          DisplayName="Invoke RouteEmail"
+                          sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_3">
+                          <ui:InvokeWorkflowFile.Arguments>
+                            <scg:Dictionary x:TypeArguments="x:String, Argument">
+                              <InArgument x:TypeArguments="uipm:UiPathMailMessage" x:Key="in_Email">[currentEmail]</InArgument>
+                              <InArgument x:TypeArguments="x:String" x:Key="in_Category">[emailCategory]</InArgument>
+                              <InArgument x:TypeArguments="x:String" x:Key="in_Priority">[emailPriority]</InArgument>
+                              <InArgument x:TypeArguments="x:String" x:Key="in_SmtpServer">[smtpServer]</InArgument>
+                              <InArgument x:TypeArguments="x:Int32"  x:Key="in_SmtpPort">[smtpPort]</InArgument>
+                              <InArgument x:TypeArguments="x:String" x:Key="in_FromEmail">[emailAddress]</InArgument>
+                              <InArgument x:TypeArguments="x:String" x:Key="in_FromPassword">[emailPassword]</InArgument>
+                              <InArgument x:TypeArguments="x:String" x:Key="in_ImapServer">[mailServer]</InArgument>
+                              <InArgument x:TypeArguments="x:Int32"  x:Key="in_ImapPort">[mailPort]</InArgument>
+                            </scg:Dictionary>
+                          </ui:InvokeWorkflowFile.Arguments>
+                        </ui:InvokeWorkflowFile>
+
+                        <!-- Count successes -->
+                        <Assign x:TypeArguments="x:Int32" DisplayName="Increment processedCount">
+                          <Assign.To>
+                            <OutArgument x:TypeArguments="x:Int32">
+                              <VisualBasicReference x:TypeArguments="x:Int32" ExpressionText="processedCount" />
+                            </OutArgument>
+                          </Assign.To>
+                          <Assign.Value>
+                            <InArgument x:TypeArguments="x:Int32">
+                              <VisualBasicValue x:TypeArguments="x:Int32" ExpressionText="processedCount + 1" />
+                            </InArgument>
+                          </Assign.Value>
+                        </Assign>
+
+                      </Sequence>
+                    </TryCatch.Try>
+                    <TryCatch.Catches>
+                      <Catch x:TypeArguments="s:Exception"
+                        xmlns:s="clr-namespace:System;assembly=System.Private.CoreLib">
+                        <ActivityAction x:TypeArguments="s:Exception">
+                          <ActivityAction.Argument>
+                            <DelegateInArgument x:TypeArguments="s:Exception" Name="itemEx" />
+                          </ActivityAction.Argument>
+                          <Sequence DisplayName="Catch - Per-item Error">
+                            <!-- Log and continue — one bad email must not stop the rest -->
+                            <ui:LogMessage Level="Error" DisplayName="Log: Per-item error">
+                              <ui:LogMessage.Message>
+                                <InArgument x:TypeArguments="x:Object">
+                                  <VisualBasicValue x:TypeArguments="x:Object" ExpressionText="&quot;Error processing email '&quot; &amp; If(currentEmail IsNot Nothing AndAlso currentEmail.Subject IsNot Nothing, currentEmail.Subject, &quot;&lt;no subject&gt;&quot;) &amp; &quot;': &quot; &amp; itemEx.ToString()" />
+                                </InArgument>
+                              </ui:LogMessage.Message>
+                            </ui:LogMessage>
+                            <Assign x:TypeArguments="x:Int32" DisplayName="Increment errorCount">
+                              <Assign.To>
+                                <OutArgument x:TypeArguments="x:Int32">
+                                  <VisualBasicReference x:TypeArguments="x:Int32" ExpressionText="errorCount" />
+                                </OutArgument>
+                              </Assign.To>
+                              <Assign.Value>
+                                <InArgument x:TypeArguments="x:Int32">
+                                  <VisualBasicValue x:TypeArguments="x:Int32" ExpressionText="errorCount + 1" />
+                                </InArgument>
+                              </Assign.Value>
+                            </Assign>
+                          </Sequence>
+                        </ActivityAction>
+                      </Catch>
+                    </TryCatch.Catches>
+                  </TryCatch>
+
+                </Sequence>
+              </ActivityAction>
+            </ui:ForEach.Body>
+          </ui:ForEach>
+
+        </Sequence>
+      </If.Then>
+      <If.Else>
+        <Sequence DisplayName="No emails">
+          <ui:LogMessage Level="Info" DisplayName="Log: No emails">
+            <ui:LogMessage.Message>
+              <InArgument x:TypeArguments="x:Object">
+                <VisualBasicValue x:TypeArguments="x:Object" ExpressionText="&quot;No unread emails found in inbox — nothing to process.&quot;" />
+              </InArgument>
+            </ui:LogMessage.Message>
+          </ui:LogMessage>
+        </Sequence>
+      </If.Else>
+    </If>
+
+    <!-- Final summary log -->
+    <ui:LogMessage Level="Info" DisplayName="Log: Process complete">
+      <ui:LogMessage.Message>
+        <InArgument x:TypeArguments="x:Object">
+          <VisualBasicValue x:TypeArguments="x:Object" ExpressionText="&quot;CustomerSupportEmailTriage complete. Processed: &quot; &amp; processedCount.ToString() &amp; &quot; | Errors: &quot; &amp; errorCount.ToString()" />
+        </InArgument>
+      </ui:LogMessage.Message>
+    </ui:LogMessage>
+
+  </Sequence>
+</Activity>

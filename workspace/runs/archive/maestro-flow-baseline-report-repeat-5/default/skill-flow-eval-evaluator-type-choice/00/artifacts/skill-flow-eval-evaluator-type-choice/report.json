@@ -1,0 +1,8 @@
+{
+  "goal_a_type": "llm-judge-output",
+  "goal_a_reason": "Free-text paraphrasing requires semantic similarity judgment (no tool-call inspection needed), which is exactly what llm-judge-output provides.",
+  "goal_b_type": "json-similarity",
+  "goal_b_reason": "Structured JSON with known expected values, tolerating key ordering and minor whitespace differences, is the deterministic tree-based comparison json-similarity was designed for.",
+  "goal_c_type": "contains",
+  "goal_c_reason": "Literal substring presence is a binary pass/fail check — the simplest and cheapest evaluator, contains, handles this without an LLM."
+}

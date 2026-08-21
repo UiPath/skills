@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "SmokeEval",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "7a923b13-7aa1-42f2-8fcc-b4d88e7ca05e",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "SmokeEval"
+    },
+    "locks": [],
+    "key": "6c71dbe4-d381-4329-b4f2-5814558d6fa0",
+    "files": []
+  }
+}

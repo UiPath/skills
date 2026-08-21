@@ -1,0 +1,6 @@
+{
+  "ran_solution_upload": false,
+  "ran_eval_run_start": false,
+  "action": "refused",
+  "reason": "The Flow project has never been uploaded to Studio Web — there is no SolutionStorage.json with a SolutionId and no prior uip solution upload has been run — so uip maestro flow eval run start cannot resolve the solution. Per the Evaluate capability's Critical Rule #2 and upload-safety.md, the skill must never run uip solution upload automatically as part of an eval workflow, because doing so would either create an unintended new Studio Web entry or overwrite remote state without the user's explicit knowledge."
+}

@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "OutlookWaitForEmail",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "3819a39a-766e-483f-a7e6-8a41960f7f2a",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "OutlookWaitForEmail"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Flow",
+      "name": "OutlookWaitForEmail",
+      "package": {
+        "key": "72aba553-74e4-41e9-a4f9-34755290f7ac"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "5dc2ccb9-6056-4513-b641-ea11768d8fb7",
+    "files": []
+  }
+}

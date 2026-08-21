@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "ProjectEulerTitle",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "2b0e2736-1116-4b07-abbe-b563b85a7ec8",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "ProjectEulerTitle"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Flow",
+      "name": "ProjectEulerTitle",
+      "package": {
+        "key": "9e69710d-db1d-4b91-9a33-761a3f34a181"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "f90bea37-b426-4703-8acb-6844d91e9aa0",
+    "files": []
+  }
+}

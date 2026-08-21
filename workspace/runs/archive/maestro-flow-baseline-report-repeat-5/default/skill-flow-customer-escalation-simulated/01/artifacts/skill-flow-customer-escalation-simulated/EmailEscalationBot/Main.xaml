@@ -1,0 +1,452 @@
+<Activity mc:Ignorable="sap sap2010" x:Class="Main"
+  xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities"
+  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+  xmlns:mva="clr-namespace:Microsoft.VisualBasic.Activities;assembly=System.Activities"
+  xmlns:s="clr-namespace:System;assembly=System.Private.CoreLib"
+  xmlns:sap="http://schemas.microsoft.com/netfx/2009/xaml/activities/presentation"
+  xmlns:sap2010="http://schemas.microsoft.com/netfx/2010/xaml/activities/presentation"
+  xmlns:sco="clr-namespace:System.Collections.ObjectModel;assembly=System.Private.CoreLib"
+  xmlns:scg="clr-namespace:System.Collections.Generic;assembly=System.Private.CoreLib"
+  xmlns:ui="http://schemas.uipath.com/workflow/activities"
+  xmlns:umam="clr-namespace:UiPath.MicrosoftOffice365.Activities.Mail;assembly=UiPath.MicrosoftOffice365.Activities"
+  xmlns:umame="clr-namespace:UiPath.MicrosoftOffice365.Activities.Mail.Enums;assembly=UiPath.MicrosoftOffice365.Activities"
+  xmlns:umamm="clr-namespace:UiPath.MicrosoftOffice365.Activities.Mail.Models;assembly=UiPath.MicrosoftOffice365.Activities"
+  xmlns:umamt="clr-namespace:UiPath.MicrosoftOffice365.Activities.Mail.Triggers;assembly=UiPath.MicrosoftOffice365.Activities"
+  xmlns:umo365="clr-namespace:UiPath.MicrosoftOffice365.Models;assembly=UiPath.MicrosoftOffice365"
+  xmlns:usau="clr-namespace:UiPath.Shared.Activities.Utils;assembly=UiPath.MicrosoftOffice365.Activities"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+  mva:VisualBasic.Settings="{x:Null}">
+
+  <TextExpression.NamespacesForImplementation>
+    <sco:Collection x:TypeArguments="x:String">
+      <x:String>System</x:String>
+      <x:String>System.Collections.Generic</x:String>
+      <x:String>System.Linq</x:String>
+      <x:String>UiPath.Core</x:String>
+      <x:String>UiPath.Core.Activities</x:String>
+      <x:String>UiPath.MicrosoftOffice365.Models</x:String>
+      <x:String>UiPath.MicrosoftOffice365.Activities.Mail</x:String>
+      <x:String>UiPath.MicrosoftOffice365.Activities.Mail.Enums</x:String>
+      <x:String>UiPath.MicrosoftOffice365.Activities.Mail.Models</x:String>
+      <x:String>UiPath.MicrosoftOffice365.Activities.Mail.Triggers</x:String>
+    </sco:Collection>
+  </TextExpression.NamespacesForImplementation>
+  <TextExpression.ReferencesForImplementation>
+    <sco:Collection x:TypeArguments="AssemblyReference">
+      <AssemblyReference>System.Activities</AssemblyReference>
+      <AssemblyReference>System.Private.CoreLib</AssemblyReference>
+      <AssemblyReference>System.Linq</AssemblyReference>
+      <AssemblyReference>UiPath.System.Activities</AssemblyReference>
+      <AssemblyReference>UiPath.MicrosoftOffice365.Activities</AssemblyReference>
+      <AssemblyReference>UiPath.MicrosoftOffice365</AssemblyReference>
+    </sco:Collection>
+  </TextExpression.ReferencesForImplementation>
+
+  <Sequence DisplayName="Main Sequence" sap2010:WorkflowViewState.IdRef="Sequence_1">
+    <Sequence.Variables>
+      <Variable x:TypeArguments="umo365:Office365Message" Name="receivedEmail" />
+      <Variable x:TypeArguments="x:Int32" Name="urgencyScore" Default="0" />
+      <Variable x:TypeArguments="x:String" Name="urgencyTier" Default="&quot;STANDARD&quot;" />
+      <Variable x:TypeArguments="x:String" Name="classificationReason" Default="&quot;&quot;" />
+      <Variable x:TypeArguments="x:String" Name="ackBodyHtml" Default="&quot;&quot;" />
+      <Variable x:TypeArguments="x:String" Name="escalationBodyHtml" Default="&quot;&quot;" />
+      <!--
+        TODO: Replace this with your real escalation team email address.
+        This is the address that receives alert notifications for HIGH-priority emails.
+      -->
+      <Variable x:TypeArguments="x:String" Name="escalationTeamEmail" Default="&quot;support-escalations@yourcompany.com&quot;" />
+    </Sequence.Variables>
+
+    <!--
+      STEP 1: Integration Trigger - fires on every new email in INBOX.
+      PLACEMENT NOTE: This MUST be the first activity in the root Sequence.
+      This is an Orchestrator-managed trigger: each new email dispatches a fresh job.
+
+      TODO BEFORE DEPLOYMENT:
+        1. Open this file in Studio and set the ConnectionId property to your
+           Microsoft 365 Integration Service connection.
+           CLI to find connection: uip is connections list uipath-microsoft-outlook365 -all-folders -output json
+        2. Adjust FilterExpression if you only want emails from a specific folder.
+    -->
+    <umamt:NewEmailReceived
+      ConnectionAccountName="{x:Null}"
+      ContinueOnError="{x:Null}"
+      Filter="{x:Null}"
+      JobData="{x:Null}"
+      UiPathEvent="{x:Null}"
+      UiPathEventConnector="{x:Null}"
+      UiPathEventObjectId="{x:Null}"
+      UiPathEventObjectType="{x:Null}"
+      AuthScopesInvalid="False"
+      BrowserFolderId="INBOX"
+      BrowserFolderName="Inbox"
+      ConnectionId="00000000-0000-0000-0000-000000000000"
+      DisplayName="New Email Received (Trigger)"
+      FilterExpression="(parentFolderId==&apos;INBOX&apos;)"
+      IncludeAttachments="False"
+      MarkAsRead="False"
+      Result="[receivedEmail]"
+      UseConnectionService="True"
+      WithAttachmentsOnly="False" />
+
+    <!-- STEP 2: Main processing wrapped in Try/Catch for resilience -->
+    <TryCatch DisplayName="Process Email - Error Boundary">
+      <TryCatch.Try>
+        <Sequence DisplayName="Try">
+
+          <ui:LogMessage Level="Info" DisplayName="Log: Email received">
+            <ui:LogMessage.Message>
+              <InArgument x:TypeArguments="x:Object">
+                <VisualBasicValue x:TypeArguments="x:Object" ExpressionText="$&quot;[EmailEscalationBot] New email received. From={receivedEmail.FromAddress} Subject={receivedEmail.Subject} MessageId={receivedEmail.MessageId}&quot;" />
+              </InArgument>
+            </ui:LogMessage.Message>
+          </ui:LogMessage>
+
+          <!-- Step 2b: Classify urgency -->
+          <ui:InvokeWorkflowFile WorkflowFileName="Workflows\ClassifyUrgency.xaml" UnSafe="False" DisplayName="Classify Email Urgency">
+            <ui:InvokeWorkflowFile.Arguments>
+              <scg:Dictionary x:TypeArguments="x:String, Argument">
+                <InArgument x:TypeArguments="umo365:Office365Message" x:Key="in_Email">[receivedEmail]</InArgument>
+                <OutArgument x:TypeArguments="x:Int32" x:Key="out_UrgencyScore">[urgencyScore]</OutArgument>
+                <OutArgument x:TypeArguments="x:String" x:Key="out_UrgencyTier">[urgencyTier]</OutArgument>
+                <OutArgument x:TypeArguments="x:String" x:Key="out_ClassificationReason">[classificationReason]</OutArgument>
+              </scg:Dictionary>
+            </ui:InvokeWorkflowFile.Arguments>
+          </ui:InvokeWorkflowFile>
+
+          <!-- Step 2c: Mark email as read to prevent duplicate processing -->
+          <umam:MarkAsReadUnreadConnections
+            ConnectionId="00000000-0000-0000-0000-000000000000"
+            MarkAsReadUnread="Read"
+            DisplayName="Mark Email As Read">
+            <umam:MarkAsReadUnreadConnections.Email>
+              <InArgument x:TypeArguments="umo365:Office365Message">[receivedEmail]</InArgument>
+            </umam:MarkAsReadUnreadConnections.Email>
+          </umam:MarkAsReadUnreadConnections>
+
+          <!-- Step 2d: Build and send auto-acknowledgement reply (ALL tiers) -->
+          <Assign x:TypeArguments="x:String" DisplayName="Build ACK reply body">
+            <Assign.To>
+              <OutArgument x:TypeArguments="x:String">
+                <VisualBasicReference x:TypeArguments="x:String" ExpressionText="ackBodyHtml" />
+              </OutArgument>
+            </Assign.To>
+            <Assign.Value>
+              <InArgument x:TypeArguments="x:String">
+                <VisualBasicValue x:TypeArguments="x:String" ExpressionText="&quot;&lt;p&gt;Thank you for contacting our support team.&lt;/p&gt;&lt;p&gt;We have received your message and a member of our team will be in touch shortly.&lt;/p&gt;&lt;p&gt;Reference number: &lt;strong&gt;&quot; &amp; receivedEmail.MessageId &amp; &quot;&lt;/strong&gt;&lt;/p&gt;&lt;p&gt;If your issue is urgent, please include the word URGENT in your subject line or reply to this email.&lt;/p&gt;&lt;br/&gt;&lt;p&gt;Kind regards,&lt;br/&gt;Support Team&lt;/p&gt;&quot;" />
+              </InArgument>
+            </Assign.Value>
+          </Assign>
+
+          <umam:ReplyToEmailConnections
+            ConnectionId="00000000-0000-0000-0000-000000000000"
+            Body="[ackBodyHtml]"
+            ReplyToAll="False"
+            SaveAsDraft="False"
+            DisplayName="Send Auto-Acknowledgement Reply">
+            <umam:ReplyToEmailConnections.Email>
+              <InArgument x:TypeArguments="umo365:Office365Message">[receivedEmail]</InArgument>
+            </umam:ReplyToEmailConnections.Email>
+            <umam:ReplyToEmailConnections.AttachmentsBackup>
+              <usau:BackupSlot x:TypeArguments="umame:AttachmentInputMode" StoredValue="Builder">
+                <usau:BackupSlot.BackupValues>
+                  <scg:Dictionary x:TypeArguments="umame:AttachmentInputMode, scg:List(x:Object)" />
+                </usau:BackupSlot.BackupValues>
+              </usau:BackupSlot>
+            </umam:ReplyToEmailConnections.AttachmentsBackup>
+            <umam:ReplyToEmailConnections.MailboxArg>
+              <umamm:MailboxArgument UseSharedMailbox="False">
+                <umamm:MailboxArgument.Backup>
+                  <usau:BackupSlot x:TypeArguments="umame:MailboxSelectionMode" StoredValue="NoMailbox">
+                    <usau:BackupSlot.BackupValues>
+                      <scg:Dictionary x:TypeArguments="umame:MailboxSelectionMode, scg:List(x:Object)" />
+                    </usau:BackupSlot.BackupValues>
+                  </usau:BackupSlot>
+                </umamm:MailboxArgument.Backup>
+              </umamm:MailboxArgument>
+            </umam:ReplyToEmailConnections.MailboxArg>
+          </umam:ReplyToEmailConnections>
+
+          <ui:LogMessage Level="Info" DisplayName="Log: ACK reply sent">
+            <ui:LogMessage.Message>
+              <InArgument x:TypeArguments="x:Object">
+                <VisualBasicValue x:TypeArguments="x:Object" ExpressionText="$&quot;[EmailEscalationBot] ACK reply sent to {receivedEmail.FromAddress}&quot;" />
+              </InArgument>
+            </ui:LogMessage.Message>
+          </ui:LogMessage>
+
+          <!-- Step 2e: Route by urgency tier -->
+          <If DisplayName="Route by Urgency Tier">
+            <If.Condition>
+              <InArgument x:TypeArguments="x:Boolean">
+                <VisualBasicValue x:TypeArguments="x:Boolean" ExpressionText="urgencyTier = &quot;HIGH&quot;" />
+              </InArgument>
+            </If.Condition>
+            <If.Then>
+              <!-- HIGH PRIORITY PATH -->
+              <Sequence DisplayName="HIGH Priority - Escalation Path">
+
+                <ui:LogMessage Level="Warn" DisplayName="Log: HIGH priority detected">
+                  <ui:LogMessage.Message>
+                    <InArgument x:TypeArguments="x:Object">
+                      <VisualBasicValue x:TypeArguments="x:Object" ExpressionText="$&quot;[EmailEscalationBot] HIGH PRIORITY email! Score={urgencyScore} Reason={classificationReason} From={receivedEmail.FromAddress} Subject={receivedEmail.Subject}&quot;" />
+                    </InArgument>
+                  </ui:LogMessage.Message>
+                </ui:LogMessage>
+
+                <!-- Tag with HIGH-PRIORITY category in Outlook -->
+                <umam:SetEmailCategoriesConnections
+                  ConnectionId="00000000-0000-0000-0000-000000000000"
+                  CategoriesToRemove="None"
+                  CategoriesToAssign="[New String(){&quot;HIGH-PRIORITY&quot;}]"
+                  DisplayName="Tag: HIGH-PRIORITY Category">
+                  <umam:SetEmailCategoriesConnections.Email>
+                    <InArgument x:TypeArguments="umo365:Office365Message">[receivedEmail]</InArgument>
+                  </umam:SetEmailCategoriesConnections.Email>
+                  <umam:SetEmailCategoriesConnections.MailboxArg>
+                    <umamm:MailboxArgument UseSharedMailbox="False">
+                      <umamm:MailboxArgument.Backup>
+                        <usau:BackupSlot x:TypeArguments="umame:MailboxSelectionMode" StoredValue="NoMailbox">
+                          <usau:BackupSlot.BackupValues>
+                            <scg:Dictionary x:TypeArguments="umame:MailboxSelectionMode, scg:List(x:Object)" />
+                          </usau:BackupSlot.BackupValues>
+                        </usau:BackupSlot>
+                      </umamm:MailboxArgument.Backup>
+                    </umamm:MailboxArgument>
+                  </umam:SetEmailCategoriesConnections.MailboxArg>
+                </umam:SetEmailCategoriesConnections>
+
+                <!-- Move to High-Priority Inbox folder -->
+                <umam:MoveEmailConnections
+                  ConnectionId="00000000-0000-0000-0000-000000000000"
+                  CreateFolderIfMissing="True"
+                  DisplayName="Move to: High-Priority Inbox">
+                  <umam:MoveEmailConnections.Email>
+                    <InArgument x:TypeArguments="umo365:Office365Message">[receivedEmail]</InArgument>
+                  </umam:MoveEmailConnections.Email>
+                  <umam:MoveEmailConnections.MailFolderArgument>
+                    <umamm:MailFolderArgument SelectionMode="EnterPath">
+                      <umamm:MailFolderArgument.Backup>
+                        <usau:BackupSlot x:TypeArguments="umame:ItemSelectionMode" StoredValue="EnterPath">
+                          <usau:BackupSlot.BackupValues>
+                            <scg:Dictionary x:TypeArguments="umame:ItemSelectionMode, scg:List(x:Object)" />
+                          </usau:BackupSlot.BackupValues>
+                        </usau:BackupSlot>
+                      </umamm:MailFolderArgument.Backup>
+                      <umamm:MailFolderArgument.ManualEntryFolder>
+                        <InArgument x:TypeArguments="x:String">["High-Priority Inbox"]</InArgument>
+                      </umamm:MailFolderArgument.ManualEntryFolder>
+                    </umamm:MailFolderArgument>
+                  </umam:MoveEmailConnections.MailFolderArgument>
+                  <umam:MoveEmailConnections.MailboxArg>
+                    <umamm:MailboxArgument UseSharedMailbox="False">
+                      <umamm:MailboxArgument.Backup>
+                        <usau:BackupSlot x:TypeArguments="umame:MailboxSelectionMode" StoredValue="NoMailbox">
+                          <usau:BackupSlot.BackupValues>
+                            <scg:Dictionary x:TypeArguments="umame:MailboxSelectionMode, scg:List(x:Object)" />
+                          </usau:BackupSlot.BackupValues>
+                        </usau:BackupSlot>
+                      </umamm:MailboxArgument.Backup>
+                    </umamm:MailboxArgument>
+                  </umam:MoveEmailConnections.MailboxArg>
+                </umam:MoveEmailConnections>
+
+                <!-- Build escalation notification email body -->
+                <Assign x:TypeArguments="x:String" DisplayName="Build escalation alert body">
+                  <Assign.To>
+                    <OutArgument x:TypeArguments="x:String">
+                      <VisualBasicReference x:TypeArguments="x:String" ExpressionText="escalationBodyHtml" />
+                    </OutArgument>
+                  </Assign.To>
+                  <Assign.Value>
+                    <InArgument x:TypeArguments="x:String">
+                      <VisualBasicValue x:TypeArguments="x:String" ExpressionText="&quot;&lt;h2 style=&apos;color:#c0392b&apos;&gt;HIGH-PRIORITY Support Email - Immediate Attention Required&lt;/h2&gt;&lt;table border=&apos;1&apos; cellpadding=&apos;6&apos;&gt;&lt;tr&gt;&lt;td&gt;&lt;b&gt;From&lt;/b&gt;&lt;/td&gt;&lt;td&gt;&quot; &amp; receivedEmail.FromAddress &amp; &quot;&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;&lt;b&gt;Subject&lt;/b&gt;&lt;/td&gt;&lt;td&gt;&quot; &amp; receivedEmail.Subject &amp; &quot;&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;&lt;b&gt;Urgency Score&lt;/b&gt;&lt;/td&gt;&lt;td&gt;&quot; &amp; urgencyScore.ToString() &amp; &quot;&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;&lt;b&gt;Classification Reason&lt;/b&gt;&lt;/td&gt;&lt;td&gt;&quot; &amp; classificationReason &amp; &quot;&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;&lt;b&gt;Message ID&lt;/b&gt;&lt;/td&gt;&lt;td&gt;&quot; &amp; receivedEmail.MessageId &amp; &quot;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;br/&gt;&lt;p&gt;The email has been moved to the High-Priority Inbox folder and tagged HIGH-PRIORITY in Outlook.&lt;/p&gt;&lt;p&gt;Please action this immediately.&lt;/p&gt;&quot;" />
+                    </InArgument>
+                  </Assign.Value>
+                </Assign>
+
+                <!--
+                  Send escalation alert to the support escalation team.
+                  TODO: Update escalationTeamEmail variable (set in Sequence.Variables above)
+                  to your real team distribution list or shared mailbox.
+                -->
+                <umam:SendMailConnections
+                  ConnectionId="00000000-0000-0000-0000-000000000000"
+                  Body="[escalationBodyHtml]"
+                  Importance="High"
+                  InputType="HTML"
+                  SaveAsDraft="False"
+                  To="[New String(){escalationTeamEmail}]"
+                  Subject="[&quot;[ACTION REQUIRED] HIGH-PRIORITY Support Email: &quot; &amp; receivedEmail.Subject]"
+                  DisplayName="Send Escalation Alert to Team">
+                  <umam:SendMailConnections.InputTypeBackup>
+                    <usau:BackupSlot x:TypeArguments="umame:BodyInputType" StoredValue="HTML">
+                      <usau:BackupSlot.BackupValues>
+                        <scg:Dictionary x:TypeArguments="umame:BodyInputType, scg:List(x:Object)" />
+                      </usau:BackupSlot.BackupValues>
+                    </usau:BackupSlot>
+                  </umam:SendMailConnections.InputTypeBackup>
+                  <umam:SendMailConnections.AttachmentsBackup>
+                    <usau:BackupSlot x:TypeArguments="umame:AttachmentInputMode" StoredValue="Builder">
+                      <usau:BackupSlot.BackupValues>
+                        <scg:Dictionary x:TypeArguments="umame:AttachmentInputMode, scg:List(x:Object)" />
+                      </usau:BackupSlot.BackupValues>
+                    </usau:BackupSlot>
+                  </umam:SendMailConnections.AttachmentsBackup>
+                  <umam:SendMailConnections.MailboxArg>
+                    <umamm:MailboxArgument UseSharedMailbox="False">
+                      <umamm:MailboxArgument.Backup>
+                        <usau:BackupSlot x:TypeArguments="umame:MailboxSelectionMode" StoredValue="NoMailbox">
+                          <usau:BackupSlot.BackupValues>
+                            <scg:Dictionary x:TypeArguments="umame:MailboxSelectionMode, scg:List(x:Object)" />
+                          </usau:BackupSlot.BackupValues>
+                        </usau:BackupSlot>
+                      </umamm:MailboxArgument.Backup>
+                    </umamm:MailboxArgument>
+                  </umam:SendMailConnections.MailboxArg>
+                </umam:SendMailConnections>
+
+                <ui:LogMessage Level="Warn" DisplayName="Log: Escalation alert sent">
+                  <ui:LogMessage.Message>
+                    <InArgument x:TypeArguments="x:Object">
+                      <VisualBasicValue x:TypeArguments="x:Object" ExpressionText="$&quot;[EmailEscalationBot] Escalation alert sent to {escalationTeamEmail} for email from {receivedEmail.FromAddress}&quot;" />
+                    </InArgument>
+                  </ui:LogMessage.Message>
+                </ui:LogMessage>
+
+              </Sequence>
+            </If.Then>
+            <If.Else>
+              <!-- STANDARD / MEDIUM PRIORITY PATH -->
+              <Sequence DisplayName="STANDARD/MEDIUM Priority - Queue Path">
+
+                <ui:LogMessage Level="Info" DisplayName="Log: Standard/Medium priority email">
+                  <ui:LogMessage.Message>
+                    <InArgument x:TypeArguments="x:Object">
+                      <VisualBasicValue x:TypeArguments="x:Object" ExpressionText="$&quot;[EmailEscalationBot] {urgencyTier} priority email queued. Score={urgencyScore} From={receivedEmail.FromAddress}&quot;" />
+                    </InArgument>
+                  </ui:LogMessage.Message>
+                </ui:LogMessage>
+
+                <!-- Tag MEDIUM emails with a visible category for team awareness -->
+                <If DisplayName="Tag MEDIUM emails">
+                  <If.Condition>
+                    <InArgument x:TypeArguments="x:Boolean">
+                      <VisualBasicValue x:TypeArguments="x:Boolean" ExpressionText="urgencyTier = &quot;MEDIUM&quot;" />
+                    </InArgument>
+                  </If.Condition>
+                  <If.Then>
+                    <Sequence DisplayName="Then">
+                      <umam:SetEmailCategoriesConnections
+                        ConnectionId="00000000-0000-0000-0000-000000000000"
+                        CategoriesToRemove="None"
+                        CategoriesToAssign="[New String(){&quot;MEDIUM-PRIORITY&quot;}]"
+                        DisplayName="Tag: MEDIUM-PRIORITY Category">
+                        <umam:SetEmailCategoriesConnections.Email>
+                          <InArgument x:TypeArguments="umo365:Office365Message">[receivedEmail]</InArgument>
+                        </umam:SetEmailCategoriesConnections.Email>
+                        <umam:SetEmailCategoriesConnections.MailboxArg>
+                          <umamm:MailboxArgument UseSharedMailbox="False">
+                            <umamm:MailboxArgument.Backup>
+                              <usau:BackupSlot x:TypeArguments="umame:MailboxSelectionMode" StoredValue="NoMailbox">
+                                <usau:BackupSlot.BackupValues>
+                                  <scg:Dictionary x:TypeArguments="umame:MailboxSelectionMode, scg:List(x:Object)" />
+                                </usau:BackupSlot.BackupValues>
+                              </usau:BackupSlot>
+                            </umamm:MailboxArgument.Backup>
+                          </umamm:MailboxArgument>
+                        </umam:SetEmailCategoriesConnections.MailboxArg>
+                      </umam:SetEmailCategoriesConnections>
+                    </Sequence>
+                  </If.Then>
+                </If>
+
+                <!-- Move to Standard Support Queue folder -->
+                <umam:MoveEmailConnections
+                  ConnectionId="00000000-0000-0000-0000-000000000000"
+                  CreateFolderIfMissing="True"
+                  DisplayName="Move to: Standard Support Queue">
+                  <umam:MoveEmailConnections.Email>
+                    <InArgument x:TypeArguments="umo365:Office365Message">[receivedEmail]</InArgument>
+                  </umam:MoveEmailConnections.Email>
+                  <umam:MoveEmailConnections.MailFolderArgument>
+                    <umamm:MailFolderArgument SelectionMode="EnterPath">
+                      <umamm:MailFolderArgument.Backup>
+                        <usau:BackupSlot x:TypeArguments="umame:ItemSelectionMode" StoredValue="EnterPath">
+                          <usau:BackupSlot.BackupValues>
+                            <scg:Dictionary x:TypeArguments="umame:ItemSelectionMode, scg:List(x:Object)" />
+                          </usau:BackupSlot.BackupValues>
+                        </usau:BackupSlot>
+                      </umamm:MailFolderArgument.Backup>
+                      <umamm:MailFolderArgument.ManualEntryFolder>
+                        <InArgument x:TypeArguments="x:String">["Standard Support Queue"]</InArgument>
+                      </umamm:MailFolderArgument.ManualEntryFolder>
+                    </umamm:MailFolderArgument>
+                  </umam:MoveEmailConnections.MailFolderArgument>
+                  <umam:MoveEmailConnections.MailboxArg>
+                    <umamm:MailboxArgument UseSharedMailbox="False">
+                      <umamm:MailboxArgument.Backup>
+                        <usau:BackupSlot x:TypeArguments="umame:MailboxSelectionMode" StoredValue="NoMailbox">
+                          <usau:BackupSlot.BackupValues>
+                            <scg:Dictionary x:TypeArguments="umame:MailboxSelectionMode, scg:List(x:Object)" />
+                          </usau:BackupSlot.BackupValues>
+                        </usau:BackupSlot>
+                      </umamm:MailboxArgument.Backup>
+                    </umamm:MailboxArgument>
+                  </umam:MoveEmailConnections.MailboxArg>
+                </umam:MoveEmailConnections>
+
+              </Sequence>
+            </If.Else>
+          </If>
+
+          <ui:LogMessage Level="Info" DisplayName="Log: Processing complete">
+            <ui:LogMessage.Message>
+              <InArgument x:TypeArguments="x:Object">
+                <VisualBasicValue x:TypeArguments="x:Object" ExpressionText="$&quot;[EmailEscalationBot] Email processed. Tier={urgencyTier} Score={urgencyScore} MessageId={receivedEmail.MessageId}&quot;" />
+              </InArgument>
+            </ui:LogMessage.Message>
+          </ui:LogMessage>
+
+        </Sequence>
+      </TryCatch.Try>
+
+      <TryCatch.Catches>
+        <Catch x:TypeArguments="ui:BusinessRuleException">
+          <ActivityAction x:TypeArguments="ui:BusinessRuleException">
+            <ActivityAction.Argument>
+              <DelegateInArgument x:TypeArguments="ui:BusinessRuleException" Name="bex" />
+            </ActivityAction.Argument>
+            <Sequence DisplayName="Catch BusinessRuleException">
+              <ui:LogMessage Level="Warn" DisplayName="Log: Business rule violation">
+                <ui:LogMessage.Message>
+                  <InArgument x:TypeArguments="x:Object">
+                    <VisualBasicValue x:TypeArguments="x:Object" ExpressionText="$&quot;[EmailEscalationBot] Business rule violation - skipping. Error: {bex.Message}&quot;" />
+                  </InArgument>
+                </ui:LogMessage.Message>
+              </ui:LogMessage>
+            </Sequence>
+          </ActivityAction>
+        </Catch>
+        <Catch x:TypeArguments="s:Exception">
+          <ActivityAction x:TypeArguments="s:Exception">
+            <ActivityAction.Argument>
+              <DelegateInArgument x:TypeArguments="s:Exception" Name="ex" />
+            </ActivityAction.Argument>
+            <Sequence DisplayName="Catch System Exception">
+              <ui:LogMessage Level="Error" DisplayName="Log: System exception">
+                <ui:LogMessage.Message>
+                  <InArgument x:TypeArguments="x:Object">
+                    <VisualBasicValue x:TypeArguments="x:Object" ExpressionText="$&quot;[EmailEscalationBot] System exception processing email from {If(receivedEmail IsNot Nothing, receivedEmail.FromAddress, &quot;&lt;unknown&gt;&quot;)}: {ex.ToString()}&quot;" />
+                  </InArgument>
+                </ui:LogMessage.Message>
+              </ui:LogMessage>
+              <Rethrow DisplayName="Rethrow to Global Exception Handler" />
+            </Sequence>
+          </ActivityAction>
+        </Catch>
+      </TryCatch.Catches>
+    </TryCatch>
+
+  </Sequence>
+</Activity>

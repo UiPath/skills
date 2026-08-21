@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+    xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+    xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+    xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+    xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+    xmlns:uipath="http://uipath.org/schema/bpmn"
+    id="Definitions_Fulfillment" targetNamespace="http://bpmn.io/schema/bpmn"
+    exporter="UiPath (https://bpmn.uipath.com)" exporterVersion="1.0">
+  <bpmn:process id="Process_Fulfillment" isExecutable="true">
+    <bpmn:extensionElements>
+      <uipath:migrationVersion version="11.5" />
+      <uipath:caseManagement version="v1"><![CDATA[{"owner":"warehouse","opaque":"preserve-only-do-not-touch"}]]></uipath:caseManagement>
+      <uipath:variables version="v1">
+        <uipath:inputOutput id="Var_OrderId" name="OrderId" type="string" />
+        <uipath:inputOutput id="Var_Label" name="Label" type="string" />
+      </uipath:variables>
+    </bpmn:extensionElements>
+    <bpmn:startEvent id="Start_1" name="Start"><bpmn:outgoing>Flow_SubS</bpmn:outgoing></bpmn:startEvent>
+    <bpmn:subProcess id="SubProc_Prepare" name="Prepare">
+      <bpmn:incoming>Flow_SubS</bpmn:incoming><bpmn:outgoing>Flow_SubE</bpmn:outgoing>
+      <bpmn:startEvent id="SubStart_Prepare"><bpmn:outgoing>SubFlow_SP</bpmn:outgoing></bpmn:startEvent>
+      <bpmn:scriptTask id="Task_Pick" name="Pick Items" scriptFormat="JavaScript">
+        <bpmn:extensionElements>
+          <uipath:scriptVersion value="v3" />
+          <uipath:mapping version="v1">
+            <uipath:type value="BPMN.ScriptTask" version="v1" />
+            <uipath:input name="args"><![CDATA[{"orderId":"=vars.Var_OrderId"}]]></uipath:input>
+          </uipath:mapping>
+        </bpmn:extensionElements>
+        <bpmn:incoming>SubFlow_SP</bpmn:incoming><bpmn:outgoing>SubFlow_PP</bpmn:outgoing>
+        <bpmn:script><![CDATA[return { response: "picked" };]]></bpmn:script>
+      </bpmn:scriptTask>
+      <bpmn:scriptTask id="Task_Pack" name="Pack Box" scriptFormat="JavaScript">
+        <bpmn:extensionElements>
+          <uipath:scriptVersion value="v3" />
+          <uipath:mapping version="v1">
+            <uipath:type value="BPMN.ScriptTask" version="v1" />
+            <uipath:input name="args"><![CDATA[{"orderId":"=vars.Var_OrderId"}]]></uipath:input>
+          </uipath:mapping>
+        </bpmn:extensionElements>
+        <bpmn:incoming>SubFlow_PP</bpmn:incoming><bpmn:outgoing>SubFlow_PE</bpmn:outgoing>
+        <bpmn:script><![CDATA[return { response: "packed" };]]></bpmn:script>
+      </bpmn:scriptTask>
+      <bpmn:endEvent id="SubEnd_Prepare"><bpmn:incoming>SubFlow_PE</bpmn:incoming></bpmn:endEvent>
+      <bpmn:sequenceFlow id="SubFlow_SP" sourceRef="SubStart_Prepare" targetRef="Task_Pick" />
+      <bpmn:sequenceFlow id="SubFlow_PP" sourceRef="Task_Pick" targetRef="Task_Pack" />
+      <bpmn:sequenceFlow id="SubFlow_PE" sourceRef="Task_Pack" targetRef="SubEnd_Prepare" />
+    </bpmn:subProcess>
+    <bpmn:scriptTask id="Task_Ship" name="Ship Parcel" scriptFormat="JavaScript">
+      <bpmn:extensionElements>
+        <uipath:scriptVersion value="v3" />
+        <uipath:mapping version="v1">
+          <uipath:type value="BPMN.ScriptTask" version="v1" />
+          <uipath:input name="args"><![CDATA[{"orderId":"=vars.Var_OrderId"}]]></uipath:input>
+          <uipath:output name="label" type="string" var="Var_Label" source="=result.response" />
+        </uipath:mapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_SubE</bpmn:incoming><bpmn:outgoing>Flow_SE</bpmn:outgoing>
+      <bpmn:script><![CDATA[return { response: "label-123" };]]></bpmn:script>
+    </bpmn:scriptTask>
+    <bpmn:endEvent id="End_1" name="Done"><bpmn:incoming>Flow_SE</bpmn:incoming></bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_SubS" sourceRef="Start_1" targetRef="SubProc_Prepare" />
+    <bpmn:sequenceFlow id="Flow_SubE" sourceRef="SubProc_Prepare" targetRef="Task_Ship" />
+    <bpmn:sequenceFlow id="Flow_SE" sourceRef="Task_Ship" targetRef="End_1" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="Diagram_1">
+    <bpmndi:BPMNPlane id="Plane_1" bpmnElement="Process_Fulfillment">
+      <bpmndi:BPMNShape id="S_Start_1" bpmnElement="Start_1"><dc:Bounds x="160" y="100" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_SubProc_Prepare" bpmnElement="SubProc_Prepare" isExpanded="true"><dc:Bounds x="240" y="38" width="480" height="200" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Task_Ship" bpmnElement="Task_Ship"><dc:Bounds x="790" y="78" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_End_1" bpmnElement="End_1"><dc:Bounds x="960" y="100" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="E_Flow_SubS" bpmnElement="Flow_SubS"><di:waypoint x="196" y="118" /><di:waypoint x="240" y="138" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_SubE" bpmnElement="Flow_SubE"><di:waypoint x="720" y="138" /><di:waypoint x="790" y="118" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_SE" bpmnElement="Flow_SE"><di:waypoint x="890" y="118" /><di:waypoint x="960" y="118" /></bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+  <bpmndi:BPMNDiagram id="Diagram_SubProc_Prepare">
+    <bpmndi:BPMNPlane id="Plane_SubProc_Prepare" bpmnElement="SubProc_Prepare">
+      <bpmndi:BPMNShape id="S_SubStart_Prepare" bpmnElement="SubStart_Prepare"><dc:Bounds x="275" y="118" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Task_Pick" bpmnElement="Task_Pick"><dc:Bounds x="355" y="96" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Task_Pack" bpmnElement="Task_Pack"><dc:Bounds x="510" y="96" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_SubEnd_Prepare" bpmnElement="SubEnd_Prepare"><dc:Bounds x="660" y="118" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="E_SubFlow_SP" bpmnElement="SubFlow_SP"><di:waypoint x="311" y="136" /><di:waypoint x="355" y="136" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_SubFlow_PP" bpmnElement="SubFlow_PP"><di:waypoint x="455" y="136" /><di:waypoint x="510" y="136" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_SubFlow_PE" bpmnElement="SubFlow_PE"><di:waypoint x="610" y="136" /><di:waypoint x="660" y="136" /></bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

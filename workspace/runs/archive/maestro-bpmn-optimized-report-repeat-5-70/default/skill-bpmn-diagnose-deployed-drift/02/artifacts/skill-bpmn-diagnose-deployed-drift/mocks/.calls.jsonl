@@ -1,0 +1,2 @@
+{"ts": 1784695786.5365179, "args": "maestro bpmn instance asset inst-triage-001 -f folder-public --output json", "matched_rule": "instance asset inst-triage-001 -f folder-public", "fixture": "instance-asset.json", "exit_code": 0}
+{"ts": 1784695803.707504, "args": "--version", "matched_rule": null, "fixture": null, "exit_code": 1, "error": "unmocked_default"}

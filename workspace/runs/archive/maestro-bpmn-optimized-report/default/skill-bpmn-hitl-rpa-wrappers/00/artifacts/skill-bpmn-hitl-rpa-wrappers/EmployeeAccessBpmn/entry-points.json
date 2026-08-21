@@ -1,0 +1,23 @@
+{
+  "entryPoints": [
+    {
+      "id": "ep_StartEvent_1",
+      "filePath": "/content/EmployeeAccessBpmn.bpmn#StartEvent_1",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "ApprovalResult": {
+            "type": "object"
+          },
+          "ProvisioningResult": {
+            "type": "object"
+          }
+        }
+      }
+    }
+  ]
+}

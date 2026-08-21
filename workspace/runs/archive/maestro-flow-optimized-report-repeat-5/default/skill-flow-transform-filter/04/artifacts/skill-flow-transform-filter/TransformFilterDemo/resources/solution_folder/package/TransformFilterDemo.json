@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "TransformFilterDemo",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "c0f5ada7-abe4-47a5-9aec-1580fd0abca4",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "TransformFilterDemo"
+    },
+    "locks": [],
+    "key": "6379762a-c41e-4593-a97d-4919575c8163",
+    "files": []
+  }
+}

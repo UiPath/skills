@@ -1,0 +1,178 @@
+<Activity mc:Ignorable="sap sap2010" x:Class="Main" mva:VisualBasic.Settings="{x:Null}"
+  xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities"
+  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+  xmlns:mva="clr-namespace:Microsoft.VisualBasic.Activities;assembly=System.Activities"
+  xmlns:sap="http://schemas.microsoft.com/netfx/2009/xaml/activities/presentation"
+  xmlns:sap2010="http://schemas.microsoft.com/netfx/2010/xaml/activities/presentation"
+  xmlns:sco="clr-namespace:System.Collections.ObjectModel;assembly=mscorlib"
+  xmlns:scg="clr-namespace:System.Collections.Generic;assembly=System.Private.CoreLib"
+  xmlns:s="clr-namespace:System;assembly=System.Private.CoreLib"
+  xmlns:ui="http://schemas.uipath.com/workflow/activities"
+  xmlns:uwah="clr-namespace:UiPath.Web.Activities.Http;assembly=UiPath.Web.Activities"
+  xmlns:uwahm="clr-namespace:UiPath.Web.Activities.Http.Models;assembly=UiPath.Web.Activities"
+  xmlns:web="clr-namespace:UiPath.Web.Activities;assembly=UiPath.Web.Activities"
+  xmlns:njl="clr-namespace:Newtonsoft.Json.Linq;assembly=Newtonsoft.Json"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <TextExpression.NamespacesForImplementation>
+    <sco:Collection x:TypeArguments="x:String">
+      <x:String>System.Activities</x:String>
+      <x:String>System.Activities.Statements</x:String>
+      <x:String>System.Activities.Expressions</x:String>
+      <x:String>System.Activities.Validation</x:String>
+      <x:String>System.Activities.XamlIntegration</x:String>
+      <x:String>Microsoft.VisualBasic</x:String>
+      <x:String>Microsoft.VisualBasic.Activities</x:String>
+      <x:String>System</x:String>
+      <x:String>System.Collections</x:String>
+      <x:String>System.Collections.Generic</x:String>
+      <x:String>System.Collections.ObjectModel</x:String>
+      <x:String>System.Data</x:String>
+      <x:String>System.Diagnostics</x:String>
+      <x:String>System.IO</x:String>
+      <x:String>System.Linq</x:String>
+      <x:String>System.Net</x:String>
+      <x:String>System.Net.Mail</x:String>
+      <x:String>System.Xml</x:String>
+      <x:String>System.Xml.Linq</x:String>
+      <x:String>UiPath.Core</x:String>
+      <x:String>UiPath.Core.Activities</x:String>
+      <x:String>Newtonsoft.Json</x:String>
+      <x:String>Newtonsoft.Json.Linq</x:String>
+      <x:String>UiPath.Web.Activities.Http.Models</x:String>
+    </sco:Collection>
+  </TextExpression.NamespacesForImplementation>
+  <TextExpression.ReferencesForImplementation>
+    <sco:Collection x:TypeArguments="AssemblyReference">
+      <AssemblyReference>System.Activities</AssemblyReference>
+      <AssemblyReference>Microsoft.VisualBasic</AssemblyReference>
+      <AssemblyReference>System.Private.CoreLib</AssemblyReference>
+      <AssemblyReference>mscorlib</AssemblyReference>
+      <AssemblyReference>System.Data</AssemblyReference>
+      <AssemblyReference>System.Data.Common</AssemblyReference>
+      <AssemblyReference>System</AssemblyReference>
+      <AssemblyReference>System.Linq</AssemblyReference>
+      <AssemblyReference>System.Core</AssemblyReference>
+      <AssemblyReference>System.Xml</AssemblyReference>
+      <AssemblyReference>System.Xml.Linq</AssemblyReference>
+      <AssemblyReference>System.Xaml</AssemblyReference>
+      <AssemblyReference>UiPath.System.Activities</AssemblyReference>
+      <AssemblyReference>UiPath.Web.Activities</AssemblyReference>
+      <AssemblyReference>Newtonsoft.Json</AssemblyReference>
+    </sco:Collection>
+  </TextExpression.ReferencesForImplementation>
+  <Sequence DisplayName="Get #office-bellevue Channel Description" sap2010:WorkflowViewState.IdRef="Sequence_1">
+    <Sequence.Variables>
+      <Variable x:TypeArguments="x:Object" Name="slackTokenObj" />
+      <Variable x:TypeArguments="x:String" Name="slackToken" />
+      <Variable x:TypeArguments="uwahm:HttpResponseSummary" Name="apiResponse" />
+      <Variable x:TypeArguments="njl:JObject" Name="jsonResult" />
+      <Variable x:TypeArguments="njl:JToken" Name="channelToken" />
+      <Variable x:TypeArguments="x:String" Name="channelDescription" Default="No description found for #office-bellevue." />
+    </Sequence.Variables>
+
+    <!-- Step 1: Retrieve the Slack Bot Token from an Orchestrator Asset named "SlackBotToken" -->
+    <ui:GetRobotAsset
+      DisplayName="Get Slack Bot Token (Asset)"
+      AssetName="[&quot;SlackBotToken&quot;]"
+      CacheStrategy="None"
+      sap2010:WorkflowViewState.IdRef="GetRobotAsset_1">
+      <ui:GetRobotAsset.Value>
+        <OutArgument x:TypeArguments="x:Object">
+          <VisualBasicReference x:TypeArguments="x:Object" ExpressionText="slackTokenObj" />
+        </OutArgument>
+      </ui:GetRobotAsset.Value>
+    </ui:GetRobotAsset>
+
+    <!-- Cast the retrieved asset value to String -->
+    <Assign DisplayName="Cast Token to String" sap2010:WorkflowViewState.IdRef="Assign_Cast">
+      <Assign.To>
+        <OutArgument x:TypeArguments="x:String">[slackToken]</OutArgument>
+      </Assign.To>
+      <Assign.Value>
+        <InArgument x:TypeArguments="x:String">[CStr(slackTokenObj)]</InArgument>
+      </Assign.Value>
+    </Assign>
+
+    <!-- Step 2: Call Slack API — conversations.list to retrieve all channels the bot can see -->
+    <uwah:NetHttpRequest
+      DisplayName="Call Slack API: conversations.list"
+      RequestUrl="[&quot;https://slack.com/api/conversations.list&quot;]"
+      Method="GET"
+      RequestBodyType="None"
+      AuthenticationType="None"
+      Headers="[New Dictionary(Of String, String) From {{&quot;Authorization&quot;, &quot;Bearer &quot; &amp; slackToken}}]"
+      Parameters="[New Dictionary(Of String, String) From {{&quot;types&quot;, &quot;public_channel,private_channel&quot;}, {&quot;exclude_archived&quot;, &quot;true&quot;}, {&quot;limit&quot;, &quot;1000&quot;}}]"
+      RetryPolicyType="Basic"
+      RetryCount="[3]"
+      ContinueOnError="False"
+      sap2010:WorkflowViewState.IdRef="NetHttpRequest_1">
+      <uwah:NetHttpRequest.Result>
+        <OutArgument x:TypeArguments="uwahm:HttpResponseSummary">
+          <VisualBasicReference x:TypeArguments="uwahm:HttpResponseSummary" ExpressionText="apiResponse" />
+        </OutArgument>
+      </uwah:NetHttpRequest.Result>
+      <uwah:NetHttpRequest.TimeoutInMiliseconds>
+        <InArgument x:TypeArguments="s:Nullable(x:Int32)">
+          <Literal x:TypeArguments="s:Nullable(x:Int32)" Value="15000" />
+        </InArgument>
+      </uwah:NetHttpRequest.TimeoutInMiliseconds>
+    </uwah:NetHttpRequest>
+
+    <!-- Step 3: Parse the JSON response body -->
+    <web:DeserializeJson x:TypeArguments="njl:JObject"
+      DisplayName="Parse JSON Response"
+      JsonString="[apiResponse.TextContent]"
+      JsonObject="[jsonResult]"
+      sap2010:WorkflowViewState.IdRef="DeserializeJson_1" />
+
+    <!-- Step 4: Extract the channel token for #office-bellevue -->
+    <Assign DisplayName="Find #office-bellevue in Channels" sap2010:WorkflowViewState.IdRef="Assign_1">
+      <Assign.To>
+        <OutArgument x:TypeArguments="njl:JToken">[channelToken]</OutArgument>
+      </Assign.To>
+      <Assign.Value>
+        <InArgument x:TypeArguments="njl:JToken">[DirectCast(jsonResult("channels"), JArray).FirstOrDefault(Function(c) c("name") IsNot Nothing AndAlso c("name").ToString() = "office-bellevue")]</InArgument>
+      </Assign.Value>
+    </Assign>
+
+    <!-- Step 5: Branch on whether the channel was found -->
+    <If Condition="[channelToken IsNot Nothing]" DisplayName="Was Channel Found?" sap2010:WorkflowViewState.IdRef="If_1">
+      <If.Then>
+        <Sequence DisplayName="Then" sap2010:WorkflowViewState.IdRef="Sequence_Then">
+          <Assign DisplayName="Extract Channel Description" sap2010:WorkflowViewState.IdRef="Assign_2">
+            <Assign.To>
+              <OutArgument x:TypeArguments="x:String">[channelDescription]</OutArgument>
+            </Assign.To>
+            <Assign.Value>
+              <InArgument x:TypeArguments="x:String">[If(channelToken("purpose") IsNot Nothing AndAlso channelToken("purpose")("value") IsNot Nothing AndAlso Not String.IsNullOrEmpty(channelToken("purpose")("value").ToString()), channelToken("purpose")("value").ToString(), "(No description has been set for this channel.)")] </InArgument>
+            </Assign.Value>
+          </Assign>
+        </Sequence>
+      </If.Then>
+      <If.Else>
+        <Sequence DisplayName="Else" sap2010:WorkflowViewState.IdRef="Sequence_Else">
+          <ui:LogMessage
+            DisplayName="Log: Channel Not Found"
+            Message="[&quot;Channel #office-bellevue was not found. Verify the bot has joined the channel and the channel name is correct.&quot;]"
+            Level="Warn"
+            sap2010:WorkflowViewState.IdRef="LogMessage_1" />
+        </Sequence>
+      </If.Else>
+    </If>
+
+    <!-- Step 6: Log the result -->
+    <ui:LogMessage
+      DisplayName="Log Channel Description"
+      Message="[&quot;#office-bellevue description: &quot; &amp; channelDescription]"
+      Level="Info"
+      sap2010:WorkflowViewState.IdRef="LogMessage_2" />
+
+    <!-- Step 7: Display the channel description on screen -->
+    <ui:MessageBox
+      DisplayName="Show Channel Description"
+      Caption="[&quot;#office-bellevue — Channel Description&quot;]"
+      Text="[channelDescription]"
+      sap2010:WorkflowViewState.IdRef="MessageBox_1" />
+
+  </Sequence>
+</Activity>

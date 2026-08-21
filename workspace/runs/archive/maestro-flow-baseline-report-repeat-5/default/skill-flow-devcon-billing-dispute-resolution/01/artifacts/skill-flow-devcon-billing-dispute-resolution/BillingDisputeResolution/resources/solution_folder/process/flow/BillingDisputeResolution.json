@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "BillingDisputeResolution",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "e244b57b-db68-44ff-adb8-a6dd7b6f55fd",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "BillingDisputeResolution"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Flow",
+      "name": "BillingDisputeResolution",
+      "package": {
+        "key": "086856bc-48cd-4649-8dda-5f00ce0076c7"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "316c4685-8d89-4464-a2a5-6f7e65ce1a72",
+    "files": []
+  }
+}

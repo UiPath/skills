@@ -1,0 +1,12 @@
+{
+    "DocVersion": "1.0.0",
+    "StudioMinVersion": "2025.10.0",
+    "SolutionId": "bcb79388-ba99-4793-adba-08defa3f12b0",
+    "Projects": [
+        {
+            "Type": "processOrchestration",
+            "ProjectRelativePath": "ProductCalc/project.uiproj",
+            "Id": "920791df-7308-4a1f-8565-0dc0fe498b4b"
+        }
+    ]
+}

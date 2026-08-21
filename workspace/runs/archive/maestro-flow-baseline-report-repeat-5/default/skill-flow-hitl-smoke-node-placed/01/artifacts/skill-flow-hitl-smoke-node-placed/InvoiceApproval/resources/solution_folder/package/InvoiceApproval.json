@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "InvoiceApproval",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "485cfc4f-7985-47e3-b1a4-88c12425b037",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "InvoiceApproval"
+    },
+    "locks": [],
+    "key": "6950e836-9407-43b0-baec-3d7ee28fa422",
+    "files": []
+  }
+}

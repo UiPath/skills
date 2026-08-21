@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "TransformGroupByDemo",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "2d3c971c-4c4e-46e0-b110-940db2198a15",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "TransformGroupByDemo"
+    },
+    "locks": [],
+    "key": "b1adbf7a-9c01-4fa4-8690-1f6845998efa",
+    "files": []
+  }
+}

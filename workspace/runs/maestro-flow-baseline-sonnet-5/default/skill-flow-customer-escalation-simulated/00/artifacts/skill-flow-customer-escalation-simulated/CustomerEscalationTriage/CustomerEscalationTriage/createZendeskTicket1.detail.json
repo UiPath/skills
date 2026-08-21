@@ -1,0 +1,12 @@
+{
+  "_comment": "PLANNED CONFIG — pending a live Zendesk connection. No 'uipath-zendesk-zendesk' connection exists in this tenant (checked via `uip is connections list --all-folders --refresh`). Once a connection is created (`uip is connections create uipath-zendesk-zendesk`), run: uip maestro flow node configure CustomerEscalationTriage.flow createZendeskTicket1 --detail '<below, with real connectionId/folderKey>' --output json",
+  "connectionId": "<PENDING_ZENDESK_CONNECTION_ID>",
+  "folderKey": "<PENDING_FOLDER_KEY>",
+  "method": "POST",
+  "endpoint": "/tickets",
+  "bodyParameters": {
+    "subject": "=js:`Support request from ${$vars.triageEmail1.output.senderEmail}: ${$vars.triageEmail1.output.subject}`",
+    "description": "=js:`Received via Outlook.\\n\\nFrom: ${$vars.triageEmail1.output.senderEmail}\\nSubject: ${$vars.triageEmail1.output.subject}\\n\\nPreview:\\n${$vars.triageEmail1.output.bodySnippet}`",
+    "priority": "normal"
+  }
+}

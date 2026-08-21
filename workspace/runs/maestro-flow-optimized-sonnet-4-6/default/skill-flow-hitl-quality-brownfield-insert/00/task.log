@@ -1,0 +1,72 @@
+2026-08-19 16:52:18 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-08-19 16:52:18 [INFO] coder_eval.orchestrator: API routing: aws_bedrock
+2026-08-19 16:52:18 [DEBUG] coder_eval.criteria: Discovered 15 criterion checkers
+2026-08-19 16:52:18 [DEBUG] coder_eval.criteria: Validated 15 criterion checkers
+2026-08-19 16:52:18 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-08-19 16:52:19 [DEBUG] coder_eval.orchestrator: Sending prompt: You are working on an existing UiPath Flow named "ContractReview".
+
+Step 1 — Build the base flow:
+Cr...
+2026-08-19 16:52:19 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Starting agent query stream...
+2026-08-19 16:59:33 [DEBUG] coder_eval.agents.claude_code_agent: [coder] session_id changed: None -> 1da81fd0-28da-4ca1-af93-d8a75b14bba7
+2026-08-19 16:59:33 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Agent query stream ended
+2026-08-19 16:59:33 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-08-19 16:59:33 [DEBUG] coder_eval.orchestrator: Agent response received (6784 chars)
+2026-08-19 16:59:33 [DEBUG] coder_eval.orchestrator: Checking success criteria
+2026-08-19 16:59:33 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'uip maestro flow validate passes after brownfield insert': python3 $EXPERIMENT_TASKS_PATH/uipath-maestro-flow/_shared/validate_flow.py
+2026-08-19 16:59:37 [DEBUG] coder_eval.sandbox: Command 'python3 $EXPERIMENT_TASKS_PATH/uipath-maestro-flow/_shared/validate_flow.py' exited with code 0
+2026-08-19 16:59:37 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+Validating ContractReview/ContractReview/ContractReview.flow
+{
+  "Result": "Success",
+  "Code": "FlowValidate",
+  "Data": {
+    "File": "/work/output/artifacts/skill-flow-hitl-quality-brownfield-insert/ContractReview/ContractReview/ContractReview.flow",
+    "Status": "Valid"
+  }
+}
+---
+2026-08-19 16:59:37 [DEBUG] coder_eval.sandbox: STDERR:
+---
+[ManifestClient] fetchDynamicNodes ok: total=317 agent context nodes=2 external agent nodes=7 orchestrator nodes=263 IXP nodes=45
+---
+2026-08-19 16:59:37 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-08-19 16:59:37 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'Flow contains the original script node': python3 $EXPERIMENT_TASKS_PATH/uipath-maestro-flow/_shared/flow_contains.py --flow-name ContractReview '"extractMeta"'
+2026-08-19 16:59:38 [DEBUG] coder_eval.sandbox: Command 'python3 $EXPERIMENT_TASKS_PATH/uipath-maestro-flow/_shared/flow_contains.py --flow-name ContractReview '"extractMeta"'' exited with code 0
+2026-08-19 16:59:38 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+Found 1 .flow file(s): ContractReview/ContractReview/ContractReview.flow
+OK: all 1 assertion(s) satisfied by ContractReview/ContractReview/ContractReview.flow
+---
+2026-08-19 16:59:38 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-08-19 16:59:38 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'Flow contains the inserted HITL node': python3 $EXPERIMENT_TASKS_PATH/uipath-maestro-flow/_shared/flow_contains.py --flow-name ContractReview '"uipath.human-in-the-loop.quick-form"'
+2026-08-19 16:59:39 [DEBUG] coder_eval.sandbox: Command 'python3 $EXPERIMENT_TASKS_PATH/uipath-maestro-flow/_shared/flow_contains.py --flow-name ContractReview '"uipath.human-in-the-loop.quick-form"'' exited with code 0
+2026-08-19 16:59:39 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+Found 1 .flow file(s): ContractReview/ContractReview/ContractReview.flow
+OK: all 1 assertion(s) satisfied by ContractReview/ContractReview/ContractReview.flow
+---
+2026-08-19 16:59:39 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-08-19 16:59:39 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'HITL completed handle is wired': python3 $EXPERIMENT_TASKS_PATH/uipath-maestro-flow/_shared/flow_contains.py --flow-name ContractReview 'completed'
+2026-08-19 16:59:39 [DEBUG] coder_eval.sandbox: Command 'python3 $EXPERIMENT_TASKS_PATH/uipath-maestro-flow/_shared/flow_contains.py --flow-name ContractReview 'completed'' exited with code 0
+2026-08-19 16:59:39 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+Found 1 .flow file(s): ContractReview/ContractReview/ContractReview.flow
+OK: all 1 assertion(s) satisfied by ContractReview/ContractReview/ContractReview.flow
+---
+2026-08-19 16:59:39 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-08-19 16:59:39 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'HITL has a boolean output field for the approval decision': python3 $EXPERIMENT_TASKS_PATH/uipath-maestro-flow/_shared/flow_contains.py --flow-name ContractReview '"boolean"'
+2026-08-19 16:59:39 [DEBUG] coder_eval.sandbox: Command 'python3 $EXPERIMENT_TASKS_PATH/uipath-maestro-flow/_shared/flow_contains.py --flow-name ContractReview '"boolean"'' exited with code 0
+2026-08-19 16:59:39 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+Found 1 .flow file(s): ContractReview/ContractReview/ContractReview.flow
+OK: all 1 assertion(s) satisfied by ContractReview/ContractReview/ContractReview.flow
+---
+2026-08-19 16:59:39 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-08-19 16:59:39 [INFO] coder_eval.orchestrator: Success criteria: 5/5 passed, weighted score: 1.000
+2026-08-19 16:59:39 [WARNING] coder_eval.orchestrator: Visible turns (39) exceeded expected_turns (34) at iteration 1 for task skill-flow-hitl-quality-brownfield-insert. Run continues — max_turns remains the hard cap.
+2026-08-19 16:59:39 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-08-19 16:59:39 [INFO] coder_eval.orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+2026-08-19 16:59:40 [INFO] coder_eval.orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-hitl-quality-brownfield-insert
+2026-08-19 16:59:40 [INFO] coder_eval.orchestrator: Task finished: status=SUCCESS duration=445.7s score=1.000 iterations=1

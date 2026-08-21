@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "LocalOnly",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "182f7c71-4814-4dee-b7cd-ce66e6995b42",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "LocalOnly"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Flow",
+      "name": "LocalOnly",
+      "package": {
+        "key": "4971e2fe-050e-43fc-9315-9ce2f4aa5068"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "09a2c844-f8e2-4a95-9e70-d7ea5f77845f",
+    "files": []
+  }
+}

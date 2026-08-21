@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "PurchaseApproval",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "9b120276-8acf-4b4a-9c5a-beb8b17b1243",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "PurchaseApproval"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Flow",
+      "name": "PurchaseApproval",
+      "package": {
+        "key": "50eda70e-02c8-4d11-b8ff-b95dbea079e5"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "ceb159df-9bf8-4ee9-a573-d30add315188",
+    "files": []
+  }
+}

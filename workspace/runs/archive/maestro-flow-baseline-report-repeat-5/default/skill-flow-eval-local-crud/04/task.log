@@ -1,0 +1,33 @@
+2026-07-24 20:54:30 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-24 20:54:30 [INFO] coder_eval.orchestrator: API routing: aws_bedrock
+2026-07-24 20:54:30 [DEBUG] coder_eval.criteria: Discovered 14 criterion checkers
+2026-07-24 20:54:30 [DEBUG] coder_eval.criteria: Validated 14 criterion checkers
+2026-07-24 20:54:30 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-24 20:54:30 [DEBUG] coder_eval.orchestrator: Sending prompt: Scaffold a UiPath Flow project called "SmokeEval" inside a solution of the
+same name, then build the...
+2026-07-24 20:54:30 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Starting agent query stream...
+2026-07-24 20:55:58 [DEBUG] coder_eval.agents.claude_code_agent: [coder] session_id changed: None -> d16f5cf7-921e-42f8-a9be-df7b2c6c01bc
+2026-07-24 20:55:58 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Agent query stream ended
+2026-07-24 20:55:58 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-24 20:55:58 [DEBUG] coder_eval.orchestrator: Agent response received (3408 chars)
+2026-07-24 20:55:58 [DEBUG] coder_eval.orchestrator: Checking success criteria
+2026-07-24 20:55:58 [DEBUG] coder_eval.evaluation.checker: Criterion 'command_executed' score: 1.00
+2026-07-24 20:55:58 [DEBUG] coder_eval.evaluation.checker: Criterion 'command_executed' score: 1.00
+2026-07-24 20:55:58 [DEBUG] coder_eval.evaluation.checker: Criterion 'file_exists' score: 1.00
+2026-07-24 20:55:58 [DEBUG] coder_eval.evaluation.checker: Criterion 'command_executed' score: 1.00
+2026-07-24 20:55:58 [DEBUG] coder_eval.evaluation.checker: Criterion 'command_executed' score: 1.00
+2026-07-24 20:55:58 [DEBUG] coder_eval.evaluation.checker: Criterion 'command_executed' score: 1.00
+2026-07-24 20:55:58 [DEBUG] coder_eval.evaluation.checker: Criterion 'command_executed' score: 1.00
+2026-07-24 20:55:58 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'Evaluator + eval-set JSON files exist on disk with correct shape': python3 $TASK_DIR/check_local_crud.py
+2026-07-24 20:55:58 [DEBUG] coder_eval.sandbox: Command 'python3 $TASK_DIR/check_local_crud.py' exited with code 0
+2026-07-24 20:55:58 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+OK: evaluator file SmokeEval/SmokeEval/evals/de660cfd-becc-4c76-aa0c-3cf4956f704c/evaluators/greeting-match-27f27548.json matches
+OK: eval set SmokeEval/SmokeEval/evals/de660cfd-becc-4c76-aa0c-3cf4956f704c/eval-sets/evaluation-set-smoke-set-fe5f202d.json contains data point 'hello' with inputs + expected
+---
+2026-07-24 20:55:58 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-07-24 20:55:58 [INFO] coder_eval.orchestrator: Success criteria: 8/8 passed, weighted score: 1.000
+2026-07-24 20:55:58 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-24 20:55:58 [INFO] coder_eval.orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+2026-07-24 20:55:58 [INFO] coder_eval.orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-eval-local-crud
+2026-07-24 20:55:58 [INFO] coder_eval.orchestrator: Task finished: status=SUCCESS duration=91.3s score=1.000 iterations=1

@@ -1,0 +1,235 @@
+{
+  "id": "43d8fd3b-2f00-4e73-9384-269c41f28ee0",
+  "version": "1.9",
+  "name": "QueueWrite",
+  "nodes": [
+    {
+      "id": "start",
+      "type": "core.trigger.manual",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Manual trigger"
+      },
+      "inputs": {
+        "entryPointId": "dd475283-45c2-4ef1-af1d-954e125ecd07",
+        "isDefaultEntryPoint": true
+      }
+    },
+    {
+      "id": "enqueueItem",
+      "type": "core.action.queue.create",
+      "typeVersion": "1.2",
+      "display": {
+        "label": "Write to Orchestrator Queue"
+      },
+      "inputs": {
+        "queue": "MyQueue",
+        "itemData": "=js:JSON.stringify({ payload: $vars.start.output })",
+        "priority": "Normal"
+      },
+      "outputs": {
+        "error": {
+          "type": "object",
+          "description": "Error information if the queue operation fails",
+          "source": "=Error",
+          "var": "error"
+        }
+      }
+    },
+    {
+      "id": "end",
+      "type": "core.control.end",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "End"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge_start_output_enqueueItem_input",
+      "source": "start",
+      "sourcePort": "output",
+      "target": "enqueueItem",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge_enqueueItem_success_end_input",
+      "source": "enqueueItem",
+      "sourcePort": "success",
+      "target": "end",
+      "targetPort": "input"
+    }
+  ],
+  "definitions": [
+    {
+      "nodeType": "core.trigger.manual",
+      "version": "1.0",
+      "category": "trigger",
+      "description": "Start the process manually",
+      "tags": [
+        "trigger",
+        "start",
+        "manual"
+      ],
+      "sortOrder": 80,
+      "display": {
+        "label": "Manual trigger",
+        "icon": "play",
+        "shape": "circle"
+      },
+      "handleConfiguration": [
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "output",
+              "type": "source",
+              "handleType": "output",
+              "showButton": true,
+              "constraints": {
+                "forbiddenTargetCategories": [
+                  "trigger"
+                ]
+              }
+            }
+          ],
+          "visible": true
+        }
+      ],
+      "model": {
+        "type": "bpmn:StartEvent",
+        "entryPointId": true
+      },
+      "outputDefinition": {
+        "output": {
+          "type": "object",
+          "description": "Data passed when manually triggering the process.",
+          "source": "null",
+          "var": "output"
+        }
+      },
+      "toolbarExtensions": {
+        "design": {
+          "actions": [
+            {
+              "id": "change-trigger-type",
+              "icon": "square-mouse-pointer",
+              "label": "Change trigger type"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "nodeType": "core.action.queue.create",
+      "version": "1.2",
+      "category": "data-operations",
+      "description": "Add an item to an Orchestrator queue",
+      "tags": [
+        "queue",
+        "orchestrator",
+        "create",
+        "item"
+      ],
+      "display": {
+        "label": "Create queue item",
+        "icon": "list-plus",
+        "shape": "rectangle"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "success",
+              "type": "source",
+              "handleType": "output"
+            }
+          ]
+        }
+      ],
+      "model": {
+        "type": "bpmn:ServiceTask"
+      },
+      "outputDefinition": {
+        "error": {
+          "type": "object",
+          "description": "Error information if the queue operation fails",
+          "source": "=Error",
+          "var": "error"
+        }
+      }
+    },
+    {
+      "nodeType": "core.control.end",
+      "version": "1.0",
+      "category": "control-flow",
+      "description": "Mark the end of a process path",
+      "tags": [
+        "control-flow",
+        "end",
+        "finish",
+        "complete"
+      ],
+      "sortOrder": 65,
+      "display": {
+        "label": "End",
+        "icon": "circle-check",
+        "shape": "circle"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        }
+      ],
+      "model": {
+        "type": "bpmn:EndEvent"
+      },
+      "runtimeConstraints": {
+        "exclude": [
+          "api-function"
+        ]
+      }
+    }
+  ],
+  "layout": {
+    "nodes": {
+      "start": {
+        "position": {
+          "x": 256,
+          "y": 144
+        }
+      },
+      "enqueueItem": {
+        "position": {
+          "x": 0,
+          "y": 0
+        }
+      },
+      "end": {
+        "position": {
+          "x": 0,
+          "y": 0
+        }
+      }
+    }
+  }
+}

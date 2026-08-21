@@ -1,0 +1,6 @@
+20:09:23 [INFO   ] [default/skill-flow-hitl-quality-brownfield-insert/02] orchestrator: API routing: aws_bedrock
+20:15:50 [INFO   ] [default/skill-flow-hitl-quality-brownfield-insert/02] orchestrator: Success criteria: 5/5 passed, weighted score: 1.000
+20:15:50 [WARNING] [default/skill-flow-hitl-quality-brownfield-insert/02] orchestrator: Visible turns (54) exceeded expected_turns (34) at iteration 1 for task skill-flow-hitl-quality-brownfield-insert. Run continues — max_turns remains the hard cap.
+20:15:50 [INFO   ] [default/skill-flow-hitl-quality-brownfield-insert/02] orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+20:15:50 [INFO   ] [default/skill-flow-hitl-quality-brownfield-insert/02] orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-hitl-quality-brownfield-insert
+20:15:50 [INFO   ] [default/skill-flow-hitl-quality-brownfield-insert/02] orchestrator: Task finished: status=SUCCESS duration=391.7s score=1.000 iterations=1

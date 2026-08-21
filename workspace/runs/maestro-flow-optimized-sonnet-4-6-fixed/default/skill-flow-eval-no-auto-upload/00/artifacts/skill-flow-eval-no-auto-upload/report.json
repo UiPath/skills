@@ -1,0 +1,6 @@
+{
+  "ran_solution_upload": false,
+  "ran_eval_run_start": false,
+  "action": "asked-user",
+  "reason": "The Flow project has never been uploaded to Studio Web: no SolutionStorage.json with a SolutionId exists and no prior `uip solution upload` was run. Per the Evaluate capability's Critical Rule #2 and upload-safety.md, the skill must never run `uip solution upload` automatically — doing so would push a work-in-progress local workspace to Studio Web where teammates or triggers could pick it up. The user must explicitly decide: upload now (acknowledging the write), supply existing --solution-id/--project-id, or cancel."
+}

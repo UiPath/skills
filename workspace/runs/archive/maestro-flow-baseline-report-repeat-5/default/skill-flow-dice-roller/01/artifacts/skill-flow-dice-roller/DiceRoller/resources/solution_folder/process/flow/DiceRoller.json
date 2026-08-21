@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "DiceRoller",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "5ee14fdb-7bd5-456c-b115-65a85116ba3d",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "DiceRoller"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Flow",
+      "name": "DiceRoller",
+      "package": {
+        "key": "48f1d82e-de5a-44d4-aac7-3b0743f1199f"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "35371693-7f5a-4bdf-9d20-76eff031bd78",
+    "files": []
+  }
+}

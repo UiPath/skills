@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "BindingsRegression",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "d4a44e60-6341-46e0-8063-75c23d441884",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "BindingsRegression"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Flow",
+      "name": "BindingsRegression",
+      "package": {
+        "key": "ebbe8586-a16e-488c-8446-7e8e36485d25"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "648e23a8-0e93-4244-8822-6de388fbf6ca",
+    "files": []
+  }
+}

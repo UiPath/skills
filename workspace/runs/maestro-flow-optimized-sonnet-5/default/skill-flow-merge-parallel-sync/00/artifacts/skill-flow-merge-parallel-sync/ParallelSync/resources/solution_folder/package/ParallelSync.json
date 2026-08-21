@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "ParallelSync",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "336c8a48-53bd-4dae-bcf9-a47b413145e6",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "ParallelSync"
+    },
+    "locks": [],
+    "key": "5631980b-0ff7-4f64-a1e0-56a6e3f717a0",
+    "files": []
+  }
+}

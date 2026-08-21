@@ -1,0 +1,12 @@
+{
+    "DocVersion": "1.0.0",
+    "StudioMinVersion": "2025.10.0",
+    "SolutionId": "2496bf4f-8502-47c7-1863-08defd629f77",
+    "Projects": [
+        {
+            "Type": "Flow",
+            "ProjectRelativePath": "DiceRoller/project.uiproj",
+            "Id": "6b3f2216-1d2a-4632-a6b4-f45035c8277e"
+        }
+    ]
+}

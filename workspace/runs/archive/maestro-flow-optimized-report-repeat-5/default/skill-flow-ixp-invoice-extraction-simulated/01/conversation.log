@@ -1,0 +1,74 @@
+=== USER (turn 1) — simulator-generated opener ===
+Hi there! I'm hoping you can help me out. I process vendor invoices all day and I'd love to get some automation set up so I don't have to do it all by hand. Is that something you can build for me?
+
+=== AGENT (turn 1) — 22.2s, in=6 out=863, 2 tool calls ===
+The directory is fresh — just a virtual environment, no invoice files yet. No worries! Here's how we can proceed:
+
+**Option A — Upload your own invoices:** Share the invoice files (PDFs, PNGs, JPGs) and I'll create an IXP project, let the AI suggest a taxonomy from them, and get the extraction model trained.
+
+**Option B — Start with a standard invoice taxonomy:** If you tell me the fields you need, I can create a project with a hand-crafted taxonomy right away and you can upload invoices afterward.
+
+**Option C — Let me check for an existing IXP project:** If you've already got a project in IXP, I can connect to it and start labeling/improving it immediately.
+
+Which would you like to do?
+
+=== USER (turn 2) ===
+Oh, I think maybe I wasn't clear enough — sorry about that! I'm not really looking to upload invoices or set up a training project myself. What I want is more like an automated flow — something that just runs on its own when a new invoice comes in and handles the whole thing for me. Like, start to finish. Can you build something like that?
+
+=== AGENT (turn 2) — 38.3s, in=7 out=1558, 4 tool calls ===
+Got it — you want a **Maestro Flow**: a fully automated pipeline that triggers on a new invoice, extracts the fields, and handles the result. Before I build it, I need two quick decisions from you:
+
+---
+
+**Question 1 — How do invoices arrive?** (This determines the trigger)
+
+1. 📧 **Email attachment** — a new email lands in an inbox with the invoice as a PDF/image attachment
+2. 📁 **File dropped into a folder** — someone drops the file into a SharePoint/OneDrive/network folder
+3. 🗂️ **Orchestrator Queue** — an item is added to a UiPath Orchestrator queue with the document attached
+4. ⏰ **Scheduled / batch** — run on a schedule (e.g., every hour, every morning) and pick up invoices from a known location
+5. **Something else** — describe your setup
+
+---
+
+**Question 2 — What should happen after the invoice is extracted?** (This determines the output/destination)
+
+1. 💾 **Save extracted fields to a spreadsheet** (Excel / Google Sheets)
+2. 📬 **Send a notification** (email or Slack) with the extracted values
+3. 🏢 **Create/update a record in a business system** (SAP, Dynamics, Salesforce, ServiceNow, etc.)
+4. ✅ **Human review step** — send for approval before finalising
+5. **Something else** — describe what "handled" means to you
+
+Once I know these two things, I can plan and build the full flow end-to-end for you.
+
+=== USER (turn 3) ===
+Oh perfect, those are easy ones! For the first one — it's option 2, a SharePoint folder. New invoices get dropped in there as PDFs. And for the second one — definitely option 3, we use SAP. That's where all our invoice data needs to end up. Can you build it to do both of those things?
+
+=== AGENT (turn 3) — 77.3s, in=5 out=2629, 6 tool calls ===
+Great news — all three services have real connectors on this tenant. I found:
+- ✅ **SharePoint trigger**: `uipath.connector.trigger.uipath-microsoft-onedrive.file-created`
+- ✅ **IxP invoice models**: multiple published models
+- ✅ **SAP connectors**: three flavours available
+
+I need two quick decisions before I build:
+
+---
+
+**Question 1 — Which IxP invoice extraction model?** (Two invoice models are published on your tenant)
+
+1. **InvoiceIXP** — named for invoices specifically, likely a custom model trained for your org
+2. **idp-benchmark---invoices-c735405a-ixp** — UiPath out-of-the-box benchmark invoice model
+3. **Something else** — tell me which one to use
+
+---
+
+**Question 2 — Which SAP system/connector?**
+
+1. **SAP BAPI** — for SAP ECC or S/4HANA via RFC/BAPI calls (e.g. `BAPI_INCOMINGINVOICE_CREATE`). Choose this if you use classic SAP ECC or if your team talks about "BAPIs" and "RFCs"
+2. **SAP OData** — for SAP S/4HANA via REST/OData API. Choose this if you're on S/4HANA Cloud or a modern S/4HANA deployment
+3. **Something else** — e.g. SAP Concur, SAP Cloud for Customer, or a different integration approach
+
+=== USER (turn 4) ===
+For the invoice reading part — I was told we use something called the "Invoice Model." I'm not sure which one that matches in your list, but does that ring a bell?
+
+And for SAP — honestly, I don't know what BAPI or OData means! All I know is that our IT team set up an endpoint and everything just gets posted over to SAP that way. Like, it sends the data over as a web request or something? Would that be option 3?
+

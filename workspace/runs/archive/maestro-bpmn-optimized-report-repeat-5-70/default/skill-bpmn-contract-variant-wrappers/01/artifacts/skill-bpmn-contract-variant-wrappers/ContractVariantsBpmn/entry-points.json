@@ -1,0 +1,62 @@
+{
+  "entryPoints": [
+    {
+      "id": "ep-contract-variants-start",
+      "filePath": "/content/ContractVariantsBpmn.bpmn#Start_1",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "AgentJobResult": {
+            "type": "object"
+          },
+          "A2AResult": {
+            "type": "object"
+          },
+          "ApiWorkflowResult": {
+            "type": "object"
+          },
+          "BizRuleResult": {
+            "type": "object"
+          },
+          "QueueItemResult": {
+            "type": "object"
+          },
+          "WaitQueueResult": {
+            "type": "object"
+          },
+          "AgenticResult": {
+            "type": "object"
+          },
+          "AgenticAsyncResult": {
+            "type": "object"
+          },
+          "CaseMgmtResult": {
+            "type": "object"
+          },
+          "CaseMgmtAsyncResult": {
+            "type": "object"
+          },
+          "WaitEventResult": {
+            "type": "object"
+          },
+          "SendMsgResult": {
+            "type": "object"
+          },
+          "GuardrailsResult": {
+            "type": "object"
+          },
+          "RulesResult": {
+            "type": "object"
+          },
+          "ScriptResult": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  ]
+}

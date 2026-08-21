@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+    xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+    xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+    xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+    xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:uipath="http://uipath.org/schema/bpmn"
+    id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn"
+    exporter="UiPath (https://bpmn.uipath.com)" exporterVersion="1.0">
+
+  <bpmn:error id="Error_ServiceUnavailable" name="Service Unavailable" errorCode="SERVICE_UNAVAILABLE" />
+
+  <bpmn:process id="Process_1" isExecutable="true">
+    <bpmn:extensionElements>
+      <uipath:migrationVersion version="11.5" />
+      <uipath:variables version="v1">
+        <uipath:inputOutput id="Var_ServiceResponse" name="ServiceResponse" type="string" />
+      </uipath:variables>
+      <uipath:bindings version="v1">
+        <uipath:binding id="Binding_DownstreamServiceConnection" resource="Connection"
+                        propertyAttribute="ConnectionId" default="&lt;CONNECTION_NAME&gt;" />
+      </uipath:bindings>
+    </bpmn:extensionElements>
+
+    <bpmn:startEvent id="Start_1" name="Start">
+      <bpmn:outgoing>Flow_Start</bpmn:outgoing>
+    </bpmn:startEvent>
+
+    <bpmn:serviceTask id="Task_InvokeDownstreamService" name="Invoke Downstream Service">
+      <bpmn:extensionElements>
+        <uipath:activity version="v1">
+          <uipath:type value="Intsvc.SyncWorkflowExecution" version="v1" />
+          <uipath:context>
+            <uipath:input name="activity" value="InvokeDownstreamService" />
+            <uipath:input name="connectorKey" value="&lt;DOWNSTREAM_SERVICE_CONNECTOR_KEY&gt;" />
+            <uipath:input name="connection" value="=bindings.Binding_DownstreamServiceConnection" />
+            <uipath:input name="folderKey" value="" />
+            <uipath:input name="method" value="" />
+            <uipath:input name="path" value="" />
+          </uipath:context>
+          <uipath:input name="body" type="json" target="body"><![CDATA[{}]]></uipath:input>
+          <uipath:output name="response" type="custom" source="." var="Var_ServiceResponse" />
+        </uipath:activity>
+        <uipath:retry maxRetryCount="2" retryBackoff="PT30S" retryBackoffType="exponential"
+                      maxDuration="PT5M" exponentialBase="2" retryAllErrors="false">
+          <uipath:errorDefinition errorRef="Error_ServiceUnavailable" />
+        </uipath:retry>
+        <uipath:errorMapping version="v1">
+          <uipath:error id="Mapped_ServiceUnavailable" errorRef="Error_ServiceUnavailable"
+                        priority="1" condition="=vars.error.code == &quot;SERVICE_UNAVAILABLE&quot;"
+                        detail="Downstream service unavailable" retryable="true" />
+        </uipath:errorMapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_Start</bpmn:incoming>
+      <bpmn:outgoing>Flow_Success</bpmn:outgoing>
+    </bpmn:serviceTask>
+
+    <bpmn:boundaryEvent id="Boundary_ServiceUnavailable" attachedToRef="Task_InvokeDownstreamService" cancelActivity="true">
+      <bpmn:errorEventDefinition errorRef="Error_ServiceUnavailable" />
+      <bpmn:outgoing>Flow_ToErrorEnd</bpmn:outgoing>
+    </bpmn:boundaryEvent>
+
+    <bpmn:endEvent id="End_Success" name="Completed">
+      <bpmn:incoming>Flow_Success</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <bpmn:endEvent id="End_ServiceUnavailable" name="Service Unavailable">
+      <bpmn:incoming>Flow_ToErrorEnd</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <bpmn:sequenceFlow id="Flow_Start" sourceRef="Start_1" targetRef="Task_InvokeDownstreamService" />
+    <bpmn:sequenceFlow id="Flow_Success" sourceRef="Task_InvokeDownstreamService" targetRef="End_Success" />
+    <bpmn:sequenceFlow id="Flow_ToErrorEnd" sourceRef="Boundary_ServiceUnavailable" targetRef="End_ServiceUnavailable" />
+  </bpmn:process>
+
+  <bpmndi:BPMNDiagram id="Diagram_1">
+    <bpmndi:BPMNPlane id="Plane_1" bpmnElement="Process_1">
+      <bpmndi:BPMNShape id="S_Start_1" bpmnElement="Start_1">
+        <dc:Bounds x="160" y="100" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Task_InvokeDownstreamService" bpmnElement="Task_InvokeDownstreamService">
+        <dc:Bounds x="260" y="78" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Boundary_ServiceUnavailable" bpmnElement="Boundary_ServiceUnavailable">
+        <dc:Bounds x="292" y="140" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_End_Success" bpmnElement="End_Success">
+        <dc:Bounds x="430" y="100" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_End_ServiceUnavailable" bpmnElement="End_ServiceUnavailable">
+        <dc:Bounds x="430" y="220" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_Start" bpmnElement="Flow_Start">
+        <di:waypoint x="196" y="118" />
+        <di:waypoint x="260" y="118" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_Success" bpmnElement="Flow_Success">
+        <di:waypoint x="360" y="118" />
+        <di:waypoint x="430" y="118" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_ToErrorEnd" bpmnElement="Flow_ToErrorEnd">
+        <di:waypoint x="310" y="176" />
+        <di:waypoint x="310" y="238" />
+        <di:waypoint x="430" y="238" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

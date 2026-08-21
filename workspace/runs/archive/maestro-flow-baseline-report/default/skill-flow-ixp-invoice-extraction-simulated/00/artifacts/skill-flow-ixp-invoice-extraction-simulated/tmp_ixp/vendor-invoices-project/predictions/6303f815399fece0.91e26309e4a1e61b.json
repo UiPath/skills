@@ -1,0 +1,224 @@
+{
+  "Result": "Success",
+  "Data": {
+    "ProjectName": "vendor-invoices-f8a3c211-ixp",
+    "TotalDocuments": 1,
+    "DocumentsWithPredictions": 1,
+    "Predictions": [
+      {
+        "DocumentId": "6303f815399fece0.91e26309e4a1e61b",
+        "Filename": "invoice_meridian_consulting_005.pdf",
+        "Labels": [
+          {
+            "Name": "Invoice Header",
+            "Occurrence": 0,
+            "Fields": [
+              {
+                "FieldId": "fld_inv_num",
+                "FieldName": "Invoice Number",
+                "FormattedValue": "MCG-2024-Q1-047"
+              },
+              {
+                "FieldId": "fld_inv_date",
+                "FieldName": "Invoice Date",
+                "FormattedValue": "2024-03-29"
+              },
+              {
+                "FieldId": "fld_due_date",
+                "FieldName": "Due Date",
+                "FormattedValue": "2024-04-28"
+              },
+              {
+                "FieldId": "fld_po_num",
+                "FieldName": "PO Number",
+                "FormattedValue": "PO-GC-44900"
+              },
+              {
+                "FieldId": "fld_pay_terms",
+                "FieldName": "Payment Terms",
+                "FormattedValue": "Net 30"
+              },
+              {
+                "FieldId": "fld_currency",
+                "FieldName": "Currency",
+                "FormattedValue": "USD"
+              }
+            ]
+          },
+          {
+            "Name": "Vendor Details",
+            "Occurrence": 0,
+            "Fields": [
+              {
+                "FieldId": "fld_vend_name",
+                "FieldName": "Vendor Name",
+                "FormattedValue": "Meridian Business Consulting Group"
+              },
+              {
+                "FieldId": "fld_vend_addr",
+                "FieldName": "Vendor Address",
+                "FormattedValue": "333 Madison Avenue, 22nd Floor, New York, NY 10017"
+              },
+              {
+                "FieldId": "fld_vend_email",
+                "FieldName": "Vendor Email",
+                "FormattedValue": "finance@meridianconsulting.com"
+              },
+              {
+                "FieldId": "fld_vend_phone",
+                "FieldName": "Vendor Phone",
+                "FormattedValue": "+1 (212) 555-4400"
+              }
+            ]
+          },
+          {
+            "Name": "Bill To",
+            "Occurrence": 0,
+            "Fields": [
+              {
+                "FieldId": "fld_bt_name",
+                "FieldName": "Bill-To Name",
+                "FormattedValue": "GlobalCorp Executive Office"
+              },
+              {
+                "FieldId": "fld_bt_addr",
+                "FieldName": "Bill-To Address",
+                "FormattedValue": "1200 Corporate Plaza, Floor 20, New York, NY 10001"
+              }
+            ]
+          },
+          {
+            "Name": "Invoice Totals",
+            "Occurrence": 0,
+            "Fields": [
+              {
+                "FieldId": "fld_subtotal",
+                "FieldName": "Subtotal",
+                "FormattedValue": "31,040.75 USD"
+              },
+              {
+                "FieldId": "fld_tax_rate",
+                "FieldName": "Tax Rate",
+                "FormattedValue": "8.875"
+              },
+              {
+                "FieldId": "fld_tax_amount",
+                "FieldName": "Tax Amount",
+                "FormattedValue": "2,754.87 USD"
+              },
+              {
+                "FieldId": "fld_total",
+                "FieldName": "Total Due",
+                "FormattedValue": "33,795.62 USD"
+              }
+            ]
+          },
+          {
+            "Name": "Line Items",
+            "Occurrence": 0,
+            "Fields": [
+              {
+                "FieldId": "fld_li_desc",
+                "FieldName": "Description",
+                "FormattedValue": "Strategic Planning Workshops (Week of March 11)"
+              },
+              {
+                "FieldId": "fld_li_qty",
+                "FieldName": "Quantity",
+                "FormattedValue": "3"
+              },
+              {
+                "FieldId": "fld_li_price",
+                "FieldName": "Unit Price",
+                "FormattedValue": "4,500.00 USD"
+              },
+              {
+                "FieldId": "fld_li_total",
+                "FieldName": "Line Total",
+                "FormattedValue": "13,500.00 USD"
+              }
+            ]
+          },
+          {
+            "Name": "Line Items",
+            "Occurrence": 1,
+            "Fields": [
+              {
+                "FieldId": "fld_li_desc",
+                "FieldName": "Description",
+                "FormattedValue": "Market Analysis Report \u2014 APAC Expansion"
+              },
+              {
+                "FieldId": "fld_li_qty",
+                "FieldName": "Quantity",
+                "FormattedValue": "1"
+              },
+              {
+                "FieldId": "fld_li_price",
+                "FieldName": "Unit Price",
+                "FormattedValue": "8,000.00 USD"
+              },
+              {
+                "FieldId": "fld_li_total",
+                "FieldName": "Line Total",
+                "FormattedValue": "8,000.00 USD"
+              }
+            ]
+          },
+          {
+            "Name": "Line Items",
+            "Occurrence": 2,
+            "Fields": [
+              {
+                "FieldId": "fld_li_desc",
+                "FieldName": "Description",
+                "FormattedValue": "Executive Coaching Sessions \u2014 12 hours"
+              },
+              {
+                "FieldId": "fld_li_qty",
+                "FieldName": "Quantity",
+                "FormattedValue": "12"
+              },
+              {
+                "FieldId": "fld_li_price",
+                "FieldName": "Unit Price",
+                "FormattedValue": "600.00 USD"
+              },
+              {
+                "FieldId": "fld_li_total",
+                "FieldName": "Line Total",
+                "FormattedValue": "7,200.00 USD"
+              }
+            ]
+          },
+          {
+            "Name": "Line Items",
+            "Occurrence": 3,
+            "Fields": [
+              {
+                "FieldId": "fld_li_desc",
+                "FieldName": "Description",
+                "FormattedValue": "Travel & Expenses (receipts attached)"
+              },
+              {
+                "FieldId": "fld_li_qty",
+                "FieldName": "Quantity",
+                "FormattedValue": "1"
+              },
+              {
+                "FieldId": "fld_li_price",
+                "FieldName": "Unit Price",
+                "FormattedValue": "2,340.75 USD"
+              },
+              {
+                "FieldId": "fld_li_total",
+                "FieldName": "Line Total",
+                "FormattedValue": "2,340.75 USD"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

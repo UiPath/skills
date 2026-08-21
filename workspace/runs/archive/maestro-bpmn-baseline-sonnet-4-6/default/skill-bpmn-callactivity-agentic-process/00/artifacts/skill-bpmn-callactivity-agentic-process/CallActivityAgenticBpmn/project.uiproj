@@ -1,0 +1,23 @@
+{
+  "name": "CallActivityAgenticBpmn",
+  "description": "Manual start, invoke a published agentic process as a separate Maestro instance via CallActivity, then end.",
+  "projectVersion": "1.0.0",
+  "runtimeOptions": {
+    "autoDispose": false
+  },
+  "entryPoints": [
+    "CallActivityAgenticBpmn.bpmn"
+  ],
+  "targetFramework": "Portable",
+  "expressionLanguage": "VisualBasic",
+  "designOptions": {
+    "fileInfoCollection": [
+      {
+        "fileName": "CallActivityAgenticBpmn.bpmn",
+        "entryPoints": [
+          "StartEvent_1"
+        ]
+      }
+    ]
+  }
+}

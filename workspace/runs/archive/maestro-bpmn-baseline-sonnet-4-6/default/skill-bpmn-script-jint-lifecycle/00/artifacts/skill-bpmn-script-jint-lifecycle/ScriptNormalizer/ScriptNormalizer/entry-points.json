@@ -1,0 +1,24 @@
+{
+  "entryPoints": [
+    {
+      "id": "4638966d-212e-4744-b061-05885a2f5d7b",
+      "filePath": "/content/ScriptNormalizer.bpmn#Start_Manual",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "rawRequest": {
+            "type": "string"
+          }
+        }
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "normalizedResponse": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  ]
+}

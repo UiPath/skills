@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "WeatherAlert",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "90fa50ba-174b-4e7e-b094-3b1570711c72",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "WeatherAlert"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Flow",
+      "name": "WeatherAlert",
+      "package": {
+        "key": "86768745-9b88-4698-947c-dc529e39f07d"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "ff688ad4-30d8-4589-a739-4db79d53d13b",
+    "files": []
+  }
+}

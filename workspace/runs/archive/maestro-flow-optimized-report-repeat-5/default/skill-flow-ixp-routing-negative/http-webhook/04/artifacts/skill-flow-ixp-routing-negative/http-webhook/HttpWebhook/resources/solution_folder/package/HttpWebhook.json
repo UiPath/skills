@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "HttpWebhook",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "a9ac82e8-0dee-4b57-90d9-b14320ab830b",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "HttpWebhook"
+    },
+    "locks": [],
+    "key": "c3402768-70b4-4fc2-ba5a-02e15aad17d0",
+    "files": []
+  }
+}

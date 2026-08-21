@@ -1,0 +1,12 @@
+{
+  "DocVersion": "1.0.0",
+  "StudioMinVersion": "2025.10.0",
+  "SolutionId": "f7210cf4-bb4e-4eff-9bb0-66debad223cf",
+  "Projects": [
+    {
+      "Type": "Flow",
+      "ProjectRelativePath": "BatchTransformDemo/project.uiproj",
+      "Id": "0824c65b-c7ce-4a56-9fdd-9dbd8c60cd0b"
+    }
+  ]
+}

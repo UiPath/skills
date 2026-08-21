@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "QueueWrite",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "e17073d8-afe8-4ea5-af61-59270d0b0203",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "QueueWrite"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Flow",
+      "name": "QueueWrite",
+      "package": {
+        "key": "4e8adff3-0403-4372-a3ca-9e12b37c11ef"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "b9cd149f-d342-4da2-8c03-1cc5b099c25b",
+    "files": []
+  }
+}

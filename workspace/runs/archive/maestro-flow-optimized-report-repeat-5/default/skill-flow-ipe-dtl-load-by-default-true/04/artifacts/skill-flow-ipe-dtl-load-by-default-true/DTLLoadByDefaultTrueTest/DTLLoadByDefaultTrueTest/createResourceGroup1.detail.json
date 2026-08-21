@@ -1,0 +1,12 @@
+{
+  "connectionId": "<REPLACE_WITH_CONNECTION_ID>",
+  "folderKey": "<REPLACE_WITH_FOLDER_KEY>",
+  "method": "POST",
+  "endpoint": "/resourceGroup/resource/{resourceGroupName}",
+  "pathParameters": {
+    "resourceGroupName": "<REPLACE_WITH_RESOURCE_GROUP_NAME>"
+  },
+  "bodyParameters": {
+    "location": "<REPLACE_WITH_AZURE_REGION_E.G._eastus>"
+  }
+}

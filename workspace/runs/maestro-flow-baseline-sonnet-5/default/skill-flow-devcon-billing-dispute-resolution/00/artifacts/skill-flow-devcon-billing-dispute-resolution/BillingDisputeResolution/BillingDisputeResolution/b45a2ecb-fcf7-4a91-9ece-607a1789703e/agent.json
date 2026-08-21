@@ -1,0 +1,116 @@
+{
+  "version": "1.1.0",
+  "settings": {
+    "model": "anthropic.claude-sonnet-5",
+    "maxTokens": 64000,
+    "temperature": 0.3,
+    "engine": "basic-v2",
+    "maxIterations": 5,
+    "mode": "standard"
+  },
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "start__output__webhookPayload": {
+        "type": "object",
+        "description": "The original billing-dispute submission event, including customer.accountNumber and invoice.invoiceNumber."
+      },
+      "disputeAnalystAgent1__output__determination": {
+        "type": "string",
+        "description": "The Dispute Analyst's determination of what was found in this billing dispute."
+      },
+      "disputeAnalystAgent1__output__rationale": {
+        "type": "string",
+        "description": "The Dispute Analyst's rationale for the determination."
+      },
+      "disputeAnalystAgent1__output__creditAmount": {
+        "type": "number",
+        "description": "The approved credit amount to be issued to the customer."
+      }
+    },
+    "required": [
+      "start__output__webhookPayload",
+      "disputeAnalystAgent1__output__determination",
+      "disputeAnalystAgent1__output__creditAmount"
+    ]
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "subject": {
+        "type": "string",
+        "description": "The subject line of the customer-facing resolution email."
+      },
+      "body": {
+        "type": "string",
+        "description": "The full body of the customer-facing resolution email. Must cite the invoice number and the approved credit amount."
+      }
+    },
+    "required": [
+      "subject",
+      "body"
+    ]
+  },
+  "metadata": {
+    "storageVersion": "50.0.0",
+    "isConversational": false,
+    "showProjectCreationExperience": false
+  },
+  "type": "lowCode",
+  "guardrails": [],
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are the Resolution Writer for the billing dispute process. You draft the customer-facing email that communicates the outcome of a billing dispute that has been approved for resolution.\n\nScope:\n- In scope: writing a clear, professional, empathetic email that states the outcome and the credit amount.\n- Out of scope: making or changing the resolution decision, negotiating with the customer, or sending the email — you only draft it.\n\nOutput:\n- Return a result conforming to the output schema: subject and body.\n- subject: a short, professional subject line referencing the invoice number and that the dispute has been resolved.\n- body: a complete email body. It MUST explicitly cite the invoice number and the approved credit amount (formatted as currency, e.g. $123.45). Summarize the determination and rationale in plain, customer-friendly language — do not paste internal jargon or raw JSON. Thank the customer for raising the dispute and note the credit will be applied.\n- Never invent an invoice number or credit amount not present in the input — use exactly the values provided.\n\nUncertainty:\n- If the credit amount is 0, still cite it explicitly (e.g. \"no credit adjustment is due\") rather than omitting it.\n- If any required detail is missing from the input, write the email with the information available and note generically that the team will follow up with any remaining details — never fabricate specifics.",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "You are the Resolution Writer for the billing dispute process. You draft the customer-facing email that communicates the outcome of a billing dispute that has been approved for resolution.\n\nScope:\n- In scope: writing a clear, professional, empathetic email that states the outcome and the credit amount.\n- Out of scope: making or changing the resolution decision, negotiating with the customer, or sending the email — you only draft it.\n\nOutput:\n- Return a result conforming to the output schema: subject and body.\n- subject: a short, professional subject line referencing the invoice number and that the dispute has been resolved.\n- body: a complete email body. It MUST explicitly cite the invoice number and the approved credit amount (formatted as currency, e.g. $123.45). Summarize the determination and rationale in plain, customer-friendly language — do not paste internal jargon or raw JSON. Thank the customer for raising the dispute and note the credit will be applied.\n- Never invent an invoice number or credit amount not present in the input — use exactly the values provided.\n\nUncertainty:\n- If the credit amount is 0, still cite it explicitly (e.g. \"no credit adjustment is due\") rather than omitting it.\n- If any required detail is missing from the input, write the email with the information available and note generically that the team will follow up with any remaining details — never fabricate specifics."
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "Draft the customer-facing resolution email for this billing dispute.\n\nCustomer / invoice context:\n{{input.start__output__webhookPayload}}\n\nDetermination:\n{{input.disputeAnalystAgent1__output__determination}}\n\nRationale:\n{{input.disputeAnalystAgent1__output__rationale}}\n\nApproved credit amount:\n{{input.disputeAnalystAgent1__output__creditAmount}}\n\nReturn subject and body. The body must cite the invoice number and the approved credit amount.",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "Draft the customer-facing resolution email for this billing dispute.\n\nCustomer / invoice context:\n"
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__webhookPayload"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\nDetermination:\n"
+        },
+        {
+          "type": "variable",
+          "rawString": "input.disputeAnalystAgent1__output__determination"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\nRationale:\n"
+        },
+        {
+          "type": "variable",
+          "rawString": "input.disputeAnalystAgent1__output__rationale"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\nApproved credit amount:\n"
+        },
+        {
+          "type": "variable",
+          "rawString": "input.disputeAnalystAgent1__output__creditAmount"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\nReturn subject and body. The body must cite the invoice number and the approved credit amount."
+        }
+      ]
+    }
+  ],
+  "projectId": "b45a2ecb-fcf7-4a91-9ece-607a1789703e"
+}

@@ -1,0 +1,2930 @@
+{
+  "id": "41f04ea9-e5e9-42bd-ac4c-71b828bf77ae",
+  "version": "1.8",
+  "name": "VendorInvoiceProcessing",
+  "nodes": [
+    {
+      "id": "extractInvoice",
+      "type": "uipath.ixp.idp-benchmark-invoices-c735405a-ixp.f6df6382-0af4-80b4-9690-e540cf2af19a-c4359cde-55f0-4f0e-9322-c6cdce74ab4c",
+      "typeVersion": "1.0.0",
+      "display": {
+        "label": "Extract Invoice Fields"
+      },
+      "inputs": {
+        "model": {
+          "id": "f6df6382-0af4-80b4-9690-e540cf2af19a",
+          "modelName": "idp-benchmark---invoices-c735405a-ixp",
+          "modelDisplayName": "idp-benchmark---invoices-c735405a-ixp",
+          "folderKey": "c4359cde-55f0-4f0e-9322-c6cdce74ab4c",
+          "folderName": "Shared",
+          "folderPath": "c4359cde-55f0-4f0e-9322-c6cdce74ab4c",
+          "description": ""
+        },
+        "modelName": "idp-benchmark---invoices-c735405a-ixp",
+        "projectName": "idp-benchmark---invoices-c735405a-ixp",
+        "folderKey": "c4359cde-55f0-4f0e-9322-c6cdce74ab4c",
+        "folderName": "Shared",
+        "versionTag": "",
+        "pageRange": "",
+        "fileRef": "=js:$vars.downloadInvoicePdf1.output.output",
+        "errorHandlingEnabled": true
+      },
+      "outputs": {
+        "output": {
+          "name": "output",
+          "type": "object",
+          "source": "=this.result",
+          "var": "output",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "properties": {
+              "ExtractionResult": {
+                "type": "object",
+                "properties": {
+                  "DocumentId": {
+                    "type": "string"
+                  },
+                  "ResultsVersion": {
+                    "type": "integer"
+                  },
+                  "ResultsDocument": {
+                    "type": "object",
+                    "properties": {
+                      "Fields": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "FieldId": {
+                              "type": "string"
+                            },
+                            "FieldName": {
+                              "type": "string"
+                            },
+                            "FieldType": {
+                              "type": "string"
+                            },
+                            "IsMissing": {
+                              "type": "boolean"
+                            },
+                            "Values": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            },
+                            "Confidence": {
+                              "type": "integer"
+                            },
+                            "OperatorConfirmed": {
+                              "type": "boolean"
+                            }
+                          }
+                        }
+                      },
+                      "Tables": {
+                        "type": "array",
+                        "items": {
+                          "type": "object"
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "ExtractorPayloads": {
+                "type": "object"
+              },
+              "BusinessrulesResults": {
+                "type": "array",
+                "items": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails",
+          "source": "=Error",
+          "var": "error",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "required": [
+              "code",
+              "message",
+              "detail",
+              "category",
+              "status"
+            ],
+            "properties": {
+              "code": {
+                "type": "string"
+              },
+              "message": {
+                "type": "string"
+              },
+              "detail": {
+                "type": "string"
+              },
+              "category": {
+                "type": "string"
+              },
+              "status": {
+                "type": "integer"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      }
+    },
+    {
+      "id": "parseFields",
+      "type": "core.action.script",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Parse & Validate Invoice Data"
+      },
+      "inputs": {
+        "script": "const fields = ($vars.extractInvoice.output.ExtractionResult && $vars.extractInvoice.output.ExtractionResult.ResultsDocument && $vars.extractInvoice.output.ExtractionResult.ResultsDocument.Fields) ? $vars.extractInvoice.output.ExtractionResult.ResultsDocument.Fields : [];\n\nconst get = (name) => {\n  const f = fields.find(f => f.FieldName === name);\n  return f && !f.IsMissing && f.Values && f.Values.length > 0 ? f.Values[0] : null;\n};\n\nconst getConf = (name) => {\n  const f = fields.find(f => f.FieldName === name);\n  return f ? (f.Confidence || 0) : 0;\n};\n\nconst invoiceNumber = get('invoice_id') || get('InvoiceNumber') || get('Invoice Number') || get('invoice_number');\nconst vendorName   = get('vendor_name') || get('VendorName') || get('Vendor Name');\nconst invoiceDate  = get('invoice_date') || get('InvoiceDate') || get('Invoice Date');\nconst dueDate      = get('due_date') || get('DueDate') || get('Due Date');\nconst totalAmount  = get('total_amount') || get('TotalAmount') || get('Total Amount') || get('Total Due') || get('total_due');\nconst currency     = get('currency') || get('Currency') || 'USD';\n\nconst confScores = [\n  getConf('invoice_id') || getConf('InvoiceNumber') || getConf('Invoice Number'),\n  getConf('vendor_name') || getConf('VendorName') || getConf('Vendor Name'),\n  getConf('total_amount') || getConf('TotalAmount') || getConf('Total Amount') || getConf('Total Due')\n].filter(c => c > 0);\n\nconst avgConfidence = confScores.length > 0\n  ? Math.round(confScores.reduce((a, b) => a + b, 0) / confScores.length)\n  : 0;\n\nconst highConfidence = avgConfidence >= 80 && invoiceNumber && totalAmount;\n\nreturn {\n  invoiceNumber,\n  vendorName,\n  invoiceDate,\n  dueDate,\n  totalAmount,\n  currency,\n  avgConfidence,\n  highConfidence,\n  fieldCount: fields.length\n};",
+        "errorHandlingEnabled": true
+      },
+      "outputs": {
+        "output": {
+          "type": "object",
+          "description": "The return value of the script",
+          "source": "=result.response",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails",
+          "source": "=Error",
+          "var": "error"
+        }
+      }
+    },
+    {
+      "id": "checkConfidence",
+      "type": "core.logic.decision",
+      "typeVersion": "1.1",
+      "display": {
+        "label": "High Confidence Extraction?"
+      },
+      "inputs": {
+        "expression": "$vars.parseFields.output.highConfidence === true",
+        "trueLabel": "Auto-approve",
+        "falseLabel": "Needs Review"
+      }
+    },
+    {
+      "id": "hitlReview",
+      "type": "uipath.human-in-the-loop.quick-form",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "AP Team Review"
+      },
+      "inputs": {
+        "title": "Invoice Requires Manual Review",
+        "priority": "Medium",
+        "schema": {
+          "schemaId": "a3f7c291-04e8-4b12-9d65-7e83f1a02c4b",
+          "fields": [
+            {
+              "id": "invoiceNumber",
+              "label": "Invoice Number",
+              "type": "text",
+              "direction": "input",
+              "binding": "vars.parseFields.output.invoiceNumber"
+            },
+            {
+              "id": "vendorName",
+              "label": "Vendor Name",
+              "type": "text",
+              "direction": "input",
+              "binding": "vars.parseFields.output.vendorName"
+            },
+            {
+              "id": "totalAmount",
+              "label": "Total Amount",
+              "type": "text",
+              "direction": "input",
+              "binding": "vars.parseFields.output.totalAmount"
+            },
+            {
+              "id": "avgConfidence",
+              "label": "Extraction Confidence (%)",
+              "type": "number",
+              "direction": "input",
+              "binding": "vars.parseFields.output.avgConfidence"
+            },
+            {
+              "id": "reviewedInvoiceNumber",
+              "label": "Confirmed Invoice Number",
+              "type": "text",
+              "direction": "output",
+              "variable": "vars.reviewedInvoiceNumber"
+            },
+            {
+              "id": "reviewedAmount",
+              "label": "Confirmed Amount",
+              "type": "text",
+              "direction": "output",
+              "variable": "vars.reviewedAmount"
+            },
+            {
+              "id": "reviewNotes",
+              "label": "Review Notes",
+              "type": "text",
+              "direction": "output",
+              "variable": "vars.reviewNotes"
+            }
+          ],
+          "outcomes": [
+            {
+              "id": "approve",
+              "name": "Approve",
+              "type": "string",
+              "isPrimary": true,
+              "action": "Continue"
+            },
+            {
+              "id": "reject",
+              "name": "Reject",
+              "type": "string",
+              "isPrimary": false,
+              "action": "End"
+            }
+          ]
+        },
+        "recipient": {
+          "channels": [
+            "Email",
+            "ActionCenter"
+          ],
+          "connections": {},
+          "assignee": {
+            "type": "group"
+          }
+        }
+      },
+      "outputs": {
+        "output": {
+          "type": "object",
+          "description": "Task result data",
+          "source": "=result",
+          "var": "output",
+          "properties": {
+            "reviewedInvoiceNumber": {
+              "type": "string"
+            },
+            "reviewedAmount": {
+              "type": "string"
+            },
+            "reviewNotes": {
+              "type": "string"
+            },
+            "Action": {
+              "type": "string",
+              "enum": [
+                "Approve",
+                "Reject"
+              ],
+              "default": "Approve"
+            }
+          }
+        },
+        "status": {
+          "type": "string",
+          "description": "Task completion status",
+          "source": "=result.Action",
+          "var": "status",
+          "enum": [
+            "Approve",
+            "Reject"
+          ],
+          "default": "Approve"
+        }
+      }
+    },
+    {
+      "id": "endAutoProcessed",
+      "type": "core.control.end",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Invoice Auto-Processed"
+      },
+      "outputs": {
+        "invoiceNumber": {
+          "source": "=js:$vars.parseFields.output.invoiceNumber"
+        },
+        "vendorName": {
+          "source": "=js:$vars.parseFields.output.vendorName"
+        },
+        "totalAmount": {
+          "source": "=js:$vars.parseFields.output.totalAmount"
+        },
+        "processingStatus": {
+          "source": "=js:'auto-approved'"
+        },
+        "reviewedInvoiceNumber": {
+          "source": "=js:$vars.reviewedInvoiceNumber"
+        },
+        "reviewedAmount": {
+          "source": "=js:$vars.reviewedAmount"
+        },
+        "reviewNotes": {
+          "source": "=js:$vars.reviewNotes"
+        },
+        "sapDocumentId": {
+          "source": "=js:$vars.postInvoiceToSap1.output && $vars.postInvoiceToSap1.output.id ? $vars.postInvoiceToSap1.output.id : null"
+        }
+      }
+    },
+    {
+      "id": "endReviewed",
+      "type": "core.control.end",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Invoice Reviewed & Approved"
+      },
+      "outputs": {
+        "invoiceNumber": {
+          "source": "=js:$vars.hitlReview.output.reviewedInvoiceNumber || $vars.parseFields.output.invoiceNumber"
+        },
+        "vendorName": {
+          "source": "=js:$vars.parseFields.output.vendorName"
+        },
+        "totalAmount": {
+          "source": "=js:$vars.hitlReview.output.reviewedAmount || $vars.parseFields.output.totalAmount"
+        },
+        "processingStatus": {
+          "source": "=js:'human-approved'"
+        },
+        "reviewedInvoiceNumber": {
+          "source": "=js:$vars.hitlReview.output.reviewedInvoiceNumber"
+        },
+        "reviewedAmount": {
+          "source": "=js:$vars.hitlReview.output.reviewedAmount"
+        },
+        "reviewNotes": {
+          "source": "=js:$vars.reviewNotes"
+        },
+        "sapDocumentId": {
+          "source": "=js:$vars.postInvoiceToSap1.output && $vars.postInvoiceToSap1.output.id ? $vars.postInvoiceToSap1.output.id : null"
+        }
+      }
+    },
+    {
+      "id": "terminateError",
+      "type": "core.logic.terminate",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Extraction Failed"
+      },
+      "inputs": {
+        "errorMessage": "=js:($vars.extractInvoice.error && $vars.extractInvoice.error.message) ? 'Invoice extraction failed: ' + $vars.extractInvoice.error.message : ($vars.parseFields.error && $vars.parseFields.error.message) ? 'Field parsing failed: ' + $vars.parseFields.error.message : 'Invoice processing failed'"
+      },
+      "outputs": {
+        "invoiceNumber": {
+          "source": "=js:null"
+        },
+        "vendorName": {
+          "source": "=js:null"
+        },
+        "totalAmount": {
+          "source": "=js:null"
+        },
+        "processingStatus": {
+          "source": "=js:'error'"
+        },
+        "reviewedInvoiceNumber": {
+          "source": "=js:null"
+        },
+        "reviewedAmount": {
+          "source": "=js:null"
+        },
+        "reviewNotes": {
+          "source": "=js:null"
+        },
+        "sapDocumentId": {
+          "source": "=js:null"
+        }
+      }
+    },
+    {
+      "id": "invoiceReceivedSharepoint1",
+      "type": "uipath.connector.trigger.uipath-microsoft-onedrive.file-created",
+      "typeVersion": "1.0.0",
+      "display": {
+        "label": "Invoice Received (SharePoint: New Vendor folder)"
+      },
+      "inputs": {
+        "entryPointId": "c26d3edc-ff43-46c7-a990-a8b0315c66cb",
+        "detail": {
+          "connector": "uipath-microsoft-onedrive",
+          "connectionId": "ae311606-25b7-43ef-9cd0-f3dc0b3a9b58",
+          "connectionResourceId": "ae311606-25b7-43ef-9cd0-f3dc0b3a9b58",
+          "connectionFolderKey": "c4359cde-55f0-4f0e-9322-c6cdce74ab4c",
+          "eventParameters": {
+            "Extension": "pdf"
+          },
+          "objectName": "File",
+          "eventType": "FILE_CREATED",
+          "eventMode": "polling",
+          "filterExpression": "ParentID eq 'NEW-VENDOR-FOLDER-ID'",
+          "configuration": "=jsonString:{\"essentialConfiguration\": {\"instanceParameters\": {\"connectorKey\": \"uipath-microsoft-onedrive\", \"objectName\": \"File\", \"activityType\": \"CuratedTrigger\", \"version\": \"1.0.0\", \"eventOperation\": \"FILE_CREATED\", \"eventMode\": \"polling\", \"supportsStreaming\": false}, \"objectName\": \"File\", \"packageVersion\": \"1.0.0\", \"connectorVersion\": null, \"executionType\": null, \"httpMethod\": null, \"path\": null, \"filter\": \"ParentID eq 'NEW-VENDOR-FOLDER-ID'\"}}",
+          "uiPathActivityTypeId": "3579e230-6ba6-39f9-9870-d6afd1e17512",
+          "errorState": {
+            "issues": []
+          }
+        }
+      }
+    },
+    {
+      "id": "downloadInvoicePdf1",
+      "type": "uipath.connector.uipath-microsoft-onedrive.download-file",
+      "typeVersion": "1.0.0",
+      "display": {
+        "label": "Download Invoice PDF"
+      },
+      "inputs": {
+        "detail": {
+          "connector": "uipath-microsoft-onedrive",
+          "connectionId": "ae311606-25b7-43ef-9cd0-f3dc0b3a9b58",
+          "connectionResourceId": "ae311606-25b7-43ef-9cd0-f3dc0b3a9b58",
+          "connectionFolderKey": "c4359cde-55f0-4f0e-9322-c6cdce74ab4c",
+          "method": "GET",
+          "endpoint": "/files/{fileId}",
+          "pathParameters": {
+            "fileId": "=js:$vars.invoiceReceivedSharepoint1.output.ID"
+          },
+          "uiPathActivityTypeId": "c0ed899b-e170-3111-bda7-fdae448fa4e5",
+          "errorState": {
+            "issues": []
+          },
+          "configuration": "=jsonString:{\"essentialConfiguration\":{\"instanceParameters\":{\"connectorKey\":\"uipath-microsoft-onedrive\",\"objectName\":\"DownloadFile\",\"httpMethod\":\"GET\",\"activityType\":\"Curated\",\"version\":\"1.0.0\",\"supportsStreaming\":false,\"subType\":\"standard\"},\"objectName\":\"DownloadFile\",\"operation\":\"retrieve\",\"httpMethod\":\"GET\",\"path\":\"/DownloadFile\",\"packageVersion\":\"1.0.0\",\"connectorVersion\":null,\"executionType\":null,\"customFieldsRequestDetails\":null,\"unifiedTypesCompatible\":true}}"
+        },
+        "errorHandlingEnabled": true
+      }
+    },
+    {
+      "id": "postInvoiceToSap1",
+      "type": "core.action.http.v2",
+      "typeVersion": "2.3",
+      "display": {
+        "label": "POST Invoice Data to Accounting System"
+      },
+      "inputs": {
+        "branches": [],
+        "timeout": "PT15M",
+        "retryCount": 0,
+        "detail": {
+          "connector": "uipath-uipath-http",
+          "connectionId": "ImplicitConnection",
+          "connectionResourceId": null,
+          "connectionFolderKey": null,
+          "method": "POST",
+          "endpoint": "/http-request",
+          "bodyParameters": {
+            "authentication": "manual",
+            "method": "POST",
+            "url": "https://YOUR-SAP-ENDPOINT/api/invoices",
+            "headers": {
+              "Content-Type": "application/json"
+            },
+            "body": "=js:JSON.stringify({ invoiceNumber: $vars.parseFields.output.invoiceNumber, vendorName: $vars.parseFields.output.vendorName, invoiceDate: $vars.parseFields.output.invoiceDate, dueDate: $vars.parseFields.output.dueDate, totalAmount: $vars.parseFields.output.totalAmount, currency: $vars.parseFields.output.currency, extractionConfidence: $vars.parseFields.output.avgConfidence, sourceFileName: $vars.invoiceReceivedSharepoint1.output.FullName, sourceFileUrl: $vars.invoiceReceivedSharepoint1.output.URL })"
+          },
+          "configuration": "=jsonString:{\"essentialConfiguration\":{\"connectorVersion\":\"1.4.50\",\"executionType\":null,\"customFieldsRequestDetails\":null,\"instanceParameters\":{\"connectorKey\":\"uipath-uipath-http\",\"objectName\":\"http-request\",\"httpMethod\":\"POST\",\"activityType\":\"Curated\",\"version\":\"1.0.0\"},\"objectName\":\"http-request\",\"operation\":\"create\",\"packageVersion\":\"1.0.0\",\"httpMethod\":\"POST\",\"path\":\"/http-request\",\"unifiedTypesCompatible\":true,\"savedJitInputFieldId\":\"in_http-request\"}}",
+          "uiPathActivityTypeId": "5c4cc855-b42a-37e6-b910-de8588998fce",
+          "errorState": {
+            "issues": []
+          },
+          "telemetryData": {
+            "connectorKey": "uipath-uipath-http",
+            "connectorName": "HTTP",
+            "operationType": "create",
+            "objectName": "http-request",
+            "objectDisplayName": "HTTP Request",
+            "primaryKeyName": ""
+          }
+        },
+        "errorHandlingEnabled": true
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e-trigger-download",
+      "sourceNodeId": "invoiceReceivedSharepoint1",
+      "sourcePort": "output",
+      "targetNodeId": "downloadInvoicePdf1",
+      "targetPort": "input"
+    },
+    {
+      "id": "e-download-extract",
+      "sourceNodeId": "downloadInvoicePdf1",
+      "sourcePort": "output",
+      "targetNodeId": "extractInvoice",
+      "targetPort": "input"
+    },
+    {
+      "id": "e-download-error",
+      "sourceNodeId": "downloadInvoicePdf1",
+      "sourcePort": "error",
+      "targetNodeId": "terminateError",
+      "targetPort": "input"
+    },
+    {
+      "id": "e-decision-sap",
+      "sourceNodeId": "checkConfidence",
+      "sourcePort": "true",
+      "targetNodeId": "postInvoiceToSap1",
+      "targetPort": "input"
+    },
+    {
+      "id": "e-hitl-sap",
+      "sourceNodeId": "hitlReview",
+      "sourcePort": "completed",
+      "targetNodeId": "postInvoiceToSap1",
+      "targetPort": "input"
+    },
+    {
+      "id": "e-sap-end",
+      "sourceNodeId": "postInvoiceToSap1",
+      "sourcePort": "default",
+      "targetNodeId": "endAutoProcessed",
+      "targetPort": "input"
+    },
+    {
+      "id": "e-sap-error",
+      "sourceNodeId": "postInvoiceToSap1",
+      "sourcePort": "error",
+      "targetNodeId": "terminateError",
+      "targetPort": "input"
+    },
+    {
+      "id": "e-extract-parse",
+      "sourceNodeId": "extractInvoice",
+      "sourcePort": "success",
+      "targetNodeId": "parseFields",
+      "targetPort": "input"
+    },
+    {
+      "id": "e-extract-error",
+      "sourceNodeId": "extractInvoice",
+      "sourcePort": "error",
+      "targetNodeId": "terminateError",
+      "targetPort": "input"
+    },
+    {
+      "id": "e-parse-decision",
+      "sourceNodeId": "parseFields",
+      "sourcePort": "success",
+      "targetNodeId": "checkConfidence",
+      "targetPort": "input"
+    },
+    {
+      "id": "e-parse-error",
+      "sourceNodeId": "parseFields",
+      "sourcePort": "error",
+      "targetNodeId": "terminateError",
+      "targetPort": "input"
+    },
+    {
+      "id": "e-decision-hitl",
+      "sourceNodeId": "checkConfidence",
+      "sourcePort": "false",
+      "targetNodeId": "hitlReview",
+      "targetPort": "input"
+    }
+  ],
+  "definitions": [
+    {
+      "nodeType": "uipath.ixp.idp-benchmark-invoices-c735405a-ixp.f6df6382-0af4-80b4-9690-e540cf2af19a-c4359cde-55f0-4f0e-9322-c6cdce74ab4c",
+      "version": "1.0.0",
+      "category": "document-extraction",
+      "tags": [
+        "ixp",
+        "document-understanding",
+        "extraction"
+      ],
+      "description": "(Shared)",
+      "sortOrder": 537,
+      "display": {
+        "canvasLabel": "Extract",
+        "label": "idp-benchmark---invoices-c735405a-ixp",
+        "description": "(Shared)",
+        "icon": "file-text"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "success",
+              "type": "source",
+              "handleType": "output"
+            },
+            {
+              "id": "error",
+              "label": "Error",
+              "type": "source",
+              "handleType": "output",
+              "visible": "{inputs.errorHandlingEnabled}",
+              "constraints": {
+                "maxConnections": 1
+              }
+            }
+          ]
+        }
+      ],
+      "supportsErrorHandling": true,
+      "model": {
+        "type": "bpmn:ServiceTask",
+        "serviceType": "IXP.Extraction",
+        "bindings": {
+          "resource": "ixpDeployment",
+          "entityType": "ixpDeployment",
+          "resourceSubType": null,
+          "resourceKey": "f6df6382-0af4-80b4-9690-e540cf2af19a",
+          "name": "idp-benchmark---invoices-c735405a-ixp",
+          "values": [
+            {
+              "name": "name",
+              "propertyAttribute": "name",
+              "default": "idp-benchmark---invoices-c735405a-ixp"
+            },
+            {
+              "name": "folderPath",
+              "propertyAttribute": "folderPath",
+              "default": "Shared"
+            }
+          ]
+        }
+      },
+      "form": {
+        "id": "ixp-standalone-form",
+        "title": "IXP",
+        "sections": [
+          {
+            "id": "ixp-model",
+            "title": "Configuration",
+            "fields": [
+              {
+                "name": "inputs.modelName",
+                "type": "text",
+                "label": "IXP model",
+                "rules": [
+                  {
+                    "id": "always-disabled",
+                    "conditions": [],
+                    "effects": {
+                      "disabled": true
+                    }
+                  }
+                ]
+              },
+              {
+                "name": "inputs.folderName",
+                "type": "text",
+                "label": "Folder",
+                "rules": [
+                  {
+                    "id": "always-disabled",
+                    "conditions": [],
+                    "effects": {
+                      "disabled": true
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "ixp-file-upload",
+            "title": "File input",
+            "collapsible": true,
+            "defaultExpanded": true,
+            "fields": [
+              {
+                "name": "inputs.fileRef",
+                "type": "file",
+                "label": "File",
+                "description": "File to extract data from",
+                "validation": {
+                  "required": true,
+                  "messages": {
+                    "required": "A file is required for extraction"
+                  }
+                }
+              },
+              {
+                "name": "inputs.pageRange",
+                "type": "text",
+                "label": "Page range",
+                "placeholder": "e.g. 1-5",
+                "description": "Optional page range to process."
+              }
+            ]
+          },
+          {
+            "id": "schema-definition",
+            "title": "Schema definition",
+            "collapsible": false,
+            "fields": [
+              {
+                "name": "inputs.model",
+                "type": "custom",
+                "component": "ixp-model-taxonomy",
+                "label": ""
+              }
+            ]
+          }
+        ]
+      },
+      "debug": {
+        "runtime": "bpmnEngine"
+      },
+      "inputDefinition": {
+        "type": "object",
+        "properties": {
+          "projectName": {
+            "type": "string"
+          },
+          "projectId": {
+            "type": "string"
+          },
+          "versionTag": {
+            "type": "string"
+          },
+          "folderKey": {
+            "type": "string"
+          },
+          "folderName": {
+            "type": "string"
+          },
+          "model": {
+            "type": "object"
+          },
+          "modelName": {
+            "type": "string"
+          },
+          "fileRef": {
+            "type": "string"
+          },
+          "pageRange": {
+            "type": "string"
+          },
+          "attachmentConfig": {
+            "type": "object"
+          },
+          "attachment": {
+            "type": "object",
+            "description": "File to extract data from.",
+            "properties": {
+              "ID": {
+                "type": "string"
+              },
+              "FullName": {
+                "type": "string"
+              },
+              "MimeType": {
+                "type": "string"
+              },
+              "Metadata": {
+                "type": "object"
+              }
+            },
+            "required": [
+              "ID"
+            ]
+          }
+        },
+        "required": [
+          "fileRef"
+        ]
+      },
+      "inputDefaults": {
+        "model": {
+          "id": "f6df6382-0af4-80b4-9690-e540cf2af19a",
+          "modelName": null,
+          "modelDisplayName": "idp-benchmark---invoices-c735405a-ixp",
+          "folderKey": "c4359cde-55f0-4f0e-9322-c6cdce74ab4c",
+          "folderName": "Shared",
+          "folderPath": "c4359cde-55f0-4f0e-9322-c6cdce74ab4c",
+          "description": ""
+        },
+        "modelName": "idp-benchmark---invoices-c735405a-ixp",
+        "description": "",
+        "projectName": "idp-benchmark---invoices-c735405a-ixp",
+        "versionTag": "",
+        "folderKey": "c4359cde-55f0-4f0e-9322-c6cdce74ab4c",
+        "folderName": "Shared",
+        "fileRef": "",
+        "pageRange": ""
+      },
+      "outputDefinition": {
+        "output": {
+          "name": "output",
+          "type": "object",
+          "source": "=this.result",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails",
+          "source": "=Error",
+          "var": "error"
+        }
+      }
+    },
+    {
+      "nodeType": "core.action.script",
+      "version": "1.0",
+      "category": "data-operations",
+      "description": "Run custom JavaScript code",
+      "tags": [
+        "code",
+        "javascript",
+        "python"
+      ],
+      "sortOrder": 35,
+      "supportsErrorHandling": true,
+      "display": {
+        "label": "Script",
+        "icon": "code"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "success",
+              "type": "source",
+              "handleType": "output"
+            },
+            {
+              "id": "error",
+              "label": "Error",
+              "type": "source",
+              "handleType": "output",
+              "visible": "{inputs.errorHandlingEnabled}",
+              "constraints": {
+                "maxConnections": 1
+              }
+            }
+          ]
+        }
+      ],
+      "debug": {
+        "runtime": "clientScript"
+      },
+      "model": {
+        "type": "bpmn:ScriptTask"
+      },
+      "inputDefinition": {
+        "type": "object",
+        "properties": {
+          "script": {
+            "type": "string",
+            "minLength": 1,
+            "errorMessage": "A script function is required",
+            "validationSeverity": "warning"
+          }
+        },
+        "required": [
+          "script"
+        ]
+      },
+      "inputDefaults": {
+        "script": ""
+      },
+      "outputDefinition": {
+        "output": {
+          "type": "object",
+          "description": "The return value of the script",
+          "source": "=result.response",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails",
+          "source": "=Error",
+          "var": "error"
+        }
+      }
+    },
+    {
+      "nodeType": "core.logic.decision",
+      "version": "1.1",
+      "category": "control-flow",
+      "description": "Branch based on a true/false condition",
+      "tags": [
+        "control-flow",
+        "if",
+        "loop",
+        "switch"
+      ],
+      "sortOrder": 20,
+      "display": {
+        "label": "Decision",
+        "icon": "trending-up-down"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ],
+          "visible": true
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "true",
+              "type": "source",
+              "handleType": "output",
+              "label": "{inputs.trueLabel}",
+              "constraints": {
+                "minConnections": 1
+              }
+            },
+            {
+              "id": "false",
+              "type": "source",
+              "handleType": "output",
+              "label": "{inputs.falseLabel}"
+            }
+          ],
+          "visible": true
+        }
+      ],
+      "debug": {
+        "runtime": "clientScript"
+      },
+      "model": {
+        "type": "bpmn:InclusiveGateway"
+      },
+      "inputDefinition": {
+        "type": "object",
+        "properties": {
+          "expression": {
+            "type": "string",
+            "minLength": 1,
+            "errorMessage": "A condition expression is required"
+          },
+          "trueLabel": {
+            "type": "string"
+          },
+          "falseLabel": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "expression"
+        ]
+      },
+      "outputDefinition": {
+        "matchedCase": {
+          "type": "string",
+          "description": "The label of the matched branch (true/false label)",
+          "var": "matchedCase"
+        },
+        "matchedCaseId": {
+          "type": "string",
+          "description": "The branch that was taken (true or false)",
+          "var": "matchedCaseId"
+        }
+      },
+      "inputDefaults": {
+        "trueLabel": "True",
+        "falseLabel": "False"
+      }
+    },
+    {
+      "nodeType": "uipath.human-in-the-loop.quick-form",
+      "version": "1.0",
+      "category": "human-task",
+      "description": "Fast inline approvals with inline debug",
+      "tags": [
+        "human-task",
+        "hitl",
+        "human-in-the-loop",
+        "quick-form",
+        "approval"
+      ],
+      "sortOrder": 27,
+      "display": {
+        "label": "Quick Form",
+        "icon": "users",
+        "shape": "square"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ],
+          "visible": true
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "completed",
+              "type": "source",
+              "handleType": "output",
+              "showButton": true,
+              "constraints": {
+                "forbiddenTargetCategories": [
+                  "trigger"
+                ]
+              }
+            }
+          ],
+          "visible": true
+        }
+      ],
+      "model": {
+        "type": "bpmn:UserTask",
+        "serviceType": "Actions.HITL"
+      },
+      "inputDefaults": {
+        "schema": {
+          "fields": [],
+          "outcomes": [
+            {
+              "id": "submit",
+              "name": "Submit",
+              "type": "string",
+              "isPrimary": true,
+              "action": "Continue"
+            }
+          ]
+        },
+        "recipient": {
+          "channels": [
+            "Email",
+            "ActionCenter"
+          ],
+          "connections": {},
+          "assignee": {
+            "type": "group"
+          }
+        }
+      },
+      "outputDefinition": {
+        "output": {
+          "type": "object",
+          "description": "Task result data",
+          "source": "=result",
+          "var": "output"
+        },
+        "status": {
+          "type": "string",
+          "description": "Task completion status (completed, cancelled, timeout)",
+          "source": "=result.Action",
+          "var": "status"
+        }
+      }
+    },
+    {
+      "nodeType": "core.control.end",
+      "version": "1.0",
+      "category": "control-flow",
+      "description": "Mark the end of a workflow path",
+      "tags": [
+        "control-flow",
+        "end",
+        "finish",
+        "complete"
+      ],
+      "sortOrder": 20,
+      "display": {
+        "label": "End",
+        "icon": "circle-check",
+        "shape": "circle"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        }
+      ],
+      "model": {
+        "type": "bpmn:EndEvent"
+      },
+      "runtimeConstraints": {
+        "exclude": [
+          "api-function"
+        ]
+      }
+    },
+    {
+      "nodeType": "core.logic.terminate",
+      "version": "1.0",
+      "category": "control-flow",
+      "description": "Immediately terminate the workflow with an error",
+      "tags": [
+        "control-flow",
+        "terminate",
+        "abort",
+        "error"
+      ],
+      "sortOrder": 25,
+      "display": {
+        "label": "Terminate",
+        "icon": "circle-x",
+        "shape": "circle"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        }
+      ],
+      "model": {
+        "type": "bpmn:EndEvent",
+        "terminateActivity": true
+      },
+      "inputDefinition": {
+        "type": "object",
+        "properties": {
+          "errorMessage": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    {
+      "nodeType": "uipath.connector.trigger.uipath-microsoft-onedrive.file-created",
+      "version": "1.0.0",
+      "category": "trigger.196549",
+      "tags": [
+        "connector",
+        "trigger",
+        "Trigger.Integrated"
+      ],
+      "sortOrder": 540,
+      "description": "(Microsoft OneDrive & SharePoint) Triggers when a new file is created in the drive.",
+      "display": {
+        "label": "File Created",
+        "description": "(Microsoft OneDrive & SharePoint) Triggers when a new file is created in the drive.",
+        "icon": "https://alpha.uipath.com/311c6049-4966-4ef2-a6f3-8ceccaf38d54/studio_/typecache/icons/446b7cebc39ca4493877cbc53272aa7c685bfa43b8b4af6eb2dca0f39e2d1fc1.svg",
+        "shape": "circle"
+      },
+      "handleConfiguration": [
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "output",
+              "type": "source",
+              "handleType": "output",
+              "showButton": true,
+              "constraints": {
+                "forbiddenTargetCategories": [
+                  "trigger"
+                ]
+              }
+            }
+          ],
+          "visible": true
+        }
+      ],
+      "model": {
+        "type": "bpmn:StartEvent",
+        "entryPointId": true,
+        "serviceType": "Intsvc.EventTrigger",
+        "eventDefinition": "bpmn:MessageEventDefinition",
+        "bindings": {
+          "resource": "connection",
+          "resourceKey": "",
+          "values": [
+            {
+              "name": "uipath-microsoft-onedrive connection",
+              "propertyAttribute": "ConnectionId"
+            },
+            {
+              "name": "FolderKey",
+              "propertyAttribute": "FolderKey"
+            }
+          ]
+        },
+        "context": [
+          {
+            "name": "connectorKey",
+            "type": "string",
+            "value": "uipath-microsoft-onedrive"
+          },
+          {
+            "name": "operation",
+            "value": "FILE_CREATED",
+            "type": "string"
+          },
+          {
+            "name": "objectName",
+            "value": "File",
+            "type": "string"
+          },
+          {
+            "name": "method",
+            "type": "string"
+          },
+          {
+            "name": "connection",
+            "type": "string",
+            "value": "<bindings.uipath-microsoft-onedrive connection>"
+          },
+          {
+            "name": "folderKey",
+            "type": "string",
+            "value": "<bindings.FolderKey>"
+          },
+          {
+            "name": "activityConfigurationVersion",
+            "type": "string",
+            "value": "v1"
+          },
+          {
+            "name": "metadata",
+            "body": {
+              "telemetryData": {
+                "connectorKey": "uipath-microsoft-onedrive",
+                "connectorName": "File Created"
+              },
+              "inputMetadata": {},
+              "errorState": {
+                "hasError": true
+              }
+            },
+            "type": "json"
+          }
+        ]
+      },
+      "form": {
+        "id": "connector-properties",
+        "title": "Connector configuration",
+        "sections": [
+          {
+            "id": "connector",
+            "title": "Connector",
+            "collapsible": true,
+            "defaultExpanded": true,
+            "fields": [
+              {
+                "label": "",
+                "name": "inputs.detail",
+                "type": "custom",
+                "component": "dap-config",
+                "componentProps": {
+                  "connectorDetail": {
+                    "type": "Integrated",
+                    "packageId": "196549",
+                    "svgIconUrl": "icons/446b7cebc39ca4493877cbc53272aa7c685bfa43b8b4af6eb2dca0f39e2d1fc1.svg",
+                    "displayName": "File Created",
+                    "assemblyQualifiedName": "UiPath.IntegrationService.Activities.Runtime.Activities.ConnectorTriggerActivity, UiPath.IntegrationService.Activities.Runtime, Version=1.30.0.0, Culture=neutral, PublicKeyToken=null",
+                    "description": "Triggers when a new file is created in the drive.",
+                    "category": "Microsoft OneDrive & SharePoint.Triggers",
+                    "activityColor": "#00A3EE",
+                    "configuration": "{\"connectorKey\":\"uipath-microsoft-onedrive\",\"objectName\":\"File\",\"activityType\":\"CuratedTrigger\",\"version\":\"1.0.0\",\"eventOperation\":\"FILE_CREATED\",\"eventMode\":\"polling\",\"supportsStreaming\":false}",
+                    "uiPathActivityTypeId": "3579e230-6ba6-39f9-9870-d6afd1e17512",
+                    "isExperimental": false,
+                    "helpUrlTemplate": "https://docs.uipath.com/{0}/activities/other/latest/integration-service/uipath-microsoft-onedrive-File-Created",
+                    "isEnabled": true,
+                    "targetPlatform": "CrossPlatform",
+                    "isAdvanced": false,
+                    "isRestricted": false,
+                    "hasWpfOnlyDesigner": false,
+                    "tags": [
+                      "Trigger.Integrated"
+                    ]
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "inputDefinition": {},
+      "outputDefinition": {
+        "output": {
+          "type": "object",
+          "description": "The return value of the connector trigger.",
+          "source": "=result.response",
+          "var": "output"
+        }
+      },
+      "toolbarExtensions": {
+        "design": {
+          "actions": [
+            {
+              "id": "change-trigger-type",
+              "icon": "square-mouse-pointer",
+              "label": "Change trigger type"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "nodeType": "uipath.connector.uipath-microsoft-onedrive.download-file",
+      "version": "1.0.0",
+      "category": "connector.196549",
+      "tags": [
+        "connector",
+        "activity",
+        "API.File.Download"
+      ],
+      "sortOrder": 515,
+      "supportsErrorHandling": true,
+      "description": "(Microsoft OneDrive & SharePoint) Downloads a file or folder from OneDrive & SharePoint",
+      "display": {
+        "label": "Download File",
+        "description": "(Microsoft OneDrive & SharePoint) Downloads a file or folder from OneDrive & SharePoint",
+        "icon": "https://alpha.uipath.com/311c6049-4966-4ef2-a6f3-8ceccaf38d54/studio_/typecache/icons/446b7cebc39ca4493877cbc53272aa7c685bfa43b8b4af6eb2dca0f39e2d1fc1.svg"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input",
+              "label": ""
+            }
+          ]
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "output",
+              "type": "source",
+              "handleType": "output",
+              "label": ""
+            },
+            {
+              "id": "error",
+              "label": "Error",
+              "type": "source",
+              "handleType": "output",
+              "visible": "{inputs.errorHandlingEnabled}",
+              "constraints": {
+                "maxConnections": 1
+              }
+            }
+          ]
+        }
+      ],
+      "model": {
+        "type": "bpmn:SendTask",
+        "serviceType": "Intsvc.ActivityExecution",
+        "bindings": {
+          "resource": "connection",
+          "resourceKey": "",
+          "values": [
+            {
+              "name": "uipath-microsoft-onedrive connection",
+              "propertyAttribute": "ConnectionId"
+            },
+            {
+              "name": "FolderKey",
+              "propertyAttribute": "FolderKey"
+            }
+          ]
+        },
+        "context": [
+          {
+            "name": "connectorKey",
+            "type": "string",
+            "value": "uipath-microsoft-onedrive"
+          },
+          {
+            "name": "operation",
+            "type": "string"
+          },
+          {
+            "name": "objectName",
+            "value": "DownloadFile",
+            "type": "string"
+          },
+          {
+            "name": "method",
+            "type": "string",
+            "value": "GET"
+          },
+          {
+            "name": "connection",
+            "type": "string",
+            "value": "<bindings.uipath-microsoft-onedrive connection>"
+          },
+          {
+            "name": "folderKey",
+            "type": "string",
+            "value": "<bindings.FolderKey>"
+          },
+          {
+            "name": "activityConfigurationVersion",
+            "type": "string",
+            "value": "v1"
+          },
+          {
+            "name": "metadata",
+            "body": {
+              "telemetryData": {
+                "connectorKey": "uipath-microsoft-onedrive",
+                "connectorName": "Download File"
+              },
+              "inputMetadata": {},
+              "errorState": {
+                "hasError": true
+              }
+            },
+            "type": "json"
+          }
+        ]
+      },
+      "form": {
+        "id": "connector-properties",
+        "title": "Connector configuration",
+        "sections": [
+          {
+            "id": "connector",
+            "title": "Connector",
+            "collapsible": true,
+            "defaultExpanded": true,
+            "fields": [
+              {
+                "label": "",
+                "name": "inputs.detail",
+                "type": "custom",
+                "component": "dap-config",
+                "componentProps": {
+                  "connectorDetail": {
+                    "isAppActivity": false,
+                    "packageId": "196549",
+                    "svgIconUrl": "icons/446b7cebc39ca4493877cbc53272aa7c685bfa43b8b4af6eb2dca0f39e2d1fc1.svg",
+                    "displayName": "Download File",
+                    "assemblyQualifiedName": "UiPath.IntegrationService.Activities.Runtime.Activities.ConnectorActivity, UiPath.IntegrationService.Activities.Runtime, Version=1.30.0.0, Culture=neutral, PublicKeyToken=null",
+                    "description": "Downloads a file or folder from OneDrive & SharePoint",
+                    "category": "",
+                    "activityColor": "#00A3EE",
+                    "configuration": "{\"connectorKey\":\"uipath-microsoft-onedrive\",\"objectName\":\"DownloadFile\",\"httpMethod\":\"GET\",\"activityType\":\"Curated\",\"version\":\"1.0.0\",\"supportsStreaming\":false,\"subType\":\"standard\"}",
+                    "uiPathActivityTypeId": "c0ed899b-e170-3111-bda7-fdae448fa4e5",
+                    "isExperimental": false,
+                    "helpUrlTemplate": "https://docs.uipath.com/{0}/activities/other/latest/integration-service/uipath-microsoft-onedrive-Download-File",
+                    "isEnabled": true,
+                    "targetPlatform": "CrossPlatform",
+                    "isAdvanced": false,
+                    "isRestricted": false,
+                    "hasWpfOnlyDesigner": false,
+                    "tags": [
+                      "API.File.Download"
+                    ]
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "inputDefinition": {},
+      "inputDefaults": {},
+      "outputDefinition": {
+        "output": {
+          "type": "file",
+          "description": "The return value of the connector.",
+          "source": "=result.response",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails",
+          "source": "=Error",
+          "var": "error",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "required": [
+              "code",
+              "message",
+              "detail",
+              "category",
+              "status"
+            ],
+            "properties": {
+              "code": {
+                "type": "string",
+                "description": "Error code as a string"
+              },
+              "message": {
+                "type": "string",
+                "description": "High-level error message"
+              },
+              "detail": {
+                "type": "string",
+                "description": "Detailed error description"
+              },
+              "category": {
+                "type": "string",
+                "description": "Error category"
+              },
+              "status": {
+                "type": "integer",
+                "description": "HTTP status code"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "debug": {
+        "runtime": "bpmnEngine"
+      }
+    },
+    {
+      "nodeType": "core.action.http.v2",
+      "version": "2.3",
+      "category": "data-operations",
+      "description": "HTTP request with managed authentication",
+      "tags": [
+        "connector",
+        "http",
+        "api",
+        "rest",
+        "request"
+      ],
+      "sortOrder": 35,
+      "supportsErrorHandling": true,
+      "display": {
+        "label": "HTTP Request",
+        "icon": "app-window"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input",
+              "label": ""
+            }
+          ]
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "branch-{item.id}",
+              "type": "source",
+              "handleType": "output",
+              "label": "{item.name}",
+              "repeat": "inputs.branches"
+            },
+            {
+              "id": "default",
+              "type": "source",
+              "handleType": "output",
+              "label": ""
+            },
+            {
+              "id": "error",
+              "label": "Error",
+              "type": "source",
+              "handleType": "output",
+              "visible": "{inputs.errorHandlingEnabled}",
+              "constraints": {
+                "maxConnections": 1
+              }
+            }
+          ],
+          "visible": true
+        }
+      ],
+      "debug": {
+        "runtime": "bpmnEngine"
+      },
+      "model": {
+        "type": "bpmn:ServiceTask",
+        "serviceType": "Intsvc.UnifiedHttpRequest",
+        "context": [
+          {
+            "name": "connectorKey",
+            "type": "string",
+            "value": "uipath-uipath-http"
+          },
+          {
+            "name": "objectName",
+            "type": "string",
+            "value": "http-request"
+          },
+          {
+            "name": "connection",
+            "type": "string",
+            "value": "<bindings.uipath-uipath-http connection>"
+          },
+          {
+            "name": "folderKey",
+            "type": "string",
+            "value": "<bindings.FolderKey>"
+          },
+          {
+            "name": "activityConfigurationVersion",
+            "type": "string",
+            "value": "v1"
+          },
+          {
+            "name": "metadata",
+            "body": {
+              "telemetryData": {
+                "connectorKey": "uipath-uipath-http",
+                "connectorName": "HTTP Request"
+              },
+              "inputMetadata": {},
+              "errorState": {
+                "hasError": true
+              }
+            },
+            "type": "json"
+          }
+        ],
+        "expansion": {
+          "processLevelVariables": [
+            {
+              "id": "{nodeId}.output",
+              "name": "output",
+              "type": "jsonSchema",
+              "elementId": "{nodeId}",
+              "custom": true
+            },
+            {
+              "condition": "hasEdgeFromHandle('error')",
+              "id": "{nodeId}.error",
+              "name": "error",
+              "type": "jsonSchema",
+              "elementId": "{nodeId}",
+              "custom": true
+            }
+          ],
+          "nodes": [
+            {
+              "id": "{nodeId}",
+              "type": "bpmn:SubProcess",
+              "replaceOriginal": true,
+              "data": {
+                "label": "{node.data.label}",
+                "isExpanded": true,
+                "model": {
+                  "serviceType": "BPMN.Variables",
+                  "subprocessVariables": {
+                    "inputOutputs": [
+                      {
+                        "id": "response",
+                        "name": "response",
+                        "type": "jsonSchema",
+                        "variableType": "inputOutput"
+                      },
+                      {
+                        "id": "error",
+                        "name": "error",
+                        "type": "jsonSchema",
+                        "variableType": "inputOutput"
+                      }
+                    ]
+                  },
+                  "outputs": [
+                    {
+                      "name": "output",
+                      "type": "jsonSchema",
+                      "source": "=vars.response",
+                      "var": "{nodeId}.output",
+                      "custom": true
+                    },
+                    {
+                      "name": "error",
+                      "type": "jsonSchema",
+                      "source": "=vars.error",
+                      "var": "{nodeId}.error",
+                      "custom": true
+                    }
+                  ]
+                }
+              },
+              "nodes": [
+                {
+                  "id": "_Implicit_StartEvent_{nodeId}",
+                  "type": "bpmn:StartEvent",
+                  "parentId": "{nodeId}",
+                  "position": {
+                    "x": 0,
+                    "y": 0
+                  },
+                  "data": {
+                    "label": "HTTP Request Start"
+                  }
+                },
+                {
+                  "id": "_Implicit_HttpTask_{nodeId}",
+                  "type": "bpmn:SendTask",
+                  "parentId": "{nodeId}",
+                  "position": {
+                    "x": 0,
+                    "y": 0
+                  },
+                  "propagate": {
+                    "detail": true,
+                    "retry": {
+                      "condition": "node.data.inputs.retryCount > 0",
+                      "maxRetryCount": "node.data.inputs.retryCount",
+                      "retryBackoff": "node.data.inputs.timeout",
+                      "retryBackoffDefault": "PT1S",
+                      "retryAllErrors": "true",
+                      "retryBackoffType": "Static"
+                    }
+                  },
+                  "data": {
+                    "label": "{node.data.label}",
+                    "model": {
+                      "serviceType": "Intsvc.UnifiedHttpRequest",
+                      "context": [
+                        {
+                          "name": "connectorKey",
+                          "type": "string",
+                          "value": "uipath-uipath-http"
+                        },
+                        {
+                          "name": "objectName",
+                          "type": "string",
+                          "value": "http-request"
+                        },
+                        {
+                          "name": "connection",
+                          "type": "string",
+                          "value": "<bindings.uipath-uipath-http connection>"
+                        },
+                        {
+                          "name": "folderKey",
+                          "type": "string",
+                          "value": "<bindings.FolderKey>"
+                        },
+                        {
+                          "name": "activityConfigurationVersion",
+                          "type": "string",
+                          "value": "v1"
+                        },
+                        {
+                          "name": "metadata",
+                          "body": {
+                            "telemetryData": {
+                              "connectorKey": "uipath-uipath-http",
+                              "connectorName": "HTTP Request"
+                            },
+                            "inputMetadata": {},
+                            "errorState": {
+                              "hasError": true
+                            }
+                          },
+                          "type": "json"
+                        }
+                      ],
+                      "outputs": [
+                        {
+                          "name": "response",
+                          "type": "json",
+                          "source": "=response",
+                          "var": "response",
+                          "internal": true
+                        }
+                      ]
+                    }
+                  }
+                },
+                {
+                  "id": "_Implicit_Gateway_{nodeId}",
+                  "type": "bpmn:ExclusiveGateway",
+                  "parentId": "{nodeId}",
+                  "position": {
+                    "x": 0,
+                    "y": 0
+                  },
+                  "condition": "node.data.inputs.branches.length > 0",
+                  "data": {
+                    "label": "Response branch",
+                    "defaultFlowId": "_Implicit_Edge__Implicit_Gateway_{nodeId}__Implicit_EndEvent_Default_{nodeId}"
+                  }
+                },
+                {
+                  "forEach": "node.data.inputs.branches",
+                  "id": "_Implicit_EndEvent_{branchName}_{nodeId}",
+                  "type": "bpmn:EndEvent",
+                  "parentId": "{nodeId}",
+                  "position": {
+                    "x": 0,
+                    "y": 0
+                  },
+                  "data": {
+                    "label": "{branch.name}"
+                  }
+                },
+                {
+                  "id": "_Implicit_EndEvent_Default_{nodeId}",
+                  "type": "bpmn:EndEvent",
+                  "parentId": "{nodeId}",
+                  "position": {
+                    "x": 0,
+                    "y": 0
+                  },
+                  "data": {
+                    "label": "Default"
+                  }
+                },
+                {
+                  "condition": "hasEdgeFromHandle('error')",
+                  "id": "_Implicit_EndEvent_Failure_{nodeId}",
+                  "type": "bpmn:EndEvent",
+                  "parentId": "{nodeId}",
+                  "position": {
+                    "x": 0,
+                    "y": 0
+                  },
+                  "data": {
+                    "label": "Failure",
+                    "model": {
+                      "serviceType": "BPMN.Variables",
+                      "outputs": [
+                        {
+                          "name": "error",
+                          "type": "boolean",
+                          "source": "=true",
+                          "var": "error",
+                          "internal": true
+                        }
+                      ]
+                    }
+                  }
+                },
+                {
+                  "condition": "hasEdgeFromHandle('error')",
+                  "id": "_Implicit_BoundaryError_{nodeId}",
+                  "type": "bpmn:BoundaryEvent",
+                  "parentId": "{nodeId}",
+                  "position": {
+                    "x": 0,
+                    "y": 0
+                  },
+                  "data": {
+                    "label": "Error",
+                    "cancelActivity": false,
+                    "attachedToId": "_Implicit_HttpTask_{nodeId}",
+                    "eventDefinition": {
+                      "type": "bpmn:ErrorEventDefinition",
+                      "id": "_Implicit_BoundaryError_{nodeId}_Error"
+                    },
+                    "model": {
+                      "outputs": [
+                        {
+                          "name": "Error",
+                          "type": "jsonSchema",
+                          "source": "=Error",
+                          "var": "response",
+                          "internal": true
+                        }
+                      ]
+                    }
+                  }
+                }
+              ],
+              "edges": [
+                {
+                  "id": "_Implicit_Edge__Implicit_StartEvent_{nodeId}__Implicit_HttpTask_{nodeId}",
+                  "source": "_Implicit_StartEvent_{nodeId}",
+                  "target": "_Implicit_HttpTask_{nodeId}",
+                  "type": "bpmn:SequenceFlow",
+                  "data": {}
+                },
+                {
+                  "condition": "node.data.inputs.branches.length === 0",
+                  "id": "_Implicit_Edge__Implicit_HttpTask_{nodeId}__Implicit_EndEvent_Default_{nodeId}",
+                  "source": "_Implicit_HttpTask_{nodeId}",
+                  "target": "_Implicit_EndEvent_Default_{nodeId}",
+                  "type": "bpmn:SequenceFlow",
+                  "data": {}
+                },
+                {
+                  "condition": "node.data.inputs.branches.length > 0",
+                  "id": "_Implicit_Edge__Implicit_HttpTask_{nodeId}__Implicit_Gateway_{nodeId}",
+                  "source": "_Implicit_HttpTask_{nodeId}",
+                  "target": "_Implicit_Gateway_{nodeId}",
+                  "type": "bpmn:SequenceFlow",
+                  "data": {}
+                },
+                {
+                  "forEach": "node.data.inputs.branches",
+                  "condition": "node.data.inputs.branches.length > 0",
+                  "id": "_Implicit_Edge__Implicit_Gateway_{nodeId}__Implicit_EndEvent_{branchName}_{nodeId}",
+                  "source": "_Implicit_Gateway_{nodeId}",
+                  "target": "_Implicit_EndEvent_{branchName}_{nodeId}",
+                  "type": "bpmn:SequenceFlow",
+                  "data": {
+                    "conditionExpression": "{branch.conditionExpression}",
+                    "label": "{branch.name}"
+                  }
+                },
+                {
+                  "condition": "node.data.inputs.branches.length > 0",
+                  "id": "_Implicit_Edge__Implicit_Gateway_{nodeId}__Implicit_EndEvent_Default_{nodeId}",
+                  "source": "_Implicit_Gateway_{nodeId}",
+                  "target": "_Implicit_EndEvent_Default_{nodeId}",
+                  "type": "bpmn:SequenceFlow",
+                  "data": {
+                    "label": "Default"
+                  }
+                },
+                {
+                  "condition": "hasEdgeFromHandle('error')",
+                  "id": "_Implicit_Edge__Implicit_BoundaryError_{nodeId}__Implicit_EndEvent_Failure_{nodeId}",
+                  "source": "_Implicit_BoundaryError_{nodeId}",
+                  "target": "_Implicit_EndEvent_Failure_{nodeId}",
+                  "type": "bpmn:SequenceFlow",
+                  "data": {}
+                }
+              ]
+            },
+            {
+              "id": "_Implicit_PostSubprocessGateway_{nodeId}",
+              "type": "bpmn:ExclusiveGateway",
+              "condition": "(node.data.inputs.branches.length > 0 || hasEdgeFromHandle('error')) && originalEdges.length > 0",
+              "parentId": null,
+              "position": {
+                "x": 0,
+                "y": 0
+              },
+              "data": {
+                "label": "Post-Subprocess Branch"
+              }
+            }
+          ],
+          "edges": [
+            {
+              "condition": "(node.data.inputs.branches.length > 0 || hasEdgeFromHandle('error')) && originalEdges.length > 0",
+              "id": "_Implicit_Edge_{nodeId}__Implicit_PostSubprocessGateway_{nodeId}",
+              "source": "{nodeId}",
+              "target": "_Implicit_PostSubprocessGateway_{nodeId}",
+              "type": "bpmn:SequenceFlow",
+              "data": {}
+            },
+            {
+              "forEach": "node.data.inputs.branches",
+              "condition": "node.data.inputs.branches.length > 0",
+              "matchOriginalEdgeByHandle": "branch-{branch.id}",
+              "preserveEdgeId": true,
+              "source": "_Implicit_PostSubprocessGateway_{nodeId}",
+              "type": "bpmn:SequenceFlow",
+              "data": {
+                "conditionExpression": "{branch.conditionExpression}",
+                "label": "{branch.name}"
+              }
+            },
+            {
+              "condition": "node.data.inputs.branches.length > 0 || hasEdgeFromHandle('error')",
+              "matchOriginalEdgeByHandle": "default",
+              "preserveEdgeId": true,
+              "source": "_Implicit_PostSubprocessGateway_{nodeId}",
+              "type": "bpmn:SequenceFlow",
+              "data": {
+                "label": "Default"
+              }
+            },
+            {
+              "condition": "hasEdgeFromHandle('error')",
+              "matchOriginalEdgeByHandle": "error",
+              "preserveEdgeId": true,
+              "source": "_Implicit_PostSubprocessGateway_{nodeId}",
+              "type": "bpmn:SequenceFlow",
+              "data": {
+                "conditionExpression": "=js:vars.{nodeId}.error || vars.{nodeId}.output?.statusCode >= 400",
+                "label": "Error"
+              }
+            },
+            {
+              "condition": "node.data.inputs.branches.length === 0 && !hasEdgeFromHandle('error')",
+              "matchOriginalEdgeByHandle": "default",
+              "preserveEdgeId": true,
+              "source": "{nodeId}",
+              "type": "bpmn:SequenceFlow"
+            }
+          ]
+        }
+      },
+      "inputDefinition": {
+        "type": "object",
+        "properties": {
+          "branches": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "conditionExpression": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "timeout": {
+            "type": "string",
+            "pattern": "^P(?!$)(\\d+Y)?(\\d+M)?(\\d+W)?(\\d+D)?(T(?=\\d)(\\d+H)?(\\d+M)?(\\d+S)?)?$",
+            "errorMessage": {
+              "pattern": "Timeout must be in ISO 8601 duration format (e.g., PT15M, PT1H, P1D)"
+            }
+          },
+          "retryCount": {
+            "type": "number"
+          }
+        }
+      },
+      "inputDefaults": {
+        "branches": [],
+        "timeout": "PT15M",
+        "retryCount": 0
+      },
+      "outputDefinition": {
+        "output": {
+          "type": "object",
+          "description": "HTTP response object",
+          "source": "=response",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails",
+          "source": "=Error",
+          "var": "error",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "required": [
+              "code",
+              "message",
+              "detail",
+              "category",
+              "status"
+            ],
+            "properties": {
+              "code": {
+                "type": "string",
+                "description": "Error code as a string"
+              },
+              "message": {
+                "type": "string",
+                "description": "High-level error message"
+              },
+              "detail": {
+                "type": "string",
+                "description": "Detailed error description"
+              },
+              "category": {
+                "type": "string",
+                "description": "Error category"
+              },
+              "status": {
+                "type": "integer",
+                "description": "HTTP status code"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "form": {
+        "id": "http-v2-properties",
+        "title": "HTTP Request",
+        "sections": [
+          {
+            "id": "http-config",
+            "title": "Configuration",
+            "collapsible": true,
+            "defaultExpanded": true,
+            "fields": [
+              {
+                "name": "inputs.dapHttpToolbar",
+                "type": "custom",
+                "component": "dap-http-toolbar",
+                "label": ""
+              },
+              {
+                "label": "",
+                "name": "inputs.detail",
+                "type": "custom",
+                "component": "dap-config",
+                "componentProps": {
+                  "connectorDetail": {
+                    "isAppActivity": false,
+                    "packageId": 196648,
+                    "svgIconUrl": "icons/0dad78c9d04c245b126d8edb4c451aa8a0d395d34731cf5702441f6284c70ccc.svg",
+                    "displayName": "HTTP Request",
+                    "assemblyQualifiedName": "UiPath.IntegrationService.Activities.Runtime.Activities.ConnectorActivity, UiPath.IntegrationService.Activities.Runtime, Version=1.22.0.0, Culture=neutral, PublicKeyToken=null",
+                    "description": "Use HTTP requests to interact with APIs via the selected connector and connection configuration.",
+                    "category": "",
+                    "activityColor": "#E56D5C",
+                    "configuration": "{\"connectorKey\":\"uipath-uipath-http\",\"objectName\":\"http-request\",\"httpMethod\":\"POST\",\"activityType\":\"Curated\",\"version\":\"1.0.0\"}",
+                    "uiPathActivityTypeId": "5c4cc855-b42a-37e6-b910-de8588998fce",
+                    "isExperimental": false,
+                    "helpUrlTemplate": "https://docs.uipath.com/{0}/activities/other/latest/integration-service/uipath-uipath-http-HTTP-Request",
+                    "isEnabled": true,
+                    "targetPlatform": "CrossPlatform",
+                    "isAdvanced": false,
+                    "isRestricted": false,
+                    "tags": [
+                      ""
+                    ]
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "id": "branches",
+            "title": "Branches",
+            "collapsible": true,
+            "defaultExpanded": false,
+            "fields": [
+              {
+                "name": "inputs.branches",
+                "type": "custom",
+                "component": "http-branch-editor",
+                "label": "Response branches",
+                "description": "Define conditional branches based on response status or properties",
+                "componentProps": {
+                  "expressionValidationFields": [
+                    {
+                      "subPath": "conditionExpression",
+                      "validationMode": "expression",
+                      "expectedType": "boolean"
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "id": "advanced",
+            "title": "Advanced",
+            "collapsible": true,
+            "defaultExpanded": false,
+            "fields": [
+              {
+                "name": "inputs.timeout",
+                "type": "text",
+                "label": "Timeout",
+                "description": "ISO 8601 duration format (e.g., PT15M for 15 minutes, PT1H for 1 hour)"
+              },
+              {
+                "name": "inputs.retryCount",
+                "type": "number",
+                "label": "Retry count",
+                "description": "Number of times to retry on failure"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "variables": {
+    "globals": [
+      {
+        "id": "invoiceNumber",
+        "type": "string",
+        "direction": "out",
+        "description": "Extracted or reviewed invoice number"
+      },
+      {
+        "id": "vendorName",
+        "type": "string",
+        "direction": "out",
+        "description": "Extracted vendor name"
+      },
+      {
+        "id": "totalAmount",
+        "type": "string",
+        "direction": "out",
+        "description": "Extracted or reviewed total amount"
+      },
+      {
+        "id": "processingStatus",
+        "type": "string",
+        "direction": "out",
+        "description": "Processing outcome: auto-approved or human-approved"
+      },
+      {
+        "id": "reviewedInvoiceNumber",
+        "type": "string",
+        "direction": "inout"
+      },
+      {
+        "id": "reviewedAmount",
+        "type": "string",
+        "direction": "inout"
+      },
+      {
+        "id": "reviewNotes",
+        "type": "string",
+        "direction": "inout"
+      },
+      {
+        "id": "sapDocumentId",
+        "type": "string",
+        "direction": "out",
+        "description": "SAP document ID returned after posting the invoice"
+      }
+    ],
+    "nodes": [
+      {
+        "id": "extractInvoice.output",
+        "type": "object",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "ExtractionResult": {
+              "type": "object",
+              "properties": {
+                "DocumentId": {
+                  "type": "string"
+                },
+                "ResultsVersion": {
+                  "type": "integer"
+                },
+                "ResultsDocument": {
+                  "type": "object",
+                  "properties": {
+                    "Fields": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "FieldId": {
+                            "type": "string"
+                          },
+                          "FieldName": {
+                            "type": "string"
+                          },
+                          "FieldType": {
+                            "type": "string"
+                          },
+                          "IsMissing": {
+                            "type": "boolean"
+                          },
+                          "Values": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "Confidence": {
+                            "type": "integer"
+                          },
+                          "OperatorConfirmed": {
+                            "type": "boolean"
+                          }
+                        }
+                      }
+                    },
+                    "Tables": {
+                      "type": "array",
+                      "items": {
+                        "type": "object"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "ExtractorPayloads": {
+              "type": "object"
+            },
+            "BusinessrulesResults": {
+              "type": "array",
+              "items": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "binding": {
+          "nodeId": "extractInvoice",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "extractInvoice.error",
+        "type": "object",
+        "description": "Error information if the node fails",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "required": [
+            "code",
+            "message",
+            "detail",
+            "category",
+            "status"
+          ],
+          "properties": {
+            "code": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "detail": {
+              "type": "string"
+            },
+            "category": {
+              "type": "string"
+            },
+            "status": {
+              "type": "integer"
+            }
+          },
+          "additionalProperties": false
+        },
+        "binding": {
+          "nodeId": "extractInvoice",
+          "outputId": "error"
+        }
+      },
+      {
+        "id": "parseFields.output",
+        "type": "object",
+        "description": "The return value of the script",
+        "binding": {
+          "nodeId": "parseFields",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "parseFields.error",
+        "type": "object",
+        "description": "Error information if the node fails",
+        "binding": {
+          "nodeId": "parseFields",
+          "outputId": "error"
+        }
+      },
+      {
+        "id": "checkConfidence.matchedCase",
+        "type": "string",
+        "description": "The label of the matched branch (true/false label)",
+        "binding": {
+          "nodeId": "checkConfidence",
+          "outputId": "matchedCase"
+        }
+      },
+      {
+        "id": "checkConfidence.matchedCaseId",
+        "type": "string",
+        "description": "The branch that was taken (true or false)",
+        "binding": {
+          "nodeId": "checkConfidence",
+          "outputId": "matchedCaseId"
+        }
+      },
+      {
+        "id": "hitlReview.output",
+        "type": "object",
+        "description": "Task result data",
+        "binding": {
+          "nodeId": "hitlReview",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "hitlReview.status",
+        "type": "string",
+        "description": "Task completion status",
+        "binding": {
+          "nodeId": "hitlReview",
+          "outputId": "status"
+        }
+      },
+      {
+        "id": "endAutoProcessed.invoiceNumber",
+        "type": "string",
+        "binding": {
+          "nodeId": "endAutoProcessed",
+          "outputId": "invoiceNumber"
+        }
+      },
+      {
+        "id": "endAutoProcessed.vendorName",
+        "type": "string",
+        "binding": {
+          "nodeId": "endAutoProcessed",
+          "outputId": "vendorName"
+        }
+      },
+      {
+        "id": "endAutoProcessed.totalAmount",
+        "type": "string",
+        "binding": {
+          "nodeId": "endAutoProcessed",
+          "outputId": "totalAmount"
+        }
+      },
+      {
+        "id": "endAutoProcessed.processingStatus",
+        "type": "string",
+        "binding": {
+          "nodeId": "endAutoProcessed",
+          "outputId": "processingStatus"
+        }
+      },
+      {
+        "id": "endAutoProcessed.reviewedInvoiceNumber",
+        "type": "string",
+        "binding": {
+          "nodeId": "endAutoProcessed",
+          "outputId": "reviewedInvoiceNumber"
+        }
+      },
+      {
+        "id": "endAutoProcessed.reviewedAmount",
+        "type": "string",
+        "binding": {
+          "nodeId": "endAutoProcessed",
+          "outputId": "reviewedAmount"
+        }
+      },
+      {
+        "id": "endAutoProcessed.reviewNotes",
+        "type": "string",
+        "binding": {
+          "nodeId": "endAutoProcessed",
+          "outputId": "reviewNotes"
+        }
+      },
+      {
+        "id": "endAutoProcessed.sapDocumentId",
+        "type": "string",
+        "binding": {
+          "nodeId": "endAutoProcessed",
+          "outputId": "sapDocumentId"
+        }
+      },
+      {
+        "id": "endReviewed.invoiceNumber",
+        "type": "string",
+        "binding": {
+          "nodeId": "endReviewed",
+          "outputId": "invoiceNumber"
+        }
+      },
+      {
+        "id": "endReviewed.vendorName",
+        "type": "string",
+        "binding": {
+          "nodeId": "endReviewed",
+          "outputId": "vendorName"
+        }
+      },
+      {
+        "id": "endReviewed.totalAmount",
+        "type": "string",
+        "binding": {
+          "nodeId": "endReviewed",
+          "outputId": "totalAmount"
+        }
+      },
+      {
+        "id": "endReviewed.processingStatus",
+        "type": "string",
+        "binding": {
+          "nodeId": "endReviewed",
+          "outputId": "processingStatus"
+        }
+      },
+      {
+        "id": "endReviewed.reviewedInvoiceNumber",
+        "type": "string",
+        "binding": {
+          "nodeId": "endReviewed",
+          "outputId": "reviewedInvoiceNumber"
+        }
+      },
+      {
+        "id": "endReviewed.reviewedAmount",
+        "type": "string",
+        "binding": {
+          "nodeId": "endReviewed",
+          "outputId": "reviewedAmount"
+        }
+      },
+      {
+        "id": "endReviewed.reviewNotes",
+        "type": "string",
+        "binding": {
+          "nodeId": "endReviewed",
+          "outputId": "reviewNotes"
+        }
+      },
+      {
+        "id": "endReviewed.sapDocumentId",
+        "type": "string",
+        "binding": {
+          "nodeId": "endReviewed",
+          "outputId": "sapDocumentId"
+        }
+      },
+      {
+        "id": "terminateError.invoiceNumber",
+        "type": "string",
+        "binding": {
+          "nodeId": "terminateError",
+          "outputId": "invoiceNumber"
+        }
+      },
+      {
+        "id": "terminateError.vendorName",
+        "type": "string",
+        "binding": {
+          "nodeId": "terminateError",
+          "outputId": "vendorName"
+        }
+      },
+      {
+        "id": "terminateError.totalAmount",
+        "type": "string",
+        "binding": {
+          "nodeId": "terminateError",
+          "outputId": "totalAmount"
+        }
+      },
+      {
+        "id": "terminateError.processingStatus",
+        "type": "string",
+        "binding": {
+          "nodeId": "terminateError",
+          "outputId": "processingStatus"
+        }
+      },
+      {
+        "id": "terminateError.reviewedInvoiceNumber",
+        "type": "string",
+        "binding": {
+          "nodeId": "terminateError",
+          "outputId": "reviewedInvoiceNumber"
+        }
+      },
+      {
+        "id": "terminateError.reviewedAmount",
+        "type": "string",
+        "binding": {
+          "nodeId": "terminateError",
+          "outputId": "reviewedAmount"
+        }
+      },
+      {
+        "id": "terminateError.reviewNotes",
+        "type": "string",
+        "binding": {
+          "nodeId": "terminateError",
+          "outputId": "reviewNotes"
+        }
+      },
+      {
+        "id": "terminateError.sapDocumentId",
+        "type": "string",
+        "binding": {
+          "nodeId": "terminateError",
+          "outputId": "sapDocumentId"
+        }
+      },
+      {
+        "id": "invoiceReceivedSharepoint1.output",
+        "type": "object",
+        "description": "The return value of the connector trigger.",
+        "binding": {
+          "nodeId": "invoiceReceivedSharepoint1",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "downloadInvoicePdf1.output",
+        "type": "file",
+        "description": "The return value of the connector.",
+        "binding": {
+          "nodeId": "downloadInvoicePdf1",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "downloadInvoicePdf1.error",
+        "type": "object",
+        "description": "Error information if the node fails",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "required": [
+            "code",
+            "message",
+            "detail",
+            "category",
+            "status"
+          ],
+          "properties": {
+            "code": {
+              "type": "string",
+              "description": "Error code as a string"
+            },
+            "message": {
+              "type": "string",
+              "description": "High-level error message"
+            },
+            "detail": {
+              "type": "string",
+              "description": "Detailed error description"
+            },
+            "category": {
+              "type": "string",
+              "description": "Error category"
+            },
+            "status": {
+              "type": "integer",
+              "description": "HTTP status code"
+            }
+          },
+          "additionalProperties": false
+        },
+        "binding": {
+          "nodeId": "downloadInvoicePdf1",
+          "outputId": "error"
+        }
+      },
+      {
+        "id": "postInvoiceToSap1.output",
+        "type": "object",
+        "description": "HTTP response object",
+        "binding": {
+          "nodeId": "postInvoiceToSap1",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "postInvoiceToSap1.error",
+        "type": "object",
+        "description": "Error information if the node fails",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "required": [
+            "code",
+            "message",
+            "detail",
+            "category",
+            "status"
+          ],
+          "properties": {
+            "code": {
+              "type": "string",
+              "description": "Error code as a string"
+            },
+            "message": {
+              "type": "string",
+              "description": "High-level error message"
+            },
+            "detail": {
+              "type": "string",
+              "description": "Detailed error description"
+            },
+            "category": {
+              "type": "string",
+              "description": "Error category"
+            },
+            "status": {
+              "type": "integer",
+              "description": "HTTP status code"
+            }
+          },
+          "additionalProperties": false
+        },
+        "binding": {
+          "nodeId": "postInvoiceToSap1",
+          "outputId": "error"
+        }
+      }
+    ]
+  },
+  "runtime": "maestro",
+  "bindings": [
+    {
+      "id": "bQGkj7syw",
+      "name": "uipath-microsoft-onedrive connection",
+      "type": "string",
+      "resource": "connection",
+      "resourceKey": "ae311606-25b7-43ef-9cd0-f3dc0b3a9b58",
+      "propertyAttribute": "ConnectionId",
+      "default": "ae311606-25b7-43ef-9cd0-f3dc0b3a9b58"
+    },
+    {
+      "id": "byyBvQH8j",
+      "name": "FolderKey",
+      "type": "string",
+      "resource": "connection",
+      "resourceKey": "ae311606-25b7-43ef-9cd0-f3dc0b3a9b58",
+      "propertyAttribute": "FolderKey",
+      "default": "c4359cde-55f0-4f0e-9322-c6cdce74ab4c"
+    },
+    {
+      "id": "bdefJReWq",
+      "name": "uipath-microsoft-onedrive connection",
+      "type": "string",
+      "resource": "connection",
+      "resourceKey": "",
+      "propertyAttribute": "ConnectionId"
+    },
+    {
+      "id": "bPtT8LR80",
+      "name": "FolderKey",
+      "type": "string",
+      "resource": "connection",
+      "resourceKey": "",
+      "propertyAttribute": "FolderKey"
+    },
+    {
+      "id": "bEerup6wT",
+      "name": "uipath-uipath-http connection",
+      "type": "string",
+      "resource": "connection",
+      "resourceKey": "",
+      "default": "ImplicitConnection",
+      "propertyAttribute": "ConnectionId"
+    }
+  ],
+  "layout": {
+    "nodes": {
+      "extractInvoice": {
+        "position": {
+          "x": 384,
+          "y": 0
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "parseFields": {
+        "position": {
+          "x": 576,
+          "y": 0
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "checkConfidence": {
+        "position": {
+          "x": 768,
+          "y": 0
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "hitlReview": {
+        "position": {
+          "x": 960,
+          "y": 96
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "endAutoProcessed": {
+        "position": {
+          "x": 1152,
+          "y": -192
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "endReviewed": {
+        "position": {
+          "x": 0,
+          "y": 288
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "terminateError": {
+        "position": {
+          "x": 1152,
+          "y": 0
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "invoiceReceivedSharepoint1": {
+        "position": {
+          "x": 0,
+          "y": 0
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        }
+      },
+      "downloadInvoicePdf1": {
+        "position": {
+          "x": 192,
+          "y": 0
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        }
+      },
+      "postInvoiceToSap1": {
+        "position": {
+          "x": 960,
+          "y": -96
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        }
+      }
+    }
+  }
+}

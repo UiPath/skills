@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "InvoicesToSap",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "4897cbe7-578e-42bc-87b4-bcf795fcba41",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "InvoicesToSap"
+    },
+    "locks": [],
+    "key": "543625a8-7ad8-4cbf-a90d-090afef0fadf",
+    "files": []
+  }
+}

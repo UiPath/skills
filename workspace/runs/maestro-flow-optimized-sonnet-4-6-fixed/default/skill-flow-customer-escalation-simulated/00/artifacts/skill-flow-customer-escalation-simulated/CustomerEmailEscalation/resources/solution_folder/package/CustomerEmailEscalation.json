@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "CustomerEmailEscalation",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "05eaca4d-06ee-419d-bf92-cc8c271dae0b",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "CustomerEmailEscalation"
+    },
+    "locks": [],
+    "key": "633c5ec9-d85c-4f37-af1b-0c8a1e83eec3",
+    "files": []
+  }
+}

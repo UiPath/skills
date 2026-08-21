@@ -1,0 +1,30 @@
+2026-08-20 21:08:54 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-08-20 21:08:54 [INFO] coder_eval.orchestrator: API routing: aws_bedrock
+2026-08-20 21:08:54 [DEBUG] coder_eval.criteria: Discovered 15 criterion checkers
+2026-08-20 21:08:54 [DEBUG] coder_eval.criteria: Validated 15 criterion checkers
+2026-08-20 21:08:54 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-08-20 21:08:55 [DEBUG] coder_eval.orchestrator: Sending prompt: Create a UiPath Maestro BPMN Process Orchestration project at:
+  ScriptNormalizer/ScriptNormalizer
+
+...
+2026-08-20 21:08:55 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Starting agent query stream...
+2026-08-20 21:13:37 [DEBUG] coder_eval.agents.claude_code_agent: [coder] session_id changed: None -> 5504e36c-fbde-4890-a2f4-7cbfca8de5b2
+2026-08-20 21:13:37 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Agent query stream ended
+2026-08-20 21:13:37 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-08-20 21:13:37 [DEBUG] coder_eval.orchestrator: Agent response received (3436 chars)
+2026-08-20 21:13:37 [DEBUG] coder_eval.orchestrator: Checking success criteria
+2026-08-20 21:13:37 [DEBUG] coder_eval.evaluation.checker: Criterion 'file_exists' score: 1.00
+2026-08-20 21:13:37 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'Script task uses JavaScript/v3 Jint-safe source and package lifecycle files': python3 $TASK_DIR/check_script_jint_lifecycle.py
+2026-08-20 21:13:38 [DEBUG] coder_eval.sandbox: Command 'python3 $TASK_DIR/check_script_jint_lifecycle.py' exited with code 1
+2026-08-20 21:13:38 [DEBUG] coder_eval.sandbox: STDERR:
+---
+FAIL: project.uiproj main does not reference the BPMN file
+---
+2026-08-20 21:13:38 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 0.00
+2026-08-20 21:13:38 [INFO] coder_eval.evaluation.checker: Criterion 'run_command' FAILED (score=0.00, threshold=1.00): Command: python3 $TASK_DIR/check_script_jint_lifecycle.py
+2026-08-20 21:13:38 [INFO] coder_eval.orchestrator: Success criteria: 1/2 passed, weighted score: 0.200
+2026-08-20 21:13:38 [WARNING] coder_eval.orchestrator: Visible turns (37) exceeded expected_turns (22) at iteration 1 for task skill-bpmn-script-jint-lifecycle. Run continues — max_turns remains the hard cap.
+2026-08-20 21:13:38 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-08-20 21:13:38 [INFO] coder_eval.orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+2026-08-20 21:13:38 [INFO] coder_eval.orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-bpmn-script-jint-lifecycle
+2026-08-20 21:13:38 [INFO] coder_eval.orchestrator: Task finished: status=FAILURE duration=289.2s score=0.200 iterations=1

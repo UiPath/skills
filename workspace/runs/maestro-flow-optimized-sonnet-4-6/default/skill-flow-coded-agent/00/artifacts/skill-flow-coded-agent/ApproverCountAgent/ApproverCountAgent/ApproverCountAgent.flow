@@ -1,0 +1,460 @@
+{
+  "id": "5f809ccf-1b08-40a0-9bd1-980903df15b2",
+  "version": "1.9",
+  "name": "ApproverCountAgent",
+  "nodes": [
+    {
+      "id": "start",
+      "type": "core.trigger.manual",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Manual trigger"
+      },
+      "inputs": {
+        "entryPointId": "21e3f14a-6e47-4034-b616-9c165d47f65f",
+        "isDefaultEntryPoint": true
+      }
+    },
+    {
+      "id": "approverCount",
+      "type": "uipath.core.agent.300b5bc0-d7a1-4131-bd3a-48e3691169f7",
+      "typeVersion": "1.0.0",
+      "display": {
+        "label": "ApproverCount",
+        "icon": "coded-agent"
+      },
+      "inputs": {
+        "sentence": "=js:$vars.start.output.sentence"
+      },
+      "outputs": {
+        "error": {
+          "type": "object",
+          "description": "Error information if the agent fails",
+          "source": "=Error",
+          "var": "error"
+        }
+      }
+    },
+    {
+      "id": "done",
+      "type": "core.control.end",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Done"
+      },
+      "inputs": {},
+      "outputs": {
+        "approverCount": {
+          "source": "=js:$vars.approverCount.output.approver_count"
+        }
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge_start_output_approverCount_input",
+      "sourceNodeId": "start",
+      "sourcePort": "output",
+      "targetNodeId": "approverCount",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge_approverCount_output_done_input",
+      "sourceNodeId": "approverCount",
+      "sourcePort": "output",
+      "targetNodeId": "done",
+      "targetPort": "input"
+    }
+  ],
+  "definitions": [
+    {
+      "nodeType": "core.trigger.manual",
+      "version": "1.0",
+      "category": "trigger",
+      "description": "Start the process manually",
+      "tags": [
+        "trigger",
+        "start",
+        "manual"
+      ],
+      "sortOrder": 80,
+      "display": {
+        "label": "Manual trigger",
+        "icon": "play",
+        "shape": "circle"
+      },
+      "handleConfiguration": [
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "output",
+              "type": "source",
+              "handleType": "output",
+              "showButton": true,
+              "constraints": {
+                "forbiddenTargetCategories": [
+                  "trigger"
+                ]
+              }
+            }
+          ],
+          "visible": true
+        }
+      ],
+      "model": {
+        "type": "bpmn:StartEvent",
+        "entryPointId": true
+      },
+      "outputDefinition": {
+        "output": {
+          "type": "object",
+          "description": "Data passed when manually triggering the process.",
+          "source": "null",
+          "var": "output"
+        }
+      },
+      "toolbarExtensions": {
+        "design": {
+          "actions": [
+            {
+              "id": "change-trigger-type",
+              "icon": "square-mouse-pointer",
+              "label": "Change trigger type"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "nodeType": "uipath.core.agent.300b5bc0-d7a1-4131-bd3a-48e3691169f7",
+      "version": "1.0.0",
+      "category": "agent",
+      "runtimeConstraints": {
+        "exclude": [
+          "api-function"
+        ]
+      },
+      "description": "(In-solution) ApproverCount",
+      "tags": [
+        "in-solution",
+        "local"
+      ],
+      "sortOrder": 510,
+      "supportsErrorHandling": true,
+      "display": {
+        "label": "ApproverCount",
+        "icon": "autonomous-agent"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "output",
+              "type": "source",
+              "handleType": "output"
+            }
+          ]
+        }
+      ],
+      "toolbarExtensions": {
+        "design": {
+          "actions": [
+            {
+              "id": "open-workflow",
+              "icon": "external-link",
+              "label": "Open"
+            }
+          ]
+        }
+      },
+      "projectId": "6c11f998-e843-4f94-ac38-1ede7d391159",
+      "model": {
+        "type": "bpmn:ServiceTask",
+        "serviceType": "Orchestrator.StartAgentJob",
+        "version": "v2",
+        "bindings": {
+          "resource": "process",
+          "resourceSubType": "Agent",
+          "resourceKey": "300b5bc0-d7a1-4131-bd3a-48e3691169f7",
+          "orchestratorType": "agent",
+          "values": [
+            {
+              "name": "name",
+              "propertyAttribute": "name",
+              "default": "ApproverCount"
+            },
+            {
+              "name": "folderPath",
+              "propertyAttribute": "folderPath",
+              "default": ""
+            }
+          ]
+        },
+        "projectId": "6c11f998-e843-4f94-ac38-1ede7d391159",
+        "projectName": "ApproverCount",
+        "context": [
+          {
+            "name": "name",
+            "type": "string",
+            "value": "<bindings.name>"
+          },
+          {
+            "name": "folderPath",
+            "type": "string",
+            "value": "<bindings.folderPath>"
+          },
+          {
+            "name": "_label",
+            "type": "string",
+            "value": "ApproverCount"
+          }
+        ]
+      },
+      "form": {
+        "id": "activity-properties",
+        "title": "Agent",
+        "sections": [
+          {
+            "id": "inputs",
+            "title": "Inputs",
+            "collapsible": true,
+            "defaultExpanded": true,
+            "fields": [
+              {
+                "name": "inputs.sentence",
+                "type": "text",
+                "label": "sentence"
+              }
+            ]
+          }
+        ]
+      },
+      "inputDefinition": {
+        "type": "object",
+        "properties": {
+          "sentence": {
+            "title": "Sentence",
+            "type": "string"
+          }
+        }
+      },
+      "inputDefaults": {
+        "sentence": ""
+      },
+      "outputDefinition": {
+        "output": {
+          "type": "object",
+          "source": "=this",
+          "var": "output",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "approver_count": {
+                "title": "Approver Count",
+                "type": "integer"
+              }
+            }
+          }
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails",
+          "source": "=Error",
+          "var": "error",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "required": [
+              "code",
+              "message",
+              "detail",
+              "category",
+              "status"
+            ],
+            "properties": {
+              "code": {
+                "type": "string",
+                "description": "Error code as a string"
+              },
+              "message": {
+                "type": "string",
+                "description": "High-level error message"
+              },
+              "detail": {
+                "type": "string",
+                "description": "Detailed error description"
+              },
+              "category": {
+                "type": "string",
+                "description": "Error category"
+              },
+              "status": {
+                "type": "integer",
+                "description": "HTTP status code"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "debug": {
+        "runtime": "bpmnEngine"
+      }
+    },
+    {
+      "nodeType": "core.control.end",
+      "version": "1.0",
+      "category": "control-flow",
+      "description": "Mark the end of a process path",
+      "tags": [
+        "control-flow",
+        "end",
+        "finish",
+        "complete"
+      ],
+      "sortOrder": 65,
+      "display": {
+        "label": "End",
+        "icon": "circle-check",
+        "shape": "circle"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        }
+      ],
+      "model": {
+        "type": "bpmn:EndEvent"
+      },
+      "runtimeConstraints": {
+        "exclude": [
+          "api-function"
+        ]
+      }
+    }
+  ],
+  "bindings": [
+    {
+      "id": "bApproverCountName",
+      "name": "name",
+      "type": "string",
+      "resource": "process",
+      "resourceKey": "300b5bc0-d7a1-4131-bd3a-48e3691169f7",
+      "default": "ApproverCount",
+      "propertyAttribute": "name",
+      "resourceSubType": "Agent"
+    },
+    {
+      "id": "bApproverCountFolderPath",
+      "name": "folderPath",
+      "type": "string",
+      "resource": "process",
+      "resourceKey": "300b5bc0-d7a1-4131-bd3a-48e3691169f7",
+      "default": "",
+      "propertyAttribute": "folderPath",
+      "resourceSubType": "Agent"
+    }
+  ],
+  "variables": {
+    "globals": [
+      {
+        "id": "sentence",
+        "direction": "in",
+        "type": "string",
+        "description": "Sentence describing the outcome of a proposal review round",
+        "triggerNodeId": "start"
+      },
+      {
+        "id": "approverCount",
+        "direction": "out",
+        "type": "number",
+        "description": "Number of people who approved"
+      }
+    ],
+    "nodes": [
+      {
+        "id": "start.output",
+        "type": "object",
+        "description": "Data passed when manually triggering the process.",
+        "binding": {
+          "nodeId": "start",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "approverCount.error",
+        "type": "object",
+        "description": "Error information if the agent fails",
+        "binding": {
+          "nodeId": "approverCount",
+          "outputId": "error"
+        }
+      },
+      {
+        "id": "done.approverCount",
+        "type": "string",
+        "binding": {
+          "nodeId": "done",
+          "outputId": "approverCount"
+        }
+      }
+    ],
+    "variableUpdates": {}
+  },
+  "runtime": "maestro",
+  "layout": {
+    "nodes": {
+      "start": {
+        "position": {
+          "x": -192,
+          "y": 0
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        }
+      },
+      "approverCount": {
+        "position": {
+          "x": 0,
+          "y": 0
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "done": {
+        "position": {
+          "x": 192,
+          "y": 0
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      }
+    }
+  }
+}

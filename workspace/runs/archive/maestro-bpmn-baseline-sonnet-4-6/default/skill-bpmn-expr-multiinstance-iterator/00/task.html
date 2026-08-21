@@ -1,0 +1,1020 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>coder_eval · skill-bpmn-expr-multiinstance-iterator · default</title>
+<style>
+:root {
+  --bg-page: #0f1419;
+  --bg-card: #1a2129;
+  --bg-card-2: #232d38;
+  --bg-code: #0b0f14;
+  --fg: #e6edf3;
+  --fg-muted: #8b98a5;
+  --fg-dim: #6e7681;
+  --border: #30363d;
+  --accent: #58a6ff;
+  --score-high: #22c55e;
+  --score-mid: #f59e0b;
+  --score-low: #ef4444;
+  --status-success: #22c55e;
+  --status-failure: #f59e0b;
+  --status-error: #ef4444;
+  --status-neutral: #6e7681;
+  --shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+.light {
+  --bg-page: #ffffff;
+  --bg-card: #f6f8fa;
+  --bg-card-2: #eaeef2;
+  --bg-code: #f6f8fa;
+  --fg: #1f2328;
+  --fg-muted: #636c76;
+  --fg-dim: #8b949e;
+  --border: #d0d7de;
+  --accent: #0969da;
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial,
+               sans-serif;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--fg);
+  background: var(--bg-page);
+}
+.container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+h1, h2, h3, h4 { margin: 0 0 12px 0; line-height: 1.25; }
+h1 { font-size: 22px; font-weight: 600; }
+h2 { font-size: 18px; font-weight: 600; margin-top: 28px;
+     padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+h3 { font-size: 15px; font-weight: 600; color: var(--fg-muted); }
+h4 { font-size: 13px; font-weight: 600; color: var(--fg-muted); }
+p { margin: 0 0 8px 0; }
+.muted { color: var(--fg-muted); }
+.dim { color: var(--fg-dim); }
+.mono { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+        monospace; font-size: 12.5px; }
+code { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+       monospace; font-size: 12.5px; background: var(--bg-code);
+       border: 1px solid var(--border); padding: 1px 5px; border-radius: 3px; }
+pre { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+      monospace; font-size: 12.5px; background: var(--bg-code);
+      border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px;
+      margin: 6px 0; overflow-x: auto; white-space: pre-wrap;
+      word-wrap: break-word; }
+.header-bar { display: flex; align-items: center; justify-content: space-between;
+              margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+.title-group { flex: 1; min-width: 0; }
+.title-group .subtitle { color: var(--fg-muted); font-size: 13px;
+                         margin-top: 2px; word-break: break-all; }
+.badges { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.badge { display: inline-flex; align-items: center; gap: 6px;
+         padding: 4px 10px; border-radius: 12px; font-size: 12px;
+         font-weight: 600; background: var(--bg-card-2);
+         border: 1px solid var(--border); color: var(--fg); }
+.badge.success { background: color-mix(in srgb, var(--status-success) 20%, var(--bg-card-2));
+                 border-color: var(--status-success); color: var(--status-success); }
+.badge.failure { background: color-mix(in srgb, var(--status-failure) 20%, var(--bg-card-2));
+                 border-color: var(--status-failure); color: var(--status-failure); }
+.badge.error { background: color-mix(in srgb, var(--status-error) 20%, var(--bg-card-2));
+               border-color: var(--status-error); color: var(--status-error); }
+.badge.warning { background: color-mix(in srgb, #f4a52810 20%, var(--bg-card-2));
+                 border-color: #f4a528; color: #f4a528; }
+.badge.neutral { color: var(--fg-muted); }
+.score-pill { display: inline-block; padding: 2px 8px; border-radius: 10px;
+              font-size: 12px; font-weight: 700; min-width: 42px;
+              text-align: center; color: #0b0f14; }
+.score-high { background: var(--score-high); }
+.score-mid { background: var(--score-mid); }
+.score-low { background: var(--score-low); }
+.card { background: var(--bg-card); border: 1px solid var(--border);
+        border-radius: 8px; padding: 16px 20px; margin-bottom: 16px;
+        box-shadow: var(--shadow); }
+.card.highlight { border-left: 4px solid var(--accent); }
+.grid { display: grid; gap: 12px;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+.stat { background: var(--bg-card-2); padding: 10px 12px; border-radius: 6px;
+        border: 1px solid var(--border); }
+.stat .label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;
+               color: var(--fg-muted); margin-bottom: 4px; }
+.stat .value { font-size: 16px; font-weight: 600; }
+table { width: 100%; border-collapse: collapse; margin: 4px 0 12px 0; }
+th, td { text-align: left; padding: 8px 10px;
+         border-bottom: 1px solid var(--border); vertical-align: top;
+         font-size: 13px; }
+th { color: var(--fg-muted); font-weight: 600; font-size: 12px;
+     text-transform: uppercase; letter-spacing: 0.3px; }
+tr:last-child td { border-bottom: none; }
+details { margin: 6px 0; border: 1px solid var(--border); border-radius: 6px;
+          background: var(--bg-card-2); }
+details > summary { cursor: pointer; padding: 8px 12px; user-select: none;
+                    font-weight: 500; list-style: none; }
+details > summary::-webkit-details-marker { display: none; }
+details > summary::before { content: "▸ "; color: var(--fg-dim);
+                            display: inline-block; width: 14px;
+                            transition: transform 0.15s; }
+details[open] > summary::before { content: "▾ "; }
+details .details-body { padding: 0 12px 10px 12px; }
+.tool-row { display: flex; align-items: center; gap: 10px;
+            flex-wrap: wrap; font-size: 13px; }
+.tool-name { font-weight: 600; color: var(--accent); font-family: ui-monospace,
+             SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+.tool-status-ok { color: var(--status-success); font-size: 11px;
+                  font-weight: 600; }
+.tool-status-err { color: var(--status-error); font-size: 11px;
+                   font-weight: 600; }
+.tool-duration { color: var(--fg-muted); font-size: 12px; }
+.tool-seq { color: var(--fg-dim); font-size: 11px; font-weight: 600;
+            min-width: 24px; text-align: right; font-family: ui-monospace,
+            SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+.turn-header { display: flex; justify-content: space-between;
+               align-items: baseline; flex-wrap: wrap; gap: 10px;
+               margin-bottom: 10px; }
+.turn-meta { font-size: 12px; color: var(--fg-muted); }
+.criterion-row td:first-child { font-family: ui-monospace, SFMono-Regular,
+                                 "SF Mono", Menlo, Consolas, monospace;
+                                 color: var(--fg-muted); font-size: 12px; }
+.judge-section { display: flex; flex-direction: column; gap: 12px; }
+.judge-card { padding: 14px 16px; }
+.judge-card-head { display: flex; justify-content: space-between;
+                    align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+.judge-card-title { font-size: 14px; line-height: 1.4; flex: 1; min-width: 0; }
+.judge-card-score { flex-shrink: 0; }
+.judge-rationale { margin-top: 10px; padding: 10px 12px;
+                   background: var(--bg-code); border-radius: 4px;
+                   font-size: 13px; line-height: 1.5; }
+.judge-findings { margin: 8px 0 0 18px; padding-left: 4px; font-size: 13px;
+                   line-height: 1.6; }
+.judge-findings li { margin: 2px 0; }
+.nav-toggle { display: inline-block; padding: 5px 10px; font-size: 12px;
+              background: var(--bg-card-2); border: 1px solid var(--border);
+              border-radius: 5px; color: var(--fg); cursor: pointer; }
+.nav-toggle:hover { background: var(--bg-card); }
+.llm-next-steps { margin: 6px 0 0 20px; padding-left: 0; }
+.llm-next-steps li { margin: 3px 0; }
+.iteration-group { padding: 12px 16px 4px 16px; margin-bottom: 20px;
+                   border-radius: 0 6px 6px 0; border-left: 4px solid var(--status-neutral); }
+/* rgba fallback for browsers without color-mix (Chrome <111, Firefox <113, Safari <16.2). */
+.iteration-group--recovered { border-left-color: var(--status-success);
+                              background: rgba(34, 197, 94, 0.06);
+                              background: color-mix(in srgb, var(--status-success) 6%, transparent); }
+.iteration-group--terminal { border-left-color: var(--status-error);
+                             background: rgba(239, 68, 68, 0.06);
+                             background: color-mix(in srgb, var(--status-error) 6%, transparent); }
+.iteration-group__banner { margin: 0 0 12px 0; font-size: 14px; font-weight: 600; }
+.iteration-group--recovered .iteration-group__banner { color: var(--status-success); }
+.iteration-group--terminal .iteration-group__banner { color: var(--status-error); }
+.attempt-transition { display: flex; align-items: center; gap: 8px;
+                      margin: -6px 0 12px 8px; color: var(--status-error); font-size: 12.5px; }
+.attempt-transition__icon { font-weight: 700; }
+footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--border);
+         color: var(--fg-dim); font-size: 12px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="header-bar">
+  <div class="title-group">
+    <h1>Task: skill-bpmn-expr-multiinstance-iterator</h1>
+    <div class="subtitle">Expression-authoring eval: agent uses the uipath-maestro-bpmn skill to author a multi-instance SUBPROCESS whose body reads the current item and loop index at subprocess depth — `iterator[0].item` and `iterator[0].loopCounter` — not the task-level `iterator.item`. Grades the iterator-depth indexing rule from references/expression-authoring.md. Authoring only — no cloud effects.</div>
+  </div>
+  <div class="badges">
+    <span class="badge success">SUCCESS</span>
+    <span class="score-pill score-high">1.00</span>
+    <span class="badge neutral">claude-code · claude-sonnet-4-6</span>
+    <span class="badge neutral">9m 56s</span>
+    <span class="badge neutral">$1.0787</span>
+    <span class="badge warning">expected_turns exceeded (22/20)</span>
+    
+    <span class="nav-toggle" onclick="toggleTheme()">Toggle theme</span>
+  </div>
+</div>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Variant</div><div class="value">default</div></div>
+    <div class="stat"><div class="label">Started</div><div class="value mono">2026-08-15T00:31:05</div></div>
+    <div class="stat"><div class="label">Duration</div><div class="value">9m 56s</div></div>
+    <div class="stat"><div class="label">Turns (SDK)</div><div class="value">34</div></div>
+    <div class="stat"><div class="label">Commands</div><div class="value">21</div></div>
+  </div>
+</div>
+
+<h2>Success Criteria <span class="muted" style="font-weight:400">(3/3 passed)</span></h2>
+<div class="card" style="padding:0">
+<table>
+  <thead>
+    <tr>
+      <th style="width:15%">Type</th>
+      <th style="width:35%">Description</th>
+      <th style="width:10%">Score</th>
+      <th>Details</th>
+    </tr>
+  </thead>
+  <tbody>
+    
+<tr class="criterion-row">
+  <td>file_exists</td>
+  <td>BPMN source was authored</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><div class="dim mono" style="white-space:pre-wrap">File &#x27;MultiInstanceIteratorBpmn/MultiInstanceIteratorBpmn.bpmn&#x27; exists</div></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>file_contains</td>
+  <td>BPMN uses a multi-instance loop marker</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><div class="dim mono" style="white-space:pre-wrap">Includes: 1/1 found; Score: 1.00</div></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>run_command</td>
+  <td>Subprocess body reads iterator[0].item / iterator[0].loopCounter and the graph is sound</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Command: python3 $TASK_DIR/check_multiinstance_iterator.py</summary><div class="details-body"><pre style="margin:6px 0 0 0">Command: python3 $TASK_DIR/check_multiinstance_iterator.py
+Exit code: 0 (expected: 0)
+Stdout:
+OK: MultiInstanceIteratorBpmn/MultiInstanceIteratorBpmn.bpmn reads iterator[0].item / iterator[0].loopCounter at subprocess depth
+
+Stderr: (empty)</pre></div></details></td>
+</tr>
+
+  </tbody>
+</table>
+</div>
+<h2>Conversation Trace (1 iteration)</h2>
+<div class="card">
+  <div class="turn-header">
+    <h3>Iteration 1</h3>
+    <div class="badges">
+      <span class="badge neutral">34 assistant turns</span>
+      <span class="badge neutral">in 23 · out 42372 · cache 1035291</span>
+      <span class="badge neutral">9m 44s</span>
+      
+      
+      
+    </div>
+  </div>
+  <details>
+    <summary>Prompt to agent</summary>
+    <div class="details-body"><pre>Your working directory is: /work/output/artifacts/skill-bpmn-expr-multiinstance-iterator
+
+Load and follow the uipath-maestro-bpmn skill.
+
+Author a local Maestro BPMN project named &quot;MultiInstanceIteratorBpmn&quot; with the
+main file at `MultiInstanceIteratorBpmn/MultiInstanceIteratorBpmn.bpmn` for
+this process:
+- Manual start with an `Items` collection variable.
+- A multi-instance SUBPROCESS (`bpmn:subProcess` carrying a
+  `bpmn:multiInstanceLoopCharacteristics` marker) that iterates the collection.
+- Inside the subprocess body, map the current item into a `CurrentLine`
+  variable and the current 0-based loop index into a `CurrentIndex` variable.
+- A single end event.
+
+Requirements:
+- Because this element sits at subprocess depth, the body must read the current
+  item as `iterator[0].item` and the loop index as `iterator[0].loopCounter`
+  (the task-level `iterator.item` / `iterator.loopCounter` forms are WRONG at
+  subprocess depth). Bind the collection through the `uipath:loopCharacteristics`
+  extension (`inputCollection`, `inputElement`) per the skill&#x27;s structural
+  reference — the registry serves no template for multi-instance markers, so
+  author it from the canvas contract.
+- Declare variables and author any `uipath:*` payloads per the skill&#x27;s
+  references; do not hand-author registry-owned XML from prose.
+- Use synthetic placeholder values only — no tenant URLs, folder keys,
+  connection IDs, release keys, or real names.
+- Include a bpmndi:BPMNDiagram with a BPMNShape for every node and a BPMNEdge
+  for every sequence flow.
+- Validate locally by parsing the BPMN and walking the skill&#x27;s structural
+  checklist. Do NOT upload, publish, deploy, debug, run, or pack anything, and
+  do NOT pause for approval — build the complete local project in one pass.
+</pre></div>
+  </details>
+  <details>
+    <summary>Agent response</summary>
+    <div class="details-body"><pre>[ASSISTANT] Now I have all the information needed. Let me author the BPMN project. Key design decisions from the references:
+
+1. **Multi-instance subprocess** at process depth uses `inputElement=&quot;iterator[0]&quot;` on `uipath:loopCharacteristics`
+2. **Inside the subprocess body**, read current item as `=iterator[0].item` and loop index as `=iterator[0].loopCounter`
+3. The body script task maps those into root-scoped `CurrentLine` and `CurrentIndex` variables
+4. Manual start = plain start event with `uipath:entryPointId`
+5. Variables: `Items` (input, json), `CurrentLine` (inputOutput, string), `CurrentIndex` (inputOutput, number)
+6. The subprocess body needs its own start + end events and the mapping script task
+[ASSISTANT] Now validate with XML parse and then walk the structural checklist:
+[ASSISTANT] All checks pass. Now try the CLI validator (expected to be unavailable in this sandbox, but we attempt it):
+[ASSISTANT] The validator found one error: `uipath:entryPointId` must be a GUID. The `isExpanded` attribute is only a warning (does not block). Fix the entryPointId:
+[ASSISTANT] Also update the `entry-points.json` to use the same GUID for `id`. But first re-run the validator to confirm the error is gone:
+[ASSISTANT] Validator exits 0 — **`&quot;Status&quot;: &quot;Valid&quot;`**. The single warning is about `isExpanded` being unknown to this CLI version; it&#x27;s a valid BPMN canvas attribute and doesn&#x27;t block. 
+
+Now write the companion metadata files with the GUID-aligned entry point:
+[ASSISTANT] The project is complete and validated. Here&#x27;s a full summary of what was built and every decision made:
+
+---
+
+## MultiInstanceIteratorBpmn — Build summary
+
+### Files created
+
+```
+MultiInstanceIteratorBpmn/
+  MultiInstanceIteratorBpmn.bpmn   ← main process source
+  project.uiproj
+  entry-points.json
+  operate.json
+  bindings_v2.json
+  package-descriptor.json
+```
+
+### Process structure
+
+```
+[Start_Manual] ──&gt; [SubProc_Iterate (multi-instance)] ──&gt; [End_1]
+                        │
+                        └─ [SubStart_1] ──&gt; [Task_MapIterator] ──&gt; [SubEnd_1]
+```
+
+### Key authoring decisions
+
+| Decision | Detail |
+|---|---|
+| **`inputElement=&quot;iterator[0]&quot;`** | Subprocess depth = `[0]`; canvas contract in `structural-bpmn.md` § multi-instance requires this binding form (not `&quot;item&quot;`) so body expressions can reach `iterator[0].item` and `iterator[0].loopCounter` |
+| **Body expressions** | `&quot;currentItem&quot;:&quot;=iterator[0].item&quot;` and `&quot;loopCounter&quot;:&quot;=iterator[0].loopCounter&quot;` in the script args CDATA — the required subprocess-depth forms, NOT the task-level `iterator.item` / `iterator.loopCounter` |
+| **`uipath:loopCharacteristics`** | Placed inside `bpmn:extensionElements` inside `bpmn:multiInstanceLoopCharacteristics` — registry gap, authored from canvas contract; `inputCollection=&quot;=vars.Var_Items&quot;` |
+| **Variables** | `Var_Items` (`uipath:input`, type `json`, scoped to `Start_Manual` via `elementId`) for the collection; `Var_CurrentLine` / `Var_CurrentIndex` as root `uipath:inputOutput` for the per-iteration outputs |
+| **Script task** | `BPMN.ScriptTask` template shape, `scriptVersion v3`, returns `{ response: { currentLine, currentIndex } }`, output mappings use `source=&quot;=result.response.currentLine&quot;` / `source=&quot;=result.response.currentIndex&quot;` |
+| **Entry point GUID** | `a1b2c3d4-0000-4000-8000-111122223333` — validator requires a GUID; fixed after first CLI pass caught the error |
+| **BPMNDiagram** | 6 BPMNShapes (one per node) + 4 BPMNEdges (one per sequence flow) — all diagram-required |
+
+### Validation results
+
+- **Python XML parse**: ✅ well-formed
+- **Structural checklist** (all 8 items): ✅ all passed
+- **CLI validator** (`uip maestro bpmn validate --output json`): ✅ **`&quot;Status&quot;: &quot;Valid&quot;`**, exit 0
+  - 1 warning: `unknown attribute &lt;isExpanded&gt;` — cosmetic only, does not block; `isExpanded` is a valid canvas attribute the installed CLI version doesn&#x27;t recognise
+[RESULT - SUCCESS] The project is complete and validated. Here&#x27;s a full summary of what was built and</pre></div>
+  </details>
+  <h4 style="margin-top:12px">Tool Calls (21)</h4>
+  
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#0</span>
+      <span class="tool-name">Skill</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">391ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;skill&quot;: &quot;uipath:uipath-maestro-bpmn&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Launching skill: uipath:uipath-maestro-bpmn</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#1</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">390ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/structural-bpmn.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Structural BPMN (what the registry does not emit)
+2	
+3	The registry&#x27;s `xmlTemplate`s give you the `uipath:*` payload for each node
+4	(see [registry-workflow.md](registry-workflow.md)). They do **not** give you the
+5	structural BPMN that holds those nodes together. This file is the ground truth
+6	for everything you author by hand around the templates.
+7	
+8	Two sources define the contract:
+9	
+10	- the registry spec `bpmn-spec.json` — enumerates which BPMN element types and
+11	  event definitions exist, via its `bpmnElements` section;
+12	- the Studio Web canvas serializer
+13	  (`PO.Frontend/src/services/serialization/`) — defines how that XML must be
+14	  shaped to import and round-trip.
+15	
+16	Where the registry stops, the canvas serializer is authoritative. Each
+17	gap below is labelled **REGISTRY GAP** — the registry exposes no template for
+18	it, so author it from this reference.
+19	
+20	BPMN XML element names are case-sensitive. Use the exact lower-camel BPMN tag
+21	names the serializer emits, such as `&lt;bpmn:startEvent&gt;`,
+22	`&lt;bpmn:intermediateCatchEvent&gt;`, `&lt;bpmn:scriptTask&gt;`, and `&lt;bpmn:endEvent&gt;`.
+23	Do not use PascalCase variants like `&lt;bpmn:IntermediateCatchEvent&gt;`; XML a
+
+… (truncated, 30791 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#2</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">50ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/expression-authoring.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Expression Authoring
+2	
+3	Use this reference whenever pass 2 writes Maestro runtime expressions in BPMN
+4	XML. Pass 1 may use business-readable placeholder conditions; pass 2 replaces
+5	them with expressions only after the variables and scopes exist.
+6	
+7	## Stored expression shape
+8	
+9	- Use a leading `=` where Maestro expects expression content.
+10	- Treat values without `=` as literals.
+11	- Read BPMN variables through `vars.&lt;variableId&gt;`, for example
+12	  `=vars.Var_RequestId`.
+13	- Do not use bare variable names such as `=requestId` in generated runtime XML.
+14	- Context bindings use `=bindings.&lt;bindingId&gt;`.
+15	- Current element outputs use `result` only in output mappings for that
+16	  element. For new BPMN script tasks, return an object and expose its value
+17	  through `result.response`: use `return { response: value };` with
+18	  `source=&quot;=result.response&quot;` for a scalar variable, or return a nested object
+19	  and use `source=&quot;=result.response.&lt;field&gt;&quot;` for a field. Do not use
+20	  `source=&quot;=result&quot;` with a bare scalar return in live debug/runtime BPMN; the
+21	  run can complete while the mapped variable reads back empty.
+22	- Multi-instance task bodies read the curren
+
+… (truncated, 4476 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#3</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">65ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/shared/project-layout.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Project Layout
+2	
+3	Maestro BPMN Process Orchestration projects use BPMN XML as source and generated JSON files as package/runtime metadata.
+4	
+5	## Canonical source files
+6	
+7	- `&lt;project&gt;.bpmn` - BPMN process source and UiPath extension XML. For a new
+8	  project, keep the BPMN source basename exactly aligned with the project
+9	  directory/name. For example, `InvoiceTriageBpmn/InvoiceTriageBpmn.bpmn`, not
+10	  `InvoiceTriageBpmn/invoice-triage-bpmn.bpmn`.
+11	- `project.uiproj` - UiPath project metadata. Keep it in the same project
+12	  directory as the main BPMN file: `InvoiceTriageBpmn/project.uiproj`, not next
+13	  to the project directory.
+14	
+15	For a new local project, place source files under a single project directory.
+16	`uip maestro bpmn init &lt;ProjectName&gt; --output json` nests that directory inside
+17	a solution. Inside a solution it registers the project with the parent `.uipx`;
+18	outside any solution it auto-scaffolds `&lt;ProjectName&gt;Solution/` and nests the
+19	project inside (the response adds `Data.AutoCreatedSolution` =
+20	`{ Name, Path, SolutionFile }` and reports `SolutionRegistration.Status:
+21	Registered`; re-running is idempotent and reports `AlreadyRegister
+
+… (truncated, 3181 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#4</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">34ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/shared/local-metadata-regeneration-guide.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Local Metadata Regeneration
+2	
+3	Use this guide when BPMN source changed and local package metadata must be refreshed or verified before packaging, upload, debug, publish, or deploy.
+4	
+5	## Ownership
+6	
+7	- `.bpmn` is the source of record for process structure, root variables, root bindings, entry point IDs, mappings, diagrams, and documented non-Integration-Service UiPath XML.
+8	- `entry-points.json`, `bindings_v2.json`, `operate.json`, and `package-descriptor.json` are derived package metadata unless a CLI contract explicitly marks a field as user-authored.
+9	- Connector-backed or dynamically schematized `Intsvc.*` activity and event payloads are executable only after registry-backed enrichment supplies connector metadata, connection binding references, dynamic schemas, and generated package resources. Confirmed plain connectionless HTTP follows the documented pass-2 authoring recipe instead.
+10	
+11	## Local Synthetic Project Contract
+12	
+13	When no CLI generator is available and you must author a local-only synthetic
+14	BPMN project, make the project executable and package-shaped before packing:
+15	
+16	- The root process must be `&lt;bpmn:process ... isExecutable=&quot;true&quot;&gt;`.
+17	
+
+… (truncated, 8694 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#5</span>
+      <span class="tool-name">TaskCreate</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">22ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;subject&quot;: &quot;Author MultiInstanceIteratorBpmn BPMN project&quot;,
+  &quot;description&quot;: &quot;Build MultiInstanceIteratorBpmn/MultiInstanceIteratorBpmn.bpmn and MultiInstanceIteratorBpmn/project.uiproj per the task spec: manual start with Items collection input, multi-instance subprocess iterating the collection with iterator[0].item / iterator[0].loopCounter mappings into CurrentLine / CurrentIndex root variables, body script task, end event, full BPMNDiagram. Validate locally via python … (38 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Task #1 created successfully: Author MultiInstanceIteratorBpmn BPMN project</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#6</span>
+      <span class="tool-name">TaskUpdate</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">10ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;taskId&quot;: &quot;1&quot;,
+  &quot;status&quot;: &quot;in_progress&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Updated task #1 status</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#7</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">245ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;mkdir -p /work/output/artifacts/skill-bpmn-expr-multiinstance-iterator/MultiInstanceIteratorBpmn &amp;&amp; echo \&quot;Directory created\&quot;&quot;,
+  &quot;description&quot;: &quot;Create project directory&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Directory created</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#8</span>
+      <span class="tool-name">Write</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">50ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-bpmn-expr-multiinstance-iterator/MultiInstanceIteratorBpmn/MultiInstanceIteratorBpmn.bpmn&quot;,
+  &quot;content&quot;: &quot;&lt;?xml version=\&quot;1.0\&quot; encoding=\&quot;UTF-8\&quot;?&gt;\n&lt;bpmn:definitions\n    xmlns:bpmn=\&quot;http://www.omg.org/spec/BPMN/20100524/MODEL\&quot;\n    xmlns:bpmndi=\&quot;http://www.omg.org/spec/BPMN/20100524/DI\&quot;\n    xmlns:dc=\&quot;http://www.omg.org/spec/DD/20100524/DC\&quot;\n    xmlns:di=\&quot;http://www.omg.org/spec/DD/20100524/DI\&quot;\n    xmlns:xsi=\&quot;http://www.w3.org/2001/XMLSchema-instance\&quot;\n    xmlns:uipath=\&quot;http://uipath.org/schema/bpmn\&quot;\n    id=… (6718 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>File created successfully at: /work/output/artifacts/skill-bpmn-expr-multiinstance-iterator/MultiInstanceIteratorBpmn/MultiInstanceIteratorBpmn.bpmn (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#9</span>
+      <span class="tool-name">Write</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">94ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-bpmn-expr-multiinstance-iterator/MultiInstanceIteratorBpmn/project.uiproj&quot;,
+  &quot;content&quot;: &quot;{\n  \&quot;projectVersion\&quot;: \&quot;1.0.0\&quot;,\n  \&quot;ProjectType\&quot;: \&quot;ProcessOrchestration\&quot;,\n  \&quot;Name\&quot;: \&quot;MultiInstanceIteratorBpmn\&quot;,\n  \&quot;main\&quot;: \&quot;MultiInstanceIteratorBpmn.bpmn\&quot;\n}\n&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>File created successfully at: /work/output/artifacts/skill-bpmn-expr-multiinstance-iterator/MultiInstanceIteratorBpmn/project.uiproj (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#10</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">552ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 -c \&quot;\nimport xml.etree.ElementTree as ET\ntree = ET.parse(&#x27;MultiInstanceIteratorBpmn/MultiInstanceIteratorBpmn.bpmn&#x27;)\nroot = tree.getroot()\nprint(&#x27;XML parse: OK&#x27;)\nprint(&#x27;Root tag:&#x27;, root.tag)\n\&quot;&quot;,
+  &quot;description&quot;: &quot;Parse BPMN XML for well-formedness&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>XML parse: OK
+Root tag: {http://www.omg.org/spec/BPMN/20100524/MODEL}definitions</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#11</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">182ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 &lt;&lt; &#x27;PYEOF&#x27;\nimport xml.etree.ElementTree as ET\n\nNS = {\n    &#x27;bpmn&#x27;:   &#x27;http://www.omg.org/spec/BPMN/20100524/MODEL&#x27;,\n    &#x27;bpmndi&#x27;: &#x27;http://www.omg.org/spec/BPMN/20100524/DI&#x27;,\n    &#x27;uipath&#x27;: &#x27;http://uipath.org/schema/bpmn&#x27;,\n}\n\ntree = ET.parse(&#x27;MultiInstanceIteratorBpmn/MultiInstanceIteratorBpmn.bpmn&#x27;)\nroot = tree.getroot()\n\nerrors = []\n\n# --- Checklist 1: root is definitions with BPMN + uipath… (7927 more chars)&quot;,
+  &quot;description&quot;: &quot;Walk structural checklist on the BPMN file&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>CHECK 1 PASS: root is bpmn:definitions with correct namespace
+CHECK 2a PASS: 1 BPMNDiagram present
+CHECK 2b: 6 BPMNShapes, 4 BPMNEdges
+  Flow nodes found: [&#x27;End_1&#x27;, &#x27;Start_Manual&#x27;, &#x27;SubEnd_1&#x27;, &#x27;SubProc_Iterate&#x27;, &#x27;SubStart_1&#x27;, &#x27;Task_MapIterator&#x27;]
+  Sequence flows found: [&#x27;Flow_MapTask_to_SubEnd&#x27;, &#x27;Flow_StartToSubProc&#x27;, &#x27;Flow_SubProcToEnd&#x27;, &#x27;Flow_SubStart_to_MapTask&#x27;]
+CHECK 2c PASS: every flow node has a BPMNShape
+CHECK 2d PASS: every sequence flow has a BPMNEdge
+CHECK 3 PASS: all *Ref attributes resolve to declared ids
+CHECK 4: XOR gateway condition check done (no XOR gateways = trivially pass)
+CHECK 5 PASS: no activity/event has multiple incoming flows
+CHECK 6: event subprocess check done (none present = trivially pass)
+  Declared variable ids: [&#x27;Var_CurrentIndex&#x27;, &#x27;Var_CurrentLine&#x27;, &#x27;Var_Items&#x27;]
+CHECK 7 PASS: all uipath:output var= references resolve
+CHECK 8 PASS: no type= attributes on uipath:activity/event wrappers
+
+Multi-instance characteristics found: 1
+  uipath:loopCharacteristics: inputCollection=&#x27;=vars.Var_Items&#x27; inputElement=&#x27;iterator[0]&#x27;
+  PASS: inputCollection and inputElement are correct for subprocess depth
+
+Script args body: {&quot;currentItem&quot;:&quot;=iterator[0].item&quot;,&quot;loopCou
+
+… (truncated, 223 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#12</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.31s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro bpmn validate MultiInstanceIteratorBpmn/MultiInstanceIteratorBpmn.bpmn --output json 2&gt;&amp;1 || echo \&quot;CLI_EXIT_NONZERO\&quot;&quot;,
+  &quot;description&quot;: &quot;Run CLI validator on the BPMN file&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Failure&quot;,
+  &quot;Message&quot;: &quot;Validation failed for /work/output/artifacts/skill-bpmn-expr-multiinstance-iterator/MultiInstanceIteratorBpmn/MultiInstanceIteratorBpmn.bpmn&quot;,
+  &quot;Instructions&quot;: &quot;Found 1 error(s):\n  - [warning] [(xml)] unknown attribute &lt;isExpanded&gt;\n  - [error] [bpmn:startEvent#Start_Manual \&quot;Start\&quot;] Root start event uipath:entryPointId value \&quot;Entry_ManualStart\&quot; must be a GUID.&quot;,
+  &quot;ErrorCode&quot;: &quot;unknown_error&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}
+CLI_EXIT_NONZERO</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#13</span>
+      <span class="tool-name">Edit</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">21ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;replace_all&quot;: false,
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-bpmn-expr-multiinstance-iterator/MultiInstanceIteratorBpmn/MultiInstanceIteratorBpmn.bpmn&quot;,
+  &quot;old_string&quot;: &quot;        &lt;uipath:entryPointId value=\&quot;Entry_ManualStart\&quot; /&gt;&quot;,
+  &quot;new_string&quot;: &quot;        &lt;uipath:entryPointId value=\&quot;a1b2c3d4-0000-4000-8000-111122223333\&quot; /&gt;&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>The file /work/output/artifacts/skill-bpmn-expr-multiinstance-iterator/MultiInstanceIteratorBpmn/MultiInstanceIteratorBpmn.bpmn has been updated successfully. (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#14</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.09s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro bpmn validate MultiInstanceIteratorBpmn/MultiInstanceIteratorBpmn.bpmn --output json 2&gt;&amp;1; echo \&quot;EXIT:$?\&quot;&quot;,
+  &quot;description&quot;: &quot;Re-validate after GUID fix&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;BpmnValidate&quot;,
+  &quot;Data&quot;: {
+    &quot;File&quot;: &quot;/work/output/artifacts/skill-bpmn-expr-multiinstance-iterator/MultiInstanceIteratorBpmn/MultiInstanceIteratorBpmn.bpmn&quot;,
+    &quot;Status&quot;: &quot;Valid&quot;,
+    &quot;ProcessCount&quot;: 1,
+    &quot;StartEventCount&quot;: 1,
+    &quot;UiPathExtensionCount&quot;: 10,
+    &quot;Warnings&quot;: &quot;1 warning(s):\n  - [(xml)] unknown attribute &lt;isExpanded&gt;&quot;
+  }
+}
+EXIT:0</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#15</span>
+      <span class="tool-name">Write</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">27ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-bpmn-expr-multiinstance-iterator/MultiInstanceIteratorBpmn/entry-points.json&quot;,
+  &quot;content&quot;: &quot;{\n  \&quot;entryPoints\&quot;: [\n    {\n      \&quot;id\&quot;: \&quot;a1b2c3d4-0000-4000-8000-111122223333\&quot;,\n      \&quot;filePath\&quot;: \&quot;/content/MultiInstanceIteratorBpmn.bpmn#Start_Manual\&quot;,\n      \&quot;inputSchema\&quot;: {\n        \&quot;type\&quot;: \&quot;object\&quot;,\n        \&quot;properties\&quot;: {\n          \&quot;Items\&quot;: { \&quot;type\&quot;: \&quot;array\&quot; }\n        }\n      },\n      \&quot;outputSchema\&quot;: {\n        \&quot;type\&quot;: \&quot;object\&quot;,\n        \&quot;properties\&quot;: {\n          \&quot;CurrentLine\&quot;:  { \&quot;type\&quot;: \&quot;strin… (83 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>File created successfully at: /work/output/artifacts/skill-bpmn-expr-multiinstance-iterator/MultiInstanceIteratorBpmn/entry-points.json (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#16</span>
+      <span class="tool-name">Write</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">29ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-bpmn-expr-multiinstance-iterator/MultiInstanceIteratorBpmn/operate.json&quot;,
+  &quot;content&quot;: &quot;{\n  \&quot;main\&quot;: \&quot;MultiInstanceIteratorBpmn.bpmn\&quot;,\n  \&quot;contentType\&quot;: \&quot;ProcessOrchestration\&quot;\n}\n&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>File created successfully at: /work/output/artifacts/skill-bpmn-expr-multiinstance-iterator/MultiInstanceIteratorBpmn/operate.json (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#17</span>
+      <span class="tool-name">Write</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">13ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-bpmn-expr-multiinstance-iterator/MultiInstanceIteratorBpmn/bindings_v2.json&quot;,
+  &quot;content&quot;: &quot;{\n  \&quot;version\&quot;: \&quot;2.0\&quot;,\n  \&quot;resources\&quot;: []\n}\n&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>File created successfully at: /work/output/artifacts/skill-bpmn-expr-multiinstance-iterator/MultiInstanceIteratorBpmn/bindings_v2.json (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#18</span>
+      <span class="tool-name">Write</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">12ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-bpmn-expr-multiinstance-iterator/MultiInstanceIteratorBpmn/package-descriptor.json&quot;,
+  &quot;content&quot;: &quot;{\n  \&quot;content\&quot;: [\n    \&quot;content/MultiInstanceIteratorBpmn.bpmn\&quot;,\n    \&quot;content/bindings_v2.json\&quot;,\n    \&quot;content/entry-points.json\&quot;,\n    \&quot;content/operate.json\&quot;\n  ]\n}\n&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>File created successfully at: /work/output/artifacts/skill-bpmn-expr-multiinstance-iterator/MultiInstanceIteratorBpmn/package-descriptor.json (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#19</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">26ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;find /work/output/artifacts/skill-bpmn-expr-multiinstance-iterator/MultiInstanceIteratorBpmn -type f | sort&quot;,
+  &quot;description&quot;: &quot;List all project files&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/work/output/artifacts/skill-bpmn-expr-multiinstance-iterator/MultiInstanceIteratorBpmn/MultiInstanceIteratorBpmn.bpmn
+/work/output/artifacts/skill-bpmn-expr-multiinstance-iterator/MultiInstanceIteratorBpmn/bindings_v2.json
+/work/output/artifacts/skill-bpmn-expr-multiinstance-iterator/MultiInstanceIteratorBpmn/entry-points.json
+/work/output/artifacts/skill-bpmn-expr-multiinstance-iterator/MultiInstanceIteratorBpmn/operate.json
+/work/output/artifacts/skill-bpmn-expr-multiinstance-iterator/MultiInstanceIteratorBpmn/package-descriptor.json
+/work/output/artifacts/skill-bpmn-expr-multiinstance-iterator/MultiInstanceIteratorBpmn/project.uiproj</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#20</span>
+      <span class="tool-name">TaskUpdate</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">15ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;taskId&quot;: &quot;1&quot;,
+  &quot;status&quot;: &quot;completed&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Updated task #1 status</pre>
+    
+  </div>
+</details>
+
+</div>
+
+<h2>Command Telemetry</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Total</div><div class="value">21</div></div>
+    <div class="stat"><div class="label">Successful</div><div class="value">21 (100%)</div></div>
+    <div class="stat"><div class="label">Failed</div><div class="value">0</div></div>
+    <div class="stat"><div class="label">Avg / cmd</div><div class="value">220ms</div></div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 2fr;gap:16px;margin-top:12px">
+    <div>
+      <h4>By Tool</h4>
+      <table>
+        <thead><tr><th>Tool</th><th>Count</th></tr></thead>
+        <tbody><tr><td class='mono'>Bash</td><td>6</td></tr><tr><td class='mono'>Write</td><td>6</td></tr><tr><td class='mono'>Read</td><td>4</td></tr><tr><td class='mono'>TaskUpdate</td><td>2</td></tr><tr><td class='mono'>Skill</td><td>1</td></tr><tr><td class='mono'>TaskCreate</td><td>1</td></tr><tr><td class='mono'>Edit</td><td>1</td></tr></tbody>
+      </table>
+    </div>
+    <div>
+      <h4>Slowest</h4>
+      <table>
+        <thead><tr><th>Tool</th><th>Duration</th><th>Parameters</th></tr></thead>
+        <tbody><tr><td class='mono'>Bash</td><td>1.31s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro bpmn validate MultiInstan...</td></tr><tr><td class='mono'>Bash</td><td>1.09s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro bpmn validate MultiInstan...</td></tr><tr><td class='mono'>Bash</td><td>552ms</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;python3 -c &quot;\nimport xml.etree.Elemen...</td></tr><tr><td class='mono'>Skill</td><td>391ms</td><td class='mono dim'>{&#x27;skill&#x27;: &#x27;uipath:uipath-maestro-bpmn&#x27;}</td></tr><tr><td class='mono'>Read</td><td>390ms</td><td class='mono dim'>{&#x27;file_path&#x27;: &#x27;/home/azureuser/projects/skills/ski...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+  <p><strong>Most Common Pattern:</strong> <code>Read → Read → Read</code></p><p><strong>Skill Tool Invoked:</strong> 1 time(s)</p>
+</div>
+
+<h2>Generation Metrics</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Total Latency</div><div class="value">9m 56s</div></div>
+    <div class="stat"><div class="label">Turns</div><div class="value">1</div></div>
+    <div class="stat"><div class="label">Assistant Turns</div><div class="value">34</div></div>
+    <div class="stat"><div class="label">Avg Turn Latency</div><div class="value">9m 44s</div></div>
+    
+  </div>
+</div>
+
+<h2>Token Usage</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Input (uncached)</div><div class="value">23</div></div>
+    <div class="stat"><div class="label">Output</div><div class="value">42,372</div></div>
+    <div class="stat"><div class="label">Cache Write</div><div class="value">35,317</div></div>
+    <div class="stat"><div class="label">Cache Read</div><div class="value">1,035,291</div></div>
+    <div class="stat"><div class="label">Total</div><div class="value">1,113,003</div></div>
+    <div class="stat"><div class="label">Cost</div><div class="value">$1.0787</div></div>
+  </div>
+</div>
+
+<h2>Agent Settings</h2>
+<div class="card" style="padding:0">
+  <table>
+    <tbody><tr><td class='mono dim'>Permission Mode</td><td>acceptEdits</td></tr><tr><td class='mono dim'>Allowed Tools</td><td>Skill, Bash, Read, Write, Edit, Glob, Grep</td></tr><tr><td class='mono dim'>Model</td><td>us.anthropic.claude-sonnet-4-6</td></tr><tr><td class='mono dim'>Max Turns</td><td>80</td></tr><tr><td class='mono dim'>System Prompt</td><td>You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted. </td></tr><tr><td class='mono dim'>Plugins</td><td>/home/azureuser/projects/skills</td></tr></tbody>
+  </table>
+</div>
+
+<h2>Environment</h2>
+<div class="card" style="padding:0">
+  <table>
+    <tbody><tr><td class='mono dim'>git_commit</td><td>unknown</td></tr><tr><td class='mono dim'>skills_git_commit</td><td>unknown</td></tr><tr><td class='mono dim'>cli_version</td><td>1.201.0-dev.8272</td></tr><tr><td class='mono dim'>tool_plugins</td><td>{&#x27;admin-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;agent-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;agenthub-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;aops-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;api-workflow-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;automation-hub-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;codedagent-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;codedapp-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;coder-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;context-grounding-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;conversational-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;data-fabric-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;docsai-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;function-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;gov-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;guardrails-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;insights-tool&#x27;: &#x27;1.201.0-dev.8276&#x27;, &#x27;integrationservice-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;ixp-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;llm-gateway-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;llmgw-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;maestro-tool&#x27;: &#x27;1.201.0-dev.8275&#x27;, &#x27;model-hub-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;orchestrator-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;platform-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;pm-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;rpa-legacy-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;rpa-tool&#x27;: &#x27;1.201.0-dev.20260809.3&#x27;, &#x27;solution-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;tasks-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;test-manager-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;traces-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;vertical-solutions-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;}</td></tr><tr><td class='mono dim'>coder_eval</td><td>0.8.8</td></tr><tr><td class='mono dim'>claude_code_cli</td><td>2.1.177 (Claude Code)</td></tr><tr><td class='mono dim'>uv</td><td>uv 0.11.28 (x86_64-unknown-linux-gnu)</td></tr><tr><td class='mono dim'>anthropic</td><td>0.122.0</td></tr><tr><td class='mono dim'>openai</td><td>3.0.0</td></tr><tr><td class='mono dim'>pydantic</td><td>2.12.5</td></tr><tr><td class='mono dim'>api_routing</td><td>aws_bedrock</td></tr><tr><td class='mono dim'>aws_region</td><td>us-east-2</td></tr><tr><td class='mono dim'>bedrock_model</td><td>us.anthropic.claude-sonnet-4-6</td></tr></tbody>
+  </table>
+</div>
+
+<footer>Generated by coder_eval · 2026-08-15T00:41:01</footer>
+</div>
+<script>
+function toggleTheme() {
+  document.documentElement.classList.toggle('light');
+  try {
+    const mode = document.documentElement.classList.contains('light') ? 'light' : 'dark';
+    localStorage.setItem('coder-eval-theme', mode);
+  } catch (e) { /* ignore */ }
+}
+(function() {
+  try {
+    if (localStorage.getItem('coder-eval-theme') === 'light') {
+      document.documentElement.classList.add('light');
+    }
+  } catch (e) { /* ignore */ }
+})();
+</script>
+</body>
+</html>

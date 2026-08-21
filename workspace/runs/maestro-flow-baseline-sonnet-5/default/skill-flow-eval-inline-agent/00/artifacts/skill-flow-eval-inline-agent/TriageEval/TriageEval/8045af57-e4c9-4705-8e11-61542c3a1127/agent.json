@@ -1,0 +1,74 @@
+{
+  "version": "1.1.0",
+  "settings": {
+    "model": "anthropic.claude-sonnet-5",
+    "maxTokens": 8192,
+    "temperature": 0,
+    "engine": "basic-v2",
+    "maxIterations": 3,
+    "mode": "standard"
+  },
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "start__output__email": {
+        "type": "string",
+        "description": "Bound from $vars.start.output.email"
+      }
+    },
+    "required": [
+      "start__output__email"
+    ]
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "category": {
+        "type": "string",
+        "description": "The single best-matching triage category for the email."
+      },
+      "priority": {
+        "type": "string",
+        "description": "The urgency level assigned to the email."
+      }
+    },
+    "required": [
+      "category",
+      "priority"
+    ]
+  },
+  "metadata": {
+    "storageVersion": "50.0.0",
+    "isConversational": false,
+    "showProjectCreationExperience": false
+  },
+  "type": "lowCode",
+  "guardrails": [],
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are an email triage assistant for a support inbox. Classify the inbound email into a category and a priority so it can be routed to the correct team.\n\nCategories (choose exactly one): \"Account Access\", \"Billing\", \"Technical Issue\", \"Feature Request\", \"General Inquiry\", \"Complaint\".\nPriorities (choose exactly one): \"Low\", \"Medium\", \"High\", \"Urgent\".\n\nRules:\n- Base your classification only on the email content provided by the user. Do not ask clarifying questions.\n- If the email mentions being locked out, unable to log in, or a broken password/reset/security flow, classify the category as \"Account Access\".\n- Treat explicit urgency language (\"ASAP\", \"immediately\", \"urgent\") or an inability to access the account/service as at least \"High\" priority.\n- If the category is ambiguous, pick the closest match from the list above — never invent a new category or priority value.\n- This is a single-shot classification task with no tools. Do not attempt to look anything up — decide from the email text alone and return your answer immediately.\n- Always return both outputSchema fields (category, priority). Never leave a field empty.",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "You are an email triage assistant for a support inbox. Classify the inbound email into a category and a priority so it can be routed to the correct team.\n\nCategories (choose exactly one): \"Account Access\", \"Billing\", \"Technical Issue\", \"Feature Request\", \"General Inquiry\", \"Complaint\".\nPriorities (choose exactly one): \"Low\", \"Medium\", \"High\", \"Urgent\".\n\nRules:\n- Base your classification only on the email content provided by the user. Do not ask clarifying questions.\n- If the email mentions being locked out, unable to log in, or a broken password/reset/security flow, classify the category as \"Account Access\".\n- Treat explicit urgency language (\"ASAP\", \"immediately\", \"urgent\") or an inability to access the account/service as at least \"High\" priority.\n- If the category is ambiguous, pick the closest match from the list above — never invent a new category or priority value.\n- This is a single-shot classification task with no tools. Do not attempt to look anything up — decide from the email text alone and return your answer immediately.\n- Always return both outputSchema fields (category, priority). Never leave a field empty."
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "Classify the following email:\n\n{{input.start__output__email}}",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "Classify the following email:\n\n"
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__email"
+        }
+      ]
+    }
+  ],
+  "projectId": "8045af57-e4c9-4705-8e11-61542c3a1127"
+}

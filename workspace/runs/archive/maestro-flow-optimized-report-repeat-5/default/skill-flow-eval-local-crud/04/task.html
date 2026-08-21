@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>coder_eval · skill-flow-eval-local-crud · default</title>
+<style>
+:root {
+  --bg-page: #0f1419;
+  --bg-card: #1a2129;
+  --bg-card-2: #232d38;
+  --bg-code: #0b0f14;
+  --fg: #e6edf3;
+  --fg-muted: #8b98a5;
+  --fg-dim: #6e7681;
+  --border: #30363d;
+  --accent: #58a6ff;
+  --score-high: #22c55e;
+  --score-mid: #f59e0b;
+  --score-low: #ef4444;
+  --status-success: #22c55e;
+  --status-failure: #f59e0b;
+  --status-error: #ef4444;
+  --status-neutral: #6e7681;
+  --shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+.light {
+  --bg-page: #ffffff;
+  --bg-card: #f6f8fa;
+  --bg-card-2: #eaeef2;
+  --bg-code: #f6f8fa;
+  --fg: #1f2328;
+  --fg-muted: #636c76;
+  --fg-dim: #8b949e;
+  --border: #d0d7de;
+  --accent: #0969da;
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial,
+               sans-serif;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--fg);
+  background: var(--bg-page);
+}
+.container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+h1, h2, h3, h4 { margin: 0 0 12px 0; line-height: 1.25; }
+h1 { font-size: 22px; font-weight: 600; }
+h2 { font-size: 18px; font-weight: 600; margin-top: 28px;
+     padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+h3 { font-size: 15px; font-weight: 600; color: var(--fg-muted); }
+h4 { font-size: 13px; font-weight: 600; color: var(--fg-muted); }
+p { margin: 0 0 8px 0; }
+.muted { color: var(--fg-muted); }
+.dim { color: var(--fg-dim); }
+.mono { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+        monospace; font-size: 12.5px; }
+code { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+       monospace; font-size: 12.5px; background: var(--bg-code);
+       border: 1px solid var(--border); padding: 1px 5px; border-radius: 3px; }
+pre { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+      monospace; font-size: 12.5px; background: var(--bg-code);
+      border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px;
+      margin: 6px 0; overflow-x: auto; white-space: pre-wrap;
+      word-wrap: break-word; }
+.header-bar { display: flex; align-items: center; justify-content: space-between;
+              margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+.title-group { flex: 1; min-width: 0; }
+.title-group .subtitle { color: var(--fg-muted); font-size: 13px;
+                         margin-top: 2px; word-break: break-all; }
+.badges { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.badge { display: inline-flex; align-items: center; gap: 6px;
+         padding: 4px 10px; border-radius: 12px; font-size: 12px;
+         font-weight: 600; background: var(--bg-card-2);
+         border: 1px solid var(--border); color: var(--fg); }
+.badge.success { background: color-mix(in srgb, var(--status-success) 20%, var(--bg-card-2));
+                 border-color: var(--status-success); color: var(--status-success); }
+.badge.failure { background: color-mix(in srgb, var(--status-failure) 20%, var(--bg-card-2));
+                 border-color: var(--status-failure); color: var(--status-failure); }
+.badge.error { background: color-mix(in srgb, var(--status-error) 20%, var(--bg-card-2));
+               border-color: var(--status-error); color: var(--status-error); }
+.badge.warning { background: color-mix(in srgb, #f4a52810 20%, var(--bg-card-2));
+                 border-color: #f4a528; color: #f4a528; }
+.badge.neutral { color: var(--fg-muted); }
+.score-pill { display: inline-block; padding: 2px 8px; border-radius: 10px;
+              font-size: 12px; font-weight: 700; min-width: 42px;
+              text-align: center; color: #0b0f14; }
+.score-high { background: var(--score-high); }
+.score-mid { background: var(--score-mid); }
+.score-low { background: var(--score-low); }
+.card { background: var(--bg-card); border: 1px solid var(--border);
+        border-radius: 8px; padding: 16px 20px; margin-bottom: 16px;
+        box-shadow: var(--shadow); }
+.card.highlight { border-left: 4px solid var(--accent); }
+.grid { display: grid; gap: 12px;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+.stat { background: var(--bg-card-2); padding: 10px 12px; border-radius: 6px;
+        border: 1px solid var(--border); }
+.stat .label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;
+               color: var(--fg-muted); margin-bottom: 4px; }
+.stat .value { font-size: 16px; font-weight: 600; }
+table { width: 100%; border-collapse: collapse; margin: 4px 0 12px 0; }
+th, td { text-align: left; padding: 8px 10px;
+         border-bottom: 1px solid var(--border); vertical-align: top;
+         font-size: 13px; }
+th { color: var(--fg-muted); font-weight: 600; font-size: 12px;
+     text-transform: uppercase; letter-spacing: 0.3px; }
+tr:last-child td { border-bottom: none; }
+details { margin: 6px 0; border: 1px solid var(--border); border-radius: 6px;
+          background: var(--bg-card-2); }
+details > summary { cursor: pointer; padding: 8px 12px; user-select: none;
+                    font-weight: 500; list-style: none; }
+details > summary::-webkit-details-marker { display: none; }
+details > summary::before { content: "▸ "; color: var(--fg-dim);
+                            display: inline-block; width: 14px;
+                            transition: transform 0.15s; }
+details[open] > summary::before { content: "▾ "; }
+details .details-body { padding: 0 12px 10px 12px; }
+.tool-row { display: flex; align-items: center; gap: 10px;
+            flex-wrap: wrap; font-size: 13px; }
+.tool-name { font-weight: 600; color: var(--accent); font-family: ui-monospace,
+             SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+.tool-status-ok { color: var(--status-success); font-size: 11px;
+                  font-weight: 600; }
+.tool-status-err { color: var(--status-error); font-size: 11px;
+                   font-weight: 600; }
+.tool-duration { color: var(--fg-muted); font-size: 12px; }
+.tool-seq { color: var(--fg-dim); font-size: 11px; font-weight: 600;
+            min-width: 24px; text-align: right; font-family: ui-monospace,
+            SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+.turn-header { display: flex; justify-content: space-between;
+               align-items: baseline; flex-wrap: wrap; gap: 10px;
+               margin-bottom: 10px; }
+.turn-meta { font-size: 12px; color: var(--fg-muted); }
+.criterion-row td:first-child { font-family: ui-monospace, SFMono-Regular,
+                                 "SF Mono", Menlo, Consolas, monospace;
+                                 color: var(--fg-muted); font-size: 12px; }
+.judge-section { display: flex; flex-direction: column; gap: 12px; }
+.judge-card { padding: 14px 16px; }
+.judge-card-head { display: flex; justify-content: space-between;
+                    align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+.judge-card-title { font-size: 14px; line-height: 1.4; flex: 1; min-width: 0; }
+.judge-card-score { flex-shrink: 0; }
+.judge-rationale { margin-top: 10px; padding: 10px 12px;
+                   background: var(--bg-code); border-radius: 4px;
+                   font-size: 13px; line-height: 1.5; }
+.judge-findings { margin: 8px 0 0 18px; padding-left: 4px; font-size: 13px;
+                   line-height: 1.6; }
+.judge-findings li { margin: 2px 0; }
+.nav-toggle { display: inline-block; padding: 5px 10px; font-size: 12px;
+              background: var(--bg-card-2); border: 1px solid var(--border);
+              border-radius: 5px; color: var(--fg); cursor: pointer; }
+.nav-toggle:hover { background: var(--bg-card); }
+.llm-next-steps { margin: 6px 0 0 20px; padding-left: 0; }
+.llm-next-steps li { margin: 3px 0; }
+.iteration-group { padding: 12px 16px 4px 16px; margin-bottom: 20px;
+                   border-radius: 0 6px 6px 0; border-left: 4px solid var(--status-neutral); }
+/* rgba fallback for browsers without color-mix (Chrome <111, Firefox <113, Safari <16.2). */
+.iteration-group--recovered { border-left-color: var(--status-success);
+                              background: rgba(34, 197, 94, 0.06);
+                              background: color-mix(in srgb, var(--status-success) 6%, transparent); }
+.iteration-group--terminal { border-left-color: var(--status-error);
+                             background: rgba(239, 68, 68, 0.06);
+                             background: color-mix(in srgb, var(--status-error) 6%, transparent); }
+.iteration-group__banner { margin: 0 0 12px 0; font-size: 14px; font-weight: 600; }
+.iteration-group--recovered .iteration-group__banner { color: var(--status-success); }
+.iteration-group--terminal .iteration-group__banner { color: var(--status-error); }
+.attempt-transition { display: flex; align-items: center; gap: 8px;
+                      margin: -6px 0 12px 8px; color: var(--status-error); font-size: 12.5px; }
+.attempt-transition__icon { font-weight: 700; }
+footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--border);
+         color: var(--fg-dim); font-size: 12px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="header-bar">
+  <div class="title-group">
+    <h1>Task: skill-flow-eval-local-crud</h1>
+    <div class="subtitle">Skill-guided evaluation: agent uses the uipath-maestro-flow skill&#x27;s evaluate capability to scaffold a Flow project and exercise local eval CRUD — evaluator add (exact-match), eval set add, data point add, list. No login, no upload, no run. Tests whether the skill teaches the correct local-CRUD workflow and `--output json` discipline on every `uip maestro flow eval` command.</div>
+  </div>
+  <div class="badges">
+    <span class="badge success">SUCCESS</span>
+    <span class="score-pill score-high">1.00</span>
+    <span class="badge neutral">claude-code · claude-sonnet-4-6</span>
+    <span class="badge neutral">2m 42s</span>
+    <span class="badge neutral">$0.3583</span>
+    
+    
+    <span class="nav-toggle" onclick="toggleTheme()">Toggle theme</span>
+  </div>
+</div>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Variant</div><div class="value">default</div></div>
+    <div class="stat"><div class="label">Started</div><div class="value mono">2026-07-24T18:27:45</div></div>
+    <div class="stat"><div class="label">Duration</div><div class="value">2m 42s</div></div>
+    <div class="stat"><div class="label">Turns (SDK)</div><div class="value">15</div></div>
+    <div class="stat"><div class="label">Commands</div><div class="value">8</div></div>
+  </div>
+</div>
+
+<h2>Success Criteria <span class="muted" style="font-weight:400">(8/8 passed)</span></h2>
+<div class="card" style="padding:0">
+<table>
+  <thead>
+    <tr>
+      <th style="width:15%">Type</th>
+      <th style="width:35%">Description</th>
+      <th style="width:10%">Score</th>
+      <th>Details</th>
+    </tr>
+  </thead>
+  <tbody>
+    
+<tr class="criterion-row">
+  <td>command_executed</td>
+  <td>Agent created a solution</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Matched 1/1 required commands (filters: tool_name=Bash, pattern=/(uip|\$UIP)\s+solution\s+(new|init)/)</summary><div class="details-body"><pre style="margin:6px 0 0 0">Matched 1/1 required commands (filters: tool_name=Bash, pattern=/(uip|\$UIP)\s+solution\s+(new|init)/)
+Examples: [&#x27;\\\nuip solution init &quot;SmokeEval&quot; --output json &amp;&amp; \\\ncd SmokeEval &amp;&amp; \\\nuip maestro flow init &quot;SmokeEval&quot; --skip-solution-r&#x27;]</pre></div></details></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>command_executed</td>
+  <td>Agent initialized a Flow project</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Matched 1/1 required commands (filters: tool_name=Bash, pattern=/(uip|\$UIP)\s+(maestro\s+)?flow\s+init/)</summary><div class="details-body"><pre style="margin:6px 0 0 0">Matched 1/1 required commands (filters: tool_name=Bash, pattern=/(uip|\$UIP)\s+(maestro\s+)?flow\s+init/)
+Examples: [&#x27;\\\nuip solution init &quot;SmokeEval&quot; --output json &amp;&amp; \\\ncd SmokeEval &amp;&amp; \\\nuip maestro flow init &quot;SmokeEval&quot; --skip-solution-r&#x27;]</pre></div></details></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>file_exists</td>
+  <td>Flow file was created at the double-nested path</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><div class="dim mono" style="white-space:pre-wrap">File &#x27;SmokeEval/SmokeEval/SmokeEval.flow&#x27; exists</div></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>command_executed</td>
+  <td>Agent added an evaluator with kebab-case --type exact-match</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Matched 1/1 required commands (filters: tool_name=Bash, pattern=/(uip|\$UIP)\s+maestro\s+flow\s+eval\s+evaluator\s+add\s+.*--type\s+exact-match/)</summary><div class="details-body"><pre style="margin:6px 0 0 0">Matched 1/1 required commands (filters: tool_name=Bash, pattern=/(uip|\$UIP)\s+maestro\s+flow\s+eval\s+evaluator\s+add\s+.*--type\s+exact-match/)
+Examples: [&#x27;\\\n\n# Step 2 — declare the `name` string input variable on the flow\nuip maestro flow variable add SmokeEval/SmokeEval.flo&#x27;]</pre></div></details></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>command_executed</td>
+  <td>Agent created an eval set</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Matched 1/1 required commands (filters: tool_name=Bash, pattern=/(uip|\$UIP)\s+maestro\s+flow\s+eval\s+set\s+add/)</summary><div class="details-body"><pre style="margin:6px 0 0 0">Matched 1/1 required commands (filters: tool_name=Bash, pattern=/(uip|\$UIP)\s+maestro\s+flow\s+eval\s+set\s+add/)
+Examples: [&#x27;\\\n\n# Step 2 — declare the `name` string input variable on the flow\nuip maestro flow variable add SmokeEval/SmokeEval.flo&#x27;]</pre></div></details></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>command_executed</td>
+  <td>Agent added a data point with --inputs and --expected</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Matched 1/1 required commands (filters: tool_name=Bash, pattern=/(uip|\$UIP)\s+maestro\s+flow\s+eval\s+add\s+.*(--inputs.*--expected|--expected.*--inputs)/)</summary><div class="details-body"><pre style="margin:6px 0 0 0">Matched 1/1 required commands (filters: tool_name=Bash, pattern=/(uip|\$UIP)\s+maestro\s+flow\s+eval\s+add\s+.*(--inputs.*--expected|--expected.*--inputs)/)
+Examples: [&#x27;\\\n\n# Step 2 — declare the `name` string input variable on the flow\nuip maestro flow variable add SmokeEval/SmokeEval.flo&#x27;]</pre></div></details></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>command_executed</td>
+  <td>Agent listed evaluators or eval sets to verify</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Matched 1/1 required commands (filters: tool_name=Bash, pattern=/(uip|\$UIP)\s+maestro\s+flow\s+eval\s+(evaluator\s+list|set\s+list)/)</summary><div class="details-body"><pre style="margin:6px 0 0 0">Matched 1/1 required commands (filters: tool_name=Bash, pattern=/(uip|\$UIP)\s+maestro\s+flow\s+eval\s+(evaluator\s+list|set\s+list)/)
+Examples: [&#x27;\\\n\n# Step 2 — declare the `name` string input variable on the flow\nuip maestro flow variable add SmokeEval/SmokeEval.flo&#x27;]</pre></div></details></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>run_command</td>
+  <td>Evaluator + eval-set JSON files exist on disk with correct shape</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Command: python3 $TASK_DIR/check_local_crud.py</summary><div class="details-body"><pre style="margin:6px 0 0 0">Command: python3 $TASK_DIR/check_local_crud.py
+Exit code: 0 (expected: 0)
+Stdout:
+OK: evaluator file SmokeEval/SmokeEval/evals/9f20e9d5-e749-494b-a1b0-00af16972952/evaluators/greeting-match-8f16147f.json matches
+OK: eval set SmokeEval/SmokeEval/evals/9f20e9d5-e749-494b-a1b0-00af16972952/eval-sets/evaluation-set-smoke-set-6d91733f.json contains data point &#x27;hello&#x27; with inputs + expected
+
+Stderr: (empty)</pre></div></details></td>
+</tr>
+
+  </tbody>
+</table>
+</div>
+<h2>Conversation Trace (1 iteration)</h2>
+<div class="card">
+  <div class="turn-header">
+    <h3>Iteration 1</h3>
+    <div class="badges">
+      <span class="badge neutral">15 assistant turns</span>
+      <span class="badge neutral">in 6840 · out 7562 · cache 274157</span>
+      <span class="badge neutral">2m 37s</span>
+      
+      
+      
+    </div>
+  </div>
+  <details>
+    <summary>Prompt to agent</summary>
+    <div class="details-body"><pre>Your working directory is: /work/output/artifacts/skill-flow-eval-local-crud
+
+Scaffold a UiPath Flow project called &quot;SmokeEval&quot; inside a solution of the
+same name, then build the eval scaffolding for it — purely local, no Studio
+Web round-trip.
+
+Steps:
+1. Create the solution and the Flow project. The flow file MUST live at
+   `SmokeEval/SmokeEval/SmokeEval.flow` (double-nested layout) and be linked
+   via `uip solution project add`.
+
+2. Declare a string input variable named `name` on
+   `SmokeEval/SmokeEval/SmokeEval.flow` before adding data points. The
+   eval data point below uses `{&quot;name&quot;:&quot;Alice&quot;}`, and `eval add` rejects
+   input keys that are not declared in the flow.
+
+3. Add an evaluator named `greeting-match` of type `exact-match`, scoped to
+   the Flow project at `SmokeEval/SmokeEval`. Use kebab-case for `--type`.
+
+4. Create an eval set named `Smoke Set` in the same project. (No
+   `--entry-point`, no `--evaluators` — defaults are fine.)
+
+5. Add one data point named `hello` to that eval set with inputs
+   `{&quot;name&quot;:&quot;Alice&quot;}` and expected `{&quot;greeting&quot;:&quot;Hello, Alice!&quot;}`.
+
+6. List evaluators and eval sets to confirm both were created.
+
+Important:
+- Use `--output json` on every `uip maestro flow eval ...` command.
+- Do NOT call `uip login`. Do NOT call `uip solution upload`. Do NOT call
+  `uip maestro flow eval run *` — this task tests local CRUD only.
+- Do NOT run `uip maestro flow debug` or `uip maestro flow validate` — this
+  is not a flow-authoring test.
+</pre></div>
+  </details>
+  <details>
+    <summary>Agent response</summary>
+    <div class="details-body"><pre>[ASSISTANT] I have all the information I need. I&#x27;ll now execute the full scaffolding in two chained turns: Turn 1 scaffolds the solution and project (with explicit `uip solution project add`), and Turn 2 adds the variable and all eval CRUD.
+[ASSISTANT] Solution and project are scaffolded, linked, and the flow file exists at the correct double-nested path. Now I&#x27;ll add the `name` input variable, then run all eval CRUD commands in one chained Bash.
+[ASSISTANT] Everything completed successfully. Here&#x27;s a summary of what was built:
+
+---
+
+## SmokeEval — scaffold complete ✅
+
+### Layout
+```
+SmokeEval/
+├── SmokeEval.uipx                                   ← solution
+└── SmokeEval/                                        ← project
+    ├── SmokeEval.flow                                ← flow file (double-nested ✓)
+    ├── project.uiproj
+    ├── evaluators/
+    │   └── greeting-match-8f16147f.json             ← exact-match evaluator
+    └── evaluation-sets/
+        └── evaluation-set-smoke-set-6d91733f.json   ← &quot;Smoke Set&quot; with 1 data point
+```
+
+### Steps completed
+
+| # | Action | Result |
+|---|--------|--------|
+| 1 | `uip solution init SmokeEval` + `uip maestro flow init SmokeEval --skip-solution-registration` + `uip solution project add` | Flow at `SmokeEval/SmokeEval/SmokeEval.flow`, linked to solution |
+| 2 | `uip maestro flow variable add … name --direction in --type string` | `name` declared as string input variable |
+| 3 | `uip maestro flow eval evaluator add greeting-match --type exact-match` | ID: `greeting-match-8f16147f`, type: `uipath-exact-match` |
+| 4 | `uip maestro flow eval set add &quot;Smoke Set&quot;` | ID: `6d91733f`, auto-attached the one existing evaluator |
+| 5 | `uip maestro flow eval add hello --set &quot;Smoke Set&quot; --inputs &#x27;{&quot;name&quot;:&quot;Alice&quot;}&#x27; --expected &#x27;{&quot;greeting&quot;:&quot;Hello, Alice!&quot;}&#x27;` | Data point `hello` (ID: `e190d4a3`) added |
+| 6 | `eval evaluator list` + `eval set list` | Both confirmed: 1 evaluator, 1 eval set with 1 data point |
+[RESULT - SUCCESS] Everything completed successfully. Here&#x27;s a summary of what was built:
+
+---
+
+## SmokeEval — scaffold complete ✅
+
+### Layout
+```
+SmokeEval/
+├── SmokeEval.uipx                                   ← solution
+└── SmokeEval/                                        ← project
+    ├── SmokeEval.flow                                ← flow file (double-nested ✓)
+    ├── project.uiproj
+    ├── evaluators/
+    │   └── greeting-match-8f16147f.json             ← exact-match evaluator
+    └── evaluation-sets/
+        └── evaluation-set-smoke-set-6d91733f.json   ← &quot;Smoke Set&quot; with 1 data point
+```
+
+### Steps completed
+
+| # | Action | Result |
+|---|--------|--------|
+| 1 | `uip solution init SmokeEval` + `uip maestro flow init SmokeEval --skip-solution-registration` + `uip solution project add` | Flow at `SmokeEval/SmokeEval/SmokeEval.flow`, linked to solution |
+| 2 | `uip maestro flow variable add … name --direction in --type string` | `name` declared as string input variable |
+| 3 | `uip maestro flow eval evaluator add greeting-match --type exact-match` | ID: `greeting-match-8f16147f`, type: `uipath-exact-match` |
+| 4 | `uip maestro flow eval set add &quot;Smoke Set&quot;` | ID: `6d91733f`, auto-attached the one existing evaluator |
+| 5 | `uip maestro flow eval add hello --set &quot;Smoke Set&quot; --inputs &#x27;{&quot;name&quot;:&quot;Alice&quot;}&#x27; --expected &#x27;{&quot;greeting&quot;:&quot;Hello, Alice!&quot;}&#x27;` | Data point `hello` (ID: `e190d4a3`) added |
+| 6 | `eval evaluator list` + `eval set list` | Both confirmed: 1 evaluator, 1 eval set with 1 data point |</pre></div>
+  </details>
+  <h4 style="margin-top:12px">Tool Calls (8)</h4>
+  
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#0</span>
+      <span class="tool-name">Skill</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">91ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;skill&quot;: &quot;uipath:uipath-maestro-flow&quot;,
+  &quot;args&quot;: &quot;Scaffold a UiPath Flow project called \&quot;SmokeEval\&quot; inside a solution of the same name, then build the eval scaffolding for it — purely local, no Studio Web round-trip.\n\nSteps:\n1. Create the solution and the Flow project. The flow file MUST live at `SmokeEval/SmokeEval/SmokeEval.flow` (double-nested layout) and be linked via `uip solution project add`.\n\n2. Declare a string input variable named `name… (979 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Launching skill: uipath:uipath-maestro-flow</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#1</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">26ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/evaluate/CAPABILITY.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Evaluate — Design and run Flow evaluations
+2	
+3	Capability index for `uip maestro flow eval` — evaluator CRUD (7 types), eval set CRUD with entry-point pinning, data point management with file attachments, and Studio Web run start/status/results/list/compare. Local CRUD is offline; runs require `uip login` and a Flow solution that already exists in Studio Web.
+4	
+5	&gt; **Where you came from / where to go next.** Evaluate is downstream of Operate (ship the flow → evaluate it on Studio Web) and feeds back into Author (failing eval → fix the `.flow` → re-ship → re-evaluate). Build/edit lives in [author/CAPABILITY.md](../author/CAPABILITY.md); publish/deploy lives in [operate/CAPABILITY.md](../operate/CAPABILITY.md); fault triage on a debug or process run lives in [diagnose/CAPABILITY.md](../diagnose/CAPABILITY.md).
+6	&gt;
+7	&gt; **Inherits universal rules from [SKILL.md](../../SKILL.md)** — `--output json` + prefer `--output-filter` for extraction, no `flow debug` without consent, never invoke other skills automatically, dropdown question pattern, **plain-English narration + granular progress list (opt-in — silent by default; engage when the user asks for verbosity)**. The rules below are
+
+… (truncated, 10648 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#2</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">24ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/evaluate/references/commands-reference.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# `uip maestro flow eval` Command Reference
+2	
+3	Complete syntax reference for every subcommand under `uip maestro flow eval`. All commands accept the global flags `--output &lt;table|json|yaml|plain&gt;` (default `json`), `--output-filter &lt;jmespath&gt;`, `--log-level &lt;debug|info|warn|error&gt;`, and `--log-file &lt;path&gt;`. Repeated reminders below: always pass `--output json` when an agent will parse the result.
+4	
+5	## Command Tree
+6	
+7	```
+8	uip maestro flow eval
+9	├── add        — Add a data point to an evaluation set
+10	├── list       — List data points in an evaluation set
+11	├── remove     — Remove a data point from an evaluation set
+12	├── set
+13	│   ├── add    — Create an evaluation set
+14	│   ├── list   — List evaluation sets
+15	│   └── remove — Remove an evaluation set
+16	├── evaluator
+17	│   ├── add    — Add an evaluator to the flow project
+18	│   ├── list   — List evaluators in a flow project
+19	│   └── remove — Remove an evaluator from a flow project
+20	├── simulation
+21	│   ├── add    — Add or update a simulation on a data point
+22	│   ├── list   — List simulations on a data point
+23	│   └── remove — Remove a simulation from a data point
+24	└── run
+25	    ├── start    — Start a S
+
+… (truncated, 13542 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#3</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">428ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/references/greenfield.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Greenfield — Create a New Flow
+2	
+3	End-to-end journey for creating a Flow project from scratch. Author terminates at `validate` + `format`. To publish, run, or debug after this, see [operate/CAPABILITY.md](../../operate/CAPABILITY.md).
+4	
+5	&gt; **Brownfield edits use a different journey.** If the `.flow` file already exists, see [brownfield.md](brownfield.md) instead.
+6	
+7	## Should you plan first?
+8	
+9	For complex flows, produce a plan before building. Reference [planning-arch.md](planning-arch.md) and [planning-impl.md](planning-impl.md) for the node type catalog, port reference, wiring rules, and topology patterns.
+10	
+11	**Plan when:**
+12	- The flow has 5+ nodes with branching or parallel paths
+13	- The flow uses connectors or resources that need discovery
+14	- The user&#x27;s requirements are ambiguous and you need to confirm the approach
+15	
+16	**Don&#x27;t plan when:**
+17	- Adding/editing a single node in an existing flow (use [brownfield.md](brownfield.md))
+18	- The flow is a straightforward linear pipeline (trigger → action → action → end)
+19	- The user has already described the exact topology they want
+20	
+21	### Examples
+22	
+23	**Plan:** &quot;Build a flow that receives a Jira ticke
+
+… (truncated, 30834 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#4</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">22ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/shared/cli-commands.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# uip maestro flow — CLI Command Reference
+2	
+3	All commands output `{ &quot;Result&quot;: &quot;Success&quot;|&quot;Failure&quot;, &quot;Code&quot;: &quot;...&quot;, &quot;Data&quot;: { ... } }`. Use `--output json` for programmatic use.
+4	
+5	&gt; For node and edge commands (`node add/remove/list/configure`, `edge add/remove/list`), see the [Author CLI editing strategy](../author/references/editing-operations-cli.md). This file covers project setup, validation, registry, debug, and publishing commands.
+6	
+7	## uip maestro flow init
+8	
+9	Scaffold a new Flow project directory. Outside a solution, `flow init` auto-scaffolds `&lt;ProjectName&gt;Solution/` and nests the project in it. **Prefer creating the solution first** so its name matches the project name (see the [Author greenfield journey — Step 2](../author/references/greenfield.md)).
+10	
+11	```bash
+12	# 1. Create solution first (for naming control)
+13	uip solution init &quot;&lt;SolutionName&gt;&quot; --output json
+14	
+15	# 2. Init the flow project inside the solution folder.
+16	#    Inside a solution directory, `flow init` auto-registers the project with
+17	#    the parent `.uipx`. Outside any solution, it auto-scaffolds
+18	#    `&lt;ProjectName&gt;Solution/&lt;ProjectName&gt;Solution.uipx`, nests the project in it,
+19	
+
+… (truncated, 21096 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#5</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">4.42s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow eval --help --output json 2&gt;&amp;1 | head -5&quot;,
+  &quot;description&quot;: &quot;Check eval CLI availability&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;Help&quot;,
+  &quot;Data&quot;: {
+    &quot;Command&quot;: &quot;eval&quot;,</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#6</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">15.15s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;\\\nuip solution init \&quot;SmokeEval\&quot; --output json &amp;&amp; \\\ncd SmokeEval &amp;&amp; \\\nuip maestro flow init \&quot;SmokeEval\&quot; --skip-solution-registration --output json &amp;&amp; \\\nuip solution project add \&quot;$(pwd)/SmokeEval\&quot; \&quot;$(pwd)/SmokeEval.uipx\&quot; --output json &amp;&amp; \\\nls \&quot;$(pwd)/SmokeEval/SmokeEval.flow\&quot;&quot;,
+  &quot;description&quot;: &quot;Scaffold solution, flow project (no auto-register), then explicitly link via project add&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;SolutionInit&quot;,
+  &quot;Data&quot;: {
+    &quot;Status&quot;: &quot;Created successfully&quot;,
+    &quot;Path&quot;: &quot;/work/output/artifacts/skill-flow-eval-local-crud/SmokeEval/SmokeEval.uipx&quot;,
+    &quot;NextSteps&quot;: &quot;Read /work/output/artifacts/skill-flow-eval-local-crud/SmokeEval/AGENTS.md or /work/output/artifacts/skill-flow-eval-local-crud/SmokeEval/CLAUDE.md to understand the solution lifecycle, project types that can be used inside a solution, and related uip command references.&quot;
+  }
+}
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FlowInit&quot;,
+  &quot;Data&quot;: {
+    &quot;Status&quot;: &quot;Created successfully&quot;,
+    &quot;Path&quot;: &quot;/work/output/artifacts/skill-flow-eval-local-crud/SmokeEval/SmokeEval&quot;,
+    &quot;SolutionRegistration&quot;: {
+      &quot;Status&quot;: &quot;OptedOut&quot;,
+      &quot;Message&quot;: &quot;Solution auto-registration skipped (--skip-solution-registration).&quot;,
+      &quot;Instructions&quot;: &quot;Automatic solution registration was skipped because --skip-solution-registration was passed.\nTo register this project later, run &#x27;uip solution projects add \&quot;/work/output/artifacts/skill-flow-eval-local-crud/SmokeEval/SmokeEval\&quot; &lt;SolutionName&gt;.uipx&#x27; from within the solution.&quot;
+    },
+    &quot;NextSteps&quot;: &quot;Automatic solution registration was skipped because --skip
+
+… (truncated, 1096 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#7</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">22.72s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;\\\n\n# Step 2 — declare the `name` string input variable on the flow\nuip maestro flow variable add SmokeEval/SmokeEval.flow name \\\n  --direction in --type string --output json &amp;&amp; \\\n\n# Step 3 — add evaluator\nuip maestro flow eval evaluator add greeting-match \\\n  --type exact-match \\\n  --path SmokeEval \\\n  --output json &amp;&amp; \\\n\n# Step 4 — create eval set (no --entry-point, no --evaluators)\nuip maestro f… (542 more chars)&quot;,
+  &quot;description&quot;: &quot;Add name variable, evaluator, eval set, data point, then list both&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;VariableAddSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;Variable&quot;: {
+      &quot;Id&quot;: &quot;name&quot;,
+      &quot;Direction&quot;: &quot;in&quot;,
+      &quot;Type&quot;: &quot;string&quot;
+    }
+  }
+}
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FlowEvalEvaluatorAdd&quot;,
+  &quot;Data&quot;: {
+    &quot;Name&quot;: &quot;greeting-match&quot;,
+    &quot;Id&quot;: &quot;greeting-match-8f16147f&quot;,
+    &quot;Type&quot;: &quot;uipath-exact-match&quot;,
+    &quot;File&quot;: &quot;greeting-match-8f16147f.json&quot;
+  }
+}
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FlowEvalSetAdd&quot;,
+  &quot;Data&quot;: {
+    &quot;Name&quot;: &quot;Smoke Set&quot;,
+    &quot;Id&quot;: &quot;6d91733f-7147-43c2-b8a6-6be4d23bdbbd&quot;,
+    &quot;Evaluators&quot;: 1,
+    &quot;File&quot;: &quot;evaluation-set-smoke-set-6d91733f.json&quot;
+  }
+}
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FlowEvalAdd&quot;,
+  &quot;Data&quot;: {
+    &quot;Status&quot;: &quot;Data point added&quot;,
+    &quot;Name&quot;: &quot;hello&quot;,
+    &quot;Id&quot;: &quot;e190d4a3-b6eb-4a4f-890e-349fb68b7fa8&quot;,
+    &quot;Set&quot;: &quot;Smoke Set&quot;
+  }
+}
+=== EVALUATORS ===
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FlowEvalEvaluatorList&quot;,
+  &quot;Data&quot;: [
+    {
+      &quot;Name&quot;: &quot;greeting-match&quot;,
+      &quot;Id&quot;: &quot;greeting-match-8f16147f&quot;,
+      &quot;Type&quot;: &quot;uipath-exact-match&quot;,
+      &quot;TargetKey&quot;: &quot;*&quot;,
+      &quot;File&quot;: &quot;greeting-match-8f16147f.json&quot;
+    }
+  ]
+}
+=== EVAL SETS ===
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FlowEvalSetList&quot;,
+  &quot;Data&quot;: [
+    {
+      &quot;Name&quot;: &quot;Smoke 
+
+… (truncated, 170 more chars)</pre>
+    
+  </div>
+</details>
+
+</div>
+
+<h2>Command Telemetry</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Total</div><div class="value">8</div></div>
+    <div class="stat"><div class="label">Successful</div><div class="value">8 (100%)</div></div>
+    <div class="stat"><div class="label">Failed</div><div class="value">0</div></div>
+    <div class="stat"><div class="label">Avg / cmd</div><div class="value">5.36s</div></div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 2fr;gap:16px;margin-top:12px">
+    <div>
+      <h4>By Tool</h4>
+      <table>
+        <thead><tr><th>Tool</th><th>Count</th></tr></thead>
+        <tbody><tr><td class='mono'>Read</td><td>4</td></tr><tr><td class='mono'>Bash</td><td>3</td></tr><tr><td class='mono'>Skill</td><td>1</td></tr></tbody>
+      </table>
+    </div>
+    <div>
+      <h4>Slowest</h4>
+      <table>
+        <thead><tr><th>Tool</th><th>Duration</th><th>Parameters</th></tr></thead>
+        <tbody><tr><td class='mono'>Bash</td><td>22.72s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;\\\n\n# Step 2 — declare the `name` s...</td></tr><tr><td class='mono'>Bash</td><td>15.15s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;\\\nuip solution init &quot;SmokeEval&quot; --o...</td></tr><tr><td class='mono'>Bash</td><td>4.42s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro flow eval --help --output...</td></tr><tr><td class='mono'>Read</td><td>428ms</td><td class='mono dim'>{&#x27;file_path&#x27;: &#x27;/home/azureuser/projects/skills/ski...</td></tr><tr><td class='mono'>Skill</td><td>91ms</td><td class='mono dim'>{&#x27;skill&#x27;: &#x27;uipath:uipath-maestro-flow&#x27;, &#x27;args&#x27;: &#x27;S...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+  <p><strong>Most Common Pattern:</strong> <code>Read → Read → Read</code></p><p><strong>Skill Tool Invoked:</strong> 1 time(s)</p>
+</div>
+
+<h2>Generation Metrics</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Total Latency</div><div class="value">2m 42s</div></div>
+    <div class="stat"><div class="label">Turns</div><div class="value">1</div></div>
+    <div class="stat"><div class="label">Assistant Turns</div><div class="value">15</div></div>
+    <div class="stat"><div class="label">Avg Turn Latency</div><div class="value">2m 37s</div></div>
+    
+  </div>
+</div>
+
+<h2>Token Usage</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Input (uncached)</div><div class="value">6,840</div></div>
+    <div class="stat"><div class="label">Output</div><div class="value">7,562</div></div>
+    <div class="stat"><div class="label">Cache Write</div><div class="value">37,906</div></div>
+    <div class="stat"><div class="label">Cache Read</div><div class="value">274,157</div></div>
+    <div class="stat"><div class="label">Total</div><div class="value">326,465</div></div>
+    <div class="stat"><div class="label">Cost</div><div class="value">$0.3583</div></div>
+  </div>
+</div>
+
+<h2>Agent Settings</h2>
+<div class="card" style="padding:0">
+  <table>
+    <tbody><tr><td class='mono dim'>Permission Mode</td><td>acceptEdits</td></tr><tr><td class='mono dim'>Allowed Tools</td><td>Skill, Bash, Read, Write, Edit, Glob, Grep</td></tr><tr><td class='mono dim'>Model</td><td>us.anthropic.claude-sonnet-4-6</td></tr><tr><td class='mono dim'>Max Turns</td><td>60</td></tr><tr><td class='mono dim'>System Prompt</td><td>You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted. </td></tr><tr><td class='mono dim'>Plugins</td><td>/home/azureuser/projects/skills</td></tr></tbody>
+  </table>
+</div>
+
+<h2>Environment</h2>
+<div class="card" style="padding:0">
+  <table>
+    <tbody><tr><td class='mono dim'>git_commit</td><td>unknown</td></tr><tr><td class='mono dim'>skills_git_commit</td><td>unknown</td></tr><tr><td class='mono dim'>cli_version</td><td>1.199.0-dev.7970</td></tr><tr><td class='mono dim'>tool_plugins</td><td>{&#x27;admin-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;agent-tool&#x27;: &#x27;1.199.0-dev.7965&#x27;, &#x27;agenthub-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;aops-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;api-workflow-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;codedagent-tool&#x27;: &#x27;1.199.0-dev.7965&#x27;, &#x27;codedapp-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;coder-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;context-grounding-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;conversational-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;data-fabric-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;docsai-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;functions-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;gov-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;insights-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;integrationservice-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;ixp-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;llm-gateway-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;llmgw-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;maestro-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;orchestrator-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;platform-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;pm-tool&#x27;: &#x27;1.199.0-dev.7969&#x27;, &#x27;rpa-legacy-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;rpa-tool&#x27;: &#x27;1.199.0-dev.20260722.4&#x27;, &#x27;solution-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;tasks-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;test-manager-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;traces-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;vertical-solutions-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;}</td></tr><tr><td class='mono dim'>coder_eval</td><td>0.8.8</td></tr><tr><td class='mono dim'>claude_code_cli</td><td>2.1.177 (Claude Code)</td></tr><tr><td class='mono dim'>uv</td><td>uv 0.11.28 (x86_64-unknown-linux-gnu)</td></tr><tr><td class='mono dim'>anthropic</td><td>0.102.0</td></tr><tr><td class='mono dim'>openai</td><td>2.47.0</td></tr><tr><td class='mono dim'>pydantic</td><td>2.12.5</td></tr><tr><td class='mono dim'>api_routing</td><td>aws_bedrock</td></tr><tr><td class='mono dim'>aws_region</td><td>us-east-2</td></tr><tr><td class='mono dim'>bedrock_model</td><td>us.anthropic.claude-sonnet-4-6</td></tr></tbody>
+  </table>
+</div>
+
+<footer>Generated by coder_eval · 2026-07-24T18:30:27</footer>
+</div>
+<script>
+function toggleTheme() {
+  document.documentElement.classList.toggle('light');
+  try {
+    const mode = document.documentElement.classList.contains('light') ? 'light' : 'dark';
+    localStorage.setItem('coder-eval-theme', mode);
+  } catch (e) { /* ignore */ }
+}
+(function() {
+  try {
+    if (localStorage.getItem('coder-eval-theme') === 'light') {
+      document.documentElement.classList.add('light');
+    }
+  } catch (e) { /* ignore */ }
+})();
+</script>
+</body>
+</html>

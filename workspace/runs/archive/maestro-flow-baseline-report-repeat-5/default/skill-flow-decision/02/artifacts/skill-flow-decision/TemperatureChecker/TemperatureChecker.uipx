@@ -1,0 +1,12 @@
+{
+    "DocVersion": "1.0.0",
+    "StudioMinVersion": "2025.10.0",
+    "SolutionId": "cad50d58-8d73-434f-47c8-08dee9b1ed35",
+    "Projects": [
+        {
+            "Type": "Flow",
+            "ProjectRelativePath": "TemperatureChecker/project.uiproj",
+            "Id": "40dfb70a-04e4-43b7-886e-faca850e7e2c"
+        }
+    ]
+}

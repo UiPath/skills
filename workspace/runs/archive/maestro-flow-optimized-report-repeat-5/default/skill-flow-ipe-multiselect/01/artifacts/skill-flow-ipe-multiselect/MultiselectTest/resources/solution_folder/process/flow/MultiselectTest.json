@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "MultiselectTest",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "45a926ca-eaee-42f1-a7f3-e3689c26738c",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "MultiselectTest"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Flow",
+      "name": "MultiselectTest",
+      "package": {
+        "key": "ff81e034-5a69-4ba3-98a9-d5c7ec81b2c0"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "775ee642-320e-469c-aad1-b12a0639fa5e",
+    "files": []
+  }
+}

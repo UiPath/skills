@@ -1,0 +1,12 @@
+{
+    "DocVersion": "1.0.0",
+    "StudioMinVersion": "2025.10.0",
+    "SolutionId": "4c245b2f-7b0a-46c1-759c-08dee9b21193",
+    "Projects": [
+        {
+            "Type": "Flow",
+            "ProjectRelativePath": "SlackEmojiListTest/project.uiproj",
+            "Id": "eb98f627-6075-44ed-a2d6-38683fbf5e97"
+        }
+    ]
+}

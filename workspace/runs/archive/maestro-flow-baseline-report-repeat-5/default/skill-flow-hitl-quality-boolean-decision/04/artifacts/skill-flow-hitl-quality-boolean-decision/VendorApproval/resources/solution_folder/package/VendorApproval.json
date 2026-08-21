@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "VendorApproval",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "fb9a6901-1d0d-49b9-b23d-b7b93b799841",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "VendorApproval"
+    },
+    "locks": [],
+    "key": "74b83980-16af-4371-a2fe-1a9e031ffa3b",
+    "files": []
+  }
+}

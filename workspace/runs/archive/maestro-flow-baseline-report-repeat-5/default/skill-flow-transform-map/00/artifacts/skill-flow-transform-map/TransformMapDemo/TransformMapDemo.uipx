@@ -1,0 +1,12 @@
+{
+  "DocVersion": "1.0.0",
+  "StudioMinVersion": "2025.10.0",
+  "SolutionId": "ae971e27-43a3-48a6-8230-d0047cec7985",
+  "Projects": [
+    {
+      "Type": "Flow",
+      "ProjectRelativePath": "TransformMapDemo/project.uiproj",
+      "Id": "8cad43d9-9da8-4e8e-8d32-ecbf02938f6d"
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "DocVersion": "1.0.0",
+  "StudioMinVersion": "2025.10.0",
+  "SolutionId": "9a3623b1-6408-49b4-b394-3274038d5c9c",
+  "Projects": [
+    {
+      "Type": "Flow",
+      "ProjectRelativePath": "BirthCertificateExtraction/project.uiproj",
+      "Id": "8abc1e6e-0624-472f-bd31-9c1cfbeaa74b"
+    }
+  ]
+}

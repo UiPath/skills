@@ -1,0 +1,142 @@
+<Activity mc:Ignorable="sap sap2010" x:Class="Main" mva:VisualBasic.Settings="{x:Null}"
+  xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities"
+  xmlns:isactr="http://schemas.uipath.com/workflow/integration-service-activities/isactr"
+  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+  xmlns:mva="clr-namespace:Microsoft.VisualBasic.Activities;assembly=System.Activities"
+  xmlns:sap="http://schemas.microsoft.com/netfx/2009/xaml/activities/presentation"
+  xmlns:sap2010="http://schemas.microsoft.com/netfx/2010/xaml/activities/presentation"
+  xmlns:sco="clr-namespace:System.Collections.ObjectModel;assembly=mscorlib"
+  xmlns:ui="http://schemas.uipath.com/workflow/activities"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+  <x:Members>
+    <!-- The Slack Channel ID to look up (e.g. "C12345678").
+         Find it in Slack: right-click the channel → View channel details → Copy channel ID (bottom of "About" tab). -->
+    <x:Property Name="in_ChannelId" Type="InArgument(x:String)" />
+  </x:Members>
+
+  <TextExpression.NamespacesForImplementation>
+    <sco:Collection x:TypeArguments="x:String">
+      <x:String>System.Activities</x:String>
+      <x:String>System.Activities.Statements</x:String>
+      <x:String>System.Activities.Expressions</x:String>
+      <x:String>System.Activities.Validation</x:String>
+      <x:String>System.Activities.XamlIntegration</x:String>
+      <x:String>Microsoft.VisualBasic</x:String>
+      <x:String>Microsoft.VisualBasic.Activities</x:String>
+      <x:String>System</x:String>
+      <x:String>System.Collections</x:String>
+      <x:String>System.Collections.Generic</x:String>
+      <x:String>System.Collections.ObjectModel</x:String>
+      <x:String>System.Data</x:String>
+      <x:String>System.Diagnostics</x:String>
+      <x:String>System.IO</x:String>
+      <x:String>System.Linq</x:String>
+      <x:String>UiPath.Core</x:String>
+      <x:String>UiPath.Core.Activities</x:String>
+      <x:String>UiPath.IntegrationService.Activities.Runtime.Activities</x:String>
+      <x:String>UiPath.IntegrationService.Activities.Runtime.Models</x:String>
+    </sco:Collection>
+  </TextExpression.NamespacesForImplementation>
+
+  <TextExpression.ReferencesForImplementation>
+    <sco:Collection x:TypeArguments="AssemblyReference">
+      <AssemblyReference>System.Activities</AssemblyReference>
+      <AssemblyReference>Microsoft.VisualBasic</AssemblyReference>
+      <AssemblyReference>System.Private.CoreLib</AssemblyReference>
+      <AssemblyReference>mscorlib</AssemblyReference>
+      <AssemblyReference>System</AssemblyReference>
+      <AssemblyReference>System.Linq</AssemblyReference>
+      <AssemblyReference>System.Data</AssemblyReference>
+      <AssemblyReference>System.Data.Common</AssemblyReference>
+      <AssemblyReference>System.Core</AssemblyReference>
+      <AssemblyReference>UiPath.System.Activities</AssemblyReference>
+      <AssemblyReference>UiPath.IntegrationService.Activities.Runtime</AssemblyReference>
+    </sco:Collection>
+  </TextExpression.ReferencesForImplementation>
+
+  <Sequence DisplayName="Get Slack Channel Description" sap2010:WorkflowViewState.IdRef="Sequence_1">
+    <Sequence.Variables>
+      <!-- Individual output fields bound directly from the ConnectorActivity FieldObjects -->
+      <Variable x:TypeArguments="x:String" Name="channelName" Default="" />
+      <Variable x:TypeArguments="x:String" Name="channelDescription" Default="" />
+    </Sequence.Variables>
+
+    <!-- ── Step 1: Log that we are starting ── -->
+    <ui:LogMessage Level="Info" DisplayName="Log: Starting lookup" sap2010:WorkflowViewState.IdRef="LogMessage_1">
+      <ui:LogMessage.Message>
+        <InArgument x:TypeArguments="x:Object">
+          <VisualBasicValue x:TypeArguments="x:Object"
+            ExpressionText="$&quot;[SlackChannelDescription] Fetching info for channel ID: {in_ChannelId}&quot;" />
+        </InArgument>
+      </ui:LogMessage.Message>
+    </ui:LogMessage>
+
+    <!-- ── Step 2: Call Slack Integration Service – Get Channel Info ──────────────────
+         IMPORTANT – Before running:
+           1. Create a Slack connection in UiPath Integration Service
+              (Orchestrator → Integration Service → Connections → + New Connection → Slack)
+           2. Replace the ConnectionId placeholder below with the GUID of that connection.
+         The workflow will fail at runtime with "invalid connection" until a real ID is provided.
+    ─────────────────────────────────────────────────────────────────────────────────── -->
+    <isactr:ConnectorActivity
+      Configuration="H4sIAAAAAAAAA42QwU7DMBBE/8XntircyI1EUCIKjUTUC0Joa28bE8cb2etCVPHvbGiFyq0ny7PPOzM+qHuLzsSCPIP1GFR2UC8IQTewcXgcquz1baJK3yc+F1aJ/ynfIxMZvMYKAnTIGOK4by2nJa8ydTWbz+ZqosTOo2YKjziInGwP3EwjOIxbChqn0YFuBbzVbPeWh3roUcAiBWA0MlhtPmTBs7iMMvm9eACLSyz9lt4Xd7VAD8z9E3JDRqAFcj6URknMAnSDZknUpn4NLuEY80/PA31GDCVjd9KrYDsIg4Q9Va8kHezwvNj1zW+zi3Itwe+SvBcEvdxr/OLckW6P//gD2YvzEpUBAAA="
+      ConnectionId="00000000-0000-0000-0000-000000000000"
+      DisplayName="Get Channel Info (Slack)"
+      UiPathActivityTypeId="f9995f55-16e3-3c65-b860-af01aa2a1e47"
+      sap2010:WorkflowViewState.IdRef="ConnectorActivity_1">
+      <isactr:ConnectorActivity.FieldObjects>
+
+        <!-- INPUT: The Slack Channel ID passed in as the workflow argument -->
+        <isactr:FieldObject Name="conversationsInfoId" Type="FieldArgument">
+          <isactr:FieldObject.Value>
+            <InArgument x:TypeArguments="x:String">
+              <VisualBasicValue x:TypeArguments="x:String" ExpressionText="in_ChannelId" />
+            </InArgument>
+          </isactr:FieldObject.Value>
+        </isactr:FieldObject>
+
+        <!-- OUTPUT: Channel name (response field "name", type string) -->
+        <isactr:FieldObject Name="name" Type="FieldArgument">
+          <isactr:FieldObject.Value>
+            <OutArgument x:TypeArguments="x:String">
+              <VisualBasicReference x:TypeArguments="x:String" ExpressionText="channelName" />
+            </OutArgument>
+          </isactr:FieldObject.Value>
+        </isactr:FieldObject>
+
+        <!-- OUTPUT: Channel description – Slack stores it in purpose.value;
+             the IS field-name encoding rule for "." is "_sub_", giving "purpose_sub_value" -->
+        <isactr:FieldObject Name="purpose_sub_value" Type="FieldArgument">
+          <isactr:FieldObject.Value>
+            <OutArgument x:TypeArguments="x:String">
+              <VisualBasicReference x:TypeArguments="x:String" ExpressionText="channelDescription" />
+            </OutArgument>
+          </isactr:FieldObject.Value>
+        </isactr:FieldObject>
+
+      </isactr:ConnectorActivity.FieldObjects>
+    </isactr:ConnectorActivity>
+
+    <!-- ── Step 5: Log the result (appears in Orchestrator / Robot log) ── -->
+    <ui:LogMessage Level="Info" DisplayName="Log: Show Description" sap2010:WorkflowViewState.IdRef="LogMessage_2">
+      <ui:LogMessage.Message>
+        <InArgument x:TypeArguments="x:Object">
+          <VisualBasicValue x:TypeArguments="x:Object"
+            ExpressionText="$&quot;=== Slack Channel Description ==={Environment.NewLine}Channel : #{channelName}{Environment.NewLine}Description: {channelDescription}&quot;" />
+        </InArgument>
+      </ui:LogMessage.Message>
+    </ui:LogMessage>
+
+    <!-- ── Step 6: Write to console (visible when running via `uip rpa run`) ── -->
+    <WriteLine DisplayName="Display Result" sap2010:WorkflowViewState.IdRef="WriteLine_1">
+      <WriteLine.Text>
+        <InArgument x:TypeArguments="x:String">
+          <VisualBasicValue x:TypeArguments="x:String"
+            ExpressionText="$&quot;=== Slack Channel Description ==={Environment.NewLine}Channel : #{channelName}{Environment.NewLine}Description: {channelDescription}&quot;" />
+        </InArgument>
+      </WriteLine.Text>
+    </WriteLine>
+
+  </Sequence>
+</Activity>

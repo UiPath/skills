@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "BindingsMulti",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "ad6ab380-6687-4257-b5c7-99e2c3e060af",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "BindingsMulti"
+    },
+    "locks": [],
+    "key": "b5617c5d-ca04-43ec-81bd-3ecef4de0b1e",
+    "files": []
+  }
+}

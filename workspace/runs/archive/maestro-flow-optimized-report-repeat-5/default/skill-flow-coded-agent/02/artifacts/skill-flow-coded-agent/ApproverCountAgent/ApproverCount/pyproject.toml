@@ -1,0 +1,14 @@
+[project]
+name = "ApproverCount"
+version = "0.0.1"
+description = "Counts the number of approvers from a proposal review sentence."
+authors = [{ name = "John Doe", email = "john.doe@myemail.com" }]
+dependencies = [
+    "uipath-langchain>=0.10.0",
+]
+requires-python = ">=3.11"
+
+[dependency-groups]
+dev = [
+    "uipath-dev",
+]

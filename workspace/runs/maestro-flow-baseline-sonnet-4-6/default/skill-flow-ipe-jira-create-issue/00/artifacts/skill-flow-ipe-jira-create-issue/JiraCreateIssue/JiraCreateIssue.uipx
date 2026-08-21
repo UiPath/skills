@@ -1,0 +1,12 @@
+{
+    "DocVersion": "1.0.0",
+    "StudioMinVersion": "2025.10.0",
+    "SolutionId": "546d1b0a-5f20-496f-9c8f-08defdfbf8f4",
+    "Projects": [
+        {
+            "Type": "Flow",
+            "ProjectRelativePath": "JiraCreateIssue/project.uiproj",
+            "Id": "427e44ea-cd48-49be-bd58-d8b9f7a8747c"
+        }
+    ]
+}

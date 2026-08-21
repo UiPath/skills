@@ -1,0 +1,5 @@
+05:12:37 [INFO   ] [default/skill-bpmn-diagnose-validate-fix-loop/04] orchestrator: API routing: aws_bedrock
+05:13:20 [INFO   ] [default/skill-bpmn-diagnose-validate-fix-loop/04] orchestrator: Success criteria: 4/4 passed, weighted score: 1.000
+05:13:20 [INFO   ] [default/skill-bpmn-diagnose-validate-fix-loop/04] orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+05:13:20 [INFO   ] [default/skill-bpmn-diagnose-validate-fix-loop/04] orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-bpmn-diagnose-validate-fix-loop
+05:13:20 [INFO   ] [default/skill-bpmn-diagnose-validate-fix-loop/04] orchestrator: Task finished: status=SUCCESS duration=43.6s score=1.000 iterations=1

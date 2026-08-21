@@ -1,0 +1,689 @@
+{
+  "id": "8e3f3dd3-1f5c-4eb6-91cd-74cb42719d39",
+  "version": "1.9",
+  "name": "FeetInches",
+  "nodes": [
+    {
+      "id": "start",
+      "type": "core.trigger.manual",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Manual trigger"
+      },
+      "inputs": {
+        "entryPointId": "1b57fb07-3f63-4948-b137-6bfcbee3bb59",
+        "isDefaultEntryPoint": true
+      }
+    },
+    {
+      "id": "switchDirection",
+      "type": "core.logic.switch",
+      "typeVersion": "1.1",
+      "display": {
+        "label": "Switch on direction"
+      },
+      "inputs": {
+        "cases": [
+          {
+            "id": "f2i",
+            "label": "Feet to Inches",
+            "expression": "$vars.start.output.direction === 'f2i'"
+          },
+          {
+            "id": "i2f",
+            "label": "Inches to Feet",
+            "expression": "$vars.start.output.direction === 'i2f'"
+          },
+          {
+            "id": "y2f",
+            "label": "Yards to Feet",
+            "expression": "$vars.start.output.direction === 'y2f'"
+          }
+        ]
+      },
+      "outputs": {
+        "output": {
+          "type": "object",
+          "description": "The return value of the node.",
+          "source": "=result.response",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails.",
+          "source": "=Error",
+          "var": "error"
+        }
+      }
+    },
+    {
+      "id": "convertF2I",
+      "type": "core.action.script",
+      "typeVersion": "1.1",
+      "display": {
+        "label": "Feet to Inches (× 12)"
+      },
+      "inputs": {
+        "script": "return { converted: $vars.start.output.value * 12 };"
+      },
+      "outputs": {
+        "output": {
+          "type": "object",
+          "description": "The return value of the node.",
+          "source": "=result.response",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails.",
+          "source": "=Error",
+          "var": "error"
+        }
+      }
+    },
+    {
+      "id": "convertI2F",
+      "type": "core.action.script",
+      "typeVersion": "1.1",
+      "display": {
+        "label": "Inches to Feet (÷ 12)"
+      },
+      "inputs": {
+        "script": "return { converted: $vars.start.output.value / 12 };"
+      },
+      "outputs": {
+        "output": {
+          "type": "object",
+          "description": "The return value of the node.",
+          "source": "=result.response",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails.",
+          "source": "=Error",
+          "var": "error"
+        }
+      }
+    },
+    {
+      "id": "convertY2F",
+      "type": "core.action.script",
+      "typeVersion": "1.1",
+      "display": {
+        "label": "Yards to Feet (× 3)"
+      },
+      "inputs": {
+        "script": "return { converted: $vars.start.output.value * 3 };"
+      },
+      "outputs": {
+        "output": {
+          "type": "object",
+          "description": "The return value of the node.",
+          "source": "=result.response",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails.",
+          "source": "=Error",
+          "var": "error"
+        }
+      }
+    },
+    {
+      "id": "end",
+      "type": "core.control.end",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "End"
+      },
+      "inputs": {},
+      "outputs": {
+        "result": {
+          "source": "=js:$vars.convertF2I.output.converted ?? $vars.convertI2F.output.converted ?? $vars.convertY2F.output.converted"
+        }
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge_start_output_switchDirection_input",
+      "sourceNodeId": "start",
+      "sourcePort": "output",
+      "targetNodeId": "switchDirection",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge_switchDirection_case-f2i_convertF2I_input",
+      "sourceNodeId": "switchDirection",
+      "sourcePort": "case-f2i",
+      "targetNodeId": "convertF2I",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge_switchDirection_case-i2f_convertI2F_input",
+      "sourceNodeId": "switchDirection",
+      "sourcePort": "case-i2f",
+      "targetNodeId": "convertI2F",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge_switchDirection_case-y2f_convertY2F_input",
+      "sourceNodeId": "switchDirection",
+      "sourcePort": "case-y2f",
+      "targetNodeId": "convertY2F",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge_convertF2I_success_end_input",
+      "sourceNodeId": "convertF2I",
+      "sourcePort": "success",
+      "targetNodeId": "end",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge_convertI2F_success_end_input",
+      "sourceNodeId": "convertI2F",
+      "sourcePort": "success",
+      "targetNodeId": "end",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge_convertY2F_success_end_input",
+      "sourceNodeId": "convertY2F",
+      "sourcePort": "success",
+      "targetNodeId": "end",
+      "targetPort": "input"
+    }
+  ],
+  "definitions": [
+    {
+      "nodeType": "core.trigger.manual",
+      "version": "1.0",
+      "category": "trigger",
+      "description": "Start the process manually",
+      "tags": [
+        "trigger",
+        "start",
+        "manual"
+      ],
+      "sortOrder": 80,
+      "display": {
+        "label": "Manual trigger",
+        "icon": "play",
+        "shape": "circle"
+      },
+      "handleConfiguration": [
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "output",
+              "type": "source",
+              "handleType": "output",
+              "showButton": true,
+              "constraints": {
+                "forbiddenTargetCategories": [
+                  "trigger"
+                ]
+              }
+            }
+          ],
+          "visible": true
+        }
+      ],
+      "model": {
+        "type": "bpmn:StartEvent",
+        "entryPointId": true
+      },
+      "outputDefinition": {
+        "output": {
+          "type": "object",
+          "description": "Data passed when manually triggering the process.",
+          "source": "null",
+          "var": "output"
+        }
+      },
+      "toolbarExtensions": {
+        "design": {
+          "actions": [
+            {
+              "id": "change-trigger-type",
+              "icon": "square-mouse-pointer",
+              "label": "Change trigger type"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "nodeType": "core.logic.switch",
+      "version": "1.1",
+      "category": "control-flow",
+      "description": "Route to one of many branches by condition",
+      "tags": [
+        "control-flow",
+        "switch",
+        "case",
+        "when"
+      ],
+      "sortOrder": 62,
+      "display": {
+        "label": "Switch",
+        "icon": "between-horizontal-start"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ],
+          "visible": true
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "case-{item.id}",
+              "type": "source",
+              "handleType": "output",
+              "label": "{item.label || 'Case ' + (index + 1)}",
+              "repeat": "inputs.cases"
+            },
+            {
+              "id": "default",
+              "type": "source",
+              "handleType": "output",
+              "label": "Default"
+            }
+          ],
+          "visible": true
+        }
+      ],
+      "debug": {
+        "runtime": "clientScript"
+      },
+      "model": {
+        "type": "bpmn:ExclusiveGateway"
+      },
+      "inputDefinition": {
+        "type": "object",
+        "properties": {
+          "cases": {
+            "type": "array",
+            "minItems": 1,
+            "errorMessage": "At least one case is required",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "label": {
+                  "type": "string"
+                },
+                "expression": {
+                  "type": "string",
+                  "minLength": 1,
+                  "errorMessage": "Add a condition"
+                }
+              },
+              "required": [
+                "expression"
+              ]
+            }
+          }
+        },
+        "required": [
+          "cases"
+        ]
+      },
+      "outputDefinition": {
+        "matchedCase": {
+          "type": "string",
+          "description": "The label of the matched case",
+          "var": "matchedCase"
+        },
+        "matchedCaseId": {
+          "type": "string",
+          "description": "The ID of the matched case",
+          "var": "matchedCaseId"
+        }
+      },
+      "inputDefaults": {
+        "cases": [
+          {
+            "id": "default-1",
+            "label": "Case 1",
+            "expression": ""
+          },
+          {
+            "id": "default-2",
+            "label": "Case 2",
+            "expression": ""
+          }
+        ]
+      },
+      "runtimeConstraints": {
+        "exclude": [
+          "api-function"
+        ]
+      }
+    },
+    {
+      "nodeType": "core.action.script",
+      "version": "1.1",
+      "category": "data-operations",
+      "description": "Run custom JavaScript code",
+      "tags": [
+        "code",
+        "javascript",
+        "python"
+      ],
+      "sortOrder": 70,
+      "supportsErrorHandling": true,
+      "display": {
+        "label": "Script",
+        "icon": "code"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "success",
+              "type": "source",
+              "handleType": "output"
+            },
+            {
+              "id": "error",
+              "label": "Error",
+              "type": "source",
+              "handleType": "output",
+              "visible": "{inputs.errorHandlingEnabled}",
+              "constraints": {
+                "maxConnections": 1
+              }
+            }
+          ]
+        }
+      ],
+      "debug": {
+        "runtime": "clientScript"
+      },
+      "model": {
+        "type": "bpmn:ScriptTask"
+      },
+      "inputDefinition": {
+        "type": "object",
+        "properties": {
+          "script": {
+            "type": "string",
+            "minLength": 1,
+            "errorMessage": "Add a script function",
+            "validationSeverity": "warning"
+          }
+        },
+        "required": [
+          "script"
+        ]
+      },
+      "inputDefaults": {
+        "script": ""
+      },
+      "outputDefinition": {
+        "output": {
+          "type": "any",
+          "description": "The return value of the script",
+          "source": "=result.response",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails",
+          "source": "=Error",
+          "var": "error"
+        }
+      }
+    },
+    {
+      "nodeType": "core.control.end",
+      "version": "1.0",
+      "category": "control-flow",
+      "description": "Mark the end of a process path",
+      "tags": [
+        "control-flow",
+        "end",
+        "finish",
+        "complete"
+      ],
+      "sortOrder": 65,
+      "display": {
+        "label": "End",
+        "icon": "circle-check",
+        "shape": "circle"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        }
+      ],
+      "model": {
+        "type": "bpmn:EndEvent"
+      },
+      "runtimeConstraints": {
+        "exclude": [
+          "api-function"
+        ]
+      }
+    }
+  ],
+  "variables": {
+    "globals": [
+      {
+        "id": "value",
+        "direction": "in",
+        "type": "number",
+        "description": "The numeric value to convert",
+        "triggerNodeId": "start"
+      },
+      {
+        "id": "direction",
+        "direction": "in",
+        "type": "string",
+        "description": "Conversion direction: f2i, i2f, or y2f",
+        "triggerNodeId": "start"
+      },
+      {
+        "id": "result",
+        "direction": "out",
+        "type": "number",
+        "description": "The converted value"
+      }
+    ],
+    "nodes": [
+      {
+        "id": "start.output",
+        "type": "object",
+        "description": "Data passed when manually triggering the process.",
+        "binding": {
+          "nodeId": "start",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "switchDirection.output",
+        "type": "object",
+        "description": "The return value of the node.",
+        "binding": {
+          "nodeId": "switchDirection",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "switchDirection.error",
+        "type": "object",
+        "description": "Error information if the node fails.",
+        "binding": {
+          "nodeId": "switchDirection",
+          "outputId": "error"
+        }
+      },
+      {
+        "id": "convertF2I.output",
+        "type": "object",
+        "description": "The return value of the node.",
+        "binding": {
+          "nodeId": "convertF2I",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "convertF2I.error",
+        "type": "object",
+        "description": "Error information if the node fails.",
+        "binding": {
+          "nodeId": "convertF2I",
+          "outputId": "error"
+        }
+      },
+      {
+        "id": "convertI2F.output",
+        "type": "object",
+        "description": "The return value of the node.",
+        "binding": {
+          "nodeId": "convertI2F",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "convertI2F.error",
+        "type": "object",
+        "description": "Error information if the node fails.",
+        "binding": {
+          "nodeId": "convertI2F",
+          "outputId": "error"
+        }
+      },
+      {
+        "id": "convertY2F.output",
+        "type": "object",
+        "description": "The return value of the node.",
+        "binding": {
+          "nodeId": "convertY2F",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "convertY2F.error",
+        "type": "object",
+        "description": "Error information if the node fails.",
+        "binding": {
+          "nodeId": "convertY2F",
+          "outputId": "error"
+        }
+      },
+      {
+        "id": "end.result",
+        "type": "string",
+        "binding": {
+          "nodeId": "end",
+          "outputId": "result"
+        }
+      }
+    ]
+  },
+  "runtime": "maestro",
+  "layout": {
+    "nodes": {
+      "start": {
+        "position": {
+          "x": -192,
+          "y": 0
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "switchDirection": {
+        "position": {
+          "x": 0,
+          "y": 0
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "convertF2I": {
+        "position": {
+          "x": 192,
+          "y": -192
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "convertI2F": {
+        "position": {
+          "x": 192,
+          "y": 0
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "convertY2F": {
+        "position": {
+          "x": 192,
+          "y": 192
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "end": {
+        "position": {
+          "x": 384,
+          "y": -192
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      }
+    }
+  }
+}

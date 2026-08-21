@@ -1,0 +1,71 @@
+{
+  "version": "1.1.0",
+  "settings": {
+    "model": "gpt-5.4",
+    "maxTokens": 4096,
+    "temperature": 0,
+    "engine": "basic-v2",
+    "maxIterations": 5,
+    "mode": "standard"
+  },
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "start__output__email": {
+        "type": "string",
+        "description": "Inbound support email text to classify"
+      }
+    }
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "category": {
+        "type": "string",
+        "description": "Support category, e.g. Account Access, Billing, Technical Issue, General Inquiry"
+      },
+      "priority": {
+        "type": "string",
+        "description": "Priority level: High, Medium, or Low"
+      }
+    },
+    "required": [
+      "category",
+      "priority"
+    ]
+  },
+  "metadata": {
+    "storageVersion": "50.0.0",
+    "isConversational": false,
+    "showProjectCreationExperience": false
+  },
+  "type": "lowCode",
+  "guardrails": [],
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a support-ticket triage specialist. Your sole task is to read inbound support emails and classify each one into exactly one category and one priority level.\n\nCategories (pick the single best fit):\n- Account Access: password resets, login failures, MFA issues, account locks\n- Billing: invoices, charges, refunds, subscription changes\n- Technical Issue: software bugs, errors, crashes, integrations\n- General Inquiry: questions, feature requests, feedback\n\nPriority levels:\n- High: service is down, customer cannot work, data loss risk, security concern\n- Medium: functionality degraded but a workaround exists, issue affects one user\n- Low: cosmetic issue, question, non-urgent request\n\nYou must always return a JSON object with exactly two fields: category and priority. Never end a run without a determination. If the email is ambiguous, choose the closest match and set priority to Medium.",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "You are a support-ticket triage specialist. Your sole task is to read inbound support emails and classify each one into exactly one category and one priority level.\n\nCategories (pick the single best fit):\n- Account Access: password resets, login failures, MFA issues, account locks\n- Billing: invoices, charges, refunds, subscription changes\n- Technical Issue: software bugs, errors, crashes, integrations\n- General Inquiry: questions, feature requests, feedback\n\nPriority levels:\n- High: service is down, customer cannot work, data loss risk, security concern\n- Medium: functionality degraded but a workaround exists, issue affects one user\n- Low: cosmetic issue, question, non-urgent request\n\nYou must always return a JSON object with exactly two fields: category and priority. Never end a run without a determination. If the email is ambiguous, choose the closest match and set priority to Medium."
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "Classify the following support email and return a JSON object with category and priority:\n\n{{input.start__output__email}}",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "Classify the following support email and return a JSON object with category and priority:\n\n"
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__email"
+        }
+      ]
+    }
+  ],
+  "projectId": "59716134-ec39-454f-8da5-717a9b378a2a"
+}

@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "NameToAge",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "5eea037a-e244-45c0-9651-abc8bbe3ecd1",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "NameToAge"
+    },
+    "locks": [],
+    "key": "22fb7569-a30d-4a6f-a0c1-ae87e9912b08",
+    "files": []
+  }
+}

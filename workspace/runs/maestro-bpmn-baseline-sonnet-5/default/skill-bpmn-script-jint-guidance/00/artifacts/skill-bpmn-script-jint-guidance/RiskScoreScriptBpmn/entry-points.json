@@ -1,0 +1,31 @@
+{
+  "$schema": "https://cloud.uipath.com/draft/2024-12/entry-point",
+  "$id": "entry-points.json",
+  "entryPoints": [
+    {
+      "filePath": "/content/RiskScoreScriptBpmn.bpmn#Event_start",
+      "uniqueId": "fd2dd4b6-16a2-4f1a-a0b8-deede5bd68e9",
+      "type": "ProcessOrchestration",
+      "input": {
+        "type": "object",
+        "properties": {
+          "amount": {
+            "type": "number"
+          },
+          "daysOverdue": {
+            "type": "number"
+          }
+        }
+      },
+      "output": {
+        "type": "object",
+        "properties": {
+          "riskScore": {
+            "type": "number"
+          }
+        }
+      },
+      "displayName": "Manual trigger"
+    }
+  ]
+}

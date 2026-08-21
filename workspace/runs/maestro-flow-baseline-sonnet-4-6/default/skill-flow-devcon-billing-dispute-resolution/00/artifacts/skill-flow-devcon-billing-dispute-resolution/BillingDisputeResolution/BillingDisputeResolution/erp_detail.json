@@ -1,0 +1,13 @@
+{
+  "connectionId": "d61e5d0e-04af-4f93-95cc-151d81fa08dc",
+  "folderKey": "c4359cde-55f0-4f0e-9322-c6cdce74ab4c",
+  "method": "POST",
+  "endpoint": "/v2/{entityName}/qer",
+  "objectName": "QueryEntityRecordsCurated",
+  "pathParameters": {
+    "entityName": "BillingDisputeERP"
+  },
+  "queryParameters": {
+    "queryExpression": "=js:\"invoiceNumber = '\" + $vars.normalizeData1.output.normalizedInvoiceNumber + \"'\""
+  }
+}

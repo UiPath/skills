@@ -1,0 +1,95 @@
+{
+  "version": "1.1.0",
+  "settings": {
+    "model": "gpt-5.4",
+    "maxTokens": 128000,
+    "temperature": 0,
+    "engine": "basic-v2",
+    "maxIterations": 3,
+    "mode": "standard"
+  },
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "emailReceived1__output__subject": {
+        "type": "string",
+        "description": "Bound from $vars.emailReceived1.output.subject"
+      },
+      "emailReceived1__output__body": {
+        "type": "string",
+        "description": "Bound from $vars.emailReceived1.output.body"
+      },
+      "emailReceived1__output__from": {
+        "type": "string",
+        "description": "Bound from $vars.emailReceived1.output.from"
+      }
+    }
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "isUrgentTone": {
+        "type": "boolean",
+        "description": "True if the email content sounds urgent or critical"
+      },
+      "isVip": {
+        "type": "boolean",
+        "description": "True if the sender appears to be a VIP or high-value account"
+      }
+    },
+    "required": [
+      "isUrgentTone",
+      "isVip"
+    ]
+  },
+  "metadata": {
+    "storageVersion": "50.0.0",
+    "isConversational": false,
+    "showProjectCreationExperience": false
+  },
+  "type": "lowCode",
+  "guardrails": [],
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a customer support triage agent. Evaluate incoming support emails on two independent dimensions and respond with a JSON object containing exactly two boolean fields.\n\n## Dimension 1: isUrgentTone\nSet to true if the email content suggests something is critically broken or the customer is in distress right now. Signals include:\n- Urgent or panic language: words like \"urgent\", \"critical\", \"down\", \"broken\", \"can't access\", \"not working\", \"emergency\", \"ASAP\", \"immediately\", \"right now\"\n- Production or business impact: \"production is down\", \"we're blocked\", \"we can't do our work\", \"clients are waiting\"\n- Data loss or security concern\n- Strong emotional distress, frustration, or threatening tone (mentions of cancellation, legal action, escalation to management)\n- A hard deadline mentioned in the near term (today, in the next few hours)\n\nSet to false for general questions, feature requests, billing inquiries, slow performance complaints, minor bugs, or polite follow-ups.\n\n## Dimension 2: isVip\nSet to true if the sender appears to represent a high-value or enterprise account. Signals include:\n- The sender's email domain belongs to a recognizable large company (not a free email service like gmail.com, yahoo.com, hotmail.com, outlook.com)\n- The email body or signature mentions enterprise, premium, or high-tier account status (e.g., \"our enterprise plan\", \"Gold tier\", \"Enterprise contract\")\n- The sender has a senior title (Director, VP, C-level, Head of, Managing Director)\n- The sender mentions a large number of users affected (e.g., \"our 500-person team\")\n- The domain or company name sounds like an established business\n\nSet to false for personal email addresses (gmail, yahoo, etc.) or individuals without clear business account signals.\n\n## Output format\nRespond with ONLY this JSON — no other text:\n{ \"isUrgentTone\": true/false, \"isVip\": true/false }",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "You are a customer support triage agent. Evaluate incoming support emails on two independent dimensions and respond with a JSON object containing exactly two boolean fields.\n\n## Dimension 1: isUrgentTone\nSet to true if the email content suggests something is critically broken or the customer is in distress right now. Signals include:\n- Urgent or panic language: words like \"urgent\", \"critical\", \"down\", \"broken\", \"can't access\", \"not working\", \"emergency\", \"ASAP\", \"immediately\", \"right now\"\n- Production or business impact: \"production is down\", \"we're blocked\", \"we can't do our work\", \"clients are waiting\"\n- Data loss or security concern\n- Strong emotional distress, frustration, or threatening tone (mentions of cancellation, legal action, escalation to management)\n- A hard deadline mentioned in the near term (today, in the next few hours)\n\nSet to false for general questions, feature requests, billing inquiries, slow performance complaints, minor bugs, or polite follow-ups.\n\n## Dimension 2: isVip\nSet to true if the sender appears to represent a high-value or enterprise account. Signals include:\n- The sender's email domain belongs to a recognizable large company (not a free email service like gmail.com, yahoo.com, hotmail.com, outlook.com)\n- The email body or signature mentions enterprise, premium, or high-tier account status (e.g., \"our enterprise plan\", \"Gold tier\", \"Enterprise contract\")\n- The sender has a senior title (Director, VP, C-level, Head of, Managing Director)\n- The sender mentions a large number of users affected (e.g., \"our 500-person team\")\n- The domain or company name sounds like an established business\n\nSet to false for personal email addresses (gmail, yahoo, etc.) or individuals without clear business account signals.\n\n## Output format\nRespond with ONLY this JSON — no other text:\n{ \"isUrgentTone\": true/false, \"isVip\": true/false }"
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "From: {{input.emailReceived1__output__from}}\nSubject: {{input.emailReceived1__output__subject}}\n\n{{input.emailReceived1__output__body}}",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "From: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.emailReceived1__output__from"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\nSubject: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.emailReceived1__output__subject"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\n"
+        },
+        {
+          "type": "variable",
+          "rawString": "input.emailReceived1__output__body"
+        }
+      ]
+    }
+  ],
+  "projectId": "59fec14f-23bc-46e4-8384-18b4b40bf96d"
+}

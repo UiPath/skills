@@ -1,0 +1,9 @@
+18:00:57 [INFO   ] [default/skill-flow-calculator/03] orchestrator: API routing: aws_bedrock
+18:05:45 [INFO   ] [default/skill-flow-calculator/03] orchestrator: Success criteria: 2/2 passed, weighted score: 1.000
+18:05:45 [WARNING] [default/skill-flow-calculator/03] orchestrator: Visible turns (20) exceeded expected_turns (18) at iteration 1 for task skill-flow-calculator. Run continues — max_turns remains the hard cap.
+18:05:45 [INFO   ] [default/skill-flow-calculator/03] orchestrator: Running post-run command: python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/cleanup_solutions.py
+18:05:47 [WARNING] [default/skill-flow-calculator/03] orchestrator: [post_run stderr] cleanup_solutions: deleted a6a71799-70ca-4fd8-c9a3-08dee9aa01c9 (from Calculator/Calculator.uipx)
+18:05:47 [WARNING] [default/skill-flow-calculator/03] orchestrator: [post_run stderr] cleanup_solutions: summary policy=always deleted=1 preserved=0 skipped=0 not_uploaded=0 failed=0
+18:05:47 [INFO   ] [default/skill-flow-calculator/03] orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+18:05:48 [INFO   ] [default/skill-flow-calculator/03] orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-calculator
+18:05:48 [INFO   ] [default/skill-flow-calculator/03] orchestrator: Task finished: status=SUCCESS duration=293.2s score=1.000 iterations=1

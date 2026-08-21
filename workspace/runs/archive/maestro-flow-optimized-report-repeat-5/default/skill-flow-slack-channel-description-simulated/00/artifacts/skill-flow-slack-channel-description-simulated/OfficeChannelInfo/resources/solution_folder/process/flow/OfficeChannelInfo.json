@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "OfficeChannelInfo",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "e5d04597-6104-4b46-b7f7-49f8344a0908",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "OfficeChannelInfo"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Flow",
+      "name": "OfficeChannelInfo",
+      "package": {
+        "key": "73fd68d1-51ec-4dfd-98a6-b50ba87dde0a"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "d937b267-1768-4faf-926b-674ab290eff3",
+    "files": []
+  }
+}

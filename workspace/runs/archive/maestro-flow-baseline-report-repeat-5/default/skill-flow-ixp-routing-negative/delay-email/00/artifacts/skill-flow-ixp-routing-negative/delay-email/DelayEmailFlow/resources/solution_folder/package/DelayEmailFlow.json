@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "DelayEmailFlow",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "24555176-d04c-4ae8-aefc-946c072d5d66",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "DelayEmailFlow"
+    },
+    "locks": [],
+    "key": "fc9f5f2a-4b71-4fd3-9d15-340f700f197e",
+    "files": []
+  }
+}

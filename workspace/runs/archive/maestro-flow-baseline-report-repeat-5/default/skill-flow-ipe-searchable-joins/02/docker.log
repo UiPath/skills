@@ -1,0 +1,5 @@
+20:10:03 [INFO   ] [default/skill-flow-ipe-searchable-joins/02] orchestrator: API routing: aws_bedrock
+20:15:41 [INFO   ] [default/skill-flow-ipe-searchable-joins/02] orchestrator: Success criteria: 3/3 passed, weighted score: 1.000
+20:15:41 [INFO   ] [default/skill-flow-ipe-searchable-joins/02] orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+20:15:41 [INFO   ] [default/skill-flow-ipe-searchable-joins/02] orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-ipe-searchable-joins
+20:15:41 [INFO   ] [default/skill-flow-ipe-searchable-joins/02] orchestrator: Task finished: status=SUCCESS duration=342.2s score=1.000 iterations=1

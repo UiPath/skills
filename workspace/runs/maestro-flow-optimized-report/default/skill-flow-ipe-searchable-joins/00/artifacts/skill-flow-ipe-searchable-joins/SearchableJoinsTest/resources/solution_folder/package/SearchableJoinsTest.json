@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "SearchableJoinsTest",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "de56cfe0-9410-488e-9dec-7f80c43d665e",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "SearchableJoinsTest"
+    },
+    "locks": [],
+    "key": "f45af0bc-1f0c-4cf3-9033-7c48f8e342b0",
+    "files": []
+  }
+}

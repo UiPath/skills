@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:uipath="http://uipath.org/schema/bpmn" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" exporter="UiPath Maestro (https://uipath.com)" exporterVersion="1.201.0-dev.8275">
+  <bpmn:process id="Process_1" name="Maestro Process">
+    <bpmn:extensionElements>
+      <uipath:variables version="v1" />
+      <uipath:bindings version="v1" />
+    </bpmn:extensionElements>
+    <bpmn:startEvent id="Event_start" name="core.trigger.manual">
+      <bpmn:extensionElements>
+        <uipath:entryPointId value="8c480c23-6a30-4c3c-a22a-6204dd19641e" />
+      </bpmn:extensionElements>
+      <bpmn:outgoing>_Implicit_EndEvent_Flow</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:endEvent id="_Implicit_EndEvent">
+      <bpmn:incoming>_Implicit_EndEvent_Flow</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="_Implicit_EndEvent_Flow" sourceRef="Event_start" targetRef="_Implicit_EndEvent" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="Diagram_1">
+    <bpmndi:BPMNPlane id="Plane_1" bpmnElement="Process_1">
+      <bpmndi:BPMNShape id="S_Event_start" bpmnElement="Event_start">
+        <dc:Bounds x="256" y="144" width="96" height="96" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="256" y="245" width="96" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

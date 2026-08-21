@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "SalesforceOpportunityUpdate",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "60989f0b-58d7-44a5-8379-ae1e89b63d77",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "SalesforceOpportunityUpdate"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Flow",
+      "name": "SalesforceOpportunityUpdate",
+      "package": {
+        "key": "390d7c9d-16c8-4ef4-8e76-45ac009c8210"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "9bf75197-fb76-4ed8-9174-52728be4c014",
+    "files": []
+  }
+}

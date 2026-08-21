@@ -1,0 +1,103 @@
+# HTTP Request Node — Planning
+
+> **MUST READ FIRST — confirm Managed HTTP Request fits your use case before authoring:** [/uipath:uipath-platform — http-request.md](../../../../../../uipath-platform/references/integration-service/http-request.md). This planning doc is the flow-specific layer on top of it.
+
+## Node Type
+
+`core.action.http.v2` (Managed HTTP Request)
+
+> **Always use `core.action.http.v2`** for all HTTP requests — both connector-authenticated and manual. The older `core.action.http` (v1) is deprecated and does not pass IS credentials at runtime.
+
+## When to Use a Managed HTTP Request Node
+
+| Situation | Use Managed HTTP? |
+| --- | --- |
+| Connector exists but lacks the specific curated activity | Yes — connector mode ([impl-connector.md](impl-connector.md)), **if the connector supports HTTP request activity** (verify `HasHttpRequest` — see [Prerequisites](#prerequisites)) |
+| No connector exists, but service has a REST API | Yes — manual mode ([impl-manual.md](impl-manual.md)) |
+| Quick prototyping against any REST API | Yes — manual mode ([impl-manual.md](impl-manual.md)) |
+| Connector exists and covers the use case | No — use [Connector Activity](../connector/planning.md) |
+| Target system has no API (desktop app) | No — use [RPA Workflow](../rpa/planning.md) |
+
+For the two-mode concept (connector vs. manual) and the `url` / auth rules per mode, see the platform doc linked at the top.
+
+## Ports
+
+| Input Port | Output Port(s) |
+| --- | --- |
+| `input` | `default`, `error`, `branch-{id}` (dynamic, one per `inputs.branches` entry) |
+
+- `default` — primary success output, or fallback when configured branches don't match.
+- `error` — implicit error port; fires when the call fails (network error, timeout, non-2xx not caught by a branch). Shared with all action nodes — see [Implicit error port on action nodes](../../../../shared/file-format.md#implicit-error-port-on-action-nodes).
+- `branch-{id}` — HTTP-specific, configured via `inputs.branches` (response-content routing). See [Conditional Branches](#conditional-branches) below.
+
+## Output Variables
+
+- `$vars.{nodeId}.output` — `{ body, code, method, rawStringBody, request }` on success
+- `$vars.{nodeId}.error` — `{ code, message, detail, category, status }` when the error port fires
+
+## Conditional Branches
+
+Use `inputs.branches` when you need to route downstream paths based on response content (e.g., empty vs non-empty results). For generic call-failure handling, prefer the shared `error` port instead — don't enumerate every bad status code as a branch.
+
+Each branch's `conditionExpression` is a JS expression with `$self` bound to the current HTTP node's output:
+
+```json
+{
+  "inputs": {
+    "branches": [
+      { "id": "hasItems",  "name": "Has Items",  "conditionExpression": "$self.output.body.items.length > 0" },
+      { "id": "empty",     "name": "Empty",      "conditionExpression": "$self.output.body.items.length == 0" }
+    ]
+  }
+}
+```
+
+Wire `branch-hasItems` / `branch-empty` as source ports on outgoing edges. `default` fires when no branch condition matches.
+
+> **Do not use `=js:` on `conditionExpression`** — HTTP branch conditions are evaluated as JS automatically (same rule as decision/switch expressions). See [variables-and-expressions.md](../../../../shared/variables-and-expressions.md#http-branch-condition-inputsbranchesconditionexpression).
+
+## Dynamic values
+
+IS activity input fields (`url`, `headers`, `body`, `query` under `bodyParameters`) do **not** resolve `{$vars.x}` brace-templates — the template runner only applies to native flow fields. Use `=js:` expressions for any dynamic value; template literals with `${...}` interpolation or string concatenation both work. See [Dynamic values](impl.md#dynamic-values-in-url--headers--body--query) for the full rationale and examples.
+
+## Key Inputs (`--detail` for `node configure`)
+
+Run `uip maestro flow node configure` with a `--detail` JSON. The CLI builds the full `inputs.detail` payload, `bindings_v2.json`, and connection resource files automatically. **Do not hand-write `inputs.detail`.**
+
+**Connector mode** (IS connection auth):
+
+| `--detail` Key | Required | Description |
+| --- | --- | --- |
+| `authentication` | Yes | `"connector"` |
+| `method` | Yes | HTTP method: GET, POST, PUT, PATCH, DELETE |
+| `targetConnector` | Yes | Target connector key (e.g., `"uipath-salesforce-slack"`) |
+| `connectionId` | Yes | Target connector's IS connection ID (from `uip is connections list --all-folders`) |
+| `folderKey` | Yes | Orchestrator folder key (from `uip is connections list --all-folders`) |
+| `url` | No | API endpoint URL/path (e.g., `"/conversations.replies"`). Auto-fills both `bodyParameters.path` and `bodyParameters.url`. |
+| `query` | No | Query parameters as key-value object |
+| `headers` | No | Additional headers as key-value object |
+| `body` | No | Request body (for POST/PUT/PATCH). Connector mode is **`application/json` only** (request and response) — no other content type. |
+
+**Manual mode** (no connector auth):
+
+| `--detail` Key | Required | Description |
+| --- | --- | --- |
+| `authentication` | Yes | `"manual"` |
+| `method` | Yes | HTTP method: GET, POST, PUT, PATCH, DELETE |
+| `url` | Yes | Full target URL |
+| `query` | No | Query parameters as key-value object |
+| `headers` | No | Additional headers as key-value object |
+| `body` | No | Request body (for POST/PUT/PATCH) |
+
+## Prerequisites
+
+- `uip login` required (for both modes — node type comes from registry)
+- For connector mode: connector must support the HTTP request activity — verify the `HasHttpRequest` flag via `uip is connectors get "<connector-key>"`. If false, fall back to manual mode — confirm the switch with the user before finalizing. See [impl-connector.md Step 2](impl-connector.md#step-2--identify-target-connection).
+- For connector mode: a healthy IS connection must exist for the **target connector**. If none exists, auto-fall-through to manual mode is the recommended fallback — but confirm the mode switch with the user before finalizing. See [impl-connector.md Step 2 — HTTP-specific recovery](impl-connector.md#step-2--identify-target-connection) for the user-confirmation flow (switch-to-manual / create-now / skip).
+- `uip maestro flow registry pull` to cache the `core.action.http.v2` definition
+
+## Planning Annotation
+
+In the architectural plan, annotate managed HTTP nodes as:
+- Connector mode: `managed-http: <service> — <operation>` (e.g., "managed-http: Slack — GET /conversations.replies")
+- Manual mode: `managed-http: manual — <method> <url>` (e.g., "managed-http: manual — GET https://api.example.com/data")

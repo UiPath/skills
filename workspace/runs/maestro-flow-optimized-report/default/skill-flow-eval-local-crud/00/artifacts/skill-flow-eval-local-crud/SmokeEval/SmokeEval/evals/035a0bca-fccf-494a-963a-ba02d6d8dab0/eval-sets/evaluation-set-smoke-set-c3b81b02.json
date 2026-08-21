@@ -1,0 +1,33 @@
+{
+  "version": "1.0",
+  "id": "c3b81b02-b1e3-48cf-9f45-83845bf2e98f",
+  "name": "Smoke Set",
+  "evaluatorRefs": [
+    "greeting-match-8dcf3c77.json"
+  ],
+  "evaluations": [
+    {
+      "id": "5588b82f-a666-44bb-9780-8823db582dc2",
+      "name": "hello",
+      "inputs": {
+        "name": "Alice"
+      },
+      "expectedOutput": {
+        "greeting": "Hello, Alice!"
+      },
+      "evaluationCriterias": {
+        "greeting-match-8dcf3c77": {
+          "expectedOutput": {
+            "greeting": "Hello, Alice!"
+          }
+        }
+      },
+      "createdAt": "2026-07-24T00:10:52.030Z",
+      "updatedAt": "2026-07-24T00:10:52.030Z"
+    }
+  ],
+  "selectedEntrypoint": "start",
+  "fileName": "evaluation-set-smoke-set-c3b81b02.json",
+  "createdAt": "2026-07-24T00:10:47.380Z",
+  "updatedAt": "2026-07-24T00:10:52.030Z"
+}

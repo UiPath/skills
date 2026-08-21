@@ -1,0 +1,43 @@
+{
+  "version": "2.0",
+  "resources": [
+    {
+      "resource": "connection",
+      "key": "2ab97e15-b5bb-4f73-9573-97e62912f5fb",
+      "id": "connection2ab97e15-b5bb-4f73-9573-97e62912f5fb",
+      "value": {
+        "ConnectionId": {
+          "defaultValue": "2ab97e15-b5bb-4f73-9573-97e62912f5fb",
+          "isExpression": false,
+          "displayName": "uipath-google-drive connection"
+        }
+      },
+      "metadata": {
+        "ActivityName": "Download File",
+        "BindingsVersion": "2.2",
+        "DisplayLabel": "uipath-google-drive connection",
+        "UseConnectionService": "true",
+        "Connector": "uipath-google-drive"
+      }
+    },
+    {
+      "resource": "connection",
+      "key": "e03f734e-0f80-4e8a-a7c1-0ece309b0ca4",
+      "id": "connectione03f734e-0f80-4e8a-a7c1-0ece309b0ca4",
+      "value": {
+        "ConnectionId": {
+          "defaultValue": "e03f734e-0f80-4e8a-a7c1-0ece309b0ca4",
+          "isExpression": false,
+          "displayName": "uipath-salesforce-slack connection"
+        }
+      },
+      "metadata": {
+        "ActivityName": "Send File to Channel",
+        "BindingsVersion": "2.2",
+        "DisplayLabel": "uipath-salesforce-slack connection",
+        "UseConnectionService": "true",
+        "Connector": "uipath-salesforce-slack"
+      }
+    }
+  ]
+}

@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "SlackPaginationTest",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "7681d0ca-baae-488e-b3f2-2e74a8a09491",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "SlackPaginationTest"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Flow",
+      "name": "SlackPaginationTest",
+      "package": {
+        "key": "8186e9e4-c92e-408c-8492-294b4d0c3007"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "e18fbe87-1c87-4048-a0f5-18e3d2973284",
+    "files": []
+  }
+}

@@ -1,0 +1,38 @@
+{
+  "Result": "Success",
+  "Code": "RegistrySearchSuccess",
+  "Data": {
+    "ExtensionTypes": [
+      {
+        "ExtensionType": "Maestro.ReceiveMessageEvent",
+        "Label": "Receive internal message",
+        "BpmnElement": "bpmn:IntermediateCatchEvent",
+        "ExtensionTag": "uipath:event",
+        "InputPattern": "separateInputs",
+        "BindingPattern": "none",
+        "RequiresDiscovery": "No"
+      },
+      {
+        "ExtensionType": "Maestro.SendMessageEvent",
+        "Label": "Send internal message",
+        "BpmnElement": "bpmn:IntermediateThrowEvent",
+        "ExtensionTag": "uipath:event",
+        "InputPattern": "splitInputsItemData",
+        "BindingPattern": "none",
+        "RequiresDiscovery": "No"
+      }
+    ],
+    "Connectors": [],
+    "Processes": [],
+    "ProcessesByType": {
+      "Process": 0,
+      "ProcessOrchestration": 0,
+      "Agent": 0,
+      "Flow": 0,
+      "Api": 0,
+      "Function": 0,
+      "CaseManagement": 0,
+      "BusinessRules": 0
+    }
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "connectionId": "<REPLACE_WITH_CONNECTION_UUID>",
+  "folderKey": "<REPLACE_WITH_FOLDER_KEY>",
+  "method": "POST",
+  "endpoint": "/normalised-teams/{team_id}/channels/{channel_id}/messages/{message_id}/replies-v2/drive/item",
+  "pathParameters": {
+    "team_id": "<REPLACE_WITH_TEAM_ID>",
+    "channel_id": "<REPLACE_WITH_CHANNEL_ID>",
+    "message_id": "<REPLACE_WITH_MESSAGE_ID>"
+  },
+  "bodyParameters": {
+    "body.content": "Reply from RequiredGroupsTest flow",
+    "attachmentIds": "=js:(['<ATTACHMENT_ID_1>', '<ATTACHMENT_ID_2>'])"
+  }
+}

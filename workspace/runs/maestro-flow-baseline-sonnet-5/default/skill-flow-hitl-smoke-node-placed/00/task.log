@@ -1,0 +1,54 @@
+2026-08-18 21:54:09 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-08-18 21:54:09 [INFO] coder_eval.orchestrator: API routing: aws_bedrock
+2026-08-18 21:54:09 [DEBUG] coder_eval.criteria: Discovered 15 criterion checkers
+2026-08-18 21:54:09 [DEBUG] coder_eval.criteria: Validated 15 criterion checkers
+2026-08-18 21:54:09 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-08-18 21:54:09 [DEBUG] coder_eval.orchestrator: Sending prompt: Build a UiPath Flow named "InvoiceApproval" that:
+1. Starts with a manual trigger
+2. Pauses for a fi...
+2026-08-18 21:54:09 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Starting agent query stream...
+2026-08-18 21:59:54 [DEBUG] coder_eval.agents.claude_code_agent: [coder] session_id changed: None -> 39bb14e1-3e8a-4f6d-b196-ef0fb1556df8
+2026-08-18 21:59:54 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Agent query stream ended
+2026-08-18 21:59:54 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-08-18 21:59:54 [DEBUG] coder_eval.orchestrator: Agent response received (4037 chars)
+2026-08-18 21:59:54 [DEBUG] coder_eval.orchestrator: Checking success criteria
+2026-08-18 21:59:54 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'Flow file was created': python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py
+2026-08-18 21:59:54 [DEBUG] coder_eval.sandbox: Command 'python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py' exited with code 0
+2026-08-18 21:59:54 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+Found 1 .flow file(s): InvoiceApproval/InvoiceApproval/InvoiceApproval.flow
+---
+2026-08-18 21:59:54 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-08-18 21:59:54 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'Flow contains the inline HITL node type': python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py '"uipath.human-in-the-loop.quick-form"'
+2026-08-18 21:59:55 [DEBUG] coder_eval.sandbox: Command 'python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py '"uipath.human-in-the-loop.quick-form"'' exited with code 0
+2026-08-18 21:59:55 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+Found 1 .flow file(s): InvoiceApproval/InvoiceApproval/InvoiceApproval.flow
+OK: all 1 assertion(s) satisfied by InvoiceApproval/InvoiceApproval/InvoiceApproval.flow
+---
+2026-08-18 21:59:55 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-08-18 21:59:55 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'uip flow validate passes': python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py
+2026-08-18 22:00:06 [DEBUG] coder_eval.sandbox: Command 'python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py' exited with code 0
+2026-08-18 22:00:06 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+Validating InvoiceApproval/InvoiceApproval/InvoiceApproval.flow
+{
+  "Result": "Success",
+  "Code": "FlowValidate",
+  "Data": {
+    "File": "/work/output/artifacts/skill-flow-hitl-smoke-node-placed/InvoiceApproval/InvoiceApproval/InvoiceApproval.flow",
+    "Status": "Valid"
+  }
+}
+---
+2026-08-18 22:00:06 [DEBUG] coder_eval.sandbox: STDERR:
+---
+[ManifestClient] fetchDynamicNodes ok: total=315 agent context nodes=2 external agent nodes=7 orchestrator nodes=261 IXP nodes=45
+---
+2026-08-18 22:00:06 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-08-18 22:00:06 [INFO] coder_eval.orchestrator: Success criteria: 3/3 passed, weighted score: 1.000
+2026-08-18 22:00:06 [WARNING] coder_eval.orchestrator: Visible turns (36) exceeded expected_turns (21) at iteration 1 for task skill-flow-hitl-smoke-node-placed. Run continues — max_turns remains the hard cap.
+2026-08-18 22:00:06 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-08-18 22:00:06 [INFO] coder_eval.orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+2026-08-18 22:00:06 [INFO] coder_eval.orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-hitl-smoke-node-placed
+2026-08-18 22:00:06 [INFO] coder_eval.orchestrator: Task finished: status=SUCCESS duration=359.6s score=1.000 iterations=1

@@ -1,0 +1,87 @@
+{
+  "version": "1.1.0",
+  "settings": {
+    "model": "anthropic.claude-sonnet-4-6",
+    "maxTokens": 64000,
+    "temperature": 0,
+    "engine": "basic-v2",
+    "maxIterations": 5,
+    "mode": "standard"
+  },
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "start__output__disputeDescription": {
+        "type": "string",
+        "description": "Description of the billing dispute"
+      },
+      "start__output__invoiceNumber": {
+        "type": "string",
+        "description": "Invoice number related to the dispute"
+      }
+    }
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "determination": {
+        "type": "string",
+        "description": "Determination of the billing dispute (e.g., Valid, Invalid, Partially Valid)"
+      },
+      "rationale": {
+        "type": "string",
+        "description": "Detailed rationale for the determination, grounded on SOP knowledge"
+      }
+    },
+    "required": [
+      "determination",
+      "rationale"
+    ]
+  },
+  "metadata": {
+    "storageVersion": "50.0.0",
+    "isConversational": false,
+    "showProjectCreationExperience": false
+  },
+  "type": "lowCode",
+  "guardrails": [],
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a billing dispute analyst. Your role is to analyze billing disputes by reviewing the dispute description and invoice details, then applying the Standard Operating Procedures (SOP) from the knowledge base to determine the validity and resolution of each dispute. Always ground your analysis on the SOP knowledge provided. Respond only with a determination (e.g., 'Valid', 'Invalid', or 'Partially Valid') and a concise rationale citing relevant SOP policies.",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "You are a billing dispute analyst. Your role is to analyze billing disputes by reviewing the dispute description and invoice details, then applying the Standard Operating Procedures (SOP) from the knowledge base to determine the validity and resolution of each dispute. Always ground your analysis on the SOP knowledge provided. Respond only with a determination (e.g., 'Valid', 'Invalid', or 'Partially Valid') and a concise rationale citing relevant SOP policies."
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "Analyze the following billing dispute:\n\nInvoice Number: {{input.start__output__invoiceNumber}}\n\nDispute Description: {{input.start__output__disputeDescription}}\n\nUsing the SOP knowledge base, provide:\n1. determination: Your determination (Valid, Invalid, or Partially Valid)\n2. rationale: A detailed rationale citing the relevant SOP policies",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "Analyze the following billing dispute:\n\nInvoice Number: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__invoiceNumber"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\nDispute Description: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__disputeDescription"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\nUsing the SOP knowledge base, provide:\n1. determination: Your determination (Valid, Invalid, or Partially Valid)\n2. rationale: A detailed rationale citing the relevant SOP policies"
+        }
+      ]
+    }
+  ],
+  "projectId": "475b63c4-9fc2-49e1-9fd9-b7ced3e4ae77"
+}

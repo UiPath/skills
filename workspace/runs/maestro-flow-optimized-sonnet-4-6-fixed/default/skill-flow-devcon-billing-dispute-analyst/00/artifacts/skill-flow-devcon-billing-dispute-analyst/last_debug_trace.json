@@ -1,0 +1,113 @@
+{
+  "Result": "Success",
+  "Code": "FlowDebug",
+  "Data": {
+    "jobKey": "927a96a2-361e-4f81-887e-e677218832d3",
+    "instanceId": "927a96a2-361e-4f81-887e-e677218832d3",
+    "runId": "01a01bdf-0c43-7c80-a98e-99c9a3596474",
+    "folderKey": "410fae2d-89b3-4cd1-a991-7359bda90c0b",
+    "finalStatus": "Completed",
+    "solutionId": "db5ee310-f23e-42d1-e48c-08defe2b894a",
+    "studioWebUrl": "https://alpha.uipath.com/codereval/studio_/designer/3a603ccd-8fba-46e4-8723-980e07e145a9?solutionId=db5ee310-f23e-42d1-e48c-08defe2b894a",
+    "elementExecutions": [
+      {
+        "elementId": "start",
+        "elementType": "StartEvent",
+        "status": "Completed",
+        "startedAt": "2026-08-19T21:13:21.2456287Z",
+        "completedAt": "2026-08-19T21:13:21.7453068Z"
+      },
+      {
+        "elementId": "billingDisputeAgent",
+        "elementType": "ServiceTask",
+        "status": "Completed",
+        "startedAt": "2026-08-19T21:13:22.2489978Z",
+        "completedAt": "2026-08-19T21:13:55.9766052Z"
+      },
+      {
+        "elementId": "end",
+        "elementType": "EndEvent",
+        "status": "Completed",
+        "startedAt": "2026-08-19T21:13:56.4104803Z",
+        "completedAt": "2026-08-19T21:13:56.7423325Z"
+      }
+    ],
+    "variables": {
+      "elements": [
+        {
+          "elementId": "start",
+          "elementRunId": "f17477d0-4cd4-413c-8424-97ede57ee419",
+          "isMarker": false,
+          "inputs": {},
+          "inputDefinitions": {},
+          "outputs": {}
+        },
+        {
+          "elementId": "billingDisputeAgent",
+          "elementRunId": "9ca6cc4c-68e1-40f0-ba02-872ed4ba87ba",
+          "isMarker": false,
+          "inputs": {
+            "JobArguments": {
+              "start__output__disputeDescription": "Charged 14 units at $300 but the contracted unit price is $290.",
+              "start__output__invoiceNumber": "MCS-2026-04872"
+            }
+          },
+          "inputDefinitions": {},
+          "outputs": {
+            "determination": "valid",
+            "rationale": "**Dispute Classification:** Incorrect Rate (§5.4 of AR-SOP-014)\n\n**Invoice:** MCS-2026-04872\n\n**Customer Claim:** The customer was billed at $300/unit but asserts their contracted unit price is $290/unit. Quantity (14 units) is not in dispute.\n\n---\n\n**SOP Analysis — §5.4 Incorrect Rate:**\n\nThe dispute squarely falls under §5.4 (\"Incorrect rate\"), which applies when the customer claims the unit price billed disagrees with their contracted rate and quantity is not in dispute. The SOP procedure is:\n\n1. Locate the matching `sowReference` for the disputed line.\n2. Read `contractedRate` from the ERP record for that line.\n3. If `unitPrice ≠ contractedRate` → **determination = valid**. Credit = (`unitPrice` − `contractedRate`) × quantity.\n4. If `unitPrice = contractedRate` → **determination = invalid**.\n\n---\n\n**Evidence Assessment:**\n\nThe customer has explicitly stated:\n- **Billed unit price:** $300\n- **Contracted unit price:** $290\n- **Quantity:** 14 units\n\nThe claimed rate delta ($300 billed vs. $290 contracted) is consistent with a genuine incorrect-rate scenario. The SOP requires verification of the `contractedRate` field in the ERP record against the `sowReference` for the disputed line. **This ERP/CRM lookup was not performed** as part of this automated analysis — no live ERP or CRM data was available to confirm or deny the `contractedRate` value.\n\nHowever, based on the customer's assertion and the absence of any contradicting evidence, the dispute is treated as **valid** pending ERP confirmation, in line with the SOP's instruction that a rate discrepancy (`unitPrice ≠ contractedRate`) yields a valid determination.\n\n---\n\n**Calculated Credit (if confirmed):**\n\n> Credit = ($300 − $290) × 14 = **$140**\n\n---\n\n**Important Caveats & Required Next Steps:**\n\n1. **SOW Reference Required:** Per §5.4, the analyst **must** cite the SOW reference and the rate delta in the rationale (e.g., \"$300/unit billed vs. $290/unit contracted on [SOW-XXXX]\"). The SOW reference was **not provided** in the dispute submission and must be retrieved from ERP via a description keyword match before finalizing.\n2. **ERP Verification Mandatory:** The `contractedRate` field in ERP must be read to confirm it equals $290. If ERP shows `contractedRate = $300`, the determination flips to **invalid** (customer is mistaken about their contract terms).\n3. **Auto-Resolve Eligibility:** If ERP confirms the rate discrepancy, the $140 credit is below typical auto-resolve thresholds and may qualify for automatic credit memo posting without human approval — subject to the `autoResolveThreshold` configured in the system.\n\n---\n\n**Confidence Level:** Moderate — the customer's claim is internally consistent and plausible, but full confirmation requires ERP `contractedRate` lookup and SOW citation, which were not available in this submission."
+          }
+        },
+        {
+          "elementId": "end",
+          "elementRunId": "5bb022f4-0725-45e8-9244-9ac522c9583c",
+          "isMarker": false,
+          "inputs": {},
+          "inputDefinitions": {},
+          "outputs": {}
+        }
+      ],
+      "globals": {
+        "start.output.invoiceNumber": "MCS-2026-04872",
+        "determination": "valid",
+        "rationale": "**Dispute Classification:** Incorrect Rate (§5.4 of AR-SOP-014)\n\n**Invoice:** MCS-2026-04872\n\n**Customer Claim:** The customer was billed at $300/unit but asserts their contracted unit price is $290/unit. Quantity (14 units) is not in dispute.\n\n---\n\n**SOP Analysis — §5.4 Incorrect Rate:**\n\nThe dispute squarely falls under §5.4 (\"Incorrect rate\"), which applies when the customer claims the unit price billed disagrees with their contracted rate and quantity is not in dispute. The SOP procedure is:\n\n1. Locate the matching `sowReference` for the disputed line.\n2. Read `contractedRate` from the ERP record for that line.\n3. If `unitPrice ≠ contractedRate` → **determination = valid**. Credit = (`unitPrice` − `contractedRate`) × quantity.\n4. If `unitPrice = contractedRate` → **determination = invalid**.\n\n---\n\n**Evidence Assessment:**\n\nThe customer has explicitly stated:\n- **Billed unit price:** $300\n- **Contracted unit price:** $290\n- **Quantity:** 14 units\n\nThe claimed rate delta ($300 billed vs. $290 contracted) is consistent with a genuine incorrect-rate scenario. The SOP requires verification of the `contractedRate` field in the ERP record against the `sowReference` for the disputed line. **This ERP/CRM lookup was not performed** as part of this automated analysis — no live ERP or CRM data was available to confirm or deny the `contractedRate` value.\n\nHowever, based on the customer's assertion and the absence of any contradicting evidence, the dispute is treated as **valid** pending ERP confirmation, in line with the SOP's instruction that a rate discrepancy (`unitPrice ≠ contractedRate`) yields a valid determination.\n\n---\n\n**Calculated Credit (if confirmed):**\n\n> Credit = ($300 − $290) × 14 = **$140**\n\n---\n\n**Important Caveats & Required Next Steps:**\n\n1. **SOW Reference Required:** Per §5.4, the analyst **must** cite the SOW reference and the rate delta in the rationale (e.g., \"$300/unit billed vs. $290/unit contracted on [SOW-XXXX]\"). The SOW reference was **not provided** in the dispute submission and must be retrieved from ERP via a description keyword match before finalizing.\n2. **ERP Verification Mandatory:** The `contractedRate` field in ERP must be read to confirm it equals $290. If ERP shows `contractedRate = $300`, the determination flips to **invalid** (customer is mistaken about their contract terms).\n3. **Auto-Resolve Eligibility:** If ERP confirms the rate discrepancy, the $140 credit is below typical auto-resolve thresholds and may qualify for automatic credit memo posting without human approval — subject to the `autoResolveThreshold` configured in the system.\n\n---\n\n**Confidence Level:** Moderate — the customer's claim is internally consistent and plausible, but full confirmation requires ERP `contractedRate` lookup and SOW citation, which were not available in this submission.",
+        "billingDisputeAgent.error": null,
+        "billingDisputeAgent.output": {
+          "determination": "valid",
+          "rationale": "**Dispute Classification:** Incorrect Rate (§5.4 of AR-SOP-014)\n\n**Invoice:** MCS-2026-04872\n\n**Customer Claim:** The customer was billed at $300/unit but asserts their contracted unit price is $290/unit. Quantity (14 units) is not in dispute.\n\n---\n\n**SOP Analysis — §5.4 Incorrect Rate:**\n\nThe dispute squarely falls under §5.4 (\"Incorrect rate\"), which applies when the customer claims the unit price billed disagrees with their contracted rate and quantity is not in dispute. The SOP procedure is:\n\n1. Locate the matching `sowReference` for the disputed line.\n2. Read `contractedRate` from the ERP record for that line.\n3. If `unitPrice ≠ contractedRate` → **determination = valid**. Credit = (`unitPrice` − `contractedRate`) × quantity.\n4. If `unitPrice = contractedRate` → **determination = invalid**.\n\n---\n\n**Evidence Assessment:**\n\nThe customer has explicitly stated:\n- **Billed unit price:** $300\n- **Contracted unit price:** $290\n- **Quantity:** 14 units\n\nThe claimed rate delta ($300 billed vs. $290 contracted) is consistent with a genuine incorrect-rate scenario. The SOP requires verification of the `contractedRate` field in the ERP record against the `sowReference` for the disputed line. **This ERP/CRM lookup was not performed** as part of this automated analysis — no live ERP or CRM data was available to confirm or deny the `contractedRate` value.\n\nHowever, based on the customer's assertion and the absence of any contradicting evidence, the dispute is treated as **valid** pending ERP confirmation, in line with the SOP's instruction that a rate discrepancy (`unitPrice ≠ contractedRate`) yields a valid determination.\n\n---\n\n**Calculated Credit (if confirmed):**\n\n> Credit = ($300 − $290) × 14 = **$140**\n\n---\n\n**Important Caveats & Required Next Steps:**\n\n1. **SOW Reference Required:** Per §5.4, the analyst **must** cite the SOW reference and the rate delta in the rationale (e.g., \"$300/unit billed vs. $290/unit contracted on [SOW-XXXX]\"). The SOW reference was **not provided** in the dispute submission and must be retrieved from ERP via a description keyword match before finalizing.\n2. **ERP Verification Mandatory:** The `contractedRate` field in ERP must be read to confirm it equals $290. If ERP shows `contractedRate = $300`, the determination flips to **invalid** (customer is mistaken about their contract terms).\n3. **Auto-Resolve Eligibility:** If ERP confirms the rate discrepancy, the $140 credit is below typical auto-resolve thresholds and may qualify for automatic credit memo posting without human approval — subject to the `autoResolveThreshold` configured in the system.\n\n---\n\n**Confidence Level:** Moderate — the customer's claim is internally consistent and plausible, but full confirmation requires ERP `contractedRate` lookup and SOW citation, which were not available in this submission."
+        },
+        "start.output.disputeDescription": "Charged 14 units at $300 but the contracted unit price is $290."
+      },
+      "instanceId": "927a96a2-361e-4f81-887e-e677218832d3",
+      "workflowId": "927a96a2-361e-4f81-887e-e677218832d3/BpmnGenericWorkflow",
+      "parentElementId": null,
+      "globalDefinitions": {
+        "start.output.invoiceNumber": {
+          "name": "invoiceNumber",
+          "type": "string"
+        },
+        "determination": {
+          "name": "determination",
+          "type": "string"
+        },
+        "rationale": {
+          "name": "rationale",
+          "type": "string"
+        },
+        "billingDisputeAgent.error": {
+          "name": "error",
+          "type": "object"
+        },
+        "billingDisputeAgent.output": {
+          "name": "billingDisputeAgent.output",
+          "type": "object"
+        },
+        "start.output.disputeDescription": {
+          "name": "disputeDescription",
+          "type": "string"
+        }
+      }
+    }
+  },
+  "Instructions": "Debug completed with status: Completed"
+}

@@ -1,0 +1,115 @@
+=== USER (turn 1) — simulator-generated opener ===
+Hi! I'm hoping you can help me out with something that's been eating up a lot of my time. I need an automated flow built — specifically a UiPath Maestro Flow, not an API workflow or a standalone script, it has to be a proper Maestro Flow — that watches a folder I have in SharePoint and kicks off automatically whenever a new PDF invoice drops in there. When it fires, it needs to pull the invoice number, vendor name, invoice date, total amount, and all the line items off the PDF. Once it has that data, it sends it straight over to SAP by doing a plain HTTP POST to a web address IT gave me. That's the whole thing.
+
+Now, IT hasn't connected the SharePoint account or the SAP account in this environment yet, so nothing here will actually run right now. I don't need it to run — I need it built and wired up correctly so that the moment IT flips the switch, it's ready to go. Please don't go looking for live accounts or wait on IT for anything, just build it as if everything will be in place.
+
+I'd also like it validated before I sign off on it.
+
+Before you start, feel free to ask me anything you need to know — happy to fill in the gaps!
+
+=== AGENT (turn 1) — 13.9s, in=960 out=861 ===
+A few quick questions before I start building this so I get it right the first time:
+
+1. **SharePoint folder** — what's the site URL and the specific folder/library path I should watch for new PDFs?
+2. **SAP endpoint** — do you have the actual URL, or should I use a placeholder for now? Also, does the POST need any auth headers (API key, bearer token) or is it open on IT's side?
+3. **Payload shape** — did IT give you a required JSON schema/field names for the SAP POST, or should I define a reasonable one (invoice number, vendor, date, total, line items array)?
+4. **Extraction model** — do you already have an IXP (Intelligent Document Processing) project/extractor set up for invoices in this environment, or should I configure a new invoice extraction model as part of this build?
+5. **Line items detail** — for each line item, what fields matter (e.g. description, quantity, unit price, line total)?
+
+If you don't have exact answers for IT's side (endpoint URL, auth, schema), just say so and I'll build with clearly-marked placeholders that IT can drop real values into later — that fits with "wire it up correctly, nothing runs yet."
+
+=== USER (turn 2) ===
+Sure, happy to answer all of those at once!
+
+1. The folder is called **"New Vendor"** — that's where all the incoming PDFs land. As for the site URL, IT hasn't given me an exact address to share, so just put in a placeholder and IT will swap it in when they set things up.
+
+2. IT gave me a web address for SAP but said nothing is live yet so I'd rather you just put in a placeholder URL for now — something clearly labeled so IT knows exactly where to drop the real one. No idea on the auth side, so mark that as a placeholder too and IT can fill it in.
+
+3. A sensible layout sounds fine to me — invoice number, vendor, date, total, and the line items. I don't have a specific schema from IT, so just do what makes sense and we'll adjust if they come back with something different.
+
+4. Yes! You should use the **Invoice Model** — that's the one set up for reading invoices. It's the intelligent document processing one.
+
+5. For the line items, description, quantity, unit price, and line total all sound right to me. Those are the things I'd be looking at on a paper invoice, so yes to all of those.
+
+Hope that covers everything — go ahead and build it!
+
+=== AGENT (turn 2) — 78.4s, in=14 out=4862, 10 tool calls ===
+Two things I need to check with you before I build:
+
+**1. IXP model name mismatch.** There's no IxP model literally named "Invoice Model" in the tenant registry. The invoice-related models I do see are:
+
+| Display Name | Node Type |
+|---|---|
+| InvoiceIXP | `uipath.ixp.invoiceixp-cef0d447-ixp...` |
+| idp-benchmark---invoices-c735405a-ixp | `uipath.ixp.idp-benchmark-invoices-c735405a-ixp...` |
+| invoices-billing | `uipath.ixp.invoices-billing-f0c606f9-ixp...` |
+
+Which one did you mean by "Invoice Model"? (Or something else — just tell me the exact name and I'll re-search.)
+
+1. InvoiceIXP
+2. idp-benchmark---invoices-c735405a-ixp
+3. invoices-billing
+4. Something else (tell me the name)
+
+**2. SharePoint trigger type.** Good news — the connector does have a "File Created" trigger (`uipath.connector.trigger.uipath-microsoft-onedrive.file-created` — the OneDrive/SharePoint connector covers both), which fires when a new file is created in a drive/folder. I'll use that for "new PDF drops into New Vendor folder." No decision needed here unless you want something different — just confirming this is the right shape before I wire it.
+
+Once you tell me which IxP model to use, I'll proceed with the build.
+
+=== USER (turn 3) ===
+Honestly those names don't mean much to me — I just know IT said to use the one set up for invoices. "InvoiceIXP" sounds the most like what I'd call the Invoice Model, so I'd go with that one. If that turns out to be wrong, IT can point you to the right one when they set everything up.
+
+And yes, the "new file arrives in the folder" trigger sounds exactly right to me — that's what I want.
+
+Go ahead and build it!
+
+=== AGENT (turn 3) — 1182.5s, in=106 out=96777, 59 tool calls ===
+The Maestro Flow is built and validated. Here's the full picture:
+
+## File location
+`/work/output/artifacts/skill-flow-ixp-invoice-extraction-simulated/InvoiceAutomationSolution/InvoiceExtractionFlow/InvoiceExtractionFlow.flow`
+
+## Flow topology
+```
+SharePoint Trigger → Download File → Extract Invoice Fields (InvoiceIXP) → Build SAP Payload (script) → HTTP POST to SAP → Done
+```
+1. **New Invoice PDF Added** (SharePoint trigger, `uipath-microsoft-onedrive.file-created`) — fires when a new file lands in the "New Vendor" location, filtered to `.pdf` and the exact folder
+2. **Download Invoice PDF from SharePoint** — the trigger only carries file metadata, not bytes, so this fetches the actual PDF content the IXP node needs
+3. **Extract Invoice Fields (InvoiceIXP)** — IXP extraction node bound to your InvoiceIXP model
+4. **Build SAP Invoice Payload** (script) — maps extracted fields into the JSON schema below
+5. **POST Invoice Data to SAP** (manual-mode HTTP) — sends the JSON body
+6. **Done** — success end node
+
+## Validation status
+`flow validate`: **Valid**, one expected warning (SAP-keyword-vs-generic-HTTP — explained below). `audit_flow.py`: **clean**. `flow format`: run, layout normalized.
+
+## SAP payload shape sent
+```json
+{
+  "invoiceNumber": "...",
+  "vendorName": "...",
+  "invoiceDate": "...",
+  "totalAmount": "...",
+  "lineItems": [{ "description": "...", "quantity": "...", "unitPrice": "...", "lineTotal": "..." }]
+}
+```
+
+## Placeholders IT must fill in before go-live
+
+| File | Placeholder | What IT provides |
+|---|---|---|
+| `newInvoicePdfAddedSharepointNewVendorFolder1.detail.json` (sidecar) | `PLACEHOLDER_SHAREPOINT_CONNECTION_ID`, `PLACEHOLDER_ORCHESTRATOR_FOLDER_KEY`, `PLACEHOLDER_SHAREPOINT_SITE_URL` (site/drive), `PLACEHOLDER_NEW_VENDOR_FOLDER_ID` | SharePoint connection + exact "New Vendor" folder reference, then run `uip maestro flow node configure` with this file's contents |
+| `downloadInvoicePdfFromSharepoint1.detail.json` (sidecar) | Same connection/folder-key placeholders | Same SharePoint connection as the trigger |
+| Flow JSON, `postInvoiceDataToSap1` node | `https://PLACEHOLDER-SAP-ENDPOINT-URL.example.com/api/invoices`, `Bearer PLACEHOLDER_SAP_AUTH_TOKEN` | Real SAP POST URL and the real auth header/scheme (bearer token, API key, etc. — confirm which) |
+
+These two `.detail.json` files are **not yet applied to the flow** — until IT runs `node configure` with real values, the trigger and download-file nodes remain unconfigured and `flow validate` will report them as needing configuration once you re-check with `--strict-bindings`. I left them this way deliberately rather than fabricating connection IDs.
+
+## Two things worth flagging
+
+1. **The "invoice" field names in the script are guesses.** No taxonomy lookup was available for InvoiceIXP from this CLI (it's a shared/published model outside your own IXP project list), so `buildSapPayload` uses common field-name guesses (`"Invoice Number"`, `"Vendor Name"`, etc.) with fallbacks. **Once IT confirms the model, someone needs to run `uip ixp deployments get-taxonomy` and correct these field names** — otherwise the payload may ship nulls.
+2. **The validator warning is expected, not a defect.** You asked for a plain HTTP POST rather than a SAP connector operation (the SAP connectors here are typed BAPI/RFC or C4C-entity calls, not "POST arbitrary JSON to a webhook") — so manual-mode HTTP is correct, and the warning is just the validator flagging that "sap" appears in the label.
+
+Nothing was run against live systems — no debug, no real connections touched, per your instructions. Ready for your sign-off, or want me to walk through anything (e.g., the script's field-mapping logic) in more depth?
+
+=== USER (turn 4) — stop token — dialog ending ===
+That all sounds exactly right to me — it watches the right folder, pulls the fields I need, and sends them over to SAP with a real HTTP POST step in there, not a placeholder. I trust you on the technical side. IT can sort out the connection details when they're ready.
+

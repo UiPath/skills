@@ -1,0 +1,12 @@
+{
+  "DocVersion": "1.0.0",
+  "StudioMinVersion": "2025.10.0",
+  "SolutionId": "6e91afb9-c5ff-4a21-bdb0-2ebcfb7942ac",
+  "Projects": [
+    {
+      "Type": "Flow",
+      "ProjectRelativePath": "InvoiceExtractionFlow/project.uiproj",
+      "Id": "bfe8dd78-7add-49c4-83fc-0be9f0974db7"
+    }
+  ]
+}

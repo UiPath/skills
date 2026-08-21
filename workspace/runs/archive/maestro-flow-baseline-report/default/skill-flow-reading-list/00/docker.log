@@ -1,0 +1,9 @@
+20:50:51 [INFO   ] [default/skill-flow-reading-list/00] orchestrator: API routing: aws_bedrock
+20:56:10 [INFO   ] [default/skill-flow-reading-list/00] orchestrator: Success criteria: 2/2 passed, weighted score: 1.000
+20:56:10 [WARNING] [default/skill-flow-reading-list/00] orchestrator: Visible turns (21) exceeded expected_turns (20) at iteration 1 for task skill-flow-reading-list. Run continues — max_turns remains the hard cap.
+20:56:10 [INFO   ] [default/skill-flow-reading-list/00] orchestrator: Running post-run command: python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/cleanup_solutions.py
+20:56:12 [WARNING] [default/skill-flow-reading-list/00] orchestrator: [post_run stderr] cleanup_solutions: deleted 74946b63-03b3-4775-32cb-08dee8fa7fa1 (from ReadingList/ReadingList.uipx)
+20:56:12 [WARNING] [default/skill-flow-reading-list/00] orchestrator: [post_run stderr] cleanup_solutions: summary policy=always deleted=1 preserved=0 skipped=0 not_uploaded=0 failed=0
+20:56:12 [INFO   ] [default/skill-flow-reading-list/00] orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+20:56:12 [INFO   ] [default/skill-flow-reading-list/00] orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-reading-list
+20:56:12 [INFO   ] [default/skill-flow-reading-list/00] orchestrator: Task finished: status=SUCCESS duration=322.7s score=1.000 iterations=1

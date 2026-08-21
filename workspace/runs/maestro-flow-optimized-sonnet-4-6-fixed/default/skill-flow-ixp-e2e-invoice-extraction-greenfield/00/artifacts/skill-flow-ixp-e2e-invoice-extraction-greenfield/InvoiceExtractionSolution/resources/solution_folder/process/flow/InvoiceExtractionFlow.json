@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "InvoiceExtractionFlow",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "7eb7dad0-21b2-438a-a196-b3fe38b1991d",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "InvoiceExtractionFlow"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Flow",
+      "name": "InvoiceExtractionFlow",
+      "package": {
+        "key": "723efc70-ced9-4b29-989a-cc6eaefb24d6"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "bc026d5a-d257-45e1-aa42-6e8394c77374",
+    "files": []
+  }
+}

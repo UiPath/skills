@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "OutlookTriggerFlow",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "bb56e98e-7b08-408f-88ca-73070c3fbbed",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "OutlookTriggerFlow"
+    },
+    "locks": [],
+    "key": "f98930ee-1eab-4a25-825d-05c5ff86b0e2",
+    "files": []
+  }
+}

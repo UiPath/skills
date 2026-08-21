@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "SimEval",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "49e19d48-4246-4996-a179-08994e07e2fd",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "SimEval"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Flow",
+      "name": "SimEval",
+      "package": {
+        "key": "902d12d9-2001-4b20-b0e2-412dd4d19d3c"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "7e409761-da68-4828-a871-8b9e727894db",
+    "files": []
+  }
+}

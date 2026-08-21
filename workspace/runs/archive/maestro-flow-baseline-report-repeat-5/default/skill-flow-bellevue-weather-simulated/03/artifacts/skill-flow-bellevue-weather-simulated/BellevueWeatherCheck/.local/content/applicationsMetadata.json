@@ -1,0 +1,15 @@
+﻿{
+  "Version": "1.0",
+  "Metadata": [
+    {
+      "ApplicationType": "API",
+      "ExecutablePath": null,
+      "Url": {
+        "Value": "\"https://api.open-meteo.com/v1/forecast?latitude=47.6101&longitude=-122.2015&current_weather=true&daily=precipitation_sum&timezone=America%2FLos_Angeles&forecast_days=1\"",
+        "IsExpression": true
+      },
+      "Arguments": null,
+      "Version": null
+    }
+  ]
+}

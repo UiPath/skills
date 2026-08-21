@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "WebhookFlow",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "8d7b694e-75c6-4ca9-ad39-0820757a6c47",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "WebhookFlow"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Flow",
+      "name": "WebhookFlow",
+      "package": {
+        "key": "ec3f0e2a-5ede-454e-9d2d-81a33148bc80"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "9462147f-ce19-4b9e-a6c9-8e018db8cd30",
+    "files": []
+  }
+}

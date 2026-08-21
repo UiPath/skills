@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "BindingsReconfigure",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "d7860969-1deb-493e-9a04-a45df17340b8",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "BindingsReconfigure"
+    },
+    "locks": [],
+    "key": "31386954-fde6-4b99-9011-c0f9dbee97fa",
+    "files": []
+  }
+}

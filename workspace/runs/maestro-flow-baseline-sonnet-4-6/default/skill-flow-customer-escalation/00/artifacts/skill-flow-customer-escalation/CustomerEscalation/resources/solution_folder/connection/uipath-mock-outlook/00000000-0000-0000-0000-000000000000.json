@@ -1,0 +1,27 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "00000000-0000-0000-0000-000000000000",
+    "kind": "connection",
+    "type": "uipath-mock-outlook",
+    "apiVersion": "integrationservice.uipath.com/v1",
+    "isOverridable": true,
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "files": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "connectorName": "uipath-mock-outlook",
+      "name": "00000000-0000-0000-0000-000000000000",
+      "description": null,
+      "authenticationType": "AuthenticateAfterDeployment",
+      "connectorKey": "uipath-mock-outlook"
+    },
+    "locks": [],
+    "key": "00000000-0000-0000-0000-000000000000"
+  }
+}

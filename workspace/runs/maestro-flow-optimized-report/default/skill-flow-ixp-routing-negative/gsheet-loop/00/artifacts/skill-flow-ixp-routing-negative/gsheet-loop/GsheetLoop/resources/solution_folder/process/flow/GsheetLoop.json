@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "GsheetLoop",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "37e1380d-9b68-4064-a074-56c086d09466",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "GsheetLoop"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Flow",
+      "name": "GsheetLoop",
+      "package": {
+        "key": "4166b9cc-b850-4dc1-9ee6-608397c79f09"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "c6e973e5-78e5-411b-9b04-8a2112bd0318",
+    "files": []
+  }
+}

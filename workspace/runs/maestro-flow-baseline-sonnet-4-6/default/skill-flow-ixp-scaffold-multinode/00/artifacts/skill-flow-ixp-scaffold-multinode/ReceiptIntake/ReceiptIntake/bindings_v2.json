@@ -1,0 +1,10 @@
+{
+  "bindings": [
+    {
+      "key": "ReceiptBucket",
+      "kind": "StorageBucket",
+      "name": "ReceiptBucket",
+      "require": "existing"
+    }
+  ]
+}

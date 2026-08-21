@@ -1,0 +1,6 @@
+18:29:31 [INFO   ] [default/skill-flow-webhook-waitfor-parallel/04] orchestrator: API routing: aws_bedrock
+18:34:05 [INFO   ] [default/skill-flow-webhook-waitfor-parallel/04] orchestrator: Success criteria: 5/5 passed, weighted score: 1.000
+18:34:05 [WARNING] [default/skill-flow-webhook-waitfor-parallel/04] orchestrator: Visible turns (39) exceeded expected_turns (35) at iteration 1 for task skill-flow-webhook-waitfor-parallel. Run continues — max_turns remains the hard cap.
+18:34:05 [INFO   ] [default/skill-flow-webhook-waitfor-parallel/04] orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+18:34:05 [INFO   ] [default/skill-flow-webhook-waitfor-parallel/04] orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-webhook-waitfor-parallel
+18:34:05 [INFO   ] [default/skill-flow-webhook-waitfor-parallel/04] orchestrator: Task finished: status=SUCCESS duration=276.9s score=1.000 iterations=1

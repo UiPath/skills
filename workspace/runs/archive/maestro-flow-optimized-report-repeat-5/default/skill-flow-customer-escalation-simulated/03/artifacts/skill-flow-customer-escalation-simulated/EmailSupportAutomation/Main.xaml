@@ -1,0 +1,335 @@
+<Activity mc:Ignorable="sap sap2010" x:Class="Main"
+  mva:VisualBasic.Settings="{x:Null}"
+  xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities"
+  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+  xmlns:mva="clr-namespace:Microsoft.VisualBasic.Activities;assembly=System.Activities"
+  xmlns:sap="http://schemas.microsoft.com/netfx/2009/xaml/activities/presentation"
+  xmlns:sap2010="http://schemas.microsoft.com/netfx/2010/xaml/activities/presentation"
+  xmlns:scg="clr-namespace:System.Collections.Generic;assembly=System.Private.CoreLib"
+  xmlns:sco="clr-namespace:System.Collections.ObjectModel;assembly=mscorlib"
+  xmlns:sc="clr-namespace:System.Collections;assembly=System.Private.CoreLib"
+  xmlns:ui="http://schemas.uipath.com/workflow/activities"
+  xmlns:umae="clr-namespace:UiPath.Mail.Activities.Enums;assembly=UiPath.Mail.Activities"
+  xmlns:usau="clr-namespace:UiPath.Shared.Activities.Utils;assembly=UiPath.Mail.Activities"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <TextExpression.NamespacesForImplementation>
+    <sco:Collection x:TypeArguments="x:String">
+      <x:String>System.Activities</x:String>
+      <x:String>System.Activities.Statements</x:String>
+      <x:String>Microsoft.VisualBasic</x:String>
+      <x:String>Microsoft.VisualBasic.Activities</x:String>
+      <x:String>System</x:String>
+      <x:String>System.Collections</x:String>
+      <x:String>System.Collections.Generic</x:String>
+      <x:String>System.Linq</x:String>
+      <x:String>UiPath.Core</x:String>
+      <x:String>UiPath.Core.Activities</x:String>
+      <x:String>UiPath.Mail.Activities.Enums</x:String>
+      <x:String>UiPath.Mail.IMAP.Activities</x:String>
+    </sco:Collection>
+  </TextExpression.NamespacesForImplementation>
+  <TextExpression.ReferencesForImplementation>
+    <sco:Collection x:TypeArguments="AssemblyReference">
+      <AssemblyReference>System.Activities</AssemblyReference>
+      <AssemblyReference>Microsoft.VisualBasic</AssemblyReference>
+      <AssemblyReference>System.Private.CoreLib</AssemblyReference>
+      <AssemblyReference>mscorlib</AssemblyReference>
+      <AssemblyReference>System</AssemblyReference>
+      <AssemblyReference>System.Linq</AssemblyReference>
+      <AssemblyReference>UiPath.System.Activities</AssemblyReference>
+      <AssemblyReference>UiPath.Mail.Activities</AssemblyReference>
+    </sco:Collection>
+  </TextExpression.ReferencesForImplementation>
+  <Sequence DisplayName="Main Sequence" sap2010:WorkflowViewState.IdRef="Sequence_1">
+    <Sequence.Variables>
+      <!-- IMAP connection settings — override these with Orchestrator Assets in production -->
+      <Variable x:TypeArguments="x:String" Name="imapServer" Default="&quot;imap.yourdomain.com&quot;" />
+      <Variable x:TypeArguments="x:Int32" Name="imapPort" Default="993" />
+      <Variable x:TypeArguments="x:String" Name="supportEmail" Default="&quot;support@yourdomain.com&quot;" />
+      <Variable x:TypeArguments="x:String" Name="emailPassword" Default="&quot;YOUR_EMAIL_PASSWORD&quot;" />
+      <!-- SMTP settings for sending auto-replies -->
+      <Variable x:TypeArguments="x:String" Name="smtpServer" Default="&quot;smtp.yourdomain.com&quot;" />
+      <Variable x:TypeArguments="x:Int32" Name="smtpPort" Default="587" />
+      <!-- Orchestrator queue for routing -->
+      <Variable x:TypeArguments="x:String" Name="queueName" Default="&quot;SupportEmailQueue&quot;" />
+      <!-- Retrieved emails: Object holds List(Of UiPathMailMessage) returned by GetIMAPMailMessages -->
+      <Variable x:TypeArguments="x:Object" Name="emailMessages" />
+      <Variable x:TypeArguments="x:String" Name="emailCategory" Default="&quot;&quot;" />
+      <Variable x:TypeArguments="x:String" Name="emailPriority" Default="&quot;&quot;" />
+      <Variable x:TypeArguments="x:Int32" Name="processedCount" Default="0" />
+    </Sequence.Variables>
+
+    <ui:LogMessage Level="Info" DisplayName="Log Start">
+      <ui:LogMessage.Message>
+        <InArgument x:TypeArguments="x:Object">
+          <VisualBasicValue x:TypeArguments="x:Object" ExpressionText="$&quot;EmailSupportAutomation started at {DateTime.Now}&quot;" />
+        </InArgument>
+      </ui:LogMessage.Message>
+    </ui:LogMessage>
+
+    <!-- Step 1: Read unread emails from IMAP inbox -->
+    <TryCatch DisplayName="Read Support Emails">
+      <TryCatch.Try>
+        <Sequence DisplayName="Try">
+          <ui:GetIMAPMailMessages
+            Server="[imapServer]"
+            Port="[imapPort]"
+            Email="[supportEmail]"
+            Password="[emailPassword]"
+            Messages="[emailMessages]"
+            MailFolder="Inbox"
+            OnlyUnreadMessages="True"
+            Top="50"
+            MarkAsRead="True"
+            EnableSSL="True"
+            SecureConnection="Auto"
+            UseISConnection="False"
+            DisplayName="Get Unread Support Emails">
+            <ui:GetIMAPMailMessages.ConnectionDetailsBackupSlot>
+              <usau:BackupSlot x:TypeArguments="umae:ConnectionDetails" StoredValue="{x:Null}">
+                <usau:BackupSlot.BackupValues>
+                  <scg:Dictionary x:TypeArguments="umae:ConnectionDetails, scg:List(x:Object)" />
+                </usau:BackupSlot.BackupValues>
+              </usau:BackupSlot>
+            </ui:GetIMAPMailMessages.ConnectionDetailsBackupSlot>
+          </ui:GetIMAPMailMessages>
+
+          <ui:LogMessage Level="Info" DisplayName="Log Emails Retrieved">
+            <ui:LogMessage.Message>
+              <InArgument x:TypeArguments="x:Object">
+                <VisualBasicValue x:TypeArguments="x:Object" ExpressionText="$&quot;Retrieved {If(emailMessages IsNot Nothing, DirectCast(emailMessages, IList).Count, 0)} unread email(s) from inbox&quot;" />
+              </InArgument>
+            </ui:LogMessage.Message>
+          </ui:LogMessage>
+        </Sequence>
+      </TryCatch.Try>
+      <TryCatch.Catches>
+        <Catch x:TypeArguments="s:Exception" xmlns:s="clr-namespace:System;assembly=System.Private.CoreLib">
+          <ActivityAction x:TypeArguments="s:Exception">
+            <ActivityAction.Argument>
+              <DelegateInArgument x:TypeArguments="s:Exception" Name="ex" />
+            </ActivityAction.Argument>
+            <Sequence DisplayName="Catch">
+              <ui:LogMessage Level="Error" DisplayName="Log Email Read Error">
+                <ui:LogMessage.Message>
+                  <InArgument x:TypeArguments="x:Object">
+                    <VisualBasicValue x:TypeArguments="x:Object" ExpressionText="$&quot;Failed to read emails from mailbox: {ex.Message}&quot;" />
+                  </InArgument>
+                </ui:LogMessage.Message>
+              </ui:LogMessage>
+              <Throw DisplayName="Rethrow as SystemException">
+                <Throw.Exception>
+                  <InArgument x:TypeArguments="s:Exception" xmlns:s="clr-namespace:System;assembly=System.Private.CoreLib">
+                    <VisualBasicValue x:TypeArguments="s:Exception" ExpressionText="New Exception(&quot;Unable to connect to mailbox. Check IMAP settings and credentials.&quot;, ex)" />
+                  </InArgument>
+                </Throw.Exception>
+              </Throw>
+            </Sequence>
+          </ActivityAction>
+        </Catch>
+      </TryCatch.Catches>
+    </TryCatch>
+
+    <!-- Step 2: Process each email only if we got a list back -->
+    <If DisplayName="Check Emails Exist">
+      <If.Condition>
+        <InArgument x:TypeArguments="x:Boolean">
+          <VisualBasicValue x:TypeArguments="x:Boolean" ExpressionText="emailMessages IsNot Nothing AndAlso DirectCast(emailMessages, IList).Count > 0" />
+        </InArgument>
+      </If.Condition>
+      <If.Then>
+        <Sequence DisplayName="Then">
+          <!-- Iterate over messages as Object — properties accessed via late binding at runtime -->
+          <ui:ForEach x:TypeArguments="x:Object" DisplayName="For Each Email">
+            <ui:ForEach.Values>
+              <InArgument x:TypeArguments="sc:IEnumerable">
+                <VisualBasicValue x:TypeArguments="sc:IEnumerable" ExpressionText="DirectCast(emailMessages, IEnumerable)" />
+              </InArgument>
+            </ui:ForEach.Values>
+            <ui:ForEach.Body>
+              <ActivityAction x:TypeArguments="x:Object">
+                <ActivityAction.Argument>
+                  <DelegateInArgument x:TypeArguments="x:Object" Name="email" />
+                </ActivityAction.Argument>
+                <Sequence DisplayName="Body">
+                  <Sequence.Variables>
+                    <Variable x:TypeArguments="x:String" Name="senderAddress" Default="&quot;&quot;" />
+                    <Variable x:TypeArguments="x:String" Name="emailSubject" Default="&quot;&quot;" />
+                    <Variable x:TypeArguments="x:String" Name="emailBody" Default="&quot;&quot;" />
+                  </Sequence.Variables>
+
+                  <!-- Extract email fields using InvokeCode to avoid Option Strict late-binding errors -->
+                  <ui:InvokeCode Language="VBNet" DisplayName="Extract Email Fields"
+                    Code="Dim t As Type = emailObj.GetType()&#xA;Dim fromProp = t.GetProperty(&quot;From&quot;)&#xA;Dim subjectProp = t.GetProperty(&quot;Subject&quot;)&#xA;Dim bodyProp = t.GetProperty(&quot;Body&quot;)&#xA;If fromProp IsNot Nothing Then&#xA;    Dim fromVal = fromProp.GetValue(emailObj)&#xA;    If fromVal IsNot Nothing Then&#xA;        Dim addrProp = fromVal.GetType().GetProperty(&quot;Address&quot;)&#xA;        If addrProp IsNot Nothing Then&#xA;            Dim addr = addrProp.GetValue(fromVal)&#xA;            If addr IsNot Nothing Then outSender = CStr(addr)&#xA;        End If&#xA;    End If&#xA;End If&#xA;If subjectProp IsNot Nothing Then&#xA;    Dim subj = subjectProp.GetValue(emailObj)&#xA;    If subj IsNot Nothing Then outSubject = CStr(subj)&#xA;End If&#xA;If bodyProp IsNot Nothing Then&#xA;    Dim bod = bodyProp.GetValue(emailObj)&#xA;    If bod IsNot Nothing Then outBody = CStr(bod)&#xA;End If">
+                    <ui:InvokeCode.Arguments>
+                      <scg:Dictionary x:TypeArguments="x:String, Argument">
+                        <InArgument x:TypeArguments="x:Object" x:Key="emailObj">
+                          <VisualBasicValue x:TypeArguments="x:Object" ExpressionText="email" />
+                        </InArgument>
+                        <OutArgument x:TypeArguments="x:String" x:Key="outSender">
+                          <VisualBasicReference x:TypeArguments="x:String" ExpressionText="senderAddress" />
+                        </OutArgument>
+                        <OutArgument x:TypeArguments="x:String" x:Key="outSubject">
+                          <VisualBasicReference x:TypeArguments="x:String" ExpressionText="emailSubject" />
+                        </OutArgument>
+                        <OutArgument x:TypeArguments="x:String" x:Key="outBody">
+                          <VisualBasicReference x:TypeArguments="x:String" ExpressionText="emailBody" />
+                        </OutArgument>
+                      </scg:Dictionary>
+                    </ui:InvokeCode.Arguments>
+                  </ui:InvokeCode>
+
+                  <!-- Set defaults if extraction yielded empty strings -->
+                  <If DisplayName="Default Sender If Empty">
+                    <If.Condition>
+                      <InArgument x:TypeArguments="x:Boolean">
+                        <VisualBasicValue x:TypeArguments="x:Boolean" ExpressionText="String.IsNullOrEmpty(senderAddress)" />
+                      </InArgument>
+                    </If.Condition>
+                    <If.Then>
+                      <Sequence DisplayName="Then">
+                        <Assign x:TypeArguments="x:String" DisplayName="Set Default Sender">
+                          <Assign.To>
+                            <OutArgument x:TypeArguments="x:String">
+                              <VisualBasicReference x:TypeArguments="x:String" ExpressionText="senderAddress" />
+                            </OutArgument>
+                          </Assign.To>
+                          <Assign.Value>
+                            <InArgument x:TypeArguments="x:String">
+                              <VisualBasicValue x:TypeArguments="x:String" ExpressionText="&quot;unknown@unknown.com&quot;" />
+                            </InArgument>
+                          </Assign.Value>
+                        </Assign>
+                      </Sequence>
+                    </If.Then>
+                  </If>
+
+                  <If DisplayName="Default Subject If Empty">
+                    <If.Condition>
+                      <InArgument x:TypeArguments="x:Boolean">
+                        <VisualBasicValue x:TypeArguments="x:Boolean" ExpressionText="String.IsNullOrEmpty(emailSubject)" />
+                      </InArgument>
+                    </If.Condition>
+                    <If.Then>
+                      <Sequence DisplayName="Then">
+                        <Assign x:TypeArguments="x:String" DisplayName="Set Default Subject">
+                          <Assign.To>
+                            <OutArgument x:TypeArguments="x:String">
+                              <VisualBasicReference x:TypeArguments="x:String" ExpressionText="emailSubject" />
+                            </OutArgument>
+                          </Assign.To>
+                          <Assign.Value>
+                            <InArgument x:TypeArguments="x:String">
+                              <VisualBasicValue x:TypeArguments="x:String" ExpressionText="&quot;(no subject)&quot;" />
+                            </InArgument>
+                          </Assign.Value>
+                        </Assign>
+                      </Sequence>
+                    </If.Then>
+                  </If>
+
+                  <ui:LogMessage Level="Info" DisplayName="Log Processing Email">
+                    <ui:LogMessage.Message>
+                      <InArgument x:TypeArguments="x:Object">
+                        <VisualBasicValue x:TypeArguments="x:Object" ExpressionText="$&quot;Processing email from {senderAddress}: {emailSubject}&quot;" />
+                      </InArgument>
+                    </ui:LogMessage.Message>
+                  </ui:LogMessage>
+
+                  <!-- Sub-workflow: Triage (categorize) the email -->
+                  <ui:InvokeWorkflowFile WorkflowFileName="Workflows\TriageEmail.xaml" DisplayName="Triage Email">
+                    <ui:InvokeWorkflowFile.Arguments>
+                      <InArgument x:Key="in_Subject" x:TypeArguments="x:String">
+                        <VisualBasicValue x:TypeArguments="x:String" ExpressionText="emailSubject" />
+                      </InArgument>
+                      <InArgument x:Key="in_Body" x:TypeArguments="x:String">
+                        <VisualBasicValue x:TypeArguments="x:String" ExpressionText="emailBody" />
+                      </InArgument>
+                      <OutArgument x:Key="out_Category" x:TypeArguments="x:String">
+                        <VisualBasicReference x:TypeArguments="x:String" ExpressionText="emailCategory" />
+                      </OutArgument>
+                      <OutArgument x:Key="out_Priority" x:TypeArguments="x:String">
+                        <VisualBasicReference x:TypeArguments="x:String" ExpressionText="emailPriority" />
+                      </OutArgument>
+                    </ui:InvokeWorkflowFile.Arguments>
+                  </ui:InvokeWorkflowFile>
+
+                  <!-- Sub-workflow: Process (auto-reply + queue + log) -->
+                  <ui:InvokeWorkflowFile WorkflowFileName="Workflows\ProcessEmail.xaml" DisplayName="Process Email">
+                    <ui:InvokeWorkflowFile.Arguments>
+                      <InArgument x:Key="in_From" x:TypeArguments="x:String">
+                        <VisualBasicValue x:TypeArguments="x:String" ExpressionText="senderAddress" />
+                      </InArgument>
+                      <InArgument x:Key="in_Subject" x:TypeArguments="x:String">
+                        <VisualBasicValue x:TypeArguments="x:String" ExpressionText="emailSubject" />
+                      </InArgument>
+                      <InArgument x:Key="in_Body" x:TypeArguments="x:String">
+                        <VisualBasicValue x:TypeArguments="x:String" ExpressionText="emailBody" />
+                      </InArgument>
+                      <InArgument x:Key="in_Category" x:TypeArguments="x:String">
+                        <VisualBasicValue x:TypeArguments="x:String" ExpressionText="emailCategory" />
+                      </InArgument>
+                      <InArgument x:Key="in_Priority" x:TypeArguments="x:String">
+                        <VisualBasicValue x:TypeArguments="x:String" ExpressionText="emailPriority" />
+                      </InArgument>
+                      <InArgument x:Key="in_SmtpServer" x:TypeArguments="x:String">
+                        <VisualBasicValue x:TypeArguments="x:String" ExpressionText="smtpServer" />
+                      </InArgument>
+                      <InArgument x:Key="in_SmtpPort" x:TypeArguments="x:Int32">
+                        <VisualBasicValue x:TypeArguments="x:Int32" ExpressionText="smtpPort" />
+                      </InArgument>
+                      <InArgument x:Key="in_SmtpEmail" x:TypeArguments="x:String">
+                        <VisualBasicValue x:TypeArguments="x:String" ExpressionText="supportEmail" />
+                      </InArgument>
+                      <InArgument x:Key="in_SmtpPassword" x:TypeArguments="x:String">
+                        <VisualBasicValue x:TypeArguments="x:String" ExpressionText="emailPassword" />
+                      </InArgument>
+                      <InArgument x:Key="in_QueueName" x:TypeArguments="x:String">
+                        <VisualBasicValue x:TypeArguments="x:String" ExpressionText="queueName" />
+                      </InArgument>
+                    </ui:InvokeWorkflowFile.Arguments>
+                  </ui:InvokeWorkflowFile>
+
+                  <!-- Increment processed counter -->
+                  <Assign x:TypeArguments="x:Int32" DisplayName="Increment Counter">
+                    <Assign.To>
+                      <OutArgument x:TypeArguments="x:Int32">
+                        <VisualBasicReference x:TypeArguments="x:Int32" ExpressionText="processedCount" />
+                      </OutArgument>
+                    </Assign.To>
+                    <Assign.Value>
+                      <InArgument x:TypeArguments="x:Int32">
+                        <VisualBasicValue x:TypeArguments="x:Int32" ExpressionText="processedCount + 1" />
+                      </InArgument>
+                    </Assign.Value>
+                  </Assign>
+
+                </Sequence>
+              </ActivityAction>
+            </ui:ForEach.Body>
+          </ui:ForEach>
+        </Sequence>
+      </If.Then>
+      <If.Else>
+        <Sequence DisplayName="Else">
+          <ui:LogMessage Level="Info" DisplayName="Log No Emails">
+            <ui:LogMessage.Message>
+              <InArgument x:TypeArguments="x:Object">
+                <VisualBasicValue x:TypeArguments="x:Object" ExpressionText="&quot;No unread emails found in inbox. Nothing to process.&quot;" />
+              </InArgument>
+            </ui:LogMessage.Message>
+          </ui:LogMessage>
+        </Sequence>
+      </If.Else>
+    </If>
+
+    <ui:LogMessage Level="Info" DisplayName="Log Completion">
+      <ui:LogMessage.Message>
+        <InArgument x:TypeArguments="x:Object">
+          <VisualBasicValue x:TypeArguments="x:Object" ExpressionText="$&quot;EmailSupportAutomation completed. Processed {processedCount} email(s).&quot;" />
+        </InArgument>
+      </ui:LogMessage.Message>
+    </ui:LogMessage>
+
+  </Sequence>
+</Activity>

@@ -1,0 +1,55 @@
+2026-07-24 17:59:07 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-24 17:59:07 [INFO] coder_eval.orchestrator: API routing: aws_bedrock
+2026-07-24 17:59:07 [DEBUG] coder_eval.criteria: Discovered 14 criterion checkers
+2026-07-24 17:59:07 [DEBUG] coder_eval.criteria: Validated 14 criterion checkers
+2026-07-24 17:59:07 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-24 17:59:07 [DEBUG] coder_eval.orchestrator: Sending prompt: Create a UiPath Flow project named "WikiPageviews" that takes `article`
+(string) and `date1`, `date2...
+2026-07-24 17:59:07 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Starting agent query stream...
+2026-07-24 18:07:33 [DEBUG] coder_eval.agents.claude_code_agent: [coder] session_id changed: None -> 91ad966a-8d53-47b0-8eb6-c27b50dc6774
+2026-07-24 18:07:34 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Agent query stream ended
+2026-07-24 18:07:34 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-24 18:07:34 [DEBUG] coder_eval.orchestrator: Agent response received (5477 chars)
+2026-07-24 18:07:34 [DEBUG] coder_eval.orchestrator: Checking success criteria
+2026-07-24 18:07:34 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'uip maestro flow validate passes on the flow file': uip maestro flow validate WikiPageviews/WikiPageviews/WikiPageviews.flow
+2026-07-24 18:07:41 [DEBUG] coder_eval.sandbox: Command 'uip maestro flow validate WikiPageviews/WikiPageviews/WikiPageviews.flow' exited with code 0
+2026-07-24 18:07:41 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+{
+  "Result": "Success",
+  "Code": "FlowValidate",
+  "Data": {
+    "File": "/work/output/artifacts/skill-flow-wiki-pageviews/WikiPageviews/WikiPageviews/WikiPageviews.flow",
+    "Status": "Valid"
+  }
+}
+---
+2026-07-24 18:07:41 [DEBUG] coder_eval.sandbox: STDERR:
+---
+[ManifestClient] fetchDynamicNodes ok: total=207 agent context nodes=2 external agent nodes=6 orchestrator nodes=158 IXP nodes=41
+---
+2026-07-24 18:07:41 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-07-24 18:07:41 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'UiPath 2024-01-01..15: debug returns numeric sum of pageviews on days above 500 (range-tolerant of Wikimedia recomputes)': python3 $TASK_DIR/check_wiki_pageviews_flow.py uipath_success
+2026-07-24 18:08:06 [DEBUG] coder_eval.sandbox: Command 'python3 $TASK_DIR/check_wiki_pageviews_flow.py uipath_success' exited with code 0
+2026-07-24 18:08:06 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+[uipath_success] Injecting inputs: {'article': 'UiPath', 'date1': '20240101', 'date2': '20240115'} (expect numeric leaf in [1000, 20000])
+OK: [uipath_success] output 4130 in [1000, 20000]
+---
+2026-07-24 18:08:06 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-07-24 18:08:06 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'Invalid article: HTTP error output port returns the string 'Article not found'': python3 $TASK_DIR/check_wiki_pageviews_flow.py invalid_error
+2026-07-24 18:08:31 [DEBUG] coder_eval.sandbox: Command 'python3 $TASK_DIR/check_wiki_pageviews_flow.py invalid_error' exited with code 0
+2026-07-24 18:08:31 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+[invalid_error] Injecting inputs: {'article': 'ThisArticleDefinitelyDoesNotExist999', 'date1': '20240101', 'date2': '20240115'} (expect 'Article not found')
+OK: [invalid_error] output contains 'Article not found'
+---
+2026-07-24 18:08:31 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-07-24 18:08:31 [INFO] coder_eval.orchestrator: Success criteria: 3/3 passed, weighted score: 1.000
+2026-07-24 18:08:31 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-24 18:08:31 [INFO] coder_eval.orchestrator: Running post-run command: python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/cleanup_solutions.py
+2026-07-24 18:08:33 [WARNING] coder_eval.orchestrator: [post_run stderr] cleanup_solutions: deleted d3af7aa0-6f1c-4a96-4e21-08dee9abf020 (from WikiPageviews/WikiPageviews.uipx)
+2026-07-24 18:08:33 [WARNING] coder_eval.orchestrator: [post_run stderr] cleanup_solutions: summary policy=always deleted=1 preserved=0 skipped=0 not_uploaded=0 failed=0
+2026-07-24 18:08:33 [INFO] coder_eval.orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+2026-07-24 18:08:33 [INFO] coder_eval.orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-wiki-pageviews
+2026-07-24 18:08:33 [INFO] coder_eval.orchestrator: Task finished: status=SUCCESS duration=568.8s score=1.000 iterations=1

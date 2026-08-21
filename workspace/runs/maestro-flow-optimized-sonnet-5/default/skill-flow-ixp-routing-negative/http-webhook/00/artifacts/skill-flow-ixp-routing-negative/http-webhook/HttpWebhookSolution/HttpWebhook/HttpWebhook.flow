@@ -1,0 +1,236 @@
+{
+  "id": "f5ef0fd5-b156-44ef-833f-a7d94b276903",
+  "version": "1.9",
+  "name": "HttpWebhook",
+  "nodes": [
+    {
+      "id": "httpWebhook1",
+      "type": "uipath.connector.trigger.uipath-http-webhook.http-webhook",
+      "typeVersion": "1.0.0",
+      "display": {
+        "label": "HTTP Webhook"
+      },
+      "inputs": {
+        "entryPointId": "d60ea0bc-4aed-492c-b858-d015826826f7",
+        "isDefaultEntryPoint": true
+      }
+    }
+  ],
+  "edges": [],
+  "definitions": [
+    {
+      "nodeType": "uipath.connector.trigger.uipath-http-webhook.http-webhook",
+      "version": "1.0.0",
+      "category": "trigger.211594",
+      "tags": [
+        "connector",
+        "trigger",
+        "Trigger.Integrated"
+      ],
+      "sortOrder": 580,
+      "description": "Triggers instantly when an event has occured",
+      "display": {
+        "label": "HTTP Webhook",
+        "description": "Triggers instantly when an event has occured",
+        "icon": "https://alpha.uipath.com/311c6049-4966-4ef2-a6f3-8ceccaf38d54/studio_/typecache/icons/afa017b350ae71500cb30aeccc90a0c437be76420db995da4caad5ff06ab8d19.svg",
+        "sourceDisplayName": "HTTP Webhook",
+        "shape": "circle"
+      },
+      "handleConfiguration": [
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "output",
+              "type": "source",
+              "handleType": "output",
+              "showButton": true,
+              "constraints": {
+                "forbiddenTargetCategories": [
+                  "trigger"
+                ]
+              }
+            }
+          ],
+          "visible": true
+        }
+      ],
+      "model": {
+        "type": "bpmn:StartEvent",
+        "entryPointId": true,
+        "serviceType": "Intsvc.EventTrigger",
+        "eventDefinition": "bpmn:MessageEventDefinition",
+        "bindings": {
+          "resource": "connection",
+          "resourceKey": "",
+          "values": [
+            {
+              "name": "uipath-http-webhook connection",
+              "propertyAttribute": "ConnectionId"
+            },
+            {
+              "name": "FolderKey",
+              "propertyAttribute": "FolderKey"
+            }
+          ]
+        },
+        "context": [
+          {
+            "name": "connectorKey",
+            "type": "string",
+            "value": "uipath-http-webhook"
+          },
+          {
+            "name": "operation",
+            "value": "GENERIC",
+            "type": "string"
+          },
+          {
+            "name": "objectName",
+            "value": "HTTP_WEBHOOK",
+            "type": "string"
+          },
+          {
+            "name": "method",
+            "type": "string"
+          },
+          {
+            "name": "connection",
+            "type": "string",
+            "value": "<bindings.uipath-http-webhook connection>"
+          },
+          {
+            "name": "folderKey",
+            "type": "string",
+            "value": "<bindings.FolderKey>"
+          },
+          {
+            "name": "activityConfigurationVersion",
+            "type": "string",
+            "value": "v1"
+          },
+          {
+            "name": "metadata",
+            "body": {
+              "telemetryData": {
+                "connectorKey": "uipath-http-webhook",
+                "connectorName": "HTTP Webhook"
+              },
+              "inputMetadata": {},
+              "errorState": {
+                "hasError": true
+              }
+            },
+            "type": "json"
+          }
+        ]
+      },
+      "form": {
+        "id": "connector-properties",
+        "title": "Connector configuration",
+        "sections": [
+          {
+            "id": "connector",
+            "title": "Connector",
+            "collapsible": true,
+            "defaultExpanded": true,
+            "fields": [
+              {
+                "label": "",
+                "name": "inputs.detail",
+                "type": "custom",
+                "component": "dap-config",
+                "componentProps": {
+                  "connectorDetail": {
+                    "type": "Integrated",
+                    "packageId": "211594",
+                    "svgIconUrl": "icons/afa017b350ae71500cb30aeccc90a0c437be76420db995da4caad5ff06ab8d19.svg",
+                    "displayName": "HTTP Webhook",
+                    "assemblyQualifiedName": "UiPath.IntegrationService.Activities.Runtime.Activities.ConnectorTriggerActivity, UiPath.IntegrationService.Activities.Runtime, Version=1.31.0.0, Culture=neutral, PublicKeyToken=null",
+                    "description": "Triggers instantly when an event has occured",
+                    "category": "HTTP Webhook.Triggers",
+                    "activityColor": "#000000",
+                    "configuration": "{\"connectorKey\":\"uipath-http-webhook\",\"objectName\":\"HTTP_WEBHOOK\",\"activityType\":\"CuratedTrigger\",\"version\":\"1.0.0\",\"eventOperation\":\"GENERIC\",\"eventMode\":\"webhooks\",\"supportsStreaming\":false}",
+                    "uiPathActivityTypeId": "773cab30-51dc-3eb4-b19d-720dfa151cc9",
+                    "isExperimental": false,
+                    "helpUrlTemplate": "https://docs.uipath.com/{0}/activities/other/latest/integration-service/uipath-http-webhook-HTTP-Webhook",
+                    "isEnabled": true,
+                    "targetPlatform": "CrossPlatform",
+                    "isAdvanced": false,
+                    "isRestricted": false,
+                    "hasWpfOnlyDesigner": false,
+                    "tags": [
+                      "Trigger.Integrated"
+                    ]
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "inputDefinition": {},
+      "outputDefinition": {
+        "output": {
+          "type": "object",
+          "description": "The return value of the connector trigger.",
+          "source": "=result.response",
+          "var": "output"
+        }
+      },
+      "toolbarExtensions": {
+        "design": {
+          "actions": [
+            {
+              "id": "change-trigger-type",
+              "icon": "square-mouse-pointer",
+              "label": "Change trigger type"
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "runtime": "maestro",
+  "bindings": [
+    {
+      "id": "bWmKtUAcZ",
+      "name": "uipath-http-webhook connection",
+      "type": "string",
+      "resource": "connection",
+      "resourceKey": "",
+      "propertyAttribute": "ConnectionId"
+    },
+    {
+      "id": "bYQYXiqsX",
+      "name": "FolderKey",
+      "type": "string",
+      "resource": "connection",
+      "resourceKey": "",
+      "propertyAttribute": "FolderKey"
+    }
+  ],
+  "variables": {
+    "nodes": [
+      {
+        "id": "httpWebhook1.output",
+        "type": "object",
+        "description": "The return value of the connector trigger.",
+        "binding": {
+          "nodeId": "httpWebhook1",
+          "outputId": "output"
+        }
+      }
+    ]
+  },
+  "layout": {
+    "nodes": {
+      "httpWebhook1": {
+        "position": {
+          "x": 200,
+          "y": 144
+        }
+      }
+    }
+  }
+}

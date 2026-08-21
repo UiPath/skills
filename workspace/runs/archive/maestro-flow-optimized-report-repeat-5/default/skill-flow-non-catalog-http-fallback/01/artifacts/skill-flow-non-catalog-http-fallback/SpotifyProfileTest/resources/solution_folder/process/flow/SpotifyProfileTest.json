@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "SpotifyProfileTest",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "e2e9abd8-14a5-4fcc-8caa-a5b4fde990d6",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "SpotifyProfileTest"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Flow",
+      "name": "SpotifyProfileTest",
+      "package": {
+        "key": "2f6d415c-7d0c-4a69-ab6f-2e7138962ef2"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "9ccc4443-6f20-46d8-b493-3f14f0ce9e43",
+    "files": []
+  }
+}

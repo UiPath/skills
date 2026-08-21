@@ -1,0 +1,12 @@
+{
+    "DocVersion": "1.0.0",
+    "StudioMinVersion": "2025.10.0",
+    "SolutionId": "9a8b02ea-fc7b-4f6f-4824-08dee9b1ed35",
+    "Projects": [
+        {
+            "Type": "Flow",
+            "ProjectRelativePath": "BillingDisputeAnalyst/project.uiproj",
+            "Id": "32d989bb-48b5-472d-8876-519dba067e7f"
+        }
+    ]
+}

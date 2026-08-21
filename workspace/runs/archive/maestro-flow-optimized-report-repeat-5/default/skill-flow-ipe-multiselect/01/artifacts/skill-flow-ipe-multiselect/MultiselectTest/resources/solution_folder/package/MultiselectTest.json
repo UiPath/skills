@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "MultiselectTest",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "45a926ca-eaee-42f1-a7f3-e3689c26738c",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "MultiselectTest"
+    },
+    "locks": [],
+    "key": "ff81e034-5a69-4ba3-98a9-d5c7ec81b2c0",
+    "files": []
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "ContractExtractionFlow",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "d7114911-5a84-4cf2-9194-cbf6a53f305f",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "ContractExtractionFlow"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Flow",
+      "name": "ContractExtractionFlow",
+      "package": {
+        "key": "7c5dd68e-847a-4955-a89d-0c6bfef9b4ca"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "934d9293-5c80-434f-bc6a-2f026b6cedf8",
+    "files": []
+  }
+}

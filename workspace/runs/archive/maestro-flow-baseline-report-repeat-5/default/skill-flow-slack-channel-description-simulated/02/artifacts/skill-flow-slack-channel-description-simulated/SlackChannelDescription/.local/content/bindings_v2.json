@@ -1,0 +1,24 @@
+{
+  "version": "2.0",
+  "resources": [
+    {
+      "activityDisplayName": "Get Channel Info (Slack)",
+      "activityId": "ConnectorActivity_1",
+      "resource": "Connection",
+      "key": "00000000-0000-0000-0000-000000000000",
+      "id": "Connection00000000-0000-0000-0000-00000000000000000000-0000-0000-0000-000000000000False",
+      "value": {
+        "ConnectionId": {
+          "defaultValue": "00000000-0000-0000-0000-000000000000",
+          "isExpression": false
+        }
+      },
+      "metadata": {
+        "UseConnectionService": "true",
+        "BindingsVersion": "2.2",
+        "Connector": "uipath-salesforce-slack",
+        "ActivityName": "Get Channel Info (Slack)"
+      }
+    }
+  ]
+}

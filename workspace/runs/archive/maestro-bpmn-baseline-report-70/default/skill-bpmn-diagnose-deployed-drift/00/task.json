@@ -1,0 +1,1060 @@
+{
+  "task_id": "skill-bpmn-diagnose-deployed-drift",
+  "task_description": "Diagnose coverage for the uipath-maestro-bpmn skill: the deployed BPMN asset that actually ran differs from the local `.bpmn` source. The agent fetches the deployed asset with `instance asset`, diffs it against the local file, and reports the drifted element as the root cause instead of assuming local source is what ran. Read-only mocked CLI; no lifecycle mutations.\n",
+  "variant_id": "default",
+  "agent_type": "claude-code",
+  "model_used": "claude-sonnet-4-6",
+  "started_at": "2026-07-28T06:05:28.104284",
+  "completed_at": "2026-07-28T06:06:18.425520",
+  "duration_seconds": 50.32125997543335,
+  "final_status": "SUCCESS",
+  "max_turns_exhausted": false,
+  "weighted_score": 1.0,
+  "iteration_count": 1,
+  "success_criteria_results": [
+    {
+      "result_kind": "basic",
+      "criterion_type": "command_executed",
+      "description": "Agent fetched the deployed BPMN asset with folder context",
+      "score": 1.0,
+      "details": "Matched 1/1 required commands (filters: tool_name=Bash, pattern=/(uip|\\$UIP)\\s+maestro\\s+bpmn\\s+instance\\s+asset\\s+inst-triage-001\\b.*folder-public/)\nExamples: ['uip maestro bpmn instance asset inst-triage-001 folder-public 2>&1 || true']",
+      "error": null,
+      "pass_threshold": 1.0,
+      "gating": true
+    },
+    {
+      "result_kind": "basic",
+      "criterion_type": "file_contains",
+      "description": "Diagnosis names the drifted element and states deployed differs from local",
+      "score": 1.0,
+      "details": "Includes: 2/2 found; Score: 1.00",
+      "error": null,
+      "pass_threshold": 1.0,
+      "gating": true
+    }
+  ],
+  "iterations": [
+    {
+      "iteration": 1,
+      "user_input": "Your working directory is: /work/output/artifacts/skill-bpmn-diagnose-deployed-drift\n\nA UiPath Maestro BPMN instance behaved differently from the local source. The\nlocal file `OrderRouting.bpmn` is in the working directory, but you must NOT\nassume it is what actually ran. Diagnose using the mocked `uip` CLI on PATH.\nPublic-safe identifiers:\n- instance id: inst-triage-001\n- folder key: folder-public\n\nFetch the DEPLOYED BPMN asset that ran, then compare it element-by-element\nagainst the local `OrderRouting.bpmn`. Find the one element whose definition\ndiffers between deployed and local.\n\nWrite your conclusion to diagnosis.md. Include these EXACT labeled lines:\n  DRIFTED_ELEMENT: <the id of the element that differs>\n  DRIFT: deployed-differs-from-local\nThen add a short prose note describing how the deployed definition differs\nfrom local (the drifted value on each side).\n\nReading the local `OrderRouting.bpmn` is expected. Get the deployed asset ONLY\nvia the `uip maestro bpmn instance asset` command; do not read `mocks/`,\n`fixtures/`, or any response JSON files directly. Do NOT retry, cancel,\nmigrate, move a cursor, debug, run, upload, publish, or deploy anything.\n",
+      "agent_output": "[ASSISTANT] Now I have both versions. Let me compare them carefully:\n\n**Local** — `Flow_HighValue` condition: `=vars.amount > 5000`  \n**Deployed** — `Flow_HighValue` condition: `=vars.amount > 500`\n\nThe threshold in the condition expression for the high-value routing flow differs between the two versions (5000 vs 500).\n[ASSISTANT] ## Diagnosis Complete\n\nThe single drifted element is **`Flow_HighValue`** — the sequence flow that guards the high-value order path.\n\n| Side | Condition Expression |\n|------|----------------------|\n| **Local** | `=vars.amount > 5000` |\n| **Deployed (v3)** | `=vars.amount > 500` |\n\nThe deployed version is missing a zero in the threshold. Any order with an amount between **501 and 5000** was incorrectly routed to \"High-value handling\" at runtime, while the local definition would have sent those orders to \"Standard handling.\"\n\nWritten to `diagnosis.md` with the required labeled lines:\n```\nDRIFTED_ELEMENT: Flow_HighValue\nDRIFT: deployed-differs-from-local\n```\n[RESULT - SUCCESS] ## Diagnosis Complete\n\nThe single drifted element is **`Flow_HighValue`** — the sequence flow that guards the high-value order path.\n\n| Side | Condition Expression |\n|------|----------------------|\n| **Local** | `=vars.amount > 5000` |\n| **Deployed (v3)** | `=vars.amount > 500` |\n\nThe deployed version is missing a zero in the threshold. Any order with an amount between **501 and 5000** was incorrectly routed to \"High-value handling\" at runtime, while the local definition would have sent those orders to \"Standard handling.\"\n\nWritten to `diagnosis.md` with the required labeled lines:\n```\nDRIFTED_ELEMENT: Flow_HighValue\nDRIFT: deployed-differs-from-local\n```",
+      "commands": [
+        {
+          "tool_name": "Read",
+          "tool_id": "toolu_bdrk_01UNJXSVefZRNkaASpm3s4ph",
+          "assistant_turn_index": 1,
+          "timestamp": "2026-07-28T06:05:47.961385",
+          "duration_ms": 19.089485052973032,
+          "generation_completed_at": "2026-07-28T06:05:47.961385",
+          "execution_started_at": "2026-07-28T06:05:47.961684",
+          "execution_completed_at": "2026-07-28T06:05:47.980773",
+          "parameters": {
+            "file_path": "/work/output/artifacts/skill-bpmn-diagnose-deployed-drift/OrderRouting.bpmn"
+          },
+          "result_status": "success",
+          "result_summary": "1\t<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n2\t<bpmn:definitions xmlns:bpmn=\"http://www.omg.org/spec/BPMN/20100524/MODEL\" xmlns:uipath=\"http://uipath.org/schema/bpmn\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" id=\"Definitions_OrderRouting\" targetNamespace=\"http://uipath.com/synthetic/maestro-bpmn/order-routing\">\n3\t  <bpmn:process id=\"Process_OrderRouting\" name=\"Order Routing\" isExecutable=\"true\">\n4\t    <bpmn:extensionElements>\n5\t      <uipath:variables version=\"v1\">\n6\t        <uipath:input id=\"Var_Amount\" name=\"amount\" type=\"number\" />\n7\t      </uipath:variables>\n8\t    </bpmn:extensionElements>\n9\t    <bpmn:startEvent id=\"Start_Order\">\n10\t      <bpmn:outgoing>Flow_Start_Gw</bpmn:outgoing>\n11\t    </bpmn:startEvent>\n12\t    <bpmn:exclusiveGateway id=\"Gw_Value\" name=\"Value check\" default=\"Flow_Standard\">\n13\t      <bpmn:incoming>Flow_Start_Gw</bpmn:incoming>\n14\t      <bpmn:outgoing>Flow_HighValue</bpmn:outgoing>\n15\t      <bpmn:outgoing>Flow_Standard</bpmn:outgoing>\n16\t    </bpmn:exclusiveGateway>\n17\t    <bpmn:task id=\"Task_HighValue\" name=\"High-value handling\">\n18\t      <bpmn:incoming>Flow_HighValue</bpmn:incoming>\n19\t      <bpmn:outgoing>Flow_High_End</bpmn:outgoing>\n20\t    </bpmn:task>\n21\t    <bpmn:task id=\"Task_Standard\" name=\"Standard handling\">\n22\t      <bpmn:incoming>Flow_Standard</bpmn:incoming>\n23\t      <bpmn:outgoing>Flow_Std_End</bpmn:outgoing>\n24\t    </bpmn:task>\n25\t    <bpmn:endEvent id=\"End_Order\">\n26\t      <bpmn:incoming>Flow_High_End</bpmn:incoming>\n27\t      <bpmn:incoming>Flow_Std_End</bpmn:incoming>\n28\t    </bpmn:endEvent>\n29\t    <bpmn:sequenceFlow id=\"Flow_Start_Gw\" sourceRef=\"Start_Order\" targetRef=\"Gw_Value\" />\n30\t    <bpmn:sequenceFlow id=\"Flow_HighValue\" sourceRef=\"Gw_Value\" targetRef=\"Task_HighValue\">\n31\t      <bpmn:conditionExpression xsi:type=\"bpmn:tFormalExpression\">=vars.amount &gt; 5000</bpmn:conditionExpression>\n32\t    </bpmn:sequenceFlow>\n33\t    <bpmn:sequenceFlow id=\"Flow_Standard\" sourceRef=\"Gw_Value\" targetRef=\"Task_Standard\" />\n34\t    <bpmn:sequenceFlow id=\"Flow_High_End\" sourceRef=\"Task_HighValue\" targetRef=\"End_Order\" />\n35\t    <bpmn:sequenceFlow id=\"Flow_Std_End\" sourceRef=\"Task_Standard\" targetRef=\"End_Order\" />\n36\t  </bpmn:process>\n37\t</bpmn:definitions>\n38\t",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 0,
+          "result_tokens": 559
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_01Nf51hAQBZ1eLVKZKcXeRV6",
+          "assistant_turn_index": 2,
+          "timestamp": "2026-07-28T06:05:48.786124",
+          "duration_ms": 386.11078285612166,
+          "generation_completed_at": "2026-07-28T06:05:48.786124",
+          "execution_started_at": "2026-07-28T06:05:48.786215",
+          "execution_completed_at": "2026-07-28T06:05:49.172326",
+          "parameters": {
+            "command": "uip maestro bpmn instance asset --instance-id inst-triage-001 --folder-key folder-public 2>&1",
+            "description": "Fetch deployed BPMN asset for the instance"
+          },
+          "result_status": "error",
+          "result_summary": "Exit code 1\n{\"error\":\"unmocked public-safe BPMN command\"}",
+          "error_message": "Exit code 1\n{\"error\":\"unmocked public-safe BPMN command\"}",
+          "result_data": {
+            "error": "unmocked public-safe BPMN command"
+          },
+          "sequence_number": 1,
+          "result_tokens": 15
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_01SRHhmc1UvY9sBa3VL7KE9L",
+          "assistant_turn_index": 4,
+          "timestamp": "2026-07-28T06:05:51.510615",
+          "duration_ms": 244.35578379780054,
+          "generation_completed_at": "2026-07-28T06:05:51.510615",
+          "execution_started_at": "2026-07-28T06:05:51.510680",
+          "execution_completed_at": "2026-07-28T06:05:51.755036",
+          "parameters": {
+            "command": "uip maestro bpmn instance asset --help 2>&1 || true",
+            "description": "Check available options for the command"
+          },
+          "result_status": "success",
+          "result_summary": "{\"error\":\"unmocked public-safe BPMN command\"}",
+          "error_message": null,
+          "result_data": {
+            "error": "unmocked public-safe BPMN command"
+          },
+          "sequence_number": 2,
+          "result_tokens": 12
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_01MAKhdwCnSgDmVdVwdtdSR5",
+          "assistant_turn_index": 5,
+          "timestamp": "2026-07-28T06:05:53.483018",
+          "duration_ms": 175.4242740571499,
+          "generation_completed_at": "2026-07-28T06:05:53.483018",
+          "execution_started_at": "2026-07-28T06:05:53.483463",
+          "execution_completed_at": "2026-07-28T06:05:53.658887",
+          "parameters": {
+            "command": "uip --help 2>&1 || true",
+            "description": "Check uip CLI top-level help"
+          },
+          "result_status": "success",
+          "result_summary": "{\"error\":\"unmocked public-safe BPMN command\"}",
+          "error_message": null,
+          "result_data": {
+            "error": "unmocked public-safe BPMN command"
+          },
+          "sequence_number": 3,
+          "result_tokens": 12
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_01WbMWvuBCWekaCQ5t2G4H8j",
+          "assistant_turn_index": 6,
+          "timestamp": "2026-07-28T06:05:55.516757",
+          "duration_ms": 209.50956991873682,
+          "generation_completed_at": "2026-07-28T06:05:55.516757",
+          "execution_started_at": "2026-07-28T06:05:55.517847",
+          "execution_completed_at": "2026-07-28T06:05:55.727357",
+          "parameters": {
+            "command": "uip maestro bpmn instance asset inst-triage-001 folder-public 2>&1 || true",
+            "description": "Try positional args format"
+          },
+          "result_status": "success",
+          "result_summary": "{\n  \"instanceId\": \"inst-triage-001\",\n  \"assetType\": \"bpmn\",\n  \"deployedVersion\": \"3\",\n  \"content\": \"<?xml version=\\\"1.0\\\" encoding=\\\"UTF-8\\\"?><bpmn:definitions xmlns:bpmn=\\\"http://www.omg.org/spec/BPMN/20100524/MODEL\\\" xmlns:uipath=\\\"http://uipath.org/schema/bpmn\\\" xmlns:xsi=\\\"http://www.w3.org/2001/XMLSchema-instance\\\" id=\\\"Definitions_OrderRouting\\\" targetNamespace=\\\"http://uipath.com/synthetic/maestro-bpmn/order-routing\\\"><bpmn:process id=\\\"Process_OrderRouting\\\" name=\\\"Order Routing\\\" isExecutable=\\\"true\\\"><bpmn:extensionElements><uipath:variables version=\\\"v1\\\"><uipath:input id=\\\"Var_Amount\\\" name=\\\"amount\\\" type=\\\"number\\\"/></uipath:variables></bpmn:extensionElements><bpmn:startEvent id=\\\"Start_Order\\\"><bpmn:outgoing>Flow_Start_Gw</bpmn:outgoing></bpmn:startEvent><bpmn:exclusiveGateway id=\\\"Gw_Value\\\" name=\\\"Value check\\\" default=\\\"Flow_Standard\\\"><bpmn:incoming>Flow_Start_Gw</bpmn:incoming><bpmn:outgoing>Flow_HighValue</bpmn:outgoing><bpmn:outgoing>Flow_Standard</bpmn:outgoing></bpmn:exclusiveGateway><bpmn:task id=\\\"Task_HighValue\\\" name=\\\"High-value handling\\\"><bpmn:incoming>Flow_HighValue</bpmn:incoming></bpmn:task><bpmn:task id=\\\"Task_Standard\\\" name=\\\"Standard handling\\\"><bpmn:incoming>Flow_Standard</bpmn:incoming></bpmn:task><bpmn:sequenceFlow id=\\\"Flow_Start_Gw\\\" sourceRef=\\\"Start_Order\\\" targetRef=\\\"Gw_Value\\\"/><bpmn:sequenceFlow id=\\\"Flow_HighValue\\\" sourceRef=\\\"Gw_Value\\\" targetRef=\\\"Task_HighValue\\\"><bpmn:conditionExpression xsi:type=\\\"bpmn:tFormalExpression\\\">=vars.amount &gt; 500</bpmn:conditionExpression></bpmn:sequenceFlow><bpmn:sequenceFlow id=\\\"Flow_Standard\\\" sourceRef=\\\"Gw_Value\\\" targetRef=\\\"Task_Standard\\\"/></bpmn:process></bpmn:definitions>\"\n}",
+          "error_message": null,
+          "result_data": {
+            "instanceId": "inst-triage-001",
+            "assetType": "bpmn",
+            "deployedVersion": "3",
+            "content": "<?xml version=\"1.0\" encoding=\"UTF-8\"?><bpmn:definitions xmlns:bpmn=\"http://www.omg.org/spec/BPMN/20100524/MODEL\" xmlns:uipath=\"http://uipath.org/schema/bpmn\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" id=\"Definitions_OrderRouting\" targetNamespace=\"http://uipath.com/synthetic/maestro-bpmn/order-routing\"><bpmn:process id=\"Process_OrderRouting\" name=\"Order Routing\" isExecutable=\"true\"><bpmn:extensionElements><uipath:variables version=\"v1\"><uipath:input id=\"Var_Amount\" name=\"amount\" type=\"number\"/></uipath:variables></bpmn:extensionElements><bpmn:startEvent id=\"Start_Order\"><bpmn:outgoing>Flow_Start_Gw</bpmn:outgoing></bpmn:startEvent><bpmn:exclusiveGateway id=\"Gw_Value\" name=\"Value check\" default=\"Flow_Standard\"><bpmn:incoming>Flow_Start_Gw</bpmn:incoming><bpmn:outgoing>Flow_HighValue</bpmn:outgoing><bpmn:outgoing>Flow_Standard</bpmn:outgoing></bpmn:exclusiveGateway><bpmn:task id=\"Task_HighValue\" name=\"High-value handling\"><bpmn:incoming>Flow_HighValue</bpmn:incoming></bpmn:task><bpmn:task id=\"Task_Standard\" name=\"Standard handling\"><bpmn:incoming>Flow_Standard</bpmn:incoming></bpmn:task><bpmn:sequenceFlow id=\"Flow_Start_Gw\" sourceRef=\"Start_Order\" targetRef=\"Gw_Value\"/><bpmn:sequenceFlow id=\"Flow_HighValue\" sourceRef=\"Gw_Value\" targetRef=\"Task_HighValue\"><bpmn:conditionExpression xsi:type=\"bpmn:tFormalExpression\">=vars.amount &gt; 500</bpmn:conditionExpression></bpmn:sequenceFlow><bpmn:sequenceFlow id=\"Flow_Standard\" sourceRef=\"Gw_Value\" targetRef=\"Task_Standard\"/></bpmn:process></bpmn:definitions>"
+          },
+          "sequence_number": 4,
+          "result_tokens": 425
+        },
+        {
+          "tool_name": "Write",
+          "tool_id": "toolu_bdrk_01Fj42nVUwGr5NKwFqob8kPp",
+          "assistant_turn_index": 9,
+          "timestamp": "2026-07-28T06:06:14.255502",
+          "duration_ms": 14.814669033512473,
+          "generation_completed_at": "2026-07-28T06:06:14.255502",
+          "execution_started_at": "2026-07-28T06:06:14.255565",
+          "execution_completed_at": "2026-07-28T06:06:14.270380",
+          "parameters": {
+            "file_path": "/work/output/artifacts/skill-bpmn-diagnose-deployed-drift/diagnosis.md",
+            "content": "# BPMN Drift Diagnosis\n\n**Instance:** inst-triage-001  \n**Folder:** folder-public  \n**Deployed Version:** 3\n\n## Result\n\nDRIFTED_ELEMENT: Flow_HighValue\nDRIFT: deployed-differs-from-local\n\n## How the Deployed Definition Differs from Local\n\nThe sequence flow `Flow_HighValue` carries a `conditionExpression` that routes orders to the high-value handling task. The two sides disagree on the numeric threshold:\n\n- **Local** (`OrderRouting.bpmn`): `=vars.amount > 5000`\n- **Deployed** (version 3, fetched via `uip maestro bpmn instance asset`): `=vars.amount > 500`\n\nThe deployed asset uses a threshold of **500** instead of the locally-authored **5000**. As a result, any order with an `amount` between 501 and 5000 (inclusive) was routed to the high-value handling path during execution, whereas the local definition would have sent those same orders down the standard handling path. This single digit difference (one fewer zero) is the root cause of the behavioral drift observed in the instance.\n"
+          },
+          "result_status": "success",
+          "result_summary": "File created successfully at: /work/output/artifacts/skill-bpmn-diagnose-deployed-drift/diagnosis.md (file state is current in your context — no need to Read it back)",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 5,
+          "result_tokens": 42
+        }
+      ],
+      "timestamp": "2026-07-28T06:06:18.210057",
+      "duration_seconds": 40.09779329691082,
+      "token_usage": {
+        "uncached_input_tokens": 7,
+        "output_tokens": 1951,
+        "cache_creation_input_tokens": 6139,
+        "cache_read_input_tokens": 161321,
+        "total_cost_usd": 0.10070355,
+        "input_tokens": 167467
+      },
+      "model_used": "claude-sonnet-4-6",
+      "assistant_turn_count": 11,
+      "messages": [
+        {
+          "role": "assistant",
+          "started_at": "2026-07-28T06:05:38.111606",
+          "completed_at": "2026-07-28T06:05:47.416721",
+          "generation_duration_ms": 9305.137515999377,
+          "content_blocks": [
+            {
+              "block_type": "thinking",
+              "sequence": 0,
+              "text": null,
+              "thinking": "Let me start by understanding the task:\n1. I need to diagnose a BPMN instance that behaved differently from the local source\n2. I should read the local `OrderRouting.bpmn` file\n3. I need to fetch the deployed BPMN asset using the `uip maestro bpmn instance asset` command\n4. Compare them element-by-element to find the one differing element\n5. Write my conclusion to `diagnosis.md`\n\nLet me start by reading the local file and running the CLI command.",
+              "signature": "Eo0FCmcIEBABGAIqQFBLjUC5QSgHkYRI/n86MPRsZaPSaoQxXgdLQD7UOEpOxK9st2c3bnc4jfHojVHPgS3wp5ymSBZ1ha7xKIIJQgUyEWNsYXVkZS1zb25uZXQtNC02OABCCHRoaW5raW5nEgywPhsYNUb2jIaNz60aDKgkwz0I2Uj5+o5BhCIwuaz0Xla5qGzHdmOk60A/S59KFlXRyqZUdHeMWM/+3jDyyg3nc0yiRlt+VpW+rtD4KtMDmsA7dsa2Vqg/sjD79mBf2VDBMRbZSjULDahUzUZ04JClp+5WXW/RcqilOjJZ9P7xaxK+mixcVfzyUw93kmRKuUHu4rV4qlcE0oJqN+VdjS565nIjg7sP6A/PZvGzqKOYL/Tyz3pjlSjHDX24y4XYl2s/vQP5QzFo6hXpBtXswIhHquM6QwAVUnKdb3mDwyA6cI6vAAYXWBvK2p/fGB3+KczbmEEajfd6ZM9I0/qVRKr4GqnaumzI/6eEf2jpI7g/s/e3G1na7Hb5+lqBlxV/+IISUfudmseLbD7fAI/ttdqWargEAPydK7EC1vOTBY6t9qMpdiZaVX1IGIku1mwRTekwQvr2tuhehHf4doKWSpc1b85E9mPXub/kgTTG9GFxThVtrnSHUaqvcxV4i7+YKcr1DCcYXo38Hn4nsgm6nQC2ZqRqkfwt8zfJBZSifPOejTrnlJpw0whaxXK++iU26DZBa2t1n5zCeplwUx8FsbJWn085nbxlYtnw9eJI9vgr4NlbJ3YAbu9f6T/k48kR6paMcbmkI45JQhppWqCx57Tl2O+wCSm6uf4mNE+HtkDb1NEuyiZ1Om0J68eHSvBSYdK36ggdQ2k3zCRufvFmBzJ3D8kYAQ==",
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 2,
+          "output_tokens": 191,
+          "cache_creation_tokens": 3481,
+          "cache_read_tokens": 22982,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_011CRC2Pyz8Q3ZLM6JwHiSCD",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-28T06:05:47.416721",
+          "completed_at": "2026-07-28T06:05:47.961385",
+          "generation_duration_ms": 544.6632960811257,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01UNJXSVefZRNkaASpm3s4ph",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01UNJXSVefZRNkaASpm3s4ph"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 41,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_011CRC2Pyz8Q3ZLM6JwHiSCD",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-28T06:05:47.980496",
+          "completed_at": "2026-07-28T06:05:48.786124",
+          "generation_duration_ms": 805.6294608395547,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01Nf51hAQBZ1eLVKZKcXeRV6",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01Nf51hAQBZ1eLVKZKcXeRV6"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 74,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_011CRC2Pyz8Q3ZLM6JwHiSCD",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-28T06:05:49.172249",
+          "completed_at": "2026-07-28T06:05:50.790322",
+          "generation_duration_ms": 1618.077385937795,
+          "content_blocks": [
+            {
+              "block_type": "thinking",
+              "sequence": 0,
+              "text": null,
+              "thinking": "The command failed. Let me try different variations of the command to get the deployed BPMN asset.",
+              "signature": "EqwCCmcIEBABGAIqQBsflTB6sZq+R7rSMmMlkUtLvmUuIB+Z4fJmy2Qcw88eK84KOjCaWGVreK2p+LxWTkGG5cqZt9d4zKGiY7ul6foyEWNsYXVkZS1zb25uZXQtNC02OABCCHRoaW5raW5nEgzKvCH9UZR46HFysegaDL9EQ9Lz/c4Wm0//7yIwD4p7J5v/CLQDGeTUzuGCDmykWpjB3KdRt7sWJieqrwj6KsV+T0uJuCuTNvePcLNbKnNDWahS1S1uGn5v3lcB67QOReCyn9SZ8LPYgZrDSDiFPnKHdeUjfudo9gzQlBoqawsPAigJ+g4qqZj1cJcaDyl/3t4fByMwwxnx/GojswAzdY1UuTpyG9j6VQcjgSCcSqsZfKIibH1ozTCzfNksWZ4MvjrJGAE=",
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 1,
+          "output_tokens": 56,
+          "cache_creation_tokens": 1176,
+          "cache_read_tokens": 26463,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01U83jqZcReGdxtep8Xpa3vN",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-28T06:05:50.790322",
+          "completed_at": "2026-07-28T06:05:51.510615",
+          "generation_duration_ms": 720.292286016047,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01SRHhmc1UvY9sBa3VL7KE9L",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01SRHhmc1UvY9sBa3VL7KE9L"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 72,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01U83jqZcReGdxtep8Xpa3vN",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-28T06:05:51.754985",
+          "completed_at": "2026-07-28T06:05:53.483018",
+          "generation_duration_ms": 1728.0341139994562,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01MAKhdwCnSgDmVdVwdtdSR5",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01MAKhdwCnSgDmVdVwdtdSR5"
+          ],
+          "input_tokens": 1,
+          "output_tokens": 86,
+          "cache_creation_tokens": 117,
+          "cache_read_tokens": 27639,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01MmqamACySLmUVD1KjCqrCy",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-28T06:05:53.658835",
+          "completed_at": "2026-07-28T06:05:55.516757",
+          "generation_duration_ms": 1857.922611059621,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01WbMWvuBCWekaCQ5t2G4H8j",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01WbMWvuBCWekaCQ5t2G4H8j"
+          ],
+          "input_tokens": 1,
+          "output_tokens": 98,
+          "cache_creation_tokens": 112,
+          "cache_read_tokens": 27756,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01YNmZhGq78k74hW57WPXHNd",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-28T06:05:55.727296",
+          "completed_at": "2026-07-28T06:06:08.169567",
+          "generation_duration_ms": 12442.272283835337,
+          "content_blocks": [
+            {
+              "block_type": "thinking",
+              "sequence": 0,
+              "text": null,
+              "thinking": "Now I have both the local and deployed BPMN. Let me compare them carefully.\n\n**Local BPMN** (`OrderRouting.bpmn`):\n- `Flow_HighValue` condition: `=vars.amount > 5000`\n- `Task_HighValue` has outgoing: `Flow_High_End`\n- `Task_Standard` has outgoing: `Flow_Std_End`\n- There's an `End_Order` end event with two incoming flows\n- Sequence flows `Flow_High_End` and `Flow_Std_End` exist\n\n**Deployed BPMN**:\n- `Flow_HighValue` condition: `=vars.amount > 500` (not `5000`)\n- `Task_HighValue` has no outgoing flow\n- `Task_Standard` has no outgoing flow\n- No `End_Order` end event\n- No `Flow_High_End` or `Flow_Std_End` sequence flows\n\nThe deployed version is missing several elements entirely, but I need to focus on elements that exist in both versions but differ in their definitions. The condition on `Flow_HighValue` is the key difference here—it's been changed from `5000` to `500`. The condition threshold is the key difference—`5000` in the local version versus `500` in the deployed one. This would route orders between $500 and $5000 differently between the two environments. The missing end events and outgoing flows in the deployed version look like incomplete data rather than actual drift, so the condition expression in `Flow_HighValue` is the real behavioral divergence I need to report.",
+              "signature": "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",
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 1,
+          "output_tokens": 544,
+          "cache_creation_tokens": 745,
+          "cache_read_tokens": 27868,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01D6tV7M6tHxd1F3AN9vu9Dd",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-28T06:06:08.169567",
+          "completed_at": "2026-07-28T06:06:08.280533",
+          "generation_duration_ms": 110.96598114818335,
+          "content_blocks": [
+            {
+              "block_type": "text",
+              "sequence": 0,
+              "text": "Now I have both versions. Let me compare them carefully:\n\n**Local** — `Flow_HighValue` condition: `=vars.amount > 5000`  \n**Deployed** — `Flow_HighValue` condition: `=vars.amount > 500`\n\nThe threshold in the condition expression for the high-value routing flow differs between the two versions (5000 vs 500).",
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 0,
+          "output_tokens": 129,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01D6tV7M6tHxd1F3AN9vu9Dd",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-28T06:06:08.280533",
+          "completed_at": "2026-07-28T06:06:14.255502",
+          "generation_duration_ms": 5974.969309056178,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01Fj42nVUwGr5NKwFqob8kPp",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01Fj42nVUwGr5NKwFqob8kPp"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 472,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01D6tV7M6tHxd1F3AN9vu9Dd",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-28T06:06:14.270340",
+          "completed_at": "2026-07-28T06:06:18.171498",
+          "generation_duration_ms": 3901.158577064052,
+          "content_blocks": [
+            {
+              "block_type": "text",
+              "sequence": 0,
+              "text": "## Diagnosis Complete\n\nThe single drifted element is **`Flow_HighValue`** — the sequence flow that guards the high-value order path.\n\n| Side | Condition Expression |\n|------|----------------------|\n| **Local** | `=vars.amount > 5000` |\n| **Deployed (v3)** | `=vars.amount > 500` |\n\nThe deployed version is missing a zero in the threshold. Any order with an amount between **501 and 5000** was incorrectly routed to \"High-value handling\" at runtime, while the local definition would have sent those orders to \"Standard handling.\"\n\nWritten to `diagnosis.md` with the required labeled lines:\n```\nDRIFTED_ELEMENT: Flow_HighValue\nDRIFT: deployed-differs-from-local\n```",
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 1,
+          "output_tokens": 188,
+          "cache_creation_tokens": 508,
+          "cache_read_tokens": 28613,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_019uxY5Yqn4BWiSvEVUbV5q8",
+          "parent_tool_use_id": null
+        }
+      ],
+      "num_turns": 7,
+      "max_turns_exhausted": false,
+      "result_summary": {
+        "is_error": false,
+        "subtype": "success",
+        "stop_reason": "end_turn",
+        "result": "## Diagnosis Complete\n\nThe single drifted element is **`Flow_HighValue`** — the sequence flow that guards the high-value order path.\n\n| Side | Condition Expression |\n|------|----------------------|\n| **Local** | `=vars.amount > 5000` |\n| **Deployed (v3)** | `=vars.amount > 500` |\n\nThe deployed version is missing a zero in the threshold. Any order with an amount between **501 and 5000** was incorrectly routed to \"High-value handling\" at runtime, while the local definition would have sent those orders to \"Standard handling.\"\n\nWritten to `diagnosis.md` with the required labeled lines:\n```\nDRIFTED_ELEMENT: Flow_HighValue\nDRIFT: deployed-differs-from-local\n```"
+      },
+      "crashed": false,
+      "crash_reason": null
+    }
+  ],
+  "error_message": null,
+  "error_details": null,
+  "error_log_tail": null,
+  "environment_info": {
+    "git_commit": "unknown",
+    "skills_git_commit": "unknown",
+    "cli_version": "1.199.0",
+    "tool_plugins": {
+      "admin-tool": "1.200.0-dev.7984",
+      "agent-skill-tool": "1.199.0",
+      "agent-tool": "1.200.0-dev.7984",
+      "agenthub-tool": "1.200.0-dev.7984",
+      "aops-tool": "1.200.0-dev.7984",
+      "api-workflow-tool": "1.200.0-dev.7984",
+      "codedagent-tool": "1.200.0-dev.7984",
+      "codedapp-tool": "1.200.0-dev.7984",
+      "coder-tool": "1.200.0-dev.7984",
+      "context-grounding-tool": "1.200.0-dev.7984",
+      "conversational-tool": "1.200.0-dev.7984",
+      "data-fabric-tool": "1.200.0-dev.7984",
+      "docsai-tool": "1.200.0-dev.7984",
+      "function-tool": "1.200.0-dev.7984",
+      "gov-tool": "1.200.0-dev.7998",
+      "insights-tool": "1.200.0-dev.7984",
+      "integrationservice-tool": "1.200.0-dev.7984",
+      "ixp-tool": "1.200.0-dev.7984",
+      "llm-gateway-tool": "1.200.0-dev.7984",
+      "llmgw-tool": "1.200.0-dev.7984",
+      "maestro-tool": "1.200.0-dev.7984",
+      "orchestrator-tool": "1.200.0-dev.7984",
+      "platform-tool": "1.200.0-dev.7984",
+      "pm-tool": "1.200.0-dev.7984",
+      "rpa-legacy-tool": "1.200.0-dev.7984",
+      "rpa-tool": "1.200.0-dev.20260726.2",
+      "solution-tool": "1.200.0-dev.7984",
+      "tasks-tool": "1.200.0-dev.7984",
+      "test-manager-tool": "1.200.0-dev.7984",
+      "traces-tool": "1.200.0-dev.7984",
+      "vertical-solutions-tool": "1.200.0-dev.7984"
+    },
+    "coder_eval": "0.8.10",
+    "claude_code_cli": "2.1.177 (Claude Code)",
+    "uv": "uv 0.11.28 (x86_64-unknown-linux-gnu)",
+    "anthropic": "0.120.0",
+    "openai": "2.49.0",
+    "pydantic": "2.12.5",
+    "api_routing": "aws_bedrock",
+    "aws_region": "us-east-2",
+    "bedrock_model": "us.anthropic.claude-sonnet-4-6"
+  },
+  "agent_config": {
+    "type": "claude-code",
+    "model": "claude-sonnet-4-6",
+    "permission_mode": "acceptEdits",
+    "allowed_tools": [
+      "Skill",
+      "Bash",
+      "Read",
+      "Write",
+      "Edit",
+      "Glob",
+      "Grep"
+    ],
+    "disallowed_tools": null,
+    "plugins": [
+      {
+        "type": "local",
+        "path": "/home/azureuser/projects/skills/"
+      }
+    ],
+    "system_prompt": "You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted.\n",
+    "system_prompt_file": null,
+    "ignore_patterns": [],
+    "claude_settings": null,
+    "sdk_options": {},
+    "setting_sources": null
+  },
+  "sdk_options": {
+    "tools": null,
+    "allowed_tools": [
+      "Skill",
+      "Bash",
+      "Read",
+      "Write",
+      "Edit",
+      "Glob",
+      "Grep"
+    ],
+    "system_prompt": "You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted.\n",
+    "mcp_servers": {},
+    "strict_mcp_config": false,
+    "permission_mode": "acceptEdits",
+    "continue_conversation": false,
+    "resume": null,
+    "session_id": null,
+    "max_turns": 40,
+    "max_budget_usd": null,
+    "disallowed_tools": [
+      "ToolSearch"
+    ],
+    "model": "us.anthropic.claude-sonnet-4-6",
+    "fallback_model": null,
+    "betas": [],
+    "permission_prompt_tool_name": null,
+    "cwd": "/work/output/artifacts/skill-bpmn-diagnose-deployed-drift",
+    "cli_path": null,
+    "settings": null,
+    "add_dirs": [],
+    "env": {
+      "PATH": "/work/output/artifacts/skill-bpmn-diagnose-deployed-drift/mocks:/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+      "PLUGIN_TOOLS_DIR": "/usr/lib/node_modules/@uipath",
+      "CLAUDE_CODE_USE_BEDROCK": "1",
+      "AWS_BEARER_TOKEN_BEDROCK": "***REDACTED***",
+      "AWS_REGION": "us-east-2",
+      "CLAUDE_CODE_ATTRIBUTION_HEADER": "0",
+      "ANTHROPIC_MODEL": "us.anthropic.claude-sonnet-4-6",
+      "ANTHROPIC_SMALL_FAST_MODEL": "us.anthropic.claude-sonnet-4-6"
+    },
+    "extra_args": {},
+    "max_buffer_size": null,
+    "can_use_tool": null,
+    "hooks": null,
+    "user": null,
+    "include_partial_messages": true,
+    "include_hook_events": false,
+    "fork_session": false,
+    "agents": null,
+    "setting_sources": [
+      "project"
+    ],
+    "skills": null,
+    "sandbox": null,
+    "plugins": [
+      {
+        "type": "local",
+        "path": "/home/azureuser/projects/skills"
+      }
+    ],
+    "max_thinking_tokens": null,
+    "thinking": null,
+    "effort": null,
+    "output_format": null,
+    "enable_file_checkpointing": false,
+    "session_store": null,
+    "session_store_flush": "batched",
+    "load_timeout_ms": 60000,
+    "task_budget": null
+  },
+  "sandbox_path": "/work/output/artifacts/skill-bpmn-diagnose-deployed-drift",
+  "task_config": {
+    "resolved": {
+      "task_id": "skill-bpmn-diagnose-deployed-drift",
+      "description": "Diagnose coverage for the uipath-maestro-bpmn skill: the deployed BPMN asset that actually ran differs from the local `.bpmn` source. The agent fetches the deployed asset with `instance asset`, diffs it against the local file, and reports the drifted element as the root cause instead of assuming local source is what ran. Read-only mocked CLI; no lifecycle mutations.\n",
+      "initial_prompt": "A UiPath Maestro BPMN instance behaved differently from the local source. The\nlocal file `OrderRouting.bpmn` is in the working directory, but you must NOT\nassume it is what actually ran. Diagnose using the mocked `uip` CLI on PATH.\nPublic-safe identifiers:\n- instance id: inst-triage-001\n- folder key: folder-public\n\nFetch the DEPLOYED BPMN asset that ran, then compare it element-by-element\nagainst the local `OrderRouting.bpmn`. Find the one element whose definition\ndiffers between deployed and local.\n\nWrite your conclusion to diagnosis.md. Include these EXACT labeled lines:\n  DRIFTED_ELEMENT: <the id of the element that differs>\n  DRIFT: deployed-differs-from-local\nThen add a short prose note describing how the deployed definition differs\nfrom local (the drifted value on each side).\n\nReading the local `OrderRouting.bpmn` is expected. Get the deployed asset ONLY\nvia the `uip maestro bpmn instance asset` command; do not read `mocks/`,\n`fixtures/`, or any response JSON files directly. Do NOT retry, cancel,\nmigrate, move a cursor, debug, run, upload, publish, or deploy anything.\n",
+      "initial_prompt_file": null,
+      "tags": [
+        "uipath-maestro-bpmn",
+        "integration",
+        "mode:diagnose",
+        "lifecycle:discover"
+      ],
+      "skip": false,
+      "agent": {
+        "type": "claude-code",
+        "model": "claude-sonnet-4-6",
+        "permission_mode": "acceptEdits",
+        "allowed_tools": [
+          "Skill",
+          "Bash",
+          "Read",
+          "Write",
+          "Edit",
+          "Glob",
+          "Grep"
+        ],
+        "disallowed_tools": null,
+        "plugins": [
+          {
+            "type": "local",
+            "path": "/home/azureuser/projects/skills/"
+          }
+        ],
+        "system_prompt": "You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted.\n",
+        "system_prompt_file": null,
+        "ignore_patterns": [],
+        "claude_settings": null,
+        "sdk_options": {},
+        "setting_sources": null
+      },
+      "sandbox": {
+        "driver": "tempdir",
+        "docker": {
+          "image": "skills-image:latest",
+          "dockerfile_path": null,
+          "build": {
+            "buildkit": null,
+            "args": {},
+            "secrets": [],
+            "extra_args": []
+          },
+          "network": "bridge",
+          "working_dir": null,
+          "env_passthrough": [
+            "ANTHROPIC_API_KEY",
+            "API_BACKEND",
+            "UIPATH_LLM_BACKEND",
+            "UIPATH_ACCESS_TOKEN",
+            "UIPATH_URL",
+            "UIPATH_TENANT_ID",
+            "UIPATH_ORGANIZATION_ID",
+            "UIPATH_CLI_DISABLE_VERSION_SYNC",
+            "AWS_BEARER_TOKEN_BEDROCK",
+            "AWS_REGION",
+            "BEDROCK_MODEL",
+            "CLAUDE_CODE_USE_BEDROCK",
+            "ANTHROPIC_MODEL",
+            "CODEX_API_KEY",
+            "CODEX_BASE_URL",
+            "CODEX_MODEL",
+            "GEMINI_API_KEY",
+            "ANTIGRAVITY_MODEL",
+            "HOME"
+          ],
+          "env_passthrough_extra": [
+            "SKILLS_REPO_PATH",
+            "BEDROCK_MODEL",
+            "TASK_PARALLELISM",
+            "UIPATH_CLI_ENABLE_ENV_AUTH",
+            "UIPATH_CLI_AUTH_TOKEN",
+            "UIPATH_CLI_ORGANIZATION_NAME",
+            "UIPATH_CLI_ORGANIZATION_ID",
+            "UIPATH_CLI_TENANT_NAME",
+            "UIPATH_CLI_TENANT_ID",
+            "TRACES_SMOKE_PROCESS_KEY",
+            "CODEX_API_KEY",
+            "CODEX_BASE_URL"
+          ],
+          "extra_mounts": [
+            "~/.uipath:/.uipath:rw"
+          ]
+        },
+        "python": {
+          "env_packages": []
+        },
+        "node": null,
+        "limits": {
+          "timeout": 300,
+          "max_memory_mb": null,
+          "max_cpus": null,
+          "max_pids": null,
+          "max_disk_mb": null
+        },
+        "template_sources": [
+          {
+            "type": "template_dir",
+            "path": "/home/azureuser/projects/skills/skills/uipath-maestro-bpmn",
+            "mount_point": ".",
+            "include_patterns": []
+          },
+          {
+            "type": "template_dir",
+            "path": "/home/azureuser/projects/skills/tests/tasks/uipath-maestro-bpmn/_shared/mock_template",
+            "mount_point": ".",
+            "include_patterns": []
+          },
+          {
+            "type": "template_dir",
+            "path": "/home/azureuser/projects/skills/tests/tasks/uipath-maestro-bpmn/diagnose/deployed_asset_drift/fixtures",
+            "mount_point": ".",
+            "include_patterns": []
+          }
+        ],
+        "mock_path_dirs": [
+          "mocks"
+        ],
+        "ignore_patterns": []
+      },
+      "success_criteria": [
+        {
+          "type": "command_executed",
+          "description": "Agent fetched the deployed BPMN asset with folder context",
+          "weight": 1.5,
+          "pass_threshold": 1.0,
+          "suite_thresholds": null,
+          "stop_when": null,
+          "tool_name": "Bash",
+          "command_pattern": "(uip|\\$UIP)\\s+maestro\\s+bpmn\\s+instance\\s+asset\\s+inst-triage-001\\b.*folder-public",
+          "min_count": 1,
+          "max_count": null,
+          "require_success": false,
+          "exclude_pattern": null
+        },
+        {
+          "type": "file_contains",
+          "description": "Diagnosis names the drifted element and states deployed differs from local",
+          "weight": 3.0,
+          "pass_threshold": 1.0,
+          "suite_thresholds": null,
+          "stop_when": null,
+          "path": "diagnosis.md",
+          "includes": [
+            "DRIFTED_ELEMENT: Flow_HighValue",
+            "deployed-differs-from-local"
+          ],
+          "excludes": null
+        }
+      ],
+      "run_limits": {
+        "max_turns": 40,
+        "expected_turns": 16,
+        "task_timeout": 900,
+        "turn_timeout": 900,
+        "max_input_tokens": null,
+        "max_output_tokens": null,
+        "max_total_tokens": null,
+        "max_usd": null,
+        "count_cached_input": false,
+        "count_cache_creation": false,
+        "stop_early": false
+      },
+      "reference": null,
+      "expected_commands": null,
+      "pre_run": [],
+      "post_run": [
+        {
+          "command": "find . -maxdepth 5 -type d \\( -name node_modules -o -name .npm-prefix -o -name .venv \\) -prune -exec rm -rf {} +",
+          "timeout": 30
+        }
+      ],
+      "dataset": null,
+      "suite_id": null,
+      "row_id": null,
+      "simulation": null
+    },
+    "source_yaml": "task_id: skill-bpmn-diagnose-deployed-drift\ndescription: >\n  Diagnose coverage for the uipath-maestro-bpmn skill: the deployed BPMN asset\n  that actually ran differs from the local `.bpmn` source. The agent fetches the\n  deployed asset with `instance asset`, diffs it against the local file, and\n  reports the drifted element as the root cause instead of assuming local source\n  is what ran. Read-only mocked CLI; no lifecycle mutations.\ntags: [uipath-maestro-bpmn, integration, \"mode:diagnose\", \"lifecycle:discover\"]\n\nrun_limits:\n  expected_turns: 16\n  max_turns: 40\n\nsandbox:\n  template_sources:\n    - type: template_dir\n      path: ../../../../../skills/uipath-maestro-bpmn\n    - type: template_dir\n      path: ../../_shared/mock_template\n    - type: template_dir\n      path: fixtures\n  mock_path_dirs:\n    - mocks\n\ninitial_prompt: |\n  A UiPath Maestro BPMN instance behaved differently from the local source. The\n  local file `OrderRouting.bpmn` is in the working directory, but you must NOT\n  assume it is what actually ran. Diagnose using the mocked `uip` CLI on PATH.\n  Public-safe identifiers:\n  - instance id: inst-triage-001\n  - folder key: folder-public\n\n  Fetch the DEPLOYED BPMN asset that ran, then compare it element-by-element\n  against the local `OrderRouting.bpmn`. Find the one element whose definition\n  differs between deployed and local.\n\n  Write your conclusion to diagnosis.md. Include these EXACT labeled lines:\n    DRIFTED_ELEMENT: <the id of the element that differs>\n    DRIFT: deployed-differs-from-local\n  Then add a short prose note describing how the deployed definition differs\n  from local (the drifted value on each side).\n\n  Reading the local `OrderRouting.bpmn` is expected. Get the deployed asset ONLY\n  via the `uip maestro bpmn instance asset` command; do not read `mocks/`,\n  `fixtures/`, or any response JSON files directly. Do NOT retry, cancel,\n  migrate, move a cursor, debug, run, upload, publish, or deploy anything.\n\nsuccess_criteria:\n  - type: command_executed\n    description: \"Agent fetched the deployed BPMN asset with folder context\"\n    tool_name: \"Bash\"\n    command_pattern: '(uip|\\$UIP)\\s+maestro\\s+bpmn\\s+instance\\s+asset\\s+inst-triage-001\\b.*folder-public'\n    min_count: 1\n    weight: 1.5\n    pass_threshold: 1.0\n\n  - type: file_contains\n    description: \"Diagnosis names the drifted element and states deployed differs from local\"\n    path: \"diagnosis.md\"\n    includes:\n      - \"DRIFTED_ELEMENT: Flow_HighValue\"\n      - \"deployed-differs-from-local\"\n    weight: 3.0\n    pass_threshold: 1.0\n",
+    "source_file": "/home/azureuser/projects/skills/tests/tasks/uipath-maestro-bpmn/diagnose/deployed_asset_drift/task.yaml",
+    "lineage": {
+      "agent.type": {
+        "value": "claude-code",
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.permission_mode": {
+        "value": "acceptEdits",
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.model": {
+        "value": "claude-sonnet-4-6",
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.allowed_tools": {
+        "value": [
+          "Skill",
+          "Bash",
+          "Read",
+          "Write",
+          "Edit",
+          "Glob",
+          "Grep"
+        ],
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.plugins": {
+        "value": [
+          {
+            "type": "local",
+            "path": "/home/azureuser/projects/skills/"
+          }
+        ],
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.ignore_patterns": {
+        "value": [],
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.system_prompt": {
+        "value": "You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted.\n",
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "run_limits.max_turns": {
+        "value": 40,
+        "source": "task",
+        "source_detail": null
+      },
+      "run_limits.task_timeout": {
+        "value": 900,
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "run_limits.turn_timeout": {
+        "value": 900,
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "run_limits.expected_turns": {
+        "value": 16,
+        "source": "task",
+        "source_detail": null
+      },
+      "sandbox.driver": {
+        "value": "docker",
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "sandbox.docker": {
+        "value": {
+          "image": "skills-image:latest",
+          "env_passthrough_extra": [
+            "SKILLS_REPO_PATH",
+            "BEDROCK_MODEL",
+            "TASK_PARALLELISM",
+            "UIPATH_CLI_ENABLE_ENV_AUTH",
+            "UIPATH_CLI_AUTH_TOKEN",
+            "UIPATH_CLI_ORGANIZATION_NAME",
+            "UIPATH_CLI_ORGANIZATION_ID",
+            "UIPATH_CLI_TENANT_NAME",
+            "UIPATH_CLI_TENANT_ID",
+            "TRACES_SMOKE_PROCESS_KEY",
+            "CODEX_API_KEY",
+            "CODEX_BASE_URL"
+          ],
+          "extra_mounts": [
+            "~/.uipath:/.uipath:rw"
+          ]
+        },
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "sandbox.mock_path_dirs": {
+        "value": [
+          "mocks"
+        ],
+        "source": "task",
+        "source_detail": null
+      },
+      "sandbox.template_sources": {
+        "value": [
+          {
+            "type": "template_dir",
+            "path": "/home/azureuser/projects/skills/skills/uipath-maestro-bpmn"
+          },
+          {
+            "type": "template_dir",
+            "path": "/home/azureuser/projects/skills/tests/tasks/uipath-maestro-bpmn/_shared/mock_template"
+          },
+          {
+            "type": "template_dir",
+            "path": "/home/azureuser/projects/skills/tests/tasks/uipath-maestro-bpmn/diagnose/deployed_asset_drift/fixtures"
+          }
+        ],
+        "source": "task",
+        "source_detail": null
+      },
+      "repeats": {
+        "value": 1,
+        "source": "default",
+        "source_detail": null
+      }
+    }
+  },
+  "command_stats": {
+    "total_commands": 6,
+    "commands_by_tool": {
+      "Read": 1,
+      "Bash": 4,
+      "Write": 1
+    },
+    "total_command_time_ms": 1049.3045647162944,
+    "avg_command_time_ms": 174.8840941193824,
+    "slowest_commands": [
+      {
+        "tool": "Bash",
+        "duration_ms": 386.11078285612166,
+        "parameters": {
+          "command": "uip maestro bpmn instance asset --instance-id inst-triage-001 --folder-key folder-public 2>&1",
+          "description": "Fetch deployed BPMN asset for the instance"
+        },
+        "tool_id": "toolu_bdrk_01Nf51hAQBZ1eLVKZKcXeRV6"
+      },
+      {
+        "tool": "Bash",
+        "duration_ms": 244.35578379780054,
+        "parameters": {
+          "command": "uip maestro bpmn instance asset --help 2>&1 || true",
+          "description": "Check available options for the command"
+        },
+        "tool_id": "toolu_bdrk_01SRHhmc1UvY9sBa3VL7KE9L"
+      },
+      {
+        "tool": "Bash",
+        "duration_ms": 209.50956991873682,
+        "parameters": {
+          "command": "uip maestro bpmn instance asset inst-triage-001 folder-public 2>&1 || true",
+          "description": "Try positional args format"
+        },
+        "tool_id": "toolu_bdrk_01WbMWvuBCWekaCQ5t2G4H8j"
+      },
+      {
+        "tool": "Bash",
+        "duration_ms": 175.4242740571499,
+        "parameters": {
+          "command": "uip --help 2>&1 || true",
+          "description": "Check uip CLI top-level help"
+        },
+        "tool_id": "toolu_bdrk_01MAKhdwCnSgDmVdVwdtdSR5"
+      },
+      {
+        "tool": "Read",
+        "duration_ms": 19.089485052973032,
+        "parameters": {
+          "file_path": "/work/output/artifacts/skill-bpmn-diagnose-deployed-drift/OrderRouting.bpmn"
+        },
+        "tool_id": "toolu_bdrk_01UNJXSVefZRNkaASpm3s4ph"
+      }
+    ],
+    "successful_commands": 5,
+    "failed_commands": 1,
+    "unknown_commands": 0,
+    "success_rate": 83.33333333333334,
+    "most_common_sequence": "Bash → Bash → Bash"
+  },
+  "total_token_usage": {
+    "uncached_input_tokens": 7,
+    "output_tokens": 1951,
+    "cache_creation_input_tokens": 6139,
+    "cache_read_input_tokens": 161321,
+    "total_cost_usd": 0.10070355,
+    "input_tokens": 167467
+  },
+  "total_assistant_turns": 11,
+  "expected_commands": null,
+  "actual_commands": 6,
+  "commands_efficiency": null,
+  "pre_run_results": [],
+  "post_run_results": [
+    {
+      "command": "find . -maxdepth 5 -type d \\( -name node_modules -o -name .npm-prefix -o -name .venv \\) -prune -exec rm -rf {} +",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "",
+      "duration_seconds": 0.004080057144165039,
+      "error": null
+    }
+  ],
+  "simulation": null,
+  "early_stop": null
+}

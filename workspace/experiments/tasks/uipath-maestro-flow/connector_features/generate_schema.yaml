@@ -1,0 +1,49 @@
+task_id: skill-flow-ipe-generate-schema
+description: >
+  Tests the GenerateSchema IS feature — configures the Atlassian Jira
+  "Create Issue" connector node so that customFieldsRequestDetails captures
+  the parent values (project key + issue type id) that drive the schema
+  fetch, and bodyParameters carries the required fields.summary value.
+tags: [uipath-platform, integration, lifecycle:generate, shape:multi-node, connector, uipath-atlassian-jira, ipe, mode:build]
+
+run_limits:
+  expected_turns: 39
+  task_timeout: 1500
+  max_turns: 120
+  turn_timeout: 1200
+
+initial_prompt: |
+  Create a new Flow project called "GenerateSchemaTest" with a manual trigger
+  that runs the Atlassian Jira "Create Issue" connector activity
+  Pick any Jira project + issue type combination and set a static summary
+  string.
+  Validate the final flow file.
+  Use the connection present in Shared/uipath-maestro-flow.
+  If the Atlassian Jira connector isn't available in your registry, 
+  stop rather than falling back to a generic HTTP request.
+
+success_criteria:
+  - type: run_command
+    description: "Flow is valid JSON with Jira Create Issue node, customFieldsRequestDetails has both parent-field tuples under GenerateSchema, and bodyParameters carries a non-empty fields.summary"
+    command: "python3 $TASK_DIR/check_generate_schema.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 10.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Parent-field-driven describe (Step 3a) was called to fetch GenerateSchema custom fields"
+    tool_name: "Bash"
+    command_pattern: "(uip|\\$UIP)\\s+is\\s+resources\\s+describe.+(-f|--field)[=\\s]+[\"']?fields\\.project\\.key"
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "uip maestro flow validate was called"
+    tool_name: "Bash"
+    command_pattern: "(uip|\\$UIP)\\s+(maestro\\s+)?flow\\s+validate"
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+

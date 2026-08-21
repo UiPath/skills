@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "FeetInches",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "ff7ee32b-730d-4b9b-b9aa-e47e03a26093",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "FeetInches"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Flow",
+      "name": "FeetInches",
+      "package": {
+        "key": "86c40883-44ea-4fd0-8cfa-0c491cd5e987"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "cd293489-4dcf-484c-a704-f8fbc373a8f6",
+    "files": []
+  }
+}

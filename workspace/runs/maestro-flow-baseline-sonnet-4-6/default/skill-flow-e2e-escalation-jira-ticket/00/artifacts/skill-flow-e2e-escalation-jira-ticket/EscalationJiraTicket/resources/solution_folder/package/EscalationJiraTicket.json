@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "EscalationJiraTicket",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "97b2f5ff-843f-4602-8b1d-ff47be09781a",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "EscalationJiraTicket"
+    },
+    "locks": [],
+    "key": "4d2deefd-463e-433d-9f7a-27c420e23f1b",
+    "files": []
+  }
+}

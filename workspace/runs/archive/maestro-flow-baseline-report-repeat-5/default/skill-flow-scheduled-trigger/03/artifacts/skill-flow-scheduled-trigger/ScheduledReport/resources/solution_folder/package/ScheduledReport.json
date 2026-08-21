@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "ScheduledReport",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "d9c7cfb7-e971-4ad6-be13-cbb9a47495cd",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "ScheduledReport"
+    },
+    "locks": [],
+    "key": "d396f71d-cc2b-4dbf-aa37-af87c1f1056a",
+    "files": []
+  }
+}

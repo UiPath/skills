@@ -1,0 +1,9 @@
+{
+  "name": "VendorPOReviewBpmn",
+  "projectVersion": "1.0.0",
+  "description": "Vendor Purchase Order Review process with HITL procurement officer approval.",
+  "projectType": "ProcessOrchestration",
+  "main": "VendorPOReviewBpmn.bpmn",
+  "expressionLanguage": "JavaScript",
+  "runtimeOptions": {}
+}

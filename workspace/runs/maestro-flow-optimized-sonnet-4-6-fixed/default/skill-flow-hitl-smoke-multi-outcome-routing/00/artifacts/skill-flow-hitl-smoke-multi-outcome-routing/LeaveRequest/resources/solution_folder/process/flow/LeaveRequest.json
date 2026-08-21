@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "LeaveRequest",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "f5c1ef97-39b6-4700-a860-2cfcf257c6de",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "LeaveRequest"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Flow",
+      "name": "LeaveRequest",
+      "package": {
+        "key": "a7fc9490-776b-476a-a9a5-0e37fcf19ae9"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "8c11ab0e-bd3c-416a-aefc-c1f1b92427a7",
+    "files": []
+  }
+}

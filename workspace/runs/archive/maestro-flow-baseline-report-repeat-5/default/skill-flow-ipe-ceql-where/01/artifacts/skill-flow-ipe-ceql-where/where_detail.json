@@ -1,0 +1,60 @@
+{
+  "_comment": "Planned CEQL filter for the listAadGroups1 connector node in CeqlWhereTest flow. Run the configure command below after binding a live IS connection.",
+  "connector": "uipath-microsoft-azureactivedirectory",
+  "nodeId": "listAadGroups1",
+  "nodeType": "uipath.connector.uipath-microsoft-azureactivedirectory.list-groups",
+  "filterBuilderParam": "where",
+  "ceqlExpression": "displayName = 'active'",
+  "filterField": {
+    "name": "displayName",
+    "displayName": "Name",
+    "dataType": "string",
+    "searchableOperators": ["=", "IN"],
+    "description": "The display name of the group."
+  },
+  "filterTree": {
+    "groupOperator": 0,
+    "index": 0,
+    "filters": [
+      {
+        "id": "displayName",
+        "operator": "Equals",
+        "value": {
+          "value": "active",
+          "rawString": "\"active\"",
+          "isLiteral": true
+        }
+      }
+    ],
+    "groups": []
+  },
+  "plannedDetail": {
+    "connectionId": "<PLACEHOLDER_CONNECTION_ID>",
+    "folderKey": "<PLACEHOLDER_FOLDER_KEY>",
+    "method": "GET",
+    "endpoint": "/groups",
+    "filter": {
+      "groupOperator": 0,
+      "index": 0,
+      "filters": [
+        {
+          "id": "displayName",
+          "operator": "Equals",
+          "value": {
+            "value": "active",
+            "rawString": "\"active\"",
+            "isLiteral": true
+          }
+        }
+      ],
+      "groups": []
+    }
+  },
+  "configureCommand": "uip maestro flow node configure CeqlWhereTest.flow listAadGroups1 --detail '{\"connectionId\": \"<CONNECTION_ID>\", \"folderKey\": \"<FOLDER_KEY>\", \"method\": \"GET\", \"endpoint\": \"/groups\", \"filter\": {\"groupOperator\": 0, \"index\": 0, \"filters\": [{\"id\": \"displayName\", \"operator\": \"Equals\", \"value\": {\"value\": \"active\", \"rawString\": \"\\\"active\\\"\", \"isLiteral\": true}}], \"groups\": []}}' --output json",
+  "notes": [
+    "The 'where' parameter has design.component='FilterBuilder' — pass the filter tree via --detail.filter, not as a raw queryParameters.where string.",
+    "The CLI compiles the tree to CEQL: displayName = 'active' (runtime side) and also persists the tree under essentialConfiguration.savedFilterTrees.where (design-time side for Studio Web round-trip).",
+    "Replace <PLACEHOLDER_CONNECTION_ID> and <PLACEHOLDER_FOLDER_KEY> with values from: uip is connections list uipath-microsoft-azureactivedirectory --all-folders --output json",
+    "The flow will NOT pass 'uip maestro flow validate' until node configure is run — this is expected per the No-Live-Tenant pattern."
+  ]
+}

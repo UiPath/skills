@@ -1,0 +1,188 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+    xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+    xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+    xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+    xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:uipath="http://uipath.org/schema/bpmn"
+    id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn"
+    exporter="UiPath (https://bpmn.uipath.com)" exporterVersion="1.0">
+
+  <bpmn:process id="Process_1" isExecutable="true">
+    <bpmn:extensionElements>
+      <uipath:migrationVersion version="11" />
+      <uipath:variables version="v1">
+        <!-- Input: unique identifier for the expense record -->
+        <uipath:input id="Var_ExpenseId" name="expenseId" type="string" elementId="Start_Manual" />
+        <!-- Input: monetary amount of the expense, used for routing -->
+        <uipath:input id="Var_Amount" name="amount" type="number" elementId="Start_Manual" />
+        <!-- Output: approval decision written by the auto-approve branch -->
+        <uipath:output id="Var_Decision" name="decision" type="string" />
+      </uipath:variables>
+      <uipath:bindings version="v1">
+        <uipath:binding id="Binding_AgentName" resource="process" propertyAttribute="name"
+                        default="PLACEHOLDER_TRIAGE_AGENT" />
+        <uipath:binding id="Binding_AgentFolderPath" resource="process" propertyAttribute="folderPath"
+                        default="PLACEHOLDER_AGENT_FOLDER" />
+      </uipath:bindings>
+    </bpmn:extensionElements>
+
+    <!-- Manual start event -->
+    <bpmn:startEvent id="Start_Manual" name="Expense Received">
+      <bpmn:extensionElements>
+        <uipath:entryPointId value="Entry_ExpenseApproval" />
+      </bpmn:extensionElements>
+      <bpmn:outgoing>Flow_StartToTriage</bpmn:outgoing>
+    </bpmn:startEvent>
+
+    <!-- Service task: triage the expense via a synthetic agent job -->
+    <bpmn:serviceTask id="Task_Triage" name="Triage Expense">
+      <bpmn:extensionElements>
+        <uipath:activity version="v1">
+          <uipath:type value="Orchestrator.StartAgentJob" version="v1" />
+          <uipath:context>
+            <uipath:input name="name" value="=bindings.Binding_AgentName" />
+            <uipath:input name="folderPath" value="=bindings.Binding_AgentFolderPath" />
+          </uipath:context>
+          <uipath:input name="JobArguments" type="json" target="bodyField"><![CDATA[{"expenseId":"=vars.Var_ExpenseId","amount":"=vars.Var_Amount"}]]></uipath:input>
+          <uipath:output name="Process response" type="Orchestrator.RunJob" var="Var_AgentResponse" />
+        </uipath:activity>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_StartToTriage</bpmn:incoming>
+      <bpmn:outgoing>Flow_TriageToGateway</bpmn:outgoing>
+    </bpmn:serviceTask>
+
+    <!-- Exclusive gateway: route by amount threshold -->
+    <bpmn:exclusiveGateway id="Gw_AmountCheck" name="Amount >= 1000?" default="Flow_GatewayToAutoApprove">
+      <bpmn:incoming>Flow_TriageToGateway</bpmn:incoming>
+      <bpmn:outgoing>Flow_GatewayToQueueItem</bpmn:outgoing>
+      <bpmn:outgoing>Flow_GatewayToAutoApprove</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+
+    <!-- Send task: create a queue item for high-amount manual review -->
+    <bpmn:sendTask id="Task_CreateQueueItem" name="Queue for Manual Review">
+      <bpmn:extensionElements>
+        <uipath:activity version="v1">
+          <uipath:type value="Orchestrator.CreateQueueItem" version="v1" />
+          <uipath:context>
+            <uipath:input name="queueName" value="PLACEHOLDER_REVIEW_QUEUE" />
+            <uipath:input name="folderId" value="" />
+            <uipath:input name="folderPath" value="PLACEHOLDER_QUEUE_FOLDER" />
+          </uipath:context>
+          <uipath:input name="ItemData" type="json" target="body"><![CDATA[{"expenseId":"=vars.Var_ExpenseId","amount":"=vars.Var_Amount"}]]></uipath:input>
+          <uipath:output name="response" type="Orchestrator.CreateQueueItem" var="Var_QueueResponse" />
+        </uipath:activity>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_GatewayToQueueItem</bpmn:incoming>
+      <bpmn:outgoing>Flow_QueueItemToEnd</bpmn:outgoing>
+    </bpmn:sendTask>
+
+    <!-- Script task: auto-approve low-amount expense and write decision -->
+    <bpmn:scriptTask id="Task_AutoApprove" name="Auto-Approve Expense" scriptFormat="JavaScript">
+      <bpmn:extensionElements>
+        <uipath:scriptVersion value="v3" />
+        <uipath:mapping version="v1">
+          <uipath:type value="BPMN.ScriptTask" version="v1" />
+          <uipath:input name="args" type="json" target="bodyField"><![CDATA[{"amount":"=vars.Var_Amount","expenseId":"=vars.Var_ExpenseId"}]]></uipath:input>
+          <uipath:output name="decision" type="string" var="Var_Decision" source="=result.response" />
+        </uipath:mapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_GatewayToAutoApprove</bpmn:incoming>
+      <bpmn:outgoing>Flow_AutoApproveToEnd</bpmn:outgoing>
+      <bpmn:script><![CDATA[
+var verdict = "approved";
+return { response: verdict };
+]]></bpmn:script>
+    </bpmn:scriptTask>
+
+    <!-- Single converging end event -->
+    <bpmn:endEvent id="End_Complete" name="Expense Processed">
+      <bpmn:incoming>Flow_QueueItemToEnd</bpmn:incoming>
+      <bpmn:incoming>Flow_AutoApproveToEnd</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <!-- Sequence flows -->
+    <bpmn:sequenceFlow id="Flow_StartToTriage" sourceRef="Start_Manual" targetRef="Task_Triage" />
+    <bpmn:sequenceFlow id="Flow_TriageToGateway" sourceRef="Task_Triage" targetRef="Gw_AmountCheck" />
+    <bpmn:sequenceFlow id="Flow_GatewayToQueueItem" sourceRef="Gw_AmountCheck" targetRef="Task_CreateQueueItem">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=vars.Var_Amount >= 1000</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_GatewayToAutoApprove" sourceRef="Gw_AmountCheck" targetRef="Task_AutoApprove" />
+    <bpmn:sequenceFlow id="Flow_QueueItemToEnd" sourceRef="Task_CreateQueueItem" targetRef="End_Complete" />
+    <bpmn:sequenceFlow id="Flow_AutoApproveToEnd" sourceRef="Task_AutoApprove" targetRef="End_Complete" />
+
+  </bpmn:process>
+
+  <bpmndi:BPMNDiagram id="Diagram_1">
+    <bpmndi:BPMNPlane id="Plane_1" bpmnElement="Process_1">
+
+      <!-- Start event -->
+      <bpmndi:BPMNShape id="S_Start_Manual" bpmnElement="Start_Manual">
+        <dc:Bounds x="152" y="202" width="36" height="36" />
+      </bpmndi:BPMNShape>
+
+      <!-- Triage service task -->
+      <bpmndi:BPMNShape id="S_Task_Triage" bpmnElement="Task_Triage">
+        <dc:Bounds x="240" y="180" width="100" height="80" />
+      </bpmndi:BPMNShape>
+
+      <!-- Exclusive gateway -->
+      <bpmndi:BPMNShape id="S_Gw_AmountCheck" bpmnElement="Gw_AmountCheck">
+        <dc:Bounds x="395" y="195" width="50" height="50" />
+      </bpmndi:BPMNShape>
+
+      <!-- Send task: create queue item (high branch, above) -->
+      <bpmndi:BPMNShape id="S_Task_CreateQueueItem" bpmnElement="Task_CreateQueueItem">
+        <dc:Bounds x="510" y="100" width="100" height="80" />
+      </bpmndi:BPMNShape>
+
+      <!-- Script task: auto-approve (default branch, below) -->
+      <bpmndi:BPMNShape id="S_Task_AutoApprove" bpmnElement="Task_AutoApprove">
+        <dc:Bounds x="510" y="280" width="100" height="80" />
+      </bpmndi:BPMNShape>
+
+      <!-- End event -->
+      <bpmndi:BPMNShape id="S_End_Complete" bpmnElement="End_Complete">
+        <dc:Bounds x="672" y="202" width="36" height="36" />
+      </bpmndi:BPMNShape>
+
+      <!-- Edges -->
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_StartToTriage" bpmnElement="Flow_StartToTriage">
+        <di:waypoint x="188" y="220" />
+        <di:waypoint x="240" y="220" />
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_TriageToGateway" bpmnElement="Flow_TriageToGateway">
+        <di:waypoint x="340" y="220" />
+        <di:waypoint x="395" y="220" />
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_GatewayToQueueItem" bpmnElement="Flow_GatewayToQueueItem">
+        <di:waypoint x="420" y="195" />
+        <di:waypoint x="420" y="140" />
+        <di:waypoint x="510" y="140" />
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_GatewayToAutoApprove" bpmnElement="Flow_GatewayToAutoApprove">
+        <di:waypoint x="420" y="245" />
+        <di:waypoint x="420" y="320" />
+        <di:waypoint x="510" y="320" />
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_QueueItemToEnd" bpmnElement="Flow_QueueItemToEnd">
+        <di:waypoint x="610" y="140" />
+        <di:waypoint x="690" y="140" />
+        <di:waypoint x="690" y="202" />
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_AutoApproveToEnd" bpmnElement="Flow_AutoApproveToEnd">
+        <di:waypoint x="610" y="320" />
+        <di:waypoint x="690" y="320" />
+        <di:waypoint x="690" y="238" />
+      </bpmndi:BPMNEdge>
+
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+
+</bpmn:definitions>

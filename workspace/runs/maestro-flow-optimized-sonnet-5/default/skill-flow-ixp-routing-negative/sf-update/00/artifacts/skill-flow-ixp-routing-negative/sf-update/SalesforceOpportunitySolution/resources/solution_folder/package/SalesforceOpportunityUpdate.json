@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "SalesforceOpportunityUpdate",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "60989f0b-58d7-44a5-8379-ae1e89b63d77",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "SalesforceOpportunityUpdate"
+    },
+    "locks": [],
+    "key": "390d7c9d-16c8-4ef4-8e76-45ac009c8210",
+    "files": []
+  }
+}

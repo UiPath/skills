@@ -1,0 +1,537 @@
+{
+  "id": "c5c5b98c-f832-4b89-869a-18245d19b59d",
+  "version": "1.8",
+  "name": "SeasonLookup",
+  "nodes": [
+    {
+      "id": "start",
+      "type": "core.trigger.manual",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Manual trigger"
+      },
+      "inputs": {
+        "entryPointId": "513e8d45-135b-41d8-af6d-5ae4c57d15f7",
+        "isDefaultEntryPoint": true
+      }
+    },
+    {
+      "id": "switchQuarter",
+      "type": "core.logic.switch",
+      "typeVersion": "1.1",
+      "display": {
+        "label": "Quarter Switch"
+      },
+      "inputs": {
+        "cases": [
+          {
+            "id": "q1",
+            "label": "Q1 - Spring",
+            "expression": "$vars.quarter === 1"
+          },
+          {
+            "id": "q2",
+            "label": "Q2 - Summer",
+            "expression": "$vars.quarter === 2"
+          },
+          {
+            "id": "q3",
+            "label": "Q3 - Fall",
+            "expression": "$vars.quarter === 3"
+          },
+          {
+            "id": "q4",
+            "label": "Q4 - Winter",
+            "expression": "$vars.quarter === 4"
+          }
+        ]
+      }
+    },
+    {
+      "id": "endSpring",
+      "type": "core.control.end",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Spring"
+      },
+      "inputs": {},
+      "outputs": {
+        "seasonName": {
+          "source": "=js:'Spring'"
+        }
+      }
+    },
+    {
+      "id": "endSummer",
+      "type": "core.control.end",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Summer"
+      },
+      "inputs": {},
+      "outputs": {
+        "seasonName": {
+          "source": "=js:'Summer'"
+        }
+      }
+    },
+    {
+      "id": "endFall",
+      "type": "core.control.end",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Fall"
+      },
+      "inputs": {},
+      "outputs": {
+        "seasonName": {
+          "source": "=js:'Fall'"
+        }
+      }
+    },
+    {
+      "id": "endWinter",
+      "type": "core.control.end",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Winter"
+      },
+      "inputs": {},
+      "outputs": {
+        "seasonName": {
+          "source": "=js:'Winter'"
+        }
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e_start_switch",
+      "sourceNodeId": "start",
+      "sourcePort": "output",
+      "targetNodeId": "switchQuarter",
+      "targetPort": "input"
+    },
+    {
+      "id": "e_switch_spring",
+      "sourceNodeId": "switchQuarter",
+      "sourcePort": "case-q1",
+      "targetNodeId": "endSpring",
+      "targetPort": "input"
+    },
+    {
+      "id": "e_switch_summer",
+      "sourceNodeId": "switchQuarter",
+      "sourcePort": "case-q2",
+      "targetNodeId": "endSummer",
+      "targetPort": "input"
+    },
+    {
+      "id": "e_switch_fall",
+      "sourceNodeId": "switchQuarter",
+      "sourcePort": "case-q3",
+      "targetNodeId": "endFall",
+      "targetPort": "input"
+    },
+    {
+      "id": "e_switch_winter",
+      "sourceNodeId": "switchQuarter",
+      "sourcePort": "case-q4",
+      "targetNodeId": "endWinter",
+      "targetPort": "input"
+    }
+  ],
+  "definitions": [
+    {
+      "nodeType": "core.trigger.manual",
+      "version": "1.0",
+      "category": "trigger",
+      "description": "Start workflow manually",
+      "tags": [
+        "trigger",
+        "start",
+        "manual"
+      ],
+      "sortOrder": 40,
+      "display": {
+        "label": "Manual trigger",
+        "icon": "play",
+        "shape": "circle"
+      },
+      "handleConfiguration": [
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "output",
+              "type": "source",
+              "handleType": "output",
+              "showButton": true,
+              "constraints": {
+                "forbiddenTargetCategories": [
+                  "trigger"
+                ]
+              }
+            }
+          ],
+          "visible": true
+        }
+      ],
+      "model": {
+        "type": "bpmn:StartEvent",
+        "entryPointId": true
+      },
+      "outputDefinition": {
+        "output": {
+          "type": "object",
+          "description": "Data passed when manually triggering the workflow.",
+          "source": "null",
+          "var": "output"
+        }
+      },
+      "toolbarExtensions": {
+        "design": {
+          "actions": [
+            {
+              "id": "change-trigger-type",
+              "icon": "square-mouse-pointer",
+              "label": "Change trigger type"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "nodeType": "core.logic.switch",
+      "version": "1.1",
+      "category": "control-flow",
+      "description": "Route to one of many branches by condition",
+      "tags": [
+        "control-flow",
+        "switch",
+        "case",
+        "when"
+      ],
+      "sortOrder": 20,
+      "display": {
+        "label": "Switch",
+        "icon": "between-horizontal-start"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ],
+          "visible": true
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "case-{item.id}",
+              "type": "source",
+              "handleType": "output",
+              "label": "{item.label || 'Case ' + (index + 1)}",
+              "repeat": "inputs.cases"
+            },
+            {
+              "id": "default",
+              "type": "source",
+              "handleType": "output",
+              "label": "Default"
+            }
+          ],
+          "visible": true
+        }
+      ],
+      "debug": {
+        "runtime": "clientScript"
+      },
+      "model": {
+        "type": "bpmn:ExclusiveGateway"
+      },
+      "inputDefinition": {
+        "type": "object",
+        "properties": {
+          "cases": {
+            "type": "array",
+            "minItems": 1,
+            "errorMessage": "At least one case is required",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "label": {
+                  "type": "string"
+                },
+                "expression": {
+                  "type": "string",
+                  "minLength": 1,
+                  "errorMessage": "A condition expression is required"
+                }
+              },
+              "required": [
+                "expression"
+              ]
+            }
+          }
+        },
+        "required": [
+          "cases"
+        ]
+      },
+      "outputDefinition": {
+        "matchedCase": {
+          "type": "string",
+          "description": "The label of the matched case",
+          "var": "matchedCase"
+        },
+        "matchedCaseId": {
+          "type": "string",
+          "description": "The ID of the matched case (\"default\" for the default branch)",
+          "var": "matchedCaseId"
+        }
+      },
+      "inputDefaults": {
+        "cases": [
+          {
+            "id": "default-1",
+            "label": "Case 1",
+            "expression": ""
+          },
+          {
+            "id": "default-2",
+            "label": "Case 2",
+            "expression": ""
+          }
+        ]
+      },
+      "form": {
+        "id": "switch-properties",
+        "title": "Switch configuration",
+        "sections": [
+          {
+            "id": "cases",
+            "title": "Cases",
+            "description": "Each case is evaluated in order. The first condition that returns true is taken.",
+            "collapsible": true,
+            "defaultExpanded": true,
+            "fields": [
+              {
+                "name": "inputs.cases",
+                "type": "custom",
+                "label": "Switch cases",
+                "component": "case-list-editor",
+                "componentProps": {
+                  "minCases": 1,
+                  "maxCases": 10,
+                  "expressionPlaceholder": "e.g., $vars.value <= 30",
+                  "expressionValidationFields": [
+                    {
+                      "subPath": "expression",
+                      "validationMode": "expression",
+                      "expectedType": "boolean"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "runtimeConstraints": {
+        "exclude": [
+          "api-function"
+        ]
+      }
+    },
+    {
+      "nodeType": "core.control.end",
+      "version": "1.0",
+      "category": "control-flow",
+      "description": "Mark the end of a workflow path",
+      "tags": [
+        "control-flow",
+        "end",
+        "finish",
+        "complete"
+      ],
+      "sortOrder": 20,
+      "display": {
+        "label": "End",
+        "icon": "circle-check",
+        "shape": "circle"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        }
+      ],
+      "model": {
+        "type": "bpmn:EndEvent"
+      },
+      "runtimeConstraints": {
+        "exclude": [
+          "api-function"
+        ]
+      }
+    }
+  ],
+  "variables": {
+    "globals": [
+      {
+        "id": "quarter",
+        "direction": "in",
+        "type": "number",
+        "description": "Quarter number (1-4): 1=Spring, 2=Summer, 3=Fall, 4=Winter"
+      },
+      {
+        "id": "seasonName",
+        "direction": "out",
+        "type": "string",
+        "description": "Season name corresponding to the quarter"
+      }
+    ],
+    "nodes": [
+      {
+        "id": "start.output",
+        "type": "object",
+        "description": "Data passed when manually triggering the workflow.",
+        "binding": {
+          "nodeId": "start",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "switchQuarter.matchedCase",
+        "type": "string",
+        "description": "The label of the matched case",
+        "binding": {
+          "nodeId": "switchQuarter",
+          "outputId": "matchedCase"
+        }
+      },
+      {
+        "id": "switchQuarter.matchedCaseId",
+        "type": "string",
+        "description": "The ID of the matched case (\"default\" for the default branch)",
+        "binding": {
+          "nodeId": "switchQuarter",
+          "outputId": "matchedCaseId"
+        }
+      },
+      {
+        "id": "endSpring.seasonName",
+        "type": "string",
+        "binding": {
+          "nodeId": "endSpring",
+          "outputId": "seasonName"
+        }
+      },
+      {
+        "id": "endSummer.seasonName",
+        "type": "string",
+        "binding": {
+          "nodeId": "endSummer",
+          "outputId": "seasonName"
+        }
+      },
+      {
+        "id": "endFall.seasonName",
+        "type": "string",
+        "binding": {
+          "nodeId": "endFall",
+          "outputId": "seasonName"
+        }
+      },
+      {
+        "id": "endWinter.seasonName",
+        "type": "string",
+        "binding": {
+          "nodeId": "endWinter",
+          "outputId": "seasonName"
+        }
+      }
+    ],
+    "variableUpdates": {}
+  },
+  "runtime": "maestro",
+  "layout": {
+    "nodes": {
+      "start": {
+        "position": {
+          "x": -192,
+          "y": 0
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        }
+      },
+      "switchQuarter": {
+        "position": {
+          "x": 0,
+          "y": 0
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        }
+      },
+      "endSpring": {
+        "position": {
+          "x": 192,
+          "y": -288
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        }
+      },
+      "endSummer": {
+        "position": {
+          "x": 192,
+          "y": -96
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        }
+      },
+      "endFall": {
+        "position": {
+          "x": 192,
+          "y": 96
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        }
+      },
+      "endWinter": {
+        "position": {
+          "x": 192,
+          "y": 288
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        }
+      }
+    }
+  }
+}

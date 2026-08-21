@@ -1,0 +1,8 @@
+{
+  "name": "InboxTriggerBpmn",
+  "description": "Process started by an Integration Service connector email inbox event trigger.",
+  "main": "InboxTriggerBpmn.bpmn",
+  "projectVersion": "1.0.0",
+  "runtimeOptions": {},
+  "dependencies": {}
+}

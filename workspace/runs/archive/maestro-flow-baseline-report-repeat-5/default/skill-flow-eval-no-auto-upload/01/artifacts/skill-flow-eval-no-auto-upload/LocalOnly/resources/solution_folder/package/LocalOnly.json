@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "LocalOnly",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "b7ae009a-9b56-4025-b898-60f44e3eb3aa",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "LocalOnly"
+    },
+    "locks": [],
+    "key": "0827bcb6-eb71-4e4e-ae89-72adee22d313",
+    "files": []
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "MultiCityWeather",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "059154bc-8603-4d40-879f-731a7b87839c",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "MultiCityWeather"
+    },
+    "locks": [],
+    "key": "40404555-e9cb-477f-b2b6-fa966125e80e",
+    "files": []
+  }
+}

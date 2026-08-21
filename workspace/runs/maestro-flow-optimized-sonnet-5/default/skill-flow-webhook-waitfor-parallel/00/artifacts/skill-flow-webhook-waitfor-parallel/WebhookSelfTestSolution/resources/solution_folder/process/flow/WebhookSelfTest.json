@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "WebhookSelfTest",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "d15ab5c8-57be-44b6-8081-6ede1c01cb60",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "WebhookSelfTest"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Flow",
+      "name": "WebhookSelfTest",
+      "package": {
+        "key": "e429a1d1-4cfd-4c8d-877b-7c5b931eb41a"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "638f4b1c-668c-4c1a-bec8-e04de514c996",
+    "files": []
+  }
+}

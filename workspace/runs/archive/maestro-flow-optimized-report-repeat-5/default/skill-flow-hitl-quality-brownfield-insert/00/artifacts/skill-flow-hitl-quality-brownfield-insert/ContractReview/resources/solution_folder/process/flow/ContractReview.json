@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "ContractReview",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "1d46edec-3f73-4225-9f6e-3ce44e4daab5",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "ContractReview"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Flow",
+      "name": "ContractReview",
+      "package": {
+        "key": "cdedcad6-9f9f-43b7-922d-50003ee32258"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "52390da9-4246-4a41-a2e9-24a94b97f43c",
+    "files": []
+  }
+}

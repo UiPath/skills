@@ -1,0 +1,6 @@
+{
+  "projectVersion": "1.0.0",
+  "ProjectType": "ProcessOrchestration",
+  "Name": "ApiWorkflowDispatch",
+  "main": "ApiWorkflowDispatch.bpmn"
+}

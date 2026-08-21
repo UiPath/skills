@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "TransformGroupByDemo",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "848b6eea-380f-4f12-a470-554f6466cc71",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "TransformGroupByDemo"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Flow",
+      "name": "TransformGroupByDemo",
+      "package": {
+        "key": "7c228965-bf4a-4f28-8d62-7adacffd9760"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "b09a5488-11dc-4516-994e-3c07ca26a7a8",
+    "files": []
+  }
+}

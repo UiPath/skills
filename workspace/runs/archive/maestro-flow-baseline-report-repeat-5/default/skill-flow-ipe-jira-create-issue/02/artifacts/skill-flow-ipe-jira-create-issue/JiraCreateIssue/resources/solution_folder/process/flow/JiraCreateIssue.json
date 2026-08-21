@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "JiraCreateIssue",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "aafb0ef0-3753-452c-a9ea-f4af90c221f9",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "JiraCreateIssue"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Flow",
+      "name": "JiraCreateIssue",
+      "package": {
+        "key": "cff1a45d-da2a-4849-9e83-65fbaefe8a51"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "cf798861-bdb9-452d-bcd5-9d5ae9fdc9e6",
+    "files": []
+  }
+}

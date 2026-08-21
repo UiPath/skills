@@ -1,0 +1,12 @@
+{
+  "connectionId": "<PLACEHOLDER: Act! 365 connection UUID from `uip is connections list uipath-act-act365 --all-folders`>",
+  "folderKey": "<PLACEHOLDER: Orchestrator folder key from the same connection list output>",
+  "method": "POST",
+  "endpoint": "/CuratedContacts",
+  "bodyParameters": {
+    "firstName": "Test",
+    "lastName": "Contact",
+    "emailAddress": "test.contact@example.com",
+    "groups": ["<group-id-1>", "<group-id-2>", "<group-id-3>"]
+  }
+}

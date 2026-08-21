@@ -1,0 +1,24 @@
+{
+  "version": "2.0",
+  "resources": [
+    {
+      "resource": "connection",
+      "key": "75dfafb4-3717-470c-a5f6-bdc144757a67",
+      "id": "connection75dfafb4-3717-470c-a5f6-bdc144757a67",
+      "value": {
+        "ConnectionId": {
+          "defaultValue": "75dfafb4-3717-470c-a5f6-bdc144757a67",
+          "isExpression": false,
+          "displayName": "uipath-microsoft-outlook365 connection"
+        }
+      },
+      "metadata": {
+        "ActivityName": "Wait for Email",
+        "BindingsVersion": "2.2",
+        "DisplayLabel": "uipath-microsoft-outlook365 connection",
+        "UseConnectionService": "true",
+        "Connector": "uipath-microsoft-outlook365"
+      }
+    }
+  ]
+}

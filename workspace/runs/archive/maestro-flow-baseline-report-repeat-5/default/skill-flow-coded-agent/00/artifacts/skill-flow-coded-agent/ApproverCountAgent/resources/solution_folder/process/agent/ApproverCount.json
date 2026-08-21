@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "ApproverCount",
+    "kind": "process",
+    "type": "agent",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "4ce13bd0-5f95-4208-b3bf-e4c6cbd7f430",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "ApproverCount"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Agent",
+      "name": "ApproverCount",
+      "package": {
+        "key": "1400a092-0cd5-48a1-a0f1-652c3e3aba42"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "6a7b3b92-5090-40ed-8d68-ce4474881c76",
+    "files": []
+  }
+}

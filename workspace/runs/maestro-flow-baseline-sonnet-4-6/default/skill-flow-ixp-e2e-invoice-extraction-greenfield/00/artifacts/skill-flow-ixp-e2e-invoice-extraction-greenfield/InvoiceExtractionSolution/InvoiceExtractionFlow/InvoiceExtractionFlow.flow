@@ -1,0 +1,3678 @@
+{
+  "id": "29c5702e-4b29-4188-8862-f68f8ed84c16",
+  "version": "1.9",
+  "name": "InvoiceExtractionFlow",
+  "nodes": [
+    {
+      "id": "fileCreatedInSharepoint1",
+      "type": "uipath.connector.trigger.uipath-microsoft-onedrive.file-created",
+      "typeVersion": "1.0.0",
+      "display": {
+        "label": "File Created in SharePoint"
+      },
+      "inputs": {
+        "entryPointId": "1573d087-4075-4c47-a609-7693bbe18a8a",
+        "isDefaultEntryPoint": true,
+        "detail": {
+          "connector": "uipath-microsoft-onedrive",
+          "connectionId": "ae311606-25b7-43ef-9cd0-f3dc0b3a9b58",
+          "connectionResourceId": "ae311606-25b7-43ef-9cd0-f3dc0b3a9b58",
+          "connectionFolderKey": "c4359cde-55f0-4f0e-9322-c6cdce74ab4c",
+          "eventParameters": {},
+          "objectName": "File",
+          "eventType": "FILE_CREATED",
+          "eventMode": "polling",
+          "pathParameters": {},
+          "filterExpression": "",
+          "configuration": "=jsonString:{\"essentialConfiguration\":{\"connectorVersion\":\"1.40.0\",\"executionType\":null,\"customFieldsRequestDetails\":null,\"instanceParameters\":{\"connectorKey\":\"uipath-microsoft-onedrive\",\"objectName\":\"File\",\"activityType\":\"CuratedTrigger\",\"version\":\"1.0.0\",\"eventOperation\":\"FILE_CREATED\",\"eventMode\":\"polling\",\"supportsStreaming\":false},\"objectName\":\"File\",\"packageVersion\":\"1.0.0\",\"httpMethod\":null,\"path\":null,\"filter\":null}}",
+          "uiPathActivityTypeId": "3579e230-6ba6-39f9-9870-d6afd1e17512",
+          "errorState": {
+            "issues": []
+          }
+        }
+      }
+    },
+    {
+      "id": "downloadInvoiceFile1",
+      "type": "uipath.connector.uipath-microsoft-onedrive.download-file",
+      "typeVersion": "1.0.0",
+      "display": {
+        "label": "Download Invoice File"
+      },
+      "inputs": {
+        "detail": {
+          "connector": "uipath-microsoft-onedrive",
+          "connectionId": "ae311606-25b7-43ef-9cd0-f3dc0b3a9b58",
+          "connectionResourceId": "ae311606-25b7-43ef-9cd0-f3dc0b3a9b58",
+          "connectionFolderKey": "c4359cde-55f0-4f0e-9322-c6cdce74ab4c",
+          "method": "GET",
+          "endpoint": "/DownloadFile",
+          "queryParameters": {
+            "referenceID": "=js:$vars.fileCreatedInSharepoint1.output.id"
+          },
+          "uiPathActivityTypeId": "c0ed899b-e170-3111-bda7-fdae448fa4e5",
+          "errorState": {
+            "issues": []
+          },
+          "configuration": "=jsonString:{\"essentialConfiguration\":{\"connectorVersion\":\"1.40.0\",\"customFieldsRequestDetails\":null,\"instanceParameters\":{\"connectorKey\":\"uipath-microsoft-onedrive\",\"objectName\":\"DownloadFile\",\"httpMethod\":\"GET\",\"activityType\":\"Curated\",\"version\":\"1.0.0\",\"supportsStreaming\":false,\"subType\":\"standard\"},\"objectName\":\"DownloadFile\",\"operation\":\"retrieve\",\"packageVersion\":\"1.0.0\",\"httpMethod\":\"GET\",\"path\":\"/DownloadFile\",\"unifiedTypesCompatible\":true}}"
+        }
+      }
+    },
+    {
+      "id": "postInvoiceToSap1",
+      "type": "core.action.http.v2",
+      "typeVersion": "2.3",
+      "display": {
+        "label": "HTTP POST to Invoice API"
+      },
+      "inputs": {
+        "branches": [],
+        "timeout": "PT15M",
+        "retryCount": 0,
+        "detail": {
+          "connector": "uipath-uipath-http",
+          "connectionId": "ImplicitConnection",
+          "connectionResourceId": null,
+          "connectionFolderKey": null,
+          "method": "POST",
+          "endpoint": "/http-request",
+          "bodyParameters": {
+            "authentication": "manual",
+            "method": "POST",
+            "url": "https://sap.example.com/api/invoices",
+            "headers": {
+              "Content-Type": "application/json"
+            },
+            "body": {
+              "invoiceNumber": "=js:$vars.buildInvoicePayload.output.invoiceNumber",
+              "vendor": "=js:$vars.buildInvoicePayload.output.vendor",
+              "invoiceDate": "=js:$vars.buildInvoicePayload.output.invoiceDate",
+              "totalAmount": "=js:$vars.buildInvoicePayload.output.totalAmount",
+              "lineItems": "=js:$vars.buildInvoicePayload.output.lineItems"
+            }
+          },
+          "configuration": "=jsonString:{\"essentialConfiguration\":{\"connectorVersion\":\"1.4.50\",\"executionType\":null,\"customFieldsRequestDetails\":null,\"instanceParameters\":{\"connectorKey\":\"uipath-uipath-http\",\"objectName\":\"http-request\",\"httpMethod\":\"POST\",\"activityType\":\"Curated\",\"version\":\"1.0.0\"},\"objectName\":\"http-request\",\"operation\":\"create\",\"packageVersion\":\"1.0.0\",\"httpMethod\":\"POST\",\"path\":\"/http-request\",\"unifiedTypesCompatible\":true,\"savedJitInputFieldId\":\"in_http-request\"}}",
+          "uiPathActivityTypeId": "5c4cc855-b42a-37e6-b910-de8588998fce",
+          "errorState": {
+            "issues": []
+          },
+          "telemetryData": {
+            "connectorKey": "uipath-uipath-http",
+            "connectorName": "HTTP",
+            "operationType": "create",
+            "objectName": "http-request",
+            "objectDisplayName": "HTTP Request",
+            "primaryKeyName": ""
+          }
+        }
+      }
+    },
+    {
+      "id": "extractInvoiceFields",
+      "type": "uipath.ixp.invoiceixp-cef0d447-ixp.ff973488-5d89-8035-86ac-f980b4be6deb-c4359cde-55f0-4f0e-9322-c6cdce74ab4c",
+      "typeVersion": "1.0.0",
+      "display": {
+        "label": "Extract Invoice Fields"
+      },
+      "inputs": {
+        "model": {
+          "id": "ff973488-5d89-8035-86ac-f980b4be6deb",
+          "modelName": "invoiceixp-cef0d447-ixp",
+          "modelDisplayName": "InvoiceIXP",
+          "folderKey": "c4359cde-55f0-4f0e-9322-c6cdce74ab4c",
+          "folderName": "Shared",
+          "folderPath": "c4359cde-55f0-4f0e-9322-c6cdce74ab4c",
+          "description": ""
+        },
+        "modelName": "invoiceixp-cef0d447-ixp",
+        "projectName": "invoiceixp-cef0d447-ixp",
+        "folderKey": "c4359cde-55f0-4f0e-9322-c6cdce74ab4c",
+        "folderName": "Shared",
+        "versionTag": "",
+        "pageRange": "",
+        "fileRef": "=js:$vars.downloadInvoiceFile1.output"
+      },
+      "outputs": {
+        "output": {
+          "name": "output",
+          "type": "object",
+          "source": "=this",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails",
+          "source": "=Error",
+          "var": "error"
+        }
+      }
+    },
+    {
+      "id": "buildInvoicePayload",
+      "type": "core.action.script",
+      "typeVersion": "1.1",
+      "display": {
+        "label": "Build Invoice Payload"
+      },
+      "inputs": {
+        "script": "const fields = ($vars.extractInvoiceFields.output && $vars.extractInvoiceFields.output.ExtractionResult && $vars.extractInvoiceFields.output.ExtractionResult.ResultsDocument && $vars.extractInvoiceFields.output.ExtractionResult.ResultsDocument.Fields) ? $vars.extractInvoiceFields.output.ExtractionResult.ResultsDocument.Fields : [];\nfunction getVal(name) {\n  const f = fields.find(function(x) { return x.FieldName === name; });\n  return (f && f.Values && f.Values.length > 0) ? f.Values[0] : null;\n}\nconst tables = ($vars.extractInvoiceFields.output && $vars.extractInvoiceFields.output.ExtractionResult && $vars.extractInvoiceFields.output.ExtractionResult.ResultsDocument && $vars.extractInvoiceFields.output.ExtractionResult.ResultsDocument.Tables) ? $vars.extractInvoiceFields.output.ExtractionResult.ResultsDocument.Tables : [];\nconst lineItems = [];\nif (tables.length > 0) {\n  const rows = tables[0].Values || [];\n  for (let i = 0; i < rows.length; i++) {\n    const item = {};\n    const cells = rows[i].Cells || [];\n    for (let j = 0; j < cells.length; j++) {\n      item[cells[j].ColumnName] = cells[j].Value;\n    }\n    lineItems.push(item);\n  }\n}\nreturn {\n  invoiceNumber: getVal('InvoiceId') || getVal('InvoiceNumber') || getVal('invoice_number'),\n  vendor: getVal('VendorName') || getVal('vendor') || getVal('Vendor'),\n  invoiceDate: getVal('InvoiceDate') || getVal('invoice_date'),\n  totalAmount: getVal('InvoiceTotal') || getVal('TotalAmount') || getVal('invoice_total'),\n  lineItems: lineItems\n};"
+      },
+      "outputs": {
+        "output": {
+          "type": "any",
+          "description": "The return value of the script",
+          "source": "=result.response",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails",
+          "source": "=Error",
+          "var": "error"
+        }
+      }
+    },
+    {
+      "id": "end1",
+      "type": "core.control.end",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "End"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge_fileCreatedInSharepoint1_output_downloadInvoiceFile1_input",
+      "sourceNodeId": "fileCreatedInSharepoint1",
+      "sourcePort": "output",
+      "targetNodeId": "downloadInvoiceFile1",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge_downloadInvoiceFile1_output_extractInvoiceFields_input",
+      "sourceNodeId": "downloadInvoiceFile1",
+      "sourcePort": "output",
+      "targetNodeId": "extractInvoiceFields",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge_extractInvoiceFields_success_buildInvoicePayload_input",
+      "sourceNodeId": "extractInvoiceFields",
+      "sourcePort": "success",
+      "targetNodeId": "buildInvoicePayload",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge_buildInvoicePayload_success_postInvoiceToSap1_input",
+      "sourceNodeId": "buildInvoicePayload",
+      "sourcePort": "success",
+      "targetNodeId": "postInvoiceToSap1",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge_postInvoiceToSap1_default_end1_input",
+      "sourceNodeId": "postInvoiceToSap1",
+      "sourcePort": "default",
+      "targetNodeId": "end1",
+      "targetPort": "input"
+    }
+  ],
+  "definitions": [
+    {
+      "nodeType": "uipath.connector.trigger.uipath-microsoft-onedrive.file-created",
+      "version": "1.0.0",
+      "category": "trigger.196549",
+      "tags": [
+        "connector",
+        "trigger",
+        "Trigger.Integrated"
+      ],
+      "sortOrder": 580,
+      "description": "Triggers when a new file is created in the drive.",
+      "display": {
+        "label": "File Created",
+        "description": "Triggers when a new file is created in the drive.",
+        "icon": "https://alpha.uipath.com/311c6049-4966-4ef2-a6f3-8ceccaf38d54/studio_/typecache/icons/446b7cebc39ca4493877cbc53272aa7c685bfa43b8b4af6eb2dca0f39e2d1fc1.svg",
+        "sourceDisplayName": "Microsoft OneDrive & SharePoint",
+        "shape": "circle"
+      },
+      "handleConfiguration": [
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "output",
+              "type": "source",
+              "handleType": "output",
+              "showButton": true,
+              "constraints": {
+                "forbiddenTargetCategories": [
+                  "trigger"
+                ]
+              }
+            }
+          ],
+          "visible": true
+        }
+      ],
+      "model": {
+        "type": "bpmn:StartEvent",
+        "entryPointId": true,
+        "serviceType": "Intsvc.EventTrigger",
+        "eventDefinition": "bpmn:MessageEventDefinition",
+        "bindings": {
+          "resource": "connection",
+          "resourceKey": "",
+          "values": [
+            {
+              "name": "uipath-microsoft-onedrive connection",
+              "propertyAttribute": "ConnectionId"
+            },
+            {
+              "name": "FolderKey",
+              "propertyAttribute": "FolderKey"
+            }
+          ]
+        },
+        "context": [
+          {
+            "name": "connectorKey",
+            "type": "string",
+            "value": "uipath-microsoft-onedrive"
+          },
+          {
+            "name": "operation",
+            "value": "FILE_CREATED",
+            "type": "string"
+          },
+          {
+            "name": "objectName",
+            "value": "File",
+            "type": "string"
+          },
+          {
+            "name": "method",
+            "type": "string"
+          },
+          {
+            "name": "connection",
+            "type": "string",
+            "value": "<bindings.uipath-microsoft-onedrive connection>"
+          },
+          {
+            "name": "folderKey",
+            "type": "string",
+            "value": "<bindings.FolderKey>"
+          },
+          {
+            "name": "activityConfigurationVersion",
+            "type": "string",
+            "value": "v1"
+          },
+          {
+            "name": "metadata",
+            "body": {
+              "telemetryData": {
+                "connectorKey": "uipath-microsoft-onedrive",
+                "connectorName": "File Created"
+              },
+              "inputMetadata": {},
+              "errorState": {
+                "hasError": true
+              }
+            },
+            "type": "json"
+          }
+        ]
+      },
+      "form": {
+        "id": "connector-properties",
+        "title": "Connector configuration",
+        "sections": [
+          {
+            "id": "connector",
+            "title": "Connector",
+            "collapsible": true,
+            "defaultExpanded": true,
+            "fields": [
+              {
+                "label": "",
+                "name": "inputs.detail",
+                "type": "custom",
+                "component": "dap-config",
+                "componentProps": {
+                  "connectorDetail": {
+                    "type": "Integrated",
+                    "packageId": "196549",
+                    "svgIconUrl": "icons/446b7cebc39ca4493877cbc53272aa7c685bfa43b8b4af6eb2dca0f39e2d1fc1.svg",
+                    "displayName": "File Created",
+                    "assemblyQualifiedName": "UiPath.IntegrationService.Activities.Runtime.Activities.ConnectorTriggerActivity, UiPath.IntegrationService.Activities.Runtime, Version=1.31.0.0, Culture=neutral, PublicKeyToken=null",
+                    "description": "Triggers when a new file is created in the drive.",
+                    "category": "Microsoft OneDrive & SharePoint.Triggers",
+                    "activityColor": "#00A3EE",
+                    "configuration": "{\"connectorKey\":\"uipath-microsoft-onedrive\",\"objectName\":\"File\",\"activityType\":\"CuratedTrigger\",\"version\":\"1.0.0\",\"eventOperation\":\"FILE_CREATED\",\"eventMode\":\"polling\",\"supportsStreaming\":false}",
+                    "uiPathActivityTypeId": "3579e230-6ba6-39f9-9870-d6afd1e17512",
+                    "isExperimental": false,
+                    "helpUrlTemplate": "https://docs.uipath.com/{0}/activities/other/latest/integration-service/uipath-microsoft-onedrive-File-Created",
+                    "isEnabled": true,
+                    "targetPlatform": "CrossPlatform",
+                    "isAdvanced": false,
+                    "isRestricted": false,
+                    "hasWpfOnlyDesigner": false,
+                    "tags": [
+                      "Trigger.Integrated"
+                    ]
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "inputDefinition": {},
+      "outputDefinition": {
+        "output": {
+          "type": "object",
+          "description": "The return value of the connector trigger.",
+          "source": "=result.response",
+          "var": "output"
+        }
+      },
+      "toolbarExtensions": {
+        "design": {
+          "actions": [
+            {
+              "id": "change-trigger-type",
+              "icon": "square-mouse-pointer",
+              "label": "Change trigger type"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "nodeType": "uipath.connector.uipath-microsoft-onedrive.download-file",
+      "version": "1.0.0",
+      "category": "connector.196549",
+      "tags": [
+        "connector",
+        "activity",
+        "API.File.Download"
+      ],
+      "sortOrder": 520,
+      "supportsErrorHandling": true,
+      "description": "Downloads a file or folder from OneDrive & SharePoint",
+      "display": {
+        "label": "Download File",
+        "description": "Downloads a file or folder from OneDrive & SharePoint",
+        "icon": "https://alpha.uipath.com/311c6049-4966-4ef2-a6f3-8ceccaf38d54/studio_/typecache/icons/446b7cebc39ca4493877cbc53272aa7c685bfa43b8b4af6eb2dca0f39e2d1fc1.svg",
+        "sourceDisplayName": "Microsoft OneDrive & SharePoint"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input",
+              "label": ""
+            }
+          ]
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "output",
+              "type": "source",
+              "handleType": "output",
+              "label": ""
+            },
+            {
+              "id": "error",
+              "label": "Error",
+              "type": "source",
+              "handleType": "output",
+              "visible": "{inputs.errorHandlingEnabled}",
+              "constraints": {
+                "maxConnections": 1
+              }
+            }
+          ]
+        }
+      ],
+      "model": {
+        "type": "bpmn:SendTask",
+        "serviceType": "Intsvc.ActivityExecution",
+        "bindings": {
+          "resource": "connection",
+          "resourceKey": "",
+          "values": [
+            {
+              "name": "uipath-microsoft-onedrive connection",
+              "propertyAttribute": "ConnectionId"
+            },
+            {
+              "name": "FolderKey",
+              "propertyAttribute": "FolderKey"
+            }
+          ]
+        },
+        "context": [
+          {
+            "name": "connectorKey",
+            "type": "string",
+            "value": "uipath-microsoft-onedrive"
+          },
+          {
+            "name": "operation",
+            "type": "string"
+          },
+          {
+            "name": "objectName",
+            "value": "DownloadFile",
+            "type": "string"
+          },
+          {
+            "name": "method",
+            "type": "string",
+            "value": "GET"
+          },
+          {
+            "name": "connection",
+            "type": "string",
+            "value": "<bindings.uipath-microsoft-onedrive connection>"
+          },
+          {
+            "name": "folderKey",
+            "type": "string",
+            "value": "<bindings.FolderKey>"
+          },
+          {
+            "name": "activityConfigurationVersion",
+            "type": "string",
+            "value": "v1"
+          },
+          {
+            "name": "metadata",
+            "body": {
+              "telemetryData": {
+                "connectorKey": "uipath-microsoft-onedrive",
+                "connectorName": "Download File"
+              },
+              "inputMetadata": {},
+              "errorState": {
+                "hasError": true
+              }
+            },
+            "type": "json"
+          }
+        ]
+      },
+      "form": {
+        "id": "connector-properties",
+        "title": "Connector configuration",
+        "sections": [
+          {
+            "id": "connector",
+            "title": "Connector",
+            "collapsible": true,
+            "defaultExpanded": true,
+            "fields": [
+              {
+                "label": "",
+                "name": "inputs.detail",
+                "type": "custom",
+                "component": "dap-config",
+                "componentProps": {
+                  "connectorDetail": {
+                    "isAppActivity": false,
+                    "packageId": "196549",
+                    "svgIconUrl": "icons/446b7cebc39ca4493877cbc53272aa7c685bfa43b8b4af6eb2dca0f39e2d1fc1.svg",
+                    "displayName": "Download File",
+                    "assemblyQualifiedName": "UiPath.IntegrationService.Activities.Runtime.Activities.ConnectorActivity, UiPath.IntegrationService.Activities.Runtime, Version=1.31.0.0, Culture=neutral, PublicKeyToken=null",
+                    "description": "Downloads a file or folder from OneDrive & SharePoint",
+                    "category": "",
+                    "activityColor": "#00A3EE",
+                    "configuration": "{\"connectorKey\":\"uipath-microsoft-onedrive\",\"objectName\":\"DownloadFile\",\"httpMethod\":\"GET\",\"activityType\":\"Curated\",\"version\":\"1.0.0\",\"supportsStreaming\":false,\"subType\":\"standard\"}",
+                    "uiPathActivityTypeId": "c0ed899b-e170-3111-bda7-fdae448fa4e5",
+                    "isExperimental": false,
+                    "helpUrlTemplate": "https://docs.uipath.com/{0}/activities/other/latest/integration-service/uipath-microsoft-onedrive-Download-File",
+                    "isEnabled": true,
+                    "targetPlatform": "CrossPlatform",
+                    "isAdvanced": false,
+                    "isRestricted": false,
+                    "hasWpfOnlyDesigner": false,
+                    "tags": [
+                      "API.File.Download"
+                    ]
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "inputDefinition": {},
+      "inputDefaults": {},
+      "outputDefinition": {
+        "output": {
+          "type": "file",
+          "description": "The return value of the connector.",
+          "source": "=result.response",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails",
+          "source": "=Error",
+          "var": "error",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "required": [
+              "code",
+              "message",
+              "detail",
+              "category",
+              "status"
+            ],
+            "properties": {
+              "code": {
+                "type": "string",
+                "description": "Error code as a string"
+              },
+              "message": {
+                "type": "string",
+                "description": "High-level error message"
+              },
+              "detail": {
+                "type": "string",
+                "description": "Detailed error description"
+              },
+              "category": {
+                "type": "string",
+                "description": "Error category"
+              },
+              "status": {
+                "type": "integer",
+                "description": "HTTP status code"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "debug": {
+        "runtime": "bpmnEngine"
+      }
+    },
+    {
+      "nodeType": "core.action.http.v2",
+      "version": "2.3",
+      "category": "data-operations",
+      "description": "HTTP request with managed authentication",
+      "tags": [
+        "connector",
+        "http",
+        "api",
+        "rest",
+        "request"
+      ],
+      "sortOrder": 72,
+      "supportsErrorHandling": true,
+      "display": {
+        "label": "HTTP Request",
+        "icon": "app-window"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input",
+              "label": ""
+            }
+          ]
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "branch-{item.id}",
+              "type": "source",
+              "handleType": "output",
+              "label": "{item.name}",
+              "repeat": "inputs.branches"
+            },
+            {
+              "id": "default",
+              "type": "source",
+              "handleType": "output",
+              "label": ""
+            },
+            {
+              "id": "error",
+              "label": "Error",
+              "type": "source",
+              "handleType": "output",
+              "visible": "{inputs.errorHandlingEnabled}",
+              "constraints": {
+                "maxConnections": 1
+              }
+            }
+          ],
+          "visible": true
+        }
+      ],
+      "debug": {
+        "runtime": "bpmnEngine"
+      },
+      "model": {
+        "type": "bpmn:ServiceTask",
+        "serviceType": "Intsvc.UnifiedHttpRequest",
+        "context": [
+          {
+            "name": "connectorKey",
+            "type": "string",
+            "value": "uipath-uipath-http"
+          },
+          {
+            "name": "objectName",
+            "type": "string",
+            "value": "http-request"
+          },
+          {
+            "name": "connection",
+            "type": "string",
+            "value": "<bindings.uipath-uipath-http connection>"
+          },
+          {
+            "name": "folderKey",
+            "type": "string",
+            "value": "<bindings.FolderKey>"
+          },
+          {
+            "name": "activityConfigurationVersion",
+            "type": "string",
+            "value": "v1"
+          },
+          {
+            "name": "metadata",
+            "body": {
+              "telemetryData": {
+                "connectorKey": "uipath-uipath-http",
+                "connectorName": "HTTP Request"
+              },
+              "inputMetadata": {},
+              "errorState": {
+                "hasError": true
+              }
+            },
+            "type": "json"
+          }
+        ],
+        "expansion": {
+          "processLevelVariables": [
+            {
+              "id": "{nodeId}.output",
+              "name": "output",
+              "type": "jsonSchema",
+              "elementId": "{nodeId}",
+              "custom": true
+            },
+            {
+              "condition": "hasEdgeFromHandle('error')",
+              "id": "{nodeId}.error",
+              "name": "error",
+              "type": "jsonSchema",
+              "elementId": "{nodeId}",
+              "custom": true
+            }
+          ],
+          "nodes": [
+            {
+              "id": "{nodeId}",
+              "type": "bpmn:SubProcess",
+              "replaceOriginal": true,
+              "data": {
+                "label": "{node.data.label}",
+                "isExpanded": true,
+                "model": {
+                  "serviceType": "BPMN.Variables",
+                  "subprocessVariables": {
+                    "inputOutputs": [
+                      {
+                        "id": "response",
+                        "name": "response",
+                        "type": "jsonSchema",
+                        "variableType": "inputOutput"
+                      },
+                      {
+                        "id": "error",
+                        "name": "error",
+                        "type": "jsonSchema",
+                        "variableType": "inputOutput"
+                      }
+                    ]
+                  },
+                  "outputs": [
+                    {
+                      "name": "output",
+                      "type": "jsonSchema",
+                      "source": "=vars.response",
+                      "var": "{nodeId}.output",
+                      "custom": true
+                    },
+                    {
+                      "name": "error",
+                      "type": "jsonSchema",
+                      "source": "=vars.error",
+                      "var": "{nodeId}.error",
+                      "custom": true
+                    }
+                  ]
+                }
+              },
+              "nodes": [
+                {
+                  "id": "_Implicit_StartEvent_{nodeId}",
+                  "type": "bpmn:StartEvent",
+                  "parentId": "{nodeId}",
+                  "position": {
+                    "x": 0,
+                    "y": 0
+                  },
+                  "data": {
+                    "label": "HTTP Request Start"
+                  }
+                },
+                {
+                  "id": "_Implicit_HttpTask_{nodeId}",
+                  "type": "bpmn:SendTask",
+                  "parentId": "{nodeId}",
+                  "position": {
+                    "x": 0,
+                    "y": 0
+                  },
+                  "propagate": {
+                    "detail": true,
+                    "retry": {
+                      "condition": "node.data.inputs.retryCount > 0",
+                      "maxRetryCount": "node.data.inputs.retryCount",
+                      "retryBackoff": "node.data.inputs.timeout",
+                      "retryBackoffDefault": "PT1S",
+                      "retryAllErrors": "true",
+                      "retryBackoffType": "Static"
+                    }
+                  },
+                  "data": {
+                    "label": "{node.data.label}",
+                    "model": {
+                      "serviceType": "Intsvc.UnifiedHttpRequest",
+                      "context": [
+                        {
+                          "name": "connectorKey",
+                          "type": "string",
+                          "value": "uipath-uipath-http"
+                        },
+                        {
+                          "name": "objectName",
+                          "type": "string",
+                          "value": "http-request"
+                        },
+                        {
+                          "name": "connection",
+                          "type": "string",
+                          "value": "<bindings.uipath-uipath-http connection>"
+                        },
+                        {
+                          "name": "folderKey",
+                          "type": "string",
+                          "value": "<bindings.FolderKey>"
+                        },
+                        {
+                          "name": "activityConfigurationVersion",
+                          "type": "string",
+                          "value": "v1"
+                        },
+                        {
+                          "name": "metadata",
+                          "body": {
+                            "telemetryData": {
+                              "connectorKey": "uipath-uipath-http",
+                              "connectorName": "HTTP Request"
+                            },
+                            "inputMetadata": {},
+                            "errorState": {
+                              "hasError": true
+                            }
+                          },
+                          "type": "json"
+                        }
+                      ],
+                      "outputs": [
+                        {
+                          "name": "response",
+                          "type": "json",
+                          "source": "=response",
+                          "var": "response",
+                          "internal": true
+                        }
+                      ]
+                    }
+                  }
+                },
+                {
+                  "id": "_Implicit_Gateway_{nodeId}",
+                  "type": "bpmn:ExclusiveGateway",
+                  "parentId": "{nodeId}",
+                  "position": {
+                    "x": 0,
+                    "y": 0
+                  },
+                  "condition": "node.data.inputs.branches.length > 0",
+                  "data": {
+                    "label": "Response branch",
+                    "defaultFlowId": "_Implicit_Edge__Implicit_Gateway_{nodeId}__Implicit_EndEvent_Default_{nodeId}"
+                  }
+                },
+                {
+                  "forEach": "node.data.inputs.branches",
+                  "id": "_Implicit_EndEvent_{branchName}_{nodeId}",
+                  "type": "bpmn:EndEvent",
+                  "parentId": "{nodeId}",
+                  "position": {
+                    "x": 0,
+                    "y": 0
+                  },
+                  "data": {
+                    "label": "{branch.name}"
+                  }
+                },
+                {
+                  "id": "_Implicit_EndEvent_Default_{nodeId}",
+                  "type": "bpmn:EndEvent",
+                  "parentId": "{nodeId}",
+                  "position": {
+                    "x": 0,
+                    "y": 0
+                  },
+                  "data": {
+                    "label": "Default"
+                  }
+                },
+                {
+                  "condition": "hasEdgeFromHandle('error')",
+                  "id": "_Implicit_EndEvent_Failure_{nodeId}",
+                  "type": "bpmn:EndEvent",
+                  "parentId": "{nodeId}",
+                  "position": {
+                    "x": 0,
+                    "y": 0
+                  },
+                  "data": {
+                    "label": "Failure",
+                    "model": {
+                      "serviceType": "BPMN.Variables",
+                      "outputs": [
+                        {
+                          "name": "error",
+                          "type": "boolean",
+                          "source": "=true",
+                          "var": "error",
+                          "internal": true
+                        }
+                      ]
+                    }
+                  }
+                },
+                {
+                  "condition": "hasEdgeFromHandle('error')",
+                  "id": "_Implicit_BoundaryError_{nodeId}",
+                  "type": "bpmn:BoundaryEvent",
+                  "parentId": "{nodeId}",
+                  "position": {
+                    "x": 0,
+                    "y": 0
+                  },
+                  "data": {
+                    "label": "Error",
+                    "cancelActivity": false,
+                    "attachedToId": "_Implicit_HttpTask_{nodeId}",
+                    "eventDefinition": {
+                      "type": "bpmn:ErrorEventDefinition",
+                      "id": "_Implicit_BoundaryError_{nodeId}_Error"
+                    },
+                    "model": {
+                      "outputs": [
+                        {
+                          "name": "Error",
+                          "type": "jsonSchema",
+                          "source": "=Error",
+                          "var": "response",
+                          "internal": true
+                        }
+                      ]
+                    }
+                  }
+                }
+              ],
+              "edges": [
+                {
+                  "id": "_Implicit_Edge__Implicit_StartEvent_{nodeId}__Implicit_HttpTask_{nodeId}",
+                  "source": "_Implicit_StartEvent_{nodeId}",
+                  "target": "_Implicit_HttpTask_{nodeId}",
+                  "type": "bpmn:SequenceFlow",
+                  "data": {}
+                },
+                {
+                  "condition": "node.data.inputs.branches.length === 0",
+                  "id": "_Implicit_Edge__Implicit_HttpTask_{nodeId}__Implicit_EndEvent_Default_{nodeId}",
+                  "source": "_Implicit_HttpTask_{nodeId}",
+                  "target": "_Implicit_EndEvent_Default_{nodeId}",
+                  "type": "bpmn:SequenceFlow",
+                  "data": {}
+                },
+                {
+                  "condition": "node.data.inputs.branches.length > 0",
+                  "id": "_Implicit_Edge__Implicit_HttpTask_{nodeId}__Implicit_Gateway_{nodeId}",
+                  "source": "_Implicit_HttpTask_{nodeId}",
+                  "target": "_Implicit_Gateway_{nodeId}",
+                  "type": "bpmn:SequenceFlow",
+                  "data": {}
+                },
+                {
+                  "forEach": "node.data.inputs.branches",
+                  "condition": "node.data.inputs.branches.length > 0",
+                  "id": "_Implicit_Edge__Implicit_Gateway_{nodeId}__Implicit_EndEvent_{branchName}_{nodeId}",
+                  "source": "_Implicit_Gateway_{nodeId}",
+                  "target": "_Implicit_EndEvent_{branchName}_{nodeId}",
+                  "type": "bpmn:SequenceFlow",
+                  "data": {
+                    "conditionExpression": "{branch.conditionExpression}",
+                    "label": "{branch.name}"
+                  }
+                },
+                {
+                  "condition": "node.data.inputs.branches.length > 0",
+                  "id": "_Implicit_Edge__Implicit_Gateway_{nodeId}__Implicit_EndEvent_Default_{nodeId}",
+                  "source": "_Implicit_Gateway_{nodeId}",
+                  "target": "_Implicit_EndEvent_Default_{nodeId}",
+                  "type": "bpmn:SequenceFlow",
+                  "data": {
+                    "label": "Default"
+                  }
+                },
+                {
+                  "condition": "hasEdgeFromHandle('error')",
+                  "id": "_Implicit_Edge__Implicit_BoundaryError_{nodeId}__Implicit_EndEvent_Failure_{nodeId}",
+                  "source": "_Implicit_BoundaryError_{nodeId}",
+                  "target": "_Implicit_EndEvent_Failure_{nodeId}",
+                  "type": "bpmn:SequenceFlow",
+                  "data": {}
+                }
+              ]
+            },
+            {
+              "id": "_Implicit_PostSubprocessGateway_{nodeId}",
+              "type": "bpmn:ExclusiveGateway",
+              "condition": "(node.data.inputs.branches.length > 0 || hasEdgeFromHandle('error')) && originalEdges.length > 0",
+              "parentId": null,
+              "position": {
+                "x": 0,
+                "y": 0
+              },
+              "data": {
+                "label": "Post-Subprocess Branch"
+              }
+            }
+          ],
+          "edges": [
+            {
+              "condition": "(node.data.inputs.branches.length > 0 || hasEdgeFromHandle('error')) && originalEdges.length > 0",
+              "id": "_Implicit_Edge_{nodeId}__Implicit_PostSubprocessGateway_{nodeId}",
+              "source": "{nodeId}",
+              "target": "_Implicit_PostSubprocessGateway_{nodeId}",
+              "type": "bpmn:SequenceFlow",
+              "data": {}
+            },
+            {
+              "forEach": "node.data.inputs.branches",
+              "condition": "node.data.inputs.branches.length > 0",
+              "matchOriginalEdgeByHandle": "branch-{branch.id}",
+              "preserveEdgeId": true,
+              "source": "_Implicit_PostSubprocessGateway_{nodeId}",
+              "type": "bpmn:SequenceFlow",
+              "data": {
+                "conditionExpression": "{branch.conditionExpression}",
+                "label": "{branch.name}"
+              }
+            },
+            {
+              "condition": "node.data.inputs.branches.length > 0 || hasEdgeFromHandle('error')",
+              "matchOriginalEdgeByHandle": "default",
+              "preserveEdgeId": true,
+              "source": "_Implicit_PostSubprocessGateway_{nodeId}",
+              "type": "bpmn:SequenceFlow",
+              "data": {
+                "label": "Default"
+              }
+            },
+            {
+              "condition": "hasEdgeFromHandle('error')",
+              "matchOriginalEdgeByHandle": "error",
+              "preserveEdgeId": true,
+              "source": "_Implicit_PostSubprocessGateway_{nodeId}",
+              "type": "bpmn:SequenceFlow",
+              "data": {
+                "conditionExpression": "=js:vars.{nodeId}.error || vars.{nodeId}.output?.statusCode >= 400",
+                "label": "Error"
+              }
+            },
+            {
+              "condition": "node.data.inputs.branches.length === 0 && !hasEdgeFromHandle('error')",
+              "matchOriginalEdgeByHandle": "default",
+              "preserveEdgeId": true,
+              "source": "{nodeId}",
+              "type": "bpmn:SequenceFlow"
+            }
+          ]
+        }
+      },
+      "inputDefinition": {
+        "type": "object",
+        "properties": {
+          "branches": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "conditionExpression": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "timeout": {
+            "type": "string",
+            "pattern": "^P(?!$)(\\d+Y)?(\\d+M)?(\\d+W)?(\\d+D)?(T(?=\\d)(\\d+H)?(\\d+M)?(\\d+S)?)?$",
+            "errorMessage": {
+              "pattern": "Timeout must be in ISO 8601 duration format (e.g., PT15M, PT1H, P1D)"
+            }
+          },
+          "retryCount": {
+            "type": "number"
+          }
+        }
+      },
+      "inputDefaults": {
+        "branches": [],
+        "timeout": "PT15M",
+        "retryCount": 0
+      },
+      "outputDefinition": {
+        "output": {
+          "type": "object",
+          "description": "HTTP response object",
+          "source": "=response",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails",
+          "source": "=Error",
+          "var": "error",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "required": [
+              "code",
+              "message",
+              "detail",
+              "category",
+              "status"
+            ],
+            "properties": {
+              "code": {
+                "type": "string",
+                "description": "Error code as a string"
+              },
+              "message": {
+                "type": "string",
+                "description": "High-level error message"
+              },
+              "detail": {
+                "type": "string",
+                "description": "Detailed error description"
+              },
+              "category": {
+                "type": "string",
+                "description": "Error category"
+              },
+              "status": {
+                "type": "integer",
+                "description": "HTTP status code"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "form": {
+        "id": "http-v2-properties",
+        "title": "HTTP Request",
+        "metadata": {
+          "propertyPanel": {
+            "tabs": [
+              {
+                "id": "branching",
+                "title": "Branching"
+              }
+            ],
+            "sectionTabs": {
+              "branches": "branching",
+              "advanced": "advanced"
+            }
+          }
+        },
+        "sections": [
+          {
+            "id": "http-config",
+            "title": "Configuration",
+            "collapsible": true,
+            "defaultExpanded": true,
+            "fields": [
+              {
+                "name": "inputs.dapHttpToolbar",
+                "type": "custom",
+                "component": "dap-http-toolbar",
+                "label": ""
+              },
+              {
+                "label": "",
+                "name": "inputs.detail",
+                "type": "custom",
+                "component": "dap-config",
+                "componentProps": {
+                  "connectorDetail": {
+                    "isAppActivity": false,
+                    "packageId": 196648,
+                    "svgIconUrl": "icons/0dad78c9d04c245b126d8edb4c451aa8a0d395d34731cf5702441f6284c70ccc.svg",
+                    "displayName": "HTTP Request",
+                    "assemblyQualifiedName": "UiPath.IntegrationService.Activities.Runtime.Activities.ConnectorActivity, UiPath.IntegrationService.Activities.Runtime, Version=1.22.0.0, Culture=neutral, PublicKeyToken=null",
+                    "description": "Use HTTP requests to interact with APIs via the selected connector and connection configuration.",
+                    "category": "",
+                    "activityColor": "#E56D5C",
+                    "configuration": "{\"connectorKey\":\"uipath-uipath-http\",\"objectName\":\"http-request\",\"httpMethod\":\"POST\",\"activityType\":\"Curated\",\"version\":\"1.0.0\"}",
+                    "uiPathActivityTypeId": "5c4cc855-b42a-37e6-b910-de8588998fce",
+                    "isExperimental": false,
+                    "helpUrlTemplate": "https://docs.uipath.com/{0}/activities/other/latest/integration-service/uipath-uipath-http-HTTP-Request",
+                    "isEnabled": true,
+                    "targetPlatform": "CrossPlatform",
+                    "isAdvanced": false,
+                    "isRestricted": false,
+                    "tags": [
+                      ""
+                    ]
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "id": "branches",
+            "title": "Branches",
+            "collapsible": true,
+            "defaultExpanded": false,
+            "fields": [
+              {
+                "name": "inputs.branches",
+                "type": "custom",
+                "component": "http-branch-editor",
+                "label": "Response branches",
+                "description": "Define conditional branches based on response status or properties",
+                "componentProps": {
+                  "expressionValidationFields": [
+                    {
+                      "subPath": "conditionExpression",
+                      "validationMode": "expression",
+                      "expectedType": "boolean"
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "id": "advanced",
+            "title": "Advanced",
+            "collapsible": true,
+            "defaultExpanded": false,
+            "fields": [
+              {
+                "name": "inputs.timeout",
+                "type": "text",
+                "label": "Timeout",
+                "description": "ISO 8601 duration format (for example, PT15M for 15 minutes, PT1H for 1 hour)"
+              },
+              {
+                "name": "inputs.retryCount",
+                "type": "number",
+                "label": "Retry count",
+                "description": "Number of times to retry on failure"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "nodeType": "uipath.ixp.invoiceixp-cef0d447-ixp.ff973488-5d89-8035-86ac-f980b4be6deb-c4359cde-55f0-4f0e-9322-c6cdce74ab4c",
+      "version": "1.0.0",
+      "category": "document-extraction",
+      "tags": [
+        "ixp",
+        "document-understanding",
+        "extraction"
+      ],
+      "description": "(Shared)",
+      "sortOrder": 545,
+      "display": {
+        "canvasLabel": "Extract",
+        "label": "InvoiceIXP",
+        "description": "(Shared)",
+        "icon": "file-text"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "success",
+              "type": "source",
+              "handleType": "output"
+            },
+            {
+              "id": "error",
+              "label": "Error",
+              "type": "source",
+              "handleType": "output",
+              "visible": "{inputs.errorHandlingEnabled}",
+              "constraints": {
+                "maxConnections": 1
+              }
+            }
+          ]
+        }
+      ],
+      "supportsErrorHandling": true,
+      "model": {
+        "type": "bpmn:ServiceTask",
+        "serviceType": "IXP.Extraction",
+        "section": "Published",
+        "bindings": {
+          "resource": "ixpDeployment",
+          "entityType": "ixpDeployment",
+          "resourceSubType": null,
+          "resourceKey": "ff973488-5d89-8035-86ac-f980b4be6deb",
+          "name": "InvoiceIXP",
+          "values": [
+            {
+              "name": "name",
+              "propertyAttribute": "name",
+              "default": "InvoiceIXP"
+            },
+            {
+              "name": "folderPath",
+              "propertyAttribute": "folderPath",
+              "default": "Shared"
+            }
+          ]
+        }
+      },
+      "form": {
+        "id": "ixp-standalone-form",
+        "title": "IXP",
+        "sections": [
+          {
+            "id": "ixp-model",
+            "title": "Configuration",
+            "fields": [
+              {
+                "name": "inputs.model",
+                "type": "custom",
+                "component": "ixp-model-folder-selector",
+                "label": ""
+              }
+            ]
+          },
+          {
+            "id": "ixp-file-upload",
+            "title": "File input",
+            "collapsible": true,
+            "defaultExpanded": true,
+            "fields": [
+              {
+                "name": "inputs.fileRef",
+                "type": "file",
+                "label": "File",
+                "description": "File to extract data from",
+                "validation": {
+                  "required": true,
+                  "messages": {
+                    "required": "A file is required for extraction"
+                  }
+                }
+              },
+              {
+                "name": "inputs.pageRange",
+                "type": "text",
+                "label": "Page range",
+                "placeholder": "e.g. 1-5",
+                "description": "Optional page range to process."
+              }
+            ]
+          },
+          {
+            "id": "schema-definition",
+            "title": "Schema definition",
+            "collapsible": false,
+            "fields": [
+              {
+                "name": "inputs.model",
+                "type": "custom",
+                "component": "ixp-model-taxonomy",
+                "label": ""
+              }
+            ]
+          }
+        ]
+      },
+      "debug": {
+        "runtime": "bpmnEngine"
+      },
+      "inputDefinition": {
+        "type": "object",
+        "properties": {
+          "projectName": {
+            "type": "string"
+          },
+          "projectId": {
+            "type": "string"
+          },
+          "versionTag": {
+            "type": "string"
+          },
+          "folderKey": {
+            "type": "string",
+            "minLength": 1
+          },
+          "folderName": {
+            "type": "string"
+          },
+          "model": {
+            "type": "object"
+          },
+          "modelName": {
+            "type": "string",
+            "minLength": 1
+          },
+          "fileRef": {
+            "type": "string",
+            "minLength": 1
+          },
+          "pageRange": {
+            "type": "string"
+          },
+          "attachmentConfig": {
+            "type": "object"
+          },
+          "attachment": {
+            "type": "object",
+            "description": "File to extract data from.",
+            "properties": {
+              "ID": {
+                "type": "string",
+                "description": "Orchestrator attachment key"
+              },
+              "FullName": {
+                "type": "string",
+                "description": "File name"
+              },
+              "MimeType": {
+                "type": "string",
+                "description": "The MIME type of the content"
+              },
+              "Metadata": {
+                "type": "object",
+                "description": "Dictionary of metadata",
+                "additionalProperties": {
+                  "type": "string"
+                }
+              }
+            },
+            "required": [
+              "ID"
+            ]
+          }
+        },
+        "required": [
+          "fileRef",
+          "modelName",
+          "folderKey"
+        ]
+      },
+      "inputDefaults": {
+        "model": {
+          "id": "ff973488-5d89-8035-86ac-f980b4be6deb",
+          "modelName": "invoiceixp-cef0d447-ixp",
+          "modelDisplayName": "InvoiceIXP",
+          "folderKey": "c4359cde-55f0-4f0e-9322-c6cdce74ab4c",
+          "folderName": "Shared",
+          "folderPath": "c4359cde-55f0-4f0e-9322-c6cdce74ab4c",
+          "description": ""
+        },
+        "modelName": "invoiceixp-cef0d447-ixp",
+        "description": "",
+        "projectName": "invoiceixp-cef0d447-ixp",
+        "versionTag": "",
+        "folderKey": "c4359cde-55f0-4f0e-9322-c6cdce74ab4c",
+        "folderName": "Shared",
+        "fileRef": "",
+        "pageRange": ""
+      },
+      "outputDefinition": {
+        "output": {
+          "name": "output",
+          "type": "object",
+          "source": "=this",
+          "var": "output",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "properties": {
+              "ExtractionResult": {
+                "type": "object",
+                "properties": {
+                  "DocumentId": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "ResultsVersion": {
+                    "type": "integer",
+                    "format": "int32",
+                    "minimum": -2147483648,
+                    "maximum": 2147483647
+                  },
+                  "ResultsDocument": {
+                    "type": "object",
+                    "properties": {
+                      "Bounds": {
+                        "type": "object",
+                        "properties": {
+                          "PageCount": {
+                            "type": "integer",
+                            "format": "int32",
+                            "minimum": -2147483648,
+                            "maximum": 2147483647
+                          },
+                          "PageRange": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          }
+                        },
+                        "additionalProperties": false
+                      },
+                      "Language": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "DocumentGroup": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "DocumentCategory": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "DocumentTypeId": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "DocumentTypeName": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "DocumentTypeDataVersion": {
+                        "type": "integer",
+                        "format": "int32",
+                        "minimum": -2147483648,
+                        "maximum": 2147483647
+                      },
+                      "DataVersion": {
+                        "type": "integer",
+                        "format": "int32",
+                        "minimum": -2147483648,
+                        "maximum": 2147483647
+                      },
+                      "DocumentTypeSource": {
+                        "enum": [
+                          "Automatic",
+                          "Manual",
+                          "ManuallyChanged",
+                          "Defaulted",
+                          "External"
+                        ],
+                        "type": "string"
+                      },
+                      "DocumentTypeField": {
+                        "type": "object",
+                        "properties": {
+                          "Components": {
+                            "type": [
+                              "array",
+                              "null"
+                            ],
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "FieldId": {
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ]
+                                },
+                                "FieldName": {
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ]
+                                },
+                                "FieldType": {
+                                  "enum": [
+                                    "Text",
+                                    "Number",
+                                    "Date",
+                                    "Name",
+                                    "Address",
+                                    "Keyword",
+                                    "Set",
+                                    "Boolean",
+                                    "Table",
+                                    "Internal",
+                                    "FieldGroup",
+                                    "MonetaryQuantity"
+                                  ],
+                                  "type": "string"
+                                },
+                                "IsMissing": {
+                                  "type": "boolean"
+                                },
+                                "DataSource": {
+                                  "enum": [
+                                    "Automatic",
+                                    "Manual",
+                                    "ManuallyChanged",
+                                    "Defaulted",
+                                    "External"
+                                  ],
+                                  "type": "string"
+                                },
+                                "Values": {
+                                  "type": [
+                                    "array",
+                                    "null"
+                                  ],
+                                  "items": {
+                                    "type": "any"
+                                  }
+                                },
+                                "DataVersion": {
+                                  "type": "integer",
+                                  "format": "int32",
+                                  "minimum": -2147483648,
+                                  "maximum": 2147483647
+                                },
+                                "OperatorConfirmed": {
+                                  "type": "boolean"
+                                },
+                                "ValidatorNotes": {
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ]
+                                },
+                                "ValidatorNotesInfo": {
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ]
+                                }
+                              },
+                              "additionalProperties": false
+                            }
+                          },
+                          "Value": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "UnformattedValue": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "Reference": {
+                            "type": "object",
+                            "properties": {
+                              "TextStartIndex": {
+                                "type": "integer",
+                                "format": "int32",
+                                "minimum": -2147483648,
+                                "maximum": 2147483647
+                              },
+                              "TextLength": {
+                                "type": "integer",
+                                "format": "int32",
+                                "minimum": -2147483648,
+                                "maximum": 2147483647
+                              },
+                              "Tokens": {
+                                "type": [
+                                  "array",
+                                  "null"
+                                ],
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "TextStartIndex": {
+                                      "type": "integer",
+                                      "format": "int32",
+                                      "minimum": -2147483648,
+                                      "maximum": 2147483647
+                                    },
+                                    "TextLength": {
+                                      "type": "integer",
+                                      "format": "int32",
+                                      "minimum": -2147483648,
+                                      "maximum": 2147483647
+                                    },
+                                    "Page": {
+                                      "type": "integer",
+                                      "format": "int32",
+                                      "minimum": -2147483648,
+                                      "maximum": 2147483647
+                                    },
+                                    "PageWidth": {
+                                      "type": "number",
+                                      "format": "float",
+                                      "minimum": -3.402823669209385e+38,
+                                      "maximum": 3.402823669209385e+38
+                                    },
+                                    "PageHeight": {
+                                      "type": "number",
+                                      "format": "float",
+                                      "minimum": -3.402823669209385e+38,
+                                      "maximum": 3.402823669209385e+38
+                                    },
+                                    "Boxes": {
+                                      "type": [
+                                        "array",
+                                        "null"
+                                      ],
+                                      "items": {
+                                        "maxItems": 4,
+                                        "minItems": 4,
+                                        "type": "array",
+                                        "items": {
+                                          "type": "number"
+                                        }
+                                      }
+                                    }
+                                  },
+                                  "additionalProperties": false
+                                }
+                              }
+                            },
+                            "additionalProperties": false
+                          },
+                          "DerivedFields": {
+                            "type": [
+                              "array",
+                              "null"
+                            ],
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "FieldId": {
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ]
+                                },
+                                "Value": {
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ]
+                                }
+                              },
+                              "additionalProperties": false
+                            }
+                          },
+                          "Confidence": {
+                            "type": "number",
+                            "format": "float",
+                            "minimum": -3.402823669209385e+38,
+                            "maximum": 3.402823669209385e+38
+                          },
+                          "OperatorConfirmed": {
+                            "type": "boolean"
+                          },
+                          "OcrConfidence": {
+                            "type": "number",
+                            "format": "float",
+                            "minimum": -3.402823669209385e+38,
+                            "maximum": 3.402823669209385e+38
+                          },
+                          "TextType": {
+                            "enum": [
+                              "Unknown",
+                              "Text",
+                              "Checkbox",
+                              "Handwriting",
+                              "Barcode",
+                              "QRcode",
+                              "Stamp",
+                              "Logo",
+                              "Circle",
+                              "Underline",
+                              "Cut"
+                            ],
+                            "type": "string"
+                          },
+                          "ValidatorNotes": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "ValidatorNotesInfo": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          }
+                        },
+                        "additionalProperties": false
+                      },
+                      "Fields": {
+                        "type": [
+                          "array",
+                          "null"
+                        ],
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "FieldId": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "FieldName": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "FieldType": {
+                              "enum": [
+                                "Text",
+                                "Number",
+                                "Date",
+                                "Name",
+                                "Address",
+                                "Keyword",
+                                "Set",
+                                "Boolean",
+                                "Table",
+                                "Internal",
+                                "FieldGroup",
+                                "MonetaryQuantity"
+                              ],
+                              "type": "string"
+                            },
+                            "IsMissing": {
+                              "type": "boolean"
+                            },
+                            "DataSource": {
+                              "enum": [
+                                "Automatic",
+                                "Manual",
+                                "ManuallyChanged",
+                                "Defaulted",
+                                "External"
+                              ],
+                              "type": "string"
+                            },
+                            "Values": {
+                              "type": [
+                                "array",
+                                "null"
+                              ],
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "Components": {
+                                    "type": [
+                                      "array",
+                                      "null"
+                                    ],
+                                    "items": {
+                                      "type": "any"
+                                    }
+                                  },
+                                  "Value": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  },
+                                  "UnformattedValue": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  },
+                                  "Reference": {
+                                    "type": "object",
+                                    "properties": {
+                                      "TextStartIndex": {
+                                        "type": "integer",
+                                        "format": "int32",
+                                        "minimum": -2147483648,
+                                        "maximum": 2147483647
+                                      },
+                                      "TextLength": {
+                                        "type": "integer",
+                                        "format": "int32",
+                                        "minimum": -2147483648,
+                                        "maximum": 2147483647
+                                      },
+                                      "Tokens": {
+                                        "type": [
+                                          "array",
+                                          "null"
+                                        ],
+                                        "items": {
+                                          "type": "object",
+                                          "properties": {
+                                            "TextStartIndex": {
+                                              "type": "integer",
+                                              "format": "int32",
+                                              "minimum": -2147483648,
+                                              "maximum": 2147483647
+                                            },
+                                            "TextLength": {
+                                              "type": "integer",
+                                              "format": "int32",
+                                              "minimum": -2147483648,
+                                              "maximum": 2147483647
+                                            },
+                                            "Page": {
+                                              "type": "integer",
+                                              "format": "int32",
+                                              "minimum": -2147483648,
+                                              "maximum": 2147483647
+                                            },
+                                            "PageWidth": {
+                                              "type": "number",
+                                              "format": "float",
+                                              "minimum": -3.402823669209385e+38,
+                                              "maximum": 3.402823669209385e+38
+                                            },
+                                            "PageHeight": {
+                                              "type": "number",
+                                              "format": "float",
+                                              "minimum": -3.402823669209385e+38,
+                                              "maximum": 3.402823669209385e+38
+                                            },
+                                            "Boxes": {
+                                              "type": [
+                                                "array",
+                                                "null"
+                                              ],
+                                              "items": {
+                                                "maxItems": 4,
+                                                "minItems": 4,
+                                                "type": "array",
+                                                "items": {
+                                                  "type": "number"
+                                                }
+                                              }
+                                            }
+                                          },
+                                          "additionalProperties": false
+                                        }
+                                      }
+                                    },
+                                    "additionalProperties": false
+                                  },
+                                  "DerivedFields": {
+                                    "type": [
+                                      "array",
+                                      "null"
+                                    ],
+                                    "items": {
+                                      "type": "object",
+                                      "properties": {
+                                        "FieldId": {
+                                          "type": [
+                                            "string",
+                                            "null"
+                                          ]
+                                        },
+                                        "Value": {
+                                          "type": [
+                                            "string",
+                                            "null"
+                                          ]
+                                        }
+                                      },
+                                      "additionalProperties": false
+                                    }
+                                  },
+                                  "Confidence": {
+                                    "type": "number",
+                                    "format": "float",
+                                    "minimum": -3.402823669209385e+38,
+                                    "maximum": 3.402823669209385e+38
+                                  },
+                                  "OperatorConfirmed": {
+                                    "type": "boolean"
+                                  },
+                                  "OcrConfidence": {
+                                    "type": "number",
+                                    "format": "float",
+                                    "minimum": -3.402823669209385e+38,
+                                    "maximum": 3.402823669209385e+38
+                                  },
+                                  "TextType": {
+                                    "enum": [
+                                      "Unknown",
+                                      "Text",
+                                      "Checkbox",
+                                      "Handwriting",
+                                      "Barcode",
+                                      "QRcode",
+                                      "Stamp",
+                                      "Logo",
+                                      "Circle",
+                                      "Underline",
+                                      "Cut"
+                                    ],
+                                    "type": "string"
+                                  },
+                                  "ValidatorNotes": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  },
+                                  "ValidatorNotesInfo": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  }
+                                },
+                                "additionalProperties": false
+                              }
+                            },
+                            "DataVersion": {
+                              "type": "integer",
+                              "format": "int32",
+                              "minimum": -2147483648,
+                              "maximum": 2147483647
+                            },
+                            "OperatorConfirmed": {
+                              "type": "boolean"
+                            },
+                            "ValidatorNotes": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "ValidatorNotesInfo": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            }
+                          },
+                          "additionalProperties": false
+                        }
+                      },
+                      "Tables": {
+                        "type": [
+                          "array",
+                          "null"
+                        ],
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "FieldId": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "FieldName": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "IsMissing": {
+                              "type": "boolean"
+                            },
+                            "DataSource": {
+                              "enum": [
+                                "Automatic",
+                                "Manual",
+                                "ManuallyChanged",
+                                "Defaulted",
+                                "External"
+                              ],
+                              "type": "string"
+                            },
+                            "DataVersion": {
+                              "type": "integer",
+                              "format": "int32",
+                              "minimum": -2147483648,
+                              "maximum": 2147483647
+                            },
+                            "OperatorConfirmed": {
+                              "type": "boolean"
+                            },
+                            "Values": {
+                              "type": [
+                                "array",
+                                "null"
+                              ],
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "OperatorConfirmed": {
+                                    "type": "boolean"
+                                  },
+                                  "Confidence": {
+                                    "type": "number",
+                                    "format": "float",
+                                    "minimum": -3.402823669209385e+38,
+                                    "maximum": 3.402823669209385e+38
+                                  },
+                                  "OcrConfidence": {
+                                    "type": "number",
+                                    "format": "float",
+                                    "minimum": -3.402823669209385e+38,
+                                    "maximum": 3.402823669209385e+38
+                                  },
+                                  "Cells": {
+                                    "type": [
+                                      "array",
+                                      "null"
+                                    ],
+                                    "items": {
+                                      "type": "object",
+                                      "properties": {
+                                        "RowIndex": {
+                                          "type": "integer",
+                                          "format": "int32",
+                                          "minimum": -2147483648,
+                                          "maximum": 2147483647
+                                        },
+                                        "ColumnIndex": {
+                                          "type": "integer",
+                                          "format": "int32",
+                                          "minimum": -2147483648,
+                                          "maximum": 2147483647
+                                        },
+                                        "IsHeader": {
+                                          "type": "boolean"
+                                        },
+                                        "IsMissing": {
+                                          "type": "boolean"
+                                        },
+                                        "OperatorConfirmed": {
+                                          "type": "boolean"
+                                        },
+                                        "DataSource": {
+                                          "enum": [
+                                            "Automatic",
+                                            "Manual",
+                                            "ManuallyChanged",
+                                            "Defaulted",
+                                            "External"
+                                          ],
+                                          "type": "string"
+                                        },
+                                        "DataVersion": {
+                                          "type": "integer",
+                                          "format": "int32",
+                                          "minimum": -2147483648,
+                                          "maximum": 2147483647
+                                        },
+                                        "Values": {
+                                          "type": [
+                                            "array",
+                                            "null"
+                                          ],
+                                          "items": {
+                                            "type": "object",
+                                            "properties": {
+                                              "Components": {
+                                                "type": [
+                                                  "array",
+                                                  "null"
+                                                ],
+                                                "items": {
+                                                  "type": "object",
+                                                  "properties": {
+                                                    "FieldId": {
+                                                      "type": [
+                                                        "string",
+                                                        "null"
+                                                      ]
+                                                    },
+                                                    "FieldName": {
+                                                      "type": [
+                                                        "string",
+                                                        "null"
+                                                      ]
+                                                    },
+                                                    "FieldType": {
+                                                      "enum": [
+                                                        "Text",
+                                                        "Number",
+                                                        "Date",
+                                                        "Name",
+                                                        "Address",
+                                                        "Keyword",
+                                                        "Set",
+                                                        "Boolean",
+                                                        "Table",
+                                                        "Internal",
+                                                        "FieldGroup",
+                                                        "MonetaryQuantity"
+                                                      ],
+                                                      "type": "string"
+                                                    },
+                                                    "IsMissing": {
+                                                      "type": "boolean"
+                                                    },
+                                                    "DataSource": {
+                                                      "enum": [
+                                                        "Automatic",
+                                                        "Manual",
+                                                        "ManuallyChanged",
+                                                        "Defaulted",
+                                                        "External"
+                                                      ],
+                                                      "type": "string"
+                                                    },
+                                                    "Values": {
+                                                      "type": [
+                                                        "array",
+                                                        "null"
+                                                      ],
+                                                      "items": {
+                                                        "type": "any"
+                                                      }
+                                                    },
+                                                    "DataVersion": {
+                                                      "type": "integer",
+                                                      "format": "int32",
+                                                      "minimum": -2147483648,
+                                                      "maximum": 2147483647
+                                                    },
+                                                    "OperatorConfirmed": {
+                                                      "type": "boolean"
+                                                    },
+                                                    "ValidatorNotes": {
+                                                      "type": [
+                                                        "string",
+                                                        "null"
+                                                      ]
+                                                    },
+                                                    "ValidatorNotesInfo": {
+                                                      "type": [
+                                                        "string",
+                                                        "null"
+                                                      ]
+                                                    }
+                                                  },
+                                                  "additionalProperties": false
+                                                }
+                                              },
+                                              "Value": {
+                                                "type": [
+                                                  "string",
+                                                  "null"
+                                                ]
+                                              },
+                                              "UnformattedValue": {
+                                                "type": [
+                                                  "string",
+                                                  "null"
+                                                ]
+                                              },
+                                              "Reference": {
+                                                "type": "object",
+                                                "properties": {
+                                                  "TextStartIndex": {
+                                                    "type": "integer",
+                                                    "format": "int32",
+                                                    "minimum": -2147483648,
+                                                    "maximum": 2147483647
+                                                  },
+                                                  "TextLength": {
+                                                    "type": "integer",
+                                                    "format": "int32",
+                                                    "minimum": -2147483648,
+                                                    "maximum": 2147483647
+                                                  },
+                                                  "Tokens": {
+                                                    "type": [
+                                                      "array",
+                                                      "null"
+                                                    ],
+                                                    "items": {
+                                                      "type": "object",
+                                                      "properties": {
+                                                        "TextStartIndex": {
+                                                          "type": "integer",
+                                                          "format": "int32",
+                                                          "minimum": -2147483648,
+                                                          "maximum": 2147483647
+                                                        },
+                                                        "TextLength": {
+                                                          "type": "integer",
+                                                          "format": "int32",
+                                                          "minimum": -2147483648,
+                                                          "maximum": 2147483647
+                                                        },
+                                                        "Page": {
+                                                          "type": "integer",
+                                                          "format": "int32",
+                                                          "minimum": -2147483648,
+                                                          "maximum": 2147483647
+                                                        },
+                                                        "PageWidth": {
+                                                          "type": "number",
+                                                          "format": "float",
+                                                          "minimum": -3.402823669209385e+38,
+                                                          "maximum": 3.402823669209385e+38
+                                                        },
+                                                        "PageHeight": {
+                                                          "type": "number",
+                                                          "format": "float",
+                                                          "minimum": -3.402823669209385e+38,
+                                                          "maximum": 3.402823669209385e+38
+                                                        },
+                                                        "Boxes": {
+                                                          "type": [
+                                                            "array",
+                                                            "null"
+                                                          ],
+                                                          "items": {
+                                                            "maxItems": 4,
+                                                            "minItems": 4,
+                                                            "type": "array",
+                                                            "items": {
+                                                              "type": "number"
+                                                            }
+                                                          }
+                                                        }
+                                                      },
+                                                      "additionalProperties": false
+                                                    }
+                                                  }
+                                                },
+                                                "additionalProperties": false
+                                              },
+                                              "DerivedFields": {
+                                                "type": [
+                                                  "array",
+                                                  "null"
+                                                ],
+                                                "items": {
+                                                  "type": "object",
+                                                  "properties": {
+                                                    "FieldId": {
+                                                      "type": [
+                                                        "string",
+                                                        "null"
+                                                      ]
+                                                    },
+                                                    "Value": {
+                                                      "type": [
+                                                        "string",
+                                                        "null"
+                                                      ]
+                                                    }
+                                                  },
+                                                  "additionalProperties": false
+                                                }
+                                              },
+                                              "Confidence": {
+                                                "type": "number",
+                                                "format": "float",
+                                                "minimum": -3.402823669209385e+38,
+                                                "maximum": 3.402823669209385e+38
+                                              },
+                                              "OperatorConfirmed": {
+                                                "type": "boolean"
+                                              },
+                                              "OcrConfidence": {
+                                                "type": "number",
+                                                "format": "float",
+                                                "minimum": -3.402823669209385e+38,
+                                                "maximum": 3.402823669209385e+38
+                                              },
+                                              "TextType": {
+                                                "enum": [
+                                                  "Unknown",
+                                                  "Text",
+                                                  "Checkbox",
+                                                  "Handwriting",
+                                                  "Barcode",
+                                                  "QRcode",
+                                                  "Stamp",
+                                                  "Logo",
+                                                  "Circle",
+                                                  "Underline",
+                                                  "Cut"
+                                                ],
+                                                "type": "string"
+                                              },
+                                              "ValidatorNotes": {
+                                                "type": [
+                                                  "string",
+                                                  "null"
+                                                ]
+                                              },
+                                              "ValidatorNotesInfo": {
+                                                "type": [
+                                                  "string",
+                                                  "null"
+                                                ]
+                                              }
+                                            },
+                                            "additionalProperties": false
+                                          }
+                                        }
+                                      },
+                                      "additionalProperties": false
+                                    }
+                                  },
+                                  "ColumnInfo": {
+                                    "type": [
+                                      "array",
+                                      "null"
+                                    ],
+                                    "items": {
+                                      "type": "object",
+                                      "properties": {
+                                        "FieldId": {
+                                          "type": [
+                                            "string",
+                                            "null"
+                                          ]
+                                        },
+                                        "FieldName": {
+                                          "type": [
+                                            "string",
+                                            "null"
+                                          ]
+                                        },
+                                        "FieldType": {
+                                          "enum": [
+                                            "Text",
+                                            "Number",
+                                            "Date",
+                                            "Name",
+                                            "Address",
+                                            "Keyword",
+                                            "Set",
+                                            "Boolean",
+                                            "Table",
+                                            "Internal",
+                                            "FieldGroup",
+                                            "MonetaryQuantity"
+                                          ],
+                                          "type": "string"
+                                        }
+                                      },
+                                      "additionalProperties": false
+                                    }
+                                  },
+                                  "NumberOfRows": {
+                                    "type": "integer",
+                                    "format": "int32",
+                                    "minimum": -2147483648,
+                                    "maximum": 2147483647
+                                  },
+                                  "ValidatorNotes": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  },
+                                  "ValidatorNotesInfo": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  }
+                                },
+                                "additionalProperties": false
+                              }
+                            },
+                            "ValidatorNotes": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "ValidatorNotesInfo": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            }
+                          },
+                          "additionalProperties": false
+                        }
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  "ExtractorPayloads": {
+                    "type": [
+                      "array",
+                      "null"
+                    ],
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "Id": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "Payload": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "SavedPayloadId": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "TaxonomySchemaMapping": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "BusinessRulesResults": {
+                    "type": [
+                      "array",
+                      "null"
+                    ],
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "FieldId": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "FieldType": {
+                          "enum": [
+                            "Text",
+                            "Number",
+                            "Date",
+                            "Name",
+                            "Address",
+                            "Keyword",
+                            "Set",
+                            "Boolean",
+                            "Table",
+                            "Internal",
+                            "FieldGroup",
+                            "MonetaryQuantity"
+                          ],
+                          "type": "string"
+                        },
+                        "Criticality": {
+                          "enum": [
+                            "Must",
+                            "Should"
+                          ],
+                          "type": "string"
+                        },
+                        "IsValid": {
+                          "type": "boolean"
+                        },
+                        "Results": {
+                          "type": [
+                            "array",
+                            "null"
+                          ],
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "Value": {
+                                "type": "object",
+                                "properties": {
+                                  "Value": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  },
+                                  "DerivedValue": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  }
+                                },
+                                "additionalProperties": false
+                              },
+                              "IsValid": {
+                                "type": "boolean"
+                              },
+                              "Rules": {
+                                "type": [
+                                  "array",
+                                  "null"
+                                ],
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "Rule": {
+                                      "type": "object",
+                                      "properties": {
+                                        "Name": {
+                                          "type": [
+                                            "string",
+                                            "null"
+                                          ]
+                                        },
+                                        "Type": {
+                                          "enum": [
+                                            "Mandatory",
+                                            "PossibleValues",
+                                            "Regex",
+                                            "StartsWith",
+                                            "EndsWith",
+                                            "FixedLength",
+                                            "IsNumeric",
+                                            "IsDate",
+                                            "IsEmail",
+                                            "Contains",
+                                            "Expression",
+                                            "TableExpression",
+                                            "IsEmpty"
+                                          ],
+                                          "type": "string"
+                                        },
+                                        "LogicalOperator": {
+                                          "enum": [
+                                            "AND",
+                                            "OR"
+                                          ],
+                                          "type": "string"
+                                        },
+                                        "ComparisonOperator": {
+                                          "enum": [
+                                            "Equals",
+                                            "NotEquals",
+                                            "Greater",
+                                            "Less",
+                                            "GreaterOrEqual",
+                                            "LessOrEqual"
+                                          ],
+                                          "type": "string"
+                                        },
+                                        "Expression": {
+                                          "type": [
+                                            "string",
+                                            "null"
+                                          ]
+                                        },
+                                        "SetValues": {
+                                          "type": [
+                                            "array",
+                                            "null"
+                                          ],
+                                          "items": {
+                                            "type": "string"
+                                          }
+                                        }
+                                      },
+                                      "additionalProperties": false
+                                    },
+                                    "IsValid": {
+                                      "type": "boolean"
+                                    }
+                                  },
+                                  "additionalProperties": false
+                                }
+                              }
+                            },
+                            "additionalProperties": false
+                          }
+                        },
+                        "BrokenRules": {
+                          "type": [
+                            "array",
+                            "null"
+                          ],
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "Name": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "Type": {
+                                "enum": [
+                                  "Mandatory",
+                                  "PossibleValues",
+                                  "Regex",
+                                  "StartsWith",
+                                  "EndsWith",
+                                  "FixedLength",
+                                  "IsNumeric",
+                                  "IsDate",
+                                  "IsEmail",
+                                  "Contains",
+                                  "Expression",
+                                  "TableExpression",
+                                  "IsEmpty"
+                                ],
+                                "type": "string"
+                              },
+                              "LogicalOperator": {
+                                "enum": [
+                                  "AND",
+                                  "OR"
+                                ],
+                                "type": "string"
+                              },
+                              "ComparisonOperator": {
+                                "enum": [
+                                  "Equals",
+                                  "NotEquals",
+                                  "Greater",
+                                  "Less",
+                                  "GreaterOrEqual",
+                                  "LessOrEqual"
+                                ],
+                                "type": "string"
+                              },
+                              "Expression": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "SetValues": {
+                                "type": [
+                                  "array",
+                                  "null"
+                                ],
+                                "items": {
+                                  "type": "string"
+                                }
+                              }
+                            },
+                            "additionalProperties": false
+                          }
+                        },
+                        "RowIndex": {
+                          "type": [
+                            "integer",
+                            "null"
+                          ],
+                          "format": "int32",
+                          "minimum": -2147483648,
+                          "maximum": 2147483647
+                        },
+                        "TableFieldId": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  }
+                },
+                "additionalProperties": false
+              },
+              "Taxonomy": {
+                "type": "object",
+                "properties": {
+                  "DataContractVersion": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "default": "1.2"
+                  },
+                  "DocumentTypes": {
+                    "type": [
+                      "array",
+                      "null"
+                    ],
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "DocumentTypeId": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "Group": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "Category": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "Name": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "OptionalUniqueIdentifier": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "TypeField": {
+                          "type": "object",
+                          "properties": {
+                            "FieldId": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "FieldName": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            }
+                          },
+                          "additionalProperties": false
+                        },
+                        "Fields": {
+                          "type": [
+                            "array",
+                            "null"
+                          ],
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "FieldId": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "FieldName": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "IsMultiValue": {
+                                "type": "boolean"
+                              },
+                              "Type": {
+                                "enum": [
+                                  "Text",
+                                  "Number",
+                                  "Date",
+                                  "Name",
+                                  "Address",
+                                  "Keyword",
+                                  "Set",
+                                  "Boolean",
+                                  "Table",
+                                  "Internal",
+                                  "FieldGroup",
+                                  "MonetaryQuantity"
+                                ],
+                                "type": "string"
+                              },
+                              "DeriveFieldsFormat": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "Components": {
+                                "type": [
+                                  "array",
+                                  "null"
+                                ],
+                                "items": {
+                                  "type": "any"
+                                }
+                              },
+                              "SetValues": {
+                                "type": [
+                                  "array",
+                                  "null"
+                                ],
+                                "items": {
+                                  "type": "string"
+                                }
+                              },
+                              "Metadata": {
+                                "type": [
+                                  "array",
+                                  "null"
+                                ],
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "Key": {
+                                      "type": [
+                                        "string",
+                                        "null"
+                                      ]
+                                    },
+                                    "Value": {
+                                      "type": [
+                                        "string",
+                                        "null"
+                                      ]
+                                    }
+                                  },
+                                  "additionalProperties": false
+                                }
+                              },
+                              "RuleSet": {
+                                "type": "object",
+                                "properties": {
+                                  "Criticality": {
+                                    "enum": [
+                                      "Must",
+                                      "Should"
+                                    ],
+                                    "type": "string"
+                                  },
+                                  "Rules": {
+                                    "type": [
+                                      "array",
+                                      "null"
+                                    ],
+                                    "items": {
+                                      "type": "object",
+                                      "properties": {
+                                        "Name": {
+                                          "type": [
+                                            "string",
+                                            "null"
+                                          ]
+                                        },
+                                        "Type": {
+                                          "enum": [
+                                            "Mandatory",
+                                            "PossibleValues",
+                                            "Regex",
+                                            "StartsWith",
+                                            "EndsWith",
+                                            "FixedLength",
+                                            "IsNumeric",
+                                            "IsDate",
+                                            "IsEmail",
+                                            "Contains",
+                                            "Expression",
+                                            "TableExpression",
+                                            "IsEmpty"
+                                          ],
+                                          "type": "string"
+                                        },
+                                        "LogicalOperator": {
+                                          "enum": [
+                                            "AND",
+                                            "OR"
+                                          ],
+                                          "type": "string"
+                                        },
+                                        "ComparisonOperator": {
+                                          "enum": [
+                                            "Equals",
+                                            "NotEquals",
+                                            "Greater",
+                                            "Less",
+                                            "GreaterOrEqual",
+                                            "LessOrEqual"
+                                          ],
+                                          "type": "string"
+                                        },
+                                        "Expression": {
+                                          "type": [
+                                            "string",
+                                            "null"
+                                          ]
+                                        },
+                                        "SetValues": {
+                                          "type": [
+                                            "array",
+                                            "null"
+                                          ],
+                                          "items": {
+                                            "type": "string"
+                                          }
+                                        }
+                                      },
+                                      "additionalProperties": false
+                                    }
+                                  }
+                                },
+                                "additionalProperties": false
+                              },
+                              "DefaultValue": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "DataSource": {
+                                "type": "object",
+                                "properties": {
+                                  "ResourceId": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  },
+                                  "ElementFieldId": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  }
+                                },
+                                "additionalProperties": false
+                              }
+                            },
+                            "additionalProperties": false
+                          }
+                        },
+                        "Metadata": {
+                          "type": [
+                            "array",
+                            "null"
+                          ],
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "Key": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "Value": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              }
+                            },
+                            "additionalProperties": false
+                          }
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "Groups": {
+                    "type": [
+                      "array",
+                      "null"
+                    ],
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "Name": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "Categories": {
+                          "type": [
+                            "array",
+                            "null"
+                          ],
+                          "items": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "SupportedLanguages": {
+                    "type": [
+                      "array",
+                      "null"
+                    ],
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "Name": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "Code": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "ReportAsExceptionSettings": {
+                    "type": "object",
+                    "properties": {
+                      "ExceptionReasonOptions": {
+                        "type": [
+                          "array",
+                          "null"
+                        ],
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "ExceptionReason": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            }
+                          },
+                          "additionalProperties": false
+                        }
+                      }
+                    },
+                    "additionalProperties": false
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails",
+          "source": "=Error",
+          "var": "error",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "required": [
+              "code",
+              "message",
+              "detail",
+              "category",
+              "status"
+            ],
+            "properties": {
+              "code": {
+                "type": "string",
+                "description": "Error code as a string"
+              },
+              "message": {
+                "type": "string",
+                "description": "High-level error message"
+              },
+              "detail": {
+                "type": "string",
+                "description": "Detailed error description"
+              },
+              "category": {
+                "type": "string",
+                "description": "Error category"
+              },
+              "status": {
+                "type": "integer",
+                "description": "HTTP status code"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      }
+    },
+    {
+      "nodeType": "core.action.script",
+      "version": "1.1",
+      "category": "data-operations",
+      "description": "Run custom JavaScript code",
+      "tags": [
+        "code",
+        "javascript",
+        "python"
+      ],
+      "sortOrder": 70,
+      "supportsErrorHandling": true,
+      "display": {
+        "label": "Script",
+        "icon": "code"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "success",
+              "type": "source",
+              "handleType": "output"
+            },
+            {
+              "id": "error",
+              "label": "Error",
+              "type": "source",
+              "handleType": "output",
+              "visible": "{inputs.errorHandlingEnabled}",
+              "constraints": {
+                "maxConnections": 1
+              }
+            }
+          ]
+        }
+      ],
+      "debug": {
+        "runtime": "clientScript"
+      },
+      "model": {
+        "type": "bpmn:ScriptTask"
+      },
+      "inputDefinition": {
+        "type": "object",
+        "properties": {
+          "script": {
+            "type": "string",
+            "minLength": 1,
+            "errorMessage": "Add a script function",
+            "validationSeverity": "warning"
+          }
+        },
+        "required": [
+          "script"
+        ]
+      },
+      "inputDefaults": {
+        "script": ""
+      },
+      "outputDefinition": {
+        "output": {
+          "type": "any",
+          "description": "The return value of the script",
+          "source": "=result.response",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails",
+          "source": "=Error",
+          "var": "error",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "required": [
+              "code",
+              "message",
+              "detail",
+              "category",
+              "status"
+            ],
+            "properties": {
+              "code": {
+                "type": "string",
+                "description": "Error code as a string"
+              },
+              "message": {
+                "type": "string",
+                "description": "High-level error message"
+              },
+              "detail": {
+                "type": "string",
+                "description": "Detailed error description"
+              },
+              "category": {
+                "type": "string",
+                "description": "Error category"
+              },
+              "status": {
+                "type": "integer",
+                "description": "HTTP status code"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "form": {
+        "id": "script-properties",
+        "title": "Script configuration",
+        "sections": [
+          {
+            "id": "script",
+            "title": "Script",
+            "collapsible": true,
+            "defaultExpanded": true,
+            "fields": [
+              {
+                "name": "inputs.script",
+                "type": "custom",
+                "component": "script-editor",
+                "componentProps": {
+                  "language": "javascript",
+                  "returnType": "any",
+                  "validationMode": "script",
+                  "minHeight": 200,
+                  "placeholder": " // Return any value\nreturn {\n  message: \"Web request response\",\n  data: $vars.httpRequest1.output\n};"
+                },
+                "label": "Code",
+                "description": "JavaScript expression that returns a result"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "nodeType": "core.control.end",
+      "version": "1.0",
+      "category": "control-flow",
+      "description": "Mark the end of a process path",
+      "tags": [
+        "control-flow",
+        "end",
+        "finish",
+        "complete"
+      ],
+      "sortOrder": 65,
+      "display": {
+        "label": "End",
+        "icon": "circle-check",
+        "shape": "circle"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        }
+      ],
+      "model": {
+        "type": "bpmn:EndEvent"
+      },
+      "runtimeConstraints": {
+        "exclude": [
+          "api-function"
+        ]
+      }
+    }
+  ],
+  "runtime": "maestro",
+  "bindings": [
+    {
+      "id": "bmzaIdeHM",
+      "name": "uipath-microsoft-onedrive connection",
+      "type": "string",
+      "resource": "connection",
+      "resourceKey": "ae311606-25b7-43ef-9cd0-f3dc0b3a9b58",
+      "propertyAttribute": "ConnectionId",
+      "default": "ae311606-25b7-43ef-9cd0-f3dc0b3a9b58"
+    },
+    {
+      "id": "bQSmaT5FK",
+      "name": "FolderKey",
+      "type": "string",
+      "resource": "connection",
+      "resourceKey": "ae311606-25b7-43ef-9cd0-f3dc0b3a9b58",
+      "propertyAttribute": "FolderKey",
+      "default": "c4359cde-55f0-4f0e-9322-c6cdce74ab4c"
+    },
+    {
+      "id": "bqY5lZ1HV",
+      "name": "uipath-uipath-http connection",
+      "type": "string",
+      "resource": "connection",
+      "resourceKey": "",
+      "default": "ImplicitConnection",
+      "propertyAttribute": "ConnectionId"
+    },
+    {
+      "id": "bSF5S8E1e",
+      "name": "FolderKey",
+      "type": "string",
+      "resource": "connection",
+      "resourceKey": "",
+      "propertyAttribute": "FolderKey"
+    }
+  ],
+  "variables": {
+    "nodes": [
+      {
+        "id": "fileCreatedInSharepoint1.output",
+        "type": "object",
+        "description": "The return value of the connector trigger.",
+        "binding": {
+          "nodeId": "fileCreatedInSharepoint1",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "downloadInvoiceFile1.output",
+        "type": "file",
+        "description": "The return value of the connector.",
+        "binding": {
+          "nodeId": "downloadInvoiceFile1",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "downloadInvoiceFile1.error",
+        "type": "object",
+        "description": "Error information if the node fails",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "required": [
+            "code",
+            "message",
+            "detail",
+            "category",
+            "status"
+          ],
+          "properties": {
+            "code": {
+              "type": "string",
+              "description": "Error code as a string"
+            },
+            "message": {
+              "type": "string",
+              "description": "High-level error message"
+            },
+            "detail": {
+              "type": "string",
+              "description": "Detailed error description"
+            },
+            "category": {
+              "type": "string",
+              "description": "Error category"
+            },
+            "status": {
+              "type": "integer",
+              "description": "HTTP status code"
+            }
+          },
+          "additionalProperties": false
+        },
+        "binding": {
+          "nodeId": "downloadInvoiceFile1",
+          "outputId": "error"
+        }
+      },
+      {
+        "id": "postInvoiceToSap1.output",
+        "type": "object",
+        "description": "HTTP response object",
+        "binding": {
+          "nodeId": "postInvoiceToSap1",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "postInvoiceToSap1.error",
+        "type": "object",
+        "description": "Error information if the node fails",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "required": [
+            "code",
+            "message",
+            "detail",
+            "category",
+            "status"
+          ],
+          "properties": {
+            "code": {
+              "type": "string",
+              "description": "Error code as a string"
+            },
+            "message": {
+              "type": "string",
+              "description": "High-level error message"
+            },
+            "detail": {
+              "type": "string",
+              "description": "Detailed error description"
+            },
+            "category": {
+              "type": "string",
+              "description": "Error category"
+            },
+            "status": {
+              "type": "integer",
+              "description": "HTTP status code"
+            }
+          },
+          "additionalProperties": false
+        },
+        "binding": {
+          "nodeId": "postInvoiceToSap1",
+          "outputId": "error"
+        }
+      },
+      {
+        "id": "extractInvoiceFields.output",
+        "type": "object",
+        "binding": {
+          "nodeId": "extractInvoiceFields",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "extractInvoiceFields.error",
+        "type": "object",
+        "description": "Error information if the node fails",
+        "binding": {
+          "nodeId": "extractInvoiceFields",
+          "outputId": "error"
+        }
+      },
+      {
+        "id": "buildInvoicePayload.output",
+        "type": "any",
+        "description": "The return value of the script",
+        "binding": {
+          "nodeId": "buildInvoicePayload",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "buildInvoicePayload.error",
+        "type": "object",
+        "description": "Error information if the node fails",
+        "binding": {
+          "nodeId": "buildInvoicePayload",
+          "outputId": "error"
+        }
+      }
+    ]
+  },
+  "layout": {
+    "nodes": {
+      "fileCreatedInSharepoint1": {
+        "position": {
+          "x": 0,
+          "y": 0
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        }
+      },
+      "downloadInvoiceFile1": {
+        "position": {
+          "x": 192,
+          "y": 0
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        }
+      },
+      "postInvoiceToSap1": {
+        "position": {
+          "x": 768,
+          "y": 0
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        }
+      },
+      "extractInvoiceFields": {
+        "position": {
+          "x": 384,
+          "y": 0
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "buildInvoicePayload": {
+        "position": {
+          "x": 576,
+          "y": 0
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "end1": {
+        "position": {
+          "x": 960,
+          "y": 0
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      }
+    }
+  }
+}

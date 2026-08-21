@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "SimEval",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "d67c2179-1994-43e7-aa31-c50e4564a1d2",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "SimEval"
+    },
+    "locks": [],
+    "key": "abdb7e13-a522-4e82-a977-896f19947da2",
+    "files": []
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "BillingResolutionWriter",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "7c3f1536-29d6-47c9-8f35-352810e2141e",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "BillingResolutionWriter"
+    },
+    "locks": [],
+    "key": "76964cea-9548-4bee-abcc-f7f35dab486f",
+    "files": []
+  }
+}

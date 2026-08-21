@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "ComplexArrayTest",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "a3eceaef-f2ce-4479-8f14-9d880eb360bb",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "ComplexArrayTest"
+    },
+    "locks": [],
+    "key": "d3739d56-344c-491b-9414-7218eaf8647b",
+    "files": []
+  }
+}

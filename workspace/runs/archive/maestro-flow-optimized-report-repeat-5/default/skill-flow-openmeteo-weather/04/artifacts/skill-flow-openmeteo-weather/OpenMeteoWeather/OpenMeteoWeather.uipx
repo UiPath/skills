@@ -1,0 +1,12 @@
+{
+    "DocVersion": "1.0.0",
+    "StudioMinVersion": "2025.10.0",
+    "SolutionId": "3a5a833a-a234-4fd4-4e62-08dee9abf020",
+    "Projects": [
+        {
+            "Type": "Flow",
+            "ProjectRelativePath": "OpenMeteoWeather/project.uiproj",
+            "Id": "141deba0-c6cc-4aae-9d5f-a543d113bba7"
+        }
+    ]
+}

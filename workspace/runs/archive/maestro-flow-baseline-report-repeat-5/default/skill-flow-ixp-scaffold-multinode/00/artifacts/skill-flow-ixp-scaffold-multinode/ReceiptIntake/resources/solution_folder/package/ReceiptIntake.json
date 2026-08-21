@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "ReceiptIntake",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "687ead2d-aa82-4398-b842-3fccff31c7d0",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "ReceiptIntake"
+    },
+    "locks": [],
+    "key": "a617db6e-e82c-4dd4-b799-48d2f7795678",
+    "files": []
+  }
+}

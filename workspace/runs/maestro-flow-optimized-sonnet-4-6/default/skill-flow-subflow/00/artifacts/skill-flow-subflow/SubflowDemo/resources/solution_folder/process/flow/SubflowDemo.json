@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "SubflowDemo",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "ec45ed2c-45e9-42cc-aa22-3433ee9f8c0b",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "SubflowDemo"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Flow",
+      "name": "SubflowDemo",
+      "package": {
+        "key": "544d2282-e895-4e4b-a9dc-1cbfd4e2dd47"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "3ce265a0-9ede-4a38-934c-7f782274ab1d",
+    "files": []
+  }
+}

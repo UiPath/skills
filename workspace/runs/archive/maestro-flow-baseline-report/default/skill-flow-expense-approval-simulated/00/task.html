@@ -1,0 +1,1678 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>coder_eval · skill-flow-expense-approval-simulated · default</title>
+<style>
+:root {
+  --bg-page: #0f1419;
+  --bg-card: #1a2129;
+  --bg-card-2: #232d38;
+  --bg-code: #0b0f14;
+  --fg: #e6edf3;
+  --fg-muted: #8b98a5;
+  --fg-dim: #6e7681;
+  --border: #30363d;
+  --accent: #58a6ff;
+  --score-high: #22c55e;
+  --score-mid: #f59e0b;
+  --score-low: #ef4444;
+  --status-success: #22c55e;
+  --status-failure: #f59e0b;
+  --status-error: #ef4444;
+  --status-neutral: #6e7681;
+  --shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+.light {
+  --bg-page: #ffffff;
+  --bg-card: #f6f8fa;
+  --bg-card-2: #eaeef2;
+  --bg-code: #f6f8fa;
+  --fg: #1f2328;
+  --fg-muted: #636c76;
+  --fg-dim: #8b949e;
+  --border: #d0d7de;
+  --accent: #0969da;
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial,
+               sans-serif;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--fg);
+  background: var(--bg-page);
+}
+.container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+h1, h2, h3, h4 { margin: 0 0 12px 0; line-height: 1.25; }
+h1 { font-size: 22px; font-weight: 600; }
+h2 { font-size: 18px; font-weight: 600; margin-top: 28px;
+     padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+h3 { font-size: 15px; font-weight: 600; color: var(--fg-muted); }
+h4 { font-size: 13px; font-weight: 600; color: var(--fg-muted); }
+p { margin: 0 0 8px 0; }
+.muted { color: var(--fg-muted); }
+.dim { color: var(--fg-dim); }
+.mono { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+        monospace; font-size: 12.5px; }
+code { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+       monospace; font-size: 12.5px; background: var(--bg-code);
+       border: 1px solid var(--border); padding: 1px 5px; border-radius: 3px; }
+pre { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+      monospace; font-size: 12.5px; background: var(--bg-code);
+      border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px;
+      margin: 6px 0; overflow-x: auto; white-space: pre-wrap;
+      word-wrap: break-word; }
+.header-bar { display: flex; align-items: center; justify-content: space-between;
+              margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+.title-group { flex: 1; min-width: 0; }
+.title-group .subtitle { color: var(--fg-muted); font-size: 13px;
+                         margin-top: 2px; word-break: break-all; }
+.badges { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.badge { display: inline-flex; align-items: center; gap: 6px;
+         padding: 4px 10px; border-radius: 12px; font-size: 12px;
+         font-weight: 600; background: var(--bg-card-2);
+         border: 1px solid var(--border); color: var(--fg); }
+.badge.success { background: color-mix(in srgb, var(--status-success) 20%, var(--bg-card-2));
+                 border-color: var(--status-success); color: var(--status-success); }
+.badge.failure { background: color-mix(in srgb, var(--status-failure) 20%, var(--bg-card-2));
+                 border-color: var(--status-failure); color: var(--status-failure); }
+.badge.error { background: color-mix(in srgb, var(--status-error) 20%, var(--bg-card-2));
+               border-color: var(--status-error); color: var(--status-error); }
+.badge.warning { background: color-mix(in srgb, #f4a52810 20%, var(--bg-card-2));
+                 border-color: #f4a528; color: #f4a528; }
+.badge.neutral { color: var(--fg-muted); }
+.score-pill { display: inline-block; padding: 2px 8px; border-radius: 10px;
+              font-size: 12px; font-weight: 700; min-width: 42px;
+              text-align: center; color: #0b0f14; }
+.score-high { background: var(--score-high); }
+.score-mid { background: var(--score-mid); }
+.score-low { background: var(--score-low); }
+.card { background: var(--bg-card); border: 1px solid var(--border);
+        border-radius: 8px; padding: 16px 20px; margin-bottom: 16px;
+        box-shadow: var(--shadow); }
+.card.highlight { border-left: 4px solid var(--accent); }
+.grid { display: grid; gap: 12px;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+.stat { background: var(--bg-card-2); padding: 10px 12px; border-radius: 6px;
+        border: 1px solid var(--border); }
+.stat .label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;
+               color: var(--fg-muted); margin-bottom: 4px; }
+.stat .value { font-size: 16px; font-weight: 600; }
+table { width: 100%; border-collapse: collapse; margin: 4px 0 12px 0; }
+th, td { text-align: left; padding: 8px 10px;
+         border-bottom: 1px solid var(--border); vertical-align: top;
+         font-size: 13px; }
+th { color: var(--fg-muted); font-weight: 600; font-size: 12px;
+     text-transform: uppercase; letter-spacing: 0.3px; }
+tr:last-child td { border-bottom: none; }
+details { margin: 6px 0; border: 1px solid var(--border); border-radius: 6px;
+          background: var(--bg-card-2); }
+details > summary { cursor: pointer; padding: 8px 12px; user-select: none;
+                    font-weight: 500; list-style: none; }
+details > summary::-webkit-details-marker { display: none; }
+details > summary::before { content: "▸ "; color: var(--fg-dim);
+                            display: inline-block; width: 14px;
+                            transition: transform 0.15s; }
+details[open] > summary::before { content: "▾ "; }
+details .details-body { padding: 0 12px 10px 12px; }
+.tool-row { display: flex; align-items: center; gap: 10px;
+            flex-wrap: wrap; font-size: 13px; }
+.tool-name { font-weight: 600; color: var(--accent); font-family: ui-monospace,
+             SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+.tool-status-ok { color: var(--status-success); font-size: 11px;
+                  font-weight: 600; }
+.tool-status-err { color: var(--status-error); font-size: 11px;
+                   font-weight: 600; }
+.tool-duration { color: var(--fg-muted); font-size: 12px; }
+.tool-seq { color: var(--fg-dim); font-size: 11px; font-weight: 600;
+            min-width: 24px; text-align: right; font-family: ui-monospace,
+            SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+.turn-header { display: flex; justify-content: space-between;
+               align-items: baseline; flex-wrap: wrap; gap: 10px;
+               margin-bottom: 10px; }
+.turn-meta { font-size: 12px; color: var(--fg-muted); }
+.criterion-row td:first-child { font-family: ui-monospace, SFMono-Regular,
+                                 "SF Mono", Menlo, Consolas, monospace;
+                                 color: var(--fg-muted); font-size: 12px; }
+.judge-section { display: flex; flex-direction: column; gap: 12px; }
+.judge-card { padding: 14px 16px; }
+.judge-card-head { display: flex; justify-content: space-between;
+                    align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+.judge-card-title { font-size: 14px; line-height: 1.4; flex: 1; min-width: 0; }
+.judge-card-score { flex-shrink: 0; }
+.judge-rationale { margin-top: 10px; padding: 10px 12px;
+                   background: var(--bg-code); border-radius: 4px;
+                   font-size: 13px; line-height: 1.5; }
+.judge-findings { margin: 8px 0 0 18px; padding-left: 4px; font-size: 13px;
+                   line-height: 1.6; }
+.judge-findings li { margin: 2px 0; }
+.nav-toggle { display: inline-block; padding: 5px 10px; font-size: 12px;
+              background: var(--bg-card-2); border: 1px solid var(--border);
+              border-radius: 5px; color: var(--fg); cursor: pointer; }
+.nav-toggle:hover { background: var(--bg-card); }
+.llm-next-steps { margin: 6px 0 0 20px; padding-left: 0; }
+.llm-next-steps li { margin: 3px 0; }
+.iteration-group { padding: 12px 16px 4px 16px; margin-bottom: 20px;
+                   border-radius: 0 6px 6px 0; border-left: 4px solid var(--status-neutral); }
+/* rgba fallback for browsers without color-mix (Chrome <111, Firefox <113, Safari <16.2). */
+.iteration-group--recovered { border-left-color: var(--status-success);
+                              background: rgba(34, 197, 94, 0.06);
+                              background: color-mix(in srgb, var(--status-success) 6%, transparent); }
+.iteration-group--terminal { border-left-color: var(--status-error);
+                             background: rgba(239, 68, 68, 0.06);
+                             background: color-mix(in srgb, var(--status-error) 6%, transparent); }
+.iteration-group__banner { margin: 0 0 12px 0; font-size: 14px; font-weight: 600; }
+.iteration-group--recovered .iteration-group__banner { color: var(--status-success); }
+.iteration-group--terminal .iteration-group__banner { color: var(--status-error); }
+.attempt-transition { display: flex; align-items: center; gap: 8px;
+                      margin: -6px 0 12px 8px; color: var(--status-error); font-size: 12.5px; }
+.attempt-transition__icon { font-weight: 700; }
+footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--border);
+         color: var(--fg-dim); font-size: 12px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="header-bar">
+  <div class="title-group">
+    <h1>Task: skill-flow-expense-approval-simulated</h1>
+    <div class="subtitle">Expense-approval flow with an inline HITL review step (trigger → script → HITL → script → end), driven by a simulated developer who describes the outcome but withholds the schema details until asked. Tests whether the agent elicits the field names/types/directions and approval outcomes before building. Validate-only — inline HITL nodes block on human review and can&#x27;t be flow-debugged.</div>
+  </div>
+  <div class="badges">
+    <span class="badge success">SUCCESS</span>
+    <span class="score-pill score-high">1.00</span>
+    <span class="badge neutral">claude-code · claude-sonnet-4-6</span>
+    <span class="badge neutral">17m 6s</span>
+    <span class="badge neutral">$1.9535</span>
+    
+    
+    <span class="nav-toggle" onclick="toggleTheme()">Toggle theme</span>
+  </div>
+</div>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Variant</div><div class="value">default</div></div>
+    <div class="stat"><div class="label">Started</div><div class="value mono">2026-07-23T20:42:26</div></div>
+    <div class="stat"><div class="label">Duration</div><div class="value">17m 6s</div></div>
+    <div class="stat"><div class="label">Turns (SDK)</div><div class="value">45</div></div>
+    <div class="stat"><div class="label">Commands</div><div class="value">22</div></div>
+  </div>
+</div>
+
+<h2>Simulation</h2>
+<div class="card" style="padding:0">
+  <table>
+    <tbody>
+      <tr><td class='mono dim'>Stop reason</td>
+          <td><span class="badge neutral">simulator ended dialog</span>
+              <span class="mono dim"> (stop_token)</span></td></tr>
+      <tr><td class='mono dim'>Total turns</td><td>4</td></tr>
+      
+      <tr><td class='mono dim'>Simulator tokens</td>
+          <td>in 408 · out 4732</td></tr>
+      
+    </tbody>
+  </table>
+</div>
+
+<h2>Success Criteria <span class="muted" style="font-weight:400">(3/3 passed)</span></h2>
+<div class="card" style="padding:0">
+<table>
+  <thead>
+    <tr>
+      <th style="width:15%">Type</th>
+      <th style="width:35%">Description</th>
+      <th style="width:10%">Score</th>
+      <th>Details</th>
+    </tr>
+  </thead>
+  <tbody>
+    
+<tr class="criterion-row">
+  <td>run_command</td>
+  <td>uip flow validate passes (any .flow)</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Command: python3 -c &quot;import glob,subprocess,sys; flows=glob.glob(&#x27;**/*.flow&#x27;,recursive=True); sys.exit(&#x27;no .flow file found&#x27;) if not flows else sys.exit(subprocess.run([&#x27;uip&#x27;,&#x27;maestro&#x27;,&#x27;flow&#x27;,&#x27;validate&#x27;,flows[0],&#x27;--output&#x27;,&#x27;json&#x27;]).returncode)&quot;</summary><div class="details-body"><pre style="margin:6px 0 0 0">Command: python3 -c &quot;import glob,subprocess,sys; flows=glob.glob(&#x27;**/*.flow&#x27;,recursive=True); sys.exit(&#x27;no .flow file found&#x27;) if not flows else sys.exit(subprocess.run([&#x27;uip&#x27;,&#x27;maestro&#x27;,&#x27;flow&#x27;,&#x27;validate&#x27;,flows[0],&#x27;--output&#x27;,&#x27;json&#x27;]).returncode)&quot;
+Exit code: 0 (expected: 0)
+Stdout:
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FlowValidate&quot;,
+  &quot;Data&quot;: {
+    &quot;File&quot;: &quot;/work/output/artifacts/skill-flow-expense-approval-simulated/ExpenseApproval/ExpenseApproval/ExpenseApproval.flow&quot;,
+    &quot;Status&quot;: &quot;Valid&quot;
+  }
+}
+
+Stderr:
+[ManifestClient] fetchDynamicNodes ok: total=206 agent context nodes=2 external agent nodes=6 orchestrator nodes=159 IXP nodes=39</pre></div></details></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>run_command</td>
+  <td>Flow has a correct inline HITL schema, decision capture, completed wiring, and downstream .output access</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Command: python3 -c &quot;import json,glob; flows=glob.glob(&#x27;**/*.flow&#x27;,recursive=True); assert flows,&#x27;No flow file&#x27;; f=json.load(open(flows[0])); nodes=f[&#x27;nodes&#x27;]; edges=f.get(&#x27;edges&#x27;,[]); hitl=[n for n in nodes if str(n.get(&#x27;type&#x27;,&#x27;&#x27;)).startswith(&#x27;uipath.human-in-the-loop&#x27;)]; assert len(hitl)==1,&#x27;need exactly 1 HITL node&#x27;; h=hitl[0]; hid=h.get(&#x27;id&#x27;); schema=h.get(&#x27;inputs&#x27;,{}).get(&#x27;schema&#x27;,{}); fields=schema.get(&#x27;fields&#x27;,[]); outcomes=schema.get(&#x27;outcomes&#x27;,[]) or []; assert fields,&#x27;HITL needs fields&#x27;; ft=lambda fl,k:(fl.get(k) or &#x27;&#x27;).lower() if isinstance(fl.get(k),str) else &#x27;&#x27;; assert any((ft(x,&#x27;id&#x27;)==&#x27;amount&#x27; or &#x27;amount&#x27; in ft(x,&#x27;label&#x27;)) and x.get(&#x27;type&#x27;)==&#x27;number&#x27; for x in fields),&#x27;amount must be a number field&#x27;; dec=[x for x in fields if x.get(&#x27;direction&#x27;) in (&#x27;output&#x27;,&#x27;inOut&#x27;) and any(k in ft(x,&#x27;id&#x27;) for k in (&#x27;approval&#x27;,&#x27;approved&#x27;,&#x27;decision&#x27;))]; onames={str(o.get(&#x27;name&#x27;) or o.get(&#x27;id&#x27;) or &#x27;&#x27;).lower() for o in outcomes}; okdec=any(x.get(&#x27;type&#x27;)==&#x27;boolean&#x27; for x in dec) or (any(&#x27;approve&#x27; in o for o in onames) and any(&#x27;reject&#x27; in o for o in onames)); assert okdec,&#x27;need boolean decision field or approve/reject outcomes&#x27;; rk=(&#x27;reason&#x27;,&#x27;comment&#x27;,&#x27;explanation&#x27;,&#x27;justification&#x27;,&#x27;note&#x27;); assert any(x.get(&#x27;direction&#x27;) in (&#x27;output&#x27;,&#x27;inOut&#x27;) and x.get(&#x27;type&#x27;) in (&#x27;text&#x27;,&#x27;string&#x27;,&#x27;textarea&#x27;) and any(k in ft(x,&#x27;id&#x27;) or k in ft(x,&#x27;label&#x27;) for k in rk) for x in fields),&#x27;need a text reason output field&#x27;; assert any(e.get(&#x27;sourceNodeId&#x27;)==hid and e.get(&#x27;sourcePort&#x27;) in (&#x27;completed&#x27;,&#x27;outcome-completed&#x27;) for e in edges),&#x27;HITL completed handle must be wired&#x27;; scripts=[str(n.get(&#x27;inputs&#x27;,{}).get(&#x27;script&#x27;,&#x27;&#x27;)) for n in nodes if n.get(&#x27;type&#x27;)==&#x27;core.action.script&#x27;]; assert any((chr(36)+&#x27;vars.&#x27;+str(hid)+&#x27;.output&#x27;) in s for s in scripts),&#x27;downstream script must read HITL output via vars.&lt;hitl&gt;.output&#x27;; print(&#x27;OK&#x27;)&quot;</summary><div class="details-body"><pre style="margin:6px 0 0 0">Command: python3 -c &quot;import json,glob; flows=glob.glob(&#x27;**/*.flow&#x27;,recursive=True); assert flows,&#x27;No flow file&#x27;; f=json.load(open(flows[0])); nodes=f[&#x27;nodes&#x27;]; edges=f.get(&#x27;edges&#x27;,[]); hitl=[n for n in nodes if str(n.get(&#x27;type&#x27;,&#x27;&#x27;)).startswith(&#x27;uipath.human-in-the-loop&#x27;)]; assert len(hitl)==1,&#x27;need exactly 1 HITL node&#x27;; h=hitl[0]; hid=h.get(&#x27;id&#x27;); schema=h.get(&#x27;inputs&#x27;,{}).get(&#x27;schema&#x27;,{}); fields=schema.get(&#x27;fields&#x27;,[]); outcomes=schema.get(&#x27;outcomes&#x27;,[]) or []; assert fields,&#x27;HITL needs fields&#x27;; ft=lambda fl,k:(fl.get(k) or &#x27;&#x27;).lower() if isinstance(fl.get(k),str) else &#x27;&#x27;; assert any((ft(x,&#x27;id&#x27;)==&#x27;amount&#x27; or &#x27;amount&#x27; in ft(x,&#x27;label&#x27;)) and x.get(&#x27;type&#x27;)==&#x27;number&#x27; for x in fields),&#x27;amount must be a number field&#x27;; dec=[x for x in fields if x.get(&#x27;direction&#x27;) in (&#x27;output&#x27;,&#x27;inOut&#x27;) and any(k in ft(x,&#x27;id&#x27;) for k in (&#x27;approval&#x27;,&#x27;approved&#x27;,&#x27;decision&#x27;))]; onames={str(o.get(&#x27;name&#x27;) or o.get(&#x27;id&#x27;) or &#x27;&#x27;).lower() for o in outcomes}; okdec=any(x.get(&#x27;type&#x27;)==&#x27;boolean&#x27; for x in dec) or (any(&#x27;approve&#x27; in o for o in onames) and any(&#x27;reject&#x27; in o for o in onames)); assert okdec,&#x27;need boolean decision field or approve/reject outcomes&#x27;; rk=(&#x27;reason&#x27;,&#x27;comment&#x27;,&#x27;explanation&#x27;,&#x27;justification&#x27;,&#x27;note&#x27;); assert any(x.get(&#x27;direction&#x27;) in (&#x27;output&#x27;,&#x27;inOut&#x27;) and x.get(&#x27;type&#x27;) in (&#x27;text&#x27;,&#x27;string&#x27;,&#x27;textarea&#x27;) and any(k in ft(x,&#x27;id&#x27;) or k in ft(x,&#x27;label&#x27;) for k in rk) for x in fields),&#x27;need a text reason output field&#x27;; assert any(e.get(&#x27;sourceNodeId&#x27;)==hid and e.get(&#x27;sourcePort&#x27;) in (&#x27;completed&#x27;,&#x27;outcome-completed&#x27;) for e in edges),&#x27;HITL completed handle must be wired&#x27;; scripts=[str(n.get(&#x27;inputs&#x27;,{}).get(&#x27;script&#x27;,&#x27;&#x27;)) for n in nodes if n.get(&#x27;type&#x27;)==&#x27;core.action.script&#x27;]; assert any((chr(36)+&#x27;vars.&#x27;+str(hid)+&#x27;.output&#x27;) in s for s in scripts),&#x27;downstream script must read HITL output via vars.&lt;hitl&gt;.output&#x27;; print(&#x27;OK&#x27;)&quot;
+Exit code: 0 (expected: 0)
+Stdout:
+OK
+
+Stderr: (empty)</pre></div></details></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>run_command</td>
+  <td>Project/flow is named ExpenseApproval (elicited from the user)</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Command: python3 -c &quot;import glob,sys; sys.exit(0 if glob.glob(&#x27;**/ExpenseApproval.flow&#x27;,recursive=True) else &#x27;expected a flow named ExpenseApproval.flow&#x27;)&quot;</summary><div class="details-body"><pre style="margin:6px 0 0 0">Command: python3 -c &quot;import glob,sys; sys.exit(0 if glob.glob(&#x27;**/ExpenseApproval.flow&#x27;,recursive=True) else &#x27;expected a flow named ExpenseApproval.flow&#x27;)&quot;
+Exit code: 0 (expected: 0)
+Stdout: (empty)
+Stderr: (empty)</pre></div></details></td>
+</tr>
+
+  </tbody>
+</table>
+</div>
+<h2>Conversation Trace (4 iterations)</h2>
+<div class="card">
+  <div class="turn-header">
+    <h3>Iteration 1</h3>
+    <div class="badges">
+      <span class="badge neutral">22 assistant turns</span>
+      <span class="badge neutral">in 12 · out 12081 · cache 432228</span>
+      <span class="badge neutral">3m 12s</span>
+      
+      
+      
+    </div>
+  </div>
+  <details>
+    <summary>Prompt to agent</summary>
+    <div class="details-body"><pre>Your working directory is: /work/output/artifacts/skill-flow-expense-approval-simulated
+
+[ASSISTANT] Hey there! I need help setting up an automated expense approval flow. We get a ton of expense reports from employees and right now everything is manual — someone has to email a manager, wait for a reply, then log it somewhere. It&#x27;s a mess. Can you build something to automate this?
+[RESULT - SUCCESS] Hey there! I need help setting up an automated expense approval flow. We get a ton of expense reports from employees and right now everything is manual — someone has to email a manager, wait for a reply, then log it somewhere. It&#x27;s a mess. Can you build something to automate this?</pre></div>
+  </details>
+  <details>
+    <summary>Agent response</summary>
+    <div class="details-body"><pre>[ASSISTANT] No existing solutions found in the working directory. This flow has 5+ nodes with branching paths, so I&#x27;ll produce an architectural plan first for your review before building.
+[ASSISTANT] Now I have everything I need to produce the architectural plan. This is a multi-node flow with branching and a human approval step, so I&#x27;ll plan first before building.
+[ASSISTANT] Here&#x27;s the architectural plan for your automated expense approval flow:
+
+---
+
+## Plan: Expense Approval Flow
+
+### What it does
+
+Accepts an expense report (employee name, description, amount, receipt URL) and routes it automatically:
+- **Low-value expenses** (≤ configurable threshold, e.g. $50) → **auto-approved instantly**
+- **Higher-value expenses** → pauses and sends a **manager a quick-form task** (via Action Center / email) to Approve or Reject → logs the outcome
+
+Every path ends with a structured `approvalStatus` + `managerComments` output.
+
+---
+
+### Flow Diagram
+
+```mermaid
+graph LR
+    trigger(Manual Trigger)
+    prepareExpense[Prepare Expense]
+    checkThreshold{Auto-Approve Check}
+    hitlManagerReview[Manager Review]
+    checkManagerDecision{Manager Decision}
+    logAutoApproved[Log Auto-Approved]
+    logApproved[Log Approved]
+    logRejected[Log Rejected]
+    logError[Log Error]
+    doneAutoApproved(Done Auto-Approved)
+    doneApproved(Done Approved)
+    doneRejected(Done Rejected)
+    doneError(Done Error)
+    trigger --&gt;|output| prepareExpense
+    prepareExpense --&gt;|success| checkThreshold
+    prepareExpense --&gt;|error| logError
+    checkThreshold --&gt;|true| logAutoApproved
+    checkThreshold --&gt;|false| hitlManagerReview
+    hitlManagerReview --&gt;|outcome-completed| checkManagerDecision
+    checkManagerDecision --&gt;|true| logApproved
+    checkManagerDecision --&gt;|false| logRejected
+    logAutoApproved --&gt;|success| doneAutoApproved
+    logApproved --&gt;|success| doneApproved
+    logRejected --&gt;|success| doneRejected
+    logError --&gt;|success| doneError
+```
+
+---
+
+### Nodes
+
+| # | Name | Type | Role |
+|---|---|---|---|
+| 1 | Manual Trigger | `core.trigger.manual` | Entry point |
+| 2 | Prepare Expense | `core.action.script` | Validates inputs, builds summary string |
+| 3 | Auto-Approve Check | `core.logic.decision` | `amount &lt;= autoApproveThreshold` |
+| 4 | **Manager Review** | `uipath.human-in-the-loop.quick-form` | Sends manager an Approve/Reject task |
+| 5 | Manager Decision | `core.logic.decision` | Branches on manager&#x27;s outcome |
+| 6–9 | Log nodes (×4) | `core.action.script` | Return `approvalStatus` + `managerComments` per path |
+| 10–13 | End nodes (×4) | `core.control.end` | One per terminal path |
+
+### Flow Inputs &amp; Outputs
+
+| | Name | Type | Description |
+|---|---|---|---|
+| `in` | `employeeName` | string | Submitter&#x27;s name |
+| `in` | `expenseDescription` | string | Purpose of the expense |
+| `in` | `amount` | number | Amount in USD |
+| `in` | `receiptUrl` | string | Receipt link (optional) |
+| `in` | `autoApproveThreshold` | number | Auto-approve limit (e.g. 50) |
+| `out` | `approvalStatus` | string | `AutoApproved` / `Approved` / `Rejected` / `Error` |
+| `out` | `managerComments` | string | Manager&#x27;s comments (empty on auto-approve) |
+
+---
+
+### Optional questions to resolve before building
+
+1. **[OPTIONAL]** Should the flow send the employee an email notification of the outcome? If so, which email service (Outlook, Gmail, SMTP)?
+2. **[OPTIONAL]** Who should the HITL task be assigned to — a named manager group, a specific user, or a value from the expense data?
+3. **[OPTIONAL]** Should rejected expenses trigger a notification back to the submitter?
+
+---
+
+**Does this plan look right?** Please choose how to proceed:
+
+1. **✅ Looks good — build it** (I&#x27;ll scaffold the solution and write the `.flow` file)
+2. **✏️ Make a change** — tell me what to adjust (threshold, extra notifications, different fields, etc.)
+3. **Something else** — free-form input
+[RESULT - SUCCESS] Here&#x27;s the architectural plan for your automated expense approval flow:
+
+---
+
+## </pre></div>
+  </details>
+  <h4 style="margin-top:12px">Tool Calls (11)</h4>
+  
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#0</span>
+      <span class="tool-name">Skill</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">19ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;skill&quot;: &quot;uipath:uipath-maestro-flow&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Launching skill: uipath:uipath-maestro-flow</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#1</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">422ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/CAPABILITY.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Author — Create and edit `.flow` files
+2	
+3	Capability index for building new flows (greenfield) and editing existing flows (brownfield). Author owns everything that happens on disk, locally, without `uip login`. Authoring journeys terminate at `validate` + `format`; from there, hand off to [operate/CAPABILITY.md](../operate/CAPABILITY.md) to publish, run, or debug.
+4	
+5	&gt; **Where you came from / where to go next.** Author is upstream of Operate (build the flow → ship it) and upstream of Diagnose only via Operate (build → run → diagnose). Publish/run/lifecycle lives in [operate/CAPABILITY.md](../operate/CAPABILITY.md); fault triage lives in [diagnose/CAPABILITY.md](../diagnose/CAPABILITY.md).
+6	&gt;
+7	&gt; **Inherits universal rules from [SKILL.md](../../SKILL.md)** — `--output json` + prefer `--output-filter` for extraction, no `flow debug` without consent, resource discovery order, never invoke other skills automatically, dropdown question pattern, solution layout, **plain-English narration + granular progress list (opt-in — silent by default; engage when the user asks for verbosity)**. The rules below are author-scoped and apply on top.
+8	
+9	## When to use this capability
+10	
+11	-
+
+… (truncated, 25996 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#2</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">119ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/references/greenfield.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Greenfield — Create a New Flow
+2	
+3	End-to-end journey for creating a Flow project from scratch. Author terminates at `validate` + `format`. To publish, run, or debug after this, see [operate/CAPABILITY.md](../../operate/CAPABILITY.md).
+4	
+5	&gt; **Brownfield edits use a different journey.** If the `.flow` file already exists, see [brownfield.md](brownfield.md) instead.
+6	
+7	## Should you plan first?
+8	
+9	For complex flows, produce a plan before building. Reference [planning-arch.md](planning-arch.md) and [planning-impl.md](planning-impl.md) for the node type catalog, port reference, wiring rules, and topology patterns.
+10	
+11	**Plan when:**
+12	- The flow has 5+ nodes with branching or parallel paths
+13	- The flow uses connectors or resources that need discovery
+14	- The user&#x27;s requirements are ambiguous and you need to confirm the approach
+15	
+16	**Don&#x27;t plan when:**
+17	- Adding/editing a single node in an existing flow (use [brownfield.md](brownfield.md))
+18	- The flow is a straightforward linear pipeline (trigger → action → action → end)
+19	- The user has already described the exact topology they want
+20	
+21	### Examples
+22	
+23	**Plan:** &quot;Build a flow that receives a Jira ticke
+
+… (truncated, 30834 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#3</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">323ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/references/planning-arch.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Planning Phase 1: Discovery &amp; Architectural Design
+2	
+3	Discover available capabilities, then design the flow topology — select node types, define edges, and identify expected inputs and outputs. This phase produces a **mermaid diagram** and structured tables that can be reviewed before any implementation work begins.
+4	
+5	&gt; **Registry rules for this phase:**
+6	&gt; - **`registry search` and `registry list` are ALLOWED** — use them to discover what connectors, resources, and operations exist before committing to a topology.
+7	&gt; - **`registry get` IS REQUIRED for any OOTB action node** the flow will use — `core.action.http`, `core.action.http.v2`, `core.action.script`, `core.action.transform`, queue actions, etc. These nodes have no connection-id; their full input/output schema, port names, and required fields are only visible via `registry get &lt;node-type&gt; --output json`. Run `get` once per OOTB action node type during discovery so the topology and ports are grounded in real metadata.
+8	&gt; - **`registry get` is DEFERRED for connector and resource nodes** — those require a `--connection-id` (connector) or `--local` resolution that belongs to [Planning Phase 2: Implementation](plannin
+
+… (truncated, 43980 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#4</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">140ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;ls /work/output/artifacts/skill-flow-expense-approval-simulated/ 2&gt;/dev/null &amp;&amp; ls /work/output/artifacts/skill-flow-expense-approval-simulated/*.uipx /work/output/artifacts/skill-flow-expense-approval-simulated/*/*.uipx 2&gt;/dev/null || echo \&quot;No .uipx files found\&quot;&quot;,
+  &quot;description&quot;: &quot;Check working directory and existing solutions&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>No .uipx files found</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#5</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">73ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/references/plugins/hitl/planning.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# HITL Node — Planning
+2	
+3	The flow needs to pause for a human to review, approve, or fill in data. Two node types serve this need — choose based on form complexity and whether an app already exists.
+4	
+5	---
+6	
+7	## Which HITL Node to Use
+8	
+9	| Use case | Node type | Form source |
+10	| --- | --- | --- |
+11	| Inline form designed right now (fields + outcomes defined in the flow) | `uipath.human-in-the-loop.quick-form` | Schema embedded in node inputs — no app needed |
+12	| Existing coded app or Action Center app | `uipath.human-in-the-loop.coded-action-app` | Deployed app from Orchestrator |
+13	
+14	**Prefer `uipath.human-in-the-loop.quick-form`** for new flows. It is an OOTB node — no registry discovery, no app publishing, no tenant dependency.
+15	
+16	---
+17	
+18	## Option 1 — `uipath.human-in-the-loop.quick-form` (Inline Schema — OOTB)
+19	
+20	Node type: `uipath.human-in-the-loop.quick-form`
+21	Available: always — no `uip login` or registry pull required.
+22	
+23	### When to Select
+24	
+25	| Situation | Select? |
+26	| --- | --- |
+27	| Manager approval before processing | Yes |
+28	| Human reviews extracted data before submission | Yes |
+29	| Human resolves exceptions the automation
+
+… (truncated, 4018 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#6</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">47ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/references/plugins/script/planning.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Script Node — Planning
+2	
+3	## Node Type
+4	
+5	`core.action.script`
+6	
+7	## When to Use
+8	
+9	Use a Script node for custom logic, data transformation, computation, or formatting that does not require an external call.
+10	
+11	### Selection Heuristics
+12	
+13	| Situation | Use Script? |
+14	| --- | --- |
+15	| Custom logic, string manipulation, computation | Yes |
+16	| Standard map/filter/group-by on a collection | No — use [Transform](../transform/planning.md) |
+17	| Ambiguous input that needs reasoning or judgment | No — use [Agent](../agent/planning.md) |
+18	| Calling an external API | No — use [HTTP](../http/planning.md) or [Connector Activity](../connector/planning.md) |
+19	| Natural language generation | No — use [Agent](../agent/planning.md) |
+20	
+21	## Ports
+22	
+23	| Input Port | Output Port(s) |
+24	| --- | --- |
+25	| `input` | `success`, `error` |
+26	
+27	- `success` — primary output; fires when the script returns normally.
+28	- `error` — implicit error port shared with all action nodes. Fires on uncaught script exceptions, returned non-object values, or timeout. See [Implicit error port on action nodes](../../../../shared/file-format.md#implicit-error-port-on-action-nodes).
+2
+
+… (truncated, 549 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#7</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">21ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/references/plugins/decision/planning.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Decision Node — Planning
+2	
+3	## Node Type
+4	
+5	`core.logic.decision`
+6	
+7	## When to Use
+8	
+9	Use a Decision node for binary branching (if/else) based on a boolean condition.
+10	
+11	### Selection Heuristics
+12	
+13	| Situation | Use Decision? |
+14	| --- | --- |
+15	| Two-path branch based on a boolean condition | Yes |
+16	| Three or more paths | No — use [Switch](../switch/planning.md) |
+17	| Branch on HTTP response status codes | No — use [HTTP](../http/planning.md) built-in branches |
+18	| Branch requires reasoning on ambiguous input | No — use [Agent](../agent/planning.md) |
+19	
+20	## Ports
+21	
+22	| Input Port | Output Port(s) |
+23	| --- | --- |
+24	| `input` | `true`, `false` |
+25	
+26	## Key Inputs
+27	
+28	| Input | Required | Description |
+29	| --- | --- | --- |
+30	| `expression` | Yes | Boolean JavaScript expression (e.g., `$vars.fetchData.output.statusCode === 200`) |
+31	| `trueLabel` | No | Custom label for the true branch |
+32	| `falseLabel` | No | Custom label for the false branch |
+33	
+34	## Wiring Rules
+35	
+36	- Decision nodes produce exactly **two** outgoing edges: one from `true`, one from `false`
+37	- Both branches must lead to a downstream node (no dangling branche
+
+… (truncated, 92 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#8</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">14ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/references/plugins/end/planning.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# End Node — Planning
+2	
+3	## Node Type
+4	
+5	`core.control.end`
+6	
+7	## When to Use
+8	
+9	Use an End node for graceful workflow completion. Each terminal path in the flow needs its own End node.
+10	
+11	### Selection Heuristics
+12	
+13	| Situation | Use End? |
+14	| --- | --- |
+15	| Normal completion of an execution path | Yes |
+16	| Fatal error — abort everything immediately | No — use [Terminate](../terminate/planning.md) |
+17	
+18	## Ports
+19	
+20	| Input Port | Output Port(s) |
+21	| --- | --- |
+22	| `input` | — (none) |
+23	
+24	## Key Rules
+25	
+26	- A flow can have multiple End nodes (one per terminal path)
+27	- Every `out` variable in `variables.globals` **must** be mapped on **every** reachable End node via `outputs`
+28	- End nodes only terminate their own path — other parallel branches continue
+29	</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#9</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">40ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/references/plugins/hitl/impl.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# HITL Node — Implementation
+2	
+3	Two node types implement human-in-the-loop checkpoints. Choose based on whether you need an inline form or an existing deployed app.
+4	
+5	---
+6	
+7	## Option 1 — `uipath.human-in-the-loop.quick-form` (Inline Schema — OOTB)
+8	
+9	This is the preferred option. No registry pull, no app publishing, no tenant dependency. Write the node directly into the `.flow` file as JSON.
+10	
+11	**Full implementation guide, JSON examples, and schema conversion rules:**
+12	→ [`uipath-human-in-the-loop` skill — hitl-node-quickform.md](../../../../../../uipath-human-in-the-loop/references/hitl-node-quickform.md)
+13	
+14	&gt; **Note:** Skills are self-contained. This cross-skill reference is for documentation context only. The agent uses the `uipath-human-in-the-loop` skill to implement HITL nodes. This implementation guide is for implementation-phase topology resolution only — not for schema design or node writing.
+15	
+16	### Adding / Editing
+17	
+18	For add, delete, and wiring procedures, see [editing-operations.md](../../editing-operations.md). **Use `Edit` / `Write` for HITL node authoring.** Do not use the dedicated HITL CLI for this non-carve-out structural edit. Wire t
+
+… (truncated, 8083 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#10</span>
+      <span class="tool-name">Write</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">60ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-expense-approval-simulated/ExpenseApproval.uipath.flow.arch.plan.md&quot;,
+  &quot;content&quot;: &quot;# ExpenseApproval — Architectural Plan\n\n## 1. Summary\n\nAn expense approval flow that accepts a submitted expense report (employee name, description, amount, receipt URL) and automatically approves low-value expenses below a configurable threshold. For higher-value expenses it pauses and sends a manager a quick-form task to approve or reject, then logs the final decision so every outcome is capture… (6609 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>File created successfully at: /work/output/artifacts/skill-flow-expense-approval-simulated/ExpenseApproval.uipath.flow.arch.plan.md (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+</div>
+
+<div class="card">
+  <div class="turn-header">
+    <h3>Iteration 2</h3>
+    <div class="badges">
+      <span class="badge neutral">14 assistant turns</span>
+      <span class="badge neutral">in 7 · out 38042 · cache 459009</span>
+      <span class="badge neutral">9m 8s</span>
+      
+      
+      
+    </div>
+  </div>
+  <details>
+    <summary>Prompt to agent</summary>
+    <div class="details-body"><pre>Your working directory is: /work/output/artifacts/skill-flow-expense-approval-simulated
+
+[ASSISTANT] This is pretty close to what I have in mind, but honestly I don&#x27;t think I need the auto-approve threshold piece — every expense should go to a manager for review, no exceptions. Keep it simple.
+
+On your question #2 — yes, there&#x27;s a specific approver group: &quot;expense-approvers.&quot; Assign the task to that group.
+
+Go ahead and build it!
+[RESULT - SUCCESS] This is pretty close to what I have in mind, but honestly I don&#x27;t think I need the auto-approve threshold piece — every expense should go to a manager for review, no exceptions. Keep it simple.
+
+On your question #2 — yes, there&#x27;s a specific approver group: &quot;expense-approvers.&quot; Assign the task to that group.
+
+Go ahead and build it!</pre></div>
+  </details>
+  <details>
+    <summary>Agent response</summary>
+    <div class="details-body"><pre>[ASSISTANT] Good — the scaffold is ready. The decision node is version `&quot;1.1&quot;` and the HITL output port is `&quot;completed&quot;`. Now I need to read the scaffolded file before writing the complete flow.
+[ASSISTANT] Good — scaffold complete. All definitions captured:
+- `core.logic.decision` is version `&quot;1.1&quot;`
+- HITL output port is `&quot;completed&quot;` (not `outcome-completed`)
+- `core.action.script` version `&quot;1.0&quot;`, error source `&quot;=Error&quot;`
+
+Now I&#x27;ll write the complete `.flow` file in one shot:
+[ASSISTANT] ✅ **Validation: Valid. Format: Complete** — 10 nodes repositioned, 19 variable entries generated, 0 warnings.
+
+---
+
+The flow is built and ready. Here&#x27;s a summary of what was created:
+
+**File:** `ExpenseApproval/ExpenseApproval/ExpenseApproval.flow`
+
+### What was built
+
+| Node | Type | Role |
+|---|---|---|
+| Manual Trigger | `core.trigger.manual` | Entry point |
+| Prepare Expense | `core.action.script` | Validates name, description, amount; throws on bad input; builds a human-readable summary |
+| Manager Review | `uipath.human-in-the-loop.quick-form` | Sends a task to **expense-approvers** group via Action Center + Email; shows employee name, description, amount, receipt URL, summary; manager picks **Approve** or **Reject** and optionally adds comments |
+| Manager Decision | `core.logic.decision` | Routes on `status === &quot;Approve&quot;` |
+| Log Approved / Log Rejected / Log Error | `core.action.script` | Returns `approvalStatus` + `managerComments` for each path |
+| Done ×3 | `core.control.end` | Maps `approvalStatus` and `managerComments` as flow outputs on every terminal path |
+
+**Flow inputs:** `employeeName`, `expenseDescription`, `amount`, `receiptUrl`
+**Flow outputs:** `approvalStatus` (`&quot;Approved&quot;` / `&quot;Rejected&quot;` / `&quot;Error&quot;`), `managerComments`
+
+The `prepareExpense` error port is wired — if required fields are missing or `amount ≤ 0`, the flow routes to the error path instead of faulting the whole instance.
+
+---
+
+**What&#x27;s next?** Choose an option:
+
+1. **Publish to Studio Web** — push to the browser editor to visualize, tweak, and publish from there
+2. **Debug the solution** — execute against real systems (note: this sends actual Action Center tasks)
+3. **Deploy to Orchestrator** — pack and publish directly to Orchestrator
+4. **Something else** — free-form (e.g. &quot;add an email notification&quot;, &quot;change the priority to High&quot;, &quot;just leave it for now&quot;)
+[RESULT - SUCCESS] ✅ **Validation: Valid. Format: Complete** — 10 nodes repositioned, 19 variable entries generated, 0 warnings.
+
+---
+
+The flow is built and ready. Here&#x27;s a summary of what was created:
+
+**File:** `ExpenseApproval/ExpenseApproval/ExpenseApproval.flow`
+
+### What was built
+
+| Node | Type | Role |
+|---|---|---|
+| Manual Trigger | `core.trigger.manual` | Entry point |
+| Prepare Expense | `core.action.script` | Validates name, description, amount; throws on bad input; builds a human-readable summary |
+| Manager Review | `uipath.human-in-the-loop.quick-form` | Sends a task to **expense-approvers** group via Action Center + Email; shows employee name, description, amount, receipt URL, summary; manager picks **Approve** or **Reject** and optionally adds comments |
+| Manager Decision | `core.logic.decision` | Routes on `status === &quot;Approve&quot;` |
+| Log Approved / Log Rejected / Log Error | `core.action.script` | Returns `approvalStatus` + `managerComments` for each path |
+| Done ×3 | `core.control.end` | Maps `approvalStatus` and `managerComments` as flow outputs on every terminal path |
+
+**Flow inputs:** `employeeName`, `expenseDescription`, `amount`, `receiptUrl`
+**Flow outputs:** `approvalStatus` (`&quot;Approved&quot;` / `&quot;Rejected&quot;` / `&quot;Error&quot;`), `managerComments`
+
+The `prepareExpense` error port is wired — if required fields are missing or `amount ≤ 0`, the flow routes to the error path instead of faulting the whole instance.
+
+---
+
+**What&#x27;s next?** Choose an option:
+
+1. **Publish to Studio Web** — push to the browser editor to visualize, tweak, and publish from there
+2. **Debug the solution** — execut</pre></div>
+  </details>
+  <h4 style="margin-top:12px">Tool Calls (8)</h4>
+  
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#0</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">452ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/shared/file-format.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# UiPath Flow File Format
+2	
+3	The `.flow` file is a JSON document at `&lt;ProjectName&gt;.flow` in the project root. It is the **only file you should edit** — other generated files will be overwritten.
+4	
+5	## Table of contents
+6	
+7	- [Top-level structure](#top-level-structure)
+8	- [Project structure (from `uip maestro flow init`)](#project-structure-from-uip-maestro-flow-init)
+9	- [Node instance](#node-instance)
+10	- [Layout](#layout)
+11	- [Edge — both ports required](#edge--both-ports-required)
+12	- [Definition entry](#definition-entry)
+13	- [Common node types](#common-node-types)
+14	- [Standard ports by node type](#standard-ports-by-node-type)
+15	- [Implicit error port on action nodes](#implicit-error-port-on-action-nodes)
+16	- [Minimal working example — dice roller](#minimal-working-example--dice-roller)
+17	- [entry-points.json — auto-generated, do not edit](#entry-pointsjson--auto-generated-do-not-edit)
+18	- [Bindings — Orchestrator resource bindings (top-level `bindings[]`)](#bindings--orchestrator-resource-bindings-top-level-bindings)
+19	- [Bindings — connector connection binding](#bindings--connector-connection-binding)
+20	
+21	## Top-level structure
+22	
+23	```json
+24	{
+25	  &quot;i
+
+… (truncated, 30199 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#1</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">43ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/references/plugins/script/impl.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Script Node — Implementation
+2	
+3	## Node Type
+4	
+5	`core.action.script`
+6	
+7	## Registry validation
+8	
+9	```bash
+10	uip maestro flow registry get core.action.script --output json
+11	```
+12	
+13	Confirm: input port `input`, output port `success`, required input `script` (string, non-empty). See [Action Node Structure — Registry validation](../../../../shared/action-nodes.md#registry-validation) for the shared pattern.
+14	
+15	## JSON structure
+16	
+17	Follow the [Action Node Structure — Standard JSON skeleton](../../../../shared/action-nodes.md#standard-json-skeleton). The script-specific input is a single `script` string:
+18	
+19	```json
+20	{
+21	  &quot;inputs&quot;: {
+22	    &quot;script&quot;: &quot;const items = $vars.fetchData.output.body.items;\nconst total = items.reduce((sum, i) =&gt; sum + i.amount, 0);\nreturn { total, count: items.length };&quot;
+23	  }
+24	}
+25	```
+26	
+27	## Adding and editing
+28	
+29	See [Action Node Structure — Adding and editing procedures](../../../../shared/action-nodes.md#adding-and-editing-procedures). The script node uses the standard input port `input` and output port `success`; no plugin-specific wiring.
+30	
+31	## Script rules
+32	
+33	1. **Top-level body — no `function main()` w
+
+… (truncated, 3416 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#2</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">6ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/references/plugins/decision/impl.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Decision Node — Implementation
+2	
+3	## Node Type
+4	
+5	`core.logic.decision`
+6	
+7	## Registry Validation
+8	
+9	```bash
+10	uip maestro flow registry get core.logic.decision --output json
+11	```
+12	
+13	Confirm: input port `input`, output ports `true` and `false`, required input `expression`. Set the node instance `typeVersion` to the `version` field from this response — do not hardcode it.
+14	
+15	## JSON Structure
+16	
+17	```json
+18	{
+19	  &quot;id&quot;: &quot;checkStatus&quot;,
+20	  &quot;type&quot;: &quot;core.logic.decision&quot;,
+21	  &quot;typeVersion&quot;: &quot;&lt;DEFINITION_VERSION&gt;&quot;,
+22	  &quot;display&quot;: { &quot;label&quot;: &quot;Check Status&quot; },
+23	  &quot;inputs&quot;: {
+24	    &quot;expression&quot;: &quot;$vars.fetchData.output.statusCode === 200&quot;
+25	  }
+26	}
+27	```
+28	
+29	## Adding / Editing
+30	
+31	For step-by-step add, delete, and wiring procedures, see [editing-operations.md](../../editing-operations.md). Use the JSON structure above for the node-specific `inputs`.
+32	
+33	## Expression Examples
+34	
+35	```javascript
+36	// Simple comparison
+37	$vars.fetchData.output.statusCode === 200
+38	
+39	// Boolean field
+40	$vars.processData.output.isValid
+41	
+42	// Compound condition
+43	$vars.httpCall.output.statusCode === 200 &amp;&amp; $vars.httpCall.output.body.count &gt; 0
+44	
+45	// S
+
+… (truncated, 735 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#3</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">26ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/shared/variables-and-expressions.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Variables and Expressions
+2	
+3	Complete reference for declaring variables, writing expressions, and managing data flow in `.flow` files.
+4	
+5	&gt; **Read this before** adding variables or writing expressions in any flow.
+6	&gt;
+7	&gt; `flow validate` catches the structural expression-reference errors:
+8	&gt;
+9	&gt; - Missing `=js:` prefix on `$vars`/`$metadata`/`$self` (MST-9107)
+10	&gt; - Invented `nodes.&lt;id&gt;.output` syntax
+11	&gt; - References to unknown variables or node IDs
+12	&gt; - Output-path walks that descend into declared primitives or schemas closed with `additionalProperties: false`
+13	&gt;
+14	&gt; Errors against **open output schemas** (HTTP response bodies, script returns, free-text agent output) and **wrong-direction reads** (e.g. reading an `out`-only variable) still slip past validate and surface only at `flow debug` or in production.
+15	
+16	---
+17	
+18	## Table of contents
+19	
+20	- [Variables Overview](#variables-overview)
+21	- [Workflow Variables (`globals`)](#workflow-variables-globals)
+22	- [Node Variables (`nodes`)](#node-variables-nodes)
+23	- [Variable Updates (`variableUpdates`)](#variable-updates-variableupdates)
+24	- [Output Mapping on End Nodes](#output-mapping-on-end-nodes)
+25	- [
+
+… (truncated, 24511 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#4</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">47.56s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-expense-approval-simulated \\\n  &amp;&amp; uip solution init \&quot;ExpenseApproval\&quot; --output json \\\n  &amp;&amp; cd \&quot;ExpenseApproval\&quot; \\\n  &amp;&amp; uip maestro flow init \&quot;ExpenseApproval\&quot; --output json \\\n  &amp;&amp; cd \&quot;ExpenseApproval\&quot; \\\n  &amp;&amp; uip maestro flow registry pull \\\n  &amp;&amp; uip maestro flow registry get core.control.end --output json \\\n  &amp;&amp; uip maestro flow registry get core.action.script … (173 more chars)&quot;,
+  &quot;description&quot;: &quot;Scaffold solution + project, pull registry, fetch OOTB node definitions&quot;,
+  &quot;timeout&quot;: 120000
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;SolutionInit&quot;,
+  &quot;Data&quot;: {
+    &quot;Status&quot;: &quot;Created successfully&quot;,
+    &quot;Path&quot;: &quot;/work/output/artifacts/skill-flow-expense-approval-simulated/ExpenseApproval/ExpenseApproval.uipx&quot;,
+    &quot;NextSteps&quot;: &quot;Read /work/output/artifacts/skill-flow-expense-approval-simulated/ExpenseApproval/AGENTS.md or /work/output/artifacts/skill-flow-expense-approval-simulated/ExpenseApproval/CLAUDE.md to understand the solution lifecycle, project types that can be used inside a solution, and related uip command references.&quot;
+  }
+}
+2026-07-23 20:47:05 INFO  [ResourceBuilder:ProjectCreateCommandHandler] Creating project [object Object]
+2026-07-23 20:47:05 INFO  [ResourceBuilder:MultiFileSolutionDefinitionProvider] Reading multi-file solution definition for solution %s /work/output/artifacts/skill-flow-expense-approval-simulated/ExpenseApproval
+2026-07-23 20:47:05 INFO  [ResourceBuilder:ProjectCreateCommandHandler] Generate artefact resources for project [object Object]
+2026-07-23 20:47:05 INFO  [ResourceBuilder:SolutionsMetadataReader] Reading metadata from %s. SolutionsMetadataReader
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FlowInit&quot;,
+  &quot;Data&quot;: {
+    &quot;Status&quot;: &quot;Created successful
+
+… (truncated, 14878 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#5</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">9ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-expense-approval-simulated/ExpenseApproval/ExpenseApproval/ExpenseApproval.flow&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	{
+2	  &quot;id&quot;: &quot;5cb7b28f-9ee8-4008-9dc1-055a1c759373&quot;,
+3	  &quot;version&quot;: &quot;1.8&quot;,
+4	  &quot;name&quot;: &quot;ExpenseApproval&quot;,
+5	  &quot;nodes&quot;: [
+6	    {
+7	      &quot;id&quot;: &quot;start&quot;,
+8	      &quot;type&quot;: &quot;core.trigger.manual&quot;,
+9	      &quot;typeVersion&quot;: &quot;1.0&quot;,
+10	      &quot;display&quot;: {
+11	        &quot;label&quot;: &quot;Manual trigger&quot;
+12	      },
+13	      &quot;inputs&quot;: {
+14	        &quot;entryPointId&quot;: &quot;ea4d1feb-046d-4990-b609-d5ba72a4388e&quot;,
+15	        &quot;isDefaultEntryPoint&quot;: true
+16	      }
+17	    }
+18	  ],
+19	  &quot;edges&quot;: [],
+20	  &quot;definitions&quot;: [
+21	    {
+22	      &quot;nodeType&quot;: &quot;core.trigger.manual&quot;,
+23	      &quot;version&quot;: &quot;1.0&quot;,
+24	      &quot;category&quot;: &quot;trigger&quot;,
+25	      &quot;description&quot;: &quot;Start workflow manually&quot;,
+26	      &quot;tags&quot;: [
+27	        &quot;trigger&quot;,
+28	        &quot;start&quot;,
+29	        &quot;manual&quot;
+30	      ],
+31	      &quot;sortOrder&quot;: 40,
+32	      &quot;display&quot;: {
+33	        &quot;label&quot;: &quot;Manual trigger&quot;,
+34	        &quot;icon&quot;: &quot;play&quot;,
+35	        &quot;shape&quot;: &quot;circle&quot;
+36	      },
+37	      &quot;handleConfiguration&quot;: [
+38	        {
+39	          &quot;position&quot;: &quot;right&quot;,
+40	          &quot;handles&quot;: [
+41	            {
+42	              &quot;id&quot;: &quot;output&quot;,
+43	              &quot;type&quot;: &quot;source&quot;,
+44	              &quot;handleType&quot;: &quot;output&quot;,
+45	              &quot;showButton&quot;: true,
+46	              &quot;constraints&quot;: 
+
+… (truncated, 1047 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#6</span>
+      <span class="tool-name">Write</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">160ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-expense-approval-simulated/ExpenseApproval/ExpenseApproval/ExpenseApproval.flow&quot;,
+  &quot;content&quot;: &quot;{\n  \&quot;id\&quot;: \&quot;5cb7b28f-9ee8-4008-9dc1-055a1c759373\&quot;,\n  \&quot;version\&quot;: \&quot;1.8\&quot;,\n  \&quot;name\&quot;: \&quot;ExpenseApproval\&quot;,\n  \&quot;nodes\&quot;: [\n    {\n      \&quot;id\&quot;: \&quot;start\&quot;,\n      \&quot;type\&quot;: \&quot;core.trigger.manual\&quot;,\n      \&quot;typeVersion\&quot;: \&quot;1.0\&quot;,\n      \&quot;display\&quot;: {\n        \&quot;label\&quot;: \&quot;Manual trigger\&quot;\n      },\n      \&quot;inputs\&quot;: {\n        \&quot;entryPointId\&quot;: \&quot;ea4d1feb-046d-4990-b609-d5ba72a4388e\&quot;,\n        \&quot;isDefaultEntryPoint\&quot;: true\n      },\n      \&quot;… (26795 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>The file /work/output/artifacts/skill-flow-expense-approval-simulated/ExpenseApproval/ExpenseApproval/ExpenseApproval.flow has been updated successfully. (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#7</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">6.46s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-expense-approval-simulated/ExpenseApproval/ExpenseApproval \\\n  &amp;&amp; uip maestro flow validate \&quot;ExpenseApproval.flow\&quot; --output json \\\n  &amp;&amp; uip maestro flow format \&quot;ExpenseApproval.flow\&quot; --output json&quot;,
+  &quot;description&quot;: &quot;Validate then format the ExpenseApproval flow&quot;,
+  &quot;timeout&quot;: 60000
+}</pre>
+    <h4>Result</h4>
+    <pre>[ManifestClient] fetchDynamicNodes ok: total=206 agent context nodes=2 external agent nodes=6 orchestrator nodes=159 IXP nodes=39
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FlowValidate&quot;,
+  &quot;Data&quot;: {
+    &quot;File&quot;: &quot;/work/output/artifacts/skill-flow-expense-approval-simulated/ExpenseApproval/ExpenseApproval/ExpenseApproval.flow&quot;,
+    &quot;Status&quot;: &quot;Valid&quot;
+  }
+}
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FlowFormat&quot;,
+  &quot;Data&quot;: {
+    &quot;File&quot;: &quot;ExpenseApproval.flow&quot;,
+    &quot;NodesTotal&quot;: 10,
+    &quot;EdgesTotal&quot;: 9,
+    &quot;NodesRepositioned&quot;: 10,
+    &quot;NodesResized&quot;: 0,
+    &quot;SubflowsTidied&quot;: 0,
+    &quot;VariableCount&quot;: 19
+  },
+  &quot;Instructions&quot;: &quot;Repositioned 10 of 10 nodes&quot;
+}</pre>
+    
+  </div>
+</details>
+
+</div>
+
+<div class="card">
+  <div class="turn-header">
+    <h3>Iteration 3</h3>
+    <div class="badges">
+      <span class="badge neutral">2 assistant turns</span>
+      <span class="badge neutral">in 3 · out 577 · cache 72950</span>
+      <span class="badge neutral">18.2s</span>
+      
+      
+      
+    </div>
+  </div>
+  <details>
+    <summary>Prompt to agent</summary>
+    <div class="details-body"><pre>Your working directory is: /work/output/artifacts/skill-flow-expense-approval-simulated
+
+[ASSISTANT] Hmm, hold on — the stuff you&#x27;re showing the manager isn&#x27;t quite right. The information they need to see is different from what you&#x27;ve got there. And I thought the first step was supposed to pull the expense details on its own, not take them all as inputs?
+
+Can you ask me what the manager actually needs to see before you go further?
+[RESULT - SUCCESS] Hmm, hold on — the stuff you&#x27;re showing the manager isn&#x27;t quite right. The information they need to see is different from what you&#x27;ve got there. And I thought the first step was supposed to pull the expense details on its own, not take them all as inputs?
+
+Can you ask me what the manager actually needs to see before you go further?</pre></div>
+  </details>
+  <details>
+    <summary>Agent response</summary>
+    <div class="details-body"><pre>[ASSISTANT] Good catch on both — let me ask before touching anything.
+
+**Question 1 — Where does the flow get the expense details?**
+
+Right now the flow takes everything (name, amount, description, receipt) as direct inputs when triggered. It sounds like you want it to *fetch* the expense from somewhere instead. Which is it?
+
+1. **Pull from an internal expense management system / API** (e.g. SAP Concur, Expensify, a custom internal REST API) — the flow receives an expense ID and fetches the rest
+2. **Pull from a database or spreadsheet** (e.g. Google Sheets, Excel, a SQL database)
+3. **Pull from an email** — expense report arrives as an email, the flow reads it
+4. **Still use inputs, but different ones** — the caller passes a subset of fields (e.g. just an expense ID or a reference number), not the full details
+5. **Something else** — describe where the expense data lives
+
+---
+
+**Question 2 — What should the manager actually see on the approval form?**
+
+The current form shows: Employee Name, Description, Amount (USD), Receipt URL, Summary, and a Comments box. What&#x27;s wrong with that? Which fields should change?
+
+1. **Different fields** — tell me exactly which fields the manager needs (e.g. cost center, category, policy flag, department)
+2. **Fewer fields** — strip it down, tell me which ones to keep
+3. **Both wrong fields and missing fields** — describe what the ideal form looks like
+4. **Something else** — free-form
+[RESULT - SUCCESS] Good catch on both — let me ask before touching anything.
+
+**Question 1 — Where does the flow get the expense details?**
+
+Right now the flow takes everything (name, amount, description, receipt) as direct inputs when triggered. It sounds like you want it to *fetch* the expense from somewhere instead. Which is it?
+
+1. **Pull from an internal expense management system / API** (e.g. SAP Concur, Expensify, a custom internal REST API) — the flow receives an expense ID and fetches the rest
+2. **Pull from a database or spreadsheet** (e.g. Google Sheets, Excel, a SQL database)
+3. **Pull from an email** — expense report arrives as an email, the flow reads it
+4. **Still use inputs, but different ones** — the caller passes a subset of fields (e.g. just an expense ID or a reference number), not the full details
+5. **Something else** — describe where the expense data lives
+
+---
+
+**Question 2 — What should the manager actually see on the approval form?**
+
+The current form shows: Employee Name, Description, Amount (USD), Receipt URL, Summary, and a Comments box. What&#x27;s wrong with that? Which fields should change?
+
+1. **Different fields** — tell me exactly which fields the manager needs (e.g. cost center, category, policy flag, department)
+2. **Fewer fields** — strip it down, tell me which ones to keep
+3. **Both wrong fields and missing fields** — describe what the ideal form looks like
+4. **Something else** — free-form</pre></div>
+  </details>
+  <h4 style="margin-top:12px">Tool Calls (0)</h4>
+  <p class="muted">No tool calls recorded for this turn.</p>
+</div>
+
+<div class="iteration-group iteration-group--recovered">
+  <h3 class="iteration-group__banner">Iteration 4 — recovered after 0 crashed attempts</h3>
+  
+<div class="card">
+  <div class="turn-header">
+    <h3>Attempt 1 of 2</h3>
+    <div class="badges">
+      <span class="badge neutral">7 assistant turns</span>
+      <span class="badge neutral">in 6 · out 10707 · cache 503872</span>
+      <span class="badge neutral">2m 20s</span>
+      
+      
+      <span class="badge success">recovered</span>
+    </div>
+  </div>
+  <details>
+    <summary>Prompt to agent</summary>
+    <div class="details-body"><pre>Your working directory is: /work/output/artifacts/skill-flow-expense-approval-simulated
+
+[ASSISTANT] Great questions — let me answer both.
+
+On #1: I don&#x27;t want to wire it up to a real system yet, just mock it out for now with a script that pretends to fetch the expense. Think of it like a placeholder. The flow should receive an expense ID, and that first script step uses the ID to &quot;look up&quot; and return the details. We can hook it to the real system later.
+
+On #2: The manager needs to see four things — the expense amount, the submitter&#x27;s name, the category (like &quot;Travel&quot; or &quot;Equipment&quot;), and the expense ID. That&#x27;s it. No description field, no receipt URL.
+[RESULT - SUCCESS] Great questions — let me answer both.
+
+On #1: I don&#x27;t want to wire it up to a real system yet, just mock it out for now with a script that pretends to fetch the expense. Think of it like a placeholder. The flow should receive an expense ID, and that first script step uses the ID to &quot;look up&quot; and return the details. We can hook it to the real system later.
+
+On #2: The manager needs to see four things — the expense amount, the submitter&#x27;s name, the category (like &quot;Travel&quot; or &quot;Equipment&quot;), and the expense ID. That&#x27;s it. No description field, no receipt URL.</pre></div>
+  </details>
+  <details>
+    <summary>Agent response</summary>
+    <div class="details-body"><pre>[ASSISTANT] Clear picture. Here&#x27;s what&#x27;s changing:
+- Replace the 4 `in` variables with a single `expenseId` input
+- Rename/rewrite `prepareExpense` → `fetchExpense` (mock script that returns name, amount, category, expenseId)
+- Strip the HITL form down to exactly those 4 read-only fields + the comments output field
+- Update all node references and edges accordingly
+
+This touches every major section of the file, so I&#x27;ll rewrite it in one shot:
+[ASSISTANT] ✅ **Validation: Valid. Format: Complete.** No warnings, 10 nodes, 9 edges.
+
+---
+
+Here&#x27;s what changed:
+
+**Flow input** is now just `expenseId` (single string) — everything else is fetched.
+
+**Fetch Expense node** (was &quot;Prepare Expense&quot;) — receives the ID, returns a mock object with `expenseId`, `employeeName`, `amount`, and `category`. The mock data is `{ &quot;Jane Smith&quot;, $325, &quot;Travel&quot; }` and there&#x27;s a `// TODO` comment marking exactly where to swap in the real API call or DB lookup when you&#x27;re ready.
+
+**Manager Review form** — stripped to exactly the four fields you specified:
+| Field | What they see |
+|---|---|
+| Expense ID | read-only, from `fetchExpense.output.expenseId` |
+| Submitted By | read-only, from `fetchExpense.output.employeeName` |
+| Category | read-only, from `fetchExpense.output.category` |
+| Amount (USD) | read-only, from `fetchExpense.output.amount` |
+| Comments | manager writes this (optional) |
+
+Everything else — the rest of the topology, the `expense-approvers` group assignment, the Approve/Reject outcomes, and the `approvalStatus`/`managerComments` outputs — is unchanged.
+
+---
+
+**What&#x27;s next?**
+
+1. **Publish to Studio Web** — open it in the browser editor
+2. **Debug the solution** — run it end-to-end against real systems (will send actual Action Center tasks)
+3. **Deploy to Orchestrator** — pack and publish directly
+4. **Something else** — e.g. &quot;swap the mock for a real API&quot;, &quot;add an email notification&quot;, &quot;leave it for now&quot;
+[RESULT - SUCCESS] ✅ **Validation: Valid. Format: Complete.** No warnings, 10 nodes, 9 edges.
+
+---
+
+Here&#x27;s what changed:
+
+**Flow input** is now just `expenseId` (single string) — everything else is fetched.
+
+**Fetch Expense node** (was &quot;Prepare Expense&quot;) — receives the ID, returns a mock object with `expenseId`, `employeeName`, `amount`, and `category`. The mock data is `{ &quot;Jane Smith&quot;, $325, &quot;Travel&quot; }` and there&#x27;s a `// TODO` comment marking exactly where to swap in the real API call or DB lookup when you&#x27;re ready.
+
+**Manager Review form** — stripped to exactly the four fields you specified:
+| Field | What they see |
+|---|---|
+| Expense ID | read-only, from `fetchExpense.output.expenseId` |
+| Submitted By | read-only, from `fetchExpense.output.employeeName` |
+| Category | read-only, from `fetchExpense.output.category` |
+| Amount (USD) | read-only, from `fetchExpense.output.amount` |
+| Comments | manager writes this (optional) |
+
+Everything else — the rest of the topology, the `expense-approvers` group assignment, the Approve/Reject outcomes, and the `approvalStatus`/`managerComments` outputs — is unchanged.
+
+---
+
+**What&#x27;s next?**
+
+1. **Publish to Studio Web** — open it in the browser editor
+2. **Debug the solution** — run it end-to-end against real systems (will send actual Action Center tasks)
+3. **Deploy to Orchestrator** — pack and publish directly
+4. **Something else** — e.g. &quot;swap the mock for a real API&quot;, &quot;add an email notification&quot;, &quot;leave it for now&quot;</pre></div>
+  </details>
+  <h4 style="margin-top:12px">Tool Calls (3)</h4>
+  
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#0</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">35ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-expense-approval-simulated/ExpenseApproval/ExpenseApproval/ExpenseApproval.flow&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Wasted call — file unchanged since your last Read. Refer to that earlier tool_result instead.</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#1</span>
+      <span class="tool-name">Write</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">104ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-expense-approval-simulated/ExpenseApproval/ExpenseApproval/ExpenseApproval.flow&quot;,
+  &quot;content&quot;: &quot;{\n  \&quot;id\&quot;: \&quot;5cb7b28f-9ee8-4008-9dc1-055a1c759373\&quot;,\n  \&quot;version\&quot;: \&quot;1.8\&quot;,\n  \&quot;name\&quot;: \&quot;ExpenseApproval\&quot;,\n  \&quot;nodes\&quot;: [\n    {\n      \&quot;id\&quot;: \&quot;start\&quot;,\n      \&quot;type\&quot;: \&quot;core.trigger.manual\&quot;,\n      \&quot;typeVersion\&quot;: \&quot;1.0\&quot;,\n      \&quot;display\&quot;: {\n        \&quot;label\&quot;: \&quot;Manual trigger\&quot;\n      },\n      \&quot;inputs\&quot;: {\n        \&quot;entryPointId\&quot;: \&quot;ea4d1feb-046d-4990-b609-d5ba72a4388e\&quot;,\n        \&quot;isDefaultEntryPoint\&quot;: true\n      },\n      \&quot;… (24910 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>The file /work/output/artifacts/skill-flow-expense-approval-simulated/ExpenseApproval/ExpenseApproval/ExpenseApproval.flow has been updated successfully. (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#2</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">9.19s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-expense-approval-simulated/ExpenseApproval/ExpenseApproval \\\n  &amp;&amp; uip maestro flow validate \&quot;ExpenseApproval.flow\&quot; --output json \\\n  &amp;&amp; uip maestro flow format \&quot;ExpenseApproval.flow\&quot; --output json&quot;,
+  &quot;description&quot;: &quot;Validate and format updated flow&quot;,
+  &quot;timeout&quot;: 60000
+}</pre>
+    <h4>Result</h4>
+    <pre>[ManifestClient] fetchDynamicNodes ok: total=206 agent context nodes=2 external agent nodes=6 orchestrator nodes=159 IXP nodes=39
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FlowValidate&quot;,
+  &quot;Data&quot;: {
+    &quot;File&quot;: &quot;/work/output/artifacts/skill-flow-expense-approval-simulated/ExpenseApproval/ExpenseApproval/ExpenseApproval.flow&quot;,
+    &quot;Status&quot;: &quot;Valid&quot;
+  }
+}
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FlowFormat&quot;,
+  &quot;Data&quot;: {
+    &quot;File&quot;: &quot;ExpenseApproval.flow&quot;,
+    &quot;NodesTotal&quot;: 10,
+    &quot;EdgesTotal&quot;: 9,
+    &quot;NodesRepositioned&quot;: 10,
+    &quot;NodesResized&quot;: 0,
+    &quot;SubflowsTidied&quot;: 0,
+    &quot;VariableCount&quot;: 19
+  },
+  &quot;Instructions&quot;: &quot;Repositioned 10 of 10 nodes&quot;
+}</pre>
+    
+  </div>
+</details>
+
+</div>
+
+<div class="card">
+  <div class="turn-header">
+    <h3>Attempt 2 of 2</h3>
+    <div class="badges">
+      <span class="badge neutral">0 assistant turns</span>
+      
+      <span class="badge neutral">0.0s</span>
+      
+      
+      <span class="badge success">recovered</span>
+    </div>
+  </div>
+  <details>
+    <summary>Prompt to agent</summary>
+    <div class="details-body"><pre>[ASSISTANT] That looks right to me! The four read-only fields are exactly what I wanted, and the Approve/Reject plus the Comments box covers what the manager needs to fill in. The project name matches, it&#x27;s a `.flow` file, and you said validation passed with no warnings.
+
+I&#x27;m satisfied — this is what I needed.
+
+
+[RESULT - SUCCESS] That looks right to me! The four read-only fields are exactly what I wanted, and the Approve/Reject plus the Comments box covers what the manager needs to fill in. The project name matches, it&#x27;s a `.flow` file, and you said validation passed with no warnings.
+
+I&#x27;m satisfied — this is what I needed.</pre></div>
+  </details>
+  <h4 style="margin-top:12px">Tool Calls (0)</h4>
+  <p class="muted">No tool calls recorded for this turn.</p>
+</div>
+
+</div>
+
+<h2>Command Telemetry</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Total</div><div class="value">22</div></div>
+    <div class="stat"><div class="label">Successful</div><div class="value">22 (100%)</div></div>
+    <div class="stat"><div class="label">Failed</div><div class="value">0</div></div>
+    <div class="stat"><div class="label">Avg / cmd</div><div class="value">2.97s</div></div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 2fr;gap:16px;margin-top:12px">
+    <div>
+      <h4>By Tool</h4>
+      <table>
+        <thead><tr><th>Tool</th><th>Count</th></tr></thead>
+        <tbody><tr><td class='mono'>Read</td><td>14</td></tr><tr><td class='mono'>Bash</td><td>4</td></tr><tr><td class='mono'>Write</td><td>3</td></tr><tr><td class='mono'>Skill</td><td>1</td></tr></tbody>
+      </table>
+    </div>
+    <div>
+      <h4>Slowest</h4>
+      <table>
+        <thead><tr><th>Tool</th><th>Duration</th><th>Parameters</th></tr></thead>
+        <tbody><tr><td class='mono'>Bash</td><td>47.56s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;cd /work/output/artifacts/skill-flow-...</td></tr><tr><td class='mono'>Bash</td><td>9.19s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;cd /work/output/artifacts/skill-flow-...</td></tr><tr><td class='mono'>Bash</td><td>6.46s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;cd /work/output/artifacts/skill-flow-...</td></tr><tr><td class='mono'>Read</td><td>452ms</td><td class='mono dim'>{&#x27;file_path&#x27;: &#x27;/home/azureuser/projects/skills/ski...</td></tr><tr><td class='mono'>Read</td><td>422ms</td><td class='mono dim'>{&#x27;file_path&#x27;: &#x27;/home/azureuser/projects/skills/ski...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+  <p><strong>Most Common Pattern:</strong> <code>Read → Read → Read</code></p><p><strong>Skill Tool Invoked:</strong> 1 time(s)</p>
+</div>
+
+<h2>Generation Metrics</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Total Latency</div><div class="value">17m 6s</div></div>
+    <div class="stat"><div class="label">Turns</div><div class="value">5</div></div>
+    <div class="stat"><div class="label">Assistant Turns</div><div class="value">45</div></div>
+    <div class="stat"><div class="label">Avg Turn Latency</div><div class="value">2m 60s</div></div>
+    
+  </div>
+</div>
+
+<h2>Token Usage</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Input (uncached)</div><div class="value">28</div></div>
+    <div class="stat"><div class="label">Output</div><div class="value">61,407</div></div>
+    <div class="stat"><div class="label">Cache Write</div><div class="value">157,847</div></div>
+    <div class="stat"><div class="label">Cache Read</div><div class="value">1,468,059</div></div>
+    <div class="stat"><div class="label">Total</div><div class="value">1,687,341</div></div>
+    <div class="stat"><div class="label">Cost</div><div class="value">$1.9535</div></div>
+  </div>
+</div>
+
+<h2>Agent Settings</h2>
+<div class="card" style="padding:0">
+  <table>
+    <tbody><tr><td class='mono dim'>Permission Mode</td><td>acceptEdits</td></tr><tr><td class='mono dim'>Allowed Tools</td><td>Skill, Bash, Read, Write, Edit, Glob, Grep</td></tr><tr><td class='mono dim'>Model</td><td>us.anthropic.claude-sonnet-4-6</td></tr><tr><td class='mono dim'>Max Turns</td><td>90</td></tr><tr><td class='mono dim'>System Prompt</td><td>You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted. </td></tr><tr><td class='mono dim'>Plugins</td><td>/home/azureuser/projects/skills</td></tr></tbody>
+  </table>
+</div>
+
+<h2>Environment</h2>
+<div class="card" style="padding:0">
+  <table>
+    <tbody><tr><td class='mono dim'>git_commit</td><td>unknown</td></tr><tr><td class='mono dim'>skills_git_commit</td><td>unknown</td></tr><tr><td class='mono dim'>cli_version</td><td>1.199.0-dev.7970</td></tr><tr><td class='mono dim'>tool_plugins</td><td>{&#x27;admin-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;agent-tool&#x27;: &#x27;1.199.0-dev.7965&#x27;, &#x27;agenthub-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;aops-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;api-workflow-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;codedagent-tool&#x27;: &#x27;1.199.0-dev.7965&#x27;, &#x27;codedapp-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;coder-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;context-grounding-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;conversational-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;data-fabric-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;docsai-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;functions-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;gov-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;insights-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;integrationservice-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;ixp-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;llm-gateway-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;llmgw-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;maestro-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;orchestrator-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;platform-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;pm-tool&#x27;: &#x27;1.199.0-dev.7969&#x27;, &#x27;rpa-legacy-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;rpa-tool&#x27;: &#x27;1.199.0-dev.20260722.4&#x27;, &#x27;solution-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;tasks-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;test-manager-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;traces-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;vertical-solutions-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;}</td></tr><tr><td class='mono dim'>coder_eval</td><td>0.8.8</td></tr><tr><td class='mono dim'>claude_code_cli</td><td>2.1.177 (Claude Code)</td></tr><tr><td class='mono dim'>uv</td><td>uv 0.11.28 (x86_64-unknown-linux-gnu)</td></tr><tr><td class='mono dim'>anthropic</td><td>0.102.0</td></tr><tr><td class='mono dim'>openai</td><td>2.47.0</td></tr><tr><td class='mono dim'>pydantic</td><td>2.12.5</td></tr><tr><td class='mono dim'>api_routing</td><td>aws_bedrock</td></tr><tr><td class='mono dim'>aws_region</td><td>us-east-2</td></tr><tr><td class='mono dim'>bedrock_model</td><td>us.anthropic.claude-sonnet-4-6</td></tr></tbody>
+  </table>
+</div>
+
+<footer>Generated by coder_eval · 2026-07-23T20:59:32</footer>
+</div>
+<script>
+function toggleTheme() {
+  document.documentElement.classList.toggle('light');
+  try {
+    const mode = document.documentElement.classList.contains('light') ? 'light' : 'dark';
+    localStorage.setItem('coder-eval-theme', mode);
+  } catch (e) { /* ignore */ }
+}
+(function() {
+  try {
+    if (localStorage.getItem('coder-eval-theme') === 'light') {
+      document.documentElement.classList.add('light');
+    }
+  } catch (e) { /* ignore */ }
+})();
+</script>
+</body>
+</html>

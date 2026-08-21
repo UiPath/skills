@@ -1,0 +1,12 @@
+{
+  "connectionId": "<REPLACE_WITH_CONNECTION_ID>",
+  "folderKey": "<REPLACE_WITH_FOLDER_KEY>",
+  "method": "POST",
+  "endpoint": "/SendEmail",
+  "bodyParameters": {
+    "To": "baishali13@gmail.com",
+    "Subject": "weather today",
+    "Body": "Weather update for today.",
+    "Importance": "high"
+  }
+}

@@ -1,0 +1,6 @@
+18:35:26 [INFO   ] [default/skill-flow-trigger-with-filter/04] orchestrator: API routing: aws_bedrock
+18:36:36 [INFO   ] [default/skill-flow-trigger-with-filter/04] evaluation.checker: Criterion 'run_command' FAILED (score=0.00, threshold=1.00): Command: python3 $TASK_DIR/check_trigger_filter.py
+18:36:36 [INFO   ] [default/skill-flow-trigger-with-filter/04] orchestrator: Success criteria: 0/1 passed, weighted score: 0.000
+18:36:36 [INFO   ] [default/skill-flow-trigger-with-filter/04] orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+18:36:36 [INFO   ] [default/skill-flow-trigger-with-filter/04] orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-trigger-with-filter
+18:36:36 [INFO   ] [default/skill-flow-trigger-with-filter/04] orchestrator: Task finished: status=FAILURE duration=72.5s score=0.000 iterations=1

@@ -1,0 +1,778 @@
+{
+  "id": "66ed3e21-325f-4603-add8-0d7420458072",
+  "version": "1.9",
+  "name": "BellevueWeather",
+  "nodes": [
+    {
+      "id": "start",
+      "type": "core.trigger.manual",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Manual trigger"
+      },
+      "inputs": {
+        "entryPointId": "1860a835-6901-49be-8d26-f5adc9c22380",
+        "isDefaultEntryPoint": true
+      }
+    },
+    {
+      "id": "getCurrentWeather1",
+      "type": "uipath.connector.custom-codereval-openmeteoapis.getcurrentweather",
+      "typeVersion": "1.0.0",
+      "display": {
+        "label": "Get Current Weather"
+      },
+      "inputs": {
+        "detail": {
+          "connector": "custom-codereval-openmeteoapis",
+          "connectionId": "21ca654f-b67b-4f97-9eb3-1f93bd3bb5cc",
+          "connectionResourceId": "21ca654f-b67b-4f97-9eb3-1f93bd3bb5cc",
+          "connectionFolderKey": "5da18ec0-7de1-4e57-aaf1-ddc8a369c199",
+          "method": "GET",
+          "endpoint": "/forecast",
+          "queryParameters": {
+            "latitude": 47.6101,
+            "longitude": -122.2015,
+            "current_weather": true,
+            "temperature_unit": "celsius",
+            "timezone": "America/Los_Angeles"
+          },
+          "uiPathActivityTypeId": "e39eee57-b09f-36fb-b131-4f4feb46b707",
+          "errorState": {
+            "issues": []
+          },
+          "configuration": "=jsonString:{\"essentialConfiguration\":{\"connectorVersion\":\"1.5.0\",\"customFieldsRequestDetails\":null,\"instanceParameters\":{\"connectorKey\":\"custom-codereval-openmeteoapis\",\"objectName\":\"V1Forecast\",\"httpMethod\":\"GETBYID\",\"activityType\":\"Curated\",\"version\":\"1.0.0\",\"supportsStreaming\":false,\"subType\":\"standard\"},\"objectName\":\"V1Forecast\",\"operation\":\"retrieve\",\"packageVersion\":\"1.0.0\",\"httpMethod\":\"GET\",\"path\":\"/forecast\",\"unifiedTypesCompatible\":true}}"
+        }
+      }
+    },
+    {
+      "id": "evaluateWeather",
+      "type": "core.action.script",
+      "typeVersion": "1.1",
+      "display": {
+        "label": "Evaluate Weather"
+      },
+      "inputs": {
+        "script": "const weather = $vars.getCurrentWeather1.output;\nconst tempC = weather && weather.current_weather && weather.current_weather.temperature;\nconst tempF = tempC != null ? (tempC * 9/5) + 32 : null;\nconst isNiceDay = tempF != null && tempF > 60;\nconst verdict = isNiceDay ? 'Nice day!' : 'Bring a jacket.';\nlet summary;\nif (tempF == null) {\n  summary = 'Weather data could not be retrieved for Bellevue, WA.';\n} else {\n  const condition = weather.current_weather.weathercode;\n  const wind = weather.current_weather.windspeed;\n  summary = `Current temperature in Bellevue, WA is ${tempF.toFixed(1)}\\u00b0F (${tempC.toFixed(1)}\\u00b0C) with wind speed ${wind} km/h. ${verdict}`;\n}\nreturn { temperatureF: tempF, isNiceDay: isNiceDay, verdict: verdict, summary: summary };"
+      },
+      "outputs": {
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails.",
+          "source": "=Error",
+          "var": "error"
+        },
+        "output": {
+          "type": "object",
+          "description": "The return value of the node.",
+          "source": "=result.response",
+          "var": "output"
+        }
+      }
+    },
+    {
+      "id": "endNode",
+      "type": "core.control.end",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "End"
+      },
+      "inputs": {},
+      "outputs": {
+        "verdict": {
+          "source": "=js:$vars.evaluateWeather.output.verdict"
+        },
+        "summary": {
+          "source": "=js:$vars.evaluateWeather.output.summary"
+        },
+        "isNiceDay": {
+          "source": "=js:$vars.evaluateWeather.output.isNiceDay"
+        }
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge_start_output_getCurrentWeather1_input",
+      "sourceNodeId": "start",
+      "sourcePort": "output",
+      "targetNodeId": "getCurrentWeather1",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge_getCurrentWeather1_output_evaluateWeather_input",
+      "sourceNodeId": "getCurrentWeather1",
+      "sourcePort": "output",
+      "targetNodeId": "evaluateWeather",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge_evaluateWeather_success_endNode_input",
+      "sourceNodeId": "evaluateWeather",
+      "sourcePort": "success",
+      "targetNodeId": "endNode",
+      "targetPort": "input"
+    }
+  ],
+  "definitions": [
+    {
+      "nodeType": "core.trigger.manual",
+      "version": "1.0",
+      "category": "trigger",
+      "description": "Start the process manually",
+      "tags": [
+        "trigger",
+        "start",
+        "manual"
+      ],
+      "sortOrder": 80,
+      "display": {
+        "label": "Manual trigger",
+        "icon": "play",
+        "shape": "circle"
+      },
+      "handleConfiguration": [
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "output",
+              "type": "source",
+              "handleType": "output",
+              "showButton": true,
+              "constraints": {
+                "forbiddenTargetCategories": [
+                  "trigger"
+                ]
+              }
+            }
+          ],
+          "visible": true
+        }
+      ],
+      "model": {
+        "type": "bpmn:StartEvent",
+        "entryPointId": true
+      },
+      "outputDefinition": {
+        "output": {
+          "type": "object",
+          "description": "Data passed when manually triggering the process.",
+          "source": "null",
+          "var": "output"
+        }
+      },
+      "toolbarExtensions": {
+        "design": {
+          "actions": [
+            {
+              "id": "change-trigger-type",
+              "icon": "square-mouse-pointer",
+              "label": "Change trigger type"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "nodeType": "uipath.connector.custom-codereval-openmeteoapis.getcurrentweather",
+      "version": "1.0.0",
+      "category": "connector.432191",
+      "tags": [
+        "connector",
+        "activity"
+      ],
+      "sortOrder": 520,
+      "supportsErrorHandling": true,
+      "description": "Get current weather",
+      "display": {
+        "label": "GetCurrentWeather",
+        "description": "Get current weather",
+        "icon": "https://alpha.uipath.com/311c6049-4966-4ef2-a6f3-8ceccaf38d54/studio_/typecache/icons/155260d5131f1d2fdd03281026db8d067a1c7fa4d6db8c1b47f49acf04c7df8f.svg",
+        "sourceDisplayName": "Open-Meteo APIs"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input",
+              "label": ""
+            }
+          ]
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "output",
+              "type": "source",
+              "handleType": "output",
+              "label": ""
+            },
+            {
+              "id": "error",
+              "label": "Error",
+              "type": "source",
+              "handleType": "output",
+              "visible": "{inputs.errorHandlingEnabled}",
+              "constraints": {
+                "maxConnections": 1
+              }
+            }
+          ]
+        }
+      ],
+      "model": {
+        "type": "bpmn:SendTask",
+        "serviceType": "Intsvc.ActivityExecution",
+        "bindings": {
+          "resource": "connection",
+          "resourceKey": "",
+          "values": [
+            {
+              "name": "custom-codereval-openmeteoapis connection",
+              "propertyAttribute": "ConnectionId"
+            },
+            {
+              "name": "FolderKey",
+              "propertyAttribute": "FolderKey"
+            }
+          ]
+        },
+        "context": [
+          {
+            "name": "connectorKey",
+            "type": "string",
+            "value": "custom-codereval-openmeteoapis"
+          },
+          {
+            "name": "operation",
+            "type": "string"
+          },
+          {
+            "name": "objectName",
+            "value": "V1Forecast",
+            "type": "string"
+          },
+          {
+            "name": "method",
+            "type": "string",
+            "value": "GETBYID"
+          },
+          {
+            "name": "connection",
+            "type": "string",
+            "value": "<bindings.custom-codereval-openmeteoapis connection>"
+          },
+          {
+            "name": "folderKey",
+            "type": "string",
+            "value": "<bindings.FolderKey>"
+          },
+          {
+            "name": "activityConfigurationVersion",
+            "type": "string",
+            "value": "v1"
+          },
+          {
+            "name": "metadata",
+            "body": {
+              "telemetryData": {
+                "connectorKey": "custom-codereval-openmeteoapis",
+                "connectorName": "GetCurrentWeather"
+              },
+              "inputMetadata": {},
+              "errorState": {
+                "hasError": true
+              }
+            },
+            "type": "json"
+          }
+        ]
+      },
+      "form": {
+        "id": "connector-properties",
+        "title": "Connector configuration",
+        "sections": [
+          {
+            "id": "connector",
+            "title": "Connector",
+            "collapsible": true,
+            "defaultExpanded": true,
+            "fields": [
+              {
+                "label": "",
+                "name": "inputs.detail",
+                "type": "custom",
+                "component": "dap-config",
+                "componentProps": {
+                  "connectorDetail": {
+                    "isAppActivity": false,
+                    "packageId": "432191",
+                    "svgIconUrl": "icons/155260d5131f1d2fdd03281026db8d067a1c7fa4d6db8c1b47f49acf04c7df8f.svg",
+                    "externalIconUrl": "https://alpha.uipath.com/codereval/defaulttenant/elements_/v3/element/elements/custom-codereval-openmeteoapis/image",
+                    "displayName": "GetCurrentWeather",
+                    "assemblyQualifiedName": "UiPath.IntegrationService.Activities.Runtime.Activities.ConnectorActivity, UiPath.IntegrationService.Activities.Runtime, Version=1.27.0.0, Culture=neutral, PublicKeyToken=null",
+                    "description": "Get current weather",
+                    "category": "",
+                    "activityColor": "#E56D5C",
+                    "configuration": "{\"connectorKey\":\"custom-codereval-openmeteoapis\",\"objectName\":\"V1Forecast\",\"httpMethod\":\"GETBYID\",\"activityType\":\"Curated\",\"version\":\"1.0.0\",\"supportsStreaming\":false,\"subType\":\"standard\"}",
+                    "uiPathActivityTypeId": "e39eee57-b09f-36fb-b131-4f4feb46b707",
+                    "isExperimental": false,
+                    "helpUrlTemplate": "https://docs.uipath.com/{0}/activities/other/latest/integration-service/custom-codereval-openmeteoapis-Get-Current-Weather",
+                    "isEnabled": true,
+                    "targetPlatform": "CrossPlatform",
+                    "isAdvanced": false,
+                    "isRestricted": false,
+                    "hasWpfOnlyDesigner": false,
+                    "tags": [
+                      ""
+                    ]
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "inputDefinition": {},
+      "inputDefaults": {},
+      "outputDefinition": {
+        "output": {
+          "type": "object",
+          "description": "The return value of the connector.",
+          "source": "=result.response",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails",
+          "source": "=Error",
+          "var": "error",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "required": [
+              "code",
+              "message",
+              "detail",
+              "category",
+              "status"
+            ],
+            "properties": {
+              "code": {
+                "type": "string",
+                "description": "Error code as a string"
+              },
+              "message": {
+                "type": "string",
+                "description": "High-level error message"
+              },
+              "detail": {
+                "type": "string",
+                "description": "Detailed error description"
+              },
+              "category": {
+                "type": "string",
+                "description": "Error category"
+              },
+              "status": {
+                "type": "integer",
+                "description": "HTTP status code"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "debug": {
+        "runtime": "bpmnEngine"
+      }
+    },
+    {
+      "nodeType": "core.action.script",
+      "version": "1.1",
+      "category": "data-operations",
+      "description": "Run custom JavaScript code",
+      "tags": [
+        "code",
+        "javascript",
+        "python"
+      ],
+      "sortOrder": 70,
+      "supportsErrorHandling": true,
+      "display": {
+        "label": "Script",
+        "icon": "code"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "success",
+              "type": "source",
+              "handleType": "output"
+            },
+            {
+              "id": "error",
+              "label": "Error",
+              "type": "source",
+              "handleType": "output",
+              "visible": "{inputs.errorHandlingEnabled}",
+              "constraints": {
+                "maxConnections": 1
+              }
+            }
+          ]
+        }
+      ],
+      "debug": {
+        "runtime": "clientScript"
+      },
+      "model": {
+        "type": "bpmn:ScriptTask"
+      },
+      "inputDefinition": {
+        "type": "object",
+        "properties": {
+          "script": {
+            "type": "string",
+            "minLength": 1,
+            "errorMessage": "Add a script function",
+            "validationSeverity": "warning"
+          }
+        },
+        "required": [
+          "script"
+        ]
+      },
+      "inputDefaults": {
+        "script": ""
+      },
+      "outputDefinition": {
+        "output": {
+          "type": "any",
+          "description": "The return value of the script",
+          "source": "=result.response",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails",
+          "source": "=Error",
+          "var": "error",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "required": [
+              "code",
+              "message",
+              "detail",
+              "category",
+              "status"
+            ],
+            "properties": {
+              "code": {
+                "type": "string",
+                "description": "Error code as a string"
+              },
+              "message": {
+                "type": "string",
+                "description": "High-level error message"
+              },
+              "detail": {
+                "type": "string",
+                "description": "Detailed error description"
+              },
+              "category": {
+                "type": "string",
+                "description": "Error category"
+              },
+              "status": {
+                "type": "integer",
+                "description": "HTTP status code"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "form": {
+        "id": "script-properties",
+        "title": "Script configuration",
+        "sections": [
+          {
+            "id": "script",
+            "title": "Script",
+            "collapsible": true,
+            "defaultExpanded": true,
+            "fields": [
+              {
+                "name": "inputs.script",
+                "type": "custom",
+                "component": "script-editor",
+                "componentProps": {
+                  "language": "javascript",
+                  "returnType": "any",
+                  "validationMode": "script",
+                  "minHeight": 200,
+                  "placeholder": " // Return any value\nreturn {\n  message: \"Web request response\",\n  data: $vars.httpRequest1.output\n};"
+                },
+                "label": "Code",
+                "description": "JavaScript expression that returns a result"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "nodeType": "core.control.end",
+      "version": "1.0",
+      "category": "control-flow",
+      "description": "Mark the end of a process path",
+      "tags": [
+        "control-flow",
+        "end",
+        "finish",
+        "complete"
+      ],
+      "sortOrder": 65,
+      "display": {
+        "label": "End",
+        "icon": "circle-check",
+        "shape": "circle"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        }
+      ],
+      "model": {
+        "type": "bpmn:EndEvent"
+      },
+      "runtimeConstraints": {
+        "exclude": [
+          "api-function"
+        ]
+      }
+    }
+  ],
+  "runtime": "maestro",
+  "bindings": [
+    {
+      "id": "b30nUJkU0",
+      "name": "custom-codereval-openmeteoapis connection",
+      "type": "string",
+      "resource": "connection",
+      "resourceKey": "21ca654f-b67b-4f97-9eb3-1f93bd3bb5cc",
+      "propertyAttribute": "ConnectionId",
+      "default": "21ca654f-b67b-4f97-9eb3-1f93bd3bb5cc"
+    },
+    {
+      "id": "bECaajRks",
+      "name": "FolderKey",
+      "type": "string",
+      "resource": "connection",
+      "resourceKey": "21ca654f-b67b-4f97-9eb3-1f93bd3bb5cc",
+      "propertyAttribute": "FolderKey",
+      "default": "5da18ec0-7de1-4e57-aaf1-ddc8a369c199"
+    }
+  ],
+  "variables": {
+    "nodes": [
+      {
+        "id": "start.output",
+        "type": "object",
+        "description": "Data passed when manually triggering the process.",
+        "binding": {
+          "nodeId": "start",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "getCurrentWeather1.output",
+        "type": "object",
+        "description": "The return value of the connector.",
+        "binding": {
+          "nodeId": "getCurrentWeather1",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "getCurrentWeather1.error",
+        "type": "object",
+        "description": "Error information if the node fails",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "required": [
+            "code",
+            "message",
+            "detail",
+            "category",
+            "status"
+          ],
+          "properties": {
+            "code": {
+              "type": "string",
+              "description": "Error code as a string"
+            },
+            "message": {
+              "type": "string",
+              "description": "High-level error message"
+            },
+            "detail": {
+              "type": "string",
+              "description": "Detailed error description"
+            },
+            "category": {
+              "type": "string",
+              "description": "Error category"
+            },
+            "status": {
+              "type": "integer",
+              "description": "HTTP status code"
+            }
+          },
+          "additionalProperties": false
+        },
+        "binding": {
+          "nodeId": "getCurrentWeather1",
+          "outputId": "error"
+        }
+      },
+      {
+        "id": "evaluateWeather.error",
+        "type": "object",
+        "description": "Error information if the node fails.",
+        "binding": {
+          "nodeId": "evaluateWeather",
+          "outputId": "error"
+        }
+      },
+      {
+        "id": "evaluateWeather.output",
+        "type": "object",
+        "description": "The return value of the node.",
+        "binding": {
+          "nodeId": "evaluateWeather",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "endNode.verdict",
+        "type": "string",
+        "binding": {
+          "nodeId": "endNode",
+          "outputId": "verdict"
+        }
+      },
+      {
+        "id": "endNode.summary",
+        "type": "string",
+        "binding": {
+          "nodeId": "endNode",
+          "outputId": "summary"
+        }
+      },
+      {
+        "id": "endNode.isNiceDay",
+        "type": "string",
+        "binding": {
+          "nodeId": "endNode",
+          "outputId": "isNiceDay"
+        }
+      }
+    ],
+    "globals": [
+      {
+        "id": "verdict",
+        "direction": "out",
+        "type": "string",
+        "description": "Nice day or bring a jacket"
+      },
+      {
+        "id": "summary",
+        "direction": "out",
+        "type": "string",
+        "description": "Short written weather summary"
+      },
+      {
+        "id": "isNiceDay",
+        "direction": "out",
+        "type": "boolean",
+        "description": "True if temperature is strictly above 60F"
+      }
+    ]
+  },
+  "layout": {
+    "nodes": {
+      "start": {
+        "position": {
+          "x": -192,
+          "y": 0
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "getCurrentWeather1": {
+        "position": {
+          "x": 0,
+          "y": 0
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "evaluateWeather": {
+        "position": {
+          "x": 192,
+          "y": 0
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "endNode": {
+        "position": {
+          "x": 384,
+          "y": 0
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      }
+    }
+  }
+}

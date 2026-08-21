@@ -1,0 +1,5 @@
+20:58:00 [INFO   ] [default/skill-flow-hitl-smoke-completed-port/00] orchestrator: API routing: aws_bedrock
+21:05:55 [INFO   ] [default/skill-flow-hitl-smoke-completed-port/00] orchestrator: Success criteria: 3/3 passed, weighted score: 1.000
+21:05:55 [INFO   ] [default/skill-flow-hitl-smoke-completed-port/00] orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+21:05:55 [INFO   ] [default/skill-flow-hitl-smoke-completed-port/00] orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-hitl-smoke-completed-port
+21:05:55 [INFO   ] [default/skill-flow-hitl-smoke-completed-port/00] orchestrator: Task finished: status=SUCCESS duration=488.3s score=1.000 iterations=1

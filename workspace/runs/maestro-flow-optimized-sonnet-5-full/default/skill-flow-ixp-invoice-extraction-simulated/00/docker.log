@@ -1,0 +1,13 @@
+15:34:25 [INFO   ] [default/skill-flow-ixp-invoice-extraction-simulated/00] orchestrator: API routing: aws_bedrock
+15:34:26 [INFO   ] [default/skill-flow-ixp-invoice-extraction-simulated/00] simulation.user_simulator: User simulator: Claude Code agent backend (route=BedrockRoute, model=us.anthropic.claude-sonnet-4-6)
+15:34:38 [INFO   ] [default/skill-flow-ixp-invoice-extraction-simulated/00] orchestrator: Simulation turn 1/8
+15:37:31 [INFO   ] [default/skill-flow-ixp-invoice-extraction-simulated/00] orchestrator: Simulation turn 2/8
+15:57:31 [WARNING] agents.watchdog: Turn timeout (1200s) fired after 1200.0s — hard-killing subprocess
+15:57:31 [WARNING] agents.claude_code_agent: Hard-killing Claude CLI subprocess (pid=412)
+15:57:31 [WARNING] [default/skill-flow-ixp-invoice-extraction-simulated/00] agents.claude_code_agent: [coder] Command Bash:toolu_bdrk_01Gs8KksdAoU7wQpcHvzH4QM completed without tool result. Status set to 'unknown'. This may indicate agent interruption or SDK issue.
+15:57:31 [WARNING] [default/skill-flow-ixp-invoice-extraction-simulated/00] agents.claude_code_agent: [coder] Turn completed with 1 command(s) in 'unknown' status. Messages received: [AssistantMessage=75, StreamEvent=1600, SystemMessage=36, TaskNotificationMessage=1, TaskStartedMessage=2, UserMessage=40]. This may indicate an SDK message type mismatch or agent interruption.
+15:57:31 [ERROR  ] [default/skill-flow-ixp-invoice-extraction-simulated/00] errors.executor: [skill-flow-ixp-invoice-extraction-simulated] Agent communication (sim turn 2) failed (non-retryable): agent_timeout - Agent turn timed out after 1200s (iteration 2)
+15:57:31 [ERROR  ] [default/skill-flow-ixp-invoice-extraction-simulated/00] orchestrator: Evaluation failed: Agent turn timed out after 1200s (iteration 2)
+15:57:31 [INFO   ] [default/skill-flow-ixp-invoice-extraction-simulated/00] orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+15:57:31 [INFO   ] [default/skill-flow-ixp-invoice-extraction-simulated/00] orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-ixp-invoice-extraction-simulated
+15:57:31 [INFO   ] [default/skill-flow-ixp-invoice-extraction-simulated/00] orchestrator: Task finished: status=ERROR duration=1396.9s score=0.000 iterations=2

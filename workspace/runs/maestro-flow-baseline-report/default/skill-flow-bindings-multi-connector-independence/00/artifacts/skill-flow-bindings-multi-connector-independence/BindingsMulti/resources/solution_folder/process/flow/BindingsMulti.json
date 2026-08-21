@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "BindingsMulti",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "e17f71d4-2df8-40e4-88ee-1e53871e9964",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "BindingsMulti"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Flow",
+      "name": "BindingsMulti",
+      "package": {
+        "key": "8d4e05a6-d5cf-4574-bd3e-5053bf2e87fb"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "bea8bdef-24aa-4c76-b878-251bd9c4f91c",
+    "files": []
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "BellevueChannelDescription",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "c7a9c51a-a5ad-4aec-8f04-8f01533ec862",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "BellevueChannelDescription"
+    },
+    "locks": [],
+    "key": "e0a7f8b5-dc74-4b0e-b153-c9a6cf0f5902",
+    "files": []
+  }
+}

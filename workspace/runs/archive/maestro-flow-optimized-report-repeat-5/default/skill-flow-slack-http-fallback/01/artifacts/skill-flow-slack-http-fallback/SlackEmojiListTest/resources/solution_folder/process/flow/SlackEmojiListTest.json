@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "SlackEmojiListTest",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "823a7ec6-6bba-4b63-8e2a-e7fdf5713af8",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "SlackEmojiListTest"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Flow",
+      "name": "SlackEmojiListTest",
+      "package": {
+        "key": "8a0dcad8-9d25-49fa-9c8a-d324b32d5420"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "c812b380-0d1e-47b2-85b8-a52d89fb4aa7",
+    "files": []
+  }
+}

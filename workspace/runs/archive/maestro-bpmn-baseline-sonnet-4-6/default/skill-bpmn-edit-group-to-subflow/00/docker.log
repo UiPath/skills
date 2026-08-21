@@ -1,0 +1,6 @@
+00:31:06 [INFO   ] [default/skill-bpmn-edit-group-to-subflow/00] orchestrator: API routing: aws_bedrock
+00:36:28 [INFO   ] [default/skill-bpmn-edit-group-to-subflow/00] evaluation.checker: Criterion 'run_command' FAILED (score=0.00, threshold=1.00): Command: python3 $TASK_DIR/check_group_to_subflow.py
+00:36:28 [INFO   ] [default/skill-bpmn-edit-group-to-subflow/00] orchestrator: Success criteria: 2/3 passed, weighted score: 0.333
+00:36:28 [INFO   ] [default/skill-bpmn-edit-group-to-subflow/00] orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+00:36:28 [INFO   ] [default/skill-bpmn-edit-group-to-subflow/00] orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-bpmn-edit-group-to-subflow
+00:36:28 [INFO   ] [default/skill-bpmn-edit-group-to-subflow/00] orchestrator: Task finished: status=FAILURE duration=332.4s score=0.333 iterations=1

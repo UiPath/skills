@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "SlackWeatherPipeline",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "3a79b328-1113-4cee-9214-062abd2f9615",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "SlackWeatherPipeline"
+    },
+    "locks": [],
+    "key": "0e94edd4-8af2-469b-aca4-cde29f2b5376",
+    "files": []
+  }
+}

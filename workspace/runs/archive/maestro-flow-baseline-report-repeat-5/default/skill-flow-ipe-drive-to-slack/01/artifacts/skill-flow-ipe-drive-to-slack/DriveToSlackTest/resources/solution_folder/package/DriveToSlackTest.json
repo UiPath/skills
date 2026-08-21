@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "DriveToSlackTest",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "c4659e72-f069-4137-9287-78a7b560d721",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "DriveToSlackTest"
+    },
+    "locks": [],
+    "key": "9c41b5fb-a084-4539-aa84-9357a02a3aed",
+    "files": []
+  }
+}

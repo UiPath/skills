@@ -1,0 +1,40 @@
+task_id: skill-flow-slack-weather-pipeline
+description: >
+  Multi-step pipeline: read Slack channel description, extract city with a script,
+  fetch weather for that city via HTTP, decide warm/cold. Exercises chaining
+  Slack connector → Script → HTTP → Decision → End with data flowing between nodes.
+tags: [uipath-maestro-flow, e2e, lifecycle:generate, shape:multi-node, node:decision, connector, feature:http]
+
+run_limits:
+  expected_turns: 51
+  task_timeout: 2400
+  turn_timeout: 1200
+
+initial_prompt: |
+  Create a flow called "SlackWeatherPipeline". Read the #office-bellevue Slack channel description — it holds the office's full US mailing address (street, suite/unit, city, state, ZIP) — identify the city (the locality, not the street or suite line). Then fetch the current weather for that city from open-meteo. If it's above 60F the flow must output the text in variable `weatherVerdict` 'warm office today', otherwise 'cold office today'.
+
+  All connections for this task live in Orchestrator folder `Shared/uipath-maestro-flow`.
+
+  Validate the flow, then run `uip maestro flow debug` and iterate until it completes without incidents.
+  Do NOT ask for approval, confirmation, or feedback. Do NOT pause between planning and implementation. Build the complete flow end-to-end in a single pass.
+
+success_criteria:
+  - type: run_command
+    description: "uip maestro flow validate passes"
+    command: "python3 $EXPERIMENT_TASKS_PATH/uipath-maestro-flow/_shared/validate_flow.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Flow debug runs end-to-end and the named out variable weatherVerdict holds exactly 'warm office today' or 'cold office today': Slack + HTTP + decision all execute"
+    command: "python3 $TASK_DIR/check_slack_weather_pipeline.py"
+    timeout: 300
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+post_run:
+  - command: "python3 $EXPERIMENT_TASKS_PATH/uipath-maestro-flow/_shared/cleanup_solutions.py"
+    timeout: 120

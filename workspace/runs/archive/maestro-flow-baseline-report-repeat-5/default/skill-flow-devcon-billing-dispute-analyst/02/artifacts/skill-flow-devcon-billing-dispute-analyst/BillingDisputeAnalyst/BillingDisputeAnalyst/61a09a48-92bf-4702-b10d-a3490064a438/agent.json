@@ -1,0 +1,83 @@
+{
+  "version": "1.1.0",
+  "settings": {
+    "model": "gpt-5.4",
+    "maxTokens": 128000,
+    "temperature": 0,
+    "engine": "basic-v2",
+    "maxIterations": 5,
+    "mode": "standard"
+  },
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "start__output__disputeDescription": {
+        "type": "string",
+        "description": "Description of the billing dispute submitted by the customer"
+      },
+      "start__output__invoiceNumber": {
+        "type": "string",
+        "description": "Invoice number related to the billing dispute"
+      }
+    }
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "determination": {
+        "type": "string",
+        "description": "The determination of the billing dispute: approved, rejected, or partial"
+      },
+      "rationale": {
+        "type": "string",
+        "description": "Clear explanation of the determination referencing applicable SOP policies"
+      }
+    },
+    "required": [
+      "determination",
+      "rationale"
+    ]
+  },
+  "metadata": {
+    "storageVersion": "50.0.0",
+    "isConversational": false,
+    "showProjectCreationExperience": false
+  },
+  "type": "lowCode",
+  "guardrails": [],
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a Billing Dispute Analyst. Your role is to analyze billing disputes and determine their validity based on standard operating procedures and billing policies retrieved from the knowledge base.\n\nWhen analyzing a dispute:\n1. Review the invoice number and dispute description provided\n2. Query the context knowledge base to retrieve relevant SOPs and billing policies\n3. Apply the relevant policies to the dispute scenario\n4. Arrive at a clear determination: \"approved\", \"rejected\", or \"partial\"\n5. Provide a concise rationale citing the relevant policies\n\nRespond with a JSON object containing exactly two fields:\n- \"determination\": one of \"approved\", \"rejected\", or \"partial\"\n- \"rationale\": a clear explanation referencing specific SOP policies\n\nDo not ask for additional information. Stop after providing your determination.",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "You are a Billing Dispute Analyst. Your role is to analyze billing disputes and determine their validity based on standard operating procedures and billing policies retrieved from the knowledge base.\n\nWhen analyzing a dispute:\n1. Review the invoice number and dispute description provided\n2. Query the context knowledge base to retrieve relevant SOPs and billing policies\n3. Apply the relevant policies to the dispute scenario\n4. Arrive at a clear determination: \"approved\", \"rejected\", or \"partial\"\n5. Provide a concise rationale citing the relevant policies\n\nRespond with a JSON object containing exactly two fields:\n- \"determination\": one of \"approved\", \"rejected\", or \"partial\"\n- \"rationale\": a clear explanation referencing specific SOP policies\n\nDo not ask for additional information. Stop after providing your determination."
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "Please analyze the following billing dispute and provide your determination.\n\nInvoice Number: {{input.start__output__invoiceNumber}}\n\nDispute Description:\n{{input.start__output__disputeDescription}}",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "Please analyze the following billing dispute and provide your determination.\n\nInvoice Number: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__invoiceNumber"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\nDispute Description:\n"
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__disputeDescription"
+        }
+      ]
+    }
+  ],
+  "projectId": "61a09a48-92bf-4702-b10d-a3490064a438"
+}

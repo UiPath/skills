@@ -1,0 +1,119 @@
+{
+  "version": "1.1.0",
+  "settings": {
+    "model": "claude-opus-4-7",
+    "maxTokens": 128000,
+    "temperature": 0.3,
+    "engine": "basic-v2",
+    "maxIterations": 3,
+    "mode": "standard"
+  },
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "normalizeData__output__normalizedInvoiceNumber": {
+        "type": "string",
+        "description": "The normalized invoice number"
+      },
+      "disputeAnalyst__output__creditAmount": {
+        "type": "number",
+        "description": "The approved credit amount"
+      },
+      "disputeAnalyst__output__determination": {
+        "type": "string",
+        "description": "The analyst's determination"
+      },
+      "disputeAnalyst__output__rationale": {
+        "type": "string",
+        "description": "The analyst's rationale"
+      },
+      "start__output__webhookPayload": {
+        "type": "object",
+        "description": "Original webhook payload with customer and invoice details"
+      }
+    }
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "subject": {
+        "type": "string",
+        "description": "Email subject line"
+      },
+      "body": {
+        "type": "string",
+        "description": "Email body text"
+      }
+    },
+    "required": [
+      "subject",
+      "body"
+    ]
+  },
+  "metadata": {
+    "storageVersion": "50.0.0",
+    "isConversational": false,
+    "showProjectCreationExperience": false
+  },
+  "type": "lowCode",
+  "guardrails": [],
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a professional customer communications specialist. Draft clear, empathetic, and professional resolution emails for billing disputes. The email must:\n1. Cite the specific invoice number.\n2. State the approved credit amount clearly.\n3. Explain what was found and what action was taken.\n4. Be professional yet warm in tone.\n5. Include appropriate closing and next steps.\n\nOutput ONLY a JSON object with: subject (string), body (string).",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "You are a professional customer communications specialist. Draft clear, empathetic, and professional resolution emails for billing disputes. The email must:\n1. Cite the specific invoice number.\n2. State the approved credit amount clearly.\n3. Explain what was found and what action was taken.\n4. Be professional yet warm in tone.\n5. Include appropriate closing and next steps.\n\nOutput ONLY a JSON object with: subject (string), body (string)."
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "Draft a resolution email for the following billing dispute:\n\nInvoice Number: {{input.normalizeData__output__normalizedInvoiceNumber}}\nApproved Credit Amount: ${{input.disputeAnalyst__output__creditAmount}}\nDetermination: {{input.disputeAnalyst__output__determination}}\nRationale: {{input.disputeAnalyst__output__rationale}}\nCustomer Info: {{input.start__output__webhookPayload}}",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "Draft a resolution email for the following billing dispute:\n\nInvoice Number: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.normalizeData__output__normalizedInvoiceNumber"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\nApproved Credit Amount: $"
+        },
+        {
+          "type": "variable",
+          "rawString": "input.disputeAnalyst__output__creditAmount"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\nDetermination: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.disputeAnalyst__output__determination"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\nRationale: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.disputeAnalyst__output__rationale"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\nCustomer Info: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__webhookPayload"
+        }
+      ]
+    }
+  ],
+  "projectId": "5a7e8ff9-0d19-44c0-9609-74abd2fc8fa9"
+}

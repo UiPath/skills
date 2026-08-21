@@ -1,0 +1,99 @@
+{
+  "version": "1.1.0",
+  "settings": {
+    "model": "anthropic.claude-sonnet-4-6",
+    "maxTokens": 64000,
+    "temperature": 0,
+    "engine": "basic-v2",
+    "maxIterations": 3,
+    "mode": "standard"
+  },
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "start__output__customerName": {
+        "type": "string",
+        "description": "Name of the customer filing the billing dispute"
+      },
+      "start__output__invoiceNumber": {
+        "type": "string",
+        "description": "Invoice number in dispute"
+      },
+      "start__output__creditAmount": {
+        "type": "number",
+        "description": "Approved credit amount to apply"
+      }
+    }
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "subject": {
+        "type": "string",
+        "description": "Email subject line"
+      },
+      "body": {
+        "type": "string",
+        "description": "Email body text"
+      }
+    },
+    "required": [
+      "subject",
+      "body"
+    ]
+  },
+  "metadata": {
+    "storageVersion": "50.0.0",
+    "isConversational": false,
+    "showProjectCreationExperience": false
+  },
+  "type": "lowCode",
+  "guardrails": [],
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a customer service specialist who drafts professional billing-dispute resolution emails. When given a customer name, invoice number, and approved credit amount, you must produce exactly two fields: a concise email subject line and a polite, professional email body. The body must explicitly state the invoice number and the approved credit amount. Respond ONLY with valid JSON matching this schema: {\"subject\": \"<subject text>\", \"body\": \"<body text>\"}. Do not include any other text outside the JSON.",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "You are a customer service specialist who drafts professional billing-dispute resolution emails. When given a customer name, invoice number, and approved credit amount, you must produce exactly two fields: a concise email subject line and a polite, professional email body. The body must explicitly state the invoice number and the approved credit amount. Respond ONLY with valid JSON matching this schema: {\"subject\": \"<subject text>\", \"body\": \"<body text>\"}. Do not include any other text outside the JSON."
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "Customer Name: {{input.start__output__customerName}}\nInvoice Number: {{input.start__output__invoiceNumber}}\nApproved Credit Amount: {{input.start__output__creditAmount}}\n\nPlease draft the billing resolution email.",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "Customer Name: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__customerName"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\nInvoice Number: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__invoiceNumber"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\nApproved Credit Amount: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__creditAmount"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\nPlease draft the billing resolution email."
+        }
+      ]
+    }
+  ],
+  "projectId": "21f31da4-2e52-4807-ba25-6074fb95d3d2"
+}

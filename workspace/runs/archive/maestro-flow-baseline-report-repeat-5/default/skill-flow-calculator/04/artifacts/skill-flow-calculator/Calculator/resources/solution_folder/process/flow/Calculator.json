@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "Calculator",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "9dda168a-fc98-4f52-8949-15a6a4445be8",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "Calculator"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Flow",
+      "name": "Calculator",
+      "package": {
+        "key": "a73e68ea-cc67-4ea5-92c0-2d9421cdc126"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "4a2fcbb7-0fbf-4d58-982d-1a223b9a704f",
+    "files": []
+  }
+}

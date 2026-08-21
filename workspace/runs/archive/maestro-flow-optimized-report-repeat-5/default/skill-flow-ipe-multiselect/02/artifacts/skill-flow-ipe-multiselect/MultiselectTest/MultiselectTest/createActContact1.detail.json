@@ -1,0 +1,12 @@
+{
+  "connectionId": "<ACT365_CONNECTION_UUID>",
+  "folderKey": "<ORCHESTRATOR_FOLDER_KEY>",
+  "method": "POST",
+  "endpoint": "/CuratedContacts",
+  "bodyParameters": {
+    "firstName": "Test",
+    "lastName": "Contact",
+    "emailAddress": "test.contact@example.com",
+    "groups": ["Alpha Group", "Beta Group"]
+  }
+}

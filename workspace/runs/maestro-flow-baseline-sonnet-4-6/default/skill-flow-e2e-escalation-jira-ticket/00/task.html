@@ -1,0 +1,2113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>coder_eval · skill-flow-e2e-escalation-jira-ticket · default</title>
+<style>
+:root {
+  --bg-page: #0f1419;
+  --bg-card: #1a2129;
+  --bg-card-2: #232d38;
+  --bg-code: #0b0f14;
+  --fg: #e6edf3;
+  --fg-muted: #8b98a5;
+  --fg-dim: #6e7681;
+  --border: #30363d;
+  --accent: #58a6ff;
+  --score-high: #22c55e;
+  --score-mid: #f59e0b;
+  --score-low: #ef4444;
+  --status-success: #22c55e;
+  --status-failure: #f59e0b;
+  --status-error: #ef4444;
+  --status-neutral: #6e7681;
+  --shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+.light {
+  --bg-page: #ffffff;
+  --bg-card: #f6f8fa;
+  --bg-card-2: #eaeef2;
+  --bg-code: #f6f8fa;
+  --fg: #1f2328;
+  --fg-muted: #636c76;
+  --fg-dim: #8b949e;
+  --border: #d0d7de;
+  --accent: #0969da;
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial,
+               sans-serif;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--fg);
+  background: var(--bg-page);
+}
+.container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+h1, h2, h3, h4 { margin: 0 0 12px 0; line-height: 1.25; }
+h1 { font-size: 22px; font-weight: 600; }
+h2 { font-size: 18px; font-weight: 600; margin-top: 28px;
+     padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+h3 { font-size: 15px; font-weight: 600; color: var(--fg-muted); }
+h4 { font-size: 13px; font-weight: 600; color: var(--fg-muted); }
+p { margin: 0 0 8px 0; }
+.muted { color: var(--fg-muted); }
+.dim { color: var(--fg-dim); }
+.mono { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+        monospace; font-size: 12.5px; }
+code { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+       monospace; font-size: 12.5px; background: var(--bg-code);
+       border: 1px solid var(--border); padding: 1px 5px; border-radius: 3px; }
+pre { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+      monospace; font-size: 12.5px; background: var(--bg-code);
+      border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px;
+      margin: 6px 0; overflow-x: auto; white-space: pre-wrap;
+      word-wrap: break-word; }
+.header-bar { display: flex; align-items: center; justify-content: space-between;
+              margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+.title-group { flex: 1; min-width: 0; }
+.title-group .subtitle { color: var(--fg-muted); font-size: 13px;
+                         margin-top: 2px; word-break: break-all; }
+.badges { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.badge { display: inline-flex; align-items: center; gap: 6px;
+         padding: 4px 10px; border-radius: 12px; font-size: 12px;
+         font-weight: 600; background: var(--bg-card-2);
+         border: 1px solid var(--border); color: var(--fg); }
+.badge.success { background: color-mix(in srgb, var(--status-success) 20%, var(--bg-card-2));
+                 border-color: var(--status-success); color: var(--status-success); }
+.badge.failure { background: color-mix(in srgb, var(--status-failure) 20%, var(--bg-card-2));
+                 border-color: var(--status-failure); color: var(--status-failure); }
+.badge.error { background: color-mix(in srgb, var(--status-error) 20%, var(--bg-card-2));
+               border-color: var(--status-error); color: var(--status-error); }
+.badge.warning { background: color-mix(in srgb, #f4a52810 20%, var(--bg-card-2));
+                 border-color: #f4a528; color: #f4a528; }
+.badge.neutral { color: var(--fg-muted); }
+.score-pill { display: inline-block; padding: 2px 8px; border-radius: 10px;
+              font-size: 12px; font-weight: 700; min-width: 42px;
+              text-align: center; color: #0b0f14; }
+.score-high { background: var(--score-high); }
+.score-mid { background: var(--score-mid); }
+.score-low { background: var(--score-low); }
+.card { background: var(--bg-card); border: 1px solid var(--border);
+        border-radius: 8px; padding: 16px 20px; margin-bottom: 16px;
+        box-shadow: var(--shadow); }
+.card.highlight { border-left: 4px solid var(--accent); }
+.grid { display: grid; gap: 12px;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+.stat { background: var(--bg-card-2); padding: 10px 12px; border-radius: 6px;
+        border: 1px solid var(--border); }
+.stat .label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;
+               color: var(--fg-muted); margin-bottom: 4px; }
+.stat .value { font-size: 16px; font-weight: 600; }
+table { width: 100%; border-collapse: collapse; margin: 4px 0 12px 0; }
+th, td { text-align: left; padding: 8px 10px;
+         border-bottom: 1px solid var(--border); vertical-align: top;
+         font-size: 13px; }
+th { color: var(--fg-muted); font-weight: 600; font-size: 12px;
+     text-transform: uppercase; letter-spacing: 0.3px; }
+tr:last-child td { border-bottom: none; }
+details { margin: 6px 0; border: 1px solid var(--border); border-radius: 6px;
+          background: var(--bg-card-2); }
+details > summary { cursor: pointer; padding: 8px 12px; user-select: none;
+                    font-weight: 500; list-style: none; }
+details > summary::-webkit-details-marker { display: none; }
+details > summary::before { content: "▸ "; color: var(--fg-dim);
+                            display: inline-block; width: 14px;
+                            transition: transform 0.15s; }
+details[open] > summary::before { content: "▾ "; }
+details .details-body { padding: 0 12px 10px 12px; }
+.tool-row { display: flex; align-items: center; gap: 10px;
+            flex-wrap: wrap; font-size: 13px; }
+.tool-name { font-weight: 600; color: var(--accent); font-family: ui-monospace,
+             SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+.tool-status-ok { color: var(--status-success); font-size: 11px;
+                  font-weight: 600; }
+.tool-status-err { color: var(--status-error); font-size: 11px;
+                   font-weight: 600; }
+.tool-duration { color: var(--fg-muted); font-size: 12px; }
+.tool-seq { color: var(--fg-dim); font-size: 11px; font-weight: 600;
+            min-width: 24px; text-align: right; font-family: ui-monospace,
+            SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+.turn-header { display: flex; justify-content: space-between;
+               align-items: baseline; flex-wrap: wrap; gap: 10px;
+               margin-bottom: 10px; }
+.turn-meta { font-size: 12px; color: var(--fg-muted); }
+.criterion-row td:first-child { font-family: ui-monospace, SFMono-Regular,
+                                 "SF Mono", Menlo, Consolas, monospace;
+                                 color: var(--fg-muted); font-size: 12px; }
+.judge-section { display: flex; flex-direction: column; gap: 12px; }
+.judge-card { padding: 14px 16px; }
+.judge-card-head { display: flex; justify-content: space-between;
+                    align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+.judge-card-title { font-size: 14px; line-height: 1.4; flex: 1; min-width: 0; }
+.judge-card-score { flex-shrink: 0; }
+.judge-rationale { margin-top: 10px; padding: 10px 12px;
+                   background: var(--bg-code); border-radius: 4px;
+                   font-size: 13px; line-height: 1.5; }
+.judge-findings { margin: 8px 0 0 18px; padding-left: 4px; font-size: 13px;
+                   line-height: 1.6; }
+.judge-findings li { margin: 2px 0; }
+.nav-toggle { display: inline-block; padding: 5px 10px; font-size: 12px;
+              background: var(--bg-card-2); border: 1px solid var(--border);
+              border-radius: 5px; color: var(--fg); cursor: pointer; }
+.nav-toggle:hover { background: var(--bg-card); }
+.llm-next-steps { margin: 6px 0 0 20px; padding-left: 0; }
+.llm-next-steps li { margin: 3px 0; }
+.iteration-group { padding: 12px 16px 4px 16px; margin-bottom: 20px;
+                   border-radius: 0 6px 6px 0; border-left: 4px solid var(--status-neutral); }
+/* rgba fallback for browsers without color-mix (Chrome <111, Firefox <113, Safari <16.2). */
+.iteration-group--recovered { border-left-color: var(--status-success);
+                              background: rgba(34, 197, 94, 0.06);
+                              background: color-mix(in srgb, var(--status-success) 6%, transparent); }
+.iteration-group--terminal { border-left-color: var(--status-error);
+                             background: rgba(239, 68, 68, 0.06);
+                             background: color-mix(in srgb, var(--status-error) 6%, transparent); }
+.iteration-group__banner { margin: 0 0 12px 0; font-size: 14px; font-weight: 600; }
+.iteration-group--recovered .iteration-group__banner { color: var(--status-success); }
+.iteration-group--terminal .iteration-group__banner { color: var(--status-error); }
+.attempt-transition { display: flex; align-items: center; gap: 8px;
+                      margin: -6px 0 12px 8px; color: var(--status-error); font-size: 12.5px; }
+.attempt-transition__icon { font-weight: 700; }
+footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--border);
+         color: var(--fg-dim); font-size: 12px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="header-bar">
+  <div class="title-group">
+    <h1>Task: skill-flow-e2e-escalation-jira-ticket</h1>
+    <div class="subtitle">E2E live Jira coverage for the escalation flow — the agent builds a manual-trigger escalation-triage Flow that classifies severity and creates a real Jira ticket for the escalation. The grader seeds a Sev1 case (unique correlationId), runs `uip maestro flow debug --inputs`, and verifies the OUTCOME by re-reading the created key from Jira: the issue exists and its summary carries the seeded correlationId — proof the flow created THIS run&#x27;s ticket, not a fabricated key. The created issue is cleaned up in post_run. A manual trigger is used because the Outlook email-received trigger is not reliably debug-testable (see outlook_trigger_inbox / customer_escalation).</div>
+  </div>
+  <div class="badges">
+    <span class="badge success">SUCCESS</span>
+    <span class="score-pill score-high">1.00</span>
+    <span class="badge neutral">claude-code · claude-sonnet-4-6</span>
+    <span class="badge neutral">8m 36s</span>
+    <span class="badge neutral">$1.7880</span>
+    
+    
+    <span class="nav-toggle" onclick="toggleTheme()">Toggle theme</span>
+  </div>
+</div>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Variant</div><div class="value">default</div></div>
+    <div class="stat"><div class="label">Started</div><div class="value mono">2026-08-19T17:51:32</div></div>
+    <div class="stat"><div class="label">Duration</div><div class="value">8m 36s</div></div>
+    <div class="stat"><div class="label">Turns (SDK)</div><div class="value">75</div></div>
+    <div class="stat"><div class="label">Commands</div><div class="value">40</div></div>
+  </div>
+</div>
+
+<h2>Success Criteria <span class="muted" style="font-weight:400">(3/3 passed)</span></h2>
+<div class="card" style="padding:0">
+<table>
+  <thead>
+    <tr>
+      <th style="width:15%">Type</th>
+      <th style="width:35%">Description</th>
+      <th style="width:10%">Score</th>
+      <th>Details</th>
+    </tr>
+  </thead>
+  <tbody>
+    
+<tr class="criterion-row">
+  <td>command_executed</td>
+  <td>Agent validated the generated Flow</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Matched 3/1 required commands (filters: tool_name=Bash, pattern=/(uip|\$UIP|\$\{?UIP\}?)\s+(maestro\s+)?flow\s+validate/)</summary><div class="details-body"><pre style="margin:6px 0 0 0">Matched 3/1 required commands (filters: tool_name=Bash, pattern=/(uip|\$UIP|\$\{?UIP\}?)\s+(maestro\s+)?flow\s+validate/)
+Examples: [&#x27;cd /work/output/artifacts/skill-flow-e2e-escalation-jira-ticket/EscalationJiraTicket/EscalationJiraTicket \\\n  &amp;&amp; uip mae&#x27;, &#x27;cd /work/output/artifacts/skill-flow-e2e-escalation-jira-ticket/EscalationJiraTicket/EscalationJiraTicket \\\n  &amp;&amp; uip mae&#x27;, &#x27;cd /work/output/artifacts/skill-flow-e2e-escalation-jira-ticket/EscalationJiraTicket/EscalationJiraTicket \\\n  &amp;&amp; uip mae&#x27;]</pre></div></details></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>run_command</td>
+  <td>Generated EscalationJiraTicket Flow validates without errors</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Command: uip maestro flow validate EscalationJiraTicket/EscalationJiraTicket/EscalationJiraTicket.flow --output json</summary><div class="details-body"><pre style="margin:6px 0 0 0">Command: uip maestro flow validate EscalationJiraTicket/EscalationJiraTicket/EscalationJiraTicket.flow --output json
+Exit code: 0 (expected: 0)
+Stdout:
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FlowValidate&quot;,
+  &quot;Data&quot;: {
+    &quot;File&quot;: &quot;/work/output/artifacts/skill-flow-e2e-escalation-jira-ticket/EscalationJiraTicket/EscalationJiraTicket/EscalationJiraTicket.flow&quot;,
+    &quot;Status&quot;: &quot;Valid&quot;
+  }
+}
+
+Stderr:
+[ManifestClient] fetchDynamicNodes ok: total=317 agent context nodes=2 external agent nodes=7 orchestrator nodes=263 IXP nodes=45</pre></div></details></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>run_command</td>
+  <td>Seeded Sev1 debug run creates a real Jira ticket whose summary carries the seeded correlationId (verified by re-reading the tenant)</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Command: python3 $TASK_DIR/check_escalation_jira_ticket.py</summary><div class="details-body"><pre style="margin:6px 0 0 0">Command: python3 $TASK_DIR/check_escalation_jira_ticket.py
+Exit code: 0 (expected: 0)
+Stdout:
+OK: flow references uipath-atlassian-jira
+OK: flow debug completed
+OK: candidate keys from debug: [&#x27;CE-685&#x27;]
+OK: Jira ticket CE-685 exists and its summary carries &#x27;ESC-JIRA-4f7e703b&#x27;
+PASS: escalation flow created a real Jira ticket with the expected classification
+
+Stderr: (empty)</pre></div></details></td>
+</tr>
+
+  </tbody>
+</table>
+</div>
+<h2>Conversation Trace (1 iteration)</h2>
+<div class="card">
+  <div class="turn-header">
+    <h3>Iteration 1</h3>
+    <div class="badges">
+      <span class="badge neutral">75 assistant turns</span>
+      <span class="badge neutral">in 36 · out 22654 · cache 3512528</span>
+      <span class="badge neutral">7m 54s</span>
+      
+      
+      
+    </div>
+  </div>
+  <details>
+    <summary>Prompt to agent</summary>
+    <div class="details-body"><pre>Your working directory is: /work/output/artifacts/skill-flow-e2e-escalation-jira-ticket
+
+Create a UiPath Maestro Flow named &quot;EscalationJiraTicket&quot; with a MANUAL trigger.
+It triages a customer escalation and creates a Jira ticket for it.
+
+Read `seed.json` in the current directory. Declare flow inputs matching the keys
+under its `inputs`: senderEmail, senderDomain, subject, body, customerTier,
+productionDown (boolean), workaroundAvailable (boolean), hasAttachments (boolean),
+customerMatchStatus, isDuplicate (boolean), correlationId.
+
+Steps:
+1. A Script node classifies severity from the inputs (Sev1 = Enterprise tier AND
+   productionDown AND NOT workaroundAvailable; Sev2 = productionDown AND
+   workaroundAvailable; Sev3 otherwise) plus engineeringNeeded.
+2. Create a Jira issue using the Atlassian Jira &quot;Create Issue&quot; connector activity.
+   Use the `project_key` and `issuetype_id` from `seed.json`. The issue summary
+   MUST include the `correlationId` verbatim (e.g. &quot;[&lt;severity&gt;] &lt;correlationId&gt;
+   &lt;subject&gt;&quot;). Use the Atlassian Jira connection in the `Shared/uipath-maestro-flow`
+   folder. If the Atlassian Jira connector isn&#x27;t in your registry, STOP rather than
+   falling back to a generic HTTP request.
+3. End the flow, exposing these `out` variables: severity, caseKey (= the incoming
+   correlationId), and jiraIssueKey (the created issue&#x27;s key).
+
+Validate the flow. Do NOT run or debug the flow — the grader executes it with the
+seeded inputs. Do NOT ask for approval and do NOT pause; build end-to-end in a
+single pass. Before starting, load the uipath-maestro-flow skill and follow its
+workflow.
+</pre></div>
+  </details>
+  <details>
+    <summary>Agent response</summary>
+    <div class="details-body"><pre>[ASSISTANT] Now I have all the context I need. Let me execute T1 — checking for existing solutions, login, and starting the build chain.
+[ASSISTANT] No existing solutions found. Logged in. Now running T1 — scaffold solution + project + registry pull + node add for the Jira connector, in parallel with registry gets.
+[ASSISTANT] Found `uipath.connector.uipath-atlassian-jira.create-issue`. Now adding the connector node and discovering the connection.
+[ASSISTANT] Node ID is `createJiraIssue1`, connection in `uipath-maestro-flow` folder. Now getting enriched metadata and reading the flow file in parallel.
+[ASSISTANT] Now running Step 3 (describe the resource) to get full field metadata before configuring, as required by impl.md.
+[ASSISTANT] I need to resolve the required `fields.reporter.id` reference. Let me look that up in parallel with preparing T2 edits.
+[ASSISTANT] The reporter reference lookup failed (401 scope). Let me try looking up user via the assignee path instead, which may have different scope:
+[ASSISTANT] The connection doesn&#x27;t have read:user scope. The `fields.reporter.id` is a required field per the describe output, but it&#x27;s a reference field — since user lookup is failing due to scope restrictions, I&#x27;ll use a `=js:` expression from the input variable (e.g. derive reporter from `senderEmail`). However, since the grader will run this flow and `reporter.id` requires a Jira accountId (not an email), I should check if we can skip it or use a placeholder that the grader might supply. Looking at the describe output again — `fields.reporter.id` is `Required: true` in the GenerateSchema-driven output.
+
+Let me try to look up the connection owner&#x27;s Jira account as a fallback reporter value:
+[ASSISTANT] Project `CE` exists as &quot;Coder Eval&quot;. Now let me check for the reporter issue — the `fields.reporter.id` is marked required by GenerateSchema, but the connection lacks user-listing scope. I&#x27;ll proceed without it since the connection&#x27;s authentication user should be set as default reporter in Jira, and include it as a dynamic expression from the flow&#x27;s input context. Let me now build the full flow in T2 — writing all user-owned nodes (script, end) and wiring.
+[ASSISTANT] Now add the definitions for the script and end nodes, the variables, and the output globals:
+[ASSISTANT] Now add the flow input variables (globals `in`) and output variables (globals `out`), plus the script node&#x27;s variable entry:
+[ASSISTANT] Now add layout entries for the new nodes:
+[ASSISTANT] Now T3 — configure the Jira node, then validate and format. The summary must include `correlationId` verbatim. I&#x27;ll wire it from `$vars.start.output.correlationId` with severity from the script output:
+[ASSISTANT] Node configure succeeded with 2 bindings created. Now run validate and format:
+[ASSISTANT] The `variables.globals` structure needs to be an array. Let me check the correct format:
+[ASSISTANT] `variables.globals` is a flat array with `direction` on each entry. I need to fix the structure:
+[ASSISTANT] I need to replace the `globals` object-with-sub-arrays structure to a flat array with `direction` field:
+[ASSISTANT] The file was modified by `node configure`. Let me read the current globals section:
+[ASSISTANT] Also need to update the script to reference input variables properly — they&#x27;re in `variables.globals` with `direction: &quot;in&quot;`, so they&#x27;re accessed as `$vars.&lt;id&gt;` directly (not via `$vars.start.output.&lt;field&gt;`). Let me check how manual trigger inputs are passed:
+[ASSISTANT] Variables with `triggerNodeId: &quot;start&quot;` are accessed as `$vars.start.output.{id}` — which is what the script already uses. I need to add `triggerNodeId: &quot;start&quot;` to all `in` variables:
+[ASSISTANT] Now validate:
+[ASSISTANT] Validation passes but has warnings — the End node output mappings aren&#x27;t being found. The issue is that `outputs` on the End node instance should be in the top-level `outputs` field of the node, but checking the file format reference to understand the exact shape:
+[ASSISTA</pre></div>
+  </details>
+  <h4 style="margin-top:12px">Tool Calls (40)</h4>
+  
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#0</span>
+      <span class="tool-name">Skill</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">120ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;skill&quot;: &quot;uipath:uipath-maestro-flow&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Launching skill: uipath:uipath-maestro-flow</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#1</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">457ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-e2e-escalation-jira-ticket/seed.json&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	{
+2	  &quot;tag&quot;: &quot;4f7e703b&quot;,
+3	  &quot;project_key&quot;: &quot;CE&quot;,
+4	  &quot;issuetype_id&quot;: &quot;11457&quot;,
+5	  &quot;correlationId&quot;: &quot;ESC-JIRA-4f7e703b&quot;,
+6	  &quot;inputs&quot;: {
+7	    &quot;senderEmail&quot;: &quot;jane.doe@acmecorp.com&quot;,
+8	    &quot;senderDomain&quot;: &quot;acmecorp.com&quot;,
+9	    &quot;subject&quot;: &quot;Production down: checkout API returning 500s&quot;,
+10	    &quot;body&quot;: &quot;Critical urgent outage, all users blocked.&quot;,
+11	    &quot;customerTier&quot;: &quot;Enterprise&quot;,
+12	    &quot;productionDown&quot;: true,
+13	    &quot;workaroundAvailable&quot;: false,
+14	    &quot;hasAttachments&quot;: false,
+15	    &quot;customerMatchStatus&quot;: &quot;single&quot;,
+16	    &quot;isDuplicate&quot;: false,
+17	    &quot;correlationId&quot;: &quot;ESC-JIRA-4f7e703b&quot;
+18	  },
+19	  &quot;expected&quot;: {
+20	    &quot;severity&quot;: &quot;Sev1&quot;,
+21	    &quot;caseKey&quot;: &quot;ESC-JIRA-4f7e703b&quot;
+22	  },
+23	  &quot;expected_script&quot;: {
+24	    &quot;engineeringNeeded&quot;: true
+25	  }
+26	}
+27	</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#2</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">534ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/CAPABILITY.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Author — Create and edit `.flow` files
+2	
+3	Capability index for building new flows (greenfield) and editing existing flows (brownfield). Author owns everything that happens on disk, locally, without `uip login`. Authoring journeys terminate at `validate` + `format`; from there, hand off to [operate/CAPABILITY.md](../operate/CAPABILITY.md) to publish, run, or debug.
+4	
+5	&gt; **Where you came from / where to go next.** Author is upstream of Operate (build the flow → ship it) and upstream of Diagnose only via Operate (build → run → diagnose). Publish/run/lifecycle lives in [operate/CAPABILITY.md](../operate/CAPABILITY.md); fault triage lives in [diagnose/CAPABILITY.md](../diagnose/CAPABILITY.md).
+6	&gt;
+7	&gt; **Inherits universal rules from [SKILL.md](../../SKILL.md)** — `--output json` + prefer `--output-filter` for extraction, no `flow debug` without consent, resource discovery order, never invoke other skills automatically, dropdown question pattern, solution layout, **plain-English narration + granular progress list (opt-in — silent by default; engage when the user asks for verbosity)**. The rules below are author-scoped and apply on top.
+8	
+9	## When to use this capability
+10	
+11	&lt;
+
+… (truncated, 29463 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#3</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">290ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/references/greenfield.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Greenfield — Create a New Flow
+2	
+3	End-to-end journey for creating a Flow project from scratch. Author terminates at `validate` + `format`. To publish, run, or debug after this, see [operate/CAPABILITY.md](../../operate/CAPABILITY.md).
+4	
+5	&gt; **Brownfield edits use a different journey.** If the `.flow` file already exists, see [brownfield.md](brownfield.md) instead.
+6	
+7	## Should you plan first?
+8	
+9	For complex flows, produce a plan before building. Reference [planning-arch.md](planning-arch.md) and [planning-impl.md](planning-impl.md) for the node type catalog, port reference, wiring rules, and topology patterns.
+10	
+11	**Plan when:**
+12	- The flow has 5+ nodes with branching or parallel paths
+13	- The flow uses connectors or resources that need discovery
+14	- The user&#x27;s requirements are ambiguous and you need to confirm the approach
+15	
+16	**Don&#x27;t plan when:**
+17	- Adding/editing a single node in an existing flow (use [brownfield.md](brownfield.md))
+18	- The flow is a straightforward linear pipeline (trigger → action → action → end)
+19	- The user has already described the exact topology they want
+20	
+21	### Examples
+22	
+23	**Plan:** &quot;Build a flow that receives a Jira ticke
+
+… (truncated, 34151 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#4</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">93ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/references/plugins/connector/impl.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Connector Activity Nodes — Implementation
+2	
+3	How to configure connector activity nodes: connection binding, enriched metadata, reference field resolution, and debugging. Connection bindings are emitted by `uip maestro flow node configure` into the flow&#x27;s top-level `bindings[]`; `bindings_v2.json` is regenerated from them at debug/pack time and should never be hand-edited.
+4	
+5	For generic node/edge add, remove, and wiring procedures, see [editing-operations.md](../../editing-operations.md). This guide covers the connector-specific configuration workflow that must follow the generic node add.
+6	
+7	## How Connector Nodes Differ from OOTB
+8	
+9	1. **Connection binding required** — every connector node needs an IS connection (OAuth, API key, etc.) authored in the flow&#x27;s top-level `bindings[]` (which the CLI regenerates into `bindings_v2.json` at debug/pack time). Without it, the node cannot authenticate.
+10	2. **Enriched metadata via `--connection-id`** — call `registry get` with `--connection-id` to get connection-aware field metadata. Without it, only base fields are returned — custom fields, dynamic enums, and reference resolution are missing.
+11	3. **`inputs.detail` object** —
+
+… (truncated, 66128 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#5</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">125ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;find /work/output/artifacts/skill-flow-e2e-escalation-jira-ticket -maxdepth 2 -type f -name &#x27;*.uipx&#x27; -print 2&gt;/dev/null; echo \&quot;---DONE---\&quot;&quot;,
+  &quot;description&quot;: &quot;Check for existing solution files&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>---DONE---</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#6</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">554ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip login status --output json 2&gt;/dev/null; echo \&quot;---DONE---\&quot;&quot;,
+  &quot;description&quot;: &quot;Check login status&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;LoginStatus&quot;,
+  &quot;Data&quot;: {
+    &quot;Status&quot;: &quot;Logged in&quot;,
+    &quot;Identity&quot;: &quot;zhongyi.shi@uipath.com&quot;,
+    &quot;IdentityType&quot;: &quot;User&quot;,
+    &quot;AuthFlow&quot;: &quot;Interactive&quot;,
+    &quot;CredentialSource&quot;: &quot;SavedLogin&quot;,
+    &quot;Provider&quot;: &quot;File&quot;,
+    &quot;UserId&quot;: &quot;bfda820f-4ddb-4af7-a5ec-3c332b403271&quot;,
+    &quot;UserEmail&quot;: &quot;zhongyi.shi@uipath.com&quot;,
+    &quot;UserName&quot;: &quot;zhongyi.shi@uipath.com&quot;,
+    &quot;BaseUrl&quot;: &quot;https://alpha.uipath.com&quot;,
+    &quot;Organization&quot;: &quot;codereval&quot;,
+    &quot;OrganizationId&quot;: &quot;311c6049-4966-4ef2-a6f3-8ceccaf38d54&quot;,
+    &quot;Tenant&quot;: &quot;DefaultTenant&quot;,
+    &quot;TenantId&quot;: &quot;69d43765-6ede-4575-88b7-9db601a2c056&quot;,
+    &quot;ExpirationDate&quot;: &quot;2026-08-19T18:52:01.000Z&quot;
+  }
+}
+---DONE---</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#7</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">21.13s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-e2e-escalation-jira-ticket \\\n  &amp;&amp; uip solution init \&quot;EscalationJiraTicket\&quot; --output json \\\n  &amp;&amp; cd \&quot;EscalationJiraTicket\&quot; \\\n  &amp;&amp; uip maestro flow init \&quot;EscalationJiraTicket\&quot; --output json \\\n  &amp;&amp; cd \&quot;EscalationJiraTicket\&quot; \\\n  &amp;&amp; uip maestro flow registry pull \\\n  &amp;&amp; uip maestro flow registry search \&quot;jira\&quot; --output json --output-filter \&quot;[*].{NodeType:NodeType,Dis… (58 more chars)&quot;,
+  &quot;description&quot;: &quot;Scaffold solution + flow project + refresh registry + search Jira connector&quot;,
+  &quot;timeout&quot;: 120000
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;SolutionInit&quot;,
+  &quot;Data&quot;: {
+    &quot;Status&quot;: &quot;Created successfully&quot;,
+    &quot;Path&quot;: &quot;/work/output/artifacts/skill-flow-e2e-escalation-jira-ticket/EscalationJiraTicket/EscalationJiraTicket.uipx&quot;,
+    &quot;NextSteps&quot;: &quot;Read /work/output/artifacts/skill-flow-e2e-escalation-jira-ticket/EscalationJiraTicket/AGENTS.md or /work/output/artifacts/skill-flow-e2e-escalation-jira-ticket/EscalationJiraTicket/CLAUDE.md to understand the solution lifecycle, project types that can be used inside a solution, and related uip command references.&quot;
+  }
+}
+2026-08-19 17:52:22 INFO  [ResourceBuilder:ProjectCreateCommandHandler] Creating project [object Object]
+2026-08-19 17:52:22 INFO  [ResourceBuilder:MultiFileSolutionDefinitionProvider] Reading multi-file solution definition for solution %s /work/output/artifacts/skill-flow-e2e-escalation-jira-ticket/EscalationJiraTicket
+2026-08-19 17:52:22 INFO  [ResourceBuilder:ProjectCreateCommandHandler] Generate artefact resources for project [object Object]
+2026-08-19 17:52:22 INFO  [ResourceBuilder:SolutionsMetadataReader] Reading metadata from %s. SolutionsMetadataReader
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FlowInit&quot;,
+  &quot;Data&quot;: {
+    &quot;Sta
+
+… (truncated, 21436 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#8</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">28.69s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry get core.control.end --output json 2&gt;/dev/null&quot;,
+  &quot;description&quot;: &quot;Get End node definition&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeGetSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;Node&quot;: {
+      &quot;nodeType&quot;: &quot;core.control.end&quot;,
+      &quot;version&quot;: &quot;1.0&quot;,
+      &quot;category&quot;: &quot;control-flow&quot;,
+      &quot;description&quot;: &quot;Mark the end of a process path&quot;,
+      &quot;tags&quot;: [
+        &quot;control-flow&quot;,
+        &quot;end&quot;,
+        &quot;finish&quot;,
+        &quot;complete&quot;
+      ],
+      &quot;sortOrder&quot;: 65,
+      &quot;display&quot;: {
+        &quot;label&quot;: &quot;End&quot;,
+        &quot;icon&quot;: &quot;circle-check&quot;,
+        &quot;shape&quot;: &quot;circle&quot;
+      },
+      &quot;handleConfiguration&quot;: [
+        {
+          &quot;position&quot;: &quot;left&quot;,
+          &quot;handles&quot;: [
+            {
+              &quot;id&quot;: &quot;input&quot;,
+              &quot;type&quot;: &quot;target&quot;,
+              &quot;handleType&quot;: &quot;input&quot;
+            }
+          ]
+        }
+      ],
+      &quot;model&quot;: {
+        &quot;type&quot;: &quot;bpmn:EndEvent&quot;
+      },
+      &quot;runtimeConstraints&quot;: {
+        &quot;exclude&quot;: [
+          &quot;api-function&quot;
+        ]
+      }
+    }
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#9</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">33.95s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry get core.action.script --output json 2&gt;/dev/null&quot;,
+  &quot;description&quot;: &quot;Get Script node definition&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeGetSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;Node&quot;: {
+      &quot;nodeType&quot;: &quot;core.action.script&quot;,
+      &quot;version&quot;: &quot;1.1&quot;,
+      &quot;category&quot;: &quot;data-operations&quot;,
+      &quot;description&quot;: &quot;Run custom JavaScript code&quot;,
+      &quot;tags&quot;: [
+        &quot;code&quot;,
+        &quot;javascript&quot;,
+        &quot;python&quot;
+      ],
+      &quot;sortOrder&quot;: 70,
+      &quot;supportsErrorHandling&quot;: true,
+      &quot;display&quot;: {
+        &quot;label&quot;: &quot;Script&quot;,
+        &quot;icon&quot;: &quot;code&quot;
+      },
+      &quot;handleConfiguration&quot;: [
+        {
+          &quot;position&quot;: &quot;left&quot;,
+          &quot;handles&quot;: [
+            {
+              &quot;id&quot;: &quot;input&quot;,
+              &quot;type&quot;: &quot;target&quot;,
+              &quot;handleType&quot;: &quot;input&quot;
+            }
+          ]
+        },
+        {
+          &quot;position&quot;: &quot;right&quot;,
+          &quot;handles&quot;: [
+            {
+              &quot;id&quot;: &quot;success&quot;,
+              &quot;type&quot;: &quot;source&quot;,
+              &quot;handleType&quot;: &quot;output&quot;
+            },
+            {
+              &quot;id&quot;: &quot;error&quot;,
+              &quot;label&quot;: &quot;Error&quot;,
+              &quot;type&quot;: &quot;source&quot;,
+              &quot;handleType&quot;: &quot;output&quot;,
+              &quot;visible&quot;: &quot;{inputs.errorHandlingEnabled}&quot;,
+              &quot;constraints&quot;: {
+                &quot;maxConnections&quot;: 1
+              }
+            }
+          ]
+    
+
+… (truncated, 2916 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#10</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">3.17s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-e2e-escalation-jira-ticket/EscalationJiraTicket/EscalationJiraTicket \\\n  &amp;&amp; uip maestro flow node add \&quot;EscalationJiraTicket.flow\&quot; uipath.connector.uipath-atlassian-jira.create-issue --label \&quot;Create Jira Issue\&quot; --output json 2&gt;/dev/null&quot;,
+  &quot;description&quot;: &quot;Add Jira create-issue connector node&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeAddSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;Node&quot;: {
+      &quot;Id&quot;: &quot;createJiraIssue1&quot;,
+      &quot;Type&quot;: &quot;uipath.connector.uipath-atlassian-jira.create-issue&quot;,
+      &quot;TypeVersion&quot;: &quot;1.0.0&quot;,
+      &quot;Ui&quot;: {
+        &quot;Position&quot;: {
+          &quot;X&quot;: 0,
+          &quot;Y&quot;: 0
+        }
+      },
+      &quot;Display&quot;: {
+        &quot;Label&quot;: &quot;Create Jira Issue&quot;
+      },
+      &quot;Inputs&quot;: {}
+    },
+    &quot;DefinitionAdded&quot;: true,
+    &quot;BindingsCreated&quot;: 0,
+    &quot;VariableCount&quot;: 3
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#11</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">4.50s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip is connections list \&quot;uipath-atlassian-jira\&quot; --all-folders --output json 2&gt;/dev/null&quot;,
+  &quot;description&quot;: &quot;List Atlassian Jira connections across all folders&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;ConnectionList&quot;,
+  &quot;Data&quot;: [
+    {
+      &quot;Id&quot;: &quot;f5273a4d-d492-4bcd-a106-5a20bf89a3ef&quot;,
+      &quot;Name&quot;: &quot;is-sandboxes-test@uipath.com-uipath-sandbox-380&quot;,
+      &quot;ConnectorKey&quot;: &quot;uipath-atlassian-jira&quot;,
+      &quot;ConnectorName&quot;: &quot;Jira&quot;,
+      &quot;State&quot;: &quot;Enabled&quot;,
+      &quot;Owner&quot;: &quot;sanjeet.manna@uipath.com&quot;,
+      &quot;IsDefault&quot;: &quot;Yes&quot;,
+      &quot;ByoaConnection&quot;: &quot;No&quot;,
+      &quot;ElementInstanceId&quot;: 336882,
+      &quot;Folder&quot;: &quot;uipath-maestro-flow&quot;,
+      &quot;FolderKey&quot;: &quot;5da18ec0-7de1-4e57-aaf1-ddc8a369c199&quot;,
+      &quot;Created&quot;: &quot;2026-05-07T14:56:28.873Z&quot;,
+      &quot;Updated&quot;: &quot;2026-08-19T17:48:50.026Z&quot;
+    }
+  ]
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#12</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">3.18s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-e2e-escalation-jira-ticket/EscalationJiraTicket/EscalationJiraTicket \\\n  &amp;&amp; uip maestro flow registry get uipath.connector.uipath-atlassian-jira.create-issue --connection-id f5273a4d-d492-4bcd-a106-5a20bf89a3ef --output json 2&gt;/dev/null&quot;,
+  &quot;description&quot;: &quot;Get enriched Jira create-issue metadata with connection&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeGetSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;Node&quot;: {
+      &quot;nodeType&quot;: &quot;uipath.connector.uipath-atlassian-jira.create-issue&quot;,
+      &quot;version&quot;: &quot;1.0.0&quot;,
+      &quot;category&quot;: &quot;connector.196560&quot;,
+      &quot;tags&quot;: [
+        &quot;connector&quot;,
+        &quot;activity&quot;
+      ],
+      &quot;sortOrder&quot;: 520,
+      &quot;supportsErrorHandling&quot;: true,
+      &quot;description&quot;: &quot;Create a new issue in Jira.&quot;,
+      &quot;display&quot;: {
+        &quot;label&quot;: &quot;Create Issue&quot;,
+        &quot;description&quot;: &quot;Create a new issue in Jira.&quot;,
+        &quot;icon&quot;: &quot;https://alpha.uipath.com/311c6049-4966-4ef2-a6f3-8ceccaf38d54/studio_/typecache/icons/34ef2aa2837dd167dab37718dbff7bb5eb83f8c210be71fc25ac55a67aa6de1b.svg&quot;,
+        &quot;sourceDisplayName&quot;: &quot;Jira&quot;
+      },
+      &quot;handleConfiguration&quot;: [
+        {
+          &quot;position&quot;: &quot;left&quot;,
+          &quot;handles&quot;: [
+            {
+              &quot;id&quot;: &quot;input&quot;,
+              &quot;type&quot;: &quot;target&quot;,
+              &quot;handleType&quot;: &quot;input&quot;,
+              &quot;label&quot;: &quot;&quot;
+            }
+          ]
+        },
+        {
+          &quot;position&quot;: &quot;right&quot;,
+          &quot;handles&quot;: [
+            {
+              &quot;id&quot;: &quot;output&quot;,
+              &quot;type&quot;: &quot;source&quot;,
+              &quot;handleType&quot;: &quot;output&quot;,
+              &quot;label&quot;: &quot;&quot;
+        
+
+… (truncated, 11033 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#13</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">2.54s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-e2e-escalation-jira-ticket/EscalationJiraTicket/EscalationJiraTicket/EscalationJiraTicket.flow&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	{
+2	  &quot;id&quot;: &quot;954ca6a4-2ce6-4f93-8a85-242d943308b6&quot;,
+3	  &quot;version&quot;: &quot;1.9&quot;,
+4	  &quot;name&quot;: &quot;EscalationJiraTicket&quot;,
+5	  &quot;nodes&quot;: [
+6	    {
+7	      &quot;id&quot;: &quot;start&quot;,
+8	      &quot;type&quot;: &quot;core.trigger.manual&quot;,
+9	      &quot;typeVersion&quot;: &quot;1.0&quot;,
+10	      &quot;display&quot;: {
+11	        &quot;label&quot;: &quot;Manual trigger&quot;
+12	      },
+13	      &quot;inputs&quot;: {
+14	        &quot;entryPointId&quot;: &quot;76237d36-e6f1-4f48-990c-1505baa87e4a&quot;,
+15	        &quot;isDefaultEntryPoint&quot;: true
+16	      }
+17	    },
+18	    {
+19	      &quot;id&quot;: &quot;createJiraIssue1&quot;,
+20	      &quot;type&quot;: &quot;uipath.connector.uipath-atlassian-jira.create-issue&quot;,
+21	      &quot;typeVersion&quot;: &quot;1.0.0&quot;,
+22	      &quot;display&quot;: {
+23	        &quot;label&quot;: &quot;Create Jira Issue&quot;
+24	      },
+25	      &quot;inputs&quot;: {}
+26	    }
+27	  ],
+28	  &quot;edges&quot;: [],
+29	  &quot;definitions&quot;: [
+30	    {
+31	      &quot;nodeType&quot;: &quot;core.trigger.manual&quot;,
+32	      &quot;version&quot;: &quot;1.0&quot;,
+33	      &quot;category&quot;: &quot;trigger&quot;,
+34	      &quot;description&quot;: &quot;Start the process manually&quot;,
+35	      &quot;tags&quot;: [
+36	        &quot;trigger&quot;,
+37	        &quot;start&quot;,
+38	        &quot;manual&quot;
+39	      ],
+40	      &quot;sortOrder&quot;: 80,
+41	      &quot;display&quot;: {
+42	        &quot;label&quot;: &quot;Manual trigger&quot;,
+43	        &quot;icon&quot;: &quot;play&quot;,
+44	        &quot;shape&quot;: &quot;circle&quot;
+45	      },
+46	      &quot;handleConfiguration&quot;: [
+47	  
+
+… (truncated, 11731 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#14</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.72s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-e2e-escalation-jira-ticket/EscalationJiraTicket/EscalationJiraTicket \\\n  &amp;&amp; uip is resources describe \&quot;uipath-atlassian-jira\&quot; \&quot;curated_create_issue\&quot; \\\n    --connection-id \&quot;f5273a4d-d492-4bcd-a106-5a20bf89a3ef\&quot; \\\n    --operation Create \\\n    -f \&quot;fields.project.key=CE\&quot; \\\n    -f \&quot;fields.issuetype.id=11457\&quot; \\\n    --output json 2&gt;/dev/null&quot;,
+  &quot;description&quot;: &quot;Describe Jira curated_create_issue with parent field values for GenerateSchema&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;ResourceMetadata&quot;,
+  &quot;Data&quot;: {
+    &quot;Name&quot;: &quot;curated_create_issue&quot;,
+    &quot;DisplayName&quot;: &quot;Curated create issue&quot;,
+    &quot;ElementKey&quot;: &quot;uipath-atlassian-jira&quot;,
+    &quot;Operation&quot;: {
+      &quot;Method&quot;: &quot;POST&quot;,
+      &quot;Name&quot;: &quot;Create&quot;,
+      &quot;Description&quot;: &quot;Create Issue&quot;,
+      &quot;Path&quot;: &quot;/curated_create_issue&quot;,
+      &quot;Curated&quot;: &quot;Create Issue&quot;
+    },
+    &quot;Parameters&quot;: [],
+    &quot;RequestFields&quot;: [
+      {
+        &quot;Name&quot;: &quot;fields.project.key&quot;,
+        &quot;Type&quot;: &quot;string&quot;,
+        &quot;DisplayName&quot;: &quot;Project&quot;,
+        &quot;Description&quot;: &quot;Select the project or enter the project name or key&quot;,
+        &quot;Reference&quot;: {
+          &quot;ObjectName&quot;: &quot;project&quot;,
+          &quot;LookupNames&quot;: [
+            &quot;name&quot;,
+            &quot;key&quot;
+          ],
+          &quot;LookupValue&quot;: &quot;key&quot;,
+          &quot;Path&quot;: &quot;/project/search&quot;,
+          &quot;FilterPattern&quot;: &quot;query={filter}&quot;
+        },
+        &quot;Required&quot;: true
+      },
+      {
+        &quot;Name&quot;: &quot;fields.issuetype.id&quot;,
+        &quot;Type&quot;: &quot;string&quot;,
+        &quot;DisplayName&quot;: &quot;Issue type&quot;,
+        &quot;Description&quot;: &quot;Select the type of the issue (epic, story, task , bug)&quot;,
+        &quot;Reference&quot;: {
+          &quot;ObjectName&quot;: &quot;project&quot;,
+          &quot;LookupNames&quot;: [
+            &quot;name&quot;,
+          
+
+… (truncated, 7269 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#15</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-err">ERROR</span>
+      <span class="tool-duration">1.32s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-e2e-escalation-jira-ticket/EscalationJiraTicket/EscalationJiraTicket \\\n  &amp;&amp; uip is resources run list \&quot;uipath-atlassian-jira\&quot; \&quot;reporter\&quot; \\\n    --connection-id \&quot;f5273a4d-d492-4bcd-a106-5a20bf89a3ef\&quot; \\\n    --output json --output-filter \&quot;[0:5].{accountId:accountId,displayName:displayName}\&quot; 2&gt;/dev/null&quot;,
+  &quot;description&quot;: &quot;Resolve reporter reference to get Jira account IDs&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Exit code 1
+{
+  &quot;Result&quot;: &quot;Failure&quot;,
+  &quot;Message&quot;: &quot;401 Unauthorized&quot;,
+  &quot;Instructions&quot;: &quot;{\&quot;requestId\&quot;:\&quot;6a85ee0be4b00f843af82f00\&quot;,\&quot;providerErrorCode\&quot;:401,\&quot;message\&quot;:\&quot;Unauthorized\&quot;,\&quot;providerMessage\&quot;:\&quot;code - 401, message - Unauthorized; scope does not match\&quot;}&quot;,
+  &quot;ErrorCode&quot;: &quot;unknown_error&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}</pre>
+    <h4>Error</h4><pre>Exit code 1
+{
+  &quot;Result&quot;: &quot;Failure&quot;,
+  &quot;Message&quot;: &quot;401 Unauthorized&quot;,
+  &quot;Instructions&quot;: &quot;{\&quot;requestId\&quot;:\&quot;6a85ee0be4b00f843af82f00\&quot;,\&quot;providerErrorCode\&quot;:401,\&quot;message\&quot;:\&quot;Unauthorized\&quot;,\&quot;providerMessage\&quot;:\&quot;code - 401, message - Unauthorized; scope does not match\&quot;}&quot;,
+  &quot;ErrorCode&quot;: &quot;unknown_error&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}</pre>
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#16</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-err">ERROR</span>
+      <span class="tool-duration">1.21s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-e2e-escalation-jira-ticket/EscalationJiraTicket/EscalationJiraTicket \\\n  &amp;&amp; uip is resources run list \&quot;uipath-atlassian-jira\&quot; \&quot;assignee\&quot; \\\n    --connection-id \&quot;f5273a4d-d492-4bcd-a106-5a20bf89a3ef\&quot; \\\n    --query \&quot;project=CE\&quot; \\\n    --output json --output-filter \&quot;[0:3].{accountId:accountId,displayName:displayName}\&quot; 2&gt;/dev/null&quot;,
+  &quot;description&quot;: &quot;Resolve Jira user/assignee list for project CE&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Exit code 1
+{
+  &quot;Result&quot;: &quot;Failure&quot;,
+  &quot;Message&quot;: &quot;401 Unauthorized&quot;,
+  &quot;Instructions&quot;: &quot;{\&quot;requestId\&quot;:\&quot;6a85ee2de4b0927dcbc68638\&quot;,\&quot;providerErrorCode\&quot;:401,\&quot;message\&quot;:\&quot;Unauthorized\&quot;,\&quot;providerMessage\&quot;:\&quot;code - 401, message - Unauthorized; scope does not match\&quot;}&quot;,
+  &quot;ErrorCode&quot;: &quot;unknown_error&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}</pre>
+    <h4>Error</h4><pre>Exit code 1
+{
+  &quot;Result&quot;: &quot;Failure&quot;,
+  &quot;Message&quot;: &quot;401 Unauthorized&quot;,
+  &quot;Instructions&quot;: &quot;{\&quot;requestId\&quot;:\&quot;6a85ee2de4b0927dcbc68638\&quot;,\&quot;providerErrorCode\&quot;:401,\&quot;message\&quot;:\&quot;Unauthorized\&quot;,\&quot;providerMessage\&quot;:\&quot;code - 401, message - Unauthorized; scope does not match\&quot;}&quot;,
+  &quot;ErrorCode&quot;: &quot;unknown_error&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}</pre>
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#17</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.64s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-e2e-escalation-jira-ticket/EscalationJiraTicket/EscalationJiraTicket \\\n  &amp;&amp; uip is resources run list \&quot;uipath-atlassian-jira\&quot; \&quot;project\&quot; \\\n    --connection-id \&quot;f5273a4d-d492-4bcd-a106-5a20bf89a3ef\&quot; \\\n    --query \&quot;query=CE\&quot; \\\n    --output json --output-filter \&quot;[*].{key:key,name:name,id:id}\&quot; 2&gt;/dev/null&quot;,
+  &quot;description&quot;: &quot;Resolve Jira project key CE to confirm it exists&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;ExecuteOperation&quot;,
+  &quot;Data&quot;: []
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#18</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.80s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-e2e-escalation-jira-ticket/EscalationJiraTicket/EscalationJiraTicket \\\n  &amp;&amp; uip is resources run list \&quot;uipath-atlassian-jira\&quot; \&quot;project\&quot; \\\n    --connection-id \&quot;f5273a4d-d492-4bcd-a106-5a20bf89a3ef\&quot; \\\n    --output json --output-filter \&quot;[*].{key:key,name:name,id:id}\&quot; 2&gt;/dev/null&quot;,
+  &quot;description&quot;: &quot;List all Jira projects&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;ExecuteOperation&quot;,
+  &quot;Data&quot;: []
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#19</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.27s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-e2e-escalation-jira-ticket/EscalationJiraTicket/EscalationJiraTicket \\\n  &amp;&amp; uip is resources run list \&quot;uipath-atlassian-jira\&quot; \&quot;project\&quot; \\\n    --connection-id \&quot;f5273a4d-d492-4bcd-a106-5a20bf89a3ef\&quot; \\\n    --output json 2&gt;/dev/null | head -50&quot;,
+  &quot;description&quot;: &quot;List Jira projects raw output&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;ExecuteOperation&quot;,
+  &quot;Data&quot;: {
+    &quot;items&quot;: [
+      {
+        &quot;expand&quot;: &quot;description,lead,issueTypes,url,projectKeys,permissions,insight&quot;,
+        &quot;simplified&quot;: true,
+        &quot;avatarUrls&quot;: {
+          &quot;16x16&quot;: &quot;https://api.atlassian.com/ex/jira/f2c10d6a-7a1c-4934-a500-dcd95b517cdf/rest/api/2/universal_avatar/view/type/project/avatar/10402?size=xsmall&quot;,
+          &quot;24x24&quot;: &quot;https://api.atlassian.com/ex/jira/f2c10d6a-7a1c-4934-a500-dcd95b517cdf/rest/api/2/universal_avatar/view/type/project/avatar/10402?size=small&quot;,
+          &quot;32x32&quot;: &quot;https://api.atlassian.com/ex/jira/f2c10d6a-7a1c-4934-a500-dcd95b517cdf/rest/api/2/universal_avatar/view/type/project/avatar/10402?size=medium&quot;,
+          &quot;48x48&quot;: &quot;https://api.atlassian.com/ex/jira/f2c10d6a-7a1c-4934-a500-dcd95b517cdf/rest/api/2/universal_avatar/view/type/project/avatar/10402&quot;
+        },
+        &quot;name&quot;: &quot;IntegrationServices&quot;,
+        &quot;self&quot;: &quot;https://api.atlassian.com/ex/jira/f2c10d6a-7a1c-4934-a500-dcd95b517cdf/rest/api/2/project/10752&quot;,
+        &quot;entityId&quot;: &quot;d257538e-a0dc-4b00-b1e0-09608cdb8c55&quot;,
+        &quot;style&quot;: &quot;next-gen&quot;,
+        &quot;id&quot;: &quot;10752&quot;,
+        &quot;isPrivate&quot;: false,
+        &quot;projectTypeKey&quot;: 
+
+… (truncated, 1937 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#20</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.53s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-e2e-escalation-jira-ticket/EscalationJiraTicket/EscalationJiraTicket \\\n  &amp;&amp; uip is resources run list \&quot;uipath-atlassian-jira\&quot; \&quot;project\&quot; \\\n    --connection-id \&quot;f5273a4d-d492-4bcd-a106-5a20bf89a3ef\&quot; \\\n    --output json 2&gt;/dev/null | python3 -c \&quot;import sys, json; data = json.load(sys.stdin); items = data.get(&#x27;Data&#x27;, {}).get(&#x27;items&#x27;, []); [print(p.get(&#x27;key&#x27;), p.get… (120 more chars)&quot;,
+  &quot;description&quot;: &quot;Search for CE project in all Jira projects&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>CE Coder Eval</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#21</span>
+      <span class="tool-name">Edit</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">110ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;replace_all&quot;: false,
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-e2e-escalation-jira-ticket/EscalationJiraTicket/EscalationJiraTicket/EscalationJiraTicket.flow&quot;,
+  &quot;old_string&quot;: &quot;{\n  \&quot;id\&quot;: \&quot;954ca6a4-2ce6-4f93-8a85-242d943308b6\&quot;,\n  \&quot;version\&quot;: \&quot;1.9\&quot;,\n  \&quot;name\&quot;: \&quot;EscalationJiraTicket\&quot;,\n  \&quot;nodes\&quot;: [\n    {\n      \&quot;id\&quot;: \&quot;start\&quot;,\n      \&quot;type\&quot;: \&quot;core.trigger.manual\&quot;,\n      \&quot;typeVersion\&quot;: \&quot;1.0\&quot;,\n      \&quot;display\&quot;: {\n        \&quot;label\&quot;: \&quot;Manual trigger\&quot;\n      },\n      \&quot;inputs\&quot;: {\n        \&quot;entryPointId\&quot;: \&quot;76237d36-e6f1-4f48-990c-1505baa87e4a\&quot;,\n        \&quot;isDefaultEntryPoint\&quot;: true\n      }\n   … (250 more chars)&quot;,
+  &quot;new_string&quot;: &quot;{\n  \&quot;id\&quot;: \&quot;954ca6a4-2ce6-4f93-8a85-242d943308b6\&quot;,\n  \&quot;version\&quot;: \&quot;1.9\&quot;,\n  \&quot;name\&quot;: \&quot;EscalationJiraTicket\&quot;,\n  \&quot;nodes\&quot;: [\n    {\n      \&quot;id\&quot;: \&quot;start\&quot;,\n      \&quot;type\&quot;: \&quot;core.trigger.manual\&quot;,\n      \&quot;typeVersion\&quot;: \&quot;1.0\&quot;,\n      \&quot;display\&quot;: {\n        \&quot;label\&quot;: \&quot;Manual trigger\&quot;\n      },\n      \&quot;inputs\&quot;: {\n        \&quot;entryPointId\&quot;: \&quot;76237d36-e6f1-4f48-990c-1505baa87e4a\&quot;,\n        \&quot;isDefaultEntryPoint\&quot;: true\n      }\n   … (1986 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>The file /work/output/artifacts/skill-flow-e2e-escalation-jira-ticket/EscalationJiraTicket/EscalationJiraTicket/EscalationJiraTicket.flow has been updated successfully. (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#22</span>
+      <span class="tool-name">Edit</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">35ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;replace_all&quot;: false,
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-e2e-escalation-jira-ticket/EscalationJiraTicket/EscalationJiraTicket/EscalationJiraTicket.flow&quot;,
+  &quot;old_string&quot;: &quot;  \&quot;definitions\&quot;: [\n    {\n      \&quot;nodeType\&quot;: \&quot;core.trigger.manual\&quot;,&quot;,
+  &quot;new_string&quot;: &quot;  \&quot;definitions\&quot;: [\n    {\n      \&quot;nodeType\&quot;: \&quot;core.action.script\&quot;,\n      \&quot;version\&quot;: \&quot;1.1\&quot;,\n      \&quot;category\&quot;: \&quot;data-operations\&quot;,\n      \&quot;description\&quot;: \&quot;Run custom JavaScript code\&quot;,\n      \&quot;tags\&quot;: [\&quot;code\&quot;, \&quot;javascript\&quot;, \&quot;python\&quot;],\n      \&quot;sortOrder\&quot;: 70,\n      \&quot;supportsErrorHandling\&quot;: true,\n      \&quot;display\&quot;: {\n        \&quot;label\&quot;: \&quot;Script\&quot;,\n        \&quot;icon\&quot;: \&quot;code\&quot;\n      },\n      \&quot;handleConfiguration\&quot;: [\n      … (2207 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>The file /work/output/artifacts/skill-flow-e2e-escalation-jira-ticket/EscalationJiraTicket/EscalationJiraTicket/EscalationJiraTicket.flow has been updated successfully. (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#23</span>
+      <span class="tool-name">Edit</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">35ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;replace_all&quot;: false,
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-e2e-escalation-jira-ticket/EscalationJiraTicket/EscalationJiraTicket/EscalationJiraTicket.flow&quot;,
+  &quot;old_string&quot;: &quot;  \&quot;variables\&quot;: {\n    \&quot;nodes\&quot;: [\n      {\n        \&quot;id\&quot;: \&quot;start.output\&quot;,\n        \&quot;type\&quot;: \&quot;object\&quot;,\n        \&quot;description\&quot;: \&quot;Data passed when manually triggering the process.\&quot;,\n        \&quot;binding\&quot;: {\n          \&quot;nodeId\&quot;: \&quot;start\&quot;,\n          \&quot;outputId\&quot;: \&quot;output\&quot;\n        }\n      },\n      {\n        \&quot;id\&quot;: \&quot;createJiraIssue1.output\&quot;,\n        \&quot;type\&quot;: \&quot;object\&quot;,\n        \&quot;description\&quot;: \&quot;The return value of the conne… (1341 more chars)&quot;,
+  &quot;new_string&quot;: &quot;  \&quot;variables\&quot;: {\n    \&quot;globals\&quot;: {\n      \&quot;in\&quot;: [\n        {\&quot;id\&quot;: \&quot;senderEmail\&quot;, \&quot;type\&quot;: \&quot;string\&quot;, \&quot;description\&quot;: \&quot;Sender email address\&quot;},\n        {\&quot;id\&quot;: \&quot;senderDomain\&quot;, \&quot;type\&quot;: \&quot;string\&quot;, \&quot;description\&quot;: \&quot;Sender domain\&quot;},\n        {\&quot;id\&quot;: \&quot;subject\&quot;, \&quot;type\&quot;: \&quot;string\&quot;, \&quot;description\&quot;: \&quot;Email subject\&quot;},\n        {\&quot;id\&quot;: \&quot;body\&quot;, \&quot;type\&quot;: \&quot;string\&quot;, \&quot;description\&quot;: \&quot;Email body\&quot;},\n        {\&quot;id\&quot;: \&quot;customerTier\&quot;, \&quot;ty… (2728 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>The file /work/output/artifacts/skill-flow-e2e-escalation-jira-ticket/EscalationJiraTicket/EscalationJiraTicket/EscalationJiraTicket.flow has been updated successfully. (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#24</span>
+      <span class="tool-name">Edit</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">25ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;replace_all&quot;: false,
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-e2e-escalation-jira-ticket/EscalationJiraTicket/EscalationJiraTicket/EscalationJiraTicket.flow&quot;,
+  &quot;old_string&quot;: &quot;  \&quot;layout\&quot;: {\n    \&quot;nodes\&quot;: {\n      \&quot;start\&quot;: {\n        \&quot;position\&quot;: {\n          \&quot;x\&quot;: 256,\n          \&quot;y\&quot;: 144\n        }\n      },\n      \&quot;createJiraIssue1\&quot;: {\n        \&quot;position\&quot;: {\n          \&quot;x\&quot;: 0,\n          \&quot;y\&quot;: 0\n        }\n      }\n    }\n  }\n}&quot;,
+  &quot;new_string&quot;: &quot;  \&quot;layout\&quot;: {\n    \&quot;nodes\&quot;: {\n      \&quot;start\&quot;: {\n        \&quot;position\&quot;: {\&quot;x\&quot;: 256, \&quot;y\&quot;: 144},\n        \&quot;size\&quot;: {\&quot;width\&quot;: 96, \&quot;height\&quot;: 96},\n        \&quot;collapsed\&quot;: false\n      },\n      \&quot;classifySeverity\&quot;: {\n        \&quot;position\&quot;: {\&quot;x\&quot;: 0, \&quot;y\&quot;: 0},\n        \&quot;size\&quot;: {\&quot;width\&quot;: 96, \&quot;height\&quot;: 96},\n        \&quot;collapsed\&quot;: false\n      },\n      \&quot;createJiraIssue1\&quot;: {\n        \&quot;position\&quot;: {\&quot;x\&quot;: 0, \&quot;y\&quot;: 0},\n        \&quot;size\&quot;: {\&quot;… (214 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>The file /work/output/artifacts/skill-flow-e2e-escalation-jira-ticket/EscalationJiraTicket/EscalationJiraTicket/EscalationJiraTicket.flow has been updated successfully. (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#25</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">2.61s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-e2e-escalation-jira-ticket/EscalationJiraTicket/EscalationJiraTicket \\\n  &amp;&amp; uip maestro flow node configure \&quot;EscalationJiraTicket.flow\&quot; \&quot;createJiraIssue1\&quot; --detail \&quot;$(cat &lt;&lt;&#x27;JSON&#x27;\n{\n  \&quot;connectionId\&quot;: \&quot;f5273a4d-d492-4bcd-a106-5a20bf89a3ef\&quot;,\n  \&quot;folderKey\&quot;: \&quot;5da18ec0-7de1-4e57-aaf1-ddc8a369c199\&quot;,\n  \&quot;method\&quot;: \&quot;POST\&quot;,\n  \&quot;endpoint\&quot;: \&quot;/curated_create_issue\&quot;,\n  \&quot;bodyPa… (594 more chars)&quot;,
+  &quot;description&quot;: &quot;Configure Jira create-issue connector node with connection, project, and summary&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeConfigureSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;NodeId&quot;: &quot;createJiraIssue1&quot;,
+    &quot;BindingsCreated&quot;: 2,
+    &quot;DetailPopulated&quot;: true
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#26</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-err">ERROR</span>
+      <span class="tool-duration">842ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-e2e-escalation-jira-ticket/EscalationJiraTicket/EscalationJiraTicket \\\n  &amp;&amp; uip maestro flow validate \&quot;EscalationJiraTicket.flow\&quot; --output json 2&gt;/dev/null&quot;,
+  &quot;description&quot;: &quot;Validate the flow&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Exit code 1
+{
+  &quot;Result&quot;: &quot;Failure&quot;,
+  &quot;Message&quot;: &quot;Validation failed for /work/output/artifacts/skill-flow-e2e-escalation-jira-ticket/EscalationJiraTicket/EscalationJiraTicket/EscalationJiraTicket.flow&quot;,
+  &quot;Instructions&quot;: &quot;Found 1 error(s):\n  - [error] [variables.globals] Invalid input: expected array, received object&quot;,
+  &quot;ErrorCode&quot;: &quot;unknown_error&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}</pre>
+    <h4>Error</h4><pre>Exit code 1
+{
+  &quot;Result&quot;: &quot;Failure&quot;,
+  &quot;Message&quot;: &quot;Validation failed for /work/output/artifacts/skill-flow-e2e-escalation-jira-ticket/EscalationJiraTicket/EscalationJiraTicket/EscalationJiraTicket.flow&quot;,
+  &quot;Instructions&quot;: &quot;Found 1 error(s):\n  - [error] [variables.globals] Invalid input: expected array, received object&quot;,
+  &quot;ErrorCode&quot;: &quot;unknown_error&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}</pre>
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#27</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">11ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/shared/variables-and-expressions.md&quot;,
+  &quot;limit&quot;: 120
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Variables and Expressions
+2	
+3	Complete reference for declaring variables, writing expressions, and managing data flow in `.flow` files.
+4	
+5	&gt; **Read this before** adding variables or writing expressions in any flow.
+6	&gt;
+7	&gt; `flow validate` catches the structural expression-reference errors:
+8	&gt;
+9	&gt; - Missing `=js:` prefix on `$vars`/`$metadata`/`$self` (MST-9107)
+10	&gt; - Invented `nodes.&lt;id&gt;.output` syntax
+11	&gt; - References to unknown variables or node IDs
+12	&gt; - Output-path walks that descend into declared primitives or schemas closed with `additionalProperties: false`
+13	&gt;
+14	&gt; Errors against **open output schemas** (HTTP response bodies, script returns, free-text agent output) and **wrong-direction reads** (e.g. reading an `out`-only variable) still slip past validate and surface only at `flow debug` or in production.
+15	
+16	---
+17	
+18	## Table of contents
+19	
+20	- [Variables Overview](#variables-overview)
+21	- [Workflow Variables (`globals`)](#workflow-variables-globals)
+22	- [Node Variables (`nodes`)](#node-variables-nodes)
+23	- [Variable Updates (`variableUpdates`)](#variable-updates-variableupdates)
+24	- [Output Mapping on End Nodes](#output-mapping-on-end-nodes)
+25	- [
+
+… (truncated, 2813 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#28</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">6ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-e2e-escalation-jira-ticket/EscalationJiraTicket/EscalationJiraTicket/EscalationJiraTicket.flow&quot;,
+  &quot;limit&quot;: 50,
+  &quot;offset&quot;: 200
+}</pre>
+    <h4>Result</h4>
+    <pre>200	                  &quot;minHeight&quot;: 200
+201	                },
+202	                &quot;label&quot;: &quot;Code&quot;,
+203	                &quot;description&quot;: &quot;JavaScript expression that returns a result&quot;
+204	              }
+205	            ]
+206	          }
+207	        ]
+208	      }
+209	    },
+210	    {
+211	      &quot;nodeType&quot;: &quot;core.control.end&quot;,
+212	      &quot;version&quot;: &quot;1.0&quot;,
+213	      &quot;category&quot;: &quot;control-flow&quot;,
+214	      &quot;description&quot;: &quot;Mark the end of a process path&quot;,
+215	      &quot;tags&quot;: [
+216	        &quot;control-flow&quot;,
+217	        &quot;end&quot;,
+218	        &quot;finish&quot;,
+219	        &quot;complete&quot;
+220	      ],
+221	      &quot;sortOrder&quot;: 65,
+222	      &quot;display&quot;: {
+223	        &quot;label&quot;: &quot;End&quot;,
+224	        &quot;icon&quot;: &quot;circle-check&quot;,
+225	        &quot;shape&quot;: &quot;circle&quot;
+226	      },
+227	      &quot;handleConfiguration&quot;: [
+228	        {
+229	          &quot;position&quot;: &quot;left&quot;,
+230	          &quot;handles&quot;: [
+231	            {
+232	              &quot;id&quot;: &quot;input&quot;,
+233	              &quot;type&quot;: &quot;target&quot;,
+234	              &quot;handleType&quot;: &quot;input&quot;
+235	            }
+236	          ]
+237	        }
+238	      ],
+239	      &quot;model&quot;: {
+240	        &quot;type&quot;: &quot;bpmn:EndEvent&quot;
+241	      },
+242	      &quot;runtimeConstraints&quot;: {
+243	        &quot;exclude&quot;: [
+244	          &quot;api-function&quot;
+245	        ]
+
+
+… (truncated, 77 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#29</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">4ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-e2e-escalation-jira-ticket/EscalationJiraTicket/EscalationJiraTicket/EscalationJiraTicket.flow&quot;,
+  &quot;limit&quot;: 100,
+  &quot;offset&quot;: 540
+}</pre>
+    <h4>Result</h4>
+    <pre>540	      &quot;resource&quot;: &quot;connection&quot;,
+541	      &quot;resourceKey&quot;: &quot;f5273a4d-d492-4bcd-a106-5a20bf89a3ef&quot;,
+542	      &quot;propertyAttribute&quot;: &quot;FolderKey&quot;,
+543	      &quot;default&quot;: &quot;5da18ec0-7de1-4e57-aaf1-ddc8a369c199&quot;
+544	    }
+545	  ],
+546	  &quot;variables&quot;: {
+547	    &quot;globals&quot;: {
+548	      &quot;in&quot;: [
+549	        {
+550	          &quot;id&quot;: &quot;senderEmail&quot;,
+551	          &quot;type&quot;: &quot;string&quot;,
+552	          &quot;description&quot;: &quot;Sender email address&quot;
+553	        },
+554	        {
+555	          &quot;id&quot;: &quot;senderDomain&quot;,
+556	          &quot;type&quot;: &quot;string&quot;,
+557	          &quot;description&quot;: &quot;Sender domain&quot;
+558	        },
+559	        {
+560	          &quot;id&quot;: &quot;subject&quot;,
+561	          &quot;type&quot;: &quot;string&quot;,
+562	          &quot;description&quot;: &quot;Email subject&quot;
+563	        },
+564	        {
+565	          &quot;id&quot;: &quot;body&quot;,
+566	          &quot;type&quot;: &quot;string&quot;,
+567	          &quot;description&quot;: &quot;Email body&quot;
+568	        },
+569	        {
+570	          &quot;id&quot;: &quot;customerTier&quot;,
+571	          &quot;type&quot;: &quot;string&quot;,
+572	          &quot;description&quot;: &quot;Customer tier (e.g. Enterprise, Standard)&quot;
+573	        },
+574	        {
+575	          &quot;id&quot;: &quot;productionDown&quot;,
+576	          &quot;type&quot;: &quot;boolean&quot;,
+577	          &quot;description&quot;: &quot;Whether production is down&quot;
+578	        },
+579	        {
+580	          &quot;i
+
+… (truncated, 1881 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#30</span>
+      <span class="tool-name">Edit</span>
+      <span class="tool-status-err">ERROR</span>
+      <span class="tool-duration">9ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;replace_all&quot;: false,
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-e2e-escalation-jira-ticket/EscalationJiraTicket/EscalationJiraTicket/EscalationJiraTicket.flow&quot;,
+  &quot;old_string&quot;: &quot;  \&quot;variables\&quot;: {\n    \&quot;globals\&quot;: {\n      \&quot;in\&quot;: [\n        {\&quot;id\&quot;: \&quot;senderEmail\&quot;, \&quot;type\&quot;: \&quot;string\&quot;, \&quot;description\&quot;: \&quot;Sender email address\&quot;},\n        {\&quot;id\&quot;: \&quot;senderDomain\&quot;, \&quot;type\&quot;: \&quot;string\&quot;, \&quot;description\&quot;: \&quot;Sender domain\&quot;},\n        {\&quot;id\&quot;: \&quot;subject\&quot;, \&quot;type\&quot;: \&quot;string\&quot;, \&quot;description\&quot;: \&quot;Email subject\&quot;},\n        {\&quot;id\&quot;: \&quot;body\&quot;, \&quot;type\&quot;: \&quot;string\&quot;, \&quot;description\&quot;: \&quot;Email body\&quot;},\n        {\&quot;id\&quot;: \&quot;customerTier\&quot;, \&quot;ty… (1026 more chars)&quot;,
+  &quot;new_string&quot;: &quot;  \&quot;variables\&quot;: {\n    \&quot;globals\&quot;: [\n      {\&quot;id\&quot;: \&quot;senderEmail\&quot;, \&quot;direction\&quot;: \&quot;in\&quot;, \&quot;type\&quot;: \&quot;string\&quot;, \&quot;description\&quot;: \&quot;Sender email address\&quot;},\n      {\&quot;id\&quot;: \&quot;senderDomain\&quot;, \&quot;direction\&quot;: \&quot;in\&quot;, \&quot;type\&quot;: \&quot;string\&quot;, \&quot;description\&quot;: \&quot;Sender domain\&quot;},\n      {\&quot;id\&quot;: \&quot;subject\&quot;, \&quot;direction\&quot;: \&quot;in\&quot;, \&quot;type\&quot;: \&quot;string\&quot;, \&quot;description\&quot;: \&quot;Email subject\&quot;},\n      {\&quot;id\&quot;: \&quot;body\&quot;, \&quot;direction\&quot;: \&quot;in\&quot;, \&quot;type\&quot;: \&quot;string\&quot;, \&quot;descripti… (1222 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>&lt;tool_use_error&gt;String to replace not found in file.
+String:   &quot;variables&quot;: {
+    &quot;globals&quot;: {
+      &quot;in&quot;: [
+        {&quot;id&quot;: &quot;senderEmail&quot;, &quot;type&quot;: &quot;string&quot;, &quot;description&quot;: &quot;Sender email address&quot;},
+        {&quot;id&quot;: &quot;senderDomain&quot;, &quot;type&quot;: &quot;string&quot;, &quot;description&quot;: &quot;Sender domain&quot;},
+        {&quot;id&quot;: &quot;subject&quot;, &quot;type&quot;: &quot;string&quot;, &quot;description&quot;: &quot;Email subject&quot;},
+        {&quot;id&quot;: &quot;body&quot;, &quot;type&quot;: &quot;string&quot;, &quot;description&quot;: &quot;Email body&quot;},
+        {&quot;id&quot;: &quot;customerTier&quot;, &quot;type&quot;: &quot;string&quot;, &quot;description&quot;: &quot;Customer tier (e.g. Enterprise, Standard)&quot;},
+        {&quot;id&quot;: &quot;productionDown&quot;, &quot;type&quot;: &quot;boolean&quot;, &quot;description&quot;: &quot;Whether production is down&quot;},
+        {&quot;id&quot;: &quot;workaroundAvailable&quot;, &quot;type&quot;: &quot;boolean&quot;, &quot;description&quot;: &quot;Whether a workaround is available&quot;},
+        {&quot;id&quot;: &quot;hasAttachments&quot;, &quot;type&quot;: &quot;boolean&quot;, &quot;description&quot;: &quot;Whether the email has attachments&quot;},
+        {&quot;id&quot;: &quot;customerMatchStatus&quot;, &quot;type&quot;: &quot;string&quot;, &quot;description&quot;: &quot;Customer match status&quot;},
+        {&quot;id&quot;: &quot;isDuplicate&quot;, &quot;type&quot;: &quot;boolean&quot;, &quot;description&quot;: &quot;Whether this is a duplicate escalation&quot;},
+        {&quot;id&quot;: &quot;correlationId&quot;, &quot;type&quot;: &quot;string&quot;, &quot;description&quot;: &quot;Correlation ID for the escalation&quot;}
+      ],
+      &quot;out&quot;: [
+        {&quot;id&quot;: &quot;seve
+
+… (truncated, 304 more chars)</pre>
+    <h4>Error</h4><pre>&lt;tool_use_error&gt;String to replace not found in file.
+String:   &quot;variables&quot;: {
+    &quot;globals&quot;: {
+      &quot;in&quot;: [
+        {&quot;id&quot;: &quot;senderEmail&quot;, &quot;type&quot;: &quot;string&quot;, &quot;description&quot;: &quot;Sender email address&quot;},
+        {&quot;id&quot;: &quot;senderDomain&quot;, &quot;type&quot;: &quot;string&quot;, &quot;description&quot;: &quot;Sender domain&quot;},
+        {&quot;id&quot;: &quot;subject&quot;, &quot;type&quot;: &quot;string&quot;, &quot;description&quot;: &quot;Email subject&quot;},
+        {&quot;id&quot;: &quot;body&quot;, &quot;type&quot;: &quot;string&quot;, &quot;description&quot;: &quot;Email body&quot;},
+        {&quot;id&quot;: &quot;customerTier&quot;, &quot;type&quot;: &quot;string&quot;, &quot;description&quot;: &quot;Customer tier (e.g. Enterprise, Standard)&quot;},
+        {&quot;id&quot;: &quot;productionDown&quot;, &quot;type&quot;: &quot;boolean&quot;, &quot;description&quot;: &quot;Whether production is down&quot;},
+        {&quot;id&quot;: &quot;workaroundAvailable&quot;, &quot;type&quot;: &quot;boolean&quot;, &quot;description&quot;: &quot;Whether a workaround is available&quot;},
+        {&quot;id&quot;: &quot;hasAttachments&quot;, &quot;type&quot;: &quot;boolean&quot;, &quot;description&quot;: &quot;Whether the email has attachments&quot;},
+        {&quot;id&quot;: &quot;customerMatchStatus&quot;, &quot;type&quot;: &quot;string&quot;, &quot;description&quot;: &quot;Customer match status&quot;},
+        {&quot;id&quot;: &quot;isDuplicate&quot;, &quot;type&quot;: &quot;boolean&quot;, &quot;description&quot;: &quot;Whether this is a duplicate escalation&quot;},
+        {&quot;id&quot;: &quot;correlationId&quot;, &quot;type&quot;: &quot;string&quot;, &quot;description&quot;: &quot;Correlation ID for the escalation&quot;}
+      ],
+      &quot;out&quot;: [
+        {&quot;id&quot;: &quot;severity&quot;, &quot;type&quot;: &quot;string&quot;, &quot;description&quot;: &quot;Classified severity level (Sev1, Sev2, Sev3)&quot;},
+        {&quot;id&quot;: &quot;caseKey&quot;, &quot;type&quot;: &quot;string&quot;, &quot;description&quot;: &quot;The incoming correlationId&quot;},
+        {&quot;id&quot;: &quot;jiraIssueKey&quot;, &quot;type&quot;: &quot;string&quot;, &quot;description&quot;: &quot;The created Jira issue key&quot;}
+      ]
+    },&lt;/tool_use_error&gt;</pre>
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#31</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">5ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-e2e-escalation-jira-ticket/EscalationJiraTicket/EscalationJiraTicket/EscalationJiraTicket.flow&quot;,
+  &quot;limit&quot;: 150,
+  &quot;offset&quot;: 540
+}</pre>
+    <h4>Result</h4>
+    <pre>540	      &quot;resource&quot;: &quot;connection&quot;,
+541	      &quot;resourceKey&quot;: &quot;f5273a4d-d492-4bcd-a106-5a20bf89a3ef&quot;,
+542	      &quot;propertyAttribute&quot;: &quot;FolderKey&quot;,
+543	      &quot;default&quot;: &quot;5da18ec0-7de1-4e57-aaf1-ddc8a369c199&quot;
+544	    }
+545	  ],
+546	  &quot;variables&quot;: {
+547	    &quot;globals&quot;: {
+548	      &quot;in&quot;: [
+549	        {
+550	          &quot;id&quot;: &quot;senderEmail&quot;,
+551	          &quot;type&quot;: &quot;string&quot;,
+552	          &quot;description&quot;: &quot;Sender email address&quot;
+553	        },
+554	        {
+555	          &quot;id&quot;: &quot;senderDomain&quot;,
+556	          &quot;type&quot;: &quot;string&quot;,
+557	          &quot;description&quot;: &quot;Sender domain&quot;
+558	        },
+559	        {
+560	          &quot;id&quot;: &quot;subject&quot;,
+561	          &quot;type&quot;: &quot;string&quot;,
+562	          &quot;description&quot;: &quot;Email subject&quot;
+563	        },
+564	        {
+565	          &quot;id&quot;: &quot;body&quot;,
+566	          &quot;type&quot;: &quot;string&quot;,
+567	          &quot;description&quot;: &quot;Email body&quot;
+568	        },
+569	        {
+570	          &quot;id&quot;: &quot;customerTier&quot;,
+571	          &quot;type&quot;: &quot;string&quot;,
+572	          &quot;description&quot;: &quot;Customer tier (e.g. Enterprise, Standard)&quot;
+573	        },
+574	        {
+575	          &quot;id&quot;: &quot;productionDown&quot;,
+576	          &quot;type&quot;: &quot;boolean&quot;,
+577	          &quot;description&quot;: &quot;Whether production is down&quot;
+578	        },
+579	        {
+580	          &quot;i
+
+… (truncated, 3471 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#32</span>
+      <span class="tool-name">Edit</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">41ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;replace_all&quot;: false,
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-e2e-escalation-jira-ticket/EscalationJiraTicket/EscalationJiraTicket/EscalationJiraTicket.flow&quot;,
+  &quot;old_string&quot;: &quot;  \&quot;variables\&quot;: {\n    \&quot;globals\&quot;: {\n      \&quot;in\&quot;: [\n        {\n          \&quot;id\&quot;: \&quot;senderEmail\&quot;,\n          \&quot;type\&quot;: \&quot;string\&quot;,\n          \&quot;description\&quot;: \&quot;Sender email address\&quot;\n        },\n        {\n          \&quot;id\&quot;: \&quot;senderDomain\&quot;,\n          \&quot;type\&quot;: \&quot;string\&quot;,\n          \&quot;description\&quot;: \&quot;Sender domain\&quot;\n        },\n        {\n          \&quot;id\&quot;: \&quot;subject\&quot;,\n          \&quot;type\&quot;: \&quot;string\&quot;,\n          \&quot;description\&quot;: \&quot;Email subje… (1586 more chars)&quot;,
+  &quot;new_string&quot;: &quot;  \&quot;variables\&quot;: {\n    \&quot;globals\&quot;: [\n      {\&quot;id\&quot;: \&quot;senderEmail\&quot;, \&quot;direction\&quot;: \&quot;in\&quot;, \&quot;type\&quot;: \&quot;string\&quot;, \&quot;description\&quot;: \&quot;Sender email address\&quot;},\n      {\&quot;id\&quot;: \&quot;senderDomain\&quot;, \&quot;direction\&quot;: \&quot;in\&quot;, \&quot;type\&quot;: \&quot;string\&quot;, \&quot;description\&quot;: \&quot;Sender domain\&quot;},\n      {\&quot;id\&quot;: \&quot;subject\&quot;, \&quot;direction\&quot;: \&quot;in\&quot;, \&quot;type\&quot;: \&quot;string\&quot;, \&quot;description\&quot;: \&quot;Email subject\&quot;},\n      {\&quot;id\&quot;: \&quot;body\&quot;, \&quot;direction\&quot;: \&quot;in\&quot;, \&quot;type\&quot;: \&quot;string\&quot;, \&quot;descripti… (1222 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>The file /work/output/artifacts/skill-flow-e2e-escalation-jira-ticket/EscalationJiraTicket/EscalationJiraTicket/EscalationJiraTicket.flow has been updated successfully. (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#33</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">21ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/shared/variables-and-expressions.md&quot;,
+  &quot;limit&quot;: 60,
+  &quot;offset&quot;: 120
+}</pre>
+    <h4>Result</h4>
+    <pre>120	  &quot;direction&quot;: &quot;in&quot;,
+121	  &quot;type&quot;: &quot;object&quot;,
+122	  &quot;schema&quot;: {
+123	    &quot;$schema&quot;: &quot;http://json-schema.org/draft-07/schema#&quot;,
+124	    &quot;type&quot;: &quot;object&quot;,
+125	    &quot;required&quot;: [&quot;orderId&quot;, &quot;amount&quot;],
+126	    &quot;properties&quot;: {
+127	      &quot;orderId&quot;: { &quot;type&quot;: &quot;string&quot; },
+128	      &quot;amount&quot;: { &quot;type&quot;: &quot;number&quot; },
+129	      &quot;items&quot;: {
+130	        &quot;type&quot;: &quot;array&quot;,
+131	        &quot;items&quot;: { &quot;type&quot;: &quot;object&quot; }
+132	      }
+133	    },
+134	    &quot;additionalProperties&quot;: false
+135	  }
+136	}
+137	```
+138	
+139	**Array with subType:**
+140	```json
+141	{
+142	  &quot;id&quot;: &quot;emailList&quot;,
+143	  &quot;direction&quot;: &quot;in&quot;,
+144	  &quot;type&quot;: &quot;array&quot;,
+145	  &quot;subType&quot;: &quot;string&quot;,
+146	  &quot;defaultValue&quot;: [&quot;admin@example.com&quot;]
+147	}
+148	```
+149	
+150	**Input associated with a trigger:**
+151	```json
+152	{
+153	  &quot;id&quot;: &quot;webhookPayload&quot;,
+154	  &quot;direction&quot;: &quot;in&quot;,
+155	  &quot;type&quot;: &quot;object&quot;,
+156	  &quot;triggerNodeId&quot;: &quot;start&quot;
+157	}
+158	```
+159	Accessed in expressions as `$vars.{triggerNodeId}.output.{id}` (the variable is nested under the trigger node&#x27;s output — NOT `$vars.{id}`).
+160	
+161	&lt;a id=&quot;file-input&quot;&gt;&lt;/a&gt;
+162	**File input (`type: &quot;file&quot;`):**
+163	```json
+164	{
+165	  &quot;id&quot;: &quot;inputDoc&quot;,
+166	  &quot;direction&quot;: &quot;in&quot;,
+167	  &quot;type&quot;: &quot;file&quot;,
+168	  &quot;description
+
+… (truncated, 1106 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#34</span>
+      <span class="tool-name">Edit</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">41ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;replace_all&quot;: false,
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-e2e-escalation-jira-ticket/EscalationJiraTicket/EscalationJiraTicket/EscalationJiraTicket.flow&quot;,
+  &quot;old_string&quot;: &quot;  \&quot;variables\&quot;: {\n    \&quot;globals\&quot;: [\n      {\&quot;id\&quot;: \&quot;senderEmail\&quot;, \&quot;direction\&quot;: \&quot;in\&quot;, \&quot;type\&quot;: \&quot;string\&quot;, \&quot;description\&quot;: \&quot;Sender email address\&quot;},\n      {\&quot;id\&quot;: \&quot;senderDomain\&quot;, \&quot;direction\&quot;: \&quot;in\&quot;, \&quot;type\&quot;: \&quot;string\&quot;, \&quot;description\&quot;: \&quot;Sender domain\&quot;},\n      {\&quot;id\&quot;: \&quot;subject\&quot;, \&quot;direction\&quot;: \&quot;in\&quot;, \&quot;type\&quot;: \&quot;string\&quot;, \&quot;description\&quot;: \&quot;Email subject\&quot;},\n      {\&quot;id\&quot;: \&quot;body\&quot;, \&quot;direction\&quot;: \&quot;in\&quot;, \&quot;type\&quot;: \&quot;string\&quot;, \&quot;descripti… (1222 more chars)&quot;,
+  &quot;new_string&quot;: &quot;  \&quot;variables\&quot;: {\n    \&quot;globals\&quot;: [\n      {\&quot;id\&quot;: \&quot;senderEmail\&quot;, \&quot;direction\&quot;: \&quot;in\&quot;, \&quot;type\&quot;: \&quot;string\&quot;, \&quot;triggerNodeId\&quot;: \&quot;start\&quot;, \&quot;description\&quot;: \&quot;Sender email address\&quot;},\n      {\&quot;id\&quot;: \&quot;senderDomain\&quot;, \&quot;direction\&quot;: \&quot;in\&quot;, \&quot;type\&quot;: \&quot;string\&quot;, \&quot;triggerNodeId\&quot;: \&quot;start\&quot;, \&quot;description\&quot;: \&quot;Sender domain\&quot;},\n      {\&quot;id\&quot;: \&quot;subject\&quot;, \&quot;direction\&quot;: \&quot;in\&quot;, \&quot;type\&quot;: \&quot;string\&quot;, \&quot;triggerNodeId\&quot;: \&quot;start\&quot;, \&quot;description\&quot;: \&quot;Email s… (1508 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>The file /work/output/artifacts/skill-flow-e2e-escalation-jira-ticket/EscalationJiraTicket/EscalationJiraTicket/EscalationJiraTicket.flow has been updated successfully. (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#35</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">3.62s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-e2e-escalation-jira-ticket/EscalationJiraTicket/EscalationJiraTicket \\\n  &amp;&amp; uip maestro flow validate \&quot;EscalationJiraTicket.flow\&quot; --output json 2&gt;/dev/null&quot;,
+  &quot;description&quot;: &quot;Validate the flow after globals fix&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FlowValidate&quot;,
+  &quot;Data&quot;: {
+    &quot;File&quot;: &quot;/work/output/artifacts/skill-flow-e2e-escalation-jira-ticket/EscalationJiraTicket/EscalationJiraTicket/EscalationJiraTicket.flow&quot;,
+    &quot;Status&quot;: &quot;Valid&quot;,
+    &quot;Warnings&quot;: &quot;3 warning(s):\n  - [nodes[endSuccess].outputs.severity.source] [MISSING_OUTPUT_MAPPING] \&quot;End\&quot; is missing output mapping for \&quot;severity\&quot;\n  - [nodes[endSuccess].outputs.caseKey.source] [MISSING_OUTPUT_MAPPING] \&quot;End\&quot; is missing output mapping for \&quot;caseKey\&quot;\n  - [nodes[endSuccess].outputs.jiraIssueKey.source] [MISSING_OUTPUT_MAPPING] \&quot;End\&quot; is missing output mapping for \&quot;jiraIssueKey\&quot;&quot;
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#36</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">17ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/shared/variables-and-expressions.md&quot;,
+  &quot;limit&quot;: 80,
+  &quot;offset&quot;: 220
+}</pre>
+    <h4>Result</h4>
+    <pre>220	  &quot;variables&quot;: {
+221	    &quot;nodes&quot;: [
+222	      {
+223	        &quot;id&quot;: &quot;fetchData.output&quot;,
+224	        &quot;type&quot;: &quot;object&quot;,
+225	        &quot;description&quot;: &quot;HTTP response body&quot;,
+226	        &quot;binding&quot;: {
+227	          &quot;nodeId&quot;: &quot;fetchData&quot;,
+228	          &quot;outputId&quot;: &quot;output&quot;
+229	        }
+230	      },
+231	      {
+232	        &quot;id&quot;: &quot;fetchData.error&quot;,
+233	        &quot;type&quot;: &quot;object&quot;,
+234	        &quot;description&quot;: &quot;Error details if the request fails&quot;,
+235	        &quot;schema&quot;: {
+236	          &quot;$schema&quot;: &quot;http://json-schema.org/draft-07/schema#&quot;,
+237	          &quot;type&quot;: &quot;object&quot;,
+238	          &quot;required&quot;: [&quot;code&quot;, &quot;message&quot;],
+239	          &quot;properties&quot;: {
+240	            &quot;code&quot;: { &quot;type&quot;: &quot;string&quot; },
+241	            &quot;message&quot;: { &quot;type&quot;: &quot;string&quot; },
+242	            &quot;detail&quot;: { &quot;type&quot;: &quot;string&quot; },
+243	            &quot;category&quot;: { &quot;type&quot;: &quot;string&quot; },
+244	            &quot;status&quot;: { &quot;type&quot;: &quot;integer&quot; }
+245	          }
+246	        },
+247	        &quot;binding&quot;: {
+248	          &quot;nodeId&quot;: &quot;fetchData&quot;,
+249	          &quot;outputId&quot;: &quot;error&quot;
+250	        }
+251	      }
+252	    ]
+253	  }
+254	}
+255	```
+256	
+257	---
+258	
+259	## Variable Updates (`variableUpdates`)
+260	
+261	Variable updates assign new values to `inout` (state) variables a
+
+… (truncated, 836 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#37</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">13ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/shared/variables-and-expressions.md&quot;,
+  &quot;limit&quot;: 80,
+  &quot;offset&quot;: 320
+}</pre>
+    <h4>Result</h4>
+    <pre>320	
+321	Workflow output variables (`direction: &quot;out&quot;`) must be mapped on End nodes. The End node&#x27;s `outputs` object maps each output variable ID to a source expression.
+322	
+323	### Structure
+324	
+325	```json
+326	{
+327	  &quot;id&quot;: &quot;end1&quot;,
+328	  &quot;type&quot;: &quot;core.control.end&quot;,
+329	  &quot;typeVersion&quot;: &quot;1.0&quot;,
+330	  &quot;display&quot;: { &quot;label&quot;: &quot;End&quot; },
+331	  &quot;inputs&quot;: {},
+332	  &quot;outputs&quot;: {
+333	    &quot;totalAmount&quot;: {
+334	      &quot;source&quot;: &quot;=js:$vars.calculateTotal.output.amount&quot;
+335	    },
+336	    &quot;summary&quot;: {
+337	      &quot;source&quot;: &quot;=js:$vars.formatResult.output.text&quot;
+338	    }
+339	  }
+340	}
+341	```
+342	
+343	&gt; **Every `out` variable must have a mapping on every End node** that the flow can reach. Missing mappings cause runtime errors.
+344	
+345	---
+346	
+347	## Expression System
+348	
+349	Flow uses a **Jint-based JavaScript engine** (ES2020 subset) for expressions. There are two expression formats.
+350	
+351	### `=js:` Expressions (Full JavaScript)
+352	
+353	Used for conditions, input values, variable updates, and output mappings. The `=js:` prefix tells the engine to evaluate the rest as JavaScript.
+354	
+355	```
+356	=js:$vars.order.amount &gt; 1000 &amp;&amp; $vars.order.status === &quot;approved&quot;
+357	```
+358	
+359	### Template
+
+… (truncated, 3325 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#38</span>
+      <span class="tool-name">Edit</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">203ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;replace_all&quot;: false,
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-e2e-escalation-jira-ticket/EscalationJiraTicket/EscalationJiraTicket/EscalationJiraTicket.flow&quot;,
+  &quot;old_string&quot;: &quot;    {\n      \&quot;id\&quot;: \&quot;endSuccess\&quot;,\n      \&quot;type\&quot;: \&quot;core.control.end\&quot;,\n      \&quot;typeVersion\&quot;: \&quot;1.0\&quot;,\n      \&quot;display\&quot;: {\n        \&quot;label\&quot;: \&quot;End\&quot;\n      },\n      \&quot;inputs\&quot;: {},\n      \&quot;outputs\&quot;: {\n        \&quot;severity\&quot;: \&quot;=js:$vars.classifySeverity.output.severity\&quot;,\n        \&quot;caseKey\&quot;: \&quot;=js:$vars.start.output.correlationId\&quot;,\n        \&quot;jiraIssueKey\&quot;: \&quot;=js:$vars.createJiraIssue1.output.key\&quot;\n      }\n    }&quot;,
+  &quot;new_string&quot;: &quot;    {\n      \&quot;id\&quot;: \&quot;endSuccess\&quot;,\n      \&quot;type\&quot;: \&quot;core.control.end\&quot;,\n      \&quot;typeVersion\&quot;: \&quot;1.0\&quot;,\n      \&quot;display\&quot;: {\n        \&quot;label\&quot;: \&quot;End\&quot;\n      },\n      \&quot;inputs\&quot;: {},\n      \&quot;outputs\&quot;: {\n        \&quot;severity\&quot;: {\n          \&quot;source\&quot;: \&quot;=js:$vars.classifySeverity.output.severity\&quot;\n        },\n        \&quot;caseKey\&quot;: {\n          \&quot;source\&quot;: \&quot;=js:$vars.start.output.correlationId\&quot;\n        },\n        \&quot;jiraIssueKey\&quot;: {\n … (82 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>The file /work/output/artifacts/skill-flow-e2e-escalation-jira-ticket/EscalationJiraTicket/EscalationJiraTicket/EscalationJiraTicket.flow has been updated successfully. (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#39</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">9.13s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-e2e-escalation-jira-ticket/EscalationJiraTicket/EscalationJiraTicket \\\n  &amp;&amp; uip maestro flow validate \&quot;EscalationJiraTicket.flow\&quot; --output json 2&gt;/dev/null \\\n  &amp;&amp; uip maestro flow format \&quot;EscalationJiraTicket.flow\&quot; --output json 2&gt;/dev/null&quot;,
+  &quot;description&quot;: &quot;Validate and format the flow&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FlowValidate&quot;,
+  &quot;Data&quot;: {
+    &quot;File&quot;: &quot;/work/output/artifacts/skill-flow-e2e-escalation-jira-ticket/EscalationJiraTicket/EscalationJiraTicket/EscalationJiraTicket.flow&quot;,
+    &quot;Status&quot;: &quot;Valid&quot;
+  }
+}
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FlowFormat&quot;,
+  &quot;Data&quot;: {
+    &quot;File&quot;: &quot;EscalationJiraTicket.flow&quot;,
+    &quot;NodesTotal&quot;: 4,
+    &quot;EdgesTotal&quot;: 3,
+    &quot;NodesRepositioned&quot;: 3,
+    &quot;NodesResized&quot;: 0,
+    &quot;SubflowsTidied&quot;: 0,
+    &quot;VariableCount&quot;: 8
+  },
+  &quot;Instructions&quot;: &quot;Repositioned 3 of 4 nodes&quot;
+}</pre>
+    
+  </div>
+</details>
+
+</div>
+
+<h2>Command Telemetry</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Total</div><div class="value">40</div></div>
+    <div class="stat"><div class="label">Successful</div><div class="value">36 (90%)</div></div>
+    <div class="stat"><div class="label">Failed</div><div class="value">4</div></div>
+    <div class="stat"><div class="label">Avg / cmd</div><div class="value">3.16s</div></div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 2fr;gap:16px;margin-top:12px">
+    <div>
+      <h4>By Tool</h4>
+      <table>
+        <thead><tr><th>Tool</th><th>Count</th></tr></thead>
+        <tbody><tr><td class='mono'>Bash</td><td>19</td></tr><tr><td class='mono'>Read</td><td>12</td></tr><tr><td class='mono'>Edit</td><td>8</td></tr><tr><td class='mono'>Skill</td><td>1</td></tr></tbody>
+      </table>
+    </div>
+    <div>
+      <h4>Slowest</h4>
+      <table>
+        <thead><tr><th>Tool</th><th>Duration</th><th>Parameters</th></tr></thead>
+        <tbody><tr><td class='mono'>Bash</td><td>33.95s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro flow registry get core.ac...</td></tr><tr><td class='mono'>Bash</td><td>28.69s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro flow registry get core.co...</td></tr><tr><td class='mono'>Bash</td><td>21.13s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;cd /work/output/artifacts/skill-flow-...</td></tr><tr><td class='mono'>Bash</td><td>9.13s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;cd /work/output/artifacts/skill-flow-...</td></tr><tr><td class='mono'>Bash</td><td>4.50s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip is connections list &quot;uipath-atlas...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+  <p><strong>Most Common Pattern:</strong> <code>Bash → Bash → Bash</code></p><p><strong>Skill Tool Invoked:</strong> 1 time(s)</p>
+</div>
+
+<h2>Generation Metrics</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Total Latency</div><div class="value">8m 36s</div></div>
+    <div class="stat"><div class="label">Turns</div><div class="value">1</div></div>
+    <div class="stat"><div class="label">Assistant Turns</div><div class="value">75</div></div>
+    <div class="stat"><div class="label">Avg Turn Latency</div><div class="value">7m 54s</div></div>
+    
+  </div>
+</div>
+
+<h2>Token Usage</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Input (uncached)</div><div class="value">36</div></div>
+    <div class="stat"><div class="label">Output</div><div class="value">22,654</div></div>
+    <div class="stat"><div class="label">Cache Write</div><div class="value">105,143</div></div>
+    <div class="stat"><div class="label">Cache Read</div><div class="value">3,512,528</div></div>
+    <div class="stat"><div class="label">Total</div><div class="value">3,640,361</div></div>
+    <div class="stat"><div class="label">Cost</div><div class="value">$1.7880</div></div>
+  </div>
+</div>
+
+<h2>Agent Settings</h2>
+<div class="card" style="padding:0">
+  <table>
+    <tbody><tr><td class='mono dim'>Permission Mode</td><td>acceptEdits</td></tr><tr><td class='mono dim'>Allowed Tools</td><td>Skill, Bash, Read, Write, Edit, Glob, Grep</td></tr><tr><td class='mono dim'>Model</td><td>us.anthropic.claude-sonnet-4-6</td></tr><tr><td class='mono dim'>Max Turns</td><td>120</td></tr><tr><td class='mono dim'>System Prompt</td><td>You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted. </td></tr><tr><td class='mono dim'>System Prompt Mode</td><td>append</td></tr><tr><td class='mono dim'>Plugins</td><td>/home/azureuser/projects/skills</td></tr></tbody>
+  </table>
+</div>
+
+<h2>Environment</h2>
+<div class="card" style="padding:0">
+  <table>
+    <tbody><tr><td class='mono dim'>git_commit</td><td>unknown</td></tr><tr><td class='mono dim'>skills_git_commit</td><td>unknown</td></tr><tr><td class='mono dim'>cli_version</td><td>1.201.0-dev.8272</td></tr><tr><td class='mono dim'>tool_plugins</td><td>{&#x27;admin-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;agent-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;agenthub-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;aops-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;api-workflow-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;automation-hub-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;codedagent-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;codedapp-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;coder-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;context-grounding-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;conversational-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;data-fabric-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;docsai-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;function-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;gov-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;guardrails-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;insights-tool&#x27;: &#x27;1.201.0-dev.8276&#x27;, &#x27;integrationservice-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;ixp-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;llm-gateway-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;llmgw-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;maestro-tool&#x27;: &#x27;1.201.0-dev.8275&#x27;, &#x27;model-hub-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;orchestrator-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;platform-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;pm-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;rpa-legacy-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;rpa-tool&#x27;: &#x27;1.201.0-dev.20260809.3&#x27;, &#x27;solution-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;tasks-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;test-manager-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;traces-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;vertical-solutions-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;}</td></tr><tr><td class='mono dim'>coder_eval</td><td>0.9.6</td></tr><tr><td class='mono dim'>claude_code_cli</td><td>2.1.177 (Claude Code)</td></tr><tr><td class='mono dim'>uv</td><td>uv 0.12.5 (x86_64-unknown-linux-gnu)</td></tr><tr><td class='mono dim'>anthropic</td><td>0.122.0</td></tr><tr><td class='mono dim'>openai</td><td>3.2.0</td></tr><tr><td class='mono dim'>pydantic</td><td>2.12.5</td></tr><tr><td class='mono dim'>api_routing</td><td>aws_bedrock</td></tr><tr><td class='mono dim'>eval_routing</td><td>aws_bedrock</td></tr><tr><td class='mono dim'>aws_region</td><td>us-east-2</td></tr><tr><td class='mono dim'>bedrock_model</td><td>us.anthropic.claude-sonnet-4-6</td></tr><tr><td class='mono dim'>system_prompt_semantics</td><td>append</td></tr></tbody>
+  </table>
+</div>
+
+<footer>Generated by coder_eval · 2026-08-19T18:00:08</footer>
+</div>
+<script>
+function toggleTheme() {
+  document.documentElement.classList.toggle('light');
+  try {
+    const mode = document.documentElement.classList.contains('light') ? 'light' : 'dark';
+    localStorage.setItem('coder-eval-theme', mode);
+  } catch (e) { /* ignore */ }
+}
+(function() {
+  try {
+    if (localStorage.getItem('coder-eval-theme') === 'light') {
+      document.documentElement.classList.add('light');
+    }
+  } catch (e) { /* ignore */ }
+})();
+</script>
+</body>
+</html>

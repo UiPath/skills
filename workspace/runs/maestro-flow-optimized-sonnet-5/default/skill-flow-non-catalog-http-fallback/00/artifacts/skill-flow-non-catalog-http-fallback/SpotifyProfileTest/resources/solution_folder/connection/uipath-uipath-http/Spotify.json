@@ -1,0 +1,29 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "Spotify",
+    "kind": "connection",
+    "type": "uipath-uipath-http",
+    "apiVersion": "integrationservice.uipath.com/v1",
+    "isOverridable": true,
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "files": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "connectorName": "HTTP",
+      "name": "Spotify",
+      "description": null,
+      "authenticationType": "AuthenticateAfterDeployment",
+      "connectorVersion": "1.4.50",
+      "connectorKey": "uipath-uipath-http",
+      "pollingInterval": 5
+    },
+    "locks": [],
+    "key": "1bf4e408-fff6-4382-a9a3-fd305038650c"
+  }
+}

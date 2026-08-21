@@ -1,0 +1,523 @@
+{
+  "id": "445dae65-7c38-4eff-bf6b-48fb57e9b5a4",
+  "version": "1.8",
+  "name": "ReadingList",
+  "nodes": [
+    {
+      "id": "start",
+      "type": "core.trigger.manual",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Manual trigger"
+      },
+      "inputs": {
+        "entryPointId": "53745c2e-5f54-456e-aecc-ef6e57acf033",
+        "isDefaultEntryPoint": true
+      }
+    },
+    {
+      "id": "transform1",
+      "type": "core.action.transform",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Curate Reading List"
+      },
+      "inputs": {
+        "collection": "$vars.catalog",
+        "operations": [
+          {
+            "id": "op-filter",
+            "type": "filter",
+            "config": {
+              "operation": "and",
+              "filters": [
+                {
+                  "id": "f1",
+                  "field": "difficulty",
+                  "condition": "greater_than",
+                  "value": 5
+                },
+                {
+                  "id": "f2",
+                  "field": "pages",
+                  "condition": "less_than",
+                  "value": 600
+                }
+              ]
+            }
+          },
+          {
+            "id": "op-map",
+            "type": "map",
+            "config": {
+              "keepOriginalFields": false,
+              "mappings": [
+                {
+                  "id": "m1",
+                  "field": "title",
+                  "transformation": "uppercase",
+                  "renameTo": "title"
+                },
+                {
+                  "id": "m2",
+                  "field": "author",
+                  "transformation": "copy",
+                  "renameTo": "author"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "outputs": {
+        "output": {
+          "type": "object",
+          "description": "The return value of the transform",
+          "source": "=result.response",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the transform fails",
+          "source": "=Error",
+          "var": "error"
+        }
+      }
+    },
+    {
+      "id": "end1",
+      "type": "core.control.end",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Done"
+      },
+      "inputs": {},
+      "outputs": {
+        "catalog": {
+          "source": "=js:$vars.catalog"
+        },
+        "readingList": {
+          "source": "=js:$vars.transform1.output.items"
+        }
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge-start-transform",
+      "sourceNodeId": "start",
+      "sourcePort": "output",
+      "targetNodeId": "transform1",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge-transform-end",
+      "sourceNodeId": "transform1",
+      "sourcePort": "output",
+      "targetNodeId": "end1",
+      "targetPort": "input"
+    }
+  ],
+  "definitions": [
+    {
+      "nodeType": "core.trigger.manual",
+      "version": "1.0",
+      "category": "trigger",
+      "description": "Start workflow manually",
+      "tags": [
+        "trigger",
+        "start",
+        "manual"
+      ],
+      "sortOrder": 40,
+      "display": {
+        "label": "Manual trigger",
+        "icon": "play",
+        "shape": "circle"
+      },
+      "handleConfiguration": [
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "output",
+              "type": "source",
+              "handleType": "output",
+              "showButton": true,
+              "constraints": {
+                "forbiddenTargetCategories": [
+                  "trigger"
+                ]
+              }
+            }
+          ],
+          "visible": true
+        }
+      ],
+      "model": {
+        "type": "bpmn:StartEvent",
+        "entryPointId": true
+      },
+      "outputDefinition": {
+        "output": {
+          "type": "object",
+          "description": "Data passed when manually triggering the workflow.",
+          "source": "null",
+          "var": "output"
+        }
+      },
+      "toolbarExtensions": {
+        "design": {
+          "actions": [
+            {
+              "id": "change-trigger-type",
+              "icon": "square-mouse-pointer",
+              "label": "Change trigger type"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "nodeType": "core.action.transform",
+      "supportsErrorHandling": true,
+      "version": "1.0",
+      "category": "data-operations",
+      "description": "Reshape and convert data with operations",
+      "tags": [
+        "data",
+        "transformation"
+      ],
+      "sortOrder": 35,
+      "display": {
+        "label": "Transform",
+        "icon": "a-large-small"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "output",
+              "type": "source",
+              "handleType": "output"
+            },
+            {
+              "id": "error",
+              "label": "Error",
+              "type": "source",
+              "handleType": "output",
+              "visible": "{inputs.errorHandlingEnabled}",
+              "constraints": {
+                "maxConnections": 1
+              }
+            }
+          ]
+        }
+      ],
+      "debug": {
+        "runtime": "clientScript"
+      },
+      "model": {
+        "type": "bpmn:ScriptTask"
+      },
+      "inputDefinition": {
+        "type": "object",
+        "properties": {
+          "collection": {
+            "type": "string"
+          },
+          "operations": {
+            "type": "array"
+          }
+        }
+      },
+      "inputDefaults": {
+        "collection": "",
+        "operations": []
+      },
+      "outputDefinition": {
+        "output": {
+          "type": "object",
+          "description": "The transformed data result",
+          "source": "=result.response",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails",
+          "source": "=Error",
+          "var": "error",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "required": [
+              "code",
+              "message",
+              "detail",
+              "category",
+              "status"
+            ],
+            "properties": {
+              "code": {
+                "type": "string",
+                "description": "Error code as a string"
+              },
+              "message": {
+                "type": "string",
+                "description": "High-level error message"
+              },
+              "detail": {
+                "type": "string",
+                "description": "Detailed error description"
+              },
+              "category": {
+                "type": "string",
+                "description": "Error category"
+              },
+              "status": {
+                "type": "integer",
+                "description": "HTTP status code"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "form": {
+        "id": "transform-data-form",
+        "title": "Transform",
+        "sections": [
+          {
+            "defaultExpanded": true,
+            "id": "transform-section",
+            "title": "Operation(s)",
+            "fields": [
+              {
+                "name": "inputs",
+                "type": "custom",
+                "component": "data-transformer-editor",
+                "componentProps": {},
+                "label": "Transform Operations"
+              }
+            ],
+            "collapsible": true
+          }
+        ]
+      },
+      "runtimeConstraints": {
+        "exclude": [
+          "api-function"
+        ]
+      }
+    },
+    {
+      "nodeType": "core.control.end",
+      "version": "1.0",
+      "category": "control-flow",
+      "description": "Mark the end of a workflow path",
+      "tags": [
+        "control-flow",
+        "end",
+        "finish",
+        "complete"
+      ],
+      "sortOrder": 20,
+      "display": {
+        "label": "End",
+        "icon": "circle-check",
+        "shape": "circle"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        }
+      ],
+      "model": {
+        "type": "bpmn:EndEvent"
+      },
+      "runtimeConstraints": {
+        "exclude": [
+          "api-function"
+        ]
+      }
+    }
+  ],
+  "variables": {
+    "globals": [
+      {
+        "id": "catalog",
+        "direction": "inout",
+        "type": "array",
+        "subType": "object",
+        "description": "Catalog of math and data science books",
+        "defaultValue": [
+          {
+            "title": "Linear Algebra Done Right",
+            "author": "Axler",
+            "field": "math",
+            "difficulty": 6,
+            "pages": 340
+          },
+          {
+            "title": "Deep Learning",
+            "author": "Goodfellow",
+            "field": "ml",
+            "difficulty": 9,
+            "pages": 800
+          },
+          {
+            "title": "Statistical Learning",
+            "author": "James",
+            "field": "data science",
+            "difficulty": 4,
+            "pages": 440
+          },
+          {
+            "title": "Elements of Statistical Learning",
+            "author": "Hastie",
+            "field": "stats",
+            "difficulty": 9,
+            "pages": 745
+          },
+          {
+            "title": "Bayesian Data Analysis",
+            "author": "Gelman",
+            "field": "stats",
+            "difficulty": 8,
+            "pages": 580
+          },
+          {
+            "title": "Python for Data Analysis",
+            "author": "McKinney",
+            "field": "data science",
+            "difficulty": 3,
+            "pages": 550
+          },
+          {
+            "title": "Probability Theory",
+            "author": "Jaynes",
+            "field": "math",
+            "difficulty": 10,
+            "pages": 753
+          },
+          {
+            "title": "Information Theory",
+            "author": "MacKay",
+            "field": "ml",
+            "difficulty": 7,
+            "pages": 540
+          }
+        ]
+      },
+      {
+        "id": "readingList",
+        "direction": "out",
+        "type": "array",
+        "subType": "object",
+        "description": "Curated reading list: high-difficulty books under 600 pages"
+      }
+    ],
+    "nodes": [
+      {
+        "id": "start.output",
+        "type": "object",
+        "description": "Data passed when manually triggering the workflow.",
+        "binding": {
+          "nodeId": "start",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "transform1.output",
+        "type": "object",
+        "description": "The return value of the transform",
+        "binding": {
+          "nodeId": "transform1",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "transform1.error",
+        "type": "object",
+        "description": "Error information if the transform fails",
+        "binding": {
+          "nodeId": "transform1",
+          "outputId": "error"
+        }
+      },
+      {
+        "id": "end1.catalog",
+        "type": "string",
+        "binding": {
+          "nodeId": "end1",
+          "outputId": "catalog"
+        }
+      },
+      {
+        "id": "end1.readingList",
+        "type": "string",
+        "binding": {
+          "nodeId": "end1",
+          "outputId": "readingList"
+        }
+      }
+    ],
+    "variableUpdates": {}
+  },
+  "runtime": "maestro",
+  "layout": {
+    "nodes": {
+      "start": {
+        "position": {
+          "x": -192,
+          "y": 0
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "transform1": {
+        "position": {
+          "x": 0,
+          "y": 0
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "end1": {
+        "position": {
+          "x": 192,
+          "y": 0
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      }
+    }
+  }
+}

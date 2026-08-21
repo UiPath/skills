@@ -1,0 +1,9 @@
+18:14:50 [INFO   ] [default/skill-flow-devcon-billing-discrepancy-detector/03] orchestrator: API routing: aws_bedrock
+18:24:28 [INFO   ] [default/skill-flow-devcon-billing-discrepancy-detector/03] evaluation.checker: Criterion 'run_command' FAILED (score=0.00, threshold=1.00): Command: python3 $TASK_DIR/check_billing_discrepancy_detector.py
+18:24:28 [INFO   ] [default/skill-flow-devcon-billing-discrepancy-detector/03] orchestrator: Success criteria: 1/2 passed, weighted score: 0.375
+18:24:28 [INFO   ] [default/skill-flow-devcon-billing-discrepancy-detector/03] orchestrator: Running post-run command: python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/cleanup_solutions.py
+18:24:30 [WARNING] [default/skill-flow-devcon-billing-discrepancy-detector/03] orchestrator: [post_run stderr] cleanup_solutions: deleted c420b1b7-7835-481b-c9e1-08dee9aa01c9 (from BillingDiscrepancyDetector/BillingDiscrepancyDetector.uipx)
+18:24:30 [WARNING] [default/skill-flow-devcon-billing-discrepancy-detector/03] orchestrator: [post_run stderr] cleanup_solutions: summary policy=always deleted=1 preserved=0 skipped=0 not_uploaded=0 failed=0
+18:24:30 [INFO   ] [default/skill-flow-devcon-billing-discrepancy-detector/03] orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+18:24:30 [INFO   ] [default/skill-flow-devcon-billing-discrepancy-detector/03] orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-devcon-billing-discrepancy-detector
+18:24:30 [INFO   ] [default/skill-flow-devcon-billing-discrepancy-detector/03] orchestrator: Task finished: status=FAILURE duration=582.2s score=0.375 iterations=1

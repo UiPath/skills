@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+    xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+    xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+    xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+    xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:uipath="http://uipath.org/schema/bpmn"
+    id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn"
+    exporter="UiPath (https://bpmn.uipath.com)" exporterVersion="1.0">
+
+  <bpmn:error id="Error_Payment" name="PaymentFailed" errorCode="PAYMENT_FAILED"/>
+
+  <bpmn:process id="Process_1" isExecutable="true">
+    <bpmn:extensionElements>
+      <uipath:migrationVersion version="11.5" />
+      <uipath:variables version="v1">
+        <uipath:inputOutput id="Var_PaymentSuccess" name="PaymentSuccess" type="boolean" />
+      </uipath:variables>
+    </bpmn:extensionElements>
+
+    <bpmn:startEvent id="Start_1" name="Start">
+      <bpmn:outgoing>Flow_1</bpmn:outgoing>
+    </bpmn:startEvent>
+
+    <bpmn:task id="Task_Payment" name="Attempt Payment">
+      <bpmn:incoming>Flow_1</bpmn:incoming>
+      <bpmn:outgoing>Flow_2</bpmn:outgoing>
+    </bpmn:task>
+
+    <bpmn:exclusiveGateway id="Gw_Route" name="Payment OK?" default="Flow_OK">
+      <bpmn:incoming>Flow_2</bpmn:incoming>
+      <bpmn:outgoing>Flow_Fail</bpmn:outgoing>
+      <bpmn:outgoing>Flow_OK</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+
+    <bpmn:endEvent id="End_Error" name="Payment Failed">
+      <bpmn:incoming>Flow_Fail</bpmn:incoming>
+      <bpmn:errorEventDefinition errorRef="Error_Payment"/>
+    </bpmn:endEvent>
+
+    <bpmn:endEvent id="End_Normal" name="Payment Complete">
+      <bpmn:incoming>Flow_OK</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <bpmn:subProcess id="Sub_ErrorHandler" name="Payment Error Handler" triggeredByEvent="true">
+
+      <bpmn:startEvent id="Sub_Start_1" name="Payment Error" isInterrupting="true">
+        <bpmn:errorEventDefinition errorRef="Error_Payment"/>
+        <bpmn:outgoing>Sub_Flow_1</bpmn:outgoing>
+      </bpmn:startEvent>
+
+      <bpmn:task id="Task_Handler" name="Handle Payment Error">
+        <bpmn:incoming>Sub_Flow_1</bpmn:incoming>
+        <bpmn:outgoing>Sub_Flow_2</bpmn:outgoing>
+      </bpmn:task>
+
+      <bpmn:endEvent id="Sub_End_1" name="Error Handled">
+        <bpmn:incoming>Sub_Flow_2</bpmn:incoming>
+      </bpmn:endEvent>
+
+      <bpmn:sequenceFlow id="Sub_Flow_1" sourceRef="Sub_Start_1" targetRef="Task_Handler"/>
+      <bpmn:sequenceFlow id="Sub_Flow_2" sourceRef="Task_Handler" targetRef="Sub_End_1"/>
+    </bpmn:subProcess>
+
+    <bpmn:sequenceFlow id="Flow_1" sourceRef="Start_1" targetRef="Task_Payment"/>
+    <bpmn:sequenceFlow id="Flow_2" sourceRef="Task_Payment" targetRef="Gw_Route"/>
+    <bpmn:sequenceFlow id="Flow_Fail" sourceRef="Gw_Route" targetRef="End_Error">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=vars.Var_PaymentSuccess == false</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_OK" sourceRef="Gw_Route" targetRef="End_Normal"/>
+  </bpmn:process>
+
+  <bpmndi:BPMNDiagram id="Diagram_1">
+    <bpmndi:BPMNPlane id="Plane_1" bpmnElement="Process_1">
+
+      <bpmndi:BPMNShape id="S_Start_1" bpmnElement="Start_1">
+        <dc:Bounds x="162" y="102" width="36" height="36"/>
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="S_Task_Payment" bpmnElement="Task_Payment">
+        <dc:Bounds x="258" y="80" width="100" height="80"/>
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="S_Gw_Route" bpmnElement="Gw_Route">
+        <dc:Bounds x="418" y="95" width="50" height="50"/>
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="S_End_Error" bpmnElement="End_Error">
+        <dc:Bounds x="540" y="42" width="36" height="36"/>
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="S_End_Normal" bpmnElement="End_Normal">
+        <dc:Bounds x="540" y="182" width="36" height="36"/>
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="S_Sub_ErrorHandler" bpmnElement="Sub_ErrorHandler" isExpanded="true">
+        <dc:Bounds x="100" y="300" width="480" height="160"/>
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="S_Sub_Start_1" bpmnElement="Sub_Start_1">
+        <dc:Bounds x="162" y="362" width="36" height="36"/>
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="S_Task_Handler" bpmnElement="Task_Handler">
+        <dc:Bounds x="258" y="340" width="100" height="80"/>
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="S_Sub_End_1" bpmnElement="Sub_End_1">
+        <dc:Bounds x="420" y="362" width="36" height="36"/>
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNEdge id="E_Flow_1" bpmnElement="Flow_1">
+        <di:waypoint x="198" y="120"/>
+        <di:waypoint x="258" y="120"/>
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="E_Flow_2" bpmnElement="Flow_2">
+        <di:waypoint x="358" y="120"/>
+        <di:waypoint x="418" y="120"/>
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="E_Flow_Fail" bpmnElement="Flow_Fail">
+        <di:waypoint x="443" y="95"/>
+        <di:waypoint x="443" y="60"/>
+        <di:waypoint x="540" y="60"/>
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="E_Flow_OK" bpmnElement="Flow_OK">
+        <di:waypoint x="443" y="145"/>
+        <di:waypoint x="443" y="200"/>
+        <di:waypoint x="540" y="200"/>
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="E_Sub_Flow_1" bpmnElement="Sub_Flow_1">
+        <di:waypoint x="198" y="380"/>
+        <di:waypoint x="258" y="380"/>
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="E_Sub_Flow_2" bpmnElement="Sub_Flow_2">
+        <di:waypoint x="358" y="380"/>
+        <di:waypoint x="420" y="380"/>
+      </bpmndi:BPMNEdge>
+
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

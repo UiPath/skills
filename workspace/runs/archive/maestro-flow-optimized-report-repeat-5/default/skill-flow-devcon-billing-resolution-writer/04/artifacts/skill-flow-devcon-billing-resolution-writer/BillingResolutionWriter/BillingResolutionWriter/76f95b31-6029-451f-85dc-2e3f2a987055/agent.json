@@ -1,0 +1,99 @@
+{
+  "version": "1.1.0",
+  "settings": {
+    "model": "gpt-5.4",
+    "maxTokens": 128000,
+    "temperature": 0,
+    "engine": "basic-v2",
+    "maxIterations": 1,
+    "mode": "standard"
+  },
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "start__output__customerName": {
+        "type": "string",
+        "description": "The name of the customer"
+      },
+      "start__output__invoiceNumber": {
+        "type": "string",
+        "description": "The invoice number in dispute"
+      },
+      "start__output__creditAmount": {
+        "type": "number",
+        "description": "The approved credit amount"
+      }
+    }
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "subject": {
+        "type": "string",
+        "description": "The email subject line"
+      },
+      "body": {
+        "type": "string",
+        "description": "The full email body"
+      }
+    },
+    "required": [
+      "subject",
+      "body"
+    ]
+  },
+  "metadata": {
+    "storageVersion": "50.0.0",
+    "isConversational": false,
+    "showProjectCreationExperience": false
+  },
+  "type": "lowCode",
+  "guardrails": [],
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a customer service specialist who drafts professional billing-dispute resolution emails. When given a customer name, invoice number, and approved credit amount, produce a polite and professional email. Always return your answer as a JSON object with two fields: \"subject\" (a concise email subject line) and \"body\" (the full email body text). The body must explicitly mention the invoice number and the approved credit amount.",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "You are a customer service specialist who drafts professional billing-dispute resolution emails. When given a customer name, invoice number, and approved credit amount, produce a polite and professional email. Always return your answer as a JSON object with two fields: \"subject\" (a concise email subject line) and \"body\" (the full email body text). The body must explicitly mention the invoice number and the approved credit amount."
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "Customer Name: {{input.start__output__customerName}}\nInvoice Number: {{input.start__output__invoiceNumber}}\nApproved Credit Amount: {{input.start__output__creditAmount}}\n\nDraft a customer-facing billing-dispute resolution email for the above customer, referencing the invoice number and approved credit amount in the body.",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "Customer Name: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__customerName"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\nInvoice Number: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__invoiceNumber"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\nApproved Credit Amount: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__creditAmount"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\nDraft a customer-facing billing-dispute resolution email for the above customer, referencing the invoice number and approved credit amount in the body."
+        }
+      ]
+    }
+  ],
+  "projectId": "76f95b31-6029-451f-85dc-2e3f2a987055"
+}

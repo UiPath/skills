@@ -1,0 +1,87 @@
+{
+  "version": "1.1.0",
+  "settings": {
+    "model": "gpt-5.4",
+    "maxTokens": 128000,
+    "temperature": 0,
+    "engine": "basic-v2",
+    "maxIterations": 10,
+    "mode": "standard"
+  },
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "start__output__disputeDescription": {
+        "type": "string",
+        "description": "The billing dispute description provided by the customer"
+      },
+      "start__output__invoiceNumber": {
+        "type": "string",
+        "description": "The invoice number associated with the billing dispute"
+      }
+    }
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "determination": {
+        "type": "string",
+        "description": "The outcome of the billing dispute analysis (e.g. Valid, Invalid, Partially Valid)"
+      },
+      "rationale": {
+        "type": "string",
+        "description": "A detailed explanation of the determination based on the SOP guidelines"
+      }
+    },
+    "required": [
+      "determination",
+      "rationale"
+    ]
+  },
+  "metadata": {
+    "storageVersion": "50.0.0",
+    "isConversational": false,
+    "showProjectCreationExperience": false
+  },
+  "type": "lowCode",
+  "guardrails": [],
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a billing dispute analyst. Your role is to review billing disputes submitted by customers and evaluate them against the company's Standard Operating Procedures (SOP). Use the provided context index to retrieve relevant SOP guidelines before making your determination.\n\nWhen analyzing a billing dispute:\n1. Retrieve relevant SOP guidelines using your context access.\n2. Compare the dispute details against the retrieved guidelines.\n3. Make a clear determination: 'Valid', 'Invalid', or 'Partially Valid'.\n4. Provide a concise, fact-based rationale citing the applicable SOP rules.\n\nAlways return a JSON object with exactly two fields: 'determination' and 'rationale'. Do not include any other text outside the JSON object.",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "You are a billing dispute analyst. Your role is to review billing disputes submitted by customers and evaluate them against the company's Standard Operating Procedures (SOP). Use the provided context index to retrieve relevant SOP guidelines before making your determination.\n\nWhen analyzing a billing dispute:\n1. Retrieve relevant SOP guidelines using your context access.\n2. Compare the dispute details against the retrieved guidelines.\n3. Make a clear determination: 'Valid', 'Invalid', or 'Partially Valid'.\n4. Provide a concise, fact-based rationale citing the applicable SOP rules.\n\nAlways return a JSON object with exactly two fields: 'determination' and 'rationale'. Do not include any other text outside the JSON object."
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "Invoice Number: {{input.start__output__invoiceNumber}}\n\nDispute Description: {{input.start__output__disputeDescription}}\n\nPlease analyze this billing dispute against the SOP guidelines and provide your determination and rationale.",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "Invoice Number: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__invoiceNumber"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\nDispute Description: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__disputeDescription"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\nPlease analyze this billing dispute against the SOP guidelines and provide your determination and rationale."
+        }
+      ]
+    }
+  ],
+  "projectId": "19d91f3b-6c40-4390-90a4-4515aea3a642"
+}

@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "QueryParamsTest",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "33d81afa-8734-40c2-96d4-b0f2835f1723",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "QueryParamsTest"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Flow",
+      "name": "QueryParamsTest",
+      "package": {
+        "key": "f9a104d8-16b5-4dfe-8b88-e0043855685b"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "6921998e-a2b7-4ed8-96d7-043dee3e3466",
+    "files": []
+  }
+}

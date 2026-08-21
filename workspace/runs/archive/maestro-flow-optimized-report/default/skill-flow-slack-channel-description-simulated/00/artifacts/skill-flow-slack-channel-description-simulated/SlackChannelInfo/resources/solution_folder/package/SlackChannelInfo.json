@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "SlackChannelInfo",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "e7b66bf1-bdb0-48e5-b794-456276cec9cc",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "SlackChannelInfo"
+    },
+    "locks": [],
+    "key": "570bff67-f356-4d56-acb5-2d8e4633fa40",
+    "files": []
+  }
+}

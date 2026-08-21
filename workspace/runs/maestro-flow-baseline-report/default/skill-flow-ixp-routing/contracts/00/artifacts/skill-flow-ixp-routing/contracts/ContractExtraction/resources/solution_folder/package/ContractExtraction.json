@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "ContractExtraction",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "e9d31b85-1564-40d5-9023-faca0524fc27",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "ContractExtraction"
+    },
+    "locks": [],
+    "key": "7bb1df3d-f416-4a98-9947-ddfac9e046be",
+    "files": []
+  }
+}

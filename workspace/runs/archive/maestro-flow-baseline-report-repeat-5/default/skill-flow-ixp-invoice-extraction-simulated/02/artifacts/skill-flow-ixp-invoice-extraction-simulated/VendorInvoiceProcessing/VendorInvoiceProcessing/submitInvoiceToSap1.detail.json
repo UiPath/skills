@@ -1,0 +1,49 @@
+{
+  "_instructions": [
+    "This file contains the planned node configure command for the 'Submit Invoice to SAP' BAPI node.",
+    "Run this command once you have created a SAP BAPI connection in UiPath Integration Service.",
+    "",
+    "Steps to complete SAP configuration:",
+    "1. Go to Integration Service → Connections → New Connection → SAP BAPI",
+    "2. Enter your SAP hostname, system number, client, username, and password",
+    "3. Test the connection, note the Connection ID and Folder Key",
+    "4. Run the node configure command below (replace the placeholder UUIDs)",
+    "5. Validate the flow: uip maestro flow validate VendorInvoiceProcessing.flow",
+    "",
+    "About bapiName:",
+    "  - For posting vendor invoices, the standard SAP BAPI is BAPI_INCOMINGINVOICE_CREATE",
+    "  - This BAPI creates a logistics invoice verification (LIV) document in SAP MM/AP",
+    "  - Run: uip is resources run list uipath-sap-bapi 'system' --connection-id <YOUR_CONNECTION_ID>",
+    "    to browse available BAPIs and confirm the exact name for your system",
+    "",
+    "About the body parameters:",
+    "  - The body must match the exact import parameters of BAPI_INCOMINGINVOICE_CREATE",
+    "  - Mandatory fields: HEADERDATA (invoice header), ITEMDATA (line items), ACCOUNTINGDATA",
+    "  - The values come from $vars.buildInvoiceRecord.output (the extracted invoice data)",
+    "  - Adjust field mappings below to match your SAP company code, currency, etc."
+  ],
+  "_command": "uip maestro flow node configure VendorInvoiceProcessing.flow submitInvoiceToSap1 --detail \"$(cat submitInvoiceToSap1.detail.json | python3 -c \"import json,sys; d=json.load(sys.stdin); print(json.dumps(d['detail']))\" )\" --output json",
+  "detail": {
+    "connectionId": "<YOUR_SAP_BAPI_CONNECTION_ID>",
+    "folderKey": "<YOUR_SAP_BAPI_FOLDER_KEY>",
+    "method": "POST",
+    "endpoint": "/bapis/execute",
+    "queryParameters": {
+      "bapiName": "BAPI_INCOMINGINVOICE_CREATE"
+    },
+    "bodyParameters": {
+      "HEADERDATA": {
+        "INVOICE_IND": "X",
+        "DOC_TYPE": "RE",
+        "DOC_DATE": "=js:$vars.buildInvoiceRecord.output.invoiceDate",
+        "PSTNG_DATE": "=js:$vars.buildInvoiceRecord.output.invoiceDate",
+        "COMP_CODE": "<YOUR_COMPANY_CODE>",
+        "CURRENCY": "=js:$vars.buildInvoiceRecord.output.currency",
+        "GROSS_AMOUNT": "=js:$vars.buildInvoiceRecord.output.totalAmount",
+        "BLINE_DATE": "=js:$vars.buildInvoiceRecord.output.dueDate",
+        "REF_DOC_NO": "=js:$vars.buildInvoiceRecord.output.invoiceNumber"
+      },
+      "ITEMDATA": "=js:$vars.buildInvoiceRecord.output.lineItems"
+    }
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "version": "1.0",
+  "id": "5681a43a-22d4-41f5-b9cd-42aa4bedaae1",
+  "name": "Triage Cases",
+  "evaluatorRefs": [
+    "triage-judge-113d4ecd.json"
+  ],
+  "evaluations": [
+    {
+      "id": "aa33822f-a31b-4a1e-a066-257b18f0ddb8",
+      "name": "password-reset",
+      "inputs": {
+        "email": "Subject: Can't log in\n\nI forgot my password and the reset link is broken. Please help ASAP."
+      },
+      "expectedOutput": {
+        "category": "Account Access",
+        "priority": "High"
+      },
+      "evaluationCriterias": {
+        "triage-judge-113d4ecd": {
+          "expectedOutput": {
+            "category": "Account Access",
+            "priority": "High"
+          }
+        }
+      },
+      "createdAt": "2026-08-19T17:59:43.924Z",
+      "updatedAt": "2026-08-19T17:59:43.924Z"
+    }
+  ],
+  "selectedEntrypoint": "start",
+  "fileName": "evaluation-set-triage-cases-5681a43a.json",
+  "createdAt": "2026-08-19T17:59:36.569Z",
+  "updatedAt": "2026-08-19T17:59:43.924Z"
+}

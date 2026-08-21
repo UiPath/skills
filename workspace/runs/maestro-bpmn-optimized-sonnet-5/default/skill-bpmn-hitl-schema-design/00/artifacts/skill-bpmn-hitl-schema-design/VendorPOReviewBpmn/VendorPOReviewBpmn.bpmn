@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+    xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+    xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+    xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+    xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:uipath="http://uipath.org/schema/bpmn"
+    id="Definitions_VendorPOReviewBpmn" targetNamespace="http://bpmn.io/schema/bpmn"
+    exporter="UiPath (https://bpmn.uipath.com)" exporterVersion="1.0">
+  <bpmn:process id="Process_VendorPOReview" name="Vendor PO Review" isExecutable="true">
+    <bpmn:extensionElements>
+      <uipath:migrationVersion version="11.5" />
+      <uipath:variables version="v1">
+        <uipath:inputOutput id="Var_PoNumber" name="PoNumber" type="string" />
+        <uipath:inputOutput id="Var_VendorName" name="VendorName" type="string" />
+        <uipath:inputOutput id="Var_TotalAmount" name="TotalAmount" type="number" />
+        <uipath:inputOutput id="Var_HitlResult" name="HitlResult" type="object" />
+        <uipath:inputOutput id="Var_Decision" name="Decision" type="string" />
+        <uipath:inputOutput id="Var_Notes" name="Notes" type="string" />
+        <uipath:inputOutput id="Var_ApprovalRecorded" name="ApprovalRecorded" type="boolean" />
+        <uipath:inputOutput id="Var_ApprovalRecordedAt" name="ApprovalRecordedAt" type="string" />
+      </uipath:variables>
+    </bpmn:extensionElements>
+
+    <bpmn:startEvent id="Start_Manual" name="Start Review">
+      <bpmn:outgoing>Flow_StartToFetch</bpmn:outgoing>
+    </bpmn:startEvent>
+
+    <bpmn:scriptTask id="Task_FetchPOContext" name="Fetch PO Context" scriptFormat="JavaScript">
+      <bpmn:extensionElements>
+        <uipath:scriptVersion value="v3" />
+        <uipath:mapping version="v1">
+          <uipath:type value="BPMN.ScriptTask" version="v1" />
+          <uipath:input name="args" type="json" target="bodyField"><![CDATA[{}]]></uipath:input>
+          <uipath:output name="poNumber" type="string" var="Var_PoNumber" source="=result.response.poNumber" />
+          <uipath:output name="vendorName" type="string" var="Var_VendorName" source="=result.response.vendorName" />
+          <uipath:output name="totalAmount" type="number" var="Var_TotalAmount" source="=result.response.totalAmount" />
+        </uipath:mapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_StartToFetch</bpmn:incoming>
+      <bpmn:outgoing>Flow_FetchToReview</bpmn:outgoing>
+      <bpmn:script><![CDATA[
+// Mock fetch of PO context from a synthetic upstream system.
+return {
+  response: {
+    poNumber: "PO-<PO_NUMBER_PLACEHOLDER>",
+    vendorName: "<VENDOR_NAME_PLACEHOLDER>",
+    totalAmount: 12500.00
+  }
+};
+]]></bpmn:script>
+    </bpmn:scriptTask>
+
+    <bpmn:userTask id="Task_ReviewPO" name="Review Purchase Order">
+      <bpmn:extensionElements>
+        <uipath:activity version="v1">
+          <uipath:type value="Actions.HITL" version="v1" />
+          <uipath:context>
+            <uipath:input name="appId" value="&lt;ACTION_APP_ID&gt;" />
+            <uipath:input name="appVersion" value="1" />
+            <uipath:input name="actions" value="Approve,Reject" />
+            <uipath:input name="key" value="&lt;FOLDER_KEY&gt;" />
+            <uipath:input name="taskTitle" value="Review Purchase Order" />
+          </uipath:context>
+          <uipath:input name="HitlTaskArguments" type="json" target="bodyField"><![CDATA[{"poNumber":"=vars.Var_PoNumber","vendorName":"=vars.Var_VendorName","totalAmount":"=vars.Var_TotalAmount"}]]></uipath:input>
+          <uipath:output name="Process response" type="Actions.HITL" var="Var_HitlResult" />
+          <uipath:output name="decision" type="string" var="Var_Decision" source="=result.decision" />
+          <uipath:output name="notes" type="string" var="Var_Notes" source="=result.notes" />
+        </uipath:activity>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_FetchToReview</bpmn:incoming>
+      <bpmn:outgoing>Flow_ReviewToGateway</bpmn:outgoing>
+    </bpmn:userTask>
+
+    <bpmn:exclusiveGateway id="Gw_Decision" name="Officer Decision?" default="Flow_GatewayToReject">
+      <bpmn:incoming>Flow_ReviewToGateway</bpmn:incoming>
+      <bpmn:outgoing>Flow_GatewayToApprove</bpmn:outgoing>
+      <bpmn:outgoing>Flow_GatewayToReject</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+
+    <bpmn:scriptTask id="Task_RecordApproval" name="Record Approval" scriptFormat="JavaScript">
+      <bpmn:extensionElements>
+        <uipath:scriptVersion value="v3" />
+        <uipath:mapping version="v1">
+          <uipath:type value="BPMN.ScriptTask" version="v1" />
+          <uipath:input name="args" type="json" target="bodyField"><![CDATA[{"poNumber":"=vars.Var_PoNumber","decision":"=vars.Var_Decision"}]]></uipath:input>
+          <uipath:output name="approvalRecorded" type="boolean" var="Var_ApprovalRecorded" source="=result.response.approvalRecorded" />
+          <uipath:output name="approvalRecordedAt" type="string" var="Var_ApprovalRecordedAt" source="=result.response.approvalRecordedAt" />
+        </uipath:mapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_GatewayToApprove</bpmn:incoming>
+      <bpmn:outgoing>Flow_ApprovalToEnd</bpmn:outgoing>
+      <bpmn:script><![CDATA[
+// Mock recording of the approval decision in a synthetic system of record.
+return {
+  response: {
+    approvalRecorded: true,
+    approvalRecordedAt: "<APPROVAL_TIMESTAMP_PLACEHOLDER>"
+  }
+};
+]]></bpmn:script>
+    </bpmn:scriptTask>
+
+    <bpmn:endEvent id="End_Approved" name="PO Approved">
+      <bpmn:incoming>Flow_ApprovalToEnd</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <bpmn:endEvent id="End_Rejected" name="PO Rejected">
+      <bpmn:incoming>Flow_GatewayToReject</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <bpmn:sequenceFlow id="Flow_StartToFetch" sourceRef="Start_Manual" targetRef="Task_FetchPOContext" />
+    <bpmn:sequenceFlow id="Flow_FetchToReview" sourceRef="Task_FetchPOContext" targetRef="Task_ReviewPO" />
+    <bpmn:sequenceFlow id="Flow_ReviewToGateway" sourceRef="Task_ReviewPO" targetRef="Gw_Decision" />
+    <bpmn:sequenceFlow id="Flow_GatewayToApprove" sourceRef="Gw_Decision" targetRef="Task_RecordApproval">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=vars.Var_Decision == "Approve"</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_GatewayToReject" sourceRef="Gw_Decision" targetRef="End_Rejected" />
+    <bpmn:sequenceFlow id="Flow_ApprovalToEnd" sourceRef="Task_RecordApproval" targetRef="End_Approved" />
+  </bpmn:process>
+
+  <bpmndi:BPMNDiagram id="Diagram_1">
+    <bpmndi:BPMNPlane id="Plane_1" bpmnElement="Process_VendorPOReview">
+      <bpmndi:BPMNShape id="S_End_Approved" bpmnElement="End_Approved"><dc:Bounds x="846" y="100" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_End_Rejected" bpmnElement="End_Rejected"><dc:Bounds x="686" y="100" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Gw_Decision" bpmnElement="Gw_Decision"><dc:Bounds x="576" y="100" width="50" height="50" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Start_Manual" bpmnElement="Start_Manual"><dc:Bounds x="160" y="100" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Task_FetchPOContext" bpmnElement="Task_FetchPOContext"><dc:Bounds x="256" y="100" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Task_RecordApproval" bpmnElement="Task_RecordApproval"><dc:Bounds x="686" y="210" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Task_ReviewPO" bpmnElement="Task_ReviewPO"><dc:Bounds x="416" y="100" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="E_Flow_ApprovalToEnd" bpmnElement="Flow_ApprovalToEnd"><di:waypoint x="736" y="250" /><di:waypoint x="864" y="118" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_FetchToReview" bpmnElement="Flow_FetchToReview"><di:waypoint x="306" y="140" /><di:waypoint x="466" y="140" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_GatewayToApprove" bpmnElement="Flow_GatewayToApprove"><di:waypoint x="601" y="125" /><di:waypoint x="736" y="250" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_GatewayToReject" bpmnElement="Flow_GatewayToReject"><di:waypoint x="601" y="125" /><di:waypoint x="704" y="118" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_ReviewToGateway" bpmnElement="Flow_ReviewToGateway"><di:waypoint x="466" y="140" /><di:waypoint x="601" y="125" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_StartToFetch" bpmnElement="Flow_StartToFetch"><di:waypoint x="178" y="118" /><di:waypoint x="306" y="140" /></bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

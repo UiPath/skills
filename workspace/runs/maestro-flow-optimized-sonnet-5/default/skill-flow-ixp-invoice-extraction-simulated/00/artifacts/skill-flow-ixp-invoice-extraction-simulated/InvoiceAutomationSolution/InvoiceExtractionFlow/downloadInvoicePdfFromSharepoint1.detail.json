@@ -1,0 +1,10 @@
+{
+  "_comment": "PLANNED CONFIGURATION - NOT YET APPLIED. Same SharePoint connection as the trigger. IT must run `uip maestro flow node configure` with this shape once a connection/folder are authorized.",
+  "connectionId": "<PLACEHOLDER_SHAREPOINT_CONNECTION_ID - IT to provide, same connection as the trigger>",
+  "folderKey": "<PLACEHOLDER_ORCHESTRATOR_FOLDER_KEY - IT to provide>",
+  "method": "GET",
+  "endpoint": "/DownloadFile",
+  "queryParameters": {
+    "referenceID": "=js:$vars.newInvoicePdfAddedSharepointNewVendorFolder1.output.ID"
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "OpenMeteoWeather",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "b6aa9db7-9953-4510-89e1-5b19d66d8dd2",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "OpenMeteoWeather"
+    },
+    "locks": [],
+    "key": "0d618740-9cf3-4837-b335-fe4d5d621b89",
+    "files": []
+  }
+}

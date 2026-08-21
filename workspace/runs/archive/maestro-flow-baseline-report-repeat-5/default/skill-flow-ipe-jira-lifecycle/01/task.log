@@ -1,0 +1,58 @@
+2026-07-24 19:43:54 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-24 19:43:54 [INFO] coder_eval.orchestrator: API routing: aws_bedrock
+2026-07-24 19:43:55 [DEBUG] coder_eval.criteria: Discovered 14 criterion checkers
+2026-07-24 19:43:55 [DEBUG] coder_eval.criteria: Validated 14 criterion checkers
+2026-07-24 19:43:55 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-24 19:43:55 [INFO] coder_eval.orchestrator: Running pre-run command: python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/e2e/jira_lifecycle/seed_jira.py
+2026-07-24 19:43:55 [INFO] coder_eval.orchestrator: [pre_run stdout] OK: wrote 3 seed issues (2 High / 1 other), tag=7ab88eda
+2026-07-24 19:43:56 [DEBUG] coder_eval.orchestrator: Sending prompt: Create a new Flow project called "JiraLifecycle" with a manual trigger.
+
+Read `seed.json` in the cur...
+2026-07-24 19:43:56 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Starting agent query stream...
+2026-07-24 19:54:57 [DEBUG] coder_eval.agents.claude_code_agent: [coder] session_id changed: None -> 26479bf2-b9a0-48f5-8fb5-f8a00fcfde70
+2026-07-24 19:54:57 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Agent query stream ended
+2026-07-24 19:54:57 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-24 19:54:57 [DEBUG] coder_eval.orchestrator: Agent response received (5027 chars)
+2026-07-24 19:54:57 [DEBUG] coder_eval.orchestrator: Checking success criteria
+2026-07-24 19:54:57 [DEBUG] coder_eval.evaluation.checker: Criterion 'command_executed' score: 1.00
+2026-07-24 19:54:57 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'JiraLifecycle checks: valid flow with a loop + switch over the Jira connector, debug creates every seeded issue, and each carries the comment its priority branch should have posted': python3 $TASK_DIR/check_jira_lifecycle.py
+2026-07-24 20:04:58 [DEBUG] coder_eval.sandbox: Command 'python3 $TASK_DIR/check_jira_lifecycle.py' exited with code 1
+2026-07-24 20:04:58 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+OK: flow references uipath-atlassian-jira
+OK: flow contains a loop node and a switch/decision node
+---
+2026-07-24 20:04:58 [DEBUG] coder_eval.sandbox: STDERR:
+---
+Traceback (most recent call last):
+  File "/home/azureuser/projects/skills/tests/tasks/uipath-maestro-flow/e2e/jira_lifecycle/check_jira_lifecycle.py", line 128, in <module>
+    main()
+    ~~~~^^
+  File "/home/azureuser/projects/skills/tests/tasks/uipath-maestro-flow/e2e/jira_lifecycle/check_jira_lifecycle.py", line 85, in main
+    payload = run_debug(timeout=600)
+  File "/home/azureuser/projects/skills/tests/tasks/uipath-maestro-flow/_shared/flow_check.py", line 118, in run_debug
+    r = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
+  File "/usr/local/lib/python3.13/subprocess.py", line 556, in run
+    stdout, stderr = process.communicate(input, timeout=timeout)
+                     ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.13/subprocess.py", line 1222, in communicate
+    stdout, stderr = self._communicate(input, endtime, timeout)
+                     ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.13/subprocess.py", line 2155, in _communicate
+    self._check_timeout(endtime, orig_timeout, stdout, stderr)
+    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.13/subprocess.py", line 1269, in _check_timeout
+    raise TimeoutExpired(
+    ...<2 lines>...
+            stderr=b''.join(stderr_seq) if stderr_seq else None)
+subprocess.TimeoutExpired: Command '['uip', 'maestro', 'flow', 'debug', 'JiraLifecycle/JiraLifecycle', '--output', 'json']' timed out after 600 seconds
+---
+2026-07-24 20:04:58 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 0.00
+2026-07-24 20:04:58 [INFO] coder_eval.evaluation.checker: Criterion 'run_command' FAILED (score=0.00, threshold=1.00): Command: python3 $TASK_DIR/check_jira_lifecycle.py
+2026-07-24 20:04:58 [INFO] coder_eval.orchestrator: Success criteria: 1/2 passed, weighted score: 0.286
+2026-07-24 20:04:58 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-24 20:04:58 [INFO] coder_eval.orchestrator: Running post-run command: python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/e2e/jira_lifecycle/teardown_jira.py
+2026-07-24 20:04:58 [INFO] coder_eval.orchestrator: [post_run stdout] OK: nothing to delete
+2026-07-24 20:04:58 [INFO] coder_eval.orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+2026-07-24 20:04:58 [INFO] coder_eval.orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-ipe-jira-lifecycle
+2026-07-24 20:04:58 [INFO] coder_eval.orchestrator: Task finished: status=FAILURE duration=1267.1s score=0.286 iterations=1

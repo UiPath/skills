@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "SlackSummary",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "2142e424-1d35-41f3-a023-49d710c77016",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "SlackSummary"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Flow",
+      "name": "SlackSummary",
+      "package": {
+        "key": "0f8da855-7da3-4f13-bb83-c787cd3cd763"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "d74780ab-2bae-4936-99de-0f3a3a2d4a81",
+    "files": []
+  }
+}

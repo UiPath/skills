@@ -1,0 +1,12 @@
+{
+    "DocVersion": "1.0.0",
+    "StudioMinVersion": "2025.10.0",
+    "SolutionId": "47c0b731-d3ce-4c57-9c71-08defdfbf8f4",
+    "Projects": [
+        {
+            "Type": "Flow",
+            "ProjectRelativePath": "MultiCityWeather/project.uiproj",
+            "Id": "d05bb30e-413c-49a5-b202-6a2228ac1885"
+        }
+    ]
+}

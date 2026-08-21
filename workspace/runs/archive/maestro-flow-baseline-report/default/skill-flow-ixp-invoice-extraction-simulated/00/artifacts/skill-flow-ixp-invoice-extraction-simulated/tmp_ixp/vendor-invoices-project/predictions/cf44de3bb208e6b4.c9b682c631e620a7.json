@@ -1,0 +1,250 @@
+{
+  "Result": "Success",
+  "Data": {
+    "ProjectName": "vendor-invoices-f8a3c211-ixp",
+    "TotalDocuments": 1,
+    "DocumentsWithPredictions": 1,
+    "Predictions": [
+      {
+        "DocumentId": "cf44de3bb208e6b4.c9b682c631e620a7",
+        "Filename": "invoice_summit_supplies_002.pdf",
+        "Labels": [
+          {
+            "Name": "Invoice Header",
+            "Occurrence": 0,
+            "Fields": [
+              {
+                "FieldId": "fld_inv_num",
+                "FieldName": "Invoice Number",
+                "FormattedValue": "SOS-INV-20240312"
+              },
+              {
+                "FieldId": "fld_inv_date",
+                "FieldName": "Invoice Date",
+                "FormattedValue": "2024-03-12"
+              },
+              {
+                "FieldId": "fld_due_date",
+                "FieldName": "Due Date",
+                "FormattedValue": "2024-03-27"
+              },
+              {
+                "FieldId": "fld_po_num",
+                "FieldName": "PO Number",
+                "FormattedValue": "PO-GC-44650"
+              },
+              {
+                "FieldId": "fld_pay_terms",
+                "FieldName": "Payment Terms",
+                "FormattedValue": "Net 15"
+              },
+              {
+                "FieldId": "fld_currency",
+                "FieldName": "Currency",
+                "FormattedValue": "USD"
+              }
+            ]
+          },
+          {
+            "Name": "Vendor Details",
+            "Occurrence": 0,
+            "Fields": [
+              {
+                "FieldId": "fld_vend_name",
+                "FieldName": "Vendor Name",
+                "FormattedValue": "Summit Office Supplies Ltd."
+              },
+              {
+                "FieldId": "fld_vend_addr",
+                "FieldName": "Vendor Address",
+                "FormattedValue": "88 Commerce Street, Chicago, IL 60601"
+              },
+              {
+                "FieldId": "fld_vend_email",
+                "FieldName": "Vendor Email",
+                "FormattedValue": "accounts@summitsupplies.com"
+              },
+              {
+                "FieldId": "fld_vend_phone",
+                "FieldName": "Vendor Phone",
+                "FormattedValue": "+1 (312) 555-7834"
+              }
+            ]
+          },
+          {
+            "Name": "Bill To",
+            "Occurrence": 0,
+            "Fields": [
+              {
+                "FieldId": "fld_bt_name",
+                "FieldName": "Bill-To Name",
+                "FormattedValue": "GlobalCorp Facilities"
+              },
+              {
+                "FieldId": "fld_bt_addr",
+                "FieldName": "Bill-To Address",
+                "FormattedValue": "1200 Corporate Plaza, New York, NY 10001"
+              }
+            ]
+          },
+          {
+            "Name": "Invoice Totals",
+            "Occurrence": 0,
+            "Fields": [
+              {
+                "FieldId": "fld_subtotal",
+                "FieldName": "Subtotal",
+                "FormattedValue": "4,239.85 USD"
+              },
+              {
+                "FieldId": "fld_tax_rate",
+                "FieldName": "Tax Rate",
+                "FormattedValue": "10.25"
+              },
+              {
+                "FieldId": "fld_tax_amount",
+                "FieldName": "Tax Amount",
+                "FormattedValue": "434.59 USD"
+              },
+              {
+                "FieldId": "fld_total",
+                "FieldName": "Total Due",
+                "FormattedValue": "4,674.44 USD"
+              }
+            ]
+          },
+          {
+            "Name": "Line Items",
+            "Occurrence": 0,
+            "Fields": [
+              {
+                "FieldId": "fld_li_desc",
+                "FieldName": "Description",
+                "FormattedValue": "A4 Copy Paper (Case of 10 reams)"
+              },
+              {
+                "FieldId": "fld_li_qty",
+                "FieldName": "Quantity",
+                "FormattedValue": "20"
+              },
+              {
+                "FieldId": "fld_li_price",
+                "FieldName": "Unit Price",
+                "FormattedValue": "42.50 USD"
+              },
+              {
+                "FieldId": "fld_li_total",
+                "FieldName": "Line Total",
+                "FormattedValue": "850.00 USD"
+              }
+            ]
+          },
+          {
+            "Name": "Line Items",
+            "Occurrence": 1,
+            "Fields": [
+              {
+                "FieldId": "fld_li_desc",
+                "FieldName": "Description",
+                "FormattedValue": "Ergonomic Office Chair \u2014 Model EX500"
+              },
+              {
+                "FieldId": "fld_li_qty",
+                "FieldName": "Quantity",
+                "FormattedValue": "5"
+              },
+              {
+                "FieldId": "fld_li_price",
+                "FieldName": "Unit Price",
+                "FormattedValue": "389.00 USD"
+              },
+              {
+                "FieldId": "fld_li_total",
+                "FieldName": "Line Total",
+                "FormattedValue": "1,945.00 USD"
+              }
+            ]
+          },
+          {
+            "Name": "Line Items",
+            "Occurrence": 2,
+            "Fields": [
+              {
+                "FieldId": "fld_li_desc",
+                "FieldName": "Description",
+                "FormattedValue": "Standing Desk Converter"
+              },
+              {
+                "FieldId": "fld_li_qty",
+                "FieldName": "Quantity",
+                "FormattedValue": "3"
+              },
+              {
+                "FieldId": "fld_li_price",
+                "FieldName": "Unit Price",
+                "FormattedValue": "215.00 USD"
+              },
+              {
+                "FieldId": "fld_li_total",
+                "FieldName": "Line Total",
+                "FormattedValue": "645.00 USD"
+              }
+            ]
+          },
+          {
+            "Name": "Line Items",
+            "Occurrence": 3,
+            "Fields": [
+              {
+                "FieldId": "fld_li_desc",
+                "FieldName": "Description",
+                "FormattedValue": "Monitor Arm Dual Mount"
+              },
+              {
+                "FieldId": "fld_li_qty",
+                "FieldName": "Quantity",
+                "FormattedValue": "5"
+              },
+              {
+                "FieldId": "fld_li_price",
+                "FieldName": "Unit Price",
+                "FormattedValue": "89.99 USD"
+              },
+              {
+                "FieldId": "fld_li_total",
+                "FieldName": "Line Total",
+                "FormattedValue": "449.95 USD"
+              }
+            ]
+          },
+          {
+            "Name": "Line Items",
+            "Occurrence": 4,
+            "Fields": [
+              {
+                "FieldId": "fld_li_desc",
+                "FieldName": "Description",
+                "FormattedValue": "USB-C Hub 7-port"
+              },
+              {
+                "FieldId": "fld_li_qty",
+                "FieldName": "Quantity",
+                "FormattedValue": "10"
+              },
+              {
+                "FieldId": "fld_li_price",
+                "FieldName": "Unit Price",
+                "FormattedValue": "34.99 USD"
+              },
+              {
+                "FieldId": "fld_li_total",
+                "FieldName": "Line Total",
+                "FormattedValue": "349.90 USD"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

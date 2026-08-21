@@ -1,0 +1,21 @@
+{
+  "entryPoints": [
+    {
+      "id": "a1b2c3d4-0000-4000-8000-111122223333",
+      "filePath": "/content/MultiInstanceIteratorBpmn.bpmn#Start_Manual",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "Items": { "type": "array" }
+        }
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "CurrentLine":  { "type": "string" },
+          "CurrentIndex": { "type": "number" }
+        }
+      }
+    }
+  ]
+}

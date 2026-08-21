@@ -1,0 +1,9 @@
+{
+  "name": "ContractVariantsBpmn",
+  "projectVersion": "1.0.0",
+  "description": "Exercises every contract-variant wrapper type in a single manually-started BPMN process.",
+  "main": "ContractVariantsBpmn.bpmn",
+  "targetFramework": "Portable",
+  "projectType": "ProcessOrchestration",
+  "schemaVersion": "0.2"
+}

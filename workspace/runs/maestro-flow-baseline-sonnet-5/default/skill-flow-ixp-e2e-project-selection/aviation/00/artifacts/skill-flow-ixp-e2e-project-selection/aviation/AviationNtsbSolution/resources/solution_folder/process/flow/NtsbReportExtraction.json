@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "NtsbReportExtraction",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "ace24b23-e0de-441d-8ef3-0c5db666bd1b",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "NtsbReportExtraction"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Flow",
+      "name": "NtsbReportExtraction",
+      "package": {
+        "key": "433120f5-92ef-406b-8739-9c940521e9c1"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "d5ae93d1-ece1-4423-ac68-635bf99ccec5",
+    "files": []
+  }
+}

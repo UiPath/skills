@@ -1,0 +1,1236 @@
+{
+  "task_id": "skill-flow-eval-simulation-crud",
+  "task_description": "Skill-guided simulation CRUD: agent uses the uipath-maestro-flow skill's evaluate capability to scaffold a Flow project, build an eval set + data point, then add, list, and remove node simulations on that data point via `uip maestro flow eval simulation add/list/remove`. Covers both strategies — `Static` (`--mock-value`) and `Llm` (explicit `--output-schema`, so the auto-resolution-from-.flow path is not exercised). Purely local, no login, no upload, no run. Tests whether the skill teaches the simulation command surface (required flags, strategy selection) and `--output json` discipline, and verifies the simulation actually persists into the eval-set JSON.\n",
+  "variant_id": "default",
+  "agent_type": "claude-code",
+  "model_used": "claude-sonnet-4-6",
+  "started_at": "2026-07-24T00:10:32.941486",
+  "completed_at": "2026-07-24T00:12:39.983418",
+  "duration_seconds": 127.04195880889893,
+  "final_status": "SUCCESS",
+  "max_turns_exhausted": false,
+  "weighted_score": 1.0,
+  "iteration_count": 1,
+  "success_criteria_results": [
+    {
+      "result_kind": "basic",
+      "criterion_type": "command_executed",
+      "description": "Agent created a solution",
+      "score": 1.0,
+      "details": "Matched 1/1 required commands (filters: tool_name=Bash, pattern=/(uip|\\$UIP)\\s+solution\\s+(new|init)/)\nExamples: ['\\\\\\necho \"=== Step 1: Create solution SimEval ===\" && \\\\\\nuip solution init SimEval --output json && \\\\\\necho \"=== Step 2: Ini']",
+      "error": null,
+      "pass_threshold": 1.0,
+      "gating": true
+    },
+    {
+      "result_kind": "basic",
+      "criterion_type": "command_executed",
+      "description": "Agent initialized a Flow project",
+      "score": 1.0,
+      "details": "Matched 1/1 required commands (filters: tool_name=Bash, pattern=/(uip|\\$UIP)\\s+(maestro\\s+)?flow\\s+init/)\nExamples: ['\\\\\\necho \"=== Step 1: Create solution SimEval ===\" && \\\\\\nuip solution init SimEval --output json && \\\\\\necho \"=== Step 2: Ini']",
+      "error": null,
+      "pass_threshold": 1.0,
+      "gating": true
+    },
+    {
+      "result_kind": "basic",
+      "criterion_type": "file_exists",
+      "description": "Flow file was created at the double-nested path",
+      "score": 1.0,
+      "details": "File 'SimEval/SimEval/SimEval.flow' exists",
+      "error": null,
+      "pass_threshold": 1.0,
+      "gating": true
+    },
+    {
+      "result_kind": "basic",
+      "criterion_type": "command_executed",
+      "description": "Agent created an eval set",
+      "score": 1.0,
+      "details": "Matched 1/1 required commands (filters: tool_name=Bash, pattern=/(uip|\\$UIP)\\s+maestro\\s+flow\\s+eval\\s+set\\s+add/)\nExamples: ['\\\\\\necho \"=== Step 1: Create solution SimEval ===\" && \\\\\\nuip solution init SimEval --output json && \\\\\\necho \"=== Step 2: Ini']",
+      "error": null,
+      "pass_threshold": 1.0,
+      "gating": true
+    },
+    {
+      "result_kind": "basic",
+      "criterion_type": "command_executed",
+      "description": "Agent added a data point with --inputs and --expected",
+      "score": 1.0,
+      "details": "Matched 1/1 required commands (filters: tool_name=Bash, pattern=/(uip|\\$UIP)\\s+maestro\\s+flow\\s+eval\\s+add\\s+.*(--inputs.*--expected|--expected.*--inputs)/)\nExamples: ['\\\\\\necho \"=== Step 1: Create solution SimEval ===\" && \\\\\\nuip solution init SimEval --output json && \\\\\\necho \"=== Step 2: Ini']",
+      "error": null,
+      "pass_threshold": 1.0,
+      "gating": true
+    },
+    {
+      "result_kind": "basic",
+      "criterion_type": "command_executed",
+      "description": "Agent added a Static simulation with --strategy Static and --mock-value",
+      "score": 1.0,
+      "details": "Matched 1/1 required commands (filters: tool_name=Bash, pattern=/(uip|\\$UIP)\\s+maestro\\s+flow\\s+eval\\s+simulation\\s+add\\s+.*--strategy\\s+Static\\b.*--mock-value/)\nExamples: ['\\\\\\necho \"=== Step 5 (task): Add Static simulation on connector-send-email ===\" && \\\\\\nuip maestro flow eval simulation add ']",
+      "error": null,
+      "pass_threshold": 1.0,
+      "gating": true
+    },
+    {
+      "result_kind": "basic",
+      "criterion_type": "command_executed",
+      "description": "Agent added an Llm simulation with --strategy Llm and explicit --output-schema",
+      "score": 1.0,
+      "details": "Matched 1/1 required commands (filters: tool_name=Bash, pattern=/(uip|\\$UIP)\\s+maestro\\s+flow\\s+eval\\s+simulation\\s+add\\s+.*--strategy\\s+Llm\\b.*--output-schema/)\nExamples: ['\\\\\\necho \"=== Step 5 (task): Add Static simulation on connector-send-email ===\" && \\\\\\nuip maestro flow eval simulation add ']",
+      "error": null,
+      "pass_threshold": 1.0,
+      "gating": true
+    },
+    {
+      "result_kind": "basic",
+      "criterion_type": "command_executed",
+      "description": "Agent listed simulations on the data point",
+      "score": 1.0,
+      "details": "Matched 1/1 required commands (filters: tool_name=Bash, pattern=/(uip|\\$UIP)\\s+maestro\\s+flow\\s+eval\\s+simulation\\s+list/)\nExamples: ['\\\\\\necho \"=== Step 5 (task): Add Static simulation on connector-send-email ===\" && \\\\\\nuip maestro flow eval simulation add ']",
+      "error": null,
+      "pass_threshold": 1.0,
+      "gating": true
+    },
+    {
+      "result_kind": "basic",
+      "criterion_type": "command_executed",
+      "description": "Agent removed the connector-send-email simulation",
+      "score": 1.0,
+      "details": "Matched 1/1 required commands (filters: tool_name=Bash, pattern=/(uip|\\$UIP)\\s+maestro\\s+flow\\s+eval\\s+simulation\\s+remove\\s+.*connector-send-email/)\nExamples: ['\\\\\\necho \"=== Step 5 (task): Add Static simulation on connector-send-email ===\" && \\\\\\nuip maestro flow eval simulation add ']",
+      "error": null,
+      "pass_threshold": 1.0,
+      "gating": true
+    },
+    {
+      "result_kind": "basic",
+      "criterion_type": "run_command",
+      "description": "Eval-set JSON shows the Llm simulation persisted and the removed one is gone",
+      "score": 1.0,
+      "details": "Command: python3 $TASK_DIR/check_simulation_crud.py\nExit code: 0 (expected: 0)\nStdout:\nOK: eval set SimEval/SimEval/evals/ab43f3fd-3a89-4e9d-ac9b-56e4ea14b5bc/eval-sets/evaluation-set-sim-set-c72d3e47.json data point 'hello' keeps 'agent-lookup' and dropped 'connector-send-email' (simulation add + remove persisted)\n\nStderr: (empty)",
+      "error": null,
+      "pass_threshold": 1.0,
+      "gating": true
+    }
+  ],
+  "iterations": [
+    {
+      "iteration": 1,
+      "user_input": "Your working directory is: /work/output/artifacts/skill-flow-eval-simulation-crud\n\nUse the `uipath-maestro-flow` skill's evaluate capability to scaffold a Flow\nproject, build an eval set with one data point, then add, list, and remove\nnode simulations on that data point — purely local, no Studio Web round-trip.\n\nSteps:\n1. Create a solution `SimEval` and a Flow project `SimEval`. The flow file\n   MUST live at `SimEval/SimEval/SimEval.flow` (double-nested layout) and be\n   linked via `uip solution project add`.\n\n2. Declare a string input variable named `name` on\n   `SimEval/SimEval/SimEval.flow` before adding the data point.\n\n3. Create an eval set named `Sim Set` in the Flow project at\n   `SimEval/SimEval`. (No `--entry-point`, no `--evaluators` — defaults are\n   fine.)\n\n4. Add one data point named `hello` to that eval set with inputs\n   `{\"name\":\"Alice\"}` and expected `{\"greeting\":\"Hello, Alice!\"}`.\n\n5. Add a `Static` simulation on the `hello` data point targeting component id\n   `connector-send-email`. Use `--component-type connector` and a fixed\n   `--mock-value '{\"status\":\"ok\",\"messageId\":\"abc123\"}'`.\n\n6. Add an `Llm` simulation on the `hello` data point targeting component id\n   `agent-lookup`. Use `--component-type agent`, supply\n   `--simulation-instructions \"Return a plausible lookup result.\"`, and pass\n   `--output-schema '{\"type\":\"object\",\"properties\":{\"result\":{\"type\":\"string\"}}}'`\n   explicitly (do NOT rely on auto-resolution from the .flow file).\n\n7. List the simulations on the `hello` data point to confirm both are present.\n\n8. Remove the `connector-send-email` simulation from the `hello` data point.\n\nImportant:\n- Use `--output json` on every `uip maestro flow eval ...` command.\n- Do NOT call `uip login`. Do NOT call `uip solution upload`. Do NOT call\n  `uip maestro flow eval run *` — this task tests local CRUD only.\n- Do NOT run `uip maestro flow debug` or `uip maestro flow validate` — this\n  is not a flow-authoring test.\n",
+      "agent_output": "[ASSISTANT] Now I have all the context I need. Let me plan the full sequence and execute in two chained Bash calls:\n\n1. Scaffold solution → init flow (skip auto-registration) → link via `project add` → declare variable → create eval set → add data point\n2. Add Static simulation → Add Llm simulation → List simulations → Remove Static simulation\n[ASSISTANT] All six setup steps succeeded. Now run the simulation CRUD steps:\n[ASSISTANT] All 8 steps completed successfully. Here's a summary of what was done:\n\n---\n\n### ✅ Completed — SimEval Flow Eval Simulation CRUD\n\n**Setup (Steps 1–4)**\n1. **Solution created** — `SimEval/SimEval.uipx` via `uip solution init SimEval`\n2. **Flow project scaffolded** — `SimEval/SimEval/SimEval.flow` via `uip maestro flow init SimEval --skip-solution-registration`\n3. **Project linked** — registered into the solution via `uip solution project add SimEval`\n4. **Input variable declared** — `name` (direction: `in`, type: `string`) added to `SimEval.flow`\n\n**Eval CRUD (Steps 5–8 setup)**\n5. **Eval set created** — `\"Sim Set\"` (`c72d3e47`) with 0 evaluators, no `--entry-point`\n6. **Data point added** — `hello` (`a249ecbb`) with inputs `{\"name\":\"Alice\"}` and expected `{\"greeting\":\"Hello, Alice!\"}`\n\n**Simulation CRUD (Steps 5–8 task)**\n| Step | Command | Result |\n|------|---------|--------|\n| Add Static | `simulation add connector-send-email --strategy Static --mock-value '{\"status\":\"ok\",\"messageId\":\"abc123\"}'` | `FlowEvalSimulationAdd` ✅ |\n| Add Llm | `simulation add agent-lookup --strategy Llm --simulation-instructions \"...\" --output-schema '{\"type\":\"object\",...}'` | `FlowEvalSimulationAdd` ✅ |\n| List | `simulation list --data-point hello` | Both simulations confirmed present ✅ |\n| Remove | `simulation remove connector-send-email` | `FlowEvalSimulationRemove` ✅ |\n\nThe `list` step confirmed both `connector-send-email` (Static) and `agent-lookup` (Llm) were present before the removal. After removal, only `agent-lookup` remains on the `hello` data point.\n[RESULT - SUCCESS] All 8 steps completed successfully. Here's a summary of what was done:\n\n---\n\n### ✅ Completed — SimEval Flow Eval Simulation CRUD\n\n**Setup (Steps 1–4)**\n1. **Solution created** — `SimEval/SimEval.uipx` via `uip solution init SimEval`\n2. **Flow project scaffolded** — `SimEval/SimEval/SimEval.flow` via `uip maestro flow init SimEval --skip-solution-registration`\n3. **Project linked** — registered into the solution via `uip solution project add SimEval`\n4. **Input variable declared** — `name` (direction: `in`, type: `string`) added to `SimEval.flow`\n\n**Eval CRUD (Steps 5–8 setup)**\n5. **Eval set created** — `\"Sim Set\"` (`c72d3e47`) with 0 evaluators, no `--entry-point`\n6. **Data point added** — `hello` (`a249ecbb`) with inputs `{\"name\":\"Alice\"}` and expected `{\"greeting\":\"Hello, Alice!\"}`\n\n**Simulation CRUD (Steps 5–8 task)**\n| Step | Command | Result |\n|------|---------|--------|\n| Add Static | `simulation add connector-send-email --strategy Static --mock-value '{\"status\":\"ok\",\"messageId\":\"abc123\"}'` | `FlowEvalSimulationAdd` ✅ |\n| Add Llm | `simulation add agent-lookup --strategy Llm --simulation-instructions \"...\" --output-schema '{\"type\":\"object\",...}'` | `FlowEvalSimulationAdd` ✅ |\n| List | `simulation list --data-point hello` | Both simulations confirmed present ✅ |\n| Remove | `simulation remove connector-send-email` | `FlowEvalSimulationRemove` ✅ |\n\nThe `list` step confirmed both `connector-send-email` (Static) and `agent-lookup` (Llm) were present before the removal. After removal, only `agent-lookup` remains on the `hello` data point.",
+      "commands": [
+        {
+          "tool_name": "Skill",
+          "tool_id": "toolu_bdrk_01KRzaf3AXhddJ1x2E8Qrfn7",
+          "assistant_turn_index": 1,
+          "timestamp": "2026-07-24T00:10:44.982945",
+          "duration_ms": 50.73592998087406,
+          "generation_completed_at": "2026-07-24T00:10:44.982945",
+          "execution_started_at": "2026-07-24T00:10:44.983213",
+          "execution_completed_at": "2026-07-24T00:10:45.033949",
+          "parameters": {
+            "skill": "uipath:uipath-maestro-flow",
+            "args": "evaluate capability: scaffold a Flow project, build an eval set with one data point, then add, list, and remove node simulations on that data point — purely local, no Studio Web round-trip.\n\nSteps:\n1. Create a solution `SimEval` and a Flow project `SimEval`. The flow file MUST live at `SimEval/SimEval/SimEval.flow` (double-nested layout) and be linked via `uip solution project add`.\n\n2. Declare a string input variable named `name` on `SimEval/SimEval/SimEval.flow` before adding the data point.\n\n3. Create an eval set named `Sim Set` in the Flow project at `SimEval/SimEval`. (No `--entry-point`, no `--evaluators` — defaults are fine.)\n\n4. Add one data point named `hello` to that eval set with inputs `{\"name\":\"Alice\"}` and expected `{\"greeting\":\"Hello, Alice!\"}`.\n\n5. Add a `Static` simulation on the `hello` data point targeting component id `connector-send-email`. Use `--component-type connector` and a fixed `--mock-value '{\"status\":\"ok\",\"messageId\":\"abc123\"}'`.\n\n6. Add an `Llm` simulation on the `hello` data point targeting component id `agent-lookup`. Use `--component-type agent`, supply `--simulation-instructions \"Return a plausible lookup result.\"`, and pass `--output-schema '{\"type\":\"object\",\"properties\":{\"result\":{\"type\":\"string\"}}}' explicitly (do NOT rely on auto-resolution from the .flow file).\n\n7. List the simulations on the `hello` data point to confirm both are present.\n\n8. Remove the `connector-send-email` simulation from the `hello` data point.\n\nImportant:\n- Use `--output json` on every `uip maestro flow eval ...` command.\n- Do NOT call `uip login`. Do NOT call `uip solution upload`. Do NOT call `uip maestro flow eval run *` — this task tests local CRUD only.\n- Do NOT run `uip maestro flow debug` or `uip maestro flow validate` — this is not a flow-authoring test."
+          },
+          "result_status": "success",
+          "result_summary": "Launching skill: uipath:uipath-maestro-flow",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 0,
+          "result_tokens": 11
+        },
+        {
+          "tool_name": "Read",
+          "tool_id": "toolu_bdrk_019rd8detYUaMNV7D1D3t9FF",
+          "assistant_turn_index": 3,
+          "timestamp": "2026-07-24T00:10:47.966086",
+          "duration_ms": 28.1426910078153,
+          "generation_completed_at": "2026-07-24T00:10:47.966086",
+          "execution_started_at": "2026-07-24T00:10:47.966151",
+          "execution_completed_at": "2026-07-24T00:10:47.994294",
+          "parameters": {
+            "file_path": "/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/evaluate/CAPABILITY.md"
+          },
+          "result_status": "success",
+          "result_summary": "1\t# Evaluate — Design and run Flow evaluations\n2\t\n3\tCapability index for `uip maestro flow eval` — evaluator CRUD (7 types), eval set CRUD with entry-point pinning, data point management with file attachments, and Studio Web run start/status/results/list/compare. Local CRUD is offline; runs require `uip login` and a Flow solution that already exists in Studio Web.\n4\t\n5\t> **Where you came from / where to go next.** Evaluate is downstream of Operate (ship the flow → evaluate it on Studio Web) and feeds back into Author (failing eval → fix the `.flow` → re-ship → re-evaluate). Build/edit lives in [author/CAPABILITY.md](../author/CAPABILITY.md); publish/deploy lives in [operate/CAPABILITY.md](../operate/CAPABILITY.md); fault triage on a debug or process run lives in [diagnose/CAPABILITY.md](../diagnose/CAPABILITY.md).\n6\t>\n7\t> **Inherits universal rules from [SKILL.md](../../SKILL.md)** — `--output json` + prefer `--output-filter` for extraction, no `flow debug` without consent, never invoke other skills automatically, dropdown question pattern, **plain-English narration + granular progress list (opt-in — silent by default; engage when the user asks for verbosity)**. The rules below are evaluate-scoped and apply on top.\n8\t\n9\t## When to use this capability\n10\t\n11\t- Add or remove data points (test cases) on a Flow eval set\n12\t- Create evaluators (`exact-match`, `json-similarity`, `contains`, `llm-judge-*` types) for a Flow project\n13\t- Create or remove eval sets, link them to evaluators, pin entry points\n14\t- Add, list, or remove simulations on data points (`uip maestro flow eval simulation`)\n15\t- Start an eval run on Studio Web, poll its status, fetch detailed results\n16\t- Compare two eval runs to verify a change improved scores without regressions\n17\t\n18\tFor agent (`agent.json`) evaluations read the `uipath-agents` skill. For BPMN evaluations read the `uipath-maestro-bpmn` skill — this capability covers Flow only.\n19\t\n20\t## Critical rules\n21\t\n22\t1. **Check Flow eval CLI availability once.** Run `uip maestro flow eval --help --output json` before using eval commands. If it returns `unknown command 'eval'`, the installed CLI does not expose Flow eval yet. Stop, report that the user needs a CLI/tool version with Flow eval support, and do not spend turns searching npm packages or source bundles.\n23\t2. **Never run `uip solution upload` automatically as part of an eval workflow.** The eval run requires the Flow solution to already exist in Studio Web, but uploading from the local working tree clobbers whatever is on Studio Web. If the project was pulled from Studio Web (`uip solution download`), edited locally in VS Code, or scaffolded on disk and never uploaded, an unprompted upload will overwrite or push unintended state. Ask the user explicitly before any `uip solution upload` — see [upload-safety.md](references/upload-safety.md).\n24\t3. **`--path` accepts a Flow project directory OR a solution directory containing exactly one Flow project.** If the solution holds multiple Flow projects, point `--path` at the specific project directory.\n25\t4. **Local CRUD does not require login.** `add`, `remove`, `list` (data points / eval sets / evaluators) edit JSON on disk. Only `uip maestro flow eval run *` requires `uip login` and an existing Studio Web solution.\n26\t5. **Pin a model on every LLM-judge evaluator.** Empty/missing `model` produces a cryptic 500 from the LLM gateway after retries. Pass `--model <name>` on `evaluator add` or set `model` in the JSON.\n27\t6. **Declare input variables before adding data points with `--inputs`.** `eval add` validates input keys against the Flow's declared input variables and fails fast on unknown keys. Add missing input variables first (for example, `uip maestro flow variable add My.flow name --direction in --type string --output json`) or change the data point input JSON to match the Flow schema.\n28\t7. **Let the CLI manage evaluator references.** Eval sets store `evaluatorRefs` as the evaluator file refs produced by `evaluator add` (for example, `greeting-match-1234abcd.json`). If the set should use every evaluator that already exists, omit `--evaluators` so the CLI writes those generated file refs. If you must pass `--evaluators`, pass the evaluator id or generated file base/ref from `evaluator add/list` — never the display name alone (`greeting-match`), because Studio Web does not resolve display-name refs.\n29\t8. **Pre-empt timeouts on `run start --wait`.** The CLI blocks until the run reaches a terminal state or `--timeout` elapses. `--timeout` only stops local blocking — the run continues server-side; query progress with `eval run status <run_id>`.\n30\t\n31\t## Quick Start\n32\t\n33\tStandard workflow: scaffold evaluators → create eval set → add data points → confirm project is in Studio Web → run.\n34\t\n35\t```bash\n36\t# 1. Add an evaluator (local; no login required)\n37\tuip maestro flow eval evaluator add greeting-quality \\\n38\t  --type llm-judge-output \\\n39\t  --model gpt-4.1-2025-04-14 \\\n40\t  --path ./MySolution/MyFlow --output json\n41\t\n42\t# 2. Create an eval set, pin the entry point, and let the CLI attach\n43\t#    all current evaluators by generated file ref\n44\tuip maestro flow eval set add \"Smoke Tests\" \\\n45\t  --entry-point /Main.bpmn#start \\\n46\t  --path ./MySolution/MyFlow --output json\n47\t\n48\t# 3. Add data points (test cases)\n49\t#    The `message` key must already be declared as a Flow input variable.\n50\tuip maestro flow eval add hello-test \\\n51\t  --set \"Smoke Tests\" \\\n52\t  --inputs '{\"message\":\"hello\"}' \\\n53\t  --expected '{\"reply\":\"Hello! How can I help you?\"}' \\\n54\t  --path ./MySolution/MyFlow --output json\n55\t\n56\t# 4. Confirm the solution is in Studio Web\n57\t#    DO NOT auto-run `uip solution upload`. Ask the user. See upload-safety.md.\n58\t\n59\t# 5. Start the run and wait\n60\tuip maestro flow eval run start \\\n61\t  --set \"Smoke Tests\" \\\n62\t  --path ./MySolution/MyFlow \\\n63\t  --wait --timeout 600 --output json\n64\t\n65\t# 6. Inspect failures\n66\tuip maestro flow eval run results <eval_set_run_id> \\\n67\t  --set \"Smoke Tests\" \\\n68\t  --only-failed --verbose \\\n69\t  --path ./MySolution/MyFlow --output json\n70\t```\n71\t\n72\t## Workflow\n73\t\n74\t| Journey | Read |\n75\t| --- | --- |\n76\t| Look up any `uip maestro flow eval` subcommand syntax, flags, defaults, output codes | [commands-reference.md](references/commands-reference.md) |\n77\t| Choose among the 7 evaluator types, write custom prompts, hand-write evaluator JSON | [evaluators-guide.md](references/evaluators-guide.md) |\n78\t| Create eval sets, add data points, map `--inputs`/`--expected`/`--criteria` to evaluator types, attach files | [eval-sets-guide.md](references/eval-sets-guide.md) |\n79\t| Start a Studio Web run, poll status, read results, export CSV/JSON, compare two runs | [running-guide.md](references/running-guide.md) |\n80\t| Decide whether to call `uip solution upload` (almost always: don't auto-run; ask first) | [upload-safety.md](references/upload-safety.md) |\n81\t\n82\t## Common tasks\n83\t\n84\t| I need to... | Read these |\n85\t| --- | --- |\n86\t| **Add an evaluator** | [evaluators-guide.md](references/evaluators-guide.md) + [commands-reference.md — Evaluators](references/commands-reference.md#evaluators) |\n87\t| **Pick the right evaluator type** | [evaluators-guide.md — When to Pick Each Type](references/evaluators-guide.md#when-to-pick-each-type) |\n88\t| **Create an eval set and pin an entry point** | [eval-sets-guide.md — Eval Set Lifecycle](references/eval-sets-guide.md#eval-set-lifecycle) |\n89\t| **Add a data point with file attachments** | [eval-sets-guide.md — `--input-file`](references/eval-sets-guide.md#--input-file-keypath) |\n90\t| **Set per-data-point criteria for trajectory evaluators** | [eval-sets-guide.md — `--criteria`](references/eval-sets-guide.md#--criteria) |\n91\t| **Add a simulation to a data point** | [eval-sets-guide.md — Simulations](references/eval-sets-guide.md#simulations-on-data-points) + [commands-reference.md — Simulations](references/commands-reference.md#simulations) |\n92\t| **Start a Studio Web eval run** | [running-guide.md — Start a Run](references/running-guide.md#start-a-run) |\n93\t| **Poll run status without `--wait`** | [running-guide.md — Check Status](references/running-guide.md#check-status) |\n94\t| **Inspect only failed data points** | [running-guide.md — Detailed Results](references/running-guide.md#detailed-results) (`--only-failed --verbose`) |\n95\t| **Compare two runs side-by-side** | [running-guide.md — Compare Two Runs](references/running-guide.md#compare-two-runs) |\n96\t| **Decide whether to call `uip solution upload`** | [upload-safety.md](references/upload-safety.md) |\n97\t| **Look up the `eval` subcommand tree, flags, defaults, output codes** | [commands-reference.md](references/commands-reference.md) |\n98\t| **My eval run failed** | [running-guide.md — Failure Detection](references/running-guide.md#failure-detection); for flow-level faults [diagnose/CAPABILITY.md](../diagnose/CAPABILITY.md) |\n99\t\n100\t## Anti-patterns\n101\t\n102\t- **Don't auto-run `uip solution upload`.** Even when an eval run errors with \"solution not found in Studio Web\", stop and ask the user — see [upload-safety.md](references/upload-safety.md). The local project may be ahead of, or diverged from, Studio Web.\n103\t- **Don't hand-write `evaluatorRefs` unless you are repairing an eval set.** Prefer the default all-evaluators behavior so the CLI writes generated file refs, or pass generated evaluator ids/file refs explicitly. Do not pass evaluator display names to `--evaluators`.\n104\t- **Don't pass `--type` in PascalCase.** Only kebab-case is accepted: `exact-match`, `json-similarity`, `contains`, `llm-judge-output`, `llm-judge-strict-json`, `llm-judge-trajectory`, `llm-judge-trajectory-simulation`.\n105\t- **Don't depend on a specific `--wait` polling cadence.** Treat `--wait` as a black-box block; if you need precise progress, omit it and call `eval run status` yourself.\n106\t- **Don't compare runs from different eval sets.** `eval run compare` aligns by data-point name within the set; cross-set deltas are meaningless.\n107\t- **Don't omit `--model` on LLM-judge evaluators.** The cloud worker fail-fasts before calling the LLM gateway.\n108\t- **Don't run evals during `flow debug`.** `debug` is a separate Studio Web session; evals run against the deployed/published solution. Mixing them produces confusing run IDs.\n109\t\n110\t## Completion Output\n111\t\n112\tAfter a run completes, report:\n113\t\n114\t1. **Eval set run ID** and aggregate score (from `run status`)\n115\t2. **Failed data points** (from `run results --only-failed --verbose`)\n116\t3. **Comparison delta** vs the previous run (`run compare`) if one exists\n117\t4. **Suggested next step** — fix the agent/flow, re-run, or accept the result. Do NOT suggest `uip solution upload` unless the user has explicitly asked to publish edits.\n118\t\n119\t## References\n120\t\n121\t### Evaluate-scoped\n122\t\n123\t- [commands-reference.md](references/commands-reference.md) — every `uip maestro flow eval` subcommand, flags, defaults, output `Code` enum\n124\t- [evaluators-guide.md](references/evaluators-guide.md) — 7 evaluator types mapped to internal `uipath-*` IDs, JSON shapes, template variables\n125\t- [eval-sets-guide.md](references/eval-sets-guide.md) — eval set + data point CRUD, `--inputs`/`--expected`/`--criteria`/`--input-file`/`--search-text`, simulations\n126\t- [running-guide.md](references/running-guide.md) — run start/status/results/list/compare, JMESPath `--output-filter`, failure detection\n127\t- [upload-safety.md](references/upload-safety.md) — the `solution upload` rule\n128\t\n129\t### Cross-capability (shared)\n130\t\n131\t- [shared/cli-commands.md](../shared/cli-commands.md) — flat CLI lookup including `eval` subcommands\n132\t- [shared/cli-conventions.md](../shared/cli-conventions.md) — login states, `--output json`, JSON output shape\n133\t",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 1,
+          "result_tokens": 2962
+        },
+        {
+          "tool_name": "Read",
+          "tool_id": "toolu_bdrk_014JLf7anqRgPT8v2irKjWsB",
+          "assistant_turn_index": 4,
+          "timestamp": "2026-07-24T00:10:50.143007",
+          "duration_ms": 8.87663895264268,
+          "generation_completed_at": "2026-07-24T00:10:50.143007",
+          "execution_started_at": "2026-07-24T00:10:50.143263",
+          "execution_completed_at": "2026-07-24T00:10:50.152140",
+          "parameters": {
+            "file_path": "/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/evaluate/references/commands-reference.md"
+          },
+          "result_status": "success",
+          "result_summary": "1\t# `uip maestro flow eval` Command Reference\n2\t\n3\tComplete syntax reference for every subcommand under `uip maestro flow eval`. All commands accept the global flags `--output <table|json|yaml|plain>` (default `json`), `--output-filter <jmespath>`, `--log-level <debug|info|warn|error>`, and `--log-file <path>`. Repeated reminders below: always pass `--output json` when an agent will parse the result.\n4\t\n5\t## Command Tree\n6\t\n7\t```\n8\tuip maestro flow eval\n9\t├── add        — Add a data point to an evaluation set\n10\t├── list       — List data points in an evaluation set\n11\t├── remove     — Remove a data point from an evaluation set\n12\t├── set\n13\t│   ├── add    — Create an evaluation set\n14\t│   ├── list   — List evaluation sets\n15\t│   └── remove — Remove an evaluation set\n16\t├── evaluator\n17\t│   ├── add    — Add an evaluator to the flow project\n18\t│   ├── list   — List evaluators in a flow project\n19\t│   └── remove — Remove an evaluator from a flow project\n20\t├── simulation\n21\t│   ├── add    — Add or update a simulation on a data point\n22\t│   ├── list   — List simulations on a data point\n23\t│   └── remove — Remove a simulation from a data point\n24\t└── run\n25\t    ├── start    — Start a Studio Web evaluation run\n26\t    ├── status   — Check the status of a run\n27\t    ├── results  — Get detailed per-data-point results\n28\t    ├── list     — List runs for an eval set\n29\t    └── compare  — Compare two runs side-by-side\n30\t```\n31\t\n32\t`add` / `remove` / `list` at the top level operate on **data points** (test cases) inside an eval set. Data points are stored inline within the eval set JSON, not as separate files.\n33\t\n34\t## Common Options\n35\t\n36\tEvery subcommand accepts:\n37\t\n38\t| Flag | Required | Description |\n39\t|------|----------|-------------|\n40\t| `--path <path>` | No (defaults to `.`) | Flow project directory, or a solution directory containing exactly one Flow project |\n41\t| `--output <fmt>` | No (default `json`) | `table`, `json`, `yaml`, or `plain` |\n42\t| `--output-filter <expr>` | No | JMESPath expression applied to JSON output before printing |\n43\t\n44\t## Data Points (Test Cases)\n45\t\n46\t### `uip maestro flow eval add <name>`\n47\t\n48\tAdd a data point to an eval set.\n49\t\n50\t| Flag | Required | Description |\n51\t|------|----------|-------------|\n52\t| `--set <name>` | Yes | Eval set name or ID |\n53\t| `--inputs <json>` | No | Input values as a JSON object; keys must be declared as Flow input variables |\n54\t| `--input-file <key=path>` | No | Attach a file as input `<key>`; **repeatable** |\n55\t| `--expected <json>` | No | Expected output as a JSON object |\n56\t| `--criteria <json>` | No | Per-evaluator criteria JSON object keyed by evaluator id |\n57\t| `--search-text <text>` | No | Search text for `contains` evaluators |\n58\t| `--path <path>` | No | (see Common Options) |\n59\t\n60\tExample:\n61\t\n62\t```bash\n63\tuip maestro flow eval add greeting-test \\\n64\t  --set \"Smoke Tests\" \\\n65\t  --inputs '{\"name\":\"Alice\"}' \\\n66\t  --expected '{\"greeting\":\"Hello, Alice!\"}' \\\n67\t  --path ./MySolution/MyFlow --output json\n68\t```\n69\t\n70\t### `uip maestro flow eval list`\n71\t\n72\tList data points in an eval set.\n73\t\n74\t```bash\n75\tuip maestro flow eval list --set \"Smoke Tests\" --path ./MySolution/MyFlow --output json\n76\t```\n77\t\n78\t### `uip maestro flow eval remove <id>`\n79\t\n80\tRemove a data point. `<id>` accepts the data point's UUID or its `name`.\n81\t\n82\t## Evaluation Sets\n83\t\n84\t### `uip maestro flow eval set add <name>`\n85\t\n86\tCreate an evaluation set.\n87\t\n88\t| Flag | Required | Description |\n89\t|------|----------|-------------|\n90\t| `--evaluators <refs>` | No (default: all) | Comma-separated evaluator IDs or generated file base names; do not pass display names |\n91\t| `--entry-point <id>` | No | Entry point node id stored as the eval set's `selectedEntrypoint` |\n92\t| `--path <path>` | No | (see Common Options) |\n93\t\n94\tWhen `--evaluators` is omitted, the new eval set references **all** evaluators present in the project at creation time using their generated evaluator file refs. Prefer this when creating a set immediately after adding the evaluator(s). If passing `--evaluators`, use the generated id/file base returned by `evaluator add/list`, not the evaluator display name.\n95\t\n96\t### `uip maestro flow eval set list`\n97\t\n98\tList eval sets in the project.\n99\t\n100\t### `uip maestro flow eval set remove <id>`\n101\t\n102\tRemove an eval set. `<id>` accepts the eval set's UUID, `name`, or file base name.\n103\t\n104\t## Evaluators\n105\t\n106\t### `uip maestro flow eval evaluator add <name>`\n107\t\n108\tCreate an evaluator file in the project's evaluators directory.\n109\t\n110\t| Flag | Required | Description |\n111\t|------|----------|-------------|\n112\t| `--type <type>` | Yes | One of: `exact-match`, `json-similarity`, `contains`, `llm-judge-output`, `llm-judge-strict-json`, `llm-judge-trajectory`, `llm-judge-trajectory-simulation` |\n113\t| `--description <text>` | No | Evaluator description |\n114\t| `--target-key <key>` | No | Output key the evaluator scores against (defaults to `*` — the entire output) |\n115\t| `--model <model>` | No (Yes for llm-judge-*) | LLM model for LLM-judge evaluators (e.g. `gpt-4.1-2025-04-14`) |\n116\t| `--prompt <prompt>` | No | Custom LLM judge prompt; defaults to a built-in template per type |\n117\t| `--path <path>` | No | (see Common Options) |\n118\t\n119\tOnly kebab-case `--type` values are accepted; PascalCase fails with an error.\n120\t\n121\tFor LLM-judge evaluators, `--model` is effectively required — the cloud worker rejects an empty `model` before sending to the LLM gateway. See [evaluators-guide.md](evaluators-guide.md) for the seven types in detail.\n122\t\n123\t### `uip maestro flow eval evaluator list`\n124\t\n125\tList evaluators in the project.\n126\t\n127\t### `uip maestro flow eval evaluator remove <id>`\n128\t\n129\tRemove an evaluator. `<id>` accepts UUID, name, or file base name. Removing an evaluator does not auto-clean `evaluatorRefs` in eval sets — verify after removing.\n130\t\n131\t## Simulations\n132\t\n133\tSimulations intercept specific nodes (connectors, agents, sub-flows) during an eval run and replace their real execution with a controlled response. Each simulation targets a single component by its `componentId` and applies one of three strategies.\n134\t\n135\t### `uip maestro flow eval simulation add <component-id>`\n136\t\n137\tAdd or replace a simulation on a data point. If a simulation for `<component-id>` already exists on the data point it is overwritten.\n138\t\n139\t| Flag | Required | Description |\n140\t|------|----------|-------------|\n141\t| `--set <name>` | Yes | Eval set name or ID |\n142\t| `--data-point <id>` | Yes | Data point name or ID |\n143\t| `--strategy <strategy>` | Yes | `Llm` or `Static` |\n144\t| `--component-type <type>` | Yes | Component type (e.g. `connector`, `agent`, `subflow`) |\n145\t| `--component-description <text>` | No | Human-readable label for the component |\n146\t| `--simulation-instructions <text>` | No | LLM prompt describing what the component should return (for `Llm` strategy) |\n147\t| `--mock-value <json>` | No | Static JSON output (for `Static` strategy) |\n148\t| `--output-schema <json>` | No | JSON Schema describing the expected output shape; passed to the LLM to constrain its response. **Auto-resolved from the `.flow` file when omitted for `Llm` strategy** — fails if the node is not found or has no outputs. Pass explicitly to override. |\n149\t| `--path <path>` | No | (see Common Options) |\n150\t\n151\t**Strategy guide:**\n152\t\n153\t| Strategy | When to use | Key flags |\n154\t|----------|-------------|-----------|\n155\t| `Llm` | Output should be realistic but non-deterministic | `--simulation-instructions`, `--output-schema` (auto-resolved) |\n156\t| `Static` | Output is fixed and deterministic | `--mock-value` |\n157\t\n158\t**`--output-schema` auto-resolution for Llm simulations:** When omitted, the CLI reads the `.flow` file, finds the node by `<component-id>`, and derives the schema from the node's output definition (connector `outputJsonSchema`, agent `agentOutputVariables`, or `node.outputs`). Fails with an actionable error if the node is not found or has no outputs. Pass `--output-schema` explicitly to override. The JSON Schema is sent alongside `--simulation-instructions` to the LLM, telling it what shape the output must conform to. Without it the LLM generates free-form text. For a connector that returns `{ status, message }` you would pass:\n159\t\n160\t```bash\n161\t--output-schema '{\"type\":\"object\",\"properties\":{\"status\":{\"type\":\"string\"},\"message\":{\"type\":\"string\"}}}'\n162\t```\n163\t\n164\tExample — LLM strategy:\n165\t\n166\t```bash\n167\tuip maestro flow eval simulation add connector-send-email \\\n168\t  --set \"Smoke Tests\" \\\n169\t  --data-point \"hello-test\" \\\n170\t  --strategy Llm \\\n171\t  --component-type connector \\\n172\t  --simulation-instructions \"Pretend to send the email and return a success confirmation.\" \\\n173\t  --path ./MySolution/MyFlow --output json\n174\t```\n175\t\n176\tExample — Static strategy:\n177\t\n178\t```bash\n179\tuip maestro flow eval simulation add agent-lookup \\\n180\t  --set \"Smoke Tests\" \\\n181\t  --data-point \"hello-test\" \\\n182\t  --strategy Static \\\n183\t  --component-type agent \\\n184\t  --mock-value '{\"result\": \"found\", \"items\": []}' \\\n185\t  --path ./MySolution/MyFlow --output json\n186\t```\n187\t\n188\t### `uip maestro flow eval simulation list`\n189\t\n190\tList all simulations configured on a data point.\n191\t\n192\t| Flag | Required | Description |\n193\t|------|----------|-------------|\n194\t| `--set <name>` | Yes | Eval set name or ID |\n195\t| `--data-point <id>` | Yes | Data point name or ID |\n196\t| `--path <path>` | No | (see Common Options) |\n197\t\n198\t```bash\n199\tuip maestro flow eval simulation list \\\n200\t  --set \"Smoke Tests\" \\\n201\t  --data-point \"hello-test\" \\\n202\t  --path ./MySolution/MyFlow --output json\n203\t```\n204\t\n205\t### `uip maestro flow eval simulation remove <component-id>`\n206\t\n207\tRemove a simulation from a data point. Returns an error if no simulation with the given `<component-id>` exists on the data point.\n208\t\n209\t| Flag | Required | Description |\n210\t|------|----------|-------------|\n211\t| `--set <name>` | Yes | Eval set name or ID |\n212\t| `--data-point <id>` | Yes | Data point name or ID |\n213\t| `--path <path>` | No | (see Common Options) |\n214\t\n215\t```bash\n216\tuip maestro flow eval simulation remove connector-send-email \\\n217\t  --set \"Smoke Tests\" \\\n218\t  --data-point \"hello-test\" \\\n219\t  --path ./MySolution/MyFlow --output json\n220\t```\n221\t\n222\t## Run\n223\t\n224\t### `uip maestro flow eval run start`\n225\t\n226\tStart a Studio Web evaluation run. The Flow solution **must already exist in Studio Web** — see [upload-safety.md](upload-safety.md).\n227\t\n228\t| Flag | Required | Description | Default |\n229\t|------|----------|-------------|---------|\n230\t| `--set <name>` | Yes | Eval set name or ID | — |\n231\t| `--solution-id <id>` | No | Solution ID from Studio Web | Auto-resolved from project metadata |\n232\t| `--project-id <id>` | No | Flow project ID from Studio Web | Auto-resolved |\n233\t| `--path <path>` | No | (see Common Options) | `.` |\n234\t| `--entry-point <entry>` | No | Flow entry point path (e.g. `/Main.bpmn#start`) or start node ID | Eval set's `selectedEntrypoint` |\n235\t| `--folder-key <key>` | No | Orchestrator folder key | Personal workspace |\n236\t| `--debug-mode <mode>` | No | Studio Web debug mode override | (server default) |\n237\t| `--wait` | No | Block until terminal state, then print results | `false` |\n238\t| `--timeout <seconds>` | No | Max time to block on `--wait` | `600` (10 min) |\n239\t\n240\tWithout `--wait`, returns immediately with `EvalSetRunId`. With `--wait`, the CLI polls until `Completed` or `Failed`, or `--timeout` elapses (the server-side run continues regardless).\n241\t\n242\t### `uip maestro flow eval run status <evalSetRunId>`\n243\t\n244\tGet current status. Terminal states: `Completed`, `Failed`.\n245\t\n246\t| Flag | Required | Description |\n247\t|------|----------|-------------|\n248\t| `--set <name>` | Yes | Eval set name or ID |\n249\t| `--solution-id <id>` | No | Override solution ID |\n250\t| `--project-id <id>` | No | Override project ID |\n251\t| `--path <path>` | No | (see Common Options) |\n252\t\n253\t### `uip maestro flow eval run results <evalSetRunId>`\n254\t\n255\tPer-data-point results.\n256\t\n257\t| Flag | Required | Description |\n258\t|------|----------|-------------|\n259\t| `--set <name>` | Yes | Eval set name or ID |\n260\t| `--only-failed` | No | Show only failed/errored data points |\n261\t| `--verbose` | No | Include evaluator justifications |\n262\t| `--export-format <json\\|csv>` | No | Export results to a file |\n263\t| `--solution-id`, `--project-id`, `--path` | No | (see start) |\n264\t\n265\tPer-row output fields: `DataPoint`, `Status`, `EvaluatorScores`, `Duration`, `Error` (plus `Justifications` when `--verbose`).\n266\t\n267\t### `uip maestro flow eval run list`\n268\t\n269\tList runs for an eval set.\n270\t\n271\t```bash\n272\tuip maestro flow eval run list --set \"Smoke Tests\" --path ./MySolution/MyFlow --output json\n273\t```\n274\t\n275\t### `uip maestro flow eval run compare <evalSetRunId>`\n276\t\n277\tCompare two runs side-by-side.\n278\t\n279\t| Flag | Required | Description |\n280\t|------|----------|-------------|\n281\t| `--compare-to <id>` | Yes | Second eval set run ID |\n282\t| `--set <name>` | Yes | Eval set name or ID |\n283\t| `--solution-id`, `--project-id`, `--path` | No | (see start) |\n284\t\n285\t`compare` aligns data points by `name` within the eval set. Comparing runs from different eval sets is meaningless.\n286\t\n287\t## Output Codes\n288\t\n289\tThe CLI emits a `Code` field on every JSON response. Useful when filtering or scripting:\n290\t\n291\t| Subcommand | `Code` |\n292\t|------------|--------|\n293\t| `eval add` | `FlowEvalAdd` |\n294\t| `eval list` | `FlowEvalList` |\n295\t| `eval remove` | `FlowEvalRemove` |\n296\t| `eval set add` / `list` / `remove` | `FlowEvalSetAdd` / `FlowEvalSetList` / `FlowEvalSetRemove` |\n297\t| `eval evaluator add` / `list` / `remove` | `FlowEvalEvaluatorAdd` / `FlowEvalEvaluatorList` / `FlowEvalEvaluatorRemove` |\n298\t| `eval simulation add` / `list` / `remove` | `FlowEvalSimulationAdd` / `FlowEvalSimulationList` / `FlowEvalSimulationRemove` |\n299\t| `eval run start` (no `--wait`) | `FlowEvalRunStarted` |\n300\t| `eval run start --wait` (summary) | `FlowEvalRunCompleted` |\n301\t| `eval run status` | `FlowEvalRunStatus` |\n302\t| `eval run results` | `FlowEvalRunResults` |\n303\t| `eval run list` | `FlowEvalRunList` |\n304\t| `eval run compare` | `FlowEvalRunComparison` |\n305\t\n306\tThe `eval run *` codes dropped their `Maestro` prefix (e.g. `MaestroFlowEvalRunResults` → `FlowEvalRunResults`) to match the rest of the `eval` family. Older CLI versions emit the `Maestro`-prefixed names. If actual emitted codes diverge from the table above, trust the JSON output — file an issue.\n307\t",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 2,
+          "result_tokens": 3686
+        },
+        {
+          "tool_name": "Read",
+          "tool_id": "toolu_bdrk_01DpWbKx194fnWXgqPAK1gDs",
+          "assistant_turn_index": 5,
+          "timestamp": "2026-07-24T00:10:50.725198",
+          "duration_ms": 16.58448693342507,
+          "generation_completed_at": "2026-07-24T00:10:50.725198",
+          "execution_started_at": "2026-07-24T00:10:50.725254",
+          "execution_completed_at": "2026-07-24T00:10:50.741838",
+          "parameters": {
+            "file_path": "/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/evaluate/references/eval-sets-guide.md"
+          },
+          "result_status": "success",
+          "result_summary": "1\t# Eval Sets and Data Points\n2\t\n3\tAn eval set is a JSON file that bundles test cases (data points) with the evaluators that score them. Each Flow project can have multiple eval sets — typically one per scenario (smoke, regression, edge cases).\n4\t\n5\t## Eval Set Lifecycle\n6\t\n7\t```bash\n8\t# Create\n9\tuip maestro flow eval set add \"<set_name>\" \\\n10\t  [--evaluators <ref1>,<ref2>] \\\n11\t  [--entry-point <node_id>] \\\n12\t  --path <flow_project> --output json\n13\t\n14\t# List\n15\tuip maestro flow eval set list --path <flow_project> --output json\n16\t\n17\t# Remove\n18\tuip maestro flow eval set remove \"<id_or_name>\" --path <flow_project> --output json\n19\t```\n20\t\n21\t### `--evaluators`\n22\t\n23\tComma-separated list of evaluator IDs or generated file base names. When omitted, the new eval set links to **all evaluators** present in the project at creation time and writes the generated evaluator file refs (for example, `greeting-match-62c0793a.json`). Prefer omission when the eval set should use every current evaluator.\n24\t\n25\tDo **not** pass an evaluator display name such as `greeting-match` to `--evaluators`; that writes the display name into `evaluatorRefs`, and Studio Web eval runs will not resolve it. If you need an explicit list, get the generated id/file ref from `uip maestro flow eval evaluator add/list --output json` and pass that value instead.\n26\t\n27\tSubsequent evaluators added to the project do NOT auto-attach — link them by re-running `set add` with explicit generated refs, or carefully repair the eval set's `evaluatorRefs` array using the evaluator file refs the CLI created.\n28\t\n29\t### `--entry-point`\n30\t\n31\tStored as `selectedEntrypoint` on the eval set. Accepts either:\n32\t\n33\t- A flow path: `/Main.bpmn#start`\n34\t- A start node ID: `start_a1b2c3d4`\n35\t\n36\tThe eval set's entry point is used by `eval run start` unless `--entry-point` is overridden at run time. Pin one explicitly when the flow has multiple entry points; otherwise the first start node found is used and may not be the one you intend.\n37\t\n38\t## Data Point Lifecycle\n39\t\n40\tData points (test cases) live **inline** inside the eval set JSON, not as separate files. CRUD via `uip maestro flow eval add/list/remove`:\n41\t\n42\t```bash\n43\t# Add a data point\n44\tuip maestro flow eval add \"<data_point_name>\" \\\n45\t  --set \"<set_name>\" \\\n46\t  --inputs '{\"...\":\"...\"}' \\\n47\t  [--expected '{\"...\":\"...\"}'] \\\n48\t  [--criteria '{\"<evaluator_id>\": {...}}'] \\\n49\t  [--input-file <key>=<path>] \\\n50\t  [--search-text \"<text>\"] \\\n51\t  --path <flow_project> --output json\n52\t\n53\t# List\n54\tuip maestro flow eval list --set \"<set_name>\" --path <flow_project> --output json\n55\t\n56\t# Remove\n57\tuip maestro flow eval remove \"<id_or_name>\" --set \"<set_name>\" --path <flow_project> --output json\n58\t```\n59\t\n60\t### `--inputs`\n61\t\n62\tJSON object whose keys must match the flow's declared input variables for the chosen entry point. `eval add` validates these keys and fails fast when an input key is not declared in the `.flow` file. Add missing variables first, or change the data point input JSON to match the Flow schema.\n63\t\n64\tFor a simple string input named `name`:\n65\t\n66\t```bash\n67\tuip maestro flow variable add ./MySolution/MyFlow/MyFlow.flow name \\\n68\t  --direction in --type string --output json\n69\t```\n70\t\n71\t### `--expected`\n72\t\n73\tJSON object representing the expected output. How it is consumed depends on the evaluator type:\n74\t\n75\t| Evaluator type | Reads `--expected` how |\n76\t|----------------|-----------------------|\n77\t| `exact-match` | Compares the output against `expected` verbatim (or `expected[targetKey]` if `--target-key` is set on the evaluator) |\n78\t| `json-similarity` | Tree-compared with tolerance |\n79\t| `contains` | Not used directly — see `--search-text` |\n80\t| `llm-judge-output` | Substituted into `{{ExpectedOutput}}` |\n81\t| `llm-judge-strict-json` | Substituted per-key into `{{ExpectedOutput}}` |\n82\t| `llm-judge-trajectory` | Used along with `--expected-agent-behavior` (set via `--criteria`) |\n83\t| `llm-judge-trajectory-simulation` | Same as `trajectory` plus simulation context |\n84\t\n85\t### `--criteria`\n86\t\n87\tPer-evaluator overrides keyed by evaluator ID. Use this when one eval set contains multiple evaluators and you want each to score against different criteria for the same data point. Most common shape:\n88\t\n89\t```json\n90\t{\n91\t  \"<evaluator_ref_for_trajectory>\": {\n92\t    \"expectedAgentBehavior\": \"Agent calls the weather tool with the user's location, then returns a one-sentence summary.\"\n93\t  },\n94\t  \"<evaluator_ref_for_output>\": {\n95\t    \"expectedOutput\": {\"summary\": \"Sunny in NYC, 72°F\"}\n96\t  }\n97\t}\n98\t```\n99\t\n100\tIf `--criteria` is omitted, evaluators fall back to `--expected` (for output evaluators) and to defaults (for trajectory evaluators). Always pass an explicit `expectedAgentBehavior` for trajectory evaluators — the LLM's score against an empty `{{ExpectedAgentBehavior}}` is meaningless.\n101\t\n102\t### `--input-file <key>=<path>`\n103\t\n104\tRepeatable. Attach a file as input under the given key. The CLI stages the file alongside the eval set so the runtime can read it during evaluation. Useful when the flow accepts file inputs (PDFs, CSVs, images) rather than JSON only.\n105\t\n106\t```bash\n107\tuip maestro flow eval add invoice-test \\\n108\t  --set \"Smoke Tests\" \\\n109\t  --inputs '{\"orderId\":\"ORD-123\"}' \\\n110\t  --input-file invoice=./fixtures/invoice-123.pdf \\\n111\t  --input-file receipt=./fixtures/receipt-123.png \\\n112\t  --expected '{\"total\": 142.50}' \\\n113\t  --path ./MySolution/MyFlow --output json\n114\t```\n115\t\n116\tThe file content is referenced from the eval set; do not delete the source file before the run completes.\n117\t\n118\t### `--search-text`\n119\t\n120\tConvenience flag for `contains` evaluators only. Attaches the search string to the data point so the contains evaluator knows what substring to test for. Equivalent to writing `criteria` for the contains evaluator.\n121\t\n122\t```bash\n123\tuip maestro flow eval add success-keyword \\\n124\t  --set \"Smoke Tests\" \\\n125\t  --inputs '{\"task\":\"deploy\"}' \\\n126\t  --search-text \"deployment succeeded\" \\\n127\t  --path ./MySolution/MyFlow --output json\n128\t```\n129\t\n130\t## Eval Set JSON Shape\n131\t\n132\tA typical eval set JSON file (created by `set add`):\n133\t\n134\t```json\n135\t{\n136\t  \"id\": \"<uuid>\",\n137\t  \"name\": \"Smoke Tests\",\n138\t  \"version\": \"1.0\",\n139\t  \"evaluatorRefs\": [\"<evaluator-file-ref-1>.json\", \"<evaluator-file-ref-2>.json\"],\n140\t  \"selectedEntrypoint\": \"/Main.bpmn#start\",\n141\t  \"evaluations\": [\n142\t    {\n143\t      \"id\": \"<uuid>\",\n144\t      \"name\": \"hello-test\",\n145\t      \"inputs\": {\"message\": \"hello\"},\n146\t      \"expectedOutput\": {\"reply\": \"Hello! How can I help you?\"},\n147\t      \"evaluationCriterias\": {\n148\t        \"<evaluator-ref-2>\": {\n149\t          \"expectedAgentBehavior\": \"Agent responds with a friendly greeting.\"\n150\t        }\n151\t      }\n152\t    }\n153\t  ]\n154\t}\n155\t```\n156\t\n157\tKey fields:\n158\t\n159\t- `version: \"1.0\"` distinguishes the new eval format from any legacy variants. Keep this. <!-- version-check-skip --> (eval-set file schema version, CLI-emitted by `eval set add` — not a `.flow` version)\n160\t- `evaluatorRefs` references evaluator files generated by the CLI. Prefer CLI commands over hand-editing these refs.\n161\t- `selectedEntrypoint` is the eval set's pinned entry point. Override per-run with `eval run start --entry-point`.\n162\t- `evaluations[]` is the inline list of data points. Order is informational, not significant.\n163\t- `evaluationCriterias` (note plural) is the per-data-point per-evaluator override map.\n164\t\n165\t## Aligning Inputs with the Flow Schema\n166\t\n167\tThe data point's `inputs` JSON must match the flow's input schema at the chosen entry point. Mismatches produce `eval add` errors such as `Input \"name\" is not declared as an input variable in the flow`. Two ways to verify before adding data points:\n168\t\n169\t1. Inspect `<flow>.flow` in the project for `variables` entries with `direction: \"in\"`.\n170\t2. Run `uip maestro flow variable list <flow_file> --output json`.\n171\t\n172\t## Simulations on Data Points\n173\t\n174\tSimulations replace selected nodes during an eval run with controlled outputs, so the flow is evaluated without calling real external services. Each simulation targets one component by its node `id` from the `.flow` file.\n175\t\n176\t```bash\n177\t# Add an LLM simulation (non-deterministic, prompt-guided)\n178\tuip maestro flow eval simulation add <component-id> \\\n179\t  --set \"<set_name>\" \\\n180\t  --data-point \"<data_point_name>\" \\\n181\t  --strategy Llm \\\n182\t  --component-type connector \\\n183\t  --simulation-instructions \"Pretend to send the email and return success.\" \\\n184\t  --output-schema '{\"type\":\"object\",\"properties\":{\"status\":{\"type\":\"string\"},\"messageId\":{\"type\":\"string\"}}}' \\\n185\t  --path <flow_project> --output json\n186\t\n187\t# Add a Static simulation (fixed JSON output)\n188\tuip maestro flow eval simulation add <component-id> \\\n189\t  --set \"<set_name>\" \\\n190\t  --data-point \"<data_point_name>\" \\\n191\t  --strategy Static \\\n192\t  --component-type agent \\\n193\t  --mock-value '{\"status\":\"ok\"}' \\\n194\t  --path <flow_project> --output json\n195\t\n196\t# List simulations on a data point\n197\tuip maestro flow eval simulation list \\\n198\t  --set \"<set_name>\" \\\n199\t  --data-point \"<data_point_name>\" \\\n200\t  --path <flow_project> --output json\n201\t\n202\t# Remove a simulation\n203\tuip maestro flow eval simulation remove <component-id> \\\n204\t  --set \"<set_name>\" \\\n205\t  --data-point \"<data_point_name>\" \\\n206\t  --path <flow_project> --output json\n207\t```\n208\t\n209\t**Strategy selection:**\n210\t\n211\t| Strategy | Use when | Key flags |\n212\t|----------|----------|-----------|\n213\t| `Llm` | Output should be plausible but non-deterministic | `--simulation-instructions`, `--output-schema` (auto-resolved) |\n214\t| `Static` | Output must be identical every run | `--mock-value <json>` |\n215\t\n216\tFor `Llm` simulations, `--output-schema` is **auto-resolved from the `.flow` file** — the CLI reads the node's output definition (connector `outputJsonSchema`, agent `agentOutputVariables`, or `node.outputs`) and injects it automatically. Pass `--output-schema` explicitly only when you need to override the derived schema or the node has no declared outputs.\n217\t\n218\tSimulations are stored inline in the data point's `simulations` array within the eval set JSON. Running `simulation add` twice for the same `<component-id>` on the same data point replaces the existing simulation.\n219\t\n220\t## Anti-patterns\n221\t\n222\t- **Don't hand-write `id` UUIDs on data points.** Use `uip maestro flow eval add` so the CLI generates fresh UUIDs and keeps `evalSetId` consistent with the parent set.\n223\t- **Don't pass `--inputs` keys that aren't in the flow's input schema.** The CLI rejects unknown keys before writing the data point.\n224\t- **Don't set `--expected '{}'` and skip `--criteria` for trajectory evaluators.** Both placeholders end up empty; scoring is meaningless.\n225\t- **Don't delete attached input files before the run completes.** The CLI references them by path until upload to Studio Web finishes.\n226\t- **Don't expect `--evaluators` on `set add` to auto-update.** Adding new evaluators later does not retroactively link them to existing eval sets.\n227\t",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 3,
+          "result_tokens": 2803
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_01PFd1QLBdM1SVH3UGnCN5mU",
+          "assistant_turn_index": 8,
+          "timestamp": "2026-07-24T00:11:47.912401",
+          "duration_ms": 20589.635420939885,
+          "generation_completed_at": "2026-07-24T00:11:47.912401",
+          "execution_started_at": "2026-07-24T00:11:47.912506",
+          "execution_completed_at": "2026-07-24T00:12:08.502141",
+          "parameters": {
+            "command": "\\\necho \"=== Step 1: Create solution SimEval ===\" && \\\nuip solution init SimEval --output json && \\\necho \"=== Step 2: Init flow project inside solution (skip auto-registration) ===\" && \\\ncd SimEval && \\\nuip maestro flow init SimEval --skip-solution-registration --output json && \\\necho \"=== Step 3: Link project via uip solution project add ===\" && \\\nuip solution project add SimEval --output json && \\\necho \"=== Step 4: Declare input variable 'name' ===\" && \\\ncd /work/output/artifacts/skill-flow-eval-simulation-crud && \\\nuip maestro flow variable add SimEval/SimEval/SimEval.flow name \\\n  --direction in --type string --output json && \\\necho \"=== Step 5: Create eval set 'Sim Set' ===\" && \\\nuip maestro flow eval set add \"Sim Set\" \\\n  --path SimEval/SimEval --output json && \\\necho \"=== Step 6: Add data point 'hello' ===\" && \\\nuip maestro flow eval add hello \\\n  --set \"Sim Set\" \\\n  --inputs '{\"name\":\"Alice\"}' \\\n  --expected '{\"greeting\":\"Hello, Alice!\"}' \\\n  --path SimEval/SimEval --output json",
+            "description": "Scaffold solution, init flow, link project, declare variable, create eval set, add data point",
+            "timeout": 120000
+          },
+          "result_status": "success",
+          "result_summary": "=== Step 1: Create solution SimEval ===\n{\n  \"Result\": \"Success\",\n  \"Code\": \"SolutionInit\",\n  \"Data\": {\n    \"Status\": \"Created successfully\",\n    \"Path\": \"/work/output/artifacts/skill-flow-eval-simulation-crud/SimEval/SimEval.uipx\",\n    \"NextSteps\": \"Read /work/output/artifacts/skill-flow-eval-simulation-crud/SimEval/AGENTS.md or /work/output/artifacts/skill-flow-eval-simulation-crud/SimEval/CLAUDE.md to understand the solution lifecycle, project types that can be used inside a solution, and related uip command references.\"\n  }\n}\n=== Step 2: Init flow project inside solution (skip auto-registration) ===\n{\n  \"Result\": \"Success\",\n  \"Code\": \"FlowInit\",\n  \"Data\": {\n    \"Status\": \"Created successfully\",\n    \"Path\": \"/work/output/artifacts/skill-flow-eval-simulation-crud/SimEval/SimEval\",\n    \"SolutionRegistration\": {\n      \"Status\": \"OptedOut\",\n      \"Message\": \"Solution auto-registration skipped (--skip-solution-registration).\",\n      \"Instructions\": \"Automatic solution registration was skipped because --skip-solution-registration was passed.\\nTo register this project later, run 'uip solution projects add \\\"/work/output/artifacts/skill-flow-eval-simulation-crud/SimEval/SimEval\\\" <SolutionName>.uipx' from within the solution.\"\n    },\n    \"NextSteps\": \"Automatic solution registration was skipped because --skip-solution-registration was passed.\\nTo register this project later, run 'uip solution projects add \\\"/work/output/artifacts/skill-flow-eval-simulation-crud/SimEval/SimEval\\\" <SolutionName>.uipx' from within the solution.\"\n  }\n}\n=== Step 3: Link project via uip solution project add ===\n2026-07-24 00:11:54 INFO  [ResourceBuilder:ProjectCreateCommandHandler] Creating project [object Object]\n2026-07-24 00:11:54 INFO  [ResourceBuilder:MultiFileSolutionDefinitionProvider] Reading multi-file solution definition for solution %s /work/output/artifacts/skill-flow-eval-simulation-crud/SimEval\n2026-07-24 00:11:54 INFO  [ResourceBuilder:ProjectCreateCommandHandler] Generate artefact resources for project [object Object]\n2026-07-24 00:11:54 INFO  [ResourceBuilder:SolutionsMetadataReader] Reading metadata from %s. SolutionsMetadataReader\n{\n  \"Result\": \"Success\",\n  \"Code\": \"ProjectAdd\",\n  \"Data\": {\n    \"Status\": \"Added successfully\",\n    \"Project\": \"SimEval/project.uiproj\",\n    \"Solution\": \"/work/output/artifacts/skill-flow-eval-simulation-crud/SimEval/SimEval.uipx\"\n  }\n}\n=== Step 4: Declare input variable 'name' ===\n{\n  \"Result\": \"Success\",\n  \"Code\": \"VariableAddSuccess\",\n  \"Data\": {\n    \"Variable\": {\n      \"Id\": \"name\",\n      \"Direction\": \"in\",\n      \"Type\": \"string\"\n    }\n  }\n}\n=== Step 5: Create eval set 'Sim Set' ===\n{\n  \"Result\": \"Success\",\n  \"Code\": \"FlowEvalSetAdd\",\n  \"Data\": {\n    \"Name\": \"Sim Set\",\n    \"Id\": \"c72d3e47-7848-4fa6-842a-a5be1b28d3b7\",\n    \"Evaluators\": 0,\n    \"File\": \"evaluation-set-sim-set-c72d3e47.json\"\n  }\n}\n=== Step 6: Add data point 'hello' ===\n{\n  \"Result\": \"Success\",\n  \"Code\": \"FlowEvalAdd\",\n  \"Data\": {\n    \"Status\": \"Data point added\",\n    \"Name\": \"hello\",\n    \"Id\": \"a249ecbb-7d2f-4a7c-8f9f-8c5de4ebd1bf\",\n    \"Set\": \"Sim Set\"\n  }\n}",
+          "error_message": null,
+          "result_data": {
+            "Result": "Success",
+            "Code": "SolutionInit",
+            "Data": {
+              "Status": "Created successfully",
+              "Path": "/work/output/artifacts/skill-flow-eval-simulation-crud/SimEval/SimEval.uipx",
+              "NextSteps": "Read /work/output/artifacts/skill-flow-eval-simulation-crud/SimEval/AGENTS.md or /work/output/artifacts/skill-flow-eval-simulation-crud/SimEval/CLAUDE.md to understand the solution lifecycle, project types that can be used inside a solution, and related uip command references."
+            }
+          },
+          "sequence_number": 4,
+          "result_tokens": 775
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_01PjFcjiu21ZprQoKQRr3mGB",
+          "assistant_turn_index": 10,
+          "timestamp": "2026-07-24T00:12:14.748933",
+          "duration_ms": 17107.012088992633,
+          "generation_completed_at": "2026-07-24T00:12:14.748933",
+          "execution_started_at": "2026-07-24T00:12:14.749012",
+          "execution_completed_at": "2026-07-24T00:12:31.856024",
+          "parameters": {
+            "command": "\\\necho \"=== Step 5 (task): Add Static simulation on connector-send-email ===\" && \\\nuip maestro flow eval simulation add connector-send-email \\\n  --set \"Sim Set\" \\\n  --data-point \"hello\" \\\n  --strategy Static \\\n  --component-type connector \\\n  --mock-value '{\"status\":\"ok\",\"messageId\":\"abc123\"}' \\\n  --path SimEval/SimEval --output json && \\\necho \"=== Step 6 (task): Add Llm simulation on agent-lookup ===\" && \\\nuip maestro flow eval simulation add agent-lookup \\\n  --set \"Sim Set\" \\\n  --data-point \"hello\" \\\n  --strategy Llm \\\n  --component-type agent \\\n  --simulation-instructions \"Return a plausible lookup result.\" \\\n  --output-schema '{\"type\":\"object\",\"properties\":{\"result\":{\"type\":\"string\"}}}' \\\n  --path SimEval/SimEval --output json && \\\necho \"=== Step 7 (task): List simulations on 'hello' ===\" && \\\nuip maestro flow eval simulation list \\\n  --set \"Sim Set\" \\\n  --data-point \"hello\" \\\n  --path SimEval/SimEval --output json && \\\necho \"=== Step 8 (task): Remove connector-send-email simulation ===\" && \\\nuip maestro flow eval simulation remove connector-send-email \\\n  --set \"Sim Set\" \\\n  --data-point \"hello\" \\\n  --path SimEval/SimEval --output json",
+            "description": "Add Static + Llm simulations, list, then remove Static simulation",
+            "timeout": 60000
+          },
+          "result_status": "success",
+          "result_summary": "=== Step 5 (task): Add Static simulation on connector-send-email ===\n{\n  \"Result\": \"Success\",\n  \"Code\": \"FlowEvalSimulationAdd\",\n  \"Data\": {\n    \"ComponentId\": \"connector-send-email\",\n    \"ComponentType\": \"connector\",\n    \"Strategy\": \"Static\",\n    \"DataPoint\": \"hello\",\n    \"Set\": \"Sim Set\"\n  }\n}\n=== Step 6 (task): Add Llm simulation on agent-lookup ===\n{\n  \"Result\": \"Success\",\n  \"Code\": \"FlowEvalSimulationAdd\",\n  \"Data\": {\n    \"ComponentId\": \"agent-lookup\",\n    \"ComponentType\": \"agent\",\n    \"Strategy\": \"Llm\",\n    \"DataPoint\": \"hello\",\n    \"Set\": \"Sim Set\"\n  }\n}\n=== Step 7 (task): List simulations on 'hello' ===\n{\n  \"Result\": \"Success\",\n  \"Code\": \"FlowEvalSimulationList\",\n  \"Data\": [\n    {\n      \"ComponentId\": \"connector-send-email\",\n      \"ComponentType\": \"connector\",\n      \"ComponentDescription\": \"-\",\n      \"Strategy\": \"Static\",\n      \"Instruction\": \"-\"\n    },\n    {\n      \"ComponentId\": \"agent-lookup\",\n      \"ComponentType\": \"agent\",\n      \"ComponentDescription\": \"-\",\n      \"Strategy\": \"Llm\",\n      \"Instruction\": \"Return a plausible lookup result.\"\n    }\n  ]\n}\n=== Step 8 (task): Remove connector-send-email simulation ===\n{\n  \"Result\": \"Success\",\n  \"Code\": \"FlowEvalSimulationRemove\",\n  \"Data\": {\n    \"Status\": \"Simulation removed\",\n    \"ComponentId\": \"connector-send-email\"\n  }\n}",
+          "error_message": null,
+          "result_data": {
+            "Result": "Success",
+            "Code": "FlowEvalSimulationAdd",
+            "Data": {
+              "ComponentId": "connector-send-email",
+              "ComponentType": "connector",
+              "Strategy": "Static",
+              "DataPoint": "hello",
+              "Set": "Sim Set"
+            }
+          },
+          "sequence_number": 5,
+          "result_tokens": 325
+        }
+      ],
+      "timestamp": "2026-07-24T00:12:39.800204",
+      "duration_seconds": 123.85931518895086,
+      "token_usage": {
+        "uncached_input_tokens": 9,
+        "output_tokens": 6239,
+        "cache_creation_input_tokens": 25646,
+        "cache_read_input_tokens": 215049,
+        "total_cost_usd": 0.25429919999999995,
+        "input_tokens": 240704
+      },
+      "model_used": "claude-sonnet-4-6",
+      "assistant_turn_count": 12,
+      "messages": [
+        {
+          "role": "assistant",
+          "started_at": "2026-07-24T00:10:35.940152",
+          "completed_at": "2026-07-24T00:10:41.182994",
+          "generation_duration_ms": 5242.8672559326515,
+          "content_blocks": [
+            {
+              "block_type": "thinking",
+              "sequence": 0,
+              "text": null,
+              "thinking": "Let me invoke the `uipath-maestro-flow` skill to handle this task. The skill should know how to scaffold Flow projects and manage eval sets with simulations.",
+              "signature": "EugCCmcIEBABGAIqQEhspOySjsxwC7E1i4G+vA1F6YfINbOnUpuNzW82Ib8xZ+EEVWIqXmAh47kQrIup4FBHDe2I3ZqPC+uhOQKmbSEyEWNsYXVkZS1zb25uZXQtNC02OABCCHRoaW5raW5nEgzTG2EssMgubbbTWJsaDEsWdai2u9inLmFU7SIwz42M1Y01A5aN5y8MNLP+bPPWZRgIEw8A8egqCMHJ71INtIOrjUnuUaOM9vDBd3kUKq4BCKMe+K58tp0Myj6AaXZiWecpZVYmd/sqpctZU2bcy/mL2PMwLJwaxKTYTnaejAamn7dtSiOM5n69+ppmq66JU1t/XtrPH5BPoXKnfe1aAPMPTqpkN4PkEHs3vMlVbgZLN19ULj4mJSfI/o1c2JDUrvnRNMnL/aaZzLvHY2VmkThe4ncQBWA79pyzNsZeTk69vkoIsfLLaGh0BVSW5DiuewuUcYtkIL7XGPuuM//IGAE=",
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 2,
+          "output_tokens": 48,
+          "cache_creation_tokens": 3733,
+          "cache_read_tokens": 22982,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01Qesm4nJwSr6Cdz15CymfU1",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-24T00:10:41.182994",
+          "completed_at": "2026-07-24T00:10:44.982945",
+          "generation_duration_ms": 3799.9513500835747,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01KRzaf3AXhddJ1x2E8Qrfn7",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01KRzaf3AXhddJ1x2E8Qrfn7"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 588,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01Qesm4nJwSr6Cdz15CymfU1",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-24T00:10:45.035728",
+          "completed_at": "2026-07-24T00:10:47.014101",
+          "generation_duration_ms": 1978.3735970268026,
+          "content_blocks": [
+            {
+              "block_type": "thinking",
+              "sequence": 0,
+              "text": null,
+              "thinking": "Let me start by reading the SKILL.md and the evaluate capability documentation to understand what I need to do.",
+              "signature": "EroCCmcIEBABGAIqQEOSrcWM0xwXvQceDHd6ag9PlFpnkVDw/MtyVNsbmLj+F3aDXMNyr3B6+MdEYNLpEPQw5b5UohCHvc0bk/vd7SsyEWNsYXVkZS1zb25uZXQtNC02OABCCHRoaW5raW5nEgzLa6asJRM834bxZL8aDAZRGd9jrG7r1BHGJyIwhj0U3i75IAV+H1tw3UVa0gQfzt8mgBmlxbEJEltvo4jtBIAgO2XE3z12YjiNyzAqKoAB+A1j76ZALaVQ/2Qkyzq2iJl9vxPBSO8TE+a9SUk8UMloz31QdJp+iqUYPG2EryUmsgkgEL4xSuWkwV+pUYS6c2YNKJjOsXLIwr7AvgpKctI5UwFUkAcwhi5IzeNuM+Qb5I3kmNi4JIggNqE+q4QEbAvY6tFwxfvDh25OLd52eBsYAQ==",
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 3,
+          "output_tokens": 59,
+          "cache_creation_tokens": 7292,
+          "cache_read_tokens": 26715,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_018JaYQdpnh4i4nGcZm23524",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-24T00:10:47.014101",
+          "completed_at": "2026-07-24T00:10:47.966086",
+          "generation_duration_ms": 951.9841750152409,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_019rd8detYUaMNV7D1D3t9FF",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_019rd8detYUaMNV7D1D3t9FF"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 61,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_018JaYQdpnh4i4nGcZm23524",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-24T00:10:47.994249",
+          "completed_at": "2026-07-24T00:10:50.143007",
+          "generation_duration_ms": 2148.757982067764,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_014JLf7anqRgPT8v2irKjWsB",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_014JLf7anqRgPT8v2irKjWsB"
+          ],
+          "input_tokens": 1,
+          "output_tokens": 78,
+          "cache_creation_tokens": 3602,
+          "cache_read_tokens": 34007,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01ALpgDY5X9V6LK3vaKJ2znT",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-24T00:10:50.152106",
+          "completed_at": "2026-07-24T00:10:50.725198",
+          "generation_duration_ms": 573.0907700490206,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01DpWbKx194fnWXgqPAK1gDs",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01DpWbKx194fnWXgqPAK1gDs"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 77,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01ALpgDY5X9V6LK3vaKJ2znT",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-24T00:10:50.741805",
+          "completed_at": "2026-07-24T00:11:43.378207",
+          "generation_duration_ms": 52636.40185398981,
+          "content_blocks": [
+            {
+              "block_type": "thinking",
+              "sequence": 0,
+              "text": null,
+              "thinking": "Now I have enough information. Let me plan and execute the full sequence of commands:\n\n1. Create solution `SimEval` and Flow project `SimEval`\n2. Declare input variable `name` on the flow\n3. Create eval set `Sim Set`\n4. Add data point `hello`\n5. Add Static simulation on `connector-send-email`\n6. Add Llm simulation on `agent-lookup`\n7. List simulations\n8. Remove `connector-send-email` simulation\n\nThe working directory is `/work/output/artifacts/skill-flow-eval-simulation-crud`.\n\nLet me chain these into as few turns as possible. Steps 1-4 can be done sequentially in one bash call, then steps 5-6 in parallel, then 7, then 8.\nI need to verify the directory structure first—scaffolding the solution creates `SimEval/SimEval.uipx`, then initializing the flow inside creates `SimEval/SimEval/SimEval.flow` with the nested naming. The skill rules recommend this approach so the solution and project names match. a solution directory, `uip maestro flow init` should auto-link. But the task explicitly requires using `uip solution project add` to link the project, so I should initialize the flow with `--skip-solution-registration` to prevent auto-linking, then manually add it via the solution command as specified. , the `--skip-solution-registration` flag would leave a bare single-nested structure that fails the requirement. So I'll go with: initialize the solution, then run `uip maestro flow init SimEval --skip-solution-registration` from inside the solution directory to create the double-nested path at `SimEval/SimEval/SimEval.flow`, then explicitly register it with `uip solution project add SimEval`. This satisfies the task requirement to use `uip solution project add`.\n\nNow I'm thinking through the variable declaration command—I need to add a variable to the flow using the path `SimEval/SimEval/SimEval.flow` relative to the working directory, specifying it as an input string variable with JSON output. Let me map out the full command sequence starting from the base directory. Finishing the data point creation, then I need to add simulations for both the static and LLM components. Since they both modify the same evaluation set, I should run them sequentially to avoid conflicts. But first, I should verify that the eval commands are available by checking the help output, as per the critical validation rule. Continuing the bash chain to add flow variables, evaluation sets, and test cases with JSON output formatting. Writing shell commands... Writing shell commands...\n\nI'm realizing I should double-check whether `--skip-solution-registration` is actually a valid flag for the init command, since I'm not entirely certain about that parameter. `SimEvalSolution/SimEval/SimEval.flow` with auto-registration. But running the same command from inside the `SimEval/` solution directory creates `SimEval/SimEval.flow` relative to that location, which resolves to the double-nested `SimEval/SimEval/SimEval.flow` from the workspace root—exactly the structure we need. Since we're already inside a solution directory, it auto-registers without requiring the `Solution` suffix.\n\nThe task requires using `uip solution project add`, so I should create the solution first, then initialize the flow with `--skip-solution-registration` to avoid auto-registration, and finally explicitly link it using the project add command. The `--skip-solution-registration` flag creates a bare single-nested structure—just `<Project>/<Project>.flow`—which from inside the solution directory becomes the double-nested layout we're after.\n\nWriting the setup pipeline...",
+              "signature": "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",
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 1,
+          "output_tokens": 2997,
+          "cache_creation_tokens": 8465,
+          "cache_read_tokens": 37609,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01EafGN82HybYfuMk2Csdg5j",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-24T00:11:43.378207",
+          "completed_at": "2026-07-24T00:11:44.592981",
+          "generation_duration_ms": 1214.7746259579435,
+          "content_blocks": [
+            {
+              "block_type": "text",
+              "sequence": 0,
+              "text": "Now I have all the context I need. Let me plan the full sequence and execute in two chained Bash calls:\n\n1. Scaffold solution → init flow (skip auto-registration) → link via `project add` → declare variable → create eval set → add data point\n2. Add Static simulation → Add Llm simulation → List simulations → Remove Static simulation",
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 0,
+          "output_tokens": 280,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01EafGN82HybYfuMk2Csdg5j",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-24T00:11:44.592981",
+          "completed_at": "2026-07-24T00:11:47.912401",
+          "generation_duration_ms": 3319.4194519892335,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01PFd1QLBdM1SVH3UGnCN5mU",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01PFd1QLBdM1SVH3UGnCN5mU"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 1020,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01EafGN82HybYfuMk2Csdg5j",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-24T00:12:08.502055",
+          "completed_at": "2026-07-24T00:12:09.979170",
+          "generation_duration_ms": 1477.1155200432986,
+          "content_blocks": [
+            {
+              "block_type": "text",
+              "sequence": 0,
+              "text": "All six setup steps succeeded. Now run the simulation CRUD steps:",
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 1,
+          "output_tokens": 23,
+          "cache_creation_tokens": 1588,
+          "cache_read_tokens": 46074,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01WsDiSmt8BCdooWpJfMDeD9",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-24T00:12:09.979170",
+          "completed_at": "2026-07-24T00:12:14.748933",
+          "generation_duration_ms": 4769.763309974223,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01PjFcjiu21ZprQoKQRr3mGB",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01PjFcjiu21ZprQoKQRr3mGB"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 494,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01WsDiSmt8BCdooWpJfMDeD9",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-24T00:12:31.855971",
+          "completed_at": "2026-07-24T00:12:39.735943",
+          "generation_duration_ms": 7879.972271970473,
+          "content_blocks": [
+            {
+              "block_type": "text",
+              "sequence": 0,
+              "text": "All 8 steps completed successfully. Here's a summary of what was done:\n\n---\n\n### ✅ Completed — SimEval Flow Eval Simulation CRUD\n\n**Setup (Steps 1–4)**\n1. **Solution created** — `SimEval/SimEval.uipx` via `uip solution init SimEval`\n2. **Flow project scaffolded** — `SimEval/SimEval/SimEval.flow` via `uip maestro flow init SimEval --skip-solution-registration`\n3. **Project linked** — registered into the solution via `uip solution project add SimEval`\n4. **Input variable declared** — `name` (direction: `in`, type: `string`) added to `SimEval.flow`\n\n**Eval CRUD (Steps 5–8 setup)**\n5. **Eval set created** — `\"Sim Set\"` (`c72d3e47`) with 0 evaluators, no `--entry-point`\n6. **Data point added** — `hello` (`a249ecbb`) with inputs `{\"name\":\"Alice\"}` and expected `{\"greeting\":\"Hello, Alice!\"}`\n\n**Simulation CRUD (Steps 5–8 task)**\n| Step | Command | Result |\n|------|---------|--------|\n| Add Static | `simulation add connector-send-email --strategy Static --mock-value '{\"status\":\"ok\",\"messageId\":\"abc123\"}'` | `FlowEvalSimulationAdd` ✅ |\n| Add Llm | `simulation add agent-lookup --strategy Llm --simulation-instructions \"...\" --output-schema '{\"type\":\"object\",...}'` | `FlowEvalSimulationAdd` ✅ |\n| List | `simulation list --data-point hello` | Both simulations confirmed present ✅ |\n| Remove | `simulation remove connector-send-email` | `FlowEvalSimulationRemove` ✅ |\n\nThe `list` step confirmed both `connector-send-email` (Static) and `agent-lookup` (Llm) were present before the removal. After removal, only `agent-lookup` remains on the `hello` data point.",
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 1,
+          "output_tokens": 514,
+          "cache_creation_tokens": 966,
+          "cache_read_tokens": 47662,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_012wk3zD9bDSdFg5PCEjheWn",
+          "parent_tool_use_id": null
+        }
+      ],
+      "num_turns": 8,
+      "max_turns_exhausted": false,
+      "result_summary": {
+        "is_error": false,
+        "subtype": "success",
+        "stop_reason": "end_turn",
+        "result": "All 8 steps completed successfully. Here's a summary of what was done:\n\n---\n\n### ✅ Completed — SimEval Flow Eval Simulation CRUD\n\n**Setup (Steps 1–4)**\n1. **Solution created** — `SimEval/SimEval.uipx` via `uip solution init SimEval`\n2. **Flow project scaffolded** — `SimEval/SimEval/SimEval.flow` via `uip maestro flow init SimEval --skip-solution-registration`\n3. **Project linked** — registered into the solution via `uip solution project add SimEval`\n4. **Input variable declared** — `name` (direction: `in`, type: `string`) added to `SimEval.flow`\n\n**Eval CRUD (Steps 5–8 setup)**\n5. **Eval set created** — `\"Sim Set\"` (`c72d3e47`) with 0 evaluators, no `--entry-point`\n6. **Data point added** — `hello` (`a249ecbb`) with inputs `{\"name\":\"Alice\"}` and expected `{\"greeting\":\"Hello, Alice!\"}`\n\n**Simulation CRUD (Steps 5–8 task)**\n| Step | Command | Result |\n|------|---------|--------|\n| Add Static | `simulation add connector-send-email --strategy Static --mock-value '{\"status\":\"ok\",\"messageId\":\"abc123\"}'` | `FlowEvalSimulationAdd` ✅ |\n| Add Llm | `simulation add agent-lookup --strategy Llm --simulation-instructions \"...\" --output-schema '{\"type\":\"object\",...}'` | `FlowEvalSimulationAdd` ✅ |\n| List | `simulation list --data-point hello` | Both simulations confirmed present ✅ |\n| Remove | `simulation remove connector-send-email` | `FlowEvalSimulationRemove` ✅ |\n\nThe `list` step confirmed both `connector-send-email` (Static) and `agent-lookup` (Llm) were present before the removal. After removal, only `agent-lookup` remains on the `hello` data point."
+      },
+      "crashed": false,
+      "crash_reason": null
+    }
+  ],
+  "error_message": null,
+  "error_details": null,
+  "error_log_tail": null,
+  "environment_info": {
+    "git_commit": "unknown",
+    "skills_git_commit": "unknown",
+    "cli_version": "1.199.0-dev.7970",
+    "tool_plugins": {
+      "admin-tool": "1.199.0-dev.7962",
+      "agent-tool": "1.199.0-dev.7965",
+      "agenthub-tool": "1.199.0-dev.7962",
+      "aops-tool": "1.199.0-dev.7962",
+      "api-workflow-tool": "1.199.0-dev.7962",
+      "codedagent-tool": "1.199.0-dev.7965",
+      "codedapp-tool": "1.199.0-dev.7962",
+      "coder-tool": "1.199.0-dev.7962",
+      "context-grounding-tool": "1.199.0-dev.7962",
+      "conversational-tool": "1.199.0-dev.7962",
+      "data-fabric-tool": "1.199.0-dev.7962",
+      "docsai-tool": "1.199.0-dev.7962",
+      "functions-tool": "1.199.0-dev.7962",
+      "gov-tool": "1.199.0-dev.7962",
+      "insights-tool": "1.199.0-dev.7962",
+      "integrationservice-tool": "1.199.0-dev.7962",
+      "ixp-tool": "1.199.0-dev.7962",
+      "llm-gateway-tool": "1.199.0-dev.7962",
+      "llmgw-tool": "1.199.0-dev.7962",
+      "maestro-tool": "1.199.0-dev.7962",
+      "orchestrator-tool": "1.199.0-dev.7962",
+      "platform-tool": "1.199.0-dev.7962",
+      "pm-tool": "1.199.0-dev.7969",
+      "rpa-legacy-tool": "1.199.0-dev.7962",
+      "rpa-tool": "1.199.0-dev.20260722.4",
+      "solution-tool": "1.199.0-dev.7962",
+      "tasks-tool": "1.199.0-dev.7962",
+      "test-manager-tool": "1.199.0-dev.7962",
+      "traces-tool": "1.199.0-dev.7962",
+      "vertical-solutions-tool": "1.199.0-dev.7962"
+    },
+    "coder_eval": "0.8.8",
+    "claude_code_cli": "2.1.177 (Claude Code)",
+    "uv": "uv 0.11.28 (x86_64-unknown-linux-gnu)",
+    "anthropic": "0.102.0",
+    "openai": "2.47.0",
+    "pydantic": "2.12.5",
+    "api_routing": "aws_bedrock",
+    "aws_region": "us-east-2",
+    "bedrock_model": "us.anthropic.claude-sonnet-4-6"
+  },
+  "agent_config": {
+    "type": "claude-code",
+    "model": "claude-sonnet-4-6",
+    "permission_mode": "acceptEdits",
+    "allowed_tools": [
+      "Skill",
+      "Bash",
+      "Read",
+      "Write",
+      "Edit",
+      "Glob",
+      "Grep"
+    ],
+    "disallowed_tools": null,
+    "plugins": [
+      {
+        "type": "local",
+        "path": "/home/azureuser/projects/skills/"
+      }
+    ],
+    "system_prompt": "You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted.\n",
+    "system_prompt_file": null,
+    "ignore_patterns": [],
+    "claude_settings": null,
+    "sdk_options": {},
+    "setting_sources": null
+  },
+  "sdk_options": {
+    "tools": null,
+    "allowed_tools": [
+      "Skill",
+      "Bash",
+      "Read",
+      "Write",
+      "Edit",
+      "Glob",
+      "Grep"
+    ],
+    "system_prompt": "You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted.\n",
+    "mcp_servers": {},
+    "strict_mcp_config": false,
+    "permission_mode": "acceptEdits",
+    "continue_conversation": false,
+    "resume": null,
+    "session_id": null,
+    "max_turns": 60,
+    "max_budget_usd": null,
+    "disallowed_tools": [
+      "ToolSearch"
+    ],
+    "model": "us.anthropic.claude-sonnet-4-6",
+    "fallback_model": null,
+    "betas": [],
+    "permission_prompt_tool_name": null,
+    "cwd": "/work/output/artifacts/skill-flow-eval-simulation-crud",
+    "cli_path": null,
+    "settings": null,
+    "add_dirs": [],
+    "env": {
+      "PATH": "/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+      "PLUGIN_TOOLS_DIR": "/usr/lib/node_modules/@uipath",
+      "CLAUDE_CODE_USE_BEDROCK": "1",
+      "AWS_BEARER_TOKEN_BEDROCK": "***REDACTED***",
+      "AWS_REGION": "us-east-2",
+      "CLAUDE_CODE_ATTRIBUTION_HEADER": "0",
+      "ANTHROPIC_MODEL": "us.anthropic.claude-sonnet-4-6",
+      "ANTHROPIC_SMALL_FAST_MODEL": "us.anthropic.claude-sonnet-4-6"
+    },
+    "extra_args": {},
+    "max_buffer_size": null,
+    "can_use_tool": null,
+    "hooks": null,
+    "user": null,
+    "include_partial_messages": true,
+    "include_hook_events": false,
+    "fork_session": false,
+    "agents": null,
+    "setting_sources": [
+      "project"
+    ],
+    "skills": null,
+    "sandbox": null,
+    "plugins": [
+      {
+        "type": "local",
+        "path": "/home/azureuser/projects/skills"
+      }
+    ],
+    "max_thinking_tokens": null,
+    "thinking": null,
+    "effort": null,
+    "output_format": null,
+    "enable_file_checkpointing": false,
+    "session_store": null,
+    "session_store_flush": "batched",
+    "load_timeout_ms": 60000,
+    "task_budget": null
+  },
+  "sandbox_path": "/work/output/artifacts/skill-flow-eval-simulation-crud",
+  "task_config": {
+    "resolved": {
+      "task_id": "skill-flow-eval-simulation-crud",
+      "description": "Skill-guided simulation CRUD: agent uses the uipath-maestro-flow skill's evaluate capability to scaffold a Flow project, build an eval set + data point, then add, list, and remove node simulations on that data point via `uip maestro flow eval simulation add/list/remove`. Covers both strategies — `Static` (`--mock-value`) and `Llm` (explicit `--output-schema`, so the auto-resolution-from-.flow path is not exercised). Purely local, no login, no upload, no run. Tests whether the skill teaches the simulation command surface (required flags, strategy selection) and `--output json` discipline, and verifies the simulation actually persists into the eval-set JSON.\n",
+      "initial_prompt": "Use the `uipath-maestro-flow` skill's evaluate capability to scaffold a Flow\nproject, build an eval set with one data point, then add, list, and remove\nnode simulations on that data point — purely local, no Studio Web round-trip.\n\nSteps:\n1. Create a solution `SimEval` and a Flow project `SimEval`. The flow file\n   MUST live at `SimEval/SimEval/SimEval.flow` (double-nested layout) and be\n   linked via `uip solution project add`.\n\n2. Declare a string input variable named `name` on\n   `SimEval/SimEval/SimEval.flow` before adding the data point.\n\n3. Create an eval set named `Sim Set` in the Flow project at\n   `SimEval/SimEval`. (No `--entry-point`, no `--evaluators` — defaults are\n   fine.)\n\n4. Add one data point named `hello` to that eval set with inputs\n   `{\"name\":\"Alice\"}` and expected `{\"greeting\":\"Hello, Alice!\"}`.\n\n5. Add a `Static` simulation on the `hello` data point targeting component id\n   `connector-send-email`. Use `--component-type connector` and a fixed\n   `--mock-value '{\"status\":\"ok\",\"messageId\":\"abc123\"}'`.\n\n6. Add an `Llm` simulation on the `hello` data point targeting component id\n   `agent-lookup`. Use `--component-type agent`, supply\n   `--simulation-instructions \"Return a plausible lookup result.\"`, and pass\n   `--output-schema '{\"type\":\"object\",\"properties\":{\"result\":{\"type\":\"string\"}}}'`\n   explicitly (do NOT rely on auto-resolution from the .flow file).\n\n7. List the simulations on the `hello` data point to confirm both are present.\n\n8. Remove the `connector-send-email` simulation from the `hello` data point.\n\nImportant:\n- Use `--output json` on every `uip maestro flow eval ...` command.\n- Do NOT call `uip login`. Do NOT call `uip solution upload`. Do NOT call\n  `uip maestro flow eval run *` — this task tests local CRUD only.\n- Do NOT run `uip maestro flow debug` or `uip maestro flow validate` — this\n  is not a flow-authoring test.\n",
+      "initial_prompt_file": null,
+      "tags": [
+        "uipath-maestro-flow",
+        "smoke",
+        "mode:build",
+        "lifecycle:generate",
+        "feature:eval"
+      ],
+      "skip": false,
+      "agent": {
+        "type": "claude-code",
+        "model": "claude-sonnet-4-6",
+        "permission_mode": "acceptEdits",
+        "allowed_tools": [
+          "Skill",
+          "Bash",
+          "Read",
+          "Write",
+          "Edit",
+          "Glob",
+          "Grep"
+        ],
+        "disallowed_tools": null,
+        "plugins": [
+          {
+            "type": "local",
+            "path": "/home/azureuser/projects/skills/"
+          }
+        ],
+        "system_prompt": "You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted.\n",
+        "system_prompt_file": null,
+        "ignore_patterns": [],
+        "claude_settings": null,
+        "sdk_options": {},
+        "setting_sources": null
+      },
+      "sandbox": {
+        "driver": "tempdir",
+        "docker": {
+          "image": "skills-image:latest",
+          "dockerfile_path": null,
+          "build": {
+            "buildkit": null,
+            "args": {},
+            "secrets": [],
+            "extra_args": []
+          },
+          "network": "bridge",
+          "working_dir": null,
+          "env_passthrough": [
+            "ANTHROPIC_API_KEY",
+            "API_BACKEND",
+            "UIPATH_LLM_BACKEND",
+            "UIPATH_ACCESS_TOKEN",
+            "UIPATH_URL",
+            "UIPATH_TENANT_ID",
+            "UIPATH_ORGANIZATION_ID",
+            "UIPATH_CLI_DISABLE_VERSION_SYNC",
+            "AWS_BEARER_TOKEN_BEDROCK",
+            "AWS_REGION",
+            "BEDROCK_MODEL",
+            "CLAUDE_CODE_USE_BEDROCK",
+            "ANTHROPIC_MODEL",
+            "CODEX_API_KEY",
+            "CODEX_BASE_URL",
+            "CODEX_MODEL",
+            "GEMINI_API_KEY",
+            "ANTIGRAVITY_MODEL",
+            "HOME"
+          ],
+          "env_passthrough_extra": [
+            "SKILLS_REPO_PATH",
+            "BEDROCK_MODEL",
+            "TASK_PARALLELISM",
+            "UIPATH_CLI_ENABLE_ENV_AUTH",
+            "UIPATH_CLI_AUTH_TOKEN",
+            "UIPATH_CLI_ORGANIZATION_NAME",
+            "UIPATH_CLI_ORGANIZATION_ID",
+            "UIPATH_CLI_TENANT_NAME",
+            "UIPATH_CLI_TENANT_ID",
+            "TRACES_SMOKE_PROCESS_KEY",
+            "CODEX_API_KEY",
+            "CODEX_BASE_URL"
+          ],
+          "extra_mounts": [
+            "~/.uipath:/.uipath:rw"
+          ]
+        },
+        "python": {
+          "env_packages": []
+        },
+        "node": null,
+        "limits": {
+          "timeout": 300,
+          "max_memory_mb": null,
+          "max_cpus": null,
+          "max_pids": null,
+          "max_disk_mb": null
+        },
+        "template_sources": null,
+        "mock_path_dirs": null,
+        "ignore_patterns": []
+      },
+      "success_criteria": [
+        {
+          "type": "command_executed",
+          "description": "Agent created a solution",
+          "weight": 1.0,
+          "pass_threshold": 1.0,
+          "suite_thresholds": null,
+          "stop_when": null,
+          "tool_name": "Bash",
+          "command_pattern": "(uip|\\$UIP)\\s+solution\\s+(new|init)",
+          "min_count": 1,
+          "max_count": null,
+          "require_success": false,
+          "exclude_pattern": null
+        },
+        {
+          "type": "command_executed",
+          "description": "Agent initialized a Flow project",
+          "weight": 1.0,
+          "pass_threshold": 1.0,
+          "suite_thresholds": null,
+          "stop_when": null,
+          "tool_name": "Bash",
+          "command_pattern": "(uip|\\$UIP)\\s+(maestro\\s+)?flow\\s+init",
+          "min_count": 1,
+          "max_count": null,
+          "require_success": false,
+          "exclude_pattern": null
+        },
+        {
+          "type": "file_exists",
+          "description": "Flow file was created at the double-nested path",
+          "weight": 1.0,
+          "pass_threshold": 1.0,
+          "suite_thresholds": null,
+          "stop_when": null,
+          "path": "SimEval/SimEval/SimEval.flow"
+        },
+        {
+          "type": "command_executed",
+          "description": "Agent created an eval set",
+          "weight": 1.0,
+          "pass_threshold": 1.0,
+          "suite_thresholds": null,
+          "stop_when": null,
+          "tool_name": "Bash",
+          "command_pattern": "(uip|\\$UIP)\\s+maestro\\s+flow\\s+eval\\s+set\\s+add",
+          "min_count": 1,
+          "max_count": null,
+          "require_success": false,
+          "exclude_pattern": null
+        },
+        {
+          "type": "command_executed",
+          "description": "Agent added a data point with --inputs and --expected",
+          "weight": 1.5,
+          "pass_threshold": 1.0,
+          "suite_thresholds": null,
+          "stop_when": null,
+          "tool_name": "Bash",
+          "command_pattern": "(uip|\\$UIP)\\s+maestro\\s+flow\\s+eval\\s+add\\s+.*(--inputs.*--expected|--expected.*--inputs)",
+          "min_count": 1,
+          "max_count": null,
+          "require_success": false,
+          "exclude_pattern": null
+        },
+        {
+          "type": "command_executed",
+          "description": "Agent added a Static simulation with --strategy Static and --mock-value",
+          "weight": 3.0,
+          "pass_threshold": 1.0,
+          "suite_thresholds": null,
+          "stop_when": null,
+          "tool_name": "Bash",
+          "command_pattern": "(uip|\\$UIP)\\s+maestro\\s+flow\\s+eval\\s+simulation\\s+add\\s+.*--strategy\\s+Static\\b.*--mock-value",
+          "min_count": 1,
+          "max_count": null,
+          "require_success": false,
+          "exclude_pattern": null
+        },
+        {
+          "type": "command_executed",
+          "description": "Agent added an Llm simulation with --strategy Llm and explicit --output-schema",
+          "weight": 3.0,
+          "pass_threshold": 1.0,
+          "suite_thresholds": null,
+          "stop_when": null,
+          "tool_name": "Bash",
+          "command_pattern": "(uip|\\$UIP)\\s+maestro\\s+flow\\s+eval\\s+simulation\\s+add\\s+.*--strategy\\s+Llm\\b.*--output-schema",
+          "min_count": 1,
+          "max_count": null,
+          "require_success": false,
+          "exclude_pattern": null
+        },
+        {
+          "type": "command_executed",
+          "description": "Agent listed simulations on the data point",
+          "weight": 1.5,
+          "pass_threshold": 1.0,
+          "suite_thresholds": null,
+          "stop_when": null,
+          "tool_name": "Bash",
+          "command_pattern": "(uip|\\$UIP)\\s+maestro\\s+flow\\s+eval\\s+simulation\\s+list",
+          "min_count": 1,
+          "max_count": null,
+          "require_success": false,
+          "exclude_pattern": null
+        },
+        {
+          "type": "command_executed",
+          "description": "Agent removed the connector-send-email simulation",
+          "weight": 2.0,
+          "pass_threshold": 1.0,
+          "suite_thresholds": null,
+          "stop_when": null,
+          "tool_name": "Bash",
+          "command_pattern": "(uip|\\$UIP)\\s+maestro\\s+flow\\s+eval\\s+simulation\\s+remove\\s+.*connector-send-email",
+          "min_count": 1,
+          "max_count": null,
+          "require_success": false,
+          "exclude_pattern": null
+        },
+        {
+          "type": "run_command",
+          "description": "Eval-set JSON shows the Llm simulation persisted and the removed one is gone",
+          "weight": 3.0,
+          "pass_threshold": 1.0,
+          "suite_thresholds": null,
+          "stop_when": null,
+          "command": "python3 $TASK_DIR/check_simulation_crud.py",
+          "timeout": 10,
+          "expected_exit_code": 0,
+          "expected_stdout": null,
+          "stdout_match": "exact",
+          "score_from_stdout": false
+        }
+      ],
+      "run_limits": {
+        "max_turns": 60,
+        "expected_turns": 20,
+        "task_timeout": 900,
+        "turn_timeout": 900,
+        "max_input_tokens": null,
+        "max_output_tokens": null,
+        "max_total_tokens": null,
+        "max_usd": null,
+        "count_cached_input": false,
+        "count_cache_creation": false,
+        "stop_early": false
+      },
+      "reference": null,
+      "expected_commands": null,
+      "pre_run": [],
+      "post_run": [
+        {
+          "command": "find . -maxdepth 5 -type d \\( -name node_modules -o -name .npm-prefix -o -name .venv \\) -prune -exec rm -rf {} +",
+          "timeout": 30
+        }
+      ],
+      "dataset": null,
+      "suite_id": null,
+      "row_id": null,
+      "simulation": null
+    },
+    "source_yaml": "task_id: skill-flow-eval-simulation-crud\ndescription: >\n  Skill-guided simulation CRUD: agent uses the uipath-maestro-flow skill's\n  evaluate capability to scaffold a Flow project, build an eval set + data\n  point, then add, list, and remove node simulations on that data point via\n  `uip maestro flow eval simulation add/list/remove`. Covers both strategies —\n  `Static` (`--mock-value`) and `Llm` (explicit `--output-schema`, so the\n  auto-resolution-from-.flow path is not exercised). Purely local, no login,\n  no upload, no run. Tests whether the skill teaches the simulation command\n  surface (required flags, strategy selection) and `--output json` discipline,\n  and verifies the simulation actually persists into the eval-set JSON.\ntags: [uipath-maestro-flow, smoke, mode:build, lifecycle:generate, feature:eval]\n\nrun_limits:\n  expected_turns: 20\n  max_turns: 60\n\ninitial_prompt: |\n  Use the `uipath-maestro-flow` skill's evaluate capability to scaffold a Flow\n  project, build an eval set with one data point, then add, list, and remove\n  node simulations on that data point — purely local, no Studio Web round-trip.\n\n  Steps:\n  1. Create a solution `SimEval` and a Flow project `SimEval`. The flow file\n     MUST live at `SimEval/SimEval/SimEval.flow` (double-nested layout) and be\n     linked via `uip solution project add`.\n\n  2. Declare a string input variable named `name` on\n     `SimEval/SimEval/SimEval.flow` before adding the data point.\n\n  3. Create an eval set named `Sim Set` in the Flow project at\n     `SimEval/SimEval`. (No `--entry-point`, no `--evaluators` — defaults are\n     fine.)\n\n  4. Add one data point named `hello` to that eval set with inputs\n     `{\"name\":\"Alice\"}` and expected `{\"greeting\":\"Hello, Alice!\"}`.\n\n  5. Add a `Static` simulation on the `hello` data point targeting component id\n     `connector-send-email`. Use `--component-type connector` and a fixed\n     `--mock-value '{\"status\":\"ok\",\"messageId\":\"abc123\"}'`.\n\n  6. Add an `Llm` simulation on the `hello` data point targeting component id\n     `agent-lookup`. Use `--component-type agent`, supply\n     `--simulation-instructions \"Return a plausible lookup result.\"`, and pass\n     `--output-schema '{\"type\":\"object\",\"properties\":{\"result\":{\"type\":\"string\"}}}'`\n     explicitly (do NOT rely on auto-resolution from the .flow file).\n\n  7. List the simulations on the `hello` data point to confirm both are present.\n\n  8. Remove the `connector-send-email` simulation from the `hello` data point.\n\n  Important:\n  - Use `--output json` on every `uip maestro flow eval ...` command.\n  - Do NOT call `uip login`. Do NOT call `uip solution upload`. Do NOT call\n    `uip maestro flow eval run *` — this task tests local CRUD only.\n  - Do NOT run `uip maestro flow debug` or `uip maestro flow validate` — this\n    is not a flow-authoring test.\n\nsuccess_criteria:\n  - type: command_executed\n    description: \"Agent created a solution\"\n    tool_name: \"Bash\"\n    command_pattern: '(uip|\\$UIP)\\s+solution\\s+(new|init)'\n    min_count: 1\n    weight: 1.0\n    pass_threshold: 1.0\n\n  - type: command_executed\n    description: \"Agent initialized a Flow project\"\n    tool_name: \"Bash\"\n    command_pattern: '(uip|\\$UIP)\\s+(maestro\\s+)?flow\\s+init'\n    min_count: 1\n    weight: 1.0\n    pass_threshold: 1.0\n\n  - type: file_exists\n    description: \"Flow file was created at the double-nested path\"\n    path: \"SimEval/SimEval/SimEval.flow\"\n    weight: 1.0\n    pass_threshold: 1.0\n\n  - type: command_executed\n    description: \"Agent created an eval set\"\n    tool_name: \"Bash\"\n    command_pattern: '(uip|\\$UIP)\\s+maestro\\s+flow\\s+eval\\s+set\\s+add'\n    min_count: 1\n    weight: 1.0\n    pass_threshold: 1.0\n\n  - type: command_executed\n    description: \"Agent added a data point with --inputs and --expected\"\n    tool_name: \"Bash\"\n    command_pattern: '(uip|\\$UIP)\\s+maestro\\s+flow\\s+eval\\s+add\\s+.*(--inputs.*--expected|--expected.*--inputs)'\n    min_count: 1\n    weight: 1.5\n    pass_threshold: 1.0\n\n  - type: command_executed\n    description: \"Agent added a Static simulation with --strategy Static and --mock-value\"\n    tool_name: \"Bash\"\n    command_pattern: '(uip|\\$UIP)\\s+maestro\\s+flow\\s+eval\\s+simulation\\s+add\\s+.*--strategy\\s+Static\\b.*--mock-value'\n    min_count: 1\n    weight: 3.0\n    pass_threshold: 1.0\n\n  - type: command_executed\n    description: \"Agent added an Llm simulation with --strategy Llm and explicit --output-schema\"\n    tool_name: \"Bash\"\n    command_pattern: '(uip|\\$UIP)\\s+maestro\\s+flow\\s+eval\\s+simulation\\s+add\\s+.*--strategy\\s+Llm\\b.*--output-schema'\n    min_count: 1\n    weight: 3.0\n    pass_threshold: 1.0\n\n  - type: command_executed\n    description: \"Agent listed simulations on the data point\"\n    tool_name: \"Bash\"\n    command_pattern: '(uip|\\$UIP)\\s+maestro\\s+flow\\s+eval\\s+simulation\\s+list'\n    min_count: 1\n    weight: 1.5\n    pass_threshold: 1.0\n\n  - type: command_executed\n    description: \"Agent removed the connector-send-email simulation\"\n    tool_name: \"Bash\"\n    command_pattern: '(uip|\\$UIP)\\s+maestro\\s+flow\\s+eval\\s+simulation\\s+remove\\s+.*connector-send-email'\n    min_count: 1\n    weight: 2.0\n    pass_threshold: 1.0\n\n  - type: run_command\n    description: \"Eval-set JSON shows the Llm simulation persisted and the removed one is gone\"\n    command: \"python3 $TASK_DIR/check_simulation_crud.py\"\n    timeout: 10\n    expected_exit_code: 0\n    weight: 3.0\n    pass_threshold: 1.0\n",
+    "source_file": "/home/azureuser/projects/skills/tests/tasks/uipath-maestro-flow/evaluate/simulation/task.yaml",
+    "lineage": {
+      "agent.type": {
+        "value": "claude-code",
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.permission_mode": {
+        "value": "acceptEdits",
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.model": {
+        "value": "claude-sonnet-4-6",
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.allowed_tools": {
+        "value": [
+          "Skill",
+          "Bash",
+          "Read",
+          "Write",
+          "Edit",
+          "Glob",
+          "Grep"
+        ],
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.plugins": {
+        "value": [
+          {
+            "type": "local",
+            "path": "/home/azureuser/projects/skills/"
+          }
+        ],
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.ignore_patterns": {
+        "value": [],
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.system_prompt": {
+        "value": "You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted.\n",
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "run_limits.max_turns": {
+        "value": 60,
+        "source": "task",
+        "source_detail": null
+      },
+      "run_limits.task_timeout": {
+        "value": 900,
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "run_limits.turn_timeout": {
+        "value": 900,
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "run_limits.expected_turns": {
+        "value": 20,
+        "source": "task",
+        "source_detail": null
+      },
+      "sandbox.driver": {
+        "value": "docker",
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "sandbox.docker": {
+        "value": {
+          "image": "skills-image:latest",
+          "env_passthrough_extra": [
+            "SKILLS_REPO_PATH",
+            "BEDROCK_MODEL",
+            "TASK_PARALLELISM",
+            "UIPATH_CLI_ENABLE_ENV_AUTH",
+            "UIPATH_CLI_AUTH_TOKEN",
+            "UIPATH_CLI_ORGANIZATION_NAME",
+            "UIPATH_CLI_ORGANIZATION_ID",
+            "UIPATH_CLI_TENANT_NAME",
+            "UIPATH_CLI_TENANT_ID",
+            "TRACES_SMOKE_PROCESS_KEY",
+            "CODEX_API_KEY",
+            "CODEX_BASE_URL"
+          ],
+          "extra_mounts": [
+            "~/.uipath:/.uipath:rw"
+          ]
+        },
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "repeats": {
+        "value": 1,
+        "source": "default",
+        "source_detail": null
+      }
+    }
+  },
+  "command_stats": {
+    "total_commands": 6,
+    "commands_by_tool": {
+      "Skill": 1,
+      "Read": 3,
+      "Bash": 2
+    },
+    "total_command_time_ms": 37800.987256807275,
+    "avg_command_time_ms": 6300.1645428012125,
+    "slowest_commands": [
+      {
+        "tool": "Bash",
+        "duration_ms": 20589.635420939885,
+        "parameters": {
+          "command": "\\\necho \"=== Step 1: Create solution SimEval ===\" && \\\nuip solution init SimEval --output json && \\\necho \"=== Step 2: Init flow project inside solution (skip auto-registration) ===\" && \\\ncd SimEval && \\\nuip maestro flow init SimEval --skip-solution-registration --output json && \\\necho \"=== Step 3: Link project via uip solution project add ===\" && \\\nuip solution project add SimEval --output json && \\\necho \"=== Step 4: Declare input variable 'name' ===\" && \\\ncd /work/output/artifacts/skill-flow-eval-simulation-crud && \\\nuip maestro flow variable add SimEval/SimEval/SimEval.flow name \\\n  --direction in --type string --output json && \\\necho \"=== Step 5: Create eval set 'Sim Set' ===\" && \\\nuip maestro flow eval set add \"Sim Set\" \\\n  --path SimEval/SimEval --output json && \\\necho \"=== Step 6: Add data point 'hello' ===\" && \\\nuip maestro flow eval add hello \\\n  --set \"Sim Set\" \\\n  --inputs '{\"name\":\"Alice\"}' \\\n  --expected '{\"greeting\":\"Hello, Alice!\"}' \\\n  --path SimEval/SimEval --output json",
+          "description": "Scaffold solution, init flow, link project, declare variable, create eval set, add data point",
+          "timeout": 120000
+        },
+        "tool_id": "toolu_bdrk_01PFd1QLBdM1SVH3UGnCN5mU"
+      },
+      {
+        "tool": "Bash",
+        "duration_ms": 17107.012088992633,
+        "parameters": {
+          "command": "\\\necho \"=== Step 5 (task): Add Static simulation on connector-send-email ===\" && \\\nuip maestro flow eval simulation add connector-send-email \\\n  --set \"Sim Set\" \\\n  --data-point \"hello\" \\\n  --strategy Static \\\n  --component-type connector \\\n  --mock-value '{\"status\":\"ok\",\"messageId\":\"abc123\"}' \\\n  --path SimEval/SimEval --output json && \\\necho \"=== Step 6 (task): Add Llm simulation on agent-lookup ===\" && \\\nuip maestro flow eval simulation add agent-lookup \\\n  --set \"Sim Set\" \\\n  --data-point \"hello\" \\\n  --strategy Llm \\\n  --component-type agent \\\n  --simulation-instructions \"Return a plausible lookup result.\" \\\n  --output-schema '{\"type\":\"object\",\"properties\":{\"result\":{\"type\":\"string\"}}}' \\\n  --path SimEval/SimEval --output json && \\\necho \"=== Step 7 (task): List simulations on 'hello' ===\" && \\\nuip maestro flow eval simulation list \\\n  --set \"Sim Set\" \\\n  --data-point \"hello\" \\\n  --path SimEval/SimEval --output json && \\\necho \"=== Step 8 (task): Remove connector-send-email simulation ===\" && \\\nuip maestro flow eval simulation remove connector-send-email \\\n  --set \"Sim Set\" \\\n  --data-point \"hello\" \\\n  --path SimEval/SimEval --output json",
+          "description": "Add Static + Llm simulations, list, then remove Static simulation",
+          "timeout": 60000
+        },
+        "tool_id": "toolu_bdrk_01PjFcjiu21ZprQoKQRr3mGB"
+      },
+      {
+        "tool": "Skill",
+        "duration_ms": 50.73592998087406,
+        "parameters": {
+          "skill": "uipath:uipath-maestro-flow",
+          "args": "evaluate capability: scaffold a Flow project, build an eval set with one data point, then add, list, and remove node simulations on that data point — purely local, no Studio Web round-trip.\n\nSteps:\n1. Create a solution `SimEval` and a Flow project `SimEval`. The flow file MUST live at `SimEval/SimEval/SimEval.flow` (double-nested layout) and be linked via `uip solution project add`.\n\n2. Declare a string input variable named `name` on `SimEval/SimEval/SimEval.flow` before adding the data point.\n\n3. Create an eval set named `Sim Set` in the Flow project at `SimEval/SimEval`. (No `--entry-point`, no `--evaluators` — defaults are fine.)\n\n4. Add one data point named `hello` to that eval set with inputs `{\"name\":\"Alice\"}` and expected `{\"greeting\":\"Hello, Alice!\"}`.\n\n5. Add a `Static` simulation on the `hello` data point targeting component id `connector-send-email`. Use `--component-type connector` and a fixed `--mock-value '{\"status\":\"ok\",\"messageId\":\"abc123\"}'`.\n\n6. Add an `Llm` simulation on the `hello` data point targeting component id `agent-lookup`. Use `--component-type agent`, supply `--simulation-instructions \"Return a plausible lookup result.\"`, and pass `--output-schema '{\"type\":\"object\",\"properties\":{\"result\":{\"type\":\"string\"}}}' explicitly (do NOT rely on auto-resolution from the .flow file).\n\n7. List the simulations on the `hello` data point to confirm both are present.\n\n8. Remove the `connector-send-email` simulation from the `hello` data point.\n\nImportant:\n- Use `--output json` on every `uip maestro flow eval ...` command.\n- Do NOT call `uip login`. Do NOT call `uip solution upload`. Do NOT call `uip maestro flow eval run *` — this task tests local CRUD only.\n- Do NOT run `uip maestro flow debug` or `uip maestro flow validate` — this is not a flow-authoring test."
+        },
+        "tool_id": "toolu_bdrk_01KRzaf3AXhddJ1x2E8Qrfn7"
+      },
+      {
+        "tool": "Read",
+        "duration_ms": 28.1426910078153,
+        "parameters": {
+          "file_path": "/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/evaluate/CAPABILITY.md"
+        },
+        "tool_id": "toolu_bdrk_019rd8detYUaMNV7D1D3t9FF"
+      },
+      {
+        "tool": "Read",
+        "duration_ms": 16.58448693342507,
+        "parameters": {
+          "file_path": "/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/evaluate/references/eval-sets-guide.md"
+        },
+        "tool_id": "toolu_bdrk_01DpWbKx194fnWXgqPAK1gDs"
+      }
+    ],
+    "successful_commands": 6,
+    "failed_commands": 0,
+    "unknown_commands": 0,
+    "success_rate": 100.0,
+    "most_common_sequence": "Skill → Read → Read"
+  },
+  "total_token_usage": {
+    "uncached_input_tokens": 9,
+    "output_tokens": 6239,
+    "cache_creation_input_tokens": 25646,
+    "cache_read_input_tokens": 215049,
+    "total_cost_usd": 0.25429919999999995,
+    "input_tokens": 240704
+  },
+  "total_assistant_turns": 12,
+  "expected_commands": null,
+  "actual_commands": 6,
+  "commands_efficiency": null,
+  "pre_run_results": [],
+  "post_run_results": [
+    {
+      "command": "find . -maxdepth 5 -type d \\( -name node_modules -o -name .npm-prefix -o -name .venv \\) -prune -exec rm -rf {} +",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "",
+      "duration_seconds": 0.008031845092773438,
+      "error": null
+    }
+  ],
+  "simulation": null,
+  "early_stop": null
+}

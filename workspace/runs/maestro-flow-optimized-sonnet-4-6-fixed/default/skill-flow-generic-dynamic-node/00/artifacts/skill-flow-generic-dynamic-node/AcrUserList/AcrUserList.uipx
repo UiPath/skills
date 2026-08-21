@@ -1,0 +1,12 @@
+{
+    "DocVersion": "1.0.0",
+    "StudioMinVersion": "2025.10.0",
+    "SolutionId": "4f1bd7ce-251d-48cd-c752-08defe2b8864",
+    "Projects": [
+        {
+            "Type": "Flow",
+            "ProjectRelativePath": "AcrUserList/project.uiproj",
+            "Id": "4a48eca8-79b4-4186-9f3e-8c851928a7ed"
+        }
+    ]
+}

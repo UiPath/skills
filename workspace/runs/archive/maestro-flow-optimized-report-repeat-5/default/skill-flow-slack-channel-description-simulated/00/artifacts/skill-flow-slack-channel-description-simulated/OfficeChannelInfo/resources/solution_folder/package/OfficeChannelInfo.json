@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "OfficeChannelInfo",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "e5d04597-6104-4b46-b7f7-49f8344a0908",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "OfficeChannelInfo"
+    },
+    "locks": [],
+    "key": "73fd68d1-51ec-4dfd-98a6-b50ba87dde0a",
+    "files": []
+  }
+}

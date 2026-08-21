@@ -1,0 +1,33 @@
+2026-08-19 16:55:26 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-08-19 16:55:26 [INFO] coder_eval.orchestrator: API routing: aws_bedrock
+2026-08-19 16:55:26 [DEBUG] coder_eval.criteria: Discovered 15 criterion checkers
+2026-08-19 16:55:26 [DEBUG] coder_eval.criteria: Validated 15 criterion checkers
+2026-08-19 16:55:26 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-08-19 16:55:26 [DEBUG] coder_eval.orchestrator: Sending prompt: Create a new Flow project called "QueryParamsTest" with a manual trigger.
+You need a flow that lists...
+2026-08-19 16:55:26 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Starting agent query stream...
+2026-08-19 16:57:55 [DEBUG] coder_eval.agents.claude_code_agent: [coder] session_id changed: None -> 9accf3e3-bb08-4946-9501-1c032b486d4d
+2026-08-19 16:57:55 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Agent query stream ended
+2026-08-19 16:57:55 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-08-19 16:57:55 [DEBUG] coder_eval.orchestrator: Agent response received (4630 chars)
+2026-08-19 16:57:55 [DEBUG] coder_eval.orchestrator: Checking success criteria
+2026-08-19 16:57:55 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'Flow file exists and is valid JSON': python3 -c "import json,glob; flows=glob.glob('**/QueryParamsTest*.flow',recursive=True); assert flows, 'No flow found'; f=json.load(open(flows[0])); assert 'nodes' in f and 'edges' in f; nn=len(f['nodes']); ne=len(f['edges']); print('OK: %d nodes, %d edges'%(nn,ne))"
+2026-08-19 16:57:55 [DEBUG] coder_eval.sandbox: Command 'python3 -c "import json,glob; flows=glob.glob('**/QueryParamsTest*.flow',recursive=True); assert flows, 'No flow found'; f=json.load(open(flows[0])); assert 'nodes' in f and 'edges' in f; nn=len(f['nodes']); ne=len(f['edges']); print('OK: %d nodes, %d edges'%(nn,ne))"' exited with code 0
+2026-08-19 16:57:55 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+OK: 3 nodes, 2 edges
+---
+2026-08-19 16:57:55 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-08-19 16:57:55 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'Flow uses Google Tasks connector or task-specific managed HTTP fallback': python3 $TASK_DIR/check_managed_http_fallback.py '**/QueryParamsTest*.flow' uipath-google-tasks query_params
+2026-08-19 16:57:55 [DEBUG] coder_eval.sandbox: Command 'python3 $TASK_DIR/check_managed_http_fallback.py '**/QueryParamsTest*.flow' uipath-google-tasks query_params' exited with code 0
+2026-08-19 16:57:55 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+OK: managed HTTP fallback has query_params evidence
+---
+2026-08-19 16:57:55 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-08-19 16:57:56 [DEBUG] coder_eval.evaluation.checker: Criterion 'command_executed' score: 1.00
+2026-08-19 16:57:56 [INFO] coder_eval.orchestrator: Success criteria: 3/3 passed, weighted score: 1.000
+2026-08-19 16:57:56 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-08-19 16:57:56 [INFO] coder_eval.orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+2026-08-19 16:57:56 [INFO] coder_eval.orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-ipe-query-params
+2026-08-19 16:57:56 [INFO] coder_eval.orchestrator: Task finished: status=SUCCESS duration=152.9s score=1.000 iterations=1

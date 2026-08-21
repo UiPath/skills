@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:omgdi="http://www.omg.org/spec/DD/20100524/DI" xmlns:omgdc="http://www.omg.org/spec/DD/20100524/DC" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="sid-38422fae-e03e-43a3-bef4-bd33b32041b2" targetNamespace="http://bpmn.io/bpmn" exporter="bpmn-js (https://demo.bpmn.io)" exporterVersion="18.1.1">
+  <process id="Process_1" isExecutable="false">
+    <startEvent id="StartEvent_001" name="Start">
+      <outgoing>SequenceFlow_001</outgoing>
+    </startEvent>
+    <task id="Task_001" name="Task01">
+      <incoming>SequenceFlow_001</incoming>
+      <outgoing>SequenceFlow_002</outgoing>
+    </task>
+    <sequenceFlow id="SequenceFlow_001" sourceRef="StartEvent_001" targetRef="Task_001" />
+    <exclusiveGateway id="ExclusiveGateway_001" name="Gateway">
+      <incoming>SequenceFlow_002</incoming>
+      <outgoing>Flow_003</outgoing>
+    </exclusiveGateway>
+    <sequenceFlow id="SequenceFlow_002" sourceRef="Task_001" targetRef="ExclusiveGateway_001" />
+    <subProcess id="SubProcess_001" name="SubProcess1">
+      <incoming>Flow_003</incoming>
+      <outgoing>Flow_004</outgoing>
+      <startEvent id="SP__StartEvent" name="SP_Start">
+        <outgoing>SP__Flow_001</outgoing>
+      </startEvent>
+      <task id="SP__Task_001" name="SP_Task">
+        <incoming>SP__Flow_001</incoming>
+        <outgoing>Flow_001</outgoing>
+      </task>
+      <endEvent id="SP__EndEvent" name="SP_End">
+        <incoming>Flow_001</incoming>
+      </endEvent>
+      <sequenceFlow id="Flow_001" sourceRef="SP__Task_001" targetRef="SP__EndEvent" />
+      <sequenceFlow id="SP__Flow_001" sourceRef="SP__StartEvent" targetRef="SP__Task_001" />
+    </subProcess>
+    <sequenceFlow id="Flow_003" sourceRef="ExclusiveGateway_001" targetRef="SubProcess_001" />
+    <task id="Task_002" name="Task02">
+      <incoming>Flow_004</incoming>
+      <outgoing>Flow_005</outgoing>
+    </task>
+    <sequenceFlow id="Flow_004" sourceRef="SubProcess_001" targetRef="Task_002" />
+    <endEvent id="EndEvent_001" name="End">
+      <incoming>Flow_005</incoming>
+    </endEvent>
+    <sequenceFlow id="Flow_005" sourceRef="Task_002" targetRef="EndEvent_001" />
+  </process>
+  <bpmndi:BPMNDiagram id="BpmnDiagram_1">
+    <bpmndi:BPMNPlane id="BpmnPlane_1" bpmnElement="Process_1">
+      <bpmndi:BPMNShape id="StartEvent_001_di" bpmnElement="StartEvent_001">
+        <omgdc:Bounds x="152" y="102" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <omgdc:Bounds x="159" y="145" width="24" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_001_di" bpmnElement="Task_001">
+        <omgdc:Bounds x="240" y="80" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ExclusiveGateway_001_di" bpmnElement="ExclusiveGateway_001" isMarkerVisible="true">
+        <omgdc:Bounds x="395" y="95" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <omgdc:Bounds x="399" y="152" width="44" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="SubProcess_001_di" bpmnElement="SubProcess_001" isExpanded="false">
+        <omgdc:Bounds x="650" y="80" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_002_di" bpmnElement="Task_002">
+        <omgdc:Bounds x="980" y="80" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_001_di" bpmnElement="EndEvent_001">
+        <omgdc:Bounds x="1228" y="102" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <omgdc:Bounds x="1236" y="145" width="20" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SequenceFlow_001_di" bpmnElement="SequenceFlow_001">
+        <omgdi:waypoint x="188" y="120" />
+        <omgdi:waypoint x="240" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SequenceFlow_0wnb4ke_di" bpmnElement="SequenceFlow_002">
+        <omgdi:waypoint x="340" y="120" />
+        <omgdi:waypoint x="395" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_003_di" bpmnElement="Flow_003">
+        <omgdi:waypoint x="445" y="120" />
+        <omgdi:waypoint x="650" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_004_di" bpmnElement="Flow_004">
+        <omgdi:waypoint x="750" y="120" />
+        <omgdi:waypoint x="980" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_005_di" bpmnElement="Flow_005">
+        <omgdi:waypoint x="1080" y="120" />
+        <omgdi:waypoint x="1228" y="120" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_013twmu">
+    <bpmndi:BPMNPlane id="BPMNPlane_0818s2n" bpmnElement="SubProcess_001">
+      <bpmndi:BPMNShape id="SP__StartEvent_di" bpmnElement="SP__StartEvent">
+        <omgdc:Bounds x="183" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <omgdc:Bounds x="180" y="225" width="45" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="SP__Task_001_di" bpmnElement="SP__Task_001">
+        <omgdc:Bounds x="303" y="160" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="SP__EndEvent_di" bpmnElement="SP__EndEvent">
+        <omgdc:Bounds x="475" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <omgdc:Bounds x="473" y="225" width="41" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SP__Flow_001_di" bpmnElement="SP__Flow_001">
+        <omgdi:waypoint x="219" y="200" />
+        <omgdi:waypoint x="303" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SP__Flow_002_di" bpmnElement="Flow_001">
+        <omgdi:waypoint x="403" y="200" />
+        <omgdi:waypoint x="475" y="200" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</definitions>

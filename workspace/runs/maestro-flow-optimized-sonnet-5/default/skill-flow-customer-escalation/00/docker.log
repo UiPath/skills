@@ -1,0 +1,7 @@
+00:07:31 [INFO   ] [default/skill-flow-customer-escalation/00] orchestrator: API routing: aws_bedrock
+00:21:51 [INFO   ] [default/skill-flow-customer-escalation/00] evaluation.checker: Criterion 'run_command' FAILED (score=0.00, threshold=1.00): Command: python3 $TASK_DIR/check_customer_escalation_flow.py
+00:21:51 [INFO   ] [default/skill-flow-customer-escalation/00] orchestrator: Success criteria: 1/2 passed, weighted score: 0.333
+00:21:51 [WARNING] [default/skill-flow-customer-escalation/00] orchestrator: Visible turns (90) exceeded expected_turns (73) at iteration 1 for task skill-flow-customer-escalation. Run continues — max_turns remains the hard cap.
+00:21:51 [INFO   ] [default/skill-flow-customer-escalation/00] orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+00:21:51 [INFO   ] [default/skill-flow-customer-escalation/00] orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-customer-escalation
+00:21:51 [INFO   ] [default/skill-flow-customer-escalation/00] orchestrator: Task finished: status=FAILURE duration=868.9s score=0.333 iterations=1

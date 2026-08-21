@@ -1,0 +1,7 @@
+{
+  "name": "QueueCreateAndWaitBpmn",
+  "description": "Enqueue a transaction item and block until it is processed, then continue.",
+  "projectVersion": "1.0.0",
+  "main": "QueueCreateAndWaitBpmn.bpmn",
+  "contentType": "ProcessOrchestration"
+}

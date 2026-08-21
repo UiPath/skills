@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "JiraLifecycle",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "b7b27b38-a211-45b5-84fb-397a8cb2cdfc",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "JiraLifecycle"
+    },
+    "locks": [],
+    "key": "41e17c4b-18cc-4195-bec4-e49dfdd763d1",
+    "files": []
+  }
+}

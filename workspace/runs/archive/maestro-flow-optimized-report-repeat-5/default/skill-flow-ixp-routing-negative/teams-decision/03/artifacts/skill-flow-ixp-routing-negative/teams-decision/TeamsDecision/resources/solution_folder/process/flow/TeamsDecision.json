@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "TeamsDecision",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "60892eff-6313-4b9a-bb04-c93f2d17b297",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "TeamsDecision"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Flow",
+      "name": "TeamsDecision",
+      "package": {
+        "key": "0310c846-80f2-4c20-82ea-76a6c2fa01af"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "77015ff2-77e9-4f58-9521-987bd77708b1",
+    "files": []
+  }
+}

@@ -1,0 +1,39 @@
+{
+  "_comment": "Filter to apply when configuring node 'listEntraGroups1' in CeqlWhereTest/CeqlWhereTest/CeqlWhereTest.flow",
+  "_configure_command": "uip maestro flow node configure CeqlWhereTest.flow listEntraGroups1 --detail \"$(cat listEntraGroups1.detail.json)\" --output json",
+  "connectorKey": "uipath-microsoft-azureactivedirectory",
+  "nodeId": "listEntraGroups1",
+  "nodeType": "uipath.connector.uipath-microsoft-azureactivedirectory.list-groups",
+  "filterParameter": "where",
+  "filterParameterComponent": "FilterBuilder",
+  "detail": {
+    "connectionId": "<CONNECTION_UUID>",
+    "folderKey": "<FOLDER_KEY>",
+    "method": "GET",
+    "endpoint": "/groups",
+    "filter": {
+      "logicalOperator": "AND",
+      "groups": [
+        {
+          "logicalOperator": "AND",
+          "rules": [
+            {
+              "fieldId": "displayName",
+              "operator": "=",
+              "value": {
+                "value": "active",
+                "isLiteral": true
+              }
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "ceqlEquivalent": "displayName = 'active'",
+  "notes": [
+    "The 'where' parameter on list-groups uses component=FilterBuilder; pass --detail.filter (structured tree), never --detail.queryParameters.where (raw CEQL string).",
+    "The CLI compiles the tree into both the runtime queryParameters.where CEQL string AND the design-time savedFilterTrees.where blob required by Studio Web.",
+    "Replace <CONNECTION_UUID> and <FOLDER_KEY> with values from: uip is connections list uipath-microsoft-azureactivedirectory --all-folders --output json"
+  ]
+}

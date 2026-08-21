@@ -1,0 +1,61 @@
+{
+  "_comment": "Planned trigger configuration for uipath.connector.trigger.uipath-microsoft-outlook365.email-received (nodeId: emailReceivedOutlook3651). Apply via: uip maestro flow node configure OutlookTriggerFlow.flow emailReceivedOutlook3651 --detail \"$(cat trigger_detail.json)\" --output json",
+
+  "connectionId": "<PLACEHOLDER: UUID of your Microsoft Outlook 365 Integration Service connection — obtain with: uip is connections list \"uipath-microsoft-outlook365\" --all-folders --output json>",
+  "folderKey": "<PLACEHOLDER: Orchestrator folder key that owns the connection above — obtain from the connections list response: Data[*].FolderKey>",
+
+  "eventMode": "polling",
+
+  "eventParameters": {
+    "parentFolderId": "<PLACEHOLDER: Inbox folder ID — resolve with: uip is resources run list \"uipath-microsoft-outlook365\" \"MailFolder\" --connection-id <connectionId> --output json>"
+  },
+
+  "queryParameters": {
+    "sharedMailboxAddress": "<OPTIONAL: leave empty for the authenticated user's own mailbox; set to a shared-mailbox address if monitoring a delegated inbox>"
+  },
+
+  "filter": {
+    "groupOperator": 0,
+    "index": 0,
+    "filters": [
+      {
+        "id": "from",
+        "operator": "Equals",
+        "value": {
+          "value": "abc@xyz.com",
+          "rawString": "\"abc@xyz.com\"",
+          "isLiteral": true
+        }
+      },
+      {
+        "id": "subject",
+        "operator": "Contains",
+        "value": {
+          "value": "good day",
+          "rawString": "\"good day\"",
+          "isLiteral": true
+        }
+      }
+    ]
+  },
+
+  "_meta": {
+    "triggerNodeType": "uipath.connector.trigger.uipath-microsoft-outlook365.email-received",
+    "connectorKey": "uipath-microsoft-outlook365",
+    "operation": "EMAIL_RECEIVED",
+    "objectName": "Message",
+    "activityType": "CuratedTrigger",
+    "eventMode": "polling",
+    "filterDescription": "Fires when an email arrives in the monitored Inbox folder, sent by abc@xyz.com, with a subject that contains 'good day'. Both conditions are AND-ed (groupOperator: 0).",
+    "filterFields": {
+      "from": "Sender email address — matched with Equals operator",
+      "subject": "Email subject line — matched with Contains operator"
+    },
+    "resolveBeforeConfigure": [
+      "connectionId — run: uip is connections list \"uipath-microsoft-outlook365\" --all-folders --output json",
+      "folderKey — from the same connections list response (FolderKey field on the chosen connection)",
+      "parentFolderId — run: uip is resources run list \"uipath-microsoft-outlook365\" \"MailFolder\" --connection-id <connectionId> --output json, pick the Inbox entry's id"
+    ],
+    "configureCommand": "uip maestro flow node configure OutlookTriggerFlow.flow emailReceivedOutlook3651 --detail \"$(cat trigger_detail_filled.json)\" --output json"
+  }
+}

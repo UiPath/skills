@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "CeqlWhereTest",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "c8d2f5af-27a7-4846-81a1-c68ebfeb21df",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "CeqlWhereTest"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Flow",
+      "name": "CeqlWhereTest",
+      "package": {
+        "key": "69280f1f-cb3b-4c54-acdc-c50002ec6458"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "132107a1-c614-46e9-8d82-1435f9a63154",
+    "files": []
+  }
+}

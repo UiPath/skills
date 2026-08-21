@@ -1,0 +1,10 @@
+{
+  "_comment": "Planned node configure payload for getProductReviews1 (WooCommerce Get Product Reviews). Run 'uip maestro flow node configure EnhancedEnumTest.flow getProductReviews1 --detail \"$(cat getProductReviews1.detail.json)\"' once a live WooCommerce IS connection exists.",
+  "connectionId": "<REPLACE_WITH_WOOCOMMERCE_CONNECTION_ID>",
+  "folderKey": "<REPLACE_WITH_FOLDER_KEY>",
+  "method": "GET",
+  "endpoint": "/search_product_review",
+  "queryParameters": {
+    "order": "=js:$vars.mapOrder1.output.orderCode"
+  }
+}

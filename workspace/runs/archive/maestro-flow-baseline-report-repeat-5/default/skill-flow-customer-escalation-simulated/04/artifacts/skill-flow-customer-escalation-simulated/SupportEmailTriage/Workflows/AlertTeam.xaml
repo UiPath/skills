@@ -1,0 +1,195 @@
+<Activity mc:Ignorable="sap sap2010" x:Class="Workflows_AlertTeam"
+  xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities"
+  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+  xmlns:mva="clr-namespace:Microsoft.VisualBasic.Activities;assembly=System.Activities"
+  xmlns:sap="http://schemas.microsoft.com/netfx/2009/xaml/activities/presentation"
+  xmlns:sap2010="http://schemas.microsoft.com/netfx/2010/xaml/activities/presentation"
+  xmlns:scg="clr-namespace:System.Collections.Generic;assembly=System.Private.CoreLib"
+  xmlns:sco="clr-namespace:System.Collections.ObjectModel;assembly=mscorlib"
+  xmlns:ui="http://schemas.uipath.com/workflow/activities"
+  xmlns:umam="clr-namespace:UiPath.MicrosoftOffice365.Activities.Mail;assembly=UiPath.MicrosoftOffice365.Activities"
+  xmlns:umame="clr-namespace:UiPath.MicrosoftOffice365.Activities.Mail.Enums;assembly=UiPath.MicrosoftOffice365.Activities"
+  xmlns:umamm="clr-namespace:UiPath.MicrosoftOffice365.Activities.Mail.Models;assembly=UiPath.MicrosoftOffice365.Activities"
+  xmlns:umm="clr-namespace:UiPath.MicrosoftOffice365.Models;assembly=UiPath.MicrosoftOffice365"
+  xmlns:usau="clr-namespace:UiPath.Shared.Activities.Utils;assembly=UiPath.MicrosoftOffice365.Activities"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+  <x:Members>
+    <x:Property Name="in_Email" Type="InArgument(umm:Office365Message)" />
+    <x:Property Name="in_UrgencyLevel" Type="InArgument(x:String)" />
+    <x:Property Name="in_IsVIP" Type="InArgument(x:Boolean)" />
+    <!-- TODO: Replace with your real O365 Connection ID (Orchestrator asset or configured connection GUID) -->
+    <x:Property Name="in_ConnectionId" Type="InArgument(x:String)" />
+    <!-- TODO: Set to your team lead email, e.g. "teamlead@yourcompany.com" -->
+    <x:Property Name="in_TeamLeadEmail" Type="InArgument(x:String)" />
+  </x:Members>
+
+  <mva:VisualBasic.Settings>
+    <x:Null />
+  </mva:VisualBasic.Settings>
+
+  <TextExpression.NamespacesForImplementation>
+    <sco:Collection x:TypeArguments="x:String">
+      <x:String>System</x:String>
+      <x:String>System.Collections.Generic</x:String>
+      <x:String>System.Linq</x:String>
+      <x:String>UiPath.Core</x:String>
+      <x:String>UiPath.Core.Activities</x:String>
+      <x:String>UiPath.MicrosoftOffice365.Models</x:String>
+      <x:String>UiPath.MicrosoftOffice365.Activities.Mail</x:String>
+      <x:String>UiPath.MicrosoftOffice365.Activities.Mail.Enums</x:String>
+      <x:String>UiPath.MicrosoftOffice365.Activities.Mail.Models</x:String>
+    </sco:Collection>
+  </TextExpression.NamespacesForImplementation>
+  <TextExpression.ReferencesForImplementation>
+    <sco:Collection x:TypeArguments="AssemblyReference">
+      <AssemblyReference>System.Activities</AssemblyReference>
+      <AssemblyReference>Microsoft.VisualBasic</AssemblyReference>
+      <AssemblyReference>System.Private.CoreLib</AssemblyReference>
+      <AssemblyReference>mscorlib</AssemblyReference>
+      <AssemblyReference>System</AssemblyReference>
+      <AssemblyReference>System.Linq</AssemblyReference>
+      <AssemblyReference>System.Core</AssemblyReference>
+      <AssemblyReference>UiPath.System.Activities</AssemblyReference>
+      <AssemblyReference>UiPath.MicrosoftOffice365.Activities</AssemblyReference>
+      <AssemblyReference>UiPath.MicrosoftOffice365</AssemblyReference>
+    </sco:Collection>
+  </TextExpression.ReferencesForImplementation>
+
+  <Sequence DisplayName="Alert Team" sap2010:WorkflowViewState.IdRef="Sequence_1">
+    <Sequence.Variables>
+      <Variable x:TypeArguments="x:String" Name="alertSubject" />
+      <Variable x:TypeArguments="x:String" Name="alertBody" />
+      <Variable x:TypeArguments="x:String" Name="vipTag" />
+      <Variable x:TypeArguments="x:String" Name="senderAddress" />
+      <Variable x:TypeArguments="x:String" Name="bodyPart1" />
+      <Variable x:TypeArguments="x:String" Name="bodyPart2" />
+    </Sequence.Variables>
+
+    <!-- Build VIP tag string -->
+    <Assign DisplayName="Build VIP Tag" sap2010:WorkflowViewState.IdRef="Assign_1">
+      <Assign.To>
+        <OutArgument x:TypeArguments="x:String">[vipTag]</OutArgument>
+      </Assign.To>
+      <Assign.Value>
+        <InArgument x:TypeArguments="x:String">[If(in_IsVIP, " [VIP CUSTOMER]", "")]</InArgument>
+      </Assign.Value>
+    </Assign>
+
+    <!-- Compose alert subject -->
+    <Assign DisplayName="Build Alert Subject" sap2010:WorkflowViewState.IdRef="Assign_2">
+      <Assign.To>
+        <OutArgument x:TypeArguments="x:String">[alertSubject]</OutArgument>
+      </Assign.To>
+      <Assign.Value>
+        <InArgument x:TypeArguments="x:String">["[" &amp; in_UrgencyLevel &amp; "]" &amp; vipTag &amp; " Escalation: " &amp; in_Email.Subject]</InArgument>
+      </Assign.Value>
+    </Assign>
+
+    <!-- Get sender address safely -->
+    <Assign DisplayName="Get Sender Address" sap2010:WorkflowViewState.IdRef="Assign_3">
+      <Assign.To>
+        <OutArgument x:TypeArguments="x:String">[senderAddress]</OutArgument>
+      </Assign.To>
+      <Assign.Value>
+        <InArgument x:TypeArguments="x:String">[If(in_Email Is Nothing OrElse in_Email.From Is Nothing, "Unknown", in_Email.From.Address)]</InArgument>
+      </Assign.Value>
+    </Assign>
+
+    <!-- Build HTML body part 1: header and metadata table -->
+    <Assign DisplayName="Build Body Part 1" sap2010:WorkflowViewState.IdRef="Assign_4">
+      <Assign.To>
+        <OutArgument x:TypeArguments="x:String">[bodyPart1]</OutArgument>
+      </Assign.To>
+      <Assign.Value>
+        <InArgument x:TypeArguments="x:String">["&lt;h2&gt;Support Email Escalation Alert&lt;/h2&gt;&lt;table style='border-collapse:collapse;font-family:Arial,sans-serif;'&gt;&lt;tr&gt;&lt;td style='font-weight:bold;padding:4px 12px 4px 0'&gt;Urgency:&lt;/td&gt;&lt;td&gt;&lt;strong&gt;" &amp; in_UrgencyLevel &amp; "&lt;/strong&gt;" &amp; vipTag &amp; "&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style='font-weight:bold;padding:4px 12px 4px 0'&gt;From:&lt;/td&gt;&lt;td&gt;" &amp; senderAddress &amp; "&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style='font-weight:bold;padding:4px 12px 4px 0'&gt;Subject:&lt;/td&gt;&lt;td&gt;" &amp; in_Email.Subject &amp; "&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;"]</InArgument>
+      </Assign.Value>
+    </Assign>
+
+    <!-- Build HTML body part 2: email preview -->
+    <Assign DisplayName="Build Body Part 2" sap2010:WorkflowViewState.IdRef="Assign_5">
+      <Assign.To>
+        <OutArgument x:TypeArguments="x:String">[bodyPart2]</OutArgument>
+      </Assign.To>
+      <Assign.Value>
+        <InArgument x:TypeArguments="x:String">["&lt;h3&gt;Email Preview&lt;/h3&gt;&lt;div style='border:1px solid #ccc;padding:12px;background:#f9f9f9;'&gt;" &amp; If(String.IsNullOrEmpty(in_Email.Body), "(no body)", in_Email.Body) &amp; "&lt;/div&gt;&lt;p&gt;&lt;em&gt;This alert was generated automatically by the Support Email Triage bot.&lt;/em&gt;&lt;/p&gt;"]</InArgument>
+      </Assign.Value>
+    </Assign>
+
+    <!-- Concatenate body parts -->
+    <Assign DisplayName="Combine Alert Body" sap2010:WorkflowViewState.IdRef="Assign_6">
+      <Assign.To>
+        <OutArgument x:TypeArguments="x:String">[alertBody]</OutArgument>
+      </Assign.To>
+      <Assign.Value>
+        <InArgument x:TypeArguments="x:String">[bodyPart1 &amp; bodyPart2]</InArgument>
+      </Assign.Value>
+    </Assign>
+
+    <ui:LogMessage DisplayName="Log Alert" Level="Warn"
+      Message="[&quot;Sending escalation alert to &quot; &amp; in_TeamLeadEmail &amp; &quot; for: &quot; &amp; in_Email.Subject]"
+      sap2010:WorkflowViewState.IdRef="LogMessage_1" />
+
+    <!-- Send alert email to team lead.
+         NOTE: Replace ConnectionId placeholder "00000000-0000-0000-0000-000000000000"
+         with your real O365 Integration Service Connection ID before running. -->
+    <umam:SendMailConnections
+      ArgumentAttachmentPaths="{x:Null}"
+      AttachmentList="{x:Null}"
+      AttachmentPaths="{x:Null}"
+      Attachments="{x:Null}"
+      Bcc="{x:Null}"
+      Body="[alertBody]"
+      Cc="{x:Null}"
+      ConnectionAccountName="{x:Null}"
+      ConnectionId="00000000-0000-0000-0000-000000000000"
+      ContinueOnError="{x:Null}"
+      MailboxBackup="{x:Reference __ReferenceID1}"
+      ReplyTo="{x:Null}"
+      SensitivityLabelId="{x:Null}"
+      Subject="[alertSubject]"
+      TextBody="{x:Null}"
+      To="[New String() {in_TeamLeadEmail}]"
+      AttachmentInputMode="Existing"
+      AuthScopesInvalid="False"
+      DisplayName="Send Alert Email"
+      Importance="High"
+      InputType="HTML"
+      IsDeliveryReceiptRequested="False"
+      IsReadReceiptRequested="False"
+      SaveAsDraft="False"
+      UseConnectionService="True"
+      UseSharedMailbox="False"
+      sap2010:WorkflowViewState.IdRef="SendMail_1">
+      <umam:SendMailConnections.AttachmentsBackup>
+        <usau:BackupSlot x:TypeArguments="umame:AttachmentInputMode" StoredValue="{x:Null}">
+          <usau:BackupSlot.BackupValues>
+            <scg:Dictionary x:TypeArguments="umame:AttachmentInputMode, scg:List(x:Object)" />
+          </usau:BackupSlot.BackupValues>
+        </usau:BackupSlot>
+      </umam:SendMailConnections.AttachmentsBackup>
+      <umam:SendMailConnections.InputTypeBackup>
+        <usau:BackupSlot x:TypeArguments="umame:BodyInputType" StoredValue="{x:Null}">
+          <usau:BackupSlot.BackupValues>
+            <scg:Dictionary x:TypeArguments="umame:BodyInputType, scg:List(x:Object)" />
+          </usau:BackupSlot.BackupValues>
+        </usau:BackupSlot>
+      </umam:SendMailConnections.InputTypeBackup>
+      <umam:SendMailConnections.Mailbox>
+        <InArgument x:TypeArguments="x:String" x:Name="__ReferenceID0" />
+      </umam:SendMailConnections.Mailbox>
+      <umam:SendMailConnections.MailboxArg>
+        <umamm:MailboxArgument SharedMailbox="{x:Reference __ReferenceID0}" UseSharedMailbox="False">
+          <umamm:MailboxArgument.Backup>
+            <usau:BackupSlot x:TypeArguments="umame:MailboxSelectionMode" StoredValue="{x:Null}" x:Name="__ReferenceID1">
+              <usau:BackupSlot.BackupValues>
+                <scg:Dictionary x:TypeArguments="umame:MailboxSelectionMode, scg:List(x:Object)" />
+              </usau:BackupSlot.BackupValues>
+            </usau:BackupSlot>
+          </umamm:MailboxArgument.Backup>
+        </umamm:MailboxArgument>
+      </umam:SendMailConnections.MailboxArg>
+    </umam:SendMailConnections>
+
+  </Sequence>
+</Activity>

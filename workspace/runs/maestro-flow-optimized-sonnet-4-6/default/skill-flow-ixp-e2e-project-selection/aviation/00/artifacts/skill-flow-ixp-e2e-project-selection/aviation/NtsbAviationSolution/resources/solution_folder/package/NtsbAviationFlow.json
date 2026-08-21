@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "NtsbAviationFlow",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "b98680b8-ba11-43b7-a350-f2a242888ae5",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "NtsbAviationFlow"
+    },
+    "locks": [],
+    "key": "969b6181-4500-4297-8d4c-97981b8b1f32",
+    "files": []
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "StripeHttpFlow",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "bae3ac07-cc24-4eff-b0d3-4618bb3d9385",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "StripeHttpFlow"
+    },
+    "locks": [],
+    "key": "6490c087-22c2-4c06-825c-28dd1f2b73ca",
+    "files": []
+  }
+}

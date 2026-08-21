@@ -1,0 +1,113 @@
+{
+  "Result": "Success",
+  "Code": "FlowDebug",
+  "Data": {
+    "jobKey": "bc99119c-5cda-4f38-b715-1bdbaeaf2e71",
+    "instanceId": "bc99119c-5cda-4f38-b715-1bdbaeaf2e71",
+    "runId": "01a01af2-4032-7610-aa67-c69444283c04",
+    "folderKey": "410fae2d-89b3-4cd1-a991-7359bda90c0b",
+    "finalStatus": "Completed",
+    "solutionId": "648a7054-5210-4ef0-c86b-08defdfbb4a7",
+    "studioWebUrl": "https://alpha.uipath.com/codereval/studio_/designer/ba42cd39-2029-4722-a6bc-686d3e551dc9?solutionId=648a7054-5210-4ef0-c86b-08defdfbb4a7",
+    "elementExecutions": [
+      {
+        "elementId": "start",
+        "elementType": "StartEvent",
+        "status": "Completed",
+        "startedAt": "2026-08-19T16:54:43.011837Z",
+        "completedAt": "2026-08-19T16:54:43.5624481Z"
+      },
+      {
+        "elementId": "billingDisputeAnalyst",
+        "elementType": "ServiceTask",
+        "status": "Completed",
+        "startedAt": "2026-08-19T16:54:43.8439229Z",
+        "completedAt": "2026-08-19T16:54:59.5817677Z"
+      },
+      {
+        "elementId": "end",
+        "elementType": "EndEvent",
+        "status": "Completed",
+        "startedAt": "2026-08-19T16:55:00.0484751Z",
+        "completedAt": "2026-08-19T16:55:00.5958643Z"
+      }
+    ],
+    "variables": {
+      "elements": [
+        {
+          "elementId": "start",
+          "elementRunId": "7edd306b-28ff-463c-86a5-41c286d11138",
+          "isMarker": false,
+          "inputs": {},
+          "inputDefinitions": {},
+          "outputs": {}
+        },
+        {
+          "elementId": "billingDisputeAnalyst",
+          "elementRunId": "d08d6d53-74ba-4678-9a34-723eb29c18c6",
+          "isMarker": false,
+          "inputs": {
+            "JobArguments": {
+              "start__output__disputeDescription": "Charged 14 units at $300 but the contracted unit price is $290.",
+              "start__output__invoiceNumber": "MCS-2026-04872"
+            }
+          },
+          "inputDefinitions": {},
+          "outputs": {
+            "determination": "Valid",
+            "rationale": "Per the billing dispute SOP section 5.4 (Incorrect rate), when the billed unit price differs from the contracted rate and quantity is not disputed, the determination is valid and the credit should be calculated as (unitPrice − contractedRate) × quantity. Here, the invoice reflects 14 units at $300 while the customer states the contracted unit price is $290, so the billed rate is $10 higher per unit. That yields an indicated credit of $140 (14 × $10). This is also consistent with SOP section 5.2 rate-over logic for incorrect amount disputes, which states that when quantity matches and the rate is overstated, the dispute is valid. The SOP further requires citing the SOW reference and rate delta in the rationale, but no SOW reference or ERP confirmation was provided in the dispute details available here, so that specific citation cannot be included. Based on the provided facts and the SOP guidance, the dispute is valid."
+          }
+        },
+        {
+          "elementId": "end",
+          "elementRunId": "1b8fc118-5fc6-4962-8dc0-7eff24830df3",
+          "isMarker": false,
+          "inputs": {},
+          "inputDefinitions": {},
+          "outputs": {}
+        }
+      ],
+      "globals": {
+        "billingDisputeAnalyst.error": null,
+        "start.output.disputeDescription": "Charged 14 units at $300 but the contracted unit price is $290.",
+        "billingDisputeAnalyst.output": {
+          "determination": "Valid",
+          "rationale": "Per the billing dispute SOP section 5.4 (Incorrect rate), when the billed unit price differs from the contracted rate and quantity is not disputed, the determination is valid and the credit should be calculated as (unitPrice − contractedRate) × quantity. Here, the invoice reflects 14 units at $300 while the customer states the contracted unit price is $290, so the billed rate is $10 higher per unit. That yields an indicated credit of $140 (14 × $10). This is also consistent with SOP section 5.2 rate-over logic for incorrect amount disputes, which states that when quantity matches and the rate is overstated, the dispute is valid. The SOP further requires citing the SOW reference and rate delta in the rationale, but no SOW reference or ERP confirmation was provided in the dispute details available here, so that specific citation cannot be included. Based on the provided facts and the SOP guidance, the dispute is valid."
+        },
+        "determination": "Valid",
+        "rationale": "Per the billing dispute SOP section 5.4 (Incorrect rate), when the billed unit price differs from the contracted rate and quantity is not disputed, the determination is valid and the credit should be calculated as (unitPrice − contractedRate) × quantity. Here, the invoice reflects 14 units at $300 while the customer states the contracted unit price is $290, so the billed rate is $10 higher per unit. That yields an indicated credit of $140 (14 × $10). This is also consistent with SOP section 5.2 rate-over logic for incorrect amount disputes, which states that when quantity matches and the rate is overstated, the dispute is valid. The SOP further requires citing the SOW reference and rate delta in the rationale, but no SOW reference or ERP confirmation was provided in the dispute details available here, so that specific citation cannot be included. Based on the provided facts and the SOP guidance, the dispute is valid.",
+        "start.output.invoiceNumber": "MCS-2026-04872"
+      },
+      "instanceId": "bc99119c-5cda-4f38-b715-1bdbaeaf2e71",
+      "workflowId": "bc99119c-5cda-4f38-b715-1bdbaeaf2e71/BpmnGenericWorkflow",
+      "parentElementId": null,
+      "globalDefinitions": {
+        "billingDisputeAnalyst.error": {
+          "name": "error",
+          "type": "object"
+        },
+        "start.output.disputeDescription": {
+          "name": "disputeDescription",
+          "type": "string"
+        },
+        "billingDisputeAnalyst.output": {
+          "name": "billingDisputeAnalyst.output",
+          "type": "object"
+        },
+        "determination": {
+          "name": "determination",
+          "type": "string"
+        },
+        "rationale": {
+          "name": "rationale",
+          "type": "string"
+        },
+        "start.output.invoiceNumber": {
+          "name": "invoiceNumber",
+          "type": "string"
+        }
+      }
+    }
+  },
+  "Instructions": "Debug completed with status: Completed"
+}

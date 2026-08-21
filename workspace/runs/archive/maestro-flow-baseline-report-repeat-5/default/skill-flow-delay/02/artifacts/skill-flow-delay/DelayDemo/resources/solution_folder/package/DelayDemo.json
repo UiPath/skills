@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "DelayDemo",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "6322c971-59b8-45ae-a52f-22d266595017",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "DelayDemo"
+    },
+    "locks": [],
+    "key": "0374df52-f993-4bc0-85fe-a9169eb76377",
+    "files": []
+  }
+}

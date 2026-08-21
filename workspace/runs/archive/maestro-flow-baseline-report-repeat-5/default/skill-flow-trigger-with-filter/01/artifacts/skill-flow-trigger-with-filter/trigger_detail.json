@@ -1,0 +1,54 @@
+{
+  "_comment": [
+    "Connector-trigger --detail payload for a UiPath Flow Outlook trigger.",
+    "This file captures the configuration you would pass to:",
+    "  uip maestro flow node configure <PROJECT>.flow <triggerId> --detail '<contents>' --output json",
+    "",
+    "Node type  : uipath.connector.trigger.microsoft-office-365-emails.email-received",
+    "             (resolved from: uip maestro flow registry search 'outlook email received' --output json)",
+    "",
+    "How each placeholder is resolved in a live environment:",
+    "  CONNECTION_ID  : uip is connections list 'microsoft-office-365-emails' --all-folders --output json",
+    "                   → pick the enabled connection (prefer IsDefault:Yes); capture its Id",
+    "  FOLDER_KEY     : uip is connections list ... --output-filter '[?IsDefault==`true`].FolderKey | [0]'",
+    "                   or read from CLI login context: uip orchestrator folders list --output json",
+    "  EVENT_MODE     : from 'uip maestro flow registry get <trigger-node-type> --connection-id <id>'",
+    "                   response field 'eventMode' — either 'webhooks' or 'polling'",
+    "  parentFolderId : uip is resources run list 'microsoft-office-365-emails' 'MailFolder'",
+    "                   --connection-id <id> --output json  → match displayName 'Inbox', capture id"
+  ],
+
+  "connectionId": "<CONNECTION_ID>",
+  "folderKey": "<FOLDER_KEY>",
+  "eventMode": "<EVENT_MODE>",
+
+  "eventParameters": {
+    "parentFolderId": "<INBOX_MAIL_FOLDER_ID>"
+  },
+
+  "filter": {
+    "groupOperator": 0,
+    "index": 0,
+    "filters": [
+      {
+        "id": "from",
+        "operator": "Equals",
+        "value": {
+          "value": "abc@xyz.com",
+          "rawString": "\"abc@xyz.com\"",
+          "isLiteral": true
+        }
+      },
+      {
+        "id": "subject",
+        "operator": "Contains",
+        "value": {
+          "value": "good day",
+          "rawString": "\"good day\"",
+          "isLiteral": true
+        }
+      }
+    ],
+    "groups": []
+  }
+}

@@ -1,0 +1,3 @@
+{"ts": 1784696682.772905, "args": "maestro bpmn debug OrderApproval --inputs @/tmp/debug-inputs.json --output json", "matched_rule": "maestro bpmn debug ", "fixture": "debug-run.json", "exit_code": 0}
+{"ts": 1784696685.1895618, "args": "maestro bpmn debug-instance variables-all debug-run-042 --output json", "matched_rule": "maestro bpmn debug-instance variables-all debug-run-042", "fixture": "debug-variables-all.json", "exit_code": 0}
+{"ts": 1784696698.5166433, "args": "--version", "matched_rule": null, "fixture": null, "exit_code": 0, "error": "unmocked_default"}

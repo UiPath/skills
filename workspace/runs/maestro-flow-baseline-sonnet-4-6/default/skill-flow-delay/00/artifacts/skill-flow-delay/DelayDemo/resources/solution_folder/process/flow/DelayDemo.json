@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "DelayDemo",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "96006af4-b9df-476f-8855-1347260c603d",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "DelayDemo"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Flow",
+      "name": "DelayDemo",
+      "package": {
+        "key": "6fc4d956-68ed-4394-8f2f-c981a8e0d813"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "3cefcf17-fe54-4184-bd6e-e61cadffca1b",
+    "files": []
+  }
+}

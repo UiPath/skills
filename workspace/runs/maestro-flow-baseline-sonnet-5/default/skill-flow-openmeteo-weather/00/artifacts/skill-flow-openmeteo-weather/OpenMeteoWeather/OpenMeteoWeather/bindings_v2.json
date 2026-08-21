@@ -1,0 +1,24 @@
+{
+  "version": "2.0",
+  "resources": [
+    {
+      "resource": "connection",
+      "key": "21ca654f-b67b-4f97-9eb3-1f93bd3bb5cc",
+      "id": "connection21ca654f-b67b-4f97-9eb3-1f93bd3bb5cc",
+      "value": {
+        "ConnectionId": {
+          "defaultValue": "21ca654f-b67b-4f97-9eb3-1f93bd3bb5cc",
+          "isExpression": false,
+          "displayName": "custom-codereval-openmeteoapis connection"
+        }
+      },
+      "metadata": {
+        "ActivityName": "GetCurrentWeather",
+        "BindingsVersion": "2.2",
+        "DisplayLabel": "custom-codereval-openmeteoapis connection",
+        "UseConnectionService": "true",
+        "Connector": "custom-codereval-openmeteoapis"
+      }
+    }
+  ]
+}

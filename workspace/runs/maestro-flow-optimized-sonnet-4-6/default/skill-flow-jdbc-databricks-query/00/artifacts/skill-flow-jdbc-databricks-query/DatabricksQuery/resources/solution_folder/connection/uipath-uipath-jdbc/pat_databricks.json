@@ -1,0 +1,28 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "pat_databricks",
+    "kind": "connection",
+    "type": "uipath-uipath-jdbc",
+    "apiVersion": "integrationservice.uipath.com/v1",
+    "isOverridable": true,
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "connectorName": "Database Hub",
+      "name": "pat_databricks",
+      "authenticationType": "AuthenticateAfterDeployment",
+      "connectorVersion": "1.20.1",
+      "connectorKey": "uipath-uipath-jdbc",
+      "pollingInterval": 5
+    },
+    "locks": [],
+    "key": "4e5d613a-96be-4ba7-b86b-ebe225d192f1",
+    "files": []
+  }
+}

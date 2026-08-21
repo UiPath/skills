@@ -1,0 +1,30 @@
+{
+  "entryPoints": [
+    {
+      "id": "Entry_LoanPrecheck",
+      "filePath": "/content/BusinessRuleDecision.bpmn#Start_Manual",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "ApplicantScore": {
+            "type": "number",
+            "description": "Credit score of the loan applicant (0-850)."
+          },
+          "RequestedAmount": {
+            "type": "number",
+            "description": "Requested loan amount in base currency."
+          }
+        }
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "EligibilityResult": {
+            "type": "string",
+            "description": "Outcome string from the business rule (e.g. Approved or Declined)."
+          }
+        }
+      }
+    }
+  ]
+}

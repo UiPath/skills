@@ -1,0 +1,12 @@
+{
+  "DocVersion": "1.0.0",
+  "StudioMinVersion": "2025.10.0",
+  "SolutionId": "812e8990-f0a8-4420-b3b2-97434db445c2",
+  "Projects": [
+    {
+      "Type": "Flow",
+      "ProjectRelativePath": "WeatherAlert/project.uiproj",
+      "Id": "903ece6e-5116-4a46-8432-865947b93345"
+    }
+  ]
+}

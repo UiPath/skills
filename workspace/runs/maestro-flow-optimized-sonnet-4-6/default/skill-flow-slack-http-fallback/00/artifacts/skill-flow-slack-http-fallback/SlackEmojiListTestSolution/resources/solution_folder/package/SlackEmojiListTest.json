@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "SlackEmojiListTest",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "8aab9b6e-e4f5-47c8-92fe-75f91a60c43c",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "SlackEmojiListTest"
+    },
+    "locks": [],
+    "key": "22346f99-552d-403f-a425-4aaf67212e83",
+    "files": []
+  }
+}

@@ -1,0 +1,49 @@
+{
+  "_description": "CEQL where filter for the 'List Groups' connector node (uipath-microsoft-azureactivedirectory.list-groups). This is the structured filter tree that the CLI compiles into queryParameters.where = \"displayName = 'active'\" at runtime and saves into essentialConfiguration.savedFilterTrees.where for Studio Web round-trip.",
+  "connectorKey": "uipath-microsoft-azureactivedirectory",
+  "nodeType": "uipath.connector.uipath-microsoft-azureactivedirectory.list-groups",
+  "nodeId": "listGroups1",
+  "connectionId": "26b7ac14-424a-45ae-88ee-88ae5c8794ce",
+  "folderKey": "5da18ec0-7de1-4e57-aaf1-ddc8a369c199",
+  "filterParamName": "where",
+  "compiledCeql": "displayName = 'active'",
+  "filter": {
+    "groupOperator": 0,
+    "index": 0,
+    "filters": [
+      {
+        "id": "displayName",
+        "operator": "Equals",
+        "value": {
+          "value": "active",
+          "rawString": "\"active\"",
+          "isLiteral": true
+        }
+      }
+    ],
+    "groups": []
+  },
+  "fullNodeConfigureDetail": {
+    "connectionId": "26b7ac14-424a-45ae-88ee-88ae5c8794ce",
+    "folderKey": "5da18ec0-7de1-4e57-aaf1-ddc8a369c199",
+    "method": "GET",
+    "endpoint": "/groups",
+    "filter": {
+      "groupOperator": 0,
+      "index": 0,
+      "filters": [
+        {
+          "id": "displayName",
+          "operator": "Equals",
+          "value": {
+            "value": "active",
+            "rawString": "\"active\"",
+            "isLiteral": true
+          }
+        }
+      ],
+      "groups": []
+    }
+  },
+  "configureCommand": "uip maestro flow node configure CeqlWhereTest.flow listGroups1 --detail '{\"connectionId\":\"26b7ac14-424a-45ae-88ee-88ae5c8794ce\",\"folderKey\":\"5da18ec0-7de1-4e57-aaf1-ddc8a369c199\",\"method\":\"GET\",\"endpoint\":\"/groups\",\"filter\":{\"groupOperator\":0,\"index\":0,\"filters\":[{\"id\":\"displayName\",\"operator\":\"Equals\",\"value\":{\"value\":\"active\",\"rawString\":\"\\\"active\\\"\",\"isLiteral\":true}}],\"groups\":[]}}' --output json"
+}

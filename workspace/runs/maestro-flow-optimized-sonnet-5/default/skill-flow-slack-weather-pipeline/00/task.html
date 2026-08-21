@@ -1,0 +1,2694 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>coder_eval · skill-flow-slack-weather-pipeline · default</title>
+<style>
+:root {
+  --bg-page: #0f1419;
+  --bg-card: #1a2129;
+  --bg-card-2: #232d38;
+  --bg-code: #0b0f14;
+  --fg: #e6edf3;
+  --fg-muted: #8b98a5;
+  --fg-dim: #6e7681;
+  --border: #30363d;
+  --accent: #58a6ff;
+  --score-high: #22c55e;
+  --score-mid: #f59e0b;
+  --score-low: #ef4444;
+  --status-success: #22c55e;
+  --status-failure: #f59e0b;
+  --status-error: #ef4444;
+  --status-neutral: #6e7681;
+  --shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+.light {
+  --bg-page: #ffffff;
+  --bg-card: #f6f8fa;
+  --bg-card-2: #eaeef2;
+  --bg-code: #f6f8fa;
+  --fg: #1f2328;
+  --fg-muted: #636c76;
+  --fg-dim: #8b949e;
+  --border: #d0d7de;
+  --accent: #0969da;
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial,
+               sans-serif;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--fg);
+  background: var(--bg-page);
+}
+.container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+h1, h2, h3, h4 { margin: 0 0 12px 0; line-height: 1.25; }
+h1 { font-size: 22px; font-weight: 600; }
+h2 { font-size: 18px; font-weight: 600; margin-top: 28px;
+     padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+h3 { font-size: 15px; font-weight: 600; color: var(--fg-muted); }
+h4 { font-size: 13px; font-weight: 600; color: var(--fg-muted); }
+p { margin: 0 0 8px 0; }
+.muted { color: var(--fg-muted); }
+.dim { color: var(--fg-dim); }
+.mono { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+        monospace; font-size: 12.5px; }
+code { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+       monospace; font-size: 12.5px; background: var(--bg-code);
+       border: 1px solid var(--border); padding: 1px 5px; border-radius: 3px; }
+pre { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+      monospace; font-size: 12.5px; background: var(--bg-code);
+      border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px;
+      margin: 6px 0; overflow-x: auto; white-space: pre-wrap;
+      word-wrap: break-word; }
+.header-bar { display: flex; align-items: center; justify-content: space-between;
+              margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+.title-group { flex: 1; min-width: 0; }
+.title-group .subtitle { color: var(--fg-muted); font-size: 13px;
+                         margin-top: 2px; word-break: break-all; }
+.badges { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.badge { display: inline-flex; align-items: center; gap: 6px;
+         padding: 4px 10px; border-radius: 12px; font-size: 12px;
+         font-weight: 600; background: var(--bg-card-2);
+         border: 1px solid var(--border); color: var(--fg); }
+.badge.success { background: color-mix(in srgb, var(--status-success) 20%, var(--bg-card-2));
+                 border-color: var(--status-success); color: var(--status-success); }
+.badge.failure { background: color-mix(in srgb, var(--status-failure) 20%, var(--bg-card-2));
+                 border-color: var(--status-failure); color: var(--status-failure); }
+.badge.error { background: color-mix(in srgb, var(--status-error) 20%, var(--bg-card-2));
+               border-color: var(--status-error); color: var(--status-error); }
+.badge.warning { background: color-mix(in srgb, #f4a52810 20%, var(--bg-card-2));
+                 border-color: #f4a528; color: #f4a528; }
+.badge.neutral { color: var(--fg-muted); }
+.score-pill { display: inline-block; padding: 2px 8px; border-radius: 10px;
+              font-size: 12px; font-weight: 700; min-width: 42px;
+              text-align: center; color: #0b0f14; }
+.score-high { background: var(--score-high); }
+.score-mid { background: var(--score-mid); }
+.score-low { background: var(--score-low); }
+.card { background: var(--bg-card); border: 1px solid var(--border);
+        border-radius: 8px; padding: 16px 20px; margin-bottom: 16px;
+        box-shadow: var(--shadow); }
+.card.highlight { border-left: 4px solid var(--accent); }
+.grid { display: grid; gap: 12px;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+.stat { background: var(--bg-card-2); padding: 10px 12px; border-radius: 6px;
+        border: 1px solid var(--border); }
+.stat .label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;
+               color: var(--fg-muted); margin-bottom: 4px; }
+.stat .value { font-size: 16px; font-weight: 600; }
+table { width: 100%; border-collapse: collapse; margin: 4px 0 12px 0; }
+th, td { text-align: left; padding: 8px 10px;
+         border-bottom: 1px solid var(--border); vertical-align: top;
+         font-size: 13px; }
+th { color: var(--fg-muted); font-weight: 600; font-size: 12px;
+     text-transform: uppercase; letter-spacing: 0.3px; }
+tr:last-child td { border-bottom: none; }
+details { margin: 6px 0; border: 1px solid var(--border); border-radius: 6px;
+          background: var(--bg-card-2); }
+details > summary { cursor: pointer; padding: 8px 12px; user-select: none;
+                    font-weight: 500; list-style: none; }
+details > summary::-webkit-details-marker { display: none; }
+details > summary::before { content: "▸ "; color: var(--fg-dim);
+                            display: inline-block; width: 14px;
+                            transition: transform 0.15s; }
+details[open] > summary::before { content: "▾ "; }
+details .details-body { padding: 0 12px 10px 12px; }
+.tool-row { display: flex; align-items: center; gap: 10px;
+            flex-wrap: wrap; font-size: 13px; }
+.tool-name { font-weight: 600; color: var(--accent); font-family: ui-monospace,
+             SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+.tool-status-ok { color: var(--status-success); font-size: 11px;
+                  font-weight: 600; }
+.tool-status-err { color: var(--status-error); font-size: 11px;
+                   font-weight: 600; }
+.tool-duration { color: var(--fg-muted); font-size: 12px; }
+.tool-seq { color: var(--fg-dim); font-size: 11px; font-weight: 600;
+            min-width: 24px; text-align: right; font-family: ui-monospace,
+            SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+.turn-header { display: flex; justify-content: space-between;
+               align-items: baseline; flex-wrap: wrap; gap: 10px;
+               margin-bottom: 10px; }
+.turn-meta { font-size: 12px; color: var(--fg-muted); }
+.criterion-row td:first-child { font-family: ui-monospace, SFMono-Regular,
+                                 "SF Mono", Menlo, Consolas, monospace;
+                                 color: var(--fg-muted); font-size: 12px; }
+.judge-section { display: flex; flex-direction: column; gap: 12px; }
+.judge-card { padding: 14px 16px; }
+.judge-card-head { display: flex; justify-content: space-between;
+                    align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+.judge-card-title { font-size: 14px; line-height: 1.4; flex: 1; min-width: 0; }
+.judge-card-score { flex-shrink: 0; }
+.judge-rationale { margin-top: 10px; padding: 10px 12px;
+                   background: var(--bg-code); border-radius: 4px;
+                   font-size: 13px; line-height: 1.5; }
+.judge-findings { margin: 8px 0 0 18px; padding-left: 4px; font-size: 13px;
+                   line-height: 1.6; }
+.judge-findings li { margin: 2px 0; }
+.nav-toggle { display: inline-block; padding: 5px 10px; font-size: 12px;
+              background: var(--bg-card-2); border: 1px solid var(--border);
+              border-radius: 5px; color: var(--fg); cursor: pointer; }
+.nav-toggle:hover { background: var(--bg-card); }
+.llm-next-steps { margin: 6px 0 0 20px; padding-left: 0; }
+.llm-next-steps li { margin: 3px 0; }
+.iteration-group { padding: 12px 16px 4px 16px; margin-bottom: 20px;
+                   border-radius: 0 6px 6px 0; border-left: 4px solid var(--status-neutral); }
+/* rgba fallback for browsers without color-mix (Chrome <111, Firefox <113, Safari <16.2). */
+.iteration-group--recovered { border-left-color: var(--status-success);
+                              background: rgba(34, 197, 94, 0.06);
+                              background: color-mix(in srgb, var(--status-success) 6%, transparent); }
+.iteration-group--terminal { border-left-color: var(--status-error);
+                             background: rgba(239, 68, 68, 0.06);
+                             background: color-mix(in srgb, var(--status-error) 6%, transparent); }
+.iteration-group__banner { margin: 0 0 12px 0; font-size: 14px; font-weight: 600; }
+.iteration-group--recovered .iteration-group__banner { color: var(--status-success); }
+.iteration-group--terminal .iteration-group__banner { color: var(--status-error); }
+.attempt-transition { display: flex; align-items: center; gap: 8px;
+                      margin: -6px 0 12px 8px; color: var(--status-error); font-size: 12.5px; }
+.attempt-transition__icon { font-weight: 700; }
+footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--border);
+         color: var(--fg-dim); font-size: 12px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="header-bar">
+  <div class="title-group">
+    <h1>Task: skill-flow-slack-weather-pipeline</h1>
+    <div class="subtitle">Multi-step pipeline: read Slack channel description, extract city with a script, fetch weather for that city via HTTP, decide warm/cold. Exercises chaining Slack connector → Script → HTTP → Decision → End with data flowing between nodes.</div>
+  </div>
+  <div class="badges">
+    <span class="badge failure">MAX_TURNS_EXHAUSTED</span>
+    <span class="score-pill score-mid">0.62</span>
+    <span class="badge neutral">claude-code · claude-sonnet-5</span>
+    <span class="badge neutral">11m 48s</span>
+    <span class="badge neutral">$3.0897</span>
+    <span class="badge warning">expected_turns exceeded (52/51)</span>
+    
+    <span class="nav-toggle" onclick="toggleTheme()">Toggle theme</span>
+  </div>
+</div>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Variant</div><div class="value">default</div></div>
+    <div class="stat"><div class="label">Started</div><div class="value mono">2026-08-19T00:23:07</div></div>
+    <div class="stat"><div class="label">Duration</div><div class="value">11m 48s</div></div>
+    <div class="stat"><div class="label">Turns (SDK)</div><div class="value">93</div></div>
+    <div class="stat"><div class="label">Commands</div><div class="value">52</div></div>
+  </div>
+</div>
+
+<h2>Success Criteria <span class="muted" style="font-weight:400">(1/2 passed)</span></h2>
+<div class="card" style="padding:0">
+<table>
+  <thead>
+    <tr>
+      <th style="width:15%">Type</th>
+      <th style="width:35%">Description</th>
+      <th style="width:10%">Score</th>
+      <th>Details</th>
+    </tr>
+  </thead>
+  <tbody>
+    
+<tr class="criterion-row">
+  <td>run_command</td>
+  <td>uip maestro flow validate passes</td>
+  <td style="text-align:center"><span class="score-pill score-low">0.00</span></td>
+  <td><details><summary class="mono dim">Command: python3 $EXPERIMENT_TASKS_PATH/uipath-maestro-flow/_shared/validate_flow.py</summary><div class="details-body"><pre style="margin:6px 0 0 0">Command: python3 $EXPERIMENT_TASKS_PATH/uipath-maestro-flow/_shared/validate_flow.py
+Exit code: 1 (expected: 0)
+Stdout:
+Validating SlackWeatherPipeline/SlackWeatherPipeline/SlackWeatherPipeline.flow
+{
+  &quot;Result&quot;: &quot;Failure&quot;,
+  &quot;Message&quot;: &quot;Validation failed for /work/output/artifacts/skill-flow-slack-weather-pipeline/SlackWeatherPipeline/SlackWeatherPipeline/SlackWeatherPipeline.flow&quot;,
+  &quot;Instructions&quot;: &quot;Found 3 error(s):\n  - [error] [nodes[isWarm1].type] Node type \&quot;core.logic.decision:1.2\&quot; has no matching definition.\n    Hint: run `uip maestro flow registry get core.logic.decision --output json` and append the returned node object to `definitions[]` (depending on plugin version, the object is at `Data.Node` or the top level). Set `typeVersion` to the returned `version` exactly — registry may emit `\&quot;1.0\&quot;` while older flows used `\&quot;1.0.0\&quot;`. To scaffold a new node with its definition auto-injected, run `uip maestro flow node add &lt;file&gt; core.logic.decision` instead.\n  - [error] [nodes[endWarm].type] Node type \&quot;core.control.end:1.0\&quot; has no matching definition.\n    Hint: run `uip maestro flow registry get core.control.end --output json` and append the returned node object to `definitions[]` (depending on plugin version, the object is at `Data.Node` or the top level). Set `typeVersion` to the returned `version` exactly — registry may emit `\&quot;1.0\&quot;` while older flows used `\&quot;1.0.0\&quot;`. To scaffold a new node with its definition auto-injected, run `uip maestro flow node add &lt;file&gt; core.control.end` instead.\n  - [error] [nodes[endCold].type] Node type \&quot;core.control.end:1.0\&quot; has no matching definition.\n    Hint: run `uip maestro flow registry get core.control.end --output json` and append the returned node object to `definitions[]` (depending on plugin version, the object is at `Data.Node` or the top level). Set `typeVersion` to the returned `version` exactly — registry may emit `\&quot;1.0\&quot;` while older flows used `\&quot;1.0.0\&quot;`. To scaffold a new node with its definition auto-injected, run `uip maestro flow node add &lt;file&gt; core.control.end` instead.&quot;,
+  &quot;ErrorCode&quot;: &quot;unknown_error&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}
+
+Stderr:
+[ManifestClient] fetchDynamicNodes ok: total=315 agent context nodes=2 external agent nodes=7 orchestrator nodes=261 IXP nodes=45</pre></div></details></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>run_command</td>
+  <td>Flow debug runs end-to-end and the named out variable weatherVerdict holds exactly &#x27;warm office today&#x27; or &#x27;cold office today&#x27;: Slack + HTTP + decision all execute</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Command: python3 $TASK_DIR/check_slack_weather_pipeline.py</summary><div class="details-body"><pre style="margin:6px 0 0 0">Command: python3 $TASK_DIR/check_slack_weather_pipeline.py
+Exit code: 0 (expected: 0)
+Stdout:
+OK: Slack connector target + weather-API node + decision all executed, weatherVerdict carries &#x27;warm office today&#x27;
+
+Stderr: (empty)</pre></div></details></td>
+</tr>
+
+  </tbody>
+</table>
+</div>
+<h2>Conversation Trace (1 iteration)</h2>
+<div class="card">
+  <div class="turn-header">
+    <h3>Iteration 1</h3>
+    <div class="badges">
+      <span class="badge neutral">93 assistant turns</span>
+      <span class="badge neutral">in 673 · out 52963 · cache 5598390</span>
+      <span class="badge neutral">11m 10s</span>
+      <span class="badge failure">max_turns exhausted</span>
+      
+      
+    </div>
+  </div>
+  <details>
+    <summary>Prompt to agent</summary>
+    <div class="details-body"><pre>Your working directory is: /work/output/artifacts/skill-flow-slack-weather-pipeline
+
+Create a flow called &quot;SlackWeatherPipeline&quot;. Read the #office-bellevue Slack channel description — it holds the office&#x27;s full US mailing address (street, suite/unit, city, state, ZIP) — identify the city (the locality, not the street or suite line). Then fetch the current weather for that city from open-meteo. If it&#x27;s above 60F the flow must output the text in variable `weatherVerdict` &#x27;warm office today&#x27;, otherwise &#x27;cold office today&#x27;.
+
+All connections for this task live in Orchestrator folder `Shared/uipath-maestro-flow`.
+
+Validate the flow, then run `uip maestro flow debug` and iterate until it completes without incidents.
+Do NOT ask for approval, confirmation, or feedback. Do NOT pause between planning and implementation. Build the complete flow end-to-end in a single pass.
+</pre></div>
+  </details>
+  <details>
+    <summary>Agent response</summary>
+    <div class="details-body"><pre>[ASSISTANT] No `office-bellevue` channel in this list. Let me check pagination properly — the field path might differ, and I need to complete the full pagination loop before concluding it doesn&#x27;t exist.
+[ASSISTANT] Found the channel: `office-bellevue` with ID `C0B50H7DE2F`. Now let me get its channel info (description/purpose).
+[ASSISTANT] Confirmed: `Shared/uipath-maestro-flow` (FolderKey `5da18ec0-7de1-4e57-aaf1-ddc8a369c199`) matches the connections I found for both Slack and Open-Meteo. Now let&#x27;s build the flow. Address is &quot;700 Bellevue Way NE, Suite 2000, Bellevue, WA 98004&quot; → city = **Bellevue**.
+[ASSISTANT] I need to fix the node reference in the geocode node&#x27;s config — the actual node ID is `extractCityFromAddress1`, not `extractCity1`.
+[ASSISTANT] Now let me write the script for the extractCityFromAddress1 node, add the decision + end nodes, and wire the edges.
+[RESULT - ERROR] </pre></div>
+  </details>
+  <h4 style="margin-top:12px">Tool Calls (52)</h4>
+  
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#0</span>
+      <span class="tool-name">Skill</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">12ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;skill&quot;: &quot;tmp:uipath-maestro-flow&quot;,
+  &quot;args&quot;: &quot;Create a flow called \&quot;SlackWeatherPipeline\&quot; in the current working directory. Steps:\n1. Read the #office-bellevue Slack channel description — it contains the office&#x27;s full US mailing address (street, suite/unit, city, state, ZIP). Identify the city (the locality, not the street or suite line).\n2. Fetch current weather for that city from open-meteo.\n3. If temperature is above 60F, set output variab… (427 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Launching skill: tmp:uipath-maestro-flow</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#1</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">856ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;ls -la &amp;&amp; find . -maxdepth 3 -type f -name &#x27;*.uipx&#x27; -print &amp;&amp; echo \&quot;---uip version---\&quot; &amp;&amp; uip --version 2&gt;&amp;1 | head -5 &amp;&amp; echo \&quot;---login check---\&quot; &amp;&amp; uip login status --output json 2&gt;&amp;1 | head -20&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>total 12
+drwxr-xr-x 3 root root 4096 Aug 19 00:23 .
+drwxr-xr-x 3 root root 4096 Aug 19 00:23 ..
+drwxr-xr-x 4 root root 4096 Aug 19 00:23 .venv
+---uip version---
+1.201.0-dev.8272
+---login check---
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;LoginStatus&quot;,
+  &quot;Data&quot;: {
+    &quot;Status&quot;: &quot;Logged in&quot;,
+    &quot;Identity&quot;: &quot;zhongyi.shi@uipath.com&quot;,
+    &quot;IdentityType&quot;: &quot;User&quot;,
+    &quot;AuthFlow&quot;: &quot;Interactive&quot;,
+    &quot;CredentialSource&quot;: &quot;SavedLogin&quot;,
+    &quot;Provider&quot;: &quot;File&quot;,
+    &quot;UserId&quot;: &quot;bfda820f-4ddb-4af7-a5ec-3c332b403271&quot;,
+    &quot;UserEmail&quot;: &quot;zhongyi.shi@uipath.com&quot;,
+    &quot;UserName&quot;: &quot;zhongyi.shi@uipath.com&quot;,
+    &quot;BaseUrl&quot;: &quot;https://alpha.uipath.com&quot;,
+    &quot;Organization&quot;: &quot;codereval&quot;,
+    &quot;OrganizationId&quot;: &quot;311c6049-4966-4ef2-a6f3-8ceccaf38d54&quot;,
+    &quot;Tenant&quot;: &quot;DefaultTenant&quot;,
+    &quot;TenantId&quot;: &quot;69d43765-6ede-4575-88b7-9db601a2c056&quot;,
+    &quot;ExpirationDate&quot;: &quot;2026-08-19T01:07:32.000Z&quot;
+  }</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#2</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">633ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/CAPABILITY.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Author — Create and edit `.flow` files
+2	
+3	Capability index for building new flows (greenfield) and editing existing flows (brownfield). Author owns everything that happens on disk, locally, without `uip login`. Authoring journeys terminate at `validate` + `format`; from there, hand off to [operate/CAPABILITY.md](../operate/CAPABILITY.md) to publish, run, or debug.
+4	
+5	&gt; **Where you came from / where to go next.** Author is upstream of Operate (build the flow → ship it) and upstream of Diagnose only via Operate (build → run → diagnose). Publish/run/lifecycle lives in [operate/CAPABILITY.md](../operate/CAPABILITY.md); fault triage lives in [diagnose/CAPABILITY.md](../diagnose/CAPABILITY.md).
+6	&gt;
+7	&gt; **Inherits universal rules from [SKILL.md](../../SKILL.md)** — `--output json` + prefer `--output-filter` for extraction, no `flow debug` without consent, resource discovery order, never invoke other skills automatically, dropdown question pattern, solution layout, **plain-English narration + granular progress list (opt-in — silent by default; engage when the user asks for verbosity)**. The rules below are author-scoped and apply on top.
+8	
+9	## When to use this capability
+10	
+11	&lt;
+
+… (truncated, 30449 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#3</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">240ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/greenfield.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Greenfield — Create a New Flow
+2	
+3	End-to-end journey for creating a Flow project from scratch. Author terminates at `validate` + `format`. To publish, run, or debug after this, see [operate/CAPABILITY.md](../../operate/CAPABILITY.md).
+4	
+5	&gt; **Brownfield edits use a different journey.** If the `.flow` file already exists, see [brownfield.md](brownfield.md) instead.
+6	
+7	## Should you plan first?
+8	
+9	For complex flows, produce a plan before building. Reference [planning-arch.md](planning-arch.md) and [planning-impl.md](planning-impl.md) for the node type catalog, port reference, wiring rules, and topology patterns.
+10	
+11	**Plan when:**
+12	- The flow has 5+ nodes with branching or parallel paths
+13	- The flow uses connectors or resources that need discovery
+14	- The user&#x27;s requirements are ambiguous and you need to confirm the approach
+15	
+16	**Don&#x27;t plan when:**
+17	- Adding/editing a single node in an existing flow (use [brownfield.md](brownfield.md))
+18	- The flow is a straightforward linear pipeline (trigger → action → action → end)
+19	- The user has already described the exact topology they want
+20	
+21	### Examples
+22	
+23	**Plan:** &quot;Build a flow that receives a Jira ticke
+
+… (truncated, 34831 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#4</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">14ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;find . -maxdepth 3 -type f -name &#x27;*.uipx&#x27; -print; echo \&quot;done listing\&quot;&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>done listing</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#5</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">15.67s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;\\\nuip solution init \&quot;SlackWeatherPipeline\&quot; --output json \\\n  &amp;&amp; cd \&quot;SlackWeatherPipeline\&quot; \\\n  &amp;&amp; uip maestro flow init \&quot;SlackWeatherPipeline\&quot; --output json \\\n  &amp;&amp; cd \&quot;SlackWeatherPipeline\&quot; \\\n  &amp;&amp; uip maestro flow registry pull --force --output json&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;SolutionInit&quot;,
+  &quot;Data&quot;: {
+    &quot;Status&quot;: &quot;Created successfully&quot;,
+    &quot;Path&quot;: &quot;/work/output/artifacts/skill-flow-slack-weather-pipeline/SlackWeatherPipeline/SlackWeatherPipeline.uipx&quot;,
+    &quot;NextSteps&quot;: &quot;Read /work/output/artifacts/skill-flow-slack-weather-pipeline/SlackWeatherPipeline/AGENTS.md or /work/output/artifacts/skill-flow-slack-weather-pipeline/SlackWeatherPipeline/CLAUDE.md to understand the solution lifecycle, project types that can be used inside a solution, and related uip command references.&quot;
+  }
+}
+2026-08-19 00:23:36 INFO  [ResourceBuilder:ProjectCreateCommandHandler] Creating project [object Object]
+2026-08-19 00:23:36 INFO  [ResourceBuilder:MultiFileSolutionDefinitionProvider] Reading multi-file solution definition for solution %s /work/output/artifacts/skill-flow-slack-weather-pipeline/SlackWeatherPipeline
+2026-08-19 00:23:36 INFO  [ResourceBuilder:ProjectCreateCommandHandler] Generate artefact resources for project [object Object]
+2026-08-19 00:23:36 INFO  [ResourceBuilder:SolutionsMetadataReader] Reading metadata from %s. SolutionsMetadataReader
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FlowInit&quot;,
+  &quot;Data&quot;: {
+    &quot;Status&quot;: &quot;Created s
+
+… (truncated, 1630 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#6</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">15.44s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry search \&quot;slack\&quot; --output json --output-filter \&quot;[*].{NodeType:NodeType,DisplayName:DisplayName,Description:Description,AvailableOnTenant:AvailableOnTenant}\&quot; 2&gt;&amp;1&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeSearchSuccess&quot;,
+  &quot;Data&quot;: [
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-salesforce-slack.unarchive-channel&quot;,
+      &quot;DisplayName&quot;: &quot;Unarchive Channel&quot;,
+      &quot;Description&quot;: &quot;Unarchive an existing channel&quot;,
+      &quot;AvailableOnTenant&quot;: true
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-salesforce-slack.send-reply&quot;,
+      &quot;DisplayName&quot;: &quot;Send Reply&quot;,
+      &quot;Description&quot;: &quot;Send a reply to a message in a Slack channel.&quot;,
+      &quot;AvailableOnTenant&quot;: true
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-salesforce-slack.join-channel&quot;,
+      &quot;DisplayName&quot;: &quot;Join Channel&quot;,
+      &quot;Description&quot;: &quot;Join a public Slack channel as the bot user or authenticated user.&quot;,
+      &quot;AvailableOnTenant&quot;: true
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-salesforce-slack.create-channel&quot;,
+      &quot;DisplayName&quot;: &quot;Create Channel&quot;,
+      &quot;Description&quot;: &quot;Create a public or private channel in Slack.&quot;,
+      &quot;AvailableOnTenant&quot;: true
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-salesforce-slack.send-message-to-channel&quot;,
+      &quot;DisplayName&quot;: &quot;Send Message to Channel&quot;,
+      &quot;Description&quot;: &quot;Send messages to public or private Slack channel
+
+… (truncated, 15749 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#7</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">15.94s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry search \&quot;open-meteo\&quot; --output json --output-filter \&quot;[*].{NodeType:NodeType,DisplayName:DisplayName,Description:Description,AvailableOnTenant:AvailableOnTenant}\&quot; 2&gt;&amp;1\necho \&quot;---weather---\&quot;\nuip maestro flow registry search \&quot;weather\&quot; --output json --output-filter \&quot;[*].{NodeType:NodeType,DisplayName:DisplayName,Description:Description,AvailableOnTenant:AvailableOnTenant}\&quot; 2&gt;&amp;1&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeSearchSuccess&quot;,
+  &quot;Data&quot;: [
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.custom-codereval-openmeteoapis.get-record&quot;,
+      &quot;DisplayName&quot;: &quot;Get Record&quot;,
+      &quot;Description&quot;: &quot;Retrieve a specific record from Open-Meteo APIs.&quot;,
+      &quot;AvailableOnTenant&quot;: true
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.agent.resource.tool.connector.custom-codereval-openmeteoapis.get-record&quot;,
+      &quot;DisplayName&quot;: &quot;Get Record&quot;,
+      &quot;Description&quot;: &quot;Retrieve a specific record from Open-Meteo APIs.&quot;,
+      &quot;AvailableOnTenant&quot;: true
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.agent.resource.tool.connector.custom-codereval-openmeteoapis.open-meteo-apis-http-request&quot;,
+      &quot;DisplayName&quot;: &quot;Open-Meteo APIs HTTP Request&quot;,
+      &quot;Description&quot;: &quot;Perform HTTP requests to interact with Open-Meteo APIs using existing connector and connection configuration.&quot;,
+      &quot;AvailableOnTenant&quot;: true
+    }
+  ]
+}
+---weather---
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeSearchSuccess&quot;,
+  &quot;Data&quot;: [
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-microsoft-azuremaps.get-daily-weather-forecast&quot;,
+      &quot;DisplayName&quot;: &quot;Get Daily Weather Forecast&quot;,
+      &quot;Description&quot;: &quot;Retrieve daily weather forecast data f
+
+… (truncated, 4198 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#8</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">3.17s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;\\\nuip maestro flow registry get \&quot;uipath.connector.uipath-salesforce-slack.get-channel-info\&quot; --output json &gt; /tmp/slack_getchannelinfo.json 2&gt;&amp;1\nuip maestro flow registry get \&quot;uipath.connector.custom-codereval-openmeteoapis.getcurrentweather\&quot; --output json &gt; /tmp/openmeteo_getcurrentweather.json 2&gt;&amp;1\nuip maestro flow registry get \&quot;core.control.end\&quot; --output json &gt; /tmp/end.json 2&gt;&amp;1\nuip maestro flo… (86 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>done</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#9</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">83ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/tmp/slack_getchannelinfo.json&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	{
+2	  &quot;Result&quot;: &quot;Success&quot;,
+3	  &quot;Code&quot;: &quot;NodeGetSuccess&quot;,
+4	  &quot;Data&quot;: {
+5	    &quot;Node&quot;: {
+6	      &quot;nodeType&quot;: &quot;uipath.connector.uipath-salesforce-slack.get-channel-info&quot;,
+7	      &quot;version&quot;: &quot;1.0.0&quot;,
+8	      &quot;category&quot;: &quot;connector.196638&quot;,
+9	      &quot;tags&quot;: [
+10	        &quot;connector&quot;,
+11	        &quot;activity&quot;
+12	      ],
+13	      &quot;sortOrder&quot;: 520,
+14	      &quot;supportsErrorHandling&quot;: true,
+15	      &quot;description&quot;: &quot;Retrieve information about a public or private Slack channel.&quot;,
+16	      &quot;display&quot;: {
+17	        &quot;label&quot;: &quot;Get Channel Info&quot;,
+18	        &quot;description&quot;: &quot;Retrieve information about a public or private Slack channel.&quot;,
+19	        &quot;icon&quot;: &quot;https://alpha.uipath.com/311c6049-4966-4ef2-a6f3-8ceccaf38d54/studio_/typecache/icons/8af239e6c82c1abd57622314380112d55f7e151ac4845ba018a96d70b4d92297.svg&quot;,
+20	        &quot;sourceDisplayName&quot;: &quot;Slack&quot;
+21	      },
+22	      &quot;handleConfiguration&quot;: [
+23	        {
+24	          &quot;position&quot;: &quot;left&quot;,
+25	          &quot;handles&quot;: [
+26	            {
+27	              &quot;id&quot;: &quot;input&quot;,
+28	              &quot;type&quot;: &quot;target&quot;,
+29	              &quot;handleType&quot;: &quot;input&quot;,
+30	              &quot;label&quot;: &quot;&quot;
+31	            }
+32	          ]
+33	        },
+34	        {
+35	          &quot;position&quot;: &quot;righ
+
+… (truncated, 16870 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#10</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">92ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/tmp/openmeteo_getcurrentweather.json&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	{
+2	  &quot;Result&quot;: &quot;Success&quot;,
+3	  &quot;Code&quot;: &quot;NodeGetSuccess&quot;,
+4	  &quot;Data&quot;: {
+5	    &quot;Node&quot;: {
+6	      &quot;nodeType&quot;: &quot;uipath.connector.custom-codereval-openmeteoapis.getcurrentweather&quot;,
+7	      &quot;version&quot;: &quot;1.0.0&quot;,
+8	      &quot;category&quot;: &quot;connector.432191&quot;,
+9	      &quot;tags&quot;: [
+10	        &quot;connector&quot;,
+11	        &quot;activity&quot;
+12	      ],
+13	      &quot;sortOrder&quot;: 520,
+14	      &quot;supportsErrorHandling&quot;: true,
+15	      &quot;description&quot;: &quot;Get current weather&quot;,
+16	      &quot;display&quot;: {
+17	        &quot;label&quot;: &quot;GetCurrentWeather&quot;,
+18	        &quot;description&quot;: &quot;Get current weather&quot;,
+19	        &quot;icon&quot;: &quot;https://alpha.uipath.com/311c6049-4966-4ef2-a6f3-8ceccaf38d54/studio_/typecache/icons/155260d5131f1d2fdd03281026db8d067a1c7fa4d6db8c1b47f49acf04c7df8f.svg&quot;,
+20	        &quot;sourceDisplayName&quot;: &quot;Open-Meteo APIs&quot;
+21	      },
+22	      &quot;handleConfiguration&quot;: [
+23	        {
+24	          &quot;position&quot;: &quot;left&quot;,
+25	          &quot;handles&quot;: [
+26	            {
+27	              &quot;id&quot;: &quot;input&quot;,
+28	              &quot;type&quot;: &quot;target&quot;,
+29	              &quot;handleType&quot;: &quot;input&quot;,
+30	              &quot;label&quot;: &quot;&quot;
+31	            }
+32	          ]
+33	        },
+34	        {
+35	          &quot;position&quot;: &quot;right&quot;,
+36	          &quot;handles&quot;: [
+37	            {
+38	              &quot;
+
+… (truncated, 35837 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#11</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.58s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip is connections list \&quot;uipath-salesforce-slack\&quot; --all-folders --output json 2&gt;&amp;1\necho \&quot;---openmeteo---\&quot;\nuip is connections list \&quot;custom-codereval-openmeteoapis\&quot; --all-folders --output json 2&gt;&amp;1&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;ConnectionList&quot;,
+  &quot;Data&quot;: [
+    {
+      &quot;Id&quot;: &quot;849e85d8-1aa9-4d52-8bbd-20041c8f05d8&quot;,
+      &quot;Name&quot;: &quot;is-sandboxes&quot;,
+      &quot;ConnectorKey&quot;: &quot;uipath-salesforce-slack&quot;,
+      &quot;ConnectorName&quot;: &quot;Slack&quot;,
+      &quot;State&quot;: &quot;Enabled&quot;,
+      &quot;Owner&quot;: &quot;sanjeet.manna@uipath.com&quot;,
+      &quot;IsDefault&quot;: &quot;No&quot;,
+      &quot;ByoaConnection&quot;: &quot;Yes&quot;,
+      &quot;ElementInstanceId&quot;: 337251,
+      &quot;Folder&quot;: &quot;uipath-maestro-flow&quot;,
+      &quot;FolderKey&quot;: &quot;5da18ec0-7de1-4e57-aaf1-ddc8a369c199&quot;,
+      &quot;Created&quot;: &quot;2026-05-08T14:59:09.153Z&quot;,
+      &quot;Updated&quot;: &quot;2026-08-19T00:21:40.230Z&quot;
+    },
+    {
+      &quot;Id&quot;: &quot;8e0e255f-ce7c-43dc-8929-83847fcd9025&quot;,
+      &quot;Name&quot;: &quot;is-sandboxes&quot;,
+      &quot;ConnectorKey&quot;: &quot;uipath-salesforce-slack&quot;,
+      &quot;ConnectorName&quot;: &quot;Slack&quot;,
+      &quot;State&quot;: &quot;Failed&quot;,
+      &quot;Owner&quot;: &quot;System&quot;,
+      &quot;IsDefault&quot;: &quot;No&quot;,
+      &quot;ByoaConnection&quot;: &quot;No&quot;,
+      &quot;ElementInstanceId&quot;: 356194,
+      &quot;Folder&quot;: &quot;SlackEmojiListTest&quot;,
+      &quot;FolderKey&quot;: &quot;c79e173d-d870-4ab6-b5f9-7627ddbae4bf&quot;,
+      &quot;Created&quot;: &quot;2026-07-01T21:56:48.066Z&quot;,
+      &quot;Updated&quot;: &quot;2026-07-25T01:56:12.670Z&quot;
+    },
+    {
+      &quot;Id&quot;: &quot;e03f734e-0f80-4e8a-a7c1-0ece309b0ca4&quot;,
+      &quot;Name&quot;: &quot;is-sandboxes&quot;,
+      &quot;ConnectorKey&quot;: 
+
+… (truncated, 1221 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#12</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.27s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/tmp/end.json&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	{
+2	  &quot;Result&quot;: &quot;Success&quot;,
+3	  &quot;Code&quot;: &quot;NodeGetSuccess&quot;,
+4	  &quot;Data&quot;: {
+5	    &quot;Node&quot;: {
+6	      &quot;nodeType&quot;: &quot;core.control.end&quot;,
+7	      &quot;version&quot;: &quot;1.0&quot;,
+8	      &quot;category&quot;: &quot;control-flow&quot;,
+9	      &quot;description&quot;: &quot;Mark the end of a process path&quot;,
+10	      &quot;tags&quot;: [
+11	        &quot;control-flow&quot;,
+12	        &quot;end&quot;,
+13	        &quot;finish&quot;,
+14	        &quot;complete&quot;
+15	      ],
+16	      &quot;sortOrder&quot;: 65,
+17	      &quot;display&quot;: {
+18	        &quot;label&quot;: &quot;End&quot;,
+19	        &quot;icon&quot;: &quot;circle-check&quot;,
+20	        &quot;shape&quot;: &quot;circle&quot;
+21	      },
+22	      &quot;handleConfiguration&quot;: [
+23	        {
+24	          &quot;position&quot;: &quot;left&quot;,
+25	          &quot;handles&quot;: [
+26	            {
+27	              &quot;id&quot;: &quot;input&quot;,
+28	              &quot;type&quot;: &quot;target&quot;,
+29	              &quot;handleType&quot;: &quot;input&quot;
+30	            }
+31	          ]
+32	        }
+33	      ],
+34	      &quot;model&quot;: {
+35	        &quot;type&quot;: &quot;bpmn:EndEvent&quot;
+36	      },
+37	      &quot;runtimeConstraints&quot;: {
+38	        &quot;exclude&quot;: [
+39	          &quot;api-function&quot;
+40	        ]
+41	      }
+42	    }
+43	  }
+44	}
+45	</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#13</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.25s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/tmp/decision.json&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	{
+2	  &quot;Result&quot;: &quot;Success&quot;,
+3	  &quot;Code&quot;: &quot;NodeGetSuccess&quot;,
+4	  &quot;Data&quot;: {
+5	    &quot;Node&quot;: {
+6	      &quot;nodeType&quot;: &quot;core.logic.decision&quot;,
+7	      &quot;version&quot;: &quot;1.2&quot;,
+8	      &quot;category&quot;: &quot;control-flow&quot;,
+9	      &quot;description&quot;: &quot;Branch on a true or false condition&quot;,
+10	      &quot;tags&quot;: [
+11	        &quot;control-flow&quot;,
+12	        &quot;if&quot;,
+13	        &quot;loop&quot;,
+14	        &quot;switch&quot;
+15	      ],
+16	      &quot;sortOrder&quot;: 61,
+17	      &quot;display&quot;: {
+18	        &quot;label&quot;: &quot;Decision&quot;,
+19	        &quot;icon&quot;: &quot;trending-up-down&quot;
+20	      },
+21	      &quot;handleConfiguration&quot;: [
+22	        {
+23	          &quot;position&quot;: &quot;left&quot;,
+24	          &quot;handles&quot;: [
+25	            {
+26	              &quot;id&quot;: &quot;input&quot;,
+27	              &quot;type&quot;: &quot;target&quot;,
+28	              &quot;handleType&quot;: &quot;input&quot;
+29	            }
+30	          ],
+31	          &quot;visible&quot;: true
+32	        },
+33	        {
+34	          &quot;position&quot;: &quot;right&quot;,
+35	          &quot;handles&quot;: [
+36	            {
+37	              &quot;id&quot;: &quot;true&quot;,
+38	              &quot;type&quot;: &quot;source&quot;,
+39	              &quot;handleType&quot;: &quot;output&quot;,
+40	              &quot;label&quot;: &quot;{inputs.trueLabel}&quot;,
+41	              &quot;constraints&quot;: {
+42	                &quot;minConnections&quot;: 1
+43	              }
+44	            },
+45	            {
+46	              &quot;id&quot;: 
+
+… (truncated, 3063 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#14</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.81s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry search \&quot;geocod\&quot; --output json --output-filter \&quot;[*].{NodeType:NodeType,DisplayName:DisplayName,Description:Description}\&quot; 2&gt;&amp;1\necho \&quot;---all openmeteo ops---\&quot;\nuip maestro flow registry search \&quot;openmeteo\&quot; --output json --output-filter \&quot;[*].{NodeType:NodeType,DisplayName:DisplayName,Description:Description}\&quot; 2&gt;&amp;1&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeSearchSuccess&quot;,
+  &quot;Data&quot;: [
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-microsoft-azuremaps.find-address-by-geocode-coordinates&quot;,
+      &quot;DisplayName&quot;: &quot;Find Address by Geocode Coordinates&quot;,
+      &quot;Description&quot;: &quot;Retrieve location or address information using geocode coordinates with Azure Maps.&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-microsoft-azuremaps.get-geocoding-coordinates&quot;,
+      &quot;DisplayName&quot;: &quot;Get Geocoding Coordinates&quot;,
+      &quot;Description&quot;: &quot;Retrieve location coordinates using address properties with Azure Maps.&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-google-maps.get-geocode-from-address&quot;,
+      &quot;DisplayName&quot;: &quot;Get Geocode from Address&quot;,
+      &quot;Description&quot;: &quot;Retrieve latitude and longitude coordinates for a specified address using Google Maps.&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-google-maps.find-address-by-geocode-coordinates&quot;,
+      &quot;DisplayName&quot;: &quot;Find Address by Geocode Coordinates&quot;,
+      &quot;Description&quot;: &quot;Retrieve address details from latitude and longitude using Google Maps.&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.agent.resource.tool.connector.uipath-microsoft-azuremap
+
+… (truncated, 2266 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#15</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.83s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip is resources list \&quot;uipath-salesforce-slack\&quot; --connection-id 849e85d8-1aa9-4d52-8bbd-20041c8f05d8 --output json 2&gt;&amp;1 | head -60&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;ResourceList&quot;,
+  &quot;Data&quot;: [
+    {
+      &quot;Name&quot;: &quot;admin_emoji_remove_POST&quot;,
+      &quot;DisplayName&quot;: &quot;Admin Emoji Remove&quot;,
+      &quot;Path&quot;: &quot;/admin_emoji_remove&quot;,
+      &quot;Type&quot;: &quot;standard&quot;,
+      &quot;SubType&quot;: &quot;method&quot;,
+      &quot;Custom&quot;: &quot;no&quot;,
+      &quot;ElementKey&quot;: &quot;uipath-salesforce-slack&quot;
+    },
+    {
+      &quot;Name&quot;: &quot;usergroups_list_GET&quot;,
+      &quot;DisplayName&quot;: &quot;Usergroups List&quot;,
+      &quot;Path&quot;: &quot;/usergroups_list&quot;,
+      &quot;Type&quot;: &quot;standard&quot;,
+      &quot;SubType&quot;: &quot;method&quot;,
+      &quot;Custom&quot;: &quot;no&quot;,
+      &quot;ElementKey&quot;: &quot;uipath-salesforce-slack&quot;
+    },
+    {
+      &quot;Name&quot;: &quot;admin_usergroups_addChannels_POST&quot;,
+      &quot;DisplayName&quot;: &quot;Admin Usergroups Add Channels&quot;,
+      &quot;Path&quot;: &quot;/admin_usergroups_addChannels&quot;,
+      &quot;Type&quot;: &quot;standard&quot;,
+      &quot;SubType&quot;: &quot;method&quot;,
+      &quot;Custom&quot;: &quot;no&quot;,
+      &quot;ElementKey&quot;: &quot;uipath-salesforce-slack&quot;
+    },
+    {
+      &quot;Name&quot;: &quot;users_setActive_POST&quot;,
+      &quot;DisplayName&quot;: &quot;Users Set Active&quot;,
+      &quot;Path&quot;: &quot;/users_setActive&quot;,
+      &quot;Type&quot;: &quot;standard&quot;,
+      &quot;SubType&quot;: &quot;method&quot;,
+      &quot;Custom&quot;: &quot;no&quot;,
+      &quot;ElementKey&quot;: &quot;uipath-salesforce-slack&quot;
+    },
+    {
+      &quot;Name&quot;: &quot;chat_scheduleMessage_POST&quot;,
+      &quot;DisplayName&quot;: &quot;Chat Schedule Message&quot;,
+      &quot;Pa
+
+… (truncated, 437 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#16</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">576ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip is resources list \&quot;custom-codereval-openmeteoapis\&quot; --connection-id 21ca654f-b67b-4f97-9eb3-1f93bd3bb5cc --output json 2&gt;&amp;1&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;ResourceList&quot;,
+  &quot;Data&quot;: [
+    {
+      &quot;Name&quot;: &quot;V1Forecast&quot;,
+      &quot;DisplayName&quot;: &quot;V1 forecast&quot;,
+      &quot;Path&quot;: &quot;/v1/forecast&quot;,
+      &quot;Type&quot;: &quot;standard&quot;,
+      &quot;SubType&quot;: &quot;standard&quot;,
+      &quot;Custom&quot;: &quot;no&quot;,
+      &quot;ElementKey&quot;: &quot;custom-codereval-openmeteoapis&quot;
+    }
+  ]
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#17</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">2.36s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry search \&quot;geocoding\&quot; --output json --output-filter \&quot;[*].{NodeType:NodeType,DisplayName:DisplayName,Description:Description}\&quot; 2&gt;&amp;1\necho \&quot;---meteo---\&quot;\nuip maestro flow registry search \&quot;meteo\&quot; --output json --output-filter \&quot;[*].{NodeType:NodeType,DisplayName:DisplayName,Description:Description}\&quot; 2&gt;&amp;1\necho \&quot;---location---\&quot;\nuip maestro flow registry search \&quot;location\&quot; --output js… (108 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeSearchSuccess&quot;,
+  &quot;Data&quot;: [
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-microsoft-azuremaps.get-geocoding-coordinates&quot;,
+      &quot;DisplayName&quot;: &quot;Get Geocoding Coordinates&quot;,
+      &quot;Description&quot;: &quot;Retrieve location coordinates using address properties with Azure Maps.&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.agent.resource.tool.connector.uipath-microsoft-azuremaps.get-geocoding-coordinates&quot;,
+      &quot;DisplayName&quot;: &quot;Get Geocoding Coordinates&quot;,
+      &quot;Description&quot;: &quot;Retrieve location coordinates using address properties with Azure Maps.&quot;
+    }
+  ]
+}
+---meteo---
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeSearchSuccess&quot;,
+  &quot;Data&quot;: [
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.custom-codereval-openmeteoapis.get-record&quot;,
+      &quot;DisplayName&quot;: &quot;Get Record&quot;,
+      &quot;Description&quot;: &quot;Retrieve a specific record from Open-Meteo APIs.&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.custom-codereval-openmeteoapis.getcurrentweather&quot;,
+      &quot;DisplayName&quot;: &quot;GetCurrentWeather&quot;,
+      &quot;Description&quot;: &quot;Get current weather&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.agent.resource.tool.connector.custom-codereval-openmeteoapis.get-record&quot;,
+      &quot;DisplayName&quot;: &quot;Get Record&quot;,
+   
+
+… (truncated, 3171 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#18</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.25s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry get \&quot;uipath.connector.custom-codereval-openmeteoapis.get-record\&quot; --output json &gt; /tmp/openmeteo_getrecord.json 2&gt;&amp;1\necho done&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>done</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#19</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.24s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/tmp/openmeteo_getrecord.json&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	{
+2	  &quot;Result&quot;: &quot;Success&quot;,
+3	  &quot;Code&quot;: &quot;NodeGetSuccess&quot;,
+4	  &quot;Data&quot;: {
+5	    &quot;Node&quot;: {
+6	      &quot;nodeType&quot;: &quot;uipath.connector.custom-codereval-openmeteoapis.get-record&quot;,
+7	      &quot;version&quot;: &quot;1.0.0&quot;,
+8	      &quot;category&quot;: &quot;connector.432191&quot;,
+9	      &quot;tags&quot;: [
+10	        &quot;connector&quot;,
+11	        &quot;activity&quot;
+12	      ],
+13	      &quot;sortOrder&quot;: 520,
+14	      &quot;supportsErrorHandling&quot;: true,
+15	      &quot;description&quot;: &quot;Retrieve a specific record from Open-Meteo APIs.&quot;,
+16	      &quot;display&quot;: {
+17	        &quot;label&quot;: &quot;Get Record&quot;,
+18	        &quot;description&quot;: &quot;Retrieve a specific record from Open-Meteo APIs.&quot;,
+19	        &quot;icon&quot;: &quot;https://alpha.uipath.com/311c6049-4966-4ef2-a6f3-8ceccaf38d54/studio_/typecache/icons/155260d5131f1d2fdd03281026db8d067a1c7fa4d6db8c1b47f49acf04c7df8f.svg&quot;,
+20	        &quot;sourceDisplayName&quot;: &quot;Open-Meteo APIs&quot;
+21	      },
+22	      &quot;handleConfiguration&quot;: [
+23	        {
+24	          &quot;position&quot;: &quot;left&quot;,
+25	          &quot;handles&quot;: [
+26	            {
+27	              &quot;id&quot;: &quot;input&quot;,
+28	              &quot;type&quot;: &quot;target&quot;,
+29	              &quot;handleType&quot;: &quot;input&quot;,
+30	              &quot;label&quot;: &quot;&quot;
+31	            }
+32	          ]
+33	        },
+34	        {
+35	          &quot;position&quot;: &quot;right&quot;,
+36	          &quot;han
+
+… (truncated, 6726 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#20</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">594ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip is resources run list uipath-salesforce-slack curated_channels --connection-id 849e85d8-1aa9-4d52-8bbd-20041c8f05d8 --output json 2&gt;&amp;1 | head -100&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;ExecuteOperation&quot;,
+  &quot;Data&quot;: {
+    &quot;items&quot;: [
+      {
+        &quot;context_team_id&quot;: &quot;T01G1P7CKR8&quot;,
+        &quot;created&quot;: 1606967318,
+        &quot;creator&quot;: &quot;U01FYLMH1D3&quot;,
+        &quot;id&quot;: &quot;C01FV1QFA86&quot;,
+        &quot;is_archived&quot;: false,
+        &quot;is_channel&quot;: true,
+        &quot;is_ext_shared&quot;: false,
+        &quot;is_general&quot;: false,
+        &quot;is_group&quot;: false,
+        &quot;is_im&quot;: false,
+        &quot;is_mpim&quot;: false,
+        &quot;is_org_shared&quot;: false,
+        &quot;is_pending_ext_shared&quot;: false,
+        &quot;is_private&quot;: false,
+        &quot;is_shared&quot;: false,
+        &quot;name&quot;: &quot;random&quot;,
+        &quot;name_normalized&quot;: &quot;random&quot;,
+        &quot;properties&quot;: {
+          &quot;tabs&quot;: [
+            {
+              &quot;id&quot;: &quot;files&quot;,
+              &quot;label&quot;: &quot;&quot;,
+              &quot;type&quot;: &quot;files&quot;
+            }
+          ],
+          &quot;tabz&quot;: [
+            {
+              &quot;type&quot;: &quot;files&quot;
+            }
+          ],
+          &quot;use_case&quot;: &quot;random&quot;
+        },
+        &quot;purpose&quot;: {
+          &quot;creator&quot;: &quot;U01FYLMH1D3&quot;,
+          &quot;last_set&quot;: 1606967318,
+          &quot;value&quot;: &quot;This channel is for... well, everything else. It’s a place for team jokes, spur-of-the-moment ideas, and funny GIFs. Go wild!&quot;
+        },
+        &quot;shared_team_ids&quot;: [
+    
+
+… (truncated, 1448 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#21</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">625ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip is resources run list uipath-salesforce-slack curated_channels --connection-id 849e85d8-1aa9-4d52-8bbd-20041c8f05d8 --output json --output-filter \&quot;items[?name==&#x27;office-bellevue&#x27;]\&quot; 2&gt;&amp;1&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;ExecuteOperation&quot;,
+  &quot;Data&quot;: []
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#22</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">798ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip is resources run list uipath-salesforce-slack curated_channels --connection-id 849e85d8-1aa9-4d52-8bbd-20041c8f05d8 --output json --output-filter \&quot;{HasMore: pagination.HasMore, NextPageToken: pagination.NextPageToken, Names: items[*].name}\&quot; 2&gt;&amp;1&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;ExecuteOperation&quot;,
+  &quot;Data&quot;: {
+    &quot;HasMore&quot;: null,
+    &quot;NextPageToken&quot;: null,
+    &quot;Names&quot;: [
+      &quot;random&quot;,
+      &quot;general&quot;,
+      &quot;slackathon&quot;,
+      &quot;uipath-slack-test&quot;,
+      &quot;tester-hub&quot;,
+      &quot;odyssey&quot;,
+      &quot;party-etsy&quot;,
+      &quot;la-la-land&quot;,
+      &quot;hairat&quot;,
+      &quot;jafdk22e21132&quot;,
+      &quot;just_do_it_again&quot;,
+      &quot;subject&quot;,
+      &quot;protect&quot;,
+      &quot;test123&quot;,
+      &quot;four&quot;,
+      &quot;last&quot;,
+      &quot;hpwrpb&quot;,
+      &quot;xplca9v&quot;,
+      &quot;tesw&quot;,
+      &quot;wgs2ea&quot;,
+      &quot;pyovps&quot;,
+      &quot;testwe&quot;,
+      &quot;adsfa32ed&quot;,
+      &quot;cfsfwsqaw&quot;,
+      &quot;eo04z&quot;,
+      &quot;4ehwq81&quot;,
+      &quot;testbot&quot;,
+      &quot;dvcvdde&quot;,
+      &quot;xaxmu&quot;,
+      &quot;r58wef&quot;,
+      &quot;hpynnj&quot;,
+      &quot;cxdcd&quot;,
+      &quot;updateasfdsaf&quot;,
+      &quot;dxdv&quot;,
+      &quot;vdcdf&quot;,
+      &quot;renameakschannel&quot;,
+      &quot;sxcs&quot;,
+      &quot;deno-test&quot;,
+      &quot;demo-test&quot;,
+      &quot;fmejft&quot;,
+      &quot;r0hlad&quot;,
+      &quot;kfkfwm&quot;,
+      &quot;kmjkm&quot;,
+      &quot;rajuchannelfirst35&quot;,
+      &quot;teaaabreak&quot;,
+      &quot;rajuchannelfirst1&quot;,
+      &quot;rajuchannelfirst322&quot;,
+      &quot;rajuchannelfirst3fv22&quot;,
+      &quot;rajuchannelsecond5&quot;,
+      &quot;rajuchannelfirst3fv22sc&quot;,
+      &quot;testconvo&quot;,
+      &quot;rajuchannelfirst3fv22s&quot;,
+      &quot;rajuchannelsecond&quot;,
+      &quot;rajuchannelsecond6&quot;,
+      &quot;rajuch
+
+… (truncated, 17744 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#23</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">2.19s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip is resources run list uipath-salesforce-slack curated_channels --connection-id 849e85d8-1aa9-4d52-8bbd-20041c8f05d8 --output json --output-filter \&quot;type(@)\&quot; 2&gt;&amp;1\nuip is resources run list uipath-salesforce-slack curated_channels --connection-id 849e85d8-1aa9-4d52-8bbd-20041c8f05d8 --output json --output-filter \&quot;keys(@)\&quot; 2&gt;&amp;1\nuip is resources run list uipath-salesforce-slack curated_channels --c… (104 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;ExecuteOperation&quot;,
+  &quot;Data&quot;: {
+    &quot;Value&quot;: &quot;object&quot;
+  }
+}
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;ExecuteOperation&quot;,
+  &quot;Data&quot;: [
+    {
+      &quot;Value&quot;: &quot;items&quot;
+    },
+    {
+      &quot;Value&quot;: &quot;Pagination&quot;
+    }
+  ]
+}
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;ExecuteOperation&quot;,
+  &quot;Data&quot;: {
+    &quot;Value&quot;: 1000
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#24</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">698ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip is resources run list uipath-salesforce-slack curated_channels --connection-id 849e85d8-1aa9-4d52-8bbd-20041c8f05d8 --output json --output-filter \&quot;Pagination\&quot; 2&gt;&amp;1&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;ExecuteOperation&quot;,
+  &quot;Data&quot;: {
+    &quot;HasMore&quot;: &quot;true&quot;,
+    &quot;NextPageToken&quot;: &quot;eyJwcm92aWRlck5leHRQYWdlIjoiMTAwMCIsInBhZ2VTaXplIjoxMDAwLCJwYWdlIjoyfQ&quot;
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#25</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.17s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip is resources run list uipath-salesforce-slack curated_channels --connection-id 849e85d8-1aa9-4d52-8bbd-20041c8f05d8 --query \&quot;nextPage=eyJwcm92aWRlck5leHRQYWdlIjoiMTAwMCIsInBhZ2VTaXplIjoxMDAwLCJwYWdlIjoyfQ\&quot; --output json --output-filter \&quot;items[?name==&#x27;office-bellevue&#x27;]\&quot; 2&gt;&amp;1\necho \&quot;---pagination---\&quot;\nuip is resources run list uipath-salesforce-slack curated_channels --connection-id 849e85d8-1aa9-… (160 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;ExecuteOperation&quot;,
+  &quot;Data&quot;: []
+}
+---pagination---
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;ExecuteOperation&quot;,
+  &quot;Data&quot;: {
+    &quot;HasMore&quot;: &quot;true&quot;,
+    &quot;NextPageToken&quot;: &quot;eyJwcm92aWRlck5leHRQYWdlIjoiMjAwMCIsInBhZ2VTaXplIjoxMDAwLCJwYWdlIjozfQ&quot;
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#26</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">2.20s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-slack-weather-pipeline\nTOKEN=\&quot;eyJwcm92aWRlck5leHRQYWdlIjoiMjAwMCIsInBhZ2VTaXplIjoxMDAwLCJwYWdlIjozfQ\&quot;\nFOUND=\&quot;\&quot;\nfor i in $(seq 1 30); do\n  RESP=$(uip is resources run list uipath-salesforce-slack curated_channels --connection-id 849e85d8-1aa9-4d52-8bbd-20041c8f05d8 --query \&quot;nextPage=$TOKEN\&quot; --output json 2&gt;&amp;1)\n  MATCH=$(echo \&quot;$RESP\&quot; | python3 -c \&quot;\nimport json,sy… (680 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Page 1 result: ---PAGSTATE---
+Page 2 result: ---PAGSTATE---
+Page 3 result: {&quot;id&quot;: &quot;C0B50H7DE2F&quot;, &quot;name&quot;: &quot;office-bellevue&quot;}
+FOUND on page 3
+{&quot;id&quot;: &quot;C0B50H7DE2F&quot;, &quot;name&quot;: &quot;office-bellevue&quot;}
+---PAGSTATE---
+true eyJwcm92aWRlck5leHRQYWdlIjoiNTAwMCIsInBhZ2VTaXplIjoxMDAwLCJwYWdlIjo2fQ</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#27</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">671ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip is resources run get uipath-salesforce-slack ConversationsInfo_GET --connection-id 849e85d8-1aa9-4d52-8bbd-20041c8f05d8 --query \&quot;conversationsInfoId=C0B50H7DE2F\&quot; --output json 2&gt;&amp;1 | head -100&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;ExecuteOperation&quot;,
+  &quot;Data&quot;: {
+    &quot;is_private&quot;: false,
+    &quot;purpose&quot;: {
+      &quot;value&quot;: &quot;700 Bellevue Way NE, Suite 2000, Bellevue, WA 98004&quot;,
+      &quot;last_set&quot;: 1779320357,
+      &quot;creator&quot;: &quot;U02EBQA5AD9&quot;
+    },
+    &quot;is_pending_ext_shared&quot;: false,
+    &quot;context_team_id&quot;: &quot;T01G1P7CKR8&quot;,
+    &quot;is_channel&quot;: true,
+    &quot;is_shared&quot;: false,
+    &quot;id&quot;: &quot;C0B50H7DE2F&quot;,
+    &quot;last_read&quot;: &quot;1784732015.335589&quot;,
+    &quot;creator&quot;: &quot;U02EBQA5AD9&quot;,
+    &quot;is_im&quot;: false,
+    &quot;is_member&quot;: true,
+    &quot;is_mpim&quot;: false,
+    &quot;created&quot;: 1779320356,
+    &quot;name_normalized&quot;: &quot;office-bellevue&quot;,
+    &quot;is_ext_shared&quot;: false,
+    &quot;is_group&quot;: false,
+    &quot;unlinked&quot;: 0,
+    &quot;is_archived&quot;: false,
+    &quot;is_general&quot;: false,
+    &quot;name&quot;: &quot;office-bellevue&quot;,
+    &quot;topic&quot;: {
+      &quot;value&quot;: &quot;&quot;,
+      &quot;last_set&quot;: 0,
+      &quot;creator&quot;: &quot;&quot;
+    },
+    &quot;shared_team_ids&quot;: [
+      &quot;T01G1P7CKR8&quot;
+    ],
+    &quot;is_org_shared&quot;: false,
+    &quot;updated&quot;: 1786657956266,
+    &quot;properties&quot;: {
+      &quot;is_dormant&quot;: true
+    }
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#28</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-err">ERROR</span>
+      <span class="tool-duration">1.53s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip orchestrator folders list --output json 2&gt;&amp;1 | head -80\necho \&quot;---filter---\&quot;\nuip orchestrator folders list --output json --output-filter \&quot;[?FolderKey==&#x27;5da18ec0-7de1-4e57-aaf1-ddc8a369c199&#x27;]\&quot; 2&gt;&amp;1&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Exit code 3
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FolderList&quot;,
+  &quot;Pagination&quot;: {
+    &quot;Returned&quot;: 50,
+    &quot;Limit&quot;: 50,
+    &quot;Offset&quot;: 0,
+    &quot;HasMore&quot;: true
+  },
+  &quot;Data&quot;: [
+    {
+      &quot;Key&quot;: &quot;410fae2d-89b3-4cd1-a991-7359bda90c0b&quot;,
+      &quot;Name&quot;: &quot;zhongyi.shi@uipath.com&#x27;s workspace&quot;,
+      &quot;Path&quot;: &quot;zhongyi.shi@uipath.com&#x27;s workspace&quot;,
+      &quot;Description&quot;: &quot;&quot;,
+      &quot;Type&quot;: &quot;Personal&quot;,
+      &quot;ParentKey&quot;: &quot;&quot;
+    },
+    {
+      &quot;Key&quot;: &quot;45972b24-e93c-49a6-8f33-a40dc2fff44f&quot;,
+      &quot;Name&quot;: &quot;Debug_AcrUserList&quot;,
+      &quot;Path&quot;: &quot;zhongyi.shi@uipath.com&#x27;s workspace/Debug_AcrUserList&quot;,
+      &quot;Description&quot;: &quot;&quot;,
+      &quot;Type&quot;: &quot;DebugSolution&quot;,
+      &quot;ParentKey&quot;: &quot;410fae2d-89b3-4cd1-a991-7359bda90c0b&quot;
+    },
+    {
+      &quot;Key&quot;: &quot;7420ce0c-3c3e-4d59-8d79-2cf20e01b832&quot;,
+      &quot;Name&quot;: &quot;Debug_AcrUserList 1&quot;,
+      &quot;Path&quot;: &quot;zhongyi.shi@uipath.com&#x27;s workspace/Debug_AcrUserList 1&quot;,
+      &quot;Description&quot;: &quot;&quot;,
+      &quot;Type&quot;: &quot;DebugSolution&quot;,
+      &quot;ParentKey&quot;: &quot;410fae2d-89b3-4cd1-a991-7359bda90c0b&quot;
+    },
+    {
+      &quot;Key&quot;: &quot;d28398c8-0da9-4e63-8152-76f7421fc524&quot;,
+      &quot;Name&quot;: &quot;Debug_AcrUserList 2&quot;,
+      &quot;Path&quot;: &quot;zhongyi.shi@uipath.com&#x27;s workspace/Debug_AcrUserList 2&quot;,
+      &quot;Description&quot;: &quot;&quot;,
+      &quot;Type&quot;: &quot;Debug
+
+… (truncated, 1979 more chars)</pre>
+    <h4>Error</h4><pre>Exit code 3
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FolderList&quot;,
+  &quot;Pagination&quot;: {
+    &quot;Returned&quot;: 50,
+    &quot;Limit&quot;: 50,
+    &quot;Offset&quot;: 0,
+    &quot;HasMore&quot;: true
+  },
+  &quot;Data&quot;: [
+    {
+      &quot;Key&quot;: &quot;410fae2d-89b3-4cd1-a991-7359bda90c0b&quot;,
+      &quot;Name&quot;: &quot;zhongyi.shi@uipath.com&#x27;s workspace&quot;,
+      &quot;Path&quot;: &quot;zhongyi.shi@uipath.com&#x27;s workspace&quot;,
+      &quot;Description&quot;: &quot;&quot;,
+      &quot;Type&quot;: &quot;Personal&quot;,
+      &quot;ParentKey&quot;: &quot;&quot;
+    },
+    {
+      &quot;Key&quot;: &quot;45972b24-e93c-49a6-8f33-a40dc2fff44f&quot;,
+      &quot;Name&quot;: &quot;Debug_AcrUserList&quot;,
+      &quot;Path&quot;: &quot;zhongyi.shi@uipath.com&#x27;s workspace/Debug_AcrUserList&quot;,
+      &quot;Description&quot;: &quot;&quot;,
+      &quot;Type&quot;: &quot;DebugSolution&quot;,
+      &quot;ParentKey&quot;: &quot;410fae2d-89b3-4cd1-a991-7359bda90c0b&quot;
+    },
+    {
+      &quot;Key&quot;: &quot;7420ce0c-3c3e-4d59-8d79-2cf20e01b832&quot;,
+      &quot;Name&quot;: &quot;Debug_AcrUserList 1&quot;,
+      &quot;Path&quot;: &quot;zhongyi.shi@uipath.com&#x27;s workspace/Debug_AcrUserList 1&quot;,
+      &quot;Description&quot;: &quot;&quot;,
+      &quot;Type&quot;: &quot;DebugSolution&quot;,
+      &quot;ParentKey&quot;: &quot;410fae2d-89b3-4cd1-a991-7359bda90c0b&quot;
+    },
+    {
+      &quot;Key&quot;: &quot;d28398c8-0da9-4e63-8152-76f7421fc524&quot;,
+      &quot;Name&quot;: &quot;Debug_AcrUserList 2&quot;,
+      &quot;Path&quot;: &quot;zhongyi.shi@uipath.com&#x27;s workspace/Debug_AcrUserList 2&quot;,
+      &quot;Description&quot;: &quot;&quot;,
+      &quot;Type&quot;: &quot;DebugSolution&quot;,
+      &quot;ParentKey&quot;: &quot;410fae2d-89b3-4cd1-a991-7359bda90c0b&quot;
+    },
+    {
+      &quot;Key&quot;: &quot;ced051cc-3aca-4888-b1db-553a8dde82f4&quot;,
+      &quot;Name&quot;: &quot;Debug_ApproverCountAgent&quot;,
+      &quot;Path&quot;: &quot;zhongyi.shi@uipath.com&#x27;s workspace/Debug_ApproverCountAgent&quot;,
+      &quot;Description&quot;: &quot;&quot;,
+      &quot;Type&quot;: &quot;DebugSolution&quot;,
+      &quot;ParentKey&quot;: &quot;410fae2d-89b3-4cd1-a991-7359bda90c0b&quot;
+    },
+    {
+      &quot;Key&quot;: &quot;84911ed7-37fe-4b05-94a4-f4aa9a0cc1b8&quot;,
+      &quot;Name&quot;: &quot;Debug_ApproverCountAgent 1&quot;,
+      &quot;Path&quot;: &quot;zhongyi.shi@uipath.com&#x27;s workspace/Debug_ApproverCountAgent 1&quot;,
+      &quot;Description&quot;: &quot;&quot;,
+      &quot;Type&quot;: &quot;DebugSolution&quot;,
+      &quot;ParentKey&quot;: &quot;410fae2d-89b3-4cd1-a991-7359bda90c0b&quot;
+    },
+    {
+      &quot;Key&quot;: &quot;1756bbad-717c-4476-a5c3-10284b6a922c&quot;,
+      &quot;Name&quot;: &quot;Debug_ApproverCountAgent 2&quot;,
+      &quot;Path&quot;: &quot;zhon</pre>
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#29</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">931ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/plugins/http/impl.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# HTTP Request Node — Implementation
+2	
+3	This page is the entry point for implementing a managed HTTP node. Pick your auth mode below, then follow the matching walkthrough end-to-end. The &quot;Shared Reference&quot; section is an appendix — the mode walkthroughs already inline what you need to act, and link here only for full rationale and extended examples.
+4	
+5	## Node Type
+6	
+7	`core.action.http.v2` (Managed HTTP Request)
+8	
+9	&gt; **Always use `core.action.http.v2`** for all HTTP requests. The older `core.action.http` (v1) is deprecated.
+10	
+11	## Pick a Mode
+12	
+13	| Mode | Use when | Walkthrough |
+14	| --- | --- | --- |
+15	| **Connector** | Target system has an IS connector — auth via an existing IS connection (OAuth/API key) | [impl-connector.md](impl-connector.md) |
+16	| **Manual** | No connector exists, public/no-auth API, or quick prototyping | [impl-manual.md](impl-manual.md) |
+17	
+18	&gt; **Mode fallback — auto-try, then confirm.** Prefer a curated connector activity first; if none, use connector mode; if connector mode cannot be configured (connector lacks HTTP request support — `HasHttpRequest` false — or no usable IS connection), fall through to manual mode automatically. Manual
+
+… (truncated, 11166 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#30</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">831ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip orchestrator folders list --output json --limit 200 --output-filter \&quot;[?Key==&#x27;5da18ec0-7de1-4e57-aaf1-ddc8a369c199&#x27;]\&quot; 2&gt;&amp;1&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FolderList&quot;,
+  &quot;Pagination&quot;: {
+    &quot;Returned&quot;: 200,
+    &quot;Limit&quot;: 200,
+    &quot;Offset&quot;: 0,
+    &quot;HasMore&quot;: true
+  },
+  &quot;Data&quot;: []
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#31</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">908ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip orchestrator folders list --output json --limit 1000 2&gt;&amp;1 | python3 -c \&quot;\nimport json,sys\nd=json.load(sys.stdin)\nfor f in d.get(&#x27;Data&#x27;,[]):\n    if f.get(&#x27;Key&#x27;)==&#x27;5da18ec0-7de1-4e57-aaf1-ddc8a369c199&#x27; or &#x27;uipath-maestro-flow&#x27; in f.get(&#x27;Name&#x27;,&#x27;&#x27;):\n        print(json.dumps(f))\n\&quot;&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{&quot;Key&quot;: &quot;5da18ec0-7de1-4e57-aaf1-ddc8a369c199&quot;, &quot;Name&quot;: &quot;uipath-maestro-flow&quot;, &quot;Path&quot;: &quot;Shared/uipath-maestro-flow&quot;, &quot;Description&quot;: &quot;&quot;, &quot;Type&quot;: &quot;Standard&quot;, &quot;ParentKey&quot;: &quot;c4359cde-55f0-4f0e-9322-c6cdce74ab4c&quot;}
+{&quot;Key&quot;: &quot;e78d0db7-2ec8-48f7-b3d0-1a805b46953a&quot;, &quot;Name&quot;: &quot;uipath-maestro-flow 1&quot;, &quot;Path&quot;: &quot;Shared/uipath-maestro-flow 1&quot;, &quot;Description&quot;: &quot;&quot;, &quot;Type&quot;: &quot;Solution&quot;, &quot;ParentKey&quot;: &quot;c4359cde-55f0-4f0e-9322-c6cdce74ab4c&quot;}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#32</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">157ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-slack-weather-pipeline/SlackWeatherPipeline/SlackWeatherPipeline\ncat SlackWeatherPipeline.flow | python3 -m json.tool | head -100&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+    &quot;id&quot;: &quot;183c99b5-9363-4439-93a5-f74d2cc39179&quot;,
+    &quot;version&quot;: &quot;1.9&quot;,
+    &quot;name&quot;: &quot;SlackWeatherPipeline&quot;,
+    &quot;nodes&quot;: [
+        {
+            &quot;id&quot;: &quot;start&quot;,
+            &quot;type&quot;: &quot;core.trigger.manual&quot;,
+            &quot;typeVersion&quot;: &quot;1.0&quot;,
+            &quot;display&quot;: {
+                &quot;label&quot;: &quot;Manual trigger&quot;
+            },
+            &quot;inputs&quot;: {
+                &quot;entryPointId&quot;: &quot;233318e8-3fa2-4f47-9384-e80151599b53&quot;,
+                &quot;isDefaultEntryPoint&quot;: true
+            }
+        }
+    ],
+    &quot;edges&quot;: [],
+    &quot;definitions&quot;: [
+        {
+            &quot;nodeType&quot;: &quot;core.trigger.manual&quot;,
+            &quot;version&quot;: &quot;1.0&quot;,
+            &quot;category&quot;: &quot;trigger&quot;,
+            &quot;description&quot;: &quot;Start the process manually&quot;,
+            &quot;tags&quot;: [
+                &quot;trigger&quot;,
+                &quot;start&quot;,
+                &quot;manual&quot;
+            ],
+            &quot;sortOrder&quot;: 80,
+            &quot;display&quot;: {
+                &quot;label&quot;: &quot;Manual trigger&quot;,
+                &quot;icon&quot;: &quot;play&quot;,
+                &quot;shape&quot;: &quot;circle&quot;
+            },
+            &quot;handleConfiguration&quot;: [
+                {
+                    &quot;position&quot;: &quot;right&quot;,
+                    &quot;handles&quot;: [
+                        {
+                            &quot;id&quot;: &quot;output&quot;,
+
+
+… (truncated, 1486 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#33</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.94s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip is connections list \&quot;uipath-google-maps\&quot; --all-folders --output json 2&gt;&amp;1\necho \&quot;---azuremaps---\&quot;\nuip is connections list \&quot;uipath-microsoft-azuremaps\&quot; --all-folders --output json 2&gt;&amp;1&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;Message&quot;,
+  &quot;Data&quot;: {
+    &quot;Message&quot;: &quot;No connections found for connector &#x27;uipath-google-maps&#x27;.&quot;
+  }
+}
+---azuremaps---
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;Message&quot;,
+  &quot;Data&quot;: {
+    &quot;Message&quot;: &quot;No connections found for connector &#x27;uipath-microsoft-azuremaps&#x27;.&quot;
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#34</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">129ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/plugins/connector/impl.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Connector Activity Nodes — Implementation
+2	
+3	How to configure connector activity nodes: connection binding, enriched metadata, reference field resolution, and debugging. Connection bindings are emitted by `uip maestro flow node configure` into the flow&#x27;s top-level `bindings[]`; `bindings_v2.json` is regenerated from them at debug/pack time and should never be hand-edited.
+4	
+5	For generic node/edge add, remove, and wiring procedures, see [editing-operations.md](../../editing-operations.md). This guide covers the connector-specific configuration workflow that must follow the generic node add.
+6	
+7	## How Connector Nodes Differ from OOTB
+8	
+9	1. **Connection binding required** — every connector node needs an IS connection (OAuth, API key, etc.) authored in the flow&#x27;s top-level `bindings[]` (which the CLI regenerates into `bindings_v2.json` at debug/pack time). Without it, the node cannot authenticate.
+10	2. **Enriched metadata via `--connection-id`** — call `registry get` with `--connection-id` to get connection-aware field metadata. Without it, only base fields are returned — custom fields, dynamic enums, and reference resolution are missing.
+11	3. **`inputs.detail` object** —
+
+… (truncated, 66612 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#35</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.54s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry get \&quot;core.action.script\&quot; --output json &gt; /tmp/script.json 2&gt;&amp;1\nuip maestro flow registry get \&quot;core.action.http.v2\&quot; --output json &gt; /tmp/http.json 2&gt;&amp;1\necho done&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>done</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#36</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.23s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/tmp/script.json&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	{
+2	  &quot;Result&quot;: &quot;Success&quot;,
+3	  &quot;Code&quot;: &quot;NodeGetSuccess&quot;,
+4	  &quot;Data&quot;: {
+5	    &quot;Node&quot;: {
+6	      &quot;nodeType&quot;: &quot;core.action.script&quot;,
+7	      &quot;version&quot;: &quot;1.1&quot;,
+8	      &quot;category&quot;: &quot;data-operations&quot;,
+9	      &quot;description&quot;: &quot;Run custom JavaScript code&quot;,
+10	      &quot;tags&quot;: [
+11	        &quot;code&quot;,
+12	        &quot;javascript&quot;,
+13	        &quot;python&quot;
+14	      ],
+15	      &quot;sortOrder&quot;: 70,
+16	      &quot;supportsErrorHandling&quot;: true,
+17	      &quot;display&quot;: {
+18	        &quot;label&quot;: &quot;Script&quot;,
+19	        &quot;icon&quot;: &quot;code&quot;
+20	      },
+21	      &quot;handleConfiguration&quot;: [
+22	        {
+23	          &quot;position&quot;: &quot;left&quot;,
+24	          &quot;handles&quot;: [
+25	            {
+26	              &quot;id&quot;: &quot;input&quot;,
+27	              &quot;type&quot;: &quot;target&quot;,
+28	              &quot;handleType&quot;: &quot;input&quot;
+29	            }
+30	          ]
+31	        },
+32	        {
+33	          &quot;position&quot;: &quot;right&quot;,
+34	          &quot;handles&quot;: [
+35	            {
+36	              &quot;id&quot;: &quot;success&quot;,
+37	              &quot;type&quot;: &quot;source&quot;,
+38	              &quot;handleType&quot;: &quot;output&quot;
+39	            },
+40	            {
+41	              &quot;id&quot;: &quot;error&quot;,
+42	              &quot;label&quot;: &quot;Error&quot;,
+43	              &quot;type&quot;: &quot;source&quot;,
+44	              &quot;handleType&quot;: &quot;output&quot;,
+45	              &quot;visible&quot;: &quot;{inputs.errorHandli
+
+… (truncated, 3429 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#37</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">2.19s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-slack-weather-pipeline/SlackWeatherPipeline/SlackWeatherPipeline\nuip maestro flow node add \&quot;SlackWeatherPipeline.flow\&quot; \&quot;uipath.connector.uipath-salesforce-slack.get-channel-info\&quot; --label \&quot;Get Office Bellevue Channel Info\&quot; --output json\necho \&quot;---openmeteo---\&quot;\nuip maestro flow node add \&quot;SlackWeatherPipeline.flow\&quot; \&quot;uipath.connector.custom-codereval-openmeteoapis.g… (200 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeAddSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;Node&quot;: {
+      &quot;Id&quot;: &quot;getOfficeBellevueChannelInfo1&quot;,
+      &quot;Type&quot;: &quot;uipath.connector.uipath-salesforce-slack.get-channel-info&quot;,
+      &quot;TypeVersion&quot;: &quot;1.0.0&quot;,
+      &quot;Ui&quot;: {
+        &quot;Position&quot;: {
+          &quot;X&quot;: 0,
+          &quot;Y&quot;: 0
+        }
+      },
+      &quot;Display&quot;: {
+        &quot;Label&quot;: &quot;Get Office Bellevue Channel Info&quot;
+      },
+      &quot;Inputs&quot;: {}
+    },
+    &quot;DefinitionAdded&quot;: true,
+    &quot;BindingsCreated&quot;: 0,
+    &quot;VariableCount&quot;: 3
+  }
+}
+---openmeteo---
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeAddSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;Node&quot;: {
+      &quot;Id&quot;: &quot;getCurrentWeather1&quot;,
+      &quot;Type&quot;: &quot;uipath.connector.custom-codereval-openmeteoapis.getcurrentweather&quot;,
+      &quot;TypeVersion&quot;: &quot;1.0.0&quot;,
+      &quot;Ui&quot;: {
+        &quot;Position&quot;: {
+          &quot;X&quot;: 0,
+          &quot;Y&quot;: 0
+        }
+      },
+      &quot;Display&quot;: {
+        &quot;Label&quot;: &quot;Get Current Weather&quot;
+      },
+      &quot;Inputs&quot;: {}
+    },
+    &quot;DefinitionAdded&quot;: true,
+    &quot;BindingsCreated&quot;: 0,
+    &quot;VariableCount&quot;: 5
+  }
+}
+---http geocode---
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeAddSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;Node&quot;: {
+      &quot;Id&quot;: &quot;geocodeCity1&quot;,
+      &quot;Type&quot;: &quot;core.action.http.v2&quot;,
+      &quot;TypeVersion&quot;
+
+… (truncated, 351 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#38</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">196ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-slack-weather-pipeline/SlackWeatherPipeline/SlackWeatherPipeline\ncat SlackWeatherPipeline.flow | python3 -m json.tool | wc -l\ncat SlackWeatherPipeline.flow | python3 -c \&quot;\nimport json,sys\nd=json.load(sys.stdin)\nprint(&#x27;nodes:&#x27;, [n[&#x27;id&#x27;] for n in d[&#x27;nodes&#x27;]])\nprint(&#x27;vars nodes:&#x27;, [v.get(&#x27;id&#x27;) for v in d.get(&#x27;variables&#x27;,{}).get(&#x27;nodes&#x27;,[])])\n\&quot;&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1439
+nodes: [&#x27;start&#x27;, &#x27;getOfficeBellevueChannelInfo1&#x27;, &#x27;getCurrentWeather1&#x27;, &#x27;geocodeCity1&#x27;]
+vars nodes: [&#x27;start.output&#x27;, &#x27;getOfficeBellevueChannelInfo1.output&#x27;, &#x27;getOfficeBellevueChannelInfo1.error&#x27;, &#x27;getCurrentWeather1.output&#x27;, &#x27;getCurrentWeather1.error&#x27;, &#x27;geocodeCity1.output&#x27;, &#x27;geocodeCity1.error&#x27;]</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#39</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">446ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;curl -s \&quot;https://geocoding-api.open-meteo.com/v1/search?name=Bellevue&amp;count=5\&quot; | python3 -m json.tool | head -60&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+    &quot;results&quot;: [
+        {
+            &quot;id&quot;: 5786882,
+            &quot;name&quot;: &quot;Bellevue&quot;,
+            &quot;latitude&quot;: 47.61038,
+            &quot;longitude&quot;: -122.20068,
+            &quot;elevation&quot;: 26.0,
+            &quot;feature_code&quot;: &quot;PPL&quot;,
+            &quot;country_code&quot;: &quot;US&quot;,
+            &quot;admin1_id&quot;: 5815135,
+            &quot;admin2_id&quot;: 5799783,
+            &quot;timezone&quot;: &quot;America/Los_Angeles&quot;,
+            &quot;population&quot;: 139820,
+            &quot;postcodes&quot;: [
+                &quot;98004&quot;,
+                &quot;98005&quot;,
+                &quot;98006&quot;,
+                &quot;98007&quot;,
+                &quot;98008&quot;,
+                &quot;98009&quot;,
+                &quot;98015&quot;
+            ],
+            &quot;country_id&quot;: 6252001,
+            &quot;country&quot;: &quot;United States&quot;,
+            &quot;admin1&quot;: &quot;Washington&quot;,
+            &quot;admin2&quot;: &quot;King&quot;
+        },
+        {
+            &quot;id&quot;: 5063805,
+            &quot;name&quot;: &quot;Bellevue&quot;,
+            &quot;latitude&quot;: 41.13667,
+            &quot;longitude&quot;: -95.89084,
+            &quot;elevation&quot;: 315.0,
+            &quot;feature_code&quot;: &quot;PPL&quot;,
+            &quot;country_code&quot;: &quot;US&quot;,
+            &quot;admin1_id&quot;: 5073708,
+            &quot;admin2_id&quot;: 5077695,
+            &quot;timezone&quot;: &quot;America/Chicago&quot;,
+            &quot;population&quot;: 55510,
+            &quot;postcodes&quot;: [
+              
+
+… (truncated, 540 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#40</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">6ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/shared/variables-and-expressions.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Variables and Expressions
+2	
+3	Complete reference for declaring variables, writing expressions, and managing data flow in `.flow` files.
+4	
+5	&gt; **Read this before** adding variables or writing expressions in any flow.
+6	&gt;
+7	&gt; `flow validate` catches the structural expression-reference errors:
+8	&gt;
+9	&gt; - Missing `=js:` prefix on `$vars`/`$metadata`/`$self` (MST-9107)
+10	&gt; - Invented `nodes.&lt;id&gt;.output` syntax
+11	&gt; - References to unknown variables or node IDs
+12	&gt; - Output-path walks that descend into declared primitives or schemas closed with `additionalProperties: false`
+13	&gt;
+14	&gt; Errors against **open output schemas** (HTTP response bodies, script returns, free-text agent output) and **wrong-direction reads** (e.g. reading an `out`-only variable) still slip past validate and surface only at `flow debug` or in production.
+15	
+16	---
+17	
+18	## Table of contents
+19	
+20	- [Variables Overview](#variables-overview)
+21	- [Workflow Variables (`globals`)](#workflow-variables-globals)
+22	- [Node Variables (`nodes`)](#node-variables-nodes)
+23	- [Variable Updates (`variableUpdates`)](#variable-updates-variableupdates)
+24	- [Output Mapping on End Nodes](#output-mapping-on-end-nodes)
+25	- [
+
+… (truncated, 24870 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#41</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">21ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -n \&quot;outputs\&quot; -A 20 /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/plugins/end/impl.md 2&gt;&amp;1 | head -80&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>40:  &quot;outputs&quot;: {
+41-    &quot;processedCount&quot;: {
+42-      &quot;source&quot;: &quot;=js:$vars.processData.output.count&quot;
+43-    },
+44-    &quot;resultSummary&quot;: {
+45-      &quot;source&quot;: &quot;=js:$vars.formatOutput.output.summary&quot;
+46-    }
+47-  }
+48-}
+49-```
+50-
+51:Each key in `outputs` must match a variable `id` from `variables.globals` where `direction: &quot;out&quot;`.
+52-
+53-## Adding / Editing
+54-
+55:For step-by-step add, delete, and wiring procedures, see [editing-operations.md](../../editing-operations.md). Use the JSON structure above for the node-specific `inputs` and `outputs`.
+56-
+57-Output mapping must be added with `Edit` against the `.flow` file — see [Edit/Write: Add output mapping](../../editing-operations-json.md#add-output-mapping-on-an-end-node).
+58-
+59-## Debug
+60-
+61-| Error | Cause | Fix |
+62-| --- | --- | --- |
+63:| Missing output mapping | `out` variable not mapped on this End node | Add `outputs.{varId}.source` expression for every `out` variable |
+64-| Output expression unresolvable | `$vars` reference points to unreachable node | Ensure the node is upstream and connected via edges |
+65-| Runtime silent failure | Output mapping missing on one reachable End node | Check **all** End nodes, not just th
+
+… (truncated, 16 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#42</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">6ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/plugins/http/impl-manual.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# HTTP Request Node — Manual Mode
+2	
+3	Use this walkthrough when there is no IS connector for the target service, the API needs no auth (or auth you pass yourself in headers), or you are prototyping against an arbitrary REST endpoint. For connector-managed auth, use [impl-connector.md](impl-connector.md) instead.
+4	
+5	**No connection lookup required.** Manual mode uses `ImplicitConnection` — there are no IS bindings.
+6	
+7	Before starting, read [impl.md](impl.md) for the node type, registry validation, and the &quot;always use `node configure`&quot; rule. Follow Steps 1–4 in order.
+8	
+9	## Step 1 — Add the node
+10	
+11	```bash
+12	uip maestro flow node add &lt;ProjectName&gt;.flow core.action.http.v2 \
+13	  --label &quot;&lt;HTTP node label&gt;&quot; --output json
+14	```
+15	
+16	&gt; **Inside a loop body?** Add `--parent &lt;LOOP_NODE_ID&gt;` to set `parentId`. Without it, the node runs outside the loop context and outputs are null. See [loop/impl.md](../loop/impl.md).
+17	
+18	The CLI copies the manifest into `definitions[]`, adds the node instance, registers `variables.nodes`, and inserts a `layout.nodes` placeholder — byte-for-byte from the registry. Save the returned `&lt;nodeId&gt;` — Step 2 reuses it. Leave `inputs` empty; St
+
+… (truncated, 3041 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#43</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">3.13s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-slack-weather-pipeline/SlackWeatherPipeline/SlackWeatherPipeline\n\n# Configure Slack Get Channel Info node\nuip maestro flow node configure \&quot;SlackWeatherPipeline.flow\&quot; \&quot;getOfficeBellevueChannelInfo1\&quot; \\\n  --detail &#x27;{\n    \&quot;connectionId\&quot;: \&quot;849e85d8-1aa9-4d52-8bbd-20041c8f05d8\&quot;,\n    \&quot;folderKey\&quot;: \&quot;5da18ec0-7de1-4e57-aaf1-ddc8a369c199\&quot;,\n    \&quot;method\&quot;: \&quot;GETBYID\&quot;,\n    \&quot;en… (1012 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeConfigureSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;NodeId&quot;: &quot;getOfficeBellevueChannelInfo1&quot;,
+    &quot;BindingsCreated&quot;: 3,
+    &quot;DetailPopulated&quot;: true
+  }
+}
+---openmeteo weather---
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeConfigureSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;NodeId&quot;: &quot;getCurrentWeather1&quot;,
+    &quot;BindingsCreated&quot;: 4,
+    &quot;DetailPopulated&quot;: true
+  }
+}
+---geocode http manual---
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeConfigureSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;NodeId&quot;: &quot;geocodeCity1&quot;,
+    &quot;BindingsCreated&quot;: 6,
+    &quot;DetailPopulated&quot;: true
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#44</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.12s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry get \&quot;core.action.script\&quot; --output json --output-filter \&quot;Node.version\&quot; 2&gt;&amp;1\ncd /work/output/artifacts/skill-flow-slack-weather-pipeline/SlackWeatherPipeline/SlackWeatherPipeline\nuip maestro flow node add \&quot;SlackWeatherPipeline.flow\&quot; \&quot;core.action.script\&quot; --label \&quot;Extract City From Address\&quot; --output json&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeGetSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;Value&quot;: &quot;1.1&quot;
+  }
+}
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeAddSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;Node&quot;: {
+      &quot;Id&quot;: &quot;extractCityFromAddress1&quot;,
+      &quot;Type&quot;: &quot;core.action.script&quot;,
+      &quot;TypeVersion&quot;: &quot;1.1&quot;,
+      &quot;Ui&quot;: {
+        &quot;Position&quot;: {
+          &quot;X&quot;: 0,
+          &quot;Y&quot;: 0
+        }
+      },
+      &quot;Display&quot;: {
+        &quot;Label&quot;: &quot;Extract City From Address&quot;
+      },
+      &quot;Inputs&quot;: {
+        &quot;Script&quot;: &quot;&quot;
+      }
+    },
+    &quot;DefinitionAdded&quot;: true,
+    &quot;BindingsCreated&quot;: 0,
+    &quot;VariableCount&quot;: 9
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#45</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">581ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-slack-weather-pipeline/SlackWeatherPipeline/SlackWeatherPipeline\nuip maestro flow node configure \&quot;SlackWeatherPipeline.flow\&quot; \&quot;geocodeCity1\&quot; \\\n  --detail &#x27;{\n    \&quot;authentication\&quot;: \&quot;manual\&quot;,\n    \&quot;method\&quot;: \&quot;GET\&quot;,\n    \&quot;url\&quot;: \&quot;=js:`https://geocoding-api.open-meteo.com/v1/search?name=${$vars.extractCityFromAddress1.output.city}&amp;count=1`\&quot;\n  }&#x27; --output json&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeConfigureSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;NodeId&quot;: &quot;geocodeCity1&quot;,
+    &quot;BindingsCreated&quot;: 6,
+    &quot;DetailPopulated&quot;: true
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#46</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">17ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -n \&quot;source\&quot; -B5 -A15 /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/shared/node-output-wiring.md | head -150&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1-# Wiring Node Outputs to Downstream Inputs
+2-
+3:How to reference one node&#x27;s output (or any `$vars.*` value) from another node&#x27;s input fields. This is the **single source of truth** for `=js:` expression rules in `.flow` JSON. All node-type plugins (connector, http, script, decision, end, etc.) defer to this file.
+4-
+5-&gt; **Read this before** writing any field that needs to reference a previous node&#x27;s output, a workflow variable, or any other `$vars.*` / `$metadata.*` value. Skipping `=js:` is the #1 cause of &quot;the value at runtime was the literal string `vars.X.output.Id`&quot; failures (MST-9107).
+6-
+7----
+8-
+9-## The Rule (one sentence)
+10-
+11-**Any string that references `$vars.*`, `$metadata.*`, or `$self.*` MUST start with `=js:`. Otherwise it is a literal string at runtime.**
+12-
+13----
+14-
+15-## What Goes Wrong Without `=js:`
+16-
+17-The Flow runtime serializes string fields into BPMN. The serializer rewrites the canvas-form tokens (`$vars` → `vars`) **whether or not the `=js:` prefix is present**. This means a missing prefix is silent — `flow validate` passes, the file looks plausible, but at runtime the BPMN engine sees a plain string and never evaluates it.
+18-
+--
+29----
+30-
+31
+
+… (truncated, 3421 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#47</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">86ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-slack-weather-pipeline/SlackWeatherPipeline/SlackWeatherPipeline\ncat SlackWeatherPipeline.flow | python3 -c \&quot;\nimport json,sys\nd=json.load(sys.stdin)\nprint(&#x27;nodes:&#x27;, [n[&#x27;id&#x27;] for n in d[&#x27;nodes&#x27;]])\n\&quot;&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>nodes: [&#x27;start&#x27;, &#x27;getOfficeBellevueChannelInfo1&#x27;, &#x27;getCurrentWeather1&#x27;, &#x27;geocodeCity1&#x27;, &#x27;extractCityFromAddress1&#x27;]</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#48</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">76ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-slack-weather-pipeline/SlackWeatherPipeline/SlackWeatherPipeline\npython3 - &lt;&lt;&#x27;PYEOF&#x27;\nimport json\n\nscript = \&quot;const parts = $vars.getOfficeBellevueChannelInfo1.output.purpose.value.split(&#x27;,&#x27;).map(function(s) { return s.trim(); });\\nconst city = parts[parts.length - 2];\\nreturn { city: city, address: $vars.getOfficeBellevueChannelInfo1.output.purpose.value };\&quot;\n\nwi… (133 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{&quot;script&quot;: &quot;const parts = $vars.getOfficeBellevueChannelInfo1.output.purpose.value.split(&#x27;,&#x27;).map(function(s) { return s.trim(); });\nconst city = parts[parts.length - 2];\nreturn { city: city, address: $vars.getOfficeBellevueChannelInfo1.output.purpose.value };&quot;}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#49</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">12ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-slack-weather-pipeline/SlackWeatherPipeline/SlackWeatherPipeline\ngrep -n \&quot;extractCityFromAddress1\&quot; SlackWeatherPipeline.flow | head -20&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>94:            &quot;url&quot;: &quot;=js:`https://geocoding-api.open-meteo.com/v1/search?name=${$vars.extractCityFromAddress1.output.city}&amp;count=1`&quot;
+113:      &quot;id&quot;: &quot;extractCityFromAddress1&quot;,
+1661:        &quot;id&quot;: &quot;extractCityFromAddress1.output&quot;,
+1665:          &quot;nodeId&quot;: &quot;extractCityFromAddress1&quot;,
+1670:        &quot;id&quot;: &quot;extractCityFromAddress1.error&quot;,
+1708:          &quot;nodeId&quot;: &quot;extractCityFromAddress1&quot;,
+1740:      &quot;extractCityFromAddress1&quot;: {</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#50</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">9ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-slack-weather-pipeline/SlackWeatherPipeline/SlackWeatherPipeline/SlackWeatherPipeline.flow&quot;,
+  &quot;offset&quot;: 105,
+  &quot;limit&quot;: 30
+}</pre>
+    <h4>Result</h4>
+    <pre>105	            &quot;objectName&quot;: &quot;http-request&quot;,
+106	            &quot;objectDisplayName&quot;: &quot;HTTP Request&quot;,
+107	            &quot;primaryKeyName&quot;: &quot;&quot;
+108	          }
+109	        }
+110	      }
+111	    },
+112	    {
+113	      &quot;id&quot;: &quot;extractCityFromAddress1&quot;,
+114	      &quot;type&quot;: &quot;core.action.script&quot;,
+115	      &quot;typeVersion&quot;: &quot;1.1&quot;,
+116	      &quot;display&quot;: {
+117	        &quot;label&quot;: &quot;Extract City From Address&quot;
+118	      },
+119	      &quot;inputs&quot;: {
+120	        &quot;script&quot;: &quot;&quot;
+121	      }
+122	    }
+123	  ],
+124	  &quot;edges&quot;: [],
+125	  &quot;definitions&quot;: [
+126	    {
+127	      &quot;nodeType&quot;: &quot;core.trigger.manual&quot;,
+128	      &quot;version&quot;: &quot;1.0&quot;,
+129	      &quot;category&quot;: &quot;trigger&quot;,
+130	      &quot;description&quot;: &quot;Start the process manually&quot;,
+131	      &quot;tags&quot;: [
+132	        &quot;trigger&quot;,
+133	        &quot;start&quot;,
+134	        &quot;manual&quot;</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#51</span>
+      <span class="tool-name">Edit</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">17ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;replace_all&quot;: false,
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-slack-weather-pipeline/SlackWeatherPipeline/SlackWeatherPipeline/SlackWeatherPipeline.flow&quot;,
+  &quot;old_string&quot;: &quot;      \&quot;id\&quot;: \&quot;extractCityFromAddress1\&quot;,\n      \&quot;type\&quot;: \&quot;core.action.script\&quot;,\n      \&quot;typeVersion\&quot;: \&quot;1.1\&quot;,\n      \&quot;display\&quot;: {\n        \&quot;label\&quot;: \&quot;Extract City From Address\&quot;\n      },\n      \&quot;inputs\&quot;: {\n        \&quot;script\&quot;: \&quot;\&quot;\n      }\n    }\n  ],\n  \&quot;edges\&quot;: [],&quot;,
+  &quot;new_string&quot;: &quot;      \&quot;id\&quot;: \&quot;extractCityFromAddress1\&quot;,\n      \&quot;type\&quot;: \&quot;core.action.script\&quot;,\n      \&quot;typeVersion\&quot;: \&quot;1.1\&quot;,\n      \&quot;display\&quot;: {\n        \&quot;label\&quot;: \&quot;Extract City From Address\&quot;\n      },\n      \&quot;inputs\&quot;: {\n        \&quot;script\&quot;: \&quot;const parts = $vars.getOfficeBellevueChannelInfo1.output.purpose.value.split(&#x27;,&#x27;).map(function(s) { return s.trim(); });\\nconst city = parts[parts.length - 2];\\nreturn { city: city };\&quot;\n  … (2442 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>The file /work/output/artifacts/skill-flow-slack-weather-pipeline/SlackWeatherPipeline/SlackWeatherPipeline/SlackWeatherPipeline.flow has been updated successfully. (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+</div>
+
+<h2>Command Telemetry</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Total</div><div class="value">52</div></div>
+    <div class="stat"><div class="label">Successful</div><div class="value">51 (98%)</div></div>
+    <div class="stat"><div class="label">Failed</div><div class="value">1</div></div>
+    <div class="stat"><div class="label">Avg / cmd</div><div class="value">1.76s</div></div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 2fr;gap:16px;margin-top:12px">
+    <div>
+      <h4>By Tool</h4>
+      <table>
+        <thead><tr><th>Tool</th><th>Count</th></tr></thead>
+        <tbody><tr><td class='mono'>Bash</td><td>37</td></tr><tr><td class='mono'>Read</td><td>13</td></tr><tr><td class='mono'>Skill</td><td>1</td></tr><tr><td class='mono'>Edit</td><td>1</td></tr></tbody>
+      </table>
+    </div>
+    <div>
+      <h4>Slowest</h4>
+      <table>
+        <thead><tr><th>Tool</th><th>Duration</th><th>Parameters</th></tr></thead>
+        <tbody><tr><td class='mono'>Bash</td><td>15.94s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro flow registry search &quot;ope...</td></tr><tr><td class='mono'>Bash</td><td>15.67s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;\\\nuip solution init &quot;SlackWeatherPi...</td></tr><tr><td class='mono'>Bash</td><td>15.44s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro flow registry search &quot;sla...</td></tr><tr><td class='mono'>Bash</td><td>3.17s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;\\\nuip maestro flow registry get &quot;ui...</td></tr><tr><td class='mono'>Bash</td><td>3.13s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;cd /work/output/artifacts/skill-flow-...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+  <p><strong>Most Common Pattern:</strong> <code>Bash → Bash → Bash</code></p><p><strong>Skill Tool Invoked:</strong> 1 time(s)</p>
+</div>
+
+<h2>Generation Metrics</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Total Latency</div><div class="value">11m 48s</div></div>
+    <div class="stat"><div class="label">Turns</div><div class="value">1</div></div>
+    <div class="stat"><div class="label">Assistant Turns</div><div class="value">93</div></div>
+    <div class="stat"><div class="label">Avg Turn Latency</div><div class="value">11m 10s</div></div>
+    
+  </div>
+</div>
+
+<h2>Token Usage</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Input (uncached)</div><div class="value">673</div></div>
+    <div class="stat"><div class="label">Output</div><div class="value">52,963</div></div>
+    <div class="stat"><div class="label">Cache Write</div><div class="value">163,661</div></div>
+    <div class="stat"><div class="label">Cache Read</div><div class="value">5,598,390</div></div>
+    <div class="stat"><div class="label">Total</div><div class="value">5,815,687</div></div>
+    <div class="stat"><div class="label">Cost</div><div class="value">$3.0897</div></div>
+  </div>
+</div>
+
+<h2>Agent Settings</h2>
+<div class="card" style="padding:0">
+  <table>
+    <tbody><tr><td class='mono dim'>Permission Mode</td><td>acceptEdits</td></tr><tr><td class='mono dim'>Allowed Tools</td><td>Skill, Bash, Read, Write, Edit, Glob, Grep</td></tr><tr><td class='mono dim'>Model</td><td>us.anthropic.claude-sonnet-5</td></tr><tr><td class='mono dim'>Max Turns</td><td>40</td></tr><tr><td class='mono dim'>System Prompt</td><td>You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted. </td></tr><tr><td class='mono dim'>System Prompt Mode</td><td>append</td></tr><tr><td class='mono dim'>Plugins</td><td>/home/azureuser/projects/skills/tmp</td></tr></tbody>
+  </table>
+</div>
+
+<h2>Environment</h2>
+<div class="card" style="padding:0">
+  <table>
+    <tbody><tr><td class='mono dim'>git_commit</td><td>unknown</td></tr><tr><td class='mono dim'>skills_git_commit</td><td>unknown</td></tr><tr><td class='mono dim'>cli_version</td><td>1.201.0-dev.8272</td></tr><tr><td class='mono dim'>tool_plugins</td><td>{&#x27;admin-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;agent-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;agenthub-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;aops-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;api-workflow-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;automation-hub-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;codedagent-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;codedapp-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;coder-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;context-grounding-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;conversational-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;data-fabric-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;docsai-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;function-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;gov-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;guardrails-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;insights-tool&#x27;: &#x27;1.201.0-dev.8276&#x27;, &#x27;integrationservice-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;ixp-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;llm-gateway-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;llmgw-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;maestro-tool&#x27;: &#x27;1.201.0-dev.8275&#x27;, &#x27;model-hub-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;orchestrator-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;platform-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;pm-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;rpa-legacy-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;rpa-tool&#x27;: &#x27;1.201.0-dev.20260809.3&#x27;, &#x27;solution-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;tasks-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;test-manager-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;traces-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;vertical-solutions-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;}</td></tr><tr><td class='mono dim'>coder_eval</td><td>0.9.6</td></tr><tr><td class='mono dim'>claude_code_cli</td><td>2.1.177 (Claude Code)</td></tr><tr><td class='mono dim'>uv</td><td>uv 0.12.5 (x86_64-unknown-linux-gnu)</td></tr><tr><td class='mono dim'>anthropic</td><td>0.122.0</td></tr><tr><td class='mono dim'>openai</td><td>3.2.0</td></tr><tr><td class='mono dim'>pydantic</td><td>2.12.5</td></tr><tr><td class='mono dim'>api_routing</td><td>aws_bedrock</td></tr><tr><td class='mono dim'>eval_routing</td><td>aws_bedrock</td></tr><tr><td class='mono dim'>aws_region</td><td>us-east-2</td></tr><tr><td class='mono dim'>bedrock_model</td><td>us.anthropic.claude-sonnet-4-6</td></tr><tr><td class='mono dim'>system_prompt_semantics</td><td>append</td></tr></tbody>
+  </table>
+</div>
+
+<footer>Generated by coder_eval · 2026-08-19T00:34:55</footer>
+</div>
+<script>
+function toggleTheme() {
+  document.documentElement.classList.toggle('light');
+  try {
+    const mode = document.documentElement.classList.contains('light') ? 'light' : 'dark';
+    localStorage.setItem('coder-eval-theme', mode);
+  } catch (e) { /* ignore */ }
+}
+(function() {
+  try {
+    if (localStorage.getItem('coder-eval-theme') === 'light') {
+      document.documentElement.classList.add('light');
+    }
+  } catch (e) { /* ignore */ }
+})();
+</script>
+</body>
+</html>

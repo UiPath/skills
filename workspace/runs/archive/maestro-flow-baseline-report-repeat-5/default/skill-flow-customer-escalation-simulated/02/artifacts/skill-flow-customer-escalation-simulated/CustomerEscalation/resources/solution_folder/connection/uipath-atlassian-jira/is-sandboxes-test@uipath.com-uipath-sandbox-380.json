@@ -1,0 +1,28 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "is-sandboxes-test@uipath.com-uipath-sandbox-380",
+    "kind": "connection",
+    "type": "uipath-atlassian-jira",
+    "apiVersion": "integrationservice.uipath.com/v1",
+    "isOverridable": true,
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "connectorName": "Jira",
+      "name": "is-sandboxes-test@uipath.com-uipath-sandbox-380",
+      "authenticationType": "AuthenticateAfterDeployment",
+      "connectorVersion": "1.13.2",
+      "connectorKey": "uipath-atlassian-jira",
+      "pollingInterval": 5
+    },
+    "locks": [],
+    "key": "f5273a4d-d492-4bcd-a106-5a20bf89a3ef",
+    "files": []
+  }
+}

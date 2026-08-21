@@ -1,0 +1,12 @@
+{
+  "DocVersion": "1.0.0",
+  "StudioMinVersion": "2025.10.0",
+  "SolutionId": "ece61a90-8bdd-4ef8-af19-be7cb2f8c51c",
+  "Projects": [
+    {
+      "Type": "Flow",
+      "ProjectRelativePath": "GoodDayFlow/project.uiproj",
+      "Id": "b2cef709-f5c7-4b3d-99e6-7c02c957c43d"
+    }
+  ]
+}

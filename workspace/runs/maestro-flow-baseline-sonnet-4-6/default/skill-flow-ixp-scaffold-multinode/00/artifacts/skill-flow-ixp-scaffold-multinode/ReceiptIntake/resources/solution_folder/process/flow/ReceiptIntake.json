@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "ReceiptIntake",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "3493655a-18f4-4d5d-9e01-9dbf06c5a4e1",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "ReceiptIntake"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Flow",
+      "name": "ReceiptIntake",
+      "package": {
+        "key": "47a7b444-e911-4fe9-9492-2b585a6dd3b9"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "77700bc9-6c2c-494e-bb60-f62537e7299a",
+    "files": []
+  }
+}

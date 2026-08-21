@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "TemperatureChecker",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "9baa6ae4-44f5-4c1b-93e4-0ab6e8623083",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "TemperatureChecker"
+    },
+    "locks": [],
+    "key": "a200c51b-b8a4-4aab-b335-f051ba8342ba",
+    "files": []
+  }
+}

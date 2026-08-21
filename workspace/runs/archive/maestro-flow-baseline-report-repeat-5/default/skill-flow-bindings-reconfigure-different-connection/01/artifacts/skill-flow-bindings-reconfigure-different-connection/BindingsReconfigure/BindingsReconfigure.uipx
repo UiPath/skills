@@ -1,0 +1,12 @@
+{
+  "DocVersion": "1.0.0",
+  "StudioMinVersion": "2025.10.0",
+  "SolutionId": "79226cf3-ce9f-4518-86cc-463898429005",
+  "Projects": [
+    {
+      "Type": "Flow",
+      "ProjectRelativePath": "BindingsReconfigure/project.uiproj",
+      "Id": "04a6b94b-a2d8-4664-8399-cf502c4a25f1"
+    }
+  ]
+}

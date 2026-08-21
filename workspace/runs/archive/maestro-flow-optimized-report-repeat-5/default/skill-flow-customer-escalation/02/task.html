@@ -1,0 +1,2200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>coder_eval · skill-flow-customer-escalation · default</title>
+<style>
+:root {
+  --bg-page: #0f1419;
+  --bg-card: #1a2129;
+  --bg-card-2: #232d38;
+  --bg-code: #0b0f14;
+  --fg: #e6edf3;
+  --fg-muted: #8b98a5;
+  --fg-dim: #6e7681;
+  --border: #30363d;
+  --accent: #58a6ff;
+  --score-high: #22c55e;
+  --score-mid: #f59e0b;
+  --score-low: #ef4444;
+  --status-success: #22c55e;
+  --status-failure: #f59e0b;
+  --status-error: #ef4444;
+  --status-neutral: #6e7681;
+  --shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+.light {
+  --bg-page: #ffffff;
+  --bg-card: #f6f8fa;
+  --bg-card-2: #eaeef2;
+  --bg-code: #f6f8fa;
+  --fg: #1f2328;
+  --fg-muted: #636c76;
+  --fg-dim: #8b949e;
+  --border: #d0d7de;
+  --accent: #0969da;
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial,
+               sans-serif;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--fg);
+  background: var(--bg-page);
+}
+.container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+h1, h2, h3, h4 { margin: 0 0 12px 0; line-height: 1.25; }
+h1 { font-size: 22px; font-weight: 600; }
+h2 { font-size: 18px; font-weight: 600; margin-top: 28px;
+     padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+h3 { font-size: 15px; font-weight: 600; color: var(--fg-muted); }
+h4 { font-size: 13px; font-weight: 600; color: var(--fg-muted); }
+p { margin: 0 0 8px 0; }
+.muted { color: var(--fg-muted); }
+.dim { color: var(--fg-dim); }
+.mono { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+        monospace; font-size: 12.5px; }
+code { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+       monospace; font-size: 12.5px; background: var(--bg-code);
+       border: 1px solid var(--border); padding: 1px 5px; border-radius: 3px; }
+pre { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+      monospace; font-size: 12.5px; background: var(--bg-code);
+      border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px;
+      margin: 6px 0; overflow-x: auto; white-space: pre-wrap;
+      word-wrap: break-word; }
+.header-bar { display: flex; align-items: center; justify-content: space-between;
+              margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+.title-group { flex: 1; min-width: 0; }
+.title-group .subtitle { color: var(--fg-muted); font-size: 13px;
+                         margin-top: 2px; word-break: break-all; }
+.badges { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.badge { display: inline-flex; align-items: center; gap: 6px;
+         padding: 4px 10px; border-radius: 12px; font-size: 12px;
+         font-weight: 600; background: var(--bg-card-2);
+         border: 1px solid var(--border); color: var(--fg); }
+.badge.success { background: color-mix(in srgb, var(--status-success) 20%, var(--bg-card-2));
+                 border-color: var(--status-success); color: var(--status-success); }
+.badge.failure { background: color-mix(in srgb, var(--status-failure) 20%, var(--bg-card-2));
+                 border-color: var(--status-failure); color: var(--status-failure); }
+.badge.error { background: color-mix(in srgb, var(--status-error) 20%, var(--bg-card-2));
+               border-color: var(--status-error); color: var(--status-error); }
+.badge.warning { background: color-mix(in srgb, #f4a52810 20%, var(--bg-card-2));
+                 border-color: #f4a528; color: #f4a528; }
+.badge.neutral { color: var(--fg-muted); }
+.score-pill { display: inline-block; padding: 2px 8px; border-radius: 10px;
+              font-size: 12px; font-weight: 700; min-width: 42px;
+              text-align: center; color: #0b0f14; }
+.score-high { background: var(--score-high); }
+.score-mid { background: var(--score-mid); }
+.score-low { background: var(--score-low); }
+.card { background: var(--bg-card); border: 1px solid var(--border);
+        border-radius: 8px; padding: 16px 20px; margin-bottom: 16px;
+        box-shadow: var(--shadow); }
+.card.highlight { border-left: 4px solid var(--accent); }
+.grid { display: grid; gap: 12px;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+.stat { background: var(--bg-card-2); padding: 10px 12px; border-radius: 6px;
+        border: 1px solid var(--border); }
+.stat .label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;
+               color: var(--fg-muted); margin-bottom: 4px; }
+.stat .value { font-size: 16px; font-weight: 600; }
+table { width: 100%; border-collapse: collapse; margin: 4px 0 12px 0; }
+th, td { text-align: left; padding: 8px 10px;
+         border-bottom: 1px solid var(--border); vertical-align: top;
+         font-size: 13px; }
+th { color: var(--fg-muted); font-weight: 600; font-size: 12px;
+     text-transform: uppercase; letter-spacing: 0.3px; }
+tr:last-child td { border-bottom: none; }
+details { margin: 6px 0; border: 1px solid var(--border); border-radius: 6px;
+          background: var(--bg-card-2); }
+details > summary { cursor: pointer; padding: 8px 12px; user-select: none;
+                    font-weight: 500; list-style: none; }
+details > summary::-webkit-details-marker { display: none; }
+details > summary::before { content: "▸ "; color: var(--fg-dim);
+                            display: inline-block; width: 14px;
+                            transition: transform 0.15s; }
+details[open] > summary::before { content: "▾ "; }
+details .details-body { padding: 0 12px 10px 12px; }
+.tool-row { display: flex; align-items: center; gap: 10px;
+            flex-wrap: wrap; font-size: 13px; }
+.tool-name { font-weight: 600; color: var(--accent); font-family: ui-monospace,
+             SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+.tool-status-ok { color: var(--status-success); font-size: 11px;
+                  font-weight: 600; }
+.tool-status-err { color: var(--status-error); font-size: 11px;
+                   font-weight: 600; }
+.tool-duration { color: var(--fg-muted); font-size: 12px; }
+.tool-seq { color: var(--fg-dim); font-size: 11px; font-weight: 600;
+            min-width: 24px; text-align: right; font-family: ui-monospace,
+            SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+.turn-header { display: flex; justify-content: space-between;
+               align-items: baseline; flex-wrap: wrap; gap: 10px;
+               margin-bottom: 10px; }
+.turn-meta { font-size: 12px; color: var(--fg-muted); }
+.criterion-row td:first-child { font-family: ui-monospace, SFMono-Regular,
+                                 "SF Mono", Menlo, Consolas, monospace;
+                                 color: var(--fg-muted); font-size: 12px; }
+.judge-section { display: flex; flex-direction: column; gap: 12px; }
+.judge-card { padding: 14px 16px; }
+.judge-card-head { display: flex; justify-content: space-between;
+                    align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+.judge-card-title { font-size: 14px; line-height: 1.4; flex: 1; min-width: 0; }
+.judge-card-score { flex-shrink: 0; }
+.judge-rationale { margin-top: 10px; padding: 10px 12px;
+                   background: var(--bg-code); border-radius: 4px;
+                   font-size: 13px; line-height: 1.5; }
+.judge-findings { margin: 8px 0 0 18px; padding-left: 4px; font-size: 13px;
+                   line-height: 1.6; }
+.judge-findings li { margin: 2px 0; }
+.nav-toggle { display: inline-block; padding: 5px 10px; font-size: 12px;
+              background: var(--bg-card-2); border: 1px solid var(--border);
+              border-radius: 5px; color: var(--fg); cursor: pointer; }
+.nav-toggle:hover { background: var(--bg-card); }
+.llm-next-steps { margin: 6px 0 0 20px; padding-left: 0; }
+.llm-next-steps li { margin: 3px 0; }
+.iteration-group { padding: 12px 16px 4px 16px; margin-bottom: 20px;
+                   border-radius: 0 6px 6px 0; border-left: 4px solid var(--status-neutral); }
+/* rgba fallback for browsers without color-mix (Chrome <111, Firefox <113, Safari <16.2). */
+.iteration-group--recovered { border-left-color: var(--status-success);
+                              background: rgba(34, 197, 94, 0.06);
+                              background: color-mix(in srgb, var(--status-success) 6%, transparent); }
+.iteration-group--terminal { border-left-color: var(--status-error);
+                             background: rgba(239, 68, 68, 0.06);
+                             background: color-mix(in srgb, var(--status-error) 6%, transparent); }
+.iteration-group__banner { margin: 0 0 12px 0; font-size: 14px; font-weight: 600; }
+.iteration-group--recovered .iteration-group__banner { color: var(--status-success); }
+.iteration-group--terminal .iteration-group__banner { color: var(--status-error); }
+.attempt-transition { display: flex; align-items: center; gap: 8px;
+                      margin: -6px 0 12px 8px; color: var(--status-error); font-size: 12.5px; }
+.attempt-transition__icon { font-weight: 700; }
+footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--border);
+         color: var(--fg-dim); font-size: 12px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="header-bar">
+  <div class="title-group">
+    <h1>Task: skill-flow-customer-escalation</h1>
+    <div class="subtitle">Complex multi-branch escalation flow: Outlook email-received trigger → urgency-keyword script → VIP-domain script → Decision → branches that send Slack DMs + Outlook reply (VIP path) or generate a mock support ticket + Outlook reply (standard path). Scoped to static validation only — trigger-fired execution is not reliably testable against the shared Outlook connection (see skills repo outlook_trigger_inbox task notes).</div>
+  </div>
+  <div class="badges">
+    <span class="badge success">SUCCESS</span>
+    <span class="score-pill score-high">1.00</span>
+    <span class="badge neutral">claude-code · claude-sonnet-4-6</span>
+    <span class="badge neutral">12m 15s</span>
+    <span class="badge neutral">$1.7908</span>
+    
+    
+    <span class="nav-toggle" onclick="toggleTheme()">Toggle theme</span>
+  </div>
+</div>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Variant</div><div class="value">default</div></div>
+    <div class="stat"><div class="label">Started</div><div class="value mono">2026-07-24T17:45:33</div></div>
+    <div class="stat"><div class="label">Duration</div><div class="value">12m 15s</div></div>
+    <div class="stat"><div class="label">Turns (SDK)</div><div class="value">76</div></div>
+    <div class="stat"><div class="label">Commands</div><div class="value">48</div></div>
+  </div>
+</div>
+
+<h2>Success Criteria <span class="muted" style="font-weight:400">(2/2 passed)</span></h2>
+<div class="card" style="padding:0">
+<table>
+  <thead>
+    <tr>
+      <th style="width:15%">Type</th>
+      <th style="width:35%">Description</th>
+      <th style="width:10%">Score</th>
+      <th>Details</th>
+    </tr>
+  </thead>
+  <tbody>
+    
+<tr class="criterion-row">
+  <td>run_command</td>
+  <td>uip maestro flow validate passes on the flow file</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Command: uip maestro flow validate CustomerEscalation/CustomerEscalation/CustomerEscalation.flow</summary><div class="details-body"><pre style="margin:6px 0 0 0">Command: uip maestro flow validate CustomerEscalation/CustomerEscalation/CustomerEscalation.flow
+Exit code: 0 (expected: 0)
+Stdout:
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FlowValidate&quot;,
+  &quot;Data&quot;: {
+    &quot;File&quot;: &quot;/work/output/artifacts/skill-flow-customer-escalation/CustomerEscalation/CustomerEscalation/CustomerEscalation.flow&quot;,
+    &quot;Status&quot;: &quot;Valid&quot;,
+    &quot;Warnings&quot;: &quot;1 warning(s):\n  - [nodes[emailReceived1].inputs.detail.connectionResourceId] Connection \&quot;75dfafb4-3717-470c-a5f6-bdc144757a67\&quot; is referenced by 3 nodes (nodes[emailReceived1], nodes[replyFastAck1], nodes[replyTicket1]). Shared connections cause cross-node state leakage at runtime. If this is intentional (e.g. two connectors on the same SaaS account), ignore this warning; otherwise create a separate connection per node.&quot;
+  }
+}
+
+Stderr:
+[ManifestClient] fetchDynamicNodes ok: total=207 agent context nodes=2 external agent nodes=6 orchestrator nodes=158 IXP nodes=41</pre></div></details></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>run_command</td>
+  <td>Flow has Outlook trigger, classifier scripts, decision with two branches, Slack DM and Outlook reply references</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Command: python3 $TASK_DIR/check_customer_escalation_flow.py</summary><div class="details-body"><pre style="margin:6px 0 0 0">Command: python3 $TASK_DIR/check_customer_escalation_flow.py
+Exit code: 0 (expected: 0)
+Stdout:
+PASS: 10 nodes, 3 scripts, decision with 2 branches, Slack and Outlook reply references present
+
+Stderr: (empty)</pre></div></details></td>
+</tr>
+
+  </tbody>
+</table>
+</div>
+<h2>Conversation Trace (1 iteration)</h2>
+<div class="card">
+  <div class="turn-header">
+    <h3>Iteration 1</h3>
+    <div class="badges">
+      <span class="badge neutral">76 assistant turns</span>
+      <span class="badge neutral">in 24 · out 40866 · cache 2336232</span>
+      <span class="badge neutral">12m 5s</span>
+      
+      
+      
+    </div>
+  </div>
+  <details>
+    <summary>Prompt to agent</summary>
+    <div class="details-body"><pre>Your working directory is: /work/output/artifacts/skill-flow-customer-escalation
+
+Build a Maestro Flow called &quot;CustomerEscalation&quot; that triggers on new
+Outlook inbox emails and routes each one based on two signals: whether
+it looks urgent (decide the keyword set yourself) and whether the
+sender is a VIP (decide the VIP rule yourself — domain allow-list,
+tag lookup, etc.).
+
+Use one script node for urgency classification and another for VIP
+classification, then branch with a decision node on the combined
+result.
+
+- High-touch branch (urgent AND VIP): notify on Slack and reply to
+  the sender via Outlook with a fast-response acknowledgment.
+- Standard branch: generate a support ticket in a script node and
+  reply to the sender via Outlook with the ticket details.
+
+Validate the flow.
+Do NOT ask for approval, confirmation, or feedback. Do NOT pause between
+planning and implementation. Build the complete flow end-to-end in a
+single pass.
+</pre></div>
+  </details>
+  <details>
+    <summary>Agent response</summary>
+    <div class="details-body"><pre>[ASSISTANT] Now I have enough context on the architecture. Let me read the key plugin docs I&#x27;ll need, and also check if there are existing solutions in the working directory — all in parallel.
+[ASSISTANT] Now I have everything I need. Let me read the action-nodes.md shared reference quickly, then execute T1 — scaffold, registry pull, connector searches, and OOTB node lookups all in parallel.
+[ASSISTANT] Now I have all the context needed. Let me execute T1 — scaffold the solution, pull the registry, search for connectors, and get OOTB node definitions, all in parallel.
+[ASSISTANT] Let me check the full Outlook search for trigger nodes and also search for a real Outlook connector trigger:
+[ASSISTANT] Now I have all node types. Let me check available connections, then add all CLI-owned nodes in one chained call:
+[ASSISTANT] I have connections. Now I&#x27;ll add all CLI-owned nodes in one chained call, and in parallel check trigger metadata and ping connections.
+[ASSISTANT] All CLI-owned nodes added, both connections are healthy. Node IDs:
+- `emailReceived1` - Outlook trigger
+- `slackNotifyVip1` - Slack send message
+- `replyFastAck1` - Outlook reply (high-touch)
+- `replyTicket1` - Outlook reply (standard)
+
+Now I need trigger metadata for `node configure`. Let me query the trigger objects in parallel with reading the scaffolded `.flow`:
+[ASSISTANT] Good. The trigger is a CuratedTrigger with `eventMode: polling`. No required event parameters (sharedMailboxAddress is optional). Now I need metadata for the activity nodes. Let me get describes in parallel:
+[ASSISTANT] I need to resolve the Outlook inbox folder ID and get metadata for the activity fields:
+[ASSISTANT] I have all the reference IDs I need:
+- Outlook Inbox folder ID: `AAMkAGNiNDVjZmJmLTczOTEtNDQ2MS04Njc2LTUwM2I3ZDgxOWQwMAAuAAAAAAAJJRkzOJfsTKZfQqhMUHzlAQAJDKUrZhoLQZ5wELpOfJPCAAAAAAEMAAA=`
+- Slack channel: `uipath-slack-test` (id: `C01H4SPS77W`) - using a visible test channel
+- Outlook connection: `75dfafb4-3717-470c-a5f6-bdc144757a67`, FolderKey: `5da18ec0-7de1-4e57-aaf1-ddc8a369c199`
+- Slack connection: `849e85d8-1aa9-4d52-8bbd-20041c8f05d8`, FolderKey: `5da18ec0-7de1-4e57-aaf1-ddc8a369c199`
+
+Now let me get describe metadata for the activity nodes so I know the field names:
+[ASSISTANT] I have all the reference data needed. Inbox folder ID identified, Slack channel IDs available. Now I&#x27;ll write the complete `.flow` file with all user-owned nodes, definitions, and edges (T2), then configure all CLI-owned nodes and validate (T3).
+[ASSISTANT] Now T3 — configure all CLI-owned nodes, then validate and format:
+[ASSISTANT] Trigger configured. Now configure the Slack and Outlook reply nodes, then validate and format:
+[ASSISTANT] All 4 CLI-owned nodes configured. Now validate + format:
+[ASSISTANT] Valid with one warning about a shared connection across 3 Outlook nodes — this is intentional (same Outlook 365 account for trigger, fast-ack reply, and ticket reply). Now format:
+[ASSISTANT] Flow validates and formats cleanly. Here&#x27;s a summary of what was built:
+
+---
+
+## ✅ CustomerEscalation Flow — Complete
+
+**File:** `/work/output/artifacts/skill-flow-customer-escalation/CustomerEscalation/CustomerEscalation/CustomerEscalation.flow`
+
+### Validation: **Valid** (1 informational warning, intentional — shared Outlook connection across 3 nodes on the same account)
+### Format: **10 nodes, 9 edges** — all positioned correctly
+
+---
+
+### Flow topology
+
+```
+Email Received (Outlook trigger, polls Inbox)
+  → Classify Urgency (script)
+  → Classify VIP (script)
+  → Urgent AND VIP? (decision)
+       ├── true (High Touch branch)
+       │     → Slack Notify VIP → Reply Fast Ack → Done - High Touch
+       └── false (Standard branch)
+             → Generate Support Ticket → Reply Ticket → Done - Standard
+```
+
+### Node details
+
+| Node | Type | Logic |
+|---|---|---|
+| **Email Received** | `uipath.connector.trigger.uipath-microsoft-outlook365.email-received` | Polls the Inbox folder of `is-sandboxes-test@uipathsand</pre></div>
+  </details>
+  <h4 style="margin-top:12px">Tool Calls (48)</h4>
+  
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#0</span>
+      <span class="tool-name">Skill</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">51ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;skill&quot;: &quot;uipath:uipath-maestro-flow&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Launching skill: uipath:uipath-maestro-flow</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#1</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">363ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/CAPABILITY.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Author — Create and edit `.flow` files
+2	
+3	Capability index for building new flows (greenfield) and editing existing flows (brownfield). Author owns everything that happens on disk, locally, without `uip login`. Authoring journeys terminate at `validate` + `format`; from there, hand off to [operate/CAPABILITY.md](../operate/CAPABILITY.md) to publish, run, or debug.
+4	
+5	&gt; **Where you came from / where to go next.** Author is upstream of Operate (build the flow → ship it) and upstream of Diagnose only via Operate (build → run → diagnose). Publish/run/lifecycle lives in [operate/CAPABILITY.md](../operate/CAPABILITY.md); fault triage lives in [diagnose/CAPABILITY.md](../diagnose/CAPABILITY.md).
+6	&gt;
+7	&gt; **Inherits universal rules from [SKILL.md](../../SKILL.md)** — `--output json` + prefer `--output-filter` for extraction, no `flow debug` without consent, resource discovery order, never invoke other skills automatically, dropdown question pattern, solution layout, **plain-English narration + granular progress list (opt-in — silent by default; engage when the user asks for verbosity)**. The rules below are author-scoped and apply on top.
+8	
+9	## When to use this capability
+10	
+11	-
+
+… (truncated, 25996 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#2</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">234ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/references/greenfield.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Greenfield — Create a New Flow
+2	
+3	End-to-end journey for creating a Flow project from scratch. Author terminates at `validate` + `format`. To publish, run, or debug after this, see [operate/CAPABILITY.md](../../operate/CAPABILITY.md).
+4	
+5	&gt; **Brownfield edits use a different journey.** If the `.flow` file already exists, see [brownfield.md](brownfield.md) instead.
+6	
+7	## Should you plan first?
+8	
+9	For complex flows, produce a plan before building. Reference [planning-arch.md](planning-arch.md) and [planning-impl.md](planning-impl.md) for the node type catalog, port reference, wiring rules, and topology patterns.
+10	
+11	**Plan when:**
+12	- The flow has 5+ nodes with branching or parallel paths
+13	- The flow uses connectors or resources that need discovery
+14	- The user&#x27;s requirements are ambiguous and you need to confirm the approach
+15	
+16	**Don&#x27;t plan when:**
+17	- Adding/editing a single node in an existing flow (use [brownfield.md](brownfield.md))
+18	- The flow is a straightforward linear pipeline (trigger → action → action → end)
+19	- The user has already described the exact topology they want
+20	
+21	### Examples
+22	
+23	**Plan:** &quot;Build a flow that receives a Jira ticke
+
+… (truncated, 30834 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#3</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">187ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/references/planning-arch.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Planning Phase 1: Discovery &amp; Architectural Design
+2	
+3	Discover available capabilities, then design the flow topology — select node types, define edges, and identify expected inputs and outputs. This phase produces a **mermaid diagram** and structured tables that can be reviewed before any implementation work begins.
+4	
+5	&gt; **Registry rules for this phase:**
+6	&gt; - **`registry search` and `registry list` are ALLOWED** — use them to discover what connectors, resources, and operations exist before committing to a topology.
+7	&gt; - **`registry get` IS REQUIRED for any OOTB action node** the flow will use — `core.action.http`, `core.action.http.v2`, `core.action.script`, `core.action.transform`, queue actions, etc. These nodes have no connection-id; their full input/output schema, port names, and required fields are only visible via `registry get &lt;node-type&gt; --output json`. Run `get` once per OOTB action node type during discovery so the topology and ports are grounded in real metadata.
+8	&gt; - **`registry get` is DEFERRED for connector and resource nodes** — those require a `--connection-id` (connector) or `--local` resolution that belongs to [Planning Phase 2: Implementation](plannin
+
+… (truncated, 43980 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#4</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">187ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/references/plugins/connector-trigger/impl.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Connector Trigger Nodes — Implementation
+2	
+3	How to configure connector trigger nodes: connection binding, enriched metadata, event parameter resolution, and trigger-specific `node configure` fields. This replaces the IS activity workflow (Steps 1-6 in [connector/impl.md](../connector/impl.md)) — trigger nodes have different metadata and configuration.
+4	
+5	&gt; **This plugin covers two node families that share the same configuration mechanism:**
+6	&gt;
+7	&gt; - **Connector triggers** (`uipath.connector.trigger.&lt;key&gt;.&lt;trigger&gt;`) — start node; the event starts the flow. The default subject of every step below.
+8	&gt; - **Wait for events** (`uipath.connector.event.&lt;key&gt;.&lt;event&gt;`) — a mid-flow event node; the flow pauses and waits for the event before continuing. Same connection binding, enriched metadata, event parameter resolution, filter trees, and `node configure` fields. Only the placement and node lifecycle differ. See [Wait for events](#wait-for-events-uipathconnectoreventkeyevent) for the deltas, then apply Steps 1-6 below unchanged.
+9	
+10	## Configuration Workflow
+11	
+12	Follow these steps for every IS trigger node.
+13	
+14	### Step 1 — Fetch a preliminary connection and query trigge
+
+… (truncated, 37132 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#5</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">124ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/references/plugins/connector/impl.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Connector Activity Nodes — Implementation
+2	
+3	How to configure connector activity nodes: connection binding, enriched metadata, reference field resolution, and debugging. Connection bindings are emitted by `uip maestro flow node configure` into the flow&#x27;s top-level `bindings[]`; `bindings_v2.json` is regenerated from them at debug/pack time and should never be hand-edited.
+4	
+5	For generic node/edge add, remove, and wiring procedures, see [editing-operations.md](../../editing-operations.md). This guide covers the connector-specific configuration workflow that must follow the generic node add.
+6	
+7	## How Connector Nodes Differ from OOTB
+8	
+9	1. **Connection binding required** — every connector node needs an IS connection (OAuth, API key, etc.) authored in the flow&#x27;s top-level `bindings[]` (which the CLI regenerates into `bindings_v2.json` at debug/pack time). Without it, the node cannot authenticate.
+10	2. **Enriched metadata via `--connection-id`** — call `registry get` with `--connection-id` to get connection-aware field metadata. Without it, only base fields are returned — custom fields, dynamic enums, and reference resolution are missing.
+11	3. **`inputs.detail` object** —
+
+… (truncated, 59526 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#6</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">13ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/references/plugins/script/impl.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Script Node — Implementation
+2	
+3	## Node Type
+4	
+5	`core.action.script`
+6	
+7	## Registry validation
+8	
+9	```bash
+10	uip maestro flow registry get core.action.script --output json
+11	```
+12	
+13	Confirm: input port `input`, output port `success`, required input `script` (string, non-empty). See [Action Node Structure — Registry validation](../../../../shared/action-nodes.md#registry-validation) for the shared pattern.
+14	
+15	## JSON structure
+16	
+17	Follow the [Action Node Structure — Standard JSON skeleton](../../../../shared/action-nodes.md#standard-json-skeleton). The script-specific input is a single `script` string:
+18	
+19	```json
+20	{
+21	  &quot;inputs&quot;: {
+22	    &quot;script&quot;: &quot;const items = $vars.fetchData.output.body.items;\nconst total = items.reduce((sum, i) =&gt; sum + i.amount, 0);\nreturn { total, count: items.length };&quot;
+23	  }
+24	}
+25	```
+26	
+27	## Adding and editing
+28	
+29	See [Action Node Structure — Adding and editing procedures](../../../../shared/action-nodes.md#adding-and-editing-procedures). The script node uses the standard input port `input` and output port `success`; no plugin-specific wiring.
+30	
+31	## Script rules
+32	
+33	1. **Top-level body — no `function main()` w
+
+… (truncated, 3416 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#7</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">36ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/references/plugins/decision/impl.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Decision Node — Implementation
+2	
+3	## Node Type
+4	
+5	`core.logic.decision`
+6	
+7	## Registry Validation
+8	
+9	```bash
+10	uip maestro flow registry get core.logic.decision --output json
+11	```
+12	
+13	Confirm: input port `input`, output ports `true` and `false`, required input `expression`. Set the node instance `typeVersion` to the `version` field from this response — do not hardcode it.
+14	
+15	## JSON Structure
+16	
+17	```json
+18	{
+19	  &quot;id&quot;: &quot;checkStatus&quot;,
+20	  &quot;type&quot;: &quot;core.logic.decision&quot;,
+21	  &quot;typeVersion&quot;: &quot;&lt;DEFINITION_VERSION&gt;&quot;,
+22	  &quot;display&quot;: { &quot;label&quot;: &quot;Check Status&quot; },
+23	  &quot;inputs&quot;: {
+24	    &quot;expression&quot;: &quot;$vars.fetchData.output.statusCode === 200&quot;
+25	  }
+26	}
+27	```
+28	
+29	## Adding / Editing
+30	
+31	For step-by-step add, delete, and wiring procedures, see [editing-operations.md](../../editing-operations.md). Use the JSON structure above for the node-specific `inputs`.
+32	
+33	## Expression Examples
+34	
+35	```javascript
+36	// Simple comparison
+37	$vars.fetchData.output.statusCode === 200
+38	
+39	// Boolean field
+40	$vars.processData.output.isValid
+41	
+42	// Compound condition
+43	$vars.httpCall.output.statusCode === 200 &amp;&amp; $vars.httpCall.output.body.count &gt; 0
+44	
+45	// S
+
+… (truncated, 735 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#8</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">330ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;ls /work/output/artifacts/skill-flow-customer-escalation/*.uipx /work/output/artifacts/skill-flow-customer-escalation/*/*.uipx 2&gt;/dev/null || echo \&quot;NO_SOLUTIONS_FOUND\&quot;&quot;,
+  &quot;description&quot;: &quot;Check for existing solutions in working directory&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>NO_SOLUTIONS_FOUND</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#9</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.41s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;which uip &amp;&amp; uip --version 2&gt;/dev/null || echo \&quot;UIP_NOT_FOUND\&quot;&quot;,
+  &quot;description&quot;: &quot;Verify uip binary and version&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/usr/bin/uip
+1.199.0-dev.7970</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#10</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">11ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/shared/action-nodes.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Action Node Structure
+2	
+3	Reference for the boilerplate shared by every action-node `impl.md` in this skill. Plugin docs should link here for the standard parts and only spell out what is plugin-specific: the registry type string, plugin-specific input fields, plugin-specific rules, debug entries, and node-type configuration workflows.
+4	
+5	## Registry validation
+6	
+7	Every action node should validate its registry contract before authoring:
+8	
+9	```bash
+10	uip maestro flow registry get &lt;node-type&gt; --output json
+11	```
+12	
+13	`registry get` returns the manifest at `Data.Node`. Do **not** inspect `Data` directly as if it were the node manifest.
+14	
+15	```json
+16	{
+17	  &quot;Data&quot;: {
+18	    &quot;Node&quot;: {
+19	      &quot;nodeType&quot;: &quot;core.action.script&quot;,
+20	      &quot;version&quot;: &quot;1.0&quot;,
+21	      &quot;handleConfiguration&quot;: [
+22	        { &quot;position&quot;: &quot;left&quot;, &quot;handles&quot;: [{ &quot;id&quot;: &quot;input&quot;, &quot;type&quot;: &quot;target&quot; }] },
+23	        { &quot;position&quot;: &quot;right&quot;, &quot;handles&quot;: [{ &quot;id&quot;: &quot;success&quot;, &quot;type&quot;: &quot;source&quot; }] }
+24	      ],
+25	      &quot;inputDefinition&quot;: {},
+26	      &quot;outputDefinition&quot;: {}
+27	    }
+28	  }
+29	}
+30	```
+31	
+32	Inspect:
+33	
+34	- `Data.Node.handleConfiguration` — input port name and output port name(s). Array of pos
+
+… (truncated, 3572 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#11</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">13ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/references/plugins/end/impl.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# End Node — Implementation
+2	
+3	## Node Type
+4	
+5	`core.control.end`
+6	
+7	## Registry Validation
+8	
+9	```bash
+10	uip maestro flow registry get core.control.end --output json
+11	```
+12	
+13	Confirm: input port `input`, no output ports. Set the node instance `typeVersion` to the `version` field from this response — do not hardcode it.
+14	
+15	## JSON Structure
+16	
+17	### Without Output Mapping
+18	
+19	```json
+20	{
+21	  &quot;id&quot;: &quot;doneSuccess&quot;,
+22	  &quot;type&quot;: &quot;core.control.end&quot;,
+23	  &quot;typeVersion&quot;: &quot;&lt;DEFINITION_VERSION&gt;&quot;,
+24	  &quot;display&quot;: { &quot;label&quot;: &quot;Done&quot; },
+25	  &quot;inputs&quot;: {}
+26	}
+27	```
+28	
+29	### With Output Mapping
+30	
+31	When the workflow declares `out` variables, every End node must map all of them:
+32	
+33	```json
+34	{
+35	  &quot;id&quot;: &quot;doneSuccess&quot;,
+36	  &quot;type&quot;: &quot;core.control.end&quot;,
+37	  &quot;typeVersion&quot;: &quot;&lt;DEFINITION_VERSION&gt;&quot;,
+38	  &quot;display&quot;: { &quot;label&quot;: &quot;Done&quot; },
+39	  &quot;inputs&quot;: {},
+40	  &quot;outputs&quot;: {
+41	    &quot;processedCount&quot;: {
+42	      &quot;source&quot;: &quot;=js:$vars.processData.output.count&quot;
+43	    },
+44	    &quot;resultSummary&quot;: {
+45	      &quot;source&quot;: &quot;=js:$vars.formatOutput.output.summary&quot;
+46	    }
+47	  }
+48	}
+49	```
+50	
+51	Each key in `outputs` must match a variable `id` from `variables.globals` where `dire
+
+… (truncated, 904 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#12</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">21.94s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip solution init CustomerEscalation --output json &amp;&amp; cd CustomerEscalation &amp;&amp; uip maestro flow init CustomerEscalation --output json &amp;&amp; cd CustomerEscalation &amp;&amp; uip maestro flow registry pull &amp;&amp; echo \&quot;SCAFFOLD_DONE\&quot; &amp;&amp; ls \&quot;$(pwd)/CustomerEscalation.flow\&quot; 2&gt;/dev/null || ls \&quot;$(pwd)\&quot;&quot;,
+  &quot;description&quot;: &quot;Scaffold solution + flow project + registry pull&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;SolutionInit&quot;,
+  &quot;Data&quot;: {
+    &quot;Status&quot;: &quot;Created successfully&quot;,
+    &quot;Path&quot;: &quot;/work/output/artifacts/skill-flow-customer-escalation/CustomerEscalation/CustomerEscalation.uipx&quot;,
+    &quot;NextSteps&quot;: &quot;Read /work/output/artifacts/skill-flow-customer-escalation/CustomerEscalation/AGENTS.md or /work/output/artifacts/skill-flow-customer-escalation/CustomerEscalation/CLAUDE.md to understand the solution lifecycle, project types that can be used inside a solution, and related uip command references.&quot;
+  }
+}
+2026-07-24 17:49:20 INFO  [ResourceBuilder:ProjectCreateCommandHandler] Creating project [object Object]
+2026-07-24 17:49:20 INFO  [ResourceBuilder:MultiFileSolutionDefinitionProvider] Reading multi-file solution definition for solution %s /work/output/artifacts/skill-flow-customer-escalation/CustomerEscalation
+2026-07-24 17:49:20 INFO  [ResourceBuilder:ProjectCreateCommandHandler] Generate artefact resources for project [object Object]
+2026-07-24 17:49:20 INFO  [ResourceBuilder:SolutionsMetadataReader] Reading metadata from %s. SolutionsMetadataReader
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FlowInit&quot;,
+  &quot;Data&quot;: {
+    &quot;Status&quot;: &quot;Created successfully&quot;,
+    &quot;Pat
+
+… (truncated, 1712 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#13</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">22.71s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip login status --output json 2&gt;/dev/null | head -5&quot;,
+  &quot;description&quot;: &quot;Check login status&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;LoginStatus&quot;,
+  &quot;Data&quot;: {
+    &quot;Status&quot;: &quot;Logged in&quot;,</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#14</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">26.31s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry search \&quot;outlook\&quot; --output json --output-filter \&quot;[*].{NodeType:NodeType,DisplayName:DisplayName,Description:Description}\&quot; 2&gt;/dev/null&quot;,
+  &quot;description&quot;: &quot;Search registry for Outlook connector nodes&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>&lt;persisted-output&gt;
+Output too large (38KB). Full output saved to: /home/azureuser/.claude/projects/-work-output-artifacts-skill-flow-customer-escalation/200db9ac-bdd8-4b06-82f1-2800791f0ff9/tool-results/b7srtirjv.txt
+
+Preview (first 2KB):
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeSearchSuccess&quot;,
+  &quot;Data&quot;: [
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-mock-outlook.get-email-folders&quot;,
+      &quot;DisplayName&quot;: &quot;Get Email Folders&quot;,
+      &quot;Description&quot;: &quot;(Microsoft Mocked Outlook 365 for webhooks) Returns list of folders available to user in their mailbox&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-mock-outlook.delete-email&quot;,
+      &quot;DisplayName&quot;: &quot;Delete Email&quot;,
+      &quot;Description&quot;: &quot;(Microsoft Mocked Outlook 365 for webhooks) Delete Email&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-mock-outlook.delete-record&quot;,
+      &quot;DisplayName&quot;: &quot;Delete Record&quot;,
+      &quot;Description&quot;: &quot;(Microsoft Mocked Outlook 365 for webhooks) Deletes a record in Microsoft Outlook 365&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-mock-outlook.reply-to-email&quot;,
+      &quot;DisplayName&quot;: &quot;Reply To Email&quot;,
+      &quot;Description&quot;: &quot;(Microsoft Mocked Outlook 365 for webhooks) Reply to specified 
+
+… (truncated, 1060 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#15</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">34.48s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry search \&quot;slack\&quot; --output json --output-filter \&quot;[*].{NodeType:NodeType,DisplayName:DisplayName,Description:Description}\&quot; 2&gt;/dev/null&quot;,
+  &quot;description&quot;: &quot;Search registry for Slack connector nodes&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeSearchSuccess&quot;,
+  &quot;Data&quot;: [
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-salesforce-slack.unarchive-channel&quot;,
+      &quot;DisplayName&quot;: &quot;Unarchive Channel&quot;,
+      &quot;Description&quot;: &quot;(Slack) Unarchive an existing channel&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-salesforce-slack.send-reply&quot;,
+      &quot;DisplayName&quot;: &quot;Send Reply&quot;,
+      &quot;Description&quot;: &quot;(Slack) Send a reply to a message in a Slack channel.&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-salesforce-slack.join-channel&quot;,
+      &quot;DisplayName&quot;: &quot;Join Channel&quot;,
+      &quot;Description&quot;: &quot;(Slack) Join a public Slack channel as the bot user or authenticated user.&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-salesforce-slack.create-channel&quot;,
+      &quot;DisplayName&quot;: &quot;Create Channel&quot;,
+      &quot;Description&quot;: &quot;(Slack) Create a public or private channel in Slack.&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-salesforce-slack.send-message-to-channel&quot;,
+      &quot;DisplayName&quot;: &quot;Send Message to Channel&quot;,
+      &quot;Description&quot;: &quot;(Slack) Send messages to public or private Slack channels.&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-salesforce-slack.archive-channel
+
+… (truncated, 12899 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#16</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">39.08s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry get core.control.end --output json 2&gt;/dev/null&quot;,
+  &quot;description&quot;: &quot;Get End node registry definition&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeGetSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;Node&quot;: {
+      &quot;nodeType&quot;: &quot;core.control.end&quot;,
+      &quot;version&quot;: &quot;1.0&quot;,
+      &quot;category&quot;: &quot;control-flow&quot;,
+      &quot;description&quot;: &quot;Mark the end of a workflow path&quot;,
+      &quot;tags&quot;: [
+        &quot;control-flow&quot;,
+        &quot;end&quot;,
+        &quot;finish&quot;,
+        &quot;complete&quot;
+      ],
+      &quot;sortOrder&quot;: 20,
+      &quot;display&quot;: {
+        &quot;label&quot;: &quot;End&quot;,
+        &quot;icon&quot;: &quot;circle-check&quot;,
+        &quot;shape&quot;: &quot;circle&quot;
+      },
+      &quot;handleConfiguration&quot;: [
+        {
+          &quot;position&quot;: &quot;left&quot;,
+          &quot;handles&quot;: [
+            {
+              &quot;id&quot;: &quot;input&quot;,
+              &quot;type&quot;: &quot;target&quot;,
+              &quot;handleType&quot;: &quot;input&quot;
+            }
+          ]
+        }
+      ],
+      &quot;model&quot;: {
+        &quot;type&quot;: &quot;bpmn:EndEvent&quot;
+      },
+      &quot;runtimeConstraints&quot;: {
+        &quot;exclude&quot;: [
+          &quot;api-function&quot;
+        ]
+      }
+    }
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#17</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">41.63s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry get core.action.script --output json 2&gt;/dev/null&quot;,
+  &quot;description&quot;: &quot;Get Script node registry definition&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeGetSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;Node&quot;: {
+      &quot;nodeType&quot;: &quot;core.action.script&quot;,
+      &quot;version&quot;: &quot;1.0&quot;,
+      &quot;category&quot;: &quot;data-operations&quot;,
+      &quot;description&quot;: &quot;Run custom JavaScript code&quot;,
+      &quot;tags&quot;: [
+        &quot;code&quot;,
+        &quot;javascript&quot;,
+        &quot;python&quot;
+      ],
+      &quot;sortOrder&quot;: 35,
+      &quot;supportsErrorHandling&quot;: true,
+      &quot;display&quot;: {
+        &quot;label&quot;: &quot;Script&quot;,
+        &quot;icon&quot;: &quot;code&quot;
+      },
+      &quot;handleConfiguration&quot;: [
+        {
+          &quot;position&quot;: &quot;left&quot;,
+          &quot;handles&quot;: [
+            {
+              &quot;id&quot;: &quot;input&quot;,
+              &quot;type&quot;: &quot;target&quot;,
+              &quot;handleType&quot;: &quot;input&quot;
+            }
+          ]
+        },
+        {
+          &quot;position&quot;: &quot;right&quot;,
+          &quot;handles&quot;: [
+            {
+              &quot;id&quot;: &quot;success&quot;,
+              &quot;type&quot;: &quot;source&quot;,
+              &quot;handleType&quot;: &quot;output&quot;
+            },
+            {
+              &quot;id&quot;: &quot;error&quot;,
+              &quot;label&quot;: &quot;Error&quot;,
+              &quot;type&quot;: &quot;source&quot;,
+              &quot;handleType&quot;: &quot;output&quot;,
+              &quot;visible&quot;: &quot;{inputs.errorHandlingEnabled}&quot;,
+              &quot;constraints&quot;: {
+                &quot;maxConnections&quot;: 1
+              }
+            }
+          ]
+    
+
+… (truncated, 2969 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#18</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">45.88s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry get core.logic.decision --output json 2&gt;/dev/null&quot;,
+  &quot;description&quot;: &quot;Get Decision node registry definition&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeGetSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;Node&quot;: {
+      &quot;nodeType&quot;: &quot;core.logic.decision&quot;,
+      &quot;version&quot;: &quot;1.1&quot;,
+      &quot;category&quot;: &quot;control-flow&quot;,
+      &quot;description&quot;: &quot;Branch based on a true/false condition&quot;,
+      &quot;tags&quot;: [
+        &quot;control-flow&quot;,
+        &quot;if&quot;,
+        &quot;loop&quot;,
+        &quot;switch&quot;
+      ],
+      &quot;sortOrder&quot;: 20,
+      &quot;display&quot;: {
+        &quot;label&quot;: &quot;Decision&quot;,
+        &quot;icon&quot;: &quot;trending-up-down&quot;
+      },
+      &quot;handleConfiguration&quot;: [
+        {
+          &quot;position&quot;: &quot;left&quot;,
+          &quot;handles&quot;: [
+            {
+              &quot;id&quot;: &quot;input&quot;,
+              &quot;type&quot;: &quot;target&quot;,
+              &quot;handleType&quot;: &quot;input&quot;
+            }
+          ],
+          &quot;visible&quot;: true
+        },
+        {
+          &quot;position&quot;: &quot;right&quot;,
+          &quot;handles&quot;: [
+            {
+              &quot;id&quot;: &quot;true&quot;,
+              &quot;type&quot;: &quot;source&quot;,
+              &quot;handleType&quot;: &quot;output&quot;,
+              &quot;label&quot;: &quot;{inputs.trueLabel}&quot;,
+              &quot;constraints&quot;: {
+                &quot;minConnections&quot;: 1
+              }
+            },
+            {
+              &quot;id&quot;: &quot;false&quot;,
+              &quot;type&quot;: &quot;source&quot;,
+              &quot;handleType&quot;: &quot;output&quot;,
+              &quot;label&quot;: &quot;{inputs.falseLabel}&quot;
+  
+
+… (truncated, 2454 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#19</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">36ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -i \&quot;trigger\\|email-received\\|new-email\\|email_received\&quot; /home/azureuser/.claude/projects/-work-output-artifacts-skill-flow-customer-escalation/200db9ac-bdd8-4b06-82f1-2800791f0ff9/tool-results/b7srtirjv.txt | head -40&quot;,
+  &quot;description&quot;: &quot;Find Outlook trigger entries in saved search results&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>      &quot;NodeType&quot;: &quot;uipath.connector.trigger.uipath-mock-outlook.new-record-created&quot;,
+      &quot;Description&quot;: &quot;(Microsoft Mocked Outlook 365 for webhooks) Triggers when you add a new record&quot;
+      &quot;Description&quot;: &quot;(Microsoft Mocked Outlook 365 for webhooks) Triggers when you add a new record&quot;
+      &quot;NodeType&quot;: &quot;uipath.connector.trigger.uipath-mock-outlook.email-moved-to-trash&quot;,
+      &quot;Description&quot;: &quot;(Microsoft Mocked Outlook 365 for webhooks) Triggers when an e-mail is moved to Trash Bin.&quot;
+      &quot;Description&quot;: &quot;(Microsoft Mocked Outlook 365 for webhooks) Triggers when an e-mail is moved to Trash Bin.&quot;
+      &quot;NodeType&quot;: &quot;uipath.connector.trigger.uipath-mock-outlook.existing-record-updated&quot;,
+      &quot;Description&quot;: &quot;(Microsoft Mocked Outlook 365 for webhooks) Triggers when an existing record is updated&quot;
+      &quot;Description&quot;: &quot;(Microsoft Mocked Outlook 365 for webhooks) Triggers when an existing record is updated&quot;
+      &quot;NodeType&quot;: &quot;uipath.connector.trigger.uipath-mock-outlook.email-received&quot;,
+      &quot;Description&quot;: &quot;(Microsoft Mocked Outlook 365 for webhooks) Triggers when an e-mail is received in your Inbox.&quot;
+      &quot;NodeType&quot;: &quot;uipath.connector.event.uipath-mock-outlook.email-received&quot;,
+      
+
+… (truncated, 2929 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#20</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">4.03s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry search \&quot;outlook trigger\&quot; --output json --output-filter \&quot;[*].{NodeType:NodeType,DisplayName:DisplayName}\&quot; 2&gt;/dev/null | head -80&quot;,
+  &quot;description&quot;: &quot;Search specifically for Outlook trigger node types&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeSearchSuccess&quot;,
+  &quot;Data&quot;: []
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#21</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">5.46s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry search \&quot;outlook\&quot; --output json --output-filter \&quot;[?contains(NodeType,&#x27;trigger&#x27;)].{NodeType:NodeType,DisplayName:DisplayName}\&quot; 2&gt;/dev/null&quot;,
+  &quot;description&quot;: &quot;Find all Outlook trigger node types&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeSearchSuccess&quot;,
+  &quot;Data&quot;: [
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.trigger.uipath-mock-outlook.new-record-created&quot;,
+      &quot;DisplayName&quot;: &quot;New record created&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.trigger.uipath-mock-outlook.email-moved-to-trash&quot;,
+      &quot;DisplayName&quot;: &quot;Email Moved to Trash&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.trigger.uipath-mock-outlook.existing-record-updated&quot;,
+      &quot;DisplayName&quot;: &quot;Existing record updated&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.trigger.uipath-mock-outlook.email-received&quot;,
+      &quot;DisplayName&quot;: &quot;Email Received&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.trigger.uipath-mock-outlook.calendar-event-created&quot;,
+      &quot;DisplayName&quot;: &quot;Calendar Event Created&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.trigger.uipath-mock-outlook.email-sent&quot;,
+      &quot;DisplayName&quot;: &quot;Email Sent&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.trigger.uipath-mock-outlook.calendar-event-replied&quot;,
+      &quot;DisplayName&quot;: &quot;Calendar Event Replied&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.trigger.uipath-mock-outlook.instant-email-received&quot;,
+      &quot;DisplayName&quot;: &quot;Instant Email Received&quot;
+    }
+
+… (truncated, 1660 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#22</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">9.07s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry search \&quot;outlook\&quot; --output json --output-filter \&quot;[?contains(NodeType,&#x27;reply&#x27;)].{NodeType:NodeType,DisplayName:DisplayName}\&quot; 2&gt;/dev/null&quot;,
+  &quot;description&quot;: &quot;Find Outlook reply activity node types&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeSearchSuccess&quot;,
+  &quot;Data&quot;: [
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-mock-outlook.reply-to-email&quot;,
+      &quot;DisplayName&quot;: &quot;Reply To Email&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-microsoft-outlook365.reply-to-email&quot;,
+      &quot;DisplayName&quot;: &quot;Reply To Email&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.agent.resource.tool.connector.uipath-mock-outlook.reply-to-email&quot;,
+      &quot;DisplayName&quot;: &quot;Reply To Email&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.agent.resource.tool.connector.uipath-microsoft-outlook365.reply-to-email&quot;,
+      &quot;DisplayName&quot;: &quot;Reply To Email&quot;
+    }
+  ]
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#23</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.87s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip is connections list \&quot;uipath-microsoft-outlook365\&quot; --all-folders --output json 2&gt;/dev/null | python3 -c \&quot;import json,sys; d=json.load(sys.stdin); [print(f\\\&quot;Id:{c[&#x27;Id&#x27;]} Name:{c[&#x27;Name&#x27;]} State:{c[&#x27;State&#x27;]} Default:{c.get(&#x27;IsDefault&#x27;,&#x27;&#x27;)} Folder:{c.get(&#x27;Folder&#x27;,&#x27;&#x27;)} FolderKey:{c.get(&#x27;FolderKey&#x27;,&#x27;&#x27;)}\\\&quot;) for c in d.get(&#x27;Data&#x27;,[])] or print(&#x27;NO_CONNECTIONS&#x27;)\&quot;&quot;,
+  &quot;description&quot;: &quot;List Outlook 365 connections&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Id:5af6fa90-234d-4b0d-a2f1-3815cfd9e15d Name:Productivity O365 Outlook State:Enabled Default:No Folder:Shared FolderKey:c4359cde-55f0-4f0e-9322-c6cdce74ab4c
+Id:75dfafb4-3717-470c-a5f6-bdc144757a67 Name:is-sandboxes-test@uipathsandboxes.onmicrosoft.com State:Enabled Default:No Folder:uipath-maestro-flow FolderKey:5da18ec0-7de1-4e57-aaf1-ddc8a369c199
+Id:dd657127-91f5-4568-a3a3-c024bc03fb0f Name:is-sandboxes-test@uipathsandboxes.onmicrosoft.com State:Enabled Default:Yes Folder:uipath-maestro-case FolderKey:def71452-bad1-40fa-be08-da175e89bd1a
+Id:9eedfd47-e4c9-48a9-8ff3-7af335fab036 Name:song.zhao@uipath.com State:Enabled Default:No Folder:uipath-maestro-case FolderKey:def71452-bad1-40fa-be08-da175e89bd1a</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#24</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">3.41s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip is connections list \&quot;uipath-salesforce-slack\&quot; --all-folders --output json 2&gt;/dev/null | python3 -c \&quot;import json,sys; d=json.load(sys.stdin); [print(f\\\&quot;Id:{c[&#x27;Id&#x27;]} Name:{c[&#x27;Name&#x27;]} State:{c[&#x27;State&#x27;]} Default:{c.get(&#x27;IsDefault&#x27;,&#x27;&#x27;)} Folder:{c.get(&#x27;Folder&#x27;,&#x27;&#x27;)} FolderKey:{c.get(&#x27;FolderKey&#x27;,&#x27;&#x27;)}\\\&quot;) for c in d.get(&#x27;Data&#x27;,[])] or print(&#x27;NO_CONNECTIONS&#x27;)\&quot;&quot;,
+  &quot;description&quot;: &quot;List Slack connections&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Id:849e85d8-1aa9-4d52-8bbd-20041c8f05d8 Name:is-sandboxes State:Enabled Default:No Folder:uipath-maestro-flow FolderKey:5da18ec0-7de1-4e57-aaf1-ddc8a369c199
+Id:8e0e255f-ce7c-43dc-8929-83847fcd9025 Name:is-sandboxes State:Failed Default:No Folder:SlackEmojiListTest FolderKey:c79e173d-d870-4ab6-b5f9-7627ddbae4bf
+Id:e03f734e-0f80-4e8a-a7c1-0ece309b0ca4 Name:is-sandboxes State:Enabled Default:Yes Folder:uipath-maestro-case FolderKey:def71452-bad1-40fa-be08-da175e89bd1a</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#25</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">22.28s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;\\\nuip maestro flow node remove CustomerEscalation.flow start --output json &amp;&amp; \\\nuip maestro flow node add CustomerEscalation.flow uipath.connector.trigger.uipath-microsoft-outlook365.email-received --label \&quot;Email Received\&quot; --output json &amp;&amp; \\\nuip maestro flow node add CustomerEscalation.flow uipath.connector.uipath-salesforce-slack.send-message-to-channel --label \&quot;Slack Notify VIP\&quot; --output json &amp;&amp;… (330 more chars)&quot;,
+  &quot;description&quot;: &quot;Remove manual trigger, add all CLI-owned nodes&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeRemoveSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;DeletedNode&quot;: {
+      &quot;Id&quot;: &quot;start&quot;,
+      &quot;Type&quot;: &quot;core.trigger.manual&quot;,
+      &quot;Label&quot;: &quot;Manual trigger&quot;,
+      &quot;Position&quot;: {
+        &quot;X&quot;: 256,
+        &quot;Y&quot;: 144
+      }
+    },
+    &quot;EdgesRemoved&quot;: 0,
+    &quot;BindingsRemoved&quot;: 0,
+    &quot;DefinitionsRemoved&quot;: 1,
+    &quot;VariablesRemoved&quot;: 0,
+    &quot;VariableUpdatesRemoved&quot;: 0
+  }
+}
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeAddSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;Node&quot;: {
+      &quot;Id&quot;: &quot;emailReceived1&quot;,
+      &quot;Type&quot;: &quot;uipath.connector.trigger.uipath-microsoft-outlook365.email-received&quot;,
+      &quot;TypeVersion&quot;: &quot;1.0.0&quot;,
+      &quot;Ui&quot;: {
+        &quot;Position&quot;: {
+          &quot;X&quot;: 0,
+          &quot;Y&quot;: 0
+        }
+      },
+      &quot;Display&quot;: {
+        &quot;Label&quot;: &quot;Email Received&quot;
+      },
+      &quot;Inputs&quot;: {
+        &quot;EntryPointId&quot;: &quot;752cc499-6b26-4555-b6c9-3d2dd329fff7&quot;,
+        &quot;IsDefaultEntryPoint&quot;: true
+      }
+    },
+    &quot;DefinitionAdded&quot;: true,
+    &quot;BindingsCreated&quot;: 0,
+    &quot;VariableCount&quot;: 1
+  }
+}
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeAddSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;Node&quot;: {
+      &quot;Id&quot;: &quot;slackNotifyVip1&quot;,
+      &quot;Type&quot;: &quot;uipath.connector.uipath-salesforce-slack.send-message-to-channel&quot;,
+      &quot;TypeVersion&quot;: &quot;
+
+… (truncated, 1238 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#26</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">22.30s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip is connections ping \&quot;75dfafb4-3717-470c-a5f6-bdc144757a67\&quot; --output json 2&gt;/dev/null | python3 -c \&quot;import json,sys; d=json.load(sys.stdin); print(&#x27;PING_OUTLOOK:&#x27;, d.get(&#x27;Data&#x27;,{}).get(&#x27;Status&#x27;,&#x27;?&#x27;))\&quot;&quot;,
+  &quot;description&quot;: &quot;Ping Outlook connection&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>PING_OUTLOOK: Enabled</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#27</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">22.84s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip is connections ping \&quot;849e85d8-1aa9-4d52-8bbd-20041c8f05d8\&quot; --output json 2&gt;/dev/null | python3 -c \&quot;import json,sys; d=json.load(sys.stdin); print(&#x27;PING_SLACK:&#x27;, d.get(&#x27;Data&#x27;,{}).get(&#x27;Status&#x27;,&#x27;?&#x27;))\&quot;&quot;,
+  &quot;description&quot;: &quot;Ping Slack connection&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>PING_SLACK: Enabled</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#28</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.45s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip is triggers objects \&quot;uipath-microsoft-outlook365\&quot; \&quot;EMAIL_RECEIVED\&quot; --connection-id \&quot;75dfafb4-3717-470c-a5f6-bdc144757a67\&quot; --output json 2&gt;/dev/null&quot;,
+  &quot;description&quot;: &quot;Get Outlook email-received trigger objects and parameters&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;TriggerObjectList&quot;,
+  &quot;Data&quot;: [
+    {
+      &quot;HideEventIDField&quot;: false,
+      &quot;DebugDisabled&quot;: false,
+      &quot;Name&quot;: &quot;Message&quot;,
+      &quot;Parameters&quot;: [
+        {
+          &quot;DisplayName&quot;: &quot;Shared mailbox&quot;,
+          &quot;Curated&quot;: false,
+          &quot;DataType&quot;: &quot;string&quot;,
+          &quot;Design&quot;: {
+            &quot;IsHidden&quot;: true
+          },
+          &quot;Name&quot;: &quot;sharedMailboxAddress&quot;,
+          &quot;Description&quot;: &quot;Email address of the shared mailbox&quot;,
+          &quot;Type&quot;: &quot;query&quot;,
+          &quot;Required&quot;: false
+        }
+      ],
+      &quot;IsHidden&quot;: false,
+      &quot;SupportedAuths&quot;: [],
+      &quot;IsWebhookUrlVisible&quot;: false,
+      &quot;ByoaConnection&quot;: false,
+      &quot;HasStaticLeftOperandFilterBuilder&quot;: false
+    }
+  ]
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#29</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">6.38s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry get uipath.connector.trigger.uipath-microsoft-outlook365.email-received --connection-id \&quot;75dfafb4-3717-470c-a5f6-bdc144757a67\&quot; --output json 2&gt;/dev/null | python3 -c \&quot;import json,sys; d=json.load(sys.stdin); n=d[&#x27;Data&#x27;][&#x27;Node&#x27;]; print(&#x27;eventMode:&#x27;, n.get(&#x27;eventMode&#x27;,&#x27;?&#x27;)); print(&#x27;context:&#x27;, json.dumps(n.get(&#x27;model&#x27;,{}).get(&#x27;context&#x27;,[])));\&quot; 2&gt;/dev/null&quot;,
+  &quot;description&quot;: &quot;Get enriched trigger metadata&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>eventMode: polling
+context: [{&quot;name&quot;: &quot;connectorKey&quot;, &quot;type&quot;: &quot;string&quot;, &quot;value&quot;: &quot;uipath-microsoft-outlook365&quot;}, {&quot;name&quot;: &quot;operation&quot;, &quot;value&quot;: &quot;EMAIL_RECEIVED&quot;, &quot;type&quot;: &quot;string&quot;}, {&quot;name&quot;: &quot;objectName&quot;, &quot;value&quot;: &quot;Message&quot;, &quot;type&quot;: &quot;string&quot;}, {&quot;name&quot;: &quot;method&quot;, &quot;type&quot;: &quot;string&quot;}, {&quot;name&quot;: &quot;connection&quot;, &quot;type&quot;: &quot;string&quot;, &quot;value&quot;: &quot;&lt;bindings.uipath-microsoft-outlook365 connection&gt;&quot;}, {&quot;name&quot;: &quot;folderKey&quot;, &quot;type&quot;: &quot;string&quot;, &quot;value&quot;: &quot;&lt;bindings.FolderKey&gt;&quot;}, {&quot;name&quot;: &quot;activityConfigurationVersion&quot;, &quot;type&quot;: &quot;string&quot;, &quot;value&quot;: &quot;v1&quot;}, {&quot;name&quot;: &quot;metadata&quot;, &quot;body&quot;: {&quot;telemetryData&quot;: {&quot;connectorKey&quot;: &quot;uipath-microsoft-outlook365&quot;, &quot;connectorName&quot;: &quot;Email Received&quot;}, &quot;inputMetadata&quot;: {}, &quot;errorState&quot;: {&quot;hasError&quot;: true}}, &quot;type&quot;: &quot;json&quot;}]</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#30</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">5.50s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-customer-escalation/CustomerEscalation/CustomerEscalation/CustomerEscalation.flow&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	{
+2	  &quot;id&quot;: &quot;69e94b52-c3f7-49cb-a528-8eaa35e2cb15&quot;,
+3	  &quot;version&quot;: &quot;1.8&quot;,
+4	  &quot;name&quot;: &quot;CustomerEscalation&quot;,
+5	  &quot;nodes&quot;: [
+6	    {
+7	      &quot;id&quot;: &quot;emailReceived1&quot;,
+8	      &quot;type&quot;: &quot;uipath.connector.trigger.uipath-microsoft-outlook365.email-received&quot;,
+9	      &quot;typeVersion&quot;: &quot;1.0.0&quot;,
+10	      &quot;display&quot;: {
+11	        &quot;label&quot;: &quot;Email Received&quot;
+12	      },
+13	      &quot;inputs&quot;: {
+14	        &quot;entryPointId&quot;: &quot;752cc499-6b26-4555-b6c9-3d2dd329fff7&quot;,
+15	        &quot;isDefaultEntryPoint&quot;: true
+16	      }
+17	    },
+18	    {
+19	      &quot;id&quot;: &quot;slackNotifyVip1&quot;,
+20	      &quot;type&quot;: &quot;uipath.connector.uipath-salesforce-slack.send-message-to-channel&quot;,
+21	      &quot;typeVersion&quot;: &quot;1.0.0&quot;,
+22	      &quot;display&quot;: {
+23	        &quot;label&quot;: &quot;Slack Notify VIP&quot;
+24	      },
+25	      &quot;inputs&quot;: {}
+26	    },
+27	    {
+28	      &quot;id&quot;: &quot;replyFastAck1&quot;,
+29	      &quot;type&quot;: &quot;uipath.connector.uipath-microsoft-outlook365.reply-to-email&quot;,
+30	      &quot;typeVersion&quot;: &quot;1.0.0&quot;,
+31	      &quot;display&quot;: {
+32	        &quot;label&quot;: &quot;Reply Fast Ack&quot;
+33	      },
+34	      &quot;inputs&quot;: {}
+35	    },
+36	    {
+37	      &quot;id&quot;: &quot;replyTicket1&quot;,
+38	      &quot;type&quot;: &quot;uipath.connector.uipath-microsoft-outlook365.reply-to-email&quot;,
+39	      &quot;typeVersion&quot;: &quot;1.0.0&quot;,
+40	      &quot;display&quot;: {
+
+… (truncated, 29087 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#31</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-err">ERROR</span>
+      <span class="tool-duration">1.08s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip is triggers describe \&quot;uipath-microsoft-outlook365\&quot; \&quot;EMAIL_RECEIVED\&quot; \&quot;Message\&quot; --connection-id \&quot;75dfafb4-3717-470c-a5f6-bdc144757a67\&quot; --output json 2&gt;/dev/null | python3 -c \&quot;import json,sys; d=json.load(sys.stdin); n=d.get(&#x27;Data&#x27;,{}); print(&#x27;EventParameters:&#x27;, json.dumps(n.get(&#x27;EventParameters&#x27;,[]))); print(&#x27;FilterFields:&#x27;, json.dumps(n.get(&#x27;FilterFields&#x27;,{}).get(&#x27;Fields&#x27;,[])));\&quot; 2&gt;/dev/null&quot;,
+  &quot;description&quot;: &quot;Get Outlook trigger describe - EventParameters and FilterFields&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Exit code 1
+EventParameters: [{&quot;Name&quot;: &quot;parentFolderId&quot;, &quot;Type&quot;: &quot;string&quot;, &quot;DisplayName&quot;: &quot;Email folder&quot;, &quot;Reference&quot;: {&quot;ObjectName&quot;: &quot;MailFolder&quot;, &quot;LookupNames&quot;: [&quot;displayName&quot;], &quot;LookupValue&quot;: &quot;id&quot;, &quot;Path&quot;: &quot;/MailFolders&quot;, &quot;ChildPath&quot;: &quot;/MailFolders?parentFolderId={id}&quot;, &quot;Hydration&quot;: {&quot;Url&quot;: &quot;/MailFolders/{id}&quot;, &quot;Method&quot;: &quot;GETBYID&quot;}}, &quot;Description&quot;: &quot;Email folder&quot;, &quot;Required&quot;: true}]</pre>
+    <h4>Error</h4><pre>Exit code 1
+EventParameters: [{&quot;Name&quot;: &quot;parentFolderId&quot;, &quot;Type&quot;: &quot;string&quot;, &quot;DisplayName&quot;: &quot;Email folder&quot;, &quot;Reference&quot;: {&quot;ObjectName&quot;: &quot;MailFolder&quot;, &quot;LookupNames&quot;: [&quot;displayName&quot;], &quot;LookupValue&quot;: &quot;id&quot;, &quot;Path&quot;: &quot;/MailFolders&quot;, &quot;ChildPath&quot;: &quot;/MailFolders?parentFolderId={id}&quot;, &quot;Hydration&quot;: {&quot;Url&quot;: &quot;/MailFolders/{id}&quot;, &quot;Method&quot;: &quot;GETBYID&quot;}}, &quot;Description&quot;: &quot;Email folder&quot;, &quot;Required&quot;: true}]</pre>
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#32</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.03s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip is resources describe \&quot;uipath-salesforce-slack\&quot; \&quot;send_message_to_channel_v2\&quot; --connection-id \&quot;849e85d8-1aa9-4d52-8bbd-20041c8f05d8\&quot; --operation Create --output json 2&gt;/dev/null | python3 -c \&quot;\nimport json,sys\nd=json.load(sys.stdin)\ndata=d.get(&#x27;Data&#x27;,{})\nprint(&#x27;metadataFile:&#x27;, data.get(&#x27;metadataFile&#x27;,&#x27;&#x27;))\nops=data.get(&#x27;availableOperations&#x27;,[])\nfor op in ops:\n    print(f&#x27;op: {op.get(\\\&quot;operation\\\&quot;… (88 more chars)&quot;,
+  &quot;description&quot;: &quot;Describe Slack send-message-to-channel activity&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>metadataFile:</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#33</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.23s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip is resources describe \&quot;uipath-microsoft-outlook365\&quot; \&quot;ReplyToEmailV2\&quot; --connection-id \&quot;75dfafb4-3717-470c-a5f6-bdc144757a67\&quot; --operation Create --output json 2&gt;/dev/null | python3 -c \&quot;\nimport json,sys\nd=json.load(sys.stdin)\ndata=d.get(&#x27;Data&#x27;,{})\nprint(&#x27;metadataFile:&#x27;, data.get(&#x27;metadataFile&#x27;,&#x27;&#x27;))\nops=data.get(&#x27;availableOperations&#x27;,[])\nfor op in ops:\n    print(f&#x27;op: {op.get(\\\&quot;operation\\\&quot;,\\\&quot;?\\\&quot;)}… (80 more chars)&quot;,
+  &quot;description&quot;: &quot;Describe Outlook reply-to-email activity&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>metadataFile:</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#34</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.39s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip is resources run list \&quot;uipath-salesforce-slack\&quot; \&quot;curated_channels?types=public_channel,private_channel\&quot; --connection-id \&quot;849e85d8-1aa9-4d52-8bbd-20041c8f05d8\&quot; --output json 2&gt;/dev/null | python3 -c \&quot;\nimport json,sys\nd=json.load(sys.stdin)\nitems=d.get(&#x27;Data&#x27;,[])\nif isinstance(items,list):\n    for i in items[:5]:\n        print(f&#x27;id:{i.get(\\\&quot;id\\\&quot;,\\\&quot;?\\\&quot;)} name:{i.get(\\\&quot;name\\\&quot;,\\\&quot;?\\\&quot;)}&#x27;)\nelse:\n    p… (43 more chars)&quot;,
+  &quot;description&quot;: &quot;List available Slack channels for the connection&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{&quot;items&quot;: [{&quot;context_team_id&quot;: &quot;T01G1P7CKR8&quot;, &quot;created&quot;: 1606967318, &quot;creator&quot;: &quot;U01FYLMH1D3&quot;, &quot;id&quot;: &quot;C01FV1QFA86&quot;, &quot;is_archived&quot;: false, &quot;is_channel&quot;: true, &quot;is_ext_shared&quot;: false, &quot;is_general&quot;: false, &quot;is_group&quot;: false, &quot;is_im&quot;: false, &quot;is_mpim&quot;: false, &quot;is_org_shared&quot;: false, &quot;is_pending_ext_shared&quot;: false, &quot;is_private&quot;: false, &quot;is_shared&quot;: false, &quot;name&quot;: &quot;random&quot;, &quot;name_normalized&quot;: &quot;random&quot;, &quot;properties&quot;: {&quot;tabs&quot;: [{&quot;id&quot;: &quot;files&quot;, &quot;label&quot;: &quot;&quot;, &quot;type&quot;: &quot;files&quot;}], &quot;tabz&quot;: [{&quot;type&quot;: &quot;files&quot;}],</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#35</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.71s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip is resources run list \&quot;uipath-microsoft-outlook365\&quot; \&quot;MailFolder\&quot; --connection-id \&quot;75dfafb4-3717-470c-a5f6-bdc144757a67\&quot; --output json 2&gt;/dev/null | python3 -c \&quot;\nimport json,sys\nd=json.load(sys.stdin)\nitems=d.get(&#x27;Data&#x27;,[])\nif isinstance(items,list):\n    for i in items[:15]:\n        print(f&#x27;id:{i.get(\\\&quot;id\\\&quot;,\\\&quot;?\\\&quot;)} displayName:{i.get(\\\&quot;displayName\\\&quot;,\\\&quot;?\\\&quot;)}&#x27;)\nelif isinstance(items,dict):\n    ar… (165 more chars)&quot;,
+  &quot;description&quot;: &quot;Resolve Outlook mail folders to find Inbox ID&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>id:AAMkAGNiNDVjZmJmLTczOTEtNDQ2MS04Njc2LTUwM2I3ZDgxOWQwMAAuAAAAAAAJJRkzOJfsTKZfQqhMUHzlAQAJDKUrZhoLQZ5wELpOfJPCAAAAAAETAAA= displayName:Archive
+id:AAMkAGNiNDVjZmJmLTczOTEtNDQ2MS04Njc2LTUwM2I3ZDgxOWQwMAAuAAAAAAAJJRkzOJfsTKZfQqhMUHzlAQAJDKUrZhoLQZ5wELpOfJPCAAAAAAEVAAA= displayName:Conversation History
+id:AAMkAGNiNDVjZmJmLTczOTEtNDQ2MS04Njc2LTUwM2I3ZDgxOWQwMAAuAAAAAAAJJRkzOJfsTKZfQqhMUHzlAQAJDKUrZhoLQZ5wELpOfJPCAAAAAAEKAAA= displayName:Deleted Items
+id:AAMkAGNiNDVjZmJmLTczOTEtNDQ2MS04Njc2LTUwM2I3ZDgxOWQwMAAuAAAAAAAJJRkzOJfsTKZfQqhMUHzlAQAJDKUrZhoLQZ5wELpOfJPCAAAAAAEPAAA= displayName:Drafts
+id:AAMkAGNiNDVjZmJmLTczOTEtNDQ2MS04Njc2LTUwM2I3ZDgxOWQwMAAuAAAAAAAJJRkzOJfsTKZfQqhMUHzlAQAJDKUrZhoLQZ5wELpOfJPCAAAAAAEMAAA= displayName:Inbox
+id:AAMkAGNiNDVjZmJmLTczOTEtNDQ2MS04Njc2LTUwM2I3ZDgxOWQwMAAuAAAAAAAJJRkzOJfsTKZfQqhMUHzlAQAJDKUrZhoLQZ5wELpOfJPCAAAAAAEUAAA= displayName:Junk Email
+id:AAMkAGNiNDVjZmJmLTczOTEtNDQ2MS04Njc2LTUwM2I3ZDgxOWQwMAAuAAAAAAAJJRkzOJfsTKZfQqhMUHzlAQAJDKUrZhoLQZ5wELpOfJPCAAAAAAELAAA= displayName:Outbox
+id:AAMkAGNiNDVjZmJmLTczOTEtNDQ2MS04Njc2LTUwM2I3ZDgxOWQwMAAuAAAAAAAJJRkzOJfsTKZfQqhMUHzlAQAJDKUrZhoLQZ5wELpOfJPCAAAAAAEJAAA= displayName:Sent Items
+id:AAMkAGNiNDVjZmJmLTczOTEt
+
+… (truncated, 561 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#36</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">3.11s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry get uipath.connector.uipath-salesforce-slack.send-message-to-channel --connection-id \&quot;849e85d8-1aa9-4d52-8bbd-20041c8f05d8\&quot; --output json 2&gt;/dev/null | python3 -c \&quot;\nimport json,sys\nd=json.load(sys.stdin)\nn=d.get(&#x27;Data&#x27;,{}).get(&#x27;Node&#x27;,{})\ninp=n.get(&#x27;inputDefinition&#x27;,{})\nfields=inp.get(&#x27;properties&#x27;,{})\nprint(&#x27;InputFields:&#x27;, list(fields.keys())[:20])\nmethod=n.get(&#x27;connectorM… (104 more chars)&quot;,
+  &quot;description&quot;: &quot;Get enriched Slack send-message metadata with connection&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>InputFields: []
+Method: POST Path: /send_message_to_channel_v2</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#37</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">4.52s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry get uipath.connector.uipath-microsoft-outlook365.reply-to-email --connection-id \&quot;75dfafb4-3717-470c-a5f6-bdc144757a67\&quot; --output json 2&gt;/dev/null | python3 -c \&quot;\nimport json,sys\nd=json.load(sys.stdin)\nn=d.get(&#x27;Data&#x27;,{}).get(&#x27;Node&#x27;,{})\ninp=n.get(&#x27;inputDefinition&#x27;,{})\nfields=inp.get(&#x27;properties&#x27;,{})\nprint(&#x27;InputFields:&#x27;, list(fields.keys())[:20])\nmethod=n.get(&#x27;connectorMethod… (99 more chars)&quot;,
+  &quot;description&quot;: &quot;Get enriched Outlook reply-to-email metadata with connection&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>InputFields: []
+Method: POST Path: /ReplyToEmailV2</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#38</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">3.95s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip is resources run list \&quot;uipath-salesforce-slack\&quot; \&quot;curated_channels?types=public_channel,private_channel\&quot; --connection-id \&quot;849e85d8-1aa9-4d52-8bbd-20041c8f05d8\&quot; --output json 2&gt;/dev/null | python3 -c \&quot;\nimport json,sys\nd=json.load(sys.stdin)\ndata=d.get(&#x27;Data&#x27;,{})\nif isinstance(data,list):\n    items=data\nelif isinstance(data,dict):\n    items=data.get(&#x27;items&#x27;,data.get(&#x27;channels&#x27;,[]))\nfor i in items… (87 more chars)&quot;,
+  &quot;description&quot;: &quot;Parse Slack channels list to find channel IDs&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>id:C01FV1QFA86 name:random
+id:C01G1P7CU58 name:general
+id:C01G1PBK3S6 name:slackathon
+id:C01H4SPS77W name:uipath-slack-test
+id:C01S1QW0X97 name:tester-hub
+id:C02FRAXQLDD name:odyssey
+id:C02G5PEVANP name:party-etsy
+id:C02G5PHCFLK name:la-la-land</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#39</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.53s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip is resources describe \&quot;uipath-salesforce-slack\&quot; \&quot;send_message_to_channel_v2\&quot; --connection-id \&quot;849e85d8-1aa9-4d52-8bbd-20041c8f05d8\&quot; --operation Create --output json 2&gt;/dev/null | python3 -c \&quot;\nimport json,sys\nd=json.load(sys.stdin)\ndata=d.get(&#x27;Data&#x27;,{})\nmf=data.get(&#x27;metadataFile&#x27;,&#x27;&#x27;)\nprint(&#x27;metadataFile:&#x27;, mf)\nrfields=data.get(&#x27;requestFields&#x27;,[])\nprint(&#x27;requestFields:&#x27;)\nfor f in rfields:\n    pr… (138 more chars)&quot;,
+  &quot;description&quot;: &quot;Get Slack send-message full describe metadata including requestFields&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>metadataFile: 
+requestFields:</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#40</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.64s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip is resources describe \&quot;uipath-microsoft-outlook365\&quot; \&quot;ReplyToEmailV2\&quot; --connection-id \&quot;75dfafb4-3717-470c-a5f6-bdc144757a67\&quot; --operation Create --output json 2&gt;/dev/null | python3 -c \&quot;\nimport json,sys\nd=json.load(sys.stdin)\ndata=d.get(&#x27;Data&#x27;,{})\nmf=data.get(&#x27;metadataFile&#x27;,&#x27;&#x27;)\nprint(&#x27;metadataFile:&#x27;, mf)\nrfields=data.get(&#x27;requestFields&#x27;,[])\nprint(&#x27;requestFields:&#x27;)\nfor f in rfields:\n    print(f&#x27;  … (130 more chars)&quot;,
+  &quot;description&quot;: &quot;Get Outlook reply-to-email full describe including requestFields&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>metadataFile: 
+requestFields:</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#41</span>
+      <span class="tool-name">Write</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">350ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-customer-escalation/CustomerEscalation/CustomerEscalation/CustomerEscalation.flow&quot;,
+  &quot;content&quot;: &quot;{\n  \&quot;id\&quot;: \&quot;69e94b52-c3f7-49cb-a528-8eaa35e2cb15\&quot;,\n  \&quot;version\&quot;: \&quot;1.8\&quot;,\n  \&quot;name\&quot;: \&quot;CustomerEscalation\&quot;,\n  \&quot;nodes\&quot;: [\n    {\n      \&quot;id\&quot;: \&quot;emailReceived1\&quot;,\n      \&quot;type\&quot;: \&quot;uipath.connector.trigger.uipath-microsoft-outlook365.email-received\&quot;,\n      \&quot;typeVersion\&quot;: \&quot;1.0.0\&quot;,\n      \&quot;display\&quot;: {\n        \&quot;label\&quot;: \&quot;Email Received\&quot;\n      },\n      \&quot;inputs\&quot;: {\n        \&quot;entryPointId\&quot;: \&quot;752cc499-6b26-4555-b6c9-3d2dd… (37561 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>The file /work/output/artifacts/skill-flow-customer-escalation/CustomerEscalation/CustomerEscalation/CustomerEscalation.flow has been updated successfully. (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#42</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">7.82s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;\\\nuip maestro flow node configure CustomerEscalation.flow emailReceived1 \\\n  --output json \\\n  --detail \&quot;$(cat &lt;&lt;&#x27;JSON&#x27;\n{\n  \&quot;connectionId\&quot;: \&quot;75dfafb4-3717-470c-a5f6-bdc144757a67\&quot;,\n  \&quot;folderKey\&quot;: \&quot;5da18ec0-7de1-4e57-aaf1-ddc8a369c199\&quot;,\n  \&quot;eventMode\&quot;: \&quot;polling\&quot;,\n  \&quot;eventParameters\&quot;: {\n    \&quot;parentFolderId\&quot;: \&quot;AAMkAGNiNDVjZmJmLTczOTEtNDQ2MS04Njc2LTUwM2I3ZDgxOWQwMAAuAAAAAAAJJRkzOJfsTKZfQqhMUHzlAQAJDKUrZ… (84 more chars)&quot;,
+  &quot;description&quot;: &quot;Configure Outlook email-received trigger with Inbox folder and connection&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeConfigureSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;NodeId&quot;: &quot;emailReceived1&quot;,
+    &quot;BindingsCreated&quot;: 3,
+    &quot;DetailPopulated&quot;: true
+  }
+}
+TRIGGER_CONFIG_DONE</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#43</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">4.30s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;\\\nuip maestro flow node configure CustomerEscalation.flow slackNotifyVip1 \\\n  --output json \\\n  --detail \&quot;$(cat &lt;&lt;&#x27;JSON&#x27;\n{\n  \&quot;connectionId\&quot;: \&quot;849e85d8-1aa9-4d52-8bbd-20041c8f05d8\&quot;,\n  \&quot;folderKey\&quot;: \&quot;5da18ec0-7de1-4e57-aaf1-ddc8a369c199\&quot;,\n  \&quot;method\&quot;: \&quot;POST\&quot;,\n  \&quot;endpoint\&quot;: \&quot;/send_message_to_channel_v2\&quot;,\n  \&quot;bodyParameters\&quot;: {\n    \&quot;channel\&quot;: \&quot;C01H4SPS77W\&quot;,\n    \&quot;messageToSend\&quot;: \&quot;=js:`🚨 VIP URGENT ESCALAT… (211 more chars)&quot;,
+  &quot;description&quot;: &quot;Configure Slack send-message-to-channel with VIP escalation message&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeConfigureSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;NodeId&quot;: &quot;slackNotifyVip1&quot;,
+    &quot;BindingsCreated&quot;: 3,
+    &quot;DetailPopulated&quot;: true
+  }
+}
+SLACK_CONFIG_DONE</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#44</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">6.29s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;\\\nuip maestro flow node configure CustomerEscalation.flow replyFastAck1 \\\n  --output json \\\n  --detail \&quot;$(cat &lt;&lt;&#x27;JSON&#x27;\n{\n  \&quot;connectionId\&quot;: \&quot;75dfafb4-3717-470c-a5f6-bdc144757a67\&quot;,\n  \&quot;folderKey\&quot;: \&quot;5da18ec0-7de1-4e57-aaf1-ddc8a369c199\&quot;,\n  \&quot;method\&quot;: \&quot;POST\&quot;,\n  \&quot;endpoint\&quot;: \&quot;/ReplyToEmailV2\&quot;,\n  \&quot;bodyParameters\&quot;: {\n    \&quot;messageId\&quot;: \&quot;=js:$vars.emailReceived1.output.id\&quot;,\n    \&quot;replyBody\&quot;: \&quot;=js:`Thank you for… (335 more chars)&quot;,
+  &quot;description&quot;: &quot;Configure Outlook reply-to-email for high-touch fast acknowledgment&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeConfigureSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;NodeId&quot;: &quot;replyFastAck1&quot;,
+    &quot;BindingsCreated&quot;: 3,
+    &quot;DetailPopulated&quot;: true
+  }
+}
+REPLY_FASTACK_DONE</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#45</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">3.37s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;\\\nuip maestro flow node configure CustomerEscalation.flow replyTicket1 \\\n  --output json \\\n  --detail \&quot;$(cat &lt;&lt;&#x27;JSON&#x27;\n{\n  \&quot;connectionId\&quot;: \&quot;75dfafb4-3717-470c-a5f6-bdc144757a67\&quot;,\n  \&quot;folderKey\&quot;: \&quot;5da18ec0-7de1-4e57-aaf1-ddc8a369c199\&quot;,\n  \&quot;method\&quot;: \&quot;POST\&quot;,\n  \&quot;endpoint\&quot;: \&quot;/ReplyToEmailV2\&quot;,\n  \&quot;bodyParameters\&quot;: {\n    \&quot;messageId\&quot;: \&quot;=js:$vars.emailReceived1.output.id\&quot;,\n    \&quot;replyBody\&quot;: \&quot;=js:$vars.generateT… (78 more chars)&quot;,
+  &quot;description&quot;: &quot;Configure Outlook reply-to-email for standard ticket confirmation&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeConfigureSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;NodeId&quot;: &quot;replyTicket1&quot;,
+    &quot;BindingsCreated&quot;: 3,
+    &quot;DetailPopulated&quot;: true
+  }
+}
+REPLY_TICKET_DONE</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#46</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">6.53s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow validate CustomerEscalation.flow --output json 2&gt;/dev/null &amp;&amp; echo \&quot;VALIDATE_DONE\&quot;&quot;,
+  &quot;description&quot;: &quot;Validate the complete CustomerEscalation flow&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FlowValidate&quot;,
+  &quot;Data&quot;: {
+    &quot;File&quot;: &quot;/work/output/artifacts/skill-flow-customer-escalation/CustomerEscalation/CustomerEscalation/CustomerEscalation.flow&quot;,
+    &quot;Status&quot;: &quot;Valid&quot;,
+    &quot;Warnings&quot;: &quot;1 warning(s):\n  - [nodes[emailReceived1].inputs.detail.connectionResourceId] Connection \&quot;75dfafb4-3717-470c-a5f6-bdc144757a67\&quot; is referenced by 3 nodes (nodes[emailReceived1], nodes[replyFastAck1], nodes[replyTicket1]). Shared connections cause cross-node state leakage at runtime. If this is intentional (e.g. two connectors on the same SaaS account), ignore this warning; otherwise create a separate connection per node.&quot;
+  }
+}
+VALIDATE_DONE</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#47</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">3.15s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow format CustomerEscalation.flow --output json 2&gt;/dev/null&quot;,
+  &quot;description&quot;: &quot;Format the flow for correct node layout&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FlowFormat&quot;,
+  &quot;Data&quot;: {
+    &quot;File&quot;: &quot;CustomerEscalation.flow&quot;,
+    &quot;NodesTotal&quot;: 10,
+    &quot;EdgesTotal&quot;: 9,
+    &quot;NodesRepositioned&quot;: 9,
+    &quot;NodesResized&quot;: 0,
+    &quot;SubflowsTidied&quot;: 0,
+    &quot;VariableCount&quot;: 15
+  },
+  &quot;Instructions&quot;: &quot;Repositioned 9 of 10 nodes&quot;
+}</pre>
+    
+  </div>
+</details>
+
+</div>
+
+<h2>Command Telemetry</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Total</div><div class="value">48</div></div>
+    <div class="stat"><div class="label">Successful</div><div class="value">47 (98%)</div></div>
+    <div class="stat"><div class="label">Failed</div><div class="value">1</div></div>
+    <div class="stat"><div class="label">Avg / cmd</div><div class="value">8.18s</div></div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 2fr;gap:16px;margin-top:12px">
+    <div>
+      <h4>By Tool</h4>
+      <table>
+        <thead><tr><th>Tool</th><th>Count</th></tr></thead>
+        <tbody><tr><td class='mono'>Bash</td><td>36</td></tr><tr><td class='mono'>Read</td><td>10</td></tr><tr><td class='mono'>Skill</td><td>1</td></tr><tr><td class='mono'>Write</td><td>1</td></tr></tbody>
+      </table>
+    </div>
+    <div>
+      <h4>Slowest</h4>
+      <table>
+        <thead><tr><th>Tool</th><th>Duration</th><th>Parameters</th></tr></thead>
+        <tbody><tr><td class='mono'>Bash</td><td>45.88s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro flow registry get core.lo...</td></tr><tr><td class='mono'>Bash</td><td>41.63s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro flow registry get core.ac...</td></tr><tr><td class='mono'>Bash</td><td>39.08s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro flow registry get core.co...</td></tr><tr><td class='mono'>Bash</td><td>34.48s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro flow registry search &quot;sla...</td></tr><tr><td class='mono'>Bash</td><td>26.31s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro flow registry search &quot;out...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+  <p><strong>Most Common Pattern:</strong> <code>Bash → Bash → Bash</code></p><p><strong>Skill Tool Invoked:</strong> 1 time(s)</p>
+</div>
+
+<h2>Generation Metrics</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Total Latency</div><div class="value">12m 15s</div></div>
+    <div class="stat"><div class="label">Turns</div><div class="value">1</div></div>
+    <div class="stat"><div class="label">Assistant Turns</div><div class="value">76</div></div>
+    <div class="stat"><div class="label">Avg Turn Latency</div><div class="value">12m 5s</div></div>
+    
+  </div>
+</div>
+
+<h2>Token Usage</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Input (uncached)</div><div class="value">24</div></div>
+    <div class="stat"><div class="label">Output</div><div class="value">40,866</div></div>
+    <div class="stat"><div class="label">Cache Write</div><div class="value">127,178</div></div>
+    <div class="stat"><div class="label">Cache Read</div><div class="value">2,336,232</div></div>
+    <div class="stat"><div class="label">Total</div><div class="value">2,504,300</div></div>
+    <div class="stat"><div class="label">Cost</div><div class="value">$1.7908</div></div>
+  </div>
+</div>
+
+<h2>Agent Settings</h2>
+<div class="card" style="padding:0">
+  <table>
+    <tbody><tr><td class='mono dim'>Permission Mode</td><td>acceptEdits</td></tr><tr><td class='mono dim'>Allowed Tools</td><td>Skill, Bash, Read, Write, Edit, Glob, Grep</td></tr><tr><td class='mono dim'>Model</td><td>us.anthropic.claude-sonnet-4-6</td></tr><tr><td class='mono dim'>Max Turns</td><td>120</td></tr><tr><td class='mono dim'>System Prompt</td><td>You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted. </td></tr><tr><td class='mono dim'>Plugins</td><td>/home/azureuser/projects/skills</td></tr></tbody>
+  </table>
+</div>
+
+<h2>Environment</h2>
+<div class="card" style="padding:0">
+  <table>
+    <tbody><tr><td class='mono dim'>git_commit</td><td>unknown</td></tr><tr><td class='mono dim'>skills_git_commit</td><td>unknown</td></tr><tr><td class='mono dim'>cli_version</td><td>1.199.0-dev.7970</td></tr><tr><td class='mono dim'>tool_plugins</td><td>{&#x27;admin-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;agent-tool&#x27;: &#x27;1.199.0-dev.7965&#x27;, &#x27;agenthub-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;aops-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;api-workflow-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;codedagent-tool&#x27;: &#x27;1.199.0-dev.7965&#x27;, &#x27;codedapp-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;coder-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;context-grounding-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;conversational-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;data-fabric-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;docsai-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;functions-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;gov-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;insights-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;integrationservice-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;ixp-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;llm-gateway-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;llmgw-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;maestro-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;orchestrator-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;platform-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;pm-tool&#x27;: &#x27;1.199.0-dev.7969&#x27;, &#x27;rpa-legacy-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;rpa-tool&#x27;: &#x27;1.199.0-dev.20260722.4&#x27;, &#x27;solution-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;tasks-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;test-manager-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;traces-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;vertical-solutions-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;}</td></tr><tr><td class='mono dim'>coder_eval</td><td>0.8.8</td></tr><tr><td class='mono dim'>claude_code_cli</td><td>2.1.177 (Claude Code)</td></tr><tr><td class='mono dim'>uv</td><td>uv 0.11.28 (x86_64-unknown-linux-gnu)</td></tr><tr><td class='mono dim'>anthropic</td><td>0.102.0</td></tr><tr><td class='mono dim'>openai</td><td>2.47.0</td></tr><tr><td class='mono dim'>pydantic</td><td>2.12.5</td></tr><tr><td class='mono dim'>api_routing</td><td>aws_bedrock</td></tr><tr><td class='mono dim'>aws_region</td><td>us-east-2</td></tr><tr><td class='mono dim'>bedrock_model</td><td>us.anthropic.claude-sonnet-4-6</td></tr></tbody>
+  </table>
+</div>
+
+<footer>Generated by coder_eval · 2026-07-24T17:57:47</footer>
+</div>
+<script>
+function toggleTheme() {
+  document.documentElement.classList.toggle('light');
+  try {
+    const mode = document.documentElement.classList.contains('light') ? 'light' : 'dark';
+    localStorage.setItem('coder-eval-theme', mode);
+  } catch (e) { /* ignore */ }
+}
+(function() {
+  try {
+    if (localStorage.getItem('coder-eval-theme') === 'light') {
+      document.documentElement.classList.add('light');
+    }
+  } catch (e) { /* ignore */ }
+})();
+</script>
+</body>
+</html>

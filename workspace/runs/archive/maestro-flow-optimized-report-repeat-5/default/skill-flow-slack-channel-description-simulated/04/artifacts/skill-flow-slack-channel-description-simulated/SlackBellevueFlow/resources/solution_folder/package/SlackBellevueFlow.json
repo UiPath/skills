@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "SlackBellevueFlow",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "07296b26-b129-4eb8-b048-5889abfdcf2d",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "SlackBellevueFlow"
+    },
+    "locks": [],
+    "key": "3ad03a97-e586-4b71-a63c-1dae8b342b1c",
+    "files": []
+  }
+}

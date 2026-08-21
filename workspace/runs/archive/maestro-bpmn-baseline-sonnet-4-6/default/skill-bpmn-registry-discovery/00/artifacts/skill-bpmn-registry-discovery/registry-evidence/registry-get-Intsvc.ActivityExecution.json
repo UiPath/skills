@@ -1,0 +1,156 @@
+{
+  "Result": "Success",
+  "Code": "RegistryGetSuccess",
+  "Data": {
+    "ExtensionType": {
+      "ExtensionType": "Intsvc.ActivityExecution",
+      "Label": "Execute connector activity",
+      "BpmnElement": "bpmn:SendTask",
+      "Placements": {
+        "Activity": {
+          "Type": "bpmn:SendTask"
+        },
+        "IntermediateEvent": {
+          "Type": "bpmn:IntermediateThrowEvent",
+          "EventDefinition": {
+            "Type": "bpmn:MessageEventDefinition"
+          }
+        },
+        "EndEvent": {
+          "Type": "bpmn:EndEvent",
+          "EventDefinition": {
+            "Type": "bpmn:MessageEventDefinition"
+          }
+        }
+      },
+      "ExtensionTag": "uipath:activity",
+      "ContextFields": [
+        {
+          "Name": "activityConfigurationVersion",
+          "DisplayName": "Activity configuration version",
+          "Type": "string",
+          "Required": false,
+          "Hidden": true,
+          "IsPrimaryKey": false,
+          "Binding": false,
+          "DefaultValue": "v1",
+          "Enum": [
+            "v1"
+          ],
+          "Description": "Marks the Integration Service activity format used by this template"
+        },
+        {
+          "Name": "connectorKey",
+          "DisplayName": "Connector key",
+          "Type": "string",
+          "Required": true,
+          "Hidden": true,
+          "IsPrimaryKey": false,
+          "Binding": false,
+          "DefaultValue": null
+        },
+        {
+          "Name": "connection",
+          "DisplayName": "Connection",
+          "Type": "string",
+          "Required": false,
+          "Hidden": true,
+          "IsPrimaryKey": false,
+          "Binding": true,
+          "DefaultValue": null,
+          "BindingInfo": {
+            "Resource": "Connection",
+            "ResourceKeyPattern": "${resourceKey}",
+            "PropertyAttribute": "ConnectionId"
+          }
+        },
+        {
+          "Name": "folderKey",
+          "DisplayName": "Folder key",
+          "Type": "string",
+          "Required": false,
+          "Hidden": true,
+          "IsPrimaryKey": false,
+          "Binding": true,
+          "DefaultValue": null,
+          "BindingInfo": {
+            "Resource": "Connection",
+            "ResourceKeyPattern": "${resourceKey}",
+            "PropertyAttribute": "folderKey"
+          }
+        },
+        {
+          "Name": "operation",
+          "DisplayName": "Operation",
+          "Type": "string",
+          "Required": true,
+          "Hidden": true,
+          "IsPrimaryKey": true,
+          "Binding": false,
+          "DefaultValue": null,
+          "Description": "Activity catalog Name used as the runtime operation"
+        },
+        {
+          "Name": "objectName",
+          "DisplayName": "Object name",
+          "Type": "string",
+          "Required": true,
+          "Hidden": true,
+          "IsPrimaryKey": false,
+          "Binding": false,
+          "DefaultValue": null,
+          "Description": "Activity catalog ObjectName"
+        },
+        {
+          "Name": "method",
+          "DisplayName": "Method",
+          "Type": "string",
+          "Required": true,
+          "Hidden": true,
+          "IsPrimaryKey": false,
+          "Binding": false,
+          "DefaultValue": null,
+          "Description": "Activity catalog MethodName"
+        },
+        {
+          "Name": "path",
+          "DisplayName": "Path",
+          "Type": "string",
+          "Required": true,
+          "Hidden": true,
+          "IsPrimaryKey": false,
+          "Binding": false,
+          "DefaultValue": null,
+          "Description": "Request path returned by resource metadata"
+        },
+        {
+          "Name": "metadata",
+          "DisplayName": "Metadata",
+          "Type": "json",
+          "Required": false,
+          "Hidden": true,
+          "IsPrimaryKey": false,
+          "Binding": false,
+          "DefaultValue": {},
+          "Description": "Optional activity metadata"
+        }
+      ],
+      "InputFields": [],
+      "InputPattern": "separateInputs",
+      "InputName": "body",
+      "InputTarget": "body",
+      "OutputSource": "=response",
+      "OutputType": "jsonSchema",
+      "OutputName": "response",
+      "UseRelativeSource": false,
+      "BindingPattern": "connection",
+      "RequiresDiscovery": true,
+      "IsDynamic": true,
+      "XmlTemplate": "<bpmn:sendTask id=\"{id}\" name=\"{name}\">\n  <bpmn:extensionElements>\n    <uipath:activity version=\"v1\">\n      <uipath:type value=\"Intsvc.ActivityExecution\" version=\"v1\" />\n      <uipath:context>\n        <uipath:input name=\"connectorKey\" type=\"string\" value=\"{connectorKey}\" />\n        <uipath:input name=\"connection\" type=\"string\" value=\"=bindings.{connectionBindingId}\" />\n        <uipath:input name=\"folderKey\" type=\"string\" value=\"=bindings.{folderBindingId}\" />\n        <uipath:input name=\"operation\" type=\"string\" value=\"{operation}\" />\n        <uipath:input name=\"objectName\" type=\"string\" value=\"{objectName}\" />\n        <uipath:input name=\"method\" type=\"string\" value=\"{method}\" />\n        <uipath:input name=\"path\" type=\"string\" value=\"{path}\" />\n        <uipath:input name=\"activityConfigurationVersion\" type=\"string\" value=\"v1\" />\n        <uipath:input name=\"metadata\" type=\"json\"><![CDATA[{}]]></uipath:input>\n      </uipath:context>\n      <uipath:output name=\"response\" type=\"jsonSchema\" source=\"=response\" var=\"{varId}\" />\n    </uipath:activity>\n  </bpmn:extensionElements>\n  <bpmn:incoming>{incomingEdge}</bpmn:incoming>\n  <bpmn:outgoing>{outgoingEdge}</bpmn:outgoing>\n</bpmn:sendTask>",
+      "DiscoveryNotes": "Use `uip is activities list <connector-key> --output json` to select an activity. Set operation from Name, then describe ObjectName to get its current path, parameters, and fields.",
+      "InputNotes": "Add each request field from the selected operation as its own uipath:input. Keep the field's type and target: path, query, body, or file.",
+      "ContextFieldNotes": "connection points to a root binding for a Connection resource. When folder scoping is required, folderKey points to a second binding for the same resourceKey. Use propertyAttribute ConnectionId for connection and folderKey for folderKey. Omit folderKey when the selected activity has no folder scoping, and omit both fields only when it does not use a connection.",
+      "ExtensionTagNotes": "In isExecution array, NOT in isEvents array, so uses uipath:activity"
+    }
+  }
+}

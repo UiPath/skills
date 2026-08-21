@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "ReadingList",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "3c690513-0d65-4932-80d3-3928c8b9378a",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "ReadingList"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Flow",
+      "name": "ReadingList",
+      "package": {
+        "key": "6c36a2de-8ed9-4619-b5a8-0089a926da7b"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "3290f2d6-3a4f-4379-ae61-5955730c9f9c",
+    "files": []
+  }
+}

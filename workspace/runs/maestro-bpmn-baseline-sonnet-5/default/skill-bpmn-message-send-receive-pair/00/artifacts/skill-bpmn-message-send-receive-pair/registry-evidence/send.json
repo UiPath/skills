@@ -1,0 +1,108 @@
+{
+  "Result": "Success",
+  "Code": "RegistryGetSuccess",
+  "Data": {
+    "ExtensionType": {
+      "ExtensionType": "Maestro.SendMessageEvent",
+      "Label": "Send internal message",
+      "BpmnElement": "bpmn:IntermediateThrowEvent",
+      "Placements": {
+        "IntermediateEvent": {
+          "Type": "bpmn:IntermediateThrowEvent",
+          "EventDefinition": {
+            "Type": "bpmn:MessageEventDefinition"
+          }
+        },
+        "EndEvent": {
+          "Type": "bpmn:EndEvent",
+          "EventDefinition": {
+            "Type": "bpmn:MessageEventDefinition"
+          }
+        }
+      },
+      "ExtensionTag": "uipath:event",
+      "ContextFields": [
+        {
+          "Name": "name",
+          "DisplayName": "Message name",
+          "Type": "string",
+          "Required": true,
+          "Hidden": false,
+          "IsPrimaryKey": false,
+          "Binding": false,
+          "DefaultValue": null
+        },
+        {
+          "Name": "_label",
+          "Type": "string",
+          "Required": false,
+          "Hidden": true,
+          "IsPrimaryKey": false,
+          "Binding": false,
+          "DefaultValue": null
+        },
+        {
+          "Name": "inputSchema",
+          "DisplayName": "Input schema",
+          "Type": "jsonSchema",
+          "Required": true,
+          "Hidden": true,
+          "IsPrimaryKey": false,
+          "Binding": false,
+          "DefaultValue": null
+        }
+      ],
+      "InputPattern": "splitInputsItemData",
+      "InputName": "ItemData",
+      "InputTarget": "body",
+      "OutputSource": null,
+      "OutputType": "Maestro.SendMessageEvent",
+      "OutputName": "response",
+      "UseRelativeSource": true,
+      "BindingPattern": "none",
+      "RequiresDiscovery": false,
+      "IsDynamic": false,
+      "XmlTemplate": "<bpmn:IntermediateThrowEvent id=\"{id}\" name=\"{name}\">\n  <bpmn:extensionElements>\n    <uipath:event version=\"v1\">\n      <uipath:type value=\"Maestro.SendMessageEvent\" version=\"v1\" />\n      <uipath:context>\n        <uipath:input name=\"name\" value=\"{name}\" />\n        <uipath:input name=\"_label\" value=\"{_label}\" />\n        <uipath:input name=\"inputSchema\" value=\"{inputSchema}\" />\n      </uipath:context>\n      <uipath:input name=\"ItemData\" type=\"json\" target=\"body\"><![CDATA[{\"Reference\":\"\",\"SpecificContent\":{},\"Error\":\"\",\"TimeToLive\":\"\"}]]></uipath:input>\n      <uipath:output name=\"response\" type=\"Maestro.SendMessageEvent\" var=\"{varId}\" />\n    </uipath:event>\n  </bpmn:extensionElements>\n  <bpmn:messageEventDefinition />\n  <bpmn:incoming>{incomingEdge}</bpmn:incoming>\n  <bpmn:outgoing>{outgoingEdge}</bpmn:outgoing>\n</bpmn:IntermediateThrowEvent>",
+      "InputNotes": "In isSplitInputsEvents array. Inputs are merged into a single ItemData JSON body at serialization time. Uses SEND_MESSAGE_EVENT_INPUT_SCHEMA as the inputSchema.",
+      "ExtensionTagNotes": "In isEvents array, uses uipath:event",
+      "InputFields": [
+        {
+          "Name": "Reference",
+          "DisplayName": "Reference",
+          "Type": "string",
+          "Required": true,
+          "Hidden": false,
+          "IsPrimaryKey": false,
+          "Binding": false,
+          "DefaultValue": null,
+          "Target": "body",
+          "Description": "Correlation reference to match this send event to its receiver"
+        },
+        {
+          "Name": "SpecificContent",
+          "DisplayName": "Item information",
+          "Type": "json",
+          "Required": false,
+          "Hidden": false,
+          "IsPrimaryKey": false,
+          "Binding": false,
+          "DefaultValue": null,
+          "Target": "body",
+          "Description": "JSON payload with the message content"
+        },
+        {
+          "Name": "TimeToLive",
+          "DisplayName": "Time to live",
+          "Type": "duration",
+          "Required": false,
+          "Hidden": false,
+          "IsPrimaryKey": false,
+          "Binding": false,
+          "DefaultValue": null,
+          "Target": "body",
+          "Description": "Duration after which the message expires if not consumed"
+        }
+      ]
+    }
+  }
+}

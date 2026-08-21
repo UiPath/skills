@@ -1,0 +1,52 @@
+2026-07-24 19:29:45 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-24 19:29:45 [INFO] coder_eval.orchestrator: API routing: aws_bedrock
+2026-07-24 19:29:45 [DEBUG] coder_eval.criteria: Discovered 14 criterion checkers
+2026-07-24 19:29:45 [DEBUG] coder_eval.criteria: Validated 14 criterion checkers
+2026-07-24 19:29:45 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-24 19:29:46 [DEBUG] coder_eval.orchestrator: Sending prompt: Build a UiPath Flow that monitors a SharePoint folder for new vendor PDF
+invoices, extracts the stru...
+2026-07-24 19:29:46 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Starting agent query stream...
+2026-07-24 19:43:36 [DEBUG] coder_eval.agents.claude_code_agent: [coder] session_id changed: None -> 8e302356-92a1-425b-b466-802ff58038c8
+2026-07-24 19:43:36 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Agent query stream ended
+2026-07-24 19:43:36 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-24 19:43:36 [DEBUG] coder_eval.orchestrator: Agent response received (6346 chars)
+2026-07-24 19:43:36 [DEBUG] coder_eval.orchestrator: Checking success criteria
+2026-07-24 19:43:36 [DEBUG] coder_eval.evaluation.checker: Criterion 'skill_triggered' score: 1.00
+2026-07-24 19:43:36 [DEBUG] coder_eval.evaluation.checker: Criterion 'command_executed' score: 1.00
+2026-07-24 19:43:36 [DEBUG] coder_eval.evaluation.checker: Criterion 'command_executed' score: 1.00
+2026-07-24 19:43:36 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'uip maestro flow validate passes on the generated flow file': f=$(find . -name "*.flow" -print -quit); [ -n "$f" ] && uip maestro flow validate "$f" --output json
+2026-07-24 19:43:45 [DEBUG] coder_eval.sandbox: Command 'f=$(find . -name "*.flow" -print -quit); [ -n "$f" ] && uip maestro flow validate "$f" --output json' exited with code 0
+2026-07-24 19:43:45 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+{
+  "Result": "Success",
+  "Code": "FlowValidate",
+  "Data": {
+    "File": "/work/output/artifacts/skill-flow-ixp-e2e-invoice-extraction-greenfield/InvoiceExtractionFlow/InvoiceExtractionFlow/InvoiceExtractionFlow.flow",
+    "Status": "Valid",
+    "Warnings": "2 warning(s):\n  - [nodes[newVendorPdfReceived1].inputs.detail.connectionResourceId] Connection \"ae311606-25b7-43ef-9cd0-f3dc0b3a9b58\" is referenced by 2 nodes (nodes[newVendorPdfReceived1], nodes[downloadInvoicePdf1]). Shared connections cause cross-node state leakage at runtime. If this is intentional (e.g. two connectors on the same SaaS account), ignore this warning; otherwise create a separate connection per node.\n  - [nodes[postToSap1].inputs.detail] Node \"POST to SAP\" mentions the \"sap\" connector keyword but uses the generic Managed HTTP type `core.action.http.v2` with no connection binding. The runtime will issue a raw HTTP call to an undefined endpoint. Either bind a real Integration Service connection with `uip maestro flow node configure <file> <node-id> --detail '{\"authentication\":\"connector\",\"targetConnector\":\"sap\",\"connectionId\":\"<uuid>\",\"folderKey\":\"<uuid>\",\"method\":\"GET\",\"url\":\"<path>\"}'`, or configure manual-mode HTTP with `--detail '{\"authentication\":\"manual\",\"method\":\"GET\",\"url\":\"https://…\"}'`. If this node is intentionally a raw HTTP call, rename it so the label doesn't imply a connector binding. Pass `--strict-bindings` to fail validation on this."
+  }
+}
+---
+2026-07-24 19:43:45 [DEBUG] coder_eval.sandbox: STDERR:
+---
+[ManifestClient] fetchDynamicNodes ok: total=209 agent context nodes=2 external agent nodes=6 orchestrator nodes=160 IXP nodes=41
+---
+2026-07-24 19:43:45 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-07-24 19:43:45 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'Generated flow contains an IxP extraction node or core.logic.mock fallback': grep -rqE "\"type\"[[:space:]]*:[[:space:]]*\"(uipath\.ixp|core\.logic\.mock)" --include="*.flow" .
+2026-07-24 19:43:45 [DEBUG] coder_eval.sandbox: Command 'grep -rqE "\"type\"[[:space:]]*:[[:space:]]*\"(uipath\.ixp|core\.logic\.mock)" --include="*.flow" .' exited with code 0
+2026-07-24 19:43:45 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-07-24 19:43:45 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'Generated flow contains a SharePoint trigger or connector node': grep -rqiE "sharepoint" --include="*.flow" .
+2026-07-24 19:43:45 [DEBUG] coder_eval.sandbox: Command 'grep -rqiE "sharepoint" --include="*.flow" .' exited with code 0
+2026-07-24 19:43:45 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-07-24 19:43:45 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'Generated flow contains an HTTP action node (core.action.http)': grep -rqE "core\.action\.http|\"type\"[[:space:]]*:[[:space:]]*\"[^\"]*http[^\"]*\"" --include="*.flow" .
+2026-07-24 19:43:45 [DEBUG] coder_eval.sandbox: Command 'grep -rqE "core\.action\.http|\"type\"[[:space:]]*:[[:space:]]*\"[^\"]*http[^\"]*\"" --include="*.flow" .' exited with code 0
+2026-07-24 19:43:45 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-07-24 19:43:45 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'Generated flow references the IxP extraction output via $vars (downstream consumption)': grep -rqF '$vars.' --include="*.flow" .
+2026-07-24 19:43:45 [DEBUG] coder_eval.sandbox: Command 'grep -rqF '$vars.' --include="*.flow" .' exited with code 0
+2026-07-24 19:43:45 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-07-24 19:43:45 [INFO] coder_eval.orchestrator: Success criteria: 8/8 passed, weighted score: 1.000
+2026-07-24 19:43:45 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-24 19:43:45 [INFO] coder_eval.orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+2026-07-24 19:43:45 [INFO] coder_eval.orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-ixp-e2e-invoice-extraction-greenfield
+2026-07-24 19:43:45 [INFO] coder_eval.orchestrator: Task finished: status=SUCCESS duration=842.3s score=1.000 iterations=1

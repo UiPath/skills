@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "WikiPageviews",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "07d97fdd-d33b-4a37-8a5f-aadb9632ca32",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "WikiPageviews"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Flow",
+      "name": "WikiPageviews",
+      "package": {
+        "key": "7bfcecf4-dee6-4b1c-a1ee-ee7c300547bf"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "1a2a7954-2cda-413b-ab53-8fe9fb1096e4",
+    "files": []
+  }
+}

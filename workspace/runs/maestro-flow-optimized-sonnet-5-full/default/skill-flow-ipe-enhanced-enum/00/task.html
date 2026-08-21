@@ -1,0 +1,2163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>coder_eval · skill-flow-ipe-enhanced-enum · default</title>
+<style>
+:root {
+  --bg-page: #0f1419;
+  --bg-card: #1a2129;
+  --bg-card-2: #232d38;
+  --bg-code: #0b0f14;
+  --fg: #e6edf3;
+  --fg-muted: #8b98a5;
+  --fg-dim: #6e7681;
+  --border: #30363d;
+  --accent: #58a6ff;
+  --score-high: #22c55e;
+  --score-mid: #f59e0b;
+  --score-low: #ef4444;
+  --status-success: #22c55e;
+  --status-failure: #f59e0b;
+  --status-error: #ef4444;
+  --status-neutral: #6e7681;
+  --shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+.light {
+  --bg-page: #ffffff;
+  --bg-card: #f6f8fa;
+  --bg-card-2: #eaeef2;
+  --bg-code: #f6f8fa;
+  --fg: #1f2328;
+  --fg-muted: #636c76;
+  --fg-dim: #8b949e;
+  --border: #d0d7de;
+  --accent: #0969da;
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial,
+               sans-serif;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--fg);
+  background: var(--bg-page);
+}
+.container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+h1, h2, h3, h4 { margin: 0 0 12px 0; line-height: 1.25; }
+h1 { font-size: 22px; font-weight: 600; }
+h2 { font-size: 18px; font-weight: 600; margin-top: 28px;
+     padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+h3 { font-size: 15px; font-weight: 600; color: var(--fg-muted); }
+h4 { font-size: 13px; font-weight: 600; color: var(--fg-muted); }
+p { margin: 0 0 8px 0; }
+.muted { color: var(--fg-muted); }
+.dim { color: var(--fg-dim); }
+.mono { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+        monospace; font-size: 12.5px; }
+code { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+       monospace; font-size: 12.5px; background: var(--bg-code);
+       border: 1px solid var(--border); padding: 1px 5px; border-radius: 3px; }
+pre { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+      monospace; font-size: 12.5px; background: var(--bg-code);
+      border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px;
+      margin: 6px 0; overflow-x: auto; white-space: pre-wrap;
+      word-wrap: break-word; }
+.header-bar { display: flex; align-items: center; justify-content: space-between;
+              margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+.title-group { flex: 1; min-width: 0; }
+.title-group .subtitle { color: var(--fg-muted); font-size: 13px;
+                         margin-top: 2px; word-break: break-all; }
+.badges { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.badge { display: inline-flex; align-items: center; gap: 6px;
+         padding: 4px 10px; border-radius: 12px; font-size: 12px;
+         font-weight: 600; background: var(--bg-card-2);
+         border: 1px solid var(--border); color: var(--fg); }
+.badge.success { background: color-mix(in srgb, var(--status-success) 20%, var(--bg-card-2));
+                 border-color: var(--status-success); color: var(--status-success); }
+.badge.failure { background: color-mix(in srgb, var(--status-failure) 20%, var(--bg-card-2));
+                 border-color: var(--status-failure); color: var(--status-failure); }
+.badge.error { background: color-mix(in srgb, var(--status-error) 20%, var(--bg-card-2));
+               border-color: var(--status-error); color: var(--status-error); }
+.badge.warning { background: color-mix(in srgb, #f4a52810 20%, var(--bg-card-2));
+                 border-color: #f4a528; color: #f4a528; }
+.badge.neutral { color: var(--fg-muted); }
+.score-pill { display: inline-block; padding: 2px 8px; border-radius: 10px;
+              font-size: 12px; font-weight: 700; min-width: 42px;
+              text-align: center; color: #0b0f14; }
+.score-high { background: var(--score-high); }
+.score-mid { background: var(--score-mid); }
+.score-low { background: var(--score-low); }
+.card { background: var(--bg-card); border: 1px solid var(--border);
+        border-radius: 8px; padding: 16px 20px; margin-bottom: 16px;
+        box-shadow: var(--shadow); }
+.card.highlight { border-left: 4px solid var(--accent); }
+.grid { display: grid; gap: 12px;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+.stat { background: var(--bg-card-2); padding: 10px 12px; border-radius: 6px;
+        border: 1px solid var(--border); }
+.stat .label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;
+               color: var(--fg-muted); margin-bottom: 4px; }
+.stat .value { font-size: 16px; font-weight: 600; }
+table { width: 100%; border-collapse: collapse; margin: 4px 0 12px 0; }
+th, td { text-align: left; padding: 8px 10px;
+         border-bottom: 1px solid var(--border); vertical-align: top;
+         font-size: 13px; }
+th { color: var(--fg-muted); font-weight: 600; font-size: 12px;
+     text-transform: uppercase; letter-spacing: 0.3px; }
+tr:last-child td { border-bottom: none; }
+details { margin: 6px 0; border: 1px solid var(--border); border-radius: 6px;
+          background: var(--bg-card-2); }
+details > summary { cursor: pointer; padding: 8px 12px; user-select: none;
+                    font-weight: 500; list-style: none; }
+details > summary::-webkit-details-marker { display: none; }
+details > summary::before { content: "▸ "; color: var(--fg-dim);
+                            display: inline-block; width: 14px;
+                            transition: transform 0.15s; }
+details[open] > summary::before { content: "▾ "; }
+details .details-body { padding: 0 12px 10px 12px; }
+.tool-row { display: flex; align-items: center; gap: 10px;
+            flex-wrap: wrap; font-size: 13px; }
+.tool-name { font-weight: 600; color: var(--accent); font-family: ui-monospace,
+             SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+.tool-status-ok { color: var(--status-success); font-size: 11px;
+                  font-weight: 600; }
+.tool-status-err { color: var(--status-error); font-size: 11px;
+                   font-weight: 600; }
+.tool-duration { color: var(--fg-muted); font-size: 12px; }
+.tool-seq { color: var(--fg-dim); font-size: 11px; font-weight: 600;
+            min-width: 24px; text-align: right; font-family: ui-monospace,
+            SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+.turn-header { display: flex; justify-content: space-between;
+               align-items: baseline; flex-wrap: wrap; gap: 10px;
+               margin-bottom: 10px; }
+.turn-meta { font-size: 12px; color: var(--fg-muted); }
+.criterion-row td:first-child { font-family: ui-monospace, SFMono-Regular,
+                                 "SF Mono", Menlo, Consolas, monospace;
+                                 color: var(--fg-muted); font-size: 12px; }
+.judge-section { display: flex; flex-direction: column; gap: 12px; }
+.judge-card { padding: 14px 16px; }
+.judge-card-head { display: flex; justify-content: space-between;
+                    align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+.judge-card-title { font-size: 14px; line-height: 1.4; flex: 1; min-width: 0; }
+.judge-card-score { flex-shrink: 0; }
+.judge-rationale { margin-top: 10px; padding: 10px 12px;
+                   background: var(--bg-code); border-radius: 4px;
+                   font-size: 13px; line-height: 1.5; }
+.judge-findings { margin: 8px 0 0 18px; padding-left: 4px; font-size: 13px;
+                   line-height: 1.6; }
+.judge-findings li { margin: 2px 0; }
+.nav-toggle { display: inline-block; padding: 5px 10px; font-size: 12px;
+              background: var(--bg-card-2); border: 1px solid var(--border);
+              border-radius: 5px; color: var(--fg); cursor: pointer; }
+.nav-toggle:hover { background: var(--bg-card); }
+.llm-next-steps { margin: 6px 0 0 20px; padding-left: 0; }
+.llm-next-steps li { margin: 3px 0; }
+.iteration-group { padding: 12px 16px 4px 16px; margin-bottom: 20px;
+                   border-radius: 0 6px 6px 0; border-left: 4px solid var(--status-neutral); }
+/* rgba fallback for browsers without color-mix (Chrome <111, Firefox <113, Safari <16.2). */
+.iteration-group--recovered { border-left-color: var(--status-success);
+                              background: rgba(34, 197, 94, 0.06);
+                              background: color-mix(in srgb, var(--status-success) 6%, transparent); }
+.iteration-group--terminal { border-left-color: var(--status-error);
+                             background: rgba(239, 68, 68, 0.06);
+                             background: color-mix(in srgb, var(--status-error) 6%, transparent); }
+.iteration-group__banner { margin: 0 0 12px 0; font-size: 14px; font-weight: 600; }
+.iteration-group--recovered .iteration-group__banner { color: var(--status-success); }
+.iteration-group--terminal .iteration-group__banner { color: var(--status-error); }
+.attempt-transition { display: flex; align-items: center; gap: 8px;
+                      margin: -6px 0 12px 8px; color: var(--status-error); font-size: 12.5px; }
+.attempt-transition__icon { font-weight: 700; }
+footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--border);
+         color: var(--fg-dim); font-size: 12px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="header-bar">
+  <div class="title-group">
+    <h1>Task: skill-flow-ipe-enhanced-enum</h1>
+    <div class="subtitle">Tests the enhanced enum IS feature — configures a connector node with an enhanced enum field with display labels on the WooCommerce connector.</div>
+  </div>
+  <div class="badges">
+    <span class="badge success">SUCCESS</span>
+    <span class="score-pill score-high">1.00</span>
+    <span class="badge neutral">claude-code · claude-sonnet-5</span>
+    <span class="badge neutral">6m 47s</span>
+    <span class="badge neutral">$2.3717</span>
+    <span class="badge warning">expected_turns exceeded (54/35)</span>
+    
+    <span class="nav-toggle" onclick="toggleTheme()">Toggle theme</span>
+  </div>
+</div>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Variant</div><div class="value">default</div></div>
+    <div class="stat"><div class="label">Started</div><div class="value mono">2026-08-19T15:39:46</div></div>
+    <div class="stat"><div class="label">Duration</div><div class="value">6m 47s</div></div>
+    <div class="stat"><div class="label">Turns (SDK)</div><div class="value">89</div></div>
+    <div class="stat"><div class="label">Commands</div><div class="value">53</div></div>
+  </div>
+</div>
+
+<h2>Success Criteria <span class="muted" style="font-weight:400">(3/3 passed)</span></h2>
+<div class="card" style="padding:0">
+<table>
+  <thead>
+    <tr>
+      <th style="width:15%">Type</th>
+      <th style="width:35%">Description</th>
+      <th style="width:10%">Score</th>
+      <th>Details</th>
+    </tr>
+  </thead>
+  <tbody>
+    
+<tr class="criterion-row">
+  <td>run_command</td>
+  <td>Flow file exists and is valid JSON</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Command: python3 -c &quot;import json,glob; flows=glob.glob(&#x27;**/EnhancedEnumTest*.flow&#x27;,recursive=True); assert flows, &#x27;No flow found&#x27;; f=json.load(open(flows[0])); assert &#x27;nodes&#x27; in f and &#x27;edges&#x27; in f; nn=len(f[&#x27;nodes&#x27;]); ne=len(f[&#x27;edges&#x27;]); print(&#x27;OK: %d nodes, %d edges&#x27;%(nn,ne))&quot;</summary><div class="details-body"><pre style="margin:6px 0 0 0">Command: python3 -c &quot;import json,glob; flows=glob.glob(&#x27;**/EnhancedEnumTest*.flow&#x27;,recursive=True); assert flows, &#x27;No flow found&#x27;; f=json.load(open(flows[0])); assert &#x27;nodes&#x27; in f and &#x27;edges&#x27; in f; nn=len(f[&#x27;nodes&#x27;]); ne=len(f[&#x27;edges&#x27;]); print(&#x27;OK: %d nodes, %d edges&#x27;%(nn,ne))&quot;
+Exit code: 0 (expected: 0)
+Stdout:
+OK: 4 nodes, 3 edges
+
+Stderr: (empty)</pre></div></details></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>run_command</td>
+  <td>Flow has a connector node referencing uipath-automattic-woocommerce</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Command: python3 -c &quot;import json,glob; flows=glob.glob(&#x27;**/EnhancedEnumTest*.flow&#x27;,recursive=True); assert flows; content=open(flows[0]).read(); assert &#x27;uipath-automattic-woocommerce&#x27; in content, &#x27;Connector key not found&#x27;; print(&#x27;OK: connector key present&#x27;)&quot;</summary><div class="details-body"><pre style="margin:6px 0 0 0">Command: python3 -c &quot;import json,glob; flows=glob.glob(&#x27;**/EnhancedEnumTest*.flow&#x27;,recursive=True); assert flows; content=open(flows[0]).read(); assert &#x27;uipath-automattic-woocommerce&#x27; in content, &#x27;Connector key not found&#x27;; print(&#x27;OK: connector key present&#x27;)&quot;
+Exit code: 0 (expected: 0)
+Stdout:
+OK: connector key present
+
+Stderr: (empty)</pre></div></details></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>command_executed</td>
+  <td>uip maestro flow validate was called</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Matched 2/1 required commands (filters: tool_name=Bash, pattern=/(uip|\$UIP)\s+(maestro\s+)?flow\s+validate/)</summary><div class="details-body"><pre style="margin:6px 0 0 0">Matched 2/1 required commands (filters: tool_name=Bash, pattern=/(uip|\$UIP)\s+(maestro\s+)?flow\s+validate/)
+Examples: [&#x27;\\\nuip maestro flow validate &quot;EnhancedEnumTest.flow&quot; --output json 2&gt;&amp;1&#x27;, &#x27;uip maestro flow validate &quot;EnhancedEnumTest.flow&quot; --output json 2&gt;&amp;1\necho &quot;---audit---&quot;\npython3 /home/azureuser/projects&#x27;]</pre></div></details></td>
+</tr>
+
+  </tbody>
+</table>
+</div>
+<h2>Conversation Trace (1 iteration)</h2>
+<div class="card">
+  <div class="turn-header">
+    <h3>Iteration 1</h3>
+    <div class="badges">
+      <span class="badge neutral">89 assistant turns</span>
+      <span class="badge neutral">in 603 · out 33924 · cache 4441019</span>
+      <span class="badge neutral">6m 45s</span>
+      
+      
+      
+    </div>
+  </div>
+  <details>
+    <summary>Prompt to agent</summary>
+    <div class="details-body"><pre>Your working directory is: /work/output/artifacts/skill-flow-ipe-enhanced-enum
+
+Create a new Flow project called &quot;EnhancedEnumTest&quot; with a manual trigger. 
+Build a flow that retrieves WooCommerce product reviews and lets the caller 
+choose whether they come back oldest-first or newest-first, picking from friendly 
+labels rather than raw codes. Discover the get-product-reviews operation and set 
+its sort-order field. Validate the final flow file.
+If the WooCommerce operation exists in the registry but the tenant has no
+live connection, keep the real WooCommerce operation node with its inputs left unset, 
+confirm that shape validates, and stop there.
+</pre></div>
+  </details>
+  <details>
+    <summary>Agent response</summary>
+    <div class="details-body"><pre>[ASSISTANT] This matches the uipath-maestro-flow skill exactly (Flow project creation, node discovery, field setting, validation). Let me invoke it.
+[ASSISTANT] Good, logged in. Now let&#x27;s check for existing solutions and search for the WooCommerce connector/operation in parallel.
+[ASSISTANT] No existing solution found — will create a new one. Registry pulled fresh. Now search for WooCommerce.
+[ASSISTANT] Found it: `uipath.connector.uipath-automattic-woocommerce.get-product-reviews`. Now check for a live connection, and in parallel get the registry details for this node type and for `core.control.end`.
+[ASSISTANT] Confirmed empty even with `--refresh` needed — let me confirm with refresh retry per the skill&#x27;s protocol before treating it as authoritative.
+[ASSISTANT] Now I have everything needed to plan the build. The task&#x27;s &quot;sort-order field&quot; is the `order` parameter (enhancedEnum: Asc/Desc) on the Get Product Reviews operation. I&#x27;ll expose a friendly-label choice (&quot;Oldest First&quot;/&quot;Newest First&quot;) as a flow input, map it to the raw `asc`/`desc` code via a Script node, and wire that into the connector&#x27;s `order` field. Since there&#x27;s no live WooCommerce connection, the connector node will be added but left unconfigured, with the planned config recorded in a sidecar file per the skill&#x27;s No-Live-Tenant protocol.
+
+Let&#x27;s scaffold the solution + project and pull registry/definitions in one batch.
+[ASSISTANT] Solution and project scaffolded correctly, and the WooCommerce connector node `getProductReviews1` was added. Now let&#x27;s read the flow file to see its current state.
+[ASSISTANT] Now I have all the definitions needed. Let me author the flow: add a Script node to map friendly labels → raw sort codes, an End node, wire the edges, declare the trigger input/output variables, and update layout — all via parallel `Edit` calls on non-overlapping regions.
+[ASSISTANT] Now let&#x27;s write the sidecar planned-config file for the connector node (per the No-Live-Tenant protocol), then run validate/audit/format.
+[ASSISTANT] Validates cleanly with no warnings. Now run the local audit script and format.
+[ASSISTANT] Clean audit — the two info/warnings are expected (unconfigured bindings since there&#x27;s no live connection, and layout sizes will be fixed by `format`). Let&#x27;s run format now.
+[ASSISTANT] Format ran successfully — 3 nodes repositioned, 2 resized. Let&#x27;s re-run validate once more to confirm the flow is still valid after formatting.
+[ASSISTANT] Flow validates cleanly with a fully clean audit (only expected info notes about the unconfigured connector bindings, which is correct for the no-live-tenant case).
+
+## Summary
+
+Built and validated **EnhancedEnumTest** at `/work/output/artifacts/skill-flow-ipe-enhanced-enum/EnhancedEnumTest/EnhancedEnumTest/EnhancedEnumTest.flow`:
+
+- **Solution/project**: `EnhancedEnumTest/EnhancedEnumTest/EnhancedEnumTest.flow` (double-nested layout, registered in the `.uipx`).
+- **Topology**: Manual trigger → Script (`mapSortOrder`) → WooCommerce **Get Product Reviews** connector node → End.
+- **Friendly-label enum**: added a flow input `sortPreference` (`in`, string, `enum: [&quot;Oldest First&quot;, &quot;Newest First&quot;]`, default `&quot;Newest First&quot;`) on the manual trigger. The `mapSortOrder` script node translates that label to the connector&#x27;s raw `order` code (`asc`/`desc`) — the caller never sees or picks raw codes.
+- **Discovered operation**: `uipath.connector.uipath-automattic-woocommerce.get-product-reviews`, whose `order` query parameter is the real sort-order field (`enhancedEnum`: Asc/Desc). The script&#x27;s output (`mapSortOrder.output.order`) is what would feed that field.
+- **No live connection**: `uip is connections list &quot;uipath-automattic-woocommerce&quot; --all-folders` (and `--refresh`) returned no connections. Per the skill&#x27;s no-live-tenant protocol, I kept the real connector node (`getProductReviews1`) via `node add` — did not substitute a mock — and left its `inputs.detail` unset. The planned `node configure --detail` payload (wirin</pre></div>
+  </details>
+  <h4 style="margin-top:12px">Tool Calls (53)</h4>
+  
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#0</span>
+      <span class="tool-name">Skill</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">15ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;skill&quot;: &quot;tmp:uipath-maestro-flow&quot;,
+  &quot;args&quot;: &quot;Create a new Flow project called \&quot;EnhancedEnumTest\&quot; with a manual trigger. Build a flow that retrieves WooCommerce product reviews and lets the caller choose whether they come back oldest-first or newest-first, picking from friendly labels rather than raw codes. Discover the get-product-reviews operation and set its sort-order field. Validate the final flow file. If the WooCommerce operation exist… (171 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Launching skill: tmp:uipath-maestro-flow</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#1</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">102ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;find . -maxdepth 2 -type f -name &#x27;*.uipx&#x27; -print; echo \&quot;---\&quot;; ls -la&quot;,
+  &quot;description&quot;: &quot;Check for existing solution files&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>---
+total 12
+drwxr-xr-x 3 root root 4096 Aug 19 15:39 .
+drwxr-xr-x 3 root root 4096 Aug 19 15:39 ..
+drwxr-xr-x 4 root root 4096 Aug 19 15:39 .venv</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#2</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">394ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/CAPABILITY.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Author — Create and edit `.flow` files
+2	
+3	Capability index for building new flows (greenfield) and editing existing flows (brownfield). Author owns everything that happens on disk, locally, without `uip login`. Authoring journeys terminate at `validate` + `format`; from there, hand off to [operate/CAPABILITY.md](../operate/CAPABILITY.md) to publish, run, or debug.
+4	
+5	&gt; **Where you came from / where to go next.** Author is upstream of Operate (build the flow → ship it) and upstream of Diagnose only via Operate (build → run → diagnose). Publish/run/lifecycle lives in [operate/CAPABILITY.md](../operate/CAPABILITY.md); fault triage lives in [diagnose/CAPABILITY.md](../diagnose/CAPABILITY.md).
+6	&gt;
+7	&gt; **Inherits universal rules from [SKILL.md](../../SKILL.md)** — `--output json` + prefer `--output-filter` for extraction, no `flow debug` without consent, resource discovery order, never invoke other skills automatically, dropdown question pattern, solution layout, **plain-English narration + granular progress list (opt-in — silent by default; engage when the user asks for verbosity)**. The rules below are author-scoped and apply on top.
+8	
+9	## When to use this capability
+10	
+11	&lt;
+
+… (truncated, 30449 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#3</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">101ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/greenfield.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Greenfield — Create a New Flow
+2	
+3	End-to-end journey for creating a Flow project from scratch. Author terminates at `validate` + `format`. To publish, run, or debug after this, see [operate/CAPABILITY.md](../../operate/CAPABILITY.md).
+4	
+5	&gt; **Brownfield edits use a different journey.** If the `.flow` file already exists, see [brownfield.md](brownfield.md) instead.
+6	
+7	## Should you plan first?
+8	
+9	For complex flows, produce a plan before building. Reference [planning-arch.md](planning-arch.md) and [planning-impl.md](planning-impl.md) for the node type catalog, port reference, wiring rules, and topology patterns.
+10	
+11	**Plan when:**
+12	- The flow has 5+ nodes with branching or parallel paths
+13	- The flow uses connectors or resources that need discovery
+14	- The user&#x27;s requirements are ambiguous and you need to confirm the approach
+15	
+16	**Don&#x27;t plan when:**
+17	- Adding/editing a single node in an existing flow (use [brownfield.md](brownfield.md))
+18	- The flow is a straightforward linear pipeline (trigger → action → action → end)
+19	- The user has already described the exact topology they want
+20	
+21	### Examples
+22	
+23	**Plan:** &quot;Build a flow that receives a Jira ticke
+
+… (truncated, 34831 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#4</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">139ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/plugins/connector/impl.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Connector Activity Nodes — Implementation
+2	
+3	How to configure connector activity nodes: connection binding, enriched metadata, reference field resolution, and debugging. Connection bindings are emitted by `uip maestro flow node configure` into the flow&#x27;s top-level `bindings[]`; `bindings_v2.json` is regenerated from them at debug/pack time and should never be hand-edited.
+4	
+5	For generic node/edge add, remove, and wiring procedures, see [editing-operations.md](../../editing-operations.md). This guide covers the connector-specific configuration workflow that must follow the generic node add.
+6	
+7	## How Connector Nodes Differ from OOTB
+8	
+9	1. **Connection binding required** — every connector node needs an IS connection (OAuth, API key, etc.) authored in the flow&#x27;s top-level `bindings[]` (which the CLI regenerates into `bindings_v2.json` at debug/pack time). Without it, the node cannot authenticate.
+10	2. **Enriched metadata via `--connection-id`** — call `registry get` with `--connection-id` to get connection-aware field metadata. Without it, only base fields are returned — custom fields, dynamic enums, and reference resolution are missing.
+11	3. **`inputs.detail` object** —
+
+… (truncated, 66612 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#5</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">4ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/plugins/connector/planning.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Connector Activity Nodes — Planning
+2	
+3	Connector activity nodes call external services (Jira, Slack, Salesforce, Outlook, etc.) via UiPath Integration Service. They are dynamically loaded — not built-in — and appear in the registry after `uip login` + `uip maestro flow registry pull`.
+4	
+5	## When to Use
+6	
+7	Use a connector activity node when the flow needs to **call an external service that has a pre-built UiPath connector**. Connectors handle auth (OAuth, API keys), token refresh, and error formatting automatically at runtime. Note: design-time reference resolution (looking up records by name during authoring) still requires the agent to paginate — see [impl.md](impl.md).
+8	
+9	### Decision Order
+10	
+11	Prefer higher tiers when connecting to external services:
+12	
+13	| Tier | Approach | When to Use |
+14	| --- | --- | --- |
+15	| 1 | **IS connector activity** (this node type) | A connector exists and its activities cover the use case |
+16	| 2 | **Managed HTTP Request** (`core.action.http.v2`) | A connector exists but lacks the specific curated activity — uses the connector&#x27;s IS connection for auth |
+17	| 3 | **Managed HTTP Request — manual mode** (`core.action.http.v2`) | No 
+
+… (truncated, 8594 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#6</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">27ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -ril \&quot;enum\&quot; /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/ | head -50&quot;,
+  &quot;description&quot;: &quot;Search skill docs for enum-related features&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/evaluate/CAPABILITY.md
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/planning-arch.md
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/plugins/http/planning.md
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/plugins/ixp/planning.md
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/plugins/ixp/impl.md
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/plugins/agent/planning.md
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/plugins/summarize/planning.md
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/plugins/summarize/impl.md
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/plugins/inline-agent/impl.md
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/plugins/connector/impl.md
+/home/azureuser/projects/skills/tmp/skills/uipath-ma
+
+… (truncated, 60 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#7</span>
+      <span class="tool-name">Grep</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">10ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;pattern&quot;: &quot;enum&quot;,
+  &quot;path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/shared&quot;,
+  &quot;-i&quot;: true,
+  &quot;-C&quot;: 3
+}</pre>
+    <h4>Result</h4>
+    <pre>No files found</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#8</span>
+      <span class="tool-name">Grep</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">11ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;pattern&quot;: &quot;enum&quot;,
+  &quot;path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/planning-arch.md&quot;,
+  &quot;-i&quot;: true,
+  &quot;-C&quot;: 5
+}</pre>
+    <h4>Result</h4>
+    <pre>Found 1 file
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/planning-arch.md</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#9</span>
+      <span class="tool-name">Grep</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">6ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;pattern&quot;: &quot;enum&quot;,
+  &quot;path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/planning-arch.md&quot;,
+  &quot;-i&quot;: true,
+  &quot;-C&quot;: 8
+}</pre>
+    <h4>Result</h4>
+    <pre>Found 1 file
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/planning-arch.md</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#10</span>
+      <span class="tool-name">Grep</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">8ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;pattern&quot;: &quot;enum|label|friendly&quot;,
+  &quot;path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/shared/variables-and-expressions.md&quot;,
+  &quot;-i&quot;: true,
+  &quot;-C&quot;: 4
+}</pre>
+    <h4>Result</h4>
+    <pre>Found 1 file
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/shared/variables-and-expressions.md</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#11</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">29ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;ls /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/plugins/&quot;,
+  &quot;description&quot;: &quot;List available plugin docs&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>agent
+agentic-process
+api-workflow
+batch-transform
+connector
+connector-trigger
+decision
+delay
+end
+flow
+hitl
+http
+inline-agent
+ixp
+loop
+merge
+queue
+rpa
+scheduled-trigger
+script
+subflow
+summarize
+switch
+terminate
+transform</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#12</span>
+      <span class="tool-name">Grep</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">7ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;pattern&quot;: &quot;enum&quot;,
+  &quot;path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/planning-arch.md&quot;,
+  &quot;-i&quot;: true,
+  &quot;output_mode&quot;: &quot;content&quot;,
+  &quot;-C&quot;: 6
+}</pre>
+    <h4>Result</h4>
+    <pre>104-- **Connectors:** Whether a connector exists for each external service, available operations (from node type names), and whether a healthy connection exists. Field details require `registry get --connection-id` in Phase 2.
+105-- **Resources:** Whether a published or in-solution node exists for each RPA process, agent, or flow referenced in the requirements. Check in-solution first (`registry list --local`, or `registry search &quot;&lt;keyword&gt;&quot; --local` for keyword match), then the tenant registry. Input/output schemas require `registry get` (with `--local` for in-solution) in Phase 2.
+106-- **Gaps:** Services with no connector -&gt; fall back to `core.action.http.v2` (manual mode). Resources in the same solution but unpublished -&gt; use `--local` discovery (no mock needed). Resources not in the solution and not yet published -&gt; use `core.logic.mock` placeholder. Connectors with no connection -&gt; flag in Open Questions for the user to create.
+107-
+108-Use these findings to select the right node types from the [Plugin Index](#plugin-index). If a connector doesn&#x27;t exist, fall back to `core.action.http.v2` (manual mode) or note it as a gap in Open Questions.
+109-
+110:[Omitted long matching lin
+
+… (truncated, 238 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#13</span>
+      <span class="tool-name">Grep</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">7ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;pattern&quot;: &quot;enum&quot;,
+  &quot;path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/shared/variables-and-expressions.md&quot;,
+  &quot;-i&quot;: true,
+  &quot;output_mode&quot;: &quot;content&quot;,
+  &quot;-C&quot;: 6
+}</pre>
+    <h4>Result</h4>
+    <pre>No matches found</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#14</span>
+      <span class="tool-name">Grep</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">9ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;pattern&quot;: &quot;enum|options|dropdown|choice&quot;,
+  &quot;path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/shared/file-format.md&quot;,
+  &quot;-i&quot;: true,
+  &quot;output_mode&quot;: &quot;content&quot;,
+  &quot;-C&quot;: 4
+}</pre>
+    <h4>Result</h4>
+    <pre>57-├── project.uiproj          # { &quot;Name&quot;: &quot;...&quot;, &quot;ProjectType&quot;: &quot;Flow&quot; }
+58-├── &lt;ProjectName&gt;.flow      # ← edit this
+59-├── bindings_v2.json        # resource bindings
+60-├── entry-points.json       # input/output schema declarations
+61:├── operate.json            # runtime options
+62-└── package-descriptor.json # packaging manifest
+63-```
+64-
+65-## Node instance</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#15</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">14ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/shared/variables-and-expressions.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Variables and Expressions
+2	
+3	Complete reference for declaring variables, writing expressions, and managing data flow in `.flow` files.
+4	
+5	&gt; **Read this before** adding variables or writing expressions in any flow.
+6	&gt;
+7	&gt; `flow validate` catches the structural expression-reference errors:
+8	&gt;
+9	&gt; - Missing `=js:` prefix on `$vars`/`$metadata`/`$self` (MST-9107)
+10	&gt; - Invented `nodes.&lt;id&gt;.output` syntax
+11	&gt; - References to unknown variables or node IDs
+12	&gt; - Output-path walks that descend into declared primitives or schemas closed with `additionalProperties: false`
+13	&gt;
+14	&gt; Errors against **open output schemas** (HTTP response bodies, script returns, free-text agent output) and **wrong-direction reads** (e.g. reading an `out`-only variable) still slip past validate and surface only at `flow debug` or in production.
+15	
+16	---
+17	
+18	## Table of contents
+19	
+20	- [Variables Overview](#variables-overview)
+21	- [Workflow Variables (`globals`)](#workflow-variables-globals)
+22	- [Node Variables (`nodes`)](#node-variables-nodes)
+23	- [Variable Updates (`variableUpdates`)](#variable-updates-variableupdates)
+24	- [Output Mapping on End Nodes](#output-mapping-on-end-nodes)
+25	- [
+
+… (truncated, 24870 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#16</span>
+      <span class="tool-name">Grep</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">11ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;pattern&quot;: &quot;enum|oneOf|manual trigger|core.trigger.manual&quot;,
+  &quot;path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/shared/file-format.md&quot;,
+  &quot;-i&quot;: true,
+  &quot;output_mode&quot;: &quot;content&quot;,
+  &quot;-C&quot;: 5
+}</pre>
+    <h4>Result</h4>
+    <pre>88-    }
+89-  }
+90-}
+91-```
+92-
+93:**Required fields on every node**: `id`, `type`, `typeVersion`, **`display`** (with at least a `label`). This applies to **every** node — triggers (`core.trigger.manual`, `core.trigger.scheduled`, connector triggers), action nodes, control-flow nodes (`core.control.end`, `core.logic.terminate`), and human-task nodes. The Zod `nodeSchema` declares `display: displayConfigSchema` without `.optional()`, so no node type is exempt — even ones that &quot;feel&quot; trivial.
+94-
+95-[Omitted long context line]
+96-
+97-&gt; **Gotcha — vague schema-validation error on missing `display`.** Omitting `display` on any node produces:
+98-&gt;
+--
+110-
+111-A few per-instance identity fields live on the node instance:
+112-
+113-| Field | Used by | Purpose |
+114-|-------|---------|---------|
+115:| `inputs.entryPointId` | All trigger nodes (`core.trigger.manual`, `core.trigger.scheduled`, connector triggers) | Stable UUID identifying the entry point |
+116-| `inputs.isDefaultEntryPoint` | Trigger nodes in subflows | Boolean marking the default entry point when a subflow has multiple triggers |
+117-| `inputs.source` | `uipath.agent.autonomous` and every attached `uipath.agent.resource.*` 
+
+… (truncated, 3375 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#17</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">5ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/plugins/script/impl.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Script Node — Implementation
+2	
+3	## Node Type
+4	
+5	`core.action.script`
+6	
+7	## Registry validation
+8	
+9	```bash
+10	uip maestro flow registry get core.action.script --output json
+11	```
+12	
+13	Confirm: input port `input`, output port `success`, required input `script` (string, non-empty). See [Action Node Structure — Registry validation](../../../../shared/action-nodes.md#registry-validation) for the shared pattern.
+14	
+15	## JSON structure
+16	
+17	Follow the [Action Node Structure — Standard JSON skeleton](../../../../shared/action-nodes.md#standard-json-skeleton). The script-specific input is a single `script` string:
+18	
+19	```json
+20	{
+21	  &quot;inputs&quot;: {
+22	    &quot;script&quot;: &quot;const items = $vars.fetchData.output.body.items;\nconst total = items.reduce((sum, i) =&gt; sum + i.amount, 0);\nreturn { total, count: items.length };&quot;
+23	  }
+24	}
+25	```
+26	
+27	## Adding and editing
+28	
+29	See [Action Node Structure — Adding and editing procedures](../../../../shared/action-nodes.md#adding-and-editing-procedures). The script node uses the standard input port `input` and output port `success`; no plugin-specific wiring.
+30	
+31	## Script rules
+32	
+33	1. **Top-level body — no `function main()` w
+
+… (truncated, 4329 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#18</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">940ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;which uip; uip --version 2&gt;&amp;1 | head -5; echo \&quot;---login---\&quot;; uip login status --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Check uip CLI binary, version, and login status&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/usr/bin/uip
+1.201.0-dev.8272
+---login---
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;LoginStatus&quot;,
+  &quot;Data&quot;: {
+    &quot;Status&quot;: &quot;Logged in&quot;,
+    &quot;Identity&quot;: &quot;zhongyi.shi@uipath.com&quot;,
+    &quot;IdentityType&quot;: &quot;User&quot;,
+    &quot;AuthFlow&quot;: &quot;Interactive&quot;,
+    &quot;CredentialSource&quot;: &quot;SavedLogin&quot;,
+    &quot;Provider&quot;: &quot;File&quot;,
+    &quot;UserId&quot;: &quot;bfda820f-4ddb-4af7-a5ec-3c332b403271&quot;,
+    &quot;UserEmail&quot;: &quot;zhongyi.shi@uipath.com&quot;,
+    &quot;UserName&quot;: &quot;zhongyi.shi@uipath.com&quot;,
+    &quot;BaseUrl&quot;: &quot;https://alpha.uipath.com&quot;,
+    &quot;Organization&quot;: &quot;codereval&quot;,
+    &quot;OrganizationId&quot;: &quot;311c6049-4966-4ef2-a6f3-8ceccaf38d54&quot;,
+    &quot;Tenant&quot;: &quot;DefaultTenant&quot;,
+    &quot;TenantId&quot;: &quot;69d43765-6ede-4575-88b7-9db601a2c056&quot;,
+    &quot;ExpirationDate&quot;: &quot;2026-08-19T16:34:30.000Z&quot;
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#19</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">25ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;find . -maxdepth 2 -type f -name &#x27;*.uipx&#x27; -print&quot;,
+  &quot;description&quot;: &quot;Check for existing solution files in cwd&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>(Bash completed with no output)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#20</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">5.09s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry pull --force --output json 2&gt;&amp;1 | tail -20&quot;,
+  &quot;description&quot;: &quot;Force refresh registry cache&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>[ManifestClient] fetchDynamicNodes ok: total=4880 connector nodes=3654 integration trigger nodes=896 agent context nodes=2 external agent nodes=7 orchestrator nodes=263 IXP nodes=45 IXP Models nodes=13
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodePullSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;NodesCount&quot;: 4763,
+    &quot;FromCache&quot;: false,
+    &quot;Source&quot;: &quot;authenticated&quot;,
+    &quot;CacheWritten&quot;: true,
+    &quot;Message&quot;: &quot;Synced fresh nodes&quot;
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#21</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.19s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry search \&quot;woocommerce\&quot; --output json --output-filter \&quot;[*].{NodeType:NodeType,DisplayName:DisplayName,Description:Description,AvailableOnTenant:AvailableOnTenant}\&quot; 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Search registry for WooCommerce nodes&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeSearchSuccess&quot;,
+  &quot;Data&quot;: [
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-automattic-woocommerce.get-product-reviews&quot;,
+      &quot;DisplayName&quot;: &quot;Get Product Reviews&quot;,
+      &quot;Description&quot;: &quot;Retrieve all product reviews for a specific product in WooCommerce.&quot;,
+      &quot;AvailableOnTenant&quot;: true
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-automattic-woocommerce.search-customers&quot;,
+      &quot;DisplayName&quot;: &quot;Search Customers&quot;,
+      &quot;Description&quot;: &quot;Search for customers using filters like name or email in WooCommerce.&quot;,
+      &quot;AvailableOnTenant&quot;: true
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-automattic-woocommerce.list-all-records&quot;,
+      &quot;DisplayName&quot;: &quot;List All Records&quot;,
+      &quot;Description&quot;: &quot;List all records in WooCommerce&quot;,
+      &quot;AvailableOnTenant&quot;: true
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-automattic-woocommerce.create-product&quot;,
+      &quot;DisplayName&quot;: &quot;Create Product&quot;,
+      &quot;Description&quot;: &quot;Create a product in WooCommerce, including details like price and stock quantity.&quot;,
+      &quot;AvailableOnTenant&quot;: true
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-automattic-woocommerce.get-record&quot;,
+      &quot;Displa
+
+… (truncated, 6720 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#22</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">697ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip is connections list \&quot;uipath-automattic-woocommerce\&quot; --all-folders --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Check for live WooCommerce connection across all folders&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;Message&quot;,
+  &quot;Data&quot;: {
+    &quot;Message&quot;: &quot;No connections found for connector &#x27;uipath-automattic-woocommerce&#x27;.&quot;
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#23</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.21s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry get \&quot;uipath.connector.uipath-automattic-woocommerce.get-product-reviews\&quot; --output json 2&gt;&amp;1 &gt; /tmp/woo_reviews.json; wc -l /tmp/woo_reviews.json&quot;,
+  &quot;description&quot;: &quot;Get full registry definition for get-product-reviews&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>706 /tmp/woo_reviews.json</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#24</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.74s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry get core.control.end --output json 2&gt;&amp;1 &gt; /tmp/end.json; wc -l /tmp/end.json&quot;,
+  &quot;description&quot;: &quot;Get End node definition&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>44 /tmp/end.json</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#25</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">356ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip is connections list --help 2&gt;&amp;1 | head -30&quot;,
+  &quot;description&quot;: &quot;Check connections list command options&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>                            uip is connections list                             
+                                List connections                                
+                Use --help with nested commands for more detail.                
+
+┌─ Usage ──────────────────────────────────────────────────────────────────────┐
+│ uip is connections list [options] [connector-key]                            │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Arguments ──────────────────────────────────────────────────────────────────┐
+│ connector-key   Connector key to filter by                                   │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Options ────────────────────────────────────────────────────────────────────┐
+│ --folder-key &lt;key&gt;             Folder key to filter by                       │
+│ --connection-id &lt;id&gt;           Filter to a specific connection ID            │
+│ --byoa                         Filter to BYOA (Bring Your Own Account)       │
+│                                connections only                              │
+│ --all-folders                  Return connections across all 
+
+… (truncated, 989 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#26</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">736ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip is connections list \&quot;uipath-automattic-woocommerce\&quot; --all-folders --refresh --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Retry connections list with force refresh&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;Message&quot;,
+  &quot;Data&quot;: {
+    &quot;Message&quot;: &quot;No connections found for connector &#x27;uipath-automattic-woocommerce&#x27;.&quot;
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#27</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">151ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/tmp/woo_reviews.json&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	{
+2	  &quot;Result&quot;: &quot;Success&quot;,
+3	  &quot;Code&quot;: &quot;NodeGetSuccess&quot;,
+4	  &quot;Data&quot;: {
+5	    &quot;Node&quot;: {
+6	      &quot;nodeType&quot;: &quot;uipath.connector.uipath-automattic-woocommerce.get-product-reviews&quot;,
+7	      &quot;version&quot;: &quot;1.0.0&quot;,
+8	      &quot;category&quot;: &quot;connector.196519&quot;,
+9	      &quot;tags&quot;: [
+10	        &quot;connector&quot;,
+11	        &quot;activity&quot;
+12	      ],
+13	      &quot;sortOrder&quot;: 520,
+14	      &quot;supportsErrorHandling&quot;: true,
+15	      &quot;description&quot;: &quot;Retrieve all product reviews for a specific product in WooCommerce.&quot;,
+16	      &quot;display&quot;: {
+17	        &quot;label&quot;: &quot;Get Product Reviews&quot;,
+18	        &quot;description&quot;: &quot;Retrieve all product reviews for a specific product in WooCommerce.&quot;,
+19	        &quot;icon&quot;: &quot;https://alpha.uipath.com/311c6049-4966-4ef2-a6f3-8ceccaf38d54/studio_/typecache/icons/5ea81447fc8282fe7c862082f2e7db3f676c63d255761a046e75e54db2ea541b.svg&quot;,
+20	        &quot;sourceDisplayName&quot;: &quot;WooCommerce&quot;
+21	      },
+22	      &quot;handleConfiguration&quot;: [
+23	        {
+24	          &quot;position&quot;: &quot;left&quot;,
+25	          &quot;handles&quot;: [
+26	            {
+27	              &quot;id&quot;: &quot;input&quot;,
+28	              &quot;type&quot;: &quot;target&quot;,
+29	              &quot;handleType&quot;: &quot;input&quot;,
+30	              &quot;label&quot;: &quot;&quot;
+31	            }
+32	          ]
+33	        },
+34	        {
+
+
+… (truncated, 23496 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#28</span>
+      <span class="tool-name">Grep</span>
+      <span class="tool-status-err">ERROR</span>
+      <span class="tool-duration">1ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;pattern&quot;: &quot;enum|oneOf|title.*enum|enumNames&quot;,
+  &quot;path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references&quot;,
+  &quot;-ri&quot;: &quot;true&quot;,
+  &quot;output_mode&quot;: &quot;content&quot;,
+  &quot;-C&quot;: 3,
+  &quot;head_limit&quot;: 150
+}</pre>
+    <h4>Result</h4>
+    <pre>&lt;tool_use_error&gt;InputValidationError: Grep failed due to the following issue:
+An unexpected parameter `-ri` was provided&lt;/tool_use_error&gt;</pre>
+    <h4>Error</h4><pre>&lt;tool_use_error&gt;InputValidationError: Grep failed due to the following issue:
+An unexpected parameter `-ri` was provided&lt;/tool_use_error&gt;</pre>
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#29</span>
+      <span class="tool-name">Grep</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">12ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;pattern&quot;: &quot;enhancedEnum&quot;,
+  &quot;path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references&quot;,
+  &quot;-i&quot;: true,
+  &quot;output_mode&quot;: &quot;content&quot;,
+  &quot;-C&quot;: 3,
+  &quot;head_limit&quot;: 150
+}</pre>
+    <h4>Result</h4>
+    <pre>No matches found</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#30</span>
+      <span class="tool-name">Grep</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">8ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;pattern&quot;: &quot;enum|oneOf|const.*title|radio|dropdown|select&quot;,
+  &quot;path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/shared/file-format.md&quot;,
+  &quot;-i&quot;: true,
+  &quot;output_mode&quot;: &quot;content&quot;,
+  &quot;-C&quot;: 4
+}</pre>
+    <h4>Result</h4>
+    <pre>No matches found</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#31</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">3ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/plugins/hitl/impl.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# HITL Node — Implementation
+2	
+3	Two node types implement human-in-the-loop checkpoints. Choose based on whether you need an inline form or an existing deployed app.
+4	
+5	---
+6	
+7	## Option 1 — `uipath.human-in-the-loop.quick-form` (Inline Schema — OOTB)
+8	
+9	This is the preferred option. No registry pull, no app publishing, no tenant dependency. Write the node directly into the `.flow` file as JSON.
+10	
+11	**Full implementation guide, JSON examples, and schema conversion rules:**
+12	→ [`uipath-human-in-the-loop` skill — hitl-node-quickform.md](../../../../../../uipath-human-in-the-loop/references/hitl-node-quickform.md)
+13	
+14	&gt; **Note:** Skills are self-contained. This cross-skill reference is for documentation context only. The agent uses the `uipath-human-in-the-loop` skill to implement HITL nodes. This implementation guide is for implementation-phase topology resolution only — not for schema design or node writing.
+15	
+16	### Adding / Editing
+17	
+18	For add, delete, and wiring procedures, see [editing-operations.md](../../editing-operations.md). **Use `Edit` / `Write` for HITL node authoring.** Do not use the dedicated HITL CLI for this non-carve-out structural edit. Wire t
+
+… (truncated, 8406 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#32</span>
+      <span class="tool-name">Grep</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">13ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;pattern&quot;: &quot;enum&quot;,
+  &quot;path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/shared/file-format.md&quot;,
+  &quot;-i&quot;: true,
+  &quot;output_mode&quot;: &quot;content&quot;,
+  &quot;-C&quot;: 6
+}</pre>
+    <h4>Result</h4>
+    <pre>No matches found</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#33</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">25ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -n \&quot;enum\&quot; -A5 -B5 /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/shared/*.md /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/*.md 2&gt;/dev/null | head -100&quot;,
+  &quot;description&quot;: &quot;Search broadly for enum usage patterns in globals/schema docs&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/planning-arch.md-105-- **Resources:** Whether a published or in-solution node exists for each RPA process, agent, or flow referenced in the requirements. Check in-solution first (`registry list --local`, or `registry search &quot;&lt;keyword&gt;&quot; --local` for keyword match), then the tenant registry. Input/output schemas require `registry get` (with `--local` for in-solution) in Phase 2.
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/planning-arch.md-106-- **Gaps:** Services with no connector -&gt; fall back to `core.action.http.v2` (manual mode). Resources in the same solution but unpublished -&gt; use `--local` discovery (no mock needed). Resources not in the solution and not yet published -&gt; use `core.logic.mock` placeholder. Connectors with no connection -&gt; flag in Open Questions for the user to create.
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/planning-arch.md-107-
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/planning-arch.md-108-Use these findings to select the r
+
+… (truncated, 1639 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#34</span>
+      <span class="tool-name">Grep</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">13ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;pattern&quot;: &quot;oneOf|enumNames|x-enumNames|\&quot;title\&quot;&quot;,
+  &quot;path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow&quot;,
+  &quot;output_mode&quot;: &quot;content&quot;,
+  &quot;-C&quot;: 4
+}</pre>
+    <h4>Result</h4>
+    <pre>/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/scripts/flow_lib.py-164-
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/scripts/flow_lib.py-165-def report(findings, fmt, title):
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/scripts/flow_lib.py-166-    findings = sorted(findings, key=lambda f: (f[&quot;severity&quot;] != &quot;error&quot;, f[&quot;code&quot;], f.get(&quot;node&quot;) or &quot;&quot;, f.get(&quot;path&quot;) or &quot;&quot;, f[&quot;message&quot;]))
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/scripts/flow_lib.py-167-    if fmt == &quot;json&quot;:
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/scripts/flow_lib.py:168:        print(json.dumps({&quot;title&quot;: title, &quot;findings&quot;: findings}, indent=2))
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/scripts/flow_lib.py-169-    else:
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/scripts/flow_lib.py-170-        for f in findings:
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/scripts/flow_lib.py-171-            print(&quot;%-7s %-26s %-46s %s&quot; % (f[&quot;severity&quot;], f[&quot;code&quot;], location(f), f[&quot;message&quot;]))
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/scripts/flow_lib.py-172-        e
+
+… (truncated, 58 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#35</span>
+      <span class="tool-name">Grep</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">8ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;pattern&quot;: &quot;enum|oneOf&quot;,
+  &quot;path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/plugins/scheduled-trigger&quot;,
+  &quot;output_mode&quot;: &quot;content&quot;,
+  &quot;-C&quot;: 5
+}</pre>
+    <h4>Result</h4>
+    <pre>No matches found</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#36</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">17ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -rn \&quot;enum\&quot; /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/scripts/*.py | head -30&quot;,
+  &quot;description&quot;: &quot;Check scripts for enum handling&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/scripts/audit_expressions.py:25:        for i, v in enumerate(value):
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/scripts/audit_expressions.py:109:            for i, entry in enumerate(entries):
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/scripts/lint_jint.py:52:        for i, v in enumerate(value):
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/scripts/validate_mermaid.py:51:    for i, raw in enumerate(body[1:], start=2):
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/scripts/wire_agent_inputs.py:124:    for i, msg in enumerate(agent.get(&quot;messages&quot;) or []):</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#37</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">8.26s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;set -e\nuip solution init \&quot;EnhancedEnumTest\&quot; --output json \\\n  &amp;&amp; cd \&quot;EnhancedEnumTest\&quot; \\\n  &amp;&amp; uip maestro flow init \&quot;EnhancedEnumTest\&quot; --output json \\\n  &amp;&amp; cd \&quot;EnhancedEnumTest\&quot; \\\n  &amp;&amp; uip maestro flow registry pull --output json \\\n  &amp;&amp; uip maestro flow node add \&quot;EnhancedEnumTest.flow\&quot; uipath.connector.uipath-automattic-woocommerce.get-product-reviews --label \&quot;Get Product Reviews\&quot; --output json\n&quot;,
+  &quot;description&quot;: &quot;Create solution, flow project, pull registry, add WooCommerce connector node&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;SolutionInit&quot;,
+  &quot;Data&quot;: {
+    &quot;Status&quot;: &quot;Created successfully&quot;,
+    &quot;Path&quot;: &quot;/work/output/artifacts/skill-flow-ipe-enhanced-enum/EnhancedEnumTest/EnhancedEnumTest.uipx&quot;,
+    &quot;NextSteps&quot;: &quot;Read /work/output/artifacts/skill-flow-ipe-enhanced-enum/EnhancedEnumTest/AGENTS.md or /work/output/artifacts/skill-flow-ipe-enhanced-enum/EnhancedEnumTest/CLAUDE.md to understand the solution lifecycle, project types that can be used inside a solution, and related uip command references.&quot;
+  }
+}
+2026-08-19 15:43:26 INFO  [ResourceBuilder:ProjectCreateCommandHandler] Creating project [object Object]
+2026-08-19 15:43:26 INFO  [ResourceBuilder:MultiFileSolutionDefinitionProvider] Reading multi-file solution definition for solution %s /work/output/artifacts/skill-flow-ipe-enhanced-enum/EnhancedEnumTest
+2026-08-19 15:43:26 INFO  [ResourceBuilder:ProjectCreateCommandHandler] Generate artefact resources for project [object Object]
+2026-08-19 15:43:26 INFO  [ResourceBuilder:SolutionsMetadataReader] Reading metadata from %s. SolutionsMetadataReader
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FlowInit&quot;,
+  &quot;Data&quot;: {
+    &quot;Status&quot;: &quot;Created successfully&quot;,
+    &quot;Path&quot;: &quot;/work/output/
+
+… (truncated, 1807 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#38</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">9.04s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry get core.control.end --output json &gt; /tmp/end.json 2&gt;&amp;1\nuip maestro flow registry get core.action.script --output json &gt; /tmp/script.json 2&gt;&amp;1\necho done&quot;,
+  &quot;description&quot;: &quot;Fetch End and Script node definitions in parallel&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>done</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#39</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">10ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;ls -la /work/output/artifacts/skill-flow-ipe-enhanced-enum/EnhancedEnumTest/EnhancedEnumTest/EnhancedEnumTest.flow&quot;,
+  &quot;description&quot;: &quot;Verify flow file exists&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>-rw-r--r-- 1 root root 11662 Aug 19 15:43 /work/output/artifacts/skill-flow-ipe-enhanced-enum/EnhancedEnumTest/EnhancedEnumTest/EnhancedEnumTest.flow</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#40</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">5ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-ipe-enhanced-enum/EnhancedEnumTest/EnhancedEnumTest/EnhancedEnumTest.flow&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	{
+2	  &quot;id&quot;: &quot;3149673f-22e7-4239-8c5c-3ae37daa1290&quot;,
+3	  &quot;version&quot;: &quot;1.9&quot;,
+4	  &quot;name&quot;: &quot;EnhancedEnumTest&quot;,
+5	  &quot;nodes&quot;: [
+6	    {
+7	      &quot;id&quot;: &quot;start&quot;,
+8	      &quot;type&quot;: &quot;core.trigger.manual&quot;,
+9	      &quot;typeVersion&quot;: &quot;1.0&quot;,
+10	      &quot;display&quot;: {
+11	        &quot;label&quot;: &quot;Manual trigger&quot;
+12	      },
+13	      &quot;inputs&quot;: {
+14	        &quot;entryPointId&quot;: &quot;4ec577c9-3aea-477b-9d49-14f489627fcc&quot;,
+15	        &quot;isDefaultEntryPoint&quot;: true
+16	      }
+17	    },
+18	    {
+19	      &quot;id&quot;: &quot;getProductReviews1&quot;,
+20	      &quot;type&quot;: &quot;uipath.connector.uipath-automattic-woocommerce.get-product-reviews&quot;,
+21	      &quot;typeVersion&quot;: &quot;1.0.0&quot;,
+22	      &quot;display&quot;: {
+23	        &quot;label&quot;: &quot;Get Product Reviews&quot;
+24	      },
+25	      &quot;inputs&quot;: {}
+26	    }
+27	  ],
+28	  &quot;edges&quot;: [],
+29	  &quot;definitions&quot;: [
+30	    {
+31	      &quot;nodeType&quot;: &quot;core.trigger.manual&quot;,
+32	      &quot;version&quot;: &quot;1.0&quot;,
+33	      &quot;category&quot;: &quot;trigger&quot;,
+34	      &quot;description&quot;: &quot;Start the process manually&quot;,
+35	      &quot;tags&quot;: [
+36	        &quot;trigger&quot;,
+37	        &quot;start&quot;,
+38	        &quot;manual&quot;
+39	      ],
+40	      &quot;sortOrder&quot;: 80,
+41	      &quot;display&quot;: {
+42	        &quot;label&quot;: &quot;Manual trigger&quot;,
+43	        &quot;icon&quot;: &quot;play&quot;,
+44	        &quot;shape&quot;: &quot;circle&quot;
+45	      },
+46	      &quot;handleConfigur
+
+… (truncated, 11982 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#41</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">6ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/tmp/end.json&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	{
+2	  &quot;Result&quot;: &quot;Success&quot;,
+3	  &quot;Code&quot;: &quot;NodeGetSuccess&quot;,
+4	  &quot;Data&quot;: {
+5	    &quot;Node&quot;: {
+6	      &quot;nodeType&quot;: &quot;core.control.end&quot;,
+7	      &quot;version&quot;: &quot;1.0&quot;,
+8	      &quot;category&quot;: &quot;control-flow&quot;,
+9	      &quot;description&quot;: &quot;Mark the end of a process path&quot;,
+10	      &quot;tags&quot;: [
+11	        &quot;control-flow&quot;,
+12	        &quot;end&quot;,
+13	        &quot;finish&quot;,
+14	        &quot;complete&quot;
+15	      ],
+16	      &quot;sortOrder&quot;: 65,
+17	      &quot;display&quot;: {
+18	        &quot;label&quot;: &quot;End&quot;,
+19	        &quot;icon&quot;: &quot;circle-check&quot;,
+20	        &quot;shape&quot;: &quot;circle&quot;
+21	      },
+22	      &quot;handleConfiguration&quot;: [
+23	        {
+24	          &quot;position&quot;: &quot;left&quot;,
+25	          &quot;handles&quot;: [
+26	            {
+27	              &quot;id&quot;: &quot;input&quot;,
+28	              &quot;type&quot;: &quot;target&quot;,
+29	              &quot;handleType&quot;: &quot;input&quot;
+30	            }
+31	          ]
+32	        }
+33	      ],
+34	      &quot;model&quot;: {
+35	        &quot;type&quot;: &quot;bpmn:EndEvent&quot;
+36	      },
+37	      &quot;runtimeConstraints&quot;: {
+38	        &quot;exclude&quot;: [
+39	          &quot;api-function&quot;
+40	        ]
+41	      }
+42	    }
+43	  }
+44	}
+45	</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#42</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">4ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/tmp/script.json&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	{
+2	  &quot;Result&quot;: &quot;Success&quot;,
+3	  &quot;Code&quot;: &quot;NodeGetSuccess&quot;,
+4	  &quot;Data&quot;: {
+5	    &quot;Node&quot;: {
+6	      &quot;nodeType&quot;: &quot;core.action.script&quot;,
+7	      &quot;version&quot;: &quot;1.1&quot;,
+8	      &quot;category&quot;: &quot;data-operations&quot;,
+9	      &quot;description&quot;: &quot;Run custom JavaScript code&quot;,
+10	      &quot;tags&quot;: [
+11	        &quot;code&quot;,
+12	        &quot;javascript&quot;,
+13	        &quot;python&quot;
+14	      ],
+15	      &quot;sortOrder&quot;: 70,
+16	      &quot;supportsErrorHandling&quot;: true,
+17	      &quot;display&quot;: {
+18	        &quot;label&quot;: &quot;Script&quot;,
+19	        &quot;icon&quot;: &quot;code&quot;
+20	      },
+21	      &quot;handleConfiguration&quot;: [
+22	        {
+23	          &quot;position&quot;: &quot;left&quot;,
+24	          &quot;handles&quot;: [
+25	            {
+26	              &quot;id&quot;: &quot;input&quot;,
+27	              &quot;type&quot;: &quot;target&quot;,
+28	              &quot;handleType&quot;: &quot;input&quot;
+29	            }
+30	          ]
+31	        },
+32	        {
+33	          &quot;position&quot;: &quot;right&quot;,
+34	          &quot;handles&quot;: [
+35	            {
+36	              &quot;id&quot;: &quot;success&quot;,
+37	              &quot;type&quot;: &quot;source&quot;,
+38	              &quot;handleType&quot;: &quot;output&quot;
+39	            },
+40	            {
+41	              &quot;id&quot;: &quot;error&quot;,
+42	              &quot;label&quot;: &quot;Error&quot;,
+43	              &quot;type&quot;: &quot;source&quot;,
+44	              &quot;handleType&quot;: &quot;output&quot;,
+45	              &quot;visible&quot;: &quot;{inputs.errorHandli
+
+… (truncated, 3429 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#43</span>
+      <span class="tool-name">Grep</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">12ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;pattern&quot;: &quot;triggerNodeId|enum|manual trigger input|entry.*input|trigger.*schema&quot;,
+  &quot;path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/shared/file-format.md&quot;,
+  &quot;-i&quot;: true,
+  &quot;output_mode&quot;: &quot;content&quot;,
+  &quot;-C&quot;: 6
+}</pre>
+    <h4>Result</h4>
+    <pre>54-
+55-```
+56-&lt;ProjectName&gt;/
+57-├── project.uiproj          # { &quot;Name&quot;: &quot;...&quot;, &quot;ProjectType&quot;: &quot;Flow&quot; }
+58-├── &lt;ProjectName&gt;.flow      # ← edit this
+59-├── bindings_v2.json        # resource bindings
+60:├── entry-points.json       # input/output schema declarations
+61-├── operate.json            # runtime options
+62-└── package-descriptor.json # packaging manifest
+63-```
+64-
+65-## Node instance
+66-
+--
+87-      &quot;var&quot;: &quot;error&quot;
+88-    }
+89-  }
+90-}
+91-```
+92-
+93:**Required fields on every node**: `id`, `type`, `typeVersion`, **`display`** (with at least a `label`). This applies to **every** node — triggers (`core.trigger.manual`, `core.trigger.scheduled`, connector triggers), action nodes, control-flow nodes (`core.control.end`, `core.logic.terminate`), and human-task nodes. The Zod `nodeSchema` declares `display: displayConfigSchema` without `.optional()`, so no node type is exempt — even ones that &quot;feel&quot; trivial.
+94-
+95-[Omitted long context line]
+96-
+97-&gt; **Gotcha — vague schema-validation error on missing `display`.** Omitting `display` on any node produces:
+98-&gt;
+99-&gt; ```
+--
+500-The `definitions` array must contain exactly one entry per unique `type:typeVersion` used — not one per 
+
+… (truncated, 1034 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#44</span>
+      <span class="tool-name">Edit</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">14ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;replace_all&quot;: false,
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-ipe-enhanced-enum/EnhancedEnumTest/EnhancedEnumTest/EnhancedEnumTest.flow&quot;,
+  &quot;old_string&quot;: &quot;      \&quot;inputs\&quot;: {}\n    }\n  ],\n  \&quot;edges\&quot;: [],&quot;,
+  &quot;new_string&quot;: &quot;      \&quot;inputs\&quot;: {}\n    },\n    {\n      \&quot;id\&quot;: \&quot;mapSortOrder\&quot;,\n      \&quot;type\&quot;: \&quot;core.action.script\&quot;,\n      \&quot;typeVersion\&quot;: \&quot;1.1\&quot;,\n      \&quot;display\&quot;: {\n        \&quot;label\&quot;: \&quot;Map Sort Order\&quot;\n      },\n      \&quot;inputs\&quot;: {\n        \&quot;script\&quot;: \&quot;const label = $vars.start.output.sortPreference;\\nconst order = label === \\\&quot;Oldest First\\\&quot; ? \\\&quot;asc\\\&quot; : \\\&quot;desc\\\&quot;;\\nreturn { order };\&quot;\n      }\n    },\n    {\n      \&quot;id\&quot;: \&quot;end1\&quot;,\n   … (887 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>The file /work/output/artifacts/skill-flow-ipe-enhanced-enum/EnhancedEnumTest/EnhancedEnumTest/EnhancedEnumTest.flow has been updated successfully. (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#45</span>
+      <span class="tool-name">Edit</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">28ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;replace_all&quot;: false,
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-ipe-enhanced-enum/EnhancedEnumTest/EnhancedEnumTest/EnhancedEnumTest.flow&quot;,
+  &quot;old_string&quot;: &quot;  \&quot;definitions\&quot;: [\n    {\n      \&quot;nodeType\&quot;: \&quot;core.trigger.manual\&quot;,&quot;,
+  &quot;new_string&quot;: &quot;  \&quot;definitions\&quot;: [\n    {\n      \&quot;nodeType\&quot;: \&quot;core.action.script\&quot;,\n      \&quot;version\&quot;: \&quot;1.1\&quot;,\n      \&quot;category\&quot;: \&quot;data-operations\&quot;,\n      \&quot;description\&quot;: \&quot;Run custom JavaScript code\&quot;,\n      \&quot;tags\&quot;: [\n        \&quot;code\&quot;,\n        \&quot;javascript\&quot;,\n        \&quot;python\&quot;\n      ],\n      \&quot;sortOrder\&quot;: 70,\n      \&quot;supportsErrorHandling\&quot;: true,\n      \&quot;display\&quot;: {\n        \&quot;label\&quot;: \&quot;Script\&quot;,\n        \&quot;icon\&quot;: \&quot;code\&quot;\n      },\n     … (4504 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>The file /work/output/artifacts/skill-flow-ipe-enhanced-enum/EnhancedEnumTest/EnhancedEnumTest/EnhancedEnumTest.flow has been updated successfully. (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#46</span>
+      <span class="tool-name">Edit</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">14ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;replace_all&quot;: false,
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-ipe-enhanced-enum/EnhancedEnumTest/EnhancedEnumTest/EnhancedEnumTest.flow&quot;,
+  &quot;old_string&quot;: &quot;  \&quot;variables\&quot;: {\n    \&quot;nodes\&quot;: [\n      {\n        \&quot;id\&quot;: \&quot;start.output\&quot;,&quot;,
+  &quot;new_string&quot;: &quot;  \&quot;variables\&quot;: {\n    \&quot;globals\&quot;: [\n      {\n        \&quot;id\&quot;: \&quot;sortPreference\&quot;,\n        \&quot;direction\&quot;: \&quot;in\&quot;,\n        \&quot;type\&quot;: \&quot;string\&quot;,\n        \&quot;triggerNodeId\&quot;: \&quot;start\&quot;,\n        \&quot;defaultValue\&quot;: \&quot;Newest First\&quot;,\n        \&quot;description\&quot;: \&quot;Order in which product reviews should be returned\&quot;,\n        \&quot;schema\&quot;: {\n          \&quot;$schema\&quot;: \&quot;http://json-schema.org/draft-07/schema#\&quot;,\n          \&quot;type\&quot;: \&quot;string\&quot;,\n          \&quot;… (800 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>The file /work/output/artifacts/skill-flow-ipe-enhanced-enum/EnhancedEnumTest/EnhancedEnumTest/EnhancedEnumTest.flow has been updated successfully. (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#47</span>
+      <span class="tool-name">Edit</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">12ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;replace_all&quot;: false,
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-ipe-enhanced-enum/EnhancedEnumTest/EnhancedEnumTest/EnhancedEnumTest.flow&quot;,
+  &quot;old_string&quot;: &quot;  \&quot;layout\&quot;: {\n    \&quot;nodes\&quot;: {\n      \&quot;start\&quot;: {&quot;,
+  &quot;new_string&quot;: &quot;  \&quot;layout\&quot;: {\n    \&quot;nodes\&quot;: {\n      \&quot;mapSortOrder\&quot;: {\n        \&quot;position\&quot;: {\n          \&quot;x\&quot;: 0,\n          \&quot;y\&quot;: 0\n        },\n        \&quot;size\&quot;: {\n          \&quot;width\&quot;: 96,\n          \&quot;height\&quot;: 96\n        },\n        \&quot;collapsed\&quot;: false\n      },\n      \&quot;end1\&quot;: {\n        \&quot;position\&quot;: {\n          \&quot;x\&quot;: 0,\n          \&quot;y\&quot;: 0\n        },\n        \&quot;size\&quot;: {\n          \&quot;width\&quot;: 96,\n          \&quot;height\&quot;: 96\n        },\n        \&quot;… (43 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>The file /work/output/artifacts/skill-flow-ipe-enhanced-enum/EnhancedEnumTest/EnhancedEnumTest/EnhancedEnumTest.flow has been updated successfully. (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#48</span>
+      <span class="tool-name">Write</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">25ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-ipe-enhanced-enum/EnhancedEnumTest/EnhancedEnumTest/getProductReviews1.detail.json&quot;,
+  &quot;content&quot;: &quot;{\n  \&quot;_comment\&quot;: \&quot;Planned uip maestro flow node configure --detail payload for getProductReviews1. Not applied — no live uipath-automattic-woocommerce connection exists on this tenant (uip is connections list \\\&quot;uipath-automattic-woocommerce\\\&quot; --all-folders returned no results, confirmed with --refresh). Run `node configure` with this payload (filling connectionId/folderKey from a real connection) o… (253 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>File created successfully at: /work/output/artifacts/skill-flow-ipe-enhanced-enum/EnhancedEnumTest/EnhancedEnumTest/getProductReviews1.detail.json (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#49</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">3.06s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;\\\nuip maestro flow validate \&quot;EnhancedEnumTest.flow\&quot; --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Validate the flow file&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>[ManifestClient] fetchDynamicNodes ok: total=317 agent context nodes=2 external agent nodes=7 orchestrator nodes=263 IXP nodes=45
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FlowValidate&quot;,
+  &quot;Data&quot;: {
+    &quot;File&quot;: &quot;/work/output/artifacts/skill-flow-ipe-enhanced-enum/EnhancedEnumTest/EnhancedEnumTest/EnhancedEnumTest.flow&quot;,
+    &quot;Status&quot;: &quot;Valid&quot;
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#50</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">132ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/scripts/audit_flow.py \&quot;EnhancedEnumTest.flow\&quot; 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Run local audit script over the flow&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>topology      0 error(s), 0 warning(s), 0 info
+expressions   0 error(s), 0 warning(s), 0 info
+jint          0 error(s), 0 warning(s), 0 info
+bindings      0 error(s), 0 warning(s), 2 info
+    info    UNUSED_BINDING             bindings                                 no resource node needs (resourceKey=, name=FolderKey)
+    info    UNUSED_BINDING             bindings                                 no resource node needs (resourceKey=, name=uipath-automattic-woocommerce connection)
+runtime-gaps  0 error(s), 2 warning(s), 0 info
+    warning LAYOUT_SIZE_MISMATCH       getProductReviews1                       size NonexNone disagrees with this node&#x27;s shape (96x96); Studio Web renders it misshapen until `flow format` runs
+    warning LAYOUT_SIZE_MISMATCH       start                                    size NonexNone disagrees with this node&#x27;s shape (96x96); Studio Web renders it misshapen until `flow format` runs
+audit: clean</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#51</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">869ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow format \&quot;EnhancedEnumTest.flow\&quot; --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Format the flow layout&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FlowFormat&quot;,
+  &quot;Data&quot;: {
+    &quot;File&quot;: &quot;EnhancedEnumTest.flow&quot;,
+    &quot;NodesTotal&quot;: 4,
+    &quot;EdgesTotal&quot;: 3,
+    &quot;NodesRepositioned&quot;: 3,
+    &quot;NodesResized&quot;: 2,
+    &quot;SubflowsTidied&quot;: 0,
+    &quot;VariableCount&quot;: 6
+  },
+  &quot;Instructions&quot;: &quot;Repositioned 3 of 4 nodes. Set canonical size on 2 node(s)&quot;
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#52</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">2.83s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow validate \&quot;EnhancedEnumTest.flow\&quot; --output json 2&gt;&amp;1\necho \&quot;---audit---\&quot;\npython3 /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/scripts/audit_flow.py \&quot;EnhancedEnumTest.flow\&quot; 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Re-validate and re-audit after format&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>[ManifestClient] fetchDynamicNodes ok: total=317 agent context nodes=2 external agent nodes=7 orchestrator nodes=263 IXP nodes=45
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FlowValidate&quot;,
+  &quot;Data&quot;: {
+    &quot;File&quot;: &quot;/work/output/artifacts/skill-flow-ipe-enhanced-enum/EnhancedEnumTest/EnhancedEnumTest/EnhancedEnumTest.flow&quot;,
+    &quot;Status&quot;: &quot;Valid&quot;
+  }
+}
+---audit---
+topology      0 error(s), 0 warning(s), 0 info
+expressions   0 error(s), 0 warning(s), 0 info
+jint          0 error(s), 0 warning(s), 0 info
+bindings      0 error(s), 0 warning(s), 2 info
+    info    UNUSED_BINDING             bindings                                 no resource node needs (resourceKey=, name=FolderKey)
+    info    UNUSED_BINDING             bindings                                 no resource node needs (resourceKey=, name=uipath-automattic-woocommerce connection)
+runtime-gaps  0 error(s), 0 warning(s), 0 info
+audit: clean</pre>
+    
+  </div>
+</details>
+
+</div>
+
+<h2>Command Telemetry</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Total</div><div class="value">53</div></div>
+    <div class="stat"><div class="label">Successful</div><div class="value">52 (98%)</div></div>
+    <div class="stat"><div class="label">Failed</div><div class="value">1</div></div>
+    <div class="stat"><div class="label">Avg / cmd</div><div class="value">706ms</div></div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 2fr;gap:16px;margin-top:12px">
+    <div>
+      <h4>By Tool</h4>
+      <table>
+        <thead><tr><th>Tool</th><th>Count</th></tr></thead>
+        <tbody><tr><td class='mono'>Bash</td><td>21</td></tr><tr><td class='mono'>Grep</td><td>15</td></tr><tr><td class='mono'>Read</td><td>11</td></tr><tr><td class='mono'>Edit</td><td>4</td></tr><tr><td class='mono'>Skill</td><td>1</td></tr><tr><td class='mono'>Write</td><td>1</td></tr></tbody>
+      </table>
+    </div>
+    <div>
+      <h4>Slowest</h4>
+      <table>
+        <thead><tr><th>Tool</th><th>Duration</th><th>Parameters</th></tr></thead>
+        <tbody><tr><td class='mono'>Bash</td><td>9.04s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro flow registry get core.co...</td></tr><tr><td class='mono'>Bash</td><td>8.26s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;set -e\nuip solution init &quot;EnhancedEn...</td></tr><tr><td class='mono'>Bash</td><td>5.09s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro flow registry pull --forc...</td></tr><tr><td class='mono'>Bash</td><td>3.06s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;\\\nuip maestro flow validate &quot;Enhanc...</td></tr><tr><td class='mono'>Bash</td><td>2.83s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro flow validate &quot;EnhancedEn...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+  <p><strong>Most Common Pattern:</strong> <code>Bash → Bash → Bash</code></p><p><strong>Skill Tool Invoked:</strong> 1 time(s)</p>
+</div>
+
+<h2>Generation Metrics</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Total Latency</div><div class="value">6m 47s</div></div>
+    <div class="stat"><div class="label">Turns</div><div class="value">1</div></div>
+    <div class="stat"><div class="label">Assistant Turns</div><div class="value">89</div></div>
+    <div class="stat"><div class="label">Avg Turn Latency</div><div class="value">6m 45s</div></div>
+    
+  </div>
+</div>
+
+<h2>Token Usage</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Input (uncached)</div><div class="value">603</div></div>
+    <div class="stat"><div class="label">Output</div><div class="value">33,924</div></div>
+    <div class="stat"><div class="label">Cache Write</div><div class="value">140,981</div></div>
+    <div class="stat"><div class="label">Cache Read</div><div class="value">4,441,019</div></div>
+    <div class="stat"><div class="label">Total</div><div class="value">4,616,527</div></div>
+    <div class="stat"><div class="label">Cost</div><div class="value">$2.3717</div></div>
+  </div>
+</div>
+
+<h2>Agent Settings</h2>
+<div class="card" style="padding:0">
+  <table>
+    <tbody><tr><td class='mono dim'>Permission Mode</td><td>acceptEdits</td></tr><tr><td class='mono dim'>Allowed Tools</td><td>Skill, Bash, Read, Write, Edit, Glob, Grep</td></tr><tr><td class='mono dim'>Model</td><td>us.anthropic.claude-sonnet-5</td></tr><tr><td class='mono dim'>Max Turns</td><td>120</td></tr><tr><td class='mono dim'>System Prompt</td><td>You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted. </td></tr><tr><td class='mono dim'>System Prompt Mode</td><td>append</td></tr><tr><td class='mono dim'>Plugins</td><td>/home/azureuser/projects/skills/tmp</td></tr></tbody>
+  </table>
+</div>
+
+<h2>Environment</h2>
+<div class="card" style="padding:0">
+  <table>
+    <tbody><tr><td class='mono dim'>git_commit</td><td>unknown</td></tr><tr><td class='mono dim'>skills_git_commit</td><td>unknown</td></tr><tr><td class='mono dim'>cli_version</td><td>1.201.0-dev.8272</td></tr><tr><td class='mono dim'>tool_plugins</td><td>{&#x27;admin-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;agent-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;agenthub-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;aops-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;api-workflow-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;automation-hub-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;codedagent-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;codedapp-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;coder-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;context-grounding-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;conversational-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;data-fabric-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;docsai-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;function-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;gov-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;guardrails-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;insights-tool&#x27;: &#x27;1.201.0-dev.8276&#x27;, &#x27;integrationservice-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;ixp-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;llm-gateway-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;llmgw-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;maestro-tool&#x27;: &#x27;1.201.0-dev.8275&#x27;, &#x27;model-hub-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;orchestrator-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;platform-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;pm-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;rpa-legacy-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;rpa-tool&#x27;: &#x27;1.201.0-dev.20260809.3&#x27;, &#x27;solution-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;tasks-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;test-manager-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;traces-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;vertical-solutions-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;}</td></tr><tr><td class='mono dim'>coder_eval</td><td>0.9.6</td></tr><tr><td class='mono dim'>claude_code_cli</td><td>2.1.177 (Claude Code)</td></tr><tr><td class='mono dim'>uv</td><td>uv 0.12.5 (x86_64-unknown-linux-gnu)</td></tr><tr><td class='mono dim'>anthropic</td><td>0.122.0</td></tr><tr><td class='mono dim'>openai</td><td>3.2.0</td></tr><tr><td class='mono dim'>pydantic</td><td>2.12.5</td></tr><tr><td class='mono dim'>api_routing</td><td>aws_bedrock</td></tr><tr><td class='mono dim'>eval_routing</td><td>aws_bedrock</td></tr><tr><td class='mono dim'>aws_region</td><td>us-east-2</td></tr><tr><td class='mono dim'>bedrock_model</td><td>us.anthropic.claude-sonnet-4-6</td></tr><tr><td class='mono dim'>system_prompt_semantics</td><td>append</td></tr></tbody>
+  </table>
+</div>
+
+<footer>Generated by coder_eval · 2026-08-19T15:46:33</footer>
+</div>
+<script>
+function toggleTheme() {
+  document.documentElement.classList.toggle('light');
+  try {
+    const mode = document.documentElement.classList.contains('light') ? 'light' : 'dark';
+    localStorage.setItem('coder-eval-theme', mode);
+  } catch (e) { /* ignore */ }
+}
+(function() {
+  try {
+    if (localStorage.getItem('coder-eval-theme') === 'light') {
+      document.documentElement.classList.add('light');
+    }
+  } catch (e) { /* ignore */ }
+})();
+</script>
+</body>
+</html>

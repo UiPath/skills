@@ -1,0 +1,66 @@
+{
+  "version": "2.0",
+  "resources": [
+    {
+      "resource": "connection",
+      "key": "ae311606-25b7-43ef-9cd0-f3dc0b3a9b58",
+      "id": "connectionae311606-25b7-43ef-9cd0-f3dc0b3a9b58",
+      "value": {
+        "ConnectionId": {
+          "defaultValue": "ae311606-25b7-43ef-9cd0-f3dc0b3a9b58",
+          "isExpression": false,
+          "displayName": "uipath-microsoft-onedrive connection"
+        }
+      },
+      "metadata": {
+        "ActivityName": "Download Invoice PDF",
+        "BindingsVersion": "2.2",
+        "DisplayLabel": "uipath-microsoft-onedrive connection",
+        "UseConnectionService": "true",
+        "Connector": "uipath-microsoft-onedrive"
+      }
+    },
+    {
+      "resource": "connection",
+      "key": "",
+      "id": "connection",
+      "value": {
+        "ConnectionId": {
+          "isExpression": false,
+          "displayName": "uipath-intuit-quickbooksonline connection"
+        }
+      },
+      "metadata": {
+        "ActivityName": "Download Invoice PDF",
+        "BindingsVersion": "2.2",
+        "DisplayLabel": "uipath-intuit-quickbooksonline connection",
+        "UseConnectionService": "true",
+        "Connector": "uipath-microsoft-onedrive"
+      }
+    },
+    {
+      "resource": "EventTrigger",
+      "key": "ae311606-25b7-43ef-9cd0-f3dc0b3a9b58_newInvoicePdfUploaded1",
+      "id": "EventTriggerae311606-25b7-43ef-9cd0-f3dc0b3a9b58_newInvoicePdfUploaded1",
+      "value": {
+        "ConnectionId": {
+          "defaultValue": "ae311606-25b7-43ef-9cd0-f3dc0b3a9b58",
+          "isExpression": false
+        },
+        "EntryPointUniqueId": {
+          "defaultValue": "bc6d0e50-6782-47f0-a69c-915623a89beb",
+          "isExpression": false
+        }
+      },
+      "metadata": {
+        "UseConnectionService": "true",
+        "Connector": "uipath-microsoft-onedrive",
+        "ActivityName": "New Invoice PDF Uploaded",
+        "BindingsVersion": "2.2",
+        "ObjectName": "File",
+        "Operation": "FILE_CREATED",
+        "FilterExpression": ""
+      }
+    }
+  ]
+}

@@ -1,0 +1,6 @@
+19:24:28 [INFO   ] [default/skill-flow-ixp-integration-handle-routing/00] orchestrator: API routing: aws_bedrock
+19:31:27 [INFO   ] [default/skill-flow-ixp-integration-handle-routing/00] orchestrator: Success criteria: 8/8 passed, weighted score: 1.000
+19:31:27 [WARNING] [default/skill-flow-ixp-integration-handle-routing/00] orchestrator: Visible turns (29) exceeded expected_turns (26) at iteration 1 for task skill-flow-ixp-integration-handle-routing. Run continues — max_turns remains the hard cap.
+19:31:27 [INFO   ] [default/skill-flow-ixp-integration-handle-routing/00] orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+19:31:27 [INFO   ] [default/skill-flow-ixp-integration-handle-routing/00] orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-ixp-integration-handle-routing
+19:31:27 [INFO   ] [default/skill-flow-ixp-integration-handle-routing/00] orchestrator: Task finished: status=SUCCESS duration=427.2s score=1.000 iterations=1

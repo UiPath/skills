@@ -1,0 +1,5 @@
+04:51:29 [INFO   ] [default/skill-bpmn-registry-discovery/02] orchestrator: API routing: aws_bedrock
+04:52:46 [INFO   ] [default/skill-bpmn-registry-discovery/02] orchestrator: Success criteria: 5/5 passed, weighted score: 1.000
+04:52:46 [INFO   ] [default/skill-bpmn-registry-discovery/02] orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+04:52:46 [INFO   ] [default/skill-bpmn-registry-discovery/02] orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-bpmn-registry-discovery
+04:52:46 [INFO   ] [default/skill-bpmn-registry-discovery/02] orchestrator: Task finished: status=SUCCESS duration=79.2s score=1.000 iterations=1

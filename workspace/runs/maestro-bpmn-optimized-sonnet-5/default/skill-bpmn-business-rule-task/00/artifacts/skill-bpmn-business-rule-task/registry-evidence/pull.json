@@ -1,0 +1,22 @@
+{
+  "Result": "Success",
+  "Code": "RegistryPullSuccess",
+  "Data": {
+    "ExtensionTypeCount": 30,
+    "ConnectorCount": 0,
+    "ProcessCount": 140,
+    "ProcessCountsByType": {
+      "Process": 24,
+      "ProcessOrchestration": 21,
+      "Agent": 16,
+      "Flow": 38,
+      "Api": 24,
+      "Function": 6,
+      "CaseManagement": 11,
+      "BusinessRules": 0
+    },
+    "FromCache": false,
+    "CacheWritten": true,
+    "Message": "Synced fresh registry. Connector/action metadata could not be refreshed; synced built-in extension types and any available processes. Check Integration Service access or connectivity and retry with --force."
+  }
+}

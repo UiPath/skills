@@ -1,0 +1,108 @@
+{
+  "version": "1.1.0",
+  "settings": {
+    "model": "anthropic.claude-sonnet-4-6",
+    "maxTokens": 4096,
+    "temperature": 0,
+    "engine": "basic-v2",
+    "maxIterations": 3,
+    "mode": "standard"
+  },
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "start__output__emailSubject": {
+        "type": "string",
+        "description": "The subject line of the inbound support email"
+      },
+      "start__output__emailFrom": {
+        "type": "string",
+        "description": "The sender address of the inbound support email"
+      },
+      "start__output__emailBody": {
+        "type": "string",
+        "description": "The full body text of the inbound support email"
+      }
+    }
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "category": {
+        "type": "string",
+        "description": "One of: billing, technical, sales, other"
+      },
+      "priority": {
+        "type": "string",
+        "description": "One of: low, medium, high, urgent"
+      },
+      "reason": {
+        "type": "string",
+        "description": "One sentence justifying the category and priority assignment"
+      },
+      "needsHuman": {
+        "type": "boolean",
+        "description": "true if the email requires immediate human review (legal threats, churn risk, security incidents, or out-of-category content)"
+      }
+    },
+    "required": [
+      "category",
+      "priority",
+      "needsHuman"
+    ]
+  },
+  "metadata": {
+    "storageVersion": "50.0.0",
+    "isConversational": false,
+    "showProjectCreationExperience": false
+  },
+  "type": "lowCode",
+  "guardrails": [],
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a support-email triage classifier for a SaaS product. Classify each inbound email into a category and priority, and flag those needing immediate human review.\n\nScope:\n- In scope: categorizing the email and assessing priority.\n- Out of scope: replying to the customer or taking any action — classify only.\n\nOutput:\n- Return a result conforming to the output schema exactly.\n- category MUST be one of: billing, technical, sales, other.\n- priority MUST be one of: low, medium, high, urgent.\n- Set needsHuman=true for legal threats, churn risk, security incidents, or anything that cannot be handled by standard support routing.\n- Never invent customer details not present in the email.\n\nUncertainty:\n- If the email is empty or unintelligible, set category=\"other\", priority=\"low\", needsHuman=true, reason=\"unintelligible input\".\n- If the email spans multiple categories, choose the primary one.",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "You are a support-email triage classifier for a SaaS product. Classify each inbound email into a category and priority, and flag those needing immediate human review.\n\nScope:\n- In scope: categorizing the email and assessing priority.\n- Out of scope: replying to the customer or taking any action — classify only.\n\nOutput:\n- Return a result conforming to the output schema exactly.\n- category MUST be one of: billing, technical, sales, other.\n- priority MUST be one of: low, medium, high, urgent.\n- Set needsHuman=true for legal threats, churn risk, security incidents, or anything that cannot be handled by standard support routing.\n- Never invent customer details not present in the email.\n\nUncertainty:\n- If the email is empty or unintelligible, set category=\"other\", priority=\"low\", needsHuman=true, reason=\"unintelligible input\".\n- If the email spans multiple categories, choose the primary one."
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "Classify the following support email.\n\nFrom: {{input.start__output__emailFrom}}\nSubject: {{input.start__output__emailSubject}}\n\n{{input.start__output__emailBody}}\n\nReturn category, priority, a one-sentence reason, and needsHuman.",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "Classify the following support email.\n\nFrom: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__emailFrom"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\nSubject: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__emailSubject"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\n"
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__emailBody"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\nReturn category, priority, a one-sentence reason, and needsHuman."
+        }
+      ]
+    }
+  ],
+  "projectId": "73cf8c10-2697-4342-ba8c-1fe60599b042"
+}

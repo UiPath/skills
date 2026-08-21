@@ -1,0 +1,138 @@
+{
+  "Result": "Success",
+  "Code": "NodeSearchSuccess",
+  "Data": [
+    {
+      "NodeType": "core.action.script",
+      "DisplayName": "Script",
+      "Description": "Run custom JavaScript code",
+      "AvailableOnTenant": true
+    },
+    {
+      "NodeType": "uipath.connector.uipath-amazon-transcribe.get-transcription-job-by-name",
+      "DisplayName": "Get Transcription Job by Name",
+      "Description": "(Amazon Transcribe) Retrieve details of a transcription job using its name in Amazon Transcribe.",
+      "AvailableOnTenant": true
+    },
+    {
+      "NodeType": "uipath.connector.uipath-freshworks-freshbooks.search-items",
+      "DisplayName": "Search Items",
+      "Description": "(FreshBooks) Search for items in FreshBooks by SKU or description.",
+      "AvailableOnTenant": true
+    },
+    {
+      "NodeType": "uipath.connector.uipath-microsoft-azure.list-nsgs",
+      "DisplayName": "List NSGs",
+      "Description": "(Microsoft Azure) Gets the list of network security group within the current subscription matching the filter criteria.",
+      "AvailableOnTenant": true
+    },
+    {
+      "NodeType": "uipath.connector.uipath-microsoft-azure.get-security-alert",
+      "DisplayName": "Get Security Alert",
+      "Description": "(Microsoft Azure) Gets the details of a security alert at subscription or resource group level",
+      "AvailableOnTenant": true
+    },
+    {
+      "NodeType": "uipath.connector.uipath-microsoft-azure.list-security-alerts",
+      "DisplayName": "List Security Alerts",
+      "Description": "(Microsoft Azure) List the security alerts by subscription level or resource group level or/and location level",
+      "AvailableOnTenant": true
+    },
+    {
+      "NodeType": "uipath.connector.uipath-microsoft-teams.list-all-transcripts",
+      "DisplayName": "List All Transcripts",
+      "Description": "(Microsoft Teams) Retrieve all transcripts from online Microsoft Teams meetings.",
+      "AvailableOnTenant": true
+    },
+    {
+      "NodeType": "uipath.connector.uipath-microsoft-teams.download-meeting-transcript-recording",
+      "DisplayName": "Download Meeting Transcript/Recording",
+      "Description": "(Microsoft Teams) Download the transcript or recording of a Microsoft Teams meeting.",
+      "AvailableOnTenant": true
+    },
+    {
+      "NodeType": "uipath.connector.uipath-microsoft-vision.describe-image",
+      "DisplayName": "Describe Image",
+      "Description": "(Microsoft Vision) Generate human-readable descriptions of images using Microsoft Vision.",
+      "AvailableOnTenant": true
+    },
+    {
+      "NodeType": "uipath.connector.uipath-mock-teams.list-all-transcripts",
+      "DisplayName": "List All Transcripts",
+      "Description": "(Mock Microsoft Teams) Retrieve all the transcripts of an online teams meeting",
+      "AvailableOnTenant": true
+    },
+    {
+      "NodeType": "uipath.connector.uipath-mock-teams.download-meeting-transcript-recording",
+      "DisplayName": "Download Meeting Transcript/Recording",
+      "Description": "(Mock Microsoft Teams) Download the transcript or recording file of an online teams meeting",
+      "AvailableOnTenant": true
+    },
+    {
+      "NodeType": "uipath.connector.uipath-salesforce-slack.set-channel-description",
+      "DisplayName": "Set Channel Description",
+      "Description": "(Slack) Sets the description of a channel",
+      "AvailableOnTenant": true
+    },
+    {
+      "NodeType": "uipath.connector.uipath-uipath-airdk.image-classification",
+      "DisplayName": "Image Classification",
+      "Description": "(UiPath GenAI Activities) Classify images using custom categories and descriptions with UiPath Integration Service.",
+      "AvailableOnTenant": true
+    },
+    {
+      "NodeType": "uipath.connector.uipath-zoom-zoom.get-meeting-recording",
+      "DisplayName": "Get Meeting Recording",
+      "Description": "(Zoom) Retrieve download URL and chat transcript of completed Zoom meetings saved in the cloud.",
+      "AvailableOnTenant": true
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.uipath-amazon-transcribe.get-transcription-job-by-name",
+      "DisplayName": "Get Transcription Job by Name",
+      "Description": "(Amazon Transcribe) Retrieve details of a transcription job using its name in Amazon Transcribe.",
+      "AvailableOnTenant": true
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.uipath-freshworks-freshbooks.search-items",
+      "DisplayName": "Search Items",
+      "Description": "(FreshBooks) Search for items in FreshBooks by SKU or description.",
+      "AvailableOnTenant": true
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.uipath-microsoft-teams.list-all-transcripts",
+      "DisplayName": "List All Transcripts",
+      "Description": "(Microsoft Teams) Retrieve all transcripts from online Microsoft Teams meetings.",
+      "AvailableOnTenant": true
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.uipath-microsoft-vision.describe-image",
+      "DisplayName": "Describe Image",
+      "Description": "(Microsoft Vision) Generate human-readable descriptions of images using Microsoft Vision.",
+      "AvailableOnTenant": true
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.uipath-mock-teams.list-all-transcripts",
+      "DisplayName": "List All Transcripts",
+      "Description": "(Mock Microsoft Teams) Retrieve all the transcripts of an online teams meeting",
+      "AvailableOnTenant": true
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.uipath-salesforce-slack.set-channel-description",
+      "DisplayName": "Set Channel Description",
+      "Description": "(Slack) Sets the description of a channel",
+      "AvailableOnTenant": true
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.uipath-uipath-airdk.image-classification",
+      "DisplayName": "Image Classification",
+      "Description": "(UiPath GenAI Activities) Classify images using custom categories and descriptions with UiPath Integration Service.",
+      "AvailableOnTenant": true
+    },
+    {
+      "NodeType": "uipath.agent.resource.tool.connector.uipath-zoom-zoom.get-meeting-recording",
+      "DisplayName": "Get Meeting Recording",
+      "Description": "(Zoom) Retrieve download URL and chat transcript of completed Zoom meetings saved in the cloud.",
+      "AvailableOnTenant": true
+    }
+  ]
+}

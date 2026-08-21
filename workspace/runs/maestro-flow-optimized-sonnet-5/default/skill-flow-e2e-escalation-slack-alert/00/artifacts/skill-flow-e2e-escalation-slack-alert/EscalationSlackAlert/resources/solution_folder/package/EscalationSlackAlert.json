@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "EscalationSlackAlert",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "c45f25eb-715e-43cd-afc1-5012aad9581b",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "EscalationSlackAlert"
+    },
+    "locks": [],
+    "key": "d857e2ee-5215-4af8-9b09-723a79f1244b",
+    "files": []
+  }
+}

@@ -1,0 +1,1235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>coder_eval · skill-flow-ixp-integration-handle-routing · default</title>
+<style>
+:root {
+  --bg-page: #0f1419;
+  --bg-card: #1a2129;
+  --bg-card-2: #232d38;
+  --bg-code: #0b0f14;
+  --fg: #e6edf3;
+  --fg-muted: #8b98a5;
+  --fg-dim: #6e7681;
+  --border: #30363d;
+  --accent: #58a6ff;
+  --score-high: #22c55e;
+  --score-mid: #f59e0b;
+  --score-low: #ef4444;
+  --status-success: #22c55e;
+  --status-failure: #f59e0b;
+  --status-error: #ef4444;
+  --status-neutral: #6e7681;
+  --shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+.light {
+  --bg-page: #ffffff;
+  --bg-card: #f6f8fa;
+  --bg-card-2: #eaeef2;
+  --bg-code: #f6f8fa;
+  --fg: #1f2328;
+  --fg-muted: #636c76;
+  --fg-dim: #8b949e;
+  --border: #d0d7de;
+  --accent: #0969da;
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial,
+               sans-serif;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--fg);
+  background: var(--bg-page);
+}
+.container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+h1, h2, h3, h4 { margin: 0 0 12px 0; line-height: 1.25; }
+h1 { font-size: 22px; font-weight: 600; }
+h2 { font-size: 18px; font-weight: 600; margin-top: 28px;
+     padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+h3 { font-size: 15px; font-weight: 600; color: var(--fg-muted); }
+h4 { font-size: 13px; font-weight: 600; color: var(--fg-muted); }
+p { margin: 0 0 8px 0; }
+.muted { color: var(--fg-muted); }
+.dim { color: var(--fg-dim); }
+.mono { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+        monospace; font-size: 12.5px; }
+code { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+       monospace; font-size: 12.5px; background: var(--bg-code);
+       border: 1px solid var(--border); padding: 1px 5px; border-radius: 3px; }
+pre { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+      monospace; font-size: 12.5px; background: var(--bg-code);
+      border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px;
+      margin: 6px 0; overflow-x: auto; white-space: pre-wrap;
+      word-wrap: break-word; }
+.header-bar { display: flex; align-items: center; justify-content: space-between;
+              margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+.title-group { flex: 1; min-width: 0; }
+.title-group .subtitle { color: var(--fg-muted); font-size: 13px;
+                         margin-top: 2px; word-break: break-all; }
+.badges { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.badge { display: inline-flex; align-items: center; gap: 6px;
+         padding: 4px 10px; border-radius: 12px; font-size: 12px;
+         font-weight: 600; background: var(--bg-card-2);
+         border: 1px solid var(--border); color: var(--fg); }
+.badge.success { background: color-mix(in srgb, var(--status-success) 20%, var(--bg-card-2));
+                 border-color: var(--status-success); color: var(--status-success); }
+.badge.failure { background: color-mix(in srgb, var(--status-failure) 20%, var(--bg-card-2));
+                 border-color: var(--status-failure); color: var(--status-failure); }
+.badge.error { background: color-mix(in srgb, var(--status-error) 20%, var(--bg-card-2));
+               border-color: var(--status-error); color: var(--status-error); }
+.badge.warning { background: color-mix(in srgb, #f4a52810 20%, var(--bg-card-2));
+                 border-color: #f4a528; color: #f4a528; }
+.badge.neutral { color: var(--fg-muted); }
+.score-pill { display: inline-block; padding: 2px 8px; border-radius: 10px;
+              font-size: 12px; font-weight: 700; min-width: 42px;
+              text-align: center; color: #0b0f14; }
+.score-high { background: var(--score-high); }
+.score-mid { background: var(--score-mid); }
+.score-low { background: var(--score-low); }
+.card { background: var(--bg-card); border: 1px solid var(--border);
+        border-radius: 8px; padding: 16px 20px; margin-bottom: 16px;
+        box-shadow: var(--shadow); }
+.card.highlight { border-left: 4px solid var(--accent); }
+.grid { display: grid; gap: 12px;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+.stat { background: var(--bg-card-2); padding: 10px 12px; border-radius: 6px;
+        border: 1px solid var(--border); }
+.stat .label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;
+               color: var(--fg-muted); margin-bottom: 4px; }
+.stat .value { font-size: 16px; font-weight: 600; }
+table { width: 100%; border-collapse: collapse; margin: 4px 0 12px 0; }
+th, td { text-align: left; padding: 8px 10px;
+         border-bottom: 1px solid var(--border); vertical-align: top;
+         font-size: 13px; }
+th { color: var(--fg-muted); font-weight: 600; font-size: 12px;
+     text-transform: uppercase; letter-spacing: 0.3px; }
+tr:last-child td { border-bottom: none; }
+details { margin: 6px 0; border: 1px solid var(--border); border-radius: 6px;
+          background: var(--bg-card-2); }
+details > summary { cursor: pointer; padding: 8px 12px; user-select: none;
+                    font-weight: 500; list-style: none; }
+details > summary::-webkit-details-marker { display: none; }
+details > summary::before { content: "▸ "; color: var(--fg-dim);
+                            display: inline-block; width: 14px;
+                            transition: transform 0.15s; }
+details[open] > summary::before { content: "▾ "; }
+details .details-body { padding: 0 12px 10px 12px; }
+.tool-row { display: flex; align-items: center; gap: 10px;
+            flex-wrap: wrap; font-size: 13px; }
+.tool-name { font-weight: 600; color: var(--accent); font-family: ui-monospace,
+             SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+.tool-status-ok { color: var(--status-success); font-size: 11px;
+                  font-weight: 600; }
+.tool-status-err { color: var(--status-error); font-size: 11px;
+                   font-weight: 600; }
+.tool-duration { color: var(--fg-muted); font-size: 12px; }
+.tool-seq { color: var(--fg-dim); font-size: 11px; font-weight: 600;
+            min-width: 24px; text-align: right; font-family: ui-monospace,
+            SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+.turn-header { display: flex; justify-content: space-between;
+               align-items: baseline; flex-wrap: wrap; gap: 10px;
+               margin-bottom: 10px; }
+.turn-meta { font-size: 12px; color: var(--fg-muted); }
+.criterion-row td:first-child { font-family: ui-monospace, SFMono-Regular,
+                                 "SF Mono", Menlo, Consolas, monospace;
+                                 color: var(--fg-muted); font-size: 12px; }
+.judge-section { display: flex; flex-direction: column; gap: 12px; }
+.judge-card { padding: 14px 16px; }
+.judge-card-head { display: flex; justify-content: space-between;
+                    align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+.judge-card-title { font-size: 14px; line-height: 1.4; flex: 1; min-width: 0; }
+.judge-card-score { flex-shrink: 0; }
+.judge-rationale { margin-top: 10px; padding: 10px 12px;
+                   background: var(--bg-code); border-radius: 4px;
+                   font-size: 13px; line-height: 1.5; }
+.judge-findings { margin: 8px 0 0 18px; padding-left: 4px; font-size: 13px;
+                   line-height: 1.6; }
+.judge-findings li { margin: 2px 0; }
+.nav-toggle { display: inline-block; padding: 5px 10px; font-size: 12px;
+              background: var(--bg-card-2); border: 1px solid var(--border);
+              border-radius: 5px; color: var(--fg); cursor: pointer; }
+.nav-toggle:hover { background: var(--bg-card); }
+.llm-next-steps { margin: 6px 0 0 20px; padding-left: 0; }
+.llm-next-steps li { margin: 3px 0; }
+.iteration-group { padding: 12px 16px 4px 16px; margin-bottom: 20px;
+                   border-radius: 0 6px 6px 0; border-left: 4px solid var(--status-neutral); }
+/* rgba fallback for browsers without color-mix (Chrome <111, Firefox <113, Safari <16.2). */
+.iteration-group--recovered { border-left-color: var(--status-success);
+                              background: rgba(34, 197, 94, 0.06);
+                              background: color-mix(in srgb, var(--status-success) 6%, transparent); }
+.iteration-group--terminal { border-left-color: var(--status-error);
+                             background: rgba(239, 68, 68, 0.06);
+                             background: color-mix(in srgb, var(--status-error) 6%, transparent); }
+.iteration-group__banner { margin: 0 0 12px 0; font-size: 14px; font-weight: 600; }
+.iteration-group--recovered .iteration-group__banner { color: var(--status-success); }
+.iteration-group--terminal .iteration-group__banner { color: var(--status-error); }
+.attempt-transition { display: flex; align-items: center; gap: 8px;
+                      margin: -6px 0 12px 8px; color: var(--status-error); font-size: 12.5px; }
+.attempt-transition__icon { font-weight: 700; }
+footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--border);
+         color: var(--fg-dim); font-size: 12px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="header-bar">
+  <div class="title-group">
+    <h1>Task: skill-flow-ixp-integration-handle-routing</h1>
+    <div class="subtitle">Integration: IxP extraction wired into a Decision node that routes on a field from the extracted content. Exercises field-level variable access via the canonical IxP path (`$vars.{ixpNode}.output.ExtractionResult.ResultsDocument.Fields.find(...)`) and two-branch Decision wiring — the multi-node Quality scenario for IxP.</div>
+  </div>
+  <div class="badges">
+    <span class="badge success">SUCCESS</span>
+    <span class="score-pill score-high">1.00</span>
+    <span class="badge neutral">claude-code · claude-sonnet-4-6</span>
+    <span class="badge neutral">5m 14s</span>
+    <span class="badge neutral">$0.7326</span>
+    
+    
+    <span class="nav-toggle" onclick="toggleTheme()">Toggle theme</span>
+  </div>
+</div>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Variant</div><div class="value">default</div></div>
+    <div class="stat"><div class="label">Started</div><div class="value mono">2026-08-19T17:00:25</div></div>
+    <div class="stat"><div class="label">Duration</div><div class="value">5m 14s</div></div>
+    <div class="stat"><div class="label">Turns (SDK)</div><div class="value">39</div></div>
+    <div class="stat"><div class="label">Commands</div><div class="value">21</div></div>
+  </div>
+</div>
+
+<h2>Success Criteria <span class="muted" style="font-weight:400">(8/8 passed)</span></h2>
+<div class="card" style="padding:0">
+<table>
+  <thead>
+    <tr>
+      <th style="width:15%">Type</th>
+      <th style="width:35%">Description</th>
+      <th style="width:10%">Score</th>
+      <th>Details</th>
+    </tr>
+  </thead>
+  <tbody>
+    
+<tr class="criterion-row">
+  <td>skill_triggered</td>
+  <td>Agent invoked the uipath-maestro-flow Skill</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><div class="dim mono" style="white-space:pre-wrap">observed=&#x27;yes&#x27;, expected=&#x27;yes&#x27; (skill_name=&#x27;uipath-maestro-flow&#x27;)</div></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>command_executed</td>
+  <td>Agent searched the registry for IxP node types</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Matched 2/1 required commands (filters: tool_name=Bash, pattern=/uip\s+maestro\s+flow\s+registry\s+(search|list|get)\b[^\n]*ixp/)</summary><div class="details-body"><pre style="margin:6px 0 0 0">Matched 2/1 required commands (filters: tool_name=Bash, pattern=/uip\s+maestro\s+flow\s+registry\s+(search|list|get)\b[^\n]*ixp/)
+Examples: [&#x27;cd /work/output/artifacts/skill-flow-ixp-integration-handle-routing \\\n  &amp;&amp; uip solution init &quot;InvoiceRouterSolution&quot; --o&#x27;, &#x27;cd /work/output/artifacts/skill-flow-ixp-integration-handle-routing/InvoiceRouterSolution/InvoiceRouter \\\n  &amp;&amp; uip maest&#x27;]</pre></div></details></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>run_command</td>
+  <td>uip maestro flow validate passes on InvoiceRouter.flow</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Command: python3 $EXPERIMENT_TASKS_PATH/uipath-maestro-flow/_shared/validate_flow.py</summary><div class="details-body"><pre style="margin:6px 0 0 0">Command: python3 $EXPERIMENT_TASKS_PATH/uipath-maestro-flow/_shared/validate_flow.py
+Exit code: 0 (expected: 0)
+Stdout:
+Validating InvoiceRouterSolution/InvoiceRouter/InvoiceRouter.flow
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FlowValidate&quot;,
+  &quot;Data&quot;: {
+    &quot;File&quot;: &quot;/work/output/artifacts/skill-flow-ixp-integration-handle-routing/InvoiceRouterSolution/InvoiceRouter/InvoiceRouter.flow&quot;,
+    &quot;Status&quot;: &quot;Valid&quot;
+  }
+}
+
+Stderr:
+[ManifestClient] fetchDynamicNodes ok: total=317 agent context nodes=2 external agent nodes=7 orchestrator nodes=263 IXP nodes=45</pre></div></details></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>run_command</td>
+  <td>Generated flow contains an IxP extraction node or core.logic.mock fallback</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Command: grep -rqE &quot;\&quot;type\&quot;[[:space:]]*:[[:space:]]*\&quot;(uipath\.ixp|core\.logic\.mock)&quot; --include=&quot;*.flow&quot; .</summary><div class="details-body"><pre style="margin:6px 0 0 0">Command: grep -rqE &quot;\&quot;type\&quot;[[:space:]]*:[[:space:]]*\&quot;(uipath\.ixp|core\.logic\.mock)&quot; --include=&quot;*.flow&quot; .
+Exit code: 0 (expected: 0)
+Stdout: (empty)
+Stderr: (empty)</pre></div></details></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>run_command</td>
+  <td>Flow contains a Decision node (core.logic.decision)</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Command: set -e</summary><div class="details-body"><pre style="margin:6px 0 0 0">Command: set -e
+flow=$(find . -name &#x27;*.flow&#x27; -print -quit)
+grep -qF &#x27;core.logic.decision&#x27; &quot;$flow&quot;
+
+Exit code: 0 (expected: 0)
+Stdout: (empty)
+Stderr: (empty)</pre></div></details></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>run_command</td>
+  <td>Decision condition references the canonical IxP output path ($vars.&lt;ixp&gt;.output.ExtractionResult.ResultsDocument.Fields)</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Command: set -e</summary><div class="details-body"><pre style="margin:6px 0 0 0">Command: set -e
+flow=$(find . -name &#x27;*.flow&#x27; -print -quit)
+grep -qF &#x27;$vars.&#x27;           &quot;$flow&quot;
+grep -qF &#x27;ExtractionResult&#x27; &quot;$flow&quot;
+grep -qF &#x27;ResultsDocument&#x27;  &quot;$flow&quot;
+grep -qF &#x27;Fields&#x27;           &quot;$flow&quot;
+
+Exit code: 0 (expected: 0)
+Stdout: (empty)
+Stderr: (empty)</pre></div></details></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>run_command</td>
+  <td>Both branch script nodes are present by name</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Command: set -e</summary><div class="details-body"><pre style="margin:6px 0 0 0">Command: set -e
+flow=$(find . -name &#x27;*.flow&#x27; -print -quit)
+grep -qF &#x27;HighValueReview&#x27; &quot;$flow&quot;
+grep -qF &#x27;AutoApprove&#x27;     &quot;$flow&quot;
+
+Exit code: 0 (expected: 0)
+Stdout: (empty)
+Stderr: (empty)</pre></div></details></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>run_command</td>
+  <td>Both Decision branches wired (true and false handles)</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Command: set -e</summary><div class="details-body"><pre style="margin:6px 0 0 0">Command: set -e
+flow=$(find . -name &#x27;*.flow&#x27; -print -quit)
+grep -qF &#x27;&quot;true&quot;&#x27;  &quot;$flow&quot;
+grep -qF &#x27;&quot;false&quot;&#x27; &quot;$flow&quot;
+
+Exit code: 0 (expected: 0)
+Stdout: (empty)
+Stderr: (empty)</pre></div></details></td>
+</tr>
+
+  </tbody>
+</table>
+</div>
+<h2>Conversation Trace (1 iteration)</h2>
+<div class="card">
+  <div class="turn-header">
+    <h3>Iteration 1</h3>
+    <div class="badges">
+      <span class="badge neutral">39 assistant turns</span>
+      <span class="badge neutral">in 782 · out 15153 · cache 915747</span>
+      <span class="badge neutral">4m 59s</span>
+      
+      
+      
+    </div>
+  </div>
+  <details>
+    <summary>Prompt to agent</summary>
+    <div class="details-body"><pre>Your working directory is: /work/output/artifacts/skill-flow-ixp-integration-handle-routing
+
+Build a UiPath Flow project named &quot;InvoiceRouter&quot; that processes vendor
+invoices:
+
+1. Manual trigger.
+2. IxP extraction node — extracts at least vendor name and total amount
+   from a PDF vendor invoice, using the published model matching that
+   document domain.
+3. Decision node — branches on the extracted total amount: if greater
+   than 1000, route to a &quot;HighValueReview&quot; script; otherwise route to an
+   &quot;AutoApprove&quot; script.
+4. Both downstream scripts contain a JavaScript that logs a one-line
+   summary including the extracted vendor name.
+
+Wire: Trigger → IxP extract → Decision → (two branches: HighValueReview
+/ AutoApprove).
+
+The Decision node condition MUST reference the extracted total amount
+via the canonical IxP runtime path —
+`$vars.&lt;ixpNodeId&gt;.output.ExtractionResult.ResultsDocument.Fields.find(f =&gt; f.FieldName === &#x27;&lt;fieldName&gt;&#x27;)?.Values?.[0]`
+— per references/plugins/ixp/impl.md (&quot;Accessing Output&quot;).
+
+Important:
+- The `uip` CLI is already available.
+- Use `--output json` on all uip commands.
+- Work inside the stated working directory — do NOT `cd` to a parent.
+- Do NOT run `uip maestro flow debug` or `uip maestro flow deploy`.
+- Run `uip maestro flow validate` at most 3 times. If it reports errors, fix
+  the `.flow` and re-run it. Do not exceed 3 validation runs.
+</pre></div>
+  </details>
+  <details>
+    <summary>Agent response</summary>
+    <div class="details-body"><pre>[ASSISTANT] Let me read the key reference files to plan the build.
+[ASSISTANT] Now let me read the IxP, decision, and script plugin docs in parallel with checking for existing solutions.
+[ASSISTANT] No existing solutions found. I have all the context needed. Now I&#x27;ll run T1: scaffold the solution + flow, pull the registry, and in parallel fetch all node definitions and check for IxP models.
+[ASSISTANT] IxP models found. I&#x27;ll use the &quot;InvoiceIXP&quot; model (`invoiceixp-cef0d447-ixp`) as it best matches vendor invoices. Now fetching the IxP registry entry, taxonomy, and reading the scaffolded flow.
+[ASSISTANT] The taxonomy command failed, so I&#x27;ll use assumed field names (`VendorName`, `TotalAmount`) and surface them as Open Questions. Now let me extract the full definition JSON for each node type and build the flow.
+[ASSISTANT] Now I&#x27;ll build the complete flow JSON using a Python script to properly assemble all definitions.
+[ASSISTANT] Now T3: run audit, validate, then format.
+[ASSISTANT] The audit says `variables.nodes[]` entries are missing — but `flow format` regenerates them. Let me run validate + format now (format will auto-fix the `variables.nodes[]` entries).
+[ASSISTANT] Validate passes. Now format to fix layout and regenerate `variables.nodes[]`.
+[ASSISTANT] Format succeeded — 7 variable entries regenerated (one per data-producing node). Let me do a final audit to confirm all errors are resolved.
+[ASSISTANT] All checks pass. Here&#x27;s the summary:
+
+---
+
+**InvoiceRouter flow built successfully.**
+
+**File:** `InvoiceRouterSolution/InvoiceRouter/InvoiceRouter.flow`
+
+**What was built:**
+
+| Node | Type | Role |
+|---|---|---|
+| `start` | `core.trigger.manual` | Manual trigger |
+| `extractInvoice` | `uipath.ixp.invoiceixp-cef0d447-ixp.*` | IxP extraction — InvoiceIXP model (Shared folder) |
+| `checkAmount` | `core.logic.decision` | Routes on total amount &gt; 1000 |
+| `highValueReview` | `core.action.script` | Logs vendor + amount for high-value invoices |
+| `autoApprove` | `core.action.script` | Logs vendor + amount for auto-approved invoices |
+| `endHighValue` / `endAutoApprove` | `core.control.end` | Terminates each branch |
+
+**Wiring:** `start → extractInvoice → checkAmount → (true) highValueReview → endHighValue` / `(false) autoApprove → endAutoApprove`
+
+**Decision expression** (canonical IxP path as specified):
+```javascript
+$vars.extractInvoice.output.ExtractionResult.ResultsDocument.Fields.find(f =&gt; f.FieldName === &#x27;TotalAmount&#x27;)?.Values?.[0] &gt; 1000
+```
+
+**Flow input:** `invoiceFile` (type `file`, bound to the manual trigger) — pass a PDF at debug time with `--attachment invoiceFile=./invoice.pdf`.
+
+**Validation:** ✅ `flow validate` — Valid  
+**Format:** ✅ `flow format` — 7 nodes laid out, 7 variable entries regenerated  
+**Audit:** ✅ Clean (0 errors across topology, expressions, jint, bindings, runtime-gaps)
+
+**Open Questions:**
+1. **Field names** — `TotalAmount` and `VendorName` are assumed field names for the InvoiceIXP model. Run `uip ixp deployments get-taxonomy --folder-key c4359cde-55f0-4f0e-9322-c6cdce74ab4c &quot;invoiceixp-cef0d447-ixp&quot;` to verify the exact `FieldName` values and update the decision expression + script bodies if they differ.
+
+**What&#x27;s next** — to continue, pick one:
+1. **Publish to Studio Web** — `uip solution upload .` from the solution folder
+2. **Debug the solution** — execute against real systems (requires consent; has real side effects)
+3. **Deploy to Orchestrator** — pack + publish
+4. **Something else**
+[RESULT - SUCCESS] All checks pass. Here&#x27;s the summary:
+
+---
+
+**InvoiceRouter flow built successfully.**
+
+**File:** `InvoiceRouterSolution/InvoiceRouter/InvoiceRouter.flow`
+
+**What was built:**
+
+| Node | Type | Role |
+|---|---|---|
+| `start` | `core.trigger.manual` | Manual trigger |
+| `extractInvoice` | `uipath.ixp.invoiceixp-cef0d447-ixp.*` | IxP extraction — InvoiceIXP model (Shared folder) |
+| `checkAmount` | `core.logic.decision` | Routes on total amount &gt; 1000 |
+| `highValueReview` | `core.action</pre></div>
+  </details>
+  <h4 style="margin-top:12px">Tool Calls (21)</h4>
+  
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#0</span>
+      <span class="tool-name">Skill</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">28ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;skill&quot;: &quot;tmp:uipath-maestro-flow&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Launching skill: tmp:uipath-maestro-flow</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#1</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">389ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/CAPABILITY.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Author — Create and edit `.flow` files
+2	
+3	Capability index for building new flows (greenfield) and editing existing flows (brownfield). Author owns everything that happens on disk, locally, without `uip login`. Authoring journeys terminate at `validate` + `format`; from there, hand off to [operate/CAPABILITY.md](../operate/CAPABILITY.md) to publish, run, or debug.
+4	
+5	&gt; **Where you came from / where to go next.** Author is upstream of Operate (build the flow → ship it) and upstream of Diagnose only via Operate (build → run → diagnose). Publish/run/lifecycle lives in [operate/CAPABILITY.md](../operate/CAPABILITY.md); fault triage lives in [diagnose/CAPABILITY.md](../diagnose/CAPABILITY.md).
+6	&gt;
+7	&gt; **Inherits universal rules from [SKILL.md](../../SKILL.md)** — `--output json` + prefer `--output-filter` for extraction, no `flow debug` without consent, resource discovery order, never invoke other skills automatically, dropdown question pattern, solution layout, **plain-English narration + granular progress list (opt-in — silent by default; engage when the user asks for verbosity)**. The rules below are author-scoped and apply on top.
+8	
+9	## When to use this capability
+10	
+11	&lt;
+
+… (truncated, 30449 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#2</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">114ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/greenfield.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Greenfield — Create a New Flow
+2	
+3	End-to-end journey for creating a Flow project from scratch. Author terminates at `validate` + `format`. To publish, run, or debug after this, see [operate/CAPABILITY.md](../../operate/CAPABILITY.md).
+4	
+5	&gt; **Brownfield edits use a different journey.** If the `.flow` file already exists, see [brownfield.md](brownfield.md) instead.
+6	
+7	## Should you plan first?
+8	
+9	For complex flows, produce a plan before building. Reference [planning-arch.md](planning-arch.md) and [planning-impl.md](planning-impl.md) for the node type catalog, port reference, wiring rules, and topology patterns.
+10	
+11	**Plan when:**
+12	- The flow has 5+ nodes with branching or parallel paths
+13	- The flow uses connectors or resources that need discovery
+14	- The user&#x27;s requirements are ambiguous and you need to confirm the approach
+15	
+16	**Don&#x27;t plan when:**
+17	- Adding/editing a single node in an existing flow (use [brownfield.md](brownfield.md))
+18	- The flow is a straightforward linear pipeline (trigger → action → action → end)
+19	- The user has already described the exact topology they want
+20	
+21	### Examples
+22	
+23	**Plan:** &quot;Build a flow that receives a Jira ticke
+
+… (truncated, 34831 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#3</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">145ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/plugins/ixp/impl.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# IxP Extraction Node — Implementation
+2	
+3	IxP Extraction nodes invoke a published UiPath Intelligent eXtraction Platform (IxP) model. They are tenant-specific resources with pattern `uipath.ixp.{sanitized-modelName}.{sanitized-fullyQualifiedName}`.
+4	
+5	Sanitization rule (applied to both tail segments, in this order):
+6	
+7	1. Lowercase.
+8	2. Replace runs of any character outside `[a-z0-9]` with a single `-`. Slashes, spaces, underscores, and runs of dashes (e.g. `---`) all collapse to a single `-`. Dots in the FQN are NOT preserved — they also collapse to `-`.
+9	
+10	The dot in `uipath.ixp.{model}.{fqn}` is the segment separator the registry adds *after* sanitizing each tail segment, not part of the sanitization itself.
+11	
+12	Examples (verified against the live registry):
+13	
+14	- `&quot;birth_certificates_oob-6252526a-ixp&quot;` + FQN `Shared/birth_certificates_oob-6252526a-ixp` → `uipath.ixp.birth-certificates-oob-6252526a-ixp.shared-birth-certificates-oob-6252526a-ixp` (underscores and slash both → `-`).
+15	- `&quot;idp-benchmark---invoices-c735405a-ixp&quot;` + FQN `Shared/idp-benchmark---invoices-c735405a-ixp` → `uipath.ixp.idp-benchmark-invoices-c735405a-ixp.shared-idp-benchmark-invoices-c73
+
+… (truncated, 32766 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#4</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">6ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/plugins/decision/impl.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Decision Node — Implementation
+2	
+3	## Node Type
+4	
+5	`core.logic.decision`
+6	
+7	## Registry Validation
+8	
+9	```bash
+10	uip maestro flow registry get core.logic.decision --output json
+11	```
+12	
+13	Confirm: input port `input`, output ports `true` and `false`, required input `expression`. Set the node instance `typeVersion` to the `version` field from this response — do not hardcode it.
+14	
+15	## JSON Structure
+16	
+17	```json
+18	{
+19	  &quot;id&quot;: &quot;checkStatus&quot;,
+20	  &quot;type&quot;: &quot;core.logic.decision&quot;,
+21	  &quot;typeVersion&quot;: &quot;&lt;DEFINITION_VERSION&gt;&quot;,
+22	  &quot;display&quot;: { &quot;label&quot;: &quot;Check Status&quot; },
+23	  &quot;inputs&quot;: {
+24	    &quot;expression&quot;: &quot;$vars.fetchData.output.statusCode === 200&quot;
+25	  }
+26	}
+27	```
+28	
+29	## Adding / Editing
+30	
+31	For step-by-step add, delete, and wiring procedures, see [editing-operations.md](../../editing-operations.md). Use the JSON structure above for the node-specific `inputs`.
+32	
+33	## Expression Examples
+34	
+35	```javascript
+36	// Simple comparison
+37	$vars.fetchData.output.statusCode === 200
+38	
+39	// Boolean field
+40	$vars.processData.output.isValid
+41	
+42	// Compound condition
+43	$vars.httpCall.output.statusCode === 200 &amp;&amp; $vars.httpCall.output.body.count &gt; 0
+44	
+45	// S
+
+… (truncated, 735 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#5</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">6ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/plugins/script/impl.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Script Node — Implementation
+2	
+3	## Node Type
+4	
+5	`core.action.script`
+6	
+7	## Registry validation
+8	
+9	```bash
+10	uip maestro flow registry get core.action.script --output json
+11	```
+12	
+13	Confirm: input port `input`, output port `success`, required input `script` (string, non-empty). See [Action Node Structure — Registry validation](../../../../shared/action-nodes.md#registry-validation) for the shared pattern.
+14	
+15	## JSON structure
+16	
+17	Follow the [Action Node Structure — Standard JSON skeleton](../../../../shared/action-nodes.md#standard-json-skeleton). The script-specific input is a single `script` string:
+18	
+19	```json
+20	{
+21	  &quot;inputs&quot;: {
+22	    &quot;script&quot;: &quot;const items = $vars.fetchData.output.body.items;\nconst total = items.reduce((sum, i) =&gt; sum + i.amount, 0);\nreturn { total, count: items.length };&quot;
+23	  }
+24	}
+25	```
+26	
+27	## Adding and editing
+28	
+29	See [Action Node Structure — Adding and editing procedures](../../../../shared/action-nodes.md#adding-and-editing-procedures). The script node uses the standard input port `input` and output port `success`; no plugin-specific wiring.
+30	
+31	## Script rules
+32	
+33	1. **Top-level body — no `function main()` w
+
+… (truncated, 4329 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#6</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">301ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;find /work/output/artifacts/skill-flow-ixp-integration-handle-routing -maxdepth 2 -type f -name &#x27;*.uipx&#x27; -print 2&gt;/dev/null&quot;,
+  &quot;description&quot;: &quot;Check for existing solutions&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>(Bash completed with no output)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#7</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">25.76s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-ixp-integration-handle-routing \\\n  &amp;&amp; uip solution init \&quot;InvoiceRouterSolution\&quot; --output json \\\n  &amp;&amp; cd \&quot;InvoiceRouterSolution\&quot; \\\n  &amp;&amp; uip maestro flow init \&quot;InvoiceRouter\&quot; --output json \\\n  &amp;&amp; uip maestro flow registry pull --force \\\n  &amp;&amp; uip maestro flow registry search \&quot;uipath.ixp\&quot; --output json &gt; /tmp/ixp_search.json \\\n  &amp;&amp; echo \&quot;=== IxP search done ===\&quot; \\\n… (213 more chars)&quot;,
+  &quot;description&quot;: &quot;Scaffold InvoiceRouterSolution, init InvoiceRouter flow, pull registry, search for IxP models&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;SolutionInit&quot;,
+  &quot;Data&quot;: {
+    &quot;Status&quot;: &quot;Created successfully&quot;,
+    &quot;Path&quot;: &quot;/work/output/artifacts/skill-flow-ixp-integration-handle-routing/InvoiceRouterSolution/InvoiceRouterSolution.uipx&quot;,
+    &quot;NextSteps&quot;: &quot;Read /work/output/artifacts/skill-flow-ixp-integration-handle-routing/InvoiceRouterSolution/AGENTS.md or /work/output/artifacts/skill-flow-ixp-integration-handle-routing/InvoiceRouterSolution/CLAUDE.md to understand the solution lifecycle, project types that can be used inside a solution, and related uip command references.&quot;
+  }
+}
+2026-08-19 17:01:56 INFO  [ResourceBuilder:ProjectCreateCommandHandler] Creating project [object Object]
+2026-08-19 17:01:56 INFO  [ResourceBuilder:MultiFileSolutionDefinitionProvider] Reading multi-file solution definition for solution %s /work/output/artifacts/skill-flow-ixp-integration-handle-routing/InvoiceRouterSolution
+2026-08-19 17:01:56 INFO  [ResourceBuilder:ProjectCreateCommandHandler] Generate artefact resources for project [object Object]
+2026-08-19 17:01:56 INFO  [ResourceBuilder:SolutionsMetadataReader] Reading metadata from %s. SolutionsMetadataReader
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FlowInit&quot;,
+
+… (truncated, 3940 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#8</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">29.86s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry get core.control.end --output json &gt; /tmp/def_end.json &amp;&amp; echo \&quot;end: ok\&quot; &amp;&amp; python3 -c \&quot;import json; d=json.load(open(&#x27;/tmp/def_end.json&#x27;)); n=d[&#x27;Data&#x27;][&#x27;Node&#x27;]; print(&#x27;end version:&#x27;, n.get(&#x27;version&#x27;)); print(&#x27;end type:&#x27;, n.get(&#x27;type&#x27;))\&quot;&quot;,
+  &quot;description&quot;: &quot;Get core.control.end definition&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>end: ok
+end version: 1.0
+end type: None</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#9</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">32.97s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry get core.logic.decision --output json &gt; /tmp/def_decision.json &amp;&amp; echo \&quot;decision: ok\&quot; &amp;&amp; python3 -c \&quot;import json; d=json.load(open(&#x27;/tmp/def_decision.json&#x27;)); n=d[&#x27;Data&#x27;][&#x27;Node&#x27;]; print(&#x27;decision version:&#x27;, n.get(&#x27;version&#x27;)); print(&#x27;ports:&#x27;, [p.get(&#x27;id&#x27;) for p in n.get(&#x27;ports&#x27;,[])])\&quot;&quot;,
+  &quot;description&quot;: &quot;Get core.logic.decision definition&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>decision: ok
+decision version: 1.2
+ports: []</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#10</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">38.16s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry get core.action.script --output json &gt; /tmp/def_script.json &amp;&amp; echo \&quot;script: ok\&quot; &amp;&amp; python3 -c \&quot;import json; d=json.load(open(&#x27;/tmp/def_script.json&#x27;)); n=d[&#x27;Data&#x27;][&#x27;Node&#x27;]; print(&#x27;script version:&#x27;, n.get(&#x27;version&#x27;)); print(&#x27;ports:&#x27;, [p.get(&#x27;id&#x27;) for p in n.get(&#x27;ports&#x27;,[])])\&quot;&quot;,
+  &quot;description&quot;: &quot;Get core.action.script definition&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>script: ok
+script version: 1.1
+ports: []</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#11</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">4.28s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-ixp-integration-handle-routing/InvoiceRouterSolution/InvoiceRouter \\\n  &amp;&amp; uip maestro flow registry get \&quot;uipath.ixp.invoiceixp-cef0d447-ixp.ff973488-5d89-8035-86ac-f980b4be6deb-c4359cde-55f0-4f0e-9322-c6cdce74ab4c\&quot; --output json &gt; /tmp/def_ixp.json \\\n  &amp;&amp; echo \&quot;ixp def: ok\&quot; \\\n  &amp;&amp; python3 -c \&quot;\nimport json\nd = json.load(open(&#x27;/tmp/def_ixp.json&#x27;))\nn = d[&#x27;Data&#x27;][&#x27;… (655 more chars)&quot;,
+  &quot;description&quot;: &quot;Get IxP InvoiceIXP registry entry and inspect inputDefaults&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>ixp def: ok
+IxP version: 1.0.0
+IxP type: None
+modelName: invoiceixp-cef0d447-ixp
+modelDisplayName: InvoiceIXP
+folderKey: c4359cde-55f0-4f0e-9322-c6cdce74ab4c
+folderName: Shared
+model id: ff973488-5d89-8035-86ac-f980b4be6deb
+model.modelName: invoiceixp-cef0d447-ixp
+model.folderPath: c4359cde-55f0-4f0e-9322-c6cdce74ab4c
+model.description: 
+
+Full inputDefaults.model: {
+  &quot;id&quot;: &quot;ff973488-5d89-8035-86ac-f980b4be6deb&quot;,
+  &quot;modelName&quot;: &quot;invoiceixp-cef0d447-ixp&quot;,
+  &quot;modelDisplayName&quot;: &quot;InvoiceIXP&quot;,
+  &quot;folderKey&quot;: &quot;c4359cde-55f0-4f0e-9322-c6cdce74ab4c&quot;,
+  &quot;folderName&quot;: &quot;Shared&quot;,
+  &quot;folderPath&quot;: &quot;c4359cde-55f0-4f0e-9322-c6cdce74ab4c&quot;,
+  &quot;description&quot;: &quot;&quot;
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#12</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">3.56s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 -c \&quot;\nimport json\nd = json.load(open(&#x27;/tmp/def_end.json&#x27;))\nn = d[&#x27;Data&#x27;][&#x27;Node&#x27;]\nprint(&#x27;end full node keys:&#x27;, list(n.keys()))\nprint(&#x27;end version:&#x27;, n.get(&#x27;version&#x27;))\n\&quot;\npython3 -c \&quot;\nimport json\nd = json.load(open(&#x27;/tmp/def_decision.json&#x27;))\nn = d[&#x27;Data&#x27;][&#x27;Node&#x27;]\nprint(&#x27;decision full node keys:&#x27;, list(n.keys()))\nprint(&#x27;decision version:&#x27;, n.get(&#x27;version&#x27;))\nprint(&#x27;decision type:&#x27;, n.get(&#x27;type&#x27;)… (224 more chars)&quot;,
+  &quot;description&quot;: &quot;Inspect definition metadata for end, decision, script nodes&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>end full node keys: [&#x27;nodeType&#x27;, &#x27;version&#x27;, &#x27;category&#x27;, &#x27;description&#x27;, &#x27;tags&#x27;, &#x27;sortOrder&#x27;, &#x27;display&#x27;, &#x27;handleConfiguration&#x27;, &#x27;model&#x27;, &#x27;runtimeConstraints&#x27;]
+end version: 1.0
+decision full node keys: [&#x27;nodeType&#x27;, &#x27;version&#x27;, &#x27;category&#x27;, &#x27;description&#x27;, &#x27;tags&#x27;, &#x27;sortOrder&#x27;, &#x27;display&#x27;, &#x27;handleConfiguration&#x27;, &#x27;debug&#x27;, &#x27;model&#x27;, &#x27;inputDefinition&#x27;, &#x27;outputDefinition&#x27;, &#x27;inputDefaults&#x27;, &#x27;form&#x27;]
+decision version: 1.2
+decision type: None
+script full node keys: [&#x27;nodeType&#x27;, &#x27;version&#x27;, &#x27;category&#x27;, &#x27;description&#x27;, &#x27;tags&#x27;, &#x27;sortOrder&#x27;, &#x27;supportsErrorHandling&#x27;, &#x27;display&#x27;, &#x27;handleConfiguration&#x27;, &#x27;debug&#x27;, &#x27;model&#x27;, &#x27;inputDefinition&#x27;, &#x27;inputDefaults&#x27;, &#x27;outputDefinition&#x27;, &#x27;form&#x27;]
+script version: 1.1
+script type: None</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#13</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-err">ERROR</span>
+      <span class="tool-duration">872ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-ixp-integration-handle-routing/InvoiceRouterSolution/InvoiceRouter \\\n  &amp;&amp; uip ixp deployments get-taxonomy --folder-key c4359cde-55f0-4f0e-9322-c6cdce74ab4c \&quot;invoiceixp-cef0d447-ixp\&quot; --output json &gt; /tmp/ixp_taxonomy.json \\\n  &amp;&amp; echo \&quot;taxonomy: ok\&quot; \\\n  &amp;&amp; python3 -c \&quot;\nimport json\nd = json.load(open(&#x27;/tmp/ixp_taxonomy.json&#x27;))\n# Print all fieldNames from the taxo… (302 more chars)&quot;,
+  &quot;description&quot;: &quot;Get taxonomy for InvoiceIXP to find vendor name and total amount field names&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Exit code 3</pre>
+    <h4>Error</h4><pre>Exit code 3</pre>
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#14</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">7ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-ixp-integration-handle-routing/InvoiceRouterSolution/InvoiceRouter/InvoiceRouter.flow&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	{
+2	  &quot;id&quot;: &quot;5e3539f6-59c9-480a-8017-b02853fe562d&quot;,
+3	  &quot;version&quot;: &quot;1.9&quot;,
+4	  &quot;name&quot;: &quot;InvoiceRouter&quot;,
+5	  &quot;nodes&quot;: [
+6	    {
+7	      &quot;id&quot;: &quot;start&quot;,
+8	      &quot;type&quot;: &quot;core.trigger.manual&quot;,
+9	      &quot;typeVersion&quot;: &quot;1.0&quot;,
+10	      &quot;display&quot;: {
+11	        &quot;label&quot;: &quot;Manual trigger&quot;
+12	      },
+13	      &quot;inputs&quot;: {
+14	        &quot;entryPointId&quot;: &quot;ac2727da-84e5-45c7-9bfd-c419ea3bd004&quot;,
+15	        &quot;isDefaultEntryPoint&quot;: true
+16	      }
+17	    }
+18	  ],
+19	  &quot;edges&quot;: [],
+20	  &quot;definitions&quot;: [
+21	    {
+22	      &quot;nodeType&quot;: &quot;core.trigger.manual&quot;,
+23	      &quot;version&quot;: &quot;1.0&quot;,
+24	      &quot;category&quot;: &quot;trigger&quot;,
+25	      &quot;description&quot;: &quot;Start the process manually&quot;,
+26	      &quot;tags&quot;: [
+27	        &quot;trigger&quot;,
+28	        &quot;start&quot;,
+29	        &quot;manual&quot;
+30	      ],
+31	      &quot;sortOrder&quot;: 80,
+32	      &quot;display&quot;: {
+33	        &quot;label&quot;: &quot;Manual trigger&quot;,
+34	        &quot;icon&quot;: &quot;play&quot;,
+35	        &quot;shape&quot;: &quot;circle&quot;
+36	      },
+37	      &quot;handleConfiguration&quot;: [
+38	        {
+39	          &quot;position&quot;: &quot;right&quot;,
+40	          &quot;handles&quot;: [
+41	            {
+42	              &quot;id&quot;: &quot;output&quot;,
+43	              &quot;type&quot;: &quot;source&quot;,
+44	              &quot;handleType&quot;: &quot;output&quot;,
+45	              &quot;showButton&quot;: true,
+46	              &quot;constraints&quot;:
+
+… (truncated, 1047 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#15</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">654ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 -c \&quot;\nimport json\n\n# Extract full Data.Node from each definition file\nfor name, path in [(&#x27;end&#x27;, &#x27;/tmp/def_end.json&#x27;), (&#x27;decision&#x27;, &#x27;/tmp/def_decision.json&#x27;), (&#x27;script&#x27;, &#x27;/tmp/def_script.json&#x27;), (&#x27;ixp&#x27;, &#x27;/tmp/def_ixp.json&#x27;)]:\n    d = json.load(open(path))\n    n = d[&#x27;Data&#x27;][&#x27;Node&#x27;]\n    out_path = f&#x27;/tmp/node_{name}.json&#x27;\n    json.dump(n, open(out_path, &#x27;w&#x27;), indent=2)\n    print(f&#x27;{name}: sav… (82 more chars)&quot;,
+  &quot;description&quot;: &quot;Extract full Node definitions from registry responses&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>end: saved to /tmp/node_end.json, nodeType=core.control.end, version=1.0
+decision: saved to /tmp/node_decision.json, nodeType=core.logic.decision, version=1.2
+script: saved to /tmp/node_script.json, nodeType=core.action.script, version=1.1
+ixp: saved to /tmp/node_ixp.json, nodeType=uipath.ixp.invoiceixp-cef0d447-ixp.ff973488-5d89-8035-86ac-f980b4be6deb-c4359cde-55f0-4f0e-9322-c6cdce74ab4c, version=1.0.0</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#16</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">730ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 - &lt;&lt; &#x27;EOF&#x27;\nimport json\n\n# Load all definitions\ndef_end = json.load(open(&#x27;/tmp/node_end.json&#x27;))\ndef_decision = json.load(open(&#x27;/tmp/node_decision.json&#x27;))\ndef_script = json.load(open(&#x27;/tmp/node_script.json&#x27;))\ndef_ixp = json.load(open(&#x27;/tmp/node_ixp.json&#x27;))\ndef_trigger = json.load(open(&#x27;/work/output/artifacts/skill-flow-ixp-integration-handle-routing/InvoiceRouterSolution/InvoiceRouter/Invoic… (8400 more chars)&quot;,
+  &quot;description&quot;: &quot;Build and write complete InvoiceRouter.flow JSON&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Flow written to /work/output/artifacts/skill-flow-ixp-integration-handle-routing/InvoiceRouterSolution/InvoiceRouter/InvoiceRouter.flow
+Nodes: [&#x27;start&#x27;, &#x27;extractInvoice&#x27;, &#x27;checkAmount&#x27;, &#x27;highValueReview&#x27;, &#x27;autoApprove&#x27;, &#x27;endHighValue&#x27;, &#x27;endAutoApprove&#x27;]
+Edges: [&#x27;edge_start_output_extractInvoice_input&#x27;, &#x27;edge_extractInvoice_success_checkAmount_input&#x27;, &#x27;edge_checkAmount_true_highValueReview_input&#x27;, &#x27;edge_checkAmount_false_autoApprove_input&#x27;, &#x27;edge_highValueReview_success_endHighValue_input&#x27;, &#x27;edge_autoApprove_success_endAutoApprove_input&#x27;]</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#17</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">278ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-ixp-integration-handle-routing/InvoiceRouterSolution/InvoiceRouter \\\n  &amp;&amp; python3 /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/scripts/audit_flow.py InvoiceRouter.flow --json-out /tmp/audit.json 2&gt;&amp;1 | tail -30 \\\n  &amp;&amp; echo \&quot;=== AUDIT EXIT: $?\&quot;&quot;,
+  &quot;description&quot;: &quot;Run audit_flow.py on the flow before validation&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>topology      0 error(s), 0 warning(s), 0 info
+expressions   0 error(s), 0 warning(s), 0 info
+jint          0 error(s), 0 warning(s), 0 info
+bindings      0 error(s), 0 warning(s), 0 info
+runtime-gaps  4 error(s), 0 warning(s), 0 info
+    error   MISSING_NODE_VARIABLE      autoApprove                              no variables.nodes[] entry &#x27;autoApprove.output&#x27;; $vars.autoApprove.output resolves to undefined at runtime even though validate passes. `uip maestro flow format` regenerates it
+    error   MISSING_NODE_VARIABLE      extractInvoice                           no variables.nodes[] entry &#x27;extractInvoice.output&#x27;; $vars.extractInvoice.output resolves to undefined at runtime even though validate passes. `uip maestro flow format` regenerates it
+    error   MISSING_NODE_VARIABLE      highValueReview                          no variables.nodes[] entry &#x27;highValueReview.output&#x27;; $vars.highValueReview.output resolves to undefined at runtime even though validate passes. `uip maestro flow format` regenerates it
+    error   MISSING_NODE_VARIABLE      start                                    no variables.nodes[] entry &#x27;start.output&#x27;; $vars.start.output resolves to undefined at runtime even 
+
+… (truncated, 138 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#18</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">7.15s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-ixp-integration-handle-routing/InvoiceRouterSolution/InvoiceRouter \\\n  &amp;&amp; uip maestro flow validate InvoiceRouter.flow --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Validate InvoiceRouter.flow&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>[ManifestClient] fetchDynamicNodes ok: total=317 agent context nodes=2 external agent nodes=7 orchestrator nodes=263 IXP nodes=45
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FlowValidate&quot;,
+  &quot;Data&quot;: {
+    &quot;File&quot;: &quot;/work/output/artifacts/skill-flow-ixp-integration-handle-routing/InvoiceRouterSolution/InvoiceRouter/InvoiceRouter.flow&quot;,
+    &quot;Status&quot;: &quot;Valid&quot;
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#19</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.89s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-ixp-integration-handle-routing/InvoiceRouterSolution/InvoiceRouter \\\n  &amp;&amp; uip maestro flow format InvoiceRouter.flow --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Format InvoiceRouter.flow to fix layout and regenerate variables.nodes[]&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FlowFormat&quot;,
+  &quot;Data&quot;: {
+    &quot;File&quot;: &quot;InvoiceRouter.flow&quot;,
+    &quot;NodesTotal&quot;: 7,
+    &quot;EdgesTotal&quot;: 6,
+    &quot;NodesRepositioned&quot;: 6,
+    &quot;NodesResized&quot;: 0,
+    &quot;SubflowsTidied&quot;: 0,
+    &quot;VariableCount&quot;: 7
+  },
+  &quot;Instructions&quot;: &quot;Repositioned 6 of 7 nodes&quot;
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#20</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">226ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-ixp-integration-handle-routing/InvoiceRouterSolution/InvoiceRouter \\\n  &amp;&amp; python3 /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/scripts/audit_flow.py InvoiceRouter.flow 2&gt;&amp;1 | tail -15&quot;,
+  &quot;description&quot;: &quot;Final audit after format&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>topology      0 error(s), 0 warning(s), 0 info
+expressions   0 error(s), 0 warning(s), 0 info
+jint          0 error(s), 0 warning(s), 0 info
+bindings      0 error(s), 0 warning(s), 0 info
+runtime-gaps  0 error(s), 0 warning(s), 0 info
+audit: clean</pre>
+    
+  </div>
+</details>
+
+</div>
+
+<h2>Command Telemetry</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Total</div><div class="value">21</div></div>
+    <div class="stat"><div class="label">Successful</div><div class="value">20 (95%)</div></div>
+    <div class="stat"><div class="label">Failed</div><div class="value">1</div></div>
+    <div class="stat"><div class="label">Avg / cmd</div><div class="value">7.02s</div></div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 2fr;gap:16px;margin-top:12px">
+    <div>
+      <h4>By Tool</h4>
+      <table>
+        <thead><tr><th>Tool</th><th>Count</th></tr></thead>
+        <tbody><tr><td class='mono'>Bash</td><td>14</td></tr><tr><td class='mono'>Read</td><td>6</td></tr><tr><td class='mono'>Skill</td><td>1</td></tr></tbody>
+      </table>
+    </div>
+    <div>
+      <h4>Slowest</h4>
+      <table>
+        <thead><tr><th>Tool</th><th>Duration</th><th>Parameters</th></tr></thead>
+        <tbody><tr><td class='mono'>Bash</td><td>38.16s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro flow registry get core.ac...</td></tr><tr><td class='mono'>Bash</td><td>32.97s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro flow registry get core.lo...</td></tr><tr><td class='mono'>Bash</td><td>29.86s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro flow registry get core.co...</td></tr><tr><td class='mono'>Bash</td><td>25.76s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;cd /work/output/artifacts/skill-flow-...</td></tr><tr><td class='mono'>Bash</td><td>7.15s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;cd /work/output/artifacts/skill-flow-...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+  <p><strong>Most Common Pattern:</strong> <code>Bash → Bash → Bash</code></p><p><strong>Skill Tool Invoked:</strong> 1 time(s)</p>
+</div>
+
+<h2>Generation Metrics</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Total Latency</div><div class="value">5m 14s</div></div>
+    <div class="stat"><div class="label">Turns</div><div class="value">1</div></div>
+    <div class="stat"><div class="label">Assistant Turns</div><div class="value">39</div></div>
+    <div class="stat"><div class="label">Avg Turn Latency</div><div class="value">4m 59s</div></div>
+    
+  </div>
+</div>
+
+<h2>Token Usage</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Input (uncached)</div><div class="value">782</div></div>
+    <div class="stat"><div class="label">Output</div><div class="value">15,153</div></div>
+    <div class="stat"><div class="label">Cache Write</div><div class="value">60,864</div></div>
+    <div class="stat"><div class="label">Cache Read</div><div class="value">915,747</div></div>
+    <div class="stat"><div class="label">Total</div><div class="value">992,546</div></div>
+    <div class="stat"><div class="label">Cost</div><div class="value">$0.7326</div></div>
+  </div>
+</div>
+
+<h2>Agent Settings</h2>
+<div class="card" style="padding:0">
+  <table>
+    <tbody><tr><td class='mono dim'>Permission Mode</td><td>acceptEdits</td></tr><tr><td class='mono dim'>Allowed Tools</td><td>Skill, Bash, Read, Write, Edit, Glob, Grep</td></tr><tr><td class='mono dim'>Model</td><td>us.anthropic.claude-sonnet-4-6</td></tr><tr><td class='mono dim'>Max Turns</td><td>60</td></tr><tr><td class='mono dim'>System Prompt</td><td>You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted. </td></tr><tr><td class='mono dim'>System Prompt Mode</td><td>append</td></tr><tr><td class='mono dim'>Plugins</td><td>/home/azureuser/projects/skills/tmp</td></tr></tbody>
+  </table>
+</div>
+
+<h2>Environment</h2>
+<div class="card" style="padding:0">
+  <table>
+    <tbody><tr><td class='mono dim'>git_commit</td><td>unknown</td></tr><tr><td class='mono dim'>skills_git_commit</td><td>unknown</td></tr><tr><td class='mono dim'>cli_version</td><td>1.201.0-dev.8272</td></tr><tr><td class='mono dim'>tool_plugins</td><td>{&#x27;admin-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;agent-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;agenthub-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;aops-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;api-workflow-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;automation-hub-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;codedagent-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;codedapp-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;coder-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;context-grounding-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;conversational-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;data-fabric-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;docsai-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;function-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;gov-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;guardrails-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;insights-tool&#x27;: &#x27;1.201.0-dev.8276&#x27;, &#x27;integrationservice-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;ixp-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;llm-gateway-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;llmgw-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;maestro-tool&#x27;: &#x27;1.201.0-dev.8275&#x27;, &#x27;model-hub-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;orchestrator-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;platform-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;pm-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;rpa-legacy-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;rpa-tool&#x27;: &#x27;1.201.0-dev.20260809.3&#x27;, &#x27;solution-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;tasks-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;test-manager-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;traces-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;vertical-solutions-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;}</td></tr><tr><td class='mono dim'>coder_eval</td><td>0.9.6</td></tr><tr><td class='mono dim'>claude_code_cli</td><td>2.1.177 (Claude Code)</td></tr><tr><td class='mono dim'>uv</td><td>uv 0.12.5 (x86_64-unknown-linux-gnu)</td></tr><tr><td class='mono dim'>anthropic</td><td>0.122.0</td></tr><tr><td class='mono dim'>openai</td><td>3.2.0</td></tr><tr><td class='mono dim'>pydantic</td><td>2.12.5</td></tr><tr><td class='mono dim'>api_routing</td><td>aws_bedrock</td></tr><tr><td class='mono dim'>eval_routing</td><td>aws_bedrock</td></tr><tr><td class='mono dim'>aws_region</td><td>us-east-2</td></tr><tr><td class='mono dim'>bedrock_model</td><td>us.anthropic.claude-sonnet-4-6</td></tr><tr><td class='mono dim'>system_prompt_semantics</td><td>append</td></tr></tbody>
+  </table>
+</div>
+
+<footer>Generated by coder_eval · 2026-08-19T17:05:39</footer>
+</div>
+<script>
+function toggleTheme() {
+  document.documentElement.classList.toggle('light');
+  try {
+    const mode = document.documentElement.classList.contains('light') ? 'light' : 'dark';
+    localStorage.setItem('coder-eval-theme', mode);
+  } catch (e) { /* ignore */ }
+}
+(function() {
+  try {
+    if (localStorage.getItem('coder-eval-theme') === 'light') {
+      document.documentElement.classList.add('light');
+    }
+  } catch (e) { /* ignore */ }
+})();
+</script>
+</body>
+</html>

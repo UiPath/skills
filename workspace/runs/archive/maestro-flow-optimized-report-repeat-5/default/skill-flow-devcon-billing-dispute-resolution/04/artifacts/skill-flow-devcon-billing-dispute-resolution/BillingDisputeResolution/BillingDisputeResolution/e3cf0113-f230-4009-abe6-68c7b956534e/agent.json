@@ -1,0 +1,111 @@
+{
+  "version": "1.1.0",
+  "settings": {
+    "model": "claude-opus-4-7",
+    "maxTokens": 2048,
+    "temperature": 0.3,
+    "engine": "basic-v2",
+    "maxIterations": 3,
+    "mode": "standard"
+  },
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "start__output__webhookPayload": {
+        "type": "object",
+        "description": "Webhook payload with invoice number and customer account"
+      },
+      "disputeAnalyst__output__creditAmount": {
+        "type": "number",
+        "description": "The approved credit amount from the analyst"
+      },
+      "disputeAnalyst__output__determination": {
+        "type": "string",
+        "description": "The dispute determination from the analyst"
+      },
+      "disputeAnalyst__output__rationale": {
+        "type": "string",
+        "description": "The analyst rationale"
+      }
+    }
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "subject": {
+        "type": "string",
+        "description": "Email subject line"
+      },
+      "body": {
+        "type": "string",
+        "description": "Email body text with invoice number and credit amount"
+      }
+    },
+    "required": [
+      "subject",
+      "body"
+    ]
+  },
+  "metadata": {
+    "storageVersion": "50.0.0",
+    "isConversational": false,
+    "showProjectCreationExperience": false
+  },
+  "type": "lowCode",
+  "guardrails": [],
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a customer resolution specialist. Draft professional, empathetic resolution emails for billing disputes. The email must:\n- Cite the specific invoice number\n- State the approved credit amount clearly\n- Explain the determination briefly\n- Be professional and customer-friendly\n- Not exceed 300 words in the body\n\nReturn ONLY the JSON output with 'subject' and 'body' fields. No additional text.",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "You are a customer resolution specialist. Draft professional, empathetic resolution emails for billing disputes. The email must:\n- Cite the specific invoice number\n- State the approved credit amount clearly\n- Explain the determination briefly\n- Be professional and customer-friendly\n- Not exceed 300 words in the body\n\nReturn ONLY the JSON output with 'subject' and 'body' fields. No additional text."
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "Draft a resolution email for the following billing dispute:\n\nInvoice Number: {{input.start__output__webhookPayload}}\nApproved Credit Amount: {{input.disputeAnalyst__output__creditAmount}}\nDetermination: {{input.disputeAnalyst__output__determination}}\nRationale: {{input.disputeAnalyst__output__rationale}}\n\nPlease include the invoice number from the webhookPayload.invoice.invoiceNumber field and cite the credit amount in the email body.",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "Draft a resolution email for the following billing dispute:\n\nInvoice Number: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__webhookPayload"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\nApproved Credit Amount: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.disputeAnalyst__output__creditAmount"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\nDetermination: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.disputeAnalyst__output__determination"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\nRationale: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.disputeAnalyst__output__rationale"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\nPlease include the invoice number from the webhookPayload.invoice.invoiceNumber field and cite the credit amount in the email body."
+        }
+      ]
+    }
+  ],
+  "projectId": "e3cf0113-f230-4009-abe6-68c7b956534e"
+}

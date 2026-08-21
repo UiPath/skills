@@ -1,0 +1,15 @@
+18:39:13 [INFO   ] [default/skill-flow-ixp-routing-listing/r05/04] orchestrator: API routing: aws_bedrock
+18:40:25 [WARNING] [default/skill-flow-ixp-routing-listing/r05/04] agents.claude_code_agent: [coder] Tool use blocked: Bash (id=toolu_bdrk_01WZzZE4zJxGKZdo6Qp5Xtos) - permission denied. Error: Exit code 1
+{
+  "Result": "Success",
+  "Code": "LlmGatewayModelsList",
+  "Data": [
+    {
+      "ModelId": "anthropic.claude-haiku-4-5-20251001-v1:0",
+      "DisplayName": "Claude Haiku 4.5",
+      "Ve
+18:40:42 [INFO   ] [default/skill-flow-ixp-routing-listing/r05/04] evaluation.checker: Criterion 'command_executed' FAILED (score=0.00, threshold=0.90): Matched 0/1 required commands (filters: tool_name=Bash, pattern=/(?i)uip\s+maestro\s+flow\s+registry\s+(list\b|(search|list)\b[^\n]*\b(ixp|document|extract))/)
+18:40:42 [INFO   ] [default/skill-flow-ixp-routing-listing/r05/04] orchestrator: Success criteria: 1/2 passed, weighted score: 0.500
+18:40:42 [INFO   ] [default/skill-flow-ixp-routing-listing/r05/04] orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+18:40:42 [INFO   ] [default/skill-flow-ixp-routing-listing/r05/04] orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-ixp-routing-listing/r05
+18:40:42 [INFO   ] [default/skill-flow-ixp-routing-listing/r05/04] orchestrator: Task finished: status=FAILURE duration=90.8s score=0.500 iterations=1

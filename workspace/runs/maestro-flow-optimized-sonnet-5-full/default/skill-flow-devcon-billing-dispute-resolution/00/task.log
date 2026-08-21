@@ -1,0 +1,71 @@
+2026-08-19 15:42:36 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-08-19 15:42:36 [INFO] coder_eval.orchestrator: API routing: aws_bedrock
+2026-08-19 15:42:36 [DEBUG] coder_eval.criteria: Discovered 15 criterion checkers
+2026-08-19 15:42:36 [DEBUG] coder_eval.criteria: Validated 15 criterion checkers
+2026-08-19 15:42:36 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-08-19 15:42:36 [DEBUG] coder_eval.orchestrator: Sending prompt: Build a Maestro Flow "BillingDisputeResolution" (in a solution of the same
+name) that resolves a cus...
+2026-08-19 15:42:36 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Starting agent query stream...
+2026-08-19 16:11:24 [DEBUG] coder_eval.agents.claude_code_agent: [coder] session_id changed: None -> 9653c89b-a2e1-4f57-8d66-5c12f44b6a2b
+2026-08-19 16:11:24 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Agent query stream ended
+2026-08-19 16:11:24 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-08-19 16:11:24 [DEBUG] coder_eval.orchestrator: Agent response received (9193 chars)
+2026-08-19 16:11:24 [DEBUG] coder_eval.orchestrator: Checking success criteria
+2026-08-19 16:11:24 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'uip maestro flow validate passes on the flow file': python3 $EXPERIMENT_TASKS_PATH/uipath-maestro-flow/_shared/validate_flow.py
+2026-08-19 16:11:29 [DEBUG] coder_eval.sandbox: Command 'python3 $EXPERIMENT_TASKS_PATH/uipath-maestro-flow/_shared/validate_flow.py' exited with code 0
+2026-08-19 16:11:29 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+Validating BillingDisputeResolution/BillingDisputeResolution/BillingDisputeResolution.flow
+{
+  "Result": "Success",
+  "Code": "FlowValidate",
+  "Data": {
+    "File": "/work/output/artifacts/skill-flow-devcon-billing-dispute-resolution/BillingDisputeResolution/BillingDisputeResolution/BillingDisputeResolution.flow",
+    "Status": "Valid",
+    "Warnings": "1 warning(s):\n  - [nodes[crmLookup1].inputs.detail.connectionResourceId] Connection \"d61e5d0e-04af-4f93-95cc-151d81fa08dc\" is referenced by 2 nodes (nodes[crmLookup1], nodes[erpLookup1]). Shared connections cause cross-node state leakage at runtime. If this is intentional (e.g. two connectors on the same SaaS account), ignore this warning; otherwise create a separate connection per node."
+  }
+}
+---
+2026-08-19 16:11:29 [DEBUG] coder_eval.sandbox: STDERR:
+---
+[ManifestClient] fetchDynamicNodes ok: total=317 agent context nodes=2 external agent nodes=7 orchestrator nodes=263 IXP nodes=45
+---
+2026-08-19 16:11:29 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-08-19 16:11:29 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'Structural + topology check: full orchestration present AND wired in order (trigger→IxP→Data Service→analyst→switch→decision→API-workflow→writer→end; SOP index attached to an agent); NO HITL node; NO send-email node; flow returns ≥2 out variables': python3 $TASK_DIR/check_structure_billing_dispute_resolution.py
+2026-08-19 16:11:30 [DEBUG] coder_eval.sandbox: Command 'python3 $TASK_DIR/check_structure_billing_dispute_resolution.py' exited with code 0
+2026-08-19 16:11:30 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+OK: full orchestration present (IxP, Data Service, 2 inline agents, SOP context index, API-workflow, switch, decision, end)
+OK: topology wired correctly (trigger→IxP→Data Service→analyst→switch→decision→API-workflow→writer→end; SOP index attached to an agent)
+OK: no human-in-the-loop node and no send-email node
+OK: flow returns its outcome via out variables ['determination', 'recommendedAction', 'creditAmount', 'rationale', 'resolutionEmailBody']
+---
+2026-08-19 16:11:30 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-08-19 16:11:30 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'E2E check debugs the flow: it completes and RETURNS a real SOP-grounded resolution citing the disputed invoice (no email sent)': python3 $TASK_DIR/check_e2e_billing_dispute_resolution.py
+2026-08-19 16:13:07 [DEBUG] coder_eval.sandbox: Command 'python3 $TASK_DIR/check_e2e_billing_dispute_resolution.py' exited with code 0
+2026-08-19 16:13:07 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+OK: inline agent + IxP nodes present
+debug inputs: object=['webhookPayload'] attachment=['disputedInvoice']
+OK: flow returned a real SOP-grounded resolution citing MCS-2026-04872 (no email sent)
+---
+2026-08-19 16:13:07 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-08-19 16:13:07 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'Advisory: COVERING (offline): the connector's CONNECTION bindings carry a real tenant key (G-19's [102010]), the IxP `fileRef` is the plain `=js:` string `flow validate` requires (FC419), and all five outputs are declared with no drafted email on a rejection path': python3 $EXPERIMENT_TASKS_PATH/uipath-maestro-flow/_shared/advisory_billing_dispute_resolution.py
+2026-08-19 16:13:08 [DEBUG] coder_eval.sandbox: Command 'python3 $EXPERIMENT_TASKS_PATH/uipath-maestro-flow/_shared/advisory_billing_dispute_resolution.py' exited with code 0
+2026-08-19 16:13:08 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+OK: 2 connection binding(s), each carrying a real tenant key
+OK: 1 IxP node(s), each with `fileRef` in the plain `=js:` spelling the validator requires
+OK: all five outputs declared with the contract's types: ['creditAmount', 'determination', 'rationale', 'recommendedAction', 'resolutionEmailBody']
+OK: `resolutionEmailBody` comes from the writer agent on 1 end node(s) (endResolution) and from a non-agent value on 2 (endRejection, endManagerRejection) — no writer is read on a path it does not run on
+OK: 2 distinct inline agents (disputeAnalystAgent, resolutionWriterAgent)
+---
+2026-08-19 16:13:08 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-08-19 16:13:08 [INFO] coder_eval.orchestrator: Success criteria: 4/4 passed, weighted score: 1.000
+2026-08-19 16:13:08 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-08-19 16:13:08 [INFO] coder_eval.orchestrator: Running post-run command: python3 $EXPERIMENT_TASKS_PATH/uipath-maestro-flow/_shared/cleanup_solutions.py
+2026-08-19 16:13:09 [WARNING] coder_eval.orchestrator: [post_run stderr] cleanup_solutions: deleted 96aacc89-3cde-4d67-c80b-08defdfbb4a7 (from BillingDisputeResolution/BillingDisputeResolution.uipx)
+2026-08-19 16:13:09 [WARNING] coder_eval.orchestrator: [post_run stderr] cleanup_solutions: summary policy=always deleted=1 preserved=0 skipped=0 not_uploaded=0 failed=0
+2026-08-19 16:13:09 [INFO] coder_eval.orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+2026-08-19 16:13:09 [INFO] coder_eval.orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-devcon-billing-dispute-resolution
+2026-08-19 16:13:09 [INFO] coder_eval.orchestrator: Task finished: status=SUCCESS duration=1834.5s score=1.000 iterations=1

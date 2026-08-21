@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "TerminateParallel",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "ddb2df46-c2bf-4be5-a21e-fc774e0df62e",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "TerminateParallel"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Flow",
+      "name": "TerminateParallel",
+      "package": {
+        "key": "f4ef7db6-8cd8-4860-84c1-71b28a4417c0"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "a35b15f2-fe19-4dc1-92bf-da4b4aa9bf4f",
+    "files": []
+  }
+}

@@ -1,0 +1,1316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>coder_eval · skill-bpmn-hitl-brownfield-insert · default</title>
+<style>
+:root {
+  --bg-page: #0f1419;
+  --bg-card: #1a2129;
+  --bg-card-2: #232d38;
+  --bg-code: #0b0f14;
+  --fg: #e6edf3;
+  --fg-muted: #8b98a5;
+  --fg-dim: #6e7681;
+  --border: #30363d;
+  --accent: #58a6ff;
+  --score-high: #22c55e;
+  --score-mid: #f59e0b;
+  --score-low: #ef4444;
+  --status-success: #22c55e;
+  --status-failure: #f59e0b;
+  --status-error: #ef4444;
+  --status-neutral: #6e7681;
+  --shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+.light {
+  --bg-page: #ffffff;
+  --bg-card: #f6f8fa;
+  --bg-card-2: #eaeef2;
+  --bg-code: #f6f8fa;
+  --fg: #1f2328;
+  --fg-muted: #636c76;
+  --fg-dim: #8b949e;
+  --border: #d0d7de;
+  --accent: #0969da;
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial,
+               sans-serif;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--fg);
+  background: var(--bg-page);
+}
+.container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+h1, h2, h3, h4 { margin: 0 0 12px 0; line-height: 1.25; }
+h1 { font-size: 22px; font-weight: 600; }
+h2 { font-size: 18px; font-weight: 600; margin-top: 28px;
+     padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+h3 { font-size: 15px; font-weight: 600; color: var(--fg-muted); }
+h4 { font-size: 13px; font-weight: 600; color: var(--fg-muted); }
+p { margin: 0 0 8px 0; }
+.muted { color: var(--fg-muted); }
+.dim { color: var(--fg-dim); }
+.mono { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+        monospace; font-size: 12.5px; }
+code { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+       monospace; font-size: 12.5px; background: var(--bg-code);
+       border: 1px solid var(--border); padding: 1px 5px; border-radius: 3px; }
+pre { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+      monospace; font-size: 12.5px; background: var(--bg-code);
+      border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px;
+      margin: 6px 0; overflow-x: auto; white-space: pre-wrap;
+      word-wrap: break-word; }
+.header-bar { display: flex; align-items: center; justify-content: space-between;
+              margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+.title-group { flex: 1; min-width: 0; }
+.title-group .subtitle { color: var(--fg-muted); font-size: 13px;
+                         margin-top: 2px; word-break: break-all; }
+.badges { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.badge { display: inline-flex; align-items: center; gap: 6px;
+         padding: 4px 10px; border-radius: 12px; font-size: 12px;
+         font-weight: 600; background: var(--bg-card-2);
+         border: 1px solid var(--border); color: var(--fg); }
+.badge.success { background: color-mix(in srgb, var(--status-success) 20%, var(--bg-card-2));
+                 border-color: var(--status-success); color: var(--status-success); }
+.badge.failure { background: color-mix(in srgb, var(--status-failure) 20%, var(--bg-card-2));
+                 border-color: var(--status-failure); color: var(--status-failure); }
+.badge.error { background: color-mix(in srgb, var(--status-error) 20%, var(--bg-card-2));
+               border-color: var(--status-error); color: var(--status-error); }
+.badge.warning { background: color-mix(in srgb, #f4a52810 20%, var(--bg-card-2));
+                 border-color: #f4a528; color: #f4a528; }
+.badge.neutral { color: var(--fg-muted); }
+.score-pill { display: inline-block; padding: 2px 8px; border-radius: 10px;
+              font-size: 12px; font-weight: 700; min-width: 42px;
+              text-align: center; color: #0b0f14; }
+.score-high { background: var(--score-high); }
+.score-mid { background: var(--score-mid); }
+.score-low { background: var(--score-low); }
+.card { background: var(--bg-card); border: 1px solid var(--border);
+        border-radius: 8px; padding: 16px 20px; margin-bottom: 16px;
+        box-shadow: var(--shadow); }
+.card.highlight { border-left: 4px solid var(--accent); }
+.grid { display: grid; gap: 12px;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+.stat { background: var(--bg-card-2); padding: 10px 12px; border-radius: 6px;
+        border: 1px solid var(--border); }
+.stat .label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;
+               color: var(--fg-muted); margin-bottom: 4px; }
+.stat .value { font-size: 16px; font-weight: 600; }
+table { width: 100%; border-collapse: collapse; margin: 4px 0 12px 0; }
+th, td { text-align: left; padding: 8px 10px;
+         border-bottom: 1px solid var(--border); vertical-align: top;
+         font-size: 13px; }
+th { color: var(--fg-muted); font-weight: 600; font-size: 12px;
+     text-transform: uppercase; letter-spacing: 0.3px; }
+tr:last-child td { border-bottom: none; }
+details { margin: 6px 0; border: 1px solid var(--border); border-radius: 6px;
+          background: var(--bg-card-2); }
+details > summary { cursor: pointer; padding: 8px 12px; user-select: none;
+                    font-weight: 500; list-style: none; }
+details > summary::-webkit-details-marker { display: none; }
+details > summary::before { content: "▸ "; color: var(--fg-dim);
+                            display: inline-block; width: 14px;
+                            transition: transform 0.15s; }
+details[open] > summary::before { content: "▾ "; }
+details .details-body { padding: 0 12px 10px 12px; }
+.tool-row { display: flex; align-items: center; gap: 10px;
+            flex-wrap: wrap; font-size: 13px; }
+.tool-name { font-weight: 600; color: var(--accent); font-family: ui-monospace,
+             SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+.tool-status-ok { color: var(--status-success); font-size: 11px;
+                  font-weight: 600; }
+.tool-status-err { color: var(--status-error); font-size: 11px;
+                   font-weight: 600; }
+.tool-duration { color: var(--fg-muted); font-size: 12px; }
+.tool-seq { color: var(--fg-dim); font-size: 11px; font-weight: 600;
+            min-width: 24px; text-align: right; font-family: ui-monospace,
+            SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+.turn-header { display: flex; justify-content: space-between;
+               align-items: baseline; flex-wrap: wrap; gap: 10px;
+               margin-bottom: 10px; }
+.turn-meta { font-size: 12px; color: var(--fg-muted); }
+.criterion-row td:first-child { font-family: ui-monospace, SFMono-Regular,
+                                 "SF Mono", Menlo, Consolas, monospace;
+                                 color: var(--fg-muted); font-size: 12px; }
+.judge-section { display: flex; flex-direction: column; gap: 12px; }
+.judge-card { padding: 14px 16px; }
+.judge-card-head { display: flex; justify-content: space-between;
+                    align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+.judge-card-title { font-size: 14px; line-height: 1.4; flex: 1; min-width: 0; }
+.judge-card-score { flex-shrink: 0; }
+.judge-rationale { margin-top: 10px; padding: 10px 12px;
+                   background: var(--bg-code); border-radius: 4px;
+                   font-size: 13px; line-height: 1.5; }
+.judge-findings { margin: 8px 0 0 18px; padding-left: 4px; font-size: 13px;
+                   line-height: 1.6; }
+.judge-findings li { margin: 2px 0; }
+.nav-toggle { display: inline-block; padding: 5px 10px; font-size: 12px;
+              background: var(--bg-card-2); border: 1px solid var(--border);
+              border-radius: 5px; color: var(--fg); cursor: pointer; }
+.nav-toggle:hover { background: var(--bg-card); }
+.llm-next-steps { margin: 6px 0 0 20px; padding-left: 0; }
+.llm-next-steps li { margin: 3px 0; }
+.iteration-group { padding: 12px 16px 4px 16px; margin-bottom: 20px;
+                   border-radius: 0 6px 6px 0; border-left: 4px solid var(--status-neutral); }
+/* rgba fallback for browsers without color-mix (Chrome <111, Firefox <113, Safari <16.2). */
+.iteration-group--recovered { border-left-color: var(--status-success);
+                              background: rgba(34, 197, 94, 0.06);
+                              background: color-mix(in srgb, var(--status-success) 6%, transparent); }
+.iteration-group--terminal { border-left-color: var(--status-error);
+                             background: rgba(239, 68, 68, 0.06);
+                             background: color-mix(in srgb, var(--status-error) 6%, transparent); }
+.iteration-group__banner { margin: 0 0 12px 0; font-size: 14px; font-weight: 600; }
+.iteration-group--recovered .iteration-group__banner { color: var(--status-success); }
+.iteration-group--terminal .iteration-group__banner { color: var(--status-error); }
+.attempt-transition { display: flex; align-items: center; gap: 8px;
+                      margin: -6px 0 12px 8px; color: var(--status-error); font-size: 12.5px; }
+.attempt-transition__icon { font-weight: 700; }
+footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--border);
+         color: var(--fg-dim); font-size: 12px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="header-bar">
+  <div class="title-group">
+    <h1>Task: skill-bpmn-hitl-brownfield-insert</h1>
+    <div class="subtitle">Quality test (ported from flow hitl/quality_04): agent inserts a HITL approval gate into an EXISTING .bpmn (shipped as a fixture) with a surgical edit — preserving every original element ID and script, removing only the one edge it splices, and adding the HITL node with a diagram shape.</div>
+  </div>
+  <div class="badges">
+    <span class="badge success">SUCCESS</span>
+    <span class="score-pill score-high">1.00</span>
+    <span class="badge neutral">claude-code · claude-sonnet-5</span>
+    <span class="badge neutral">4m 5s</span>
+    <span class="badge neutral">$1.0150</span>
+    <span class="badge warning">expected_turns exceeded (27/22)</span>
+    
+    <span class="nav-toggle" onclick="toggleTheme()">Toggle theme</span>
+  </div>
+</div>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Variant</div><div class="value">default</div></div>
+    <div class="stat"><div class="label">Started</div><div class="value mono">2026-08-14T21:55:15</div></div>
+    <div class="stat"><div class="label">Duration</div><div class="value">4m 5s</div></div>
+    <div class="stat"><div class="label">Turns (SDK)</div><div class="value">51</div></div>
+    <div class="stat"><div class="label">Commands</div><div class="value">26</div></div>
+  </div>
+</div>
+
+<h2>Success Criteria <span class="muted" style="font-weight:400">(3/3 passed)</span></h2>
+<div class="card" style="padding:0">
+<table>
+  <thead>
+    <tr>
+      <th style="width:15%">Type</th>
+      <th style="width:35%">Description</th>
+      <th style="width:10%">Score</th>
+      <th>Details</th>
+    </tr>
+  </thead>
+  <tbody>
+    
+<tr class="criterion-row">
+  <td>file_exists</td>
+  <td>The existing BPMN file is still present</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><div class="dim mono" style="white-space:pre-wrap">File &#x27;OrderFulfillmentBpmn/OrderFulfillmentBpmn.bpmn&#x27; exists</div></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>file_contains</td>
+  <td>HITL approval inserted with the documented Actions.HITL activity type</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><div class="dim mono" style="white-space:pre-wrap">Includes: 1/1 found; Score: 1.00</div></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>run_command</td>
+  <td>HITL spliced in surgically: original IDs/scripts preserved, only the target edge re-routed</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Command: python3 $TASK_DIR/check_quality_brownfield_insert.py</summary><div class="details-body"><pre style="margin:6px 0 0 0">Command: python3 $TASK_DIR/check_quality_brownfield_insert.py
+Exit code: 0 (expected: 0)
+Stdout:
+OK: OrderFulfillmentBpmn/OrderFulfillmentBpmn.bpmn spliced the HITL gate in surgically, preserving original structure
+
+Stderr: (empty)</pre></div></details></td>
+</tr>
+
+  </tbody>
+</table>
+</div>
+<h2>Conversation Trace (1 iteration)</h2>
+<div class="card">
+  <div class="turn-header">
+    <h3>Iteration 1</h3>
+    <div class="badges">
+      <span class="badge neutral">51 assistant turns</span>
+      <span class="badge neutral">in 54 · out 19979 · cache 1729618</span>
+      <span class="badge neutral">4m 4s</span>
+      
+      
+      
+    </div>
+  </div>
+  <details>
+    <summary>Prompt to agent</summary>
+    <div class="details-body"><pre>Your working directory is: /work/output/artifacts/skill-bpmn-hitl-brownfield-insert
+
+An existing UiPath Maestro BPMN project is at `OrderFulfillmentBpmn/` in the
+current directory. Its process is:
+  Start -&gt; Validate order (script) -&gt; Compute total (script) -&gt; End
+
+Insert a human approval gate BETWEEN the &quot;Compute total&quot; script task and the
+End event: after computing the total, a reviewer must approve before the
+process ends. After the edit the flow must be:
+  Start -&gt; Validate order -&gt; Compute total -&gt; HITL approval -&gt; End
+
+Requirements:
+- Edit the existing `.bpmn` XML in place with the uipath-maestro-bpmn skill.
+  Do NOT convert it to a `.flow` or regenerate it from scratch.
+- Model the approval as a `bpmn:userTask` using the documented `Actions.HITL`
+  `uipath:activity` shell from the registry template. Do not hand-author the
+  uipath:* payload from prose.
+- Make a SURGICAL edit: preserve every existing element ID, variable, and
+  script body untouched. Remove only the single Compute total -&gt; End sequence
+  flow and re-route it through the new HITL task. Do not regenerate the file.
+- Add a BPMN DI shape for the new HITL node and edges for the new sequence
+  flows; keep all existing diagram elements.
+- Use synthetic placeholder resource names only.
+- Do not upload, publish, deploy, debug, or run the process. Do not pause for
+  approval, confirmation, or feedback.
+</pre></div>
+  </details>
+  <details>
+    <summary>Agent response</summary>
+    <div class="details-body"><pre>[ASSISTANT] Now I have everything needed: the `Actions.HITL` registry template and the current file content. Let me make the surgical edits.
+[ASSISTANT] Now update the diagram: add a shape for the new HITL task, shift the End event shape to make room, and replace the single edge with two edges.
+[ASSISTANT] Now let&#x27;s view the full resulting file and validate it.
+[ASSISTANT] This looks correct. Now let&#x27;s validate with the CLI.
+[ASSISTANT] Confirmed: those 4 `args` errors are pre-existing in the original file (not introduced by my edit) — the task requires preserving the script tasks&#x27; bodies/mappings untouched, so I correctly left them as-is. The only new finding is a warning (not an error) that the new HITL task has no bound resource, which is expected since we used synthetic placeholder values per the requirements. Validation confirms the surgical edit didn&#x27;t introduce any new errors.
+[ASSISTANT] The edit is complete. Summary:
+
+**File edited:** `OrderFulfillmentBpmn/OrderFulfillmentBpmn.bpmn` (surgical in-place XML edit, no regeneration)
+
+**What changed:**
+1. **New variable** `Var_HitlResult` (`hitlResult`, string) added to the existing `&lt;uipath:variables&gt;` block — all 3 original variables untouched.
+2. **New `bpmn:userTask` node** `Task_HitlApproval` (&quot;Approve order&quot;), built from the `registry get Actions.HITL` template (`uip maestro bpmn registry get Actions.HITL`) — the `uipath:activity`/`uipath:type`/`uipath:context`/`uipath:input`/`uipath:output` shell is pulled verbatim from that template with only placeholders filled in (synthetic `&lt;PLACEHOLDER_APP_ID&gt;`, `&lt;PLACEHOLDER_ACTIONS&gt;`, `&lt;PLACEHOLDER_FOLDER_KEY&gt;`, plus a `taskTitle` and the `HitlTaskArguments` body referencing existing vars). Output bound to the new `Var_HitlResult` variable.
+3. **Rewiring:** removed only `Flow_Compute_End` (Task_ComputeTotal → End_1) and replaced it with two new sequence flows: `Flow_Compute_Hitl` (ComputeTotal → HitlApproval) and `Flow_Hitl_End` (HitlApproval → End_1). Updated the `&lt;bpmn:outgoing&gt;`/`&lt;bpmn:incoming&gt;` pointers on `Task_ComputeTotal`, the new userTask, and `End_1` accordingly. All other elements (`Start_1`, `Task_ValidateOrder`, `Task_ComputeTotal` scripts/mappings, `Flow_Start_Validate`, `Flow_Validate_Compute`) are byte-identical to before.
+4. **Diagram:** added `BPMNShape` `S_Task_HitlApproval` for the new node, shifted the `End_1` shape right to make room, and replaced the removed edge with `E_Flow_Compute_Hitl` and `E_Flow_Hitl_End`. All pre-existing shapes/edges for Start, Validate, Compute retained unchanged.
+
+**Validation:** Ran `uip maestro bpmn validate`. It reports the same 4 pre-existing errors that exist in the *original* file (the `args` input on the two original script tasks lacking `type=&quot;json&quot;`/`target=&quot;bodyField&quot;` — confirmed by validating the unmodified original separately), meaning the edit introduced **zero new errors**. The only new finding is a `MISSING_RESOURCE` **warning** on the HITL task, which is expected since synthetic placeholder resource values were used per your instructions (not a real app/folder binding). No upload/publish/deploy/run was performed.
+[RESULT - SUCCESS] The edit is complete. Summary:
+
+**File edited:** `OrderFulfillmentBpmn/OrderFulfillmentBpmn.bpmn` (surgical in-place XML edit, no regeneration)
+
+**What changed:**
+1. **New variable** `Var_HitlResult` (`hitlResult`, string) added to the existing `&lt;uipath:variables&gt;` block — all 3 original variables untouched.
+2. **New `bpmn:userTask` node** `Task_HitlApproval` (&quot;Approve order&quot;), built from the `registry get Actions.HITL` template (`uip maestro bpmn registry get Actions.HITL`) — the `uipath:activity`/`uipath:type`/`uipath:context`/`uipath:input`/`uipath:output` shell is pulled verbatim from that template with only placeholders filled in (synthetic `&lt;PLACEHOLDER_APP_ID&gt;`, `&lt;PLACEHOLDER_ACTIONS&gt;`, `&lt;PLACEHOLDER_FOLDER_KEY&gt;`, plus a `taskTitle` and the `HitlTaskArguments` body referencing existing vars). Output bound to the new `Var_Hitl</pre></div>
+  </details>
+  <h4 style="margin-top:12px">Tool Calls (26)</h4>
+  
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#0</span>
+      <span class="tool-name">Skill</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">19ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;skill&quot;: &quot;uipath:uipath-maestro-bpmn&quot;,
+  &quot;args&quot;: &quot;Insert a human approval gate BETWEEN the \&quot;Compute total\&quot; script task and the End event in the existing project at OrderFulfillmentBpmn/ (working directory: /work/output/artifacts/skill-bpmn-hitl-brownfield-insert).\n\nCurrent flow: Start -&gt; Validate order (script) -&gt; Compute total (script) -&gt; End\nTarget flow: Start -&gt; Validate order -&gt; Compute total -&gt; HITL approval -&gt; End\n\nHard requirements:\n- Surg… (944 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Launching skill: uipath:uipath-maestro-bpmn</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#1</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">46ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;find /work/output/artifacts/skill-bpmn-hitl-brownfield-insert/OrderFulfillmentBpmn -type f | head -50&quot;,
+  &quot;description&quot;: &quot;List files in existing BPMN project&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/work/output/artifacts/skill-bpmn-hitl-brownfield-insert/OrderFulfillmentBpmn/OrderFulfillmentBpmn.bpmn</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#2</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">8ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-bpmn-hitl-brownfield-insert/OrderFulfillmentBpmn/OrderFulfillmentBpmn.bpmn&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;
+2	&lt;bpmn:definitions xmlns:bpmn=&quot;http://www.omg.org/spec/BPMN/20100524/MODEL&quot; xmlns:bpmndi=&quot;http://www.omg.org/spec/BPMN/20100524/DI&quot; xmlns:dc=&quot;http://www.omg.org/spec/DD/20100524/DC&quot; xmlns:di=&quot;http://www.omg.org/spec/DD/20100524/DI&quot; xmlns:uipath=&quot;http://uipath.org/schema/bpmn&quot; id=&quot;Definitions_OrderFulfillment&quot; targetNamespace=&quot;http://bpmn.io/schema/bpmn&quot; exporter=&quot;UiPath (https://bpmn.uipath.com)&quot; exporterVersion=&quot;1.0&quot;&gt;
+3	  &lt;bpmn:process id=&quot;Process_OrderFulfillment&quot; isExecutable=&quot;true&quot;&gt;
+4	    &lt;bpmn:extensionElements&gt;
+5	      &lt;uipath:migrationVersion version=&quot;11.5&quot; /&gt;
+6	      &lt;uipath:variables version=&quot;v1&quot;&gt;
+7	        &lt;uipath:inputOutput id=&quot;Var_OrderId&quot; name=&quot;orderId&quot; type=&quot;string&quot; /&gt;
+8	        &lt;uipath:inputOutput id=&quot;Var_Category&quot; name=&quot;category&quot; type=&quot;string&quot; /&gt;
+9	        &lt;uipath:inputOutput id=&quot;Var_OrderTotal&quot; name=&quot;orderTotal&quot; type=&quot;number&quot; /&gt;
+10	      &lt;/uipath:variables&gt;
+11	    &lt;/bpmn:extensionElements&gt;
+12	    &lt;bpmn:startEvent id=&quot;Start_1&quot; name=&quot;Start&quot;&gt;
+13	      &lt;bpmn:outgoing&gt;Flow_Start_Validate&lt;/bpmn:outgoing&gt;
+14	    &lt;/bpmn:startEvent&gt;
+15	    &lt;bpmn:scriptTask id=&quot;Task_ValidateOrder&quot; name=&quot;Validate order&quot; scriptFormat=&quot;JavaScript&quot;&gt;
+16	
+
+… (truncated, 3514 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#3</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">332ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;which uip &amp;&amp; uip --version 2&gt;&amp;1 | head -5&quot;,
+  &quot;description&quot;: &quot;Check uip CLI availability&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/usr/bin/uip
+1.201.0-dev.8272</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#4</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">3.56s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro bpmn registry pull --output json 2&gt;&amp;1 | tail -30&quot;,
+  &quot;description&quot;: &quot;Pull the maestro bpmn registry cache&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;RegistryPullSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;ExtensionTypeCount&quot;: 30,
+    &quot;ConnectorCount&quot;: 27,
+    &quot;ProcessCount&quot;: 138,
+    &quot;ProcessCountsByType&quot;: {
+      &quot;Process&quot;: 24,
+      &quot;ProcessOrchestration&quot;: 21,
+      &quot;Agent&quot;: 15,
+      &quot;Flow&quot;: 38,
+      &quot;Api&quot;: 23,
+      &quot;Function&quot;: 6,
+      &quot;CaseManagement&quot;: 11,
+      &quot;BusinessRules&quot;: 0
+    },
+    &quot;FromCache&quot;: false,
+    &quot;CacheWritten&quot;: true,
+    &quot;Message&quot;: &quot;Synced fresh registry&quot;
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#5</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">992ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro bpmn registry get Actions.HITL --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Get the Actions.HITL registry template&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;RegistryGetSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;ExtensionType&quot;: {
+      &quot;ExtensionType&quot;: &quot;Actions.HITL&quot;,
+      &quot;Label&quot;: &quot;Create action app task&quot;,
+      &quot;BpmnElement&quot;: &quot;bpmn:UserTask&quot;,
+      &quot;Placements&quot;: {
+        &quot;Activity&quot;: {
+          &quot;Type&quot;: &quot;bpmn:UserTask&quot;
+        }
+      },
+      &quot;ExtensionTag&quot;: &quot;uipath:activity&quot;,
+      &quot;ContextFields&quot;: [
+        {
+          &quot;Name&quot;: &quot;appId&quot;,
+          &quot;Type&quot;: &quot;string&quot;,
+          &quot;Required&quot;: false,
+          &quot;Hidden&quot;: true,
+          &quot;IsPrimaryKey&quot;: true,
+          &quot;Binding&quot;: false,
+          &quot;DefaultValue&quot;: null
+        },
+        {
+          &quot;Name&quot;: &quot;appVersion&quot;,
+          &quot;Type&quot;: &quot;number&quot;,
+          &quot;Required&quot;: false,
+          &quot;Hidden&quot;: true,
+          &quot;IsPrimaryKey&quot;: false,
+          &quot;Binding&quot;: false,
+          &quot;DefaultValue&quot;: null
+        },
+        {
+          &quot;Name&quot;: &quot;actions&quot;,
+          &quot;Type&quot;: &quot;string&quot;,
+          &quot;Required&quot;: false,
+          &quot;Hidden&quot;: true,
+          &quot;IsPrimaryKey&quot;: false,
+          &quot;Binding&quot;: false,
+          &quot;DefaultValue&quot;: null
+        },
+        {
+          &quot;Name&quot;: &quot;key&quot;,
+          &quot;Type&quot;: &quot;string&quot;,
+          &quot;Required&quot;: false,
+          &quot;Hidden&quot;: true,
+          &quot;IsPrimaryKey&quot;: false,
+ 
+
+… (truncated, 1812 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#6</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">26ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -n -i \&quot;hitl\\|Actions.HITL\\|UserTask\&quot; -r /home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/ 2&gt;/dev/null | head -80&quot;,
+  &quot;description&quot;: &quot;Search skill references for HITL guidance&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/registry-workflow.md:193:| `Actions.HITL` | `bpmn:userTask` | activity |</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#7</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">18ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;sed -n &#x27;150,260p&#x27; /home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/registry-workflow.md&quot;,
+  &quot;description&quot;: &quot;Read registry-workflow.md around HITL section&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>## Connectionless vs connector HTTP
+
+- **Connector activity** (`Intsvc.ActivityExecution` / a connector-authenticated
+  operation): use when the call goes through a tenant connection, a dynamic
+  connector schema, or a connector object operation. Keep the node **draft**
+  until enriched. The CLI-owned enrichment blockers — the ones that must be
+  resolved before upload or run, and that boundary notes should name explicitly
+  — are **connection binding**, **dynamic schemas**, generated **package
+  metadata** (`bindings_v2.json`, `entry-points.json`, `operate.json`,
+  `package-descriptor.json`). Do not hand-author any of these (§3).
+- **Connectionless / manual HTTP** (`Intsvc.HttpExecution`, or
+  `Intsvc.UnifiedHttpRequest` when current tooling exposes the unified shape):
+  use when the workflow itself owns the URL, method, payload, and response
+  parsing (no connection). Author `mode=&quot;manual&quot;`, `method`, `url`, `headers`,
+  `parameters`, `body` directly from the registry template.
+
+Status vocabulary for an IS node in a summary: **executable** (activity, inputs,
+output variable, and downstream mappings present, runtime-verified if a run was
+done), **draft** (BPMN shape/intent present
+
+… (truncated, 3240 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#8</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">21ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -n -i \&quot;placeholder\\|synthetic\\|appId\\|folderKey\\|HITL\&quot; /home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/public-safety.md 2&gt;/dev/null | head -40&quot;,
+  &quot;description&quot;: &quot;Check public-safety.md for placeholder conventions&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>16:- Synthetic process names such as `InvoiceApproval`.
+17:- Synthetic element IDs such as `Task_ValidateRequest`.
+18:- Placeholder resource labels such as `&lt;PROCESS_NAME&gt;`, `&lt;FOLDER_KEY&gt;`, or `&lt;CONNECTION_NAME&gt;` when the user must provide a real value.
+22:## XML placeholder escaping
+24:Angle-bracket placeholders are safe only when the XML location can contain text
+31:  `&lt;CONNECTION_NAME&gt;` may be used as literal placeholder text.
+34:pass that replaces a private value with unescaped `&lt;PLACEHOLDER&gt;` inside an
+44:- Confirm generated package metadata examples are synthetic or omitted.</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#9</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">20ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -n -A5 -B5 \&quot;uipath:variables\\|inputOutput\&quot; /home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/structural-bpmn.md | head -100&quot;,
+  &quot;description&quot;: &quot;Check variable declaration conventions in structural-bpmn.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>53-&lt;/bpmn:definitions&gt;
+54-```
+55-
+56-The `uipath:` namespace URI is exactly `http://uipath.org/schema/bpmn`. All
+57-`uipath:*` tags inside `extensionElements` are lower-camelCase
+58:(`uipath:activity`, `uipath:variables`, `uipath:loopCharacteristics`, …).
+59-
+60-Every `uipath:activity` / `uipath:event` / `uipath:mapping` carries its node
+61-type as a **child** element — `&lt;uipath:type value=&quot;&lt;Type&gt;&quot; version=&quot;v1&quot; /&gt;` —
+62-never as a `type=` attribute on the wrapper. This holds both for templated nodes
+63-and for any shell you author or preserve by hand.
+--
+86-    id=&quot;Definitions_1&quot; targetNamespace=&quot;http://bpmn.io/schema/bpmn&quot;
+87-    exporter=&quot;UiPath (https://bpmn.uipath.com)&quot; exporterVersion=&quot;1.0&quot;&gt;
+88-  &lt;bpmn:process id=&quot;Process_1&quot; isExecutable=&quot;true&quot;&gt;
+89-    &lt;bpmn:extensionElements&gt;
+90-      &lt;uipath:migrationVersion version=&quot;11.5&quot; /&gt;
+91:      &lt;uipath:variables version=&quot;v1&quot;&gt;
+92:        &lt;uipath:inputOutput id=&quot;Var_Amount&quot; name=&quot;Amount&quot; type=&quot;number&quot; /&gt;
+93:        &lt;uipath:inputOutput id=&quot;Var_Tier&quot; name=&quot;Tier&quot; type=&quot;string&quot; /&gt;
+94:      &lt;/uipath:variables&gt;
+95-    &lt;/bpmn:extensionElements&gt;
+96-    &lt;bpmn:startEvent id=&quot;Start_1&quot; name=&quot;Start&quot;&gt;&lt;bpmn:outgoing&gt;Flow_1&lt;/bpmn:outgoing&gt;&lt;/bpmn:startE
+
+… (truncated, 1574 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#10</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">22ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -rn \&quot;Actions.HITL\&quot; /home/azureuser/projects/skills/skills/uipath-maestro-bpmn/ 2&gt;/dev/null&quot;,
+  &quot;description&quot;: &quot;Search skill dir for any Actions.HITL usage examples&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/SKILL.md:143:   When routing on an Actions.HITL user task&#x27;s outcome, the sequence-flow
+/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/validator/bpmn-spec.json:12:    &quot;Actions.HITL&quot;: {
+/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/validator/bpmn-spec.json:13:      &quot;extensionType&quot;: &quot;Actions.HITL&quot;,
+/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/validator/bpmn-spec.json:73:      &quot;outputType&quot;: &quot;Actions.HITL&quot;,
+/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/validator/bpmn-spec.json:79:      &quot;xmlTemplate&quot;: &quot;&lt;bpmn:UserTask id=\&quot;{id}\&quot; name=\&quot;{name}\&quot;&gt;\n  &lt;bpmn:extensionElements&gt;\n    &lt;uipath:activity version=\&quot;v1\&quot;&gt;\n      &lt;uipath:type value=\&quot;Actions.HITL\&quot; version=\&quot;v1\&quot; /&gt;\n      &lt;uipath:context&gt;\n        &lt;uipath:input name=\&quot;appId\&quot; value=\&quot;{appId}\&quot; /&gt;\n        &lt;uipath:input name=\&quot;appVersion\&quot; value=\&quot;{appVersion}\&quot; /&gt;\n        &lt;uipath:input name=\&quot;actions\&quot; value=\&quot;{actions}\&quot; /&gt;\n        &lt;uipath:input name=\&quot;key\&quot; value=\&quot;{key}\&quot; /&gt;\n        &lt;uipath:input name=\&quot;taskTitle\&quot; value=\&quot;{taskTitle}\&quot; /&gt;\n      &lt;/uipath:context&gt;\n      &lt;uipath:input name=\&quot;HitlTaskArguments\&quot; type=\
+
+… (truncated, 461 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#11</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">30ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;find /home/azureuser/projects/skills/skills -iname \&quot;*hitl*\&quot; -o -iname \&quot;*human*\&quot; 2&gt;/dev/null&quot;,
+  &quot;description&quot;: &quot;Find HITL related skill directories&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/home/azureuser/projects/skills/skills/uipath-human-in-the-loop
+/home/azureuser/projects/skills/skills/uipath-human-in-the-loop/references/hitl-node-apptask.md
+/home/azureuser/projects/skills/skills/uipath-human-in-the-loop/references/hitl-node-quickform.md
+/home/azureuser/projects/skills/skills/uipath-human-in-the-loop/references/hitl-node-coded-action-app.md
+/home/azureuser/projects/skills/skills/uipath-human-in-the-loop/references/hitl-patterns.md
+/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/references/plugins/hitl
+/home/azureuser/projects/skills/skills/uipath-agents/references/coded/capabilities/human-in-the-loop.md</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#12</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">6ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-human-in-the-loop/references/hitl-node-apptask.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# HITL AppTask Node — Direct JSON Reference
+2	
+3	The AppTask variant uses a deployed coded app (Studio Web) as the task form. Node type: `uipath.human-in-the-loop.coded-action-app`. Same three handles (`input`, `completed`) as QuickForm. Difference from QuickForm: `inputs.app` points to the deployed app (no inline schema).
+4	
+5	---
+6	
+7	## App Lookup and Solution Registration
+8	
+9	Before writing the node JSON, resolve the app and register it with the solution. All API calls use auth from the stored login session (`uip login`).
+10	
+11	### Step 1 — Resolve solution context and credentials
+12	
+13	**Read credentials from the active `uip` session:**
+14	
+15	```bash
+16	source &quot;$HOME/.uipath/.auth&quot;
+17	# Variables now available:
+18	# UIPATH_ACCESS_TOKEN       — bearer token
+19	# UIPATH_URL                — e.g. https://cloud.uipath.com
+20	# UIPATH_ORGANIZATION_NAME  — org name (slug)
+21	# UIPATH_ORGANIZATION_ID    — org UUID
+22	# UIPATH_TENANT_NAME
+23	# UIPATH_TENANT_ID
+24	# UIPATH_PROJECT_ID
+25	```
+26	
+27	Map to working variables:
+28	
+29	| Variable | Source |
+30	|---|---|
+31	| `BASE_URL` | `$UIPATH_URL` |
+32	| `ORG_NAME` | `$UIPATH_ORGANIZATION_NAME` |
+33	| `ORG_ID` | `$UIPATH_ORGANIZATI
+
+… (truncated, 14755 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#13</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">102ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 -c \&quot;\nimport json\nd = json.load(open(&#x27;/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/validator/bpmn-spec.json&#x27;))\nprint(json.dumps(d.get(&#x27;Actions.HITL&#x27;, d), indent=2)[:3000])\n\&quot;\n&quot;,
+  &quot;description&quot;: &quot;Inspect full Actions.HITL spec entry&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;version&quot;: &quot;1.0.0&quot;,
+  &quot;source&quot;: &quot;PO.Frontend registry generator (2026-04-14) + CLI notes&quot;,
+  &quot;extractedFrom&quot;: {
+    &quot;designSchemaUtils&quot;: &quot;src/services/serialization/design-schema/design-schema-utils.ts&quot;,
+    &quot;bpmnModdle&quot;: &quot;src/services/serialization/bpmn-moddle.ts&quot;,
+    &quot;fpsFormPropertiesUtils&quot;: &quot;src/components/canvases/shared/panels/properties/fps/FPSFormPropertiesUtils.ts&quot;,
+    &quot;constants&quot;: &quot;src/constants.ts&quot;,
+    &quot;designSchemaJsonDir&quot;: &quot;src/services/serialization/design-schema/*.design-schema.json&quot;
+  },
+  &quot;extensionTypes&quot;: {
+    &quot;Actions.HITL&quot;: {
+      &quot;extensionType&quot;: &quot;Actions.HITL&quot;,
+      &quot;label&quot;: &quot;Create action app task&quot;,
+      &quot;bpmnElement&quot;: &quot;bpmn:UserTask&quot;,
+      &quot;placements&quot;: {
+        &quot;activity&quot;: {
+          &quot;type&quot;: &quot;bpmn:UserTask&quot;
+        }
+      },
+      &quot;extensionTag&quot;: &quot;uipath:activity&quot;,
+      &quot;contextFields&quot;: [
+        {
+          &quot;name&quot;: &quot;appId&quot;,
+          &quot;type&quot;: &quot;string&quot;,
+          &quot;required&quot;: false,
+          &quot;hidden&quot;: true,
+          &quot;isPrimaryKey&quot;: true,
+          &quot;binding&quot;: false,
+          &quot;defaultValue&quot;: null
+        },
+        {
+          &quot;name&quot;: &quot;appVersion&quot;,
+          &quot;type&quot;: &quot;number&quot;,
+          &quot;required&quot;: false,
+          &quot;hidden&quot;: true,
+          &quot;i
+
+… (truncated, 1799 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#14</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">13ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -n -i \&quot;userTask\\|HITL\\|taskTitle\\|HitlTaskArguments\\|actions\\b\&quot; /home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/structural-bpmn.md /home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/expression-authoring.md 2&gt;/dev/null&quot;,
+  &quot;description&quot;: &quot;Look for additional HITL-specific guidance in structural-bpmn and expression-authoring&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>(Bash completed with no output)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#15</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">82ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 -c \&quot;\nimport json\nd = json.load(open(&#x27;/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/validator/bpmn-spec.json&#x27;))\nprint(json.dumps(d[&#x27;extensionTypes&#x27;][&#x27;Actions.HITL&#x27;], indent=2))\n\&quot;\n&quot;,
+  &quot;description&quot;: &quot;Print full Actions.HITL spec entry from validator&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;extensionType&quot;: &quot;Actions.HITL&quot;,
+  &quot;label&quot;: &quot;Create action app task&quot;,
+  &quot;bpmnElement&quot;: &quot;bpmn:UserTask&quot;,
+  &quot;placements&quot;: {
+    &quot;activity&quot;: {
+      &quot;type&quot;: &quot;bpmn:UserTask&quot;
+    }
+  },
+  &quot;extensionTag&quot;: &quot;uipath:activity&quot;,
+  &quot;contextFields&quot;: [
+    {
+      &quot;name&quot;: &quot;appId&quot;,
+      &quot;type&quot;: &quot;string&quot;,
+      &quot;required&quot;: false,
+      &quot;hidden&quot;: true,
+      &quot;isPrimaryKey&quot;: true,
+      &quot;binding&quot;: false,
+      &quot;defaultValue&quot;: null
+    },
+    {
+      &quot;name&quot;: &quot;appVersion&quot;,
+      &quot;type&quot;: &quot;number&quot;,
+      &quot;required&quot;: false,
+      &quot;hidden&quot;: true,
+      &quot;isPrimaryKey&quot;: false,
+      &quot;binding&quot;: false,
+      &quot;defaultValue&quot;: null
+    },
+    {
+      &quot;name&quot;: &quot;actions&quot;,
+      &quot;type&quot;: &quot;string&quot;,
+      &quot;required&quot;: false,
+      &quot;hidden&quot;: true,
+      &quot;isPrimaryKey&quot;: false,
+      &quot;binding&quot;: false,
+      &quot;defaultValue&quot;: null
+    },
+    {
+      &quot;name&quot;: &quot;key&quot;,
+      &quot;type&quot;: &quot;string&quot;,
+      &quot;required&quot;: false,
+      &quot;hidden&quot;: true,
+      &quot;isPrimaryKey&quot;: false,
+      &quot;binding&quot;: false,
+      &quot;defaultValue&quot;: null
+    },
+    {
+      &quot;name&quot;: &quot;taskTitle&quot;,
+      &quot;type&quot;: &quot;string&quot;,
+      &quot;required&quot;: false,
+      &quot;hidden&quot;: false,
+      &quot;isPrimaryKey&quot;: false,
+      &quot;binding&quot;: false,
+      &quot;defaultValue&quot;: null
+    }
+  ],
+  &quot;inputP
+
+… (truncated, 1436 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#16</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">2.22s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -rn \&quot;Actions.HITL\&quot; -A 20 /home/azureuser/projects/skills/skills/uipath-maestro-bpmn/ 2&gt;/dev/null | grep -v \&quot;^--$\&quot; | sed -n &#x27;1,200p&#x27;\necho \&quot;---search other examples across whole skills folder---\&quot;\ngrep -rln \&quot;Actions.HITL\&quot; / --include=\&quot;*.bpmn\&quot; 2&gt;/dev/null\nfind / -iname \&quot;*.bpmn\&quot; 2&gt;/dev/null | grep -v output/artifacts | head -20&quot;,
+  &quot;description&quot;: &quot;Search for example filled Actions.HITL bpmn nodes anywhere on disk&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>&lt;persisted-output&gt;
+Output too large (305.3KB). Full output saved to: /home/azureuser/.claude/projects/-work-output-artifacts-skill-bpmn-hitl-brownfield-insert/56194d82-7087-4d34-ba18-ea1010536949/tool-results/brfwv8381.txt
+
+Preview (first 2KB):
+/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/SKILL.md:143:   When routing on an Actions.HITL user task&#x27;s outcome, the sequence-flow
+/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/SKILL.md-144-   conditions from the exclusive gateway must reference the exact variable bound
+/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/SKILL.md-145-   by the HITL template&#x27;s `&lt;uipath:output ... var=&quot;...&quot;&gt;` (for example
+/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/SKILL.md-146-   `=vars.Var_HitlResult == &quot;approve&quot;`), not only a copied or derived script
+/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/SKILL.md-147-   variable.
+/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/SKILL.md-148-   For Integration Service draft notes, name every CLI-owned blocker literally,
+/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/SKILL.md-149-   including the exact phrase `connection binding`, plu
+
+… (truncated, 1055 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#17</span>
+      <span class="tool-name">Edit</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">35ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;replace_all&quot;: false,
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-bpmn-hitl-brownfield-insert/OrderFulfillmentBpmn/OrderFulfillmentBpmn.bpmn&quot;,
+  &quot;old_string&quot;: &quot;        &lt;uipath:inputOutput id=\&quot;Var_OrderTotal\&quot; name=\&quot;orderTotal\&quot; type=\&quot;number\&quot; /&gt;\n      &lt;/uipath:variables&gt;&quot;,
+  &quot;new_string&quot;: &quot;        &lt;uipath:inputOutput id=\&quot;Var_OrderTotal\&quot; name=\&quot;orderTotal\&quot; type=\&quot;number\&quot; /&gt;\n        &lt;uipath:inputOutput id=\&quot;Var_HitlResult\&quot; name=\&quot;hitlResult\&quot; type=\&quot;string\&quot; /&gt;\n      &lt;/uipath:variables&gt;&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>The file /work/output/artifacts/skill-bpmn-hitl-brownfield-insert/OrderFulfillmentBpmn/OrderFulfillmentBpmn.bpmn has been updated successfully. (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#18</span>
+      <span class="tool-name">Edit</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">21ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;replace_all&quot;: false,
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-bpmn-hitl-brownfield-insert/OrderFulfillmentBpmn/OrderFulfillmentBpmn.bpmn&quot;,
+  &quot;old_string&quot;: &quot;      &lt;bpmn:incoming&gt;Flow_Validate_Compute&lt;/bpmn:incoming&gt;\n      &lt;bpmn:outgoing&gt;Flow_Compute_End&lt;/bpmn:outgoing&gt;\n      &lt;bpmn:script&gt;&lt;![CDATA[return { response: category === \&quot;computeTotal\&quot; ? 0 : 100 };]]&gt;&lt;/bpmn:script&gt;\n    &lt;/bpmn:scriptTask&gt;\n    &lt;bpmn:endEvent id=\&quot;End_1\&quot; name=\&quot;Done\&quot;&gt;\n      &lt;bpmn:incoming&gt;Flow_Compute_End&lt;/bpmn:incoming&gt;\n    &lt;/bpmn:endEvent&gt;\n    &lt;bpmn:sequenceFlow id=\&quot;Flow_Start_Val… (288 more chars)&quot;,
+  &quot;new_string&quot;: &quot;      &lt;bpmn:incoming&gt;Flow_Validate_Compute&lt;/bpmn:incoming&gt;\n      &lt;bpmn:outgoing&gt;Flow_Compute_Hitl&lt;/bpmn:outgoing&gt;\n      &lt;bpmn:script&gt;&lt;![CDATA[return { response: category === \&quot;computeTotal\&quot; ? 0 : 100 };]]&gt;&lt;/bpmn:script&gt;\n    &lt;/bpmn:scriptTask&gt;\n    &lt;bpmn:userTask id=\&quot;Task_HitlApproval\&quot; name=\&quot;Approve order\&quot;&gt;\n      &lt;bpmn:extensionElements&gt;\n        &lt;uipath:activity version=\&quot;v1\&quot;&gt;\n          &lt;uipath:type v… (1462 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>The file /work/output/artifacts/skill-bpmn-hitl-brownfield-insert/OrderFulfillmentBpmn/OrderFulfillmentBpmn.bpmn has been updated successfully. (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#19</span>
+      <span class="tool-name">Edit</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">11ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;replace_all&quot;: false,
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-bpmn-hitl-brownfield-insert/OrderFulfillmentBpmn/OrderFulfillmentBpmn.bpmn&quot;,
+  &quot;old_string&quot;: &quot;      &lt;bpmndi:BPMNShape id=\&quot;S_End_1\&quot; bpmnElement=\&quot;End_1\&quot;&gt;\n        &lt;dc:Bounds x=\&quot;570\&quot; y=\&quot;100\&quot; width=\&quot;36\&quot; height=\&quot;36\&quot; /&gt;\n      &lt;/bpmndi:BPMNShape&gt;\n      &lt;bpmndi:BPMNEdge id=\&quot;E_Flow_Start_Validate\&quot; bpmnElement=\&quot;Flow_Start_Validate\&quot;&gt;\n        &lt;di:waypoint x=\&quot;196\&quot; y=\&quot;118\&quot; /&gt;\n        &lt;di:waypoint x=\&quot;250\&quot; y=\&quot;118\&quot; /&gt;\n      &lt;/bpmndi:BPMNEdge&gt;\n      &lt;bpmndi:BPMNEdge id=\&quot;E_Flow_Validate_Compute\&quot; bpmnElement=\&quot;… (312 more chars)&quot;,
+  &quot;new_string&quot;: &quot;      &lt;bpmndi:BPMNShape id=\&quot;S_Task_HitlApproval\&quot; bpmnElement=\&quot;Task_HitlApproval\&quot;&gt;\n        &lt;dc:Bounds x=\&quot;570\&quot; y=\&quot;78\&quot; width=\&quot;100\&quot; height=\&quot;80\&quot; /&gt;\n      &lt;/bpmndi:BPMNShape&gt;\n      &lt;bpmndi:BPMNShape id=\&quot;S_End_1\&quot; bpmnElement=\&quot;End_1\&quot;&gt;\n        &lt;dc:Bounds x=\&quot;730\&quot; y=\&quot;100\&quot; width=\&quot;36\&quot; height=\&quot;36\&quot; /&gt;\n      &lt;/bpmndi:BPMNShape&gt;\n      &lt;bpmndi:BPMNEdge id=\&quot;E_Flow_Start_Validate\&quot; bpmnElement=\&quot;Flow_Start_Validate\&quot;&gt;\n … (661 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>The file /work/output/artifacts/skill-bpmn-hitl-brownfield-insert/OrderFulfillmentBpmn/OrderFulfillmentBpmn.bpmn has been updated successfully. (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#20</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">5ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-bpmn-hitl-brownfield-insert/OrderFulfillmentBpmn/OrderFulfillmentBpmn.bpmn&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;
+2	&lt;bpmn:definitions xmlns:bpmn=&quot;http://www.omg.org/spec/BPMN/20100524/MODEL&quot; xmlns:bpmndi=&quot;http://www.omg.org/spec/BPMN/20100524/DI&quot; xmlns:dc=&quot;http://www.omg.org/spec/DD/20100524/DC&quot; xmlns:di=&quot;http://www.omg.org/spec/DD/20100524/DI&quot; xmlns:uipath=&quot;http://uipath.org/schema/bpmn&quot; id=&quot;Definitions_OrderFulfillment&quot; targetNamespace=&quot;http://bpmn.io/schema/bpmn&quot; exporter=&quot;UiPath (https://bpmn.uipath.com)&quot; exporterVersion=&quot;1.0&quot;&gt;
+3	  &lt;bpmn:process id=&quot;Process_OrderFulfillment&quot; isExecutable=&quot;true&quot;&gt;
+4	    &lt;bpmn:extensionElements&gt;
+5	      &lt;uipath:migrationVersion version=&quot;11.5&quot; /&gt;
+6	      &lt;uipath:variables version=&quot;v1&quot;&gt;
+7	        &lt;uipath:inputOutput id=&quot;Var_OrderId&quot; name=&quot;orderId&quot; type=&quot;string&quot; /&gt;
+8	        &lt;uipath:inputOutput id=&quot;Var_Category&quot; name=&quot;category&quot; type=&quot;string&quot; /&gt;
+9	        &lt;uipath:inputOutput id=&quot;Var_OrderTotal&quot; name=&quot;orderTotal&quot; type=&quot;number&quot; /&gt;
+10	        &lt;uipath:inputOutput id=&quot;Var_HitlResult&quot; name=&quot;hitlResult&quot; type=&quot;string&quot; /&gt;
+11	      &lt;/uipath:variables&gt;
+12	    &lt;/bpmn:extensionElements&gt;
+13	    &lt;bpmn:startEvent id=&quot;Start_1&quot; name=&quot;Start&quot;&gt;
+14	      &lt;bpmn:outgoing&gt;Flow_Start_Validate&lt;/bpmn:outgoing&gt;
+15	    &lt;/bpmn:startEvent&gt;
+16	    &lt;bpmn:s
+
+… (truncated, 5206 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#21</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-err">ERROR</span>
+      <span class="tool-duration">602ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro bpmn validate OrderFulfillmentBpmn/OrderFulfillmentBpmn.bpmn --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Validate the edited BPMN file&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Exit code 1
+{
+  &quot;Result&quot;: &quot;Failure&quot;,
+  &quot;Message&quot;: &quot;Validation failed for /work/output/artifacts/skill-bpmn-hitl-brownfield-insert/OrderFulfillmentBpmn/OrderFulfillmentBpmn.bpmn&quot;,
+  &quot;Instructions&quot;: &quot;Found 4 error(s):\n  - [error] [uipath:input \&quot;args\&quot;] Input payload \&quot;args\&quot; must declare type=\&quot;json\&quot;.\n  - [error] [uipath:input \&quot;args\&quot;] Input payload \&quot;args\&quot; must target \&quot;bodyField\&quot;.\n  - [error] [uipath:input \&quot;args\&quot;] Input payload \&quot;args\&quot; must declare type=\&quot;json\&quot;.\n  - [error] [uipath:input \&quot;args\&quot;] Input payload \&quot;args\&quot; must target \&quot;bodyField\&quot;.\n  - [warning] [Task_HitlApproval] MISSING_RESOURCE: Service task &#x27;Approve order&#x27; has no bound resource.&quot;,
+  &quot;ErrorCode&quot;: &quot;unknown_error&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}</pre>
+    <h4>Error</h4><pre>Exit code 1
+{
+  &quot;Result&quot;: &quot;Failure&quot;,
+  &quot;Message&quot;: &quot;Validation failed for /work/output/artifacts/skill-bpmn-hitl-brownfield-insert/OrderFulfillmentBpmn/OrderFulfillmentBpmn.bpmn&quot;,
+  &quot;Instructions&quot;: &quot;Found 4 error(s):\n  - [error] [uipath:input \&quot;args\&quot;] Input payload \&quot;args\&quot; must declare type=\&quot;json\&quot;.\n  - [error] [uipath:input \&quot;args\&quot;] Input payload \&quot;args\&quot; must target \&quot;bodyField\&quot;.\n  - [error] [uipath:input \&quot;args\&quot;] Input payload \&quot;args\&quot; must declare type=\&quot;json\&quot;.\n  - [error] [uipath:input \&quot;args\&quot;] Input payload \&quot;args\&quot; must target \&quot;bodyField\&quot;.\n  - [warning] [Task_HitlApproval] MISSING_RESOURCE: Service task &#x27;Approve order&#x27; has no bound resource.&quot;,
+  &quot;ErrorCode&quot;: &quot;unknown_error&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}</pre>
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#22</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">28ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;git status 2&gt;&amp;1 | head -20; git diff --stat 2&gt;&amp;1 | head -20&quot;,
+  &quot;description&quot;: &quot;Check if this is a git repo to see original file state&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>fatal: not a git repository (or any parent up to mount point /work)
+Stopping at filesystem boundary (GIT_DISCOVERY_ACROSS_FILESYSTEM not set).
+warning: Not a git repository. Use --no-index to compare two paths outside a working tree
+usage: git diff --no-index [&lt;options&gt;] &lt;path&gt; &lt;path&gt;
+
+Diff output format options
+    -p, --patch           generate patch
+    -s, --no-patch        suppress diff output
+    -u                    generate patch
+    -U, --unified[=&lt;n&gt;]   generate diffs with &lt;n&gt; lines context
+    -W, --[no-]function-context
+                          generate diffs with &lt;n&gt; lines context
+    --raw                 generate the diff in raw format
+    --patch-with-raw      synonym for &#x27;-p --raw&#x27;
+    --patch-with-stat     synonym for &#x27;-p --stat&#x27;
+    --numstat             machine friendly --stat
+    --shortstat           output only the last line of --stat
+    -X, --dirstat[=&lt;param1&gt;,&lt;param2&gt;...]
+                          output the distribution of relative amount of changes for each sub-directory
+    --cumulative          synonym for --dirstat=cumulative
+    --dirstat-by-file[=&lt;param1&gt;,&lt;param2&gt;...]
+                          synonym for --dirstat=files,&lt;param1&gt;,&lt;param2&gt;...</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#23</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-err">ERROR</span>
+      <span class="tool-duration">635ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;mkdir -p /tmp/orig_check\ncat &gt; /tmp/orig_check/orig.bpmn &lt;&lt; &#x27;EOF&#x27;\n&lt;?xml version=\&quot;1.0\&quot; encoding=\&quot;UTF-8\&quot;?&gt;\n&lt;bpmn:definitions xmlns:bpmn=\&quot;http://www.omg.org/spec/BPMN/20100524/MODEL\&quot; xmlns:bpmndi=\&quot;http://www.omg.org/spec/BPMN/20100524/DI\&quot; xmlns:dc=\&quot;http://www.omg.org/spec/DD/20100524/DC\&quot; xmlns:di=\&quot;http://www.omg.org/spec/DD/20100524/DI\&quot; xmlns:uipath=\&quot;http://uipath.org/schema/bpmn\&quot; id=\&quot;Definitions_Ord… (4232 more chars)&quot;,
+  &quot;description&quot;: &quot;Validate the original unmodified file to check if the args errors pre-exist&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Exit code 1
+{
+  &quot;Result&quot;: &quot;Failure&quot;,
+  &quot;Message&quot;: &quot;Validation failed for /tmp/orig_check/orig.bpmn&quot;,
+  &quot;Instructions&quot;: &quot;Found 4 error(s):\n  - [error] [uipath:input \&quot;args\&quot;] Input payload \&quot;args\&quot; must declare type=\&quot;json\&quot;.\n  - [error] [uipath:input \&quot;args\&quot;] Input payload \&quot;args\&quot; must target \&quot;bodyField\&quot;.\n  - [error] [uipath:input \&quot;args\&quot;] Input payload \&quot;args\&quot; must declare type=\&quot;json\&quot;.\n  - [error] [uipath:input \&quot;args\&quot;] Input payload \&quot;args\&quot; must target \&quot;bodyField\&quot;.&quot;,
+  &quot;ErrorCode&quot;: &quot;unknown_error&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}</pre>
+    <h4>Error</h4><pre>Exit code 1
+{
+  &quot;Result&quot;: &quot;Failure&quot;,
+  &quot;Message&quot;: &quot;Validation failed for /tmp/orig_check/orig.bpmn&quot;,
+  &quot;Instructions&quot;: &quot;Found 4 error(s):\n  - [error] [uipath:input \&quot;args\&quot;] Input payload \&quot;args\&quot; must declare type=\&quot;json\&quot;.\n  - [error] [uipath:input \&quot;args\&quot;] Input payload \&quot;args\&quot; must target \&quot;bodyField\&quot;.\n  - [error] [uipath:input \&quot;args\&quot;] Input payload \&quot;args\&quot; must declare type=\&quot;json\&quot;.\n  - [error] [uipath:input \&quot;args\&quot;] Input payload \&quot;args\&quot; must target \&quot;bodyField\&quot;.&quot;,
+  &quot;ErrorCode&quot;: &quot;unknown_error&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}</pre>
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#24</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">10ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;rm -rf /tmp/orig_check&quot;,
+  &quot;description&quot;: &quot;Clean up temp validation file&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>(Bash completed with no output)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#25</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">67ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 -c \&quot;\nimport xml.dom.minidom as m\nd = m.parse(&#x27;OrderFulfillmentBpmn/OrderFulfillmentBpmn.bpmn&#x27;)\nprint(&#x27;XML well-formed OK&#x27;)\n\&quot;&quot;,
+  &quot;description&quot;: &quot;Confirm XML is well-formed&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>XML well-formed OK</pre>
+    
+  </div>
+</details>
+
+</div>
+
+<h2>Command Telemetry</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Total</div><div class="value">26</div></div>
+    <div class="stat"><div class="label">Successful</div><div class="value">24 (92%)</div></div>
+    <div class="stat"><div class="label">Failed</div><div class="value">2</div></div>
+    <div class="stat"><div class="label">Avg / cmd</div><div class="value">343ms</div></div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 2fr;gap:16px;margin-top:12px">
+    <div>
+      <h4>By Tool</h4>
+      <table>
+        <thead><tr><th>Tool</th><th>Count</th></tr></thead>
+        <tbody><tr><td class='mono'>Bash</td><td>19</td></tr><tr><td class='mono'>Read</td><td>3</td></tr><tr><td class='mono'>Edit</td><td>3</td></tr><tr><td class='mono'>Skill</td><td>1</td></tr></tbody>
+      </table>
+    </div>
+    <div>
+      <h4>Slowest</h4>
+      <table>
+        <thead><tr><th>Tool</th><th>Duration</th><th>Parameters</th></tr></thead>
+        <tbody><tr><td class='mono'>Bash</td><td>3.56s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro bpmn registry pull --outp...</td></tr><tr><td class='mono'>Bash</td><td>2.22s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;grep -rn &quot;Actions.HITL&quot; -A 20 /home/a...</td></tr><tr><td class='mono'>Bash</td><td>992ms</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro bpmn registry get Actions...</td></tr><tr><td class='mono'>Bash</td><td>635ms</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;mkdir -p /tmp/orig_check\ncat &gt; /tmp/...</td></tr><tr><td class='mono'>Bash</td><td>602ms</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro bpmn validate OrderFulfil...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+  <p><strong>Most Common Pattern:</strong> <code>Bash → Bash → Bash</code></p><p><strong>Skill Tool Invoked:</strong> 1 time(s)</p>
+</div>
+
+<h2>Generation Metrics</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Total Latency</div><div class="value">4m 5s</div></div>
+    <div class="stat"><div class="label">Turns</div><div class="value">1</div></div>
+    <div class="stat"><div class="label">Assistant Turns</div><div class="value">51</div></div>
+    <div class="stat"><div class="label">Avg Turn Latency</div><div class="value">4m 4s</div></div>
+    
+  </div>
+</div>
+
+<h2>Token Usage</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Input (uncached)</div><div class="value">54</div></div>
+    <div class="stat"><div class="label">Output</div><div class="value">19,979</div></div>
+    <div class="stat"><div class="label">Cache Write</div><div class="value">52,351</div></div>
+    <div class="stat"><div class="label">Cache Read</div><div class="value">1,729,618</div></div>
+    <div class="stat"><div class="label">Total</div><div class="value">1,802,002</div></div>
+    <div class="stat"><div class="label">Cost</div><div class="value">$1.0150</div></div>
+  </div>
+</div>
+
+<h2>Agent Settings</h2>
+<div class="card" style="padding:0">
+  <table>
+    <tbody><tr><td class='mono dim'>Permission Mode</td><td>acceptEdits</td></tr><tr><td class='mono dim'>Allowed Tools</td><td>Skill, Bash, Read, Write, Edit, Glob, Grep</td></tr><tr><td class='mono dim'>Model</td><td>us.anthropic.claude-sonnet-5</td></tr><tr><td class='mono dim'>Max Turns</td><td>110</td></tr><tr><td class='mono dim'>System Prompt</td><td>You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted. </td></tr><tr><td class='mono dim'>Plugins</td><td>/home/azureuser/projects/skills</td></tr></tbody>
+  </table>
+</div>
+
+<h2>Environment</h2>
+<div class="card" style="padding:0">
+  <table>
+    <tbody><tr><td class='mono dim'>git_commit</td><td>unknown</td></tr><tr><td class='mono dim'>skills_git_commit</td><td>unknown</td></tr><tr><td class='mono dim'>cli_version</td><td>1.201.0-dev.8272</td></tr><tr><td class='mono dim'>tool_plugins</td><td>{&#x27;admin-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;agent-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;agenthub-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;aops-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;api-workflow-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;automation-hub-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;codedagent-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;codedapp-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;coder-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;context-grounding-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;conversational-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;data-fabric-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;docsai-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;function-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;gov-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;guardrails-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;insights-tool&#x27;: &#x27;1.201.0-dev.8276&#x27;, &#x27;integrationservice-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;ixp-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;llm-gateway-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;llmgw-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;maestro-tool&#x27;: &#x27;1.201.0-dev.8275&#x27;, &#x27;model-hub-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;orchestrator-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;platform-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;pm-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;rpa-legacy-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;rpa-tool&#x27;: &#x27;1.201.0-dev.20260809.3&#x27;, &#x27;solution-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;tasks-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;test-manager-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;traces-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;vertical-solutions-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;}</td></tr><tr><td class='mono dim'>coder_eval</td><td>0.8.8</td></tr><tr><td class='mono dim'>claude_code_cli</td><td>2.1.177 (Claude Code)</td></tr><tr><td class='mono dim'>uv</td><td>uv 0.11.28 (x86_64-unknown-linux-gnu)</td></tr><tr><td class='mono dim'>anthropic</td><td>0.122.0</td></tr><tr><td class='mono dim'>openai</td><td>3.0.0</td></tr><tr><td class='mono dim'>pydantic</td><td>2.12.5</td></tr><tr><td class='mono dim'>api_routing</td><td>aws_bedrock</td></tr><tr><td class='mono dim'>aws_region</td><td>us-east-2</td></tr><tr><td class='mono dim'>bedrock_model</td><td>us.anthropic.claude-sonnet-4-6</td></tr></tbody>
+  </table>
+</div>
+
+<footer>Generated by coder_eval · 2026-08-14T21:59:20</footer>
+</div>
+<script>
+function toggleTheme() {
+  document.documentElement.classList.toggle('light');
+  try {
+    const mode = document.documentElement.classList.contains('light') ? 'light' : 'dark';
+    localStorage.setItem('coder-eval-theme', mode);
+  } catch (e) { /* ignore */ }
+}
+(function() {
+  try {
+    if (localStorage.getItem('coder-eval-theme') === 'light') {
+      document.documentElement.classList.add('light');
+    }
+  } catch (e) { /* ignore */ }
+})();
+</script>
+</body>
+</html>

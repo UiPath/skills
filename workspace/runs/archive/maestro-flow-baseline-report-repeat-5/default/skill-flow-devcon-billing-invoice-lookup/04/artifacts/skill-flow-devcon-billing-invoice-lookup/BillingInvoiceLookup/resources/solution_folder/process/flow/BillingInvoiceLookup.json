@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "BillingInvoiceLookup",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "b10da5cb-4003-4ced-b77f-4f06ecec4b15",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "BillingInvoiceLookup"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Flow",
+      "name": "BillingInvoiceLookup",
+      "package": {
+        "key": "da3006f4-2e3b-47ba-9edc-feb934a62bba"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "854efb77-8b8a-4c78-b300-7080769dfb7b",
+    "files": []
+  }
+}

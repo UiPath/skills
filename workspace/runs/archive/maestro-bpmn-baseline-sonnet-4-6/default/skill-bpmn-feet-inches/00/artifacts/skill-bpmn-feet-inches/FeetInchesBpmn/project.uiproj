@@ -1,0 +1,7 @@
+{
+  "name": "FeetInchesBpmn",
+  "description": "Converts between feet, inches, and yards via a three-task script pipeline.",
+  "projectVersion": "1.0.0",
+  "projectType": "ProcessOrchestration",
+  "main": "FeetInchesBpmn.bpmn"
+}

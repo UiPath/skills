@@ -1,0 +1,9 @@
+{
+  "name": "VendorApprovalBpmn",
+  "projectVersion": "1.0.0",
+  "description": "Vendor onboarding process with HITL compliance officer approval and boolean-driven routing.",
+  "projectType": "ProcessOrchestration",
+  "main": "VendorApprovalBpmn.bpmn",
+  "expressionLanguage": "JavaScript",
+  "runtimeOptions": {}
+}

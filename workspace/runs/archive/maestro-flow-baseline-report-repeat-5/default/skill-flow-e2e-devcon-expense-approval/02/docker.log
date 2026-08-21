@@ -1,0 +1,5 @@
+20:18:19 [INFO   ] [default/skill-flow-e2e-devcon-expense-approval/02] orchestrator: API routing: aws_bedrock
+20:26:50 [INFO   ] [default/skill-flow-e2e-devcon-expense-approval/02] orchestrator: Success criteria: 6/6 passed, weighted score: 1.000
+20:26:50 [INFO   ] [default/skill-flow-e2e-devcon-expense-approval/02] orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+20:26:50 [INFO   ] [default/skill-flow-e2e-devcon-expense-approval/02] orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-e2e-devcon-expense-approval
+20:26:50 [INFO   ] [default/skill-flow-e2e-devcon-expense-approval/02] orchestrator: Task finished: status=SUCCESS duration=514.8s score=1.000 iterations=1

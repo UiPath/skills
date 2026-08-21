@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "MultiCityWeather",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "bb356cf5-5d52-4399-9729-21ad73b94222",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "MultiCityWeather"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Flow",
+      "name": "MultiCityWeather",
+      "package": {
+        "key": "3a9e6d1e-d151-4a97-89ef-96bf449f6c2b"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "b245f958-f4df-491e-8e57-f2edba63f30c",
+    "files": []
+  }
+}

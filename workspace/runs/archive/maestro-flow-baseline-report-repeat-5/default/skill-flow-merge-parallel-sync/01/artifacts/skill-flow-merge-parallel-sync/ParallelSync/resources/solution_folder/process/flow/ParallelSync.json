@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "ParallelSync",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "3d710500-95cc-462f-bccc-5186a966e0d4",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "ParallelSync"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Flow",
+      "name": "ParallelSync",
+      "package": {
+        "key": "835fa8bb-ac95-4b88-a8ec-aca36569f5c5"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "ce346414-8eff-49fa-8848-75fd298f0146",
+    "files": []
+  }
+}

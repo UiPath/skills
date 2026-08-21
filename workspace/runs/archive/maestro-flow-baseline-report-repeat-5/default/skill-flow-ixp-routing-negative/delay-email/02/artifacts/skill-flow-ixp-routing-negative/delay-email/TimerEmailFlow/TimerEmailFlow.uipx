@@ -1,0 +1,12 @@
+{
+  "DocVersion": "1.0.0",
+  "StudioMinVersion": "2025.10.0",
+  "SolutionId": "5016b508-ef51-4259-a22b-13a32f353d0b",
+  "Projects": [
+    {
+      "Type": "Flow",
+      "ProjectRelativePath": "TimerEmailFlow/project.uiproj",
+      "Id": "d9f6b8bb-c2e5-4ad3-b19d-ebe64cf7d613"
+    }
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "version": "2.0",
+  "resources": [
+    {
+      "resource": "connection",
+      "key": "12edde58-ae61-4f8e-bc24-56a5e7f45604",
+      "id": "connection12edde58-ae61-4f8e-bc24-56a5e7f45604",
+      "value": {
+        "ConnectionId": {
+          "defaultValue": "12edde58-ae61-4f8e-bc24-56a5e7f45604",
+          "isExpression": false,
+          "displayName": "custom-codereval-codereval connection"
+        }
+      },
+      "metadata": {
+        "ActivityName": "List Records",
+        "BindingsVersion": "2.2",
+        "DisplayLabel": "custom-codereval-codereval connection",
+        "UseConnectionService": "true",
+        "Connector": "custom-codereval-codereval"
+      }
+    }
+  ]
+}

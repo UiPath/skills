@@ -1,0 +1,24 @@
+{
+  "version": "2.0",
+  "resources": [
+    {
+      "resource": "connection",
+      "key": "e03f734e-0f80-4e8a-a7c1-0ece309b0ca4",
+      "id": "connectione03f734e-0f80-4e8a-a7c1-0ece309b0ca4",
+      "value": {
+        "ConnectionId": {
+          "defaultValue": "e03f734e-0f80-4e8a-a7c1-0ece309b0ca4",
+          "isExpression": false,
+          "displayName": "uipath-salesforce-slack connection"
+        }
+      },
+      "metadata": {
+        "ActivityName": "Get Channel Info",
+        "BindingsVersion": "2.2",
+        "DisplayLabel": "uipath-salesforce-slack connection",
+        "UseConnectionService": "true",
+        "Connector": "uipath-salesforce-slack"
+      }
+    }
+  ]
+}

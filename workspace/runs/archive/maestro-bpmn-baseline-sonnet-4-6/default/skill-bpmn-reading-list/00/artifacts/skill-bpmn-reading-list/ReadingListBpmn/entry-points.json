@@ -1,0 +1,15 @@
+{
+  "entryPoints": [
+    {
+      "id": "c11378b9-20fa-4df2-b152-70e125e46964",
+      "filePath": "/content/ReadingListBpmn.bpmn#Start_Manual",
+      "inputSchema": { "type": "object", "properties": {} },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "readingList": { "type": "array" }
+        }
+      }
+    }
+  ]
+}

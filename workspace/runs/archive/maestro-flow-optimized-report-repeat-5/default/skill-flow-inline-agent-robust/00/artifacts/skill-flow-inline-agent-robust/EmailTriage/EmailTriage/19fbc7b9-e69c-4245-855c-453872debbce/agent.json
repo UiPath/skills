@@ -1,0 +1,87 @@
+{
+  "version": "1.1.0",
+  "settings": {
+    "model": "anthropic.claude-sonnet-4-6",
+    "maxTokens": 64000,
+    "temperature": 0,
+    "engine": "basic-v2",
+    "maxIterations": 1,
+    "mode": "standard"
+  },
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "start__output__emailSubject": {
+        "type": "string",
+        "description": "Subject line of the inbound support email"
+      },
+      "start__output__emailBody": {
+        "type": "string",
+        "description": "Body text of the inbound support email"
+      }
+    },
+    "required": [
+      "start__output__emailSubject",
+      "start__output__emailBody"
+    ]
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "category": {
+        "type": "string",
+        "description": "Email category: billing | technical | account | shipping | feature-request | complaint | general"
+      },
+      "priority": {
+        "type": "string",
+        "description": "Triage priority: critical | high | medium | low"
+      }
+    },
+    "required": [
+      "category",
+      "priority"
+    ]
+  },
+  "metadata": {
+    "storageVersion": "50.0.0",
+    "isConversational": false,
+    "showProjectCreationExperience": false
+  },
+  "type": "lowCode",
+  "guardrails": [],
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a specialized support-email triage classifier for a SaaS company.\n\nYour ONLY task is to read one inbound support email (subject + body) and return a JSON object with exactly two fields:\n- category: one of [billing, technical, account, shipping, feature-request, complaint, general]\n- priority: one of [critical, high, medium, low]\n\nCategory definitions:\n- billing: invoices, payments, refunds, pricing, subscription changes\n- technical: bugs, errors, crashes, integrations, API issues, performance problems\n- account: login, password reset, access permissions, user management, SSO\n- shipping: delivery status, tracking, lost packages (for product companies)\n- feature-request: suggestions for new functionality or improvements\n- complaint: expressions of dissatisfaction not tied to a specific technical issue\n- general: everything else that doesn’t clearly fit the above\n\nPriority rules:\n- critical: complete service outage, data loss, security breach, or total inability to work\n- high: major feature broken and blocking work, payment failure, account locked out\n- medium: partial functionality degraded, billing question with urgency, how-to request\n- low: minor inconvenience, feature request, general inquiry, compliment\n\nOutput format: return ONLY a raw JSON object, no markdown fences, no explanation.\nExample: {\"category\": \"technical\", \"priority\": \"high\"}",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "You are a specialized support-email triage classifier for a SaaS company.\n\nYour ONLY task is to read one inbound support email (subject + body) and return a JSON object with exactly two fields:\n- category: one of [billing, technical, account, shipping, feature-request, complaint, general]\n- priority: one of [critical, high, medium, low]\n\nCategory definitions:\n- billing: invoices, payments, refunds, pricing, subscription changes\n- technical: bugs, errors, crashes, integrations, API issues, performance problems\n- account: login, password reset, access permissions, user management, SSO\n- shipping: delivery status, tracking, lost packages (for product companies)\n- feature-request: suggestions for new functionality or improvements\n- complaint: expressions of dissatisfaction not tied to a specific technical issue\n- general: everything else that doesn’t clearly fit the above\n\nPriority rules:\n- critical: complete service outage, data loss, security breach, or total inability to work\n- high: major feature broken and blocking work, payment failure, account locked out\n- medium: partial functionality degraded, billing question with urgency, how-to request\n- low: minor inconvenience, feature request, general inquiry, compliment\n\nOutput format: return ONLY a raw JSON object, no markdown fences, no explanation.\nExample: {\"category\": \"technical\", \"priority\": \"high\"}"
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "Subject: {{input.start__output__emailSubject}}\n\n{{input.start__output__emailBody}}",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "Subject: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__emailSubject"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\n"
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__emailBody"
+        }
+      ]
+    }
+  ],
+  "projectId": "19fbc7b9-e69c-4245-855c-453872debbce"
+}

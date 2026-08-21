@@ -1,0 +1,6 @@
+{
+  "Name": "DiceRoller",
+  "ProjectType": "Process",
+  "Description": "Rolls a die and displays the result",
+  "MainFile": "Main.xaml"
+}

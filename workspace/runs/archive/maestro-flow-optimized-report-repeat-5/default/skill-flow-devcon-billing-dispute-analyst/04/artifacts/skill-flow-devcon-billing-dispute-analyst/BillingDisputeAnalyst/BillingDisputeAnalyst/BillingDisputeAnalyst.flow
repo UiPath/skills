@@ -1,0 +1,543 @@
+{
+  "id": "63791c97-1dab-4009-bd2a-e2173ea446b0",
+  "version": "1.8",
+  "name": "BillingDisputeAnalyst",
+  "variables": {
+    "globals": [
+      {
+        "id": "disputeDescription",
+        "direction": "in",
+        "type": "string",
+        "triggerNodeId": "start"
+      },
+      {
+        "id": "invoiceNumber",
+        "direction": "in",
+        "type": "string",
+        "triggerNodeId": "start"
+      },
+      {
+        "id": "determination",
+        "direction": "out",
+        "type": "string"
+      },
+      {
+        "id": "rationale",
+        "direction": "out",
+        "type": "string"
+      }
+    ],
+    "nodes": [
+      {
+        "id": "start.output",
+        "type": "object",
+        "description": "Data passed when manually triggering the workflow.",
+        "binding": {
+          "nodeId": "start",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "billingDisputeAgent1.output",
+        "type": "object",
+        "description": "Agent response",
+        "binding": {
+          "nodeId": "billingDisputeAgent1",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "billingDisputeAgent1.error",
+        "type": "object",
+        "description": "Error information if the node fails",
+        "binding": {
+          "nodeId": "billingDisputeAgent1",
+          "outputId": "error"
+        }
+      },
+      {
+        "id": "end1.determination",
+        "type": "string",
+        "binding": {
+          "nodeId": "end1",
+          "outputId": "determination"
+        }
+      },
+      {
+        "id": "end1.rationale",
+        "type": "string",
+        "binding": {
+          "nodeId": "end1",
+          "outputId": "rationale"
+        }
+      }
+    ]
+  },
+  "nodes": [
+    {
+      "id": "start",
+      "type": "core.trigger.manual",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Manual trigger"
+      },
+      "inputs": {
+        "entryPointId": "b244d9aa-720b-45f7-89f9-8cc212f2049a",
+        "isDefaultEntryPoint": true
+      }
+    },
+    {
+      "id": "billingDisputeAgent1",
+      "type": "uipath.agent.autonomous",
+      "typeVersion": "1.2",
+      "display": {
+        "label": "Billing Dispute Analyst"
+      },
+      "inputs": {
+        "systemPrompt": "You are a billing dispute analyst. Analyze billing disputes and provide a determination and rationale.",
+        "userPrompt": "Analyze the billing dispute.",
+        "source": "33063438-7ffd-4792-ae67-9ce8d59b3920",
+        "agentInputVariables": [
+          {
+            "id": "start__output__disputeDescription",
+            "type": "string",
+            "binding": "=$vars.start.output.disputeDescription"
+          },
+          {
+            "id": "start__output__invoiceNumber",
+            "type": "string",
+            "binding": "=$vars.start.output.invoiceNumber"
+          }
+        ],
+        "agentOutputVariables": [
+          {
+            "id": "determination",
+            "type": "string"
+          },
+          {
+            "id": "rationale",
+            "type": "string"
+          }
+        ]
+      },
+      "outputs": {
+        "output": {
+          "type": "object",
+          "description": "Agent response",
+          "source": "=result.response",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails",
+          "source": "=Error",
+          "var": "error"
+        }
+      }
+    },
+    {
+      "id": "billingDisputeSopIndexCtx1",
+      "type": "uipath.agent.resource.context.index.billing-dispute-sop-index.cc45b9b4-dbf6-47b3-40ac-08debc0cec5b",
+      "typeVersion": "1.0.0",
+      "display": {
+        "label": "Billing Dispute SOP Index"
+      },
+      "inputs": {
+        "source": "399c8771-1555-4fb8-8fdd-c5e1c01afb39"
+      }
+    },
+    {
+      "id": "end1",
+      "type": "core.control.end",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "End"
+      },
+      "outputs": {
+        "determination": {
+          "source": "=js:$vars.billingDisputeAgent1.output.determination"
+        },
+        "rationale": {
+          "source": "=js:$vars.billingDisputeAgent1.output.rationale"
+        }
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge-start-to-agent",
+      "sourceNodeId": "start",
+      "sourcePort": "output",
+      "targetNodeId": "billingDisputeAgent1",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge-agent-context",
+      "sourceNodeId": "billingDisputeAgent1",
+      "sourcePort": "context",
+      "targetNodeId": "billingDisputeSopIndexCtx1",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge-agent-to-end",
+      "sourceNodeId": "billingDisputeAgent1",
+      "sourcePort": "success",
+      "targetNodeId": "end1",
+      "targetPort": "input"
+    }
+  ],
+  "definitions": [
+    {
+      "nodeType": "core.trigger.manual",
+      "version": "1.0",
+      "category": "trigger",
+      "description": "Start workflow manually",
+      "tags": [
+        "trigger",
+        "start",
+        "manual"
+      ],
+      "sortOrder": 40,
+      "display": {
+        "label": "Manual trigger",
+        "icon": "play",
+        "shape": "circle"
+      },
+      "handleConfiguration": [
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "output",
+              "type": "source",
+              "handleType": "output",
+              "showButton": true,
+              "constraints": {
+                "forbiddenTargetCategories": [
+                  "trigger"
+                ]
+              }
+            }
+          ],
+          "visible": true
+        }
+      ],
+      "model": {
+        "type": "bpmn:StartEvent",
+        "entryPointId": true
+      },
+      "outputDefinition": {
+        "output": {
+          "type": "object",
+          "description": "Data passed when manually triggering the workflow.",
+          "source": "null",
+          "var": "output"
+        }
+      },
+      "toolbarExtensions": {
+        "design": {
+          "actions": [
+            {
+              "id": "change-trigger-type",
+              "icon": "square-mouse-pointer",
+              "label": "Change trigger type"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "nodeType": "uipath.agent.autonomous",
+      "version": "1.2",
+      "category": "agent",
+      "description": "AI agent that completes tasks autonomously",
+      "tags": [
+        "agentic",
+        "ai",
+        "autonomous",
+        "agent"
+      ],
+      "sortOrder": 5,
+      "supportsErrorHandling": true,
+      "display": {
+        "label": "Autonomous Agent",
+        "icon": "autonomous-agent",
+        "shape": "rectangle"
+      },
+      "handleConfiguration": [
+        {
+          "position": "top",
+          "handles": [
+            {
+              "id": "escalation",
+              "type": "source",
+              "handleType": "artifact",
+              "label": "Escalations",
+              "showButton": true,
+              "constraints": {
+                "allowedTargets": [
+                  {
+                    "nodeType": "uipath.agent.resource.escalation"
+                  },
+                  {
+                    "nodeType": "uipath.agent.resource.escalation.*"
+                  }
+                ],
+                "validationMessage": "Only Agent Escalation nodes can connect here",
+                "addNodePanel": {
+                  "searchScope": "deep",
+                  "searchProviders": []
+                }
+              }
+            }
+          ]
+        },
+        {
+          "position": "bottom",
+          "handles": [
+            {
+              "id": "context",
+              "type": "source",
+              "handleType": "artifact",
+              "label": "Context",
+              "showButton": true,
+              "constraints": {
+                "allowedTargets": [
+                  {
+                    "nodeType": "uipath.agent.resource.context.*"
+                  }
+                ],
+                "validationMessage": "Only Context resource nodes can connect here",
+                "addNodePanel": {
+                  "searchScope": "deep",
+                  "searchProviders": [],
+                  "refreshOnFocus": "context",
+                  "createNewActions": [
+                    {
+                      "label": "Create new Context",
+                      "icon": "external-link",
+                      "description": "Opens in a new tab",
+                      "urlTemplate": "/{org}/agents_/indexes/add",
+                      "categoryId": "agent"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "id": "tool",
+              "type": "source",
+              "handleType": "artifact",
+              "label": "Tools",
+              "showButton": true,
+              "constraints": {
+                "allowedTargets": [
+                  {
+                    "nodeType": "uipath.agent.resource.tool.*"
+                  }
+                ],
+                "validationMessage": "Only Tool resource nodes can connect here",
+                "addNodePanel": {
+                  "searchScope": "deep",
+                  "searchProviders": [],
+                  "createNewActions": []
+                }
+              }
+            }
+          ]
+        },
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "success",
+              "type": "source",
+              "handleType": "output",
+              "showButton": true,
+              "constraints": {
+                "forbiddenTargetCategories": [
+                  "trigger"
+                ]
+              }
+            },
+            {
+              "id": "error",
+              "type": "source",
+              "handleType": "output",
+              "label": "Error",
+              "showButton": false,
+              "constraints": {
+                "forbiddenTargetCategories": [
+                  "trigger"
+                ]
+              }
+            }
+          ]
+        }
+      ],
+      "model": {
+        "type": "bpmn:ServiceTask",
+        "serviceType": "Orchestrator.StartInlineAgentJob",
+        "version": "v2",
+        "source": true
+      },
+      "outputDefinition": {
+        "output": {
+          "type": "object",
+          "description": "Agent response",
+          "source": "=result.response",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails",
+          "source": "=Error",
+          "var": "error"
+        }
+      }
+    },
+    {
+      "nodeType": "uipath.agent.resource.context.index.billing-dispute-sop-index.cc45b9b4-dbf6-47b3-40ac-08debc0cec5b",
+      "version": "1.0.0",
+      "category": "agent",
+      "tags": [
+        "agent-context",
+        "index"
+      ],
+      "description": "SOP grounding for the Billing Dispute Analyst agent.",
+      "sortOrder": 505,
+      "display": {
+        "label": "Billing Dispute SOP Index",
+        "description": "SOP grounding for the Billing Dispute Analyst agent.",
+        "icon": "file-text",
+        "shape": "circle"
+      },
+      "handleConfiguration": [
+        {
+          "position": "top",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "artifact",
+              "constraints": {
+                "maxConnections": 1,
+                "allowedSources": [
+                  {
+                    "nodeType": "uipath.agent.autonomous",
+                    "handleId": "context"
+                  },
+                  {
+                    "nodeType": "uipath.agent.conversational",
+                    "handleId": "context"
+                  }
+                ],
+                "validationMessage": "Only Agent's context handle can connect here"
+              }
+            }
+          ]
+        }
+      ],
+      "model": {
+        "source": true
+      }
+    },
+    {
+      "nodeType": "core.control.end",
+      "version": "1.0",
+      "category": "control-flow",
+      "description": "Mark the end of a workflow path",
+      "tags": [
+        "control-flow",
+        "end",
+        "finish",
+        "complete"
+      ],
+      "sortOrder": 20,
+      "display": {
+        "label": "End",
+        "icon": "circle-check",
+        "shape": "circle"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        }
+      ],
+      "model": {
+        "type": "bpmn:EndEvent"
+      },
+      "runtimeConstraints": {
+        "exclude": [
+          "api-function"
+        ]
+      }
+    }
+  ],
+  "runtime": "maestro",
+  "layout": {
+    "nodes": {
+      "start": {
+        "position": {
+          "x": -192,
+          "y": 96
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "billingDisputeAgent1": {
+        "position": {
+          "x": 0,
+          "y": 0
+        },
+        "size": {
+          "width": 288,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "billingDisputeSopIndexCtx1": {
+        "position": {
+          "x": 48,
+          "y": 192
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "end1": {
+        "position": {
+          "x": 384,
+          "y": 96
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      }
+    }
+  }
+}

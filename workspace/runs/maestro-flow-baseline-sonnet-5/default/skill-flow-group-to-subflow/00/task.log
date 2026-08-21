@@ -1,0 +1,47 @@
+2026-08-18 21:57:33 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-08-18 21:57:33 [INFO] coder_eval.orchestrator: API routing: aws_bedrock
+2026-08-18 21:57:34 [DEBUG] coder_eval.criteria: Discovered 15 criterion checkers
+2026-08-18 21:57:34 [DEBUG] coder_eval.criteria: Validated 15 criterion checkers
+2026-08-18 21:57:34 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-08-18 21:57:34 [DEBUG] coder_eval.orchestrator: Sending prompt: Move getWeather and formatSummary into a subflow called "fetchAndFormat". The subflow should output ...
+2026-08-18 21:57:34 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Starting agent query stream...
+2026-08-18 22:05:27 [DEBUG] coder_eval.agents.claude_code_agent: [coder] session_id changed: None -> fa24a14a-6e8d-4b15-9ba4-0d55bb6af57a
+2026-08-18 22:05:27 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Agent query stream ended
+2026-08-18 22:05:27 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-08-18 22:05:27 [DEBUG] coder_eval.orchestrator: Agent response received (3575 chars)
+2026-08-18 22:05:27 [DEBUG] coder_eval.orchestrator: Checking success criteria
+2026-08-18 22:05:27 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'uip maestro flow validate passes on the flow file': python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py
+2026-08-18 22:05:30 [DEBUG] coder_eval.sandbox: Command 'python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py' exited with code 0
+2026-08-18 22:05:30 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+Validating BellevueWeather/BellevueWeather/BellevueWeather.flow
+{
+  "Result": "Success",
+  "Code": "FlowValidate",
+  "Data": {
+    "File": "/work/output/artifacts/skill-flow-group-to-subflow/BellevueWeather/BellevueWeather/BellevueWeather.flow",
+    "Status": "Valid"
+  }
+}
+---
+2026-08-18 22:05:30 [DEBUG] coder_eval.sandbox: STDERR:
+---
+[ManifestClient] fetchDynamicNodes ok: total=315 agent context nodes=2 external agent nodes=7 orchestrator nodes=261 IXP nodes=45
+---
+2026-08-18 22:05:30 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-08-18 22:05:30 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'Flow debug runs with subflow, output contains branch message': python3 $TASK_DIR/check_group_to_subflow.py
+2026-08-18 22:05:47 [DEBUG] coder_eval.sandbox: Command 'python3 $TASK_DIR/check_group_to_subflow.py' exited with code 0
+2026-08-18 22:05:47 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+OK: fetchAndFormat subflow present, old nodes removed, debug output valid
+---
+2026-08-18 22:05:47 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-08-18 22:05:47 [INFO] coder_eval.orchestrator: Success criteria: 2/2 passed, weighted score: 1.000
+2026-08-18 22:05:47 [WARNING] coder_eval.orchestrator: Visible turns (32) exceeded expected_turns (13) at iteration 1 for task skill-flow-group-to-subflow. Run continues — max_turns remains the hard cap.
+2026-08-18 22:05:47 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-08-18 22:05:47 [INFO] coder_eval.orchestrator: Running post-run command: python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/cleanup_solutions.py
+2026-08-18 22:05:48 [WARNING] coder_eval.orchestrator: [post_run stderr] cleanup_solutions: deleted e67e35de-4a3e-4050-55e1-08defd62525a (from BellevueWeather/BellevueWeather.uipx)
+2026-08-18 22:05:48 [WARNING] coder_eval.orchestrator: [post_run stderr] cleanup_solutions: summary policy=always deleted=1 preserved=0 skipped=0 not_uploaded=0 failed=0
+2026-08-18 22:05:48 [INFO] coder_eval.orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+2026-08-18 22:05:48 [INFO] coder_eval.orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-group-to-subflow
+2026-08-18 22:05:48 [INFO] coder_eval.orchestrator: Task finished: status=SUCCESS duration=495.9s score=1.000 iterations=1

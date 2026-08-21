@@ -1,0 +1,31 @@
+{
+  "_description": "Filter applied to the 'List Groups' connector activity (uipath.connector.uipath-microsoft-azureactivedirectory.list-groups) in the CeqlWhereTest flow. The 'where' parameter has design.component=FilterBuilder (CEQL) as confirmed by registry get connectorMethodInfo. This filter compiles to the CEQL string: displayName = 'active'",
+  "connectorKey": "uipath-microsoft-azureactivedirectory",
+  "nodeType": "uipath.connector.uipath-microsoft-azureactivedirectory.list-groups",
+  "nodeId": "listGroups1",
+  "filterParamName": "where",
+  "compiledCeql": "displayName = 'active'",
+  "filterTree": {
+    "groupOperator": 0,
+    "index": 0,
+    "filters": [
+      {
+        "id": "displayName",
+        "operator": "Equals",
+        "value": {
+          "value": "active",
+          "rawString": "\"active\"",
+          "isLiteral": true
+        }
+      }
+    ],
+    "groups": []
+  },
+  "configureCommand": "uip maestro flow node configure CeqlWhereTest.flow listGroups1 --detail '{\"connectionId\":\"<UUID>\",\"folderKey\":\"<FOLDER_KEY>\",\"method\":\"GET\",\"endpoint\":\"/groups\",\"filter\":{\"groupOperator\":0,\"index\":0,\"filters\":[{\"id\":\"displayName\",\"operator\":\"Equals\",\"value\":{\"value\":\"active\",\"rawString\":\"\\\"active\\\"\",\"isLiteral\":true}}],\"groups\":[]}}' --output json",
+  "openQuestions": [
+    "A live Azure AD (Microsoft Entra) IS connection UUID must replace <UUID>",
+    "The Orchestrator folder key for that connection must replace <FOLDER_KEY>",
+    "Run: uip is connections list uipath-microsoft-azureactivedirectory --all-folders --output json  to discover both values",
+    "Re-run node configure with the resolved values to complete wiring and generate bindings_v2.json"
+  ]
+}

@@ -1,0 +1,641 @@
+{
+  "id": "dbdf8e4c-8330-4813-a916-687008a37e1b",
+  "version": "1.8",
+  "name": "InvoiceSAPFlow",
+  "nodes": [
+    {
+      "id": "extractInvoiceFields",
+      "type": "uipath.ixp.invoiceixp-cef0d447-ixp.ff973488-5d89-8035-86ac-f980b4be6deb-c4359cde-55f0-4f0e-9322-c6cdce74ab4c",
+      "typeVersion": "1.0.0",
+      "display": {
+        "label": "Extract Invoice Fields"
+      },
+      "inputs": {
+        "model": {
+          "id": "ff973488-5d89-8035-86ac-f980b4be6deb",
+          "modelName": "invoiceixp-cef0d447-ixp",
+          "modelDisplayName": "InvoiceIXP",
+          "folderKey": "c4359cde-55f0-4f0e-9322-c6cdce74ab4c",
+          "folderName": "Shared",
+          "folderPath": "c4359cde-55f0-4f0e-9322-c6cdce74ab4c",
+          "description": ""
+        },
+        "modelName": "invoiceixp-cef0d447-ixp",
+        "description": "",
+        "projectName": "invoiceixp-cef0d447-ixp",
+        "versionTag": "",
+        "folderKey": "c4359cde-55f0-4f0e-9322-c6cdce74ab4c",
+        "folderName": "Shared",
+        "fileRef": "=js:$vars.start.output.invoicePdf",
+        "pageRange": ""
+      },
+      "outputs": {
+        "output": {
+          "name": "output",
+          "type": "object",
+          "source": "=this.result",
+          "var": "output",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "properties": {
+              "ExtractionResult": {
+                "type": "object",
+                "properties": {
+                  "DocumentId": {
+                    "type": "string"
+                  },
+                  "ResultsVersion": {
+                    "type": "integer"
+                  },
+                  "ResultsDocument": {
+                    "type": "object",
+                    "properties": {
+                      "Fields": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "FieldId": {
+                              "type": "string"
+                            },
+                            "FieldName": {
+                              "type": "string"
+                            },
+                            "FieldType": {
+                              "type": "string"
+                            },
+                            "IsMissing": {
+                              "type": "boolean"
+                            },
+                            "Values": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            },
+                            "Confidence": {
+                              "type": "integer"
+                            }
+                          }
+                        }
+                      },
+                      "Tables": {
+                        "type": "array"
+                      }
+                    }
+                  }
+                }
+              },
+              "ExtractorPayloads": {
+                "type": "object"
+              },
+              "BusinessrulesResults": {
+                "type": "array"
+              }
+            }
+          }
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails",
+          "source": "=Error",
+          "var": "error",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "required": [
+              "code",
+              "message",
+              "detail",
+              "category",
+              "status"
+            ],
+            "properties": {
+              "code": {
+                "type": "string"
+              },
+              "message": {
+                "type": "string"
+              },
+              "detail": {
+                "type": "string"
+              },
+              "category": {
+                "type": "string"
+              },
+              "status": {
+                "type": "integer"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      }
+    },
+    {
+      "id": "buildSapPayload",
+      "type": "core.action.script",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Build SAP Payload"
+      },
+      "inputs": {
+        "script": "const fields = $vars.extractInvoiceFields.output.ExtractionResult.ResultsDocument.Fields || [];\nconst get = (name) => (fields.find(f => f.FieldName === name) || {}).Values?.[0] || null;\nreturn {\n  vendorId: get('VendorId') || get('vendor_id') || get('Vendor'),\n  invoiceNumber: get('InvoiceNumber') || get('invoice_number') || get('Invoice Number'),\n  invoiceDate: get('InvoiceDate') || get('invoice_date') || get('Invoice Date'),\n  totalAmount: get('TotalAmount') || get('total_amount') || get('Total Amount'),\n  currency: get('Currency') || get('currency'),\n  lineItems: ($vars.extractInvoiceFields.output.ExtractionResult.ResultsDocument.Tables || []).map(t => t)\n};"
+      },
+      "outputs": {
+        "output": {
+          "type": "object",
+          "description": "The return value of the script",
+          "source": "=result.response",
+          "var": "output"
+        }
+      }
+    },
+    {
+      "id": "postToSap",
+      "type": "core.logic.mock",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Post Invoice to SAP (mock — SAP connector pending)"
+      }
+    },
+    {
+      "id": "end",
+      "type": "core.control.end",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "End"
+      }
+    },
+    {
+      "id": "start",
+      "type": "core.trigger.manual",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Manual trigger"
+      },
+      "inputs": {
+        "entryPointId": "a46b67d8-06ea-4bbd-8e96-62f134074d8f",
+        "isDefaultEntryPoint": true
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge-start-to-extract",
+      "sourceNodeId": "start",
+      "sourceHandle": "output",
+      "targetNodeId": "extractInvoiceFields",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge-extract-to-script",
+      "sourceNodeId": "extractInvoiceFields",
+      "sourceHandle": "success",
+      "targetNodeId": "buildSapPayload",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge-script-to-sap",
+      "sourceNodeId": "buildSapPayload",
+      "sourceHandle": "success",
+      "targetNodeId": "postToSap",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge-sap-to-end",
+      "sourceNodeId": "postToSap",
+      "sourceHandle": "output",
+      "targetNodeId": "end",
+      "targetPort": "input"
+    }
+  ],
+  "definitions": [
+    {
+      "nodeType": "uipath.ixp.invoiceixp-cef0d447-ixp.ff973488-5d89-8035-86ac-f980b4be6deb-c4359cde-55f0-4f0e-9322-c6cdce74ab4c",
+      "version": "1.0.0",
+      "category": "document-extraction",
+      "tags": [
+        "ixp",
+        "document-understanding",
+        "extraction"
+      ],
+      "description": "(Shared)",
+      "sortOrder": 537,
+      "display": {
+        "canvasLabel": "Extract",
+        "label": "InvoiceIXP",
+        "description": "(Shared)",
+        "icon": "file-text"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "success",
+              "type": "source",
+              "handleType": "output"
+            },
+            {
+              "id": "error",
+              "label": "Error",
+              "type": "source",
+              "handleType": "output",
+              "visible": "{inputs.errorHandlingEnabled}",
+              "constraints": {
+                "maxConnections": 1
+              }
+            }
+          ]
+        }
+      ],
+      "supportsErrorHandling": true,
+      "model": {
+        "type": "bpmn:ServiceTask",
+        "serviceType": "IXP.Extraction"
+      }
+    },
+    {
+      "nodeType": "core.action.script",
+      "version": "1.0",
+      "category": "data-operations",
+      "description": "Run custom JavaScript code",
+      "tags": [
+        "code",
+        "javascript",
+        "python"
+      ],
+      "sortOrder": 35,
+      "display": {
+        "label": "Script",
+        "icon": "code"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "success",
+              "type": "source",
+              "handleType": "output"
+            },
+            {
+              "id": "error",
+              "label": "Error",
+              "type": "source",
+              "handleType": "output",
+              "visible": "{inputs.errorHandlingEnabled}",
+              "constraints": {
+                "maxConnections": 1
+              }
+            }
+          ]
+        }
+      ],
+      "model": {
+        "type": "bpmn:ScriptTask"
+      }
+    },
+    {
+      "nodeType": "core.logic.mock",
+      "version": "1.0",
+      "category": "logic",
+      "description": "Mock placeholder for a node not yet implemented",
+      "tags": [
+        "mock",
+        "placeholder"
+      ],
+      "sortOrder": 999,
+      "display": {
+        "label": "Mock",
+        "icon": "box"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "output",
+              "type": "source",
+              "handleType": "output"
+            }
+          ]
+        }
+      ],
+      "model": {
+        "type": "bpmn:ServiceTask"
+      }
+    },
+    {
+      "nodeType": "core.control.end",
+      "version": "1.0",
+      "category": "control-flow",
+      "description": "Mark the end of a workflow path",
+      "tags": [
+        "control-flow",
+        "end",
+        "finish",
+        "complete"
+      ],
+      "sortOrder": 20,
+      "display": {
+        "label": "End",
+        "icon": "circle-check",
+        "shape": "circle"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        }
+      ],
+      "model": {
+        "type": "bpmn:EndEvent"
+      }
+    },
+    {
+      "nodeType": "core.trigger.manual",
+      "version": "1.0",
+      "category": "trigger",
+      "description": "Start workflow manually",
+      "tags": [
+        "trigger",
+        "start",
+        "manual"
+      ],
+      "sortOrder": 40,
+      "display": {
+        "label": "Manual trigger",
+        "icon": "play",
+        "shape": "circle"
+      },
+      "handleConfiguration": [
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "output",
+              "type": "source",
+              "handleType": "output",
+              "showButton": true,
+              "constraints": {
+                "forbiddenTargetCategories": [
+                  "trigger"
+                ]
+              }
+            }
+          ],
+          "visible": true
+        }
+      ],
+      "model": {
+        "type": "bpmn:StartEvent",
+        "entryPointId": true
+      },
+      "outputDefinition": {
+        "output": {
+          "type": "object",
+          "description": "Data passed when manually triggering the workflow.",
+          "source": "null",
+          "var": "output"
+        }
+      },
+      "toolbarExtensions": {
+        "design": {
+          "actions": [
+            {
+              "id": "change-trigger-type",
+              "icon": "square-mouse-pointer",
+              "label": "Change trigger type"
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "runtime": "maestro",
+  "variables": {
+    "nodes": [
+      {
+        "id": "extractInvoiceFields.output",
+        "type": "object",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "ExtractionResult": {
+              "type": "object",
+              "properties": {
+                "DocumentId": {
+                  "type": "string"
+                },
+                "ResultsVersion": {
+                  "type": "integer"
+                },
+                "ResultsDocument": {
+                  "type": "object",
+                  "properties": {
+                    "Fields": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "FieldId": {
+                            "type": "string"
+                          },
+                          "FieldName": {
+                            "type": "string"
+                          },
+                          "FieldType": {
+                            "type": "string"
+                          },
+                          "IsMissing": {
+                            "type": "boolean"
+                          },
+                          "Values": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "Confidence": {
+                            "type": "integer"
+                          }
+                        }
+                      }
+                    },
+                    "Tables": {
+                      "type": "array"
+                    }
+                  }
+                }
+              }
+            },
+            "ExtractorPayloads": {
+              "type": "object"
+            },
+            "BusinessrulesResults": {
+              "type": "array"
+            }
+          }
+        },
+        "binding": {
+          "nodeId": "extractInvoiceFields",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "extractInvoiceFields.error",
+        "type": "object",
+        "description": "Error information if the node fails",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "required": [
+            "code",
+            "message",
+            "detail",
+            "category",
+            "status"
+          ],
+          "properties": {
+            "code": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "detail": {
+              "type": "string"
+            },
+            "category": {
+              "type": "string"
+            },
+            "status": {
+              "type": "integer"
+            }
+          },
+          "additionalProperties": false
+        },
+        "binding": {
+          "nodeId": "extractInvoiceFields",
+          "outputId": "error"
+        }
+      },
+      {
+        "id": "buildSapPayload.output",
+        "type": "object",
+        "description": "The return value of the script",
+        "binding": {
+          "nodeId": "buildSapPayload",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "start.output",
+        "type": "object",
+        "description": "Data passed when manually triggering the workflow.",
+        "binding": {
+          "nodeId": "start",
+          "outputId": "output"
+        }
+      }
+    ]
+  },
+  "layout": {
+    "nodes": {
+      "extractInvoiceFields": {
+        "position": {
+          "x": 448,
+          "y": 144
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "buildSapPayload": {
+        "position": {
+          "x": 640,
+          "y": 144
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "postToSap": {
+        "position": {
+          "x": 832,
+          "y": 144
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "end": {
+        "position": {
+          "x": 1024,
+          "y": 144
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "start": {
+        "position": {
+          "x": 256,
+          "y": 144
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        }
+      }
+    }
+  }
+}

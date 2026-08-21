@@ -1,0 +1,12 @@
+{
+    "DocVersion": "1.0.0",
+    "StudioMinVersion": "2025.10.0",
+    "SolutionId": "d5da3b9f-a3c9-43d2-9bf2-08defdfbf8f4",
+    "Projects": [
+        {
+            "Type": "Flow",
+            "ProjectRelativePath": "DatabricksQuery/project.uiproj",
+            "Id": "6d6da532-fc66-4566-a4a8-c2f31d1ea3be"
+        }
+    ]
+}

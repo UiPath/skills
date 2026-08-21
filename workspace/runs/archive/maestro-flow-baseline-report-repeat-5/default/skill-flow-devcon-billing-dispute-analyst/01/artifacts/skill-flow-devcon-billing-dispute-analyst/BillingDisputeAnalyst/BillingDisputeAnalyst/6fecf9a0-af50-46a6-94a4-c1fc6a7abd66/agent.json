@@ -1,0 +1,87 @@
+{
+  "version": "1.1.0",
+  "settings": {
+    "model": "anthropic.claude-sonnet-4-6",
+    "maxTokens": 64000,
+    "temperature": 0,
+    "engine": "basic-v2",
+    "maxIterations": 5,
+    "mode": "standard"
+  },
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "start__output__disputeDescription": {
+        "type": "string",
+        "description": "Bound from $vars.start.output.disputeDescription"
+      },
+      "start__output__invoiceNumber": {
+        "type": "string",
+        "description": "Bound from $vars.start.output.invoiceNumber"
+      }
+    }
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "determination": {
+        "type": "string",
+        "description": "The determination of the billing dispute (e.g. Valid, Invalid, Partial)"
+      },
+      "rationale": {
+        "type": "string",
+        "description": "The detailed rationale supporting the determination"
+      }
+    },
+    "required": [
+      "determination",
+      "rationale"
+    ]
+  },
+  "metadata": {
+    "storageVersion": "50.0.0",
+    "isConversational": false,
+    "showProjectCreationExperience": false
+  },
+  "type": "lowCode",
+  "guardrails": [],
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are an expert billing dispute analyst. Your role is to analyze billing disputes submitted by customers and provide a clear determination along with a detailed rationale. Use the knowledge base context provided to ground your analysis in company SOPs and policies. Always return a JSON object with two fields: \"determination\" (a concise verdict such as Valid, Invalid, or Partial) and \"rationale\" (a detailed explanation of your reasoning referencing applicable policies).",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "You are an expert billing dispute analyst. Your role is to analyze billing disputes submitted by customers and provide a clear determination along with a detailed rationale. Use the knowledge base context provided to ground your analysis in company SOPs and policies. Always return a JSON object with two fields: \"determination\" (a concise verdict such as Valid, Invalid, or Partial) and \"rationale\" (a detailed explanation of your reasoning referencing applicable policies)."
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "Please analyze the following billing dispute:\n\nInvoice Number: {{input.start__output__invoiceNumber}}\n\nDispute Description: {{input.start__output__disputeDescription}}\n\nBased on the applicable SOPs and policies in your knowledge base, provide your determination and rationale.",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "Please analyze the following billing dispute:\n\nInvoice Number: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__invoiceNumber"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\nDispute Description: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__disputeDescription"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\nBased on the applicable SOPs and policies in your knowledge base, provide your determination and rationale."
+        }
+      ]
+    }
+  ],
+  "projectId": "6fecf9a0-af50-46a6-94a4-c1fc6a7abd66"
+}

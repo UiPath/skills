@@ -1,0 +1,169 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+    xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+    xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+    xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+    xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:uipath="http://uipath.org/schema/bpmn"
+    id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn"
+    exporter="UiPath (https://bpmn.uipath.com)" exporterVersion="1.0">
+
+  <bpmn:process id="Process_ExpenseApproval" isExecutable="true">
+    <bpmn:extensionElements>
+      <uipath:migrationVersion version="11.5" />
+      <uipath:variables version="v1">
+        <!-- expenseId: identifier for the expense being evaluated -->
+        <uipath:inputOutput id="Var_ExpenseId" name="expenseId" type="string" />
+        <!-- amount: monetary value of the expense (numeric) -->
+        <uipath:inputOutput id="Var_Amount" name="amount" type="number" />
+        <!-- decision: approval outcome written by the auto-approve script branch -->
+        <uipath:inputOutput id="Var_Decision" name="decision" type="string" />
+        <!-- triageResult: raw output returned by the triage agent job -->
+        <uipath:inputOutput id="Var_TriageResult" name="triageResult" type="json" />
+        <!-- queueItemResult: queue item creation response for high-amount routing -->
+        <uipath:inputOutput id="Var_QueueItemResult" name="queueItemResult" type="json" />
+      </uipath:variables>
+      <uipath:bindings version="v1">
+        <uipath:binding id="Binding_AgentName" resource="process" propertyAttribute="name" default="PlaceholderTriageAgent" />
+        <uipath:binding id="Binding_FolderPath" resource="process" propertyAttribute="folderPath" default="PlaceholderFolder" />
+      </uipath:bindings>
+    </bpmn:extensionElements>
+
+    <bpmn:startEvent id="StartEvent_Manual" name="Expense Submitted">
+      <bpmn:outgoing>Flow_Start_Triage</bpmn:outgoing>
+    </bpmn:startEvent>
+
+    <bpmn:serviceTask id="Task_Triage" name="Triage Expense">
+      <bpmn:extensionElements>
+        <uipath:activity version="v1">
+          <uipath:type value="Orchestrator.StartAgentJob" version="v1" />
+          <uipath:context>
+            <uipath:input name="name" value="=bindings.Binding_AgentName" />
+            <uipath:input name="folderPath" value="=bindings.Binding_FolderPath" />
+          </uipath:context>
+          <uipath:input name="JobArguments" type="json" target="bodyField"><![CDATA[{"expenseId":"=vars.Var_ExpenseId","amount":"=vars.Var_Amount"}]]></uipath:input>
+          <uipath:output name="Process response" type="Orchestrator.RunJob" var="Var_TriageResult" />
+        </uipath:activity>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_Start_Triage</bpmn:incoming>
+      <bpmn:outgoing>Flow_Triage_Gw</bpmn:outgoing>
+    </bpmn:serviceTask>
+
+    <bpmn:exclusiveGateway id="GW_Route" name="Amount >= 1000?" default="Flow_Low">
+      <bpmn:incoming>Flow_Triage_Gw</bpmn:incoming>
+      <bpmn:outgoing>Flow_High</bpmn:outgoing>
+      <bpmn:outgoing>Flow_Low</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+
+    <bpmn:sendTask id="Task_HighRoute" name="Queue High-Amount Expense">
+      <bpmn:extensionElements>
+        <uipath:activity version="v1">
+          <uipath:type value="Orchestrator.CreateQueueItem" version="v1" />
+          <uipath:context>
+            <uipath:input name="queueName" value="PlaceholderExpenseApprovalQueue" />
+            <uipath:input name="folderId" value="" />
+            <uipath:input name="folderPath" value="PlaceholderFolder" />
+          </uipath:context>
+          <uipath:input name="ItemData" type="json" target="body"><![CDATA[{"expenseId":"=vars.Var_ExpenseId","amount":"=vars.Var_Amount"}]]></uipath:input>
+          <uipath:output name="response" type="Orchestrator.CreateQueueItem" var="Var_QueueItemResult" />
+        </uipath:activity>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_High</bpmn:incoming>
+      <bpmn:outgoing>Flow_High_Merge</bpmn:outgoing>
+    </bpmn:sendTask>
+
+    <bpmn:scriptTask id="Task_AutoApprove" name="Auto-Approve Expense" scriptFormat="JavaScript">
+      <bpmn:extensionElements>
+        <uipath:scriptVersion value="v3" />
+        <uipath:mapping version="v1">
+          <uipath:type value="BPMN.ScriptTask" version="v1" />
+          <uipath:input name="args" type="json" target="bodyField"><![CDATA[{"expenseId":"=vars.Var_ExpenseId","amount":"=vars.Var_Amount"}]]></uipath:input>
+          <uipath:output name="decision" type="string" var="Var_Decision" source="=result.response" />
+        </uipath:mapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_Low</bpmn:incoming>
+      <bpmn:outgoing>Flow_Low_Merge</bpmn:outgoing>
+      <bpmn:script><![CDATA[var autoDecision = "approved";
+return { response: autoDecision };]]></bpmn:script>
+    </bpmn:scriptTask>
+
+    <bpmn:exclusiveGateway id="GW_Merge" name="Merge" default="Flow_End">
+      <bpmn:incoming>Flow_High_Merge</bpmn:incoming>
+      <bpmn:incoming>Flow_Low_Merge</bpmn:incoming>
+      <bpmn:outgoing>Flow_End</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+
+    <bpmn:endEvent id="EndEvent_1" name="Expense Processed">
+      <bpmn:incoming>Flow_End</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <bpmn:sequenceFlow id="Flow_Start_Triage" sourceRef="StartEvent_Manual" targetRef="Task_Triage" />
+    <bpmn:sequenceFlow id="Flow_Triage_Gw" sourceRef="Task_Triage" targetRef="GW_Route" />
+    <bpmn:sequenceFlow id="Flow_High" sourceRef="GW_Route" targetRef="Task_HighRoute">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=vars.Var_Amount >= 1000</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_Low" sourceRef="GW_Route" targetRef="Task_AutoApprove" />
+    <bpmn:sequenceFlow id="Flow_High_Merge" sourceRef="Task_HighRoute" targetRef="GW_Merge" />
+    <bpmn:sequenceFlow id="Flow_Low_Merge" sourceRef="Task_AutoApprove" targetRef="GW_Merge" />
+    <bpmn:sequenceFlow id="Flow_End" sourceRef="GW_Merge" targetRef="EndEvent_1" />
+  </bpmn:process>
+
+  <bpmndi:BPMNDiagram id="Diagram_1">
+    <bpmndi:BPMNPlane id="Plane_1" bpmnElement="Process_ExpenseApproval">
+      <bpmndi:BPMNShape id="S_StartEvent_Manual" bpmnElement="StartEvent_Manual">
+        <dc:Bounds x="160" y="182" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Task_Triage" bpmnElement="Task_Triage">
+        <dc:Bounds x="260" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_GW_Route" bpmnElement="GW_Route">
+        <dc:Bounds x="430" y="175" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Task_HighRoute" bpmnElement="Task_HighRoute">
+        <dc:Bounds x="560" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Task_AutoApprove" bpmnElement="Task_AutoApprove">
+        <dc:Bounds x="560" y="270" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_GW_Merge" bpmnElement="GW_Merge">
+        <dc:Bounds x="730" y="175" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_EndEvent_1" bpmnElement="EndEvent_1">
+        <dc:Bounds x="850" y="182" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="E_Flow_Start_Triage" bpmnElement="Flow_Start_Triage">
+        <di:waypoint x="196" y="200" />
+        <di:waypoint x="260" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_Triage_Gw" bpmnElement="Flow_Triage_Gw">
+        <di:waypoint x="360" y="200" />
+        <di:waypoint x="430" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_High" bpmnElement="Flow_High">
+        <di:waypoint x="455" y="175" />
+        <di:waypoint x="455" y="120" />
+        <di:waypoint x="560" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_Low" bpmnElement="Flow_Low">
+        <di:waypoint x="455" y="225" />
+        <di:waypoint x="455" y="310" />
+        <di:waypoint x="560" y="310" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_High_Merge" bpmnElement="Flow_High_Merge">
+        <di:waypoint x="660" y="120" />
+        <di:waypoint x="755" y="120" />
+        <di:waypoint x="755" y="175" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_Low_Merge" bpmnElement="Flow_Low_Merge">
+        <di:waypoint x="660" y="310" />
+        <di:waypoint x="755" y="310" />
+        <di:waypoint x="755" y="225" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_End" bpmnElement="Flow_End">
+        <di:waypoint x="780" y="200" />
+        <di:waypoint x="850" y="200" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

@@ -1,0 +1,10 @@
+{
+  "_comment": "Planned uip maestro flow node configure --detail payload for getProductReviews1. Not applied — no live uipath-automattic-woocommerce connection exists on this tenant (uip is connections list \"uipath-automattic-woocommerce\" --all-folders returned no results, confirmed with --refresh). Run `node configure` with this payload (filling connectionId/folderKey from a real connection) once one is created.",
+  "connectionId": "<CONNECTION_ID_PLACEHOLDER>",
+  "folderKey": "<FOLDER_KEY_PLACEHOLDER>",
+  "method": "GET",
+  "endpoint": "/search_product_review",
+  "queryParameters": {
+    "order": "=js:$vars.mapSortOrder.output.order"
+  }
+}

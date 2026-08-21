@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "GenerateSchemaTest",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "99e4724d-6604-409d-9780-1b90a95843f5",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "GenerateSchemaTest"
+    },
+    "locks": [],
+    "key": "bd515bd0-0185-495c-8411-19cb9ae972e8",
+    "files": []
+  }
+}

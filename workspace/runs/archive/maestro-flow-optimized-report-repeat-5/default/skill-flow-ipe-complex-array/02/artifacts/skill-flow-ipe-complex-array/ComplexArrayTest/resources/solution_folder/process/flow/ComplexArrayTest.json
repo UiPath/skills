@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "ComplexArrayTest",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "1e302822-32a8-4ec0-becf-b449fbece612",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "ComplexArrayTest"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Flow",
+      "name": "ComplexArrayTest",
+      "package": {
+        "key": "f381a145-dca2-4034-8a1d-da0ebe223189"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "7b3ccb99-0c2b-4bf6-8cb8-23ba32421037",
+    "files": []
+  }
+}

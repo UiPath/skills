@@ -1,0 +1,29 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "Open-Meteo APIs",
+    "kind": "connection",
+    "type": "custom-codereval-openmeteoapis",
+    "apiVersion": "integrationservice.uipath.com/v1",
+    "isOverridable": true,
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "files": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "connectorName": "Open-Meteo APIs",
+      "name": "Open-Meteo APIs",
+      "description": null,
+      "authenticationType": "AuthenticateAfterDeployment",
+      "connectorVersion": "1.1.0",
+      "connectorKey": "custom-codereval-openmeteoapis",
+      "pollingInterval": 5
+    },
+    "locks": [],
+    "key": "21ca654f-b67b-4f97-9eb3-1f93bd3bb5cc"
+  }
+}

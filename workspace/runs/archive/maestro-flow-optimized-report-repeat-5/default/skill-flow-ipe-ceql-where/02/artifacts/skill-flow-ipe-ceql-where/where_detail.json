@@ -1,0 +1,32 @@
+{
+  "connector_key": "uipath-microsoft-azureactivedirectory",
+  "node_type": "uipath.connector.uipath-microsoft-azureactivedirectory.list-groups",
+  "node_id": "listEntraGroups1",
+  "operation": "List",
+  "method": "GET",
+  "endpoint": "/groups",
+  "filter_builder_param": "where",
+  "filter_tree": {
+    "groupOperator": 0,
+    "index": 0,
+    "filters": [
+      {
+        "id": "displayName",
+        "operator": "Equals",
+        "value": {
+          "value": "active",
+          "rawString": "\"active\"",
+          "isLiteral": true
+        }
+      }
+    ],
+    "groups": []
+  },
+  "compiled_ceql": "displayName = 'active'",
+  "notes": [
+    "The 'where' parameter on list-groups carries design.component=FilterBuilder per IS metadata.",
+    "The filter tree above compiles to the CEQL string: displayName = 'active'.",
+    "The CLI persists two halves: runtime at inputs.detail.queryParameters.where and design-time at inputs.detail.configuration.essentialConfiguration.savedFilterTrees.where.",
+    "To apply: run `uip maestro flow node configure CeqlWhereTest.flow listEntraGroups1 --detail \"$(cat listEntraGroups1.detail.json)\" --output json` after replacing connection placeholders."
+  ]
+}

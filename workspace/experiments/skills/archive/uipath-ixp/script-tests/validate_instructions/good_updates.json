@@ -1,0 +1,10 @@
+[
+  {
+    "name": "Invoice Number",
+    "instructions": "The unique invoice identifier, found in the header area near the top-right corner of the document, labeled 'Invoice #' or 'Invoice Number'. Example: '2106732', 'INV-2025-0042'."
+  },
+  {
+    "name": "Invoice Date",
+    "instructions": "The date the invoice was issued, located near the invoice number in the top section of the document, labeled 'Date' or 'Invoice Date'. Example: '2025-01-15', 'January 15 2025'."
+  }
+]

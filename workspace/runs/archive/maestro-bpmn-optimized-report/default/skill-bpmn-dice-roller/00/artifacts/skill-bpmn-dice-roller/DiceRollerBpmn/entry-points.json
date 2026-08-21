@@ -1,0 +1,20 @@
+{
+  "entryPoints": [
+    {
+      "id": "EP_Start",
+      "filePath": "/content/DiceRollerBpmn.bpmn#Start_1",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "roll": {
+            "type": "number"
+          }
+        }
+      }
+    }
+  ]
+}

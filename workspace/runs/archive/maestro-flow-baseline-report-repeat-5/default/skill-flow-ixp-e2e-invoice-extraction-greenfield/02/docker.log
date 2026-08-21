@@ -1,0 +1,6 @@
+20:10:03 [INFO   ] [default/skill-flow-ixp-e2e-invoice-extraction-greenfield/02] orchestrator: API routing: aws_bedrock
+20:20:58 [INFO   ] [default/skill-flow-ixp-e2e-invoice-extraction-greenfield/02] evaluation.checker: Criterion 'run_command' FAILED (score=0.00, threshold=1.00): Command: f=$(find . -name "*.flow" -print -quit); [ -n "$f" ] && uip maestro flow validate "$f" --output json
+20:20:58 [INFO   ] [default/skill-flow-ixp-e2e-invoice-extraction-greenfield/02] orchestrator: Success criteria: 7/8 passed, weighted score: 0.812
+20:20:58 [INFO   ] [default/skill-flow-ixp-e2e-invoice-extraction-greenfield/02] orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+20:20:58 [INFO   ] [default/skill-flow-ixp-e2e-invoice-extraction-greenfield/02] orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-ixp-e2e-invoice-extraction-greenfield
+20:20:58 [INFO   ] [default/skill-flow-ixp-e2e-invoice-extraction-greenfield/02] orchestrator: Task finished: status=FAILURE duration=659.0s score=0.812 iterations=1

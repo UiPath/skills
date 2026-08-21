@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "CountLettersLowCode",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "12854df2-fc7c-40bb-a00c-588602d33e7e",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "CountLettersLowCode"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Flow",
+      "name": "CountLettersLowCode",
+      "package": {
+        "key": "7da877da-e8e1-4e4e-a097-503d58c98050"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "f13d878b-bfdd-43a5-87e6-cbf2ce60ee4a",
+    "files": []
+  }
+}

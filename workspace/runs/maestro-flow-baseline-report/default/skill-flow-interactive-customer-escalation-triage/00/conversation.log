@@ -1,0 +1,90 @@
+=== USER (turn 1) — simulator-generated opener ===
+I need a new UiPath Flow project — call it **CustomerEscalationTriage**, inside a solution with the same name.
+
+The flow should take these inputs: `customerTier`, `productionDown`, `workaroundAvailable`, `businessImpact`, and `correlationId`. It needs to return four named outputs: `severity`, `engineeringNeeded`, `responseMode`, and `caseKey`.
+
+The logic should classify an incoming customer escalation and populate those outputs accordingly. I don't need you to run it — our grader will execute it after you've validated it. Let me know what other details you need from me to get the business logic right.
+
+=== AGENT (turn 1) — 202.8s, in=13 out=12177, 16 tool calls ===
+✅ **Validation passes** (`Status: Valid`) and **format ran** (repositioned 2 of 3 nodes, 7 variables counted).
+
+---
+
+## What was built
+
+**File:** `CustomerEscalationTriage/CustomerEscalationTriage/CustomerEscalationTriage.flow`
+**Solution:** `CustomerEscalationTriage/CustomerEscalationTriage.uipx`
+
+### Flow topology
+
+```
+Manual Trigger → Classify Escalation (Script) → End
+```
+
+### Inputs (5)
+| Variable | Type | Description |
+|---|---|---|
+| `customerTier` | string | `Enterprise`, `Pro`, `Standard`, `Free` |
+| `productionDown` | boolean | Whether production is down |
+| `workaroundAvailable` | boolean | Whether a workaround exists |
+| `businessImpact` | string | `High`, `Medium`, `Low` |
+| `correlationId` | string | Correlation identifier |
+
+### Outputs (4)
+| Variable | Type | Values |
+|---|---|---|
+| `severity` | string | `Sev1` / `Sev2` / `Sev3` / `Sev4` |
+| `engineeringNeeded` | boolean | `true` for Sev1 or Sev2 |
+| `responseMode` | string | `Immediate` / `Urgent` / `SLA-bound` / `Best-effort` |
+| `caseKey` | string | `{correlationId}-{severity}` |
+
+### Classification logic
+| Condition | Severity |
+|---|---|
+| Production down **AND** no workaround **AND** (Enterprise or High impact) | **Sev1** → Immediate, engineering required |
+| Production down **AND** (workaround exists OR Pro tier OR High impact) | **Sev2** → Urgent, engineering required |
+| Medium impact OR Enterprise OR Pro tier (no prod-down) | **Sev3** → SLA-bound |
+| Everything else | **Sev4** → Best-effort |
+
+### Status
+- ✅ `flow validate` — **Valid**, no warnings
+- ✅ `flow format` — run, layout normalised
+
+---
+
+What would you like to do next?
+
+1. **Publish to Studio Web** — push the solution so you can visualize and edit it in the browser
+2. **Debug the solution** — execute the flow end-to-end against real systems (has real side effects — confirmation required)
+3. **Deploy to Orchestrator** — pack and publish directly to Orchestrator
+4. **Something else** — tell me what you need
+
+=== USER (turn 2) ===
+A few things don't match how we actually operate, so I need some corrections before this is ready:
+
+1. **`responseMode`** — those values (`Immediate`, `Urgent`, etc.) aren't right for us. Every acknowledgement we draft has to go through human review before it goes to the customer; we never send automatically. So `responseMode` should always come back as `Draft`, regardless of severity.
+
+2. **`caseKey`** — I need that to simply carry the `correlationId` through unchanged. Downstream systems look it up by that exact value. Adding the severity suffix breaks the correlation.
+
+3. **Sev4** — we don't have a Sev4 tier. The three buckets are Sev1, Sev2, and Sev3. Anything that doesn't hit the Sev1 or Sev2 criteria should fall to Sev3.
+
+Can you update the logic with those corrections and re-validate?
+
+=== AGENT (turn 2) — 47.6s, in=5 out=3141, 2 tool calls ===
+✅ Valid, no warnings.
+
+Here's a summary of the three corrections applied to the script node:
+
+| What changed | Before | After |
+|---|---|---|
+| `responseMode` | Derived from severity (`Immediate` / `Urgent` / `SLA-bound` / `Best-effort`) | Always `Draft` |
+| `caseKey` | `correlationId + '-' + severity` | `correlationId` unchanged |
+| Sev4 bucket | Existed as a fourth tier | Removed — everything below Sev2 is Sev3 |
+
+The classification still works as before for Sev1 and Sev2; the else branch now falls straight to Sev3.
+
+=== USER (turn 3) — stop token — dialog ending ===
+Those three corrections are exactly what I needed. The flow now reflects how we actually handle escalations — `responseMode` always `Draft`, `caseKey` passes the `correlationId` through clean, and only three severity tiers. Validation passing is the last gate on our end.
+
+Go ahead and leave it there — the grader will take it from here.
+

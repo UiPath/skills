@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "QueueWrite",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "6ca3c9db-7bbe-4cc0-bf1d-72f059b1e14d",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "QueueWrite"
+    },
+    "locks": [],
+    "key": "3752a3f6-3c29-4f61-a651-c5bdf9504c1c",
+    "files": []
+  }
+}

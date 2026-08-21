@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "GoodDayFlow",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "7384b028-6265-4186-9a19-3eb65515152a",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "GoodDayFlow"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Flow",
+      "name": "GoodDayFlow",
+      "package": {
+        "key": "1400eb1c-2066-44a2-976f-78f550460296"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "c03cdf8c-9fc0-4249-95ed-f79a6b81bd72",
+    "files": []
+  }
+}

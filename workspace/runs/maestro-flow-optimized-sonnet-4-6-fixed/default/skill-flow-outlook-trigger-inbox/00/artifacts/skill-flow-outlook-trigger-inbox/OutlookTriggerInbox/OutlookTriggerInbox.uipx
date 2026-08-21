@@ -1,0 +1,12 @@
+{
+  "DocVersion": "1.0.0",
+  "StudioMinVersion": "2025.10.0",
+  "SolutionId": "6b7d8228-f7ea-4e3b-8900-d5712a52a2d6",
+  "Projects": [
+    {
+      "Type": "Flow",
+      "ProjectRelativePath": "OutlookTriggerInbox/project.uiproj",
+      "Id": "df2e7099-eb06-44c1-bd94-85a0bd9f9884"
+    }
+  ]
+}

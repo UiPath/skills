@@ -1,0 +1,49 @@
+task_id: skill-flow-non-catalog-http-fallback
+description: >
+  Integration test: a NON-catalog service (Spotify) has no IS connector of its
+  own — there is no `uipath-spotify` connector key. The only managed path is the
+  generic HTTP connector (`uipath-uipath-http`): a connection of that type holds
+  Spotify's base URL + OAuth, and the flow issues a connector-mode HTTP request
+  against it for the `/me` endpoint. The skill must build that managed-HTTP node.
+  Non-catalog counterpart of slack-http-fallback (there the proxy targets a
+  catalog connector; here the connector key IS uipath-uipath-http). Graded
+  structurally: validate plus a check on the fallback node shape. Runtime
+  `flow debug` is not graded here — correctness is verified by the node shape, so
+  the test does not depend on a live Spotify connection in the grading sandbox.
+tags: [uipath-maestro-flow, integration, mode:build, lifecycle:generate, shape:single-node, connector, uipath-uipath-http, feature:http, ipe]
+
+run_limits:
+  expected_turns: 32
+  task_timeout: 1500
+  max_turns: 100
+  turn_timeout: 1200
+
+initial_prompt: |
+  Create a new Flow project called "SpotifyProfileTest" with a manual trigger
+  that gets the current user's Spotify profile. Wire
+  the manual trigger to the node that fetches the profile.
+
+  Use the connection present in the `Shared/uipath-maestro-flow` folder.
+
+  Validate the final flow file.
+
+  Use `--output json` on every `uip` command whose output you parse.
+  Do NOT ask for approval, confirmation, or feedback — build and validate the
+  flow end-to-end in a single pass.
+
+success_criteria:
+  - type: command_executed
+    description: "uip maestro flow validate was called"
+    tool_name: "Bash"
+    command_pattern: "(uip|\\$UIP)\\s+(maestro\\s+)?flow\\s+validate"
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Profile fetch uses a managed HTTP node with the uipath-uipath-http connector key (non-catalog fallback) and targets the /me endpoint"
+    command: "python3 $TASK_DIR/check_non_catalog_http_fallback.py check_fallback"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0

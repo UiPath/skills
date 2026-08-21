@@ -1,0 +1,33 @@
+2026-08-19 20:58:03 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-08-19 20:58:03 [INFO] coder_eval.orchestrator: API routing: aws_bedrock
+2026-08-19 20:58:03 [DEBUG] coder_eval.criteria: Discovered 15 criterion checkers
+2026-08-19 20:58:03 [DEBUG] coder_eval.criteria: Validated 15 criterion checkers
+2026-08-19 20:58:03 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-08-19 20:58:05 [DEBUG] coder_eval.orchestrator: Sending prompt: Create a new Flow project called "DatabricksQuery" with a manual trigger.
+
+It should run a SQL query...
+2026-08-19 20:58:05 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Starting agent query stream...
+2026-08-19 21:04:48 [DEBUG] coder_eval.agents.claude_code_agent: [coder] session_id changed: None -> 9172d75b-6f24-4cdc-a254-bf80015fb540
+2026-08-19 21:04:48 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Agent query stream ended
+2026-08-19 21:04:48 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-08-19 21:04:48 [DEBUG] coder_eval.orchestrator: Agent response received (3868 chars)
+2026-08-19 21:04:48 [DEBUG] coder_eval.orchestrator: Checking success criteria
+2026-08-19 21:04:48 [DEBUG] coder_eval.evaluation.checker: Criterion 'command_executed' score: 1.00
+2026-08-19 21:04:48 [DEBUG] coder_eval.evaluation.checker: Criterion 'command_executed' score: 0.00
+2026-08-19 21:04:48 [INFO] coder_eval.evaluation.checker: Criterion 'command_executed' FAILED (score=0.00, threshold=1.00): Matched 0/1 required commands (filters: tool_name=Bash, pattern=/(uip|\$UIP)\s+(maestro\s+)?flow\s+debug/)
+2026-08-19 21:04:48 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'DatabricksQuery checks: valid flow wires the JDBC Execute-Query node with a bound connection, not the native Databricks connector or an HTTP fallback': python3 $TASK_DIR/check_databricks_query.py
+2026-08-19 21:04:48 [DEBUG] coder_eval.sandbox: Command 'python3 $TASK_DIR/check_databricks_query.py' exited with code 0
+2026-08-19 21:04:48 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+OK: flow uses the uipath-uipath-jdbc.execute-query-synchronously connector with a bound connection
+OK: all DatabricksQuery checks passed
+---
+2026-08-19 21:04:48 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-08-19 21:04:48 [INFO] coder_eval.orchestrator: Success criteria: 2/3 passed, weighted score: 0.769
+2026-08-19 21:04:48 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-08-19 21:04:48 [INFO] coder_eval.orchestrator: Running post-run command: python3 $EXPERIMENT_TASKS_PATH/uipath-maestro-flow/_shared/cleanup_solutions.py
+2026-08-19 21:04:49 [WARNING] coder_eval.orchestrator: [post_run stderr] cleanup_solutions: solution daef4a3f-f448-42fe-bcf8-54af1881e50c not uploaded (from DatabricksQuery/DatabricksQuery.uipx); nothing to clean up
+2026-08-19 21:04:49 [WARNING] coder_eval.orchestrator: [post_run stderr] cleanup_solutions: summary policy=always deleted=0 preserved=0 skipped=0 not_uploaded=1 failed=0
+2026-08-19 21:04:49 [INFO] coder_eval.orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+2026-08-19 21:04:49 [INFO] coder_eval.orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-jdbc-databricks-query
+2026-08-19 21:04:49 [INFO] coder_eval.orchestrator: Task finished: status=FAILURE duration=418.9s score=0.769 iterations=1

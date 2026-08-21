@@ -1,0 +1,123 @@
+{
+  "version": "1.1.0",
+  "settings": {
+    "model": "anthropic.claude-sonnet-5",
+    "maxTokens": 128000,
+    "temperature": 0,
+    "engine": "basic-v2",
+    "maxIterations": 5,
+    "mode": "standard"
+  },
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "disputeAnalyst__output__determination": {
+        "type": "string",
+        "description": "Dispute determination from the analyst"
+      },
+      "disputeAnalyst__output__recommendedAction": {
+        "type": "string",
+        "description": "Recommended action: auto_resolve or escalate_to_manager"
+      },
+      "disputeAnalyst__output__creditAmount": {
+        "type": "number",
+        "description": "Credit amount to be applied"
+      },
+      "disputeAnalyst__output__rationale": {
+        "type": "string",
+        "description": "Analyst rationale for the determination"
+      },
+      "start__output__webhookPayload": {
+        "type": "object",
+        "description": "Original webhook payload with invoice and customer details"
+      }
+    }
+  },
+  "outputSchema": {
+    "type": "object",
+    "required": [
+      "subject",
+      "body"
+    ],
+    "properties": {
+      "subject": {
+        "type": "string",
+        "description": "Email subject line for the resolution notification"
+      },
+      "body": {
+        "type": "string",
+        "description": "Full email body text for the billing dispute resolution notification"
+      }
+    }
+  },
+  "metadata": {
+    "storageVersion": "50.0.0",
+    "isConversational": false,
+    "showProjectCreationExperience": false
+  },
+  "type": "lowCode",
+  "guardrails": [],
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a professional customer communications writer specializing in billing dispute resolutions. Write clear, empathetic, and professional emails to customers explaining the outcome of their billing dispute.\n\nGuidelines:\n- Use a professional but warm tone\n- Clearly state the outcome and any credit being applied\n- Reference specific invoice details from the payload when available\n- Keep the email concise (under 300 words for the body)\n- Always return both the subject and body fields\n- Do not include placeholders or template variables in the output — write the complete email text",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "You are a professional customer communications writer specializing in billing dispute resolutions. Write clear, empathetic, and professional emails to customers explaining the outcome of their billing dispute.\n\nGuidelines:\n- Use a professional but warm tone\n- Clearly state the outcome and any credit being applied\n- Reference specific invoice details from the payload when available\n- Keep the email concise (under 300 words for the body)\n- Always return both the subject and body fields\n- Do not include placeholders or template variables in the output — write the complete email text"
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "Write a billing dispute resolution email for the following case:\n\n**Determination:** {{input.disputeAnalyst__output__determination}}\n**Recommended Action:** {{input.disputeAnalyst__output__recommendedAction}}\n**Credit Amount:** {{input.disputeAnalyst__output__creditAmount}}\n**Analyst Rationale:** {{input.disputeAnalyst__output__rationale}}\n\n**Original Dispute Details:**\n{{input.start__output__webhookPayload}}\n\nWrite a complete, professional resolution email with a subject line and body. The email should inform the customer of the outcome and, if a credit is being applied, confirm the credit amount.",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "Write a billing dispute resolution email for the following case:\n\n**Determination:** "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.disputeAnalyst__output__determination"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n**Recommended Action:** "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.disputeAnalyst__output__recommendedAction"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n**Credit Amount:** "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.disputeAnalyst__output__creditAmount"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n**Analyst Rationale:** "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.disputeAnalyst__output__rationale"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\n**Original Dispute Details:**\n"
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__webhookPayload"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\nWrite a complete, professional resolution email with a subject line and body. The email should inform the customer of the outcome and, if a credit is being applied, confirm the credit amount."
+        }
+      ]
+    }
+  ],
+  "projectId": "451feb8a-5fc9-44f3-96a0-5d1bec91e823"
+}

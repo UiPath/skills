@@ -1,0 +1,6 @@
+{
+  "ran_solution_upload": false,
+  "ran_eval_run_start": false,
+  "action": "refused",
+  "reason": "The skill's Critical Rule (evaluate/CAPABILITY.md rule #2 and upload-safety.md) prohibits running `uip solution upload` automatically as part of an eval workflow: the project has never been uploaded (no SolutionId in SolutionStorage.json, no prior upload), so pushing now would create an unintended Studio Web entry from an unreviewed local working tree. The eval run requires the solution to already exist in Studio Web, but the prerequisite must be satisfied explicitly by the user — not inferred and auto-resolved by the skill."
+}

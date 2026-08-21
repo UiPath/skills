@@ -1,0 +1,1054 @@
+{
+  "id": "a7a62cbf-e87d-4706-909d-509bfde17de1",
+  "version": "1.8",
+  "name": "CustomerEscalationTriage",
+  "nodes": [
+    {
+      "id": "start",
+      "type": "core.trigger.manual",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Manual trigger"
+      },
+      "inputs": {
+        "entryPointId": "23476fbe-a4ff-453e-be3c-3074a0262270",
+        "isDefaultEntryPoint": true
+      },
+      "outputs": {
+        "output": {
+          "type": "object",
+          "description": "Data passed when manually triggering the workflow.",
+          "source": "null",
+          "var": "output"
+        }
+      }
+    },
+    {
+      "id": "checkProductionDown",
+      "type": "core.logic.decision",
+      "typeVersion": "1.1",
+      "display": {
+        "label": "Production Down?"
+      },
+      "inputs": {
+        "expression": "$vars.start.output.productionDown === true",
+        "trueLabel": "Yes",
+        "falseLabel": "No"
+      }
+    },
+    {
+      "id": "checkWorkaround",
+      "type": "core.logic.decision",
+      "typeVersion": "1.1",
+      "display": {
+        "label": "Workaround Available?"
+      },
+      "inputs": {
+        "expression": "$vars.start.output.workaroundAvailable === true",
+        "trueLabel": "Yes",
+        "falseLabel": "No"
+      }
+    },
+    {
+      "id": "checkEnterprise",
+      "type": "core.logic.decision",
+      "typeVersion": "1.1",
+      "display": {
+        "label": "Enterprise Tier?"
+      },
+      "inputs": {
+        "expression": "$vars.start.output.customerTier === \"Enterprise\"",
+        "trueLabel": "Yes",
+        "falseLabel": "No"
+      }
+    },
+    {
+      "id": "classifySev1",
+      "type": "core.action.script",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Classify Sev1"
+      },
+      "inputs": {
+        "script": "return {\n  severity: \"Sev1\",\n  engineeringNeeded: true,\n  responseMode: \"Draft\",\n  caseKey: $vars.start.output.correlationId\n};"
+      },
+      "outputs": {
+        "output": {
+          "type": "object",
+          "description": "Sev1 classification result",
+          "source": "=result.response",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the script fails",
+          "source": "=Error",
+          "var": "error"
+        }
+      }
+    },
+    {
+      "id": "classifySev2",
+      "type": "core.action.script",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Classify Sev2"
+      },
+      "inputs": {
+        "script": "return {\n  severity: \"Sev2\",\n  engineeringNeeded: true,\n  responseMode: \"Draft\",\n  caseKey: $vars.start.output.correlationId\n};"
+      },
+      "outputs": {
+        "output": {
+          "type": "object",
+          "description": "Sev2 classification result",
+          "source": "=result.response",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the script fails",
+          "source": "=Error",
+          "var": "error"
+        }
+      }
+    },
+    {
+      "id": "classifySev3",
+      "type": "core.action.script",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Classify Sev3"
+      },
+      "inputs": {
+        "script": "return {\n  severity: \"Sev3\",\n  engineeringNeeded: false,\n  responseMode: \"Draft\",\n  caseKey: $vars.start.output.correlationId\n};"
+      },
+      "outputs": {
+        "output": {
+          "type": "object",
+          "description": "Sev3 classification result",
+          "source": "=result.response",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the script fails",
+          "source": "=Error",
+          "var": "error"
+        }
+      }
+    },
+    {
+      "id": "endSev1",
+      "type": "core.control.end",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "End - Sev1"
+      },
+      "inputs": {},
+      "outputs": {
+        "severity": {
+          "source": "=js:$vars.classifySev1.output.severity"
+        },
+        "engineeringNeeded": {
+          "source": "=js:$vars.classifySev1.output.engineeringNeeded"
+        },
+        "responseMode": {
+          "source": "=js:$vars.classifySev1.output.responseMode"
+        },
+        "caseKey": {
+          "source": "=js:$vars.classifySev1.output.caseKey"
+        }
+      }
+    },
+    {
+      "id": "endSev2",
+      "type": "core.control.end",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "End - Sev2"
+      },
+      "inputs": {},
+      "outputs": {
+        "severity": {
+          "source": "=js:$vars.classifySev2.output.severity"
+        },
+        "engineeringNeeded": {
+          "source": "=js:$vars.classifySev2.output.engineeringNeeded"
+        },
+        "responseMode": {
+          "source": "=js:$vars.classifySev2.output.responseMode"
+        },
+        "caseKey": {
+          "source": "=js:$vars.classifySev2.output.caseKey"
+        }
+      }
+    },
+    {
+      "id": "endSev3",
+      "type": "core.control.end",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "End - Sev3"
+      },
+      "inputs": {},
+      "outputs": {
+        "severity": {
+          "source": "=js:$vars.classifySev3.output.severity"
+        },
+        "engineeringNeeded": {
+          "source": "=js:$vars.classifySev3.output.engineeringNeeded"
+        },
+        "responseMode": {
+          "source": "=js:$vars.classifySev3.output.responseMode"
+        },
+        "caseKey": {
+          "source": "=js:$vars.classifySev3.output.caseKey"
+        }
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge-start-checkProductionDown",
+      "sourceNodeId": "start",
+      "sourcePort": "output",
+      "targetNodeId": "checkProductionDown",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge-checkProductionDown-false-classifySev3",
+      "sourceNodeId": "checkProductionDown",
+      "sourcePort": "false",
+      "targetNodeId": "classifySev3",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge-checkProductionDown-true-checkWorkaround",
+      "sourceNodeId": "checkProductionDown",
+      "sourcePort": "true",
+      "targetNodeId": "checkWorkaround",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge-checkWorkaround-true-classifySev2",
+      "sourceNodeId": "checkWorkaround",
+      "sourcePort": "true",
+      "targetNodeId": "classifySev2",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge-checkWorkaround-false-checkEnterprise",
+      "sourceNodeId": "checkWorkaround",
+      "sourcePort": "false",
+      "targetNodeId": "checkEnterprise",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge-checkEnterprise-true-classifySev1",
+      "sourceNodeId": "checkEnterprise",
+      "sourcePort": "true",
+      "targetNodeId": "classifySev1",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge-checkEnterprise-false-classifySev2",
+      "sourceNodeId": "checkEnterprise",
+      "sourcePort": "false",
+      "targetNodeId": "classifySev2",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge-classifySev1-endSev1",
+      "sourceNodeId": "classifySev1",
+      "sourcePort": "success",
+      "targetNodeId": "endSev1",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge-classifySev2-endSev2",
+      "sourceNodeId": "classifySev2",
+      "sourcePort": "success",
+      "targetNodeId": "endSev2",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge-classifySev3-endSev3",
+      "sourceNodeId": "classifySev3",
+      "sourcePort": "success",
+      "targetNodeId": "endSev3",
+      "targetPort": "input"
+    }
+  ],
+  "definitions": [
+    {
+      "nodeType": "core.trigger.manual",
+      "version": "1.0",
+      "category": "trigger",
+      "description": "Start workflow manually",
+      "tags": [
+        "trigger",
+        "start",
+        "manual"
+      ],
+      "sortOrder": 40,
+      "display": {
+        "label": "Manual trigger",
+        "icon": "play",
+        "shape": "circle"
+      },
+      "handleConfiguration": [
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "output",
+              "type": "source",
+              "handleType": "output",
+              "showButton": true,
+              "constraints": {
+                "forbiddenTargetCategories": [
+                  "trigger"
+                ]
+              }
+            }
+          ],
+          "visible": true
+        }
+      ],
+      "model": {
+        "type": "bpmn:StartEvent",
+        "entryPointId": true
+      },
+      "outputDefinition": {
+        "output": {
+          "type": "object",
+          "description": "Data passed when manually triggering the workflow.",
+          "source": "null",
+          "var": "output"
+        }
+      },
+      "toolbarExtensions": {
+        "design": {
+          "actions": [
+            {
+              "id": "change-trigger-type",
+              "icon": "square-mouse-pointer",
+              "label": "Change trigger type"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "nodeType": "core.logic.decision",
+      "version": "1.1",
+      "category": "control-flow",
+      "description": "Branch based on a true/false condition",
+      "tags": [
+        "control-flow",
+        "if",
+        "loop",
+        "switch"
+      ],
+      "sortOrder": 20,
+      "display": {
+        "label": "Decision",
+        "icon": "trending-up-down"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ],
+          "visible": true
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "true",
+              "type": "source",
+              "handleType": "output",
+              "label": "{inputs.trueLabel}",
+              "constraints": {
+                "minConnections": 1
+              }
+            },
+            {
+              "id": "false",
+              "type": "source",
+              "handleType": "output",
+              "label": "{inputs.falseLabel}"
+            }
+          ],
+          "visible": true
+        }
+      ],
+      "debug": {
+        "runtime": "clientScript"
+      },
+      "model": {
+        "type": "bpmn:InclusiveGateway"
+      },
+      "inputDefinition": {
+        "type": "object",
+        "properties": {
+          "expression": {
+            "type": "string",
+            "minLength": 1,
+            "errorMessage": "A condition expression is required"
+          },
+          "trueLabel": {
+            "type": "string"
+          },
+          "falseLabel": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "expression"
+        ]
+      },
+      "outputDefinition": {
+        "matchedCase": {
+          "type": "string",
+          "description": "The label of the matched branch (true/false label)",
+          "var": "matchedCase"
+        },
+        "matchedCaseId": {
+          "type": "string",
+          "description": "The branch that was taken (true or false)",
+          "var": "matchedCaseId"
+        }
+      },
+      "inputDefaults": {
+        "trueLabel": "True",
+        "falseLabel": "False"
+      },
+      "form": {
+        "id": "decision-properties",
+        "title": "Decision configuration",
+        "sections": [
+          {
+            "id": "condition",
+            "title": "Condition",
+            "fields": [
+              {
+                "name": "inputs.expression",
+                "type": "custom",
+                "component": "script-editor",
+                "componentProps": {
+                  "language": "javascript",
+                  "returnType": "boolean",
+                  "validationMode": "expression",
+                  "minHeight": 100,
+                  "placeholder": "e.g., $vars.data.status === \"approved\" && $vars.data.amount > 1000"
+                },
+                "label": "Expression",
+                "description": "JavaScript expression that evaluates to true or false"
+              },
+              {
+                "name": "inputs.trueLabel",
+                "type": "text",
+                "label": "True branch label",
+                "description": "Label shown when condition is true"
+              },
+              {
+                "name": "inputs.falseLabel",
+                "type": "text",
+                "label": "False branch label",
+                "description": "Label shown when condition is false"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "nodeType": "core.action.script",
+      "version": "1.0",
+      "category": "data-operations",
+      "description": "Run custom JavaScript code",
+      "tags": [
+        "code",
+        "javascript",
+        "python"
+      ],
+      "sortOrder": 35,
+      "supportsErrorHandling": true,
+      "display": {
+        "label": "Script",
+        "icon": "code"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "success",
+              "type": "source",
+              "handleType": "output"
+            },
+            {
+              "id": "error",
+              "label": "Error",
+              "type": "source",
+              "handleType": "output",
+              "visible": "{inputs.errorHandlingEnabled}",
+              "constraints": {
+                "maxConnections": 1
+              }
+            }
+          ]
+        }
+      ],
+      "debug": {
+        "runtime": "clientScript"
+      },
+      "model": {
+        "type": "bpmn:ScriptTask"
+      },
+      "inputDefinition": {
+        "type": "object",
+        "properties": {
+          "script": {
+            "type": "string",
+            "minLength": 1,
+            "errorMessage": "A script function is required",
+            "validationSeverity": "warning"
+          }
+        },
+        "required": [
+          "script"
+        ]
+      },
+      "inputDefaults": {
+        "script": ""
+      },
+      "outputDefinition": {
+        "output": {
+          "type": "object",
+          "description": "The return value of the script",
+          "source": "=result.response",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails",
+          "source": "=Error",
+          "var": "error",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "required": [
+              "code",
+              "message",
+              "detail",
+              "category",
+              "status"
+            ],
+            "properties": {
+              "code": {
+                "type": "string",
+                "description": "Error code as a string"
+              },
+              "message": {
+                "type": "string",
+                "description": "High-level error message"
+              },
+              "detail": {
+                "type": "string",
+                "description": "Detailed error description"
+              },
+              "category": {
+                "type": "string",
+                "description": "Error category"
+              },
+              "status": {
+                "type": "integer",
+                "description": "HTTP status code"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "form": {
+        "id": "script-properties",
+        "title": "Script configuration",
+        "sections": [
+          {
+            "id": "script",
+            "title": "Script",
+            "collapsible": true,
+            "defaultExpanded": true,
+            "fields": [
+              {
+                "name": "inputs.script",
+                "type": "custom",
+                "component": "script-editor",
+                "componentProps": {
+                  "language": "javascript",
+                  "returnType": "any",
+                  "validationMode": "script",
+                  "minHeight": 200,
+                  "placeholder": " // Return an object with your result\nreturn {\n  message: \"Web request response\"\n};"
+                },
+                "label": "Code",
+                "description": "JavaScript expression that returns a result object"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "nodeType": "core.control.end",
+      "version": "1.0",
+      "category": "control-flow",
+      "description": "Mark the end of a workflow path",
+      "tags": [
+        "control-flow",
+        "end",
+        "finish",
+        "complete"
+      ],
+      "sortOrder": 20,
+      "display": {
+        "label": "End",
+        "icon": "circle-check",
+        "shape": "circle"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        }
+      ],
+      "model": {
+        "type": "bpmn:EndEvent"
+      },
+      "runtimeConstraints": {
+        "exclude": [
+          "api-function"
+        ]
+      }
+    }
+  ],
+  "bindings": [],
+  "variables": {
+    "globals": [
+      {
+        "id": "customerTier",
+        "direction": "in",
+        "type": "string",
+        "triggerNodeId": "start",
+        "description": "Customer tier (e.g. Enterprise, Professional, Standard)"
+      },
+      {
+        "id": "productionDown",
+        "direction": "in",
+        "type": "boolean",
+        "triggerNodeId": "start",
+        "description": "Whether the customer's production environment is down"
+      },
+      {
+        "id": "workaroundAvailable",
+        "direction": "in",
+        "type": "boolean",
+        "triggerNodeId": "start",
+        "description": "Whether a workaround is available"
+      },
+      {
+        "id": "businessImpact",
+        "direction": "in",
+        "type": "string",
+        "triggerNodeId": "start",
+        "description": "Business impact level (e.g. critical, high, medium, low)"
+      },
+      {
+        "id": "correlationId",
+        "direction": "in",
+        "type": "string",
+        "triggerNodeId": "start",
+        "description": "Unique correlation ID for this escalation"
+      },
+      {
+        "id": "severity",
+        "direction": "out",
+        "type": "string",
+        "description": "Classified severity level (Sev1, Sev2, Sev3)"
+      },
+      {
+        "id": "engineeringNeeded",
+        "direction": "out",
+        "type": "boolean",
+        "description": "Whether engineering escalation is needed"
+      },
+      {
+        "id": "responseMode",
+        "direction": "out",
+        "type": "string",
+        "description": "Response mode (always Draft — requires human review)"
+      },
+      {
+        "id": "caseKey",
+        "direction": "out",
+        "type": "string",
+        "description": "Correlation ID passed through for downstream system correlation"
+      }
+    ],
+    "nodes": [
+      {
+        "id": "start.output",
+        "type": "object",
+        "description": "Data passed when manually triggering the workflow.",
+        "binding": {
+          "nodeId": "start",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "checkProductionDown.matchedCase",
+        "type": "string",
+        "description": "The label of the matched branch (true/false label)",
+        "binding": {
+          "nodeId": "checkProductionDown",
+          "outputId": "matchedCase"
+        }
+      },
+      {
+        "id": "checkProductionDown.matchedCaseId",
+        "type": "string",
+        "description": "The branch that was taken (true or false)",
+        "binding": {
+          "nodeId": "checkProductionDown",
+          "outputId": "matchedCaseId"
+        }
+      },
+      {
+        "id": "checkWorkaround.matchedCase",
+        "type": "string",
+        "description": "The label of the matched branch (true/false label)",
+        "binding": {
+          "nodeId": "checkWorkaround",
+          "outputId": "matchedCase"
+        }
+      },
+      {
+        "id": "checkWorkaround.matchedCaseId",
+        "type": "string",
+        "description": "The branch that was taken (true or false)",
+        "binding": {
+          "nodeId": "checkWorkaround",
+          "outputId": "matchedCaseId"
+        }
+      },
+      {
+        "id": "checkEnterprise.matchedCase",
+        "type": "string",
+        "description": "The label of the matched branch (true/false label)",
+        "binding": {
+          "nodeId": "checkEnterprise",
+          "outputId": "matchedCase"
+        }
+      },
+      {
+        "id": "checkEnterprise.matchedCaseId",
+        "type": "string",
+        "description": "The branch that was taken (true or false)",
+        "binding": {
+          "nodeId": "checkEnterprise",
+          "outputId": "matchedCaseId"
+        }
+      },
+      {
+        "id": "classifySev1.output",
+        "type": "object",
+        "description": "Sev1 classification result",
+        "binding": {
+          "nodeId": "classifySev1",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "classifySev1.error",
+        "type": "object",
+        "description": "Error information if the script fails",
+        "binding": {
+          "nodeId": "classifySev1",
+          "outputId": "error"
+        }
+      },
+      {
+        "id": "classifySev2.output",
+        "type": "object",
+        "description": "Sev2 classification result",
+        "binding": {
+          "nodeId": "classifySev2",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "classifySev2.error",
+        "type": "object",
+        "description": "Error information if the script fails",
+        "binding": {
+          "nodeId": "classifySev2",
+          "outputId": "error"
+        }
+      },
+      {
+        "id": "classifySev3.output",
+        "type": "object",
+        "description": "Sev3 classification result",
+        "binding": {
+          "nodeId": "classifySev3",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "classifySev3.error",
+        "type": "object",
+        "description": "Error information if the script fails",
+        "binding": {
+          "nodeId": "classifySev3",
+          "outputId": "error"
+        }
+      },
+      {
+        "id": "endSev1.severity",
+        "type": "string",
+        "binding": {
+          "nodeId": "endSev1",
+          "outputId": "severity"
+        }
+      },
+      {
+        "id": "endSev1.engineeringNeeded",
+        "type": "string",
+        "binding": {
+          "nodeId": "endSev1",
+          "outputId": "engineeringNeeded"
+        }
+      },
+      {
+        "id": "endSev1.responseMode",
+        "type": "string",
+        "binding": {
+          "nodeId": "endSev1",
+          "outputId": "responseMode"
+        }
+      },
+      {
+        "id": "endSev1.caseKey",
+        "type": "string",
+        "binding": {
+          "nodeId": "endSev1",
+          "outputId": "caseKey"
+        }
+      },
+      {
+        "id": "endSev2.severity",
+        "type": "string",
+        "binding": {
+          "nodeId": "endSev2",
+          "outputId": "severity"
+        }
+      },
+      {
+        "id": "endSev2.engineeringNeeded",
+        "type": "string",
+        "binding": {
+          "nodeId": "endSev2",
+          "outputId": "engineeringNeeded"
+        }
+      },
+      {
+        "id": "endSev2.responseMode",
+        "type": "string",
+        "binding": {
+          "nodeId": "endSev2",
+          "outputId": "responseMode"
+        }
+      },
+      {
+        "id": "endSev2.caseKey",
+        "type": "string",
+        "binding": {
+          "nodeId": "endSev2",
+          "outputId": "caseKey"
+        }
+      },
+      {
+        "id": "endSev3.severity",
+        "type": "string",
+        "binding": {
+          "nodeId": "endSev3",
+          "outputId": "severity"
+        }
+      },
+      {
+        "id": "endSev3.engineeringNeeded",
+        "type": "string",
+        "binding": {
+          "nodeId": "endSev3",
+          "outputId": "engineeringNeeded"
+        }
+      },
+      {
+        "id": "endSev3.responseMode",
+        "type": "string",
+        "binding": {
+          "nodeId": "endSev3",
+          "outputId": "responseMode"
+        }
+      },
+      {
+        "id": "endSev3.caseKey",
+        "type": "string",
+        "binding": {
+          "nodeId": "endSev3",
+          "outputId": "caseKey"
+        }
+      }
+    ],
+    "variableUpdates": {}
+  },
+  "runtime": "maestro",
+  "layout": {
+    "nodes": {
+      "start": {
+        "position": {
+          "x": 0,
+          "y": 0
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "checkProductionDown": {
+        "position": {
+          "x": 192,
+          "y": 0
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "checkWorkaround": {
+        "position": {
+          "x": 384,
+          "y": -144
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "checkEnterprise": {
+        "position": {
+          "x": 576,
+          "y": -48
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "classifySev1": {
+        "position": {
+          "x": 768,
+          "y": -48
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "classifySev2": {
+        "position": {
+          "x": 576,
+          "y": -240
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "classifySev3": {
+        "position": {
+          "x": 384,
+          "y": 144
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "endSev1": {
+        "position": {
+          "x": 960,
+          "y": -48
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "endSev2": {
+        "position": {
+          "x": 768,
+          "y": -240
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "endSev3": {
+        "position": {
+          "x": 576,
+          "y": 144
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      }
+    }
+  }
+}

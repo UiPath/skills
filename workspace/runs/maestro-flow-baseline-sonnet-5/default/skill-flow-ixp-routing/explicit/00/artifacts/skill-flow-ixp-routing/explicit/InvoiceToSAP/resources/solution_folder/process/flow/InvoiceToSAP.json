@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "InvoiceToSAP",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "85228b34-dbc9-48d8-b4b2-d4aeddd231d3",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "InvoiceToSAP"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Flow",
+      "name": "InvoiceToSAP",
+      "package": {
+        "key": "47f71a9b-b6d7-45d8-85e8-14bc45c41877"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "0ddb2cf2-a12a-42ba-9f32-ee11572e6419",
+    "files": []
+  }
+}

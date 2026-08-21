@@ -1,0 +1,6 @@
+{
+  "ran_solution_upload": false,
+  "ran_eval_run_start": false,
+  "action": "refused",
+  "reason": "The Evaluate capability's Critical Rule #2 and upload-safety.md prohibit auto-running `uip solution upload` as part of an eval workflow: the solution has never been uploaded (no SolutionStorage.json with a SolutionId exists), so uploading would create an unreviewed tenant entry and may push work-in-progress to Studio Web where teammates or triggers could pick it up. The skill must stop here, explain this to the user, and offer them the explicit choice to upload, pass IDs manually, or cancel."
+}

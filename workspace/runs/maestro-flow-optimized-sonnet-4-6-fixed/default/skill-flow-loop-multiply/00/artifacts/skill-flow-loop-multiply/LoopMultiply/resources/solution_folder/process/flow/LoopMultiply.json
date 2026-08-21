@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "LoopMultiply",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "59be72ec-8d69-474a-be2d-5f6b566c3e65",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "LoopMultiply"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Flow",
+      "name": "LoopMultiply",
+      "package": {
+        "key": "e449b32b-df43-4a87-af54-aed444513e3a"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "739ecbe9-77eb-4ba0-ac93-217926941ee4",
+    "files": []
+  }
+}

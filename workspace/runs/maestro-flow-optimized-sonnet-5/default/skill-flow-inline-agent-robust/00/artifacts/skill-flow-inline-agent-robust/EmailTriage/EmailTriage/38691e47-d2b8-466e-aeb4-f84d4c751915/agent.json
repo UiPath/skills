@@ -1,0 +1,108 @@
+{
+  "version": "1.1.0",
+  "settings": {
+    "model": "anthropic.claude-haiku-4-5-20251001-v1:0",
+    "maxTokens": 4096,
+    "temperature": 0,
+    "engine": "basic-v2",
+    "maxIterations": 5,
+    "mode": "standard"
+  },
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "start__output__emailFrom": {
+        "type": "string",
+        "description": "Bound from $vars.start.output.emailFrom"
+      },
+      "start__output__emailSubject": {
+        "type": "string",
+        "description": "Bound from $vars.start.output.emailSubject"
+      },
+      "start__output__emailBody": {
+        "type": "string",
+        "description": "Bound from $vars.start.output.emailBody"
+      }
+    }
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "category": {
+        "type": "string",
+        "description": "One of: billing, technical, sales, account, spam, other"
+      },
+      "priority": {
+        "type": "string",
+        "description": "One of: low, medium, high, urgent"
+      },
+      "reason": {
+        "type": "string",
+        "description": "One sentence grounded in the email content justifying the category and priority"
+      },
+      "needsHuman": {
+        "type": "boolean",
+        "description": "true if the email requires human review before any automated action"
+      }
+    },
+    "required": [
+      "category",
+      "priority",
+      "needsHuman"
+    ]
+  },
+  "metadata": {
+    "storageVersion": "50.0.0",
+    "isConversational": false,
+    "showProjectCreationExperience": false
+  },
+  "type": "lowCode",
+  "guardrails": [],
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a support-email triage classifier for a SaaS company's customer support inbox. Classify each inbound support email so it can be routed to the correct team automatically.\n\nScope:\n- In scope: reading the email's sender, subject, and body, then determining category, priority, a one-sentence reason, and whether a human must review it before any automated action.\n- Out of scope: drafting a reply, taking any action on the ticket, or fabricating information not present in the email.\n\nOutput:\n- Return a result conforming to the output schema.\n- category MUST be exactly one of: billing, technical, sales, account, spam, other.\n- priority MUST be exactly one of: low, medium, high, urgent. Use urgent only for outages, security incidents, legal threats, or explicit escalations.\n- reason: one sentence grounded in the email content justifying the category and priority.\n- needsHuman: true when the email contains a legal threat, mentions cancellation/churn, reports a security or data issue, or does not clearly fit one of the categories; false otherwise.\n\nUncertainty:\n- If the email body is empty, unintelligible, or clearly spam, set category to \"spam\" or \"other\" as appropriate, priority=\"low\", needsHuman=true, and state why in reason.\n- Never invent customer details, order numbers, or commitments not present in the email text.",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "You are a support-email triage classifier for a SaaS company's customer support inbox. Classify each inbound support email so it can be routed to the correct team automatically.\n\nScope:\n- In scope: reading the email's sender, subject, and body, then determining category, priority, a one-sentence reason, and whether a human must review it before any automated action.\n- Out of scope: drafting a reply, taking any action on the ticket, or fabricating information not present in the email.\n\nOutput:\n- Return a result conforming to the output schema.\n- category MUST be exactly one of: billing, technical, sales, account, spam, other.\n- priority MUST be exactly one of: low, medium, high, urgent. Use urgent only for outages, security incidents, legal threats, or explicit escalations.\n- reason: one sentence grounded in the email content justifying the category and priority.\n- needsHuman: true when the email contains a legal threat, mentions cancellation/churn, reports a security or data issue, or does not clearly fit one of the categories; false otherwise.\n\nUncertainty:\n- If the email body is empty, unintelligible, or clearly spam, set category to \"spam\" or \"other\" as appropriate, priority=\"low\", needsHuman=true, and state why in reason.\n- Never invent customer details, order numbers, or commitments not present in the email text."
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "Classify the following inbound support email.\n\nFrom: {{input.start__output__emailFrom}}\nSubject: {{input.start__output__emailSubject}}\n\n{{input.start__output__emailBody}}\n\nReturn the category, priority, a one-sentence reason, and whether this needs human review.",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "Classify the following inbound support email.\n\nFrom: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__emailFrom"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\nSubject: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__emailSubject"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\n"
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__emailBody"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\nReturn the category, priority, a one-sentence reason, and whether this needs human review."
+        }
+      ]
+    }
+  ],
+  "projectId": "38691e47-d2b8-466e-aeb4-f84d4c751915"
+}

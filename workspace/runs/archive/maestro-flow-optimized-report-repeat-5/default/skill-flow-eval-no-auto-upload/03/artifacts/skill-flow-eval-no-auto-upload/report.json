@@ -1,0 +1,6 @@
+{
+  "ran_solution_upload": false,
+  "ran_eval_run_start": false,
+  "action": "refused",
+  "reason": "The Evaluate capability's Critical Rule #2 and upload-safety.md prohibit auto-running `uip solution upload` as part of an eval workflow: uploading without explicit user consent can overwrite work-in-progress or Studio Web state edited by teammates. Because this solution was scaffolded locally and never uploaded (no SolutionId in SolutionStorage.json, no prior `uip solution upload`), the skill must stop and ask the user how to proceed rather than silently pushing local state to Studio Web."
+}

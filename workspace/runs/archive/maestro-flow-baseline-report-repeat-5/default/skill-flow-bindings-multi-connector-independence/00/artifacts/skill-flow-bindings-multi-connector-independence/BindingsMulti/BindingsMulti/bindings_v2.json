@@ -1,0 +1,43 @@
+{
+  "version": "2.0",
+  "resources": [
+    {
+      "resource": "connection",
+      "key": "f5273a4d-d492-4bcd-a106-5a20bf89a3ef",
+      "id": "connectionf5273a4d-d492-4bcd-a106-5a20bf89a3ef",
+      "value": {
+        "ConnectionId": {
+          "defaultValue": "f5273a4d-d492-4bcd-a106-5a20bf89a3ef",
+          "isExpression": false,
+          "displayName": "uipath-atlassian-jira connection"
+        }
+      },
+      "metadata": {
+        "ActivityName": "Jira Get Issue",
+        "BindingsVersion": "2.2",
+        "DisplayLabel": "uipath-atlassian-jira connection",
+        "UseConnectionService": "true",
+        "Connector": "uipath-atlassian-jira"
+      }
+    },
+    {
+      "resource": "connection",
+      "key": "e03f734e-0f80-4e8a-a7c1-0ece309b0ca4",
+      "id": "connectione03f734e-0f80-4e8a-a7c1-0ece309b0ca4",
+      "value": {
+        "ConnectionId": {
+          "defaultValue": "e03f734e-0f80-4e8a-a7c1-0ece309b0ca4",
+          "isExpression": false,
+          "displayName": "uipath-salesforce-slack connection"
+        }
+      },
+      "metadata": {
+        "ActivityName": "Slack Send Message",
+        "BindingsVersion": "2.2",
+        "DisplayLabel": "uipath-salesforce-slack connection",
+        "UseConnectionService": "true",
+        "Connector": "uipath-salesforce-slack"
+      }
+    }
+  ]
+}

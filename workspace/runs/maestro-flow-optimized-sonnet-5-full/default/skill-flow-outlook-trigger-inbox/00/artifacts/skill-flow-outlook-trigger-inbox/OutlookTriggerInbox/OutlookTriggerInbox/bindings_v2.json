@@ -1,0 +1,67 @@
+{
+  "version": "2.0",
+  "resources": [
+    {
+      "resource": "connection",
+      "key": "75dfafb4-3717-470c-a5f6-bdc144757a67",
+      "id": "connection75dfafb4-3717-470c-a5f6-bdc144757a67",
+      "value": {
+        "ConnectionId": {
+          "defaultValue": "75dfafb4-3717-470c-a5f6-bdc144757a67",
+          "isExpression": false,
+          "displayName": "uipath-microsoft-outlook365 connection"
+        }
+      },
+      "metadata": {
+        "ActivityName": "Email Received",
+        "BindingsVersion": "2.2",
+        "DisplayLabel": "uipath-microsoft-outlook365 connection",
+        "UseConnectionService": "true",
+        "Connector": "uipath-microsoft-outlook365"
+      }
+    },
+    {
+      "resource": "EventTrigger",
+      "key": "75dfafb4-3717-470c-a5f6-bdc144757a67_emailReceived1",
+      "id": "EventTrigger75dfafb4-3717-470c-a5f6-bdc144757a67_emailReceived1",
+      "value": {
+        "ConnectionId": {
+          "defaultValue": "75dfafb4-3717-470c-a5f6-bdc144757a67",
+          "isExpression": false
+        },
+        "EntryPointUniqueId": {
+          "defaultValue": "dbfb7e59-957e-49cf-b416-546529a0e4a3",
+          "isExpression": false
+        }
+      },
+      "metadata": {
+        "UseConnectionService": "true",
+        "Connector": "uipath-microsoft-outlook365",
+        "ActivityName": "Email Received",
+        "BindingsVersion": "2.2",
+        "ObjectName": "Message",
+        "Operation": "EMAIL_RECEIVED",
+        "FilterExpression": ""
+      }
+    },
+    {
+      "resource": "Property",
+      "key": "EMAIL_RECEIVED",
+      "id": "Property_emailReceived1",
+      "value": {
+        "parentFolderId": {
+          "defaultValue": "AAMkAGNiNDVjZmJmLTczOTEtNDQ2MS04Njc2LTUwM2I3ZDgxOWQwMAAuAAAAAAAJJRkzOJfsTKZfQqhMUHzlAQAJDKUrZhoLQZ5wELpOfJPCAAAAAAEMAAA=",
+          "isExpression": false
+        }
+      },
+      "metadata": {
+        "TriggerCreateParameters": "parentFolderId",
+        "DebugQueryParameters": "parentFolderId",
+        "ActivityName": "Email Received",
+        "BindingsVersion": "2.2",
+        "ObjectName": "Message",
+        "ParentResourceKey": "EventTrigger.75dfafb4-3717-470c-a5f6-bdc144757a67_emailReceived1"
+      }
+    }
+  ]
+}

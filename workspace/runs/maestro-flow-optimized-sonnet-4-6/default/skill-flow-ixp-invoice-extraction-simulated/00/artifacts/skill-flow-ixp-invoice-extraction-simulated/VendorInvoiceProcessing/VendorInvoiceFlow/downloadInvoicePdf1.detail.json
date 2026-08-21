@@ -1,0 +1,7 @@
+{
+  "connectionId": "<SHAREPOINT_CONNECTION_ID>",
+  "folderKey": "<SHAREPOINT_FOLDER_KEY>",
+  "bodyParameters": {
+    "id": "=js:$vars.newInvoiceInSharepoint1.output.id"
+  }
+}

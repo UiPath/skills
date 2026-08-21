@@ -1,0 +1,224 @@
+{
+  "Result": "Success",
+  "Data": {
+    "ProjectName": "vendor-invoices-f8a3c211-ixp",
+    "TotalDocuments": 1,
+    "DocumentsWithPredictions": 1,
+    "Predictions": [
+      {
+        "DocumentId": "fc73280dda3f607d.3a4a9dc40959dd7b",
+        "Filename": "invoice_rapid_logistics_003.pdf",
+        "Labels": [
+          {
+            "Name": "Invoice Header",
+            "Occurrence": 0,
+            "Fields": [
+              {
+                "FieldId": "fld_inv_num",
+                "FieldName": "Invoice Number",
+                "FormattedValue": "RL-2024-8847"
+              },
+              {
+                "FieldId": "fld_inv_date",
+                "FieldName": "Invoice Date",
+                "FormattedValue": "2024-03-20"
+              },
+              {
+                "FieldId": "fld_due_date",
+                "FieldName": "Due Date",
+                "FormattedValue": "2024-04-19"
+              },
+              {
+                "FieldId": "fld_po_num",
+                "FieldName": "PO Number",
+                "FormattedValue": "PO-GC-44801"
+              },
+              {
+                "FieldId": "fld_pay_terms",
+                "FieldName": "Payment Terms",
+                "FormattedValue": "Net 30"
+              },
+              {
+                "FieldId": "fld_currency",
+                "FieldName": "Currency",
+                "FormattedValue": "USD"
+              }
+            ]
+          },
+          {
+            "Name": "Vendor Details",
+            "Occurrence": 0,
+            "Fields": [
+              {
+                "FieldId": "fld_vend_name",
+                "FieldName": "Vendor Name",
+                "FormattedValue": "Rapid Logistics & Freight Co."
+              },
+              {
+                "FieldId": "fld_vend_addr",
+                "FieldName": "Vendor Address",
+                "FormattedValue": "7200 Industrial Park Way, Dallas, TX 75201"
+              },
+              {
+                "FieldId": "fld_vend_email",
+                "FieldName": "Vendor Email",
+                "FormattedValue": "invoices@rapidlogistics.com"
+              },
+              {
+                "FieldId": "fld_vend_phone",
+                "FieldName": "Vendor Phone",
+                "FormattedValue": "+1 (214) 555-3301"
+              }
+            ]
+          },
+          {
+            "Name": "Bill To",
+            "Occurrence": 0,
+            "Fields": [
+              {
+                "FieldId": "fld_bt_name",
+                "FieldName": "Bill-To Name",
+                "FormattedValue": "GlobalCorp Operations"
+              },
+              {
+                "FieldId": "fld_bt_addr",
+                "FieldName": "Bill-To Address",
+                "FormattedValue": "500 Warehouse Drive, Elizabeth, NJ 07201"
+              }
+            ]
+          },
+          {
+            "Name": "Invoice Totals",
+            "Occurrence": 0,
+            "Fields": [
+              {
+                "FieldId": "fld_subtotal",
+                "FieldName": "Subtotal",
+                "FormattedValue": "4,351.00 USD"
+              },
+              {
+                "FieldId": "fld_tax_rate",
+                "FieldName": "Tax Rate",
+                "FormattedValue": ""
+              },
+              {
+                "FieldId": "fld_tax_amount",
+                "FieldName": "Tax Amount",
+                "FormattedValue": ""
+              },
+              {
+                "FieldId": "fld_total",
+                "FieldName": "Total Due",
+                "FormattedValue": "4,351.00 USD"
+              }
+            ]
+          },
+          {
+            "Name": "Line Items",
+            "Occurrence": 0,
+            "Fields": [
+              {
+                "FieldId": "fld_li_desc",
+                "FieldName": "Description",
+                "FormattedValue": "Freight Shipment \u2014 Chicago to Newark (FTL)"
+              },
+              {
+                "FieldId": "fld_li_qty",
+                "FieldName": "Quantity",
+                "FormattedValue": "1"
+              },
+              {
+                "FieldId": "fld_li_price",
+                "FieldName": "Unit Price",
+                "FormattedValue": "3,200.00 USD"
+              },
+              {
+                "FieldId": "fld_li_total",
+                "FieldName": "Line Total",
+                "FormattedValue": "3,200.00 USD"
+              }
+            ]
+          },
+          {
+            "Name": "Line Items",
+            "Occurrence": 1,
+            "Fields": [
+              {
+                "FieldId": "fld_li_desc",
+                "FieldName": "Description",
+                "FormattedValue": "Hazmat Handling Surcharge"
+              },
+              {
+                "FieldId": "fld_li_qty",
+                "FieldName": "Quantity",
+                "FormattedValue": "1"
+              },
+              {
+                "FieldId": "fld_li_price",
+                "FieldName": "Unit Price",
+                "FormattedValue": "450.00 USD"
+              },
+              {
+                "FieldId": "fld_li_total",
+                "FieldName": "Line Total",
+                "FormattedValue": "450.00 USD"
+              }
+            ]
+          },
+          {
+            "Name": "Line Items",
+            "Occurrence": 2,
+            "Fields": [
+              {
+                "FieldId": "fld_li_desc",
+                "FieldName": "Description",
+                "FormattedValue": "Fuel Surcharge (18% of base freight)"
+              },
+              {
+                "FieldId": "fld_li_qty",
+                "FieldName": "Quantity",
+                "FormattedValue": "1"
+              },
+              {
+                "FieldId": "fld_li_price",
+                "FieldName": "Unit Price",
+                "FormattedValue": "576.00 USD"
+              },
+              {
+                "FieldId": "fld_li_total",
+                "FieldName": "Line Total",
+                "FormattedValue": "576.00 USD"
+              }
+            ]
+          },
+          {
+            "Name": "Line Items",
+            "Occurrence": 3,
+            "Fields": [
+              {
+                "FieldId": "fld_li_desc",
+                "FieldName": "Description",
+                "FormattedValue": "Liftgate Service"
+              },
+              {
+                "FieldId": "fld_li_qty",
+                "FieldName": "Quantity",
+                "FormattedValue": "1"
+              },
+              {
+                "FieldId": "fld_li_price",
+                "FieldName": "Unit Price",
+                "FormattedValue": "125.00 USD"
+              },
+              {
+                "FieldId": "fld_li_total",
+                "FieldName": "Line Total",
+                "FormattedValue": "125.00 USD"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

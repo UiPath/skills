@@ -1,0 +1,186 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+    xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+    xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+    xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+    xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:uipath="http://uipath.org/schema/bpmn"
+    id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn"
+    exporter="UiPath (https://bpmn.uipath.com)" exporterVersion="1.0">
+
+  <bpmn:process id="Process_1" isExecutable="true">
+    <bpmn:extensionElements>
+      <uipath:migrationVersion version="11.5" />
+      <uipath:variables version="v1">
+        <uipath:inputOutput id="Var_EmailWanted" name="EmailWanted" type="boolean" />
+        <uipath:inputOutput id="Var_SmsWanted" name="SmsWanted" type="boolean" />
+        <uipath:inputOutput id="Var_Recipient" name="Recipient" type="string" />
+      </uipath:variables>
+    </bpmn:extensionElements>
+
+    <!-- Manual start -->
+    <bpmn:startEvent id="Start_1" name="Start Notification">
+      <bpmn:outgoing>Flow_Start</bpmn:outgoing>
+    </bpmn:startEvent>
+
+    <!-- Inclusive SPLIT: one incoming, two outgoing with conditions -->
+    <bpmn:inclusiveGateway id="Gw_Split" name="Channel Split">
+      <bpmn:incoming>Flow_Start</bpmn:incoming>
+      <bpmn:outgoing>Flow_Email</bpmn:outgoing>
+      <bpmn:outgoing>Flow_SMS</bpmn:outgoing>
+    </bpmn:inclusiveGateway>
+
+    <!-- Email notification task (from BPMN.ScriptTask registry template) -->
+    <bpmn:scriptTask id="Task_Email" name="Send Email Notification" scriptFormat="JavaScript">
+      <bpmn:extensionElements>
+        <uipath:scriptVersion value="v3" />
+        <uipath:mapping version="v1">
+          <uipath:type value="BPMN.ScriptTask" version="v1" />
+          <uipath:input name="args" type="json" target="bodyField"><![CDATA[{"recipient":"=vars.Var_Recipient"}]]></uipath:input>
+        </uipath:mapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_Email</bpmn:incoming>
+      <bpmn:outgoing>Flow_EmailDone</bpmn:outgoing>
+      <bpmn:script><![CDATA[return { response: "Email sent to " + recipient };]]></bpmn:script>
+    </bpmn:scriptTask>
+
+    <!-- SMS notification task (from BPMN.ScriptTask registry template) -->
+    <bpmn:scriptTask id="Task_SMS" name="Send SMS Notification" scriptFormat="JavaScript">
+      <bpmn:extensionElements>
+        <uipath:scriptVersion value="v3" />
+        <uipath:mapping version="v1">
+          <uipath:type value="BPMN.ScriptTask" version="v1" />
+          <uipath:input name="args" type="json" target="bodyField"><![CDATA[{"recipient":"=vars.Var_Recipient"}]]></uipath:input>
+        </uipath:mapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_SMS</bpmn:incoming>
+      <bpmn:outgoing>Flow_SMSDone</bpmn:outgoing>
+      <bpmn:script><![CDATA[return { response: "SMS sent to " + recipient };]]></bpmn:script>
+    </bpmn:scriptTask>
+
+    <!-- Inclusive JOIN: two incoming, one outgoing - synchronizes branches -->
+    <bpmn:inclusiveGateway id="Gw_Join" name="Channel Join">
+      <bpmn:incoming>Flow_EmailDone</bpmn:incoming>
+      <bpmn:incoming>Flow_SMSDone</bpmn:incoming>
+      <bpmn:outgoing>Flow_Final</bpmn:outgoing>
+    </bpmn:inclusiveGateway>
+
+    <!-- Final task after join (from BPMN.ScriptTask registry template) -->
+    <bpmn:scriptTask id="Task_Final" name="Log Completion" scriptFormat="JavaScript">
+      <bpmn:extensionElements>
+        <uipath:scriptVersion value="v3" />
+        <uipath:mapping version="v1">
+          <uipath:type value="BPMN.ScriptTask" version="v1" />
+          <uipath:input name="args" type="json" target="bodyField"><![CDATA[{}]]></uipath:input>
+        </uipath:mapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_Final</bpmn:incoming>
+      <bpmn:outgoing>Flow_End</bpmn:outgoing>
+      <bpmn:script><![CDATA[return { response: "Notification fanout complete" };]]></bpmn:script>
+    </bpmn:scriptTask>
+
+    <!-- End event -->
+    <bpmn:endEvent id="End_1" name="Notifications Sent">
+      <bpmn:incoming>Flow_End</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <!-- Sequence flows -->
+    <bpmn:sequenceFlow id="Flow_Start" sourceRef="Start_1" targetRef="Gw_Split" />
+
+    <bpmn:sequenceFlow id="Flow_Email" sourceRef="Gw_Split" targetRef="Task_Email">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=vars.Var_EmailWanted == true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+
+    <bpmn:sequenceFlow id="Flow_SMS" sourceRef="Gw_Split" targetRef="Task_SMS">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=vars.Var_SmsWanted == true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+
+    <bpmn:sequenceFlow id="Flow_EmailDone" sourceRef="Task_Email" targetRef="Gw_Join" />
+    <bpmn:sequenceFlow id="Flow_SMSDone" sourceRef="Task_SMS" targetRef="Gw_Join" />
+    <bpmn:sequenceFlow id="Flow_Final" sourceRef="Gw_Join" targetRef="Task_Final" />
+    <bpmn:sequenceFlow id="Flow_End" sourceRef="Task_Final" targetRef="End_1" />
+  </bpmn:process>
+
+  <bpmndi:BPMNDiagram id="Diagram_1">
+    <bpmndi:BPMNPlane id="Plane_1" bpmnElement="Process_1">
+
+      <!-- Start event -->
+      <bpmndi:BPMNShape id="S_Start_1" bpmnElement="Start_1">
+        <dc:Bounds x="160" y="202" width="36" height="36" />
+      </bpmndi:BPMNShape>
+
+      <!-- Inclusive SPLIT gateway -->
+      <bpmndi:BPMNShape id="S_Gw_Split" bpmnElement="Gw_Split">
+        <dc:Bounds x="270" y="195" width="50" height="50" />
+      </bpmndi:BPMNShape>
+
+      <!-- Email notification task (upper branch) -->
+      <bpmndi:BPMNShape id="S_Task_Email" bpmnElement="Task_Email">
+        <dc:Bounds x="390" y="120" width="100" height="80" />
+      </bpmndi:BPMNShape>
+
+      <!-- SMS notification task (lower branch) -->
+      <bpmndi:BPMNShape id="S_Task_SMS" bpmnElement="Task_SMS">
+        <dc:Bounds x="390" y="280" width="100" height="80" />
+      </bpmndi:BPMNShape>
+
+      <!-- Inclusive JOIN gateway -->
+      <bpmndi:BPMNShape id="S_Gw_Join" bpmnElement="Gw_Join">
+        <dc:Bounds x="560" y="195" width="50" height="50" />
+      </bpmndi:BPMNShape>
+
+      <!-- Final task -->
+      <bpmndi:BPMNShape id="S_Task_Final" bpmnElement="Task_Final">
+        <dc:Bounds x="680" y="180" width="100" height="80" />
+      </bpmndi:BPMNShape>
+
+      <!-- End event -->
+      <bpmndi:BPMNShape id="S_End_1" bpmnElement="End_1">
+        <dc:Bounds x="852" y="202" width="36" height="36" />
+      </bpmndi:BPMNShape>
+
+      <!-- Edges -->
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_Start" bpmnElement="Flow_Start">
+        <di:waypoint x="196" y="220" />
+        <di:waypoint x="270" y="220" />
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_Email" bpmnElement="Flow_Email">
+        <di:waypoint x="295" y="195" />
+        <di:waypoint x="295" y="160" />
+        <di:waypoint x="390" y="160" />
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_SMS" bpmnElement="Flow_SMS">
+        <di:waypoint x="295" y="245" />
+        <di:waypoint x="295" y="320" />
+        <di:waypoint x="390" y="320" />
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_EmailDone" bpmnElement="Flow_EmailDone">
+        <di:waypoint x="490" y="160" />
+        <di:waypoint x="585" y="160" />
+        <di:waypoint x="585" y="195" />
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_SMSDone" bpmnElement="Flow_SMSDone">
+        <di:waypoint x="490" y="320" />
+        <di:waypoint x="585" y="320" />
+        <di:waypoint x="585" y="245" />
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_Final" bpmnElement="Flow_Final">
+        <di:waypoint x="610" y="220" />
+        <di:waypoint x="680" y="220" />
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_End" bpmnElement="Flow_End">
+        <di:waypoint x="780" y="220" />
+        <di:waypoint x="852" y="220" />
+      </bpmndi:BPMNEdge>
+
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+
+</bpmn:definitions>

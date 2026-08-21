@@ -1,0 +1,72 @@
+{
+    "$schema": "https://cloud.uipath.com/draft/2024-12/entry-point",
+    "$id": "entry-points.json",
+    "entryPoints": [
+        {
+            "filePath": "agent",
+            "uniqueId": "2a292a82-1bf7-457e-be05-6e5ee4a2ab16",
+            "type": "agent",
+            "input": {
+                "type": "object",
+                "properties": {
+                    "sentence": {
+                        "title": "Sentence",
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "sentence"
+                ]
+            },
+            "output": {
+                "type": "object",
+                "properties": {
+                    "approverCount": {
+                        "title": "Approvercount",
+                        "type": "integer"
+                    }
+                },
+                "required": [
+                    "approverCount"
+                ]
+            },
+            "graph": {
+                "nodes": [
+                    {
+                        "id": "__start__",
+                        "name": "__start__",
+                        "type": "__start__",
+                        "subgraph": null,
+                        "metadata": {}
+                    },
+                    {
+                        "id": "analyze_review",
+                        "name": "analyze_review",
+                        "type": "node",
+                        "subgraph": null,
+                        "metadata": {}
+                    },
+                    {
+                        "id": "__end__",
+                        "name": "__end__",
+                        "type": "__end__",
+                        "subgraph": null,
+                        "metadata": {}
+                    }
+                ],
+                "edges": [
+                    {
+                        "source": "__start__",
+                        "target": "analyze_review",
+                        "label": null
+                    },
+                    {
+                        "source": "analyze_review",
+                        "target": "__end__",
+                        "label": null
+                    }
+                ]
+            }
+        }
+    ]
+}

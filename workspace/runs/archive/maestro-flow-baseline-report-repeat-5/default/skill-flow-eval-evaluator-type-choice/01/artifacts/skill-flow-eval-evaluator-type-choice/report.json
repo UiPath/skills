@@ -1,0 +1,8 @@
+{
+  "goal_a_type": "llm-judge-output",
+  "goal_a_reason": "Free-text greetings require semantic similarity scoring by an LLM judge because deterministic comparators would fail on paraphrases like 'Hi Alice!' vs 'Hello, Alice!'.",
+  "goal_b_type": "json-similarity",
+  "goal_b_reason": "Structured JSON output with a known expected object is best compared with the deterministic tree-based json-similarity evaluator, which tolerates key ordering and minor whitespace differences without an LLM.",
+  "goal_c_type": "contains",
+  "goal_c_reason": "A pass/fail check for the literal substring 'deployment succeeded' anywhere in the output is exactly what the deterministic contains evaluator is designed for."
+}

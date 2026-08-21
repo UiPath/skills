@@ -1,0 +1,5 @@
+17:02:50 [INFO   ] [default/skill-flow-ipe-dtl-load-by-default-true/00] orchestrator: API routing: aws_bedrock
+17:06:03 [INFO   ] [default/skill-flow-ipe-dtl-load-by-default-true/00] orchestrator: Success criteria: 3/3 passed, weighted score: 1.000
+17:06:03 [INFO   ] [default/skill-flow-ipe-dtl-load-by-default-true/00] orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+17:06:03 [INFO   ] [default/skill-flow-ipe-dtl-load-by-default-true/00] orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-ipe-dtl-load-by-default-true
+17:06:03 [INFO   ] [default/skill-flow-ipe-dtl-load-by-default-true/00] orchestrator: Task finished: status=SUCCESS duration=202.0s score=1.000 iterations=1

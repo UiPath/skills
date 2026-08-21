@@ -1,0 +1,10 @@
+[
+  {
+    "name": "Invoice Number",
+    "instructions": "Extract the invoice number"
+  },
+  {
+    "name": "Invoice Date",
+    "instructions": "Extract the invoice date. Format: MM/DD/YYYY. Found in the header section near the top of the document. Example: '01/15/2025'."
+  }
+]

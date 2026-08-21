@@ -1,0 +1,5 @@
+20:12:17 [INFO   ] [default/skill-flow-batch-transform/02] orchestrator: API routing: aws_bedrock
+20:15:26 [INFO   ] [default/skill-flow-batch-transform/02] orchestrator: Success criteria: 2/2 passed, weighted score: 1.000
+20:15:26 [INFO   ] [default/skill-flow-batch-transform/02] orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+20:15:26 [INFO   ] [default/skill-flow-batch-transform/02] orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-batch-transform
+20:15:26 [INFO   ] [default/skill-flow-batch-transform/02] orchestrator: Task finished: status=SUCCESS duration=193.5s score=1.000 iterations=1

@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+    xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+    xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+    xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+    xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+    xmlns:uipath="http://uipath.org/schema/bpmn"
+    id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn"
+    exporter="UiPath (https://bpmn.uipath.com)" exporterVersion="1.0">
+  <bpmn:process id="Process_1" isExecutable="true">
+    <bpmn:extensionElements>
+      <uipath:migrationVersion version="11.5" />
+    </bpmn:extensionElements>
+
+    <bpmn:startEvent id="Start_1" name="Start">
+      <bpmn:outgoing>Flow_Start</bpmn:outgoing>
+    </bpmn:startEvent>
+
+    <bpmn:parallelGateway id="Fork_Gw" name="Fork">
+      <bpmn:incoming>Flow_Start</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToA</bpmn:outgoing>
+      <bpmn:outgoing>Flow_ToB</bpmn:outgoing>
+    </bpmn:parallelGateway>
+
+    <bpmn:task id="Task_BranchA" name="Branch A Task">
+      <bpmn:incoming>Flow_ToA</bpmn:incoming>
+      <bpmn:outgoing>Flow_FromA</bpmn:outgoing>
+    </bpmn:task>
+
+    <bpmn:task id="Task_BranchB" name="Branch B Task">
+      <bpmn:incoming>Flow_ToB</bpmn:incoming>
+      <bpmn:outgoing>Flow_FromB</bpmn:outgoing>
+    </bpmn:task>
+
+    <bpmn:parallelGateway id="Join_Gw" name="Join">
+      <bpmn:incoming>Flow_FromA</bpmn:incoming>
+      <bpmn:incoming>Flow_FromB</bpmn:incoming>
+      <bpmn:outgoing>Flow_End</bpmn:outgoing>
+    </bpmn:parallelGateway>
+
+    <bpmn:endEvent id="End_1" name="End">
+      <bpmn:incoming>Flow_End</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <bpmn:sequenceFlow id="Flow_Start" sourceRef="Start_1"    targetRef="Fork_Gw"    />
+    <bpmn:sequenceFlow id="Flow_ToA"   sourceRef="Fork_Gw"    targetRef="Task_BranchA" />
+    <bpmn:sequenceFlow id="Flow_ToB"   sourceRef="Fork_Gw"    targetRef="Task_BranchB" />
+    <bpmn:sequenceFlow id="Flow_FromA" sourceRef="Task_BranchA" targetRef="Join_Gw"    />
+    <bpmn:sequenceFlow id="Flow_FromB" sourceRef="Task_BranchB" targetRef="Join_Gw"    />
+    <bpmn:sequenceFlow id="Flow_End"   sourceRef="Join_Gw"    targetRef="End_1"       />
+  </bpmn:process>
+
+  <bpmndi:BPMNDiagram id="Diagram_1">
+    <bpmndi:BPMNPlane id="Plane_1" bpmnElement="Process_1">
+      <bpmndi:BPMNShape id="S_End_1" bpmnElement="End_1"><dc:Bounds x="636" y="100" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Fork_Gw" bpmnElement="Fork_Gw"><dc:Bounds x="256" y="100" width="50" height="50" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Join_Gw" bpmnElement="Join_Gw"><dc:Bounds x="526" y="100" width="50" height="50" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Start_1" bpmnElement="Start_1"><dc:Bounds x="160" y="100" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Task_BranchA" bpmnElement="Task_BranchA"><dc:Bounds x="366" y="100" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Task_BranchB" bpmnElement="Task_BranchB"><dc:Bounds x="366" y="210" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="E_Flow_End" bpmnElement="Flow_End"><di:waypoint x="551" y="125" /><di:waypoint x="654" y="118" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_FromA" bpmnElement="Flow_FromA"><di:waypoint x="416" y="140" /><di:waypoint x="551" y="125" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_FromB" bpmnElement="Flow_FromB"><di:waypoint x="416" y="250" /><di:waypoint x="551" y="125" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_Start" bpmnElement="Flow_Start"><di:waypoint x="178" y="118" /><di:waypoint x="281" y="125" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_ToA" bpmnElement="Flow_ToA"><di:waypoint x="281" y="125" /><di:waypoint x="416" y="140" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_ToB" bpmnElement="Flow_ToB"><di:waypoint x="281" y="125" /><di:waypoint x="416" y="250" /></bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

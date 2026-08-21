@@ -1,0 +1,9 @@
+{
+  "name": "MultiInstanceIteratorBpmn",
+  "projectVersion": "1.0.0",
+  "description": "Multi-instance subprocess iterating an Items collection; maps current item to CurrentLine and 0-based loop index to CurrentIndex.",
+  "projectType": "ProcessOrchestration",
+  "main": "MultiInstanceIteratorBpmn.bpmn",
+  "dependencies": {},
+  "schemaVersion": "1.0"
+}

@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "EscalationJiraTicket",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "97b2f5ff-843f-4602-8b1d-ff47be09781a",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "EscalationJiraTicket"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Flow",
+      "name": "EscalationJiraTicket",
+      "package": {
+        "key": "4d2deefd-463e-433d-9f7a-27c420e23f1b"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "ca3b9c33-f9cc-4653-ae23-b7f8fb4841d1",
+    "files": []
+  }
+}

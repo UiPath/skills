@@ -1,0 +1,16 @@
+{
+  "version": "1.0",
+  "id": "goal-c-evaluator-e4c7eab2",
+  "name": "goal-c-evaluator",
+  "description": "goal-c-evaluator evaluator",
+  "evaluatorTypeId": "uipath-contains",
+  "evaluatorConfig": {
+    "name": "goal-c-evaluator",
+    "caseSensitive": false,
+    "negated": false,
+    "targetOutputKey": "*"
+  },
+  "fileName": "goal-c-evaluator-e4c7eab2.json",
+  "createdAt": "2026-08-19T16:55:39.242Z",
+  "updatedAt": "2026-08-19T16:55:39.242Z"
+}

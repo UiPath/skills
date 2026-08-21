@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "ApproverCountAgent",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "374b53f2-c49a-4274-acb8-4c15cbb5fba5",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "ApproverCountAgent"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Flow",
+      "name": "ApproverCountAgent",
+      "package": {
+        "key": "1bf80b35-332d-427b-b83c-8fe8b4f15e8c"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "4743f7a8-2f9b-4686-a866-ebb988c8b1b6",
+    "files": []
+  }
+}

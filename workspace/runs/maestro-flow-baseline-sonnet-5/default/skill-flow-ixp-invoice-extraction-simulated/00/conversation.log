@@ -1,0 +1,43 @@
+=== USER (turn 1) — simulator-generated opener ===
+Hi! I'm hoping you can help me out with something that's been on my to-do list for a while. I need a flow built that watches a folder we have on SharePoint and kicks off automatically whenever a new PDF invoice drops in there. It should pull all the key details off each invoice — things like the invoice number, vendor name, invoice date, total amount, and the line items — and then push all of that straight into SAP by posting it to a web address our IT team gave us. Nothing fancy on the SAP side, just a plain post to that address.
+
+One important thing: it has to be built as a UiPath Maestro Flow — not an API workflow, not a standalone script, a proper Maestro Flow. And before I sign off on it I'd like it validated so I know it's wired up right.
+
+I should also mention that IT hasn't connected the SharePoint or SAP accounts in this environment yet, so nothing will actually run right now. I don't need it to run — I just need it built and wired up correctly so that when IT flips the switch it's ready to go. Please don't go hunting for live accounts or wait on IT to get started.
+
+Feel free to ask me anything you need before you start building!
+
+=== AGENT (turn 1) — 8.5s, in=2 out=401 ===
+This is a Maestro Flow build with a document-extraction step and a webhook post — that's squarely the `uipath-maestro-flow` skill's territory. Before I invoke it, a few quick questions:
+
+1. **SharePoint trigger specifics**: Do you know the exact SharePoint site/library name for the folder, or should I use a placeholder that IT can swap in later?
+2. **Extraction model**: For the invoice data extraction (invoice number, vendor, date, total, line items), should this use an IXP (Document Understanding) node in the flow, or do you already have an existing extraction taxonomy/project set up that I should point to?
+3. **SAP POST endpoint**: Do you have the actual URL IT gave you (even if the connection/auth isn't live yet), or should I use a placeholder endpoint field for them to fill in?
+4. **Payload shape**: Any required JSON structure/field names for the SAP side, or should I just post the extracted fields in a straightforward JSON body (invoice number, vendor, date, total, line items array)?
+
+If you don't have exact values for 1 and 3, that's fine — I'll wire in clearly-marked placeholders so it's structurally correct and ready for IT to drop in real values.
+
+=== USER (turn 2) ===
+Good questions — let me answer them all in one go so you can get started.
+
+1. The folder is called **"New Vendor"** — that's where all the invoices land. I don't have the full SharePoint site address off the top of my head, so just use a placeholder there and IT can drop in the real details.
+
+2. Yes, use the document understanding option — specifically there's an **Invoice Model** in there that should handle reading everything off the invoice. Use that.
+
+3. I don't have the exact URL handy right now — IT sent it in an email I'd have to dig up. Just put in a clearly marked placeholder field so they can fill it in. A straightforward JSON body with all the invoice fields is totally fine, nothing special required on the SAP side.
+
+Go ahead and build it!
+
+=== AGENT (turn 2) — 100.3s, in=16 out=4827, 11 tool calls ===
+I found the SharePoint trigger node (the Microsoft OneDrive & SharePoint connector's "File Created" trigger — this connector covers both OneDrive and SharePoint), so that part is unambiguous. But "Invoice Model" doesn't exactly match anything published on this tenant. There are three invoice-related IXP models available:
+
+1. **InvoiceIXP** (Shared)
+2. **idp-benchmark---invoices-c735405a-ixp** (Shared)
+3. **invoices-billing** (Shared/uipath-maestro-flow/BillingDispute)
+4. **Something else** — tell me the exact name/folder
+
+Which one did you mean?
+
+=== USER (turn 3) ===
+Honestly I just know it as the "Invoice Model" — that's what the team has always called it. I'm not the right person to tell you which of those technical names matches up. If I had to guess I'd say the first one sounds the most like a general invoice one, but you're the expert here. Pick whichever one is the right fit for reading a standard vendor invoice and get it wired in. If IT needs to swap it out later they can, but I don't want the whole build to stall over a name!
+

@@ -1,0 +1,204 @@
+{
+  "Result": "Success",
+  "Data": {
+    "status": "active",
+    "dataset": {
+      "entity_defs": [
+        {
+          "id": "et_exact",
+          "name": "Exact Text",
+          "kind": "text",
+          "input_value": "exact-match"
+        },
+        {
+          "id": "et_infer",
+          "name": "Inferred Text",
+          "kind": "text",
+          "input_value": "inferred"
+        },
+        {
+          "id": "et_number",
+          "name": "Number",
+          "kind": "number"
+        },
+        {
+          "id": "et_date",
+          "name": "Date",
+          "kind": "date"
+        },
+        {
+          "id": "et_money",
+          "name": "Monetary Quantity",
+          "kind": "money"
+        },
+        {
+          "id": "et_bool",
+          "name": "Boolean",
+          "kind": "boolean"
+        }
+      ],
+      "label_groups": [
+        {
+          "id": "lg_header",
+          "name": "Invoice Header",
+          "instructions": "Extract the top-level invoice metadata printed at the header of the document.",
+          "repeatable": false,
+          "fields": [
+            {
+              "id": "fld_inv_num",
+              "name": "Invoice Number",
+              "type_id": "et_exact",
+              "instructions": "The unique invoice identifier, usually prefixed with a vendor code (e.g. ACM-2024-00891)."
+            },
+            {
+              "id": "fld_inv_date",
+              "name": "Invoice Date",
+              "type_id": "et_date",
+              "instructions": "The date the invoice was issued. Return as YYYY-MM-DD."
+            },
+            {
+              "id": "fld_due_date",
+              "name": "Due Date",
+              "type_id": "et_date",
+              "instructions": "The payment due date. Return as YYYY-MM-DD."
+            },
+            {
+              "id": "fld_po_num",
+              "name": "PO Number",
+              "type_id": "et_exact",
+              "instructions": "The buyer purchase order number referenced on this invoice."
+            },
+            {
+              "id": "fld_pay_terms",
+              "name": "Payment Terms",
+              "type_id": "et_exact",
+              "instructions": "Terms such as Net 30, Net 15, or Due on Receipt."
+            },
+            {
+              "id": "fld_currency",
+              "name": "Currency",
+              "type_id": "et_exact",
+              "instructions": "Three-letter ISO currency code (e.g. USD, EUR)."
+            }
+          ]
+        },
+        {
+          "id": "lg_vendor",
+          "name": "Vendor Details",
+          "instructions": "Extract the vendor (seller) contact and identification details.",
+          "repeatable": false,
+          "fields": [
+            {
+              "id": "fld_vend_name",
+              "name": "Vendor Name",
+              "type_id": "et_exact",
+              "instructions": "Legal name of the vendor / supplier company."
+            },
+            {
+              "id": "fld_vend_addr",
+              "name": "Vendor Address",
+              "type_id": "et_exact",
+              "instructions": "Full mailing address of the vendor including street, city, state, ZIP."
+            },
+            {
+              "id": "fld_vend_email",
+              "name": "Vendor Email",
+              "type_id": "et_exact",
+              "instructions": "Billing or accounts-receivable email address of the vendor."
+            },
+            {
+              "id": "fld_vend_phone",
+              "name": "Vendor Phone",
+              "type_id": "et_exact",
+              "instructions": "Phone number of the vendor."
+            }
+          ]
+        },
+        {
+          "id": "lg_billto",
+          "name": "Bill To",
+          "instructions": "Extract the buyer / bill-to party name and address.",
+          "repeatable": false,
+          "fields": [
+            {
+              "id": "fld_bt_name",
+              "name": "Bill-To Name",
+              "type_id": "et_exact",
+              "instructions": "Name of the billing entity or department."
+            },
+            {
+              "id": "fld_bt_addr",
+              "name": "Bill-To Address",
+              "type_id": "et_exact",
+              "instructions": "Full mailing address of the bill-to party."
+            }
+          ]
+        },
+        {
+          "id": "lg_totals",
+          "name": "Invoice Totals",
+          "instructions": "Extract the financial summary fields from the totals section.",
+          "repeatable": false,
+          "fields": [
+            {
+              "id": "fld_subtotal",
+              "name": "Subtotal",
+              "type_id": "et_money",
+              "instructions": "Sum before tax. Normalise to decimal (e.g. 10,300.00 USD)."
+            },
+            {
+              "id": "fld_tax_rate",
+              "name": "Tax Rate",
+              "type_id": "et_number",
+              "instructions": "Tax percentage rate applied. Return as a plain number (e.g. 8.5)."
+            },
+            {
+              "id": "fld_tax_amount",
+              "name": "Tax Amount",
+              "type_id": "et_money",
+              "instructions": "Dollar amount of tax charged."
+            },
+            {
+              "id": "fld_total",
+              "name": "Total Due",
+              "type_id": "et_money",
+              "instructions": "Final amount due including tax. This is the amount to be paid."
+            }
+          ]
+        },
+        {
+          "id": "lg_lineitems",
+          "name": "Line Items",
+          "instructions": "Extract each individual product or service line from the invoice table.",
+          "repeatable": true,
+          "fields": [
+            {
+              "id": "fld_li_desc",
+              "name": "Description",
+              "type_id": "et_exact",
+              "instructions": "Description of the product or service on this line."
+            },
+            {
+              "id": "fld_li_qty",
+              "name": "Quantity",
+              "type_id": "et_number",
+              "instructions": "Number of units for this line item."
+            },
+            {
+              "id": "fld_li_price",
+              "name": "Unit Price",
+              "type_id": "et_money",
+              "instructions": "Price per unit for this line."
+            },
+            {
+              "id": "fld_li_total",
+              "name": "Line Total",
+              "type_id": "et_money",
+              "instructions": "Total for this line (qty \u00d7 unit price)."
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

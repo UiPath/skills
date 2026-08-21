@@ -1,0 +1,6 @@
+{
+  "Name": "GetSlackToken",
+  "ProjectType": "Process",
+  "Description": "Project",
+  "MainFile": "Main.xaml"
+}

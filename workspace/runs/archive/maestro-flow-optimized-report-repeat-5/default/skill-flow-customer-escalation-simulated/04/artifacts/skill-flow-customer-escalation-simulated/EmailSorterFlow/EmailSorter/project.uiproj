@@ -1,0 +1,6 @@
+{
+  "Name": "EmailSorter",
+  "ProjectType": "Process",
+  "Description": "Automatically sorts and classifies incoming customer support emails by type and priority",
+  "MainFile": "Main.xaml"
+}

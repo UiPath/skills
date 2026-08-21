@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+    xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+    xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+    xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+    xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+    xmlns:uipath="http://uipath.org/schema/bpmn"
+    id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn"
+    exporter="UiPath (https://bpmn.uipath.com)" exporterVersion="1.0">
+  <bpmn:process id="Process_1" isExecutable="true">
+    <bpmn:extensionElements>
+      <uipath:migrationVersion version="11.5" />
+    </bpmn:extensionElements>
+
+    <bpmn:startEvent id="Start_1" name="Start">
+      <bpmn:outgoing>Flow_StartToFork</bpmn:outgoing>
+    </bpmn:startEvent>
+
+    <bpmn:parallelGateway id="Gw_Fork" name="Fork">
+      <bpmn:incoming>Flow_StartToFork</bpmn:incoming>
+      <bpmn:outgoing>Flow_ForkToA</bpmn:outgoing>
+      <bpmn:outgoing>Flow_ForkToB</bpmn:outgoing>
+    </bpmn:parallelGateway>
+
+    <bpmn:task id="Task_BranchA" name="Branch A Task">
+      <bpmn:incoming>Flow_ForkToA</bpmn:incoming>
+      <bpmn:outgoing>Flow_AToJoin</bpmn:outgoing>
+    </bpmn:task>
+
+    <bpmn:task id="Task_BranchB" name="Branch B Task">
+      <bpmn:incoming>Flow_ForkToB</bpmn:incoming>
+      <bpmn:outgoing>Flow_BToJoin</bpmn:outgoing>
+    </bpmn:task>
+
+    <bpmn:parallelGateway id="Gw_Join" name="Join">
+      <bpmn:incoming>Flow_AToJoin</bpmn:incoming>
+      <bpmn:incoming>Flow_BToJoin</bpmn:incoming>
+      <bpmn:outgoing>Flow_JoinToEnd</bpmn:outgoing>
+    </bpmn:parallelGateway>
+
+    <bpmn:endEvent id="End_1" name="End">
+      <bpmn:incoming>Flow_JoinToEnd</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <bpmn:sequenceFlow id="Flow_StartToFork" sourceRef="Start_1"    targetRef="Gw_Fork"      />
+    <bpmn:sequenceFlow id="Flow_ForkToA"     sourceRef="Gw_Fork"    targetRef="Task_BranchA" />
+    <bpmn:sequenceFlow id="Flow_ForkToB"     sourceRef="Gw_Fork"    targetRef="Task_BranchB" />
+    <bpmn:sequenceFlow id="Flow_AToJoin"     sourceRef="Task_BranchA" targetRef="Gw_Join"    />
+    <bpmn:sequenceFlow id="Flow_BToJoin"     sourceRef="Task_BranchB" targetRef="Gw_Join"    />
+    <bpmn:sequenceFlow id="Flow_JoinToEnd"   sourceRef="Gw_Join"    targetRef="End_1"        />
+  </bpmn:process>
+
+  <bpmndi:BPMNDiagram id="Diagram_1">
+    <bpmndi:BPMNPlane id="Plane_1" bpmnElement="Process_1">
+      <!-- Start event -->
+      <bpmndi:BPMNShape id="S_Start_1" bpmnElement="Start_1">
+        <dc:Bounds x="160" y="200" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <!-- Fork parallel gateway -->
+      <bpmndi:BPMNShape id="S_Gw_Fork" bpmnElement="Gw_Fork">
+        <dc:Bounds x="260" y="193" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <!-- Branch A task (upper lane) -->
+      <bpmndi:BPMNShape id="S_Task_BranchA" bpmnElement="Task_BranchA">
+        <dc:Bounds x="380" y="98" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <!-- Branch B task (lower lane) -->
+      <bpmndi:BPMNShape id="S_Task_BranchB" bpmnElement="Task_BranchB">
+        <dc:Bounds x="380" y="258" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <!-- Join parallel gateway -->
+      <bpmndi:BPMNShape id="S_Gw_Join" bpmnElement="Gw_Join">
+        <dc:Bounds x="540" y="193" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <!-- End event -->
+      <bpmndi:BPMNShape id="S_End_1" bpmnElement="End_1">
+        <dc:Bounds x="650" y="200" width="36" height="36" />
+      </bpmndi:BPMNShape>
+
+      <!-- Start -> Fork -->
+      <bpmndi:BPMNEdge id="E_StartToFork" bpmnElement="Flow_StartToFork">
+        <di:waypoint x="196" y="218" />
+        <di:waypoint x="260" y="218" />
+      </bpmndi:BPMNEdge>
+      <!-- Fork -> Branch A (up) -->
+      <bpmndi:BPMNEdge id="E_ForkToA" bpmnElement="Flow_ForkToA">
+        <di:waypoint x="285" y="193" />
+        <di:waypoint x="285" y="138" />
+        <di:waypoint x="380" y="138" />
+      </bpmndi:BPMNEdge>
+      <!-- Fork -> Branch B (down) -->
+      <bpmndi:BPMNEdge id="E_ForkToB" bpmnElement="Flow_ForkToB">
+        <di:waypoint x="285" y="243" />
+        <di:waypoint x="285" y="298" />
+        <di:waypoint x="380" y="298" />
+      </bpmndi:BPMNEdge>
+      <!-- Branch A -> Join -->
+      <bpmndi:BPMNEdge id="E_AToJoin" bpmnElement="Flow_AToJoin">
+        <di:waypoint x="480" y="138" />
+        <di:waypoint x="565" y="138" />
+        <di:waypoint x="565" y="193" />
+      </bpmndi:BPMNEdge>
+      <!-- Branch B -> Join -->
+      <bpmndi:BPMNEdge id="E_BToJoin" bpmnElement="Flow_BToJoin">
+        <di:waypoint x="480" y="298" />
+        <di:waypoint x="565" y="298" />
+        <di:waypoint x="565" y="243" />
+      </bpmndi:BPMNEdge>
+      <!-- Join -> End -->
+      <bpmndi:BPMNEdge id="E_JoinToEnd" bpmnElement="Flow_JoinToEnd">
+        <di:waypoint x="590" y="218" />
+        <di:waypoint x="650" y="218" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

@@ -1,0 +1,8 @@
+17:02:53 [INFO   ] [default/skill-flow-terminate/00] orchestrator: API routing: aws_bedrock
+17:06:30 [INFO   ] [default/skill-flow-terminate/00] orchestrator: Success criteria: 2/2 passed, weighted score: 1.000
+17:06:30 [INFO   ] [default/skill-flow-terminate/00] orchestrator: Running post-run command: python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/cleanup_solutions.py
+17:06:32 [WARNING] [default/skill-flow-terminate/00] orchestrator: [post_run stderr] cleanup_solutions: deleted 1e396b55-0b82-409d-1431-08dee9a2709e (from TerminateParallel/TerminateParallel.uipx)
+17:06:32 [WARNING] [default/skill-flow-terminate/00] orchestrator: [post_run stderr] cleanup_solutions: summary policy=always deleted=1 preserved=0 skipped=0 not_uploaded=0 failed=0
+17:06:32 [INFO   ] [default/skill-flow-terminate/00] orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+17:06:32 [INFO   ] [default/skill-flow-terminate/00] orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-terminate
+17:06:32 [INFO   ] [default/skill-flow-terminate/00] orchestrator: Task finished: status=SUCCESS duration=228.8s score=1.000 iterations=1

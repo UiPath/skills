@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "CeqlWhereTest",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "c8d2f5af-27a7-4846-81a1-c68ebfeb21df",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "CeqlWhereTest"
+    },
+    "locks": [],
+    "key": "69280f1f-cb3b-4c54-acdc-c50002ec6458",
+    "files": []
+  }
+}

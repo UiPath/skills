@@ -1,0 +1,52 @@
+2026-07-24 20:10:23 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-24 20:10:23 [INFO] coder_eval.orchestrator: API routing: aws_bedrock
+2026-07-24 20:10:23 [DEBUG] coder_eval.criteria: Discovered 14 criterion checkers
+2026-07-24 20:10:23 [DEBUG] coder_eval.criteria: Validated 14 criterion checkers
+2026-07-24 20:10:23 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-24 20:10:23 [DEBUG] coder_eval.orchestrator: Sending prompt: Build a Maestro Flow "BillingInvoiceLookup" (in a solution of the same name)
+that looks up a dispute...
+2026-07-24 20:10:23 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Starting agent query stream...
+2026-07-24 20:18:35 [DEBUG] coder_eval.agents.claude_code_agent: [coder] session_id changed: None -> a3150199-26be-49d6-afd0-68ea3123422e
+2026-07-24 20:18:35 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Agent query stream ended
+2026-07-24 20:18:35 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-24 20:18:35 [DEBUG] coder_eval.orchestrator: Agent response received (11966 chars)
+2026-07-24 20:18:35 [DEBUG] coder_eval.orchestrator: Checking success criteria
+2026-07-24 20:18:35 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'uip maestro flow validate passes on the flow file': uip maestro flow validate BillingInvoiceLookup/BillingInvoiceLookup/BillingInvoiceLookup.flow
+2026-07-24 20:18:42 [DEBUG] coder_eval.sandbox: Command 'uip maestro flow validate BillingInvoiceLookup/BillingInvoiceLookup/BillingInvoiceLookup.flow' exited with code 0
+2026-07-24 20:18:42 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+{
+  "Result": "Success",
+  "Code": "FlowValidate",
+  "Data": {
+    "File": "/work/output/artifacts/skill-flow-devcon-billing-invoice-lookup/BillingInvoiceLookup/BillingInvoiceLookup/BillingInvoiceLookup.flow",
+    "Status": "Valid"
+  }
+}
+---
+2026-07-24 20:18:42 [DEBUG] coder_eval.sandbox: STDERR:
+---
+[ManifestClient] fetchDynamicNodes ok: total=208 agent context nodes=2 external agent nodes=6 orchestrator nodes=158 IXP nodes=42
+---
+2026-07-24 20:18:42 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-07-24 20:18:42 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'Check script debugs all three malformed inputs; each resolves to MCS-2026-04872 with 8 line items': python3 $TASK_DIR/check_billing_invoice_lookup.py
+2026-07-24 20:19:49 [DEBUG] coder_eval.sandbox: Command 'python3 $TASK_DIR/check_billing_invoice_lookup.py' exited with code 0
+2026-07-24 20:19:49 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+[missing MCS- prefix] debug inputs: {'invoiceNumber': '2026-04872'}
+OK: [missing MCS- prefix] -> MCS-2026-04872, 8 line items
+[wrong casing] debug inputs: {'invoiceNumber': 'mcs-2026-04872'}
+OK: [wrong casing] -> MCS-2026-04872, 8 line items
+[leading whitespace] debug inputs: {'invoiceNumber': ' MCS-2026-04872'}
+OK: [leading whitespace] -> MCS-2026-04872, 8 line items
+OK: all 3 malformed forms normalized and queried correctly
+---
+2026-07-24 20:19:49 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-07-24 20:19:49 [INFO] coder_eval.orchestrator: Success criteria: 2/2 passed, weighted score: 1.000
+2026-07-24 20:19:49 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-24 20:19:49 [INFO] coder_eval.orchestrator: Running post-run command: python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/cleanup_solutions.py
+2026-07-24 20:19:50 [WARNING] coder_eval.orchestrator: [post_run stderr] cleanup_solutions: deleted a33cb68b-095a-43c6-4807-08dee9b1ed35 (from BillingInvoiceLookup/BillingInvoiceLookup.uipx)
+2026-07-24 20:19:50 [WARNING] coder_eval.orchestrator: [post_run stderr] cleanup_solutions: summary policy=always deleted=1 preserved=0 skipped=0 not_uploaded=0 failed=0
+2026-07-24 20:19:50 [INFO] coder_eval.orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+2026-07-24 20:19:50 [INFO] coder_eval.orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-devcon-billing-invoice-lookup
+2026-07-24 20:19:50 [INFO] coder_eval.orchestrator: Task finished: status=SUCCESS duration=570.0s score=1.000 iterations=1

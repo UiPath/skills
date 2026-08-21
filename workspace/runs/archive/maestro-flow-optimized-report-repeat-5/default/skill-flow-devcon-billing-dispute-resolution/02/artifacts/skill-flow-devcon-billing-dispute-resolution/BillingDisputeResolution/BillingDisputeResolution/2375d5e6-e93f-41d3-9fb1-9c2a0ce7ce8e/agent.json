@@ -1,0 +1,123 @@
+{
+  "version": "1.1.0",
+  "settings": {
+    "model": "anthropic.claude-sonnet-4-20250514-v1:0",
+    "maxTokens": 128000,
+    "temperature": 0.3,
+    "engine": "basic-v2",
+    "maxIterations": 10,
+    "mode": "standard"
+  },
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "normalizeData__output__normalizedInvoiceNumber": {
+        "type": "string",
+        "description": "The normalized invoice number (MCS- prefixed, uppercased)."
+      },
+      "disputeAnalyst__output__creditAmount": {
+        "type": "number",
+        "description": "The approved credit amount in the account currency."
+      },
+      "disputeAnalyst__output__determination": {
+        "type": "string",
+        "description": "The analyst's determination of the dispute outcome."
+      },
+      "disputeAnalyst__output__rationale": {
+        "type": "string",
+        "description": "The analyst's detailed reasoning."
+      },
+      "start__output__webhookPayload": {
+        "type": "object",
+        "description": "The full webhook payload containing customer information."
+      }
+    }
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "subject": {
+        "type": "string",
+        "description": "Professional email subject line referencing the invoice number."
+      },
+      "body": {
+        "type": "string",
+        "description": "Professional email body confirming the dispute resolution, citing the invoice number and approved credit amount."
+      }
+    },
+    "required": [
+      "subject",
+      "body"
+    ]
+  },
+  "metadata": {
+    "storageVersion": "50.0.0",
+    "isConversational": false,
+    "showProjectCreationExperience": false
+  },
+  "type": "lowCode",
+  "guardrails": [],
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a Customer Success specialist responsible for drafting professional billing dispute resolution communications. Your emails must be:\n- Clear, empathetic, and professional in tone\n- Factually accurate — always cite the exact invoice number and credit amount\n- Concise (3–5 paragraphs)\n- Action-oriented — tell the customer what happens next\n\nAlways format the credit amount as a dollar figure with 2 decimal places (e.g., $1,234.56).",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "You are a Customer Success specialist responsible for drafting professional billing dispute resolution communications. Your emails must be:\n- Clear, empathetic, and professional in tone\n- Factually accurate — always cite the exact invoice number and credit amount\n- Concise (3–5 paragraphs)\n- Action-oriented — tell the customer what happens next\n\nAlways format the credit amount as a dollar figure with 2 decimal places (e.g., $1,234.56)."
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "Draft a billing dispute resolution email for the following case:\n\nInvoice Number: {{input.normalizeData__output__normalizedInvoiceNumber}}\nCustomer Information: {{input.start__output__webhookPayload}}\nDetermination: {{input.disputeAnalyst__output__determination}}\nApproved Credit Amount: {{input.disputeAnalyst__output__creditAmount}}\nAnalyst Rationale: {{input.disputeAnalyst__output__rationale}}\n\nThe email should confirm the dispute has been resolved, cite the invoice number, state the approved credit amount, and explain what the customer should expect next (credit applied within 3–5 business days).",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "Draft a billing dispute resolution email for the following case:\n\nInvoice Number: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.normalizeData__output__normalizedInvoiceNumber"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\nCustomer Information: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__webhookPayload"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\nDetermination: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.disputeAnalyst__output__determination"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\nApproved Credit Amount: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.disputeAnalyst__output__creditAmount"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\nAnalyst Rationale: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.disputeAnalyst__output__rationale"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\nThe email should confirm the dispute has been resolved, cite the invoice number, state the approved credit amount, and explain what the customer should expect next (credit applied within 3–5 business days)."
+        }
+      ]
+    }
+  ],
+  "projectId": "2375d5e6-e93f-41d3-9fb1-9c2a0ce7ce8e"
+}

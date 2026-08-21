@@ -1,0 +1,6 @@
+{
+  "$schema": "https://cloud.uipath.com/draft/2024-12/operate",
+  "main": "/content/BusinessRuleDecision.bpmn#Start_ManualEntry",
+  "contentType": "ProcessOrchestration",
+  "projectId": "151d0f45-385a-4f76-a1be-2dd44a84e488"
+}

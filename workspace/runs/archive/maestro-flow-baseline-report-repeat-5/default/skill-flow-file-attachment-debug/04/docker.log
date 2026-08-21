@@ -1,0 +1,8 @@
+20:53:47 [INFO   ] [default/skill-flow-file-attachment-debug/04] orchestrator: API routing: aws_bedrock
+20:57:36 [INFO   ] [default/skill-flow-file-attachment-debug/04] orchestrator: Success criteria: 3/3 passed, weighted score: 1.000
+20:57:36 [INFO   ] [default/skill-flow-file-attachment-debug/04] orchestrator: Running post-run command: python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/cleanup_solutions.py
+20:57:38 [WARNING] [default/skill-flow-file-attachment-debug/04] orchestrator: [post_run stderr] cleanup_solutions: deleted 85dcd2e5-590d-47e2-486c-08dee9b1ed35 (from AttachmentEcho/AttachmentEcho.uipx)
+20:57:38 [WARNING] [default/skill-flow-file-attachment-debug/04] orchestrator: [post_run stderr] cleanup_solutions: summary policy=always deleted=1 preserved=0 skipped=0 not_uploaded=0 failed=0
+20:57:38 [INFO   ] [default/skill-flow-file-attachment-debug/04] orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+20:57:38 [INFO   ] [default/skill-flow-file-attachment-debug/04] orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-file-attachment-debug
+20:57:38 [INFO   ] [default/skill-flow-file-attachment-debug/04] orchestrator: Task finished: status=SUCCESS duration=233.8s score=1.000 iterations=1

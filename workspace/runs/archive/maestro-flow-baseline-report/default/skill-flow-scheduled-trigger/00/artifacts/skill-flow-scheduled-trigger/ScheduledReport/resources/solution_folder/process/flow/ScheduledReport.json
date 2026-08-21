@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "ScheduledReport",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "b8b286b2-7253-4caf-b946-13c2ef7efa6d",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "ScheduledReport"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Flow",
+      "name": "ScheduledReport",
+      "package": {
+        "key": "9311726e-e18f-4f29-90aa-2f729ccba7a9"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "20cd0260-2c1a-451f-8e61-48450bb78c0d",
+    "files": []
+  }
+}

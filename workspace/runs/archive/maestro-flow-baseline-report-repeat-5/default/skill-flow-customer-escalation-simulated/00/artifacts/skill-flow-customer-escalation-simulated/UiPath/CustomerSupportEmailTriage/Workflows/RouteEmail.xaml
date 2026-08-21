@@ -1,0 +1,276 @@
+<Activity mc:Ignorable="sap sap2010" x:Class="Workflows_RouteEmail"
+  xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities"
+  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+  xmlns:mva="clr-namespace:Microsoft.VisualBasic.Activities;assembly=System.Activities"
+  xmlns:sap="http://schemas.microsoft.com/netfx/2009/xaml/activities/presentation"
+  xmlns:sap2010="http://schemas.microsoft.com/netfx/2010/xaml/activities/presentation"
+  xmlns:scg="clr-namespace:System.Collections.Generic;assembly=System.Private.CoreLib"
+  xmlns:sco="clr-namespace:System.Collections.ObjectModel;assembly=System.Private.CoreLib"
+  xmlns:ui="http://schemas.uipath.com/workflow/activities"
+  xmlns:umae="clr-namespace:UiPath.Mail.Activities.Enums;assembly=UiPath.Mail.Activities"
+  xmlns:umame="clr-namespace:UiPath.MicrosoftOffice365.Activities.Mail.Enums;assembly=UiPath.Mail.Activities"
+  xmlns:uipm="clr-namespace:UiPath.Mail;assembly=UiPath.Mail"
+  xmlns:usau="clr-namespace:UiPath.Shared.Activities.Utils;assembly=UiPath.Mail.Activities"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+  <x:Members>
+    <!-- IN: Email to route -->
+    <x:Property Name="in_Email" Type="InArgument(uipm:UiPathMailMessage)" />
+    <!-- IN: Assigned category from ClassifyEmail -->
+    <x:Property Name="in_Category" Type="InArgument(x:String)" />
+    <!-- IN: Assigned priority from ClassifyEmail -->
+    <x:Property Name="in_Priority" Type="InArgument(x:String)" />
+    <!-- IN: SMTP server for sending the acknowledgement reply -->
+    <x:Property Name="in_SmtpServer" Type="InArgument(x:String)" />
+    <!-- IN: SMTP port number, e.g. 587 -->
+    <x:Property Name="in_SmtpPort" Type="InArgument(x:Int32)" />
+    <!-- IN: Sender email address -->
+    <x:Property Name="in_FromEmail" Type="InArgument(x:String)" />
+    <!-- IN: Sender email password -->
+    <x:Property Name="in_FromPassword" Type="InArgument(x:String)" />
+    <!-- IN: IMAP server (for moving the email to a category folder) -->
+    <x:Property Name="in_ImapServer" Type="InArgument(x:String)" />
+    <!-- IN: IMAP port -->
+    <x:Property Name="in_ImapPort" Type="InArgument(x:Int32)" />
+  </x:Members>
+
+  <mva:VisualBasic.Settings>
+    <x:Null />
+  </mva:VisualBasic.Settings>
+
+  <TextExpression.NamespacesForImplementation>
+    <sco:Collection x:TypeArguments="x:String">
+      <x:String>System</x:String>
+      <x:String>System.Collections.Generic</x:String>
+      <x:String>System.Net.Mail</x:String>
+      <x:String>UiPath.Mail</x:String>
+      <x:String>UiPath.Core</x:String>
+      <x:String>UiPath.Core.Activities</x:String>
+      <x:String>UiPath.Mail.Activities.Enums</x:String>
+    </sco:Collection>
+  </TextExpression.NamespacesForImplementation>
+  <TextExpression.ReferencesForImplementation>
+    <sco:Collection x:TypeArguments="AssemblyReference">
+      <AssemblyReference>System</AssemblyReference>
+      <AssemblyReference>System.Activities</AssemblyReference>
+      <AssemblyReference>System.Private.CoreLib</AssemblyReference>
+      <AssemblyReference>System.Net.Mail</AssemblyReference>
+      <AssemblyReference>UiPath.System.Activities</AssemblyReference>
+      <AssemblyReference>UiPath.Mail.Activities</AssemblyReference>
+      <AssemblyReference>UiPath.Mail</AssemblyReference>
+    </sco:Collection>
+  </TextExpression.ReferencesForImplementation>
+
+  <Sequence DisplayName="Route Email" sap2010:WorkflowViewState.IdRef="Sequence_1">
+    <Sequence.Variables>
+      <Variable x:TypeArguments="x:String" Name="senderAddress" Default="&quot;&quot;" />
+      <Variable x:TypeArguments="x:String" Name="ackSubject" Default="&quot;&quot;" />
+      <Variable x:TypeArguments="x:String" Name="ackBody" Default="&quot;&quot;" />
+      <Variable x:TypeArguments="x:String" Name="targetFolder" Default="&quot;Inbox&quot;" />
+    </Sequence.Variables>
+
+    <!-- Extract sender address from the incoming email -->
+    <Assign x:TypeArguments="x:String" DisplayName="Get Sender Address">
+      <Assign.To>
+        <OutArgument x:TypeArguments="x:String">
+          <VisualBasicReference x:TypeArguments="x:String" ExpressionText="senderAddress" />
+        </OutArgument>
+      </Assign.To>
+      <Assign.Value>
+        <InArgument x:TypeArguments="x:String">
+          <VisualBasicValue x:TypeArguments="x:String" ExpressionText="If(in_Email IsNot Nothing AndAlso in_Email.From IsNot Nothing, in_Email.From.Address, &quot;&quot;)" />
+        </InArgument>
+      </Assign.Value>
+    </Assign>
+
+    <!-- Build the acknowledgement subject -->
+    <Assign x:TypeArguments="x:String" DisplayName="Build Ack Subject">
+      <Assign.To>
+        <OutArgument x:TypeArguments="x:String">
+          <VisualBasicReference x:TypeArguments="x:String" ExpressionText="ackSubject" />
+        </OutArgument>
+      </Assign.To>
+      <Assign.Value>
+        <InArgument x:TypeArguments="x:String">
+          <VisualBasicValue x:TypeArguments="x:String" ExpressionText="&quot;[Support Ticket Received] Re: &quot; &amp; If(in_Email IsNot Nothing AndAlso in_Email.Subject IsNot Nothing, in_Email.Subject, &quot;Your request&quot;)" />
+        </InArgument>
+      </Assign.Value>
+    </Assign>
+
+    <!-- Build the acknowledgement body using category -->
+    <Assign x:TypeArguments="x:String" DisplayName="Build Ack Body">
+      <Assign.To>
+        <OutArgument x:TypeArguments="x:String">
+          <VisualBasicReference x:TypeArguments="x:String" ExpressionText="ackBody" />
+        </OutArgument>
+      </Assign.To>
+      <Assign.Value>
+        <InArgument x:TypeArguments="x:String">
+          <VisualBasicValue x:TypeArguments="x:String" ExpressionText="&quot;Thank you for contacting our support team.&quot; &amp; Environment.NewLine &amp; Environment.NewLine &amp; &quot;We have received your email and categorised it as: &quot; &amp; in_Category &amp; &quot; (Priority: &quot; &amp; in_Priority &amp; &quot;).&quot; &amp; Environment.NewLine &amp; Environment.NewLine &amp; &quot;A member of our team will be in touch shortly.&quot; &amp; Environment.NewLine &amp; Environment.NewLine &amp; &quot;Best regards,&quot; &amp; Environment.NewLine &amp; &quot;Customer Support Team&quot;" />
+        </InArgument>
+      </Assign.Value>
+    </Assign>
+
+    <!-- Determine the IMAP target folder for the category -->
+    <If DisplayName="Set Target Folder">
+      <If.Condition>
+        <InArgument x:TypeArguments="x:Boolean">
+          <VisualBasicValue x:TypeArguments="x:Boolean" ExpressionText="Not String.IsNullOrWhiteSpace(in_Category)" />
+        </InArgument>
+      </If.Condition>
+      <If.Then>
+        <Sequence DisplayName="Assign Folder by Category">
+          <Assign x:TypeArguments="x:String" DisplayName="Target Folder = Category">
+            <Assign.To>
+              <OutArgument x:TypeArguments="x:String">
+                <VisualBasicReference x:TypeArguments="x:String" ExpressionText="targetFolder" />
+              </OutArgument>
+            </Assign.To>
+            <Assign.Value>
+              <InArgument x:TypeArguments="x:String">
+                <VisualBasicValue x:TypeArguments="x:String" ExpressionText="&quot;Support/&quot; &amp; in_Category" />
+              </InArgument>
+            </Assign.Value>
+          </Assign>
+        </Sequence>
+      </If.Then>
+    </If>
+
+    <!-- Send acknowledgement reply only if we have a sender address -->
+    <If DisplayName="Send Ack if Sender Known">
+      <If.Condition>
+        <InArgument x:TypeArguments="x:Boolean">
+          <VisualBasicValue x:TypeArguments="x:Boolean" ExpressionText="Not String.IsNullOrWhiteSpace(senderAddress)" />
+        </InArgument>
+      </If.Condition>
+      <If.Then>
+        <Sequence DisplayName="Send Acknowledgement">
+          <TryCatch DisplayName="Try Send Ack Email">
+            <TryCatch.Try>
+              <Sequence DisplayName="Try">
+                <ui:SendMail
+                  DisplayName="Send Acknowledgement Reply"
+                  sap2010:WorkflowViewState.IdRef="SendMail_1"
+                  EnableSSL="True"
+                  IgnoreCRL="False"
+                  IsBodyHtml="False"
+                  SecureConnection="Auto"
+                  UseISConnection="False"
+                  AttachmentInputMode="None"
+                  Server="[in_SmtpServer]"
+                  Port="[in_SmtpPort]"
+                  Email="[in_FromEmail]"
+                  Password="[in_FromPassword]"
+                  From="[in_FromEmail]"
+                  To="[senderAddress]"
+                  Subject="[ackSubject]"
+                  Body="[ackBody]">
+                  <ui:SendMail.AttachmentsBackup>
+                    <usau:BackupSlot x:TypeArguments="umame:AttachmentInputMode" StoredValue="{x:Null}">
+                      <usau:BackupSlot.BackupValues>
+                        <scg:Dictionary x:TypeArguments="umame:AttachmentInputMode, scg:List(x:Object)" />
+                      </usau:BackupSlot.BackupValues>
+                    </usau:BackupSlot>
+                  </ui:SendMail.AttachmentsBackup>
+                  <ui:SendMail.ConnectionDetailsBackupSlot>
+                    <usau:BackupSlot x:TypeArguments="umae:ConnectionDetails" StoredValue="{x:Null}">
+                      <usau:BackupSlot.BackupValues>
+                        <scg:Dictionary x:TypeArguments="umae:ConnectionDetails, scg:List(x:Object)" />
+                      </usau:BackupSlot.BackupValues>
+                    </usau:BackupSlot>
+                  </ui:SendMail.ConnectionDetailsBackupSlot>
+                  <ui:SendMail.Files>
+                    <scg:List x:TypeArguments="InArgument(x:String)" Capacity="0" />
+                  </ui:SendMail.Files>
+                </ui:SendMail>
+                <ui:LogMessage Level="Info" DisplayName="Log: Ack sent">
+                  <ui:LogMessage.Message>
+                    <InArgument x:TypeArguments="x:Object">
+                      <VisualBasicValue x:TypeArguments="x:Object" ExpressionText="&quot;[RouteEmail] Acknowledgement sent to &quot; &amp; senderAddress" />
+                    </InArgument>
+                  </ui:LogMessage.Message>
+                </ui:LogMessage>
+              </Sequence>
+            </TryCatch.Try>
+            <TryCatch.Catches>
+              <Catch x:TypeArguments="s:Exception"
+                xmlns:s="clr-namespace:System;assembly=System.Private.CoreLib">
+                <ActivityAction x:TypeArguments="s:Exception">
+                  <ActivityAction.Argument>
+                    <DelegateInArgument x:TypeArguments="s:Exception" Name="ex" />
+                  </ActivityAction.Argument>
+                  <Sequence DisplayName="Catch">
+                    <ui:LogMessage Level="Warn" DisplayName="Log: Ack send failed">
+                      <ui:LogMessage.Message>
+                        <InArgument x:TypeArguments="x:Object">
+                          <VisualBasicValue x:TypeArguments="x:Object" ExpressionText="&quot;[RouteEmail] Failed to send acknowledgement to &quot; &amp; senderAddress &amp; &quot;: &quot; &amp; ex.Message" />
+                        </InArgument>
+                      </ui:LogMessage.Message>
+                    </ui:LogMessage>
+                  </Sequence>
+                </ActivityAction>
+              </Catch>
+            </TryCatch.Catches>
+          </TryCatch>
+        </Sequence>
+      </If.Then>
+    </If>
+
+    <!-- Move the email into the category sub-folder via IMAP -->
+    <TryCatch DisplayName="Try Move Email to Folder">
+      <TryCatch.Try>
+        <Sequence DisplayName="Try">
+          <ui:MoveIMAPMailMessageToFolder
+            DisplayName="Move to Category Folder"
+            sap2010:WorkflowViewState.IdRef="MoveIMAPMailMessageToFolder_1"
+            EnableSSL="True"
+            IgnoreCRL="False"
+            SecureConnection="Auto"
+            UseISConnection="False"
+            Server="[in_ImapServer]"
+            Port="[in_ImapPort]"
+            Email="[in_FromEmail]"
+            Password="[in_FromPassword]"
+            MailMessage="[in_Email]"
+            FromFolder="Inbox"
+            MailFolder="[targetFolder]">
+            <ui:MoveIMAPMailMessageToFolder.ConnectionDetailsBackupSlot>
+              <usau:BackupSlot x:TypeArguments="umae:ConnectionDetails" StoredValue="{x:Null}">
+                <usau:BackupSlot.BackupValues>
+                  <scg:Dictionary x:TypeArguments="umae:ConnectionDetails, scg:List(x:Object)" />
+                </usau:BackupSlot.BackupValues>
+              </usau:BackupSlot>
+            </ui:MoveIMAPMailMessageToFolder.ConnectionDetailsBackupSlot>
+          </ui:MoveIMAPMailMessageToFolder>
+          <ui:LogMessage Level="Info" DisplayName="Log: Email moved">
+            <ui:LogMessage.Message>
+              <InArgument x:TypeArguments="x:Object">
+                <VisualBasicValue x:TypeArguments="x:Object" ExpressionText="&quot;[RouteEmail] Moved email to folder: &quot; &amp; targetFolder" />
+              </InArgument>
+            </ui:LogMessage.Message>
+          </ui:LogMessage>
+        </Sequence>
+      </TryCatch.Try>
+      <TryCatch.Catches>
+        <Catch x:TypeArguments="s:Exception"
+          xmlns:s="clr-namespace:System;assembly=System.Private.CoreLib">
+          <ActivityAction x:TypeArguments="s:Exception">
+            <ActivityAction.Argument>
+              <DelegateInArgument x:TypeArguments="s:Exception" Name="ex" />
+            </ActivityAction.Argument>
+            <Sequence DisplayName="Catch">
+              <ui:LogMessage Level="Warn" DisplayName="Log: Move failed">
+                <ui:LogMessage.Message>
+                  <InArgument x:TypeArguments="x:Object">
+                    <VisualBasicValue x:TypeArguments="x:Object" ExpressionText="&quot;[RouteEmail] Failed to move email to &quot; &amp; targetFolder &amp; &quot;: &quot; &amp; ex.Message" />
+                  </InArgument>
+                </ui:LogMessage.Message>
+              </ui:LogMessage>
+            </Sequence>
+          </ActivityAction>
+        </Catch>
+      </TryCatch.Catches>
+    </TryCatch>
+
+  </Sequence>
+</Activity>

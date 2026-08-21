@@ -1,0 +1,67 @@
+{
+  "version": "1.1.0",
+  "projectId": "5cdff5ae-790a-459c-8fcd-4444abacab58",
+  "settings": {
+    "model": "gpt-4.1-2025-04-14",
+    "maxTokens": 128000,
+    "temperature": 0,
+    "engine": "basic-v2",
+    "maxIterations": 5,
+    "mode": "standard"
+  },
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "start__output__email": {
+        "type": "string",
+        "description": "Bound from $vars.start.output.email"
+      }
+    }
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "category": {
+        "type": "string",
+        "description": "Support category: Account Access, Billing, Technical Support, Feature Request, or General Inquiry"
+      },
+      "priority": {
+        "type": "string",
+        "description": "Priority level: High, Medium, or Low"
+      }
+    },
+    "required": [
+      "category",
+      "priority"
+    ]
+  },
+  "metadata": {
+    "storageVersion": "50.0.0",
+    "isConversational": false,
+    "showProjectCreationExperience": false
+  },
+  "type": "lowCode",
+  "guardrails": [],
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are an email triage assistant. Your sole task is to classify inbound support emails.\n\nRead the email provided and return a JSON object with exactly two fields:\n- \"category\": one of [\"Account Access\", \"Billing\", \"Technical Support\", \"Feature Request\", \"General Inquiry\"]\n- \"priority\": one of [\"High\", \"Medium\", \"Low\"]\n\nPriority rules:\n- High: urgent language, business-critical impact, data loss, security issues, or account lockout\n- Medium: moderate disruption, a workaround exists, or the issue can wait up to 2 business days\n- Low: informational questions, feature suggestions, or no immediate impact\n\nCall no tools. Return ONLY the JSON object with no explanation or surrounding text.",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "You are an email triage assistant. Your sole task is to classify inbound support emails.\n\nRead the email provided and return a JSON object with exactly two fields:\n- \"category\": one of [\"Account Access\", \"Billing\", \"Technical Support\", \"Feature Request\", \"General Inquiry\"]\n- \"priority\": one of [\"High\", \"Medium\", \"Low\"]\n\nPriority rules:\n- High: urgent language, business-critical impact, data loss, security issues, or account lockout\n- Medium: moderate disruption, a workaround exists, or the issue can wait up to 2 business days\n- Low: informational questions, feature suggestions, or no immediate impact\n\nCall no tools. Return ONLY the JSON object with no explanation or surrounding text."
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "{{input.start__output__email}}",
+      "contentTokens": [
+        {
+          "type": "variable",
+          "rawString": "input.start__output__email"
+        }
+      ]
+    }
+  ]
+}

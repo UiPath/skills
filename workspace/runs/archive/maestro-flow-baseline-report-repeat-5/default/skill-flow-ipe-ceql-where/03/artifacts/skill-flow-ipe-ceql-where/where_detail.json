@@ -1,0 +1,47 @@
+{
+  "_comment": "Planned node configure payload for listGroups1 (uipath-microsoft-azureactivedirectory / list-groups). Cannot be applied in this sandbox — no live IS connection. Run `uip maestro flow node configure` with this payload once a connection is available.",
+  "connector_key": "uipath-microsoft-azureactivedirectory",
+  "activity": "list-groups",
+  "filter_param": "where",
+  "filter_type": "FilterBuilder (CEQL)",
+  "ceql_expression": "displayName = 'active'",
+  "filter_tree": {
+    "groupOperator": 0,
+    "index": 0,
+    "filters": [
+      {
+        "id": "displayName",
+        "operator": "Equals",
+        "value": {
+          "value": "active",
+          "rawString": "\"active\"",
+          "isLiteral": true
+        }
+      }
+    ],
+    "groups": []
+  },
+  "node_configure_detail": {
+    "connectionId": "<CONNECTION_UUID — from `uip is connections list uipath-microsoft-azureactivedirectory --all-folders`>",
+    "folderKey": "<FOLDER_KEY — from same connections list response, FolderKey field>",
+    "method": "GET",
+    "endpoint": "/groups",
+    "filter": {
+      "groupOperator": 0,
+      "index": 0,
+      "filters": [
+        {
+          "id": "displayName",
+          "operator": "Equals",
+          "value": {
+            "value": "active",
+            "rawString": "\"active\"",
+            "isLiteral": true
+          }
+        }
+      ],
+      "groups": []
+    }
+  },
+  "cli_command": "uip maestro flow node configure CeqlWhereTest.flow listGroups1 --detail '{\"connectionId\":\"<CONNECTION_UUID>\",\"folderKey\":\"<FOLDER_KEY>\",\"method\":\"GET\",\"endpoint\":\"/groups\",\"filter\":{\"groupOperator\":0,\"index\":0,\"filters\":[{\"id\":\"displayName\",\"operator\":\"Equals\",\"value\":{\"value\":\"active\",\"rawString\":\"\\\"active\\\"\",\"isLiteral\":true}}],\"groups\":[]}}' --output json"
+}

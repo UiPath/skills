@@ -1,0 +1,102 @@
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:uipath="http://uipath.org/schema/bpmn" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="x-uipath-initial-diagram" targetNamespace="http://www.omg.org/spec/BPMN/20100524/MODEL" exporter="UiPath Studio Web (https://uipath.com)" exporterVersion="4ac19271">
+  <bpmn:process id="Process_1" name="Process" isExecutable="false">
+    <bpmn:extensionElements>
+      <uipath:variables version="v1">
+        <uipath:inputOutput id="sp1Op" name="sp1OP" type="jsonSchema" elementId="Activity_2RKCY4" custom="true"><![CDATA[{"type":"object","$schema":"http://json-schema.org/draft-07/schema#"}]]></uipath:inputOutput>
+      </uipath:variables>
+      <uipath:bindings version="v1">
+        <uipath:binding id="bxtI7ER5N" name="folderPath" type="string" resource="process" resourceKey="RPA Workflow" propertyAttribute="folderPath" />
+        <uipath:binding id="blJ2Uziju" name="name" type="string" default="RPA Workflow" resource="process" resourceKey="RPA Workflow" propertyAttribute="name" />
+        <uipath:binding id="bLVJKcVK4" name="uipath-asana-asana connection" type="string" default="445487ee-1712-41f0-a036-150570e77021" resource="Connection" resourceKey="445487ee-1712-41f0-a036-150570e77021" propertyAttribute="ConnectionId" />
+        <uipath:binding id="bLdOrC0UZ" name="FolderKey" type="string" default="a68864f4-5bc0-468a-84e3-f32dfd821b5c" resource="Connection" resourceKey="445487ee-1712-41f0-a036-150570e77021" propertyAttribute="folderKey" />
+      </uipath:bindings>
+      <uipath:migrationVersion version="8" />
+    </bpmn:extensionElements>
+    <bpmn:startEvent id="Event_start" name="Start event">
+      <bpmn:extensionElements>
+        <uipath:entryPointId value="9dfd5ca3-9311-42fd-b2e2-9374931a8112" />
+      </bpmn:extensionElements>
+      <bpmn:outgoing>edge_Event_start-Activity_2RKCY42OFIWy</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:subProcess id="Activity_2RKCY4" name="">
+      <bpmn:extensionElements>
+        <uipath:mapping version="v1">
+          <uipath:type value="BPMN.Variables" version="v1" />
+          <uipath:output name="sp1OP" type="json" var="sp1Op" custom="true"><![CDATA[=vars.sp2Op]]></uipath:output>
+        </uipath:mapping>
+        <uipath:variables version="v1">
+          <uipath:inputOutput id="splitChar" name="splitChar" type="integer" elementId="Event_8PZeBv" custom="true" />
+          <uipath:inputOutput id="intArr" name="intArr" type="jsonSchema" elementId="Event_8PZeBv" custom="true"><![CDATA[{"type":"array","items":{"type":"integer"},"$schema":"http://json-schema.org/draft-07/schema#"}]]></uipath:inputOutput>
+          <uipath:inputOutput id="sp2Op" name="sp2Op" type="jsonSchema" elementId="Activity_EzMuwg" custom="true"><![CDATA[{"$schema":"http://json-schema.org/draft-07/schema#","type":"array","properties":{},"definitions":{},"x-uipath-original-type":"json"}]]></uipath:inputOutput>
+        </uipath:variables>
+      </bpmn:extensionElements>
+      <bpmn:incoming>edge_Event_start-Activity_2RKCY42OFIWy</bpmn:incoming>
+      <bpmn:outgoing>edge_Activity_2RKCY4-Event_hnDLdz6oMO18</bpmn:outgoing>
+      <bpmn:startEvent id="Event_8PZeBv">
+        <bpmn:extensionElements>
+          <uipath:mapping version="v1">
+            <uipath:type value="BPMN.Variables" version="v1" />
+            <uipath:output name="splitChar" type="integer" source="999777" var="splitChar" custom="true" />
+            <uipath:output name="intArr" type="json" var="intArr" custom="true"><![CDATA[[1,2,3]]]></uipath:output>
+          </uipath:mapping>
+        </bpmn:extensionElements>
+        <bpmn:outgoing>edge_Event_8PZeBv-Activity_EzMuwglgJVsW</bpmn:outgoing>
+      </bpmn:startEvent>
+      <bpmn:subProcess id="Activity_EzMuwg" name="">
+        <bpmn:extensionElements>
+          <uipath:mapping version="v1">
+            <uipath:type value="BPMN.Variables" version="v1" />
+            <uipath:output name="sp2Op" type="json" var="sp2Op" custom="true"><![CDATA[=vars.rpaOut]]></uipath:output>
+          </uipath:mapping>
+          <uipath:variables version="v1">
+            <uipath:inputOutput id="error" name="Error" type="jsonSchema" elementId="Activity_4KaE8t"><![CDATA[{"type":"object","properties":{"code":{"type":"string"},"message":{"type":"string"},"detail":{"type":"string"},"category":{"type":"string"},"status":{"type":"number"}}}]]></uipath:inputOutput>
+            <uipath:inputOutput id="rpaOut" name="rpaOUT" type="string" elementId="Activity_4KaE8t" custom="true" />
+          </uipath:variables>
+        </bpmn:extensionElements>
+        <bpmn:incoming>edge_Event_8PZeBv-Activity_EzMuwglgJVsW</bpmn:incoming>
+        <bpmn:outgoing>edge_Activity_EzMuwg-Event_OIiNBw</bpmn:outgoing>
+        <bpmn:multiInstanceLoopCharacteristics>
+          <bpmn:extensionElements>
+            <uipath:loopCharacteristics inputCollection="=vars.intArr" inputElement="iterator[0]" version="v1" />
+          </bpmn:extensionElements>
+        </bpmn:multiInstanceLoopCharacteristics>
+        <bpmn:startEvent id="Event_ZGR0is">
+          <bpmn:outgoing>edge_Event_ZGR0is-Activity_4KaE8t</bpmn:outgoing>
+        </bpmn:startEvent>
+        <bpmn:serviceTask id="Activity_4KaE8t" name="RPA Workflow">
+          <bpmn:extensionElements>
+            <uipath:activity version="v1">
+              <uipath:type value="Orchestrator.StartJob" version="v2" />
+              <uipath:context>
+                <uipath:input name="name" type="string" value="=bindings.blJ2Uziju" />
+                <uipath:input name="folderPath" type="string" value="=bindings.bxtI7ER5N" />
+                <uipath:input name="_label" type="string" value="RPA Workflow" />
+                <uipath:inputSchema type="jsonSchema"><![CDATA[{"$schema":"http://json-schema.org/draft-07/schema#","type":"object","properties":{"Error":{"type":"object","title":"Error"},"ip":{"type":"string","title":"ip"},"ip2":{"type":"string","title":"ip2"}},"required":[]}]]></uipath:inputSchema>
+              </uipath:context>
+              <uipath:input name="JobArguments" type="json" target="bodyField"><![CDATA[{"Error":"","ip":"=vars.splitChar","ip2":"=vars.splitChar+ \" Updated\""}]]></uipath:input>
+              <uipath:output name="Error" type="jsonSchema" source="=Error" var="error" />
+              <uipath:output name="rpaOUT" type="string" source="=vars.splitChar+ &#34; Input&#34;" var="rpaOut" custom="true" />
+            </uipath:activity>
+          </bpmn:extensionElements>
+          <bpmn:incoming>edge_Event_ZGR0is-Activity_4KaE8t</bpmn:incoming>
+          <bpmn:outgoing>edge_Activity_4KaE8t-Event_vn2mt0</bpmn:outgoing>
+        </bpmn:serviceTask>
+        <bpmn:endEvent id="Event_vn2mt0">
+          <bpmn:incoming>edge_Activity_4KaE8t-Event_vn2mt0</bpmn:incoming>
+        </bpmn:endEvent>
+        <bpmn:sequenceFlow id="edge_Event_ZGR0is-Activity_4KaE8t" sourceRef="Event_ZGR0is" targetRef="Activity_4KaE8t" />
+        <bpmn:sequenceFlow id="edge_Activity_4KaE8t-Event_vn2mt0" sourceRef="Activity_4KaE8t" targetRef="Event_vn2mt0" />
+      </bpmn:subProcess>
+      <bpmn:endEvent id="Event_OIiNBw">
+        <bpmn:incoming>edge_Activity_EzMuwg-Event_OIiNBw</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="edge_Activity_EzMuwg-Event_OIiNBw" sourceRef="Activity_EzMuwg" targetRef="Event_OIiNBw" />
+      <bpmn:sequenceFlow id="edge_Event_8PZeBv-Activity_EzMuwglgJVsW" sourceRef="Event_8PZeBv" targetRef="Activity_EzMuwg" />
+    </bpmn:subProcess>
+    <bpmn:endEvent id="Event_hnDLdz">
+      <bpmn:incoming>edge_Activity_2RKCY4-Event_hnDLdz6oMO18</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="edge_Event_start-Activity_2RKCY42OFIWy" sourceRef="Event_start" targetRef="Activity_2RKCY4" />
+    <bpmn:sequenceFlow id="edge_Activity_2RKCY4-Event_hnDLdz6oMO18" sourceRef="Activity_2RKCY4" targetRef="Event_hnDLdz" />
+  </bpmn:process>
+</bpmn:definitions>

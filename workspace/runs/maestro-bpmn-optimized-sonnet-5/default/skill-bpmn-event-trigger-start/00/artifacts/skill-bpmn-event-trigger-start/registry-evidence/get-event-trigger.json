@@ -1,0 +1,135 @@
+{
+  "Result": "Success",
+  "Code": "RegistryGetSuccess",
+  "Data": {
+    "ExtensionType": {
+      "ExtensionType": "Intsvc.EventTrigger",
+      "Label": "Wait for connector event (trigger)",
+      "BpmnElement": "bpmn:StartEvent",
+      "Placements": {
+        "StartEvent": {
+          "Type": "bpmn:StartEvent",
+          "EventDefinition": {
+            "Type": "bpmn:MessageEventDefinition"
+          }
+        }
+      },
+      "ExtensionTag": "uipath:event",
+      "ContextFields": [],
+      "InputPattern": "separateInputs",
+      "OutputSource": ".",
+      "OutputType": "custom",
+      "OutputName": "result",
+      "UseRelativeSource": false,
+      "BindingPattern": "connection",
+      "RequiresDiscovery": true,
+      "IsDynamic": false,
+      "XmlTemplate": "<bpmn:StartEvent id=\"{id}\" name=\"{name}\">\n  <bpmn:extensionElements>\n    <uipath:event version=\"v1\">\n      <uipath:type value=\"Intsvc.EventTrigger\" version=\"v1\" />\n      <uipath:output name=\"result\" type=\"custom\" source=\".\" var=\"{varId}\" />\n    </uipath:event>\n  </bpmn:extensionElements>\n  <bpmn:messageEventDefinition />\n  <bpmn:incoming>{incomingEdge}</bpmn:incoming>\n  <bpmn:outgoing>{outgoingEdge}</bpmn:outgoing>\n</bpmn:StartEvent>",
+      "DiscoveryNotes": "Uses getConnectorConnections(connectorKey) to list available connections",
+      "InputNotes": "isSplitInputs=false; inputs defined in input.fields. Sent as separate <uipath:input> elements.",
+      "ContextFieldNotes": "Context fields are empty in design schema; all field definitions are in inputFields below",
+      "ExtensionTagNotes": "In isEvents array, uses uipath:event",
+      "InputFields": [
+        {
+          "Name": "connectionId",
+          "DisplayName": "Connection ID",
+          "Type": "string",
+          "Required": true,
+          "Hidden": false,
+          "IsPrimaryKey": false,
+          "Binding": true,
+          "DefaultValue": null,
+          "Description": "Connection ID for the IS connector (bindable)"
+        },
+        {
+          "Name": "connectorKey",
+          "DisplayName": "Connector key",
+          "Type": "string",
+          "Required": true,
+          "Hidden": false,
+          "IsPrimaryKey": false,
+          "Binding": false,
+          "DefaultValue": null,
+          "Description": "Integration Service connector identifier"
+        },
+        {
+          "Name": "folderId",
+          "DisplayName": "Folder ID",
+          "Type": "string",
+          "Required": true,
+          "Hidden": false,
+          "IsPrimaryKey": false,
+          "Binding": false,
+          "DefaultValue": null,
+          "Description": "Folder ID for the connector connection"
+        },
+        {
+          "Name": "folderPath",
+          "DisplayName": "Folder path",
+          "Type": "string",
+          "Required": true,
+          "Hidden": false,
+          "IsPrimaryKey": false,
+          "Binding": false,
+          "DefaultValue": null,
+          "Description": "Folder path for the connector connection"
+        },
+        {
+          "Name": "folderKey",
+          "DisplayName": "Folder key",
+          "Type": "string",
+          "Required": true,
+          "Hidden": false,
+          "IsPrimaryKey": false,
+          "Binding": false,
+          "DefaultValue": null,
+          "Description": "Folder key for the connector connection"
+        },
+        {
+          "Name": "operation",
+          "DisplayName": "Operation",
+          "Type": "string",
+          "Required": true,
+          "Hidden": true,
+          "IsPrimaryKey": true,
+          "Binding": false,
+          "DefaultValue": null,
+          "Description": "Connector event operation to trigger on"
+        },
+        {
+          "Name": "objectName",
+          "DisplayName": "Object name",
+          "Type": "string",
+          "Required": true,
+          "Hidden": true,
+          "IsPrimaryKey": false,
+          "Binding": false,
+          "DefaultValue": null,
+          "Description": "Object name associated with the event trigger"
+        },
+        {
+          "Name": "filter",
+          "DisplayName": "Filter",
+          "Type": "object",
+          "Required": false,
+          "Hidden": false,
+          "IsPrimaryKey": false,
+          "Binding": false,
+          "DefaultValue": {},
+          "Description": "Filter criteria for the event trigger"
+        },
+        {
+          "Name": "parameters",
+          "DisplayName": "Parameters",
+          "Type": "object",
+          "Required": false,
+          "Hidden": false,
+          "IsPrimaryKey": false,
+          "Binding": false,
+          "DefaultValue": {},
+          "Description": "Additional parameters for the event trigger"
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,68 @@
+{
+  "version": "2.0",
+  "resources": [
+    {
+      "resource": "connection",
+      "key": "d61e5d0e-04af-4f93-95cc-151d81fa08dc",
+      "id": "connectiond61e5d0e-04af-4f93-95cc-151d81fa08dc",
+      "value": {
+        "ConnectionId": {
+          "defaultValue": "d61e5d0e-04af-4f93-95cc-151d81fa08dc",
+          "isExpression": false,
+          "displayName": "uipath-uipath-dataservice connection"
+        }
+      },
+      "metadata": {
+        "ActivityName": "CRM Lookup",
+        "BindingsVersion": "2.2",
+        "DisplayLabel": "uipath-uipath-dataservice connection",
+        "UseConnectionService": "true",
+        "Connector": "uipath-uipath-dataservice"
+      }
+    },
+    {
+      "resource": "process",
+      "key": "Shared/uipath-maestro-flow/BillingDispute.FinancialPostingFunction",
+      "id": "processShared/uipath-maestro-flow/BillingDispute.FinancialPostingFunction",
+      "value": {
+        "folderPath": {
+          "defaultValue": "Shared/uipath-maestro-flow/BillingDispute",
+          "isExpression": false,
+          "displayName": "Folder path"
+        },
+        "name": {
+          "defaultValue": "FinancialPostingFunction",
+          "isExpression": false,
+          "displayName": "Process name"
+        }
+      },
+      "metadata": {
+        "ActivityName": "Financial Posting",
+        "BindingsVersion": "2.2",
+        "DisplayLabel": "name",
+        "SolutionsSupport": "true",
+        "subType": "Api"
+      }
+    },
+    {
+      "resource": "index",
+      "key": "Billing Dispute SOP Index",
+      "value": {
+        "name": {
+          "defaultValue": "Billing Dispute SOP Index",
+          "isExpression": false,
+          "displayName": "Index Name"
+        },
+        "folderPath": {
+          "defaultValue": "Shared",
+          "isExpression": false,
+          "displayName": "Folder path"
+        }
+      },
+      "metadata": {
+        "bindingsVersion": "2.2",
+        "solutionsSupport": "true"
+      }
+    }
+  ]
+}

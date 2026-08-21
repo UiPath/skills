@@ -1,0 +1,8 @@
+21:45:51 [INFO   ] [default/skill-flow-ipe-dtl-load-by-default-true/00] orchestrator: API routing: aws_bedrock
+21:53:46 [INFO   ] [default/skill-flow-ipe-dtl-load-by-default-true/00] evaluation.checker: Criterion 'run_command' FAILED (score=0.00, threshold=1.00): Command: python3 -c "import json,glob; flows=glob.glob('**/DTLLoadByDefaultTrueTest*.flow',recursive=True); assert flows; content=open(flows[0]).read(); assert 'uipath-microsoft-azure' in content, 'C…
+21:53:46 [INFO   ] [default/skill-flow-ipe-dtl-load-by-default-true/00] evaluation.checker: Criterion 'command_executed' FAILED (score=0.00, threshold=1.00): Matched 0/1 required commands (filters: tool_name=Bash, pattern=/(uip|\$UIP)\s+(maestro\s+)?flow\s+validate/)
+21:53:46 [INFO   ] [default/skill-flow-ipe-dtl-load-by-default-true/00] orchestrator: Success criteria: 1/3 passed, weighted score: 0.375
+21:53:46 [WARNING] [default/skill-flow-ipe-dtl-load-by-default-true/00] orchestrator: Visible turns (61) exceeded expected_turns (40) at iteration 1 for task skill-flow-ipe-dtl-load-by-default-true. Run continues — max_turns remains the hard cap.
+21:53:46 [INFO   ] [default/skill-flow-ipe-dtl-load-by-default-true/00] orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+21:53:46 [INFO   ] [default/skill-flow-ipe-dtl-load-by-default-true/00] orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-ipe-dtl-load-by-default-true
+21:53:46 [INFO   ] [default/skill-flow-ipe-dtl-load-by-default-true/00] orchestrator: Task finished: status=FAILURE duration=483.5s score=0.375 iterations=1

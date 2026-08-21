@@ -1,0 +1,67 @@
+{
+  "version": "2.0",
+  "resources": [
+    {
+      "resource": "connection",
+      "key": "ae311606-25b7-43ef-9cd0-f3dc0b3a9b58",
+      "id": "connectionae311606-25b7-43ef-9cd0-f3dc0b3a9b58",
+      "value": {
+        "ConnectionId": {
+          "defaultValue": "ae311606-25b7-43ef-9cd0-f3dc0b3a9b58",
+          "isExpression": false,
+          "displayName": "uipath-microsoft-onedrive connection"
+        }
+      },
+      "metadata": {
+        "ActivityName": "New Vendor Invoice Uploaded",
+        "BindingsVersion": "2.2",
+        "DisplayLabel": "uipath-microsoft-onedrive connection",
+        "UseConnectionService": "true",
+        "Connector": "uipath-microsoft-onedrive"
+      }
+    },
+    {
+      "resource": "connection",
+      "key": "",
+      "id": "connection",
+      "value": {
+        "ConnectionId": {
+          "defaultValue": "ImplicitConnection",
+          "isExpression": false,
+          "displayName": "uipath-uipath-http connection"
+        }
+      },
+      "metadata": {
+        "ActivityName": "POST to SAP",
+        "BindingsVersion": "2.2",
+        "DisplayLabel": "uipath-uipath-http connection",
+        "UseConnectionService": "true",
+        "Connector": "uipath-uipath-http"
+      }
+    },
+    {
+      "resource": "EventTrigger",
+      "key": "ae311606-25b7-43ef-9cd0-f3dc0b3a9b58",
+      "id": "EventTriggerae311606-25b7-43ef-9cd0-f3dc0b3a9b58",
+      "value": {
+        "ConnectionId": {
+          "defaultValue": "ae311606-25b7-43ef-9cd0-f3dc0b3a9b58",
+          "isExpression": false
+        },
+        "EntryPointUniqueId": {
+          "defaultValue": "219a3e15-9926-4dee-b023-7b90c24ce0db",
+          "isExpression": false
+        }
+      },
+      "metadata": {
+        "UseConnectionService": "true",
+        "Connector": "uipath-microsoft-onedrive",
+        "ActivityName": "New Vendor Invoice Uploaded",
+        "BindingsVersion": "2.2",
+        "ObjectName": "File",
+        "Operation": "FILE_CREATED",
+        "FilterExpression": "((ends_with(FullName,'.pdf'))&&(ParentID=='New Vendor'))"
+      }
+    }
+  ]
+}

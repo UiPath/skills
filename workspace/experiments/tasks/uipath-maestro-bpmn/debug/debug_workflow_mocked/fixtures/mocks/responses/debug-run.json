@@ -1,0 +1,11 @@
+{
+  "Status": true,
+  "Message": "Debug session completed.",
+  "Data": {
+    "jobKey": "job-debug-042",
+    "instanceId": "debug-run-042",
+    "runId": "run-042",
+    "solutionId": "sol-042",
+    "finalStatus": "Completed"
+  }
+}

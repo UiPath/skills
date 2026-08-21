@@ -1,0 +1,1463 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>coder_eval · skill-flow-slack-channel-description · default</title>
+<style>
+:root {
+  --bg-page: #0f1419;
+  --bg-card: #1a2129;
+  --bg-card-2: #232d38;
+  --bg-code: #0b0f14;
+  --fg: #e6edf3;
+  --fg-muted: #8b98a5;
+  --fg-dim: #6e7681;
+  --border: #30363d;
+  --accent: #58a6ff;
+  --score-high: #22c55e;
+  --score-mid: #f59e0b;
+  --score-low: #ef4444;
+  --status-success: #22c55e;
+  --status-failure: #f59e0b;
+  --status-error: #ef4444;
+  --status-neutral: #6e7681;
+  --shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+.light {
+  --bg-page: #ffffff;
+  --bg-card: #f6f8fa;
+  --bg-card-2: #eaeef2;
+  --bg-code: #f6f8fa;
+  --fg: #1f2328;
+  --fg-muted: #636c76;
+  --fg-dim: #8b949e;
+  --border: #d0d7de;
+  --accent: #0969da;
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial,
+               sans-serif;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--fg);
+  background: var(--bg-page);
+}
+.container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+h1, h2, h3, h4 { margin: 0 0 12px 0; line-height: 1.25; }
+h1 { font-size: 22px; font-weight: 600; }
+h2 { font-size: 18px; font-weight: 600; margin-top: 28px;
+     padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+h3 { font-size: 15px; font-weight: 600; color: var(--fg-muted); }
+h4 { font-size: 13px; font-weight: 600; color: var(--fg-muted); }
+p { margin: 0 0 8px 0; }
+.muted { color: var(--fg-muted); }
+.dim { color: var(--fg-dim); }
+.mono { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+        monospace; font-size: 12.5px; }
+code { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+       monospace; font-size: 12.5px; background: var(--bg-code);
+       border: 1px solid var(--border); padding: 1px 5px; border-radius: 3px; }
+pre { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+      monospace; font-size: 12.5px; background: var(--bg-code);
+      border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px;
+      margin: 6px 0; overflow-x: auto; white-space: pre-wrap;
+      word-wrap: break-word; }
+.header-bar { display: flex; align-items: center; justify-content: space-between;
+              margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+.title-group { flex: 1; min-width: 0; }
+.title-group .subtitle { color: var(--fg-muted); font-size: 13px;
+                         margin-top: 2px; word-break: break-all; }
+.badges { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.badge { display: inline-flex; align-items: center; gap: 6px;
+         padding: 4px 10px; border-radius: 12px; font-size: 12px;
+         font-weight: 600; background: var(--bg-card-2);
+         border: 1px solid var(--border); color: var(--fg); }
+.badge.success { background: color-mix(in srgb, var(--status-success) 20%, var(--bg-card-2));
+                 border-color: var(--status-success); color: var(--status-success); }
+.badge.failure { background: color-mix(in srgb, var(--status-failure) 20%, var(--bg-card-2));
+                 border-color: var(--status-failure); color: var(--status-failure); }
+.badge.error { background: color-mix(in srgb, var(--status-error) 20%, var(--bg-card-2));
+               border-color: var(--status-error); color: var(--status-error); }
+.badge.warning { background: color-mix(in srgb, #f4a52810 20%, var(--bg-card-2));
+                 border-color: #f4a528; color: #f4a528; }
+.badge.neutral { color: var(--fg-muted); }
+.score-pill { display: inline-block; padding: 2px 8px; border-radius: 10px;
+              font-size: 12px; font-weight: 700; min-width: 42px;
+              text-align: center; color: #0b0f14; }
+.score-high { background: var(--score-high); }
+.score-mid { background: var(--score-mid); }
+.score-low { background: var(--score-low); }
+.card { background: var(--bg-card); border: 1px solid var(--border);
+        border-radius: 8px; padding: 16px 20px; margin-bottom: 16px;
+        box-shadow: var(--shadow); }
+.card.highlight { border-left: 4px solid var(--accent); }
+.grid { display: grid; gap: 12px;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+.stat { background: var(--bg-card-2); padding: 10px 12px; border-radius: 6px;
+        border: 1px solid var(--border); }
+.stat .label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;
+               color: var(--fg-muted); margin-bottom: 4px; }
+.stat .value { font-size: 16px; font-weight: 600; }
+table { width: 100%; border-collapse: collapse; margin: 4px 0 12px 0; }
+th, td { text-align: left; padding: 8px 10px;
+         border-bottom: 1px solid var(--border); vertical-align: top;
+         font-size: 13px; }
+th { color: var(--fg-muted); font-weight: 600; font-size: 12px;
+     text-transform: uppercase; letter-spacing: 0.3px; }
+tr:last-child td { border-bottom: none; }
+details { margin: 6px 0; border: 1px solid var(--border); border-radius: 6px;
+          background: var(--bg-card-2); }
+details > summary { cursor: pointer; padding: 8px 12px; user-select: none;
+                    font-weight: 500; list-style: none; }
+details > summary::-webkit-details-marker { display: none; }
+details > summary::before { content: "▸ "; color: var(--fg-dim);
+                            display: inline-block; width: 14px;
+                            transition: transform 0.15s; }
+details[open] > summary::before { content: "▾ "; }
+details .details-body { padding: 0 12px 10px 12px; }
+.tool-row { display: flex; align-items: center; gap: 10px;
+            flex-wrap: wrap; font-size: 13px; }
+.tool-name { font-weight: 600; color: var(--accent); font-family: ui-monospace,
+             SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+.tool-status-ok { color: var(--status-success); font-size: 11px;
+                  font-weight: 600; }
+.tool-status-err { color: var(--status-error); font-size: 11px;
+                   font-weight: 600; }
+.tool-duration { color: var(--fg-muted); font-size: 12px; }
+.tool-seq { color: var(--fg-dim); font-size: 11px; font-weight: 600;
+            min-width: 24px; text-align: right; font-family: ui-monospace,
+            SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+.turn-header { display: flex; justify-content: space-between;
+               align-items: baseline; flex-wrap: wrap; gap: 10px;
+               margin-bottom: 10px; }
+.turn-meta { font-size: 12px; color: var(--fg-muted); }
+.criterion-row td:first-child { font-family: ui-monospace, SFMono-Regular,
+                                 "SF Mono", Menlo, Consolas, monospace;
+                                 color: var(--fg-muted); font-size: 12px; }
+.judge-section { display: flex; flex-direction: column; gap: 12px; }
+.judge-card { padding: 14px 16px; }
+.judge-card-head { display: flex; justify-content: space-between;
+                    align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+.judge-card-title { font-size: 14px; line-height: 1.4; flex: 1; min-width: 0; }
+.judge-card-score { flex-shrink: 0; }
+.judge-rationale { margin-top: 10px; padding: 10px 12px;
+                   background: var(--bg-code); border-radius: 4px;
+                   font-size: 13px; line-height: 1.5; }
+.judge-findings { margin: 8px 0 0 18px; padding-left: 4px; font-size: 13px;
+                   line-height: 1.6; }
+.judge-findings li { margin: 2px 0; }
+.nav-toggle { display: inline-block; padding: 5px 10px; font-size: 12px;
+              background: var(--bg-card-2); border: 1px solid var(--border);
+              border-radius: 5px; color: var(--fg); cursor: pointer; }
+.nav-toggle:hover { background: var(--bg-card); }
+.llm-next-steps { margin: 6px 0 0 20px; padding-left: 0; }
+.llm-next-steps li { margin: 3px 0; }
+.iteration-group { padding: 12px 16px 4px 16px; margin-bottom: 20px;
+                   border-radius: 0 6px 6px 0; border-left: 4px solid var(--status-neutral); }
+/* rgba fallback for browsers without color-mix (Chrome <111, Firefox <113, Safari <16.2). */
+.iteration-group--recovered { border-left-color: var(--status-success);
+                              background: rgba(34, 197, 94, 0.06);
+                              background: color-mix(in srgb, var(--status-success) 6%, transparent); }
+.iteration-group--terminal { border-left-color: var(--status-error);
+                             background: rgba(239, 68, 68, 0.06);
+                             background: color-mix(in srgb, var(--status-error) 6%, transparent); }
+.iteration-group__banner { margin: 0 0 12px 0; font-size: 14px; font-weight: 600; }
+.iteration-group--recovered .iteration-group__banner { color: var(--status-success); }
+.iteration-group--terminal .iteration-group__banner { color: var(--status-error); }
+.attempt-transition { display: flex; align-items: center; gap: 8px;
+                      margin: -6px 0 12px 8px; color: var(--status-error); font-size: 12.5px; }
+.attempt-transition__icon { font-weight: 700; }
+footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--border);
+         color: var(--fg-dim); font-size: 12px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="header-bar">
+  <div class="title-group">
+    <h1>Task: skill-flow-slack-channel-description</h1>
+    <div class="subtitle">Create a UiPath Flow that uses the Slack IS connector to retrieve the channel description of #office-bellevue and outputs it. This is an end-to-end test that exercises connector discovery, connection binding, reference resolution, node configuration, and cloud debug execution.</div>
+  </div>
+  <div class="badges">
+    <span class="badge success">SUCCESS</span>
+    <span class="score-pill score-high">1.00</span>
+    <span class="badge neutral">claude-code · claude-sonnet-4-6</span>
+    <span class="badge neutral">3m 53s</span>
+    <span class="badge neutral">$0.9109</span>
+    
+    
+    <span class="nav-toggle" onclick="toggleTheme()">Toggle theme</span>
+  </div>
+</div>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Variant</div><div class="value">default</div></div>
+    <div class="stat"><div class="label">Started</div><div class="value mono">2026-07-24T20:16:38</div></div>
+    <div class="stat"><div class="label">Duration</div><div class="value">3m 53s</div></div>
+    <div class="stat"><div class="label">Turns (SDK)</div><div class="value">48</div></div>
+    <div class="stat"><div class="label">Commands</div><div class="value">27</div></div>
+  </div>
+</div>
+
+<h2>Success Criteria <span class="muted" style="font-weight:400">(2/2 passed)</span></h2>
+<div class="card" style="padding:0">
+<table>
+  <thead>
+    <tr>
+      <th style="width:15%">Type</th>
+      <th style="width:35%">Description</th>
+      <th style="width:10%">Score</th>
+      <th>Details</th>
+    </tr>
+  </thead>
+  <tbody>
+    
+<tr class="criterion-row">
+  <td>run_command</td>
+  <td>uip maestro flow validate passes on the flow file</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Command: uip maestro flow validate SlackChannelDescription/SlackChannelDescription/SlackChannelDescription.flow</summary><div class="details-body"><pre style="margin:6px 0 0 0">Command: uip maestro flow validate SlackChannelDescription/SlackChannelDescription/SlackChannelDescription.flow
+Exit code: 0 (expected: 0)
+Stdout:
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FlowValidate&quot;,
+  &quot;Data&quot;: {
+    &quot;File&quot;: &quot;/work/output/artifacts/skill-flow-slack-channel-description/SlackChannelDescription/SlackChannelDescription/SlackChannelDescription.flow&quot;,
+    &quot;Status&quot;: &quot;Valid&quot;
+  }
+}
+
+Stderr:
+[ManifestClient] fetchDynamicNodes ok: total=208 agent context nodes=2 external agent nodes=6 orchestrator nodes=158 IXP nodes=42</pre></div></details></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>run_command</td>
+  <td>Flow debug runs successfully and output contains the Bellevue office address</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Command: python3 $TASK_DIR/check_channel_description.py</summary><div class="details-body"><pre style="margin:6px 0 0 0">Command: python3 $TASK_DIR/check_channel_description.py
+Exit code: 0 (expected: 0)
+Stdout:
+OK: Slack connector target present; output contains Bellevue office address
+
+Stderr: (empty)</pre></div></details></td>
+</tr>
+
+  </tbody>
+</table>
+</div>
+<h2>Conversation Trace (1 iteration)</h2>
+<div class="card">
+  <div class="turn-header">
+    <h3>Iteration 1</h3>
+    <div class="badges">
+      <span class="badge neutral">48 assistant turns</span>
+      <span class="badge neutral">in 23 · out 8514 · cache 1598292</span>
+      <span class="badge neutral">3m 23s</span>
+      
+      
+      
+    </div>
+  </div>
+  <details>
+    <summary>Prompt to agent</summary>
+    <div class="details-body"><pre>Your working directory is: /work/output/artifacts/skill-flow-slack-channel-description
+
+Create a UiPath Flow named &quot;SlackChannelDescription&quot; that retrieves
+the channel description of #office-bellevue and outputs it.
+
+Validate the flow.
+Do NOT ask for approval, confirmation, or feedback. Do NOT pause between planning and implementation. Build the complete flow end-to-end in a single pass.
+</pre></div>
+  </details>
+  <details>
+    <summary>Agent response</summary>
+    <div class="details-body"><pre>[ASSISTANT] Now let me start the T1 phase - check for existing solutions, login status, and search for the Slack connector:
+[ASSISTANT] I found the `uipath.connector.uipath-salesforce-slack.get-channel-info` node — perfect for retrieving #office-bellevue&#x27;s description. Now I&#x27;ll run the full T1 chain: scaffold the solution, init the flow, pull registry, add the connector node, fetch the `get-channel-info` definition, and read the connector impl docs.
+[ASSISTANT] Now I need to read the connections reference before running IS commands, and also read the scaffolded flow file:
+[ASSISTANT] Now I&#x27;ll follow the connector configuration workflow. First, list Slack connections:
+[ASSISTANT] There&#x27;s a default enabled connection. Per non-interactive mode I&#x27;ll use the `IsDefault: Yes` connection. Now I&#x27;ll ping it, get enriched registry metadata, and describe the resource:
+[ASSISTANT] Good. The node is a concrete `Curated` activity with `objectName: ConversationsInfo_GET`. I need to describe the resource and resolve the `#office-bellevue` channel ID:
+[ASSISTANT] I need to paginate to find #office-bellevue. Let me search more:
+[ASSISTANT] Found it — `#office-bellevue` has channel ID `C0B50H7DE2F`. Now I have everything needed. I&#x27;ll proceed to T2 (add the End node and wire edges) and T3 (configure, validate, format) together. First let me add the End node and wire the flow:
+[ASSISTANT] Now add the End node definition and layout entry:
+[ASSISTANT] Now add layout entry for the end node:
+[ASSISTANT] Now run T3 — configure the connector node, validate, and format:
+[ASSISTANT] The flow validated successfully with status **Valid** and was formatted. The build is complete.
+
+---
+
+**Flow &quot;SlackChannelDescription&quot; — Build Summary**
+
+**File path:**
+`/work/output/artifacts/skill-flow-slack-channel-description/SlackChannelDescription/SlackChannelDescription/SlackChannelDescription.flow`
+
+**What was built:**
+
+| Node | Type | Role |
+|---|---|---|
+| `start` | `core.trigger.manual` | Manual trigger — starts the flow on demand |
+| `getChannelInfo1` | `uipath.connector.uipath-salesforce-slack.get-channel-info` | Calls Slack API `GET /ConversationsInfo/{conversationsInfoId}` with channel ID `C0B50H7DE2F` (`#office-bellevue`). Returns the full channel object — `purpose.value` is the channel description field. |
+| `end1` | `core.control.end` | Terminates the flow |
+
+**Edges wired:** `start → getChannelInfo1 → end1`
+
+**Connector:** `uipath-salesforce-slack` bound to connection `is-sandboxes` (ID `e03f734e-...`, folder `uipath-maestro-case`, default + enabled, pinged healthy)
+
+**Channel resolved:** `#office-bellevue` → ID `C0B50H7DE2F` (resolved live via paginated `uip is resources run list`)
+
+**Validation status:** ✅ `Valid` — no errors, no warnings
+
+**Format status:** ✅ `flow format` run — 3 nodes total, 2 repositioned, 2 resized to canonical 96×96
+
+**What&#x27;s next — choose an option:**
+1. **Publish to Studio Web** — push the solution so you can visualize and edit it in a browser
+2. **Debug the solution** — execute end-to-end against Slack (real API call; confirm consent first)
+3. **Deploy to Orchestrator** — pack and publish directly for scheduled/triggered runs
+4. **Something else** — e.g. &quot;just leave it&quot;, &quot;pack only&quot;, &quot;upload to a different tenant&quot;
+[RESULT - SUCCESS] The flow validated successfully with status **Valid** and was formatted. The build is complete.
+
+---
+
+**Flow &quot;SlackChannelDescription&quot; — Build Summary**
+
+**File path:**
+`/work/output/artifacts/skill-flow-slack-channel-description/SlackChannelDescription/SlackChannelDescription/SlackChannelDescription.flow`
+
+**What was built:**
+
+| Node | Type | Role |
+|---|---|---|
+| `start` | `core.trigger.manual` | Manual trigger — starts the flow on demand |
+| `getChannelInfo1` | `uipath.connector.uipath-salesforce-slack.get-channel-info` | Calls Slack API `GET /ConversationsInfo/{conversationsInfoId}` with channel ID `C0B50H7DE2F` (`#office-bellevue`). Returns the full channel object — `purpose.value` is the channel</pre></div>
+  </details>
+  <h4 style="margin-top:12px">Tool Calls (27)</h4>
+  
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#0</span>
+      <span class="tool-name">Skill</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">22ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;skill&quot;: &quot;uipath:uipath-maestro-flow&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Launching skill: uipath:uipath-maestro-flow</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#1</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">376ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/CAPABILITY.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Author — Create and edit `.flow` files
+2	
+3	Capability index for building new flows (greenfield) and editing existing flows (brownfield). Author owns everything that happens on disk, locally, without `uip login`. Authoring journeys terminate at `validate` + `format`; from there, hand off to [operate/CAPABILITY.md](../operate/CAPABILITY.md) to publish, run, or debug.
+4	
+5	&gt; **Where you came from / where to go next.** Author is upstream of Operate (build the flow → ship it) and upstream of Diagnose only via Operate (build → run → diagnose). Publish/run/lifecycle lives in [operate/CAPABILITY.md](../operate/CAPABILITY.md); fault triage lives in [diagnose/CAPABILITY.md](../diagnose/CAPABILITY.md).
+6	&gt;
+7	&gt; **Inherits universal rules from [SKILL.md](../../SKILL.md)** — `--output json` + prefer `--output-filter` for extraction, no `flow debug` without consent, resource discovery order, never invoke other skills automatically, dropdown question pattern, solution layout, **plain-English narration + granular progress list (opt-in — silent by default; engage when the user asks for verbosity)**. The rules below are author-scoped and apply on top.
+8	
+9	## When to use this capability
+10	
+11	-
+
+… (truncated, 25996 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#2</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">135ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/references/greenfield.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Greenfield — Create a New Flow
+2	
+3	End-to-end journey for creating a Flow project from scratch. Author terminates at `validate` + `format`. To publish, run, or debug after this, see [operate/CAPABILITY.md](../../operate/CAPABILITY.md).
+4	
+5	&gt; **Brownfield edits use a different journey.** If the `.flow` file already exists, see [brownfield.md](brownfield.md) instead.
+6	
+7	## Should you plan first?
+8	
+9	For complex flows, produce a plan before building. Reference [planning-arch.md](planning-arch.md) and [planning-impl.md](planning-impl.md) for the node type catalog, port reference, wiring rules, and topology patterns.
+10	
+11	**Plan when:**
+12	- The flow has 5+ nodes with branching or parallel paths
+13	- The flow uses connectors or resources that need discovery
+14	- The user&#x27;s requirements are ambiguous and you need to confirm the approach
+15	
+16	**Don&#x27;t plan when:**
+17	- Adding/editing a single node in an existing flow (use [brownfield.md](brownfield.md))
+18	- The flow is a straightforward linear pipeline (trigger → action → action → end)
+19	- The user has already described the exact topology they want
+20	
+21	### Examples
+22	
+23	**Plan:** &quot;Build a flow that receives a Jira ticke
+
+… (truncated, 30834 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#3</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">124ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;ls *.uipx */*.uipx 2&gt;/dev/null &amp;&amp; echo \&quot;FOUND_SOLUTIONS\&quot; || echo \&quot;NO_SOLUTIONS\&quot;&quot;,
+  &quot;description&quot;: &quot;Check for existing solutions in working directory&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>NO_SOLUTIONS</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#4</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.07s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip login status --output json 2&gt;&amp;1 | head -50&quot;,
+  &quot;description&quot;: &quot;Check UiPath login status&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;LoginStatus&quot;,
+  &quot;Data&quot;: {
+    &quot;Status&quot;: &quot;Logged in&quot;,
+    &quot;Provider&quot;: &quot;File&quot;,
+    &quot;BaseUrl&quot;: &quot;https://alpha.uipath.com&quot;,
+    &quot;Organization&quot;: &quot;codereval&quot;,
+    &quot;OrganizationId&quot;: &quot;311c6049-4966-4ef2-a6f3-8ceccaf38d54&quot;,
+    &quot;Tenant&quot;: &quot;DefaultTenant&quot;,
+    &quot;TenantId&quot;: &quot;69d43765-6ede-4575-88b7-9db601a2c056&quot;,
+    &quot;ExpirationDate&quot;: &quot;2026-07-24T20:34:03.000Z&quot;
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#5</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">5.16s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry search \&quot;slack\&quot; --output json --output-filter \&quot;[*].{NodeType:NodeType,DisplayName:DisplayName,Description:Description,AvailableOnTenant:AvailableOnTenant}\&quot; 2&gt;&amp;1 | head -100&quot;,
+  &quot;description&quot;: &quot;Search registry for Slack connector nodes&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>[ManifestClient] fetchDynamicNodes ok: total=4684 connector nodes=3572 integration trigger nodes=892 agent context nodes=2 external agent nodes=6 orchestrator nodes=158 IXP nodes=41 IXP Models nodes=13
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeSearchSuccess&quot;,
+  &quot;Data&quot;: [
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-salesforce-slack.unarchive-channel&quot;,
+      &quot;DisplayName&quot;: &quot;Unarchive Channel&quot;,
+      &quot;Description&quot;: &quot;(Slack) Unarchive an existing channel&quot;,
+      &quot;AvailableOnTenant&quot;: true
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-salesforce-slack.send-reply&quot;,
+      &quot;DisplayName&quot;: &quot;Send Reply&quot;,
+      &quot;Description&quot;: &quot;(Slack) Send a reply to a message in a Slack channel.&quot;,
+      &quot;AvailableOnTenant&quot;: true
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-salesforce-slack.join-channel&quot;,
+      &quot;DisplayName&quot;: &quot;Join Channel&quot;,
+      &quot;Description&quot;: &quot;(Slack) Join a public Slack channel as the bot user or authenticated user.&quot;,
+      &quot;AvailableOnTenant&quot;: true
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-salesforce-slack.create-channel&quot;,
+      &quot;DisplayName&quot;: &quot;Create Channel&quot;,
+      &quot;Description&quot;: &quot;(Slack) Create a public or private channel in Slack.&quot;,
+      &quot;Availabl
+
+… (truncated, 3153 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#6</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">3.80s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry search \&quot;slack\&quot; --output json --output-filter \&quot;[*].{NodeType:NodeType,DisplayName:DisplayName,Description:Description}\&quot; 2&gt;&amp;1 | python3 -c \&quot;import json,sys; data=json.load(sys.stdin); [print(d[&#x27;NodeType&#x27;], &#x27;|&#x27;, d[&#x27;DisplayName&#x27;], &#x27;|&#x27;, d[&#x27;Description&#x27;]) for d in data[&#x27;Data&#x27;]]\&quot; 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;List all Slack connector node types&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>uipath.connector.uipath-salesforce-slack.unarchive-channel | Unarchive Channel | (Slack) Unarchive an existing channel
+uipath.connector.uipath-salesforce-slack.send-reply | Send Reply | (Slack) Send a reply to a message in a Slack channel.
+uipath.connector.uipath-salesforce-slack.join-channel | Join Channel | (Slack) Join a public Slack channel as the bot user or authenticated user.
+uipath.connector.uipath-salesforce-slack.create-channel | Create Channel | (Slack) Create a public or private channel in Slack.
+uipath.connector.uipath-salesforce-slack.send-message-to-channel | Send Message to Channel | (Slack) Send messages to public or private Slack channels.
+uipath.connector.uipath-salesforce-slack.archive-channel | Archive Channel | (Slack) Archive an existing Slack channel for all users.
+uipath.connector.uipath-salesforce-slack.list-all-users | List All Users | (Slack) Retrieve a list of all users in a connected Slack workspace.
+uipath.connector.uipath-salesforce-slack.list-all-user-groups | List All User Groups | (Slack) Retrieve a list of all user groups in a connected Slack workspace.
+uipath.connector.uipath-salesforce-slack.create-user-group | Create User Group | (Slack) Creat
+
+… (truncated, 8283 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#7</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">19.37s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-slack-channel-description \\\n  &amp;&amp; uip solution init \&quot;SlackChannelDescription\&quot; --output json \\\n  &amp;&amp; cd \&quot;SlackChannelDescription\&quot; \\\n  &amp;&amp; uip maestro flow init \&quot;SlackChannelDescription\&quot; --output json \\\n  &amp;&amp; cd \&quot;SlackChannelDescription\&quot; \\\n  &amp;&amp; uip maestro flow registry pull \\\n  &amp;&amp; uip maestro flow node add \&quot;SlackChannelDescription.flow\&quot; uipath.connector.uipath-sales… (69 more chars)&quot;,
+  &quot;description&quot;: &quot;T1 chain: scaffold solution, init flow project, pull registry, add Slack get-channel-info node&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;SolutionInit&quot;,
+  &quot;Data&quot;: {
+    &quot;Status&quot;: &quot;Created successfully&quot;,
+    &quot;Path&quot;: &quot;/work/output/artifacts/skill-flow-slack-channel-description/SlackChannelDescription/SlackChannelDescription.uipx&quot;,
+    &quot;NextSteps&quot;: &quot;Read /work/output/artifacts/skill-flow-slack-channel-description/SlackChannelDescription/AGENTS.md or /work/output/artifacts/skill-flow-slack-channel-description/SlackChannelDescription/CLAUDE.md to understand the solution lifecycle, project types that can be used inside a solution, and related uip command references.&quot;
+  }
+}
+2026-07-24 20:17:26 INFO  [ResourceBuilder:ProjectCreateCommandHandler] Creating project [object Object]
+2026-07-24 20:17:26 INFO  [ResourceBuilder:MultiFileSolutionDefinitionProvider] Reading multi-file solution definition for solution %s /work/output/artifacts/skill-flow-slack-channel-description/SlackChannelDescription
+2026-07-24 20:17:26 INFO  [ResourceBuilder:ProjectCreateCommandHandler] Generate artefact resources for project [object Object]
+2026-07-24 20:17:26 INFO  [ResourceBuilder:SolutionsMetadataReader] Reading metadata from %s. SolutionsMetadataReader
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FlowInit&quot;,
+  &quot;Data&quot;:
+
+… (truncated, 1940 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#8</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">24.14s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry get core.control.end --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Get End node definition from registry&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeGetSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;Node&quot;: {
+      &quot;nodeType&quot;: &quot;core.control.end&quot;,
+      &quot;version&quot;: &quot;1.0&quot;,
+      &quot;category&quot;: &quot;control-flow&quot;,
+      &quot;description&quot;: &quot;Mark the end of a workflow path&quot;,
+      &quot;tags&quot;: [
+        &quot;control-flow&quot;,
+        &quot;end&quot;,
+        &quot;finish&quot;,
+        &quot;complete&quot;
+      ],
+      &quot;sortOrder&quot;: 20,
+      &quot;display&quot;: {
+        &quot;label&quot;: &quot;End&quot;,
+        &quot;icon&quot;: &quot;circle-check&quot;,
+        &quot;shape&quot;: &quot;circle&quot;
+      },
+      &quot;handleConfiguration&quot;: [
+        {
+          &quot;position&quot;: &quot;left&quot;,
+          &quot;handles&quot;: [
+            {
+              &quot;id&quot;: &quot;input&quot;,
+              &quot;type&quot;: &quot;target&quot;,
+              &quot;handleType&quot;: &quot;input&quot;
+            }
+          ]
+        }
+      ],
+      &quot;model&quot;: {
+        &quot;type&quot;: &quot;bpmn:EndEvent&quot;
+      },
+      &quot;runtimeConstraints&quot;: {
+        &quot;exclude&quot;: [
+          &quot;api-function&quot;
+        ]
+      }
+    }
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#9</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">23.13s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/references/plugins/connector/impl.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Connector Activity Nodes — Implementation
+2	
+3	How to configure connector activity nodes: connection binding, enriched metadata, reference field resolution, and debugging. Connection bindings are emitted by `uip maestro flow node configure` into the flow&#x27;s top-level `bindings[]`; `bindings_v2.json` is regenerated from them at debug/pack time and should never be hand-edited.
+4	
+5	For generic node/edge add, remove, and wiring procedures, see [editing-operations.md](../../editing-operations.md). This guide covers the connector-specific configuration workflow that must follow the generic node add.
+6	
+7	## How Connector Nodes Differ from OOTB
+8	
+9	1. **Connection binding required** — every connector node needs an IS connection (OAuth, API key, etc.) authored in the flow&#x27;s top-level `bindings[]` (which the CLI regenerates into `bindings_v2.json` at debug/pack time). Without it, the node cannot authenticate.
+10	2. **Enriched metadata via `--connection-id`** — call `registry get` with `--connection-id` to get connection-aware field metadata. Without it, only base fields are returned — custom fields, dynamic enums, and reference resolution are missing.
+11	3. **`inputs.detail` object** —
+
+… (truncated, 59526 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#10</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">7ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-platform/references/integration-service/connections.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Connections
+2	
+3	Connections are authenticated sessions for a specific connector. They store credentials and tokens, and can be shared across automations within a folder.
+4	
+5	&gt; Full command syntax and options: [uip-commands.md — Integration Service](../uip-commands.md#integration-service-is). Domain-specific usage patterns are shown inline below.
+6	
+7	---
+8	
+9	## Response Fields
+10	
+11	| Field | Show to user? | Description |
+12	|---|---|---|
+13	| **`Name`** | **Yes** | Display name — always use this as the primary identifier when presenting to the user (e.g., &quot;Salesforce Prod&quot;, &quot;bai.li&quot;) |
+14	| **`State`** | **Yes** | `Enabled` or other status. Only Enabled connections can be used. |
+15	| **`IsDefault`** | **Yes** | `Yes` or `No`. Recommend the default connection but always let the user confirm. |
+16	| **`Owner`** | **Yes** | Who created the connection (email) |
+17	| **`Folder`** | **Yes** | Folder name this connection belongs to (e.g., &quot;Shared&quot;, &quot;Personal&quot;) |
+18	| `ConnectorName` | **Yes** | Human-readable connector name (e.g., &quot;Slack&quot;, &quot;Salesforce&quot;) |
+19	| `ByoaConnection` | **Yes** | `Yes` or `No`. BYOA (Bring Your Own Account) connection — customer registered their own OAu
+
+… (truncated, 12228 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#11</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">15ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-slack-channel-description/SlackChannelDescription/SlackChannelDescription/SlackChannelDescription.flow&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	{
+2	  &quot;id&quot;: &quot;16ae1ebb-33c5-4abb-85f1-1e9a9531260f&quot;,
+3	  &quot;version&quot;: &quot;1.8&quot;,
+4	  &quot;name&quot;: &quot;SlackChannelDescription&quot;,
+5	  &quot;nodes&quot;: [
+6	    {
+7	      &quot;id&quot;: &quot;start&quot;,
+8	      &quot;type&quot;: &quot;core.trigger.manual&quot;,
+9	      &quot;typeVersion&quot;: &quot;1.0&quot;,
+10	      &quot;display&quot;: {
+11	        &quot;label&quot;: &quot;Manual trigger&quot;
+12	      },
+13	      &quot;inputs&quot;: {
+14	        &quot;entryPointId&quot;: &quot;f7e0aaa6-2fea-4085-8816-bd148556127c&quot;,
+15	        &quot;isDefaultEntryPoint&quot;: true
+16	      }
+17	    },
+18	    {
+19	      &quot;id&quot;: &quot;getChannelInfo1&quot;,
+20	      &quot;type&quot;: &quot;uipath.connector.uipath-salesforce-slack.get-channel-info&quot;,
+21	      &quot;typeVersion&quot;: &quot;1.0.0&quot;,
+22	      &quot;display&quot;: {
+23	        &quot;label&quot;: &quot;Get Channel Info&quot;
+24	      },
+25	      &quot;inputs&quot;: {}
+26	    }
+27	  ],
+28	  &quot;edges&quot;: [],
+29	  &quot;definitions&quot;: [
+30	    {
+31	      &quot;nodeType&quot;: &quot;core.trigger.manual&quot;,
+32	      &quot;version&quot;: &quot;1.0&quot;,
+33	      &quot;category&quot;: &quot;trigger&quot;,
+34	      &quot;description&quot;: &quot;Start workflow manually&quot;,
+35	      &quot;tags&quot;: [
+36	        &quot;trigger&quot;,
+37	        &quot;start&quot;,
+38	        &quot;manual&quot;
+39	      ],
+40	      &quot;sortOrder&quot;: 40,
+41	      &quot;display&quot;: {
+42	        &quot;label&quot;: &quot;Manual trigger&quot;,
+43	        &quot;icon&quot;: &quot;play&quot;,
+44	        &quot;shape&quot;: &quot;circle&quot;
+45	      },
+46	      &quot;handleConfiguration&quot;: [
+4
+
+… (truncated, 11851 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#12</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.26s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-slack-channel-description/SlackChannelDescription/SlackChannelDescription \\\n  &amp;&amp; uip is connections list \&quot;uipath-salesforce-slack\&quot; --all-folders --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;List all Slack connections across folders&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;ConnectionList&quot;,
+  &quot;Data&quot;: [
+    {
+      &quot;Id&quot;: &quot;849e85d8-1aa9-4d52-8bbd-20041c8f05d8&quot;,
+      &quot;Name&quot;: &quot;is-sandboxes&quot;,
+      &quot;ConnectorKey&quot;: &quot;uipath-salesforce-slack&quot;,
+      &quot;ConnectorName&quot;: &quot;Slack&quot;,
+      &quot;State&quot;: &quot;Enabled&quot;,
+      &quot;Owner&quot;: &quot;sanjeet.manna@uipath.com&quot;,
+      &quot;IsDefault&quot;: &quot;No&quot;,
+      &quot;ByoaConnection&quot;: &quot;Yes&quot;,
+      &quot;ElementInstanceId&quot;: 337251,
+      &quot;Folder&quot;: &quot;uipath-maestro-flow&quot;,
+      &quot;FolderKey&quot;: &quot;5da18ec0-7de1-4e57-aaf1-ddc8a369c199&quot;,
+      &quot;Created&quot;: &quot;2026-05-08T14:59:09.153Z&quot;,
+      &quot;Updated&quot;: &quot;2026-07-24T19:58:01.676Z&quot;
+    },
+    {
+      &quot;Id&quot;: &quot;8e0e255f-ce7c-43dc-8929-83847fcd9025&quot;,
+      &quot;Name&quot;: &quot;is-sandboxes&quot;,
+      &quot;ConnectorKey&quot;: &quot;uipath-salesforce-slack&quot;,
+      &quot;ConnectorName&quot;: &quot;Slack&quot;,
+      &quot;State&quot;: &quot;Failed&quot;,
+      &quot;Owner&quot;: &quot;System&quot;,
+      &quot;IsDefault&quot;: &quot;No&quot;,
+      &quot;ByoaConnection&quot;: &quot;No&quot;,
+      &quot;ElementInstanceId&quot;: 356194,
+      &quot;Folder&quot;: &quot;SlackEmojiListTest&quot;,
+      &quot;FolderKey&quot;: &quot;c79e173d-d870-4ab6-b5f9-7627ddbae4bf&quot;,
+      &quot;Created&quot;: &quot;2026-07-01T21:56:48.066Z&quot;,
+      &quot;Updated&quot;: &quot;2026-07-01T21:56:48.066Z&quot;
+    },
+    {
+      &quot;Id&quot;: &quot;e03f734e-0f80-4e8a-a7c1-0ece309b0ca4&quot;,
+      &quot;Name&quot;: &quot;is-sandboxes&quot;,
+      &quot;ConnectorKey&quot;: 
+
+… (truncated, 594 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#13</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.87s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip is connections ping \&quot;e03f734e-0f80-4e8a-a7c1-0ece309b0ca4\&quot; --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Ping the default Slack connection to verify health&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;ConnectionPing&quot;,
+  &quot;Data&quot;: {
+    &quot;ConnectionId&quot;: &quot;e03f734e-0f80-4e8a-a7c1-0ece309b0ca4&quot;,
+    &quot;Status&quot;: &quot;Enabled&quot;,
+    &quot;Message&quot;: &quot;Connection is active.&quot;
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#14</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">4.85s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry get uipath.connector.uipath-salesforce-slack.get-channel-info --connection-id e03f734e-0f80-4e8a-a7c1-0ece309b0ca4 --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Get enriched registry metadata with connection for get-channel-info&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeGetSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;Node&quot;: {
+      &quot;nodeType&quot;: &quot;uipath.connector.uipath-salesforce-slack.get-channel-info&quot;,
+      &quot;version&quot;: &quot;1.0.0&quot;,
+      &quot;category&quot;: &quot;connector.196638&quot;,
+      &quot;tags&quot;: [
+        &quot;connector&quot;,
+        &quot;activity&quot;
+      ],
+      &quot;sortOrder&quot;: 515,
+      &quot;supportsErrorHandling&quot;: true,
+      &quot;description&quot;: &quot;(Slack) Retrieve information about a public or private Slack channel.&quot;,
+      &quot;display&quot;: {
+        &quot;label&quot;: &quot;Get Channel Info&quot;,
+        &quot;description&quot;: &quot;(Slack) Retrieve information about a public or private Slack channel.&quot;,
+        &quot;icon&quot;: &quot;https://alpha.uipath.com/311c6049-4966-4ef2-a6f3-8ceccaf38d54/studio_/typecache/icons/8af239e6c82c1abd57622314380112d55f7e151ac4845ba018a96d70b4d92297.svg&quot;
+      },
+      &quot;handleConfiguration&quot;: [
+        {
+          &quot;position&quot;: &quot;left&quot;,
+          &quot;handles&quot;: [
+            {
+              &quot;id&quot;: &quot;input&quot;,
+              &quot;type&quot;: &quot;target&quot;,
+              &quot;handleType&quot;: &quot;input&quot;,
+              &quot;label&quot;: &quot;&quot;
+            }
+          ]
+        },
+        {
+          &quot;position&quot;: &quot;right&quot;,
+          &quot;handles&quot;: [
+            {
+              &quot;id&quot;: &quot;output&quot;,
+              &quot;type&quot;: &quot;source&quot;,
+              &quot;
+
+… (truncated, 14883 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#15</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.09s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-slack-channel-description/SlackChannelDescription/SlackChannelDescription \\\n  &amp;&amp; uip is resources describe \&quot;uipath-salesforce-slack\&quot; \&quot;ConversationsInfo_GET\&quot; \\\n     --connection-id \&quot;e03f734e-0f80-4e8a-a7c1-0ece309b0ca4\&quot; --operation Retrieve --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Describe the ConversationsInfo_GET resource to get full metadata&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;ResourceMetadata&quot;,
+  &quot;Data&quot;: {
+    &quot;Name&quot;: &quot;ConversationsInfo_GET&quot;,
+    &quot;DisplayName&quot;: &quot;Conversations Info&quot;,
+    &quot;ElementKey&quot;: &quot;uipath-salesforce-slack&quot;,
+    &quot;Operation&quot;: {
+      &quot;Method&quot;: &quot;GETBYID&quot;,
+      &quot;Name&quot;: &quot;Retrieve&quot;,
+      &quot;Description&quot;: &quot;Retrieve information about a conversation.&quot;,
+      &quot;Path&quot;: &quot;/ConversationsInfo/{conversationsInfoId}&quot;,
+      &quot;Curated&quot;: &quot;Get Channel Info&quot;
+    },
+    &quot;Parameters&quot;: [
+      {
+        &quot;Name&quot;: &quot;conversationsInfoId&quot;,
+        &quot;Type&quot;: &quot;path&quot;,
+        &quot;DataType&quot;: &quot;string&quot;,
+        &quot;Required&quot;: true,
+        &quot;DisplayName&quot;: &quot;Channel ID&quot;,
+        &quot;Description&quot;: &quot;Conversations info ID&quot;,
+        &quot;Reference&quot;: {
+          &quot;ObjectName&quot;: &quot;curated_channels&quot;,
+          &quot;LookupNames&quot;: [
+            &quot;name&quot;,
+            &quot;id&quot;
+          ],
+          &quot;LookupValue&quot;: &quot;id&quot;,
+          &quot;Path&quot;: &quot;/curated_channels?fields=id,name&quot;
+        }
+      },
+      {
+        &quot;Name&quot;: &quot;include_locale&quot;,
+        &quot;Type&quot;: &quot;query&quot;,
+        &quot;DataType&quot;: &quot;boolean&quot;,
+        &quot;Required&quot;: false,
+        &quot;DisplayName&quot;: &quot;Include locale&quot;,
+        &quot;Description&quot;: &quot;Set this to `true` to receive the locale for this conversation. Defaults to `false`&quot;
+      },
+      {
+
+… (truncated, 3447 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#16</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">2.00s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-slack-channel-description/SlackChannelDescription/SlackChannelDescription \\\n  &amp;&amp; uip is resources run list \&quot;uipath-salesforce-slack\&quot; \&quot;curated_channels?fields=id,name\&quot; \\\n     --connection-id \&quot;e03f734e-0f80-4e8a-a7c1-0ece309b0ca4\&quot; --output json 2&gt;&amp;1 | head -200&quot;,
+  &quot;description&quot;: &quot;List Slack channels to find #office-bellevue channel ID&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;ExecuteOperation&quot;,
+  &quot;Data&quot;: {
+    &quot;items&quot;: [
+      {
+        &quot;context_team_id&quot;: &quot;T01G1P7CKR8&quot;,
+        &quot;created&quot;: 1606967318,
+        &quot;creator&quot;: &quot;U01FYLMH1D3&quot;,
+        &quot;id&quot;: &quot;C01FV1QFA86&quot;,
+        &quot;is_archived&quot;: false,
+        &quot;is_channel&quot;: true,
+        &quot;is_ext_shared&quot;: false,
+        &quot;is_general&quot;: false,
+        &quot;is_group&quot;: false,
+        &quot;is_im&quot;: false,
+        &quot;is_mpim&quot;: false,
+        &quot;is_org_shared&quot;: false,
+        &quot;is_pending_ext_shared&quot;: false,
+        &quot;is_private&quot;: false,
+        &quot;is_shared&quot;: false,
+        &quot;name&quot;: &quot;random&quot;,
+        &quot;name_normalized&quot;: &quot;random&quot;,
+        &quot;properties&quot;: {
+          &quot;tabs&quot;: [
+            {
+              &quot;id&quot;: &quot;files&quot;,
+              &quot;label&quot;: &quot;&quot;,
+              &quot;type&quot;: &quot;files&quot;
+            }
+          ],
+          &quot;tabz&quot;: [
+            {
+              &quot;type&quot;: &quot;files&quot;
+            }
+          ],
+          &quot;use_case&quot;: &quot;random&quot;
+        },
+        &quot;purpose&quot;: {
+          &quot;creator&quot;: &quot;U01FYLMH1D3&quot;,
+          &quot;last_set&quot;: 1606967318,
+          &quot;value&quot;: &quot;This channel is for... well, everything else. It’s a place for team jokes, spur-of-the-moment ideas, and funny GIFs. Go wild!&quot;
+        },
+        &quot;shared_team_ids&quot;: [
+    
+
+… (truncated, 4138 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#17</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.48s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-slack-channel-description/SlackChannelDescription/SlackChannelDescription \\\n  &amp;&amp; uip is resources run list \&quot;uipath-salesforce-slack\&quot; \&quot;curated_channels?fields=id,name\&quot; \\\n     --connection-id \&quot;e03f734e-0f80-4e8a-a7c1-0ece309b0ca4\&quot; --output json 2&gt;/dev/null \\\n     | python3 -c \&quot;\nimport json, sys\ndata = json.load(sys.stdin)\nitems = data.get(&#x27;Data&#x27;, {}).get(&#x27;items&#x27;,… (281 more chars)&quot;,
+  &quot;description&quot;: &quot;Search for office-bellevue channel in initial page and check pagination&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>MATCHES: []
+PAGINATION: {
+  &quot;HasMore&quot;: &quot;true&quot;,
+  &quot;NextPageToken&quot;: &quot;eyJwcm92aWRlck5leHRQYWdlIjoiMTAwMCIsInBhZ2VTaXplIjoxMDAwLCJwYWdlIjoyfQ&quot;
+}
+TOTAL ITEMS THIS PAGE: 1000</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#18</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.16s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-slack-channel-description/SlackChannelDescription/SlackChannelDescription \\\n  &amp;&amp; token=\&quot;eyJwcm92aWRlck5leHRQYWdlIjoiMTAwMCIsInBhZ2VTaXplIjoxMDAwLCJwYWdlIjoyfQ\&quot; \\\n  &amp;&amp; uip is resources run list \&quot;uipath-salesforce-slack\&quot; \&quot;curated_channels?fields=id,name\&quot; \\\n     --connection-id \&quot;e03f734e-0f80-4e8a-a7c1-0ece309b0ca4\&quot; \\\n     --query \&quot;nextPage=$token\&quot; \\\n     --output… (407 more chars)&quot;,
+  &quot;description&quot;: &quot;Paginate to find office-bellevue channel on page 2&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>MATCHES: []
+PAGINATION: {
+  &quot;HasMore&quot;: &quot;true&quot;,
+  &quot;NextPageToken&quot;: &quot;eyJwcm92aWRlck5leHRQYWdlIjoiMjAwMCIsInBhZ2VTaXplIjoxMDAwLCJwYWdlIjozfQ&quot;
+}
+TOTAL ITEMS THIS PAGE: 1000</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#19</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.28s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-slack-channel-description/SlackChannelDescription/SlackChannelDescription \\\n  &amp;&amp; token=\&quot;eyJwcm92aWRlck5leHRQYWdlIjoiMjAwMCIsInBhZ2VTaXplIjoxMDAwLCJwYWdlIjozfQ\&quot; \\\n  &amp;&amp; uip is resources run list \&quot;uipath-salesforce-slack\&quot; \&quot;curated_channels?fields=id,name\&quot; \\\n     --connection-id \&quot;e03f734e-0f80-4e8a-a7c1-0ece309b0ca4\&quot; \\\n     --query \&quot;nextPage=$token\&quot; \\\n     --output… (407 more chars)&quot;,
+  &quot;description&quot;: &quot;Paginate page 3 looking for office-bellevue&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>MATCHES: []
+PAGINATION: {
+  &quot;HasMore&quot;: &quot;true&quot;,
+  &quot;NextPageToken&quot;: &quot;eyJwcm92aWRlck5leHRQYWdlIjoiMzAwMCIsInBhZ2VTaXplIjoxMDAwLCJwYWdlIjo0fQ&quot;
+}
+TOTAL ITEMS THIS PAGE: 1000</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#20</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.31s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-slack-channel-description/SlackChannelDescription/SlackChannelDescription \\\n  &amp;&amp; token=\&quot;eyJwcm92aWRlck5leHRQYWdlIjoiMzAwMCIsInBhZ2VTaXplIjoxMDAwLCJwYWdlIjo0fQ\&quot; \\\n  &amp;&amp; uip is resources run list \&quot;uipath-salesforce-slack\&quot; \&quot;curated_channels?fields=id,name\&quot; \\\n     --connection-id \&quot;e03f734e-0f80-4e8a-a7c1-0ece309b0ca4\&quot; \\\n     --query \&quot;nextPage=$token\&quot; \\\n     --output… (407 more chars)&quot;,
+  &quot;description&quot;: &quot;Paginate page 4 looking for office-bellevue&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>MATCHES: []
+PAGINATION: {
+  &quot;HasMore&quot;: &quot;true&quot;,
+  &quot;NextPageToken&quot;: &quot;eyJwcm92aWRlck5leHRQYWdlIjoiNDAwMCIsInBhZ2VTaXplIjoxMDAwLCJwYWdlIjo1fQ&quot;
+}
+TOTAL ITEMS THIS PAGE: 1000</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#21</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.31s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-slack-channel-description/SlackChannelDescription/SlackChannelDescription \\\n  &amp;&amp; token=\&quot;eyJwcm92aWRlck5leHRQYWdlIjoiNDAwMCIsInBhZ2VTaXplIjoxMDAwLCJwYWdlIjo1fQ\&quot; \\\n  &amp;&amp; uip is resources run list \&quot;uipath-salesforce-slack\&quot; \&quot;curated_channels?fields=id,name\&quot; \\\n     --connection-id \&quot;e03f734e-0f80-4e8a-a7c1-0ece309b0ca4\&quot; \\\n     --query \&quot;nextPage=$token\&quot; \\\n     --output… (407 more chars)&quot;,
+  &quot;description&quot;: &quot;Paginate page 5 looking for office-bellevue&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>MATCHES: [
+  {
+    &quot;id&quot;: &quot;C0B50H7DE2F&quot;,
+    &quot;name&quot;: &quot;office-bellevue&quot;
+  }
+]
+PAGINATION: {
+  &quot;HasMore&quot;: &quot;true&quot;,
+  &quot;NextPageToken&quot;: &quot;eyJwcm92aWRlck5leHRQYWdlIjoiNTAwMCIsInBhZ2VTaXplIjoxMDAwLCJwYWdlIjo2fQ&quot;
+}
+TOTAL ITEMS THIS PAGE: 1000</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#22</span>
+      <span class="tool-name">Edit</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">17ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;replace_all&quot;: false,
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-slack-channel-description/SlackChannelDescription/SlackChannelDescription/SlackChannelDescription.flow&quot;,
+  &quot;old_string&quot;: &quot;  \&quot;nodes\&quot;: [\n    {\n      \&quot;id\&quot;: \&quot;start\&quot;,\n      \&quot;type\&quot;: \&quot;core.trigger.manual\&quot;,&quot;,
+  &quot;new_string&quot;: &quot;  \&quot;nodes\&quot;: [\n    {\n      \&quot;id\&quot;: \&quot;end1\&quot;,\n      \&quot;type\&quot;: \&quot;core.control.end\&quot;,\n      \&quot;typeVersion\&quot;: \&quot;1.0\&quot;,\n      \&quot;display\&quot;: {\n        \&quot;label\&quot;: \&quot;End\&quot;\n      },\n      \&quot;inputs\&quot;: {},\n      \&quot;outputs\&quot;: {}\n    },\n    {\n      \&quot;id\&quot;: \&quot;start\&quot;,\n      \&quot;type\&quot;: \&quot;core.trigger.manual\&quot;,&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>The file /work/output/artifacts/skill-flow-slack-channel-description/SlackChannelDescription/SlackChannelDescription/SlackChannelDescription.flow has been updated successfully. (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#23</span>
+      <span class="tool-name">Edit</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">21ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;replace_all&quot;: false,
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-slack-channel-description/SlackChannelDescription/SlackChannelDescription/SlackChannelDescription.flow&quot;,
+  &quot;old_string&quot;: &quot;  \&quot;edges\&quot;: [],&quot;,
+  &quot;new_string&quot;: &quot;  \&quot;edges\&quot;: [\n    {\n      \&quot;id\&quot;: \&quot;edge-start-getChannelInfo1\&quot;,\n      \&quot;sourceNodeId\&quot;: \&quot;start\&quot;,\n      \&quot;sourcePort\&quot;: \&quot;output\&quot;,\n      \&quot;targetNodeId\&quot;: \&quot;getChannelInfo1\&quot;,\n      \&quot;targetPort\&quot;: \&quot;input\&quot;\n    },\n    {\n      \&quot;id\&quot;: \&quot;edge-getChannelInfo1-end1\&quot;,\n      \&quot;sourceNodeId\&quot;: \&quot;getChannelInfo1\&quot;,\n      \&quot;sourcePort\&quot;: \&quot;output\&quot;,\n      \&quot;targetNodeId\&quot;: \&quot;end1\&quot;,\n      \&quot;targetPort\&quot;: \&quot;input\&quot;\n    }\n  ],&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>The file /work/output/artifacts/skill-flow-slack-channel-description/SlackChannelDescription/SlackChannelDescription/SlackChannelDescription.flow has been updated successfully. (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#24</span>
+      <span class="tool-name">Edit</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">17ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;replace_all&quot;: false,
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-slack-channel-description/SlackChannelDescription/SlackChannelDescription/SlackChannelDescription.flow&quot;,
+  &quot;old_string&quot;: &quot;  \&quot;definitions\&quot;: [\n    {\n      \&quot;nodeType\&quot;: \&quot;core.trigger.manual\&quot;,&quot;,
+  &quot;new_string&quot;: &quot;  \&quot;definitions\&quot;: [\n    {\n      \&quot;nodeType\&quot;: \&quot;core.control.end\&quot;,\n      \&quot;version\&quot;: \&quot;1.0\&quot;,\n      \&quot;category\&quot;: \&quot;control-flow\&quot;,\n      \&quot;description\&quot;: \&quot;Mark the end of a workflow path\&quot;,\n      \&quot;tags\&quot;: [\n        \&quot;control-flow\&quot;,\n        \&quot;end\&quot;,\n        \&quot;finish\&quot;,\n        \&quot;complete\&quot;\n      ],\n      \&quot;sortOrder\&quot;: 20,\n      \&quot;display\&quot;: {\n        \&quot;label\&quot;: \&quot;End\&quot;,\n        \&quot;icon\&quot;: \&quot;circle-check\&quot;,\n        \&quot;shape\&quot;: \&quot;circle… (466 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>The file /work/output/artifacts/skill-flow-slack-channel-description/SlackChannelDescription/SlackChannelDescription/SlackChannelDescription.flow has been updated successfully. (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#25</span>
+      <span class="tool-name">Edit</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">27ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;replace_all&quot;: false,
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-slack-channel-description/SlackChannelDescription/SlackChannelDescription/SlackChannelDescription.flow&quot;,
+  &quot;old_string&quot;: &quot;  \&quot;layout\&quot;: {\n    \&quot;nodes\&quot;: {\n      \&quot;start\&quot;: {&quot;,
+  &quot;new_string&quot;: &quot;  \&quot;layout\&quot;: {\n    \&quot;nodes\&quot;: {\n      \&quot;end1\&quot;: {\n        \&quot;position\&quot;: {\n          \&quot;x\&quot;: 0,\n          \&quot;y\&quot;: 0\n        },\n        \&quot;size\&quot;: {\n          \&quot;width\&quot;: 96,\n          \&quot;height\&quot;: 96\n        },\n        \&quot;collapsed\&quot;: false\n      },\n      \&quot;start\&quot;: {&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>The file /work/output/artifacts/skill-flow-slack-channel-description/SlackChannelDescription/SlackChannelDescription/SlackChannelDescription.flow has been updated successfully. (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#26</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">10.01s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-slack-channel-description/SlackChannelDescription/SlackChannelDescription \\\n  &amp;&amp; uip maestro flow node configure \&quot;SlackChannelDescription.flow\&quot; \&quot;getChannelInfo1\&quot; \\\n     --detail &#x27;{\&quot;connectionId\&quot;: \&quot;e03f734e-0f80-4e8a-a7c1-0ece309b0ca4\&quot;, \&quot;folderKey\&quot;: \&quot;def71452-bad1-40fa-be08-da175e89bd1a\&quot;, \&quot;method\&quot;: \&quot;GETBYID\&quot;, \&quot;endpoint\&quot;: \&quot;/ConversationsInfo/{conversationsInfoId}… (236 more chars)&quot;,
+  &quot;description&quot;: &quot;T3: configure Slack node, validate and format the flow&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeConfigureSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;NodeId&quot;: &quot;getChannelInfo1&quot;,
+    &quot;BindingsCreated&quot;: 2,
+    &quot;DetailPopulated&quot;: true
+  }
+}
+[ManifestClient] fetchDynamicNodes ok: total=208 agent context nodes=2 external agent nodes=6 orchestrator nodes=158 IXP nodes=42
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FlowValidate&quot;,
+  &quot;Data&quot;: {
+    &quot;File&quot;: &quot;/work/output/artifacts/skill-flow-slack-channel-description/SlackChannelDescription/SlackChannelDescription/SlackChannelDescription.flow&quot;,
+    &quot;Status&quot;: &quot;Valid&quot;
+  }
+}
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FlowFormat&quot;,
+  &quot;Data&quot;: {
+    &quot;File&quot;: &quot;SlackChannelDescription.flow&quot;,
+    &quot;NodesTotal&quot;: 3,
+    &quot;EdgesTotal&quot;: 2,
+    &quot;NodesRepositioned&quot;: 2,
+    &quot;NodesResized&quot;: 2,
+    &quot;SubflowsTidied&quot;: 0,
+    &quot;VariableCount&quot;: 3
+  },
+  &quot;Instructions&quot;: &quot;Repositioned 2 of 3 nodes. Set canonical size on 2 node(s)&quot;
+}</pre>
+    
+  </div>
+</details>
+
+</div>
+
+<h2>Command Telemetry</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Total</div><div class="value">27</div></div>
+    <div class="stat"><div class="label">Successful</div><div class="value">27 (100%)</div></div>
+    <div class="stat"><div class="label">Failed</div><div class="value">0</div></div>
+    <div class="stat"><div class="label">Avg / cmd</div><div class="value">3.89s</div></div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 2fr;gap:16px;margin-top:12px">
+    <div>
+      <h4>By Tool</h4>
+      <table>
+        <thead><tr><th>Tool</th><th>Count</th></tr></thead>
+        <tbody><tr><td class='mono'>Bash</td><td>17</td></tr><tr><td class='mono'>Read</td><td>5</td></tr><tr><td class='mono'>Edit</td><td>4</td></tr><tr><td class='mono'>Skill</td><td>1</td></tr></tbody>
+      </table>
+    </div>
+    <div>
+      <h4>Slowest</h4>
+      <table>
+        <thead><tr><th>Tool</th><th>Duration</th><th>Parameters</th></tr></thead>
+        <tbody><tr><td class='mono'>Bash</td><td>24.14s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro flow registry get core.co...</td></tr><tr><td class='mono'>Read</td><td>23.13s</td><td class='mono dim'>{&#x27;file_path&#x27;: &#x27;/home/azureuser/projects/skills/ski...</td></tr><tr><td class='mono'>Bash</td><td>19.37s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;cd /work/output/artifacts/skill-flow-...</td></tr><tr><td class='mono'>Bash</td><td>10.01s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;cd /work/output/artifacts/skill-flow-...</td></tr><tr><td class='mono'>Bash</td><td>5.16s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro flow registry search &quot;sla...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+  <p><strong>Most Common Pattern:</strong> <code>Bash → Bash → Bash</code></p><p><strong>Skill Tool Invoked:</strong> 1 time(s)</p>
+</div>
+
+<h2>Generation Metrics</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Total Latency</div><div class="value">3m 53s</div></div>
+    <div class="stat"><div class="label">Turns</div><div class="value">1</div></div>
+    <div class="stat"><div class="label">Assistant Turns</div><div class="value">48</div></div>
+    <div class="stat"><div class="label">Avg Turn Latency</div><div class="value">3m 23s</div></div>
+    
+  </div>
+</div>
+
+<h2>Token Usage</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Input (uncached)</div><div class="value">23</div></div>
+    <div class="stat"><div class="label">Output</div><div class="value">8,514</div></div>
+    <div class="stat"><div class="label">Cache Write</div><div class="value">80,959</div></div>
+    <div class="stat"><div class="label">Cache Read</div><div class="value">1,598,292</div></div>
+    <div class="stat"><div class="label">Total</div><div class="value">1,687,788</div></div>
+    <div class="stat"><div class="label">Cost</div><div class="value">$0.9109</div></div>
+  </div>
+</div>
+
+<h2>Agent Settings</h2>
+<div class="card" style="padding:0">
+  <table>
+    <tbody><tr><td class='mono dim'>Permission Mode</td><td>acceptEdits</td></tr><tr><td class='mono dim'>Allowed Tools</td><td>Skill, Bash, Read, Write, Edit, Glob, Grep</td></tr><tr><td class='mono dim'>Model</td><td>us.anthropic.claude-sonnet-4-6</td></tr><tr><td class='mono dim'>Max Turns</td><td>40</td></tr><tr><td class='mono dim'>System Prompt</td><td>You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted. </td></tr><tr><td class='mono dim'>Plugins</td><td>/home/azureuser/projects/skills</td></tr></tbody>
+  </table>
+</div>
+
+<h2>Environment</h2>
+<div class="card" style="padding:0">
+  <table>
+    <tbody><tr><td class='mono dim'>git_commit</td><td>unknown</td></tr><tr><td class='mono dim'>skills_git_commit</td><td>unknown</td></tr><tr><td class='mono dim'>cli_version</td><td>1.199.0-dev.7970</td></tr><tr><td class='mono dim'>tool_plugins</td><td>{&#x27;admin-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;agent-tool&#x27;: &#x27;1.199.0-dev.7965&#x27;, &#x27;agenthub-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;aops-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;api-workflow-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;codedagent-tool&#x27;: &#x27;1.199.0-dev.7965&#x27;, &#x27;codedapp-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;coder-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;context-grounding-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;conversational-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;data-fabric-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;docsai-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;functions-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;gov-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;insights-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;integrationservice-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;ixp-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;llm-gateway-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;llmgw-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;maestro-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;orchestrator-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;platform-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;pm-tool&#x27;: &#x27;1.199.0-dev.7969&#x27;, &#x27;rpa-legacy-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;rpa-tool&#x27;: &#x27;1.199.0-dev.20260722.4&#x27;, &#x27;solution-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;tasks-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;test-manager-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;traces-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;vertical-solutions-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;}</td></tr><tr><td class='mono dim'>coder_eval</td><td>0.8.8</td></tr><tr><td class='mono dim'>claude_code_cli</td><td>2.1.177 (Claude Code)</td></tr><tr><td class='mono dim'>uv</td><td>uv 0.11.28 (x86_64-unknown-linux-gnu)</td></tr><tr><td class='mono dim'>anthropic</td><td>0.102.0</td></tr><tr><td class='mono dim'>openai</td><td>2.47.0</td></tr><tr><td class='mono dim'>pydantic</td><td>2.12.5</td></tr><tr><td class='mono dim'>api_routing</td><td>aws_bedrock</td></tr><tr><td class='mono dim'>aws_region</td><td>us-east-2</td></tr><tr><td class='mono dim'>bedrock_model</td><td>us.anthropic.claude-sonnet-4-6</td></tr></tbody>
+  </table>
+</div>
+
+<footer>Generated by coder_eval · 2026-07-24T20:20:30</footer>
+</div>
+<script>
+function toggleTheme() {
+  document.documentElement.classList.toggle('light');
+  try {
+    const mode = document.documentElement.classList.contains('light') ? 'light' : 'dark';
+    localStorage.setItem('coder-eval-theme', mode);
+  } catch (e) { /* ignore */ }
+}
+(function() {
+  try {
+    if (localStorage.getItem('coder-eval-theme') === 'light') {
+      document.documentElement.classList.add('light');
+    }
+  } catch (e) { /* ignore */ }
+})();
+</script>
+</body>
+</html>

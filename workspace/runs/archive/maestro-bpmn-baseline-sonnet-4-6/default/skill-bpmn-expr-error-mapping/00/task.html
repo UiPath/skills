@@ -1,0 +1,1070 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>coder_eval · skill-bpmn-expr-error-mapping · default</title>
+<style>
+:root {
+  --bg-page: #0f1419;
+  --bg-card: #1a2129;
+  --bg-card-2: #232d38;
+  --bg-code: #0b0f14;
+  --fg: #e6edf3;
+  --fg-muted: #8b98a5;
+  --fg-dim: #6e7681;
+  --border: #30363d;
+  --accent: #58a6ff;
+  --score-high: #22c55e;
+  --score-mid: #f59e0b;
+  --score-low: #ef4444;
+  --status-success: #22c55e;
+  --status-failure: #f59e0b;
+  --status-error: #ef4444;
+  --status-neutral: #6e7681;
+  --shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+.light {
+  --bg-page: #ffffff;
+  --bg-card: #f6f8fa;
+  --bg-card-2: #eaeef2;
+  --bg-code: #f6f8fa;
+  --fg: #1f2328;
+  --fg-muted: #636c76;
+  --fg-dim: #8b949e;
+  --border: #d0d7de;
+  --accent: #0969da;
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial,
+               sans-serif;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--fg);
+  background: var(--bg-page);
+}
+.container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+h1, h2, h3, h4 { margin: 0 0 12px 0; line-height: 1.25; }
+h1 { font-size: 22px; font-weight: 600; }
+h2 { font-size: 18px; font-weight: 600; margin-top: 28px;
+     padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+h3 { font-size: 15px; font-weight: 600; color: var(--fg-muted); }
+h4 { font-size: 13px; font-weight: 600; color: var(--fg-muted); }
+p { margin: 0 0 8px 0; }
+.muted { color: var(--fg-muted); }
+.dim { color: var(--fg-dim); }
+.mono { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+        monospace; font-size: 12.5px; }
+code { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+       monospace; font-size: 12.5px; background: var(--bg-code);
+       border: 1px solid var(--border); padding: 1px 5px; border-radius: 3px; }
+pre { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+      monospace; font-size: 12.5px; background: var(--bg-code);
+      border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px;
+      margin: 6px 0; overflow-x: auto; white-space: pre-wrap;
+      word-wrap: break-word; }
+.header-bar { display: flex; align-items: center; justify-content: space-between;
+              margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+.title-group { flex: 1; min-width: 0; }
+.title-group .subtitle { color: var(--fg-muted); font-size: 13px;
+                         margin-top: 2px; word-break: break-all; }
+.badges { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.badge { display: inline-flex; align-items: center; gap: 6px;
+         padding: 4px 10px; border-radius: 12px; font-size: 12px;
+         font-weight: 600; background: var(--bg-card-2);
+         border: 1px solid var(--border); color: var(--fg); }
+.badge.success { background: color-mix(in srgb, var(--status-success) 20%, var(--bg-card-2));
+                 border-color: var(--status-success); color: var(--status-success); }
+.badge.failure { background: color-mix(in srgb, var(--status-failure) 20%, var(--bg-card-2));
+                 border-color: var(--status-failure); color: var(--status-failure); }
+.badge.error { background: color-mix(in srgb, var(--status-error) 20%, var(--bg-card-2));
+               border-color: var(--status-error); color: var(--status-error); }
+.badge.warning { background: color-mix(in srgb, #f4a52810 20%, var(--bg-card-2));
+                 border-color: #f4a528; color: #f4a528; }
+.badge.neutral { color: var(--fg-muted); }
+.score-pill { display: inline-block; padding: 2px 8px; border-radius: 10px;
+              font-size: 12px; font-weight: 700; min-width: 42px;
+              text-align: center; color: #0b0f14; }
+.score-high { background: var(--score-high); }
+.score-mid { background: var(--score-mid); }
+.score-low { background: var(--score-low); }
+.card { background: var(--bg-card); border: 1px solid var(--border);
+        border-radius: 8px; padding: 16px 20px; margin-bottom: 16px;
+        box-shadow: var(--shadow); }
+.card.highlight { border-left: 4px solid var(--accent); }
+.grid { display: grid; gap: 12px;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+.stat { background: var(--bg-card-2); padding: 10px 12px; border-radius: 6px;
+        border: 1px solid var(--border); }
+.stat .label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;
+               color: var(--fg-muted); margin-bottom: 4px; }
+.stat .value { font-size: 16px; font-weight: 600; }
+table { width: 100%; border-collapse: collapse; margin: 4px 0 12px 0; }
+th, td { text-align: left; padding: 8px 10px;
+         border-bottom: 1px solid var(--border); vertical-align: top;
+         font-size: 13px; }
+th { color: var(--fg-muted); font-weight: 600; font-size: 12px;
+     text-transform: uppercase; letter-spacing: 0.3px; }
+tr:last-child td { border-bottom: none; }
+details { margin: 6px 0; border: 1px solid var(--border); border-radius: 6px;
+          background: var(--bg-card-2); }
+details > summary { cursor: pointer; padding: 8px 12px; user-select: none;
+                    font-weight: 500; list-style: none; }
+details > summary::-webkit-details-marker { display: none; }
+details > summary::before { content: "▸ "; color: var(--fg-dim);
+                            display: inline-block; width: 14px;
+                            transition: transform 0.15s; }
+details[open] > summary::before { content: "▾ "; }
+details .details-body { padding: 0 12px 10px 12px; }
+.tool-row { display: flex; align-items: center; gap: 10px;
+            flex-wrap: wrap; font-size: 13px; }
+.tool-name { font-weight: 600; color: var(--accent); font-family: ui-monospace,
+             SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+.tool-status-ok { color: var(--status-success); font-size: 11px;
+                  font-weight: 600; }
+.tool-status-err { color: var(--status-error); font-size: 11px;
+                   font-weight: 600; }
+.tool-duration { color: var(--fg-muted); font-size: 12px; }
+.tool-seq { color: var(--fg-dim); font-size: 11px; font-weight: 600;
+            min-width: 24px; text-align: right; font-family: ui-monospace,
+            SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+.turn-header { display: flex; justify-content: space-between;
+               align-items: baseline; flex-wrap: wrap; gap: 10px;
+               margin-bottom: 10px; }
+.turn-meta { font-size: 12px; color: var(--fg-muted); }
+.criterion-row td:first-child { font-family: ui-monospace, SFMono-Regular,
+                                 "SF Mono", Menlo, Consolas, monospace;
+                                 color: var(--fg-muted); font-size: 12px; }
+.judge-section { display: flex; flex-direction: column; gap: 12px; }
+.judge-card { padding: 14px 16px; }
+.judge-card-head { display: flex; justify-content: space-between;
+                    align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+.judge-card-title { font-size: 14px; line-height: 1.4; flex: 1; min-width: 0; }
+.judge-card-score { flex-shrink: 0; }
+.judge-rationale { margin-top: 10px; padding: 10px 12px;
+                   background: var(--bg-code); border-radius: 4px;
+                   font-size: 13px; line-height: 1.5; }
+.judge-findings { margin: 8px 0 0 18px; padding-left: 4px; font-size: 13px;
+                   line-height: 1.6; }
+.judge-findings li { margin: 2px 0; }
+.nav-toggle { display: inline-block; padding: 5px 10px; font-size: 12px;
+              background: var(--bg-card-2); border: 1px solid var(--border);
+              border-radius: 5px; color: var(--fg); cursor: pointer; }
+.nav-toggle:hover { background: var(--bg-card); }
+.llm-next-steps { margin: 6px 0 0 20px; padding-left: 0; }
+.llm-next-steps li { margin: 3px 0; }
+.iteration-group { padding: 12px 16px 4px 16px; margin-bottom: 20px;
+                   border-radius: 0 6px 6px 0; border-left: 4px solid var(--status-neutral); }
+/* rgba fallback for browsers without color-mix (Chrome <111, Firefox <113, Safari <16.2). */
+.iteration-group--recovered { border-left-color: var(--status-success);
+                              background: rgba(34, 197, 94, 0.06);
+                              background: color-mix(in srgb, var(--status-success) 6%, transparent); }
+.iteration-group--terminal { border-left-color: var(--status-error);
+                             background: rgba(239, 68, 68, 0.06);
+                             background: color-mix(in srgb, var(--status-error) 6%, transparent); }
+.iteration-group__banner { margin: 0 0 12px 0; font-size: 14px; font-weight: 600; }
+.iteration-group--recovered .iteration-group__banner { color: var(--status-success); }
+.iteration-group--terminal .iteration-group__banner { color: var(--status-error); }
+.attempt-transition { display: flex; align-items: center; gap: 8px;
+                      margin: -6px 0 12px 8px; color: var(--status-error); font-size: 12.5px; }
+.attempt-transition__icon { font-weight: 700; }
+footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--border);
+         color: var(--fg-dim); font-size: 12px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="header-bar">
+  <div class="title-group">
+    <h1>Task: skill-bpmn-expr-error-mapping</h1>
+    <div class="subtitle">Expression-authoring eval: agent uses the uipath-maestro-bpmn skill to author a uipath:errorMapping block whose condition branches on the runtime error object via `=vars.error.code == &quot;...&quot;` after a failed activity. Grades the error-mapping expression shape from references/expression-authoring.md. Authoring only — no cloud effects.</div>
+  </div>
+  <div class="badges">
+    <span class="badge success">SUCCESS</span>
+    <span class="score-pill score-high">1.00</span>
+    <span class="badge neutral">claude-code · claude-sonnet-4-6</span>
+    <span class="badge neutral">4m 51s</span>
+    <span class="badge neutral">$0.6659</span>
+    
+    
+    <span class="nav-toggle" onclick="toggleTheme()">Toggle theme</span>
+  </div>
+</div>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Variant</div><div class="value">default</div></div>
+    <div class="stat"><div class="label">Started</div><div class="value mono">2026-08-15T00:35:48</div></div>
+    <div class="stat"><div class="label">Duration</div><div class="value">4m 51s</div></div>
+    <div class="stat"><div class="label">Turns (SDK)</div><div class="value">35</div></div>
+    <div class="stat"><div class="label">Commands</div><div class="value">16</div></div>
+  </div>
+</div>
+
+<h2>Success Criteria <span class="muted" style="font-weight:400">(3/3 passed)</span></h2>
+<div class="card" style="padding:0">
+<table>
+  <thead>
+    <tr>
+      <th style="width:15%">Type</th>
+      <th style="width:35%">Description</th>
+      <th style="width:10%">Score</th>
+      <th>Details</th>
+    </tr>
+  </thead>
+  <tbody>
+    
+<tr class="criterion-row">
+  <td>file_exists</td>
+  <td>BPMN source was authored</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><div class="dim mono" style="white-space:pre-wrap">File &#x27;ErrorMappingBpmn/ErrorMappingBpmn.bpmn&#x27; exists</div></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>file_contains</td>
+  <td>BPMN carries a uipath:errorMapping block</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><div class="dim mono" style="white-space:pre-wrap">Includes: 1/1 found; Score: 1.00</div></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>run_command</td>
+  <td>errorMapping condition branches on vars.error.code and the graph is sound</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Command: python3 $TASK_DIR/check_error_mapping.py</summary><div class="details-body"><pre style="margin:6px 0 0 0">Command: python3 $TASK_DIR/check_error_mapping.py
+Exit code: 0 (expected: 0)
+Stdout:
+OK: ErrorMappingBpmn/ErrorMappingBpmn.bpmn branches on vars.error.code via uipath:errorMapping
+
+Stderr: (empty)</pre></div></details></td>
+</tr>
+
+  </tbody>
+</table>
+</div>
+<h2>Conversation Trace (1 iteration)</h2>
+<div class="card">
+  <div class="turn-header">
+    <h3>Iteration 1</h3>
+    <div class="badges">
+      <span class="badge neutral">35 assistant turns</span>
+      <span class="badge neutral">in 17 · out 21544 · cache 684946</span>
+      <span class="badge neutral">4m 45s</span>
+      
+      
+      
+    </div>
+  </div>
+  <details>
+    <summary>Prompt to agent</summary>
+    <div class="details-body"><pre>Your working directory is: /work/output/artifacts/skill-bpmn-expr-error-mapping
+
+Load and follow the uipath-maestro-bpmn skill.
+
+Author a local Maestro BPMN project named &quot;ErrorMappingBpmn&quot; with the main
+file at `ErrorMappingBpmn/ErrorMappingBpmn.bpmn` for this process:
+- Manual start -&gt; a serviceTask that invokes a downstream service -&gt; end.
+- The serviceTask must declare error-handling metadata so that when the
+  activity fails with a service-unavailable error, the process branches on the
+  runtime error object. Model the error code on a `bpmn:error errorCode` and
+  reference it from a `uipath:errorMapping` whose condition reads the runtime
+  error via `vars.error.code` (for example
+  `=vars.error.code == &quot;SERVICE_UNAVAILABLE&quot;`).
+
+Requirements:
+- Discover any `uipath:*` activity payload via the registry
+  (`uip maestro bpmn registry`) and author it from the served template. Do not
+  hand-author registry-owned `uipath:*` XML from prose.
+- The errorMapping condition must be a read-only expression that reads
+  `vars.error.code` — not a baked literal and no assignment operators.
+- Use synthetic placeholder resource names only. Do not include tenant URLs,
+  folder keys, connection IDs, release keys, real process names, or real user
+  names.
+- Include a bpmndi:BPMNDiagram with a BPMNShape for every node and a BPMNEdge
+  for every sequence flow.
+- Validate locally by parsing the BPMN for well-formedness and walking the
+  skill&#x27;s structural checklist. Do NOT upload, publish, deploy, debug, run, or
+  pack anything, and do NOT pause for approval, confirmation, or feedback —
+  build the complete local project end to end in one pass.
+</pre></div>
+  </details>
+  <details>
+    <summary>Agent response</summary>
+    <div class="details-body"><pre>[ASSISTANT] Good — registry is pulled, template retrieved, structural reference read. Now let me also check the project layout reference, then assemble everything.
+[ASSISTANT] I have everything I need. Let me now create the project directory and files.
+[ASSISTANT] Now I&#x27;ll assemble the BPMN file. The process is:
+- Manual start event → `Orchestrator.StartJob` serviceTask → end
+- `bpmn:error` declared at definitions level with `errorCode=&quot;SERVICE_UNAVAILABLE&quot;`
+- `uipath:errorMapping` on the serviceTask with `condition=&quot;=vars.error.code == &amp;quot;SERVICE_UNAVAILABLE&amp;quot;&quot;`
+- Full `bpmndi:BPMNDiagram` with shapes for all nodes and edges for all flows
+[ASSISTANT] Now the `project.uiproj` file:
+[ASSISTANT] Now validate — first with the CLI, then fall back to the structural checklist if needed:
+[ASSISTANT] CLI validator passes (exit 0, `&quot;Status&quot;: &quot;Valid&quot;`). Now run the structural checklist manually to confirm all rules:
+[ASSISTANT] The BPMN is fine — `ElementTree` doesn&#x27;t expose `xmlns:*` as attribs. Let me fix the namespace check:
+[ASSISTANT] The check has a false positive — it&#x27;s finding the leading `=` (the required expression prefix) after stripping `==`. The BPMN is correct; the checklist script needs to strip the leading `=` first. Let me fix and re-run:
+[ASSISTANT] The `exporter` attribute contains `https://bpmn.uipath.com` which is the standard UiPath tooling URL required by the canvas import detector — it&#x27;s not customer data and is mandated by the spec. The regex is too broad. Let me fix the check to only flag customer tenant URLs:
+[ASSISTANT] All 12 checks pass. Let me show the final file layout:
+[ASSISTANT] The **ErrorMappingBpmn** project is complete and fully validated. Here&#x27;s a summary of what was built and how it satisfies every requirement:
+
+---
+
+## Project: `ErrorMappingBpmn/ErrorMappingBpmn.bpmn`
+
+### Process structure
+```
+[Start_1] → Flow_StartToTask → [Task_InvokeService (serviceTask)] → Flow_TaskToEnd → [End_1]
+```
+- **Manual start**: plain `bpmn:startEvent` (no event definition = manual/none trigger)
+- **Service task**: `Orchestrator.StartJob` (registry-served template, `bpmn:serviceTask`)
+- **End**: plain `bpmn:endEvent`
+
+### Error-handling metadata (structural BPMN, registry gap)
+
+**`bpmn:error` at definitions level** — error code is modelled here, not on the mapping element:
+```xml
+&lt;bpmn:error id=&quot;Error_ServiceUnavailable&quot; name=&quot;ServiceUnavailable&quot; errorCode=&quot;SERVICE_UNAVAILABLE&quot; /&gt;
+```
+
+**`uipath:errorMapping` inside the serviceTask&#x27;s `extensionElements`** — references the error by `errorRef`; condition reads `vars.error.code` (runtime error object):
+```xml
+&lt;uipath:errorMapping version=&quot;v1&quot;&gt;
+  &lt;uipath:error id=&quot;Mapped_ServiceUnavailable&quot; errorRef=&quot;Error_ServiceUnavailable&quot;
+                priority=&quot;1&quot; condition=&quot;=vars.error.code == &amp;quot;SERVICE_UNAVAILABLE&amp;quot;&quot;
+                detail=&quot;Downstream service is unavailable&quot; retryable=&quot;true&quot; /&gt;
+&lt;/uipath:errorMapping&gt;
+```
+
+### Validation results
+| Check | Result |
+|---|---|
+| CLI validator (`uip maestro bpmn validate`) | ✅ `&quot;Status&quot;: &quot;Valid&quot;` |
+| Well-formed XML | ✅ |
+| Root `bpmn:definitions` + required namespaces | ✅ |
+| Diagram completeness (shape per node, edge per flow) | ✅ 3 shapes, 2 edges |
+| All `*Ref` attributes resolve to declared IDs | ✅ |
+| No XOR gateway condition gaps / no fake joins | ✅ |
+| `vars.*` references: `Var_JobResult` declared; `vars.error` is runtime builtin | ✅ |
+| `uipath:*` payload from registry (`Orchestrator.StartJob`) | ✅ |
+| `errorMapping` condition is read-only expression (`=vars.error.code == &quot;SERVICE_UNAVAILABLE&quot;`) | ✅ |
+| `bpmn:error errorCode=&quot;SERVICE_UNAVAILABLE&quot;` at definitions level | ✅ |
+| No `--` in XML comments | ✅ |
+| Public-safe (no tenant URLs, no GUIDs, synthetic placeholders only) | ✅ |
+[RESULT - SUCCESS] The **ErrorMappingBpmn** project is complete and fully validated. Here&#x27;s a summary of what was built and how it satisfies every requirement:
+
+---
+
+## Project: `ErrorMappingBpmn/ErrorMappingBpmn.bpmn`
+
+### Process </pre></div>
+  </details>
+  <h4 style="margin-top:12px">Tool Calls (16)</h4>
+  
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#0</span>
+      <span class="tool-name">Skill</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">18ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;skill&quot;: &quot;uipath:uipath-maestro-bpmn&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Launching skill: uipath:uipath-maestro-bpmn</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#1</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">543ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/structural-bpmn.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Structural BPMN (what the registry does not emit)
+2	
+3	The registry&#x27;s `xmlTemplate`s give you the `uipath:*` payload for each node
+4	(see [registry-workflow.md](registry-workflow.md)). They do **not** give you the
+5	structural BPMN that holds those nodes together. This file is the ground truth
+6	for everything you author by hand around the templates.
+7	
+8	Two sources define the contract:
+9	
+10	- the registry spec `bpmn-spec.json` — enumerates which BPMN element types and
+11	  event definitions exist, via its `bpmnElements` section;
+12	- the Studio Web canvas serializer
+13	  (`PO.Frontend/src/services/serialization/`) — defines how that XML must be
+14	  shaped to import and round-trip.
+15	
+16	Where the registry stops, the canvas serializer is authoritative. Each
+17	gap below is labelled **REGISTRY GAP** — the registry exposes no template for
+18	it, so author it from this reference.
+19	
+20	BPMN XML element names are case-sensitive. Use the exact lower-camel BPMN tag
+21	names the serializer emits, such as `&lt;bpmn:startEvent&gt;`,
+22	`&lt;bpmn:intermediateCatchEvent&gt;`, `&lt;bpmn:scriptTask&gt;`, and `&lt;bpmn:endEvent&gt;`.
+23	Do not use PascalCase variants like `&lt;bpmn:IntermediateCatchEvent&gt;`; XML a
+
+… (truncated, 30791 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#2</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">3.60s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro bpmn registry pull --output json 2&gt;&amp;1 | head -20&quot;,
+  &quot;description&quot;: &quot;Pull registry cache&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;RegistryPullSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;ExtensionTypeCount&quot;: 30,
+    &quot;ConnectorCount&quot;: 27,
+    &quot;ProcessCount&quot;: 138,
+    &quot;ProcessCountsByType&quot;: {
+      &quot;Process&quot;: 24,
+      &quot;ProcessOrchestration&quot;: 21,
+      &quot;Agent&quot;: 15,
+      &quot;Flow&quot;: 38,
+      &quot;Api&quot;: 23,
+      &quot;Function&quot;: 6,
+      &quot;CaseManagement&quot;: 11,
+      &quot;BusinessRules&quot;: 0
+    },
+    &quot;FromCache&quot;: false,
+    &quot;CacheWritten&quot;: true,
+    &quot;Message&quot;: &quot;Synced fresh registry&quot;</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#3</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.36s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro bpmn registry list --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;List registry extension types&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>&lt;persisted-output&gt;
+Output too large (81.2KB). Full output saved to: /home/azureuser/.claude/projects/-work-output-artifacts-skill-bpmn-expr-error-mapping/5b204d5d-e53e-4314-964f-a437d46262e3/tool-results/b70px6svk.txt
+
+Preview (first 2KB):
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;RegistryListSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;ExtensionTypes&quot;: [
+      {
+        &quot;ExtensionType&quot;: &quot;uipath:Activity&quot;,
+        &quot;Label&quot;: &quot;Canvas activity&quot;,
+        &quot;BpmnElement&quot;: &quot;bpmn:ServiceTask&quot;,
+        &quot;ExtensionTag&quot;: &quot;uipath:activity&quot;,
+        &quot;InputPattern&quot;: &quot;none&quot;,
+        &quot;BindingPattern&quot;: &quot;none&quot;,
+        &quot;RequiresDiscovery&quot;: &quot;No&quot;
+      },
+      {
+        &quot;ExtensionType&quot;: &quot;Actions.HITL&quot;,
+        &quot;Label&quot;: &quot;Create action app task&quot;,
+        &quot;BpmnElement&quot;: &quot;bpmn:UserTask&quot;,
+        &quot;ExtensionTag&quot;: &quot;uipath:activity&quot;,
+        &quot;InputPattern&quot;: &quot;mergedBody&quot;,
+        &quot;BindingPattern&quot;: &quot;none&quot;,
+        &quot;RequiresDiscovery&quot;: &quot;Yes&quot;
+      },
+      {
+        &quot;ExtensionType&quot;: &quot;Orchestrator.StartJob&quot;,
+        &quot;Label&quot;: &quot;Start and wait for RPA workflow&quot;,
+        &quot;BpmnElement&quot;: &quot;bpmn:ServiceTask&quot;,
+        &quot;ExtensionTag&quot;: &quot;uipath:activity&quot;,
+        &quot;InputPattern&quot;: &quot;mergedBody&quot;,
+        &quot;BindingPattern&quot;: &quot;process&quot;,
+        &quot;RequiresDisc
+
+… (truncated, 1063 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#4</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">392ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/expression-authoring.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Expression Authoring
+2	
+3	Use this reference whenever pass 2 writes Maestro runtime expressions in BPMN
+4	XML. Pass 1 may use business-readable placeholder conditions; pass 2 replaces
+5	them with expressions only after the variables and scopes exist.
+6	
+7	## Stored expression shape
+8	
+9	- Use a leading `=` where Maestro expects expression content.
+10	- Treat values without `=` as literals.
+11	- Read BPMN variables through `vars.&lt;variableId&gt;`, for example
+12	  `=vars.Var_RequestId`.
+13	- Do not use bare variable names such as `=requestId` in generated runtime XML.
+14	- Context bindings use `=bindings.&lt;bindingId&gt;`.
+15	- Current element outputs use `result` only in output mappings for that
+16	  element. For new BPMN script tasks, return an object and expose its value
+17	  through `result.response`: use `return { response: value };` with
+18	  `source=&quot;=result.response&quot;` for a scalar variable, or return a nested object
+19	  and use `source=&quot;=result.response.&lt;field&gt;&quot;` for a field. Do not use
+20	  `source=&quot;=result&quot;` with a bare scalar return in live debug/runtime BPMN; the
+21	  run can complete while the mapped variable reads back empty.
+22	- Multi-instance task bodies read the curren
+
+… (truncated, 4476 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#5</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.21s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro bpmn registry get Orchestrator.StartJob --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Get Orchestrator.StartJob registry template&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;RegistryGetSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;ExtensionType&quot;: {
+      &quot;ExtensionType&quot;: &quot;Orchestrator.StartJob&quot;,
+      &quot;Label&quot;: &quot;Start and wait for RPA workflow&quot;,
+      &quot;BpmnElement&quot;: &quot;bpmn:ServiceTask&quot;,
+      &quot;Placements&quot;: {
+        &quot;Activity&quot;: {
+          &quot;Type&quot;: &quot;bpmn:ServiceTask&quot;
+        }
+      },
+      &quot;ExtensionTag&quot;: &quot;uipath:activity&quot;,
+      &quot;ContextFields&quot;: [
+        {
+          &quot;Name&quot;: &quot;releaseKey&quot;,
+          &quot;DisplayName&quot;: &quot;Process&quot;,
+          &quot;Type&quot;: &quot;string&quot;,
+          &quot;Required&quot;: false,
+          &quot;Hidden&quot;: true,
+          &quot;IsPrimaryKey&quot;: false,
+          &quot;Binding&quot;: false,
+          &quot;DefaultValue&quot;: null,
+          &quot;BindingInfo&quot;: {
+            &quot;Resource&quot;: &quot;process&quot;,
+            &quot;ResourceKeyPattern&quot;: &quot;${metadata.key}&quot;,
+            &quot;PropertyAttribute&quot;: &quot;Key&quot;
+          }
+        },
+        {
+          &quot;Name&quot;: &quot;folderId&quot;,
+          &quot;Type&quot;: &quot;string&quot;,
+          &quot;Required&quot;: false,
+          &quot;Hidden&quot;: true,
+          &quot;IsPrimaryKey&quot;: false,
+          &quot;Binding&quot;: false,
+          &quot;DefaultValue&quot;: null
+        },
+        {
+          &quot;Name&quot;: &quot;folderPath&quot;,
+          &quot;Type&quot;: &quot;string&quot;,
+          &quot;Required&quot;: false,
+          &quot;Hidden&quot;: true,
+          &quot;IsPrimaryK
+
+… (truncated, 1850 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#6</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">9ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/shared/project-layout.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Project Layout
+2	
+3	Maestro BPMN Process Orchestration projects use BPMN XML as source and generated JSON files as package/runtime metadata.
+4	
+5	## Canonical source files
+6	
+7	- `&lt;project&gt;.bpmn` - BPMN process source and UiPath extension XML. For a new
+8	  project, keep the BPMN source basename exactly aligned with the project
+9	  directory/name. For example, `InvoiceTriageBpmn/InvoiceTriageBpmn.bpmn`, not
+10	  `InvoiceTriageBpmn/invoice-triage-bpmn.bpmn`.
+11	- `project.uiproj` - UiPath project metadata. Keep it in the same project
+12	  directory as the main BPMN file: `InvoiceTriageBpmn/project.uiproj`, not next
+13	  to the project directory.
+14	
+15	For a new local project, place source files under a single project directory.
+16	`uip maestro bpmn init &lt;ProjectName&gt; --output json` nests that directory inside
+17	a solution. Inside a solution it registers the project with the parent `.uipx`;
+18	outside any solution it auto-scaffolds `&lt;ProjectName&gt;Solution/` and nests the
+19	project inside (the response adds `Data.AutoCreatedSolution` =
+20	`{ Name, Path, SolutionFile }` and reports `SolutionRegistration.Status:
+21	Registered`; re-running is idempotent and reports `AlreadyRegister
+
+… (truncated, 3181 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#7</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">73ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;mkdir -p /work/output/artifacts/skill-bpmn-expr-error-mapping/ErrorMappingBpmn &amp;&amp; ls /work/output/artifacts/skill-bpmn-expr-error-mapping/&quot;,
+  &quot;description&quot;: &quot;Create project directory&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>ErrorMappingBpmn
+SKILL.md
+references
+validator</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#8</span>
+      <span class="tool-name">Write</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">21ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-bpmn-expr-error-mapping/ErrorMappingBpmn/ErrorMappingBpmn.bpmn&quot;,
+  &quot;content&quot;: &quot;&lt;?xml version=\&quot;1.0\&quot; encoding=\&quot;UTF-8\&quot;?&gt;\n&lt;bpmn:definitions\n    xmlns:bpmn=\&quot;http://www.omg.org/spec/BPMN/20100524/MODEL\&quot;\n    xmlns:bpmndi=\&quot;http://www.omg.org/spec/BPMN/20100524/DI\&quot;\n    xmlns:dc=\&quot;http://www.omg.org/spec/DD/20100524/DC\&quot;\n    xmlns:di=\&quot;http://www.omg.org/spec/DD/20100524/DI\&quot;\n    xmlns:xsi=\&quot;http://www.w3.org/2001/XMLSchema-instance\&quot;\n    xmlns:uipath=\&quot;http://uipath.org/schema/bpmn\&quot;\n    id=… (3343 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>File created successfully at: /work/output/artifacts/skill-bpmn-expr-error-mapping/ErrorMappingBpmn/ErrorMappingBpmn.bpmn (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#9</span>
+      <span class="tool-name">Write</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">13ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-bpmn-expr-error-mapping/ErrorMappingBpmn/project.uiproj&quot;,
+  &quot;content&quot;: &quot;{\n  \&quot;name\&quot;: \&quot;ErrorMappingBpmn\&quot;,\n  \&quot;description\&quot;: \&quot;Error mapping demo: service task with uipath:errorMapping on SERVICE_UNAVAILABLE\&quot;,\n  \&quot;main\&quot;: \&quot;ErrorMappingBpmn.bpmn\&quot;,\n  \&quot;contentType\&quot;: \&quot;ProcessOrchestration\&quot;,\n  \&quot;projectVersion\&quot;: \&quot;1.0.0\&quot;,\n  \&quot;runtimeOptions\&quot;: {}\n}\n&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>File created successfully at: /work/output/artifacts/skill-bpmn-expr-error-mapping/ErrorMappingBpmn/project.uiproj (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#10</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.67s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro bpmn validate /work/output/artifacts/skill-bpmn-expr-error-mapping/ErrorMappingBpmn/ErrorMappingBpmn.bpmn --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Validate BPMN file with CLI&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;BpmnValidate&quot;,
+  &quot;Data&quot;: {
+    &quot;File&quot;: &quot;/work/output/artifacts/skill-bpmn-expr-error-mapping/ErrorMappingBpmn/ErrorMappingBpmn.bpmn&quot;,
+    &quot;Status&quot;: &quot;Valid&quot;,
+    &quot;ProcessCount&quot;: 1,
+    &quot;StartEventCount&quot;: 1,
+    &quot;UiPathExtensionCount&quot;: 9
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#11</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-err">ERROR</span>
+      <span class="tool-duration">370ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 -c \&quot;\nimport xml.etree.ElementTree as ET\ntree = ET.parse(&#x27;/work/output/artifacts/skill-bpmn-expr-error-mapping/ErrorMappingBpmn/ErrorMappingBpmn.bpmn&#x27;)\nroot = tree.getroot()\nprint(&#x27;Well-formed XML: OK&#x27;)\n\nns = {\n    &#x27;bpmn&#x27;: &#x27;http://www.omg.org/spec/BPMN/20100524/MODEL&#x27;,\n    &#x27;bpmndi&#x27;: &#x27;http://www.omg.org/spec/BPMN/20100524/DI&#x27;,\n    &#x27;uipath&#x27;: &#x27;http://uipath.org/schema/bpmn&#x27;\n}\n\n# 1. Root is def… (4658 more chars)&quot;,
+  &quot;description&quot;: &quot;Walk structural checklist against generated BPMN&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Exit code 1
+Well-formed XML: OK
+Traceback (most recent call last):
+  File &quot;&lt;string&gt;&quot;, line 17, in &lt;module&gt;
+    assert &#x27;http://www.omg.org/spec/BPMN/20100524/MODEL&#x27; in attribs.values() or any(&#x27;MODEL&#x27; in v for v in attribs.values()), &#x27;BPMN namespace missing&#x27;
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: BPMN namespace missing</pre>
+    <h4>Error</h4><pre>Exit code 1
+Well-formed XML: OK
+Traceback (most recent call last):
+  File &quot;&lt;string&gt;&quot;, line 17, in &lt;module&gt;
+    assert &#x27;http://www.omg.org/spec/BPMN/20100524/MODEL&#x27; in attribs.values() or any(&#x27;MODEL&#x27; in v for v in attribs.values()), &#x27;BPMN namespace missing&#x27;
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: BPMN namespace missing</pre>
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#12</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-err">ERROR</span>
+      <span class="tool-duration">325ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 -c \&quot;\nimport xml.etree.ElementTree as ET, re\n\nbpmn_path = &#x27;/work/output/artifacts/skill-bpmn-expr-error-mapping/ErrorMappingBpmn/ErrorMappingBpmn.bpmn&#x27;\ntree = ET.parse(bpmn_path)\nroot = tree.getroot()\nbpmn_text = open(bpmn_path).read()\nprint(&#x27;Well-formed XML: OK&#x27;)\n\nns = {\n    &#x27;bpmn&#x27;: &#x27;http://www.omg.org/spec/BPMN/20100524/MODEL&#x27;,\n    &#x27;bpmndi&#x27;: &#x27;http://www.omg.org/spec/BPMN/20100524/DI&#x27;,\n   … (5236 more chars)&quot;,
+  &quot;description&quot;: &quot;Run complete structural checklist against BPMN&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Exit code 1
+Well-formed XML: OK
+Check 1 (root definitions + namespaces): OK
+  Shapes: [&#x27;End_1&#x27;, &#x27;Start_1&#x27;, &#x27;Task_InvokeService&#x27;]
+  Edges: [&#x27;Flow_StartToTask&#x27;, &#x27;Flow_TaskToEnd&#x27;]
+  Flow nodes: [&#x27;Start_1&#x27;, &#x27;Task_InvokeService&#x27;, &#x27;End_1&#x27;]
+  Sequence flows: [&#x27;Flow_StartToTask&#x27;, &#x27;Flow_TaskToEnd&#x27;]
+Check 2 (diagram completeness): OK
+Check 3 (all refs resolve): OK
+Check 4 (XOR gateways): 0 - OK (none needed)
+Check 5 (no fake joins): OK
+Check 6 (event subprocesses): N/A
+  Declared vars: {&#x27;Var_JobResult&#x27;}
+  Referenced vars: {&#x27;error&#x27;}
+Check 7 (vars refs resolve, vars.error is runtime builtin): OK
+Check 8 (registry-authored payloads, types=[&#x27;Orchestrator.StartJob&#x27;]): OK
+  Error mapping conditions: [&#x27;=vars.error.code == &amp;quot;SERVICE_UNAVAILABLE&amp;quot;&#x27;]
+Traceback (most recent call last):
+  File &quot;&lt;string&gt;&quot;, line 97, in &lt;module&gt;
+    assert &#x27;=&#x27; not in stripped, f&#x27;Assignment operator in condition: {c}&#x27;
+           ^^^^^^^^^^^^^^^^^^^
+AssertionError: Assignment operator in condition: =vars.error.code == &amp;quot;SERVICE_UNAVAILABLE&amp;quot;</pre>
+    <h4>Error</h4><pre>Exit code 1
+Well-formed XML: OK
+Check 1 (root definitions + namespaces): OK
+  Shapes: [&#x27;End_1&#x27;, &#x27;Start_1&#x27;, &#x27;Task_InvokeService&#x27;]
+  Edges: [&#x27;Flow_StartToTask&#x27;, &#x27;Flow_TaskToEnd&#x27;]
+  Flow nodes: [&#x27;Start_1&#x27;, &#x27;Task_InvokeService&#x27;, &#x27;End_1&#x27;]
+  Sequence flows: [&#x27;Flow_StartToTask&#x27;, &#x27;Flow_TaskToEnd&#x27;]
+Check 2 (diagram completeness): OK
+Check 3 (all refs resolve): OK
+Check 4 (XOR gateways): 0 - OK (none needed)
+Check 5 (no fake joins): OK
+Check 6 (event subprocesses): N/A
+  Declared vars: {&#x27;Var_JobResult&#x27;}
+  Referenced vars: {&#x27;error&#x27;}
+Check 7 (vars refs resolve, vars.error is runtime builtin): OK
+Check 8 (registry-authored payloads, types=[&#x27;Orchestrator.StartJob&#x27;]): OK
+  Error mapping conditions: [&#x27;=vars.error.code == &amp;quot;SERVICE_UNAVAILABLE&amp;quot;&#x27;]
+Traceback (most recent call last):
+  File &quot;&lt;string&gt;&quot;, line 97, in &lt;module&gt;
+    assert &#x27;=&#x27; not in stripped, f&#x27;Assignment operator in condition: {c}&#x27;
+           ^^^^^^^^^^^^^^^^^^^
+AssertionError: Assignment operator in condition: =vars.error.code == &amp;quot;SERVICE_UNAVAILABLE&amp;quot;</pre>
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#13</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-err">ERROR</span>
+      <span class="tool-duration">327ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 -c \&quot;\nimport xml.etree.ElementTree as ET, re\n\nbpmn_path = &#x27;/work/output/artifacts/skill-bpmn-expr-error-mapping/ErrorMappingBpmn/ErrorMappingBpmn.bpmn&#x27;\ntree = ET.parse(bpmn_path)\nroot = tree.getroot()\nbpmn_text = open(bpmn_path).read()\n\nns = {\n    &#x27;bpmn&#x27;: &#x27;http://www.omg.org/spec/BPMN/20100524/MODEL&#x27;,\n    &#x27;bpmndi&#x27;: &#x27;http://www.omg.org/spec/BPMN/20100524/DI&#x27;,\n    &#x27;uipath&#x27;: &#x27;http://uipath.org… (4229 more chars)&quot;,
+  &quot;description&quot;: &quot;Re-run fixed structural checklist&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Exit code 1
+Well-formed XML: OK
+Check 1 (root + namespaces): OK
+Check 2 (diagram completeness: 3 shapes, 2 edges): OK
+Check 3 (all refs resolve): OK
+Check 4-5 (gateways / fake joins): OK
+  Declared vars: {&#x27;Var_JobResult&#x27;}, referenced: {&#x27;error&#x27;}
+Check 7 (vars refs): OK
+Check 8 (registry type Orchestrator.StartJob): OK
+  Condition (decoded): =vars.error.code == &quot;SERVICE_UNAVAILABLE&quot;
+Check 9 (errorMapping condition read-only, reads vars.error.code): OK
+Check 10 (bpmn:error errorCode=SERVICE_UNAVAILABLE): OK
+Check 11 (no -- in XML comments): OK
+Traceback (most recent call last):
+  File &quot;&lt;string&gt;&quot;, line 101, in &lt;module&gt;
+    assert not found, f&#x27;Private data: {found}&#x27;
+           ^^^^^^^^^
+AssertionError: Private data: [&#x27;https://bpmn.uipath.com&#x27;]</pre>
+    <h4>Error</h4><pre>Exit code 1
+Well-formed XML: OK
+Check 1 (root + namespaces): OK
+Check 2 (diagram completeness: 3 shapes, 2 edges): OK
+Check 3 (all refs resolve): OK
+Check 4-5 (gateways / fake joins): OK
+  Declared vars: {&#x27;Var_JobResult&#x27;}, referenced: {&#x27;error&#x27;}
+Check 7 (vars refs): OK
+Check 8 (registry type Orchestrator.StartJob): OK
+  Condition (decoded): =vars.error.code == &quot;SERVICE_UNAVAILABLE&quot;
+Check 9 (errorMapping condition read-only, reads vars.error.code): OK
+Check 10 (bpmn:error errorCode=SERVICE_UNAVAILABLE): OK
+Check 11 (no -- in XML comments): OK
+Traceback (most recent call last):
+  File &quot;&lt;string&gt;&quot;, line 101, in &lt;module&gt;
+    assert not found, f&#x27;Private data: {found}&#x27;
+           ^^^^^^^^^
+AssertionError: Private data: [&#x27;https://bpmn.uipath.com&#x27;]</pre>
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#14</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">205ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 -c \&quot;\nimport xml.etree.ElementTree as ET, re, html\n\nbpmn_path = &#x27;/work/output/artifacts/skill-bpmn-expr-error-mapping/ErrorMappingBpmn/ErrorMappingBpmn.bpmn&#x27;\ntree = ET.parse(bpmn_path)\nroot = tree.getroot()\nbpmn_text = open(bpmn_path).read()\n\nns = {\n    &#x27;bpmn&#x27;: &#x27;http://www.omg.org/spec/BPMN/20100524/MODEL&#x27;,\n    &#x27;bpmndi&#x27;: &#x27;http://www.omg.org/spec/BPMN/20100524/DI&#x27;,\n    &#x27;uipath&#x27;: &#x27;http://uipa… (3792 more chars)&quot;,
+  &quot;description&quot;: &quot;Final structural checklist run&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Well-formed XML: OK
+Check 1 (root + namespaces): OK
+Check 2 (diagram: 3 shapes, 2 edges): OK
+Check 3 (all refs resolve): OK
+Check 4-5 (gateways/fake joins): OK
+Check 7 (vars refs: declared={&#x27;Var_JobResult&#x27;}, refs={&#x27;error&#x27;}): OK
+Check 8 (registry type [&#x27;Orchestrator.StartJob&#x27;]): OK
+  Condition (decoded): =vars.error.code == &quot;SERVICE_UNAVAILABLE&quot;
+Check 9 (errorMapping condition): OK
+Check 10 (bpmn:error errorCode=SERVICE_UNAVAILABLE): OK
+Check 11 (no -- in XML comments): OK
+Check 12 (public-safe, no customer URLs/GUIDs): OK
+
+ALL STRUCTURAL CHECKS PASSED</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#15</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">55ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;find /work/output/artifacts/skill-bpmn-expr-error-mapping/ErrorMappingBpmn -type f | sort&quot;,
+  &quot;description&quot;: &quot;Show project file layout&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/work/output/artifacts/skill-bpmn-expr-error-mapping/ErrorMappingBpmn/ErrorMappingBpmn.bpmn
+/work/output/artifacts/skill-bpmn-expr-error-mapping/ErrorMappingBpmn/project.uiproj</pre>
+    
+  </div>
+</details>
+
+</div>
+
+<h2>Command Telemetry</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Total</div><div class="value">16</div></div>
+    <div class="stat"><div class="label">Successful</div><div class="value">13 (81%)</div></div>
+    <div class="stat"><div class="label">Failed</div><div class="value">3</div></div>
+    <div class="stat"><div class="label">Avg / cmd</div><div class="value">637ms</div></div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 2fr;gap:16px;margin-top:12px">
+    <div>
+      <h4>By Tool</h4>
+      <table>
+        <thead><tr><th>Tool</th><th>Count</th></tr></thead>
+        <tbody><tr><td class='mono'>Bash</td><td>10</td></tr><tr><td class='mono'>Read</td><td>3</td></tr><tr><td class='mono'>Write</td><td>2</td></tr><tr><td class='mono'>Skill</td><td>1</td></tr></tbody>
+      </table>
+    </div>
+    <div>
+      <h4>Slowest</h4>
+      <table>
+        <thead><tr><th>Tool</th><th>Duration</th><th>Parameters</th></tr></thead>
+        <tbody><tr><td class='mono'>Bash</td><td>3.60s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro bpmn registry pull --outp...</td></tr><tr><td class='mono'>Bash</td><td>1.67s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro bpmn validate /work/outpu...</td></tr><tr><td class='mono'>Bash</td><td>1.36s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro bpmn registry list --outp...</td></tr><tr><td class='mono'>Bash</td><td>1.21s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro bpmn registry get Orchest...</td></tr><tr><td class='mono'>Read</td><td>543ms</td><td class='mono dim'>{&#x27;file_path&#x27;: &#x27;/home/azureuser/projects/skills/ski...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+  <p><strong>Most Common Pattern:</strong> <code>Bash → Bash → Bash</code></p><p><strong>Skill Tool Invoked:</strong> 1 time(s)</p>
+</div>
+
+<h2>Generation Metrics</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Total Latency</div><div class="value">4m 51s</div></div>
+    <div class="stat"><div class="label">Turns</div><div class="value">1</div></div>
+    <div class="stat"><div class="label">Assistant Turns</div><div class="value">35</div></div>
+    <div class="stat"><div class="label">Avg Turn Latency</div><div class="value">4m 45s</div></div>
+    
+  </div>
+</div>
+
+<h2>Token Usage</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Input (uncached)</div><div class="value">17</div></div>
+    <div class="stat"><div class="label">Output</div><div class="value">21,544</div></div>
+    <div class="stat"><div class="label">Cache Write</div><div class="value">36,575</div></div>
+    <div class="stat"><div class="label">Cache Read</div><div class="value">684,946</div></div>
+    <div class="stat"><div class="label">Total</div><div class="value">743,082</div></div>
+    <div class="stat"><div class="label">Cost</div><div class="value">$0.6659</div></div>
+  </div>
+</div>
+
+<h2>Agent Settings</h2>
+<div class="card" style="padding:0">
+  <table>
+    <tbody><tr><td class='mono dim'>Permission Mode</td><td>acceptEdits</td></tr><tr><td class='mono dim'>Allowed Tools</td><td>Skill, Bash, Read, Write, Edit, Glob, Grep</td></tr><tr><td class='mono dim'>Model</td><td>us.anthropic.claude-sonnet-4-6</td></tr><tr><td class='mono dim'>Max Turns</td><td>75</td></tr><tr><td class='mono dim'>System Prompt</td><td>You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted. </td></tr><tr><td class='mono dim'>Plugins</td><td>/home/azureuser/projects/skills</td></tr></tbody>
+  </table>
+</div>
+
+<h2>Environment</h2>
+<div class="card" style="padding:0">
+  <table>
+    <tbody><tr><td class='mono dim'>git_commit</td><td>unknown</td></tr><tr><td class='mono dim'>skills_git_commit</td><td>unknown</td></tr><tr><td class='mono dim'>cli_version</td><td>1.201.0-dev.8272</td></tr><tr><td class='mono dim'>tool_plugins</td><td>{&#x27;admin-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;agent-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;agenthub-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;aops-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;api-workflow-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;automation-hub-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;codedagent-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;codedapp-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;coder-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;context-grounding-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;conversational-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;data-fabric-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;docsai-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;function-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;gov-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;guardrails-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;insights-tool&#x27;: &#x27;1.201.0-dev.8276&#x27;, &#x27;integrationservice-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;ixp-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;llm-gateway-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;llmgw-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;maestro-tool&#x27;: &#x27;1.201.0-dev.8275&#x27;, &#x27;model-hub-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;orchestrator-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;platform-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;pm-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;rpa-legacy-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;rpa-tool&#x27;: &#x27;1.201.0-dev.20260809.3&#x27;, &#x27;solution-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;tasks-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;test-manager-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;traces-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;vertical-solutions-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;}</td></tr><tr><td class='mono dim'>coder_eval</td><td>0.8.8</td></tr><tr><td class='mono dim'>claude_code_cli</td><td>2.1.177 (Claude Code)</td></tr><tr><td class='mono dim'>uv</td><td>uv 0.11.28 (x86_64-unknown-linux-gnu)</td></tr><tr><td class='mono dim'>anthropic</td><td>0.122.0</td></tr><tr><td class='mono dim'>openai</td><td>3.0.0</td></tr><tr><td class='mono dim'>pydantic</td><td>2.12.5</td></tr><tr><td class='mono dim'>api_routing</td><td>aws_bedrock</td></tr><tr><td class='mono dim'>aws_region</td><td>us-east-2</td></tr><tr><td class='mono dim'>bedrock_model</td><td>us.anthropic.claude-sonnet-4-6</td></tr></tbody>
+  </table>
+</div>
+
+<footer>Generated by coder_eval · 2026-08-15T00:40:39</footer>
+</div>
+<script>
+function toggleTheme() {
+  document.documentElement.classList.toggle('light');
+  try {
+    const mode = document.documentElement.classList.contains('light') ? 'light' : 'dark';
+    localStorage.setItem('coder-eval-theme', mode);
+  } catch (e) { /* ignore */ }
+}
+(function() {
+  try {
+    if (localStorage.getItem('coder-eval-theme') === 'light') {
+      document.documentElement.classList.add('light');
+    }
+  } catch (e) { /* ignore */ }
+})();
+</script>
+</body>
+</html>

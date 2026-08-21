@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "EmployeeAccessBpmn",
+    "kind": "process",
+    "type": "processOrchestration",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "3575ca33-857e-4d3b-9ff3-1e648e1a8e65",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "EmployeeAccessBpmn"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "ProcessOrchestration",
+      "name": "EmployeeAccessBpmn",
+      "package": {
+        "key": "d0a97ca3-6d60-45f1-8451-afe16f67a6cf"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "ad09d06a-9a37-4a35-bf97-92012e56fc50",
+    "files": []
+  }
+}

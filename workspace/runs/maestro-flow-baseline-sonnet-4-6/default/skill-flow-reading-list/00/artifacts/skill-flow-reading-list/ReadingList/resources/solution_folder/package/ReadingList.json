@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "ReadingList",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "ce0f860d-f830-4eaa-91ca-9dd856805d75",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "ReadingList"
+    },
+    "locks": [],
+    "key": "43799e1c-16b9-4efe-8c8f-bbb705d9ec7b",
+    "files": []
+  }
+}

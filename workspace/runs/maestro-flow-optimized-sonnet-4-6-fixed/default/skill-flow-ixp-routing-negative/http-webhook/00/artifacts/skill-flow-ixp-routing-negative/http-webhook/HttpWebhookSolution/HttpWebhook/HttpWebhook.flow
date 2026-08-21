@@ -1,0 +1,644 @@
+{
+  "id": "cfbb929e-e5fa-4f9c-ba26-50bc7eba9e92",
+  "version": "1.9",
+  "name": "HttpWebhook",
+  "nodes": [
+    {
+      "id": "start",
+      "type": "core.trigger.manual",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Manual trigger"
+      },
+      "inputs": {
+        "entryPointId": "25606575-1566-4457-acb1-1d7d755e32f3",
+        "isDefaultEntryPoint": true
+      }
+    },
+    {
+      "id": "httpWebhookTrigger1",
+      "type": "uipath.connector.trigger.uipath-http-webhook.http-webhook",
+      "typeVersion": "1.0.0",
+      "display": {
+        "label": "HTTP Webhook Trigger"
+      },
+      "inputs": {
+        "entryPointId": "e4c3ab72-fb06-4042-b01b-c29275c3a0fd"
+      }
+    },
+    {
+      "id": "validatePayload",
+      "type": "core.action.script",
+      "typeVersion": "1.1",
+      "display": {
+        "label": "Validate JSON Payload"
+      },
+      "inputs": {
+        "script": "const body = $vars.httpWebhookTrigger1.output;\nif (!body || typeof body !== 'object') {\n  return { valid: false, statusCode: 400, message: 'Invalid or missing JSON body' };\n}\nconst requiredFields = ['id', 'type'];\nconst missing = requiredFields.filter(f => !(f in body));\nif (missing.length > 0) {\n  return { valid: false, statusCode: 422, message: 'Missing required fields: ' + missing.join(', ') };\n}\nreturn { valid: true, statusCode: 200, message: 'Payload is valid', payload: body };"
+      },
+      "outputs": {
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails.",
+          "source": "=Error",
+          "var": "error"
+        },
+        "output": {
+          "type": "object",
+          "description": "The return value of the node.",
+          "source": "=result.response",
+          "var": "output"
+        }
+      }
+    },
+    {
+      "id": "endSuccess",
+      "type": "core.control.end",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "End"
+      },
+      "inputs": {},
+      "outputs": {
+        "statusCode": {
+          "source": "=js:$vars.validatePayload.output.statusCode"
+        },
+        "responseMessage": {
+          "source": "=js:$vars.validatePayload.output.message"
+        }
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge_httpWebhookTrigger1_output_validatePayload_input",
+      "sourceNodeId": "httpWebhookTrigger1",
+      "sourcePort": "output",
+      "targetNodeId": "validatePayload",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge_validatePayload_success_endSuccess_input",
+      "sourceNodeId": "validatePayload",
+      "sourcePort": "success",
+      "targetNodeId": "endSuccess",
+      "targetPort": "input"
+    }
+  ],
+  "definitions": [
+    {
+      "nodeType": "core.trigger.manual",
+      "version": "1.0",
+      "category": "trigger",
+      "description": "Start the process manually",
+      "tags": [
+        "trigger",
+        "start",
+        "manual"
+      ],
+      "sortOrder": 80,
+      "display": {
+        "label": "Manual trigger",
+        "icon": "play",
+        "shape": "circle"
+      },
+      "handleConfiguration": [
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "output",
+              "type": "source",
+              "handleType": "output",
+              "showButton": true,
+              "constraints": {
+                "forbiddenTargetCategories": [
+                  "trigger"
+                ]
+              }
+            }
+          ],
+          "visible": true
+        }
+      ],
+      "model": {
+        "type": "bpmn:StartEvent",
+        "entryPointId": true
+      },
+      "outputDefinition": {
+        "output": {
+          "type": "object",
+          "description": "Data passed when manually triggering the process.",
+          "source": "null",
+          "var": "output"
+        }
+      },
+      "toolbarExtensions": {
+        "design": {
+          "actions": [
+            {
+              "id": "change-trigger-type",
+              "icon": "square-mouse-pointer",
+              "label": "Change trigger type"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "nodeType": "uipath.connector.trigger.uipath-http-webhook.http-webhook",
+      "version": "1.0.0",
+      "category": "trigger.211594",
+      "tags": [
+        "connector",
+        "trigger",
+        "Trigger.Integrated"
+      ],
+      "sortOrder": 580,
+      "description": "Triggers instantly when an event has occured",
+      "display": {
+        "label": "HTTP Webhook",
+        "description": "Triggers instantly when an event has occured",
+        "icon": "https://alpha.uipath.com/311c6049-4966-4ef2-a6f3-8ceccaf38d54/studio_/typecache/icons/afa017b350ae71500cb30aeccc90a0c437be76420db995da4caad5ff06ab8d19.svg",
+        "sourceDisplayName": "HTTP Webhook",
+        "shape": "circle"
+      },
+      "handleConfiguration": [
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "output",
+              "type": "source",
+              "handleType": "output",
+              "showButton": true,
+              "constraints": {
+                "forbiddenTargetCategories": [
+                  "trigger"
+                ]
+              }
+            }
+          ],
+          "visible": true
+        }
+      ],
+      "model": {
+        "type": "bpmn:StartEvent",
+        "entryPointId": true,
+        "serviceType": "Intsvc.EventTrigger",
+        "eventDefinition": "bpmn:MessageEventDefinition",
+        "bindings": {
+          "resource": "connection",
+          "resourceKey": "",
+          "values": [
+            {
+              "name": "uipath-http-webhook connection",
+              "propertyAttribute": "ConnectionId"
+            },
+            {
+              "name": "FolderKey",
+              "propertyAttribute": "FolderKey"
+            }
+          ]
+        },
+        "context": [
+          {
+            "name": "connectorKey",
+            "type": "string",
+            "value": "uipath-http-webhook"
+          },
+          {
+            "name": "operation",
+            "value": "GENERIC",
+            "type": "string"
+          },
+          {
+            "name": "objectName",
+            "value": "HTTP_WEBHOOK",
+            "type": "string"
+          },
+          {
+            "name": "method",
+            "type": "string"
+          },
+          {
+            "name": "connection",
+            "type": "string",
+            "value": "<bindings.uipath-http-webhook connection>"
+          },
+          {
+            "name": "folderKey",
+            "type": "string",
+            "value": "<bindings.FolderKey>"
+          },
+          {
+            "name": "activityConfigurationVersion",
+            "type": "string",
+            "value": "v1"
+          },
+          {
+            "name": "metadata",
+            "body": {
+              "telemetryData": {
+                "connectorKey": "uipath-http-webhook",
+                "connectorName": "HTTP Webhook"
+              },
+              "inputMetadata": {},
+              "errorState": {
+                "hasError": true
+              }
+            },
+            "type": "json"
+          }
+        ]
+      },
+      "form": {
+        "id": "connector-properties",
+        "title": "Connector configuration",
+        "sections": [
+          {
+            "id": "connector",
+            "title": "Connector",
+            "collapsible": true,
+            "defaultExpanded": true,
+            "fields": [
+              {
+                "label": "",
+                "name": "inputs.detail",
+                "type": "custom",
+                "component": "dap-config",
+                "componentProps": {
+                  "connectorDetail": {
+                    "type": "Integrated",
+                    "packageId": "211594",
+                    "svgIconUrl": "icons/afa017b350ae71500cb30aeccc90a0c437be76420db995da4caad5ff06ab8d19.svg",
+                    "displayName": "HTTP Webhook",
+                    "assemblyQualifiedName": "UiPath.IntegrationService.Activities.Runtime.Activities.ConnectorTriggerActivity, UiPath.IntegrationService.Activities.Runtime, Version=1.31.0.0, Culture=neutral, PublicKeyToken=null",
+                    "description": "Triggers instantly when an event has occured",
+                    "category": "HTTP Webhook.Triggers",
+                    "activityColor": "#000000",
+                    "configuration": "{\"connectorKey\":\"uipath-http-webhook\",\"objectName\":\"HTTP_WEBHOOK\",\"activityType\":\"CuratedTrigger\",\"version\":\"1.0.0\",\"eventOperation\":\"GENERIC\",\"eventMode\":\"webhooks\",\"supportsStreaming\":false}",
+                    "uiPathActivityTypeId": "773cab30-51dc-3eb4-b19d-720dfa151cc9",
+                    "isExperimental": false,
+                    "helpUrlTemplate": "https://docs.uipath.com/{0}/activities/other/latest/integration-service/uipath-http-webhook-HTTP-Webhook",
+                    "isEnabled": true,
+                    "targetPlatform": "CrossPlatform",
+                    "isAdvanced": false,
+                    "isRestricted": false,
+                    "hasWpfOnlyDesigner": false,
+                    "tags": [
+                      "Trigger.Integrated"
+                    ]
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "inputDefinition": {},
+      "outputDefinition": {
+        "output": {
+          "type": "object",
+          "description": "The return value of the connector trigger.",
+          "source": "=result.response",
+          "var": "output"
+        }
+      },
+      "toolbarExtensions": {
+        "design": {
+          "actions": [
+            {
+              "id": "change-trigger-type",
+              "icon": "square-mouse-pointer",
+              "label": "Change trigger type"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "nodeType": "core.action.script",
+      "version": "1.1",
+      "category": "data-operations",
+      "description": "Run custom JavaScript code",
+      "tags": [
+        "code",
+        "javascript",
+        "python"
+      ],
+      "sortOrder": 70,
+      "supportsErrorHandling": true,
+      "display": {
+        "label": "Script",
+        "icon": "code"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "success",
+              "type": "source",
+              "handleType": "output"
+            },
+            {
+              "id": "error",
+              "label": "Error",
+              "type": "source",
+              "handleType": "output",
+              "visible": "{inputs.errorHandlingEnabled}",
+              "constraints": {
+                "maxConnections": 1
+              }
+            }
+          ]
+        }
+      ],
+      "debug": {
+        "runtime": "clientScript"
+      },
+      "model": {
+        "type": "bpmn:ScriptTask"
+      },
+      "inputDefinition": {
+        "type": "object",
+        "properties": {
+          "script": {
+            "type": "string",
+            "minLength": 1,
+            "errorMessage": "Add a script function",
+            "validationSeverity": "warning"
+          }
+        },
+        "required": [
+          "script"
+        ]
+      },
+      "inputDefaults": {
+        "script": ""
+      },
+      "outputDefinition": {
+        "output": {
+          "type": "any",
+          "description": "The return value of the script",
+          "source": "=result.response",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails",
+          "source": "=Error",
+          "var": "error",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "required": [
+              "code",
+              "message",
+              "detail",
+              "category",
+              "status"
+            ],
+            "properties": {
+              "code": {
+                "type": "string",
+                "description": "Error code as a string"
+              },
+              "message": {
+                "type": "string",
+                "description": "High-level error message"
+              },
+              "detail": {
+                "type": "string",
+                "description": "Detailed error description"
+              },
+              "category": {
+                "type": "string",
+                "description": "Error category"
+              },
+              "status": {
+                "type": "integer",
+                "description": "HTTP status code"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "form": {
+        "id": "script-properties",
+        "title": "Script configuration",
+        "sections": [
+          {
+            "id": "script",
+            "title": "Script",
+            "collapsible": true,
+            "defaultExpanded": true,
+            "fields": [
+              {
+                "name": "inputs.script",
+                "type": "custom",
+                "component": "script-editor",
+                "componentProps": {
+                  "language": "javascript",
+                  "returnType": "any",
+                  "validationMode": "script",
+                  "minHeight": 200,
+                  "placeholder": " // Return any value\nreturn {\n  message: \"Web request response\",\n  data: $vars.httpRequest1.output\n};"
+                },
+                "label": "Code",
+                "description": "JavaScript expression that returns a result"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "nodeType": "core.control.end",
+      "version": "1.0",
+      "category": "control-flow",
+      "description": "Mark the end of a process path",
+      "tags": [
+        "control-flow",
+        "end",
+        "finish",
+        "complete"
+      ],
+      "sortOrder": 65,
+      "display": {
+        "label": "End",
+        "icon": "circle-check",
+        "shape": "circle"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        }
+      ],
+      "model": {
+        "type": "bpmn:EndEvent"
+      },
+      "runtimeConstraints": {
+        "exclude": [
+          "api-function"
+        ]
+      }
+    }
+  ],
+  "runtime": "maestro",
+  "bindings": [
+    {
+      "id": "bkguNJRhV",
+      "name": "uipath-http-webhook connection",
+      "type": "string",
+      "resource": "connection",
+      "resourceKey": "",
+      "propertyAttribute": "ConnectionId"
+    },
+    {
+      "id": "bntAX87e1",
+      "name": "FolderKey",
+      "type": "string",
+      "resource": "connection",
+      "resourceKey": "",
+      "propertyAttribute": "FolderKey"
+    }
+  ],
+  "variables": {
+    "nodes": [
+      {
+        "id": "start.output",
+        "type": "object",
+        "description": "Data passed when manually triggering the process.",
+        "binding": {
+          "nodeId": "start",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "httpWebhookTrigger1.output",
+        "type": "object",
+        "description": "The return value of the connector trigger.",
+        "binding": {
+          "nodeId": "httpWebhookTrigger1",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "validatePayload.error",
+        "type": "object",
+        "description": "Error information if the node fails.",
+        "binding": {
+          "nodeId": "validatePayload",
+          "outputId": "error"
+        }
+      },
+      {
+        "id": "validatePayload.output",
+        "type": "object",
+        "description": "The return value of the node.",
+        "binding": {
+          "nodeId": "validatePayload",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "endSuccess.statusCode",
+        "type": "string",
+        "binding": {
+          "nodeId": "endSuccess",
+          "outputId": "statusCode"
+        }
+      },
+      {
+        "id": "endSuccess.responseMessage",
+        "type": "string",
+        "binding": {
+          "nodeId": "endSuccess",
+          "outputId": "responseMessage"
+        }
+      }
+    ],
+    "globals": [
+      {
+        "id": "statusCode",
+        "direction": "out",
+        "type": "number",
+        "description": "HTTP status code to return"
+      },
+      {
+        "id": "responseMessage",
+        "direction": "out",
+        "type": "string",
+        "description": "Response message"
+      }
+    ]
+  },
+  "layout": {
+    "nodes": {
+      "start": {
+        "position": {
+          "x": 0,
+          "y": 192
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "httpWebhookTrigger1": {
+        "position": {
+          "x": 0,
+          "y": 0
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "validatePayload": {
+        "position": {
+          "x": 192,
+          "y": 0
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "endSuccess": {
+        "position": {
+          "x": 384,
+          "y": 0
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      }
+    }
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "version": "1.0",
+  "id": "goal-c-evaluator-f33af895",
+  "name": "goal-c-evaluator",
+  "description": "Pass/fail check that the flow response contains the literal substring 'deployment succeeded'.",
+  "evaluatorTypeId": "uipath-contains",
+  "evaluatorConfig": {
+    "name": "goal-c-evaluator",
+    "caseSensitive": false,
+    "negated": false,
+    "targetOutputKey": "*"
+  },
+  "fileName": "goal-c-evaluator-f33af895.json",
+  "createdAt": "2026-07-23T20:59:36.505Z",
+  "updatedAt": "2026-07-23T20:59:36.505Z"
+}

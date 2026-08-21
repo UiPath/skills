@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "GroupDirectMessage",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "bff71aec-5612-4b93-9c86-9eb78b0a301d",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "GroupDirectMessage"
+    },
+    "locks": [],
+    "key": "b25c12c0-de4c-4262-958f-1a4ed8f18c64",
+    "files": []
+  }
+}

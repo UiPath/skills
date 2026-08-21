@@ -1,0 +1,96 @@
+=== USER (turn 1) — simulator-generated opener ===
+Hey there! I'm hoping you can help me out with something that's been eating up a lot of my time. I process vendor invoices every day and I'd love to have something built that just takes care of it automatically.
+
+Here's what I need: whenever a new PDF invoice lands in my SharePoint folder, I want the flow to kick in on its own and pull out the key details — invoice number, vendor name, invoice date, total amount, and all the line items. Once it has that information, it needs to send it straight over to SAP by posting it to a web address that IT gave me. Nothing complicated on that end, just a plain post to that address.
+
+One important thing — it has to be built as a UiPath Maestro Flow, specifically. Not an API workflow, not a standalone script. I've heard there are other ways to build things in UiPath but I was told Maestro Flow is what we need here, so please make sure it's a `.flow` file in the workspace.
+
+Also, just so you know upfront, IT hasn't connected our SharePoint or SAP accounts in this environment yet, so nothing here will actually run right now. I don't want you to go looking for live accounts or wait around for IT to set things up. Just build it and wire everything up correctly so it's ready to go the moment IT flips the switch.
+
+I'd like it validated before I sign off on it too, please.
+
+Go ahead and ask me anything you need before you get started!
+
+=== AGENT (turn 1) — 36.4s, in=1071 out=1477, 1 tool calls ===
+I have everything I need to get started — just three quick things before I build:
+
+**1. SAP endpoint URL**
+IT gave you a web address for the POST. What is it? If you don't have it handy, I can wire in a placeholder (e.g. `https://sap.yourcompany.com/api/invoices`) and you swap it in later.
+
+- A) I have the URL — let me paste it
+- B) Use a placeholder, I'll fill it in with IT later
+- C) Something else
+
+---
+
+**2. SharePoint folder details**
+To configure the trigger correctly I need the SharePoint site URL and the folder (library + path) to watch. Do you have those, or should I use placeholders there too?
+
+- A) I have the site URL and folder path — let me provide them
+- B) Use placeholders (`https://yourcompany.sharepoint.com/sites/YourSite`, library `Invoices`) — IT will update
+- C) Something else
+
+---
+
+**3. Solution name**
+The Flow must live inside a solution. I'll default to `InvoiceProcessingSolution` containing a `InvoiceExtraction` flow — does that naming work, or would you like something different?
+
+- A) That naming works fine
+- B) I want different names — let me tell you
+- C) Something else
+
+=== USER (turn 2) ===
+Sure, happy to answer all three!
+
+**1.** I don't have the URL in front of me right now — go ahead and use a placeholder and I'll get the real one from IT to swap in later.
+
+**2.** Use a placeholder for the site address, but the folder it needs to watch is called **"New Vendor"** — that's where the invoices land.
+
+**3.** The project should be called **"InvoiceProcessing"** — please use that name.
+
+Now go ahead and build it! And hey — you didn't ask me how it should actually read and pull the data off the invoices. Don't you need to know that before you start?
+
+=== AGENT (turn 2) — 548.0s, in=17 out=30330, 21 tool calls ===
+Validation passes clean — no warnings, no errors. Here's the completed flow:
+
+---
+
+**Flow built and validated: `InvoiceProcessing.flow`**
+
+**File location:**
+`/work/output/artifacts/skill-flow-ixp-invoice-extraction-simulated/InvoiceProcessing/InvoiceProcessing/InvoiceProcessing.flow`
+
+**What was built (6 nodes, 5 edges):**
+
+| Step | Node | Type |
+|---|---|---|
+| 1 | New File in New Vendor | SharePoint/OneDrive connector trigger — fires when a new item appears in a list |
+| 2 | Download Invoice PDF | OneDrive `download-file` connector activity — fetches the actual file bytes |
+| 3 | Extract Invoice Fields | `InvoiceIXP` — tenant's published invoice extraction model extracts all named fields and tables |
+| 4 | Build SAP Payload | Script node — reads `invoice number`, `vendor name`, `invoice date`, `total amount`, `line items` from the IxP result and assembles the POST body |
+| 5 | Submit Invoice to ERP | Manual-mode HTTP POST to `https://sap.yourcompany.com/api/invoices` with `Content-Type: application/json` |
+| 6 | Done | End node |
+
+**Validation:** ✓ Clean (no errors, no warnings)
+**Format:** ✓ Run
+
+---
+
+**Open Questions / what IT needs to do before this runs:**
+
+1. **SharePoint connection** — IT must create a Microsoft OneDrive & SharePoint IS connection in UiPath and configure the trigger (`node configure`) with the real `connectionId`, `folderKey`, and the `New Vendor` list's reference ID.
+2. **SAP endpoint URL** — replace `https://sap.yourcompany.com/api/invoices` in the HTTP node's `--detail` with the real URL IT provides.
+3. **Trigger `configure pending`** — IT needs to run `uip maestro flow node configure InvoiceProcessing.flow newFileInNewVendor1 --detail '{"connectionId":"<uuid>","folderKey":"<uuid>","eventMode":"polling","eventParameters":{"listId":"<NewVendorListId>"}}'` with the real IDs.
+4. **Download node `configure pending`** — similarly for `downloadInvoicePdf1` to bind the same SharePoint connection and supply the file ID from the trigger output.
+
+**What's next?**
+
+1. Upload to Studio Web (recommended — lets you visualize the flow in your browser)
+2. Deploy to Orchestrator
+3. Leave it as-is for now
+4. Something else
+
+=== USER (turn 3) — stop token — dialog ending ===
+[ASSISTANT] 
+[RESULT - SUCCESS]
+

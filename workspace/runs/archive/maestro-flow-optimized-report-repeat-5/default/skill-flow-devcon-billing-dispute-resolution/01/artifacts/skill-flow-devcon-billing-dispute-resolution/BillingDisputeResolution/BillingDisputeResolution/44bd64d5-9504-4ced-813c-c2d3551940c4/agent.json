@@ -1,0 +1,163 @@
+{
+  "version": "1.1.0",
+  "settings": {
+    "model": "anthropic.claude-sonnet-4-5-20250929-v1:0",
+    "maxTokens": 8000,
+    "temperature": 0,
+    "engine": "basic-v2",
+    "maxIterations": 5,
+    "mode": "standard"
+  },
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "normalizeData__output__fields": {
+        "type": "array",
+        "description": "Normalized invoice fields"
+      },
+      "normalizeData__output__normalizedInvoiceNumber": {
+        "type": "string",
+        "description": "Normalized invoice number"
+      },
+      "crmLookup1__output__value": {
+        "type": "object",
+        "description": "CRM account records"
+      },
+      "erpLookup1__output__value": {
+        "type": "object",
+        "description": "ERP contract records"
+      },
+      "discrepancyDetection__output__mismatches": {
+        "type": "array",
+        "description": "Line item discrepancies"
+      },
+      "discrepancyDetection__output__totalOvercharge": {
+        "type": "number",
+        "description": "Total overcharge amount"
+      },
+      "start__output__webhookPayload": {
+        "type": "object",
+        "description": "Webhook payload with dispute details"
+      }
+    }
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "determination": {
+        "type": "string",
+        "description": "Dispute determination summary"
+      },
+      "recommendedAction": {
+        "type": "string",
+        "description": "One of: escalate_to_manager, auto_resolve, reject"
+      },
+      "autoResolutionEligible": {
+        "type": "boolean",
+        "description": "Whether eligible for automatic resolution"
+      },
+      "creditAmount": {
+        "type": "number",
+        "description": "Recommended credit amount"
+      },
+      "confidence": {
+        "type": "number",
+        "description": "Confidence score 0-1"
+      },
+      "rationale": {
+        "type": "string",
+        "description": "Detailed rationale for the determination"
+      }
+    },
+    "required": [
+      "determination",
+      "recommendedAction",
+      "autoResolutionEligible",
+      "creditAmount",
+      "confidence",
+      "rationale"
+    ]
+  },
+  "metadata": {
+    "storageVersion": "50.0.0",
+    "isConversational": false,
+    "showProjectCreationExperience": false
+  },
+  "type": "lowCode",
+  "guardrails": [],
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a billing dispute analyst. Your job is to review invoice extraction data, CRM account records, ERP contract data, and discrepancy analysis to determine whether a billing dispute is valid and how it should be resolved.\n\nBased on the provided data:\n1. Review the normalized invoice fields and invoice number\n2. Cross-reference with CRM account records to verify customer standing\n3. Compare with ERP contract data to identify pricing discrepancies\n4. Analyze the discrepancy summary (mismatches and overcharge totals)\n\nReturn your determination with one of these recommendedAction values:\n- 'auto_resolve': Clear discrepancy supported by data, credit <= $5000, customer in good standing\n- 'escalate_to_manager': Ambiguous case, high-value credit (> $5000), or requires manual review\n- 'reject': Dispute not supported by data or fraudulent\n\nSet creditAmount to the total justified credit based on discrepancies. Set confidence between 0 and 1.",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "You are a billing dispute analyst. Your job is to review invoice extraction data, CRM account records, ERP contract data, and discrepancy analysis to determine whether a billing dispute is valid and how it should be resolved.\n\nBased on the provided data:\n1. Review the normalized invoice fields and invoice number\n2. Cross-reference with CRM account records to verify customer standing\n3. Compare with ERP contract data to identify pricing discrepancies\n4. Analyze the discrepancy summary (mismatches and overcharge totals)\n\nReturn your determination with one of these recommendedAction values:\n- 'auto_resolve': Clear discrepancy supported by data, credit <= $5000, customer in good standing\n- 'escalate_to_manager': Ambiguous case, high-value credit (> $5000), or requires manual review\n- 'reject': Dispute not supported by data or fraudulent\n\nSet creditAmount to the total justified credit based on discrepancies. Set confidence between 0 and 1."
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "Invoice Number: {{input.normalizeData__output__normalizedInvoiceNumber}}\n\nNormalized Invoice Fields: {{input.normalizeData__output__fields}}\n\nCRM Account Records: {{input.crmLookup1__output__value}}\n\nERP Contract Records: {{input.erpLookup1__output__value}}\n\nDiscrepancies Found: {{input.discrepancyDetection__output__mismatches}}\n\nTotal Overcharge Amount: {{input.discrepancyDetection__output__totalOvercharge}}\n\nFull Dispute Payload: {{input.start__output__webhookPayload}}",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "Invoice Number: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.normalizeData__output__normalizedInvoiceNumber"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\nNormalized Invoice Fields: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.normalizeData__output__fields"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\nCRM Account Records: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.crmLookup1__output__value"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\nERP Contract Records: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.erpLookup1__output__value"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\nDiscrepancies Found: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.discrepancyDetection__output__mismatches"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\nTotal Overcharge Amount: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.discrepancyDetection__output__totalOvercharge"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\nFull Dispute Payload: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__webhookPayload"
+        }
+      ]
+    }
+  ],
+  "projectId": "44bd64d5-9504-4ced-813c-c2d3551940c4"
+}

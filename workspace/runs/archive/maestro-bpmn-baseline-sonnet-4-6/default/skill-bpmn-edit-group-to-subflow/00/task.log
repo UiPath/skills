@@ -1,0 +1,29 @@
+2026-08-15 00:31:06 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-08-15 00:31:06 [INFO] coder_eval.orchestrator: API routing: aws_bedrock
+2026-08-15 00:31:06 [DEBUG] coder_eval.criteria: Discovered 14 criterion checkers
+2026-08-15 00:31:06 [DEBUG] coder_eval.criteria: Validated 14 criterion checkers
+2026-08-15 00:31:06 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-08-15 00:31:07 [DEBUG] coder_eval.orchestrator: Sending prompt: Load and follow the uipath-maestro-bpmn skill.
+
+A valid Maestro BPMN file `Fulfillment.bpmn` is in t...
+2026-08-15 00:31:08 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Starting agent query stream...
+2026-08-15 00:36:28 [DEBUG] coder_eval.agents.claude_code_agent: [coder] session_id changed: None -> a882a5b1-5570-4da4-8902-3c10b5d0c271
+2026-08-15 00:36:28 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Agent query stream ended
+2026-08-15 00:36:28 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-08-15 00:36:28 [DEBUG] coder_eval.orchestrator: Agent response received (5589 chars)
+2026-08-15 00:36:28 [DEBUG] coder_eval.orchestrator: Checking success criteria
+2026-08-15 00:36:28 [DEBUG] coder_eval.evaluation.checker: Criterion 'file_exists' score: 1.00
+2026-08-15 00:36:28 [DEBUG] coder_eval.evaluation.checker: Criterion 'file_contains' score: 1.00
+2026-08-15 00:36:28 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'Group extracted into a subprocess, Ship Parcel preserved in main flow, file still structurally sound': python3 $TASK_DIR/check_group_to_subflow.py
+2026-08-15 00:36:28 [DEBUG] coder_eval.sandbox: Command 'python3 $TASK_DIR/check_group_to_subflow.py' exited with code 1
+2026-08-15 00:36:28 [DEBUG] coder_eval.sandbox: STDERR:
+---
+FAIL: node 'Task_Ship' config/payload changed (only its wiring may change)
+---
+2026-08-15 00:36:28 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 0.00
+2026-08-15 00:36:28 [INFO] coder_eval.evaluation.checker: Criterion 'run_command' FAILED (score=0.00, threshold=1.00): Command: python3 $TASK_DIR/check_group_to_subflow.py
+2026-08-15 00:36:28 [INFO] coder_eval.orchestrator: Success criteria: 2/3 passed, weighted score: 0.333
+2026-08-15 00:36:28 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-08-15 00:36:28 [INFO] coder_eval.orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+2026-08-15 00:36:28 [INFO] coder_eval.orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-bpmn-edit-group-to-subflow
+2026-08-15 00:36:28 [INFO] coder_eval.orchestrator: Task finished: status=FAILURE duration=332.4s score=0.333 iterations=1

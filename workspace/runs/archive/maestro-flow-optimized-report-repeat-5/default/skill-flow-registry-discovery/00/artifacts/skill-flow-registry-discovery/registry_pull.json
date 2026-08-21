@@ -1,0 +1,10 @@
+{
+  "Result": "Success",
+  "Code": "NodePullSuccess",
+  "Data": {
+    "NodesCount": 4565,
+    "FromCache": true,
+    "AgeMinutes": 0,
+    "Message": "Using cached nodes (age: 0m)"
+  }
+}

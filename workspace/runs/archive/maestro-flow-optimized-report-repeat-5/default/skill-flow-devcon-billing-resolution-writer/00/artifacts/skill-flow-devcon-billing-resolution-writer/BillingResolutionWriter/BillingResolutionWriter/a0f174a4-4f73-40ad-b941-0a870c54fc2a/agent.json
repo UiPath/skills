@@ -1,0 +1,115 @@
+{
+  "version": "1.1.0",
+  "settings": {
+    "model": "gpt-5.4",
+    "maxTokens": 128000,
+    "temperature": 0,
+    "engine": "basic-v2",
+    "maxIterations": 3,
+    "mode": "standard"
+  },
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "start__output__customerName": {
+        "type": "string",
+        "description": "The name of the customer with the billing dispute"
+      },
+      "start__output__invoiceNumber": {
+        "type": "string",
+        "description": "The invoice number being disputed"
+      },
+      "start__output__creditAmount": {
+        "type": "number",
+        "description": "The approved credit amount in dollars"
+      }
+    }
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "subject": {
+        "type": "string",
+        "description": "The email subject line"
+      },
+      "body": {
+        "type": "string",
+        "description": "The full email body text"
+      }
+    },
+    "required": [
+      "subject",
+      "body"
+    ]
+  },
+  "metadata": {
+    "storageVersion": "50.0.0",
+    "isConversational": false,
+    "showProjectCreationExperience": false
+  },
+  "type": "lowCode",
+  "guardrails": [],
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a customer service specialist at a billing department. Your task is to draft a professional, empathetic customer-facing email resolving a billing dispute. The email must be concise, clear, and professional. You must include the specific invoice number and the approved credit amount in the body. Return a JSON object with exactly two fields: \"subject\" (the email subject line) and \"body\" (the full email body text, using plain text with no markdown).",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "You are a customer service specialist at a billing department. Your task is to draft a professional, empathetic customer-facing email resolving a billing dispute. The email must be concise, clear, and professional. You must include the specific invoice number and the approved credit amount in the body. Return a JSON object with exactly two fields: \"subject\" (the email subject line) and \"body\" (the full email body text, using plain text with no markdown)."
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "Draft a billing dispute resolution email for the following case:\n\nCustomer Name: {{input.start__output__customerName}}\nInvoice Number: {{input.start__output__invoiceNumber}}\nApproved Credit Amount: ${{input.start__output__creditAmount}}\n\nThe email body must reference invoice number {{input.start__output__invoiceNumber}} and state that a credit of ${{input.start__output__creditAmount}} has been approved. Address the customer by name.",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "Draft a billing dispute resolution email for the following case:\n\nCustomer Name: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__customerName"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\nInvoice Number: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__invoiceNumber"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\nApproved Credit Amount: $"
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__creditAmount"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\nThe email body must reference invoice number "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__invoiceNumber"
+        },
+        {
+          "type": "simpleText",
+          "rawString": " and state that a credit of $"
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__creditAmount"
+        },
+        {
+          "type": "simpleText",
+          "rawString": " has been approved. Address the customer by name."
+        }
+      ]
+    }
+  ],
+  "projectId": "a0f174a4-4f73-40ad-b941-0a870c54fc2a"
+}

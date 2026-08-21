@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "QueryParamsTest",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "98bf1036-1b9b-4647-8cab-ad5691faf23b",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "QueryParamsTest"
+    },
+    "locks": [],
+    "key": "92fc426b-66fb-4209-9734-5db376757ae6",
+    "files": []
+  }
+}

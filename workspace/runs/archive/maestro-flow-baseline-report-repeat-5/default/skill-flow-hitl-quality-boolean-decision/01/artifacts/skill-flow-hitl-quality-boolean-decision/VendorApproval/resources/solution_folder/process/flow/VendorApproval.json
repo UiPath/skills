@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "VendorApproval",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "f60cc017-7841-4cd4-b4ff-ca0aa6fc241f",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "VendorApproval"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Flow",
+      "name": "VendorApproval",
+      "package": {
+        "key": "683767c9-c0b4-4de8-8173-f3cccccc4262"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "07f67326-8f86-470f-9806-9eebea097f54",
+    "files": []
+  }
+}

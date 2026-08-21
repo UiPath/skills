@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+    xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+    xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+    xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+    xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:uipath="http://uipath.org/schema/bpmn"
+    id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn"
+    exporter="UiPath (https://bpmn.uipath.com)" exporterVersion="1.0">
+
+  <bpmn:process id="Process_1" isExecutable="true">
+    <bpmn:extensionElements>
+      <uipath:migrationVersion version="11.5" />
+      <uipath:variables version="v1">
+        <uipath:input id="Var_Article" name="article" type="string" elementId="Start_Manual" />
+        <uipath:input id="Var_Date1" name="date1" type="string" elementId="Start_Manual" />
+        <uipath:input id="Var_Date2" name="date2" type="string" elementId="Start_Manual" />
+        <uipath:inputOutput id="Var_Valid" name="valid" type="boolean" />
+        <uipath:inputOutput id="Var_Records" name="records" type="array" />
+        <uipath:inputOutput id="Var_Filtered" name="filtered" type="array" />
+        <uipath:output id="Var_Total" name="total" type="number" />
+        <uipath:output id="Var_ErrorMsg" name="errorMessage" type="string" />
+      </uipath:variables>
+    </bpmn:extensionElements>
+
+    <bpmn:startEvent id="Start_Manual" name="Start">
+      <bpmn:extensionElements>
+        <uipath:entryPointId value="ep_WikiPageviews_manual" />
+      </bpmn:extensionElements>
+      <bpmn:outgoing>Flow_StartToFetch</bpmn:outgoing>
+    </bpmn:startEvent>
+
+    <bpmn:scriptTask id="Task_FetchPageviews" name="fetchPageviews" scriptFormat="JavaScript">
+      <bpmn:extensionElements>
+        <uipath:scriptVersion value="v3" />
+        <uipath:mapping version="v1">
+          <uipath:type value="BPMN.ScriptTask" version="v1" />
+          <uipath:input name="args" type="json" target="bodyField"><![CDATA[{"article":"=vars.Var_Article","date1":"=vars.Var_Date1","date2":"=vars.Var_Date2"}]]></uipath:input>
+          <uipath:output name="valid" type="boolean" var="Var_Valid" source="=result.response.valid" />
+          <uipath:output name="records" type="array" var="Var_Records" source="=result.response.records" />
+        </uipath:mapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_StartToFetch</bpmn:incoming>
+      <bpmn:outgoing>Flow_FetchToGateway</bpmn:outgoing>
+      <bpmn:script><![CDATA[
+var knownArticles = ["Python", "JavaScript", "TypeScript", "Linux", "Wikipedia"];
+var isValid = knownArticles.indexOf(article) !== -1;
+if (!isValid) {
+  return { response: { valid: false, records: [] } };
+}
+var start = new Date(date1);
+var end = new Date(date2);
+var daily = [];
+var seed = article.length * 31;
+var cur = new Date(start.getTime());
+while (cur <= end) {
+  var day = cur.toISOString().slice(0, 10);
+  seed = (seed * 1103515245 + 12345) & 0x7fffffff;
+  var views = (seed % 1500) + 1;
+  daily.push({ date: day, views: views });
+  cur.setDate(cur.getDate() + 1);
+}
+return { response: { valid: true, records: daily } };
+]]></bpmn:script>
+    </bpmn:scriptTask>
+
+    <bpmn:exclusiveGateway id="Gw_Valid" name="Valid?" default="Flow_ValidPath">
+      <bpmn:incoming>Flow_FetchToGateway</bpmn:incoming>
+      <bpmn:outgoing>Flow_InvalidPath</bpmn:outgoing>
+      <bpmn:outgoing>Flow_ValidPath</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+
+    <bpmn:scriptTask id="Task_SetNotFound" name="setNotFound" scriptFormat="JavaScript">
+      <bpmn:extensionElements>
+        <uipath:scriptVersion value="v3" />
+        <uipath:mapping version="v1">
+          <uipath:type value="BPMN.ScriptTask" version="v1" />
+          <uipath:input name="args" type="json" target="bodyField"><![CDATA[{}]]></uipath:input>
+          <uipath:output name="errorMessage" type="string" var="Var_ErrorMsg" source="=result.response" />
+        </uipath:mapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_InvalidPath</bpmn:incoming>
+      <bpmn:outgoing>Flow_NotFoundToEnd</bpmn:outgoing>
+      <bpmn:script><![CDATA[
+return { response: "Article not found" };
+]]></bpmn:script>
+    </bpmn:scriptTask>
+
+    <bpmn:endEvent id="End_NotFound" name="Article not found">
+      <bpmn:incoming>Flow_NotFoundToEnd</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <bpmn:scriptTask id="Task_FilterHighTraffic" name="filterHighTraffic" scriptFormat="JavaScript">
+      <bpmn:extensionElements>
+        <uipath:scriptVersion value="v3" />
+        <uipath:mapping version="v1">
+          <uipath:type value="BPMN.ScriptTask" version="v1" />
+          <uipath:input name="args" type="json" target="bodyField"><![CDATA[{"records":"=vars.Var_Records"}]]></uipath:input>
+          <uipath:output name="filtered" type="array" var="Var_Filtered" source="=result.response" />
+        </uipath:mapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_ValidPath</bpmn:incoming>
+      <bpmn:outgoing>Flow_FilterToAggregate</bpmn:outgoing>
+      <bpmn:script><![CDATA[
+var filtered = [];
+for (var i = 0; i < records.length; i++) {
+  if (records[i].views > 500) {
+    filtered.push(records[i]);
+  }
+}
+return { response: filtered };
+]]></bpmn:script>
+    </bpmn:scriptTask>
+
+    <bpmn:scriptTask id="Task_AggregateTotal" name="aggregateTotal" scriptFormat="JavaScript">
+      <bpmn:extensionElements>
+        <uipath:scriptVersion value="v3" />
+        <uipath:mapping version="v1">
+          <uipath:type value="BPMN.ScriptTask" version="v1" />
+          <uipath:input name="args" type="json" target="bodyField"><![CDATA[{"filtered":"=vars.Var_Filtered"}]]></uipath:input>
+          <uipath:output name="total" type="number" var="Var_Total" source="=result.response" />
+        </uipath:mapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_FilterToAggregate</bpmn:incoming>
+      <bpmn:outgoing>Flow_AggregateToEnd</bpmn:outgoing>
+      <bpmn:script><![CDATA[
+var sum = 0;
+for (var i = 0; i < filtered.length; i++) {
+  sum += filtered[i].views;
+}
+return { response: sum };
+]]></bpmn:script>
+    </bpmn:scriptTask>
+
+    <bpmn:endEvent id="End_Done" name="Done">
+      <bpmn:incoming>Flow_AggregateToEnd</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <bpmn:sequenceFlow id="Flow_StartToFetch" sourceRef="Start_Manual" targetRef="Task_FetchPageviews" />
+    <bpmn:sequenceFlow id="Flow_FetchToGateway" sourceRef="Task_FetchPageviews" targetRef="Gw_Valid" />
+    <bpmn:sequenceFlow id="Flow_InvalidPath" sourceRef="Gw_Valid" targetRef="Task_SetNotFound">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=vars.Var_Valid == false</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_ValidPath" sourceRef="Gw_Valid" targetRef="Task_FilterHighTraffic" />
+    <bpmn:sequenceFlow id="Flow_NotFoundToEnd" sourceRef="Task_SetNotFound" targetRef="End_NotFound" />
+    <bpmn:sequenceFlow id="Flow_FilterToAggregate" sourceRef="Task_FilterHighTraffic" targetRef="Task_AggregateTotal" />
+    <bpmn:sequenceFlow id="Flow_AggregateToEnd" sourceRef="Task_AggregateTotal" targetRef="End_Done" />
+
+  </bpmn:process>
+
+
+  <bpmndi:BPMNDiagram id="Diagram_1">
+    <bpmndi:BPMNPlane id="Plane_1" bpmnElement="Process_1">
+      <bpmndi:BPMNShape id="S_End_Done" bpmnElement="End_Done"><dc:Bounds x="846" y="100" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_End_NotFound" bpmnElement="End_NotFound"><dc:Bounds x="686" y="100" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Gw_Valid" bpmnElement="Gw_Valid"><dc:Bounds x="416" y="100" width="50" height="50" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Start_Manual" bpmnElement="Start_Manual"><dc:Bounds x="160" y="100" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Task_AggregateTotal" bpmnElement="Task_AggregateTotal"><dc:Bounds x="686" y="210" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Task_FetchPageviews" bpmnElement="Task_FetchPageviews"><dc:Bounds x="256" y="100" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Task_FilterHighTraffic" bpmnElement="Task_FilterHighTraffic"><dc:Bounds x="526" y="100" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Task_SetNotFound" bpmnElement="Task_SetNotFound"><dc:Bounds x="526" y="210" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="E_Flow_AggregateToEnd" bpmnElement="Flow_AggregateToEnd"><di:waypoint x="736" y="250" /><di:waypoint x="864" y="118" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_FetchToGateway" bpmnElement="Flow_FetchToGateway"><di:waypoint x="306" y="140" /><di:waypoint x="441" y="125" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_FilterToAggregate" bpmnElement="Flow_FilterToAggregate"><di:waypoint x="576" y="140" /><di:waypoint x="736" y="250" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_InvalidPath" bpmnElement="Flow_InvalidPath"><di:waypoint x="441" y="125" /><di:waypoint x="576" y="250" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_NotFoundToEnd" bpmnElement="Flow_NotFoundToEnd"><di:waypoint x="576" y="250" /><di:waypoint x="704" y="118" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_StartToFetch" bpmnElement="Flow_StartToFetch"><di:waypoint x="178" y="118" /><di:waypoint x="306" y="140" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_ValidPath" bpmnElement="Flow_ValidPath"><di:waypoint x="441" y="125" /><di:waypoint x="576" y="140" /></bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

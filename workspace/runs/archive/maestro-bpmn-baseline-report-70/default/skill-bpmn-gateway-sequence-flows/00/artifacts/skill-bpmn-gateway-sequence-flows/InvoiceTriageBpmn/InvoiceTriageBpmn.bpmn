@@ -1,0 +1,362 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+             xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+             xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+             xmlns:uipath="http://schemas.uipath.com/workflow/activities"
+             id="Definitions_InvoiceTriage"
+             targetNamespace="http://invoicetriage.example.com/bpmn"
+             exporter="UiPath Studio"
+             exporterVersion="24.10.0">
+
+  <process id="Process_InvoiceTriage"
+           name="InvoiceTriageBpmn"
+           isExecutable="true">
+
+    <!-- ═══════════════════════════════════════════════════
+         Input variables declared on the process
+    ═══════════════════════════════════════════════════ -->
+    <extensionElements>
+      <uipath:properties>
+        <uipath:property name="invoiceId" type="System.String" direction="In"/>
+        <uipath:property name="amount"    type="System.Decimal" direction="In"/>
+      </uipath:properties>
+    </extensionElements>
+
+    <!-- ═══════════════════════════════════════════════════
+         START EVENT  (manual / none trigger = user kicks it off)
+    ═══════════════════════════════════════════════════ -->
+    <startEvent id="StartEvent_ManualStart"
+                name="Invoice&#10;Received">
+    </startEvent>
+
+    <!-- ═══════════════════════════════════════════════════
+         TASK 1 – Record Invoice Intake
+    ═══════════════════════════════════════════════════ -->
+    <userTask id="Task_RecordIntake"
+              name="Record Invoice&#10;Intake">
+    </userTask>
+
+    <!-- ═══════════════════════════════════════════════════
+         EXCLUSIVE GATEWAY – route by amount
+    ═══════════════════════════════════════════════════ -->
+    <exclusiveGateway id="Gateway_AmountCheck"
+                      name="High-Value&#10;Invoice?"
+                      default="Flow_ToAutoApproval">
+    </exclusiveGateway>
+
+    <!-- ═══════════════════════════════════════════════════
+         TASK 2a – Manager Review  (high-value path)
+    ═══════════════════════════════════════════════════ -->
+    <userTask id="Task_ManagerReview"
+              name="Manager&#10;Review">
+    </userTask>
+
+    <!-- ═══════════════════════════════════════════════════
+         TASK 2b – Auto Approval  (default / low-value path)
+    ═══════════════════════════════════════════════════ -->
+    <serviceTask id="Task_AutoApproval"
+                 name="Auto&#10;Approval">
+    </serviceTask>
+
+    <!-- ═══════════════════════════════════════════════════
+         PARALLEL GATEWAY (fork) – start two follow-up tasks
+    ═══════════════════════════════════════════════════ -->
+    <parallelGateway id="Gateway_ParallelFork"
+                     name="Start&#10;Follow-ups">
+    </parallelGateway>
+
+    <!-- ═══════════════════════════════════════════════════
+         TASK 3a – Notify Requester
+    ═══════════════════════════════════════════════════ -->
+    <sendTask id="Task_NotifyRequester"
+              name="Notify&#10;Requester">
+    </sendTask>
+
+    <!-- ═══════════════════════════════════════════════════
+         TASK 3b – Archive Decision
+    ═══════════════════════════════════════════════════ -->
+    <serviceTask id="Task_ArchiveDecision"
+                 name="Archive&#10;Decision">
+    </serviceTask>
+
+    <!-- ═══════════════════════════════════════════════════
+         PARALLEL GATEWAY (join) – wait for both follow-ups
+    ═══════════════════════════════════════════════════ -->
+    <parallelGateway id="Gateway_ParallelJoin"
+                     name="Follow-ups&#10;Complete">
+    </parallelGateway>
+
+    <!-- ═══════════════════════════════════════════════════
+         END EVENT
+    ═══════════════════════════════════════════════════ -->
+    <endEvent id="EndEvent_Done"
+              name="Invoice&#10;Processed">
+    </endEvent>
+
+    <!-- ═══════════════════════════════════════════════════
+         SEQUENCE FLOWS
+    ═══════════════════════════════════════════════════ -->
+
+    <!-- Start → Record Intake -->
+    <sequenceFlow id="Flow_StartToIntake"
+                  name=""
+                  sourceRef="StartEvent_ManualStart"
+                  targetRef="Task_RecordIntake"/>
+
+    <!-- Record Intake → Exclusive Gateway -->
+    <sequenceFlow id="Flow_IntakeToGateway"
+                  name=""
+                  sourceRef="Task_RecordIntake"
+                  targetRef="Gateway_AmountCheck"/>
+
+    <!-- Exclusive Gateway → Manager Review  (condition: amount >= 1000) -->
+    <sequenceFlow id="Flow_ToManagerReview"
+                  name="amount ≥ 1000"
+                  sourceRef="Gateway_AmountCheck"
+                  targetRef="Task_ManagerReview">
+      <conditionExpression xsi:type="tFormalExpression"
+                           id="Condition_HighValue"
+                           language="http://www.w3.org/1999/XPath">
+        $amount &gt;= 1000
+      </conditionExpression>
+    </sequenceFlow>
+
+    <!-- Exclusive Gateway → Auto Approval  (default route: amount < 1000) -->
+    <sequenceFlow id="Flow_ToAutoApproval"
+                  name="amount &lt; 1000&#10;(default)"
+                  sourceRef="Gateway_AmountCheck"
+                  targetRef="Task_AutoApproval"/>
+
+    <!-- Manager Review → Parallel Fork -->
+    <sequenceFlow id="Flow_ManagerToFork"
+                  name=""
+                  sourceRef="Task_ManagerReview"
+                  targetRef="Gateway_ParallelFork"/>
+
+    <!-- Auto Approval → Parallel Fork -->
+    <sequenceFlow id="Flow_AutoToFork"
+                  name=""
+                  sourceRef="Task_AutoApproval"
+                  targetRef="Gateway_ParallelFork"/>
+
+    <!-- Parallel Fork → Notify Requester -->
+    <sequenceFlow id="Flow_ForkToNotify"
+                  name=""
+                  sourceRef="Gateway_ParallelFork"
+                  targetRef="Task_NotifyRequester"/>
+
+    <!-- Parallel Fork → Archive Decision -->
+    <sequenceFlow id="Flow_ForkToArchive"
+                  name=""
+                  sourceRef="Gateway_ParallelFork"
+                  targetRef="Task_ArchiveDecision"/>
+
+    <!-- Notify Requester → Parallel Join -->
+    <sequenceFlow id="Flow_NotifyToJoin"
+                  name=""
+                  sourceRef="Task_NotifyRequester"
+                  targetRef="Gateway_ParallelJoin"/>
+
+    <!-- Archive Decision → Parallel Join -->
+    <sequenceFlow id="Flow_ArchiveToJoin"
+                  name=""
+                  sourceRef="Task_ArchiveDecision"
+                  targetRef="Gateway_ParallelJoin"/>
+
+    <!-- Parallel Join → End Event -->
+    <sequenceFlow id="Flow_JoinToEnd"
+                  name=""
+                  sourceRef="Gateway_ParallelJoin"
+                  targetRef="EndEvent_Done"/>
+
+  </process>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       BPMN DI  –  shapes and waypoints for every visible element
+  ═══════════════════════════════════════════════════════════════════ -->
+  <bpmndi:BPMNDiagram id="BPMNDiagram_InvoiceTriage">
+    <bpmndi:BPMNPlane id="BPMNPlane_InvoiceTriage"
+                      bpmnElement="Process_InvoiceTriage">
+
+      <!-- ─── START EVENT ─── -->
+      <bpmndi:BPMNShape id="Shape_StartEvent_ManualStart"
+                        bpmnElement="StartEvent_ManualStart">
+        <dc:Bounds x="152" y="242" width="36" height="36"/>
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="138" y="285" width="64" height="27"/>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+
+      <!-- ─── TASK: Record Invoice Intake ─── -->
+      <bpmndi:BPMNShape id="Shape_Task_RecordIntake"
+                        bpmnElement="Task_RecordIntake">
+        <dc:Bounds x="240" y="220" width="120" height="80"/>
+        <bpmndi:BPMNLabel/>
+      </bpmndi:BPMNShape>
+
+      <!-- ─── EXCLUSIVE GATEWAY ─── -->
+      <bpmndi:BPMNShape id="Shape_Gateway_AmountCheck"
+                        bpmnElement="Gateway_AmountCheck"
+                        isMarkerVisible="true">
+        <dc:Bounds x="415" y="235" width="50" height="50"/>
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="398" y="292" width="84" height="27"/>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+
+      <!-- ─── TASK: Manager Review ─── -->
+      <bpmndi:BPMNShape id="Shape_Task_ManagerReview"
+                        bpmnElement="Task_ManagerReview">
+        <dc:Bounds x="530" y="140" width="120" height="80"/>
+        <bpmndi:BPMNLabel/>
+      </bpmndi:BPMNShape>
+
+      <!-- ─── TASK: Auto Approval ─── -->
+      <bpmndi:BPMNShape id="Shape_Task_AutoApproval"
+                        bpmnElement="Task_AutoApproval">
+        <dc:Bounds x="530" y="300" width="120" height="80"/>
+        <bpmndi:BPMNLabel/>
+      </bpmndi:BPMNShape>
+
+      <!-- ─── PARALLEL GATEWAY (fork) ─── -->
+      <bpmndi:BPMNShape id="Shape_Gateway_ParallelFork"
+                        bpmnElement="Gateway_ParallelFork">
+        <dc:Bounds x="715" y="235" width="50" height="50"/>
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="699" y="292" width="82" height="27"/>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+
+      <!-- ─── TASK: Notify Requester ─── -->
+      <bpmndi:BPMNShape id="Shape_Task_NotifyRequester"
+                        bpmnElement="Task_NotifyRequester">
+        <dc:Bounds x="830" y="140" width="120" height="80"/>
+        <bpmndi:BPMNLabel/>
+      </bpmndi:BPMNShape>
+
+      <!-- ─── TASK: Archive Decision ─── -->
+      <bpmndi:BPMNShape id="Shape_Task_ArchiveDecision"
+                        bpmnElement="Task_ArchiveDecision">
+        <dc:Bounds x="830" y="300" width="120" height="80"/>
+        <bpmndi:BPMNLabel/>
+      </bpmndi:BPMNShape>
+
+      <!-- ─── PARALLEL GATEWAY (join) ─── -->
+      <bpmndi:BPMNShape id="Shape_Gateway_ParallelJoin"
+                        bpmnElement="Gateway_ParallelJoin">
+        <dc:Bounds x="1015" y="235" width="50" height="50"/>
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="993" y="292" width="94" height="27"/>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+
+      <!-- ─── END EVENT ─── -->
+      <bpmndi:BPMNShape id="Shape_EndEvent_Done"
+                        bpmnElement="EndEvent_Done">
+        <dc:Bounds x="1122" y="242" width="36" height="36"/>
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1100" y="285" width="80" height="27"/>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+
+      <!-- ════════════════════════════════════════
+           EDGES (sequence flow waypoints)
+      ════════════════════════════════════════ -->
+
+      <!-- Flow_StartToIntake -->
+      <bpmndi:BPMNEdge id="Edge_Flow_StartToIntake"
+                       bpmnElement="Flow_StartToIntake">
+        <di:waypoint x="188" y="260"/>
+        <di:waypoint x="240" y="260"/>
+      </bpmndi:BPMNEdge>
+
+      <!-- Flow_IntakeToGateway -->
+      <bpmndi:BPMNEdge id="Edge_Flow_IntakeToGateway"
+                       bpmnElement="Flow_IntakeToGateway">
+        <di:waypoint x="360" y="260"/>
+        <di:waypoint x="415" y="260"/>
+      </bpmndi:BPMNEdge>
+
+      <!-- Flow_ToManagerReview  (goes up to upper lane) -->
+      <bpmndi:BPMNEdge id="Edge_Flow_ToManagerReview"
+                       bpmnElement="Flow_ToManagerReview">
+        <di:waypoint x="440" y="235"/>
+        <di:waypoint x="440" y="180"/>
+        <di:waypoint x="530" y="180"/>
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="448" y="196" width="72" height="14"/>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+
+      <!-- Flow_ToAutoApproval  (goes down to lower lane) -->
+      <bpmndi:BPMNEdge id="Edge_Flow_ToAutoApproval"
+                       bpmnElement="Flow_ToAutoApproval">
+        <di:waypoint x="440" y="285"/>
+        <di:waypoint x="440" y="340"/>
+        <di:waypoint x="530" y="340"/>
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="448" y="308" width="72" height="27"/>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+
+      <!-- Flow_ManagerToFork -->
+      <bpmndi:BPMNEdge id="Edge_Flow_ManagerToFork"
+                       bpmnElement="Flow_ManagerToFork">
+        <di:waypoint x="650" y="180"/>
+        <di:waypoint x="740" y="180"/>
+        <di:waypoint x="740" y="235"/>
+      </bpmndi:BPMNEdge>
+
+      <!-- Flow_AutoToFork -->
+      <bpmndi:BPMNEdge id="Edge_Flow_AutoToFork"
+                       bpmnElement="Flow_AutoToFork">
+        <di:waypoint x="650" y="340"/>
+        <di:waypoint x="740" y="340"/>
+        <di:waypoint x="740" y="285"/>
+      </bpmndi:BPMNEdge>
+
+      <!-- Flow_ForkToNotify -->
+      <bpmndi:BPMNEdge id="Edge_Flow_ForkToNotify"
+                       bpmnElement="Flow_ForkToNotify">
+        <di:waypoint x="740" y="235"/>
+        <di:waypoint x="740" y="180"/>
+        <di:waypoint x="830" y="180"/>
+      </bpmndi:BPMNEdge>
+
+      <!-- Flow_ForkToArchive -->
+      <bpmndi:BPMNEdge id="Edge_Flow_ForkToArchive"
+                       bpmnElement="Flow_ForkToArchive">
+        <di:waypoint x="740" y="285"/>
+        <di:waypoint x="740" y="340"/>
+        <di:waypoint x="830" y="340"/>
+      </bpmndi:BPMNEdge>
+
+      <!-- Flow_NotifyToJoin -->
+      <bpmndi:BPMNEdge id="Edge_Flow_NotifyToJoin"
+                       bpmnElement="Flow_NotifyToJoin">
+        <di:waypoint x="950" y="180"/>
+        <di:waypoint x="1040" y="180"/>
+        <di:waypoint x="1040" y="235"/>
+      </bpmndi:BPMNEdge>
+
+      <!-- Flow_ArchiveToJoin -->
+      <bpmndi:BPMNEdge id="Edge_Flow_ArchiveToJoin"
+                       bpmnElement="Flow_ArchiveToJoin">
+        <di:waypoint x="950" y="340"/>
+        <di:waypoint x="1040" y="340"/>
+        <di:waypoint x="1040" y="285"/>
+      </bpmndi:BPMNEdge>
+
+      <!-- Flow_JoinToEnd -->
+      <bpmndi:BPMNEdge id="Edge_Flow_JoinToEnd"
+                       bpmnElement="Flow_JoinToEnd">
+        <di:waypoint x="1065" y="260"/>
+        <di:waypoint x="1122" y="260"/>
+      </bpmndi:BPMNEdge>
+
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+
+</definitions>

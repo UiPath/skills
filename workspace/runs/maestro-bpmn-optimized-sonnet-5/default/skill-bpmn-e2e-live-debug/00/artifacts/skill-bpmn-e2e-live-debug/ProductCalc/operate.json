@@ -1,0 +1,5 @@
+{
+  "$schema": "https://cloud.uipath.com/draft/2024-12/operate",
+  "main": "/content/ProductCalc.bpmn#Start_1",
+  "contentType": "ProcessOrchestration"
+}

@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+    xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+    xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+    xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+    xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:uipath="http://uipath.org/schema/bpmn"
+    id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn"
+    exporter="UiPath (https://bpmn.uipath.com)" exporterVersion="1.0">
+
+  <bpmn:process id="Process_1" isExecutable="true">
+    <bpmn:extensionElements>
+      <uipath:migrationVersion version="11.5" />
+      <uipath:variables version="v1">
+        <uipath:inputOutput id="Var_InvoiceAmount" name="InvoiceAmount" type="number" />
+      </uipath:variables>
+    </bpmn:extensionElements>
+
+    <bpmn:startEvent id="StartEvent_1" name="Start">
+      <bpmn:outgoing>Flow_StartToGateway</bpmn:outgoing>
+    </bpmn:startEvent>
+
+    <bpmn:exclusiveGateway id="Gateway_AmountCheck" name="Amount check" default="Flow_DefaultBranch">
+      <bpmn:incoming>Flow_StartToGateway</bpmn:incoming>
+      <bpmn:outgoing>Flow_OverThreshold</bpmn:outgoing>
+      <bpmn:outgoing>Flow_DefaultBranch</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+
+    <bpmn:endEvent id="EndEvent_OverThreshold" name="Requires Manager Approval">
+      <bpmn:incoming>Flow_OverThreshold</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <bpmn:endEvent id="EndEvent_Default" name="Auto Approved">
+      <bpmn:incoming>Flow_DefaultBranch</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <bpmn:sequenceFlow id="Flow_StartToGateway" sourceRef="StartEvent_1" targetRef="Gateway_AmountCheck" />
+
+    <bpmn:sequenceFlow id="Flow_OverThreshold" sourceRef="Gateway_AmountCheck" targetRef="EndEvent_OverThreshold">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=vars.Var_InvoiceAmount &gt; 1000</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+
+    <bpmn:sequenceFlow id="Flow_DefaultBranch" sourceRef="Gateway_AmountCheck" targetRef="EndEvent_Default" />
+
+  </bpmn:process>
+
+  <bpmndi:BPMNDiagram id="Diagram_1">
+    <bpmndi:BPMNPlane id="Plane_1" bpmnElement="Process_1">
+
+      <bpmndi:BPMNShape id="S_StartEvent_1" bpmnElement="StartEvent_1">
+        <dc:Bounds x="160" y="100" width="36" height="36" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="S_Gateway_AmountCheck" bpmnElement="Gateway_AmountCheck" isMarkerVisible="true">
+        <dc:Bounds x="280" y="93" width="50" height="50" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="S_EndEvent_OverThreshold" bpmnElement="EndEvent_OverThreshold">
+        <dc:Bounds x="420" y="40" width="36" height="36" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="S_EndEvent_Default" bpmnElement="EndEvent_Default">
+        <dc:Bounds x="420" y="160" width="36" height="36" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_StartToGateway" bpmnElement="Flow_StartToGateway">
+        <di:waypoint x="196" y="118" />
+        <di:waypoint x="280" y="118" />
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_OverThreshold" bpmnElement="Flow_OverThreshold">
+        <di:waypoint x="305" y="93" />
+        <di:waypoint x="305" y="58" />
+        <di:waypoint x="420" y="58" />
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_DefaultBranch" bpmnElement="Flow_DefaultBranch">
+        <di:waypoint x="305" y="143" />
+        <di:waypoint x="305" y="178" />
+        <di:waypoint x="420" y="178" />
+      </bpmndi:BPMNEdge>
+
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+
+</bpmn:definitions>

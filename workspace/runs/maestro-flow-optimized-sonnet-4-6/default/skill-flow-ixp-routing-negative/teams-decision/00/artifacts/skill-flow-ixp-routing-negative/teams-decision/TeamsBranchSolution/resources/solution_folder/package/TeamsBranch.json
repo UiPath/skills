@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "TeamsBranch",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "56c79908-e91d-487f-a8a2-e95b0b453f5c",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "TeamsBranch"
+    },
+    "locks": [],
+    "key": "f1d87e84-dbdf-4c6d-9766-4008b513ec0b",
+    "files": []
+  }
+}

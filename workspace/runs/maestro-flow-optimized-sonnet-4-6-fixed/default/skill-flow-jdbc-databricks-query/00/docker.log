@@ -1,0 +1,9 @@
+20:58:03 [INFO   ] [default/skill-flow-jdbc-databricks-query/00] orchestrator: API routing: aws_bedrock
+21:04:48 [INFO   ] [default/skill-flow-jdbc-databricks-query/00] evaluation.checker: Criterion 'command_executed' FAILED (score=0.00, threshold=1.00): Matched 0/1 required commands (filters: tool_name=Bash, pattern=/(uip|\$UIP)\s+(maestro\s+)?flow\s+debug/)
+21:04:48 [INFO   ] [default/skill-flow-jdbc-databricks-query/00] orchestrator: Success criteria: 2/3 passed, weighted score: 0.769
+21:04:48 [INFO   ] [default/skill-flow-jdbc-databricks-query/00] orchestrator: Running post-run command: python3 $EXPERIMENT_TASKS_PATH/uipath-maestro-flow/_shared/cleanup_solutions.py
+21:04:49 [WARNING] [default/skill-flow-jdbc-databricks-query/00] orchestrator: [post_run stderr] cleanup_solutions: solution daef4a3f-f448-42fe-bcf8-54af1881e50c not uploaded (from DatabricksQuery/DatabricksQuery.uipx); nothing to clean up
+21:04:49 [WARNING] [default/skill-flow-jdbc-databricks-query/00] orchestrator: [post_run stderr] cleanup_solutions: summary policy=always deleted=0 preserved=0 skipped=0 not_uploaded=1 failed=0
+21:04:49 [INFO   ] [default/skill-flow-jdbc-databricks-query/00] orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+21:04:49 [INFO   ] [default/skill-flow-jdbc-databricks-query/00] orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-jdbc-databricks-query
+21:04:49 [INFO   ] [default/skill-flow-jdbc-databricks-query/00] orchestrator: Task finished: status=FAILURE duration=418.9s score=0.769 iterations=1

@@ -1,0 +1,261 @@
+<Activity mc:Ignorable="sap sap2010" x:Class="Main" mva:VisualBasic.Settings="{x:Null}"
+xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities"
+xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+xmlns:mva="clr-namespace:Microsoft.VisualBasic.Activities;assembly=System.Activities"
+xmlns:njl="clr-namespace:Newtonsoft.Json.Linq;assembly=Newtonsoft.Json"
+xmlns:sap="http://schemas.microsoft.com/netfx/2009/xaml/activities/presentation"
+xmlns:sap2010="http://schemas.microsoft.com/netfx/2010/xaml/activities/presentation"
+xmlns:scg="clr-namespace:System.Collections.Generic;assembly=System.Private.CoreLib"
+xmlns:sco="clr-namespace:System.Collections.ObjectModel;assembly=mscorlib"
+xmlns:ui="http://schemas.uipath.com/workflow/activities"
+xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <TextExpression.NamespacesForImplementation>
+        <sco:Collection x:TypeArguments="x:String">
+            <x:String>System.Activities</x:String>
+            <x:String>System.Activities.Statements</x:String>
+            <x:String>System.Activities.Expressions</x:String>
+            <x:String>System.Activities.Validation</x:String>
+            <x:String>System.Activities.XamlIntegration</x:String>
+            <x:String>Microsoft.VisualBasic</x:String>
+            <x:String>Microsoft.VisualBasic.Activities</x:String>
+            <x:String>System</x:String>
+            <x:String>System.Collections</x:String>
+            <x:String>System.Collections.Generic</x:String>
+            <x:String>System.Collections.ObjectModel</x:String>
+            <x:String>System.Data</x:String>
+            <x:String>System.Diagnostics</x:String>
+            <x:String>System.Drawing</x:String>
+            <x:String>System.IO</x:String>
+            <x:String>System.Linq</x:String>
+            <x:String>System.Net.Mail</x:String>
+            <x:String>System.Xml</x:String>
+            <x:String>System.Xml.Linq</x:String>
+            <x:String>UiPath.Core</x:String>
+            <x:String>UiPath.Core.Activities</x:String>
+            <x:String>System.Windows.Markup</x:String>
+            <x:String>Newtonsoft.Json.Linq</x:String>
+        </sco:Collection>
+    </TextExpression.NamespacesForImplementation>
+    <TextExpression.ReferencesForImplementation>
+        <sco:Collection x:TypeArguments="AssemblyReference">
+            <AssemblyReference>System.Activities</AssemblyReference>
+            <AssemblyReference>Microsoft.VisualBasic</AssemblyReference>
+            <AssemblyReference>System.Private.CoreLib</AssemblyReference>
+            <AssemblyReference>mscorlib</AssemblyReference>
+            <AssemblyReference>System.Data</AssemblyReference>
+            <AssemblyReference>System.Data.Common</AssemblyReference>
+            <AssemblyReference>System</AssemblyReference>
+            <AssemblyReference>System.Linq</AssemblyReference>
+            <AssemblyReference>System.Drawing</AssemblyReference>
+            <AssemblyReference>System.Drawing.Primitives</AssemblyReference>
+            <AssemblyReference>System.Drawing.Common</AssemblyReference>
+            <AssemblyReference>System.Core</AssemblyReference>
+            <AssemblyReference>System.Xml</AssemblyReference>
+            <AssemblyReference>System.Xml.Linq</AssemblyReference>
+            <AssemblyReference>System.Xaml</AssemblyReference>
+            <AssemblyReference>UiPath.System.Activities</AssemblyReference>
+            <AssemblyReference>UiPath.UiAutomation.Activities</AssemblyReference>
+            <AssemblyReference>System.Data.DataSetExtensions</AssemblyReference>
+            <AssemblyReference>System.Net.Mail</AssemblyReference>
+            <AssemblyReference>Newtonsoft.Json</AssemblyReference>
+            <AssemblyReference>UiPath.Web.Activities</AssemblyReference>
+        </sco:Collection>
+    </TextExpression.ReferencesForImplementation>
+    <Sequence DisplayName="Main Sequence" sap2010:WorkflowViewState.IdRef="Sequence_1">
+        <Sequence.Variables>
+            <Variable x:TypeArguments="x:String" Name="weatherResponse" />
+            <Variable x:TypeArguments="x:Int32" Name="statusCode" Default="0" />
+            <Variable x:TypeArguments="njl:JObject" Name="weatherJson" />
+            <Variable x:TypeArguments="x:Double" Name="temperature" Default="0" />
+            <Variable x:TypeArguments="x:Int32" Name="weatherCode" Default="0" />
+            <Variable x:TypeArguments="x:Double" Name="precipitation" Default="0" />
+            <Variable x:TypeArguments="x:Boolean" Name="isNiceDay" Default="False" />
+        </Sequence.Variables>
+
+        <!-- Step 1: Log start of automation -->
+        <ui:LogMessage Level="Info" DisplayName="Log: Start">
+            <ui:LogMessage.Message>
+                <InArgument x:TypeArguments="x:Object">["Checking current weather for Bellevue, WA..."]</InArgument>
+            </ui:LogMessage.Message>
+        </ui:LogMessage>
+
+        <!-- Step 2: Call open-meteo free weather API for Bellevue, WA (lat=47.6101, lon=-122.2015) -->
+        <ui:HttpClient
+            Body="{x:Null}"
+            ClientCertificate="{x:Null}"
+            ClientCertificatePassword="{x:Null}"
+            ConsumerKey="{x:Null}"
+            ConsumerSecret="{x:Null}"
+            ContinueOnError="{x:Null}"
+            FileAttachments="{x:Null}"
+            OAuth1Token="{x:Null}"
+            OAuth1TokenSecret="{x:Null}"
+            OAuth2Token="{x:Null}"
+            Password="{x:Null}"
+            ResourcePath="{x:Null}"
+            ResponseAttachment="{x:Null}"
+            ResponseHeaders="{x:Null}"
+            SecureClientCertificatePassword="{x:Null}"
+            SecurePassword="{x:Null}"
+            Username="{x:Null}"
+            AcceptFormat="JSON"
+            AuthenticationType="None"
+            BodyFormat="application/json"
+            EnableSSLVerification="True"
+            Method="GET"
+            TimeoutMS="30000"
+            DisplayName="HTTP GET: Bellevue Weather API">
+            <ui:HttpClient.EndPoint>
+                <InArgument x:TypeArguments="x:String">["https://api.open-meteo.com/v1/forecast?latitude=47.6101&amp;longitude=-122.2015&amp;current_weather=true&amp;daily=precipitation_sum&amp;timezone=America%2FLos_Angeles&amp;forecast_days=1"]</InArgument>
+            </ui:HttpClient.EndPoint>
+            <ui:HttpClient.Result>
+                <OutArgument x:TypeArguments="x:String">
+                    <VisualBasicReference x:TypeArguments="x:String" ExpressionText="weatherResponse" />
+                </OutArgument>
+            </ui:HttpClient.Result>
+            <ui:HttpClient.StatusCode>
+                <OutArgument x:TypeArguments="x:Int32">
+                    <VisualBasicReference x:TypeArguments="x:Int32" ExpressionText="statusCode" />
+                </OutArgument>
+            </ui:HttpClient.StatusCode>
+            <ui:HttpClient.Attachments>
+                <scg:Dictionary x:TypeArguments="x:String, InArgument(x:String)" />
+            </ui:HttpClient.Attachments>
+            <ui:HttpClient.Cookies>
+                <scg:Dictionary x:TypeArguments="x:String, InArgument(x:String)" />
+            </ui:HttpClient.Cookies>
+            <ui:HttpClient.Headers>
+                <scg:Dictionary x:TypeArguments="x:String, InArgument(x:String)" />
+            </ui:HttpClient.Headers>
+            <ui:HttpClient.Parameters>
+                <scg:Dictionary x:TypeArguments="x:String, InArgument(x:String)" />
+            </ui:HttpClient.Parameters>
+            <ui:HttpClient.UrlSegments>
+                <scg:Dictionary x:TypeArguments="x:String, InArgument(x:String)" />
+            </ui:HttpClient.UrlSegments>
+        </ui:HttpClient>
+
+        <!-- Step 3: Log HTTP status -->
+        <ui:LogMessage Level="Info" DisplayName="Log: HTTP Status">
+            <ui:LogMessage.Message>
+                <InArgument x:TypeArguments="x:Object">
+                    <VisualBasicValue x:TypeArguments="x:Object" ExpressionText="$&quot;Weather API response received. HTTP Status: {statusCode}&quot;" />
+                </InArgument>
+            </ui:LogMessage.Message>
+        </ui:LogMessage>
+
+        <!-- Step 4: Deserialize JSON response into JObject -->
+        <ui:DeserializeJson x:TypeArguments="njl:JObject"
+            JsonSample="{x:Null}"
+            Settings="{x:Null}"
+            DisplayName="Deserialize Weather JSON">
+            <ui:DeserializeJson.JsonString>
+                <InArgument x:TypeArguments="x:String">
+                    <VisualBasicValue x:TypeArguments="x:String" ExpressionText="weatherResponse" />
+                </InArgument>
+            </ui:DeserializeJson.JsonString>
+            <ui:DeserializeJson.JsonObject>
+                <OutArgument x:TypeArguments="njl:JObject">
+                    <VisualBasicReference x:TypeArguments="njl:JObject" ExpressionText="weatherJson" />
+                </OutArgument>
+            </ui:DeserializeJson.JsonObject>
+        </ui:DeserializeJson>
+
+        <!-- Step 5: Extract temperature (degrees Celsius) from current_weather object -->
+        <Assign x:TypeArguments="x:Double" DisplayName="Extract Temperature">
+            <Assign.To>
+                <OutArgument x:TypeArguments="x:Double">
+                    <VisualBasicReference x:TypeArguments="x:Double" ExpressionText="temperature" />
+                </OutArgument>
+            </Assign.To>
+            <Assign.Value>
+                <InArgument x:TypeArguments="x:Double">
+                    <VisualBasicValue x:TypeArguments="x:Double" ExpressionText="Convert.ToDouble(weatherJson(&quot;current_weather&quot;)(&quot;temperature&quot;))" />
+                </InArgument>
+            </Assign.Value>
+        </Assign>
+
+        <!-- Step 6: Extract WMO weather code (0=clear, 1-2=mostly clear, 3=overcast, 45+=fog/rain/snow) -->
+        <Assign x:TypeArguments="x:Int32" DisplayName="Extract Weather Code">
+            <Assign.To>
+                <OutArgument x:TypeArguments="x:Int32">
+                    <VisualBasicReference x:TypeArguments="x:Int32" ExpressionText="weatherCode" />
+                </OutArgument>
+            </Assign.To>
+            <Assign.Value>
+                <InArgument x:TypeArguments="x:Int32">
+                    <VisualBasicValue x:TypeArguments="x:Int32" ExpressionText="Convert.ToInt32(weatherJson(&quot;current_weather&quot;)(&quot;weathercode&quot;))" />
+                </InArgument>
+            </Assign.Value>
+        </Assign>
+
+        <!-- Step 7: Extract today's total precipitation (mm) from daily forecast -->
+        <Assign x:TypeArguments="x:Double" DisplayName="Extract Precipitation">
+            <Assign.To>
+                <OutArgument x:TypeArguments="x:Double">
+                    <VisualBasicReference x:TypeArguments="x:Double" ExpressionText="precipitation" />
+                </OutArgument>
+            </Assign.To>
+            <Assign.Value>
+                <InArgument x:TypeArguments="x:Double">
+                    <VisualBasicValue x:TypeArguments="x:Double" ExpressionText="Convert.ToDouble(weatherJson(&quot;daily&quot;)(&quot;precipitation_sum&quot;)(0))" />
+                </InArgument>
+            </Assign.Value>
+        </Assign>
+
+        <!-- Step 8: Evaluate "nice day" — clear/partly cloudy (code 0-2), at least 15°C, less than 1mm rain -->
+        <Assign x:TypeArguments="x:Boolean" DisplayName="Determine: Is It a Nice Day?">
+            <Assign.To>
+                <OutArgument x:TypeArguments="x:Boolean">
+                    <VisualBasicReference x:TypeArguments="x:Boolean" ExpressionText="isNiceDay" />
+                </OutArgument>
+            </Assign.To>
+            <Assign.Value>
+                <InArgument x:TypeArguments="x:Boolean">
+                    <VisualBasicValue x:TypeArguments="x:Boolean" ExpressionText="weatherCode &lt;= 2 AndAlso temperature &gt;= 15.0 AndAlso precipitation &lt; 1.0" />
+                </InArgument>
+            </Assign.Value>
+        </Assign>
+
+        <!-- Step 9: Log current conditions summary -->
+        <ui:LogMessage Level="Info" DisplayName="Log: Weather Conditions">
+            <ui:LogMessage.Message>
+                <InArgument x:TypeArguments="x:Object">
+                    <VisualBasicValue x:TypeArguments="x:Object" ExpressionText="$&quot;Current conditions — Temp: {temperature}°C | WMO Code: {weatherCode} | Precipitation today: {precipitation}mm&quot;" />
+                </InArgument>
+            </ui:LogMessage.Message>
+        </ui:LogMessage>
+
+        <!-- Step 10: Report whether it is a nice day -->
+        <If DisplayName="Is it a nice day in Bellevue?">
+            <If.Condition>
+                <InArgument x:TypeArguments="x:Boolean">
+                    <VisualBasicValue x:TypeArguments="x:Boolean" ExpressionText="isNiceDay" />
+                </InArgument>
+            </If.Condition>
+            <If.Then>
+                <Sequence DisplayName="Then">
+                    <ui:LogMessage Level="Info" DisplayName="Log: Nice Day!">
+                        <ui:LogMessage.Message>
+                            <InArgument x:TypeArguments="x:Object">
+                                <VisualBasicValue x:TypeArguments="x:Object" ExpressionText="$&quot;VERDICT: It IS a nice day in Bellevue, WA! Temp: {temperature}°C, sky is clear to partly cloudy (code {weatherCode}), and no significant rain ({precipitation}mm). Get outside!&quot;" />
+                            </InArgument>
+                        </ui:LogMessage.Message>
+                    </ui:LogMessage>
+                </Sequence>
+            </If.Then>
+            <If.Else>
+                <Sequence DisplayName="Else">
+                    <ui:LogMessage Level="Info" DisplayName="Log: Not a Nice Day">
+                        <ui:LogMessage.Message>
+                            <InArgument x:TypeArguments="x:Object">
+                                <VisualBasicValue x:TypeArguments="x:Object" ExpressionText="$&quot;VERDICT: It is NOT a nice day in Bellevue, WA. Temp: {temperature}°C, WMO code: {weatherCode}, Precipitation today: {precipitation}mm. Stay cozy indoors!&quot;" />
+                            </InArgument>
+                        </ui:LogMessage.Message>
+                    </ui:LogMessage>
+                </Sequence>
+            </If.Else>
+        </If>
+
+    </Sequence>
+</Activity>

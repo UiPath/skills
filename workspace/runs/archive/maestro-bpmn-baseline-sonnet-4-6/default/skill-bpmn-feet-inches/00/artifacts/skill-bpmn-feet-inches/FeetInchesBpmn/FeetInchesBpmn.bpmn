@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+    xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+    xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+    xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+    xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:uipath="http://uipath.org/schema/bpmn"
+    id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn"
+    exporter="UiPath (https://bpmn.uipath.com)" exporterVersion="1.0">
+
+  <bpmn:process id="Process_1" isExecutable="true">
+    <bpmn:extensionElements>
+      <uipath:migrationVersion version="11.5" />
+      <uipath:variables version="v1">
+        <!-- Input variables (manual start) -->
+        <uipath:inputOutput id="Var_value"     name="value"     type="number" />
+        <uipath:inputOutput id="Var_direction" name="direction" type="string" />
+        <!-- Intermediate variables produced by each script task -->
+        <uipath:inputOutput id="Var_parsedValue"     name="parsedValue"     type="number" />
+        <uipath:inputOutput id="Var_parsedDirection" name="parsedDirection" type="string"  />
+        <uipath:inputOutput id="Var_converted"       name="converted"       type="number" />
+        <!-- Final output variable -->
+        <uipath:inputOutput id="Var_result"    name="result"    type="string" />
+      </uipath:variables>
+    </bpmn:extensionElements>
+
+    <!-- Manual start event with input variables -->
+    <bpmn:startEvent id="Start_1" name="Start">
+      <bpmn:outgoing>Flow_1</bpmn:outgoing>
+    </bpmn:startEvent>
+
+    <!-- Task 1: Normalize / parse inputs -->
+    <bpmn:scriptTask id="Task_Normalize" name="Normalize Inputs" scriptFormat="JavaScript">
+      <bpmn:extensionElements>
+        <uipath:scriptVersion value="v3" />
+        <uipath:mapping version="v1">
+          <uipath:type value="BPMN.ScriptTask" version="v1" />
+          <uipath:input name="args" type="json" target="bodyField"><![CDATA[{"rawValue":"=vars.Var_value","rawDirection":"=vars.Var_direction"}]]></uipath:input>
+          <uipath:output name="parsedValue"     type="number" var="Var_parsedValue"     source="=result.response.parsedValue" />
+          <uipath:output name="parsedDirection" type="string" var="Var_parsedDirection" source="=result.response.parsedDirection" />
+        </uipath:mapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_1</bpmn:incoming>
+      <bpmn:outgoing>Flow_2</bpmn:outgoing>
+      <bpmn:script><![CDATA[
+var v = typeof rawValue === "number" ? rawValue : parseFloat(rawValue) || 0;
+var d = typeof rawDirection === "string" ? rawDirection.trim().toLowerCase() : "f2i";
+if (d !== "f2i" && d !== "i2f" && d !== "y2f") { d = "f2i"; }
+return { response: { parsedValue: v, parsedDirection: d } };
+]]></bpmn:script>
+    </bpmn:scriptTask>
+
+    <!-- Task 2: Apply conversion (reads Var_parsedValue and Var_parsedDirection) -->
+    <bpmn:scriptTask id="Task_Convert" name="Apply Conversion" scriptFormat="JavaScript">
+      <bpmn:extensionElements>
+        <uipath:scriptVersion value="v3" />
+        <uipath:mapping version="v1">
+          <uipath:type value="BPMN.ScriptTask" version="v1" />
+          <uipath:input name="args" type="json" target="bodyField"><![CDATA[{"parsedValue":"=vars.Var_parsedValue","parsedDirection":"=vars.Var_parsedDirection"}]]></uipath:input>
+          <uipath:output name="converted" type="number" var="Var_converted" source="=result.response" />
+        </uipath:mapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_2</bpmn:incoming>
+      <bpmn:outgoing>Flow_3</bpmn:outgoing>
+      <bpmn:script><![CDATA[
+var out;
+if (parsedDirection === "f2i") {
+  out = parsedValue * 12;
+} else if (parsedDirection === "i2f") {
+  out = parsedValue / 12;
+} else {
+  out = parsedValue * 3;
+}
+return { response: out };
+]]></bpmn:script>
+    </bpmn:scriptTask>
+
+    <!-- Task 3: Format result (reads Var_converted and Var_parsedDirection) -->
+    <bpmn:scriptTask id="Task_Format" name="Format Result" scriptFormat="JavaScript">
+      <bpmn:extensionElements>
+        <uipath:scriptVersion value="v3" />
+        <uipath:mapping version="v1">
+          <uipath:type value="BPMN.ScriptTask" version="v1" />
+          <uipath:input name="args" type="json" target="bodyField"><![CDATA[{"converted":"=vars.Var_converted","parsedDirection":"=vars.Var_parsedDirection"}]]></uipath:input>
+          <uipath:output name="result" type="string" var="Var_result" source="=result.response" />
+        </uipath:mapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_3</bpmn:incoming>
+      <bpmn:outgoing>Flow_4</bpmn:outgoing>
+      <bpmn:script><![CDATA[
+var labels = { "f2i": "inches", "i2f": "feet", "y2f": "feet" };
+var unit = labels[parsedDirection] || "units";
+var rounded = Math.round(converted * 10000) / 10000;
+return { response: String(rounded) + " " + unit };
+]]></bpmn:script>
+    </bpmn:scriptTask>
+
+    <bpmn:endEvent id="End_1" name="End">
+      <bpmn:incoming>Flow_4</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <bpmn:sequenceFlow id="Flow_1" sourceRef="Start_1"    targetRef="Task_Normalize" />
+    <bpmn:sequenceFlow id="Flow_2" sourceRef="Task_Normalize" targetRef="Task_Convert" />
+    <bpmn:sequenceFlow id="Flow_3" sourceRef="Task_Convert"   targetRef="Task_Format" />
+    <bpmn:sequenceFlow id="Flow_4" sourceRef="Task_Format"    targetRef="End_1" />
+  </bpmn:process>
+
+  <bpmndi:BPMNDiagram id="Diagram_1">
+    <bpmndi:BPMNPlane id="Plane_1" bpmnElement="Process_1">
+
+      <!-- Nodes laid out left-to-right at y=100 centre -->
+      <bpmndi:BPMNShape id="S_Start_1" bpmnElement="Start_1">
+        <dc:Bounds x="160" y="100" width="36" height="36" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="S_Task_Normalize" bpmnElement="Task_Normalize">
+        <dc:Bounds x="260" y="78" width="100" height="80" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="S_Task_Convert" bpmnElement="Task_Convert">
+        <dc:Bounds x="420" y="78" width="100" height="80" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="S_Task_Format" bpmnElement="Task_Format">
+        <dc:Bounds x="580" y="78" width="100" height="80" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="S_End_1" bpmnElement="End_1">
+        <dc:Bounds x="742" y="100" width="36" height="36" />
+      </bpmndi:BPMNShape>
+
+      <!-- Edges -->
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_1" bpmnElement="Flow_1">
+        <di:waypoint x="196" y="118" />
+        <di:waypoint x="260" y="118" />
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_2" bpmnElement="Flow_2">
+        <di:waypoint x="360" y="118" />
+        <di:waypoint x="420" y="118" />
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_3" bpmnElement="Flow_3">
+        <di:waypoint x="520" y="118" />
+        <di:waypoint x="580" y="118" />
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_4" bpmnElement="Flow_4">
+        <di:waypoint x="680" y="118" />
+        <di:waypoint x="742" y="118" />
+      </bpmndi:BPMNEdge>
+
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

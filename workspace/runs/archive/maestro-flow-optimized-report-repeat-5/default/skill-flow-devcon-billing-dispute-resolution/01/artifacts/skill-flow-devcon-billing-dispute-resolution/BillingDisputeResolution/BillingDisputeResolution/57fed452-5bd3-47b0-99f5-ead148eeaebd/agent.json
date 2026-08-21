@@ -1,0 +1,119 @@
+{
+  "version": "1.1.0",
+  "settings": {
+    "model": "anthropic.claude-sonnet-4-5-20250929-v1:0",
+    "maxTokens": 4000,
+    "temperature": 0.3,
+    "engine": "basic-v2",
+    "maxIterations": 3,
+    "mode": "standard"
+  },
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "normalizeData__output__normalizedInvoiceNumber": {
+        "type": "string",
+        "description": "Invoice number"
+      },
+      "disputeAnalyst__output__determination": {
+        "type": "string",
+        "description": "Analyst determination"
+      },
+      "disputeAnalyst__output__creditAmount": {
+        "type": "number",
+        "description": "Approved credit amount"
+      },
+      "disputeAnalyst__output__rationale": {
+        "type": "string",
+        "description": "Analyst rationale"
+      },
+      "start__output__webhookPayload": {
+        "type": "object",
+        "description": "Customer and dispute information"
+      }
+    }
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "subject": {
+        "type": "string",
+        "description": "Email subject line"
+      },
+      "body": {
+        "type": "string",
+        "description": "Email body text"
+      }
+    },
+    "required": [
+      "subject",
+      "body"
+    ]
+  },
+  "metadata": {
+    "storageVersion": "50.0.0",
+    "isConversational": false,
+    "showProjectCreationExperience": false
+  },
+  "type": "lowCode",
+  "guardrails": [],
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a customer resolution specialist. Draft professional, empathetic resolution emails for billing disputes. Always cite the specific invoice number and any approved credit amount. Keep the tone courteous and solution-focused. Return only the subject and body.",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "You are a customer resolution specialist. Draft professional, empathetic resolution emails for billing disputes. Always cite the specific invoice number and any approved credit amount. Keep the tone courteous and solution-focused. Return only the subject and body."
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "Draft a resolution email for the following billing dispute:\n\nInvoice Number: {{input.normalizeData__output__normalizedInvoiceNumber}}\nDetermination: {{input.disputeAnalyst__output__determination}}\nApproved Credit Amount: ${{input.disputeAnalyst__output__creditAmount}}\nRationale: {{input.disputeAnalyst__output__rationale}}\nCustomer Info: {{input.start__output__webhookPayload}}",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "Draft a resolution email for the following billing dispute:\n\nInvoice Number: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.normalizeData__output__normalizedInvoiceNumber"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\nDetermination: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.disputeAnalyst__output__determination"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\nApproved Credit Amount: $"
+        },
+        {
+          "type": "variable",
+          "rawString": "input.disputeAnalyst__output__creditAmount"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\nRationale: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.disputeAnalyst__output__rationale"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\nCustomer Info: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__webhookPayload"
+        }
+      ]
+    }
+  ],
+  "projectId": "57fed452-5bd3-47b0-99f5-ead148eeaebd"
+}

@@ -1,0 +1,83 @@
+{
+  "version": "1.1.0",
+  "settings": {
+    "model": "gpt-5.4",
+    "maxTokens": 128000,
+    "temperature": 0,
+    "engine": "basic-v2",
+    "maxIterations": 5,
+    "mode": "standard"
+  },
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "start__output__emailSubject": {
+        "type": "string",
+        "description": "Subject line of the inbound support email"
+      },
+      "start__output__emailBody": {
+        "type": "string",
+        "description": "Body text of the inbound support email"
+      }
+    }
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "category": {
+        "type": "string",
+        "description": "Support category: one of Billing, Technical, Account, FeatureRequest, General"
+      },
+      "priority": {
+        "type": "string",
+        "description": "Priority level: one of Critical, High, Medium, Low"
+      }
+    },
+    "required": [
+      "category",
+      "priority"
+    ]
+  },
+  "metadata": {
+    "storageVersion": "50.0.0",
+    "isConversational": false,
+    "showProjectCreationExperience": false
+  },
+  "type": "lowCode",
+  "guardrails": [],
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a support-email triage assistant. Your job is to read an inbound customer support email and return exactly two fields: category and priority.\n\nCategories:\n- Billing: questions or disputes about invoices, payments, refunds, or subscriptions\n- Technical: bugs, errors, integration failures, or product malfunctions\n- Account: login issues, password resets, user management, or access permissions\n- FeatureRequest: suggestions, enhancement requests, or new capability asks\n- General: anything that does not fit the categories above\n\nPriority levels:\n- Critical: service is completely down, data loss is occurring, or a compliance deadline is at immediate risk\n- High: key feature is broken for the customer with no workaround available\n- Medium: issue affects the customer but a workaround exists, or the request is time-sensitive\n- Low: informational question, minor inconvenience, or non-urgent feature request\n\nRules:\n1. Read the subject and body once. Do not call any tools.\n2. Output only the JSON object with 'category' and 'priority'. Never include explanation text outside the JSON.\n3. If the email is ambiguous, choose the most likely category and the lower of the two plausible priorities.\n4. Never end a run without returning both fields.",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "You are a support-email triage assistant. Your job is to read an inbound customer support email and return exactly two fields: category and priority.\n\nCategories:\n- Billing: questions or disputes about invoices, payments, refunds, or subscriptions\n- Technical: bugs, errors, integration failures, or product malfunctions\n- Account: login issues, password resets, user management, or access permissions\n- FeatureRequest: suggestions, enhancement requests, or new capability asks\n- General: anything that does not fit the categories above\n\nPriority levels:\n- Critical: service is completely down, data loss is occurring, or a compliance deadline is at immediate risk\n- High: key feature is broken for the customer with no workaround available\n- Medium: issue affects the customer but a workaround exists, or the request is time-sensitive\n- Low: informational question, minor inconvenience, or non-urgent feature request\n\nRules:\n1. Read the subject and body once. Do not call any tools.\n2. Output only the JSON object with 'category' and 'priority'. Never include explanation text outside the JSON.\n3. If the email is ambiguous, choose the most likely category and the lower of the two plausible priorities.\n4. Never end a run without returning both fields."
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "Subject: {{input.start__output__emailSubject}}\n\n{{input.start__output__emailBody}}",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "Subject: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__emailSubject"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\n"
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__emailBody"
+        }
+      ]
+    }
+  ],
+  "projectId": "cac4af44-9739-4e4a-b68e-099528cdec36"
+}

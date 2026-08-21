@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "ProjectEulerTitle",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "a17d0550-36be-48cc-91df-78cc90874f0b",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "ProjectEulerTitle"
+    },
+    "locks": [],
+    "key": "5392b77f-3434-4581-99ce-a943aa692ef9",
+    "files": []
+  }
+}

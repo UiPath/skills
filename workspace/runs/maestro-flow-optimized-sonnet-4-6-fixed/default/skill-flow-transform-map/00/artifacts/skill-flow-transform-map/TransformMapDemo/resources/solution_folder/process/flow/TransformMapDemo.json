@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "TransformMapDemo",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "6797d3b1-e055-4e4f-9e5a-8a18f3971c35",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "TransformMapDemo"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Flow",
+      "name": "TransformMapDemo",
+      "package": {
+        "key": "f958fed6-a0cf-4bdf-9950-9af88f0dc3af"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "c0bed352-921f-4735-b078-fbc3a14b51f4",
+    "files": []
+  }
+}

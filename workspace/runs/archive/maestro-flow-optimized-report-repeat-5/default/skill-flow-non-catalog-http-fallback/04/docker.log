@@ -1,0 +1,5 @@
+18:26:07 [INFO   ] [default/skill-flow-non-catalog-http-fallback/04] orchestrator: API routing: aws_bedrock
+18:30:32 [INFO   ] [default/skill-flow-non-catalog-http-fallback/04] orchestrator: Success criteria: 2/2 passed, weighted score: 1.000
+18:30:32 [INFO   ] [default/skill-flow-non-catalog-http-fallback/04] orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+18:30:32 [INFO   ] [default/skill-flow-non-catalog-http-fallback/04] orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-non-catalog-http-fallback
+18:30:32 [INFO   ] [default/skill-flow-non-catalog-http-fallback/04] orchestrator: Task finished: status=SUCCESS duration=267.5s score=1.000 iterations=1

@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "NtsbAccidentReportExtractor",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "f82eabb9-6843-4104-8fd8-82e9ecce51b3",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "NtsbAccidentReportExtractor"
+    },
+    "locks": [],
+    "key": "5a43564d-e0e9-41c4-8921-bdcb8f8183c1",
+    "files": []
+  }
+}

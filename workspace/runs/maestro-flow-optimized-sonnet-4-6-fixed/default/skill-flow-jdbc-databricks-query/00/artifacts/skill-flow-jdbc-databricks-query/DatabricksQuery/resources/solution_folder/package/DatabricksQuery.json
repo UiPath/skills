@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "DatabricksQuery",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "87d57ed6-54b8-4451-ab86-ef7126060217",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "DatabricksQuery"
+    },
+    "locks": [],
+    "key": "95d6041e-fc9c-45d0-a01f-e5646f5efd7d",
+    "files": []
+  }
+}

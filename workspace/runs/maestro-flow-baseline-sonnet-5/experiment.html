@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Experiment skill-tests-smoke</title>
+<style>
+:root {
+  --bg-page: #0f1419;
+  --bg-card: #1a2129;
+  --bg-card-2: #232d38;
+  --bg-code: #0b0f14;
+  --fg: #e6edf3;
+  --fg-muted: #8b98a5;
+  --fg-dim: #6e7681;
+  --border: #30363d;
+  --accent: #58a6ff;
+  --score-high: #22c55e;
+  --score-mid: #f59e0b;
+  --score-low: #ef4444;
+  --status-success: #22c55e;
+  --status-failure: #f59e0b;
+  --status-error: #ef4444;
+  --status-neutral: #6e7681;
+  --shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+.light {
+  --bg-page: #ffffff;
+  --bg-card: #f6f8fa;
+  --bg-card-2: #eaeef2;
+  --bg-code: #f6f8fa;
+  --fg: #1f2328;
+  --fg-muted: #636c76;
+  --fg-dim: #8b949e;
+  --border: #d0d7de;
+  --accent: #0969da;
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial,
+               sans-serif;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--fg);
+  background: var(--bg-page);
+}
+.container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+h1, h2, h3, h4 { margin: 0 0 12px 0; line-height: 1.25; }
+h1 { font-size: 22px; font-weight: 600; }
+h2 { font-size: 18px; font-weight: 600; margin-top: 28px;
+     padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+h3 { font-size: 15px; font-weight: 600; color: var(--fg-muted); }
+h4 { font-size: 13px; font-weight: 600; color: var(--fg-muted); }
+p { margin: 0 0 8px 0; }
+.muted { color: var(--fg-muted); }
+.dim { color: var(--fg-dim); }
+.mono { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+        monospace; font-size: 12.5px; }
+code { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+       monospace; font-size: 12.5px; background: var(--bg-code);
+       border: 1px solid var(--border); padding: 1px 5px; border-radius: 3px; }
+pre { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+      monospace; font-size: 12.5px; background: var(--bg-code);
+      border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px;
+      margin: 6px 0; overflow-x: auto; white-space: pre-wrap;
+      word-wrap: break-word; }
+.header-bar { display: flex; align-items: center; justify-content: space-between;
+              margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+.title-group { flex: 1; min-width: 0; }
+.title-group .subtitle { color: var(--fg-muted); font-size: 13px;
+                         margin-top: 2px; word-break: break-all; }
+.badges { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.badge { display: inline-flex; align-items: center; gap: 6px;
+         padding: 4px 10px; border-radius: 12px; font-size: 12px;
+         font-weight: 600; background: var(--bg-card-2);
+         border: 1px solid var(--border); color: var(--fg); }
+.badge.success { background: color-mix(in srgb, var(--status-success) 20%, var(--bg-card-2));
+                 border-color: var(--status-success); color: var(--status-success); }
+.badge.failure { background: color-mix(in srgb, var(--status-failure) 20%, var(--bg-card-2));
+                 border-color: var(--status-failure); color: var(--status-failure); }
+.badge.error { background: color-mix(in srgb, var(--status-error) 20%, var(--bg-card-2));
+               border-color: var(--status-error); color: var(--status-error); }
+.badge.warning { background: color-mix(in srgb, #f4a52810 20%, var(--bg-card-2));
+                 border-color: #f4a528; color: #f4a528; }
+.badge.neutral { color: var(--fg-muted); }
+.score-pill { display: inline-block; padding: 2px 8px; border-radius: 10px;
+              font-size: 12px; font-weight: 700; min-width: 42px;
+              text-align: center; color: #0b0f14; }
+.score-high { background: var(--score-high); }
+.score-mid { background: var(--score-mid); }
+.score-low { background: var(--score-low); }
+.card { background: var(--bg-card); border: 1px solid var(--border);
+        border-radius: 8px; padding: 16px 20px; margin-bottom: 16px;
+        box-shadow: var(--shadow); }
+.card.highlight { border-left: 4px solid var(--accent); }
+.grid { display: grid; gap: 12px;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+.stat { background: var(--bg-card-2); padding: 10px 12px; border-radius: 6px;
+        border: 1px solid var(--border); }
+.stat .label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;
+               color: var(--fg-muted); margin-bottom: 4px; }
+.stat .value { font-size: 16px; font-weight: 600; }
+table { width: 100%; border-collapse: collapse; margin: 4px 0 12px 0; }
+th, td { text-align: left; padding: 8px 10px;
+         border-bottom: 1px solid var(--border); vertical-align: top;
+         font-size: 13px; }
+th { color: var(--fg-muted); font-weight: 600; font-size: 12px;
+     text-transform: uppercase; letter-spacing: 0.3px; }
+tr:last-child td { border-bottom: none; }
+details { margin: 6px 0; border: 1px solid var(--border); border-radius: 6px;
+          background: var(--bg-card-2); }
+details > summary { cursor: pointer; padding: 8px 12px; user-select: none;
+                    font-weight: 500; list-style: none; }
+details > summary::-webkit-details-marker { display: none; }
+details > summary::before { content: "▸ "; color: var(--fg-dim);
+                            display: inline-block; width: 14px;
+                            transition: transform 0.15s; }
+details[open] > summary::before { content: "▾ "; }
+details .details-body { padding: 0 12px 10px 12px; }
+.tool-row { display: flex; align-items: center; gap: 10px;
+            flex-wrap: wrap; font-size: 13px; }
+.tool-name { font-weight: 600; color: var(--accent); font-family: ui-monospace,
+             SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+.tool-status-ok { color: var(--status-success); font-size: 11px;
+                  font-weight: 600; }
+.tool-status-err { color: var(--status-error); font-size: 11px;
+                   font-weight: 600; }
+.tool-duration { color: var(--fg-muted); font-size: 12px; }
+.tool-seq { color: var(--fg-dim); font-size: 11px; font-weight: 600;
+            min-width: 24px; text-align: right; font-family: ui-monospace,
+            SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+.turn-header { display: flex; justify-content: space-between;
+               align-items: baseline; flex-wrap: wrap; gap: 10px;
+               margin-bottom: 10px; }
+.turn-meta { font-size: 12px; color: var(--fg-muted); }
+.criterion-row td:first-child { font-family: ui-monospace, SFMono-Regular,
+                                 "SF Mono", Menlo, Consolas, monospace;
+                                 color: var(--fg-muted); font-size: 12px; }
+.judge-section { display: flex; flex-direction: column; gap: 12px; }
+.judge-card { padding: 14px 16px; }
+.judge-card-head { display: flex; justify-content: space-between;
+                    align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+.judge-card-title { font-size: 14px; line-height: 1.4; flex: 1; min-width: 0; }
+.judge-card-score { flex-shrink: 0; }
+.judge-rationale { margin-top: 10px; padding: 10px 12px;
+                   background: var(--bg-code); border-radius: 4px;
+                   font-size: 13px; line-height: 1.5; }
+.judge-findings { margin: 8px 0 0 18px; padding-left: 4px; font-size: 13px;
+                   line-height: 1.6; }
+.judge-findings li { margin: 2px 0; }
+.nav-toggle { display: inline-block; padding: 5px 10px; font-size: 12px;
+              background: var(--bg-card-2); border: 1px solid var(--border);
+              border-radius: 5px; color: var(--fg); cursor: pointer; }
+.nav-toggle:hover { background: var(--bg-card); }
+.llm-next-steps { margin: 6px 0 0 20px; padding-left: 0; }
+.llm-next-steps li { margin: 3px 0; }
+.iteration-group { padding: 12px 16px 4px 16px; margin-bottom: 20px;
+                   border-radius: 0 6px 6px 0; border-left: 4px solid var(--status-neutral); }
+/* rgba fallback for browsers without color-mix (Chrome <111, Firefox <113, Safari <16.2). */
+.iteration-group--recovered { border-left-color: var(--status-success);
+                              background: rgba(34, 197, 94, 0.06);
+                              background: color-mix(in srgb, var(--status-success) 6%, transparent); }
+.iteration-group--terminal { border-left-color: var(--status-error);
+                             background: rgba(239, 68, 68, 0.06);
+                             background: color-mix(in srgb, var(--status-error) 6%, transparent); }
+.iteration-group__banner { margin: 0 0 12px 0; font-size: 14px; font-weight: 600; }
+.iteration-group--recovered .iteration-group__banner { color: var(--status-success); }
+.iteration-group--terminal .iteration-group__banner { color: var(--status-error); }
+.attempt-transition { display: flex; align-items: center; gap: 8px;
+                      margin: -6px 0 12px 8px; color: var(--status-error); font-size: 12.5px; }
+.attempt-transition__icon { font-weight: 700; }
+footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--border);
+         color: var(--fg-dim); font-size: 12px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="header-bar">
+  <div class="title-group">
+    <h1>Experiment: skill-tests-smoke</h1>
+    <div class="subtitle">Linux PR-gate smoke tests — docker isolation, fast turn budget</div>
+  </div>
+  <div class="badges">
+    <span class="badge neutral">1 variants</span>
+    <span class="badge neutral">45m 59s</span>
+    <span class="nav-toggle" onclick="toggleTheme()">Toggle theme</span>
+  </div>
+</div>
+<h2>Variants</h2>
+<div class="card" style="padding:0">
+<table>
+  <thead><tr><th>Variant</th><th style="width:100px">Avg Score</th><th style="width:120px">Pass Ratio</th></tr></thead>
+  <tbody>
+<tr>
+  <td><a href="default/variant.html">default</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">0.94</span></td>
+  <td>115/127</td>
+</tr>
+</tbody>
+</table>
+</div>
+
+<h2>Aggregate Metrics</h2>
+<div class="card" style="padding:0">
+  <table>
+    <thead><tr><th>Metric</th><th>default</th></tr></thead>
+    <tbody><tr><td>Tasks Run</td><td>127</td></tr><tr><td>Succeeded</td><td>115</td></tr><tr><td>Failed</td><td>10</td></tr><tr><td>Errors</td><td>2</td></tr><tr><td>Pass Rate</td><td>90.6%</td></tr><tr><td>Score</td><td>0.935 ± 0.202</td></tr><tr><td>Duration (s)</td><td>325.2 ± 244.0</td></tr><tr><td>Assistant Turns</td><td>59.0 ± 36.8</td></tr><tr><td>Tokens</td><td>3,291,591 ± 3,147,820</td></tr></tbody>
+  </table>
+</div>
+
+<h2>Win Rates</h2>
+<div class="card">
+  <ul><li><strong>default</strong>: 127/127 tasks (100%)</li></ul>
+</div>
+
+<h2>Per-Task Comparison</h2>
+<div class="card" style="padding:0">
+  <table>
+    <thead><tr><th>Task</th><th>default</th><th>Best</th><th>Spread</th></tr></thead>
+    <tbody><tr><td class='mono'>skill-flow-devcon-billing-resolution-writer</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-flow-hitl-quality-brownfield-insert</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-flow-file-attachment-debug</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-flow-ixp-e2e-invoice-extraction-greenfield</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-flow-init-validate</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-flow-jdbc-databricks-query</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-flow-reading-list</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-flow-ixp-routing-negative/stripe-http</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-flow-ixp-routing-negative/slack-summary</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-flow-ixp-routing-negative/sf-update</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-flow-ixp-routing-negative/http-webhook</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-flow-ixp-routing-negative/gsheet-loop</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-flow-ixp-routing-negative/queue-write</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-flow-ixp-routing-negative/teams-decision</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-flow-ixp-routing-negative/delay-email</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-flow-transform-group-by</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-flow-customer-escalation</td><td>0.333 (-)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-flow-terminate</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-flow-bindings-no-duplicates</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-flow-eval-simulation-crud</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-flow-ixp-routing-listing/r01</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-flow-ixp-routing-listing/r02</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-flow-ixp-routing-listing/r03</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-flow-ixp-routing-listing/r04</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-flow-ixp-routing-listing/r05</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-flow-ixp-routing-listing/r06</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-flow-ixp-routing-listing/r07</td><td>0.500 (-)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-flow-ixp-routing-listing/r08</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-flow-ixp-routing-listing/r09</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-flow-ixp-routing-listing/r10</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-flow-ipe-drive-to-slack</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-flow-ipe-required-groups</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-flow-ipe-enhanced-enum</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-flow-bindings-idempotent-reconfigure</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-flow-slack-http-fallback</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-flow-hitl-quality-boolean-decision</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-flow-bindings-multi-connector-independence</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-flow-rpa</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-flow-ipe-dtl-load-by-default-true</td><td>0.375 (-)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-flow-lowcode-agent</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-flow-webhook-waitfor-parallel</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-flow-hitl-schema-design-simulated</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-flow-registry-discovery</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-flow-add-node</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-flow-multi-city-weather</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-flow-bellevue-weather-simulated</td><td>0.889 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-flow-ixp-invoice-extraction-simulated</td><td>0.000 (!)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-flow-api-workflow</td><td>0.375 (M)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-flow-loop-multiply</td><td>0.625 (M)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-flow-devcon-billing-dispute-analyst</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-flow-eval-inline-agent</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-flow-ipe-complex-array</td><td>0.875 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-flow-e2e-escalation-slack-alert</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-flow-expense-approval-simulated</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-flow-transform-map</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-flow-wiki-pageviews</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-flow-paginated-reference-lookup</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-flow-eval-evaluator-type-choice</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-flow-outlook-waitfor-email</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-flow-switch</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-flow-cli-dice-roller-simulated</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-flow-ipe-multiselect</td><td>0.231 (-)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-flow-decision</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-flow-ipe-ceql-where</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-flow-remove-node</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-flow-transform-filter</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-flow-ixp-scaffold-multinode</td><td>0.276 (M)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-flow-outlook-trigger-inbox</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-flow-scheduled-trigger</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-flow-ixp-e2e-project-selection/aviation</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-flow-ixp-e2e-project-selection/birth-certificate</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-flow-slack-channel-description</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-flow-ipe-path-params</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-flow-dice-roller</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-flow-openmeteo-weather</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-flow-eval-no-auto-upload</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-flow-ipe-generate-schema</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-flow-eval-local-crud</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-flow-interactive-customer-escalation-triage</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-flow-ixp-routing/explicit</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-flow-ixp-routing/invoice-extraction</td><td>0.000 (!)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-flow-ixp-routing/receipts</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-flow-ixp-routing/contracts</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-flow-ixp-routing/forms-classify</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-flow-hitl-quality-result-downstream</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-flow-slack-weather-pipeline</td><td>0.375 (M)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-flow-hitl-smoke-node-placed</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-flow-ixp-integration-handle-routing</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-flow-e2e-escalation-orchestrator-paths</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-flow-trigger-with-filter</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-flow-ipe-jira-search-triage</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-flow-non-catalog-http-fallback</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-flow-hitl-quality-schema-design</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-flow-ipe-enum</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-flow-update-node</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-flow-devcon-billing-discrepancy-detector</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-flow-solution-select-ask</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-flow-add-output</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-flow-ipe-jira-get-issue</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-flow-merge-parallel-sync</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-flow-devcon-billing-dispute-resolution</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-flow-ipe-dtl-load-by-default-false</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-flow-batch-transform</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-flow-coded-agent</td><td>0.375 (-)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-flow-hitl-smoke-multi-outcome-routing</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-flow-delay</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-flow-slack-channel-description-simulated</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-flow-summarize</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-flow-ipe-jira-lifecycle</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-flow-bindings-reconfigure-different-connection</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-flow-calculator</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-flow-group-to-subflow</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-flow-ipe-searchable-joins</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-flow-bellevue-weather</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-flow-ipe-query-params</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-flow-feet-inches</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-flow-inline-agent-robust</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-flow-customer-escalation-simulated</td><td>0.938 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-flow-e2e-devcon-expense-approval</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-flow-hitl-smoke-completed-port</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-flow-subflow</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-flow-ipe-jira-create-issue</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-flow-devcon-billing-invoice-lookup</td><td>0.909 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-flow-generic-dynamic-node</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-flow-move-node</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-flow-ixp-scaffold-minimal</td><td>1.000 (+)</td><td>default</td><td>0.000</td></tr><tr><td class='mono'>skill-flow-e2e-escalation-jira-ticket</td><td>0.684 (-)</td><td>default</td><td>0.000</td></tr></tbody>
+  </table>
+</div>
+
+<footer>Generated by coder_eval · 2026-08-18T22:30:10</footer>
+</div>
+<script>
+function toggleTheme() {
+  document.documentElement.classList.toggle('light');
+  try {
+    const mode = document.documentElement.classList.contains('light') ? 'light' : 'dark';
+    localStorage.setItem('coder-eval-theme', mode);
+  } catch (e) { /* ignore */ }
+}
+(function() {
+  try {
+    if (localStorage.getItem('coder-eval-theme') === 'light') {
+      document.documentElement.classList.add('light');
+    }
+  } catch (e) { /* ignore */ }
+})();
+</script>
+</body>
+</html>

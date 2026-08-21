@@ -1,0 +1,276 @@
+{
+  "Result": "Success",
+  "Data": {
+    "ProjectName": "vendor-invoices-f8a3c211-ixp",
+    "TotalDocuments": 1,
+    "DocumentsWithPredictions": 1,
+    "Predictions": [
+      {
+        "DocumentId": "0335e10ceb19bcda.0e0ff33d9fa2fef0",
+        "Filename": "invoice_cloudwave_004.pdf",
+        "Labels": [
+          {
+            "Name": "Invoice Header",
+            "Occurrence": 0,
+            "Fields": [
+              {
+                "FieldId": "fld_inv_num",
+                "FieldName": "Invoice Number",
+                "FormattedValue": "CW-0029541"
+              },
+              {
+                "FieldId": "fld_inv_date",
+                "FieldName": "Invoice Date",
+                "FormattedValue": "2024-03-01"
+              },
+              {
+                "FieldId": "fld_due_date",
+                "FieldName": "Due Date",
+                "FormattedValue": "2024-03-31"
+              },
+              {
+                "FieldId": "fld_po_num",
+                "FieldName": "PO Number",
+                "FormattedValue": "PO-GC-44501"
+              },
+              {
+                "FieldId": "fld_pay_terms",
+                "FieldName": "Payment Terms",
+                "FormattedValue": "Due on Receipt"
+              },
+              {
+                "FieldId": "fld_currency",
+                "FieldName": "Currency",
+                "FormattedValue": "USD"
+              }
+            ]
+          },
+          {
+            "Name": "Vendor Details",
+            "Occurrence": 0,
+            "Fields": [
+              {
+                "FieldId": "fld_vend_name",
+                "FieldName": "Vendor Name",
+                "FormattedValue": "CloudWave Infrastructure LLC"
+              },
+              {
+                "FieldId": "fld_vend_addr",
+                "FieldName": "Vendor Address",
+                "FormattedValue": "1 Cloud Campus Drive, Seattle, WA 98101"
+              },
+              {
+                "FieldId": "fld_vend_email",
+                "FieldName": "Vendor Email",
+                "FormattedValue": "billing@cloudwave.io"
+              },
+              {
+                "FieldId": "fld_vend_phone",
+                "FieldName": "Vendor Phone",
+                "FormattedValue": "+1 (206) 555-9020"
+              }
+            ]
+          },
+          {
+            "Name": "Bill To",
+            "Occurrence": 0,
+            "Fields": [
+              {
+                "FieldId": "fld_bt_name",
+                "FieldName": "Bill-To Name",
+                "FormattedValue": "GlobalCorp IT Department"
+              },
+              {
+                "FieldId": "fld_bt_addr",
+                "FieldName": "Bill-To Address",
+                "FormattedValue": "1200 Corporate Plaza, Floor 12, New York, NY 10001"
+              }
+            ]
+          },
+          {
+            "Name": "Invoice Totals",
+            "Occurrence": 0,
+            "Fields": [
+              {
+                "FieldId": "fld_subtotal",
+                "FieldName": "Subtotal",
+                "FormattedValue": "3,908.00 USD"
+              },
+              {
+                "FieldId": "fld_tax_rate",
+                "FieldName": "Tax Rate",
+                "FormattedValue": "10.1"
+              },
+              {
+                "FieldId": "fld_tax_amount",
+                "FieldName": "Tax Amount",
+                "FormattedValue": "394.71 USD"
+              },
+              {
+                "FieldId": "fld_total",
+                "FieldName": "Total Due",
+                "FormattedValue": "4,302.71 USD"
+              }
+            ]
+          },
+          {
+            "Name": "Line Items",
+            "Occurrence": 0,
+            "Fields": [
+              {
+                "FieldId": "fld_li_desc",
+                "FieldName": "Description",
+                "FormattedValue": "Cloud Compute \u2014 500 vCPU-hours"
+              },
+              {
+                "FieldId": "fld_li_qty",
+                "FieldName": "Quantity",
+                "FormattedValue": "500"
+              },
+              {
+                "FieldId": "fld_li_price",
+                "FieldName": "Unit Price",
+                "FormattedValue": "0.10 USD"
+              },
+              {
+                "FieldId": "fld_li_total",
+                "FieldName": "Line Total",
+                "FormattedValue": "48.00 USD"
+              }
+            ]
+          },
+          {
+            "Name": "Line Items",
+            "Occurrence": 1,
+            "Fields": [
+              {
+                "FieldId": "fld_li_desc",
+                "FieldName": "Description",
+                "FormattedValue": "Cloud Storage \u2014 50 TB (March 2024)"
+              },
+              {
+                "FieldId": "fld_li_qty",
+                "FieldName": "Quantity",
+                "FormattedValue": "50"
+              },
+              {
+                "FieldId": "fld_li_price",
+                "FieldName": "Unit Price",
+                "FormattedValue": "23.00 USD"
+              },
+              {
+                "FieldId": "fld_li_total",
+                "FieldName": "Line Total",
+                "FormattedValue": "1,150.00 USD"
+              }
+            ]
+          },
+          {
+            "Name": "Line Items",
+            "Occurrence": 2,
+            "Fields": [
+              {
+                "FieldId": "fld_li_desc",
+                "FieldName": "Description",
+                "FormattedValue": "Data Transfer Egress \u2014 12 TB"
+              },
+              {
+                "FieldId": "fld_li_qty",
+                "FieldName": "Quantity",
+                "FormattedValue": "12"
+              },
+              {
+                "FieldId": "fld_li_price",
+                "FieldName": "Unit Price",
+                "FormattedValue": "90.00 USD"
+              },
+              {
+                "FieldId": "fld_li_total",
+                "FieldName": "Line Total",
+                "FormattedValue": "1,130.00 USD"
+              }
+            ]
+          },
+          {
+            "Name": "Line Items",
+            "Occurrence": 3,
+            "Fields": [
+              {
+                "FieldId": "fld_li_desc",
+                "FieldName": "Description",
+                "FormattedValue": "Managed Kubernetes Service (3 clusters)"
+              },
+              {
+                "FieldId": "fld_li_qty",
+                "FieldName": "Quantity",
+                "FormattedValue": "3"
+              },
+              {
+                "FieldId": "fld_li_price",
+                "FieldName": "Unit Price",
+                "FormattedValue": "150.00 USD"
+              },
+              {
+                "FieldId": "fld_li_total",
+                "FieldName": "Line Total",
+                "FormattedValue": "450.00 USD"
+              }
+            ]
+          },
+          {
+            "Name": "Line Items",
+            "Occurrence": 4,
+            "Fields": [
+              {
+                "FieldId": "fld_li_desc",
+                "FieldName": "Description",
+                "FormattedValue": "CDN Bandwidth \u2014 8 TB"
+              },
+              {
+                "FieldId": "fld_li_qty",
+                "FieldName": "Quantity",
+                "FormattedValue": "8"
+              },
+              {
+                "FieldId": "fld_li_price",
+                "FieldName": "Unit Price",
+                "FormattedValue": "85.00 USD"
+              },
+              {
+                "FieldId": "fld_li_total",
+                "FieldName": "Line Total",
+                "FormattedValue": "680.00 USD"
+              }
+            ]
+          },
+          {
+            "Name": "Line Items",
+            "Occurrence": 5,
+            "Fields": [
+              {
+                "FieldId": "fld_li_desc",
+                "FieldName": "Description",
+                "FormattedValue": "DDoS Protection \u2014 Enterprise Tier"
+              },
+              {
+                "FieldId": "fld_li_qty",
+                "FieldName": "Quantity",
+                "FormattedValue": "1"
+              },
+              {
+                "FieldId": "fld_li_price",
+                "FieldName": "Unit Price",
+                "FormattedValue": "500.00 USD"
+              },
+              {
+                "FieldId": "fld_li_total",
+                "FieldName": "Line Total",
+                "FormattedValue": "500.00 USD"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

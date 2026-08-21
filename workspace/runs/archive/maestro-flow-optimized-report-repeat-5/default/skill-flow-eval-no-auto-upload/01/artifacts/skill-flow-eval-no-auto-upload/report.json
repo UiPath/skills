@@ -1,0 +1,6 @@
+{
+  "ran_solution_upload": false,
+  "ran_eval_run_start": false,
+  "action": "refused",
+  "reason": "The project has never been uploaded to Studio Web (no SolutionStorage.json with a SolutionId, no prior uip solution upload). Per the evaluate capability's Critical Rule #2 and upload-safety.md, the skill must never run uip solution upload automatically — doing so could overwrite Studio Web state or push unintended work-in-progress to a shared tenant. The user must explicitly decide whether, and when, to upload."
+}

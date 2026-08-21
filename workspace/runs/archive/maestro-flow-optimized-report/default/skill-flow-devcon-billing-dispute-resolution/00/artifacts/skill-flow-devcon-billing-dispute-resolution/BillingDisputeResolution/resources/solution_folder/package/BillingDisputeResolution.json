@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "BillingDisputeResolution",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "a140e672-d9fa-4d47-8ee6-09e85e5bc0ae",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "BillingDisputeResolution"
+    },
+    "locks": [],
+    "key": "f3a5a089-933d-4b54-b466-27ba3a328e57",
+    "files": []
+  }
+}

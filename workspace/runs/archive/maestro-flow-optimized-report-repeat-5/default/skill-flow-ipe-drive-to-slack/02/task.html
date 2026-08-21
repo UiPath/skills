@@ -1,0 +1,2278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>coder_eval · skill-flow-ipe-drive-to-slack · default</title>
+<style>
+:root {
+  --bg-page: #0f1419;
+  --bg-card: #1a2129;
+  --bg-card-2: #232d38;
+  --bg-code: #0b0f14;
+  --fg: #e6edf3;
+  --fg-muted: #8b98a5;
+  --fg-dim: #6e7681;
+  --border: #30363d;
+  --accent: #58a6ff;
+  --score-high: #22c55e;
+  --score-mid: #f59e0b;
+  --score-low: #ef4444;
+  --status-success: #22c55e;
+  --status-failure: #f59e0b;
+  --status-error: #ef4444;
+  --status-neutral: #6e7681;
+  --shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+.light {
+  --bg-page: #ffffff;
+  --bg-card: #f6f8fa;
+  --bg-card-2: #eaeef2;
+  --bg-code: #f6f8fa;
+  --fg: #1f2328;
+  --fg-muted: #636c76;
+  --fg-dim: #8b949e;
+  --border: #d0d7de;
+  --accent: #0969da;
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial,
+               sans-serif;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--fg);
+  background: var(--bg-page);
+}
+.container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+h1, h2, h3, h4 { margin: 0 0 12px 0; line-height: 1.25; }
+h1 { font-size: 22px; font-weight: 600; }
+h2 { font-size: 18px; font-weight: 600; margin-top: 28px;
+     padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+h3 { font-size: 15px; font-weight: 600; color: var(--fg-muted); }
+h4 { font-size: 13px; font-weight: 600; color: var(--fg-muted); }
+p { margin: 0 0 8px 0; }
+.muted { color: var(--fg-muted); }
+.dim { color: var(--fg-dim); }
+.mono { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+        monospace; font-size: 12.5px; }
+code { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+       monospace; font-size: 12.5px; background: var(--bg-code);
+       border: 1px solid var(--border); padding: 1px 5px; border-radius: 3px; }
+pre { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+      monospace; font-size: 12.5px; background: var(--bg-code);
+      border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px;
+      margin: 6px 0; overflow-x: auto; white-space: pre-wrap;
+      word-wrap: break-word; }
+.header-bar { display: flex; align-items: center; justify-content: space-between;
+              margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+.title-group { flex: 1; min-width: 0; }
+.title-group .subtitle { color: var(--fg-muted); font-size: 13px;
+                         margin-top: 2px; word-break: break-all; }
+.badges { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.badge { display: inline-flex; align-items: center; gap: 6px;
+         padding: 4px 10px; border-radius: 12px; font-size: 12px;
+         font-weight: 600; background: var(--bg-card-2);
+         border: 1px solid var(--border); color: var(--fg); }
+.badge.success { background: color-mix(in srgb, var(--status-success) 20%, var(--bg-card-2));
+                 border-color: var(--status-success); color: var(--status-success); }
+.badge.failure { background: color-mix(in srgb, var(--status-failure) 20%, var(--bg-card-2));
+                 border-color: var(--status-failure); color: var(--status-failure); }
+.badge.error { background: color-mix(in srgb, var(--status-error) 20%, var(--bg-card-2));
+               border-color: var(--status-error); color: var(--status-error); }
+.badge.warning { background: color-mix(in srgb, #f4a52810 20%, var(--bg-card-2));
+                 border-color: #f4a528; color: #f4a528; }
+.badge.neutral { color: var(--fg-muted); }
+.score-pill { display: inline-block; padding: 2px 8px; border-radius: 10px;
+              font-size: 12px; font-weight: 700; min-width: 42px;
+              text-align: center; color: #0b0f14; }
+.score-high { background: var(--score-high); }
+.score-mid { background: var(--score-mid); }
+.score-low { background: var(--score-low); }
+.card { background: var(--bg-card); border: 1px solid var(--border);
+        border-radius: 8px; padding: 16px 20px; margin-bottom: 16px;
+        box-shadow: var(--shadow); }
+.card.highlight { border-left: 4px solid var(--accent); }
+.grid { display: grid; gap: 12px;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+.stat { background: var(--bg-card-2); padding: 10px 12px; border-radius: 6px;
+        border: 1px solid var(--border); }
+.stat .label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;
+               color: var(--fg-muted); margin-bottom: 4px; }
+.stat .value { font-size: 16px; font-weight: 600; }
+table { width: 100%; border-collapse: collapse; margin: 4px 0 12px 0; }
+th, td { text-align: left; padding: 8px 10px;
+         border-bottom: 1px solid var(--border); vertical-align: top;
+         font-size: 13px; }
+th { color: var(--fg-muted); font-weight: 600; font-size: 12px;
+     text-transform: uppercase; letter-spacing: 0.3px; }
+tr:last-child td { border-bottom: none; }
+details { margin: 6px 0; border: 1px solid var(--border); border-radius: 6px;
+          background: var(--bg-card-2); }
+details > summary { cursor: pointer; padding: 8px 12px; user-select: none;
+                    font-weight: 500; list-style: none; }
+details > summary::-webkit-details-marker { display: none; }
+details > summary::before { content: "▸ "; color: var(--fg-dim);
+                            display: inline-block; width: 14px;
+                            transition: transform 0.15s; }
+details[open] > summary::before { content: "▾ "; }
+details .details-body { padding: 0 12px 10px 12px; }
+.tool-row { display: flex; align-items: center; gap: 10px;
+            flex-wrap: wrap; font-size: 13px; }
+.tool-name { font-weight: 600; color: var(--accent); font-family: ui-monospace,
+             SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+.tool-status-ok { color: var(--status-success); font-size: 11px;
+                  font-weight: 600; }
+.tool-status-err { color: var(--status-error); font-size: 11px;
+                   font-weight: 600; }
+.tool-duration { color: var(--fg-muted); font-size: 12px; }
+.tool-seq { color: var(--fg-dim); font-size: 11px; font-weight: 600;
+            min-width: 24px; text-align: right; font-family: ui-monospace,
+            SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+.turn-header { display: flex; justify-content: space-between;
+               align-items: baseline; flex-wrap: wrap; gap: 10px;
+               margin-bottom: 10px; }
+.turn-meta { font-size: 12px; color: var(--fg-muted); }
+.criterion-row td:first-child { font-family: ui-monospace, SFMono-Regular,
+                                 "SF Mono", Menlo, Consolas, monospace;
+                                 color: var(--fg-muted); font-size: 12px; }
+.judge-section { display: flex; flex-direction: column; gap: 12px; }
+.judge-card { padding: 14px 16px; }
+.judge-card-head { display: flex; justify-content: space-between;
+                    align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+.judge-card-title { font-size: 14px; line-height: 1.4; flex: 1; min-width: 0; }
+.judge-card-score { flex-shrink: 0; }
+.judge-rationale { margin-top: 10px; padding: 10px 12px;
+                   background: var(--bg-code); border-radius: 4px;
+                   font-size: 13px; line-height: 1.5; }
+.judge-findings { margin: 8px 0 0 18px; padding-left: 4px; font-size: 13px;
+                   line-height: 1.6; }
+.judge-findings li { margin: 2px 0; }
+.nav-toggle { display: inline-block; padding: 5px 10px; font-size: 12px;
+              background: var(--bg-card-2); border: 1px solid var(--border);
+              border-radius: 5px; color: var(--fg); cursor: pointer; }
+.nav-toggle:hover { background: var(--bg-card); }
+.llm-next-steps { margin: 6px 0 0 20px; padding-left: 0; }
+.llm-next-steps li { margin: 3px 0; }
+.iteration-group { padding: 12px 16px 4px 16px; margin-bottom: 20px;
+                   border-radius: 0 6px 6px 0; border-left: 4px solid var(--status-neutral); }
+/* rgba fallback for browsers without color-mix (Chrome <111, Firefox <113, Safari <16.2). */
+.iteration-group--recovered { border-left-color: var(--status-success);
+                              background: rgba(34, 197, 94, 0.06);
+                              background: color-mix(in srgb, var(--status-success) 6%, transparent); }
+.iteration-group--terminal { border-left-color: var(--status-error);
+                             background: rgba(239, 68, 68, 0.06);
+                             background: color-mix(in srgb, var(--status-error) 6%, transparent); }
+.iteration-group__banner { margin: 0 0 12px 0; font-size: 14px; font-weight: 600; }
+.iteration-group--recovered .iteration-group__banner { color: var(--status-success); }
+.iteration-group--terminal .iteration-group__banner { color: var(--status-error); }
+.attempt-transition { display: flex; align-items: center; gap: 8px;
+                      margin: -6px 0 12px 8px; color: var(--status-error); font-size: 12.5px; }
+.attempt-transition__icon { font-weight: 700; }
+footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--border);
+         color: var(--fg-dim); font-size: 12px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="header-bar">
+  <div class="title-group">
+    <h1>Task: skill-flow-ipe-drive-to-slack</h1>
+    <div class="subtitle">E2E cross-connector scenario — downloads a file from Google Drive and posts it into a Slack channel via the &quot;Send File to channel&quot; activity. Exercises binary file flow between two IS connectors in a single Flow.</div>
+  </div>
+  <div class="badges">
+    <span class="badge success">SUCCESS</span>
+    <span class="score-pill score-high">1.00</span>
+    <span class="badge neutral">claude-code · claude-sonnet-4-6</span>
+    <span class="badge neutral">6m 9s</span>
+    <span class="badge neutral">$1.4810</span>
+    <span class="badge warning">expected_turns exceeded (53/49)</span>
+    
+    <span class="nav-toggle" onclick="toggleTheme()">Toggle theme</span>
+  </div>
+</div>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Variant</div><div class="value">default</div></div>
+    <div class="stat"><div class="label">Started</div><div class="value mono">2026-07-24T17:53:43</div></div>
+    <div class="stat"><div class="label">Duration</div><div class="value">6m 9s</div></div>
+    <div class="stat"><div class="label">Turns (SDK)</div><div class="value">83</div></div>
+    <div class="stat"><div class="label">Commands</div><div class="value">52</div></div>
+  </div>
+</div>
+
+<h2>Success Criteria <span class="muted" style="font-weight:400">(2/2 passed)</span></h2>
+<div class="card" style="padding:0">
+<table>
+  <thead>
+    <tr>
+      <th style="width:15%">Type</th>
+      <th style="width:35%">Description</th>
+      <th style="width:10%">Score</th>
+      <th>Details</th>
+    </tr>
+  </thead>
+  <tbody>
+    
+<tr class="criterion-row">
+  <td>command_executed</td>
+  <td>uip maestro flow validate was called</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Matched 2/1 required commands (filters: tool_name=Bash, pattern=/(uip|\$UIP)\s+(maestro\s+)?flow\s+validate/)</summary><div class="details-body"><pre style="margin:6px 0 0 0">Matched 2/1 required commands (filters: tool_name=Bash, pattern=/(uip|\$UIP)\s+(maestro\s+)?flow\s+validate/)
+Examples: [&#x27;uip maestro flow validate &quot;DriveToSlackTest.flow&quot; --output json 2&gt;/dev/null &amp;&amp; \\\nuip maestro flow format &quot;DriveToSlackTe&#x27;, &#x27;uip maestro flow validate &quot;DriveToSlackTest.flow&quot; --output json 2&gt;/dev/null &amp;&amp; \\\nuip maestro flow format &quot;DriveToSlackTe&#x27;]</pre></div></details></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>run_command</td>
+  <td>Drive→Slack flow checks: structure, connector wiring, and debug step finished green</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Command: python3 $TASK_DIR/check_drive_to_slack.py</summary><div class="details-body"><pre style="margin:6px 0 0 0">Command: python3 $TASK_DIR/check_drive_to_slack.py
+Exit code: 0 (expected: 0)
+Stdout:
+OK: 4 nodes, 3 edges
+OK: uipath-google-drive connector key present
+OK: uipath-salesforce-slack connector key present
+OK: Send File to channel operation present
+OK: Slack node references Google Drive node output
+OK: all DriveToSlack checks passed
+
+Stderr: (empty)</pre></div></details></td>
+</tr>
+
+  </tbody>
+</table>
+</div>
+<h2>Conversation Trace (1 iteration)</h2>
+<div class="card">
+  <div class="turn-header">
+    <h3>Iteration 1</h3>
+    <div class="badges">
+      <span class="badge neutral">83 assistant turns</span>
+      <span class="badge neutral">in 35 · out 15575 · cache 2959053</span>
+      <span class="badge neutral">6m 7s</span>
+      
+      
+      
+    </div>
+  </div>
+  <details>
+    <summary>Prompt to agent</summary>
+    <div class="details-body"><pre>Your working directory is: /work/output/artifacts/skill-flow-ipe-drive-to-slack
+
+Create a new Flow project called &quot;DriveToSlackTest&quot; with a manual trigger.
+It should download a file from Google Drive and then post that file into a 
+Slack channel named &quot;coding-agent-testing&quot; using Slack.
+Wire the file output of the download operation to the channel input of the slack send file.  
+Validate the final flow file.
+For the Google Drive Download File activity, use the first available file.
+For Send File, send as `user`.
+For google drive, use the connection name &#x27;is.sandboxes.test@gmail.com&#x27;, and for slack
+use the connection name &#x27;is-sandboxes&#x27;.
+</pre></div>
+  </details>
+  <details>
+    <summary>Agent response</summary>
+    <div class="details-body"><pre>[ASSISTANT] Now I have the key references I need. Let me start by checking login status, existing solutions, and searching the registry for both connectors — all in parallel.
+[ASSISTANT] Found both connectors. Now I&#x27;ll run the T1 chain: scaffold solution + project + registry pull + add both connector nodes, in parallel with getting connections and the End node definition.
+[ASSISTANT] No Google Drive connections found under `uipath-google-drivecustom`. The user specified connection name `is.sandboxes.test@gmail.com` — let me search for other Google Drive connector keys and ping the Slack connection.
+[ASSISTANT] The correct Google Drive connector is `uipath-google-drive`. I need to replace the `uipath-google-drivecustom.download-file` node with the correct one. Let me search for the right activity and fix the node.
+[ASSISTANT] The correct node is `uipath.connector.uipath-google-drive.download-file`. The wrong node was added — I need to remove it and add the correct one. Let me read the current flow file, remove the wrong node, then add the right one.
+[ASSISTANT] I need to replace the wrong GDrive node and gather all metadata in parallel. Let me do that now.
+[ASSISTANT] Need to resolve the Slack channel ID and Google Drive file ID. Let me try the correct resource paths.
+[ASSISTANT] `send_as` = `user` confirmed. Now let me resolve the Slack channel and Google Drive file IDs with correct describe calls.
+[ASSISTANT] I can see Google Drive root folders. Need to drill into My Drive to find files. Let me also search all Slack channels for `coding-agent-testing`.
+[ASSISTANT] The `coding-agent-testing` channel wasn&#x27;t in the first 1000. Let me check for more pages and also find a Google Drive file.
+[ASSISTANT] First Google Drive file: `000_coder_evals.txt` (ID: `1YlblU34Vd6RvCkamYw5BWejdX8ES-Zzy`). Now let me page through Slack to find `coding-agent-testing`.
+[ASSISTANT] Found it: `coding-agent-testing` = `C0B2FDZD1M3`. Now I have all the data I need. Let me also check the `is resources describe` for the Slack send-file activity to confirm required fields, then proceed to configure both nodes.
+
+Now I have all the data needed:
+- **Google Drive** connection: `41943488-5cec-48b3-93cf-19048447524e`, folderKey: `5da18ec0-7de1-4e57-aaf1-ddc8a369c199`
+- **Google Drive file ID**: `1YlblU34Vd6RvCkamYw5BWejdX8ES-Zzy` (first file: `000_coder_evals.txt`)
+- **Slack** connection: `849e85d8-1aa9-4d52-8bbd-20041c8f05d8`, folderKey: `5da18ec0-7de1-4e57-aaf1-ddc8a369c199`
+- **Slack channel ID**: `C0B2FDZD1M3` (coding-agent-testing)
+- **send_as**: `user`
+
+Now I need to build the flow file with the End node and edges, then configure the connector nodes. Let me read the current state of the flow file first.
+[ASSISTANT] Good — the flow has the correct `downloadFile1` with `uipath-google-drive` now. I need to add the End node and edges. Let me do T2 edits now.
+[ASSISTANT] Now add the End node definition and layout entry. Let me do those as separate edits:
+[ASSISTANT] Now add the End node to layout.nodes:
+[ASSISTANT] Now T3: configure both connector nodes, then validate and format. The Slack `send-file-to-channel` uses multipart (file is `multipart` type). The file output from Google Drive download maps to the `file` input. I need to wire `=js:$vars.downloadFile1.output` as the file content.
+[ASSISTANT] Google Drive node configured. Now configure Slack `send-file-to-channel`. The `file` parameter is multipart and I need to wire it from `downloadFile1.output`. Per the impl doc, multipart file values go in `bodyParameters` and the CLI moves them to `multipartParameters`.
+[ASSISTANT] Both nodes configured. Now validate and format:
+[ASSISTANT] Need `sourcePort` on edges (not `sourcePortId`). Let me fix the edge schema:
+[ASSISTANT] ✅ Validation passes with **Status: Valid** and format completed successfully. The flow is complete.
+
+---
+
+Here&#x27;s a summary of what was built:
+
+**File path:** `DriveToSlackTest/DriveToSlackTest/DriveToSlackTest.flow`
+
+**What was built:**
+
+|</pre></div>
+  </details>
+  <h4 style="margin-top:12px">Tool Calls (52)</h4>
+  
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#0</span>
+      <span class="tool-name">Skill</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">24ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;skill&quot;: &quot;uipath:uipath-maestro-flow&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Launching skill: uipath:uipath-maestro-flow</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#1</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">359ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/CAPABILITY.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Author — Create and edit `.flow` files
+2	
+3	Capability index for building new flows (greenfield) and editing existing flows (brownfield). Author owns everything that happens on disk, locally, without `uip login`. Authoring journeys terminate at `validate` + `format`; from there, hand off to [operate/CAPABILITY.md](../operate/CAPABILITY.md) to publish, run, or debug.
+4	
+5	&gt; **Where you came from / where to go next.** Author is upstream of Operate (build the flow → ship it) and upstream of Diagnose only via Operate (build → run → diagnose). Publish/run/lifecycle lives in [operate/CAPABILITY.md](../operate/CAPABILITY.md); fault triage lives in [diagnose/CAPABILITY.md](../diagnose/CAPABILITY.md).
+6	&gt;
+7	&gt; **Inherits universal rules from [SKILL.md](../../SKILL.md)** — `--output json` + prefer `--output-filter` for extraction, no `flow debug` without consent, resource discovery order, never invoke other skills automatically, dropdown question pattern, solution layout, **plain-English narration + granular progress list (opt-in — silent by default; engage when the user asks for verbosity)**. The rules below are author-scoped and apply on top.
+8	
+9	## When to use this capability
+10	
+11	-
+
+… (truncated, 25996 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#2</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">336ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/references/greenfield.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Greenfield — Create a New Flow
+2	
+3	End-to-end journey for creating a Flow project from scratch. Author terminates at `validate` + `format`. To publish, run, or debug after this, see [operate/CAPABILITY.md](../../operate/CAPABILITY.md).
+4	
+5	&gt; **Brownfield edits use a different journey.** If the `.flow` file already exists, see [brownfield.md](brownfield.md) instead.
+6	
+7	## Should you plan first?
+8	
+9	For complex flows, produce a plan before building. Reference [planning-arch.md](planning-arch.md) and [planning-impl.md](planning-impl.md) for the node type catalog, port reference, wiring rules, and topology patterns.
+10	
+11	**Plan when:**
+12	- The flow has 5+ nodes with branching or parallel paths
+13	- The flow uses connectors or resources that need discovery
+14	- The user&#x27;s requirements are ambiguous and you need to confirm the approach
+15	
+16	**Don&#x27;t plan when:**
+17	- Adding/editing a single node in an existing flow (use [brownfield.md](brownfield.md))
+18	- The flow is a straightforward linear pipeline (trigger → action → action → end)
+19	- The user has already described the exact topology they want
+20	
+21	### Examples
+22	
+23	**Plan:** &quot;Build a flow that receives a Jira ticke
+
+… (truncated, 30834 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#3</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">136ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/references/plugins/connector/impl.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Connector Activity Nodes — Implementation
+2	
+3	How to configure connector activity nodes: connection binding, enriched metadata, reference field resolution, and debugging. Connection bindings are emitted by `uip maestro flow node configure` into the flow&#x27;s top-level `bindings[]`; `bindings_v2.json` is regenerated from them at debug/pack time and should never be hand-edited.
+4	
+5	For generic node/edge add, remove, and wiring procedures, see [editing-operations.md](../../editing-operations.md). This guide covers the connector-specific configuration workflow that must follow the generic node add.
+6	
+7	## How Connector Nodes Differ from OOTB
+8	
+9	1. **Connection binding required** — every connector node needs an IS connection (OAuth, API key, etc.) authored in the flow&#x27;s top-level `bindings[]` (which the CLI regenerates into `bindings_v2.json` at debug/pack time). Without it, the node cannot authenticate.
+10	2. **Enriched metadata via `--connection-id`** — call `registry get` with `--connection-id` to get connection-aware field metadata. Without it, only base fields are returned — custom fields, dynamic enums, and reference resolution are missing.
+11	3. **`inputs.detail` object** —
+
+… (truncated, 59526 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#4</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">82ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;ls *.uipx */*.uipx 2&gt;/dev/null || echo \&quot;NO_SOLUTIONS_FOUND\&quot;&quot;,
+  &quot;description&quot;: &quot;Check for existing .uipx solution files&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>NO_SOLUTIONS_FOUND</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#5</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.05s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip login status --output json 2&gt;/dev/null | head -5&quot;,
+  &quot;description&quot;: &quot;Check login status&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;LoginStatus&quot;,
+  &quot;Data&quot;: {
+    &quot;Status&quot;: &quot;Logged in&quot;,</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#6</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">6.98s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry search \&quot;google drive\&quot; --output json --output-filter \&quot;[*].{NodeType:NodeType,DisplayName:DisplayName,Description:Description}\&quot; 2&gt;/dev/null | head -80&quot;,
+  &quot;description&quot;: &quot;Search registry for Google Drive connector nodes&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeSearchSuccess&quot;,
+  &quot;Data&quot;: [
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-google-drivecustom.get-file-or-folder&quot;,
+      &quot;DisplayName&quot;: &quot;Get File or Folder&quot;,
+      &quot;Description&quot;: &quot;(Custom Google Drive) Retrieve File or Folder information from Google Drive&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-google-drivecustom.insert-record&quot;,
+      &quot;DisplayName&quot;: &quot;Insert Record&quot;,
+      &quot;Description&quot;: &quot;(Custom Google Drive) Insert a new record into Custom Google Drive.&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-google-drivecustom.upload-file&quot;,
+      &quot;DisplayName&quot;: &quot;Upload File&quot;,
+      &quot;Description&quot;: &quot;(Custom Google Drive) Uploads file to specified folder in Google Drive&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-google-drivecustom.remove-file-labels&quot;,
+      &quot;DisplayName&quot;: &quot;Remove File Labels&quot;,
+      &quot;Description&quot;: &quot;(Custom Google Drive) Remove labels from a file&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-google-drivecustom.download-file&quot;,
+      &quot;DisplayName&quot;: &quot;Download File&quot;,
+      &quot;Description&quot;: &quot;(Custom Google Drive) Downloads File&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-google-
+
+… (truncated, 2143 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#7</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">11.51s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry search \&quot;slack\&quot; --output json --output-filter \&quot;[*].{NodeType:NodeType,DisplayName:DisplayName,Description:Description}\&quot; 2&gt;/dev/null | head -80&quot;,
+  &quot;description&quot;: &quot;Search registry for Slack connector nodes&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeSearchSuccess&quot;,
+  &quot;Data&quot;: [
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-salesforce-slack.unarchive-channel&quot;,
+      &quot;DisplayName&quot;: &quot;Unarchive Channel&quot;,
+      &quot;Description&quot;: &quot;(Slack) Unarchive an existing channel&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-salesforce-slack.send-reply&quot;,
+      &quot;DisplayName&quot;: &quot;Send Reply&quot;,
+      &quot;Description&quot;: &quot;(Slack) Send a reply to a message in a Slack channel.&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-salesforce-slack.join-channel&quot;,
+      &quot;DisplayName&quot;: &quot;Join Channel&quot;,
+      &quot;Description&quot;: &quot;(Slack) Join a public Slack channel as the bot user or authenticated user.&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-salesforce-slack.create-channel&quot;,
+      &quot;DisplayName&quot;: &quot;Create Channel&quot;,
+      &quot;Description&quot;: &quot;(Slack) Create a public or private channel in Slack.&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-salesforce-slack.send-message-to-channel&quot;,
+      &quot;DisplayName&quot;: &quot;Send Message to Channel&quot;,
+      &quot;Description&quot;: &quot;(Slack) Send messages to public or private Slack channels.&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-salesforce-slack.archive-channel
+
+… (truncated, 2205 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#8</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">20.96s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;\\\nuip solution init \&quot;DriveToSlackTest\&quot; --output json 2&gt;/dev/null &amp;&amp; \\\ncd DriveToSlackTest &amp;&amp; \\\nuip maestro flow init \&quot;DriveToSlackTest\&quot; --output json 2&gt;/dev/null &amp;&amp; \\\ncd DriveToSlackTest &amp;&amp; \\\nuip maestro flow registry pull 2&gt;/dev/null &amp;&amp; \\\necho \&quot;=NODE_ADD_GDRIVE=\&quot; &amp;&amp; \\\nuip maestro flow node add \&quot;DriveToSlackTest.flow\&quot; \&quot;uipath.connector.uipath-google-drivecustom.download-file\&quot; --label \&quot;Download Fil… (233 more chars)&quot;,
+  &quot;description&quot;: &quot;Scaffold solution, flow project, pull registry, add both connector nodes&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;SolutionInit&quot;,
+  &quot;Data&quot;: {
+    &quot;Status&quot;: &quot;Created successfully&quot;,
+    &quot;Path&quot;: &quot;/work/output/artifacts/skill-flow-ipe-drive-to-slack/DriveToSlackTest/DriveToSlackTest.uipx&quot;,
+    &quot;NextSteps&quot;: &quot;Read /work/output/artifacts/skill-flow-ipe-drive-to-slack/DriveToSlackTest/AGENTS.md or /work/output/artifacts/skill-flow-ipe-drive-to-slack/DriveToSlackTest/CLAUDE.md to understand the solution lifecycle, project types that can be used inside a solution, and related uip command references.&quot;
+  }
+}
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FlowInit&quot;,
+  &quot;Data&quot;: {
+    &quot;Status&quot;: &quot;Created successfully&quot;,
+    &quot;Path&quot;: &quot;/work/output/artifacts/skill-flow-ipe-drive-to-slack/DriveToSlackTest/DriveToSlackTest&quot;,
+    &quot;SolutionRegistration&quot;: {
+      &quot;Status&quot;: &quot;Registered&quot;,
+      &quot;Message&quot;: &quot;Project registered in parent solution.&quot;,
+      &quot;Solution&quot;: &quot;/work/output/artifacts/skill-flow-ipe-drive-to-slack/DriveToSlackTest/DriveToSlackTest.uipx&quot;,
+      &quot;Project&quot;: &quot;DriveToSlackTest/project.uiproj&quot;,
+      &quot;ProjectId&quot;: &quot;b5209754-a1b9-4c33-948c-0830ec5642af&quot;,
+      &quot;Instructions&quot;: &quot;The project is listed in the parent solution manifest.\nPacking or uploading the solution will sync solution r
+
+… (truncated, 1763 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#9</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">23.73s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry get core.control.end --output json 2&gt;/dev/null&quot;,
+  &quot;description&quot;: &quot;Get End node definition&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeGetSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;Node&quot;: {
+      &quot;nodeType&quot;: &quot;core.control.end&quot;,
+      &quot;version&quot;: &quot;1.0&quot;,
+      &quot;category&quot;: &quot;control-flow&quot;,
+      &quot;description&quot;: &quot;Mark the end of a workflow path&quot;,
+      &quot;tags&quot;: [
+        &quot;control-flow&quot;,
+        &quot;end&quot;,
+        &quot;finish&quot;,
+        &quot;complete&quot;
+      ],
+      &quot;sortOrder&quot;: 20,
+      &quot;display&quot;: {
+        &quot;label&quot;: &quot;End&quot;,
+        &quot;icon&quot;: &quot;circle-check&quot;,
+        &quot;shape&quot;: &quot;circle&quot;
+      },
+      &quot;handleConfiguration&quot;: [
+        {
+          &quot;position&quot;: &quot;left&quot;,
+          &quot;handles&quot;: [
+            {
+              &quot;id&quot;: &quot;input&quot;,
+              &quot;type&quot;: &quot;target&quot;,
+              &quot;handleType&quot;: &quot;input&quot;
+            }
+          ]
+        }
+      ],
+      &quot;model&quot;: {
+        &quot;type&quot;: &quot;bpmn:EndEvent&quot;
+      },
+      &quot;runtimeConstraints&quot;: {
+        &quot;exclude&quot;: [
+          &quot;api-function&quot;
+        ]
+      }
+    }
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#10</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">24.63s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip is connections list \&quot;uipath-google-drivecustom\&quot; --all-folders --output json 2&gt;/dev/null&quot;,
+  &quot;description&quot;: &quot;List Google Drive connections&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;Message&quot;,
+  &quot;Data&quot;: {
+    &quot;Message&quot;: &quot;No connections found for connector &#x27;uipath-google-drivecustom&#x27;.&quot;
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#11</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">26.30s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip is connections list \&quot;uipath-salesforce-slack\&quot; --all-folders --output json 2&gt;/dev/null&quot;,
+  &quot;description&quot;: &quot;List Slack connections&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;ConnectionList&quot;,
+  &quot;Data&quot;: [
+    {
+      &quot;Id&quot;: &quot;849e85d8-1aa9-4d52-8bbd-20041c8f05d8&quot;,
+      &quot;Name&quot;: &quot;is-sandboxes&quot;,
+      &quot;ConnectorKey&quot;: &quot;uipath-salesforce-slack&quot;,
+      &quot;ConnectorName&quot;: &quot;Slack&quot;,
+      &quot;State&quot;: &quot;Enabled&quot;,
+      &quot;Owner&quot;: &quot;sanjeet.manna@uipath.com&quot;,
+      &quot;IsDefault&quot;: &quot;No&quot;,
+      &quot;ByoaConnection&quot;: &quot;Yes&quot;,
+      &quot;ElementInstanceId&quot;: 337251,
+      &quot;Folder&quot;: &quot;uipath-maestro-flow&quot;,
+      &quot;FolderKey&quot;: &quot;5da18ec0-7de1-4e57-aaf1-ddc8a369c199&quot;,
+      &quot;Created&quot;: &quot;2026-05-08T14:59:09.153Z&quot;,
+      &quot;Updated&quot;: &quot;2026-07-24T17:51:40.136Z&quot;
+    },
+    {
+      &quot;Id&quot;: &quot;8e0e255f-ce7c-43dc-8929-83847fcd9025&quot;,
+      &quot;Name&quot;: &quot;is-sandboxes&quot;,
+      &quot;ConnectorKey&quot;: &quot;uipath-salesforce-slack&quot;,
+      &quot;ConnectorName&quot;: &quot;Slack&quot;,
+      &quot;State&quot;: &quot;Failed&quot;,
+      &quot;Owner&quot;: &quot;System&quot;,
+      &quot;IsDefault&quot;: &quot;No&quot;,
+      &quot;ByoaConnection&quot;: &quot;No&quot;,
+      &quot;ElementInstanceId&quot;: 356194,
+      &quot;Folder&quot;: &quot;SlackEmojiListTest&quot;,
+      &quot;FolderKey&quot;: &quot;c79e173d-d870-4ab6-b5f9-7627ddbae4bf&quot;,
+      &quot;Created&quot;: &quot;2026-07-01T21:56:48.066Z&quot;,
+      &quot;Updated&quot;: &quot;2026-07-01T21:56:48.066Z&quot;
+    },
+    {
+      &quot;Id&quot;: &quot;e03f734e-0f80-4e8a-a7c1-0ece309b0ca4&quot;,
+      &quot;Name&quot;: &quot;is-sandboxes&quot;,
+      &quot;ConnectorKey&quot;: 
+
+… (truncated, 594 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#12</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">2.01s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip is connectors list --output json 2&gt;/dev/null | python3 -c \&quot;import json,sys; data=json.load(sys.stdin); [print(c.get(&#x27;Key&#x27;,&#x27;&#x27;),c.get(&#x27;Name&#x27;,&#x27;&#x27;)) for c in (data.get(&#x27;Data&#x27;) or []) if &#x27;google&#x27; in c.get(&#x27;Key&#x27;,&#x27;&#x27;).lower() or &#x27;google&#x27; in c.get(&#x27;Name&#x27;,&#x27;&#x27;).lower()]\&quot;&quot;,
+  &quot;description&quot;: &quot;List all Google-related connector keys&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>uipath-google-cloudplatform Google Cloud Platform
+uipath-google-forms Google Forms
+uipath-google-tasks Google Tasks
+uipath-google-workspace Google Workspace
+uipath-google-vision Google Vision
+uipath-google-texttospeech Google Text-to-Speech
+uipath-google-speechtotext Google Speech-to-Text
+uipath-google-youtube YouTube
+uipath-google-sheets Google Sheets
+uipath-google-drive Google Drive
+uipath-google-docs Google Docs
+uipath-google-gmail Gmail
+uipath-google-bigquery BigQuery
+uipath-google-maps Google Maps
+uipath-google-agent2agent Agent 2 Agent
+uipath-google-vertex Google Vertex</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#13</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">3.03s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip is connections list \&quot;uipath-google-drive\&quot; --all-folders --output json 2&gt;/dev/null&quot;,
+  &quot;description&quot;: &quot;Check connections for uipath-google-drive connector key&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;ConnectionList&quot;,
+  &quot;Data&quot;: [
+    {
+      &quot;Id&quot;: &quot;41943488-5cec-48b3-93cf-19048447524e&quot;,
+      &quot;Name&quot;: &quot;is.sandboxes.test@gmail.com&quot;,
+      &quot;ConnectorKey&quot;: &quot;uipath-google-drive&quot;,
+      &quot;ConnectorName&quot;: &quot;Google Drive&quot;,
+      &quot;State&quot;: &quot;Enabled&quot;,
+      &quot;Owner&quot;: &quot;sanjeet.manna@uipath.com&quot;,
+      &quot;IsDefault&quot;: &quot;No&quot;,
+      &quot;ByoaConnection&quot;: &quot;No&quot;,
+      &quot;ElementInstanceId&quot;: 337250,
+      &quot;Folder&quot;: &quot;uipath-maestro-flow&quot;,
+      &quot;FolderKey&quot;: &quot;5da18ec0-7de1-4e57-aaf1-ddc8a369c199&quot;,
+      &quot;Created&quot;: &quot;2026-05-08T14:58:39.066Z&quot;,
+      &quot;Updated&quot;: &quot;2026-07-24T15:19:02.596Z&quot;
+    },
+    {
+      &quot;Id&quot;: &quot;c20b9abb-fecd-4883-a452-4e43f7b5fbf3&quot;,
+      &quot;Name&quot;: &quot;Productivity Google Drive&quot;,
+      &quot;ConnectorKey&quot;: &quot;uipath-google-drive&quot;,
+      &quot;ConnectorName&quot;: &quot;Google Drive&quot;,
+      &quot;State&quot;: &quot;Enabled&quot;,
+      &quot;Owner&quot;: &quot;toma.alexandru@uipath.com&quot;,
+      &quot;IsDefault&quot;: &quot;No&quot;,
+      &quot;ByoaConnection&quot;: &quot;No&quot;,
+      &quot;ElementInstanceId&quot;: 345846,
+      &quot;Folder&quot;: &quot;Shared&quot;,
+      &quot;FolderKey&quot;: &quot;c4359cde-55f0-4f0e-9322-c6cdce74ab4c&quot;,
+      &quot;Created&quot;: &quot;2026-06-04T15:45:41.646Z&quot;,
+      &quot;Updated&quot;: &quot;2026-07-24T15:19:02.756Z&quot;
+    },
+    {
+      &quot;Id&quot;: &quot;2ab97e15-b5bb-4f73-9573-97e62912f5fb&quot;,
+      &quot;Name
+
+… (truncated, 477 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#14</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">3.66s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip is connections ping \&quot;849e85d8-1aa9-4d52-8bbd-20041c8f05d8\&quot; --output json 2&gt;/dev/null&quot;,
+  &quot;description&quot;: &quot;Ping Slack is-sandboxes connection health&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;ConnectionPing&quot;,
+  &quot;Data&quot;: {
+    &quot;ConnectionId&quot;: &quot;849e85d8-1aa9-4d52-8bbd-20041c8f05d8&quot;,
+    &quot;Status&quot;: &quot;Enabled&quot;,
+    &quot;Message&quot;: &quot;Connection is active.&quot;
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#15</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">4.84s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;\\\nuip maestro flow registry search \&quot;download\&quot; --output json --output-filter \&quot;[?contains(NodeType,&#x27;uipath-google-drive&#x27;)].{NodeType:NodeType,DisplayName:DisplayName,Description:Description}\&quot; 2&gt;/dev/null&quot;,
+  &quot;description&quot;: &quot;Search for Google Drive download activity with correct connector key&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeSearchSuccess&quot;,
+  &quot;Data&quot;: [
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-google-drivecustom.download-file&quot;,
+      &quot;DisplayName&quot;: &quot;Download File&quot;,
+      &quot;Description&quot;: &quot;(Custom Google Drive) Downloads File&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-google-drive.download-file&quot;,
+      &quot;DisplayName&quot;: &quot;Download File&quot;,
+      &quot;Description&quot;: &quot;(Google Drive) Downloads File&quot;
+    }
+  ]
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#16</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">106ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-ipe-drive-to-slack/DriveToSlackTest/DriveToSlackTest/DriveToSlackTest.flow&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	{
+2	  &quot;id&quot;: &quot;301a8440-9f73-42e2-90b3-f9920e3219ff&quot;,
+3	  &quot;version&quot;: &quot;1.8&quot;,
+4	  &quot;name&quot;: &quot;DriveToSlackTest&quot;,
+5	  &quot;nodes&quot;: [
+6	    {
+7	      &quot;id&quot;: &quot;start&quot;,
+8	      &quot;type&quot;: &quot;core.trigger.manual&quot;,
+9	      &quot;typeVersion&quot;: &quot;1.0&quot;,
+10	      &quot;display&quot;: {
+11	        &quot;label&quot;: &quot;Manual trigger&quot;
+12	      },
+13	      &quot;inputs&quot;: {
+14	        &quot;entryPointId&quot;: &quot;311b874f-53b4-4f6c-a242-0a4b58648dfc&quot;,
+15	        &quot;isDefaultEntryPoint&quot;: true
+16	      }
+17	    },
+18	    {
+19	      &quot;id&quot;: &quot;downloadFile1&quot;,
+20	      &quot;type&quot;: &quot;uipath.connector.uipath-google-drivecustom.download-file&quot;,
+21	      &quot;typeVersion&quot;: &quot;1.0.0&quot;,
+22	      &quot;display&quot;: {
+23	        &quot;label&quot;: &quot;Download File&quot;
+24	      },
+25	      &quot;inputs&quot;: {}
+26	    },
+27	    {
+28	      &quot;id&quot;: &quot;sendFileToChannel1&quot;,
+29	      &quot;type&quot;: &quot;uipath.connector.uipath-salesforce-slack.send-file-to-channel&quot;,
+30	      &quot;typeVersion&quot;: &quot;1.0.0&quot;,
+31	      &quot;display&quot;: {
+32	        &quot;label&quot;: &quot;Send File to Channel&quot;
+33	      },
+34	      &quot;inputs&quot;: {}
+35	    }
+36	  ],
+37	  &quot;edges&quot;: [],
+38	  &quot;definitions&quot;: [
+39	    {
+40	      &quot;nodeType&quot;: &quot;core.trigger.manual&quot;,
+41	      &quot;version&quot;: &quot;1.0&quot;,
+42	      &quot;category&quot;: &quot;trigger&quot;,
+43	      &quot;description&quot;: &quot;Start workflow manually&quot;,
+44	      &quot;tags&quot;: [
+45	   
+
+… (truncated, 22026 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#17</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">8.40s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;\\\nuip maestro flow node remove \&quot;DriveToSlackTest.flow\&quot; \&quot;downloadFile1\&quot; --output json 2&gt;/dev/null &amp;&amp; \\\nuip maestro flow node add \&quot;DriveToSlackTest.flow\&quot; \&quot;uipath.connector.uipath-google-drive.download-file\&quot; --label \&quot;Download File\&quot; --output json 2&gt;/dev/null&quot;,
+  &quot;description&quot;: &quot;Remove wrong GDrive node and add correct one&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeRemoveSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;DeletedNode&quot;: {
+      &quot;Id&quot;: &quot;downloadFile1&quot;,
+      &quot;Type&quot;: &quot;uipath.connector.uipath-google-drivecustom.download-file&quot;,
+      &quot;Label&quot;: &quot;Download File&quot;,
+      &quot;Position&quot;: {
+        &quot;X&quot;: 0,
+        &quot;Y&quot;: 0
+      }
+    },
+    &quot;EdgesRemoved&quot;: 0,
+    &quot;BindingsRemoved&quot;: 0,
+    &quot;DefinitionsRemoved&quot;: 1,
+    &quot;VariablesRemoved&quot;: 2,
+    &quot;VariableUpdatesRemoved&quot;: 0
+  }
+}
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeAddSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;Node&quot;: {
+      &quot;Id&quot;: &quot;downloadFile1&quot;,
+      &quot;Type&quot;: &quot;uipath.connector.uipath-google-drive.download-file&quot;,
+      &quot;TypeVersion&quot;: &quot;1.0.0&quot;,
+      &quot;Ui&quot;: {
+        &quot;Position&quot;: {
+          &quot;X&quot;: 0,
+          &quot;Y&quot;: 0
+        }
+      },
+      &quot;Display&quot;: {
+        &quot;Label&quot;: &quot;Download File&quot;
+      },
+      &quot;Inputs&quot;: {}
+    },
+    &quot;DefinitionAdded&quot;: true,
+    &quot;BindingsCreated&quot;: 0,
+    &quot;VariableCount&quot;: 5
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#18</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">10.09s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry get \&quot;uipath.connector.uipath-google-drive.download-file\&quot; --connection-id \&quot;41943488-5cec-48b3-93cf-19048447524e\&quot; --output json 2&gt;/dev/null | python3 -c \&quot;\nimport json,sys\ndata=json.load(sys.stdin)\nnode=data.get(&#x27;Data&#x27;,{}).get(&#x27;Node&#x27;,{})\nprint(&#x27;=== connectorMethodInfo ===&#x27;)\nprint(json.dumps(node.get(&#x27;connectorMethodInfo&#x27;,{}), indent=2))\nprint(&#x27;=== inputDefinition ===&#x27;)\nprint… (157 more chars)&quot;,
+  &quot;description&quot;: &quot;Get enriched GDrive download-file node metadata&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>=== connectorMethodInfo ===
+{
+  &quot;operation&quot;: &quot;Retrieve&quot;,
+  &quot;description&quot;: &quot;Downloads of files stored in Google Drive.&quot;,
+  &quot;method&quot;: &quot;GET&quot;,
+  &quot;parameters&quot;: [
+    {
+      &quot;name&quot;: &quot;mimeType&quot;,
+      &quot;description&quot;: &quot;Download document as&quot;,
+      &quot;type&quot;: &quot;query&quot;,
+      &quot;dataType&quot;: &quot;string&quot;,
+      &quot;required&quot;: false,
+      &quot;displayName&quot;: &quot;Download document as&quot;,
+      &quot;curated&quot;: true,
+      &quot;design&quot;: {
+        &quot;loadByDefault&quot;: false,
+        &quot;isMultiSelect&quot;: false,
+        &quot;enableUserOverride&quot;: false,
+        &quot;isHidden&quot;: false,
+        &quot;position&quot;: &quot;secondary&quot;,
+        &quot;validation&quot;: false
+      },
+      &quot;sortOrder&quot;: 1
+    },
+    {
+      &quot;name&quot;: &quot;fileId&quot;,
+      &quot;description&quot;: &quot;File to download&quot;,
+      &quot;type&quot;: &quot;query&quot;,
+      &quot;dataType&quot;: &quot;string&quot;,
+      &quot;required&quot;: true,
+      &quot;displayName&quot;: &quot;File to download&quot;,
+      &quot;reference&quot;: {
+        &quot;objectName&quot;: &quot;EventFolderPicker&quot;,
+        &quot;lookupNames&quot;: [
+          &quot;FullName&quot;
+        ],
+        &quot;lookupValue&quot;: &quot;ID&quot;,
+        &quot;path&quot;: &quot;/EventFolderPicker&quot;,
+        &quot;childPath&quot;: &quot;/EventFolderPicker?parentReference={ID}&amp;includeFiles=true&quot;,
+        &quot;hydration&quot;: {
+          &quot;url&quot;: &quot;/CuratedFileAndFolders/{ID}&quot;,
+          &quot;method&quot;: &quot;GETBYID&quot;
+        }
+      },
+ 
+
+… (truncated, 1003 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#19</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">15.75s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry get \&quot;uipath.connector.uipath-salesforce-slack.send-file-to-channel\&quot; --connection-id \&quot;849e85d8-1aa9-4d52-8bbd-20041c8f05d8\&quot; --output json 2&gt;/dev/null | python3 -c \&quot;\nimport json,sys\ndata=json.load(sys.stdin)\nnode=data.get(&#x27;Data&#x27;,{}).get(&#x27;Node&#x27;,{})\nprint(&#x27;=== connectorMethodInfo ===&#x27;)\nprint(json.dumps(node.get(&#x27;connectorMethodInfo&#x27;,{}), indent=2))\nprint(&#x27;=== inputDefinition … (79 more chars)&quot;,
+  &quot;description&quot;: &quot;Get enriched Slack send-file-to-channel metadata&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>=== connectorMethodInfo ===
+{
+  &quot;operation&quot;: &quot;Create&quot;,
+  &quot;description&quot;: &quot;Uploads or creates a file&quot;,
+  &quot;method&quot;: &quot;POST&quot;,
+  &quot;reference&quot;: &quot;/send_files_to_channel&quot;,
+  &quot;parameters&quot;: [
+    {
+      &quot;name&quot;: &quot;file&quot;,
+      &quot;description&quot;: &quot;The file to attach&quot;,
+      &quot;type&quot;: &quot;multipart&quot;,
+      &quot;dataType&quot;: &quot;file&quot;,
+      &quot;required&quot;: true,
+      &quot;displayName&quot;: &quot;File&quot;,
+      &quot;curated&quot;: false,
+      &quot;design&quot;: {
+        &quot;loadByDefault&quot;: false,
+        &quot;isMultiSelect&quot;: false,
+        &quot;enableUserOverride&quot;: false,
+        &quot;isHidden&quot;: false,
+        &quot;position&quot;: &quot;primary&quot;,
+        &quot;validation&quot;: false
+      }
+    },
+    {
+      &quot;name&quot;: &quot;channels&quot;,
+      &quot;description&quot;: &quot;Channel names/IDs&quot;,
+      &quot;type&quot;: &quot;query&quot;,
+      &quot;dataType&quot;: &quot;string&quot;,
+      &quot;required&quot;: false,
+      &quot;displayName&quot;: &quot;Channel names/IDs&quot;,
+      &quot;reference&quot;: {
+        &quot;objectName&quot;: &quot;curated_channels?types=public_channel,private_channel&quot;,
+        &quot;lookupNames&quot;: [
+          &quot;name&quot;,
+          &quot;id&quot;
+        ],
+        &quot;lookupValue&quot;: &quot;id&quot;,
+        &quot;path&quot;: &quot;/curated_channels?fields=id,name&quot;
+      },
+      &quot;curated&quot;: true,
+      &quot;design&quot;: {
+        &quot;loadByDefault&quot;: true,
+        &quot;isMultiSelect&quot;: false,
+        &quot;enableUserOverride&quot;: false,
+        
+
+… (truncated, 2956 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#20</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-err">ERROR</span>
+      <span class="tool-duration">15.39s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip is resources run list \&quot;uipath-salesforce-slack\&quot; \&quot;curated_channels?types=public_channel,private_channel\&quot; \\\n  --connection-id \&quot;849e85d8-1aa9-4d52-8bbd-20041c8f05d8\&quot; --output json 2&gt;/dev/null | python3 -c \&quot;\nimport json,sys\ndata=json.load(sys.stdin)\nchannels=data.get(&#x27;Data&#x27;,[])\nfor c in channels:\n    print(c.get(&#x27;id&#x27;,&#x27;&#x27;), c.get(&#x27;name&#x27;,&#x27;&#x27;))\n\&quot; 2&gt;/dev/null&quot;,
+  &quot;description&quot;: &quot;Resolve Slack channel ID for coding-agent-testing&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Exit code 1</pre>
+    <h4>Error</h4><pre>Exit code 1</pre>
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#21</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-err">ERROR</span>
+      <span class="tool-duration">16.81s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip is resources run list \&quot;uipath-google-drive\&quot; \&quot;files\&quot; \\\n  --connection-id \&quot;41943488-5cec-48b3-93cf-19048447524e\&quot; --output json 2&gt;/dev/null | python3 -c \&quot;\nimport json,sys\ndata=json.load(sys.stdin)\nfiles=data.get(&#x27;Data&#x27;,[])\nprint(json.dumps(files[:3] if files else [], indent=2))\n\&quot; 2&gt;/dev/null&quot;,
+  &quot;description&quot;: &quot;List first available Google Drive files&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Exit code 1</pre>
+    <h4>Error</h4><pre>Exit code 1</pre>
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#22</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-err">ERROR</span>
+      <span class="tool-duration">1.81s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip is resources run list \&quot;uipath-salesforce-slack\&quot; \&quot;curated_channels?fields=id,name\&quot; \\\n  --connection-id \&quot;849e85d8-1aa9-4d52-8bbd-20041c8f05d8\&quot; --output json 2&gt;/dev/null | python3 -c \&quot;\nimport json,sys\ndata=json.load(sys.stdin)\nitems=data.get(&#x27;Data&#x27;,[])\nfor c in items:\n    name=c.get(&#x27;name&#x27;,&#x27;&#x27;)\n    cid=c.get(&#x27;id&#x27;,&#x27;&#x27;)\n    print(cid, name)\nprint(&#x27;HasMore:&#x27;, data.get(&#x27;Pagination&#x27;,{}).get(&#x27;HasMore&#x27;,&#x27;?… (17 more chars)&quot;,
+  &quot;description&quot;: &quot;List Slack channels to find coding-agent-testing&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Exit code 1</pre>
+    <h4>Error</h4><pre>Exit code 1</pre>
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#23</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-err">ERROR</span>
+      <span class="tool-duration">1.45s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip is resources run list \&quot;uipath-google-drive\&quot; \&quot;EventFolderPicker?includeFiles=true\&quot; \\\n  --connection-id \&quot;41943488-5cec-48b3-93cf-19048447524e\&quot; --output json 2&gt;/dev/null | python3 -c \&quot;\nimport json,sys\ndata=json.load(sys.stdin)\nitems=data.get(&#x27;Data&#x27;,[])\nprint(json.dumps(items[:5], indent=2))\n\&quot; 2&gt;/dev/null&quot;,
+  &quot;description&quot;: &quot;List Google Drive files/folders&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Exit code 1</pre>
+    <h4>Error</h4><pre>Exit code 1</pre>
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#24</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.62s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip is resources run list \&quot;uipath-salesforce-slack\&quot; \&quot;available_tokens\&quot; \\\n  --connection-id \&quot;849e85d8-1aa9-4d52-8bbd-20041c8f05d8\&quot; --output json 2&gt;/dev/null&quot;,
+  &quot;description&quot;: &quot;List Slack available_tokens to confirm user token value&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;ExecuteOperation&quot;,
+  &quot;Data&quot;: {
+    &quot;items&quot;: [
+      {
+        &quot;name&quot;: &quot;Bot&quot;,
+        &quot;value&quot;: &quot;bot&quot;
+      },
+      {
+        &quot;name&quot;: &quot;User&quot;,
+        &quot;value&quot;: &quot;user&quot;
+      }
+    ],
+    &quot;Pagination&quot;: {
+      &quot;HasMore&quot;: &quot;false&quot;
+    }
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#25</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.15s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip is resources describe \&quot;uipath-salesforce-slack\&quot; \&quot;curated_channels?types=public_channel,private_channel\&quot; \\\n  --connection-id \&quot;849e85d8-1aa9-4d52-8bbd-20041c8f05d8\&quot; --output json 2&gt;/dev/null | head -30&quot;,
+  &quot;description&quot;: &quot;Describe Slack curated_channels to get resource path&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Failure&quot;,
+  &quot;Message&quot;: &quot;HTTP 404: Object metadata not found!&quot;,
+  &quot;Instructions&quot;: &quot;Response returned an error code&quot;,
+  &quot;ErrorCode&quot;: &quot;not_found&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#26</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">2.17s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip is resources describe \&quot;uipath-google-drive\&quot; \&quot;EventFolderPicker\&quot; \\\n  --connection-id \&quot;41943488-5cec-48b3-93cf-19048447524e\&quot; --output json 2&gt;/dev/null | head -30&quot;,
+  &quot;description&quot;: &quot;Describe Google Drive EventFolderPicker resource&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;ResourceMetadata&quot;,
+  &quot;Data&quot;: {
+    &quot;Name&quot;: &quot;EventFolderPicker&quot;,
+    &quot;DisplayName&quot;: &quot;Event Folder Picker&quot;,
+    &quot;ElementKey&quot;: &quot;uipath-google-drive&quot;,
+    &quot;AvailableOperations&quot;: [
+      {
+        &quot;Method&quot;: &quot;GET&quot;,
+        &quot;Name&quot;: &quot;List&quot;,
+        &quot;Description&quot;: &quot;Drilldown API  used for folder picker experience starting from root as drives.&quot;,
+        &quot;Path&quot;: &quot;/EventFolderPicker&quot;
+      }
+    ],
+    &quot;Hint&quot;: &quot;Use --operation &lt;Create|List|Retrieve|Update|Delete|Replace&gt; to see fields for a specific operation.&quot;
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#27</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-err">ERROR</span>
+      <span class="tool-duration">1.68s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip is resources run list \&quot;uipath-google-drive\&quot; \&quot;EventFolderPicker\&quot; \\\n  --connection-id \&quot;41943488-5cec-48b3-93cf-19048447524e\&quot; --output json 2&gt;/dev/null | python3 -c \&quot;\nimport json,sys\ndata=json.load(sys.stdin)\nitems=data.get(&#x27;Data&#x27;,[])\nprint(json.dumps(items[:5], indent=2))\nprint(&#x27;HasMore:&#x27;, data.get(&#x27;Pagination&#x27;,{}).get(&#x27;HasMore&#x27;,&#x27;?&#x27;))\n\&quot; 2&gt;/dev/null&quot;,
+  &quot;description&quot;: &quot;List Google Drive root folders via EventFolderPicker&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Exit code 1</pre>
+    <h4>Error</h4><pre>Exit code 1</pre>
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#28</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-err">ERROR</span>
+      <span class="tool-duration">1.93s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip is resources run list \&quot;uipath-salesforce-slack\&quot; \&quot;curated_channels\&quot; \\\n  --connection-id \&quot;849e85d8-1aa9-4d52-8bbd-20041c8f05d8\&quot; --output json 2&gt;/dev/null | python3 -c \&quot;\nimport json,sys\ndata=json.load(sys.stdin)\nitems=data.get(&#x27;Data&#x27;,[])\nfor c in items:\n    print(c.get(&#x27;id&#x27;,&#x27;&#x27;), c.get(&#x27;name&#x27;,&#x27;&#x27;))\n\&quot; 2&gt;/dev/null&quot;,
+  &quot;description&quot;: &quot;List Slack channels (curated_channels endpoint)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Exit code 1</pre>
+    <h4>Error</h4><pre>Exit code 1</pre>
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#29</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.22s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip is resources run list \&quot;uipath-salesforce-slack\&quot; \&quot;curated_channels\&quot; \\\n  --connection-id \&quot;849e85d8-1aa9-4d52-8bbd-20041c8f05d8\&quot; 2&gt;&amp;1 | head -30&quot;,
+  &quot;description&quot;: &quot;Debug Slack channel listing error&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;ExecuteOperation&quot;,
+  &quot;Data&quot;: {
+    &quot;items&quot;: [
+      {
+        &quot;context_team_id&quot;: &quot;T01G1P7CKR8&quot;,
+        &quot;created&quot;: 1606967318,
+        &quot;creator&quot;: &quot;U01FYLMH1D3&quot;,
+        &quot;id&quot;: &quot;C01FV1QFA86&quot;,
+        &quot;is_archived&quot;: false,
+        &quot;is_channel&quot;: true,
+        &quot;is_ext_shared&quot;: false,
+        &quot;is_general&quot;: false,
+        &quot;is_group&quot;: false,
+        &quot;is_im&quot;: false,
+        &quot;is_mpim&quot;: false,
+        &quot;is_org_shared&quot;: false,
+        &quot;is_pending_ext_shared&quot;: false,
+        &quot;is_private&quot;: false,
+        &quot;is_shared&quot;: false,
+        &quot;name&quot;: &quot;random&quot;,
+        &quot;name_normalized&quot;: &quot;random&quot;,
+        &quot;properties&quot;: {
+          &quot;tabs&quot;: [
+            {
+              &quot;id&quot;: &quot;files&quot;,
+              &quot;label&quot;: &quot;&quot;,
+              &quot;type&quot;: &quot;files&quot;
+            }</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#30</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">3.27s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip is resources run list \&quot;uipath-google-drive\&quot; \&quot;EventFolderPicker\&quot; \\\n  --connection-id \&quot;41943488-5cec-48b3-93cf-19048447524e\&quot; 2&gt;&amp;1 | head -30&quot;,
+  &quot;description&quot;: &quot;Debug Google Drive EventFolderPicker listing error&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;ExecuteOperation&quot;,
+  &quot;Data&quot;: {
+    &quot;items&quot;: [
+      {
+        &quot;isFolder&quot;: true,
+        &quot;Selectable&quot;: true,
+        &quot;FullName&quot;: &quot;My Drive&quot;,
+        &quot;Kind&quot;: &quot;drive#drive&quot;,
+        &quot;ID&quot;: &quot;0AKHXBGF_5DaVUk9PVA&quot;,
+        &quot;URL&quot;: &quot;https://drive.google.com/drive/folders/0AKHXBGF_5DaVUk9PVA&quot;
+      },
+      {
+        &quot;isFolder&quot;: true,
+        &quot;Selectable&quot;: false,
+        &quot;FullName&quot;: &quot;Shared with me&quot;,
+        &quot;Kind&quot;: &quot;drive#drive&quot;,
+        &quot;ID&quot;: &quot;sharedWithMe&quot;,
+        &quot;URL&quot;: &quot;sharedWithMe&quot;
+      },
+      {
+        &quot;isFolder&quot;: true,
+        &quot;Selectable&quot;: false,
+        &quot;FullName&quot;: &quot;Shared drives&quot;,
+        &quot;Kind&quot;: &quot;drive#drive&quot;,
+        &quot;ID&quot;: &quot;sharedDrives&quot;,
+        &quot;URL&quot;: &quot;sharedDrives&quot;
+      }
+    ],</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#31</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">2.55s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip is resources run list \&quot;uipath-google-drive\&quot; \&quot;EventFolderPicker?parentReference=0AKHXBGF_5DaVUk9PVA&amp;includeFiles=true\&quot; \\\n  --connection-id \&quot;41943488-5cec-48b3-93cf-19048447524e\&quot; 2&gt;/dev/null | python3 -c \&quot;\nimport json,sys\ndata=json.load(sys.stdin)\nitems=data.get(&#x27;Data&#x27;,{}).get(&#x27;items&#x27;,[])\nfor f in items[:10]:\n    print(f.get(&#x27;ID&#x27;,&#x27;&#x27;), f.get(&#x27;FullName&#x27;,&#x27;&#x27;), f.get(&#x27;isFolder&#x27;,&#x27;&#x27;))\n\&quot; 2&gt;/dev/null&quot;,
+  &quot;description&quot;: &quot;List files inside My Drive Google Drive folder&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1Jgkf9kpWxZ9APapbd630Bk69bIOMBLNQ 1_Spectra_e2e True
+1PsoU82HgFoMrWCuYitJfDqAmzvlLGVFR aeutfijouhharish True
+1Atw82Ko5SzFX6I2oFHYtMVKfeF8OVkVw akarisnoldharish True
+1VLOeNjuiYx5xeeIdKuWNxkOgHbBb7YqS amuudclzvuharish True
+1q2qHbOPutdcpn0DCC6exSdAe3o2T-Z4g anmisujnsfharish True
+1pFNycVxKYixG7dUXZEwPlP2UeWMJBhpE asytkgyrfbharish True
+12EUZ-QIST8iovniSDMhNn_s0FH2fHqhr ataimyxcmaharish True
+1uq226mmusgs5IDgS2GTaF2AkVPMa1hvn atest True
+1v7eapmWkO_iWlQB2Gzpcl0vjN5w-J8rj atestupload True
+1314WFqfBsYpsoN894atd1eBfgsmW2Anh auluaxwtzfharish True</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#32</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.59s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip is resources run list \&quot;uipath-salesforce-slack\&quot; \&quot;curated_channels\&quot; \\\n  --connection-id \&quot;849e85d8-1aa9-4d52-8bbd-20041c8f05d8\&quot; 2&gt;/dev/null | python3 -c \&quot;\nimport json,sys\ndata=json.load(sys.stdin)\nitems=data.get(&#x27;Data&#x27;,{}).get(&#x27;items&#x27;,[])\nfor c in items:\n    if &#x27;coding&#x27; in c.get(&#x27;name&#x27;,&#x27;&#x27;).lower() or &#x27;testing&#x27; in c.get(&#x27;name&#x27;,&#x27;&#x27;).lower() or &#x27;agent&#x27; in c.get(&#x27;name&#x27;,&#x27;&#x27;).lower():\n        print(c.ge… (220 more chars)&quot;,
+  &quot;description&quot;: &quot;Find coding-agent-testing channel in Slack&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>C0388PV0XAM fortesting
+C049D33AQA0 testing_1
+--- first 10 ---
+C01FV1QFA86 random
+C01G1P7CU58 general
+C01G1PBK3S6 slackathon
+C01H4SPS77W uipath-slack-test
+C01S1QW0X97 tester-hub
+C02FRAXQLDD odyssey
+C02G5PEVANP party-etsy
+C02G5PHCFLK la-la-land
+C02GJMY3V1P hairat
+C02H67Y4TUZ jafdk22e21132
+HasMore: ?</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#33</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">2.12s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip is resources run list \&quot;uipath-salesforce-slack\&quot; \&quot;curated_channels\&quot; \\\n  --connection-id \&quot;849e85d8-1aa9-4d52-8bbd-20041c8f05d8\&quot; 2&gt;/dev/null | python3 -c \&quot;\nimport json,sys\ndata=json.load(sys.stdin)\nitems=data.get(&#x27;Data&#x27;,{}).get(&#x27;items&#x27;,[])\npagination=data.get(&#x27;Pagination&#x27;,{})\nprint(&#x27;Total channels:&#x27;, len(items))\nprint(&#x27;Pagination:&#x27;, json.dumps(pagination))\nfor c in items:\n    if &#x27;coding&#x27; in c.get… (222 more chars)&quot;,
+  &quot;description&quot;: &quot;Search all Slack channels for coding-agent-testing&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Total channels: 1000
+Pagination: {}
+NextPageToken: NONE</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#34</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">3.29s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip is resources run list \&quot;uipath-salesforce-slack\&quot; \&quot;curated_channels\&quot; \\\n  --connection-id \&quot;849e85d8-1aa9-4d52-8bbd-20041c8f05d8\&quot; 2&gt;/dev/null | python3 -c \&quot;\nimport json,sys\ndata=json.load(sys.stdin)\nitems=data.get(&#x27;Data&#x27;,{}).get(&#x27;items&#x27;,[])\nfor c in items:\n    name=c.get(&#x27;name&#x27;,&#x27;&#x27;).lower()\n    if &#x27;coding&#x27; in name or &#x27;agent&#x27; in name or &#x27;agent-test&#x27; in name or &#x27;coding-agent&#x27; in name:\n        print(c… (46 more chars)&quot;,
+  &quot;description&quot;: &quot;Search 1000 Slack channels for coding-agent-testing&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>(Bash completed with no output)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#35</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.24s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip is resources run list \&quot;uipath-salesforce-slack\&quot; \&quot;curated_channels\&quot; \\\n  --connection-id \&quot;849e85d8-1aa9-4d52-8bbd-20041c8f05d8\&quot; 2&gt;/dev/null &gt; /tmp/slack_channels.json\npython3 -c \&quot;\nimport json\ndata=json.load(open(&#x27;/tmp/slack_channels.json&#x27;))\nitems=data.get(&#x27;Data&#x27;,{}).get(&#x27;items&#x27;,[])\nprint(&#x27;Total:&#x27;, len(items))\n# search broadly\nfor c in items:\n    n=c.get(&#x27;name&#x27;,&#x27;&#x27;)\n    if any(kw in n for kw in [&#x27;… (76 more chars)&quot;,
+  &quot;description&quot;: &quot;Full search of Slack channels for relevant names&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Total: 1000
+C01H4SPS77W uipath-slack-test
+C01S1QW0X97 tester-hub
+C02HGMRUW8H test123
+C032ACCPE02 testwe
+C032KARDRGU testbot
+C03502DJU4D deno-test
+C0352UU0K8A demo-test
+C037QJZ32VC testconvo
+C037WGW4ZMF rajutestcase1
+C0388PV0XAM fortesting
+C038M0Z18U8 testconversation
+C03B8V2NQ69 randomnewtest
+C03BQE5R7MF randomnewtest01
+C03M477DS5S test-private
+C03MS8KDKQX 1950906607testinvoke
+C03MSAF57N3 515583029testinvoke
+C03MSEWV895 1238014918testinvoke
+C03MT3Z6UJK 24sw-test-293678
+C03MT5VEJP9 24sw-test-155246
+C03MT62L2EB 24sw-test-187940
+C03MU3HC6PM 1927755884rajutest
+C03MU4TMW31 24s_testchannel31409
+C03MX2CMXSR 1763900359rajutest
+C03MX4AKJH5 24sw-test-146459
+C03MX8N0J3X 1177718758rajutest
+C03MX8R4WF7 1301141928rajutest
+C03MX8TGZUM 1590613628rajutest
+C03MXGPJZHT 1871172125rajutest
+C03MZU6MSEN 680457682rajutest
+C03N003UWBC 1224256625rajutest
+C03N04KN4LT 441399741rajutest
+C03N15H9LBY 24sw-test-223589
+C03N29YPF36 426662755testinvoke
+C03N2CGE8R2 1840840159testinvoke
+C03N2UZ3FEG 489358056testinvoke
+C03N30EJ42Y 1817998340testinvoke
+C03N41RUJ3F 1239121038testinvoke
+C03N44DKCJZ 2097783123testinvoke
+C03N466MA05 1448365518testinvoke
+C03N4RV8L9K 24sw-test-270916
+C03N53FK9LN 24sw-test-181609
+C03N547004W 2
+
+… (truncated, 3952 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#36</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">240ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 -c \&quot;\nimport json\ndata=json.load(open(&#x27;/tmp/slack_channels.json&#x27;))\nraw=data.get(&#x27;Data&#x27;,{})\n# Check all keys\nprint(&#x27;Keys:&#x27;, list(raw.keys()) if isinstance(raw, dict) else type(raw))\nif isinstance(raw, dict):\n    pagination=raw.get(&#x27;Pagination&#x27;,{})\n    print(&#x27;Pagination:&#x27;, json.dumps(pagination))\n    items=raw.get(&#x27;items&#x27;,[])\n    print(&#x27;Count:&#x27;, len(items))\n\&quot;&quot;,
+  &quot;description&quot;: &quot;Check Slack channels pagination data&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Keys: [&#x27;items&#x27;, &#x27;Pagination&#x27;]
+Pagination: {&quot;HasMore&quot;: &quot;true&quot;, &quot;NextPageToken&quot;: &quot;eyJwcm92aWRlck5leHRQYWdlIjoiMTAwMCIsInBhZ2VTaXplIjoxMDAwLCJwYWdlIjoyfQ&quot;}
+Count: 1000</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#37</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">3.03s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip is resources run list \&quot;uipath-google-drive\&quot; \&quot;EventFolderPicker?parentReference=0AKHXBGF_5DaVUk9PVA&amp;includeFiles=true\&quot; \\\n  --connection-id \&quot;41943488-5cec-48b3-93cf-19048447524e\&quot; 2&gt;/dev/null | python3 -c \&quot;\nimport json,sys\ndata=json.load(sys.stdin)\nraw=data.get(&#x27;Data&#x27;,{})\nitems=raw.get(&#x27;items&#x27;,[]) if isinstance(raw,dict) else raw\nfor f in items:\n    print(&#x27;isFolder:&#x27;, f.get(&#x27;isFolder&#x27;), &#x27;ID:&#x27;, f.… (140 more chars)&quot;,
+  &quot;description&quot;: &quot;List My Drive contents with files included&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>isFolder: True ID: 1Jgkf9kpWxZ9APapbd630Bk69bIOMBLNQ Name: 1_Spectra_e2e
+isFolder: True ID: 1PsoU82HgFoMrWCuYitJfDqAmzvlLGVFR Name: aeutfijouhharish
+isFolder: True ID: 1Atw82Ko5SzFX6I2oFHYtMVKfeF8OVkVw Name: akarisnoldharish
+isFolder: True ID: 1VLOeNjuiYx5xeeIdKuWNxkOgHbBb7YqS Name: amuudclzvuharish
+isFolder: True ID: 1q2qHbOPutdcpn0DCC6exSdAe3o2T-Z4g Name: anmisujnsfharish
+isFolder: True ID: 1pFNycVxKYixG7dUXZEwPlP2UeWMJBhpE Name: asytkgyrfbharish
+isFolder: True ID: 12EUZ-QIST8iovniSDMhNn_s0FH2fHqhr Name: ataimyxcmaharish
+isFolder: True ID: 1uq226mmusgs5IDgS2GTaF2AkVPMa1hvn Name: atest
+isFolder: True ID: 1v7eapmWkO_iWlQB2Gzpcl0vjN5w-J8rj Name: atestupload
+isFolder: True ID: 1314WFqfBsYpsoN894atd1eBfgsmW2Anh Name: auluaxwtzfharish
+isFolder: True ID: 1md4QAqzulXWKRAXjENGxbuMW5f9wj3n0 Name: ayvyvyitnbharish
+isFolder: True ID: 1qgFRX07ROm9_5Yyd8WI8yVc3AnvggRf3 Name: bbenxwfuunharish
+isFolder: True ID: 1C-yE_d6jkZt_AhNP8a1GkZeYZUvjpqpf Name: bcrszczpdlharish
+isFolder: True ID: 1oB5_Fc25rLWnXRWmfxr5cjdxIRXqzpcF Name: bfzaktxnfaharish
+isFolder: True ID: 1DEDqwBEoeMCghJwqoEXklU2vbE9BJ_A8 Name: bhsqnqbvocharish
+isFolder: True ID: 1fdYf1ytzD2gGCr_wiq6rwWJh92EZqhQG Name: bicldtrzixharish
+isF
+
+… (truncated, 8237 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#38</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.33s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;NEXT_TOKEN=\&quot;eyJwcm92aWRlck5leHRQYWdlIjoiMTAwMCIsInBhZ2VTaXplIjoxMDAwLCJwYWdlIjoyfQ\&quot;\nuip is resources run list \&quot;uipath-salesforce-slack\&quot; \&quot;curated_channels\&quot; \\\n  --connection-id \&quot;849e85d8-1aa9-4d52-8bbd-20041c8f05d8\&quot; \\\n  --query \&quot;nextPage=${NEXT_TOKEN}\&quot; 2&gt;/dev/null | python3 -c \&quot;\nimport json,sys\ndata=json.load(sys.stdin)\nraw=data.get(&#x27;Data&#x27;,{})\nitems=raw.get(&#x27;items&#x27;,[]) if isinstance(raw,dict) else [… (257 more chars)&quot;,
+  &quot;description&quot;: &quot;Paginate Slack channels page 2 to find coding-agent-testing&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Count: 1000
+Pagination: {&#x27;HasMore&#x27;: &#x27;true&#x27;, &#x27;NextPageToken&#x27;: &#x27;eyJwcm92aWRlck5leHRQYWdlIjoiMjAwMCIsInBhZ2VTaXplIjoxMDAwLCJwYWdlIjozfQ&#x27;}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#39</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.43s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;NEXT_TOKEN=\&quot;eyJwcm92aWRlck5leHRQYWdlIjoiMjAwMCIsInBhZ2VTaXplIjoxMDAwLCJwYWdlIjozfQ\&quot;\nuip is resources run list \&quot;uipath-salesforce-slack\&quot; \&quot;curated_channels\&quot; \\\n  --connection-id \&quot;849e85d8-1aa9-4d52-8bbd-20041c8f05d8\&quot; \\\n  --query \&quot;nextPage=${NEXT_TOKEN}\&quot; 2&gt;/dev/null | python3 -c \&quot;\nimport json,sys\ndata=json.load(sys.stdin)\nraw=data.get(&#x27;Data&#x27;,{})\nitems=raw.get(&#x27;items&#x27;,[]) if isinstance(raw,dict) else [… (262 more chars)&quot;,
+  &quot;description&quot;: &quot;Paginate Slack channels page 3 for coding-agent-testing&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Count: 1000
+Pagination: {&#x27;HasMore&#x27;: &#x27;true&#x27;, &#x27;NextPageToken&#x27;: &#x27;eyJwcm92aWRlck5leHRQYWdlIjoiMzAwMCIsInBhZ2VTaXplIjoxMDAwLCJwYWdlIjo0fQ&#x27;}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#40</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.37s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;NEXT_TOKEN=\&quot;eyJwcm92aWRlck5leHRQYWdlIjoiMzAwMCIsInBhZ2VTaXplIjoxMDAwLCJwYWdlIjo0fQ\&quot;\nuip is resources run list \&quot;uipath-salesforce-slack\&quot; \&quot;curated_channels\&quot; \\\n  --connection-id \&quot;849e85d8-1aa9-4d52-8bbd-20041c8f05d8\&quot; \\\n  --query \&quot;nextPage=${NEXT_TOKEN}\&quot; 2&gt;/dev/null | python3 -c \&quot;\nimport json,sys\ndata=json.load(sys.stdin)\nraw=data.get(&#x27;Data&#x27;,{})\nitems=raw.get(&#x27;items&#x27;,[]) if isinstance(raw,dict) else [… (231 more chars)&quot;,
+  &quot;description&quot;: &quot;Paginate Slack channels page 4&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Count: 1000
+Pagination: {&#x27;HasMore&#x27;: &#x27;true&#x27;, &#x27;NextPageToken&#x27;: &#x27;eyJwcm92aWRlck5leHRQYWdlIjoiNDAwMCIsInBhZ2VTaXplIjoxMDAwLCJwYWdlIjo1fQ&#x27;}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#41</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.42s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;NEXT_TOKEN=\&quot;eyJwcm92aWRlck5leHRQYWdlIjoiNDAwMCIsInBhZ2VTaXplIjoxMDAwLCJwYWdlIjo1fQ\&quot;\nuip is resources run list \&quot;uipath-salesforce-slack\&quot; \&quot;curated_channels\&quot; \\\n  --connection-id \&quot;849e85d8-1aa9-4d52-8bbd-20041c8f05d8\&quot; \\\n  --query \&quot;nextPage=${NEXT_TOKEN}\&quot; 2&gt;/dev/null | python3 -c \&quot;\nimport json,sys\ndata=json.load(sys.stdin)\nraw=data.get(&#x27;Data&#x27;,{})\nitems=raw.get(&#x27;items&#x27;,[]) if isinstance(raw,dict) else [… (231 more chars)&quot;,
+  &quot;description&quot;: &quot;Paginate Slack channels page 5&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Count: 878
+MATCH: C0B2FDZD1M3 coding-agent-testing
+Pagination: {&#x27;HasMore&#x27;: &#x27;false&#x27;}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#42</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">7ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-ipe-drive-to-slack/DriveToSlackTest/DriveToSlackTest/DriveToSlackTest.flow&quot;,
+  &quot;limit&quot;: 60
+}</pre>
+    <h4>Result</h4>
+    <pre>1	{
+2	  &quot;id&quot;: &quot;301a8440-9f73-42e2-90b3-f9920e3219ff&quot;,
+3	  &quot;version&quot;: &quot;1.8&quot;,
+4	  &quot;name&quot;: &quot;DriveToSlackTest&quot;,
+5	  &quot;nodes&quot;: [
+6	    {
+7	      &quot;id&quot;: &quot;start&quot;,
+8	      &quot;type&quot;: &quot;core.trigger.manual&quot;,
+9	      &quot;typeVersion&quot;: &quot;1.0&quot;,
+10	      &quot;display&quot;: {
+11	        &quot;label&quot;: &quot;Manual trigger&quot;
+12	      },
+13	      &quot;inputs&quot;: {
+14	        &quot;entryPointId&quot;: &quot;311b874f-53b4-4f6c-a242-0a4b58648dfc&quot;,
+15	        &quot;isDefaultEntryPoint&quot;: true
+16	      }
+17	    },
+18	    {
+19	      &quot;id&quot;: &quot;sendFileToChannel1&quot;,
+20	      &quot;type&quot;: &quot;uipath.connector.uipath-salesforce-slack.send-file-to-channel&quot;,
+21	      &quot;typeVersion&quot;: &quot;1.0.0&quot;,
+22	      &quot;display&quot;: {
+23	        &quot;label&quot;: &quot;Send File to Channel&quot;
+24	      },
+25	      &quot;inputs&quot;: {}
+26	    },
+27	    {
+28	      &quot;id&quot;: &quot;downloadFile1&quot;,
+29	      &quot;type&quot;: &quot;uipath.connector.uipath-google-drive.download-file&quot;,
+30	      &quot;typeVersion&quot;: &quot;1.0.0&quot;,
+31	      &quot;display&quot;: {
+32	        &quot;label&quot;: &quot;Download File&quot;
+33	      },
+34	      &quot;inputs&quot;: {}
+35	    }
+36	  ],
+37	  &quot;edges&quot;: [],
+38	  &quot;definitions&quot;: [
+39	    {
+40	      &quot;nodeType&quot;: &quot;core.trigger.manual&quot;,
+41	      &quot;version&quot;: &quot;1.0&quot;,
+42	      &quot;category&quot;: &quot;trigger&quot;,
+43	      &quot;description&quot;: &quot;Start workflow manually&quot;,
+44	      &quot;tags&quot;: [
+45	        &quot;
+
+… (truncated, 372 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#43</span>
+      <span class="tool-name">Edit</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">23ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;replace_all&quot;: false,
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-ipe-drive-to-slack/DriveToSlackTest/DriveToSlackTest/DriveToSlackTest.flow&quot;,
+  &quot;old_string&quot;: &quot;  \&quot;nodes\&quot;: [\n    {\n      \&quot;id\&quot;: \&quot;start\&quot;,&quot;,
+  &quot;new_string&quot;: &quot;  \&quot;nodes\&quot;: [\n    {\n      \&quot;id\&quot;: \&quot;end1\&quot;,\n      \&quot;type\&quot;: \&quot;core.control.end\&quot;,\n      \&quot;typeVersion\&quot;: \&quot;1.0\&quot;,\n      \&quot;display\&quot;: {\n        \&quot;label\&quot;: \&quot;End\&quot;\n      },\n      \&quot;inputs\&quot;: {}\n    },\n    {\n      \&quot;id\&quot;: \&quot;start\&quot;,&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>The file /work/output/artifacts/skill-flow-ipe-drive-to-slack/DriveToSlackTest/DriveToSlackTest/DriveToSlackTest.flow has been updated successfully. (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#44</span>
+      <span class="tool-name">Edit</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">27ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;replace_all&quot;: false,
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-ipe-drive-to-slack/DriveToSlackTest/DriveToSlackTest/DriveToSlackTest.flow&quot;,
+  &quot;old_string&quot;: &quot;  \&quot;edges\&quot;: [],&quot;,
+  &quot;new_string&quot;: &quot;  \&quot;edges\&quot;: [\n    {\n      \&quot;id\&quot;: \&quot;edge-start-download\&quot;,\n      \&quot;sourceNodeId\&quot;: \&quot;start\&quot;,\n      \&quot;sourcePortId\&quot;: \&quot;output\&quot;,\n      \&quot;targetNodeId\&quot;: \&quot;downloadFile1\&quot;,\n      \&quot;targetPort\&quot;: \&quot;input\&quot;\n    },\n    {\n      \&quot;id\&quot;: \&quot;edge-download-slack\&quot;,\n      \&quot;sourceNodeId\&quot;: \&quot;downloadFile1\&quot;,\n      \&quot;sourcePortId\&quot;: \&quot;output\&quot;,\n      \&quot;targetNodeId\&quot;: \&quot;sendFileToChannel1\&quot;,\n      \&quot;targetPort\&quot;: \&quot;input\&quot;\n    },\n    {\n      \&quot;id\&quot;: … (162 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>The file /work/output/artifacts/skill-flow-ipe-drive-to-slack/DriveToSlackTest/DriveToSlackTest/DriveToSlackTest.flow has been updated successfully. (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#45</span>
+      <span class="tool-name">Edit</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">31ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;replace_all&quot;: false,
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-ipe-drive-to-slack/DriveToSlackTest/DriveToSlackTest/DriveToSlackTest.flow&quot;,
+  &quot;old_string&quot;: &quot;  \&quot;definitions\&quot;: [\n    {\n      \&quot;nodeType\&quot;: \&quot;core.trigger.manual\&quot;,&quot;,
+  &quot;new_string&quot;: &quot;  \&quot;definitions\&quot;: [\n    {\n      \&quot;nodeType\&quot;: \&quot;core.control.end\&quot;,\n      \&quot;version\&quot;: \&quot;1.0\&quot;,\n      \&quot;category\&quot;: \&quot;control-flow\&quot;,\n      \&quot;description\&quot;: \&quot;Mark the end of a workflow path\&quot;,\n      \&quot;tags\&quot;: [\n        \&quot;control-flow\&quot;,\n        \&quot;end\&quot;,\n        \&quot;finish\&quot;,\n        \&quot;complete\&quot;\n      ],\n      \&quot;sortOrder\&quot;: 20,\n      \&quot;display\&quot;: {\n        \&quot;label\&quot;: \&quot;End\&quot;,\n        \&quot;icon\&quot;: \&quot;circle-check\&quot;,\n        \&quot;shape\&quot;: \&quot;circle… (466 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>The file /work/output/artifacts/skill-flow-ipe-drive-to-slack/DriveToSlackTest/DriveToSlackTest/DriveToSlackTest.flow has been updated successfully. (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#46</span>
+      <span class="tool-name">Edit</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">42ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;replace_all&quot;: false,
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-ipe-drive-to-slack/DriveToSlackTest/DriveToSlackTest/DriveToSlackTest.flow&quot;,
+  &quot;old_string&quot;: &quot;    \&quot;nodes\&quot;: {\n      \&quot;start\&quot;: {&quot;,
+  &quot;new_string&quot;: &quot;    \&quot;nodes\&quot;: {\n      \&quot;end1\&quot;: {\n        \&quot;position\&quot;: {\n          \&quot;x\&quot;: 0,\n          \&quot;y\&quot;: 0\n        }\n      },\n      \&quot;start\&quot;: {&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>The file /work/output/artifacts/skill-flow-ipe-drive-to-slack/DriveToSlackTest/DriveToSlackTest/DriveToSlackTest.flow has been updated successfully. (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#47</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">4.68s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;\\\nuip maestro flow node configure \&quot;DriveToSlackTest.flow\&quot; \&quot;downloadFile1\&quot; \\\n  --detail &#x27;{\&quot;connectionId\&quot;: \&quot;41943488-5cec-48b3-93cf-19048447524e\&quot;, \&quot;folderKey\&quot;: \&quot;5da18ec0-7de1-4e57-aaf1-ddc8a369c199\&quot;, \&quot;method\&quot;: \&quot;GET\&quot;, \&quot;endpoint\&quot;: \&quot;/hubs/general/download_file\&quot;, \&quot;queryParameters\&quot;: {\&quot;fileId\&quot;: \&quot;1YlblU34Vd6RvCkamYw5BWejdX8ES-Zzy\&quot;}}&#x27; \\\n  --output json 2&gt;/dev/null&quot;,
+  &quot;description&quot;: &quot;Configure Google Drive download-file node with first file&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeConfigureSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;NodeId&quot;: &quot;downloadFile1&quot;,
+    &quot;BindingsCreated&quot;: 4,
+    &quot;DetailPopulated&quot;: true
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#48</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">4.29s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;\\\nuip maestro flow node configure \&quot;DriveToSlackTest.flow\&quot; \&quot;sendFileToChannel1\&quot; \\\n  --detail &#x27;{\&quot;connectionId\&quot;: \&quot;849e85d8-1aa9-4d52-8bbd-20041c8f05d8\&quot;, \&quot;folderKey\&quot;: \&quot;5da18ec0-7de1-4e57-aaf1-ddc8a369c199\&quot;, \&quot;method\&quot;: \&quot;POST\&quot;, \&quot;endpoint\&quot;: \&quot;/send_files_to_channel\&quot;, \&quot;bodyParameters\&quot;: {\&quot;file\&quot;: \&quot;=js:$vars.downloadFile1.output\&quot;}, \&quot;queryParameters\&quot;: {\&quot;channels\&quot;: \&quot;C0B2FDZD1M3\&quot;, \&quot;send_as\&quot;: \&quot;user\&quot;}}&#x27; \\\n  --outpu… (18 more chars)&quot;,
+  &quot;description&quot;: &quot;Configure Slack send-file-to-channel node&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeConfigureSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;NodeId&quot;: &quot;sendFileToChannel1&quot;,
+    &quot;BindingsCreated&quot;: 4,
+    &quot;DetailPopulated&quot;: true
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#49</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-err">ERROR</span>
+      <span class="tool-duration">4.41s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow validate \&quot;DriveToSlackTest.flow\&quot; --output json 2&gt;/dev/null &amp;&amp; \\\nuip maestro flow format \&quot;DriveToSlackTest.flow\&quot; --output json 2&gt;/dev/null&quot;,
+  &quot;description&quot;: &quot;Validate and format the flow file&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Exit code 1
+{
+  &quot;Result&quot;: &quot;Failure&quot;,
+  &quot;Message&quot;: &quot;Validation failed for /work/output/artifacts/skill-flow-ipe-drive-to-slack/DriveToSlackTest/DriveToSlackTest/DriveToSlackTest.flow&quot;,
+  &quot;Instructions&quot;: &quot;Found 3 error(s):\n  - [error] [edges[0].sourcePort] Invalid input: expected string, received undefined\n  - [error] [edges[1].sourcePort] Invalid input: expected string, received undefined\n  - [error] [edges[2].sourcePort] Invalid input: expected string, received undefined&quot;,
+  &quot;ErrorCode&quot;: &quot;unknown_error&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}</pre>
+    <h4>Error</h4><pre>Exit code 1
+{
+  &quot;Result&quot;: &quot;Failure&quot;,
+  &quot;Message&quot;: &quot;Validation failed for /work/output/artifacts/skill-flow-ipe-drive-to-slack/DriveToSlackTest/DriveToSlackTest/DriveToSlackTest.flow&quot;,
+  &quot;Instructions&quot;: &quot;Found 3 error(s):\n  - [error] [edges[0].sourcePort] Invalid input: expected string, received undefined\n  - [error] [edges[1].sourcePort] Invalid input: expected string, received undefined\n  - [error] [edges[2].sourcePort] Invalid input: expected string, received undefined&quot;,
+  &quot;ErrorCode&quot;: &quot;unknown_error&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}</pre>
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#50</span>
+      <span class="tool-name">Edit</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">42ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;replace_all&quot;: false,
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-ipe-drive-to-slack/DriveToSlackTest/DriveToSlackTest/DriveToSlackTest.flow&quot;,
+  &quot;old_string&quot;: &quot;    {\n      \&quot;id\&quot;: \&quot;edge-start-download\&quot;,\n      \&quot;sourceNodeId\&quot;: \&quot;start\&quot;,\n      \&quot;sourcePortId\&quot;: \&quot;output\&quot;,\n      \&quot;targetNodeId\&quot;: \&quot;downloadFile1\&quot;,\n      \&quot;targetPort\&quot;: \&quot;input\&quot;\n    },\n    {\n      \&quot;id\&quot;: \&quot;edge-download-slack\&quot;,\n      \&quot;sourceNodeId\&quot;: \&quot;downloadFile1\&quot;,\n      \&quot;sourcePortId\&quot;: \&quot;output\&quot;,\n      \&quot;targetNodeId\&quot;: \&quot;sendFileToChannel1\&quot;,\n      \&quot;targetPort\&quot;: \&quot;input\&quot;\n    },\n    {\n      \&quot;id\&quot;: \&quot;edge-slack-e… (144 more chars)&quot;,
+  &quot;new_string&quot;: &quot;    {\n      \&quot;id\&quot;: \&quot;edge-start-download\&quot;,\n      \&quot;sourceNodeId\&quot;: \&quot;start\&quot;,\n      \&quot;sourcePort\&quot;: \&quot;output\&quot;,\n      \&quot;targetNodeId\&quot;: \&quot;downloadFile1\&quot;,\n      \&quot;targetPort\&quot;: \&quot;input\&quot;\n    },\n    {\n      \&quot;id\&quot;: \&quot;edge-download-slack\&quot;,\n      \&quot;sourceNodeId\&quot;: \&quot;downloadFile1\&quot;,\n      \&quot;sourcePort\&quot;: \&quot;output\&quot;,\n      \&quot;targetNodeId\&quot;: \&quot;sendFileToChannel1\&quot;,\n      \&quot;targetPort\&quot;: \&quot;input\&quot;\n    },\n    {\n      \&quot;id\&quot;: \&quot;edge-slack-end\&quot;,… (138 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>The file /work/output/artifacts/skill-flow-ipe-drive-to-slack/DriveToSlackTest/DriveToSlackTest/DriveToSlackTest.flow has been updated successfully. (note: the file had been modified on disk since you last read it — the edit applied cleanly, but the file contains other changes not in your context. Read it before edits that depend on surrounding content.)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#51</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">7.69s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow validate \&quot;DriveToSlackTest.flow\&quot; --output json 2&gt;/dev/null &amp;&amp; \\\nuip maestro flow format \&quot;DriveToSlackTest.flow\&quot; --output json 2&gt;/dev/null&quot;,
+  &quot;description&quot;: &quot;Validate and format after edge fix&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FlowValidate&quot;,
+  &quot;Data&quot;: {
+    &quot;File&quot;: &quot;/work/output/artifacts/skill-flow-ipe-drive-to-slack/DriveToSlackTest/DriveToSlackTest/DriveToSlackTest.flow&quot;,
+    &quot;Status&quot;: &quot;Valid&quot;
+  }
+}
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FlowFormat&quot;,
+  &quot;Data&quot;: {
+    &quot;File&quot;: &quot;DriveToSlackTest.flow&quot;,
+    &quot;NodesTotal&quot;: 4,
+    &quot;EdgesTotal&quot;: 3,
+    &quot;NodesRepositioned&quot;: 3,
+    &quot;NodesResized&quot;: 4,
+    &quot;SubflowsTidied&quot;: 0,
+    &quot;VariableCount&quot;: 5
+  },
+  &quot;Instructions&quot;: &quot;Repositioned 3 of 4 nodes. Set canonical size on 4 node(s)&quot;
+}</pre>
+    
+  </div>
+</details>
+
+</div>
+
+<h2>Command Telemetry</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Total</div><div class="value">52</div></div>
+    <div class="stat"><div class="label">Successful</div><div class="value">45 (87%)</div></div>
+    <div class="stat"><div class="label">Failed</div><div class="value">7</div></div>
+    <div class="stat"><div class="label">Avg / cmd</div><div class="value">4.87s</div></div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 2fr;gap:16px;margin-top:12px">
+    <div>
+      <h4>By Tool</h4>
+      <table>
+        <thead><tr><th>Tool</th><th>Count</th></tr></thead>
+        <tbody><tr><td class='mono'>Bash</td><td>41</td></tr><tr><td class='mono'>Read</td><td>5</td></tr><tr><td class='mono'>Edit</td><td>5</td></tr><tr><td class='mono'>Skill</td><td>1</td></tr></tbody>
+      </table>
+    </div>
+    <div>
+      <h4>Slowest</h4>
+      <table>
+        <thead><tr><th>Tool</th><th>Duration</th><th>Parameters</th></tr></thead>
+        <tbody><tr><td class='mono'>Bash</td><td>26.30s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip is connections list &quot;uipath-sales...</td></tr><tr><td class='mono'>Bash</td><td>24.63s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip is connections list &quot;uipath-googl...</td></tr><tr><td class='mono'>Bash</td><td>23.73s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro flow registry get core.co...</td></tr><tr><td class='mono'>Bash</td><td>20.96s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;\\\nuip solution init &quot;DriveToSlackTe...</td></tr><tr><td class='mono'>Bash</td><td>16.81s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip is resources run list &quot;uipath-goo...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+  <p><strong>Most Common Pattern:</strong> <code>Bash → Bash → Bash</code></p><p><strong>Skill Tool Invoked:</strong> 1 time(s)</p>
+</div>
+
+<h2>Generation Metrics</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Total Latency</div><div class="value">6m 9s</div></div>
+    <div class="stat"><div class="label">Turns</div><div class="value">1</div></div>
+    <div class="stat"><div class="label">Assistant Turns</div><div class="value">83</div></div>
+    <div class="stat"><div class="label">Avg Turn Latency</div><div class="value">6m 7s</div></div>
+    
+  </div>
+</div>
+
+<h2>Token Usage</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Input (uncached)</div><div class="value">35</div></div>
+    <div class="stat"><div class="label">Output</div><div class="value">15,575</div></div>
+    <div class="stat"><div class="label">Cache Write</div><div class="value">95,880</div></div>
+    <div class="stat"><div class="label">Cache Read</div><div class="value">2,959,053</div></div>
+    <div class="stat"><div class="label">Total</div><div class="value">3,070,543</div></div>
+    <div class="stat"><div class="label">Cost</div><div class="value">$1.4810</div></div>
+  </div>
+</div>
+
+<h2>Agent Settings</h2>
+<div class="card" style="padding:0">
+  <table>
+    <tbody><tr><td class='mono dim'>Permission Mode</td><td>acceptEdits</td></tr><tr><td class='mono dim'>Allowed Tools</td><td>Skill, Bash, Read, Write, Edit, Glob, Grep</td></tr><tr><td class='mono dim'>Model</td><td>us.anthropic.claude-sonnet-4-6</td></tr><tr><td class='mono dim'>Max Turns</td><td>120</td></tr><tr><td class='mono dim'>System Prompt</td><td>You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted. </td></tr><tr><td class='mono dim'>Plugins</td><td>/home/azureuser/projects/skills</td></tr></tbody>
+  </table>
+</div>
+
+<h2>Environment</h2>
+<div class="card" style="padding:0">
+  <table>
+    <tbody><tr><td class='mono dim'>git_commit</td><td>unknown</td></tr><tr><td class='mono dim'>skills_git_commit</td><td>unknown</td></tr><tr><td class='mono dim'>cli_version</td><td>1.199.0-dev.7970</td></tr><tr><td class='mono dim'>tool_plugins</td><td>{&#x27;admin-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;agent-tool&#x27;: &#x27;1.199.0-dev.7965&#x27;, &#x27;agenthub-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;aops-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;api-workflow-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;codedagent-tool&#x27;: &#x27;1.199.0-dev.7965&#x27;, &#x27;codedapp-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;coder-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;context-grounding-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;conversational-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;data-fabric-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;docsai-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;functions-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;gov-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;insights-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;integrationservice-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;ixp-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;llm-gateway-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;llmgw-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;maestro-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;orchestrator-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;platform-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;pm-tool&#x27;: &#x27;1.199.0-dev.7969&#x27;, &#x27;rpa-legacy-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;rpa-tool&#x27;: &#x27;1.199.0-dev.20260722.4&#x27;, &#x27;solution-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;tasks-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;test-manager-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;traces-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;vertical-solutions-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;}</td></tr><tr><td class='mono dim'>coder_eval</td><td>0.8.8</td></tr><tr><td class='mono dim'>claude_code_cli</td><td>2.1.177 (Claude Code)</td></tr><tr><td class='mono dim'>uv</td><td>uv 0.11.28 (x86_64-unknown-linux-gnu)</td></tr><tr><td class='mono dim'>anthropic</td><td>0.102.0</td></tr><tr><td class='mono dim'>openai</td><td>2.47.0</td></tr><tr><td class='mono dim'>pydantic</td><td>2.12.5</td></tr><tr><td class='mono dim'>api_routing</td><td>aws_bedrock</td></tr><tr><td class='mono dim'>aws_region</td><td>us-east-2</td></tr><tr><td class='mono dim'>bedrock_model</td><td>us.anthropic.claude-sonnet-4-6</td></tr></tbody>
+  </table>
+</div>
+
+<footer>Generated by coder_eval · 2026-07-24T17:59:52</footer>
+</div>
+<script>
+function toggleTheme() {
+  document.documentElement.classList.toggle('light');
+  try {
+    const mode = document.documentElement.classList.contains('light') ? 'light' : 'dark';
+    localStorage.setItem('coder-eval-theme', mode);
+  } catch (e) { /* ignore */ }
+}
+(function() {
+  try {
+    if (localStorage.getItem('coder-eval-theme') === 'light') {
+      document.documentElement.classList.add('light');
+    }
+  } catch (e) { /* ignore */ }
+})();
+</script>
+</body>
+</html>

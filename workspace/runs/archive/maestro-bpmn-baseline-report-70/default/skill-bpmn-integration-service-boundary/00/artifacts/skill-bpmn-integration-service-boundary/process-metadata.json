@@ -1,0 +1,85 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$comment": "SlackDigestBoundaryBpmn – process metadata. DRAFT. CLI enrichment required.",
+  "project": {
+    "name": "SlackDigestBoundaryBpmn",
+    "processId": "Process_SlackDigestBoundary",
+    "bpmnFile": "SlackDigestBoundaryBpmn.bpmn",
+    "status": "draft",
+    "attended": true,
+    "description": "Manual start → Prepare Digest → Send Slack Digest (Integration Service) → End"
+  },
+  "processVariables": [
+    {
+      "name": "DigestConfig",
+      "bpmnDataObjectId": "DataObject_DigestConfig",
+      "direction": "In",
+      "required": true,
+      "typeHint": "object",
+      "shape": {
+        "channelIds": "string[]",
+        "lookbackHours": "number",
+        "title": "string"
+      },
+      "note": "Caller-supplied configuration. Shape is illustrative; authoritative schema is CLI-generated."
+    },
+    {
+      "name": "DigestPayload",
+      "bpmnDataObjectId": "DataObject_DigestPayload",
+      "direction": "Internal",
+      "required": false,
+      "typeHint": "object",
+      "shape": {
+        "text": "string",
+        "blocks": "object[]"
+      },
+      "note": "Slack Block Kit message payload produced by Task_PrepareDigest."
+    },
+    {
+      "name": "SlackResponse",
+      "bpmnDataObjectId": "DataObject_SlackResponse",
+      "direction": "Out",
+      "required": false,
+      "typeHint": "object",
+      "shape": "OPAQUE_PENDING_CLI_ENRICHMENT",
+      "note": "Raw Slack connector response. Schema is a dynamic, CLI-generated artefact. Declared opaque until CLI enrichment runs."
+    }
+  ],
+  "tasks": [
+    {
+      "id": "Task_PrepareDigest",
+      "name": "Prepare Digest",
+      "type": "scriptTask",
+      "implementation": "uipath-workflow-xaml",
+      "inputs": ["DigestConfig"],
+      "outputs": ["DigestPayload"],
+      "status": "authorable"
+    },
+    {
+      "id": "Task_SendSlackDigest",
+      "name": "Send Slack Digest",
+      "type": "serviceTask",
+      "implementation": "##unspecified – Integration Service DRAFT BOUNDARY",
+      "connectorIntent": "Slack",
+      "operationIntent": "PostMessage",
+      "inputs": ["DigestPayload"],
+      "outputs": ["SlackResponse"],
+      "status": "draft_boundary",
+      "enrichmentRequired": true,
+      "cliOwnedFields": [
+        "connectorResourceKey",
+        "connectionId",
+        "operationId",
+        "inputSchema",
+        "outputSchema",
+        "bindings_v2.json entry",
+        "nugetPackageMetadata"
+      ],
+      "note": "This task is a draft executable boundary. Do NOT invent connector IDs, connection IDs, folder keys, tenant URLs, or package metadata. CLI enrichment is the only correct path."
+    }
+  ],
+  "cliEnrichmentBlockers": {
+    "summary": "See ENRICHMENT_BLOCKERS.md for the full list with resolution steps.",
+    "count": 7
+  }
+}

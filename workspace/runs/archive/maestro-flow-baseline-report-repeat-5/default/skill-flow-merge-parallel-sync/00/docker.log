@@ -1,0 +1,7 @@
+19:27:12 [INFO   ] [default/skill-flow-merge-parallel-sync/00] orchestrator: API routing: aws_bedrock
+19:30:28 [WARNING] [default/skill-flow-merge-parallel-sync/00] sandbox: Command 'uip maestro flow validate ParallelSync/ParallelSync/ParallelSync.flow' timed out after 30 seconds
+19:30:28 [INFO   ] [default/skill-flow-merge-parallel-sync/00] evaluation.checker: Criterion 'run_command' FAILED (score=0.00, threshold=1.00): Command: uip maestro flow validate ParallelSync/ParallelSync/ParallelSync.flow
+19:30:28 [INFO   ] [default/skill-flow-merge-parallel-sync/00] orchestrator: Success criteria: 1/2 passed, weighted score: 0.625
+19:30:28 [INFO   ] [default/skill-flow-merge-parallel-sync/00] orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+19:30:28 [INFO   ] [default/skill-flow-merge-parallel-sync/00] orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-merge-parallel-sync
+19:30:28 [INFO   ] [default/skill-flow-merge-parallel-sync/00] orchestrator: Task finished: status=FAILURE duration=198.3s score=0.625 iterations=1

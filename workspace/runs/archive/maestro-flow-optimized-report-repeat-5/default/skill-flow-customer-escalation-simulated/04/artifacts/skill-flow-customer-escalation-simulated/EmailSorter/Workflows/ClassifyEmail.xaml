@@ -1,0 +1,206 @@
+<Activity mc:Ignorable="sap sap2010" x:Class="Workflows_ClassifyEmail"
+  mva:VisualBasic.Settings="{x:Null}"
+  xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities"
+  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+  xmlns:mva="clr-namespace:Microsoft.VisualBasic.Activities;assembly=System.Activities"
+  xmlns:sap="http://schemas.microsoft.com/netfx/2009/xaml/activities/presentation"
+  xmlns:sap2010="http://schemas.microsoft.com/netfx/2010/xaml/activities/presentation"
+  xmlns:sco="clr-namespace:System.Collections.ObjectModel;assembly=mscorlib"
+  xmlns:ui="http://schemas.uipath.com/workflow/activities"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <x:Members>
+    <x:Property Name="in_Subject" Type="InArgument(x:String)" />
+    <x:Property Name="in_Body" Type="InArgument(x:String)" />
+    <x:Property Name="out_Category" Type="OutArgument(x:String)" />
+    <x:Property Name="out_Priority" Type="OutArgument(x:String)" />
+  </x:Members>
+  <TextExpression.NamespacesForImplementation>
+    <sco:Collection x:TypeArguments="x:String">
+      <x:String>System.Activities</x:String>
+      <x:String>System.Activities.Statements</x:String>
+      <x:String>System.Activities.Expressions</x:String>
+      <x:String>System.Activities.Validation</x:String>
+      <x:String>System.Activities.XamlIntegration</x:String>
+      <x:String>Microsoft.VisualBasic</x:String>
+      <x:String>Microsoft.VisualBasic.Activities</x:String>
+      <x:String>System</x:String>
+      <x:String>System.Collections</x:String>
+      <x:String>System.Collections.Generic</x:String>
+      <x:String>System.Collections.ObjectModel</x:String>
+      <x:String>System.Data</x:String>
+      <x:String>System.IO</x:String>
+      <x:String>System.Linq</x:String>
+      <x:String>UiPath.Core</x:String>
+      <x:String>UiPath.Core.Activities</x:String>
+    </sco:Collection>
+  </TextExpression.NamespacesForImplementation>
+  <TextExpression.ReferencesForImplementation>
+    <sco:Collection x:TypeArguments="AssemblyReference">
+      <AssemblyReference>System.Activities</AssemblyReference>
+      <AssemblyReference>Microsoft.VisualBasic</AssemblyReference>
+      <AssemblyReference>System.Private.CoreLib</AssemblyReference>
+      <AssemblyReference>mscorlib</AssemblyReference>
+      <AssemblyReference>System</AssemblyReference>
+      <AssemblyReference>System.Linq</AssemblyReference>
+      <AssemblyReference>System.Data</AssemblyReference>
+      <AssemblyReference>System.Data.Common</AssemblyReference>
+      <AssemblyReference>System.Core</AssemblyReference>
+      <AssemblyReference>UiPath.System.Activities</AssemblyReference>
+    </sco:Collection>
+  </TextExpression.ReferencesForImplementation>
+
+  <!--
+    ClassifyEmail workflow
+    Inputs:  in_Subject (String), in_Body (String)
+    Outputs: out_Category (String), out_Priority (String)
+
+    Categories: "Billing", "Technical", "UrgentEscalation", "GeneralInquiry"
+    Priorities:  "High", "Normal"
+
+    Classification logic uses keyword matching on subject + body.
+    Urgent/escalation keywords always override category to UrgentEscalation + High.
+  -->
+  <Sequence DisplayName="ClassifyEmail" sap2010:WorkflowViewState.IdRef="Sequence_1">
+    <Sequence.Variables>
+      <Variable x:TypeArguments="x:String" Name="combinedText" />
+    </Sequence.Variables>
+
+    <!-- Step 1: Combine subject + body to a single lowercase string for matching -->
+    <Assign x:TypeArguments="x:String" DisplayName="Build combined text">
+      <Assign.To>
+        <OutArgument x:TypeArguments="x:String">
+          <VisualBasicReference x:TypeArguments="x:String" ExpressionText="combinedText" />
+        </OutArgument>
+      </Assign.To>
+      <Assign.Value>
+        <InArgument x:TypeArguments="x:String">
+          <VisualBasicValue x:TypeArguments="x:String" ExpressionText="(If(in_Subject, &quot;&quot;) &amp; &quot; &quot; &amp; If(in_Body, &quot;&quot;)).ToLowerInvariant()" />
+        </InArgument>
+      </Assign.Value>
+    </Assign>
+
+    <!-- Step 2: Default category = GeneralInquiry, priority = Normal -->
+    <Assign x:TypeArguments="x:String" DisplayName="Set default category">
+      <Assign.To>
+        <OutArgument x:TypeArguments="x:String">
+          <VisualBasicReference x:TypeArguments="x:String" ExpressionText="out_Category" />
+        </OutArgument>
+      </Assign.To>
+      <Assign.Value>
+        <InArgument x:TypeArguments="x:String">
+          <VisualBasicValue x:TypeArguments="x:String" ExpressionText="&quot;GeneralInquiry&quot;" />
+        </InArgument>
+      </Assign.Value>
+    </Assign>
+
+    <Assign x:TypeArguments="x:String" DisplayName="Set default priority">
+      <Assign.To>
+        <OutArgument x:TypeArguments="x:String">
+          <VisualBasicReference x:TypeArguments="x:String" ExpressionText="out_Priority" />
+        </OutArgument>
+      </Assign.To>
+      <Assign.Value>
+        <InArgument x:TypeArguments="x:String">
+          <VisualBasicValue x:TypeArguments="x:String" ExpressionText="&quot;Normal&quot;" />
+        </InArgument>
+      </Assign.Value>
+    </Assign>
+
+    <!-- Step 3: Check for Billing keywords -->
+    <If DisplayName="Check Billing Keywords">
+      <If.Condition>
+        <InArgument x:TypeArguments="x:Boolean">
+          <VisualBasicValue x:TypeArguments="x:Boolean" ExpressionText="combinedText.Contains(&quot;invoice&quot;) OrElse combinedText.Contains(&quot;payment&quot;) OrElse combinedText.Contains(&quot;charge&quot;) OrElse combinedText.Contains(&quot;billing&quot;) OrElse combinedText.Contains(&quot;refund&quot;) OrElse combinedText.Contains(&quot;subscription&quot;) OrElse combinedText.Contains(&quot;overcharged&quot;) OrElse combinedText.Contains(&quot;credit card&quot;) OrElse combinedText.Contains(&quot;receipt&quot;) OrElse combinedText.Contains(&quot;price&quot;)" />
+        </InArgument>
+      </If.Condition>
+      <If.Then>
+        <Sequence DisplayName="Then">
+          <Assign x:TypeArguments="x:String" DisplayName="Set Billing">
+            <Assign.To>
+              <OutArgument x:TypeArguments="x:String">
+                <VisualBasicReference x:TypeArguments="x:String" ExpressionText="out_Category" />
+              </OutArgument>
+            </Assign.To>
+            <Assign.Value>
+              <InArgument x:TypeArguments="x:String">
+                <VisualBasicValue x:TypeArguments="x:String" ExpressionText="&quot;Billing&quot;" />
+              </InArgument>
+            </Assign.Value>
+          </Assign>
+        </Sequence>
+      </If.Then>
+    </If>
+
+    <!-- Step 4: Check for Technical keywords -->
+    <If DisplayName="Check Technical Keywords">
+      <If.Condition>
+        <InArgument x:TypeArguments="x:Boolean">
+          <VisualBasicValue x:TypeArguments="x:Boolean" ExpressionText="combinedText.Contains(&quot;error&quot;) OrElse combinedText.Contains(&quot;bug&quot;) OrElse combinedText.Contains(&quot;crash&quot;) OrElse combinedText.Contains(&quot;broken&quot;) OrElse combinedText.Contains(&quot;not working&quot;) OrElse combinedText.Contains(&quot;technical&quot;) OrElse combinedText.Contains(&quot;issue&quot;) OrElse combinedText.Contains(&quot;problem&quot;) OrElse combinedText.Contains(&quot;support&quot;) OrElse combinedText.Contains(&quot;login&quot;) OrElse combinedText.Contains(&quot;password&quot;) OrElse combinedText.Contains(&quot;cannot access&quot;) OrElse combinedText.Contains(&quot;failed&quot;)" />
+        </InArgument>
+      </If.Condition>
+      <If.Then>
+        <Sequence DisplayName="Then">
+          <Assign x:TypeArguments="x:String" DisplayName="Set Technical">
+            <Assign.To>
+              <OutArgument x:TypeArguments="x:String">
+                <VisualBasicReference x:TypeArguments="x:String" ExpressionText="out_Category" />
+              </OutArgument>
+            </Assign.To>
+            <Assign.Value>
+              <InArgument x:TypeArguments="x:String">
+                <VisualBasicValue x:TypeArguments="x:String" ExpressionText="&quot;Technical&quot;" />
+              </InArgument>
+            </Assign.Value>
+          </Assign>
+        </Sequence>
+      </If.Then>
+    </If>
+
+    <!-- Step 5: Check for Urgent/Escalation keywords — OVERRIDES everything above -->
+    <If DisplayName="Check Urgent/Escalation Keywords">
+      <If.Condition>
+        <InArgument x:TypeArguments="x:Boolean">
+          <VisualBasicValue x:TypeArguments="x:Boolean" ExpressionText="combinedText.Contains(&quot;urgent&quot;) OrElse combinedText.Contains(&quot;escalate&quot;) OrElse combinedText.Contains(&quot;escalation&quot;) OrElse combinedText.Contains(&quot;immediately&quot;) OrElse combinedText.Contains(&quot;asap&quot;) OrElse combinedText.Contains(&quot;critical&quot;) OrElse combinedText.Contains(&quot;emergency&quot;) OrElse combinedText.Contains(&quot;lawsuit&quot;) OrElse combinedText.Contains(&quot;legal action&quot;) OrElse combinedText.Contains(&quot;unacceptable&quot;) OrElse combinedText.Contains(&quot;data loss&quot;) OrElse combinedText.Contains(&quot;account hacked&quot;)" />
+        </InArgument>
+      </If.Condition>
+      <If.Then>
+        <Sequence DisplayName="Then">
+          <Assign x:TypeArguments="x:String" DisplayName="Set UrgentEscalation">
+            <Assign.To>
+              <OutArgument x:TypeArguments="x:String">
+                <VisualBasicReference x:TypeArguments="x:String" ExpressionText="out_Category" />
+              </OutArgument>
+            </Assign.To>
+            <Assign.Value>
+              <InArgument x:TypeArguments="x:String">
+                <VisualBasicValue x:TypeArguments="x:String" ExpressionText="&quot;UrgentEscalation&quot;" />
+              </InArgument>
+            </Assign.Value>
+          </Assign>
+          <Assign x:TypeArguments="x:String" DisplayName="Set High Priority">
+            <Assign.To>
+              <OutArgument x:TypeArguments="x:String">
+                <VisualBasicReference x:TypeArguments="x:String" ExpressionText="out_Priority" />
+              </OutArgument>
+            </Assign.To>
+            <Assign.Value>
+              <InArgument x:TypeArguments="x:String">
+                <VisualBasicValue x:TypeArguments="x:String" ExpressionText="&quot;High&quot;" />
+              </InArgument>
+            </Assign.Value>
+          </Assign>
+        </Sequence>
+      </If.Then>
+    </If>
+
+    <!-- Step 6: Log the classification result -->
+    <ui:LogMessage Level="Info" DisplayName="Log Classification">
+      <ui:LogMessage.Message>
+        <InArgument x:TypeArguments="x:Object">
+          <VisualBasicValue x:TypeArguments="x:Object" ExpressionText="$&quot;Classified email — Subject: '{in_Subject}' → Category: {out_Category} | Priority: {out_Priority}&quot;" />
+        </InArgument>
+      </ui:LogMessage.Message>
+    </ui:LogMessage>
+
+  </Sequence>
+</Activity>

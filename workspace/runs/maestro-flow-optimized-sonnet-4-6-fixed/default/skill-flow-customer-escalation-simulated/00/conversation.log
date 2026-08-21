@@ -1,0 +1,143 @@
+=== USER (turn 1) — simulator-generated opener ===
+Hey! I want to get something built that'll take the pressure off my team when it comes to handling support emails. Here's the gist: whenever a new email lands in my Outlook inbox, I want the whole thing to kick in automatically — no one should have to lift a finger. Each email needs to be looked at based on two things: does it seem urgent, and is the sender one of our VIP customers? If an email hits both of those marks — urgent AND from a VIP — I want a heads-up posted in Slack and a quick acknowledgment reply sent straight back to that sender. Anything that doesn't meet both of those criteria should have a support ticket created for it, and the sender gets a reply with the ticket details.
+
+Really important: this has to be built as a UiPath Maestro Flow — not some API workflow or standalone script, an actual Maestro Flow. And before I sign off on it, I want it validated so I know it's solid.
+
+Happy to answer any questions you have before you get started — what do you need from me?
+
+=== AGENT (turn 1) — 332.4s, in=887 out=10941, 23 tool calls ===
+Here's the architectural plan for your flow. Before I build anything, I need answers to a few questions — and two are blockers.
+
+---
+
+## Plan: Customer Email Escalation Flow
+
+**What it does:** Triggers on every new Outlook email → evaluates urgency + VIP status → routes to either (a) Slack alert + acknowledgment reply, or (b) Freshdesk ticket + ticket-details reply.
+
+```mermaid
+graph LR
+    emailTrigger(Email Received)
+    checkUrgencyAndVip[Check Urgency and VIP]
+    routeDecision{Urgent and VIP}
+    notifySlack[Slack Alert to Channel]
+    replyAcknowledge[Reply Acknowledgment to Sender]
+    createTicket[Create Freshdesk Ticket]
+    replyTicket[Reply with Ticket Details]
+    doneVip(Done VIP Escalation)
+    doneStandard(Done Standard Ticket)
+    emailTrigger -->|output| checkUrgencyAndVip
+    checkUrgencyAndVip -->|success| routeDecision
+    routeDecision -->|true| notifySlack
+    notifySlack -->|output| replyAcknowledge
+    replyAcknowledge -->|output| doneVip
+    routeDecision -->|false| createTicket
+    createTicket -->|output| replyTicket
+    replyTicket -->|output| doneStandard
+```
+
+**Connectors chosen:**
+- **Outlook trigger + replies:** `uipath-mock-outlook` (simulated, appropriate for this environment)
+- **Slack:** `uipath-salesforce-slack` — enabled connection found ✓
+- **Ticketing:** `uipath-freshworks-freshdesk` (Create Ticket) — enabled connection found ✓
+
+---
+
+## Questions I need answered before building
+
+**[REQUIRED] #1 — Urgency detection rule**
+How does the flow decide an email is urgent?
+1. Keywords in subject/body (e.g. "urgent", "critical", "ASAP")
+2. Subject-line prefix like `[URGENT]`
+3. Something else
+
+**[REQUIRED] #2 — VIP customer identification**
+How does the flow know the sender is VIP?
+1. Hardcoded list of email addresses in the script
+2. Hardcoded list of email domains (e.g. `bigclient.com`)
+3. Lookup in an external system (CRM, etc.)
+4. Something else
+
+**[REQUIRED] #3 — Outlook connection**
+No connection exists for `uipath-mock-outlook` on this tenant. The email trigger and both reply nodes need one. You'll need to create it in Integration Service. Want me to flag this as an open item and build the flow with a placeholder, or hold until you create it?
+1. Build now, flag connection as pending configuration
+2. Hold until connection is created
+3. Something else
+
+**[REQUIRED] #4 — Slack channel**
+Which Slack channel should VIP escalation alerts go to? (e.g. `#support-escalations`)
+
+**[OPTIONAL] #5 — Reply message content**
+What should the VIP acknowledgment reply say? What should the ticket reply include (just ID, a URL, a full message)?
+
+=== USER (turn 2) ===
+Good questions — let me knock them all out so you can just get going.
+
+**Urgency and VIP rules:** Honestly, I don't have a fixed list in mind for either of those. You decide — use your best judgment on what keywords signal urgency and what makes a good VIP domain allow-list. I trust you to pick sensible defaults.
+
+**Outlook connection:** Don't wait on me — build it now and flag the connection as something I'll need to set up. I just want the flow itself to be ready.
+
+**Slack channel:** Use **#vip-escalations**.
+
+**Reply content:** Keep it simple and professional. The VIP acknowledgment just needs to say we got their message and someone will be with them shortly. The ticket reply should include the ticket ID and a brief note that we've logged their request.
+
+Now go build it!
+
+=== AGENT (turn 2) — 592.3s, in=18772 out=32168, 36 tool calls ===
+Everything is in order. Here's your completion report:
+
+---
+
+## CustomerEmailEscalation — Build Complete
+
+**Validation: PASSED** (`uip maestro flow validate` → `Status: Valid`)  
+**Audit: CLEAN** (0 errors, 0 warnings across topology, expressions, jint, bindings, runtime-gaps)
+
+---
+
+### What was built
+
+| Node | Type | Status |
+|---|---|---|
+| `emailReceived1` — Email Received | Outlook trigger | Configured (connection pending) |
+| `checkUrgencyAndVip` — Check Urgency and VIP | Script | Fully configured |
+| `routeDecision` — Urgent and VIP | Decision | Fully configured |
+| `slackAlertToChannel1` — Slack Alert to Channel | Slack connector | Fully configured |
+| `replyAcknowledgmentToSender1` — Reply Acknowledgment | Outlook connector | Configured (connection pending) |
+| `createFreshdeskTicket1` — Create Freshdesk Ticket | Freshdesk connector | Fully configured |
+| `replyWithTicketDetails1` — Reply with Ticket Details | Outlook connector | Configured (connection pending) |
+| `doneVip` / `doneStandard` | End nodes | In place |
+
+**Urgency keywords:** `urgent`, `critical`, `asap`, `emergency`, `immediate` (checked in subject + body)  
+**VIP domains:** `bigclient.com`, `enterprise.com`, `premiercorp.com`, `platinum.com` + specific addresses `ceo@anycompany.com`, `vip@keyaccount.com`  
+**Freshdesk connection:** live (`29aae689-...`)  
+**Slack connection:** live (`849e85d8-...`) — message posts to a placeholder channel ID (see below)
+
+---
+
+### Two things to finish before going live
+
+**1. Outlook connection (blocks 3 nodes)**  
+No `uipath-mock-outlook` connection exists on the tenant. Once you create one, run the three `node configure` commands documented in:
+```
+CustomerEmailEscalation/CustomerEmailEscalation/PENDING_OUTLOOK_CONFIGURATION.md
+```
+
+**2. Slack `#vip-escalations` channel**  
+The workspace's channel directory (1000+ channels) does not contain `#vip-escalations`. The Slack node is currently pointing at a placeholder channel ID. Either create `#vip-escalations` in your Slack workspace or pick an existing channel, get its `C...` ID, and run the reconfigure command shown in the same sidecar file.
+
+---
+
+### Flow location (ready to upload to Studio Web)
+
+```
+CustomerEmailEscalation/
+  CustomerEmailEscalation.uipx          ← solution manifest
+  CustomerEmailEscalation/
+    CustomerEmailEscalation.flow        ← the flow
+    PENDING_OUTLOOK_CONFIGURATION.md   ← runbook for the two open items
+```
+
+=== USER (turn 3) — stop token — dialog ending ===
+[ASSISTANT] 
+[RESULT - SUCCESS]
+

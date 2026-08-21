@@ -1,0 +1,6 @@
+{
+  "ran_solution_upload": false,
+  "ran_eval_run_start": false,
+  "action": "refused",
+  "reason": "This Flow project has never been uploaded to Studio Web (no SolutionStorage.json / SolutionId, no prior upload) so per the Evaluate capability's upload-safety rule I will not auto-run `uip solution upload` just to satisfy the eval-run prerequisite, since that could clobber or diverge from whatever the user intends for Studio Web. I'm surfacing the choice instead of running `uip solution upload` or `uip maestro flow eval run start` unprompted."
+}

@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "SearchableJoinsTest",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "d788f18f-9a5b-4fba-88e4-e46cc0ff652d",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "SearchableJoinsTest"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Flow",
+      "name": "SearchableJoinsTest",
+      "package": {
+        "key": "26f91938-8369-47ac-a2e1-e8908be60d21"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "925f3eb3-7bef-41b0-afc4-22a199151389",
+    "files": []
+  }
+}

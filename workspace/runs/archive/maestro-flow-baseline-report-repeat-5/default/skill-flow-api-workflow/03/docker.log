@@ -1,0 +1,8 @@
+20:41:14 [INFO   ] [default/skill-flow-api-workflow/03] orchestrator: API routing: aws_bedrock
+20:46:37 [WARNING] [default/skill-flow-api-workflow/03] agents.claude_code_agent: [coder] Agent exhausted max_turns (40); turn ended without completing
+20:47:01 [INFO   ] [default/skill-flow-api-workflow/03] orchestrator: Success criteria: 2/2 passed, weighted score: 1.000
+20:47:01 [WARNING] [default/skill-flow-api-workflow/03] orchestrator: Agent exhausted max_turns (40) without passing criteria.
+20:47:01 [WARNING] [default/skill-flow-api-workflow/03] orchestrator: Visible turns (43) exceeded expected_turns (25) at iteration 1 for task skill-flow-api-workflow. Run continues — max_turns remains the hard cap.
+20:47:01 [INFO   ] [default/skill-flow-api-workflow/03] orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+20:47:01 [INFO   ] [default/skill-flow-api-workflow/03] orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-api-workflow
+20:47:01 [INFO   ] [default/skill-flow-api-workflow/03] orchestrator: Task finished: status=SUCCESS duration=350.3s score=1.000 iterations=1

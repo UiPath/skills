@@ -1,0 +1,29 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "Coder Eval",
+    "kind": "connection",
+    "type": "custom-codereval-codereval",
+    "apiVersion": "integrationservice.uipath.com/v1",
+    "isOverridable": true,
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "files": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "connectorName": "Coder Eval",
+      "name": "Coder Eval",
+      "description": null,
+      "authenticationType": "AuthenticateAfterDeployment",
+      "connectorVersion": "1.1.0",
+      "connectorKey": "custom-codereval-codereval",
+      "pollingInterval": 5
+    },
+    "locks": [],
+    "key": "12edde58-ae61-4f8e-bc24-56a5e7f45604"
+  }
+}

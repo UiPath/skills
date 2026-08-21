@@ -1,0 +1,117 @@
+{
+  "version": "1.1.0",
+  "settings": {
+    "model": "gpt-5.4",
+    "maxTokens": 128000,
+    "temperature": 0,
+    "engine": "basic-v2",
+    "maxIterations": 25,
+    "mode": "standard"
+  },
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "start__output__webhookPayload": {
+        "type": "object",
+        "description": "The billing dispute submission event payload including customer name, account number, and invoice details."
+      },
+      "disputeAnalyst__output__determination": {
+        "type": "string",
+        "description": "The analyst's determination statement for the dispute."
+      },
+      "disputeAnalyst__output__creditAmount": {
+        "type": "number",
+        "description": "The approved credit amount to be applied to the customer's account."
+      },
+      "disputeAnalyst__output__rationale": {
+        "type": "string",
+        "description": "The analyst's rationale explaining the dispute resolution decision."
+      }
+    },
+    "required": [
+      "start__output__webhookPayload",
+      "disputeAnalyst__output__determination",
+      "disputeAnalyst__output__creditAmount",
+      "disputeAnalyst__output__rationale"
+    ]
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "subject": {
+        "type": "string",
+        "description": "The email subject line for the customer-facing resolution notification."
+      },
+      "body": {
+        "type": "string",
+        "description": "The full email body for the customer-facing resolution notification. Should be professional, empathetic, and clearly state the outcome and next steps."
+      }
+    },
+    "required": [
+      "subject",
+      "body"
+    ]
+  },
+  "metadata": {
+    "storageVersion": "50.0.0",
+    "isConversational": false,
+    "showProjectCreationExperience": false
+  },
+  "type": "lowCode",
+  "guardrails": [],
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a professional Customer Communications Specialist at a B2B software company. Your role is to draft clear, empathetic, and professional resolution emails for billing dispute cases that have been reviewed and approved for resolution.\n\nYour writing guidelines:\n- Address the customer by name if available, otherwise use their company name\n- Reference the specific invoice number in the subject line and opening\n- Clearly state the outcome (credit approved) and the exact credit amount\n- Briefly summarize why the credit was issued without technical jargon\n- Provide clear next steps (when the credit will appear, who to contact with questions)\n- Maintain a warm, professional, solution-focused tone\n- Keep the email concise (under 300 words for the body)\n- Never include internal analysis details or system references in the email",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "You are a professional Customer Communications Specialist at a B2B software company. Your role is to draft clear, empathetic, and professional resolution emails for billing dispute cases that have been reviewed and approved for resolution.\n\nYour writing guidelines:\n- Address the customer by name if available, otherwise use their company name\n- Reference the specific invoice number in the subject line and opening\n- Clearly state the outcome (credit approved) and the exact credit amount\n- Briefly summarize why the credit was issued without technical jargon\n- Provide clear next steps (when the credit will appear, who to contact with questions)\n- Maintain a warm, professional, solution-focused tone\n- Keep the email concise (under 300 words for the body)\n- Never include internal analysis details or system references in the email"
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "Please draft the customer resolution email for this approved billing dispute.\n\nCustomer and Dispute Info:\n{{input.start__output__webhookPayload}}\n\nResolution Determination:\n{{input.disputeAnalyst__output__determination}}\n\nApproved Credit Amount: ${{input.disputeAnalyst__output__creditAmount}}\n\nResolution Rationale (for context, do NOT include verbatim in the email):\n{{input.disputeAnalyst__output__rationale}}\n\nPlease provide:\n1. A subject line referencing the invoice number\n2. A professional, empathetic email body confirming the approved credit and next steps",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "Please draft the customer resolution email for this approved billing dispute.\n\nCustomer and Dispute Info:\n"
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__webhookPayload"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\nResolution Determination:\n"
+        },
+        {
+          "type": "variable",
+          "rawString": "input.disputeAnalyst__output__determination"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\nApproved Credit Amount: $"
+        },
+        {
+          "type": "variable",
+          "rawString": "input.disputeAnalyst__output__creditAmount"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\nResolution Rationale (for context, do NOT include verbatim in the email):\n"
+        },
+        {
+          "type": "variable",
+          "rawString": "input.disputeAnalyst__output__rationale"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\nPlease provide:\n1. A subject line referencing the invoice number\n2. A professional, empathetic email body confirming the approved credit and next steps"
+        }
+      ]
+    }
+  ],
+  "projectId": "5ae22d5f-3815-4297-b173-bee321a76478"
+}

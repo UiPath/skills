@@ -1,0 +1,6 @@
+{
+  "Name": "SlackChannelDescription",
+  "ProjectType": "Process",
+  "Description": "Fetches the description (purpose) of a Slack channel via the Slack API and displays it",
+  "MainFile": "Main.xaml"
+}

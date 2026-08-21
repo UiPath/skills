@@ -1,0 +1,48 @@
+{
+  "version": "2.0",
+  "resources": [
+    {
+      "activityDisplayName": "New Email Received",
+      "activityId": "NewEmailReceived_1",
+      "resource": "EventTrigger",
+      "key": "00000000-0000-0000-0000-000000000000",
+      "id": "EventTrigger00000000-0000-0000-0000-00000000000000000000-0000-0000-0000-000000000000False",
+      "value": {
+        "ConnectionId": {
+          "defaultValue": "00000000-0000-0000-0000-000000000000",
+          "isExpression": false,
+          "displayName": "Connection",
+          "description": "The connection to be used"
+        }
+      },
+      "metadata": {
+        "BindingsVersion": "2.2",
+        "ActivityName": "New Email Received",
+        "Connector": "uipath-microsoft-outlook365",
+        "FilterExpression": "(parentFolderId=='INBOX')",
+        "ObjectName": "Message",
+        "Operation": "EMAIL_RECEIVED"
+      }
+    },
+    {
+      "activityDisplayName": "Forward to Support Queue",
+      "activityId": "SendMail_1",
+      "resource": "Connection",
+      "key": "00000000-0000-0000-0000-000000000000",
+      "id": "Connection00000000-0000-0000-0000-00000000000000000000-0000-0000-0000-000000000000False",
+      "value": {
+        "ConnectionId": {
+          "defaultValue": "00000000-0000-0000-0000-000000000000",
+          "isExpression": false,
+          "displayName": "Connection",
+          "description": "The connection to be used"
+        }
+      },
+      "metadata": {
+        "BindingsVersion": "2.2",
+        "Connector": "uipath-microsoft-outlook365",
+        "UseConnectionService": "True"
+      }
+    }
+  ]
+}

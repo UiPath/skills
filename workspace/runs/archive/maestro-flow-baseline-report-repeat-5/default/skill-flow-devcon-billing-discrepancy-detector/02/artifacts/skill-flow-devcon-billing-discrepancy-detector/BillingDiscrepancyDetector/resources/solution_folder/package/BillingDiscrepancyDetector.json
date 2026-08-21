@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "BillingDiscrepancyDetector",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "771d8ef5-aa2e-47b1-9ed5-84f0a93e8b9d",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "BillingDiscrepancyDetector"
+    },
+    "locks": [],
+    "key": "6f51b19a-5e9b-400a-8722-e9a2c557d150",
+    "files": []
+  }
+}

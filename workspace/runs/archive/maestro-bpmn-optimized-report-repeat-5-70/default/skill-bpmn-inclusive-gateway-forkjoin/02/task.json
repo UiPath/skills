@@ -1,0 +1,1932 @@
+{
+  "task_id": "skill-bpmn-inclusive-gateway-forkjoin",
+  "task_description": "Structural advanced-event eval: agent uses the uipath-maestro-bpmn skill to author an INCLUSIVE (OR) gateway fork with conditioned branches and a real inclusive join. Exercises the FAKE_JOIN / SUPERFLUOUS_GATEWAY rules (join with a gateway, not by pointing two flows at one activity). Authoring only — no cloud effects.\n",
+  "variant_id": "default",
+  "agent_type": "claude-code",
+  "model_used": "claude-sonnet-4-6",
+  "started_at": "2026-07-22T04:47:37.024655",
+  "completed_at": "2026-07-22T04:50:51.908317",
+  "duration_seconds": 194.8836851119995,
+  "final_status": "SUCCESS",
+  "max_turns_exhausted": false,
+  "weighted_score": 1.0,
+  "iteration_count": 1,
+  "success_criteria_results": [
+    {
+      "result_kind": "basic",
+      "criterion_type": "file_exists",
+      "description": "BPMN source was authored",
+      "score": 1.0,
+      "details": "File 'NotificationFanout.bpmn' exists",
+      "error": null,
+      "pass_threshold": 1.0
+    },
+    {
+      "result_kind": "basic",
+      "criterion_type": "command_executed",
+      "description": "Agent did not run any cloud-side Maestro BPMN lifecycle command",
+      "score": 1.0,
+      "details": "Matched 0 matches (allowed range 0..0) commands (filters: tool_name=Bash, pattern=/(uip|\\$UIP)\\s+maestro\\s+bpmn\\s+(upload|publish|deploy|debug|run|pack)/)",
+      "error": null,
+      "pass_threshold": 1.0
+    },
+    {
+      "result_kind": "basic",
+      "criterion_type": "file_contains",
+      "description": "BPMN has a diagram, an inclusive gateway, and branch conditions",
+      "score": 1.0,
+      "details": "Includes: 3/3 found; Score: 1.00",
+      "error": null,
+      "pass_threshold": 1.0
+    },
+    {
+      "result_kind": "basic",
+      "criterion_type": "run_command",
+      "description": "Conditioned inclusive split rejoins at a real inclusive join (no fake/superfluous gateway), fully shaped",
+      "score": 1.0,
+      "details": "Command: python3 $TASK_DIR/check_inclusive_gateway_forkjoin.py\nExit code: 0 (expected: 0)\nStdout:\nOK: NotificationFanout.bpmn forks on a conditioned inclusive split and rejoins at a real inclusive join\n\nStderr: (empty)",
+      "error": null,
+      "pass_threshold": 1.0
+    }
+  ],
+  "iterations": [
+    {
+      "iteration": 1,
+      "user_input": "Your working directory is: /work/output/artifacts/skill-bpmn-inclusive-gateway-forkjoin\n\nLoad and follow the uipath-maestro-bpmn skill.\n\nAuthor a single Maestro BPMN file `NotificationFanout.bpmn` in the working\ndirectory that fans out to independently-chosen channels and rejoins:\n  - a manual start,\n  - a bpmn:inclusiveGateway SPLIT (one incoming, two outgoing) where each\n    outgoing branch carries its own conditionExpression (e.g. email wanted,\n    SMS wanted) so any subset can run,\n  - each branch runs a notification task,\n  - a SECOND bpmn:inclusiveGateway JOIN (two incoming, one outgoing) that\n    synchronizes the branches,\n  - a final task and end event after the join.\n\nRequirements:\n- Synchronize with an inclusive JOIN gateway — do NOT point two flows at one\n  activity (that is a FAKE_JOIN), and do NOT use a one-in/one-out gateway\n  (SUPERFLUOUS_GATEWAY). Each split branch must be conditioned.\n- Discover any UiPath extension node's type via the registry and author it from\n  the registry template — do not hand-author uipath:* XML from prose. Structural\n  BPMN (gateways, conditions, sequence flows) comes from the skill's structural\n  reference.\n- Include a bpmndi:BPMNDiagram with a BPMNShape for every node and a BPMNEdge\n  for every sequence flow.\n- Validate the file locally before finishing (the bundled validator, or a\n  well-formed-XML parse plus the structural checklist).\n\nDo NOT upload, publish, deploy, debug, run, or pack anything. Do NOT ask for\napproval, confirmation, or feedback, and do NOT pause between planning and\nimplementation. Build the complete file end-to-end in a single pass.\n",
+      "agent_output": "[ASSISTANT] Now I have the structural reference. Let me pull the registry and discover the right node type for notification tasks, then build the file in one pass.\n[ASSISTANT] I have all I need. The notification tasks will use `BPMN.ScriptTask` (no discovery needed). Now I'll author the complete file in one pass, then validate.\n[ASSISTANT] The validator directory is read-only. Falling back to the documented secondary: well-formed XML parse + structural checklist.\n[ASSISTANT] The file is valid. Here's a summary of what was built:\n\n---\n\n## `NotificationFanout.bpmn` — complete and validated\n\n**Location:** `/work/output/artifacts/skill-bpmn-inclusive-gateway-forkjoin/NotificationFanout.bpmn`\n\n### Process structure\n\n```\nStart (manual)\n  → inclusive SPLIT \"Which channels?\"\n       ├─[=vars.Var_SendEmail == true]─→ Task_Email (Send Email Notification) ─┐\n       └─[=vars.Var_SendSms == true]───→ Task_Sms   (Send SMS Notification)  ─┤\n                                                                                 ↓\n                                                              inclusive JOIN \"All channels done\"\n                                                                                 ↓\n                                                              Task_Summary (Log Completion)\n                                                                                 ↓\n                                                                           End (Notifications Complete)\n```\n\n### Key design decisions\n\n| Requirement | How it was satisfied |\n|---|---|\n| **Manual start** | Plain `bpmn:startEvent` (no event definition = manual) |\n| **Inclusive SPLIT** | `bpmn:inclusiveGateway` with 1 incoming, 2 outgoing — each outgoing flow carries a `conditionExpression` (`=vars.Var_SendEmail == true`, `=vars.Var_SendSms == true`), so any subset can run |\n| **Real JOIN, not FAKE_JOIN** | Second `bpmn:inclusiveGateway` with 2 incoming, 1 outgoing — synchronizes exactly the branches that ran |\n| **No SUPERFLUOUS_GATEWAY** | Both gateways have ≥2 incoming or ≥2 outgoing connections |\n| **Node payloads from registry** | All three tasks use `BPMN.ScriptTask` from `registry get`, with `<uipath:type value=\"BPMN.ScriptTask\" version=\"v1\" />` as a child element, never an attribute |\n| **Full BPMNDiagram** | Every node has a `BPMNShape`, every flow has a `BPMNEdge` with waypoints |\n| **Validation** | Structural checklist passed — 7 nodes shaped, 7 flows edged, no dangling refs, conditions present on all split branches, no fake joins, no superfluous gateways |\n[RESULT - SUCCESS] The file is valid. Here's a summary of what was built:\n\n---\n\n## `NotificationFanout.bpmn` — complete and validated\n\n**Location:** `/work/output/artifacts/skill-bpmn-inclusive-gateway-forkjoin/NotificationFanout.bpmn`\n\n### Process structure\n\n```\nStart (manual)\n  → inclusive SPLIT \"Which channels?\"\n       ├─[=vars.Var_SendEmail == true]─→ Task_Email (Send Email Notification) ─┐\n       └─[=vars.Var_SendSms == true]───→ Task_Sms   (Send SMS Notification)  ─┤\n                                                                                 ↓\n                                                              inclusive JOIN \"All channels done\"\n                                                                                 ↓\n                                                              Task_Summary (Log Completion)\n                                                                                 ↓\n                                                                           End (Notifications Complete)\n```\n\n### Key design decisions\n\n| Requirement | How it was satisfied |\n|---|---|\n| **Manual start** | Plain `bpmn:startEvent` (no event definition = manual) |\n| **Inclusive SPLIT** | `bpmn:inclusiveGateway` with 1 incoming, 2 outgoing — each outgoing flow carries a `conditionExpression` (`=vars.Var_SendEmail == true`, `=vars.Var_SendSms == true`), so any subset can run |\n| **Real JOIN, not FAKE_JOIN** | Second `bpmn:inclusiveGateway` with 2 incoming, 1 outgoing — synchronizes exactly the branches that ran |\n| **No SUPERFLUOUS_GATEWAY** | Both gateways have ≥2 incoming or ≥2 outgoing connections |\n| **Node payloads from registry** | All three tasks use `BPMN.ScriptTask` from `registry get`, with `<uipath:type value=\"BPMN.ScriptTask\" version=\"v1\" />` as a child element, never an attribute |\n| **Full BPMNDiagram** | Every node has a `BPMNShape`, every flow has a `BPMNEdge` with waypoints |\n| **Validation** | Structural checklist passed — 7 nodes shaped, 7 flows edged, no dangling refs, conditions present on all split branches, no fake joins, no superfluous gateways |",
+      "commands": [
+        {
+          "tool_name": "Skill",
+          "tool_id": "toolu_bdrk_0129VvdNxM9HC27Zg2Nym6YA",
+          "assistant_turn_index": 1,
+          "timestamp": "2026-07-22T04:47:41.245196",
+          "duration_ms": 14.841738040558994,
+          "generation_completed_at": "2026-07-22T04:47:41.245196",
+          "execution_started_at": "2026-07-22T04:47:41.245393",
+          "execution_completed_at": "2026-07-22T04:47:41.260235",
+          "parameters": {
+            "skill": "tmp:uipath-maestro-bpmn"
+          },
+          "result_status": "success",
+          "result_summary": "Launching skill: tmp:uipath-maestro-bpmn",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 0,
+          "result_tokens": 10
+        },
+        {
+          "tool_name": "Read",
+          "tool_id": "toolu_bdrk_01P8PxV2Q6pwpop6b9tFiDuP",
+          "assistant_turn_index": 3,
+          "timestamp": "2026-07-22T04:47:44.132843",
+          "duration_ms": 323.46451992634684,
+          "generation_completed_at": "2026-07-22T04:47:44.132843",
+          "execution_started_at": "2026-07-22T04:47:44.132910",
+          "execution_completed_at": "2026-07-22T04:47:44.456375",
+          "parameters": {
+            "file_path": "/home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn/references/structural-bpmn.md"
+          },
+          "result_status": "success",
+          "result_summary": "1\t# Structural BPMN (what the registry does not emit)\n2\t\n3\tThe registry's `xmlTemplate`s give you the `uipath:*` payload for each node\n4\t(see [registry-workflow.md](registry-workflow.md)). They do **not** give you the\n5\tstructural BPMN that holds those nodes together. This file is the ground truth\n6\tfor everything you author by hand around the templates.\n7\t\n8\tTwo sources define the contract:\n9\t\n10\t- the registry spec `bpmn-spec.json` — enumerates which BPMN element types and\n11\t  event definitions exist, via its `bpmnElements` section;\n12\t- the Studio Web canvas serializer\n13\t  (`PO.Frontend/src/services/serialization/`) — defines how that XML must be\n14\t  shaped to import and round-trip.\n15\t\n16\tWhere the registry stops, the canvas serializer is authoritative. Each\n17\tgap below is labelled **REGISTRY GAP** — the registry exposes no template for\n18\tit, so author it from this reference.\n19\t\n20\t## The document scaffold (REGISTRY GAP)\n21\t\n22\tThe registry emits no `<bpmn:definitions>` / `<bpmn:process>` root and no\n23\tnamespace declarations. Author this shell yourself. The canvas import detector\n24\t(`exporter.ts`) requires: a root `<…:definitions>` carrying a BPMN-spec\n25\tnamespace, at least one `<bpmn:process>`, and (to render) a\n26\t`<bpmndi:BPMNDiagram>`.\n27\t\n28\t```xml\n29\t<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n30\t<bpmn:definitions\n31\t    xmlns:bpmn=\"http://www.omg.org/spec/BPMN/20100524/MODEL\"\n32\t    xmlns:bpmndi=\"http://www.omg.org/spec/BPMN/20100524/DI\"\n33\t    xmlns:dc=\"http://www.omg.org/spec/DD/20100524/DC\"\n34\t    xmlns:di=\"http://www.omg.org/spec/DD/20100524/DI\"\n35\t    xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n36\t    xmlns:uipath=\"http://uipath.org/schema/bpmn\"\n37\t    id=\"Definitions_1\" targetNamespace=\"http://bpmn.io/schema/bpmn\"\n38\t    exporter=\"UiPath (https://bpmn.uipath.com)\" exporterVersion=\"1.0\">\n39\t  <bpmn:process id=\"Process_1\" isExecutable=\"true\">\n40\t    <!-- variables, flow nodes, sequence flows -->\n41\t  </bpmn:process>\n42\t  <bpmndi:BPMNDiagram id=\"Diagram_1\">\n43\t    <bpmndi:BPMNPlane id=\"Plane_1\" bpmnElement=\"Process_1\">\n44\t      <!-- one BPMNShape per node, one BPMNEdge per flow -->\n45\t    </bpmndi:BPMNPlane>\n46\t  </bpmndi:BPMNDiagram>\n47\t</bpmn:definitions>\n48\t```\n49\t\n50\tThe `uipath:` namespace URI is exactly `http://uipath.org/schema/bpmn`. All\n51\t`uipath:*` tags inside `extensionElements` are lower-camelCase\n52\t(`uipath:activity`, `uipath:variables`, `uipath:loopCharacteristics`, …).\n53\t\n54\tEvery `uipath:activity` / `uipath:event` / `uipath:mapping` carries its node\n55\ttype as a **child** element — `<uipath:type value=\"<Type>\" version=\"v1\" />` —\n56\tnever as a `type=` attribute on the wrapper. This holds both for templated nodes\n57\tand for any shell you author or preserve by hand.\n58\t\n59\tXML comments must not contain `--` (double-hyphen): it is invalid XML and the\n60\tfile will fail to parse. Never paste CLI commands or flags\n61\t(`--output`, `--connection-id`) into `<!-- … -->`. Keep comments minimal.\n62\t\n63\t## A complete minimal file (author from this, not from fixtures)\n64\t\n65\tThis is the whole shape — variables, an entry point, one node, a branch, and\n66\tthe diagram — in one valid file. Author from this skeleton plus the registry\n67\ttemplates for your nodes. **Do not read the validator's `test/fixtures/` to\n68\tinfer the pattern**; those are validator test data, and reading them is the\n69\tmain reason authoring runs out of time. Swap the `scriptTask` payload for the\n70\tregistry `xmlTemplate` of whatever node you need.\n71\t\n72\t```xml\n73\t<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n74\t<bpmn:definitions\n75\t    xmlns:bpmn=\"http://www.omg.org/spec/BPMN/20100524/MODEL\"\n76\t    xmlns:bpmndi=\"http://www.omg.org/spec/BPMN/20100524/DI\"\n77\t    xmlns:dc=\"http://www.omg.org/spec/DD/20100524/DC\"\n78\t    xmlns:di=\"http://www.omg.org/spec/DD/20100524/DI\"\n79\t    xmlns:uipath=\"http://uipath.org/schema/bpmn\"\n80\t    id=\"Definitions_1\" targetNamespace=\"http://bpmn.io/schema/bpmn\"\n81\t    exporter=\"UiPath (https://bpmn.uipath.com)\" exporterVersion=\"1.0\">\n82\t  <bpmn:process id=\"Process_1\" isExecutable=\"true\">\n83\t    <bpmn:extensionElements>\n84\t      <uipath:migrationVersion version=\"11.5\" />\n85\t      <uipath:variables version=\"v1\">\n86\t        <uipath:inputOutput id=\"Var_Amount\" name=\"Amount\" type=\"number\" />\n87\t        <uipath:inputOutput id=\"Var_Tier\" name=\"Tier\" type=\"string\" />\n88\t      </uipath:variables>\n89\t    </bpmn:extensionElements>\n90\t    <bpmn:startEvent id=\"Start_1\" name=\"Start\"><bpmn:outgoing>Flow_1</bpmn:outgoing></bpmn:startEvent>\n91\t    <bpmn:scriptTask id=\"Task_Tier\" name=\"Classify\" scriptFormat=\"JavaScript\">\n92\t      <bpmn:extensionElements>\n93\t        <uipath:scriptVersion value=\"v3\" />\n94\t        <uipath:mapping version=\"v1\">\n95\t          <uipath:type value=\"BPMN.ScriptTask\" version=\"v1\" />\n96\t          <uipath:input name=\"args\"><![CDATA[{\"amount\":\"=vars.Var_Amount\"}]]></uipath:input>\n97\t          <uipath:output name=\"tier\" type=\"string\" var=\"Var_Tier\" source=\"=result.response\" />\n98\t        </uipath:mapping>\n99\t      </bpmn:extensionElements>\n100\t      <bpmn:incoming>Flow_1</bpmn:incoming><bpmn:outgoing>Flow_2</bpmn:outgoing>\n101\t      <bpmn:script><![CDATA[return { response: amount > 1000 ? \"high\" : \"low\" };]]></bpmn:script>\n102\t    </bpmn:scriptTask>\n103\t    <bpmn:exclusiveGateway id=\"Gw_1\" name=\"Tier?\" default=\"Flow_Low\">\n104\t      <bpmn:incoming>Flow_2</bpmn:incoming>\n105\t      <bpmn:outgoing>Flow_High</bpmn:outgoing><bpmn:outgoing>Flow_Low</bpmn:outgoing>\n106\t    </bpmn:exclusiveGateway>\n107\t    <bpmn:endEvent id=\"End_High\" name=\"High\"><bpmn:incoming>Flow_High</bpmn:incoming></bpmn:endEvent>\n108\t    <bpmn:endEvent id=\"End_Low\" name=\"Low\"><bpmn:incoming>Flow_Low</bpmn:incoming></bpmn:endEvent>\n109\t    <bpmn:sequenceFlow id=\"Flow_1\" sourceRef=\"Start_1\" targetRef=\"Task_Tier\" />\n110\t    <bpmn:sequenceFlow id=\"Flow_2\" sourceRef=\"Task_Tier\" targetRef=\"Gw_1\" />\n111\t    <bpmn:sequenceFlow id=\"Flow_High\" sourceRef=\"Gw_1\" targetRef=\"End_High\">\n112\t      <bpmn:conditionExpression xsi:type=\"bpmn:tFormalExpression\"\n113\t        xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">=vars.Var_Tier == \"high\"</bpmn:conditionExpression>\n114\t    </bpmn:sequenceFlow>\n115\t    <bpmn:sequenceFlow id=\"Flow_Low\" sourceRef=\"Gw_1\" targetRef=\"End_Low\" />\n116\t  </bpmn:process>\n117\t  <bpmndi:BPMNDiagram id=\"Diagram_1\">\n118\t    <bpmndi:BPMNPlane id=\"Plane_1\" bpmnElement=\"Process_1\">\n119\t      <bpmndi:BPMNShape id=\"S_Start\" bpmnElement=\"Start_1\"><dc:Bounds x=\"160\" y=\"100\" width=\"36\" height=\"36\" /></bpmndi:BPMNShape>\n120\t      <bpmndi:BPMNShape id=\"S_Task\" bpmnElement=\"Task_Tier\"><dc:Bounds x=\"250\" y=\"78\" width=\"100\" height=\"80\" /></bpmndi:BPMNShape>\n121\t      <bpmndi:BPMNShape id=\"S_Gw\" bpmnElement=\"Gw_1\"><dc:Bounds x=\"410\" y=\"93\" width=\"50\" height=\"50\" /></bpmndi:BPMNShape>\n122\t      <bpmndi:BPMNShape id=\"S_High\" bpmnElement=\"End_High\"><dc:Bounds x=\"520\" y=\"40\" width=\"36\" height=\"36\" /></bpmndi:BPMNShape>\n123\t      <bpmndi:BPMNShape id=\"S_Low\" bpmnElement=\"End_Low\"><dc:Bounds x=\"520\" y=\"160\" width=\"36\" height=\"36\" /></bpmndi:BPMNShape>\n124\t      <bpmndi:BPMNEdge id=\"E_1\" bpmnElement=\"Flow_1\"><di:waypoint x=\"196\" y=\"118\" /><di:waypoint x=\"250\" y=\"118\" /></bpmndi:BPMNEdge>\n125\t      <bpmndi:BPMNEdge id=\"E_2\" bpmnElement=\"Flow_2\"><di:waypoint x=\"350\" y=\"118\" /><di:waypoint x=\"410\" y=\"118\" /></bpmndi:BPMNEdge>\n126\t      <bpmndi:BPMNEdge id=\"E_High\" bpmnElement=\"Flow_High\"><di:waypoint x=\"435\" y=\"93\" /><di:waypoint x=\"435\" y=\"58\" /><di:waypoint x=\"520\" y=\"58\" /></bpmndi:BPMNEdge>\n127\t      <bpmndi:BPMNEdge id=\"E_Low\" bpmnElement=\"Flow_Low\"><di:waypoint x=\"435\" y=\"143\" /><di:waypoint x=\"435\" y=\"178\" /><di:waypoint x=\"520\" y=\"178\" /></bpmndi:BPMNEdge>\n128\t    </bpmndi:BPMNPlane>\n129\t  </bpmndi:BPMNDiagram>\n130\t</bpmn:definitions>\n131\t```\n132\t\n133\t## Variables (`BPMN.Variables`)\n134\t\n135\tDeclare root variables with the `BPMN.Variables` registry template attached to\n136\tthe process via `extensionElements`, or use the canvas `<uipath:variables>`\n137\tblock directly. Variable bodies are CDATA. Reference variables in expressions as\n138\t`vars.<id>` — see [expression-authoring.md](expression-authoring.md).\n139\tSub-process-scoped variables go in that sub-process's own `<uipath:variables>`.\n140\t\n141\t## Script tasks (`BPMN.ScriptTask`) — Jint runtime contract\n142\t\n143\t`bpmn:scriptTask scriptFormat=\"JavaScript\"` runs under **Jint**, not Node.js or\n144\ta browser. The mapping payload comes from the `BPMN.ScriptTask` registry\n145\ttemplate, but the runtime contract is fixed:\n146\t\n147\t- Only these helpers exist: `uipath.aggregate`, `uipath._aggregate`,\n148\t  `uipath._pipe`, and a no-op `console`. No npm packages, filesystem, network,\n149\t  browser globals, or long-running async behavior. Execution envelope is ~64 MB\n150\t  / 30 s.\n151\t- Set `uipath:scriptVersion value=\"v3\"` for new scripts; preserve an imported\n152\t  `value=\"v2\"`. For v2+ the script returns JSON under `response`.\n153\t- Mapped `args` fields are read as **top-level identifiers** in the script body\n154\t  (`amount`, not `args.amount`); the input mapping itself stays `name=\"args\"`\n155\t  and maps each field by variable id (`=vars.Var_Amount`).\n156\t- Map the return back through `source=\"=result.response\"` (scalar) or\n157\t  `source=\"=result.response.<field>\"` (object field); `var` points at a declared\n158\t  variable id (do not put the target id in `name`).\n159\t- Do not mutate `Globals.*`, `vars.*`, or process variables inside the script\n160\t  body. The supported path is: return a value from the script, then use a\n161\t  `uipath:output` mapping to write it to the declared variable. Direct mutation\n162\t  is not applied to the runtime, so the variable reads empty afterward.\n163\t\n164\t```xml\n165\t<bpmn:scriptTask id=\"Task_RiskScore\" name=\"Risk Score\" scriptFormat=\"JavaScript\">\n166\t  <bpmn:extensionElements>\n167\t    <uipath:scriptVersion value=\"v3\" />\n168\t    <uipath:mapping version=\"v1\">\n169\t      <uipath:type value=\"BPMN.ScriptTask\" version=\"v1\" />\n170\t      <uipath:input name=\"args\"><![CDATA[{\"amount\":\"=vars.Var_Amount\",\"daysOverdue\":\"=vars.Var_DaysOverdue\"}]]></uipath:input>\n171\t      <uipath:output name=\"riskScore\" type=\"number\" var=\"Var_RiskScore\" source=\"=result.response\" />\n172\t    </uipath:mapping>\n173\t  </bpmn:extensionElements>\n174\t  <bpmn:script><![CDATA[\n175\tvar score = amount * 0.01 + daysOverdue * 2;\n176\treturn { response: score };\n177\t]]></bpmn:script>\n178\t</bpmn:scriptTask>\n179\t```\n180\t\n181\t## Sequence flows, conditions, and gateway defaults (REGISTRY GAP)\n182\t\n183\tThe registry never emits `<bpmn:sequenceFlow>`, conditions, or the gateway\n184\t`default` attribute. Author all of them.\n185\t\n186\t- A flow: `<bpmn:sequenceFlow id=\"Flow_1\" sourceRef=\"A\" targetRef=\"B\" />`. The\n187\t  source/target nodes must also list `<bpmn:incoming>`/`<bpmn:outgoing>`\n188\t  (the registry templates leave `{incomingEdge}`/`{outgoingEdge}` placeholders\n189\t  for exactly these).\n190\t- Conditional flow body: `<bpmn:conditionExpression xsi:type=\"bpmn:tFormalExpression\">=vars.Var_X == \"approved\"</bpmn:conditionExpression>`.\n191\t  The canvas normalizes the body to start with `=` — always lead with `=`.\n192\t- Gateway default flow: set `default=\"Flow_else\"` on the gateway element, and\n193\t  give that flow no condition.\n194\t\n195\t## Gateways\n196\t\n197\tAuthor these gateway types for new BPMN: `bpmn:ExclusiveGateway`,\n198\t`bpmn:ParallelGateway`, `bpmn:InclusiveGateway`, `bpmn:EventBasedGateway`.\n199\t`bpmn:ComplexGateway` round-trips structurally but is **preserve-only** — do not\n200\tgenerate it for new authoring (see [Do not generate for new\n201\tauthoring](#do-not-generate-for-new-authoring-preserve-on-round-trip-only)).\n202\t\n203\t- **Exclusive (XOR)**: each non-default outgoing flow needs a\n204\t  `conditionExpression`; exactly one outgoing flow is the `default`. (Validator\n205\t  rule `MISSING_CONDITION_EXPRESSION`.)\n206\t- **Parallel (AND)**: fork = one in, many out; join = many in, one out. No\n207\t  conditions.\n208\t- **Inclusive (OR)**: conditions on outgoing flows; multiple may be taken.\n209\t- **Event-based**: routes to the first of several catch events / receive tasks\n210\t  to fire; its outgoing flows target intermediate catch events or receive tasks.\n211\t- A gateway with exactly one incoming and one outgoing flow is rejected\n212\t  (`SUPERFLUOUS_GATEWAY`). Activities/events must not have more than one\n213\t  incoming flow — join with a gateway, not a \"fake join\" (`FAKE_JOIN`).\n214\t\n215\t## Events and the event-definition matrix\n216\t\n217\t`bpmn-spec.json` `bpmnElements.events` enumerates which event definitions each\n218\tevent element can carry on **round-trip**. For **new authoring**, only the\n219\t**none**, **Message**, **Timer**, **Error** (on end + boundary), and\n220\t**Terminate** (on end events only) definitions are generated. Conditional,\n221\tSignal, Escalation, Compensate, Cancel, Link, multiple, and parallel-multiple\n222\tdefinitions are **preserve-only** — keep them when imported, but do not generate\n223\tthem for new BPMN (see [Do not generate for new\n224\tauthoring](#do-not-generate-for-new-authoring-preserve-on-round-trip-only)).\n225\t\n226\tThe matrix below is the round-trip acceptance per element; **preserve-only**\n227\tmarks definitions that the skill keeps but does not author for new files.\n228\t\n229\t| Event element | Authorable | Preserve-only (round-trip) |\n230\t| --- | --- | --- |\n231\t| `bpmn:StartEvent` | none, Message, Timer | Conditional, Signal |\n232\t| `bpmn:IntermediateThrowEvent` | none, Message | Escalation, Signal, Link, Compensate |\n233\t| `bpmn:IntermediateCatchEvent` | Message, Timer | Escalation, Signal, Conditional, Link, Compensate |\n234\t| `bpmn:EndEvent` | none, Message, Error, Terminate | Escalation, Compensate, Signal |\n235\t| `bpmn:BoundaryEvent` | Message, Timer, Error | Escalation, Conditional, Signal, Compensate |\n236\t\n237\tPayload shapes the canvas serializes:\n238\t\n239\t- **Timer**: `<bpmn:timerEventDefinition><bpmn:timeDuration xsi:type=\"bpmn:tFormalExpression\">PT30M</bpmn:timeDuration></bpmn:timerEventDefinition>`\n240\t  (or `timeDate` / `timeCycle`). Static durations must be valid ISO-8601;\n241\t  week designators (`PnW`) are unsupported. Expression-mode is allowed and\n242\t  accepts either prefix — `=…` or `@…`.\n243\t- **Message**: `<bpmn:messageEventDefinition messageRef=\"Message_1\" />` with a\n244\t  `<bpmn:message id=\"Message_1\" name=\"…\"/>` declared at definitions level. The\n245\t  Maestro internal-message events (`Maestro.ReceiveMessageEvent` /\n246\t  `Maestro.SendMessageEvent`) carry the `uipath:event` payload **and** a bare\n247\t  `<bpmn:messageEventDefinition />` (see their registry templates).\n248\t- **Error**: `<bpmn:errorEventDefinition errorRef=\"Error_1\" />` with a\n249\t  `<bpmn:error id=\"Error_1\" name=\"…\" errorCode=\"…\"/>` at definitions level. An\n250\t  error end event with no `errorRef` fails to parse at runtime\n251\t  (`ERROR_END_EVENT_MISSING_EXCEPTION`); an error referenced by a boundary event\n252\t  must declare an `errorCode` (`ERROR_BOUNDARY_EVENT_REQUIRES_ERROR_CODE`).\n253\t- **Terminate** (end events only): emit the bare\n254\t  `<bpmn:terminateEventDefinition />`.\n255\t\n256\tPreserve-only payloads — keep these when imported, but do not author them for\n257\tnew files:\n258\t\n259\t- **Signal**: `<bpmn:signalEventDefinition signalRef=\"Signal_1\" />` with a\n260\t  definitions-level `<bpmn:signal/>`.\n261\t- **Escalation**: `<bpmn:escalationEventDefinition escalationRef=\"Escalation_1\" />`\n262\t  with a `<bpmn:escalation id=\"Escalation_1\" name=\"…\" escalationCode=\"…\"/>`\n263\t  declared at definitions level (parallel to message/error/signal).\n264\t- **Conditional / Link / Compensate**: the bare definition element; the canvas\n265\t  round-trips it.\n266\t\n267\t### Boundary events (REGISTRY GAP for `attachedToRef` / `cancelActivity`)\n268\t\n269\tA boundary event attaches to an activity and catches an event on it. The\n270\tregistry exposes no boundary template; author it:\n271\t\n272\t```xml\n273\t<bpmn:boundaryEvent id=\"Boundary_Timeout\" attachedToRef=\"Task_DoWork\" cancelActivity=\"true\">\n274\t  <bpmn:timerEventDefinition>\n275\t    <bpmn:timeDuration xsi:type=\"bpmn:tFormalExpression\">PT15M</bpmn:timeDuration>\n276\t  </bpmn:timerEventDefinition>\n277\t  <bpmn:outgoing>Flow_OnTimeout</bpmn:outgoing>\n278\t</bpmn:boundaryEvent>\n279\t```\n280\t\n281\t- `attachedToRef` = id of the activity it sits on. The boundary event and that\n282\t  activity must be `flowElements` of the same parent scope.\n283\t- `cancelActivity=\"true\"` = interrupting (default); `cancelActivity=\"false\"` =\n284\t  non-interrupting. Per the spec, non-interrupting is available for\n285\t  Message/Timer/Escalation/Conditional/Signal — **not** Error or Compensate.\n286\t- Only one catch-all (no `errorRef`) error boundary event per task, and no two\n287\t  error boundary events with the same error code on one task\n288\t  (`MULTIPLE_CATCH_ALL_BOUNDARY_EVENTS_ON_TASK`,\n289\t  `DUPLICATE_ERROR_BOUNDARY_EVENT_ON_TASK`).\n290\t\n291\t### Retry and error mapping (REGISTRY GAP)\n292\t\n293\tUiPath-specific retry and error-mapping metadata live inside an activity's\n294\t`extensionElements`. The error **code** lives on the declared\n295\t`bpmn:error errorCode=\"…\"`; `uipath:*` elements reference it through `errorRef`.\n296\t\n297\t```xml\n298\t<uipath:retry maxRetryCount=\"2\" retryBackoff=\"PT30S\" retryBackoffType=\"exponential\"\n299\t              maxDuration=\"PT5M\" exponentialBase=\"2\" retryAllErrors=\"false\">\n300\t  <uipath:errorDefinition errorRef=\"Error_ServiceUnavailable\" />\n301\t</uipath:retry>\n302\t<uipath:errorMapping version=\"v1\">\n303\t  <uipath:error id=\"Mapped_ServiceUnavailable\" errorRef=\"Error_ServiceUnavailable\"\n304\t                priority=\"1\" condition=\"=vars.error.code == &quot;SERVICE_UNAVAILABLE&quot;\"\n305\t                detail=\"Service unavailable\" retryable=\"true\" />\n306\t</uipath:errorMapping>\n307\t```\n308\t\n309\t- `uipath:retry` attributes: `maxRetryCount`, `retryBackoff`, `retryBackoffType`,\n310\t  `maxDuration`, `exponentialBase`, `retryAllErrors`. Do not use stale aliases\n311\t  (`maxAttempts`, `interval`).\n312\t- `uipath:error` (mapping) fields: `id`, `errorRef`, `priority`, `condition`,\n313\t  `detail`, `retryable` (`true`/`false`). Conditions read the runtime error via\n314\t  `vars.error` and contain no assignments. Do not put `code=` on `uipath:error`;\n315\t  model the code on `bpmn:error errorCode` and reference via `errorRef`.\n316\t\n317\t## Subprocess, call activity, event subprocess (REGISTRY GAP for structure)\n318\t\n319\t- **SubProcess** (`bpmn:SubProcess`): a container with its own nested\n320\t  `flowElements` (start event, nodes, end event) and its own scoped\n321\t  `<uipath:variables>`. Variants: `collapsed`, `expanded`, `eventSubprocess`.\n322\t  The shape carries `isExpanded` for the collapsed/expanded distinction.\n323\t- **Event subprocess**: a `bpmn:SubProcess` with `triggeredByEvent=\"true\"`. It\n324\t  must have **exactly one** start event, and that start event **must carry an\n325\t  event definition** (with `isInterrupting`) — a blank start event is invalid for\n326\t  an event subprocess.\n327\t- **Call activity** (`bpmn:CallActivity`): invokes a *separate* Maestro\n328\t  instance. The registry provides the `uipath:activity` payload for the\n329\t  Orchestrator agentic/case-management call-activity types\n330\t  (`Orchestrator.StartAgenticProcess[Async]`, `…CaseMgmtProcess[Async]`). A\n331\t  plain BPMN `calledElement` round-trips but is not specially authored by the\n332\t  canvas layer.\n333\t- Each scope (process or sub-process) may have at most one blank (untyped) start\n334\t  event (`MULTIPLE_BLANK_START_EVENTS`).\n335\t\n336\t> SubProcess scopes operations *within the same instance*; CallActivity invokes\n337\t> a *separate* Maestro instance. Do not conflate them.\n338\t\n339\t## Multi-instance / loop characteristics (REGISTRY GAP — canvas supports it)\n340\t\n341\tThe registry spec enumerates **no** multi-instance or loop markers\n342\t(`grep` for `multiInstance`/`loopCharacteristics` in `bpmn-spec.json` returns\n343\tnothing). This is a genuine registry gap. The Studio Web canvas, however, **does**\n344\tserialize them (`elements/nodes.ts`), so author them from the canvas contract:\n345\t\n346\t```xml\n347\t<bpmn:multiInstanceLoopCharacteristics isSequential=\"true\">\n348\t  <bpmn:completionCondition xsi:type=\"bpmn:tFormalExpression\">=vars.Var_Done</bpmn:completionCondition>\n349\t  <bpmn:extensionElements>\n350\t    <uipath:loopCharacteristics\n351\t        inputCollection=\"=vars.Var_Items\" inputElement=\"item\" />\n352\t  </bpmn:extensionElements>\n353\t</bpmn:multiInstanceLoopCharacteristics>\n354\t```\n355\t\n356\t- `isSequential=\"true\"` = one at a time; `false` = parallel.\n357\t- The collection/item binding lives in the `uipath:loopCharacteristics`\n358\t  extension (`inputCollection`, `inputElement`), **not** in `loopCardinality`\n359\t  (the canvas never reads `loopCardinality`).\n360\t- The loop element **must declare `inputElement`** — do not rely on reading a\n361\t  bare `iterator`/`iterator.item` downstream without it. For a multi-instance\n362\t  **subprocess** body, bind `inputElement=\"iterator[0]\"` on\n363\t  `uipath:loopCharacteristics` and pass the current item into body activities\n364\t  with `=iterator[0].item`. Do not assume a bare alias such as `=currentItem` is\n365\t  in scope inside a marker subprocess body unless the file already uses it.\n366\t- Inside the body, read the current item with the `iterator` namespace — see\n367\t  [expression-authoring.md](expression-authoring.md).\n368\t- `bpmn:standardLoopCharacteristics` is also recognized (no uipath extension).\n369\t\n370\tBecause the registry exposes no template for this, treat it as a documented\n371\tauthoring path backed by the canvas serializer, and tell the user it is a\n372\tregistry gap if they ask why no `registry get` covers it.\n373\t\n374\t## Do not generate for new authoring (preserve on round-trip only)\n375\t\n376\tThese structures are **not** authored for new Maestro BPMN. If they appear in an\n377\timported or brownfield file, preserve them and report that the skill cannot\n378\tsafely regenerate or normalize them. Planned / preview / TBD statuses count as\n379\tunsupported for generation until current tooling confirms them.\n380\t\n381\t- Gateway: `bpmn:complexGateway`.\n382\t- Tasks / containers: `bpmn:manualTask`, `bpmn:adHocSubProcess`,\n383\t  `bpmn:transaction`.\n384\t- Event definitions: `conditionalEventDefinition`, `signalEventDefinition`,\n385\t  `escalationEventDefinition`, `compensateEventDefinition`,\n386\t  `cancelEventDefinition`, `linkEventDefinition`, multiple, and\n387\t  parallel-multiple event definitions.\n388\t- Markers: standard-loop and compensation markers (use only documented\n389\t  multi-instance parallel/sequential metadata for new loops).\n390\t- Terminate is supported **only** on end events — not on start, boundary,\n391\t  intermediate-catch, or intermediate-throw events.\n392\t- Preserve-only `uipath:*` extension payloads: keep these when imported, and when\n393\t  a file legitimately needs one, reproduce the shape (with synthetic, public-safe\n394\t  contents) rather than inventing a new one.\n395\t  - **Typed activity/event shells always use the lowercase `<uipath:activity>` /\n396\t    `<uipath:event>` wrapper with a `<uipath:type value=\"<Type>\" version=\"v1\" />`\n397\t    child** — including types not served by the live registry (e.g.\n398\t    `Maestro.CasePlanScheduler`, `Maestro.CaseManagerGuardrails`,\n399\t    `Maestro.CaseRulesEvaluator`). Do **not** substitute the capital-`A`\n400\t    `<uipath:Activity>` element for a typed shell.\n401\t  - The capital-`A` `<uipath:Activity>` element is a **separate** generic\n402\t    preserve-only payload (its own element, not a wrapper for typed shells).\n403\t  - `uipath:caseManagement` is a versioned body-string element —\n404\t    `<uipath:caseManagement version=\"v1\">…synthetic payload…</uipath:caseManagement>`.\n405\t  - `<uipath:scriptVersion value=\"v2\" />` is legacy: author `v3` for new scripts,\n406\t    preserve `v2` where it already exists.\n407\t\n408\t## Diagram interchange — `bpmndi` (REGISTRY GAP — always generated)\n409\t\n410\tThe registry emits no diagram. Import is **diagram-driven**: the canvas builds\n411\tnodes from `BPMNShape`s and edges from `BPMNEdge`s, not by walking\n412\t`flowElements`. **A node with no shape is invisible; a flow with no edge is\n413\tdropped.** You must generate the full `BPMNDiagram` yourself.\n414\t\n415\t- One `<bpmndi:BPMNShape id=\"S_<nodeId>\" bpmnElement=\"<nodeId>\">` per node, with\n416\t  `<dc:Bounds x= y= width= height= />`. SubProcess shapes carry `isExpanded`.\n417\t- One `<bpmndi:BPMNEdge id=\"BPMNEdge_<flowId>\" bpmnElement=\"<flowId>\">` per\n418\t  sequence flow, with `<di:waypoint x= y= />` points.\n419\t- Lay nodes out left-to-right with non-overlapping bounds. Typical sizes: tasks\n420\t  100×80, events 36×36, gateways 50×50.\n421\t\n422\tExample:\n423\t\n424\t```xml\n425\t<bpmndi:BPMNShape id=\"S_StartEvent_1\" bpmnElement=\"StartEvent_1\">\n426\t  <dc:Bounds x=\"160\" y=\"100\" width=\"36\" height=\"36\" />\n427\t</bpmndi:BPMNShape>\n428\t<bpmndi:BPMNEdge id=\"BPMNEdge_Flow_1\" bpmnElement=\"Flow_1\">\n429\t  <di:waypoint x=\"196\" y=\"118\" />\n430\t  <di:waypoint x=\"260\" y=\"118\" />\n431\t</bpmndi:BPMNEdge>\n432\t```\n433\t\n434\t## Editing operations\n435\t\n436\tSafe, surgical edits on an existing `.bpmn` (preserve content you did not author\n437\t— see [SKILL.md](../SKILL.md#editing-an-existing-bpmn-preserve-what-you-did-not-author)):\n438\t\n439\t- **Add / delete / reconnect a node**: add the element with a stable id and its\n440\t  `<bpmn:incoming>`/`<bpmn:outgoing>` refs, add the sequence-flow elements in the\n441\t  owning scope, and add/update its `BPMNShape` and edge waypoints. On delete,\n442\t  remove orphaned flows and DI edges and recheck entry-point variables, output\n443\t  mappings, and binding references.\n444\t- **Insert a gateway**: split the existing sequence flow into an incoming and an\n445\t  outgoing flow, add conditions to the outgoing flows plus one `default`, add a\n446\t  matching join only if branches actually need synchronization, then re-waypoint\n447\t  the diagram (gateway shape + all edges).\n448\t- **Move logic into a subprocess**: move only elements that share a valid scope,\n449\t  re-scope their variables, recreate legal subprocess flow boundaries, and add a\n450\t  second diagram plane for the subprocess so nested content renders.\n451\t- **Add an entry point**: use a root-level start event, add a stable unique\n452\t  `uipath:entryPointId`, and declare input/output variables whose `elementId`\n453\t  matches that start event.\n454\t\n455\tDo not patch generated JSON to fix source behavior — change the `.bpmn` and\n456\tregenerate. For `Intsvc.*` activities/triggers, hand editing to CLI enrichment.\n457\t\n458\t### Edit red-flags\n459\t\n460\tRe-check after any edit:\n461\t\n462\t- A diagram plane references a missing process, collaboration, or subprocess.\n463\t- A rendered element lacks a shape or its flow lacks an edge/waypoint.\n464\t- An entry-point variable points at the wrong start event.\n465\t- A `uipath:context` value references a missing binding.\n466\t- A topology edit rewrote unrelated `uipath:*` extension XML.\n467\t- An Integration Service element carries hand-authored connection details.\n468\t\n469\t## Validation\n470\t\n471\tThere is **no** `uip maestro bpmn validate` CLI command. The skill ships its own\n472\toffline validator that reconstructs the PO.Frontend Node/Edge/CanvasState model\n473\tfrom the parsed BPMN and runs **every** canvas validation rule — run it as the\n474\tprimary check:\n475\t\n476\t```bash\n477\tcd skills/uipath-maestro-bpmn/validator && npm install --silent\n478\tnode validate-bpmn.mjs <file.bpmn>   # prints VALID and exits 0, or prints errors and exits 1\n479\t```\n480\t\n481\t`VALID` / exit 0 means the document passes all rules. Any other output lists the\n482\tblocking errors (gateway/condition, fake-join, superfluous-gateway, error\n483\tend/boundary event, timer-duration, single-blank-start, variable-reference, and\n484\tIS-connector checks). See [validator/README.md](../validator/README.md).\n485\t\n486\tIf Node is unavailable, fall back to a well-formed-XML parse plus the structural\n487\tchecklist below — it mirrors the same blocking rules:\n488\t\n489\t```bash\n490\tpython3 -c \"import xml.etree.ElementTree as ET; ET.parse('<file.bpmn>')\"\n491\t```\n492\t\n493\tThen walk the structural checklist:\n494\t\n495\t1. Root is `<…:definitions>` with the BPMN + `uipath` namespaces.\n496\t2. Exactly one `<bpmndi:BPMNDiagram>` with a shape per node and an edge per flow.\n497\t3. Every `sourceRef`/`targetRef`/`attachedToRef`/`*Ref` resolves to a declared id.\n498\t4. Each XOR gateway: non-default flows have conditions; exactly one default.\n499\t5. No activity/event has more than one incoming flow.\n500\t6. Each event subprocess has exactly one start event, and it carries an event\n501\t   definition (with `isInterrupting`).\n502\t7. Every `vars.<id>` reference resolves to a declared variable.\n503\t8. Each `uipath:*` payload was produced from a `registry get` template, not\n504\t   hand-written.\n505\t",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 1,
+          "result_tokens": 7205
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_011NHbwdXg5Q3kuxNnHCrf2f",
+          "assistant_turn_index": 6,
+          "timestamp": "2026-07-22T04:47:57.199219",
+          "duration_ms": 2687.7204270567745,
+          "generation_completed_at": "2026-07-22T04:47:57.199219",
+          "execution_started_at": "2026-07-22T04:47:57.199274",
+          "execution_completed_at": "2026-07-22T04:47:59.886994",
+          "parameters": {
+            "command": "cd /home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn && uip maestro bpmn registry pull 2>&1 | tail -5",
+            "description": "Pull the registry (cached for session)"
+          },
+          "result_status": "success",
+          "result_summary": "    \"FromCache\": false,\n    \"CacheWritten\": true,\n    \"Message\": \"Synced fresh registry. Only built-in (OOTB) extension types synced. Run 'uip login' to discover connectors and processes.\"\n  }\n}\nShell cwd was reset to /work/output/artifacts/skill-bpmn-inclusive-gateway-forkjoin",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 2,
+          "result_tokens": 70
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_01WRg9HQ8MqnzUGYufaeYT7T",
+          "assistant_turn_index": 7,
+          "timestamp": "2026-07-22T04:48:01.463469",
+          "duration_ms": 2033.4240780211985,
+          "generation_completed_at": "2026-07-22T04:48:01.463469",
+          "execution_started_at": "2026-07-22T04:48:01.463773",
+          "execution_completed_at": "2026-07-22T04:48:03.497197",
+          "parameters": {
+            "command": "cd /home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn && uip maestro bpmn registry list 2>&1",
+            "description": "List available registry node types"
+          },
+          "result_status": "success",
+          "result_summary": "{\n  \"Result\": \"Success\",\n  \"Code\": \"RegistryListSuccess\",\n  \"Data\": {\n    \"ExtensionTypes\": [\n      {\n        \"ExtensionType\": \"uipath:Activity\",\n        \"Label\": \"Canvas activity\",\n        \"BpmnElement\": \"bpmn:ServiceTask\",\n        \"ExtensionTag\": \"uipath:activity\",\n        \"InputPattern\": \"none\",\n        \"BindingPattern\": \"none\",\n        \"RequiresDiscovery\": \"No\"\n      },\n      {\n        \"ExtensionType\": \"Actions.HITL\",\n        \"Label\": \"Create action app task\",\n        \"BpmnElement\": \"bpmn:UserTask\",\n        \"ExtensionTag\": \"uipath:activity\",\n        \"InputPattern\": \"mergedBody\",\n        \"BindingPattern\": \"none\",\n        \"RequiresDiscovery\": \"Yes\"\n      },\n      {\n        \"ExtensionType\": \"Orchestrator.StartJob\",\n        \"Label\": \"Start and wait for RPA workflow\",\n        \"BpmnElement\": \"bpmn:ServiceTask\",\n        \"ExtensionTag\": \"uipath:activity\",\n        \"InputPattern\": \"mergedBody\",\n        \"BindingPattern\": \"process\",\n        \"RequiresDiscovery\": \"Yes\"\n      },\n      {\n        \"ExtensionType\": \"Orchestrator.StartAgentJob\",\n        \"Label\": \"Start and wait for agent\",\n        \"BpmnElement\": \"bpmn:ServiceTask\",\n        \"ExtensionTag\": \"uipath:activity\",\n        \"InputPattern\": \"mergedBody\",\n        \"BindingPattern\": \"process\",\n        \"RequiresDiscovery\": \"Yes\"\n      },\n      {\n        \"ExtensionType\": \"Orchestrator.BusinessRules\",\n        \"Label\": \"Execute business rule [Preview]\",\n        \"BpmnElement\": \"bpmn:BusinessRuleTask\",\n        \"ExtensionTag\": \"uipath:activity\",\n        \"InputPattern\": \"mergedBody\",\n        \"BindingPattern\": \"businessRule\",\n        \"RequiresDiscovery\": \"Yes\"\n      },\n      {\n        \"ExtensionType\": \"Intsvc.ActivityExecution\",\n        \"Label\": \"Execute connector activity\",\n        \"BpmnElement\": \"bpmn:SendTask\",\n        \"ExtensionTag\": \"uipath:activity\",\n        \"InputPattern\": \"separateInputs\",\n        \"BindingPattern\": \"connection\",\n        \"RequiresDiscovery\": \"Yes\"\n      },\n      {\n        \"ExtensionType\": \"Intsvc.HttpExecution\",\n        \"Label\": \"Execute HTTP request (Legacy)\",\n        \"BpmnElement\": \"bpmn:SendTask\",\n        \"ExtensionTag\": \"uipath:activity\",\n        \"InputPattern\": \"none\",\n        \"BindingPattern\": \"none\",\n        \"RequiresDiscovery\": \"No\"\n      },\n      {\n        \"ExtensionType\": \"Intsvc.UnifiedHttpRequest\",\n        \"Label\": \"Execute HTTP request\",\n        \"BpmnElement\": \"bpmn:SendTask\",\n        \"ExtensionTag\": \"uipath:activity\",\n        \"InputPattern\": \"separateInputs\",\n        \"BindingPattern\": \"none\",\n        \"RequiresDiscovery\": \"No\"\n      },\n      {\n        \"ExtensionType\": \"Intsvc.WaitForEvent\",\n        \"Label\": \"Wait for connector event\",\n        \"BpmnElement\": \"bpmn:ReceiveTask\",\n        \"ExtensionTag\": \"uipath:event\",\n        \"InputPattern\": \"separateInputs\",\n        \"BindingPattern\": \"connection\",\n        \"RequiresDiscovery\": \"Yes\"\n      },\n      {\n        \"ExtensionType\": \"Intsvc.EventTrigger\",\n        \"Label\": \"Wait for connector event (trigger)\",\n        \"BpmnElement\": \"bpmn:StartEvent\",\n        \"ExtensionTag\": \"uipath:event\",\n        \"InputPattern\": \"separateInputs\",\n        \"BindingPattern\": \"connection\",\n        \"RequiresDiscovery\": \"Yes\"\n      },\n      {\n        \"ExtensionType\": \"Intsvc.AsyncExecution\",\n        \"Label\": \"Start and wait for external agent\",\n        \"BpmnElement\": \"bpmn:ServiceTask\",\n        \"ExtensionTag\": \"uipath:activity\",\n        \"InputPattern\": \"separateInputs\",\n        \"BindingPattern\": \"connection\",\n        \"RequiresDiscovery\": \"Yes\"\n      },\n      {\n        \"ExtensionType\": \"Intsvc.SyncAgentExecution\",\n        \"Label\": \"Start and wait for external agent\",\n        \"BpmnElement\": \"bpmn:ServiceTask\",\n        \"ExtensionTag\": \"uipath:activity\",\n        \"InputPattern\": \"separateInputs\",\n        \"BindingPattern\": \"connection\",\n        \"RequiresDiscovery\": \"Yes\"\n      },\n      {\n        \"ExtensionType\": \"Intsvc.AsyncAgentExecution\",\n        \"Label\": \"Start and wait for external agent\",\n        \"BpmnElement\": \"bpmn:ServiceTask\",\n        \"ExtensionTag\": \"uipath:activity\",\n        \"InputPattern\": \"separateInputs\",\n        \"BindingPattern\": \"connection\",\n        \"RequiresDiscovery\": \"Yes\"\n      },\n      {\n        \"ExtensionType\": \"Intsvc.SyncWorkflowExecution\",\n        \"Label\": \"Start and wait for external workflow\",\n        \"BpmnElement\": \"bpmn:ServiceTask\",\n        \"ExtensionTag\": \"uipath:activity\",\n        \"InputPattern\": \"separateInputs\",\n        \"BindingPattern\": \"connection\",\n        \"RequiresDiscovery\": \"Yes\"\n      },\n      {\n        \"ExtensionType\": \"Intsvc.AsyncWorkflowExecution\",\n        \"Label\": \"Start and wait for external workflow\",\n        \"BpmnElement\": \"bpmn:ServiceTask\",\n        \"ExtensionTag\": \"uipath:activity\",\n        \"InputPattern\": \"separateInputs\",\n        \"BindingPattern\": \"connection\",\n        \"RequiresDiscovery\": \"Yes\"\n      },\n      {\n        \"ExtensionType\": \"Orchestrator.ExecuteApiWorkflowAsync\",\n        \"Label\": \"Start and wait for API workflow [Preview]\",\n        \"BpmnElement\": \"bpmn:ServiceTask\",\n        \"ExtensionTag\": \"uipath:activity\",\n        \"InputPattern\": \"mergedBody\",\n        \"BindingPattern\": \"process\",\n        \"RequiresDiscovery\": \"Yes\"\n      },\n      {\n        \"ExtensionType\": \"Orchestrator.CreateQueueItem\",\n        \"Label\": \"Create queue item\",\n        \"BpmnElement\": \"bpmn:SendTask\",\n        \"ExtensionTag\": \"uipath:activity\",\n        \"InputPattern\": \"mergedBody\",\n        \"BindingPattern\": \"queue\",\n        \"RequiresDiscovery\": \"Yes\"\n      },\n      {\n        \"ExtensionType\": \"Orchestrator.CreateAndWaitForQueueItem\",\n        \"Label\": \"Create and wait for queue item\",\n        \"BpmnElement\": \"bpmn:ServiceTask\",\n        \"ExtensionTag\": \"uipath:activity\",\n        \"InputPattern\": \"mergedBody\",\n        \"BindingPattern\": \"queue\",\n        \"RequiresDiscovery\": \"Yes\"\n      },\n      {\n        \"ExtensionType\": \"Orchestrator.StartAgenticProcess\",\n        \"Label\": \"Start and wait for agentic process\",\n        \"BpmnElement\": \"bpmn:CallActivity\",\n        \"ExtensionTag\": \"uipath:activity\",\n        \"InputPattern\": \"mergedBody\",\n        \"BindingPattern\": \"process\",\n        \"RequiresDiscovery\": \"Yes\"\n      },\n      {\n        \"ExtensionType\": \"Orchestrator.StartAgenticProcessAsync\",\n        \"Label\": \"Start agentic process\",\n        \"BpmnElement\": \"bpmn:CallActivity\",\n        \"ExtensionTag\": \"uipath:activity\",\n        \"InputPattern\": \"mergedBody\",\n        \"BindingPattern\": \"process\",\n        \"RequiresDiscovery\": \"Yes\"\n      },\n      {\n        \"ExtensionType\": \"Orchestrator.StartCaseMgmtProcess\",\n        \"Label\": \"Start and wait for case management\",\n        \"BpmnElement\": \"bpmn:CallActivity\",\n        \"ExtensionTag\": \"uipath:activity\",\n        \"InputPattern\": \"mergedBody\",\n        \"BindingPattern\": \"process\",\n        \"RequiresDiscovery\": \"Yes\"\n      },\n      {\n        \"ExtensionType\": \"Orchestrator.StartCaseMgmtProcessAsync\",\n        \"Label\": \"Start case management\",\n        \"BpmnElement\": \"bpmn:CallActivity\",\n        \"ExtensionTag\": \"uipath:activity\",\n        \"InputPattern\": \"mergedBody\",\n        \"BindingPattern\": \"process\",\n        \"RequiresDiscovery\": \"Yes\"\n      },\n      {\n        \"ExtensionType\": \"A2A.AgentExecution\",\n        \"Label\": \"Start and wait for A2A agent\",\n        \"BpmnElement\": \"bpmn:ServiceTask\",\n        \"ExtensionTag\": \"uipath:activity\",\n        \"InputPattern\": \"mergedBody\",\n        \"BindingPattern\": \"none\",\n        \"RequiresDiscovery\": \"No\"\n      },\n      {\n        \"ExtensionType\": \"BPMN.Variables\",\n        \"Label\": \"BPMN Variables\",\n        \"BpmnElement\": \"bpmn:Task\",\n        \"ExtensionTag\": \"uipath:mapping\",\n        \"InputPattern\": \"none\",\n        \"BindingPattern\": \"none\",\n        \"RequiresDiscovery\": \"No\"\n      },\n      {\n        \"ExtensionType\": \"BPMN.ScriptTask\",\n        \"Label\": \"Execute script\",\n        \"BpmnElement\": \"bpmn:ScriptTask\",\n        \"ExtensionTag\": \"uipath:mapping\",\n        \"InputPattern\": \"scriptArgs\",\n        \"BindingPattern\": \"none\",\n        \"RequiresDiscovery\": \"No\"\n      },\n      {\n        \"ExtensionType\": \"Intsvc.TimerTrigger\",\n        \"Label\": \"Timer trigger\",\n        \"BpmnElement\": \"bpmn:StartEvent\",\n        \"ExtensionTag\": \"uipath:activity\",\n        \"InputPattern\": \"none\",\n        \"BindingPattern\": \"none\",\n        \"RequiresDiscovery\": \"No\"\n      },\n      {\n        \"ExtensionType\": \"Maestro.ReceiveMessageEvent\",\n        \"Label\": \"Receive internal message\",\n        \"BpmnElement\": \"bpmn:IntermediateCatchEvent\",\n        \"ExtensionTag\": \"uipath:event\",\n        \"InputPattern\": \"separateInputs\",\n        \"BindingPattern\": \"none\",\n        \"RequiresDiscovery\": \"No\"\n      },\n      {\n        \"ExtensionType\": \"Maestro.SendMessageEvent\",\n        \"Label\": \"Send internal message\",\n        \"BpmnElement\": \"bpmn:IntermediateThrowEvent\",\n        \"ExtensionTag\": \"uipath:event\",\n        \"InputPattern\": \"splitInputsItemData\",\n        \"BindingPattern\": \"none\",\n        \"RequiresDiscovery\": \"No\"\n      },\n      {\n        \"ExtensionType\": \"Maestro.CaseRulesEvaluator\",\n        \"Label\": \"Case rules evaluator\",\n        \"BpmnElement\": \"bpmn:ServiceTask\",\n        \"ExtensionTag\": \"uipath:activity\",\n        \"InputPattern\": \"mergedBody\",\n        \"BindingPattern\": \"none\",\n        \"RequiresDiscovery\": \"No\"\n      },\n      {\n        \"ExtensionType\": \"Maestro.CaseManagerGuardrails\",\n        \"Label\": \"Case manager guardrails\",\n        \"BpmnElement\": \"bpmn:ServiceTask\",\n        \"ExtensionTag\": \"uipath:activity\",\n        \"InputPattern\": \"mergedBody\",\n        \"BindingPattern\": \"none\",\n        \"RequiresDiscovery\": \"No\"\n      }\n    ],\n    \"Connectors\": [],\n    \"Processes\": [],\n    \"ProcessesByType\": {\n      \"Process\": 0,\n      \"ProcessOrchestration\": 0,\n      \"Agent\": 0,\n      \"Flow\": 0,\n      \"Api\": 0,\n      \"Function\": 0,\n      \"CaseManagement\": 0,\n      \"BusinessRules\": 0\n    }\n  }\n}\nShell cwd was reset to /work/output/artifacts/skill-bpmn-inclusive-gateway-forkjoin",
+          "error_message": null,
+          "result_data": {
+            "Result": "Success",
+            "Code": "RegistryListSuccess",
+            "Data": {
+              "ExtensionTypes": [
+                {
+                  "ExtensionType": "uipath:Activity",
+                  "Label": "Canvas activity",
+                  "BpmnElement": "bpmn:ServiceTask",
+                  "ExtensionTag": "uipath:activity",
+                  "InputPattern": "none",
+                  "BindingPattern": "none",
+                  "RequiresDiscovery": "No"
+                },
+                {
+                  "ExtensionType": "Actions.HITL",
+                  "Label": "Create action app task",
+                  "BpmnElement": "bpmn:UserTask",
+                  "ExtensionTag": "uipath:activity",
+                  "InputPattern": "mergedBody",
+                  "BindingPattern": "none",
+                  "RequiresDiscovery": "Yes"
+                },
+                {
+                  "ExtensionType": "Orchestrator.StartJob",
+                  "Label": "Start and wait for RPA workflow",
+                  "BpmnElement": "bpmn:ServiceTask",
+                  "ExtensionTag": "uipath:activity",
+                  "InputPattern": "mergedBody",
+                  "BindingPattern": "process",
+                  "RequiresDiscovery": "Yes"
+                },
+                {
+                  "ExtensionType": "Orchestrator.StartAgentJob",
+                  "Label": "Start and wait for agent",
+                  "BpmnElement": "bpmn:ServiceTask",
+                  "ExtensionTag": "uipath:activity",
+                  "InputPattern": "mergedBody",
+                  "BindingPattern": "process",
+                  "RequiresDiscovery": "Yes"
+                },
+                {
+                  "ExtensionType": "Orchestrator.BusinessRules",
+                  "Label": "Execute business rule [Preview]",
+                  "BpmnElement": "bpmn:BusinessRuleTask",
+                  "ExtensionTag": "uipath:activity",
+                  "InputPattern": "mergedBody",
+                  "BindingPattern": "businessRule",
+                  "RequiresDiscovery": "Yes"
+                },
+                {
+                  "ExtensionType": "Intsvc.ActivityExecution",
+                  "Label": "Execute connector activity",
+                  "BpmnElement": "bpmn:SendTask",
+                  "ExtensionTag": "uipath:activity",
+                  "InputPattern": "separateInputs",
+                  "BindingPattern": "connection",
+                  "RequiresDiscovery": "Yes"
+                },
+                {
+                  "ExtensionType": "Intsvc.HttpExecution",
+                  "Label": "Execute HTTP request (Legacy)",
+                  "BpmnElement": "bpmn:SendTask",
+                  "ExtensionTag": "uipath:activity",
+                  "InputPattern": "none",
+                  "BindingPattern": "none",
+                  "RequiresDiscovery": "No"
+                },
+                {
+                  "ExtensionType": "Intsvc.UnifiedHttpRequest",
+                  "Label": "Execute HTTP request",
+                  "BpmnElement": "bpmn:SendTask",
+                  "ExtensionTag": "uipath:activity",
+                  "InputPattern": "separateInputs",
+                  "BindingPattern": "none",
+                  "RequiresDiscovery": "No"
+                },
+                {
+                  "ExtensionType": "Intsvc.WaitForEvent",
+                  "Label": "Wait for connector event",
+                  "BpmnElement": "bpmn:ReceiveTask",
+                  "ExtensionTag": "uipath:event",
+                  "InputPattern": "separateInputs",
+                  "BindingPattern": "connection",
+                  "RequiresDiscovery": "Yes"
+                },
+                {
+                  "ExtensionType": "Intsvc.EventTrigger",
+                  "Label": "Wait for connector event (trigger)",
+                  "BpmnElement": "bpmn:StartEvent",
+                  "ExtensionTag": "uipath:event",
+                  "InputPattern": "separateInputs",
+                  "BindingPattern": "connection",
+                  "RequiresDiscovery": "Yes"
+                },
+                {
+                  "ExtensionType": "Intsvc.AsyncExecution",
+                  "Label": "Start and wait for external agent",
+                  "BpmnElement": "bpmn:ServiceTask",
+                  "ExtensionTag": "uipath:activity",
+                  "InputPattern": "separateInputs",
+                  "BindingPattern": "connection",
+                  "RequiresDiscovery": "Yes"
+                },
+                {
+                  "ExtensionType": "Intsvc.SyncAgentExecution",
+                  "Label": "Start and wait for external agent",
+                  "BpmnElement": "bpmn:ServiceTask",
+                  "ExtensionTag": "uipath:activity",
+                  "InputPattern": "separateInputs",
+                  "BindingPattern": "connection",
+                  "RequiresDiscovery": "Yes"
+                },
+                {
+                  "ExtensionType": "Intsvc.AsyncAgentExecution",
+                  "Label": "Start and wait for external agent",
+                  "BpmnElement": "bpmn:ServiceTask",
+                  "ExtensionTag": "uipath:activity",
+                  "InputPattern": "separateInputs",
+                  "BindingPattern": "connection",
+                  "RequiresDiscovery": "Yes"
+                },
+                {
+                  "ExtensionType": "Intsvc.SyncWorkflowExecution",
+                  "Label": "Start and wait for external workflow",
+                  "BpmnElement": "bpmn:ServiceTask",
+                  "ExtensionTag": "uipath:activity",
+                  "InputPattern": "separateInputs",
+                  "BindingPattern": "connection",
+                  "RequiresDiscovery": "Yes"
+                },
+                {
+                  "ExtensionType": "Intsvc.AsyncWorkflowExecution",
+                  "Label": "Start and wait for external workflow",
+                  "BpmnElement": "bpmn:ServiceTask",
+                  "ExtensionTag": "uipath:activity",
+                  "InputPattern": "separateInputs",
+                  "BindingPattern": "connection",
+                  "RequiresDiscovery": "Yes"
+                },
+                {
+                  "ExtensionType": "Orchestrator.ExecuteApiWorkflowAsync",
+                  "Label": "Start and wait for API workflow [Preview]",
+                  "BpmnElement": "bpmn:ServiceTask",
+                  "ExtensionTag": "uipath:activity",
+                  "InputPattern": "mergedBody",
+                  "BindingPattern": "process",
+                  "RequiresDiscovery": "Yes"
+                },
+                {
+                  "ExtensionType": "Orchestrator.CreateQueueItem",
+                  "Label": "Create queue item",
+                  "BpmnElement": "bpmn:SendTask",
+                  "ExtensionTag": "uipath:activity",
+                  "InputPattern": "mergedBody",
+                  "BindingPattern": "queue",
+                  "RequiresDiscovery": "Yes"
+                },
+                {
+                  "ExtensionType": "Orchestrator.CreateAndWaitForQueueItem",
+                  "Label": "Create and wait for queue item",
+                  "BpmnElement": "bpmn:ServiceTask",
+                  "ExtensionTag": "uipath:activity",
+                  "InputPattern": "mergedBody",
+                  "BindingPattern": "queue",
+                  "RequiresDiscovery": "Yes"
+                },
+                {
+                  "ExtensionType": "Orchestrator.StartAgenticProcess",
+                  "Label": "Start and wait for agentic process",
+                  "BpmnElement": "bpmn:CallActivity",
+                  "ExtensionTag": "uipath:activity",
+                  "InputPattern": "mergedBody",
+                  "BindingPattern": "process",
+                  "RequiresDiscovery": "Yes"
+                },
+                {
+                  "ExtensionType": "Orchestrator.StartAgenticProcessAsync",
+                  "Label": "Start agentic process",
+                  "BpmnElement": "bpmn:CallActivity",
+                  "ExtensionTag": "uipath:activity",
+                  "InputPattern": "mergedBody",
+                  "BindingPattern": "process",
+                  "RequiresDiscovery": "Yes"
+                },
+                {
+                  "ExtensionType": "Orchestrator.StartCaseMgmtProcess",
+                  "Label": "Start and wait for case management",
+                  "BpmnElement": "bpmn:CallActivity",
+                  "ExtensionTag": "uipath:activity",
+                  "InputPattern": "mergedBody",
+                  "BindingPattern": "process",
+                  "RequiresDiscovery": "Yes"
+                },
+                {
+                  "ExtensionType": "Orchestrator.StartCaseMgmtProcessAsync",
+                  "Label": "Start case management",
+                  "BpmnElement": "bpmn:CallActivity",
+                  "ExtensionTag": "uipath:activity",
+                  "InputPattern": "mergedBody",
+                  "BindingPattern": "process",
+                  "RequiresDiscovery": "Yes"
+                },
+                {
+                  "ExtensionType": "A2A.AgentExecution",
+                  "Label": "Start and wait for A2A agent",
+                  "BpmnElement": "bpmn:ServiceTask",
+                  "ExtensionTag": "uipath:activity",
+                  "InputPattern": "mergedBody",
+                  "BindingPattern": "none",
+                  "RequiresDiscovery": "No"
+                },
+                {
+                  "ExtensionType": "BPMN.Variables",
+                  "Label": "BPMN Variables",
+                  "BpmnElement": "bpmn:Task",
+                  "ExtensionTag": "uipath:mapping",
+                  "InputPattern": "none",
+                  "BindingPattern": "none",
+                  "RequiresDiscovery": "No"
+                },
+                {
+                  "ExtensionType": "BPMN.ScriptTask",
+                  "Label": "Execute script",
+                  "BpmnElement": "bpmn:ScriptTask",
+                  "ExtensionTag": "uipath:mapping",
+                  "InputPattern": "scriptArgs",
+                  "BindingPattern": "none",
+                  "RequiresDiscovery": "No"
+                },
+                {
+                  "ExtensionType": "Intsvc.TimerTrigger",
+                  "Label": "Timer trigger",
+                  "BpmnElement": "bpmn:StartEvent",
+                  "ExtensionTag": "uipath:activity",
+                  "InputPattern": "none",
+                  "BindingPattern": "none",
+                  "RequiresDiscovery": "No"
+                },
+                {
+                  "ExtensionType": "Maestro.ReceiveMessageEvent",
+                  "Label": "Receive internal message",
+                  "BpmnElement": "bpmn:IntermediateCatchEvent",
+                  "ExtensionTag": "uipath:event",
+                  "InputPattern": "separateInputs",
+                  "BindingPattern": "none",
+                  "RequiresDiscovery": "No"
+                },
+                {
+                  "ExtensionType": "Maestro.SendMessageEvent",
+                  "Label": "Send internal message",
+                  "BpmnElement": "bpmn:IntermediateThrowEvent",
+                  "ExtensionTag": "uipath:event",
+                  "InputPattern": "splitInputsItemData",
+                  "BindingPattern": "none",
+                  "RequiresDiscovery": "No"
+                },
+                {
+                  "ExtensionType": "Maestro.CaseRulesEvaluator",
+                  "Label": "Case rules evaluator",
+                  "BpmnElement": "bpmn:ServiceTask",
+                  "ExtensionTag": "uipath:activity",
+                  "InputPattern": "mergedBody",
+                  "BindingPattern": "none",
+                  "RequiresDiscovery": "No"
+                },
+                {
+                  "ExtensionType": "Maestro.CaseManagerGuardrails",
+                  "Label": "Case manager guardrails",
+                  "BpmnElement": "bpmn:ServiceTask",
+                  "ExtensionTag": "uipath:activity",
+                  "InputPattern": "mergedBody",
+                  "BindingPattern": "none",
+                  "RequiresDiscovery": "No"
+                }
+              ],
+              "Connectors": [],
+              "Processes": [],
+              "ProcessesByType": {
+                "Process": 0,
+                "ProcessOrchestration": 0,
+                "Agent": 0,
+                "Flow": 0,
+                "Api": 0,
+                "Function": 0,
+                "CaseManagement": 0,
+                "BusinessRules": 0
+              }
+            }
+          },
+          "sequence_number": 3,
+          "result_tokens": 2465
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_01LEpBBY7uxLvba3AxDhx28X",
+          "assistant_turn_index": 9,
+          "timestamp": "2026-07-22T04:48:10.841485",
+          "duration_ms": 2647.789673996158,
+          "generation_completed_at": "2026-07-22T04:48:10.841485",
+          "execution_started_at": "2026-07-22T04:48:10.841588",
+          "execution_completed_at": "2026-07-22T04:48:13.489378",
+          "parameters": {
+            "command": "cd /home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn && uip maestro bpmn registry get BPMN.ScriptTask --output json 2>&1",
+            "description": "Get BPMN.ScriptTask template from registry"
+          },
+          "result_status": "success",
+          "result_summary": "{\n  \"Result\": \"Success\",\n  \"Code\": \"RegistryGetSuccess\",\n  \"Data\": {\n    \"ExtensionType\": {\n      \"ExtensionType\": \"BPMN.ScriptTask\",\n      \"Label\": \"Execute script\",\n      \"BpmnElement\": \"bpmn:ScriptTask\",\n      \"Placements\": {},\n      \"ExtensionTag\": \"uipath:mapping\",\n      \"ContextFields\": [],\n      \"InputPattern\": \"scriptArgs\",\n      \"InputName\": \"args\",\n      \"InputTarget\": \"bodyField\",\n      \"OutputSource\": null,\n      \"OutputType\": null,\n      \"BindingPattern\": \"none\",\n      \"RequiresDiscovery\": false,\n      \"IsDynamic\": false,\n      \"XmlTemplate\": \"<bpmn:ScriptTask id=\\\"{id}\\\" name=\\\"{name}\\\">\\n  <bpmn:extensionElements>\\n    <uipath:mapping version=\\\"v1\\\">\\n      <uipath:type value=\\\"BPMN.ScriptTask\\\" version=\\\"v1\\\" />\\n      <uipath:input name=\\\"args\\\" type=\\\"json\\\" target=\\\"bodyField\\\"><![CDATA[{}]]></uipath:input>\\n    </uipath:mapping>\\n  </bpmn:extensionElements>\\n  <bpmn:incoming>{incomingEdge}</bpmn:incoming>\\n  <bpmn:outgoing>{outgoingEdge}</bpmn:outgoing>\\n</bpmn:ScriptTask>\",\n      \"InputNotes\": \"Inputs are merged into a single json input named 'args' with target 'bodyField'. An inputSchema is created from the input variables.\",\n      \"ExtensionTagNotes\": \"bpmn:ScriptTask is routed through createModdleExtensionVariableMapping (same as BPMN.Variables). Inputs are merged into a single 'args' JSON body with inputSchema.\"\n    }\n  }\n}\nShell cwd was reset to /work/output/artifacts/skill-bpmn-inclusive-gateway-forkjoin",
+          "error_message": null,
+          "result_data": {
+            "Result": "Success",
+            "Code": "RegistryGetSuccess",
+            "Data": {
+              "ExtensionType": {
+                "ExtensionType": "BPMN.ScriptTask",
+                "Label": "Execute script",
+                "BpmnElement": "bpmn:ScriptTask",
+                "Placements": {},
+                "ExtensionTag": "uipath:mapping",
+                "ContextFields": [],
+                "InputPattern": "scriptArgs",
+                "InputName": "args",
+                "InputTarget": "bodyField",
+                "OutputSource": null,
+                "OutputType": null,
+                "BindingPattern": "none",
+                "RequiresDiscovery": false,
+                "IsDynamic": false,
+                "XmlTemplate": "<bpmn:ScriptTask id=\"{id}\" name=\"{name}\">\n  <bpmn:extensionElements>\n    <uipath:mapping version=\"v1\">\n      <uipath:type value=\"BPMN.ScriptTask\" version=\"v1\" />\n      <uipath:input name=\"args\" type=\"json\" target=\"bodyField\"><![CDATA[{}]]></uipath:input>\n    </uipath:mapping>\n  </bpmn:extensionElements>\n  <bpmn:incoming>{incomingEdge}</bpmn:incoming>\n  <bpmn:outgoing>{outgoingEdge}</bpmn:outgoing>\n</bpmn:ScriptTask>",
+                "InputNotes": "Inputs are merged into a single json input named 'args' with target 'bodyField'. An inputSchema is created from the input variables.",
+                "ExtensionTagNotes": "bpmn:ScriptTask is routed through createModdleExtensionVariableMapping (same as BPMN.Variables). Inputs are merged into a single 'args' JSON body with inputSchema."
+              }
+            }
+          },
+          "sequence_number": 4,
+          "result_tokens": 364
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_019AcSCWwGGh8judb4MdcBCU",
+          "assistant_turn_index": 10,
+          "timestamp": "2026-07-22T04:48:11.494053",
+          "duration_ms": 3961.769144050777,
+          "generation_completed_at": "2026-07-22T04:48:11.494053",
+          "execution_started_at": "2026-07-22T04:48:11.494121",
+          "execution_completed_at": "2026-07-22T04:48:15.455890",
+          "parameters": {
+            "command": "cd /home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn && uip maestro bpmn registry get BPMN.Variables --output json 2>&1",
+            "description": "Get BPMN.Variables template from registry"
+          },
+          "result_status": "success",
+          "result_summary": "{\n  \"Result\": \"Success\",\n  \"Code\": \"RegistryGetSuccess\",\n  \"Data\": {\n    \"ExtensionType\": {\n      \"ExtensionType\": \"BPMN.Variables\",\n      \"Label\": \"BPMN Variables\",\n      \"BpmnElement\": \"bpmn:Task\",\n      \"Placements\": {},\n      \"ExtensionTag\": \"uipath:mapping\",\n      \"ContextFields\": [],\n      \"InputPattern\": \"none\",\n      \"OutputSource\": null,\n      \"OutputType\": null,\n      \"BindingPattern\": \"none\",\n      \"RequiresDiscovery\": false,\n      \"IsDynamic\": false,\n      \"XmlTemplate\": \"<bpmn:Task id=\\\"{id}\\\" name=\\\"{name}\\\">\\n  <bpmn:extensionElements>\\n    <uipath:mapping version=\\\"v1\\\">\\n      <uipath:type value=\\\"BPMN.Variables\\\" version=\\\"v1\\\" />\\n    </uipath:mapping>\\n  </bpmn:extensionElements>\\n  <bpmn:incoming>{incomingEdge}</bpmn:incoming>\\n  <bpmn:outgoing>{outgoingEdge}</bpmn:outgoing>\\n</bpmn:Task>\",\n      \"InputNotes\": \"Variable mappings use uipath:mapping with direct input/output elements, not a jsonBody pattern\",\n      \"BpmnElementNotes\": \"Also used on bpmn:StartEvent and bpmn:EndEvent for variable mappings. On bpmn:Task with no serviceType, defaults to BPMN.Variables.\",\n      \"ExtensionTagNotes\": \"Uses uipath:mapping (not uipath:activity). createExtensionTask checks for serviceType=BPMN.Variables on StartEvent/EndEvent/Task and routes to createModdleExtensionVariableMapping.\"\n    }\n  }\n}\nShell cwd was reset to /work/output/artifacts/skill-bpmn-inclusive-gateway-forkjoin",
+          "error_message": null,
+          "result_data": {
+            "Result": "Success",
+            "Code": "RegistryGetSuccess",
+            "Data": {
+              "ExtensionType": {
+                "ExtensionType": "BPMN.Variables",
+                "Label": "BPMN Variables",
+                "BpmnElement": "bpmn:Task",
+                "Placements": {},
+                "ExtensionTag": "uipath:mapping",
+                "ContextFields": [],
+                "InputPattern": "none",
+                "OutputSource": null,
+                "OutputType": null,
+                "BindingPattern": "none",
+                "RequiresDiscovery": false,
+                "IsDynamic": false,
+                "XmlTemplate": "<bpmn:Task id=\"{id}\" name=\"{name}\">\n  <bpmn:extensionElements>\n    <uipath:mapping version=\"v1\">\n      <uipath:type value=\"BPMN.Variables\" version=\"v1\" />\n    </uipath:mapping>\n  </bpmn:extensionElements>\n  <bpmn:incoming>{incomingEdge}</bpmn:incoming>\n  <bpmn:outgoing>{outgoingEdge}</bpmn:outgoing>\n</bpmn:Task>",
+                "InputNotes": "Variable mappings use uipath:mapping with direct input/output elements, not a jsonBody pattern",
+                "BpmnElementNotes": "Also used on bpmn:StartEvent and bpmn:EndEvent for variable mappings. On bpmn:Task with no serviceType, defaults to BPMN.Variables.",
+                "ExtensionTagNotes": "Uses uipath:mapping (not uipath:activity). createExtensionTask checks for serviceType=BPMN.Variables on StartEvent/EndEvent/Task and routes to createModdleExtensionVariableMapping."
+              }
+            }
+          },
+          "sequence_number": 5,
+          "result_tokens": 352
+        },
+        {
+          "tool_name": "Write",
+          "tool_id": "toolu_bdrk_01VpqWr3HM4QUL5wB8Wp7wVE",
+          "assistant_turn_index": 13,
+          "timestamp": "2026-07-22T04:49:59.797460",
+          "duration_ms": 34.43220804911107,
+          "generation_completed_at": "2026-07-22T04:49:59.797460",
+          "execution_started_at": "2026-07-22T04:49:59.797550",
+          "execution_completed_at": "2026-07-22T04:49:59.831982",
+          "parameters": {
+            "file_path": "/work/output/artifacts/skill-bpmn-inclusive-gateway-forkjoin/NotificationFanout.bpmn",
+            "content": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<bpmn:definitions\n    xmlns:bpmn=\"http://www.omg.org/spec/BPMN/20100524/MODEL\"\n    xmlns:bpmndi=\"http://www.omg.org/spec/BPMN/20100524/DI\"\n    xmlns:dc=\"http://www.omg.org/spec/DD/20100524/DC\"\n    xmlns:di=\"http://www.omg.org/spec/DD/20100524/DI\"\n    xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n    xmlns:uipath=\"http://uipath.org/schema/bpmn\"\n    id=\"Definitions_1\" targetNamespace=\"http://bpmn.io/schema/bpmn\"\n    exporter=\"UiPath (https://bpmn.uipath.com)\" exporterVersion=\"1.0\">\n\n  <bpmn:process id=\"Process_1\" isExecutable=\"true\">\n    <bpmn:extensionElements>\n      <uipath:migrationVersion version=\"11.5\" />\n      <uipath:variables version=\"v1\">\n        <uipath:inputOutput id=\"Var_SendEmail\"      name=\"SendEmail\"      type=\"boolean\" />\n        <uipath:inputOutput id=\"Var_SendSms\"        name=\"SendSms\"        type=\"boolean\" />\n        <uipath:inputOutput id=\"Var_RecipientEmail\" name=\"RecipientEmail\" type=\"string\"  />\n        <uipath:inputOutput id=\"Var_RecipientPhone\" name=\"RecipientPhone\" type=\"string\"  />\n        <uipath:inputOutput id=\"Var_EmailResult\"    name=\"EmailResult\"    type=\"string\"  />\n        <uipath:inputOutput id=\"Var_SmsResult\"      name=\"SmsResult\"      type=\"string\"  />\n        <uipath:inputOutput id=\"Var_Summary\"        name=\"Summary\"        type=\"string\"  />\n      </uipath:variables>\n    </bpmn:extensionElements>\n\n    <!-- Manual start event -->\n    <bpmn:startEvent id=\"Start_1\" name=\"Start Notification\">\n      <bpmn:outgoing>Flow_ToSplit</bpmn:outgoing>\n    </bpmn:startEvent>\n\n    <!-- Inclusive gateway SPLIT: 1 incoming, 2 conditioned outgoing -->\n    <bpmn:inclusiveGateway id=\"Gw_Split\" name=\"Which channels?\">\n      <bpmn:incoming>Flow_ToSplit</bpmn:incoming>\n      <bpmn:outgoing>Flow_ToEmail</bpmn:outgoing>\n      <bpmn:outgoing>Flow_ToSms</bpmn:outgoing>\n    </bpmn:inclusiveGateway>\n\n    <!-- Branch 1: email notification (BPMN.ScriptTask from registry template) -->\n    <bpmn:scriptTask id=\"Task_Email\" name=\"Send Email Notification\" scriptFormat=\"JavaScript\">\n      <bpmn:extensionElements>\n        <uipath:scriptVersion value=\"v3\" />\n        <uipath:mapping version=\"v1\">\n          <uipath:type value=\"BPMN.ScriptTask\" version=\"v1\" />\n          <uipath:input name=\"args\" type=\"json\" target=\"bodyField\"><![CDATA[{\"recipient\":\"=vars.Var_RecipientEmail\"}]]></uipath:input>\n          <uipath:output name=\"emailResult\" type=\"string\" var=\"Var_EmailResult\" source=\"=result.response\" />\n        </uipath:mapping>\n      </bpmn:extensionElements>\n      <bpmn:incoming>Flow_ToEmail</bpmn:incoming>\n      <bpmn:outgoing>Flow_EmailToJoin</bpmn:outgoing>\n      <bpmn:script><![CDATA[return { response: \"Email sent to \" + recipient };]]></bpmn:script>\n    </bpmn:scriptTask>\n\n    <!-- Branch 2: SMS notification (BPMN.ScriptTask from registry template) -->\n    <bpmn:scriptTask id=\"Task_Sms\" name=\"Send SMS Notification\" scriptFormat=\"JavaScript\">\n      <bpmn:extensionElements>\n        <uipath:scriptVersion value=\"v3\" />\n        <uipath:mapping version=\"v1\">\n          <uipath:type value=\"BPMN.ScriptTask\" version=\"v1\" />\n          <uipath:input name=\"args\" type=\"json\" target=\"bodyField\"><![CDATA[{\"phone\":\"=vars.Var_RecipientPhone\"}]]></uipath:input>\n          <uipath:output name=\"smsResult\" type=\"string\" var=\"Var_SmsResult\" source=\"=result.response\" />\n        </uipath:mapping>\n      </bpmn:extensionElements>\n      <bpmn:incoming>Flow_ToSms</bpmn:incoming>\n      <bpmn:outgoing>Flow_SmsToJoin</bpmn:outgoing>\n      <bpmn:script><![CDATA[return { response: \"SMS sent to \" + phone };]]></bpmn:script>\n    </bpmn:scriptTask>\n\n    <!-- Inclusive gateway JOIN: 2 incoming, 1 outgoing — real synchronization, not a fake join -->\n    <bpmn:inclusiveGateway id=\"Gw_Join\" name=\"All channels done\">\n      <bpmn:incoming>Flow_EmailToJoin</bpmn:incoming>\n      <bpmn:incoming>Flow_SmsToJoin</bpmn:incoming>\n      <bpmn:outgoing>Flow_ToSummary</bpmn:outgoing>\n    </bpmn:inclusiveGateway>\n\n    <!-- Final task after join (BPMN.ScriptTask from registry template) -->\n    <bpmn:scriptTask id=\"Task_Summary\" name=\"Log Completion\" scriptFormat=\"JavaScript\">\n      <bpmn:extensionElements>\n        <uipath:scriptVersion value=\"v3\" />\n        <uipath:mapping version=\"v1\">\n          <uipath:type value=\"BPMN.ScriptTask\" version=\"v1\" />\n          <uipath:input name=\"args\" type=\"json\" target=\"bodyField\"><![CDATA[{\"emailResult\":\"=vars.Var_EmailResult\",\"smsResult\":\"=vars.Var_SmsResult\"}]]></uipath:input>\n          <uipath:output name=\"summary\" type=\"string\" var=\"Var_Summary\" source=\"=result.response\" />\n        </uipath:mapping>\n      </bpmn:extensionElements>\n      <bpmn:incoming>Flow_ToSummary</bpmn:incoming>\n      <bpmn:outgoing>Flow_ToEnd</bpmn:outgoing>\n      <bpmn:script><![CDATA[var parts = []; if (emailResult) { parts.push(emailResult); } if (smsResult) { parts.push(smsResult); } return { response: \"Dispatched: \" + parts.join(\"; \") };]]></bpmn:script>\n    </bpmn:scriptTask>\n\n    <!-- End event -->\n    <bpmn:endEvent id=\"End_1\" name=\"Notifications Complete\">\n      <bpmn:incoming>Flow_ToEnd</bpmn:incoming>\n    </bpmn:endEvent>\n\n    <!-- Sequence flows -->\n    <bpmn:sequenceFlow id=\"Flow_ToSplit\"    sourceRef=\"Start_1\"    targetRef=\"Gw_Split\"    />\n\n    <!-- Conditioned branches from inclusive SPLIT -->\n    <bpmn:sequenceFlow id=\"Flow_ToEmail\" sourceRef=\"Gw_Split\" targetRef=\"Task_Email\">\n      <bpmn:conditionExpression xsi:type=\"bpmn:tFormalExpression\">=vars.Var_SendEmail == true</bpmn:conditionExpression>\n    </bpmn:sequenceFlow>\n    <bpmn:sequenceFlow id=\"Flow_ToSms\" sourceRef=\"Gw_Split\" targetRef=\"Task_Sms\">\n      <bpmn:conditionExpression xsi:type=\"bpmn:tFormalExpression\">=vars.Var_SendSms == true</bpmn:conditionExpression>\n    </bpmn:sequenceFlow>\n\n    <!-- Branch outputs to inclusive JOIN -->\n    <bpmn:sequenceFlow id=\"Flow_EmailToJoin\" sourceRef=\"Task_Email\"   targetRef=\"Gw_Join\"      />\n    <bpmn:sequenceFlow id=\"Flow_SmsToJoin\"   sourceRef=\"Task_Sms\"     targetRef=\"Gw_Join\"      />\n\n    <!-- Post-join -->\n    <bpmn:sequenceFlow id=\"Flow_ToSummary\"   sourceRef=\"Gw_Join\"      targetRef=\"Task_Summary\" />\n    <bpmn:sequenceFlow id=\"Flow_ToEnd\"       sourceRef=\"Task_Summary\" targetRef=\"End_1\"        />\n  </bpmn:process>\n\n  <bpmndi:BPMNDiagram id=\"Diagram_1\">\n    <bpmndi:BPMNPlane id=\"Plane_1\" bpmnElement=\"Process_1\">\n\n      <!-- Shapes -->\n      <bpmndi:BPMNShape id=\"S_Start_1\"     bpmnElement=\"Start_1\">\n        <dc:Bounds x=\"160\" y=\"195\" width=\"36\"  height=\"36\" />\n      </bpmndi:BPMNShape>\n      <bpmndi:BPMNShape id=\"S_Gw_Split\"    bpmnElement=\"Gw_Split\">\n        <dc:Bounds x=\"260\" y=\"188\" width=\"50\"  height=\"50\" />\n      </bpmndi:BPMNShape>\n      <bpmndi:BPMNShape id=\"S_Task_Email\"  bpmnElement=\"Task_Email\">\n        <dc:Bounds x=\"385\" y=\"90\"  width=\"100\" height=\"80\" />\n      </bpmndi:BPMNShape>\n      <bpmndi:BPMNShape id=\"S_Task_Sms\"    bpmnElement=\"Task_Sms\">\n        <dc:Bounds x=\"385\" y=\"295\" width=\"100\" height=\"80\" />\n      </bpmndi:BPMNShape>\n      <bpmndi:BPMNShape id=\"S_Gw_Join\"     bpmnElement=\"Gw_Join\">\n        <dc:Bounds x=\"550\" y=\"188\" width=\"50\"  height=\"50\" />\n      </bpmndi:BPMNShape>\n      <bpmndi:BPMNShape id=\"S_Task_Summary\" bpmnElement=\"Task_Summary\">\n        <dc:Bounds x=\"665\" y=\"173\" width=\"100\" height=\"80\" />\n      </bpmndi:BPMNShape>\n      <bpmndi:BPMNShape id=\"S_End_1\"       bpmnElement=\"End_1\">\n        <dc:Bounds x=\"832\" y=\"195\" width=\"36\"  height=\"36\" />\n      </bpmndi:BPMNShape>\n\n      <!-- Edges -->\n      <bpmndi:BPMNEdge id=\"E_Flow_ToSplit\" bpmnElement=\"Flow_ToSplit\">\n        <di:waypoint x=\"196\" y=\"213\" />\n        <di:waypoint x=\"260\" y=\"213\" />\n      </bpmndi:BPMNEdge>\n      <bpmndi:BPMNEdge id=\"E_Flow_ToEmail\" bpmnElement=\"Flow_ToEmail\">\n        <di:waypoint x=\"285\" y=\"188\" />\n        <di:waypoint x=\"285\" y=\"130\" />\n        <di:waypoint x=\"385\" y=\"130\" />\n      </bpmndi:BPMNEdge>\n      <bpmndi:BPMNEdge id=\"E_Flow_ToSms\" bpmnElement=\"Flow_ToSms\">\n        <di:waypoint x=\"285\" y=\"238\" />\n        <di:waypoint x=\"285\" y=\"335\" />\n        <di:waypoint x=\"385\" y=\"335\" />\n      </bpmndi:BPMNEdge>\n      <bpmndi:BPMNEdge id=\"E_Flow_EmailToJoin\" bpmnElement=\"Flow_EmailToJoin\">\n        <di:waypoint x=\"485\" y=\"130\" />\n        <di:waypoint x=\"575\" y=\"130\" />\n        <di:waypoint x=\"575\" y=\"188\" />\n      </bpmndi:BPMNEdge>\n      <bpmndi:BPMNEdge id=\"E_Flow_SmsToJoin\" bpmnElement=\"Flow_SmsToJoin\">\n        <di:waypoint x=\"485\" y=\"335\" />\n        <di:waypoint x=\"575\" y=\"335\" />\n        <di:waypoint x=\"575\" y=\"238\" />\n      </bpmndi:BPMNEdge>\n      <bpmndi:BPMNEdge id=\"E_Flow_ToSummary\" bpmnElement=\"Flow_ToSummary\">\n        <di:waypoint x=\"600\" y=\"213\" />\n        <di:waypoint x=\"665\" y=\"213\" />\n      </bpmndi:BPMNEdge>\n      <bpmndi:BPMNEdge id=\"E_Flow_ToEnd\" bpmnElement=\"Flow_ToEnd\">\n        <di:waypoint x=\"765\" y=\"213\" />\n        <di:waypoint x=\"832\" y=\"213\" />\n      </bpmndi:BPMNEdge>\n\n    </bpmndi:BPMNPlane>\n  </bpmndi:BPMNDiagram>\n</bpmn:definitions>\n"
+          },
+          "result_status": "success",
+          "result_summary": "File created successfully at: /work/output/artifacts/skill-bpmn-inclusive-gateway-forkjoin/NotificationFanout.bpmn (file state is current in your context — no need to Read it back)",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 6,
+          "result_tokens": 45
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_019g1YTTSFgVCZS69sfuyRKx",
+          "assistant_turn_index": 14,
+          "timestamp": "2026-07-22T04:50:03.277659",
+          "duration_ms": 554.5246169203892,
+          "generation_completed_at": "2026-07-22T04:50:03.277659",
+          "execution_started_at": "2026-07-22T04:50:03.277906",
+          "execution_completed_at": "2026-07-22T04:50:03.832431",
+          "parameters": {
+            "command": "cd /home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn/validator && npm install --silent 2>&1 | tail -3 && node validate-bpmn.mjs /work/output/artifacts/skill-bpmn-inclusive-gateway-forkjoin/NotificationFanout.bpmn 2>&1",
+            "description": "Install validator deps and validate the BPMN file"
+          },
+          "result_status": "error",
+          "result_summary": "Exit code 1\nnode:internal/modules/package_json_reader:314\n  throw new ERR_MODULE_NOT_FOUND(packageName, fileURLToPath(base), null);\n        ^\n\nError [ERR_MODULE_NOT_FOUND]: Cannot find package 'bpmn-moddle' imported from /home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn/validator/validate-bpmn.mjs\n    at Object.getPackageJSONURL (node:internal/modules/package_json_reader:314:9)\n    at packageResolve (node:internal/modules/esm/resolve:768:81)\n    at moduleResolve (node:internal/modules/esm/resolve:855:18)\n    at defaultResolve (node:internal/modules/esm/resolve:985:11)\n    at #cachedDefaultResolve (node:internal/modules/esm/loader:747:20)\n    at ModuleLoader.resolve (node:internal/modules/esm/loader:724:38)\n    at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:320:38)\n    at ModuleJob._link (node:internal/modules/esm/module_job:182:49) {\n  code: 'ERR_MODULE_NOT_FOUND'\n}\n\nNode.js v22.23.1",
+          "error_message": "Exit code 1\nnode:internal/modules/package_json_reader:314\n  throw new ERR_MODULE_NOT_FOUND(packageName, fileURLToPath(base), null);\n        ^\n\nError [ERR_MODULE_NOT_FOUND]: Cannot find package 'bpmn-moddle' imported from /home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn/validator/validate-bpmn.mjs\n    at Object.getPackageJSONURL (node:internal/modules/package_json_reader:314:9)\n    at packageResolve (node:internal/modules/esm/resolve:768:81)\n    at moduleResolve (node:internal/modules/esm/resolve:855:18)\n    at defaultResolve (node:internal/modules/esm/resolve:985:11)\n    at #cachedDefaultResolve (node:internal/modules/esm/loader:747:20)\n    at ModuleLoader.resolve (node:internal/modules/esm/loader:724:38)\n    at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:320:38)\n    at ModuleJob._link (node:internal/modules/esm/module_job:182:49) {\n  code: 'ERR_MODULE_NOT_FOUND'\n}\n\nNode.js v22.23.1",
+          "result_data": null,
+          "sequence_number": 7,
+          "result_tokens": 234
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_01CPRv5ae3wKdtxZJcJJed1S",
+          "assistant_turn_index": 15,
+          "timestamp": "2026-07-22T04:50:06.007997",
+          "duration_ms": 322.597729973495,
+          "generation_completed_at": "2026-07-22T04:50:06.007997",
+          "execution_started_at": "2026-07-22T04:50:06.008419",
+          "execution_completed_at": "2026-07-22T04:50:06.331017",
+          "parameters": {
+            "command": "cd /home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn/validator && npm install 2>&1 | tail -5",
+            "description": "Run full npm install (not silent) to catch issues"
+          },
+          "result_status": "success",
+          "result_summary": "npm error errno -2\nnpm error enoent ENOENT: no such file or directory, mkdir '/home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn/validator/node_modules'\nnpm error enoent This is related to npm not being able to find a file.\nnpm error enoent\nnpm error A complete log of this run can be found in: /home/azureuser/.npm/_logs/2026-07-22T04_50_06_090Z-debug-0.log\nShell cwd was reset to /work/output/artifacts/skill-bpmn-inclusive-gateway-forkjoin",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 8,
+          "result_tokens": 114
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_01XHfAhE2AogyXzS2v93cMGB",
+          "assistant_turn_index": 16,
+          "timestamp": "2026-07-22T04:50:08.149682",
+          "duration_ms": 13.497640960849822,
+          "generation_completed_at": "2026-07-22T04:50:08.149682",
+          "execution_started_at": "2026-07-22T04:50:08.149919",
+          "execution_completed_at": "2026-07-22T04:50:08.163417",
+          "parameters": {
+            "command": "ls /home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn/validator/",
+            "description": "Check validator directory contents"
+          },
+          "result_status": "success",
+          "result_summary": "README.md\nbpmn-spec.json\nmodel.mjs\npackage.json\nrules.mjs\nsamples\ntest\nuipath-moddle.v1.json\nvalidate-bpmn.mjs",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 9,
+          "result_tokens": 28
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_019zVxnmp7aDxo3fMhSHcUZN",
+          "assistant_turn_index": 17,
+          "timestamp": "2026-07-22T04:50:10.012984",
+          "duration_ms": 12.044453993439674,
+          "generation_completed_at": "2026-07-22T04:50:10.012984",
+          "execution_started_at": "2026-07-22T04:50:10.013212",
+          "execution_completed_at": "2026-07-22T04:50:10.025256",
+          "parameters": {
+            "command": "cat /home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn/validator/package.json",
+            "description": "Check package.json for dependencies"
+          },
+          "result_status": "success",
+          "result_summary": "{\n  \"name\": \"uipath-maestro-bpmn-validator\",\n  \"private\": true,\n  \"type\": \"module\",\n  \"description\": \"Offline semantic validator for UiPath Maestro BPMN XML. Reconstructs the PO.Frontend Node/Edge/CanvasState model from the parsed BPMN and runs all 19 PO.Frontend validation rules.\",\n  \"bin\": {\n    \"validate-bpmn\": \"./validate-bpmn.mjs\"\n  },\n  \"scripts\": {\n    \"test\": \"node test/run-tests.mjs\"\n  },\n  \"dependencies\": {\n    \"bpmn-moddle\": \"^9.0.2\",\n    \"luxon\": \"^3.4.4\",\n    \"sax\": \"^1.6.0\"\n  }\n}",
+          "error_message": null,
+          "result_data": {
+            "name": "uipath-maestro-bpmn-validator",
+            "private": true,
+            "type": "module",
+            "description": "Offline semantic validator for UiPath Maestro BPMN XML. Reconstructs the PO.Frontend Node/Edge/CanvasState model from the parsed BPMN and runs all 19 PO.Frontend validation rules.",
+            "bin": {
+              "validate-bpmn": "./validate-bpmn.mjs"
+            },
+            "scripts": {
+              "test": "node test/run-tests.mjs"
+            },
+            "dependencies": {
+              "bpmn-moddle": "^9.0.2",
+              "luxon": "^3.4.4",
+              "sax": "^1.6.0"
+            }
+          },
+          "sequence_number": 10,
+          "result_tokens": 125
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_01W2J9E4Kqxez9SKirUiuydr",
+          "assistant_turn_index": 18,
+          "timestamp": "2026-07-22T04:50:12.001917",
+          "duration_ms": 283.8497350458056,
+          "generation_completed_at": "2026-07-22T04:50:12.001917",
+          "execution_started_at": "2026-07-22T04:50:12.002118",
+          "execution_completed_at": "2026-07-22T04:50:12.285968",
+          "parameters": {
+            "command": "cd /home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn/validator && npm install --prefer-offline 2>&1 | tail -8",
+            "description": "Install npm dependencies with network fallback"
+          },
+          "result_status": "success",
+          "result_summary": "npm error code ENOENT\nnpm error syscall mkdir\nnpm error path /home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn/validator/node_modules\nnpm error errno -2\nnpm error enoent ENOENT: no such file or directory, mkdir '/home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn/validator/node_modules'\nnpm error enoent This is related to npm not being able to find a file.\nnpm error enoent\nnpm error A complete log of this run can be found in: /home/azureuser/.npm/_logs/2026-07-22T04_50_12_060Z-debug-0.log\nShell cwd was reset to /work/output/artifacts/skill-bpmn-inclusive-gateway-forkjoin",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 11,
+          "result_tokens": 151
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_01LjAmG7z6Do1QDxY7XRW4cd",
+          "assistant_turn_index": 19,
+          "timestamp": "2026-07-22T04:50:14.722837",
+          "duration_ms": 29.63286405429244,
+          "generation_completed_at": "2026-07-22T04:50:14.722837",
+          "execution_started_at": "2026-07-22T04:50:14.723095",
+          "execution_completed_at": "2026-07-22T04:50:14.752728",
+          "parameters": {
+            "command": "ls -la /home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn/validator/ | head -5 && mkdir -p /home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn/validator/node_modules && cd /home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn/validator && npm install 2>&1 | tail -8",
+            "description": "Create node_modules dir and install"
+          },
+          "result_status": "error",
+          "result_summary": "Exit code 1\ntotal 232\ndrwxrwxr-x 4 1000 1000  4096 Jul 17 18:46 .\ndrwxrwxr-x 5 1000 1000  4096 Jul 20 23:00 ..\n-rw-rw-r-- 1 1000 1000 14435 Jul 17 18:46 README.md\n-rw-rw-r-- 1 1000 1000 99114 Jul 17 18:46 bpmn-spec.json\nmkdir: cannot create directory ‘/home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn/validator/node_modules’: Read-only file system",
+          "error_message": "Exit code 1\ntotal 232\ndrwxrwxr-x 4 1000 1000  4096 Jul 17 18:46 .\ndrwxrwxr-x 5 1000 1000  4096 Jul 20 23:00 ..\n-rw-rw-r-- 1 1000 1000 14435 Jul 17 18:46 README.md\n-rw-rw-r-- 1 1000 1000 99114 Jul 17 18:46 bpmn-spec.json\nmkdir: cannot create directory ‘/home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn/validator/node_modules’: Read-only file system",
+          "result_data": null,
+          "sequence_number": 12,
+          "result_tokens": 91
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_01VB5uQqQeCNayDCa8swL2YG",
+          "assistant_turn_index": 22,
+          "timestamp": "2026-07-22T04:50:39.718368",
+          "duration_ms": 132.83689599484205,
+          "generation_completed_at": "2026-07-22T04:50:39.718368",
+          "execution_started_at": "2026-07-22T04:50:39.718422",
+          "execution_completed_at": "2026-07-22T04:50:39.851259",
+          "parameters": {
+            "command": "python3 -c \"\nimport xml.etree.ElementTree as ET\nimport sys\n\nBN = '{http://www.omg.org/spec/BPMN/20100524/MODEL}'\nBDI = '{http://www.omg.org/spec/BPMN/20100524/DI}'\nDC = '{http://www.omg.org/spec/DD/20100524/DC}'\nUP = '{http://uipath.org/schema/bpmn}'\n\ntree = ET.parse('/work/output/artifacts/skill-bpmn-inclusive-gateway-forkjoin/NotificationFanout.bpmn')\nroot = tree.getroot()\nerrors = []\n\n# 1. Root is definitions with BPMN namespace\nassert 'definitions' in root.tag, 'Root must be definitions'\nassert BN.strip('{}') in root.tag or root.tag == f'{BN}definitions', 'Missing BPMN namespace'\n\nproc = root.find(f'{BN}process')\nassert proc is not None, 'No bpmn:process found'\n\n# Collect all elements by id\nids = {}\nfor el in root.iter():\n    eid = el.get('id')\n    if eid:\n        ids[eid] = el\n\n# Collect flow nodes and sequence flows in process\nflows = {f.get('id'): f for f in proc.iter(f'{BN}sequenceFlow')}\nflow_nodes = {}\nfor tag in ['startEvent','endEvent','exclusiveGateway','parallelGateway','inclusiveGateway',\n            'eventBasedGateway','task','serviceTask','userTask','scriptTask','sendTask',\n            'receiveTask','callActivity','subProcess','businessRuleTask']:\n    for el in proc.iter(f'{BN}{tag}'):\n        flow_nodes[el.get('id')] = el\n\n# 2. Check BPMNDiagram exists\ndiagram = root.find(f'{BDI}BPMNDiagram')\nassert diagram is not None, 'No BPMNDiagram found'\nplane = diagram.find(f'{BDI}BPMNPlane')\nassert plane is not None, 'No BPMNPlane found'\n\n# Collect shaped/edged elements\nshapes = {s.get('bpmnElement') for s in plane.findall(f'{BDI}BPMNShape')}\nedges  = {e.get('bpmnElement') for e in plane.findall(f'{BDI}BPMNEdge')}\n\n# Every flow node has a shape\nfor nid in flow_nodes:\n    if nid not in shapes:\n        errors.append(f'  MISSING SHAPE: {nid}')\n\n# Every sequence flow has an edge\nfor fid in flows:\n    if fid not in edges:\n        errors.append(f'  MISSING EDGE: {fid}')\n\n# 3. sourceRef/targetRef resolve\nfor f in flows.values():\n    src = f.get('sourceRef')\n    tgt = f.get('targetRef')\n    if src not in ids: errors.append(f'  DANGLING sourceRef {src}')\n    if tgt not in ids: errors.append(f'  DANGLING targetRef {tgt}')\n\n# 4. Inclusive gateway: both outgoing flows have conditionExpression\nfor gw in proc.iter(f'{BN}inclusiveGateway'):\n    out_ids = [o.text.strip() for o in gw.findall(f'{BN}outgoing')]\n    in_ids  = [i.text.strip() for i in gw.findall(f'{BN}incoming')]\n    if len(out_ids) >= 2:  # SPLIT: each outgoing must be conditioned\n        for fid in out_ids:\n            f = flows.get(fid)\n            if f is None: errors.append(f'  MISSING FLOW {fid}')\n            elif f.find(f'{BN}conditionExpression') is None:\n                errors.append(f'  MISSING conditionExpression on split flow {fid}')\n    if len(in_ids) >= 2 and len(out_ids) == 1:\n        pass  # JOIN: no conditions required on single outgoing\n\n# 5. FAKE_JOIN: no task/event with > 1 incoming flow\nfor nid, node in flow_nodes.items():\n    inc = [i.text.strip() for i in node.findall(f'{BN}incoming')]\n    tag = node.tag.replace(BN,'')\n    if tag not in ('exclusiveGateway','parallelGateway','inclusiveGateway','eventBasedGateway') and len(inc) > 1:\n        errors.append(f'  FAKE_JOIN: {tag}#{nid} has {len(inc)} incoming flows')\n\n# 6. SUPERFLUOUS_GATEWAY: no gateway with exactly 1 in AND 1 out\nfor tag in ('exclusiveGateway','parallelGateway','inclusiveGateway','eventBasedGateway'):\n    for gw in proc.iter(f'{BN}{tag}'):\n        inc = [i.text.strip() for i in gw.findall(f'{BN}incoming')]\n        out = [o.text.strip() for o in gw.findall(f'{BN}outgoing')]\n        if len(inc) == 1 and len(out) == 1:\n            errors.append(f'  SUPERFLUOUS_GATEWAY: {tag}#{gw.get(\\\"id\\\")} 1-in/1-out')\n\n# 7. uipath:type must be child element (not attribute) on every activity/event/mapping\nfor el in root.iter():\n    for tag in ('activity','event','mapping'):\n        if el.tag == f'{UP}{tag}':\n            if el.get('type'):\n                errors.append(f'  RULE6 VIOLATION: {el.tag} uses type= attribute instead of child element')\n            has_type_child = any(c.tag == f'{UP}type' for c in el)\n            if not has_type_child:\n                errors.append(f'  MISSING type child on {el.tag} id={el.get(\\\"id\\\",\\\"?\\\")}')\n\nprint('Flow nodes:', list(flow_nodes.keys()))\nprint('Sequence flows:', list(flows.keys()))\nprint('Shapes:', sorted(shapes))\nprint('Edges:', sorted(edges))\nif errors:\n    print('ERRORS:')\n    for e in errors: print(e)\n    sys.exit(1)\nelse:\n    print('VALID (structural checklist passed, no blocking errors)')\n\" 2>&1",
+            "description": "Run structural validation checklist via Python"
+          },
+          "result_status": "success",
+          "result_summary": "Flow nodes: ['Start_1', 'End_1', 'Gw_Split', 'Gw_Join', 'Task_Email', 'Task_Sms', 'Task_Summary']\nSequence flows: ['Flow_ToSplit', 'Flow_ToEmail', 'Flow_ToSms', 'Flow_EmailToJoin', 'Flow_SmsToJoin', 'Flow_ToSummary', 'Flow_ToEnd']\nShapes: ['End_1', 'Gw_Join', 'Gw_Split', 'Start_1', 'Task_Email', 'Task_Sms', 'Task_Summary']\nEdges: ['Flow_EmailToJoin', 'Flow_SmsToJoin', 'Flow_ToEmail', 'Flow_ToEnd', 'Flow_ToSms', 'Flow_ToSplit', 'Flow_ToSummary']\nVALID (structural checklist passed, no blocking errors)",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 13,
+          "result_tokens": 126
+        }
+      ],
+      "timestamp": "2026-07-22T04:50:51.794300",
+      "duration_seconds": 193.2280710779596,
+      "token_usage": {
+        "uncached_input_tokens": 770,
+        "output_tokens": 14875,
+        "cache_creation_input_tokens": 28965,
+        "cache_read_input_tokens": 528556,
+        "total_cost_usd": 0.49262055,
+        "input_tokens": 558291
+      },
+      "model_used": "claude-sonnet-4-6",
+      "assistant_turn_count": 24,
+      "messages": [
+        {
+          "role": "assistant",
+          "started_at": "2026-07-22T04:47:38.565194",
+          "completed_at": "2026-07-22T04:47:40.817533",
+          "generation_duration_ms": 2252.357163000852,
+          "content_blocks": [
+            {
+              "block_type": "thinking",
+              "sequence": 0,
+              "text": null,
+              "thinking": "The user wants me to load the UiPath Maestro BPMN skill and then author a BPMN file. Let me start by invoking the skill.",
+              "signature": "EsMCCmcIEBABGAIqQBCbnUrGuuRMOP4wlPrSvjMO385m4wHBbdgqcPeH19gwZXpG1H5Srh4y8RwRwZ/ZkKSg5HZFD2K3/y90a3+gXJgyEWNsYXVkZS1zb25uZXQtNC02OABCCHRoaW5raW5nEgxPcFs+A8fms0q88zsaDGro0dM0AEME6Cb/LSIwdQ9nOaT6GzTR1XELDU65rJDwfsENXroPAwxCiQAD4EPxnwyPwhVg80IuRsWbW7f6KokBPrzzBAn2acCXRl2QqUqqjxpnyllMfUJqVx3MNU1b4rjbWCqZpx41JSgeXgoFS8I9qpi4BoQXc7pED57pKvDgn75ExPo+GJeROlMSgfPeFimX17VtaJRIt1+NZV8i/RBaWKI6n1zHG/UEOoeBEtiQFrGheJPZe7cy54WiHwxwv0HGy3cMSYyVEGgYAQ==",
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 2,
+          "output_tokens": 86,
+          "cache_creation_tokens": 1966,
+          "cache_read_tokens": 18954,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01NX3Q2pejzswoKHRnYxydxx",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-22T04:47:40.817533",
+          "completed_at": "2026-07-22T04:47:41.245196",
+          "generation_duration_ms": 427.6630550157279,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_0129VvdNxM9HC27Zg2Nym6YA",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_0129VvdNxM9HC27Zg2Nym6YA"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 29,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01NX3Q2pejzswoKHRnYxydxx",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-22T04:47:41.261348",
+          "completed_at": "2026-07-22T04:47:43.307127",
+          "generation_duration_ms": 2045.778097002767,
+          "content_blocks": [
+            {
+              "block_type": "thinking",
+              "sequence": 0,
+              "text": null,
+              "thinking": "Let me start by reading the SKILL.md and structural reference to understand what I need to author. I'll read the key references needed for this task.",
+              "signature": "EuACCmcIEBABGAIqQMYr4DKQUD3yLLr1viuVYRVOyDi7VSg94HgmU2V1U29Y6l2Iwt3svnIAO5QfoJ+Sbbgi61nnZoAmLO64RF/jwn0yEWNsYXVkZS1zb25uZXQtNC02OABCCHRoaW5raW5nEgxugOweE51gMLHfp7IaDMQ2XNkGMDZTx2i29CIwQwhjHPOXbLN0uWaXH++8wfqNKeD+U5+cJTvufPUeCBk1O4fyp2MxBaS7Aww6mrNnKqYBmQsfgigdmX85Lz1hFdIs4UyxZvV55xEO/0fX02tB1sDUTStyzlGai+FA5t9aH4WghRyC6v8f/x3GjaK60uxvZLngIyhHWjxFLt/WJQNNhL3NZu1nQWzL+YY2uUepdiZJX1KnSMpTaLpYrroXXxRR03iMatWcjqZbg7oLYhmydlL/XIwlCoKnQC1j6V2EFMEhUrZ3u0sS2R5hQ5/V1vgq56ukavLtKhgB",
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 2,
+          "output_tokens": 76,
+          "cache_creation_tokens": 4131,
+          "cache_read_tokens": 20920,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_016UcogC4gX7tyMjsrDwCioL",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-22T04:47:43.307127",
+          "completed_at": "2026-07-22T04:47:44.132843",
+          "generation_duration_ms": 825.7150490535423,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01P8PxV2Q6pwpop6b9tFiDuP",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01P8PxV2Q6pwpop6b9tFiDuP"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 58,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_016UcogC4gX7tyMjsrDwCioL",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-22T04:47:44.456336",
+          "completed_at": "2026-07-22T04:47:55.509508",
+          "generation_duration_ms": 11053.171505918726,
+          "content_blocks": [
+            {
+              "block_type": "thinking",
+              "sequence": 0,
+              "text": null,
+              "thinking": "Now I have the structural BPMN reference. Let me plan the complete approach:\n\n**Plan:**\n1. Pull the registry to find the right task node type for notification tasks\n2. Get the template for that task type\n3. Write the BPMN file with:\n   - Manual start event\n   - Inclusive gateway SPLIT (1 in, 2 out with conditionExpressions)\n   - Email notification task\n   - SMS notification task\n   - Inclusive gateway JOIN (2 in, 1 out)\n   - Final task\n   - End event\n4. Generate the diagram using `scripts/generate_diagram.py`\n5. Validate with the bundled validator\n\nI need to check the registry for available notification task types. The instructions emphasize discovering UiPath extension node types from the registry rather than hand-authoring, so I should look there first before defaulting to a generic script task.",
+              "signature": "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",
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 1,
+          "output_tokens": 418,
+          "cache_creation_tokens": 10039,
+          "cache_read_tokens": 25051,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01SNiPgTHTDBbz6pGAWyzYhs",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-22T04:47:55.509508",
+          "completed_at": "2026-07-22T04:47:55.908625",
+          "generation_duration_ms": 399.11551401019096,
+          "content_blocks": [
+            {
+              "block_type": "text",
+              "sequence": 0,
+              "text": "Now I have the structural reference. Let me pull the registry and discover the right node type for notification tasks, then build the file in one pass.",
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 0,
+          "output_tokens": 78,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01SNiPgTHTDBbz6pGAWyzYhs",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-22T04:47:55.908625",
+          "completed_at": "2026-07-22T04:47:57.199219",
+          "generation_duration_ms": 1290.5962880467996,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_011NHbwdXg5Q3kuxNnHCrf2f",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_011NHbwdXg5Q3kuxNnHCrf2f"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 98,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01SNiPgTHTDBbz6pGAWyzYhs",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-22T04:47:59.886960",
+          "completed_at": "2026-07-22T04:48:01.463469",
+          "generation_duration_ms": 1576.5093519585207,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01WRg9HQ8MqnzUGYufaeYT7T",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01WRg9HQ8MqnzUGYufaeYT7T"
+          ],
+          "input_tokens": 1,
+          "output_tokens": 112,
+          "cache_creation_tokens": 253,
+          "cache_read_tokens": 35090,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01KF3WQEH23UssF6bpxY9VMU",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-22T04:48:03.497073",
+          "completed_at": "2026-07-22T04:48:10.011420",
+          "generation_duration_ms": 6514.347541960888,
+          "content_blocks": [
+            {
+              "block_type": "thinking",
+              "sequence": 0,
+              "text": null,
+              "thinking": "The task requires notification tasks. Looking at the registry, there's no specific \"notification\" node. The best options for standalone notification tasks are:\n1. `BPMN.ScriptTask` - Execute script (no discovery required, available offline)\n2. `Intsvc.UnifiedHttpRequest` - Execute HTTP request (no discovery required)\n\nSince the task says \"runs a notification task\" and there's no specific notification type, I'll use `BPMN.ScriptTask` as the notification tasks - it's the most natural fit for a standalone task that doesn't require external connectivity discovery. \n\nLet me get the templates for `BPMN.ScriptTask` (for the two notification branch tasks and the final task).\nI should also check if there's a `BPMN.Variables` template for the variables block, then fetch both templates together.",
+              "signature": "EvcHCmcIEBABGAIqQJqh1p0rPSIoP11z1s/KWwAOFAUHYVxOLpKQLOn2vL4b8zLaswJ7C9T+EM3eI2D2y2X0d1PqtBI9DrK75ZDhiewyEWNsYXVkZS1zb25uZXQtNC02OABCCHRoaW5raW5nEgxRQi9HFlBnV7ehz1AaDPe9J5sFMm3RIFAw8iIwX3tWZMD0XCHOlPSUAa+95qDp//WZJFUgK90W7R2O+pA3uzxNc9Osg568kKpyxW3YKr0GvjhTWUGjNuFn+AeRXgdI86hGEpE5yZwKppMpG5NdCNWbwiXBfGUWQwmNtPJaDRkhownAyXr/dzQ88Hl4A42VTMX+Atdtvcgo4rG/Cve5Ov1Yi0FDjuASXEkN5EmGCag1eoujcFYJ3Go02l6pyQQbfpdJ4LixbW3KfUytLh2Mu/RmafSR9+aQjCTbSf7bDI/DrKNRQomx7FnHbI5VsxAWYc3WCp+dzia8Um4YGRyhzDr/wBIQDZBKQkTu8+9ybIVw2O4l6CCyLJUcntK3+MV2W8JqXMyJtySJcsFlhImkH5cb/yLzPwOQl5rV5oxrgq2EOW10jqPDnNMQVi1/4P4er2uzqB8VkO/u7wpAIejJjbozFWgEsYTIQ5eYa66uAFiJ0tUxVF0yhaJrMXJZSCY7bhYzqaEcUOH6AtdO+aVvWndKKcOBTp+lfXqgzmdBv6bLNpBdXChK8ELChsW/JD6JC8/0HXZDe46U1YYACRo1B8USIK7Vg2O/v278AYdQJM1mvmgk8JQzfVxytdCKaLjsdPTZEg9qZvkdJK67l3GayHtKakMeQUdYLWh7Jw3Nq+MKsEP78GHwrW4RTevDTiWdT3GasosCptPc06Aeh1E1ckbahLjQLfzlVpAiz4yQwp4oGAoODsPNfk2E8oVh0jzSBW3vkKkk9HqlPqC6KQA+VCY3Gad6w95GwQnB3ciKyy+kujQxrZgGz0eehjoDOk7ZMISyi/4NAnZ2hmvxmW4JwZ1IaiLe/UZOUHh8c2zR/l7cmL6WW7P9YDWwj0I5fCuKFLUErWR7E8kcdAcAj7oETpTYzOoGQC2yOr9WnApE+PwRXklkacvX098Qy25jAUKB9jwwwAEfJzJ9rcdigc+/zUmo1O5proq4Wfo0MZPsAGrInj/rRvdO/Py9AiYUkz+h32x863PU0XLnWfrNALIguaJw0FMTdMDJE6ycS2f2fd6Du4Y2eUbPVVY+fCh7mUu1OUkIcmZq2TbjlMyVgx3iMD1iSnzCIG0dwuDwyWP1Cdwx/ScPIHU/72EXiuCGUZC4ctaa16J7Uz4dFKtww/QrnYuD2uOfT8hcmoNeuooq68V0Dy77YhdYP1tgbAXGnBgB",
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 1,
+          "output_tokens": 293,
+          "cache_creation_tokens": 3400,
+          "cache_read_tokens": 35343,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01Jf4jSwhbF68siBpcLVC1ri",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-22T04:48:10.011420",
+          "completed_at": "2026-07-22T04:48:10.841485",
+          "generation_duration_ms": 830.0646010320634,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01LEpBBY7uxLvba3AxDhx28X",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01LEpBBY7uxLvba3AxDhx28X"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 79,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01Jf4jSwhbF68siBpcLVC1ri",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-22T04:48:10.841485",
+          "completed_at": "2026-07-22T04:48:11.494053",
+          "generation_duration_ms": 652.5685649830848,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_019AcSCWwGGh8judb4MdcBCU",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_019AcSCWwGGh8judb4MdcBCU"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 78,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01Jf4jSwhbF68siBpcLVC1ri",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-22T04:48:15.455844",
+          "completed_at": "2026-07-22T04:49:33.284439",
+          "generation_duration_ms": 77828.59598298091,
+          "content_blocks": [
+            {
+              "block_type": "thinking",
+              "sequence": 0,
+              "text": null,
+              "thinking": "Now I have everything I need. Let me plan the complete BPMN structure:\n\n1. **Manual start event** - `bpmn:startEvent` (none/blank - manual in the sense it's a manual trigger, no timer/message)\n2. **Inclusive Gateway SPLIT** - `bpmn:inclusiveGateway` with one incoming, two outgoing flows (each with a conditionExpression)\n3. **Branch 1**: Task_EmailNotification (ScriptTask that simulates sending email)\n4. **Branch 2**: Task_SmsNotification (ScriptTask that simulates sending SMS)\n5. **Inclusive Gateway JOIN** - `bpmn:inclusiveGateway` that merges both branches back together\n6. **Final Task** - Task_LogCompletion (ScriptTask to log the completion)\n7. **End Event** - `bpmn:endEvent`\n\nI'll need to track four variables: `Var_SendEmail` and `Var_SendSms` as booleans to control which branches execute, plus `Var_EmailResult` and `Var_SmsResult` as strings to capture the outcomes from each notification task.\n\nThe flow splits at an inclusive gateway based on the email and SMS flags, routes through the respective notification tasks, then reconverges at another inclusive gateway before logging completion and ending the process. I need to make sure the join gateway properly handles both incoming flows without violating the rule that activities can't have multiple direct inputs. more at 595, 213). Let me map out the coordinates for the diagram elements: the start event, split gateway, two task branches, and join gateway positioned to flow left to right. Finalizing the join node at the center, then positioning the log task and end node to complete the horizontal flow. For the script task, I need to add the JavaScript format attribute and include the UiPath script version element with a mapping configuration. I need to add the `scriptFormat=\"JavaScript\"` attribute and the `<uipath:scriptVersion value=\"v3\" />` element since the BPMN spec requires them, even though they're missing from the registry template. For the task scripts, I'm planning to write simple notification handlers that return status results, with output mappings to capture those results. I'll also need to define variables like `Var_SendEmail` and `Var_SendSms` as boolean inputs to control which notifications get triggered.\n\nNow I'm setting up the conditional logic for the parallel split—the email branch will execute when `Var_SendEmail` is true, and the SMS branch when `Var_SendSms` is true. Each task script will simulate sending a notification and return a status string, then a final logging task will summarize the results.\n\nWriting the complete BPMN file... Writing BPMN XML structure... Defining the workflow variables... Writing BPMN XML... Completing the script task that returns a confirmation message, then setting up an inclusive gateway to join the email and SMS flows, followed by a final logging task. Writing BPMN workflow definition... Writing BPMN diagram... Writing BPMN diagram shapes... Defining the flow connections... Finishing the BPMN diagram structure...\n\nNow I'm thinking through the validator rules for the process. The key constraints are that activities can't have multiple incoming flows, and gateways need to have the right number of inputs and outputs to avoid being superfluous. My split gateway has one input and two outputs which is valid, and the join gateway should handle the two incoming flows properly.\n\nFor the inclusive gateway split, I need to make sure both outgoing flows have condition expressions since multiple paths can be taken simultaneously. I'm also checking whether a default attribute is required on the split gateway itself—exclusive gateways need one, but I'm still verifying what the spec requires for inclusive gateways. I'm ready to write out the file and run validation. I should also verify the namespace declarations—since I've already declared `xmlns:xsi` at the root level, I don't need to repeat it on individual condition expression elements. Writing the complete BPMN file...",
+              "signature": "EoSVAQpnCBAQARgCKkAMj5X6/GT1+37EGNf3hMfIqsSA0ZCwHu5YboRDsbywdVNKAn6B0JA2SbQn7FDrDtJYw9b6NyKBq+g2BcUGyJdEMhFjbGF1ZGUtc29ubmV0LTQtNjgAQgh0aGlua2luZxIM80LJhbnyAUS1PuJJGgz2P0h5ClP9YEqqtI0iMKo5ffYADDM5ymi/bXNVu+3aLbaHBVrcA/Mf9Rh+Jj7Wj8YeNFqLX0H8YNdJt5kazyrJkwH9NkXMb5IWVYY2CACl/XarEn4pmSTHymQ5ykOLwWRTyxORZg4raqFipbMDzrhk188AdvWfvoqb59BxQWPH8DQN4+RHGoZvMuBA2wWUlf8vNESAv1v1d5MPfvpK3TLizedpVSunbzgXwYEILuVCtMym/I8e0meOqXwMrZGBMzit8JEMzbpHyjfISildC6MfvqYAskRy4753UMK5WvTZif5Vz+Gp5+bt9Jtwxpr/UsrLTlSMqVRFyaNv8rZWueIc/H/cECkY403OClyEbIyd84Iej4zTbuJtZ1m5RGgNI6jrwikYt0Wn6Hfb8gTPJt+PsFlyMsYl+6rwQCw24UTsxaZMuSsVMMCDBd8V8FMsiKMjnj23DUcsRNprs/ci+XppkubmMEcU9TxHBwHFwSxpEu7tUZdRd32GGAlHgWrQn3tqLxxaqeH9+PhL5UvXaHDj+J0TRZPU+mTMHYDzzqXkoIMgZHWoDRP66GPqbrXT+5/HUwGodeyCOMAsmPRQra2+ekvDLsZn2qAJekmi/XWD5q1sAYPdPCjjHGq3w0riPrC/rWmGA2LVFeJZaqx/owMe8lT1MCn4ynVREJ3M7bIaoKQ4jBmxMLXqr+sWLbtxNlKL6sgEwRd0AXDWzu16QVHbAPXjAUZIGQSoZYIDJjq6o2+sFRMQjZoa+lLW69kslIyt+40DuZdeHjBXODZLLisRKGg7fzRTR78J9kG7i/oT5y8IIXOolvwu1lUzz1N+Bg/RCJ5gJG7tukNto8UeXVip9Dt9OEhW8WeTcSLVzP4DMzDS8JKKgb0CbfgpAuwCPTor+QU+JAEwtRYpjDA9wKENiQgqcVUGWLcgAqc2rgdnYfqzqV4Uybvg/5AmU89bnqM86T9lqRHUlMITmqK0PkniN0Ye6fMOkHXeFW0PoR5JcvaL+GPko9jCTvlLIbcPz93JvX0pWBZEJGTXa1hMsNnVSZ1n8meuhQPYFMwxbrQEfzKEXzIt0N0xkJ4ovICDubovyPiZdzIdbcZ5D57JqP6MQ6e5lht5vW7V3dO+zjm+l2O25vyIIE3axbVlWYS8KR3GuvS6xcW26z5YwqOsjkDpMN9bnac/9H72E36kxdY6ILTsjmHSj3OkT1cn+QYviL/uyHyOIh9Z36Jz5qUNQxFRjBKFotyT02ngJhxxdf+mX/HDuxXNkWAsjK2a2g/BvGVQCEhDpXQ7q1C2e+RLmWxa4uzHKIrsxPYQj8w7DEWhQDrQZ5n6y0UUHPEQ5ISn0XsXOSvvgxargdxsgoyc7ObsIzDIVVk7xQ2UdAduE1Xa1b+9Boa3n88eI4yb82iaZii/iZl4poTsQr7ESej4F30cvf7bWJ7nhQ2NuEpgtmcAiX5yCtueIsnwa8wbp2pmSe0xQmbXH6tJmPC2uuR7QGDHxXIpe4vRzfG3AaZZsKgQ+k4YxYIZj1ryYGFq141rNMbBojP0r0Hq6jbMAYSPpnHc8zOMbPC21YEX+uArzI9XfSGkCTdHww7mMBr56W8XjW/szzLObNSpoiL//Z0l3yf8ODLs9IK3wJA8KtGQBqDU0rvQLvhmSecu0vhY8WV/7yGzvDkuPZSp42xheJbIaU5jMaMVs4e/SD/TKKOSQRmjbYfaQCLGtTFIZ1LE+GQeHAJjJDCohP49KA+SwDD8qTxaPb1RVgPfJnRCShr+yWnAxi/7pRdE/wz2ehh3ZN5fnzswwF8F0llV9Br+OOYBtqZ60MkAxs8d3iUF6PRBmz4rNWVEk3w6Lxli1P7oXpY+R9tjzCkmwrMp1lVy4JvPiLs7/0fw+RoR0ok/K2AvQq5CF160kZbysLTHYCgegNdoyGj5FHBQ4RTCdtj6XWuzDiOow2Eg1vlq6mO31Ha23xAkQT2PVCBNEn4yxjTY8iBlyRGYkicAfPdxkwSWhqcfhjVOjSl4Wrk0zmkszwcyYGEWXADk7N/F6vw9c/QAqKix3rNafCQ0QllAoeaKmb66BQqac1wzb3AH1pCxHIMOUNh6XHgnJLlq7mn5exof0YBmfhgHTQNnTIOGdyp5OyVQ2WbwWjWinK76voRrVEhqu5qZB0B90YNUoxv/LiBnC8SUIX1NiRkW15U0iNFZk5VMpIljgbXP7jT/Qeh9YOqY01WXF9SwCfmCDpjTBaot39Ri4DmE4WjGE8eX2QuRt+Ru+mfycri8lLPNn05xC+jzWZn3uUw9B1n+2cGS3JZOiW2MSRU1PSqTA9NFk7szWggUpksr6+5CKZAMCxLvomCmmBoFdOMAPO3Q7qdWw46v5yz2ky4QDpsYHmet7tP8I4pwsh1U5HZfj70m8u5UkmysYDZ9xZW05I+GzDckuSOm4KvMJKGVa6XrXIBt6xEkgkXDEb3ak3dkMboNeLAm1SXLCyjNIazVMvi6/wH4ojLDgolo/NSJwgzONeiJA2jA+4CpWtXCQUbEqkrFl5zh6cWEjbp+6eaqNMcuBerfcQz13jWreMYZYO/QPoLmuDFQ3Am6dzakRyJw0NFqowSngZSkq6Li4fCnPDuSoekcHPS5CSrrF0qkGUR6xxpYLGO8jrnb0uYDRe2rFvgi77ToDdbOnqPdR0bwuDRQlOCWnwzt1djcHOc7M5t6f9XzsWZESaj7gR0Nv9EGL/WQZFZrltZIfHv5LBaiM3Njz4G1JB/1bqb7G2KQmfQ24bWZpccK7KALNBEkNbY49unE8bzDuQFGWu0+lTn6q0xFX+m5L4Oo4tRkBeMypcgAgca2VL7thH/KoM+aTgwhh41RE4RtrzheRfKi/L8zMcYuGZJ9skaBXig2V9xMgMdvnX6ptzkHMVD9EZtwGGFclfcnEcBT4MPYkd7OU+6eo+OM6OR25Tp767asTLOW3J6S5nT1u+wRsbMjHbS5KIhz4H71vWFIf5nNx5txL77at3pJk1dn0Avxe+WiImrlc1vzyoDsxIu62slXmR/vDh5WQBQQXkKP7q39Ug6f+TyVkMTRsYsndSokc/VqJDtsWGzOZBhlC1WsfCOQEWiB3w6SHR9qp/H6Bc7l9SpE/90jg/yWuoExVSSmRCMbd/fI2pfhU4b5ToDX7hkbHW45TSpy4fcRSI3zae1g9nWtJTRO5DNuqGpWeUChiNcfx8tFXsxGGP7Mz6o+NBBBZtTRhi3YmqmdzTq+LomLIZqP3vhY9EbUhjqfYxaf8yTOpoVpmluAD70+6JgRpgNgD4i0RbjybCiKS7I8duL4dhcs7lB2xUq9ZPm3vJFMtelCYjgh3/1ftHN8aWptQLjhXjh0kWlTIvdlvX48/87HNW02X6jy7bpxb55F10PH5aRBnLB5vyLBoZHLOVIstFdj0rWSrexWtxOKBxACwGdIUaAX5/NqqJusjBmIfwOsnDisHgHUKVzhKkMbm7hp+RUBOlFLJaq+brvkMh9enOlBqhjP94PVL4SzCdTr5rtic9w1oLFHA6enpKr9Xq7GB8BaK/lksF40ibSmUTj7dfAIVTeT2f/nJx3nJpvNIQkk/MTmKheXWZTnqMhUeBouu289s4+jdmoBOARghDx4iAz7RR9yh6iXiKk5O26PM2ZcZ4yX/LTXSTLw5rDtvfSQb1GFJWaEqivgCpla1YG1T0a/XVA3IhG9C8gQ/rT2GmhahjYh7rpZD3H/soTm5/g6PHq7MdkgPoTnuTCmr5hClXFU6IsPSv2DdkLfaxIYuIbvhlNY/yuUT9C502fHek82U7hc4xg/ErMVtsyMk5TctyVOjCDNMrfsbTzMTh74j5btf4IfYyB+Dogg0kRzdxm6ZQS96OS6ic2YuaVy1mbegHv54Or43E3PQL/o922Z3HQlFOufGW4PEAdD6yJDpWeaYGkju8Eo67RbRRWOOwo9bAo75GPa9OyB5UvkM/OeyNQm51+DfqFUoDMHzM+poGEt0g6r1TRlXYksbpGY7mns/BfAI5/aFa4Zv23avEOvAuM2CGFMydeYQplHyvGwCpy5ATVXg57ulW1vPzkDlnxGn3yWcl3PmkqmpBNV5EeTogqaMzxA2hlZFO9Dgd/hXBFuYf2e5Or20v77Twq1+TkfS2TA03CfzZ0b0Lz0wEFwym84HP9MRZipgUijEk4VFwGLbKc0QLLn4kWVcTi7E1KgHzcYvSIAFUIcP8lkdo5UMNqn8jIB5mjqIB6FU9cqvckWzZ3xcHsI25OwZt1ZocEyaYaTN8qJn0x7QZGsDxfDffSxv3Za/3so/LGr+nArrleBzsdujXjMokAAllunf50UX2dXiM6vBGBVcCwLRVOMy7ppqCn0v3tZ8i5vA6UOeleuz2KLciPHYRGq2+nbw7s3F9cuYhq0Ne9uzymOxaYU5q2vb73e+ycm7dJgXUfKwkwoouhHguPKJJWI/FqkklSvoo3uuw4b0GxOkHN+L8iwvxoCbp6xNWj7i01PP2e/b1/YTTHhd70/byrRXc0qRSYcxUANh1aQEyDo30S4ov4DyTuSgpwe5aNxd3i9hW0jGPa90g4jNRyHLsiB6xVJ0AXJXSa9NwNMHGO92PoMbhSutH1RY87I+VORnMcWrsbNZ3urVN097SFZTQlBLrGs3BMlhDM5uI20Shx0kmepS8/5lWCDsooetvfowAtndOa8Cu98gYTArlbbOyUAtfmLTJiGeim9yiiS35ScKlkHEewBeLd7Vh7nWI8wIdjG+RTUgF08DpqvEQdDlM70pqALCJJnyI9ec/bYdQ4PL5TeTPEK15YXeTM8K+O/og6ZWEloMpaSf7lBtuKnswqgPMtKhZNSmO9ViqiBgTecbnQLq7IrnLSLR8qgRNA2VDrwDnNdgaFtJeTTOxVN19kUSyq4BrRh4vag6VsOo15fh4OxOfxWUlKDrbZf1o18fZZqAN2WyDXB1IRHPNtESftX/WU15BQzOyu2hHVShgvwFdtGgi2CYT/4ks+l58EplTh9cNYclOy8MMQJo56PG6yOz8oSFDnkCB6CKLIbvN8xyfmY1iqgs9o9CgHJQuJNzgQ7RNui6ikkRuKTUEeBkUCdvwJ32E+hzwd4nD8DcNyR2pVx62QXGBkGtDoymQDR0W8wcPddu0axYe5mE0fwhkRrX2vBCI2BuBJU59wJ1ADWq/f6PIFv+2FgY21luyYEEDkQ2UKg6FiQt8LG9H6uw7oxj9UyaQszyzVhTvP+WJ5MjwIgTYo/s+fyOG+AI5ws+4YzBosSQcuc8vdM6i7raALxpp+WqlKLdMbjZZaDa2lvdcW8VqHEAjx8gisuSAwBQ4UEylx4qIf5XIAxJ05Uno+BGI2NR4HFCWE0IABp73kFO5Aur+8RBQoq4vwQ0jQ7NWhK7R+j9zzHEUt2wVA9CNzDIKWdcfZ1ibCbWZ+gsOCdzzTwS+TKPsNW4A2W89SxuIIbJG/++fFhWZh2IyzW0OFBsBqINQbzXxHNCgxqiMOGRyJN+ISctsI71nFnOUPvOYGQnB4ox0kNPI6B3yHHZO2IpbuU+gthn5JxP07Awk28pX97I1f4cGTk2oqDv4Nf2o5+sk3Hf8Kxg+8U3uyzcjtNYNa/pdezCOBiSwukg1Is1bkDqMq+byjLVS/J5JjMxrAZ8FJV9lC1cPgry37oFPf398UmfERmpSGlockMB0ZIONGF/IejvTlBiF9RxgN+3P2I+O+0RVmizPaS9/JeNZrNbnuxcyX9PZDbzYKD9eLUjaBYb8jE6scszyZefSGOcngdl4DQMzi2nc8iidaAeN3d0MNnWAi6nA3MV8zDRxp73QQNs7KLKB0efGRcrfrAF61mC5N0BTsoDpD2ukb3VPdMEIkYoLaQeO75llnnQg0G94jacSuoo9ceW+cXtzy/0NL/VHOcMRHvmCdnUuqozAFg2oCz/8/IIeiz9i9bOePpxVsLx5dTT3diZ1vePKHslzKeJydKa0dWQXXyxem1fVEmBOh7CbGsFSV07vKlJjAyKpDhrYmA3h5h+39d4rpnQH4F8S+4Zmn8V01TMDWnUfT2bUy9VQanwTN1K58skVvvW0SjNIMNG9knImilIvVzG53ZRD45EZK0X/eRnas9+yaZg7UInSr4IRGwEUkZ1PqFEhHAm60ZD+PjoAxxS9xPVlnkJ7axcqetdq4PNl0phxZq7MbNakVG8N9IgiWNKybGzXjvp87x36UdVwrLh4pkHW27lL0LqDkZ+BvXy/rRwBuvq2mM8cOP9DrjdThueZCTs6Drx0cMxXIqcg0Ep6Qf4s6NMIid2iLSgVF9YrIzf+s+XBavDlAtjc3GRSwzU43eRoizBmjZG9PaQQ2GgqRlEGi7MmhTXnXiVGFebsR6/StH6HX96r2fnMVfo/IJuxsPWF6lkRnHm5mc2nwQEkbBDDOE8nFdnUIIFVA2z9uHr06aVpbBzM8JfVyxjd5WFwe9fdlLVyYhhOOAM7gy46MyQrEbVSA/pJGFJ7NLHUZP/Qx1SokS3zXciY0xCAPBrx00JY5Dg9pvvoJ7rNweEcWbr0kFBQbdL0DOOSRVnENpg+FZLWyuUTb9WbemAMkFAwMVXnGnU3Dp+zl5P01zWSDdW9iYggPKvAZuTS6X7c7WZTmPcV1G7azJD4w2lfqEqTSmJmku96Ng1sqAB5dElWcW2KjUjP51VShdQGiag+wE5/fnX7iRVCoqw55RnzqXNIvpiLoFOYpg5fForxH0vJDFL/CUOv8hHyXcJZIVLFt6XdSGvd1t36YWmT0LP6DMODgnoljg1db80SNkCm6qtMhMmWymVaJS80SlZE0TmBsa2hyDIHKRNqhGgfGMQmiCxiDDcXQcdwqT9jiprX9QhVuH5wqAAMH+8Zt3FTQTfXLojMY78Bv8SKUgfJcupz3/0RtENHJLn3JPVlF3NdSPM3sVdKEcFDFjlmBDiw+JI7jPF/Zv+3Hdunr/3AF7+AgJZK+yyLFLitEF4Hnm1cWnbSvqYChHMVmVwhaEWZnd9nx1RxKwuwrsKZylYeXq9WowvY7FWfO6P3HpSpQSBao3Q3EBial64XfZ6SKdXVxEQEicBUUTWmbJkpdKOxHd6fqtR6YjzdlJkSezyOUmEStARqehvlAQZqYg81G8vBk7lgCTd2Mebh7xWxhyoP+xlJvvG7opi8ZzvRn41mOWSxHABxifbhFSnoW6riZ8uKonI30TTh/PtH6X+RcyrQngXQpzG76uv6FtOqP8GR3emIXW/jgSv6LZiMXOAYPw8MLiEsT4YmZSzhdSjZ7PyEQOzJWobeAXmNpjSMZpqTsQccTQar+DAL4cLVOSYrbxv1NmgRr8JcyNzIEakesfgquzLXd2AVsesCQnzJy8XNWeECiNlC9FAdiCU/Q913TY2eTzNB034JusE/KGBrt210REr8v4Ek7K6ZJ93FVZsN6sv6lQIW0f/ZUExbcKXCaJT8afiIBgA8adzknKQxCYXQ8Q4RmVpfzzdCLx5al+7SZbTqdFCMH9xkmoY2rJAVA/KdWGiiawFNcp2FXLEhWdOwwThm2IW12t8WU/AA3e522rdvILLoERqHseyi61HZU5lgnud5WzyDfM5UanfWmZquXDbAJm/WpMB34SIPJuuWQiO0c71jtSesLHGPIak+5c2mTQq4yeOUIAzoA2hLoViqDJmF1HtqXcVZa6Byqtwqwafk7cBspkEVy/6kId5uKt8BaK40qDLD3zxbwv70r6OUssoK/2b9/iH3qnMBt/RK+IEXC63XPfl4Rfog1IGD+uPfgkQuTKUPcQkeYxiVqAICincQ5IVBpuVf2ftF5ib2/Tpu3+dxP13UPe/Fm7ZoDTXtmx8NnxQO0bs5A1jKn/Eeoi8edHpHC0yeFi/sF2sLFgnK8xzDgZVu1f9MJ2wYH6ClyJtvyhB/KHfQD/Gd94CgEiZu8jkpBwNIf/1JgYDRiF4fU34g1fHqk+Rn+uhOLl2vFJyXEcZSGhXXjpMwBTnKKREZV995rwDO9PGvtXqwfVgAqNJBbLzUgsB6egA8tfKvmoTfWEGxuM0EkwqDsNMHNC0KsC/ry54HycnjBBWsQWBjMF1qvuDxa+JwGa4giJC4nP1sO2b6Ci3PCQG2+1ETnoIbnJ4xbFKWufarISjX3QzDYLCa0hLmeRenHve62oi4j9wQO01ZF4Vm1Vg+mX6236TvRbTFMagfJJHVgVIiWuag7rcQ2B7qk1ZbOuKk8O6BmVKahkgNsI9vtegAPnbWeKzdXfiYOmVTyNeWSVlKRjbXz/mbHYPQtB8Bt7p+y+ivbEVfrKRYXqEUC0skx8F3uKu/+CXO644TSxggFvhtOGCDtA+EGKnGx97MOieCd00L0gwWL9M60iVksj8Lz9aOFKLV/uXuIujxsfbFfvGmNro6z8fj6spwF4p1NKGZv0mxuNoPEKPEQOnZMGaVUBs62v/6w0VECU7A1baBcS4yc2Rh+mi15stLeZWT4DbFa9B7DpBclCCM0Jns7eVjdYg8MRApBC5ODAWDNKu9SMQqFd3EkGAwDcwf05LUTND2UHBY8MzWQSgwUnArvtZNfSGfOX6R8uRdUG/SORIU1BID3ELOaydPWRomAapmX08Gj/+x0Q80ikS8Fmfglgt5F9QgDYQEFyce/HYlEslFIh0AOm1gbLS5o1RZX9flupEEMqBZu1ciXYSTQEFKJMD0UHYtImWTb0eyMGwLuMncFQ6RBY14APzsf3uJkL8I7FYnbhRJEXurXVRAphZvthAbv28NpCZtP9LqxSuSAsObt2vkGK7GLEpknN68saGCkJcPz2+FVr9c6ERB3OLvN/80ImiW57WGbk+DHPnQJcARTvyR0F8DCderrJ9uAEeYHo0fOmBLhSuZpiWi53HBAjd1OdIS4beNjS4Fd68FQlsjUTtVzYMNsFnuZe8TJ9yEhyLAHsD1tvvtEieaGA832cUyK8ZWtOo9XdOpoAe66PEvGt5VIQ73/IovZRb3F7lkJ/RSbj8M6bQq4n2AyBYEeLUfdkQY3Q7NaG0DuL4v3/s1vZx40I8BPhEk5YBX+vgM6q3GF1UWbZJJSvSoOP9tYdZcLceurNma4tbzPZUPfBpvk+ht5DBXo18q2dLNHDUKvlFstI/Vk3/V4fwMO6tVHFZmiB1OP4r/xUqunsrMZ51caoEDQ8Q2v7GlAMJy7WYWkPBPdSlC9t3VT/0oNmRwJO8xNKKFoPpEg2GieoGA2FzgCJ3GonwCrubZ+9xCWKH0cG4tsfaFdc2KGrBS2VHhlITt5C6SYQkNydd8YwQrKdIFrT5OM4SFQS4GpsmmQoWxtOFMJJOItOwcHMjsK7ElNkwV720PnAzfdQDVuTI+tJG8h4a3StwePCAbU3cgw/Xj0wiIYDBGJHsLFiaBEb6O/X3roSTvG0N1VM1Y3UgqxRI1BDEctYImpyIVCxHl4WI3jIqlIPC3gcc1tyJHxE9yZGjh6EksBxx+94TyKCWji90Z7Yqh4Mdfp5c1xM+k/pejPnDZyo1nwlo6pD0YnrZ96lDt6SIC3TZJEewCvmxhmn8cUFXKvS83QiI/LLWKyb+LDUa0j8ZwTrwHBlvIOWeFdcjqBaBTvnRfPeg5dN7IHslWFEwcSfYYbmRxucOTtrzOuaScxlkrgzqVdD7Gshml4iCFfYxFPtbj/lcmSIsQ9SsZf8f1o4CT+81dgo1vLSGMw5ndSnAqtPzSYBbYfcWF2Xe0G5h7SCut1Fx+gDuJ4rpIkm14nqBYe/eFhRHKdBogKS+UnPqJDq03OT/It7SVNSvV799vA9TpRcTvGA/n2yl5K4mLUAqlsabofohRdJERxo1l1uPisq2UHR53MfWdKMm17wVdm2+Rf+DzC/Nn7xbRCMi305Lso1R4TqJmYsR9dsaJ4zGXPJM3mZ3SiiIrf83e1Cxtzq70e7KLH8MZ5IRRdVxDS1lQ04JeAFeoFJFYp1KDKcR9858cXKHvN4obMITB6ngCA1SbBoP96Km3ULzOeRqNnGhRewfP4k2WC/ns6vDh9um49ux1G4ULj/e3lxlog8yf/uw24VIlMkPomuUdXgfHR3Gq5d0UJk5FGnCROZtVBGMPloKxgQENC9hO71OlNHO9mJQgHTNIjYUQOrR6dJLIZfeqscy9uyDgyMnJP+HufZMWINrfQEFZ/RQ8Ukdc+JhSOOS9/weNoPjHffwyj3Fpujy3lTH9p01lk6n5S7w2bBd7GZNQLDpWqyqlZEQYPvor4opAj3cCO0cI6s8jzNN4WBblkBZuLanGOedFXTHdRjN/r5FcR/K0XYgMPU2WhM2Jfs2/69sYSFNj1ZKat6EtHkCU8jrAgDhcApwJkUHUEpAjXIBBJ7LY0vWS+nwS/4EHyPxEfYpE39uWdEHSxTcL/ZYIxzZH27y41aj/FeMbDgplBiALvdgNyrSDmBkaiTp8JSk+VL/VDm8EoT91+F7ZLv66+e0j6esMmUj0iov9qUyLsXbWyZfsafxNEHVpSNM38We/Ekjt/QJcj4eDr17gs6dzm+6vnzlDx5Pd96iNKV/1ZpAp/ijlMR2ZctnvttRZN0BbxJDDXDSK6Ez38vclHZhRkUgdA1OcIf903KwZKNBjRG3EYwAtUqNpJfYSZTe3Hqbxb1Pw8L8j+UqmEOoXhzsQHqbyX1GlqmnZXDNCJIVa6UTXRKNSffKogtYwy4UfYhgoPev8UxJBMepMsDfkHl7zVV283Q8Smc0UmUL7sRqDw/13WOCu8hLxEkimihEDFDEhGOpEDqRAFg5+5wG63fJP0BtYjCwSLaT5MjjXekucQN6bRkXdf5yFy2sEkp7S92eOgZOAse6Wu4hbUQDL7ahzuWVnWmK45PhwbQ/LNpQeDgsqHNnJDYgDVp3rskGVKjWzrCwX36YSa3TieMjJ20MfglU827Wnw8LGp11/14f8OEoBpN0fAKs0ej+zpYv/3UGFNbv+nU2trbjaKhdbeE+8jp0NHIBDdjxJlORUPO4OVpIeZ1PMVr2MHJKN8igAaxlM44Pghc+OAytJ0Ii7gyVbqeuVNGKpBGLhuOlgq3WRSRAVb8gMLpprNMKpkujF0IHxWPWbUAzhnn1bJtVarOu8y9xXnia3lP2L6Et0zL7PYPm46eEQZgJnR+msR8d1WZ+tDJlUy/2T44l2Ik8CjoWOBe6QeLRKsAvxgV6r+mZVRZyJ2oX9KZy9GDp8jbGbmW+Cg9Bhesy6CcufMnoXKMyR9vRcDmi3YvXn744ols7Q/uMAbBRA6LiPUMRtLyvlQkowry7Sq4keT6RFK3ONe7ouFy4K1/90fgZ+U0evYTTCruXOEgJpoN7HRFz7TaD5UmMy21r5qglCdbt0bszD2irPlPRbXBjt55Em4LrR2O4DdUf2ZSM7N+xonq9xdhIQEVx+8vc9jlATNJ2sdiDFcA26JmG1D1BJVfBq5U/nill7r9nX3/EBPKlaX7ebdyGP5O2CXeBXyidhlVBMTd6W8KXJIm1tDxfGytS+Am01tMgl7hGfVmtjj8Id5eEnknJjCm1DkaVzy+Tgys/3qZm0YpiTnQUrGhWeAJccVThotspJcm2/D+5qPdC8txDplRe1ZVucAYLSbjBH7lqEdd+V86vNHSgnf9AaO3iEyEa+U1XjRO7auf3OAwoDBPZte82itydXcHxtemlDTY1U0q3Og88QVIfNllfdTRBDdU7Zao+iIZisdaXSZPSnTeFHTPMAgj0FljJOP+hKCWJGJcahWDWAxYIOP0/RaqOa2zSa6+XUSgBWFxRtIU6t+syoGxQafAQOS8Lj52x/dHPhKqmB3xm/dpm/prAj7m6lPHxtiNXxt4Db0izGzel9R7jYnnAmQPhHuM2zRtseew70RwIBlodogVTEjCS43zKRboo3y5oHrj9VyQ+v58UPM4cDWXZzGL0dGoV2XYAi55smmJbP/CzeS6tqPYkg698o5JsttKth2o/8y3Ntb6Kf1lO+pCCoW7lyp9/FqQJsYWoFXm1YwPBqOlTUP3I2iRxPA/figcqBoRBzxJvE72b0evPPMXVP7iweRm93nSG/eERyTlQg8X7QI1OcktG57fPpNXIl3uHeckp2KFm4ZRMV25980rWCq+X2AHj5MwoEO1SQ98JPOBSMP+cNqB9tTWpbrGkrrZOgM093T3i4wy7Lv0Xd3DKHTv2A0FgKqpirnrk2BYDbm5x4eJ/Ern4GvJvz2Ja0GxFjM6uQKH+uumXqoGgCUOSZKPVM/UVKubeKBUCuqAUbtTBbgCc+8j+vsYf5zkq6EeD2zGURfI73tOVrd+KPOB4wG//o3XqTWHeastbMytmS2+vAi2SDIa4m6TASntQzm3xDxZqBmGKuJdhyCQlaKEdOm8Hz22DpFGmukBsSrIlk5fGLvRzbcD8TofGpkqnLDdeav4+4JmaEvcy5yaqEfo7DRwrYluJ+1WFPypckUgJWElgaJ6lGPBBs9vZwbae/5azVbwVLPlhpVhK9I6NSAuub2gQVIrtGjrT1rQw0DypzYg8owhQ/ccjrkPDD4wIirtW1c9GRDEEZox6l6mLUSGhGtluatgK6sidASP9LH2S+s69jR52MP259T2WCrUWL9B379FWXT9LCD9ubug7AmYoMh/OIXf0n5Ou21uFWGmUbBoXsN/cd2iFW10R27jwF/WCLcHOZL/x0MZpOSZT1tDBlt17jpiWimgXRqh3VdZ6UABQxrM1meZQ3IU2O1pLA84+NcmuF0frgVfCVxnKtWohadN2fscTcg6cvo7CGwIKnBtIMQX1imjfbz4kusUe7SckkHYdjfOtjPdYl6AhZ0xNe9/h8T0EANutIyI1dEoBZJvRP1LALXxyFfrZJAUspDG8R9cWcVwwKBEKlW6zoQ2dQRccXdW0QP8DizynODAHah8gIOsco8Y2t4N+/fLkKDSUXNwR9ny5Nve+uclzwJP/pUph+jbfRpv3/G0WBHIoE1JSWGRRNZEmiJCbIeztTp3+GC3w2n1OqhYWRr5hk7CvMKtFonQqQTZuUSiriIT87IahAI5Wb4cQ+l65ae9yqBLZ+9ni7+Pb94KHSMOpUOaGsCgiHBbIV7biYyIBxHQfRtwVp72OATcCTY/cUskiOVpbPaampHN8VCmNMfkiKKVXNqrudSC61QX3Ne+V51GOgwSkNDOb3vfSVIWdZUAeWRdEC+lkGHaPUaWaJgQK5CEnPu1cDEwuIXHi9N0DOoqb8Zaq72jdxG4Oy3pcWRiqLukblopEmm3l7qUIBTxsAsx1/ywbpU+/U4GbbhjS6KdKvI6GZcBaCho5ZgqEuoAHOjyarr3QuR8I6jEJWE6/Ng3TG/tKRRx9BJd8YPHQBLlx+1FFIct5vRFw2GoS4zS+K2JFBKEF9J5PjCvENwFnzYn/sb9joDBmX7xenzr28sXdXaChgc9S+4mryT4YPMl0yKi/HCBVYbYetRl1Uth18mjWwmLKPFG55gb0XxITaa1Rw2FozhXjeJWcbdwata6gndzhCaeh/LJMDDeinTTL0HJLQJKySIKj4QY8ah71KaMzQGYm42WhQ3FySMW6JeVGseLvjbrBygOQEI7Y9n3YgVhbk4ZLUICTSvhQmKWeiV2UMeqzEZoKQWBc0CkAMQLIhjGh2UX6so5q/d7Av0TsSPHdFdmYTGUaaOC/uBL2YAmt5SS1CHAMU79cFgFtINIx1RqMN2j3SLz9zRnHDPGvnphKUi0SuU1URi2hs+oIJr7ikUr5Ey02z0NsdIjzuzTm8tKiPoUq2e7LU3bOdboBJmZPGPXwWMPP494VLHGgeCyKmFQ9C0aZaX4MkVJVkTl2Yaf6AzQmWdAlwko4E2xNDfa4kVxwizsh5Qz3KE+NljGSyDSmhybA0XhKpnG/u/VCLnPT6NblJKX1KiX6laNXEK5RZWmt4JSwhbeyLDsTD1ncwjD7gMOkCVIL/3QInh+sgor8OWfkJNXCvKv6iAOxnpxWBxalbT3XLjgwML549RnpBx+8Wco1ZUgLmsQZQZihL9FY/Jll2hxIe2bTQsua8PDis06C6N3a4Mwws/r221lzRxP9Gg4KOMYxJ0/oIisDPJGx0nmH1nj4gemnIz1dr606o5OqXlfc6Ad8Q+5PuVKEwalY9zB4WIz0qUtZI4Yz67bUvKudVHzZBhA5CszS7/aNFKo3vZj8d/WmHNq8yhqw0+Zqcw6n4+oYDyRJPne1FdrDBmHxL4bAhBESldvQf9hNmNdolTvtMEpB3LzWx/xFarlTHjOBVMbKAPE9QbhMmBnwkfplKSuqoa2CJXiBrR5XDjFXCK5cWyIi1LdnPLVTvkGtfNydbDscwPl4bp9PXXPQ+tSuH4PDmMLW0ZU5GnEIA6doCdRVBd67lLYScPU3gwWMP4B9jGR+C96O7nEUON8WTmEkakTONs+uV66JQvr9OTWiJiciuveYDZqBLefpA3bkgyCmyAUDmGvPEwMZCKDWZF9/Taetidpl0FnGfiUltJuLbjdUy7rD+ry5c2lYmSdWj4D68UaS/3bqXBlPt6mafgvCL65l9XAWRu3Imj1wrSOqPabwFDTmr82MS8lj8TKNWMjIHvJVeRO6oRgf/YkPegm2VYHyXBNknvjCJdGOne/CMucm5SzUn2DOULncVMcbvPxabLktvaogyypGm2ELwUirMqEsu6KKDfNcjKRjWDDcCNo1yt53f8wQWaJzufrRpl1pw2KQemQ8EpcdIjpiZuRNAS7aSc6Ey0sC1VDxpQ6pP2A3sO4Up6W5iVprRTQf9Wa2F+Dqu3GSEns0gXlP6ytvB8Zon+VHbT2RQ1yB+wcxi/Gn9V1VjnMBn1qKGwnHqq6fp8G0ojeHeiEZbdNwaUjThcbEl7bLi24wXq/Fup4c4Sx8NWWetaPejZzAL/YD5Ob7uOMvHaac8S9ttKQmNAmoTlBg8Gs2CxmolAfQyaqkcv9pICjn7hEZhEtKLH39LXrTq5Cr61x6WrspciC3TIyJN7wQlLt/1rYIxCV1bQsM8FbFMGqI3l9S5uOddqvCkZTkrpVGCEApVLuxcwcCdH0gCtBIyXgm9rHm0bJ68ASqwYgII+7ARpiazt7Eywx/bYFHvR8+9ZKoYu+nIF0jQVD008+ZUkyBFlCkHOjrRGFrfIeKu+kumwAagg4xnRZoMPzKV2pH0pM+nu7gQJyzwhDN7osNxiRy4vQOiI2kdbaK6+0cPswno4rrTglLBYrzKFmdQYHO7kwByx24gAb8ftidNCirKeVzJtBnpo6fGTUHO6LFVNV0tDK4QZjsaVggZG/SOnsk2kI7BxySl5aG3tQLRzrLjOF/PZtVIgNQg+TzsDT+nD1aijpwKt9t3vvQluDW2RsA1tbAutnLXZ7Ju3hQUPJI5QYrZtSJl94m6NSuJldqbqX0hFMpMxxFx6IHSgie2t1/XM0r1kc6d1T5gG4tvJTmk3SDIRwcrYQ4XIM19tSREKDr0zy2pBGow5KJ2qkLprCFXnlCAurYmzPyeLUmjTcj1jB/42I78q2ZxUJN46YWqbawRaDlp38p6dS5otGmdoF/tCxFB/sahC4i0WkgVTixh5jYMzOJI/v2ymMo7D5yva8aYmYnZDahhASkMkQigTSDcRXsdvJXvy2KjrqEUUlexMkSE+Rkw9LpxYnYq8UR9WoGk9XM4rlwBqo+R8UfEulMi555qiz0HnvAVtPk7gp5oykKbZgvhcw1F1J1OyfMPEkPeACvy7VrvaIerw40xC+MLL3Ww+Sr756mYxgz4zCVqK6ZRMy9K3tAfytf4dhGcSWrWgwgcW2D63Y7b4CfxnTJtKLbOqPMLSPoSshj5wA67poZAG1rzx0O2WJYNcm7zgTtExbtl4jqV7IcgomTUANJjdnMsByALdiI4Ywd4qlcaVgkpvanVzY9Wf9LVI134+TqyFlWn3k6Ox7yqQQxkmIl5OMveta+N+jKdcwvSe5fsHQN/qCWr0n3zhKpgA/FUlhtqH+tmFYxA7eiljJlBv1ulWFbIbfz8ISRmV1bL6w4w4n01b+1Vpbacz4a4XjmCTBUbGCqHPWsBK/jjqHouEzeebMXKU5ABgHQpDoZEeHzLId/fhlMBhGaFeb3RmpNaSdaQr2JA4QXmVq0C+S8Pwb41kqjNJRaoRG8FwG+lxyUBZWmTHLZIsv9HCaNL77qz8C/WJ+8RMtdhdF4LC4D8biPrDOf++XCiLyGyMwJKY/3DRlZvCxIFqseBqSlwMqDktVJf8tvK31Yc5uR6qyBYyQ4T42mHinRxgzasmgaN6357qDA3NkBvWFBk/SSsS0DUPvK9j39AlOs26ZT1mIKM8/Jr8xCl48KPK45gCdPJWogH1rBBwY8lXj8a/is3dny03f4cige9B+7yhHIcotpVd51ANgZr3s9qAKckiGyAKqfGBkYNBi7W/orWx+Biq45ReDQPLfE7YWLNIJ5SybmlsDStdfiGgJXTTNr9iiGMtFeI6k//Uw/tDyhAB5txfVRTLzFdh+tY8eXGMXQODaSzIfgvCUpaYPpVNOt2o5JzcTT/r5rWl+7TECHA0uN28a7OwGJGqYW6z0og5umlHjko7TtX/hHAWSubf/vp3YiWHzTAeDwyhiOdZJjusDgGkOvxB/ObpWoIVfOn5V8Coo4PFAJcxEAN5Wq/hFVCqM2gEPfkEtgL315+d8k5YL3nI6g7htAKQskNVPkD0WhLGMmp4g72LW2SXguC7xt7+KxyhSkBTvs3Hw5bNvSQlzdpnvcYGl2T+FZAio4HQEh4QL1foQl6baSXASuCZLk0amOPfVHlyjwJe3MwF4XBfV+kqhu0Yz/PR2IU1wiCpaHMgP8M5hbVciSPDTMWTHI9QqmFp00SPo9MoxM1vrEw8jkpPmqEx9VaXDVuMxBt6w6o76PBF2n7oH567ij9cgIzn9a4/4d6NqEaJNwaPgNEqqG2oBgshFDMuBzGpvY9nsqi6ki4iIlDgIw/2f71prCWjYqOvLxNpUnfFtn3mjk2dhTLzHvEetyFSbaokLmHVzklv7bpuvofCt9k4Dz+J7PRPxbEpHjrzYbzRC4K31fk3hqy578piZChD4vZ05wl4muRdVBrbIHYk8x2hzTgFcQozUXZKIA+AjsluYHP8ZQHJBY2IYfvgrf1l0TIubFhfGgym3kJxHHlw3duIfhlBPXzAHeIUnfM6M9YlIYmoBbJ/wWRuFf3lzklcfaGlWQ+mZyv3gimJNhWSGUCt10O63Bj5RKA/eSrJkeW+L58xKnbTXQp3AcT4RJJSS5IuAf8VHS6nqBq8c7T0LIvEkYLmY+r549uZuGyvpMMNtL8XFOJGkr8sfAvJ9EXhOeKGIMbEOBbNpBFvkupI1RlGaKLm2g2dkO8ztFOmlAwY7s6VxTHWlA+H3retuWXDs2i0IJ5t0E5asrLyqVC8yqAW+g3SKeIIX4tz50yGbEQbrqpESI/cbXSCqNcg+9G5O06BXm4T85PZMUB5NfpzKR/9tid5fSfrfjMZQjQGHd9kW9G2KiXw/EBQ5fIylyxQ/2Y8HAja9dtjuCHILm6PtYfQODoj2sKAtASPHuehT5WPxm9hVdw4dqQmOl7Od6XBjPGxiT9KKEz3YCx44zWedet2P9qmoLXYiSIBcZpp7NG6s4yq6qDnkFG9xuaUtGBZZYcCH+ep3HDq+S+BeFlc9Q4ViOWRfYseh44MP6ynGlfoaj11N6LSmp0zjKn2jezcqMsCPWKfV8H/xt7b0WSycVLNZQm4UDiuMM1iyLULxUyMR/zL72PKBetyvXgbgeplZOjn7g85dxNLWdnvUr5eQwbAHd9IYQreOmFr+yyrB1WMumuCA3xYJYY41k5uRb6E4ZmhVPo/VwUDSwq+kaEFgDIEQlfHMx4Y5V+H3xBJ4dLSj0Ky4nOt2fPRx6K38mEN1JMN/LFGEUtZOF8k6URznS/0JVwp68eCcYjGHvhM34xzArKGbBMbWppK9jfIf/Yfg8j1AtRppQjQxjjxUd1XV6CFeBl9oSaC6L5WwSKVFmHTCP4zZ/k+7N0c8igOHkpOaK1bK5N6qMIju2DuMhR+Jf3Tm7E6W7RuD3cXR3VPi2DocmZc2RVMlG8CxAZczt3xcPnTzyPEByHUu+a4ePNhM1kHPo241lpc0djgXtgGKn7V1S98kPOvNSAoVsEi6ixXbW+QHrsUcp/QlvE8newlmomf74rkuXNOGtWunc3TNnWRVmYQ6mf73U+uL1FFUFaxGXLE5+YsvXdptiC3z9RJHyJa83pN6XwCUwn2ZWG48PkhCM0nQCZgq7lA+HaTyrXfRE7aNiPUCnsCJt5joY54+ILgS9DT/J6QnHmnibdDynzuFNK4TubXILweZNAnQl/Uy1ty6ZV0PU+NFiV2dU2jicy1kP6UNVTH4nfGh94B0gb/ucb3rqOwOwvISg/IgPh7v0vWli+s7rIiH1eU9P44gQ/ESYAurWSZcxQKbWTNPVw+Ojs+w6hq69jOY0PZ0zpe9gLEkbRsqTvUJm0BljjfW5VJPXLQyY9Jl+IK2A6QqBrd9Au4OGi6gqLO0agzeBFpH86u87yCeK7Evtm7kifHtk4bi3pY/IQDR0pBskd/rlSP6PG7e5h0DSyhsUCMwTptCyNW6UMeu0nlaHT9v9QcFls0/hEo4utfFh3rc+8NZaJeYhFBPpjGEBmFr5Dg4pjqFJ7Z771px37bZisddjvZWQqUZ4Kg7RVWMrDrducUzAna8MpFwDsVERGErlfU1jkpTqReOvciAgeEzgDvKNJXeblEhMkNnGvjQWcsTBvwDtiUH4jxF+DNFNuLVSmAn6sv4y5rh85zjGU9iXc0o5bsIKaNCCCEmDMP/Ehq+R0aYS0AyOJJdGNgPkvT7iz2PsYC6RIvAQY2bvTrc2rkz2mLK9S6QZ9t6SM3GpY8brtRrdpq0KWakGgdoeYupDGUW0zFYH4rL5e85ctq6vkILzK7nUx56kiDHaxjnj6rfERmGkF+RWD08DQIRx4Dc2P0OuCQ06VCZRJauVs32EPh+OAmZWfz79OdHUxtFOexpCUaCfbHT+2QLYOE8xHJ1jvBYEotJmMNnEY/buQcTtMz0TpZxM0N0veK3NbtpkrEBYnpAAmJJRxLcMd4LadK+2AMvnYdk6x7yoOyh7kUkVkPtXuVqifCZDLaSCg48IwDY1XjxatJmgNJmvNCApv9CvbypWB6p6I18NDuTMn7SSDreLETqJaFmOXnueSwIe2VmxR/oSG1VVPhpSscp0ZxqXaXbUpUwBXkQaG0FoyDg6UJ5ePM+Hn2YQEDtFc45BHMiglxzfyzsD1fWVQiAbCRJz4NXo0uHllMrlIfamw89SnzKXpqHhu0PBCWTCiXHCHWiaCh57nUyt1xvfObmpOMoQ45uUAeszryTo6glo7wbCWXg1GcdjOAbbInUMmeuW6TEFWZjg+XnPSXMyHnjWU/Be/zXP399UarTFeSQ342BhGXQLk6jXyzbkbba1ENuVCUI/Nytd4z5pMAHMH+woZq2WXZDDvQwj3LKLLFROaGS0C/5Lyui0HNE8z9RF4CstG4bE5wretEdUu4suT95xZyKYsntVBnIG19cXMPLgDURmdLliekx8N8ws3vehlZ5Gc764ztg+ZoKvo4y6LRkE+Jp7fG4u8OQLhAb8fAL7FiusRliYBmJUyi4tP4Y1kBDDZgrFD8JF6m2vK5PUYAdm3i6IwxAGfMVpIEdbfs7tfGsbKBe7v5Rp86j1R8af9sQFvllq30HIaWjIl5++p9bw4ppkNiDozEflFPJSTcjGaw668/R0GKLb6LeSvZdpJenesms/LMPbDva8/UOPfgG+B0lbdpAOxkrf13LPtx4RqLxMjjSceqpvnPlKGV/Z/fu468Tbx55TNqApjEyp7z/uA026rx3cgdzziYbjGeK068TH6HV36ICg0cChw9eR4PdUwRtWQgAyLCmOHY2SsxaRuQsJelIvpUxnolx5WxtwAU/6YUQyAk/1Q9MIwCdrTaLbNi5wke4HEiJSAnAa56DWLQLsCoxdxSsIMLBlOHCxaNK14etf3GtzY8drf+lhddxwtrhOlUzBt7Wby5+x5uFzYrJ4WNi6iwS+7QKsI8LaRjWz3q/rdljJp66L8UJzMG7cjyj5W9n8/f8vBI+U4azw45qHoyDbyoJYiaKFS4MRD4GAdrwFHc73rnKEkHWUNdFU8BBfL32B9A6shfQgIoWEn0DiNKzKqDdHxm9kkl2bPNa7ZI7iTUvs1z3BKGlPkSJktXtQ0U3Ickc03Z00AZoB48D8Xa8tMJky4pUogyz5YDySuD6nvgib3WnpoyX9SH+TtOg9euYX/2dEot9KrGKwXO6TAzI0ui991h/wd2aSfbh7pqMwY8rDv6qc39VY/EapMXVbanvdCXrProxnpkKjHtsoGczJYpY1wX9ycGLBAVoi7ZOVgnYnNJYFNuWMTzV9Pm8GJrzYDDTbpBoDxzy2cOXYIrkOpGsoALf/mwpU+jNOa4lNfm+jPVm2F+vRw0ot2keyouhWPNVKgDIa7NeC5HhLBi2G1Xfn85csnMnhDeKfmxJVFCf8EPBBgKF8lScQo2AQ1xLZ72yULByRJdGwRz94ydaKcnT6lMgGrlz8vZfBUBGVQsxQybSbPNqNa5RDmb+X8IzrLyUM0v5wTAprcw11cvzOBbWmirjEMPFx+vJwChY1b552DnnDQ8weoetrhHDSoH73h1F3aPDOXUWnaFBqctXpyi7Mt0Vwd8qsmhAkY4GRbA1IpU72bcNOJp9ioW4MaY/6efBV4cBfsKaBuYUV5kF/shKZWNBQdgOciK5fDPsv69cr9uhwCGZo95Kd0gNSlY4i+Vj6KcEVxK/4xkVJZeGzW9oOkkJ22obXZsTSASSnlUIriw1gkRtWHqjSkNQPEtSW9BN4NCKV1Vfxhay4JM0Ve1re2qzSYTdPwCSYPC7YGskLtnor3DKsZ/K1M2aJ/CbtNh1DFbSKSGVYviOT5g2G00rnkIWKnK3DvNAr0WONw0tE1MVY9CXgAX/vQvGvFxWZePmX9BCQ3aj4nruZzgcrQG+BGWz4X/MhiYJnrqmKXufR3JG+tvVB0f9T/JSuzFk0GuyglQeY8/tLKot5PMP0tDvFNyg3JuGhinG+WQ8BHn6w29oEdeuZF252qGgtL3Uve6BPGizQjpwCkAIiUbaufdWsGalJ8GtuDwlelcp+wATh3lUpecvoWAMNJwWz8ZJDdnVVnyKfczNc2vj8q5JC4bA8i5B3S/xik9toGiHb/3sgCyvsAX+HOSGsyb5PDc2WqcExrLIKoj/DrTAIOlABG+QUKNqTceTp72hdCHbhg+Q8+SHYnAeIAtENouAmNU0HqJolcPeO3J5NGxp/3SvSt4fbYJzEvFdgVMTl5CZDbpfNpCSkRLjE6ZkkEiRuvypuU2FvCL5eEMKx6kgebO4SQMdOSxZbG0jRS3kE0zVRfajTJIRV8ddCMBCCRbZzwqG1drltY3WDRALCV2Pkm8KAuZSbzW1slBCyJOP/gske8yZxuqXwuLs9u/uRxsHdciUIHO7baVsYxiWDOR0YApa+ZifUIYIPnH45XKBnZupBIBe1NTisMm2p/pA+vA166bFYSSQSXzQQUfXSsVa69NlwSTFUY1BCTPaZ2Pm6e2A+dQkKd7Z72TAQnI2oa66xXilh2usCiggNz2lcxg+D2vNAQmHPOGgnqYqvu52/zao4oHJh0HfGlDDWXDDT3ngamfwVoWiY2twTlA0/IePMSm7DeE+U1reGjTpQSukFJz+jzRNLsy78Zt1LvocRbeUer14XWTtij7l7U01PQpDicbBju1CFWuiQF0EhJ6refSGU4EfVitZRCu8zVpPsDXUs+ozWLbk4XrxnYX4iY8aH7SBXOmwt8Q6of5S74m63+Y4x4vDRjfv98fzaRM9XP1pqhGWgXo/u1v84dp9zCbqYw7tdZxBf59Q9fZoQoeqQRexvZfR9iRGZCrEy1ZM4IB6qtBhdXC9OuAoy9veJSYqA12dljfnenTiozjbv5uHV9Q8VZ3azmXZszimADmhPQzcuLiNwfRP5U8d9pUiakcAY2Ig1x75LF/Pwkda0dypQdmBBs43S91SAhoGA/y5mi7MnVOBdimXe+rH25gYQ97KRF8ce8zTpQ2hpq1+Ta1dw6ZeScFIR03iXXZsKBEqVA8ILiRnwQk4MW//XdRqFJDUJHDP7qKRjHBBAKFPbPrryYDF4JwCez+gvcCipp/kNO3jD0LGAZLNKh9fgKb6XpDBPjLmPWBiHOrus0pq3orM2aBV2unR4PIdepOYkyViOpNxRMDC8V2pEb+MZGf3ROVDAWLQ/AZFNwFNV3DdPd6lhdGJZkEbrCYjSUsdGFWoq39Hx5QDPOXQlaPl7E5DO0ahEE51JGhzaRXNrvJFAcGfIZCdDdp++qU0Q3J5Vyq0rWthnxv/ZYkhbvk98Dd1xtyoRbBhyOc8Wpc5LEbZXsZCpAY452NIUQtXAy+1sND2v5V0qGd3wt5V9FLdxDhCCrAdnV+ua+MRo/cJevzS4sLbqwyNnDZXz2F89Bcgi85qbOVtkOFltZrW1flgsRzI/01GxUrXkndauslYNX4I7IM8iwBNpSlsrxA34hrx7QAT6AmIuTxvq5k1k5qXkpYAYYhVm01LKcY2TCG8Uov4suq8chR0W9/CohZbKas5i3x5TxoAjSArGzvQU3bOn4d4XabrhA6kgyZajh1sICoYmnKuCy6iDURO1VV/1rCOZV9isr2ht021E0sFv89e/XgT/rgLCVCeO47TPyvrIGUf9mn47usDdv10ZsnCgCwTAh+N4/dEFpO46qmq9GaHuPZLFVmzHXsw0seUsXHUSSgTM0nKc3fmeWZkH938QgIZKKPKGnJAKa1DsE7x5ira1yAVoMudTohzZWHu1FcP/dvdwbzaZBUnmOB18OXAuSR9ZWNV5O8i2r/jB5wtauQf8aGZMoZW14TBWxtvOY0DG5zTUMIoIo/+5d0GZJyRHMxmS10v77E8UgB0apK1QSoXy3bTrLvKH6BgbRfC5Fuomc5ANlnorvslEl3RGUCHPRXIJie7JNdBG01xwnOKs+74S+OJSXW6TbXuXhwCaHBBsFy+xkjT/C/8QrrKn1ZHTu95iByFmdgzGDCLUhZ5q5jzS3+AmmyGRczFWedhFl8RhKt9AllWUeyWGk/h7W/jLy6puR6sBkl5XA9F+Nhr3z6gMCgscy9IQ5NBWtR2rqpPbcxUZayujUE/WGhnbg2Om3JTMHDKc0A/bCObSODfFJj+Na8vJNHLxtf+WZZ1TTlFyqENHqs4XE186Zqkoop77Y+nxQEoEeuc/2VEnGQR2hGEukO2ZWEp4KQnhUEofbwUC/8K9WAAVPXDIBbxHbiVhry2cm4yKARApiLLoNeDG/R9h37EMzfu06n+3VCI6tyM0wcG1uxtshK1YAlkb6UW2cqyuWPfZ8W28CWDuoZXjpKwgUiPyDapHyCDdNzpZblNm9sTlLGEKsbfD+Rqm6+oZlfvtjW7QtEvibxPGkZ8SUpZm1ebdJnSRDLBLvAoK8CO9mrhOa8ryeOUkO+I8QxPuAvuBc/kO8NhIuWyD2Za2ag1SszaL/kZlZAvdiDLdKgwT2Z1V9g13bArS02J1+Hg/XXTpXZjPPZM79Xkeoh6RtmBL00oDk8zPpjfxHGS7rfiimnzQzV72yvhjzOXdAISvf976x/njEZ1hGN6LMF2tYmiQaYwICbbWHVWcsVUBX4MJFIT+D1RrLLmy6VcmV6dzKCA5AhWRAcvZ2WK5vl97cXocmg3uNfqEw1WHcLcYEIV8B8/ii8envpO78/C2TN2+8kW4lAWxQ9CTfahkAVEcCa+bfvuhI0/15B6WzN17sX0BNcC7eTpc4T91ZpkoM6as+zOmgeM8HWBYJfrFP07q5kdiikXKeXUTWi8axyCKh5PFR9p7AJG/00SH90iAF9XMIRbawjUZopsWskLksqlNZA9BCS/7JRL5laZ3lwWaGLmsBYSoj4sNjx3HDHxFagFiVZWa8rnuHwzMJQOrJWk7TRxJCxhXXY8QtWEfsZIBHKZkfW3hkkf7QhPwLe0GLCly38rrSxOo9pBTljVH4yaw/wacm7ZwG8Y0fiqw7l0n7/GKtOazqaTHRHJZWlE8DIwjJapmjrP6lvy8OLNVXZ/HLWkyYAZpfI4GTyxWYDxt/l5MD/hipf2PiGC76kFKg68SWXRK/21qEKryDVGZBaCwxUPE4wORJUgMEsaVjQbtFuT7RaWfQ5FUATwa8+Np6eccxxvdoPfo5tfPOzkUMO2/js3+GCKs+Y7eivZCpnHzxjJjlvGMccW3/z7gUgC4xsyUPkVbiS0yBDRMNF8cmxBXqIatuyVZjUl3DVJpgnk3ZVg68esDsR8JL1ZpEYjaGOYoV7/m+VZdU5vuhzTMoQYGw2W1lfHjCbgicPNke5aVRF1Pyszh2mKwhMeFZC6PR/9+lhwPm4Ae3HUsww57I46oFQCx4jivyyl5wVyBKdY8Q9TMKrxxbP/90qPjXo4D2jUxJS8AmbRlaUlizN3GC1I/yE8UdPm07XkvlIu7wYjNgrdD0cb79iDbTAn6hpNsXMwik5WD2kRZJ3Fe6itDjGHbbarVJouK9bWAVugW6sftZHQJmnR+d5Gxs1Q9F2Q2fSzlsgbBPLi6QgOT8egDJ4xahlpffOBLe/sT56eX/yyRVAnSkl4BMxlQvWfhtlWx80GtTewf7X+IjDallm6kUV+BmNBF5LFbfveBiAd3JKkqMwBKpOCB89AS4co/FytIQ6YD4jaMmY4SYpdSsBgwxpPUTgZPZgLk0VDjhWXT4Wpb5acYEDCHL/UIj1HXuqkKVp1ojDwD0A0yqEBKpei6mlgNGUK36BcFT3LNJYVnSe46jxeNI0hINlBavs/7BfniyVrwO2Y+LkEeatQExgmvBtpAKfscCOEOllO1Q4VeqpDeWzTE68oLLjYYGTDSZYbW8FKA41XMMk6fBKeRjHw8sDDyk4uPfO9Q7skp/Y+UgI4oAKJVNia6Ur6jALDycSJv9zaY3VPZV1eEuHcw0b2mjbqnK/DrP67tS3SPVlaK8rt7JarfuNnKUKB0beLcukbpZrc5ZRjjuW8jcwbVmo+ZKT7axTkqVwOfYpM/ZjPFWBlyQsZImKL0DpzyocIuBrcVOMqAENMQA+iM/P0A8Lzg9AsIqELbYnFQEV/1QXJ3+lQaLNgFpwXj3bMBXRmuZQf6V863w1Kn9gqEFB5ZWAi8Q89CeYQwhR6kcSJIklFRTiBqN7AdJ9HEA/SMabzW/dD66Iif/3dmWFjzxtqFiJ8Etq6SUtnvytZj7U0+YptKXbgr1PfeLAuGAE=",
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 1,
+          "output_tokens": 2927,
+          "cache_creation_tokens": 1308,
+          "cache_read_tokens": 38743,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01WPvQ8PBEVjZRntHSmLGTaR",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-22T04:49:33.284439",
+          "completed_at": "2026-07-22T04:49:34.018073",
+          "generation_duration_ms": 733.6336409207433,
+          "content_blocks": [
+            {
+              "block_type": "text",
+              "sequence": 0,
+              "text": "I have all I need. The notification tasks will use `BPMN.ScriptTask` (no discovery needed). Now I'll author the complete file in one pass, then validate.",
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 0,
+          "output_tokens": 114,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01WPvQ8PBEVjZRntHSmLGTaR",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-22T04:49:34.018073",
+          "completed_at": "2026-07-22T04:49:59.797460",
+          "generation_duration_ms": 25779.3873550836,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01VpqWr3HM4QUL5wB8Wp7wVE",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01VpqWr3HM4QUL5wB8Wp7wVE"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 7207,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01WPvQ8PBEVjZRntHSmLGTaR",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-22T04:49:59.831950",
+          "completed_at": "2026-07-22T04:50:03.277659",
+          "generation_duration_ms": 3445.7099399296567,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_019g1YTTSFgVCZS69sfuyRKx",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_019g1YTTSFgVCZS69sfuyRKx"
+          ],
+          "input_tokens": 1,
+          "output_tokens": 166,
+          "cache_creation_tokens": 3744,
+          "cache_read_tokens": 40051,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01BXmAYyLDwmAk8ZxrmWWNoi",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-22T04:50:03.832387",
+          "completed_at": "2026-07-22T04:50:06.007997",
+          "generation_duration_ms": 2175.6098640616983,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01CPRv5ae3wKdtxZJcJJed1S",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01CPRv5ae3wKdtxZJcJJed1S"
+          ],
+          "input_tokens": 1,
+          "output_tokens": 118,
+          "cache_creation_tokens": 626,
+          "cache_read_tokens": 43795,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_019Dc2drs6VxWvuCaWmutf2R",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-22T04:50:06.330983",
+          "completed_at": "2026-07-22T04:50:08.149682",
+          "generation_duration_ms": 1818.6863880837336,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01XHfAhE2AogyXzS2v93cMGB",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01XHfAhE2AogyXzS2v93cMGB"
+          ],
+          "input_tokens": 1,
+          "output_tokens": 100,
+          "cache_creation_tokens": 284,
+          "cache_read_tokens": 44421,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01NVZuBhmsFJAFFME1vs8CU6",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-22T04:50:08.163386",
+          "completed_at": "2026-07-22T04:50:10.012984",
+          "generation_duration_ms": 1849.599110078998,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_019zVxnmp7aDxo3fMhSHcUZN",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_019zVxnmp7aDxo3fMhSHcUZN"
+          ],
+          "input_tokens": 1,
+          "output_tokens": 105,
+          "cache_creation_tokens": 162,
+          "cache_read_tokens": 44705,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_017yq3QtpDtrdVNakmYaqyBH",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-22T04:50:10.025206",
+          "completed_at": "2026-07-22T04:50:12.001917",
+          "generation_duration_ms": 1976.7111360561103,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01W2J9E4Kqxez9SKirUiuydr",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01W2J9E4Kqxez9SKirUiuydr"
+          ],
+          "input_tokens": 1,
+          "output_tokens": 118,
+          "cache_creation_tokens": 320,
+          "cache_read_tokens": 44867,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01G6M9tram2XL1Su82m8mj8a",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-22T04:50:12.285936",
+          "completed_at": "2026-07-22T04:50:14.722837",
+          "generation_duration_ms": 2436.901338980533,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01LjAmG7z6Do1QDxY7XRW4cd",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01LjAmG7z6Do1QDxY7XRW4cd"
+          ],
+          "input_tokens": 1,
+          "output_tokens": 186,
+          "cache_creation_tokens": 333,
+          "cache_read_tokens": 45187,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_0176burGBtUwyKH61otJCMiG",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-22T04:50:14.752698",
+          "completed_at": "2026-07-22T04:50:18.358289",
+          "generation_duration_ms": 3605.5911910953,
+          "content_blocks": [
+            {
+              "block_type": "thinking",
+              "sequence": 0,
+              "text": null,
+              "thinking": "The validator directory is read-only. I can't install npm packages there. I'll use the fallback: well-formed XML parse plus the structural checklist. Let me use Python to parse the XML and then do the structural checks.",
+              "signature": "EqYDCmcIEBABGAIqQKcGy4e79w2lmIBpx9W1WDYnHF/XIz8t8SexOUHckczJszjd7brenO6DqnrQmvsouJCJz910x2HMT01JvsXEnEMyEWNsYXVkZS1zb25uZXQtNC02OABCCHRoaW5raW5nEgwyZ+fSci4X87Ae+bcaDEzk6e4vo5ywVUW9giIw/hI6yW1DMKhIbkMrEXfQB8xlIALdgPf4JXNXdY8nx4PV5jgKLSl3I+Vf4mFv5s5RKuwB49jKiPEeveXTnYXqn2TwGYN35QEGesbymbvfwG7AzwJHXHI82xaLV4r/5btMKQzjSfFNH0crKkvZMCJ08S3mu56l20jRwVL24AHZuwbSOSHpf5/5j+wBYzYke4jt+ALnvQCfHJcLbeJKlbofGNkzR/lBTgfPunZS6SWgC3E4LmF3btQAkWBNiyqWpvik1kitb8FLbC3kx94ivkjZOa9lCm3rUPnEznd1Wa+DrNawaIEqPxuCAbMKNmuKQBPRGWOL6yYlrqOFcda/He0h4LTpiCHmyJAGaoEireyUqdk49f7M+gDEuh/Ny6Q4xVcYAQ==",
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 1,
+          "output_tokens": 78,
+          "cache_creation_tokens": 389,
+          "cache_read_tokens": 45520,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_015oG192rsEMaWs3StpCFNBC",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-22T04:50:18.358289",
+          "completed_at": "2026-07-22T04:50:18.924142",
+          "generation_duration_ms": 565.8515869872645,
+          "content_blocks": [
+            {
+              "block_type": "text",
+              "sequence": 0,
+              "text": "The validator directory is read-only. Falling back to the documented secondary: well-formed XML parse + structural checklist.",
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 0,
+          "output_tokens": 45,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_015oG192rsEMaWs3StpCFNBC",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-22T04:50:18.924142",
+          "completed_at": "2026-07-22T04:50:39.718368",
+          "generation_duration_ms": 20794.226994970813,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01VB5uQqQeCNayDCa8swL2YG",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01VB5uQqQeCNayDCa8swL2YG"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 1703,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_015oG192rsEMaWs3StpCFNBC",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-22T04:50:39.851229",
+          "completed_at": "2026-07-22T04:50:51.757600",
+          "generation_duration_ms": 11906.370274024084,
+          "content_blocks": [
+            {
+              "block_type": "text",
+              "sequence": 0,
+              "text": "The file is valid. Here's a summary of what was built:\n\n---\n\n## `NotificationFanout.bpmn` — complete and validated\n\n**Location:** `/work/output/artifacts/skill-bpmn-inclusive-gateway-forkjoin/NotificationFanout.bpmn`\n\n### Process structure\n\n```\nStart (manual)\n  → inclusive SPLIT \"Which channels?\"\n       ├─[=vars.Var_SendEmail == true]─→ Task_Email (Send Email Notification) ─┐\n       └─[=vars.Var_SendSms == true]───→ Task_Sms   (Send SMS Notification)  ─┤\n                                                                                 ↓\n                                                              inclusive JOIN \"All channels done\"\n                                                                                 ↓\n                                                              Task_Summary (Log Completion)\n                                                                                 ↓\n                                                                           End (Notifications Complete)\n```\n\n### Key design decisions\n\n| Requirement | How it was satisfied |\n|---|---|\n| **Manual start** | Plain `bpmn:startEvent` (no event definition = manual) |\n| **Inclusive SPLIT** | `bpmn:inclusiveGateway` with 1 incoming, 2 outgoing — each outgoing flow carries a `conditionExpression` (`=vars.Var_SendEmail == true`, `=vars.Var_SendSms == true`), so any subset can run |\n| **Real JOIN, not FAKE_JOIN** | Second `bpmn:inclusiveGateway` with 2 incoming, 1 outgoing — synchronizes exactly the branches that ran |\n| **No SUPERFLUOUS_GATEWAY** | Both gateways have ≥2 incoming or ≥2 outgoing connections |\n| **Node payloads from registry** | All three tasks use `BPMN.ScriptTask` from `registry get`, with `<uipath:type value=\"BPMN.ScriptTask\" version=\"v1\" />` as a child element, never an attribute |\n| **Full BPMNDiagram** | Every node has a `BPMNShape`, every flow has a `BPMNEdge` with waypoints |\n| **Validation** | Structural checklist passed — 7 nodes shaped, 7 flows edged, no dangling refs, conditions present on all split branches, no fake joins, no superfluous gateways |",
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 1,
+          "output_tokens": 585,
+          "cache_creation_tokens": 2010,
+          "cache_read_tokens": 45909,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01PnVgjzJ5dp6aZearjbySnz",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "reconciliation",
+          "input_tokens": 754,
+          "output_tokens": 18,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "note": "Tokens the agent billed but never surfaced as a generation (fixed prompt overhead + sub-agent input/cache the stream doesn't bubble up). Booked here so the transcript reconciles to the turn total."
+        }
+      ],
+      "num_turns": 16,
+      "max_turns_exhausted": false,
+      "result_summary": {
+        "is_error": false,
+        "subtype": "success",
+        "stop_reason": "end_turn",
+        "result": "The file is valid. Here's a summary of what was built:\n\n---\n\n## `NotificationFanout.bpmn` — complete and validated\n\n**Location:** `/work/output/artifacts/skill-bpmn-inclusive-gateway-forkjoin/NotificationFanout.bpmn`\n\n### Process structure\n\n```\nStart (manual)\n  → inclusive SPLIT \"Which channels?\"\n       ├─[=vars.Var_SendEmail == true]─→ Task_Email (Send Email Notification) ─┐\n       └─[=vars.Var_SendSms == true]───→ Task_Sms   (Send SMS Notification)  ─┤\n                                                                                 ↓\n                                                              inclusive JOIN \"All channels done\"\n                                                                                 ↓\n                                                              Task_Summary (Log Completion)\n                                                                                 ↓\n                                                                           End (Notifications Complete)\n```\n\n### Key design decisions\n\n| Requirement | How it was satisfied |\n|---|---|\n| **Manual start** | Plain `bpmn:startEvent` (no event definition = manual) |\n| **Inclusive SPLIT** | `bpmn:inclusiveGateway` with 1 incoming, 2 outgoing — each outgoing flow carries a `conditionExpression` (`=vars.Var_SendEmail == true`, `=vars.Var_SendSms == true`), so any subset can run |\n| **Real JOIN, not FAKE_JOIN** | Second `bpmn:inclusiveGateway` with 2 incoming, 1 outgoing — synchronizes exactly the branches that ran |\n| **No SUPERFLUOUS_GATEWAY** | Both gateways have ≥2 incoming or ≥2 outgoing connections |\n| **Node payloads from registry** | All three tasks use `BPMN.ScriptTask` from `registry get`, with `<uipath:type value=\"BPMN.ScriptTask\" version=\"v1\" />` as a child element, never an attribute |\n| **Full BPMNDiagram** | Every node has a `BPMNShape`, every flow has a `BPMNEdge` with waypoints |\n| **Validation** | Structural checklist passed — 7 nodes shaped, 7 flows edged, no dangling refs, conditions present on all split branches, no fake joins, no superfluous gateways |"
+      },
+      "crashed": false,
+      "crash_reason": null
+    }
+  ],
+  "error_message": null,
+  "error_details": null,
+  "error_log_tail": null,
+  "environment_info": {
+    "git_commit": "unknown",
+    "skills_git_commit": "unknown",
+    "cli_version": "1.197.0-alpha.20260626.7673",
+    "tool_plugins": {
+      "agent-tool": "1.197.0",
+      "agenthub-tool": "1.197.0",
+      "codedagent-tool": "1.197.0",
+      "data-fabric-tool": "1.197.0",
+      "functions-tool": "1.197.0",
+      "gov-tool": "1.197.0",
+      "insights-tool": "1.197.0",
+      "integrationservice-tool": "1.197.0",
+      "ixp-tool": "1.197.0",
+      "maestro-tool": "1.197.0",
+      "orchestrator-tool": "1.197.0",
+      "solution-tool": "1.197.0",
+      "tasks-tool": "1.197.0",
+      "test-manager-tool": "1.197.0"
+    },
+    "coder_eval": "0.8.4",
+    "claude_code_cli": "2.1.177 (Claude Code)",
+    "uv": "uv 0.11.28 (x86_64-unknown-linux-gnu)",
+    "anthropic": "0.102.0",
+    "openai": "2.46.0",
+    "pydantic": "2.12.5",
+    "api_routing": "aws_bedrock",
+    "aws_region": "us-east-2",
+    "bedrock_model": "us.anthropic.claude-sonnet-4-6"
+  },
+  "agent_config": {
+    "type": "claude-code",
+    "model": "claude-sonnet-4-6",
+    "permission_mode": "acceptEdits",
+    "allowed_tools": [
+      "Skill",
+      "Bash",
+      "Read",
+      "Write",
+      "Edit",
+      "Glob",
+      "Grep"
+    ],
+    "disallowed_tools": null,
+    "plugins": [
+      {
+        "type": "local",
+        "path": "/home/azureuser/projects/skills/tmp/"
+      }
+    ],
+    "system_prompt": "You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted.\n",
+    "system_prompt_file": null,
+    "ignore_patterns": [],
+    "claude_settings": null,
+    "sdk_options": {},
+    "setting_sources": null
+  },
+  "sdk_options": {
+    "tools": null,
+    "allowed_tools": [
+      "Skill",
+      "Bash",
+      "Read",
+      "Write",
+      "Edit",
+      "Glob",
+      "Grep"
+    ],
+    "system_prompt": "You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted.\n",
+    "mcp_servers": {},
+    "strict_mcp_config": false,
+    "permission_mode": "acceptEdits",
+    "continue_conversation": false,
+    "resume": null,
+    "session_id": null,
+    "max_turns": 70,
+    "max_budget_usd": null,
+    "disallowed_tools": [
+      "ToolSearch"
+    ],
+    "model": "us.anthropic.claude-sonnet-4-6",
+    "fallback_model": null,
+    "betas": [],
+    "permission_prompt_tool_name": null,
+    "cwd": "/work/output/artifacts/skill-bpmn-inclusive-gateway-forkjoin",
+    "cli_path": null,
+    "settings": null,
+    "add_dirs": [],
+    "env": {
+      "PATH": "/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+      "PLUGIN_TOOLS_DIR": "/usr/lib/node_modules/@uipath",
+      "CLAUDE_CODE_USE_BEDROCK": "1",
+      "AWS_BEARER_TOKEN_BEDROCK": "***REDACTED***",
+      "AWS_REGION": "us-east-2",
+      "CLAUDE_CODE_ATTRIBUTION_HEADER": "0",
+      "ANTHROPIC_MODEL": "us.anthropic.claude-sonnet-4-6",
+      "ANTHROPIC_SMALL_FAST_MODEL": "us.anthropic.claude-sonnet-4-6"
+    },
+    "extra_args": {},
+    "max_buffer_size": null,
+    "can_use_tool": null,
+    "hooks": null,
+    "user": null,
+    "include_partial_messages": true,
+    "include_hook_events": false,
+    "fork_session": false,
+    "agents": null,
+    "setting_sources": [
+      "project"
+    ],
+    "skills": null,
+    "sandbox": null,
+    "plugins": [
+      {
+        "type": "local",
+        "path": "/home/azureuser/projects/skills/tmp"
+      }
+    ],
+    "max_thinking_tokens": null,
+    "thinking": null,
+    "effort": null,
+    "output_format": null,
+    "enable_file_checkpointing": false,
+    "session_store": null,
+    "session_store_flush": "batched",
+    "load_timeout_ms": 60000,
+    "task_budget": null
+  },
+  "sandbox_path": "/work/output/artifacts/skill-bpmn-inclusive-gateway-forkjoin",
+  "task_config": {
+    "resolved": {
+      "task_id": "skill-bpmn-inclusive-gateway-forkjoin",
+      "description": "Structural advanced-event eval: agent uses the uipath-maestro-bpmn skill to author an INCLUSIVE (OR) gateway fork with conditioned branches and a real inclusive join. Exercises the FAKE_JOIN / SUPERFLUOUS_GATEWAY rules (join with a gateway, not by pointing two flows at one activity). Authoring only — no cloud effects.\n",
+      "initial_prompt": "Load and follow the uipath-maestro-bpmn skill.\n\nAuthor a single Maestro BPMN file `NotificationFanout.bpmn` in the working\ndirectory that fans out to independently-chosen channels and rejoins:\n  - a manual start,\n  - a bpmn:inclusiveGateway SPLIT (one incoming, two outgoing) where each\n    outgoing branch carries its own conditionExpression (e.g. email wanted,\n    SMS wanted) so any subset can run,\n  - each branch runs a notification task,\n  - a SECOND bpmn:inclusiveGateway JOIN (two incoming, one outgoing) that\n    synchronizes the branches,\n  - a final task and end event after the join.\n\nRequirements:\n- Synchronize with an inclusive JOIN gateway — do NOT point two flows at one\n  activity (that is a FAKE_JOIN), and do NOT use a one-in/one-out gateway\n  (SUPERFLUOUS_GATEWAY). Each split branch must be conditioned.\n- Discover any UiPath extension node's type via the registry and author it from\n  the registry template — do not hand-author uipath:* XML from prose. Structural\n  BPMN (gateways, conditions, sequence flows) comes from the skill's structural\n  reference.\n- Include a bpmndi:BPMNDiagram with a BPMNShape for every node and a BPMNEdge\n  for every sequence flow.\n- Validate the file locally before finishing (the bundled validator, or a\n  well-formed-XML parse plus the structural checklist).\n\nDo NOT upload, publish, deploy, debug, run, or pack anything. Do NOT ask for\napproval, confirmation, or feedback, and do NOT pause between planning and\nimplementation. Build the complete file end-to-end in a single pass.\n",
+      "initial_prompt_file": null,
+      "tags": [
+        "uipath-maestro-bpmn",
+        "integration",
+        "mode:build",
+        "lifecycle:generate",
+        "node:gateway"
+      ],
+      "skip": false,
+      "agent": {
+        "type": "claude-code",
+        "model": "claude-sonnet-4-6",
+        "permission_mode": "acceptEdits",
+        "allowed_tools": [
+          "Skill",
+          "Bash",
+          "Read",
+          "Write",
+          "Edit",
+          "Glob",
+          "Grep"
+        ],
+        "disallowed_tools": null,
+        "plugins": [
+          {
+            "type": "local",
+            "path": "/home/azureuser/projects/skills/tmp/"
+          }
+        ],
+        "system_prompt": "You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted.\n",
+        "system_prompt_file": null,
+        "ignore_patterns": [],
+        "claude_settings": null,
+        "sdk_options": {},
+        "setting_sources": null
+      },
+      "sandbox": {
+        "driver": "tempdir",
+        "docker": {
+          "image": "skills-image:latest",
+          "dockerfile_path": null,
+          "build": {
+            "buildkit": null,
+            "args": {},
+            "secrets": [],
+            "extra_args": []
+          },
+          "network": "bridge",
+          "working_dir": null,
+          "env_passthrough": [
+            "ANTHROPIC_API_KEY",
+            "API_BACKEND",
+            "UIPATH_LLM_BACKEND",
+            "UIPATH_ACCESS_TOKEN",
+            "UIPATH_URL",
+            "UIPATH_TENANT_ID",
+            "UIPATH_ORGANIZATION_ID",
+            "UIPATH_CLI_DISABLE_VERSION_SYNC",
+            "AWS_BEARER_TOKEN_BEDROCK",
+            "AWS_REGION",
+            "BEDROCK_MODEL",
+            "CLAUDE_CODE_USE_BEDROCK",
+            "ANTHROPIC_MODEL",
+            "CODEX_API_KEY",
+            "CODEX_BASE_URL",
+            "CODEX_MODEL",
+            "GEMINI_API_KEY",
+            "ANTIGRAVITY_MODEL",
+            "HOME"
+          ],
+          "env_passthrough_extra": [
+            "SKILLS_REPO_PATH",
+            "BEDROCK_MODEL",
+            "TASK_PARALLELISM",
+            "UIPATH_CLI_ENABLE_ENV_AUTH",
+            "UIPATH_CLI_AUTH_TOKEN",
+            "UIPATH_CLI_ORGANIZATION_NAME",
+            "UIPATH_CLI_ORGANIZATION_ID",
+            "UIPATH_CLI_TENANT_NAME",
+            "UIPATH_CLI_TENANT_ID",
+            "TRACES_SMOKE_PROCESS_KEY",
+            "CODEX_API_KEY",
+            "CODEX_BASE_URL"
+          ],
+          "extra_mounts": [
+            "~/.uipath:/.uipath:rw"
+          ]
+        },
+        "python": {
+          "env_packages": []
+        },
+        "node": null,
+        "limits": {
+          "timeout": 300,
+          "max_memory_mb": null,
+          "max_cpus": null,
+          "max_pids": null,
+          "max_disk_mb": null
+        },
+        "template_sources": [
+          {
+            "type": "template_dir",
+            "path": "/home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn",
+            "mount_point": ".",
+            "include_patterns": []
+          }
+        ],
+        "mock_path_dirs": null,
+        "ignore_patterns": []
+      },
+      "success_criteria": [
+        {
+          "type": "file_exists",
+          "description": "BPMN source was authored",
+          "weight": 1.5,
+          "pass_threshold": 1.0,
+          "suite_thresholds": null,
+          "stop_when": null,
+          "path": "NotificationFanout.bpmn"
+        },
+        {
+          "type": "command_executed",
+          "description": "Agent did not run any cloud-side Maestro BPMN lifecycle command",
+          "weight": 1.0,
+          "pass_threshold": 1.0,
+          "suite_thresholds": null,
+          "stop_when": null,
+          "tool_name": "Bash",
+          "command_pattern": "(uip|\\$UIP)\\s+maestro\\s+bpmn\\s+(upload|publish|deploy|debug|run|pack)",
+          "min_count": 0,
+          "max_count": 0,
+          "require_success": false,
+          "exclude_pattern": null
+        },
+        {
+          "type": "file_contains",
+          "description": "BPMN has a diagram, an inclusive gateway, and branch conditions",
+          "weight": 2.0,
+          "pass_threshold": 1.0,
+          "suite_thresholds": null,
+          "stop_when": null,
+          "path": "NotificationFanout.bpmn",
+          "includes": [
+            "bpmndi:BPMNDiagram",
+            "inclusiveGateway",
+            "conditionExpression"
+          ],
+          "excludes": null
+        },
+        {
+          "type": "run_command",
+          "description": "Conditioned inclusive split rejoins at a real inclusive join (no fake/superfluous gateway), fully shaped",
+          "weight": 4.0,
+          "pass_threshold": 1.0,
+          "suite_thresholds": null,
+          "stop_when": null,
+          "command": "python3 $TASK_DIR/check_inclusive_gateway_forkjoin.py",
+          "timeout": 30,
+          "expected_exit_code": 0,
+          "expected_stdout": null,
+          "stdout_match": "exact",
+          "score_from_stdout": false
+        }
+      ],
+      "run_limits": {
+        "max_turns": 70,
+        "expected_turns": 20,
+        "task_timeout": 900,
+        "turn_timeout": 900,
+        "max_input_tokens": null,
+        "max_output_tokens": null,
+        "max_total_tokens": null,
+        "max_usd": null,
+        "count_cached_input": false,
+        "count_cache_creation": false,
+        "stop_early": false
+      },
+      "reference": null,
+      "expected_commands": null,
+      "pre_run": [],
+      "post_run": [
+        {
+          "command": "find . -maxdepth 5 -type d \\( -name node_modules -o -name .npm-prefix -o -name .venv \\) -prune -exec rm -rf {} +",
+          "timeout": 30
+        }
+      ],
+      "dataset": null,
+      "suite_id": null,
+      "row_id": null,
+      "simulation": null
+    },
+    "source_yaml": "task_id: skill-bpmn-inclusive-gateway-forkjoin\ndescription: >\n  Structural advanced-event eval: agent uses the uipath-maestro-bpmn skill to\n  author an INCLUSIVE (OR) gateway fork with conditioned branches and a real\n  inclusive join. Exercises the FAKE_JOIN / SUPERFLUOUS_GATEWAY rules (join with\n  a gateway, not by pointing two flows at one activity). Authoring only — no\n  cloud effects.\ntags: [uipath-maestro-bpmn, integration, \"mode:build\", \"lifecycle:generate\", \"node:gateway\"]\n\nrun_limits:\n  expected_turns: 20\n  max_turns: 70\n\nsandbox:\n  template_sources:\n    - type: template_dir\n      path: ../../../../../skills/uipath-maestro-bpmn\n\ninitial_prompt: |\n  Load and follow the uipath-maestro-bpmn skill.\n\n  Author a single Maestro BPMN file `NotificationFanout.bpmn` in the working\n  directory that fans out to independently-chosen channels and rejoins:\n    - a manual start,\n    - a bpmn:inclusiveGateway SPLIT (one incoming, two outgoing) where each\n      outgoing branch carries its own conditionExpression (e.g. email wanted,\n      SMS wanted) so any subset can run,\n    - each branch runs a notification task,\n    - a SECOND bpmn:inclusiveGateway JOIN (two incoming, one outgoing) that\n      synchronizes the branches,\n    - a final task and end event after the join.\n\n  Requirements:\n  - Synchronize with an inclusive JOIN gateway — do NOT point two flows at one\n    activity (that is a FAKE_JOIN), and do NOT use a one-in/one-out gateway\n    (SUPERFLUOUS_GATEWAY). Each split branch must be conditioned.\n  - Discover any UiPath extension node's type via the registry and author it from\n    the registry template — do not hand-author uipath:* XML from prose. Structural\n    BPMN (gateways, conditions, sequence flows) comes from the skill's structural\n    reference.\n  - Include a bpmndi:BPMNDiagram with a BPMNShape for every node and a BPMNEdge\n    for every sequence flow.\n  - Validate the file locally before finishing (the bundled validator, or a\n    well-formed-XML parse plus the structural checklist).\n\n  Do NOT upload, publish, deploy, debug, run, or pack anything. Do NOT ask for\n  approval, confirmation, or feedback, and do NOT pause between planning and\n  implementation. Build the complete file end-to-end in a single pass.\n\nsuccess_criteria:\n  - type: file_exists\n    description: \"BPMN source was authored\"\n    path: \"NotificationFanout.bpmn\"\n    weight: 1.5\n    pass_threshold: 1.0\n\n  - type: command_not_executed\n    description: \"Agent did not run any cloud-side Maestro BPMN lifecycle command\"\n    tool_name: \"Bash\"\n    command_pattern: '(uip|\\$UIP)\\s+maestro\\s+bpmn\\s+(upload|publish|deploy|debug|run|pack)'\n    weight: 1.0\n    pass_threshold: 1.0\n\n  - type: file_contains\n    description: \"BPMN has a diagram, an inclusive gateway, and branch conditions\"\n    path: \"NotificationFanout.bpmn\"\n    includes:\n      - \"bpmndi:BPMNDiagram\"\n      - \"inclusiveGateway\"\n      - \"conditionExpression\"\n    weight: 2.0\n    pass_threshold: 1.0\n\n  - type: run_command\n    description: \"Conditioned inclusive split rejoins at a real inclusive join (no fake/superfluous gateway), fully shaped\"\n    command: \"python3 $TASK_DIR/check_inclusive_gateway_forkjoin.py\"\n    timeout: 30\n    expected_exit_code: 0\n    weight: 4.0\n    pass_threshold: 1.0\n",
+    "source_file": "/home/azureuser/projects/skills/tmp/experiments/tasks/uipath-maestro-bpmn/structural/inclusive_gateway_forkjoin/task.yaml",
+    "lineage": {
+      "agent.type": {
+        "value": "claude-code",
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.permission_mode": {
+        "value": "acceptEdits",
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.model": {
+        "value": "claude-sonnet-4-6",
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.allowed_tools": {
+        "value": [
+          "Skill",
+          "Bash",
+          "Read",
+          "Write",
+          "Edit",
+          "Glob",
+          "Grep"
+        ],
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.plugins": {
+        "value": [
+          {
+            "type": "local",
+            "path": "/home/azureuser/projects/skills/tmp/"
+          }
+        ],
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.ignore_patterns": {
+        "value": [],
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.system_prompt": {
+        "value": "You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted.\n",
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "run_limits.max_turns": {
+        "value": 70,
+        "source": "task",
+        "source_detail": null
+      },
+      "run_limits.task_timeout": {
+        "value": 900,
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "run_limits.turn_timeout": {
+        "value": 900,
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "run_limits.expected_turns": {
+        "value": 20,
+        "source": "task",
+        "source_detail": null
+      },
+      "sandbox.driver": {
+        "value": "docker",
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "sandbox.docker": {
+        "value": {
+          "image": "skills-image:latest",
+          "env_passthrough_extra": [
+            "SKILLS_REPO_PATH",
+            "BEDROCK_MODEL",
+            "TASK_PARALLELISM",
+            "UIPATH_CLI_ENABLE_ENV_AUTH",
+            "UIPATH_CLI_AUTH_TOKEN",
+            "UIPATH_CLI_ORGANIZATION_NAME",
+            "UIPATH_CLI_ORGANIZATION_ID",
+            "UIPATH_CLI_TENANT_NAME",
+            "UIPATH_CLI_TENANT_ID",
+            "TRACES_SMOKE_PROCESS_KEY",
+            "CODEX_API_KEY",
+            "CODEX_BASE_URL"
+          ],
+          "extra_mounts": [
+            "~/.uipath:/.uipath:rw"
+          ]
+        },
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "sandbox.template_sources": {
+        "value": [
+          {
+            "type": "template_dir",
+            "path": "/home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn"
+          }
+        ],
+        "source": "task",
+        "source_detail": null
+      },
+      "repeats": {
+        "value": 5,
+        "source": "cli",
+        "source_detail": null
+      }
+    }
+  },
+  "command_stats": {
+    "total_commands": 14,
+    "commands_by_tool": {
+      "Skill": 1,
+      "Read": 1,
+      "Bash": 11,
+      "Write": 1
+    },
+    "total_command_time_ms": 13052.425726084039,
+    "avg_command_time_ms": 932.3161232917171,
+    "slowest_commands": [
+      {
+        "tool": "Bash",
+        "duration_ms": 3961.769144050777,
+        "parameters": {
+          "command": "cd /home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn && uip maestro bpmn registry get BPMN.Variables --output json 2>&1",
+          "description": "Get BPMN.Variables template from registry"
+        },
+        "tool_id": "toolu_bdrk_019AcSCWwGGh8judb4MdcBCU"
+      },
+      {
+        "tool": "Bash",
+        "duration_ms": 2687.7204270567745,
+        "parameters": {
+          "command": "cd /home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn && uip maestro bpmn registry pull 2>&1 | tail -5",
+          "description": "Pull the registry (cached for session)"
+        },
+        "tool_id": "toolu_bdrk_011NHbwdXg5Q3kuxNnHCrf2f"
+      },
+      {
+        "tool": "Bash",
+        "duration_ms": 2647.789673996158,
+        "parameters": {
+          "command": "cd /home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn && uip maestro bpmn registry get BPMN.ScriptTask --output json 2>&1",
+          "description": "Get BPMN.ScriptTask template from registry"
+        },
+        "tool_id": "toolu_bdrk_01LEpBBY7uxLvba3AxDhx28X"
+      },
+      {
+        "tool": "Bash",
+        "duration_ms": 2033.4240780211985,
+        "parameters": {
+          "command": "cd /home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn && uip maestro bpmn registry list 2>&1",
+          "description": "List available registry node types"
+        },
+        "tool_id": "toolu_bdrk_01WRg9HQ8MqnzUGYufaeYT7T"
+      },
+      {
+        "tool": "Bash",
+        "duration_ms": 554.5246169203892,
+        "parameters": {
+          "command": "cd /home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn/validator && npm install --silent 2>&1 | tail -3 && node validate-bpmn.mjs /work/output/artifacts/skill-bpmn-inclusive-gateway-forkjoin/NotificationFanout.bpmn 2>&1",
+          "description": "Install validator deps and validate the BPMN file"
+        },
+        "tool_id": "toolu_bdrk_019g1YTTSFgVCZS69sfuyRKx"
+      }
+    ],
+    "successful_commands": 12,
+    "failed_commands": 2,
+    "unknown_commands": 0,
+    "success_rate": 85.71428571428571,
+    "most_common_sequence": "Bash → Bash → Bash"
+  },
+  "total_token_usage": {
+    "uncached_input_tokens": 770,
+    "output_tokens": 14875,
+    "cache_creation_input_tokens": 28965,
+    "cache_read_input_tokens": 528556,
+    "total_cost_usd": 0.49262055,
+    "input_tokens": 558291
+  },
+  "total_assistant_turns": 24,
+  "expected_commands": null,
+  "actual_commands": 14,
+  "commands_efficiency": null,
+  "pre_run_results": [],
+  "post_run_results": [
+    {
+      "command": "find . -maxdepth 5 -type d \\( -name node_modules -o -name .npm-prefix -o -name .venv \\) -prune -exec rm -rf {} +",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "",
+      "duration_seconds": 0.002999544143676758,
+      "error": null
+    }
+  ],
+  "simulation": null,
+  "early_stop": null
+}

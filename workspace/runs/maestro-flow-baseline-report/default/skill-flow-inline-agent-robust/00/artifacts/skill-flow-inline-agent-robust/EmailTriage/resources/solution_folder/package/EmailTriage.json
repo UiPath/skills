@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "EmailTriage",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "0240f0a9-8e8e-4187-93f5-8162b8dd3f56",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "EmailTriage"
+    },
+    "locks": [],
+    "key": "1047ebb2-b06f-4963-8f93-edf70e34773e",
+    "files": []
+  }
+}

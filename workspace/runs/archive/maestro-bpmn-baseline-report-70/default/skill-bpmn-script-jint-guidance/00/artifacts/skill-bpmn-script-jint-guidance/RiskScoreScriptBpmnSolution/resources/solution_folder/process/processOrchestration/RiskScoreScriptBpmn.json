@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "RiskScoreScriptBpmn",
+    "kind": "process",
+    "type": "processOrchestration",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "c9db0334-0be5-4a10-bc7c-b7a9bbffa1fa",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "RiskScoreScriptBpmn"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "ProcessOrchestration",
+      "name": "RiskScoreScriptBpmn",
+      "package": {
+        "key": "301cd9dd-8eec-4bd6-91c2-70ef3ee7e110"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "6320bb08-9075-4b59-bd6a-803cdb8df594",
+    "files": []
+  }
+}

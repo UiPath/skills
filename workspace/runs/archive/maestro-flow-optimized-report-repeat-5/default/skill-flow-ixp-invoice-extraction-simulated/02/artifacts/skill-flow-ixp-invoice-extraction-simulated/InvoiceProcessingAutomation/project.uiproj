@@ -1,0 +1,6 @@
+{
+  "Name": "InvoiceProcessingAutomation",
+  "ProjectType": "Process",
+  "Description": "Automated vendor invoice processing: polls SharePoint for new invoice PDFs, extracts fields via IXP, and posts structured data to SAP endpoint",
+  "MainFile": "Main.xaml"
+}

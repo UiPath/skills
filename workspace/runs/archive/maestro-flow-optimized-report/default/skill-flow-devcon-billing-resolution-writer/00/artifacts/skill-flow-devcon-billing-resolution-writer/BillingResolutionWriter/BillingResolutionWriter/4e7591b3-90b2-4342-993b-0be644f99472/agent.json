@@ -1,0 +1,120 @@
+{
+  "version": "1.1.0",
+  "settings": {
+    "model": "gpt-5.4",
+    "maxTokens": 128000,
+    "temperature": 0,
+    "engine": "basic-v2",
+    "maxIterations": 5,
+    "mode": "standard"
+  },
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "start__output__customerName": {
+        "type": "string",
+        "description": "The name of the customer with a billing dispute"
+      },
+      "start__output__invoiceNumber": {
+        "type": "string",
+        "description": "The invoice number being disputed"
+      },
+      "start__output__creditAmount": {
+        "type": "number",
+        "description": "The credit amount approved for the customer"
+      }
+    },
+    "required": [
+      "start__output__customerName",
+      "start__output__invoiceNumber",
+      "start__output__creditAmount"
+    ]
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "subject": {
+        "type": "string",
+        "description": "The email subject line for the billing resolution"
+      },
+      "body": {
+        "type": "string",
+        "description": "The email body for the billing resolution"
+      }
+    },
+    "required": [
+      "subject",
+      "body"
+    ]
+  },
+  "metadata": {
+    "storageVersion": "50.0.0",
+    "isConversational": false,
+    "showProjectCreationExperience": false
+  },
+  "type": "lowCode",
+  "guardrails": [],
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a professional billing dispute resolution specialist. Your task is to draft a clear, empathetic, and professional customer-facing email resolving a billing dispute. The email must include the specific invoice number and the approved credit amount. Always respond with a JSON object containing exactly two fields: \"subject\" (a concise email subject line) and \"body\" (the full email body text). Do not include any other text outside the JSON object.",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "You are a professional billing dispute resolution specialist. Your task is to draft a clear, empathetic, and professional customer-facing email resolving a billing dispute. The email must include the specific invoice number and the approved credit amount. Always respond with a JSON object containing exactly two fields: \"subject\" (a concise email subject line) and \"body\" (the full email body text). Do not include any other text outside the JSON object."
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "Draft a billing dispute resolution email for the following:\n- Customer Name: {{input.start__output__customerName}}\n- Invoice Number: {{input.start__output__invoiceNumber}}\n- Approved Credit Amount: ${{input.start__output__creditAmount}}\n\nThe email body must explicitly mention invoice number {{input.start__output__invoiceNumber}} and the approved credit of ${{input.start__output__creditAmount}}. Return a JSON object with \"subject\" and \"body\" fields only.",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "Draft a billing dispute resolution email for the following:\n- Customer Name: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__customerName"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n- Invoice Number: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__invoiceNumber"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n- Approved Credit Amount: $"
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__creditAmount"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\nThe email body must explicitly mention invoice number "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__invoiceNumber"
+        },
+        {
+          "type": "simpleText",
+          "rawString": " and the approved credit of $"
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__creditAmount"
+        },
+        {
+          "type": "simpleText",
+          "rawString": ". Return a JSON object with \"subject\" and \"body\" fields only."
+        }
+      ]
+    }
+  ],
+  "projectId": "4e7591b3-90b2-4342-993b-0be644f99472"
+}

@@ -1,0 +1,16 @@
+{
+  "connectionId": "<REPLACE_WITH_ACT365_CONNECTION_ID>",
+  "folderKey": "<REPLACE_WITH_FOLDER_KEY>",
+  "method": "POST",
+  "endpoint": "/CuratedContacts",
+  "bodyParameters": {
+    "firstName": "Test",
+    "lastName": "Contact",
+    "emailAddress": "test.contact@example.com",
+    "groups": [
+      "group-id-1",
+      "group-id-2",
+      "group-id-3"
+    ]
+  }
+}

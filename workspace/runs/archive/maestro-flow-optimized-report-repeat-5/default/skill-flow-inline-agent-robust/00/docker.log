@@ -1,0 +1,5 @@
+17:11:22 [INFO   ] [default/skill-flow-inline-agent-robust/00] orchestrator: API routing: aws_bedrock
+17:16:47 [INFO   ] [default/skill-flow-inline-agent-robust/00] orchestrator: Success criteria: 6/6 passed, weighted score: 1.000
+17:16:47 [INFO   ] [default/skill-flow-inline-agent-robust/00] orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+17:16:47 [INFO   ] [default/skill-flow-inline-agent-robust/00] orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-inline-agent-robust
+17:16:47 [INFO   ] [default/skill-flow-inline-agent-robust/00] orchestrator: Task finished: status=SUCCESS duration=326.9s score=1.000 iterations=1

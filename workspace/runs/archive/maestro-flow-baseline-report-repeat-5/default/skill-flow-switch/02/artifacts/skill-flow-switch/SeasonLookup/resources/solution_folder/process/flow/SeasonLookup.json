@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "SeasonLookup",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "cf6dcaaf-011f-42be-9edd-061c66684ba8",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "SeasonLookup"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Flow",
+      "name": "SeasonLookup",
+      "package": {
+        "key": "de0d5fd8-9bee-40f6-9c9a-2acfb8b0f238"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "9bbfa738-e51b-4222-9bcf-38582c18f487",
+    "files": []
+  }
+}

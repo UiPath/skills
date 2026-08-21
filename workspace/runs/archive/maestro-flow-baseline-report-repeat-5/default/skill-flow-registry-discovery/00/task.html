@@ -1,0 +1,1026 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>coder_eval · skill-flow-registry-discovery · default</title>
+<style>
+:root {
+  --bg-page: #0f1419;
+  --bg-card: #1a2129;
+  --bg-card-2: #232d38;
+  --bg-code: #0b0f14;
+  --fg: #e6edf3;
+  --fg-muted: #8b98a5;
+  --fg-dim: #6e7681;
+  --border: #30363d;
+  --accent: #58a6ff;
+  --score-high: #22c55e;
+  --score-mid: #f59e0b;
+  --score-low: #ef4444;
+  --status-success: #22c55e;
+  --status-failure: #f59e0b;
+  --status-error: #ef4444;
+  --status-neutral: #6e7681;
+  --shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+.light {
+  --bg-page: #ffffff;
+  --bg-card: #f6f8fa;
+  --bg-card-2: #eaeef2;
+  --bg-code: #f6f8fa;
+  --fg: #1f2328;
+  --fg-muted: #636c76;
+  --fg-dim: #8b949e;
+  --border: #d0d7de;
+  --accent: #0969da;
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial,
+               sans-serif;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--fg);
+  background: var(--bg-page);
+}
+.container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+h1, h2, h3, h4 { margin: 0 0 12px 0; line-height: 1.25; }
+h1 { font-size: 22px; font-weight: 600; }
+h2 { font-size: 18px; font-weight: 600; margin-top: 28px;
+     padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+h3 { font-size: 15px; font-weight: 600; color: var(--fg-muted); }
+h4 { font-size: 13px; font-weight: 600; color: var(--fg-muted); }
+p { margin: 0 0 8px 0; }
+.muted { color: var(--fg-muted); }
+.dim { color: var(--fg-dim); }
+.mono { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+        monospace; font-size: 12.5px; }
+code { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+       monospace; font-size: 12.5px; background: var(--bg-code);
+       border: 1px solid var(--border); padding: 1px 5px; border-radius: 3px; }
+pre { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+      monospace; font-size: 12.5px; background: var(--bg-code);
+      border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px;
+      margin: 6px 0; overflow-x: auto; white-space: pre-wrap;
+      word-wrap: break-word; }
+.header-bar { display: flex; align-items: center; justify-content: space-between;
+              margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+.title-group { flex: 1; min-width: 0; }
+.title-group .subtitle { color: var(--fg-muted); font-size: 13px;
+                         margin-top: 2px; word-break: break-all; }
+.badges { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.badge { display: inline-flex; align-items: center; gap: 6px;
+         padding: 4px 10px; border-radius: 12px; font-size: 12px;
+         font-weight: 600; background: var(--bg-card-2);
+         border: 1px solid var(--border); color: var(--fg); }
+.badge.success { background: color-mix(in srgb, var(--status-success) 20%, var(--bg-card-2));
+                 border-color: var(--status-success); color: var(--status-success); }
+.badge.failure { background: color-mix(in srgb, var(--status-failure) 20%, var(--bg-card-2));
+                 border-color: var(--status-failure); color: var(--status-failure); }
+.badge.error { background: color-mix(in srgb, var(--status-error) 20%, var(--bg-card-2));
+               border-color: var(--status-error); color: var(--status-error); }
+.badge.warning { background: color-mix(in srgb, #f4a52810 20%, var(--bg-card-2));
+                 border-color: #f4a528; color: #f4a528; }
+.badge.neutral { color: var(--fg-muted); }
+.score-pill { display: inline-block; padding: 2px 8px; border-radius: 10px;
+              font-size: 12px; font-weight: 700; min-width: 42px;
+              text-align: center; color: #0b0f14; }
+.score-high { background: var(--score-high); }
+.score-mid { background: var(--score-mid); }
+.score-low { background: var(--score-low); }
+.card { background: var(--bg-card); border: 1px solid var(--border);
+        border-radius: 8px; padding: 16px 20px; margin-bottom: 16px;
+        box-shadow: var(--shadow); }
+.card.highlight { border-left: 4px solid var(--accent); }
+.grid { display: grid; gap: 12px;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+.stat { background: var(--bg-card-2); padding: 10px 12px; border-radius: 6px;
+        border: 1px solid var(--border); }
+.stat .label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;
+               color: var(--fg-muted); margin-bottom: 4px; }
+.stat .value { font-size: 16px; font-weight: 600; }
+table { width: 100%; border-collapse: collapse; margin: 4px 0 12px 0; }
+th, td { text-align: left; padding: 8px 10px;
+         border-bottom: 1px solid var(--border); vertical-align: top;
+         font-size: 13px; }
+th { color: var(--fg-muted); font-weight: 600; font-size: 12px;
+     text-transform: uppercase; letter-spacing: 0.3px; }
+tr:last-child td { border-bottom: none; }
+details { margin: 6px 0; border: 1px solid var(--border); border-radius: 6px;
+          background: var(--bg-card-2); }
+details > summary { cursor: pointer; padding: 8px 12px; user-select: none;
+                    font-weight: 500; list-style: none; }
+details > summary::-webkit-details-marker { display: none; }
+details > summary::before { content: "▸ "; color: var(--fg-dim);
+                            display: inline-block; width: 14px;
+                            transition: transform 0.15s; }
+details[open] > summary::before { content: "▾ "; }
+details .details-body { padding: 0 12px 10px 12px; }
+.tool-row { display: flex; align-items: center; gap: 10px;
+            flex-wrap: wrap; font-size: 13px; }
+.tool-name { font-weight: 600; color: var(--accent); font-family: ui-monospace,
+             SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+.tool-status-ok { color: var(--status-success); font-size: 11px;
+                  font-weight: 600; }
+.tool-status-err { color: var(--status-error); font-size: 11px;
+                   font-weight: 600; }
+.tool-duration { color: var(--fg-muted); font-size: 12px; }
+.tool-seq { color: var(--fg-dim); font-size: 11px; font-weight: 600;
+            min-width: 24px; text-align: right; font-family: ui-monospace,
+            SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+.turn-header { display: flex; justify-content: space-between;
+               align-items: baseline; flex-wrap: wrap; gap: 10px;
+               margin-bottom: 10px; }
+.turn-meta { font-size: 12px; color: var(--fg-muted); }
+.criterion-row td:first-child { font-family: ui-monospace, SFMono-Regular,
+                                 "SF Mono", Menlo, Consolas, monospace;
+                                 color: var(--fg-muted); font-size: 12px; }
+.judge-section { display: flex; flex-direction: column; gap: 12px; }
+.judge-card { padding: 14px 16px; }
+.judge-card-head { display: flex; justify-content: space-between;
+                    align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+.judge-card-title { font-size: 14px; line-height: 1.4; flex: 1; min-width: 0; }
+.judge-card-score { flex-shrink: 0; }
+.judge-rationale { margin-top: 10px; padding: 10px 12px;
+                   background: var(--bg-code); border-radius: 4px;
+                   font-size: 13px; line-height: 1.5; }
+.judge-findings { margin: 8px 0 0 18px; padding-left: 4px; font-size: 13px;
+                   line-height: 1.6; }
+.judge-findings li { margin: 2px 0; }
+.nav-toggle { display: inline-block; padding: 5px 10px; font-size: 12px;
+              background: var(--bg-card-2); border: 1px solid var(--border);
+              border-radius: 5px; color: var(--fg); cursor: pointer; }
+.nav-toggle:hover { background: var(--bg-card); }
+.llm-next-steps { margin: 6px 0 0 20px; padding-left: 0; }
+.llm-next-steps li { margin: 3px 0; }
+.iteration-group { padding: 12px 16px 4px 16px; margin-bottom: 20px;
+                   border-radius: 0 6px 6px 0; border-left: 4px solid var(--status-neutral); }
+/* rgba fallback for browsers without color-mix (Chrome <111, Firefox <113, Safari <16.2). */
+.iteration-group--recovered { border-left-color: var(--status-success);
+                              background: rgba(34, 197, 94, 0.06);
+                              background: color-mix(in srgb, var(--status-success) 6%, transparent); }
+.iteration-group--terminal { border-left-color: var(--status-error);
+                             background: rgba(239, 68, 68, 0.06);
+                             background: color-mix(in srgb, var(--status-error) 6%, transparent); }
+.iteration-group__banner { margin: 0 0 12px 0; font-size: 14px; font-weight: 600; }
+.iteration-group--recovered .iteration-group__banner { color: var(--status-success); }
+.iteration-group--terminal .iteration-group__banner { color: var(--status-error); }
+.attempt-transition { display: flex; align-items: center; gap: 8px;
+                      margin: -6px 0 12px 8px; color: var(--status-error); font-size: 12.5px; }
+.attempt-transition__icon { font-weight: 700; }
+footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--border);
+         color: var(--fg-dim); font-size: 12px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="header-bar">
+  <div class="title-group">
+    <h1>Task: skill-flow-registry-discovery</h1>
+    <div class="subtitle">Skill-guided evaluation: agent uses the uipath-maestro-flow skill to explore available Flow node types via the registry. Tests whether the skill teaches the correct registry workflow (pull, list/search, get).</div>
+  </div>
+  <div class="badges">
+    <span class="badge success">SUCCESS</span>
+    <span class="score-pill score-high">1.00</span>
+    <span class="badge neutral">claude-code · claude-sonnet-4-6</span>
+    <span class="badge neutral">2m 12s</span>
+    <span class="badge neutral">$0.1881</span>
+    <span class="badge warning">expected_turns exceeded (14/9)</span>
+    
+    <span class="nav-toggle" onclick="toggleTheme()">Toggle theme</span>
+  </div>
+</div>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Variant</div><div class="value">default</div></div>
+    <div class="stat"><div class="label">Started</div><div class="value mono">2026-07-24T19:24:22</div></div>
+    <div class="stat"><div class="label">Duration</div><div class="value">2m 12s</div></div>
+    <div class="stat"><div class="label">Turns (SDK)</div><div class="value">20</div></div>
+    <div class="stat"><div class="label">Commands</div><div class="value">13</div></div>
+  </div>
+</div>
+
+<h2>Success Criteria <span class="muted" style="font-weight:400">(4/4 passed)</span></h2>
+<div class="card" style="padding:0">
+<table>
+  <thead>
+    <tr>
+      <th style="width:15%">Type</th>
+      <th style="width:35%">Description</th>
+      <th style="width:10%">Score</th>
+      <th>Details</th>
+    </tr>
+  </thead>
+  <tbody>
+    
+<tr class="criterion-row">
+  <td>command_executed</td>
+  <td>Agent pulled registry data</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Matched 1/1 required commands (filters: tool_name=Bash, pattern=/uip\s+(maestro\s+)?flow\s+registry\s+pull/)</summary><div class="details-body"><pre style="margin:6px 0 0 0">Matched 1/1 required commands (filters: tool_name=Bash, pattern=/uip\s+(maestro\s+)?flow\s+registry\s+pull/)
+Examples: [&#x27;uip maestro flow registry pull --output json 2&gt;&amp;1&#x27;]</pre></div></details></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>command_executed</td>
+  <td>Agent listed or searched registry nodes</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Matched 6/1 required commands (filters: tool_name=Bash, pattern=/uip\s+(maestro\s+)?flow\s+registry\s+(list|search)/)</summary><div class="details-body"><pre style="margin:6px 0 0 0">Matched 6/1 required commands (filters: tool_name=Bash, pattern=/uip\s+(maestro\s+)?flow\s+registry\s+(list|search)/)
+Examples: [&#x27;uip maestro flow registry list --output json 2&gt;&amp;1 | head -200&#x27;, &#x27;uip maestro flow registry search --query &quot;http&quot; --output json 2&gt;&amp;1&#x27;, &#x27;uip maestro flow registry search --query &quot;script&quot; --output json 2&gt;&amp;1&#x27;]</pre></div></details></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>command_executed</td>
+  <td>Agent retrieved details on the HTTP node type via registry get</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Matched 2/1 required commands (filters: tool_name=Bash, pattern=/uip\s+(maestro\s+)?flow\s+registry\s+get\s+.*core\.action\.http/)</summary><div class="details-body"><pre style="margin:6px 0 0 0">Matched 2/1 required commands (filters: tool_name=Bash, pattern=/uip\s+(maestro\s+)?flow\s+registry\s+get\s+.*core\.action\.http/)
+Examples: [&#x27;uip maestro flow registry get core.action.http --output json 2&gt;&amp;1&#x27;, &#x27;uip maestro flow registry get core.action.http.v2 --output json 2&gt;&amp;1&#x27;]</pre></div></details></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>command_executed</td>
+  <td>Agent retrieved details on the script node type via registry get</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Matched 1/1 required commands (filters: tool_name=Bash, pattern=/uip\s+(maestro\s+)?flow\s+registry\s+get\s+.*core\.action\.script/)</summary><div class="details-body"><pre style="margin:6px 0 0 0">Matched 1/1 required commands (filters: tool_name=Bash, pattern=/uip\s+(maestro\s+)?flow\s+registry\s+get\s+.*core\.action\.script/)
+Examples: [&#x27;uip maestro flow registry get core.action.script --output json 2&gt;&amp;1&#x27;]</pre></div></details></td>
+</tr>
+
+  </tbody>
+</table>
+</div>
+<h2>Conversation Trace (1 iteration)</h2>
+<div class="card">
+  <div class="turn-header">
+    <h3>Iteration 1</h3>
+    <div class="badges">
+      <span class="badge neutral">20 assistant turns</span>
+      <span class="badge neutral">in 9 · out 3224 · cache 231864</span>
+      <span class="badge neutral">2m 2s</span>
+      
+      
+      
+    </div>
+  </div>
+  <details>
+    <summary>Prompt to agent</summary>
+    <div class="details-body"><pre>Your working directory is: /work/output/artifacts/skill-flow-registry-discovery
+
+I want to build a UiPath Flow that makes an HTTP request and processes the
+response with a script. Before building anything, explore what node types
+are available in the Flow registry and find the right ones for this task.
+
+Important:
+- The `uip` CLI is already available in the environment.
+- Start by refreshing the registry cache with `uip maestro flow registry pull --output json`.
+- After list/search identifies the candidates, inspect the exact schemas with
+  `uip maestro flow registry get core.action.http --output json` and
+  `uip maestro flow registry get core.action.script --output json`.
+- Use `--output json` on all uip commands.
+- Do not build the flow — just explore.
+</pre></div>
+  </details>
+  <details>
+    <summary>Agent response</summary>
+    <div class="details-body"><pre>[ASSISTANT] Let me start by refreshing the registry cache, then explore the available node types.
+[ASSISTANT] Registry pulled successfully — 4,685 nodes total. Now let me search for HTTP and script-related nodes in parallel.
+[ASSISTANT] The list already shows the key candidates. Let me check the search command syntax and also look for the legacy `core.action.http` node.
+[ASSISTANT] `core.action.http` doesn&#x27;t exist — the current HTTP node is `core.action.http.v2`. Let me now inspect that schema and also do a proper search for all HTTP-related nodes.
+[ASSISTANT] I&#x27;ve fully explored the registry. Here&#x27;s a comprehensive summary of everything found:
+
+---
+
+## Registry Exploration Results
+
+### Registry Pull
+- **4,685 nodes** synced fresh from the authenticated source (4,567 loaded into cache: 3,572 connector nodes, 892 integration trigger nodes, 158 orchestrator nodes, 42 IXP nodes, plus others).
+
+---
+
+## Candidate Node Types for Your Flow
+
+### 1. `core.action.http.v2` — HTTP Request ✅ (use this one)
+
+| Field | Value |
+|---|---|
+| **NodeType** | `core.action.http.v2` |
+| **Display Name** | HTTP Request |
+| **Version** | 2.3 |
+| **Category** | `data-operations` |
+| **Tags** | `connector, http, api, rest, request` |
+| **AvailableOnTenant** | `true` |
+
+&gt; ⚠️ **`core.action.http` does NOT exist** in the registry — the correct and current node type is **`core.action.http.v2`**. The older bare `core.action.http` returns a `Node not found` error.
+
+**Key schema details:**
+- **BPMN model type**: `bpmn:ServiceTask` → `Intsvc.UnifiedHttpRequest` (runs in the BPMN engine, not client-side)
+- **Connector key**: `uipath-uipath-http` — requires an Integration Service connection binding
+- **Input properties:**
+  - `branches` (array) — optional conditional branches on the response (e.g. branch by status code)
+  - `timeout` (ISO 8601 string, default `PT15M`) — e.g. `&quot;PT30S&quot;`, `&quot;PT1H&quot;`
+  - `retryCount` (number, default `0`) — automatic retry on failure
+- **Output:**
+  - `output` — the full HTTP response object (`=response`)
+  - `error` — structured error (`{code, message, detail, category, status}`) on the error handle
+- **Output handles:** `default` (success), `branch-{item.id}` (per custom branch), `error` (when error handling is enabled)
+- **Supports error handling**: `true`
+- **Retry**: configurable via `retryCount` + `timeout` (static backoff)
+- **UI form**: `dap-http-toolbar` + `dap-config` components (visual HTTP method/URL configurator), plus a Branches section and Advanced section for timeout/retry.
+
+---
+
+### 2. `core.action.script` — Script ✅
+
+| Field | Value |
+|---|---|
+| **NodeType** | `core.action.script` |
+| **Display Name** | Script |
+| **Version** | 1.0 |
+| **Category** | `data-operations` |
+| **Tags** | `code, javascript, python` |
+| **AvailableOnTenant** | `true` |
+
+**Key schema details:**
+- **BPMN model type**: `bpmn:ScriptTask`
+- **Debug runtime**: `clientScript` (runs JavaScript client-side)
+- **Input properties:**
+  - `script` (string, **required**, minLength: 1) — the JavaScript function body
+- **Input defaults:** `script: &quot;&quot;`
+- **Output:**
+  - `output` — the return value of the script (`=result.response`)
+  - `error` — structured error object on the error handle
+- **Output handles:** `success` (right side), `error` (when error handling is enabled)
+- **Supports error handling**: `true`
+- **UI form**: `script-editor` component with `language: &quot;javascript&quot;`, `returnType: &quot;any&quot;`, `validationMode: &quot;script&quot;`.
+- **Placeholder code hint** in the form:
+  ```javascript
+  // Return an object with your result
+  return {
+    message: &quot;Web request response&quot;,
+    data: $vars.httpRequest1.output
+  };
+  ```
+  This confirms the **canonical way to consume the HTTP node&#x27;s output in the Script node** is `$vars.&lt;httpNodeId&gt;.output`.
+
+---
+
+## How the Two Nodes Wire Together
+
+```
+[HTTP Request node (core.action.http.v2)]
+    ↓ (success / default handle)
+[Script node (core.action.script)]
+    → receives HTTP response as: $vars.&lt;httpNodeId&gt;.output
+    → re</pre></div>
+  </details>
+  <h4 style="margin-top:12px">Tool Calls (13)</h4>
+  
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#0</span>
+      <span class="tool-name">TaskCreate</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">21ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;subject&quot;: &quot;Explore UiPath Flow registry for HTTP and Script node types&quot;,
+  &quot;description&quot;: &quot;Pull the registry cache, search for HTTP and script candidates, then inspect the exact schemas for core.action.http and core.action.script using the uip CLI.&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Task #1 created successfully: Explore UiPath Flow registry for HTTP and Script node types</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#1</span>
+      <span class="tool-name">TaskUpdate</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">6ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;taskId&quot;: &quot;1&quot;,
+  &quot;status&quot;: &quot;in_progress&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Updated task #1 status</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#2</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">5.00s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry pull --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Pull/refresh the Flow registry cache&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>[ManifestClient] fetchDynamicNodes ok: total=4685 connector nodes=3572 integration trigger nodes=892 agent context nodes=2 external agent nodes=6 orchestrator nodes=158 IXP nodes=42 IXP Models nodes=13
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodePullSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;NodesCount&quot;: 4567,
+    &quot;FromCache&quot;: false,
+    &quot;Source&quot;: &quot;authenticated&quot;,
+    &quot;CacheWritten&quot;: true,
+    &quot;Message&quot;: &quot;Synced fresh nodes&quot;
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#3</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">2.51s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry list --output json 2&gt;&amp;1 | head -200&quot;,
+  &quot;description&quot;: &quot;List all registry nodes (first 200 lines to see structure)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeListSuccess&quot;,
+  &quot;Data&quot;: [
+    {
+      &quot;NodeType&quot;: &quot;core.logic.mock&quot;,
+      &quot;Category&quot;: &quot;control-flow&quot;,
+      &quot;DisplayName&quot;: &quot;Mock&quot;,
+      &quot;Description&quot;: &quot;Placeholder node for prototyping&quot;,
+      &quot;Version&quot;: &quot;1.0&quot;,
+      &quot;Tags&quot;: &quot;blank, todo&quot;,
+      &quot;AvailableOnTenant&quot;: true
+    },
+    {
+      &quot;NodeType&quot;: &quot;core.logic.decision&quot;,
+      &quot;Category&quot;: &quot;control-flow&quot;,
+      &quot;DisplayName&quot;: &quot;Decision&quot;,
+      &quot;Description&quot;: &quot;Branch based on a true/false condition&quot;,
+      &quot;Version&quot;: &quot;1.1&quot;,
+      &quot;Tags&quot;: &quot;control-flow, if, loop, switch&quot;,
+      &quot;AvailableOnTenant&quot;: true
+    },
+    {
+      &quot;NodeType&quot;: &quot;core.logic.loop&quot;,
+      &quot;Category&quot;: &quot;control-flow&quot;,
+      &quot;DisplayName&quot;: &quot;Loop&quot;,
+      &quot;Description&quot;: &quot;Iterate over a collection of items&quot;,
+      &quot;Version&quot;: &quot;2.4&quot;,
+      &quot;Tags&quot;: &quot;control-flow, loop, iteration&quot;,
+      &quot;AvailableOnTenant&quot;: true
+    },
+    {
+      &quot;NodeType&quot;: &quot;core.logic.merge&quot;,
+      &quot;Category&quot;: &quot;control-flow&quot;,
+      &quot;DisplayName&quot;: &quot;Merge&quot;,
+      &quot;Description&quot;: &quot;Join parallel branches into one path&quot;,
+      &quot;Version&quot;: &quot;1.0&quot;,
+      &quot;Tags&quot;: &quot;control-flow, merge&quot;,
+      &quot;AvailableOnTenant&quot;: true
+    },
+    {
+      &quot;NodeType&quot;: &quot;core.logic.switch&quot;,
+  
+
+… (truncated, 4658 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#4</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-err">ERROR</span>
+      <span class="tool-duration">5.15s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry search --query \&quot;http\&quot; --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Search registry for HTTP-related nodes&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Exit code 3
+{
+  &quot;Result&quot;: &quot;ValidationError&quot;,
+  &quot;ErrorCode&quot;: &quot;invalid_argument&quot;,
+  &quot;Message&quot;: &quot;error: unknown option &#x27;--query&#x27;&quot;,
+  &quot;Instructions&quot;: &quot;Run &#x27;uip maestro flow registry search --help&#x27; for usage information.&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}</pre>
+    <h4>Error</h4><pre>Exit code 3
+{
+  &quot;Result&quot;: &quot;ValidationError&quot;,
+  &quot;ErrorCode&quot;: &quot;invalid_argument&quot;,
+  &quot;Message&quot;: &quot;error: unknown option &#x27;--query&#x27;&quot;,
+  &quot;Instructions&quot;: &quot;Run &#x27;uip maestro flow registry search --help&#x27; for usage information.&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}</pre>
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#5</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-err">ERROR</span>
+      <span class="tool-duration">7.32s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry search --query \&quot;script\&quot; --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Search registry for script-related nodes&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Exit code 3
+{
+  &quot;Result&quot;: &quot;ValidationError&quot;,
+  &quot;ErrorCode&quot;: &quot;invalid_argument&quot;,
+  &quot;Message&quot;: &quot;error: unknown option &#x27;--query&#x27;&quot;,
+  &quot;Instructions&quot;: &quot;Run &#x27;uip maestro flow registry search --help&#x27; for usage information.&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}</pre>
+    <h4>Error</h4><pre>Exit code 3
+{
+  &quot;Result&quot;: &quot;ValidationError&quot;,
+  &quot;ErrorCode&quot;: &quot;invalid_argument&quot;,
+  &quot;Message&quot;: &quot;error: unknown option &#x27;--query&#x27;&quot;,
+  &quot;Instructions&quot;: &quot;Run &#x27;uip maestro flow registry search --help&#x27; for usage information.&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}</pre>
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#6</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">3.74s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry search --help 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Check search command help/syntax&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>                        uip maestro flow registry search                        
+                   Find nodes by keyword and/or field filters                   
+                Use --help with nested commands for more detail.                
+
+┌─ Usage ──────────────────────────────────────────────────────────────────────┐
+│ uip maestro flow registry search [options] [keyword]                         │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Arguments ──────────────────────────────────────────────────────────────────┐
+│ keyword   Search term matched against nodeType, category, tags, display      │
+│           name, and description                                              │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Options ────────────────────────────────────────────────────────────────────┐
+│ -f, --filter &lt;filter&gt;          Structured field filter: field=value or       │
+│                                field:operator=value. Comma-separated = AND.  │
+│                                Fields: category, type, tags, displayname,    │
+│                                description.                  
+
+… (truncated, 3241 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#7</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-err">ERROR</span>
+      <span class="tool-duration">8.46s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry get core.action.http --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Inspect core.action.http schema&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Exit code 1
+{
+  &quot;Result&quot;: &quot;Failure&quot;,
+  &quot;Message&quot;: &quot;Node not found&quot;,
+  &quot;Instructions&quot;: &quot;No node found with node type: core.action.http&quot;,
+  &quot;ErrorCode&quot;: &quot;unknown_error&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}</pre>
+    <h4>Error</h4><pre>Exit code 1
+{
+  &quot;Result&quot;: &quot;Failure&quot;,
+  &quot;Message&quot;: &quot;Node not found&quot;,
+  &quot;Instructions&quot;: &quot;No node found with node type: core.action.http&quot;,
+  &quot;ErrorCode&quot;: &quot;unknown_error&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}</pre>
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#8</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">13.84s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry get core.action.script --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Inspect core.action.script schema&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeGetSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;Node&quot;: {
+      &quot;nodeType&quot;: &quot;core.action.script&quot;,
+      &quot;version&quot;: &quot;1.0&quot;,
+      &quot;category&quot;: &quot;data-operations&quot;,
+      &quot;description&quot;: &quot;Run custom JavaScript code&quot;,
+      &quot;tags&quot;: [
+        &quot;code&quot;,
+        &quot;javascript&quot;,
+        &quot;python&quot;
+      ],
+      &quot;sortOrder&quot;: 35,
+      &quot;supportsErrorHandling&quot;: true,
+      &quot;display&quot;: {
+        &quot;label&quot;: &quot;Script&quot;,
+        &quot;icon&quot;: &quot;code&quot;
+      },
+      &quot;handleConfiguration&quot;: [
+        {
+          &quot;position&quot;: &quot;left&quot;,
+          &quot;handles&quot;: [
+            {
+              &quot;id&quot;: &quot;input&quot;,
+              &quot;type&quot;: &quot;target&quot;,
+              &quot;handleType&quot;: &quot;input&quot;
+            }
+          ]
+        },
+        {
+          &quot;position&quot;: &quot;right&quot;,
+          &quot;handles&quot;: [
+            {
+              &quot;id&quot;: &quot;success&quot;,
+              &quot;type&quot;: &quot;source&quot;,
+              &quot;handleType&quot;: &quot;output&quot;
+            },
+            {
+              &quot;id&quot;: &quot;error&quot;,
+              &quot;label&quot;: &quot;Error&quot;,
+              &quot;type&quot;: &quot;source&quot;,
+              &quot;handleType&quot;: &quot;output&quot;,
+              &quot;visible&quot;: &quot;{inputs.errorHandlingEnabled}&quot;,
+              &quot;constraints&quot;: {
+                &quot;maxConnections&quot;: 1
+              }
+            }
+          ]
+    
+
+… (truncated, 2969 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#9</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">8.77s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry get core.action.http.v2 --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Inspect core.action.http.v2 schema (the active HTTP node)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeGetSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;Node&quot;: {
+      &quot;nodeType&quot;: &quot;core.action.http.v2&quot;,
+      &quot;version&quot;: &quot;2.3&quot;,
+      &quot;category&quot;: &quot;data-operations&quot;,
+      &quot;description&quot;: &quot;HTTP request with managed authentication&quot;,
+      &quot;tags&quot;: [
+        &quot;connector&quot;,
+        &quot;http&quot;,
+        &quot;api&quot;,
+        &quot;rest&quot;,
+        &quot;request&quot;
+      ],
+      &quot;sortOrder&quot;: 35,
+      &quot;supportsErrorHandling&quot;: true,
+      &quot;display&quot;: {
+        &quot;label&quot;: &quot;HTTP Request&quot;,
+        &quot;icon&quot;: &quot;app-window&quot;
+      },
+      &quot;handleConfiguration&quot;: [
+        {
+          &quot;position&quot;: &quot;left&quot;,
+          &quot;handles&quot;: [
+            {
+              &quot;id&quot;: &quot;input&quot;,
+              &quot;type&quot;: &quot;target&quot;,
+              &quot;handleType&quot;: &quot;input&quot;,
+              &quot;label&quot;: &quot;&quot;
+            }
+          ]
+        },
+        {
+          &quot;position&quot;: &quot;right&quot;,
+          &quot;handles&quot;: [
+            {
+              &quot;id&quot;: &quot;branch-{item.id}&quot;,
+              &quot;type&quot;: &quot;source&quot;,
+              &quot;handleType&quot;: &quot;output&quot;,
+              &quot;label&quot;: &quot;{item.name}&quot;,
+              &quot;repeat&quot;: &quot;inputs.branches&quot;
+            },
+            {
+              &quot;id&quot;: &quot;default&quot;,
+              &quot;type&quot;: &quot;source&quot;,
+              &quot;handleType&quot;: &quot;output&quot;,
+              &quot;label&quot;: &quot;&quot;
+
+
+… (truncated, 22063 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#10</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">20.33s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry search http --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Search all HTTP-related nodes in registry&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>&lt;persisted-output&gt;
+Output too large (58.6KB). Full output saved to: /home/azureuser/.claude/projects/-work-output-artifacts-skill-flow-registry-discovery/00b174cf-e0b9-425b-a173-44a7c878799f/tool-results/ba68lizt6.txt
+
+Preview (first 2KB):
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeSearchSuccess&quot;,
+  &quot;Data&quot;: [
+    {
+      &quot;NodeType&quot;: &quot;core.action.http.v2&quot;,
+      &quot;Category&quot;: &quot;data-operations&quot;,
+      &quot;DisplayName&quot;: &quot;HTTP Request&quot;,
+      &quot;Description&quot;: &quot;HTTP request with managed authentication&quot;,
+      &quot;Version&quot;: &quot;2.3&quot;,
+      &quot;Tags&quot;: &quot;connector, http, api, rest, request&quot;,
+      &quot;AvailableOnTenant&quot;: true
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-http-webhook.get-trigger-event-output&quot;,
+      &quot;Category&quot;: &quot;connector.211594&quot;,
+      &quot;DisplayName&quot;: &quot;Get Trigger Event Output&quot;,
+      &quot;Description&quot;: &quot;(HTTP Webhook) Retrieves the full event response for HTTP webhook triggers created in Orchestrator&quot;,
+      &quot;Version&quot;: &quot;1.0.0&quot;,
+      &quot;Tags&quot;: &quot;connector, activity&quot;,
+      &quot;AvailableOnTenant&quot;: true
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.agent.resource.tool.connector.uipath-activecampaign-activecampaign.activecampaign-http-request&quot;,
+      &quot;Category&quot;: &quot;agent.tool.connector.196587&quot;,
+      &quot;Disp
+
+… (truncated, 958 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#11</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">27.04s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry search script --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Search all script-related nodes in registry&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeSearchSuccess&quot;,
+  &quot;Data&quot;: [
+    {
+      &quot;NodeType&quot;: &quot;core.action.script&quot;,
+      &quot;Category&quot;: &quot;data-operations&quot;,
+      &quot;DisplayName&quot;: &quot;Script&quot;,
+      &quot;Description&quot;: &quot;Run custom JavaScript code&quot;,
+      &quot;Version&quot;: &quot;1.0&quot;,
+      &quot;Tags&quot;: &quot;code, javascript, python&quot;,
+      &quot;AvailableOnTenant&quot;: true
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-amazon-transcribe.get-transcription-job-by-name&quot;,
+      &quot;Category&quot;: &quot;connector.196543&quot;,
+      &quot;DisplayName&quot;: &quot;Get Transcription Job by Name&quot;,
+      &quot;Description&quot;: &quot;(Amazon Transcribe) Retrieve details of a transcription job using its name in Amazon Transcribe.&quot;,
+      &quot;Version&quot;: &quot;1.0.0&quot;,
+      &quot;Tags&quot;: &quot;connector, activity&quot;,
+      &quot;AvailableOnTenant&quot;: true
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-freshworks-freshbooks.search-items&quot;,
+      &quot;Category&quot;: &quot;connector.196561&quot;,
+      &quot;DisplayName&quot;: &quot;Search Items&quot;,
+      &quot;Description&quot;: &quot;(FreshBooks) Search for items in FreshBooks by SKU or description.&quot;,
+      &quot;Version&quot;: &quot;1.0.0&quot;,
+      &quot;Tags&quot;: &quot;connector, activity&quot;,
+      &quot;AvailableOnTenant&quot;: true
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-microsoft-azure.list-nsgs&quot;,
+      &quot;Category&quot;:
+
+… (truncated, 7729 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#12</span>
+      <span class="tool-name">TaskUpdate</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">28ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;taskId&quot;: &quot;1&quot;,
+  &quot;status&quot;: &quot;completed&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Updated task #1 status</pre>
+    
+  </div>
+</details>
+
+</div>
+
+<h2>Command Telemetry</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Total</div><div class="value">13</div></div>
+    <div class="stat"><div class="label">Successful</div><div class="value">10 (77%)</div></div>
+    <div class="stat"><div class="label">Failed</div><div class="value">3</div></div>
+    <div class="stat"><div class="label">Avg / cmd</div><div class="value">7.86s</div></div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 2fr;gap:16px;margin-top:12px">
+    <div>
+      <h4>By Tool</h4>
+      <table>
+        <thead><tr><th>Tool</th><th>Count</th></tr></thead>
+        <tbody><tr><td class='mono'>Bash</td><td>10</td></tr><tr><td class='mono'>TaskUpdate</td><td>2</td></tr><tr><td class='mono'>TaskCreate</td><td>1</td></tr></tbody>
+      </table>
+    </div>
+    <div>
+      <h4>Slowest</h4>
+      <table>
+        <thead><tr><th>Tool</th><th>Duration</th><th>Parameters</th></tr></thead>
+        <tbody><tr><td class='mono'>Bash</td><td>27.04s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro flow registry search scri...</td></tr><tr><td class='mono'>Bash</td><td>20.33s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro flow registry search http...</td></tr><tr><td class='mono'>Bash</td><td>13.84s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro flow registry get core.ac...</td></tr><tr><td class='mono'>Bash</td><td>8.77s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro flow registry get core.ac...</td></tr><tr><td class='mono'>Bash</td><td>8.46s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro flow registry get core.ac...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+  <p><strong>Most Common Pattern:</strong> <code>Bash → Bash → Bash</code></p>
+</div>
+
+<h2>Generation Metrics</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Total Latency</div><div class="value">2m 12s</div></div>
+    <div class="stat"><div class="label">Turns</div><div class="value">1</div></div>
+    <div class="stat"><div class="label">Assistant Turns</div><div class="value">20</div></div>
+    <div class="stat"><div class="label">Avg Turn Latency</div><div class="value">2m 2s</div></div>
+    
+  </div>
+</div>
+
+<h2>Token Usage</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Input (uncached)</div><div class="value">9</div></div>
+    <div class="stat"><div class="label">Output</div><div class="value">3,224</div></div>
+    <div class="stat"><div class="label">Cache Write</div><div class="value">18,704</div></div>
+    <div class="stat"><div class="label">Cache Read</div><div class="value">231,864</div></div>
+    <div class="stat"><div class="label">Total</div><div class="value">253,801</div></div>
+    <div class="stat"><div class="label">Cost</div><div class="value">$0.1881</div></div>
+  </div>
+</div>
+
+<h2>Agent Settings</h2>
+<div class="card" style="padding:0">
+  <table>
+    <tbody><tr><td class='mono dim'>Permission Mode</td><td>acceptEdits</td></tr><tr><td class='mono dim'>Allowed Tools</td><td>Skill, Bash, Read, Write, Edit, Glob, Grep</td></tr><tr><td class='mono dim'>Model</td><td>us.anthropic.claude-sonnet-4-6</td></tr><tr><td class='mono dim'>Max Turns</td><td>28</td></tr><tr><td class='mono dim'>System Prompt</td><td>You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted. </td></tr><tr><td class='mono dim'>Plugins</td><td>/home/azureuser/projects/skills</td></tr></tbody>
+  </table>
+</div>
+
+<h2>Environment</h2>
+<div class="card" style="padding:0">
+  <table>
+    <tbody><tr><td class='mono dim'>git_commit</td><td>unknown</td></tr><tr><td class='mono dim'>skills_git_commit</td><td>unknown</td></tr><tr><td class='mono dim'>cli_version</td><td>1.199.0-dev.7970</td></tr><tr><td class='mono dim'>tool_plugins</td><td>{&#x27;admin-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;agent-tool&#x27;: &#x27;1.199.0-dev.7965&#x27;, &#x27;agenthub-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;aops-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;api-workflow-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;codedagent-tool&#x27;: &#x27;1.199.0-dev.7965&#x27;, &#x27;codedapp-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;coder-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;context-grounding-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;conversational-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;data-fabric-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;docsai-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;functions-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;gov-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;insights-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;integrationservice-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;ixp-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;llm-gateway-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;llmgw-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;maestro-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;orchestrator-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;platform-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;pm-tool&#x27;: &#x27;1.199.0-dev.7969&#x27;, &#x27;rpa-legacy-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;rpa-tool&#x27;: &#x27;1.199.0-dev.20260722.4&#x27;, &#x27;solution-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;tasks-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;test-manager-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;traces-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;vertical-solutions-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;}</td></tr><tr><td class='mono dim'>coder_eval</td><td>0.8.8</td></tr><tr><td class='mono dim'>claude_code_cli</td><td>2.1.177 (Claude Code)</td></tr><tr><td class='mono dim'>uv</td><td>uv 0.11.28 (x86_64-unknown-linux-gnu)</td></tr><tr><td class='mono dim'>anthropic</td><td>0.102.0</td></tr><tr><td class='mono dim'>openai</td><td>2.47.0</td></tr><tr><td class='mono dim'>pydantic</td><td>2.12.5</td></tr><tr><td class='mono dim'>api_routing</td><td>aws_bedrock</td></tr><tr><td class='mono dim'>aws_region</td><td>us-east-2</td></tr><tr><td class='mono dim'>bedrock_model</td><td>us.anthropic.claude-sonnet-4-6</td></tr></tbody>
+  </table>
+</div>
+
+<footer>Generated by coder_eval · 2026-07-24T19:26:34</footer>
+</div>
+<script>
+function toggleTheme() {
+  document.documentElement.classList.toggle('light');
+  try {
+    const mode = document.documentElement.classList.contains('light') ? 'light' : 'dark';
+    localStorage.setItem('coder-eval-theme', mode);
+  } catch (e) { /* ignore */ }
+}
+(function() {
+  try {
+    if (localStorage.getItem('coder-eval-theme') === 'light') {
+      document.documentElement.classList.add('light');
+    }
+  } catch (e) { /* ignore */ }
+})();
+</script>
+</body>
+</html>

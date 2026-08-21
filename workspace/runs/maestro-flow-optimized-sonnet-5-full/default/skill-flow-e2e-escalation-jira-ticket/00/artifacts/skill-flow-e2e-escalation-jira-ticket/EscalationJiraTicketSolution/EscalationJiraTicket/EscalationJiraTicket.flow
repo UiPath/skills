@@ -1,0 +1,841 @@
+{
+  "id": "76e3f8b1-42c8-4a2c-8c48-f758d1199cb4",
+  "version": "1.9",
+  "name": "EscalationJiraTicket",
+  "nodes": [
+    {
+      "id": "start",
+      "type": "core.trigger.manual",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Manual trigger"
+      },
+      "inputs": {
+        "entryPointId": "ed44cdd5-c8b6-4fd5-8d4b-5531117b4dba",
+        "isDefaultEntryPoint": true
+      }
+    },
+    {
+      "id": "createJiraIssue1",
+      "type": "uipath.connector.uipath-atlassian-jira.create-issue",
+      "typeVersion": "1.0.0",
+      "display": {
+        "label": "Create Jira Issue"
+      },
+      "inputs": {
+        "detail": {
+          "connector": "uipath-atlassian-jira",
+          "connectionId": "f5273a4d-d492-4bcd-a106-5a20bf89a3ef",
+          "connectionResourceId": "f5273a4d-d492-4bcd-a106-5a20bf89a3ef",
+          "connectionFolderKey": "5da18ec0-7de1-4e57-aaf1-ddc8a369c199",
+          "method": "POST",
+          "endpoint": "/curated_create_issue",
+          "bodyParameters": {
+            "fields.project.key": "CE",
+            "fields.issuetype.id": "11457",
+            "fields.summary": "=js:'[' + $vars.classifySeverity.output.severity + '] ' + $vars.correlationId + ' ' + $vars.subject",
+            "fields.description": "=js:$vars.body",
+            "fields.reporter.id": "712020:2f339e42-e0aa-4464-9dc6-e32d91a14956"
+          },
+          "uiPathActivityTypeId": "f90a75ba-d728-34b6-a84a-fb1f995b784b",
+          "errorState": {
+            "issues": []
+          },
+          "configuration": "=jsonString:{\"essentialConfiguration\":{\"connectorVersion\":\"1.13.3\",\"customFieldsRequestDetails\":{\"objectActionName\":\"GenerateSchema\",\"parameterValues\":[[\"fields_sub_project_sub_key\",\"CE\"],[\"fields_sub_issuetype_sub_id\",\"11457\"]]},\"instanceParameters\":{\"connectorKey\":\"uipath-atlassian-jira\",\"objectName\":\"curated_create_issue\",\"httpMethod\":\"POST\",\"activityType\":\"Curated\",\"version\":\"1.0.0\",\"supportsStreaming\":false,\"subType\":\"standard\"},\"objectName\":\"curated_create_issue\",\"operation\":\"create\",\"packageVersion\":\"1.0.0\",\"httpMethod\":\"POST\",\"path\":\"/curated_create_issue\",\"unifiedTypesCompatible\":true,\"savedJitInputFieldId\":\"in_curated_create_issue\"}}"
+        }
+      }
+    },
+    {
+      "id": "classifySeverity",
+      "type": "core.action.script",
+      "typeVersion": "1.1",
+      "display": {
+        "label": "Classify Severity"
+      },
+      "inputs": {
+        "script": "const severity = ($vars.customerTier === \"Enterprise\" && $vars.productionDown && !$vars.workaroundAvailable) ? \"Sev1\" : ($vars.productionDown && $vars.workaroundAvailable) ? \"Sev2\" : \"Sev3\";\nconst engineeringNeeded = Boolean($vars.productionDown);\nreturn { severity: severity, engineeringNeeded: engineeringNeeded };"
+      },
+      "outputs": {
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails.",
+          "source": "=Error",
+          "var": "error"
+        },
+        "output": {
+          "type": "object",
+          "description": "The return value of the node.",
+          "source": "=result.response",
+          "var": "output"
+        }
+      }
+    },
+    {
+      "id": "endSuccess",
+      "type": "core.control.end",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Done"
+      },
+      "inputs": {},
+      "outputs": {
+        "severity": {
+          "source": "=js:$vars.classifySeverity.output.severity"
+        },
+        "caseKey": {
+          "source": "=js:$vars.correlationId"
+        },
+        "jiraIssueKey": {
+          "source": "=js:$vars.createJiraIssue1.output.key"
+        }
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge_start_output_classifySeverity_input",
+      "sourceNodeId": "start",
+      "sourcePort": "output",
+      "targetNodeId": "classifySeverity",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge_classifySeverity_success_createJiraIssue1_input",
+      "sourceNodeId": "classifySeverity",
+      "sourcePort": "success",
+      "targetNodeId": "createJiraIssue1",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge_createJiraIssue1_output_endSuccess_input",
+      "sourceNodeId": "createJiraIssue1",
+      "sourcePort": "output",
+      "targetNodeId": "endSuccess",
+      "targetPort": "input"
+    }
+  ],
+  "definitions": [
+    {
+      "nodeType": "core.trigger.manual",
+      "version": "1.0",
+      "category": "trigger",
+      "description": "Start the process manually",
+      "tags": [
+        "trigger",
+        "start",
+        "manual"
+      ],
+      "sortOrder": 80,
+      "display": {
+        "label": "Manual trigger",
+        "icon": "play",
+        "shape": "circle"
+      },
+      "handleConfiguration": [
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "output",
+              "type": "source",
+              "handleType": "output",
+              "showButton": true,
+              "constraints": {
+                "forbiddenTargetCategories": [
+                  "trigger"
+                ]
+              }
+            }
+          ],
+          "visible": true
+        }
+      ],
+      "model": {
+        "type": "bpmn:StartEvent",
+        "entryPointId": true
+      },
+      "outputDefinition": {
+        "output": {
+          "type": "object",
+          "description": "Data passed when manually triggering the process.",
+          "source": "null",
+          "var": "output"
+        }
+      },
+      "toolbarExtensions": {
+        "design": {
+          "actions": [
+            {
+              "id": "change-trigger-type",
+              "icon": "square-mouse-pointer",
+              "label": "Change trigger type"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "nodeType": "uipath.connector.uipath-atlassian-jira.create-issue",
+      "version": "1.0.0",
+      "category": "connector.196560",
+      "tags": [
+        "connector",
+        "activity"
+      ],
+      "sortOrder": 520,
+      "supportsErrorHandling": true,
+      "description": "Create a new issue in Jira.",
+      "display": {
+        "label": "Create Issue",
+        "description": "Create a new issue in Jira.",
+        "icon": "https://alpha.uipath.com/311c6049-4966-4ef2-a6f3-8ceccaf38d54/studio_/typecache/icons/34ef2aa2837dd167dab37718dbff7bb5eb83f8c210be71fc25ac55a67aa6de1b.svg",
+        "sourceDisplayName": "Jira"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input",
+              "label": ""
+            }
+          ]
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "output",
+              "type": "source",
+              "handleType": "output",
+              "label": ""
+            },
+            {
+              "id": "error",
+              "label": "Error",
+              "type": "source",
+              "handleType": "output",
+              "visible": "{inputs.errorHandlingEnabled}",
+              "constraints": {
+                "maxConnections": 1
+              }
+            }
+          ]
+        }
+      ],
+      "model": {
+        "type": "bpmn:SendTask",
+        "serviceType": "Intsvc.ActivityExecution",
+        "bindings": {
+          "resource": "connection",
+          "resourceKey": "",
+          "values": [
+            {
+              "name": "uipath-atlassian-jira connection",
+              "propertyAttribute": "ConnectionId"
+            },
+            {
+              "name": "FolderKey",
+              "propertyAttribute": "FolderKey"
+            }
+          ]
+        },
+        "context": [
+          {
+            "name": "connectorKey",
+            "type": "string",
+            "value": "uipath-atlassian-jira"
+          },
+          {
+            "name": "operation",
+            "type": "string"
+          },
+          {
+            "name": "objectName",
+            "value": "curated_create_issue",
+            "type": "string"
+          },
+          {
+            "name": "method",
+            "type": "string",
+            "value": "POST"
+          },
+          {
+            "name": "connection",
+            "type": "string",
+            "value": "<bindings.uipath-atlassian-jira connection>"
+          },
+          {
+            "name": "folderKey",
+            "type": "string",
+            "value": "<bindings.FolderKey>"
+          },
+          {
+            "name": "activityConfigurationVersion",
+            "type": "string",
+            "value": "v1"
+          },
+          {
+            "name": "metadata",
+            "body": {
+              "telemetryData": {
+                "connectorKey": "uipath-atlassian-jira",
+                "connectorName": "Create Issue"
+              },
+              "inputMetadata": {},
+              "errorState": {
+                "hasError": true
+              }
+            },
+            "type": "json"
+          }
+        ]
+      },
+      "form": {
+        "id": "connector-properties",
+        "title": "Connector configuration",
+        "sections": [
+          {
+            "id": "connector",
+            "title": "Connector",
+            "collapsible": true,
+            "defaultExpanded": true,
+            "fields": [
+              {
+                "label": "",
+                "name": "inputs.detail",
+                "type": "custom",
+                "component": "dap-config",
+                "componentProps": {
+                  "connectorDetail": {
+                    "isAppActivity": false,
+                    "packageId": "196560",
+                    "svgIconUrl": "icons/34ef2aa2837dd167dab37718dbff7bb5eb83f8c210be71fc25ac55a67aa6de1b.svg",
+                    "displayName": "Create Issue",
+                    "assemblyQualifiedName": "UiPath.IntegrationService.Activities.Runtime.Activities.ConnectorActivity, UiPath.IntegrationService.Activities.Runtime, Version=1.31.0.0, Culture=neutral, PublicKeyToken=null",
+                    "description": "Create a new issue in Jira.",
+                    "category": "",
+                    "activityColor": "#0052CC",
+                    "configuration": "{\"connectorKey\":\"uipath-atlassian-jira\",\"objectName\":\"curated_create_issue\",\"httpMethod\":\"POST\",\"activityType\":\"Curated\",\"version\":\"1.0.0\",\"supportsStreaming\":false,\"subType\":\"standard\"}",
+                    "uiPathActivityTypeId": "f90a75ba-d728-34b6-a84a-fb1f995b784b",
+                    "isExperimental": false,
+                    "helpUrlTemplate": "https://docs.uipath.com/{0}/activities/other/latest/integration-service/uipath-atlassian-jira-Create-Issue",
+                    "isEnabled": true,
+                    "targetPlatform": "CrossPlatform",
+                    "isAdvanced": false,
+                    "isRestricted": false,
+                    "hasWpfOnlyDesigner": false,
+                    "tags": [
+                      ""
+                    ]
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "inputDefinition": {},
+      "inputDefaults": {},
+      "outputDefinition": {
+        "output": {
+          "type": "object",
+          "description": "The return value of the connector.",
+          "source": "=result.response",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails",
+          "source": "=Error",
+          "var": "error",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "required": [
+              "code",
+              "message",
+              "detail",
+              "category",
+              "status"
+            ],
+            "properties": {
+              "code": {
+                "type": "string",
+                "description": "Error code as a string"
+              },
+              "message": {
+                "type": "string",
+                "description": "High-level error message"
+              },
+              "detail": {
+                "type": "string",
+                "description": "Detailed error description"
+              },
+              "category": {
+                "type": "string",
+                "description": "Error category"
+              },
+              "status": {
+                "type": "integer",
+                "description": "HTTP status code"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "debug": {
+        "runtime": "bpmnEngine"
+      }
+    },
+    {
+      "nodeType": "core.action.script",
+      "version": "1.1",
+      "category": "data-operations",
+      "description": "Run custom JavaScript code",
+      "tags": [
+        "code",
+        "javascript",
+        "python"
+      ],
+      "sortOrder": 70,
+      "supportsErrorHandling": true,
+      "display": {
+        "label": "Script",
+        "icon": "code"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "success",
+              "type": "source",
+              "handleType": "output"
+            },
+            {
+              "id": "error",
+              "label": "Error",
+              "type": "source",
+              "handleType": "output",
+              "visible": "{inputs.errorHandlingEnabled}",
+              "constraints": {
+                "maxConnections": 1
+              }
+            }
+          ]
+        }
+      ],
+      "debug": {
+        "runtime": "clientScript"
+      },
+      "model": {
+        "type": "bpmn:ScriptTask"
+      },
+      "inputDefinition": {
+        "type": "object",
+        "properties": {
+          "script": {
+            "type": "string",
+            "minLength": 1,
+            "errorMessage": "Add a script function",
+            "validationSeverity": "warning"
+          }
+        },
+        "required": [
+          "script"
+        ]
+      },
+      "inputDefaults": {
+        "script": ""
+      },
+      "outputDefinition": {
+        "output": {
+          "type": "any",
+          "description": "The return value of the script",
+          "source": "=result.response",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails",
+          "source": "=Error",
+          "var": "error",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "required": [
+              "code",
+              "message",
+              "detail",
+              "category",
+              "status"
+            ],
+            "properties": {
+              "code": {
+                "type": "string",
+                "description": "Error code as a string"
+              },
+              "message": {
+                "type": "string",
+                "description": "High-level error message"
+              },
+              "detail": {
+                "type": "string",
+                "description": "Detailed error description"
+              },
+              "category": {
+                "type": "string",
+                "description": "Error category"
+              },
+              "status": {
+                "type": "integer",
+                "description": "HTTP status code"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "form": {
+        "id": "script-properties",
+        "title": "Script configuration",
+        "sections": [
+          {
+            "id": "script",
+            "title": "Script",
+            "collapsible": true,
+            "defaultExpanded": true,
+            "fields": [
+              {
+                "name": "inputs.script",
+                "type": "custom",
+                "component": "script-editor",
+                "componentProps": {
+                  "language": "javascript",
+                  "returnType": "any",
+                  "validationMode": "script",
+                  "minHeight": 200,
+                  "placeholder": " // Return any value\nreturn {\n  message: \"Web request response\",\n  data: $vars.httpRequest1.output\n};"
+                },
+                "label": "Code",
+                "description": "JavaScript expression that returns a result"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "nodeType": "core.control.end",
+      "version": "1.0",
+      "category": "control-flow",
+      "description": "Mark the end of a process path",
+      "tags": [
+        "control-flow",
+        "end",
+        "finish",
+        "complete"
+      ],
+      "sortOrder": 65,
+      "display": {
+        "label": "End",
+        "icon": "circle-check",
+        "shape": "circle"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        }
+      ],
+      "model": {
+        "type": "bpmn:EndEvent"
+      },
+      "runtimeConstraints": {
+        "exclude": [
+          "api-function"
+        ]
+      }
+    }
+  ],
+  "runtime": "maestro",
+  "bindings": [
+    {
+      "id": "bqDqeCUuS",
+      "name": "uipath-atlassian-jira connection",
+      "type": "string",
+      "resource": "connection",
+      "resourceKey": "f5273a4d-d492-4bcd-a106-5a20bf89a3ef",
+      "propertyAttribute": "ConnectionId",
+      "default": "f5273a4d-d492-4bcd-a106-5a20bf89a3ef"
+    },
+    {
+      "id": "bVVsNelup",
+      "name": "FolderKey",
+      "type": "string",
+      "resource": "connection",
+      "resourceKey": "f5273a4d-d492-4bcd-a106-5a20bf89a3ef",
+      "propertyAttribute": "FolderKey",
+      "default": "5da18ec0-7de1-4e57-aaf1-ddc8a369c199"
+    }
+  ],
+  "variables": {
+    "nodes": [
+      {
+        "id": "start.output",
+        "type": "object",
+        "description": "Data passed when manually triggering the process.",
+        "binding": {
+          "nodeId": "start",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "createJiraIssue1.output",
+        "type": "object",
+        "description": "The return value of the connector.",
+        "binding": {
+          "nodeId": "createJiraIssue1",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "createJiraIssue1.error",
+        "type": "object",
+        "description": "Error information if the node fails",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "required": [
+            "code",
+            "message",
+            "detail",
+            "category",
+            "status"
+          ],
+          "properties": {
+            "code": {
+              "type": "string",
+              "description": "Error code as a string"
+            },
+            "message": {
+              "type": "string",
+              "description": "High-level error message"
+            },
+            "detail": {
+              "type": "string",
+              "description": "Detailed error description"
+            },
+            "category": {
+              "type": "string",
+              "description": "Error category"
+            },
+            "status": {
+              "type": "integer",
+              "description": "HTTP status code"
+            }
+          },
+          "additionalProperties": false
+        },
+        "binding": {
+          "nodeId": "createJiraIssue1",
+          "outputId": "error"
+        }
+      },
+      {
+        "id": "classifySeverity.error",
+        "type": "object",
+        "description": "Error information if the node fails.",
+        "binding": {
+          "nodeId": "classifySeverity",
+          "outputId": "error"
+        }
+      },
+      {
+        "id": "classifySeverity.output",
+        "type": "object",
+        "description": "The return value of the node.",
+        "binding": {
+          "nodeId": "classifySeverity",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "endSuccess.severity",
+        "type": "string",
+        "binding": {
+          "nodeId": "endSuccess",
+          "outputId": "severity"
+        }
+      },
+      {
+        "id": "endSuccess.caseKey",
+        "type": "string",
+        "binding": {
+          "nodeId": "endSuccess",
+          "outputId": "caseKey"
+        }
+      },
+      {
+        "id": "endSuccess.jiraIssueKey",
+        "type": "string",
+        "binding": {
+          "nodeId": "endSuccess",
+          "outputId": "jiraIssueKey"
+        }
+      }
+    ],
+    "globals": [
+      {
+        "id": "senderEmail",
+        "direction": "in",
+        "type": "string",
+        "description": "Sender's email address"
+      },
+      {
+        "id": "senderDomain",
+        "direction": "in",
+        "type": "string",
+        "description": "Sender's email domain"
+      },
+      {
+        "id": "subject",
+        "direction": "in",
+        "type": "string",
+        "description": "Escalation email subject"
+      },
+      {
+        "id": "body",
+        "direction": "in",
+        "type": "string",
+        "description": "Escalation email body"
+      },
+      {
+        "id": "customerTier",
+        "direction": "in",
+        "type": "string",
+        "description": "Customer tier (e.g. Enterprise)"
+      },
+      {
+        "id": "productionDown",
+        "direction": "in",
+        "type": "boolean",
+        "description": "Whether production is down"
+      },
+      {
+        "id": "workaroundAvailable",
+        "direction": "in",
+        "type": "boolean",
+        "description": "Whether a workaround is available"
+      },
+      {
+        "id": "hasAttachments",
+        "direction": "in",
+        "type": "boolean",
+        "description": "Whether the escalation has attachments"
+      },
+      {
+        "id": "customerMatchStatus",
+        "direction": "in",
+        "type": "string",
+        "description": "Customer match status (e.g. single)"
+      },
+      {
+        "id": "isDuplicate",
+        "direction": "in",
+        "type": "boolean",
+        "description": "Whether this escalation is a duplicate"
+      },
+      {
+        "id": "correlationId",
+        "direction": "in",
+        "type": "string",
+        "description": "Correlation ID for this escalation"
+      },
+      {
+        "id": "severity",
+        "direction": "out",
+        "type": "string",
+        "description": "Classified severity (Sev1/Sev2/Sev3)"
+      },
+      {
+        "id": "caseKey",
+        "direction": "out",
+        "type": "string",
+        "description": "Case key (the incoming correlationId)"
+      },
+      {
+        "id": "jiraIssueKey",
+        "direction": "out",
+        "type": "string",
+        "description": "Created Jira issue key"
+      }
+    ]
+  },
+  "layout": {
+    "nodes": {
+      "start": {
+        "position": {
+          "x": -384,
+          "y": 0
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        }
+      },
+      "createJiraIssue1": {
+        "position": {
+          "x": 0,
+          "y": 0
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        }
+      },
+      "classifySeverity": {
+        "position": {
+          "x": -192,
+          "y": 0
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "endSuccess": {
+        "position": {
+          "x": 192,
+          "y": 0
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      }
+    }
+  }
+}

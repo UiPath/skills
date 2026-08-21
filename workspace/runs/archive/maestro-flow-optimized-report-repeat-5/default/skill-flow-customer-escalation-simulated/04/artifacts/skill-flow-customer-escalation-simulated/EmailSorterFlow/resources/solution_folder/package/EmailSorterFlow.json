@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "EmailSorterFlow",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "cc238c84-0245-48ff-9984-4cd8ad30eed5",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "EmailSorterFlow"
+    },
+    "locks": [],
+    "key": "8878874f-5b31-4ca1-b9de-8e7dd405414b",
+    "files": []
+  }
+}

@@ -1,0 +1,214 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+    xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+    xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+    xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+    xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:uipath="http://uipath.org/schema/bpmn"
+    id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn"
+    exporter="UiPath (https://bpmn.uipath.com)" exporterVersion="1.0">
+
+  <bpmn:process id="Process_1" isExecutable="true">
+    <bpmn:extensionElements>
+      <uipath:migrationVersion version="11.5" />
+      <!-- Process variables declared using BPMN.Variables pattern -->
+      <uipath:variables version="v1">
+        <uipath:inputOutput id="Var_VendorName"  name="VendorName"  type="string"  />
+        <uipath:inputOutput id="Var_CreditScore" name="CreditScore" type="number"  />
+        <uipath:inputOutput id="Var_Approved"    name="Approved"    type="boolean" />
+        <uipath:inputOutput id="Var_RiskNotes"   name="RiskNotes"   type="string"  />
+      </uipath:variables>
+    </bpmn:extensionElements>
+
+    <!-- 1. Manual start -->
+    <bpmn:startEvent id="Start_Manual" name="Start">
+      <bpmn:extensionElements>
+        <uipath:entryPointId value="a1b2c3d4-e5f6-7890-abcd-ef1234567890" />
+      </bpmn:extensionElements>
+      <bpmn:outgoing>Flow_StartToScript</bpmn:outgoing>
+    </bpmn:startEvent>
+
+    <!-- 2. Script task: set mock vendor context -->
+    <bpmn:scriptTask id="Task_SetVendorContext" name="Set Vendor Context" scriptFormat="JavaScript">
+      <bpmn:extensionElements>
+        <uipath:scriptVersion value="v3" />
+        <uipath:mapping version="v1">
+          <uipath:type value="BPMN.ScriptTask" version="v1" />
+          <uipath:input name="args" type="json" target="bodyField"><![CDATA[{}]]></uipath:input>
+          <uipath:output name="vendorName"  type="string" var="Var_VendorName"  source="=result.response.vendorName"  />
+          <uipath:output name="creditScore" type="number" var="Var_CreditScore" source="=result.response.creditScore" />
+        </uipath:mapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_StartToScript</bpmn:incoming>
+      <bpmn:outgoing>Flow_ScriptToHitl</bpmn:outgoing>
+      <bpmn:script><![CDATA[
+return {
+  response: {
+    vendorName: "Acme Supplies Ltd",
+    creditScore: 720
+  }
+};
+      ]]></bpmn:script>
+    </bpmn:scriptTask>
+
+    <!-- 3. HITL user task: compliance officer review -->
+    <!-- Actions.HITL shell from registry; approval captured as boolean output -->
+    <bpmn:userTask id="Task_ComplianceReview" name="Compliance Review">
+      <bpmn:extensionElements>
+        <uipath:activity version="v1">
+          <uipath:type value="Actions.HITL" version="v1" />
+          <uipath:context>
+            <uipath:input name="appId"       value="vendor-review-app"       />
+            <uipath:input name="appVersion"  value="1"                       />
+            <uipath:input name="actions"     value=""                        />
+            <uipath:input name="key"         value="vendor-compliance-review"/>
+            <uipath:input name="taskTitle"   value="Vendor Compliance Review"/>
+          </uipath:context>
+          <!-- Input: pass vendor context (read-only) to the action-app form -->
+          <uipath:input name="HitlTaskArguments" type="json" target="bodyField"><![CDATA[{"vendorName":"=vars.Var_VendorName","creditScore":"=vars.Var_CreditScore"}]]></uipath:input>
+          <!-- Boolean approval decision bound to boolean-typed Var_Approved -->
+          <uipath:output name="approved"   type="boolean" var="Var_Approved"  />
+          <!-- Optional risk notes -->
+          <uipath:output name="riskNotes"  type="string"  var="Var_RiskNotes" />
+        </uipath:activity>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_ScriptToHitl</bpmn:incoming>
+      <bpmn:outgoing>Flow_HitlToGw</bpmn:outgoing>
+    </bpmn:userTask>
+
+    <!-- 4. Exclusive gateway: branch on boolean Var_Approved -->
+    <bpmn:exclusiveGateway id="Gw_ApprovalDecision" name="Approved?" default="Flow_Rejected">
+      <bpmn:incoming>Flow_HitlToGw</bpmn:incoming>
+      <bpmn:outgoing>Flow_Approved</bpmn:outgoing>
+      <bpmn:outgoing>Flow_Rejected</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+
+    <!-- 5a. Onboard vendor (approval == true) -->
+    <bpmn:scriptTask id="Task_OnboardVendor" name="Onboard Vendor" scriptFormat="JavaScript">
+      <bpmn:extensionElements>
+        <uipath:scriptVersion value="v3" />
+        <uipath:mapping version="v1">
+          <uipath:type value="BPMN.ScriptTask" version="v1" />
+          <uipath:input name="args" type="json" target="bodyField"><![CDATA[{}]]></uipath:input>
+        </uipath:mapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_Approved</bpmn:incoming>
+      <bpmn:outgoing>Flow_OnboardToEnd</bpmn:outgoing>
+      <bpmn:script><![CDATA[return { response: "onboarded" };]]></bpmn:script>
+    </bpmn:scriptTask>
+
+    <!-- 5b. Reject vendor (approval == false / default) -->
+    <bpmn:scriptTask id="Task_RejectVendor" name="Reject Vendor" scriptFormat="JavaScript">
+      <bpmn:extensionElements>
+        <uipath:scriptVersion value="v3" />
+        <uipath:mapping version="v1">
+          <uipath:type value="BPMN.ScriptTask" version="v1" />
+          <uipath:input name="args" type="json" target="bodyField"><![CDATA[{}]]></uipath:input>
+        </uipath:mapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_Rejected</bpmn:incoming>
+      <bpmn:outgoing>Flow_RejectToEnd</bpmn:outgoing>
+      <bpmn:script><![CDATA[return { response: "rejected" };]]></bpmn:script>
+    </bpmn:scriptTask>
+
+    <!-- End events -->
+    <bpmn:endEvent id="End_Approved" name="Vendor Onboarded">
+      <bpmn:incoming>Flow_OnboardToEnd</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <bpmn:endEvent id="End_Rejected" name="Vendor Rejected">
+      <bpmn:incoming>Flow_RejectToEnd</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <!-- Sequence flows -->
+    <bpmn:sequenceFlow id="Flow_StartToScript" sourceRef="Start_Manual"         targetRef="Task_SetVendorContext" />
+    <bpmn:sequenceFlow id="Flow_ScriptToHitl"  sourceRef="Task_SetVendorContext" targetRef="Task_ComplianceReview" />
+    <bpmn:sequenceFlow id="Flow_HitlToGw"      sourceRef="Task_ComplianceReview" targetRef="Gw_ApprovalDecision"  />
+
+    <!-- Approved branch: boolean true -->
+    <bpmn:sequenceFlow id="Flow_Approved" sourceRef="Gw_ApprovalDecision" targetRef="Task_OnboardVendor">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=vars.Var_Approved == true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+
+    <!-- Rejected branch: default (Var_Approved is false or unset) -->
+    <bpmn:sequenceFlow id="Flow_Rejected"    sourceRef="Gw_ApprovalDecision" targetRef="Task_RejectVendor"  />
+    <bpmn:sequenceFlow id="Flow_OnboardToEnd" sourceRef="Task_OnboardVendor"  targetRef="End_Approved"       />
+    <bpmn:sequenceFlow id="Flow_RejectToEnd"  sourceRef="Task_RejectVendor"   targetRef="End_Rejected"       />
+  </bpmn:process>
+
+  <!-- BPMN DI: one BPMNShape per node, one BPMNEdge per flow -->
+  <bpmndi:BPMNDiagram id="Diagram_1">
+    <bpmndi:BPMNPlane id="Plane_1" bpmnElement="Process_1">
+
+      <!-- Shapes: main flow at y=250 (center) -->
+      <bpmndi:BPMNShape id="S_Start_Manual" bpmnElement="Start_Manual">
+        <dc:Bounds x="150" y="232" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Task_SetVendorContext" bpmnElement="Task_SetVendorContext">
+        <dc:Bounds x="250" y="210" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Task_ComplianceReview" bpmnElement="Task_ComplianceReview">
+        <dc:Bounds x="410" y="210" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Gw_ApprovalDecision" bpmnElement="Gw_ApprovalDecision">
+        <dc:Bounds x="570" y="225" width="50" height="50" />
+      </bpmndi:BPMNShape>
+
+      <!-- Shapes: upper branch (approved) at y=170 -->
+      <bpmndi:BPMNShape id="S_Task_OnboardVendor" bpmnElement="Task_OnboardVendor">
+        <dc:Bounds x="680" y="130" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_End_Approved" bpmnElement="End_Approved">
+        <dc:Bounds x="840" y="152" width="36" height="36" />
+      </bpmndi:BPMNShape>
+
+      <!-- Shapes: lower branch (rejected) at y=330 -->
+      <bpmndi:BPMNShape id="S_Task_RejectVendor" bpmnElement="Task_RejectVendor">
+        <dc:Bounds x="680" y="290" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_End_Rejected" bpmnElement="End_Rejected">
+        <dc:Bounds x="840" y="312" width="36" height="36" />
+      </bpmndi:BPMNShape>
+
+      <!-- Edges: main flow -->
+      <bpmndi:BPMNEdge id="E_Flow_StartToScript" bpmnElement="Flow_StartToScript">
+        <di:waypoint x="186" y="250" />
+        <di:waypoint x="250" y="250" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_ScriptToHitl" bpmnElement="Flow_ScriptToHitl">
+        <di:waypoint x="350" y="250" />
+        <di:waypoint x="410" y="250" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_HitlToGw" bpmnElement="Flow_HitlToGw">
+        <di:waypoint x="510" y="250" />
+        <di:waypoint x="570" y="250" />
+      </bpmndi:BPMNEdge>
+
+      <!-- Edges: gateway branches (both exit right, then split up/down) -->
+      <bpmndi:BPMNEdge id="E_Flow_Approved" bpmnElement="Flow_Approved">
+        <di:waypoint x="620" y="250" />
+        <di:waypoint x="650" y="250" />
+        <di:waypoint x="650" y="170" />
+        <di:waypoint x="680" y="170" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_Rejected" bpmnElement="Flow_Rejected">
+        <di:waypoint x="620" y="250" />
+        <di:waypoint x="650" y="250" />
+        <di:waypoint x="650" y="330" />
+        <di:waypoint x="680" y="330" />
+      </bpmndi:BPMNEdge>
+
+      <!-- Edges: terminal flows -->
+      <bpmndi:BPMNEdge id="E_Flow_OnboardToEnd" bpmnElement="Flow_OnboardToEnd">
+        <di:waypoint x="780" y="170" />
+        <di:waypoint x="840" y="170" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_RejectToEnd" bpmnElement="Flow_RejectToEnd">
+        <di:waypoint x="780" y="330" />
+        <di:waypoint x="840" y="330" />
+      </bpmndi:BPMNEdge>
+
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

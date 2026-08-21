@@ -1,0 +1,1909 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>coder_eval · skill-flow-wiki-pageviews · default</title>
+<style>
+:root {
+  --bg-page: #0f1419;
+  --bg-card: #1a2129;
+  --bg-card-2: #232d38;
+  --bg-code: #0b0f14;
+  --fg: #e6edf3;
+  --fg-muted: #8b98a5;
+  --fg-dim: #6e7681;
+  --border: #30363d;
+  --accent: #58a6ff;
+  --score-high: #22c55e;
+  --score-mid: #f59e0b;
+  --score-low: #ef4444;
+  --status-success: #22c55e;
+  --status-failure: #f59e0b;
+  --status-error: #ef4444;
+  --status-neutral: #6e7681;
+  --shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+.light {
+  --bg-page: #ffffff;
+  --bg-card: #f6f8fa;
+  --bg-card-2: #eaeef2;
+  --bg-code: #f6f8fa;
+  --fg: #1f2328;
+  --fg-muted: #636c76;
+  --fg-dim: #8b949e;
+  --border: #d0d7de;
+  --accent: #0969da;
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial,
+               sans-serif;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--fg);
+  background: var(--bg-page);
+}
+.container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+h1, h2, h3, h4 { margin: 0 0 12px 0; line-height: 1.25; }
+h1 { font-size: 22px; font-weight: 600; }
+h2 { font-size: 18px; font-weight: 600; margin-top: 28px;
+     padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+h3 { font-size: 15px; font-weight: 600; color: var(--fg-muted); }
+h4 { font-size: 13px; font-weight: 600; color: var(--fg-muted); }
+p { margin: 0 0 8px 0; }
+.muted { color: var(--fg-muted); }
+.dim { color: var(--fg-dim); }
+.mono { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+        monospace; font-size: 12.5px; }
+code { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+       monospace; font-size: 12.5px; background: var(--bg-code);
+       border: 1px solid var(--border); padding: 1px 5px; border-radius: 3px; }
+pre { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+      monospace; font-size: 12.5px; background: var(--bg-code);
+      border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px;
+      margin: 6px 0; overflow-x: auto; white-space: pre-wrap;
+      word-wrap: break-word; }
+.header-bar { display: flex; align-items: center; justify-content: space-between;
+              margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+.title-group { flex: 1; min-width: 0; }
+.title-group .subtitle { color: var(--fg-muted); font-size: 13px;
+                         margin-top: 2px; word-break: break-all; }
+.badges { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.badge { display: inline-flex; align-items: center; gap: 6px;
+         padding: 4px 10px; border-radius: 12px; font-size: 12px;
+         font-weight: 600; background: var(--bg-card-2);
+         border: 1px solid var(--border); color: var(--fg); }
+.badge.success { background: color-mix(in srgb, var(--status-success) 20%, var(--bg-card-2));
+                 border-color: var(--status-success); color: var(--status-success); }
+.badge.failure { background: color-mix(in srgb, var(--status-failure) 20%, var(--bg-card-2));
+                 border-color: var(--status-failure); color: var(--status-failure); }
+.badge.error { background: color-mix(in srgb, var(--status-error) 20%, var(--bg-card-2));
+               border-color: var(--status-error); color: var(--status-error); }
+.badge.warning { background: color-mix(in srgb, #f4a52810 20%, var(--bg-card-2));
+                 border-color: #f4a528; color: #f4a528; }
+.badge.neutral { color: var(--fg-muted); }
+.score-pill { display: inline-block; padding: 2px 8px; border-radius: 10px;
+              font-size: 12px; font-weight: 700; min-width: 42px;
+              text-align: center; color: #0b0f14; }
+.score-high { background: var(--score-high); }
+.score-mid { background: var(--score-mid); }
+.score-low { background: var(--score-low); }
+.card { background: var(--bg-card); border: 1px solid var(--border);
+        border-radius: 8px; padding: 16px 20px; margin-bottom: 16px;
+        box-shadow: var(--shadow); }
+.card.highlight { border-left: 4px solid var(--accent); }
+.grid { display: grid; gap: 12px;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+.stat { background: var(--bg-card-2); padding: 10px 12px; border-radius: 6px;
+        border: 1px solid var(--border); }
+.stat .label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;
+               color: var(--fg-muted); margin-bottom: 4px; }
+.stat .value { font-size: 16px; font-weight: 600; }
+table { width: 100%; border-collapse: collapse; margin: 4px 0 12px 0; }
+th, td { text-align: left; padding: 8px 10px;
+         border-bottom: 1px solid var(--border); vertical-align: top;
+         font-size: 13px; }
+th { color: var(--fg-muted); font-weight: 600; font-size: 12px;
+     text-transform: uppercase; letter-spacing: 0.3px; }
+tr:last-child td { border-bottom: none; }
+details { margin: 6px 0; border: 1px solid var(--border); border-radius: 6px;
+          background: var(--bg-card-2); }
+details > summary { cursor: pointer; padding: 8px 12px; user-select: none;
+                    font-weight: 500; list-style: none; }
+details > summary::-webkit-details-marker { display: none; }
+details > summary::before { content: "▸ "; color: var(--fg-dim);
+                            display: inline-block; width: 14px;
+                            transition: transform 0.15s; }
+details[open] > summary::before { content: "▾ "; }
+details .details-body { padding: 0 12px 10px 12px; }
+.tool-row { display: flex; align-items: center; gap: 10px;
+            flex-wrap: wrap; font-size: 13px; }
+.tool-name { font-weight: 600; color: var(--accent); font-family: ui-monospace,
+             SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+.tool-status-ok { color: var(--status-success); font-size: 11px;
+                  font-weight: 600; }
+.tool-status-err { color: var(--status-error); font-size: 11px;
+                   font-weight: 600; }
+.tool-duration { color: var(--fg-muted); font-size: 12px; }
+.tool-seq { color: var(--fg-dim); font-size: 11px; font-weight: 600;
+            min-width: 24px; text-align: right; font-family: ui-monospace,
+            SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+.turn-header { display: flex; justify-content: space-between;
+               align-items: baseline; flex-wrap: wrap; gap: 10px;
+               margin-bottom: 10px; }
+.turn-meta { font-size: 12px; color: var(--fg-muted); }
+.criterion-row td:first-child { font-family: ui-monospace, SFMono-Regular,
+                                 "SF Mono", Menlo, Consolas, monospace;
+                                 color: var(--fg-muted); font-size: 12px; }
+.judge-section { display: flex; flex-direction: column; gap: 12px; }
+.judge-card { padding: 14px 16px; }
+.judge-card-head { display: flex; justify-content: space-between;
+                    align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+.judge-card-title { font-size: 14px; line-height: 1.4; flex: 1; min-width: 0; }
+.judge-card-score { flex-shrink: 0; }
+.judge-rationale { margin-top: 10px; padding: 10px 12px;
+                   background: var(--bg-code); border-radius: 4px;
+                   font-size: 13px; line-height: 1.5; }
+.judge-findings { margin: 8px 0 0 18px; padding-left: 4px; font-size: 13px;
+                   line-height: 1.6; }
+.judge-findings li { margin: 2px 0; }
+.nav-toggle { display: inline-block; padding: 5px 10px; font-size: 12px;
+              background: var(--bg-card-2); border: 1px solid var(--border);
+              border-radius: 5px; color: var(--fg); cursor: pointer; }
+.nav-toggle:hover { background: var(--bg-card); }
+.llm-next-steps { margin: 6px 0 0 20px; padding-left: 0; }
+.llm-next-steps li { margin: 3px 0; }
+.iteration-group { padding: 12px 16px 4px 16px; margin-bottom: 20px;
+                   border-radius: 0 6px 6px 0; border-left: 4px solid var(--status-neutral); }
+/* rgba fallback for browsers without color-mix (Chrome <111, Firefox <113, Safari <16.2). */
+.iteration-group--recovered { border-left-color: var(--status-success);
+                              background: rgba(34, 197, 94, 0.06);
+                              background: color-mix(in srgb, var(--status-success) 6%, transparent); }
+.iteration-group--terminal { border-left-color: var(--status-error);
+                             background: rgba(239, 68, 68, 0.06);
+                             background: color-mix(in srgb, var(--status-error) 6%, transparent); }
+.iteration-group__banner { margin: 0 0 12px 0; font-size: 14px; font-weight: 600; }
+.iteration-group--recovered .iteration-group__banner { color: var(--status-success); }
+.iteration-group--terminal .iteration-group__banner { color: var(--status-error); }
+.attempt-transition { display: flex; align-items: center; gap: 8px;
+                      margin: -6px 0 12px 8px; color: var(--status-error); font-size: 12.5px; }
+.attempt-transition__icon { font-weight: 700; }
+footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--border);
+         color: var(--fg-dim); font-size: 12px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="header-bar">
+  <div class="title-group">
+    <h1>Task: skill-flow-wiki-pageviews</h1>
+    <div class="subtitle">Create a UiPath Flow that fetches a range of Wikipedia pageviews, keeps the high-traffic days, and returns the sum of their views — returning a fixed error string when the article is invalid. Exercises managed HTTP with a dynamic URL built from flow inputs, upstream-failure routing, and a filter + aggregate pipeline over the response items.</div>
+  </div>
+  <div class="badges">
+    <span class="badge failure">TIMEOUT</span>
+    <span class="score-pill score-low">0.00</span>
+    <span class="badge neutral">claude-code · claude-sonnet-5</span>
+    <span class="badge neutral">15m 3s</span>
+    <span class="badge neutral">$2.4894</span>
+    
+    
+    <span class="nav-toggle" onclick="toggleTheme()">Toggle theme</span>
+  </div>
+</div>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Variant</div><div class="value">default</div></div>
+    <div class="stat"><div class="label">Started</div><div class="value mono">2026-08-19T15:52:02</div></div>
+    <div class="stat"><div class="label">Duration</div><div class="value">15m 3s</div></div>
+    <div class="stat"><div class="label">Turns (SDK)</div><div class="value">56</div></div>
+    <div class="stat"><div class="label">Commands</div><div class="value">33</div></div>
+  </div>
+</div>
+
+<div class="card">
+  <h2 style="margin-top:0;border:none;padding:0">Success Criteria</h2>
+  <p class="muted">No criteria were evaluated (task may have errored before
+  the checker ran).</p>
+</div>
+
+<h2>Error</h2>
+<div class="card" style="border-left:4px solid var(--status-error)">
+  <div class="badges" style="margin-bottom:10px">
+    <span class="badge error">agent_timeout</span>
+    <span class="badge neutral">orchestrator.task_timeout</span>
+    <span class="badge neutral">non-retryable</span>
+  </div>
+  <h4>Message</h4>
+  <pre>Task timed out after 900s</pre>
+  <details><summary>Logs</summary><div class="details-body"><pre>2026-08-19 15:52:03 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-08-19 15:52:03 [INFO] coder_eval.orchestrator: API routing: aws_bedrock
+2026-08-19 15:52:03 [DEBUG] coder_eval.criteria: Discovered 15 criterion checkers
+2026-08-19 15:52:03 [DEBUG] coder_eval.criteria: Validated 15 criterion checkers
+2026-08-19 15:52:03 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-08-19 15:52:03 [DEBUG] coder_eval.orchestrator: Sending prompt: Create a UiPath Flow project named &quot;WikiPageviews&quot; that takes `article`
+(string) and `date1`, `date2...
+2026-08-19 15:52:04 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Starting agent query stream...
+2026-08-19 16:07:04 [ERROR] coder_eval.orchestrator: Task timed out: Task timed out after 900s
+2026-08-19 16:07:04 [INFO] coder_eval.orchestrator: [skill-flow-wiki-pageviews] Recovered the hard-killed turn: 3087282 tokens, $2.4894
+2026-08-19 16:07:04 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-08-19 16:07:04 [INFO] coder_eval.orchestrator: Running post-run command: python3 $EXPERIMENT_TASKS_PATH/uipath-maestro-flow/_shared/cleanup_solutions.py
+2026-08-19 16:07:05 [WARNING] coder_eval.orchestrator: [post_run stderr] cleanup_solutions: solution 3817d261-4ac1-4cd0-871f-fa6d460ec16e not uploaded (from WikiPageviews/WikiPageviews.uipx); nothing to clean up
+2026-08-19 16:07:05 [WARNING] coder_eval.orchestrator: [post_run stderr] cleanup_solutions: summary policy=always deleted=0 preserved=0 skipped=0 not_uploaded=1 failed=0
+2026-08-19 16:07:05 [INFO] coder_eval.orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+2026-08-19 16:07:05 [INFO] coder_eval.orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-wiki-pageviews
+</pre></div></details>
+</div>
+<h2>Conversation Trace (1 iteration, 1 attempt)</h2>
+<div class="card">
+  <div class="turn-header">
+    <h3>Iteration 1</h3>
+    <div class="badges">
+      <span class="badge neutral">56 assistant turns</span>
+      <span class="badge neutral">in 46 · out 73353 · cache 2873357</span>
+      <span class="badge neutral">15m 0s</span>
+      
+      <span class="badge error">crashed (partial)</span>
+      
+    </div>
+  </div>
+  <details>
+    <summary>Prompt to agent</summary>
+    <div class="details-body"><pre>Your working directory is: /work/output/artifacts/skill-flow-wiki-pageviews
+
+Create a UiPath Flow project named &quot;WikiPageviews&quot; that takes `article`
+(string) and `date1`, `date2` (strings in `YYYYMMDD` format) as inputs.
+Fetch the daily view counts in the range from the Wikimedia pageviews API
+(`https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/en.wikipedia/all-access/user/{article}/daily/{date1}/{date2}`)
+in a single call. Preserve every constant path segment of that URL
+verbatim — including the literal `/daily/` between `{article}` and
+`{date1}` — and only substitute the three placeholders; dropping any
+segment makes the route invalid and Wikimedia returns 404. The request
+must include a descriptive `User-Agent` header (e.g.
+`WikiPageviewsFlow/1.0 (example@example.com)`) — Wikimedia rejects
+requests without one (HTTP 403 per their robot policy).
+
+Express the data pipeline as two distinct steps: first keep only the days
+whose `views` exceed 500, then aggregate the surviving `views` into a
+single integer total — pick the right Flow node for each step rather than
+collapsing both into one. When the upstream call fails (e.g. the article
+does not exist and the API returns an error), the flow must instead
+return the literal string `Article not found`.
+
+Do NOT ask for approval, confirmation, or feedback. Do NOT pause between planning and implementation. Build the complete flow end-to-end in a single pass.
+</pre></div>
+  </details>
+  <details>
+    <summary>Agent response</summary>
+    <div class="details-body"><pre>[No output]</pre></div>
+  </details>
+  <h4 style="margin-top:12px">Tool Calls (33)</h4>
+  
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#0</span>
+      <span class="tool-name">Skill</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">13ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;skill&quot;: &quot;tmp:uipath-maestro-flow&quot;,
+  &quot;args&quot;: &quot;Create a UiPath Flow project named \&quot;WikiPageviews\&quot; in /work/output/artifacts/skill-flow-wiki-pageviews. Inputs: article (string), date1 (string, YYYYMMDD), date2 (string, YYYYMMDD). The flow calls the Wikimedia pageviews REST API in a single HTTP call: https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/en.wikipedia/all-access/user/{article}/daily/{date1}/{date2} — preserve every liter… (799 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Launching skill: tmp:uipath-maestro-flow</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#1</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">69ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;find . -maxdepth 2 -type f -name &#x27;*.uipx&#x27; -print; echo \&quot;---\&quot;; ls -la&quot;,
+  &quot;description&quot;: &quot;Check for existing UiPath solution files&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>---
+total 12
+drwxr-xr-x 3 root root 4096 Aug 19 15:52 .
+drwxr-xr-x 3 root root 4096 Aug 19 15:52 ..
+drwxr-xr-x 4 root root 4096 Aug 19 15:52 .venv</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#2</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">551ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/CAPABILITY.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Author — Create and edit `.flow` files
+2	
+3	Capability index for building new flows (greenfield) and editing existing flows (brownfield). Author owns everything that happens on disk, locally, without `uip login`. Authoring journeys terminate at `validate` + `format`; from there, hand off to [operate/CAPABILITY.md](../operate/CAPABILITY.md) to publish, run, or debug.
+4	
+5	&gt; **Where you came from / where to go next.** Author is upstream of Operate (build the flow → ship it) and upstream of Diagnose only via Operate (build → run → diagnose). Publish/run/lifecycle lives in [operate/CAPABILITY.md](../operate/CAPABILITY.md); fault triage lives in [diagnose/CAPABILITY.md](../diagnose/CAPABILITY.md).
+6	&gt;
+7	&gt; **Inherits universal rules from [SKILL.md](../../SKILL.md)** — `--output json` + prefer `--output-filter` for extraction, no `flow debug` without consent, resource discovery order, never invoke other skills automatically, dropdown question pattern, solution layout, **plain-English narration + granular progress list (opt-in — silent by default; engage when the user asks for verbosity)**. The rules below are author-scoped and apply on top.
+8	
+9	## When to use this capability
+10	
+11	&lt;
+
+… (truncated, 30449 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#3</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">96ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/greenfield.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Greenfield — Create a New Flow
+2	
+3	End-to-end journey for creating a Flow project from scratch. Author terminates at `validate` + `format`. To publish, run, or debug after this, see [operate/CAPABILITY.md](../../operate/CAPABILITY.md).
+4	
+5	&gt; **Brownfield edits use a different journey.** If the `.flow` file already exists, see [brownfield.md](brownfield.md) instead.
+6	
+7	## Should you plan first?
+8	
+9	For complex flows, produce a plan before building. Reference [planning-arch.md](planning-arch.md) and [planning-impl.md](planning-impl.md) for the node type catalog, port reference, wiring rules, and topology patterns.
+10	
+11	**Plan when:**
+12	- The flow has 5+ nodes with branching or parallel paths
+13	- The flow uses connectors or resources that need discovery
+14	- The user&#x27;s requirements are ambiguous and you need to confirm the approach
+15	
+16	**Don&#x27;t plan when:**
+17	- Adding/editing a single node in an existing flow (use [brownfield.md](brownfield.md))
+18	- The flow is a straightforward linear pipeline (trigger → action → action → end)
+19	- The user has already described the exact topology they want
+20	
+21	### Examples
+22	
+23	**Plan:** &quot;Build a flow that receives a Jira ticke
+
+… (truncated, 34831 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#4</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">5ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/plugins/transform/impl.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Transform Node — Implementation
+2	
+3	## Node Types
+4	
+5	- `core.action.transform` — generic (chains multiple operations)
+6	- `core.action.transform.filter` — filter only
+7	- `core.action.transform.map` — map only
+8	- `core.action.transform.group-by` — group-by only
+9	
+10	## Registry Validation
+11	
+12	```bash
+13	uip maestro flow registry get core.action.transform --output json
+14	uip maestro flow registry get core.action.transform.filter --output json
+15	uip maestro flow registry get core.action.transform.map --output json
+16	uip maestro flow registry get core.action.transform.group-by --output json
+17	```
+18	
+19	Confirm: input port `input`, output ports `output` and `error`, required inputs `collection` and `operations`. Set each node instance&#x27;s `typeVersion` to the `version` field from the matching response — do not hardcode it.
+20	
+21	## Adding / Editing
+22	
+23	For step-by-step add, delete, and wiring procedures, see [editing-operations.md](../../editing-operations.md). Use the JSON structures below for the node-specific `inputs` and `model` fields.
+24	
+25	## Collection Input Contract
+26	
+27	`inputs.collection` is a transform-specific path field, not a general `=js:` value fi
+
+… (truncated, 10616 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#5</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">5ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/plugins/transform/planning.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Transform Node — Planning
+2	
+3	## Node Types
+4	
+5	| Node Type | Description |
+6	| --- | --- |
+7	| `core.action.transform` | Chain multiple operations (filter, map, groupBy) in a single node |
+8	| `core.action.transform.filter` | Filter an array based on conditions |
+9	| `core.action.transform.map` | Transform each item (rename, convert fields) |
+10	| `core.action.transform.group-by` | Group items by a field with aggregations |
+11	
+12	## When to Use
+13	
+14	Use Transform nodes for declarative map, filter, or group-by on a collection — no custom code needed.
+15	
+16	### Selection Heuristics
+17	
+18	| Situation | Use Transform? |
+19	| --- | --- |
+20	| Standard filter/map/group-by on an array | Yes |
+21	| Custom logic, string manipulation, computation | No — use [Script](../script/planning.md) |
+22	| Iterate and perform actions per item (API calls, etc.) | No — use [Loop](../loop/planning.md) |
+23	
+24	## Ports
+25	
+26	All transform variants share the same port layout:
+27	
+28	| Input Port | Output Port(s) |
+29	| --- | --- |
+30	| `input` | `output`, `error` |
+31	
+32	The `error` port is the implicit error port shared with all action nodes — see [Implicit error port on action nodes](../../
+
+… (truncated, 1109 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#6</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">5.90s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry search \&quot;aggregate\&quot; --output json --output-filter \&quot;[*].{NodeType:NodeType,DisplayName:DisplayName,Description:Description}\&quot; 2&gt;&amp;1 | head -50\necho \&quot;---sum---\&quot;\nuip maestro flow registry search \&quot;sum\&quot; --output json --output-filter \&quot;[*].{NodeType:NodeType,DisplayName:DisplayName,Description:Description}\&quot; 2&gt;&amp;1 | head -50\necho \&quot;---http---\&quot;\nuip maestro flow registry search \&quot;http\&quot; -… (174 more chars)&quot;,
+  &quot;description&quot;: &quot;Search registry for aggregate/sum node types and check login&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>[ManifestClient] fetchDynamicNodes ok: total=4880 connector nodes=3654 integration trigger nodes=896 agent context nodes=2 external agent nodes=7 orchestrator nodes=263 IXP nodes=45 IXP Models nodes=13
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeSearchSuccess&quot;,
+  &quot;Data&quot;: []
+}
+---sum---
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeSearchSuccess&quot;,
+  &quot;Data&quot;: [
+    {
+      &quot;NodeType&quot;: &quot;uipath.pattern.deep-rag&quot;,
+      &quot;DisplayName&quot;: &quot;Summarize&quot;,
+      &quot;Description&quot;: &quot;Create a complex summary of a document&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.agent.resource.tool.builtin.summarize&quot;,
+      &quot;DisplayName&quot;: &quot;Summarize&quot;,
+      &quot;Description&quot;: &quot;Synthesize across documents with citations&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-campaignmonitor-campaignmonitor.get-campaign-summary&quot;,
+      &quot;DisplayName&quot;: &quot;Get Campaign Summary&quot;,
+      &quot;Description&quot;: &quot;Retrieve the summary of a campaign in Campaign Monitor.&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-salesforce-sfdc.get-report-metadata&quot;,
+      &quot;DisplayName&quot;: &quot;Get Report Metadata&quot;,
+      &quot;Description&quot;: &quot;Run a Salesforce report immediately and retrieve the latest summary data.&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipa
+
+… (truncated, 4238 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#7</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.82s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry search \&quot;wikimedia\&quot; --output json 2&gt;&amp;1\necho \&quot;---pageviews---\&quot;\nuip maestro flow registry search \&quot;pageviews\&quot; --output json 2&gt;&amp;1\necho \&quot;---wikipedia---\&quot;\nuip maestro flow registry search \&quot;wikipedia\&quot; --output json 2&gt;&amp;1\n&quot;,
+  &quot;description&quot;: &quot;Search registry for wikimedia/pageviews connector existence&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeSearchSuccess&quot;,
+  &quot;Data&quot;: []
+}
+---pageviews---
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeSearchSuccess&quot;,
+  &quot;Data&quot;: []
+}
+---wikipedia---
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeSearchSuccess&quot;,
+  &quot;Data&quot;: []
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#8</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.11s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/plugins/end/impl.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# End Node — Implementation
+2	
+3	## Node Type
+4	
+5	`core.control.end`
+6	
+7	## Registry Validation
+8	
+9	```bash
+10	uip maestro flow registry get core.control.end --output json
+11	```
+12	
+13	Confirm: input port `input`, no output ports. Set the node instance `typeVersion` to the `version` field from this response — do not hardcode it.
+14	
+15	## JSON Structure
+16	
+17	### Without Output Mapping
+18	
+19	```json
+20	{
+21	  &quot;id&quot;: &quot;doneSuccess&quot;,
+22	  &quot;type&quot;: &quot;core.control.end&quot;,
+23	  &quot;typeVersion&quot;: &quot;&lt;DEFINITION_VERSION&gt;&quot;,
+24	  &quot;display&quot;: { &quot;label&quot;: &quot;Done&quot; },
+25	  &quot;inputs&quot;: {}
+26	}
+27	```
+28	
+29	### With Output Mapping
+30	
+31	When the workflow declares `out` variables, every End node must map all of them:
+32	
+33	```json
+34	{
+35	  &quot;id&quot;: &quot;doneSuccess&quot;,
+36	  &quot;type&quot;: &quot;core.control.end&quot;,
+37	  &quot;typeVersion&quot;: &quot;&lt;DEFINITION_VERSION&gt;&quot;,
+38	  &quot;display&quot;: { &quot;label&quot;: &quot;Done&quot; },
+39	  &quot;inputs&quot;: {},
+40	  &quot;outputs&quot;: {
+41	    &quot;processedCount&quot;: {
+42	      &quot;source&quot;: &quot;=js:$vars.processData.output.count&quot;
+43	    },
+44	    &quot;resultSummary&quot;: {
+45	      &quot;source&quot;: &quot;=js:$vars.formatOutput.output.summary&quot;
+46	    }
+47	  }
+48	}
+49	```
+50	
+51	Each key in `outputs` must match a variable `id` from `variables.globals` where `dire
+
+… (truncated, 904 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#9</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">588ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/plugins/http/impl.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# HTTP Request Node — Implementation
+2	
+3	This page is the entry point for implementing a managed HTTP node. Pick your auth mode below, then follow the matching walkthrough end-to-end. The &quot;Shared Reference&quot; section is an appendix — the mode walkthroughs already inline what you need to act, and link here only for full rationale and extended examples.
+4	
+5	## Node Type
+6	
+7	`core.action.http.v2` (Managed HTTP Request)
+8	
+9	&gt; **Always use `core.action.http.v2`** for all HTTP requests. The older `core.action.http` (v1) is deprecated.
+10	
+11	## Pick a Mode
+12	
+13	| Mode | Use when | Walkthrough |
+14	| --- | --- | --- |
+15	| **Connector** | Target system has an IS connector — auth via an existing IS connection (OAuth/API key) | [impl-connector.md](impl-connector.md) |
+16	| **Manual** | No connector exists, public/no-auth API, or quick prototyping | [impl-manual.md](impl-manual.md) |
+17	
+18	&gt; **Mode fallback — auto-try, then confirm.** Prefer a curated connector activity first; if none, use connector mode; if connector mode cannot be configured (connector lacks HTTP request support — `HasHttpRequest` false — or no usable IS connection), fall through to manual mode automatically. Manual
+
+… (truncated, 11166 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#10</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.31s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry search \&quot;core.action.transform\&quot; --output json 2&gt;&amp;1\necho \&quot;---aggregate node search (local)---\&quot;\nuip maestro flow registry list --output json 2&gt;&amp;1 | grep -i -E \&quot;aggregate|reduce|sum|transform\&quot; | head -50\n&quot;,
+  &quot;description&quot;: &quot;Search for aggregate/reduce transform node types in registry&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeSearchSuccess&quot;,
+  &quot;Data&quot;: [
+    {
+      &quot;NodeType&quot;: &quot;core.action.transform&quot;,
+      &quot;Category&quot;: &quot;data&quot;,
+      &quot;DisplayName&quot;: &quot;Transform&quot;,
+      &quot;Description&quot;: &quot;Reshape and convert data with operations&quot;,
+      &quot;Version&quot;: &quot;1.1&quot;,
+      &quot;Tags&quot;: &quot;data, transformation&quot;,
+      &quot;AvailableOnTenant&quot;: true
+    },
+    {
+      &quot;NodeType&quot;: &quot;core.action.transform.filter&quot;,
+      &quot;Category&quot;: &quot;data&quot;,
+      &quot;DisplayName&quot;: &quot;Filter&quot;,
+      &quot;Description&quot;: &quot;Filter data by conditions&quot;,
+      &quot;Version&quot;: &quot;1.1&quot;,
+      &quot;Tags&quot;: &quot;data, transformation, filter&quot;,
+      &quot;AvailableOnTenant&quot;: true
+    },
+    {
+      &quot;NodeType&quot;: &quot;core.action.transform.map&quot;,
+      &quot;Category&quot;: &quot;data&quot;,
+      &quot;DisplayName&quot;: &quot;Map&quot;,
+      &quot;Description&quot;: &quot;Rename and transform fields&quot;,
+      &quot;Version&quot;: &quot;1.1&quot;,
+      &quot;Tags&quot;: &quot;data, transformation, map&quot;,
+      &quot;AvailableOnTenant&quot;: true
+    },
+    {
+      &quot;NodeType&quot;: &quot;core.action.transform.group-by&quot;,
+      &quot;Category&quot;: &quot;data&quot;,
+      &quot;DisplayName&quot;: &quot;Group by&quot;,
+      &quot;Description&quot;: &quot;Group data by a field with aggregations&quot;,
+      &quot;Version&quot;: &quot;1.1&quot;,
+      &quot;Tags&quot;: &quot;data, transformation, group&quot;,
+      &quot;AvailableOnTenant&quot;: true
+    }
+  ]
+}
+---aggregate node search (
+
+… (truncated, 687 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#11</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">547ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/plugins/http/impl-manual.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# HTTP Request Node — Manual Mode
+2	
+3	Use this walkthrough when there is no IS connector for the target service, the API needs no auth (or auth you pass yourself in headers), or you are prototyping against an arbitrary REST endpoint. For connector-managed auth, use [impl-connector.md](impl-connector.md) instead.
+4	
+5	**No connection lookup required.** Manual mode uses `ImplicitConnection` — there are no IS bindings.
+6	
+7	Before starting, read [impl.md](impl.md) for the node type, registry validation, and the &quot;always use `node configure`&quot; rule. Follow Steps 1–4 in order.
+8	
+9	## Step 1 — Add the node
+10	
+11	```bash
+12	uip maestro flow node add &lt;ProjectName&gt;.flow core.action.http.v2 \
+13	  --label &quot;&lt;HTTP node label&gt;&quot; --output json
+14	```
+15	
+16	&gt; **Inside a loop body?** Add `--parent &lt;LOOP_NODE_ID&gt;` to set `parentId`. Without it, the node runs outside the loop context and outputs are null. See [loop/impl.md](../loop/impl.md).
+17	
+18	The CLI copies the manifest into `definitions[]`, adds the node instance, registers `variables.nodes`, and inserts a `layout.nodes` placeholder — byte-for-byte from the registry. Save the returned `&lt;nodeId&gt;` — Step 2 reuses it. Leave `inputs` empty; St
+
+… (truncated, 3041 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#12</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.25s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry get core.action.transform.group-by --output json 2&gt;&amp;1\necho \&quot;---filter---\&quot;\nuip maestro flow registry get core.action.transform.filter --output json 2&gt;&amp;1 | head -100\n&quot;,
+  &quot;description&quot;: &quot;Get group-by and filter node definitions&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeGetSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;Node&quot;: {
+      &quot;nodeType&quot;: &quot;core.action.transform.group-by&quot;,
+      &quot;supportsErrorHandling&quot;: true,
+      &quot;version&quot;: &quot;1.1&quot;,
+      &quot;category&quot;: &quot;data&quot;,
+      &quot;description&quot;: &quot;Group data by a field with aggregations&quot;,
+      &quot;tags&quot;: [
+        &quot;data&quot;,
+        &quot;transformation&quot;,
+        &quot;group&quot;
+      ],
+      &quot;sortOrder&quot;: 32,
+      &quot;display&quot;: {
+        &quot;label&quot;: &quot;Group by&quot;,
+        &quot;icon&quot;: &quot;group&quot;
+      },
+      &quot;handleConfiguration&quot;: [
+        {
+          &quot;position&quot;: &quot;left&quot;,
+          &quot;handles&quot;: [
+            {
+              &quot;id&quot;: &quot;input&quot;,
+              &quot;type&quot;: &quot;target&quot;,
+              &quot;handleType&quot;: &quot;input&quot;
+            }
+          ]
+        },
+        {
+          &quot;position&quot;: &quot;right&quot;,
+          &quot;handles&quot;: [
+            {
+              &quot;id&quot;: &quot;output&quot;,
+              &quot;type&quot;: &quot;source&quot;,
+              &quot;handleType&quot;: &quot;output&quot;
+            },
+            {
+              &quot;id&quot;: &quot;error&quot;,
+              &quot;label&quot;: &quot;Error&quot;,
+              &quot;type&quot;: &quot;source&quot;,
+              &quot;handleType&quot;: &quot;output&quot;,
+              &quot;visible&quot;: &quot;{inputs.errorHandlingEnabled}&quot;,
+              &quot;constraints&quot;: {
+                &quot;maxConnections&quot;: 1
+              }
+           
+
+… (truncated, 5081 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#13</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">6ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/shared/variables-and-expressions.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Variables and Expressions
+2	
+3	Complete reference for declaring variables, writing expressions, and managing data flow in `.flow` files.
+4	
+5	&gt; **Read this before** adding variables or writing expressions in any flow.
+6	&gt;
+7	&gt; `flow validate` catches the structural expression-reference errors:
+8	&gt;
+9	&gt; - Missing `=js:` prefix on `$vars`/`$metadata`/`$self` (MST-9107)
+10	&gt; - Invented `nodes.&lt;id&gt;.output` syntax
+11	&gt; - References to unknown variables or node IDs
+12	&gt; - Output-path walks that descend into declared primitives or schemas closed with `additionalProperties: false`
+13	&gt;
+14	&gt; Errors against **open output schemas** (HTTP response bodies, script returns, free-text agent output) and **wrong-direction reads** (e.g. reading an `out`-only variable) still slip past validate and surface only at `flow debug` or in production.
+15	
+16	---
+17	
+18	## Table of contents
+19	
+20	- [Variables Overview](#variables-overview)
+21	- [Workflow Variables (`globals`)](#workflow-variables-globals)
+22	- [Node Variables (`nodes`)](#node-variables-nodes)
+23	- [Variable Updates (`variableUpdates`)](#variable-updates-variableupdates)
+24	- [Output Mapping on End Nodes](#output-mapping-on-end-nodes)
+25	- [
+
+… (truncated, 24870 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#14</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">128ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/shared/file-format.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# UiPath Flow File Format
+2	
+3	The `.flow` file is a JSON document at `&lt;ProjectName&gt;.flow` in the project root. It is the **only file you should edit** — other generated files will be overwritten.
+4	
+5	## Table of contents
+6	
+7	- [Top-level structure](#top-level-structure)
+8	- [Project structure (generated scaffold)](#project-structure-generated-scaffold)
+9	- [Node instance](#node-instance)
+10	- [Layout](#layout)
+11	- [Edge — both ports required](#edge--both-ports-required)
+12	- [Definition entry](#definition-entry)
+13	- [Common node types](#common-node-types)
+14	- [Standard ports by node type](#standard-ports-by-node-type)
+15	- [Implicit error port on action nodes](#implicit-error-port-on-action-nodes)
+16	- [Minimal working example — dice roller](#minimal-working-example--dice-roller)
+17	- [entry-points.json — auto-generated, do not edit](#entry-pointsjson--auto-generated-do-not-edit)
+18	- [Bindings — Orchestrator resource bindings (top-level `bindings[]`)](#bindings--orchestrator-resource-bindings-top-level-bindings)
+19	- [Bindings — connector connection binding](#bindings--connector-connection-binding)
+20	
+21	## Top-level structure
+22	
+23	```json
+24	{
+25	  &quot;id&quot;: &quot;&lt;uuid&gt;&quot;,
+26	 
+
+… (truncated, 35296 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#15</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">802ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry list --output json 2&gt;&amp;1 | python3 -c \&quot;\nimport json,sys\ndata=json.load(sys.stdin)\nnodes=data[&#x27;Data&#x27;]\nfor n in nodes:\n    if isinstance(n,dict) and n.get(&#x27;NodeType&#x27;,&#x27;&#x27;).startswith(&#x27;core.&#x27;):\n        print(n.get(&#x27;NodeType&#x27;), &#x27;-&#x27;, n.get(&#x27;DisplayName&#x27;), &#x27;-&#x27;, n.get(&#x27;Description&#x27;))\n\&quot;\n&quot;,
+  &quot;description&quot;: &quot;List all core.* node types in registry&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>core.logic.mock - Mock - Placeholder node for prototyping
+core.logic.decision - Decision - Branch on a true or false condition
+core.logic.loop - Loop - Iterate over a collection of items
+core.logic.merge - Merge - Join parallel branches into one path
+core.logic.switch - Switch - Route to one of many branches by condition
+core.logic.delay - Delay - Pause execution for a duration or until a date
+core.subflow - Subflow - Group steps into a reusable subflow
+core.control.end - End - Mark the end of a process path
+core.logic.terminate - Terminate - Stop the entire process immediately
+core.action.http.v2 - HTTP Request - HTTP request with managed authentication
+core.action.script - Script - Run custom JavaScript code
+core.action.transform - Transform - Reshape and convert data with operations
+core.action.transform.filter - Filter - Filter data by conditions
+core.action.transform.map - Map - Rename and transform fields
+core.action.transform.group-by - Group by - Group data by a field with aggregations
+core.trigger.manual - Manual trigger - Start the process manually</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#16</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">34ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -rn \&quot;triggerNodeId\&quot; /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/ | grep -v \&quot;\\.pyc\&quot; | head -30\necho \&quot;---\&quot;\ngrep -rln \&quot;direction.*in\&quot; /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/plugins/ 2&gt;/dev/null\necho \&quot;---manual trigger planning---\&quot;\nfind /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references -inam… (58 more chars)&quot;,
+  &quot;description&quot;: &quot;Search for manual trigger input variable conventions&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/shared/variables-and-expressions.md:80:  triggerNodeId?: string  // Trigger node this input is associated with (works in both root flows and subflows)
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/shared/variables-and-expressions.md:156:  &quot;triggerNodeId&quot;: &quot;start&quot;
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/shared/variables-and-expressions.md:159:Accessed in expressions as `$vars.{triggerNodeId}.output.{id}` (the variable is nested under the trigger node&#x27;s output — NOT `$vars.{id}`).
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/shared/variables-and-expressions.md:169:  &quot;triggerNodeId&quot;: &quot;start&quot;
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/shared/variables-and-expressions.md:412:// Trigger-associated flow input (triggerNodeId set)
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/shared/variables-and-expressions.md:413:$vars.{triggerNodeId}.output.{id}
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/shared/cli-commands.md:182:3. If none exist, add o
+
+… (truncated, 9985 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#17</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">35ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -rn \&quot;type.*string.*number\\|output.*type.*mismatch\\|out.*variable.*type\&quot; /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/shared/*.md | head -20\necho \&quot;---check decision node for routing on error vs success at end (any note about output type enforcement)---\&quot;\ngrep -rn \&quot;additionalProperties\\|schema.*enforce\\|type coercion\\|strictly typed\&quot; /home/azureuser/projects/skills/t… (77 more chars)&quot;,
+  &quot;description&quot;: &quot;Check if output variable type is strictly enforced&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/shared/node-output-wiring.md:135:1. Run `python3 scripts/audit_expressions.py &lt;project&gt;.flow`. It walks every string in `nodes[].inputs` / `nodes[].outputs` and `variables.variableUpdates` and applies the table above per node type and field path, reporting `MISSING_JS_PREFIX`, `JS_ON_CONDITION`, `INVENTED_NODES_SYNTAX`, `BRACE_INTERPOLATION` and `QUOTED_JS_PREFIX` with the exact JSON path. `--format json` for machine-readable findings; exit 1 when anything is wrong. A `$vars` reference in a field this table does not cover is reported as a warning, because a plugin may document that field as a path (see the Transform `inputs.collection` note above) — decide per plugin.
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/shared/variables-and-expressions.md:75:  type?: string           // &quot;string&quot; (default), &quot;number&quot;, &quot;boolean&quot;, &quot;object&quot;, &quot;array&quot;, &quot;file&quot;
+---check decision node for routing on error vs success at end (any note about output type enforcement)---
+12:&gt; - Output-path walks that descend into declared primitives or schemas closed with `additionalProperties: false`
+134:    &quot;additiona
+
+… (truncated, 19 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#18</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">4.19s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;for kw in reduce aggregate total sum count \&quot;group by\&quot;; do\necho \&quot;=== $kw ===\&quot;\nuip maestro flow registry search \&quot;$kw\&quot; --output json --output-filter \&quot;[*].NodeType\&quot; 2&gt;&amp;1\ndone\n&quot;,
+  &quot;description&quot;: &quot;Search registry for aggregate-type node keywords&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>=== reduce ===
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeSearchSuccess&quot;,
+  &quot;Data&quot;: []
+}
+=== aggregate ===
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeSearchSuccess&quot;,
+  &quot;Data&quot;: []
+}
+=== total ===
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeSearchSuccess&quot;,
+  &quot;Data&quot;: []
+}
+=== sum ===
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeSearchSuccess&quot;,
+  &quot;Data&quot;: [
+    {
+      &quot;NodeType&quot;: &quot;uipath.pattern.deep-rag&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.agent.resource.tool.builtin.summarize&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-campaignmonitor-campaignmonitor.get-campaign-summary&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-salesforce-sfdc.get-report-metadata&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-uipath-airdk.summarize-text&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-workday-workday.create-pre-hire&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-xero-xero.get-bank-summary-report&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-xero-xero.get-executive-summary-report&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-xero-xero.get-budget-summary-report&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.agent.resource.tool.connector.uipath
+
+… (truncated, 15300 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#19</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">7ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/shared/cli-commands.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# uip maestro flow — CLI Command Reference
+2	
+3	All commands output `{ &quot;Result&quot;: &quot;Success&quot;|&quot;Failure&quot;, &quot;Code&quot;: &quot;...&quot;, &quot;Data&quot;: { ... } }`. Use `--output json` for programmatic use.
+4	
+5	&gt; For node and edge commands (`node add/remove/list/configure`, `edge add/remove/list`), see the [Author CLI editing strategy](../author/references/editing-operations-cli.md). This file covers project setup, validation, registry, debug, and publishing commands.
+6	
+7	&lt;!--skill-flavor:flow-init-command:start--&gt;
+8	## uip maestro flow init
+9	
+10	Scaffold a new Flow project directory. Outside a solution, `flow init` auto-scaffolds `&lt;ProjectName&gt;Solution/` and nests the project in it. **Prefer creating the solution first** so its name matches the project name (see the [Author greenfield journey — Step 2](../author/references/greenfield.md)).
+11	
+12	```bash
+13	# 1. Create solution first (for naming control)
+14	uip solution init &quot;&lt;SolutionName&gt;&quot; --output json
+15	
+16	# 2. Init the flow project inside the solution folder.
+17	#    Inside a solution directory, `flow init` auto-registers the project with
+18	#    the parent `.uipx`. Outside any solution, it auto-scaffolds
+19	#    `&lt;ProjectName&gt;Solution/&lt;ProjectNa
+
+… (truncated, 21723 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#20</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.65s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow node --help 2&gt;&amp;1\necho \&quot;---edge add help---\&quot;\nuip maestro flow edge --help 2&gt;&amp;1\necho \&quot;---edge add sub---\&quot;\nuip maestro flow edge add --help 2&gt;&amp;1\n&quot;,
+  &quot;description&quot;: &quot;Check CLI help for node/edge commands&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>                             uip maestro flow node                              
+                          Manage nodes in a Flow file                           
+                Use --help with nested commands for more detail.                
+
+┌─ Usage ──────────────────────────────────────────────────────────────────────┐
+│ uip maestro flow node [options] [command]                                    │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Commands ───────────────────────────────────────────────────────────────────┐
+│ add         Add a node to a Flow file.                                       │
+│ configure   Configure a connector or managed HTTP node with connection and   │
+│             method details.                                                  │
+│ delete      Delete a node from a Flow file.                                  │
+│ help        display help for command                                         │
+│ list        List all nodes in a Flow file                                    │
+│ remove      Remove a node from a Flow file.                                  │
+└───────────────────────────────────────────────────────────────
+
+… (truncated, 6786 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#21</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">10.06s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;\\\nuip solution init \&quot;WikiPageviews\&quot; --output json \\\n  &amp;&amp; cd \&quot;WikiPageviews\&quot; \\\n  &amp;&amp; uip maestro flow init \&quot;WikiPageviews\&quot; --output json \\\n  &amp;&amp; cd \&quot;WikiPageviews\&quot; \\\n  &amp;&amp; uip maestro flow registry pull \\\n  &amp;&amp; uip maestro flow node add \&quot;WikiPageviews.flow\&quot; core.action.http.v2 --label \&quot;Fetch Pageviews\&quot; --output json\n&quot;,
+  &quot;description&quot;: &quot;Create solution, flow project, refresh registry, add HTTP node&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;SolutionInit&quot;,
+  &quot;Data&quot;: {
+    &quot;Status&quot;: &quot;Created successfully&quot;,
+    &quot;Path&quot;: &quot;/work/output/artifacts/skill-flow-wiki-pageviews/WikiPageviews/WikiPageviews.uipx&quot;,
+    &quot;NextSteps&quot;: &quot;Read /work/output/artifacts/skill-flow-wiki-pageviews/WikiPageviews/AGENTS.md or /work/output/artifacts/skill-flow-wiki-pageviews/WikiPageviews/CLAUDE.md to understand the solution lifecycle, project types that can be used inside a solution, and related uip command references.&quot;
+  }
+}
+2026-08-19 15:57:52 INFO  [ResourceBuilder:ProjectCreateCommandHandler] Creating project [object Object]
+2026-08-19 15:57:52 INFO  [ResourceBuilder:MultiFileSolutionDefinitionProvider] Reading multi-file solution definition for solution %s /work/output/artifacts/skill-flow-wiki-pageviews/WikiPageviews
+2026-08-19 15:57:52 INFO  [ResourceBuilder:ProjectCreateCommandHandler] Generate artefact resources for project [object Object]
+2026-08-19 15:57:52 INFO  [ResourceBuilder:SolutionsMetadataReader] Reading metadata from %s. SolutionsMetadataReader
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FlowInit&quot;,
+  &quot;Data&quot;: {
+    &quot;Status&quot;: &quot;Created successfully&quot;,
+    &quot;Path&quot;: &quot;/work/output/artifacts/skill-flow-wiki-p
+
+… (truncated, 1774 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#22</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">10.90s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry get core.control.end --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Get End node definition from registry&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeGetSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;Node&quot;: {
+      &quot;nodeType&quot;: &quot;core.control.end&quot;,
+      &quot;version&quot;: &quot;1.0&quot;,
+      &quot;category&quot;: &quot;control-flow&quot;,
+      &quot;description&quot;: &quot;Mark the end of a process path&quot;,
+      &quot;tags&quot;: [
+        &quot;control-flow&quot;,
+        &quot;end&quot;,
+        &quot;finish&quot;,
+        &quot;complete&quot;
+      ],
+      &quot;sortOrder&quot;: 65,
+      &quot;display&quot;: {
+        &quot;label&quot;: &quot;End&quot;,
+        &quot;icon&quot;: &quot;circle-check&quot;,
+        &quot;shape&quot;: &quot;circle&quot;
+      },
+      &quot;handleConfiguration&quot;: [
+        {
+          &quot;position&quot;: &quot;left&quot;,
+          &quot;handles&quot;: [
+            {
+              &quot;id&quot;: &quot;input&quot;,
+              &quot;type&quot;: &quot;target&quot;,
+              &quot;handleType&quot;: &quot;input&quot;
+            }
+          ]
+        }
+      ],
+      &quot;model&quot;: {
+        &quot;type&quot;: &quot;bpmn:EndEvent&quot;
+      },
+      &quot;runtimeConstraints&quot;: {
+        &quot;exclude&quot;: [
+          &quot;api-function&quot;
+        ]
+      }
+    }
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#23</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">64ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -rn \&quot;\\\&quot;source\\\&quot;:\&quot; /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/ | grep -v \&quot;=js:\\|=result\\|=Error\\|\\\&quot;null\\\&quot;\&quot; | head -30\necho \&quot;---node-output-wiring end node section---\&quot;\nsed -n &#x27;1,220p&#x27; /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/shared/node-output-wiring.md\n&quot;,
+  &quot;description&quot;: &quot;Check end node output source literal conventions&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/shared/file-format.md:105:&gt; **No instance `model` block.** BPMN type, serviceType, event definition, and binding/context templates all live in the node&#x27;s **definition** (the manifest copied from the registry into `definitions[]`). The runtime hydrates them from the definition at serialization time — instances carry only per-instance data (`inputs`, `outputs`, `display`). This applies to every inline-agent-related node too: `uipath.agent.autonomous` plus every attached `uipath.agent.resource.*` node (tool, escalation, context) carries source identity at `inputs.source`. Their definitions declare `model.source: true`; flow-core hoists that identity onto each instance&#x27;s `inputs.source`. Do not write a `&quot;model&quot;: { &quot;source&quot;: ... }` block on the instance.
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/editing-operations-json.md:140:&gt; **No instance `model` block.** BPMN type, serviceType, event definition, and binding/context templates are provided by the definition in `definitions[]` (copied verbatim from the registry). Instance-specific identity fields live under `input
+
+… (truncated, 10845 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#24</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">25ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cat WikiPageviews.flow&quot;,
+  &quot;description&quot;: &quot;Read scaffolded flow file&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;id&quot;: &quot;9ed99804-4a5e-4def-89f8-cd1dc8932af9&quot;,
+  &quot;version&quot;: &quot;1.9&quot;,
+  &quot;name&quot;: &quot;WikiPageviews&quot;,
+  &quot;nodes&quot;: [
+    {
+      &quot;id&quot;: &quot;start&quot;,
+      &quot;type&quot;: &quot;core.trigger.manual&quot;,
+      &quot;typeVersion&quot;: &quot;1.0&quot;,
+      &quot;display&quot;: {
+        &quot;label&quot;: &quot;Manual trigger&quot;
+      },
+      &quot;inputs&quot;: {
+        &quot;entryPointId&quot;: &quot;feaff3cc-13b2-46af-89e8-10324df3bc59&quot;,
+        &quot;isDefaultEntryPoint&quot;: true
+      }
+    },
+    {
+      &quot;id&quot;: &quot;fetchPageviews1&quot;,
+      &quot;type&quot;: &quot;core.action.http.v2&quot;,
+      &quot;typeVersion&quot;: &quot;2.3&quot;,
+      &quot;display&quot;: {
+        &quot;label&quot;: &quot;Fetch Pageviews&quot;
+      },
+      &quot;inputs&quot;: {
+        &quot;branches&quot;: [],
+        &quot;timeout&quot;: &quot;PT15M&quot;,
+        &quot;retryCount&quot;: 0
+      }
+    }
+  ],
+  &quot;edges&quot;: [],
+  &quot;definitions&quot;: [
+    {
+      &quot;nodeType&quot;: &quot;core.trigger.manual&quot;,
+      &quot;version&quot;: &quot;1.0&quot;,
+      &quot;category&quot;: &quot;trigger&quot;,
+      &quot;description&quot;: &quot;Start the process manually&quot;,
+      &quot;tags&quot;: [
+        &quot;trigger&quot;,
+        &quot;start&quot;,
+        &quot;manual&quot;
+      ],
+      &quot;sortOrder&quot;: 80,
+      &quot;display&quot;: {
+        &quot;label&quot;: &quot;Manual trigger&quot;,
+        &quot;icon&quot;: &quot;play&quot;,
+        &quot;shape&quot;: &quot;circle&quot;
+      },
+      &quot;handleConfiguration&quot;: [
+        {
+          &quot;position&quot;: &quot;right&quot;,
+          &quot;handles&quot;: [
+            {
+              &quot;id
+
+… (truncated, 26435 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#25</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">402ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/scripts/flow_edit.py --help 2&gt;&amp;1 | head -60&quot;,
+  &quot;description&quot;: &quot;Check flow_edit.py CLI help&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>usage: flow_edit.py [-h]
+                    {add-node,delete-node,add-edge,delete-edge,set-input,add-variable,add-output-mapping,add-variable-update} ...
+
+Primitive `.flow` mutations: node/edge CRUD, variables, output mappings.
+
+Each subcommand touches every array the operation implies (nodes, edges, definitions,
+variables.nodes, variables.variableUpdates, layout.nodes) in one pass and writes the file
+back with 2-space indent.
+
+positional arguments:
+  {add-node,delete-node,add-edge,delete-edge,set-input,add-variable,add-output-mapping,add-variable-update}
+    add-node            insert a node + definition + variables.nodes + layout
+                        entry
+    delete-node         remove a node and cascade
+                        edges/variables/updates/layout/definition
+    add-edge            add an edge with both ports; sets errorHandlingEnabled
+                        for error edges
+    delete-edge         remove an edge by id or by endpoints
+    set-input           in-place inputs update (dotted key path), preserves
+                        node id
+    add-variable        declare a workflow variable in variables.globals
+    add-output-mapping  map an out variable on an En
+
+… (truncated, 180 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#26</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">853ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/scripts/flow_edit.py add-node --help 2&gt;&amp;1\necho \&quot;---add-variable---\&quot;\npython3 /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/scripts/flow_edit.py add-variable --help 2&gt;&amp;1\necho \&quot;---add-edge---\&quot;\npython3 /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/scripts/flow_edit.py add-edge --help 2&gt;&amp;1\necho \&quot;---… (146 more chars)&quot;,
+  &quot;description&quot;: &quot;Check flow_edit.py subcommand help&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>usage: flow_edit.py add-node [-h] --flow FLOW --id ID --type TYPE
+                             [--type-version TYPE_VERSION] [--label LABEL]
+                             [--definition-file DEFINITION_FILE]
+                             [--inputs INPUTS] [--outputs OUTPUTS]
+                             [--allow-cli-owned]
+
+options:
+  -h, --help            show this help message and exit
+  --flow FLOW
+  --id ID               camelCase, must start with a letter
+  --type TYPE
+  --type-version TYPE_VERSION
+                        omit when --definition-file supplies it
+  --label LABEL
+  --definition-file DEFINITION_FILE
+                        `uip maestro flow registry get &lt;type&gt; --output json`
+                        saved to a file
+  --inputs INPUTS       JSON object for inputs
+  --outputs OUTPUTS     auto | none | comma-separated output ids
+  --allow-cli-owned     override the CLI-owned refusal
+---add-variable---
+usage: flow_edit.py add-variable [-h] --flow FLOW --id ID
+                                 --direction {in,out,inout}
+                                 [--type {string,number,boolean,object,array,file}]
+                                 [--sub-type SUB_TYPE] [--default DEFAULT
+
+… (truncated, 1250 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#27</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">7.29s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-wiki-pageviews/WikiPageviews/WikiPageviews\nuip maestro flow registry get core.action.transform.filter --output json &gt; /tmp/filter.json\nuip maestro flow registry get core.action.transform.group-by --output json &gt; /tmp/groupby.json\nuip maestro flow registry get core.control.end --output json &gt; /tmp/end.json\necho done\npython3 -c \&quot;import json; print(json.load(open(… (240 more chars)&quot;,
+  &quot;description&quot;: &quot;Save registry definitions to files for flow_edit.py&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>done
+1.1
+1.1
+1.0</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#28</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">28ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -rn \&quot;outputs\\.\\|\\.source\\\&quot;\&quot; /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/plugins/end/impl.md /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/editing-operations-json.md 2&gt;&amp;1 | head -40\necho \&quot;---editing-operations-json add output mapping section---\&quot;\ngrep -n \&quot;Add output mapping\&quot; -A 40 /home/azureuser/proje… (109 more chars)&quot;,
+  &quot;description&quot;: &quot;Check End node output source literal string convention&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/plugins/end/impl.md:63:| Missing output mapping | `out` variable not mapped on this End node | Add `outputs.{varId}.source` expression for every `out` variable |
+---editing-operations-json add output mapping section---
+295:### Add output mapping on an End node
+296-
+297-**Tool:** `Edit`
+298-
+299-Use `Edit` to map every `out` variable in `variables.globals` on every reachable End node:
+300-
+301-```json
+302-{
+303-  &quot;id&quot;: &quot;doneSuccess&quot;,
+304-  &quot;type&quot;: &quot;core.control.end&quot;,
+305-  &quot;typeVersion&quot;: &quot;1.0.0&quot;,
+306-  &quot;display&quot;: { &quot;label&quot;: &quot;Done&quot; },
+307-  &quot;inputs&quot;: {},
+308-  &quot;outputs&quot;: {
+309-    &quot;&lt;VARIABLE_ID&gt;&quot;: {
+310-      &quot;source&quot;: &quot;=js:&lt;EXPRESSION&gt;&quot;
+311-    }
+312-  }
+313-}
+314-```
+315-
+316-Each key in `outputs` must match a variable `id` from `variables.globals` where `direction: &quot;out&quot;`. Missing mappings cause silent runtime failures.
+317-
+318-### Add a variable update
+319-
+320-**Tool:** `Edit`
+321-
+322-Use `Edit` to add an entry to `variables.variableUpdates.&lt;NODE_ID&gt;`:
+323-
+324-```json
+325-{
+326-  &quot;variables&quot;: {
+327-    &quot;variableUpdates&quot;: {
+328-      &quot;&lt;NODE_ID&gt;&quot;: [
+329-        {
+330-          &quot;variableI
+
+… (truncated, 117 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#29</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">34ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;sed -n &#x27;1,400p&#x27; /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/scripts/flow_edit.py&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>#!/usr/bin/env python3
+&quot;&quot;&quot;Primitive `.flow` mutations: node/edge CRUD, variables, output mappings.
+
+Each subcommand touches every array the operation implies (nodes, edges, definitions,
+variables.nodes, variables.variableUpdates, layout.nodes) in one pass and writes the file
+back with 2-space indent.
+&quot;&quot;&quot;
+import argparse
+import json
+import re
+import sys
+
+import flow_lib as fl
+
+ID_RE = re.compile(r&quot;^[A-Za-z]&quot;)
+
+
+def _check_id(kind, value):
+    if not ID_RE.match(value or &quot;&quot;):
+        fl.die(&quot;%s id %r must start with a letter (XML NCName); never a bare UUID or leading digit&quot; % (kind, value))
+
+
+def _load_definition(path):
+    with open(path) as fh:
+        payload = json.load(fh)
+    return fl.unwrap_definition(payload)
+
+
+def _skeleton_outputs(ntype, outputs):
+    if fl.is_terminal(ntype) or not outputs:
+        return {}
+    if fl.is_trigger(ntype):
+        return {
+            &quot;output&quot;: {
+                &quot;type&quot;: &quot;object&quot;,
+                &quot;description&quot;: &quot;Data passed when triggering the process.&quot;,
+                &quot;source&quot;: &quot;null&quot;,
+                &quot;var&quot;: &quot;output&quot;,
+            }
+        }
+    if fl.is_orch_job(ntype):
+        return {
+            &quot;error&quot;: {
+                &quot;type&quot;: &quot;objec
+
+… (truncated, 14050 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#30</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">23ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;sed -n &#x27;1,200p&#x27; /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/scripts/flow_lib.py | grep -n \&quot;is_cli_owned\\|CLI_OWNED\\|is_terminal\\|is_trigger\\|declared_outputs\\|expected_size\&quot; &quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>8:CLI_OWNED_PREFIXES = (&quot;uipath.connector.trigger.&quot;, &quot;uipath.connector.event.&quot;, &quot;uipath.connector.&quot;)
+9:CLI_OWNED_TYPES = {&quot;core.action.http.v2&quot;}
+56:def is_trigger(ntype):
+60:def is_terminal(ntype):
+64:def is_cli_owned(ntype):
+65:    if ntype in CLI_OWNED_TYPES:
+67:    return ntype.startswith(CLI_OWNED_PREFIXES)
+119:def declared_outputs(definition):
+138:    if is_terminal((nodes.get(start) or {}).get(&quot;type&quot;, &quot;&quot;)):
+189:def expected_size(ntype):</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#31</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">49ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -rn \&quot;\\\&quot;source\\\&quot;: \\\&quot;[A-Za-z]\&quot; /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/ 2&gt;/dev/null | grep -v \&quot;=js\\|=result\\|=Error\\|=response\\|=this\\|=vars\\|null\&quot; | head -30\necho \&quot;---search terminate node docs for output mapping with literal---\&quot;\ncat /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/plugins/terminate/impl.md 2&gt;&amp;1 | hea… (7 more chars)&quot;,
+  &quot;description&quot;: &quot;Search for literal string source examples on End nodes&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>---search terminate node docs for output mapping with literal---
+# Terminate Node — Implementation
+
+## Node Type
+
+`core.logic.terminate`
+
+## Registry Validation
+
+```bash
+uip maestro flow registry get core.logic.terminate --output json
+```
+
+Confirm: input port `input`, no output ports. Set the node instance `typeVersion` to the `version` field from this response — do not hardcode it.
+
+## JSON Structure
+
+```json
+{
+  &quot;id&quot;: &quot;abortOnError&quot;,
+  &quot;type&quot;: &quot;core.logic.terminate&quot;,
+  &quot;typeVersion&quot;: &quot;&lt;DEFINITION_VERSION&gt;&quot;,
+  &quot;display&quot;: { &quot;label&quot;: &quot;Abort&quot; },
+  &quot;inputs&quot;: {}
+}
+```
+
+## Adding / Editing
+
+For step-by-step add, delete, and wiring procedures, see [editing-operations.md](../../editing-operations.md). Use the JSON structure above for the node-specific `inputs`.
+
+## Common Pattern — Error Handler
+
+```text
+HTTP Request
+  |-- default -&gt; Process -&gt; End
+  |-- error   -&gt; Log Error (Script) -&gt; Terminate
+```
+
+Wire the action node&#x27;s implicit `error` source port straight to the handler; the Script logs `$vars.httpCall.error`, then Terminate aborts the flow. Do **not** put a Decision downstream to test for an error — a failing node has already faulted the flow before execution reaches it.
+
+Add this 
+
+… (truncated, 679 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#32</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;sed -n &#x27;1,220p&#x27; /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/scripts/flow_lib.py&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>&quot;&quot;&quot;Shared loader and graph helpers for `.flow` JSON. Internal — imported by the other scripts.&quot;&quot;&quot;
+import json
+import sys
+
+TRIGGER_TYPES = {&quot;core.trigger.manual&quot;, &quot;core.trigger.scheduled&quot;}
+TRIGGER_PREFIXES = (&quot;uipath.connector.trigger.&quot;,)
+TERMINAL_TYPES = {&quot;core.control.end&quot;, &quot;core.logic.terminate&quot;}
+CLI_OWNED_PREFIXES = (&quot;uipath.connector.trigger.&quot;, &quot;uipath.connector.event.&quot;, &quot;uipath.connector.&quot;)
+CLI_OWNED_TYPES = {&quot;core.action.http.v2&quot;}
+RESOURCE_PREFIXES = (
+    &quot;uipath.core.rpa-workflow.&quot;,
+    &quot;uipath.core.agent.&quot;,
+    &quot;uipath.core.flow.&quot;,
+    &quot;uipath.core.agentic-process.&quot;,
+    &quot;uipath.core.api-workflow.&quot;,
+    &quot;uipath.core.human-task.&quot;,
+)
+
+
+def die(msg, code=2):
+    sys.stderr.write(&quot;error: %s\n&quot; % msg)
+    raise SystemExit(code)
+
+
+def load(path):
+    try:
+        with open(path) as fh:
+            data = json.load(fh)
+    except FileNotFoundError:
+        die(&quot;flow file not found: %s&quot; % path)
+    except json.JSONDecodeError as exc:
+        die(&quot;%s is not valid JSON: %s&quot; % (path, exc))
+    if not isinstance(data, dict):
+        die(&quot;%s does not contain a flow object&quot; % path)
+    data.setdefault(&quot;nodes&quot;, [])
+    data.setdefault(&quot;edges&quot;, [])
+    data.setdefault(&quot;definitions&quot;, [])
+ 
+
+… (truncated, 5121 more chars)</pre>
+    
+  </div>
+</details>
+
+</div>
+
+<h2>Command Telemetry</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Total</div><div class="value">33</div></div>
+    <div class="stat"><div class="label">Successful</div><div class="value">33 (100%)</div></div>
+    <div class="stat"><div class="label">Failed</div><div class="value">0</div></div>
+    <div class="stat"><div class="label">Avg / cmd</div><div class="value">1.51s</div></div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 2fr;gap:16px;margin-top:12px">
+    <div>
+      <h4>By Tool</h4>
+      <table>
+        <thead><tr><th>Tool</th><th>Count</th></tr></thead>
+        <tbody><tr><td class='mono'>Bash</td><td>22</td></tr><tr><td class='mono'>Read</td><td>10</td></tr><tr><td class='mono'>Skill</td><td>1</td></tr></tbody>
+      </table>
+    </div>
+    <div>
+      <h4>Slowest</h4>
+      <table>
+        <thead><tr><th>Tool</th><th>Duration</th><th>Parameters</th></tr></thead>
+        <tbody><tr><td class='mono'>Bash</td><td>10.90s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro flow registry get core.co...</td></tr><tr><td class='mono'>Bash</td><td>10.06s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;\\\nuip solution init &quot;WikiPageviews&quot;...</td></tr><tr><td class='mono'>Bash</td><td>7.29s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;cd /work/output/artifacts/skill-flow-...</td></tr><tr><td class='mono'>Bash</td><td>5.90s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro flow registry search &quot;agg...</td></tr><tr><td class='mono'>Bash</td><td>4.19s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;for kw in reduce aggregate total sum ...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+  <p><strong>Most Common Pattern:</strong> <code>Bash → Bash → Bash</code></p><p><strong>Skill Tool Invoked:</strong> 1 time(s)</p>
+</div>
+
+<h2>Generation Metrics</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Total Latency</div><div class="value">15m 3s</div></div>
+    <div class="stat"><div class="label">Turns</div><div class="value">1</div></div>
+    <div class="stat"><div class="label">Assistant Turns</div><div class="value">56</div></div>
+    <div class="stat"><div class="label">Avg Turn Latency</div><div class="value">15m 0s</div></div>
+    <div class="stat"><div class="label">Crashed Partials</div><div class="value">1 (0 recovered, 1 terminal)</div></div>
+  </div>
+</div>
+
+<h2>Token Usage</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Input (uncached)</div><div class="value">46</div></div>
+    <div class="stat"><div class="label">Output</div><div class="value">73,353</div></div>
+    <div class="stat"><div class="label">Cache Write</div><div class="value">140,526</div></div>
+    <div class="stat"><div class="label">Cache Read</div><div class="value">2,873,357</div></div>
+    <div class="stat"><div class="label">Total</div><div class="value">3,087,282</div></div>
+    <div class="stat"><div class="label">Cost</div><div class="value">$2.4894</div></div>
+  </div>
+</div>
+
+<h2>Agent Settings</h2>
+<div class="card" style="padding:0">
+  <table>
+    <tbody><tr><td class='mono dim'>Permission Mode</td><td>acceptEdits</td></tr><tr><td class='mono dim'>Allowed Tools</td><td>Skill, Bash, Read, Write, Edit, Glob, Grep</td></tr><tr><td class='mono dim'>Model</td><td>us.anthropic.claude-sonnet-5</td></tr><tr><td class='mono dim'>Max Turns</td><td>40</td></tr><tr><td class='mono dim'>System Prompt</td><td>You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted. </td></tr><tr><td class='mono dim'>System Prompt Mode</td><td>append</td></tr><tr><td class='mono dim'>Plugins</td><td>/home/azureuser/projects/skills/tmp</td></tr></tbody>
+  </table>
+</div>
+
+<h2>Environment</h2>
+<div class="card" style="padding:0">
+  <table>
+    <tbody><tr><td class='mono dim'>git_commit</td><td>unknown</td></tr><tr><td class='mono dim'>skills_git_commit</td><td>unknown</td></tr><tr><td class='mono dim'>cli_version</td><td>1.201.0-dev.8272</td></tr><tr><td class='mono dim'>tool_plugins</td><td>{&#x27;admin-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;agent-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;agenthub-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;aops-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;api-workflow-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;automation-hub-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;codedagent-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;codedapp-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;coder-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;context-grounding-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;conversational-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;data-fabric-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;docsai-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;function-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;gov-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;guardrails-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;insights-tool&#x27;: &#x27;1.201.0-dev.8276&#x27;, &#x27;integrationservice-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;ixp-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;llm-gateway-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;llmgw-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;maestro-tool&#x27;: &#x27;1.201.0-dev.8275&#x27;, &#x27;model-hub-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;orchestrator-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;platform-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;pm-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;rpa-legacy-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;rpa-tool&#x27;: &#x27;1.201.0-dev.20260809.3&#x27;, &#x27;solution-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;tasks-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;test-manager-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;traces-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;vertical-solutions-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;}</td></tr><tr><td class='mono dim'>coder_eval</td><td>0.9.6</td></tr><tr><td class='mono dim'>claude_code_cli</td><td>2.1.177 (Claude Code)</td></tr><tr><td class='mono dim'>uv</td><td>uv 0.12.5 (x86_64-unknown-linux-gnu)</td></tr><tr><td class='mono dim'>anthropic</td><td>0.122.0</td></tr><tr><td class='mono dim'>openai</td><td>3.2.0</td></tr><tr><td class='mono dim'>pydantic</td><td>2.12.5</td></tr><tr><td class='mono dim'>api_routing</td><td>aws_bedrock</td></tr><tr><td class='mono dim'>eval_routing</td><td>aws_bedrock</td></tr><tr><td class='mono dim'>aws_region</td><td>us-east-2</td></tr><tr><td class='mono dim'>bedrock_model</td><td>us.anthropic.claude-sonnet-4-6</td></tr><tr><td class='mono dim'>system_prompt_semantics</td><td>append</td></tr></tbody>
+  </table>
+</div>
+
+<footer>Generated by coder_eval · 2026-08-19T16:07:05</footer>
+</div>
+<script>
+function toggleTheme() {
+  document.documentElement.classList.toggle('light');
+  try {
+    const mode = document.documentElement.classList.contains('light') ? 'light' : 'dark';
+    localStorage.setItem('coder-eval-theme', mode);
+  } catch (e) { /* ignore */ }
+}
+(function() {
+  try {
+    if (localStorage.getItem('coder-eval-theme') === 'light') {
+      document.documentElement.classList.add('light');
+    }
+  } catch (e) { /* ignore */ }
+})();
+</script>
+</body>
+</html>

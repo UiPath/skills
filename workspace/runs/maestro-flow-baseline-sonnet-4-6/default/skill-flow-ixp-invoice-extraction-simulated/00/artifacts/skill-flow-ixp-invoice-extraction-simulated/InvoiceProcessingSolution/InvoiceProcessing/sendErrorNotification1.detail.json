@@ -1,0 +1,18 @@
+{
+  "_comment": "PLANNED CONFIGURATION — run 'uip maestro flow node configure InvoiceProcessing.flow sendErrorNotification1 --detail \"$(cat sendErrorNotification1.detail.json | python3 -c import sys,json,d=json.load(sys.stdin);del d[\"_comment\"],d[\"_open_questions\"];print(json.dumps(d))')' once IT provisions the Outlook 365 connection.",
+  "connectionId": "<OUTLOOK365_CONNECTION_UUID>",
+  "folderKey": "<OUTLOOK365_FOLDER_KEY_UUID>",
+  "method": "POST",
+  "endpoint": "/send-mail-v2",
+  "bodyParameters": {
+    "toRecipients": "<YOUR_EMAIL_ADDRESS>",
+    "subject": "Invoice Processing Failed",
+    "body": "=js:`Invoice processing failed. Please review the invoice manually.\\n\\nError details: ${JSON.stringify($vars.extractInvoiceFields.error || $vars.postInvoiceToSap1.error || $vars.buildSapPayload.error || 'Unknown error')}`",
+    "importance": "High"
+  },
+  "_open_questions": [
+    "connectionId: IT must create a 'Microsoft Outlook 365' connection in Integration Service and supply its UUID",
+    "folderKey: The Orchestrator folder key (UUID) for the folder that owns the Outlook connection",
+    "toRecipients: Replace with the actual recipient email address for failure notifications"
+  ]
+}

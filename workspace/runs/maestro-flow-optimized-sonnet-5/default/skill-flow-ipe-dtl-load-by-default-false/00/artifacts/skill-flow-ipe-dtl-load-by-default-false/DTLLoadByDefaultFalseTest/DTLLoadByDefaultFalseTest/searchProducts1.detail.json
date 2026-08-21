@@ -1,0 +1,16 @@
+{
+  "_comment": "PLANNED configuration — no live WooCommerce (uipath-automattic-woocommerce) connection exists in this tenant (uip is connections list returns none across all folders, and the connector itself is Active:No/CatalogActive:No in uip is connectors list). Run `uip maestro flow node configure` with real values once a connection is available; this node has NOT been configured on the .flow and will not pass flow validate until then.",
+  "connectionId": "<WOOCOMMERCE_CONNECTION_ID>",
+  "folderKey": "<WOOCOMMERCE_FOLDER_KEY>",
+  "method": "GET",
+  "endpoint": "/search_products",
+  "objectName": "search_products",
+  "queryParameters": {
+    "attribute": "<ATTRIBUTE_ID>",
+    "attribute_term": "<ATTRIBUTE_TERM_ID>"
+  },
+  "_fieldNotes": {
+    "attribute": "Parent reference field (objectName: '/attributes'). Must be set for 'attribute_term' to become visible per its fieldActions show/hide rule keyed on this field.",
+    "attribute_term": "The attribute-term dropdown field (displayName 'Attribute terms'). design.loadByDefault=false, so its options are NOT preloaded when the activity form opens — the dropdown resolves its option list on demand (reference lookup: attributes::terms via /attributes/terms?attribute_ID={attribute}), i.e. only when the caller opens/interacts with it. This is the field the task asked to configure. Resolve the real term id at authoring time via: uip is resources run list uipath-automattic-woocommerce 'attributes/terms?attribute_ID=<ATTRIBUTE_ID>' --connection-id <id>"
+  }
+}

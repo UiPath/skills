@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "SpotifyProfileTest",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "e2e9abd8-14a5-4fcc-8caa-a5b4fde990d6",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "SpotifyProfileTest"
+    },
+    "locks": [],
+    "key": "2f6d415c-7d0c-4a69-ab6f-2e7138962ef2",
+    "files": []
+  }
+}

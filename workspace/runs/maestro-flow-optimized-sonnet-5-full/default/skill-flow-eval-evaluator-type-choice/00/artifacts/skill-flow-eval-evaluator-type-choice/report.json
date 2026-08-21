@@ -1,0 +1,8 @@
+{
+  "goal_a_type": "llm-judge-output",
+  "goal_a_reason": "Free-text greeting comparison needs semantic/paraphrase tolerance from an LLM judge, but no tool-call trajectory inspection, so the output-only judge fits.",
+  "goal_b_type": "json-similarity",
+  "goal_b_reason": "Structured JSON output with tolerance for key ordering and whitespace but deterministic (no LLM) matching is exactly what the tree-based json-similarity evaluator provides.",
+  "goal_c_type": "contains",
+  "goal_c_reason": "A binary pass-fail check for a literal substring is the dedicated purpose of the contains evaluator, no LLM needed."
+}

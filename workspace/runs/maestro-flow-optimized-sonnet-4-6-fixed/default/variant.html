@@ -1,0 +1,1057 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Variant default</title>
+<style>
+:root {
+  --bg-page: #0f1419;
+  --bg-card: #1a2129;
+  --bg-card-2: #232d38;
+  --bg-code: #0b0f14;
+  --fg: #e6edf3;
+  --fg-muted: #8b98a5;
+  --fg-dim: #6e7681;
+  --border: #30363d;
+  --accent: #58a6ff;
+  --score-high: #22c55e;
+  --score-mid: #f59e0b;
+  --score-low: #ef4444;
+  --status-success: #22c55e;
+  --status-failure: #f59e0b;
+  --status-error: #ef4444;
+  --status-neutral: #6e7681;
+  --shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+.light {
+  --bg-page: #ffffff;
+  --bg-card: #f6f8fa;
+  --bg-card-2: #eaeef2;
+  --bg-code: #f6f8fa;
+  --fg: #1f2328;
+  --fg-muted: #636c76;
+  --fg-dim: #8b949e;
+  --border: #d0d7de;
+  --accent: #0969da;
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial,
+               sans-serif;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--fg);
+  background: var(--bg-page);
+}
+.container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+h1, h2, h3, h4 { margin: 0 0 12px 0; line-height: 1.25; }
+h1 { font-size: 22px; font-weight: 600; }
+h2 { font-size: 18px; font-weight: 600; margin-top: 28px;
+     padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+h3 { font-size: 15px; font-weight: 600; color: var(--fg-muted); }
+h4 { font-size: 13px; font-weight: 600; color: var(--fg-muted); }
+p { margin: 0 0 8px 0; }
+.muted { color: var(--fg-muted); }
+.dim { color: var(--fg-dim); }
+.mono { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+        monospace; font-size: 12.5px; }
+code { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+       monospace; font-size: 12.5px; background: var(--bg-code);
+       border: 1px solid var(--border); padding: 1px 5px; border-radius: 3px; }
+pre { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+      monospace; font-size: 12.5px; background: var(--bg-code);
+      border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px;
+      margin: 6px 0; overflow-x: auto; white-space: pre-wrap;
+      word-wrap: break-word; }
+.header-bar { display: flex; align-items: center; justify-content: space-between;
+              margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+.title-group { flex: 1; min-width: 0; }
+.title-group .subtitle { color: var(--fg-muted); font-size: 13px;
+                         margin-top: 2px; word-break: break-all; }
+.badges { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.badge { display: inline-flex; align-items: center; gap: 6px;
+         padding: 4px 10px; border-radius: 12px; font-size: 12px;
+         font-weight: 600; background: var(--bg-card-2);
+         border: 1px solid var(--border); color: var(--fg); }
+.badge.success { background: color-mix(in srgb, var(--status-success) 20%, var(--bg-card-2));
+                 border-color: var(--status-success); color: var(--status-success); }
+.badge.failure { background: color-mix(in srgb, var(--status-failure) 20%, var(--bg-card-2));
+                 border-color: var(--status-failure); color: var(--status-failure); }
+.badge.error { background: color-mix(in srgb, var(--status-error) 20%, var(--bg-card-2));
+               border-color: var(--status-error); color: var(--status-error); }
+.badge.warning { background: color-mix(in srgb, #f4a52810 20%, var(--bg-card-2));
+                 border-color: #f4a528; color: #f4a528; }
+.badge.neutral { color: var(--fg-muted); }
+.score-pill { display: inline-block; padding: 2px 8px; border-radius: 10px;
+              font-size: 12px; font-weight: 700; min-width: 42px;
+              text-align: center; color: #0b0f14; }
+.score-high { background: var(--score-high); }
+.score-mid { background: var(--score-mid); }
+.score-low { background: var(--score-low); }
+.card { background: var(--bg-card); border: 1px solid var(--border);
+        border-radius: 8px; padding: 16px 20px; margin-bottom: 16px;
+        box-shadow: var(--shadow); }
+.card.highlight { border-left: 4px solid var(--accent); }
+.grid { display: grid; gap: 12px;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+.stat { background: var(--bg-card-2); padding: 10px 12px; border-radius: 6px;
+        border: 1px solid var(--border); }
+.stat .label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;
+               color: var(--fg-muted); margin-bottom: 4px; }
+.stat .value { font-size: 16px; font-weight: 600; }
+table { width: 100%; border-collapse: collapse; margin: 4px 0 12px 0; }
+th, td { text-align: left; padding: 8px 10px;
+         border-bottom: 1px solid var(--border); vertical-align: top;
+         font-size: 13px; }
+th { color: var(--fg-muted); font-weight: 600; font-size: 12px;
+     text-transform: uppercase; letter-spacing: 0.3px; }
+tr:last-child td { border-bottom: none; }
+details { margin: 6px 0; border: 1px solid var(--border); border-radius: 6px;
+          background: var(--bg-card-2); }
+details > summary { cursor: pointer; padding: 8px 12px; user-select: none;
+                    font-weight: 500; list-style: none; }
+details > summary::-webkit-details-marker { display: none; }
+details > summary::before { content: "▸ "; color: var(--fg-dim);
+                            display: inline-block; width: 14px;
+                            transition: transform 0.15s; }
+details[open] > summary::before { content: "▾ "; }
+details .details-body { padding: 0 12px 10px 12px; }
+.tool-row { display: flex; align-items: center; gap: 10px;
+            flex-wrap: wrap; font-size: 13px; }
+.tool-name { font-weight: 600; color: var(--accent); font-family: ui-monospace,
+             SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+.tool-status-ok { color: var(--status-success); font-size: 11px;
+                  font-weight: 600; }
+.tool-status-err { color: var(--status-error); font-size: 11px;
+                   font-weight: 600; }
+.tool-duration { color: var(--fg-muted); font-size: 12px; }
+.tool-seq { color: var(--fg-dim); font-size: 11px; font-weight: 600;
+            min-width: 24px; text-align: right; font-family: ui-monospace,
+            SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+.turn-header { display: flex; justify-content: space-between;
+               align-items: baseline; flex-wrap: wrap; gap: 10px;
+               margin-bottom: 10px; }
+.turn-meta { font-size: 12px; color: var(--fg-muted); }
+.criterion-row td:first-child { font-family: ui-monospace, SFMono-Regular,
+                                 "SF Mono", Menlo, Consolas, monospace;
+                                 color: var(--fg-muted); font-size: 12px; }
+.judge-section { display: flex; flex-direction: column; gap: 12px; }
+.judge-card { padding: 14px 16px; }
+.judge-card-head { display: flex; justify-content: space-between;
+                    align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+.judge-card-title { font-size: 14px; line-height: 1.4; flex: 1; min-width: 0; }
+.judge-card-score { flex-shrink: 0; }
+.judge-rationale { margin-top: 10px; padding: 10px 12px;
+                   background: var(--bg-code); border-radius: 4px;
+                   font-size: 13px; line-height: 1.5; }
+.judge-findings { margin: 8px 0 0 18px; padding-left: 4px; font-size: 13px;
+                   line-height: 1.6; }
+.judge-findings li { margin: 2px 0; }
+.nav-toggle { display: inline-block; padding: 5px 10px; font-size: 12px;
+              background: var(--bg-card-2); border: 1px solid var(--border);
+              border-radius: 5px; color: var(--fg); cursor: pointer; }
+.nav-toggle:hover { background: var(--bg-card); }
+.llm-next-steps { margin: 6px 0 0 20px; padding-left: 0; }
+.llm-next-steps li { margin: 3px 0; }
+.iteration-group { padding: 12px 16px 4px 16px; margin-bottom: 20px;
+                   border-radius: 0 6px 6px 0; border-left: 4px solid var(--status-neutral); }
+/* rgba fallback for browsers without color-mix (Chrome <111, Firefox <113, Safari <16.2). */
+.iteration-group--recovered { border-left-color: var(--status-success);
+                              background: rgba(34, 197, 94, 0.06);
+                              background: color-mix(in srgb, var(--status-success) 6%, transparent); }
+.iteration-group--terminal { border-left-color: var(--status-error);
+                             background: rgba(239, 68, 68, 0.06);
+                             background: color-mix(in srgb, var(--status-error) 6%, transparent); }
+.iteration-group__banner { margin: 0 0 12px 0; font-size: 14px; font-weight: 600; }
+.iteration-group--recovered .iteration-group__banner { color: var(--status-success); }
+.iteration-group--terminal .iteration-group__banner { color: var(--status-error); }
+.attempt-transition { display: flex; align-items: center; gap: 8px;
+                      margin: -6px 0 12px 8px; color: var(--status-error); font-size: 12.5px; }
+.attempt-transition__icon { font-weight: 700; }
+footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--border);
+         color: var(--fg-dim); font-size: 12px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="header-bar">
+  <div class="title-group">
+    <h1>Variant: default</h1>
+    <div class="subtitle">Aggregate summary for variant <code>default</code></div>
+  </div>
+  <div class="badges">
+    <span class="score-pill score-high">0.96 avg</span>
+    <span class="nav-toggle" onclick="toggleTheme()">Toggle theme</span>
+  </div>
+</div>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Tasks Run</div><div class="value">127</div></div>
+    <div class="stat"><div class="label">Succeeded</div><div class="value">117</div></div>
+    <div class="stat"><div class="label">Failed</div><div class="value">10</div></div>
+    <div class="stat"><div class="label">Errors</div><div class="value">0</div></div>
+    
+  </div>
+  <ul style="margin-top:10px"><li><strong>Score Stddev:</strong> 0.160</li><li><strong>Duration Stddev:</strong> 235.9s</li></ul>
+</div>
+<h2>Tasks</h2>
+<div class="card" style="padding:0">
+<table>
+  <thead><tr><th>Task</th><th style="width:80px">Score</th><th style="width:140px">Status</th></tr></thead>
+  <tbody>
+<tr>
+  <td><a href="skill-flow-ipe-generate-schema/00/task.html">skill-flow-ipe-generate-schema</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">0.80</span></td>
+  <td><span class="badge failure">FAILURE</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-flow-subflow/00/task.html">skill-flow-subflow</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-flow-hitl-smoke-completed-port/00/task.html">skill-flow-hitl-smoke-completed-port</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-flow-outlook-trigger-inbox/00/task.html">skill-flow-outlook-trigger-inbox</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-flow-ipe-path-params/00/task.html">skill-flow-ipe-path-params</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-flow-webhook-waitfor-parallel/00/task.html">skill-flow-webhook-waitfor-parallel</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-flow-eval-simulation-crud/00/task.html">skill-flow-eval-simulation-crud</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-flow-e2e-escalation-slack-alert/00/task.html">skill-flow-e2e-escalation-slack-alert</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-flow-decision/00/task.html">skill-flow-decision</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-flow-slack-http-fallback/00/task.html">skill-flow-slack-http-fallback</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-flow-trigger-with-filter/00/task.html">skill-flow-trigger-with-filter</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-flow-bindings-reconfigure-different-connection/00/task.html">skill-flow-bindings-reconfigure-different-connection</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-flow-hitl-schema-design-simulated/00/task.html">skill-flow-hitl-schema-design-simulated</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">0.89</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-flow-transform-map/00/task.html">skill-flow-transform-map</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-flow-ipe-required-groups/00/task.html">skill-flow-ipe-required-groups</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-flow-customer-escalation-simulated/00/task.html">skill-flow-customer-escalation-simulated</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">0.94</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-flow-ipe-jira-get-issue/00/task.html">skill-flow-ipe-jira-get-issue</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-flow-ixp-routing-listing/r01/00/task.html">skill-flow-ixp-routing-listing/r01</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-flow-ixp-routing-listing/r02/00/task.html">skill-flow-ixp-routing-listing/r02</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-flow-ixp-routing-listing/r03/00/task.html">skill-flow-ixp-routing-listing/r03</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-flow-ixp-routing-listing/r04/00/task.html">skill-flow-ixp-routing-listing/r04</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-flow-ixp-routing-listing/r05/00/task.html">skill-flow-ixp-routing-listing/r05</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-flow-ixp-routing-listing/r06/00/task.html">skill-flow-ixp-routing-listing/r06</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-flow-ixp-routing-listing/r07/00/task.html">skill-flow-ixp-routing-listing/r07</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-flow-ixp-routing-listing/r08/00/task.html">skill-flow-ixp-routing-listing/r08</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-flow-ixp-routing-listing/r09/00/task.html">skill-flow-ixp-routing-listing/r09</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-flow-ixp-routing-listing/r10/00/task.html">skill-flow-ixp-routing-listing/r10</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-flow-ipe-dtl-load-by-default-false/00/task.html">skill-flow-ipe-dtl-load-by-default-false</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-flow-cli-dice-roller-simulated/00/task.html">skill-flow-cli-dice-roller-simulated</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-flow-update-node/00/task.html">skill-flow-update-node</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-flow-ipe-ceql-where/00/task.html">skill-flow-ipe-ceql-where</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-flow-customer-escalation/00/task.html">skill-flow-customer-escalation</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-flow-bellevue-weather-simulated/00/task.html">skill-flow-bellevue-weather-simulated</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-flow-reading-list/00/task.html">skill-flow-reading-list</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-flow-jdbc-databricks-query/00/task.html">skill-flow-jdbc-databricks-query</a></td>
+  <td style="text-align:center"><span class="score-pill score-mid">0.77</span></td>
+  <td><span class="badge failure">FAILURE</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-flow-file-attachment-debug/00/task.html">skill-flow-file-attachment-debug</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-flow-bindings-multi-connector-independence/00/task.html">skill-flow-bindings-multi-connector-independence</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-flow-ipe-query-params/00/task.html">skill-flow-ipe-query-params</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-flow-wiki-pageviews/00/task.html">skill-flow-wiki-pageviews</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-flow-ipe-complex-array/00/task.html">skill-flow-ipe-complex-array</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">0.88</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-flow-merge-parallel-sync/00/task.html">skill-flow-merge-parallel-sync</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-flow-ipe-dtl-load-by-default-true/00/task.html">skill-flow-ipe-dtl-load-by-default-true</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-flow-bindings-no-duplicates/00/task.html">skill-flow-bindings-no-duplicates</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-flow-lowcode-agent/00/task.html">skill-flow-lowcode-agent</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-flow-eval-no-auto-upload/00/task.html">skill-flow-eval-no-auto-upload</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-flow-hitl-quality-schema-design/00/task.html">skill-flow-hitl-quality-schema-design</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-flow-terminate/00/task.html">skill-flow-terminate</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-flow-ipe-jira-search-triage/00/task.html">skill-flow-ipe-jira-search-triage</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-flow-hitl-quality-boolean-decision/00/task.html">skill-flow-hitl-quality-boolean-decision</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-flow-multi-city-weather/00/task.html">skill-flow-multi-city-weather</a></td>
+  <td style="text-align:center"><span class="score-pill score-low">0.00</span></td>
+  <td><span class="badge failure">TIMEOUT</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-flow-solution-select-ask/00/task.html">skill-flow-solution-select-ask</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-flow-hitl-smoke-node-placed/00/task.html">skill-flow-hitl-smoke-node-placed</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-flow-e2e-escalation-jira-ticket/00/task.html">skill-flow-e2e-escalation-jira-ticket</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-flow-coded-agent/00/task.html">skill-flow-coded-agent</a></td>
+  <td style="text-align:center"><span class="score-pill score-low">0.38</span></td>
+  <td><span class="badge failure">FAILURE</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-flow-ixp-scaffold-multinode/00/task.html">skill-flow-ixp-scaffold-multinode</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-flow-inline-agent-robust/00/task.html">skill-flow-inline-agent-robust</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">0.90</span></td>
+  <td><span class="badge failure">FAILURE</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-flow-eval-local-crud/00/task.html">skill-flow-eval-local-crud</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-flow-paginated-reference-lookup/00/task.html">skill-flow-paginated-reference-lookup</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-flow-api-workflow/00/task.html">skill-flow-api-workflow</a></td>
+  <td style="text-align:center"><span class="score-pill score-low">0.38</span></td>
+  <td><span class="badge failure">FAILURE</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-flow-expense-approval-simulated/00/task.html">skill-flow-expense-approval-simulated</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-flow-bellevue-weather/00/task.html">skill-flow-bellevue-weather</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-flow-devcon-billing-dispute-resolution/00/task.html">skill-flow-devcon-billing-dispute-resolution</a></td>
+  <td style="text-align:center"><span class="score-pill score-mid">0.55</span></td>
+  <td><span class="badge failure">FAILURE</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-flow-ixp-routing/explicit/00/task.html">skill-flow-ixp-routing/explicit</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-flow-ixp-routing/invoice-extraction/00/task.html">skill-flow-ixp-routing/invoice-extraction</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-flow-ixp-routing/receipts/00/task.html">skill-flow-ixp-routing/receipts</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-flow-ixp-routing/contracts/00/task.html">skill-flow-ixp-routing/contracts</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-flow-ixp-routing/forms-classify/00/task.html">skill-flow-ixp-routing/forms-classify</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-flow-slack-channel-description/00/task.html">skill-flow-slack-channel-description</a></td>
+  <td style="text-align:center"><span class="score-pill score-low">0.25</span></td>
+  <td><span class="badge failure">MAX_TURNS_EXHAUSTED</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-flow-transform-group-by/00/task.html">skill-flow-transform-group-by</a></td>
+  <td style="text-align:center"><span class="score-pill score-low">0.38</span></td>
+  <td><span class="badge failure">FAILURE</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-flow-ipe-enum/00/task.html">skill-flow-ipe-enum</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-flow-interactive-customer-escalation-triage/00/task.html">skill-flow-interactive-customer-escalation-triage</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-flow-add-output/00/task.html">skill-flow-add-output</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-flow-rpa/00/task.html">skill-flow-rpa</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-flow-feet-inches/00/task.html">skill-flow-feet-inches</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-flow-summarize/00/task.html">skill-flow-summarize</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-flow-devcon-billing-dispute-analyst/00/task.html">skill-flow-devcon-billing-dispute-analyst</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-flow-ixp-invoice-extraction-simulated/00/task.html">skill-flow-ixp-invoice-extraction-simulated</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-flow-hitl-quality-brownfield-insert/00/task.html">skill-flow-hitl-quality-brownfield-insert</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-flow-registry-discovery/00/task.html">skill-flow-registry-discovery</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-flow-ixp-routing-negative/stripe-http/00/task.html">skill-flow-ixp-routing-negative/stripe-http</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-flow-ixp-routing-negative/slack-summary/00/task.html">skill-flow-ixp-routing-negative/slack-summary</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-flow-ixp-routing-negative/sf-update/00/task.html">skill-flow-ixp-routing-negative/sf-update</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-flow-ixp-routing-negative/http-webhook/00/task.html">skill-flow-ixp-routing-negative/http-webhook</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-flow-ixp-routing-negative/gsheet-loop/00/task.html">skill-flow-ixp-routing-negative/gsheet-loop</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-flow-ixp-routing-negative/queue-write/00/task.html">skill-flow-ixp-routing-negative/queue-write</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-flow-ixp-routing-negative/teams-decision/00/task.html">skill-flow-ixp-routing-negative/teams-decision</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-flow-ixp-routing-negative/delay-email/00/task.html">skill-flow-ixp-routing-negative/delay-email</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-flow-remove-node/00/task.html">skill-flow-remove-node</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-flow-calculator/00/task.html">skill-flow-calculator</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-flow-move-node/00/task.html">skill-flow-move-node</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-flow-devcon-billing-resolution-writer/00/task.html">skill-flow-devcon-billing-resolution-writer</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-flow-add-node/00/task.html">skill-flow-add-node</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-flow-devcon-billing-invoice-lookup/00/task.html">skill-flow-devcon-billing-invoice-lookup</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">0.91</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-flow-ipe-jira-create-issue/00/task.html">skill-flow-ipe-jira-create-issue</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-flow-eval-evaluator-type-choice/00/task.html">skill-flow-eval-evaluator-type-choice</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-flow-batch-transform/00/task.html">skill-flow-batch-transform</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-flow-ipe-jira-lifecycle/00/task.html">skill-flow-ipe-jira-lifecycle</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-flow-ixp-e2e-invoice-extraction-greenfield/00/task.html">skill-flow-ixp-e2e-invoice-extraction-greenfield</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-flow-ipe-multiselect/00/task.html">skill-flow-ipe-multiselect</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-flow-bindings-idempotent-reconfigure/00/task.html">skill-flow-bindings-idempotent-reconfigure</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-flow-non-catalog-http-fallback/00/task.html">skill-flow-non-catalog-http-fallback</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-flow-dice-roller/00/task.html">skill-flow-dice-roller</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-flow-transform-filter/00/task.html">skill-flow-transform-filter</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-flow-ipe-enhanced-enum/00/task.html">skill-flow-ipe-enhanced-enum</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-flow-group-to-subflow/00/task.html">skill-flow-group-to-subflow</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-flow-slack-channel-description-simulated/00/task.html">skill-flow-slack-channel-description-simulated</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">0.92</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-flow-e2e-escalation-orchestrator-paths/00/task.html">skill-flow-e2e-escalation-orchestrator-paths</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-flow-scheduled-trigger/00/task.html">skill-flow-scheduled-trigger</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-flow-devcon-billing-discrepancy-detector/00/task.html">skill-flow-devcon-billing-discrepancy-detector</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-flow-e2e-devcon-expense-approval/00/task.html">skill-flow-e2e-devcon-expense-approval</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-flow-ixp-integration-handle-routing/00/task.html">skill-flow-ixp-integration-handle-routing</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-flow-openmeteo-weather/00/task.html">skill-flow-openmeteo-weather</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-flow-slack-weather-pipeline/00/task.html">skill-flow-slack-weather-pipeline</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-flow-generic-dynamic-node/00/task.html">skill-flow-generic-dynamic-node</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-flow-ipe-searchable-joins/00/task.html">skill-flow-ipe-searchable-joins</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-flow-hitl-quality-result-downstream/00/task.html">skill-flow-hitl-quality-result-downstream</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-flow-init-validate/00/task.html">skill-flow-init-validate</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-flow-outlook-waitfor-email/00/task.html">skill-flow-outlook-waitfor-email</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-flow-switch/00/task.html">skill-flow-switch</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-flow-ixp-scaffold-minimal/00/task.html">skill-flow-ixp-scaffold-minimal</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-flow-delay/00/task.html">skill-flow-delay</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-flow-eval-inline-agent/00/task.html">skill-flow-eval-inline-agent</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-flow-hitl-smoke-multi-outcome-routing/00/task.html">skill-flow-hitl-smoke-multi-outcome-routing</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-flow-ipe-drive-to-slack/00/task.html">skill-flow-ipe-drive-to-slack</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-flow-loop-multiply/00/task.html">skill-flow-loop-multiply</a></td>
+  <td style="text-align:center"><span class="score-pill score-low">0.38</span></td>
+  <td><span class="badge failure">FAILURE</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-flow-ixp-e2e-project-selection/aviation/00/task.html">skill-flow-ixp-e2e-project-selection/aviation</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-flow-ixp-e2e-project-selection/birth-certificate/00/task.html">skill-flow-ixp-e2e-project-selection/birth-certificate</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+</tbody>
+</table>
+</div>
+
+<h2>Generation Metrics</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Tasks</div><div class="value">127</div></div>
+    <div class="stat"><div class="label">Total Latency</div><div class="value">714m 32s</div></div>
+    <div class="stat"><div class="label">Turns</div><div class="value">144</div></div>
+    <div class="stat"><div class="label">Assistant Turns</div><div class="value">5047</div></div>
+    <div class="stat"><div class="label">Avg Turn Latency</div><div class="value">4m 37s</div></div>
+  </div>
+</div>
+
+<h2>Token Usage</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Input</div><div class="value">148,353</div></div>
+    <div class="stat"><div class="label">Output</div><div class="value">1,962,600</div></div>
+    <div class="stat"><div class="label">Cache Write</div><div class="value">9,082,838</div></div>
+    <div class="stat"><div class="label">Cache Read</div><div class="value">162,376,886</div></div>
+    <div class="stat"><div class="label">Total</div><div class="value">173,570,677</div></div>
+    <div class="stat"><div class="label">Cost</div><div class="value">$112.7619</div></div>
+  </div>
+</div>
+
+<h2>Command Telemetry</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Total</div><div class="value">2746</div></div>
+    <div class="stat"><div class="label">Successful</div><div class="value">2628 (96%)</div></div>
+    <div class="stat"><div class="label">Failed</div><div class="value">118</div></div>
+    <div class="stat"><div class="label">Avg / cmd</div><div class="value">5.02s</div></div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 2fr;gap:16px;margin-top:12px">
+    <div>
+      <h4>By Tool</h4>
+      <table>
+        <thead><tr><th>Tool</th><th>Count</th></tr></thead>
+        <tbody><tr><td class='mono'>Bash</td><td>1704</td></tr><tr><td class='mono'>Read</td><td>737</td></tr><tr><td class='mono'>Skill</td><td>127</td></tr><tr><td class='mono'>Edit</td><td>90</td></tr><tr><td class='mono'>Glob</td><td>39</td></tr><tr><td class='mono'>Write</td><td>36</td></tr><tr><td class='mono'>Grep</td><td>7</td></tr><tr><td class='mono'>TaskUpdate</td><td>4</td></tr><tr><td class='mono'>TaskCreate</td><td>2</td></tr></tbody>
+      </table>
+    </div>
+    <div>
+      <h4>Slowest</h4>
+      <table>
+        <thead><tr><th>Tool</th><th>Duration</th><th>Parameters</th></tr></thead>
+        <tbody><tr><td class='mono'>Bash</td><td>120.04s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;python3 3&lt;&lt;\&#x27;PYEOF\&#x27;\nimport json\n\n...</td></tr><tr><td class='mono'>Bash</td><td>102.94s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro flow registry get core.lo...</td></tr><tr><td class='mono'>Bash</td><td>92.76s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro flow registry get core.ac...</td></tr><tr><td class='mono'>Bash</td><td>83.36s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro flow registry get core.co...</td></tr><tr><td class='mono'>Bash</td><td>82.71s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro flow registry get core.tr...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+  <p><strong>Most Common Pattern:</strong> <code>Bash → Bash → Bash</code></p><p><strong>Skill Tool Invoked:</strong> 127 time(s)</p>
+</div>
+
+<h2>Agent Settings</h2>
+<div class="card" style="padding:0">
+  <table>
+    <tbody><tr><td class='mono dim'>Permission Mode</td><td>acceptEdits</td></tr><tr><td class='mono dim'>Allowed Tools</td><td>Skill, Bash, Read, Write, Edit, Glob, Grep</td></tr><tr><td class='mono dim'>Model</td><td>us.anthropic.claude-sonnet-4-6</td></tr><tr><td class='mono dim'>Max Turns</td><td>120</td></tr><tr><td class='mono dim'>System Prompt</td><td>You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted. </td></tr><tr><td class='mono dim'>System Prompt Mode</td><td>append</td></tr><tr><td class='mono dim'>Plugins</td><td>/home/azureuser/projects/skills/tmp</td></tr></tbody>
+  </table>
+</div>
+
+<h2>Environment</h2>
+<div class="card" style="padding:0">
+  <table>
+    <tbody><tr><td class='mono dim'>git_commit</td><td>unknown</td></tr><tr><td class='mono dim'>skills_git_commit</td><td>unknown</td></tr><tr><td class='mono dim'>cli_version</td><td>1.201.0-dev.8272</td></tr><tr><td class='mono dim'>tool_plugins</td><td>{&#x27;admin-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;agent-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;agenthub-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;aops-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;api-workflow-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;automation-hub-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;codedagent-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;codedapp-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;coder-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;context-grounding-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;conversational-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;data-fabric-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;docsai-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;function-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;gov-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;guardrails-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;insights-tool&#x27;: &#x27;1.201.0-dev.8276&#x27;, &#x27;integrationservice-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;ixp-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;llm-gateway-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;llmgw-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;maestro-tool&#x27;: &#x27;1.201.0-dev.8275&#x27;, &#x27;model-hub-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;orchestrator-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;platform-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;pm-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;rpa-legacy-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;rpa-tool&#x27;: &#x27;1.201.0-dev.20260809.3&#x27;, &#x27;solution-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;tasks-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;test-manager-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;traces-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;vertical-solutions-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;}</td></tr><tr><td class='mono dim'>coder_eval</td><td>0.9.6</td></tr><tr><td class='mono dim'>claude_code_cli</td><td>2.1.177 (Claude Code)</td></tr><tr><td class='mono dim'>uv</td><td>uv 0.12.5 (x86_64-unknown-linux-gnu)</td></tr><tr><td class='mono dim'>anthropic</td><td>0.122.0</td></tr><tr><td class='mono dim'>openai</td><td>3.2.0</td></tr><tr><td class='mono dim'>pydantic</td><td>2.12.5</td></tr><tr><td class='mono dim'>api_routing</td><td>aws_bedrock</td></tr><tr><td class='mono dim'>eval_routing</td><td>aws_bedrock</td></tr><tr><td class='mono dim'>aws_region</td><td>us-east-2</td></tr><tr><td class='mono dim'>bedrock_model</td><td>us.anthropic.claude-sonnet-4-6</td></tr><tr><td class='mono dim'>system_prompt_semantics</td><td>append</td></tr></tbody>
+  </table>
+</div>
+
+
+<footer>Generated by coder_eval · 2026-08-19T21:33:21</footer>
+</div>
+<script>
+function toggleTheme() {
+  document.documentElement.classList.toggle('light');
+  try {
+    const mode = document.documentElement.classList.contains('light') ? 'light' : 'dark';
+    localStorage.setItem('coder-eval-theme', mode);
+  } catch (e) { /* ignore */ }
+}
+(function() {
+  try {
+    if (localStorage.getItem('coder-eval-theme') === 'light') {
+      document.documentElement.classList.add('light');
+    }
+  } catch (e) { /* ignore */ }
+})();
+</script>
+</body>
+</html>

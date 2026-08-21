@@ -1,0 +1,12 @@
+{
+  "DocVersion": "1.0.0",
+  "StudioMinVersion": "2025.10.0",
+  "SolutionId": "14369e68-75dd-415d-acfc-05412cf3d347",
+  "Projects": [
+    {
+      "Type": "Flow",
+      "ProjectRelativePath": "NtsbAviationFlow/project.uiproj",
+      "Id": "b98680b8-ba11-43b7-a350-f2a242888ae5"
+    }
+  ]
+}

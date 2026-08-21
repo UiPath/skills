@@ -1,0 +1,109 @@
+=== USER (turn 1) — simulator-generated opener ===
+Hi, I need your help building a UiPath Maestro Flow that has to be validated before we can sign it off for production. Here's what I need:
+
+**Project and solution name:** CustomerEscalationTriage (both the solution and the flow project should use this name)
+
+**What it does:** It takes an incoming customer escalation and classifies it — determining severity, whether engineering needs to be looped in, how we respond, and stamping the case with our tracking ID.
+
+**Input/output contract — these names must be exact, because downstream systems consume them by name:**
+
+*Inputs:*
+- `customerTier`
+- `productionDown`
+- `workaroundAvailable`
+- `businessImpact`
+- `correlationId`
+
+*Outputs:*
+- `severity`
+- `engineeringNeeded`
+- `responseMode`
+- `caseKey`
+
+**Business policy to encode:**
+- An Enterprise customer with production fully unavailable and no workaround available is our most critical situation — that's Sev1.
+- At the other end, informational or routine follow-up requests with no production impact are Sev3.
+- Engineering gets pulled in for Sev1. For Sev3, engineering is not involved.
+- We never send customer acknowledgements automatically. Whatever the severity, the response mode is always Draft — a human reviews before anything goes out.
+- The `correlationId` coming in must be carried through unchanged as the `caseKey` so downstream systems can match up the run.
+
+One more thing on `businessImpact`: this is free-form text the requester types in themselves — a short phrase or sentence in their own words describing what's being impacted. It won't be a fixed keyword or code value, so the wording will vary from case to case.
+
+Please let me know if you have any questions before you start building. I'm happy to clarify the policy or the technical requirements.
+
+=== AGENT (turn 1) — 55.9s, in=1296 out=2432, 6 tool calls ===
+I have all the context I need to plan this build. Before starting, I have three questions where the requirements leave gaps — I need your answers to encode the business policy correctly:
+
+**1. Severity for the middle case**
+
+The policy defines Sev1 (Enterprise + production down + no workaround) and Sev3 (no production impact). What happens in between — e.g., Enterprise with production down *but* a workaround available, or a non-Enterprise customer with production down?
+
+1. All of those → Sev2
+2. Some other classification rule applies (describe it)
+3. Something else
+
+**2. Engineering involvement for that middle case**
+
+Assuming the middle case is Sev2: should `engineeringNeeded` be `true` or `false` for Sev2?
+
+1. true
+2. false
+3. Something else
+
+**3. Role of `businessImpact` in classification**
+
+The other inputs (`customerTier`, `productionDown`, `workaroundAvailable`) are categorical and map cleanly to rules. `businessImpact` is free-form text. Does it:
+
+1. Not affect severity — it's carried along as context only (the script captures it as metadata but the classification rules ignore it)
+2. Affect severity through some rule I should know about (describe it)
+3. Something else
+
+=== USER (turn 2) ===
+Good questions — here are the answers to all three:
+
+**1. The middle case is Sev2.** Production is down or degraded but a viable workaround exists. That applies regardless of customer tier — if there's a working workaround, it's Sev2, not Sev1.
+
+**2. Engineering is needed for Sev2** — same as Sev1. `engineeringNeeded` should be `true` for both Sev1 and Sev2.
+
+**3. `businessImpact` does not drive the classification.** It's free-form context the requester provides so the team understands what's affected, but the severity rules run off `customerTier`, `productionDown`, and `workaroundAvailable`. Capture `businessImpact` as metadata and carry it through, but don't branch on its wording.
+
+Go ahead and build it.
+
+=== AGENT (turn 2) — 333.7s, in=11 out=18475, 11 tool calls ===
+All clean. Here's the summary:
+
+---
+
+**Flow built and validated.**
+
+**File:** `CustomerEscalationTriage/CustomerEscalationTriage/CustomerEscalationTriage.flow`
+
+**What was built:**
+
+- **Manual trigger** (`start`) — accepts the 5 inputs (`customerTier`, `productionDown`, `workaroundAvailable`, `businessImpact`, `correlationId`) as `in` variables
+- **Classify Escalation script node** — encodes all business rules:
+  - Enterprise + production down + no workaround → `Sev1`
+  - Production down + workaround available → `Sev2` (regardless of tier)
+  - Production not down → `Sev3`
+  - Fallback (other combinations) → `Sev2`
+  - `engineeringNeeded` = `true` for Sev1 and Sev2, `false` for Sev3
+  - `responseMode` is always `"Draft"`
+  - `caseKey` = `correlationId` passed through unchanged
+- **End node** — maps all 4 outputs (`severity`, `engineeringNeeded`, `responseMode`, `caseKey`) from the script result
+
+**Validation:** `flow validate` — Status: Valid, zero warnings  
+**Audit:** All 5 checks clean (topology, expressions, jint, bindings, runtime-gaps)  
+**Format:** Run — layout normalized, `variables.nodes[]` regenerated
+
+---
+
+**What's next?** How would you like to proceed?
+
+1. **Publish to Studio Web** — push the solution so you can visualize and edit it in the browser
+2. **Debug the solution** — execute the flow end-to-end against real systems (requires explicit consent; has real side effects)
+3. **Deploy to Orchestrator** — pack and publish directly to Orchestrator
+4. **Something else**
+
+=== USER (turn 3) — stop token — dialog ending ===
+That's everything I need — the flow is built and validated, and the grader will take it from here.
+

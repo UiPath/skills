@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Variant default</title>
+<style>
+:root {
+  --bg-page: #0f1419;
+  --bg-card: #1a2129;
+  --bg-card-2: #232d38;
+  --bg-code: #0b0f14;
+  --fg: #e6edf3;
+  --fg-muted: #8b98a5;
+  --fg-dim: #6e7681;
+  --border: #30363d;
+  --accent: #58a6ff;
+  --score-high: #22c55e;
+  --score-mid: #f59e0b;
+  --score-low: #ef4444;
+  --status-success: #22c55e;
+  --status-failure: #f59e0b;
+  --status-error: #ef4444;
+  --status-neutral: #6e7681;
+  --shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+.light {
+  --bg-page: #ffffff;
+  --bg-card: #f6f8fa;
+  --bg-card-2: #eaeef2;
+  --bg-code: #f6f8fa;
+  --fg: #1f2328;
+  --fg-muted: #636c76;
+  --fg-dim: #8b949e;
+  --border: #d0d7de;
+  --accent: #0969da;
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial,
+               sans-serif;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--fg);
+  background: var(--bg-page);
+}
+.container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+h1, h2, h3, h4 { margin: 0 0 12px 0; line-height: 1.25; }
+h1 { font-size: 22px; font-weight: 600; }
+h2 { font-size: 18px; font-weight: 600; margin-top: 28px;
+     padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+h3 { font-size: 15px; font-weight: 600; color: var(--fg-muted); }
+h4 { font-size: 13px; font-weight: 600; color: var(--fg-muted); }
+p { margin: 0 0 8px 0; }
+.muted { color: var(--fg-muted); }
+.dim { color: var(--fg-dim); }
+.mono { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+        monospace; font-size: 12.5px; }
+code { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+       monospace; font-size: 12.5px; background: var(--bg-code);
+       border: 1px solid var(--border); padding: 1px 5px; border-radius: 3px; }
+pre { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+      monospace; font-size: 12.5px; background: var(--bg-code);
+      border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px;
+      margin: 6px 0; overflow-x: auto; white-space: pre-wrap;
+      word-wrap: break-word; }
+.header-bar { display: flex; align-items: center; justify-content: space-between;
+              margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+.title-group { flex: 1; min-width: 0; }
+.title-group .subtitle { color: var(--fg-muted); font-size: 13px;
+                         margin-top: 2px; word-break: break-all; }
+.badges { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.badge { display: inline-flex; align-items: center; gap: 6px;
+         padding: 4px 10px; border-radius: 12px; font-size: 12px;
+         font-weight: 600; background: var(--bg-card-2);
+         border: 1px solid var(--border); color: var(--fg); }
+.badge.success { background: color-mix(in srgb, var(--status-success) 20%, var(--bg-card-2));
+                 border-color: var(--status-success); color: var(--status-success); }
+.badge.failure { background: color-mix(in srgb, var(--status-failure) 20%, var(--bg-card-2));
+                 border-color: var(--status-failure); color: var(--status-failure); }
+.badge.error { background: color-mix(in srgb, var(--status-error) 20%, var(--bg-card-2));
+               border-color: var(--status-error); color: var(--status-error); }
+.badge.warning { background: color-mix(in srgb, #f4a52810 20%, var(--bg-card-2));
+                 border-color: #f4a528; color: #f4a528; }
+.badge.neutral { color: var(--fg-muted); }
+.score-pill { display: inline-block; padding: 2px 8px; border-radius: 10px;
+              font-size: 12px; font-weight: 700; min-width: 42px;
+              text-align: center; color: #0b0f14; }
+.score-high { background: var(--score-high); }
+.score-mid { background: var(--score-mid); }
+.score-low { background: var(--score-low); }
+.card { background: var(--bg-card); border: 1px solid var(--border);
+        border-radius: 8px; padding: 16px 20px; margin-bottom: 16px;
+        box-shadow: var(--shadow); }
+.card.highlight { border-left: 4px solid var(--accent); }
+.grid { display: grid; gap: 12px;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+.stat { background: var(--bg-card-2); padding: 10px 12px; border-radius: 6px;
+        border: 1px solid var(--border); }
+.stat .label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;
+               color: var(--fg-muted); margin-bottom: 4px; }
+.stat .value { font-size: 16px; font-weight: 600; }
+table { width: 100%; border-collapse: collapse; margin: 4px 0 12px 0; }
+th, td { text-align: left; padding: 8px 10px;
+         border-bottom: 1px solid var(--border); vertical-align: top;
+         font-size: 13px; }
+th { color: var(--fg-muted); font-weight: 600; font-size: 12px;
+     text-transform: uppercase; letter-spacing: 0.3px; }
+tr:last-child td { border-bottom: none; }
+details { margin: 6px 0; border: 1px solid var(--border); border-radius: 6px;
+          background: var(--bg-card-2); }
+details > summary { cursor: pointer; padding: 8px 12px; user-select: none;
+                    font-weight: 500; list-style: none; }
+details > summary::-webkit-details-marker { display: none; }
+details > summary::before { content: "▸ "; color: var(--fg-dim);
+                            display: inline-block; width: 14px;
+                            transition: transform 0.15s; }
+details[open] > summary::before { content: "▾ "; }
+details .details-body { padding: 0 12px 10px 12px; }
+.tool-row { display: flex; align-items: center; gap: 10px;
+            flex-wrap: wrap; font-size: 13px; }
+.tool-name { font-weight: 600; color: var(--accent); font-family: ui-monospace,
+             SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+.tool-status-ok { color: var(--status-success); font-size: 11px;
+                  font-weight: 600; }
+.tool-status-err { color: var(--status-error); font-size: 11px;
+                   font-weight: 600; }
+.tool-duration { color: var(--fg-muted); font-size: 12px; }
+.tool-seq { color: var(--fg-dim); font-size: 11px; font-weight: 600;
+            min-width: 24px; text-align: right; font-family: ui-monospace,
+            SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+.turn-header { display: flex; justify-content: space-between;
+               align-items: baseline; flex-wrap: wrap; gap: 10px;
+               margin-bottom: 10px; }
+.turn-meta { font-size: 12px; color: var(--fg-muted); }
+.criterion-row td:first-child { font-family: ui-monospace, SFMono-Regular,
+                                 "SF Mono", Menlo, Consolas, monospace;
+                                 color: var(--fg-muted); font-size: 12px; }
+.judge-section { display: flex; flex-direction: column; gap: 12px; }
+.judge-card { padding: 14px 16px; }
+.judge-card-head { display: flex; justify-content: space-between;
+                    align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+.judge-card-title { font-size: 14px; line-height: 1.4; flex: 1; min-width: 0; }
+.judge-card-score { flex-shrink: 0; }
+.judge-rationale { margin-top: 10px; padding: 10px 12px;
+                   background: var(--bg-code); border-radius: 4px;
+                   font-size: 13px; line-height: 1.5; }
+.judge-findings { margin: 8px 0 0 18px; padding-left: 4px; font-size: 13px;
+                   line-height: 1.6; }
+.judge-findings li { margin: 2px 0; }
+.nav-toggle { display: inline-block; padding: 5px 10px; font-size: 12px;
+              background: var(--bg-card-2); border: 1px solid var(--border);
+              border-radius: 5px; color: var(--fg); cursor: pointer; }
+.nav-toggle:hover { background: var(--bg-card); }
+.llm-next-steps { margin: 6px 0 0 20px; padding-left: 0; }
+.llm-next-steps li { margin: 3px 0; }
+.iteration-group { padding: 12px 16px 4px 16px; margin-bottom: 20px;
+                   border-radius: 0 6px 6px 0; border-left: 4px solid var(--status-neutral); }
+/* rgba fallback for browsers without color-mix (Chrome <111, Firefox <113, Safari <16.2). */
+.iteration-group--recovered { border-left-color: var(--status-success);
+                              background: rgba(34, 197, 94, 0.06);
+                              background: color-mix(in srgb, var(--status-success) 6%, transparent); }
+.iteration-group--terminal { border-left-color: var(--status-error);
+                             background: rgba(239, 68, 68, 0.06);
+                             background: color-mix(in srgb, var(--status-error) 6%, transparent); }
+.iteration-group__banner { margin: 0 0 12px 0; font-size: 14px; font-weight: 600; }
+.iteration-group--recovered .iteration-group__banner { color: var(--status-success); }
+.iteration-group--terminal .iteration-group__banner { color: var(--status-error); }
+.attempt-transition { display: flex; align-items: center; gap: 8px;
+                      margin: -6px 0 12px 8px; color: var(--status-error); font-size: 12.5px; }
+.attempt-transition__icon { font-weight: 700; }
+footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--border);
+         color: var(--fg-dim); font-size: 12px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="header-bar">
+  <div class="title-group">
+    <h1>Variant: default</h1>
+    <div class="subtitle">Aggregate summary for variant <code>default</code></div>
+  </div>
+  <div class="badges">
+    <span class="score-pill score-high">0.98 avg</span>
+    <span class="nav-toggle" onclick="toggleTheme()">Toggle theme</span>
+  </div>
+</div>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Tasks Run</div><div class="value">48</div></div>
+    <div class="stat"><div class="label">Succeeded</div><div class="value">47</div></div>
+    <div class="stat"><div class="label">Failed</div><div class="value">1</div></div>
+    <div class="stat"><div class="label">Errors</div><div class="value">0</div></div>
+    
+  </div>
+  <ul style="margin-top:10px"><li><strong>Score Stddev:</strong> 0.144</li><li><strong>Duration Stddev:</strong> 211.1s</li></ul>
+</div>
+<h2>Tasks</h2>
+<div class="card" style="padding:0">
+<table>
+  <thead><tr><th>Task</th><th style="width:80px">Score</th><th style="width:140px">Status</th></tr></thead>
+  <tbody>
+<tr>
+  <td><a href="skill-bpmn-script-jint-guidance/00/task.html">skill-bpmn-script-jint-guidance</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-bpmn-transform-group-by/00/task.html">skill-bpmn-transform-group-by</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-bpmn-operate-diagnose-minimal-fault-triage/00/task.html">skill-bpmn-operate-diagnose-minimal-fault-triage</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-bpmn-loop-multiply/00/task.html">skill-bpmn-loop-multiply</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-bpmn-hitl-rpa-wrappers/00/task.html">skill-bpmn-hitl-rpa-wrappers</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-bpmn-edit-update-node/00/task.html">skill-bpmn-edit-update-node</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-bpmn-edit-add-node/00/task.html">skill-bpmn-edit-add-node</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-bpmn-gateway-sequence-flows/00/task.html">skill-bpmn-gateway-sequence-flows</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-bpmn-e2e-customer-escalation/00/task.html">skill-bpmn-e2e-customer-escalation</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-bpmn-reading-list/00/task.html">skill-bpmn-reading-list</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-bpmn-message-catch/00/task.html">skill-bpmn-message-catch</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-bpmn-feet-inches/00/task.html">skill-bpmn-feet-inches</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-bpmn-edit-move-node/00/task.html">skill-bpmn-edit-move-node</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-bpmn-hitl-completed-wired/00/task.html">skill-bpmn-hitl-completed-wired</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-bpmn-script-jint-lifecycle/00/task.html">skill-bpmn-script-jint-lifecycle</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-bpmn-e2e-wiki-pageviews/00/task.html">skill-bpmn-e2e-wiki-pageviews</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-bpmn-transform-map/00/task.html">skill-bpmn-transform-map</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-bpmn-agent-job/00/task.html">skill-bpmn-agent-job</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-bpmn-subprocess/00/task.html">skill-bpmn-subprocess</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-bpmn-edit-add-output/00/task.html">skill-bpmn-edit-add-output</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-bpmn-hitl-multi-outcome-routing/00/task.html">skill-bpmn-hitl-multi-outcome-routing</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-bpmn-smoke-registry-discovery/00/task.html">skill-bpmn-smoke-registry-discovery</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-bpmn-hitl-schema-design/00/task.html">skill-bpmn-hitl-schema-design</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-bpmn-integration-service-boundary/00/task.html">skill-bpmn-integration-service-boundary</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-bpmn-timer/00/task.html">skill-bpmn-timer</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-bpmn-calculator/00/task.html">skill-bpmn-calculator</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-bpmn-event-trigger-start/00/task.html">skill-bpmn-event-trigger-start</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-bpmn-business-rule-task/00/task.html">skill-bpmn-business-rule-task</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-bpmn-author-validate/00/task.html">skill-bpmn-author-validate</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-bpmn-edit-remove-node/00/task.html">skill-bpmn-edit-remove-node</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-bpmn-simple-approval-bpmn/00/task.html">skill-bpmn-simple-approval-bpmn</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-bpmn-e2e-invoice-exception-triage/00/task.html">skill-bpmn-e2e-invoice-exception-triage</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-bpmn-edit-group-to-subflow/00/task.html">skill-bpmn-edit-group-to-subflow</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-bpmn-switch/00/task.html">skill-bpmn-switch</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-bpmn-http-weather/00/task.html">skill-bpmn-http-weather</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-bpmn-registry-discovery/00/task.html">skill-bpmn-registry-discovery</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-bpmn-api-workflow-task/00/task.html">skill-bpmn-api-workflow-task</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-bpmn-hitl-brownfield-insert/00/task.html">skill-bpmn-hitl-brownfield-insert</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-bpmn-hitl-result-downstream/00/task.html">skill-bpmn-hitl-result-downstream</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-bpmn-rpa-job/00/task.html">skill-bpmn-rpa-job</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-bpmn-multi-city-weather/00/task.html">skill-bpmn-multi-city-weather</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-bpmn-hitl-boolean-decision/00/task.html">skill-bpmn-hitl-boolean-decision</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-bpmn-terminate/00/task.html">skill-bpmn-terminate</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-bpmn-transform-filter/00/task.html">skill-bpmn-transform-filter</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-bpmn-parallel-fork-join/00/task.html">skill-bpmn-parallel-fork-join</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-bpmn-timer-start/00/task.html">skill-bpmn-timer-start</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-bpmn-dice-roller/00/task.html">skill-bpmn-dice-roller</a></td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><span class="badge success">SUCCESS</span></td>
+</tr>
+
+<tr>
+  <td><a href="skill-bpmn-contract-variant-wrappers/00/task.html">skill-bpmn-contract-variant-wrappers</a></td>
+  <td style="text-align:center"><span class="score-pill score-low">0.00</span></td>
+  <td><span class="badge failure">TIMEOUT</span></td>
+</tr>
+</tbody>
+</table>
+</div>
+
+<h2>Generation Metrics</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Tasks</div><div class="value">48</div></div>
+    <div class="stat"><div class="label">Total Latency</div><div class="value">232m 36s</div></div>
+    <div class="stat"><div class="label">Turns</div><div class="value">47</div></div>
+    <div class="stat"><div class="label">Assistant Turns</div><div class="value">1637</div></div>
+    <div class="stat"><div class="label">Avg Turn Latency</div><div class="value">4m 34s</div></div>
+  </div>
+</div>
+
+<h2>Token Usage</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Input</div><div class="value">102,261</div></div>
+    <div class="stat"><div class="label">Output</div><div class="value">922,995</div></div>
+    <div class="stat"><div class="label">Cache Write</div><div class="value">1,546,735</div></div>
+    <div class="stat"><div class="label">Cache Read</div><div class="value">39,733,622</div></div>
+    <div class="stat"><div class="label">Total</div><div class="value">42,305,613</div></div>
+    <div class="stat"><div class="label">Cost</div><div class="value">$31.8721</div></div>
+  </div>
+</div>
+
+<h2>Command Telemetry</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Total</div><div class="value">1064</div></div>
+    <div class="stat"><div class="label">Successful</div><div class="value">973 (91%)</div></div>
+    <div class="stat"><div class="label">Failed</div><div class="value">91</div></div>
+    <div class="stat"><div class="label">Avg / cmd</div><div class="value">648ms</div></div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 2fr;gap:16px;margin-top:12px">
+    <div>
+      <h4>By Tool</h4>
+      <table>
+        <thead><tr><th>Tool</th><th>Count</th></tr></thead>
+        <tbody><tr><td class='mono'>Bash</td><td>580</td></tr><tr><td class='mono'>Read</td><td>182</td></tr><tr><td class='mono'>Write</td><td>105</td></tr><tr><td class='mono'>TaskUpdate</td><td>67</td></tr><tr><td class='mono'>Skill</td><td>47</td></tr><tr><td class='mono'>TaskCreate</td><td>34</td></tr><tr><td class='mono'>Glob</td><td>26</td></tr><tr><td class='mono'>Edit</td><td>23</td></tr></tbody>
+      </table>
+    </div>
+    <div>
+      <h4>Slowest</h4>
+      <table>
+        <thead><tr><th>Tool</th><th>Duration</th><th>Parameters</th></tr></thead>
+        <tbody><tr><td class='mono'>Write</td><td>18.49s</td><td class='mono dim'>{&#x27;file_path&#x27;: &#x27;/work/output/artifacts/skill-bpmn-r...</td></tr><tr><td class='mono'>Bash</td><td>16.67s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;cd /home/azureuser/projects/skills/sk...</td></tr><tr><td class='mono'>Bash</td><td>12.74s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;cd /home/azureuser/projects/skills/sk...</td></tr><tr><td class='mono'>Write</td><td>12.51s</td><td class='mono dim'>{&#x27;file_path&#x27;: &#x27;/work/output/artifacts/skill-bpmn-r...</td></tr><tr><td class='mono'>Bash</td><td>11.25s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;cd /home/azureuser/projects/skills/sk...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+  <p><strong>Most Common Pattern:</strong> <code>Bash → Bash → Bash</code></p><p><strong>Skill Tool Invoked:</strong> 47 time(s)</p>
+</div>
+
+<h2>Agent Settings</h2>
+<div class="card" style="padding:0">
+  <table>
+    <tbody><tr><td class='mono dim'>Permission Mode</td><td>acceptEdits</td></tr><tr><td class='mono dim'>Allowed Tools</td><td>Skill, Bash, Read, Write, Edit, Glob, Grep</td></tr><tr><td class='mono dim'>Model</td><td>us.anthropic.claude-sonnet-4-6</td></tr><tr><td class='mono dim'>Max Turns</td><td>60</td></tr><tr><td class='mono dim'>System Prompt</td><td>You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted. </td></tr><tr><td class='mono dim'>Plugins</td><td>/home/azureuser/projects/skills</td></tr></tbody>
+  </table>
+</div>
+
+<h2>Environment</h2>
+<div class="card" style="padding:0">
+  <table>
+    <tbody><tr><td class='mono dim'>git_commit</td><td>unknown</td></tr><tr><td class='mono dim'>skills_git_commit</td><td>unknown</td></tr><tr><td class='mono dim'>cli_version</td><td>1.197.0-alpha.20260626.7673</td></tr><tr><td class='mono dim'>tool_plugins</td><td>{&#x27;agent-tool&#x27;: &#x27;1.197.0-alpha.20260626.7673&#x27;, &#x27;agenthub-tool&#x27;: &#x27;1.197.0-alpha.20260626.7673&#x27;, &#x27;codedagent-tool&#x27;: &#x27;1.197.0-alpha.20260626.7673&#x27;, &#x27;data-fabric-tool&#x27;: &#x27;1.197.0-alpha.20260626.7673&#x27;, &#x27;functions-tool&#x27;: &#x27;1.197.0-alpha.20260626.7673&#x27;, &#x27;gov-tool&#x27;: &#x27;1.197.0-alpha.20260626.7673&#x27;, &#x27;insights-tool&#x27;: &#x27;1.197.0-alpha.20260626.7673&#x27;, &#x27;integrationservice-tool&#x27;: &#x27;1.197.0-alpha.20260626.7673&#x27;, &#x27;ixp-tool&#x27;: &#x27;1.197.0-alpha.20260626.7673&#x27;, &#x27;maestro-tool&#x27;: &#x27;1.197.0-alpha.20260626.7673&#x27;, &#x27;orchestrator-tool&#x27;: &#x27;1.197.0-alpha.20260626.7673&#x27;, &#x27;solution-tool&#x27;: &#x27;1.197.0-alpha.20260626.7673&#x27;, &#x27;tasks-tool&#x27;: &#x27;1.197.0-alpha.20260626.7673&#x27;, &#x27;test-manager-tool&#x27;: &#x27;1.197.0-alpha.20260626.7673&#x27;}</td></tr><tr><td class='mono dim'>coder_eval</td><td>0.8.4</td></tr><tr><td class='mono dim'>claude_code_cli</td><td>2.1.177 (Claude Code)</td></tr><tr><td class='mono dim'>uv</td><td>uv 0.11.28 (x86_64-unknown-linux-gnu)</td></tr><tr><td class='mono dim'>anthropic</td><td>0.102.0</td></tr><tr><td class='mono dim'>openai</td><td>2.46.0</td></tr><tr><td class='mono dim'>pydantic</td><td>2.12.5</td></tr><tr><td class='mono dim'>api_routing</td><td>aws_bedrock</td></tr><tr><td class='mono dim'>aws_region</td><td>us-east-2</td></tr><tr><td class='mono dim'>bedrock_model</td><td>us.anthropic.claude-sonnet-4-6</td></tr></tbody>
+  </table>
+</div>
+
+
+<footer>Generated by coder_eval · 2026-07-21T01:07:27</footer>
+</div>
+<script>
+function toggleTheme() {
+  document.documentElement.classList.toggle('light');
+  try {
+    const mode = document.documentElement.classList.contains('light') ? 'light' : 'dark';
+    localStorage.setItem('coder-eval-theme', mode);
+  } catch (e) { /* ignore */ }
+}
+(function() {
+  try {
+    if (localStorage.getItem('coder-eval-theme') === 'light') {
+      document.documentElement.classList.add('light');
+    }
+  } catch (e) { /* ignore */ }
+})();
+</script>
+</body>
+</html>

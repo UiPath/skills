@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "TeamsDecision",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "212ad01b-f3b6-4e16-831d-4b47ece80ee0",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "TeamsDecision"
+    },
+    "locks": [],
+    "key": "5fe23a08-28e0-43c2-9aaf-e61e8c371475",
+    "files": []
+  }
+}

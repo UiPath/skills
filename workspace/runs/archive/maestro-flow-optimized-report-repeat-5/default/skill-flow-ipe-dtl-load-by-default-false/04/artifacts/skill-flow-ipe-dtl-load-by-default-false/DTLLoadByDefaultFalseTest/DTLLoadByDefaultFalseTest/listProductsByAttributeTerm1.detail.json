@@ -1,0 +1,13 @@
+{
+  "_comment": "Planned node configure --detail payload for listProductsByAttributeTerm1. Run once a WooCommerce IS connection exists. Replace <CONNECTION_ID> and <FOLDER_KEY>.",
+  "connectionId": "<CONNECTION_ID>",
+  "folderKey": "<FOLDER_KEY>",
+  "method": "GET",
+  "endpoint": "/products",
+  "objectName": "search_products",
+  "queryParameters": {
+    "attribute": "=js:$vars.start.output.attribute",
+    "attribute_term": "=js:$vars.start.output.attribute_term"
+  },
+  "_dtl_note": "attribute_term has design.loadByDefault=false — the Studio Web UI will render it as a dropdown that loads its options only on demand (after the user picks an 'attribute' value). The reference path is /attributes/terms?attribute_ID={attribute}. No change to the --detail payload is needed for this behaviour; it is driven by the connector metadata."
+}

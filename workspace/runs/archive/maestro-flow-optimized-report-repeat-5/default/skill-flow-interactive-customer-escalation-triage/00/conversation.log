@@ -1,0 +1,156 @@
+=== USER (turn 1) — simulator-generated opener ===
+I need a UiPath Flow project built — the project and solution should both be named **CustomerEscalationTriage**.
+
+The flow needs to take these inputs:
+- `customerTier`
+- `productionDown`
+- `workaroundAvailable`
+- `businessImpact`
+- `correlationId`
+
+And return these outputs:
+- `severity`
+- `engineeringNeeded`
+- `responseMode`
+- `caseKey`
+
+Once it validates cleanly, we're done — I don't need you to run it. Can you build that out?
+
+=== AGENT (turn 1) — 186.5s, in=12 out=12763, 13 tool calls ===
+The flow validates cleanly and formats successfully. Here's the summary:
+
+---
+
+**✅ CustomerEscalationTriage — built, validated, and formatted**
+
+**File:** `CustomerEscalationTriage/CustomerEscalationTriage/CustomerEscalationTriage.flow`
+
+**What was built — 3 nodes, 2 edges:**
+
+| Node | Type | Role |
+|---|---|---|
+| `start` | `core.trigger.manual` | Receives the 5 inputs: `customerTier`, `productionDown`, `workaroundAvailable`, `businessImpact`, `correlationId` |
+| `triageScript` | `core.action.script` | Triage logic — computes severity, engineeringNeeded, responseMode, and caseKey |
+| `end` | `core.control.end` | Maps all 4 outputs back to the flow's `out` variables |
+
+**Triage logic (in the Script node):**
+- `severity`: `critical` if production is down + enterprise/high-impact; `high` if production down or enterprise+medium; `medium` if enterprise or medium impact; `low` otherwise
+- `engineeringNeeded`: `true` when severity is `critical` or `high`
+- `responseMode`: `immediate` / `urgent` / `standard` / `deferred` by severity
+- `caseKey`: `<SEVERITY>-<correlationId>`
+
+**Validation:** `Status: Valid` — no errors, no warnings  
+**Format:** 2 nodes repositioned, layout normalized ✅
+
+---
+
+What would you like to do next?
+
+1. **Publish to Studio Web** — push to the browser editor
+2. **Debug the solution** — execute end-to-end against real systems (has side effects; requires consent)
+3. **Deploy to Orchestrator** — pack and publish directly
+4. **Something else**
+
+=== USER (turn 2) ===
+The structure looks right, but the triage logic doesn't match our actual policy at all — the agent assumed values it should have asked about. A few issues:
+
+1. **Severity levels** — we don't use "critical/high/medium/low." You should have asked me what the severity tiers are before coding them up.
+2. **responseMode** — "immediate/urgent/standard/deferred" is not how we operate. That output has a specific, fixed behavior regardless of severity tier.
+3. **caseKey** — the format you chose modifies the correlationId. That's not acceptable; downstream systems need to match on it exactly.
+
+Before you rebuild the logic, please ask me the business questions you need answered. I'd rather you get it right than have me review another incorrect implementation.
+
+=== AGENT (turn 2) — 15.2s, in=3 out=665 ===
+Fair point — I made assumptions on all three of those. Here are the questions I need answered before touching the code:
+
+---
+
+**1. Severity tiers — what are the valid values, and what are the rules?**
+
+Please tell me:
+- What labels do you use for severity? (e.g. P1/P2/P3/P4, S1/S2/S3, or something else?)
+- Which inputs drive the severity decision — `customerTier`, `productionDown`, `workaroundAvailable`, `businessImpact`, some combination, or all of them?
+- What are the branching rules? (e.g. "productionDown=true + enterprise tier → S1", "workaround available reduces severity by one step", etc.)
+
+---
+
+**2. responseMode — what are the valid values and how is it assigned?**
+
+You said it has "specific, fixed behavior regardless of severity tier." Does that mean:
+
+1. `responseMode` always returns the same hardcoded string (e.g. always `"async"`)
+2. `responseMode` is derived from a different input entirely (which one?)
+3. `responseMode` has a fixed set of values but is computed from the inputs in a way unrelated to severity
+4. Something else — please describe
+
+---
+
+**3. caseKey format — what is the correct format?**
+
+You said the correlationId must not be modified. Does `caseKey` need to be:
+
+1. Exactly equal to `correlationId` (i.e. `caseKey = correlationId`)
+2. A fixed prefix or suffix joined without modification (e.g. `"CASE-" + correlationId`)
+3. A completely different derivation that doesn't touch correlationId at all
+4. Something else — please describe
+
+---
+
+Once I have those three answers I can rebuild the script node correctly in one pass.
+
+=== USER (turn 3) ===
+Good questions. Here are the answers:
+
+**1. Severity tiers**
+
+We use **Sev1, Sev2, Sev3**. The rules:
+- **Sev1**: the customer is Enterprise tier, production is down, and no workaround is available
+- **Sev2**: production is down or degraded but a viable workaround exists
+- **Sev3**: no production impact — informational or routine follow-up
+
+**2. responseMode**
+
+Option 1 — it's always the same value. Every acknowledgement must be drafted for human review before anything goes to the customer; we never send automatically. So `responseMode` is always `"Draft"`, regardless of severity or any other input.
+
+**3. caseKey**
+
+Option 1 — `caseKey` should equal `correlationId` exactly, unchanged. Downstream systems correlate on it and any modification breaks that.
+
+=== AGENT (turn 3) — 19.4s, in=3 out=838 ===
+Got it — those three are clear. One more before I build: you didn't mention `engineeringNeeded`, and I don't want to assume again.
+
+**What determines `engineeringNeeded`?**
+
+1. Derived from severity — e.g. Sev1 always `true`, Sev2/Sev3 always `false`
+2. Its own rule based on one or more inputs — please describe
+3. Always `true` / always `false`
+4. Something else
+
+=== USER (turn 4) ===
+Option 1, but with a twist: **Sev1 and Sev2 both require engineering involvement** — so `engineeringNeeded` is `true` for either of those. Sev3 is `false`. That's it.
+
+=== AGENT (turn 4) — 49.2s, in=5 out=2791, 2 tool calls ===
+Validates clean, no warnings. Here's what changed:
+
+**Updated triage logic:**
+- `Sev1`: enterprise tier + production down + no workaround
+- `Sev2`: production down (all other cases)
+- `Sev3`: production not down
+- `engineeringNeeded`: `true` for Sev1/Sev2, `false` for Sev3
+- `responseMode`: always `"Draft"`
+- `caseKey`: `correlationId` passed through unchanged
+
+The unused `businessImpact` input variable is still declared (it's in the flow signature you specified) — it's just not consumed by the logic, which matches what you described.
+
+What would you like to do next?
+
+1. **Publish to Studio Web**
+2. **Debug the solution** (executes for real — requires your consent)
+3. **Deploy to Orchestrator**
+4. **Something else**
+
+=== USER (turn 5) — stop token — dialog ending ===
+That all lines up with our policy. The logic is correct, validation is clean, and I don't need you to run it — the grader will execute it against their test cases.
+
+We're done.
+

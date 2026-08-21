@@ -1,0 +1,93 @@
+=== USER (turn 1) — simulator-generated opener ===
+Hey! I'm hoping you can help me out — I need a flow built that takes care of vendor invoices automatically. The idea is that whenever a new PDF invoice shows up in our SharePoint folder, the flow kicks in on its own, pulls out all the important details — invoice number, vendor name, invoice date, total amount, and any line items — and then sends that data straight over to SAP by posting it to a web address IT gave me. Nothing fancy on the SAP side, just a plain HTTP post to that URL.
+
+One thing I want to be clear about: this has to be a UiPath Maestro Flow — not an API workflow, not a script, an actual Maestro Flow. And before I sign off on it, I want it validated so I know it's wired up right.
+
+Also, just so you know upfront — IT hasn't connected the SharePoint or SAP accounts in this environment yet, so nothing will actually run here. I still want the whole thing built and wired up correctly, ready to go the moment IT flips the switch. Please don't go looking for live accounts or wait on IT to finish — just build it as if everything will be in place.
+
+What else do you need from me before you get started?
+
+=== AGENT (turn 1) — 20.8s, in=957 out=727, 1 tool calls ===
+I have a few quick questions before I start building, so the flow is wired up exactly right from the start:
+
+**1. What is the SharePoint folder path where invoices will land?**
+(e.g., `/sites/Finance/Shared Documents/Invoices` — or give me whatever path IT told you)
+
+**2. What is the SAP HTTP endpoint URL IT provided?**
+(e.g., `https://sap.internal.example.com/api/invoices` — paste the exact URL)
+
+**3. Which IxP document extraction model should the flow use to pull out the invoice fields?**
+
+1. Use the default/general invoice extraction model (recommended — works out of the box)
+2. A specific named model IT or your team set up
+3. Something else
+
+**4. What should the flow do if extraction fails or the HTTP post to SAP returns an error?**
+
+1. Stop the flow and surface the error (simple, visible failures)
+2. Send a notification email with the error details
+3. Something else
+
+=== USER (turn 2) ===
+Sure, happy to answer all of that at once!
+
+The SharePoint folder is called **"New Vendor"** — that's where all the incoming invoices land.
+
+For the SAP web address, IT gave me a URL but I don't have it right in front of me, and since nothing's connected yet anyway, just put in a placeholder for now and I'll swap in the real one when IT is ready. The important thing is the step is actually there and wired up to post the data — don't leave it out or make it a dummy step.
+
+For pulling the data off the invoices, I was told to use the **Invoice Model** — I believe that's the one set up for this kind of document.
+
+And for errors, let's keep it simple — just stop the flow and surface the error so we can see what went wrong. Option 1.
+
+Does that cover everything? Go ahead and build it!
+
+=== AGENT (turn 2) — 551.2s, in=30 out=27057, 44 tool calls ===
+The flow is built, wired, validated, and formatted. Here's the complete picture:
+
+---
+
+## Flow built and validated ✓
+
+**File:** `VendorInvoiceProcessing/VendorInvoiceFlow/VendorInvoiceFlow.flow`
+
+### What was built
+
+| Node | Type | Role |
+|---|---|---|
+| **New Invoice in SharePoint** | `uipath.connector.trigger.…file-created` | Fires when any file lands in SharePoint |
+| **Download Invoice PDF** | `uipath.connector.…download-file` | Downloads the PDF so IxP can process it |
+| **Extract Invoice Fields** | `uipath.ixp.invoiceixp-cef0d447-ixp` | Runs the **InvoiceIXP** model — pulls invoice number, vendor, date, amount, line items |
+| **Build SAP Payload** | `core.action.script` | Reads the extracted fields and assembles a clean JSON object |
+| **Post Invoice to SAP** | `core.action.http.v2` (manual POST) | HTTP POST to SAP — URL is a placeholder |
+| **Done** | `core.control.end` | Ends the flow |
+
+**Edge chain:** trigger → download → extract → build payload → post to SAP → done
+
+**Validation:** passes (`flow validate` exit 0). The one warning is expected — it flags that the SAP node label mentions "SAP" but uses raw HTTP, which is correct since IT hasn't provided a live SAP connector. The node is wired to POST `https://sap-placeholder.example.com/api/invoices`; swapping in the real URL is all that's needed.
+
+**Format:** run and clean (6 nodes repositioned, 3 resized).
+
+### Open questions IT must resolve before going live
+
+1. **SharePoint connection** — IT needs to create a Microsoft OneDrive & SharePoint connection in Integration Service, then run:
+   ```
+   uip maestro flow node configure VendorInvoiceFlow.flow newInvoiceInSharepoint1 \
+     --detail '{"connectionId":"<real-id>","folderKey":"<real-folder-key>","eventMode":"polling","eventParameters":{"path":"/New Vendor"}}'
+   ```
+   Then the same `--detail` (with the right `bodyParameters.id`) for `downloadInvoicePdf1` — see `downloadInvoicePdf1.detail.json` in the project folder.
+
+2. **SAP endpoint URL** — swap the placeholder in the HTTP node. Either re-run `node configure` with the real URL, or update it in Studio Web once uploaded.
+
+3. **IxP field names** — the Script node uses common field name guesses (`InvoiceId`, `InvoiceNumber`, `VendorName`, `InvoiceDate`, `InvoiceTotal`, etc.). Once you run a test document through IxP, you can confirm the exact `FieldName` values and update the script if needed.
+
+### What's next?
+
+1. **Push to Studio Web** — `uip solution upload .` from the `VendorInvoiceProcessing` folder — so you can visualize and edit in the browser
+2. **Debug the solution** — run it end-to-end once connections are in place (requires IT setup first; real side effects apply)
+3. **Deploy to Orchestrator** — pack and publish for production
+4. **Something else**
+
+=== USER (turn 3) — stop token — dialog ending ===
+[ASSISTANT] 
+[RESULT - SUCCESS]
+

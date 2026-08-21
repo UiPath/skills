@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:uipath="http://uipath.org/schema/bpmn" >
+    <bpmn:process id="Process_1">
+
+        <bpmn:startEvent id="Start_1" name="Begin">
+            <bpmn:outgoing>Flow_1</bpmn:outgoing>
+        </bpmn:startEvent>
+
+        <bpmn:serviceTask id="Activity_Extract" name="IxP Extraction">
+            <bpmn:incoming>Flow_1</bpmn:incoming>
+            <bpmn:outgoing>Flow_2</bpmn:outgoing>
+            <bpmn:extensionElements>
+              <uipath:activity version="v1">
+                <uipath:type value="IXP.Extraction" version="v2" />
+                <uipath:context>
+                    <uipath:input name="folderKey" type="string" value="=bindings.bFolderKey" />
+                    <uipath:input name="modelName" type="string" value="=bindings.bModelName" />
+                    <uipath:input name="digitizationMode" type="string" value="jobAttachment" />
+                </uipath:context>
+                <uipath:input name="attachmentId" type="string" target="bodyField" value="= vars.attachmentId" />
+                <uipath:input name="fileName" type="string" target="bodyField" value="= vars.fileName" />
+                <uipath:input name="mimeType" type="string" target="bodyField" value="= vars.mimeType" />
+                <uipath:output name="Error" type="jsonSchema" source="=Error" var="error" />
+                <uipath:output name="content" type="jsonSchema" source="=result" var="content" />
+              </uipath:activity>
+          </bpmn:extensionElements>
+        </bpmn:serviceTask>
+
+        <bpmn:endEvent id="End_1" name="Finish">
+            <bpmn:incoming>Flow_2</bpmn:incoming>
+        </bpmn:endEvent>
+        <bpmn:sequenceFlow id="Flow_1" sourceRef="Start_1" targetRef="Activity_Extract" />
+        <bpmn:sequenceFlow id="Flow_2" sourceRef="Activity_Extract" targetRef="End_1" />
+    </bpmn:process>
+</bpmn:definitions>

@@ -1,0 +1,7 @@
+{
+  "name": "ApproverCountAgent",
+  "description": "Synthetic public-safe BPMN project: manual start invokes a published Agent Builder agent to count approvers in a sentence, then ends.",
+  "main": "ApproverCountAgent.bpmn",
+  "projectType": "Process",
+  "targetFramework": "Portable"
+}

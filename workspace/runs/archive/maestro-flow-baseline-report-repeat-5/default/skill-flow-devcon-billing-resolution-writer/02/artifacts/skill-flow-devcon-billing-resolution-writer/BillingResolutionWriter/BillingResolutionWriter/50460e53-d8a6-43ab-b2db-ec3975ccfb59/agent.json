@@ -1,0 +1,99 @@
+{
+  "version": "1.1.0",
+  "settings": {
+    "model": "anthropic.claude-sonnet-4-6",
+    "maxTokens": 64000,
+    "temperature": 0,
+    "engine": "basic-v2",
+    "maxIterations": 1,
+    "mode": "standard"
+  },
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "start__output__customerName": {
+        "type": "string",
+        "description": "Bound from $vars.start.output.customerName"
+      },
+      "start__output__invoiceNumber": {
+        "type": "string",
+        "description": "Bound from $vars.start.output.invoiceNumber"
+      },
+      "start__output__creditAmount": {
+        "type": "number",
+        "description": "Bound from $vars.start.output.creditAmount"
+      }
+    }
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "subject": {
+        "type": "string",
+        "description": "Email subject line"
+      },
+      "body": {
+        "type": "string",
+        "description": "Email body text"
+      }
+    },
+    "required": [
+      "subject",
+      "body"
+    ]
+  },
+  "metadata": {
+    "storageVersion": "50.0.0",
+    "isConversational": false,
+    "showProjectCreationExperience": false
+  },
+  "type": "lowCode",
+  "guardrails": [],
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a customer billing dispute specialist. Your role is to draft professional, empathetic customer-facing emails that resolve billing disputes.\n\nWhen given customer information, invoice details, and an approved credit amount, draft a complete resolution email. Your response must be a JSON object with exactly two string fields:\n- \"subject\": a concise, professional email subject line\n- \"body\": the complete email body text\n\nThe email body must:\n1. Address the customer by name\n2. Reference the specific invoice number\n3. State the approved credit amount clearly\n4. Maintain a professional yet empathetic tone\n5. Thank the customer for their patience",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "You are a customer billing dispute specialist. Your role is to draft professional, empathetic customer-facing emails that resolve billing disputes.\n\nWhen given customer information, invoice details, and an approved credit amount, draft a complete resolution email. Your response must be a JSON object with exactly two string fields:\n- \"subject\": a concise, professional email subject line\n- \"body\": the complete email body text\n\nThe email body must:\n1. Address the customer by name\n2. Reference the specific invoice number\n3. State the approved credit amount clearly\n4. Maintain a professional yet empathetic tone\n5. Thank the customer for their patience"
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "Draft a billing dispute resolution email with the following details:\n- Customer Name: {{input.start__output__customerName}}\n- Invoice Number: {{input.start__output__invoiceNumber}}\n- Approved Credit Amount: {{input.start__output__creditAmount}}\n\nReturn a JSON object with \"subject\" and \"body\" fields.",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "Draft a billing dispute resolution email with the following details:\n- Customer Name: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__customerName"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n- Invoice Number: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__invoiceNumber"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n- Approved Credit Amount: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__creditAmount"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\nReturn a JSON object with \"subject\" and \"body\" fields."
+        }
+      ]
+    }
+  ],
+  "projectId": "50460e53-d8a6-43ab-b2db-ec3975ccfb59"
+}

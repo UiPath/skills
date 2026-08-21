@@ -1,0 +1,17 @@
+{
+  "_comment": "Planned --detail payload for node addAct365Activity1 (uipath.connector.uipath-act-act365.add-activity). Replace <CONNECTION_UUID> and <FOLDER_KEY> with values from: uip is connections list uipath-act-act365 --all-folders --output json",
+  "_configure_command": "uip maestro flow node configure ComplexArrayTest.flow addAct365Activity1 --detail \"$(cat addAct365Activity1.detail.json | python3 -c 'import json,sys; d=json.load(sys.stdin); del d[\"_comment\"]; del d[\"_configure_command\"]; print(json.dumps(d))')\" --output json",
+  "connectionId": "<CONNECTION_UUID>",
+  "folderKey": "<FOLDER_KEY>",
+  "method": "POST",
+  "endpoint": "/Interactions",
+  "bodyParameters": {
+    "subject": "Sales Interaction Call",
+    "type": "Call",
+    "startTime": "2026-07-24T09:00:00Z",
+    "endTime": "2026-07-24T09:30:00Z",
+    "timeZone": "UTC",
+    "details": "Sales call recording associated with multiple contacts.",
+    "contacts": "=js:[{\"id\":\"contact-id-001\"},{\"id\":\"contact-id-002\"},{\"id\":\"contact-id-003\"}]"
+  }
+}

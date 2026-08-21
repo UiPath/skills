@@ -1,0 +1,6 @@
+{
+  "Name": "SlackChannelDescription",
+  "ProjectType": "Process",
+  "Description": "Retrieves and displays a Slack channel description using the Integration Service Slack connector",
+  "MainFile": "Main.xaml"
+}

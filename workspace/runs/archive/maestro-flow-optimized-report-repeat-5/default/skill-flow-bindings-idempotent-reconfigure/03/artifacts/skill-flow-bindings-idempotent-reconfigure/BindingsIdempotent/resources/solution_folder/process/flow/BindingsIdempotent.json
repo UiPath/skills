@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "BindingsIdempotent",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "26aa2d62-b3c5-464d-b127-387f2ae29af8",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "BindingsIdempotent"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Flow",
+      "name": "BindingsIdempotent",
+      "package": {
+        "key": "3dbc9c30-2dda-498c-ab20-228051e2f095"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "b5e75371-34e3-4fbc-8c42-5fd1ca6058d9",
+    "files": []
+  }
+}

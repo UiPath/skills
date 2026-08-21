@@ -1,0 +1,5 @@
+18:12:02 [INFO   ] [default/skill-flow-outlook-trigger-inbox/03] orchestrator: API routing: aws_bedrock
+18:15:45 [INFO   ] [default/skill-flow-outlook-trigger-inbox/03] orchestrator: Success criteria: 6/6 passed, weighted score: 1.000
+18:15:45 [INFO   ] [default/skill-flow-outlook-trigger-inbox/03] orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+18:15:45 [INFO   ] [default/skill-flow-outlook-trigger-inbox/03] orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-outlook-trigger-inbox
+18:15:45 [INFO   ] [default/skill-flow-outlook-trigger-inbox/03] orchestrator: Task finished: status=SUCCESS duration=225.8s score=1.000 iterations=1

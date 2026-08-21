@@ -1,0 +1,14 @@
+{
+  "version": "1.0",
+  "id": "invoice-fields-check-f2c09d9f",
+  "name": "invoice-fields-check",
+  "description": "Verifies the 15 invoice fields are correctly parsed from IXP extraction output",
+  "evaluatorTypeId": "uipath-json-similarity",
+  "evaluatorConfig": {
+    "name": "invoice-fields-check",
+    "targetOutputKey": "*"
+  },
+  "fileName": "invoice-fields-check-f2c09d9f.json",
+  "createdAt": "2026-07-24T17:35:06.944Z",
+  "updatedAt": "2026-07-24T17:35:06.944Z"
+}

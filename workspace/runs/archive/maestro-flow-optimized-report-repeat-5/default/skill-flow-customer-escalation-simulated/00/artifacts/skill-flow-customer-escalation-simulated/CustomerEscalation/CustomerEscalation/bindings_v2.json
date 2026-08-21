@@ -1,0 +1,105 @@
+{
+  "version": "2.0",
+  "resources": [
+    {
+      "resource": "connection",
+      "key": "dd657127-91f5-4568-a3a3-c024bc03fb0f",
+      "id": "connectiondd657127-91f5-4568-a3a3-c024bc03fb0f",
+      "value": {
+        "ConnectionId": {
+          "defaultValue": "dd657127-91f5-4568-a3a3-c024bc03fb0f",
+          "isExpression": false,
+          "displayName": "uipath-microsoft-outlook365 connection"
+        }
+      },
+      "metadata": {
+        "ActivityName": "Email Received",
+        "BindingsVersion": "2.2",
+        "DisplayLabel": "uipath-microsoft-outlook365 connection",
+        "UseConnectionService": "true",
+        "Connector": "uipath-microsoft-outlook365"
+      }
+    },
+    {
+      "resource": "connection",
+      "key": "e03f734e-0f80-4e8a-a7c1-0ece309b0ca4",
+      "id": "connectione03f734e-0f80-4e8a-a7c1-0ece309b0ca4",
+      "value": {
+        "ConnectionId": {
+          "defaultValue": "e03f734e-0f80-4e8a-a7c1-0ece309b0ca4",
+          "isExpression": false,
+          "displayName": "uipath-salesforce-slack connection"
+        }
+      },
+      "metadata": {
+        "ActivityName": "Slack Alert",
+        "BindingsVersion": "2.2",
+        "DisplayLabel": "uipath-salesforce-slack connection",
+        "UseConnectionService": "true",
+        "Connector": "uipath-salesforce-slack"
+      }
+    },
+    {
+      "resource": "connection",
+      "key": "f5273a4d-d492-4bcd-a106-5a20bf89a3ef",
+      "id": "connectionf5273a4d-d492-4bcd-a106-5a20bf89a3ef",
+      "value": {
+        "ConnectionId": {
+          "defaultValue": "f5273a4d-d492-4bcd-a106-5a20bf89a3ef",
+          "isExpression": false,
+          "displayName": "uipath-atlassian-jira connection"
+        }
+      },
+      "metadata": {
+        "ActivityName": "Create Jira Ticket",
+        "BindingsVersion": "2.2",
+        "DisplayLabel": "uipath-atlassian-jira connection",
+        "UseConnectionService": "true",
+        "Connector": "uipath-atlassian-jira"
+      }
+    },
+    {
+      "resource": "EventTrigger",
+      "key": "dd657127-91f5-4568-a3a3-c024bc03fb0f",
+      "id": "EventTriggerdd657127-91f5-4568-a3a3-c024bc03fb0f",
+      "value": {
+        "ConnectionId": {
+          "defaultValue": "dd657127-91f5-4568-a3a3-c024bc03fb0f",
+          "isExpression": false
+        },
+        "EntryPointUniqueId": {
+          "defaultValue": "00a2fbd9-e98c-404d-a4ca-b0625c0776d0",
+          "isExpression": false
+        }
+      },
+      "metadata": {
+        "UseConnectionService": "true",
+        "Connector": "uipath-microsoft-outlook365",
+        "ActivityName": "Email Received",
+        "BindingsVersion": "2.2",
+        "ObjectName": "Message",
+        "Operation": "EMAIL_RECEIVED",
+        "FilterExpression": "(parentFolderId == 'AAMkAGNiNDVjZmJmLTczOTEtNDQ2MS04Njc2LTUwM2I3ZDgxOWQwMAAuAAAAAAAJJRkzOJfsTKZfQqhMUHzlAQAJDKUrZhoLQZ5wELpOfJPCAAAAAAEMAAA=')"
+      }
+    },
+    {
+      "resource": "Property",
+      "key": "EMAIL_RECEIVED",
+      "id": "Property_emailReceived1",
+      "value": {
+        "parentFolderId": {
+          "defaultValue": "AAMkAGNiNDVjZmJmLTczOTEtNDQ2MS04Njc2LTUwM2I3ZDgxOWQwMAAuAAAAAAAJJRkzOJfsTKZfQqhMUHzlAQAJDKUrZhoLQZ5wELpOfJPCAAAAAAEMAAA=",
+          "isExpression": false
+        }
+      },
+      "metadata": {
+        "TriggerCreateParameters": "parentFolderId",
+        "DebugQueryParameters": "parentFolderId",
+        "ActivityName": "Email Received",
+        "BindingsVersion": "2.2",
+        "ObjectName": "Message",
+        "ParentResourceKey": "EventTrigger.dd657127-91f5-4568-a3a3-c024bc03fb0f"
+      }
+    }
+  ]
+}

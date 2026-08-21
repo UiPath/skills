@@ -1,0 +1,15 @@
+[
+  { "elementId": "Start_Manual", "elementType": "startEvent", "state": "Completed" },
+  { "elementId": "ServiceTask_Score", "elementType": "serviceTask", "state": "Completed" },
+  {
+    "elementId": "Gw_ApprovalRoute",
+    "elementType": "exclusiveGateway",
+    "state": "Waiting",
+    "outgoingEvaluations": [
+      { "flowId": "Flow_HighRisk", "conditionExpression": "=vars.riskScore > 80", "evaluated": false },
+      { "flowId": "Flow_LowRisk", "conditionExpression": "=vars.riskScore < 20", "evaluated": false }
+    ],
+    "hasDefaultFlow": false,
+    "note": "No outgoing condition evaluated true and the gateway has no default flow."
+  }
+]

@@ -1,0 +1,9 @@
+17:57:08 [INFO   ] [default/skill-flow-subflow/02] orchestrator: API routing: aws_bedrock
+18:00:26 [INFO   ] [default/skill-flow-subflow/02] evaluation.checker: Criterion 'run_command' FAILED (score=0.00, threshold=1.00): Command: python3 $TASK_DIR/check_subflow_flow.py
+18:00:26 [INFO   ] [default/skill-flow-subflow/02] orchestrator: Success criteria: 1/2 passed, weighted score: 0.375
+18:00:26 [INFO   ] [default/skill-flow-subflow/02] orchestrator: Running post-run command: python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/cleanup_solutions.py
+18:00:28 [WARNING] [default/skill-flow-subflow/02] orchestrator: [post_run stderr] cleanup_solutions: deleted 77a59e06-41d4-4487-4e07-08dee9abf020 (from SubflowDemo/SubflowDemo.uipx)
+18:00:28 [WARNING] [default/skill-flow-subflow/02] orchestrator: [post_run stderr] cleanup_solutions: summary policy=always deleted=1 preserved=0 skipped=0 not_uploaded=0 failed=0
+18:00:28 [INFO   ] [default/skill-flow-subflow/02] orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+18:00:28 [INFO   ] [default/skill-flow-subflow/02] orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-subflow
+18:00:28 [INFO   ] [default/skill-flow-subflow/02] orchestrator: Task finished: status=FAILURE duration=202.2s score=0.375 iterations=1

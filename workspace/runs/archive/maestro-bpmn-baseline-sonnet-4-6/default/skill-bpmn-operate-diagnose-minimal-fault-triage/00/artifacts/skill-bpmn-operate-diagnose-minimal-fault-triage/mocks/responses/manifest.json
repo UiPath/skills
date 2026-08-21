@@ -1,0 +1,60 @@
+{
+  "version": 2,
+  "_doc": "Mocked public-safe BPMN operate/diagnose responses for minimal lifecycle coverage.",
+  "rules": [
+    {
+      "match": "maestro bpmn job status job-triage-001 --output json",
+      "file": "job-status.json",
+      "exit_code": 0
+    },
+    {
+      "match": "maestro bpmn instance incidents inst-triage-001 -f folder-public --output json",
+      "file": "instance-incidents.json",
+      "exit_code": 0
+    },
+    {
+      "match": "maestro bpmn instance incidents inst-triage-001 --folder-key folder-public --output json",
+      "file": "instance-incidents.json",
+      "exit_code": 0
+    },
+    {
+      "match": "maestro bpmn incident get inc-triage-001 --folder-key folder-public --output json",
+      "file": "incident-get.json",
+      "exit_code": 0
+    },
+    {
+      "match": "maestro bpmn instance variables inst-triage-001 -f folder-public --output json",
+      "file": "instance-variables.json",
+      "exit_code": 0
+    },
+    {
+      "match": "maestro bpmn instance variables inst-triage-001 --folder-key folder-public --output json",
+      "file": "instance-variables.json",
+      "exit_code": 0
+    },
+    {
+      "match": "maestro bpmn instance asset inst-triage-001 -f folder-public --output json",
+      "file": "instance-asset.json",
+      "exit_code": 0
+    },
+    {
+      "match": "maestro bpmn instance asset inst-triage-001 --folder-key folder-public --output json",
+      "file": "instance-asset.json",
+      "exit_code": 0
+    },
+    {
+      "match": "maestro bpmn instance element-executions inst-triage-001 -f folder-public --output json",
+      "file": "element-executions.json",
+      "exit_code": 0
+    },
+    {
+      "match": "maestro bpmn instance cursors inst-triage-001 -f folder-public --output json",
+      "file": "cursors.json",
+      "exit_code": 0
+    }
+  ],
+  "unmocked_default": {
+    "response": "{\"error\":\"unmocked public-safe BPMN command\"}\n",
+    "exit_code": 1
+  }
+}

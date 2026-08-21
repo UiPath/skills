@@ -1,0 +1,32 @@
+{
+  "connectionId": "<OUTLOOK_CONNECTION_ID>",
+  "folderKey": "<ORCHESTRATOR_FOLDER_KEY>",
+  "eventMode": "polling",
+  "eventParameters": {
+    "parentFolderId": "<MAIL_FOLDER_ID>"
+  },
+  "filter": {
+    "groupOperator": 0,
+    "index": 0,
+    "filters": [
+      {
+        "id": "subject",
+        "operator": "Contains",
+        "value": {
+          "value": "good day",
+          "rawString": "\"good day\"",
+          "isLiteral": true
+        }
+      },
+      {
+        "id": "fromAddress",
+        "operator": "Equals",
+        "value": {
+          "value": "abc@xyz.com",
+          "rawString": "\"abc@xyz.com\"",
+          "isLiteral": true
+        }
+      }
+    ]
+  }
+}

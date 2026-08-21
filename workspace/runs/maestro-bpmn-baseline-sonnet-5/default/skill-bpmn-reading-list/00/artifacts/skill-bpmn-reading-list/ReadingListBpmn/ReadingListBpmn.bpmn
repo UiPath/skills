@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+    xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+    xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+    xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+    xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:uipath="http://uipath.org/schema/bpmn"
+    id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn"
+    exporter="UiPath (https://bpmn.uipath.com)" exporterVersion="1.0">
+  <bpmn:process id="Process_ReadingListBpmn" isExecutable="true">
+    <bpmn:extensionElements>
+      <uipath:migrationVersion version="11.5" />
+      <uipath:variables version="v1">
+        <uipath:output id="catalog" name="catalog" type="json" />
+        <uipath:output id="filtered" name="filtered" type="json" />
+        <uipath:output id="readingList" name="readingList" type="json" />
+      </uipath:variables>
+    </bpmn:extensionElements>
+    <bpmn:startEvent id="Start_Manual" name="Manual Start">
+      <bpmn:outgoing>Flow_1</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:task id="Task_SeedCatalog" name="Seed Catalog">
+      <bpmn:extensionElements>
+        <uipath:mapping version="v1">
+          <uipath:type value="BPMN.Variables" version="v1" />
+          <uipath:output name="catalog" type="json" var="catalog" source="[{&quot;title&quot;:&quot;Deep Learning&quot;,&quot;author&quot;:&quot;Goodfellow&quot;,&quot;difficulty&quot;:9,&quot;pages&quot;:800},{&quot;title&quot;:&quot;Statistical Learning&quot;,&quot;author&quot;:&quot;James&quot;,&quot;difficulty&quot;:4,&quot;pages&quot;:440},{&quot;title&quot;:&quot;Bayesian Data Analysis&quot;,&quot;author&quot;:&quot;Gelman&quot;,&quot;difficulty&quot;:8,&quot;pages&quot;:580},{&quot;title&quot;:&quot;Information Theory&quot;,&quot;author&quot;:&quot;MacKay&quot;,&quot;difficulty&quot;:7,&quot;pages&quot;:540}]" />
+        </uipath:mapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_1</bpmn:incoming>
+      <bpmn:outgoing>Flow_2</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:scriptTask id="Task_FilterCatalog" name="Filter by Difficulty and Pages" scriptFormat="JavaScript">
+      <bpmn:extensionElements>
+        <uipath:scriptVersion value="v3" />
+        <uipath:mapping version="v1">
+          <uipath:type value="BPMN.ScriptTask" version="v1" />
+          <uipath:input name="args" type="json" target="bodyField"><![CDATA[{"catalog":"=vars.catalog"}]]></uipath:input>
+          <uipath:output name="filtered" type="json" var="filtered" source="=result.response" />
+        </uipath:mapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_2</bpmn:incoming>
+      <bpmn:outgoing>Flow_3</bpmn:outgoing>
+      <bpmn:script><![CDATA[
+var filtered = catalog.filter(function (book) {
+  return book.difficulty > 5 && book.pages < 600;
+});
+return { response: filtered };
+]]></bpmn:script>
+    </bpmn:scriptTask>
+    <bpmn:scriptTask id="Task_MapReadingList" name="Map to Title and Author" scriptFormat="JavaScript">
+      <bpmn:extensionElements>
+        <uipath:scriptVersion value="v3" />
+        <uipath:mapping version="v1">
+          <uipath:type value="BPMN.ScriptTask" version="v1" />
+          <uipath:input name="args" type="json" target="bodyField"><![CDATA[{"filtered":"=vars.filtered"}]]></uipath:input>
+          <uipath:output name="readingList" type="json" var="readingList" source="=result.response" />
+        </uipath:mapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_3</bpmn:incoming>
+      <bpmn:outgoing>Flow_4</bpmn:outgoing>
+      <bpmn:script><![CDATA[
+var mapped = filtered.map(function (book) {
+  return { title: book.title.toUpperCase(), author: book.author };
+});
+return { response: mapped };
+]]></bpmn:script>
+    </bpmn:scriptTask>
+    <bpmn:endEvent id="End_1" name="End">
+      <bpmn:incoming>Flow_4</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_1" sourceRef="Start_Manual" targetRef="Task_SeedCatalog" />
+    <bpmn:sequenceFlow id="Flow_2" sourceRef="Task_SeedCatalog" targetRef="Task_FilterCatalog" />
+    <bpmn:sequenceFlow id="Flow_3" sourceRef="Task_FilterCatalog" targetRef="Task_MapReadingList" />
+    <bpmn:sequenceFlow id="Flow_4" sourceRef="Task_MapReadingList" targetRef="End_1" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="Diagram_1">
+    <bpmndi:BPMNPlane id="Plane_1" bpmnElement="Process_ReadingListBpmn">
+      <bpmndi:BPMNShape id="S_Start_Manual" bpmnElement="Start_Manual">
+        <dc:Bounds x="160" y="200" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Task_SeedCatalog" bpmnElement="Task_SeedCatalog">
+        <dc:Bounds x="250" y="178" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Task_FilterCatalog" bpmnElement="Task_FilterCatalog">
+        <dc:Bounds x="410" y="178" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Task_MapReadingList" bpmnElement="Task_MapReadingList">
+        <dc:Bounds x="570" y="178" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_End_1" bpmnElement="End_1">
+        <dc:Bounds x="730" y="200" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_1" bpmnElement="Flow_1">
+        <di:waypoint x="196" y="218" />
+        <di:waypoint x="250" y="218" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_2" bpmnElement="Flow_2">
+        <di:waypoint x="350" y="218" />
+        <di:waypoint x="410" y="218" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_3" bpmnElement="Flow_3">
+        <di:waypoint x="510" y="218" />
+        <di:waypoint x="570" y="218" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_4" bpmnElement="Flow_4">
+        <di:waypoint x="670" y="218" />
+        <di:waypoint x="730" y="218" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

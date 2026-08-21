@@ -1,0 +1,670 @@
+{
+  "id": "1b581810-732e-404e-8bad-cae98d76b17d",
+  "version": "1.9",
+  "name": "CustomerEscalationTriage",
+  "nodes": [
+    {
+      "id": "start",
+      "type": "core.trigger.manual",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Manual trigger"
+      },
+      "inputs": {
+        "entryPointId": "870240fb-9972-4e99-8422-524eb6a01b32",
+        "isDefaultEntryPoint": true
+      },
+      "outputs": {
+        "output": {
+          "type": "object",
+          "description": "Data passed when manually triggering the process.",
+          "source": "null",
+          "var": "output"
+        }
+      }
+    },
+    {
+      "id": "checkProductionDown",
+      "type": "core.logic.decision",
+      "typeVersion": "1.2",
+      "display": {
+        "label": "Production Down?"
+      },
+      "inputs": {
+        "expression": "$vars.start.output.productionDown === false",
+        "trueLabel": "No Production Impact",
+        "falseLabel": "Production Impacted"
+      }
+    },
+    {
+      "id": "checkEnterpriseNoWorkaround",
+      "type": "core.logic.decision",
+      "typeVersion": "1.2",
+      "display": {
+        "label": "Enterprise + No Workaround?"
+      },
+      "inputs": {
+        "expression": "$vars.start.output.customerTier === \"Enterprise\" && $vars.start.output.workaroundAvailable === false",
+        "trueLabel": "Sev1",
+        "falseLabel": "Sev2"
+      }
+    },
+    {
+      "id": "endSev1",
+      "type": "core.control.end",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "End - Sev1"
+      },
+      "inputs": {},
+      "outputs": {
+        "severity": {
+          "source": "=js:'Sev1'"
+        },
+        "engineeringNeeded": {
+          "source": "=js:true"
+        },
+        "responseMode": {
+          "source": "=js:'Draft'"
+        },
+        "caseKey": {
+          "source": "=js:$vars.start.output.correlationId"
+        }
+      }
+    },
+    {
+      "id": "endSev2",
+      "type": "core.control.end",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "End - Sev2"
+      },
+      "inputs": {},
+      "outputs": {
+        "severity": {
+          "source": "=js:'Sev2'"
+        },
+        "engineeringNeeded": {
+          "source": "=js:true"
+        },
+        "responseMode": {
+          "source": "=js:'Draft'"
+        },
+        "caseKey": {
+          "source": "=js:$vars.start.output.correlationId"
+        }
+      }
+    },
+    {
+      "id": "endSev3",
+      "type": "core.control.end",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "End - Sev3"
+      },
+      "inputs": {},
+      "outputs": {
+        "severity": {
+          "source": "=js:'Sev3'"
+        },
+        "engineeringNeeded": {
+          "source": "=js:false"
+        },
+        "responseMode": {
+          "source": "=js:'Draft'"
+        },
+        "caseKey": {
+          "source": "=js:$vars.start.output.correlationId"
+        }
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e-start-checkProductionDown",
+      "sourceNodeId": "start",
+      "sourcePort": "output",
+      "targetNodeId": "checkProductionDown",
+      "targetPort": "input"
+    },
+    {
+      "id": "e-checkProductionDown-true-endSev3",
+      "sourceNodeId": "checkProductionDown",
+      "sourcePort": "true",
+      "targetNodeId": "endSev3",
+      "targetPort": "input"
+    },
+    {
+      "id": "e-checkProductionDown-false-checkEnterpriseNoWorkaround",
+      "sourceNodeId": "checkProductionDown",
+      "sourcePort": "false",
+      "targetNodeId": "checkEnterpriseNoWorkaround",
+      "targetPort": "input"
+    },
+    {
+      "id": "e-checkEnterpriseNoWorkaround-true-endSev1",
+      "sourceNodeId": "checkEnterpriseNoWorkaround",
+      "sourcePort": "true",
+      "targetNodeId": "endSev1",
+      "targetPort": "input"
+    },
+    {
+      "id": "e-checkEnterpriseNoWorkaround-false-endSev2",
+      "sourceNodeId": "checkEnterpriseNoWorkaround",
+      "sourcePort": "false",
+      "targetNodeId": "endSev2",
+      "targetPort": "input"
+    }
+  ],
+  "definitions": [
+    {
+      "nodeType": "core.trigger.manual",
+      "version": "1.0",
+      "category": "trigger",
+      "description": "Start the process manually",
+      "tags": [
+        "trigger",
+        "start",
+        "manual"
+      ],
+      "sortOrder": 80,
+      "display": {
+        "label": "Manual trigger",
+        "icon": "play",
+        "shape": "circle"
+      },
+      "handleConfiguration": [
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "output",
+              "type": "source",
+              "handleType": "output",
+              "showButton": true,
+              "constraints": {
+                "forbiddenTargetCategories": [
+                  "trigger"
+                ]
+              }
+            }
+          ],
+          "visible": true
+        }
+      ],
+      "model": {
+        "type": "bpmn:StartEvent",
+        "entryPointId": true
+      },
+      "outputDefinition": {
+        "output": {
+          "type": "object",
+          "description": "Data passed when manually triggering the process.",
+          "source": "null",
+          "var": "output"
+        }
+      },
+      "toolbarExtensions": {
+        "design": {
+          "actions": [
+            {
+              "id": "change-trigger-type",
+              "icon": "square-mouse-pointer",
+              "label": "Change trigger type"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "nodeType": "core.logic.decision",
+      "version": "1.2",
+      "category": "control-flow",
+      "description": "Branch on a true or false condition",
+      "tags": [
+        "control-flow",
+        "if",
+        "loop",
+        "switch"
+      ],
+      "sortOrder": 61,
+      "display": {
+        "label": "Decision",
+        "icon": "trending-up-down"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ],
+          "visible": true
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "true",
+              "type": "source",
+              "handleType": "output",
+              "label": "{inputs.trueLabel}",
+              "constraints": {
+                "minConnections": 1
+              }
+            },
+            {
+              "id": "false",
+              "type": "source",
+              "handleType": "output",
+              "label": "{inputs.falseLabel}"
+            }
+          ],
+          "visible": true
+        }
+      ],
+      "debug": {
+        "runtime": "clientScript"
+      },
+      "model": {
+        "type": "bpmn:InclusiveGateway"
+      },
+      "inputDefinition": {
+        "type": "object",
+        "properties": {
+          "expression": {
+            "type": "string",
+            "minLength": 1,
+            "errorMessage": "Add a condition"
+          },
+          "trueLabel": {
+            "type": "string"
+          },
+          "falseLabel": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "expression"
+        ]
+      },
+      "outputDefinition": {
+        "matchedCase": {
+          "type": "string",
+          "description": "The label of the matched branch (true/false label)",
+          "var": "matchedCase"
+        },
+        "matchedCaseId": {
+          "type": "string",
+          "description": "The branch that was taken (true or false)",
+          "var": "matchedCaseId"
+        }
+      },
+      "inputDefaults": {
+        "trueLabel": "True",
+        "falseLabel": "False"
+      },
+      "form": {
+        "id": "decision-properties",
+        "title": "Decision configuration",
+        "sections": [
+          {
+            "id": "condition",
+            "title": "Condition",
+            "fields": [
+              {
+                "name": "inputs.expression",
+                "type": "custom",
+                "component": "code-editor",
+                "componentProps": {
+                  "singleLine": true,
+                  "mode": "expression",
+                  "toggleable": false,
+                  "language": "javascript",
+                  "returnType": "boolean",
+                  "validationMode": "expression",
+                  "showVariableButton": true,
+                  "placeholder": "$vars.httpRequest1.output.statusCode >= 200 && $vars.httpRequest1.output.statusCode < 300"
+                },
+                "label": "Condition",
+                "description": "The condition must be a JavaScript expression that evaluates to true or false."
+              },
+              {
+                "name": "inputs.trueLabel",
+                "type": "text",
+                "label": "True branch label",
+                "description": "This label appears on the true branch."
+              },
+              {
+                "name": "inputs.falseLabel",
+                "type": "text",
+                "label": "False branch label",
+                "description": "This label appears on the false branch."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "nodeType": "core.control.end",
+      "version": "1.0",
+      "category": "control-flow",
+      "description": "Mark the end of a process path",
+      "tags": [
+        "control-flow",
+        "end",
+        "finish",
+        "complete"
+      ],
+      "sortOrder": 65,
+      "display": {
+        "label": "End",
+        "icon": "circle-check",
+        "shape": "circle"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        }
+      ],
+      "model": {
+        "type": "bpmn:EndEvent"
+      },
+      "runtimeConstraints": {
+        "exclude": [
+          "api-function"
+        ]
+      }
+    }
+  ],
+  "bindings": [],
+  "variables": {
+    "globals": [
+      {
+        "id": "customerTier",
+        "direction": "in",
+        "type": "string",
+        "triggerNodeId": "start",
+        "description": "Requesting customer's tier (e.g. Enterprise)"
+      },
+      {
+        "id": "productionDown",
+        "direction": "in",
+        "type": "boolean",
+        "triggerNodeId": "start",
+        "description": "Whether production is fully unavailable"
+      },
+      {
+        "id": "workaroundAvailable",
+        "direction": "in",
+        "type": "boolean",
+        "triggerNodeId": "start",
+        "description": "Whether a viable workaround is in place"
+      },
+      {
+        "id": "businessImpact",
+        "direction": "in",
+        "type": "string",
+        "triggerNodeId": "start",
+        "description": "Free-form requester description of business impact; logging/record only, does not affect severity branching"
+      },
+      {
+        "id": "correlationId",
+        "direction": "in",
+        "type": "string",
+        "triggerNodeId": "start",
+        "description": "Caller-supplied correlation id, carried through unchanged as caseKey"
+      },
+      {
+        "id": "severity",
+        "direction": "out",
+        "type": "string",
+        "description": "Sev1, Sev2, or Sev3"
+      },
+      {
+        "id": "engineeringNeeded",
+        "direction": "out",
+        "type": "boolean",
+        "description": "Whether engineering must be pulled in"
+      },
+      {
+        "id": "responseMode",
+        "direction": "out",
+        "type": "string",
+        "description": "Always Draft - a human always reviews before any acknowledgement is sent"
+      },
+      {
+        "id": "caseKey",
+        "direction": "out",
+        "type": "string",
+        "description": "Pass-through of correlationId for downstream run matching"
+      }
+    ],
+    "nodes": [
+      {
+        "id": "start.output",
+        "type": "object",
+        "description": "Data passed when manually triggering the process.",
+        "binding": {
+          "nodeId": "start",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "checkProductionDown.matchedCase",
+        "type": "string",
+        "description": "The label of the matched branch (true/false label)",
+        "binding": {
+          "nodeId": "checkProductionDown",
+          "outputId": "matchedCase"
+        }
+      },
+      {
+        "id": "checkProductionDown.matchedCaseId",
+        "type": "string",
+        "description": "The branch that was taken (true or false)",
+        "binding": {
+          "nodeId": "checkProductionDown",
+          "outputId": "matchedCaseId"
+        }
+      },
+      {
+        "id": "checkEnterpriseNoWorkaround.matchedCase",
+        "type": "string",
+        "description": "The label of the matched branch (true/false label)",
+        "binding": {
+          "nodeId": "checkEnterpriseNoWorkaround",
+          "outputId": "matchedCase"
+        }
+      },
+      {
+        "id": "checkEnterpriseNoWorkaround.matchedCaseId",
+        "type": "string",
+        "description": "The branch that was taken (true or false)",
+        "binding": {
+          "nodeId": "checkEnterpriseNoWorkaround",
+          "outputId": "matchedCaseId"
+        }
+      },
+      {
+        "id": "endSev1.severity",
+        "type": "string",
+        "binding": {
+          "nodeId": "endSev1",
+          "outputId": "severity"
+        }
+      },
+      {
+        "id": "endSev1.engineeringNeeded",
+        "type": "string",
+        "binding": {
+          "nodeId": "endSev1",
+          "outputId": "engineeringNeeded"
+        }
+      },
+      {
+        "id": "endSev1.responseMode",
+        "type": "string",
+        "binding": {
+          "nodeId": "endSev1",
+          "outputId": "responseMode"
+        }
+      },
+      {
+        "id": "endSev1.caseKey",
+        "type": "string",
+        "binding": {
+          "nodeId": "endSev1",
+          "outputId": "caseKey"
+        }
+      },
+      {
+        "id": "endSev2.severity",
+        "type": "string",
+        "binding": {
+          "nodeId": "endSev2",
+          "outputId": "severity"
+        }
+      },
+      {
+        "id": "endSev2.engineeringNeeded",
+        "type": "string",
+        "binding": {
+          "nodeId": "endSev2",
+          "outputId": "engineeringNeeded"
+        }
+      },
+      {
+        "id": "endSev2.responseMode",
+        "type": "string",
+        "binding": {
+          "nodeId": "endSev2",
+          "outputId": "responseMode"
+        }
+      },
+      {
+        "id": "endSev2.caseKey",
+        "type": "string",
+        "binding": {
+          "nodeId": "endSev2",
+          "outputId": "caseKey"
+        }
+      },
+      {
+        "id": "endSev3.severity",
+        "type": "string",
+        "binding": {
+          "nodeId": "endSev3",
+          "outputId": "severity"
+        }
+      },
+      {
+        "id": "endSev3.engineeringNeeded",
+        "type": "string",
+        "binding": {
+          "nodeId": "endSev3",
+          "outputId": "engineeringNeeded"
+        }
+      },
+      {
+        "id": "endSev3.responseMode",
+        "type": "string",
+        "binding": {
+          "nodeId": "endSev3",
+          "outputId": "responseMode"
+        }
+      },
+      {
+        "id": "endSev3.caseKey",
+        "type": "string",
+        "binding": {
+          "nodeId": "endSev3",
+          "outputId": "caseKey"
+        }
+      }
+    ],
+    "variableUpdates": {}
+  },
+  "runtime": "maestro",
+  "layout": {
+    "nodes": {
+      "start": {
+        "position": {
+          "x": 0,
+          "y": 0
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "checkProductionDown": {
+        "position": {
+          "x": 192,
+          "y": 0
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "checkEnterpriseNoWorkaround": {
+        "position": {
+          "x": 384,
+          "y": 96
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "endSev1": {
+        "position": {
+          "x": 576,
+          "y": 0
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "endSev2": {
+        "position": {
+          "x": 576,
+          "y": 192
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "endSev3": {
+        "position": {
+          "x": 384,
+          "y": -96
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      }
+    }
+  }
+}

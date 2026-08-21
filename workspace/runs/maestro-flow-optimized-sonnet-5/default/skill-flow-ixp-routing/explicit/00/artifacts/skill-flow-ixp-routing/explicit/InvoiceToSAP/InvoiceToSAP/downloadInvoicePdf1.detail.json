@@ -1,0 +1,10 @@
+{
+  "_comment": "PLANNED — not yet applied via `node configure`. Wire referenceID to the file item chosen from the List node's output once a loop/selection is added.",
+  "connectionId": "ae311606-25b7-43ef-9cd0-f3dc0b3a9b58",
+  "folderKey": "c4359cde-55f0-4f0e-9322-c6cdce74ab4c",
+  "method": "GET",
+  "endpoint": "/DownloadFile",
+  "queryParameters": {
+    "referenceID": "=js:$vars.listInvoicePdfsInSharepointFolder1.output.<item>.ReferenceID"
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "NameToAge",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "22e012d6-78cb-407a-8056-c38d740b0251",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "NameToAge"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Flow",
+      "name": "NameToAge",
+      "package": {
+        "key": "927e4799-042b-4c75-9b8b-776835a75c88"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "9ab73e80-99c4-4b84-b0f9-52d5e78c6b65",
+    "files": []
+  }
+}

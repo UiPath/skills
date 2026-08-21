@@ -1,0 +1,55 @@
+2026-07-24 00:00:43 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-24 00:00:43 [INFO] coder_eval.orchestrator: API routing: aws_bedrock
+2026-07-24 00:00:43 [DEBUG] coder_eval.criteria: Discovered 14 criterion checkers
+2026-07-24 00:00:43 [DEBUG] coder_eval.criteria: Validated 14 criterion checkers
+2026-07-24 00:00:43 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-24 00:00:43 [DEBUG] coder_eval.orchestrator: Sending prompt: Create a new Flow project called "EnumTest" with a manual trigger.
+Build a flow that sends an email ...
+2026-07-24 00:00:43 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Starting agent query stream...
+2026-07-24 00:10:02 [DEBUG] coder_eval.agents.claude_code_agent: [coder] session_id changed: None -> 348858ce-31aa-4349-8c0a-07d986e30829
+2026-07-24 00:10:02 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Agent query stream ended
+2026-07-24 00:10:02 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-24 00:10:02 [DEBUG] coder_eval.orchestrator: Agent response received (5194 chars)
+2026-07-24 00:10:02 [DEBUG] coder_eval.orchestrator: Checking success criteria
+2026-07-24 00:10:02 [DEBUG] coder_eval.evaluation.checker: Criterion 'command_executed' score: 1.00
+2026-07-24 00:10:02 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'Tenant has at least one Gmail connection (precondition for `node configure`)': python3 $TASK_DIR/check_connection_available.py uipath-google-gmail
+2026-07-24 00:10:03 [DEBUG] coder_eval.sandbox: Command 'python3 $TASK_DIR/check_connection_available.py uipath-google-gmail' exited with code 0
+2026-07-24 00:10:03 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+OK: 5 connection(s) available for 'uipath-google-gmail' (first: is.sandboxes.test@gmail.com)
+---
+2026-07-24 00:10:03 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-07-24 00:10:03 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'Flow file exists and is valid JSON': python3 $TASK_DIR/check_enum_flow.py '**/EnumTest*.flow' structure
+2026-07-24 00:10:03 [DEBUG] coder_eval.sandbox: Command 'python3 $TASK_DIR/check_enum_flow.py '**/EnumTest*.flow' structure' exited with code 0
+2026-07-24 00:10:03 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+OK: EnumTest/EnumTest/EnumTest.flow valid JSON with 6 nodes, 5 edges
+---
+2026-07-24 00:10:03 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-07-24 00:10:03 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'Flow uses Gmail connector or task-specific managed HTTP fallback': python3 $TASK_DIR/check_managed_http_fallback.py '**/EnumTest*.flow' uipath-google-gmail enum
+2026-07-24 00:10:04 [DEBUG] coder_eval.sandbox: Command 'python3 $TASK_DIR/check_managed_http_fallback.py '**/EnumTest*.flow' uipath-google-gmail enum' exited with code 0
+2026-07-24 00:10:04 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+OK: native connector present (uipath-google-gmail)
+---
+2026-07-24 00:10:04 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-07-24 00:10:04 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'Connector node has inputs.detail.bodyParameters with to and importance': python3 $TASK_DIR/check_enum_flow.py '**/EnumTest*.flow' body_params
+2026-07-24 00:10:04 [DEBUG] coder_eval.sandbox: Command 'python3 $TASK_DIR/check_enum_flow.py '**/EnumTest*.flow' body_params' exited with code 0
+2026-07-24 00:10:04 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+OK: bodyParameters on node 'sendMail1' carries expected to/subject/body/importance
+---
+2026-07-24 00:10:04 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-07-24 00:10:04 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'Flow has Decision and Terminate nodes': python3 $TASK_DIR/check_enum_flow.py '**/EnumTest*.flow' control
+2026-07-24 00:10:04 [DEBUG] coder_eval.sandbox: Command 'python3 $TASK_DIR/check_enum_flow.py '**/EnumTest*.flow' control' exited with code 0
+2026-07-24 00:10:04 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+OK: Decision and Terminate nodes present
+---
+2026-07-24 00:10:04 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-07-24 00:10:04 [DEBUG] coder_eval.evaluation.checker: Criterion 'command_executed' score: 1.00
+2026-07-24 00:10:04 [INFO] coder_eval.orchestrator: Success criteria: 7/7 passed, weighted score: 1.000
+2026-07-24 00:10:04 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-24 00:10:04 [INFO] coder_eval.orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+2026-07-24 00:10:04 [INFO] coder_eval.orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-ipe-enum
+2026-07-24 00:10:04 [INFO] coder_eval.orchestrator: Task finished: status=SUCCESS duration=563.4s score=1.000 iterations=1

@@ -1,0 +1,9 @@
+{
+  "id": "8c134ae1-dbd2-44e2-8a32-ad62a00eca07",
+  "type": "uipath.agent.resource.context.index.billing-dispute-sop-index.cc45b9b4-dbf6-47b3-40ac-08debc0cec5b",
+  "typeVersion": "1.0.0",
+  "display": {
+    "label": "Billing Dispute SOP Index"
+  },
+  "inputs": {}
+}

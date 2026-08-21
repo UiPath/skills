@@ -1,0 +1,48 @@
+{
+  "Result": "Success",
+  "Code": "DebugInstanceVariablesAll",
+  "Data": {
+    "Variables": [
+      {
+        "Elements": [
+          {
+            "ElementId": "Start_1",
+            "ElementRunId": "37e38508-f5c6-449f-a937-824deb7d436e",
+            "IsMarker": false,
+            "Inputs": {},
+            "InputDefinitions": {},
+            "Outputs": {}
+          },
+          {
+            "ElementId": "Task_Product",
+            "ElementRunId": "ffef7544-30aa-4d6a-ba98-4596006b1676",
+            "IsMarker": false,
+            "Inputs": {},
+            "InputDefinitions": {},
+            "Outputs": {}
+          },
+          {
+            "ElementId": "End_1",
+            "ElementRunId": "5b8f9f9b-8515-4298-9847-8fc895a36ed4",
+            "IsMarker": false,
+            "Inputs": {},
+            "InputDefinitions": {},
+            "Outputs": {}
+          }
+        ],
+        "Globals": {
+          "Product": null
+        },
+        "InstanceId": "df7adfea-76af-48b6-9739-daeebc3ad8dc",
+        "WorkflowId": "df7adfea-76af-48b6-9739-daeebc3ad8dc/BpmnGenericWorkflow",
+        "ParentElementId": null,
+        "GlobalDefinitions": {
+          "Product": {
+            "Name": "product",
+            "Type": "integer"
+          }
+        }
+      }
+    ]
+  }
+}

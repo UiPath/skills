@@ -1,0 +1,2226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>coder_eval · skill-flow-bindings-multi-connector-independence · default</title>
+<style>
+:root {
+  --bg-page: #0f1419;
+  --bg-card: #1a2129;
+  --bg-card-2: #232d38;
+  --bg-code: #0b0f14;
+  --fg: #e6edf3;
+  --fg-muted: #8b98a5;
+  --fg-dim: #6e7681;
+  --border: #30363d;
+  --accent: #58a6ff;
+  --score-high: #22c55e;
+  --score-mid: #f59e0b;
+  --score-low: #ef4444;
+  --status-success: #22c55e;
+  --status-failure: #f59e0b;
+  --status-error: #ef4444;
+  --status-neutral: #6e7681;
+  --shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+.light {
+  --bg-page: #ffffff;
+  --bg-card: #f6f8fa;
+  --bg-card-2: #eaeef2;
+  --bg-code: #f6f8fa;
+  --fg: #1f2328;
+  --fg-muted: #636c76;
+  --fg-dim: #8b949e;
+  --border: #d0d7de;
+  --accent: #0969da;
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial,
+               sans-serif;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--fg);
+  background: var(--bg-page);
+}
+.container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+h1, h2, h3, h4 { margin: 0 0 12px 0; line-height: 1.25; }
+h1 { font-size: 22px; font-weight: 600; }
+h2 { font-size: 18px; font-weight: 600; margin-top: 28px;
+     padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+h3 { font-size: 15px; font-weight: 600; color: var(--fg-muted); }
+h4 { font-size: 13px; font-weight: 600; color: var(--fg-muted); }
+p { margin: 0 0 8px 0; }
+.muted { color: var(--fg-muted); }
+.dim { color: var(--fg-dim); }
+.mono { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+        monospace; font-size: 12.5px; }
+code { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+       monospace; font-size: 12.5px; background: var(--bg-code);
+       border: 1px solid var(--border); padding: 1px 5px; border-radius: 3px; }
+pre { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+      monospace; font-size: 12.5px; background: var(--bg-code);
+      border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px;
+      margin: 6px 0; overflow-x: auto; white-space: pre-wrap;
+      word-wrap: break-word; }
+.header-bar { display: flex; align-items: center; justify-content: space-between;
+              margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+.title-group { flex: 1; min-width: 0; }
+.title-group .subtitle { color: var(--fg-muted); font-size: 13px;
+                         margin-top: 2px; word-break: break-all; }
+.badges { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.badge { display: inline-flex; align-items: center; gap: 6px;
+         padding: 4px 10px; border-radius: 12px; font-size: 12px;
+         font-weight: 600; background: var(--bg-card-2);
+         border: 1px solid var(--border); color: var(--fg); }
+.badge.success { background: color-mix(in srgb, var(--status-success) 20%, var(--bg-card-2));
+                 border-color: var(--status-success); color: var(--status-success); }
+.badge.failure { background: color-mix(in srgb, var(--status-failure) 20%, var(--bg-card-2));
+                 border-color: var(--status-failure); color: var(--status-failure); }
+.badge.error { background: color-mix(in srgb, var(--status-error) 20%, var(--bg-card-2));
+               border-color: var(--status-error); color: var(--status-error); }
+.badge.warning { background: color-mix(in srgb, #f4a52810 20%, var(--bg-card-2));
+                 border-color: #f4a528; color: #f4a528; }
+.badge.neutral { color: var(--fg-muted); }
+.score-pill { display: inline-block; padding: 2px 8px; border-radius: 10px;
+              font-size: 12px; font-weight: 700; min-width: 42px;
+              text-align: center; color: #0b0f14; }
+.score-high { background: var(--score-high); }
+.score-mid { background: var(--score-mid); }
+.score-low { background: var(--score-low); }
+.card { background: var(--bg-card); border: 1px solid var(--border);
+        border-radius: 8px; padding: 16px 20px; margin-bottom: 16px;
+        box-shadow: var(--shadow); }
+.card.highlight { border-left: 4px solid var(--accent); }
+.grid { display: grid; gap: 12px;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+.stat { background: var(--bg-card-2); padding: 10px 12px; border-radius: 6px;
+        border: 1px solid var(--border); }
+.stat .label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;
+               color: var(--fg-muted); margin-bottom: 4px; }
+.stat .value { font-size: 16px; font-weight: 600; }
+table { width: 100%; border-collapse: collapse; margin: 4px 0 12px 0; }
+th, td { text-align: left; padding: 8px 10px;
+         border-bottom: 1px solid var(--border); vertical-align: top;
+         font-size: 13px; }
+th { color: var(--fg-muted); font-weight: 600; font-size: 12px;
+     text-transform: uppercase; letter-spacing: 0.3px; }
+tr:last-child td { border-bottom: none; }
+details { margin: 6px 0; border: 1px solid var(--border); border-radius: 6px;
+          background: var(--bg-card-2); }
+details > summary { cursor: pointer; padding: 8px 12px; user-select: none;
+                    font-weight: 500; list-style: none; }
+details > summary::-webkit-details-marker { display: none; }
+details > summary::before { content: "▸ "; color: var(--fg-dim);
+                            display: inline-block; width: 14px;
+                            transition: transform 0.15s; }
+details[open] > summary::before { content: "▾ "; }
+details .details-body { padding: 0 12px 10px 12px; }
+.tool-row { display: flex; align-items: center; gap: 10px;
+            flex-wrap: wrap; font-size: 13px; }
+.tool-name { font-weight: 600; color: var(--accent); font-family: ui-monospace,
+             SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+.tool-status-ok { color: var(--status-success); font-size: 11px;
+                  font-weight: 600; }
+.tool-status-err { color: var(--status-error); font-size: 11px;
+                   font-weight: 600; }
+.tool-duration { color: var(--fg-muted); font-size: 12px; }
+.tool-seq { color: var(--fg-dim); font-size: 11px; font-weight: 600;
+            min-width: 24px; text-align: right; font-family: ui-monospace,
+            SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+.turn-header { display: flex; justify-content: space-between;
+               align-items: baseline; flex-wrap: wrap; gap: 10px;
+               margin-bottom: 10px; }
+.turn-meta { font-size: 12px; color: var(--fg-muted); }
+.criterion-row td:first-child { font-family: ui-monospace, SFMono-Regular,
+                                 "SF Mono", Menlo, Consolas, monospace;
+                                 color: var(--fg-muted); font-size: 12px; }
+.judge-section { display: flex; flex-direction: column; gap: 12px; }
+.judge-card { padding: 14px 16px; }
+.judge-card-head { display: flex; justify-content: space-between;
+                    align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+.judge-card-title { font-size: 14px; line-height: 1.4; flex: 1; min-width: 0; }
+.judge-card-score { flex-shrink: 0; }
+.judge-rationale { margin-top: 10px; padding: 10px 12px;
+                   background: var(--bg-code); border-radius: 4px;
+                   font-size: 13px; line-height: 1.5; }
+.judge-findings { margin: 8px 0 0 18px; padding-left: 4px; font-size: 13px;
+                   line-height: 1.6; }
+.judge-findings li { margin: 2px 0; }
+.nav-toggle { display: inline-block; padding: 5px 10px; font-size: 12px;
+              background: var(--bg-card-2); border: 1px solid var(--border);
+              border-radius: 5px; color: var(--fg); cursor: pointer; }
+.nav-toggle:hover { background: var(--bg-card); }
+.llm-next-steps { margin: 6px 0 0 20px; padding-left: 0; }
+.llm-next-steps li { margin: 3px 0; }
+.iteration-group { padding: 12px 16px 4px 16px; margin-bottom: 20px;
+                   border-radius: 0 6px 6px 0; border-left: 4px solid var(--status-neutral); }
+/* rgba fallback for browsers without color-mix (Chrome <111, Firefox <113, Safari <16.2). */
+.iteration-group--recovered { border-left-color: var(--status-success);
+                              background: rgba(34, 197, 94, 0.06);
+                              background: color-mix(in srgb, var(--status-success) 6%, transparent); }
+.iteration-group--terminal { border-left-color: var(--status-error);
+                             background: rgba(239, 68, 68, 0.06);
+                             background: color-mix(in srgb, var(--status-error) 6%, transparent); }
+.iteration-group__banner { margin: 0 0 12px 0; font-size: 14px; font-weight: 600; }
+.iteration-group--recovered .iteration-group__banner { color: var(--status-success); }
+.iteration-group--terminal .iteration-group__banner { color: var(--status-error); }
+.attempt-transition { display: flex; align-items: center; gap: 8px;
+                      margin: -6px 0 12px 8px; color: var(--status-error); font-size: 12.5px; }
+.attempt-transition__icon { font-weight: 700; }
+footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--border);
+         color: var(--fg-dim); font-size: 12px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="header-bar">
+  <div class="title-group">
+    <h1>Task: skill-flow-bindings-multi-connector-independence</h1>
+    <div class="subtitle">Two distinct connector nodes (different connector keys) in the same flow, each configured with its own connection, must produce independent Connection bindings — no cross-aliasing between nodes, even when both manifests share common binding `name`/`propertyAttribute` values like `ConnectionId` and `FolderKey`. This is the cross-connector aliasing case that flow-workbench#1726 had to harden against because stale empty-keyed rows collided on `(resourceKey, propertyAttribute)`. With PR #2197 in place there should be no empty rows at all and no aliasing should be possible in the first place. See https://github.com/UiPath/cli/pull/2197 and https://github.com/UiPath/flow-workbench/pull/1726.</div>
+  </div>
+  <div class="badges">
+    <span class="badge success">SUCCESS</span>
+    <span class="score-pill score-high">1.00</span>
+    <span class="badge neutral">claude-code · claude-sonnet-5</span>
+    <span class="badge neutral">6m 11s</span>
+    <span class="badge neutral">$2.4767</span>
+    
+    
+    <span class="nav-toggle" onclick="toggleTheme()">Toggle theme</span>
+  </div>
+</div>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Variant</div><div class="value">default</div></div>
+    <div class="stat"><div class="label">Started</div><div class="value mono">2026-08-19T15:50:05</div></div>
+    <div class="stat"><div class="label">Duration</div><div class="value">6m 11s</div></div>
+    <div class="stat"><div class="label">Turns (SDK)</div><div class="value">92</div></div>
+    <div class="stat"><div class="label">Commands</div><div class="value">48</div></div>
+  </div>
+</div>
+
+<h2>Success Criteria <span class="muted" style="font-weight:400">(7/7 passed)</span></h2>
+<div class="card" style="padding:0">
+<table>
+  <thead>
+    <tr>
+      <th style="width:15%">Type</th>
+      <th style="width:35%">Description</th>
+      <th style="width:10%">Score</th>
+      <th>Details</th>
+    </tr>
+  </thead>
+  <tbody>
+    
+<tr class="criterion-row">
+  <td>command_executed</td>
+  <td>Agent used `uip flow node add` at least once</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Matched 1/1 required commands (filters: tool_name=Bash, pattern=/(uip|\$UIP)\s+(maestro\s+)?flow\s+node\s+add/)</summary><div class="details-body"><pre style="margin:6px 0 0 0">Matched 1/1 required commands (filters: tool_name=Bash, pattern=/(uip|\$UIP)\s+(maestro\s+)?flow\s+node\s+add/)
+Examples: [&#x27;\\\nuip maestro flow node add &quot;BindingsMulti.flow&quot; uipath.connector.uipath-atlassian-jira.search-issues-by-jql --label &quot;Se&#x27;]</pre></div></details></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>command_executed</td>
+  <td>Agent used `uip flow node configure` at least once</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Matched 2/1 required commands (filters: tool_name=Bash, pattern=/(uip|\$UIP)\s+(maestro\s+)?flow\s+node\s+configure/)</summary><div class="details-body"><pre style="margin:6px 0 0 0">Matched 2/1 required commands (filters: tool_name=Bash, pattern=/(uip|\$UIP)\s+(maestro\s+)?flow\s+node\s+configure/)
+Examples: [&#x27;cd /work/output/artifacts/skill-flow-bindings-multi-connector-independence/BindingsMulti/BindingsMulti\nuip maestro flow &#x27;, &#x27;cd /work/output/artifacts/skill-flow-bindings-multi-connector-independence/BindingsMulti/BindingsMulti\nuip maestro flow &#x27;]</pre></div></details></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>run_command</td>
+  <td>conn_ids.json declares two distinct connection ids backed by different connector keys</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Command: python3 -c &quot;import json; d=json.load(open(&#x27;conn_ids.json&#x27;)); assert d[&#x27;a&#x27;]!=d[&#x27;b&#x27;], &#x27;connection ids must differ&#x27;; assert d[&#x27;ka&#x27;]!=d[&#x27;kb&#x27;], &#x27;connector keys must differ&#x27;&quot;</summary><div class="details-body"><pre style="margin:6px 0 0 0">Command: python3 -c &quot;import json; d=json.load(open(&#x27;conn_ids.json&#x27;)); assert d[&#x27;a&#x27;]!=d[&#x27;b&#x27;], &#x27;connection ids must differ&#x27;; assert d[&#x27;ka&#x27;]!=d[&#x27;kb&#x27;], &#x27;connector keys must differ&#x27;&quot;
+Exit code: 0 (expected: 0)
+Stdout: (empty)
+Stderr: (empty)</pre></div></details></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>run_command</td>
+  <td>Flow file exists and is valid JSON</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Command: python3 $TASK_DIR/check_bindings.py structure &#x27;**/BindingsMulti*.flow&#x27;</summary><div class="details-body"><pre style="margin:6px 0 0 0">Command: python3 $TASK_DIR/check_bindings.py structure &#x27;**/BindingsMulti*.flow&#x27;
+Exit code: 0 (expected: 0)
+Stdout:
+OK: BindingsMulti/flow_files/BindingsMulti.flow valid JSON with nodes + bindings
+
+Stderr: (empty)</pre></div></details></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>run_command</td>
+  <td>Both connection ids appear in Connection bindings, each on its own ConnectionId row</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Command: python3 $TASK_DIR/check_bindings.py both_ids_present_from_json &#x27;**/BindingsMulti*.flow&#x27; conn_ids.json</summary><div class="details-body"><pre style="margin:6px 0 0 0">Command: python3 $TASK_DIR/check_bindings.py both_ids_present_from_json &#x27;**/BindingsMulti*.flow&#x27; conn_ids.json
+Exit code: 0 (expected: 0)
+Stdout:
+OK: BindingsMulti/flow_files/BindingsMulti.flow both connections present in ConnectionId bindings
+
+Stderr: (empty)</pre></div></details></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>run_command</td>
+  <td>No empty-keyed Connection bindings (cross-node aliasing surface)</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Command: python3 $TASK_DIR/check_bindings.py no_empty_stubs &#x27;**/BindingsMulti*.flow&#x27;</summary><div class="details-body"><pre style="margin:6px 0 0 0">Command: python3 $TASK_DIR/check_bindings.py no_empty_stubs &#x27;**/BindingsMulti*.flow&#x27;
+Exit code: 0 (expected: 0)
+Stdout:
+OK: BindingsMulti/flow_files/BindingsMulti.flow has no empty-keyed Connection bindings
+
+Stderr: (empty)</pre></div></details></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>run_command</td>
+  <td>No (name, propertyAttribute, resourceKey) triplet duplicates</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Command: python3 $TASK_DIR/check_bindings.py no_triplet_dups &#x27;**/BindingsMulti*.flow&#x27;</summary><div class="details-body"><pre style="margin:6px 0 0 0">Command: python3 $TASK_DIR/check_bindings.py no_triplet_dups &#x27;**/BindingsMulti*.flow&#x27;
+Exit code: 0 (expected: 0)
+Stdout:
+OK: BindingsMulti/flow_files/BindingsMulti.flow has no duplicate Connection (name, propertyAttribute, resourceKey) triplets
+
+Stderr: (empty)</pre></div></details></td>
+</tr>
+
+  </tbody>
+</table>
+</div>
+<h2>Conversation Trace (1 iteration)</h2>
+<div class="card">
+  <div class="turn-header">
+    <h3>Iteration 1</h3>
+    <div class="badges">
+      <span class="badge neutral">92 assistant turns</span>
+      <span class="badge neutral">in 631 · out 24094 · cache 5577242</span>
+      <span class="badge neutral">6m 9s</span>
+      
+      
+      
+    </div>
+  </div>
+  <details>
+    <summary>Prompt to agent</summary>
+    <div class="details-body"><pre>Your working directory is: /work/output/artifacts/skill-flow-bindings-multi-connector-independence
+
+Build a flow named &quot;BindingsMulti&quot; with TWO IS connector nodes backed
+by DIFFERENT connector keys, saved as
+`BindingsMulti/flow_files/BindingsMulti.flow` with
+`BindingsMulti/project.uiproj`.
+
+Configure each node with its own distinct connection. Record the
+connection ids and connector keys at the sandbox root:
+
+    echo &#x27;{&quot;a&quot;:&quot;&lt;conn-id-1&gt;&quot;,&quot;ka&quot;:&quot;&lt;connector-key-1&gt;&quot;,&quot;b&quot;:&quot;&lt;conn-id-2&gt;&quot;,&quot;kb&quot;:&quot;&lt;connector-key-2&gt;&quot;}&#x27; &gt; conn_ids.json
+</pre></div>
+  </details>
+  <details>
+    <summary>Agent response</summary>
+    <div class="details-body"><pre>[ASSISTANT] Logged in. Now let&#x27;s discover connector connections available across folders to pick two distinct connector keys.
+[ASSISTANT] I have both nodes selected: Jira &quot;Search Issues by JQL&quot; (all optional fields, simplest) and Google Drive &quot;Get Drive Labels&quot; (only `labelType` required, with a default value). Let&#x27;s add both nodes now.
+[ASSISTANT] Both nodes are added: `searchJiraIssues1` and `getDriveLabels1`. Now let&#x27;s fetch `core.control.end` and read the current flow to wire everything together.
+[ASSISTANT] Now I&#x27;ll add the End node, wire edges (start → jira → gdrive → end), and add layout entries.
+[ASSISTANT] That was a mistake — let me remove that bogus key and properly add the End node&#x27;s definition to `definitions[]`.
+[ASSISTANT] Now let&#x27;s add the End node&#x27;s definition to `definitions[]` and the layout entry:
+[ASSISTANT] Now let&#x27;s configure both connector nodes. First, resolve required fields for Google Drive&#x27;s `labelType` (has a default `&quot;all&quot;`), and Jira JQL has no required fields.
+[ASSISTANT] Jira node configured successfully. Now configure the Google Drive node.
+[ASSISTANT] Both nodes configured with distinct connections. Now let&#x27;s audit, validate, and format the flow.
+[ASSISTANT] Validate passed (`Valid`, no warnings) and format completed. Now let&#x27;s verify `bindings[]` has both distinct connections with correct `resourceKey`s, then write `conn_ids.json`.
+[ASSISTANT] Both connections are confirmed distinct: Jira (`f5273a4d-...`) and Google Drive (`41943488-...`), each with its own connector key. Now let&#x27;s verify the double-nested layout and write `conn_ids.json`.
+[ASSISTANT] Now let&#x27;s write `conn_ids.json` at the sandbox root with the two connection ids and connector keys.
+[ASSISTANT] Everything&#x27;s in place. Summary:
+
+**Built:** `BindingsMulti` — a Maestro Flow with a manual trigger → Jira &quot;Search Issues by JQL&quot; → Google Drive &quot;Get Drive Labels&quot; → End, each connector node bound to its own distinct IS connection:
+
+- **Jira** (`searchJiraIssues1`): connector key `uipath-atlassian-jira`, connection `f5273a4d-d492-4bcd-a106-5a20bf89a3ef`
+- **Google Drive** (`getDriveLabels1`): connector key `uipath-google-drive`, connection `41943488-5cec-48b3-93cf-19048447524e`
+
+Both connections are confirmed independent (different connector keys, different connection UUIDs) in the flow&#x27;s top-level `bindings[]` (4 entries — 2 per connection). `flow validate` returned `Valid` with no warnings, and `flow format` ran cleanly.
+
+**Files produced:**
+- `BindingsMulti/flow_files/BindingsMulti.flow` — the requested flow file
+- `BindingsMulti/project.uiproj` — the requested project file
+- `conn_ids.json` at the sandbox root with both connection ids and connector keys
+
+(The canonical CLI-scaffolded double-nested layout also remains at `BindingsMulti/BindingsMulti/` per the solution/project registration; the requested flat copies were placed alongside it as asked.)
+[RESULT - SUCCESS] Everything&#x27;s in place. Summary:
+
+**Built:** `BindingsMulti` — a Maestro Flow with a manual trigger → Jira &quot;Search Issues by JQL&quot; → Google Drive &quot;Get Drive Labels&quot; → End, each connector node bound to its own distinct IS connection:
+
+- **Jira** (`searchJiraIssues1`): connector key `uipath-atlassian-jira`, connection `f5273a4d-d492-4bcd-a106-5a20bf89a3ef`
+- **Google Drive** (`getDriveLabels1`): connector key `uipath-google-drive`, connection `41943488-5cec-48b3-93cf-19048447524e`
+
+Both connections are confirmed independent (different connector keys, different connection UUIDs) in the flow&#x27;s top-level `bindings[]` (4 entries — 2 per connection). `flow validate` returned `Valid` with no warnings, and `flow format` ran cleanly.
+
+**Files produced:**
+- `BindingsMulti/flow_files/BindingsMulti.flow` — the requested flow file
+- `BindingsMulti/project.uiproj` — the requested project file
+- `conn_ids.json` at the sandbox root with both connection ids and connector keys
+
+(The canonical CLI-scaffolded double-nested layout also remains at `BindingsMulti/BindingsMulti/` per the soluti</pre></div>
+  </details>
+  <h4 style="margin-top:12px">Tool Calls (48)</h4>
+  
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#0</span>
+      <span class="tool-name">Skill</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">12ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;skill&quot;: &quot;tmp:uipath-maestro-flow&quot;,
+  &quot;args&quot;: &quot;Build a flow named \&quot;BindingsMulti\&quot; with TWO IS connector nodes backed by DIFFERENT connector keys, saved as BindingsMulti/flow_files/BindingsMulti.flow with BindingsMulti/project.uiproj. Configure each node with its own distinct connection. Record the connection ids and connector keys at the sandbox root: echo &#x27;{\&quot;a\&quot;:\&quot;&lt;conn-id-1&gt;\&quot;,\&quot;ka\&quot;:\&quot;&lt;connector-key-1&gt;\&quot;,\&quot;b\&quot;:\&quot;&lt;conn-id-2&gt;\&quot;,\&quot;kb\&quot;:\&quot;&lt;connector-key-2&gt;\&quot;}… (17 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Launching skill: tmp:uipath-maestro-flow</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#1</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">433ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;pwd &amp;&amp; find . -maxdepth 4 -print &amp;&amp; echo \&quot;---uip version---\&quot; &amp;&amp; uip --version 2&gt;&amp;1 | head -5&quot;,
+  &quot;description&quot;: &quot;Inspect current directory and uip CLI version&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/work/output/artifacts/skill-flow-bindings-multi-connector-independence
+.
+./.venv
+./.venv/CACHEDIR.TAG
+./.venv/lib64
+./.venv/pyvenv.cfg
+./.venv/lib
+./.venv/lib/python3.13
+./.venv/lib/python3.13/site-packages
+./.venv/bin
+./.venv/bin/activate.csh
+./.venv/bin/activate.bat
+./.venv/bin/activate_this.py
+./.venv/bin/python
+./.venv/bin/pydoc.bat
+./.venv/bin/activate.ps1
+./.venv/bin/activate.xsh
+./.venv/bin/activate.nu
+./.venv/bin/python3.13
+./.venv/bin/activate
+./.venv/bin/activate.fish
+./.venv/bin/python3
+./.venv/bin/deactivate.bat
+./.venv/.gitignore
+---uip version---
+1.201.0-dev.8272</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#2</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">333ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/CAPABILITY.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Author — Create and edit `.flow` files
+2	
+3	Capability index for building new flows (greenfield) and editing existing flows (brownfield). Author owns everything that happens on disk, locally, without `uip login`. Authoring journeys terminate at `validate` + `format`; from there, hand off to [operate/CAPABILITY.md](../operate/CAPABILITY.md) to publish, run, or debug.
+4	
+5	&gt; **Where you came from / where to go next.** Author is upstream of Operate (build the flow → ship it) and upstream of Diagnose only via Operate (build → run → diagnose). Publish/run/lifecycle lives in [operate/CAPABILITY.md](../operate/CAPABILITY.md); fault triage lives in [diagnose/CAPABILITY.md](../diagnose/CAPABILITY.md).
+6	&gt;
+7	&gt; **Inherits universal rules from [SKILL.md](../../SKILL.md)** — `--output json` + prefer `--output-filter` for extraction, no `flow debug` without consent, resource discovery order, never invoke other skills automatically, dropdown question pattern, solution layout, **plain-English narration + granular progress list (opt-in — silent by default; engage when the user asks for verbosity)**. The rules below are author-scoped and apply on top.
+8	
+9	## When to use this capability
+10	
+11	&lt;
+
+… (truncated, 30449 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#3</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">100ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/greenfield.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Greenfield — Create a New Flow
+2	
+3	End-to-end journey for creating a Flow project from scratch. Author terminates at `validate` + `format`. To publish, run, or debug after this, see [operate/CAPABILITY.md](../../operate/CAPABILITY.md).
+4	
+5	&gt; **Brownfield edits use a different journey.** If the `.flow` file already exists, see [brownfield.md](brownfield.md) instead.
+6	
+7	## Should you plan first?
+8	
+9	For complex flows, produce a plan before building. Reference [planning-arch.md](planning-arch.md) and [planning-impl.md](planning-impl.md) for the node type catalog, port reference, wiring rules, and topology patterns.
+10	
+11	**Plan when:**
+12	- The flow has 5+ nodes with branching or parallel paths
+13	- The flow uses connectors or resources that need discovery
+14	- The user&#x27;s requirements are ambiguous and you need to confirm the approach
+15	
+16	**Don&#x27;t plan when:**
+17	- Adding/editing a single node in an existing flow (use [brownfield.md](brownfield.md))
+18	- The flow is a straightforward linear pipeline (trigger → action → action → end)
+19	- The user has already described the exact topology they want
+20	
+21	### Examples
+22	
+23	**Plan:** &quot;Build a flow that receives a Jira ticke
+
+… (truncated, 34831 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#4</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">23ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;find . -maxdepth 2 -type f -name &#x27;*.uipx&#x27; -print 2&gt;&amp;1; echo \&quot;---\&quot;; ls -la 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Check for existing solution files&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>---
+total 12
+drwxr-xr-x 3 root root 4096 Aug 19 15:50 .
+drwxr-xr-x 3 root root 4096 Aug 19 15:50 ..
+drwxr-xr-x 4 root root 4096 Aug 19 15:50 .venv</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#5</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">501ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip solution init \&quot;BindingsMulti\&quot; --output json 2&gt;&amp;1 | tee /tmp/sol_init.json&quot;,
+  &quot;description&quot;: &quot;Initialize solution BindingsMulti&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;SolutionInit&quot;,
+  &quot;Data&quot;: {
+    &quot;Status&quot;: &quot;Created successfully&quot;,
+    &quot;Path&quot;: &quot;/work/output/artifacts/skill-flow-bindings-multi-connector-independence/BindingsMulti/BindingsMulti.uipx&quot;,
+    &quot;NextSteps&quot;: &quot;Read /work/output/artifacts/skill-flow-bindings-multi-connector-independence/BindingsMulti/AGENTS.md or /work/output/artifacts/skill-flow-bindings-multi-connector-independence/BindingsMulti/CLAUDE.md to understand the solution lifecycle, project types that can be used inside a solution, and related uip command references.&quot;
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#6</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">6.40s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-bindings-multi-connector-independence/BindingsMulti &amp;&amp; ls -la &amp;&amp; uip maestro flow init \&quot;BindingsMulti\&quot; --output json 2&gt;&amp;1 | tee /tmp/flow_init.json&quot;,
+  &quot;description&quot;: &quot;Initialize flow project inside solution&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>total 52
+drwxr-xr-x 2 root root  4096 Aug 19 15:50 .
+drwxr-xr-x 4 root root  4096 Aug 19 15:50 ..
+-rw-r--r-- 1 root root 20136 Aug 19 15:50 AGENTS.md
+-rw-r--r-- 1 root root   137 Aug 19 15:50 BindingsMulti.uipx
+-rw-r--r-- 1 root root 20136 Aug 19 15:50 CLAUDE.md
+2026-08-19 15:50:43 INFO  [ResourceBuilder:ProjectCreateCommandHandler] Creating project [object Object]
+2026-08-19 15:50:43 INFO  [ResourceBuilder:MultiFileSolutionDefinitionProvider] Reading multi-file solution definition for solution %s /work/output/artifacts/skill-flow-bindings-multi-connector-independence/BindingsMulti
+2026-08-19 15:50:43 INFO  [ResourceBuilder:ProjectCreateCommandHandler] Generate artefact resources for project [object Object]
+2026-08-19 15:50:43 INFO  [ResourceBuilder:SolutionsMetadataReader] Reading metadata from %s. SolutionsMetadataReader
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FlowInit&quot;,
+  &quot;Data&quot;: {
+    &quot;Status&quot;: &quot;Created successfully&quot;,
+    &quot;Path&quot;: &quot;/work/output/artifacts/skill-flow-bindings-multi-connector-independence/BindingsMulti/BindingsMulti&quot;,
+    &quot;SolutionRegistration&quot;: {
+      &quot;Status&quot;: &quot;Registered&quot;,
+      &quot;Message&quot;: &quot;Project registered in parent solution.&quot;,
+      &quot;Solution&quot;: &quot;/work/output/ar
+
+… (truncated, 944 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#7</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">26ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;find . -maxdepth 4 -type f | sort&quot;,
+  &quot;description&quot;: &quot;List all files created in the solution/project&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>./AGENTS.md
+./BindingsMulti.uipx
+./BindingsMulti/BindingsMulti.flow
+./BindingsMulti/operate.json
+./BindingsMulti/project.uiproj
+./CLAUDE.md
+./resources/solution_folder/package/BindingsMulti.json</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#8</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">4ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-bindings-multi-connector-independence/BindingsMulti/BindingsMulti/project.uiproj&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	{
+2	  &quot;Name&quot;: &quot;BindingsMulti&quot;,
+3	  &quot;ProjectType&quot;: &quot;Flow&quot;
+4	}
+5	</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#9</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">25ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cat BindingsMulti.uipx; echo \&quot;---operate.json---\&quot;; cat BindingsMulti/operate.json&quot;,
+  &quot;description&quot;: &quot;Inspect uipx and operate.json for path references&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;DocVersion&quot;: &quot;1.0.0&quot;,
+  &quot;StudioMinVersion&quot;: &quot;2025.10.0&quot;,
+  &quot;SolutionId&quot;: &quot;627860e2-6581-490e-8c8b-37b9a236ba15&quot;,
+  &quot;Projects&quot;: [
+    {
+      &quot;Type&quot;: &quot;Flow&quot;,
+      &quot;ProjectRelativePath&quot;: &quot;BindingsMulti/project.uiproj&quot;,
+      &quot;Id&quot;: &quot;1009a6b5-86a2-448e-bbbe-dae8ba845560&quot;
+    }
+  ]
+}
+---operate.json---
+{
+  &quot;$schema&quot;: &quot;https://cloud.uipath.com/draft/2024-12/operate&quot;,
+  &quot;projectId&quot;: &quot;65a71a4b-86fe-4ff2-98be-b88d7c097a0c&quot;,
+  &quot;contentType&quot;: &quot;Flow&quot;,
+  &quot;targetFramework&quot;: &quot;Portable&quot;,
+  &quot;runtimeOptions&quot;: {
+    &quot;requiresUserInteraction&quot;: false,
+    &quot;isAttended&quot;: false
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#10</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">346ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip login status --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Check login status&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;LoginStatus&quot;,
+  &quot;Data&quot;: {
+    &quot;Status&quot;: &quot;Logged in&quot;,
+    &quot;Identity&quot;: &quot;zhongyi.shi@uipath.com&quot;,
+    &quot;IdentityType&quot;: &quot;User&quot;,
+    &quot;AuthFlow&quot;: &quot;Interactive&quot;,
+    &quot;CredentialSource&quot;: &quot;SavedLogin&quot;,
+    &quot;Provider&quot;: &quot;File&quot;,
+    &quot;UserId&quot;: &quot;bfda820f-4ddb-4af7-a5ec-3c332b403271&quot;,
+    &quot;UserEmail&quot;: &quot;zhongyi.shi@uipath.com&quot;,
+    &quot;UserName&quot;: &quot;zhongyi.shi@uipath.com&quot;,
+    &quot;BaseUrl&quot;: &quot;https://alpha.uipath.com&quot;,
+    &quot;Organization&quot;: &quot;codereval&quot;,
+    &quot;OrganizationId&quot;: &quot;311c6049-4966-4ef2-a6f3-8ceccaf38d54&quot;,
+    &quot;Tenant&quot;: &quot;DefaultTenant&quot;,
+    &quot;TenantId&quot;: &quot;69d43765-6ede-4575-88b7-9db601a2c056&quot;,
+    &quot;ExpirationDate&quot;: &quot;2026-08-19T16:34:30.000Z&quot;
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#11</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">2.10s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-bindings-multi-connector-independence/BindingsMulti/BindingsMulti &amp;&amp; uip is connections list --all-folders --output json 2&gt;&amp;1 | tee /tmp/connections.json | head -100&quot;,
+  &quot;description&quot;: &quot;List all IS connections across folders&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;ConnectionList&quot;,
+  &quot;Data&quot;: [
+    {
+      &quot;Id&quot;: &quot;f5273a4d-d492-4bcd-a106-5a20bf89a3ef&quot;,
+      &quot;Name&quot;: &quot;is-sandboxes-test@uipath.com-uipath-sandbox-380&quot;,
+      &quot;ConnectorKey&quot;: &quot;uipath-atlassian-jira&quot;,
+      &quot;ConnectorName&quot;: &quot;Jira&quot;,
+      &quot;State&quot;: &quot;Enabled&quot;,
+      &quot;Owner&quot;: &quot;sanjeet.manna@uipath.com&quot;,
+      &quot;IsDefault&quot;: &quot;Yes&quot;,
+      &quot;ByoaConnection&quot;: &quot;No&quot;,
+      &quot;ElementInstanceId&quot;: 336882,
+      &quot;Folder&quot;: &quot;uipath-maestro-flow&quot;,
+      &quot;FolderKey&quot;: &quot;5da18ec0-7de1-4e57-aaf1-ddc8a369c199&quot;,
+      &quot;Created&quot;: &quot;2026-05-07T14:56:28.873Z&quot;,
+      &quot;Updated&quot;: &quot;2026-08-19T15:03:59.840Z&quot;
+    },
+    {
+      &quot;Id&quot;: &quot;41943488-5cec-48b3-93cf-19048447524e&quot;,
+      &quot;Name&quot;: &quot;is.sandboxes.test@gmail.com&quot;,
+      &quot;ConnectorKey&quot;: &quot;uipath-google-drive&quot;,
+      &quot;ConnectorName&quot;: &quot;Google Drive&quot;,
+      &quot;State&quot;: &quot;Enabled&quot;,
+      &quot;Owner&quot;: &quot;sanjeet.manna@uipath.com&quot;,
+      &quot;IsDefault&quot;: &quot;No&quot;,
+      &quot;ByoaConnection&quot;: &quot;No&quot;,
+      &quot;ElementInstanceId&quot;: 337250,
+      &quot;Folder&quot;: &quot;uipath-maestro-flow&quot;,
+      &quot;FolderKey&quot;: &quot;5da18ec0-7de1-4e57-aaf1-ddc8a369c199&quot;,
+      &quot;Created&quot;: &quot;2026-05-08T14:58:39.066Z&quot;,
+      &quot;Updated&quot;: &quot;2026-08-19T15:25:03.056Z&quot;
+    },
+    {
+      &quot;Id&quot;: &quot;849e85d8-1aa9-4d52-8b
+
+… (truncated, 2271 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#12</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">90ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 -c \&quot;\nimport json\nd = json.load(open(&#x27;/tmp/connections.json&#x27;))\nfor c in d[&#x27;Data&#x27;]:\n    if c[&#x27;State&#x27;]==&#x27;Enabled&#x27;:\n        print(c[&#x27;Id&#x27;], c[&#x27;ConnectorKey&#x27;], c[&#x27;ConnectorName&#x27;], c[&#x27;Folder&#x27;])\n\&quot;&quot;,
+  &quot;description&quot;: &quot;List enabled connections with connector key&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>f5273a4d-d492-4bcd-a106-5a20bf89a3ef uipath-atlassian-jira Jira uipath-maestro-flow
+41943488-5cec-48b3-93cf-19048447524e uipath-google-drive Google Drive uipath-maestro-flow
+849e85d8-1aa9-4d52-8bbd-20041c8f05d8 uipath-salesforce-slack Slack uipath-maestro-flow
+971fc639-5b3d-4921-aa16-3a8fa2e69948 uipath-google-gmail Gmail uipath-maestro-flow
+d61e5d0e-04af-4f93-95cc-151d81fa08dc uipath-uipath-dataservice UiPath Data Fabric Shared
+2ed023b0-2381-4cec-88d1-36766790aeef uipath-coupa-coupa Coupa Shared
+a8f843d1-c9df-401f-9a02-61a3396e4b94 uipath-workday-workday Workday Shared
+2dc0d640-eac6-445f-9f0c-d5654c4f3b1a uipath-uipath-airdk UiPath GenAI Activities uipath-agents
+5a1a639e-8395-4dc8-b043-6dc7d82de499 uipath-google-gmail Gmail Shared
+28717c8b-e16d-45e3-a0e8-318e1134a108 uipath-google-gmail Gmail Shared
+21ca654f-b67b-4f97-9eb3-1f93bd3bb5cc custom-codereval-openmeteoapis Open-Meteo APIs uipath-maestro-flow
+c20b9abb-fecd-4883-a452-4e43f7b5fbf3 uipath-google-drive Google Drive Shared
+f03a1712-5b3a-46b1-ab57-7041ba61ea66 uipath-uipath-mcp MCP Shared
+93765735-22ae-49d9-bda0-0b88bb6f4698 uipath-google-sheets Google Sheets Shared
+155c13a0-1958-4957-87ba-773e1471487d uipath-google-gmail Gmail
+
+… (truncated, 2484 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#13</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">3.46s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry pull --force --output json 2&gt;&amp;1 | tail -20&quot;,
+  &quot;description&quot;: &quot;Pull tenant registry cache&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>[ManifestClient] fetchDynamicNodes ok: total=4880 connector nodes=3654 integration trigger nodes=896 agent context nodes=2 external agent nodes=7 orchestrator nodes=263 IXP nodes=45 IXP Models nodes=13
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodePullSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;NodesCount&quot;: 4763,
+    &quot;FromCache&quot;: false,
+    &quot;Source&quot;: &quot;authenticated&quot;,
+    &quot;CacheWritten&quot;: true,
+    &quot;Message&quot;: &quot;Synced fresh nodes&quot;
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#14</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.49s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry search \&quot;uipath-atlassian-jira\&quot; --output json --output-filter \&quot;[*].{NodeType:NodeType,DisplayName:DisplayName}\&quot; 2&gt;&amp;1 | head -30\necho \&quot;---gdrive---\&quot;\nuip maestro flow registry search \&quot;uipath-google-drive\&quot; --output json --output-filter \&quot;[*].{NodeType:NodeType,DisplayName:DisplayName}\&quot; 2&gt;&amp;1 | head -30&quot;,
+  &quot;description&quot;: &quot;Search registry for jira and google drive connector activities&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeSearchSuccess&quot;,
+  &quot;Data&quot;: [
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-atlassian-jira.update-issue-status&quot;,
+      &quot;DisplayName&quot;: &quot;Update Issue Status&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-atlassian-jira.get-issue&quot;,
+      &quot;DisplayName&quot;: &quot;Get Issue&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-atlassian-jira.update-issue-assignee&quot;,
+      &quot;DisplayName&quot;: &quot;Update Issue Assignee&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-atlassian-jira.download-issue-attachment&quot;,
+      &quot;DisplayName&quot;: &quot;Download Issue Attachment&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-atlassian-jira.search-issues-by-jql&quot;,
+      &quot;DisplayName&quot;: &quot;Search Issues by JQL&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-atlassian-jira.list-records&quot;,
+      &quot;DisplayName&quot;: &quot;List Records&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-atlassian-jira.delete-record&quot;,
+---gdrive---
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeSearchSuccess&quot;,
+  &quot;Data&quot;: [
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-google-drivecustom.get-file-or-folder&quot;,
+      &quot;DisplayName&quot;: &quot;Get File or Folder&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.c
+
+… (truncated, 696 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#15</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">895ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry search \&quot;google drive\&quot; --output json --output-filter \&quot;[*].{NodeType:NodeType,DisplayName:DisplayName}\&quot; 2&gt;&amp;1 | python3 -c \&quot;\nimport json,sys\nd=json.load(sys.stdin)\nkeys=set()\nfor n in d[&#x27;Data&#x27;]:\n    nt=n[&#x27;NodeType&#x27;]\n    parts=nt.split(&#x27;.&#x27;)\n    if len(parts)&gt;=3:\n        keys.add(parts[2])\nprint(keys)\n\&quot;&quot;,
+  &quot;description&quot;: &quot;Extract distinct connector keys matching google drive&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{&#x27;resource&#x27;, &#x27;uipath-google-drive&#x27;, &#x27;uipath-google-drivecustom&#x27;}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#16</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.21s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry search \&quot;uipath-google-drive.\&quot; --output json --output-filter \&quot;[*].{NodeType:NodeType,DisplayName:DisplayName}\&quot; 2&gt;&amp;1 | python3 -c \&quot;\nimport json,sys\nd=json.load(sys.stdin)\nfor n in d[&#x27;Data&#x27;]:\n    if n[&#x27;NodeType&#x27;].startswith(&#x27;uipath.connector.uipath-google-drive.&#x27;):\n        print(n[&#x27;NodeType&#x27;], n[&#x27;DisplayName&#x27;])\n\&quot;&quot;,
+  &quot;description&quot;: &quot;List activities strictly for uipath-google-drive connector key&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>uipath.connector.uipath-google-drive.copy-file Copy File
+uipath.connector.uipath-google-drive.get-file-or-folder-list Get File or Folder List
+uipath.connector.uipath-google-drive.get-record-deprecated- Get Record (deprecated)
+uipath.connector.uipath-google-drive.list-records-deprecated- List Records (deprecated)
+uipath.connector.uipath-google-drive.move-file-or-folder Move File or Folder
+uipath.connector.uipath-google-drive.remove-file-labels Remove File Labels
+uipath.connector.uipath-google-drive.get-drive-labels Get Drive Labels
+uipath.connector.uipath-google-drive.download-file Download File
+uipath.connector.uipath-google-drive.create-folder Create Folder
+uipath.connector.uipath-google-drive.delete-record-deprecated- Delete Record (deprecated)
+uipath.connector.uipath-google-drive.delete-file-or-folder Delete File or Folder
+uipath.connector.uipath-google-drive.update-record-deprecated- Update Record (deprecated)
+uipath.connector.uipath-google-drive.insert-record-deprecated- Insert Record (deprecated)
+uipath.connector.uipath-google-drive.clear-file-label-fields Clear File Label Fields
+uipath.connector.uipath-google-drive.share-file-or-folder Share File or Folder
+uipath.connector.u
+
+… (truncated, 259 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#17</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">125ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/plugins/connector/impl.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Connector Activity Nodes — Implementation
+2	
+3	How to configure connector activity nodes: connection binding, enriched metadata, reference field resolution, and debugging. Connection bindings are emitted by `uip maestro flow node configure` into the flow&#x27;s top-level `bindings[]`; `bindings_v2.json` is regenerated from them at debug/pack time and should never be hand-edited.
+4	
+5	For generic node/edge add, remove, and wiring procedures, see [editing-operations.md](../../editing-operations.md). This guide covers the connector-specific configuration workflow that must follow the generic node add.
+6	
+7	## How Connector Nodes Differ from OOTB
+8	
+9	1. **Connection binding required** — every connector node needs an IS connection (OAuth, API key, etc.) authored in the flow&#x27;s top-level `bindings[]` (which the CLI regenerates into `bindings_v2.json` at debug/pack time). Without it, the node cannot authenticate.
+10	2. **Enriched metadata via `--connection-id`** — call `registry get` with `--connection-id` to get connection-aware field metadata. Without it, only base fields are returned — custom fields, dynamic enums, and reference resolution are missing.
+11	3. **`inputs.detail` object** —
+
+… (truncated, 66612 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#18</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">957ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;\\\nuip maestro flow registry get uipath.connector.uipath-atlassian-jira.get-issue --connection-id f5273a4d-d492-4bcd-a106-5a20bf89a3ef --output json &gt; /tmp/jira_get_issue.json 2&gt;&amp;1 &amp;\nuip maestro flow registry get uipath.connector.uipath-google-drive.get-file-or-folder --connection-id 41943488-5cec-48b3-93cf-19048447524e --output json &gt; /tmp/gdrive_get_file.json 2&gt;&amp;1 &amp;\nwait\necho done&quot;,
+  &quot;description&quot;: &quot;Fetch enriched registry metadata for candidate nodes&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>done</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#19</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">93ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 -c \&quot;\nimport json\nd=json.load(open(&#x27;/tmp/jira_get_issue.json&#x27;))\nn=d[&#x27;Data&#x27;][&#x27;Node&#x27;] if &#x27;Node&#x27; in d.get(&#x27;Data&#x27;,{}) else d[&#x27;Data&#x27;]\nprint(&#x27;keys:&#x27;, list(n.keys()) if isinstance(n,dict) else type(n))\n\&quot;\necho \&quot;---\&quot;\nhead -c 2000 /tmp/jira_get_issue.json&quot;,
+  &quot;description&quot;: &quot;Inspect jira get-issue registry response structure&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>keys: [&#x27;nodeType&#x27;, &#x27;version&#x27;, &#x27;category&#x27;, &#x27;tags&#x27;, &#x27;sortOrder&#x27;, &#x27;supportsErrorHandling&#x27;, &#x27;description&#x27;, &#x27;display&#x27;, &#x27;handleConfiguration&#x27;, &#x27;model&#x27;, &#x27;form&#x27;, &#x27;inputDefinition&#x27;, &#x27;inputDefaults&#x27;, &#x27;outputDefinition&#x27;, &#x27;debug&#x27;, &#x27;connectorMethodInfo&#x27;, &#x27;outputResponseDefinition&#x27;]
+---
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeGetSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;Node&quot;: {
+      &quot;nodeType&quot;: &quot;uipath.connector.uipath-atlassian-jira.get-issue&quot;,
+      &quot;version&quot;: &quot;1.0.0&quot;,
+      &quot;category&quot;: &quot;connector.196560&quot;,
+      &quot;tags&quot;: [
+        &quot;connector&quot;,
+        &quot;activity&quot;
+      ],
+      &quot;sortOrder&quot;: 520,
+      &quot;supportsErrorHandling&quot;: true,
+      &quot;description&quot;: &quot;Retrieve detailed information of a Jira issue, including assignee, reporter, and project.&quot;,
+      &quot;display&quot;: {
+        &quot;label&quot;: &quot;Get Issue&quot;,
+        &quot;description&quot;: &quot;Retrieve detailed information of a Jira issue, including assignee, reporter, and project.&quot;,
+        &quot;icon&quot;: &quot;https://alpha.uipath.com/311c6049-4966-4ef2-a6f3-8ceccaf38d54/studio_/typecache/icons/34ef2aa2837dd167dab37718dbff7bb5eb83f8c210be71fc25ac55a67aa6de1b.svg&quot;,
+        &quot;sourceDisplayName&quot;: &quot;Jira&quot;
+      },
+      &quot;handleConfiguration&quot;: [
+        {
+          &quot;position&quot;: &quot;left&quot;,
+          &quot;handles
+
+… (truncated, 1061 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#20</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">85ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 -c \&quot;\nimport json\nd=json.load(open(&#x27;/tmp/jira_get_issue.json&#x27;))\nn=d[&#x27;Data&#x27;][&#x27;Node&#x27;]\nprint(&#x27;connectorMethodInfo:&#x27;, json.dumps(n.get(&#x27;connectorMethodInfo&#x27;), indent=2))\nprint(&#x27;inputDefinition fields:&#x27;)\nfor f in n.get(&#x27;inputDefinition&#x27;,{}).get(&#x27;fields&#x27;,[]):\n    print(&#x27; -&#x27;, f.get(&#x27;name&#x27;), f.get(&#x27;required&#x27;), f.get(&#x27;dataType&#x27;), f.get(&#x27;reference&#x27;))\n\&quot;\n&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>connectorMethodInfo: {
+  &quot;operation&quot;: &quot;Retrieve&quot;,
+  &quot;description&quot;: &quot;Get Issue&quot;,
+  &quot;method&quot;: &quot;GET&quot;,
+  &quot;parameters&quot;: [
+    {
+      &quot;name&quot;: &quot;project&quot;,
+      &quot;description&quot;: &quot;The unique key of the project&quot;,
+      &quot;type&quot;: &quot;query&quot;,
+      &quot;dataType&quot;: &quot;string&quot;,
+      &quot;required&quot;: true,
+      &quot;displayName&quot;: &quot;Project&quot;,
+      &quot;reference&quot;: {
+        &quot;objectName&quot;: &quot;project&quot;,
+        &quot;lookupNames&quot;: [
+          &quot;name&quot;,
+          &quot;key&quot;
+        ],
+        &quot;lookupValue&quot;: &quot;key&quot;,
+        &quot;path&quot;: &quot;/project/search&quot;,
+        &quot;filterPattern&quot;: &quot;query={filter}&quot;
+      },
+      &quot;curated&quot;: false,
+      &quot;design&quot;: {
+        &quot;loadByDefault&quot;: true,
+        &quot;isMultiSelect&quot;: false,
+        &quot;enableUserOverride&quot;: false,
+        &quot;displayPattern&quot;: &quot;{name} - {key}&quot;,
+        &quot;isHidden&quot;: false,
+        &quot;fieldActions&quot;: [
+          {
+            &quot;actionType&quot;: &quot;showMessages&quot;,
+            &quot;rules&quot;: [
+              {
+                &quot;refFieldName&quot;: &quot;project&quot;,
+                &quot;refFieldValues&quot;: [
+                  &quot;*&quot;
+                ],
+                &quot;isCleared&quot;: true,
+                &quot;isVariable&quot;: false,
+                &quot;isWorkflowExpression&quot;: true,
+                &quot;isConstantValue&quot;: true
+              }
+            ],
+          
+
+… (truncated, 5778 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#21</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">81ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 -c \&quot;\nimport json\nd=json.load(open(&#x27;/tmp/gdrive_get_file.json&#x27;))\nn=d[&#x27;Data&#x27;][&#x27;Node&#x27;]\nprint(&#x27;connectorMethodInfo:&#x27;, json.dumps(n.get(&#x27;connectorMethodInfo&#x27;), indent=2))\n\&quot;\n&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>connectorMethodInfo: {
+  &quot;operation&quot;: &quot;List&quot;,
+  &quot;description&quot;: &quot;Search for Get File Folder&quot;,
+  &quot;method&quot;: &quot;GET&quot;,
+  &quot;parameters&quot;: [
+    {
+      &quot;name&quot;: &quot;ID&quot;,
+      &quot;description&quot;: &quot;The file or folder to retrieve&quot;,
+      &quot;type&quot;: &quot;path&quot;,
+      &quot;dataType&quot;: &quot;string&quot;,
+      &quot;required&quot;: true,
+      &quot;displayName&quot;: &quot;File or folder&quot;,
+      &quot;reference&quot;: {
+        &quot;objectName&quot;: &quot;EventFolderPicker&quot;,
+        &quot;lookupNames&quot;: [
+          &quot;FullName&quot;
+        ],
+        &quot;lookupValue&quot;: &quot;ID&quot;,
+        &quot;path&quot;: &quot;/EventFolderPicker&quot;,
+        &quot;childPath&quot;: &quot;/EventFolderPicker?parentReference={ID}&amp;includeFiles=true&quot;,
+        &quot;hydration&quot;: {
+          &quot;url&quot;: &quot;/CuratedFileAndFolders/{ID}&quot;,
+          &quot;method&quot;: &quot;GETBYID&quot;
+        }
+      },
+      &quot;curated&quot;: true,
+      &quot;design&quot;: {
+        &quot;component&quot;: &quot;FileFolderPicker&quot;,
+        &quot;loadByDefault&quot;: false,
+        &quot;isMultiSelect&quot;: false,
+        &quot;enableUserOverride&quot;: false,
+        &quot;isHidden&quot;: false,
+        &quot;position&quot;: &quot;primary&quot;,
+        &quot;validation&quot;: false
+      },
+      &quot;sortOrder&quot;: 1
+    }
+  ],
+  &quot;path&quot;: &quot;/GetFileFolder/{ID}&quot;,
+  &quot;operationId&quot;: &quot;getGetFileFolderByID&quot;,
+  &quot;curated&quot;: {
+    &quot;name&quot;: &quot;GetFileOrFolderV2&quot;,
+    &quot;displayName&quot;: &quot;Get File or Folder&quot;,
+    &quot;descript
+
+… (truncated, 110 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#22</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.77s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry get uipath.connector.uipath-atlassian-jira.search-issues-by-jql --connection-id f5273a4d-d492-4bcd-a106-5a20bf89a3ef --output json &gt; /tmp/jira_jql.json 2&gt;&amp;1 &amp;\nuip maestro flow registry get uipath.connector.uipath-google-drive.get-file-or-folder-list --connection-id 41943488-5cec-48b3-93cf-19048447524e --output json &gt; /tmp/gdrive_list.json 2&gt;&amp;1 &amp;\nwait\npython3 -c \&quot;\nimport j… (208 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/tmp/jira_jql.json -&gt; {
+  &quot;operation&quot;: &quot;List&quot;,
+  &quot;description&quot;: &quot;Advanced issue search&quot;,
+  &quot;method&quot;: &quot;GET&quot;,
+  &quot;parameters&quot;: [
+    {
+      &quot;name&quot;: &quot;nextPage&quot;,
+      &quot;description&quot;: &quot;The next page token for pagination(elements-next-page-token header value received in the previous response).&quot;,
+      &quot;type&quot;: &quot;query&quot;,
+      &quot;dataType&quot;: &quot;string&quot;,
+      &quot;required&quot;: false,
+      &quot;curated&quot;: false,
+      &quot;displayName&quot;: &quot;Next page&quot;
+    },
+    {
+      &quot;name&quot;: &quot;pageSize&quot;,
+      &quot;description&quot;: &quot;The maximum number of items to return per page. To manage page size, Jira may return fewer items per page where a large number of fields are requested. The greatest number of items returned per page is achieved when requesting `id` or `key` only.&quot;,
+      &quot;type&quot;: &quot;query&quot;,
+      &quot;dataType&quot;: &quot;integer&quot;,
+      &quot;required&quot;: false,
+      &quot;format&quot;: &quot;int32&quot;,
+      &quot;curated&quot;: false,
+      &quot;displayName&quot;: &quot;Page size&quot;
+    },
+    {
+      &quot;name&quot;: &quot;jql&quot;,
+      &quot;description&quot;: &quot;The string containing the JQL used to filter out issues&quot;,
+      &quot;type&quot;: &quot;query&quot;,
+      &quot;dataType&quot;: &quot;string&quot;,
+      &quot;required&quot;: false,
+      &quot;displayName&quot;: &quot;JQL&quot;,
+      &quot;curated&quot;: false,
+      &quot;design&quot;: {
+        &quot;loadByDefault&quot;: false,
+        &quot;isMult
+
+… (truncated, 1858 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#23</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">162ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 -c \&quot;\nimport json\nd=json.load(open(&#x27;/tmp/jira_jql.json&#x27;))\nn=d[&#x27;Data&#x27;][&#x27;Node&#x27;]\nprint(&#x27;required params jira jql:&#x27;)\nfor p in n[&#x27;connectorMethodInfo&#x27;][&#x27;parameters&#x27;]:\n    print(&#x27; -&#x27;, p[&#x27;name&#x27;], p.get(&#x27;required&#x27;), p.get(&#x27;type&#x27;))\nprint(&#x27;inputDefinition:&#x27;, n.get(&#x27;inputDefinition&#x27;))\n\&quot;\necho &#x27;---gdrive---&#x27;\npython3 -c \&quot;\nimport json\nd=json.load(open(&#x27;/tmp/gdrive_list.json&#x27;))\nn=d[&#x27;Data&#x27;][&#x27;Node&#x27;]\nprint(&#x27;r… (193 more chars)&quot;,
+  &quot;description&quot;: &quot;Check required fields for both candidate nodes&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>required params jira jql:
+ - nextPage False query
+ - pageSize False query
+ - jql False query
+inputDefinition: {&#x27;fields&#x27;: []}
+---gdrive---
+required params gdrive list:
+ - pageSize False query
+ - nextPage False query
+ - starredOnly False query
+ - whatToReturn False query
+ - parentID True query
+ - additionalFilters False query
+inputDefinition: {&#x27;fields&#x27;: []}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#24</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">3.07s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;for nt in get-drive-labels copy-file create-folder; do\n  uip maestro flow registry get \&quot;uipath.connector.uipath-google-drive.$nt\&quot; --connection-id 41943488-5cec-48b3-93cf-19048447524e --output json &gt; /tmp/gdrive_$nt.json 2&gt;&amp;1\ndone\npython3 -c \&quot;\nimport json\nfor nt in [&#x27;get-drive-labels&#x27;,&#x27;copy-file&#x27;,&#x27;create-folder&#x27;]:\n    d=json.load(open(f&#x27;/tmp/gdrive_{nt}.json&#x27;))\n    n=d[&#x27;Data&#x27;][&#x27;Node&#x27;]\n    print(nt,… (281 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>get-drive-labels -&gt;
+   nextPage False query 
+   pageSize False query 
+   labelType True query 
+  method: GET path: /GetDriveLabels
+copy-file -&gt;
+   body True body 
+   fileId True query ref
+   alreadyExists False query 
+  method: POST path: /copyFile
+create-folder -&gt;
+   body True body 
+   alreadyExists False query 
+  method: POST path: /CreateFolder</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#25</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">91ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 -c \&quot;\nimport json\nd=json.load(open(&#x27;/tmp/jira_jql.json&#x27;))\nn=d[&#x27;Data&#x27;][&#x27;Node&#x27;]\nprint(&#x27;objectActions:&#x27;, n.get(&#x27;objectActions&#x27;))\nprint(&#x27;design.actions:&#x27;, n[&#x27;connectorMethodInfo&#x27;].get(&#x27;design&#x27;,{}).get(&#x27;actions&#x27;))\nprint(&#x27;activityType marker check:&#x27;)\nform = n.get(&#x27;form&#x27;,{})\nprint(json.dumps(form, indent=2)[:1500])\n\&quot;\n&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>objectActions: None
+design.actions: None
+activityType marker check:
+{
+  &quot;id&quot;: &quot;connector-properties&quot;,
+  &quot;title&quot;: &quot;Connector configuration&quot;,
+  &quot;sections&quot;: [
+    {
+      &quot;id&quot;: &quot;connector&quot;,
+      &quot;title&quot;: &quot;Connector&quot;,
+      &quot;collapsible&quot;: true,
+      &quot;defaultExpanded&quot;: true,
+      &quot;fields&quot;: [
+        {
+          &quot;label&quot;: &quot;&quot;,
+          &quot;name&quot;: &quot;inputs.detail&quot;,
+          &quot;type&quot;: &quot;custom&quot;,
+          &quot;component&quot;: &quot;dap-config&quot;,
+          &quot;componentProps&quot;: {
+            &quot;connectorDetail&quot;: {
+              &quot;isAppActivity&quot;: false,
+              &quot;packageId&quot;: &quot;196560&quot;,
+              &quot;svgIconUrl&quot;: &quot;icons/34ef2aa2837dd167dab37718dbff7bb5eb83f8c210be71fc25ac55a67aa6de1b.svg&quot;,
+              &quot;displayName&quot;: &quot;Search Issues by JQL&quot;,
+              &quot;assemblyQualifiedName&quot;: &quot;UiPath.IntegrationService.Activities.Runtime.Activities.ConnectorActivity, UiPath.IntegrationService.Activities.Runtime, Version=1.31.0.0, Culture=neutral, PublicKeyToken=null&quot;,
+              &quot;description&quot;: &quot;Perform advanced issue searches using Jira Query Language (JQL) in Jira.&quot;,
+              &quot;category&quot;: &quot;&quot;,
+              &quot;activityColor&quot;: &quot;#0052CC&quot;,
+              &quot;configuration&quot;: &quot;{\&quot;connectorKey\&quot;:\&quot;uipath-atlassian-jira\&quot;,\&quot;object
+
+… (truncated, 368 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#26</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">97ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 -c \&quot;\nimport json\nd=json.load(open(&#x27;/tmp/gdrive_list.json&#x27;))\nn=d[&#x27;Data&#x27;][&#x27;Node&#x27;]\nform = n.get(&#x27;form&#x27;,{})\ncfg = form[&#x27;sections&#x27;][0][&#x27;fields&#x27;][0][&#x27;componentProps&#x27;][&#x27;connectorDetail&#x27;][&#x27;configuration&#x27;]\nprint(cfg)\nprint()\nprint(&#x27;parentID reference:&#x27;, [p for p in n[&#x27;connectorMethodInfo&#x27;][&#x27;parameters&#x27;] if p[&#x27;name&#x27;]==&#x27;parentID&#x27;])\n\&quot;\n&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{&quot;connectorKey&quot;:&quot;uipath-google-drive&quot;,&quot;objectName&quot;:&quot;getFileorFolderList&quot;,&quot;httpMethod&quot;:&quot;GET&quot;,&quot;activityType&quot;:&quot;Curated&quot;,&quot;version&quot;:&quot;1.0.0&quot;,&quot;supportsStreaming&quot;:false,&quot;subType&quot;:&quot;standard&quot;}
+
+parentID reference: [{&#x27;name&#x27;: &#x27;parentID&#x27;, &#x27;description&#x27;: &#x27;The location where to search for files and folders. If left blank, it searches anywhere in Google Drive.&#x27;, &#x27;type&#x27;: &#x27;query&#x27;, &#x27;dataType&#x27;: &#x27;string&#x27;, &#x27;required&#x27;: True, &#x27;displayName&#x27;: &#x27;In location&#x27;, &#x27;reference&#x27;: {&#x27;objectName&#x27;: &#x27;EventFolderPicker&#x27;, &#x27;lookupNames&#x27;: [&#x27;FullName&#x27;], &#x27;lookupValue&#x27;: &#x27;ID&#x27;, &#x27;path&#x27;: &#x27;/EventFolderPicker&#x27;, &#x27;childPath&#x27;: &#x27;/EventFolderPicker?parentReference={ID}&amp;includeFiles=true&#x27;, &#x27;hydration&#x27;: {&#x27;url&#x27;: &#x27;/CuratedFileAndFolders/{ID}&#x27;, &#x27;method&#x27;: &#x27;GETBYID&#x27;}}, &#x27;curated&#x27;: True, &#x27;design&#x27;: {&#x27;component&#x27;: &#x27;FolderPicker&#x27;, &#x27;loadByDefault&#x27;: False, &#x27;isMultiSelect&#x27;: False, &#x27;enableUserOverride&#x27;: False, &#x27;isHidden&#x27;: False, &#x27;position&#x27;: &#x27;primary&#x27;, &#x27;validation&#x27;: False}, &#x27;sortOrder&#x27;: 1}]</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#27</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">88ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 -c \&quot;\nimport json\nd=json.load(open(&#x27;/tmp/gdrive_get-drive-labels.json&#x27;))\nn=d[&#x27;Data&#x27;][&#x27;Node&#x27;]\nfor p in n[&#x27;connectorMethodInfo&#x27;][&#x27;parameters&#x27;]:\n    print(p[&#x27;name&#x27;], p.get(&#x27;required&#x27;), p.get(&#x27;dataType&#x27;), p.get(&#x27;enum&#x27;), p.get(&#x27;reference&#x27;))\n\&quot;\n&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>nextPage False string None None
+pageSize False integer None None
+labelType True string None None</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#28</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">92ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 -c \&quot;\nimport json\nd=json.load(open(&#x27;/tmp/gdrive_get-drive-labels.json&#x27;))\nn=d[&#x27;Data&#x27;][&#x27;Node&#x27;]\np = [p for p in n[&#x27;connectorMethodInfo&#x27;][&#x27;parameters&#x27;] if p[&#x27;name&#x27;]==&#x27;labelType&#x27;][0]\nprint(json.dumps(p, indent=2))\n\&quot;\n&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;name&quot;: &quot;labelType&quot;,
+  &quot;description&quot;: &quot;The type of labels to be retrieved&quot;,
+  &quot;type&quot;: &quot;query&quot;,
+  &quot;dataType&quot;: &quot;string&quot;,
+  &quot;required&quot;: true,
+  &quot;defaultValue&quot;: &quot;all&quot;,
+  &quot;displayName&quot;: &quot;Drive label type&quot;,
+  &quot;curated&quot;: true,
+  &quot;design&quot;: {
+    &quot;loadByDefault&quot;: false,
+    &quot;isMultiSelect&quot;: false,
+    &quot;enableUserOverride&quot;: false,
+    &quot;isHidden&quot;: false,
+    &quot;position&quot;: &quot;primary&quot;,
+    &quot;validation&quot;: false
+  },
+  &quot;sortOrder&quot;: 1,
+  &quot;enhancedEnum&quot;: [
+    {
+      &quot;name&quot;: &quot;All Labels&quot;,
+      &quot;value&quot;: &quot;all&quot;
+    },
+    {
+      &quot;name&quot;: &quot;Badged Labels&quot;,
+      &quot;value&quot;: &quot;badged&quot;
+    },
+    {
+      &quot;name&quot;: &quot;Standard Labels&quot;,
+      &quot;value&quot;: &quot;standard&quot;
+    }
+  ]
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#29</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">92ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 -c \&quot;\nimport json\nd=json.load(open(&#x27;/tmp/jira_jql.json&#x27;))\nn=d[&#x27;Data&#x27;][&#x27;Node&#x27;]\nprint(&#x27;path:&#x27;, n[&#x27;connectorMethodInfo&#x27;].get(&#x27;path&#x27;))\nprint(&#x27;method:&#x27;, n[&#x27;connectorMethodInfo&#x27;].get(&#x27;method&#x27;))\nprint(&#x27;operation:&#x27;, n[&#x27;connectorMethodInfo&#x27;].get(&#x27;operation&#x27;))\n\&quot;\n&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>path: /search
+method: GET
+operation: List</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#30</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.51s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;\\\nuip maestro flow node add \&quot;BindingsMulti.flow\&quot; uipath.connector.uipath-atlassian-jira.search-issues-by-jql --label \&quot;Search Jira Issues\&quot; --output json 2&gt;&amp;1 | tee /tmp/node_add_jira.json\necho \&quot;====\&quot;\nuip maestro flow node add \&quot;BindingsMulti.flow\&quot; uipath.connector.uipath-google-drive.get-drive-labels --label \&quot;Get Drive Labels\&quot; --output json 2&gt;&amp;1 | tee /tmp/node_add_gdrive.json&quot;,
+  &quot;description&quot;: &quot;Add the two connector nodes to the flow&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeAddSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;Node&quot;: {
+      &quot;Id&quot;: &quot;searchJiraIssues1&quot;,
+      &quot;Type&quot;: &quot;uipath.connector.uipath-atlassian-jira.search-issues-by-jql&quot;,
+      &quot;TypeVersion&quot;: &quot;1.0.0&quot;,
+      &quot;Ui&quot;: {
+        &quot;Position&quot;: {
+          &quot;X&quot;: 0,
+          &quot;Y&quot;: 0
+        }
+      },
+      &quot;Display&quot;: {
+        &quot;Label&quot;: &quot;Search Jira Issues&quot;
+      },
+      &quot;Inputs&quot;: {}
+    },
+    &quot;DefinitionAdded&quot;: true,
+    &quot;BindingsCreated&quot;: 0,
+    &quot;VariableCount&quot;: 3
+  }
+}
+====
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeAddSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;Node&quot;: {
+      &quot;Id&quot;: &quot;getDriveLabels1&quot;,
+      &quot;Type&quot;: &quot;uipath.connector.uipath-google-drive.get-drive-labels&quot;,
+      &quot;TypeVersion&quot;: &quot;1.0.0&quot;,
+      &quot;Ui&quot;: {
+        &quot;Position&quot;: {
+          &quot;X&quot;: 0,
+          &quot;Y&quot;: 0
+        }
+      },
+      &quot;Display&quot;: {
+        &quot;Label&quot;: &quot;Get Drive Labels&quot;
+      },
+      &quot;Inputs&quot;: {}
+    },
+    &quot;DefinitionAdded&quot;: true,
+    &quot;BindingsCreated&quot;: 0,
+    &quot;VariableCount&quot;: 5
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#31</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">587ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry get core.control.end --output json &gt; /tmp/end.json 2&gt;&amp;1\necho done&quot;,
+  &quot;description&quot;: &quot;Get End node definition&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>done</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#32</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">4ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-bindings-multi-connector-independence/BindingsMulti/BindingsMulti/BindingsMulti.flow&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	{
+2	  &quot;id&quot;: &quot;65a71a4b-86fe-4ff2-98be-b88d7c097a0c&quot;,
+3	  &quot;version&quot;: &quot;1.9&quot;,
+4	  &quot;name&quot;: &quot;BindingsMulti&quot;,
+5	  &quot;nodes&quot;: [
+6	    {
+7	      &quot;id&quot;: &quot;start&quot;,
+8	      &quot;type&quot;: &quot;core.trigger.manual&quot;,
+9	      &quot;typeVersion&quot;: &quot;1.0&quot;,
+10	      &quot;display&quot;: {
+11	        &quot;label&quot;: &quot;Manual trigger&quot;
+12	      },
+13	      &quot;inputs&quot;: {
+14	        &quot;entryPointId&quot;: &quot;9f057f76-abee-4251-b26e-15cd5696247a&quot;,
+15	        &quot;isDefaultEntryPoint&quot;: true
+16	      }
+17	    },
+18	    {
+19	      &quot;id&quot;: &quot;searchJiraIssues1&quot;,
+20	      &quot;type&quot;: &quot;uipath.connector.uipath-atlassian-jira.search-issues-by-jql&quot;,
+21	      &quot;typeVersion&quot;: &quot;1.0.0&quot;,
+22	      &quot;display&quot;: {
+23	        &quot;label&quot;: &quot;Search Jira Issues&quot;
+24	      },
+25	      &quot;inputs&quot;: {}
+26	    },
+27	    {
+28	      &quot;id&quot;: &quot;getDriveLabels1&quot;,
+29	      &quot;type&quot;: &quot;uipath.connector.uipath-google-drive.get-drive-labels&quot;,
+30	      &quot;typeVersion&quot;: &quot;1.0.0&quot;,
+31	      &quot;display&quot;: {
+32	        &quot;label&quot;: &quot;Get Drive Labels&quot;
+33	      },
+34	      &quot;inputs&quot;: {}
+35	    }
+36	  ],
+37	  &quot;edges&quot;: [],
+38	  &quot;definitions&quot;: [
+39	    {
+40	      &quot;nodeType&quot;: &quot;core.trigger.manual&quot;,
+41	      &quot;version&quot;: &quot;1.0&quot;,
+42	      &quot;category&quot;: &quot;trigger&quot;,
+43	      &quot;description&quot;: &quot;Start the process manually&quot;,
+44	      &quot;tags&quot;: [
+45	      
+
+… (truncated, 21940 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#33</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">3ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/tmp/end.json&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	{
+2	  &quot;Result&quot;: &quot;Success&quot;,
+3	  &quot;Code&quot;: &quot;NodeGetSuccess&quot;,
+4	  &quot;Data&quot;: {
+5	    &quot;Node&quot;: {
+6	      &quot;nodeType&quot;: &quot;core.control.end&quot;,
+7	      &quot;version&quot;: &quot;1.0&quot;,
+8	      &quot;category&quot;: &quot;control-flow&quot;,
+9	      &quot;description&quot;: &quot;Mark the end of a process path&quot;,
+10	      &quot;tags&quot;: [
+11	        &quot;control-flow&quot;,
+12	        &quot;end&quot;,
+13	        &quot;finish&quot;,
+14	        &quot;complete&quot;
+15	      ],
+16	      &quot;sortOrder&quot;: 65,
+17	      &quot;display&quot;: {
+18	        &quot;label&quot;: &quot;End&quot;,
+19	        &quot;icon&quot;: &quot;circle-check&quot;,
+20	        &quot;shape&quot;: &quot;circle&quot;
+21	      },
+22	      &quot;handleConfiguration&quot;: [
+23	        {
+24	          &quot;position&quot;: &quot;left&quot;,
+25	          &quot;handles&quot;: [
+26	            {
+27	              &quot;id&quot;: &quot;input&quot;,
+28	              &quot;type&quot;: &quot;target&quot;,
+29	              &quot;handleType&quot;: &quot;input&quot;
+30	            }
+31	          ]
+32	        }
+33	      ],
+34	      &quot;model&quot;: {
+35	        &quot;type&quot;: &quot;bpmn:EndEvent&quot;
+36	      },
+37	      &quot;runtimeConstraints&quot;: {
+38	        &quot;exclude&quot;: [
+39	          &quot;api-function&quot;
+40	        ]
+41	      }
+42	    }
+43	  }
+44	}
+45	</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#34</span>
+      <span class="tool-name">Edit</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">14ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;replace_all&quot;: false,
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-bindings-multi-connector-independence/BindingsMulti/BindingsMulti/BindingsMulti.flow&quot;,
+  &quot;old_string&quot;: &quot;    {\n      \&quot;id\&quot;: \&quot;getDriveLabels1\&quot;,\n      \&quot;type\&quot;: \&quot;uipath.connector.uipath-google-drive.get-drive-labels\&quot;,\n      \&quot;typeVersion\&quot;: \&quot;1.0.0\&quot;,\n      \&quot;display\&quot;: {\n        \&quot;label\&quot;: \&quot;Get Drive Labels\&quot;\n      },\n      \&quot;inputs\&quot;: {}\n    }\n  ],\n  \&quot;edges\&quot;: [],&quot;,
+  &quot;new_string&quot;: &quot;    {\n      \&quot;id\&quot;: \&quot;getDriveLabels1\&quot;,\n      \&quot;type\&quot;: \&quot;uipath.connector.uipath-google-drive.get-drive-labels\&quot;,\n      \&quot;typeVersion\&quot;: \&quot;1.0.0\&quot;,\n      \&quot;display\&quot;: {\n        \&quot;label\&quot;: \&quot;Get Drive Labels\&quot;\n      },\n      \&quot;inputs\&quot;: {}\n    },\n    {\n      \&quot;id\&quot;: \&quot;end\&quot;,\n      \&quot;type\&quot;: \&quot;core.control.end\&quot;,\n      \&quot;typeVersion\&quot;: \&quot;1.0\&quot;,\n      \&quot;display\&quot;: {\n        \&quot;label\&quot;: \&quot;End\&quot;\n      },\n      \&quot;inputs\&quot;: {}\n    }\n  ],\n  \&quot;e… (630 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>The file /work/output/artifacts/skill-flow-bindings-multi-connector-independence/BindingsMulti/BindingsMulti/BindingsMulti.flow has been updated successfully. (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#35</span>
+      <span class="tool-name">Edit</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">19ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;replace_all&quot;: false,
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-bindings-multi-connector-independence/BindingsMulti/BindingsMulti/BindingsMulti.flow&quot;,
+  &quot;old_string&quot;: &quot;  \&quot;runtime\&quot;: \&quot;maestro\&quot;,\n  \&quot;bindings\&quot;: [&quot;,
+  &quot;new_string&quot;: &quot;  \&quot;definitions_end_marker\&quot;: null,\n  \&quot;runtime\&quot;: \&quot;maestro\&quot;,\n  \&quot;bindings\&quot;: [&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>The file /work/output/artifacts/skill-flow-bindings-multi-connector-independence/BindingsMulti/BindingsMulti/BindingsMulti.flow has been updated successfully. (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#36</span>
+      <span class="tool-name">Edit</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">17ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;replace_all&quot;: false,
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-bindings-multi-connector-independence/BindingsMulti/BindingsMulti/BindingsMulti.flow&quot;,
+  &quot;old_string&quot;: &quot;  \&quot;definitions_end_marker\&quot;: null,\n  \&quot;runtime\&quot;: \&quot;maestro\&quot;,\n  \&quot;bindings\&quot;: [&quot;,
+  &quot;new_string&quot;: &quot;  \&quot;runtime\&quot;: \&quot;maestro\&quot;,\n  \&quot;bindings\&quot;: [&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>The file /work/output/artifacts/skill-flow-bindings-multi-connector-independence/BindingsMulti/BindingsMulti/BindingsMulti.flow has been updated successfully. (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#37</span>
+      <span class="tool-name">Edit</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">16ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;replace_all&quot;: false,
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-bindings-multi-connector-independence/BindingsMulti/BindingsMulti/BindingsMulti.flow&quot;,
+  &quot;old_string&quot;: &quot;  \&quot;definitions\&quot;: [\n    {\n      \&quot;nodeType\&quot;: \&quot;core.trigger.manual\&quot;,&quot;,
+  &quot;new_string&quot;: &quot;  \&quot;definitions\&quot;: [\n    {\n      \&quot;nodeType\&quot;: \&quot;core.control.end\&quot;,\n      \&quot;version\&quot;: \&quot;1.0\&quot;,\n      \&quot;category\&quot;: \&quot;control-flow\&quot;,\n      \&quot;description\&quot;: \&quot;Mark the end of a process path\&quot;,\n      \&quot;tags\&quot;: [\n        \&quot;control-flow\&quot;,\n        \&quot;end\&quot;,\n        \&quot;finish\&quot;,\n        \&quot;complete\&quot;\n      ],\n      \&quot;sortOrder\&quot;: 65,\n      \&quot;display\&quot;: {\n        \&quot;label\&quot;: \&quot;End\&quot;,\n        \&quot;icon\&quot;: \&quot;circle-check\&quot;,\n        \&quot;shape\&quot;: \&quot;circle\&quot;… (465 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>The file /work/output/artifacts/skill-flow-bindings-multi-connector-independence/BindingsMulti/BindingsMulti/BindingsMulti.flow has been updated successfully. (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#38</span>
+      <span class="tool-name">Edit</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">14ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;replace_all&quot;: false,
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-bindings-multi-connector-independence/BindingsMulti/BindingsMulti/BindingsMulti.flow&quot;,
+  &quot;old_string&quot;: &quot;      \&quot;getDriveLabels1\&quot;: {\n        \&quot;position\&quot;: {\n          \&quot;x\&quot;: 0,\n          \&quot;y\&quot;: 0\n        }\n      }\n    }\n  }\n}&quot;,
+  &quot;new_string&quot;: &quot;      \&quot;getDriveLabels1\&quot;: {\n        \&quot;position\&quot;: {\n          \&quot;x\&quot;: 0,\n          \&quot;y\&quot;: 0\n        }\n      },\n      \&quot;end\&quot;: {\n        \&quot;position\&quot;: {\n          \&quot;x\&quot;: 0,\n          \&quot;y\&quot;: 0\n        }\n      }\n    }\n  }\n}&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>The file /work/output/artifacts/skill-flow-bindings-multi-connector-independence/BindingsMulti/BindingsMulti/BindingsMulti.flow has been updated successfully. (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#39</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.41s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-bindings-multi-connector-independence/BindingsMulti/BindingsMulti\nuip maestro flow node configure \&quot;BindingsMulti.flow\&quot; searchJiraIssues1 \\\n  --detail &#x27;{\&quot;connectionId\&quot;: \&quot;f5273a4d-d492-4bcd-a106-5a20bf89a3ef\&quot;, \&quot;folderKey\&quot;: \&quot;5da18ec0-7de1-4e57-aaf1-ddc8a369c199\&quot;, \&quot;method\&quot;: \&quot;GET\&quot;, \&quot;endpoint\&quot;: \&quot;/search\&quot;, \&quot;queryParameters\&quot;: {\&quot;jql\&quot;: \&quot;order by created DESC\&quot;, \&quot;pageSize\&quot;… (61 more chars)&quot;,
+  &quot;description&quot;: &quot;Configure Jira search-issues-by-jql node with connection binding&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeConfigureSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;NodeId&quot;: &quot;searchJiraIssues1&quot;,
+    &quot;BindingsCreated&quot;: 3,
+    &quot;DetailPopulated&quot;: true
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#40</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.54s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-bindings-multi-connector-independence/BindingsMulti/BindingsMulti\nuip maestro flow node configure \&quot;BindingsMulti.flow\&quot; getDriveLabels1 \\\n  --detail &#x27;{\&quot;connectionId\&quot;: \&quot;41943488-5cec-48b3-93cf-19048447524e\&quot;, \&quot;folderKey\&quot;: \&quot;5da18ec0-7de1-4e57-aaf1-ddc8a369c199\&quot;, \&quot;method\&quot;: \&quot;GET\&quot;, \&quot;endpoint\&quot;: \&quot;/GetDriveLabels\&quot;, \&quot;queryParameters\&quot;: {\&quot;labelType\&quot;: \&quot;all\&quot;}}&#x27; \\\n  --output j… (41 more chars)&quot;,
+  &quot;description&quot;: &quot;Configure Google Drive get-drive-labels node with its own distinct connection&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeConfigureSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;NodeId&quot;: &quot;getDriveLabels1&quot;,
+    &quot;BindingsCreated&quot;: 4,
+    &quot;DetailPopulated&quot;: true
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#41</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">128ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-bindings-multi-connector-independence/BindingsMulti/BindingsMulti\npython3 /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/scripts/audit_flow.py \&quot;BindingsMulti.flow\&quot; --json-out /tmp/audit_findings.json 2&gt;&amp;1\necho \&quot;=== exit: $? ===\&quot;&quot;,
+  &quot;description&quot;: &quot;Run flow audit before validate&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>topology      0 error(s), 0 warning(s), 0 info
+expressions   0 error(s), 0 warning(s), 0 info
+jint          0 error(s), 0 warning(s), 0 info
+bindings      0 error(s), 0 warning(s), 4 info
+    info    UNUSED_BINDING             bindings                                 no resource node needs (resourceKey=41943488-5cec-48b3-93cf-19048447524e, name=FolderKey)
+    info    UNUSED_BINDING             bindings                                 no resource node needs (resourceKey=41943488-5cec-48b3-93cf-19048447524e, name=uipath-google-drive connection)
+    info    UNUSED_BINDING             bindings                                 no resource node needs (resourceKey=f5273a4d-d492-4bcd-a106-5a20bf89a3ef, name=FolderKey)
+    info    UNUSED_BINDING             bindings                                 no resource node needs (resourceKey=f5273a4d-d492-4bcd-a106-5a20bf89a3ef, name=uipath-atlassian-jira connection)
+runtime-gaps  0 error(s), 4 warning(s), 0 info
+    warning LAYOUT_SIZE_MISMATCH       end                                      size NonexNone disagrees with this node&#x27;s shape (96x96); Studio Web renders it misshapen until `flow format` runs
+    warning LAYOUT_SIZE_MISMATCH       getDrive
+
+… (truncated, 603 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#42</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">3.68s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-bindings-multi-connector-independence/BindingsMulti/BindingsMulti\nuip maestro flow validate \&quot;BindingsMulti.flow\&quot; --output json 2&gt;&amp;1 | tee /tmp/validate.json\necho \&quot;=== validate exit: $? ===\&quot;\nuip maestro flow format \&quot;BindingsMulti.flow\&quot; --output json 2&gt;&amp;1 | tee /tmp/format.json\necho \&quot;=== format exit: $? ===\&quot;&quot;,
+  &quot;description&quot;: &quot;Validate and format the flow&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>[ManifestClient] fetchDynamicNodes ok: total=317 agent context nodes=2 external agent nodes=7 orchestrator nodes=263 IXP nodes=45
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FlowValidate&quot;,
+  &quot;Data&quot;: {
+    &quot;File&quot;: &quot;/work/output/artifacts/skill-flow-bindings-multi-connector-independence/BindingsMulti/BindingsMulti/BindingsMulti.flow&quot;,
+    &quot;Status&quot;: &quot;Valid&quot;
+  }
+}
+=== validate exit: 0 ===
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FlowFormat&quot;,
+  &quot;Data&quot;: {
+    &quot;File&quot;: &quot;BindingsMulti.flow&quot;,
+    &quot;NodesTotal&quot;: 4,
+    &quot;EdgesTotal&quot;: 3,
+    &quot;NodesRepositioned&quot;: 3,
+    &quot;NodesResized&quot;: 4,
+    &quot;SubflowsTidied&quot;: 0,
+    &quot;VariableCount&quot;: 5
+  },
+  &quot;Instructions&quot;: &quot;Repositioned 3 of 4 nodes. Set canonical size on 4 node(s)&quot;
+}
+=== format exit: 0 ===</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#43</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">82ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-bindings-multi-connector-independence/BindingsMulti/BindingsMulti\npython3 -c \&quot;\nimport json\nd = json.load(open(&#x27;BindingsMulti.flow&#x27;))\nfor b in d[&#x27;bindings&#x27;]:\n    print(b)\n\&quot;&quot;,
+  &quot;description&quot;: &quot;Inspect final bindings array&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{&#x27;id&#x27;: &#x27;b87R1HinA&#x27;, &#x27;name&#x27;: &#x27;uipath-atlassian-jira connection&#x27;, &#x27;type&#x27;: &#x27;string&#x27;, &#x27;resource&#x27;: &#x27;connection&#x27;, &#x27;resourceKey&#x27;: &#x27;f5273a4d-d492-4bcd-a106-5a20bf89a3ef&#x27;, &#x27;propertyAttribute&#x27;: &#x27;ConnectionId&#x27;, &#x27;default&#x27;: &#x27;f5273a4d-d492-4bcd-a106-5a20bf89a3ef&#x27;}
+{&#x27;id&#x27;: &#x27;bjxZDne0t&#x27;, &#x27;name&#x27;: &#x27;FolderKey&#x27;, &#x27;type&#x27;: &#x27;string&#x27;, &#x27;resource&#x27;: &#x27;connection&#x27;, &#x27;resourceKey&#x27;: &#x27;f5273a4d-d492-4bcd-a106-5a20bf89a3ef&#x27;, &#x27;propertyAttribute&#x27;: &#x27;FolderKey&#x27;, &#x27;default&#x27;: &#x27;5da18ec0-7de1-4e57-aaf1-ddc8a369c199&#x27;}
+{&#x27;id&#x27;: &#x27;b6ko4q7wt&#x27;, &#x27;name&#x27;: &#x27;uipath-google-drive connection&#x27;, &#x27;type&#x27;: &#x27;string&#x27;, &#x27;resource&#x27;: &#x27;connection&#x27;, &#x27;resourceKey&#x27;: &#x27;41943488-5cec-48b3-93cf-19048447524e&#x27;, &#x27;propertyAttribute&#x27;: &#x27;ConnectionId&#x27;, &#x27;default&#x27;: &#x27;41943488-5cec-48b3-93cf-19048447524e&#x27;}
+{&#x27;id&#x27;: &#x27;brldpaZRX&#x27;, &#x27;name&#x27;: &#x27;FolderKey&#x27;, &#x27;type&#x27;: &#x27;string&#x27;, &#x27;resource&#x27;: &#x27;connection&#x27;, &#x27;resourceKey&#x27;: &#x27;41943488-5cec-48b3-93cf-19048447524e&#x27;, &#x27;default&#x27;: &#x27;5da18ec0-7de1-4e57-aaf1-ddc8a369c199&#x27;, &#x27;propertyAttribute&#x27;: &#x27;FolderKey&#x27;}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#44</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">25ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-bindings-multi-connector-independence\nfind BindingsMulti -maxdepth 3 -type f | sort\necho \&quot;---\&quot;\nls -la BindingsMulti/BindingsMulti/BindingsMulti.flow BindingsMulti/BindingsMulti/project.uiproj&quot;,
+  &quot;description&quot;: &quot;Verify expected flow_files layout structure required by the task&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>BindingsMulti/AGENTS.md
+BindingsMulti/BindingsMulti.uipx
+BindingsMulti/BindingsMulti/BindingsMulti.flow
+BindingsMulti/BindingsMulti/bindings_v2.json
+BindingsMulti/BindingsMulti/operate.json
+BindingsMulti/BindingsMulti/project.uiproj
+BindingsMulti/CLAUDE.md
+---
+-rw-r--r-- 1 root root 25546 Aug 19 15:55 BindingsMulti/BindingsMulti/BindingsMulti.flow
+-rw-r--r-- 1 root root    55 Aug 19 15:50 BindingsMulti/BindingsMulti/project.uiproj</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#45</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">31ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-bindings-multi-connector-independence\nmkdir -p BindingsMulti/flow_files\ncp BindingsMulti/BindingsMulti/BindingsMulti.flow BindingsMulti/flow_files/BindingsMulti.flow\ncp BindingsMulti/BindingsMulti/project.uiproj BindingsMulti/project.uiproj\nls -la BindingsMulti/flow_files/ BindingsMulti/project.uiproj\ncat BindingsMulti/project.uiproj&quot;,
+  &quot;description&quot;: &quot;Copy the flow and project files into the exact requested layout&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>-rw-r--r-- 1 root root   55 Aug 19 15:55 BindingsMulti/project.uiproj
+
+BindingsMulti/flow_files/:
+total 36
+drwxr-xr-x 2 root root  4096 Aug 19 15:55 .
+drwxr-xr-x 5 root root  4096 Aug 19 15:55 ..
+-rw-r--r-- 1 root root 25546 Aug 19 15:55 BindingsMulti.flow
+{
+  &quot;Name&quot;: &quot;BindingsMulti&quot;,
+  &quot;ProjectType&quot;: &quot;Flow&quot;
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#46</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">20ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-bindings-multi-connector-independence\necho &#x27;{\&quot;a\&quot;:\&quot;f5273a4d-d492-4bcd-a106-5a20bf89a3ef\&quot;,\&quot;ka\&quot;:\&quot;uipath-atlassian-jira\&quot;,\&quot;b\&quot;:\&quot;41943488-5cec-48b3-93cf-19048447524e\&quot;,\&quot;kb\&quot;:\&quot;uipath-google-drive\&quot;}&#x27; &gt; conn_ids.json\ncat conn_ids.json&quot;,
+  &quot;description&quot;: &quot;Write connection ids and connector keys record to sandbox root&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{&quot;a&quot;:&quot;f5273a4d-d492-4bcd-a106-5a20bf89a3ef&quot;,&quot;ka&quot;:&quot;uipath-atlassian-jira&quot;,&quot;b&quot;:&quot;41943488-5cec-48b3-93cf-19048447524e&quot;,&quot;kb&quot;:&quot;uipath-google-drive&quot;}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#47</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">18ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-bindings-multi-connector-independence\nfind . -maxdepth 4 -type f | sort&quot;,
+  &quot;description&quot;: &quot;Final listing of sandbox root and artifact tree&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>./.venv/.gitignore
+./.venv/CACHEDIR.TAG
+./.venv/bin/activate
+./.venv/bin/activate.bat
+./.venv/bin/activate.csh
+./.venv/bin/activate.fish
+./.venv/bin/activate.nu
+./.venv/bin/activate.ps1
+./.venv/bin/activate.xsh
+./.venv/bin/activate_this.py
+./.venv/bin/deactivate.bat
+./.venv/bin/pydoc.bat
+./.venv/pyvenv.cfg
+./BindingsMulti/AGENTS.md
+./BindingsMulti/BindingsMulti.uipx
+./BindingsMulti/BindingsMulti/BindingsMulti.flow
+./BindingsMulti/BindingsMulti/bindings_v2.json
+./BindingsMulti/BindingsMulti/operate.json
+./BindingsMulti/BindingsMulti/project.uiproj
+./BindingsMulti/CLAUDE.md
+./BindingsMulti/flow_files/BindingsMulti.flow
+./BindingsMulti/project.uiproj
+./conn_ids.json</pre>
+    
+  </div>
+</details>
+
+</div>
+
+<h2>Command Telemetry</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Total</div><div class="value">48</div></div>
+    <div class="stat"><div class="label">Successful</div><div class="value">48 (100%)</div></div>
+    <div class="stat"><div class="label">Failed</div><div class="value">0</div></div>
+    <div class="stat"><div class="label">Avg / cmd</div><div class="value">695ms</div></div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 2fr;gap:16px;margin-top:12px">
+    <div>
+      <h4>By Tool</h4>
+      <table>
+        <thead><tr><th>Tool</th><th>Count</th></tr></thead>
+        <tbody><tr><td class='mono'>Bash</td><td>36</td></tr><tr><td class='mono'>Read</td><td>6</td></tr><tr><td class='mono'>Edit</td><td>5</td></tr><tr><td class='mono'>Skill</td><td>1</td></tr></tbody>
+      </table>
+    </div>
+    <div>
+      <h4>Slowest</h4>
+      <table>
+        <thead><tr><th>Tool</th><th>Duration</th><th>Parameters</th></tr></thead>
+        <tbody><tr><td class='mono'>Bash</td><td>6.40s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;cd /work/output/artifacts/skill-flow-...</td></tr><tr><td class='mono'>Bash</td><td>3.68s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;cd /work/output/artifacts/skill-flow-...</td></tr><tr><td class='mono'>Bash</td><td>3.46s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro flow registry pull --forc...</td></tr><tr><td class='mono'>Bash</td><td>3.07s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;for nt in get-drive-labels copy-file ...</td></tr><tr><td class='mono'>Bash</td><td>2.10s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;cd /work/output/artifacts/skill-flow-...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+  <p><strong>Most Common Pattern:</strong> <code>Bash → Bash → Bash</code></p><p><strong>Skill Tool Invoked:</strong> 1 time(s)</p>
+</div>
+
+<h2>Generation Metrics</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Total Latency</div><div class="value">6m 11s</div></div>
+    <div class="stat"><div class="label">Turns</div><div class="value">1</div></div>
+    <div class="stat"><div class="label">Assistant Turns</div><div class="value">92</div></div>
+    <div class="stat"><div class="label">Avg Turn Latency</div><div class="value">6m 9s</div></div>
+    
+  </div>
+</div>
+
+<h2>Token Usage</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Input (uncached)</div><div class="value">631</div></div>
+    <div class="stat"><div class="label">Output</div><div class="value">24,094</div></div>
+    <div class="stat"><div class="label">Cache Write</div><div class="value">117,386</div></div>
+    <div class="stat"><div class="label">Cache Read</div><div class="value">5,577,242</div></div>
+    <div class="stat"><div class="label">Total</div><div class="value">5,719,353</div></div>
+    <div class="stat"><div class="label">Cost</div><div class="value">$2.4767</div></div>
+  </div>
+</div>
+
+<h2>Agent Settings</h2>
+<div class="card" style="padding:0">
+  <table>
+    <tbody><tr><td class='mono dim'>Permission Mode</td><td>acceptEdits</td></tr><tr><td class='mono dim'>Allowed Tools</td><td>Skill, Bash, Read, Write, Edit, Glob, Grep</td></tr><tr><td class='mono dim'>Model</td><td>us.anthropic.claude-sonnet-5</td></tr><tr><td class='mono dim'>Max Turns</td><td>80</td></tr><tr><td class='mono dim'>System Prompt</td><td>You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted. </td></tr><tr><td class='mono dim'>System Prompt Mode</td><td>append</td></tr><tr><td class='mono dim'>Plugins</td><td>/home/azureuser/projects/skills/tmp</td></tr></tbody>
+  </table>
+</div>
+
+<h2>Environment</h2>
+<div class="card" style="padding:0">
+  <table>
+    <tbody><tr><td class='mono dim'>git_commit</td><td>unknown</td></tr><tr><td class='mono dim'>skills_git_commit</td><td>unknown</td></tr><tr><td class='mono dim'>cli_version</td><td>1.201.0-dev.8272</td></tr><tr><td class='mono dim'>tool_plugins</td><td>{&#x27;admin-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;agent-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;agenthub-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;aops-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;api-workflow-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;automation-hub-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;codedagent-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;codedapp-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;coder-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;context-grounding-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;conversational-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;data-fabric-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;docsai-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;function-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;gov-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;guardrails-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;insights-tool&#x27;: &#x27;1.201.0-dev.8276&#x27;, &#x27;integrationservice-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;ixp-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;llm-gateway-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;llmgw-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;maestro-tool&#x27;: &#x27;1.201.0-dev.8275&#x27;, &#x27;model-hub-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;orchestrator-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;platform-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;pm-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;rpa-legacy-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;rpa-tool&#x27;: &#x27;1.201.0-dev.20260809.3&#x27;, &#x27;solution-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;tasks-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;test-manager-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;traces-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;vertical-solutions-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;}</td></tr><tr><td class='mono dim'>coder_eval</td><td>0.9.6</td></tr><tr><td class='mono dim'>claude_code_cli</td><td>2.1.177 (Claude Code)</td></tr><tr><td class='mono dim'>uv</td><td>uv 0.12.5 (x86_64-unknown-linux-gnu)</td></tr><tr><td class='mono dim'>anthropic</td><td>0.122.0</td></tr><tr><td class='mono dim'>openai</td><td>3.2.0</td></tr><tr><td class='mono dim'>pydantic</td><td>2.12.5</td></tr><tr><td class='mono dim'>api_routing</td><td>aws_bedrock</td></tr><tr><td class='mono dim'>eval_routing</td><td>aws_bedrock</td></tr><tr><td class='mono dim'>aws_region</td><td>us-east-2</td></tr><tr><td class='mono dim'>bedrock_model</td><td>us.anthropic.claude-sonnet-4-6</td></tr><tr><td class='mono dim'>system_prompt_semantics</td><td>append</td></tr></tbody>
+  </table>
+</div>
+
+<footer>Generated by coder_eval · 2026-08-19T15:56:16</footer>
+</div>
+<script>
+function toggleTheme() {
+  document.documentElement.classList.toggle('light');
+  try {
+    const mode = document.documentElement.classList.contains('light') ? 'light' : 'dark';
+    localStorage.setItem('coder-eval-theme', mode);
+  } catch (e) { /* ignore */ }
+}
+(function() {
+  try {
+    if (localStorage.getItem('coder-eval-theme') === 'light') {
+      document.documentElement.classList.add('light');
+    }
+  } catch (e) { /* ignore */ }
+})();
+</script>
+</body>
+</html>

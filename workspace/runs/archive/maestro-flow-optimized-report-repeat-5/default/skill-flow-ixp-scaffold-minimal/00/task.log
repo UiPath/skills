@@ -1,0 +1,43 @@
+2026-07-24 17:09:46 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-24 17:09:46 [INFO] coder_eval.orchestrator: API routing: aws_bedrock
+2026-07-24 17:09:46 [DEBUG] coder_eval.criteria: Discovered 14 criterion checkers
+2026-07-24 17:09:46 [DEBUG] coder_eval.criteria: Validated 14 criterion checkers
+2026-07-24 17:09:46 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-24 17:09:46 [DEBUG] coder_eval.orchestrator: Sending prompt: Create a new Maestro Flow project called "Smoke" with a manual trigger, an
+extract node, and a scrip...
+2026-07-24 17:09:46 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Starting agent query stream...
+2026-07-24 17:14:52 [DEBUG] coder_eval.agents.claude_code_agent: [coder] session_id changed: None -> 7420efd8-d1ed-4d23-86e4-651a0adee94e
+2026-07-24 17:14:52 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Agent query stream ended
+2026-07-24 17:14:52 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-24 17:14:52 [DEBUG] coder_eval.orchestrator: Agent response received (4894 chars)
+2026-07-24 17:14:52 [DEBUG] coder_eval.orchestrator: Checking success criteria
+2026-07-24 17:14:52 [DEBUG] coder_eval.evaluation.checker: Criterion 'skill_triggered' score: 1.00
+2026-07-24 17:14:52 [DEBUG] coder_eval.evaluation.checker: Criterion 'command_executed' score: 1.00
+2026-07-24 17:14:52 [DEBUG] coder_eval.evaluation.checker: Criterion 'command_executed' score: 1.00
+2026-07-24 17:14:52 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'uip maestro flow validate passes on Smoke.flow': uip maestro flow validate Smoke/Smoke/Smoke.flow --output json
+2026-07-24 17:15:03 [DEBUG] coder_eval.sandbox: Command 'uip maestro flow validate Smoke/Smoke/Smoke.flow --output json' exited with code 0
+2026-07-24 17:15:03 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+{
+  "Result": "Success",
+  "Code": "FlowValidate",
+  "Data": {
+    "File": "/work/output/artifacts/skill-flow-ixp-scaffold-minimal/Smoke/Smoke/Smoke.flow",
+    "Status": "Valid"
+  }
+}
+---
+2026-07-24 17:15:03 [DEBUG] coder_eval.sandbox: STDERR:
+---
+[ManifestClient] fetchDynamicNodes ok: total=206 agent context nodes=2 external agent nodes=6 orchestrator nodes=158 IXP nodes=40
+---
+2026-07-24 17:15:03 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-07-24 17:15:03 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'Generated flow contains an IxP extraction node or core.logic.mock fallback (per references/plugins/ixp/impl.md)': grep -rqE "\"type\"[[:space:]]*:[[:space:]]*\"(uipath\.ixp|core\.logic\.mock)" --include="*.flow" .
+2026-07-24 17:15:03 [DEBUG] coder_eval.sandbox: Command 'grep -rqE "\"type\"[[:space:]]*:[[:space:]]*\"(uipath\.ixp|core\.logic\.mock)" --include="*.flow" .' exited with code 0
+2026-07-24 17:15:03 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-07-24 17:15:03 [DEBUG] coder_eval.evaluation.checker: Criterion 'file_contains' score: 1.00
+2026-07-24 17:15:03 [INFO] coder_eval.orchestrator: Success criteria: 6/6 passed, weighted score: 1.000
+2026-07-24 17:15:03 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-24 17:15:03 [INFO] coder_eval.orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+2026-07-24 17:15:03 [INFO] coder_eval.orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-ixp-scaffold-minimal
+2026-07-24 17:15:03 [INFO] coder_eval.orchestrator: Task finished: status=SUCCESS duration=320.2s score=1.000 iterations=1

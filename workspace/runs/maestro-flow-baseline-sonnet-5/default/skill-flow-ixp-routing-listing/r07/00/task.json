@@ -1,0 +1,857 @@
+{
+  "task_id": "skill-flow-ixp-routing-listing/r07",
+  "task_description": "IxP listing routing — user asks what IxP models / runtime projects are available from a Maestro flow. Read-only Q&A, not a build task.\nAsserts the agent ran the IxP registry-search listing command (per references/plugins/ixp/impl.md — Listing Published Models). Also asserts the agent did NOT take the build path: no .flow file should be created for a listing question.\nFailure here is signal about the IxP plugin's Listing Published Models / Listing Available Models sections — do NOT relax assertions, tighten the copy.\n",
+  "variant_id": "default",
+  "agent_type": "claude-code",
+  "model_used": "claude-sonnet-5",
+  "started_at": "2026-08-18T21:44:30.550015",
+  "completed_at": "2026-08-18T21:45:08.182958",
+  "duration_seconds": 37.63295555114746,
+  "final_status": "FAILURE",
+  "max_turns_exhausted": false,
+  "weighted_score": 0.5,
+  "iteration_count": 1,
+  "success_criteria_results": [
+    {
+      "result_kind": "basic",
+      "criterion_type": "command_executed",
+      "description": "Agent searched the registry for IxP node types (listing path)",
+      "score": 0.0,
+      "details": "Matched 0/1 required commands (filters: tool_name=Bash, pattern=/(?i)uip\\s+maestro\\s+flow\\s+registry\\s+(list\\b|(search|list)\\b[^\\n]*\\b(ixp|document|extract))/)",
+      "error": null,
+      "pass_threshold": 0.9,
+      "gating": true
+    },
+    {
+      "result_kind": "basic",
+      "criterion_type": "run_command",
+      "description": "No .flow file was created (listing is read-only Q&A, not a build task)",
+      "score": 1.0,
+      "details": "Command: ! find . -name \"*.flow\" -type f | grep -q .\nExit code: 0 (expected: 0)\nStdout: (empty)\nStderr: (empty)",
+      "error": null,
+      "pass_threshold": 0.9,
+      "gating": true
+    }
+  ],
+  "iterations": [
+    {
+      "iteration": 1,
+      "user_input": "Your working directory is: /work/output/artifacts/skill-flow-ixp-routing-listing/r07\n\nWhich document-extraction models can this flow call?\n\nImportant:\n- The `uip` CLI is already available.\n- Use `--output json` on all uip commands.\n",
+      "agent_output": "[ASSISTANT] I searched the working directory (`/work/output/artifacts/skill-flow-ixp-routing-listing/r07`) and found no `.flow` or `.uipx` file there — the only contents are a Python `.venv`.\n\nCould you confirm the correct path to the Flow project (or the specific `.flow` file) you want me to inspect? Once I have that, I can look up the IXP/document-extraction nodes via the flow's registry and list which models it can call.\n[RESULT - SUCCESS] I searched the working directory (`/work/output/artifacts/skill-flow-ixp-routing-listing/r07`) and found no `.flow` or `.uipx` file there — the only contents are a Python `.venv`.\n\nCould you confirm the correct path to the Flow project (or the specific `.flow` file) you want me to inspect? Once I have that, I can look up the IXP/document-extraction nodes via the flow's registry and list which models it can call.",
+      "commands": [
+        {
+          "tool_name": "Skill",
+          "tool_id": "toolu_bdrk_01Rqhfcd1isaWz4D2mEvSfYH",
+          "assistant_turn_index": 1,
+          "timestamp": "2026-08-18T21:44:55.705896",
+          "duration_ms": 77.52707500185352,
+          "generation_completed_at": "2026-08-18T21:44:55.705896",
+          "execution_started_at": "2026-08-18T21:44:55.707199",
+          "execution_completed_at": "2026-08-18T21:44:55.784726",
+          "parameters": {
+            "skill": "uipath:uipath-maestro-flow",
+            "args": "Which document-extraction (IXP) models can this flow call? Working directory: /work/output/artifacts/skill-flow-ixp-routing-listing/r07. Use the uip CLI with --output json on all uip commands to find the flow file in the working directory and list the document-extraction/IXP models available to it."
+          },
+          "result_status": "success",
+          "result_summary": "Launching skill: uipath:uipath-maestro-flow",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 0,
+          "result_tokens": 11
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_01URZRfX4UdHFHDeimdYjrt5",
+          "assistant_turn_index": 3,
+          "timestamp": "2026-08-18T21:44:59.625685",
+          "duration_ms": 158.58791400387418,
+          "generation_completed_at": "2026-08-18T21:44:59.625685",
+          "execution_started_at": "2026-08-18T21:44:59.625751",
+          "execution_completed_at": "2026-08-18T21:44:59.784339",
+          "parameters": {
+            "command": "find /work/output/artifacts/skill-flow-ixp-routing-listing/r07 -maxdepth 4 \\( -name '*.flow' -o -name '*.uipx' \\) -print",
+            "description": "Find flow and solution files in working directory"
+          },
+          "result_status": "success",
+          "result_summary": "(Bash completed with no output)",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 1,
+          "result_tokens": 8
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_01AGKejLTA1ynUw5AGx5PmMU",
+          "assistant_turn_index": 5,
+          "timestamp": "2026-08-18T21:45:02.628299",
+          "duration_ms": 24.859746001311578,
+          "generation_completed_at": "2026-08-18T21:45:02.628299",
+          "execution_started_at": "2026-08-18T21:45:02.628353",
+          "execution_completed_at": "2026-08-18T21:45:02.653213",
+          "parameters": {
+            "command": "find /work/output/artifacts/skill-flow-ixp-routing-listing/r07 -maxdepth 6 -print",
+            "description": "List all files in working directory up to depth 6"
+          },
+          "result_status": "success",
+          "result_summary": "/work/output/artifacts/skill-flow-ixp-routing-listing/r07\n/work/output/artifacts/skill-flow-ixp-routing-listing/r07/.venv\n/work/output/artifacts/skill-flow-ixp-routing-listing/r07/.venv/CACHEDIR.TAG\n/work/output/artifacts/skill-flow-ixp-routing-listing/r07/.venv/lib64\n/work/output/artifacts/skill-flow-ixp-routing-listing/r07/.venv/pyvenv.cfg\n/work/output/artifacts/skill-flow-ixp-routing-listing/r07/.venv/lib\n/work/output/artifacts/skill-flow-ixp-routing-listing/r07/.venv/lib/python3.13\n/work/output/artifacts/skill-flow-ixp-routing-listing/r07/.venv/lib/python3.13/site-packages\n/work/output/artifacts/skill-flow-ixp-routing-listing/r07/.venv/lib/python3.13/site-packages/_virtualenv.pth\n/work/output/artifacts/skill-flow-ixp-routing-listing/r07/.venv/lib/python3.13/site-packages/_virtualenv.py\n/work/output/artifacts/skill-flow-ixp-routing-listing/r07/.venv/bin\n/work/output/artifacts/skill-flow-ixp-routing-listing/r07/.venv/bin/activate.csh\n/work/output/artifacts/skill-flow-ixp-routing-listing/r07/.venv/bin/activate.bat\n/work/output/artifacts/skill-flow-ixp-routing-listing/r07/.venv/bin/activate_this.py\n/work/output/artifacts/skill-flow-ixp-routing-listing/r07/.venv/bin/python\n/work/output/artifacts/skill-flow-ixp-routing-listing/r07/.venv/bin/pydoc.bat\n/work/output/artifacts/skill-flow-ixp-routing-listing/r07/.venv/bin/activate.ps1\n/work/output/artifacts/skill-flow-ixp-routing-listing/r07/.venv/bin/activate.xsh\n/work/output/artifacts/skill-flow-ixp-routing-listing/r07/.venv/bin/activate.nu\n/work/output/artifacts/skill-flow-ixp-routing-listing/r07/.venv/bin/python3.13\n/work/output/artifacts/skill-flow-ixp-routing-listing/r07/.venv/bin/activate\n/work/output/artifacts/skill-flow-ixp-routing-listing/r07/.venv/bin/activate.fish\n/work/output/artifacts/skill-flow-ixp-routing-listing/r07/.venv/bin/python3\n/work/output/artifacts/skill-flow-ixp-routing-listing/r07/.venv/bin/deactivate.bat\n/work/output/artifacts/skill-flow-ixp-routing-listing/r07/.venv/.gitignore",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 2,
+          "result_tokens": 496
+        }
+      ],
+      "timestamp": "2026-08-18T21:45:08.093306",
+      "duration_seconds": 25.390980184005457,
+      "token_usage": {
+        "uncached_input_tokens": 8,
+        "output_tokens": 904,
+        "cache_creation_input_tokens": 21699,
+        "cache_read_input_tokens": 212384,
+        "total_cost_usd": 0.15867045,
+        "input_tokens": 234091
+      },
+      "model_used": "claude-sonnet-5",
+      "assistant_turn_count": 8,
+      "messages": [
+        {
+          "role": "assistant",
+          "started_at": "2026-08-18T21:44:42.701832",
+          "completed_at": "2026-08-18T21:44:54.433817",
+          "generation_duration_ms": 11732.006735008326,
+          "content_blocks": [
+            {
+              "block_type": "thinking",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": "EtADCnIIEBABGAIqQPylD1CcdXLV9I7VomqkGReeN4fBLq5MZQsazNnjwMiTntkNzkMlmT7PzqcrJsDNlznhcm6obdOAfGqIcYNacg0yDmNsYXVkZS1zYWZmcm9uOABCCHRoaW5raW5nWgw3OTM4MzUwMTkyODASDLJJaq699Ra1071IzRoMVFlGmNrL8nUlpfQIIjDm03cKjtbn2hP242mm+1ZbbZd0bNafakBus6yOBhLzQmuq7pQNUsJGeukzzINp7DsqiwInP0K22uNK0pgfxCAgWex/0+PVTmY88ZXL7HvbnyYt4/BiRP2hfGBaKnKskPf9PpJBu4KnWRblgEQldiUKzG0Qs6MqSogSCKOzNx9W9mdWkowQdk7CjN7ouW7dp352fSyxGkPngW+qtutciGu7zq0Z3psg94A944VkDZAhE0+/9BMURgwZsr40vmvKj6nemr7h6o0xZrtAv75rPWLpV32pygFDb0qyJfsdPlTO3WimIRRC1tGsCbHJWerdvGawyXK7QtSqwYMS/aj8E6XbhHexwdZUJmJQBS7uP/SyanRjPd/ushVGKnIWC0VkWBVQfmCwk36GTOfkLK4qU2s+2eDlI0VTk1l4YP1wMaoYAQ==",
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 2,
+          "output_tokens": 0,
+          "cache_creation_tokens": 11643,
+          "cache_read_tokens": 39956,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-5",
+          "message_id": "msg_bdrk_pvngjg3oagmnlofv75pe7f2m4ugibc77cw76ylzjytkjwfs2fnwa",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-08-18T21:44:54.433817",
+          "completed_at": "2026-08-18T21:44:55.705896",
+          "generation_duration_ms": 1272.0779239898548,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01Rqhfcd1isaWz4D2mEvSfYH",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01Rqhfcd1isaWz4D2mEvSfYH"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 273,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-5",
+          "message_id": "msg_bdrk_pvngjg3oagmnlofv75pe7f2m4ugibc77cw76ylzjytkjwfs2fnwa",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-08-18T21:44:55.785204",
+          "completed_at": "2026-08-18T21:44:58.932947",
+          "generation_duration_ms": 3147.742325993022,
+          "content_blocks": [
+            {
+              "block_type": "thinking",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": "EvYCCnIIEBABGAIqQCnwYJT56lQriiguzP+pqAJQi1n3lYs1RNS6N7hLgTP7L3ltGbXpRJOqu4TT0/w/rVDAl3cSwAvojfvjAk2NfV8yDmNsYXVkZS1zYWZmcm9uOABCCHRoaW5raW5nWgw3OTM4MzUwMTkyODASDOccoS+hlTfBB6kzyxoM6k+TYklYT7QKMu2RIjAb8aqG7v1Ysi8KkodxhqZj/HAjxikfbzSuAXkcV4jWTFT+njNe/MA3WRtU8pwKMl4qsQHhxHjG9/1hxLnCqB4GbZa3Z5GeASw7qIAU21+YYliFPQRbgPUE3btw+lSY8q7Bve0u56zlLdUpi4cs6FpvhIWE3sRlhcCvszNi0Z2dtCKQhQu6wGzv9C+v9ljeGdSRZKvoLXFnIGitnEMoUNELRakQGCXTd6M9AVKaMRgDlC5RX3O+nG7GQPBt0eHm/jXnwXIrvSyQNFUUk3Zcpflk43QA4whHrW10E/wFcfYy3AHUFeYYAQ==",
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 2,
+          "output_tokens": 0,
+          "cache_creation_tokens": 8737,
+          "cache_read_tokens": 51599,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-5",
+          "message_id": "msg_bdrk_jz6ujuv6fgjg3myl6ozgm7mkmnc5ey77eo4ed2kixmgbs4qevxgq",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-08-18T21:44:58.932947",
+          "completed_at": "2026-08-18T21:44:59.625685",
+          "generation_duration_ms": 692.7377040119609,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01URZRfX4UdHFHDeimdYjrt5",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01URZRfX4UdHFHDeimdYjrt5"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 193,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-5",
+          "message_id": "msg_bdrk_jz6ujuv6fgjg3myl6ozgm7mkmnc5ey77eo4ed2kixmgbs4qevxgq",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-08-18T21:44:59.784296",
+          "completed_at": "2026-08-18T21:45:01.957326",
+          "generation_duration_ms": 2173.0302590003703,
+          "content_blocks": [
+            {
+              "block_type": "thinking",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": "Ev4BCnIIEBABGAIqQL4znJw4mWqyHGuxKhDe88AhU6qUWe/sQhB+EuHdahNXheEoXGhC61GN+IOclQbsJwr14vKsaSGYHmWE8UDk4xUyDmNsYXVkZS1zYWZmcm9uOABCCHRoaW5raW5nWgw3OTM4MzUwMTkyODASDBEAg+mcl1BTKVMfcRoM+xqEQLODY4Pm3H8UIjARsgOTRL2i4QJHY6vUt2LZI9o41idtoJv/ZerM1ijrXFD1TNKF/ZXFq59ymeBhjlUqOmLaZuCUUBuLIfAzZyj4KIsKTnDHwB0++twg7/y3FrNgUyrJJRhG9AgTxHcFUziTZxnIDuKq8bLiipYYAQ==",
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 2,
+          "output_tokens": 0,
+          "cache_creation_tokens": 157,
+          "cache_read_tokens": 60336,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-5",
+          "message_id": "msg_bdrk_wlyrknqhgybuphwcfwkzjvqwisw6tcrz6mtbylapbntb7xxa4qma",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-08-18T21:45:01.957326",
+          "completed_at": "2026-08-18T21:45:02.628299",
+          "generation_duration_ms": 670.9733580064494,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01AGKejLTA1ynUw5AGx5PmMU",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01AGKejLTA1ynUw5AGx5PmMU"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 136,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-5",
+          "message_id": "msg_bdrk_wlyrknqhgybuphwcfwkzjvqwisw6tcrz6mtbylapbntb7xxa4qma",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-08-18T21:45:02.653181",
+          "completed_at": "2026-08-18T21:45:06.510759",
+          "generation_duration_ms": 3857.5775460049044,
+          "content_blocks": [
+            {
+              "block_type": "thinking",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": "EuEFCnIIEBABGAIqQNKGZsilraMdmjMJMHpGYhAtBAvH8xpYWA79e2h0LEMHlh5vfY3U7Vip457qoJZPsBIEWIgYeh8dB75ADELVwfEyDmNsYXVkZS1zYWZmcm9uOABCCHRoaW5raW5nWgw3OTM4MzUwMTkyODASDL8ojvwio37B1U2XghoMnuOTc1klo86IZlr8IjBZ4AULfC7iukHUCzy9PCEz6DCLwcVeg/9T/bwHxzwMJrtL/QJSq/PhM37SFBhhQv0qnASBq2lcQpbW2yHR/ywqSzPlztazryqz530Ka3Xz0KULo6YRrEmrjsPXSfElERzS4zy7JieGNRm2u+BZ1BWB2veYN0rnUV41HTrOaMnFFPBj9h1xkZMhMeuiF5sVdxcvIFf/A8Bhp8AYYL3ttAGK2aKXDYz1bbrccvcdgIBvSlQVyewNKEhBtWAj+ReP7OPiFcI6k4xWlGGOxacvEY9/ECfb/NJPhsbgSDtK1FzZCAEXcTaRvt4cZ0+BAmc1y7PcqaDbCjGF6YNhYBEFvLJoQLO5M8kIzNoZFdZbqD+hvQt66Ldliv74lFQSpM44dNX5T9tLTpbQb74kNas9145UWU+htJihgyY7wZOTiNH1+UmSiU3dXsUWjTWYbPwBXJsLyuPKwFb4V3jyNyGz4yJetWSzk3HkoioEXWWbhCCRtKQqjzGfuoL6SE7AEACSJDAQkSoszr7aSZqtlVF1YhDbhnrKnUcjcIX5jFvQ6S9USmz0MF3Umbbo+mGa9d4CFDwMTL6af7RVM6KnqOEbPNafEhFSqxwCXcrVaf1Yom2ZFXV+1BqBOICF/2GjUUKVia8FGda9fJX0JCnVYjmGwk2shR4P6GrfWmpIFDcq76TBYKyLL8EqazfBiXGWNiLLqdIqAapBownbhtch244Z3O/rXN/Ir5VB8FYZZY7w0nl1tgP4YgJWDYIYKE4aA3oBsJPGX9tIgCKnmm3uxm3rTO0YAQ==",
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 2,
+          "output_tokens": 0,
+          "cache_creation_tokens": 1162,
+          "cache_read_tokens": 60493,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-5",
+          "message_id": "msg_bdrk_xees2ez65fptugu2bmrcvphyvre5lgvrwjxgmfleqso7wvfqrwqa",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-08-18T21:45:06.510759",
+          "completed_at": "2026-08-18T21:45:07.964817",
+          "generation_duration_ms": 1454.0580110042356,
+          "content_blocks": [
+            {
+              "block_type": "text",
+              "sequence": 0,
+              "text": "I searched the working directory (`/work/output/artifacts/skill-flow-ixp-routing-listing/r07`) and found no `.flow` or `.uipx` file there — the only contents are a Python `.venv`.\n\nCould you confirm the correct path to the Flow project (or the specific `.flow` file) you want me to inspect? Once I have that, I can look up the IXP/document-extraction nodes via the flow's registry and list which models it can call.",
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 0,
+          "output_tokens": 302,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-5",
+          "message_id": "msg_bdrk_xees2ez65fptugu2bmrcvphyvre5lgvrwjxgmfleqso7wvfqrwqa",
+          "parent_tool_use_id": null
+        }
+      ],
+      "num_turns": 5,
+      "max_turns_exhausted": false,
+      "result_summary": {
+        "is_error": false,
+        "subtype": "success",
+        "stop_reason": "end_turn",
+        "result": "I searched the working directory (`/work/output/artifacts/skill-flow-ixp-routing-listing/r07`) and found no `.flow` or `.uipx` file there — the only contents are a Python `.venv`.\n\nCould you confirm the correct path to the Flow project (or the specific `.flow` file) you want me to inspect? Once I have that, I can look up the IXP/document-extraction nodes via the flow's registry and list which models it can call."
+      },
+      "provider_call_costs": [],
+      "crashed": false,
+      "crash_reason": null
+    }
+  ],
+  "error_message": null,
+  "error_details": null,
+  "error_log_tail": "2026-08-18 21:44:41 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js\n2026-08-18 21:44:41 [INFO] coder_eval.orchestrator: API routing: aws_bedrock\n2026-08-18 21:44:41 [DEBUG] coder_eval.criteria: Discovered 15 criterion checkers\n2026-08-18 21:44:41 [DEBUG] coder_eval.criteria: Validated 15 criterion checkers\n2026-08-18 21:44:41 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js\n2026-08-18 21:44:42 [DEBUG] coder_eval.orchestrator: Sending prompt: Which document-extraction models can this flow call?\n\nImportant:\n- The `uip` CLI is already availabl...\n2026-08-18 21:44:42 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Starting agent query stream...\n2026-08-18 21:45:07 [DEBUG] coder_eval.agents.claude_code_agent: [coder] session_id changed: None -> d8b9046f-1709-4d66-b592-a107741d1041\n2026-08-18 21:45:08 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Agent query stream ended\n2026-08-18 21:45:08 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js\n2026-08-18 21:45:08 [DEBUG] coder_eval.orchestrator: Agent response received (862 chars)\n2026-08-18 21:45:08 [DEBUG] coder_eval.orchestrator: Checking success criteria\n2026-08-18 21:45:08 [DEBUG] coder_eval.evaluation.checker: Criterion 'command_executed' score: 0.00\n2026-08-18 21:45:08 [INFO] coder_eval.evaluation.checker: Criterion 'command_executed' FAILED (score=0.00, threshold=0.90): Matched 0/1 required commands (filters: tool_name=Bash, pattern=/(?i)uip\\s+maestro\\s+flow\\s+registry\\s+(list\\b|(search|list)\\b[^\\n]*\\b(ixp|document|extract))/)\n2026-08-18 21:45:08 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'No .flow file was created (listing is read-only Q&A, not a build task)': ! find . -name \"*.flow\" -type f | grep -q .\n2026-08-18 21:45:08 [DEBUG] coder_eval.sandbox: Command '! find . -name \"*.flow\" -type f | grep -q .' exited with code 0\n2026-08-18 21:45:08 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00\n2026-08-18 21:45:08 [INFO] coder_eval.orchestrator: Success criteria: 1/2 passed, weighted score: 0.500\n2026-08-18 21:45:08 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js\n2026-08-18 21:45:08 [INFO] coder_eval.orchestrator: Running post-run command: find . -maxdepth 5 -type d \\( -name node_modules -o -name .npm-prefix -o -name .venv \\) -prune -exec rm -rf {} +\n2026-08-18 21:45:08 [INFO] coder_eval.orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-ixp-routing-listing/r07\n",
+  "environment_info": {
+    "git_commit": "unknown",
+    "skills_git_commit": "unknown",
+    "cli_version": "1.201.0-dev.8272",
+    "tool_plugins": {
+      "admin-tool": "1.201.0-dev.8272",
+      "agent-tool": "1.201.0-dev.8272",
+      "agenthub-tool": "1.201.0-dev.8272",
+      "aops-tool": "1.201.0-dev.8272",
+      "api-workflow-tool": "1.201.0-dev.8272",
+      "automation-hub-tool": "1.201.0-dev.8272",
+      "codedagent-tool": "1.201.0-dev.8272",
+      "codedapp-tool": "1.201.0-dev.8272",
+      "coder-tool": "1.201.0-dev.8272",
+      "context-grounding-tool": "1.201.0-dev.8272",
+      "conversational-tool": "1.201.0-dev.8272",
+      "data-fabric-tool": "1.201.0-dev.8272",
+      "docsai-tool": "1.201.0-dev.8272",
+      "function-tool": "1.201.0-dev.8272",
+      "gov-tool": "1.201.0-dev.8272",
+      "guardrails-tool": "1.201.0-dev.8272",
+      "insights-tool": "1.201.0-dev.8276",
+      "integrationservice-tool": "1.201.0-dev.8272",
+      "ixp-tool": "1.201.0-dev.8272",
+      "llm-gateway-tool": "1.201.0-dev.8272",
+      "llmgw-tool": "1.201.0-dev.8272",
+      "maestro-tool": "1.201.0-dev.8275",
+      "model-hub-tool": "1.201.0-dev.8272",
+      "orchestrator-tool": "1.201.0-dev.8272",
+      "platform-tool": "1.201.0-dev.8272",
+      "pm-tool": "1.201.0-dev.8272",
+      "rpa-legacy-tool": "1.201.0-dev.8272",
+      "rpa-tool": "1.201.0-dev.20260809.3",
+      "solution-tool": "1.201.0-dev.8272",
+      "tasks-tool": "1.201.0-dev.8272",
+      "test-manager-tool": "1.201.0-dev.8272",
+      "traces-tool": "1.201.0-dev.8272",
+      "vertical-solutions-tool": "1.201.0-dev.8272"
+    },
+    "coder_eval": "0.9.6",
+    "claude_code_cli": "2.1.177 (Claude Code)",
+    "uv": "uv 0.12.5 (x86_64-unknown-linux-gnu)",
+    "anthropic": "0.122.0",
+    "openai": "3.2.0",
+    "pydantic": "2.12.5",
+    "api_routing": "aws_bedrock",
+    "eval_routing": "aws_bedrock",
+    "aws_region": "us-east-2",
+    "bedrock_model": "us.anthropic.claude-sonnet-4-6",
+    "system_prompt_semantics": "append"
+  },
+  "agent_config": {
+    "type": "claude-code",
+    "model": "claude-sonnet-5",
+    "permission_mode": "acceptEdits",
+    "allowed_tools": [
+      "Skill",
+      "Bash",
+      "Read",
+      "Write",
+      "Edit",
+      "Glob",
+      "Grep"
+    ],
+    "disallowed_tools": null,
+    "plugins": [
+      {
+        "type": "local",
+        "path": "/home/azureuser/projects/skills/"
+      }
+    ],
+    "system_prompt": "You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted.\n",
+    "system_prompt_file": null,
+    "ignore_patterns": [],
+    "system_prompt_mode": "append",
+    "claude_settings": null,
+    "sdk_options": {},
+    "setting_sources": null
+  },
+  "sdk_options": {
+    "tools": null,
+    "allowed_tools": [
+      "Skill",
+      "Bash",
+      "Read",
+      "Write",
+      "Edit",
+      "Glob",
+      "Grep"
+    ],
+    "system_prompt": {
+      "type": "preset",
+      "preset": "claude_code",
+      "exclude_dynamic_sections": true,
+      "append": "You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted.\n"
+    },
+    "mcp_servers": {},
+    "strict_mcp_config": false,
+    "permission_mode": "acceptEdits",
+    "continue_conversation": false,
+    "resume": null,
+    "session_id": null,
+    "max_turns": 20,
+    "max_budget_usd": null,
+    "disallowed_tools": [
+      "ToolSearch"
+    ],
+    "model": "us.anthropic.claude-sonnet-5",
+    "fallback_model": null,
+    "betas": [],
+    "permission_prompt_tool_name": null,
+    "cwd": "/work/output/artifacts/skill-flow-ixp-routing-listing/r07",
+    "cli_path": null,
+    "settings": null,
+    "add_dirs": [],
+    "env": {
+      "PATH": "/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+      "PLUGIN_TOOLS_DIR": "/usr/lib/node_modules/@uipath",
+      "CLAUDE_CODE_USE_BEDROCK": "1",
+      "AWS_BEARER_TOKEN_BEDROCK": "***REDACTED***",
+      "AWS_REGION": "us-east-2",
+      "CLAUDE_CODE_ATTRIBUTION_HEADER": "0",
+      "ANTHROPIC_MODEL": "us.anthropic.claude-sonnet-5",
+      "ANTHROPIC_SMALL_FAST_MODEL": "us.anthropic.claude-sonnet-4-6"
+    },
+    "extra_args": {},
+    "max_buffer_size": null,
+    "can_use_tool": null,
+    "hooks": null,
+    "user": null,
+    "include_partial_messages": true,
+    "include_hook_events": false,
+    "fork_session": false,
+    "agents": null,
+    "setting_sources": [
+      "project"
+    ],
+    "skills": null,
+    "sandbox": null,
+    "plugins": [
+      {
+        "type": "local",
+        "path": "/home/azureuser/projects/skills"
+      }
+    ],
+    "max_thinking_tokens": null,
+    "thinking": null,
+    "effort": null,
+    "output_format": null,
+    "enable_file_checkpointing": false,
+    "session_store": null,
+    "session_store_flush": "batched",
+    "load_timeout_ms": 60000,
+    "task_budget": null
+  },
+  "sandbox_path": "/work/output/artifacts/skill-flow-ixp-routing-listing/r07",
+  "task_config": {
+    "resolved": {
+      "task_id": "skill-flow-ixp-routing-listing/r07",
+      "description": "IxP listing routing — user asks what IxP models / runtime projects are available from a Maestro flow. Read-only Q&A, not a build task.\nAsserts the agent ran the IxP registry-search listing command (per references/plugins/ixp/impl.md — Listing Published Models). Also asserts the agent did NOT take the build path: no .flow file should be created for a listing question.\nFailure here is signal about the IxP plugin's Listing Published Models / Listing Available Models sections — do NOT relax assertions, tighten the copy.\n",
+      "initial_prompt": "Which document-extraction models can this flow call?\n\nImportant:\n- The `uip` CLI is already available.\n- Use `--output json` on all uip commands.\n",
+      "initial_prompt_file": null,
+      "tags": [
+        "uipath-maestro-flow",
+        "integration",
+        "mode:operate",
+        "lifecycle:discover",
+        "node:ixp"
+      ],
+      "skip": false,
+      "agent": {
+        "type": "claude-code",
+        "model": "claude-sonnet-5",
+        "permission_mode": "acceptEdits",
+        "allowed_tools": [
+          "Skill",
+          "Bash",
+          "Read",
+          "Write",
+          "Edit",
+          "Glob",
+          "Grep"
+        ],
+        "disallowed_tools": null,
+        "plugins": [
+          {
+            "type": "local",
+            "path": "/home/azureuser/projects/skills/"
+          }
+        ],
+        "system_prompt": "You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted.\n",
+        "system_prompt_file": null,
+        "ignore_patterns": [],
+        "system_prompt_mode": "append",
+        "claude_settings": null,
+        "sdk_options": {},
+        "setting_sources": null
+      },
+      "sandbox": {
+        "driver": "tempdir",
+        "docker": {
+          "image": "skills-image:latest",
+          "dockerfile_path": null,
+          "build": {
+            "buildkit": null,
+            "args": {},
+            "secrets": [],
+            "extra_args": []
+          },
+          "network": "bridge",
+          "working_dir": null,
+          "env_passthrough": [
+            "ANTHROPIC_API_KEY",
+            "API_BACKEND",
+            "UIPATH_LLM_BACKEND",
+            "UIPATH_ACCESS_TOKEN",
+            "UIPATH_URL",
+            "UIPATH_TENANT_ID",
+            "UIPATH_ORGANIZATION_ID",
+            "UIPATH_CLI_DISABLE_VERSION_SYNC",
+            "AWS_BEARER_TOKEN_BEDROCK",
+            "AWS_REGION",
+            "BEDROCK_MODEL",
+            "CLAUDE_CODE_USE_BEDROCK",
+            "ANTHROPIC_MODEL",
+            "LITELLM_BASE_URL",
+            "LITELLM_AUTH_TOKEN",
+            "LITELLM_MODEL",
+            "LITELLM_SMALL_MODEL",
+            "LITELLM_COST_LOG",
+            "CODEX_API_KEY",
+            "CODEX_BASE_URL",
+            "CODEX_MODEL",
+            "GEMINI_API_KEY",
+            "ANTIGRAVITY_MODEL",
+            "HOME"
+          ],
+          "env_passthrough_extra": [
+            "SKILLS_REPO_PATH",
+            "BEDROCK_MODEL",
+            "TASK_PARALLELISM",
+            "UIPATH_CLI_ENABLE_ENV_AUTH",
+            "UIPATH_CLI_AUTH_TOKEN",
+            "UIPATH_CLI_ORGANIZATION_NAME",
+            "UIPATH_CLI_ORGANIZATION_ID",
+            "UIPATH_CLI_TENANT_NAME",
+            "UIPATH_CLI_TENANT_ID",
+            "TRACES_SMOKE_PROCESS_KEY",
+            "CODEX_API_KEY",
+            "CODEX_BASE_URL"
+          ],
+          "extra_mounts": [
+            "~/.uipath:/.uipath:rw"
+          ]
+        },
+        "python": {
+          "env_packages": []
+        },
+        "node": null,
+        "limits": {
+          "timeout": 300,
+          "max_memory_mb": null,
+          "max_cpus": null,
+          "max_pids": null,
+          "max_disk_mb": null
+        },
+        "template_sources": null,
+        "mock_path_dirs": null,
+        "record_cli": null,
+        "ignore_patterns": []
+      },
+      "success_criteria": [
+        {
+          "type": "command_executed",
+          "description": "Agent searched the registry for IxP node types (listing path)",
+          "weight": 1.0,
+          "pass_threshold": 0.9,
+          "suite_thresholds": {
+            "mean": 0.85
+          },
+          "stop_early": null,
+          "tool_name": "Bash",
+          "command_pattern": "(?i)uip\\s+maestro\\s+flow\\s+registry\\s+(list\\b|(search|list)\\b[^\\n]*\\b(ixp|document|extract))",
+          "min_count": 1,
+          "max_count": null,
+          "require_success": false,
+          "exclude_pattern": null
+        },
+        {
+          "type": "run_command",
+          "description": "No .flow file was created (listing is read-only Q&A, not a build task)",
+          "weight": 1.0,
+          "pass_threshold": 0.9,
+          "suite_thresholds": {
+            "mean": 0.85
+          },
+          "command": "! find . -name \"*.flow\" -type f | grep -q .",
+          "timeout": 30,
+          "expected_exit_code": 0,
+          "expected_stdout": null,
+          "stdout_match": "exact",
+          "score_from_stdout": false
+        }
+      ],
+      "run_limits": {
+        "max_turns": 20,
+        "expected_turns": null,
+        "task_timeout": 300,
+        "turn_timeout": 300,
+        "max_input_tokens": null,
+        "max_output_tokens": null,
+        "max_total_tokens": null,
+        "max_usd": null,
+        "count_cached_input": false,
+        "count_cache_creation": false,
+        "stop_early": null,
+        "stop_early_gate_threshold": 1.0
+      },
+      "reference": null,
+      "expected_commands": null,
+      "pre_run": [],
+      "post_run": [
+        {
+          "command": "find . -maxdepth 5 -type d \\( -name node_modules -o -name .npm-prefix -o -name .venv \\) -prune -exec rm -rf {} +",
+          "timeout": 30
+        }
+      ],
+      "dataset": null,
+      "suite_id": "skill-flow-ixp-routing-listing",
+      "row_id": "r07",
+      "simulation": null
+    },
+    "source_yaml": "task_id: skill-flow-ixp-routing-listing\ndescription: >\n  IxP listing routing — user asks what IxP models / runtime projects are\n  available from a Maestro flow. Read-only Q&A, not a build task.\n\n  Asserts the agent ran the IxP registry-search listing command (per\n  references/plugins/ixp/impl.md — Listing Published Models). Also asserts the\n  agent did NOT take the build path: no .flow file should be created for a\n  listing question.\n\n  Failure here is signal about the IxP plugin's Listing Published Models /\n  Listing Available Models sections — do NOT relax assertions, tighten the\n  copy.\n\ntags: [uipath-maestro-flow, integration, mode:operate, lifecycle:discover, node:ixp]\n\ndataset:\n  rows:\n    - id: r01\n      prompt: \"What IxP models can I access in maestro?\"\n    - id: r02\n      prompt: \"What document extractors can I add to this flow?\"\n    - id: r03\n      prompt: \"List the published IxP extractors available to my .flow\"\n    - id: r04\n      prompt: \"Which IxP runtime projects can I wire into a Maestro flow node?\"\n    - id: r05\n      prompt: \"What extraction models are available to my Maestro flow?\"\n    - id: r06\n      prompt: \"Show me the IxP document-understanding models I can use in maestro\"\n    - id: r07\n      prompt: \"Which document-extraction models can this flow call?\"\n    - id: r08\n      prompt: \"What are my options for IxP nodes in a Maestro flow?\"\n    - id: r09\n      prompt: \"Can you list the IxP models I can add to my flow?\"\n    - id: r10\n      prompt: \"What published IxP extractors can a flow node reference?\"\n\ninitial_prompt: |\n  ${row.prompt}\n\n  Important:\n  - The `uip` CLI is already available.\n  - Use `--output json` on all uip commands.\n\nsuccess_criteria:\n  # IxP registry-search check (omits `get`) — see routing.yaml for the pattern breakdown.\n  - type: command_executed\n    description: \"Agent searched the registry for IxP node types (listing path)\"\n    tool_name: \"Bash\"\n    command_pattern: '(?i)uip\\s+maestro\\s+flow\\s+registry\\s+(list\\b|(search|list)\\b[^\\n]*\\b(ixp|document|extract))'\n    min_count: 1\n    suite_thresholds: {mean: 0.85}\n\n  # Inverted check: a listing/Q&A task should NOT create a .flow file.\n  # `! find ... | grep -q .` exits 0 when no .flow file is found (PASS)\n  # and 1 when one exists (FAIL).\n  - type: run_command\n    description: \"No .flow file was created (listing is read-only Q&A, not a build task)\"\n    command: '! find . -name \"*.flow\" -type f | grep -q .'\n    expected_exit_code: 0\n    suite_thresholds: {mean: 0.85}\n\nrun_limits:\n  max_turns: 20\n  turn_timeout: 300\n  task_timeout: 300\n",
+    "source_file": "/home/azureuser/projects/skills/tests/tasks/uipath-maestro-flow/ixp/task.yaml",
+    "lineage": {
+      "agent.type": {
+        "value": "claude-code",
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.permission_mode": {
+        "value": "acceptEdits",
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.model": {
+        "value": "claude-sonnet-5",
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.allowed_tools": {
+        "value": [
+          "Skill",
+          "Bash",
+          "Read",
+          "Write",
+          "Edit",
+          "Glob",
+          "Grep"
+        ],
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.plugins": {
+        "value": [
+          {
+            "type": "local",
+            "path": "/home/azureuser/projects/skills/"
+          }
+        ],
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.ignore_patterns": {
+        "value": [],
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.system_prompt": {
+        "value": "You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted.\n",
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "run_limits.max_turns": {
+        "value": 20,
+        "source": "task",
+        "source_detail": null
+      },
+      "run_limits.task_timeout": {
+        "value": 300,
+        "source": "task",
+        "source_detail": null
+      },
+      "run_limits.turn_timeout": {
+        "value": 300,
+        "source": "task",
+        "source_detail": null
+      },
+      "sandbox.driver": {
+        "value": "docker",
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "sandbox.docker": {
+        "value": {
+          "image": "skills-image:latest",
+          "env_passthrough_extra": [
+            "SKILLS_REPO_PATH",
+            "BEDROCK_MODEL",
+            "TASK_PARALLELISM",
+            "UIPATH_CLI_ENABLE_ENV_AUTH",
+            "UIPATH_CLI_AUTH_TOKEN",
+            "UIPATH_CLI_ORGANIZATION_NAME",
+            "UIPATH_CLI_ORGANIZATION_ID",
+            "UIPATH_CLI_TENANT_NAME",
+            "UIPATH_CLI_TENANT_ID",
+            "TRACES_SMOKE_PROCESS_KEY",
+            "CODEX_API_KEY",
+            "CODEX_BASE_URL"
+          ],
+          "extra_mounts": [
+            "~/.uipath:/.uipath:rw"
+          ]
+        },
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "repeats": {
+        "value": 1,
+        "source": "default",
+        "source_detail": null
+      }
+    }
+  },
+  "command_stats": {
+    "total_commands": 3,
+    "commands_by_tool": {
+      "Skill": 1,
+      "Bash": 2
+    },
+    "total_command_time_ms": 260.97473500703927,
+    "avg_command_time_ms": 86.99157833567976,
+    "slowest_commands": [
+      {
+        "tool": "Bash",
+        "duration_ms": 158.58791400387418,
+        "parameters": {
+          "command": "find /work/output/artifacts/skill-flow-ixp-routing-listing/r07 -maxdepth 4 \\( -name '*.flow' -o -name '*.uipx' \\) -print",
+          "description": "Find flow and solution files in working directory"
+        },
+        "tool_id": "toolu_bdrk_01URZRfX4UdHFHDeimdYjrt5"
+      },
+      {
+        "tool": "Skill",
+        "duration_ms": 77.52707500185352,
+        "parameters": {
+          "skill": "uipath:uipath-maestro-flow",
+          "args": "Which document-extraction (IXP) models can this flow call? Working directory: /work/output/artifacts/skill-flow-ixp-routing-listing/r07. Use the uip CLI with --output json on all uip commands to find the flow file in the working directory and list the document-extraction/IXP models available to it."
+        },
+        "tool_id": "toolu_bdrk_01Rqhfcd1isaWz4D2mEvSfYH"
+      },
+      {
+        "tool": "Bash",
+        "duration_ms": 24.859746001311578,
+        "parameters": {
+          "command": "find /work/output/artifacts/skill-flow-ixp-routing-listing/r07 -maxdepth 6 -print",
+          "description": "List all files in working directory up to depth 6"
+        },
+        "tool_id": "toolu_bdrk_01AGKejLTA1ynUw5AGx5PmMU"
+      }
+    ],
+    "successful_commands": 3,
+    "failed_commands": 0,
+    "unknown_commands": 0,
+    "success_rate": 100.0,
+    "most_common_sequence": "Skill → Bash → Bash"
+  },
+  "total_token_usage": {
+    "uncached_input_tokens": 8,
+    "output_tokens": 904,
+    "cache_creation_input_tokens": 21699,
+    "cache_read_input_tokens": 212384,
+    "total_cost_usd": 0.15867045,
+    "input_tokens": 234091
+  },
+  "total_assistant_turns": 8,
+  "expected_commands": null,
+  "actual_commands": 3,
+  "commands_efficiency": null,
+  "pre_run_results": [],
+  "post_run_results": [
+    {
+      "command": "find . -maxdepth 5 -type d \\( -name node_modules -o -name .npm-prefix -o -name .venv \\) -prune -exec rm -rf {} +",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "",
+      "duration_seconds": 0.017014741897583008,
+      "error": null
+    }
+  ],
+  "simulation": null,
+  "early_stop": null
+}

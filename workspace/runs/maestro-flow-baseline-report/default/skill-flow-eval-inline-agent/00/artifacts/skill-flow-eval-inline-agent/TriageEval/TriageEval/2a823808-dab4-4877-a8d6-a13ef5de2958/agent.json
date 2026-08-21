@@ -1,0 +1,74 @@
+{
+  "version": "1.1.0",
+  "settings": {
+    "model": "gpt-4.1-2025-04-14",
+    "maxTokens": 4096,
+    "temperature": 0,
+    "engine": "basic-v2",
+    "maxIterations": 5,
+    "mode": "standard"
+  },
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "start__output__email": {
+        "type": "string",
+        "description": "The inbound email text to classify. Bound from $vars.start.output.email."
+      }
+    },
+    "required": [
+      "start__output__email"
+    ]
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "category": {
+        "type": "string",
+        "description": "The support category for the email, e.g. Account Access, Billing, Technical Issue, General Inquiry."
+      },
+      "priority": {
+        "type": "string",
+        "description": "The urgency level: High, Medium, or Low."
+      }
+    },
+    "required": [
+      "category",
+      "priority"
+    ]
+  },
+  "metadata": {
+    "storageVersion": "50.0.0",
+    "isConversational": false,
+    "showProjectCreationExperience": false
+  },
+  "type": "lowCode",
+  "guardrails": [],
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are an expert customer-support triage assistant. Your sole task is to read the provided email and return a structured classification.\n\nRules:\n1. Choose exactly ONE category from: Account Access, Billing, Technical Issue, Shipping & Delivery, General Inquiry.\n2. Choose exactly ONE priority from: High, Medium, Low.\n3. Priority guidance:\n   - High: user is blocked, data loss risk, SLA breach, or explicit urgency.\n   - Medium: issue affects normal workflow but a workaround exists.\n   - Low: question, feedback, or non-blocking request.\n4. Respond ONLY with valid JSON matching the output schema {\"category\": \"...\", \"priority\": \"...\"} — no prose, no explanation.",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "You are an expert customer-support triage assistant. Your sole task is to read the provided email and return a structured classification.\n\nRules:\n1. Choose exactly ONE category from: Account Access, Billing, Technical Issue, Shipping & Delivery, General Inquiry.\n2. Choose exactly ONE priority from: High, Medium, Low.\n3. Priority guidance:\n   - High: user is blocked, data loss risk, SLA breach, or explicit urgency.\n   - Medium: issue affects normal workflow but a workaround exists.\n   - Low: question, feedback, or non-blocking request.\n4. Respond ONLY with valid JSON matching the output schema {\"category\": \"...\", \"priority\": \"...\"} — no prose, no explanation."
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "Classify the following email:\n\n{{input.start__output__email}}",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "Classify the following email:\n\n"
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__email"
+        }
+      ]
+    }
+  ],
+  "projectId": "2a823808-dab4-4877-a8d6-a13ef5de2958"
+}

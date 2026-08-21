@@ -1,0 +1,111 @@
+{
+  "version": "1.1.0",
+  "settings": {
+    "model": "anthropic.claude-sonnet-4-20250514-v1:0",
+    "maxTokens": 64000,
+    "temperature": 0,
+    "engine": "basic-v2",
+    "maxIterations": 5,
+    "mode": "standard"
+  },
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "start__output__webhookPayload": {
+        "type": "object",
+        "description": "Webhook payload with customer account and invoice details"
+      },
+      "disputeAnalyst__output__creditAmount": {
+        "type": "number",
+        "description": "Credit amount approved by the dispute analyst"
+      },
+      "disputeAnalyst__output__determination": {
+        "type": "string",
+        "description": "Analyst's determination of the dispute"
+      },
+      "disputeAnalyst__output__rationale": {
+        "type": "string",
+        "description": "Analyst's rationale for the decision"
+      }
+    }
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "subject": {
+        "type": "string",
+        "description": "Email subject line for the customer-facing resolution notification"
+      },
+      "body": {
+        "type": "string",
+        "description": "Full email body text for the customer-facing resolution notification (plain text, ready to send)"
+      }
+    },
+    "required": [
+      "subject",
+      "body"
+    ]
+  },
+  "metadata": {
+    "storageVersion": "50.0.0",
+    "isConversational": false,
+    "showProjectCreationExperience": false
+  },
+  "type": "lowCode",
+  "guardrails": [],
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a resolution email writer agent for a B2B SaaS billing department. Your task is to draft a professional, empathetic, and clear customer-facing email notifying them of the outcome of their billing dispute resolution.\n\nTone: Professional, courteous, and clear. Avoid technical jargon. Be specific about amounts and invoice numbers. Express appreciation for the customer's patience.\n\nInclude in the email body:\n1. A brief summary of the dispute outcome\n2. The credit amount being applied (if any) with the invoice number\n3. When they can expect to see the credit on their account\n4. An apology for any inconvenience caused\n5. Contact information for further questions\n\nReturn a JSON object with 'subject' and 'body' fields.",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "You are a resolution email writer agent for a B2B SaaS billing department. Your task is to draft a professional, empathetic, and clear customer-facing email notifying them of the outcome of their billing dispute resolution.\n\nTone: Professional, courteous, and clear. Avoid technical jargon. Be specific about amounts and invoice numbers. Express appreciation for the customer's patience.\n\nInclude in the email body:\n1. A brief summary of the dispute outcome\n2. The credit amount being applied (if any) with the invoice number\n3. When they can expect to see the credit on their account\n4. An apology for any inconvenience caused\n5. Contact information for further questions\n\nReturn a JSON object with 'subject' and 'body' fields."
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "Draft a customer-facing billing dispute resolution email using the following information.\n\nWebhook payload: {{input.start__output__webhookPayload}}\nDispute determination: {{input.disputeAnalyst__output__determination}}\nCredit amount approved: {{input.disputeAnalyst__output__creditAmount}}\nRationale: {{input.disputeAnalyst__output__rationale}}\n\nReturn JSON with 'subject' (email subject line) and 'body' (full plain-text email body).",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "Draft a customer-facing billing dispute resolution email using the following information.\n\nWebhook payload: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__webhookPayload"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\nDispute determination: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.disputeAnalyst__output__determination"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\nCredit amount approved: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.disputeAnalyst__output__creditAmount"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\nRationale: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.disputeAnalyst__output__rationale"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\nReturn JSON with 'subject' (email subject line) and 'body' (full plain-text email body)."
+        }
+      ]
+    }
+  ],
+  "projectId": "2b3aae58-72dc-437c-82b8-35d532a2bcb5"
+}

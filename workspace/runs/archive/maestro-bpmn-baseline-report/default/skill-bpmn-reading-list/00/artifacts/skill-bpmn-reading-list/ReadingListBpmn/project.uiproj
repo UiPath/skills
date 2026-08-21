@@ -1,0 +1,9 @@
+{
+  "name": "ReadingListBpmn",
+  "projectVersion": "1.0.0",
+  "description": "Filters and maps a hardcoded book catalog to a curated reading list.",
+  "main": "ReadingListBpmn.bpmn",
+  "targetFramework": "Portable",
+  "projectType": "ProcessOrchestration",
+  "schemaVersion": "0.2"
+}

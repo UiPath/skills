@@ -1,0 +1,3 @@
+{"ts": 1784694502.247072, "args": "maestro bpmn instance variables inst-triage-001 -f folder-public --output json", "matched_rule": "instance variables inst-triage-001 -f folder-public", "fixture": "instance-variables.json", "exit_code": 0}
+{"ts": 1784694502.4473395, "args": "maestro bpmn instance variables inst-triage-001 -f folder-public --parent-element-id SubProcess_TaxCalc --output json", "matched_rule": "--parent-element-id SubProcess_TaxCalc", "fixture": "instance-variables-scoped.json", "exit_code": 0}
+{"ts": 1784694526.6414526, "args": "--version", "matched_rule": null, "fixture": null, "exit_code": 1, "error": "unmocked_default"}

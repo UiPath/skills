@@ -1,0 +1,17 @@
+{
+  "DocVersion": "1.0.0",
+  "StudioMinVersion": "2025.10.0",
+  "SolutionId": "c239cec2-2bd2-42fb-affe-26b89deb9465",
+  "Projects": [
+    {
+      "Type": "Flow",
+      "ProjectRelativePath": "EmailSorterFlow/project.uiproj",
+      "Id": "cc238c84-0245-48ff-9984-4cd8ad30eed5"
+    },
+    {
+      "Type": "Process",
+      "ProjectRelativePath": "EmailSorter/project.uiproj",
+      "Id": "9efae0da-7d8c-413f-8db6-9d657ee07e2c"
+    }
+  ]
+}

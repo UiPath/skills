@@ -1,0 +1,2541 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>coder_eval · skill-flow-ixp-e2e-project-selection/aviation · default</title>
+<style>
+:root {
+  --bg-page: #0f1419;
+  --bg-card: #1a2129;
+  --bg-card-2: #232d38;
+  --bg-code: #0b0f14;
+  --fg: #e6edf3;
+  --fg-muted: #8b98a5;
+  --fg-dim: #6e7681;
+  --border: #30363d;
+  --accent: #58a6ff;
+  --score-high: #22c55e;
+  --score-mid: #f59e0b;
+  --score-low: #ef4444;
+  --status-success: #22c55e;
+  --status-failure: #f59e0b;
+  --status-error: #ef4444;
+  --status-neutral: #6e7681;
+  --shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+.light {
+  --bg-page: #ffffff;
+  --bg-card: #f6f8fa;
+  --bg-card-2: #eaeef2;
+  --bg-code: #f6f8fa;
+  --fg: #1f2328;
+  --fg-muted: #636c76;
+  --fg-dim: #8b949e;
+  --border: #d0d7de;
+  --accent: #0969da;
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial,
+               sans-serif;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--fg);
+  background: var(--bg-page);
+}
+.container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+h1, h2, h3, h4 { margin: 0 0 12px 0; line-height: 1.25; }
+h1 { font-size: 22px; font-weight: 600; }
+h2 { font-size: 18px; font-weight: 600; margin-top: 28px;
+     padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+h3 { font-size: 15px; font-weight: 600; color: var(--fg-muted); }
+h4 { font-size: 13px; font-weight: 600; color: var(--fg-muted); }
+p { margin: 0 0 8px 0; }
+.muted { color: var(--fg-muted); }
+.dim { color: var(--fg-dim); }
+.mono { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+        monospace; font-size: 12.5px; }
+code { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+       monospace; font-size: 12.5px; background: var(--bg-code);
+       border: 1px solid var(--border); padding: 1px 5px; border-radius: 3px; }
+pre { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+      monospace; font-size: 12.5px; background: var(--bg-code);
+      border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px;
+      margin: 6px 0; overflow-x: auto; white-space: pre-wrap;
+      word-wrap: break-word; }
+.header-bar { display: flex; align-items: center; justify-content: space-between;
+              margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+.title-group { flex: 1; min-width: 0; }
+.title-group .subtitle { color: var(--fg-muted); font-size: 13px;
+                         margin-top: 2px; word-break: break-all; }
+.badges { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.badge { display: inline-flex; align-items: center; gap: 6px;
+         padding: 4px 10px; border-radius: 12px; font-size: 12px;
+         font-weight: 600; background: var(--bg-card-2);
+         border: 1px solid var(--border); color: var(--fg); }
+.badge.success { background: color-mix(in srgb, var(--status-success) 20%, var(--bg-card-2));
+                 border-color: var(--status-success); color: var(--status-success); }
+.badge.failure { background: color-mix(in srgb, var(--status-failure) 20%, var(--bg-card-2));
+                 border-color: var(--status-failure); color: var(--status-failure); }
+.badge.error { background: color-mix(in srgb, var(--status-error) 20%, var(--bg-card-2));
+               border-color: var(--status-error); color: var(--status-error); }
+.badge.warning { background: color-mix(in srgb, #f4a52810 20%, var(--bg-card-2));
+                 border-color: #f4a528; color: #f4a528; }
+.badge.neutral { color: var(--fg-muted); }
+.score-pill { display: inline-block; padding: 2px 8px; border-radius: 10px;
+              font-size: 12px; font-weight: 700; min-width: 42px;
+              text-align: center; color: #0b0f14; }
+.score-high { background: var(--score-high); }
+.score-mid { background: var(--score-mid); }
+.score-low { background: var(--score-low); }
+.card { background: var(--bg-card); border: 1px solid var(--border);
+        border-radius: 8px; padding: 16px 20px; margin-bottom: 16px;
+        box-shadow: var(--shadow); }
+.card.highlight { border-left: 4px solid var(--accent); }
+.grid { display: grid; gap: 12px;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+.stat { background: var(--bg-card-2); padding: 10px 12px; border-radius: 6px;
+        border: 1px solid var(--border); }
+.stat .label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;
+               color: var(--fg-muted); margin-bottom: 4px; }
+.stat .value { font-size: 16px; font-weight: 600; }
+table { width: 100%; border-collapse: collapse; margin: 4px 0 12px 0; }
+th, td { text-align: left; padding: 8px 10px;
+         border-bottom: 1px solid var(--border); vertical-align: top;
+         font-size: 13px; }
+th { color: var(--fg-muted); font-weight: 600; font-size: 12px;
+     text-transform: uppercase; letter-spacing: 0.3px; }
+tr:last-child td { border-bottom: none; }
+details { margin: 6px 0; border: 1px solid var(--border); border-radius: 6px;
+          background: var(--bg-card-2); }
+details > summary { cursor: pointer; padding: 8px 12px; user-select: none;
+                    font-weight: 500; list-style: none; }
+details > summary::-webkit-details-marker { display: none; }
+details > summary::before { content: "▸ "; color: var(--fg-dim);
+                            display: inline-block; width: 14px;
+                            transition: transform 0.15s; }
+details[open] > summary::before { content: "▾ "; }
+details .details-body { padding: 0 12px 10px 12px; }
+.tool-row { display: flex; align-items: center; gap: 10px;
+            flex-wrap: wrap; font-size: 13px; }
+.tool-name { font-weight: 600; color: var(--accent); font-family: ui-monospace,
+             SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+.tool-status-ok { color: var(--status-success); font-size: 11px;
+                  font-weight: 600; }
+.tool-status-err { color: var(--status-error); font-size: 11px;
+                   font-weight: 600; }
+.tool-duration { color: var(--fg-muted); font-size: 12px; }
+.tool-seq { color: var(--fg-dim); font-size: 11px; font-weight: 600;
+            min-width: 24px; text-align: right; font-family: ui-monospace,
+            SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+.turn-header { display: flex; justify-content: space-between;
+               align-items: baseline; flex-wrap: wrap; gap: 10px;
+               margin-bottom: 10px; }
+.turn-meta { font-size: 12px; color: var(--fg-muted); }
+.criterion-row td:first-child { font-family: ui-monospace, SFMono-Regular,
+                                 "SF Mono", Menlo, Consolas, monospace;
+                                 color: var(--fg-muted); font-size: 12px; }
+.judge-section { display: flex; flex-direction: column; gap: 12px; }
+.judge-card { padding: 14px 16px; }
+.judge-card-head { display: flex; justify-content: space-between;
+                    align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+.judge-card-title { font-size: 14px; line-height: 1.4; flex: 1; min-width: 0; }
+.judge-card-score { flex-shrink: 0; }
+.judge-rationale { margin-top: 10px; padding: 10px 12px;
+                   background: var(--bg-code); border-radius: 4px;
+                   font-size: 13px; line-height: 1.5; }
+.judge-findings { margin: 8px 0 0 18px; padding-left: 4px; font-size: 13px;
+                   line-height: 1.6; }
+.judge-findings li { margin: 2px 0; }
+.nav-toggle { display: inline-block; padding: 5px 10px; font-size: 12px;
+              background: var(--bg-card-2); border: 1px solid var(--border);
+              border-radius: 5px; color: var(--fg); cursor: pointer; }
+.nav-toggle:hover { background: var(--bg-card); }
+.llm-next-steps { margin: 6px 0 0 20px; padding-left: 0; }
+.llm-next-steps li { margin: 3px 0; }
+.iteration-group { padding: 12px 16px 4px 16px; margin-bottom: 20px;
+                   border-radius: 0 6px 6px 0; border-left: 4px solid var(--status-neutral); }
+/* rgba fallback for browsers without color-mix (Chrome <111, Firefox <113, Safari <16.2). */
+.iteration-group--recovered { border-left-color: var(--status-success);
+                              background: rgba(34, 197, 94, 0.06);
+                              background: color-mix(in srgb, var(--status-success) 6%, transparent); }
+.iteration-group--terminal { border-left-color: var(--status-error);
+                             background: rgba(239, 68, 68, 0.06);
+                             background: color-mix(in srgb, var(--status-error) 6%, transparent); }
+.iteration-group__banner { margin: 0 0 12px 0; font-size: 14px; font-weight: 600; }
+.iteration-group--recovered .iteration-group__banner { color: var(--status-success); }
+.iteration-group--terminal .iteration-group__banner { color: var(--status-error); }
+.attempt-transition { display: flex; align-items: center; gap: 8px;
+                      margin: -6px 0 12px 8px; color: var(--status-error); font-size: 12.5px; }
+.attempt-transition__icon { font-weight: 700; }
+footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--border);
+         color: var(--fg-dim); font-size: 12px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="header-bar">
+  <div class="title-group">
+    <h1>Task: skill-flow-ixp-e2e-project-selection/aviation</h1>
+    <div class="subtitle">E2E (project selection): on a tenant where the demo IxP project set is published (one model per zip in scripts/ixp-demo-projects/packages/), the agent must pick the published model that matches the user&#x27;s document domain — not fall back to core.logic.mock and not pick a different domain&#x27;s model.</div>
+  </div>
+  <div class="badges">
+    <span class="badge success">SUCCESS</span>
+    <span class="score-pill score-high">1.00</span>
+    <span class="badge neutral">claude-code · claude-sonnet-5</span>
+    <span class="badge neutral">6m 55s</span>
+    <span class="badge neutral">$2.5843</span>
+    
+    
+    <span class="nav-toggle" onclick="toggleTheme()">Toggle theme</span>
+  </div>
+</div>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Variant</div><div class="value">default</div></div>
+    <div class="stat"><div class="label">Started</div><div class="value mono">2026-08-18T21:51:44</div></div>
+    <div class="stat"><div class="label">Duration</div><div class="value">6m 55s</div></div>
+    <div class="stat"><div class="label">Turns (SDK)</div><div class="value">85</div></div>
+    <div class="stat"><div class="label">Commands</div><div class="value">48</div></div>
+  </div>
+</div>
+
+<h2>Success Criteria <span class="muted" style="font-weight:400">(6/6 passed)</span></h2>
+<div class="card" style="padding:0">
+<table>
+  <thead>
+    <tr>
+      <th style="width:15%">Type</th>
+      <th style="width:35%">Description</th>
+      <th style="width:10%">Score</th>
+      <th>Details</th>
+    </tr>
+  </thead>
+  <tbody>
+    
+<tr class="criterion-row">
+  <td>skill_triggered</td>
+  <td>Agent invoked the uipath-maestro-flow Skill</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><div class="dim mono" style="white-space:pre-wrap">observed=&#x27;yes&#x27;, expected=&#x27;yes&#x27; (skill_name=&#x27;uipath-maestro-flow&#x27;)</div></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>command_executed</td>
+  <td>Agent searched the registry for IxP node types</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Matched 2/1 required commands (filters: tool_name=Bash, pattern=/uip\s+maestro\s+flow\s+registry\s+(search|list|get)\b[^\n]*ixp/)</summary><div class="details-body"><pre style="margin:6px 0 0 0">Matched 2/1 required commands (filters: tool_name=Bash, pattern=/uip\s+maestro\s+flow\s+registry\s+(search|list|get)\b[^\n]*ixp/)
+Examples: [&#x27;uip maestro flow registry search &quot;uipath.ixp&quot; --output json&#x27;, &#x27;uip maestro flow registry get &quot;uipath.ixp.aviation-investigation-final-report-demo-a42b1d4d-ixp.937c414b-7879-8059-8b29-&#x27;]</pre></div></details></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>run_command</td>
+  <td>uip maestro flow validate passes on the generated flow</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Command: f=$(find ../.. -name &quot;*.flow&quot; -print -quit); [ -n &quot;$f&quot; ] &amp;&amp; uip maestro flow validate &quot;$f&quot; --output json</summary><div class="details-body"><pre style="margin:6px 0 0 0">Command: f=$(find ../.. -name &quot;*.flow&quot; -print -quit); [ -n &quot;$f&quot; ] &amp;&amp; uip maestro flow validate &quot;$f&quot; --output json
+Exit code: 0 (expected: 0)
+Stdout:
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FlowValidate&quot;,
+  &quot;Data&quot;: {
+    &quot;File&quot;: &quot;/work/output/artifacts/skill-flow-ixp-e2e-project-selection/aviation/AviationNtsbSolution/NtsbReportExtraction/NtsbReportExtraction.flow&quot;,
+    &quot;Status&quot;: &quot;Valid&quot;
+  }
+}
+
+Stderr:
+[ManifestClient] fetchDynamicNodes ok: total=315 agent context nodes=2 external agent nodes=7 orchestrator nodes=261 IXP nodes=45</pre></div></details></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>run_command</td>
+  <td>Generated flow contains a real uipath.ixp.* node</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Command: grep -rqE &quot;\&quot;type\&quot;[[:space:]]*:[[:space:]]*\&quot;uipath\.ixp\.&quot; --include=&quot;*.flow&quot; ../..</summary><div class="details-body"><pre style="margin:6px 0 0 0">Command: grep -rqE &quot;\&quot;type\&quot;[[:space:]]*:[[:space:]]*\&quot;uipath\.ixp\.&quot; --include=&quot;*.flow&quot; ../..
+Exit code: 0 (expected: 0)
+Stdout: (empty)
+Stderr: (empty)</pre></div></details></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>run_command</td>
+  <td>Generated flow does NOT contain a core.logic.mock fallback</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Command: ! grep -rqE &quot;\&quot;type\&quot;[[:space:]]*:[[:space:]]*\&quot;core\.logic\.mock\&quot;&quot; --include=&quot;*.flow&quot; ../..</summary><div class="details-body"><pre style="margin:6px 0 0 0">Command: ! grep -rqE &quot;\&quot;type\&quot;[[:space:]]*:[[:space:]]*\&quot;core\.logic\.mock\&quot;&quot; --include=&quot;*.flow&quot; ../..
+Exit code: 0 (expected: 0)
+Stdout: (empty)
+Stderr: (empty)</pre></div></details></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>run_command</td>
+  <td>IxP node references the exact published model for this row&#x27;s domain (strict)</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Command: case &quot;$(pwd)&quot; in</summary><div class="details-body"><pre style="margin:6px 0 0 0">Command: case &quot;$(pwd)&quot; in
+  *aviation*)
+    model=&#x27;aviation-investigation-final-report-demo-a42b1d4d-ixp&#x27;
+    nt=&#x27;uipath\.ixp\.aviation-investigation-final-report-demo-a42b1d4d-ixp\.&#x27;
+    ;;
+  *birth*)
+    model=&#x27;birth_certificates_oob-6252526a-ixp&#x27;
+    nt=&#x27;uipath\.ixp\.birth-certificates-oob-6252526a-ixp\.&#x27;
+    ;;
+  *)
+    echo &quot;Unknown row in pwd: $(pwd)&quot; &gt;&amp;2
+    exit 2
+    ;;
+esac
+f=$(find ../.. -name &quot;*.flow&quot; -print -quit)
+if [ -z &quot;$f&quot; ]; then
+  echo &quot;no .flow file under ../..&quot; &gt;&amp;2
+  exit 1
+fi
+if ! grep -qF &quot;\&quot;modelName\&quot;: \&quot;${model}\&quot;&quot; &quot;$f&quot;; then
+  echo &quot;modelName mismatch — expected &#x27;${model}&#x27; in $f&quot; &gt;&amp;2
+  grep -E &#x27;&quot;modelName&quot;&#x27; &quot;$f&quot; &gt;&amp;2 || true
+  exit 1
+fi
+if ! grep -qE &quot;\&quot;type\&quot;[[:space:]]*:[[:space:]]*\&quot;${nt}&quot; &quot;$f&quot;; then
+  echo &quot;NodeType mismatch — expected prefix &#x27;${nt}&#x27; in $f&quot; &gt;&amp;2
+  grep -E &#x27;&quot;type&quot;[[:space:]]*:[[:space:]]*&quot;uipath\.ixp&#x27; &quot;$f&quot; &gt;&amp;2 || true
+  exit 1
+fi
+
+Exit code: 0 (expected: 0)
+Stdout: (empty)
+Stderr: (empty)</pre></div></details></td>
+</tr>
+
+  </tbody>
+</table>
+</div>
+<h2>Conversation Trace (1 iteration)</h2>
+<div class="card">
+  <div class="turn-header">
+    <h3>Iteration 1</h3>
+    <div class="badges">
+      <span class="badge neutral">85 assistant turns</span>
+      <span class="badge neutral">in 74 · out 25612 · cache 5197392</span>
+      <span class="badge neutral">6m 49s</span>
+      
+      
+      
+    </div>
+  </div>
+  <details>
+    <summary>Prompt to agent</summary>
+    <div class="details-body"><pre>Your working directory is: /work/output/artifacts/skill-flow-ixp-e2e-project-selection/aviation
+
+Build a Maestro flow that reads NTSB aviation accident investigation final-report PDFs and extracts the NTSB number, event date, location (city/state), aircraft make and model, and aircraft damage. Trigger manually; the downstream script logs the NTSB number.
+
+Important:
+- The `uip` CLI is already available and the runner is logged in.
+- Use `--output json` on all uip commands.
+- Work inside the stated working directory — do NOT `cd` to a parent.
+- Do NOT run `uip maestro flow debug` or `uip maestro flow deploy`.
+- Run `uip maestro flow validate` at most 3 times. If it reports errors, fix
+  the `.flow` and re-run it. Do not exceed 3 validation runs.
+</pre></div>
+  </details>
+  <details>
+    <summary>Agent response</summary>
+    <div class="details-body"><pre>[ASSISTANT] There&#x27;s a perfect match: `aviation-investigation-final-report-demo-a42b1d4d-ixp`. Let me get its full node definition and check `core.control.end` and `core.trigger.manual` at the same time.
+[ASSISTANT] Good, scaffold done inside the working directory (not a parent). Now let&#x27;s read the generated `.flow` file.
+[ASSISTANT] Validation passed on the first run with no warnings. Now format the flow.
+[ASSISTANT] Format succeeded. Let&#x27;s confirm the final flow file looks correct and check `variables.nodes[]` was regenerated as expected.
+[ASSISTANT] The flow is complete, validated, and formatted. Let me note the field-name assumptions used in the script node since I couldn&#x27;t confirm the exact taxonomy field names via the CLI (the `get-taxonomy` command couldn&#x27;t resolve this deployed model by name).
+[ASSISTANT] Confirmed still valid (this was the same first validate result, re-checked — only 1 validate run total, well under the 3-run limit).
+
+## Summary
+
+Built the Maestro flow at:
+`/work/output/artifacts/skill-flow-ixp-e2e-project-selection/aviation/AviationNtsbSolution/NtsbReportExtraction/NtsbReportExtraction.flow`
+
+**Topology:** `Manual trigger` → `Extract NTSB Report Fields` (IxP) → `Log NTSB Number` (Script) → `End`
+
+- **Trigger:** `core.trigger.manual` — manual start, with a `reportFile` flow input (`type: &quot;file&quot;`) bound to it for uploading the PDF.
+- **Extraction:** found and used a published tenant IxP model that&#x27;s a perfect fit — `aviation-investigation-final-report-demo-a42b1d4d-ixp` — wired via `fileRef: &quot;=js:$vars.start.output.reportFile&quot;`.
+- **Logging script:** reads `$vars.extractNtsbReport.output.ExtractionResult.ResultsDocument.Fields[]` and pulls out NTSB number, event date, city/state, aircraft make/model, and aircraft damage, then logs the NTSB number via `return { ..., log: &#x27;NTSB Number: &#x27; + ntsbNumber }`.
+- **End:** `core.control.end`.
+
+`uip maestro flow validate` passed clean (1 of 3 allowed runs used, no warnings), and `uip maestro flow format` ran successfully afterward. No `flow debug` or `flow deploy` was run, per instructions.
+
+One caveat worth flagging: I couldn&#x27;t confirm the exact taxonomy field names (`NTSB Number`, `Event Date`, `City`, `State`, `Aircraft Make`, `Aircraft Model`, `Aircraft Damage`) against the live model — `uip ixp deployments get-taxonomy` and `uip ixp projects list-models` both returned &quot;Project not found&quot; for this model name/GUID (it may be a demo/OOB deployment not indexed under `uip ixp projects list`). The script&#x27;s field-lookup logic is generic (`fields.find(f =&gt; f.FieldName === name)`), so once you confirm the real taxonomy field names (e.g. via the IXP product UI or Studio Web&#x27;s schema panel for this node), you may need to adjust the six field-name string literals in the `Log NTSB Number` script to match exactly.
+[RESULT - SUCCESS] Confirmed still valid (this was the same first validate result, re-checked — only 1 validate run total, well under the 3-run limit).
+
+## Summary
+
+Built the Maestro flow at:
+`/work/output/artifacts/skill-flow-ixp-e2e-project-selection/aviation/AviationNtsbSolution/NtsbReportExtraction/NtsbReportExtraction.flow`
+
+**Topology:** `Manual trigger` → `Extract NTSB Report Fields` (IxP) → `Log NTSB Number` (Script) → `End`
+
+- **Trigger:** `core.trigger.manual` — manual start, with a `reportFile` flow input (`type: &quot;file&quot;`) bound to it for uploading the PDF.
+- **Extraction:** found and used a published tenant IxP model that&#x27;s a perfect fit — `aviation-investigation-final-report-demo-a42b1d4d-ixp` — wired via `fileRef: &quot;=js:$vars.start.output.reportFile&quot;`.
+- **Logging script:** reads `$vars.extractNtsbReport.output.ExtractionResult.ResultsDocument.Fields[]` and pulls out NTSB number, event date, city/state, aircraft make/model, and aircraft damage, then logs the NTSB number via `return { ..., log: &#x27;NTSB Number: &#x27; + ntsbNumber }`.
+- **End:** `core.control.end`.
+
+`uip maestro flow validate` passed clean (1 of 3 allowed runs used, no warnings), and `uip mae</pre></div>
+  </details>
+  <h4 style="margin-top:12px">Tool Calls (48)</h4>
+  
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#0</span>
+      <span class="tool-name">Skill</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">182ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;skill&quot;: &quot;uipath:uipath-maestro-flow&quot;,
+  &quot;args&quot;: &quot;Build a Maestro flow in the working directory /work/output/artifacts/skill-flow-ixp-e2e-project-selection/aviation that reads NTSB aviation accident investigation final-report PDFs and extracts: NTSB number, event date, location (city/state), aircraft make and model, and aircraft damage. Trigger: manual. Downstream: a script node that logs the extracted NTSB number. Use an IXP/document-extraction … (275 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Launching skill: uipath:uipath-maestro-flow</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#1</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">58ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cat /home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/CAPABILITY.md&quot;,
+  &quot;description&quot;: &quot;Read author capability doc&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>&lt;persisted-output&gt;
+Output too large (29.6KB). Full output saved to: /home/azureuser/.claude/projects/-work-output-artifacts-skill-flow-ixp-e2e-project-selection-aviation/b3cc93bf-f7f0-4cb4-b667-fa372963f106/tool-results/bzz3lbcog.txt
+
+Preview (first 2KB):
+# Author — Create and edit `.flow` files
+
+Capability index for building new flows (greenfield) and editing existing flows (brownfield). Author owns everything that happens on disk, locally, without `uip login`. Authoring journeys terminate at `validate` + `format`; from there, hand off to [operate/CAPABILITY.md](../operate/CAPABILITY.md) to publish, run, or debug.
+
+&gt; **Where you came from / where to go next.** Author is upstream of Operate (build the flow → ship it) and upstream of Diagnose only via Operate (build → run → diagnose). Publish/run/lifecycle lives in [operate/CAPABILITY.md](../operate/CAPABILITY.md); fault triage lives in [diagnose/CAPABILITY.md](../diagnose/CAPABILITY.md).
+&gt;
+&gt; **Inherits universal rules from [SKILL.md](../../SKILL.md)** — `--output json` + prefer `--output-filter` for extraction, no `flow debug` without consent, resource discovery order, never invoke other skills automatically, dropdown question patt
+
+… (truncated, 1071 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#2</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">376ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/.claude/projects/-work-output-artifacts-skill-flow-ixp-e2e-project-selection-aviation/b3cc93bf-f7f0-4cb4-b667-fa372963f106/tool-results/bzz3lbcog.txt&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Author — Create and edit `.flow` files
+2	
+3	Capability index for building new flows (greenfield) and editing existing flows (brownfield). Author owns everything that happens on disk, locally, without `uip login`. Authoring journeys terminate at `validate` + `format`; from there, hand off to [operate/CAPABILITY.md](../operate/CAPABILITY.md) to publish, run, or debug.
+4	
+5	&gt; **Where you came from / where to go next.** Author is upstream of Operate (build the flow → ship it) and upstream of Diagnose only via Operate (build → run → diagnose). Publish/run/lifecycle lives in [operate/CAPABILITY.md](../operate/CAPABILITY.md); fault triage lives in [diagnose/CAPABILITY.md](../diagnose/CAPABILITY.md).
+6	&gt;
+7	&gt; **Inherits universal rules from [SKILL.md](../../SKILL.md)** — `--output json` + prefer `--output-filter` for extraction, no `flow debug` without consent, resource discovery order, never invoke other skills automatically, dropdown question pattern, solution layout, **plain-English narration + granular progress list (opt-in — silent by default; engage when the user asks for verbosity)**. The rules below are author-scoped and apply on top.
+8	
+9	## When to use this capability
+10	
+11	&lt;
+
+… (truncated, 29463 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#3</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">32ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cat /home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/references/greenfield.md&quot;,
+  &quot;description&quot;: &quot;Read greenfield journey doc&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>&lt;persisted-output&gt;
+Output too large (33.5KB). Full output saved to: /home/azureuser/.claude/projects/-work-output-artifacts-skill-flow-ixp-e2e-project-selection-aviation/b3cc93bf-f7f0-4cb4-b667-fa372963f106/tool-results/b39r2qj9v.txt
+
+Preview (first 2KB):
+# Greenfield — Create a New Flow
+
+End-to-end journey for creating a Flow project from scratch. Author terminates at `validate` + `format`. To publish, run, or debug after this, see [operate/CAPABILITY.md](../../operate/CAPABILITY.md).
+
+&gt; **Brownfield edits use a different journey.** If the `.flow` file already exists, see [brownfield.md](brownfield.md) instead.
+
+## Should you plan first?
+
+For complex flows, produce a plan before building. Reference [planning-arch.md](planning-arch.md) and [planning-impl.md](planning-impl.md) for the node type catalog, port reference, wiring rules, and topology patterns.
+
+**Plan when:**
+- The flow has 5+ nodes with branching or parallel paths
+- The flow uses connectors or resources that need discovery
+- The user&#x27;s requirements are ambiguous and you need to confirm the approach
+
+**Don&#x27;t plan when:**
+- Adding/editing a single node in an existing flow (use [brownfield.md](brownfield.md))
+- The flow is
+
+… (truncated, 1001 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#4</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">27ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cat /home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/references/plugins/ixp/planning.md&quot;,
+  &quot;description&quot;: &quot;Read ixp planning doc&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre># IxP Extraction Node — Planning
+
+IxP Extraction nodes invoke a **trained, published** UiPath Intelligent eXtraction Platform (IxP) model to pull structured fields out of unstructured or semi-structured documents (PDFs, photos, scanned forms). They are tenant-specific resources that appear in the registry after `uip login` + `uip maestro flow registry pull`.
+
+In the IxP product these published models are also called **runtime projects** — the bundle published to the tenant runtime and callable from a flow. Treat &quot;what IxP models do I have&quot;, &quot;what runtime projects do I have access to in flow&quot;, and &quot;list published extractors&quot; as the same listing question — see [Listing Available Models / Runtime Projects](#listing-available-models--runtime-projects).
+
+## Node Type Pattern
+
+`uipath.ixp.{modelName}.{fullyQualifiedName}`
+
+Unlike other resource plugins that use the `uipath.core.*` prefix, IxP nodes use `uipath.ixp.*` and a **two-segment tail**: `{modelName}` is the model&#x27;s display name, and `{fullyQualifiedName}` is the model&#x27;s fully-qualified name on the tenant (e.g. `Shared/invoice-model`). Both segments are sanitized — see [impl.md](impl.md) for the rule and concrete examples. Model v
+
+… (truncated, 6488 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#5</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">117ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cat /home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/references/plugins/ixp/impl.md&quot;,
+  &quot;description&quot;: &quot;Read ixp impl doc&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>&lt;persisted-output&gt;
+Output too large (32KB). Full output saved to: /home/azureuser/.claude/projects/-work-output-artifacts-skill-flow-ixp-e2e-project-selection-aviation/b3cc93bf-f7f0-4cb4-b667-fa372963f106/tool-results/b2q66q0c5.txt
+
+Preview (first 2KB):
+# IxP Extraction Node — Implementation
+
+IxP Extraction nodes invoke a published UiPath Intelligent eXtraction Platform (IxP) model. They are tenant-specific resources with pattern `uipath.ixp.{sanitized-modelName}.{sanitized-fullyQualifiedName}`.
+
+Sanitization rule (applied to both tail segments, in this order):
+
+1. Lowercase.
+2. Replace runs of any character outside `[a-z0-9]` with a single `-`. Slashes, spaces, underscores, and runs of dashes (e.g. `---`) all collapse to a single `-`. Dots in the FQN are NOT preserved — they also collapse to `-`.
+
+The dot in `uipath.ixp.{model}.{fqn}` is the segment separator the registry adds *after* sanitizing each tail segment, not part of the sanitization itself.
+
+Examples (verified against the live registry):
+
+- `&quot;birth_certificates_oob-6252526a-ixp&quot;` + FQN `Shared/birth_certificates_oob-6252526a-ixp` → `uipath.ixp.birth-certificates-oob-6252526a-ixp.shared-birth-certificates-oob-6252526a-ixp
+
+… (truncated, 998 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#6</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">82ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/.claude/projects/-work-output-artifacts-skill-flow-ixp-e2e-project-selection-aviation/b3cc93bf-f7f0-4cb4-b667-fa372963f106/tool-results/b2q66q0c5.txt&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# IxP Extraction Node — Implementation
+2	
+3	IxP Extraction nodes invoke a published UiPath Intelligent eXtraction Platform (IxP) model. They are tenant-specific resources with pattern `uipath.ixp.{sanitized-modelName}.{sanitized-fullyQualifiedName}`.
+4	
+5	Sanitization rule (applied to both tail segments, in this order):
+6	
+7	1. Lowercase.
+8	2. Replace runs of any character outside `[a-z0-9]` with a single `-`. Slashes, spaces, underscores, and runs of dashes (e.g. `---`) all collapse to a single `-`. Dots in the FQN are NOT preserved — they also collapse to `-`.
+9	
+10	The dot in `uipath.ixp.{model}.{fqn}` is the segment separator the registry adds *after* sanitizing each tail segment, not part of the sanitization itself.
+11	
+12	Examples (verified against the live registry):
+13	
+14	- `&quot;birth_certificates_oob-6252526a-ixp&quot;` + FQN `Shared/birth_certificates_oob-6252526a-ixp` → `uipath.ixp.birth-certificates-oob-6252526a-ixp.shared-birth-certificates-oob-6252526a-ixp` (underscores and slash both → `-`).
+15	- `&quot;idp-benchmark---invoices-c735405a-ixp&quot;` + FQN `Shared/idp-benchmark---invoices-c735405a-ixp` → `uipath.ixp.idp-benchmark-invoices-c735405a-ixp.shared-idp-benchmark-invoices-c73
+
+… (truncated, 32766 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#7</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">92ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/.claude/projects/-work-output-artifacts-skill-flow-ixp-e2e-project-selection-aviation/b3cc93bf-f7f0-4cb4-b667-fa372963f106/tool-results/b39r2qj9v.txt&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Greenfield — Create a New Flow
+2	
+3	End-to-end journey for creating a Flow project from scratch. Author terminates at `validate` + `format`. To publish, run, or debug after this, see [operate/CAPABILITY.md](../../operate/CAPABILITY.md).
+4	
+5	&gt; **Brownfield edits use a different journey.** If the `.flow` file already exists, see [brownfield.md](brownfield.md) instead.
+6	
+7	## Should you plan first?
+8	
+9	For complex flows, produce a plan before building. Reference [planning-arch.md](planning-arch.md) and [planning-impl.md](planning-impl.md) for the node type catalog, port reference, wiring rules, and topology patterns.
+10	
+11	**Plan when:**
+12	- The flow has 5+ nodes with branching or parallel paths
+13	- The flow uses connectors or resources that need discovery
+14	- The user&#x27;s requirements are ambiguous and you need to confirm the approach
+15	
+16	**Don&#x27;t plan when:**
+17	- Adding/editing a single node in an existing flow (use [brownfield.md](brownfield.md))
+18	- The flow is a straightforward linear pipeline (trigger → action → action → end)
+19	- The user has already described the exact topology they want
+20	
+21	### Examples
+22	
+23	**Plan:** &quot;Build a flow that receives a Jira ticke
+
+… (truncated, 34151 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#8</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">25ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;pwd &amp;&amp; find . -maxdepth 3 -print &amp;&amp; echo \&quot;---uipx---\&quot; &amp;&amp; find . -maxdepth 2 -type f -name &#x27;*.uipx&#x27; -print&quot;,
+  &quot;description&quot;: &quot;Inspect working directory contents&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/work/output/artifacts/skill-flow-ixp-e2e-project-selection/aviation
+.
+./.venv
+./.venv/CACHEDIR.TAG
+./.venv/lib64
+./.venv/pyvenv.cfg
+./.venv/lib
+./.venv/lib/python3.13
+./.venv/bin
+./.venv/bin/activate.csh
+./.venv/bin/activate.bat
+./.venv/bin/activate_this.py
+./.venv/bin/python
+./.venv/bin/pydoc.bat
+./.venv/bin/activate.ps1
+./.venv/bin/activate.xsh
+./.venv/bin/activate.nu
+./.venv/bin/python3.13
+./.venv/bin/activate
+./.venv/bin/activate.fish
+./.venv/bin/python3
+./.venv/bin/deactivate.bat
+./.venv/.gitignore
+---uipx---</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#9</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">13ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cat /home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/references/plugins/script/impl.md&quot;,
+  &quot;description&quot;: &quot;Read script node impl doc&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre># Script Node — Implementation
+
+## Node Type
+
+`core.action.script`
+
+## Registry validation
+
+```bash
+uip maestro flow registry get core.action.script --output json
+```
+
+Confirm: input port `input`, output port `success`, required input `script` (string, non-empty). See [Action Node Structure — Registry validation](../../../../shared/action-nodes.md#registry-validation) for the shared pattern.
+
+## JSON structure
+
+Follow the [Action Node Structure — Standard JSON skeleton](../../../../shared/action-nodes.md#standard-json-skeleton). The script-specific input is a single `script` string:
+
+```json
+{
+  &quot;inputs&quot;: {
+    &quot;script&quot;: &quot;const items = $vars.fetchData.output.body.items;\nconst total = items.reduce((sum, i) =&gt; sum + i.amount, 0);\nreturn { total, count: items.length };&quot;
+  }
+}
+```
+
+## Adding and editing
+
+See [Action Node Structure — Adding and editing procedures](../../../../shared/action-nodes.md#adding-and-editing-procedures). The script node uses the standard input port `input` and output port `success`; no plugin-specific wiring.
+
+## Script rules
+
+1. **Top-level body — no `function main()` wrapper.** Node runs the `script` text directly (as a function body); a wrapper is never ca
+
+… (truncated, 3756 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#10</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">48ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cat /home/azureuser/projects/skills/skills/uipath-maestro-flow/references/shared/cli-conventions.md&quot;,
+  &quot;description&quot;: &quot;Read cli conventions doc&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre># CLI Conventions
+
+Shared conventions for the `uip` CLI that apply across **all three capabilities** (Author, Operate, Diagnose). Read this first when invoking any `uip` command — every capability assumes these mechanics.
+
+## 1. Resolve the `uip` binary and detect command prefix
+
+The `uip` CLI is installed via npm. Resolve the binary (it may not be on PATH in nvm environments) and detect the command namespace.
+
+```bash
+UIP=$(command -v uip 2&gt;/dev/null || echo &quot;$(npm root -g 2&gt;/dev/null | sed &#x27;s|/node_modules$||&#x27;)/bin/uip&quot;)
+CURRENT=$($UIP --version 2&gt;/dev/null | awk &#x27;{print $NF}&#x27;)
+```
+
+If `uip` is not found at all, install it:
+
+```bash
+npm install -g @uipath/cli@latest
+```
+
+If `npm install -g` fails with a permission error, prompt the user to re-run with appropriate privileges — do not retry automatically.
+
+### Command prefix by version
+
+| Installed version | Command prefix | Example |
+| --- | --- | --- |
+| **≥ 0.3.4** | `uip maestro flow` | `uip maestro flow init MyProject` |
+| **&lt; 0.3.4** | `uip flow` | `uip flow init MyProject` &lt;!-- uip-check-skip --&gt; |
+
+```bash
+MIN_VERSION=&quot;0.3.4&quot;
+if [ &quot;$(printf &#x27;%s\n%s\n&#x27; &quot;$MIN_VERSION&quot; &quot;$CURRENT&quot; | sort -V | head -n1)&quot; = &quot;$MIN_VERSION&quot; ]; then
+
+… (truncated, 9257 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#11</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">404ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip login status --output json&quot;,
+  &quot;description&quot;: &quot;Check uip login status&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;LoginStatus&quot;,
+  &quot;Data&quot;: {
+    &quot;Status&quot;: &quot;Logged in&quot;,
+    &quot;Identity&quot;: &quot;zhongyi.shi@uipath.com&quot;,
+    &quot;IdentityType&quot;: &quot;User&quot;,
+    &quot;AuthFlow&quot;: &quot;Interactive&quot;,
+    &quot;CredentialSource&quot;: &quot;SavedLogin&quot;,
+    &quot;Provider&quot;: &quot;File&quot;,
+    &quot;UserId&quot;: &quot;bfda820f-4ddb-4af7-a5ec-3c332b403271&quot;,
+    &quot;UserEmail&quot;: &quot;zhongyi.shi@uipath.com&quot;,
+    &quot;UserName&quot;: &quot;zhongyi.shi@uipath.com&quot;,
+    &quot;BaseUrl&quot;: &quot;https://alpha.uipath.com&quot;,
+    &quot;Organization&quot;: &quot;codereval&quot;,
+    &quot;OrganizationId&quot;: &quot;311c6049-4966-4ef2-a6f3-8ceccaf38d54&quot;,
+    &quot;Tenant&quot;: &quot;DefaultTenant&quot;,
+    &quot;TenantId&quot;: &quot;69d43765-6ede-4575-88b7-9db601a2c056&quot;,
+    &quot;ExpirationDate&quot;: &quot;2026-08-18T22:43:38.000Z&quot;
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#12</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">4.97s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry pull --force --output json 2&gt;&amp;1 | tail -30&quot;,
+  &quot;description&quot;: &quot;Refresh flow registry cache&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>[ManifestClient] fetchDynamicNodes ok: total=4878 connector nodes=3654 integration trigger nodes=896 agent context nodes=2 external agent nodes=7 orchestrator nodes=261 IXP nodes=45 IXP Models nodes=13
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodePullSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;NodesCount&quot;: 4761,
+    &quot;FromCache&quot;: false,
+    &quot;Source&quot;: &quot;authenticated&quot;,
+    &quot;CacheWritten&quot;: true,
+    &quot;Message&quot;: &quot;Synced fresh nodes&quot;
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#13</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">8.83s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry search \&quot;uipath.ixp\&quot; --output json&quot;,
+  &quot;description&quot;: &quot;Search for published IxP extraction models&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeSearchSuccess&quot;,
+  &quot;Data&quot;: [
+    {
+      &quot;NodeType&quot;: &quot;uipath.ixp.aviation-investigation-final-report-demo-a42b1d4d-ixp.937c414b-7879-8059-8b29-e8401d2dd3ba-c4359cde-55f0-4f0e-9322-c6cdce74ab4c&quot;,
+      &quot;Category&quot;: &quot;document-extraction&quot;,
+      &quot;DisplayName&quot;: &quot;aviation-investigation-final-report-demo-a42b1d4d-ixp&quot;,
+      &quot;Description&quot;: &quot;(Shared)&quot;,
+      &quot;Version&quot;: &quot;1.0.0&quot;,
+      &quot;Tags&quot;: &quot;ixp, document-understanding, extraction&quot;,
+      &quot;AvailableOnTenant&quot;: true
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.ixp.birth-certificates-oob-6252526a-ixp.a05c7655-1a1c-80a5-94a0-b1609d34dc10-c4359cde-55f0-4f0e-9322-c6cdce74ab4c&quot;,
+      &quot;Category&quot;: &quot;document-extraction&quot;,
+      &quot;DisplayName&quot;: &quot;birth_certificates_oob-6252526a-ixp&quot;,
+      &quot;Description&quot;: &quot;(Shared)&quot;,
+      &quot;Version&quot;: &quot;1.0.0&quot;,
+      &quot;Tags&quot;: &quot;ixp, document-understanding, extraction&quot;,
+      &quot;AvailableOnTenant&quot;: true
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.ixp.death-certificates-oob-56f11e28-ixp.fb2bf1b7-2e43-80ec-9d87-f380183f3550-c4359cde-55f0-4f0e-9322-c6cdce74ab4c&quot;,
+      &quot;Category&quot;: &quot;document-extraction&quot;,
+      &quot;DisplayName&quot;: &quot;death_certificates_oob-56f11e28-ixp&quot;,
+      &quot;Description&quot;: &quot;(Shared)&quot;,
+      
+
+… (truncated, 4323 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#14</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">3.02s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry get \&quot;uipath.ixp.aviation-investigation-final-report-demo-a42b1d4d-ixp.937c414b-7879-8059-8b29-e8401d2dd3ba-c4359cde-55f0-4f0e-9322-c6cdce74ab4c\&quot; --output json &gt; /tmp/ixp_node.json; wc -l /tmp/ixp_node.json; cat /tmp/ixp_node.json&quot;,
+  &quot;description&quot;: &quot;Get full IxP node definition for aviation model&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>&lt;persisted-output&gt;
+Output too large (83.9KB). Full output saved to: /home/azureuser/.claude/projects/-work-output-artifacts-skill-flow-ixp-e2e-project-selection-aviation/b3cc93bf-f7f0-4cb4-b667-fa372963f106/tool-results/bemm62n86.txt
+
+Preview (first 2KB):
+1960 /tmp/ixp_node.json
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeGetSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;Node&quot;: {
+      &quot;nodeType&quot;: &quot;uipath.ixp.aviation-investigation-final-report-demo-a42b1d4d-ixp.937c414b-7879-8059-8b29-e8401d2dd3ba-c4359cde-55f0-4f0e-9322-c6cdce74ab4c&quot;,
+      &quot;version&quot;: &quot;1.0.0&quot;,
+      &quot;category&quot;: &quot;document-extraction&quot;,
+      &quot;tags&quot;: [
+        &quot;ixp&quot;,
+        &quot;document-understanding&quot;,
+        &quot;extraction&quot;
+      ],
+      &quot;description&quot;: &quot;(Shared)&quot;,
+      &quot;sortOrder&quot;: 545,
+      &quot;display&quot;: {
+        &quot;canvasLabel&quot;: &quot;Extract&quot;,
+        &quot;label&quot;: &quot;aviation-investigation-final-report-demo-a42b1d4d-ixp&quot;,
+        &quot;description&quot;: &quot;(Shared)&quot;,
+        &quot;icon&quot;: &quot;file-text&quot;
+      },
+      &quot;handleConfiguration&quot;: [
+        {
+          &quot;position&quot;: &quot;left&quot;,
+          &quot;handles&quot;: [
+            {
+              &quot;id&quot;: &quot;input&quot;,
+              &quot;type&quot;: &quot;target&quot;,
+              &quot;handleType&quot;: &quot;input&quot;
+            }
+          ]
+        },
+        {
+          &quot;
+
+… (truncated, 1075 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#15</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">5.67s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry get core.control.end --output json &gt; /tmp/end_node.json; cat /tmp/end_node.json&quot;,
+  &quot;description&quot;: &quot;Get End node definition&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeGetSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;Node&quot;: {
+      &quot;nodeType&quot;: &quot;core.control.end&quot;,
+      &quot;version&quot;: &quot;1.0&quot;,
+      &quot;category&quot;: &quot;control-flow&quot;,
+      &quot;description&quot;: &quot;Mark the end of a process path&quot;,
+      &quot;tags&quot;: [
+        &quot;control-flow&quot;,
+        &quot;end&quot;,
+        &quot;finish&quot;,
+        &quot;complete&quot;
+      ],
+      &quot;sortOrder&quot;: 65,
+      &quot;display&quot;: {
+        &quot;label&quot;: &quot;End&quot;,
+        &quot;icon&quot;: &quot;circle-check&quot;,
+        &quot;shape&quot;: &quot;circle&quot;
+      },
+      &quot;handleConfiguration&quot;: [
+        {
+          &quot;position&quot;: &quot;left&quot;,
+          &quot;handles&quot;: [
+            {
+              &quot;id&quot;: &quot;input&quot;,
+              &quot;type&quot;: &quot;target&quot;,
+              &quot;handleType&quot;: &quot;input&quot;
+            }
+          ]
+        }
+      ],
+      &quot;model&quot;: {
+        &quot;type&quot;: &quot;bpmn:EndEvent&quot;
+      },
+      &quot;runtimeConstraints&quot;: {
+        &quot;exclude&quot;: [
+          &quot;api-function&quot;
+        ]
+      }
+    }
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#16</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">7.29s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry get core.trigger.manual --output json &gt; /tmp/manual_trigger.json; cat /tmp/manual_trigger.json&quot;,
+  &quot;description&quot;: &quot;Get manual trigger node definition&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeGetSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;Node&quot;: {
+      &quot;nodeType&quot;: &quot;core.trigger.manual&quot;,
+      &quot;version&quot;: &quot;1.0&quot;,
+      &quot;category&quot;: &quot;trigger&quot;,
+      &quot;description&quot;: &quot;Start the process manually&quot;,
+      &quot;tags&quot;: [
+        &quot;trigger&quot;,
+        &quot;start&quot;,
+        &quot;manual&quot;
+      ],
+      &quot;sortOrder&quot;: 80,
+      &quot;display&quot;: {
+        &quot;label&quot;: &quot;Manual trigger&quot;,
+        &quot;icon&quot;: &quot;play&quot;,
+        &quot;shape&quot;: &quot;circle&quot;
+      },
+      &quot;handleConfiguration&quot;: [
+        {
+          &quot;position&quot;: &quot;right&quot;,
+          &quot;handles&quot;: [
+            {
+              &quot;id&quot;: &quot;output&quot;,
+              &quot;type&quot;: &quot;source&quot;,
+              &quot;handleType&quot;: &quot;output&quot;,
+              &quot;showButton&quot;: true,
+              &quot;constraints&quot;: {
+                &quot;forbiddenTargetCategories&quot;: [
+                  &quot;trigger&quot;
+                ]
+              }
+            }
+          ],
+          &quot;visible&quot;: true
+        }
+      ],
+      &quot;model&quot;: {
+        &quot;type&quot;: &quot;bpmn:StartEvent&quot;,
+        &quot;entryPointId&quot;: true
+      },
+      &quot;outputDefinition&quot;: {
+        &quot;output&quot;: {
+          &quot;type&quot;: &quot;object&quot;,
+          &quot;description&quot;: &quot;Data passed when manually triggering the process.&quot;,
+          &quot;source&quot;: &quot;null&quot;,
+          &quot;var&quot;: &quot;output&quot;
+        }
+
+… (truncated, 285 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#17</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">7.88s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry get core.action.script --output json &gt; /tmp/script_node.json; cat /tmp/script_node.json&quot;,
+  &quot;description&quot;: &quot;Get script node definition&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeGetSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;Node&quot;: {
+      &quot;nodeType&quot;: &quot;core.action.script&quot;,
+      &quot;version&quot;: &quot;1.1&quot;,
+      &quot;category&quot;: &quot;data-operations&quot;,
+      &quot;description&quot;: &quot;Run custom JavaScript code&quot;,
+      &quot;tags&quot;: [
+        &quot;code&quot;,
+        &quot;javascript&quot;,
+        &quot;python&quot;
+      ],
+      &quot;sortOrder&quot;: 70,
+      &quot;supportsErrorHandling&quot;: true,
+      &quot;display&quot;: {
+        &quot;label&quot;: &quot;Script&quot;,
+        &quot;icon&quot;: &quot;code&quot;
+      },
+      &quot;handleConfiguration&quot;: [
+        {
+          &quot;position&quot;: &quot;left&quot;,
+          &quot;handles&quot;: [
+            {
+              &quot;id&quot;: &quot;input&quot;,
+              &quot;type&quot;: &quot;target&quot;,
+              &quot;handleType&quot;: &quot;input&quot;
+            }
+          ]
+        },
+        {
+          &quot;position&quot;: &quot;right&quot;,
+          &quot;handles&quot;: [
+            {
+              &quot;id&quot;: &quot;success&quot;,
+              &quot;type&quot;: &quot;source&quot;,
+              &quot;handleType&quot;: &quot;output&quot;
+            },
+            {
+              &quot;id&quot;: &quot;error&quot;,
+              &quot;label&quot;: &quot;Error&quot;,
+              &quot;type&quot;: &quot;source&quot;,
+              &quot;handleType&quot;: &quot;output&quot;,
+              &quot;visible&quot;: &quot;{inputs.errorHandlingEnabled}&quot;,
+              &quot;constraints&quot;: {
+                &quot;maxConnections&quot;: 1
+              }
+            }
+          ]
+    
+
+… (truncated, 2916 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#18</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">241ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/.claude/projects/-work-output-artifacts-skill-flow-ixp-e2e-project-selection-aviation/b3cc93bf-f7f0-4cb4-b667-fa372963f106/tool-results/bemm62n86.txt&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	1960 /tmp/ixp_node.json
+2	{
+3	  &quot;Result&quot;: &quot;Success&quot;,
+4	  &quot;Code&quot;: &quot;NodeGetSuccess&quot;,
+5	  &quot;Data&quot;: {
+6	    &quot;Node&quot;: {
+7	      &quot;nodeType&quot;: &quot;uipath.ixp.aviation-investigation-final-report-demo-a42b1d4d-ixp.937c414b-7879-8059-8b29-e8401d2dd3ba-c4359cde-55f0-4f0e-9322-c6cdce74ab4c&quot;,
+8	      &quot;version&quot;: &quot;1.0.0&quot;,
+9	      &quot;category&quot;: &quot;document-extraction&quot;,
+10	      &quot;tags&quot;: [
+11	        &quot;ixp&quot;,
+12	        &quot;document-understanding&quot;,
+13	        &quot;extraction&quot;
+14	      ],
+15	      &quot;description&quot;: &quot;(Shared)&quot;,
+16	      &quot;sortOrder&quot;: 545,
+17	      &quot;display&quot;: {
+18	        &quot;canvasLabel&quot;: &quot;Extract&quot;,
+19	        &quot;label&quot;: &quot;aviation-investigation-final-report-demo-a42b1d4d-ixp&quot;,
+20	        &quot;description&quot;: &quot;(Shared)&quot;,
+21	        &quot;icon&quot;: &quot;file-text&quot;
+22	      },
+23	      &quot;handleConfiguration&quot;: [
+24	        {
+25	          &quot;position&quot;: &quot;left&quot;,
+26	          &quot;handles&quot;: [
+27	            {
+28	              &quot;id&quot;: &quot;input&quot;,
+29	              &quot;type&quot;: &quot;target&quot;,
+30	              &quot;handleType&quot;: &quot;input&quot;
+31	            }
+32	          ]
+33	        },
+34	        {
+35	          &quot;position&quot;: &quot;right&quot;,
+36	          &quot;handles&quot;: [
+37	            {
+38	              &quot;id&quot;: &quot;success&quot;,
+39	              &quot;type&quot;: &quot;source&quot;,
+40	              &quot;handleType
+
+… (truncated, 93383 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#19</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">24ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -n -i \&quot;typeVersion\&quot; -A3 -B3 /home/azureuser/projects/skills/skills/uipath-maestro-flow/references/shared/file-format.md | head -100&quot;,
+  &quot;description&quot;: &quot;Search file-format doc for typeVersion mapping rule&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>44-**Top-level `version`** = workflow file-format version. **Use the exact value `uip maestro flow init` scaffolds** — do not hand-pick, hardcode, or downgrade it. It is not a semver string; the schema gates on an exact literal for the current file-format version, so an older value (e.g. `&quot;1.0&quot;`, `&quot;1.0.0&quot;`) that worked for a legacy parser will fail for a new flow. `init` always writes the accepted value; preserve it. To see the current value, scaffold a throwaway flow with `init` and read its top-level `version`, or read it from an existing `init`-generated `.flow`.
+45-&lt;!--skill-flavor:flow-format-version-source:end--&gt;
+46-
+47:&gt; **Don&#x27;t confuse top-level `version` with `definitions[].version` / `typeVersion`.** Node-definition `version` (and matching node-instance `typeVersion`) are validated by `versionSchema`, a regex that accepts both `x.y` and `x.y.z` (`/^\d+\.\d+(\.\d+)?$/`, error `&#x27;Version must be in format &quot;x.y&quot; or &quot;x.y.z&quot;&#x27;`). Both layers are canonically `x.y`, but the node-level regex still accepts legacy 3-part strings so registry definitions (`&quot;1.0&quot;`) and older scaffolded nodes (`&quot;1.0.0&quot;`) both parse. The two layers report distinct errors, but Zod may collapse a node-level
+
+… (truncated, 3635 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#20</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">35ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cat /home/azureuser/projects/skills/skills/uipath-maestro-flow/references/shared/file-format.md&quot;,
+  &quot;description&quot;: &quot;Read full file-format doc&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>&lt;persisted-output&gt;
+Output too large (33KB). Full output saved to: /home/azureuser/.claude/projects/-work-output-artifacts-skill-flow-ixp-e2e-project-selection-aviation/b3cc93bf-f7f0-4cb4-b667-fa372963f106/tool-results/bceo60dx4.txt
+
+Preview (first 2KB):
+# UiPath Flow File Format
+
+The `.flow` file is a JSON document at `&lt;ProjectName&gt;.flow` in the project root. It is the **only file you should edit** — other generated files will be overwritten.
+
+## Table of contents
+
+- [Top-level structure](#top-level-structure)
+- [Project structure (generated scaffold)](#project-structure-generated-scaffold)
+- [Node instance](#node-instance)
+- [Layout](#layout)
+- [Edge — both ports required](#edge--both-ports-required)
+- [Definition entry](#definition-entry)
+- [Common node types](#common-node-types)
+- [Standard ports by node type](#standard-ports-by-node-type)
+- [Implicit error port on action nodes](#implicit-error-port-on-action-nodes)
+- [Minimal working example — dice roller](#minimal-working-example--dice-roller)
+- [entry-points.json — auto-generated, do not edit](#entry-pointsjson--auto-generated-do-not-edit)
+- [Bindings — Orchestrator resource bindings (top-level `bindings[]`)](#bindings--orche
+
+… (truncated, 405 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#21</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">8.84s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;\\\nuip solution init \&quot;AviationNtsbSolution\&quot; --output json \\\n  &amp;&amp; cd \&quot;AviationNtsbSolution\&quot; \\\n  &amp;&amp; uip maestro flow init \&quot;NtsbReportExtraction\&quot; --output json \\\n  &amp;&amp; cd \&quot;NtsbReportExtraction\&quot; \\\n  &amp;&amp; uip maestro flow registry pull --output json \\\n  &amp;&amp; pwd \\\n  &amp;&amp; ls -la&quot;,
+  &quot;description&quot;: &quot;Scaffold solution and flow project, refresh registry&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;SolutionInit&quot;,
+  &quot;Data&quot;: {
+    &quot;Status&quot;: &quot;Created successfully&quot;,
+    &quot;Path&quot;: &quot;/work/output/artifacts/skill-flow-ixp-e2e-project-selection/aviation/AviationNtsbSolution/AviationNtsbSolution.uipx&quot;,
+    &quot;NextSteps&quot;: &quot;Read /work/output/artifacts/skill-flow-ixp-e2e-project-selection/aviation/AviationNtsbSolution/AGENTS.md or /work/output/artifacts/skill-flow-ixp-e2e-project-selection/aviation/AviationNtsbSolution/CLAUDE.md to understand the solution lifecycle, project types that can be used inside a solution, and related uip command references.&quot;
+  }
+}
+2026-08-18 21:53:30 INFO  [ResourceBuilder:ProjectCreateCommandHandler] Creating project [object Object]
+2026-08-18 21:53:30 INFO  [ResourceBuilder:MultiFileSolutionDefinitionProvider] Reading multi-file solution definition for solution %s /work/output/artifacts/skill-flow-ixp-e2e-project-selection/aviation/AviationNtsbSolution
+2026-08-18 21:53:30 INFO  [ResourceBuilder:ProjectCreateCommandHandler] Generate artefact resources for project [object Object]
+2026-08-18 21:53:30 INFO  [ResourceBuilder:SolutionsMetadataReader] Reading metadata from %s. SolutionsMetadataReader
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: 
+
+… (truncated, 1881 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#22</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">6ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-ixp-e2e-project-selection/aviation/AviationNtsbSolution/NtsbReportExtraction/NtsbReportExtraction.flow&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	{
+2	  &quot;id&quot;: &quot;cf44af6e-0c64-42a8-bbce-6376b8d992b8&quot;,
+3	  &quot;version&quot;: &quot;1.9&quot;,
+4	  &quot;name&quot;: &quot;NtsbReportExtraction&quot;,
+5	  &quot;nodes&quot;: [
+6	    {
+7	      &quot;id&quot;: &quot;start&quot;,
+8	      &quot;type&quot;: &quot;core.trigger.manual&quot;,
+9	      &quot;typeVersion&quot;: &quot;1.0&quot;,
+10	      &quot;display&quot;: {
+11	        &quot;label&quot;: &quot;Manual trigger&quot;
+12	      },
+13	      &quot;inputs&quot;: {
+14	        &quot;entryPointId&quot;: &quot;de7edf97-e9b9-4bfe-bd12-5124c440079f&quot;,
+15	        &quot;isDefaultEntryPoint&quot;: true
+16	      }
+17	    }
+18	  ],
+19	  &quot;edges&quot;: [],
+20	  &quot;definitions&quot;: [
+21	    {
+22	      &quot;nodeType&quot;: &quot;core.trigger.manual&quot;,
+23	      &quot;version&quot;: &quot;1.0&quot;,
+24	      &quot;category&quot;: &quot;trigger&quot;,
+25	      &quot;description&quot;: &quot;Start the process manually&quot;,
+26	      &quot;tags&quot;: [
+27	        &quot;trigger&quot;,
+28	        &quot;start&quot;,
+29	        &quot;manual&quot;
+30	      ],
+31	      &quot;sortOrder&quot;: 80,
+32	      &quot;display&quot;: {
+33	        &quot;label&quot;: &quot;Manual trigger&quot;,
+34	        &quot;icon&quot;: &quot;play&quot;,
+35	        &quot;shape&quot;: &quot;circle&quot;
+36	      },
+37	      &quot;handleConfiguration&quot;: [
+38	        {
+39	          &quot;position&quot;: &quot;right&quot;,
+40	          &quot;handles&quot;: [
+41	            {
+42	              &quot;id&quot;: &quot;output&quot;,
+43	              &quot;type&quot;: &quot;source&quot;,
+44	              &quot;handleType&quot;: &quot;output&quot;,
+45	              &quot;showButton&quot;: true,
+46	              &quot;constr
+
+… (truncated, 1054 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#23</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-err">ERROR</span>
+      <span class="tool-duration">893ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip ixp deployments get-taxonomy --folder-key c4359cde-55f0-4f0e-9322-c6cdce74ab4c \&quot;aviation-investigation-final-report-demo-a42b1d4d-ixp\&quot; --output json&quot;,
+  &quot;description&quot;: &quot;Get taxonomy field names for aviation IxP model&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Exit code 3
+{
+  &quot;Result&quot;: &quot;ValidationError&quot;,
+  &quot;ErrorCode&quot;: &quot;invalid_argument&quot;,
+  &quot;Message&quot;: &quot;error: required option &#x27;--version &lt;number&gt;&#x27; not specified&quot;,
+  &quot;Instructions&quot;: &quot;Run &#x27;uip ixp deployments get-taxonomy aviation-investigation-final-report-demo-a42b1d4d-ixp --help&#x27; for usage information.&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}</pre>
+    <h4>Error</h4><pre>Exit code 3
+{
+  &quot;Result&quot;: &quot;ValidationError&quot;,
+  &quot;ErrorCode&quot;: &quot;invalid_argument&quot;,
+  &quot;Message&quot;: &quot;error: required option &#x27;--version &lt;number&gt;&#x27; not specified&quot;,
+  &quot;Instructions&quot;: &quot;Run &#x27;uip ixp deployments get-taxonomy aviation-investigation-final-report-demo-a42b1d4d-ixp --help&#x27; for usage information.&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}</pre>
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#24</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">519ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip ixp deployments get-taxonomy --help 2&gt;&amp;1 | head -40&quot;,
+  &quot;description&quot;: &quot;Check get-taxonomy CLI options&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>                        uip ixp deployments get-taxonomy                        
+Get the project taxonomy (data types + field groups) at a specific trained model version
+                Use --help with nested commands for more detail.                
+
+┌─ Usage ──────────────────────────────────────────────────────────────────────┐
+│ uip ixp deployments get-taxonomy [options] &lt;project-name&gt;                    │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Arguments ──────────────────────────────────────────────────────────────────┐
+│ project-name   Project name                                                  │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Options ────────────────────────────────────────────────────────────────────┐
+│ --version &lt;number&gt;             Trained model version (non-negative integer). │
+│                                Get available versions from `uip ixp projects │
+│                                list-models &lt;project-name&gt; --output json`.    │
+│ -h, --help                     display help for command                      │
+│ --output                       Output format (default
+
+… (truncated, 1484 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#25</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-err">ERROR</span>
+      <span class="tool-duration">1.37s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip ixp projects list-models \&quot;aviation-investigation-final-report-demo-a42b1d4d-ixp\&quot; --output json&quot;,
+  &quot;description&quot;: &quot;List trained model versions for aviation IxP project&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Exit code 1
+{
+  &quot;Result&quot;: &quot;Failure&quot;,
+  &quot;ErrorCode&quot;: &quot;not_found&quot;,
+  &quot;Message&quot;: &quot;Failed to list models&quot;,
+  &quot;Instructions&quot;: &quot;Project with name &#x27;aviation-investigation-final-report-demo-a42b1d4d-ixp&#x27; was not found.&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;,
+  &quot;Context&quot;: {
+    &quot;HttpStatus&quot;: 404,
+    &quot;ErrorCode&quot;: &quot;[ProjectNotFoundError]&quot;
+  }
+}</pre>
+    <h4>Error</h4><pre>Exit code 1
+{
+  &quot;Result&quot;: &quot;Failure&quot;,
+  &quot;ErrorCode&quot;: &quot;not_found&quot;,
+  &quot;Message&quot;: &quot;Failed to list models&quot;,
+  &quot;Instructions&quot;: &quot;Project with name &#x27;aviation-investigation-final-report-demo-a42b1d4d-ixp&#x27; was not found.&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;,
+  &quot;Context&quot;: {
+    &quot;HttpStatus&quot;: 404,
+    &quot;ErrorCode&quot;: &quot;[ProjectNotFoundError]&quot;
+  }
+}</pre>
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#26</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-err">ERROR</span>
+      <span class="tool-duration">600ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip ixp projects list --output json --output-filter \&quot;[?contains(name,&#x27;aviation&#x27;)]\&quot;&quot;,
+  &quot;description&quot;: &quot;Search IXP projects list for aviation project&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Exit code 3
+{
+  &quot;Result&quot;: &quot;ValidationError&quot;,
+  &quot;ErrorCode&quot;: &quot;invalid_argument&quot;,
+  &quot;Message&quot;: &quot;--output-filter requires an explicit --limit: this command defaults to --limit 50, so the filter would silently apply to only the first 50 records.&quot;,
+  &quot;Instructions&quot;: &quot;Pass --limit &lt;n&gt; to choose how many records the filter applies to. To filter over all records, pass the command&#x27;s maximum accepted --limit (see the option&#x27;s description in --help).&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}</pre>
+    <h4>Error</h4><pre>Exit code 3
+{
+  &quot;Result&quot;: &quot;ValidationError&quot;,
+  &quot;ErrorCode&quot;: &quot;invalid_argument&quot;,
+  &quot;Message&quot;: &quot;--output-filter requires an explicit --limit: this command defaults to --limit 50, so the filter would silently apply to only the first 50 records.&quot;,
+  &quot;Instructions&quot;: &quot;Pass --limit &lt;n&gt; to choose how many records the filter applies to. To filter over all records, pass the command&#x27;s maximum accepted --limit (see the option&#x27;s description in --help).&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}</pre>
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#27</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">2.01s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip ixp projects list --output json --limit 200 --output-filter \&quot;[?contains(name,&#x27;aviation&#x27;)]\&quot;&quot;,
+  &quot;description&quot;: &quot;Search IXP projects list for aviation project with explicit limit&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;IxpProjectsList&quot;,
+  &quot;Data&quot;: []
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#28</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.25s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip ixp projects list --output json --limit 200 --output-filter \&quot;[].name\&quot;&quot;,
+  &quot;description&quot;: &quot;List all IXP project names&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;IxpProjectsList&quot;,
+  &quot;Data&quot;: []
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#29</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">989ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip ixp projects list --output json --limit 200&quot;,
+  &quot;description&quot;: &quot;List all IXP projects raw&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;IxpProjectsList&quot;,
+  &quot;Data&quot;: {
+    &quot;Projects&quot;: [
+      {
+        &quot;Id&quot;: &quot;b8d3ea65-59c5-8021-8427-a0406ce6218b&quot;,
+        &quot;Name&quot;: &quot;vendor_invoices-3e19dd82-ixp&quot;,
+        &quot;Title&quot;: &quot;Vendor Invoices&quot;,
+        &quot;CreatedAt&quot;: &quot;2026-07-24T17:03:52.973749+00:00&quot;,
+        &quot;ProjectUrl&quot;: &quot;https://alpha.uipath.com/codereval/defaulttenant/reinfer_/ixp/vendor_invoices-3e19dd82-ixp/vendor_invoices-3e19dd82&quot;
+      },
+      {
+        &quot;Id&quot;: &quot;ae342ddb-1574-8073-8e71-478002ef6515&quot;,
+        &quot;Name&quot;: &quot;codereval-integ-publish-444cb85e5e-ed030ecc-ixp&quot;,
+        &quot;Title&quot;: &quot;codereval-integ-publish-444cb85e5e&quot;,
+        &quot;CreatedAt&quot;: &quot;2026-08-17T05:22:23.576987+00:00&quot;,
+        &quot;ProjectUrl&quot;: &quot;https://alpha.uipath.com/codereval/defaulttenant/reinfer_/ixp/codereval-integ-publish-444cb85e5e-ed030ecc-ixp/codereval-integ-publish-444cb85e5e-ed030ecc&quot;
+      }
+    ],
+    &quot;Total&quot;: 2,
+    &quot;Offset&quot;: 0,
+    &quot;Limit&quot;: 200
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#30</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">837ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip ixp deployments --help 2&gt;&amp;1 | head -40&quot;,
+  &quot;description&quot;: &quot;Check ixp deployments subcommands&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>                              uip ixp deployments                               
+Inspect IXP deployments — project taxonomy pinned to a specific trained model version
+                Use --help with nested commands for more detail.                
+
+┌─ Usage ──────────────────────────────────────────────────────────────────────┐
+│ uip ixp deployments [options] [command]                                      │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Commands ───────────────────────────────────────────────────────────────────┐
+│ get-taxonomy   Get the project taxonomy (data types + field groups) at a     │
+│                specific trained model version                                │
+│ help           display help for command                                      │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Options ────────────────────────────────────────────────────────────────────┐
+│ -h, --help                     display help for command                      │
+│ --output                       Output format (default: json)                 │
+│ &lt;table|json|yaml|plain&gt;                                 
+
+… (truncated, 589 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#31</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.36s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip ixp deployments get-taxonomy \&quot;aviation-investigation-final-report-demo-a42b1d4d-ixp\&quot; --version 1 --output json 2&gt;&amp;1 | head -100&quot;,
+  &quot;description&quot;: &quot;Try fetching taxonomy with version 1&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Failure&quot;,
+  &quot;ErrorCode&quot;: &quot;not_found&quot;,
+  &quot;Message&quot;: &quot;Failed to get deployment taxonomy&quot;,
+  &quot;Instructions&quot;: &quot;Project with name &#x27;aviation-investigation-final-report-demo-a42b1d4d-ixp&#x27; was not found.&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;,
+  &quot;Context&quot;: {
+    &quot;HttpStatus&quot;: 404,
+    &quot;ErrorCode&quot;: &quot;[ProjectNotFoundError]&quot;
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#32</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-err">ERROR</span>
+      <span class="tool-duration">2.05s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip ixp deployments get-taxonomy \&quot;Shared/aviation-investigation-final-report-demo-a42b1d4d-ixp\&quot; --version 1 --output json 2&gt;&amp;1\necho \&quot;---\&quot;\nuip ixp deployments get-taxonomy \&quot;937c414b-7879-8059-8b29-e8401d2dd3ba\&quot; --version 1 --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Try alternate project-name formats for taxonomy lookup&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Exit code 1
+{
+  &quot;Result&quot;: &quot;ValidationError&quot;,
+  &quot;ErrorCode&quot;: &quot;invalid_argument&quot;,
+  &quot;Message&quot;: &quot;Failed to get deployment taxonomy&quot;,
+  &quot;Instructions&quot;: &quot;The service could not complete the request: Invalid project name&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;,
+  &quot;Context&quot;: {
+    &quot;HttpStatus&quot;: 400,
+    &quot;ErrorCode&quot;: &quot;[IxpValidationError]&quot;
+  }
+}
+---
+{
+  &quot;Result&quot;: &quot;Failure&quot;,
+  &quot;ErrorCode&quot;: &quot;not_found&quot;,
+  &quot;Message&quot;: &quot;Failed to get deployment taxonomy&quot;,
+  &quot;Instructions&quot;: &quot;Project with name &#x27;937c414b-7879-8059-8b29-e8401d2dd3ba&#x27; was not found.&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;,
+  &quot;Context&quot;: {
+    &quot;HttpStatus&quot;: 404,
+    &quot;ErrorCode&quot;: &quot;[ProjectNotFoundError]&quot;
+  }
+}</pre>
+    <h4>Error</h4><pre>Exit code 1
+{
+  &quot;Result&quot;: &quot;ValidationError&quot;,
+  &quot;ErrorCode&quot;: &quot;invalid_argument&quot;,
+  &quot;Message&quot;: &quot;Failed to get deployment taxonomy&quot;,
+  &quot;Instructions&quot;: &quot;The service could not complete the request: Invalid project name&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;,
+  &quot;Context&quot;: {
+    &quot;HttpStatus&quot;: 400,
+    &quot;ErrorCode&quot;: &quot;[IxpValidationError]&quot;
+  }
+}
+---
+{
+  &quot;Result&quot;: &quot;Failure&quot;,
+  &quot;ErrorCode&quot;: &quot;not_found&quot;,
+  &quot;Message&quot;: &quot;Failed to get deployment taxonomy&quot;,
+  &quot;Instructions&quot;: &quot;Project with name &#x27;937c414b-7879-8059-8b29-e8401d2dd3ba&#x27; was not found.&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;,
+  &quot;Context&quot;: {
+    &quot;HttpStatus&quot;: 404,
+    &quot;ErrorCode&quot;: &quot;[ProjectNotFoundError]&quot;
+  }
+}</pre>
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#33</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.50s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip ixp projects list --output json --limit 200 --output-filter \&quot;[*].{Name:Name,Title:Title}\&quot;\necho \&quot;---try search---\&quot;\nuip ixp projects list --output json --limit 200 -q \&quot;aviation\&quot; 2&gt;&amp;1 || true&quot;,
+  &quot;description&quot;: &quot;List IXP projects with name/title, try query filter&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;IxpProjectsList&quot;,
+  &quot;Data&quot;: []
+}
+---try search---
+{
+  &quot;Result&quot;: &quot;ValidationError&quot;,
+  &quot;ErrorCode&quot;: &quot;invalid_argument&quot;,
+  &quot;Message&quot;: &quot;error: unknown option &#x27;-q&#x27;&quot;,
+  &quot;Instructions&quot;: &quot;Run &#x27;uip ixp projects list --help&#x27; for usage information.&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#34</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">884ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip ixp projects list --help 2&gt;&amp;1 | head -60&quot;,
+  &quot;description&quot;: &quot;Check ixp projects list options for folder scoping&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>                             uip ixp projects list                              
+                         List all IXP training projects                         
+                Use --help with nested commands for more detail.                
+
+┌─ Usage ──────────────────────────────────────────────────────────────────────┐
+│ uip ixp projects list [options]                                              │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Options ────────────────────────────────────────────────────────────────────┐
+│ -l, --limit &lt;number&gt;           Number of items to return (1-10000)           │
+│ --offset &lt;number&gt;              Number of items to skip (0-1000000)           │
+│ -h, --help                     display help for command                      │
+│ --output                       Output format (default: json)                 │
+│ &lt;table|json|yaml|plain&gt;                                                      │
+│ --output-filter &lt;expression&gt;   JMESPath expression applied to the Data field │
+│                                of the response envelope                      │
+│ --log-level                    Log level threshold (default: i
+
+… (truncated, 1394 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#35</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">633ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip ixp --help 2&gt;&amp;1 | head -60&quot;,
+  &quot;description&quot;: &quot;List all ixp subcommands&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>                                    uip ixp                                     
+UiPath IXP Tool for managing projects, prompts, predictions and model publishing
+                Use --help with nested commands for more detail.                
+
+┌─ Usage ──────────────────────────────────────────────────────────────────────┐
+│ uip ixp [options] [command]                                                  │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Commands ───────────────────────────────────────────────────────────────────┐
+│ data-types    Manage data types (entity_defs) — the reusable type            │
+│               definitions fields reference via field_type_id                 │
+│ deployments   Inspect IXP deployments — project taxonomy pinned to a         │
+│               specific trained model version                                 │
+│ documents     Read IXP document content                                      │
+│ fields        Edit fields within a project&#x27;s field groups (label_defs)       │
+│ groups        Manage field groups (label_defs) — the document type           │
+│               containers for fields                           
+
+… (truncated, 1232 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#36</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">874ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip ixp projects list-models --help 2&gt;&amp;1 | head -40&quot;,
+  &quot;description&quot;: &quot;Check list-models command help&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>                          uip ixp projects list-models                          
+                 List all model versions and tags for a project                 
+                Use --help with nested commands for more detail.                
+
+┌─ Usage ──────────────────────────────────────────────────────────────────────┐
+│ uip ixp projects list-models [options] &lt;project-name&gt;                        │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Arguments ──────────────────────────────────────────────────────────────────┐
+│ project-name   Project name                                                  │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Options ────────────────────────────────────────────────────────────────────┐
+│ -h, --help                     display help for command                      │
+│ --output                       Output format (default: json)                 │
+│ &lt;table|json|yaml|plain&gt;                                                      │
+│ --output-filter &lt;expression&gt;   JMESPath expression applied to the Data field │
+│                                of the response envelope      
+
+… (truncated, 1152 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#37</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-err">ERROR</span>
+      <span class="tool-duration">3.12s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip ixp deployments get-taxonomy --help 2&gt;&amp;1\necho \&quot;===try with full displayname and no dashes===\&quot;\nuip ixp deployments get-taxonomy \&quot;aviation-investigation-final-report-demo-a42b1d4d\&quot; --version 1 --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Recheck get-taxonomy help and try trimmed project name&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Exit code 1
+                        uip ixp deployments get-taxonomy                        
+Get the project taxonomy (data types + field groups) at a specific trained model version
+                Use --help with nested commands for more detail.                
+
+┌─ Usage ──────────────────────────────────────────────────────────────────────┐
+│ uip ixp deployments get-taxonomy [options] &lt;project-name&gt;                    │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Arguments ──────────────────────────────────────────────────────────────────┐
+│ project-name   Project name                                                  │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Options ────────────────────────────────────────────────────────────────────┐
+│ --version &lt;number&gt;             Trained model version (non-negative integer). │
+│                                Get available versions from `uip ixp projects │
+│                                list-models &lt;project-name&gt; --output json`.    │
+│ -h, --help                     display help for command                      │
+│ --output                       Output for
+
+… (truncated, 1867 more chars)</pre>
+    <h4>Error</h4><pre>Exit code 1
+                        uip ixp deployments get-taxonomy                        
+Get the project taxonomy (data types + field groups) at a specific trained model version
+                Use --help with nested commands for more detail.                
+
+┌─ Usage ──────────────────────────────────────────────────────────────────────┐
+│ uip ixp deployments get-taxonomy [options] &lt;project-name&gt;                    │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Arguments ──────────────────────────────────────────────────────────────────┐
+│ project-name   Project name                                                  │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Options ────────────────────────────────────────────────────────────────────┐
+│ --version &lt;number&gt;             Trained model version (non-negative integer). │
+│                                Get available versions from `uip ixp projects │
+│                                list-models &lt;project-name&gt; --output json`.    │
+│ -h, --help                     display help for command                      │
+│ --output                       Output format (default: json)                 │
+│ &lt;table|json|yaml|plain&gt;                                                      │
+│ --output-filter &lt;expression&gt;   JMESPath expression applied to the Data field │
+│                                of the response envelope                      │
+│ --log-level                    Log level threshold (default: info)           │
+│ &lt;debug|info|warn|error&gt;                                                      │
+│ --log-file &lt;path&gt;              Write logs to file instead of stderr          │
+│ --profile &lt;name&gt;               Use a named login profile                     │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Examples ───────────────────────────────────────────────────────────────────┐
+│ Inspect the project taxonomy p</pre>
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#38</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">2.80s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip ixp projects list --help 2&gt;&amp;1 | grep -i folder\nuip ixp deployments get-taxonomy \&quot;InvoiceIXP\&quot; --version 1 --output json 2&gt;&amp;1 | head -20&quot;,
+  &quot;description&quot;: &quot;Check for folder options and test taxonomy with a different known model&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Failure&quot;,
+  &quot;ErrorCode&quot;: &quot;not_found&quot;,
+  &quot;Message&quot;: &quot;Failed to get deployment taxonomy&quot;,
+  &quot;Instructions&quot;: &quot;Project with name &#x27;InvoiceIXP&#x27; was not found.&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;,
+  &quot;Context&quot;: {
+    &quot;HttpStatus&quot;: 404,
+    &quot;ErrorCode&quot;: &quot;[ProjectNotFoundError]&quot;
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#39</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.37s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip ixp groups --help 2&gt;&amp;1 | head -40&quot;,
+  &quot;description&quot;: &quot;Check ixp groups subcommands for taxonomy inspection alternative&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>                                 uip ixp groups                                 
+   Manage field groups (label_defs) — the document type containers for fields   
+                Use --help with nested commands for more detail.                
+
+┌─ Usage ──────────────────────────────────────────────────────────────────────┐
+│ uip ixp groups [options] [command]                                           │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Commands ───────────────────────────────────────────────────────────────────┐
+│ add              Create a new field group with instructions and at least one │
+│                  field                                                       │
+│ delete           Delete a field group. IRREVERSIBLE: all annotations on all  │
+│                  fields in the group are deleted.                            │
+│ help             display help for command                                    │
+│ rename           Rename a field group. Preserves all fields and annotations. │
+│ update-prompts   Bulk-update field group (label_def) extraction              │
+│                  instructions. Match by group name; existing f
+
+… (truncated, 1070 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#40</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">3.43s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip ixp fields --help 2&gt;&amp;1 | head -40&quot;,
+  &quot;description&quot;: &quot;Check ixp fields subcommands&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>                                 uip ixp fields                                 
+            Edit fields within a project&#x27;s field groups (label_defs)            
+                Use --help with nested commands for more detail.                
+
+┌─ Usage ──────────────────────────────────────────────────────────────────────┐
+│ uip ixp fields [options] [command]                                           │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Commands ───────────────────────────────────────────────────────────────────┐
+│ add              Add a new field to a field group                            │
+│ change-type      Change a field&#x27;s type. IRREVERSIBLE: existing annotations   │
+│                  for this field are deleted.                                 │
+│ delete           Delete a field from a field group                           │
+│ help             display help for command                                    │
+│ rename           Rename a field within a field group                         │
+│ update-prompts   Bulk-update per-field extraction instructions. Match by     │
+│                  moon_form field name; existing definitions pr
+
+… (truncated, 989 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#41</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">111ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/.claude/projects/-work-output-artifacts-skill-flow-ixp-e2e-project-selection-aviation/b3cc93bf-f7f0-4cb4-b667-fa372963f106/tool-results/bceo60dx4.txt&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# UiPath Flow File Format
+2	
+3	The `.flow` file is a JSON document at `&lt;ProjectName&gt;.flow` in the project root. It is the **only file you should edit** — other generated files will be overwritten.
+4	
+5	## Table of contents
+6	
+7	- [Top-level structure](#top-level-structure)
+8	- [Project structure (generated scaffold)](#project-structure-generated-scaffold)
+9	- [Node instance](#node-instance)
+10	- [Layout](#layout)
+11	- [Edge — both ports required](#edge--both-ports-required)
+12	- [Definition entry](#definition-entry)
+13	- [Common node types](#common-node-types)
+14	- [Standard ports by node type](#standard-ports-by-node-type)
+15	- [Implicit error port on action nodes](#implicit-error-port-on-action-nodes)
+16	- [Minimal working example — dice roller](#minimal-working-example--dice-roller)
+17	- [entry-points.json — auto-generated, do not edit](#entry-pointsjson--auto-generated-do-not-edit)
+18	- [Bindings — Orchestrator resource bindings (top-level `bindings[]`)](#bindings--orchestrator-resource-bindings-top-level-bindings)
+19	- [Bindings — connector connection binding](#bindings--connector-connection-binding)
+20	
+21	## Top-level structure
+22	
+23	```json
+24	{
+25	  &quot;id&quot;: &quot;&lt;uuid&gt;&quot;,
+26	 
+
+… (truncated, 34496 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#42</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-err">ERROR</span>
+      <span class="tool-duration">2.86s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip ixp projects list-models \&quot;937c414b-7879-8059-8b29-e8401d2dd3ba\&quot; --output json 2&gt;&amp;1\necho \&quot;---\&quot;\nuip ixp projects list-models \&quot;aviation-investigation-final-report-demo-a42b1d4d-ixp\&quot; --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Try listing models by GUID and full node display name&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Exit code 1
+{
+  &quot;Result&quot;: &quot;Failure&quot;,
+  &quot;ErrorCode&quot;: &quot;not_found&quot;,
+  &quot;Message&quot;: &quot;Failed to list models&quot;,
+  &quot;Instructions&quot;: &quot;Project with name &#x27;937c414b-7879-8059-8b29-e8401d2dd3ba&#x27; was not found.&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;,
+  &quot;Context&quot;: {
+    &quot;HttpStatus&quot;: 404,
+    &quot;ErrorCode&quot;: &quot;[ProjectNotFoundError]&quot;
+  }
+}
+---
+{
+  &quot;Result&quot;: &quot;Failure&quot;,
+  &quot;ErrorCode&quot;: &quot;not_found&quot;,
+  &quot;Message&quot;: &quot;Failed to list models&quot;,
+  &quot;Instructions&quot;: &quot;Project with name &#x27;aviation-investigation-final-report-demo-a42b1d4d-ixp&#x27; was not found.&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;,
+  &quot;Context&quot;: {
+    &quot;HttpStatus&quot;: 404,
+    &quot;ErrorCode&quot;: &quot;[ProjectNotFoundError]&quot;
+  }
+}</pre>
+    <h4>Error</h4><pre>Exit code 1
+{
+  &quot;Result&quot;: &quot;Failure&quot;,
+  &quot;ErrorCode&quot;: &quot;not_found&quot;,
+  &quot;Message&quot;: &quot;Failed to list models&quot;,
+  &quot;Instructions&quot;: &quot;Project with name &#x27;937c414b-7879-8059-8b29-e8401d2dd3ba&#x27; was not found.&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;,
+  &quot;Context&quot;: {
+    &quot;HttpStatus&quot;: 404,
+    &quot;ErrorCode&quot;: &quot;[ProjectNotFoundError]&quot;
+  }
+}
+---
+{
+  &quot;Result&quot;: &quot;Failure&quot;,
+  &quot;ErrorCode&quot;: &quot;not_found&quot;,
+  &quot;Message&quot;: &quot;Failed to list models&quot;,
+  &quot;Instructions&quot;: &quot;Project with name &#x27;aviation-investigation-final-report-demo-a42b1d4d-ixp&#x27; was not found.&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;,
+  &quot;Context&quot;: {
+    &quot;HttpStatus&quot;: 404,
+    &quot;ErrorCode&quot;: &quot;[ProjectNotFoundError]&quot;
+  }
+}</pre>
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#43</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">248ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 &lt;&lt; &#x27;EOF&#x27;\nimport json, uuid\n\nwith open(\&quot;NtsbReportExtraction.flow\&quot;) as f:\n    flow = json.load(f)\n\nwith open(\&quot;/tmp/ixp_node.json\&quot;) as f:\n    ixp_def = json.load(f)[\&quot;Data\&quot;][\&quot;Node\&quot;]\n\nwith open(\&quot;/tmp/script_node.json\&quot;) as f:\n    script_def = json.load(f)[\&quot;Data\&quot;][\&quot;Node\&quot;]\n\nwith open(\&quot;/tmp/end_node.json\&quot;) as f:\n    end_def = json.load(f)[\&quot;Data\&quot;][\&quot;Node\&quot;]\n\nmanual_def = flow[\&quot;definitions\&quot;][0]  # alr… (4269 more chars)&quot;,
+  &quot;description&quot;: &quot;Assemble the complete .flow file by merging registry definitions with authored nodes/edges/variables&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>done, nodes: [&#x27;start&#x27;, &#x27;extractNtsbReport&#x27;, &#x27;logNtsbNumber&#x27;, &#x27;end&#x27;]</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#44</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">6.60s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow validate \&quot;NtsbReportExtraction.flow\&quot; --output json&quot;,
+  &quot;description&quot;: &quot;Run flow validate (1st run)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>[ManifestClient] fetchDynamicNodes ok: total=315 agent context nodes=2 external agent nodes=7 orchestrator nodes=261 IXP nodes=45
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FlowValidate&quot;,
+  &quot;Data&quot;: {
+    &quot;File&quot;: &quot;/work/output/artifacts/skill-flow-ixp-e2e-project-selection/aviation/AviationNtsbSolution/NtsbReportExtraction/NtsbReportExtraction.flow&quot;,
+    &quot;Status&quot;: &quot;Valid&quot;
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#45</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.50s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow format \&quot;NtsbReportExtraction.flow\&quot; --output json&quot;,
+  &quot;description&quot;: &quot;Format the flow layout&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FlowFormat&quot;,
+  &quot;Data&quot;: {
+    &quot;File&quot;: &quot;NtsbReportExtraction.flow&quot;,
+    &quot;NodesTotal&quot;: 4,
+    &quot;EdgesTotal&quot;: 3,
+    &quot;NodesRepositioned&quot;: 3,
+    &quot;NodesResized&quot;: 0,
+    &quot;SubflowsTidied&quot;: 0,
+    &quot;VariableCount&quot;: 5
+  },
+  &quot;Instructions&quot;: &quot;Repositioned 3 of 4 nodes&quot;
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#46</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">141ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-ixp-e2e-project-selection/aviation/AviationNtsbSolution/NtsbReportExtraction/NtsbReportExtraction.flow&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	{
+2	  &quot;id&quot;: &quot;cf44af6e-0c64-42a8-bbce-6376b8d992b8&quot;,
+3	  &quot;version&quot;: &quot;1.9&quot;,
+4	  &quot;name&quot;: &quot;NtsbReportExtraction&quot;,
+5	  &quot;nodes&quot;: [
+6	    {
+7	      &quot;id&quot;: &quot;start&quot;,
+8	      &quot;type&quot;: &quot;core.trigger.manual&quot;,
+9	      &quot;typeVersion&quot;: &quot;1.0&quot;,
+10	      &quot;display&quot;: {
+11	        &quot;label&quot;: &quot;Manual trigger&quot;
+12	      },
+13	      &quot;inputs&quot;: {
+14	        &quot;entryPointId&quot;: &quot;de7edf97-e9b9-4bfe-bd12-5124c440079f&quot;,
+15	        &quot;isDefaultEntryPoint&quot;: true
+16	      }
+17	    },
+18	    {
+19	      &quot;id&quot;: &quot;extractNtsbReport&quot;,
+20	      &quot;type&quot;: &quot;uipath.ixp.aviation-investigation-final-report-demo-a42b1d4d-ixp.937c414b-7879-8059-8b29-e8401d2dd3ba-c4359cde-55f0-4f0e-9322-c6cdce74ab4c&quot;,
+21	      &quot;typeVersion&quot;: &quot;1.0.0&quot;,
+22	      &quot;display&quot;: {
+23	        &quot;label&quot;: &quot;Extract NTSB Report Fields&quot;
+24	      },
+25	      &quot;inputs&quot;: {
+26	        &quot;model&quot;: {
+27	          &quot;id&quot;: &quot;937c414b-7879-8059-8b29-e8401d2dd3ba&quot;,
+28	          &quot;modelName&quot;: &quot;aviation-investigation-final-report-demo-a42b1d4d-ixp&quot;,
+29	          &quot;modelDisplayName&quot;: &quot;aviation-investigation-final-report-demo-a42b1d4d-ixp&quot;,
+30	          &quot;folderKey&quot;: &quot;c4359cde-55f0-4f0e-9322-c6cdce74ab4c&quot;,
+31	          &quot;folderName&quot;: &quot;Shared&quot;,
+32	          &quot;folderPath&quot;: &quot;c4359cde-55f0-4f0e-9322-c6cd
+
+… (truncated, 108196 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#47</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">4.37s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;ls -la &amp;&amp; echo \&quot;---\&quot; &amp;&amp; uip maestro flow validate \&quot;NtsbReportExtraction.flow\&quot; --output json 2&gt;&amp;1 | tail -10&quot;,
+  &quot;description&quot;: &quot;Final directory listing and confirm validate still passes&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>total 116
+drwxr-xr-x 2 root root  4096 Aug 18 21:53 .
+drwxr-xr-x 4 root root  4096 Aug 18 21:53 ..
+-rw-r--r-- 1 root root 98383 Aug 18 21:58 NtsbReportExtraction.flow
+-rw-r--r-- 1 root root   268 Aug 18 21:53 operate.json
+-rw-r--r-- 1 root root    62 Aug 18 21:53 project.uiproj
+---
+[ManifestClient] fetchDynamicNodes ok: total=315 agent context nodes=2 external agent nodes=7 orchestrator nodes=261 IXP nodes=45
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FlowValidate&quot;,
+  &quot;Data&quot;: {
+    &quot;File&quot;: &quot;/work/output/artifacts/skill-flow-ixp-e2e-project-selection/aviation/AviationNtsbSolution/NtsbReportExtraction/NtsbReportExtraction.flow&quot;,
+    &quot;Status&quot;: &quot;Valid&quot;
+  }
+}</pre>
+    
+  </div>
+</details>
+
+</div>
+
+<h2>Command Telemetry</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Total</div><div class="value">48</div></div>
+    <div class="stat"><div class="label">Successful</div><div class="value">42 (88%)</div></div>
+    <div class="stat"><div class="label">Failed</div><div class="value">6</div></div>
+    <div class="stat"><div class="label">Avg / cmd</div><div class="value">1.89s</div></div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 2fr;gap:16px;margin-top:12px">
+    <div>
+      <h4>By Tool</h4>
+      <table>
+        <thead><tr><th>Tool</th><th>Count</th></tr></thead>
+        <tbody><tr><td class='mono'>Bash</td><td>40</td></tr><tr><td class='mono'>Read</td><td>7</td></tr><tr><td class='mono'>Skill</td><td>1</td></tr></tbody>
+      </table>
+    </div>
+    <div>
+      <h4>Slowest</h4>
+      <table>
+        <thead><tr><th>Tool</th><th>Duration</th><th>Parameters</th></tr></thead>
+        <tbody><tr><td class='mono'>Bash</td><td>8.84s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;\\\nuip solution init &quot;AviationNtsbSo...</td></tr><tr><td class='mono'>Bash</td><td>8.83s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro flow registry search &quot;uip...</td></tr><tr><td class='mono'>Bash</td><td>7.88s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro flow registry get core.ac...</td></tr><tr><td class='mono'>Bash</td><td>7.29s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro flow registry get core.tr...</td></tr><tr><td class='mono'>Bash</td><td>6.60s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro flow validate &quot;NtsbReport...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+  <p><strong>Most Common Pattern:</strong> <code>Bash → Bash → Bash</code></p><p><strong>Skill Tool Invoked:</strong> 1 time(s)</p>
+</div>
+
+<h2>Generation Metrics</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Total Latency</div><div class="value">6m 55s</div></div>
+    <div class="stat"><div class="label">Turns</div><div class="value">1</div></div>
+    <div class="stat"><div class="label">Assistant Turns</div><div class="value">85</div></div>
+    <div class="stat"><div class="label">Avg Turn Latency</div><div class="value">6m 49s</div></div>
+    
+  </div>
+</div>
+
+<h2>Token Usage</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Input (uncached)</div><div class="value">74</div></div>
+    <div class="stat"><div class="label">Output</div><div class="value">25,612</div></div>
+    <div class="stat"><div class="label">Cache Write</div><div class="value">170,843</div></div>
+    <div class="stat"><div class="label">Cache Read</div><div class="value">5,197,392</div></div>
+    <div class="stat"><div class="label">Total</div><div class="value">5,393,921</div></div>
+    <div class="stat"><div class="label">Cost</div><div class="value">$2.5843</div></div>
+  </div>
+</div>
+
+<h2>Agent Settings</h2>
+<div class="card" style="padding:0">
+  <table>
+    <tbody><tr><td class='mono dim'>Permission Mode</td><td>acceptEdits</td></tr><tr><td class='mono dim'>Allowed Tools</td><td>Skill, Bash, Read, Write, Edit, Glob, Grep</td></tr><tr><td class='mono dim'>Model</td><td>us.anthropic.claude-sonnet-5</td></tr><tr><td class='mono dim'>Max Turns</td><td>60</td></tr><tr><td class='mono dim'>System Prompt</td><td>You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted. </td></tr><tr><td class='mono dim'>System Prompt Mode</td><td>append</td></tr><tr><td class='mono dim'>Plugins</td><td>/home/azureuser/projects/skills</td></tr></tbody>
+  </table>
+</div>
+
+<h2>Environment</h2>
+<div class="card" style="padding:0">
+  <table>
+    <tbody><tr><td class='mono dim'>git_commit</td><td>unknown</td></tr><tr><td class='mono dim'>skills_git_commit</td><td>unknown</td></tr><tr><td class='mono dim'>cli_version</td><td>1.201.0-dev.8272</td></tr><tr><td class='mono dim'>tool_plugins</td><td>{&#x27;admin-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;agent-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;agenthub-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;aops-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;api-workflow-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;automation-hub-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;codedagent-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;codedapp-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;coder-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;context-grounding-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;conversational-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;data-fabric-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;docsai-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;function-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;gov-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;guardrails-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;insights-tool&#x27;: &#x27;1.201.0-dev.8276&#x27;, &#x27;integrationservice-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;ixp-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;llm-gateway-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;llmgw-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;maestro-tool&#x27;: &#x27;1.201.0-dev.8275&#x27;, &#x27;model-hub-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;orchestrator-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;platform-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;pm-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;rpa-legacy-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;rpa-tool&#x27;: &#x27;1.201.0-dev.20260809.3&#x27;, &#x27;solution-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;tasks-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;test-manager-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;traces-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;vertical-solutions-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;}</td></tr><tr><td class='mono dim'>coder_eval</td><td>0.9.6</td></tr><tr><td class='mono dim'>claude_code_cli</td><td>2.1.177 (Claude Code)</td></tr><tr><td class='mono dim'>uv</td><td>uv 0.12.5 (x86_64-unknown-linux-gnu)</td></tr><tr><td class='mono dim'>anthropic</td><td>0.122.0</td></tr><tr><td class='mono dim'>openai</td><td>3.2.0</td></tr><tr><td class='mono dim'>pydantic</td><td>2.12.5</td></tr><tr><td class='mono dim'>api_routing</td><td>aws_bedrock</td></tr><tr><td class='mono dim'>eval_routing</td><td>aws_bedrock</td></tr><tr><td class='mono dim'>aws_region</td><td>us-east-2</td></tr><tr><td class='mono dim'>bedrock_model</td><td>us.anthropic.claude-sonnet-4-6</td></tr><tr><td class='mono dim'>system_prompt_semantics</td><td>append</td></tr></tbody>
+  </table>
+</div>
+
+<footer>Generated by coder_eval · 2026-08-18T21:58:39</footer>
+</div>
+<script>
+function toggleTheme() {
+  document.documentElement.classList.toggle('light');
+  try {
+    const mode = document.documentElement.classList.contains('light') ? 'light' : 'dark';
+    localStorage.setItem('coder-eval-theme', mode);
+  } catch (e) { /* ignore */ }
+}
+(function() {
+  try {
+    if (localStorage.getItem('coder-eval-theme') === 'light') {
+      document.documentElement.classList.add('light');
+    }
+  } catch (e) { /* ignore */ }
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,29 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "Microsoft Azure",
+    "kind": "connection",
+    "type": "uipath-microsoft-azure",
+    "apiVersion": "integrationservice.uipath.com/v1",
+    "isOverridable": true,
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "files": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "connectorName": "Microsoft Azure",
+      "name": "Microsoft Azure",
+      "description": null,
+      "authenticationType": "AuthenticateAfterDeployment",
+      "connectorVersion": "1.17.13",
+      "connectorKey": "uipath-microsoft-azure",
+      "pollingInterval": 5
+    },
+    "locks": [],
+    "key": "f746b6e5-9aea-4aff-81f1-fbaf460092e9"
+  }
+}

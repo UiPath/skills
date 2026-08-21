@@ -1,0 +1,487 @@
+{
+  "id": "4a08e320-f36d-4d3d-99e8-4ab6d3cc5387",
+  "version": "1.8",
+  "name": "CustomerEscalationTriage",
+  "variables": {
+    "globals": [
+      {
+        "id": "customerTier",
+        "direction": "in",
+        "type": "string",
+        "description": "Customer tier level (e.g. Enterprise, Tier1, Premium, Standard)"
+      },
+      {
+        "id": "productionDown",
+        "direction": "in",
+        "type": "boolean",
+        "description": "Whether the customer's production environment is down"
+      },
+      {
+        "id": "workaroundAvailable",
+        "direction": "in",
+        "type": "boolean",
+        "description": "Whether a workaround is available for the issue"
+      },
+      {
+        "id": "businessImpact",
+        "direction": "in",
+        "type": "string",
+        "description": "Level of business impact (critical, high, medium, low)"
+      },
+      {
+        "id": "correlationId",
+        "direction": "in",
+        "type": "string",
+        "description": "Unique correlation identifier for this escalation"
+      },
+      {
+        "id": "severity",
+        "direction": "out",
+        "type": "string",
+        "description": "Classified severity level: Critical, High, Medium, or Low"
+      },
+      {
+        "id": "engineeringNeeded",
+        "direction": "out",
+        "type": "boolean",
+        "description": "Whether engineering team involvement is required"
+      },
+      {
+        "id": "responseMode",
+        "direction": "out",
+        "type": "string",
+        "description": "Response mode: immediate, urgent, standard, or normal"
+      },
+      {
+        "id": "caseKey",
+        "direction": "out",
+        "type": "string",
+        "description": "Generated case key for this escalation"
+      }
+    ],
+    "nodes": [
+      {
+        "id": "start.output",
+        "type": "object",
+        "description": "Data passed when manually triggering the workflow.",
+        "binding": {
+          "nodeId": "start",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "script1.output",
+        "type": "object",
+        "description": "The return value of the script",
+        "binding": {
+          "nodeId": "script1",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "script1.error",
+        "type": "object",
+        "description": "Error information if the node fails",
+        "binding": {
+          "nodeId": "script1",
+          "outputId": "error"
+        }
+      },
+      {
+        "id": "end1.severity",
+        "type": "string",
+        "binding": {
+          "nodeId": "end1",
+          "outputId": "severity"
+        }
+      },
+      {
+        "id": "end1.engineeringNeeded",
+        "type": "string",
+        "binding": {
+          "nodeId": "end1",
+          "outputId": "engineeringNeeded"
+        }
+      },
+      {
+        "id": "end1.responseMode",
+        "type": "string",
+        "binding": {
+          "nodeId": "end1",
+          "outputId": "responseMode"
+        }
+      },
+      {
+        "id": "end1.caseKey",
+        "type": "string",
+        "binding": {
+          "nodeId": "end1",
+          "outputId": "caseKey"
+        }
+      }
+    ],
+    "variableUpdates": {}
+  },
+  "nodes": [
+    {
+      "id": "start",
+      "type": "core.trigger.manual",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Manual trigger"
+      },
+      "inputs": {
+        "entryPointId": "aa940f0e-94ba-4eed-8910-71ddb15ac10f",
+        "isDefaultEntryPoint": true
+      }
+    },
+    {
+      "id": "script1",
+      "type": "core.action.script",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Classify Escalation"
+      },
+      "inputs": {
+        "script": "var tier = ($vars.customerTier || '').toString().toLowerCase();\nvar isDown = $vars.productionDown === true || $vars.productionDown === 'true';\nvar hasWorkaround = $vars.workaroundAvailable === true || $vars.workaroundAvailable === 'true';\nvar isEnterprise = tier === 'enterprise';\n\nvar severity;\nif (isEnterprise && isDown && !hasWorkaround) {\n  severity = 'Sev1';\n} else if (isDown && hasWorkaround) {\n  severity = 'Sev2';\n} else {\n  severity = 'Sev3';\n}\n\nvar engineeringNeeded = severity === 'Sev1' || severity === 'Sev2';\nvar responseMode = 'Draft';\nvar caseKey = ($vars.correlationId || '').toString();\n\nreturn { severity: severity, engineeringNeeded: engineeringNeeded, responseMode: responseMode, caseKey: caseKey };"
+      },
+      "outputs": {
+        "output": {
+          "type": "object",
+          "description": "The return value of the script",
+          "source": "=result.response",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails",
+          "source": "=Error",
+          "var": "error"
+        }
+      }
+    },
+    {
+      "id": "end1",
+      "type": "core.control.end",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "End"
+      },
+      "inputs": {},
+      "outputs": {
+        "severity": {
+          "source": "=js:$vars.script1.output.severity"
+        },
+        "engineeringNeeded": {
+          "source": "=js:$vars.script1.output.engineeringNeeded"
+        },
+        "responseMode": {
+          "source": "=js:$vars.script1.output.responseMode"
+        },
+        "caseKey": {
+          "source": "=js:$vars.script1.output.caseKey"
+        }
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "sourceNodeId": "start",
+      "sourcePort": "output",
+      "targetNodeId": "script1",
+      "targetPort": "input"
+    },
+    {
+      "id": "e2",
+      "sourceNodeId": "script1",
+      "sourcePort": "success",
+      "targetNodeId": "end1",
+      "targetPort": "input"
+    }
+  ],
+  "definitions": [
+    {
+      "nodeType": "core.trigger.manual",
+      "version": "1.0",
+      "category": "trigger",
+      "description": "Start workflow manually",
+      "tags": [
+        "trigger",
+        "start",
+        "manual"
+      ],
+      "sortOrder": 40,
+      "display": {
+        "label": "Manual trigger",
+        "icon": "play",
+        "shape": "circle"
+      },
+      "handleConfiguration": [
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "output",
+              "type": "source",
+              "handleType": "output",
+              "showButton": true,
+              "constraints": {
+                "forbiddenTargetCategories": [
+                  "trigger"
+                ]
+              }
+            }
+          ],
+          "visible": true
+        }
+      ],
+      "model": {
+        "type": "bpmn:StartEvent",
+        "entryPointId": true
+      },
+      "outputDefinition": {
+        "output": {
+          "type": "object",
+          "description": "Data passed when manually triggering the workflow.",
+          "source": "null",
+          "var": "output"
+        }
+      },
+      "toolbarExtensions": {
+        "design": {
+          "actions": [
+            {
+              "id": "change-trigger-type",
+              "icon": "square-mouse-pointer",
+              "label": "Change trigger type"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "nodeType": "core.action.script",
+      "version": "1.0",
+      "category": "data-operations",
+      "description": "Run custom JavaScript code",
+      "tags": [
+        "code",
+        "javascript",
+        "python"
+      ],
+      "sortOrder": 35,
+      "supportsErrorHandling": true,
+      "display": {
+        "label": "Script",
+        "icon": "code"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "success",
+              "type": "source",
+              "handleType": "output"
+            },
+            {
+              "id": "error",
+              "label": "Error",
+              "type": "source",
+              "handleType": "output",
+              "visible": "{inputs.errorHandlingEnabled}",
+              "constraints": {
+                "maxConnections": 1
+              }
+            }
+          ]
+        }
+      ],
+      "debug": {
+        "runtime": "clientScript"
+      },
+      "model": {
+        "type": "bpmn:ScriptTask"
+      },
+      "inputDefinition": {
+        "type": "object",
+        "properties": {
+          "script": {
+            "type": "string",
+            "minLength": 1,
+            "errorMessage": "A script function is required",
+            "validationSeverity": "warning"
+          }
+        },
+        "required": [
+          "script"
+        ]
+      },
+      "inputDefaults": {
+        "script": ""
+      },
+      "outputDefinition": {
+        "output": {
+          "type": "object",
+          "description": "The return value of the script",
+          "source": "=result.response",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails",
+          "source": "=Error",
+          "var": "error",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "required": [
+              "code",
+              "message",
+              "detail",
+              "category",
+              "status"
+            ],
+            "properties": {
+              "code": {
+                "type": "string",
+                "description": "Error code as a string"
+              },
+              "message": {
+                "type": "string",
+                "description": "High-level error message"
+              },
+              "detail": {
+                "type": "string",
+                "description": "Detailed error description"
+              },
+              "category": {
+                "type": "string",
+                "description": "Error category"
+              },
+              "status": {
+                "type": "integer",
+                "description": "HTTP status code"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "form": {
+        "id": "script-properties",
+        "title": "Script configuration",
+        "sections": [
+          {
+            "id": "script",
+            "title": "Script",
+            "collapsible": true,
+            "defaultExpanded": true,
+            "fields": [
+              {
+                "name": "inputs.script",
+                "type": "custom",
+                "component": "script-editor",
+                "componentProps": {
+                  "language": "javascript",
+                  "returnType": "any",
+                  "validationMode": "script",
+                  "minHeight": 200,
+                  "placeholder": " // Return an object with your result\nreturn {\n  message: \"Web request response\",\n  data: $vars.httpRequest1.output\n                  };"
+                },
+                "label": "Code",
+                "description": "JavaScript expression that returns a result object"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "nodeType": "core.control.end",
+      "version": "1.0",
+      "category": "control-flow",
+      "description": "Mark the end of a workflow path",
+      "tags": [
+        "control-flow",
+        "end",
+        "finish",
+        "complete"
+      ],
+      "sortOrder": 20,
+      "display": {
+        "label": "End",
+        "icon": "circle-check",
+        "shape": "circle"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        }
+      ],
+      "model": {
+        "type": "bpmn:EndEvent"
+      },
+      "runtimeConstraints": {
+        "exclude": [
+          "api-function"
+        ]
+      }
+    }
+  ],
+  "runtime": "maestro",
+  "layout": {
+    "nodes": {
+      "start": {
+        "position": {
+          "x": -192,
+          "y": 0
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        }
+      },
+      "script1": {
+        "position": {
+          "x": 0,
+          "y": 0
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "end1": {
+        "position": {
+          "x": 192,
+          "y": 0
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      }
+    }
+  }
+}

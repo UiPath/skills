@@ -1,0 +1,46 @@
+task_id: skill-flow-ipe-multiselect
+description: >
+  Tests the multiselect IS feature — configures a Slack group direct message
+  node whose members field takes multiple values, using an existing tenant
+  connection.
+tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:single-node, connector, ipe, mode:build]
+
+run_limits:
+  expected_turns: 37
+  task_timeout: 1500
+  max_turns: 120
+  turn_timeout: 1200
+
+initial_prompt: |
+  Create a flow file to create a group direct message between
+  Coder Evals, IS-sandboxes and E2E-testing.
+  Use the connection present in Shared/uipath-maestro-flow.
+
+success_criteria:
+  # Name-agnostic: the prompt doesn't fix a project name.
+  - type: run_command
+    description: "A .flow file exists and is valid JSON with nodes and edges"
+    command: "python3 -c \"import json,glob,sys; flows=glob.glob('**/*.flow',recursive=True); sys.exit('no .flow found') if not flows else None; f=json.load(open(flows[0])); assert 'nodes' in f and 'edges' in f; print('OK: %d nodes, %d edges'%(len(f['nodes']),len(f['edges'])))\""
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # Core check: Slack connector node present and the users multiselect
+  # field has exactly 3 entries (the three group-DM recipients).
+  - type: run_command
+    description: "Slack group-DM node present with 3 entries in the users multiselect"
+    command: "python3 $TASK_DIR/check_multiselect_flow.py"
+    timeout: 15
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "uip maestro flow validate was called"
+    tool_name: "Bash"
+    command_pattern: "(uip|\\$UIP)\\s+(maestro\\s+)?flow\\s+validate"
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+

@@ -1,0 +1,87 @@
+{
+  "version": "1.1.0",
+  "settings": {
+    "model": "anthropic.claude-sonnet-4-6",
+    "maxTokens": 64000,
+    "temperature": 0,
+    "engine": "basic-v2",
+    "maxIterations": 5,
+    "mode": "standard"
+  },
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "start__output__disputeDescription": {
+        "type": "string",
+        "description": "Bound from $vars.start.output.disputeDescription"
+      },
+      "start__output__invoiceNumber": {
+        "type": "string",
+        "description": "Bound from $vars.start.output.invoiceNumber"
+      }
+    }
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "determination": {
+        "type": "string",
+        "description": "The billing dispute determination: Approved, Denied, or Escalate."
+      },
+      "rationale": {
+        "type": "string",
+        "description": "The rationale explaining the determination."
+      }
+    },
+    "required": [
+      "determination",
+      "rationale"
+    ]
+  },
+  "metadata": {
+    "storageVersion": "50.0.0",
+    "isConversational": false,
+    "showProjectCreationExperience": false
+  },
+  "type": "lowCode",
+  "guardrails": [],
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a billing dispute analyst. Your role is to analyze billing disputes submitted by customers and determine the appropriate outcome based on the organization's Standard Operating Procedures (SOP).\n\nYou have access to the Billing Dispute SOP Index knowledge base. Always query the SOP before making a determination.\n\nFor each dispute, you must:\n1. Retrieve relevant SOP policies from the knowledge base.\n2. Evaluate the dispute description and invoice number against those policies.\n3. Return a JSON object with exactly two fields:\n   - determination: one of \"Approved\", \"Denied\", or \"Escalate\"\n   - rationale: a clear explanation of why you reached the determination, citing the relevant SOP policy.\n\nBe objective, concise, and always ground your analysis in the SOP documentation.",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "You are a billing dispute analyst. Your role is to analyze billing disputes submitted by customers and determine the appropriate outcome based on the organization's Standard Operating Procedures (SOP).\n\nYou have access to the Billing Dispute SOP Index knowledge base. Always query the SOP before making a determination.\n\nFor each dispute, you must:\n1. Retrieve relevant SOP policies from the knowledge base.\n2. Evaluate the dispute description and invoice number against those policies.\n3. Return a JSON object with exactly two fields:\n   - determination: one of \"Approved\", \"Denied\", or \"Escalate\"\n   - rationale: a clear explanation of why you reached the determination, citing the relevant SOP policy.\n\nBe objective, concise, and always ground your analysis in the SOP documentation."
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "Please analyze the following billing dispute:\n\nInvoice Number: {{input.start__output__invoiceNumber}}\nDispute Description: {{input.start__output__disputeDescription}}\n\nQuery the Billing Dispute SOP knowledge base for relevant policies, then provide your determination and rationale.",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "Please analyze the following billing dispute:\n\nInvoice Number: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__invoiceNumber"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\nDispute Description: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__disputeDescription"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\nQuery the Billing Dispute SOP knowledge base for relevant policies, then provide your determination and rationale."
+        }
+      ]
+    }
+  ],
+  "projectId": "e653aeaf-ecf5-4558-969c-7e5505741d72"
+}

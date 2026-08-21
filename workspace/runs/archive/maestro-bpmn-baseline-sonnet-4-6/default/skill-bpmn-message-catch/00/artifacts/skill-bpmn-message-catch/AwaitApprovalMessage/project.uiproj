@@ -1,0 +1,8 @@
+{
+  "name": "AwaitApprovalMessage",
+  "description": "Process that prepares a request then waits for an approval message before ending.",
+  "projectVersion": "1.0.0",
+  "entryPoints": [
+    "AwaitApprovalMessage.bpmn"
+  ]
+}

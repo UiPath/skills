@@ -1,0 +1,8 @@
+20:51:23 [INFO   ] [default/skill-flow-bindings-no-duplicates/00] orchestrator: API routing: aws_bedrock
+20:55:26 [INFO   ] [default/skill-flow-bindings-no-duplicates/00] orchestrator: Success criteria: 6/6 passed, weighted score: 1.000
+20:55:26 [INFO   ] [default/skill-flow-bindings-no-duplicates/00] orchestrator: Running post-run command: python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/cleanup_solutions.py
+20:55:28 [WARNING] [default/skill-flow-bindings-no-duplicates/00] orchestrator: [post_run stderr] cleanup_solutions: solution ad63d320-ba2f-4bc7-bebc-262e0635a097 not uploaded (from BindingsRegression/BindingsRegression.uipx); nothing to clean up
+20:55:28 [WARNING] [default/skill-flow-bindings-no-duplicates/00] orchestrator: [post_run stderr] cleanup_solutions: summary policy=always deleted=0 preserved=0 skipped=0 not_uploaded=1 failed=0
+20:55:28 [INFO   ] [default/skill-flow-bindings-no-duplicates/00] orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+20:55:28 [INFO   ] [default/skill-flow-bindings-no-duplicates/00] orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-bindings-no-duplicates
+20:55:28 [INFO   ] [default/skill-flow-bindings-no-duplicates/00] orchestrator: Task finished: status=SUCCESS duration=246.7s score=1.000 iterations=1

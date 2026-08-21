@@ -1,0 +1,12 @@
+{
+  "DocVersion": "1.0.0",
+  "StudioMinVersion": "2025.10.0",
+  "SolutionId": "768d6ddd-7fc3-4a95-9e2d-a69ee875ce22",
+  "Projects": [
+    {
+      "Type": "Flow",
+      "ProjectRelativePath": "TeamsDecision/project.uiproj",
+      "Id": "526a368d-e0c0-492e-8243-beb613e508cc"
+    }
+  ]
+}

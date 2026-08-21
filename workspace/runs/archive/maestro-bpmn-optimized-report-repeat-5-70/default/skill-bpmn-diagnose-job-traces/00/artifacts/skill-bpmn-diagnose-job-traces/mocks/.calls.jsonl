@@ -1,0 +1,4 @@
+{"ts": 1784694413.9364574, "args": "maestro bpmn job status job-triage-001 --folder-key folder-public --output json", "matched_rule": "job status job-triage-001", "fixture": "job-status.json", "exit_code": 0}
+{"ts": 1784694415.6984198, "args": "maestro bpmn instance incidents inst-triage-001 -f folder-public --output json", "matched_rule": "instance incidents inst-triage-001 -f folder-public", "fixture": "instance-incidents.json", "exit_code": 0}
+{"ts": 1784694421.6725113, "args": "maestro bpmn job traces job-triage-001 --output json", "matched_rule": "job traces job-triage-001", "fixture": "job-traces.json", "exit_code": 0}
+{"ts": 1784694441.8537872, "args": "--version", "matched_rule": null, "fixture": null, "exit_code": 1, "error": "unmocked_default"}

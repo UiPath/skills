@@ -1,0 +1,23 @@
+{
+  "Result": "Success",
+  "Code": "RegistryPullSuccess",
+  "Data": {
+    "ExtensionTypeCount": 30,
+    "ConnectorCount": 0,
+    "ProcessCount": 87,
+    "ProcessCountsByType": {
+      "Process": 18,
+      "ProcessOrchestration": 3,
+      "Agent": 9,
+      "Flow": 32,
+      "Api": 14,
+      "Function": 6,
+      "CaseManagement": 5,
+      "BusinessRules": 0
+    },
+    "FromCache": true,
+    "AgeMinutes": 25,
+    "CacheWritten": false,
+    "Message": "Using cached registry (age: 25m)"
+  }
+}

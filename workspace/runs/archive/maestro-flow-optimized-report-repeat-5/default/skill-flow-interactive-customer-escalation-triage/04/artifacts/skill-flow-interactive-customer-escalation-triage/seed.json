@@ -1,0 +1,37 @@
+{
+  "run_id": "27adfcaac4a2",
+  "cases": [
+    {
+      "name": "enterprise-production-down",
+      "inputs": {
+        "customerTier": "Enterprise",
+        "productionDown": true,
+        "workaroundAvailable": false,
+        "businessImpact": "All production users are blocked",
+        "correlationId": "E2E-27adfcaac4a2-SEV1"
+      },
+      "expected": {
+        "severity": "Sev1",
+        "engineeringNeeded": true,
+        "responseMode": "Draft",
+        "caseKey": "E2E-27adfcaac4a2-SEV1"
+      }
+    },
+    {
+      "name": "informational-follow-up",
+      "inputs": {
+        "customerTier": "Standard",
+        "productionDown": false,
+        "workaroundAvailable": true,
+        "businessImpact": "Informational product question only",
+        "correlationId": "E2E-27adfcaac4a2-SEV3"
+      },
+      "expected": {
+        "severity": "Sev3",
+        "engineeringNeeded": false,
+        "responseMode": "Draft",
+        "caseKey": "E2E-27adfcaac4a2-SEV3"
+      }
+    }
+  ]
+}

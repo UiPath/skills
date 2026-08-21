@@ -1,0 +1,25 @@
+{
+  "$resourceType": "context",
+  "id": "d361ab97-de14-4913-bedd-e7727847df7e",
+  "referenceKey": null,
+  "name": "Billing Dispute SOP Index",
+  "description": "SOP grounding for the Billing Dispute Analyst agent.",
+  "contextType": "index",
+  "folderPath": "Shared/uipath-maestro-flow/BillingDispute",
+  "indexName": "Billing Dispute SOP Index",
+  "settings": {
+    "retrievalMode": "semantic",
+    "query": {
+      "variant": "dynamic",
+      "description": "Query for retrieval"
+    },
+    "folderPathPrefix": {
+      "variant": "static"
+    },
+    "fileExtension": {
+      "value": "All"
+    },
+    "threshold": 0,
+    "resultCount": 3
+  }
+}

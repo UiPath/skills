@@ -1,0 +1,27 @@
+{
+  "entryPoints": [
+    {
+      "id": "EntryPoint_1",
+      "filePath": "/content/RiskScoreScriptBpmn.bpmn#StartEvent_1",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "amount": {
+            "type": "number"
+          },
+          "daysOverdue": {
+            "type": "number"
+          }
+        }
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "riskScore": {
+            "type": "number"
+          }
+        }
+      }
+    }
+  ]
+}

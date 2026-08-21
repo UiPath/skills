@@ -1,0 +1,12 @@
+21:51:25 [INFO   ] [default/skill-flow-ixp-scaffold-multinode/00] orchestrator: API routing: aws_bedrock
+21:57:03 [WARNING] [default/skill-flow-ixp-scaffold-multinode/00] agents.claude_code_agent: [coder] Agent exhausted max_turns (40); turn ended without completing
+21:57:03 [INFO   ] [default/skill-flow-ixp-scaffold-multinode/00] evaluation.checker: Criterion 'command_executed' FAILED (score=0.00, threshold=1.00): Matched 0/1 required commands (filters: tool_name=Bash, pattern=/uip\s+(maestro\s+)?flow\s+validate/)
+21:57:03 [INFO   ] [default/skill-flow-ixp-scaffold-multinode/00] evaluation.checker: Criterion 'run_command' FAILED (score=0.00, threshold=1.00): Command: python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py
+21:57:03 [INFO   ] [default/skill-flow-ixp-scaffold-multinode/00] evaluation.checker: Criterion 'run_command' FAILED (score=0.00, threshold=1.00): (empty)
+21:57:03 [INFO   ] [default/skill-flow-ixp-scaffold-multinode/00] evaluation.checker: Criterion 'run_command' FAILED (score=0.00, threshold=1.00): Command: python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name ReceiptIntake 'postReceipt' 'sendToValidation' 'logError'
+21:57:03 [INFO   ] [default/skill-flow-ixp-scaffold-multinode/00] evaluation.checker: Criterion 'run_command' FAILED (score=0.00, threshold=1.00): Command: python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name ReceiptIntake '$vars.'
+21:57:03 [INFO   ] [default/skill-flow-ixp-scaffold-multinode/00] orchestrator: Success criteria: 2/7 passed, weighted score: 0.276
+21:57:03 [WARNING] [default/skill-flow-ixp-scaffold-multinode/00] orchestrator: Agent exhausted max_turns (40) without passing criteria.
+21:57:03 [INFO   ] [default/skill-flow-ixp-scaffold-multinode/00] orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+21:57:03 [INFO   ] [default/skill-flow-ixp-scaffold-multinode/00] orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-ixp-scaffold-multinode
+21:57:03 [INFO   ] [default/skill-flow-ixp-scaffold-multinode/00] orchestrator: Task finished: status=MAX_TURNS_EXHAUSTED duration=343.9s score=0.276 iterations=1

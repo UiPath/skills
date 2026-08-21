@@ -1,0 +1,87 @@
+{
+  "version": "1.1.0",
+  "settings": {
+    "model": "claude-sonnet-4-6",
+    "maxTokens": 128000,
+    "temperature": 0,
+    "engine": "basic-v2",
+    "maxIterations": 5,
+    "mode": "standard"
+  },
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "start__output__disputeDescription": {
+        "type": "string",
+        "description": "Bound from $vars.start.output.disputeDescription"
+      },
+      "start__output__invoiceNumber": {
+        "type": "string",
+        "description": "Bound from $vars.start.output.invoiceNumber"
+      }
+    }
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "determination": {
+        "type": "string",
+        "description": "The determination of the billing dispute: valid, invalid, or partial."
+      },
+      "rationale": {
+        "type": "string",
+        "description": "The detailed rationale supporting the determination."
+      }
+    },
+    "required": [
+      "determination",
+      "rationale"
+    ]
+  },
+  "metadata": {
+    "storageVersion": "50.0.0",
+    "isConversational": false,
+    "showProjectCreationExperience": false
+  },
+  "type": "lowCode",
+  "guardrails": [],
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are an expert billing dispute analyst. Your role is to review billing disputes submitted by customers and determine whether each dispute is valid, invalid, or partially valid.\n\nYou have access to a Billing Dispute SOP Index (a semantic knowledge base) that contains the standard operating procedures, policies, and guidelines for handling billing disputes. Use this index to ground your analysis in the approved SOPs and policies.\n\nFor each dispute, you must:\n1. Search the Billing Dispute SOP Index at most 2 times to retrieve relevant SOPs and policies. After the last search, stop retrieving and decide based on the evidence you already have.\n2. Evaluate the dispute description and invoice number against the retrieved policies.\n3. Return a clear determination (valid, invalid, or partial) and a detailed rationale explaining your reasoning.\n\nIf the retrieved content does not cover a specific detail, state that explicitly in your rationale, lower your confidence accordingly, and still return both outputSchema fields. Never end a run without producing both a determination and a rationale.",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "You are an expert billing dispute analyst. Your role is to review billing disputes submitted by customers and determine whether each dispute is valid, invalid, or partially valid.\n\nYou have access to a Billing Dispute SOP Index (a semantic knowledge base) that contains the standard operating procedures, policies, and guidelines for handling billing disputes. Use this index to ground your analysis in the approved SOPs and policies.\n\nFor each dispute, you must:\n1. Search the Billing Dispute SOP Index at most 2 times to retrieve relevant SOPs and policies. After the last search, stop retrieving and decide based on the evidence you already have.\n2. Evaluate the dispute description and invoice number against the retrieved policies.\n3. Return a clear determination (valid, invalid, or partial) and a detailed rationale explaining your reasoning.\n\nIf the retrieved content does not cover a specific detail, state that explicitly in your rationale, lower your confidence accordingly, and still return both outputSchema fields. Never end a run without producing both a determination and a rationale."
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "Please analyze the following billing dispute:\n\nInvoice Number: {{input.start__output__invoiceNumber}}\n\nDispute Description: {{input.start__output__disputeDescription}}\n\nReview the Billing Dispute SOP Index for relevant policies, then return your determination and rationale.",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "Please analyze the following billing dispute:\n\nInvoice Number: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__invoiceNumber"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\nDispute Description: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__disputeDescription"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\nReview the Billing Dispute SOP Index for relevant policies, then return your determination and rationale."
+        }
+      ]
+    }
+  ],
+  "projectId": "91d6fd98-a368-4b1d-b9da-0dedeacc3bec"
+}

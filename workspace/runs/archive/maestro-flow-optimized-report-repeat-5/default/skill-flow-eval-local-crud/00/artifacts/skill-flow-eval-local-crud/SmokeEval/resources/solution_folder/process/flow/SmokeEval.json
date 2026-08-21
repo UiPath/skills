@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "SmokeEval",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "5b31000a-6b78-4fa4-a0dd-7a32fb2006f8",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "SmokeEval"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Flow",
+      "name": "SmokeEval",
+      "package": {
+        "key": "e765a587-2a1f-49b7-9d40-dc3f5af73172"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "2b51142c-92fa-4395-9a02-38b12200b05f",
+    "files": []
+  }
+}

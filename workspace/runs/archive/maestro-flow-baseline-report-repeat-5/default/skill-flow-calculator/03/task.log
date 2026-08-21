@@ -1,0 +1,47 @@
+2026-07-24 20:40:04 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-24 20:40:04 [INFO] coder_eval.orchestrator: API routing: aws_bedrock
+2026-07-24 20:40:04 [DEBUG] coder_eval.criteria: Discovered 14 criterion checkers
+2026-07-24 20:40:04 [DEBUG] coder_eval.criteria: Validated 14 criterion checkers
+2026-07-24 20:40:04 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-24 20:40:04 [DEBUG] coder_eval.orchestrator: Sending prompt: Create a UiPath Flow project named "Calculator" that takes two numbers as
+input and calculates their...
+2026-07-24 20:40:04 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Starting agent query stream...
+2026-07-24 20:43:07 [DEBUG] coder_eval.agents.claude_code_agent: [coder] session_id changed: None -> e45adcc8-bed2-460b-958d-c7fd554e4551
+2026-07-24 20:43:07 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Agent query stream ended
+2026-07-24 20:43:07 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-24 20:43:07 [DEBUG] coder_eval.orchestrator: Agent response received (4236 chars)
+2026-07-24 20:43:07 [DEBUG] coder_eval.orchestrator: Checking success criteria
+2026-07-24 20:43:07 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'uip maestro flow validate passes on the flow file': uip maestro flow validate Calculator/Calculator/Calculator.flow
+2026-07-24 20:43:14 [DEBUG] coder_eval.sandbox: Command 'uip maestro flow validate Calculator/Calculator/Calculator.flow' exited with code 0
+2026-07-24 20:43:14 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+{
+  "Result": "Success",
+  "Code": "FlowValidate",
+  "Data": {
+    "File": "/work/output/artifacts/skill-flow-calculator/Calculator/Calculator/Calculator.flow",
+    "Status": "Valid"
+  }
+}
+---
+2026-07-24 20:43:14 [DEBUG] coder_eval.sandbox: STDERR:
+---
+[ManifestClient] fetchDynamicNodes ok: total=207 agent context nodes=2 external agent nodes=6 orchestrator nodes=158 IXP nodes=41
+---
+2026-07-24 20:43:14 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-07-24 20:43:14 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'Flow debug runs and output contains 391 (17 * 23)': python3 $TASK_DIR/check_calculator_flow.py
+2026-07-24 20:43:31 [DEBUG] coder_eval.sandbox: Command 'python3 $TASK_DIR/check_calculator_flow.py' exited with code 0
+2026-07-24 20:43:31 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+Injecting inputs: {'numberA': 17, 'numberB': 23}
+OK: Script node present; output contains 391
+---
+2026-07-24 20:43:31 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-07-24 20:43:31 [INFO] coder_eval.orchestrator: Success criteria: 2/2 passed, weighted score: 1.000
+2026-07-24 20:43:31 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-24 20:43:31 [INFO] coder_eval.orchestrator: Running post-run command: python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/cleanup_solutions.py
+2026-07-24 20:43:33 [WARNING] coder_eval.orchestrator: [post_run stderr] cleanup_solutions: deleted 783d6c72-d385-4fa3-484c-08dee9b1ed35 (from Calculator/Calculator.uipx)
+2026-07-24 20:43:33 [WARNING] coder_eval.orchestrator: [post_run stderr] cleanup_solutions: summary policy=always deleted=1 preserved=0 skipped=0 not_uploaded=0 failed=0
+2026-07-24 20:43:33 [INFO] coder_eval.orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+2026-07-24 20:43:33 [INFO] coder_eval.orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-calculator
+2026-07-24 20:43:33 [INFO] coder_eval.orchestrator: Task finished: status=SUCCESS duration=210.4s score=1.000 iterations=1

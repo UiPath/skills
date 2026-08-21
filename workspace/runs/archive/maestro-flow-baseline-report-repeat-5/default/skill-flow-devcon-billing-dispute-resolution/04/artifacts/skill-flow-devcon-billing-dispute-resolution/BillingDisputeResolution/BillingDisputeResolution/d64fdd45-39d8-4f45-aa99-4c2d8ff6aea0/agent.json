@@ -1,0 +1,179 @@
+{
+  "version": "1.1.0",
+  "settings": {
+    "model": "gpt-5.4",
+    "maxTokens": 128000,
+    "temperature": 0,
+    "engine": "basic-v2",
+    "maxIterations": 5,
+    "mode": "standard"
+  },
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "normalizeData1__output__fields": {
+        "type": "array",
+        "description": "Normalized invoice fields from IxP extraction"
+      },
+      "normalizeData1__output__invoiceNumber": {
+        "type": "string",
+        "description": "Normalized invoice number (MCS-prefixed)"
+      },
+      "crmLookup1__output__value": {
+        "type": "object",
+        "description": "CRM records for the account"
+      },
+      "erpLookup1__output__value": {
+        "type": "object",
+        "description": "ERP records for the invoice"
+      },
+      "discrepancyDetection1__output__mismatches": {
+        "type": "array",
+        "description": "List of detected line item discrepancies"
+      },
+      "discrepancyDetection1__output__totalOvercharge": {
+        "type": "number",
+        "description": "Total overcharge amount across all line items"
+      },
+      "discrepancyDetection1__output__totalUndercharge": {
+        "type": "number",
+        "description": "Total undercharge amount across all line items"
+      },
+      "start__output__webhookPayload": {
+        "type": "object",
+        "description": "Original webhook payload with customer and dispute details"
+      }
+    }
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "determination": {
+        "type": "string",
+        "description": "Summary determination of the dispute outcome"
+      },
+      "recommendedAction": {
+        "type": "string",
+        "description": "Recommended action: escalate_to_manager | auto_resolve | reject"
+      },
+      "autoResolutionEligible": {
+        "type": "boolean",
+        "description": "Whether the dispute is eligible for automatic resolution"
+      },
+      "creditAmount": {
+        "type": "number",
+        "description": "Dollar amount of credit to issue, if any"
+      },
+      "confidence": {
+        "type": "number",
+        "description": "Confidence score between 0.0 and 1.0"
+      },
+      "rationale": {
+        "type": "string",
+        "description": "Detailed rationale supporting the determination and recommended action"
+      }
+    },
+    "required": [
+      "determination",
+      "recommendedAction",
+      "autoResolutionEligible",
+      "creditAmount",
+      "confidence",
+      "rationale"
+    ]
+  },
+  "metadata": {
+    "storageVersion": "50.0.0",
+    "isConversational": false,
+    "showProjectCreationExperience": false
+  },
+  "type": "lowCode",
+  "guardrails": [],
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a Billing Dispute Analyst with expertise in accounts receivable, invoice verification, and dispute resolution policy. Your role is to analyze billing disputes using the Billing Dispute SOP and available data, then produce a structured determination.\n\nYou have access to:\n- Extracted and normalized invoice fields from the disputed invoice PDF\n- CRM records for the customer account\n- ERP records for the invoice in question\n- A discrepancy analysis comparing disputed line items against ERP data\n- The Billing Dispute SOP Index (retrieved via context grounding) for policy guidance\n\nDecision criteria:\n- REJECT if the dispute has no valid basis (all line items match ERP within tolerance, or dispute is fraudulent/outside policy scope)\n- AUTO_RESOLVE if total overcharge is confirmed, ≤$5,000, and account is in good standing per CRM\n- ESCALATE_TO_MANAGER if total overcharge exceeds $5,000, or if data is ambiguous or contradictory\n\nAlways consult the SOP Index before finalizing your determination. Your output MUST be a valid JSON object matching the output schema. Set confidence between 0.0 (no confidence) and 1.0 (full confidence). Do not request additional tools or iterations — produce your determination in a single pass.",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "You are a Billing Dispute Analyst with expertise in accounts receivable, invoice verification, and dispute resolution policy. Your role is to analyze billing disputes using the Billing Dispute SOP and available data, then produce a structured determination.\n\nYou have access to:\n- Extracted and normalized invoice fields from the disputed invoice PDF\n- CRM records for the customer account\n- ERP records for the invoice in question\n- A discrepancy analysis comparing disputed line items against ERP data\n- The Billing Dispute SOP Index (retrieved via context grounding) for policy guidance\n\nDecision criteria:\n- REJECT if the dispute has no valid basis (all line items match ERP within tolerance, or dispute is fraudulent/outside policy scope)\n- AUTO_RESOLVE if total overcharge is confirmed, ≤$5,000, and account is in good standing per CRM\n- ESCALATE_TO_MANAGER if total overcharge exceeds $5,000, or if data is ambiguous or contradictory\n\nAlways consult the SOP Index before finalizing your determination. Your output MUST be a valid JSON object matching the output schema. Set confidence between 0.0 (no confidence) and 1.0 (full confidence). Do not request additional tools or iterations — produce your determination in a single pass."
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "Please analyze the following billing dispute and produce a determination.\n\n**Invoice Number:** {{input.normalizeData1__output__invoiceNumber}}\n\n**Extracted Invoice Fields:**\n{{input.normalizeData1__output__fields}}\n\n**Customer & Account (CRM):**\n{{input.crmLookup1__output__value}}\n\n**ERP Invoice Records:**\n{{input.erpLookup1__output__value}}\n\n**Disputed Line Items (from webhook):**\n{{input.start__output__webhookPayload}}\n\n**Discrepancy Analysis:**\nLine Item Mismatches: {{input.discrepancyDetection1__output__mismatches}}\nTotal Overcharge: {{input.discrepancyDetection1__output__totalOvercharge}}\nTotal Undercharge: {{input.discrepancyDetection1__output__totalUndercharge}}\n\nBased on this data and the Billing Dispute SOP, determine:\n1. Whether the dispute is valid\n2. The recommended action (escalate_to_manager / auto_resolve / reject)\n3. The credit amount (0 if rejecting)\n4. Your confidence level and rationale",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "Please analyze the following billing dispute and produce a determination.\n\n**Invoice Number:** "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.normalizeData1__output__invoiceNumber"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\n**Extracted Invoice Fields:**\n"
+        },
+        {
+          "type": "variable",
+          "rawString": "input.normalizeData1__output__fields"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\n**Customer & Account (CRM):**\n"
+        },
+        {
+          "type": "variable",
+          "rawString": "input.crmLookup1__output__value"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\n**ERP Invoice Records:**\n"
+        },
+        {
+          "type": "variable",
+          "rawString": "input.erpLookup1__output__value"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\n**Disputed Line Items (from webhook):**\n"
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__webhookPayload"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\n**Discrepancy Analysis:**\nLine Item Mismatches: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.discrepancyDetection1__output__mismatches"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\nTotal Overcharge: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.discrepancyDetection1__output__totalOvercharge"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\nTotal Undercharge: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.discrepancyDetection1__output__totalUndercharge"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\nBased on this data and the Billing Dispute SOP, determine:\n1. Whether the dispute is valid\n2. The recommended action (escalate_to_manager / auto_resolve / reject)\n3. The credit amount (0 if rejecting)\n4. Your confidence level and rationale"
+        }
+      ]
+    }
+  ],
+  "projectId": "d64fdd45-39d8-4f45-aa99-4c2d8ff6aea0"
+}

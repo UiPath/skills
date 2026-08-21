@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "InvoicesToSap",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "4897cbe7-578e-42bc-87b4-bcf795fcba41",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "InvoicesToSap"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Flow",
+      "name": "InvoicesToSap",
+      "package": {
+        "key": "543625a8-7ad8-4cbf-a90d-090afef0fadf"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "b5f2387d-7d1a-42fc-a1b4-1cf2106d5882",
+    "files": []
+  }
+}

@@ -1,0 +1,65 @@
+task_id: skill-flow-wiki-pageviews
+description: >
+  Create a UiPath Flow that fetches a range of Wikipedia pageviews, keeps
+  the high-traffic days, and returns the sum of their views — returning a
+  fixed error string when the article is invalid. Exercises managed HTTP
+  with a dynamic URL built from flow inputs, upstream-failure routing, and
+  a filter + aggregate pipeline over the response items.
+tags: [uipath-maestro-flow, e2e, lifecycle:generate, shape:multi-node, node:transform, feature:http]
+
+run_limits:
+  expected_turns: 44
+  turn_timeout: 1200
+
+initial_prompt: |
+  Create a UiPath Flow project named "WikiPageviews" that takes `article`
+  (string) and `date1`, `date2` (strings in `YYYYMMDD` format) as inputs.
+  Fetch the daily view counts in the range from the Wikimedia pageviews API
+  (`https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/en.wikipedia/all-access/user/{article}/daily/{date1}/{date2}`)
+  in a single call. Preserve every constant path segment of that URL
+  verbatim — including the literal `/daily/` between `{article}` and
+  `{date1}` — and only substitute the three placeholders; dropping any
+  segment makes the route invalid and Wikimedia returns 404. The request
+  must include a descriptive `User-Agent` header (e.g.
+  `WikiPageviewsFlow/1.0 (example@example.com)`) — Wikimedia rejects
+  requests without one (HTTP 403 per their robot policy).
+
+  Express the data pipeline as two distinct steps: first keep only the days
+  whose `views` exceed 500, then aggregate the surviving `views` into a
+  single integer total — pick the right Flow node for each step rather than
+  collapsing both into one. When the upstream call fails (e.g. the article
+  does not exist and the API returns an error), the flow must instead
+  return the literal string `Article not found`.
+
+  Do NOT ask for approval, confirmation, or feedback. Do NOT pause between planning and implementation. Build the complete flow end-to-end in a single pass.
+
+success_criteria:
+  # ── Flow file validity ─────────────────────────────────────────────────
+  - type: run_command
+    description: "uip maestro flow validate passes on the flow file"
+    command: "python3 $EXPERIMENT_TASKS_PATH/uipath-maestro-flow/_shared/validate_flow.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # ── Execution checks — success path (transform filter + sum) + error path (http error port) ─────
+  - type: run_command
+    description: "UiPath 2024-01-01..15: debug returns numeric sum of pageviews on days above 500 (range-tolerant of Wikimedia recomputes)"
+    command: "python3 $TASK_DIR/check_wiki_pageviews_flow.py uipath_success"
+    timeout: 600
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Invalid article: HTTP error output port returns the string 'Article not found'"
+    command: "python3 $TASK_DIR/check_wiki_pageviews_flow.py invalid_error"
+    timeout: 600
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+post_run:
+  - command: "python3 $EXPERIMENT_TASKS_PATH/uipath-maestro-flow/_shared/cleanup_solutions.py"
+    timeout: 120

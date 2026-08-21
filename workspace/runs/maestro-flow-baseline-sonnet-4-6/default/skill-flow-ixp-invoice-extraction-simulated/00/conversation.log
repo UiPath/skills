@@ -1,0 +1,138 @@
+=== USER (turn 1) — simulator-generated opener ===
+Hey there! I'm hoping you can help me out. I process vendor invoices all day and right now it's all manual — I want to get that automated. What I need is a flow that kicks in on its own whenever a new PDF invoice lands in my SharePoint folder, pulls all the important details off the invoice (invoice number, vendor name, invoice date, total amount, and the line items), and then sends all of that straight over to SAP by posting it to a web address IT gave me. Nothing fancy on the SAP side, just a plain post to that address.
+
+One important thing — it has to be built as a UiPath Maestro Flow, not an API workflow or a standalone script. I've heard those are different things and I specifically want the Maestro Flow kind.
+
+Also, I should mention upfront: IT hasn't connected the SharePoint or SAP accounts in this environment yet, so nothing will actually run right now. But I don't want to wait on IT — I want the whole thing built and wired up correctly, ready to go the moment IT flips the switch. So please don't go looking for live accounts or sit around waiting on IT.
+
+Before you start building, please ask me anything you need to know. I want to make sure you have everything before you dive in!
+
+=== AGENT (turn 1) — 41.9s, in=5 out=1694, 1 tool calls ===
+Great project — I have everything I need to understand the goal. Before diving in, here are a few things I need from you:
+
+**1. SharePoint location**
+What is the SharePoint site URL and the folder path to watch?
+(e.g., `https://yourcompany.sharepoint.com/sites/Finance` / `Shared Documents/Invoices/Incoming`)
+
+**2. Line item fields**
+When you say "line items," which columns do you expect on each line?
+1. Description, Quantity, Unit Price, Total
+2. Description, Quantity, Unit Price, Tax, Total
+3. Item Code, Description, Quantity, Unit Price, Amount
+4. Something else (tell me the exact columns)
+
+**3. SAP endpoint**
+What is the full URL IT gave you for the POST?
+(e.g., `https://sap.yourcompany.com/api/invoices`)
+
+**4. SAP payload format**
+Does IT require JSON or XML? Do you have a sample schema or field names they expect?
+1. JSON — IT gave me field names (paste them below)
+2. JSON — no schema yet, use the extracted field names as-is
+3. XML — IT gave me a schema
+4. Something else
+
+**5. SAP authentication**
+How should the POST authenticate to SAP?
+1. No authentication (open endpoint)
+2. API key in a header
+3. Bearer token / OAuth
+4. Basic auth (username + password)
+5. Something else
+
+**6. On failure**
+If extraction fails or the SAP post fails, what should happen?
+1. Send me an email notification
+2. Do nothing / let it fail silently
+3. Something else
+
+**7. Flow and solution name**
+What would you like to call the Flow project and its solution?
+1. `InvoiceExtractionFlow` / `InvoiceExtractionSolution` (defaults)
+2. Something else (tell me your preferred names)
+
+Answer as many as you can — if you're unsure on something, just say so and I'll pick a sensible default.
+
+=== USER (turn 2) ===
+Sure, let me go through these one by one!
+
+1. The folder is called **"New Vendor"** — that's where the invoices land. I don't have the full site URL handy, IT will sort that out when they connect things up, so just use a placeholder for now.
+
+2. Honestly, just grab whatever the invoice has on it — description, quantity, unit price, total at a minimum. Use your best judgment there.
+
+3. IT gave me a URL but I'd have to dig it out — just put in a placeholder like `https://sap.ourcompany.com/api/invoices` and I'll swap it in when IT confirms.
+
+4. JSON sounds right, and just use the field names as they come off the invoice — no fancy schema.
+
+5. I'm not sure on the authentication — pick whatever makes the most sense as a default and IT can update it.
+
+6. If something goes wrong, I'd love an email so I know to follow up. Nothing worse than an invoice falling through the cracks!
+
+7. Call the project **"InvoiceProcessing"** please.
+
+That covers everything I know! Go ahead and build it out — and remember, don't stop if the accounts aren't live yet, just wire everything up so it's ready to go. Let me know if anything else comes up!
+
+=== AGENT (turn 2) — 998.7s, in=24195 out=51390, 49 tool calls ===
+The flow is complete and fully validates. Here's what was built and what IT needs to do to flip the switch:
+
+---
+
+## InvoiceProcessing — Maestro Flow
+
+**Status:** `flow validate` → **Valid** (0 errors, 0 warnings)
+
+### Flow topology
+
+```
+New Invoice in SharePoint ──▶ Download Invoice File ──▶ Extract Invoice Fields ──▶ Build SAP Payload ──▶ Submit Invoice to ERP ──▶ Invoice Processed
+                                      │                         │                        │                       │
+                                      └─── error ──────────────┴───── error ────────────┴───── error ───────────┘
+                                                                                                                  ▼
+                                                                                                     Send Error Notification ──▶ Processing Failed
+```
+
+### What each node does
+
+| Node | Type | Status |
+|---|---|---|
+| **New Invoice in SharePoint** | OneDrive/SharePoint polling trigger — fires when a file is created in "New Vendor" folder | Needs IT connection |
+| **Download Invoice File** | Downloads the PDF using the file ID from the trigger output | Needs IT connection |
+| **Extract Invoice Fields** | IxP extraction with the `InvoiceIXP` model (already wired to your tenant's model) | Ready — uses model `invoiceixp-cef0d447-ixp` in folder `Shared` |
+| **Build SAP Payload** | Script node — extracts InvoiceNumber, VendorName, InvoiceDate, TotalAmount, line items from IxP output | Ready |
+| **Submit Invoice to ERP** | Manual HTTP POST to `https://sap.ourcompany.com/api/invoices` | Ready — swap URL when IT confirms |
+| **Send Error Notification** | Outlook 365 email alert on any failure | Needs IT connection |
+| **Invoice Processed / Processing Failed** | End nodes | Ready |
+
+---
+
+## Open Questions for IT
+
+Three sidecar files in `InvoiceProcessing/` hold the planned `node configure` commands — IT fills in the UUIDs and re-runs them:
+
+### 1. SharePoint connection (`newInvoiceInSharepoint1.detail.json`)
+- Create a **Microsoft OneDrive & SharePoint** connection in Integration Service
+- Supply: `connectionId` (connection UUID), `folderKey` (Orchestrator folder key UUID), `driveId` (SharePoint site drive ID), `folderId` (item ID of the "New Vendor" folder)
+- Then run: `uip maestro flow node configure InvoiceProcessing.flow newInvoiceInSharepoint1 --detail "$(cat newInvoiceInSharepoint1.detail.json | ...)"` (see comment in file)
+
+### 2. Download file connection (`downloadInvoiceFile1.detail.json`)
+- Uses the **same SharePoint connection** as the trigger
+- Confirm the field name that carries the file item ID from the trigger output (likely `.id` — verify from the trigger's `outputResponseDefinition` after IT enables the connection)
+
+### 3. Outlook 365 email connection (`sendErrorNotification1.detail.json`)
+- Create a **Microsoft Outlook 365** connection in Integration Service
+- Supply: `connectionId`, `folderKey`, and the recipient email address for failure alerts
+
+### 4. SAP endpoint URL
+- Replace `https://sap.ourcompany.com/api/invoices` in `postInvoiceToSap1` with the real URL:
+  ```bash
+  uip maestro flow node configure InvoiceProcessing.flow postInvoiceToSap1 \
+    --detail '{"authentication":"manual","method":"POST","url":"<REAL_SAP_URL>","headers":{"Content-Type":"application/json"},"body":{...}}'
+  ```
+
+### 5. IxP field names (confirm after first run)
+The `BuildSapPayload` script looks for `InvoiceNumber`, `VendorName`, `InvoiceDate`, `TotalAmount` in the IxP `Fields[]` array. After IT enables the SharePoint connection, drop a test PDF and check the IxP output in the run log — if the field names differ from those in the model, update the script's `getField('...')` calls.
+
+=== USER (turn 3) — stop token — dialog ending ===
+[ASSISTANT] 
+[RESULT - SUCCESS]
+

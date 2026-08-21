@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "CreateGroupDM",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "cccf3553-6f0c-40ab-a9af-ec702fabcf71",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "CreateGroupDM"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Flow",
+      "name": "CreateGroupDM",
+      "package": {
+        "key": "bad879c6-ef57-488d-810b-3710f5db357f"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "3866ecc1-f668-4db3-bd1e-7155b4d1d228",
+    "files": []
+  }
+}

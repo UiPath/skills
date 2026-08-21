@@ -1,0 +1,6 @@
+20:54:03 [INFO   ] [default/skill-flow-eval-evaluator-type-choice/04] orchestrator: API routing: aws_bedrock
+20:56:50 [INFO   ] [default/skill-flow-eval-evaluator-type-choice/04] orchestrator: Success criteria: 7/7 passed, weighted score: 1.000
+20:56:50 [WARNING] [default/skill-flow-eval-evaluator-type-choice/04] orchestrator: Visible turns (23) exceeded expected_turns (15) at iteration 1 for task skill-flow-eval-evaluator-type-choice. Run continues — max_turns remains the hard cap.
+20:56:50 [INFO   ] [default/skill-flow-eval-evaluator-type-choice/04] orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+20:56:50 [INFO   ] [default/skill-flow-eval-evaluator-type-choice/04] orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-eval-evaluator-type-choice
+20:56:50 [INFO   ] [default/skill-flow-eval-evaluator-type-choice/04] orchestrator: Task finished: status=SUCCESS duration=171.0s score=1.000 iterations=1

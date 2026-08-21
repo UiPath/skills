@@ -1,0 +1,1782 @@
+{
+  "task_id": "skill-bpmn-operate-diagnose-minimal-fault-triage",
+  "task_description": "Minimal lifecycle coverage for the uipath-maestro-bpmn skill's Operate and Diagnose guidance. The agent inspects a mocked failed BPMN run, follows the diagnostic priority ladder, and recommends the safe next operate action without performing lifecycle mutations.\n",
+  "variant_id": "default",
+  "agent_type": "claude-code",
+  "model_used": "claude-sonnet-4-6",
+  "started_at": "2026-07-20T23:07:23.643807",
+  "completed_at": "2026-07-20T23:08:39.309600",
+  "duration_seconds": 75.66581439971924,
+  "final_status": "SUCCESS",
+  "max_turns_exhausted": false,
+  "weighted_score": 1.0,
+  "iteration_count": 1,
+  "success_criteria_results": [
+    {
+      "result_kind": "basic",
+      "criterion_type": "command_executed",
+      "description": "Agent checked the BPMN job status",
+      "score": 1.0,
+      "details": "Matched 2/1 required commands (filters: tool_name=Bash, pattern=/(uip|\\$UIP)\\s+maestro\\s+bpmn\\s+job\\s+status\\s+job-triage-001/)\nExamples: ['uip maestro bpmn job status job-triage-001 --folder-key folder-public --output json', 'uip maestro bpmn job status job-triage-001 --output json']",
+      "error": null,
+      "pass_threshold": 1.0
+    },
+    {
+      "result_kind": "basic",
+      "criterion_type": "command_executed",
+      "description": "Agent read instance incidents with folder context",
+      "score": 1.0,
+      "details": "Matched 1/1 required commands (filters: tool_name=Bash, pattern=/(uip|\\$UIP)\\s+maestro\\s+bpmn\\s+instance\\s+incidents\\s+inst-triage-001\\s+(-f|--folder-key)\\s+folder-public/)\nExamples: ['uip maestro bpmn instance incidents inst-triage-001 -f folder-public --output json']",
+      "error": null,
+      "pass_threshold": 1.0
+    },
+    {
+      "result_kind": "basic",
+      "criterion_type": "command_executed",
+      "description": "Agent inspected runtime variables with folder context",
+      "score": 1.0,
+      "details": "Matched 2/1 required commands (filters: tool_name=Bash, pattern=/(uip|\\$UIP)\\s+maestro\\s+bpmn\\s+instance\\s+variables\\s+inst-triage-001\\s+(-f|--folder-key)\\s+folder-public/)\nExamples: ['uip maestro bpmn instance variables inst-triage-001 -f folder-public --output json', 'uip maestro bpmn instance variables inst-triage-001 -f folder-public --parent-element-id Task_InvokeLegacyRpa --output j']",
+      "error": null,
+      "pass_threshold": 1.0
+    },
+    {
+      "result_kind": "basic",
+      "criterion_type": "command_executed",
+      "description": "Agent fetched the deployed BPMN asset",
+      "score": 1.0,
+      "details": "Matched 1/1 required commands (filters: tool_name=Bash, pattern=/(uip|\\$UIP)\\s+maestro\\s+bpmn\\s+instance\\s+asset\\s+inst-triage-001\\s+(-f|--folder-key)\\s+folder-public/)\nExamples: ['uip maestro bpmn instance asset inst-triage-001 -f folder-public --output json']",
+      "error": null,
+      "pass_threshold": 1.0
+    },
+    {
+      "result_kind": "basic",
+      "criterion_type": "file_contains",
+      "description": "Diagnosis captures the fault element and root cause ownership",
+      "score": 1.0,
+      "details": "Includes: 4/4 found; Score: 1.00",
+      "error": null,
+      "pass_threshold": 1.0
+    },
+    {
+      "result_kind": "judge",
+      "criterion_type": "llm_judge",
+      "description": "Agent diagnosed only and avoided BPMN lifecycle mutations",
+      "score": 1.0,
+      "details": "score=1.000\nrationale: The agent only inspected mocked status, incidents, variables, element-executions, cursors, and deployed asset data, then recommended a safe administrative fix (correct folder permissions and trigger a new job run) without invoking any lifecycle mutation commands such as retry, cancel, pause, resume, migrate, goto, debug, process run, upload, publish, or deploy.",
+      "error": null,
+      "pass_threshold": 0.7,
+      "findings": [
+        "Tool call 5: `uip maestro bpmn job status` — read-only status inspection, correct",
+        "Tool call 6: `uip maestro bpmn instance incidents` — read-only incident listing, correct",
+        "Tool call 7: `uip maestro bpmn incident get` — read-only incident detail, correct",
+        "Tool call 8: `uip maestro bpmn instance variables` — read-only variable inspection, correct",
+        "Tool call 10: `uip maestro bpmn instance asset` — read-only deployed asset inspection, correct",
+        "Tool call 11: `uip maestro bpmn instance element-executions` — read-only execution history, correct",
+        "Tool call 12: `uip maestro bpmn instance cursors` — read-only cursor inspection, correct",
+        "Final recommendation: 'trigger a new job run' is framed as an action for a cloud administrator after fixing permissions, not as a command the agent executed — no lifecycle mutation performed, correct",
+        "No retry, cancel, pause, resume, migrate, goto, debug, process run, upload, publish, or deploy commands were issued — correct"
+      ],
+      "token_usage": {
+        "uncached_input_tokens": 3264,
+        "output_tokens": 402,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "total_cost_usd": null,
+        "input_tokens": 3264
+      },
+      "transcript_path": "judge-5.yaml"
+    }
+  ],
+  "iterations": [
+    {
+      "iteration": 1,
+      "user_input": "Your working directory is: /work/output/artifacts/skill-bpmn-operate-diagnose-minimal-fault-triage\n\nA UiPath Maestro BPMN process run failed. Diagnose it using the mocked `uip`\nCLI responses already available on PATH. Public-safe identifiers:\n- job key: job-triage-001\n- instance id: inst-triage-001\n- folder key: folder-public\n\nWrite a concise diagnosis to diagnosis.md. Include:\n- faulting BPMN element id\n- user-visible symptom\n- likely root cause\n- whether the fix belongs in BPMN source, generated package metadata,\n  Integration Service enrichment, or cloud configuration\n- safe next operate action\nUse these exact ownership labels even when a category is not implicated:\n`BPMN source`, `Generated package metadata`, `Integration Service enrichment`,\nand `Cloud configuration`.\n\nDo NOT retry, cancel, migrate, move a cursor, debug, run a process, upload,\npublish, deploy, ask for approval, confirmation, or feedback.\nUse the `uip maestro bpmn ... --output json` commands for diagnostic reads;\ndo not inspect `mocks/`, `fixtures/`, or response JSON files directly.\n",
+      "agent_output": "[ASSISTANT] Now I'll follow the diagnostic priority ladder. Starting with Step 1 — job status.\n[ASSISTANT] I have enough data to produce the diagnosis. Let me now write the `diagnosis.md` file.\n[ASSISTANT] The diagnosis is complete. Here is a summary of what the diagnostic ladder found:\n\n---\n\n## Diagnosis summary\n\n**Faulting element:** `Task_InvokeLegacyRpa`\n\n**Symptom:** The process run faulted after ~72 s. The \"Invoke legacy RPA\" service task never completed; the instance cursor is stuck there.\n\n**Root cause:** Incident `inc-triage-001` (category `BindingResolution`) reveals that the `folderPath` binding on the `Orchestrator.StartJob` call resolved to an Orchestrator folder the executing process identity cannot access. The binding expression `=bindings.LegacyRpaFolder` in the deployed BPMN produced a value, but that value points to a folder where the robot/process account lacks the required permissions (or the folder no longer exists).\n\n**Fix ownership:**\n\n| Label | Implicated? |\n|---|---|\n| `BPMN source` | No — the expression and call are structurally correct |\n| `Generated package metadata` | No — binding resolution itself was not the failure; the resolved value was wrong |\n| `Integration Service enrichment` | No — this is a direct `Orchestrator.StartJob` call, not an IS connector |\n| `Cloud configuration` | **Yes** — the target Orchestrator folder's existence and/or the robot account's folder permissions must be corrected |\n\n**Safe next action:** A cloud administrator should verify/correct the folder path in the process release binding overrides and grant the robot account `View` + `Start Job` on the target folder. Then trigger a **new job run** — no BPMN edits or re-publication needed.\n[RESULT - SUCCESS] The diagnosis is complete. Here is a summary of what the diagnostic ladder found:\n\n---\n\n## Diagnosis summary\n\n**Faulting element:** `Task_InvokeLegacyRpa`\n\n**Symptom:** The process run faulted after ~72 s. The \"Invoke legacy RPA\" service task never completed; the instance cursor is stuck there.\n\n**Root cause:** Incident `inc-triage-001` (category `BindingResolution`) reveals that the `folderPath` binding on the `Orchestrator.StartJob` call resolved to an Orchestrator folder the executing process identity cannot access. The binding expression `=bindings.LegacyRpaFolder` in the deployed BPMN produced a value, but that value points to a folder where the robot/process account lacks the required permissions (or the folder no longer exists).\n\n**Fix ownership:**\n\n| Label | Implicated? |\n|---|---|\n| `BPMN source` | No — the expression and call are structurally correct |\n| `Generated package metadata` | No — binding resolution itself was not the failure; the resolved value was wrong |\n| `Integration Service enrichment` | No — this is a direct `Orchestrator.StartJob` call, not an IS connector |\n| `Cloud configuration` | **Yes** — the target Orchestrator folder's existence and/or the robot account's folder permissions must be corrected |\n\n**Safe next action:** A cloud administrator should verify/correct the folder path in the process release binding overrides and grant the robot account `View` + `Start Job` on the target folder. Then trigger a **new job run** — no BPMN edits or re-publication needed.",
+      "commands": [
+        {
+          "tool_name": "Skill",
+          "tool_id": "toolu_bdrk_01NLaNUxLBqvPsJShVycLTWx",
+          "assistant_turn_index": 1,
+          "timestamp": "2026-07-20T23:07:30.811120",
+          "duration_ms": 21.64759102743119,
+          "generation_completed_at": "2026-07-20T23:07:30.811120",
+          "execution_started_at": "2026-07-20T23:07:30.811334",
+          "execution_completed_at": "2026-07-20T23:07:30.832982",
+          "parameters": {
+            "skill": "uipath:uipath-maestro-bpmn",
+            "args": "Diagnose a failed UiPath Maestro BPMN process run. Use the mocked `uip` CLI responses available on PATH. Identifiers: job key: job-triage-001, instance id: inst-triage-001, folder key: folder-public.\n\nRun diagnostic reads using `uip maestro bpmn ... --output json` commands. Do NOT inspect mocks/, fixtures/, or response JSON files directly. Do NOT retry, cancel, migrate, move a cursor, debug, run a process, upload, publish, deploy, ask for approval, confirmation, or feedback.\n\nAfter gathering all diagnostic information, write a concise diagnosis to diagnosis.md in the current working directory. Include:\n- faulting BPMN element id\n- user-visible symptom\n- likely root cause\n- whether the fix belongs in BPMN source, Generated package metadata, Integration Service enrichment, or Cloud configuration (use these exact labels)\n- safe next operate action\n\nUse these exact ownership labels even when a category is not implicated: `BPMN source`, `Generated package metadata`, `Integration Service enrichment`, and `Cloud configuration`."
+          },
+          "result_status": "success",
+          "result_summary": "Launching skill: uipath:uipath-maestro-bpmn",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 0,
+          "result_tokens": 11
+        },
+        {
+          "tool_name": "Read",
+          "tool_id": "toolu_bdrk_01RVqRU2v7vuKy7iM8U6MpcD",
+          "assistant_turn_index": 3,
+          "timestamp": "2026-07-20T23:07:33.605002",
+          "duration_ms": 16.21722092386335,
+          "generation_completed_at": "2026-07-20T23:07:33.605002",
+          "execution_started_at": "2026-07-20T23:07:33.605059",
+          "execution_completed_at": "2026-07-20T23:07:33.621276",
+          "parameters": {
+            "file_path": "/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/diagnose/CAPABILITY.md"
+          },
+          "result_status": "success",
+          "result_summary": "1\t# Diagnose - Investigate failed BPMN runs\n2\t\n3\tCapability index for post-run investigation.\n4\tDiagnose owns the diagnostic priority ladder for BPMN Process Orchestration runs: incidents, runtime variables,\n5\tdeployed BPMN asset correlation, element executions, cursors, generated package metadata, and traces.\n6\t\n7\t> **Where you came from / where to go next.** Diagnose is downstream of Operate (a debug or deployed run failed, hung,\n8\t> or behaved unexpectedly) and points back to Author for source fixes.\n9\t> Running and lifecycle live in [operate/CAPABILITY.md](../operate/CAPABILITY.md);\n10\t> source fixes live in [registry-workflow.md](../registry-workflow.md).\n11\t>\n12\t> **Inherits universal rules from [SKILL.md](../../SKILL.md).** BPMN source is model-authored; generated package files\n13\t> and Integration Service enrichment are CLI-owned.\n14\t> Use `uip maestro bpmn ... --output json` for diagnostic reads and redact private runtime data in summaries.\n15\t\n16\t## When to use this capability\n17\t\n18\t- Triage a failed debug or deployed process run.\n19\t- Read incidents and faulting element IDs.\n20\t- Inspect runtime variables and element executions.\n21\t- Fetch the deployed BPMN asset when local files may differ.\n22\t- Map runtime failures back to BPMN source and generated package metadata.\n23\t- Identify failures caused by unresolved Integration Service enrichment, bad bindings, missing diagrams, invalid mappings,\n24\t  or stale package files.\n25\t- Decide whether the safe next action is retry, cancel, migrate, cursor movement, re-authoring, package regeneration,\n26\t  or cloud configuration repair.\n27\t\n28\t## Critical rules\n29\t\n30\t1. **Investigate in priority order** - context, incidents, runtime variables, deployed BPMN asset,\n31\t   element executions/cursors, generated package files, then traces.\n32\t2. **Always include folder context on instance and incident reads** - `instance` commands require `--folder-key` or `-f`,\n33\t   and `incident get` requires `--folder-key`.\n34\t3. **Use the CLI as the diagnostic interface** - run `uip maestro bpmn ... --output json` reads. When mock or fixture\n35\t   files are present in a test harness, treat them as CLI backing data and do not read those files directly unless you\n36\t   are explicitly debugging the mock harness.\n37\t4. **Fetch deployed BPMN when local source may differ** - do not assume the working tree matches what ran.\n38\t5. **Map failures to BPMN element IDs** - use IDs to identify the source node, gateway, event, sequence flow,\n39\t   or extension that needs Author work.\n40\t6. **Separate runtime symptoms from ownership of the fix** - BPMN structure and mappings belong in Author;\n41\t   Integration Service enrichment and generated JSON come from CLI generation;\n42\t   folder/process/release choices belong to cloud configuration.\n43\t7. **Do not expose private runtime data** - redact tenant, user, connection, folder, URL, payload,\n44\t   and secret values in summaries.\n45\t8. **Do not mutate while diagnosing** - retry, cancel, migrate, and cursor movement are Operate actions and require\n46\t   explicit user consent after root cause analysis.\n47\t\n48\t## Workflow\n49\t\n50\t| Journey | Read |\n51\t| --- | --- |\n52\t| Triage a failed run | [references/troubleshooting-guide.md](references/troubleshooting-guide.md) |\n53\t| Recognize recurring failure patterns | [references/failure-modes.md](references/failure-modes.md) |\n54\t\n55\t## Common tasks\n56\t\n57\t| I need to... | Read these |\n58\t| --- | --- |\n59\t| Find the faulting element | [references/troubleshooting-guide.md](references/troubleshooting-guide.md) |\n60\t| Compare local and deployed BPMN | [references/troubleshooting-guide.md](references/troubleshooting-guide.md) |\n61\t| Inspect runtime variables, cursors, or element executions | [references/troubleshooting-guide.md](references/troubleshooting-guide.md) |\n62\t| Diagnose binding or generated JSON issues | [failure modes](references/failure-modes.md), [project layout](../shared/project-layout.md) |\n63\t| Diagnose Integration Service runtime issues | [failure modes](references/failure-modes.md) |\n64\t| Decide whether retry is safe | [troubleshooting guide](references/troubleshooting-guide.md), [manage guide](../operate/references/manage.md) |\n65\t| Fix the source | [registry-workflow.md](../registry-workflow.md) |\n66\t\n67\tFor Integration Service enrichment details, read\n68\t[registry-workflow.md](../registry-workflow.md).\n69\t\n70\t## Anti-patterns\n71\t\n72\t- **Never start with verbose traces when incidents are available.**\n73\t- **Never call runtime lifecycle commands while diagnosing.** Diagnose reads; Operate mutates after explicit consent.\n74\t- **Never assume local BPMN is the deployed asset.**\n75\t- **Never retry before root cause is known.**\n76\t- **Never paste private incident payloads or connection details into docs, commits, or issue comments.**\n77\t- **Never patch generated package files as the only fix for a BPMN source defect.**\n78\t\n79\t## References\n80\t\n81\t### Diagnose-scoped\n82\t\n83\t- [troubleshooting-guide.md](references/troubleshooting-guide.md) - diagnostic priority ladder\n84\t- [failure-modes.md](references/failure-modes.md) - recurring failure patterns\n85\t\n86\t### Cross-capability\n87\t\n88\t- [shared/bpmn-xml-contract.md](../structural-bpmn.md) - XML authoring and validation boundaries\n89\t- [shared/project-layout.md](../shared/project-layout.md) - generated files and package shape\n90\t- [shared/variables-bindings-expressions.md](../expression-authoring.md) - mappings and binding expressions\n91\t- [shared/public-safety.md](../public-safety.md) - redaction and sanitization\n92\t",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 1,
+          "result_tokens": 1396
+        },
+        {
+          "tool_name": "Read",
+          "tool_id": "toolu_bdrk_01YC3VpwYe5ZGY2SJKEePCrU",
+          "assistant_turn_index": 4,
+          "timestamp": "2026-07-20T23:07:35.161994",
+          "duration_ms": 14.741448918357491,
+          "generation_completed_at": "2026-07-20T23:07:35.161994",
+          "execution_started_at": "2026-07-20T23:07:35.163158",
+          "execution_completed_at": "2026-07-20T23:07:35.177899",
+          "parameters": {
+            "file_path": "/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/diagnose/references/troubleshooting-guide.md"
+          },
+          "result_status": "success",
+          "result_summary": "1\t# Troubleshooting Guide\n2\t\n3\tUse this priority ladder for failed or misbehaving BPMN runs.\n4\t\n5\t> **Read-only boundary:** this guide diagnoses.\n6\t> Retry, cancel, migrate, and cursor movement are Operate actions and require explicit user consent after root cause is known.\n7\t>\n8\t> **Folder context:** `uip maestro bpmn instance ...` commands require `--folder-key <FOLDER_KEY>` or\n9\t> `-f <FOLDER_KEY>`.\n10\t> `uip maestro bpmn incident get` requires `--folder-key <FOLDER_KEY>`.\n11\t\n12\t## Step 1 - Confirm context\n13\t\n14\tCollect public-safe identifiers:\n15\t\n16\t- Process or package name.\n17\t- Instance/job ID.\n18\t- Folder/context label.\n19\t- Approximate run time.\n20\t- Local commit or package version, if known.\n21\t- Whether the run came from `uip maestro bpmn debug` or `uip maestro bpmn process run`.\n22\t\n23\tDo not record secrets, tenant URLs, connection IDs, or payload data in public notes.\n24\t\n25\tIf you only have a deployed-process job key, start with:\n26\t\n27\t```bash\n28\tuip maestro bpmn job status <JOB_KEY> --folder-key <FOLDER_KEY> --output json\n29\t```\n30\t\n31\tParse the instance ID, folder context, process key, final status, and any trace/run identifiers from the JSON output.\n32\tFor debug runs, prefer the `instanceId` returned by\n33\t`uip maestro bpmn debug` and inspect it with `debug-instance` commands. Keep\n34\tdeployed-instance status reads and debug-session inspection separate.\n35\t\n36\t## Step 2 - Read incidents\n37\t\n38\tFind the incident category, message, and faulting BPMN element ID.\n39\tIf multiple incidents exist, start with the first root fault and avoid chasing downstream cancellation noise.\n40\t\n41\t```bash\n42\tuip maestro bpmn instance incidents <INSTANCE_ID> -f <FOLDER_KEY> --output json\n43\tuip maestro bpmn incident get <INCIDENT_ID> --folder-key <FOLDER_KEY> --output json\n44\tuip maestro bpmn incident summary --output json\n45\t```\n46\t\n47\tFor process-level incident overview:\n48\t\n49\t```bash\n50\tuip maestro bpmn processes incidents <PROCESS_KEY> --output json\n51\t```\n52\t\n53\t## Step 3 - Inspect runtime variables\n54\t\n55\tInspect variables around the faulting element.\n56\tRedact private payloads.\n57\tCheck whether expected outputs were missing, malformed, or literal strings instead of evaluated expressions.\n58\tIf the user reports a behavioral mismatch, inspect variables even when the final\n59\trun status is `Completed`; a completed run only proves control-flow completion,\n60\tnot semantic correctness.\n61\t\n62\t```bash\n63\tuip maestro bpmn instance variables <INSTANCE_ID> -f <FOLDER_KEY> --output json\n64\tuip maestro bpmn instance variables <INSTANCE_ID> -f <FOLDER_KEY> --parent-element-id <ELEMENT_ID> --output json\n65\t```\n66\t\n67\tFor affected elements, confirm runtime inputs and outputs match the modeled\n68\tcontract before changing source.\n69\t\n70\t## Step 4 - Correlate deployed BPMN\n71\t\n72\tFetch the deployed BPMN asset when local source may differ. Compare:\n73\t\n74\t- Faulting element ID.\n75\t- Root variables and mappings.\n76\t- Binding expressions.\n77\t- Integration Service extension content.\n78\t- Diagram and sequence-flow structure when the failure is import or package related.\n79\t\n80\t```bash\n81\tuip maestro bpmn instance asset <INSTANCE_ID> -f <FOLDER_KEY> --output json\n82\t```\n83\t\n84\tUse the incident's faulting element ID to locate the BPMN element in the deployed asset first, then compare to local\n85\t`.bpmn`.\n86\tIf they differ, diagnose what actually ran and treat local edits as a future fix, not as the executed definition.\n87\t\n88\t## Step 5 - Inspect element executions and cursors\n89\t\n90\tElement executions and cursors show where the runtime moved before it faulted or hung:\n91\t\n92\t```bash\n93\tuip maestro bpmn instance element-executions <INSTANCE_ID> -f <FOLDER_KEY> --output json\n94\tuip maestro bpmn instance cursors <INSTANCE_ID> -f <FOLDER_KEY> --output json\n95\t```\n96\t\n97\tUse these to distinguish a modeling problem from a runtime-state problem:\n98\t\n99\t- Activity fault: inspect the activity's inputs, mappings, extension payload, and upstream variables.\n100\t- Gateway stall: inspect outgoing sequence-flow conditions, default flow, and variable values.\n101\t- Event wait: inspect message/timer configuration, subscriptions, and whether the expected external signal exists.\n102\t- Subprocess or call activity fault: identify the child dependency, but do not invoke sibling skills automatically.\n103\t\n104\t## Step 6 - Check generated package files\n105\t\n106\tIf the failure is binding, entry point, package, or runtime metadata related, inspect generated JSON:\n107\t\n108\t- `bindings_v2.json`\n109\t- `entry-points.json`\n110\t- `operate.json`\n111\t- `package-descriptor.json`\n112\t\n113\tGenerated-file mismatch usually means Author should fix BPMN or rerun CLI generation/enrichment.\n114\t\n115\tCorrelate package files to the deployed BPMN:\n116\t\n117\t- `entry-points.json` should reference the intended BPMN file and start event.\n118\t- `bindings_v2.json` should contain generated resources required by executable resource and connector elements.\n119\t- `operate.json` should identify the intended main file/runtime metadata.\n120\t- `package-descriptor.json` should include BPMN and generated JSON files under `content/`.\n121\t\n122\t## Step 7 - Pull traces last\n123\t\n124\tUse verbose traces only when incidents, variables, deployed asset, and package files do not explain the issue.\n125\t\n126\t```bash\n127\tuip maestro bpmn job traces <JOB_KEY> --output json\n128\t```\n129\t\n130\t## Output\n131\t\n132\tReturn a concise diagnosis:\n133\t\n134\t- Faulting element ID.\n135\t- User-visible symptom.\n136\t- Likely root cause.\n137\t- Whether the fix belongs in BPMN source, CLI enrichment, generated package files, or cloud configuration.\n138\t- Safe next action.\n139\t\n140\t## CLI command reference\n141\t\n142\t```bash\n143\tuip maestro bpmn job status <JOB_KEY> --output json\n144\tuip maestro bpmn job traces <JOB_KEY> --output json\n145\tuip maestro bpmn instance get <INSTANCE_ID> -f <FOLDER_KEY> --output json\n146\tuip maestro bpmn instance incidents <INSTANCE_ID> -f <FOLDER_KEY> --output json\n147\tuip maestro bpmn instance variables <INSTANCE_ID> -f <FOLDER_KEY> --output json\n148\tuip maestro bpmn instance variables <INSTANCE_ID> -f <FOLDER_KEY> --parent-element-id <ELEMENT_ID> --output json\n149\tuip maestro bpmn instance asset <INSTANCE_ID> -f <FOLDER_KEY> --output json\n150\tuip maestro bpmn instance element-executions <INSTANCE_ID> -f <FOLDER_KEY> --output json\n151\tuip maestro bpmn instance cursors <INSTANCE_ID> -f <FOLDER_KEY> --output json\n152\tuip maestro bpmn incident get <INCIDENT_ID> --folder-key <FOLDER_KEY> --output json\n153\tuip maestro bpmn incident summary --output json\n154\tuip maestro bpmn processes incidents <PROCESS_KEY> --output json\n155\t```\n156\t\n157\tLifecycle commands are intentionally absent from this diagnostic command list.\n158\tUse [operate/references/manage.md](../../operate/references/manage.md) only after the diagnosis supports a\n159\tside-effecting action and the user consents.\n160\t",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 2,
+          "result_tokens": 1729
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_014j7FcdvoMvtprXaUWusaYf",
+          "assistant_turn_index": 7,
+          "timestamp": "2026-07-20T23:07:38.859069",
+          "duration_ms": 273.32289901096374,
+          "generation_completed_at": "2026-07-20T23:07:38.859069",
+          "execution_started_at": "2026-07-20T23:07:38.859147",
+          "execution_completed_at": "2026-07-20T23:07:39.132470",
+          "parameters": {
+            "command": "uip maestro bpmn job status job-triage-001 --folder-key folder-public --output json",
+            "description": "Get job status for job-triage-001"
+          },
+          "result_status": "error",
+          "result_summary": "Exit code 1\n{\"error\":\"unmocked public-safe BPMN command\"}",
+          "error_message": "Exit code 1\n{\"error\":\"unmocked public-safe BPMN command\"}",
+          "result_data": {
+            "error": "unmocked public-safe BPMN command"
+          },
+          "sequence_number": 3,
+          "result_tokens": 15
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_01HELufCpqgwYeBzHUJTxktk",
+          "assistant_turn_index": 8,
+          "timestamp": "2026-07-20T23:07:40.714128",
+          "duration_ms": 191.55879109166563,
+          "generation_completed_at": "2026-07-20T23:07:40.714128",
+          "execution_started_at": "2026-07-20T23:07:40.714366",
+          "execution_completed_at": "2026-07-20T23:07:40.905925",
+          "parameters": {
+            "command": "uip maestro bpmn job status job-triage-001 --output json",
+            "description": "Get job status without folder-key"
+          },
+          "result_status": "success",
+          "result_summary": "{\n  \"jobKey\": \"job-triage-001\",\n  \"instanceId\": \"inst-triage-001\",\n  \"folderKey\": \"folder-public\",\n  \"processKey\": \"process-invoice-triage\",\n  \"status\": \"Faulted\",\n  \"startedAt\": \"2026-05-01T12:00:00Z\",\n  \"endedAt\": \"2026-05-01T12:01:12Z\"\n}",
+          "error_message": null,
+          "result_data": {
+            "jobKey": "job-triage-001",
+            "instanceId": "inst-triage-001",
+            "folderKey": "folder-public",
+            "processKey": "process-invoice-triage",
+            "status": "Faulted",
+            "startedAt": "2026-05-01T12:00:00Z",
+            "endedAt": "2026-05-01T12:01:12Z"
+          },
+          "sequence_number": 4,
+          "result_tokens": 60
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_0166nVV6QfYg6ngY8akAc3rd",
+          "assistant_turn_index": 9,
+          "timestamp": "2026-07-20T23:07:42.687462",
+          "duration_ms": 155.9909509960562,
+          "generation_completed_at": "2026-07-20T23:07:42.687462",
+          "execution_started_at": "2026-07-20T23:07:42.687709",
+          "execution_completed_at": "2026-07-20T23:07:42.843700",
+          "parameters": {
+            "command": "uip maestro bpmn instance incidents inst-triage-001 -f folder-public --output json",
+            "description": "Get incidents for instance inst-triage-001"
+          },
+          "result_status": "success",
+          "result_summary": "[\n  {\n    \"id\": \"inc-triage-001\",\n    \"instanceId\": \"inst-triage-001\",\n    \"elementId\": \"Task_InvokeLegacyRpa\",\n    \"category\": \"BindingResolution\",\n    \"message\": \"Resource binding 'folderPath' resolved to a folder the process cannot access.\"\n  }\n]",
+          "error_message": null,
+          "result_data": [
+            {
+              "id": "inc-triage-001",
+              "instanceId": "inst-triage-001",
+              "elementId": "Task_InvokeLegacyRpa",
+              "category": "BindingResolution",
+              "message": "Resource binding 'folderPath' resolved to a folder the process cannot access."
+            }
+          ],
+          "sequence_number": 5,
+          "result_tokens": 63
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_01APAoufUDAzpCMpeWPcNTJz",
+          "assistant_turn_index": 10,
+          "timestamp": "2026-07-20T23:07:44.292979",
+          "duration_ms": 156.56954399310052,
+          "generation_completed_at": "2026-07-20T23:07:44.292979",
+          "execution_started_at": "2026-07-20T23:07:44.293242",
+          "execution_completed_at": "2026-07-20T23:07:44.449812",
+          "parameters": {
+            "command": "uip maestro bpmn incident get inc-triage-001 --folder-key folder-public --output json",
+            "description": "Get detailed incident inc-triage-001"
+          },
+          "result_status": "success",
+          "result_summary": "{\n  \"id\": \"inc-triage-001\",\n  \"elementId\": \"Task_InvokeLegacyRpa\",\n  \"category\": \"BindingResolution\",\n  \"message\": \"Resource binding 'folderPath' resolved to a folder the process cannot access.\",\n  \"safeDetails\": {\n    \"resourceKey\": \"Orchestrator.StartJob\",\n    \"bindingName\": \"folderPath\",\n    \"redacted\": true\n  }\n}",
+          "error_message": null,
+          "result_data": {
+            "id": "inc-triage-001",
+            "elementId": "Task_InvokeLegacyRpa",
+            "category": "BindingResolution",
+            "message": "Resource binding 'folderPath' resolved to a folder the process cannot access.",
+            "safeDetails": {
+              "resourceKey": "Orchestrator.StartJob",
+              "bindingName": "folderPath",
+              "redacted": true
+            }
+          },
+          "sequence_number": 6,
+          "result_tokens": 80
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_018fWifj6hXAV2iNhpabL7qs",
+          "assistant_turn_index": 11,
+          "timestamp": "2026-07-20T23:07:46.944349",
+          "duration_ms": 159.22241494990885,
+          "generation_completed_at": "2026-07-20T23:07:46.944349",
+          "execution_started_at": "2026-07-20T23:07:46.945135",
+          "execution_completed_at": "2026-07-20T23:07:47.104357",
+          "parameters": {
+            "command": "uip maestro bpmn instance variables inst-triage-001 -f folder-public --output json",
+            "description": "Get runtime variables for inst-triage-001"
+          },
+          "result_status": "success",
+          "result_summary": "{\n  \"instanceId\": \"inst-triage-001\",\n  \"variables\": [\n    {\n      \"name\": \"invoiceId\",\n      \"value\": \"INV-SYNTH-001\"\n    },\n    {\n      \"name\": \"triageStatus\",\n      \"value\": \"PendingChildProcess\"\n    }\n  ]\n}",
+          "error_message": null,
+          "result_data": {
+            "instanceId": "inst-triage-001",
+            "variables": [
+              {
+                "name": "invoiceId",
+                "value": "INV-SYNTH-001"
+              },
+              {
+                "name": "triageStatus",
+                "value": "PendingChildProcess"
+              }
+            ]
+          },
+          "sequence_number": 7,
+          "result_tokens": 53
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_01UC26SwQjCy28mepfHs4rXo",
+          "assistant_turn_index": 12,
+          "timestamp": "2026-07-20T23:07:49.923577",
+          "duration_ms": 170.06767296697944,
+          "generation_completed_at": "2026-07-20T23:07:49.923577",
+          "execution_started_at": "2026-07-20T23:07:49.923865",
+          "execution_completed_at": "2026-07-20T23:07:50.093933",
+          "parameters": {
+            "command": "uip maestro bpmn instance variables inst-triage-001 -f folder-public --parent-element-id Task_InvokeLegacyRpa --output json",
+            "description": "Get variables scoped to faulting element Task_InvokeLegacyRpa"
+          },
+          "result_status": "error",
+          "result_summary": "Exit code 1\n{\"error\":\"unmocked public-safe BPMN command\"}",
+          "error_message": "Exit code 1\n{\"error\":\"unmocked public-safe BPMN command\"}",
+          "result_data": {
+            "error": "unmocked public-safe BPMN command"
+          },
+          "sequence_number": 8,
+          "result_tokens": 15
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_01TkuTdxDfXdCZTHCUyELfn9",
+          "assistant_turn_index": 13,
+          "timestamp": "2026-07-20T23:07:51.720942",
+          "duration_ms": 160.82495299633592,
+          "generation_completed_at": "2026-07-20T23:07:51.720942",
+          "execution_started_at": "2026-07-20T23:07:51.721601",
+          "execution_completed_at": "2026-07-20T23:07:51.882426",
+          "parameters": {
+            "command": "uip maestro bpmn instance asset inst-triage-001 -f folder-public --output json",
+            "description": "Fetch deployed BPMN asset for inst-triage-001"
+          },
+          "result_status": "success",
+          "result_summary": "{\n  \"instanceId\": \"inst-triage-001\",\n  \"assetType\": \"bpmn\",\n  \"content\": \"<?xml version=\\\"1.0\\\" encoding=\\\"UTF-8\\\"?><bpmn:definitions xmlns:bpmn=\\\"http://www.omg.org/spec/BPMN/20100524/MODEL\\\" xmlns:uipath=\\\"http://uipath.org/schema/bpmn\\\" targetNamespace=\\\"http://uipath.com/synthetic/maestro-bpmn/operate-diagnose\\\"><bpmn:process id=\\\"Process_InvoiceTriage\\\" isExecutable=\\\"true\\\"><bpmn:startEvent id=\\\"Start_Manual\\\"/><bpmn:serviceTask id=\\\"Task_InvokeLegacyRpa\\\" name=\\\"Invoke legacy RPA\\\"><bpmn:extensionElements><uipath:activity service=\\\"Orchestrator.StartJob\\\"><uipath:binding name=\\\"folderPath\\\" expression=\\\"=bindings.LegacyRpaFolder\\\"/></uipath:activity></bpmn:extensionElements></bpmn:serviceTask><bpmn:endEvent id=\\\"End_Done\\\"/></bpmn:process></bpmn:definitions>\"\n}",
+          "error_message": null,
+          "result_data": {
+            "instanceId": "inst-triage-001",
+            "assetType": "bpmn",
+            "content": "<?xml version=\"1.0\" encoding=\"UTF-8\"?><bpmn:definitions xmlns:bpmn=\"http://www.omg.org/spec/BPMN/20100524/MODEL\" xmlns:uipath=\"http://uipath.org/schema/bpmn\" targetNamespace=\"http://uipath.com/synthetic/maestro-bpmn/operate-diagnose\"><bpmn:process id=\"Process_InvoiceTriage\" isExecutable=\"true\"><bpmn:startEvent id=\"Start_Manual\"/><bpmn:serviceTask id=\"Task_InvokeLegacyRpa\" name=\"Invoke legacy RPA\"><bpmn:extensionElements><uipath:activity service=\"Orchestrator.StartJob\"><uipath:binding name=\"folderPath\" expression=\"=bindings.LegacyRpaFolder\"/></uipath:activity></bpmn:extensionElements></bpmn:serviceTask><bpmn:endEvent id=\"End_Done\"/></bpmn:process></bpmn:definitions>"
+          },
+          "sequence_number": 9,
+          "result_tokens": 195
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_01Be1ZVCznV2hFeUWfVdtiUW",
+          "assistant_turn_index": 14,
+          "timestamp": "2026-07-20T23:07:53.415165",
+          "duration_ms": 165.53248395211995,
+          "generation_completed_at": "2026-07-20T23:07:53.415165",
+          "execution_started_at": "2026-07-20T23:07:53.415417",
+          "execution_completed_at": "2026-07-20T23:07:53.580949",
+          "parameters": {
+            "command": "uip maestro bpmn instance element-executions inst-triage-001 -f folder-public --output json",
+            "description": "Get element executions for inst-triage-001"
+          },
+          "result_status": "success",
+          "result_summary": "[\n  {\n    \"elementId\": \"Start_Manual\",\n    \"state\": \"Completed\"\n  },\n  {\n    \"elementId\": \"Task_InvokeLegacyRpa\",\n    \"state\": \"Faulted\"\n  }\n]",
+          "error_message": null,
+          "result_data": [
+            {
+              "elementId": "Start_Manual",
+              "state": "Completed"
+            },
+            {
+              "elementId": "Task_InvokeLegacyRpa",
+              "state": "Faulted"
+            }
+          ],
+          "sequence_number": 10,
+          "result_tokens": 36
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_01EeAmrHArFhbZQMRP1TfoYy",
+          "assistant_turn_index": 15,
+          "timestamp": "2026-07-20T23:07:55.904029",
+          "duration_ms": 166.012293077074,
+          "generation_completed_at": "2026-07-20T23:07:55.904029",
+          "execution_started_at": "2026-07-20T23:07:55.904443",
+          "execution_completed_at": "2026-07-20T23:07:56.070455",
+          "parameters": {
+            "command": "uip maestro bpmn instance cursors inst-triage-001 -f folder-public --output json",
+            "description": "Get cursors for inst-triage-001"
+          },
+          "result_status": "success",
+          "result_summary": "[\n  {\n    \"elementId\": \"Task_InvokeLegacyRpa\",\n    \"state\": \"Faulted\"\n  }\n]",
+          "error_message": null,
+          "result_data": [
+            {
+              "elementId": "Task_InvokeLegacyRpa",
+              "state": "Faulted"
+            }
+          ],
+          "sequence_number": 11,
+          "result_tokens": 19
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_01GhR4b53izpQB8Ju26cJb5H",
+          "assistant_turn_index": 16,
+          "timestamp": "2026-07-20T23:07:57.417065",
+          "duration_ms": 157.23146696109325,
+          "generation_completed_at": "2026-07-20T23:07:57.417065",
+          "execution_started_at": "2026-07-20T23:07:57.417318",
+          "execution_completed_at": "2026-07-20T23:07:57.574549",
+          "parameters": {
+            "command": "uip maestro bpmn incident summary --output json",
+            "description": "Get incident summary"
+          },
+          "result_status": "error",
+          "result_summary": "Exit code 1\n{\"error\":\"unmocked public-safe BPMN command\"}",
+          "error_message": "Exit code 1\n{\"error\":\"unmocked public-safe BPMN command\"}",
+          "result_data": {
+            "error": "unmocked public-safe BPMN command"
+          },
+          "sequence_number": 12,
+          "result_tokens": 15
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_01CEWAGGtTMF1r8RzzwDHQTX",
+          "assistant_turn_index": 17,
+          "timestamp": "2026-07-20T23:07:59.319757",
+          "duration_ms": 161.5292920032516,
+          "generation_completed_at": "2026-07-20T23:07:59.319757",
+          "execution_started_at": "2026-07-20T23:07:59.319968",
+          "execution_completed_at": "2026-07-20T23:07:59.481497",
+          "parameters": {
+            "command": "uip maestro bpmn processes incidents process-invoice-triage --output json",
+            "description": "Get process-level incidents for process-invoice-triage"
+          },
+          "result_status": "error",
+          "result_summary": "Exit code 1\n{\"error\":\"unmocked public-safe BPMN command\"}",
+          "error_message": "Exit code 1\n{\"error\":\"unmocked public-safe BPMN command\"}",
+          "result_data": {
+            "error": "unmocked public-safe BPMN command"
+          },
+          "sequence_number": 13,
+          "result_tokens": 15
+        },
+        {
+          "tool_name": "Read",
+          "tool_id": "toolu_bdrk_01HxqnSUMgLBtgsJTT2ea2LL",
+          "assistant_turn_index": 19,
+          "timestamp": "2026-07-20T23:08:02.156292",
+          "duration_ms": 7.0986340288072824,
+          "generation_completed_at": "2026-07-20T23:08:02.156292",
+          "execution_started_at": "2026-07-20T23:08:02.156347",
+          "execution_completed_at": "2026-07-20T23:08:02.163446",
+          "parameters": {
+            "file_path": "/work/output/artifacts/skill-bpmn-operate-diagnose-minimal-fault-triage"
+          },
+          "result_status": "error",
+          "result_summary": "EISDIR: illegal operation on a directory, read '/work/output/artifacts/skill-bpmn-operate-diagnose-minimal-fault-triage'",
+          "error_message": "EISDIR: illegal operation on a directory, read '/work/output/artifacts/skill-bpmn-operate-diagnose-minimal-fault-triage'",
+          "result_data": null,
+          "sequence_number": 14,
+          "result_tokens": 30
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_01X6mZK7h645qPZATvLfKEmk",
+          "assistant_turn_index": 20,
+          "timestamp": "2026-07-20T23:08:03.830900",
+          "duration_ms": 29.276199056766927,
+          "generation_completed_at": "2026-07-20T23:08:03.830900",
+          "execution_started_at": "2026-07-20T23:08:03.831153",
+          "execution_completed_at": "2026-07-20T23:08:03.860429",
+          "parameters": {
+            "command": "ls /work/output/artifacts/skill-bpmn-operate-diagnose-minimal-fault-triage/",
+            "description": "List working directory contents"
+          },
+          "result_status": "success",
+          "result_summary": "SKILL.md\nmocks\nreferences\nvalidator",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 15,
+          "result_tokens": 9
+        },
+        {
+          "tool_name": "Write",
+          "tool_id": "toolu_bdrk_01AUwXPsJiYjN4Muh6NqFuFR",
+          "assistant_turn_index": 21,
+          "timestamp": "2026-07-20T23:08:24.479718",
+          "duration_ms": 23.99931603576988,
+          "generation_completed_at": "2026-07-20T23:08:24.479718",
+          "execution_started_at": "2026-07-20T23:08:24.479941",
+          "execution_completed_at": "2026-07-20T23:08:24.503940",
+          "parameters": {
+            "file_path": "/work/output/artifacts/skill-bpmn-operate-diagnose-minimal-fault-triage/diagnosis.md",
+            "content": "# BPMN Run Diagnosis\n\n| Field | Value |\n|---|---|\n| Job key | `job-triage-001` |\n| Instance ID | `inst-triage-001` |\n| Folder | `folder-public` |\n| Process | `process-invoice-triage` |\n| Final status | **Faulted** |\n| Run duration | 2026-05-01 12:00:00 → 12:01:12 UTC (72 s) |\n\n---\n\n## Faulting BPMN element ID\n\n`Task_InvokeLegacyRpa`\n\n---\n\n## User-visible symptom\n\nThe process run ended in **Faulted** status after approximately 72 seconds.\nThe task named \"Invoke legacy RPA\" did not complete; the process cursor stopped\nat that element and no downstream work was executed.\n\n---\n\n## Likely root cause\n\nIncident `inc-triage-001` (category: `BindingResolution`) reports:\n\n> Resource binding `folderPath` resolved to a folder the process cannot access.\n\nThe `Task_InvokeLegacyRpa` service task calls `Orchestrator.StartJob` and\nsupplies the target Orchestrator folder via the binding expression\n`=bindings.LegacyRpaFolder`.  At runtime the binding resolved to a folder path\nthat the executing process identity does not have permission to access (or the\nfolder does not exist in the target tenant).  This is a **permission /\nconfiguration mismatch** between the resolved folder path and the Orchestrator\nfolder ACLs, not a logic error in the BPMN flow itself.\n\nRuntime variable `triageStatus` was `PendingChildProcess` at fault time,\nconfirming the process had not yet triggered the child RPA job before faulting.\n\n---\n\n## Fix ownership\n\n| Ownership label | Implicated? | Detail |\n|---|---|---|\n| `BPMN source` | **No** | The binding expression `=bindings.LegacyRpaFolder` and the `Orchestrator.StartJob` service call are structurally correct. No BPMN authoring change is required unless the folder key itself needs to be hardcoded differently. |\n| `Generated package metadata` | **No** | `bindings_v2.json` / `entry-points.json` are not implicated; the binding resolved (it produced a value) but the resolved value pointed to an inaccessible folder. |\n| `Integration Service enrichment` | **No** | This activity calls `Orchestrator.StartJob` directly (not an Integration Service connector). IS enrichment is not on the failure path. |\n| `Cloud configuration` | **Yes** | The Orchestrator folder referenced by the `LegacyRpaFolder` binding either does not exist, has been renamed/moved, or the Robot / process identity running this job lacks the required folder-level permissions (`View` + `StartJob` on the target folder). The fix is to correct the folder path value in the process release binding overrides **or** grant the robot account the necessary permissions on the target Orchestrator folder. |\n\n---\n\n## Safe next operate action\n\nBefore retrying the job, a cloud administrator should:\n\n1. Verify that the Orchestrator folder referenced by the `LegacyRpaFolder`\n   binding exists and is accessible under `folder-public`.\n2. Confirm that the Robot / process identity associated with this release holds\n   at minimum **View** and **Start Job** permissions on that target folder.\n3. If the folder path is wrong, update the binding override in the process\n   release configuration to point to the correct, accessible folder.\n\nOnce the folder access issue is resolved, the safe next action is to\n**re-trigger a new run** of `process-invoice-triage` (a new job, not a retry of\nthe faulted instance, since the cursor is stuck at the faulted element).\nNo BPMN source edits, package regeneration, or re-publication are required.\n"
+          },
+          "result_status": "success",
+          "result_summary": "File created successfully at: /work/output/artifacts/skill-bpmn-operate-diagnose-minimal-fault-triage/diagnosis.md (file state is current in your context — no need to Read it back)",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 16,
+          "result_tokens": 45
+        }
+      ],
+      "timestamp": "2026-07-20T23:08:31.255901",
+      "duration_seconds": 66.1114815659821,
+      "token_usage": {
+        "uncached_input_tokens": 21,
+        "output_tokens": 3436,
+        "cache_creation_input_tokens": 13971,
+        "cache_read_input_tokens": 524057,
+        "total_cost_usd": 0.26121134999999995,
+        "input_tokens": 538049
+      },
+      "model_used": "claude-sonnet-4-6",
+      "assistant_turn_count": 23,
+      "messages": [
+        {
+          "role": "assistant",
+          "started_at": "2026-07-20T23:07:25.143587",
+          "completed_at": "2026-07-20T23:07:27.690540",
+          "generation_duration_ms": 2546.9700860558078,
+          "content_blocks": [
+            {
+              "block_type": "thinking",
+              "sequence": 0,
+              "text": null,
+              "thinking": "Let me invoke the UiPath Maestro BPMN skill to diagnose the failed process run.",
+              "signature": "EpkCCmcIDxABGAIqQAhZzVpUhrB82+YyU3q/zJWN8KwTYoPbAruzFDr+qLrzlkkI0LA2qiFXi7fupUPpm+HT0ASo0IRyciAEKG8ODucyEWNsYXVkZS1zb25uZXQtNC02OABCCHRoaW5raW5nEgwI/GkvxsiLzRK1DywaDPPhCY4+ShaZ4HN5LSIweDQRy4SQ5X9nph4kQ8YwRPNb9bfzys4rV9EICNc5I0rHWWND0U0WT/MNNfXStjeuKmArXqOkjHE8VUQqtrpzYp9r9kxZvotTtkyNct1RRdEDGJdmGwdCSaG7QYKNTXeVyBFiRNgGoLh//pGcbVTUmBeKiIx3pBCSXiFWHdnrfO199OZUEzv1uKmOCJG9GHCVNzUYAQ==",
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 2,
+          "output_tokens": 25,
+          "cache_creation_tokens": 2915,
+          "cache_read_tokens": 19032,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01KC8ZmhE4BWPvvP2kH4gTLb",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-20T23:07:27.690540",
+          "completed_at": "2026-07-20T23:07:30.811120",
+          "generation_duration_ms": 3120.5807109363377,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01NLaNUxLBqvPsJShVycLTWx",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01NLaNUxLBqvPsJShVycLTWx"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 346,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01KC8ZmhE4BWPvvP2kH4gTLb",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-20T23:07:30.834990",
+          "completed_at": "2026-07-20T23:07:32.884630",
+          "generation_duration_ms": 2049.6403789147735,
+          "content_blocks": [
+            {
+              "block_type": "thinking",
+              "sequence": 0,
+              "text": null,
+              "thinking": "Let me start by reading the diagnostic capability reference to understand how to diagnose a failed BPMN process run.",
+              "signature": "Er8CCmcIDxABGAIqQNsmhOszhAQhbUb+JyKRV1++Br6DSAhMHo06SsHjrQQ7RWBrxB5iTmeWr5qrTNEBP6+w9RtWdczyYG/7iMFjZEYyEWNsYXVkZS1zb25uZXQtNC02OABCCHRoaW5raW5nEgymGZ8itaE9xReRgykaDPbydEWqE9QJzClXMiIw3sABGK1NZd608GitvqJ5eAME2qq45dnPDsudJqlgG8M9v8EYlkDSpy8ddUQc/gGQKoUBqj49C0JPDESCiySOpb5sDiMaNfFqsHWlYoPn5BZy5Zoj4kyWGQWb4bDNYBIYWTuqzopE5wBQqpBvk/vFSKHuNVzrqARtQP1S/hKSABdryS+urj4gCpQNYCMW6kWE8L87+CzGTB0A4CfBz2vtaqFVIhKedHJaYbb6WtoGeTXm+oyG6TGhwhgB",
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 3,
+          "output_tokens": 63,
+          "cache_creation_tokens": 3522,
+          "cache_read_tokens": 21947,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01L3cnNcQ9Dd4P8J6dWD5qH9",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-20T23:07:32.884630",
+          "completed_at": "2026-07-20T23:07:33.605002",
+          "generation_duration_ms": 720.371657051146,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01RVqRU2v7vuKy7iM8U6MpcD",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01RVqRU2v7vuKy7iM8U6MpcD"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 61,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01L3cnNcQ9Dd4P8J6dWD5qH9",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-20T23:07:33.621226",
+          "completed_at": "2026-07-20T23:07:35.161994",
+          "generation_duration_ms": 1540.767419966869,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01YC3VpwYe5ZGY2SJKEePCrU",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01YC3VpwYe5ZGY2SJKEePCrU"
+          ],
+          "input_tokens": 1,
+          "output_tokens": 91,
+          "cache_creation_tokens": 1683,
+          "cache_read_tokens": 25469,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01U161DdLYxv5SRMWY9PAmWf",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-20T23:07:35.177865",
+          "completed_at": "2026-07-20T23:07:37.311129",
+          "generation_duration_ms": 2133.263002964668,
+          "content_blocks": [
+            {
+              "block_type": "thinking",
+              "sequence": 0,
+              "text": null,
+              "thinking": "Now I have the diagnostic workflow. Let me follow the priority ladder:\n1. Start with job status to get instance ID, folder context, etc.\n2. Read incidents\n3. Inspect runtime variables\n4. Correlate deployed BPMN\n5. Inspect element executions and cursors\n6. Check generated package files\n7. Pull traces last (if needed)\n\nLet me start with Step 1 - job status.",
+              "signature": "ErAECmcIDxABGAIqQAjcmqqGOP8x4T5hs+j03mjkM3XXB58k3DmK1pAZth5mmDH1dDVh52ZSjlRkBhHBtitltJDXVh5NglpvLDbp7tEyEWNsYXVkZS1zb25uZXQtNC02OABCCHRoaW5raW5nEgx4MMsQokcCQnkxVzQaDEAaN5ToJ20jES/OIiIws7uOqKHEBacuKSxnY/ShmZIsKTlwqN/xANJEdIDmpwlS+oPs54bKMB22DVb4aGSTKvYC2Vff18rVTkwugShvTj5fv4ql98BzwY3HYtlcWCn/boK/HGty7sHE/Z8so52GaN79a3ejrIGvxbiU1KlLISsn6hmuC5Rs/dorH9YXmiQ2iM1FHGGD06eBBfQHBxXf34V966rINv1vSUMDgpa7hN7al5J3J2J+0+/L/EECW6aQfIOBE6TbpEwl+CV+W9D5aJw4y0gtoXnLvZ6p/suggkd+N/ZGGT1+WT3W69yk8fkIi6YCRV+geVT4lCUNJZ/dsRZgpHCV6j/ODQk1qTkTYz+sYMCALtNSJf4I95PxDcKkVYPRIRsR61paJM+o7yasYEePz4jDXYwxcgMv070U61aJ3vmX5W6pGi5So7+dkmOR6suizorO7lJqEEAlFL0Fw/z8bakviZZxDBmA8tM3IpsGketegMGmyFu3i28O71z3ePVH05+JMSYJMoBDbJFl+2+fnzbeDXreZUHDGShBZcMq7BhBbHNKfONikui1SI4SsPOnDfidoHQYAQ==",
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 1,
+          "output_tokens": 140,
+          "cache_creation_tokens": 2232,
+          "cache_read_tokens": 27152,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_014Dk4eLimArbwSXH1ztSEu5",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-20T23:07:37.311129",
+          "completed_at": "2026-07-20T23:07:37.939219",
+          "generation_duration_ms": 628.089735051617,
+          "content_blocks": [
+            {
+              "block_type": "text",
+              "sequence": 0,
+              "text": "Now I'll follow the diagnostic priority ladder. Starting with Step 1 — job status.",
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 0,
+          "output_tokens": 32,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_014Dk4eLimArbwSXH1ztSEu5",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-20T23:07:37.939219",
+          "completed_at": "2026-07-20T23:07:38.859069",
+          "generation_duration_ms": 919.8493039002642,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_014j7FcdvoMvtprXaUWusaYf",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_014j7FcdvoMvtprXaUWusaYf"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 61,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_014Dk4eLimArbwSXH1ztSEu5",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-20T23:07:39.132407",
+          "completed_at": "2026-07-20T23:07:40.714128",
+          "generation_duration_ms": 1581.722529954277,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01HELufCpqgwYeBzHUJTxktk",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01HELufCpqgwYeBzHUJTxktk"
+          ],
+          "input_tokens": 1,
+          "output_tokens": 93,
+          "cache_creation_tokens": 162,
+          "cache_read_tokens": 29384,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_017wT4ugRgBVS6t8LWdaDsQG",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-20T23:07:40.905874",
+          "completed_at": "2026-07-20T23:07:42.687462",
+          "generation_duration_ms": 1781.5887340111658,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_0166nVV6QfYg6ngY8akAc3rd",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_0166nVV6QfYg6ngY8akAc3rd"
+          ],
+          "input_tokens": 1,
+          "output_tokens": 101,
+          "cache_creation_tokens": 215,
+          "cache_read_tokens": 29546,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01Kmb9eR3pNoTXKzuaAqXDuP",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-20T23:07:42.843634",
+          "completed_at": "2026-07-20T23:07:44.292979",
+          "generation_duration_ms": 1449.3458989309147,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01APAoufUDAzpCMpeWPcNTJz",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01APAoufUDAzpCMpeWPcNTJz"
+          ],
+          "input_tokens": 1,
+          "output_tokens": 102,
+          "cache_creation_tokens": 202,
+          "cache_read_tokens": 29761,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_0123YqEh52ZRRSanxBWcET8L",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-20T23:07:44.449763",
+          "completed_at": "2026-07-20T23:07:46.944349",
+          "generation_duration_ms": 2494.585574953817,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_018fWifj6hXAV2iNhpabL7qs",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_018fWifj6hXAV2iNhpabL7qs"
+          ],
+          "input_tokens": 1,
+          "output_tokens": 101,
+          "cache_creation_tokens": 226,
+          "cache_read_tokens": 29963,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01KJ1o3ZpnwPpvvNAF6mSroH",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-20T23:07:47.104310",
+          "completed_at": "2026-07-20T23:07:49.923577",
+          "generation_duration_ms": 2819.266604958102,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01UC26SwQjCy28mepfHs4rXo",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01UC26SwQjCy28mepfHs4rXo"
+          ],
+          "input_tokens": 1,
+          "output_tokens": 128,
+          "cache_creation_tokens": 196,
+          "cache_read_tokens": 30189,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_0131Hpw6eRuvUDLhPNFUCf7s",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-20T23:07:50.093897",
+          "completed_at": "2026-07-20T23:07:51.720942",
+          "generation_duration_ms": 1627.0458699436858,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01TkuTdxDfXdCZTHCUyELfn9",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01TkuTdxDfXdCZTHCUyELfn9"
+          ],
+          "input_tokens": 1,
+          "output_tokens": 106,
+          "cache_creation_tokens": 265,
+          "cache_read_tokens": 30385,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01StbqVe6izopLr9z6D2rJKR",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-20T23:07:51.882371",
+          "completed_at": "2026-07-20T23:07:53.415165",
+          "generation_duration_ms": 1532.7945050084963,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01Be1ZVCznV2hFeUWfVdtiUW",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01Be1ZVCznV2hFeUWfVdtiUW"
+          ],
+          "input_tokens": 1,
+          "output_tokens": 105,
+          "cache_creation_tokens": 409,
+          "cache_read_tokens": 30650,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01ApZfAweMvDSDDdNxAsnLZZ",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-20T23:07:53.580912",
+          "completed_at": "2026-07-20T23:07:55.904029",
+          "generation_duration_ms": 2323.1160070281476,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01EeAmrHArFhbZQMRP1TfoYy",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01EeAmrHArFhbZQMRP1TfoYy"
+          ],
+          "input_tokens": 1,
+          "output_tokens": 102,
+          "cache_creation_tokens": 181,
+          "cache_read_tokens": 31059,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01MLU9AnDwiJHFby2qTsUovG",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-20T23:07:56.070409",
+          "completed_at": "2026-07-20T23:07:57.417065",
+          "generation_duration_ms": 1346.6559469234198,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01GhR4b53izpQB8Ju26cJb5H",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01GhR4b53izpQB8Ju26cJb5H"
+          ],
+          "input_tokens": 1,
+          "output_tokens": 82,
+          "cache_creation_tokens": 152,
+          "cache_read_tokens": 31240,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_014HeDHXhWGGk8ToGqZzjyHR",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-20T23:07:57.574508",
+          "completed_at": "2026-07-20T23:07:59.319757",
+          "generation_duration_ms": 1745.2491290168837,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01CEWAGGtTMF1r8RzzwDHQTX",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01CEWAGGtTMF1r8RzzwDHQTX"
+          ],
+          "input_tokens": 1,
+          "output_tokens": 97,
+          "cache_creation_tokens": 121,
+          "cache_read_tokens": 31392,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01VxsRVXcgpuTu2R5ow2xopf",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-20T23:07:59.481445",
+          "completed_at": "2026-07-20T23:08:01.188549",
+          "generation_duration_ms": 1707.1040690643713,
+          "content_blocks": [
+            {
+              "block_type": "text",
+              "sequence": 0,
+              "text": "I have enough data to produce the diagnosis. Let me now write the `diagnosis.md` file.",
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 1,
+          "output_tokens": 47,
+          "cache_creation_tokens": 136,
+          "cache_read_tokens": 31513,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01EhKkWMaqzVhdgrzNBRjkM7",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-20T23:08:01.188549",
+          "completed_at": "2026-07-20T23:08:02.156292",
+          "generation_duration_ms": 967.7430249284953,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01HxqnSUMgLBtgsJTT2ea2LL",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01HxqnSUMgLBtgsJTT2ea2LL"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 51,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01EhKkWMaqzVhdgrzNBRjkM7",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-20T23:08:02.163414",
+          "completed_at": "2026-07-20T23:08:03.830900",
+          "generation_duration_ms": 1667.486738995649,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01X6mZK7h645qPZATvLfKEmk",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01X6mZK7h645qPZATvLfKEmk"
+          ],
+          "input_tokens": 1,
+          "output_tokens": 97,
+          "cache_creation_tokens": 154,
+          "cache_read_tokens": 31649,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01FXj7Xc68t2AVXxZihEAyxi",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-20T23:08:03.860393",
+          "completed_at": "2026-07-20T23:08:24.479718",
+          "generation_duration_ms": 20619.32434490882,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01AUwXPsJiYjN4Muh6NqFuFR",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01AUwXPsJiYjN4Muh6NqFuFR"
+          ],
+          "input_tokens": 1,
+          "output_tokens": 1020,
+          "cache_creation_tokens": 120,
+          "cache_read_tokens": 31803,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_0171RmcGEaf9CHo8nGTxABcf",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-20T23:08:24.503910",
+          "completed_at": "2026-07-20T23:08:31.180267",
+          "generation_duration_ms": 6676.357186050154,
+          "content_blocks": [
+            {
+              "block_type": "text",
+              "sequence": 0,
+              "text": "The diagnosis is complete. Here is a summary of what the diagnostic ladder found:\n\n---\n\n## Diagnosis summary\n\n**Faulting element:** `Task_InvokeLegacyRpa`\n\n**Symptom:** The process run faulted after ~72 s. The \"Invoke legacy RPA\" service task never completed; the instance cursor is stuck there.\n\n**Root cause:** Incident `inc-triage-001` (category `BindingResolution`) reveals that the `folderPath` binding on the `Orchestrator.StartJob` call resolved to an Orchestrator folder the executing process identity cannot access. The binding expression `=bindings.LegacyRpaFolder` in the deployed BPMN produced a value, but that value points to a folder where the robot/process account lacks the required permissions (or the folder no longer exists).\n\n**Fix ownership:**\n\n| Label | Implicated? |\n|---|---|\n| `BPMN source` | No — the expression and call are structurally correct |\n| `Generated package metadata` | No — binding resolution itself was not the failure; the resolved value was wrong |\n| `Integration Service enrichment` | No — this is a direct `Orchestrator.StartJob` call, not an IS connector |\n| `Cloud configuration` | **Yes** — the target Orchestrator folder's existence and/or the robot account's folder permissions must be corrected |\n\n**Safe next action:** A cloud administrator should verify/correct the folder path in the process release binding overrides and grant the robot account `View` + `Start Job` on the target folder. Then trigger a **new job run** — no BPMN edits or re-publication needed.",
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 1,
+          "output_tokens": 385,
+          "cache_creation_tokens": 1080,
+          "cache_read_tokens": 31923,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01PuokCcgTi5Xg55SUPijq7M",
+          "parent_tool_use_id": null
+        }
+      ],
+      "num_turns": 19,
+      "max_turns_exhausted": false,
+      "result_summary": {
+        "is_error": false,
+        "subtype": "success",
+        "stop_reason": "end_turn",
+        "result": "The diagnosis is complete. Here is a summary of what the diagnostic ladder found:\n\n---\n\n## Diagnosis summary\n\n**Faulting element:** `Task_InvokeLegacyRpa`\n\n**Symptom:** The process run faulted after ~72 s. The \"Invoke legacy RPA\" service task never completed; the instance cursor is stuck there.\n\n**Root cause:** Incident `inc-triage-001` (category `BindingResolution`) reveals that the `folderPath` binding on the `Orchestrator.StartJob` call resolved to an Orchestrator folder the executing process identity cannot access. The binding expression `=bindings.LegacyRpaFolder` in the deployed BPMN produced a value, but that value points to a folder where the robot/process account lacks the required permissions (or the folder no longer exists).\n\n**Fix ownership:**\n\n| Label | Implicated? |\n|---|---|\n| `BPMN source` | No — the expression and call are structurally correct |\n| `Generated package metadata` | No — binding resolution itself was not the failure; the resolved value was wrong |\n| `Integration Service enrichment` | No — this is a direct `Orchestrator.StartJob` call, not an IS connector |\n| `Cloud configuration` | **Yes** — the target Orchestrator folder's existence and/or the robot account's folder permissions must be corrected |\n\n**Safe next action:** A cloud administrator should verify/correct the folder path in the process release binding overrides and grant the robot account `View` + `Start Job` on the target folder. Then trigger a **new job run** — no BPMN edits or re-publication needed."
+      },
+      "crashed": false,
+      "crash_reason": null
+    }
+  ],
+  "error_message": null,
+  "error_details": null,
+  "error_log_tail": null,
+  "environment_info": {
+    "git_commit": "unknown",
+    "skills_git_commit": "unknown",
+    "cli_version": "1.197.0-alpha.20260626.7673",
+    "tool_plugins": {
+      "agent-tool": "1.197.0",
+      "agenthub-tool": "1.197.0",
+      "codedagent-tool": "1.197.0",
+      "data-fabric-tool": "1.197.0",
+      "functions-tool": "1.197.0",
+      "gov-tool": "1.197.0",
+      "insights-tool": "1.197.0",
+      "integrationservice-tool": "1.197.0",
+      "ixp-tool": "1.197.0",
+      "maestro-tool": "1.197.0",
+      "orchestrator-tool": "1.197.0",
+      "solution-tool": "1.197.0",
+      "tasks-tool": "1.197.0",
+      "test-manager-tool": "1.197.0"
+    },
+    "coder_eval": "0.8.4",
+    "claude_code_cli": "2.1.177 (Claude Code)",
+    "uv": "uv 0.11.28 (x86_64-unknown-linux-gnu)",
+    "anthropic": "0.102.0",
+    "openai": "2.46.0",
+    "pydantic": "2.12.5",
+    "api_routing": "aws_bedrock",
+    "aws_region": "us-east-2",
+    "bedrock_model": "us.anthropic.claude-sonnet-4-6"
+  },
+  "agent_config": {
+    "type": "claude-code",
+    "model": "claude-sonnet-4-6",
+    "permission_mode": "acceptEdits",
+    "allowed_tools": [
+      "Skill",
+      "Bash",
+      "Read",
+      "Write",
+      "Edit",
+      "Glob",
+      "Grep"
+    ],
+    "disallowed_tools": null,
+    "plugins": [
+      {
+        "type": "local",
+        "path": "/home/azureuser/projects/skills/"
+      }
+    ],
+    "system_prompt": "You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted.\n",
+    "system_prompt_file": null,
+    "ignore_patterns": [],
+    "claude_settings": null,
+    "sdk_options": {},
+    "setting_sources": null
+  },
+  "sdk_options": {
+    "tools": null,
+    "allowed_tools": [
+      "Skill",
+      "Bash",
+      "Read",
+      "Write",
+      "Edit",
+      "Glob",
+      "Grep"
+    ],
+    "system_prompt": "You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted.\n",
+    "mcp_servers": {},
+    "strict_mcp_config": false,
+    "permission_mode": "acceptEdits",
+    "continue_conversation": false,
+    "resume": null,
+    "session_id": null,
+    "max_turns": 20,
+    "max_budget_usd": null,
+    "disallowed_tools": [
+      "ToolSearch"
+    ],
+    "model": "us.anthropic.claude-sonnet-4-6",
+    "fallback_model": null,
+    "betas": [],
+    "permission_prompt_tool_name": null,
+    "cwd": "/work/output/artifacts/skill-bpmn-operate-diagnose-minimal-fault-triage",
+    "cli_path": null,
+    "settings": null,
+    "add_dirs": [],
+    "env": {
+      "PATH": "/work/output/artifacts/skill-bpmn-operate-diagnose-minimal-fault-triage/mocks:/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+      "PLUGIN_TOOLS_DIR": "/usr/lib/node_modules/@uipath",
+      "CLAUDE_CODE_USE_BEDROCK": "1",
+      "AWS_BEARER_TOKEN_BEDROCK": "***REDACTED***",
+      "AWS_REGION": "us-east-2",
+      "CLAUDE_CODE_ATTRIBUTION_HEADER": "0",
+      "ANTHROPIC_MODEL": "us.anthropic.claude-sonnet-4-6",
+      "ANTHROPIC_SMALL_FAST_MODEL": "us.anthropic.claude-sonnet-4-6"
+    },
+    "extra_args": {},
+    "max_buffer_size": null,
+    "can_use_tool": null,
+    "hooks": null,
+    "user": null,
+    "include_partial_messages": true,
+    "include_hook_events": false,
+    "fork_session": false,
+    "agents": null,
+    "setting_sources": [
+      "project"
+    ],
+    "skills": null,
+    "sandbox": null,
+    "plugins": [
+      {
+        "type": "local",
+        "path": "/home/azureuser/projects/skills"
+      }
+    ],
+    "max_thinking_tokens": null,
+    "thinking": null,
+    "effort": null,
+    "output_format": null,
+    "enable_file_checkpointing": false,
+    "session_store": null,
+    "session_store_flush": "batched",
+    "load_timeout_ms": 60000,
+    "task_budget": null
+  },
+  "sandbox_path": "/work/output/artifacts/skill-bpmn-operate-diagnose-minimal-fault-triage",
+  "task_config": {
+    "resolved": {
+      "task_id": "skill-bpmn-operate-diagnose-minimal-fault-triage",
+      "description": "Minimal lifecycle coverage for the uipath-maestro-bpmn skill's Operate and Diagnose guidance. The agent inspects a mocked failed BPMN run, follows the diagnostic priority ladder, and recommends the safe next operate action without performing lifecycle mutations.\n",
+      "initial_prompt": "A UiPath Maestro BPMN process run failed. Diagnose it using the mocked `uip`\nCLI responses already available on PATH. Public-safe identifiers:\n- job key: job-triage-001\n- instance id: inst-triage-001\n- folder key: folder-public\n\nWrite a concise diagnosis to diagnosis.md. Include:\n- faulting BPMN element id\n- user-visible symptom\n- likely root cause\n- whether the fix belongs in BPMN source, generated package metadata,\n  Integration Service enrichment, or cloud configuration\n- safe next operate action\nUse these exact ownership labels even when a category is not implicated:\n`BPMN source`, `Generated package metadata`, `Integration Service enrichment`,\nand `Cloud configuration`.\n\nDo NOT retry, cancel, migrate, move a cursor, debug, run a process, upload,\npublish, deploy, ask for approval, confirmation, or feedback.\nUse the `uip maestro bpmn ... --output json` commands for diagnostic reads;\ndo not inspect `mocks/`, `fixtures/`, or response JSON files directly.\n",
+      "initial_prompt_file": null,
+      "tags": [
+        "uipath-maestro-bpmn",
+        "smoke",
+        "mode:diagnose",
+        "lifecycle:execute"
+      ],
+      "skip": false,
+      "agent": {
+        "type": "claude-code",
+        "model": "claude-sonnet-4-6",
+        "permission_mode": "acceptEdits",
+        "allowed_tools": [
+          "Skill",
+          "Bash",
+          "Read",
+          "Write",
+          "Edit",
+          "Glob",
+          "Grep"
+        ],
+        "disallowed_tools": null,
+        "plugins": [
+          {
+            "type": "local",
+            "path": "/home/azureuser/projects/skills/"
+          }
+        ],
+        "system_prompt": "You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted.\n",
+        "system_prompt_file": null,
+        "ignore_patterns": [],
+        "claude_settings": null,
+        "sdk_options": {},
+        "setting_sources": null
+      },
+      "sandbox": {
+        "driver": "tempdir",
+        "docker": {
+          "image": "skills-image:latest",
+          "dockerfile_path": null,
+          "build": {
+            "buildkit": null,
+            "args": {},
+            "secrets": [],
+            "extra_args": []
+          },
+          "network": "bridge",
+          "working_dir": null,
+          "env_passthrough": [
+            "ANTHROPIC_API_KEY",
+            "API_BACKEND",
+            "UIPATH_LLM_BACKEND",
+            "UIPATH_ACCESS_TOKEN",
+            "UIPATH_URL",
+            "UIPATH_TENANT_ID",
+            "UIPATH_ORGANIZATION_ID",
+            "UIPATH_CLI_DISABLE_VERSION_SYNC",
+            "AWS_BEARER_TOKEN_BEDROCK",
+            "AWS_REGION",
+            "BEDROCK_MODEL",
+            "CLAUDE_CODE_USE_BEDROCK",
+            "ANTHROPIC_MODEL",
+            "CODEX_API_KEY",
+            "CODEX_BASE_URL",
+            "CODEX_MODEL",
+            "GEMINI_API_KEY",
+            "ANTIGRAVITY_MODEL",
+            "HOME"
+          ],
+          "env_passthrough_extra": [
+            "SKILLS_REPO_PATH",
+            "BEDROCK_MODEL",
+            "TASK_PARALLELISM",
+            "UIPATH_CLI_ENABLE_ENV_AUTH",
+            "UIPATH_CLI_AUTH_TOKEN",
+            "UIPATH_CLI_ORGANIZATION_NAME",
+            "UIPATH_CLI_ORGANIZATION_ID",
+            "UIPATH_CLI_TENANT_NAME",
+            "UIPATH_CLI_TENANT_ID",
+            "TRACES_SMOKE_PROCESS_KEY",
+            "CODEX_API_KEY",
+            "CODEX_BASE_URL"
+          ],
+          "extra_mounts": [
+            "~/.uipath:/.uipath:rw"
+          ]
+        },
+        "python": {
+          "env_packages": []
+        },
+        "node": null,
+        "limits": {
+          "timeout": 300,
+          "max_memory_mb": null,
+          "max_cpus": null,
+          "max_pids": null,
+          "max_disk_mb": null
+        },
+        "template_sources": [
+          {
+            "type": "template_dir",
+            "path": "/home/azureuser/projects/skills/skills/uipath-maestro-bpmn",
+            "mount_point": ".",
+            "include_patterns": []
+          },
+          {
+            "type": "template_dir",
+            "path": "/home/azureuser/projects/skills/tests/tasks/uipath-maestro-bpmn/_shared/mock_template",
+            "mount_point": ".",
+            "include_patterns": []
+          },
+          {
+            "type": "template_dir",
+            "path": "/home/azureuser/projects/skills/tests/tasks/uipath-maestro-bpmn/operate-diagnose/fixtures",
+            "mount_point": ".",
+            "include_patterns": []
+          }
+        ],
+        "mock_path_dirs": [
+          "mocks"
+        ],
+        "ignore_patterns": []
+      },
+      "success_criteria": [
+        {
+          "type": "command_executed",
+          "description": "Agent checked the BPMN job status",
+          "weight": 1.5,
+          "pass_threshold": 1.0,
+          "suite_thresholds": null,
+          "stop_when": null,
+          "tool_name": "Bash",
+          "command_pattern": "(uip|\\$UIP)\\s+maestro\\s+bpmn\\s+job\\s+status\\s+job-triage-001",
+          "min_count": 1,
+          "max_count": null,
+          "require_success": false,
+          "exclude_pattern": null
+        },
+        {
+          "type": "command_executed",
+          "description": "Agent read instance incidents with folder context",
+          "weight": 1.5,
+          "pass_threshold": 1.0,
+          "suite_thresholds": null,
+          "stop_when": null,
+          "tool_name": "Bash",
+          "command_pattern": "(uip|\\$UIP)\\s+maestro\\s+bpmn\\s+instance\\s+incidents\\s+inst-triage-001\\s+(-f|--folder-key)\\s+folder-public",
+          "min_count": 1,
+          "max_count": null,
+          "require_success": false,
+          "exclude_pattern": null
+        },
+        {
+          "type": "command_executed",
+          "description": "Agent inspected runtime variables with folder context",
+          "weight": 1.0,
+          "pass_threshold": 1.0,
+          "suite_thresholds": null,
+          "stop_when": null,
+          "tool_name": "Bash",
+          "command_pattern": "(uip|\\$UIP)\\s+maestro\\s+bpmn\\s+instance\\s+variables\\s+inst-triage-001\\s+(-f|--folder-key)\\s+folder-public",
+          "min_count": 1,
+          "max_count": null,
+          "require_success": false,
+          "exclude_pattern": null
+        },
+        {
+          "type": "command_executed",
+          "description": "Agent fetched the deployed BPMN asset",
+          "weight": 1.0,
+          "pass_threshold": 1.0,
+          "suite_thresholds": null,
+          "stop_when": null,
+          "tool_name": "Bash",
+          "command_pattern": "(uip|\\$UIP)\\s+maestro\\s+bpmn\\s+instance\\s+asset\\s+inst-triage-001\\s+(-f|--folder-key)\\s+folder-public",
+          "min_count": 1,
+          "max_count": null,
+          "require_success": false,
+          "exclude_pattern": null
+        },
+        {
+          "type": "file_contains",
+          "description": "Diagnosis captures the fault element and root cause ownership",
+          "weight": 3.0,
+          "pass_threshold": 1.0,
+          "suite_thresholds": null,
+          "stop_when": null,
+          "path": "diagnosis.md",
+          "includes": [
+            "Task_InvokeLegacyRpa",
+            "folderPath",
+            "Cloud configuration",
+            "Integration Service enrichment"
+          ],
+          "excludes": null
+        },
+        {
+          "type": "llm_judge",
+          "description": "Agent diagnosed only and avoided BPMN lifecycle mutations",
+          "weight": 2.0,
+          "pass_threshold": 0.7,
+          "suite_thresholds": null,
+          "stop_when": null,
+          "enabled": true,
+          "prompt": "Pass if the agent only inspected mocked status, incidents, variables, and deployed asset data, then recommended a safe next action without running retry, cancel, pause, resume, migrate, goto, debug, process run, upload, publish, or deploy commands. Fail if tool calls or the final answer show any lifecycle mutation or any request to perform one.\n",
+          "files": [],
+          "include_reference": true,
+          "include_agent_output": true,
+          "include_tool_calls": true,
+          "include_dialog": false,
+          "max_dialog_chars": 80000,
+          "model": "anthropic.claude-sonnet-4-6",
+          "temperature": 0.0,
+          "max_tokens": 2000,
+          "max_file_chars": 20000,
+          "capture_transcript": true,
+          "max_transcript_chars": 100000
+        }
+      ],
+      "run_limits": {
+        "max_turns": 20,
+        "expected_turns": 16,
+        "task_timeout": 900,
+        "turn_timeout": 900,
+        "max_input_tokens": null,
+        "max_output_tokens": null,
+        "max_total_tokens": null,
+        "max_usd": null,
+        "count_cached_input": false,
+        "count_cache_creation": false,
+        "stop_early": false
+      },
+      "reference": null,
+      "expected_commands": null,
+      "pre_run": [],
+      "post_run": [
+        {
+          "command": "find . -maxdepth 5 -type d \\( -name node_modules -o -name .npm-prefix -o -name .venv \\) -prune -exec rm -rf {} +",
+          "timeout": 30
+        }
+      ],
+      "dataset": null,
+      "suite_id": null,
+      "row_id": null,
+      "simulation": null
+    },
+    "source_yaml": "task_id: skill-bpmn-operate-diagnose-minimal-fault-triage\ndescription: >\n  Minimal lifecycle coverage for the uipath-maestro-bpmn skill's Operate and\n  Diagnose guidance. The agent inspects a mocked failed BPMN run, follows the\n  diagnostic priority ladder, and recommends the safe next operate action\n  without performing lifecycle mutations.\ntags: [uipath-maestro-bpmn, smoke, \"mode:diagnose\", \"lifecycle:execute\"]\n\nrun_limits:\n  expected_turns: 16\n  max_turns: 20\n\nsandbox:\n  template_sources:\n    - type: template_dir\n      path: ../../../../skills/uipath-maestro-bpmn\n    - type: template_dir\n      path: ../_shared/mock_template\n    - type: template_dir\n      path: fixtures\n  mock_path_dirs:\n    - mocks\n\ninitial_prompt: |\n  A UiPath Maestro BPMN process run failed. Diagnose it using the mocked `uip`\n  CLI responses already available on PATH. Public-safe identifiers:\n  - job key: job-triage-001\n  - instance id: inst-triage-001\n  - folder key: folder-public\n\n  Write a concise diagnosis to diagnosis.md. Include:\n  - faulting BPMN element id\n  - user-visible symptom\n  - likely root cause\n  - whether the fix belongs in BPMN source, generated package metadata,\n    Integration Service enrichment, or cloud configuration\n  - safe next operate action\n  Use these exact ownership labels even when a category is not implicated:\n  `BPMN source`, `Generated package metadata`, `Integration Service enrichment`,\n  and `Cloud configuration`.\n\n  Do NOT retry, cancel, migrate, move a cursor, debug, run a process, upload,\n  publish, deploy, ask for approval, confirmation, or feedback.\n  Use the `uip maestro bpmn ... --output json` commands for diagnostic reads;\n  do not inspect `mocks/`, `fixtures/`, or response JSON files directly.\n\nsuccess_criteria:\n  - type: command_executed\n    description: \"Agent checked the BPMN job status\"\n    tool_name: \"Bash\"\n    command_pattern: '(uip|\\$UIP)\\s+maestro\\s+bpmn\\s+job\\s+status\\s+job-triage-001'\n    min_count: 1\n    weight: 1.5\n    pass_threshold: 1.0\n\n  - type: command_executed\n    description: \"Agent read instance incidents with folder context\"\n    tool_name: \"Bash\"\n    command_pattern: '(uip|\\$UIP)\\s+maestro\\s+bpmn\\s+instance\\s+incidents\\s+inst-triage-001\\s+(-f|--folder-key)\\s+folder-public'\n    min_count: 1\n    weight: 1.5\n    pass_threshold: 1.0\n\n  - type: command_executed\n    description: \"Agent inspected runtime variables with folder context\"\n    tool_name: \"Bash\"\n    command_pattern: '(uip|\\$UIP)\\s+maestro\\s+bpmn\\s+instance\\s+variables\\s+inst-triage-001\\s+(-f|--folder-key)\\s+folder-public'\n    min_count: 1\n    weight: 1.0\n    pass_threshold: 1.0\n\n  - type: command_executed\n    description: \"Agent fetched the deployed BPMN asset\"\n    tool_name: \"Bash\"\n    command_pattern: '(uip|\\$UIP)\\s+maestro\\s+bpmn\\s+instance\\s+asset\\s+inst-triage-001\\s+(-f|--folder-key)\\s+folder-public'\n    min_count: 1\n    weight: 1.0\n    pass_threshold: 1.0\n\n  - type: file_contains\n    description: \"Diagnosis captures the fault element and root cause ownership\"\n    path: \"diagnosis.md\"\n    includes:\n      - \"Task_InvokeLegacyRpa\"\n      - \"folderPath\"\n      - \"Cloud configuration\"\n      - \"Integration Service enrichment\"\n    weight: 3.0\n    pass_threshold: 1.0\n\n  - type: llm_judge\n    description: \"Agent diagnosed only and avoided BPMN lifecycle mutations\"\n    weight: 2.0\n    pass_threshold: 0.7\n    include_agent_output: true\n    include_tool_calls: true\n    prompt: >\n      Pass if the agent only inspected mocked status, incidents, variables, and\n      deployed asset data, then recommended a safe next action without running\n      retry, cancel, pause, resume, migrate, goto, debug, process run, upload,\n      publish, or deploy commands. Fail if tool calls or the final answer show\n      any lifecycle mutation or any request to perform one.\n",
+    "source_file": "/home/azureuser/projects/skills/tests/tasks/uipath-maestro-bpmn/operate-diagnose/task.yaml",
+    "lineage": {
+      "agent.type": {
+        "value": "claude-code",
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.permission_mode": {
+        "value": "acceptEdits",
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.model": {
+        "value": "claude-sonnet-4-6",
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.allowed_tools": {
+        "value": [
+          "Skill",
+          "Bash",
+          "Read",
+          "Write",
+          "Edit",
+          "Glob",
+          "Grep"
+        ],
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.plugins": {
+        "value": [
+          {
+            "type": "local",
+            "path": "/home/azureuser/projects/skills/"
+          }
+        ],
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.ignore_patterns": {
+        "value": [],
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.system_prompt": {
+        "value": "You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted.\n",
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "run_limits.max_turns": {
+        "value": 20,
+        "source": "task",
+        "source_detail": null
+      },
+      "run_limits.task_timeout": {
+        "value": 900,
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "run_limits.turn_timeout": {
+        "value": 900,
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "run_limits.expected_turns": {
+        "value": 16,
+        "source": "task",
+        "source_detail": null
+      },
+      "sandbox.driver": {
+        "value": "docker",
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "sandbox.docker": {
+        "value": {
+          "image": "skills-image:latest",
+          "env_passthrough_extra": [
+            "SKILLS_REPO_PATH",
+            "BEDROCK_MODEL",
+            "TASK_PARALLELISM",
+            "UIPATH_CLI_ENABLE_ENV_AUTH",
+            "UIPATH_CLI_AUTH_TOKEN",
+            "UIPATH_CLI_ORGANIZATION_NAME",
+            "UIPATH_CLI_ORGANIZATION_ID",
+            "UIPATH_CLI_TENANT_NAME",
+            "UIPATH_CLI_TENANT_ID",
+            "TRACES_SMOKE_PROCESS_KEY",
+            "CODEX_API_KEY",
+            "CODEX_BASE_URL"
+          ],
+          "extra_mounts": [
+            "~/.uipath:/.uipath:rw"
+          ]
+        },
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "sandbox.mock_path_dirs": {
+        "value": [
+          "mocks"
+        ],
+        "source": "task",
+        "source_detail": null
+      },
+      "sandbox.template_sources": {
+        "value": [
+          {
+            "type": "template_dir",
+            "path": "/home/azureuser/projects/skills/skills/uipath-maestro-bpmn"
+          },
+          {
+            "type": "template_dir",
+            "path": "/home/azureuser/projects/skills/tests/tasks/uipath-maestro-bpmn/_shared/mock_template"
+          },
+          {
+            "type": "template_dir",
+            "path": "/home/azureuser/projects/skills/tests/tasks/uipath-maestro-bpmn/operate-diagnose/fixtures"
+          }
+        ],
+        "source": "task",
+        "source_detail": null
+      },
+      "repeats": {
+        "value": 1,
+        "source": "default",
+        "source_detail": null
+      }
+    }
+  },
+  "command_stats": {
+    "total_commands": 17,
+    "commands_by_tool": {
+      "Skill": 1,
+      "Read": 3,
+      "Bash": 12,
+      "Write": 1
+    },
+    "total_command_time_ms": 2030.8431719895452,
+    "avg_command_time_ms": 119.46136305820855,
+    "slowest_commands": [
+      {
+        "tool": "Bash",
+        "duration_ms": 273.32289901096374,
+        "parameters": {
+          "command": "uip maestro bpmn job status job-triage-001 --folder-key folder-public --output json",
+          "description": "Get job status for job-triage-001"
+        },
+        "tool_id": "toolu_bdrk_014j7FcdvoMvtprXaUWusaYf"
+      },
+      {
+        "tool": "Bash",
+        "duration_ms": 191.55879109166563,
+        "parameters": {
+          "command": "uip maestro bpmn job status job-triage-001 --output json",
+          "description": "Get job status without folder-key"
+        },
+        "tool_id": "toolu_bdrk_01HELufCpqgwYeBzHUJTxktk"
+      },
+      {
+        "tool": "Bash",
+        "duration_ms": 170.06767296697944,
+        "parameters": {
+          "command": "uip maestro bpmn instance variables inst-triage-001 -f folder-public --parent-element-id Task_InvokeLegacyRpa --output json",
+          "description": "Get variables scoped to faulting element Task_InvokeLegacyRpa"
+        },
+        "tool_id": "toolu_bdrk_01UC26SwQjCy28mepfHs4rXo"
+      },
+      {
+        "tool": "Bash",
+        "duration_ms": 166.012293077074,
+        "parameters": {
+          "command": "uip maestro bpmn instance cursors inst-triage-001 -f folder-public --output json",
+          "description": "Get cursors for inst-triage-001"
+        },
+        "tool_id": "toolu_bdrk_01EeAmrHArFhbZQMRP1TfoYy"
+      },
+      {
+        "tool": "Bash",
+        "duration_ms": 165.53248395211995,
+        "parameters": {
+          "command": "uip maestro bpmn instance element-executions inst-triage-001 -f folder-public --output json",
+          "description": "Get element executions for inst-triage-001"
+        },
+        "tool_id": "toolu_bdrk_01Be1ZVCznV2hFeUWfVdtiUW"
+      }
+    ],
+    "successful_commands": 12,
+    "failed_commands": 5,
+    "unknown_commands": 0,
+    "success_rate": 70.58823529411765,
+    "most_common_sequence": "Bash → Bash → Bash"
+  },
+  "total_token_usage": {
+    "uncached_input_tokens": 21,
+    "output_tokens": 3436,
+    "cache_creation_input_tokens": 13971,
+    "cache_read_input_tokens": 524057,
+    "total_cost_usd": 0.26121134999999995,
+    "input_tokens": 538049
+  },
+  "total_assistant_turns": 23,
+  "expected_commands": null,
+  "actual_commands": 17,
+  "commands_efficiency": null,
+  "pre_run_results": [],
+  "post_run_results": [
+    {
+      "command": "find . -maxdepth 5 -type d \\( -name node_modules -o -name .npm-prefix -o -name .venv \\) -prune -exec rm -rf {} +",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "",
+      "duration_seconds": 0.003400087356567383,
+      "error": null
+    }
+  ],
+  "simulation": null,
+  "early_stop": null
+}

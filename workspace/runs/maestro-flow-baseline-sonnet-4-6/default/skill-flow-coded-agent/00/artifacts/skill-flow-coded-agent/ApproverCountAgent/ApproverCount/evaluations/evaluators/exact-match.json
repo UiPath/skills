@@ -1,0 +1,8 @@
+{
+  "version": "1.0",
+  "id": "ExactMatchEvaluator",
+  "evaluatorTypeId": "uipath-exact-match",
+  "evaluatorConfig": {
+    "name": "ExactMatchEvaluator"
+  }
+}

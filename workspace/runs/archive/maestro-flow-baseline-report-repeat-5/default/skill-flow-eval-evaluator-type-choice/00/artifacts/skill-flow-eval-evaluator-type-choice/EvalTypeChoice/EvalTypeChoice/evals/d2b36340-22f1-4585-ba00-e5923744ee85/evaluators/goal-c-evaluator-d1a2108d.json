@@ -1,0 +1,16 @@
+{
+  "version": "1.0",
+  "id": "goal-c-evaluator-d1a2108d",
+  "name": "goal-c-evaluator",
+  "description": "Pass-fail on whether output contains the literal substring deployment succeeded",
+  "evaluatorTypeId": "uipath-contains",
+  "evaluatorConfig": {
+    "name": "goal-c-evaluator",
+    "caseSensitive": false,
+    "negated": false,
+    "targetOutputKey": "*"
+  },
+  "fileName": "goal-c-evaluator-d1a2108d.json",
+  "createdAt": "2026-07-24T19:31:44.787Z",
+  "updatedAt": "2026-07-24T19:31:44.787Z"
+}

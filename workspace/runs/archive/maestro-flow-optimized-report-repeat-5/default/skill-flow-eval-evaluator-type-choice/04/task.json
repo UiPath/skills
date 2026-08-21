@@ -1,0 +1,1715 @@
+{
+  "task_id": "skill-flow-eval-evaluator-type-choice",
+  "task_description": "Smoke test: agent is given three evaluation goals and must pick the correct `--type` value for each, then actually create the evaluators via `uip maestro flow eval evaluator add` so the skill is genuinely invoked (not just self-reported). Tests that the evaluator taxonomy is internalized — natural-language similarity → llm-judge-output, deterministic JSON shape similarity → json-similarity, substring presence → contains. The `command_executed` regexes pin each `--type` value, so the agent has to both pick correctly and run the CLI to pass.\n",
+  "variant_id": "default",
+  "agent_type": "claude-code",
+  "model_used": "claude-sonnet-4-6",
+  "started_at": "2026-07-24T18:29:34.334220",
+  "completed_at": "2026-07-24T18:32:08.787143",
+  "duration_seconds": 154.45295119285583,
+  "final_status": "SUCCESS",
+  "max_turns_exhausted": false,
+  "weighted_score": 1.0,
+  "iteration_count": 1,
+  "success_criteria_results": [
+    {
+      "result_kind": "basic",
+      "criterion_type": "command_executed",
+      "description": "Agent created the solution",
+      "score": 1.0,
+      "details": "Matched 1/1 required commands (filters: tool_name=Bash, pattern=/(uip|\\$UIP)\\s+solution\\s+(new|init)/)\nExamples: ['\\\\\\nuip solution init EvalTypeChoice --output json 2>&1 | head -5']",
+      "error": null,
+      "pass_threshold": 0.0,
+      "gating": true
+    },
+    {
+      "result_kind": "basic",
+      "criterion_type": "command_executed",
+      "description": "Agent initialized the Flow project",
+      "score": 1.0,
+      "details": "Matched 1/1 required commands (filters: tool_name=Bash, pattern=/(uip|\\$UIP)\\s+(maestro\\s+)?flow\\s+init/)\nExamples: ['cd EvalTypeChoice && uip maestro flow init EvalTypeChoice --output json 2>&1 | head -10']",
+      "error": null,
+      "pass_threshold": 1.0,
+      "gating": true
+    },
+    {
+      "result_kind": "basic",
+      "criterion_type": "command_executed",
+      "description": "Goal A — agent ran evaluator add with --type llm-judge-output",
+      "score": 1.0,
+      "details": "Matched 1/1 required commands (filters: tool_name=Bash, pattern=/(uip|\\$UIP)\\s+maestro\\s+flow\\s+eval\\s+evaluator\\s+add\\s+.*--type\\s+llm-judge-output/)\nExamples: ['cd /work/output/artifacts/skill-flow-eval-evaluator-type-choice/EvalTypeChoice && \\\\\\nuip maestro flow eval evaluator add ']",
+      "error": null,
+      "pass_threshold": 1.0,
+      "gating": true
+    },
+    {
+      "result_kind": "basic",
+      "criterion_type": "command_executed",
+      "description": "Goal B — agent ran evaluator add with --type json-similarity",
+      "score": 1.0,
+      "details": "Matched 1/1 required commands (filters: tool_name=Bash, pattern=/(uip|\\$UIP)\\s+maestro\\s+flow\\s+eval\\s+evaluator\\s+add\\s+.*--type\\s+json-similarity/)\nExamples: ['\\\\\\nuip maestro flow eval evaluator add goal-b-evaluator \\\\\\n  --type json-similarity \\\\\\n  --description \"Deterministic tree-']",
+      "error": null,
+      "pass_threshold": 1.0,
+      "gating": true
+    },
+    {
+      "result_kind": "basic",
+      "criterion_type": "command_executed",
+      "description": "Goal C — agent ran evaluator add with --type contains",
+      "score": 1.0,
+      "details": "Matched 1/1 required commands (filters: tool_name=Bash, pattern=/(uip|\\$UIP)\\s+maestro\\s+flow\\s+eval\\s+evaluator\\s+add\\s+.*--type\\s+contains/)\nExamples: ['\\\\\\nuip maestro flow eval evaluator add goal-b-evaluator \\\\\\n  --type json-similarity \\\\\\n  --description \"Deterministic tree-']",
+      "error": null,
+      "pass_threshold": 1.0,
+      "gating": true
+    },
+    {
+      "result_kind": "basic",
+      "criterion_type": "file_exists",
+      "description": "report.json was created (reasoning artifact)",
+      "score": 1.0,
+      "details": "File 'report.json' exists",
+      "error": null,
+      "pass_threshold": 1.0,
+      "gating": true
+    },
+    {
+      "result_kind": "basic",
+      "criterion_type": "run_command",
+      "description": "report.json reasoning matches the chosen types",
+      "score": 1.0,
+      "details": "Command: python3 $TASK_DIR/check_type_choice.py\nExit code: 0 (expected: 0)\nStdout:\nOK: all 3 evaluator-type choices match expected (['llm-judge-output', 'json-similarity', 'contains'])\n\nStderr: (empty)",
+      "error": null,
+      "pass_threshold": 1.0,
+      "gating": true
+    }
+  ],
+  "iterations": [
+    {
+      "iteration": 1,
+      "user_input": "Your working directory is: /work/output/artifacts/skill-flow-eval-evaluator-type-choice\n\nScaffold a\nproject and add three evaluators — one per goal — picking the correct\n`--type` for each.\n\nStep 1 — scaffold the project so `--path` resolves:\n  Solution `EvalTypeChoice`, Flow project `EvalTypeChoice`, double-nested\n  layout `EvalTypeChoice/EvalTypeChoice/EvalTypeChoice.flow`. Link via\n  `uip solution project add`.\n\nStep 2 — for each goal, decide the right `--type` (kebab-case, from the\nseven valid values: `exact-match`, `json-similarity`, `contains`,\n`llm-judge-output`, `llm-judge-strict-json`, `llm-judge-trajectory`,\n`llm-judge-trajectory-simulation`) and add the evaluator with that type:\n\n  Goal A — `goal-a-evaluator`: score a chatbot's free-text reply against\n    an expected greeting, allowing for paraphrasing (e.g. \"Hi Alice!\"\n    vs expected \"Hello, Alice!\"). The judge does not need to inspect\n    tool calls.\n\n  Goal B — `goal-b-evaluator`: score a flow that emits a structured JSON\n    envelope of order details. Expected output is a known object; key\n    ordering and minor whitespace tolerated, but values must match.\n    Deterministic — no LLM.\n\n  Goal C — `goal-c-evaluator`: pass-fail on whether the flow's response\n    contains the literal substring \"deployment succeeded\" anywhere in\n    the output.\n\nStep 3 — save your reasoning to `report.json` in the working directory:\n\n  {\n    \"goal_a_type\": \"<the --type you used for goal A>\",\n    \"goal_a_reason\": \"<one short sentence>\",\n    \"goal_b_type\": \"<the --type you used for goal B>\",\n    \"goal_b_reason\": \"<one short sentence>\",\n    \"goal_c_type\": \"<the --type you used for goal C>\",\n    \"goal_c_reason\": \"<one short sentence>\"\n  }\n\nImportant:\n- Use `--output json` on every `uip maestro flow eval ...` command.\n- For LLM-judge evaluators, pass `--model gpt-4.1-2025-04-14`.\n- Do NOT call `uip login`. Do NOT call `uip solution upload`. Do NOT call\n  `uip maestro flow eval run *`. Local CRUD only.\n",
+      "agent_output": "[ASSISTANT] Now I have all the information I need. Let me plan the full execution:\n\n**Goal A** → `llm-judge-output`: free-text paraphrase scoring needs an LLM judge; no tool-call inspection required, so trajectory types are unnecessary overhead.\n\n**Goal B** → `json-similarity`: deterministic tree-based JSON diff with ordering/whitespace tolerance; explicitly \"no LLM\".\n\n**Goal C** → `contains`: literal substring pass/fail; purely deterministic.\n\nLet me quickly check the `uip solution project add` syntax before executing:\n[ASSISTANT] Now I have everything I need. Let me execute all three steps:\n[ASSISTANT] The solution was already auto-registered during `flow init`. The double-nested layout exists: `EvalTypeChoice/EvalTypeChoice/EvalTypeChoice.flow`. Now add all three evaluators in one chained command:\n[ASSISTANT] All three evaluators added successfully. Now verify and write the report:\n[ASSISTANT] All three evaluators are correctly registered. Now write the report:\n[ASSISTANT] All done. Here's a summary of what was completed:\n\n---\n\n## Summary\n\n### Step 1 — Project scaffolded\n\n- `uip solution init EvalTypeChoice` created the solution\n- `uip maestro flow init EvalTypeChoice` (run inside the solution dir) produced the double-nested layout:\n  ```\n  EvalTypeChoice/EvalTypeChoice/EvalTypeChoice.flow\n  ```\n- Solution registration was automatic (`Data.SolutionRegistration.Status: Registered`)\n\n### Step 2 — Three evaluators added\n\n| Goal | Evaluator name | `--type` used | Internal type ID |\n|------|---------------|--------------|-----------------|\n| A | `goal-a-evaluator` | `llm-judge-output` | `uipath-llm-judge-output-semantic-similarity` |\n| B | `goal-b-evaluator` | `json-similarity` | `uipath-json-similarity` |\n| C | `goal-c-evaluator` | `contains` | `uipath-contains` |\n\n### Step 3 — `report.json` written\n\n**Goal A → `llm-judge-output`**: Free-text paraphrases need an LLM to judge semantic similarity; deterministic matchers fail on valid rewording, and trajectory types are unnecessary since no tool-call history needs inspection.\n\n**Goal B → `json-similarity`**: A deterministic tree-based comparator with ordering/whitespace tolerance is the right fit for a known structured JSON envelope — no LLM needed.\n\n**Goal C → `contains`**: A literal substring pass/fail (\"deployment succeeded\") is precisely the binary check `contains` is built for.\n[RESULT - SUCCESS] All done. Here's a summary of what was completed:\n\n---\n\n## Summary\n\n### Step 1 — Project scaffolded\n\n- `uip solution init EvalTypeChoice` created the solution\n- `uip maestro flow init EvalTypeChoice` (run inside the solution dir) produced the double-nested layout:\n  ```\n  EvalTypeChoice/EvalTypeChoice/EvalTypeChoice.flow\n  ```\n- Solution registration was automatic (`Data.SolutionRegistration.Status: Registered`)\n\n### Step 2 — Three evaluators added\n\n| Goal | Evaluator name | `--type` used | Internal type ID |\n|------|---------------|--------------|-----------------|\n| A | `goal-a-evaluator` | `llm-judge-output` | `uipath-llm-judge-output-semantic-similarity` |\n| B | `goal-b-evaluator` | `json-similarity` | `uipath-json-similarity` |\n| C | `goal-c-evaluator` | `contains` | `uipath-contains` |\n\n### Step 3 — `report.json` written\n\n**Goal A → `llm-judge-output`**: Free-text paraphrases need an LLM to judge semantic similarity; deterministic matchers fail on valid rewording, and trajectory types are unnecessary since no tool-call history needs inspection.\n\n**Goal B → `json-similarity`**: A deterministic tree-based comparator with ordering/whitespace tolerance is the right fit for a known structured JSON envelope — no LLM needed.\n\n**Goal C → `contains`**: A literal substring pass/fail (\"deployment succeeded\") is precisely the binary check `contains` is built for.",
+      "commands": [
+        {
+          "tool_name": "Skill",
+          "tool_id": "toolu_bdrk_016LgNxUBYWW8GQLSjm8u1fh",
+          "assistant_turn_index": 1,
+          "timestamp": "2026-07-24T18:29:50.435531",
+          "duration_ms": 40.40684399660677,
+          "generation_completed_at": "2026-07-24T18:29:50.435531",
+          "execution_started_at": "2026-07-24T18:29:50.435776",
+          "execution_completed_at": "2026-07-24T18:29:50.476183",
+          "parameters": {
+            "skill": "uipath:uipath-maestro-flow"
+          },
+          "result_status": "success",
+          "result_summary": "Launching skill: uipath:uipath-maestro-flow",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 0,
+          "result_tokens": 11
+        },
+        {
+          "tool_name": "Read",
+          "tool_id": "toolu_bdrk_01Kyq1BJqAyEGEDa48khyTe7",
+          "assistant_turn_index": 3,
+          "timestamp": "2026-07-24T18:29:54.005919",
+          "duration_ms": 22.438487969338894,
+          "generation_completed_at": "2026-07-24T18:29:54.005919",
+          "execution_started_at": "2026-07-24T18:29:54.005981",
+          "execution_completed_at": "2026-07-24T18:29:54.028419",
+          "parameters": {
+            "file_path": "/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/evaluate/CAPABILITY.md"
+          },
+          "result_status": "success",
+          "result_summary": "1\t# Evaluate — Design and run Flow evaluations\n2\t\n3\tCapability index for `uip maestro flow eval` — evaluator CRUD (7 types), eval set CRUD with entry-point pinning, data point management with file attachments, and Studio Web run start/status/results/list/compare. Local CRUD is offline; runs require `uip login` and a Flow solution that already exists in Studio Web.\n4\t\n5\t> **Where you came from / where to go next.** Evaluate is downstream of Operate (ship the flow → evaluate it on Studio Web) and feeds back into Author (failing eval → fix the `.flow` → re-ship → re-evaluate). Build/edit lives in [author/CAPABILITY.md](../author/CAPABILITY.md); publish/deploy lives in [operate/CAPABILITY.md](../operate/CAPABILITY.md); fault triage on a debug or process run lives in [diagnose/CAPABILITY.md](../diagnose/CAPABILITY.md).\n6\t>\n7\t> **Inherits universal rules from [SKILL.md](../../SKILL.md)** — `--output json` + prefer `--output-filter` for extraction, no `flow debug` without consent, never invoke other skills automatically, dropdown question pattern, **plain-English narration + granular progress list (opt-in — silent by default; engage when the user asks for verbosity)**. The rules below are evaluate-scoped and apply on top.\n8\t\n9\t## When to use this capability\n10\t\n11\t- Add or remove data points (test cases) on a Flow eval set\n12\t- Create evaluators (`exact-match`, `json-similarity`, `contains`, `llm-judge-*` types) for a Flow project\n13\t- Create or remove eval sets, link them to evaluators, pin entry points\n14\t- Add, list, or remove simulations on data points (`uip maestro flow eval simulation`)\n15\t- Start an eval run on Studio Web, poll its status, fetch detailed results\n16\t- Compare two eval runs to verify a change improved scores without regressions\n17\t\n18\tFor agent (`agent.json`) evaluations read the `uipath-agents` skill. For BPMN evaluations read the `uipath-maestro-bpmn` skill — this capability covers Flow only.\n19\t\n20\t## Critical rules\n21\t\n22\t1. **Check Flow eval CLI availability once.** Run `uip maestro flow eval --help --output json` before using eval commands. If it returns `unknown command 'eval'`, the installed CLI does not expose Flow eval yet. Stop, report that the user needs a CLI/tool version with Flow eval support, and do not spend turns searching npm packages or source bundles.\n23\t2. **Never run `uip solution upload` automatically as part of an eval workflow.** The eval run requires the Flow solution to already exist in Studio Web, but uploading from the local working tree clobbers whatever is on Studio Web. If the project was pulled from Studio Web (`uip solution download`), edited locally in VS Code, or scaffolded on disk and never uploaded, an unprompted upload will overwrite or push unintended state. Ask the user explicitly before any `uip solution upload` — see [upload-safety.md](references/upload-safety.md).\n24\t3. **`--path` accepts a Flow project directory OR a solution directory containing exactly one Flow project.** If the solution holds multiple Flow projects, point `--path` at the specific project directory.\n25\t4. **Local CRUD does not require login.** `add`, `remove`, `list` (data points / eval sets / evaluators) edit JSON on disk. Only `uip maestro flow eval run *` requires `uip login` and an existing Studio Web solution.\n26\t5. **Pin a model on every LLM-judge evaluator.** Empty/missing `model` produces a cryptic 500 from the LLM gateway after retries. Pass `--model <name>` on `evaluator add` or set `model` in the JSON.\n27\t6. **Declare input variables before adding data points with `--inputs`.** `eval add` validates input keys against the Flow's declared input variables and fails fast on unknown keys. Add missing input variables first (for example, `uip maestro flow variable add My.flow name --direction in --type string --output json`) or change the data point input JSON to match the Flow schema.\n28\t7. **Let the CLI manage evaluator references.** Eval sets store `evaluatorRefs` as the evaluator file refs produced by `evaluator add` (for example, `greeting-match-1234abcd.json`). If the set should use every evaluator that already exists, omit `--evaluators` so the CLI writes those generated file refs. If you must pass `--evaluators`, pass the evaluator id or generated file base/ref from `evaluator add/list` — never the display name alone (`greeting-match`), because Studio Web does not resolve display-name refs.\n29\t8. **Pre-empt timeouts on `run start --wait`.** The CLI blocks until the run reaches a terminal state or `--timeout` elapses. `--timeout` only stops local blocking — the run continues server-side; query progress with `eval run status <run_id>`.\n30\t\n31\t## Quick Start\n32\t\n33\tStandard workflow: scaffold evaluators → create eval set → add data points → confirm project is in Studio Web → run.\n34\t\n35\t```bash\n36\t# 1. Add an evaluator (local; no login required)\n37\tuip maestro flow eval evaluator add greeting-quality \\\n38\t  --type llm-judge-output \\\n39\t  --model gpt-4.1-2025-04-14 \\\n40\t  --path ./MySolution/MyFlow --output json\n41\t\n42\t# 2. Create an eval set, pin the entry point, and let the CLI attach\n43\t#    all current evaluators by generated file ref\n44\tuip maestro flow eval set add \"Smoke Tests\" \\\n45\t  --entry-point /Main.bpmn#start \\\n46\t  --path ./MySolution/MyFlow --output json\n47\t\n48\t# 3. Add data points (test cases)\n49\t#    The `message` key must already be declared as a Flow input variable.\n50\tuip maestro flow eval add hello-test \\\n51\t  --set \"Smoke Tests\" \\\n52\t  --inputs '{\"message\":\"hello\"}' \\\n53\t  --expected '{\"reply\":\"Hello! How can I help you?\"}' \\\n54\t  --path ./MySolution/MyFlow --output json\n55\t\n56\t# 4. Confirm the solution is in Studio Web\n57\t#    DO NOT auto-run `uip solution upload`. Ask the user. See upload-safety.md.\n58\t\n59\t# 5. Start the run and wait\n60\tuip maestro flow eval run start \\\n61\t  --set \"Smoke Tests\" \\\n62\t  --path ./MySolution/MyFlow \\\n63\t  --wait --timeout 600 --output json\n64\t\n65\t# 6. Inspect failures\n66\tuip maestro flow eval run results <eval_set_run_id> \\\n67\t  --set \"Smoke Tests\" \\\n68\t  --only-failed --verbose \\\n69\t  --path ./MySolution/MyFlow --output json\n70\t```\n71\t\n72\t## Workflow\n73\t\n74\t| Journey | Read |\n75\t| --- | --- |\n76\t| Look up any `uip maestro flow eval` subcommand syntax, flags, defaults, output codes | [commands-reference.md](references/commands-reference.md) |\n77\t| Choose among the 7 evaluator types, write custom prompts, hand-write evaluator JSON | [evaluators-guide.md](references/evaluators-guide.md) |\n78\t| Create eval sets, add data points, map `--inputs`/`--expected`/`--criteria` to evaluator types, attach files | [eval-sets-guide.md](references/eval-sets-guide.md) |\n79\t| Start a Studio Web run, poll status, read results, export CSV/JSON, compare two runs | [running-guide.md](references/running-guide.md) |\n80\t| Decide whether to call `uip solution upload` (almost always: don't auto-run; ask first) | [upload-safety.md](references/upload-safety.md) |\n81\t\n82\t## Common tasks\n83\t\n84\t| I need to... | Read these |\n85\t| --- | --- |\n86\t| **Add an evaluator** | [evaluators-guide.md](references/evaluators-guide.md) + [commands-reference.md — Evaluators](references/commands-reference.md#evaluators) |\n87\t| **Pick the right evaluator type** | [evaluators-guide.md — When to Pick Each Type](references/evaluators-guide.md#when-to-pick-each-type) |\n88\t| **Create an eval set and pin an entry point** | [eval-sets-guide.md — Eval Set Lifecycle](references/eval-sets-guide.md#eval-set-lifecycle) |\n89\t| **Add a data point with file attachments** | [eval-sets-guide.md — `--input-file`](references/eval-sets-guide.md#--input-file-keypath) |\n90\t| **Set per-data-point criteria for trajectory evaluators** | [eval-sets-guide.md — `--criteria`](references/eval-sets-guide.md#--criteria) |\n91\t| **Add a simulation to a data point** | [eval-sets-guide.md — Simulations](references/eval-sets-guide.md#simulations-on-data-points) + [commands-reference.md — Simulations](references/commands-reference.md#simulations) |\n92\t| **Start a Studio Web eval run** | [running-guide.md — Start a Run](references/running-guide.md#start-a-run) |\n93\t| **Poll run status without `--wait`** | [running-guide.md — Check Status](references/running-guide.md#check-status) |\n94\t| **Inspect only failed data points** | [running-guide.md — Detailed Results](references/running-guide.md#detailed-results) (`--only-failed --verbose`) |\n95\t| **Compare two runs side-by-side** | [running-guide.md — Compare Two Runs](references/running-guide.md#compare-two-runs) |\n96\t| **Decide whether to call `uip solution upload`** | [upload-safety.md](references/upload-safety.md) |\n97\t| **Look up the `eval` subcommand tree, flags, defaults, output codes** | [commands-reference.md](references/commands-reference.md) |\n98\t| **My eval run failed** | [running-guide.md — Failure Detection](references/running-guide.md#failure-detection); for flow-level faults [diagnose/CAPABILITY.md](../diagnose/CAPABILITY.md) |\n99\t\n100\t## Anti-patterns\n101\t\n102\t- **Don't auto-run `uip solution upload`.** Even when an eval run errors with \"solution not found in Studio Web\", stop and ask the user — see [upload-safety.md](references/upload-safety.md). The local project may be ahead of, or diverged from, Studio Web.\n103\t- **Don't hand-write `evaluatorRefs` unless you are repairing an eval set.** Prefer the default all-evaluators behavior so the CLI writes generated file refs, or pass generated evaluator ids/file refs explicitly. Do not pass evaluator display names to `--evaluators`.\n104\t- **Don't pass `--type` in PascalCase.** Only kebab-case is accepted: `exact-match`, `json-similarity`, `contains`, `llm-judge-output`, `llm-judge-strict-json`, `llm-judge-trajectory`, `llm-judge-trajectory-simulation`.\n105\t- **Don't depend on a specific `--wait` polling cadence.** Treat `--wait` as a black-box block; if you need precise progress, omit it and call `eval run status` yourself.\n106\t- **Don't compare runs from different eval sets.** `eval run compare` aligns by data-point name within the set; cross-set deltas are meaningless.\n107\t- **Don't omit `--model` on LLM-judge evaluators.** The cloud worker fail-fasts before calling the LLM gateway.\n108\t- **Don't run evals during `flow debug`.** `debug` is a separate Studio Web session; evals run against the deployed/published solution. Mixing them produces confusing run IDs.\n109\t\n110\t## Completion Output\n111\t\n112\tAfter a run completes, report:\n113\t\n114\t1. **Eval set run ID** and aggregate score (from `run status`)\n115\t2. **Failed data points** (from `run results --only-failed --verbose`)\n116\t3. **Comparison delta** vs the previous run (`run compare`) if one exists\n117\t4. **Suggested next step** — fix the agent/flow, re-run, or accept the result. Do NOT suggest `uip solution upload` unless the user has explicitly asked to publish edits.\n118\t\n119\t## References\n120\t\n121\t### Evaluate-scoped\n122\t\n123\t- [commands-reference.md](references/commands-reference.md) — every `uip maestro flow eval` subcommand, flags, defaults, output `Code` enum\n124\t- [evaluators-guide.md](references/evaluators-guide.md) — 7 evaluator types mapped to internal `uipath-*` IDs, JSON shapes, template variables\n125\t- [eval-sets-guide.md](references/eval-sets-guide.md) — eval set + data point CRUD, `--inputs`/`--expected`/`--criteria`/`--input-file`/`--search-text`, simulations\n126\t- [running-guide.md](references/running-guide.md) — run start/status/results/list/compare, JMESPath `--output-filter`, failure detection\n127\t- [upload-safety.md](references/upload-safety.md) — the `solution upload` rule\n128\t\n129\t### Cross-capability (shared)\n130\t\n131\t- [shared/cli-commands.md](../shared/cli-commands.md) — flat CLI lookup including `eval` subcommands\n132\t- [shared/cli-conventions.md](../shared/cli-conventions.md) — login states, `--output json`, JSON output shape\n133\t",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 1,
+          "result_tokens": 2962
+        },
+        {
+          "tool_name": "Read",
+          "tool_id": "toolu_bdrk_01RJVz2QqSpXzyKXHYQaCLTv",
+          "assistant_turn_index": 4,
+          "timestamp": "2026-07-24T18:29:56.041970",
+          "duration_ms": 8.449033019132912,
+          "generation_completed_at": "2026-07-24T18:29:56.041970",
+          "execution_started_at": "2026-07-24T18:29:56.042558",
+          "execution_completed_at": "2026-07-24T18:29:56.051007",
+          "parameters": {
+            "file_path": "/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/evaluate/references/evaluators-guide.md"
+          },
+          "result_status": "success",
+          "result_summary": "1\t# Flow Evaluators Guide\n2\t\n3\tThe seven evaluator types for `uip maestro flow eval evaluator add --type <type>`. Flow uses the same `uipath-*` evaluator type IDs as the coded evaluator engine (NOT the legacy IDs the low-code `uipath-agents` skill uses). Each `--type` kebab-case value maps to a `uipath-*` evaluator under the hood:\n4\t\n5\t| `--type` flag | Internal `evaluatorTypeId` | LLM-based | Score scale |\n6\t|---------------|---------------------------|-----------|-------------|\n7\t| `exact-match` | `uipath-exact-match` | No | Binary (0/1) |\n8\t| `json-similarity` | `uipath-json-similarity` | No | Continuous (0–1) |\n9\t| `contains` | `uipath-contains` | No | Binary (0/1) |\n10\t| `llm-judge-output` | `uipath-llm-judge-output-semantic-similarity` | Yes | Continuous (0–1) |\n11\t| `llm-judge-strict-json` | `uipath-llm-judge-output-strict-json-similarity` | Yes | Continuous (0–1) |\n12\t| `llm-judge-trajectory` | `uipath-llm-judge-trajectory-similarity` | Yes | Continuous (0–1) |\n13\t| `llm-judge-trajectory-simulation` | `uipath-llm-judge-trajectory-simulation` | Yes | Continuous (0–1) |\n14\t\n15\tThe four classification and tool-call evaluators (`uipath-binary-classification`, `uipath-multiclass-classification`, `uipath-tool-call-*`) that exist in the coded SDK are **not** exposed by `uip maestro flow eval evaluator add`. Use the seven listed above.\n16\t\n17\t## When to Pick Each Type\n18\t\n19\t| Goal | Type | Notes |\n20\t|------|------|-------|\n21\t| Strict equality of a known output value | `exact-match` | Binary; no LLM. Cheapest. Use for deterministic agents. |\n22\t| Compare structured JSON outputs with tolerance for ordering / minor diffs | `json-similarity` | Tree-based; numeric tolerance ~1%, string Levenshtein. |\n23\t| Pass/fail on whether a substring appears | `contains` | Use `--search-text` on the data point, not the evaluator. |\n24\t| Score natural-language similarity between expected and actual | `llm-judge-output` | Default LLM judge. Set `--model`. |\n25\t| Per-key strict JSON scoring with LLM judgment on differences | `llm-judge-strict-json` | LLM penalizes per-field. Use when each output key matters independently. |\n26\t| Score whether the agent's reasoning path matches expected behavior | `llm-judge-trajectory` | Reads agent run history. Use `--expected-agent-behavior` on data points. |\n27\t| As above but with simulated tool calls / inputs | `llm-judge-trajectory-simulation` | Use when the flow can't safely execute real tools during eval. |\n28\t\n29\t## Adding an Evaluator (CLI)\n30\t\n31\t```bash\n32\t# Deterministic — no model needed\n33\tuip maestro flow eval evaluator add exact-greeting \\\n34\t  --type exact-match \\\n35\t  --target-key \"greeting\" \\\n36\t  --path ./MySolution/MyFlow --output json\n37\t\n38\t# LLM-judge — model is effectively required\n39\tuip maestro flow eval evaluator add greeting-quality \\\n40\t  --type llm-judge-output \\\n41\t  --model gpt-4.1-2025-04-14 \\\n42\t  --description \"Score greeting tone and completeness\" \\\n43\t  --path ./MySolution/MyFlow --output json\n44\t```\n45\t\n46\tCritical: pass `--model` on every `llm-judge-*` evaluator. Empty `model` triggers a 500 from the LLM gateway only after retries — unfriendly to debug.\n47\t\n48\t## `--target-key`\n49\t\n50\tDefaults to `*` (the entire output object). Set a specific key when only one field of the output should be scored:\n51\t\n52\t- Output: `{\"greeting\": \"Hello!\", \"metadata\": {\"latencyMs\": 12}}` \n53\t- `--target-key \"greeting\"` scores only the greeting string, ignoring metadata noise.\n54\t- `--target-key \"*\"` (default) scores the whole object.\n55\t\n56\t## Evaluator JSON Shape\n57\t\n58\tThe CLI writes evaluator JSON files into the project's evaluator directory. Filenames follow `<name>-<suffix>.json` for CLI-created files; hand-written files can use any descriptive name. Let `eval set add` write `evaluatorRefs` instead of hand-editing them.\n59\t\n60\t### Deterministic example (`exact-match`)\n61\t\n62\t```json\n63\t{\n64\t  \"id\": \"<generate-uuid>\",\n65\t  \"name\": \"exact-greeting\",\n66\t  \"description\": \"Strict greeting match\",\n67\t  \"version\": \"1.0\",\n68\t  \"evaluatorTypeId\": \"uipath-exact-match\",\n69\t  \"evaluatorConfig\": {\n70\t    \"name\": \"exact-greeting\",\n71\t    \"targetOutputKey\": \"greeting\",\n72\t    \"caseSensitive\": false,\n73\t    \"negated\": false\n74\t  }\n75\t}\n76\t```\n77\t\n78\t`exact-match`, `json-similarity`, and `contains` do NOT carry a `model` or `prompt`.\n79\t\n80\t### LLM-judge example (`llm-judge-output`)\n81\t\n82\t```json\n83\t{\n84\t  \"id\": \"<generate-uuid>\",\n85\t  \"name\": \"greeting-quality\",\n86\t  \"description\": \"Score greeting tone and completeness\",\n87\t  \"version\": \"1.0\",\n88\t  \"evaluatorTypeId\": \"uipath-llm-judge-output-semantic-similarity\",\n89\t  \"evaluatorConfig\": {\n90\t    \"name\": \"greeting-quality\",\n91\t    \"model\": \"gpt-4.1-2025-04-14\",\n92\t    \"temperature\": 0,\n93\t    \"maxTokens\": 4096,\n94\t    \"targetOutputKey\": \"*\",\n95\t    \"prompt\": \"Score 0-1 the semantic similarity of {{ActualOutput}} vs {{ExpectedOutput}}. Return JSON {\\\"score\\\": N, \\\"reason\\\": \\\"...\\\"}.\"\n96\t  }\n97\t}\n98\t```\n99\t\n100\tTemplate variables per type:\n101\t\n102\t| Type | Placeholders |\n103\t|------|-------------|\n104\t| `llm-judge-output` | `{{ExpectedOutput}}`, `{{ActualOutput}}` |\n105\t| `llm-judge-strict-json` | `{{ExpectedOutput}}`, `{{ActualOutput}}` |\n106\t| `llm-judge-trajectory` | `{{AgentRunHistory}}`, `{{ExpectedAgentBehavior}}`, `{{UserOrSyntheticInput}}` |\n107\t| `llm-judge-trajectory-simulation` | `{{AgentRunHistory}}`, `{{ExpectedAgentBehavior}}`, `{{UserOrSyntheticInput}}`, `{{SimulationInstructions}}` |\n108\t\n109\tWhen `--prompt` is omitted, the CLI inserts a built-in default for each type. Override with `--prompt` only when you need different wording or scoring criteria — keep the same placeholders.\n110\t\n111\t## Custom Prompts\n112\t\n113\t```bash\n114\tuip maestro flow eval evaluator add strict-match \\\n115\t  --type llm-judge-output \\\n116\t  --model gpt-4.1-2025-04-14 \\\n117\t  --prompt 'Score 0-1 how closely {{ActualOutput}} matches {{ExpectedOutput}}. Return JSON {\"score\": N, \"reason\": \"...\"}.' \\\n118\t  --path ./MySolution/MyFlow --output json\n119\t```\n120\t\n121\tUnknown placeholders are passed through to the LLM as literal text — they are not silent errors but they will not be substituted with run data.\n122\t\n123\t## Removing an Evaluator\n124\t\n125\t```bash\n126\tuip maestro flow eval evaluator remove greeting-quality \\\n127\t  --path ./MySolution/MyFlow --output json\n128\t```\n129\t\n130\tRemoving an evaluator does NOT auto-clean `evaluatorRefs` arrays in eval sets that reference it. After removing, re-list eval sets and reconcile any stale refs:\n131\t\n132\t```bash\n133\tuip maestro flow eval set list --path ./MySolution/MyFlow --output json\n134\t```\n135\t\n136\t## Anti-patterns\n137\t\n138\t- **Don't pass `--type` in PascalCase.** `ExactMatch` fails; only `exact-match` is accepted.\n139\t- **Don't omit `--model` on `llm-judge-*`.** The cloud worker fail-fasts before calling the LLM gateway; the resulting 500 is unhelpful.\n140\t- **Don't hand-write evaluator refs unless you are repairing an eval set.** Omit `--evaluators` so the CLI links all current evaluators, or use `eval set add --evaluators <generated_id_or_file_base>`. Do not pass the evaluator display name.\n141\t- **Don't copy evaluator JSON across projects without regenerating UUIDs.** `id` collisions silently corrupt resolution.\n142\t- **Don't use deterministic evaluators (`exact-match`, `json-similarity`, `contains`) for natural-language outputs.** They will fail almost every test that paraphrases.\n143\t- **Don't mix trajectory and output evaluators on the same data point unless the data point provides both `--expected` and `--expected-agent-behavior`.** Otherwise one of them scores against an empty placeholder.\n144\t",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 2,
+          "result_tokens": 1913
+        },
+        {
+          "tool_name": "Read",
+          "tool_id": "toolu_bdrk_014cpRgnVgC4fi2rPxiuLqXY",
+          "assistant_turn_index": 6,
+          "timestamp": "2026-07-24T18:30:04.678519",
+          "duration_ms": 17.424848047085106,
+          "generation_completed_at": "2026-07-24T18:30:04.678519",
+          "execution_started_at": "2026-07-24T18:30:04.678567",
+          "execution_completed_at": "2026-07-24T18:30:04.695992",
+          "parameters": {
+            "file_path": "/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/evaluate/references/commands-reference.md"
+          },
+          "result_status": "success",
+          "result_summary": "1\t# `uip maestro flow eval` Command Reference\n2\t\n3\tComplete syntax reference for every subcommand under `uip maestro flow eval`. All commands accept the global flags `--output <table|json|yaml|plain>` (default `json`), `--output-filter <jmespath>`, `--log-level <debug|info|warn|error>`, and `--log-file <path>`. Repeated reminders below: always pass `--output json` when an agent will parse the result.\n4\t\n5\t## Command Tree\n6\t\n7\t```\n8\tuip maestro flow eval\n9\t├── add        — Add a data point to an evaluation set\n10\t├── list       — List data points in an evaluation set\n11\t├── remove     — Remove a data point from an evaluation set\n12\t├── set\n13\t│   ├── add    — Create an evaluation set\n14\t│   ├── list   — List evaluation sets\n15\t│   └── remove — Remove an evaluation set\n16\t├── evaluator\n17\t│   ├── add    — Add an evaluator to the flow project\n18\t│   ├── list   — List evaluators in a flow project\n19\t│   └── remove — Remove an evaluator from a flow project\n20\t├── simulation\n21\t│   ├── add    — Add or update a simulation on a data point\n22\t│   ├── list   — List simulations on a data point\n23\t│   └── remove — Remove a simulation from a data point\n24\t└── run\n25\t    ├── start    — Start a Studio Web evaluation run\n26\t    ├── status   — Check the status of a run\n27\t    ├── results  — Get detailed per-data-point results\n28\t    ├── list     — List runs for an eval set\n29\t    └── compare  — Compare two runs side-by-side\n30\t```\n31\t\n32\t`add` / `remove` / `list` at the top level operate on **data points** (test cases) inside an eval set. Data points are stored inline within the eval set JSON, not as separate files.\n33\t\n34\t## Common Options\n35\t\n36\tEvery subcommand accepts:\n37\t\n38\t| Flag | Required | Description |\n39\t|------|----------|-------------|\n40\t| `--path <path>` | No (defaults to `.`) | Flow project directory, or a solution directory containing exactly one Flow project |\n41\t| `--output <fmt>` | No (default `json`) | `table`, `json`, `yaml`, or `plain` |\n42\t| `--output-filter <expr>` | No | JMESPath expression applied to JSON output before printing |\n43\t\n44\t## Data Points (Test Cases)\n45\t\n46\t### `uip maestro flow eval add <name>`\n47\t\n48\tAdd a data point to an eval set.\n49\t\n50\t| Flag | Required | Description |\n51\t|------|----------|-------------|\n52\t| `--set <name>` | Yes | Eval set name or ID |\n53\t| `--inputs <json>` | No | Input values as a JSON object; keys must be declared as Flow input variables |\n54\t| `--input-file <key=path>` | No | Attach a file as input `<key>`; **repeatable** |\n55\t| `--expected <json>` | No | Expected output as a JSON object |\n56\t| `--criteria <json>` | No | Per-evaluator criteria JSON object keyed by evaluator id |\n57\t| `--search-text <text>` | No | Search text for `contains` evaluators |\n58\t| `--path <path>` | No | (see Common Options) |\n59\t\n60\tExample:\n61\t\n62\t```bash\n63\tuip maestro flow eval add greeting-test \\\n64\t  --set \"Smoke Tests\" \\\n65\t  --inputs '{\"name\":\"Alice\"}' \\\n66\t  --expected '{\"greeting\":\"Hello, Alice!\"}' \\\n67\t  --path ./MySolution/MyFlow --output json\n68\t```\n69\t\n70\t### `uip maestro flow eval list`\n71\t\n72\tList data points in an eval set.\n73\t\n74\t```bash\n75\tuip maestro flow eval list --set \"Smoke Tests\" --path ./MySolution/MyFlow --output json\n76\t```\n77\t\n78\t### `uip maestro flow eval remove <id>`\n79\t\n80\tRemove a data point. `<id>` accepts the data point's UUID or its `name`.\n81\t\n82\t## Evaluation Sets\n83\t\n84\t### `uip maestro flow eval set add <name>`\n85\t\n86\tCreate an evaluation set.\n87\t\n88\t| Flag | Required | Description |\n89\t|------|----------|-------------|\n90\t| `--evaluators <refs>` | No (default: all) | Comma-separated evaluator IDs or generated file base names; do not pass display names |\n91\t| `--entry-point <id>` | No | Entry point node id stored as the eval set's `selectedEntrypoint` |\n92\t| `--path <path>` | No | (see Common Options) |\n93\t\n94\tWhen `--evaluators` is omitted, the new eval set references **all** evaluators present in the project at creation time using their generated evaluator file refs. Prefer this when creating a set immediately after adding the evaluator(s). If passing `--evaluators`, use the generated id/file base returned by `evaluator add/list`, not the evaluator display name.\n95\t\n96\t### `uip maestro flow eval set list`\n97\t\n98\tList eval sets in the project.\n99\t\n100\t### `uip maestro flow eval set remove <id>`\n101\t\n102\tRemove an eval set. `<id>` accepts the eval set's UUID, `name`, or file base name.\n103\t\n104\t## Evaluators\n105\t\n106\t### `uip maestro flow eval evaluator add <name>`\n107\t\n108\tCreate an evaluator file in the project's evaluators directory.\n109\t\n110\t| Flag | Required | Description |\n111\t|------|----------|-------------|\n112\t| `--type <type>` | Yes | One of: `exact-match`, `json-similarity`, `contains`, `llm-judge-output`, `llm-judge-strict-json`, `llm-judge-trajectory`, `llm-judge-trajectory-simulation` |\n113\t| `--description <text>` | No | Evaluator description |\n114\t| `--target-key <key>` | No | Output key the evaluator scores against (defaults to `*` — the entire output) |\n115\t| `--model <model>` | No (Yes for llm-judge-*) | LLM model for LLM-judge evaluators (e.g. `gpt-4.1-2025-04-14`) |\n116\t| `--prompt <prompt>` | No | Custom LLM judge prompt; defaults to a built-in template per type |\n117\t| `--path <path>` | No | (see Common Options) |\n118\t\n119\tOnly kebab-case `--type` values are accepted; PascalCase fails with an error.\n120\t\n121\tFor LLM-judge evaluators, `--model` is effectively required — the cloud worker rejects an empty `model` before sending to the LLM gateway. See [evaluators-guide.md](evaluators-guide.md) for the seven types in detail.\n122\t\n123\t### `uip maestro flow eval evaluator list`\n124\t\n125\tList evaluators in the project.\n126\t\n127\t### `uip maestro flow eval evaluator remove <id>`\n128\t\n129\tRemove an evaluator. `<id>` accepts UUID, name, or file base name. Removing an evaluator does not auto-clean `evaluatorRefs` in eval sets — verify after removing.\n130\t\n131\t## Simulations\n132\t\n133\tSimulations intercept specific nodes (connectors, agents, sub-flows) during an eval run and replace their real execution with a controlled response. Each simulation targets a single component by its `componentId` and applies one of three strategies.\n134\t\n135\t### `uip maestro flow eval simulation add <component-id>`\n136\t\n137\tAdd or replace a simulation on a data point. If a simulation for `<component-id>` already exists on the data point it is overwritten.\n138\t\n139\t| Flag | Required | Description |\n140\t|------|----------|-------------|\n141\t| `--set <name>` | Yes | Eval set name or ID |\n142\t| `--data-point <id>` | Yes | Data point name or ID |\n143\t| `--strategy <strategy>` | Yes | `Llm` or `Static` |\n144\t| `--component-type <type>` | Yes | Component type (e.g. `connector`, `agent`, `subflow`) |\n145\t| `--component-description <text>` | No | Human-readable label for the component |\n146\t| `--simulation-instructions <text>` | No | LLM prompt describing what the component should return (for `Llm` strategy) |\n147\t| `--mock-value <json>` | No | Static JSON output (for `Static` strategy) |\n148\t| `--output-schema <json>` | No | JSON Schema describing the expected output shape; passed to the LLM to constrain its response. **Auto-resolved from the `.flow` file when omitted for `Llm` strategy** — fails if the node is not found or has no outputs. Pass explicitly to override. |\n149\t| `--path <path>` | No | (see Common Options) |\n150\t\n151\t**Strategy guide:**\n152\t\n153\t| Strategy | When to use | Key flags |\n154\t|----------|-------------|-----------|\n155\t| `Llm` | Output should be realistic but non-deterministic | `--simulation-instructions`, `--output-schema` (auto-resolved) |\n156\t| `Static` | Output is fixed and deterministic | `--mock-value` |\n157\t\n158\t**`--output-schema` auto-resolution for Llm simulations:** When omitted, the CLI reads the `.flow` file, finds the node by `<component-id>`, and derives the schema from the node's output definition (connector `outputJsonSchema`, agent `agentOutputVariables`, or `node.outputs`). Fails with an actionable error if the node is not found or has no outputs. Pass `--output-schema` explicitly to override. The JSON Schema is sent alongside `--simulation-instructions` to the LLM, telling it what shape the output must conform to. Without it the LLM generates free-form text. For a connector that returns `{ status, message }` you would pass:\n159\t\n160\t```bash\n161\t--output-schema '{\"type\":\"object\",\"properties\":{\"status\":{\"type\":\"string\"},\"message\":{\"type\":\"string\"}}}'\n162\t```\n163\t\n164\tExample — LLM strategy:\n165\t\n166\t```bash\n167\tuip maestro flow eval simulation add connector-send-email \\\n168\t  --set \"Smoke Tests\" \\\n169\t  --data-point \"hello-test\" \\\n170\t  --strategy Llm \\\n171\t  --component-type connector \\\n172\t  --simulation-instructions \"Pretend to send the email and return a success confirmation.\" \\\n173\t  --path ./MySolution/MyFlow --output json\n174\t```\n175\t\n176\tExample — Static strategy:\n177\t\n178\t```bash\n179\tuip maestro flow eval simulation add agent-lookup \\\n180\t  --set \"Smoke Tests\" \\\n181\t  --data-point \"hello-test\" \\\n182\t  --strategy Static \\\n183\t  --component-type agent \\\n184\t  --mock-value '{\"result\": \"found\", \"items\": []}' \\\n185\t  --path ./MySolution/MyFlow --output json\n186\t```\n187\t\n188\t### `uip maestro flow eval simulation list`\n189\t\n190\tList all simulations configured on a data point.\n191\t\n192\t| Flag | Required | Description |\n193\t|------|----------|-------------|\n194\t| `--set <name>` | Yes | Eval set name or ID |\n195\t| `--data-point <id>` | Yes | Data point name or ID |\n196\t| `--path <path>` | No | (see Common Options) |\n197\t\n198\t```bash\n199\tuip maestro flow eval simulation list \\\n200\t  --set \"Smoke Tests\" \\\n201\t  --data-point \"hello-test\" \\\n202\t  --path ./MySolution/MyFlow --output json\n203\t```\n204\t\n205\t### `uip maestro flow eval simulation remove <component-id>`\n206\t\n207\tRemove a simulation from a data point. Returns an error if no simulation with the given `<component-id>` exists on the data point.\n208\t\n209\t| Flag | Required | Description |\n210\t|------|----------|-------------|\n211\t| `--set <name>` | Yes | Eval set name or ID |\n212\t| `--data-point <id>` | Yes | Data point name or ID |\n213\t| `--path <path>` | No | (see Common Options) |\n214\t\n215\t```bash\n216\tuip maestro flow eval simulation remove connector-send-email \\\n217\t  --set \"Smoke Tests\" \\\n218\t  --data-point \"hello-test\" \\\n219\t  --path ./MySolution/MyFlow --output json\n220\t```\n221\t\n222\t## Run\n223\t\n224\t### `uip maestro flow eval run start`\n225\t\n226\tStart a Studio Web evaluation run. The Flow solution **must already exist in Studio Web** — see [upload-safety.md](upload-safety.md).\n227\t\n228\t| Flag | Required | Description | Default |\n229\t|------|----------|-------------|---------|\n230\t| `--set <name>` | Yes | Eval set name or ID | — |\n231\t| `--solution-id <id>` | No | Solution ID from Studio Web | Auto-resolved from project metadata |\n232\t| `--project-id <id>` | No | Flow project ID from Studio Web | Auto-resolved |\n233\t| `--path <path>` | No | (see Common Options) | `.` |\n234\t| `--entry-point <entry>` | No | Flow entry point path (e.g. `/Main.bpmn#start`) or start node ID | Eval set's `selectedEntrypoint` |\n235\t| `--folder-key <key>` | No | Orchestrator folder key | Personal workspace |\n236\t| `--debug-mode <mode>` | No | Studio Web debug mode override | (server default) |\n237\t| `--wait` | No | Block until terminal state, then print results | `false` |\n238\t| `--timeout <seconds>` | No | Max time to block on `--wait` | `600` (10 min) |\n239\t\n240\tWithout `--wait`, returns immediately with `EvalSetRunId`. With `--wait`, the CLI polls until `Completed` or `Failed`, or `--timeout` elapses (the server-side run continues regardless).\n241\t\n242\t### `uip maestro flow eval run status <evalSetRunId>`\n243\t\n244\tGet current status. Terminal states: `Completed`, `Failed`.\n245\t\n246\t| Flag | Required | Description |\n247\t|------|----------|-------------|\n248\t| `--set <name>` | Yes | Eval set name or ID |\n249\t| `--solution-id <id>` | No | Override solution ID |\n250\t| `--project-id <id>` | No | Override project ID |\n251\t| `--path <path>` | No | (see Common Options) |\n252\t\n253\t### `uip maestro flow eval run results <evalSetRunId>`\n254\t\n255\tPer-data-point results.\n256\t\n257\t| Flag | Required | Description |\n258\t|------|----------|-------------|\n259\t| `--set <name>` | Yes | Eval set name or ID |\n260\t| `--only-failed` | No | Show only failed/errored data points |\n261\t| `--verbose` | No | Include evaluator justifications |\n262\t| `--export-format <json\\|csv>` | No | Export results to a file |\n263\t| `--solution-id`, `--project-id`, `--path` | No | (see start) |\n264\t\n265\tPer-row output fields: `DataPoint`, `Status`, `EvaluatorScores`, `Duration`, `Error` (plus `Justifications` when `--verbose`).\n266\t\n267\t### `uip maestro flow eval run list`\n268\t\n269\tList runs for an eval set.\n270\t\n271\t```bash\n272\tuip maestro flow eval run list --set \"Smoke Tests\" --path ./MySolution/MyFlow --output json\n273\t```\n274\t\n275\t### `uip maestro flow eval run compare <evalSetRunId>`\n276\t\n277\tCompare two runs side-by-side.\n278\t\n279\t| Flag | Required | Description |\n280\t|------|----------|-------------|\n281\t| `--compare-to <id>` | Yes | Second eval set run ID |\n282\t| `--set <name>` | Yes | Eval set name or ID |\n283\t| `--solution-id`, `--project-id`, `--path` | No | (see start) |\n284\t\n285\t`compare` aligns data points by `name` within the eval set. Comparing runs from different eval sets is meaningless.\n286\t\n287\t## Output Codes\n288\t\n289\tThe CLI emits a `Code` field on every JSON response. Useful when filtering or scripting:\n290\t\n291\t| Subcommand | `Code` |\n292\t|------------|--------|\n293\t| `eval add` | `FlowEvalAdd` |\n294\t| `eval list` | `FlowEvalList` |\n295\t| `eval remove` | `FlowEvalRemove` |\n296\t| `eval set add` / `list` / `remove` | `FlowEvalSetAdd` / `FlowEvalSetList` / `FlowEvalSetRemove` |\n297\t| `eval evaluator add` / `list` / `remove` | `FlowEvalEvaluatorAdd` / `FlowEvalEvaluatorList` / `FlowEvalEvaluatorRemove` |\n298\t| `eval simulation add` / `list` / `remove` | `FlowEvalSimulationAdd` / `FlowEvalSimulationList` / `FlowEvalSimulationRemove` |\n299\t| `eval run start` (no `--wait`) | `FlowEvalRunStarted` |\n300\t| `eval run start --wait` (summary) | `FlowEvalRunCompleted` |\n301\t| `eval run status` | `FlowEvalRunStatus` |\n302\t| `eval run results` | `FlowEvalRunResults` |\n303\t| `eval run list` | `FlowEvalRunList` |\n304\t| `eval run compare` | `FlowEvalRunComparison` |\n305\t\n306\tThe `eval run *` codes dropped their `Maestro` prefix (e.g. `MaestroFlowEvalRunResults` → `FlowEvalRunResults`) to match the rest of the `eval` family. Older CLI versions emit the `Maestro`-prefixed names. If actual emitted codes diverge from the table above, trust the JSON output — file an issue.\n307\t",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 3,
+          "result_tokens": 3686
+        },
+        {
+          "tool_name": "Read",
+          "tool_id": "toolu_bdrk_01M5YZvGvdNFqFzsnRrdtMU7",
+          "assistant_turn_index": 9,
+          "timestamp": "2026-07-24T18:30:52.220113",
+          "duration_ms": 20.41453099809587,
+          "generation_completed_at": "2026-07-24T18:30:52.220113",
+          "execution_started_at": "2026-07-24T18:30:52.220169",
+          "execution_completed_at": "2026-07-24T18:30:52.240584",
+          "parameters": {
+            "file_path": "/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/shared/cli-commands.md",
+            "limit": 80
+          },
+          "result_status": "success",
+          "result_summary": "1\t# uip maestro flow — CLI Command Reference\n2\t\n3\tAll commands output `{ \"Result\": \"Success\"|\"Failure\", \"Code\": \"...\", \"Data\": { ... } }`. Use `--output json` for programmatic use.\n4\t\n5\t> For node and edge commands (`node add/remove/list/configure`, `edge add/remove/list`), see the [Author CLI editing strategy](../author/references/editing-operations-cli.md). This file covers project setup, validation, registry, debug, and publishing commands.\n6\t\n7\t## uip maestro flow init\n8\t\n9\tScaffold a new Flow project directory. Outside a solution, `flow init` auto-scaffolds `<ProjectName>Solution/` and nests the project in it. **Prefer creating the solution first** so its name matches the project name (see the [Author greenfield journey — Step 2](../author/references/greenfield.md)).\n10\t\n11\t```bash\n12\t# 1. Create solution first (for naming control)\n13\tuip solution init \"<SolutionName>\" --output json\n14\t\n15\t# 2. Init the flow project inside the solution folder.\n16\t#    Inside a solution directory, `flow init` auto-registers the project with\n17\t#    the parent `.uipx`. Outside any solution, it auto-scaffolds\n18\t#    `<ProjectName>Solution/<ProjectName>Solution.uipx`, nests the project in it,\n19\t#    and adds `Data.AutoCreatedSolution` to the response. Either way confirm via\n20\t#    `Data.SolutionRegistration.Status` (`Registered` or `AlreadyRegistered`).\n21\t#    `--skip-solution-registration` opts out of both (Status `OptedOut`).\n22\tcd <directory>/<SolutionName> && uip maestro flow init <ProjectName> --output json\n23\t\n24\t# 3. (Fallback only) Wire the project manually if registration was\n25\t#    `Skipped` / `Failed` (ambiguous discovery or `.uipx` write error), or the\n26\t#    rare `NotInSolution`. (`OptedOut` means `--skip-solution-registration` was\n27\t#    passed and the skip was intentional.)\n28\tuip solution project add \\\n29\t  <directory>/<SolutionName>/<ProjectName> \\\n30\t  <directory>/<SolutionName>/<SolutionName>.uipx\n31\t```\n32\t\n33\tCreates `<ProjectName>/` with `project.uiproj`, `<ProjectName>.flow`, `bindings_v2.json`, `entry-points.json`, `operate.json`, and `package-descriptor.json` inside the solution directory.\n34\t\n35\t## uip maestro flow validate\n36\t\n37\tValidate a `.flow` file locally — no auth, no network.\n38\t\n39\t```bash\n40\tuip maestro flow validate <path/to/file.flow>\n41\tuip maestro flow validate <path/to/file.flow> --output json\n42\tuip maestro flow validate <path/to/file.flow> --verbose --output json\n43\t\n44\t# With governance policy checks (requires login)\n45\tuip maestro flow validate <path/to/file.flow> --governance --output json\n46\t```\n47\t\n48\tChecks:\n49\t\n50\t- JSON parses correctly\n51\t- All required fields present (including `targetPort` on edges)\n52\t- Every node `type:typeVersion` has a matching entry in `definitions`\n53\t- Edge `sourceNodeId`/`targetNodeId` reference existing node `id`s\n54\t- Node `id`s are unique; edge `id`s are unique\n55\t\n56\tExit code 0 = valid, 1 = invalid.\n57\t\n58\t### `--governance` flag\n59\t\n60\tValidates agent nodes against organization governance policies fetched from the platform. Requires `uip login`. When governance data cannot be fetched (no login, platform unreachable), the command exits with a failure. Omit `--governance` to run local-only schema validation without auth.\n61\t\n62\t## uip maestro flow format\n63\t\n64\tAuto-layout nodes in the `.flow` file. Run after validation passes and before publishing or debugging — without format, hand-written or stale `layout` data can render as misshapen rectangles in Studio Web.\n65\t\n66\t```bash\n67\tuip maestro flow format <path/to/file.flow>\n68\tuip maestro flow format <path/to/file.flow> --output json\n69\t```\n70\t\n71\tFormat:\n72\t- Arranges nodes horizontally (left-to-right) and anchors to the leftmost node's original position so the user's general layout intent is preserved\n73\t- Sets each node's `size` to match its canvas shape — inline agents (`shape: rectangle`) → `{ \"width\": 288, \"height\": 96 }`, containers (loops/groups) → `{ \"width\": 560, \"height\": 320 }`, everything else (incl. referenced `uipath.core.agent.<guid>`) → `{ \"width\": 96, \"height\": 96 }`; sticky-note custom sizes are preserved\n74\t- Recurses into subflows and rewrites `subflows[<id>].layout` for each\n75\t- Backfills missing `position`/`size` entries\n76\t- Does not modify node logic, edges, definitions, or variables — only layout coordinates\n77\t\n78\tJSON output (`--output json`) reports counts in `Data`: `NodesTotal`, `EdgesTotal`, `NodesRepositioned`, `NodesResized`, `SubflowsTidied`.\n79\t\n80\t## uip maestro flow pack",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 4,
+          "result_tokens": 1129
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_01LrvqWBsHPGDeBwb9xgQANv",
+          "assistant_turn_index": 11,
+          "timestamp": "2026-07-24T18:30:55.427123",
+          "duration_ms": 1276.0707039851695,
+          "generation_completed_at": "2026-07-24T18:30:55.427123",
+          "execution_started_at": "2026-07-24T18:30:55.427225",
+          "execution_completed_at": "2026-07-24T18:30:56.703296",
+          "parameters": {
+            "command": "\\\nuip solution init EvalTypeChoice --output json 2>&1 | head -5",
+            "description": "Scaffold the solution"
+          },
+          "result_status": "success",
+          "result_summary": "{\n  \"Result\": \"Success\",\n  \"Code\": \"SolutionInit\",\n  \"Data\": {\n    \"Status\": \"Created successfully\",",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 5,
+          "result_tokens": 25
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_01Pq2vwJknAeJbpsD2rWvyiv",
+          "assistant_turn_index": 12,
+          "timestamp": "2026-07-24T18:30:58.539185",
+          "duration_ms": 7982.525305007584,
+          "generation_completed_at": "2026-07-24T18:30:58.539185",
+          "execution_started_at": "2026-07-24T18:30:58.539439",
+          "execution_completed_at": "2026-07-24T18:31:06.521964",
+          "parameters": {
+            "command": "cd EvalTypeChoice && uip maestro flow init EvalTypeChoice --output json 2>&1 | head -10",
+            "description": "Scaffold the flow project inside the solution"
+          },
+          "result_status": "success",
+          "result_summary": "2026-07-24 18:31:00 INFO  [ResourceBuilder:ProjectCreateCommandHandler] Creating project [object Object]\n2026-07-24 18:31:00 INFO  [ResourceBuilder:MultiFileSolutionDefinitionProvider] Reading multi-file solution definition for solution %s /work/output/artifacts/skill-flow-eval-evaluator-type-choice/EvalTypeChoice\n2026-07-24 18:31:00 INFO  [ResourceBuilder:ProjectCreateCommandHandler] Generate artefact resources for project [object Object]\n2026-07-24 18:31:00 INFO  [ResourceBuilder:SolutionsMetadataReader] Reading metadata from %s. SolutionsMetadataReader\n{\n  \"Result\": \"Success\",\n  \"Code\": \"FlowInit\",\n  \"Data\": {\n    \"Status\": \"Created successfully\",\n    \"Path\": \"/work/output/artifacts/skill-flow-eval-evaluator-type-choice/EvalTypeChoice/EvalTypeChoice\",",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 6,
+          "result_tokens": 191
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_01SwxewKW4NLvVPvEKoyd8Ax",
+          "assistant_turn_index": 13,
+          "timestamp": "2026-07-24T18:31:09.106114",
+          "duration_ms": 1126.170606003143,
+          "generation_completed_at": "2026-07-24T18:31:09.106114",
+          "execution_started_at": "2026-07-24T18:31:09.115842",
+          "execution_completed_at": "2026-07-24T18:31:10.242013",
+          "parameters": {
+            "command": "cd EvalTypeChoice && uip solution project add EvalTypeChoice EvalTypeChoice.uipx --output json 2>&1 | tail -5",
+            "description": "Verify solution project registration (link)"
+          },
+          "result_status": "success",
+          "result_summary": "  \"Message\": \"Failed to add project to solution\",\n  \"Instructions\": \"Project folder not found: /work/output/artifacts/skill-flow-eval-evaluator-type-choice/EvalTypeChoice/EvalTypeChoice/EvalTypeChoice\",\n  \"ErrorCode\": \"unknown_error\",\n  \"Retry\": \"RetryWillNotFix\"\n}",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 7,
+          "result_tokens": 67
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_01TVYt8gNCBS6wWTTB3A948z",
+          "assistant_turn_index": 14,
+          "timestamp": "2026-07-24T18:31:12.243106",
+          "duration_ms": 46.91366397310048,
+          "generation_completed_at": "2026-07-24T18:31:12.243106",
+          "execution_started_at": "2026-07-24T18:31:12.243353",
+          "execution_completed_at": "2026-07-24T18:31:12.290267",
+          "parameters": {
+            "command": "ls EvalTypeChoice/ && ls EvalTypeChoice/EvalTypeChoice/ 2>/dev/null | head -10",
+            "description": "Verify the directory structure"
+          },
+          "result_status": "error",
+          "result_summary": "Exit code 2\nls: cannot access 'EvalTypeChoice/': No such file or directory",
+          "error_message": "Exit code 2\nls: cannot access 'EvalTypeChoice/': No such file or directory",
+          "result_data": null,
+          "sequence_number": 8,
+          "result_tokens": 19
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_017dgeK532B9UDvzgv876t61",
+          "assistant_turn_index": 15,
+          "timestamp": "2026-07-24T18:31:14.390931",
+          "duration_ms": 43.55248005595058,
+          "generation_completed_at": "2026-07-24T18:31:14.390931",
+          "execution_started_at": "2026-07-24T18:31:14.391819",
+          "execution_completed_at": "2026-07-24T18:31:14.435371",
+          "parameters": {
+            "command": "ls /work/output/artifacts/skill-flow-eval-evaluator-type-choice/ && ls /work/output/artifacts/skill-flow-eval-evaluator-type-choice/EvalTypeChoice/",
+            "description": "Check the directory layout"
+          },
+          "result_status": "success",
+          "result_summary": "EvalTypeChoice\nAGENTS.md\nCLAUDE.md\nEvalTypeChoice\nEvalTypeChoice.uipx\nresources",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 9,
+          "result_tokens": 20
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_01YBJSNTyM7WwVMQgtjDCRSU",
+          "assistant_turn_index": 17,
+          "timestamp": "2026-07-24T18:31:20.165933",
+          "duration_ms": 5073.63548502326,
+          "generation_completed_at": "2026-07-24T18:31:20.165933",
+          "execution_started_at": "2026-07-24T18:31:20.165989",
+          "execution_completed_at": "2026-07-24T18:31:25.239624",
+          "parameters": {
+            "command": "cd /work/output/artifacts/skill-flow-eval-evaluator-type-choice/EvalTypeChoice && \\\nuip maestro flow eval evaluator add goal-a-evaluator \\\n  --type llm-judge-output \\\n  --model gpt-4.1-2025-04-14 \\\n  --description \"Score free-text chatbot greeting replies for semantic similarity against expected greeting\" \\\n  --path EvalTypeChoice --output json 2>&1 | grep -E '\"Result\"|\"Code\"|\"name\"|\"evaluatorTypeId\"'",
+            "description": "Add goal-a-evaluator (llm-judge-output)"
+          },
+          "result_status": "success",
+          "result_summary": "  \"Result\": \"Success\",\n  \"Code\": \"FlowEvalEvaluatorAdd\",",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 10,
+          "result_tokens": 14
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_01Rq8De9vfAv5ttuUP7cv95a",
+          "assistant_turn_index": 18,
+          "timestamp": "2026-07-24T18:31:28.944475",
+          "duration_ms": 13415.52754107397,
+          "generation_completed_at": "2026-07-24T18:31:28.944475",
+          "execution_started_at": "2026-07-24T18:31:28.945672",
+          "execution_completed_at": "2026-07-24T18:31:42.361200",
+          "parameters": {
+            "command": "\\\nuip maestro flow eval evaluator add goal-b-evaluator \\\n  --type json-similarity \\\n  --description \"Deterministic tree-based JSON comparison for structured order-detail envelopes\" \\\n  --path EvalTypeChoice --output json 2>&1 | grep -E '\"Result\"|\"Code\"' && \\\nuip maestro flow eval evaluator add goal-c-evaluator \\\n  --type contains \\\n  --description \"Pass/fail check whether the output contains the literal substring 'deployment succeeded'\" \\\n  --path EvalTypeChoice --output json 2>&1 | grep -E '\"Result\"|\"Code\"'",
+            "description": "Add goal-b-evaluator (json-similarity) and goal-c-evaluator (contains)"
+          },
+          "result_status": "success",
+          "result_summary": "  \"Result\": \"Success\",\n  \"Code\": \"FlowEvalEvaluatorAdd\",\n  \"Result\": \"Success\",\n  \"Code\": \"FlowEvalEvaluatorAdd\",",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 11,
+          "result_tokens": 29
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_011g7Xa1pyiZKaSzbx69DzJw",
+          "assistant_turn_index": 20,
+          "timestamp": "2026-07-24T18:31:45.236884",
+          "duration_ms": 4567.016746033914,
+          "generation_completed_at": "2026-07-24T18:31:45.236884",
+          "execution_started_at": "2026-07-24T18:31:45.236940",
+          "execution_completed_at": "2026-07-24T18:31:49.803957",
+          "parameters": {
+            "command": "uip maestro flow eval evaluator list --path EvalTypeChoice --output json 2>&1 | python3 -c \"\nimport json, sys\ndata = json.load(sys.stdin)\nfor e in data['Data']:\n    print(e['name'], '->', e['evaluatorTypeId'])\n\"",
+            "description": "List evaluators to confirm all three are registered"
+          },
+          "result_status": "error",
+          "result_summary": "Exit code 1\nTraceback (most recent call last):\n  File \"<string>\", line 5, in <module>\n    print(e['name'], '->', e['evaluatorTypeId'])\n          ~^^^^^^^^\nKeyError: 'name'",
+          "error_message": "Exit code 1\nTraceback (most recent call last):\n  File \"<string>\", line 5, in <module>\n    print(e['name'], '->', e['evaluatorTypeId'])\n          ~^^^^^^^^\nKeyError: 'name'",
+          "result_data": null,
+          "sequence_number": 12,
+          "result_tokens": 43
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_01HhQGB6rpgKkSWsacgYddBx",
+          "assistant_turn_index": 21,
+          "timestamp": "2026-07-24T18:31:51.889915",
+          "duration_ms": 2804.7399680363014,
+          "generation_completed_at": "2026-07-24T18:31:51.889915",
+          "execution_started_at": "2026-07-24T18:31:51.890206",
+          "execution_completed_at": "2026-07-24T18:31:54.694946",
+          "parameters": {
+            "command": "uip maestro flow eval evaluator list --path EvalTypeChoice --output json 2>&1 | python3 -c \"\nimport json, sys\ndata = json.load(sys.stdin)\nprint(json.dumps(data['Data'], indent=2))\n\" | head -40",
+            "description": "Inspect evaluator list structure"
+          },
+          "result_status": "success",
+          "result_summary": "[\n  {\n    \"Name\": \"goal-a-evaluator\",\n    \"Id\": \"goal-a-evaluator-56132bde\",\n    \"Type\": \"uipath-llm-judge-output-semantic-similarity\",\n    \"TargetKey\": \"*\",\n    \"File\": \"goal-a-evaluator-56132bde.json\"\n  },\n  {\n    \"Name\": \"goal-b-evaluator\",\n    \"Id\": \"goal-b-evaluator-c81e2841\",\n    \"Type\": \"uipath-json-similarity\",\n    \"TargetKey\": \"*\",\n    \"File\": \"goal-b-evaluator-c81e2841.json\"\n  },\n  {\n    \"Name\": \"goal-c-evaluator\",\n    \"Id\": \"goal-c-evaluator-eb066b68\",\n    \"Type\": \"uipath-contains\",\n    \"TargetKey\": \"*\",\n    \"File\": \"goal-c-evaluator-eb066b68.json\"\n  }\n]",
+          "error_message": null,
+          "result_data": [
+            {
+              "Name": "goal-a-evaluator",
+              "Id": "goal-a-evaluator-56132bde",
+              "Type": "uipath-llm-judge-output-semantic-similarity",
+              "TargetKey": "*",
+              "File": "goal-a-evaluator-56132bde.json"
+            },
+            {
+              "Name": "goal-b-evaluator",
+              "Id": "goal-b-evaluator-c81e2841",
+              "Type": "uipath-json-similarity",
+              "TargetKey": "*",
+              "File": "goal-b-evaluator-c81e2841.json"
+            },
+            {
+              "Name": "goal-c-evaluator",
+              "Id": "goal-c-evaluator-eb066b68",
+              "Type": "uipath-contains",
+              "TargetKey": "*",
+              "File": "goal-c-evaluator-eb066b68.json"
+            }
+          ],
+          "sequence_number": 13,
+          "result_tokens": 143
+        },
+        {
+          "tool_name": "Write",
+          "tool_id": "toolu_bdrk_01Wabjmym3XSguRNr97dJHE3",
+          "assistant_turn_index": 23,
+          "timestamp": "2026-07-24T18:32:01.407720",
+          "duration_ms": 17.6419549388811,
+          "generation_completed_at": "2026-07-24T18:32:01.407720",
+          "execution_started_at": "2026-07-24T18:32:01.407777",
+          "execution_completed_at": "2026-07-24T18:32:01.425419",
+          "parameters": {
+            "file_path": "/work/output/artifacts/skill-flow-eval-evaluator-type-choice/report.json",
+            "content": "{\n  \"goal_a_type\": \"llm-judge-output\",\n  \"goal_a_reason\": \"Free-text paraphrases (e.g. 'Hi Alice!' vs 'Hello, Alice!') require semantic similarity scoring by an LLM judge; deterministic string matchers would fail on valid paraphrases, and trajectory types are unnecessary since no tool-call inspection is needed.\",\n  \"goal_b_type\": \"json-similarity\",\n  \"goal_b_reason\": \"Structured JSON output with known expected values calls for deterministic tree-based comparison that tolerates key ordering and minor whitespace differences without invoking an LLM.\",\n  \"goal_c_type\": \"contains\",\n  \"goal_c_reason\": \"A literal substring presence check ('deployment succeeded') is exactly the binary pass/fail pattern the contains evaluator is designed for, requiring no LLM and no structural comparison.\"\n}\n"
+          },
+          "result_status": "success",
+          "result_summary": "File created successfully at: /work/output/artifacts/skill-flow-eval-evaluator-type-choice/report.json (file state is current in your context — no need to Read it back)",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 14,
+          "result_tokens": 42
+        }
+      ],
+      "timestamp": "2026-07-24T18:32:08.564114",
+      "duration_seconds": 151.19531222700607,
+      "token_usage": {
+        "uncached_input_tokens": 18,
+        "output_tokens": 5957,
+        "cache_creation_input_tokens": 25579,
+        "cache_read_input_tokens": 670987,
+        "total_cost_usd": 0.38662634999999995,
+        "input_tokens": 696584
+      },
+      "model_used": "claude-sonnet-4-6",
+      "assistant_turn_count": 25,
+      "messages": [
+        {
+          "role": "assistant",
+          "started_at": "2026-07-24T18:29:37.365902",
+          "completed_at": "2026-07-24T18:29:50.420896",
+          "generation_duration_ms": 13055.024696979672,
+          "content_blocks": [
+            {
+              "block_type": "thinking",
+              "sequence": 0,
+              "text": null,
+              "thinking": "Let me analyze the task and plan my approach:\n\n1. I need to scaffold a UiPath project with a specific structure\n2. Add three evaluators with specific types based on the goals\n3. Save reasoning to report.json\n\nLet me first invoke the UiPath skill to understand the commands available, then proceed with the implementation.\n\nLet me think about the evaluator types for each goal:\n\n**Goal A** - Score a chatbot's free-text reply against an expected greeting, allowing paraphrasing. The judge doesn't need to inspect tool calls.\n- This is LLM-based (allows paraphrasing, not exact)\n- Doesn't need to inspect tool calls (so not trajectory)\n- Output-based judgment → `llm-judge-output`\n\n**Goal B** - Score a flow that emits structured JSON envelope, key ordering/whitespace tolerated, values must match. Deterministic — no LLM.\n- Deterministic, no LLM\n- JSON comparison with tolerance for ordering/whitespace\n- → `json-similarity`\n\n**Goal C** - Pass-fail on whether the flow's response contains the literal substring \"deployment succeeded\".\n- Contains a literal substring\n- → `contains`\n\nNow I'll invoke the skill to get the right commands.",
+              "signature": "EsIKCmcIEBABGAIqQKecO4fISUUXj9I02rp2EoHbU0X8+rv6VvHkkibYNCP+0dGIZlkhrMotSntSkn5OIsfhu8uvUTi6TqcpsfT5iXoyEWNsYXVkZS1zb25uZXQtNC02OABCCHRoaW5raW5nEgyPr7p91AokB2FyvWsaDFNEeEEP9/OmwNJtrCIwj3ka+IjD31uSQRtdg8MeKf0F963Tz+VWR78KScKSj6UtcHj3nVmbnWF2EcVCIJNCKogJg9fh11pNFICmphnpCRx4CmekmtFhCJ4EOhQ/qRvr9txvarYwLWn/dQJ3PIB3tVZxbrxhGx64aj9EYzu1lngXkkf/i5AlB6Qgyz/mt4He/htfGBau363B1f64ELkiEvToOK3b8wrJR5b4SbFxYkdzziVBHOYnx/ZoA5Uu8+BpLja1iQR75dK3oVDJBSAZFQ1V+ZMxGu40adMWIR+ysJ9SRR4llqoZuUi+Zxgh8F8txlS7GWiUyPsAAFm37/W5CafYekqXOk4y3p6rZl4nVJknzc5v//HGgnESVYtQ+SMKc+Jfoi3UboA73i4g37VrTYqv+/ApqFhIloR97XoNs856gt3dnJowHaj/CUUfH0csd4X04dAG7qek6ZfOsbfReirmqS0LvimDL7l/W7j6WBf90H56DAHahaqDqmyu7beinWAXVrSvoxtLGlzndvy26KAhA8kncAYQeSC685IttBJ1cuo5PMXuE/IAATjOuR0c349rivgBk28gOnpIlGqxVoMxJpLXkRyLC3bYYk5SBXZUVW1xuGIxuFtCGAfjb6C/OwQA8MmBPz9xXHXz6r7dhGjHLKwBZ1I+fGbdYejsGg4RWef520wO/bAwbwVzk8ystCbzFNYOoIuRLku8Zo1yTTCNfpG+WdcXn4SuB2+7iTb/NT43uDA1/LFUwxxDgBgCjWR4fx0SZjv06tmcTWmvvE1TTqTPSlZN08poXEPX7xygSqR1ImNuNp6YmOPHal1gHEvKEE7jmNC/XUdXi37Wh+Jb2s69QpGWSrAPKLOYU3M1mOk5dFxADC39T66Whd5VwRBYTTMyTySVzrxpJs3+2o4v5r3kGDPB3DU3L+Gf7tfqbWr4KivmW6C5Gf+nUpKvRbUNNsVsgRUeW1CZZY0LNg374IFhx2heBmYUfFRwHjxgi0DAqF7GFJ3efhdg0HJhd1m6mSqtYFuwu35X3EsEEPsdtKgS6tozZy189nlRmDbeTZZdt10f+XCxrS4kZfUo3WqP64VSJxjzFbr8p4w1qqacYMuoi0BajqkQRillcQQIhpjkKi7OTkj7zgEV1pUDoMwlIt0TPFDDfQWwqPgC8N2ofv8asWPMLfslb+La+7mVbesgdnjTak+qIP2M1TfPwpdz64y5lJYgD+PqNPKg+CGFfjzEPrwnWtYkINeh6L+K7ZaD0kPHDHXjl42HYxFhbokeuiq5oePTzstCy5CnHXecp2mJ3hT2S5hSkuzG36A23P/fvdUzH5f6FJGPjrunjdQPqjJD31VqyIcZc+eBdylkvkHY9lXApswmLJzWq3CvrcVT8pjxmpFRZ4aZwVBZOVXsMRIyg4dpn167wOYpK3al8wzP7vE+47wgikg44KJRiRZHUxXtOZTZb/92frcy48QlnX3bw/A+ZJY6XppGoVpV7bdxUD+NUN3V/92nLh1+wZK2eXWhIaptIMSvdBSCcphsAQo0gO+FmIGaOwqPR0Ct3ljvhTHINA20rkDhkZXHiBEt12LSn10fybh5ivFspiXnIyxQ/O6wCyEsqSLerr344hWk58PwxpgYAQ==",
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 2,
+          "output_tokens": 348,
+          "cache_creation_tokens": 3760,
+          "cache_read_tokens": 22982,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_018EeRfucvo8nmh7JMHT9iv2",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-24T18:29:50.420896",
+          "completed_at": "2026-07-24T18:29:50.435531",
+          "generation_duration_ms": 14.636225998401642,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_016LgNxUBYWW8GQLSjm8u1fh",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_016LgNxUBYWW8GQLSjm8u1fh"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 13,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_018EeRfucvo8nmh7JMHT9iv2",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-24T18:29:50.476762",
+          "completed_at": "2026-07-24T18:29:53.078064",
+          "generation_duration_ms": 2601.3017639052123,
+          "content_blocks": [
+            {
+              "block_type": "thinking",
+              "sequence": 0,
+              "text": null,
+              "thinking": "Let me read the evaluate capability documentation to understand how to create evaluators properly.",
+              "signature": "EqwCCmcIEBABGAIqQFf5f+x6dPW6NpNQxzQPfgXvD6UY6SD6sfWKrcX3yGK37EPNzGvjL8E1EjDhCG8+a/pvaVoKdepAWeTzXR4xIskyEWNsYXVkZS1zb25uZXQtNC02OABCCHRoaW5raW5nEgxc9/Zy6JMuBXPB5iEaDBFrcFw8Oz3/yDqwwyIwFWfyeMobQDwNKRJWeuo/jI0aj0FDNxnbKd/XUYxlyEOP4ljjoS/qOVQyHj/TJFtGKnMm/WF5CAsY+deXTR7ne5cuZPenzsmk5iwuZGrK/h00chnacdQnNubefQnAAckX7gSP4Bk57asCMxqUw4yQPTaQsPa6X3RonTkQudYlgqObdvmrBwp4GqhU8saQucTzI1reGoLktxkuSS8B/8n/wQAUPh2/GAE=",
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 2,
+          "output_tokens": 52,
+          "cache_creation_tokens": 6262,
+          "cache_read_tokens": 26742,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_0141Y2PvT7TnLoxn5TAZRXZh",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-24T18:29:53.078064",
+          "completed_at": "2026-07-24T18:29:54.005919",
+          "generation_duration_ms": 927.8542851097882,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01Kyq1BJqAyEGEDa48khyTe7",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01Kyq1BJqAyEGEDa48khyTe7"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 61,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_0141Y2PvT7TnLoxn5TAZRXZh",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-24T18:29:54.028383",
+          "completed_at": "2026-07-24T18:29:56.041970",
+          "generation_duration_ms": 2013.5858549037948,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01RJVz2QqSpXzyKXHYQaCLTv",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01RJVz2QqSpXzyKXHYQaCLTv"
+          ],
+          "input_tokens": 1,
+          "output_tokens": 86,
+          "cache_creation_tokens": 3601,
+          "cache_read_tokens": 33004,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_011H3jzMYPw92JZjqK3HAeM5",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-24T18:29:56.050974",
+          "completed_at": "2026-07-24T18:30:04.657876",
+          "generation_duration_ms": 8606.900549028069,
+          "content_blocks": [
+            {
+              "block_type": "thinking",
+              "sequence": 0,
+              "text": null,
+              "thinking": "Now I have all the information I need. Let me plan the full execution:\n\n**Step 1: Scaffold the project**\n- `uip solution init EvalTypeChoice` — creates `EvalTypeChoice/EvalTypeChoice.uipx`\n- `cd EvalTypeChoice && uip maestro flow init EvalTypeChoice` — creates `EvalTypeChoice/EvalTypeChoice/EvalTypeChoice.flow`\n- `uip solution project add EvalTypeChoice --path EvalTypeChoice/EvalTypeChoice` (or similar)\n\n**Step 2: Add evaluators**\n\nGoal A — Free-text reply scoring with paraphrasing tolerance → `llm-judge-output` (semantic similarity, LLM-based, doesn't inspect tool calls)\nGoal B — Structured JSON envelope, deterministic, key ordering and whitespace tolerated → `json-similarity` (tree-based, no LLM, tolerates ordering/minor diffs)\nGoal C — Pass/fail on literal substring presence → `contains` (binary, no LLM)\n\nNow I need to check the commands reference to get the exact syntax for setting up the scaffolding.",
+              "signature": "EuoICmcIEBABGAIqQI82m/eksDj8+0UeubLode45ALpR6Pg9vns7aYlLkXAUaA5exr10P3ZeVBrNJTxsLYpBxn3XMZecGUpIyHSvzvEyEWNsYXVkZS1zb25uZXQtNC02OABCCHRoaW5raW5nEgybuCE0P930aR2sJtsaDILwCqhA4OlJkKr+ZiIwHFlWsUuK//L9P06z4UaexM6E61aL/yz1phGF+/ePKjoo84/DOgVfTfyXl9AqxtPWKrAH00BrQfCZpCPcY/22CtjcQNV+DEIrIJE2bT4uCSmambBTskxFjwHpG2wwOk/2+zFuN4TEdiilv3CQlHQxglKSh/+jWBS3IFIvMhk7egu9wi2D54qkXqXbPvgXyFuOXMHHoa3McXlIMH4+8emA6vaoCkJWdHNjd4Jz1Kp53HmIC6FSOq9LEOqYHfqtUhfiQ03fDMAUlNZM5v6t4IXBVSZo3oFuOvyO2Yu+EVDs3eWxUU23a2CY9OCQ7YO/1W7Jm+Y0ss3MpkVUSNx1rjeiXQtfycN4b5WEU8FxBgjJPTXehe4oaXzEb16NXbslRFJSgk/dgQbCXbk0hrZmcC6fhDU1pSiGwzc1DL2YzKMn/tTrnOhCJbBccf+Pa8X4T81RjcHPXa+ISZ4BrzHosSoPBZ/ghgZtwvQozkUjakzH0R5vqhc7m1ZFkPBpHy30GQ8kX5SHzIQW0ZvhjcbQrygO1/DzzdVFdhD1zyBh+Bi5pZ3wfLlUHMIwDV4qA67AHGTuK02QUapy6K8HEOxccEwcjK572ofIYV7UDZsFew8ZQQns9PG4r0dYVdEL4J5Ctxil+YJ1UUdwTsSJRu7bhqXUcD+MosnZ/c6FJmobkQ1i1FMp4wZyos2d/oIj2yLooHVx9O89QzxwQVeKGLveMs2H/IVwjoPz7uRJgGiQo/ypq9U3OM7/UDi7yD8CS1QLppaRJlrYUn9Vpw+ZqVuN1D07HFUVygwCse28e4bdse0+3iMRqzkAFywCkahFRTQNOIdGzXpEWL/iowijfngaexbbn1l5tZKNtK2NI9yRwRHvVZmPdZnXZS1kKXoeJtUpyPPXB6U2RP1ZjSLWeAx21zvRxk84unaRBG5viszNAoEFYmt+0t2SnFVMX4XbcsoZ+bD0nptbOOjvecZc8JIHPdKFezGpyh8mzw8q4wVGf01xU6RWMPv9dzesWmZlw/PQ+0rvzIL9d2QfUZFlnHB+UG3unNXXaCstmg3w/7f+PlVRJ57y7M0uPjU328xnWyx2ix/YxkF4oLg8X12hmdlnMZd5oMNaG11fX2ptBu8vHYu4ObyIcATJl8rS4R0ILPE/9t5FDIm/RX7OS5mm6JAHpneWw1DmCInzPTA9HoWZk3SiDrZ95vH/nFo7oarWqx01+8BqaKINo1XdXeeFKi3FwbwDInah5jlfDiUyrKp/x9diZIfYo/Ty5x66pj1WIlTowGEDGxSSAIfXoNvTEg/bkyaM58QJCkwvZs0b0qPeg312KK7/iSIYAQ==",
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 1,
+          "output_tokens": 314,
+          "cache_creation_tokens": 2606,
+          "cache_read_tokens": 36605,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_014f5LENjBoYBy2cdByeXr61",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-24T18:30:04.657876",
+          "completed_at": "2026-07-24T18:30:04.678519",
+          "generation_duration_ms": 20.644380943849683,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_014cpRgnVgC4fi2rPxiuLqXY",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_014cpRgnVgC4fi2rPxiuLqXY"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 45,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_014f5LENjBoYBy2cdByeXr61",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-24T18:30:04.695961",
+          "completed_at": "2026-07-24T18:30:49.426406",
+          "generation_duration_ms": 44730.44392000884,
+          "content_blocks": [
+            {
+              "block_type": "thinking",
+              "sequence": 0,
+              "text": null,
+              "thinking": "Now I have all the information I need. Let me plan the full sequence:\n\n1. **Scaffold the solution and flow project** with the double-nested layout `EvalTypeChoice/EvalTypeChoice/EvalTypeChoice.flow`\n   - `uip solution init EvalTypeChoice` (creates `EvalTypeChoice/EvalTypeChoice.uipx`)\n   - `cd EvalTypeChoice && uip maestro flow init EvalTypeChoice` (creates `EvalTypeChoice/EvalTypeChoice.flow`)\n   - `uip solution project add EvalTypeChoice` (links project to solution)\n\n2. **Add evaluators for each goal:**\n   - **Goal A** uses an LLM judge to score the chatbot's free-text greeting against expected output, allowing for paraphrasing without needing to inspect tool calls\n   - **Goal B** uses deterministic JSON similarity scoring to compare structured order details, tolerating minor whitespace and key ordering but requiring exact value matches\n   - **Goal C** is cut off but follows the same pattern of selecting the appropriate evaluator type\n   - **Goal C** is a simple substring check for \"deployment succeeded\" using the `contains` evaluator\n   - The reasoning gets saved to `report.json`\n   - For scaffolding, I need to follow the SKILL.md guidance: create the solution first with `uip solution init EvalTypeChoice`, then set up the flow project and link them together rather than relying on auto-generated naming Writing shell commands...\n\nI'm uncertain about the exact syntax for `uip solution project add` — whether it needs a `--path` flag or how to reference the project directory — so I'm going to check the SKILL.md documentation and the flow initialization reference to confirm the correct command structure before finalizing the script. Continuing with the scaffolding commands, then mapping each evaluator type to its corresponding evaluation strategy—Goal A uses LLM-based judging for free-text responses, Goal B applies JSON similarity matching for structured data validation, and Goal C requires a different approach. I'm looking at the UiPath CLI syntax for adding projects to a solution, then chaining together the initialization commands in sequence—creating the solution, initializing the Flow project within it, and linking the project. After that, I'll set up the evaluators, starting with the llm-judge-output type for the paraphrasing-tolerant scoring.\n\nAdding the remaining evaluators... Writing scaffold and evaluator setup...\n\nI need to be careful with the working directory since it persists between commands, so I'll chain everything in a single bash call to avoid any state issues. Let me verify the exact syntax for `uip solution project add` in the CLI documentation.",
+              "signature": "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",
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 1,
+          "output_tokens": 2362,
+          "cache_creation_tokens": 4891,
+          "cache_read_tokens": 39211,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01KzBHD4R86TxpZir2F3SGWn",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-24T18:30:49.426406",
+          "completed_at": "2026-07-24T18:30:50.938654",
+          "generation_duration_ms": 1512.2480519348755,
+          "content_blocks": [
+            {
+              "block_type": "text",
+              "sequence": 0,
+              "text": "Now I have all the information I need. Let me plan the full execution:\n\n**Goal A** → `llm-judge-output`: free-text paraphrase scoring needs an LLM judge; no tool-call inspection required, so trajectory types are unnecessary overhead.\n\n**Goal B** → `json-similarity`: deterministic tree-based JSON diff with ordering/whitespace tolerance; explicitly \"no LLM\".\n\n**Goal C** → `contains`: literal substring pass/fail; purely deterministic.\n\nLet me quickly check the `uip solution project add` syntax before executing:",
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 0,
+          "output_tokens": 465,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01KzBHD4R86TxpZir2F3SGWn",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-24T18:30:50.938654",
+          "completed_at": "2026-07-24T18:30:52.220113",
+          "generation_duration_ms": 1281.459821970202,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01M5YZvGvdNFqFzsnRrdtMU7",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01M5YZvGvdNFqFzsnRrdtMU7"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 114,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01KzBHD4R86TxpZir2F3SGWn",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-24T18:30:52.240547",
+          "completed_at": "2026-07-24T18:30:53.685323",
+          "generation_duration_ms": 1444.7763179196045,
+          "content_blocks": [
+            {
+              "block_type": "text",
+              "sequence": 0,
+              "text": "Now I have everything I need. Let me execute all three steps:",
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 1,
+          "output_tokens": 43,
+          "cache_creation_tokens": 1635,
+          "cache_read_tokens": 44102,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01QbqTz8BRBXf7VvgM4oHZiV",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-24T18:30:53.685323",
+          "completed_at": "2026-07-24T18:30:55.427123",
+          "generation_duration_ms": 1741.7999320896342,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01LrvqWBsHPGDeBwb9xgQANv",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01LrvqWBsHPGDeBwb9xgQANv"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 86,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01QbqTz8BRBXf7VvgM4oHZiV",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-24T18:30:56.703214",
+          "completed_at": "2026-07-24T18:30:58.539185",
+          "generation_duration_ms": 1835.971588967368,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01Pq2vwJknAeJbpsD2rWvyiv",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01Pq2vwJknAeJbpsD2rWvyiv"
+          ],
+          "input_tokens": 1,
+          "output_tokens": 103,
+          "cache_creation_tokens": 154,
+          "cache_read_tokens": 45737,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01TJQBRpqsp3vut2dK4Tak7h",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-24T18:31:06.521926",
+          "completed_at": "2026-07-24T18:31:09.106114",
+          "generation_duration_ms": 2584.1888670111075,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01SwxewKW4NLvVPvEKoyd8Ax",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01SwxewKW4NLvVPvEKoyd8Ax"
+          ],
+          "input_tokens": 1,
+          "output_tokens": 109,
+          "cache_creation_tokens": 355,
+          "cache_read_tokens": 45891,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01MNZKeYhq59TpGTfThYMSKw",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-24T18:31:10.241977",
+          "completed_at": "2026-07-24T18:31:12.243106",
+          "generation_duration_ms": 2001.129426062107,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01TVYt8gNCBS6wWTTB3A948z",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01TVYt8gNCBS6wWTTB3A948z"
+          ],
+          "input_tokens": 1,
+          "output_tokens": 100,
+          "cache_creation_tokens": 303,
+          "cache_read_tokens": 46246,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_014SzuwpRpAEsD4Q1oXjcaDh",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-24T18:31:12.290235",
+          "completed_at": "2026-07-24T18:31:14.390931",
+          "generation_duration_ms": 2100.695663015358,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_017dgeK532B9UDvzgv876t61",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_017dgeK532B9UDvzgv876t61"
+          ],
+          "input_tokens": 1,
+          "output_tokens": 119,
+          "cache_creation_tokens": 142,
+          "cache_read_tokens": 46549,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01Ms4qUEFGuNXw3SntwPeM1T",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-24T18:31:14.435342",
+          "completed_at": "2026-07-24T18:31:16.966277",
+          "generation_duration_ms": 2530.9351469622925,
+          "content_blocks": [
+            {
+              "block_type": "text",
+              "sequence": 0,
+              "text": "The solution was already auto-registered during `flow init`. The double-nested layout exists: `EvalTypeChoice/EvalTypeChoice/EvalTypeChoice.flow`. Now add all three evaluators in one chained command:",
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 1,
+          "output_tokens": 74,
+          "cache_creation_tokens": 161,
+          "cache_read_tokens": 46691,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01EobyK2QYoZ2UiLVmCgypN7",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-24T18:31:16.966277",
+          "completed_at": "2026-07-24T18:31:20.165933",
+          "generation_duration_ms": 3199.654916068539,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01YBJSNTyM7WwVMQgtjDCRSU",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01YBJSNTyM7WwVMQgtjDCRSU"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 188,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01EobyK2QYoZ2UiLVmCgypN7",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-24T18:31:25.239589",
+          "completed_at": "2026-07-24T18:31:28.944475",
+          "generation_duration_ms": 3704.887286061421,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01Rq8De9vfAv5ttuUP7cv95a",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01Rq8De9vfAv5ttuUP7cv95a"
+          ],
+          "input_tokens": 1,
+          "output_tokens": 264,
+          "cache_creation_tokens": 297,
+          "cache_read_tokens": 46852,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01TnzjFVNUaRGx8LYnj9nweX",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-24T18:31:42.361161",
+          "completed_at": "2026-07-24T18:31:43.857106",
+          "generation_duration_ms": 1495.946089969948,
+          "content_blocks": [
+            {
+              "block_type": "text",
+              "sequence": 0,
+              "text": "All three evaluators added successfully. Now verify and write the report:",
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 1,
+          "output_tokens": 32,
+          "cache_creation_tokens": 297,
+          "cache_read_tokens": 47149,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_0121pCahNkYei2LDBRUpPvYn",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-24T18:31:43.857106",
+          "completed_at": "2026-07-24T18:31:45.236884",
+          "generation_duration_ms": 1379.7768549993634,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_011g7Xa1pyiZKaSzbx69DzJw",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_011g7Xa1pyiZKaSzbx69DzJw"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 132,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_0121pCahNkYei2LDBRUpPvYn",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-24T18:31:49.803921",
+          "completed_at": "2026-07-24T18:31:51.889915",
+          "generation_duration_ms": 2085.9953629551455,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01HhQGB6rpgKkSWsacgYddBx",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01HhQGB6rpgKkSWsacgYddBx"
+          ],
+          "input_tokens": 1,
+          "output_tokens": 140,
+          "cache_creation_tokens": 242,
+          "cache_read_tokens": 47446,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01PBk4HobNtRu8GPcoUxfvQo",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-24T18:31:54.694886",
+          "completed_at": "2026-07-24T18:31:56.214946",
+          "generation_duration_ms": 1520.0605370337144,
+          "content_blocks": [
+            {
+              "block_type": "text",
+              "sequence": 0,
+              "text": "All three evaluators are correctly registered. Now write the report:",
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 1,
+          "output_tokens": 21,
+          "cache_creation_tokens": 404,
+          "cache_read_tokens": 47688,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01EWJYHk6o1mXkTsMuriKLv4",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-24T18:31:56.214946",
+          "completed_at": "2026-07-24T18:32:01.407720",
+          "generation_duration_ms": 5192.773153074086,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01Wabjmym3XSguRNr97dJHE3",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01Wabjmym3XSguRNr97dJHE3"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 294,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01EWJYHk6o1mXkTsMuriKLv4",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-24T18:32:01.425385",
+          "completed_at": "2026-07-24T18:32:08.510635",
+          "generation_duration_ms": 7085.249686962925,
+          "content_blocks": [
+            {
+              "block_type": "text",
+              "sequence": 0,
+              "text": "All done. Here's a summary of what was completed:\n\n---\n\n## Summary\n\n### Step 1 — Project scaffolded\n\n- `uip solution init EvalTypeChoice` created the solution\n- `uip maestro flow init EvalTypeChoice` (run inside the solution dir) produced the double-nested layout:\n  ```\n  EvalTypeChoice/EvalTypeChoice/EvalTypeChoice.flow\n  ```\n- Solution registration was automatic (`Data.SolutionRegistration.Status: Registered`)\n\n### Step 2 — Three evaluators added\n\n| Goal | Evaluator name | `--type` used | Internal type ID |\n|------|---------------|--------------|-----------------|\n| A | `goal-a-evaluator` | `llm-judge-output` | `uipath-llm-judge-output-semantic-similarity` |\n| B | `goal-b-evaluator` | `json-similarity` | `uipath-json-similarity` |\n| C | `goal-c-evaluator` | `contains` | `uipath-contains` |\n\n### Step 3 — `report.json` written\n\n**Goal A → `llm-judge-output`**: Free-text paraphrases need an LLM to judge semantic similarity; deterministic matchers fail on valid rewording, and trajectory types are unnecessary since no tool-call history needs inspection.\n\n**Goal B → `json-similarity`**: A deterministic tree-based comparator with ordering/whitespace tolerance is the right fit for a known structured JSON envelope — no LLM needed.\n\n**Goal C → `contains`**: A literal substring pass/fail (\"deployment succeeded\") is precisely the binary check `contains` is built for.",
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 1,
+          "output_tokens": 392,
+          "cache_creation_tokens": 469,
+          "cache_read_tokens": 48092,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_015AZxYMc8wj2PSyycHjZBW2",
+          "parent_tool_use_id": null
+        }
+      ],
+      "num_turns": 17,
+      "max_turns_exhausted": false,
+      "result_summary": {
+        "is_error": false,
+        "subtype": "success",
+        "stop_reason": "end_turn",
+        "result": "All done. Here's a summary of what was completed:\n\n---\n\n## Summary\n\n### Step 1 — Project scaffolded\n\n- `uip solution init EvalTypeChoice` created the solution\n- `uip maestro flow init EvalTypeChoice` (run inside the solution dir) produced the double-nested layout:\n  ```\n  EvalTypeChoice/EvalTypeChoice/EvalTypeChoice.flow\n  ```\n- Solution registration was automatic (`Data.SolutionRegistration.Status: Registered`)\n\n### Step 2 — Three evaluators added\n\n| Goal | Evaluator name | `--type` used | Internal type ID |\n|------|---------------|--------------|-----------------|\n| A | `goal-a-evaluator` | `llm-judge-output` | `uipath-llm-judge-output-semantic-similarity` |\n| B | `goal-b-evaluator` | `json-similarity` | `uipath-json-similarity` |\n| C | `goal-c-evaluator` | `contains` | `uipath-contains` |\n\n### Step 3 — `report.json` written\n\n**Goal A → `llm-judge-output`**: Free-text paraphrases need an LLM to judge semantic similarity; deterministic matchers fail on valid rewording, and trajectory types are unnecessary since no tool-call history needs inspection.\n\n**Goal B → `json-similarity`**: A deterministic tree-based comparator with ordering/whitespace tolerance is the right fit for a known structured JSON envelope — no LLM needed.\n\n**Goal C → `contains`**: A literal substring pass/fail (\"deployment succeeded\") is precisely the binary check `contains` is built for."
+      },
+      "crashed": false,
+      "crash_reason": null
+    }
+  ],
+  "error_message": null,
+  "error_details": null,
+  "error_log_tail": null,
+  "environment_info": {
+    "git_commit": "unknown",
+    "skills_git_commit": "unknown",
+    "cli_version": "1.199.0-dev.7970",
+    "tool_plugins": {
+      "admin-tool": "1.199.0-dev.7962",
+      "agent-tool": "1.199.0-dev.7965",
+      "agenthub-tool": "1.199.0-dev.7962",
+      "aops-tool": "1.199.0-dev.7962",
+      "api-workflow-tool": "1.199.0-dev.7962",
+      "codedagent-tool": "1.199.0-dev.7965",
+      "codedapp-tool": "1.199.0-dev.7962",
+      "coder-tool": "1.199.0-dev.7962",
+      "context-grounding-tool": "1.199.0-dev.7962",
+      "conversational-tool": "1.199.0-dev.7962",
+      "data-fabric-tool": "1.199.0-dev.7962",
+      "docsai-tool": "1.199.0-dev.7962",
+      "functions-tool": "1.199.0-dev.7962",
+      "gov-tool": "1.199.0-dev.7962",
+      "insights-tool": "1.199.0-dev.7962",
+      "integrationservice-tool": "1.199.0-dev.7962",
+      "ixp-tool": "1.199.0-dev.7962",
+      "llm-gateway-tool": "1.199.0-dev.7962",
+      "llmgw-tool": "1.199.0-dev.7962",
+      "maestro-tool": "1.199.0-dev.7962",
+      "orchestrator-tool": "1.199.0-dev.7962",
+      "platform-tool": "1.199.0-dev.7962",
+      "pm-tool": "1.199.0-dev.7969",
+      "rpa-legacy-tool": "1.199.0-dev.7962",
+      "rpa-tool": "1.199.0-dev.20260722.4",
+      "solution-tool": "1.199.0-dev.7962",
+      "tasks-tool": "1.199.0-dev.7962",
+      "test-manager-tool": "1.199.0-dev.7962",
+      "traces-tool": "1.199.0-dev.7962",
+      "vertical-solutions-tool": "1.199.0-dev.7962"
+    },
+    "coder_eval": "0.8.8",
+    "claude_code_cli": "2.1.177 (Claude Code)",
+    "uv": "uv 0.11.28 (x86_64-unknown-linux-gnu)",
+    "anthropic": "0.102.0",
+    "openai": "2.47.0",
+    "pydantic": "2.12.5",
+    "api_routing": "aws_bedrock",
+    "aws_region": "us-east-2",
+    "bedrock_model": "us.anthropic.claude-sonnet-4-6"
+  },
+  "agent_config": {
+    "type": "claude-code",
+    "model": "claude-sonnet-4-6",
+    "permission_mode": "acceptEdits",
+    "allowed_tools": [
+      "Skill",
+      "Bash",
+      "Read",
+      "Write",
+      "Edit",
+      "Glob",
+      "Grep"
+    ],
+    "disallowed_tools": null,
+    "plugins": [
+      {
+        "type": "local",
+        "path": "/home/azureuser/projects/skills/"
+      }
+    ],
+    "system_prompt": "You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted.\n",
+    "system_prompt_file": null,
+    "ignore_patterns": [],
+    "claude_settings": null,
+    "sdk_options": {},
+    "setting_sources": null
+  },
+  "sdk_options": {
+    "tools": null,
+    "allowed_tools": [
+      "Skill",
+      "Bash",
+      "Read",
+      "Write",
+      "Edit",
+      "Glob",
+      "Grep"
+    ],
+    "system_prompt": "You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted.\n",
+    "mcp_servers": {},
+    "strict_mcp_config": false,
+    "permission_mode": "acceptEdits",
+    "continue_conversation": false,
+    "resume": null,
+    "session_id": null,
+    "max_turns": 50,
+    "max_budget_usd": null,
+    "disallowed_tools": [
+      "ToolSearch"
+    ],
+    "model": "us.anthropic.claude-sonnet-4-6",
+    "fallback_model": null,
+    "betas": [],
+    "permission_prompt_tool_name": null,
+    "cwd": "/work/output/artifacts/skill-flow-eval-evaluator-type-choice",
+    "cli_path": null,
+    "settings": null,
+    "add_dirs": [],
+    "env": {
+      "PATH": "/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+      "PLUGIN_TOOLS_DIR": "/usr/lib/node_modules/@uipath",
+      "CLAUDE_CODE_USE_BEDROCK": "1",
+      "AWS_BEARER_TOKEN_BEDROCK": "***REDACTED***",
+      "AWS_REGION": "us-east-2",
+      "CLAUDE_CODE_ATTRIBUTION_HEADER": "0",
+      "ANTHROPIC_MODEL": "us.anthropic.claude-sonnet-4-6",
+      "ANTHROPIC_SMALL_FAST_MODEL": "us.anthropic.claude-sonnet-4-6"
+    },
+    "extra_args": {},
+    "max_buffer_size": null,
+    "can_use_tool": null,
+    "hooks": null,
+    "user": null,
+    "include_partial_messages": true,
+    "include_hook_events": false,
+    "fork_session": false,
+    "agents": null,
+    "setting_sources": [
+      "project"
+    ],
+    "skills": null,
+    "sandbox": null,
+    "plugins": [
+      {
+        "type": "local",
+        "path": "/home/azureuser/projects/skills"
+      }
+    ],
+    "max_thinking_tokens": null,
+    "thinking": null,
+    "effort": null,
+    "output_format": null,
+    "enable_file_checkpointing": false,
+    "session_store": null,
+    "session_store_flush": "batched",
+    "load_timeout_ms": 60000,
+    "task_budget": null
+  },
+  "sandbox_path": "/work/output/artifacts/skill-flow-eval-evaluator-type-choice",
+  "task_config": {
+    "resolved": {
+      "task_id": "skill-flow-eval-evaluator-type-choice",
+      "description": "Smoke test: agent is given three evaluation goals and must pick the correct `--type` value for each, then actually create the evaluators via `uip maestro flow eval evaluator add` so the skill is genuinely invoked (not just self-reported). Tests that the evaluator taxonomy is internalized — natural-language similarity → llm-judge-output, deterministic JSON shape similarity → json-similarity, substring presence → contains. The `command_executed` regexes pin each `--type` value, so the agent has to both pick correctly and run the CLI to pass.\n",
+      "initial_prompt": "Scaffold a\nproject and add three evaluators — one per goal — picking the correct\n`--type` for each.\n\nStep 1 — scaffold the project so `--path` resolves:\n  Solution `EvalTypeChoice`, Flow project `EvalTypeChoice`, double-nested\n  layout `EvalTypeChoice/EvalTypeChoice/EvalTypeChoice.flow`. Link via\n  `uip solution project add`.\n\nStep 2 — for each goal, decide the right `--type` (kebab-case, from the\nseven valid values: `exact-match`, `json-similarity`, `contains`,\n`llm-judge-output`, `llm-judge-strict-json`, `llm-judge-trajectory`,\n`llm-judge-trajectory-simulation`) and add the evaluator with that type:\n\n  Goal A — `goal-a-evaluator`: score a chatbot's free-text reply against\n    an expected greeting, allowing for paraphrasing (e.g. \"Hi Alice!\"\n    vs expected \"Hello, Alice!\"). The judge does not need to inspect\n    tool calls.\n\n  Goal B — `goal-b-evaluator`: score a flow that emits a structured JSON\n    envelope of order details. Expected output is a known object; key\n    ordering and minor whitespace tolerated, but values must match.\n    Deterministic — no LLM.\n\n  Goal C — `goal-c-evaluator`: pass-fail on whether the flow's response\n    contains the literal substring \"deployment succeeded\" anywhere in\n    the output.\n\nStep 3 — save your reasoning to `report.json` in the working directory:\n\n  {\n    \"goal_a_type\": \"<the --type you used for goal A>\",\n    \"goal_a_reason\": \"<one short sentence>\",\n    \"goal_b_type\": \"<the --type you used for goal B>\",\n    \"goal_b_reason\": \"<one short sentence>\",\n    \"goal_c_type\": \"<the --type you used for goal C>\",\n    \"goal_c_reason\": \"<one short sentence>\"\n  }\n\nImportant:\n- Use `--output json` on every `uip maestro flow eval ...` command.\n- For LLM-judge evaluators, pass `--model gpt-4.1-2025-04-14`.\n- Do NOT call `uip login`. Do NOT call `uip solution upload`. Do NOT call\n  `uip maestro flow eval run *`. Local CRUD only.\n",
+      "initial_prompt_file": null,
+      "tags": [
+        "uipath-maestro-flow",
+        "smoke",
+        "mode:build",
+        "lifecycle:discover",
+        "feature:eval"
+      ],
+      "skip": false,
+      "agent": {
+        "type": "claude-code",
+        "model": "claude-sonnet-4-6",
+        "permission_mode": "acceptEdits",
+        "allowed_tools": [
+          "Skill",
+          "Bash",
+          "Read",
+          "Write",
+          "Edit",
+          "Glob",
+          "Grep"
+        ],
+        "disallowed_tools": null,
+        "plugins": [
+          {
+            "type": "local",
+            "path": "/home/azureuser/projects/skills/"
+          }
+        ],
+        "system_prompt": "You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted.\n",
+        "system_prompt_file": null,
+        "ignore_patterns": [],
+        "claude_settings": null,
+        "sdk_options": {},
+        "setting_sources": null
+      },
+      "sandbox": {
+        "driver": "tempdir",
+        "docker": {
+          "image": "skills-image:latest",
+          "dockerfile_path": null,
+          "build": {
+            "buildkit": null,
+            "args": {},
+            "secrets": [],
+            "extra_args": []
+          },
+          "network": "bridge",
+          "working_dir": null,
+          "env_passthrough": [
+            "ANTHROPIC_API_KEY",
+            "API_BACKEND",
+            "UIPATH_LLM_BACKEND",
+            "UIPATH_ACCESS_TOKEN",
+            "UIPATH_URL",
+            "UIPATH_TENANT_ID",
+            "UIPATH_ORGANIZATION_ID",
+            "UIPATH_CLI_DISABLE_VERSION_SYNC",
+            "AWS_BEARER_TOKEN_BEDROCK",
+            "AWS_REGION",
+            "BEDROCK_MODEL",
+            "CLAUDE_CODE_USE_BEDROCK",
+            "ANTHROPIC_MODEL",
+            "CODEX_API_KEY",
+            "CODEX_BASE_URL",
+            "CODEX_MODEL",
+            "GEMINI_API_KEY",
+            "ANTIGRAVITY_MODEL",
+            "HOME"
+          ],
+          "env_passthrough_extra": [
+            "SKILLS_REPO_PATH",
+            "BEDROCK_MODEL",
+            "TASK_PARALLELISM",
+            "UIPATH_CLI_ENABLE_ENV_AUTH",
+            "UIPATH_CLI_AUTH_TOKEN",
+            "UIPATH_CLI_ORGANIZATION_NAME",
+            "UIPATH_CLI_ORGANIZATION_ID",
+            "UIPATH_CLI_TENANT_NAME",
+            "UIPATH_CLI_TENANT_ID",
+            "TRACES_SMOKE_PROCESS_KEY",
+            "CODEX_API_KEY",
+            "CODEX_BASE_URL"
+          ],
+          "extra_mounts": [
+            "~/.uipath:/.uipath:rw"
+          ]
+        },
+        "python": {
+          "env_packages": []
+        },
+        "node": null,
+        "limits": {
+          "timeout": 300,
+          "max_memory_mb": null,
+          "max_cpus": null,
+          "max_pids": null,
+          "max_disk_mb": null
+        },
+        "template_sources": null,
+        "mock_path_dirs": null,
+        "ignore_patterns": []
+      },
+      "success_criteria": [
+        {
+          "type": "command_executed",
+          "description": "Agent created the solution",
+          "weight": 1.0,
+          "pass_threshold": 0.0,
+          "suite_thresholds": null,
+          "stop_when": null,
+          "tool_name": "Bash",
+          "command_pattern": "(uip|\\$UIP)\\s+solution\\s+(new|init)",
+          "min_count": 1,
+          "max_count": null,
+          "require_success": false,
+          "exclude_pattern": null
+        },
+        {
+          "type": "command_executed",
+          "description": "Agent initialized the Flow project",
+          "weight": 1.0,
+          "pass_threshold": 1.0,
+          "suite_thresholds": null,
+          "stop_when": null,
+          "tool_name": "Bash",
+          "command_pattern": "(uip|\\$UIP)\\s+(maestro\\s+)?flow\\s+init",
+          "min_count": 1,
+          "max_count": null,
+          "require_success": false,
+          "exclude_pattern": null
+        },
+        {
+          "type": "command_executed",
+          "description": "Goal A — agent ran evaluator add with --type llm-judge-output",
+          "weight": 3.0,
+          "pass_threshold": 1.0,
+          "suite_thresholds": null,
+          "stop_when": null,
+          "tool_name": "Bash",
+          "command_pattern": "(uip|\\$UIP)\\s+maestro\\s+flow\\s+eval\\s+evaluator\\s+add\\s+.*--type\\s+llm-judge-output",
+          "min_count": 1,
+          "max_count": null,
+          "require_success": false,
+          "exclude_pattern": null
+        },
+        {
+          "type": "command_executed",
+          "description": "Goal B — agent ran evaluator add with --type json-similarity",
+          "weight": 3.0,
+          "pass_threshold": 1.0,
+          "suite_thresholds": null,
+          "stop_when": null,
+          "tool_name": "Bash",
+          "command_pattern": "(uip|\\$UIP)\\s+maestro\\s+flow\\s+eval\\s+evaluator\\s+add\\s+.*--type\\s+json-similarity",
+          "min_count": 1,
+          "max_count": null,
+          "require_success": false,
+          "exclude_pattern": null
+        },
+        {
+          "type": "command_executed",
+          "description": "Goal C — agent ran evaluator add with --type contains",
+          "weight": 3.0,
+          "pass_threshold": 1.0,
+          "suite_thresholds": null,
+          "stop_when": null,
+          "tool_name": "Bash",
+          "command_pattern": "(uip|\\$UIP)\\s+maestro\\s+flow\\s+eval\\s+evaluator\\s+add\\s+.*--type\\s+contains",
+          "min_count": 1,
+          "max_count": null,
+          "require_success": false,
+          "exclude_pattern": null
+        },
+        {
+          "type": "file_exists",
+          "description": "report.json was created (reasoning artifact)",
+          "weight": 0.5,
+          "pass_threshold": 1.0,
+          "suite_thresholds": null,
+          "stop_when": null,
+          "path": "report.json"
+        },
+        {
+          "type": "run_command",
+          "description": "report.json reasoning matches the chosen types",
+          "weight": 3.0,
+          "pass_threshold": 1.0,
+          "suite_thresholds": null,
+          "stop_when": null,
+          "command": "python3 $TASK_DIR/check_type_choice.py",
+          "timeout": 10,
+          "expected_exit_code": 0,
+          "expected_stdout": null,
+          "stdout_match": "exact",
+          "score_from_stdout": false
+        }
+      ],
+      "run_limits": {
+        "max_turns": 50,
+        "expected_turns": 15,
+        "task_timeout": 900,
+        "turn_timeout": 900,
+        "max_input_tokens": null,
+        "max_output_tokens": null,
+        "max_total_tokens": null,
+        "max_usd": null,
+        "count_cached_input": false,
+        "count_cache_creation": false,
+        "stop_early": false
+      },
+      "reference": null,
+      "expected_commands": null,
+      "pre_run": [],
+      "post_run": [
+        {
+          "command": "find . -maxdepth 5 -type d \\( -name node_modules -o -name .npm-prefix -o -name .venv \\) -prune -exec rm -rf {} +",
+          "timeout": 30
+        }
+      ],
+      "dataset": null,
+      "suite_id": null,
+      "row_id": null,
+      "simulation": null
+    },
+    "source_yaml": "task_id: skill-flow-eval-evaluator-type-choice\ndescription: >\n  Smoke test: agent is given three evaluation goals and must pick the correct\n  `--type` value for each, then actually create the evaluators via\n  `uip maestro flow eval evaluator add` so the skill is genuinely invoked\n  (not just self-reported). Tests that the evaluator taxonomy is internalized\n  — natural-language similarity → llm-judge-output, deterministic JSON shape\n  similarity → json-similarity, substring presence → contains. The\n  `command_executed` regexes pin each `--type` value, so the agent has to\n  both pick correctly and run the CLI to pass.\ntags: [uipath-maestro-flow, smoke, mode:build, lifecycle:discover, feature:eval]\n\nrun_limits:\n  expected_turns: 15\n  max_turns: 50\n\ninitial_prompt: |\n  Scaffold a\n  project and add three evaluators — one per goal — picking the correct\n  `--type` for each.\n\n  Step 1 — scaffold the project so `--path` resolves:\n    Solution `EvalTypeChoice`, Flow project `EvalTypeChoice`, double-nested\n    layout `EvalTypeChoice/EvalTypeChoice/EvalTypeChoice.flow`. Link via\n    `uip solution project add`.\n\n  Step 2 — for each goal, decide the right `--type` (kebab-case, from the\n  seven valid values: `exact-match`, `json-similarity`, `contains`,\n  `llm-judge-output`, `llm-judge-strict-json`, `llm-judge-trajectory`,\n  `llm-judge-trajectory-simulation`) and add the evaluator with that type:\n\n    Goal A — `goal-a-evaluator`: score a chatbot's free-text reply against\n      an expected greeting, allowing for paraphrasing (e.g. \"Hi Alice!\"\n      vs expected \"Hello, Alice!\"). The judge does not need to inspect\n      tool calls.\n\n    Goal B — `goal-b-evaluator`: score a flow that emits a structured JSON\n      envelope of order details. Expected output is a known object; key\n      ordering and minor whitespace tolerated, but values must match.\n      Deterministic — no LLM.\n\n    Goal C — `goal-c-evaluator`: pass-fail on whether the flow's response\n      contains the literal substring \"deployment succeeded\" anywhere in\n      the output.\n\n  Step 3 — save your reasoning to `report.json` in the working directory:\n\n    {\n      \"goal_a_type\": \"<the --type you used for goal A>\",\n      \"goal_a_reason\": \"<one short sentence>\",\n      \"goal_b_type\": \"<the --type you used for goal B>\",\n      \"goal_b_reason\": \"<one short sentence>\",\n      \"goal_c_type\": \"<the --type you used for goal C>\",\n      \"goal_c_reason\": \"<one short sentence>\"\n    }\n\n  Important:\n  - Use `--output json` on every `uip maestro flow eval ...` command.\n  - For LLM-judge evaluators, pass `--model gpt-4.1-2025-04-14`.\n  - Do NOT call `uip login`. Do NOT call `uip solution upload`. Do NOT call\n    `uip maestro flow eval run *`. Local CRUD only.\n\nsuccess_criteria:\n  - type: command_executed\n    description: \"Agent created the solution\"\n    tool_name: \"Bash\"\n    command_pattern: '(uip|\\$UIP)\\s+solution\\s+(new|init)'\n    min_count: 1\n    weight: 1.0\n    pass_threshold: 0.0  # advisory: init auto-scaffolds the parent solution (CLI #2470)\n\n  - type: command_executed\n    description: \"Agent initialized the Flow project\"\n    tool_name: \"Bash\"\n    command_pattern: '(uip|\\$UIP)\\s+(maestro\\s+)?flow\\s+init'\n    min_count: 1\n    weight: 1.0\n    pass_threshold: 1.0\n\n  - type: command_executed\n    description: \"Goal A — agent ran evaluator add with --type llm-judge-output\"\n    tool_name: \"Bash\"\n    command_pattern: '(uip|\\$UIP)\\s+maestro\\s+flow\\s+eval\\s+evaluator\\s+add\\s+.*--type\\s+llm-judge-output'\n    min_count: 1\n    weight: 3.0\n    pass_threshold: 1.0\n\n  - type: command_executed\n    description: \"Goal B — agent ran evaluator add with --type json-similarity\"\n    tool_name: \"Bash\"\n    command_pattern: '(uip|\\$UIP)\\s+maestro\\s+flow\\s+eval\\s+evaluator\\s+add\\s+.*--type\\s+json-similarity'\n    min_count: 1\n    weight: 3.0\n    pass_threshold: 1.0\n\n  - type: command_executed\n    description: \"Goal C — agent ran evaluator add with --type contains\"\n    tool_name: \"Bash\"\n    command_pattern: '(uip|\\$UIP)\\s+maestro\\s+flow\\s+eval\\s+evaluator\\s+add\\s+.*--type\\s+contains'\n    min_count: 1\n    weight: 3.0\n    pass_threshold: 1.0\n\n  - type: file_exists\n    description: \"report.json was created (reasoning artifact)\"\n    path: \"report.json\"\n    weight: 0.5\n    pass_threshold: 1.0\n\n  - type: run_command\n    description: \"report.json reasoning matches the chosen types\"\n    command: \"python3 $TASK_DIR/check_type_choice.py\"\n    timeout: 10\n    expected_exit_code: 0\n    weight: 3.0\n    pass_threshold: 1.0\n",
+    "source_file": "/home/azureuser/projects/skills/tests/tasks/uipath-maestro-flow/evaluate/task.yaml",
+    "lineage": {
+      "agent.type": {
+        "value": "claude-code",
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.permission_mode": {
+        "value": "acceptEdits",
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.model": {
+        "value": "claude-sonnet-4-6",
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.allowed_tools": {
+        "value": [
+          "Skill",
+          "Bash",
+          "Read",
+          "Write",
+          "Edit",
+          "Glob",
+          "Grep"
+        ],
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.plugins": {
+        "value": [
+          {
+            "type": "local",
+            "path": "/home/azureuser/projects/skills/"
+          }
+        ],
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.ignore_patterns": {
+        "value": [],
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.system_prompt": {
+        "value": "You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted.\n",
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "run_limits.max_turns": {
+        "value": 50,
+        "source": "task",
+        "source_detail": null
+      },
+      "run_limits.task_timeout": {
+        "value": 900,
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "run_limits.turn_timeout": {
+        "value": 900,
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "run_limits.expected_turns": {
+        "value": 15,
+        "source": "task",
+        "source_detail": null
+      },
+      "sandbox.driver": {
+        "value": "docker",
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "sandbox.docker": {
+        "value": {
+          "image": "skills-image:latest",
+          "env_passthrough_extra": [
+            "SKILLS_REPO_PATH",
+            "BEDROCK_MODEL",
+            "TASK_PARALLELISM",
+            "UIPATH_CLI_ENABLE_ENV_AUTH",
+            "UIPATH_CLI_AUTH_TOKEN",
+            "UIPATH_CLI_ORGANIZATION_NAME",
+            "UIPATH_CLI_ORGANIZATION_ID",
+            "UIPATH_CLI_TENANT_NAME",
+            "UIPATH_CLI_TENANT_ID",
+            "TRACES_SMOKE_PROCESS_KEY",
+            "CODEX_API_KEY",
+            "CODEX_BASE_URL"
+          ],
+          "extra_mounts": [
+            "~/.uipath:/.uipath:rw"
+          ]
+        },
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "repeats": {
+        "value": 5,
+        "source": "cli",
+        "source_detail": null
+      }
+    }
+  },
+  "command_stats": {
+    "total_commands": 15,
+    "commands_by_tool": {
+      "Skill": 1,
+      "Read": 4,
+      "Bash": 9,
+      "Write": 1
+    },
+    "total_command_time_ms": 36462.928198161535,
+    "avg_command_time_ms": 2430.8618798774355,
+    "slowest_commands": [
+      {
+        "tool": "Bash",
+        "duration_ms": 13415.52754107397,
+        "parameters": {
+          "command": "\\\nuip maestro flow eval evaluator add goal-b-evaluator \\\n  --type json-similarity \\\n  --description \"Deterministic tree-based JSON comparison for structured order-detail envelopes\" \\\n  --path EvalTypeChoice --output json 2>&1 | grep -E '\"Result\"|\"Code\"' && \\\nuip maestro flow eval evaluator add goal-c-evaluator \\\n  --type contains \\\n  --description \"Pass/fail check whether the output contains the literal substring 'deployment succeeded'\" \\\n  --path EvalTypeChoice --output json 2>&1 | grep -E '\"Result\"|\"Code\"'",
+          "description": "Add goal-b-evaluator (json-similarity) and goal-c-evaluator (contains)"
+        },
+        "tool_id": "toolu_bdrk_01Rq8De9vfAv5ttuUP7cv95a"
+      },
+      {
+        "tool": "Bash",
+        "duration_ms": 7982.525305007584,
+        "parameters": {
+          "command": "cd EvalTypeChoice && uip maestro flow init EvalTypeChoice --output json 2>&1 | head -10",
+          "description": "Scaffold the flow project inside the solution"
+        },
+        "tool_id": "toolu_bdrk_01Pq2vwJknAeJbpsD2rWvyiv"
+      },
+      {
+        "tool": "Bash",
+        "duration_ms": 5073.63548502326,
+        "parameters": {
+          "command": "cd /work/output/artifacts/skill-flow-eval-evaluator-type-choice/EvalTypeChoice && \\\nuip maestro flow eval evaluator add goal-a-evaluator \\\n  --type llm-judge-output \\\n  --model gpt-4.1-2025-04-14 \\\n  --description \"Score free-text chatbot greeting replies for semantic similarity against expected greeting\" \\\n  --path EvalTypeChoice --output json 2>&1 | grep -E '\"Result\"|\"Code\"|\"name\"|\"evaluatorTypeId\"'",
+          "description": "Add goal-a-evaluator (llm-judge-output)"
+        },
+        "tool_id": "toolu_bdrk_01YBJSNTyM7WwVMQgtjDCRSU"
+      },
+      {
+        "tool": "Bash",
+        "duration_ms": 4567.016746033914,
+        "parameters": {
+          "command": "uip maestro flow eval evaluator list --path EvalTypeChoice --output json 2>&1 | python3 -c \"\nimport json, sys\ndata = json.load(sys.stdin)\nfor e in data['Data']:\n    print(e['name'], '->', e['evaluatorTypeId'])\n\"",
+          "description": "List evaluators to confirm all three are registered"
+        },
+        "tool_id": "toolu_bdrk_011g7Xa1pyiZKaSzbx69DzJw"
+      },
+      {
+        "tool": "Bash",
+        "duration_ms": 2804.7399680363014,
+        "parameters": {
+          "command": "uip maestro flow eval evaluator list --path EvalTypeChoice --output json 2>&1 | python3 -c \"\nimport json, sys\ndata = json.load(sys.stdin)\nprint(json.dumps(data['Data'], indent=2))\n\" | head -40",
+          "description": "Inspect evaluator list structure"
+        },
+        "tool_id": "toolu_bdrk_01HhQGB6rpgKkSWsacgYddBx"
+      }
+    ],
+    "successful_commands": 13,
+    "failed_commands": 2,
+    "unknown_commands": 0,
+    "success_rate": 86.66666666666667,
+    "most_common_sequence": "Bash → Bash → Bash"
+  },
+  "total_token_usage": {
+    "uncached_input_tokens": 18,
+    "output_tokens": 5957,
+    "cache_creation_input_tokens": 25579,
+    "cache_read_input_tokens": 670987,
+    "total_cost_usd": 0.38662634999999995,
+    "input_tokens": 696584
+  },
+  "total_assistant_turns": 25,
+  "expected_commands": null,
+  "actual_commands": 15,
+  "commands_efficiency": null,
+  "pre_run_results": [],
+  "post_run_results": [
+    {
+      "command": "find . -maxdepth 5 -type d \\( -name node_modules -o -name .npm-prefix -o -name .venv \\) -prune -exec rm -rf {} +",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "",
+      "duration_seconds": 0.030746936798095703,
+      "error": null
+    }
+  ],
+  "simulation": null,
+  "early_stop": null
+}

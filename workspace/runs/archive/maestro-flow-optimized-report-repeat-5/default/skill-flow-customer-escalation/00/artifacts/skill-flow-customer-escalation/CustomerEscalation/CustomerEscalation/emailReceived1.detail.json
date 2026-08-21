@@ -1,0 +1,6 @@
+{
+  "_note": "PENDING CONFIGURATION: Run `uip maestro flow node configure CustomerEscalation.flow emailReceived1 --detail \"$(cat emailReceived1.detail.json)\"` after creating an Outlook IS connection",
+  "connectionId": "<OUTLOOK_CONNECTION_ID>",
+  "folderKey": "<OUTLOOK_FOLDER_KEY>",
+  "eventMode": "polling"
+}

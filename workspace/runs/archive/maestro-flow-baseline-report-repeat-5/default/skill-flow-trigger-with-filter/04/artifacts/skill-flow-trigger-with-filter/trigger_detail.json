@@ -1,0 +1,75 @@
+{
+  "_comment": [
+    "Planned --detail payload for: uip maestro flow node configure GoodDayFlow.flow emailReceived1 --detail ...",
+    "No live connection is available in this sandbox, so connectionId and folderKey are placeholders.",
+    "Steps to complete before running node configure:",
+    "  1. uip login",
+    "  2. uip is connections list uipath-microsoft-outlook365 --all-folders --output json",
+    "     → pick an enabled connection; capture its Id → replace <YOUR_CONNECTION_ID>",
+    "  3. uip login status --output json  (grab folderKey of target Orchestrator folder → replace <YOUR_FOLDER_KEY>)",
+    "  4. (optional) resolve parentFolderId for a non-Inbox folder:",
+    "       uip is resources run list uipath-microsoft-outlook365 MailFolder --connection-id <ID> --output json",
+    "       → capture the Id for the desired folder → set in eventParameters.parentFolderId",
+    "  5. Run node configure with this file:",
+    "       uip maestro flow node configure GoodDayFlow.flow emailReceived1 --detail \"$(cat trigger_detail.json | python3 -c 'import json,sys; d=json.load(sys.stdin); del d[\"_comment\"]; del d[\"_schema_notes\"]; print(json.dumps(d))')\" --output json"
+  ],
+  "_schema_notes": {
+    "connectorKey": "uipath-microsoft-outlook365",
+    "triggerNodeType": "uipath.connector.trigger.uipath-microsoft-outlook365.email-received",
+    "nodeId": "emailReceived1",
+    "activityType": "CuratedTrigger",
+    "eventOperation": "EMAIL_RECEIVED",
+    "objectName": "Message",
+    "eventModeSource": "definition.form.componentProps.connectorDetail.configuration",
+    "filterFieldsSource": "registry get --connection-id <id> → filterFields.fields (requires live connection)",
+    "knownFilterFields": [
+      {
+        "id": "from",
+        "displayName": "From address",
+        "type": "string",
+        "note": "Sender email address — use Equals operator"
+      },
+      {
+        "id": "subject",
+        "displayName": "Subject",
+        "type": "string",
+        "note": "Email subject line — use Contains operator"
+      }
+    ]
+  },
+
+  "connectionId": "<YOUR_CONNECTION_ID>",
+  "folderKey": "<YOUR_FOLDER_KEY>",
+
+  "eventMode": "polling",
+
+  "eventParameters": {
+    "parentFolderId": "<INBOX_FOLDER_ID_OR_OMIT_FOR_DEFAULT_INBOX>"
+  },
+
+  "filter": {
+    "groupOperator": 0,
+    "index": 0,
+    "filters": [
+      {
+        "id": "from",
+        "operator": "Equals",
+        "value": {
+          "value": "abc@xyz.com",
+          "rawString": "\"abc@xyz.com\"",
+          "isLiteral": true
+        }
+      },
+      {
+        "id": "subject",
+        "operator": "Contains",
+        "value": {
+          "value": "good day",
+          "rawString": "\"good day\"",
+          "isLiteral": true
+        }
+      }
+    ],
+    "groups": []
+  }
+}

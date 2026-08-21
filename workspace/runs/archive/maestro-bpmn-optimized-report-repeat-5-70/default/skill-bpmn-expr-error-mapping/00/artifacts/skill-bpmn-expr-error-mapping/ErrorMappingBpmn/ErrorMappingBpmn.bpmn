@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+    xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+    xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+    xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+    xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:uipath="http://uipath.org/schema/bpmn"
+    id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn"
+    exporter="UiPath (https://bpmn.uipath.com)" exporterVersion="1.0">
+
+  <!-- Error declared at definitions level; errorCode drives uipath:errorMapping condition -->
+  <bpmn:error id="Error_ServiceUnavailable" name="ServiceUnavailable" errorCode="SERVICE_UNAVAILABLE" />
+
+  <bpmn:process id="Process_1" isExecutable="true">
+    <bpmn:extensionElements>
+      <uipath:migrationVersion version="11.5" />
+      <uipath:variables version="v1">
+        <uipath:inputOutput id="Var_JobResponse" name="JobResponse" type="object" />
+      </uipath:variables>
+    </bpmn:extensionElements>
+
+    <!-- Manual (none) start event -->
+    <bpmn:startEvent id="Start_1" name="Start">
+      <bpmn:outgoing>Flow_StartToTask</bpmn:outgoing>
+    </bpmn:startEvent>
+
+    <!-- Service task: Orchestrator.StartJob template, filled with synthetic placeholders -->
+    <!-- Error-handling metadata (uipath:retry + uipath:errorMapping) added per structural-bpmn.md REGISTRY GAP -->
+    <bpmn:serviceTask id="Task_InvokeService" name="Invoke Downstream Service">
+      <bpmn:extensionElements>
+        <uipath:activity version="v1">
+          <uipath:type value="Orchestrator.StartJob" version="v1" />
+          <uipath:context>
+            <uipath:input name="releaseKey" value="placeholder-release-key" />
+            <uipath:input name="folderId" value="placeholder-folder-id" />
+            <uipath:input name="folderPath" value="placeholder-folder-path" />
+            <uipath:input name="name" value="placeholder-job-name" />
+          </uipath:context>
+          <uipath:input name="JobArguments" type="json" target="bodyField"><![CDATA[{}]]></uipath:input>
+          <uipath:output name="Process response" type="Orchestrator.RunJob" var="Var_JobResponse" />
+        </uipath:activity>
+        <uipath:retry maxRetryCount="2" retryBackoff="PT30S" retryBackoffType="exponential"
+                      maxDuration="PT5M" exponentialBase="2" retryAllErrors="false">
+          <uipath:errorDefinition errorRef="Error_ServiceUnavailable" />
+        </uipath:retry>
+        <uipath:errorMapping version="v1">
+          <uipath:error id="Mapped_ServiceUnavailable" errorRef="Error_ServiceUnavailable"
+                        priority="1" condition="=vars.error.code == &quot;SERVICE_UNAVAILABLE&quot;"
+                        detail="The downstream service is unavailable" retryable="true" />
+        </uipath:errorMapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_StartToTask</bpmn:incoming>
+      <bpmn:outgoing>Flow_TaskToEnd</bpmn:outgoing>
+    </bpmn:serviceTask>
+
+    <!-- None end event -->
+    <bpmn:endEvent id="End_1" name="End">
+      <bpmn:incoming>Flow_TaskToEnd</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <bpmn:sequenceFlow id="Flow_StartToTask" sourceRef="Start_1" targetRef="Task_InvokeService" />
+    <bpmn:sequenceFlow id="Flow_TaskToEnd" sourceRef="Task_InvokeService" targetRef="End_1" />
+  </bpmn:process>
+
+  <!-- BPMNDiagram placeholder - will be replaced by generate_diagram.py -->
+
+  <bpmndi:BPMNDiagram id="Diagram_1">
+    <bpmndi:BPMNPlane id="Plane_1" bpmnElement="Process_1">
+      <bpmndi:BPMNShape id="S_End_1" bpmnElement="End_1"><dc:Bounds x="416" y="100" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Start_1" bpmnElement="Start_1"><dc:Bounds x="160" y="100" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Task_InvokeService" bpmnElement="Task_InvokeService"><dc:Bounds x="256" y="100" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="E_Flow_StartToTask" bpmnElement="Flow_StartToTask"><di:waypoint x="178" y="118" /><di:waypoint x="306" y="140" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_TaskToEnd" bpmnElement="Flow_TaskToEnd"><di:waypoint x="306" y="140" /><di:waypoint x="434" y="118" /></bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

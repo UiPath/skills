@@ -1,0 +1,11 @@
+{
+  "name": "DiceRollerBpmn",
+  "description": "Rolls a fair six-sided die and routes to a high (>= 4) or low branch.",
+  "projectVersion": "1.0.0",
+  "runtimeOptions": {
+    "autoDispose": true
+  },
+  "entryPoints": [
+    "DiceRollerBpmn.bpmn"
+  ]
+}

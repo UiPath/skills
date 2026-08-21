@@ -1,0 +1,16 @@
+{
+  "_comment": "PLANNED CONFIGURATION — no Microsoft Teams IS connection exists in this tenant. Run `uip is connections create uipath-microsoft-teams` (interactive OAuth) to create one, resolve the placeholder values below via `uip is resources run list` against the real connection, then run `uip maestro flow node configure RequiredGroupsTest.flow replyToChannelMessage1 --detail '<this JSON minus this comment>'`.",
+  "connectionId": "<TEAMS_CONNECTION_ID>",
+  "folderKey": "<TEAMS_CONNECTION_FOLDER_KEY>",
+  "method": "POST",
+  "endpoint": "/normalised-teams/{team_id}/channels/{channel_id}/messages/{message_id}/replies-v2/drive/item",
+  "pathParameters": {
+    "team_id": "<TEAM_ID>",
+    "channel_id": "<CHANNEL_ID>",
+    "message_id": "<MESSAGE_ID>"
+  },
+  "bodyParameters": {
+    "body.content": "Here are the requested files.",
+    "attachmentIds": "=js:(['<SHAREPOINT_FILE_ID_1>', '<SHAREPOINT_FILE_ID_2>'])"
+  }
+}

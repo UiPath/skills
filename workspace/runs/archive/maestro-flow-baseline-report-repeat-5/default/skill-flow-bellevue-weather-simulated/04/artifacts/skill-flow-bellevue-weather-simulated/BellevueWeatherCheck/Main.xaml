@@ -1,0 +1,171 @@
+<Activity mc:Ignorable="sap sap2010" x:Class="Main" mva:VisualBasic.Settings="{x:Null}"
+xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities"
+xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+xmlns:mva="clr-namespace:Microsoft.VisualBasic.Activities;assembly=System.Activities"
+xmlns:sap="http://schemas.microsoft.com/netfx/2009/xaml/activities/presentation"
+xmlns:sap2010="http://schemas.microsoft.com/netfx/2010/xaml/activities/presentation"
+xmlns:sco="clr-namespace:System.Collections.ObjectModel;assembly=mscorlib"
+xmlns:ui="http://schemas.uipath.com/workflow/activities"
+xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <TextExpression.NamespacesForImplementation>
+        <sco:Collection x:TypeArguments="x:String">
+            <x:String>System.Activities</x:String>
+            <x:String>System.Activities.Statements</x:String>
+            <x:String>System.Activities.Expressions</x:String>
+            <x:String>System.Activities.Validation</x:String>
+            <x:String>System.Activities.XamlIntegration</x:String>
+            <x:String>Microsoft.VisualBasic</x:String>
+            <x:String>Microsoft.VisualBasic.Activities</x:String>
+            <x:String>System</x:String>
+            <x:String>System.Collections</x:String>
+            <x:String>System.Collections.Generic</x:String>
+            <x:String>System.Collections.ObjectModel</x:String>
+            <x:String>System.Data</x:String>
+            <x:String>System.Diagnostics</x:String>
+            <x:String>System.Drawing</x:String>
+            <x:String>System.IO</x:String>
+            <x:String>System.Linq</x:String>
+            <x:String>System.Net.Mail</x:String>
+            <x:String>System.Xml</x:String>
+            <x:String>System.Xml.Linq</x:String>
+            <x:String>UiPath.Core</x:String>
+            <x:String>UiPath.Core.Activities</x:String>
+            <x:String>System.Windows.Markup</x:String>
+        </sco:Collection>
+    </TextExpression.NamespacesForImplementation>
+    <TextExpression.ReferencesForImplementation>
+        <sco:Collection x:TypeArguments="AssemblyReference">
+            <AssemblyReference>System.Activities</AssemblyReference>
+            <AssemblyReference>Microsoft.VisualBasic</AssemblyReference>
+            <AssemblyReference>System.Private.CoreLib</AssemblyReference>
+            <AssemblyReference>mscorlib</AssemblyReference>
+            <AssemblyReference>System.Data</AssemblyReference>
+            <AssemblyReference>System.Data.Common</AssemblyReference>
+            <AssemblyReference>System</AssemblyReference>
+            <AssemblyReference>System.Linq</AssemblyReference>
+            <AssemblyReference>System.Drawing</AssemblyReference>
+            <AssemblyReference>System.Drawing.Primitives</AssemblyReference>
+            <AssemblyReference>System.Drawing.Common</AssemblyReference>
+            <AssemblyReference>System.Core</AssemblyReference>
+            <AssemblyReference>System.Xml</AssemblyReference>
+            <AssemblyReference>System.Xml.Linq</AssemblyReference>
+            <AssemblyReference>System.Xaml</AssemblyReference>
+            <AssemblyReference>UiPath.System.Activities</AssemblyReference>
+            <AssemblyReference>UiPath.UiAutomation.Activities</AssemblyReference>
+            <AssemblyReference>System.Data.DataSetExtensions</AssemblyReference>
+            <AssemblyReference>System.Net.Mail</AssemblyReference>
+        </sco:Collection>
+    </TextExpression.ReferencesForImplementation>
+    <Sequence DisplayName="Main Sequence" sap2010:WorkflowViewState.IdRef="Sequence_1">
+        <Sequence.Variables>
+            <Variable x:TypeArguments="x:Double" Name="temperature" />
+            <Variable x:TypeArguments="x:String" Name="condition" />
+            <Variable x:TypeArguments="x:Double" Name="windSpeed" />
+            <Variable x:TypeArguments="x:Boolean" Name="isNiceDay" />
+        </Sequence.Variables>
+
+        <!-- Step 1: Log start -->
+        <ui:LogMessage Level="Info" DisplayName="Log: Fetching Weather">
+            <ui:LogMessage.Message>
+                <InArgument x:TypeArguments="x:Object">
+                    <VisualBasicValue x:TypeArguments="x:Object" ExpressionText="&quot;[BellevueWeatherCheck] Fetching simulated weather data for Bellevue, WA...&quot;" />
+                </InArgument>
+            </ui:LogMessage.Message>
+        </ui:LogMessage>
+
+        <!-- Step 2: Simulate weather data (replace with a real HTTP call to a weather API in production) -->
+        <Assign x:TypeArguments="x:Double" DisplayName="Assign: Temperature = 72 F">
+            <Assign.To>
+                <OutArgument x:TypeArguments="x:Double">
+                    <VisualBasicReference x:TypeArguments="x:Double" ExpressionText="temperature" />
+                </OutArgument>
+            </Assign.To>
+            <Assign.Value>
+                <InArgument x:TypeArguments="x:Double">
+                    <VisualBasicValue x:TypeArguments="x:Double" ExpressionText="72.0" />
+                </InArgument>
+            </Assign.Value>
+        </Assign>
+
+        <Assign x:TypeArguments="x:String" DisplayName="Assign: Condition = Sunny">
+            <Assign.To>
+                <OutArgument x:TypeArguments="x:String">
+                    <VisualBasicReference x:TypeArguments="x:String" ExpressionText="condition" />
+                </OutArgument>
+            </Assign.To>
+            <Assign.Value>
+                <InArgument x:TypeArguments="x:String">
+                    <VisualBasicValue x:TypeArguments="x:String" ExpressionText="&quot;Sunny&quot;" />
+                </InArgument>
+            </Assign.Value>
+        </Assign>
+
+        <Assign x:TypeArguments="x:Double" DisplayName="Assign: Wind Speed = 8 mph">
+            <Assign.To>
+                <OutArgument x:TypeArguments="x:Double">
+                    <VisualBasicReference x:TypeArguments="x:Double" ExpressionText="windSpeed" />
+                </OutArgument>
+            </Assign.To>
+            <Assign.Value>
+                <InArgument x:TypeArguments="x:Double">
+                    <VisualBasicValue x:TypeArguments="x:Double" ExpressionText="8.0" />
+                </InArgument>
+            </Assign.Value>
+        </Assign>
+
+        <!-- Step 3: Log the raw weather values -->
+        <ui:LogMessage Level="Info" DisplayName="Log: Weather Data">
+            <ui:LogMessage.Message>
+                <InArgument x:TypeArguments="x:Object">
+                    <VisualBasicValue x:TypeArguments="x:Object" ExpressionText="&quot;Bellevue weather - Temp: &quot; &amp; temperature &amp; &quot;F | Condition: &quot; &amp; condition &amp; &quot; | Wind: &quot; &amp; windSpeed &amp; &quot; mph&quot;" />
+                </InArgument>
+            </ui:LogMessage.Message>
+        </ui:LogMessage>
+
+        <!-- Step 4: Evaluate nice-day criteria: 60-85 F, Sunny or Partly Cloudy, wind under 20 mph -->
+        <Assign x:TypeArguments="x:Boolean" DisplayName="Assign: Evaluate Is Nice Day">
+            <Assign.To>
+                <OutArgument x:TypeArguments="x:Boolean">
+                    <VisualBasicReference x:TypeArguments="x:Boolean" ExpressionText="isNiceDay" />
+                </OutArgument>
+            </Assign.To>
+            <Assign.Value>
+                <InArgument x:TypeArguments="x:Boolean">
+                    <VisualBasicValue x:TypeArguments="x:Boolean" ExpressionText="temperature >= 60.0 AndAlso temperature &lt;= 85.0 AndAlso (condition = &quot;Sunny&quot; OrElse condition = &quot;Partly Cloudy&quot;) AndAlso windSpeed &lt; 20.0" />
+                </InArgument>
+            </Assign.Value>
+        </Assign>
+
+        <!-- Step 5: Report verdict -->
+        <If DisplayName="Is It a Nice Day?">
+            <If.Condition>
+                <InArgument x:TypeArguments="x:Boolean">
+                    <VisualBasicValue x:TypeArguments="x:Boolean" ExpressionText="isNiceDay" />
+                </InArgument>
+            </If.Condition>
+            <If.Then>
+                <Sequence DisplayName="Then">
+                    <ui:LogMessage Level="Info" DisplayName="Log: YES - Nice Day">
+                        <ui:LogMessage.Message>
+                            <InArgument x:TypeArguments="x:Object">
+                                <VisualBasicValue x:TypeArguments="x:Object" ExpressionText="&quot;RESULT: YES - It is a nice day in Bellevue! Enjoy &quot; &amp; condition &amp; &quot; skies at &quot; &amp; temperature &amp; &quot;F with a light &quot; &amp; windSpeed &amp; &quot; mph breeze.&quot;" />
+                            </InArgument>
+                        </ui:LogMessage.Message>
+                    </ui:LogMessage>
+                </Sequence>
+            </If.Then>
+            <If.Else>
+                <Sequence DisplayName="Else">
+                    <ui:LogMessage Level="Warn" DisplayName="Log: NO - Not a Nice Day">
+                        <ui:LogMessage.Message>
+                            <InArgument x:TypeArguments="x:Object">
+                                <VisualBasicValue x:TypeArguments="x:Object" ExpressionText="&quot;RESULT: NO - Not the nicest day in Bellevue. &quot; &amp; condition &amp; &quot; skies at &quot; &amp; temperature &amp; &quot;F with &quot; &amp; windSpeed &amp; &quot; mph winds.&quot;" />
+                            </InArgument>
+                        </ui:LogMessage.Message>
+                    </ui:LogMessage>
+                </Sequence>
+            </If.Else>
+        </If>
+
+    </Sequence>
+</Activity>

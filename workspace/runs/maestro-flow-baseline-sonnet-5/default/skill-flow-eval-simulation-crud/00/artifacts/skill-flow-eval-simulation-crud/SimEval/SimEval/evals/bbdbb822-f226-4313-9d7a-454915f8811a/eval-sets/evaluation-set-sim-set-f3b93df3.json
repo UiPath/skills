@@ -1,0 +1,41 @@
+{
+  "version": "1.0",
+  "id": "f3b93df3-1daa-44da-abbf-fac102cd126b",
+  "name": "Sim Set",
+  "evaluatorRefs": [],
+  "evaluations": [
+    {
+      "id": "623cbe1b-f17d-42a7-ac4b-32b24d802fdd",
+      "name": "hello",
+      "inputs": {
+        "name": "Alice"
+      },
+      "expectedOutput": {
+        "greeting": "Hello, Alice!"
+      },
+      "evaluationCriterias": {},
+      "createdAt": "2026-08-18T21:46:24.773Z",
+      "updatedAt": "2026-08-18T21:46:40.905Z",
+      "simulations": [
+        {
+          "componentId": "agent-lookup",
+          "componentType": "agent",
+          "simulationStrategy": "Llm",
+          "simulationInstruction": "Return a plausible lookup result.",
+          "outputSchema": {
+            "type": "object",
+            "properties": {
+              "result": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "selectedEntrypoint": "start",
+  "fileName": "evaluation-set-sim-set-f3b93df3.json",
+  "createdAt": "2026-08-18T21:46:15.027Z",
+  "updatedAt": "2026-08-18T21:46:53.036Z"
+}

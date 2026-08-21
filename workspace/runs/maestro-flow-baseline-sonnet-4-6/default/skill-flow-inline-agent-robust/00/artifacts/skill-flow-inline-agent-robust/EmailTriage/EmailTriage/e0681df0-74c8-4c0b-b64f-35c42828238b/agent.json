@@ -1,0 +1,83 @@
+{
+  "version": "1.1.0",
+  "settings": {
+    "model": "anthropic.claude-sonnet-4-6",
+    "maxTokens": 64000,
+    "temperature": 0,
+    "engine": "basic-v2",
+    "maxIterations": 3,
+    "mode": "standard"
+  },
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "start__output__subject": {
+        "type": "string",
+        "description": "Email subject line"
+      },
+      "start__output__body": {
+        "type": "string",
+        "description": "Email body text"
+      }
+    }
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "category": {
+        "type": "string",
+        "description": "Support category: Billing, Technical, Account, Product, or General"
+      },
+      "priority": {
+        "type": "string",
+        "description": "Urgency level: Critical, High, Medium, or Low"
+      }
+    },
+    "required": [
+      "category",
+      "priority"
+    ]
+  },
+  "metadata": {
+    "storageVersion": "50.0.0",
+    "isConversational": false,
+    "showProjectCreationExperience": false
+  },
+  "type": "lowCode",
+  "guardrails": [],
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a support email triage specialist. Your task is to classify inbound support emails into a category and a priority level.\n\nCategories (pick exactly one):\n- Billing: payment issues, invoices, refunds, subscription changes\n- Technical: bugs, errors, performance problems, integration failures\n- Account: login, password reset, access permissions, profile changes\n- Product: feature questions, how-to guidance, product feedback\n- General: anything that does not fit the above categories\n\nPriority levels (pick exactly one):\n- Critical: system down, data loss, security breach, complete service failure\n- High: major feature broken, significant business impact, time-sensitive deadline\n- Medium: partial degradation, workaround available, moderate business impact\n- Low: general inquiry, cosmetic issue, future feature request\n\nRules:\n- Base your classification solely on the email subject and body provided.\n- If the email is ambiguous, assign the most likely category and a lower priority.\n- Always return both fields. Never end a run without a determination.\n- Return your answer as a JSON object with exactly two fields: category and priority.",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "You are a support email triage specialist. Your task is to classify inbound support emails into a category and a priority level.\n\nCategories (pick exactly one):\n- Billing: payment issues, invoices, refunds, subscription changes\n- Technical: bugs, errors, performance problems, integration failures\n- Account: login, password reset, access permissions, profile changes\n- Product: feature questions, how-to guidance, product feedback\n- General: anything that does not fit the above categories\n\nPriority levels (pick exactly one):\n- Critical: system down, data loss, security breach, complete service failure\n- High: major feature broken, significant business impact, time-sensitive deadline\n- Medium: partial degradation, workaround available, moderate business impact\n- Low: general inquiry, cosmetic issue, future feature request\n\nRules:\n- Base your classification solely on the email subject and body provided.\n- If the email is ambiguous, assign the most likely category and a lower priority.\n- Always return both fields. Never end a run without a determination.\n- Return your answer as a JSON object with exactly two fields: category and priority."
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "Subject: {{input.start__output__subject}}\n\nBody:\n{{input.start__output__body}}",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "Subject: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__subject"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\nBody:\n"
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__body"
+        }
+      ]
+    }
+  ],
+  "projectId": "e0681df0-74c8-4c0b-b64f-35c42828238b"
+}

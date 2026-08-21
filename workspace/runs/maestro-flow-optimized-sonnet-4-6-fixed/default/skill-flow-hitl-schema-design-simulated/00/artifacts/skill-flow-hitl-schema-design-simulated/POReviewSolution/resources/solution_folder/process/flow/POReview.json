@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "POReview",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "f5602a03-b3ee-4ac8-b180-40e0d1b56a2e",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "POReview"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Flow",
+      "name": "POReview",
+      "package": {
+        "key": "ba9ae04d-8144-40c6-acb0-f6cdd5971847"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "a1c62842-7f41-43ec-9448-de7a013e182f",
+    "files": []
+  }
+}

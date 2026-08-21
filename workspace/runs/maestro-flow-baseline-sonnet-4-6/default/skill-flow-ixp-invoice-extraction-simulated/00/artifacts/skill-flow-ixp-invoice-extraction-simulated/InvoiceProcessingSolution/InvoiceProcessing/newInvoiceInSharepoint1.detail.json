@@ -1,0 +1,16 @@
+{
+  "_comment": "PLANNED CONFIGURATION — run 'uip maestro flow node configure InvoiceProcessing.flow newInvoiceInSharepoint1 --detail \"$(cat newInvoiceInSharepoint1.detail.json | python3 -c import sys,json,d=json.load(sys.stdin);del d[\"_comment\"];print(json.dumps(d))')' once IT provisions the SharePoint connection.",
+  "connectionId": "<SHAREPOINT_CONNECTION_UUID>",
+  "folderKey": "<SHAREPOINT_FOLDER_KEY_UUID>",
+  "eventMode": "polling",
+  "queryParameters": {
+    "driveId": "<SHAREPOINT_DRIVE_ID>",
+    "folderId": "<NEW_VENDOR_FOLDER_ID>"
+  },
+  "_open_questions": [
+    "connectionId: IT must create a 'Microsoft OneDrive & SharePoint' connection in Integration Service and supply its UUID",
+    "folderKey: The Orchestrator folder key (UUID) for the folder that owns the connection",
+    "driveId: The SharePoint site drive ID — IT can retrieve from the SharePoint site URL",
+    "folderId: The item ID of the 'New Vendor' folder within the drive"
+  ]
+}

@@ -1,0 +1,238 @@
+{
+  "Result": "Success",
+  "Code": "RegistrySearchSuccess",
+  "Data": {
+    "ExtensionTypes": [
+      {
+        "ExtensionType": "Orchestrator.StartAgentJob",
+        "Label": "Start and wait for agent",
+        "BpmnElement": "bpmn:ServiceTask",
+        "ExtensionTag": "uipath:activity",
+        "InputPattern": "mergedBody",
+        "BindingPattern": "process",
+        "RequiresDiscovery": "Yes"
+      },
+      {
+        "ExtensionType": "Intsvc.AsyncExecution",
+        "Label": "Start and wait for external agent",
+        "BpmnElement": "bpmn:ServiceTask",
+        "ExtensionTag": "uipath:activity",
+        "InputPattern": "separateInputs",
+        "BindingPattern": "connection",
+        "RequiresDiscovery": "Yes"
+      },
+      {
+        "ExtensionType": "Intsvc.SyncAgentExecution",
+        "Label": "Start and wait for external agent",
+        "BpmnElement": "bpmn:ServiceTask",
+        "ExtensionTag": "uipath:activity",
+        "InputPattern": "separateInputs",
+        "BindingPattern": "connection",
+        "RequiresDiscovery": "Yes"
+      },
+      {
+        "ExtensionType": "Intsvc.AsyncAgentExecution",
+        "Label": "Start and wait for external agent",
+        "BpmnElement": "bpmn:ServiceTask",
+        "ExtensionTag": "uipath:activity",
+        "InputPattern": "separateInputs",
+        "BindingPattern": "connection",
+        "RequiresDiscovery": "Yes"
+      },
+      {
+        "ExtensionType": "Orchestrator.StartAgenticProcess",
+        "Label": "Start and wait for agentic process",
+        "BpmnElement": "bpmn:CallActivity",
+        "ExtensionTag": "uipath:activity",
+        "InputPattern": "mergedBody",
+        "BindingPattern": "process",
+        "RequiresDiscovery": "Yes"
+      },
+      {
+        "ExtensionType": "Orchestrator.StartAgenticProcessAsync",
+        "Label": "Start agentic process",
+        "BpmnElement": "bpmn:CallActivity",
+        "ExtensionTag": "uipath:activity",
+        "InputPattern": "mergedBody",
+        "BindingPattern": "process",
+        "RequiresDiscovery": "Yes"
+      },
+      {
+        "ExtensionType": "A2A.AgentExecution",
+        "Label": "Start and wait for A2A agent",
+        "BpmnElement": "bpmn:ServiceTask",
+        "ExtensionTag": "uipath:activity",
+        "InputPattern": "mergedBody",
+        "BindingPattern": "none",
+        "RequiresDiscovery": "No"
+      }
+    ],
+    "Connectors": [],
+    "Processes": [
+      {
+        "Name": "Agentic Process",
+        "ProcessKey": "CM-Golden-Expense-Reporting-Manual.agentic.Agentic.Process",
+        "ProcessVersion": "1.0.5",
+        "PackageProcessKey": "CM-Golden-Expense-Reporting-Manual.agentic.Agentic.Process:1.0.5",
+        "ReleaseKey": "FC9D430F-177E-4B35-BEC1-13DA8892BE7D",
+        "Type": "ProcessOrchestration",
+        "Folder": "Shared/uipath-maestro-case/CM-Golden-Expense-Reporting-Manual-Test",
+        "FolderKey": "a4696f90-4054-4785-8757-44af322a054c",
+        "FeedId": "001c61d7-2108-4130-b7ff-198c88ecbf79"
+      },
+      {
+        "Name": "Agentic Process",
+        "ProcessKey": "CM-Golden-Expense-Reporting-Manual.agentic.Agentic.Process",
+        "ProcessVersion": "1.0.6",
+        "PackageProcessKey": "CM-Golden-Expense-Reporting-Manual.agentic.Agentic.Process:1.0.6",
+        "ReleaseKey": "7D01A11A-C8A3-41B0-B30F-F65C4D7DDBB9",
+        "Type": "ProcessOrchestration",
+        "Folder": "Shared/uipath-maestro-case/CM-Golden-Expense-Reporting-106",
+        "FolderKey": "32204ea1-4659-425b-a793-2266e2995e67",
+        "FeedId": "001c61d7-2108-4130-b7ff-198c88ecbf79"
+      },
+      {
+        "Name": "ProcurementProcess",
+        "ProcessKey": "ProcurementProcess.agentic.ProcurementProcess",
+        "ProcessVersion": "1.0.0",
+        "PackageProcessKey": "ProcurementProcess.agentic.ProcurementProcess:1.0.0",
+        "ReleaseKey": "4FC450AB-89BE-4462-8FC8-21AC4C1D6FB9",
+        "Type": "ProcessOrchestration",
+        "Folder": "Shared/uipath-agents/ProcurementProcess",
+        "FolderKey": "a596fcef-dafc-4738-be29-256038fc090f",
+        "FeedId": "001c61d7-2108-4130-b7ff-198c88ecbf79"
+      },
+      {
+        "Name": "Agent",
+        "ProcessKey": "CM-Golden-Expense-Reporting-Manual.agent.Agent",
+        "ProcessVersion": "1.0.5",
+        "PackageProcessKey": "CM-Golden-Expense-Reporting-Manual.agent.Agent:1.0.5",
+        "ReleaseKey": "86E7DD8A-3BAC-44FC-8088-97B348CF4E24",
+        "Type": "Agent",
+        "Folder": "Shared/uipath-maestro-case/CM-Golden-Expense-Reporting-Manual-Test",
+        "FolderKey": "a4696f90-4054-4785-8757-44af322a054c",
+        "FeedId": "001c61d7-2108-4130-b7ff-198c88ecbf79"
+      },
+      {
+        "Name": "Agent",
+        "ProcessKey": "CM-Golden-Expense-Reporting-Manual.agent.Agent",
+        "ProcessVersion": "1.0.6",
+        "PackageProcessKey": "CM-Golden-Expense-Reporting-Manual.agent.Agent:1.0.6",
+        "ReleaseKey": "CCF5793F-54AB-4262-BF44-FCD09A52ED4E",
+        "Type": "Agent",
+        "Folder": "Shared/uipath-maestro-case/CM-Golden-Expense-Reporting-106",
+        "FolderKey": "32204ea1-4659-425b-a793-2266e2995e67",
+        "FeedId": "001c61d7-2108-4130-b7ff-198c88ecbf79"
+      },
+      {
+        "Name": "CountLetters",
+        "ProcessKey": "CountLetters.CodedAgent.agent.CountLetters",
+        "ProcessVersion": "1.0.0",
+        "PackageProcessKey": "CountLetters.CodedAgent.agent.CountLetters:1.0.0",
+        "ReleaseKey": "19677045-6C7C-406F-BE8B-48BD1EB06414",
+        "Type": "Agent",
+        "Folder": "Shared/uipath-maestro-flow/CountLetters CodedAgent",
+        "FolderKey": "6702a83b-9f53-4d14-a55a-534a39479b26",
+        "FeedId": "001c61d7-2108-4130-b7ff-198c88ecbf79"
+      },
+      {
+        "Name": "CountLetters",
+        "ProcessKey": "CountLetters.CodedAgent.agent.CountLetters",
+        "ProcessVersion": "1.0.0",
+        "PackageProcessKey": "CountLetters.CodedAgent.agent.CountLetters:1.0.0",
+        "ReleaseKey": "F5CC005E-4DAA-4E32-B6A5-2ECB536D4361",
+        "Type": "Agent",
+        "Folder": "Shared",
+        "FolderKey": "c4359cde-55f0-4f0e-9322-c6cdce74ab4c",
+        "FeedId": "001c61d7-2108-4130-b7ff-198c88ecbf79"
+      },
+      {
+        "Name": "CountLetters LowCode Agent",
+        "ProcessKey": "CountLetters.LowCode.agent.CountLetters.LowCode.Agent",
+        "ProcessVersion": "1.0.0",
+        "PackageProcessKey": "CountLetters.LowCode.agent.CountLetters.LowCode.Agent:1.0.0",
+        "ReleaseKey": "6A47DC5B-5FD4-461F-B97D-6C1817ABCAAA",
+        "Type": "Agent",
+        "Folder": "Shared/uipath-maestro-flow/CountLetters LowCode",
+        "FolderKey": "6d7d6de4-31dd-49e1-b774-1405890df355",
+        "FeedId": "001c61d7-2108-4130-b7ff-198c88ecbf79"
+      },
+      {
+        "Name": "EmailDrafter",
+        "ProcessKey": "EmailDrafter.agent.EmailDrafter",
+        "ProcessVersion": "1.0.0",
+        "PackageProcessKey": "EmailDrafter.agent.EmailDrafter:1.0.0",
+        "ReleaseKey": "EF305CB4-8922-4847-AB77-F89D841A4575",
+        "Type": "Agent",
+        "Folder": "Shared/uipath-agents/EmailDrafter",
+        "FolderKey": "aa2fb329-d5e0-4eee-95b7-c7b5c369991b",
+        "FeedId": "001c61d7-2108-4130-b7ff-198c88ecbf79"
+      },
+      {
+        "Name": "tone-classifier-svc",
+        "ProcessKey": "tone-classifier-svc",
+        "ProcessVersion": "1.0.1782806075",
+        "PackageProcessKey": "tone-classifier-svc:1.0.1782806075",
+        "ReleaseKey": "DA209502-4799-4586-B0FD-DCD3C67B9652",
+        "Type": "Agent",
+        "Folder": "Shared",
+        "FolderKey": "c4359cde-55f0-4f0e-9322-c6cdce74ab4c",
+        "FeedId": "001c61d7-2108-4130-b7ff-198c88ecbf79"
+      },
+      {
+        "Name": "traces-smoke-agent",
+        "ProcessKey": "traces-smoke-agent",
+        "ProcessVersion": "0.5.0",
+        "PackageProcessKey": "traces-smoke-agent:0.5.0",
+        "ReleaseKey": "B1DEAFC2-D50A-4817-A2D1-69FCE43B97C6",
+        "Type": "Agent",
+        "Folder": "Shared/uipath-platform",
+        "FolderKey": "6cd43909-9841-4275-a72e-1d4b6a76e6b7",
+        "FeedId": "001c61d7-2108-4130-b7ff-198c88ecbf79"
+      },
+      {
+        "Name": "traces-smoke-v3",
+        "ProcessKey": "traces-smoke-v2",
+        "ProcessVersion": "0.0.1",
+        "PackageProcessKey": "traces-smoke-v2:0.0.1",
+        "ReleaseKey": "BF544B24-9133-41B5-9361-4F9F75C64467",
+        "Type": "Agent",
+        "Folder": "Shared/uipath-platform",
+        "FolderKey": "6cd43909-9841-4275-a72e-1d4b6a76e6b7",
+        "FeedId": "001c61d7-2108-4130-b7ff-198c88ecbf79"
+      },
+      {
+        "Name": "Task agentic case",
+        "ProcessKey": "CM-Golden-Expense-Reporting-Manual.caseManagement.Task.agentic.case",
+        "ProcessVersion": "1.0.5",
+        "PackageProcessKey": "CM-Golden-Expense-Reporting-Manual.caseManagement.Task.agentic.case:1.0.5",
+        "ReleaseKey": "D8F91594-E958-4B28-94EA-3990641AF15B",
+        "Type": "CaseManagement",
+        "Folder": "Shared/uipath-maestro-case/CM-Golden-Expense-Reporting-Manual-Test",
+        "FolderKey": "a4696f90-4054-4785-8757-44af322a054c",
+        "FeedId": "001c61d7-2108-4130-b7ff-198c88ecbf79"
+      },
+      {
+        "Name": "Task agentic case",
+        "ProcessKey": "CM-Golden-Expense-Reporting-Manual.caseManagement.Task.agentic.case",
+        "ProcessVersion": "1.0.6",
+        "PackageProcessKey": "CM-Golden-Expense-Reporting-Manual.caseManagement.Task.agentic.case:1.0.6",
+        "ReleaseKey": "DEECAE87-CE5A-4351-B777-92348AFF3226",
+        "Type": "CaseManagement",
+        "Folder": "Shared/uipath-maestro-case/CM-Golden-Expense-Reporting-106",
+        "FolderKey": "32204ea1-4659-425b-a793-2266e2995e67",
+        "FeedId": "001c61d7-2108-4130-b7ff-198c88ecbf79"
+      }
+    ],
+    "ProcessesByType": {
+      "Process": 0,
+      "ProcessOrchestration": 3,
+      "Agent": 9,
+      "Flow": 0,
+      "Api": 0,
+      "Function": 0,
+      "CaseManagement": 2,
+      "BusinessRules": 0
+    }
+  }
+}

@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+    xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+    xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+    xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+    xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:uipath="http://uipath.org/schema/bpmn"
+    id="Definitions_ScriptNormalizer" targetNamespace="http://bpmn.io/schema/bpmn"
+    exporter="UiPath (https://bpmn.uipath.com)" exporterVersion="1.0">
+  <bpmn:process id="Process_ScriptNormalizer" isExecutable="true">
+    <bpmn:extensionElements>
+      <uipath:migrationVersion version="11.5" />
+      <uipath:variables version="v1">
+        <uipath:inputOutput id="Var_RawRequest" name="rawRequest" type="string" elementId="Start_Manual" />
+        <uipath:inputOutput id="Var_NormalizedResponse" name="normalizedResponse" type="json" />
+      </uipath:variables>
+    </bpmn:extensionElements>
+    <bpmn:startEvent id="Start_Manual" name="Manual Start">
+      <bpmn:extensionElements>
+        <uipath:entryPointId value="a6052f28-a91c-4bef-86d1-474b0a537420" />
+      </bpmn:extensionElements>
+      <bpmn:outgoing>Flow_ToNormalize</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:scriptTask id="Task_NormalizeRequest" name="Normalize Request" scriptFormat="JavaScript">
+      <bpmn:extensionElements>
+        <uipath:scriptVersion value="v3" />
+        <uipath:mapping version="v1">
+          <uipath:type value="BPMN.ScriptTask" version="v1" />
+          <uipath:input name="args" type="json" target="bodyField"><![CDATA[{"rawRequest":"=vars.Var_RawRequest"}]]></uipath:input>
+          <uipath:output name="normalizedResponse" type="json" var="Var_NormalizedResponse" source="=result.response" />
+        </uipath:mapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_ToNormalize</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToSuccess</bpmn:outgoing>
+      <bpmn:script><![CDATA[
+var parsed;
+try {
+  parsed = (typeof rawRequest === "string") ? JSON.parse(rawRequest) : (rawRequest || {});
+} catch (e) {
+  parsed = {};
+}
+if (typeof parsed !== "object" || parsed === null) {
+  parsed = {};
+}
+
+function toStr(value, fallback) {
+  if (value === undefined || value === null) {
+    return fallback;
+  }
+  return String(value);
+}
+
+var requestId = toStr(parsed.requestId, "unknown");
+var method = toStr(parsed.method, "GET").toUpperCase();
+var path = toStr(parsed.path, "/");
+if (path.charAt(0) !== "/") {
+  path = "/" + path;
+}
+
+var headers = (parsed.headers && typeof parsed.headers === "object") ? parsed.headers : {};
+var body = (parsed.body === undefined) ? null : parsed.body;
+var isValid = requestId !== "unknown" && path.length > 1;
+
+var normalized = {
+  requestId: requestId,
+  method: method,
+  path: path,
+  headers: headers,
+  body: body,
+  isValid: isValid
+};
+
+return { response: normalized };
+]]></bpmn:script>
+    </bpmn:scriptTask>
+    <bpmn:endEvent id="End_Success" name="Success">
+      <bpmn:incoming>Flow_ToSuccess</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_ToNormalize" sourceRef="Start_Manual" targetRef="Task_NormalizeRequest" />
+    <bpmn:sequenceFlow id="Flow_ToSuccess" sourceRef="Task_NormalizeRequest" targetRef="End_Success" />
+  </bpmn:process>
+
+  <bpmndi:BPMNDiagram id="Diagram_1">
+    <bpmndi:BPMNPlane id="Plane_1" bpmnElement="Process_ScriptNormalizer">
+      <bpmndi:BPMNShape id="S_End_Success" bpmnElement="End_Success"><dc:Bounds x="416" y="100" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Start_Manual" bpmnElement="Start_Manual"><dc:Bounds x="160" y="100" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Task_NormalizeRequest" bpmnElement="Task_NormalizeRequest"><dc:Bounds x="256" y="100" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="E_Flow_ToNormalize" bpmnElement="Flow_ToNormalize"><di:waypoint x="178" y="118" /><di:waypoint x="306" y="140" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_ToSuccess" bpmnElement="Flow_ToSuccess"><di:waypoint x="306" y="140" /><di:waypoint x="434" y="118" /></bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

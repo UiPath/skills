@@ -1,0 +1,452 @@
+{
+  "task_id": "skill-bpmn-contract-variant-wrappers",
+  "task_description": "XML contract eval: agent authors public-safe Maestro BPMN wrappers for documented Orchestrator, A2A, queue, business-rule, call-activity, message-event, case-management, wait-event, migration, and preserve-only extension variants.\n",
+  "variant_id": "default",
+  "agent_type": "claude-code",
+  "model_used": "claude-sonnet-4-6",
+  "started_at": "2026-07-21T00:52:25.406184",
+  "completed_at": "2026-07-21T01:07:26.700922",
+  "duration_seconds": 901.2947459220886,
+  "final_status": "TIMEOUT",
+  "max_turns_exhausted": false,
+  "weighted_score": 0.0,
+  "iteration_count": 1,
+  "success_criteria_results": [],
+  "iterations": [],
+  "error_message": "Task timed out after 900s",
+  "error_details": {
+    "error_category": "agent_timeout",
+    "error_message": "Task timed out after 900s",
+    "stack_trace": "Traceback (most recent call last):\n  File \"/opt/coder_eval/src/coder_eval/orchestrator.py\", line 478, in run\n    raise TaskTimeoutError(\n    ...<3 lines>...\n    ) from None\ncoder_eval.errors.timeout.TaskTimeoutError: Task timed out after 900s\n",
+    "task_id": "skill-bpmn-contract-variant-wrappers",
+    "component": "orchestrator.task_timeout",
+    "agent_name": "claude-code",
+    "attempt_number": 1,
+    "is_retryable": false,
+    "retry_delay_seconds": 0.0,
+    "disk_usage_gb": null,
+    "memory_usage_gb": null,
+    "agent_stdout": null,
+    "agent_stderr": null,
+    "timestamp": "2026-07-21T01:07:26.694798",
+    "error_tip": "Agent or task timed out. Consider increasing the limit (-D run_limits.turn_timeout=… or -D run_limits.task_timeout=…), or simplifying the task to require fewer iterations."
+  },
+  "error_log_tail": "2026-07-21 00:52:26 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js\n2026-07-21 00:52:26 [INFO] coder_eval.orchestrator: API routing: aws_bedrock\n2026-07-21 00:52:26 [DEBUG] coder_eval.criteria: Discovered 14 criterion checkers\n2026-07-21 00:52:26 [DEBUG] coder_eval.criteria: Validated 14 criterion checkers\n2026-07-21 00:52:26 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js\n2026-07-21 00:52:26 [DEBUG] coder_eval.orchestrator: Sending prompt: Create a local BPMN project named \"ContractVariantsBpmn\".\nUse synthetic placeholder resource names o...\n2026-07-21 00:52:26 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Starting agent query stream...\n2026-07-21 01:07:26 [ERROR] coder_eval.orchestrator: Task timed out: Task timed out after 900s\n2026-07-21 01:07:26 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js\n2026-07-21 01:07:26 [INFO] coder_eval.orchestrator: Running post-run command: find . -maxdepth 5 -type d \\( -name node_modules -o -name .npm-prefix -o -name .venv \\) -prune -exec rm -rf {} +\n2026-07-21 01:07:26 [INFO] coder_eval.orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-bpmn-contract-variant-wrappers\n",
+  "environment_info": {
+    "git_commit": "unknown",
+    "skills_git_commit": "unknown",
+    "cli_version": "1.197.0-alpha.20260626.7673",
+    "tool_plugins": {
+      "agent-tool": "1.197.0-alpha.20260626.7673",
+      "agenthub-tool": "1.197.0-alpha.20260626.7673",
+      "codedagent-tool": "1.197.0-alpha.20260626.7673",
+      "data-fabric-tool": "1.197.0-alpha.20260626.7673",
+      "functions-tool": "1.197.0-alpha.20260626.7673",
+      "gov-tool": "1.197.0-alpha.20260626.7673",
+      "insights-tool": "1.197.0-alpha.20260626.7673",
+      "integrationservice-tool": "1.197.0-alpha.20260626.7673",
+      "ixp-tool": "1.197.0-alpha.20260626.7673",
+      "maestro-tool": "1.197.0-alpha.20260626.7673",
+      "orchestrator-tool": "1.197.0-alpha.20260626.7673",
+      "solution-tool": "1.197.0-alpha.20260626.7673",
+      "tasks-tool": "1.197.0-alpha.20260626.7673",
+      "test-manager-tool": "1.197.0-alpha.20260626.7673"
+    },
+    "coder_eval": "0.8.4",
+    "claude_code_cli": "2.1.177 (Claude Code)",
+    "uv": "uv 0.11.28 (x86_64-unknown-linux-gnu)",
+    "anthropic": "0.102.0",
+    "openai": "2.46.0",
+    "pydantic": "2.12.5",
+    "api_routing": "aws_bedrock",
+    "aws_region": "us-east-2",
+    "bedrock_model": "us.anthropic.claude-sonnet-4-6"
+  },
+  "agent_config": {
+    "type": "claude-code",
+    "model": "claude-sonnet-4-6",
+    "permission_mode": "acceptEdits",
+    "allowed_tools": [
+      "Skill",
+      "Bash",
+      "Read",
+      "Write",
+      "Edit",
+      "Glob",
+      "Grep"
+    ],
+    "disallowed_tools": null,
+    "plugins": [
+      {
+        "type": "local",
+        "path": "/home/azureuser/projects/skills/"
+      }
+    ],
+    "system_prompt": "You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted.\n",
+    "system_prompt_file": null,
+    "ignore_patterns": [],
+    "claude_settings": null,
+    "sdk_options": {},
+    "setting_sources": null
+  },
+  "sdk_options": {
+    "tools": null,
+    "allowed_tools": [
+      "Skill",
+      "Bash",
+      "Read",
+      "Write",
+      "Edit",
+      "Glob",
+      "Grep"
+    ],
+    "system_prompt": "You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted.\n",
+    "mcp_servers": {},
+    "strict_mcp_config": false,
+    "permission_mode": "acceptEdits",
+    "continue_conversation": false,
+    "resume": null,
+    "session_id": null,
+    "max_turns": 90,
+    "max_budget_usd": null,
+    "disallowed_tools": [
+      "ToolSearch"
+    ],
+    "model": "us.anthropic.claude-sonnet-4-6",
+    "fallback_model": null,
+    "betas": [],
+    "permission_prompt_tool_name": null,
+    "cwd": "/work/output/artifacts/skill-bpmn-contract-variant-wrappers",
+    "cli_path": null,
+    "settings": null,
+    "add_dirs": [],
+    "env": {
+      "PATH": "/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+      "PLUGIN_TOOLS_DIR": "/usr/lib/node_modules/@uipath",
+      "CLAUDE_CODE_USE_BEDROCK": "1",
+      "AWS_BEARER_TOKEN_BEDROCK": "***REDACTED***",
+      "AWS_REGION": "us-east-2",
+      "CLAUDE_CODE_ATTRIBUTION_HEADER": "0",
+      "ANTHROPIC_MODEL": "us.anthropic.claude-sonnet-4-6",
+      "ANTHROPIC_SMALL_FAST_MODEL": "us.anthropic.claude-sonnet-4-6"
+    },
+    "extra_args": {},
+    "max_buffer_size": null,
+    "can_use_tool": null,
+    "hooks": null,
+    "user": null,
+    "include_partial_messages": true,
+    "include_hook_events": false,
+    "fork_session": false,
+    "agents": null,
+    "setting_sources": [
+      "project"
+    ],
+    "skills": null,
+    "sandbox": null,
+    "plugins": [
+      {
+        "type": "local",
+        "path": "/home/azureuser/projects/skills"
+      }
+    ],
+    "max_thinking_tokens": null,
+    "thinking": null,
+    "effort": null,
+    "output_format": null,
+    "enable_file_checkpointing": false,
+    "session_store": null,
+    "session_store_flush": "batched",
+    "load_timeout_ms": 60000,
+    "task_budget": null
+  },
+  "sandbox_path": "/work/output/artifacts/skill-bpmn-contract-variant-wrappers",
+  "task_config": {
+    "resolved": {
+      "task_id": "skill-bpmn-contract-variant-wrappers",
+      "description": "XML contract eval: agent authors public-safe Maestro BPMN wrappers for documented Orchestrator, A2A, queue, business-rule, call-activity, message-event, case-management, wait-event, migration, and preserve-only extension variants.\n",
+      "initial_prompt": "Create a local BPMN project named \"ContractVariantsBpmn\".\nUse synthetic placeholder resource names only. Do not include tenant URLs,\nfolder keys, connection IDs, queue IDs, release keys, real process names, or\nreal user names.\n\nThe BPMN must include a public-safe process that manually starts, visits each\nwrapper below, and ends:\n- `bpmn:serviceTask` with `Orchestrator.StartAgentJob`.\n- `bpmn:serviceTask` with `A2A.AgentExecution`.\n- `bpmn:serviceTask` with `Orchestrator.ExecuteApiWorkflowAsync`.\n- `bpmn:businessRuleTask` with `Orchestrator.BusinessRules`.\n- `bpmn:sendTask` with `Orchestrator.CreateQueueItem`.\n- `bpmn:serviceTask` with `Orchestrator.CreateAndWaitForQueueItem`.\n- `bpmn:callActivity` with `Orchestrator.StartAgenticProcess`.\n- `bpmn:callActivity` with `Orchestrator.StartAgenticProcessAsync`.\n- `bpmn:callActivity` with `Orchestrator.StartCaseMgmtProcess`; if a\n  case-management payload is needed, mark it preserve-only and synthetic.\n- `bpmn:callActivity` with `Orchestrator.StartCaseMgmtProcessAsync`; keep it\n  synthetic and do not invent deployment identifiers.\n- `bpmn:receiveTask` with `Intsvc.WaitForEvent`; keep connector details\n  placeholder-safe and do not hand-author private connection metadata.\n- `bpmn:intermediateThrowEvent` with `Maestro.SendMessageEvent`; keep the\n  message name and payload synthetic.\n- `bpmn:serviceTask` with `Maestro.CasePlanScheduler`; mark it draft-only or\n  preserve-only and keep all payloads synthetic.\n- `bpmn:serviceTask` with `Maestro.CaseManagerGuardrails`; mark it\n  preserve-only and keep all payloads synthetic.\n- `bpmn:serviceTask` with `Maestro.CaseRulesEvaluator`; mark it preserve-only\n  and keep all payloads synthetic.\n- Preserve numeric `uipath:migrationVersion` values `5`, `11`, and `11.5`.\n- Preserve a legacy `uipath:scriptVersion` value `v2` on a script task while\n  still following the skill guidance that new scripts should prefer `v3`.\n- Preserve a generic unsupported `uipath:Activity` payload instead of\n  rewriting or deleting it.\n\nInclude BPMN DI for every visible node and sequence flow. Do not upload,\npublish, deploy, debug, or run the process.\n",
+      "initial_prompt_file": null,
+      "tags": [
+        "uipath-maestro-bpmn",
+        "integration",
+        "lifecycle:generate",
+        "contract:xml",
+        "node:service-task",
+        "node:call-activity",
+        "connector"
+      ],
+      "skip": false,
+      "agent": {
+        "type": "claude-code",
+        "model": "claude-sonnet-4-6",
+        "permission_mode": "acceptEdits",
+        "allowed_tools": [
+          "Skill",
+          "Bash",
+          "Read",
+          "Write",
+          "Edit",
+          "Glob",
+          "Grep"
+        ],
+        "disallowed_tools": null,
+        "plugins": [
+          {
+            "type": "local",
+            "path": "/home/azureuser/projects/skills/"
+          }
+        ],
+        "system_prompt": "You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted.\n",
+        "system_prompt_file": null,
+        "ignore_patterns": [],
+        "claude_settings": null,
+        "sdk_options": {},
+        "setting_sources": null
+      },
+      "sandbox": {
+        "driver": "tempdir",
+        "docker": {
+          "image": "skills-image:latest",
+          "dockerfile_path": null,
+          "build": {
+            "buildkit": null,
+            "args": {},
+            "secrets": [],
+            "extra_args": []
+          },
+          "network": "bridge",
+          "working_dir": null,
+          "env_passthrough": [
+            "ANTHROPIC_API_KEY",
+            "API_BACKEND",
+            "UIPATH_LLM_BACKEND",
+            "UIPATH_ACCESS_TOKEN",
+            "UIPATH_URL",
+            "UIPATH_TENANT_ID",
+            "UIPATH_ORGANIZATION_ID",
+            "UIPATH_CLI_DISABLE_VERSION_SYNC",
+            "AWS_BEARER_TOKEN_BEDROCK",
+            "AWS_REGION",
+            "BEDROCK_MODEL",
+            "CLAUDE_CODE_USE_BEDROCK",
+            "ANTHROPIC_MODEL",
+            "CODEX_API_KEY",
+            "CODEX_BASE_URL",
+            "CODEX_MODEL",
+            "GEMINI_API_KEY",
+            "ANTIGRAVITY_MODEL",
+            "HOME"
+          ],
+          "env_passthrough_extra": [
+            "SKILLS_REPO_PATH",
+            "BEDROCK_MODEL",
+            "TASK_PARALLELISM",
+            "UIPATH_CLI_ENABLE_ENV_AUTH",
+            "UIPATH_CLI_AUTH_TOKEN",
+            "UIPATH_CLI_ORGANIZATION_NAME",
+            "UIPATH_CLI_ORGANIZATION_ID",
+            "UIPATH_CLI_TENANT_NAME",
+            "UIPATH_CLI_TENANT_ID",
+            "TRACES_SMOKE_PROCESS_KEY",
+            "CODEX_API_KEY",
+            "CODEX_BASE_URL"
+          ],
+          "extra_mounts": [
+            "~/.uipath:/.uipath:rw"
+          ]
+        },
+        "python": {
+          "env_packages": []
+        },
+        "node": null,
+        "limits": {
+          "timeout": 300,
+          "max_memory_mb": null,
+          "max_cpus": null,
+          "max_pids": null,
+          "max_disk_mb": null
+        },
+        "template_sources": null,
+        "mock_path_dirs": null,
+        "ignore_patterns": []
+      },
+      "success_criteria": [
+        {
+          "type": "file_exists",
+          "description": "BPMN source was created",
+          "weight": 1.0,
+          "pass_threshold": 1.0,
+          "suite_thresholds": null,
+          "stop_when": null,
+          "path": "ContractVariantsBpmn/ContractVariantsBpmn.bpmn"
+        },
+        {
+          "type": "run_command",
+          "description": "Contract variant wrappers use the documented BPMN element types",
+          "weight": 5.0,
+          "pass_threshold": 1.0,
+          "suite_thresholds": null,
+          "stop_when": null,
+          "command": "python3 $TASK_DIR/check_contract_variant_wrappers.py",
+          "timeout": 30,
+          "expected_exit_code": 0,
+          "expected_stdout": null,
+          "stdout_match": "exact",
+          "score_from_stdout": false
+        }
+      ],
+      "run_limits": {
+        "max_turns": 90,
+        "expected_turns": 20,
+        "task_timeout": 900,
+        "turn_timeout": 1200,
+        "max_input_tokens": null,
+        "max_output_tokens": null,
+        "max_total_tokens": null,
+        "max_usd": null,
+        "count_cached_input": false,
+        "count_cache_creation": false,
+        "stop_early": false
+      },
+      "reference": null,
+      "expected_commands": null,
+      "pre_run": [],
+      "post_run": [
+        {
+          "command": "find . -maxdepth 5 -type d \\( -name node_modules -o -name .npm-prefix -o -name .venv \\) -prune -exec rm -rf {} +",
+          "timeout": 30
+        }
+      ],
+      "dataset": null,
+      "suite_id": null,
+      "row_id": null,
+      "simulation": null
+    },
+    "source_yaml": "task_id: skill-bpmn-contract-variant-wrappers\ndescription: >\n  XML contract eval: agent authors public-safe Maestro BPMN wrappers for\n  documented Orchestrator, A2A, queue, business-rule, call-activity,\n  message-event, case-management, wait-event, migration, and preserve-only\n  extension variants.\ntags: [uipath-maestro-bpmn, integration, lifecycle:generate, contract:xml, node:service-task, node:call-activity, connector]\n\nrun_limits:\n  expected_turns: 20\n  max_turns: 90\n  turn_timeout: 1200\ninitial_prompt: |\n  Create a local BPMN project named \"ContractVariantsBpmn\".\n  Use synthetic placeholder resource names only. Do not include tenant URLs,\n  folder keys, connection IDs, queue IDs, release keys, real process names, or\n  real user names.\n\n  The BPMN must include a public-safe process that manually starts, visits each\n  wrapper below, and ends:\n  - `bpmn:serviceTask` with `Orchestrator.StartAgentJob`.\n  - `bpmn:serviceTask` with `A2A.AgentExecution`.\n  - `bpmn:serviceTask` with `Orchestrator.ExecuteApiWorkflowAsync`.\n  - `bpmn:businessRuleTask` with `Orchestrator.BusinessRules`.\n  - `bpmn:sendTask` with `Orchestrator.CreateQueueItem`.\n  - `bpmn:serviceTask` with `Orchestrator.CreateAndWaitForQueueItem`.\n  - `bpmn:callActivity` with `Orchestrator.StartAgenticProcess`.\n  - `bpmn:callActivity` with `Orchestrator.StartAgenticProcessAsync`.\n  - `bpmn:callActivity` with `Orchestrator.StartCaseMgmtProcess`; if a\n    case-management payload is needed, mark it preserve-only and synthetic.\n  - `bpmn:callActivity` with `Orchestrator.StartCaseMgmtProcessAsync`; keep it\n    synthetic and do not invent deployment identifiers.\n  - `bpmn:receiveTask` with `Intsvc.WaitForEvent`; keep connector details\n    placeholder-safe and do not hand-author private connection metadata.\n  - `bpmn:intermediateThrowEvent` with `Maestro.SendMessageEvent`; keep the\n    message name and payload synthetic.\n  - `bpmn:serviceTask` with `Maestro.CasePlanScheduler`; mark it draft-only or\n    preserve-only and keep all payloads synthetic.\n  - `bpmn:serviceTask` with `Maestro.CaseManagerGuardrails`; mark it\n    preserve-only and keep all payloads synthetic.\n  - `bpmn:serviceTask` with `Maestro.CaseRulesEvaluator`; mark it preserve-only\n    and keep all payloads synthetic.\n  - Preserve numeric `uipath:migrationVersion` values `5`, `11`, and `11.5`.\n  - Preserve a legacy `uipath:scriptVersion` value `v2` on a script task while\n    still following the skill guidance that new scripts should prefer `v3`.\n  - Preserve a generic unsupported `uipath:Activity` payload instead of\n    rewriting or deleting it.\n\n  Include BPMN DI for every visible node and sequence flow. Do not upload,\n  publish, deploy, debug, or run the process.\n\nsuccess_criteria:\n  - type: file_exists\n    description: \"BPMN source was created\"\n    path: \"ContractVariantsBpmn/ContractVariantsBpmn.bpmn\"\n    weight: 1.0\n    pass_threshold: 1.0\n\n  - type: run_command\n    description: \"Contract variant wrappers use the documented BPMN element types\"\n    command: \"python3 $TASK_DIR/check_contract_variant_wrappers.py\"\n    timeout: 30\n    expected_exit_code: 0\n    weight: 5.0\n    pass_threshold: 1.0\n",
+    "source_file": "/home/azureuser/projects/skills/tests/tasks/uipath-maestro-bpmn/nodes/task.yaml",
+    "lineage": {
+      "agent.type": {
+        "value": "claude-code",
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.permission_mode": {
+        "value": "acceptEdits",
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.model": {
+        "value": "claude-sonnet-4-6",
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.allowed_tools": {
+        "value": [
+          "Skill",
+          "Bash",
+          "Read",
+          "Write",
+          "Edit",
+          "Glob",
+          "Grep"
+        ],
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.plugins": {
+        "value": [
+          {
+            "type": "local",
+            "path": "/home/azureuser/projects/skills/"
+          }
+        ],
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.ignore_patterns": {
+        "value": [],
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.system_prompt": {
+        "value": "You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted.\n",
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "run_limits.max_turns": {
+        "value": 90,
+        "source": "task",
+        "source_detail": null
+      },
+      "run_limits.task_timeout": {
+        "value": 900,
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "run_limits.turn_timeout": {
+        "value": 1200,
+        "source": "task",
+        "source_detail": null
+      },
+      "run_limits.expected_turns": {
+        "value": 20,
+        "source": "task",
+        "source_detail": null
+      },
+      "sandbox.driver": {
+        "value": "docker",
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "sandbox.docker": {
+        "value": {
+          "image": "skills-image:latest",
+          "env_passthrough_extra": [
+            "SKILLS_REPO_PATH",
+            "BEDROCK_MODEL",
+            "TASK_PARALLELISM",
+            "UIPATH_CLI_ENABLE_ENV_AUTH",
+            "UIPATH_CLI_AUTH_TOKEN",
+            "UIPATH_CLI_ORGANIZATION_NAME",
+            "UIPATH_CLI_ORGANIZATION_ID",
+            "UIPATH_CLI_TENANT_NAME",
+            "UIPATH_CLI_TENANT_ID",
+            "TRACES_SMOKE_PROCESS_KEY",
+            "CODEX_API_KEY",
+            "CODEX_BASE_URL"
+          ],
+          "extra_mounts": [
+            "~/.uipath:/.uipath:rw"
+          ]
+        },
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "repeats": {
+        "value": 1,
+        "source": "default",
+        "source_detail": null
+      }
+    }
+  },
+  "command_stats": null,
+  "total_token_usage": null,
+  "total_assistant_turns": null,
+  "expected_commands": null,
+  "actual_commands": null,
+  "commands_efficiency": null,
+  "pre_run_results": [],
+  "post_run_results": [
+    {
+      "command": "find . -maxdepth 5 -type d \\( -name node_modules -o -name .npm-prefix -o -name .venv \\) -prune -exec rm -rf {} +",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "",
+      "duration_seconds": 0.0027675628662109375,
+      "error": null
+    }
+  ],
+  "simulation": null,
+  "early_stop": null
+}

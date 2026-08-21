@@ -1,0 +1,21 @@
+{
+  "tag": "e1861be1",
+  "project_key": "CE",
+  "issuetype_id": "11457",
+  "issues": [
+    {
+      "summary": "coder-eval jira lifecycle e1861be1 item1",
+      "priority": "High"
+    },
+    {
+      "summary": "coder-eval jira lifecycle e1861be1 item2",
+      "priority": "Low"
+    },
+    {
+      "summary": "coder-eval jira lifecycle e1861be1 item3",
+      "priority": "High"
+    }
+  ],
+  "escalated_marker": "ESCALATED e1861be1",
+  "routine_marker": "ROUTINE e1861be1"
+}

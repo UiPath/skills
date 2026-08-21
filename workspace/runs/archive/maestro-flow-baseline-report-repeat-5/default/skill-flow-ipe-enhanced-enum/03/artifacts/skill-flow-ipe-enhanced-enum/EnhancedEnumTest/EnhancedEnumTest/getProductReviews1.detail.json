@@ -1,0 +1,20 @@
+{
+  "_comment": "Planned node configure payload for getProductReviews1 (uipath.connector.uipath-automattic-woocommerce.get-product-reviews). Run this once a live WooCommerce connection is created in Integration Service.",
+  "_command": "uip maestro flow node configure EnhancedEnumTest.flow getProductReviews1 --detail \"$(cat getProductReviews1.detail.json | python3 -c 'import json,sys; d=json.load(sys.stdin); del d[\"_comment\"]; del d[\"_command\"]; print(json.dumps(d))')\" --output json",
+  "connectionId": "<REPLACE: UUID from uip is connections list uipath-automattic-woocommerce --all-folders>",
+  "folderKey": "<REPLACE: FolderKey from same connections list output>",
+  "method": "GET",
+  "endpoint": "/search_product_review",
+  "queryParameters": {
+    "order": "=js:$vars.mapSortOrder1.output.order"
+  },
+  "_enumNote": {
+    "field": "order",
+    "displayName": "Order",
+    "enhancedEnum": [
+      { "label": "Oldest first", "flowInputValue": "Oldest first", "apiCode": "asc" },
+      { "label": "Newest first", "flowInputValue": "Newest first", "apiCode": "desc" }
+    ],
+    "mapping": "The Script node (mapSortOrder1) reads $vars.sortOrderLabel (an 'in' variable with friendly values 'Oldest first' / 'Newest first') and returns { order: 'asc' | 'desc' }. The connector receives the raw code via =js:$vars.mapSortOrder1.output.order."
+  }
+}

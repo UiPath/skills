@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+    xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+    xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+    xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+    xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:uipath="http://uipath.org/schema/bpmn"
+    id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn"
+    exporter="UiPath (https://bpmn.uipath.com)" exporterVersion="1.0">
+
+  <bpmn:process id="Process_1" isExecutable="true">
+    <bpmn:extensionElements>
+      <uipath:migrationVersion version="11.5" />
+      <uipath:variables version="v1">
+        <uipath:inputOutput id="Var_ExpenseAmount" name="ExpenseAmount" type="number" />
+        <uipath:inputOutput id="Var_RequesterName" name="RequesterName" type="string" />
+        <uipath:inputOutput id="Var_Category" name="Category" type="string" />
+        <uipath:inputOutput id="Var_ReviewResponse" name="ReviewResponse" type="object" />
+        <uipath:inputOutput id="Var_ApprovalRecorded" name="ApprovalRecorded" type="boolean" />
+      </uipath:variables>
+    </bpmn:extensionElements>
+
+    <bpmn:startEvent id="StartEvent_1" name="Start">
+      <bpmn:outgoing>Flow_StartToHITL</bpmn:outgoing>
+    </bpmn:startEvent>
+
+    <bpmn:userTask id="Task_ExpenseReview" name="Review Expense">
+      <bpmn:extensionElements>
+        <uipath:activity version="v1">
+          <uipath:type value="Actions.HITL" version="v1" />
+          <uipath:context>
+            <uipath:input name="appId" value="expense-review-app-placeholder" />
+            <uipath:input name="appVersion" value="1" />
+            <uipath:input name="actions" value="approve,reject" />
+            <uipath:input name="key" value="expense-folder-placeholder" />
+            <uipath:input name="taskTitle" value="Expense Approval Review" />
+          </uipath:context>
+          <uipath:input name="HitlTaskArguments" type="json" target="bodyField"><![CDATA[{
+  "expenseAmount": "=vars.Var_ExpenseAmount",
+  "requesterName": "=vars.Var_RequesterName",
+  "category": "=vars.Var_Category"
+}]]></uipath:input>
+          <uipath:output name="Process response" type="Actions.HITL" var="Var_ReviewResponse" />
+        </uipath:activity>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_StartToHITL</bpmn:incoming>
+      <bpmn:outgoing>Flow_HITLToGateway</bpmn:outgoing>
+    </bpmn:userTask>
+
+    <bpmn:exclusiveGateway id="Gw_DecisionBranch" name="Approved?" default="Flow_Declined">
+      <bpmn:incoming>Flow_HITLToGateway</bpmn:incoming>
+      <bpmn:outgoing>Flow_Approved</bpmn:outgoing>
+      <bpmn:outgoing>Flow_Declined</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+
+    <bpmn:task id="Task_RecordApproval" name="Record Approval">
+      <bpmn:extensionElements>
+        <uipath:mapping version="v1">
+          <uipath:type value="BPMN.Variables" version="v1" />
+          <uipath:output name="ApprovalRecorded" type="boolean" var="Var_ApprovalRecorded" source="=true" />
+        </uipath:mapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_Approved</bpmn:incoming>
+      <bpmn:outgoing>Flow_RecordToEnd</bpmn:outgoing>
+    </bpmn:task>
+
+    <bpmn:endEvent id="End_Approved" name="Approved">
+      <bpmn:incoming>Flow_RecordToEnd</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <bpmn:endEvent id="End_Declined" name="Declined">
+      <bpmn:incoming>Flow_Declined</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <bpmn:sequenceFlow id="Flow_StartToHITL" sourceRef="StartEvent_1" targetRef="Task_ExpenseReview" />
+    <bpmn:sequenceFlow id="Flow_HITLToGateway" sourceRef="Task_ExpenseReview" targetRef="Gw_DecisionBranch" />
+    <bpmn:sequenceFlow id="Flow_Approved" sourceRef="Gw_DecisionBranch" targetRef="Task_RecordApproval">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=vars.Var_ReviewResponse.approvalDecision == "approved"</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_Declined" sourceRef="Gw_DecisionBranch" targetRef="End_Declined" />
+    <bpmn:sequenceFlow id="Flow_RecordToEnd" sourceRef="Task_RecordApproval" targetRef="End_Approved" />
+  </bpmn:process>
+
+  <bpmndi:BPMNDiagram id="Diagram_1">
+    <bpmndi:BPMNPlane id="Plane_1" bpmnElement="Process_1">
+      <bpmndi:BPMNShape id="S_End_Approved" bpmnElement="End_Approved"><dc:Bounds x="686" y="100" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_End_Declined" bpmnElement="End_Declined"><dc:Bounds x="526" y="100" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Gw_DecisionBranch" bpmnElement="Gw_DecisionBranch"><dc:Bounds x="416" y="100" width="50" height="50" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_StartEvent_1" bpmnElement="StartEvent_1"><dc:Bounds x="160" y="100" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Task_ExpenseReview" bpmnElement="Task_ExpenseReview"><dc:Bounds x="256" y="100" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Task_RecordApproval" bpmnElement="Task_RecordApproval"><dc:Bounds x="526" y="210" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="E_Flow_Approved" bpmnElement="Flow_Approved"><di:waypoint x="441" y="125" /><di:waypoint x="576" y="250" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_Declined" bpmnElement="Flow_Declined"><di:waypoint x="441" y="125" /><di:waypoint x="544" y="118" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_HITLToGateway" bpmnElement="Flow_HITLToGateway"><di:waypoint x="306" y="140" /><di:waypoint x="441" y="125" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_RecordToEnd" bpmnElement="Flow_RecordToEnd"><di:waypoint x="576" y="250" /><di:waypoint x="704" y="118" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_StartToHITL" bpmnElement="Flow_StartToHITL"><di:waypoint x="178" y="118" /><di:waypoint x="306" y="140" /></bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

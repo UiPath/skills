@@ -1,0 +1,9 @@
+17:22:42 [INFO   ] [default/skill-flow-ipe-jira-create-issue/01] orchestrator: API routing: aws_bedrock
+17:22:42 [INFO   ] [default/skill-flow-ipe-jira-create-issue/01] orchestrator: Running pre-run command: python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/e2e/jira_create_issue/seed_jira.py
+17:22:43 [INFO   ] [default/skill-flow-ipe-jira-create-issue/01] orchestrator: [pre_run stdout] OK: wrote seed targets (summary='coder-eval jira flow e2e 5698ec53', project=CE)
+17:29:24 [INFO   ] [default/skill-flow-ipe-jira-create-issue/01] orchestrator: Success criteria: 2/2 passed, weighted score: 1.000
+17:29:24 [INFO   ] [default/skill-flow-ipe-jira-create-issue/01] orchestrator: Running post-run command: python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/e2e/jira_create_issue/teardown_jira.py
+17:29:30 [INFO   ] [default/skill-flow-ipe-jira-create-issue/01] orchestrator: [post_run stdout] OK: deleted CE-158
+17:29:30 [INFO   ] [default/skill-flow-ipe-jira-create-issue/01] orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+17:29:30 [INFO   ] [default/skill-flow-ipe-jira-create-issue/01] orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-ipe-jira-create-issue
+17:29:30 [INFO   ] [default/skill-flow-ipe-jira-create-issue/01] orchestrator: Task finished: status=SUCCESS duration=410.1s score=1.000 iterations=1

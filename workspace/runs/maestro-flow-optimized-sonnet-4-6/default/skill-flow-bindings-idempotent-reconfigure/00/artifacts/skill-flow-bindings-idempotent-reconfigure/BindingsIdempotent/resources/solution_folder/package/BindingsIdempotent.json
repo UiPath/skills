@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "BindingsIdempotent",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "940613f8-e0c1-4350-a517-a07d97a33b54",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "BindingsIdempotent"
+    },
+    "locks": [],
+    "key": "15b10dc6-b1c3-49f3-bf87-1b595a049b02",
+    "files": []
+  }
+}

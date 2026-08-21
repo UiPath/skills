@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+    xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+    xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+    xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+    xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:uipath="http://uipath.org/schema/bpmn"
+    id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn"
+    exporter="UiPath (https://bpmn.uipath.com)" exporterVersion="1.0">
+
+  <bpmn:process id="Process_1" isExecutable="true">
+    <bpmn:extensionElements>
+      <uipath:migrationVersion version="11.5" />
+      <uipath:variables version="v1">
+        <uipath:inputOutput id="Var_Input" name="Input" type="string" />
+        <uipath:inputOutput id="Var_Reversed" name="Reversed" type="string" />
+      </uipath:variables>
+    </bpmn:extensionElements>
+
+    <bpmn:startEvent id="Start_1" name="Start">
+      <bpmn:outgoing>Flow_StartToSub</bpmn:outgoing>
+    </bpmn:startEvent>
+
+    <bpmn:subProcess id="SubProcess_Reverse" name="Reverse String">
+      <bpmn:extensionElements>
+        <uipath:variables version="v1">
+          <uipath:inputOutput id="Var_Sub_Input" name="SubInput" type="string" />
+          <uipath:inputOutput id="Var_Sub_Result" name="SubResult" type="string" />
+        </uipath:variables>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_StartToSub</bpmn:incoming>
+      <bpmn:outgoing>Flow_SubToEnd</bpmn:outgoing>
+
+      <bpmn:startEvent id="SubStart_1" name="Sub Start">
+        <bpmn:outgoing>Flow_SubStart_to_Script</bpmn:outgoing>
+      </bpmn:startEvent>
+
+      <bpmn:scriptTask id="Task_Reverse" name="Reverse" scriptFormat="JavaScript">
+        <bpmn:extensionElements>
+          <uipath:scriptVersion value="v3" />
+          <uipath:mapping version="v1">
+            <uipath:type value="BPMN.ScriptTask" version="v1" />
+            <uipath:input name="args" type="json" target="bodyField"><![CDATA[{"subInput":"=vars.Var_Input"}]]></uipath:input>
+            <uipath:output name="reversed" type="string" var="Var_Reversed" source="=result.response" />
+          </uipath:mapping>
+        </bpmn:extensionElements>
+        <bpmn:incoming>Flow_SubStart_to_Script</bpmn:incoming>
+        <bpmn:outgoing>Flow_Script_to_SubEnd</bpmn:outgoing>
+        <bpmn:script><![CDATA[
+var s = subInput || "";
+var reversed = s.split("").reverse().join("");
+return { response: reversed };
+]]></bpmn:script>
+      </bpmn:scriptTask>
+
+      <bpmn:endEvent id="SubEnd_1" name="Sub End">
+        <bpmn:incoming>Flow_Script_to_SubEnd</bpmn:incoming>
+      </bpmn:endEvent>
+
+      <bpmn:sequenceFlow id="Flow_SubStart_to_Script" sourceRef="SubStart_1" targetRef="Task_Reverse" />
+      <bpmn:sequenceFlow id="Flow_Script_to_SubEnd" sourceRef="Task_Reverse" targetRef="SubEnd_1" />
+    </bpmn:subProcess>
+
+    <bpmn:endEvent id="End_1" name="End">
+      <bpmn:incoming>Flow_SubToEnd</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <bpmn:sequenceFlow id="Flow_StartToSub" sourceRef="Start_1" targetRef="SubProcess_Reverse" />
+    <bpmn:sequenceFlow id="Flow_SubToEnd" sourceRef="SubProcess_Reverse" targetRef="End_1" />
+  </bpmn:process>
+
+  <bpmndi:BPMNDiagram id="Diagram_1">
+    <bpmndi:BPMNPlane id="Plane_1" bpmnElement="Process_1">
+
+      <!-- Top-level nodes -->
+      <bpmndi:BPMNShape id="S_Start_1" bpmnElement="Start_1">
+        <dc:Bounds x="160" y="118" width="36" height="36" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="S_SubProcess_Reverse" bpmnElement="SubProcess_Reverse" isExpanded="true">
+        <dc:Bounds x="260" y="60" width="400" height="200" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="S_End_1" bpmnElement="End_1">
+        <dc:Bounds x="724" y="118" width="36" height="36" />
+      </bpmndi:BPMNShape>
+
+      <!-- Top-level sequence flow edges -->
+      <bpmndi:BPMNEdge id="E_StartToSub" bpmnElement="Flow_StartToSub">
+        <di:waypoint x="196" y="136" />
+        <di:waypoint x="260" y="160" />
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="E_SubToEnd" bpmnElement="Flow_SubToEnd">
+        <di:waypoint x="660" y="160" />
+        <di:waypoint x="724" y="136" />
+      </bpmndi:BPMNEdge>
+
+      <!-- Inner nodes of the subprocess -->
+      <bpmndi:BPMNShape id="S_SubStart_1" bpmnElement="SubStart_1">
+        <dc:Bounds x="302" y="142" width="36" height="36" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="S_Task_Reverse" bpmnElement="Task_Reverse">
+        <dc:Bounds x="390" y="120" width="100" height="80" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="S_SubEnd_1" bpmnElement="SubEnd_1">
+        <dc:Bounds x="552" y="142" width="36" height="36" />
+      </bpmndi:BPMNShape>
+
+      <!-- Inner sequence flow edges -->
+      <bpmndi:BPMNEdge id="E_SubStart_to_Script" bpmnElement="Flow_SubStart_to_Script">
+        <di:waypoint x="338" y="160" />
+        <di:waypoint x="390" y="160" />
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="E_Script_to_SubEnd" bpmnElement="Flow_Script_to_SubEnd">
+        <di:waypoint x="490" y="160" />
+        <di:waypoint x="552" y="160" />
+      </bpmndi:BPMNEdge>
+
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+
+</bpmn:definitions>

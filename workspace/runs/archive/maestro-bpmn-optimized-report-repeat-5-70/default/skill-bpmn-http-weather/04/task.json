@@ -1,0 +1,1970 @@
+{
+  "task_id": "skill-bpmn-http-weather",
+  "task_description": "HTTP activity eval: agent uses the uipath-maestro-bpmn skill to model a connectionless HTTP call to a public weather API (Open-Meteo) as a bpmn:sendTask with the registry Intsvc.HttpExecution wrapper in manual mode, capturing the response into a declared variable. Ports the Flow Open-Meteo weather single-node test to a connectionless BPMN HTTP node. Authoring only — no cloud effects, no live call.\n",
+  "variant_id": "default",
+  "agent_type": "claude-code",
+  "model_used": "claude-sonnet-4-6",
+  "started_at": "2026-07-22T05:15:27.024455",
+  "completed_at": "2026-07-22T05:19:39.210335",
+  "duration_seconds": 252.18589568138123,
+  "final_status": "SUCCESS",
+  "max_turns_exhausted": false,
+  "weighted_score": 1.0,
+  "iteration_count": 1,
+  "success_criteria_results": [
+    {
+      "result_kind": "basic",
+      "criterion_type": "file_exists",
+      "description": "BPMN source was created",
+      "score": 1.0,
+      "details": "File 'OpenMeteoWeatherHttp/OpenMeteoWeatherHttp.bpmn' exists",
+      "error": null,
+      "pass_threshold": 1.0
+    },
+    {
+      "result_kind": "basic",
+      "criterion_type": "file_contains",
+      "description": "BPMN uses the HTTP-execution wrapper and the public Open-Meteo host",
+      "score": 1.0,
+      "details": "Includes: 2/2 found; Score: 1.00",
+      "error": null,
+      "pass_threshold": 1.0
+    },
+    {
+      "result_kind": "basic",
+      "criterion_type": "command_executed",
+      "description": "Agent did not run any cloud-side Maestro BPMN lifecycle command",
+      "score": 1.0,
+      "details": "Matched 0 matches (allowed range 0..0) commands (filters: tool_name=Bash, pattern=/(uip|\\$UIP)\\s+maestro\\s+bpmn\\s+(upload|publish|deploy|debug|run|pack)/)",
+      "error": null,
+      "pass_threshold": 1.0
+    },
+    {
+      "result_kind": "basic",
+      "criterion_type": "run_command",
+      "description": "HTTP sendTask is connectionless manual GET to Open-Meteo with a bound output variable",
+      "score": 1.0,
+      "details": "Command: python3 $TASK_DIR/check_http_weather.py\nExit code: 0 (expected: 0)\nStdout:\nOK: OpenMeteoWeatherHttp/OpenMeteoWeatherHttp.bpmn is a connectionless manual GET to Open-Meteo with a bound output\n\nStderr: (empty)",
+      "error": null,
+      "pass_threshold": 1.0
+    }
+  ],
+  "iterations": [
+    {
+      "iteration": 1,
+      "user_input": "Your working directory is: /work/output/artifacts/skill-bpmn-http-weather\n\nLoad and follow the uipath-maestro-bpmn skill.\n\nCreate a local BPMN project named \"OpenMeteoWeatherHttp\" with the main file at\nOpenMeteoWeatherHttp/OpenMeteoWeatherHttp.bpmn. Model this process:\nmanual start -> HTTP GET the current weather for Bellevue from the public\nOpen-Meteo API -> end.\n\nRequirements:\n- Discover the HTTP-execution extension type via the registry and author its\n  node from the registry template. Do not hand-author uipath:* XML from prose.\n- This is a connectionless (manual) HTTP call — no Integration Service\n  connection. Model it as a bpmn:sendTask using the documented\n  Intsvc.HttpExecution wrapper in manual mode with method GET and a literal\n  Open-Meteo forecast URL (host api.open-meteo.com), including latitude,\n  longitude, and current-weather query parameters.\n- Capture the HTTP response into a declared process variable (BPMN.Variables).\n- Do not invent or paste real tenant URLs, connection IDs, or connector keys —\n  the only external URL is the public Open-Meteo endpoint.\n- Include a bpmndi:BPMNDiagram with a BPMNShape for every node and a BPMNEdge\n  for every sequence flow.\n- Do not upload, publish, deploy, debug, run, pack, or actually call the API,\n  and do not pause for approval or confirmation.\n",
+      "agent_output": "[ASSISTANT] Now I have the references. Let me pull the registry and get the templates in parallel:\n[ASSISTANT] Now I have both templates. Let me create the directory and author the BPMN file:\n[ASSISTANT] Now I have everything needed. Let me author the BPMN file:\n[ASSISTANT] Now validate:\n[ASSISTANT] The BPMN is **VALID**. Here's a summary of what was built:\n\n---\n\n## `OpenMeteoWeatherHttp/OpenMeteoWeatherHttp.bpmn` — complete\n\n**Process:** Start → HTTP GET weather → End\n\n### What was done and why\n\n1. **Registry pull** — synced the OOTB registry (no login needed for `Intsvc.HttpExecution`).\n\n2. **Template discovery** — `registry get Intsvc.HttpExecution` confirmed:\n   - Host element: `bpmn:SendTask` (as the registry requires)\n   - Extension tag: `uipath:activity`\n   - Context fields: `mode`, `method`, `url`, `headers`, `parameters`, `body`\n   - Output: `source=\"=response\"` → variable\n\n3. **Node authored from the registry template** — placeholders filled:\n   | Placeholder | Value |\n   |---|---|\n   | `mode` | `manual` (connectionless — no IS connection) |\n   | `method` | `GET` |\n   | `url` | `https://api.open-meteo.com/v1/forecast` (literal, public) |\n   | `parameters` | `{\"latitude\":\"47.6101\",\"longitude\":\"-122.2015\",\"current_weather\":\"true\"}` |\n   | `headers` | `{}` (none needed for public API) |\n   | `body` | `null` |\n   | `var` | `Var_WeatherResponse` (declared in `uipath:variables`) |\n\n   Bellevue, WA coordinates: 47.6101°N, 122.2015°W.\n\n4. **Variable declared** — `Var_WeatherResponse` of type `object` in the process-level `<uipath:variables>` block captures the full JSON response.\n\n5. **Diagram included** — `BPMNShape` for all 3 nodes, `BPMNEdge` for both flows, left-to-right layout.\n\n6. **Validated** — `node validate-bpmn.mjs` → `VALID` (exit 0).\n[RESULT - SUCCESS] The BPMN is **VALID**. Here's a summary of what was built:\n\n---\n\n## `OpenMeteoWeatherHttp/OpenMeteoWeatherHttp.bpmn` — complete\n\n**Process:** Start → HTTP GET weather → End\n\n### What was done and why\n\n1. **Registry pull** — synced the OOTB registry (no login needed for `Intsvc.HttpExecution`).\n\n2. **Template discovery** — `registry get Intsvc.HttpExecution` confirmed:\n   - Host element: `bpmn:SendTask` (as the registry requires)\n   - Extension tag: `uipath:activity`\n   - Context fields: `mode`, `method`, `url`, `headers`, `parameters`, `body`\n   - Output: `source=\"=response\"` → variable\n\n3. **Node authored from the registry template** — placeholders filled:\n   | Placeholder | Value |\n   |---|---|\n   | `mode` | `manual` (connectionless — no IS connection) |\n   | `method` | `GET` |\n   | `url` | `https://api.open-meteo.com/v1/forecast` (literal, public) |\n   | `parameters` | `{\"latitude\":\"47.6101\",\"longitude\":\"-122.2015\",\"current_weather\":\"true\"}` |\n   | `headers` | `{}` (none needed for public API) |\n   | `body` | `null` |\n   | `var` | `Var_WeatherResponse` (declared in `uipath:variables`) |\n\n   Bellevue, WA coordinates: 47.6101°N, 122.2015°W.\n\n4. **Variable declared** — `Var_WeatherResponse` of type `object` in the process-level `<uipath:variables>` block captures the full JSON response.\n\n5. **Diagram included** — `BPMNShape` for all 3 nodes, `BPMNEdge` for both flows, left-to-right layout.\n\n6. **Validated** — `node validate-bpmn.mjs` → `VALID` (exit 0).",
+      "commands": [
+        {
+          "tool_name": "Skill",
+          "tool_id": "toolu_bdrk_01PGDtFr7qKo6csy13HyQNAj",
+          "assistant_turn_index": 1,
+          "timestamp": "2026-07-22T05:15:31.938492",
+          "duration_ms": 8.195235044695437,
+          "generation_completed_at": "2026-07-22T05:15:31.938492",
+          "execution_started_at": "2026-07-22T05:15:31.938710",
+          "execution_completed_at": "2026-07-22T05:15:31.946905",
+          "parameters": {
+            "skill": "tmp:uipath-maestro-bpmn"
+          },
+          "result_status": "success",
+          "result_summary": "Launching skill: tmp:uipath-maestro-bpmn",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 0,
+          "result_tokens": 10
+        },
+        {
+          "tool_name": "Read",
+          "tool_id": "toolu_bdrk_01SguNosS73JorSWxTH9ZNku",
+          "assistant_turn_index": 3,
+          "timestamp": "2026-07-22T05:15:41.124478",
+          "duration_ms": 563.3417060598731,
+          "generation_completed_at": "2026-07-22T05:15:41.124478",
+          "execution_started_at": "2026-07-22T05:15:41.124539",
+          "execution_completed_at": "2026-07-22T05:15:41.687881",
+          "parameters": {
+            "file_path": "/home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn/references/structural-bpmn.md"
+          },
+          "result_status": "success",
+          "result_summary": "1\t# Structural BPMN (what the registry does not emit)\n2\t\n3\tThe registry's `xmlTemplate`s give you the `uipath:*` payload for each node\n4\t(see [registry-workflow.md](registry-workflow.md)). They do **not** give you the\n5\tstructural BPMN that holds those nodes together. This file is the ground truth\n6\tfor everything you author by hand around the templates.\n7\t\n8\tTwo sources define the contract:\n9\t\n10\t- the registry spec `bpmn-spec.json` — enumerates which BPMN element types and\n11\t  event definitions exist, via its `bpmnElements` section;\n12\t- the Studio Web canvas serializer\n13\t  (`PO.Frontend/src/services/serialization/`) — defines how that XML must be\n14\t  shaped to import and round-trip.\n15\t\n16\tWhere the registry stops, the canvas serializer is authoritative. Each\n17\tgap below is labelled **REGISTRY GAP** — the registry exposes no template for\n18\tit, so author it from this reference.\n19\t\n20\t## The document scaffold (REGISTRY GAP)\n21\t\n22\tThe registry emits no `<bpmn:definitions>` / `<bpmn:process>` root and no\n23\tnamespace declarations. Author this shell yourself. The canvas import detector\n24\t(`exporter.ts`) requires: a root `<…:definitions>` carrying a BPMN-spec\n25\tnamespace, at least one `<bpmn:process>`, and (to render) a\n26\t`<bpmndi:BPMNDiagram>`.\n27\t\n28\t```xml\n29\t<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n30\t<bpmn:definitions\n31\t    xmlns:bpmn=\"http://www.omg.org/spec/BPMN/20100524/MODEL\"\n32\t    xmlns:bpmndi=\"http://www.omg.org/spec/BPMN/20100524/DI\"\n33\t    xmlns:dc=\"http://www.omg.org/spec/DD/20100524/DC\"\n34\t    xmlns:di=\"http://www.omg.org/spec/DD/20100524/DI\"\n35\t    xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n36\t    xmlns:uipath=\"http://uipath.org/schema/bpmn\"\n37\t    id=\"Definitions_1\" targetNamespace=\"http://bpmn.io/schema/bpmn\"\n38\t    exporter=\"UiPath (https://bpmn.uipath.com)\" exporterVersion=\"1.0\">\n39\t  <bpmn:process id=\"Process_1\" isExecutable=\"true\">\n40\t    <!-- variables, flow nodes, sequence flows -->\n41\t  </bpmn:process>\n42\t  <bpmndi:BPMNDiagram id=\"Diagram_1\">\n43\t    <bpmndi:BPMNPlane id=\"Plane_1\" bpmnElement=\"Process_1\">\n44\t      <!-- one BPMNShape per node, one BPMNEdge per flow -->\n45\t    </bpmndi:BPMNPlane>\n46\t  </bpmndi:BPMNDiagram>\n47\t</bpmn:definitions>\n48\t```\n49\t\n50\tThe `uipath:` namespace URI is exactly `http://uipath.org/schema/bpmn`. All\n51\t`uipath:*` tags inside `extensionElements` are lower-camelCase\n52\t(`uipath:activity`, `uipath:variables`, `uipath:loopCharacteristics`, …).\n53\t\n54\tEvery `uipath:activity` / `uipath:event` / `uipath:mapping` carries its node\n55\ttype as a **child** element — `<uipath:type value=\"<Type>\" version=\"v1\" />` —\n56\tnever as a `type=` attribute on the wrapper. This holds both for templated nodes\n57\tand for any shell you author or preserve by hand.\n58\t\n59\tXML comments must not contain `--` (double-hyphen): it is invalid XML and the\n60\tfile will fail to parse. Never paste CLI commands or flags\n61\t(`--output`, `--connection-id`) into `<!-- … -->`. Keep comments minimal.\n62\t\n63\t## A complete minimal file (author from this, not from fixtures)\n64\t\n65\tThis is the whole shape — variables, an entry point, one node, a branch, and\n66\tthe diagram — in one valid file. Author from this skeleton plus the registry\n67\ttemplates for your nodes. **Do not read the validator's `test/fixtures/` to\n68\tinfer the pattern**; those are validator test data, and reading them is the\n69\tmain reason authoring runs out of time. Swap the `scriptTask` payload for the\n70\tregistry `xmlTemplate` of whatever node you need.\n71\t\n72\t```xml\n73\t<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n74\t<bpmn:definitions\n75\t    xmlns:bpmn=\"http://www.omg.org/spec/BPMN/20100524/MODEL\"\n76\t    xmlns:bpmndi=\"http://www.omg.org/spec/BPMN/20100524/DI\"\n77\t    xmlns:dc=\"http://www.omg.org/spec/DD/20100524/DC\"\n78\t    xmlns:di=\"http://www.omg.org/spec/DD/20100524/DI\"\n79\t    xmlns:uipath=\"http://uipath.org/schema/bpmn\"\n80\t    id=\"Definitions_1\" targetNamespace=\"http://bpmn.io/schema/bpmn\"\n81\t    exporter=\"UiPath (https://bpmn.uipath.com)\" exporterVersion=\"1.0\">\n82\t  <bpmn:process id=\"Process_1\" isExecutable=\"true\">\n83\t    <bpmn:extensionElements>\n84\t      <uipath:migrationVersion version=\"11.5\" />\n85\t      <uipath:variables version=\"v1\">\n86\t        <uipath:inputOutput id=\"Var_Amount\" name=\"Amount\" type=\"number\" />\n87\t        <uipath:inputOutput id=\"Var_Tier\" name=\"Tier\" type=\"string\" />\n88\t      </uipath:variables>\n89\t    </bpmn:extensionElements>\n90\t    <bpmn:startEvent id=\"Start_1\" name=\"Start\"><bpmn:outgoing>Flow_1</bpmn:outgoing></bpmn:startEvent>\n91\t    <bpmn:scriptTask id=\"Task_Tier\" name=\"Classify\" scriptFormat=\"JavaScript\">\n92\t      <bpmn:extensionElements>\n93\t        <uipath:scriptVersion value=\"v3\" />\n94\t        <uipath:mapping version=\"v1\">\n95\t          <uipath:type value=\"BPMN.ScriptTask\" version=\"v1\" />\n96\t          <uipath:input name=\"args\"><![CDATA[{\"amount\":\"=vars.Var_Amount\"}]]></uipath:input>\n97\t          <uipath:output name=\"tier\" type=\"string\" var=\"Var_Tier\" source=\"=result.response\" />\n98\t        </uipath:mapping>\n99\t      </bpmn:extensionElements>\n100\t      <bpmn:incoming>Flow_1</bpmn:incoming><bpmn:outgoing>Flow_2</bpmn:outgoing>\n101\t      <bpmn:script><![CDATA[return { response: amount > 1000 ? \"high\" : \"low\" };]]></bpmn:script>\n102\t    </bpmn:scriptTask>\n103\t    <bpmn:exclusiveGateway id=\"Gw_1\" name=\"Tier?\" default=\"Flow_Low\">\n104\t      <bpmn:incoming>Flow_2</bpmn:incoming>\n105\t      <bpmn:outgoing>Flow_High</bpmn:outgoing><bpmn:outgoing>Flow_Low</bpmn:outgoing>\n106\t    </bpmn:exclusiveGateway>\n107\t    <bpmn:endEvent id=\"End_High\" name=\"High\"><bpmn:incoming>Flow_High</bpmn:incoming></bpmn:endEvent>\n108\t    <bpmn:endEvent id=\"End_Low\" name=\"Low\"><bpmn:incoming>Flow_Low</bpmn:incoming></bpmn:endEvent>\n109\t    <bpmn:sequenceFlow id=\"Flow_1\" sourceRef=\"Start_1\" targetRef=\"Task_Tier\" />\n110\t    <bpmn:sequenceFlow id=\"Flow_2\" sourceRef=\"Task_Tier\" targetRef=\"Gw_1\" />\n111\t    <bpmn:sequenceFlow id=\"Flow_High\" sourceRef=\"Gw_1\" targetRef=\"End_High\">\n112\t      <bpmn:conditionExpression xsi:type=\"bpmn:tFormalExpression\"\n113\t        xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">=vars.Var_Tier == \"high\"</bpmn:conditionExpression>\n114\t    </bpmn:sequenceFlow>\n115\t    <bpmn:sequenceFlow id=\"Flow_Low\" sourceRef=\"Gw_1\" targetRef=\"End_Low\" />\n116\t  </bpmn:process>\n117\t  <bpmndi:BPMNDiagram id=\"Diagram_1\">\n118\t    <bpmndi:BPMNPlane id=\"Plane_1\" bpmnElement=\"Process_1\">\n119\t      <bpmndi:BPMNShape id=\"S_Start\" bpmnElement=\"Start_1\"><dc:Bounds x=\"160\" y=\"100\" width=\"36\" height=\"36\" /></bpmndi:BPMNShape>\n120\t      <bpmndi:BPMNShape id=\"S_Task\" bpmnElement=\"Task_Tier\"><dc:Bounds x=\"250\" y=\"78\" width=\"100\" height=\"80\" /></bpmndi:BPMNShape>\n121\t      <bpmndi:BPMNShape id=\"S_Gw\" bpmnElement=\"Gw_1\"><dc:Bounds x=\"410\" y=\"93\" width=\"50\" height=\"50\" /></bpmndi:BPMNShape>\n122\t      <bpmndi:BPMNShape id=\"S_High\" bpmnElement=\"End_High\"><dc:Bounds x=\"520\" y=\"40\" width=\"36\" height=\"36\" /></bpmndi:BPMNShape>\n123\t      <bpmndi:BPMNShape id=\"S_Low\" bpmnElement=\"End_Low\"><dc:Bounds x=\"520\" y=\"160\" width=\"36\" height=\"36\" /></bpmndi:BPMNShape>\n124\t      <bpmndi:BPMNEdge id=\"E_1\" bpmnElement=\"Flow_1\"><di:waypoint x=\"196\" y=\"118\" /><di:waypoint x=\"250\" y=\"118\" /></bpmndi:BPMNEdge>\n125\t      <bpmndi:BPMNEdge id=\"E_2\" bpmnElement=\"Flow_2\"><di:waypoint x=\"350\" y=\"118\" /><di:waypoint x=\"410\" y=\"118\" /></bpmndi:BPMNEdge>\n126\t      <bpmndi:BPMNEdge id=\"E_High\" bpmnElement=\"Flow_High\"><di:waypoint x=\"435\" y=\"93\" /><di:waypoint x=\"435\" y=\"58\" /><di:waypoint x=\"520\" y=\"58\" /></bpmndi:BPMNEdge>\n127\t      <bpmndi:BPMNEdge id=\"E_Low\" bpmnElement=\"Flow_Low\"><di:waypoint x=\"435\" y=\"143\" /><di:waypoint x=\"435\" y=\"178\" /><di:waypoint x=\"520\" y=\"178\" /></bpmndi:BPMNEdge>\n128\t    </bpmndi:BPMNPlane>\n129\t  </bpmndi:BPMNDiagram>\n130\t</bpmn:definitions>\n131\t```\n132\t\n133\t## Variables (`BPMN.Variables`)\n134\t\n135\tDeclare root variables with the `BPMN.Variables` registry template attached to\n136\tthe process via `extensionElements`, or use the canvas `<uipath:variables>`\n137\tblock directly. Variable bodies are CDATA. Reference variables in expressions as\n138\t`vars.<id>` — see [expression-authoring.md](expression-authoring.md).\n139\tSub-process-scoped variables go in that sub-process's own `<uipath:variables>`.\n140\t\n141\t## Script tasks (`BPMN.ScriptTask`) — Jint runtime contract\n142\t\n143\t`bpmn:scriptTask scriptFormat=\"JavaScript\"` runs under **Jint**, not Node.js or\n144\ta browser. The mapping payload comes from the `BPMN.ScriptTask` registry\n145\ttemplate, but the runtime contract is fixed:\n146\t\n147\t- Only these helpers exist: `uipath.aggregate`, `uipath._aggregate`,\n148\t  `uipath._pipe`, and a no-op `console`. No npm packages, filesystem, network,\n149\t  browser globals, or long-running async behavior. Execution envelope is ~64 MB\n150\t  / 30 s.\n151\t- Set `uipath:scriptVersion value=\"v3\"` for new scripts; preserve an imported\n152\t  `value=\"v2\"`. For v2+ the script returns JSON under `response`.\n153\t- Mapped `args` fields are read as **top-level identifiers** in the script body\n154\t  (`amount`, not `args.amount`); the input mapping itself stays `name=\"args\"`\n155\t  and maps each field by variable id (`=vars.Var_Amount`).\n156\t- Map the return back through `source=\"=result.response\"` (scalar) or\n157\t  `source=\"=result.response.<field>\"` (object field); `var` points at a declared\n158\t  variable id (do not put the target id in `name`).\n159\t- Do not mutate `Globals.*`, `vars.*`, or process variables inside the script\n160\t  body. The supported path is: return a value from the script, then use a\n161\t  `uipath:output` mapping to write it to the declared variable. Direct mutation\n162\t  is not applied to the runtime, so the variable reads empty afterward.\n163\t\n164\t```xml\n165\t<bpmn:scriptTask id=\"Task_RiskScore\" name=\"Risk Score\" scriptFormat=\"JavaScript\">\n166\t  <bpmn:extensionElements>\n167\t    <uipath:scriptVersion value=\"v3\" />\n168\t    <uipath:mapping version=\"v1\">\n169\t      <uipath:type value=\"BPMN.ScriptTask\" version=\"v1\" />\n170\t      <uipath:input name=\"args\"><![CDATA[{\"amount\":\"=vars.Var_Amount\",\"daysOverdue\":\"=vars.Var_DaysOverdue\"}]]></uipath:input>\n171\t      <uipath:output name=\"riskScore\" type=\"number\" var=\"Var_RiskScore\" source=\"=result.response\" />\n172\t    </uipath:mapping>\n173\t  </bpmn:extensionElements>\n174\t  <bpmn:script><![CDATA[\n175\tvar score = amount * 0.01 + daysOverdue * 2;\n176\treturn { response: score };\n177\t]]></bpmn:script>\n178\t</bpmn:scriptTask>\n179\t```\n180\t\n181\t## Sequence flows, conditions, and gateway defaults (REGISTRY GAP)\n182\t\n183\tThe registry never emits `<bpmn:sequenceFlow>`, conditions, or the gateway\n184\t`default` attribute. Author all of them.\n185\t\n186\t- A flow: `<bpmn:sequenceFlow id=\"Flow_1\" sourceRef=\"A\" targetRef=\"B\" />`. The\n187\t  source/target nodes must also list `<bpmn:incoming>`/`<bpmn:outgoing>`\n188\t  (the registry templates leave `{incomingEdge}`/`{outgoingEdge}` placeholders\n189\t  for exactly these).\n190\t- Conditional flow body: `<bpmn:conditionExpression xsi:type=\"bpmn:tFormalExpression\">=vars.Var_X == \"approved\"</bpmn:conditionExpression>`.\n191\t  The canvas normalizes the body to start with `=` — always lead with `=`.\n192\t- Gateway default flow: set `default=\"Flow_else\"` on the gateway element, and\n193\t  give that flow no condition.\n194\t\n195\t## Gateways\n196\t\n197\tAuthor these gateway types for new BPMN: `bpmn:ExclusiveGateway`,\n198\t`bpmn:ParallelGateway`, `bpmn:InclusiveGateway`, `bpmn:EventBasedGateway`.\n199\t`bpmn:ComplexGateway` round-trips structurally but is **preserve-only** — do not\n200\tgenerate it for new authoring (see [Do not generate for new\n201\tauthoring](#do-not-generate-for-new-authoring-preserve-on-round-trip-only)).\n202\t\n203\t- **Exclusive (XOR)**: each non-default outgoing flow needs a\n204\t  `conditionExpression`; exactly one outgoing flow is the `default`. (Validator\n205\t  rule `MISSING_CONDITION_EXPRESSION`.)\n206\t- **Parallel (AND)**: fork = one in, many out; join = many in, one out. No\n207\t  conditions.\n208\t- **Inclusive (OR)**: conditions on outgoing flows; multiple may be taken.\n209\t- **Event-based**: routes to the first of several catch events / receive tasks\n210\t  to fire; its outgoing flows target intermediate catch events or receive tasks.\n211\t- A gateway with exactly one incoming and one outgoing flow is rejected\n212\t  (`SUPERFLUOUS_GATEWAY`). Activities/events must not have more than one\n213\t  incoming flow — join with a gateway, not a \"fake join\" (`FAKE_JOIN`).\n214\t\n215\t## Events and the event-definition matrix\n216\t\n217\t`bpmn-spec.json` `bpmnElements.events` enumerates which event definitions each\n218\tevent element can carry on **round-trip**. For **new authoring**, only the\n219\t**none**, **Message**, **Timer**, **Error** (on end + boundary), and\n220\t**Terminate** (on end events only) definitions are generated. Conditional,\n221\tSignal, Escalation, Compensate, Cancel, Link, multiple, and parallel-multiple\n222\tdefinitions are **preserve-only** — keep them when imported, but do not generate\n223\tthem for new BPMN (see [Do not generate for new\n224\tauthoring](#do-not-generate-for-new-authoring-preserve-on-round-trip-only)).\n225\t\n226\tThe matrix below is the round-trip acceptance per element; **preserve-only**\n227\tmarks definitions that the skill keeps but does not author for new files.\n228\t\n229\t| Event element | Authorable | Preserve-only (round-trip) |\n230\t| --- | --- | --- |\n231\t| `bpmn:StartEvent` | none, Message, Timer | Conditional, Signal |\n232\t| `bpmn:IntermediateThrowEvent` | none, Message | Escalation, Signal, Link, Compensate |\n233\t| `bpmn:IntermediateCatchEvent` | Message, Timer | Escalation, Signal, Conditional, Link, Compensate |\n234\t| `bpmn:EndEvent` | none, Message, Error, Terminate | Escalation, Compensate, Signal |\n235\t| `bpmn:BoundaryEvent` | Message, Timer, Error | Escalation, Conditional, Signal, Compensate |\n236\t\n237\tPayload shapes the canvas serializes:\n238\t\n239\t- **Timer**: `<bpmn:timerEventDefinition><bpmn:timeDuration xsi:type=\"bpmn:tFormalExpression\">PT30M</bpmn:timeDuration></bpmn:timerEventDefinition>`\n240\t  (or `timeDate` / `timeCycle`). Static durations must be valid ISO-8601;\n241\t  week designators (`PnW`) are unsupported. Expression-mode is allowed and\n242\t  accepts either prefix — `=…` or `@…`.\n243\t- **Message**: `<bpmn:messageEventDefinition messageRef=\"Message_1\" />` with a\n244\t  `<bpmn:message id=\"Message_1\" name=\"…\"/>` declared at definitions level. The\n245\t  Maestro internal-message events (`Maestro.ReceiveMessageEvent` /\n246\t  `Maestro.SendMessageEvent`) carry the `uipath:event` payload **and** a bare\n247\t  `<bpmn:messageEventDefinition />` (see their registry templates).\n248\t- **Error**: `<bpmn:errorEventDefinition errorRef=\"Error_1\" />` with a\n249\t  `<bpmn:error id=\"Error_1\" name=\"…\" errorCode=\"…\"/>` at definitions level. An\n250\t  error end event with no `errorRef` fails to parse at runtime\n251\t  (`ERROR_END_EVENT_MISSING_EXCEPTION`); an error referenced by a boundary event\n252\t  must declare an `errorCode` (`ERROR_BOUNDARY_EVENT_REQUIRES_ERROR_CODE`).\n253\t- **Terminate** (end events only): emit the bare\n254\t  `<bpmn:terminateEventDefinition />`.\n255\t\n256\tPreserve-only payloads — keep these when imported, but do not author them for\n257\tnew files:\n258\t\n259\t- **Signal**: `<bpmn:signalEventDefinition signalRef=\"Signal_1\" />` with a\n260\t  definitions-level `<bpmn:signal/>`.\n261\t- **Escalation**: `<bpmn:escalationEventDefinition escalationRef=\"Escalation_1\" />`\n262\t  with a `<bpmn:escalation id=\"Escalation_1\" name=\"…\" escalationCode=\"…\"/>`\n263\t  declared at definitions level (parallel to message/error/signal).\n264\t- **Conditional / Link / Compensate**: the bare definition element; the canvas\n265\t  round-trips it.\n266\t\n267\t### Boundary events (REGISTRY GAP for `attachedToRef` / `cancelActivity`)\n268\t\n269\tA boundary event attaches to an activity and catches an event on it. The\n270\tregistry exposes no boundary template; author it:\n271\t\n272\t```xml\n273\t<bpmn:boundaryEvent id=\"Boundary_Timeout\" attachedToRef=\"Task_DoWork\" cancelActivity=\"true\">\n274\t  <bpmn:timerEventDefinition>\n275\t    <bpmn:timeDuration xsi:type=\"bpmn:tFormalExpression\">PT15M</bpmn:timeDuration>\n276\t  </bpmn:timerEventDefinition>\n277\t  <bpmn:outgoing>Flow_OnTimeout</bpmn:outgoing>\n278\t</bpmn:boundaryEvent>\n279\t```\n280\t\n281\t- `attachedToRef` = id of the activity it sits on. The boundary event and that\n282\t  activity must be `flowElements` of the same parent scope.\n283\t- `cancelActivity=\"true\"` = interrupting (default); `cancelActivity=\"false\"` =\n284\t  non-interrupting. Per the spec, non-interrupting is available for\n285\t  Message/Timer/Escalation/Conditional/Signal — **not** Error or Compensate.\n286\t- Only one catch-all (no `errorRef`) error boundary event per task, and no two\n287\t  error boundary events with the same error code on one task\n288\t  (`MULTIPLE_CATCH_ALL_BOUNDARY_EVENTS_ON_TASK`,\n289\t  `DUPLICATE_ERROR_BOUNDARY_EVENT_ON_TASK`).\n290\t\n291\t### Retry and error mapping (REGISTRY GAP)\n292\t\n293\tUiPath-specific retry and error-mapping metadata live inside an activity's\n294\t`extensionElements`. The error **code** lives on the declared\n295\t`bpmn:error errorCode=\"…\"`; `uipath:*` elements reference it through `errorRef`.\n296\t\n297\t```xml\n298\t<uipath:retry maxRetryCount=\"2\" retryBackoff=\"PT30S\" retryBackoffType=\"exponential\"\n299\t              maxDuration=\"PT5M\" exponentialBase=\"2\" retryAllErrors=\"false\">\n300\t  <uipath:errorDefinition errorRef=\"Error_ServiceUnavailable\" />\n301\t</uipath:retry>\n302\t<uipath:errorMapping version=\"v1\">\n303\t  <uipath:error id=\"Mapped_ServiceUnavailable\" errorRef=\"Error_ServiceUnavailable\"\n304\t                priority=\"1\" condition=\"=vars.error.code == &quot;SERVICE_UNAVAILABLE&quot;\"\n305\t                detail=\"Service unavailable\" retryable=\"true\" />\n306\t</uipath:errorMapping>\n307\t```\n308\t\n309\t- `uipath:retry` attributes: `maxRetryCount`, `retryBackoff`, `retryBackoffType`,\n310\t  `maxDuration`, `exponentialBase`, `retryAllErrors`. Do not use stale aliases\n311\t  (`maxAttempts`, `interval`).\n312\t- `uipath:error` (mapping) fields: `id`, `errorRef`, `priority`, `condition`,\n313\t  `detail`, `retryable` (`true`/`false`). Conditions read the runtime error via\n314\t  `vars.error` and contain no assignments. Do not put `code=` on `uipath:error`;\n315\t  model the code on `bpmn:error errorCode` and reference via `errorRef`.\n316\t\n317\t## Subprocess, call activity, event subprocess (REGISTRY GAP for structure)\n318\t\n319\t- **SubProcess** (`bpmn:SubProcess`): a container with its own nested\n320\t  `flowElements` (start event, nodes, end event) and its own scoped\n321\t  `<uipath:variables>`. Variants: `collapsed`, `expanded`, `eventSubprocess`.\n322\t  The shape carries `isExpanded` for the collapsed/expanded distinction.\n323\t- **Event subprocess**: a `bpmn:SubProcess` with `triggeredByEvent=\"true\"`. It\n324\t  must have **exactly one** start event, and that start event **must carry an\n325\t  event definition** (with `isInterrupting`) — a blank start event is invalid for\n326\t  an event subprocess.\n327\t- **Call activity** (`bpmn:CallActivity`): invokes a *separate* Maestro\n328\t  instance. The registry provides the `uipath:activity` payload for the\n329\t  Orchestrator agentic/case-management call-activity types\n330\t  (`Orchestrator.StartAgenticProcess[Async]`, `…CaseMgmtProcess[Async]`). A\n331\t  plain BPMN `calledElement` round-trips but is not specially authored by the\n332\t  canvas layer.\n333\t- Each scope (process or sub-process) may have at most one blank (untyped) start\n334\t  event (`MULTIPLE_BLANK_START_EVENTS`).\n335\t\n336\t> SubProcess scopes operations *within the same instance*; CallActivity invokes\n337\t> a *separate* Maestro instance. Do not conflate them.\n338\t\n339\t## Multi-instance / loop characteristics (REGISTRY GAP — canvas supports it)\n340\t\n341\tThe registry spec enumerates **no** multi-instance or loop markers\n342\t(`grep` for `multiInstance`/`loopCharacteristics` in `bpmn-spec.json` returns\n343\tnothing). This is a genuine registry gap. The Studio Web canvas, however, **does**\n344\tserialize them (`elements/nodes.ts`), so author them from the canvas contract:\n345\t\n346\t```xml\n347\t<bpmn:multiInstanceLoopCharacteristics isSequential=\"true\">\n348\t  <bpmn:completionCondition xsi:type=\"bpmn:tFormalExpression\">=vars.Var_Done</bpmn:completionCondition>\n349\t  <bpmn:extensionElements>\n350\t    <uipath:loopCharacteristics\n351\t        inputCollection=\"=vars.Var_Items\" inputElement=\"item\" />\n352\t  </bpmn:extensionElements>\n353\t</bpmn:multiInstanceLoopCharacteristics>\n354\t```\n355\t\n356\t- `isSequential=\"true\"` = one at a time; `false` = parallel.\n357\t- The collection/item binding lives in the `uipath:loopCharacteristics`\n358\t  extension (`inputCollection`, `inputElement`), **not** in `loopCardinality`\n359\t  (the canvas never reads `loopCardinality`).\n360\t- The loop element **must declare `inputElement`** — do not rely on reading a\n361\t  bare `iterator`/`iterator.item` downstream without it. For a multi-instance\n362\t  **subprocess** body, bind `inputElement=\"iterator[0]\"` on\n363\t  `uipath:loopCharacteristics` and pass the current item into body activities\n364\t  with `=iterator[0].item`. Do not assume a bare alias such as `=currentItem` is\n365\t  in scope inside a marker subprocess body unless the file already uses it.\n366\t- Inside the body, read the current item with the `iterator` namespace — see\n367\t  [expression-authoring.md](expression-authoring.md).\n368\t- `bpmn:standardLoopCharacteristics` is also recognized (no uipath extension).\n369\t\n370\tBecause the registry exposes no template for this, treat it as a documented\n371\tauthoring path backed by the canvas serializer, and tell the user it is a\n372\tregistry gap if they ask why no `registry get` covers it.\n373\t\n374\t## Do not generate for new authoring (preserve on round-trip only)\n375\t\n376\tThese structures are **not** authored for new Maestro BPMN. If they appear in an\n377\timported or brownfield file, preserve them and report that the skill cannot\n378\tsafely regenerate or normalize them. Planned / preview / TBD statuses count as\n379\tunsupported for generation until current tooling confirms them.\n380\t\n381\t- Gateway: `bpmn:complexGateway`.\n382\t- Tasks / containers: `bpmn:manualTask`, `bpmn:adHocSubProcess`,\n383\t  `bpmn:transaction`.\n384\t- Event definitions: `conditionalEventDefinition`, `signalEventDefinition`,\n385\t  `escalationEventDefinition`, `compensateEventDefinition`,\n386\t  `cancelEventDefinition`, `linkEventDefinition`, multiple, and\n387\t  parallel-multiple event definitions.\n388\t- Markers: standard-loop and compensation markers (use only documented\n389\t  multi-instance parallel/sequential metadata for new loops).\n390\t- Terminate is supported **only** on end events — not on start, boundary,\n391\t  intermediate-catch, or intermediate-throw events.\n392\t- Preserve-only `uipath:*` extension payloads: keep these when imported, and when\n393\t  a file legitimately needs one, reproduce the shape (with synthetic, public-safe\n394\t  contents) rather than inventing a new one.\n395\t  - **Typed activity/event shells always use the lowercase `<uipath:activity>` /\n396\t    `<uipath:event>` wrapper with a `<uipath:type value=\"<Type>\" version=\"v1\" />`\n397\t    child** — including types not served by the live registry (e.g.\n398\t    `Maestro.CasePlanScheduler`, `Maestro.CaseManagerGuardrails`,\n399\t    `Maestro.CaseRulesEvaluator`). Do **not** substitute the capital-`A`\n400\t    `<uipath:Activity>` element for a typed shell.\n401\t  - The capital-`A` `<uipath:Activity>` element is a **separate** generic\n402\t    preserve-only payload (its own element, not a wrapper for typed shells).\n403\t  - `uipath:caseManagement` is a versioned body-string element —\n404\t    `<uipath:caseManagement version=\"v1\">…synthetic payload…</uipath:caseManagement>`.\n405\t  - `<uipath:scriptVersion value=\"v2\" />` is legacy: author `v3` for new scripts,\n406\t    preserve `v2` where it already exists.\n407\t\n408\t## Diagram interchange — `bpmndi` (REGISTRY GAP — always generated)\n409\t\n410\tThe registry emits no diagram. Import is **diagram-driven**: the canvas builds\n411\tnodes from `BPMNShape`s and edges from `BPMNEdge`s, not by walking\n412\t`flowElements`. **A node with no shape is invisible; a flow with no edge is\n413\tdropped.** You must generate the full `BPMNDiagram` yourself.\n414\t\n415\t- One `<bpmndi:BPMNShape id=\"S_<nodeId>\" bpmnElement=\"<nodeId>\">` per node, with\n416\t  `<dc:Bounds x= y= width= height= />`. SubProcess shapes carry `isExpanded`.\n417\t- One `<bpmndi:BPMNEdge id=\"BPMNEdge_<flowId>\" bpmnElement=\"<flowId>\">` per\n418\t  sequence flow, with `<di:waypoint x= y= />` points.\n419\t- Lay nodes out left-to-right with non-overlapping bounds. Typical sizes: tasks\n420\t  100×80, events 36×36, gateways 50×50.\n421\t\n422\tExample:\n423\t\n424\t```xml\n425\t<bpmndi:BPMNShape id=\"S_StartEvent_1\" bpmnElement=\"StartEvent_1\">\n426\t  <dc:Bounds x=\"160\" y=\"100\" width=\"36\" height=\"36\" />\n427\t</bpmndi:BPMNShape>\n428\t<bpmndi:BPMNEdge id=\"BPMNEdge_Flow_1\" bpmnElement=\"Flow_1\">\n429\t  <di:waypoint x=\"196\" y=\"118\" />\n430\t  <di:waypoint x=\"260\" y=\"118\" />\n431\t</bpmndi:BPMNEdge>\n432\t```\n433\t\n434\t## Editing operations\n435\t\n436\tSafe, surgical edits on an existing `.bpmn` (preserve content you did not author\n437\t— see [SKILL.md](../SKILL.md#editing-an-existing-bpmn-preserve-what-you-did-not-author)):\n438\t\n439\t- **Add / delete / reconnect a node**: add the element with a stable id and its\n440\t  `<bpmn:incoming>`/`<bpmn:outgoing>` refs, add the sequence-flow elements in the\n441\t  owning scope, and add/update its `BPMNShape` and edge waypoints. On delete,\n442\t  remove orphaned flows and DI edges and recheck entry-point variables, output\n443\t  mappings, and binding references.\n444\t- **Insert a gateway**: split the existing sequence flow into an incoming and an\n445\t  outgoing flow, add conditions to the outgoing flows plus one `default`, add a\n446\t  matching join only if branches actually need synchronization, then re-waypoint\n447\t  the diagram (gateway shape + all edges).\n448\t- **Move logic into a subprocess**: move only elements that share a valid scope,\n449\t  re-scope their variables, recreate legal subprocess flow boundaries, and add a\n450\t  second diagram plane for the subprocess so nested content renders.\n451\t- **Add an entry point**: use a root-level start event, add a stable unique\n452\t  `uipath:entryPointId`, and declare input/output variables whose `elementId`\n453\t  matches that start event.\n454\t\n455\tDo not patch generated JSON to fix source behavior — change the `.bpmn` and\n456\tregenerate. For `Intsvc.*` activities/triggers, hand editing to CLI enrichment.\n457\t\n458\t### Edit red-flags\n459\t\n460\tRe-check after any edit:\n461\t\n462\t- A diagram plane references a missing process, collaboration, or subprocess.\n463\t- A rendered element lacks a shape or its flow lacks an edge/waypoint.\n464\t- An entry-point variable points at the wrong start event.\n465\t- A `uipath:context` value references a missing binding.\n466\t- A topology edit rewrote unrelated `uipath:*` extension XML.\n467\t- An Integration Service element carries hand-authored connection details.\n468\t\n469\t## Validation\n470\t\n471\tThere is **no** `uip maestro bpmn validate` CLI command. The skill ships its own\n472\toffline validator that reconstructs the PO.Frontend Node/Edge/CanvasState model\n473\tfrom the parsed BPMN and runs **every** canvas validation rule — run it as the\n474\tprimary check:\n475\t\n476\t```bash\n477\tcd skills/uipath-maestro-bpmn/validator && npm install --silent\n478\tnode validate-bpmn.mjs <file.bpmn>   # prints VALID and exits 0, or prints errors and exits 1\n479\t```\n480\t\n481\t`VALID` / exit 0 means the document passes all rules. Any other output lists the\n482\tblocking errors (gateway/condition, fake-join, superfluous-gateway, error\n483\tend/boundary event, timer-duration, single-blank-start, variable-reference, and\n484\tIS-connector checks). See [validator/README.md](../validator/README.md).\n485\t\n486\tIf Node is unavailable, fall back to a well-formed-XML parse plus the structural\n487\tchecklist below — it mirrors the same blocking rules:\n488\t\n489\t```bash\n490\tpython3 -c \"import xml.etree.ElementTree as ET; ET.parse('<file.bpmn>')\"\n491\t```\n492\t\n493\tThen walk the structural checklist:\n494\t\n495\t1. Root is `<…:definitions>` with the BPMN + `uipath` namespaces.\n496\t2. Exactly one `<bpmndi:BPMNDiagram>` with a shape per node and an edge per flow.\n497\t3. Every `sourceRef`/`targetRef`/`attachedToRef`/`*Ref` resolves to a declared id.\n498\t4. Each XOR gateway: non-default flows have conditions; exactly one default.\n499\t5. No activity/event has more than one incoming flow.\n500\t6. Each event subprocess has exactly one start event, and it carries an event\n501\t   definition (with `isInterrupting`).\n502\t7. Every `vars.<id>` reference resolves to a declared variable.\n503\t8. Each `uipath:*` payload was produced from a `registry get` template, not\n504\t   hand-written.\n505\t",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 1,
+          "result_tokens": 7205
+        },
+        {
+          "tool_name": "Read",
+          "tool_id": "toolu_bdrk_018pbki9mX6PkY5iLa78bEJn",
+          "assistant_turn_index": 4,
+          "timestamp": "2026-07-22T05:15:41.141851",
+          "duration_ms": 29.82042299117893,
+          "generation_completed_at": "2026-07-22T05:15:41.141851",
+          "execution_started_at": "2026-07-22T05:15:41.141908",
+          "execution_completed_at": "2026-07-22T05:15:41.171728",
+          "parameters": {
+            "file_path": "/home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn/references/registry-workflow.md"
+          },
+          "result_status": "success",
+          "result_summary": "1\t# Registry workflow\n2\t\n3\tEvery `uipath:*` payload in a Maestro `.bpmn` comes from the registry — never\n4\tfrom prose, never hand-written. This file is the loop for turning user intent\n5\tinto registry-backed XML.\n6\t\n7\t## 1. Sync and discover\n8\t\n9\t```bash\n10\tuip maestro bpmn registry pull            # sync + cache (login for connectors/processes)\n11\tuip maestro bpmn registry list --limit -1 --output json   # all extension types\n12\tuip maestro bpmn registry search <keyword> --output json  # find a type by intent\n13\tuip is connections list --all-folders --output json   # live IS connections (all folders)\n14\t```\n15\t\n16\tMap the user's intent to an extension type from the list. Confirm the choice\n17\twith the user (and the specific connection / process / queue) before authoring.\n18\t**Never fabricate an identifier** — see [cli-conventions.md](cli-conventions.md).\n19\t\n20\t**Connection discovery must be exhaustive.** Always pass `--all-folders` to\n21\t`uip is connections list` — connections live in many folders and a folder-scoped\n22\tlisting silently misses them. An empty or unmatched result from a missing\n23\t`--all-folders`, or from a connector key guessed from a brand name rather than\n24\tfound via `registry search`, is a **false negative** — never conclude \"no\n25\tconnection exists\" or ask the user to create one until you have searched the\n26\tregistry for the real connector key and listed across all folders.\n27\t\n28\t`registry list` returns three buckets in `Data`: `ExtensionTypes` (the OOTB\n29\textension types, always available), `Connectors` and `Processes` (only after\n30\t`uip login`). Each extension-type row carries `ExtensionType`, `Label`,\n31\t`BpmnElement` (the host BPMN element), `ExtensionTag`, and\n32\t`RequiresDiscovery` (`Yes` means you must resolve a concrete resource — process,\n33\tqueue, connection — before the node is runnable).\n34\t\n35\t## 2. Get the template for each chosen type\n36\t\n37\t```bash\n38\tuip maestro bpmn registry get <extensionType> --output json\n39\t```\n40\t\n41\t`Data.ExtensionType` contains everything needed to author the node:\n42\t\n43\t| Field | Use |\n44\t| --- | --- |\n45\t| `xmlTemplate` | The literal node XML with `{placeholder}` slots. **Author from this; fill placeholders only.** |\n46\t| `bpmnElement` | The host BPMN element the template uses (e.g. `bpmn:ServiceTask`). |\n47\t| `extensionTag` | `uipath:activity`, `uipath:event`, or `uipath:mapping`. |\n48\t| `contextFields[]` | The `uipath:context` inputs; each may carry its own `bindingInfo`. |\n49\t| `bindingInfo` | How the node binds to a resource (see §4). |\n50\t| `inputPattern` / `inputName` / `inputTarget` | How the request body input is shaped. |\n51\t| `requiresDiscovery` / `isDynamic` | Whether a concrete resource must be resolved first. |\n52\t\n53\tThe placeholders you fill are the obvious ones: `{id}`, `{name}`,\n54\t`{incomingEdge}`, `{outgoingEdge}`, `{varId}` (the output variable id), plus the\n55\tper-context-field placeholders (`{releaseKey}`, `{queueName}`, `{appId}`, …) and\n56\tthe body CDATA. Leave the structural placeholders (`{incomingEdge}` /\n57\t`{outgoingEdge}`) wired to the sequence-flow ids you create in\n58\t[structural-bpmn.md](structural-bpmn.md).\n59\t\n60\t## 3. Connector (`Intsvc.*`) enrichment\n61\t\n62\tFor connector types (`requiresDiscovery: Yes`, e.g.\n63\t`Intsvc.ActivityExecution`, `Intsvc.WaitForEvent`, `Intsvc.EventTrigger`),\n64\tresolve a live connection and object, then enrich:\n65\t\n66\t```bash\n67\tuip is connections list --all-folders --output json   # pick a connection id + its connector (search all folders)\n68\tuip maestro bpmn registry get Intsvc.ActivityExecution \\\n69\t    --connection-id <id> --object-name <object> --output json\n70\t```\n71\t\n72\tThe response adds an `ISEnrichment` block with the live field metadata. Write\n73\tthe activity's `body` input (`target=\"body\"`) and `context` (`connectorKey`,\n74\t`objectName`) from that enrichment — do not hand-author connector schemas. The\n75\tconnection is referenced through a connection binding, `=bindings.<bindingId>`\n76\t(see §4).\n77\t\n78\t## 4. Bindings — from `bindingInfo`, never invented\n79\t\n80\tA node that targets a cloud resource carries a binding. The `bindingInfo` on the\n81\textension type tells you the binding shape; the concrete value comes from\n82\tdiscovery or the user.\n83\t\n84\t- **Resource bindings** (`bindingInfo.resource` = `process` / `queue` /\n85\t  `businessRule`): the context field named by `bindingInfo.contextField`\n86\t  (e.g. `releaseKey`, `queueName`) holds the resource key\n87\t  (`bindingInfo.propertyAttribute`, usually `Key`). Resolve the real key with\n88\t  `registry search` / discovered `Processes` / `Queues`; never guess a GUID.\n89\t- **Connection bindings** (`Intsvc.*`): the context references a connection via\n90\t  `=bindings.<bindingId>`, and a `<uipath:binding>` of `resource=\"Connection\"`\n91\t  with `propertyAttribute=\"ConnectionId\"` in the process-level\n92\t  `<uipath:bindings>` holds the live connection id from `uip is connections list`.\n93\t\n94\tDeclare all bindings in a single process-level `<uipath:bindings version=\"v1\">`\n95\tblock. Each `<uipath:binding>` carries `id`, `resource`, `propertyAttribute`,\n96\tand a `default` value (the resolved key/id).\n97\t\n98\t## Agent wrapper selection — pick by `processType`, not the label\n99\t\n100\tWhen a node invokes an agent, choose the wrapper by the resource's\n101\t**`processType`** (from `uip or processes list --all-fields`), not its display\n102\tlabel:\n103\t\n104\t- Coded Python agents publish as `processType: \"Function\"` — use the\n105\t  `Orchestrator.StartJob` process contract, **not** `StartAgentJob`.\n106\t- Agent Builder (low-code) publishes as `processType: \"Agent\"` →\n107\t  `Orchestrator.StartAgentJob`.\n108\t- External A2A agent addressed by URL / skillId → `A2A.AgentExecution`.\n109\t- Integration Service external agent → `Intsvc.*AgentExecution`.\n110\t\n111\tGotcha: `A2A.AgentExecution` renders as an external A2A node and **disables the\n112\tAction dropdown** in Studio Web. Do not use it for a folder-deployed agent — the\n113\tcanvas treats the task as misconfigured. Use `StartAgentJob`/`StartJob` for\n114\tfolder-deployed resources.\n115\t\n116\t## API workflow — wait vs fire-and-forget\n117\t\n118\tPick the wrapper by whether downstream needs the invocation result:\n119\t`Orchestrator.ExecuteApiWorkflow` **waits** for completion (result available to\n120\tlater nodes); `Orchestrator.ExecuteApiWorkflowAsync` **returns immediately**\n121\t(fire-and-forget). Both are `bpmn:serviceTask` activities. Resolve `ReleaseKey`\n122\t(process GUID), `FolderKey`/`FolderPath`, and the request/response schemas before\n123\tthe node is runnable — make the wait-versus-async choice explicit in the model.\n124\t\n125\t## Integration Service triggers — bind trigger properties via the CLI\n126\t\n127\t`Intsvc.TimerTrigger` and `Intsvc.EventTrigger` (and connector waits like\n128\t`Intsvc.WaitForEvent`) need their **trigger properties** enriched/bound through\n129\tthe CLI — the same enrichment path as `Intsvc.*` activities (§3). A hand-authored\n130\ttrigger shell stays **draft** until the CLI supplies the concrete trigger\n131\tproperties, connection binding, and schemas.\n132\t\n133\t## Connectionless vs connector HTTP\n134\t\n135\t- **Connector activity** (`Intsvc.ActivityExecution` / a connector-authenticated\n136\t  operation): use when the call goes through a tenant connection, a dynamic\n137\t  connector schema, or a connector object operation. Keep the node **draft**\n138\t  until enriched. The CLI-owned enrichment blockers — the ones that must be\n139\t  resolved before upload or run, and that boundary notes should name explicitly\n140\t  — are **connection binding**, **dynamic schemas**, generated **package\n141\t  metadata** (`bindings_v2.json`, `entry-points.json`, `operate.json`,\n142\t  `package-descriptor.json`). Do not hand-author any of these (§3).\n143\t- **Connectionless / manual HTTP** (`Intsvc.HttpExecution`, or\n144\t  `Intsvc.UnifiedHttpRequest` when current tooling exposes the unified shape):\n145\t  use when the workflow itself owns the URL, method, payload, and response\n146\t  parsing (no connection). Author `mode=\"manual\"`, `method`, `url`, `headers`,\n147\t  `parameters`, `body` directly from the registry template.\n148\t\n149\tStatus vocabulary for an IS node in a summary: **executable** (activity, inputs,\n150\toutput variable, and downstream mappings present, runtime-verified if a run was\n151\tdone), **draft** (BPMN shape/intent present but enrichment missing), **mock**\n152\t(returns fixed sample data instead of calling out), **blocked** (a required URL,\n153\tauth, schema, or enrichment decision is missing).\n154\t\n155\t## 5. Assemble\n156\t\n157\t1. Build the document scaffold and process (see\n158\t   [structural-bpmn.md](structural-bpmn.md)).\n159\t2. Declare root variables (`BPMN.Variables` template) and the\n160\t   `<uipath:bindings>` block.\n161\t3. For each node, paste its `registry get` `xmlTemplate`, fill placeholders, and\n162\t   wire `{incomingEdge}`/`{outgoingEdge}` to your sequence flows.\n163\t4. Author the structural BPMN the registry does not emit: sequence flows,\n164\t   gateway conditions/defaults, event definitions, boundary events,\n165\t   subprocess/call-activity containers, multi-instance markers.\n166\t5. Generate the `bpmndi:BPMNDiagram` (shape per node, edge per flow).\n167\t6. Validate (see [structural-bpmn.md#validation](structural-bpmn.md#validation)).\n168\t\n169\t## OOTB extension types (29, login-free)\n170\t\n171\tThese are the built-in types `registry pull` returns without login. Discover the\n172\texact template for any of them with `registry get <type>`.\n173\t\n174\t| Extension type | Host element | Tag |\n175\t| --- | --- | --- |\n176\t| `Actions.HITL` | `bpmn:UserTask` | activity |\n177\t| `Orchestrator.StartJob` | `bpmn:ServiceTask` | activity |\n178\t| `Orchestrator.StartAgentJob` | `bpmn:ServiceTask` | activity |\n179\t| `Orchestrator.BusinessRules` | `bpmn:BusinessRuleTask` | activity |\n180\t| `Orchestrator.ExecuteApiWorkflowAsync` | `bpmn:ServiceTask` | activity |\n181\t| `Orchestrator.CreateQueueItem` | `bpmn:SendTask` | activity |\n182\t| `Orchestrator.CreateAndWaitForQueueItem` | `bpmn:ServiceTask` | activity |\n183\t| `Orchestrator.StartAgenticProcess[Async]` | `bpmn:CallActivity` | activity |\n184\t| `Orchestrator.StartCaseMgmtProcess[Async]` | `bpmn:CallActivity` | activity |\n185\t| `Intsvc.ActivityExecution` | `bpmn:SendTask` | event/activity |\n186\t| `Intsvc.HttpExecution` / `Intsvc.UnifiedHttpRequest` | `bpmn:SendTask` | activity |\n187\t| `Intsvc.WaitForEvent` | `bpmn:ReceiveTask` | event |\n188\t| `Intsvc.EventTrigger` | `bpmn:StartEvent` | event |\n189\t| `Intsvc.TimerTrigger` | `bpmn:StartEvent` | activity |\n190\t| `Intsvc.{Async,SyncAgent,AsyncAgent,SyncWorkflow,AsyncWorkflow}Execution` | `bpmn:ServiceTask` | activity |\n191\t| `A2A.AgentExecution` | `bpmn:ServiceTask` | activity |\n192\t| `BPMN.Variables` | `bpmn:Task` | mapping |\n193\t| `BPMN.ScriptTask` | `bpmn:ScriptTask` | mapping |\n194\t| `Maestro.ReceiveMessageEvent` | `bpmn:IntermediateCatchEvent` | event |\n195\t| `Maestro.SendMessageEvent` | `bpmn:IntermediateThrowEvent` | event |\n196\t| `Maestro.CaseRulesEvaluator` / `Maestro.CaseManagerGuardrails` | `bpmn:ServiceTask` | activity |\n197\t\n198\tThis table is a discovery aid, not a substitute for `registry get` — always pull\n199\tthe live template before authoring.\n200\t",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 2,
+          "result_tokens": 2816
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_01VgUbe8cf19JtaTK75ezkjV",
+          "assistant_turn_index": 7,
+          "timestamp": "2026-07-22T05:15:46.438965",
+          "duration_ms": 34254.38550300896,
+          "generation_completed_at": "2026-07-22T05:15:46.438965",
+          "execution_started_at": "2026-07-22T05:15:46.439014",
+          "execution_completed_at": "2026-07-22T05:16:20.693400",
+          "parameters": {
+            "command": "uip maestro bpmn registry pull --output json 2>&1 | tail -5",
+            "description": "Pull/sync the BPMN extension registry"
+          },
+          "result_status": "success",
+          "result_summary": "    \"FromCache\": false,\n    \"CacheWritten\": true,\n    \"Message\": \"Synced fresh registry. Only built-in (OOTB) extension types synced. Run 'uip login' to discover connectors and processes.\"\n  }\n}",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 3,
+          "result_tokens": 49
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_019M6xnJ1DnNokoYR7HH3ZBy",
+          "assistant_turn_index": 8,
+          "timestamp": "2026-07-22T05:16:23.206600",
+          "duration_ms": 4486.294741043821,
+          "generation_completed_at": "2026-07-22T05:16:23.206600",
+          "execution_started_at": "2026-07-22T05:16:23.206885",
+          "execution_completed_at": "2026-07-22T05:16:27.693180",
+          "parameters": {
+            "command": "uip maestro bpmn registry get Intsvc.HttpExecution --output json > /tmp/http_template.json 2>&1\nuip maestro bpmn registry get BPMN.Variables --output json > /tmp/vars_template.json 2>&1",
+            "description": "Get registry templates for HttpExecution and Variables"
+          },
+          "result_status": "success",
+          "result_summary": "(Bash completed with no output)",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 4,
+          "result_tokens": 8
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_01PzA34NvcLAmgr4YcneJdbV",
+          "assistant_turn_index": 9,
+          "timestamp": "2026-07-22T05:16:30.464066",
+          "duration_ms": 133.7560749379918,
+          "generation_completed_at": "2026-07-22T05:16:30.464066",
+          "execution_started_at": "2026-07-22T05:16:30.464267",
+          "execution_completed_at": "2026-07-22T05:16:30.598023",
+          "parameters": {
+            "command": "python3 -c \"\nimport json\nwith open('/tmp/http_template.json') as f:\n    d = json.load(f)\net = d['Data']['ExtensionType']\nprint('bpmnElement:', et['bpmnElement'])\nprint('extensionTag:', et['extensionTag'])\nprint('--- xmlTemplate ---')\nprint(et['xmlTemplate'])\n\"",
+            "description": "Extract key fields from HttpExecution template"
+          },
+          "result_status": "error",
+          "result_summary": "Exit code 1\nTraceback (most recent call last):\n  File \"<string>\", line 6, in <module>\n    print('bpmnElement:', et['bpmnElement'])\n                          ~~^^^^^^^^^^^^^^^\nKeyError: 'bpmnElement'",
+          "error_message": "Exit code 1\nTraceback (most recent call last):\n  File \"<string>\", line 6, in <module>\n    print('bpmnElement:', et['bpmnElement'])\n                          ~~^^^^^^^^^^^^^^^\nKeyError: 'bpmnElement'",
+          "result_data": null,
+          "sequence_number": 5,
+          "result_tokens": 50
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_014J8UxHwA4Yb7xyNMgg5Gkw",
+          "assistant_turn_index": 10,
+          "timestamp": "2026-07-22T05:16:32.758383",
+          "duration_ms": 87.17160997912288,
+          "generation_completed_at": "2026-07-22T05:16:32.758383",
+          "execution_started_at": "2026-07-22T05:16:32.758630",
+          "execution_completed_at": "2026-07-22T05:16:32.845802",
+          "parameters": {
+            "command": "python3 -c \"\nimport json\nwith open('/tmp/http_template.json') as f:\n    d = json.load(f)\net = d['Data']['ExtensionType']\nprint(json.dumps(et, indent=2))\n\" 2>&1 | head -120",
+            "description": "Print full HttpExecution extension type JSON"
+          },
+          "result_status": "success",
+          "result_summary": "{\n  \"ExtensionType\": \"Intsvc.HttpExecution\",\n  \"Label\": \"Execute HTTP request (Legacy)\",\n  \"BpmnElement\": \"bpmn:SendTask\",\n  \"Placements\": {\n    \"Activity\": {\n      \"Type\": \"bpmn:SendTask\"\n    }\n  },\n  \"ExtensionTag\": \"uipath:activity\",\n  \"ContextFields\": [\n    {\n      \"Name\": \"mode\",\n      \"DisplayName\": \"Mode\",\n      \"Type\": \"string\",\n      \"Required\": true,\n      \"Hidden\": true,\n      \"IsPrimaryKey\": false,\n      \"Binding\": false,\n      \"DefaultValue\": \"manual\"\n    },\n    {\n      \"Name\": \"method\",\n      \"DisplayName\": \"HTTP Method\",\n      \"Type\": \"string\",\n      \"Required\": true,\n      \"Hidden\": false,\n      \"IsPrimaryKey\": false,\n      \"Binding\": false,\n      \"DefaultValue\": \"GET\"\n    },\n    {\n      \"Name\": \"url\",\n      \"DisplayName\": \"URL\",\n      \"Type\": \"string\",\n      \"Required\": true,\n      \"Hidden\": false,\n      \"IsPrimaryKey\": false,\n      \"Binding\": true,\n      \"DefaultValue\": \"\"\n    },\n    {\n      \"Name\": \"headers\",\n      \"DisplayName\": \"Headers\",\n      \"Type\": \"json\",\n      \"Required\": false,\n      \"Hidden\": false,\n      \"IsPrimaryKey\": false,\n      \"Binding\": true,\n      \"DefaultValue\": \"{}\"\n    },\n    {\n      \"Name\": \"parameters\",\n      \"DisplayName\": \"Query Parameters\",\n      \"Type\": \"json\",\n      \"Required\": false,\n      \"Hidden\": false,\n      \"IsPrimaryKey\": false,\n      \"Binding\": true,\n      \"DefaultValue\": \"{}\"\n    },\n    {\n      \"Name\": \"body\",\n      \"DisplayName\": \"Request Body\",\n      \"Type\": \"json\",\n      \"Required\": false,\n      \"Hidden\": false,\n      \"IsPrimaryKey\": false,\n      \"Binding\": true,\n      \"DefaultValue\": \"null\"\n    }\n  ],\n  \"InputPattern\": \"none\",\n  \"OutputSource\": \"=response\",\n  \"OutputType\": \"jsonSchema\",\n  \"OutputName\": \"response\",\n  \"UseRelativeSource\": false,\n  \"BindingPattern\": \"none\",\n  \"RequiresDiscovery\": false,\n  \"IsDynamic\": false,\n  \"XmlTemplate\": \"<bpmn:SendTask id=\\\"{id}\\\" name=\\\"{name}\\\">\\n  <bpmn:extensionElements>\\n    <uipath:activity version=\\\"v1\\\">\\n      <uipath:type value=\\\"Intsvc.HttpExecution\\\" version=\\\"v1\\\" />\\n      <uipath:context>\\n        <uipath:input name=\\\"mode\\\" value=\\\"manual\\\" />\\n        <uipath:input name=\\\"method\\\" value=\\\"GET\\\" />\\n        <uipath:input name=\\\"url\\\" value=\\\"=bindings.{bindingId}\\\" />\\n        <uipath:input name=\\\"headers\\\" value=\\\"=bindings.{bindingId}\\\" />\\n        <uipath:input name=\\\"parameters\\\" value=\\\"=bindings.{bindingId}\\\" />\\n        <uipath:input name=\\\"body\\\" value=\\\"=bindings.{bindingId}\\\" />\\n      </uipath:context>\\n      <uipath:output name=\\\"response\\\" type=\\\"jsonSchema\\\" source=\\\"=response\\\" var=\\\"{varId}\\\" />\\n    </uipath:activity>\\n  </bpmn:extensionElements>\\n  <bpmn:incoming>{incomingEdge}</bpmn:incoming>\\n  <bpmn:outgoing>{outgoingEdge}</bpmn:outgoing>\\n</bpmn:SendTask>\",\n  \"InputNotes\": \"No jsonBody in design schema input section; all configuration is in context fields\"\n}",
+          "error_message": null,
+          "result_data": {
+            "ExtensionType": "Intsvc.HttpExecution",
+            "Label": "Execute HTTP request (Legacy)",
+            "BpmnElement": "bpmn:SendTask",
+            "Placements": {
+              "Activity": {
+                "Type": "bpmn:SendTask"
+              }
+            },
+            "ExtensionTag": "uipath:activity",
+            "ContextFields": [
+              {
+                "Name": "mode",
+                "DisplayName": "Mode",
+                "Type": "string",
+                "Required": true,
+                "Hidden": true,
+                "IsPrimaryKey": false,
+                "Binding": false,
+                "DefaultValue": "manual"
+              },
+              {
+                "Name": "method",
+                "DisplayName": "HTTP Method",
+                "Type": "string",
+                "Required": true,
+                "Hidden": false,
+                "IsPrimaryKey": false,
+                "Binding": false,
+                "DefaultValue": "GET"
+              },
+              {
+                "Name": "url",
+                "DisplayName": "URL",
+                "Type": "string",
+                "Required": true,
+                "Hidden": false,
+                "IsPrimaryKey": false,
+                "Binding": true,
+                "DefaultValue": ""
+              },
+              {
+                "Name": "headers",
+                "DisplayName": "Headers",
+                "Type": "json",
+                "Required": false,
+                "Hidden": false,
+                "IsPrimaryKey": false,
+                "Binding": true,
+                "DefaultValue": "{}"
+              },
+              {
+                "Name": "parameters",
+                "DisplayName": "Query Parameters",
+                "Type": "json",
+                "Required": false,
+                "Hidden": false,
+                "IsPrimaryKey": false,
+                "Binding": true,
+                "DefaultValue": "{}"
+              },
+              {
+                "Name": "body",
+                "DisplayName": "Request Body",
+                "Type": "json",
+                "Required": false,
+                "Hidden": false,
+                "IsPrimaryKey": false,
+                "Binding": true,
+                "DefaultValue": "null"
+              }
+            ],
+            "InputPattern": "none",
+            "OutputSource": "=response",
+            "OutputType": "jsonSchema",
+            "OutputName": "response",
+            "UseRelativeSource": false,
+            "BindingPattern": "none",
+            "RequiresDiscovery": false,
+            "IsDynamic": false,
+            "XmlTemplate": "<bpmn:SendTask id=\"{id}\" name=\"{name}\">\n  <bpmn:extensionElements>\n    <uipath:activity version=\"v1\">\n      <uipath:type value=\"Intsvc.HttpExecution\" version=\"v1\" />\n      <uipath:context>\n        <uipath:input name=\"mode\" value=\"manual\" />\n        <uipath:input name=\"method\" value=\"GET\" />\n        <uipath:input name=\"url\" value=\"=bindings.{bindingId}\" />\n        <uipath:input name=\"headers\" value=\"=bindings.{bindingId}\" />\n        <uipath:input name=\"parameters\" value=\"=bindings.{bindingId}\" />\n        <uipath:input name=\"body\" value=\"=bindings.{bindingId}\" />\n      </uipath:context>\n      <uipath:output name=\"response\" type=\"jsonSchema\" source=\"=response\" var=\"{varId}\" />\n    </uipath:activity>\n  </bpmn:extensionElements>\n  <bpmn:incoming>{incomingEdge}</bpmn:incoming>\n  <bpmn:outgoing>{outgoingEdge}</bpmn:outgoing>\n</bpmn:SendTask>",
+            "InputNotes": "No jsonBody in design schema input section; all configuration is in context fields"
+          },
+          "sequence_number": 6,
+          "result_tokens": 711
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_01K8YTo1Siu7rt1jCaFYzCoC",
+          "assistant_turn_index": 11,
+          "timestamp": "2026-07-22T05:16:34.901210",
+          "duration_ms": 88.61178799998015,
+          "generation_completed_at": "2026-07-22T05:16:34.901210",
+          "execution_started_at": "2026-07-22T05:16:34.901427",
+          "execution_completed_at": "2026-07-22T05:16:34.990039",
+          "parameters": {
+            "command": "python3 -c \"\nimport json\nwith open('/tmp/vars_template.json') as f:\n    d = json.load(f)\net = d['Data']['ExtensionType']\nprint(et['XmlTemplate'])\n\"",
+            "description": "Print Variables xmlTemplate"
+          },
+          "result_status": "success",
+          "result_summary": "<bpmn:Task id=\"{id}\" name=\"{name}\">\n  <bpmn:extensionElements>\n    <uipath:mapping version=\"v1\">\n      <uipath:type value=\"BPMN.Variables\" version=\"v1\" />\n    </uipath:mapping>\n  </bpmn:extensionElements>\n  <bpmn:incoming>{incomingEdge}</bpmn:incoming>\n  <bpmn:outgoing>{outgoingEdge}</bpmn:outgoing>\n</bpmn:Task>",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 7,
+          "result_tokens": 79
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_015tJdiXbqqspm1j375ujaJu",
+          "assistant_turn_index": 14,
+          "timestamp": "2026-07-22T05:17:53.388948",
+          "duration_ms": 28.435559943318367,
+          "generation_completed_at": "2026-07-22T05:17:53.388948",
+          "execution_started_at": "2026-07-22T05:17:53.388996",
+          "execution_completed_at": "2026-07-22T05:17:53.417432",
+          "parameters": {
+            "command": "mkdir -p /work/output/artifacts/skill-bpmn-http-weather/OpenMeteoWeatherHttp",
+            "description": "Create project directory"
+          },
+          "result_status": "success",
+          "result_summary": "(Bash completed with no output)",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 8,
+          "result_tokens": 8
+        },
+        {
+          "tool_name": "Write",
+          "tool_id": "toolu_bdrk_019Tj8jK2qexDwN6PmB1jr2t",
+          "assistant_turn_index": 17,
+          "timestamp": "2026-07-22T05:19:05.708865",
+          "duration_ms": 19.984206068329513,
+          "generation_completed_at": "2026-07-22T05:19:05.708865",
+          "execution_started_at": "2026-07-22T05:19:05.708922",
+          "execution_completed_at": "2026-07-22T05:19:05.728906",
+          "parameters": {
+            "file_path": "/work/output/artifacts/skill-bpmn-http-weather/OpenMeteoWeatherHttp/OpenMeteoWeatherHttp.bpmn",
+            "content": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<bpmn:definitions\n    xmlns:bpmn=\"http://www.omg.org/spec/BPMN/20100524/MODEL\"\n    xmlns:bpmndi=\"http://www.omg.org/spec/BPMN/20100524/DI\"\n    xmlns:dc=\"http://www.omg.org/spec/DD/20100524/DC\"\n    xmlns:di=\"http://www.omg.org/spec/DD/20100524/DI\"\n    xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n    xmlns:uipath=\"http://uipath.org/schema/bpmn\"\n    id=\"Definitions_1\" targetNamespace=\"http://bpmn.io/schema/bpmn\"\n    exporter=\"UiPath (https://bpmn.uipath.com)\" exporterVersion=\"1.0\">\n  <bpmn:process id=\"Process_1\" isExecutable=\"true\">\n    <bpmn:extensionElements>\n      <uipath:migrationVersion version=\"11.5\" />\n      <uipath:variables version=\"v1\">\n        <uipath:inputOutput id=\"Var_WeatherResponse\" name=\"WeatherResponse\" type=\"object\" />\n      </uipath:variables>\n    </bpmn:extensionElements>\n\n    <bpmn:startEvent id=\"StartEvent_1\" name=\"Start\">\n      <bpmn:outgoing>Flow_1</bpmn:outgoing>\n    </bpmn:startEvent>\n\n    <bpmn:sendTask id=\"Task_HttpGetWeather\" name=\"GET Current Weather (Bellevue)\">\n      <bpmn:extensionElements>\n        <uipath:activity version=\"v1\">\n          <uipath:type value=\"Intsvc.HttpExecution\" version=\"v1\" />\n          <uipath:context>\n            <uipath:input name=\"mode\" value=\"manual\" />\n            <uipath:input name=\"method\" value=\"GET\" />\n            <uipath:input name=\"url\" value=\"https://api.open-meteo.com/v1/forecast\" />\n            <uipath:input name=\"headers\"><![CDATA[{}]]></uipath:input>\n            <uipath:input name=\"parameters\"><![CDATA[{\"latitude\":\"47.6101\",\"longitude\":\"-122.2015\",\"current_weather\":\"true\"}]]></uipath:input>\n            <uipath:input name=\"body\" value=\"null\" />\n          </uipath:context>\n          <uipath:output name=\"response\" type=\"jsonSchema\" source=\"=response\" var=\"Var_WeatherResponse\" />\n        </uipath:activity>\n      </bpmn:extensionElements>\n      <bpmn:incoming>Flow_1</bpmn:incoming>\n      <bpmn:outgoing>Flow_2</bpmn:outgoing>\n    </bpmn:sendTask>\n\n    <bpmn:endEvent id=\"EndEvent_1\" name=\"End\">\n      <bpmn:incoming>Flow_2</bpmn:incoming>\n    </bpmn:endEvent>\n\n    <bpmn:sequenceFlow id=\"Flow_1\" sourceRef=\"StartEvent_1\" targetRef=\"Task_HttpGetWeather\" />\n    <bpmn:sequenceFlow id=\"Flow_2\" sourceRef=\"Task_HttpGetWeather\" targetRef=\"EndEvent_1\" />\n  </bpmn:process>\n\n  <bpmndi:BPMNDiagram id=\"Diagram_1\">\n    <bpmndi:BPMNPlane id=\"Plane_1\" bpmnElement=\"Process_1\">\n      <bpmndi:BPMNShape id=\"S_StartEvent_1\" bpmnElement=\"StartEvent_1\">\n        <dc:Bounds x=\"160\" y=\"100\" width=\"36\" height=\"36\" />\n      </bpmndi:BPMNShape>\n      <bpmndi:BPMNShape id=\"S_Task_HttpGetWeather\" bpmnElement=\"Task_HttpGetWeather\">\n        <dc:Bounds x=\"260\" y=\"78\" width=\"100\" height=\"80\" />\n      </bpmndi:BPMNShape>\n      <bpmndi:BPMNShape id=\"S_EndEvent_1\" bpmnElement=\"EndEvent_1\">\n        <dc:Bounds x=\"422\" y=\"100\" width=\"36\" height=\"36\" />\n      </bpmndi:BPMNShape>\n      <bpmndi:BPMNEdge id=\"BPMNEdge_Flow_1\" bpmnElement=\"Flow_1\">\n        <di:waypoint x=\"196\" y=\"118\" />\n        <di:waypoint x=\"260\" y=\"118\" />\n      </bpmndi:BPMNEdge>\n      <bpmndi:BPMNEdge id=\"BPMNEdge_Flow_2\" bpmnElement=\"Flow_2\">\n        <di:waypoint x=\"360\" y=\"118\" />\n        <di:waypoint x=\"422\" y=\"118\" />\n      </bpmndi:BPMNEdge>\n    </bpmndi:BPMNPlane>\n  </bpmndi:BPMNDiagram>\n</bpmn:definitions>\n"
+          },
+          "result_status": "success",
+          "result_summary": "File created successfully at: /work/output/artifacts/skill-bpmn-http-weather/OpenMeteoWeatherHttp/OpenMeteoWeatherHttp.bpmn (file state is current in your context — no need to Read it back)",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 9,
+          "result_tokens": 48
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_016RHng77MndHKGcEQsaisWH",
+          "assistant_turn_index": 19,
+          "timestamp": "2026-07-22T05:19:08.982041",
+          "duration_ms": 443.56469495687634,
+          "generation_completed_at": "2026-07-22T05:19:08.982041",
+          "execution_started_at": "2026-07-22T05:19:08.982087",
+          "execution_completed_at": "2026-07-22T05:19:09.425652",
+          "parameters": {
+            "command": "cd /home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn/validator && npm install --silent 2>&1 | tail -3 && node validate-bpmn.mjs /work/output/artifacts/skill-bpmn-http-weather/OpenMeteoWeatherHttp/OpenMeteoWeatherHttp.bpmn",
+            "description": "Install validator deps and validate the BPMN file"
+          },
+          "result_status": "error",
+          "result_summary": "Exit code 1\nnode:internal/modules/package_json_reader:314\n  throw new ERR_MODULE_NOT_FOUND(packageName, fileURLToPath(base), null);\n        ^\n\nError [ERR_MODULE_NOT_FOUND]: Cannot find package 'bpmn-moddle' imported from /home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn/validator/validate-bpmn.mjs\n    at Object.getPackageJSONURL (node:internal/modules/package_json_reader:314:9)\n    at packageResolve (node:internal/modules/esm/resolve:768:81)\n    at moduleResolve (node:internal/modules/esm/resolve:855:18)\n    at defaultResolve (node:internal/modules/esm/resolve:985:11)\n    at #cachedDefaultResolve (node:internal/modules/esm/loader:747:20)\n    at ModuleLoader.resolve (node:internal/modules/esm/loader:724:38)\n    at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:320:38)\n    at ModuleJob._link (node:internal/modules/esm/module_job:182:49) {\n  code: 'ERR_MODULE_NOT_FOUND'\n}\n\nNode.js v22.23.1",
+          "error_message": "Exit code 1\nnode:internal/modules/package_json_reader:314\n  throw new ERR_MODULE_NOT_FOUND(packageName, fileURLToPath(base), null);\n        ^\n\nError [ERR_MODULE_NOT_FOUND]: Cannot find package 'bpmn-moddle' imported from /home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn/validator/validate-bpmn.mjs\n    at Object.getPackageJSONURL (node:internal/modules/package_json_reader:314:9)\n    at packageResolve (node:internal/modules/esm/resolve:768:81)\n    at moduleResolve (node:internal/modules/esm/resolve:855:18)\n    at defaultResolve (node:internal/modules/esm/resolve:985:11)\n    at #cachedDefaultResolve (node:internal/modules/esm/loader:747:20)\n    at ModuleLoader.resolve (node:internal/modules/esm/loader:724:38)\n    at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:320:38)\n    at ModuleJob._link (node:internal/modules/esm/module_job:182:49) {\n  code: 'ERR_MODULE_NOT_FOUND'\n}\n\nNode.js v22.23.1",
+          "result_data": null,
+          "sequence_number": 10,
+          "result_tokens": 234
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_01TTTr8zHnosyoQzRw9Kuv8r",
+          "assistant_turn_index": 20,
+          "timestamp": "2026-07-22T05:19:11.175196",
+          "duration_ms": 252.8262829873711,
+          "generation_completed_at": "2026-07-22T05:19:11.175196",
+          "execution_started_at": "2026-07-22T05:19:11.175396",
+          "execution_completed_at": "2026-07-22T05:19:11.428222",
+          "parameters": {
+            "command": "cd /home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn/validator && npm install 2>&1 | tail -5",
+            "description": "Install validator dependencies verbosely"
+          },
+          "result_status": "success",
+          "result_summary": "npm error errno -2\nnpm error enoent ENOENT: no such file or directory, mkdir '/home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn/validator/node_modules'\nnpm error enoent This is related to npm not being able to find a file.\nnpm error enoent\nnpm error A complete log of this run can be found in: /home/azureuser/.npm/_logs/2026-07-22T05_19_11_228Z-debug-0.log\nShell cwd was reset to /work/output/artifacts/skill-bpmn-http-weather",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 11,
+          "result_tokens": 110
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_0161vEnKgErZvBXQehQdEaJz",
+          "assistant_turn_index": 21,
+          "timestamp": "2026-07-22T05:19:13.180545",
+          "duration_ms": 20.788250025361776,
+          "generation_completed_at": "2026-07-22T05:19:13.180545",
+          "execution_started_at": "2026-07-22T05:19:13.180763",
+          "execution_completed_at": "2026-07-22T05:19:13.201551",
+          "parameters": {
+            "command": "ls /home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn/validator/",
+            "description": "List validator directory contents"
+          },
+          "result_status": "success",
+          "result_summary": "README.md\nbpmn-spec.json\nmodel.mjs\npackage.json\nrules.mjs\nsamples\ntest\nuipath-moddle.v1.json\nvalidate-bpmn.mjs",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 12,
+          "result_tokens": 28
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_014A27kdN6P51P5c32CVpLSW",
+          "assistant_turn_index": 22,
+          "timestamp": "2026-07-22T05:19:15.061977",
+          "duration_ms": 13.485372066497803,
+          "generation_completed_at": "2026-07-22T05:19:15.061977",
+          "execution_started_at": "2026-07-22T05:19:15.062176",
+          "execution_completed_at": "2026-07-22T05:19:15.075661",
+          "parameters": {
+            "command": "cd /home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn/validator && cat package.json",
+            "description": "Check package.json for dependencies"
+          },
+          "result_status": "success",
+          "result_summary": "{\n  \"name\": \"uipath-maestro-bpmn-validator\",\n  \"private\": true,\n  \"type\": \"module\",\n  \"description\": \"Offline semantic validator for UiPath Maestro BPMN XML. Reconstructs the PO.Frontend Node/Edge/CanvasState model from the parsed BPMN and runs all 19 PO.Frontend validation rules.\",\n  \"bin\": {\n    \"validate-bpmn\": \"./validate-bpmn.mjs\"\n  },\n  \"scripts\": {\n    \"test\": \"node test/run-tests.mjs\"\n  },\n  \"dependencies\": {\n    \"bpmn-moddle\": \"^9.0.2\",\n    \"luxon\": \"^3.4.4\",\n    \"sax\": \"^1.6.0\"\n  }\n}\nShell cwd was reset to /work/output/artifacts/skill-bpmn-http-weather",
+          "error_message": null,
+          "result_data": {
+            "name": "uipath-maestro-bpmn-validator",
+            "private": true,
+            "type": "module",
+            "description": "Offline semantic validator for UiPath Maestro BPMN XML. Reconstructs the PO.Frontend Node/Edge/CanvasState model from the parsed BPMN and runs all 19 PO.Frontend validation rules.",
+            "bin": {
+              "validate-bpmn": "./validate-bpmn.mjs"
+            },
+            "scripts": {
+              "test": "node test/run-tests.mjs"
+            },
+            "dependencies": {
+              "bpmn-moddle": "^9.0.2",
+              "luxon": "^3.4.4",
+              "sax": "^1.6.0"
+            }
+          },
+          "sequence_number": 13,
+          "result_tokens": 142
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_01Da2Pv8wQFGPyGFfEEHHAcP",
+          "assistant_turn_index": 23,
+          "timestamp": "2026-07-22T05:19:16.873433",
+          "duration_ms": 248.80248901899904,
+          "generation_completed_at": "2026-07-22T05:19:16.873433",
+          "execution_started_at": "2026-07-22T05:19:16.873732",
+          "execution_completed_at": "2026-07-22T05:19:17.122534",
+          "parameters": {
+            "command": "cd /home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn/validator && npm install --prefer-offline 2>&1 | tail -5",
+            "description": "Install npm packages for validator"
+          },
+          "result_status": "success",
+          "result_summary": "npm error errno -2\nnpm error enoent ENOENT: no such file or directory, mkdir '/home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn/validator/node_modules'\nnpm error enoent This is related to npm not being able to find a file.\nnpm error enoent\nnpm error A complete log of this run can be found in: /home/azureuser/.npm/_logs/2026-07-22T05_19_16_927Z-debug-0.log\nShell cwd was reset to /work/output/artifacts/skill-bpmn-http-weather",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 14,
+          "result_tokens": 110
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_014Zr7RqacxusaD8gLHsdkYH",
+          "assistant_turn_index": 24,
+          "timestamp": "2026-07-22T05:19:19.198154",
+          "duration_ms": 14.454685035161674,
+          "generation_completed_at": "2026-07-22T05:19:19.198154",
+          "execution_started_at": "2026-07-22T05:19:19.198347",
+          "execution_completed_at": "2026-07-22T05:19:19.212802",
+          "parameters": {
+            "command": "ls -la /home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn/validator/ | head -5; stat /home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn/validator/",
+            "description": "Check permissions on validator directory"
+          },
+          "result_status": "success",
+          "result_summary": "total 232\ndrwxrwxr-x 4 1000 1000  4096 Jul 17 18:46 .\ndrwxrwxr-x 5 1000 1000  4096 Jul 20 23:00 ..\n-rw-rw-r-- 1 1000 1000 14435 Jul 17 18:46 README.md\n-rw-rw-r-- 1 1000 1000 99114 Jul 17 18:46 bpmn-spec.json\n  File: /home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn/validator/\n  Size: 4096      \tBlocks: 8          IO Block: 4096   directory\nDevice: 259,1\tInode: 2697936     Links: 4\nAccess: (0775/drwxrwxr-x)  Uid: ( 1000/ UNKNOWN)   Gid: ( 1000/ UNKNOWN)\nAccess: 2026-07-22 01:44:17.013307703 +0000\nModify: 2026-07-17 18:46:44.689188155 +0000\nChange: 2026-07-17 18:46:44.689215407 +0000\n Birth: 2026-07-17 18:46:44.686562839 +0000",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 15,
+          "result_tokens": 162
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_01VHZoGSBYsKtFv6vScg2Csy",
+          "assistant_turn_index": 25,
+          "timestamp": "2026-07-22T05:19:21.114234",
+          "duration_ms": 10.420711012557149,
+          "generation_completed_at": "2026-07-22T05:19:21.114234",
+          "execution_started_at": "2026-07-22T05:19:21.114422",
+          "execution_completed_at": "2026-07-22T05:19:21.124843",
+          "parameters": {
+            "command": "whoami && id",
+            "description": "Check current user"
+          },
+          "result_status": "success",
+          "result_summary": "root\nuid=0(root) gid=0(root) groups=0(root)",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 16,
+          "result_tokens": 11
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_01TuwrVeC6LK9AyPzrHLXxDt",
+          "assistant_turn_index": 26,
+          "timestamp": "2026-07-22T05:19:23.568926",
+          "duration_ms": 434.280748013407,
+          "generation_completed_at": "2026-07-22T05:19:23.568926",
+          "execution_started_at": "2026-07-22T05:19:23.569130",
+          "execution_completed_at": "2026-07-22T05:19:24.003411",
+          "parameters": {
+            "command": "mkdir -p /tmp/validator-work && cp -r /home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn/validator/* /tmp/validator-work/ && cd /tmp/validator-work && npm install --silent 2>&1 | tail -3",
+            "description": "Copy validator to writable location and install deps"
+          },
+          "result_status": "success",
+          "result_summary": "Shell cwd was reset to /work/output/artifacts/skill-bpmn-http-weather",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 17,
+          "result_tokens": 18
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_016Zpyok1J5fJJyvNBXqpm8N",
+          "assistant_turn_index": 27,
+          "timestamp": "2026-07-22T05:19:25.865130",
+          "duration_ms": 20.025404053740203,
+          "generation_completed_at": "2026-07-22T05:19:25.865130",
+          "execution_started_at": "2026-07-22T05:19:25.865368",
+          "execution_completed_at": "2026-07-22T05:19:25.885393",
+          "parameters": {
+            "command": "ls /tmp/validator-work/node_modules/ 2>/dev/null | head -5 || echo \"no node_modules\"",
+            "description": "Check if node_modules installed"
+          },
+          "result_status": "success",
+          "result_summary": "bpmn-moddle\nluxon\nmin-dash\nmoddle\nmoddle-xml",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 18,
+          "result_tokens": 11
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_017zXgjKoDjQicUt68n9W7SU",
+          "assistant_turn_index": 28,
+          "timestamp": "2026-07-22T05:19:28.067223",
+          "duration_ms": 81.78872999269515,
+          "generation_completed_at": "2026-07-22T05:19:28.067223",
+          "execution_started_at": "2026-07-22T05:19:28.067403",
+          "execution_completed_at": "2026-07-22T05:19:28.149192",
+          "parameters": {
+            "command": "cd /tmp/validator-work && node validate-bpmn.mjs /work/output/artifacts/skill-bpmn-http-weather/OpenMeteoWeatherHttp/OpenMeteoWeatherHttp.bpmn",
+            "description": "Validate the BPMN file"
+          },
+          "result_status": "success",
+          "result_summary": "VALID\nShell cwd was reset to /work/output/artifacts/skill-bpmn-http-weather",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 19,
+          "result_tokens": 19
+        }
+      ],
+      "timestamp": "2026-07-22T05:19:39.106289",
+      "duration_seconds": 250.51668982510455,
+      "token_usage": {
+        "uncached_input_tokens": 4345,
+        "output_tokens": 14076,
+        "cache_creation_input_tokens": 26360,
+        "cache_read_input_tokens": 779511,
+        "total_cost_usd": 0.5568783,
+        "input_tokens": 810216
+      },
+      "model_used": "claude-sonnet-4-6",
+      "assistant_turn_count": 30,
+      "messages": [
+        {
+          "role": "assistant",
+          "started_at": "2026-07-22T05:15:28.588691",
+          "completed_at": "2026-07-22T05:15:31.437414",
+          "generation_duration_ms": 2848.7595800543204,
+          "content_blocks": [
+            {
+              "block_type": "thinking",
+              "sequence": 0,
+              "text": null,
+              "thinking": "The user wants me to load the UiPath Maestro BPMN skill and then create a local BPMN project. Let me first invoke the skill.",
+              "signature": "EscCCmcIEBABGAIqQN2wQvLirZAljSCHOpBK2v/pSggTTd99cd93QoFjVGdbmitAArwfi7VrvldB8mGruZxthsUV0RrmgBv4CF5N7e4yEWNsYXVkZS1zb25uZXQtNC02OABCCHRoaW5raW5nEgxvJW/PRT7f2dN9otsaDB4CDvKpKgGmt+6fuiIwGW64ay2DSMgHLdp8BS2N10XEKYQB3fnyHOEhKoQhIkxk2jfFFJP3Pf3ZAa7OSc4SKo0BXLjOiTy884hp7epah9cr6WNGpLVxUCH7pvCwkf4XVMEsdl9xU51I02OvV7VM4rqjbQQwpeiVZAhA6DE8Ugqv6i8h239PCTWHgnmgYAw2oUL2Ux4jN8qWyfBfK2uFAMgUWLIIshF4D7ebt1Dx9vR+EM8KHEWLgfcxlFEtYKMzsR0aQjAPmj2ptZLViN/CGAE=",
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 2,
+          "output_tokens": 86,
+          "cache_creation_tokens": 1880,
+          "cache_read_tokens": 18954,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01PvLnttM2jLp4jbEJxeEezw",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-22T05:15:31.437414",
+          "completed_at": "2026-07-22T05:15:31.938492",
+          "generation_duration_ms": 501.0776330018416,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01PGDtFr7qKo6csy13HyQNAj",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01PGDtFr7qKo6csy13HyQNAj"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 28,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01PvLnttM2jLp4jbEJxeEezw",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-22T05:15:31.948078",
+          "completed_at": "2026-07-22T05:15:41.072832",
+          "generation_duration_ms": 9124.75318799261,
+          "content_blocks": [
+            {
+              "block_type": "thinking",
+              "sequence": 0,
+              "text": null,
+              "thinking": "Let me start by reading the SKILL.md and understanding the workflow, then plan the full sequence of steps.\n\nThe task is:\n1. Create a local BPMN project \"OpenMeteoWeatherHttp\" \n2. Model: manual start → HTTP GET weather for Bellevue from Open-Meteo API → end\n3. Use registry to discover HTTP execution extension type\n4. Use `Intsvc.HttpExecution` wrapper in manual mode (no Integration Service connection)\n5. Capture HTTP response into a declared process variable\n6. Include BPMNDiagram with shapes and edges\n7. No upload/publish/deploy/run\n\nLet me plan the full workflow:\nI'll start by reading the structural-bpmn.md reference to understand the minimal file structure, then pull the registry to search for the HTTP execution type and get its template. Once I have those pieces, I can assemble the BPMN file, run generate_diagram.py to add the BPMNDiagram, and validate everything.",
+              "signature": "EoMJCmcIEBABGAIqQIP7AhxuppfMUklZBiIV46aKHAKSflGb5InDNg/l/DgVvkfNOSbU83gjmxPg07Naz7aC1XTqn39m6l5Jmp6IaYcyEWNsYXVkZS1zb25uZXQtNC02OABCCHRoaW5raW5nEgxLXP1dLxa8zRACvfEaDLS+xAtI0MUwNL25XyIwoXrxuYTHk4IHRGty02WfiXk3fKGOmNJiPQ3mrw/HjRxvdziVPADSSt6x93p/vHrdKskH3ZcQE3JzLSCl4Cly1Wj7P4lTiYVnKeUwMc6T0Hk4p48p9q3yYVS9rOE1V+KH9ZJoV0xwD0gxX7A1IXgEy0J6I2Lfx4NbwgxVk8sbjMBWp7QqYdkK307zaFT18XPawfwiyA/NAddBc2hh44qMfJpwoIDmHcXubnPsPLOdGsk1KRz+daWHCXSX+JZb0WYJN4mTQHulUFFUWkReX3QXJ6m+At2NuYKILtBllHrGdutJgth1yV/FGsrVZdHGtRyQSOpegtUksFAeSdv/U4iUDeqUj9l5h29dpaSGd0OOOUXp/BcrGzFpOCCU/IdCzB6RDze6EkxQ827Y1Zk9datMGZlKL3YCAc4H9FI9qod9hvPczC71F3i85ZF1D/70XF4l+xMMkqWPeqTVfkNH5jBl2P2YNw+DrfLjbHMO0f2nQN5cM0zPVPpcLkAhhIFqrpxSRCGRdpHDlzBPo2Wt4BBYHK3/I4qVITstXSemTqvWhbIYCDzTP+jGO1xJYFgsGQrmYXHxv0q7JKJsWrzFDXumluJlmBp38+phAj1VLTqIURFetq2AOcdHQmaL6NwwVJVYtb0XnG92JZUfPiGZJtp5lLnwrM8M4HlMAWJZ/yeHG7+hdQJC0GnQmVep5+BFSdij1CINpTHMmhCy+9dY5dERwCNYdtxAuY4JNe30HyESR6FPBXzPAXw6pNZOHdZW8ZAkRryJLLSyZTN6byXCyfavlmwWZLbb1/XSCNZrb2XUseUrG7xY7cpV4ayRjLA1amvoj7kTmsSgmi2+ZQsYyWSA7bq1vqAJwsOHT7MZmzkZ4rZ/+F1IDjY8vYFLwOzYPb0WK30bGLAV7GwMOXl6VWptZ0LZ5TG47zcCorUiYFZIuerqKSQv+qMM9ktHczPv53JDAr7aiKaG579wxYh4qE0Fd2uxOH1ZvaGZ3qrlF0z8xhrPsbrIdDFtEtMUKGsjdqZdOhyjexQNiawFVmE+H2HMEoFnL7R/eejF0K5HsQjeNJf7t1BzChCxlJuokIabjJW3xzk9ez48wzeflko/lm+8sdRG7WxjAx0tris7Qt6jSIL7cLtSqTgh6CFbF5tio3fc/AKQWiDcI/iJ8Udzh8wOkmt4JSAfzpJjgtRX474KX4xphpqsBGE2spcS5rezTBAuxXWQJxHqhxVwaCNAYomDMoJwMr2FGOc+7OQQSmvleQXs7e2Yto77BnSSXtb2wgRPrHLdd4o1KhwK1pANaoh4GKqYR8EWvfl4etdqTgjiWhvzefSt5gfGtsTU71lvMWCVYwRHag+5FNlzICpWGAE=",
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 2,
+          "output_tokens": 334,
+          "cache_creation_tokens": 4131,
+          "cache_read_tokens": 20834,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01PTTShQ75K447X9ovzS24KE",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-22T05:15:41.072832",
+          "completed_at": "2026-07-22T05:15:41.124478",
+          "generation_duration_ms": 51.64598301053047,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01SguNosS73JorSWxTH9ZNku",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01SguNosS73JorSWxTH9ZNku"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 43,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01PTTShQ75K447X9ovzS24KE",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-22T05:15:41.124478",
+          "completed_at": "2026-07-22T05:15:41.141851",
+          "generation_duration_ms": 17.37331598997116,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_018pbki9mX6PkY5iLa78bEJn",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_018pbki9mX6PkY5iLa78bEJn"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 44,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01PTTShQ75K447X9ovzS24KE",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-22T05:15:41.687842",
+          "completed_at": "2026-07-22T05:15:44.444923",
+          "generation_duration_ms": 2757.081220042892,
+          "content_blocks": [
+            {
+              "block_type": "thinking",
+              "sequence": 0,
+              "text": null,
+              "thinking": "Good. I now have the key references. Let me plan the full path:\n\n1. Pull the registry and get the `Intsvc.HttpExecution` template\n2. Also get the `BPMN.Variables` template\n3. Assemble the BPMN file\n4. Generate the diagram\n5. Validate\n\nLet me pull the registry first, then get the templates.",
+              "signature": "Eu0DCmcIEBABGAIqQP9yysAbJt3KWsAUavILP+M5f9CY8J0Bb+zOPr7DQD9Ib5/e9qFK+Uu0QEBPzmbeMtpNlj9u0BMCOzauwUZ/P14yEWNsYXVkZS1zb25uZXQtNC02OABCCHRoaW5raW5nEgx3XYilMhBy1LQ3YVoaDGP/bUN6I32CzlhoByIwAv565z2daudjyt79Z8XLIq4qIJgwVY9BiZc7Ibp9Lhofpn4YC+cgBKNI3N3VGSGgKrMCo/2GbkDdX5s7JujXo6tNX68aZ8KDnMrD9Xt4+rof7W1gRaHmPSseDKTlYTxLZO4ORuwNXL5Y8ZVqo3hi4xSedv4qHx90GIu58BFQT/tU0ANHik1cB9cmb8/PqD9iu3MKVlwm0G+QFs17meYdkmaIkg0cq2EW9ZfuVVglsPT6vvlw0y+ltHEWGrDQDr+qyRlNc8dyzAjaNNh+t3iYCg25In3eNGmOv7UaIR8gOXHsKFppMQUvOPK8r4KfJuyA3QJ6y5pKKqrlMwU1lzPuJaf9KvXpFqIgcIvrZVFQNXzmf2ofp3zIl35qTIQU4Ub9XJtHxx1tFBaIbdF8UIlV9oBXL2TPKVpmrQljYOwPjsK5a0P9BCGLq82jVWuwh3n6pYvtmqbxa4mJwIL8Z9oillNMjF0stxgB",
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 3656,
+          "output_tokens": 135,
+          "cache_creation_tokens": 10125,
+          "cache_read_tokens": 24965,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01C9KFeQqjUAztQEETT12VGG",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-22T05:15:44.444923",
+          "completed_at": "2026-07-22T05:15:44.943805",
+          "generation_duration_ms": 498.88286006171256,
+          "content_blocks": [
+            {
+              "block_type": "text",
+              "sequence": 0,
+              "text": "Now I have the references. Let me pull the registry and get the templates in parallel:",
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 0,
+          "output_tokens": 40,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01C9KFeQqjUAztQEETT12VGG",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-22T05:15:44.943805",
+          "completed_at": "2026-07-22T05:15:46.438965",
+          "generation_duration_ms": 1495.1604169327766,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01VgUbe8cf19JtaTK75ezkjV",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01VgUbe8cf19JtaTK75ezkjV"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 62,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01C9KFeQqjUAztQEETT12VGG",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-22T05:16:20.693364",
+          "completed_at": "2026-07-22T05:16:23.206600",
+          "generation_duration_ms": 2513.2366199977696,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_019M6xnJ1DnNokoYR7HH3ZBy",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_019M6xnJ1DnNokoYR7HH3ZBy"
+          ],
+          "input_tokens": 1,
+          "output_tokens": 141,
+          "cache_creation_tokens": 3846,
+          "cache_read_tokens": 35090,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01C5umHoekbXGEizwpBL6CDc",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-22T05:16:27.693147",
+          "completed_at": "2026-07-22T05:16:30.464066",
+          "generation_duration_ms": 2770.9193730261177,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01PzA34NvcLAmgr4YcneJdbV",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01PzA34NvcLAmgr4YcneJdbV"
+          ],
+          "input_tokens": 1,
+          "output_tokens": 167,
+          "cache_creation_tokens": 159,
+          "cache_read_tokens": 38936,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01UwdFyhgksGvarteEfKaebv",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-22T05:16:30.597987",
+          "completed_at": "2026-07-22T05:16:32.758383",
+          "generation_duration_ms": 2160.3959610220045,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_014J8UxHwA4Yb7xyNMgg5Gkw",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_014J8UxHwA4Yb7xyNMgg5Gkw"
+          ],
+          "input_tokens": 1,
+          "output_tokens": 145,
+          "cache_creation_tokens": 251,
+          "cache_read_tokens": 39095,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01PHkS8Ye3At8BNesAHtUwkF",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-22T05:16:32.845714",
+          "completed_at": "2026-07-22T05:16:34.901210",
+          "generation_duration_ms": 2055.4965229239315,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01K8YTo1Siu7rt1jCaFYzCoC",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01K8YTo1Siu7rt1jCaFYzCoC"
+          ],
+          "input_tokens": 1,
+          "output_tokens": 128,
+          "cache_creation_tokens": 1140,
+          "cache_read_tokens": 39346,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01YNXyg7Cs6kt7qnB43CJtGy",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-22T05:16:34.990002",
+          "completed_at": "2026-07-22T05:17:52.996848",
+          "generation_duration_ms": 78006.84721302241,
+          "content_blocks": [
+            {
+              "block_type": "thinking",
+              "sequence": 0,
+              "text": null,
+              "thinking": "Now I have what I need. Let me analyze the `Intsvc.HttpExecution` template:\n\nThe `XmlTemplate` for `Intsvc.HttpExecution` shows that the context inputs use `=bindings.{bindingId}` for the url, headers, parameters, body. But for a **connectionless/manual** HTTP call, the `mode` is `\"manual\"` and the URL is a literal value. \n\nLooking at the registry-workflow.md:\n> **Connectionless / manual HTTP** (`Intsvc.HttpExecution`, or `Intsvc.UnifiedHttpRequest` when current tooling exposes the unified shape): use when the workflow itself owns the URL, method, payload, and response parsing (no connection). Author `mode=\"manual\"`, `method`, `url`, `headers`, `parameters`, `body` directly from the registry template.\n \nFor manual mode, I need to provide literal values instead of binding references—the mode stays `\"manual\"`, method is `\"GET\"`, the URL points directly to Open-Meteo, headers and parameters are JSON literals, and body is null since GET doesn't need one.\n\nFor capturing the response, I'll need to declare a process variable using the `extensionElements` section in the BPMN structure to hold the output from the HTTP call. So the `BPMN.Variables` registry type is actually a task node that appears on the canvas for declaring variables, while the actual process-level variable declarations go in the process's `extensionElements` block using the `<uipath:variables>` structure. Both approaches work—you can either use the registry template as a visual task or declare them directly in the extension elements. So I need to declare a `WeatherResponse` variable in the process extensionElements using the `<uipath:variables>` block, then wire the HTTP task's output to populate that variable.\n\nLooking at the context template, I'm noticing that for manual mode without a connection, the `url` should be a literal string value rather than a binding expression. The registry-workflow documentation clarifies this distinction for connectionless workflows.\n\nFor the GET request, I need to decide whether to include the full URL with query parameters inline or split the latitude, longitude, and weather parameters into the separate `parameters` field. Since the default values show `url` as an empty string, `headers` and `parameters` as empty JSON objects, and `body` as null, I can construct the request either way.\n\nI'll go with option 2 and put the base URL in the `url` field while passing the query parameters as a JSON object in the `parameters` field. For the response variable type, since the Open-Meteo API returns a JSON object, I should use `object` as the type.\n\nNow I'm mapping out the full BPMN structure: a start event that triggers a SendTask configured for the HTTP call to Open-Meteo, which then flows to an end event. I'll need to define the weather response variable to capture the API output, and fill in the HTTP task details with the appropriate ID, name, and configuration. Writing XML input elements... I see that the CDATA approach might work better here for handling the JSON values in the XML attributes, so I'm reconsidering whether to use CDATA sections for the parameters and headers instead of escaping quotes. Encoding the ampersands in the URL as `&amp;` to keep everything in the attribute value, then I can leave the parameters empty or as an empty object. This avoids the JSON escaping complexity altogether. I think the cleaner approach is to include the full URL with all query parameters directly in the literal value, so the XML would escape the ampersands appropriately. For the variable declaration, I'm interpreting \"BPMN.Variables\" as referring to the `uipath:variables` block where I'll capture the HTTP response.\n\nDefining the variable to hold the JSON response...\n\nNow I'm laying out the BPMN diagram with a start event, the HTTP task in the middle, and an end event flowing left to right, positioning them so they align vertically and connect properly.\n\nI need to be careful with the HttpExecution template in manual mode—instead of using binding references like `=bindings.{bindingId}`, I should substitute actual literal values for the URL, headers, parameters, and body. Completing the XML activity definition... I'm checking the requirements about how to declare root variables in BPMN - the documentation mentions using the BPMN.Variables template, but that's typically a task node type, which seems odd for root-level variable declarations. Let me review the minimal example to see how variables are actually structured in the extensionElements.\n\nI think the reference to \"BPMN.Variables\" in the requirement is just naming the variable declaration system itself, not requiring a specific task node. I'll declare the `Var_WeatherResponse` variable directly in the `<uipath:variables>` block at the process level, then reference it in the HTTP task's output mapping.\n\nNow I'm writing out the complete BPMN file with the directory structure...",
+              "signature": "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",
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 1,
+          "output_tokens": 5317,
+          "cache_creation_tokens": 274,
+          "cache_read_tokens": 40486,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01V9EQAGCVdaFwzYhS7K9E7L",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-22T05:17:52.996848",
+          "completed_at": "2026-07-22T05:17:53.001472",
+          "generation_duration_ms": 4.623617976903915,
+          "content_blocks": [
+            {
+              "block_type": "text",
+              "sequence": 0,
+              "text": "Now I have both templates. Let me create the directory and author the BPMN file:",
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 0,
+          "output_tokens": 87,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01V9EQAGCVdaFwzYhS7K9E7L",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-22T05:17:53.001472",
+          "completed_at": "2026-07-22T05:17:53.388948",
+          "generation_duration_ms": 387.4760220060125,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_015tJdiXbqqspm1j375ujaJu",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_015tJdiXbqqspm1j375ujaJu"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 150,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01V9EQAGCVdaFwzYhS7K9E7L",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-22T05:17:53.417401",
+          "completed_at": "2026-07-22T05:18:54.893723",
+          "generation_duration_ms": 61476.32135497406,
+          "content_blocks": [
+            {
+              "block_type": "thinking",
+              "sequence": 0,
+              "text": null,
+              "thinking": "Now I need to author the BPMN file. Let me analyze the template carefully:\n\nThe `Intsvc.HttpExecution` template has `uipath:context` with these inputs:\n- `mode` = \"manual\" (hidden, required)\n- `method` = \"GET\"\n- `url` = the URL (with `=bindings.{bindingId}` pattern in the template, but for connectionless/manual mode, we need a literal URL, not a binding)\n- `headers` - JSON\n- `parameters` - JSON query params\n- `body` - null for GET\n\nThe registry workflow doc says:\nFor manual mode, I need to use literal values instead of binding references in the context inputs. So instead of `=bindings.{bindingId}`, I'll provide the actual URL, headers, and parameters directly. I'm setting up the Open-Meteo API call for Bellevue, WA...\n\nWriting the template configuration... I'm deciding whether to include the query parameters directly in the URL string or use the parameters field, and I'm realizing that embedding them in the URL is cleaner for a GET request. I need to remember that XML requires escaping ampersands as `&amp;` when they appear in attribute values. I need to clarify whether literal values or expressions are used for the URL and parameters in manual mode, then set up the BPMN process with a start event, HTTP GET task, and end event, using a process variable to capture the weather response. Variables are declared directly in the process `extensionElements` using `<uipath:variables>`, not as a task node in the flow. The minimal file example shows this structure with input/output variable definitions for things like Amount and Tier.\n\nFor the HTTP response, I need to add a variable with `id=\"Var_WeatherResponse\"`, `name=\"WeatherResponse\"`, and `type=\"object\"` to capture the JSON response. Then in the SendTask's output mapping, I'll reference this variable ID so the response gets stored properly.\n\nIn manual mode without a connection, the url and parameters fields need literal string values rather than binding references, similar to how the mode and method fields are handled. I need to handle the quotes in the JSON parameters carefully—either escaping them with `&quot;` in the attribute or using CDATA instead. Looking at how the script task handles JSON bodies with CDATA, that might be the cleaner approach for the parameters too. For the JSON parameters, I could escape the quotes with `&quot;` in the attribute value, though that gets messy. The cleaner alternative might be using element content with CDATA like the ScriptTask does, since the HttpExecution template seems flexible about how inputs are structured. Setting up the input parameters with CDATA for JSON values and simple attributes for plain strings, making sure headers and body are formatted consistently.\n\nNow I'm laying out the complete BPMN structure with a start event, HTTP GET task, and end event, connected by sequence flows. I'll need to include the migration version and define the weather response variable in the process extensions.\n\nFor the SendTask, I'm mapping the HTTP response output to the Var_WeatherResponse variable using a JSON schema. The diagram positions the start event on the left, the HTTP task in the middle, and the end event on the right, with horizontal flow connectors between them.\n\nWriting the BPMN file... I need to make sure the SendTask has the right inputs configured for manual mode without relying on binding references.",
+              "signature": "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",
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 1,
+          "output_tokens": 2576,
+          "cache_creation_tokens": 235,
+          "cache_read_tokens": 40760,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01DM8q4ULJgFioiBQcwNVQt3",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-22T05:18:54.893723",
+          "completed_at": "2026-07-22T05:18:54.894534",
+          "generation_duration_ms": 0.8123150328174233,
+          "content_blocks": [
+            {
+              "block_type": "text",
+              "sequence": 0,
+              "text": "Now I have everything needed. Let me author the BPMN file:",
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 0,
+          "output_tokens": 44,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01DM8q4ULJgFioiBQcwNVQt3",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-22T05:18:54.894534",
+          "completed_at": "2026-07-22T05:19:05.708865",
+          "generation_duration_ms": 10814.330570981838,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_019Tj8jK2qexDwN6PmB1jr2t",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_019Tj8jK2qexDwN6PmB1jr2t"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 2824,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01DM8q4ULJgFioiBQcwNVQt3",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-22T05:19:05.728878",
+          "completed_at": "2026-07-22T05:19:06.962378",
+          "generation_duration_ms": 1233.4988209186122,
+          "content_blocks": [
+            {
+              "block_type": "text",
+              "sequence": 0,
+              "text": "Now validate:",
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 1,
+          "output_tokens": 7,
+          "cache_creation_tokens": 1541,
+          "cache_read_tokens": 40995,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01QjFvtRTdiFguhANH6mnfad",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-22T05:19:06.962378",
+          "completed_at": "2026-07-22T05:19:08.982041",
+          "generation_duration_ms": 2019.6638359921053,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_016RHng77MndHKGcEQsaisWH",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_016RHng77MndHKGcEQsaisWH"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 164,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01QjFvtRTdiFguhANH6mnfad",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-22T05:19:09.425620",
+          "completed_at": "2026-07-22T05:19:11.175196",
+          "generation_duration_ms": 1749.5766220381483,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01TTTr8zHnosyoQzRw9Kuv8r",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01TTTr8zHnosyoQzRw9Kuv8r"
+          ],
+          "input_tokens": 1,
+          "output_tokens": 113,
+          "cache_creation_tokens": 533,
+          "cache_read_tokens": 42536,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01SE8DEJFWv6kbUcMynLs2bD",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-22T05:19:11.428189",
+          "completed_at": "2026-07-22T05:19:13.180545",
+          "generation_duration_ms": 1752.3557449458167,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_0161vEnKgErZvBXQehQdEaJz",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_0161vEnKgErZvBXQehQdEaJz"
+          ],
+          "input_tokens": 1,
+          "output_tokens": 100,
+          "cache_creation_tokens": 274,
+          "cache_read_tokens": 43069,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01Uuu1JLqeCJfeuojfqCJZ3v",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-22T05:19:13.201519",
+          "completed_at": "2026-07-22T05:19:15.061977",
+          "generation_duration_ms": 1860.459389979951,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_014A27kdN6P51P5c32CVpLSW",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_014A27kdN6P51P5c32CVpLSW"
+          ],
+          "input_tokens": 1,
+          "output_tokens": 106,
+          "cache_creation_tokens": 162,
+          "cache_read_tokens": 43343,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01S3Cgcvo7qSFDyiWL9zMt8o",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-22T05:19:15.075619",
+          "completed_at": "2026-07-22T05:19:16.873433",
+          "generation_duration_ms": 1797.813876066357,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01Da2Pv8wQFGPyGFfEEHHAcP",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01Da2Pv8wQFGPyGFfEEHHAcP"
+          ],
+          "input_tokens": 1,
+          "output_tokens": 116,
+          "cache_creation_tokens": 345,
+          "cache_read_tokens": 43505,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01CGg25rsYprVjJwy6qikKxg",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-22T05:19:17.122501",
+          "completed_at": "2026-07-22T05:19:19.198154",
+          "generation_duration_ms": 2075.6547540659085,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_014Zr7RqacxusaD8gLHsdkYH",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_014Zr7RqacxusaD8gLHsdkYH"
+          ],
+          "input_tokens": 1,
+          "output_tokens": 137,
+          "cache_creation_tokens": 277,
+          "cache_read_tokens": 43850,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01XQANNMLktqcMsLR5jJJcMY",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-22T05:19:19.212774",
+          "completed_at": "2026-07-22T05:19:21.114234",
+          "generation_duration_ms": 1901.4593630563468,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01VHZoGSBYsKtFv6vScg2Csy",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01VHZoGSBYsKtFv6vScg2Csy"
+          ],
+          "input_tokens": 1,
+          "output_tokens": 74,
+          "cache_creation_tokens": 500,
+          "cache_read_tokens": 44127,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01LhuXvt6sjVuRnG1dTox2Q7",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-22T05:19:21.124816",
+          "completed_at": "2026-07-22T05:19:23.568926",
+          "generation_duration_ms": 2444.1090560285375,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01TuwrVeC6LK9AyPzrHLXxDt",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01TuwrVeC6LK9AyPzrHLXxDt"
+          ],
+          "input_tokens": 1,
+          "output_tokens": 146,
+          "cache_creation_tokens": 205,
+          "cache_read_tokens": 44627,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01QrDy3BTjt1sHZAmuifo7mi",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-22T05:19:24.003377",
+          "completed_at": "2026-07-22T05:19:25.865130",
+          "generation_duration_ms": 1861.754033016041,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_016Zpyok1J5fJJyvNBXqpm8N",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_016Zpyok1J5fJJyvNBXqpm8N"
+          ],
+          "input_tokens": 1,
+          "output_tokens": 104,
+          "cache_creation_tokens": 180,
+          "cache_read_tokens": 44832,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01KQ2N3QqNGQHKs3opn3jnHq",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-22T05:19:25.885360",
+          "completed_at": "2026-07-22T05:19:28.067223",
+          "generation_duration_ms": 2181.86344509013,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_017zXgjKoDjQicUt68n9W7SU",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_017zXgjKoDjQicUt68n9W7SU"
+          ],
+          "input_tokens": 1,
+          "output_tokens": 128,
+          "cache_creation_tokens": 137,
+          "cache_read_tokens": 45012,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01JB4wnuk4JnR65YCorDsQkR",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-22T05:19:28.149162",
+          "completed_at": "2026-07-22T05:19:39.077717",
+          "generation_duration_ms": 10928.554559941404,
+          "content_blocks": [
+            {
+              "block_type": "text",
+              "sequence": 0,
+              "text": "The BPMN is **VALID**. Here's a summary of what was built:\n\n---\n\n## `OpenMeteoWeatherHttp/OpenMeteoWeatherHttp.bpmn` — complete\n\n**Process:** Start → HTTP GET weather → End\n\n### What was done and why\n\n1. **Registry pull** — synced the OOTB registry (no login needed for `Intsvc.HttpExecution`).\n\n2. **Template discovery** — `registry get Intsvc.HttpExecution` confirmed:\n   - Host element: `bpmn:SendTask` (as the registry requires)\n   - Extension tag: `uipath:activity`\n   - Context fields: `mode`, `method`, `url`, `headers`, `parameters`, `body`\n   - Output: `source=\"=response\"` → variable\n\n3. **Node authored from the registry template** — placeholders filled:\n   | Placeholder | Value |\n   |---|---|\n   | `mode` | `manual` (connectionless — no IS connection) |\n   | `method` | `GET` |\n   | `url` | `https://api.open-meteo.com/v1/forecast` (literal, public) |\n   | `parameters` | `{\"latitude\":\"47.6101\",\"longitude\":\"-122.2015\",\"current_weather\":\"true\"}` |\n   | `headers` | `{}` (none needed for public API) |\n   | `body` | `null` |\n   | `var` | `Var_WeatherResponse` (declared in `uipath:variables`) |\n\n   Bellevue, WA coordinates: 47.6101°N, 122.2015°W.\n\n4. **Variable declared** — `Var_WeatherResponse` of type `object` in the process-level `<uipath:variables>` block captures the full JSON response.\n\n5. **Diagram included** — `BPMNShape` for all 3 nodes, `BPMNEdge` for both flows, left-to-right layout.\n\n6. **Validated** — `node validate-bpmn.mjs` → `VALID` (exit 0).",
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 1,
+          "output_tokens": 509,
+          "cache_creation_tokens": 165,
+          "cache_read_tokens": 45149,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_014yTRffg2jxjXFcb27V6qiY",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "reconciliation",
+          "input_tokens": 668,
+          "output_tokens": 21,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "note": "Tokens the agent billed but never surfaced as a generation (fixed prompt overhead + sub-agent input/cache the stream doesn't bubble up). Booked here so the transcript reconciles to the turn total."
+        }
+      ],
+      "num_turns": 22,
+      "max_turns_exhausted": false,
+      "result_summary": {
+        "is_error": false,
+        "subtype": "success",
+        "stop_reason": "end_turn",
+        "result": "The BPMN is **VALID**. Here's a summary of what was built:\n\n---\n\n## `OpenMeteoWeatherHttp/OpenMeteoWeatherHttp.bpmn` — complete\n\n**Process:** Start → HTTP GET weather → End\n\n### What was done and why\n\n1. **Registry pull** — synced the OOTB registry (no login needed for `Intsvc.HttpExecution`).\n\n2. **Template discovery** — `registry get Intsvc.HttpExecution` confirmed:\n   - Host element: `bpmn:SendTask` (as the registry requires)\n   - Extension tag: `uipath:activity`\n   - Context fields: `mode`, `method`, `url`, `headers`, `parameters`, `body`\n   - Output: `source=\"=response\"` → variable\n\n3. **Node authored from the registry template** — placeholders filled:\n   | Placeholder | Value |\n   |---|---|\n   | `mode` | `manual` (connectionless — no IS connection) |\n   | `method` | `GET` |\n   | `url` | `https://api.open-meteo.com/v1/forecast` (literal, public) |\n   | `parameters` | `{\"latitude\":\"47.6101\",\"longitude\":\"-122.2015\",\"current_weather\":\"true\"}` |\n   | `headers` | `{}` (none needed for public API) |\n   | `body` | `null` |\n   | `var` | `Var_WeatherResponse` (declared in `uipath:variables`) |\n\n   Bellevue, WA coordinates: 47.6101°N, 122.2015°W.\n\n4. **Variable declared** — `Var_WeatherResponse` of type `object` in the process-level `<uipath:variables>` block captures the full JSON response.\n\n5. **Diagram included** — `BPMNShape` for all 3 nodes, `BPMNEdge` for both flows, left-to-right layout.\n\n6. **Validated** — `node validate-bpmn.mjs` → `VALID` (exit 0)."
+      },
+      "crashed": false,
+      "crash_reason": null
+    }
+  ],
+  "error_message": null,
+  "error_details": null,
+  "error_log_tail": null,
+  "environment_info": {
+    "git_commit": "unknown",
+    "skills_git_commit": "unknown",
+    "cli_version": "1.197.0-alpha.20260626.7673",
+    "tool_plugins": {
+      "agent-tool": "1.197.0-alpha.20260626.7673",
+      "agenthub-tool": "1.197.0-alpha.20260626.7673",
+      "codedagent-tool": "1.197.0-alpha.20260626.7673",
+      "data-fabric-tool": "1.197.0-alpha.20260626.7673",
+      "functions-tool": "1.197.0-alpha.20260626.7673",
+      "gov-tool": "1.197.0-alpha.20260626.7673",
+      "insights-tool": "1.197.0-alpha.20260626.7673",
+      "integrationservice-tool": "1.197.0-alpha.20260626.7673",
+      "ixp-tool": "1.197.0-alpha.20260626.7673",
+      "maestro-tool": "1.197.0-alpha.20260626.7673",
+      "orchestrator-tool": "1.197.0-alpha.20260626.7673",
+      "solution-tool": "1.197.0-alpha.20260626.7673",
+      "tasks-tool": "1.197.0-alpha.20260626.7673",
+      "test-manager-tool": "1.197.0-alpha.20260626.7673"
+    },
+    "coder_eval": "0.8.4",
+    "claude_code_cli": "2.1.177 (Claude Code)",
+    "uv": "uv 0.11.28 (x86_64-unknown-linux-gnu)",
+    "anthropic": "0.102.0",
+    "openai": "2.46.0",
+    "pydantic": "2.12.5",
+    "api_routing": "aws_bedrock",
+    "aws_region": "us-east-2",
+    "bedrock_model": "us.anthropic.claude-sonnet-4-6"
+  },
+  "agent_config": {
+    "type": "claude-code",
+    "model": "claude-sonnet-4-6",
+    "permission_mode": "acceptEdits",
+    "allowed_tools": [
+      "Skill",
+      "Bash",
+      "Read",
+      "Write",
+      "Edit",
+      "Glob",
+      "Grep"
+    ],
+    "disallowed_tools": null,
+    "plugins": [
+      {
+        "type": "local",
+        "path": "/home/azureuser/projects/skills/tmp/"
+      }
+    ],
+    "system_prompt": "You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted.\n",
+    "system_prompt_file": null,
+    "ignore_patterns": [],
+    "claude_settings": null,
+    "sdk_options": {},
+    "setting_sources": null
+  },
+  "sdk_options": {
+    "tools": null,
+    "allowed_tools": [
+      "Skill",
+      "Bash",
+      "Read",
+      "Write",
+      "Edit",
+      "Glob",
+      "Grep"
+    ],
+    "system_prompt": "You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted.\n",
+    "mcp_servers": {},
+    "strict_mcp_config": false,
+    "permission_mode": "acceptEdits",
+    "continue_conversation": false,
+    "resume": null,
+    "session_id": null,
+    "max_turns": 80,
+    "max_budget_usd": null,
+    "disallowed_tools": [
+      "ToolSearch"
+    ],
+    "model": "us.anthropic.claude-sonnet-4-6",
+    "fallback_model": null,
+    "betas": [],
+    "permission_prompt_tool_name": null,
+    "cwd": "/work/output/artifacts/skill-bpmn-http-weather",
+    "cli_path": null,
+    "settings": null,
+    "add_dirs": [],
+    "env": {
+      "PATH": "/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+      "PLUGIN_TOOLS_DIR": "/usr/lib/node_modules/@uipath",
+      "CLAUDE_CODE_USE_BEDROCK": "1",
+      "AWS_BEARER_TOKEN_BEDROCK": "***REDACTED***",
+      "AWS_REGION": "us-east-2",
+      "CLAUDE_CODE_ATTRIBUTION_HEADER": "0",
+      "ANTHROPIC_MODEL": "us.anthropic.claude-sonnet-4-6",
+      "ANTHROPIC_SMALL_FAST_MODEL": "us.anthropic.claude-sonnet-4-6"
+    },
+    "extra_args": {},
+    "max_buffer_size": null,
+    "can_use_tool": null,
+    "hooks": null,
+    "user": null,
+    "include_partial_messages": true,
+    "include_hook_events": false,
+    "fork_session": false,
+    "agents": null,
+    "setting_sources": [
+      "project"
+    ],
+    "skills": null,
+    "sandbox": null,
+    "plugins": [
+      {
+        "type": "local",
+        "path": "/home/azureuser/projects/skills/tmp"
+      }
+    ],
+    "max_thinking_tokens": null,
+    "thinking": null,
+    "effort": null,
+    "output_format": null,
+    "enable_file_checkpointing": false,
+    "session_store": null,
+    "session_store_flush": "batched",
+    "load_timeout_ms": 60000,
+    "task_budget": null
+  },
+  "sandbox_path": "/work/output/artifacts/skill-bpmn-http-weather",
+  "task_config": {
+    "resolved": {
+      "task_id": "skill-bpmn-http-weather",
+      "description": "HTTP activity eval: agent uses the uipath-maestro-bpmn skill to model a connectionless HTTP call to a public weather API (Open-Meteo) as a bpmn:sendTask with the registry Intsvc.HttpExecution wrapper in manual mode, capturing the response into a declared variable. Ports the Flow Open-Meteo weather single-node test to a connectionless BPMN HTTP node. Authoring only — no cloud effects, no live call.\n",
+      "initial_prompt": "Load and follow the uipath-maestro-bpmn skill.\n\nCreate a local BPMN project named \"OpenMeteoWeatherHttp\" with the main file at\nOpenMeteoWeatherHttp/OpenMeteoWeatherHttp.bpmn. Model this process:\nmanual start -> HTTP GET the current weather for Bellevue from the public\nOpen-Meteo API -> end.\n\nRequirements:\n- Discover the HTTP-execution extension type via the registry and author its\n  node from the registry template. Do not hand-author uipath:* XML from prose.\n- This is a connectionless (manual) HTTP call — no Integration Service\n  connection. Model it as a bpmn:sendTask using the documented\n  Intsvc.HttpExecution wrapper in manual mode with method GET and a literal\n  Open-Meteo forecast URL (host api.open-meteo.com), including latitude,\n  longitude, and current-weather query parameters.\n- Capture the HTTP response into a declared process variable (BPMN.Variables).\n- Do not invent or paste real tenant URLs, connection IDs, or connector keys —\n  the only external URL is the public Open-Meteo endpoint.\n- Include a bpmndi:BPMNDiagram with a BPMNShape for every node and a BPMNEdge\n  for every sequence flow.\n- Do not upload, publish, deploy, debug, run, pack, or actually call the API,\n  and do not pause for approval or confirmation.\n",
+      "initial_prompt_file": null,
+      "tags": [
+        "uipath-maestro-bpmn",
+        "integration",
+        "mode:build",
+        "lifecycle:generate",
+        "shape:single-node",
+        "feature:http"
+      ],
+      "skip": false,
+      "agent": {
+        "type": "claude-code",
+        "model": "claude-sonnet-4-6",
+        "permission_mode": "acceptEdits",
+        "allowed_tools": [
+          "Skill",
+          "Bash",
+          "Read",
+          "Write",
+          "Edit",
+          "Glob",
+          "Grep"
+        ],
+        "disallowed_tools": null,
+        "plugins": [
+          {
+            "type": "local",
+            "path": "/home/azureuser/projects/skills/tmp/"
+          }
+        ],
+        "system_prompt": "You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted.\n",
+        "system_prompt_file": null,
+        "ignore_patterns": [],
+        "claude_settings": null,
+        "sdk_options": {},
+        "setting_sources": null
+      },
+      "sandbox": {
+        "driver": "tempdir",
+        "docker": {
+          "image": "skills-image:latest",
+          "dockerfile_path": null,
+          "build": {
+            "buildkit": null,
+            "args": {},
+            "secrets": [],
+            "extra_args": []
+          },
+          "network": "bridge",
+          "working_dir": null,
+          "env_passthrough": [
+            "ANTHROPIC_API_KEY",
+            "API_BACKEND",
+            "UIPATH_LLM_BACKEND",
+            "UIPATH_ACCESS_TOKEN",
+            "UIPATH_URL",
+            "UIPATH_TENANT_ID",
+            "UIPATH_ORGANIZATION_ID",
+            "UIPATH_CLI_DISABLE_VERSION_SYNC",
+            "AWS_BEARER_TOKEN_BEDROCK",
+            "AWS_REGION",
+            "BEDROCK_MODEL",
+            "CLAUDE_CODE_USE_BEDROCK",
+            "ANTHROPIC_MODEL",
+            "CODEX_API_KEY",
+            "CODEX_BASE_URL",
+            "CODEX_MODEL",
+            "GEMINI_API_KEY",
+            "ANTIGRAVITY_MODEL",
+            "HOME"
+          ],
+          "env_passthrough_extra": [
+            "SKILLS_REPO_PATH",
+            "BEDROCK_MODEL",
+            "TASK_PARALLELISM",
+            "UIPATH_CLI_ENABLE_ENV_AUTH",
+            "UIPATH_CLI_AUTH_TOKEN",
+            "UIPATH_CLI_ORGANIZATION_NAME",
+            "UIPATH_CLI_ORGANIZATION_ID",
+            "UIPATH_CLI_TENANT_NAME",
+            "UIPATH_CLI_TENANT_ID",
+            "TRACES_SMOKE_PROCESS_KEY",
+            "CODEX_API_KEY",
+            "CODEX_BASE_URL"
+          ],
+          "extra_mounts": [
+            "~/.uipath:/.uipath:rw"
+          ]
+        },
+        "python": {
+          "env_packages": []
+        },
+        "node": null,
+        "limits": {
+          "timeout": 300,
+          "max_memory_mb": null,
+          "max_cpus": null,
+          "max_pids": null,
+          "max_disk_mb": null
+        },
+        "template_sources": [
+          {
+            "type": "template_dir",
+            "path": "/home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn",
+            "mount_point": ".",
+            "include_patterns": []
+          }
+        ],
+        "mock_path_dirs": null,
+        "ignore_patterns": []
+      },
+      "success_criteria": [
+        {
+          "type": "file_exists",
+          "description": "BPMN source was created",
+          "weight": 1.0,
+          "pass_threshold": 1.0,
+          "suite_thresholds": null,
+          "stop_when": null,
+          "path": "OpenMeteoWeatherHttp/OpenMeteoWeatherHttp.bpmn"
+        },
+        {
+          "type": "file_contains",
+          "description": "BPMN uses the HTTP-execution wrapper and the public Open-Meteo host",
+          "weight": 1.5,
+          "pass_threshold": 1.0,
+          "suite_thresholds": null,
+          "stop_when": null,
+          "path": "OpenMeteoWeatherHttp/OpenMeteoWeatherHttp.bpmn",
+          "includes": [
+            "Intsvc.HttpExecution",
+            "open-meteo"
+          ],
+          "excludes": null
+        },
+        {
+          "type": "command_executed",
+          "description": "Agent did not run any cloud-side Maestro BPMN lifecycle command",
+          "weight": 1.0,
+          "pass_threshold": 1.0,
+          "suite_thresholds": null,
+          "stop_when": null,
+          "tool_name": "Bash",
+          "command_pattern": "(uip|\\$UIP)\\s+maestro\\s+bpmn\\s+(upload|publish|deploy|debug|run|pack)",
+          "min_count": 0,
+          "max_count": 0,
+          "require_success": false,
+          "exclude_pattern": null
+        },
+        {
+          "type": "run_command",
+          "description": "HTTP sendTask is connectionless manual GET to Open-Meteo with a bound output variable",
+          "weight": 5.0,
+          "pass_threshold": 1.0,
+          "suite_thresholds": null,
+          "stop_when": null,
+          "command": "python3 $TASK_DIR/check_http_weather.py",
+          "timeout": 30,
+          "expected_exit_code": 0,
+          "expected_stdout": null,
+          "stdout_match": "exact",
+          "score_from_stdout": false
+        }
+      ],
+      "run_limits": {
+        "max_turns": 80,
+        "expected_turns": 16,
+        "task_timeout": 900,
+        "turn_timeout": 900,
+        "max_input_tokens": null,
+        "max_output_tokens": null,
+        "max_total_tokens": null,
+        "max_usd": null,
+        "count_cached_input": false,
+        "count_cache_creation": false,
+        "stop_early": false
+      },
+      "reference": null,
+      "expected_commands": null,
+      "pre_run": [],
+      "post_run": [
+        {
+          "command": "find . -maxdepth 5 -type d \\( -name node_modules -o -name .npm-prefix -o -name .venv \\) -prune -exec rm -rf {} +",
+          "timeout": 30
+        }
+      ],
+      "dataset": null,
+      "suite_id": null,
+      "row_id": null,
+      "simulation": null
+    },
+    "source_yaml": "task_id: skill-bpmn-http-weather\ndescription: >\n  HTTP activity eval: agent uses the uipath-maestro-bpmn skill to model a\n  connectionless HTTP call to a public weather API (Open-Meteo) as a\n  bpmn:sendTask with the registry Intsvc.HttpExecution wrapper in manual mode,\n  capturing the response into a declared variable. Ports the Flow Open-Meteo\n  weather single-node test to a connectionless BPMN HTTP node. Authoring only —\n  no cloud effects, no live call.\ntags: [uipath-maestro-bpmn, integration, \"mode:build\", \"lifecycle:generate\", \"shape:single-node\", \"feature:http\"]\n\nrun_limits:\n  expected_turns: 16\n  max_turns: 80\n\nsandbox:\n  template_sources:\n    - type: template_dir\n      path: ../../../../../skills/uipath-maestro-bpmn\n\ninitial_prompt: |\n  Load and follow the uipath-maestro-bpmn skill.\n\n  Create a local BPMN project named \"OpenMeteoWeatherHttp\" with the main file at\n  OpenMeteoWeatherHttp/OpenMeteoWeatherHttp.bpmn. Model this process:\n  manual start -> HTTP GET the current weather for Bellevue from the public\n  Open-Meteo API -> end.\n\n  Requirements:\n  - Discover the HTTP-execution extension type via the registry and author its\n    node from the registry template. Do not hand-author uipath:* XML from prose.\n  - This is a connectionless (manual) HTTP call — no Integration Service\n    connection. Model it as a bpmn:sendTask using the documented\n    Intsvc.HttpExecution wrapper in manual mode with method GET and a literal\n    Open-Meteo forecast URL (host api.open-meteo.com), including latitude,\n    longitude, and current-weather query parameters.\n  - Capture the HTTP response into a declared process variable (BPMN.Variables).\n  - Do not invent or paste real tenant URLs, connection IDs, or connector keys —\n    the only external URL is the public Open-Meteo endpoint.\n  - Include a bpmndi:BPMNDiagram with a BPMNShape for every node and a BPMNEdge\n    for every sequence flow.\n  - Do not upload, publish, deploy, debug, run, pack, or actually call the API,\n    and do not pause for approval or confirmation.\n\nsuccess_criteria:\n  - type: file_exists\n    description: \"BPMN source was created\"\n    path: \"OpenMeteoWeatherHttp/OpenMeteoWeatherHttp.bpmn\"\n    weight: 1.0\n    pass_threshold: 1.0\n\n  - type: file_contains\n    description: \"BPMN uses the HTTP-execution wrapper and the public Open-Meteo host\"\n    path: \"OpenMeteoWeatherHttp/OpenMeteoWeatherHttp.bpmn\"\n    includes:\n      - \"Intsvc.HttpExecution\"\n      - \"open-meteo\"\n    weight: 1.5\n    pass_threshold: 1.0\n\n  - type: command_not_executed\n    description: \"Agent did not run any cloud-side Maestro BPMN lifecycle command\"\n    tool_name: \"Bash\"\n    command_pattern: '(uip|\\$UIP)\\s+maestro\\s+bpmn\\s+(upload|publish|deploy|debug|run|pack)'\n    weight: 1.0\n    pass_threshold: 1.0\n\n  - type: run_command\n    description: \"HTTP sendTask is connectionless manual GET to Open-Meteo with a bound output variable\"\n    command: \"python3 $TASK_DIR/check_http_weather.py\"\n    timeout: 30\n    expected_exit_code: 0\n    weight: 5.0\n    pass_threshold: 1.0\n",
+    "source_file": "/home/azureuser/projects/skills/tmp/experiments/tasks/uipath-maestro-bpmn/single_node/http_weather/task.yaml",
+    "lineage": {
+      "agent.type": {
+        "value": "claude-code",
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.permission_mode": {
+        "value": "acceptEdits",
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.model": {
+        "value": "claude-sonnet-4-6",
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.allowed_tools": {
+        "value": [
+          "Skill",
+          "Bash",
+          "Read",
+          "Write",
+          "Edit",
+          "Glob",
+          "Grep"
+        ],
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.plugins": {
+        "value": [
+          {
+            "type": "local",
+            "path": "/home/azureuser/projects/skills/tmp/"
+          }
+        ],
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.ignore_patterns": {
+        "value": [],
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.system_prompt": {
+        "value": "You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted.\n",
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "run_limits.max_turns": {
+        "value": 80,
+        "source": "task",
+        "source_detail": null
+      },
+      "run_limits.task_timeout": {
+        "value": 900,
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "run_limits.turn_timeout": {
+        "value": 900,
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "run_limits.expected_turns": {
+        "value": 16,
+        "source": "task",
+        "source_detail": null
+      },
+      "sandbox.driver": {
+        "value": "docker",
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "sandbox.docker": {
+        "value": {
+          "image": "skills-image:latest",
+          "env_passthrough_extra": [
+            "SKILLS_REPO_PATH",
+            "BEDROCK_MODEL",
+            "TASK_PARALLELISM",
+            "UIPATH_CLI_ENABLE_ENV_AUTH",
+            "UIPATH_CLI_AUTH_TOKEN",
+            "UIPATH_CLI_ORGANIZATION_NAME",
+            "UIPATH_CLI_ORGANIZATION_ID",
+            "UIPATH_CLI_TENANT_NAME",
+            "UIPATH_CLI_TENANT_ID",
+            "TRACES_SMOKE_PROCESS_KEY",
+            "CODEX_API_KEY",
+            "CODEX_BASE_URL"
+          ],
+          "extra_mounts": [
+            "~/.uipath:/.uipath:rw"
+          ]
+        },
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "sandbox.template_sources": {
+        "value": [
+          {
+            "type": "template_dir",
+            "path": "/home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn"
+          }
+        ],
+        "source": "task",
+        "source_detail": null
+      },
+      "repeats": {
+        "value": 5,
+        "source": "cli",
+        "source_detail": null
+      }
+    }
+  },
+  "command_stats": {
+    "total_commands": 20,
+    "commands_by_tool": {
+      "Skill": 1,
+      "Read": 2,
+      "Bash": 16,
+      "Write": 1
+    },
+    "total_command_time_ms": 41240.43421423994,
+    "avg_command_time_ms": 2062.021710711997,
+    "slowest_commands": [
+      {
+        "tool": "Bash",
+        "duration_ms": 34254.38550300896,
+        "parameters": {
+          "command": "uip maestro bpmn registry pull --output json 2>&1 | tail -5",
+          "description": "Pull/sync the BPMN extension registry"
+        },
+        "tool_id": "toolu_bdrk_01VgUbe8cf19JtaTK75ezkjV"
+      },
+      {
+        "tool": "Bash",
+        "duration_ms": 4486.294741043821,
+        "parameters": {
+          "command": "uip maestro bpmn registry get Intsvc.HttpExecution --output json > /tmp/http_template.json 2>&1\nuip maestro bpmn registry get BPMN.Variables --output json > /tmp/vars_template.json 2>&1",
+          "description": "Get registry templates for HttpExecution and Variables"
+        },
+        "tool_id": "toolu_bdrk_019M6xnJ1DnNokoYR7HH3ZBy"
+      },
+      {
+        "tool": "Read",
+        "duration_ms": 563.3417060598731,
+        "parameters": {
+          "file_path": "/home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn/references/structural-bpmn.md"
+        },
+        "tool_id": "toolu_bdrk_01SguNosS73JorSWxTH9ZNku"
+      },
+      {
+        "tool": "Bash",
+        "duration_ms": 443.56469495687634,
+        "parameters": {
+          "command": "cd /home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn/validator && npm install --silent 2>&1 | tail -3 && node validate-bpmn.mjs /work/output/artifacts/skill-bpmn-http-weather/OpenMeteoWeatherHttp/OpenMeteoWeatherHttp.bpmn",
+          "description": "Install validator deps and validate the BPMN file"
+        },
+        "tool_id": "toolu_bdrk_016RHng77MndHKGcEQsaisWH"
+      },
+      {
+        "tool": "Bash",
+        "duration_ms": 434.280748013407,
+        "parameters": {
+          "command": "mkdir -p /tmp/validator-work && cp -r /home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn/validator/* /tmp/validator-work/ && cd /tmp/validator-work && npm install --silent 2>&1 | tail -3",
+          "description": "Copy validator to writable location and install deps"
+        },
+        "tool_id": "toolu_bdrk_01TuwrVeC6LK9AyPzrHLXxDt"
+      }
+    ],
+    "successful_commands": 18,
+    "failed_commands": 2,
+    "unknown_commands": 0,
+    "success_rate": 90.0,
+    "most_common_sequence": "Bash → Bash → Bash"
+  },
+  "total_token_usage": {
+    "uncached_input_tokens": 4345,
+    "output_tokens": 14076,
+    "cache_creation_input_tokens": 26360,
+    "cache_read_input_tokens": 779511,
+    "total_cost_usd": 0.5568783,
+    "input_tokens": 810216
+  },
+  "total_assistant_turns": 30,
+  "expected_commands": null,
+  "actual_commands": 20,
+  "commands_efficiency": null,
+  "pre_run_results": [],
+  "post_run_results": [
+    {
+      "command": "find . -maxdepth 5 -type d \\( -name node_modules -o -name .npm-prefix -o -name .venv \\) -prune -exec rm -rf {} +",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "",
+      "duration_seconds": 0.002774953842163086,
+      "error": null
+    }
+  ],
+  "simulation": null,
+  "early_stop": null
+}

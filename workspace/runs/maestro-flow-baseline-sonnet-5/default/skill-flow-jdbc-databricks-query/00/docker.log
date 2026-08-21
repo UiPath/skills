@@ -1,0 +1,9 @@
+21:44:38 [INFO   ] [default/skill-flow-jdbc-databricks-query/00] orchestrator: API routing: aws_bedrock
+21:51:57 [INFO   ] [default/skill-flow-jdbc-databricks-query/00] orchestrator: Success criteria: 3/3 passed, weighted score: 1.000
+21:51:57 [WARNING] [default/skill-flow-jdbc-databricks-query/00] orchestrator: Visible turns (41) exceeded expected_turns (40) at iteration 1 for task skill-flow-jdbc-databricks-query. Run continues — max_turns remains the hard cap.
+21:51:57 [INFO   ] [default/skill-flow-jdbc-databricks-query/00] orchestrator: Running post-run command: python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/cleanup_solutions.py
+21:51:58 [WARNING] [default/skill-flow-jdbc-databricks-query/00] orchestrator: [post_run stderr] cleanup_solutions: deleted 31cc7d3f-c92c-4875-962a-08defd628c60 (from DatabricksQuery/DatabricksQuery.uipx)
+21:51:58 [WARNING] [default/skill-flow-jdbc-databricks-query/00] orchestrator: [post_run stderr] cleanup_solutions: summary policy=always deleted=1 preserved=0 skipped=0 not_uploaded=0 failed=0
+21:51:58 [INFO   ] [default/skill-flow-jdbc-databricks-query/00] orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+21:51:58 [INFO   ] [default/skill-flow-jdbc-databricks-query/00] orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-jdbc-databricks-query
+21:51:58 [INFO   ] [default/skill-flow-jdbc-databricks-query/00] orchestrator: Task finished: status=SUCCESS duration=448.5s score=1.000 iterations=1

@@ -1,0 +1,311 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+    xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+    xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+    xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+    xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:uipath="http://uipath.org/schema/bpmn"
+    id="Definitions_InvoiceTriage"
+    targetNamespace="http://bpmn.io/schema/bpmn"
+    exporter="UiPath (https://bpmn.uipath.com)" exporterVersion="1.0">
+
+  <bpmn:process id="Process_InvoiceTriage" isExecutable="true">
+    <bpmn:extensionElements>
+      <uipath:migrationVersion version="11.5" />
+      <uipath:variables version="v1">
+        <uipath:inputOutput id="Var_InvoiceId" name="invoiceId" type="string" />
+        <uipath:inputOutput id="Var_Amount"    name="amount"    type="number" />
+      </uipath:variables>
+    </bpmn:extensionElements>
+
+    <!-- Start: plain none-start (manual trigger, no event-definition needed) -->
+    <bpmn:startEvent id="Start_ManualTrigger" name="Invoice Received">
+      <bpmn:outgoing>Flow_StartToIntake</bpmn:outgoing>
+    </bpmn:startEvent>
+
+    <!-- Task 1: Record invoice intake -->
+    <bpmn:scriptTask id="Task_RecordIntake" name="Record Invoice Intake" scriptFormat="JavaScript">
+      <bpmn:extensionElements>
+        <uipath:scriptVersion value="v3" />
+        <uipath:mapping version="v1">
+          <uipath:type value="BPMN.ScriptTask" version="v1" />
+          <uipath:input name="args"><![CDATA[{"invoiceId":"=vars.Var_InvoiceId","amount":"=vars.Var_Amount"}]]></uipath:input>
+        </uipath:mapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_StartToIntake</bpmn:incoming>
+      <bpmn:outgoing>Flow_IntakeToTriage</bpmn:outgoing>
+      <bpmn:script><![CDATA[
+return { response: "intake_recorded" };
+]]></bpmn:script>
+    </bpmn:scriptTask>
+
+    <!-- XOR gateway: route by amount -->
+    <bpmn:exclusiveGateway id="Gw_Triage" name="High-Value?" default="Flow_TriageToAutoApproval">
+      <bpmn:incoming>Flow_IntakeToTriage</bpmn:incoming>
+      <bpmn:outgoing>Flow_TriageToManagerReview</bpmn:outgoing>
+      <bpmn:outgoing>Flow_TriageToAutoApproval</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+
+    <!-- Task 2a: Manager review (high-value path) -->
+    <bpmn:scriptTask id="Task_ManagerReview" name="Manager Review" scriptFormat="JavaScript">
+      <bpmn:extensionElements>
+        <uipath:scriptVersion value="v3" />
+        <uipath:mapping version="v1">
+          <uipath:type value="BPMN.ScriptTask" version="v1" />
+          <uipath:input name="args"><![CDATA[{"invoiceId":"=vars.Var_InvoiceId","amount":"=vars.Var_Amount"}]]></uipath:input>
+        </uipath:mapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_TriageToManagerReview</bpmn:incoming>
+      <bpmn:outgoing>Flow_ManagerReviewToMerge</bpmn:outgoing>
+      <bpmn:script><![CDATA[
+return { response: "manager_reviewed" };
+]]></bpmn:script>
+    </bpmn:scriptTask>
+
+    <!-- Task 2b: Auto approval (low-value path / default) -->
+    <bpmn:scriptTask id="Task_AutoApproval" name="Auto Approval" scriptFormat="JavaScript">
+      <bpmn:extensionElements>
+        <uipath:scriptVersion value="v3" />
+        <uipath:mapping version="v1">
+          <uipath:type value="BPMN.ScriptTask" version="v1" />
+          <uipath:input name="args"><![CDATA[{"invoiceId":"=vars.Var_InvoiceId","amount":"=vars.Var_Amount"}]]></uipath:input>
+        </uipath:mapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_TriageToAutoApproval</bpmn:incoming>
+      <bpmn:outgoing>Flow_AutoApprovalToMerge</bpmn:outgoing>
+      <bpmn:script><![CDATA[
+return { response: "auto_approved" };
+]]></bpmn:script>
+    </bpmn:scriptTask>
+
+    <!-- XOR merge: converge both approval branches -->
+    <bpmn:exclusiveGateway id="Gw_ApprovalMerge" name="Approval Merge" default="Flow_MergeToFork">
+      <bpmn:incoming>Flow_ManagerReviewToMerge</bpmn:incoming>
+      <bpmn:incoming>Flow_AutoApprovalToMerge</bpmn:incoming>
+      <bpmn:outgoing>Flow_MergeToFork</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+
+    <!-- Parallel fork: start two follow-up tasks -->
+    <bpmn:parallelGateway id="Gw_ParallelFork" name="Start Follow-Up">
+      <bpmn:incoming>Flow_MergeToFork</bpmn:incoming>
+      <bpmn:outgoing>Flow_ForkToNotify</bpmn:outgoing>
+      <bpmn:outgoing>Flow_ForkToArchive</bpmn:outgoing>
+    </bpmn:parallelGateway>
+
+    <!-- Task 3a: Notify requester -->
+    <bpmn:scriptTask id="Task_NotifyRequester" name="Notify Requester" scriptFormat="JavaScript">
+      <bpmn:extensionElements>
+        <uipath:scriptVersion value="v3" />
+        <uipath:mapping version="v1">
+          <uipath:type value="BPMN.ScriptTask" version="v1" />
+          <uipath:input name="args"><![CDATA[{"invoiceId":"=vars.Var_InvoiceId"}]]></uipath:input>
+        </uipath:mapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_ForkToNotify</bpmn:incoming>
+      <bpmn:outgoing>Flow_NotifyToJoin</bpmn:outgoing>
+      <bpmn:script><![CDATA[
+return { response: "requester_notified" };
+]]></bpmn:script>
+    </bpmn:scriptTask>
+
+    <!-- Task 3b: Archive decision -->
+    <bpmn:scriptTask id="Task_ArchiveDecision" name="Archive Decision" scriptFormat="JavaScript">
+      <bpmn:extensionElements>
+        <uipath:scriptVersion value="v3" />
+        <uipath:mapping version="v1">
+          <uipath:type value="BPMN.ScriptTask" version="v1" />
+          <uipath:input name="args"><![CDATA[{"invoiceId":"=vars.Var_InvoiceId"}]]></uipath:input>
+        </uipath:mapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_ForkToArchive</bpmn:incoming>
+      <bpmn:outgoing>Flow_ArchiveToJoin</bpmn:outgoing>
+      <bpmn:script><![CDATA[
+return { response: "decision_archived" };
+]]></bpmn:script>
+    </bpmn:scriptTask>
+
+    <!-- Parallel join -->
+    <bpmn:parallelGateway id="Gw_ParallelJoin" name="Follow-Up Complete">
+      <bpmn:incoming>Flow_NotifyToJoin</bpmn:incoming>
+      <bpmn:incoming>Flow_ArchiveToJoin</bpmn:incoming>
+      <bpmn:outgoing>Flow_JoinToEnd</bpmn:outgoing>
+    </bpmn:parallelGateway>
+
+    <!-- End event -->
+    <bpmn:endEvent id="End_Processed" name="Invoice Processed">
+      <bpmn:incoming>Flow_JoinToEnd</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <!-- Sequence flows -->
+    <bpmn:sequenceFlow id="Flow_StartToIntake"         sourceRef="Start_ManualTrigger"  targetRef="Task_RecordIntake" />
+    <bpmn:sequenceFlow id="Flow_IntakeToTriage"         sourceRef="Task_RecordIntake"    targetRef="Gw_Triage" />
+
+    <bpmn:sequenceFlow id="Flow_TriageToManagerReview"  sourceRef="Gw_Triage"            targetRef="Task_ManagerReview">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=vars.Var_Amount >= 1000</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_TriageToAutoApproval"   sourceRef="Gw_Triage"            targetRef="Task_AutoApproval" />
+
+    <bpmn:sequenceFlow id="Flow_ManagerReviewToMerge"   sourceRef="Task_ManagerReview"   targetRef="Gw_ApprovalMerge" />
+    <bpmn:sequenceFlow id="Flow_AutoApprovalToMerge"    sourceRef="Task_AutoApproval"     targetRef="Gw_ApprovalMerge" />
+
+    <bpmn:sequenceFlow id="Flow_MergeToFork"            sourceRef="Gw_ApprovalMerge"     targetRef="Gw_ParallelFork" />
+
+    <bpmn:sequenceFlow id="Flow_ForkToNotify"           sourceRef="Gw_ParallelFork"      targetRef="Task_NotifyRequester" />
+    <bpmn:sequenceFlow id="Flow_ForkToArchive"          sourceRef="Gw_ParallelFork"      targetRef="Task_ArchiveDecision" />
+
+    <bpmn:sequenceFlow id="Flow_NotifyToJoin"           sourceRef="Task_NotifyRequester" targetRef="Gw_ParallelJoin" />
+    <bpmn:sequenceFlow id="Flow_ArchiveToJoin"          sourceRef="Task_ArchiveDecision"  targetRef="Gw_ParallelJoin" />
+
+    <bpmn:sequenceFlow id="Flow_JoinToEnd"              sourceRef="Gw_ParallelJoin"      targetRef="End_Processed" />
+  </bpmn:process>
+
+  <!--
+    Layout (left-to-right, y-center = 220):
+      Start(160,202)  RecordIntake(246,180)  Gw_Triage(396,195)
+        upper: ManagerReview(506,100)  lower: AutoApproval(506,280)
+      Gw_ApprovalMerge(666,195)  Gw_ParallelFork(766,195)
+        upper: NotifyRequester(876,100)  lower: ArchiveDecision(876,280)
+      Gw_ParallelJoin(1036,195)  End(1136,202)
+  -->
+  <bpmndi:BPMNDiagram id="Diagram_1">
+    <bpmndi:BPMNPlane id="Plane_1" bpmnElement="Process_InvoiceTriage">
+
+      <!-- Start event -->
+      <bpmndi:BPMNShape id="S_Start_ManualTrigger" bpmnElement="Start_ManualTrigger">
+        <dc:Bounds x="160" y="202" width="36" height="36" />
+      </bpmndi:BPMNShape>
+
+      <!-- Record Invoice Intake -->
+      <bpmndi:BPMNShape id="S_Task_RecordIntake" bpmnElement="Task_RecordIntake">
+        <dc:Bounds x="246" y="180" width="100" height="80" />
+      </bpmndi:BPMNShape>
+
+      <!-- XOR Triage gateway -->
+      <bpmndi:BPMNShape id="S_Gw_Triage" bpmnElement="Gw_Triage" isMarkerVisible="true">
+        <dc:Bounds x="396" y="195" width="50" height="50" />
+      </bpmndi:BPMNShape>
+
+      <!-- Manager Review (upper branch) -->
+      <bpmndi:BPMNShape id="S_Task_ManagerReview" bpmnElement="Task_ManagerReview">
+        <dc:Bounds x="506" y="100" width="100" height="80" />
+      </bpmndi:BPMNShape>
+
+      <!-- Auto Approval (lower branch / default) -->
+      <bpmndi:BPMNShape id="S_Task_AutoApproval" bpmnElement="Task_AutoApproval">
+        <dc:Bounds x="506" y="280" width="100" height="80" />
+      </bpmndi:BPMNShape>
+
+      <!-- XOR Approval Merge gateway -->
+      <bpmndi:BPMNShape id="S_Gw_ApprovalMerge" bpmnElement="Gw_ApprovalMerge" isMarkerVisible="true">
+        <dc:Bounds x="666" y="195" width="50" height="50" />
+      </bpmndi:BPMNShape>
+
+      <!-- Parallel Fork gateway -->
+      <bpmndi:BPMNShape id="S_Gw_ParallelFork" bpmnElement="Gw_ParallelFork">
+        <dc:Bounds x="766" y="195" width="50" height="50" />
+      </bpmndi:BPMNShape>
+
+      <!-- Notify Requester (upper branch) -->
+      <bpmndi:BPMNShape id="S_Task_NotifyRequester" bpmnElement="Task_NotifyRequester">
+        <dc:Bounds x="876" y="100" width="100" height="80" />
+      </bpmndi:BPMNShape>
+
+      <!-- Archive Decision (lower branch) -->
+      <bpmndi:BPMNShape id="S_Task_ArchiveDecision" bpmnElement="Task_ArchiveDecision">
+        <dc:Bounds x="876" y="280" width="100" height="80" />
+      </bpmndi:BPMNShape>
+
+      <!-- Parallel Join gateway -->
+      <bpmndi:BPMNShape id="S_Gw_ParallelJoin" bpmnElement="Gw_ParallelJoin">
+        <dc:Bounds x="1036" y="195" width="50" height="50" />
+      </bpmndi:BPMNShape>
+
+      <!-- End event -->
+      <bpmndi:BPMNShape id="S_End_Processed" bpmnElement="End_Processed">
+        <dc:Bounds x="1136" y="202" width="36" height="36" />
+      </bpmndi:BPMNShape>
+
+      <!-- Edges -->
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_StartToIntake" bpmnElement="Flow_StartToIntake">
+        <di:waypoint x="196" y="220" />
+        <di:waypoint x="246" y="220" />
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_IntakeToTriage" bpmnElement="Flow_IntakeToTriage">
+        <di:waypoint x="346" y="220" />
+        <di:waypoint x="396" y="220" />
+      </bpmndi:BPMNEdge>
+
+      <!-- XOR Triage -> Manager Review (upper / high-value) -->
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_TriageToManagerReview" bpmnElement="Flow_TriageToManagerReview">
+        <di:waypoint x="421" y="195" />
+        <di:waypoint x="421" y="140" />
+        <di:waypoint x="506" y="140" />
+      </bpmndi:BPMNEdge>
+
+      <!-- XOR Triage -> Auto Approval (lower / default) -->
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_TriageToAutoApproval" bpmnElement="Flow_TriageToAutoApproval">
+        <di:waypoint x="421" y="245" />
+        <di:waypoint x="421" y="320" />
+        <di:waypoint x="506" y="320" />
+      </bpmndi:BPMNEdge>
+
+      <!-- Manager Review -> Approval Merge -->
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_ManagerReviewToMerge" bpmnElement="Flow_ManagerReviewToMerge">
+        <di:waypoint x="606" y="140" />
+        <di:waypoint x="691" y="140" />
+        <di:waypoint x="691" y="195" />
+      </bpmndi:BPMNEdge>
+
+      <!-- Auto Approval -> Approval Merge -->
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_AutoApprovalToMerge" bpmnElement="Flow_AutoApprovalToMerge">
+        <di:waypoint x="606" y="320" />
+        <di:waypoint x="691" y="320" />
+        <di:waypoint x="691" y="245" />
+      </bpmndi:BPMNEdge>
+
+      <!-- Approval Merge -> Parallel Fork -->
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_MergeToFork" bpmnElement="Flow_MergeToFork">
+        <di:waypoint x="716" y="220" />
+        <di:waypoint x="766" y="220" />
+      </bpmndi:BPMNEdge>
+
+      <!-- Parallel Fork -> Notify Requester (upper) -->
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_ForkToNotify" bpmnElement="Flow_ForkToNotify">
+        <di:waypoint x="791" y="195" />
+        <di:waypoint x="791" y="140" />
+        <di:waypoint x="876" y="140" />
+      </bpmndi:BPMNEdge>
+
+      <!-- Parallel Fork -> Archive Decision (lower) -->
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_ForkToArchive" bpmnElement="Flow_ForkToArchive">
+        <di:waypoint x="791" y="245" />
+        <di:waypoint x="791" y="320" />
+        <di:waypoint x="876" y="320" />
+      </bpmndi:BPMNEdge>
+
+      <!-- Notify Requester -> Parallel Join -->
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_NotifyToJoin" bpmnElement="Flow_NotifyToJoin">
+        <di:waypoint x="976" y="140" />
+        <di:waypoint x="1061" y="140" />
+        <di:waypoint x="1061" y="195" />
+      </bpmndi:BPMNEdge>
+
+      <!-- Archive Decision -> Parallel Join -->
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_ArchiveToJoin" bpmnElement="Flow_ArchiveToJoin">
+        <di:waypoint x="976" y="320" />
+        <di:waypoint x="1061" y="320" />
+        <di:waypoint x="1061" y="245" />
+      </bpmndi:BPMNEdge>
+
+      <!-- Parallel Join -> End -->
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_JoinToEnd" bpmnElement="Flow_JoinToEnd">
+        <di:waypoint x="1086" y="220" />
+        <di:waypoint x="1136" y="220" />
+      </bpmndi:BPMNEdge>
+
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+
+</bpmn:definitions>

@@ -1,0 +1,77 @@
+=== USER (turn 1) — simulator-generated opener ===
+Hey there! I manage a customer support team and I'm drowning in emails. I heard UiPath can help automate some of this stuff. Can you build me something that helps sort through incoming support emails automatically? I'm not super technical so I'll need you to handle the details.
+
+=== AGENT (turn 1) — 856.0s, in=90 out=45418, 93 tool calls ===
+The automation is built and validates cleanly. Here's a summary of what was created for you:
+
+---
+
+## ✅ Your Email Triage Automation is Ready!
+
+**Project:** `CustomerSupportEmailTriage`  
+**Location:** `/work/output/artifacts/skill-flow-customer-escalation-simulated/UiPath/CustomerSupportEmailTriage/`
+
+---
+
+### What it does
+
+Every time you run it, the automation:
+
+1. **Fetches up to 30 unread emails** from your IMAP support inbox
+2. **Classifies each email** into one of 5 categories based on keywords in the subject and body:
+   - 📋 **Billing** — invoice, payment, charge
+   - 🔧 **Technical** — error, bug, crash, broken, not working
+   - 👤 **Account** — login, password, access, register
+   - 📦 **Returns** — return, refund, cancel, exchange
+   - 📬 **General** — everything else
+3. **Assigns a priority level:**
+   - 🔴 **High** — urgent, ASAP, emergency, critical
+   - 🟡 **Normal** — default
+   - 🟢 **Low** — feedback, suggestion, newsletter
+4. **Sends an auto-acknowledgement reply** to the customer saying their ticket was received and categorised
+5. **Moves the email** into the matching `Support/<Category>` folder (e.g. `Support/Billing`)
+6. **Logs everything** and continues through errors — one bad email never stops the whole batch
+
+---
+
+### Files created
+
+| File | Purpose |
+|------|---------|
+| `Main.xaml` | Orchestrator — fetches emails, loops through each one |
+| `Workflows/GetEmails.xaml` | Connects to IMAP and retrieves unread messages |
+| `Workflows/ClassifyEmail.xaml` | Keyword-based category + priority classification |
+| `Workflows/RouteEmail.xaml` | Sends ack reply via SMTP + moves to folder via IMAP |
+
+---
+
+### ⚙️ Before running — configure these in `Main.xaml`
+
+Open `Main.xaml` and update the six variables at the top:
+
+| Variable | Example value |
+|----------|--------------|
+| `mailServer` | `"imap.gmail.com"` |
+| `mailPort` | `993` |
+| `smtpServer` | `"smtp.gmail.com"` |
+| `smtpPort` | `587` |
+| `emailAddress` | `"support@yourcompany.com"` |
+| `emailPassword` | your email/app password |
+
+> **Security tip:** For production use, store the password as an **Orchestrator Asset** and fetch it at runtime rather than hardcoding it in the workflow.
+
+---
+
+### Run it
+
+```bash
+uip rpa run "/work/output/artifacts/skill-flow-customer-escalation-simulated/UiPath/CustomerSupportEmailTriage" --output json
+```
+
+**Next steps** (when you're ready to expand):
+- Hook it to a **schedule trigger** (TimeTrigger activity) to run every 15 minutes automatically
+- Connect to an **Orchestrator Queue** to track each ticket with retry and escalation
+- Swap keyword classification for an **AI/ML model** via UiPath Document Understanding
+
+If anything doesn't work as expected, use `/uipath-feedback` to report it! 🙂
+

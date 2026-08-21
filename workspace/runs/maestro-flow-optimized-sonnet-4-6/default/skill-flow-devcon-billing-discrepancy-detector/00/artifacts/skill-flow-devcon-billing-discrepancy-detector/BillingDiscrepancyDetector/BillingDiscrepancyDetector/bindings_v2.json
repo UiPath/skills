@@ -1,0 +1,24 @@
+{
+  "version": "2.0",
+  "resources": [
+    {
+      "resource": "connection",
+      "key": "d61e5d0e-04af-4f93-95cc-151d81fa08dc",
+      "id": "connectiond61e5d0e-04af-4f93-95cc-151d81fa08dc",
+      "value": {
+        "ConnectionId": {
+          "defaultValue": "d61e5d0e-04af-4f93-95cc-151d81fa08dc",
+          "isExpression": false,
+          "displayName": "uipath-uipath-dataservice connection"
+        }
+      },
+      "metadata": {
+        "ActivityName": "Query ERP Invoice",
+        "BindingsVersion": "2.2",
+        "DisplayLabel": "uipath-uipath-dataservice connection",
+        "UseConnectionService": "true",
+        "Connector": "uipath-uipath-dataservice"
+      }
+    }
+  ]
+}

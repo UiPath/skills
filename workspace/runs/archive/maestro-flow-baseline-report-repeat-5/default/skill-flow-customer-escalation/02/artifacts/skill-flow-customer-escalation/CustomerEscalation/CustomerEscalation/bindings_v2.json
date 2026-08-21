@@ -1,0 +1,67 @@
+{
+  "version": "2.0",
+  "resources": [
+    {
+      "resource": "connection",
+      "key": "75dfafb4-3717-470c-a5f6-bdc144757a67",
+      "id": "connection75dfafb4-3717-470c-a5f6-bdc144757a67",
+      "value": {
+        "ConnectionId": {
+          "defaultValue": "75dfafb4-3717-470c-a5f6-bdc144757a67",
+          "isExpression": false,
+          "displayName": "uipath-microsoft-outlook365 connection"
+        }
+      },
+      "metadata": {
+        "ActivityName": "Email Received",
+        "BindingsVersion": "2.2",
+        "DisplayLabel": "uipath-microsoft-outlook365 connection",
+        "UseConnectionService": "true",
+        "Connector": "uipath-microsoft-outlook365"
+      }
+    },
+    {
+      "resource": "connection",
+      "key": "849e85d8-1aa9-4d52-8bbd-20041c8f05d8",
+      "id": "connection849e85d8-1aa9-4d52-8bbd-20041c8f05d8",
+      "value": {
+        "ConnectionId": {
+          "defaultValue": "849e85d8-1aa9-4d52-8bbd-20041c8f05d8",
+          "isExpression": false,
+          "displayName": "uipath-salesforce-slack connection"
+        }
+      },
+      "metadata": {
+        "ActivityName": "Slack Notify VIP Urgent",
+        "BindingsVersion": "2.2",
+        "DisplayLabel": "uipath-salesforce-slack connection",
+        "UseConnectionService": "true",
+        "Connector": "uipath-salesforce-slack"
+      }
+    },
+    {
+      "resource": "EventTrigger",
+      "key": "75dfafb4-3717-470c-a5f6-bdc144757a67",
+      "id": "EventTrigger75dfafb4-3717-470c-a5f6-bdc144757a67",
+      "value": {
+        "ConnectionId": {
+          "defaultValue": "75dfafb4-3717-470c-a5f6-bdc144757a67",
+          "isExpression": false
+        },
+        "EntryPointUniqueId": {
+          "defaultValue": "5751755d-c427-405d-93e0-ec2521f4ecae",
+          "isExpression": false
+        }
+      },
+      "metadata": {
+        "UseConnectionService": "true",
+        "Connector": "uipath-microsoft-outlook365",
+        "ActivityName": "Email Received",
+        "BindingsVersion": "2.2",
+        "ObjectName": "Message",
+        "Operation": "EMAIL_RECEIVED",
+        "FilterExpression": ""
+      }
+    }
+  ]
+}

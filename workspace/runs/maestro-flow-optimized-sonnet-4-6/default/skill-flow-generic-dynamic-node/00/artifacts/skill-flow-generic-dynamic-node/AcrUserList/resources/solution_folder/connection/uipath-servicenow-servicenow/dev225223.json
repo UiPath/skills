@@ -1,0 +1,28 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "dev225223",
+    "kind": "connection",
+    "type": "uipath-servicenow-servicenow",
+    "apiVersion": "integrationservice.uipath.com/v1",
+    "isOverridable": true,
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "connectorName": "ServiceNow",
+      "name": "dev225223",
+      "authenticationType": "AuthenticateAfterDeployment",
+      "connectorVersion": "1.5.0",
+      "connectorKey": "uipath-servicenow-servicenow",
+      "pollingInterval": 5
+    },
+    "locks": [],
+    "key": "197c7074-fa5e-4174-9f95-cb53aa1a2e0b",
+    "files": []
+  }
+}

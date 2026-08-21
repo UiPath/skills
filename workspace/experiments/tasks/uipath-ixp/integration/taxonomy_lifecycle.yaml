@@ -1,0 +1,186 @@
+task_id: skill-ixp-integration-taxonomy-lifecycle
+description: >
+  Integration: full taxonomy-editing lifecycle against a live tenant, verified by
+  reading taxonomy back with `get-taxonomy` after each edit. The project starts
+  from an auto-suggested taxonomy (no fixture import); the agent snapshots it, adds
+  a field group and reshapes it (add field, rename group/field, change-type, bulk
+  update-prompts, delete field), then deletes that group — so the taxonomy must
+  round-trip back to the initial suggested one. Covers create-with-auto-suggest and
+  the full edit set, validated by a structural round-trip equality.
+tags: [uipath-ixp, integration, mode:build, lifecycle:setup]
+
+run_limits:
+  max_turns: 60
+  task_timeout: 1800
+  turn_timeout: 600
+
+sandbox:
+  # driver: docker (NOT tempdir) so `uip ixp` resolves the migrated in-image
+  # ixp-tool, not the BYOS host's stale pre-migration plugin.
+  driver: docker
+  python: {}
+  template_sources:
+    - type: template_dir
+      path: ../_shared/fixtures
+
+initial_prompt: |
+  I want to set up an invoice project, reshape its taxonomy, then undo the reshaping.
+  Use the tenant I'm already signed into (check I'm logged in; don't re-authenticate).
+  Create the project from the invoices in `./fixtures/` and let IXP auto-suggest the
+  taxonomy — I only care about the taxonomy structure here, so don't label or train.
+  Use a unique project title `codereval-integ-taxonomy-<random-suffix>` so concurrent runs
+  don't collide. Save the suggested taxonomy to `taxonomy_initial.json`.
+
+  Then make these exact edits, checking after each that it took:
+  - Add a new field group "Charges" with two fields: "Discount", a plain text field,
+  and "Late Fee" — pick whatever type fits that one.
+  - Add a third field, "Surcharge", to "Charges".
+  - Rename the group "Charges" to "Adjustments".
+  - Rename the field "Late Fee" to "Penalty Fee".
+  - Change "Discount" to a Number type.
+  - Update the field instructions: set "Discount"'s to "Discount taken off the
+    invoice total" and "Penalty Fee"'s to "Late penalty added to the invoice total".
+  - Delete the "Surcharge" field.
+  - Save the taxonomy to `taxonomy_before_delete.json`, then delete the
+    "Adjustments" group.
+  - Save the taxonomy again to `taxonomy_final.json`.
+
+  Right after the project is created, write `report.json` for cleanup: {"project_name": "<the ProjectName from the create response>"}.
+
+success_criteria:
+  - type: command_not_executed
+    description: "Did NOT import the fixture taxonomy — used auto-suggest at create time instead"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+ixp\s+projects\s+import-taxonomy'
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Created the 'Charges' group with the 'Discount' and 'Late Fee' fields"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+ixp\s+groups\s+add\b(?=.*Charges)(?=.*Discount)(?=.*Late Fee)'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Renamed group 'Charges' -> 'Adjustments'"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+ixp\s+groups\s+rename\b(?=.*Charges)(?=.*Adjustments)'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Changed 'Discount' to type Number with the confirmation flag"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+ixp\s+fields\s+change-type\b(?=.*Discount)(?=.*Number)(?=.*(--yes|-y))'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Bulk-updated field prompts via update-prompts --updates"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+ixp\s+fields\s+update-prompts\b.*--updates'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Deleted the 'Surcharge' field with the confirmation flag"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+ixp\s+fields\s+delete\b(?=.*Surcharge)(?=.*(-y|--yes))'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Deleted the 'Adjustments' group with the confirmation flag"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+ixp\s+groups\s+delete\b(?=.*Adjustments)(?=.*(--yes|-y))'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Read taxonomy back to verify edits (multiple get-taxonomy calls)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+ixp\s+projects\s+get-taxonomy'
+    min_count: 3
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "report.json written for post-run cleanup"
+    path: "report.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # --- Outcome verification (read-back content, not just command shape) ---
+  - type: file_exists
+    description: "Captured the taxonomy before deleting the group"
+    path: "taxonomy_before_delete.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Rename landed and Surcharge was field-deleted: Adjustments/Penalty Fee present, Charges/Late Fee/Surcharge gone"
+    path: "taxonomy_before_delete.json"
+    includes: ["Adjustments", "Penalty Fee"]
+    excludes: ["Charges", "Late Fee", "Surcharge"]
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "change-type took effect: the Discount field is now type Number"
+    path: "taxonomy_before_delete.json"
+    assertions:
+      # `Data.dataset || @`: accept either save shape. We don't control how the
+      # agent writes the file — it may store the full `get-taxonomy` response
+      # (root has `Data.dataset`) or just the unwrapped dataset (root IS the
+      # dataset). `@` is the JMESPath current node, so this resolves the field
+      # whichever way it was saved.
+      - expression: "(Data.dataset || @).label_groups[].label_defs[].moon_form[?name=='Discount'][].kind | [0]"
+        operator: equals
+        expected: "Number"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "update-prompts landed: both fields' new instruction text is in the taxonomy"
+    path: "taxonomy_before_delete.json"
+    includes: ["Discount taken off the invoice total", "Late penalty added to the invoice total"]
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Captured the initial auto-suggested taxonomy"
+    path: "taxonomy_initial.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Captured the final taxonomy"
+    path: "taxonomy_final.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # Round-trip: every edit was confined to the added "Adjustments" group, so after
+  # deleting it the taxonomy must structurally match the initial suggested one
+  # (group/field names, kinds, instructions — ignoring ids/timestamps). This also
+  # subsumes "Adjustments is gone" (the initial never had it).
+  - type: run_command
+    description: "Round-trip: taxonomy_final structurally matches the initial auto-suggested taxonomy"
+    command: "python3 $TASK_DIR/check_taxonomy_roundtrip.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+# Safety net: delete the project even if the agent's in-band cleanup never ran
+# (crash / MAX_TURNS before the final delete). Reads report.json; idempotent;
+# always exits 0 so it never fails the test.
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-ixp/_shared/cleanup_project.py"
+    timeout: 60

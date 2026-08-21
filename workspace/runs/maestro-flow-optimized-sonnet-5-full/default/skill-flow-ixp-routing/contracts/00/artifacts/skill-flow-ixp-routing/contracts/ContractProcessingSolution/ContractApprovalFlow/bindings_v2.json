@@ -1,0 +1,89 @@
+{
+  "version": "2.0",
+  "resources": [
+    {
+      "resource": "connection",
+      "key": "41943488-5cec-48b3-93cf-19048447524e",
+      "id": "connection41943488-5cec-48b3-93cf-19048447524e",
+      "value": {
+        "ConnectionId": {
+          "defaultValue": "41943488-5cec-48b3-93cf-19048447524e",
+          "isExpression": false,
+          "displayName": "uipath-google-drive connection"
+        }
+      },
+      "metadata": {
+        "ActivityName": "New Contract PDF Uploaded",
+        "BindingsVersion": "2.2",
+        "DisplayLabel": "uipath-google-drive connection",
+        "UseConnectionService": "true",
+        "Connector": "uipath-google-drive"
+      }
+    },
+    {
+      "resource": "connection",
+      "key": "",
+      "id": "connection",
+      "value": {
+        "ConnectionId": {
+          "isExpression": false,
+          "displayName": "uipath-google-drive connection"
+        }
+      },
+      "metadata": {
+        "ActivityName": "New Contract PDF Uploaded",
+        "BindingsVersion": "2.2",
+        "DisplayLabel": "uipath-google-drive connection",
+        "UseConnectionService": "true",
+        "Connector": "uipath-google-drive"
+      }
+    },
+    {
+      "resource": "EventTrigger",
+      "key": "41943488-5cec-48b3-93cf-19048447524e_newContractPdfUploaded1",
+      "id": "EventTrigger41943488-5cec-48b3-93cf-19048447524e_newContractPdfUploaded1",
+      "value": {
+        "ConnectionId": {
+          "defaultValue": "41943488-5cec-48b3-93cf-19048447524e",
+          "isExpression": false
+        },
+        "EntryPointUniqueId": {
+          "defaultValue": "fa2cdc99-6de1-41ec-991c-d934b844e422",
+          "isExpression": false
+        }
+      },
+      "metadata": {
+        "UseConnectionService": "true",
+        "Connector": "uipath-google-drive",
+        "ActivityName": "New Contract PDF Uploaded",
+        "BindingsVersion": "2.2",
+        "ObjectName": "File",
+        "Operation": "FILE_CREATED",
+        "FilterExpression": "((Extension=='pdf'))"
+      }
+    },
+    {
+      "resource": "Property",
+      "key": "FILE_CREATED",
+      "id": "Property_newContractPdfUploaded1",
+      "value": {
+        "ParentDriveID": {
+          "defaultValue": "me",
+          "isExpression": false
+        },
+        "ParentID": {
+          "defaultValue": "0AKHXBGF_5DaVUk9PVA",
+          "isExpression": false
+        }
+      },
+      "metadata": {
+        "TriggerCreateParameters": "ParentDriveID,ParentID",
+        "DebugQueryParameters": "ParentDriveID,ParentID",
+        "ActivityName": "New Contract PDF Uploaded",
+        "BindingsVersion": "2.2",
+        "ObjectName": "File",
+        "ParentResourceKey": "EventTrigger.41943488-5cec-48b3-93cf-19048447524e_newContractPdfUploaded1"
+      }
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "DocVersion": "1.0.0",
+  "StudioMinVersion": "2025.10.0",
+  "SolutionId": "8884ba37-0cad-4e5d-b400-966092c086d9",
+  "Projects": [
+    {
+      "Type": "Flow",
+      "ProjectRelativePath": "ParallelSync/project.uiproj",
+      "Id": "3d710500-95cc-462f-bccc-5186a966e0d4"
+    }
+  ]
+}

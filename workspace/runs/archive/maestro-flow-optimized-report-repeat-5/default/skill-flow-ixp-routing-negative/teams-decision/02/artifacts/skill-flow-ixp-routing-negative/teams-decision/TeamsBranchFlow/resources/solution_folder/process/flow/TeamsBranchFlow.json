@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "TeamsBranchFlow",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "9f26d9df-5157-44f8-a687-ed7c198ee2f1",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "TeamsBranchFlow"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Flow",
+      "name": "TeamsBranchFlow",
+      "package": {
+        "key": "9190c9ce-d4cd-4751-8d52-161160c78b31"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "a05d0664-b446-4d13-887d-c8602105f8da",
+    "files": []
+  }
+}

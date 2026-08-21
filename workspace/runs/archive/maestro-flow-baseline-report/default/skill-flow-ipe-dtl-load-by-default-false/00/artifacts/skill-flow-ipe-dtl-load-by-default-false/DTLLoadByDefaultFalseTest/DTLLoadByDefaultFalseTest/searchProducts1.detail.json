@@ -1,0 +1,9 @@
+{
+  "connectionId": "<PLACEHOLDER_CONNECTION_UUID>",
+  "folderKey": "<PLACEHOLDER_FOLDER_KEY>",
+  "method": "GET",
+  "endpoint": "/search_products",
+  "queryParameters": {
+    "attribute_term": "=js:$vars.start.output.attributeTerm"
+  }
+}

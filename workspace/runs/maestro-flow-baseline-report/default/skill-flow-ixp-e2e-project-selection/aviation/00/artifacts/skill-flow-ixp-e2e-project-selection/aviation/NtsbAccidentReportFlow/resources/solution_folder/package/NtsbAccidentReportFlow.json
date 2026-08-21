@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "NtsbAccidentReportFlow",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "cd0482c5-f345-4dad-8307-32f1e1b78c71",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "NtsbAccidentReportFlow"
+    },
+    "locks": [],
+    "key": "da9569f5-16e0-43d6-bdbe-dcce13af8844",
+    "files": []
+  }
+}

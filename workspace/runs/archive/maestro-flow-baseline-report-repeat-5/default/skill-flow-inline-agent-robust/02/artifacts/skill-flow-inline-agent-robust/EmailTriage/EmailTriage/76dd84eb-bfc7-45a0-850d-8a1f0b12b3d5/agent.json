@@ -1,0 +1,83 @@
+{
+  "version": "1.1.0",
+  "settings": {
+    "model": "anthropic.claude-sonnet-4-6",
+    "maxTokens": 1024,
+    "temperature": 0,
+    "engine": "basic-v2",
+    "maxIterations": 1,
+    "mode": "standard"
+  },
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "start__output__emailSubject": {
+        "type": "string",
+        "description": "The subject line of the inbound support email"
+      },
+      "start__output__emailBody": {
+        "type": "string",
+        "description": "The body text of the inbound support email"
+      }
+    }
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "category": {
+        "type": "string",
+        "description": "Email category: billing, technical, account, shipping, general"
+      },
+      "priority": {
+        "type": "string",
+        "description": "Priority level: critical, high, medium, low"
+      }
+    },
+    "required": [
+      "category",
+      "priority"
+    ]
+  },
+  "metadata": {
+    "storageVersion": "50.0.0",
+    "isConversational": false,
+    "showProjectCreationExperience": false
+  },
+  "type": "lowCode",
+  "guardrails": [],
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a support email triage agent. Your job is to read an inbound customer support email and classify it into exactly one category and one priority level.\n\nCategories (choose exactly one):\n- billing: questions or issues about invoices, payments, subscriptions, refunds, or pricing\n- technical: software bugs, errors, crashes, performance problems, or feature malfunctions\n- account: login issues, password resets, account access, profile changes, or permission problems\n- shipping: delivery status, lost packages, address changes, or logistics questions\n- general: anything that does not fit the above categories\n\nPriority levels (choose exactly one):\n- critical: service completely down, data loss, security breach, or severe financial impact\n- high: major feature broken or significant business impact with no workaround\n- medium: partial functionality affected; a workaround exists but is inconvenient\n- low: minor cosmetic issue, general question, or feedback with no immediate business impact\n\nRules:\n1. Respond ONLY with the structured output — no additional commentary.\n2. Base classification solely on the email subject and body provided.\n3. If the email is ambiguous, prefer the lower priority level.\n4. Never refuse to classify; always return a valid category and priority.",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "You are a support email triage agent. Your job is to read an inbound customer support email and classify it into exactly one category and one priority level.\n\nCategories (choose exactly one):\n- billing: questions or issues about invoices, payments, subscriptions, refunds, or pricing\n- technical: software bugs, errors, crashes, performance problems, or feature malfunctions\n- account: login issues, password resets, account access, profile changes, or permission problems\n- shipping: delivery status, lost packages, address changes, or logistics questions\n- general: anything that does not fit the above categories\n\nPriority levels (choose exactly one):\n- critical: service completely down, data loss, security breach, or severe financial impact\n- high: major feature broken or significant business impact with no workaround\n- medium: partial functionality affected; a workaround exists but is inconvenient\n- low: minor cosmetic issue, general question, or feedback with no immediate business impact\n\nRules:\n1. Respond ONLY with the structured output — no additional commentary.\n2. Base classification solely on the email subject and body provided.\n3. If the email is ambiguous, prefer the lower priority level.\n4. Never refuse to classify; always return a valid category and priority."
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "Classify the following support email.\n\nSubject: {{input.start__output__emailSubject}}\n\nBody:\n{{input.start__output__emailBody}}",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "Classify the following support email.\n\nSubject: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__emailSubject"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\nBody:\n"
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__emailBody"
+        }
+      ]
+    }
+  ],
+  "projectId": "76dd84eb-bfc7-45a0-850d-8a1f0b12b3d5"
+}

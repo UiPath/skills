@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "NtsbReportExtraction",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "5091bf0f-1b77-4853-9189-ca16570b2f41",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "NtsbReportExtraction"
+    },
+    "locks": [],
+    "key": "18a498bf-f1c6-43e5-939f-87323c2abc1f",
+    "files": []
+  }
+}

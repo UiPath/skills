@@ -1,0 +1,12 @@
+{
+  "DocVersion": "1.0.0",
+  "StudioMinVersion": "2025.10.0",
+  "SolutionId": "29a28f21-fa6f-4987-9681-368b5d3268bd",
+  "Projects": [
+    {
+      "Type": "Flow",
+      "ProjectRelativePath": "GsheetLoopFlow/project.uiproj",
+      "Id": "c26e8b05-3453-4a4e-99bf-71080d37370d"
+    }
+  ]
+}

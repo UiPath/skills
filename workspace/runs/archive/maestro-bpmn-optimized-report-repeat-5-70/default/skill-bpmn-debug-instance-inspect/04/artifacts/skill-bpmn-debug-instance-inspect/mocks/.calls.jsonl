@@ -1,0 +1,7 @@
+{"ts": 1784697033.1133354, "args": "maestro bpmn --help", "matched_rule": null, "fixture": null, "exit_code": 0, "error": "unmocked_default"}
+{"ts": 1784697035.220276, "args": "maestro bpmn --help", "matched_rule": null, "fixture": null, "exit_code": 0, "error": "unmocked_default"}
+{"ts": 1784697037.2877634, "args": "maestro bpmn debug-instance --help", "matched_rule": null, "fixture": null, "exit_code": 0, "error": "unmocked_default"}
+{"ts": 1784697037.4349978, "args": "maestro bpmn debug-session --help", "matched_rule": null, "fixture": null, "exit_code": 0, "error": "unmocked_default"}
+{"ts": 1784697039.7499194, "args": "maestro bpmn debug-instance incidents debug-fault-777 --output json", "matched_rule": "maestro bpmn debug-instance incidents debug-fault-777", "fixture": "debug-incidents.json", "exit_code": 0}
+{"ts": 1784697041.8744855, "args": "maestro bpmn debug-instance variables debug-fault-777 --output json", "matched_rule": "maestro bpmn debug-instance variables debug-fault-777", "fixture": "debug-variables.json", "exit_code": 0}
+{"ts": 1784697059.0057917, "args": "--version", "matched_rule": null, "fixture": null, "exit_code": 0, "error": "unmocked_default"}

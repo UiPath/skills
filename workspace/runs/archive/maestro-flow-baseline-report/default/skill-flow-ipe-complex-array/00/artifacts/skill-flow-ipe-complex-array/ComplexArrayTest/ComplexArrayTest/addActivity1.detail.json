@@ -1,0 +1,13 @@
+{
+  "connectionId": "<PLACEHOLDER: Act! 365 connection UUID from uip is connections list uipath-act-act365 --all-folders>",
+  "folderKey": "<PLACEHOLDER: Orchestrator folder key from the connection record>",
+  "method": "POST",
+  "endpoint": "/api/v1/activities",
+  "objectName": "Interactions",
+  "bodyParameters": {
+    "subject": "Sales Call",
+    "activityType": "Call",
+    "regardingType": "contact",
+    "contacts": ["<contact-id-1>", "<contact-id-2>", "<contact-id-3>"]
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "WebhookSelfTest",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "52152e9a-87fe-42db-8720-f804655481fa",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "WebhookSelfTest"
+    },
+    "locks": [],
+    "key": "ee11d256-76f8-4de6-9e94-1fa544583a38",
+    "files": []
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "DocVersion": "1.0.0",
+  "StudioMinVersion": "2025.10.0",
+  "SolutionId": "c8da51b9-6d19-4c44-9921-8c34192d8e88",
+  "Projects": [
+    {
+      "Type": "Flow",
+      "ProjectRelativePath": "MultiselectTest/project.uiproj",
+      "Id": "2257bbbc-56df-42ca-9f1f-cb921f85bab9"
+    }
+  ]
+}

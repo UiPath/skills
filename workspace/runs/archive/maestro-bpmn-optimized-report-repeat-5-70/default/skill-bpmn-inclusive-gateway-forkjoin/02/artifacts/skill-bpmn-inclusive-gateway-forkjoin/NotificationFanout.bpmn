@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+    xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+    xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+    xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+    xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:uipath="http://uipath.org/schema/bpmn"
+    id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn"
+    exporter="UiPath (https://bpmn.uipath.com)" exporterVersion="1.0">
+
+  <bpmn:process id="Process_1" isExecutable="true">
+    <bpmn:extensionElements>
+      <uipath:migrationVersion version="11.5" />
+      <uipath:variables version="v1">
+        <uipath:inputOutput id="Var_SendEmail"      name="SendEmail"      type="boolean" />
+        <uipath:inputOutput id="Var_SendSms"        name="SendSms"        type="boolean" />
+        <uipath:inputOutput id="Var_RecipientEmail" name="RecipientEmail" type="string"  />
+        <uipath:inputOutput id="Var_RecipientPhone" name="RecipientPhone" type="string"  />
+        <uipath:inputOutput id="Var_EmailResult"    name="EmailResult"    type="string"  />
+        <uipath:inputOutput id="Var_SmsResult"      name="SmsResult"      type="string"  />
+        <uipath:inputOutput id="Var_Summary"        name="Summary"        type="string"  />
+      </uipath:variables>
+    </bpmn:extensionElements>
+
+    <!-- Manual start event -->
+    <bpmn:startEvent id="Start_1" name="Start Notification">
+      <bpmn:outgoing>Flow_ToSplit</bpmn:outgoing>
+    </bpmn:startEvent>
+
+    <!-- Inclusive gateway SPLIT: 1 incoming, 2 conditioned outgoing -->
+    <bpmn:inclusiveGateway id="Gw_Split" name="Which channels?">
+      <bpmn:incoming>Flow_ToSplit</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToEmail</bpmn:outgoing>
+      <bpmn:outgoing>Flow_ToSms</bpmn:outgoing>
+    </bpmn:inclusiveGateway>
+
+    <!-- Branch 1: email notification (BPMN.ScriptTask from registry template) -->
+    <bpmn:scriptTask id="Task_Email" name="Send Email Notification" scriptFormat="JavaScript">
+      <bpmn:extensionElements>
+        <uipath:scriptVersion value="v3" />
+        <uipath:mapping version="v1">
+          <uipath:type value="BPMN.ScriptTask" version="v1" />
+          <uipath:input name="args" type="json" target="bodyField"><![CDATA[{"recipient":"=vars.Var_RecipientEmail"}]]></uipath:input>
+          <uipath:output name="emailResult" type="string" var="Var_EmailResult" source="=result.response" />
+        </uipath:mapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_ToEmail</bpmn:incoming>
+      <bpmn:outgoing>Flow_EmailToJoin</bpmn:outgoing>
+      <bpmn:script><![CDATA[return { response: "Email sent to " + recipient };]]></bpmn:script>
+    </bpmn:scriptTask>
+
+    <!-- Branch 2: SMS notification (BPMN.ScriptTask from registry template) -->
+    <bpmn:scriptTask id="Task_Sms" name="Send SMS Notification" scriptFormat="JavaScript">
+      <bpmn:extensionElements>
+        <uipath:scriptVersion value="v3" />
+        <uipath:mapping version="v1">
+          <uipath:type value="BPMN.ScriptTask" version="v1" />
+          <uipath:input name="args" type="json" target="bodyField"><![CDATA[{"phone":"=vars.Var_RecipientPhone"}]]></uipath:input>
+          <uipath:output name="smsResult" type="string" var="Var_SmsResult" source="=result.response" />
+        </uipath:mapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_ToSms</bpmn:incoming>
+      <bpmn:outgoing>Flow_SmsToJoin</bpmn:outgoing>
+      <bpmn:script><![CDATA[return { response: "SMS sent to " + phone };]]></bpmn:script>
+    </bpmn:scriptTask>
+
+    <!-- Inclusive gateway JOIN: 2 incoming, 1 outgoing — real synchronization, not a fake join -->
+    <bpmn:inclusiveGateway id="Gw_Join" name="All channels done">
+      <bpmn:incoming>Flow_EmailToJoin</bpmn:incoming>
+      <bpmn:incoming>Flow_SmsToJoin</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToSummary</bpmn:outgoing>
+    </bpmn:inclusiveGateway>
+
+    <!-- Final task after join (BPMN.ScriptTask from registry template) -->
+    <bpmn:scriptTask id="Task_Summary" name="Log Completion" scriptFormat="JavaScript">
+      <bpmn:extensionElements>
+        <uipath:scriptVersion value="v3" />
+        <uipath:mapping version="v1">
+          <uipath:type value="BPMN.ScriptTask" version="v1" />
+          <uipath:input name="args" type="json" target="bodyField"><![CDATA[{"emailResult":"=vars.Var_EmailResult","smsResult":"=vars.Var_SmsResult"}]]></uipath:input>
+          <uipath:output name="summary" type="string" var="Var_Summary" source="=result.response" />
+        </uipath:mapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_ToSummary</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToEnd</bpmn:outgoing>
+      <bpmn:script><![CDATA[var parts = []; if (emailResult) { parts.push(emailResult); } if (smsResult) { parts.push(smsResult); } return { response: "Dispatched: " + parts.join("; ") };]]></bpmn:script>
+    </bpmn:scriptTask>
+
+    <!-- End event -->
+    <bpmn:endEvent id="End_1" name="Notifications Complete">
+      <bpmn:incoming>Flow_ToEnd</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <!-- Sequence flows -->
+    <bpmn:sequenceFlow id="Flow_ToSplit"    sourceRef="Start_1"    targetRef="Gw_Split"    />
+
+    <!-- Conditioned branches from inclusive SPLIT -->
+    <bpmn:sequenceFlow id="Flow_ToEmail" sourceRef="Gw_Split" targetRef="Task_Email">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=vars.Var_SendEmail == true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_ToSms" sourceRef="Gw_Split" targetRef="Task_Sms">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=vars.Var_SendSms == true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+
+    <!-- Branch outputs to inclusive JOIN -->
+    <bpmn:sequenceFlow id="Flow_EmailToJoin" sourceRef="Task_Email"   targetRef="Gw_Join"      />
+    <bpmn:sequenceFlow id="Flow_SmsToJoin"   sourceRef="Task_Sms"     targetRef="Gw_Join"      />
+
+    <!-- Post-join -->
+    <bpmn:sequenceFlow id="Flow_ToSummary"   sourceRef="Gw_Join"      targetRef="Task_Summary" />
+    <bpmn:sequenceFlow id="Flow_ToEnd"       sourceRef="Task_Summary" targetRef="End_1"        />
+  </bpmn:process>
+
+  <bpmndi:BPMNDiagram id="Diagram_1">
+    <bpmndi:BPMNPlane id="Plane_1" bpmnElement="Process_1">
+
+      <!-- Shapes -->
+      <bpmndi:BPMNShape id="S_Start_1"     bpmnElement="Start_1">
+        <dc:Bounds x="160" y="195" width="36"  height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Gw_Split"    bpmnElement="Gw_Split">
+        <dc:Bounds x="260" y="188" width="50"  height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Task_Email"  bpmnElement="Task_Email">
+        <dc:Bounds x="385" y="90"  width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Task_Sms"    bpmnElement="Task_Sms">
+        <dc:Bounds x="385" y="295" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Gw_Join"     bpmnElement="Gw_Join">
+        <dc:Bounds x="550" y="188" width="50"  height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Task_Summary" bpmnElement="Task_Summary">
+        <dc:Bounds x="665" y="173" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_End_1"       bpmnElement="End_1">
+        <dc:Bounds x="832" y="195" width="36"  height="36" />
+      </bpmndi:BPMNShape>
+
+      <!-- Edges -->
+      <bpmndi:BPMNEdge id="E_Flow_ToSplit" bpmnElement="Flow_ToSplit">
+        <di:waypoint x="196" y="213" />
+        <di:waypoint x="260" y="213" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_ToEmail" bpmnElement="Flow_ToEmail">
+        <di:waypoint x="285" y="188" />
+        <di:waypoint x="285" y="130" />
+        <di:waypoint x="385" y="130" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_ToSms" bpmnElement="Flow_ToSms">
+        <di:waypoint x="285" y="238" />
+        <di:waypoint x="285" y="335" />
+        <di:waypoint x="385" y="335" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_EmailToJoin" bpmnElement="Flow_EmailToJoin">
+        <di:waypoint x="485" y="130" />
+        <di:waypoint x="575" y="130" />
+        <di:waypoint x="575" y="188" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_SmsToJoin" bpmnElement="Flow_SmsToJoin">
+        <di:waypoint x="485" y="335" />
+        <di:waypoint x="575" y="335" />
+        <di:waypoint x="575" y="238" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_ToSummary" bpmnElement="Flow_ToSummary">
+        <di:waypoint x="600" y="213" />
+        <di:waypoint x="665" y="213" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_ToEnd" bpmnElement="Flow_ToEnd">
+        <di:waypoint x="765" y="213" />
+        <di:waypoint x="832" y="213" />
+      </bpmndi:BPMNEdge>
+
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

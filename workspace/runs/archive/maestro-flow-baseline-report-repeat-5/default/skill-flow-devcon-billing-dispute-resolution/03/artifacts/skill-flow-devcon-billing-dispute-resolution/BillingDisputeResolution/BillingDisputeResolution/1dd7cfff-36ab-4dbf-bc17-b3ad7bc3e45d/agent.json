@@ -1,0 +1,111 @@
+{
+  "version": "1.1.0",
+  "settings": {
+    "model": "gpt-5.4",
+    "maxTokens": 4096,
+    "temperature": 0.3,
+    "engine": "basic-v2",
+    "maxIterations": 3,
+    "mode": "standard"
+  },
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "start__output__webhookPayload": {
+        "type": "object",
+        "description": "Webhook payload with customer and invoice information"
+      },
+      "disputeAnalyst__output__determination": {
+        "type": "string",
+        "description": "The analyst's determination of the dispute"
+      },
+      "disputeAnalyst__output__creditAmount": {
+        "type": "number",
+        "description": "The approved credit amount in dollars"
+      },
+      "disputeAnalyst__output__rationale": {
+        "type": "string",
+        "description": "The analyst's rationale for the determination"
+      }
+    }
+  },
+  "outputSchema": {
+    "type": "object",
+    "required": [
+      "subject",
+      "body"
+    ],
+    "properties": {
+      "subject": {
+        "type": "string",
+        "description": "Email subject line for the resolution notification"
+      },
+      "body": {
+        "type": "string",
+        "description": "Full email body text for the customer-facing resolution notification"
+      }
+    }
+  },
+  "metadata": {
+    "storageVersion": "50.0.0",
+    "isConversational": false,
+    "showProjectCreationExperience": false
+  },
+  "type": "lowCode",
+  "guardrails": [],
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a professional customer service representative drafting resolution emails for billing disputes. Write clear, empathetic, and professional emails that explain the resolution outcome to the customer. The email body MUST explicitly cite the invoice number and the approved credit amount. Keep the tone courteous and solution-oriented. Return a JSON object with 'subject' (concise email subject line) and 'body' (full email body text).",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "You are a professional customer service representative drafting resolution emails for billing disputes. Write clear, empathetic, and professional emails that explain the resolution outcome to the customer. The email body MUST explicitly cite the invoice number and the approved credit amount. Keep the tone courteous and solution-oriented. Return a JSON object with 'subject' (concise email subject line) and 'body' (full email body text)."
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "Draft a customer-facing resolution email for the following billing dispute.\n\nWebhook Payload (customer and invoice info): {{input.start__output__webhookPayload}}\n\nDetermination: {{input.disputeAnalyst__output__determination}}\n\nApproved Credit Amount: {{input.disputeAnalyst__output__creditAmount}}\n\nRationale: {{input.disputeAnalyst__output__rationale}}\n\nThe email body MUST cite the invoice number and the approved credit amount. Return JSON with 'subject' and 'body' fields.",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "Draft a customer-facing resolution email for the following billing dispute.\n\nWebhook Payload (customer and invoice info): "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__webhookPayload"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\nDetermination: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.disputeAnalyst__output__determination"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\nApproved Credit Amount: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.disputeAnalyst__output__creditAmount"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\nRationale: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.disputeAnalyst__output__rationale"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\nThe email body MUST cite the invoice number and the approved credit amount. Return JSON with 'subject' and 'body' fields."
+        }
+      ]
+    }
+  ],
+  "projectId": "1dd7cfff-36ab-4dbf-bc17-b3ad7bc3e45d"
+}

@@ -1,0 +1,2973 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>coder_eval · skill-flow-jdbc-databricks-query · default</title>
+<style>
+:root {
+  --bg-page: #0f1419;
+  --bg-card: #1a2129;
+  --bg-card-2: #232d38;
+  --bg-code: #0b0f14;
+  --fg: #e6edf3;
+  --fg-muted: #8b98a5;
+  --fg-dim: #6e7681;
+  --border: #30363d;
+  --accent: #58a6ff;
+  --score-high: #22c55e;
+  --score-mid: #f59e0b;
+  --score-low: #ef4444;
+  --status-success: #22c55e;
+  --status-failure: #f59e0b;
+  --status-error: #ef4444;
+  --status-neutral: #6e7681;
+  --shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+.light {
+  --bg-page: #ffffff;
+  --bg-card: #f6f8fa;
+  --bg-card-2: #eaeef2;
+  --bg-code: #f6f8fa;
+  --fg: #1f2328;
+  --fg-muted: #636c76;
+  --fg-dim: #8b949e;
+  --border: #d0d7de;
+  --accent: #0969da;
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial,
+               sans-serif;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--fg);
+  background: var(--bg-page);
+}
+.container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+h1, h2, h3, h4 { margin: 0 0 12px 0; line-height: 1.25; }
+h1 { font-size: 22px; font-weight: 600; }
+h2 { font-size: 18px; font-weight: 600; margin-top: 28px;
+     padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+h3 { font-size: 15px; font-weight: 600; color: var(--fg-muted); }
+h4 { font-size: 13px; font-weight: 600; color: var(--fg-muted); }
+p { margin: 0 0 8px 0; }
+.muted { color: var(--fg-muted); }
+.dim { color: var(--fg-dim); }
+.mono { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+        monospace; font-size: 12.5px; }
+code { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+       monospace; font-size: 12.5px; background: var(--bg-code);
+       border: 1px solid var(--border); padding: 1px 5px; border-radius: 3px; }
+pre { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+      monospace; font-size: 12.5px; background: var(--bg-code);
+      border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px;
+      margin: 6px 0; overflow-x: auto; white-space: pre-wrap;
+      word-wrap: break-word; }
+.header-bar { display: flex; align-items: center; justify-content: space-between;
+              margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+.title-group { flex: 1; min-width: 0; }
+.title-group .subtitle { color: var(--fg-muted); font-size: 13px;
+                         margin-top: 2px; word-break: break-all; }
+.badges { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.badge { display: inline-flex; align-items: center; gap: 6px;
+         padding: 4px 10px; border-radius: 12px; font-size: 12px;
+         font-weight: 600; background: var(--bg-card-2);
+         border: 1px solid var(--border); color: var(--fg); }
+.badge.success { background: color-mix(in srgb, var(--status-success) 20%, var(--bg-card-2));
+                 border-color: var(--status-success); color: var(--status-success); }
+.badge.failure { background: color-mix(in srgb, var(--status-failure) 20%, var(--bg-card-2));
+                 border-color: var(--status-failure); color: var(--status-failure); }
+.badge.error { background: color-mix(in srgb, var(--status-error) 20%, var(--bg-card-2));
+               border-color: var(--status-error); color: var(--status-error); }
+.badge.warning { background: color-mix(in srgb, #f4a52810 20%, var(--bg-card-2));
+                 border-color: #f4a528; color: #f4a528; }
+.badge.neutral { color: var(--fg-muted); }
+.score-pill { display: inline-block; padding: 2px 8px; border-radius: 10px;
+              font-size: 12px; font-weight: 700; min-width: 42px;
+              text-align: center; color: #0b0f14; }
+.score-high { background: var(--score-high); }
+.score-mid { background: var(--score-mid); }
+.score-low { background: var(--score-low); }
+.card { background: var(--bg-card); border: 1px solid var(--border);
+        border-radius: 8px; padding: 16px 20px; margin-bottom: 16px;
+        box-shadow: var(--shadow); }
+.card.highlight { border-left: 4px solid var(--accent); }
+.grid { display: grid; gap: 12px;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+.stat { background: var(--bg-card-2); padding: 10px 12px; border-radius: 6px;
+        border: 1px solid var(--border); }
+.stat .label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;
+               color: var(--fg-muted); margin-bottom: 4px; }
+.stat .value { font-size: 16px; font-weight: 600; }
+table { width: 100%; border-collapse: collapse; margin: 4px 0 12px 0; }
+th, td { text-align: left; padding: 8px 10px;
+         border-bottom: 1px solid var(--border); vertical-align: top;
+         font-size: 13px; }
+th { color: var(--fg-muted); font-weight: 600; font-size: 12px;
+     text-transform: uppercase; letter-spacing: 0.3px; }
+tr:last-child td { border-bottom: none; }
+details { margin: 6px 0; border: 1px solid var(--border); border-radius: 6px;
+          background: var(--bg-card-2); }
+details > summary { cursor: pointer; padding: 8px 12px; user-select: none;
+                    font-weight: 500; list-style: none; }
+details > summary::-webkit-details-marker { display: none; }
+details > summary::before { content: "▸ "; color: var(--fg-dim);
+                            display: inline-block; width: 14px;
+                            transition: transform 0.15s; }
+details[open] > summary::before { content: "▾ "; }
+details .details-body { padding: 0 12px 10px 12px; }
+.tool-row { display: flex; align-items: center; gap: 10px;
+            flex-wrap: wrap; font-size: 13px; }
+.tool-name { font-weight: 600; color: var(--accent); font-family: ui-monospace,
+             SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+.tool-status-ok { color: var(--status-success); font-size: 11px;
+                  font-weight: 600; }
+.tool-status-err { color: var(--status-error); font-size: 11px;
+                   font-weight: 600; }
+.tool-duration { color: var(--fg-muted); font-size: 12px; }
+.tool-seq { color: var(--fg-dim); font-size: 11px; font-weight: 600;
+            min-width: 24px; text-align: right; font-family: ui-monospace,
+            SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+.turn-header { display: flex; justify-content: space-between;
+               align-items: baseline; flex-wrap: wrap; gap: 10px;
+               margin-bottom: 10px; }
+.turn-meta { font-size: 12px; color: var(--fg-muted); }
+.criterion-row td:first-child { font-family: ui-monospace, SFMono-Regular,
+                                 "SF Mono", Menlo, Consolas, monospace;
+                                 color: var(--fg-muted); font-size: 12px; }
+.judge-section { display: flex; flex-direction: column; gap: 12px; }
+.judge-card { padding: 14px 16px; }
+.judge-card-head { display: flex; justify-content: space-between;
+                    align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+.judge-card-title { font-size: 14px; line-height: 1.4; flex: 1; min-width: 0; }
+.judge-card-score { flex-shrink: 0; }
+.judge-rationale { margin-top: 10px; padding: 10px 12px;
+                   background: var(--bg-code); border-radius: 4px;
+                   font-size: 13px; line-height: 1.5; }
+.judge-findings { margin: 8px 0 0 18px; padding-left: 4px; font-size: 13px;
+                   line-height: 1.6; }
+.judge-findings li { margin: 2px 0; }
+.nav-toggle { display: inline-block; padding: 5px 10px; font-size: 12px;
+              background: var(--bg-card-2); border: 1px solid var(--border);
+              border-radius: 5px; color: var(--fg); cursor: pointer; }
+.nav-toggle:hover { background: var(--bg-card); }
+.llm-next-steps { margin: 6px 0 0 20px; padding-left: 0; }
+.llm-next-steps li { margin: 3px 0; }
+.iteration-group { padding: 12px 16px 4px 16px; margin-bottom: 20px;
+                   border-radius: 0 6px 6px 0; border-left: 4px solid var(--status-neutral); }
+/* rgba fallback for browsers without color-mix (Chrome <111, Firefox <113, Safari <16.2). */
+.iteration-group--recovered { border-left-color: var(--status-success);
+                              background: rgba(34, 197, 94, 0.06);
+                              background: color-mix(in srgb, var(--status-success) 6%, transparent); }
+.iteration-group--terminal { border-left-color: var(--status-error);
+                             background: rgba(239, 68, 68, 0.06);
+                             background: color-mix(in srgb, var(--status-error) 6%, transparent); }
+.iteration-group__banner { margin: 0 0 12px 0; font-size: 14px; font-weight: 600; }
+.iteration-group--recovered .iteration-group__banner { color: var(--status-success); }
+.iteration-group--terminal .iteration-group__banner { color: var(--status-error); }
+.attempt-transition { display: flex; align-items: center; gap: 8px;
+                      margin: -6px 0 12px 8px; color: var(--status-error); font-size: 12.5px; }
+.attempt-transition__icon { font-weight: 700; }
+footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--border);
+         color: var(--fg-dim); font-size: 12px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="header-bar">
+  <div class="title-group">
+    <h1>Task: skill-flow-jdbc-databricks-query</h1>
+    <div class="subtitle">Databricks-via-JDBC coverage (Maestro Flow connector, special SDK case): builds a Flow whose Execute Query Synchronously node (`uipath-uipath-jdbc.execute-query-synchronously`) runs a complex aggregate SQL query (GROUP BY / HAVING / AVG / ORDER BY — expressible only via raw SQL, not the generic record activities) against the `employees` table on a Databricks database, exposing the result as a flow output. Grades structurally: the .flow parses as JSON and wires the JDBC gateway connector as a real node with a bound connection id + folder key and the execute-query-synchronously operation — not the native Databricks connector, not an HTTP fallback. Exercises the disambiguation that Databricks SQL has no native connector — it must resolve to the JDBC gateway. Tenant prerequisite: a Databricks-backed `uipath-uipath-jdbc` connection reaching `sandbox.globalmart` (employees seeded per the spartacus connector-sanity fixture). REQUIRES cloud auth AND that connection.</div>
+  </div>
+  <div class="badges">
+    <span class="badge success">SUCCESS</span>
+    <span class="score-pill score-high">1.00</span>
+    <span class="badge neutral">claude-code · claude-sonnet-5</span>
+    <span class="badge neutral">10m 7s</span>
+    <span class="badge neutral">$3.8275</span>
+    <span class="badge warning">expected_turns exceeded (80/40)</span>
+    
+    <span class="nav-toggle" onclick="toggleTheme()">Toggle theme</span>
+  </div>
+</div>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Variant</div><div class="value">default</div></div>
+    <div class="stat"><div class="label">Started</div><div class="value mono">2026-08-19T00:15:41</div></div>
+    <div class="stat"><div class="label">Duration</div><div class="value">10m 7s</div></div>
+    <div class="stat"><div class="label">Turns (SDK)</div><div class="value">138</div></div>
+    <div class="stat"><div class="label">Commands</div><div class="value">79</div></div>
+  </div>
+</div>
+
+<h2>Success Criteria <span class="muted" style="font-weight:400">(3/3 passed)</span></h2>
+<div class="card" style="padding:0">
+<table>
+  <thead>
+    <tr>
+      <th style="width:15%">Type</th>
+      <th style="width:35%">Description</th>
+      <th style="width:10%">Score</th>
+      <th>Details</th>
+    </tr>
+  </thead>
+  <tbody>
+    
+<tr class="criterion-row">
+  <td>command_executed</td>
+  <td>uip maestro flow validate was called</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Matched 1/1 required commands (filters: tool_name=Bash, pattern=/(uip|\$UIP)\s+(maestro\s+)?flow\s+validate/)</summary><div class="details-body"><pre style="margin:6px 0 0 0">Matched 1/1 required commands (filters: tool_name=Bash, pattern=/(uip|\$UIP)\s+(maestro\s+)?flow\s+validate/)
+Examples: [&#x27;cd /work/output/artifacts/skill-flow-jdbc-databricks-query/DatabricksQuery/DatabricksQuery \\\n  &amp;&amp; python3 /home/azureuse&#x27;]</pre></div></details></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>command_executed</td>
+  <td>uip maestro flow debug was called</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Matched 3/1 required commands (filters: tool_name=Bash, pattern=/(uip|\$UIP)\s+(maestro\s+)?flow\s+debug/)</summary><div class="details-body"><pre style="margin:6px 0 0 0">Matched 3/1 required commands (filters: tool_name=Bash, pattern=/(uip|\$UIP)\s+(maestro\s+)?flow\s+debug/)
+Examples: [&#x27;cd /work/output/artifacts/skill-flow-jdbc-databricks-query/DatabricksQuery/DatabricksQuery \\\n  &amp;&amp; uip maestro flow debug&#x27;, &#x27;uip maestro flow debug --help 2&gt;&amp;1 | head -40&#x27;, &#x27;cd /work/output/artifacts/skill-flow-jdbc-databricks-query/DatabricksQuery/DatabricksQuery \\\n  &amp;&amp; uip maestro flow debug&#x27;]</pre></div></details></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>run_command</td>
+  <td>DatabricksQuery checks: valid flow wires the JDBC Execute-Query node with a bound connection, not the native Databricks connector or an HTTP fallback</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Command: python3 $TASK_DIR/check_databricks_query.py</summary><div class="details-body"><pre style="margin:6px 0 0 0">Command: python3 $TASK_DIR/check_databricks_query.py
+Exit code: 0 (expected: 0)
+Stdout:
+OK: flow uses the uipath-uipath-jdbc.execute-query-synchronously connector with a bound connection
+OK: all DatabricksQuery checks passed
+
+Stderr: (empty)</pre></div></details></td>
+</tr>
+
+  </tbody>
+</table>
+</div>
+<h2>Conversation Trace (1 iteration)</h2>
+<div class="card">
+  <div class="turn-header">
+    <h3>Iteration 1</h3>
+    <div class="badges">
+      <span class="badge neutral">138 assistant turns</span>
+      <span class="badge neutral">in 706 · out 33306 · cache 8998160</span>
+      <span class="badge neutral">10m 4s</span>
+      
+      
+      
+    </div>
+  </div>
+  <details>
+    <summary>Prompt to agent</summary>
+    <div class="details-body"><pre>Your working directory is: /work/output/artifacts/skill-flow-jdbc-databricks-query
+
+Create a new Flow project called &quot;DatabricksQuery&quot; with a manual trigger.
+
+It should run a SQL query against a Databricks database using the Database Hub
+(JDBC) connector, and expose the query result as a flow output. Run an aggregate
+query over the `employees` table that groups by department, keeps only
+departments with two or more employees, and orders them by average salary.
+
+Discover the Databricks-backed Database Hub (JDBC) connection in the
+`Shared/uipath-maestro-flow` folder from the tenant — do NOT hand-author or
+invent a connection id. If the JDBC connector isn&#x27;t available in your registry,
+stop rather than falling back to a generic HTTP request.
+
+Validate the final flow file and debug it.
+
+Do NOT ask for approval, confirmation, or feedback.
+Do NOT pause between planning and implementation.
+</pre></div>
+  </details>
+  <details>
+    <summary>Agent response</summary>
+    <div class="details-body"><pre>[ASSISTANT] This task matches the uipath-maestro-flow skill exactly — I&#x27;ll invoke it to build, connect, and validate the Flow project.
+[ASSISTANT] Good — no existing solutions, logged in. Let me find the correct connectors.md path and start the T1 chain (scaffold + registry pull + connector discovery in parallel).
+[ASSISTANT] Found the JDBC connector (`uipath-uipath-jdbc`, activity `execute-query-synchronously`). Now discovering the Databricks-backed connection in the `Shared/uipath-maestro-flow` folder.
+[ASSISTANT] Now let me get the enriched metadata for the JDBC node with the connection bound, to see required fields for the execute-query-synchronously activity.
+[ASSISTANT] Now I&#x27;ll resolve the parent-field-driven custom fields (Step 3a) for the JDBC query — this connector requires running `is resources describe` with the `script` field to get the real response schema for the SQL query.
+[ASSISTANT] Good, `script` has no dots/brackets so the encoded key is unchanged. My detail JSON matches this shape. Now let&#x27;s configure the node.
+[ASSISTANT] The diff shows `&quot;customFieldsRequestDetails&quot;:null` — my custom fields payload didn&#x27;t take. Let me inspect the full file to confirm.
+[ASSISTANT] The `customFieldsRequestDetails` came back null — the CLI actually attempted a live schema-generation call against the connector&#x27;s `GenerateQuerySchema` action for the design-time cache. Since the runtime `bodyParameters.script` already carries the real SQL query (which is what actually executes), this only affects Studio Web&#x27;s schema preview, not `flow debug` execution. I&#x27;ll proceed — this is non-blocking per the docs&#x27; own guidance that Retrieve/Get-style calls &quot;stay green&quot; regardless of the design-time cache. Now let&#x27;s add the End node with the output mapping and wire edges.
+[ASSISTANT] All node/edge/variable edits applied. Now finalize: run the audit, validate, and format.
+[ASSISTANT] That confirms the `UNUSED_BINDING` info finding is benign — the checker only understands `uipath.core.*` resource-node bindings, not connector bindings, so it flags the (correctly-created) connector bindings as &quot;unused&quot; by mistake. Not an actual defect. `flow validate` passed clean and `flow format` completed successfully. Let&#x27;s confirm the final state of the flow and then proceed to debug.
+[ASSISTANT] Validation and format are clean. The user explicitly asked to debug and instructed not to pause for confirmation — that satisfies the consent gate for `flow debug`. Let&#x27;s run it.
+[ASSISTANT] It takes the project directory, not the .flow file.
+[ASSISTANT] The debug run completed successfully end-to-end, and the JDBC query executed against the real Databricks-backed connection, returning the correctly aggregated result.
+[ASSISTANT] ## Summary
+
+Built and verified the **DatabricksQuery** flow at `/work/output/artifacts/skill-flow-jdbc-databricks-query/DatabricksQuery/DatabricksQuery/DatabricksQuery.flow`:
+
+- **Trigger**: `core.trigger.manual` (start)
+- **Query node**: `uipath.connector.uipath-uipath-jdbc.execute-query-synchronously` (Database Hub / JDBC connector), bound to the tenant connection `pat_databricks` discovered in `Shared/uipath-maestro-flow` (connection id `4e5d613a-96be-4ba7-b86b-ebe225d192f1`) — never hand-authored.
+- **SQL**: `SELECT department, COUNT(*) AS employee_count, AVG(salary) AS avg_salary FROM employees GROUP BY department HAVING COUNT(*) &gt;= 2 ORDER BY avg_salary`
+- **Output**: `queryResult` (workflow `out` variable) mapped on the End node from `$vars.queryEmployeesByDepartment1.output`
+
+Connector discovery followed the disambiguation ladder (dropped Databricks&#x27; native `uipath-databricks-databricks` connector since it only exposes AI serving endpoints, kept the JDBC gateway which matches the SQL intent) — no HTTP fallback was needed since the JDBC connector was available.
+
+Validation: `flow validate` → Valid, no errors. `audit_flow.py` → clean (two informational `UNUSED_BINDING` notices are a known false-positive in the audit script, which onl</pre></div>
+  </details>
+  <h4 style="margin-top:12px">Tool Calls (79)</h4>
+  
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#0</span>
+      <span class="tool-name">Skill</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">14ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;skill&quot;: &quot;tmp:uipath-maestro-flow&quot;,
+  &quot;args&quot;: &quot;Create a new Flow project called \&quot;DatabricksQuery\&quot; with a manual trigger. It should run a SQL query against a Databricks database using the Database Hub (JDBC) connector, and expose the query result as a flow output. Run an aggregate query over the `employees` table that groups by department, keeps only departments with two or more employees (HAVING COUNT(*) &gt;= 2), and orders them by average salar… (437 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Launching skill: tmp:uipath-maestro-flow</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#1</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">49ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;find . -maxdepth 2 -type f -name &#x27;*.uipx&#x27; -print 2&gt;/dev/null; echo \&quot;---\&quot;; pwd; ls -la&quot;,
+  &quot;description&quot;: &quot;Check for existing solutions in working directory&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>---
+/work/output/artifacts/skill-flow-jdbc-databricks-query
+total 12
+drwxr-xr-x 3 root root 4096 Aug 19 00:15 .
+drwxr-xr-x 3 root root 4096 Aug 19 00:15 ..
+drwxr-xr-x 4 root root 4096 Aug 19 00:15 .venv</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#2</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">314ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/CAPABILITY.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Author — Create and edit `.flow` files
+2	
+3	Capability index for building new flows (greenfield) and editing existing flows (brownfield). Author owns everything that happens on disk, locally, without `uip login`. Authoring journeys terminate at `validate` + `format`; from there, hand off to [operate/CAPABILITY.md](../operate/CAPABILITY.md) to publish, run, or debug.
+4	
+5	&gt; **Where you came from / where to go next.** Author is upstream of Operate (build the flow → ship it) and upstream of Diagnose only via Operate (build → run → diagnose). Publish/run/lifecycle lives in [operate/CAPABILITY.md](../operate/CAPABILITY.md); fault triage lives in [diagnose/CAPABILITY.md](../diagnose/CAPABILITY.md).
+6	&gt;
+7	&gt; **Inherits universal rules from [SKILL.md](../../SKILL.md)** — `--output json` + prefer `--output-filter` for extraction, no `flow debug` without consent, resource discovery order, never invoke other skills automatically, dropdown question pattern, solution layout, **plain-English narration + granular progress list (opt-in — silent by default; engage when the user asks for verbosity)**. The rules below are author-scoped and apply on top.
+8	
+9	## When to use this capability
+10	
+11	&lt;
+
+… (truncated, 30449 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#3</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">85ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/greenfield.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Greenfield — Create a New Flow
+2	
+3	End-to-end journey for creating a Flow project from scratch. Author terminates at `validate` + `format`. To publish, run, or debug after this, see [operate/CAPABILITY.md](../../operate/CAPABILITY.md).
+4	
+5	&gt; **Brownfield edits use a different journey.** If the `.flow` file already exists, see [brownfield.md](brownfield.md) instead.
+6	
+7	## Should you plan first?
+8	
+9	For complex flows, produce a plan before building. Reference [planning-arch.md](planning-arch.md) and [planning-impl.md](planning-impl.md) for the node type catalog, port reference, wiring rules, and topology patterns.
+10	
+11	**Plan when:**
+12	- The flow has 5+ nodes with branching or parallel paths
+13	- The flow uses connectors or resources that need discovery
+14	- The user&#x27;s requirements are ambiguous and you need to confirm the approach
+15	
+16	**Don&#x27;t plan when:**
+17	- Adding/editing a single node in an existing flow (use [brownfield.md](brownfield.md))
+18	- The flow is a straightforward linear pipeline (trigger → action → action → end)
+19	- The user has already described the exact topology they want
+20	
+21	### Examples
+22	
+23	**Plan:** &quot;Build a flow that receives a Jira ticke
+
+… (truncated, 34831 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#4</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">71ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/plugins/connector/impl.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Connector Activity Nodes — Implementation
+2	
+3	How to configure connector activity nodes: connection binding, enriched metadata, reference field resolution, and debugging. Connection bindings are emitted by `uip maestro flow node configure` into the flow&#x27;s top-level `bindings[]`; `bindings_v2.json` is regenerated from them at debug/pack time and should never be hand-edited.
+4	
+5	For generic node/edge add, remove, and wiring procedures, see [editing-operations.md](../../editing-operations.md). This guide covers the connector-specific configuration workflow that must follow the generic node add.
+6	
+7	## How Connector Nodes Differ from OOTB
+8	
+9	1. **Connection binding required** — every connector node needs an IS connection (OAuth, API key, etc.) authored in the flow&#x27;s top-level `bindings[]` (which the CLI regenerates into `bindings_v2.json` at debug/pack time). Without it, the node cannot authenticate.
+10	2. **Enriched metadata via `--connection-id`** — call `registry get` with `--connection-id` to get connection-aware field metadata. Without it, only base fields are returned — custom fields, dynamic enums, and reference resolution are missing.
+11	3. **`inputs.detail` object** —
+
+… (truncated, 66612 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#5</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">5ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/plugins/connector/planning.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Connector Activity Nodes — Planning
+2	
+3	Connector activity nodes call external services (Jira, Slack, Salesforce, Outlook, etc.) via UiPath Integration Service. They are dynamically loaded — not built-in — and appear in the registry after `uip login` + `uip maestro flow registry pull`.
+4	
+5	## When to Use
+6	
+7	Use a connector activity node when the flow needs to **call an external service that has a pre-built UiPath connector**. Connectors handle auth (OAuth, API keys), token refresh, and error formatting automatically at runtime. Note: design-time reference resolution (looking up records by name during authoring) still requires the agent to paginate — see [impl.md](impl.md).
+8	
+9	### Decision Order
+10	
+11	Prefer higher tiers when connecting to external services:
+12	
+13	| Tier | Approach | When to Use |
+14	| --- | --- | --- |
+15	| 1 | **IS connector activity** (this node type) | A connector exists and its activities cover the use case |
+16	| 2 | **Managed HTTP Request** (`core.action.http.v2`) | A connector exists but lacks the specific curated activity — uses the connector&#x27;s IS connection for auth |
+17	| 3 | **Managed HTTP Request — manual mode** (`core.action.http.v2`) | No 
+
+… (truncated, 8594 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#6</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-err">ERROR</span>
+      <span class="tool-duration">6ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/uipath-platform/references/integration-service/connectors.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>File does not exist. Note: your current working directory is /work/output/artifacts/skill-flow-jdbc-databricks-query.</pre>
+    <h4>Error</h4><pre>File does not exist. Note: your current working directory is /work/output/artifacts/skill-flow-jdbc-databricks-query.</pre>
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#7</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">644ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;find . -maxdepth 2 -type f -name &#x27;*.uipx&#x27; -print 2&gt;/dev/null; echo \&quot;---uipx done---\&quot;; which uip 2&gt;/dev/null; uip --version 2&gt;/dev/null; echo \&quot;---version done---\&quot;; uip login status --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Check for existing solutions, uip binary, and login status&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>---uipx done---
+/usr/bin/uip
+1.201.0-dev.8272
+---version done---
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;LoginStatus&quot;,
+  &quot;Data&quot;: {
+    &quot;Status&quot;: &quot;Logged in&quot;,
+    &quot;Identity&quot;: &quot;zhongyi.shi@uipath.com&quot;,
+    &quot;IdentityType&quot;: &quot;User&quot;,
+    &quot;AuthFlow&quot;: &quot;Interactive&quot;,
+    &quot;CredentialSource&quot;: &quot;SavedLogin&quot;,
+    &quot;Provider&quot;: &quot;File&quot;,
+    &quot;UserId&quot;: &quot;bfda820f-4ddb-4af7-a5ec-3c332b403271&quot;,
+    &quot;UserEmail&quot;: &quot;zhongyi.shi@uipath.com&quot;,
+    &quot;UserName&quot;: &quot;zhongyi.shi@uipath.com&quot;,
+    &quot;BaseUrl&quot;: &quot;https://alpha.uipath.com&quot;,
+    &quot;Organization&quot;: &quot;codereval&quot;,
+    &quot;OrganizationId&quot;: &quot;311c6049-4966-4ef2-a6f3-8ceccaf38d54&quot;,
+    &quot;Tenant&quot;: &quot;DefaultTenant&quot;,
+    &quot;TenantId&quot;: &quot;69d43765-6ede-4575-88b7-9db601a2c056&quot;,
+    &quot;ExpirationDate&quot;: &quot;2026-08-19T01:07:32.000Z&quot;
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#8</span>
+      <span class="tool-name">Glob</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">783ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;pattern&quot;: &quot;**/connectors.md&quot;,
+  &quot;path&quot;: &quot;/home/azureuser/projects/skills&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>No files found</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#9</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">14.21s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip solution init \&quot;DatabricksQuery\&quot; --output json \\\n  &amp;&amp; cd \&quot;DatabricksQuery\&quot; \\\n  &amp;&amp; uip maestro flow init \&quot;DatabricksQuery\&quot; --output json \\\n  &amp;&amp; cd \&quot;DatabricksQuery\&quot; \\\n  &amp;&amp; uip maestro flow registry pull --force --output json&quot;,
+  &quot;description&quot;: &quot;Scaffold solution + flow project, pull registry&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;SolutionInit&quot;,
+  &quot;Data&quot;: {
+    &quot;Status&quot;: &quot;Created successfully&quot;,
+    &quot;Path&quot;: &quot;/work/output/artifacts/skill-flow-jdbc-databricks-query/DatabricksQuery/DatabricksQuery.uipx&quot;,
+    &quot;NextSteps&quot;: &quot;Read /work/output/artifacts/skill-flow-jdbc-databricks-query/DatabricksQuery/AGENTS.md or /work/output/artifacts/skill-flow-jdbc-databricks-query/DatabricksQuery/CLAUDE.md to understand the solution lifecycle, project types that can be used inside a solution, and related uip command references.&quot;
+  }
+}
+2026-08-19 00:16:11 INFO  [ResourceBuilder:ProjectCreateCommandHandler] Creating project [object Object]
+2026-08-19 00:16:11 INFO  [ResourceBuilder:MultiFileSolutionDefinitionProvider] Reading multi-file solution definition for solution %s /work/output/artifacts/skill-flow-jdbc-databricks-query/DatabricksQuery
+2026-08-19 00:16:11 INFO  [ResourceBuilder:ProjectCreateCommandHandler] Generate artefact resources for project [object Object]
+2026-08-19 00:16:11 INFO  [ResourceBuilder:SolutionsMetadataReader] Reading metadata from %s. SolutionsMetadataReader
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FlowInit&quot;,
+  &quot;Data&quot;: {
+    &quot;Status&quot;: &quot;Created successfully&quot;,
+    &quot;Path&quot;: &quot;/w
+
+… (truncated, 1562 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#10</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">13.76s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry search \&quot;databricks\&quot; --output json --output-filter \&quot;[*].{NodeType:NodeType,DisplayName:DisplayName,Description:Description,AvailableOnTenant:AvailableOnTenant}\&quot;&quot;,
+  &quot;description&quot;: &quot;Search registry for databricks connectors&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeSearchSuccess&quot;,
+  &quot;Data&quot;: [
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-uipath-jdbc.execute-query-synchronously&quot;,
+      &quot;DisplayName&quot;: &quot;Execute Query Synchronously&quot;,
+      &quot;Description&quot;: &quot;Execute any valid SQL query on supported JDBC databases (SQL Server, PostgreSQL, Oracle, Redshift, Databricks)&quot;,
+      &quot;AvailableOnTenant&quot;: true
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-uipath-jdbc.list-records&quot;,
+      &quot;DisplayName&quot;: &quot;List Records&quot;,
+      &quot;Description&quot;: &quot;Reads rows from the specified table for supported JDBC databases (SQL Server, PostgreSQL, Oracle, Redshift, Databricks) with filtering and pagination support&quot;,
+      &quot;AvailableOnTenant&quot;: true
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-uipath-jdbc.insert-record&quot;,
+      &quot;DisplayName&quot;: &quot;Insert Record&quot;,
+      &quot;Description&quot;: &quot;Inserts a new row into the specified table for supported JDBC databases (SQL Server, PostgreSQL, Oracle, Redshift, Databricks)&quot;,
+      &quot;AvailableOnTenant&quot;: true
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-uipath-jdbc.delete-record&quot;,
+      &quot;DisplayName&quot;: &quot;Delete Record&quot;,
+      &quot;Description&quot;: &quot;Deletes a row from the specified table 
+
+… (truncated, 1272 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#11</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">13.63s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry search \&quot;jdbc\&quot; --output json --output-filter \&quot;[*].{NodeType:NodeType,DisplayName:DisplayName,Description:Description,AvailableOnTenant:AvailableOnTenant}\&quot;&quot;,
+  &quot;description&quot;: &quot;Search registry for JDBC / Database Hub connectors&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeSearchSuccess&quot;,
+  &quot;Data&quot;: [
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-uipath-jdbc.execute-query-synchronously&quot;,
+      &quot;DisplayName&quot;: &quot;Execute Query Synchronously&quot;,
+      &quot;Description&quot;: &quot;Execute any valid SQL query on supported JDBC databases (SQL Server, PostgreSQL, Oracle, Redshift, Databricks)&quot;,
+      &quot;AvailableOnTenant&quot;: true
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-uipath-jdbc.list-records&quot;,
+      &quot;DisplayName&quot;: &quot;List Records&quot;,
+      &quot;Description&quot;: &quot;Reads rows from the specified table for supported JDBC databases (SQL Server, PostgreSQL, Oracle, Redshift, Databricks) with filtering and pagination support&quot;,
+      &quot;AvailableOnTenant&quot;: true
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-uipath-jdbc.insert-record&quot;,
+      &quot;DisplayName&quot;: &quot;Insert Record&quot;,
+      &quot;Description&quot;: &quot;Inserts a new row into the specified table for supported JDBC databases (SQL Server, PostgreSQL, Oracle, Redshift, Databricks)&quot;,
+      &quot;AvailableOnTenant&quot;: true
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-uipath-jdbc.delete-record&quot;,
+      &quot;DisplayName&quot;: &quot;Delete Record&quot;,
+      &quot;Description&quot;: &quot;Deletes a row from the specified table 
+
+… (truncated, 1690 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#12</span>
+      <span class="tool-name">TaskCreate</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">6ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;subject&quot;: &quot;Discover JDBC connection in Shared/uipath-maestro-flow&quot;,
+  &quot;description&quot;: &quot;Find the Databricks-backed Database Hub (JDBC) connection via uip is connections list --all-folders, scoped to Shared/uipath-maestro-flow folder&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Task #1 created successfully: Discover JDBC connection in Shared/uipath-maestro-flow</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#13</span>
+      <span class="tool-name">TaskCreate</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">4ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;subject&quot;: &quot;Add manual trigger + JDBC node + End node, wire edges&quot;,
+  &quot;description&quot;: &quot;Add core.trigger.manual (already scaffolded), node add for execute-query-synchronously, End node with flow output, wire edges&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Task #2 created successfully: Add manual trigger + JDBC node + End node, wire edges</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#14</span>
+      <span class="tool-name">TaskCreate</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">6ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;subject&quot;: &quot;Configure JDBC node with SQL query and connection binding&quot;,
+  &quot;description&quot;: &quot;Resolve enriched metadata via registry get --connection-id, then node configure with the aggregate SQL query against employees table&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Task #3 created successfully: Configure JDBC node with SQL query and connection binding</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#15</span>
+      <span class="tool-name">TaskCreate</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">3ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;subject&quot;: &quot;Validate, audit, format, and debug the flow&quot;,
+  &quot;description&quot;: &quot;Run audit_flow.py, flow validate, flow format, then flow debug&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Task #4 created successfully: Validate, audit, format, and debug the flow</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#16</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">977ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip is connections list \&quot;uipath-uipath-jdbc\&quot; --all-folders --output json&quot;,
+  &quot;description&quot;: &quot;List all JDBC connections across folders&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;ConnectionList&quot;,
+  &quot;Data&quot;: [
+    {
+      &quot;Id&quot;: &quot;4e5d613a-96be-4ba7-b86b-ebe225d192f1&quot;,
+      &quot;Name&quot;: &quot;pat_databricks&quot;,
+      &quot;ConnectorKey&quot;: &quot;uipath-uipath-jdbc&quot;,
+      &quot;ConnectorName&quot;: &quot;Database Hub&quot;,
+      &quot;State&quot;: &quot;Enabled&quot;,
+      &quot;Owner&quot;: &quot;ad65a642-f5d0-430a-ba9c-9a3f3bbd1e9f&quot;,
+      &quot;IsDefault&quot;: &quot;Yes&quot;,
+      &quot;ByoaConnection&quot;: &quot;No&quot;,
+      &quot;ElementInstanceId&quot;: 364066,
+      &quot;Folder&quot;: &quot;uipath-maestro-flow&quot;,
+      &quot;FolderKey&quot;: &quot;5da18ec0-7de1-4e57-aaf1-ddc8a369c199&quot;,
+      &quot;Created&quot;: &quot;2026-07-20T09:41:58.710Z&quot;,
+      &quot;Updated&quot;: &quot;2026-08-18T23:53:27.963Z&quot;
+    }
+  ]
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#17</span>
+      <span class="tool-name">TaskUpdate</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">5ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;taskId&quot;: &quot;1&quot;,
+  &quot;status&quot;: &quot;completed&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Updated task #1 status</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#18</span>
+      <span class="tool-name">TaskUpdate</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">3ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;taskId&quot;: &quot;2&quot;,
+  &quot;status&quot;: &quot;in_progress&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Updated task #2 status</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#19</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">870ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-jdbc-databricks-query/DatabricksQuery/DatabricksQuery \\\n  &amp;&amp; uip maestro flow node add \&quot;DatabricksQuery.flow\&quot; uipath.connector.uipath-uipath-jdbc.execute-query-synchronously --label \&quot;Query Employees by Department\&quot; --output json&quot;,
+  &quot;description&quot;: &quot;Add the JDBC execute-query-synchronously node&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeAddSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;Node&quot;: {
+      &quot;Id&quot;: &quot;queryEmployeesByDepartment1&quot;,
+      &quot;Type&quot;: &quot;uipath.connector.uipath-uipath-jdbc.execute-query-synchronously&quot;,
+      &quot;TypeVersion&quot;: &quot;1.0.0&quot;,
+      &quot;Ui&quot;: {
+        &quot;Position&quot;: {
+          &quot;X&quot;: 0,
+          &quot;Y&quot;: 0
+        }
+      },
+      &quot;Display&quot;: {
+        &quot;Label&quot;: &quot;Query Employees by Department&quot;
+      },
+      &quot;Inputs&quot;: {}
+    },
+    &quot;DefinitionAdded&quot;: true,
+    &quot;BindingsCreated&quot;: 0,
+    &quot;VariableCount&quot;: 3
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#20</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.10s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry get core.control.end --output json&quot;,
+  &quot;description&quot;: &quot;Get End node definition&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeGetSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;Node&quot;: {
+      &quot;nodeType&quot;: &quot;core.control.end&quot;,
+      &quot;version&quot;: &quot;1.0&quot;,
+      &quot;category&quot;: &quot;control-flow&quot;,
+      &quot;description&quot;: &quot;Mark the end of a process path&quot;,
+      &quot;tags&quot;: [
+        &quot;control-flow&quot;,
+        &quot;end&quot;,
+        &quot;finish&quot;,
+        &quot;complete&quot;
+      ],
+      &quot;sortOrder&quot;: 65,
+      &quot;display&quot;: {
+        &quot;label&quot;: &quot;End&quot;,
+        &quot;icon&quot;: &quot;circle-check&quot;,
+        &quot;shape&quot;: &quot;circle&quot;
+      },
+      &quot;handleConfiguration&quot;: [
+        {
+          &quot;position&quot;: &quot;left&quot;,
+          &quot;handles&quot;: [
+            {
+              &quot;id&quot;: &quot;input&quot;,
+              &quot;type&quot;: &quot;target&quot;,
+              &quot;handleType&quot;: &quot;input&quot;
+            }
+          ]
+        }
+      ],
+      &quot;model&quot;: {
+        &quot;type&quot;: &quot;bpmn:EndEvent&quot;
+      },
+      &quot;runtimeConstraints&quot;: {
+        &quot;exclude&quot;: [
+          &quot;api-function&quot;
+        ]
+      }
+    }
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#21</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">15.35s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-jdbc-databricks-query/DatabricksQuery/DatabricksQuery \\\n  &amp;&amp; uip maestro flow registry get uipath.connector.uipath-uipath-jdbc.execute-query-synchronously --connection-id \&quot;4e5d613a-96be-4ba7-b86b-ebe225d192f1\&quot; --output json &gt; /tmp/jdbc_node.json \\\n  &amp;&amp; cat /tmp/jdbc_node.json | head -c 6000&quot;,
+  &quot;description&quot;: &quot;Fetch enriched JDBC node metadata with connection&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeGetSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;Node&quot;: {
+      &quot;nodeType&quot;: &quot;uipath.connector.uipath-uipath-jdbc.execute-query-synchronously&quot;,
+      &quot;version&quot;: &quot;1.0.0&quot;,
+      &quot;category&quot;: &quot;connector.198151&quot;,
+      &quot;tags&quot;: [
+        &quot;connector&quot;,
+        &quot;activity&quot;
+      ],
+      &quot;sortOrder&quot;: 520,
+      &quot;supportsErrorHandling&quot;: true,
+      &quot;description&quot;: &quot;Execute any valid SQL query on supported JDBC databases (SQL Server, PostgreSQL, Oracle, Redshift, Databricks)&quot;,
+      &quot;display&quot;: {
+        &quot;label&quot;: &quot;Execute Query Synchronously&quot;,
+        &quot;description&quot;: &quot;Execute any valid SQL query on supported JDBC databases (SQL Server, PostgreSQL, Oracle, Redshift, Databricks)&quot;,
+        &quot;icon&quot;: &quot;https://alpha.uipath.com/311c6049-4966-4ef2-a6f3-8ceccaf38d54/studio_/typecache/icons/8c11cf0621016d2721c8f98f8ca3d7f8d415d945beb8c0cb875269247b8e698d.svg&quot;,
+        &quot;sourceDisplayName&quot;: &quot;Database Hub&quot;
+      },
+      &quot;handleConfiguration&quot;: [
+        {
+          &quot;position&quot;: &quot;left&quot;,
+          &quot;handles&quot;: [
+            {
+              &quot;id&quot;: &quot;input&quot;,
+              &quot;type&quot;: &quot;target&quot;,
+              &quot;handleType&quot;: &quot;input&quot;,
+              &quot;label&quot;: &quot;&quot;
+            }
+          ]
+        },
+        {
+ 
+
+… (truncated, 4800 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#22</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">112ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-jdbc-databricks-query/DatabricksQuery/DatabricksQuery \\\n  &amp;&amp; python3 -c \&quot;\nimport json\nd = json.load(open(&#x27;/tmp/jdbc_node.json&#x27;))\nnode = d[&#x27;Data&#x27;][&#x27;Node&#x27;]\nprint(&#x27;activityType:&#x27;, json.loads(node[&#x27;form&#x27;][&#x27;sections&#x27;][0][&#x27;fields&#x27;][0][&#x27;componentProps&#x27;][&#x27;connectorDetail&#x27;][&#x27;configuration&#x27;])[&#x27;activityType&#x27;] if False else &#x27;skip&#x27;)\nprint(&#x27;=== inputDefinition.fields ===&#x27;)\nf… (301 more chars)&quot;,
+  &quot;description&quot;: &quot;Inspect JDBC node input/output definitions&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>activityType: skip
+=== inputDefinition.fields ===
+{
+  &quot;name&quot;: &quot;limit&quot;,
+  &quot;displayName&quot;: &quot;Limit&quot;,
+  &quot;type&quot;: &quot;integer&quot;,
+  &quot;dataType&quot;: &quot;integer&quot;,
+  &quot;required&quot;: false
+}
+{
+  &quot;name&quot;: &quot;script&quot;,
+  &quot;displayName&quot;: &quot;Script&quot;,
+  &quot;type&quot;: &quot;string&quot;,
+  &quot;dataType&quot;: &quot;string&quot;,
+  &quot;required&quot;: true,
+  &quot;description&quot;: &quot;Please input a valid SQL query and then click on Generate output schema. For example, you can use: SELECT * FROM [TABLE_NAME] LIMIT 1&quot;
+}
+{
+  &quot;name&quot;: &quot;generateSchema&quot;,
+  &quot;displayName&quot;: &quot;Generate output schema&quot;,
+  &quot;type&quot;: &quot;string&quot;,
+  &quot;dataType&quot;: &quot;string&quot;,
+  &quot;required&quot;: false
+}
+=== connectorMethodInfo ===
+{
+  &quot;operation&quot;: &quot;List&quot;,
+  &quot;description&quot;: &quot;Execute a valid SQL query on supported JDBC databases (SQL Server, PostgreSQL, Oracle, Redshift, Databricks)&quot;,
+  &quot;method&quot;: &quot;POST&quot;,
+  &quot;path&quot;: &quot;/hubs/datawarehouse/query&quot;,
+  &quot;operationId&quot;: &quot;createHubDatawarehouseQuery&quot;,
+  &quot;curated&quot;: {
+    &quot;name&quot;: &quot;ExecuteQuerySynchronously&quot;,
+    &quot;displayName&quot;: &quot;Execute Query Synchronously&quot;,
+    &quot;description&quot;: &quot;Execute any valid SQL query on supported JDBC databases (SQL Server, PostgreSQL, Oracle, Redshift, Databricks)&quot;,
+    &quot;isHidden&quot;: false
+  },
+  &quot;isHidden&quot;: true,
+  &quot;design&quot;: {
+    &quot;actions&quot;: [
+      {
+        &quot;actio
+
+… (truncated, 3215 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#23</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">87ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-jdbc-databricks-query/DatabricksQuery/DatabricksQuery \\\n  &amp;&amp; python3 -c \&quot;\nimport json\nd = json.load(open(&#x27;/tmp/jdbc_node.json&#x27;))\nnode = d[&#x27;Data&#x27;][&#x27;Node&#x27;]\nprint(&#x27;top-level objectActions:&#x27;, node.get(&#x27;objectActions&#x27;))\nprint(&#x27;keys:&#x27;, list(node.keys()))\n\&quot;\n&quot;,
+  &quot;description&quot;: &quot;Check for top-level objectActions&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>top-level objectActions: None
+keys: [&#x27;nodeType&#x27;, &#x27;version&#x27;, &#x27;category&#x27;, &#x27;tags&#x27;, &#x27;sortOrder&#x27;, &#x27;supportsErrorHandling&#x27;, &#x27;description&#x27;, &#x27;display&#x27;, &#x27;handleConfiguration&#x27;, &#x27;model&#x27;, &#x27;form&#x27;, &#x27;inputDefinition&#x27;, &#x27;inputDefaults&#x27;, &#x27;outputDefinition&#x27;, &#x27;debug&#x27;, &#x27;connectorMethodInfo&#x27;, &#x27;outputResponseDefinition&#x27;]</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#24</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-err">ERROR</span>
+      <span class="tool-duration">5ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/uipath-platform/references/integration-service/resources.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>File does not exist. Note: your current working directory is /work/output/artifacts/skill-flow-jdbc-databricks-query/DatabricksQuery/DatabricksQuery.</pre>
+    <h4>Error</h4><pre>File does not exist. Note: your current working directory is /work/output/artifacts/skill-flow-jdbc-databricks-query/DatabricksQuery/DatabricksQuery.</pre>
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#25</span>
+      <span class="tool-name">Glob</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">708ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;pattern&quot;: &quot;**/uipath-platform/**/*.md&quot;,
+  &quot;path&quot;: &quot;/home/azureuser/projects/skills&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>No files found</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#26</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.13s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;find / -iname \&quot;*uipath-platform*\&quot; -type d 2&gt;/dev/null | head -20&quot;,
+  &quot;description&quot;: &quot;Locate uipath-platform skill directory&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/.uipath/.skills/skills/uipath-platform</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#27</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">3ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/.uipath/.skills/skills/uipath-platform/references/integration-service/connectors.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Connectors
+2	
+3	Connectors are pre-built integrations to external applications. Each connector has a unique key (e.g., `uipath-salesforce-sfdc`, `uipath-servicenow-servicenow`). A connector contains **connections** (authenticated sessions), **activities** (pre-built actions), and **resources** (object types with CRUD operations).
+4	
+5	&gt; Full command syntax and options: [uip-commands.md — Integration Service](../uip-commands.md#integration-service-is). Domain-specific usage patterns are shown inline below.
+6	
+7	---
+8	
+9	## Response Fields
+10	
+11	| Field | Show to user? | Description |
+12	|---|---|---|
+13	| **`Name`** | **Yes** | Display name — always show this to the user (e.g., &quot;Salesforce&quot;, &quot;Slack&quot;) |
+14	| **`Key`** | **Yes** | Unique key used in all subsequent commands (e.g., `uipath-salesforce-sfdc`) — also shown to users since it&#x27;s human-readable |
+15	| `Active` | **Yes** | Whether the connector is active |
+16	| `DapCompatible` | Optional | Whether it supports Data Access Policy |
+17	| `Id` | Internal | Connector UUID — never show to the user |
+18	
+19	---
+20	
+21	## HTTP Connector Fallback
+22	
+23	When no native connector exists for a vendor, use the HTTP connector (`uipath-u
+
+… (truncated, 6359 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#28</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">10ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;find /.uipath/.skills/skills/uipath-platform -iname \&quot;resources.md\&quot;&quot;,
+  &quot;description&quot;: &quot;Find resources.md doc&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/.uipath/.skills/skills/uipath-platform/references/integration-service/resources.md
+/.uipath/.skills/skills/uipath-platform/references/orchestrator/resources.md</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#29</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">22ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cat DatabricksQuery.flow&quot;,
+  &quot;description&quot;: &quot;Read current flow file&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;id&quot;: &quot;fb94ca8b-a3a5-4ad8-88e7-1648e9c6f765&quot;,
+  &quot;version&quot;: &quot;1.9&quot;,
+  &quot;name&quot;: &quot;DatabricksQuery&quot;,
+  &quot;nodes&quot;: [
+    {
+      &quot;id&quot;: &quot;start&quot;,
+      &quot;type&quot;: &quot;core.trigger.manual&quot;,
+      &quot;typeVersion&quot;: &quot;1.0&quot;,
+      &quot;display&quot;: {
+        &quot;label&quot;: &quot;Manual trigger&quot;
+      },
+      &quot;inputs&quot;: {
+        &quot;entryPointId&quot;: &quot;1c556654-f276-4ae3-bc4c-68dadd279570&quot;,
+        &quot;isDefaultEntryPoint&quot;: true
+      }
+    },
+    {
+      &quot;id&quot;: &quot;queryEmployeesByDepartment1&quot;,
+      &quot;type&quot;: &quot;uipath.connector.uipath-uipath-jdbc.execute-query-synchronously&quot;,
+      &quot;typeVersion&quot;: &quot;1.0.0&quot;,
+      &quot;display&quot;: {
+        &quot;label&quot;: &quot;Query Employees by Department&quot;
+      },
+      &quot;inputs&quot;: {}
+    }
+  ],
+  &quot;edges&quot;: [],
+  &quot;definitions&quot;: [
+    {
+      &quot;nodeType&quot;: &quot;core.trigger.manual&quot;,
+      &quot;version&quot;: &quot;1.0&quot;,
+      &quot;category&quot;: &quot;trigger&quot;,
+      &quot;description&quot;: &quot;Start the process manually&quot;,
+      &quot;tags&quot;: [
+        &quot;trigger&quot;,
+        &quot;start&quot;,
+        &quot;manual&quot;
+      ],
+      &quot;sortOrder&quot;: 80,
+      &quot;display&quot;: {
+        &quot;label&quot;: &quot;Manual trigger&quot;,
+        &quot;icon&quot;: &quot;play&quot;,
+        &quot;shape&quot;: &quot;circle&quot;
+      },
+      &quot;handleConfiguration&quot;: [
+        {
+          &quot;position&quot;: &quot;right&quot;,
+          &quot;handles&quot;: [
+            {
+              &quot;id&quot;: &quot;outpu
+
+… (truncated, 10572 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#30</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">4ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/shared/variables-and-expressions.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Variables and Expressions
+2	
+3	Complete reference for declaring variables, writing expressions, and managing data flow in `.flow` files.
+4	
+5	&gt; **Read this before** adding variables or writing expressions in any flow.
+6	&gt;
+7	&gt; `flow validate` catches the structural expression-reference errors:
+8	&gt;
+9	&gt; - Missing `=js:` prefix on `$vars`/`$metadata`/`$self` (MST-9107)
+10	&gt; - Invented `nodes.&lt;id&gt;.output` syntax
+11	&gt; - References to unknown variables or node IDs
+12	&gt; - Output-path walks that descend into declared primitives or schemas closed with `additionalProperties: false`
+13	&gt;
+14	&gt; Errors against **open output schemas** (HTTP response bodies, script returns, free-text agent output) and **wrong-direction reads** (e.g. reading an `out`-only variable) still slip past validate and surface only at `flow debug` or in production.
+15	
+16	---
+17	
+18	## Table of contents
+19	
+20	- [Variables Overview](#variables-overview)
+21	- [Workflow Variables (`globals`)](#workflow-variables-globals)
+22	- [Node Variables (`nodes`)](#node-variables-nodes)
+23	- [Variable Updates (`variableUpdates`)](#variable-updates-variableupdates)
+24	- [Output Mapping on End Nodes](#output-mapping-on-end-nodes)
+25	- [
+
+… (truncated, 24870 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#31</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">4ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/plugins/end/impl.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# End Node — Implementation
+2	
+3	## Node Type
+4	
+5	`core.control.end`
+6	
+7	## Registry Validation
+8	
+9	```bash
+10	uip maestro flow registry get core.control.end --output json
+11	```
+12	
+13	Confirm: input port `input`, no output ports. Set the node instance `typeVersion` to the `version` field from this response — do not hardcode it.
+14	
+15	## JSON Structure
+16	
+17	### Without Output Mapping
+18	
+19	```json
+20	{
+21	  &quot;id&quot;: &quot;doneSuccess&quot;,
+22	  &quot;type&quot;: &quot;core.control.end&quot;,
+23	  &quot;typeVersion&quot;: &quot;&lt;DEFINITION_VERSION&gt;&quot;,
+24	  &quot;display&quot;: { &quot;label&quot;: &quot;Done&quot; },
+25	  &quot;inputs&quot;: {}
+26	}
+27	```
+28	
+29	### With Output Mapping
+30	
+31	When the workflow declares `out` variables, every End node must map all of them:
+32	
+33	```json
+34	{
+35	  &quot;id&quot;: &quot;doneSuccess&quot;,
+36	  &quot;type&quot;: &quot;core.control.end&quot;,
+37	  &quot;typeVersion&quot;: &quot;&lt;DEFINITION_VERSION&gt;&quot;,
+38	  &quot;display&quot;: { &quot;label&quot;: &quot;Done&quot; },
+39	  &quot;inputs&quot;: {},
+40	  &quot;outputs&quot;: {
+41	    &quot;processedCount&quot;: {
+42	      &quot;source&quot;: &quot;=js:$vars.processData.output.count&quot;
+43	    },
+44	    &quot;resultSummary&quot;: {
+45	      &quot;source&quot;: &quot;=js:$vars.formatOutput.output.summary&quot;
+46	    }
+47	  }
+48	}
+49	```
+50	
+51	Each key in `outputs` must match a variable `id` from `variables.globals` where `dire
+
+… (truncated, 904 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#32</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">4ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/.uipath/.skills/skills/uipath-platform/references/integration-service/resources.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Resources
+2	
+3	Resources represent the data objects available through a connector (e.g., Salesforce Account, Contact, Opportunity). Each resource supports a set of CRUD operations.
+4	
+5	&gt; Full command syntax and options: [uip-commands.md — Integration Service](../uip-commands.md#integration-service-is). Domain-specific usage patterns are shown inline below.
+6	
+7	## Contents
+8	- Listing and Describing Resources
+9	- Response Fields
+10	- Describe Response
+11	- Describe Failures
+12	- Parent-Field-Driven Custom Fields (api-type ObjectActions)
+13	- Execute Operations
+14	- Pagination
+15	- Execute Error Handling
+16	
+17	For reference field resolution (simple refs, dependency chains, required field validation), see [reference-resolution.md](reference-resolution.md).
+18	
+19	---
+20	
+21	## Listing and Describing Resources
+22	
+23	**Always pass `--connection-id`** to get connection-specific metadata including custom objects and fields. Without it, only standard objects/fields are returned.
+24	
+25	## Response Fields
+26	
+27	| Field | Description |
+28	|---|---|
+29	| **`Name`** | Resource identifier (used in commands) |
+30	| `DisplayName` | Human-readable name |
+31	| `Path` | API path for this re
+
+… (truncated, 11510 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#33</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-err">ERROR</span>
+      <span class="tool-duration">7.95s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-jdbc-databricks-query/DatabricksQuery/DatabricksQuery \\\n  &amp;&amp; uip is resources describe \&quot;uipath-uipath-jdbc\&quot; \&quot;query\&quot; \\\n  --connection-id \&quot;4e5d613a-96be-4ba7-b86b-ebe225d192f1\&quot; --operation List \\\n  -f script=\&quot;SELECT department, COUNT(*) AS employee_count, AVG(salary) AS avg_salary FROM employees GROUP BY department HAVING COUNT(*) &gt;= 2 ORDER BY avg_salary\&quot; \\\n  --… (16 more chars)&quot;,
+  &quot;description&quot;: &quot;Describe JDBC query resource with the aggregate SQL as parent field&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Exit code 1
+{
+  &quot;Result&quot;: &quot;Failure&quot;,
+  &quot;Message&quot;: &quot;No api-type ObjectAction matched for fields [script] on operation &#x27;List&#x27;&quot;,
+  &quot;Instructions&quot;: &quot;Verify the connector exposes a design-time action (objectActions[] or connectorMethodInfo.design.actions[]) whose rules reference the supplied fields. Pass --action &lt;name&gt; to disambiguate when multiple actions match.&quot;,
+  &quot;ErrorCode&quot;: &quot;unknown_error&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}</pre>
+    <h4>Error</h4><pre>Exit code 1
+{
+  &quot;Result&quot;: &quot;Failure&quot;,
+  &quot;Message&quot;: &quot;No api-type ObjectAction matched for fields [script] on operation &#x27;List&#x27;&quot;,
+  &quot;Instructions&quot;: &quot;Verify the connector exposes a design-time action (objectActions[] or connectorMethodInfo.design.actions[]) whose rules reference the supplied fields. Pass --action &lt;name&gt; to disambiguate when multiple actions match.&quot;,
+  &quot;ErrorCode&quot;: &quot;unknown_error&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}</pre>
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#34</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-err">ERROR</span>
+      <span class="tool-duration">6.61s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-jdbc-databricks-query/DatabricksQuery/DatabricksQuery \\\n  &amp;&amp; uip is resources describe \&quot;uipath-uipath-jdbc\&quot; \&quot;query\&quot; \\\n  --connection-id \&quot;4e5d613a-96be-4ba7-b86b-ebe225d192f1\&quot; --operation List \\\n  --action GenerateQuerySchema \\\n  -f script=\&quot;SELECT department, COUNT(*) AS employee_count, AVG(salary) AS avg_salary FROM employees GROUP BY department HAVING COUNT(*)… (78 more chars)&quot;,
+  &quot;description&quot;: &quot;Describe JDBC query resource with action name specified&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Exit code 1
+{
+  &quot;Result&quot;: &quot;Failure&quot;,
+  &quot;Message&quot;: &quot;No api-type ObjectAction matched for fields [script, generateSchema] on operation &#x27;List&#x27;&quot;,
+  &quot;Instructions&quot;: &quot;Verify the connector exposes a design-time action (objectActions[] or connectorMethodInfo.design.actions[]) whose rules reference the supplied fields. Pass --action &lt;name&gt; to disambiguate when multiple actions match.&quot;,
+  &quot;ErrorCode&quot;: &quot;unknown_error&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}</pre>
+    <h4>Error</h4><pre>Exit code 1
+{
+  &quot;Result&quot;: &quot;Failure&quot;,
+  &quot;Message&quot;: &quot;No api-type ObjectAction matched for fields [script, generateSchema] on operation &#x27;List&#x27;&quot;,
+  &quot;Instructions&quot;: &quot;Verify the connector exposes a design-time action (objectActions[] or connectorMethodInfo.design.actions[]) whose rules reference the supplied fields. Pass --action &lt;name&gt; to disambiguate when multiple actions match.&quot;,
+  &quot;ErrorCode&quot;: &quot;unknown_error&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}</pre>
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#35</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-err">ERROR</span>
+      <span class="tool-duration">7.36s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-jdbc-databricks-query/DatabricksQuery/DatabricksQuery \\\n  &amp;&amp; uip is resources describe \&quot;uipath-uipath-jdbc\&quot; \&quot;query\&quot; \\\n  --connection-id \&quot;4e5d613a-96be-4ba7-b86b-ebe225d192f1\&quot; --operation List \\\n  --action GenerateQuerySchema \\\n  -f script=\&quot;SELECT department, COUNT(*) AS employee_count, AVG(salary) AS avg_salary FROM employees GROUP BY department HAVING COUNT(*)… (49 more chars)&quot;,
+  &quot;description&quot;: &quot;Describe with only script field and explicit action&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Exit code 1
+{
+  &quot;Result&quot;: &quot;Failure&quot;,
+  &quot;Message&quot;: &quot;No api-type ObjectAction matched for fields [script] on operation &#x27;List&#x27;&quot;,
+  &quot;Instructions&quot;: &quot;Verify the connector exposes a design-time action (objectActions[] or connectorMethodInfo.design.actions[]) whose rules reference the supplied fields. Pass --action &lt;name&gt; to disambiguate when multiple actions match.&quot;,
+  &quot;ErrorCode&quot;: &quot;unknown_error&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}</pre>
+    <h4>Error</h4><pre>Exit code 1
+{
+  &quot;Result&quot;: &quot;Failure&quot;,
+  &quot;Message&quot;: &quot;No api-type ObjectAction matched for fields [script] on operation &#x27;List&#x27;&quot;,
+  &quot;Instructions&quot;: &quot;Verify the connector exposes a design-time action (objectActions[] or connectorMethodInfo.design.actions[]) whose rules reference the supplied fields. Pass --action &lt;name&gt; to disambiguate when multiple actions match.&quot;,
+  &quot;ErrorCode&quot;: &quot;unknown_error&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}</pre>
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#36</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">6.53s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-jdbc-databricks-query/DatabricksQuery/DatabricksQuery \\\n  &amp;&amp; uip is resources describe \&quot;uipath-uipath-jdbc\&quot; \&quot;query\&quot; \\\n  --connection-id \&quot;4e5d613a-96be-4ba7-b86b-ebe225d192f1\&quot; \\\n  --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;List available operations for query resource&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;ResourceMetadata&quot;,
+  &quot;Data&quot;: {
+    &quot;Name&quot;: &quot;query&quot;,
+    &quot;DisplayName&quot;: &quot;Query&quot;,
+    &quot;ElementKey&quot;: &quot;uipath-uipath-jdbc&quot;,
+    &quot;AvailableOperations&quot;: [
+      {
+        &quot;Method&quot;: &quot;POST&quot;,
+        &quot;Name&quot;: &quot;Create&quot;,
+        &quot;Description&quot;: &quot;Execute a valid SQL query on supported JDBC databases (SQL Server, PostgreSQL, Oracle, Redshift, Databricks)&quot;,
+        &quot;Path&quot;: &quot;/hubs/datawarehouse/query&quot;,
+        &quot;Curated&quot;: &quot;Execute Query Synchronously&quot;
+      }
+    ],
+    &quot;Hint&quot;: &quot;Use --operation &lt;Create|List|Retrieve|Update|Delete|Replace&gt; to see fields for a specific operation.&quot;
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#37</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">10.36s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-jdbc-databricks-query/DatabricksQuery/DatabricksQuery \\\n  &amp;&amp; uip is resources describe \&quot;uipath-uipath-jdbc\&quot; \&quot;query\&quot; \\\n  --connection-id \&quot;4e5d613a-96be-4ba7-b86b-ebe225d192f1\&quot; --operation Create \\\n  --action GenerateQuerySchema \\\n  -f script=\&quot;SELECT department, COUNT(*) AS employee_count, AVG(salary) AS avg_salary FROM employees GROUP BY department HAVING COUNT(… (80 more chars)&quot;,
+  &quot;description&quot;: &quot;Describe query resource with Create operation and GenerateQuerySchema action&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;ResourceMetadata&quot;,
+  &quot;Data&quot;: {
+    &quot;Name&quot;: &quot;query&quot;,
+    &quot;DisplayName&quot;: &quot;Query&quot;,
+    &quot;ElementKey&quot;: &quot;uipath-uipath-jdbc&quot;,
+    &quot;Operation&quot;: {
+      &quot;Method&quot;: &quot;POST&quot;,
+      &quot;Name&quot;: &quot;Create&quot;,
+      &quot;Description&quot;: &quot;Execute a valid SQL query on supported JDBC databases (SQL Server, PostgreSQL, Oracle, Redshift, Databricks)&quot;,
+      &quot;Path&quot;: &quot;/hubs/datawarehouse/query&quot;,
+      &quot;Curated&quot;: &quot;Execute Query Synchronously&quot;
+    },
+    &quot;Parameters&quot;: [],
+    &quot;RequestFields&quot;: [
+      {
+        &quot;Name&quot;: &quot;limit&quot;,
+        &quot;Type&quot;: &quot;integer&quot;,
+        &quot;DisplayName&quot;: &quot;Limit&quot;,
+        &quot;Required&quot;: false
+      },
+      {
+        &quot;Name&quot;: &quot;script&quot;,
+        &quot;Type&quot;: &quot;string&quot;,
+        &quot;DisplayName&quot;: &quot;Script&quot;,
+        &quot;Description&quot;: &quot;Please input a valid SQL query and then click on Generate output schema. For example, you can use: SELECT * FROM [TABLE_NAME] LIMIT 1&quot;,
+        &quot;Required&quot;: true
+      },
+      {
+        &quot;Name&quot;: &quot;generateSchema&quot;,
+        &quot;Type&quot;: &quot;string&quot;,
+        &quot;DisplayName&quot;: &quot;Generate output schema&quot;,
+        &quot;Required&quot;: false
+      }
+    ],
+    &quot;ResponseFields&quot;: [
+      {
+        &quot;Name&quot;: &quot;key&quot;,
+        &quot;Type&quot;: &quot;string&quot;,
+        &quot;DisplayName&quot;: &quot;Key&quot;
+      }
+    ],
+    &quot;
+
+… (truncated, 1902 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#38</span>
+      <span class="tool-name">Grep</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">9ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;pattern&quot;: &quot;Implicit error port on action nodes&quot;,
+  &quot;path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/shared/file-format.md&quot;,
+  &quot;-A&quot;: 40
+}</pre>
+    <h4>Result</h4>
+    <pre>Found 1 file
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/shared/file-format.md</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#39</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">17ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -n \&quot;Implicit error port\&quot; -A 40 /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/shared/file-format.md&quot;,
+  &quot;description&quot;: &quot;Read implicit error port section of file-format.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>15:- [Implicit error port on action nodes](#implicit-error-port-on-action-nodes)
+16-- [Minimal working example — dice roller](#minimal-working-example--dice-roller)
+17-- [entry-points.json — auto-generated, do not edit](#entry-pointsjson--auto-generated-do-not-edit)
+18-- [Bindings — Orchestrator resource bindings (top-level `bindings[]`)](#bindings--orchestrator-resource-bindings-top-level-bindings)
+19-- [Bindings — connector connection binding](#bindings--connector-connection-binding)
+20-
+21-## Top-level structure
+22-
+23-```json
+24-{
+25-  &quot;id&quot;: &quot;&lt;uuid&gt;&quot;,
+26-  &quot;version&quot;: &quot;&lt;scaffolded file-format version&gt;&quot;,
+27-  &quot;name&quot;: &quot;MyFlow&quot;,
+28-  &quot;nodes&quot;: [],
+29-  &quot;edges&quot;: [],
+30-  &quot;definitions&quot;: [],
+31-  &quot;bindings&quot;: [],
+32-  &quot;variables&quot;: {},
+33-  &quot;layout&quot;: {
+34-    &quot;nodes&quot;: {}
+35-  }
+36-}
+37-```
+38-
+39-&gt; **Key order is NOT guaranteed — never anchor edits on it.** The skeleton above is illustrative; the CLI does not commit to a stable top-level key sequence or to which optional keys are present. Real flows vary: `runtime` may appear (and has been observed *before* `nodes`, not after `definitions`) or be absent entirely; `bindings`, `variables`, `solutionId`, `projectId`, and a trailing `metadat
+
+… (truncated, 6518 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#40</span>
+      <span class="tool-name">Write</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">6ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/tmp/jdbc_detail.json&quot;,
+  &quot;content&quot;: &quot;{\n  \&quot;connectionId\&quot;: \&quot;4e5d613a-96be-4ba7-b86b-ebe225d192f1\&quot;,\n  \&quot;folderKey\&quot;: \&quot;5da18ec0-7de1-4e57-aaf1-ddc8a369c199\&quot;,\n  \&quot;method\&quot;: \&quot;POST\&quot;,\n  \&quot;endpoint\&quot;: \&quot;/hubs/datawarehouse/query\&quot;,\n  \&quot;bodyParameters\&quot;: {\n    \&quot;script\&quot;: \&quot;SELECT department, COUNT(*) AS employee_count, AVG(salary) AS avg_salary FROM employees GROUP BY department HAVING COUNT(*) &gt;= 2 ORDER BY avg_salary\&quot;\n  },\n  \&quot;customFieldsRequestDetails\&quot;… (257 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>File created successfully at: /tmp/jdbc_detail.json (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#41</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">175ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/scripts/encode_parameter_values.py --field &#x27;script=SELECT department, COUNT(*) AS employee_count, AVG(salary) AS avg_salary FROM employees GROUP BY department HAVING COUNT(*) &gt;= 2 ORDER BY avg_salary&#x27; --object-action-name GenerateQuerySchema 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Verify encoded parameterValues shape for the script token&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;parameterValues&quot;: [
+    [
+      &quot;script&quot;,
+      &quot;SELECT department, COUNT(*) AS employee_count, AVG(salary) AS avg_salary FROM employees GROUP BY department HAVING COUNT(*) &gt;= 2 ORDER BY avg_salary&quot;
+    ]
+  ],
+  &quot;runtimeParameters&quot;: {
+    &quot;bodyParameters&quot;: {
+      &quot;script&quot;: &quot;SELECT department, COUNT(*) AS employee_count, AVG(salary) AS avg_salary FROM employees GROUP BY department HAVING COUNT(*) &gt;= 2 ORDER BY avg_salary&quot;
+    }
+  },
+  &quot;objectActionName&quot;: &quot;GenerateQuerySchema&quot;
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#42</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">16.43s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-jdbc-databricks-query/DatabricksQuery/DatabricksQuery \\\n  &amp;&amp; uip maestro flow node configure \&quot;DatabricksQuery.flow\&quot; \&quot;queryEmployeesByDepartment1\&quot; --detail \&quot;$(cat /tmp/jdbc_detail.json)\&quot; --output json&quot;,
+  &quot;description&quot;: &quot;Configure the JDBC node with connection and SQL query&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeConfigureSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;NodeId&quot;: &quot;queryEmployeesByDepartment1&quot;,
+    &quot;BindingsCreated&quot;: 2,
+    &quot;DetailPopulated&quot;: true
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#43</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">92ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-jdbc-databricks-query/DatabricksQuery/DatabricksQuery \\\n  &amp;&amp; python3 -c \&quot;\nimport json\nd = json.load(open(&#x27;DatabricksQuery.flow&#x27;))\nnode = next(n for n in d[&#x27;nodes&#x27;] if n[&#x27;id&#x27;]==&#x27;queryEmployeesByDepartment1&#x27;)\nprint(json.dumps(node[&#x27;inputs&#x27;][&#x27;detail&#x27;], indent=2))\n\&quot;&quot;,
+  &quot;description&quot;: &quot;Inspect configured node detail&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;connector&quot;: &quot;uipath-uipath-jdbc&quot;,
+  &quot;connectionId&quot;: &quot;4e5d613a-96be-4ba7-b86b-ebe225d192f1&quot;,
+  &quot;connectionResourceId&quot;: &quot;4e5d613a-96be-4ba7-b86b-ebe225d192f1&quot;,
+  &quot;connectionFolderKey&quot;: &quot;5da18ec0-7de1-4e57-aaf1-ddc8a369c199&quot;,
+  &quot;method&quot;: &quot;POST&quot;,
+  &quot;endpoint&quot;: &quot;/hubs/datawarehouse/query&quot;,
+  &quot;bodyParameters&quot;: {
+    &quot;script&quot;: &quot;SELECT department, COUNT(*) AS employee_count, AVG(salary) AS avg_salary FROM employees GROUP BY department HAVING COUNT(*) &gt;= 2 ORDER BY avg_salary&quot;
+  },
+  &quot;uiPathActivityTypeId&quot;: &quot;30ba82aa-29d8-35ad-bf2c-1d2abc2aed3b&quot;,
+  &quot;errorState&quot;: {
+    &quot;issues&quot;: []
+  },
+  &quot;configuration&quot;: &quot;=jsonString:{\&quot;essentialConfiguration\&quot;:{\&quot;connectorVersion\&quot;:\&quot;1.20.1\&quot;,\&quot;customFieldsRequestDetails\&quot;:null,\&quot;instanceParameters\&quot;:{\&quot;connectorKey\&quot;:\&quot;uipath-uipath-jdbc\&quot;,\&quot;objectName\&quot;:\&quot;query\&quot;,\&quot;httpMethod\&quot;:\&quot;POST\&quot;,\&quot;activityType\&quot;:\&quot;Curated\&quot;,\&quot;version\&quot;:\&quot;1.0.0\&quot;,\&quot;supportsStreaming\&quot;:false,\&quot;subType\&quot;:\&quot;method\&quot;},\&quot;objectName\&quot;:\&quot;query\&quot;,\&quot;operation\&quot;:\&quot;list\&quot;,\&quot;packageVersion\&quot;:\&quot;1.0.0\&quot;,\&quot;httpMethod\&quot;:\&quot;POST\&quot;,\&quot;path\&quot;:\&quot;/hubs/datawarehouse/query\&quot;,\&quot;unifiedTypesCompatible\&quot;:true}}&quot;,
+  &quot;inputMetadata&quot;: {
+    &quot;operation&quot;: &quot;list&quot;,
+    &quot;pagination&quot;: {
+      &quot;maxPageSize&quot;: 100
+
+… (truncated, 13 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#44</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">771ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 -c \&quot;import json; print(json.load(open(&#x27;/tmp/jdbc_detail.json&#x27;)))\&quot; 2&gt;&amp;1\necho \&quot;---\&quot;\nuip maestro flow node configure --help 2&gt;&amp;1 | head -60&quot;,
+  &quot;description&quot;: &quot;Validate detail JSON is well-formed and check configure help&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{&#x27;connectionId&#x27;: &#x27;4e5d613a-96be-4ba7-b86b-ebe225d192f1&#x27;, &#x27;folderKey&#x27;: &#x27;5da18ec0-7de1-4e57-aaf1-ddc8a369c199&#x27;, &#x27;method&#x27;: &#x27;POST&#x27;, &#x27;endpoint&#x27;: &#x27;/hubs/datawarehouse/query&#x27;, &#x27;bodyParameters&#x27;: {&#x27;script&#x27;: &#x27;SELECT department, COUNT(*) AS employee_count, AVG(salary) AS avg_salary FROM employees GROUP BY department HAVING COUNT(*) &gt;= 2 ORDER BY avg_salary&#x27;}, &#x27;customFieldsRequestDetails&#x27;: {&#x27;objectActionName&#x27;: &#x27;GenerateQuerySchema&#x27;, &#x27;parameterValues&#x27;: [[&#x27;script&#x27;, &#x27;SELECT department, COUNT(*) AS employee_count, AVG(salary) AS avg_salary FROM employees GROUP BY department HAVING COUNT(*) &gt;= 2 ORDER BY avg_salary&#x27;]]}}
+---
+                        uip maestro flow node configure                         
+Configure a connector or managed HTTP node with connection and method details.
+Run this after &#x27;node add&#x27; — populates inputs.detail and creates workflow bindings.
+Use &#x27;node list&#x27; to find the node ID.
+
+CONNECTOR ACTIVITIES (type uipath.connector.*, NOT *.trigger.*)
+  Required: connectionId, folderKey, method, endpoint.
+  Generic activities (manifest activityType=&#x27;Generic&#x27;, e.g. *.insert-record,
+    *.list-records) also require objectName. Discover with:
+      uip is resources list &lt;connector-key&gt; --op
+
+… (truncated, 3356 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#45</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">13.53s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-jdbc-databricks-query/DatabricksQuery/DatabricksQuery \\\n  &amp;&amp; uip maestro flow node configure \&quot;DatabricksQuery.flow\&quot; \&quot;queryEmployeesByDepartment1\&quot; --detail \&quot;$(cat /tmp/jdbc_detail.json)\&quot; --output json 2&gt;&amp;1\necho \&quot;EXIT: $?\&quot;&quot;,
+  &quot;description&quot;: &quot;Re-run configure and capture full output including stderr&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeConfigureSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;NodeId&quot;: &quot;queryEmployeesByDepartment1&quot;,
+    &quot;BindingsCreated&quot;: 2,
+    &quot;DetailPopulated&quot;: true
+  }
+}
+EXIT: 0</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#46</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">94ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-jdbc-databricks-query/DatabricksQuery/DatabricksQuery \\\n  &amp;&amp; python3 -c \&quot;\nimport json\nd = json.load(open(&#x27;DatabricksQuery.flow&#x27;))\nnode = next(n for n in d[&#x27;nodes&#x27;] if n[&#x27;id&#x27;]==&#x27;queryEmployeesByDepartment1&#x27;)\ndetail = node[&#x27;inputs&#x27;][&#x27;detail&#x27;]\nconfig_str = detail[&#x27;configuration&#x27;]\nprint(&#x27;config_str prefix:&#x27;, config_str[:30])\ninner = json.loads(config_str.split(&#x27;:&#x27;,… (43 more chars)&quot;,
+  &quot;description&quot;: &quot;Check customFieldsRequestDetails in configuration blob&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>config_str prefix: =jsonString:{&quot;essentialConfigu
+{
+  &quot;essentialConfiguration&quot;: {
+    &quot;connectorVersion&quot;: &quot;1.20.1&quot;,
+    &quot;customFieldsRequestDetails&quot;: null,
+    &quot;instanceParameters&quot;: {
+      &quot;connectorKey&quot;: &quot;uipath-uipath-jdbc&quot;,
+      &quot;objectName&quot;: &quot;query&quot;,
+      &quot;httpMethod&quot;: &quot;POST&quot;,
+      &quot;activityType&quot;: &quot;Curated&quot;,
+      &quot;version&quot;: &quot;1.0.0&quot;,
+      &quot;supportsStreaming&quot;: false,
+      &quot;subType&quot;: &quot;method&quot;
+    },
+    &quot;objectName&quot;: &quot;query&quot;,
+    &quot;operation&quot;: &quot;list&quot;,
+    &quot;packageVersion&quot;: &quot;1.0.0&quot;,
+    &quot;httpMethod&quot;: &quot;POST&quot;,
+    &quot;path&quot;: &quot;/hubs/datawarehouse/query&quot;,
+    &quot;unifiedTypesCompatible&quot;: true
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#47</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">853ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow node configure --help 2&gt;&amp;1 | tail -80&quot;,
+  &quot;description&quot;: &quot;See rest of node configure help&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>  Required: connectionId, folderKey, eventMode (e.g. &#x27;polling&#x27; or &#x27;webhooks&#x27;).
+  Generic event nodes also require objectName (same rule as triggers).
+  Optional: eventParameters, queryParameters, pathParameters,
+            filter (structured FilterTree, not a raw expression).
+  Discover eventMode with:
+    uip is triggers describe &lt;connector-key&gt; &lt;eventType&gt; &lt;object&gt; --connection-id &lt;uuid&gt;
+  Example:
+    --detail &#x27;{&quot;connectionId&quot;:&quot;&lt;uuid&gt;&quot;,&quot;folderKey&quot;:&quot;&lt;uuid&gt;&quot;,&quot;eventMode&quot;:&quot;polling&quot;,&quot;queryParameters&quot;:{&quot;repo&quot;:&quot;cli&quot;}}&#x27;
+
+MANAGED HTTP NODES (type core.action.http.v2)
+  Two authentication modes — set via the &#x27;authentication&#x27; key:
+
+  Connector mode (authentication=&#x27;connector&#x27;):
+    Uses an Integration Service connection for auth.
+    Required: authentication, method (GET/POST/PUT/PATCH/DELETE/OPTIONS/HEAD),
+              connectionId (target connector connection UUID),
+              folderKey, targetConnector (e.g. uipath-microsoft-outlook365)
+    Optional: url (path appended to connector base URL), headers, query, body
+    Example:
+      --detail &#x27;{&quot;authentication&quot;:&quot;connector&quot;,&quot;targetConnector&quot;:&quot;uipath-microsoft-outlook365&quot;,&quot;connectionId&quot;:&quot;&lt;uuid&gt;&quot;,&quot;folderKey&quot;:&quot;&lt;uuid&gt;&quot;,&quot;method&quot;:&quot;GET&quot;,&quot;url
+
+… (truncated, 4939 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#48</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">15.28s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-jdbc-databricks-query/DatabricksQuery/DatabricksQuery \\\n  &amp;&amp; uip maestro flow node configure \&quot;DatabricksQuery.flow\&quot; \&quot;queryEmployeesByDepartment1\&quot; --detail \&quot;$(cat /tmp/jdbc_detail.json)\&quot; --output json --log-level debug 2&gt;&amp;1 | grep -i -A5 -B5 \&quot;custom\\|warn\\|drop\\|skip\&quot; | head -100&quot;,
+  &quot;description&quot;: &quot;Run configure with debug logging to see custom fields handling&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>[DEBUG] Tool &#x27;maestro&#x27; is already installed
+[DEBUG] Discovered 33 tools: solution, agent, agenthub, conversational, codedagent, context-grounding, function, codedapp, is, or, rpa, tm, api-workflow, maestro, docsai, vss, rpa-legacy, traces, gov, admin, df, insights, tasks, aops, llm-configuration, llm-gateway, guardrails, model-hub, platform, ixp, pm, coder, ah
+[DEBUG] Program built successfully — ready to parse args
+[DEBUG] Node program built successfully — ready to parse args
+[DEBUG] Version sync evaluating (trigger=startup)
+[DEBUG] Version sync skipped: UIPATH_CLI_DISABLE_VERSION_SYNC is set
+[DEBUG] Parsing args: maestro flow node configure DatabricksQuery.flow queryEmployeesByDepartment1 --detail {
+  &quot;connectionId&quot;: &quot;4e5d613a-96be-4ba7-b86b-ebe225d192f1&quot;,
+  &quot;folderKey&quot;: &quot;5da18ec0-7de1-4e57-aaf1-ddc8a369c199&quot;,
+  &quot;method&quot;: &quot;POST&quot;,
+  &quot;endpoint&quot;: &quot;/hubs/datawarehouse/query&quot;,
+  &quot;bodyParameters&quot;: {
+    &quot;script&quot;: &quot;SELECT department, COUNT(*) AS employee_count, AVG(salary) AS avg_salary FROM employees GROUP BY department HAVING COUNT(*) &gt;= 2 ORDER BY avg_salary&quot;
+  },
+  &quot;customFieldsRequestDetails&quot;: {
+    &quot;objectActionName&quot;: &quot;GenerateQuerySchema&quot;,
+    &quot;parameterValues&quot;: [
+      [&quot;script&quot;
+
+… (truncated, 345 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#49</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">119ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-jdbc-databricks-query/DatabricksQuery/DatabricksQuery \\\n  &amp;&amp; python3 -c \&quot;\nimport json\nd = json.load(open(&#x27;DatabricksQuery.flow&#x27;))\ndefn = next(x for x in d[&#x27;definitions&#x27;] if x[&#x27;nodeType&#x27;]==&#x27;uipath.connector.uipath-uipath-jdbc.execute-query-synchronously&#x27;)\nprint(&#x27;has connectorMethodInfo:&#x27;, &#x27;connectorMethodInfo&#x27; in defn)\nprint(&#x27;has objectActions:&#x27;, &#x27;objectActions&#x27;… (36 more chars)&quot;,
+  &quot;description&quot;: &quot;Check if definition in definitions[] has design.actions metadata&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>has connectorMethodInfo: False
+has objectActions: False
+[&#x27;nodeType&#x27;, &#x27;version&#x27;, &#x27;category&#x27;, &#x27;tags&#x27;, &#x27;sortOrder&#x27;, &#x27;supportsErrorHandling&#x27;, &#x27;description&#x27;, &#x27;display&#x27;, &#x27;handleConfiguration&#x27;, &#x27;model&#x27;, &#x27;form&#x27;, &#x27;inputDefinition&#x27;, &#x27;inputDefaults&#x27;, &#x27;outputDefinition&#x27;, &#x27;debug&#x27;]</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#50</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">582ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow node add --help 2&gt;&amp;1 | head -60&quot;,
+  &quot;description&quot;: &quot;Check node add options for connection-aware definition&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>                           uip maestro flow node add                            
+Add a node to a Flow file.
+For connector nodes (type uipath.connector), do NOT pass --input here — run &#x27;node configure&#x27; afterwards to supply connection and endpoint details.
+Example: uip maestro flow node add flow.flow uipath.connector.jira.createIssue --label &#x27;Create Jira Issue&#x27;
+                Use --help with nested commands for more detail.                
+
+┌─ Usage ──────────────────────────────────────────────────────────────────────┐
+│ uip maestro flow node add [options] &lt;file&gt; &lt;node-type&gt;                       │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Arguments ──────────────────────────────────────────────────────────────────┐
+│ file        Path to the .flow file                                           │
+│ node-type   Node type identifier (e.g. core.trigger.manual)                  │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Options ────────────────────────────────────────────────────────────────────┐
+│ -i, --input &lt;json&gt;             JSON object of input values to set on the     │
+│                        
+
+… (truncated, 2891 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#51</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">15ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;which uip; file $(which uip) 2&gt;/dev/null; readlink -f $(which uip)&quot;,
+  &quot;description&quot;: &quot;Locate the uip binary/script&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/usr/bin/uip
+/usr/lib/node_modules/@uipath/cli/dist/index.js</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#52</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">64ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -rn \&quot;customFieldsRequestDetails\&quot; /usr/lib/node_modules/@uipath/cli/dist/ 2&gt;/dev/null | head -30&quot;,
+  &quot;description&quot;: &quot;Search CLI source for customFieldsRequestDetails handling&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>&lt;persisted-output&gt;
+Output too large (467.1KB). Full output saved to: /home/azureuser/.claude/projects/-work-output-artifacts-skill-flow-jdbc-databricks-query/5f567401-1897-4e3b-9a51-b92bead642f1/tool-results/bru0f3d2y.txt
+
+Preview (first 2KB):
+/usr/lib/node_modules/@uipath/cli/dist/index.browser.js:1451:ErrorMessage: ${this.message}`,t}isBreakingChangeException(){return HB._breakingExceptions.includes(this.errorCode)}shouldAddPrefix(){return!HB._breakingExceptionsWithoutPrefix.has(this.errorCode)}shouldRenderOnCanvas(){return this.errorCode===3e3||HB._uIFriendlyExceptions.includes(this.errorCode)||HB._breakingExceptions.includes(this.errorCode)}shouldMakeUiPropertiesReadOnly(){return!HB._uIFriendlyExceptions.includes(this.errorCode)}static setTranslationService(t){HB._translationService||(HB._translationService=t)}static getTranslationService(){return HB._translationService}static _getMessage(t,r,n){let i=`_${t.toString()}`;tr.isNullOrWhiteSpace(r)&amp;&amp;(r=HB._translationService.instant(`dap.errorCodeMessages.${i}`));let o=HB._translationService.instant(&quot;dap.errorCodeMessages.Suffix&quot;),u=tr.format(o,`${n}-${i}`);return`${r} ${u}`}},B6n=class y4d extends Em{static{this._prefix=&quot;DAP-RT&quot;}c
+
+… (truncated, 1068 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#53</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">80ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -o \&quot;essentialConfiguration[^}]\\{0,400\\}\&quot; /usr/lib/node_modules/@uipath/cli/dist/index.js 2&gt;/dev/null | head -5\necho \&quot;---\&quot;\ngrep -o \&quot;.\\{100\\}customFieldsRequestDetails.\\{200\\}\&quot; /usr/lib/node_modules/@uipath/cli/dist/index.js 2&gt;/dev/null | head -20&quot;,
+  &quot;description&quot;: &quot;Search main CLI bundle for customFieldsRequestDetails context&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>---</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#54</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">41ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -rl \&quot;customFieldsRequestDetails\&quot; /usr/lib/node_modules/@uipath/cli/dist/ 2&gt;/dev/null&quot;,
+  &quot;description&quot;: &quot;Find files containing customFieldsRequestDetails&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/usr/lib/node_modules/@uipath/cli/dist/index.browser.js</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#55</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">27ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -c \&quot;essentialConfiguration\&quot; /usr/lib/node_modules/@uipath/cli/dist/index.js\ngrep -o \&quot;.\\{80\\}essentialConfiguration.\\{300\\}\&quot; /usr/lib/node_modules/@uipath/cli/dist/index.js | head -10&quot;,
+  &quot;description&quot;: &quot;Search index.js for essentialConfiguration building logic&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>0</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#56</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">3.28s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -o \&quot;.\\{150\\}essentialConfiguration:{.\\{500\\}\&quot; /usr/lib/node_modules/@uipath/cli/dist/index.browser.js | head -5&quot;,
+  &quot;description&quot;: &quot;Find essentialConfiguration object construction&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>ctivityType:e.activityType??&quot;Curated&quot;,version:e.version,supportsStreaming:e.supportsStreaming,subType:e.subType};return{configuration:JSON.stringify({essentialConfiguration:{instanceParameters:t,objectName:CEn,httpMethod:t.httpMethod,path:`/${CEn}`}}),uiPathActivityTypeId:Jjc}})();iNf=x.object({type:x.literal(&quot;object&quot;),properties:x.object({branches:x.object({type:x.literal(&quot;array&quot;)}).passthrough(),timeout:x.object({type:x.literal(&quot;string&quot;)}).passthrough(),retryCount:x.object({type:x.literal(&quot;number&quot;)}).passthrough(),swaggerDefinition:x.object({type:x.tuple([x.literal(&quot;object&quot;),x.literal(&quot;null&quot;)])}).passthrough()}).passthrough()}).passthrough(),oNf=x.object({output:x
+ctivityType:e.activityType??&quot;Curated&quot;,version:e.version,supportsStreaming:e.supportsStreaming,subType:e.subType};return{configuration:JSON.stringify({essentialConfiguration:{instanceParameters:t,objectName:vNn,httpMethod:t.httpMethod,path:`/${vNn}`}}),uiPathActivityTypeId:lpd}})(),Tlg=C.object({type:C.literal(&quot;object&quot;),properties:C.object({branches:C.object({type:C.literal(&quot;array&quot;)}).passthrough(),timeout:C.object({type:C.literal(&quot;string&quot;)}).passthrough(),retryCount:C.object({type:C.literal(&quot;number&quot;)}).passthrough(),swa
+
+… (truncated, 2174 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#57</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">735ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -o \&quot;.\\{200\\}l0e(.\\{300\\}\&quot; /usr/lib/node_modules/@uipath/cli/dist/index.browser.js | head -10&quot;,
+  &quot;description&quot;: &quot;Find callers of l0e to see how customFieldsRequestDetails param is passed&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>turn{...WB._inertConnectionsService(),getConnectionInfo:r=&gt;yD(t.getConnectionInfo(r)),getConnection:r=&gt;yD(t.getConnectionInfo(r)),pingConnectionStatus:()=&gt;Gt({status:&quot;Enabled&quot;})}}},xJg=CJg});function l0e(e,t,r=null,n=null){let i=t.operation.toLowerCase(),o=AJg(i,t.parameters,e.objectName);return{essentialConfiguration:{instanceParameters:e,objectName:e.objectName,operation:i,httpMethod:t.method,path:t.path,packageVersion:&quot;1.0.0&quot;,connectorVersion:null,executionType:null,customFieldsRequestDetails:n,u
+.Le?{caseShape:Le}:{}}}async function Lny(e,t,r,n,i,o,u){i.fetched.push(&quot;synthetic.HttpRequest&quot;);let l=tiy(r),d=u.entry.displayName??t,m={...u.parsedConfig,connectorKey:e,objectName:t,httpMethod:r},g=l0e(m,{operation:l,description:&quot;&quot;,method:r,parameters:[],path:&quot;&quot;,operationId:&quot;&quot;}),y=o.inputDetails,T;if(!o.skipCaseShape){let E=await Eer(u.entry.packageId);T=TBp(t,[],[],[],[],null),y&amp;&amp;EBp(T,y,{filterParamName:null,ceqlExpression:null}),T.context=SBp({connectorKey:e,connectorName:n.connectorName,object</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#58</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">46ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -o \&quot;l0e([a-zA-Z0-9_.]*,[a-zA-Z0-9_.]*,[a-zA-Z0-9_.]*,[a-zA-Z0-9_.]*)\&quot; /usr/lib/node_modules/@uipath/cli/dist/index.browser.js | sort -u | head -20&quot;,
+  &quot;description&quot;: &quot;Find all call sites of l0e function&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>(Bash completed with no output)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#59</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">38ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -o \&quot;=l0e([^)]*)\&quot; /usr/lib/node_modules/@uipath/cli/dist/index.browser.js | sort -u | head -20&quot;,
+  &quot;description&quot;: &quot;Find all call sites of l0e function assignments&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>=l0e(m,{operation:l,description:&quot;&quot;,method:r,parameters:[],path:&quot;&quot;,operationId:&quot;&quot;})</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#60</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">435ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -o \&quot;.\\{100\\}customFieldsRequestDetails.\\{100\\}\&quot; /usr/lib/node_modules/@uipath/cli/dist/index.browser.js | grep -v \&quot;connectorVersion:null\\|connectorVersion:\\\&quot;\\\&quot;\\|customFieldsRequestDetails:null\&quot; &quot;,
+  &quot;description&quot;: &quot;Find non-null customFieldsRequestDetails handling&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>&quot;,&quot;path&quot;,&quot;packageVersion&quot;,&quot;executionType&quot;,&quot;connectorVersion&quot;],ckd=[...b$n,&quot;unifiedTypesCompatible&quot;,&quot;customFieldsRequestDetails&quot;],dkd=[...b$n],pkd=[...b$n,&quot;filter&quot;,&quot;customFieldsRequestDetails&quot;];d7g=[&quot;inputFields&quot;,&quot;searchableFie
+is.connectorVersion=null,this.agentIdentity=null,this.executionType=null,this.maxPageSize=null,this.customFieldsRequestDetails=null,this.jobArguments=null,this.isAutopilotInvalidConfig=!1,this.isEssentialOnly=!1,this.additiona
+return r;let n=[];for(let i=0;i&lt;r.length;i++)n.push(ZL.factory(JSON.stringify(r[i])));return n}case&quot;customFieldsRequestDetails&quot;:return r&amp;&amp;Qtt.factory(JSON.stringify(r));default:return r}}static replacer(t,r){if(ZB.isCacheKey(t
+return r;let n=[];for(let i=0;i&lt;r.length;i++)n.push(ZL.factory(JSON.stringify(r[i])));return n}case&quot;customFieldsRequestDetails&quot;:return r&amp;&amp;Qtt.factory(JSON.stringify(r));default:return r}}static replacer(t,r){if(ZB.isCacheKey(t
+Operation(e,r,Fc.createTelemetryOperation(e,null,&quot;GetConnectorEventOperation&quot;)).pipe(ii(i=&gt;{let o=e.customFieldsRequestDetails!=null,u=e.objectName!=null&amp;&amp;(i?.design?.actions==null||t!=null||!o)?this._metadataService.getConnec
+l;return[u,m].filter(g=&gt;g!=null)}return[]}get _hasCustomFields(){
+
+… (truncated, 3566 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#61</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">144ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -o \&quot;.\\{50\\}async function QO(.\\{800\\}\&quot; /usr/lib/node_modules/@uipath/cli/dist/index.browser.js | head -3&quot;,
+  &quot;description&quot;: &quot;Get fuller context of QO function&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>&amp;(t??[]).some(n=&gt;n.type===&quot;body&quot;))return`in_${r}`}async function QO({instanceParameters:e,connectionId:t,savedFilterTrees:r=null,customFieldsRequestDetails:n=null,fieldValues:i=null}){if(r)for(let l of Object.values(r))O$t(l);let{DesignTimeActivityClient:o}=await Promise.resolve().then(()=&gt;(AUd(),DUd)),u=await o.initiate({instanceParameters:e,uiPathActivityTypeId:&quot;&quot;},{connectionsProvider:Ixd()});if(await u.updateConnection({connectionId:t}),n)for(let[l,d]of n.parameterValues)await u.updateProperty({propertyName:l,valueType:&quot;widget&quot;,widget:{type:&quot;connectorAutocomplete&quot;,widgetValue:d??&quot;&quot;}});if(i&amp;&amp;Object.keys(i).length&gt;0&amp;&amp;await u.setFieldValues(i),r)for(let[l,d]of Object.entries(r))await AQ(u,l,d);return u}async function AQ(e,t,r){await e.updateProperty({propertyName:t,valueType:&quot;widget&quot;,widget:{type:&quot;filter&quot;,widgetValue:r}})}function YO(e,t){if(e.connectorVe</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#62</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">31ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -o \&quot;let ue=await QO(.\\{100\\}getEssentialConfiguration().\\{600\\}\&quot; /usr/lib/node_modules/@uipath/cli/dist/index.browser.js&quot;,
+  &quot;description&quot;: &quot;Get context around QO call and essentialConfiguration retrieval&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>(Bash completed with no output)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#63</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">131ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -o \&quot;.\\{300\\}let ue=await QO(.\\{800\\}\&quot; /usr/lib/node_modules/@uipath/cli/dist/index.browser.js&quot;,
+  &quot;description&quot;: &quot;Get more context around QO call&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>ot declare a FilterBuilder parameter \u2014 server-side filtering is not supported by this operation. Drop \`filter\` from --detail.`);W=B.name,Z=r.filter;let Ne=U$d(r.filter);Q=Ne.variables,K={[W]:Ne.tree}}let re={...m.bodyParameters,...m.queryParameters,...m.pathParameters};q!==null&amp;&amp;delete re[q];let ue=await QO({instanceParameters:y,connectionId:r.connectionId,savedFilterTrees:K,customFieldsRequestDetails:r.customFieldsRequestDetails??null,fieldValues:re});if(YO(ue.getEssentialConfiguration().essentialConfiguration,r.connectionId),W&amp;&amp;Z){let Ne=ue.getCompiledFilter(W);M$d(Ne,W,Z),m.queryParameters={...m.queryParameters??{},[W]:Ne},Object.keys(Q).length&gt;0&amp;&amp;(m.filterVariables=Q,await AQ(ue,W,Z))}let{essentialConfiguration:ye}=ue.getEssentialConfiguration();if(m.configuration=`=jsonString:${JSON.stringify({essentialConfiguration:ye})}`,(t.type??&quot;&quot;).startsWith(&quot;uipath.agent.resource.tool.connector.&quot;)){let{bodyParameters:Ne,queryParameters:Le,pathParameters:ke}=gWg(E,r.method);!m.bodyParameters&amp;&amp;Object.keys(Ne).length&gt;0&amp;&amp;(m.bodyParameters=Ne),!m.queryParameters&amp;&amp;Object.keys(Le).length&gt;0&amp;&amp;(m.queryParame</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#64</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">4ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-jdbc-databricks-query/DatabricksQuery/DatabricksQuery/DatabricksQuery.flow&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	{
+2	  &quot;id&quot;: &quot;fb94ca8b-a3a5-4ad8-88e7-1648e9c6f765&quot;,
+3	  &quot;version&quot;: &quot;1.9&quot;,
+4	  &quot;name&quot;: &quot;DatabricksQuery&quot;,
+5	  &quot;nodes&quot;: [
+6	    {
+7	      &quot;id&quot;: &quot;start&quot;,
+8	      &quot;type&quot;: &quot;core.trigger.manual&quot;,
+9	      &quot;typeVersion&quot;: &quot;1.0&quot;,
+10	      &quot;display&quot;: {
+11	        &quot;label&quot;: &quot;Manual trigger&quot;
+12	      },
+13	      &quot;inputs&quot;: {
+14	        &quot;entryPointId&quot;: &quot;1c556654-f276-4ae3-bc4c-68dadd279570&quot;,
+15	        &quot;isDefaultEntryPoint&quot;: true
+16	      }
+17	    },
+18	    {
+19	      &quot;id&quot;: &quot;queryEmployeesByDepartment1&quot;,
+20	      &quot;type&quot;: &quot;uipath.connector.uipath-uipath-jdbc.execute-query-synchronously&quot;,
+21	      &quot;typeVersion&quot;: &quot;1.0.0&quot;,
+22	      &quot;display&quot;: {
+23	        &quot;label&quot;: &quot;Query Employees by Department&quot;
+24	      },
+25	      &quot;inputs&quot;: {
+26	        &quot;detail&quot;: {
+27	          &quot;connector&quot;: &quot;uipath-uipath-jdbc&quot;,
+28	          &quot;connectionId&quot;: &quot;4e5d613a-96be-4ba7-b86b-ebe225d192f1&quot;,
+29	          &quot;connectionResourceId&quot;: &quot;4e5d613a-96be-4ba7-b86b-ebe225d192f1&quot;,
+30	          &quot;connectionFolderKey&quot;: &quot;5da18ec0-7de1-4e57-aaf1-ddc8a369c199&quot;,
+31	          &quot;method&quot;: &quot;POST&quot;,
+32	          &quot;endpoint&quot;: &quot;/hubs/datawarehouse/query&quot;,
+33	          &quot;bodyParameters&quot;: {
+34	            &quot;script&quot;: &quot;SELECT department, COUNT(*) AS employee_cou
+
+… (truncated, 13785 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#65</span>
+      <span class="tool-name">Edit</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">65ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;replace_all&quot;: false,
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-jdbc-databricks-query/DatabricksQuery/DatabricksQuery/DatabricksQuery.flow&quot;,
+  &quot;old_string&quot;: &quot;  \&quot;nodes\&quot;: [\n    {\n      \&quot;id\&quot;: \&quot;start\&quot;,&quot;,
+  &quot;new_string&quot;: &quot;  \&quot;nodes\&quot;: [\n    {\n      \&quot;id\&quot;: \&quot;end1\&quot;,\n      \&quot;type\&quot;: \&quot;core.control.end\&quot;,\n      \&quot;typeVersion\&quot;: \&quot;1.0\&quot;,\n      \&quot;display\&quot;: {\n        \&quot;label\&quot;: \&quot;End\&quot;\n      },\n      \&quot;inputs\&quot;: {},\n      \&quot;outputs\&quot;: {\n        \&quot;queryResult\&quot;: {\n          \&quot;source\&quot;: \&quot;=js:$vars.queryEmployeesByDepartment1.output\&quot;\n        }\n      }\n    },\n    {\n      \&quot;id\&quot;: \&quot;start\&quot;,&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>The file /work/output/artifacts/skill-flow-jdbc-databricks-query/DatabricksQuery/DatabricksQuery/DatabricksQuery.flow has been updated successfully. (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#66</span>
+      <span class="tool-name">Edit</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">27ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;replace_all&quot;: false,
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-jdbc-databricks-query/DatabricksQuery/DatabricksQuery/DatabricksQuery.flow&quot;,
+  &quot;old_string&quot;: &quot;  \&quot;edges\&quot;: [],\n  \&quot;definitions\&quot;: [\n    {\n      \&quot;nodeType\&quot;: \&quot;core.trigger.manual\&quot;,&quot;,
+  &quot;new_string&quot;: &quot;  \&quot;edges\&quot;: [\n    {\n      \&quot;id\&quot;: \&quot;edge_start_output_queryEmployeesByDepartment1_input\&quot;,\n      \&quot;sourceNodeId\&quot;: \&quot;start\&quot;,\n      \&quot;sourcePort\&quot;: \&quot;output\&quot;,\n      \&quot;targetNodeId\&quot;: \&quot;queryEmployeesByDepartment1\&quot;,\n      \&quot;targetPort\&quot;: \&quot;input\&quot;\n    },\n    {\n      \&quot;id\&quot;: \&quot;edge_queryEmployeesByDepartment1_output_end1_input\&quot;,\n      \&quot;sourceNodeId\&quot;: \&quot;queryEmployeesByDepartment1\&quot;,\n      \&quot;sourcePort\&quot;: \&quot;output\&quot;,\n      \&quot;tar… (924 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>The file /work/output/artifacts/skill-flow-jdbc-databricks-query/DatabricksQuery/DatabricksQuery/DatabricksQuery.flow has been updated successfully. (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#67</span>
+      <span class="tool-name">Edit</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">526ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;replace_all&quot;: false,
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-jdbc-databricks-query/DatabricksQuery/DatabricksQuery/DatabricksQuery.flow&quot;,
+  &quot;old_string&quot;: &quot;  \&quot;variables\&quot;: {\n    \&quot;nodes\&quot;: [&quot;,
+  &quot;new_string&quot;: &quot;  \&quot;variables\&quot;: {\n    \&quot;globals\&quot;: [\n      {\n        \&quot;id\&quot;: \&quot;queryResult\&quot;,\n        \&quot;direction\&quot;: \&quot;out\&quot;,\n        \&quot;type\&quot;: \&quot;object\&quot;,\n        \&quot;description\&quot;: \&quot;Aggregate query result: employees grouped by department (2+ employees), ordered by average salary.\&quot;\n      }\n    ],\n    \&quot;nodes\&quot;: [&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>The file /work/output/artifacts/skill-flow-jdbc-databricks-query/DatabricksQuery/DatabricksQuery/DatabricksQuery.flow has been updated successfully. (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#68</span>
+      <span class="tool-name">Edit</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">165ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;replace_all&quot;: false,
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-jdbc-databricks-query/DatabricksQuery/DatabricksQuery/DatabricksQuery.flow&quot;,
+  &quot;old_string&quot;: &quot;  \&quot;layout\&quot;: {\n    \&quot;nodes\&quot;: {\n      \&quot;start\&quot;: {&quot;,
+  &quot;new_string&quot;: &quot;  \&quot;layout\&quot;: {\n    \&quot;nodes\&quot;: {\n      \&quot;end1\&quot;: {\n        \&quot;position\&quot;: {\n          \&quot;x\&quot;: 0,\n          \&quot;y\&quot;: 0\n        },\n        \&quot;size\&quot;: {\n          \&quot;width\&quot;: 96,\n          \&quot;height\&quot;: 96\n        }\n      },\n      \&quot;start\&quot;: {&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>The file /work/output/artifacts/skill-flow-jdbc-databricks-query/DatabricksQuery/DatabricksQuery/DatabricksQuery.flow has been updated successfully. (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#69</span>
+      <span class="tool-name">TaskUpdate</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">4ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;taskId&quot;: &quot;2&quot;,
+  &quot;status&quot;: &quot;completed&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Updated task #2 status</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#70</span>
+      <span class="tool-name">TaskUpdate</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">3ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;taskId&quot;: &quot;3&quot;,
+  &quot;status&quot;: &quot;completed&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Updated task #3 status</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#71</span>
+      <span class="tool-name">TaskUpdate</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">6ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;taskId&quot;: &quot;4&quot;,
+  &quot;status&quot;: &quot;in_progress&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Updated task #4 status</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#72</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">5.94s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-jdbc-databricks-query/DatabricksQuery/DatabricksQuery \\\n  &amp;&amp; python3 /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/scripts/audit_flow.py \&quot;DatabricksQuery.flow\&quot; --json-out /tmp/audit_findings.json \\\n  &amp;&amp; echo \&quot;AUDIT_EXIT: $?\&quot; \\\n  ; uip maestro flow validate \&quot;DatabricksQuery.flow\&quot; --output json \\\n  &amp;&amp; uip maestro flow format \&quot;DatabricksQuery.flow… (15 more chars)&quot;,
+  &quot;description&quot;: &quot;Run audit, validate, and format the flow&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>topology      0 error(s), 0 warning(s), 0 info
+expressions   0 error(s), 0 warning(s), 0 info
+jint          0 error(s), 0 warning(s), 0 info
+bindings      0 error(s), 0 warning(s), 2 info
+    info    UNUSED_BINDING             bindings                                 no resource node needs (resourceKey=4e5d613a-96be-4ba7-b86b-ebe225d192f1, name=FolderKey)
+    info    UNUSED_BINDING             bindings                                 no resource node needs (resourceKey=4e5d613a-96be-4ba7-b86b-ebe225d192f1, name=uipath-uipath-jdbc connection)
+runtime-gaps  0 error(s), 2 warning(s), 0 info
+    warning LAYOUT_SIZE_MISMATCH       queryEmployeesByDepartment1              size NonexNone disagrees with this node&#x27;s shape (96x96); Studio Web renders it misshapen until `flow format` runs
+    warning LAYOUT_SIZE_MISMATCH       start                                    size NonexNone disagrees with this node&#x27;s shape (96x96); Studio Web renders it misshapen until `flow format` runs
+full findings: /tmp/audit_findings.json
+audit: clean
+AUDIT_EXIT: 0
+[ManifestClient] fetchDynamicNodes ok: total=315 agent context nodes=2 external agent nodes=7 orchestrator nodes=261 IXP nodes=45
+{
+  &quot;Result&quot;: &quot;Succe
+
+… (truncated, 518 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#73</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">17ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -n \&quot;UNUSED_BINDING\\|resource node\\|def check\&quot; /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/scripts/check_bindings.py | head -30&quot;,
+  &quot;description&quot;: &quot;Check how audit script determines UNUSED_BINDING - likely only checks resource nodes, not connectors&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>2:&quot;&quot;&quot;Audit (and optionally emit) the top-level `bindings[]` pairs that uipath.core.* resource nodes need.
+4:For every resource node the script reads its definition&#x27;s model.bindings.resourceKey /
+101:            out.append(fl.finding(&quot;info&quot;, &quot;UNUSED_BINDING&quot;,
+102:                                  &quot;no resource node needs (resourceKey=%s, name=%s)&quot; % key, path=&quot;bindings&quot;))</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#74</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">6ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-jdbc-databricks-query/DatabricksQuery/DatabricksQuery/DatabricksQuery.flow&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Wasted call — file unchanged since your last Read. Refer to that earlier tool_result instead.</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#75</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-err">ERROR</span>
+      <span class="tool-duration">755ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-jdbc-databricks-query/DatabricksQuery/DatabricksQuery \\\n  &amp;&amp; uip maestro flow debug \&quot;DatabricksQuery.flow\&quot; --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Debug the flow end-to-end&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Exit code 1
+{
+  &quot;Result&quot;: &quot;Failure&quot;,
+  &quot;Message&quot;: &quot;Not a valid flow project directory: missing project.uiproj in /work/output/artifacts/skill-flow-jdbc-databricks-query/DatabricksQuery/DatabricksQuery/DatabricksQuery.flow&quot;,
+  &quot;Instructions&quot;: &quot;Check that the flow project is valid, the selected folder is accessible, and Studio Web debug is available, then retry.&quot;,
+  &quot;ErrorCode&quot;: &quot;unknown_error&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}</pre>
+    <h4>Error</h4><pre>Exit code 1
+{
+  &quot;Result&quot;: &quot;Failure&quot;,
+  &quot;Message&quot;: &quot;Not a valid flow project directory: missing project.uiproj in /work/output/artifacts/skill-flow-jdbc-databricks-query/DatabricksQuery/DatabricksQuery/DatabricksQuery.flow&quot;,
+  &quot;Instructions&quot;: &quot;Check that the flow project is valid, the selected folder is accessible, and Studio Web debug is available, then retry.&quot;,
+  &quot;ErrorCode&quot;: &quot;unknown_error&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}</pre>
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#76</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">657ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow debug --help 2&gt;&amp;1 | head -40&quot;,
+  &quot;description&quot;: &quot;Check flow debug usage syntax&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>                             uip maestro flow debug                             
+  Debug a flow project by uploading to Studio Web and running a debug session   
+                Use --help with nested commands for more detail.                
+
+┌─ Usage ──────────────────────────────────────────────────────────────────────┐
+│ uip maestro flow debug [options] &lt;project-path&gt;                              │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Arguments ──────────────────────────────────────────────────────────────────┐
+│ project-path   Path to the flow project directory (must contain              │
+│                project.uiproj)                                               │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Options ────────────────────────────────────────────────────────────────────┐
+│ --folder-id &lt;id&gt;               Orchestrator folder ID (OrganizationUnitId)   │
+│                                as a positive integer. Mutually exclusive     │
+│                                with --folder-key/--folder-path.              │
+│                                Auto-detected if none are prov
+
+… (truncated, 1799 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#77</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">22.35s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-jdbc-databricks-query/DatabricksQuery/DatabricksQuery \\\n  &amp;&amp; uip maestro flow debug \&quot;.\&quot; --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Debug the flow using project directory&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>2026-08-19 00:25:14 INFO  [ResourceBuilder:ReconcileProjectsCommandHandler] Reconcile projects for solution {solutionKey} [object Object]
+2026-08-19 00:25:14 INFO  [ResourceBuilder:MultiFileSolutionDefinitionProvider] Reading multi-file solution definition for solution %s /tmp/.flow-debug-staging-DatabricksQuery-1787099114480
+2026-08-19 00:25:14 INFO  [ResourceBuilder:SolutionsMetadataReader] Reading metadata from %s. SolutionsMetadataReader
+2026-08-19 00:25:14 INFO  [ResourceBuilder:MultiFileSolutionDefinitionProvider] Reading multi-file solution definition for solution %s /tmp/.flow-debug-staging-DatabricksQuery-1787099114480
+2026-08-19 00:25:15 INFO  [ResourceBuilder:AddOrUpdateResourceToSolutionCommandHandler] Add or update resource 4e5d613a-96be-4ba7-b86b-ebe225d192f1 of type connection to solution.
+2026-08-19 00:25:15 INFO  [ResourceBuilder:SolutionsMetadataReader] Reading metadata from %s. SolutionsMetadataReader
+2026-08-19 00:25:15 INFO  [ResourceBuilder:ImportResourceHelper] ExportResourceAsync: Exporting resource 4e5d613a-96be-4ba7-b86b-ebe225d192f1 from integrationservice.uipath.com
+2026-08-19 00:25:15 INFO  [ResourceBuilder:ImportResourceHelper] ExportResourceAsync: Res
+
+… (truncated, 8287 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#78</span>
+      <span class="tool-name">TaskUpdate</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">10ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;taskId&quot;: &quot;4&quot;,
+  &quot;status&quot;: &quot;completed&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Updated task #4 status</pre>
+    
+  </div>
+</details>
+
+</div>
+
+<h2>Command Telemetry</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Total</div><div class="value">79</div></div>
+    <div class="stat"><div class="label">Successful</div><div class="value">73 (92%)</div></div>
+    <div class="stat"><div class="label">Failed</div><div class="value">6</div></div>
+    <div class="stat"><div class="label">Avg / cmd</div><div class="value">2.36s</div></div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 2fr;gap:16px;margin-top:12px">
+    <div>
+      <h4>By Tool</h4>
+      <table>
+        <thead><tr><th>Tool</th><th>Count</th></tr></thead>
+        <tbody><tr><td class='mono'>Bash</td><td>48</td></tr><tr><td class='mono'>Read</td><td>12</td></tr><tr><td class='mono'>TaskUpdate</td><td>6</td></tr><tr><td class='mono'>TaskCreate</td><td>4</td></tr><tr><td class='mono'>Edit</td><td>4</td></tr><tr><td class='mono'>Glob</td><td>2</td></tr><tr><td class='mono'>Skill</td><td>1</td></tr><tr><td class='mono'>Grep</td><td>1</td></tr><tr><td class='mono'>Write</td><td>1</td></tr></tbody>
+      </table>
+    </div>
+    <div>
+      <h4>Slowest</h4>
+      <table>
+        <thead><tr><th>Tool</th><th>Duration</th><th>Parameters</th></tr></thead>
+        <tbody><tr><td class='mono'>Bash</td><td>22.35s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;cd /work/output/artifacts/skill-flow-...</td></tr><tr><td class='mono'>Bash</td><td>16.43s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;cd /work/output/artifacts/skill-flow-...</td></tr><tr><td class='mono'>Bash</td><td>15.35s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;cd /work/output/artifacts/skill-flow-...</td></tr><tr><td class='mono'>Bash</td><td>15.28s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;cd /work/output/artifacts/skill-flow-...</td></tr><tr><td class='mono'>Bash</td><td>14.21s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip solution init &quot;DatabricksQuery&quot; -...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+  <p><strong>Most Common Pattern:</strong> <code>Bash → Bash → Bash</code></p><p><strong>Skill Tool Invoked:</strong> 1 time(s)</p>
+</div>
+
+<h2>Generation Metrics</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Total Latency</div><div class="value">10m 7s</div></div>
+    <div class="stat"><div class="label">Turns</div><div class="value">1</div></div>
+    <div class="stat"><div class="label">Assistant Turns</div><div class="value">138</div></div>
+    <div class="stat"><div class="label">Avg Turn Latency</div><div class="value">10m 4s</div></div>
+    
+  </div>
+</div>
+
+<h2>Token Usage</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Input (uncached)</div><div class="value">706</div></div>
+    <div class="stat"><div class="label">Output</div><div class="value">33,306</div></div>
+    <div class="stat"><div class="label">Cache Write</div><div class="value">167,023</div></div>
+    <div class="stat"><div class="label">Cache Read</div><div class="value">8,998,160</div></div>
+    <div class="stat"><div class="label">Total</div><div class="value">9,199,195</div></div>
+    <div class="stat"><div class="label">Cost</div><div class="value">$3.8275</div></div>
+  </div>
+</div>
+
+<h2>Agent Settings</h2>
+<div class="card" style="padding:0">
+  <table>
+    <tbody><tr><td class='mono dim'>Permission Mode</td><td>acceptEdits</td></tr><tr><td class='mono dim'>Allowed Tools</td><td>Skill, Bash, Read, Write, Edit, Glob, Grep</td></tr><tr><td class='mono dim'>Model</td><td>us.anthropic.claude-sonnet-5</td></tr><tr><td class='mono dim'>Max Turns</td><td>120</td></tr><tr><td class='mono dim'>System Prompt</td><td>You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted. </td></tr><tr><td class='mono dim'>System Prompt Mode</td><td>append</td></tr><tr><td class='mono dim'>Plugins</td><td>/home/azureuser/projects/skills/tmp</td></tr></tbody>
+  </table>
+</div>
+
+<h2>Environment</h2>
+<div class="card" style="padding:0">
+  <table>
+    <tbody><tr><td class='mono dim'>git_commit</td><td>unknown</td></tr><tr><td class='mono dim'>skills_git_commit</td><td>unknown</td></tr><tr><td class='mono dim'>cli_version</td><td>1.201.0-dev.8272</td></tr><tr><td class='mono dim'>tool_plugins</td><td>{&#x27;admin-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;agent-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;agenthub-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;aops-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;api-workflow-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;automation-hub-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;codedagent-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;codedapp-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;coder-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;context-grounding-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;conversational-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;data-fabric-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;docsai-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;function-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;gov-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;guardrails-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;insights-tool&#x27;: &#x27;1.201.0-dev.8276&#x27;, &#x27;integrationservice-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;ixp-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;llm-gateway-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;llmgw-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;maestro-tool&#x27;: &#x27;1.201.0-dev.8275&#x27;, &#x27;model-hub-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;orchestrator-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;platform-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;pm-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;rpa-legacy-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;rpa-tool&#x27;: &#x27;1.201.0-dev.20260809.3&#x27;, &#x27;solution-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;tasks-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;test-manager-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;traces-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;vertical-solutions-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;}</td></tr><tr><td class='mono dim'>coder_eval</td><td>0.9.6</td></tr><tr><td class='mono dim'>claude_code_cli</td><td>2.1.177 (Claude Code)</td></tr><tr><td class='mono dim'>uv</td><td>uv 0.12.5 (x86_64-unknown-linux-gnu)</td></tr><tr><td class='mono dim'>anthropic</td><td>0.122.0</td></tr><tr><td class='mono dim'>openai</td><td>3.2.0</td></tr><tr><td class='mono dim'>pydantic</td><td>2.12.5</td></tr><tr><td class='mono dim'>api_routing</td><td>aws_bedrock</td></tr><tr><td class='mono dim'>eval_routing</td><td>aws_bedrock</td></tr><tr><td class='mono dim'>aws_region</td><td>us-east-2</td></tr><tr><td class='mono dim'>bedrock_model</td><td>us.anthropic.claude-sonnet-4-6</td></tr><tr><td class='mono dim'>system_prompt_semantics</td><td>append</td></tr></tbody>
+  </table>
+</div>
+
+<footer>Generated by coder_eval · 2026-08-19T00:25:48</footer>
+</div>
+<script>
+function toggleTheme() {
+  document.documentElement.classList.toggle('light');
+  try {
+    const mode = document.documentElement.classList.contains('light') ? 'light' : 'dark';
+    localStorage.setItem('coder-eval-theme', mode);
+  } catch (e) { /* ignore */ }
+}
+(function() {
+  try {
+    if (localStorage.getItem('coder-eval-theme') === 'light') {
+      document.documentElement.classList.add('light');
+    }
+  } catch (e) { /* ignore */ }
+})();
+</script>
+</body>
+</html>

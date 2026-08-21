@@ -1,0 +1,12 @@
+{
+  "connectionId": "<REPLACE_WITH_CONNECTION_ID>",
+  "folderKey": "<REPLACE_WITH_FOLDER_KEY>",
+  "method": "POST",
+  "endpoint": "/resourceGroup/resource/{resourceGroupName}",
+  "pathParameters": {
+    "resourceGroupName": "=js:$vars.resourceGroupName"
+  },
+  "bodyParameters": {
+    "location": "=js:$vars.location"
+  }
+}

@@ -1,0 +1,104 @@
+{
+  "version": "1.1.0",
+  "settings": {
+    "model": "gpt-5.4",
+    "maxTokens": 128000,
+    "temperature": 0,
+    "engine": "basic-v2",
+    "maxIterations": 2,
+    "mode": "standard"
+  },
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "start__output__customerName": {
+        "type": "string",
+        "description": "The customer's full name"
+      },
+      "start__output__invoiceNumber": {
+        "type": "string",
+        "description": "The invoice number being disputed"
+      },
+      "start__output__creditAmount": {
+        "type": "number",
+        "description": "The approved credit amount"
+      }
+    },
+    "required": [
+      "start__output__customerName",
+      "start__output__invoiceNumber",
+      "start__output__creditAmount"
+    ]
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "subject": {
+        "type": "string",
+        "description": "The email subject line"
+      },
+      "body": {
+        "type": "string",
+        "description": "The full email body text"
+      }
+    },
+    "required": [
+      "subject",
+      "body"
+    ]
+  },
+  "metadata": {
+    "storageVersion": "50.0.0",
+    "isConversational": false,
+    "showProjectCreationExperience": false
+  },
+  "type": "lowCode",
+  "guardrails": [],
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a billing dispute resolution specialist. Draft professional, empathetic customer-facing emails resolving billing disputes. The email body MUST explicitly state the invoice number and the approved credit amount. Return a JSON object with exactly two fields: 'subject' (a concise email subject line) and 'body' (the full email body text addressed to the customer by name).",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "You are a billing dispute resolution specialist. Draft professional, empathetic customer-facing emails resolving billing disputes. The email body MUST explicitly state the invoice number and the approved credit amount. Return a JSON object with exactly two fields: 'subject' (a concise email subject line) and 'body' (the full email body text addressed to the customer by name)."
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "Draft a billing dispute resolution email for the following case:\n\nCustomer Name: {{input.start__output__customerName}}\nInvoice Number: {{input.start__output__invoiceNumber}}\nApproved Credit Amount: ${{input.start__output__creditAmount}}\n\nWrite a professional resolution email that explicitly states the invoice number and the approved credit amount.",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "Draft a billing dispute resolution email for the following case:\n\nCustomer Name: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__customerName"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\nInvoice Number: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__invoiceNumber"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\nApproved Credit Amount: $"
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__creditAmount"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\nWrite a professional resolution email that explicitly states the invoice number and the approved credit amount."
+        }
+      ]
+    }
+  ],
+  "projectId": "aece11ec-d7a7-44e5-8b3d-fc00fd7fe4ad"
+}

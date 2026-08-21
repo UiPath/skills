@@ -1,0 +1,96 @@
+{
+  "version": "1.1.0",
+  "settings": {
+    "model": "gpt-4.1-2025-04-14",
+    "maxTokens": 4096,
+    "temperature": 0,
+    "engine": "basic-v2",
+    "maxIterations": 3,
+    "mode": "standard"
+  },
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "start__output__emailSubject": {
+        "type": "string",
+        "description": "The subject line of the inbound support email"
+      },
+      "start__output__emailBody": {
+        "type": "string",
+        "description": "The full body text of the inbound support email"
+      }
+    }
+  },
+  "outputSchema": {
+    "type": "object",
+    "required": [
+      "category",
+      "priority"
+    ],
+    "properties": {
+      "category": {
+        "type": "string",
+        "description": "Support category: billing, technical, account, feature_request, or general_inquiry",
+        "enum": [
+          "billing",
+          "technical",
+          "account",
+          "feature_request",
+          "general_inquiry"
+        ]
+      },
+      "priority": {
+        "type": "string",
+        "description": "Priority level: critical, high, medium, or low",
+        "enum": [
+          "critical",
+          "high",
+          "medium",
+          "low"
+        ]
+      }
+    }
+  },
+  "metadata": {
+    "storageVersion": "50.0.0",
+    "isConversational": false,
+    "showProjectCreationExperience": false
+  },
+  "type": "lowCode",
+  "guardrails": [],
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are an expert support email triage agent. Your sole task is to classify inbound customer support emails into a category and priority.\n\nCategories (pick exactly one):\n- billing: payment issues, invoices, charges, refunds, subscription questions\n- technical: bugs, errors, crashes, installation problems, performance issues\n- account: login issues, password resets, account access, profile changes\n- feature_request: suggestions, enhancements, new capability asks\n- general_inquiry: questions about product, pricing, policies, or other topics not covered above\n\nPriority levels (pick exactly one):\n- critical: service outage, data loss, security breach, or business-blocking issue\n- high: significant functional impact, revenue at risk, or VIP customer issue\n- medium: notable issue with a workaround available, or moderate urgency\n- low: general questions, minor requests, cosmetic issues, or feature requests\n\nOutput contract: Return a JSON object with exactly two string fields: \"category\" and \"priority\". Use only the values listed above. Do not include any explanation, preamble, or additional fields.\n\nStop criteria: Classify the email in a single step. Do not call any tools. Do not iterate.",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "You are an expert support email triage agent. Your sole task is to classify inbound customer support emails into a category and priority.\n\nCategories (pick exactly one):\n- billing: payment issues, invoices, charges, refunds, subscription questions\n- technical: bugs, errors, crashes, installation problems, performance issues\n- account: login issues, password resets, account access, profile changes\n- feature_request: suggestions, enhancements, new capability asks\n- general_inquiry: questions about product, pricing, policies, or other topics not covered above\n\nPriority levels (pick exactly one):\n- critical: service outage, data loss, security breach, or business-blocking issue\n- high: significant functional impact, revenue at risk, or VIP customer issue\n- medium: notable issue with a workaround available, or moderate urgency\n- low: general questions, minor requests, cosmetic issues, or feature requests\n\nOutput contract: Return a JSON object with exactly two string fields: \"category\" and \"priority\". Use only the values listed above. Do not include any explanation, preamble, or additional fields.\n\nStop criteria: Classify the email in a single step. Do not call any tools. Do not iterate."
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "Classify the following support email.\n\nSubject: {{input.start__output__emailSubject}}\n\nBody:\n{{input.start__output__emailBody}}",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "Classify the following support email.\n\nSubject: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__emailSubject"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\nBody:\n"
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__emailBody"
+        }
+      ]
+    }
+  ],
+  "projectId": "02801aec-3a8a-4c26-a1db-75f726986ab9"
+}

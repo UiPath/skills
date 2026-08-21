@@ -1,0 +1,6 @@
+17:31:33 [INFO   ] [default/skill-flow-inline-agent-robust/01] orchestrator: API routing: aws_bedrock
+17:38:04 [INFO   ] [default/skill-flow-inline-agent-robust/01] evaluation.checker: Criterion 'command_executed' FAILED (score=0.00, threshold=1.00): Matched 0/1 required commands (filters: tool_name=Bash, pattern=/(uip|\$UIP)\s+agent\s+model\s+list/)
+17:38:05 [INFO   ] [default/skill-flow-inline-agent-robust/01] orchestrator: Success criteria: 5/6 passed, weighted score: 0.905
+17:38:05 [INFO   ] [default/skill-flow-inline-agent-robust/01] orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+17:38:05 [INFO   ] [default/skill-flow-inline-agent-robust/01] orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-inline-agent-robust
+17:38:05 [INFO   ] [default/skill-flow-inline-agent-robust/01] orchestrator: Task finished: status=FAILURE duration=393.5s score=0.905 iterations=1

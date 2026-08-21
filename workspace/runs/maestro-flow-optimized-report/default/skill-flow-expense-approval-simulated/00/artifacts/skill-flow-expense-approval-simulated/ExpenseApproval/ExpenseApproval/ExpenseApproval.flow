@@ -1,0 +1,397 @@
+{
+  "id": "a0823dcd-c1fc-4e3a-a738-e63f1c750ea6",
+  "version": "1.8",
+  "name": "ExpenseApproval",
+  "runtime": "maestro",
+  "nodes": [
+    {
+      "id": "start",
+      "type": "core.trigger.manual",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Manual trigger"
+      },
+      "inputs": {
+        "entryPointId": "01e94b24-175d-4ed6-b206-d87b5d596785",
+        "isDefaultEntryPoint": true
+      }
+    },
+    {
+      "id": "fetchExpense1",
+      "type": "core.action.script",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Fetch Expense Details"
+      },
+      "inputs": {
+        "script": "// Mock: simulates fetching expense details from an external system\nreturn {\n  expenseId: 'EXP-1042',\n  submitterName: 'Jane Smith',\n  amount: 485.00,\n  category: 'Travel'\n};"
+      }
+    },
+    {
+      "id": "expenseApproval1",
+      "type": "uipath.human-in-the-loop.quick-form",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Expense Report Approval"
+      },
+      "inputs": {
+        "title": "Expense Report Approval",
+        "recipient": {
+          "channels": ["Email", "ActionCenter"],
+          "connections": {},
+          "assignee": {
+            "type": "group",
+            "value": "expense-approvers"
+          }
+        },
+        "priority": "Medium",
+        "schema": {
+          "schemaId": "b1c4e7a2-3f9d-4b8e-a5c2-7d1f4e9b3c6a",
+          "fields": [
+            {
+              "id": "expenseid",
+              "label": "Expense ID",
+              "type": "string",
+              "direction": "input",
+              "binding": "vars.fetchExpense1.output.expenseId"
+            },
+            {
+              "id": "submittername",
+              "label": "Submitter Name",
+              "type": "string",
+              "direction": "input",
+              "binding": "vars.fetchExpense1.output.submitterName"
+            },
+            {
+              "id": "amount",
+              "label": "Amount",
+              "type": "number",
+              "direction": "input",
+              "binding": "vars.fetchExpense1.output.amount"
+            },
+            {
+              "id": "category",
+              "label": "Category",
+              "type": "string",
+              "direction": "input",
+              "binding": "vars.fetchExpense1.output.category"
+            },
+            {
+              "id": "reason",
+              "label": "Reason",
+              "type": "string",
+              "direction": "output",
+              "variable": "vars.reason",
+              "required": false
+            }
+          ],
+          "outcomes": [
+            { "id": "approve", "name": "Approve", "type": "string", "isPrimary": true,  "action": "Continue" },
+            { "id": "reject",  "name": "Reject",  "type": "string", "isPrimary": false, "action": "End" }
+          ]
+        }
+      },
+      "outputs": {
+        "output": {
+          "type": "object",
+          "description": "Task result data",
+          "source": "=result",
+          "var": "output",
+          "properties": {
+            "reason": { "type": "string" },
+            "Action": { "type": "string", "enum": ["Approve", "Reject"], "default": "Approve" }
+          }
+        },
+        "status": {
+          "type": "string",
+          "description": "Task completion status",
+          "source": "=result.Action",
+          "var": "status",
+          "enum": ["Approve", "Reject"],
+          "default": "Approve"
+        }
+      }
+    },
+    {
+      "id": "logOutcome1",
+      "type": "core.action.script",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Log Outcome"
+      },
+      "inputs": {
+        "script": "const decision = $vars.expenseApproval1.status;\nconst reason = $vars.expenseApproval1.output.reason;\nconst expenseId = $vars.fetchExpense1.output.expenseId;\nconst submitterName = $vars.fetchExpense1.output.submitterName;\nconsole.log(`Expense ${expenseId} (${submitterName}): ${decision}${reason ? ' — Reason: ' + reason : ''}`);\nreturn { expenseId, submitterName, decision, reason: reason || null };"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "start-output-fetchExpense1-input",
+      "sourceNodeId": "start",
+      "sourcePort": "output",
+      "targetNodeId": "fetchExpense1",
+      "targetPort": "input"
+    },
+    {
+      "id": "fetchExpense1-success-expenseApproval1-input",
+      "sourceNodeId": "fetchExpense1",
+      "sourcePort": "success",
+      "targetNodeId": "expenseApproval1",
+      "targetPort": "input"
+    },
+    {
+      "id": "expenseApproval1-completed-logOutcome1-input",
+      "sourceNodeId": "expenseApproval1",
+      "sourcePort": "completed",
+      "targetNodeId": "logOutcome1",
+      "targetPort": "input"
+    }
+  ],
+  "definitions": [
+    {
+      "nodeType": "core.trigger.manual",
+      "version": "1.0",
+      "category": "trigger",
+      "description": "Start workflow manually",
+      "tags": ["trigger", "start", "manual"],
+      "sortOrder": 40,
+      "display": { "label": "Manual trigger", "icon": "play", "shape": "circle" },
+      "handleConfiguration": [
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "output",
+              "type": "source",
+              "handleType": "output",
+              "showButton": true,
+              "constraints": { "forbiddenTargetCategories": ["trigger"] }
+            }
+          ],
+          "visible": true
+        }
+      ],
+      "model": { "type": "bpmn:StartEvent", "entryPointId": true },
+      "outputDefinition": {
+        "output": {
+          "type": "object",
+          "description": "Data passed when manually triggering the workflow.",
+          "source": "null",
+          "var": "output"
+        }
+      },
+      "toolbarExtensions": {
+        "design": {
+          "actions": [
+            { "id": "change-trigger-type", "icon": "square-mouse-pointer", "label": "Change trigger type" }
+          ]
+        }
+      }
+    },
+    {
+      "nodeType": "core.action.script",
+      "version": "1.0",
+      "category": "data-operations",
+      "description": "Run custom JavaScript code",
+      "tags": ["code", "javascript", "python"],
+      "sortOrder": 35,
+      "supportsErrorHandling": true,
+      "display": { "label": "Script", "icon": "code" },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            { "id": "input", "type": "target", "handleType": "input" }
+          ]
+        },
+        {
+          "position": "right",
+          "handles": [
+            { "id": "success", "type": "source", "handleType": "output" },
+            {
+              "id": "error",
+              "label": "Error",
+              "type": "source",
+              "handleType": "output",
+              "visible": "{inputs.errorHandlingEnabled}",
+              "constraints": { "maxConnections": 1 }
+            }
+          ]
+        }
+      ],
+      "debug": { "runtime": "clientScript" },
+      "model": { "type": "bpmn:ScriptTask" },
+      "inputDefinition": {
+        "type": "object",
+        "properties": {
+          "script": {
+            "type": "string",
+            "minLength": 1,
+            "errorMessage": "A script function is required",
+            "validationSeverity": "warning"
+          }
+        },
+        "required": ["script"]
+      },
+      "inputDefaults": { "script": "" },
+      "outputDefinition": {
+        "output": {
+          "type": "object",
+          "description": "The return value of the script",
+          "source": "=result.response",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails",
+          "source": "=Error",
+          "var": "error",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "required": ["code", "message", "detail", "category", "status"],
+            "properties": {
+              "code":     { "type": "string", "description": "Error code as a string" },
+              "message":  { "type": "string", "description": "High-level error message" },
+              "detail":   { "type": "string", "description": "Detailed error description" },
+              "category": { "type": "string", "description": "Error category" },
+              "status":   { "type": "integer", "description": "HTTP status code" }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "form": {
+        "id": "script-properties",
+        "title": "Script configuration",
+        "sections": [
+          {
+            "id": "script",
+            "title": "Script",
+            "collapsible": true,
+            "defaultExpanded": true,
+            "fields": [
+              {
+                "name": "inputs.script",
+                "type": "custom",
+                "component": "script-editor",
+                "componentProps": {
+                  "language": "javascript",
+                  "returnType": "any",
+                  "validationMode": "script",
+                  "minHeight": 200
+                },
+                "label": "Code",
+                "description": "JavaScript expression that returns a result object"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "nodeType": "uipath.human-in-the-loop.quick-form",
+      "version": "1.0",
+      "category": "human-task",
+      "description": "Fast inline approvals with inline debug",
+      "tags": ["human-task", "hitl", "human-in-the-loop", "quick-form", "approval"],
+      "sortOrder": 27,
+      "display": { "label": "Quick Form", "icon": "users", "shape": "square" },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            { "id": "input", "type": "target", "handleType": "input" }
+          ],
+          "visible": true
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "completed",
+              "label": "Completed",
+              "type": "source",
+              "handleType": "output",
+              "showButton": true,
+              "constraints": { "forbiddenTargetCategories": ["trigger"] }
+            }
+          ],
+          "visible": true
+        }
+      ],
+      "model": { "type": "bpmn:UserTask", "serviceType": "Actions.HITL" },
+      "inputDefaults": {
+        "schema": {
+          "fields": [],
+          "outcomes": [
+            { "id": "submit", "name": "Submit", "type": "string", "isPrimary": true, "action": "Continue" }
+          ]
+        },
+        "recipient": {
+          "channels": ["Email", "ActionCenter"],
+          "connections": {},
+          "assignee": { "type": "group" }
+        }
+      },
+      "outputDefinition": {
+        "output": { "type": "object", "description": "Task result data", "source": "=result", "var": "output" },
+        "status": { "type": "string", "description": "Task completion status", "source": "=result.Action", "var": "status" }
+      }
+    }
+  ],
+  "variables": {
+    "nodes": [
+      {
+        "id": "start.output",
+        "type": "object",
+        "description": "Data passed when manually triggering the workflow.",
+        "binding": { "nodeId": "start", "outputId": "output" }
+      },
+      {
+        "id": "fetchExpense1.output",
+        "type": "object",
+        "description": "The return value of the script",
+        "binding": { "nodeId": "fetchExpense1", "outputId": "output" }
+      },
+      {
+        "id": "fetchExpense1.error",
+        "type": "object",
+        "description": "Error information if the node fails",
+        "binding": { "nodeId": "fetchExpense1", "outputId": "error" }
+      },
+      {
+        "id": "expenseApproval1.output",
+        "type": "object",
+        "description": "Task result data",
+        "binding": { "nodeId": "expenseApproval1", "outputId": "output" }
+      },
+      {
+        "id": "expenseApproval1.status",
+        "type": "string",
+        "description": "Task completion status",
+        "binding": { "nodeId": "expenseApproval1", "outputId": "status" }
+      },
+      {
+        "id": "logOutcome1.output",
+        "type": "object",
+        "description": "The return value of the script",
+        "binding": { "nodeId": "logOutcome1", "outputId": "output" }
+      },
+      {
+        "id": "logOutcome1.error",
+        "type": "object",
+        "description": "Error information if the node fails",
+        "binding": { "nodeId": "logOutcome1", "outputId": "error" }
+      }
+    ]
+  },
+  "layout": {
+    "nodes": {
+      "start":            { "position": { "x": 128, "y": 144 } },
+      "fetchExpense1":    { "position": { "x": 384, "y": 144 } },
+      "expenseApproval1": { "position": { "x": 640, "y": 144 } },
+      "logOutcome1":      { "position": { "x": 896, "y": 144 } }
+    }
+  }
+}

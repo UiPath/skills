@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "DatabricksQuery",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "46cc69dd-4c93-4fc6-ac89-da25d1e3338d",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "DatabricksQuery"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Flow",
+      "name": "DatabricksQuery",
+      "package": {
+        "key": "2c21ddb1-0da8-4b4f-8873-bf7d2c589b16"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "dd52cc43-30a8-4c1b-ada3-1fbbf46afba5",
+    "files": []
+  }
+}

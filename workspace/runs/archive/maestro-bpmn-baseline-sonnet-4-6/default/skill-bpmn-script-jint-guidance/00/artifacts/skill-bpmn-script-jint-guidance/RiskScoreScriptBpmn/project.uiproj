@@ -1,0 +1,8 @@
+{
+  "name": "RiskScoreScriptBpmn",
+  "description": "Calculates a risk score from amount and daysOverdue inputs using a BPMN script task.",
+  "main": "RiskScoreScriptBpmn.bpmn",
+  "contentType": "ProcessOrchestration",
+  "projectVersion": "1.0.0",
+  "runtimeOptions": {}
+}

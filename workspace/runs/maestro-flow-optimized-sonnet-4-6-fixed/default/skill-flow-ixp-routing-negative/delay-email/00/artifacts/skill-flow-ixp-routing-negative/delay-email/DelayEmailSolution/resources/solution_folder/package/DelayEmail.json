@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "DelayEmail",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "9c3c7bfb-a233-45ff-bf02-1ac1bea4e885",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "DelayEmail"
+    },
+    "locks": [],
+    "key": "cace3190-7956-480c-85c1-5dff489e5d8d",
+    "files": []
+  }
+}

@@ -1,0 +1,702 @@
+{
+  "id": "50df0d25-b4ab-4b43-b6f5-0c7b5a456d2c",
+  "version": "1.8",
+  "name": "ExpenseApproval",
+  "nodes": [
+    {
+      "id": "start",
+      "type": "core.trigger.manual",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Manual trigger"
+      },
+      "inputs": {
+        "entryPointId": "04ef4d80-1829-477f-9a4c-4fc43320b850",
+        "isDefaultEntryPoint": true
+      }
+    },
+    {
+      "id": "preparePacket",
+      "type": "core.action.script",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Prepare Review Packet"
+      },
+      "inputs": {
+        "script": "const expenseId = $vars.expenseId;\nconst submittedBy = $vars.submittedBy;\nconst amount = $vars.amount;\nconst category = $vars.category;\nreturn {\n  expenseId: expenseId,\n  submittedBy: submittedBy,\n  amount: amount,\n  category: category,\n  summary: `Expense #${expenseId} submitted by ${submittedBy} for $${amount} (${category})`\n};"
+      },
+      "outputs": {
+        "output": {
+          "type": "object",
+          "description": "The return value of the script",
+          "source": "=result.response",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails",
+          "source": "=Error",
+          "var": "error"
+        }
+      }
+    },
+    {
+      "id": "managerReview",
+      "type": "uipath.human-in-the-loop.quick-form",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Manager Review"
+      },
+      "inputs": {
+        "title": "Expense Report Approval",
+        "priority": "Medium",
+        "schema": {
+          "schemaId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+          "fields": [
+            {
+              "id": "expenseid",
+              "label": "Expense ID",
+              "type": "text",
+              "direction": "input",
+              "binding": "vars.preparePacket.output.expenseId"
+            },
+            {
+              "id": "submittedby",
+              "label": "Submitted By",
+              "type": "text",
+              "direction": "input",
+              "binding": "vars.preparePacket.output.submittedBy"
+            },
+            {
+              "id": "amount",
+              "label": "Amount ($)",
+              "type": "number",
+              "direction": "input",
+              "binding": "vars.preparePacket.output.amount"
+            },
+            {
+              "id": "category",
+              "label": "Category",
+              "type": "text",
+              "direction": "input",
+              "binding": "vars.preparePacket.output.category"
+            },
+            {
+              "id": "comments",
+              "label": "Manager Comments",
+              "type": "text",
+              "direction": "output",
+              "variable": "vars.managerComments"
+            }
+          ],
+          "outcomes": [
+            {
+              "id": "approve",
+              "name": "Approve",
+              "type": "string",
+              "isPrimary": true,
+              "action": "Continue"
+            },
+            {
+              "id": "reject",
+              "name": "Reject",
+              "type": "string",
+              "isPrimary": false,
+              "action": "Continue"
+            }
+          ]
+        },
+        "recipient": {
+          "channels": [
+            "Email",
+            "ActionCenter"
+          ],
+          "connections": {},
+          "assignee": {
+            "type": "group",
+            "name": "expense-approvers"
+          }
+        }
+      },
+      "outputs": {
+        "output": {
+          "type": "object",
+          "description": "Task result data",
+          "source": "=result",
+          "var": "output",
+          "properties": {
+            "comments": {
+              "type": "string"
+            },
+            "Action": {
+              "type": "string",
+              "enum": [
+                "Approve",
+                "Reject"
+              ],
+              "default": "Approve"
+            }
+          }
+        },
+        "status": {
+          "type": "string",
+          "description": "Task completion status",
+          "source": "=result.Action",
+          "var": "status",
+          "enum": [
+            "Approve",
+            "Reject"
+          ],
+          "default": "Approve"
+        }
+      }
+    },
+    {
+      "id": "logDecision",
+      "type": "core.action.script",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Log Decision"
+      },
+      "inputs": {
+        "script": "const expenseId = $vars.preparePacket.output.expenseId;\nconst submittedBy = $vars.preparePacket.output.submittedBy;\nconst amount = $vars.preparePacket.output.amount;\nconst category = $vars.preparePacket.output.category;\nconst decision = $vars.managerReview.status;\nconst comments = $vars.managerReview.output.comments || '';\nreturn {\n  decision: decision,\n  expenseId: expenseId,\n  submittedBy: submittedBy,\n  amount: amount,\n  category: category,\n  managerComments: comments,\n  logEntry: `${decision.toUpperCase()}: Expense #${expenseId} by ${submittedBy} ($${amount}, ${category}). Manager notes: ${comments}`\n};"
+      },
+      "outputs": {
+        "output": {
+          "type": "object",
+          "description": "The return value of the script",
+          "source": "=result.response",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails",
+          "source": "=Error",
+          "var": "error"
+        }
+      }
+    },
+    {
+      "id": "done",
+      "type": "core.control.end",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Done"
+      },
+      "inputs": {},
+      "outputs": {
+        "approvalDecision": {
+          "source": "=js:$vars.logDecision.output.decision"
+        },
+        "approvalLog": {
+          "source": "=js:$vars.logDecision.output.logEntry"
+        },
+        "managerComments": {
+          "source": "=js:$vars.managerReview.output.comments || ''"
+        }
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "sourceNodeId": "start",
+      "sourcePort": "output",
+      "targetNodeId": "preparePacket",
+      "targetPort": "input"
+    },
+    {
+      "id": "e2",
+      "sourceNodeId": "preparePacket",
+      "sourcePort": "success",
+      "targetNodeId": "managerReview",
+      "targetPort": "input"
+    },
+    {
+      "id": "e3",
+      "sourceNodeId": "managerReview",
+      "sourcePort": "completed",
+      "targetNodeId": "logDecision",
+      "targetPort": "input"
+    },
+    {
+      "id": "e4",
+      "sourceNodeId": "logDecision",
+      "sourcePort": "success",
+      "targetNodeId": "done",
+      "targetPort": "input"
+    }
+  ],
+  "definitions": [
+    {
+      "nodeType": "core.trigger.manual",
+      "version": "1.0",
+      "category": "trigger",
+      "description": "Start workflow manually",
+      "tags": [
+        "trigger",
+        "start",
+        "manual"
+      ],
+      "sortOrder": 40,
+      "display": {
+        "label": "Manual trigger",
+        "icon": "play",
+        "shape": "circle"
+      },
+      "handleConfiguration": [
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "output",
+              "type": "source",
+              "handleType": "output",
+              "showButton": true,
+              "constraints": {
+                "forbiddenTargetCategories": [
+                  "trigger"
+                ]
+              }
+            }
+          ],
+          "visible": true
+        }
+      ],
+      "model": {
+        "type": "bpmn:StartEvent",
+        "entryPointId": true
+      },
+      "outputDefinition": {
+        "output": {
+          "type": "object",
+          "description": "Data passed when manually triggering the workflow.",
+          "source": "null",
+          "var": "output"
+        }
+      },
+      "toolbarExtensions": {
+        "design": {
+          "actions": [
+            {
+              "id": "change-trigger-type",
+              "icon": "square-mouse-pointer",
+              "label": "Change trigger type"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "nodeType": "core.action.script",
+      "version": "1.0",
+      "category": "data-operations",
+      "description": "Run custom JavaScript code",
+      "tags": [
+        "code",
+        "javascript",
+        "python"
+      ],
+      "sortOrder": 35,
+      "supportsErrorHandling": true,
+      "display": {
+        "label": "Script",
+        "icon": "code"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "success",
+              "type": "source",
+              "handleType": "output"
+            },
+            {
+              "id": "error",
+              "label": "Error",
+              "type": "source",
+              "handleType": "output",
+              "visible": "{inputs.errorHandlingEnabled}",
+              "constraints": {
+                "maxConnections": 1
+              }
+            }
+          ]
+        }
+      ],
+      "debug": {
+        "runtime": "clientScript"
+      },
+      "model": {
+        "type": "bpmn:ScriptTask"
+      },
+      "inputDefinition": {
+        "type": "object",
+        "properties": {
+          "script": {
+            "type": "string",
+            "minLength": 1,
+            "errorMessage": "A script function is required",
+            "validationSeverity": "warning"
+          }
+        },
+        "required": [
+          "script"
+        ]
+      },
+      "inputDefaults": {
+        "script": ""
+      },
+      "outputDefinition": {
+        "output": {
+          "type": "object",
+          "description": "The return value of the script",
+          "source": "=result.response",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails",
+          "source": "=Error",
+          "var": "error"
+        }
+      }
+    },
+    {
+      "nodeType": "uipath.human-in-the-loop.quick-form",
+      "version": "1.0",
+      "category": "human-task",
+      "description": "Fast inline approvals with inline debug",
+      "tags": [
+        "human-task",
+        "hitl",
+        "human-in-the-loop",
+        "quick-form",
+        "approval"
+      ],
+      "sortOrder": 27,
+      "display": {
+        "label": "Quick Form",
+        "icon": "users",
+        "shape": "square"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ],
+          "visible": true
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "completed",
+              "type": "source",
+              "handleType": "output",
+              "showButton": true,
+              "constraints": {
+                "forbiddenTargetCategories": [
+                  "trigger"
+                ]
+              }
+            }
+          ],
+          "visible": true
+        }
+      ],
+      "model": {
+        "type": "bpmn:UserTask",
+        "serviceType": "Actions.HITL"
+      },
+      "inputDefaults": {
+        "schema": {
+          "fields": [],
+          "outcomes": [
+            {
+              "id": "submit",
+              "name": "Submit",
+              "type": "string",
+              "isPrimary": true,
+              "action": "Continue"
+            }
+          ]
+        },
+        "recipient": {
+          "channels": [
+            "Email",
+            "ActionCenter"
+          ],
+          "connections": {},
+          "assignee": {
+            "type": "group"
+          }
+        }
+      },
+      "outputDefinition": {
+        "output": {
+          "type": "object",
+          "description": "Task result data",
+          "source": "=result",
+          "var": "output"
+        },
+        "status": {
+          "type": "string",
+          "description": "Task completion status (completed, cancelled, timeout)",
+          "source": "=result.Action",
+          "var": "status"
+        }
+      }
+    },
+    {
+      "nodeType": "core.control.end",
+      "version": "1.0",
+      "category": "control-flow",
+      "description": "Mark the end of a workflow path",
+      "tags": [
+        "control-flow",
+        "end",
+        "finish",
+        "complete"
+      ],
+      "sortOrder": 20,
+      "display": {
+        "label": "End",
+        "icon": "circle-check",
+        "shape": "circle"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        }
+      ],
+      "model": {
+        "type": "bpmn:EndEvent"
+      },
+      "runtimeConstraints": {
+        "exclude": [
+          "api-function"
+        ]
+      }
+    }
+  ],
+  "variables": {
+    "globals": [
+      {
+        "id": "expenseId",
+        "direction": "in",
+        "type": "string",
+        "description": "Unique identifier for the expense report"
+      },
+      {
+        "id": "submittedBy",
+        "direction": "in",
+        "type": "string",
+        "description": "Name of the employee who submitted the expense"
+      },
+      {
+        "id": "amount",
+        "direction": "in",
+        "type": "number",
+        "description": "Total amount of the expense in dollars"
+      },
+      {
+        "id": "category",
+        "direction": "in",
+        "type": "string",
+        "description": "Expense category (e.g. Travel, Meals, Software)"
+      },
+      {
+        "id": "managerComments",
+        "direction": "out",
+        "type": "string",
+        "description": "Comments entered by the manager during review"
+      },
+      {
+        "id": "approvalDecision",
+        "direction": "out",
+        "type": "string",
+        "description": "Final decision: Approve or Reject"
+      },
+      {
+        "id": "approvalLog",
+        "direction": "out",
+        "type": "string",
+        "description": "Full log entry recording the manager decision"
+      }
+    ],
+    "nodes": [
+      {
+        "id": "start.output",
+        "type": "object",
+        "description": "Data passed when manually triggering the workflow.",
+        "binding": {
+          "nodeId": "start",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "preparePacket.output",
+        "type": "object",
+        "description": "The return value of the script",
+        "binding": {
+          "nodeId": "preparePacket",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "preparePacket.error",
+        "type": "object",
+        "description": "Error information if the node fails",
+        "binding": {
+          "nodeId": "preparePacket",
+          "outputId": "error"
+        }
+      },
+      {
+        "id": "managerReview.output",
+        "type": "object",
+        "description": "Task result data",
+        "binding": {
+          "nodeId": "managerReview",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "managerReview.status",
+        "type": "string",
+        "description": "Task completion status",
+        "binding": {
+          "nodeId": "managerReview",
+          "outputId": "status"
+        }
+      },
+      {
+        "id": "logDecision.output",
+        "type": "object",
+        "description": "The return value of the script",
+        "binding": {
+          "nodeId": "logDecision",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "logDecision.error",
+        "type": "object",
+        "description": "Error information if the node fails",
+        "binding": {
+          "nodeId": "logDecision",
+          "outputId": "error"
+        }
+      },
+      {
+        "id": "done.approvalDecision",
+        "type": "string",
+        "binding": {
+          "nodeId": "done",
+          "outputId": "approvalDecision"
+        }
+      },
+      {
+        "id": "done.approvalLog",
+        "type": "string",
+        "binding": {
+          "nodeId": "done",
+          "outputId": "approvalLog"
+        }
+      },
+      {
+        "id": "done.managerComments",
+        "type": "string",
+        "binding": {
+          "nodeId": "done",
+          "outputId": "managerComments"
+        }
+      }
+    ],
+    "variableUpdates": {}
+  },
+  "runtime": "maestro",
+  "layout": {
+    "nodes": {
+      "start": {
+        "position": {
+          "x": 0,
+          "y": 0
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "preparePacket": {
+        "position": {
+          "x": 192,
+          "y": 0
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "managerReview": {
+        "position": {
+          "x": 384,
+          "y": 0
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "logDecision": {
+        "position": {
+          "x": 576,
+          "y": 0
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "done": {
+        "position": {
+          "x": 768,
+          "y": 0
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      }
+    }
+  }
+}

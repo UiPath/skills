@@ -1,0 +1,11 @@
+20:27:35 [INFO   ] [default/skill-flow-slack-weather-pipeline/03] orchestrator: API routing: aws_bedrock
+20:47:35 [WARNING] agents.watchdog: Turn timeout (1200s) fired after 1200.0s — hard-killing subprocess
+20:47:35 [WARNING] agents.claude_code_agent: Hard-killing Claude CLI subprocess (pid=54)
+20:47:35 [ERROR  ] [default/skill-flow-slack-weather-pipeline/03] errors.executor: [skill-flow-slack-weather-pipeline] Agent communication failed (non-retryable): agent_timeout - Agent turn timed out after 1200s (iteration 1)
+20:47:35 [ERROR  ] [default/skill-flow-slack-weather-pipeline/03] orchestrator: Evaluation failed: Agent turn timed out after 1200s (iteration 1)
+20:47:35 [INFO   ] [default/skill-flow-slack-weather-pipeline/03] orchestrator: Running post-run command: python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/cleanup_solutions.py
+20:47:37 [WARNING] [default/skill-flow-slack-weather-pipeline/03] orchestrator: [post_run stderr] cleanup_solutions: solution dc27db75-d0bc-4b79-b484-3397ac4e56e6 not uploaded (from SlackWeatherPipeline/SlackWeatherPipeline.uipx); nothing to clean up
+20:47:37 [WARNING] [default/skill-flow-slack-weather-pipeline/03] orchestrator: [post_run stderr] cleanup_solutions: summary policy=always deleted=0 preserved=0 skipped=0 not_uploaded=1 failed=0
+20:47:37 [INFO   ] [default/skill-flow-slack-weather-pipeline/03] orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+20:47:37 [INFO   ] [default/skill-flow-slack-weather-pipeline/03] orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-slack-weather-pipeline
+20:47:37 [INFO   ] [default/skill-flow-slack-weather-pipeline/03] orchestrator: Task finished: status=ERROR duration=1204.0s score=0.000 iterations=1

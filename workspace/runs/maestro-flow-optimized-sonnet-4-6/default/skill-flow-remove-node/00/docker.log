@@ -1,0 +1,9 @@
+16:52:35 [INFO   ] [default/skill-flow-remove-node/00] orchestrator: API routing: aws_bedrock
+16:54:36 [INFO   ] [default/skill-flow-remove-node/00] evaluation.checker: Criterion 'run_command' FAILED (score=0.00, threshold=1.00): 2026-08-19 16:54:30 INFO  [ResourceBuilder:ReconcileProjectsCommandHandler] Reconcile projects for solution {solutionKey} [object Object]
+16:54:36 [INFO   ] [default/skill-flow-remove-node/00] orchestrator: Success criteria: 1/2 passed, weighted score: 0.375
+16:54:36 [INFO   ] [default/skill-flow-remove-node/00] orchestrator: Running post-run command: python3 $EXPERIMENT_TASKS_PATH/uipath-maestro-flow/_shared/cleanup_solutions.py
+16:54:39 [WARNING] [default/skill-flow-remove-node/00] orchestrator: [post_run stderr] cleanup_solutions: deleted e85020a0-ac14-4a15-5ba9-08defdfbd63a (from BellevueWeather/BellevueWeather.uipx)
+16:54:39 [WARNING] [default/skill-flow-remove-node/00] orchestrator: [post_run stderr] cleanup_solutions: summary policy=always deleted=1 preserved=0 skipped=0 not_uploaded=0 failed=0
+16:54:39 [INFO   ] [default/skill-flow-remove-node/00] orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+16:54:39 [INFO   ] [default/skill-flow-remove-node/00] orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-remove-node
+16:54:39 [INFO   ] [default/skill-flow-remove-node/00] orchestrator: Task finished: status=FAILURE duration=131.0s score=0.375 iterations=1

@@ -1,0 +1,2061 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>coder_eval · skill-flow-slack-http-fallback · default</title>
+<style>
+:root {
+  --bg-page: #0f1419;
+  --bg-card: #1a2129;
+  --bg-card-2: #232d38;
+  --bg-code: #0b0f14;
+  --fg: #e6edf3;
+  --fg-muted: #8b98a5;
+  --fg-dim: #6e7681;
+  --border: #30363d;
+  --accent: #58a6ff;
+  --score-high: #22c55e;
+  --score-mid: #f59e0b;
+  --score-low: #ef4444;
+  --status-success: #22c55e;
+  --status-failure: #f59e0b;
+  --status-error: #ef4444;
+  --status-neutral: #6e7681;
+  --shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+.light {
+  --bg-page: #ffffff;
+  --bg-card: #f6f8fa;
+  --bg-card-2: #eaeef2;
+  --bg-code: #f6f8fa;
+  --fg: #1f2328;
+  --fg-muted: #636c76;
+  --fg-dim: #8b949e;
+  --border: #d0d7de;
+  --accent: #0969da;
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial,
+               sans-serif;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--fg);
+  background: var(--bg-page);
+}
+.container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+h1, h2, h3, h4 { margin: 0 0 12px 0; line-height: 1.25; }
+h1 { font-size: 22px; font-weight: 600; }
+h2 { font-size: 18px; font-weight: 600; margin-top: 28px;
+     padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+h3 { font-size: 15px; font-weight: 600; color: var(--fg-muted); }
+h4 { font-size: 13px; font-weight: 600; color: var(--fg-muted); }
+p { margin: 0 0 8px 0; }
+.muted { color: var(--fg-muted); }
+.dim { color: var(--fg-dim); }
+.mono { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+        monospace; font-size: 12.5px; }
+code { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+       monospace; font-size: 12.5px; background: var(--bg-code);
+       border: 1px solid var(--border); padding: 1px 5px; border-radius: 3px; }
+pre { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+      monospace; font-size: 12.5px; background: var(--bg-code);
+      border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px;
+      margin: 6px 0; overflow-x: auto; white-space: pre-wrap;
+      word-wrap: break-word; }
+.header-bar { display: flex; align-items: center; justify-content: space-between;
+              margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+.title-group { flex: 1; min-width: 0; }
+.title-group .subtitle { color: var(--fg-muted); font-size: 13px;
+                         margin-top: 2px; word-break: break-all; }
+.badges { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.badge { display: inline-flex; align-items: center; gap: 6px;
+         padding: 4px 10px; border-radius: 12px; font-size: 12px;
+         font-weight: 600; background: var(--bg-card-2);
+         border: 1px solid var(--border); color: var(--fg); }
+.badge.success { background: color-mix(in srgb, var(--status-success) 20%, var(--bg-card-2));
+                 border-color: var(--status-success); color: var(--status-success); }
+.badge.failure { background: color-mix(in srgb, var(--status-failure) 20%, var(--bg-card-2));
+                 border-color: var(--status-failure); color: var(--status-failure); }
+.badge.error { background: color-mix(in srgb, var(--status-error) 20%, var(--bg-card-2));
+               border-color: var(--status-error); color: var(--status-error); }
+.badge.warning { background: color-mix(in srgb, #f4a52810 20%, var(--bg-card-2));
+                 border-color: #f4a528; color: #f4a528; }
+.badge.neutral { color: var(--fg-muted); }
+.score-pill { display: inline-block; padding: 2px 8px; border-radius: 10px;
+              font-size: 12px; font-weight: 700; min-width: 42px;
+              text-align: center; color: #0b0f14; }
+.score-high { background: var(--score-high); }
+.score-mid { background: var(--score-mid); }
+.score-low { background: var(--score-low); }
+.card { background: var(--bg-card); border: 1px solid var(--border);
+        border-radius: 8px; padding: 16px 20px; margin-bottom: 16px;
+        box-shadow: var(--shadow); }
+.card.highlight { border-left: 4px solid var(--accent); }
+.grid { display: grid; gap: 12px;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+.stat { background: var(--bg-card-2); padding: 10px 12px; border-radius: 6px;
+        border: 1px solid var(--border); }
+.stat .label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;
+               color: var(--fg-muted); margin-bottom: 4px; }
+.stat .value { font-size: 16px; font-weight: 600; }
+table { width: 100%; border-collapse: collapse; margin: 4px 0 12px 0; }
+th, td { text-align: left; padding: 8px 10px;
+         border-bottom: 1px solid var(--border); vertical-align: top;
+         font-size: 13px; }
+th { color: var(--fg-muted); font-weight: 600; font-size: 12px;
+     text-transform: uppercase; letter-spacing: 0.3px; }
+tr:last-child td { border-bottom: none; }
+details { margin: 6px 0; border: 1px solid var(--border); border-radius: 6px;
+          background: var(--bg-card-2); }
+details > summary { cursor: pointer; padding: 8px 12px; user-select: none;
+                    font-weight: 500; list-style: none; }
+details > summary::-webkit-details-marker { display: none; }
+details > summary::before { content: "▸ "; color: var(--fg-dim);
+                            display: inline-block; width: 14px;
+                            transition: transform 0.15s; }
+details[open] > summary::before { content: "▾ "; }
+details .details-body { padding: 0 12px 10px 12px; }
+.tool-row { display: flex; align-items: center; gap: 10px;
+            flex-wrap: wrap; font-size: 13px; }
+.tool-name { font-weight: 600; color: var(--accent); font-family: ui-monospace,
+             SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+.tool-status-ok { color: var(--status-success); font-size: 11px;
+                  font-weight: 600; }
+.tool-status-err { color: var(--status-error); font-size: 11px;
+                   font-weight: 600; }
+.tool-duration { color: var(--fg-muted); font-size: 12px; }
+.tool-seq { color: var(--fg-dim); font-size: 11px; font-weight: 600;
+            min-width: 24px; text-align: right; font-family: ui-monospace,
+            SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+.turn-header { display: flex; justify-content: space-between;
+               align-items: baseline; flex-wrap: wrap; gap: 10px;
+               margin-bottom: 10px; }
+.turn-meta { font-size: 12px; color: var(--fg-muted); }
+.criterion-row td:first-child { font-family: ui-monospace, SFMono-Regular,
+                                 "SF Mono", Menlo, Consolas, monospace;
+                                 color: var(--fg-muted); font-size: 12px; }
+.judge-section { display: flex; flex-direction: column; gap: 12px; }
+.judge-card { padding: 14px 16px; }
+.judge-card-head { display: flex; justify-content: space-between;
+                    align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+.judge-card-title { font-size: 14px; line-height: 1.4; flex: 1; min-width: 0; }
+.judge-card-score { flex-shrink: 0; }
+.judge-rationale { margin-top: 10px; padding: 10px 12px;
+                   background: var(--bg-code); border-radius: 4px;
+                   font-size: 13px; line-height: 1.5; }
+.judge-findings { margin: 8px 0 0 18px; padding-left: 4px; font-size: 13px;
+                   line-height: 1.6; }
+.judge-findings li { margin: 2px 0; }
+.nav-toggle { display: inline-block; padding: 5px 10px; font-size: 12px;
+              background: var(--bg-card-2); border: 1px solid var(--border);
+              border-radius: 5px; color: var(--fg); cursor: pointer; }
+.nav-toggle:hover { background: var(--bg-card); }
+.llm-next-steps { margin: 6px 0 0 20px; padding-left: 0; }
+.llm-next-steps li { margin: 3px 0; }
+.iteration-group { padding: 12px 16px 4px 16px; margin-bottom: 20px;
+                   border-radius: 0 6px 6px 0; border-left: 4px solid var(--status-neutral); }
+/* rgba fallback for browsers without color-mix (Chrome <111, Firefox <113, Safari <16.2). */
+.iteration-group--recovered { border-left-color: var(--status-success);
+                              background: rgba(34, 197, 94, 0.06);
+                              background: color-mix(in srgb, var(--status-success) 6%, transparent); }
+.iteration-group--terminal { border-left-color: var(--status-error);
+                             background: rgba(239, 68, 68, 0.06);
+                             background: color-mix(in srgb, var(--status-error) 6%, transparent); }
+.iteration-group__banner { margin: 0 0 12px 0; font-size: 14px; font-weight: 600; }
+.iteration-group--recovered .iteration-group__banner { color: var(--status-success); }
+.iteration-group--terminal .iteration-group__banner { color: var(--status-error); }
+.attempt-transition { display: flex; align-items: center; gap: 8px;
+                      margin: -6px 0 12px 8px; color: var(--status-error); font-size: 12.5px; }
+.attempt-transition__icon { font-weight: 700; }
+footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--border);
+         color: var(--fg-dim); font-size: 12px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="header-bar">
+  <div class="title-group">
+    <h1>Task: skill-flow-slack-http-fallback</h1>
+    <div class="subtitle">E2E test: a catalog connector (Slack, uipath-salesforce-slack) has no native activity for &quot;list a team&#x27;s custom emoji&quot; (Slack&#x27;s emoji.list). The skill must fall back to a connector-mode HTTP-request node that reuses the existing Slack connection&#x27;s managed auth, then the flow must debug green. Exercises the no-native-activity -&gt; managed-HTTP fallback path end-to-end: structural check confirms the fallback shape, runtime check confirms `uip maestro flow debug` completes against the live Slack connection.</div>
+  </div>
+  <div class="badges">
+    <span class="badge success">SUCCESS</span>
+    <span class="score-pill score-high">1.00</span>
+    <span class="badge neutral">claude-code · claude-sonnet-5</span>
+    <span class="badge neutral">5m 3s</span>
+    <span class="badge neutral">$1.2910</span>
+    <span class="badge warning">expected_turns exceeded (41/32)</span>
+    
+    <span class="nav-toggle" onclick="toggleTheme()">Toggle theme</span>
+  </div>
+</div>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Variant</div><div class="value">default</div></div>
+    <div class="stat"><div class="label">Started</div><div class="value mono">2026-08-19T00:07:20</div></div>
+    <div class="stat"><div class="label">Duration</div><div class="value">5m 3s</div></div>
+    <div class="stat"><div class="label">Turns (SDK)</div><div class="value">69</div></div>
+    <div class="stat"><div class="label">Commands</div><div class="value">40</div></div>
+  </div>
+</div>
+
+<h2>Success Criteria <span class="muted" style="font-weight:400">(4/4 passed)</span></h2>
+<div class="card" style="padding:0">
+<table>
+  <thead>
+    <tr>
+      <th style="width:15%">Type</th>
+      <th style="width:35%">Description</th>
+      <th style="width:10%">Score</th>
+      <th>Details</th>
+    </tr>
+  </thead>
+  <tbody>
+    
+<tr class="criterion-row">
+  <td>command_executed</td>
+  <td>uip maestro flow validate was called</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Matched 2/1 required commands (filters: tool_name=Bash, pattern=/(uip|\$UIP)\s+(maestro\s+)?flow\s+validate/)</summary><div class="details-body"><pre style="margin:6px 0 0 0">Matched 2/1 required commands (filters: tool_name=Bash, pattern=/(uip|\$UIP)\s+(maestro\s+)?flow\s+validate/)
+Examples: [&#x27;python3 /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/scripts/audit_flow.py SlackEmojiListTest/SlackEmo&#x27;, &#x27;\\\npython3 /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/scripts/audit_flow.py SlackEmojiListTest/SlackE&#x27;]</pre></div></details></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>command_executed</td>
+  <td>Agent debugged the flow with uip maestro flow debug</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Matched 2/1 required commands (filters: tool_name=Bash, pattern=/(uip|\$UIP)\s+(maestro\s+)?flow\s+debug/)</summary><div class="details-body"><pre style="margin:6px 0 0 0">Matched 2/1 required commands (filters: tool_name=Bash, pattern=/(uip|\$UIP)\s+(maestro\s+)?flow\s+debug/)
+Examples: [&#x27;uip maestro flow debug --help 2&gt;&amp;1 | head -60&#x27;, &#x27;uip maestro flow debug SlackEmojiListTest --output json --timeout 180 2&gt;&amp;1&#x27;]</pre></div></details></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>run_command</td>
+  <td>Emoji list falls back to an HTTP-request node bound to the Slack connector (no native activity exists for it) and targets the emoji.list endpoint</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Command: python3 $TASK_DIR/check_slack_http_fallback.py check_fallback</summary><div class="details-body"><pre style="margin:6px 0 0 0">Command: python3 $TASK_DIR/check_slack_http_fallback.py check_fallback
+Exit code: 0 (expected: 0)
+Stdout:
+OK: 3 nodes, 2 edges
+OK: 1 Slack HTTP-request fallback node(s) present
+OK: fallback node targets the Slack &#x27;/emoji.list&#x27; endpoint
+OK: all Slack HTTP-fallback structural checks passed
+
+Stderr: (empty)</pre></div></details></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>run_command</td>
+  <td>uip maestro flow debug finishes with finalStatus Completed against the live Slack connection</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Command: python3 $TASK_DIR/check_slack_http_fallback.py check_debug</summary><div class="details-body"><pre style="margin:6px 0 0 0">Command: python3 $TASK_DIR/check_slack_http_fallback.py check_debug
+Exit code: 0 (expected: 0)
+Stdout:
+OK: uip maestro flow debug finished with finalStatus=Completed
+
+Stderr: (empty)</pre></div></details></td>
+</tr>
+
+  </tbody>
+</table>
+</div>
+<h2>Conversation Trace (1 iteration)</h2>
+<div class="card">
+  <div class="turn-header">
+    <h3>Iteration 1</h3>
+    <div class="badges">
+      <span class="badge neutral">69 assistant turns</span>
+      <span class="badge neutral">in 598 · out 12047 · cache 2750615</span>
+      <span class="badge neutral">4m 35s</span>
+      
+      
+      
+    </div>
+  </div>
+  <details>
+    <summary>Prompt to agent</summary>
+    <div class="details-body"><pre>Your working directory is: /work/output/artifacts/skill-flow-slack-http-fallback
+
+Create a new Flow project called &quot;SlackEmojiListTest&quot; with a manual trigger
+that lists the custom emoji for a team. Wire the manual trigger to the node that 
+lists the emoji.
+
+Use the Slack connection in the `Shared/uipath-maestro-flow` folder.
+
+Validate the final flow file. Once it validates, debug it.
+
+Use `--output json` on every `uip` command whose output you parse.
+Do NOT ask for approval, confirmation, or feedback — build, validate, and
+debug the flow end-to-end in a single pass.
+</pre></div>
+  </details>
+  <details>
+    <summary>Agent response</summary>
+    <div class="details-body"><pre>[ASSISTANT] No existing solution — I&#x27;ll create a new one and search for the Slack connector/connection.
+[ASSISTANT] Confirmed: connection `849e85d8-1aa9-4d52-8bbd-20041c8f05d8` is the Slack connection in `Shared/uipath-maestro-flow`, and it&#x27;s Enabled. Now let&#x27;s search for a &quot;list custom emoji&quot; activity more precisely — maybe under a different keyword.
+[ASSISTANT] There&#x27;s a Slack-specific connector-overrides doc — exactly the ground-truth doc I need for the emoji list endpoint.
+[ASSISTANT] Good, no override for non-trigger activities. Now let me check the vendor docs registry for Slack and probe the emoji.list endpoint via the connection.
+[ASSISTANT] Slack&#x27;s API method for listing custom emoji is `emoji.list`. Let me probe it via the connection to confirm.
+[ASSISTANT] Confirmed `/emoji.list` works and returns the emoji list. Now let&#x27;s build the flow: init the project, add a manual trigger, add the HTTP node in connector mode wired to it.
+[ASSISTANT] Now let&#x27;s read the scaffolded flow file and check the manual trigger node type, then add the HTTP node.
+[ASSISTANT] Manual trigger already exists (`start` node). Now add the HTTP node for connector-mode Slack call.
+[ASSISTANT] Now wire the manual trigger&#x27;s output to the HTTP node&#x27;s input.
+[ASSISTANT] Now let&#x27;s audit, format, and validate.
+[ASSISTANT] The audit flags a real error — the HTTP node needs an outgoing edge to a terminal node. Let me add an End node.
+[ASSISTANT] Validation is clean with no warnings. Per explicit instructions, proceeding directly to debug (real execution).
+[ASSISTANT] The debug run completed successfully end-to-end, with real Slack data returned.
+
+**Result: SlackEmojiListTest flow built, validated, and debugged successfully.**
+
+- Project: `/work/output/artifacts/skill-flow-slack-http-fallback/SlackEmojiListTest/SlackEmojiListTest/SlackEmojiListTest.flow`
+- Flow: Manual trigger (`start`) → Managed HTTP node (`listCustomEmoji1`) → End (`done`)
+- No connector activity exists for &quot;list custom emoji&quot; on Slack, so per the skill&#x27;s fallback ladder I used the Managed HTTP node in **connector mode**, bound to the Slack connection `is-sandboxes` (`849e85d8-1aa9-4d52-8bbd-20041c8f05d8`) in `Shared/uipath-maestro-flow`, calling Slack&#x27;s `emoji.list` API method (`GET /emoji.list`, relative to the connection&#x27;s base URL — auth applied automatically).
+- `audit_flow.py`: clean (0 errors after fixing an initial `NO_OUTGOING` topology error by adding the End node).
+- `uip maestro flow validate`: `Status: &quot;Valid&quot;`.
+- `uip maestro flow debug`: `finalStatus: &quot;Completed&quot;` — all elements (`start` → `listCustomEmoji1` → `done`) completed, and the live Slack response came back with `ok: true` and the workspace&#x27;s custom emoji (e.g. `testemoji`, `party-hard-emoji-png-hd`, `jira`, plus built-ins/aliases).
+[RESULT - SUCCESS] The debug run completed successfully end-to-end, with real Slack data returned.
+
+**Result: SlackEmojiListTest flow built, validated, and debugged successfully.**
+
+- Project: `/work/output/artifacts/skill-flow-slack-http-fallback/SlackEmojiListTest/SlackEmojiListTest/SlackEmojiListTest.flow`
+- Flow: Manual trigger (`start`) → Managed HTTP node (`listCustomEmoji1`) → End (`done`)
+- No connector activity exists for &quot;list custom emoji&quot; on Slack, so per the skill&#x27;s fallback ladder I used the Managed HTTP node in **connector mode**, bound to the Slack connection `is-sandboxes` (`849e85d8-1aa9-4d52-8bbd-20041c8f05d8`) in `Shared/uipath-maestro-flow`, calling Slack&#x27;s `emoji.list` API method (`GET /emoji.list`, relative to the connection&#x27;s base URL — auth applied automatically).
+- `audit_flow.py`: clean (0 errors after fixing an initial `NO_OUTGOING` topology error by adding the End node).
+- `uip maestro flow validate`: `Status: &quot;Valid&quot;`.
+- `uip maestro flow debug`: `finalStatus: &quot;Completed&quot;` — all elements (`start` → `listCustomEmoji1` → `done`) completed, and the live Slack response came back with `ok: true` and the workspace&#x27;s custom emoji (e.g. `testemoji`, `party-hard-emo</pre></div>
+  </details>
+  <h4 style="margin-top:12px">Tool Calls (40)</h4>
+  
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#0</span>
+      <span class="tool-name">Skill</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">12ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;skill&quot;: &quot;tmp:uipath-maestro-flow&quot;,
+  &quot;args&quot;: &quot;Create a new Flow project called \&quot;SlackEmojiListTest\&quot; in the current working directory (/work/output/artifacts/skill-flow-slack-http-fallback) with a manual trigger, wired to a node that lists the custom emoji for a team using the Slack connection in the `Shared/uipath-maestro-flow` folder. Use --output json on every `uip` command whose output is parsed. Validate the final .flow file, and once it … (148 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Launching skill: tmp:uipath-maestro-flow</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#1</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">45ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;find . -maxdepth 2 -type f -name &#x27;*.uipx&#x27; -print &amp;&amp; echo \&quot;---ls---\&quot; &amp;&amp; ls -la&quot;,
+  &quot;description&quot;: &quot;Check for existing solution files in working directory&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>---ls---
+total 12
+drwxr-xr-x 3 root root 4096 Aug 19 00:07 .
+drwxr-xr-x 3 root root 4096 Aug 19 00:07 ..
+drwxr-xr-x 4 root root 4096 Aug 19 00:07 .venv</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#2</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">337ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip login status --output json 2&gt;&amp;1 | head -100&quot;,
+  &quot;description&quot;: &quot;Check uip login status&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;LoginStatus&quot;,
+  &quot;Data&quot;: {
+    &quot;Status&quot;: &quot;Logged in&quot;,
+    &quot;Identity&quot;: &quot;zhongyi.shi@uipath.com&quot;,
+    &quot;IdentityType&quot;: &quot;User&quot;,
+    &quot;AuthFlow&quot;: &quot;Interactive&quot;,
+    &quot;CredentialSource&quot;: &quot;SavedLogin&quot;,
+    &quot;Provider&quot;: &quot;File&quot;,
+    &quot;UserId&quot;: &quot;bfda820f-4ddb-4af7-a5ec-3c332b403271&quot;,
+    &quot;UserEmail&quot;: &quot;zhongyi.shi@uipath.com&quot;,
+    &quot;UserName&quot;: &quot;zhongyi.shi@uipath.com&quot;,
+    &quot;BaseUrl&quot;: &quot;https://alpha.uipath.com&quot;,
+    &quot;Organization&quot;: &quot;codereval&quot;,
+    &quot;OrganizationId&quot;: &quot;311c6049-4966-4ef2-a6f3-8ceccaf38d54&quot;,
+    &quot;Tenant&quot;: &quot;DefaultTenant&quot;,
+    &quot;TenantId&quot;: &quot;69d43765-6ede-4575-88b7-9db601a2c056&quot;,
+    &quot;ExpirationDate&quot;: &quot;2026-08-19T01:07:32.000Z&quot;
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#3</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">466ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip solution init \&quot;SlackEmojiListTest\&quot; --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Init new solution&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;SolutionInit&quot;,
+  &quot;Data&quot;: {
+    &quot;Status&quot;: &quot;Created successfully&quot;,
+    &quot;Path&quot;: &quot;/work/output/artifacts/skill-flow-slack-http-fallback/SlackEmojiListTest/SlackEmojiListTest.uipx&quot;,
+    &quot;NextSteps&quot;: &quot;Read /work/output/artifacts/skill-flow-slack-http-fallback/SlackEmojiListTest/AGENTS.md or /work/output/artifacts/skill-flow-slack-http-fallback/SlackEmojiListTest/CLAUDE.md to understand the solution lifecycle, project types that can be used inside a solution, and related uip command references.&quot;
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#4</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">4.85s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry pull --force --output json 2&gt;&amp;1 | tail -20; echo \&quot;---search---\&quot;; uip maestro flow registry search \&quot;slack\&quot; --output json --output-filter \&quot;[*].{NodeType:NodeType,DisplayName:DisplayName,Description:Description,AvailableOnTenant:AvailableOnTenant}\&quot; 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Pull registry and search for slack connector nodes&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>[ManifestClient] fetchDynamicNodes ok: total=4878 connector nodes=3654 integration trigger nodes=896 agent context nodes=2 external agent nodes=7 orchestrator nodes=261 IXP nodes=45 IXP Models nodes=13
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodePullSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;NodesCount&quot;: 4761,
+    &quot;FromCache&quot;: false,
+    &quot;Source&quot;: &quot;authenticated&quot;,
+    &quot;CacheWritten&quot;: true,
+    &quot;Message&quot;: &quot;Synced fresh nodes&quot;
+  }
+}
+---search---
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeSearchSuccess&quot;,
+  &quot;Data&quot;: [
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-salesforce-slack.unarchive-channel&quot;,
+      &quot;DisplayName&quot;: &quot;Unarchive Channel&quot;,
+      &quot;Description&quot;: &quot;Unarchive an existing channel&quot;,
+      &quot;AvailableOnTenant&quot;: true
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-salesforce-slack.send-reply&quot;,
+      &quot;DisplayName&quot;: &quot;Send Reply&quot;,
+      &quot;Description&quot;: &quot;Send a reply to a message in a Slack channel.&quot;,
+      &quot;AvailableOnTenant&quot;: true
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-salesforce-slack.join-channel&quot;,
+      &quot;DisplayName&quot;: &quot;Join Channel&quot;,
+      &quot;Description&quot;: &quot;Join a public Slack channel as the bot user or authenticated user.&quot;,
+      &quot;AvailableOnTenant&quot;: true
+    },
+    {
+      
+
+… (truncated, 16177 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#5</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">706ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry search \&quot;emoji\&quot; --output json --output-filter \&quot;[*].{NodeType:NodeType,DisplayName:DisplayName,Description:Description,AvailableOnTenant:AvailableOnTenant}\&quot; 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Search registry for emoji-related nodes&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeSearchSuccess&quot;,
+  &quot;Data&quot;: [
+    {
+      &quot;NodeType&quot;: &quot;uipath.core.flow.898368f7-d639-49ae-bd2c-7a3c1fd9ae46&quot;,
+      &quot;DisplayName&quot;: &quot;SlackEmojiListTest&quot;,
+      &quot;Description&quot;: &quot;&quot;,
+      &quot;AvailableOnTenant&quot;: true
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.agent.resource.tool.flow.898368f7-d639-49ae-bd2c-7a3c1fd9ae46&quot;,
+      &quot;DisplayName&quot;: &quot;SlackEmojiListTest&quot;,
+      &quot;Description&quot;: &quot;&quot;,
+      &quot;AvailableOnTenant&quot;: true
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.core.flow.51bc3e19-c056-4713-a2be-3d5dcb59f45c&quot;,
+      &quot;DisplayName&quot;: &quot;SlackEmojiListTest&quot;,
+      &quot;Description&quot;: &quot;&quot;,
+      &quot;AvailableOnTenant&quot;: true
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.agent.resource.tool.flow.51bc3e19-c056-4713-a2be-3d5dcb59f45c&quot;,
+      &quot;DisplayName&quot;: &quot;SlackEmojiListTest&quot;,
+      &quot;Description&quot;: &quot;&quot;,
+      &quot;AvailableOnTenant&quot;: true
+    }
+  ]
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#6</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">2.64s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry search \&quot;slack-http-request\&quot; --output json --output-filter \&quot;[*].{NodeType:NodeType,DisplayName:DisplayName,Description:Description,AvailableOnTenant:AvailableOnTenant}\&quot; 2&gt;&amp;1\necho \&quot;---\&quot;\nuip maestro flow registry search \&quot;uipath-salesforce-slack\&quot; --local --output json --output-filter \&quot;[*].{NodeType:NodeType,DisplayName:DisplayName}\&quot; 2&gt;&amp;1 | grep -i http\necho \&quot;---list local con… (94 more chars)&quot;,
+  &quot;description&quot;: &quot;Search for slack http-request node and existing connections&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeSearchSuccess&quot;,
+  &quot;Data&quot;: [
+    {
+      &quot;NodeType&quot;: &quot;uipath.agent.resource.tool.connector.uipath-salesforce-slack.slack-http-request&quot;,
+      &quot;DisplayName&quot;: &quot;Slack HTTP Request&quot;,
+      &quot;Description&quot;: &quot;Perform HTTP requests to interact with Slack using existing connector and connection configuration.&quot;,
+      &quot;AvailableOnTenant&quot;: true
+    }
+  ]
+}
+---
+---list local connectors---
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;ConnectionList&quot;,
+  &quot;Data&quot;: [
+    {
+      &quot;Id&quot;: &quot;849e85d8-1aa9-4d52-8bbd-20041c8f05d8&quot;,
+      &quot;Name&quot;: &quot;is-sandboxes&quot;,
+      &quot;ConnectorKey&quot;: &quot;uipath-salesforce-slack&quot;,
+      &quot;ConnectorName&quot;: &quot;Slack&quot;,
+      &quot;State&quot;: &quot;Enabled&quot;,
+      &quot;Owner&quot;: &quot;sanjeet.manna@uipath.com&quot;,
+      &quot;IsDefault&quot;: &quot;No&quot;,
+      &quot;ByoaConnection&quot;: &quot;Yes&quot;,
+      &quot;ElementInstanceId&quot;: 337251,
+      &quot;Folder&quot;: &quot;uipath-maestro-flow&quot;,
+      &quot;FolderKey&quot;: &quot;5da18ec0-7de1-4e57-aaf1-ddc8a369c199&quot;,
+      &quot;Created&quot;: &quot;2026-05-08T14:59:09.153Z&quot;,
+      &quot;Updated&quot;: &quot;2026-08-18T23:53:19.023Z&quot;
+    },
+    {
+      &quot;Id&quot;: &quot;8e0e255f-ce7c-43dc-8929-83847fcd9025&quot;,
+      &quot;Name&quot;: &quot;is-sandboxes&quot;,
+      &quot;ConnectorKey&quot;: &quot;uipath-salesforce-slack&quot;,
+      &quot;ConnectorName&quot;: &quot;Slack&quot;,
+      &quot;State&quot;: &quot;Failed&quot;,
+
+
+… (truncated, 1012 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#7</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.59s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry search \&quot;uipath.connector.uipath-salesforce-slack\&quot; --output json --output-filter \&quot;[*].NodeType\&quot; 2&gt;&amp;1 | grep -i http\necho \&quot;---get node def for slack-http-request (agent resource) to see shape---\&quot;\nuip maestro flow registry get \&quot;uipath.connector.uipath-salesforce-slack.slack-http-request\&quot; --output json 2&gt;&amp;1 | head -100&quot;,
+  &quot;description&quot;: &quot;Check for plain connector http-request node type and its definition&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>---get node def for slack-http-request (agent resource) to see shape---
+{
+  &quot;Result&quot;: &quot;Failure&quot;,
+  &quot;Message&quot;: &quot;Node not found&quot;,
+  &quot;Instructions&quot;: &quot;No node found with node type: uipath.connector.uipath-salesforce-slack.slack-http-request&quot;,
+  &quot;ErrorCode&quot;: &quot;unknown_error&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#8</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">789ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry get \&quot;core.action.http.v2\&quot; --output json 2&gt;&amp;1 | head -150&quot;,
+  &quot;description&quot;: &quot;Get definition of managed HTTP node&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeGetSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;Node&quot;: {
+      &quot;nodeType&quot;: &quot;core.action.http.v2&quot;,
+      &quot;version&quot;: &quot;2.3&quot;,
+      &quot;category&quot;: &quot;data-operations&quot;,
+      &quot;description&quot;: &quot;HTTP request with managed authentication&quot;,
+      &quot;tags&quot;: [
+        &quot;connector&quot;,
+        &quot;http&quot;,
+        &quot;api&quot;,
+        &quot;rest&quot;,
+        &quot;request&quot;
+      ],
+      &quot;sortOrder&quot;: 72,
+      &quot;supportsErrorHandling&quot;: true,
+      &quot;display&quot;: {
+        &quot;label&quot;: &quot;HTTP Request&quot;,
+        &quot;icon&quot;: &quot;app-window&quot;
+      },
+      &quot;handleConfiguration&quot;: [
+        {
+          &quot;position&quot;: &quot;left&quot;,
+          &quot;handles&quot;: [
+            {
+              &quot;id&quot;: &quot;input&quot;,
+              &quot;type&quot;: &quot;target&quot;,
+              &quot;handleType&quot;: &quot;input&quot;,
+              &quot;label&quot;: &quot;&quot;
+            }
+          ]
+        },
+        {
+          &quot;position&quot;: &quot;right&quot;,
+          &quot;handles&quot;: [
+            {
+              &quot;id&quot;: &quot;branch-{item.id}&quot;,
+              &quot;type&quot;: &quot;source&quot;,
+              &quot;handleType&quot;: &quot;output&quot;,
+              &quot;label&quot;: &quot;{item.name}&quot;,
+              &quot;repeat&quot;: &quot;inputs.branches&quot;
+            },
+            {
+              &quot;id&quot;: &quot;default&quot;,
+              &quot;type&quot;: &quot;source&quot;,
+              &quot;handleType&quot;: &quot;output&quot;,
+              &quot;label&quot;: &quot;&quot;
+
+
+… (truncated, 2915 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#9</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">41ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;find /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow -iname \&quot;*connector*\&quot; -path \&quot;*plugins*\&quot; 2&gt;/dev/null&quot;,
+  &quot;description&quot;: &quot;Locate connector plugin impl docs&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/plugins/connector-trigger
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/plugins/http/impl-connector.md
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/plugins/connector</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#10</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">12ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/plugins/http/impl-connector.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# HTTP Request Node — Connector Mode
+2	
+3	Use this walkthrough when the target service has an IS connector and you want managed auth (OAuth / API key) handled by an existing IS connection.
+4	
+5	**Prerequisite:** a healthy IS connection for the target connector. Step 2 verifies this. If none exists, propose manual mode as the fallback and confirm the switch with the user before finalizing — do not switch modes without that confirmation.
+6	
+7	Before starting, read [impl.md](impl.md) for the node type, registry validation, and the &quot;always use `node configure`&quot; rule. Follow Steps 1–5 in order.
+8	
+9	## Step 1 — Add the node
+10	
+11	```bash
+12	uip maestro flow node add &lt;ProjectName&gt;.flow core.action.http.v2 \
+13	  --label &quot;&lt;HTTP node label&gt;&quot; --output json
+14	```
+15	
+16	&gt; **Inside a loop body?** Add `--parent &lt;LOOP_NODE_ID&gt;` to set `parentId`. Without it, the node runs outside the loop context and outputs are null. See [loop/impl.md](../loop/impl.md).
+17	
+18	The CLI copies the manifest into `definitions[]`, adds the node instance, registers `variables.nodes`, and inserts a `layout.nodes` placeholder — byte-for-byte from the registry. Save the returned `&lt;nodeId&gt;` — Steps 2 and 3 reuse it.
+
+… (truncated, 5810 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#11</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.71s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip is connections list \&quot;uipath-salesforce-slack\&quot; --all-folders --output json --output-filter \&quot;[?Folder==&#x27;uipath-maestro-flow&#x27;]\&quot; 2&gt;&amp;1\necho \&quot;---check parent folder path---\&quot;\nuip is connections list \&quot;uipath-salesforce-slack\&quot; --all-folders --output json 2&gt;&amp;1 | python3 -c \&quot;import json,sys; d=json.load(sys.stdin); print(json.dumps(d[&#x27;Data&#x27;],indent=2))\&quot; 2&gt;&amp;1 | grep -i -A2 -B2 folder&quot;,
+  &quot;description&quot;: &quot;Read HTTP connector-mode impl doc and check connection folder details&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;ConnectionList&quot;,
+  &quot;Data&quot;: [
+    {
+      &quot;Id&quot;: &quot;849e85d8-1aa9-4d52-8bbd-20041c8f05d8&quot;,
+      &quot;Name&quot;: &quot;is-sandboxes&quot;,
+      &quot;ConnectorKey&quot;: &quot;uipath-salesforce-slack&quot;,
+      &quot;ConnectorName&quot;: &quot;Slack&quot;,
+      &quot;State&quot;: &quot;Enabled&quot;,
+      &quot;Owner&quot;: &quot;sanjeet.manna@uipath.com&quot;,
+      &quot;IsDefault&quot;: &quot;No&quot;,
+      &quot;ByoaConnection&quot;: &quot;No&quot;,
+      &quot;ElementInstanceId&quot;: &quot;&quot;,
+      &quot;Folder&quot;: &quot;uipath-maestro-flow&quot;,
+      &quot;FolderKey&quot;: &quot;5da18ec0-7de1-4e57-aaf1-ddc8a369c199&quot;,
+      &quot;Created&quot;: &quot;2026-05-08T14:59:09.153Z&quot;,
+      &quot;Updated&quot;: &quot;&quot;
+    }
+  ],
+  &quot;Warning&quot;: &quot;Connection(s) not enabled: is-sandboxes. Only Enabled connections can be used for operations. Run &#x27;uip is connections edit &lt;connection-id&gt;&#x27; to re-authenticate.&quot;
+}
+---check parent folder path---
+    &quot;ByoaConnection&quot;: &quot;No&quot;,
+    &quot;ElementInstanceId&quot;: &quot;&quot;,
+    &quot;Folder&quot;: &quot;uipath-maestro-flow&quot;,
+    &quot;FolderKey&quot;: &quot;5da18ec0-7de1-4e57-aaf1-ddc8a369c199&quot;,
+    &quot;Created&quot;: &quot;2026-05-08T14:59:09.153Z&quot;,
+    &quot;Updated&quot;: &quot;&quot;
+--
+    &quot;ByoaConnection&quot;: &quot;No&quot;,
+    &quot;ElementInstanceId&quot;: &quot;&quot;,
+    &quot;Folder&quot;: &quot;SlackEmojiListTest&quot;,
+    &quot;FolderKey&quot;: &quot;c79e173d-d870-4ab6-b5f9-7627ddbae4bf&quot;,
+    &quot;Created&quot;: &quot;2026-07-01T21:56:48.066Z&quot;,
+    &quot;Updated&quot;: &quot;&quot;
+--
+
+
+… (truncated, 211 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#12</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.45s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip is connectors get \&quot;uipath-salesforce-slack\&quot; --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Check if slack connector supports HTTP request activity&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;Connector&quot;,
+  &quot;Data&quot;: [
+    {
+      &quot;Id&quot;: 49,
+      &quot;Name&quot;: &quot;Slack&quot;,
+      &quot;Key&quot;: &quot;uipath-salesforce-slack&quot;,
+      &quot;AppName&quot;: &quot;Slack&quot;,
+      &quot;Vendor&quot;: &quot;Salesforce&quot;,
+      &quot;Description&quot;: &quot;An organizational communication and collaboration platform. After connecting, automate user and channel management, scheduled messaging, and other ways to work together.&quot;,
+      &quot;Image&quot;: &quot;https://alpha.uipath.com/elements_/scaleunit_/3854d037-4ab5-4881-909b-968c433f6d88/v3/element/elements/uipath-salesforce-slack/image&quot;,
+      &quot;Active&quot;: &quot;Yes&quot;,
+      &quot;HasEvents&quot;: &quot;Yes&quot;,
+      &quot;HasCruds&quot;: &quot;Yes&quot;,
+      &quot;HasMethods&quot;: &quot;Yes&quot;,
+      &quot;HasHttpRequest&quot;: &quot;Yes&quot;,
+      &quot;DapCompatible&quot;: &quot;Yes&quot;,
+      &quot;Categories&quot;: &quot;Messaging, Collaboration&quot;,
+      &quot;Tags&quot;: &quot;salesforce, slack, collaboration, message, integration service, connector catalog&quot;,
+      &quot;DocumentationUrl&quot;: &quot;https://docs.uipath.com/integration-service/automation-cloud/latest/user-guide/uipath-salesforce-slack&quot;
+    }
+  ]
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#13</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">2.72s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip is connections list \&quot;uipath-salesforce-slack\&quot; --all-folders --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Full unfiltered connection list to check enabled state clarity&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;ConnectionList&quot;,
+  &quot;Data&quot;: [
+    {
+      &quot;Id&quot;: &quot;849e85d8-1aa9-4d52-8bbd-20041c8f05d8&quot;,
+      &quot;Name&quot;: &quot;is-sandboxes&quot;,
+      &quot;ConnectorKey&quot;: &quot;uipath-salesforce-slack&quot;,
+      &quot;ConnectorName&quot;: &quot;Slack&quot;,
+      &quot;State&quot;: &quot;Enabled&quot;,
+      &quot;Owner&quot;: &quot;sanjeet.manna@uipath.com&quot;,
+      &quot;IsDefault&quot;: &quot;No&quot;,
+      &quot;ByoaConnection&quot;: &quot;No&quot;,
+      &quot;ElementInstanceId&quot;: &quot;&quot;,
+      &quot;Folder&quot;: &quot;uipath-maestro-flow&quot;,
+      &quot;FolderKey&quot;: &quot;5da18ec0-7de1-4e57-aaf1-ddc8a369c199&quot;,
+      &quot;Created&quot;: &quot;2026-05-08T14:59:09.153Z&quot;,
+      &quot;Updated&quot;: &quot;&quot;
+    },
+    {
+      &quot;Id&quot;: &quot;8e0e255f-ce7c-43dc-8929-83847fcd9025&quot;,
+      &quot;Name&quot;: &quot;is-sandboxes&quot;,
+      &quot;ConnectorKey&quot;: &quot;uipath-salesforce-slack&quot;,
+      &quot;ConnectorName&quot;: &quot;Slack&quot;,
+      &quot;State&quot;: &quot;Failed&quot;,
+      &quot;Owner&quot;: &quot;System&quot;,
+      &quot;IsDefault&quot;: &quot;No&quot;,
+      &quot;ByoaConnection&quot;: &quot;No&quot;,
+      &quot;ElementInstanceId&quot;: &quot;&quot;,
+      &quot;Folder&quot;: &quot;SlackEmojiListTest&quot;,
+      &quot;FolderKey&quot;: &quot;c79e173d-d870-4ab6-b5f9-7627ddbae4bf&quot;,
+      &quot;Created&quot;: &quot;2026-07-01T21:56:48.066Z&quot;,
+      &quot;Updated&quot;: &quot;&quot;
+    },
+    {
+      &quot;Id&quot;: &quot;e03f734e-0f80-4e8a-a7c1-0ece309b0ca4&quot;,
+      &quot;Name&quot;: &quot;is-sandboxes&quot;,
+      &quot;ConnectorKey&quot;: &quot;uipath-salesforce-slack&quot;,
+      &quot;ConnectorName&quot;: &quot;Slack&quot;
+
+… (truncated, 508 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#14</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.61s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry search \&quot;custom\&quot; --output json --output-filter \&quot;[?contains(NodeType,&#x27;slack&#x27;)].{NodeType:NodeType,DisplayName:DisplayName}\&quot; 2&gt;&amp;1\necho \&quot;---list-all activities for slack connector broadly---\&quot;\nuip maestro flow registry search \&quot;uipath-salesforce-slack\&quot; --output json --output-filter \&quot;[?starts_with(NodeType,&#x27;uipath.connector.uipath-salesforce-slack.&#x27;)].{NodeType:NodeType,DisplayN… (22 more chars)&quot;,
+  &quot;description&quot;: &quot;Search for emoji/custom activities more broadly on slack connector&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeSearchSuccess&quot;,
+  &quot;Data&quot;: []
+}
+---list-all activities for slack connector broadly---
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeSearchSuccess&quot;,
+  &quot;Data&quot;: [
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-salesforce-slack.unarchive-channel&quot;,
+      &quot;DisplayName&quot;: &quot;Unarchive Channel&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-salesforce-slack.send-reply&quot;,
+      &quot;DisplayName&quot;: &quot;Send Reply&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-salesforce-slack.join-channel&quot;,
+      &quot;DisplayName&quot;: &quot;Join Channel&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-salesforce-slack.create-channel&quot;,
+      &quot;DisplayName&quot;: &quot;Create Channel&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-salesforce-slack.send-message-to-channel&quot;,
+      &quot;DisplayName&quot;: &quot;Send Message to Channel&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-salesforce-slack.archive-channel&quot;,
+      &quot;DisplayName&quot;: &quot;Archive Channel&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-salesforce-slack.list-all-users&quot;,
+      &quot;DisplayName&quot;: &quot;List All Users&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-salesforce-slack.list-all-user-groups&quot;,
+      &quot;D
+
+… (truncated, 2211 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#15</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">2.62s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip is connections list \&quot;uipath-salesforce-slack\&quot; --all-folders --output json --output-filter \&quot;[?FolderKey==&#x27;5da18ec0-7de1-4e57-aaf1-ddc8a369c199&#x27;]\&quot; 2&gt;&amp;1\necho \&quot;---check folder hierarchy---\&quot;\nuip --help 2&gt;&amp;1 | grep -i folder\necho \&quot;---\&quot;\nuip orchestrator folder list --output json 2&gt;&amp;1 | head -60 || true&quot;,
+  &quot;description&quot;: &quot;Check folder details for uipath-maestro-flow connection folder&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;ConnectionList&quot;,
+  &quot;Data&quot;: [
+    {
+      &quot;Id&quot;: &quot;849e85d8-1aa9-4d52-8bbd-20041c8f05d8&quot;,
+      &quot;Name&quot;: &quot;is-sandboxes&quot;,
+      &quot;ConnectorKey&quot;: &quot;uipath-salesforce-slack&quot;,
+      &quot;ConnectorName&quot;: &quot;Slack&quot;,
+      &quot;State&quot;: &quot;Enabled&quot;,
+      &quot;Owner&quot;: &quot;sanjeet.manna@uipath.com&quot;,
+      &quot;IsDefault&quot;: &quot;No&quot;,
+      &quot;ByoaConnection&quot;: &quot;No&quot;,
+      &quot;ElementInstanceId&quot;: &quot;&quot;,
+      &quot;Folder&quot;: &quot;uipath-maestro-flow&quot;,
+      &quot;FolderKey&quot;: &quot;5da18ec0-7de1-4e57-aaf1-ddc8a369c199&quot;,
+      &quot;Created&quot;: &quot;2026-05-08T14:59:09.153Z&quot;,
+      &quot;Updated&quot;: &quot;&quot;
+    }
+  ],
+  &quot;Warning&quot;: &quot;Connection(s) not enabled: is-sandboxes. Only Enabled connections can be used for operations. Run &#x27;uip is connections edit &lt;connection-id&gt;&#x27; to re-authenticate.&quot;
+}
+---check folder hierarchy---
+│ or                  Manage Orchestrator folders, jobs, processes, and        │
+---
+{
+  &quot;Result&quot;: &quot;ValidationError&quot;,
+  &quot;ErrorCode&quot;: &quot;invalid_argument&quot;,
+  &quot;Message&quot;: &quot;error: unknown command &#x27;folder&#x27;\n(Did you mean folders?)&quot;,
+  &quot;Instructions&quot;: &quot;Run &#x27;uip --help&#x27; to list available commands.&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#16</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">2.59s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip orchestrator folders list --output json 2&gt;&amp;1 | head -100&quot;,
+  &quot;description&quot;: &quot;List orchestrator folders to confirm Shared/uipath-maestro-flow path&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FolderList&quot;,
+  &quot;Pagination&quot;: {
+    &quot;Returned&quot;: 50,
+    &quot;Limit&quot;: 50,
+    &quot;Offset&quot;: 0,
+    &quot;HasMore&quot;: true
+  },
+  &quot;Data&quot;: [
+    {
+      &quot;Key&quot;: &quot;410fae2d-89b3-4cd1-a991-7359bda90c0b&quot;,
+      &quot;Name&quot;: &quot;zhongyi.shi@uipath.com&#x27;s workspace&quot;,
+      &quot;Path&quot;: &quot;zhongyi.shi@uipath.com&#x27;s workspace&quot;,
+      &quot;Description&quot;: &quot;&quot;,
+      &quot;Type&quot;: &quot;Personal&quot;,
+      &quot;ParentKey&quot;: &quot;&quot;
+    },
+    {
+      &quot;Key&quot;: &quot;45972b24-e93c-49a6-8f33-a40dc2fff44f&quot;,
+      &quot;Name&quot;: &quot;Debug_AcrUserList&quot;,
+      &quot;Path&quot;: &quot;zhongyi.shi@uipath.com&#x27;s workspace/Debug_AcrUserList&quot;,
+      &quot;Description&quot;: &quot;&quot;,
+      &quot;Type&quot;: &quot;DebugSolution&quot;,
+      &quot;ParentKey&quot;: &quot;410fae2d-89b3-4cd1-a991-7359bda90c0b&quot;
+    },
+    {
+      &quot;Key&quot;: &quot;7420ce0c-3c3e-4d59-8d79-2cf20e01b832&quot;,
+      &quot;Name&quot;: &quot;Debug_AcrUserList 1&quot;,
+      &quot;Path&quot;: &quot;zhongyi.shi@uipath.com&#x27;s workspace/Debug_AcrUserList 1&quot;,
+      &quot;Description&quot;: &quot;&quot;,
+      &quot;Type&quot;: &quot;DebugSolution&quot;,
+      &quot;ParentKey&quot;: &quot;410fae2d-89b3-4cd1-a991-7359bda90c0b&quot;
+    },
+    {
+      &quot;Key&quot;: &quot;d28398c8-0da9-4e63-8152-76f7421fc524&quot;,
+      &quot;Name&quot;: &quot;Debug_AcrUserList 2&quot;,
+      &quot;Path&quot;: &quot;zhongyi.shi@uipath.com&#x27;s workspace/Debug_AcrUserList 2&quot;,
+      &quot;Description&quot;: &quot;&quot;,
+      &quot;Type&quot;: &quot;DebugSolution&quot;,
+ 
+
+… (truncated, 2195 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#17</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-err">ERROR</span>
+      <span class="tool-duration">347ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip orchestrator folders list --output json --output-filter \&quot;[?Key==&#x27;5da18ec0-7de1-4e57-aaf1-ddc8a369c199&#x27;]\&quot; 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Get full path of the target folder by key&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Exit code 3
+{
+  &quot;Result&quot;: &quot;ValidationError&quot;,
+  &quot;ErrorCode&quot;: &quot;invalid_argument&quot;,
+  &quot;Message&quot;: &quot;--output-filter requires an explicit --limit: this command defaults to --limit 50, so the filter would silently apply to only the first 50 records.&quot;,
+  &quot;Instructions&quot;: &quot;Pass --limit &lt;n&gt; to choose how many records the filter applies to. To filter over all records, pass the command&#x27;s maximum accepted --limit (see the option&#x27;s description in --help).&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}</pre>
+    <h4>Error</h4><pre>Exit code 3
+{
+  &quot;Result&quot;: &quot;ValidationError&quot;,
+  &quot;ErrorCode&quot;: &quot;invalid_argument&quot;,
+  &quot;Message&quot;: &quot;--output-filter requires an explicit --limit: this command defaults to --limit 50, so the filter would silently apply to only the first 50 records.&quot;,
+  &quot;Instructions&quot;: &quot;Pass --limit &lt;n&gt; to choose how many records the filter applies to. To filter over all records, pass the command&#x27;s maximum accepted --limit (see the option&#x27;s description in --help).&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}</pre>
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#18</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">970ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip orchestrator folders list --output json --limit 1000 --output-filter \&quot;[?Key==&#x27;5da18ec0-7de1-4e57-aaf1-ddc8a369c199&#x27;]\&quot; 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Get full path of the target folder by key with proper limit&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FolderList&quot;,
+  &quot;Pagination&quot;: {
+    &quot;Returned&quot;: 785,
+    &quot;Limit&quot;: 1000,
+    &quot;Offset&quot;: 0,
+    &quot;HasMore&quot;: false
+  },
+  &quot;Data&quot;: [
+    {
+      &quot;Key&quot;: &quot;5da18ec0-7de1-4e57-aaf1-ddc8a369c199&quot;,
+      &quot;Name&quot;: &quot;uipath-maestro-flow&quot;,
+      &quot;Path&quot;: &quot;Shared/uipath-maestro-flow&quot;,
+      &quot;Description&quot;: &quot;&quot;,
+      &quot;Type&quot;: &quot;Standard&quot;,
+      &quot;ParentKey&quot;: &quot;c4359cde-55f0-4f0e-9322-c6cdce74ab4c&quot;
+    }
+  ]
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#19</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">2.53s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry search \&quot;list\&quot; --output json --output-filter \&quot;[?contains(NodeType,&#x27;slack&#x27;)].{NodeType:NodeType,DisplayName:DisplayName,Description:Description}\&quot; 2&gt;&amp;1\necho \&quot;---search &#x27;emoji list&#x27;---\&quot;\nuip maestro flow registry search \&quot;emoticon\&quot; --output json 2&gt;&amp;1\necho \&quot;---check registry list --local for anything matching adhoc method activity for custom methods---\&quot;\nuip maestro flow registry… (90 more chars)&quot;,
+  &quot;description&quot;: &quot;Broader search for emoji-related and custom-method slack activities&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeSearchSuccess&quot;,
+  &quot;Data&quot;: [
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-salesforce-slack.list-all-users&quot;,
+      &quot;DisplayName&quot;: &quot;List All Users&quot;,
+      &quot;Description&quot;: &quot;Retrieve a list of all users in a connected Slack workspace.&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-salesforce-slack.list-all-user-groups&quot;,
+      &quot;DisplayName&quot;: &quot;List All User Groups&quot;,
+      &quot;Description&quot;: &quot;Retrieve a list of all user groups in a connected Slack workspace.&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-salesforce-slack.add-users-to-user-group&quot;,
+      &quot;DisplayName&quot;: &quot;Add Users to User Group&quot;,
+      &quot;Description&quot;: &quot;Add a list of users to a user group in a connected Slack workspace.&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-salesforce-slack.list-all-users-beta-&quot;,
+      &quot;DisplayName&quot;: &quot;List All Users (beta)&quot;,
+      &quot;Description&quot;: &quot;Retrieve a list of all users in a connected Slack workspace.&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.agent.resource.tool.connector.uipath-salesforce-slack.list-all-users&quot;,
+      &quot;DisplayName&quot;: &quot;List All Users&quot;,
+      &quot;Description&quot;: &quot;Retrieve a list of all users in a connected Slack workspace.
+
+… (truncated, 1033 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#20</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">3.01s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;find / -iname \&quot;vendor-docs-registry.json\&quot; 2&gt;/dev/null\nfind / -path \&quot;*uipath-platform*integration-service*\&quot; -iname \&quot;*.md\&quot; 2&gt;/dev/null&quot;,
+  &quot;description&quot;: &quot;Find platform skill docs for http-request and vendor docs registry&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/.uipath/.skills/skills/uipath-platform/references/integration-service/vendor-docs-registry.json
+/.uipath/.skills/skills/uipath-platform/references/integration-service/connections.md
+/.uipath/.skills/skills/uipath-platform/references/integration-service/resources.md
+/.uipath/.skills/skills/uipath-platform/references/integration-service/connector-overrides/README.md
+/.uipath/.skills/skills/uipath-platform/references/integration-service/connector-overrides/uipath-microsoft-teams.md
+/.uipath/.skills/skills/uipath-platform/references/integration-service/connector-overrides/uipath-salesforce-slack.md
+/.uipath/.skills/skills/uipath-platform/references/integration-service/activities.md
+/.uipath/.skills/skills/uipath-platform/references/integration-service/http-request.md
+/.uipath/.skills/skills/uipath-platform/references/integration-service/triggers.md
+/.uipath/.skills/skills/uipath-platform/references/integration-service/integration-service.md
+/.uipath/.skills/skills/uipath-platform/references/integration-service/connectors.md
+/.uipath/.skills/skills/uipath-platform/references/integration-service/reference-resolution.md
+/.uipath/.skills/skills/uipath-platform/references/integration-servi
+
+… (truncated, 20 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#21</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">5ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/.uipath/.skills/skills/uipath-platform/references/integration-service/connector-overrides/uipath-salesforce-slack.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Slack — Connector Overrides
+2	
+3	**Connector key:** `uipath-salesforce-slack`
+4	
+5	## Connection Selection Override
+6	
+7	### When this override applies
+8	
+9	Slack webhook trigger node types — explicit allow-list (not a blanket `.trigger.*` wildcard):
+10	
+11	- `uipath.connector.trigger.uipath-salesforce-slack.message-received-in-slack`
+12	- `uipath.connector.trigger.uipath-salesforce-slack.channel-message-posted`
+13	- `uipath.connector.trigger.uipath-salesforce-slack.chat-message-posted`
+14	- `uipath.connector.trigger.uipath-salesforce-slack.chat-message-updated`
+15	- `uipath.connector.trigger.uipath-salesforce-slack.reaction-added-in-slack`
+16	- `uipath.connector.trigger.uipath-salesforce-slack.member-joined-a-slack-channel`
+17	- `uipath.connector.trigger.uipath-salesforce-slack.channel-created-in-slack`
+18	- `uipath.connector.trigger.uipath-salesforce-slack.webhook-event-received-real-time-`
+19	
+20	**Override exceptions:**
+21	
+22	- `uipath.connector.trigger.uipath-salesforce-slack.button-clicked` — the BYOA requirement depends on the app/configuration. Follow the default native-connector flow, then the existing BYOA detection via `triggers objects` ([../connections.md — For BY
+
+… (truncated, 1523 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#22</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">4ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/.uipath/.skills/skills/uipath-platform/references/integration-service/http-request.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Managed HTTP Request - Concept + `http-request` Authoring Helper
+2	
+3	This doc covers two things every agent authoring a Managed HTTP Request needs to know:
+4	1. What Managed HTTP Request is, and the two modes it runs in.
+5	2. How to use the `http-request` CLI command to fill in the values Managed HTTP Request needs.
+6	
+7	Consumers: Maestro Flow, Maestro BPMN, API Workflows, Case Management, etc. Each consumer surfaces Managed HTTP Request differently (as a node, an activity, a tool call, …) and uses its own type identifier and configuration schema - the concept and the rules below are the same. For the exact node/activity type identifier and how to configure it, see your consumer&#x27;s own authoring docs.
+8	
+9	## What is Managed HTTP Request?
+10	
+11	A built-in way to make an HTTP call from a UiPath automation. Runs in two modes - **connector mode** and **manual mode**:
+12	
+13	| Mode | When | `url` | Auth |
+14	|---|---|---|---|
+15	| **Connector** | Connector exists for the vendor but the specific operation is not curated | **Relative** to the connection&#x27;s vendor base URL | Applied automatically from the bound connection |
+16	| **Manual** | No connector exists, or public API with no
+
+… (truncated, 8342 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#23</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">132ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 -c \&quot;\nimport json\nwith open(&#x27;/.uipath/.skills/skills/uipath-platform/references/integration-service/vendor-docs-registry.json&#x27;) as f:\n    d = json.load(f)\nfor entry in d if isinstance(d, list) else d.get(&#x27;connectors&#x27;, d):\n    pass\nprint(json.dumps(d, indent=2))\n\&quot; 2&gt;&amp;1 | grep -i -A5 -B2 slack&quot;,
+  &quot;description&quot;: &quot;Check vendor docs registry for slack entry&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>  &quot;_comment&quot;: &quot;Maps a vendor to its connector-key and the authoritative API docs URL used for baseline grounding. The live http-request call is the final authority. Add entries as new vendors are supported. &#x27;dynamic&#x27; flags objects that can carry tenant-specific custom fields. Population basis: Tier 1 connectors per INSCE &#x27;Connector tiering definitions&#x27; (third-party, GA only; excludes UiPath-internal, generic-protocol, FPS/not-yet-GA, and SDK-only connectors with no HTTP API).&quot;,
+  &quot;vendors&quot;: {
+    &quot;slack&quot;: {
+      &quot;connectorKey&quot;: &quot;uipath-salesforce-slack&quot;,
+      &quot;docsUrl&quot;: &quot;https://docs.slack.dev/reference/methods&quot;,
+      &quot;dynamic&quot;: false,
+      &quot;notes&quot;: &quot;Method-per-operation (e.g. chat.postMessage). Static schema; same for every workspace.&quot;
+    },
+    &quot;salesforce&quot;: {
+      &quot;connectorKey&quot;: &quot;uipath-salesforce-sfdc&quot;,</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#24</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">679ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip is connections base-url \&quot;849e85d8-1aa9-4d52-8bbd-20041c8f05d8\&quot; --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Get base URL for the slack connection&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;ConnectionBaseUrl&quot;,
+  &quot;Data&quot;: {
+    &quot;ConnectionId&quot;: &quot;849e85d8-1aa9-4d52-8bbd-20041c8f05d8&quot;,
+    &quot;BaseUrl&quot;: &quot;https://slack.com/api&quot;
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#25</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">960ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip is resources run create \&quot;uipath-salesforce-slack\&quot; http-request \\\n  --connection-id \&quot;849e85d8-1aa9-4d52-8bbd-20041c8f05d8\&quot; \\\n  --body &#x27;{\&quot;method\&quot;:\&quot;GET\&quot;,\&quot;url\&quot;:\&quot;/emoji.list\&quot;}&#x27; --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Probe Slack emoji.list endpoint through the connection&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;ExecuteOperation&quot;,
+  &quot;Data&quot;: {
+    &quot;code&quot;: 200,
+    &quot;headers&quot;: {
+      &quot;date&quot;: &quot;Wed, 19 Aug 2026 00:10:05 GMT&quot;,
+      &quot;server&quot;: &quot;Apache&quot;,
+      &quot;expires&quot;: &quot;Sat, 26 Jul 1997 05:00:00 GMT&quot;,
+      &quot;x-envoy-upstream-service-time&quot;: &quot;33&quot;,
+      &quot;vary&quot;: &quot;Accept-Encoding&quot;,
+      &quot;access-control-allow-headers&quot;: &quot;slack-route, x-slack-version-ts, x-b3-traceid, x-b3-spanid, x-b3-parentspanid, x-b3-sampled, x-b3-flags, x-background&quot;,
+      &quot;x-slack-req-id&quot;: &quot;01b9ce74dab2e550b16e8c6905a3931e&quot;,
+      &quot;x-backend&quot;: &quot;api_normal&quot;,
+      &quot;via&quot;: &quot;1.1 slack-prod.tinyspeck.com, ingress-www-iad-external-prod-06c504e97faea4dc4,envoy-edge-iad-nbgvgyam&quot;,
+      &quot;referrer-policy&quot;: &quot;no-referrer&quot;,
+      &quot;content-type&quot;: &quot;application/json; charset=utf-8&quot;,
+      &quot;x-accepted-oauth-scopes&quot;: &quot;emoji:read&quot;,
+      &quot;cache-control&quot;: &quot;private, no-cache, no-store, must-revalidate&quot;,
+      &quot;x-oauth-scopes&quot;: &quot;identify,channels:read,emoji:read,groups:read,im:read,mpim:read,users:read,users:read.email,usergroups:read,users.profile:read,channels:write,chat:write,files:write,groups:write,im:write,mpim:write,usergroups:write&quot;,
+      &quot;Content-Type&quot;: &quot;application/json&quot;,
+      &quot;x-edge-backend&quot;: &quot;envo
+
+… (truncated, 3993 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#26</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">6.51s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-slack-http-fallback/SlackEmojiListTest &amp;&amp; uip maestro flow init \&quot;SlackEmojiListTest\&quot; --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Init the flow project inside the solution&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>2026-08-19 00:10:10 INFO  [ResourceBuilder:ProjectCreateCommandHandler] Creating project [object Object]
+2026-08-19 00:10:10 INFO  [ResourceBuilder:MultiFileSolutionDefinitionProvider] Reading multi-file solution definition for solution %s /work/output/artifacts/skill-flow-slack-http-fallback/SlackEmojiListTest
+2026-08-19 00:10:10 INFO  [ResourceBuilder:ProjectCreateCommandHandler] Generate artefact resources for project [object Object]
+2026-08-19 00:10:10 INFO  [ResourceBuilder:SolutionsMetadataReader] Reading metadata from %s. SolutionsMetadataReader
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FlowInit&quot;,
+  &quot;Data&quot;: {
+    &quot;Status&quot;: &quot;Created successfully&quot;,
+    &quot;Path&quot;: &quot;/work/output/artifacts/skill-flow-slack-http-fallback/SlackEmojiListTest/SlackEmojiListTest&quot;,
+    &quot;SolutionRegistration&quot;: {
+      &quot;Status&quot;: &quot;Registered&quot;,
+      &quot;Message&quot;: &quot;Project registered in parent solution.&quot;,
+      &quot;Solution&quot;: &quot;/work/output/artifacts/skill-flow-slack-http-fallback/SlackEmojiListTest/SlackEmojiListTest.uipx&quot;,
+      &quot;Project&quot;: &quot;SlackEmojiListTest/project.uiproj&quot;,
+      &quot;ProjectId&quot;: &quot;50bb18a9-b915-4481-a793-609e4435813c&quot;,
+      &quot;Instructions&quot;: &quot;The project is listed in the parent solution manifest.\nPacking 
+
+… (truncated, 631 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#27</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">14ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;find /work/output/artifacts/skill-flow-slack-http-fallback/SlackEmojiListTest -name \&quot;*.flow\&quot;&quot;,
+  &quot;description&quot;: &quot;Locate the scaffolded flow file&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/work/output/artifacts/skill-flow-slack-http-fallback/SlackEmojiListTest/SlackEmojiListTest/SlackEmojiListTest.flow</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#28</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.02s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry search \&quot;manual trigger\&quot; --output json --output-filter \&quot;[*].{NodeType:NodeType,DisplayName:DisplayName}\&quot; 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Search for manual trigger node type&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeSearchSuccess&quot;,
+  &quot;Data&quot;: [
+    {
+      &quot;NodeType&quot;: &quot;core.trigger.manual&quot;,
+      &quot;DisplayName&quot;: &quot;Manual trigger&quot;
+    }
+  ]
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#29</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">10ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-slack-http-fallback/SlackEmojiListTest/SlackEmojiListTest/SlackEmojiListTest.flow&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	{
+2	  &quot;id&quot;: &quot;00bce4b1-c128-47ce-8fe4-5f1d833e5d83&quot;,
+3	  &quot;version&quot;: &quot;1.9&quot;,
+4	  &quot;name&quot;: &quot;SlackEmojiListTest&quot;,
+5	  &quot;nodes&quot;: [
+6	    {
+7	      &quot;id&quot;: &quot;start&quot;,
+8	      &quot;type&quot;: &quot;core.trigger.manual&quot;,
+9	      &quot;typeVersion&quot;: &quot;1.0&quot;,
+10	      &quot;display&quot;: {
+11	        &quot;label&quot;: &quot;Manual trigger&quot;
+12	      },
+13	      &quot;inputs&quot;: {
+14	        &quot;entryPointId&quot;: &quot;ede08999-4b21-4b22-9773-8ef159cbf5f0&quot;,
+15	        &quot;isDefaultEntryPoint&quot;: true
+16	      }
+17	    }
+18	  ],
+19	  &quot;edges&quot;: [],
+20	  &quot;definitions&quot;: [
+21	    {
+22	      &quot;nodeType&quot;: &quot;core.trigger.manual&quot;,
+23	      &quot;version&quot;: &quot;1.0&quot;,
+24	      &quot;category&quot;: &quot;trigger&quot;,
+25	      &quot;description&quot;: &quot;Start the process manually&quot;,
+26	      &quot;tags&quot;: [
+27	        &quot;trigger&quot;,
+28	        &quot;start&quot;,
+29	        &quot;manual&quot;
+30	      ],
+31	      &quot;sortOrder&quot;: 80,
+32	      &quot;display&quot;: {
+33	        &quot;label&quot;: &quot;Manual trigger&quot;,
+34	        &quot;icon&quot;: &quot;play&quot;,
+35	        &quot;shape&quot;: &quot;circle&quot;
+36	      },
+37	      &quot;handleConfiguration&quot;: [
+38	        {
+39	          &quot;position&quot;: &quot;right&quot;,
+40	          &quot;handles&quot;: [
+41	            {
+42	              &quot;id&quot;: &quot;output&quot;,
+43	              &quot;type&quot;: &quot;source&quot;,
+44	              &quot;handleType&quot;: &quot;output&quot;,
+45	              &quot;showButton&quot;: true,
+46	              &quot;constrai
+
+… (truncated, 1052 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#30</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">708ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow node add SlackEmojiListTest/SlackEmojiListTest.flow core.action.http.v2 --label \&quot;List Custom Emoji\&quot; --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Add the managed HTTP node&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeAddSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;Node&quot;: {
+      &quot;Id&quot;: &quot;listCustomEmoji1&quot;,
+      &quot;Type&quot;: &quot;core.action.http.v2&quot;,
+      &quot;TypeVersion&quot;: &quot;2.3&quot;,
+      &quot;Ui&quot;: {
+        &quot;Position&quot;: {
+          &quot;X&quot;: 0,
+          &quot;Y&quot;: 0
+        }
+      },
+      &quot;Display&quot;: {
+        &quot;Label&quot;: &quot;List Custom Emoji&quot;
+      },
+      &quot;Inputs&quot;: {
+        &quot;Branches&quot;: [],
+        &quot;Timeout&quot;: &quot;PT15M&quot;,
+        &quot;RetryCount&quot;: 0
+      }
+    },
+    &quot;DefinitionAdded&quot;: true,
+    &quot;BindingsCreated&quot;: 0,
+    &quot;VariableCount&quot;: 3
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#31</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.11s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow node configure SlackEmojiListTest/SlackEmojiListTest.flow listCustomEmoji1 \\\n  --detail &#x27;{\n    \&quot;authentication\&quot;: \&quot;connector\&quot;,\n    \&quot;targetConnector\&quot;: \&quot;uipath-salesforce-slack\&quot;,\n    \&quot;connectionId\&quot;: \&quot;849e85d8-1aa9-4d52-8bbd-20041c8f05d8\&quot;,\n    \&quot;folderKey\&quot;: \&quot;5da18ec0-7de1-4e57-aaf1-ddc8a369c199\&quot;,\n    \&quot;method\&quot;: \&quot;GET\&quot;,\n    \&quot;url\&quot;: \&quot;/emoji.list\&quot;\n  }&#x27; --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Configure the HTTP node with Slack connector-mode auth&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeConfigureSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;NodeId&quot;: &quot;listCustomEmoji1&quot;,
+    &quot;BindingsCreated&quot;: 2,
+    &quot;DetailPopulated&quot;: true
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#32</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">97ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 -c \&quot;\nimport json\nwith open(&#x27;SlackEmojiListTest/SlackEmojiListTest.flow&#x27;) as f:\n    d = json.load(f)\nfor n in d[&#x27;nodes&#x27;]:\n    print(n[&#x27;id&#x27;], n[&#x27;type&#x27;])\n\&quot;&quot;,
+  &quot;description&quot;: &quot;List current nodes and their ids/types&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>start core.trigger.manual
+listCustomEmoji1 core.action.http.v2</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#33</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">373ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/scripts/flow_edit.py add-edge --flow SlackEmojiListTest/SlackEmojiListTest.flow \\\n  --source start --source-port output --target listCustomEmoji1 --target-port input 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Wire manual trigger output to HTTP node input&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>added edge edge_start_output_listCustomEmoji1_input</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#34</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">8.23s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/scripts/audit_flow.py SlackEmojiListTest/SlackEmojiListTest.flow --json-out /tmp/findings.json 2&gt;&amp;1\necho \&quot;---format---\&quot;\nuip maestro flow format SlackEmojiListTest/SlackEmojiListTest.flow --output json 2&gt;&amp;1\necho \&quot;---validate---\&quot;\nuip maestro flow validate SlackEmojiListTest/SlackEmojiListTest.flow --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Audit, format, and validate the flow&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>topology      1 error(s), 0 warning(s), 0 info
+    error   NO_OUTGOING                listCustomEmoji1                         non-terminal node has no outgoing edge
+expressions   0 error(s), 0 warning(s), 0 info
+jint          0 error(s), 0 warning(s), 0 info
+bindings      0 error(s), 0 warning(s), 2 info
+    info    UNUSED_BINDING             bindings                                 no resource node needs (resourceKey=849e85d8-1aa9-4d52-8bbd-20041c8f05d8, name=FolderKey)
+    info    UNUSED_BINDING             bindings                                 no resource node needs (resourceKey=849e85d8-1aa9-4d52-8bbd-20041c8f05d8, name=uipath-uipath-http connection)
+runtime-gaps  0 error(s), 2 warning(s), 0 info
+    warning LAYOUT_SIZE_MISMATCH       listCustomEmoji1                         size NonexNone disagrees with this node&#x27;s shape (96x96); Studio Web renders it misshapen until `flow format` runs
+    warning LAYOUT_SIZE_MISMATCH       start                                    size NonexNone disagrees with this node&#x27;s shape (96x96); Studio Web renders it misshapen until `flow format` runs
+full findings: /tmp/findings.json
+audit: FAIL (1 error(s))
+---format---
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+ 
+
+… (truncated, 686 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#35</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">855ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry get core.control.end --output json 2&gt;&amp;1 &gt; /tmp/end.json\ncat /tmp/end.json | python3 -c \&quot;import json,sys; d=json.load(sys.stdin); print(json.dumps(d[&#x27;Data&#x27;][&#x27;Node&#x27;], indent=2)[:500])\&quot;&quot;,
+  &quot;description&quot;: &quot;Get End node definition&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;nodeType&quot;: &quot;core.control.end&quot;,
+  &quot;version&quot;: &quot;1.0&quot;,
+  &quot;category&quot;: &quot;control-flow&quot;,
+  &quot;description&quot;: &quot;Mark the end of a process path&quot;,
+  &quot;tags&quot;: [
+    &quot;control-flow&quot;,
+    &quot;end&quot;,
+    &quot;finish&quot;,
+    &quot;complete&quot;
+  ],
+  &quot;sortOrder&quot;: 65,
+  &quot;display&quot;: {
+    &quot;label&quot;: &quot;End&quot;,
+    &quot;icon&quot;: &quot;circle-check&quot;,
+    &quot;shape&quot;: &quot;circle&quot;
+  },
+  &quot;handleConfiguration&quot;: [
+    {
+      &quot;position&quot;: &quot;left&quot;,
+      &quot;handles&quot;: [
+        {
+          &quot;id&quot;: &quot;input&quot;,
+          &quot;type&quot;: &quot;target&quot;,
+          &quot;handleType&quot;: &quot;input&quot;</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#36</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">292ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/scripts/flow_edit.py add-node --flow SlackEmojiListTest/SlackEmojiListTest.flow \\\n  --id done --type core.control.end --definition-file /tmp/end.json --label Done 2&gt;&amp;1\necho \&quot;---add-edge---\&quot;\npython3 /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/scripts/flow_edit.py add-edge --flow SlackEmojiListTest/SlackEmojiLi… (102 more chars)&quot;,
+  &quot;description&quot;: &quot;Add End node and wire HTTP node&#x27;s default output to it&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>added node done (core.control.end v1.0); definition added; variables.nodes +0
+---add-edge---
+added edge edge_listCustomEmoji1_default_done_input</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#37</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">13.19s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;\\\npython3 /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/scripts/audit_flow.py SlackEmojiListTest/SlackEmojiListTest.flow --json-out /tmp/findings2.json 2&gt;&amp;1\necho \&quot;---format---\&quot;\nuip maestro flow format SlackEmojiListTest/SlackEmojiListTest.flow --output json 2&gt;&amp;1\necho \&quot;---validate---\&quot;\nuip maestro flow validate SlackEmojiListTest/SlackEmojiListTest.flow --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Re-audit, format, and validate after adding End node&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>topology      0 error(s), 0 warning(s), 0 info
+expressions   0 error(s), 0 warning(s), 0 info
+jint          0 error(s), 0 warning(s), 0 info
+bindings      0 error(s), 0 warning(s), 2 info
+    info    UNUSED_BINDING             bindings                                 no resource node needs (resourceKey=849e85d8-1aa9-4d52-8bbd-20041c8f05d8, name=FolderKey)
+    info    UNUSED_BINDING             bindings                                 no resource node needs (resourceKey=849e85d8-1aa9-4d52-8bbd-20041c8f05d8, name=uipath-uipath-http connection)
+runtime-gaps  0 error(s), 0 warning(s), 0 info
+full findings: /tmp/findings2.json
+audit: clean
+---format---
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FlowFormat&quot;,
+  &quot;Data&quot;: {
+    &quot;File&quot;: &quot;SlackEmojiListTest/SlackEmojiListTest.flow&quot;,
+    &quot;NodesTotal&quot;: 3,
+    &quot;EdgesTotal&quot;: 2,
+    &quot;NodesRepositioned&quot;: 1,
+    &quot;NodesResized&quot;: 0,
+    &quot;SubflowsTidied&quot;: 0,
+    &quot;VariableCount&quot;: 3
+  },
+  &quot;Instructions&quot;: &quot;Repositioned 1 of 3 nodes&quot;
+}
+---validate---
+[ManifestClient] fetchDynamicNodes ok: total=315 agent context nodes=2 external agent nodes=7 orchestrator nodes=261 IXP nodes=45
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FlowValidate&quot;,
+  &quot;Data&quot;: {
+    &quot;File&quot;: &quot;/work/outp
+
+… (truncated, 135 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#38</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">734ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow debug --help 2&gt;&amp;1 | head -60&quot;,
+  &quot;description&quot;: &quot;Check flow debug command options&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>                             uip maestro flow debug                             
+  Debug a flow project by uploading to Studio Web and running a debug session   
+                Use --help with nested commands for more detail.                
+
+┌─ Usage ──────────────────────────────────────────────────────────────────────┐
+│ uip maestro flow debug [options] &lt;project-path&gt;                              │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Arguments ──────────────────────────────────────────────────────────────────┐
+│ project-path   Path to the flow project directory (must contain              │
+│                project.uiproj)                                               │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Options ────────────────────────────────────────────────────────────────────┐
+│ --folder-id &lt;id&gt;               Orchestrator folder ID (OrganizationUnitId)   │
+│                                as a positive integer. Mutually exclusive     │
+│                                with --folder-key/--folder-path.              │
+│                                Auto-detected if none are prov
+
+… (truncated, 3339 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#39</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">21.45s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow debug SlackEmojiListTest --output json --timeout 180 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Run flow debug end-to-end&quot;,
+  &quot;timeout&quot;: 200000
+}</pre>
+    <h4>Result</h4>
+    <pre>2026-08-19 00:11:35 INFO  [ResourceBuilder:ReconcileProjectsCommandHandler] Reconcile projects for solution {solutionKey} [object Object]
+2026-08-19 00:11:35 INFO  [ResourceBuilder:MultiFileSolutionDefinitionProvider] Reading multi-file solution definition for solution %s /tmp/.flow-debug-staging-SlackEmojiListTest-1787098295748
+2026-08-19 00:11:35 INFO  [ResourceBuilder:SolutionsMetadataReader] Reading metadata from %s. SolutionsMetadataReader
+2026-08-19 00:11:36 INFO  [ResourceBuilder:MultiFileSolutionDefinitionProvider] Reading multi-file solution definition for solution %s /tmp/.flow-debug-staging-SlackEmojiListTest-1787098295748
+2026-08-19 00:11:36 INFO  [ResourceBuilder:AddOrUpdateResourceToSolutionCommandHandler] Add or update resource 849e85d8-1aa9-4d52-8bbd-20041c8f05d8 of type connection to solution.
+2026-08-19 00:11:36 INFO  [ResourceBuilder:SolutionsMetadataReader] Reading metadata from %s. SolutionsMetadataReader
+2026-08-19 00:11:37 INFO  [ResourceBuilder:ImportResourceHelper] ExportResourceAsync: Exporting resource 849e85d8-1aa9-4d52-8bbd-20041c8f05d8 from integrationservice.uipath.com
+2026-08-19 00:11:37 INFO  [ResourceBuilder:ImportResourceHelper] ExportResourceAsyn
+
+… (truncated, 19572 more chars)</pre>
+    
+  </div>
+</details>
+
+</div>
+
+<h2>Command Telemetry</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Total</div><div class="value">40</div></div>
+    <div class="stat"><div class="label">Successful</div><div class="value">39 (98%)</div></div>
+    <div class="stat"><div class="label">Failed</div><div class="value">1</div></div>
+    <div class="stat"><div class="label">Avg / cmd</div><div class="value">2.19s</div></div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 2fr;gap:16px;margin-top:12px">
+    <div>
+      <h4>By Tool</h4>
+      <table>
+        <thead><tr><th>Tool</th><th>Count</th></tr></thead>
+        <tbody><tr><td class='mono'>Bash</td><td>35</td></tr><tr><td class='mono'>Read</td><td>4</td></tr><tr><td class='mono'>Skill</td><td>1</td></tr></tbody>
+      </table>
+    </div>
+    <div>
+      <h4>Slowest</h4>
+      <table>
+        <thead><tr><th>Tool</th><th>Duration</th><th>Parameters</th></tr></thead>
+        <tbody><tr><td class='mono'>Bash</td><td>21.45s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro flow debug SlackEmojiList...</td></tr><tr><td class='mono'>Bash</td><td>13.19s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;\\\npython3 /home/azureuser/projects/...</td></tr><tr><td class='mono'>Bash</td><td>8.23s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;python3 /home/azureuser/projects/skil...</td></tr><tr><td class='mono'>Bash</td><td>6.51s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;cd /work/output/artifacts/skill-flow-...</td></tr><tr><td class='mono'>Bash</td><td>4.85s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro flow registry pull --forc...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+  <p><strong>Most Common Pattern:</strong> <code>Bash → Bash → Bash</code></p><p><strong>Skill Tool Invoked:</strong> 1 time(s)</p>
+</div>
+
+<h2>Generation Metrics</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Total Latency</div><div class="value">5m 3s</div></div>
+    <div class="stat"><div class="label">Turns</div><div class="value">1</div></div>
+    <div class="stat"><div class="label">Assistant Turns</div><div class="value">69</div></div>
+    <div class="stat"><div class="label">Avg Turn Latency</div><div class="value">4m 35s</div></div>
+    
+  </div>
+</div>
+
+<h2>Token Usage</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Input (uncached)</div><div class="value">598</div></div>
+    <div class="stat"><div class="label">Output</div><div class="value">12,047</div></div>
+    <div class="stat"><div class="label">Cache Write</div><div class="value">75,541</div></div>
+    <div class="stat"><div class="label">Cache Read</div><div class="value">2,750,615</div></div>
+    <div class="stat"><div class="label">Total</div><div class="value">2,838,801</div></div>
+    <div class="stat"><div class="label">Cost</div><div class="value">$1.2910</div></div>
+  </div>
+</div>
+
+<h2>Agent Settings</h2>
+<div class="card" style="padding:0">
+  <table>
+    <tbody><tr><td class='mono dim'>Permission Mode</td><td>acceptEdits</td></tr><tr><td class='mono dim'>Allowed Tools</td><td>Skill, Bash, Read, Write, Edit, Glob, Grep</td></tr><tr><td class='mono dim'>Model</td><td>us.anthropic.claude-sonnet-5</td></tr><tr><td class='mono dim'>Max Turns</td><td>100</td></tr><tr><td class='mono dim'>System Prompt</td><td>You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted. </td></tr><tr><td class='mono dim'>System Prompt Mode</td><td>append</td></tr><tr><td class='mono dim'>Plugins</td><td>/home/azureuser/projects/skills/tmp</td></tr></tbody>
+  </table>
+</div>
+
+<h2>Environment</h2>
+<div class="card" style="padding:0">
+  <table>
+    <tbody><tr><td class='mono dim'>git_commit</td><td>unknown</td></tr><tr><td class='mono dim'>skills_git_commit</td><td>unknown</td></tr><tr><td class='mono dim'>cli_version</td><td>1.201.0-dev.8272</td></tr><tr><td class='mono dim'>tool_plugins</td><td>{&#x27;admin-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;agent-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;agenthub-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;aops-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;api-workflow-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;automation-hub-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;codedagent-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;codedapp-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;coder-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;context-grounding-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;conversational-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;data-fabric-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;docsai-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;function-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;gov-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;guardrails-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;insights-tool&#x27;: &#x27;1.201.0-dev.8276&#x27;, &#x27;integrationservice-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;ixp-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;llm-gateway-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;llmgw-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;maestro-tool&#x27;: &#x27;1.201.0-dev.8275&#x27;, &#x27;model-hub-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;orchestrator-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;platform-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;pm-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;rpa-legacy-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;rpa-tool&#x27;: &#x27;1.201.0-dev.20260809.3&#x27;, &#x27;solution-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;tasks-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;test-manager-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;traces-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;vertical-solutions-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;}</td></tr><tr><td class='mono dim'>coder_eval</td><td>0.9.6</td></tr><tr><td class='mono dim'>claude_code_cli</td><td>2.1.177 (Claude Code)</td></tr><tr><td class='mono dim'>uv</td><td>uv 0.12.5 (x86_64-unknown-linux-gnu)</td></tr><tr><td class='mono dim'>anthropic</td><td>0.122.0</td></tr><tr><td class='mono dim'>openai</td><td>3.2.0</td></tr><tr><td class='mono dim'>pydantic</td><td>2.12.5</td></tr><tr><td class='mono dim'>api_routing</td><td>aws_bedrock</td></tr><tr><td class='mono dim'>eval_routing</td><td>aws_bedrock</td></tr><tr><td class='mono dim'>aws_region</td><td>us-east-2</td></tr><tr><td class='mono dim'>bedrock_model</td><td>us.anthropic.claude-sonnet-4-6</td></tr><tr><td class='mono dim'>system_prompt_semantics</td><td>append</td></tr></tbody>
+  </table>
+</div>
+
+<footer>Generated by coder_eval · 2026-08-19T00:12:23</footer>
+</div>
+<script>
+function toggleTheme() {
+  document.documentElement.classList.toggle('light');
+  try {
+    const mode = document.documentElement.classList.contains('light') ? 'light' : 'dark';
+    localStorage.setItem('coder-eval-theme', mode);
+  } catch (e) { /* ignore */ }
+}
+(function() {
+  try {
+    if (localStorage.getItem('coder-eval-theme') === 'light') {
+      document.documentElement.classList.add('light');
+    }
+  } catch (e) { /* ignore */ }
+})();
+</script>
+</body>
+</html>

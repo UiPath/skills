@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "CreateGroupDM",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "19be09a8-905c-4d61-97fd-e05e9d56cac7",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "CreateGroupDM"
+    },
+    "locks": [],
+    "key": "db30fb70-fe1b-46a5-97af-729b8fca7ebc",
+    "files": []
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "Result": "Success",
+  "Code": "RegistrySearchSuccess",
+  "Data": {
+    "ExtensionTypes": [
+      {
+        "ExtensionType": "Intsvc.TimerTrigger",
+        "Label": "Timer trigger",
+        "BpmnElement": "bpmn:StartEvent",
+        "ExtensionTag": "uipath:activity",
+        "InputPattern": "none",
+        "BindingPattern": "none",
+        "RequiresDiscovery": "No"
+      }
+    ],
+    "Connectors": [],
+    "Processes": [],
+    "ProcessesByType": {
+      "Process": 0,
+      "ProcessOrchestration": 0,
+      "Agent": 0,
+      "Flow": 0,
+      "Api": 0,
+      "Function": 0,
+      "CaseManagement": 0,
+      "BusinessRules": 0
+    }
+  }
+}

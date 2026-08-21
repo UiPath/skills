@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "DTLLoadByDefaultTrueTest",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "7e8b051e-9c98-4754-aad8-b84e01b6f5d9",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "DTLLoadByDefaultTrueTest"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Flow",
+      "name": "DTLLoadByDefaultTrueTest",
+      "package": {
+        "key": "d05b8c1a-233d-45e8-8738-8e69cc4536d7"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "0a6837cb-de3a-4e33-b71f-ef79a04bc7e4",
+    "files": []
+  }
+}

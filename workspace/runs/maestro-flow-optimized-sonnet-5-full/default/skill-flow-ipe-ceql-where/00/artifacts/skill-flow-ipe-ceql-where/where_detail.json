@@ -1,0 +1,28 @@
+{
+  "connectorKey": "uipath-microsoft-azureactivedirectory",
+  "connectionId": "26b7ac14-424a-45ae-88ee-88ae5c8794ce",
+  "folderKey": "5da18ec0-7de1-4e57-aaf1-ddc8a369c199",
+  "nodeId": "listGroups1",
+  "operation": "List Groups",
+  "endpoint": "/groups",
+  "method": "GET",
+  "filterParameterName": "where",
+  "filter": {
+    "groupOperator": 0,
+    "index": 0,
+    "filters": [
+      {
+        "id": "displayName",
+        "operator": "Equals",
+        "value": {
+          "value": "active",
+          "rawString": "\"active\"",
+          "isLiteral": true
+        }
+      }
+    ],
+    "groups": []
+  },
+  "compiledCeql": "displayName = 'active'",
+  "notes": "Server-side filter for the Microsoft Azure Active Directory (Entra ID) List Groups activity (uipath.connector.uipath-microsoft-azureactivedirectory.list-groups). The 'where' query parameter carries a design.component: 'FilterBuilder' marker, so this structured tree is the CLI's --detail.filter input for `uip maestro flow node configure`. Captured here instead of applied live because no UiPath tenant/live node-configuration step is available in this sandbox."
+}

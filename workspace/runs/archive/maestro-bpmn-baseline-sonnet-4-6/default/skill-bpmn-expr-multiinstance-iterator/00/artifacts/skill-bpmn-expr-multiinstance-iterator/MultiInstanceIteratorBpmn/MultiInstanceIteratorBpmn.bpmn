@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+    xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+    xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+    xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+    xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:uipath="http://uipath.org/schema/bpmn"
+    id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn"
+    exporter="UiPath (https://bpmn.uipath.com)" exporterVersion="1.0">
+
+  <bpmn:process id="Process_1" isExecutable="true">
+    <bpmn:extensionElements>
+      <uipath:migrationVersion version="11.5" />
+      <uipath:variables version="v1">
+        <!-- Items: collection input fed from the manual start entry point -->
+        <uipath:input    id="Var_Items"        name="Items"        type="json"   elementId="Start_Manual" />
+        <!-- CurrentLine and CurrentIndex: written by the subprocess body on each iteration -->
+        <uipath:inputOutput id="Var_CurrentLine"  name="CurrentLine"  type="string" />
+        <uipath:inputOutput id="Var_CurrentIndex" name="CurrentIndex" type="number" />
+      </uipath:variables>
+    </bpmn:extensionElements>
+
+    <!-- Manual start event (entry point) -->
+    <bpmn:startEvent id="Start_Manual" name="Start">
+      <bpmn:extensionElements>
+        <uipath:entryPointId value="a1b2c3d4-0000-4000-8000-111122223333" />
+      </bpmn:extensionElements>
+      <bpmn:outgoing>Flow_StartToSubProc</bpmn:outgoing>
+    </bpmn:startEvent>
+
+    <!-- Multi-instance subprocess iterating Var_Items -->
+    <bpmn:subProcess id="SubProc_Iterate" name="Iterate Items" isExpanded="true">
+      <bpmn:extensionElements>
+        <!-- Scoped variables inside the subprocess body (none needed beyond root vars) -->
+      </bpmn:extensionElements>
+      <bpmn:multiInstanceLoopCharacteristics isSequential="true">
+        <bpmn:extensionElements>
+          <!-- Registry gap: loopCharacteristics authored from canvas contract.
+               inputElement="iterator[0]" so body reads iterator[0].item and iterator[0].loopCounter -->
+          <uipath:loopCharacteristics
+              inputCollection="=vars.Var_Items"
+              inputElement="iterator[0]" />
+        </bpmn:extensionElements>
+      </bpmn:multiInstanceLoopCharacteristics>
+      <bpmn:incoming>Flow_StartToSubProc</bpmn:incoming>
+      <bpmn:outgoing>Flow_SubProcToEnd</bpmn:outgoing>
+
+      <!-- Subprocess body: start -->
+      <bpmn:startEvent id="SubStart_1" name="Iteration Start">
+        <bpmn:outgoing>Flow_SubStart_to_MapTask</bpmn:outgoing>
+      </bpmn:startEvent>
+
+      <!-- Script task: map iterator[0].item into CurrentLine, iterator[0].loopCounter into CurrentIndex -->
+      <bpmn:scriptTask id="Task_MapIterator" name="Map Item and Index" scriptFormat="JavaScript">
+        <bpmn:extensionElements>
+          <uipath:scriptVersion value="v3" />
+          <uipath:mapping version="v1">
+            <uipath:type value="BPMN.ScriptTask" version="v1" />
+            <!-- Pass item and loopCounter as script args using iterator[0] forms (subprocess depth) -->
+            <uipath:input name="args" type="json" target="bodyField"><![CDATA[{"currentItem":"=iterator[0].item","loopCounter":"=iterator[0].loopCounter"}]]></uipath:input>
+            <!-- Map the current item string representation into Var_CurrentLine -->
+            <uipath:output name="currentLine" type="string" var="Var_CurrentLine" source="=result.response.currentLine" />
+            <!-- Map the 0-based loop index into Var_CurrentIndex -->
+            <uipath:output name="currentIndex" type="number" var="Var_CurrentIndex" source="=result.response.currentIndex" />
+          </uipath:mapping>
+        </bpmn:extensionElements>
+        <bpmn:incoming>Flow_SubStart_to_MapTask</bpmn:incoming>
+        <bpmn:outgoing>Flow_MapTask_to_SubEnd</bpmn:outgoing>
+        <bpmn:script><![CDATA[
+var line = typeof currentItem === "string" ? currentItem : JSON.stringify(currentItem);
+return { response: { currentLine: line, currentIndex: loopCounter } };
+]]></bpmn:script>
+      </bpmn:scriptTask>
+
+      <!-- Subprocess body: end -->
+      <bpmn:endEvent id="SubEnd_1" name="Iteration End">
+        <bpmn:incoming>Flow_MapTask_to_SubEnd</bpmn:incoming>
+      </bpmn:endEvent>
+
+      <!-- Subprocess internal sequence flows -->
+      <bpmn:sequenceFlow id="Flow_SubStart_to_MapTask" sourceRef="SubStart_1" targetRef="Task_MapIterator" />
+      <bpmn:sequenceFlow id="Flow_MapTask_to_SubEnd"   sourceRef="Task_MapIterator" targetRef="SubEnd_1" />
+    </bpmn:subProcess>
+
+    <!-- Process-level end event -->
+    <bpmn:endEvent id="End_1" name="End">
+      <bpmn:incoming>Flow_SubProcToEnd</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <!-- Process-level sequence flows -->
+    <bpmn:sequenceFlow id="Flow_StartToSubProc" sourceRef="Start_Manual"  targetRef="SubProc_Iterate" />
+    <bpmn:sequenceFlow id="Flow_SubProcToEnd"   sourceRef="SubProc_Iterate" targetRef="End_1" />
+  </bpmn:process>
+
+  <!-- Diagram interchange (REGISTRY GAP - always generated) -->
+  <bpmndi:BPMNDiagram id="Diagram_1">
+    <bpmndi:BPMNPlane id="Plane_1" bpmnElement="Process_1">
+
+      <!-- Process-level nodes -->
+      <bpmndi:BPMNShape id="S_Start_Manual" bpmnElement="Start_Manual">
+        <dc:Bounds x="160" y="200" width="36" height="36" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="S_SubProc_Iterate" bpmnElement="SubProc_Iterate" isExpanded="true">
+        <dc:Bounds x="250" y="120" width="500" height="200" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="S_End_1" bpmnElement="End_1">
+        <dc:Bounds x="810" y="200" width="36" height="36" />
+      </bpmndi:BPMNShape>
+
+      <!-- Process-level edges -->
+      <bpmndi:BPMNEdge id="E_Flow_StartToSubProc" bpmnElement="Flow_StartToSubProc">
+        <di:waypoint x="196" y="218" />
+        <di:waypoint x="250" y="218" />
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="E_Flow_SubProcToEnd" bpmnElement="Flow_SubProcToEnd">
+        <di:waypoint x="750" y="218" />
+        <di:waypoint x="810" y="218" />
+      </bpmndi:BPMNEdge>
+
+      <!-- Subprocess body nodes -->
+      <bpmndi:BPMNShape id="S_SubStart_1" bpmnElement="SubStart_1">
+        <dc:Bounds x="300" y="200" width="36" height="36" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="S_Task_MapIterator" bpmnElement="Task_MapIterator">
+        <dc:Bounds x="400" y="178" width="100" height="80" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="S_SubEnd_1" bpmnElement="SubEnd_1">
+        <dc:Bounds x="570" y="200" width="36" height="36" />
+      </bpmndi:BPMNShape>
+
+      <!-- Subprocess body edges -->
+      <bpmndi:BPMNEdge id="E_Flow_SubStart_to_MapTask" bpmnElement="Flow_SubStart_to_MapTask">
+        <di:waypoint x="336" y="218" />
+        <di:waypoint x="400" y="218" />
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="E_Flow_MapTask_to_SubEnd" bpmnElement="Flow_MapTask_to_SubEnd">
+        <di:waypoint x="500" y="218" />
+        <di:waypoint x="570" y="218" />
+      </bpmndi:BPMNEdge>
+
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

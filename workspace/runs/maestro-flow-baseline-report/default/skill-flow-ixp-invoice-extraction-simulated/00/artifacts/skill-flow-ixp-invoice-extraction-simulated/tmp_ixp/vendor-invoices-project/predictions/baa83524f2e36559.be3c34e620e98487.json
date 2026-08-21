@@ -1,0 +1,224 @@
+{
+  "Result": "Success",
+  "Data": {
+    "ProjectName": "vendor-invoices-f8a3c211-ixp",
+    "TotalDocuments": 1,
+    "DocumentsWithPredictions": 1,
+    "Predictions": [
+      {
+        "DocumentId": "baa83524f2e36559.be3c34e620e98487",
+        "Filename": "invoice_acme_tech_001.pdf",
+        "Labels": [
+          {
+            "Name": "Invoice Header",
+            "Occurrence": 0,
+            "Fields": [
+              {
+                "FieldId": "fld_inv_num",
+                "FieldName": "Invoice Number",
+                "FormattedValue": "ACM-2024-00891"
+              },
+              {
+                "FieldId": "fld_inv_date",
+                "FieldName": "Invoice Date",
+                "FormattedValue": "2024-03-15"
+              },
+              {
+                "FieldId": "fld_due_date",
+                "FieldName": "Due Date",
+                "FormattedValue": "2024-04-14"
+              },
+              {
+                "FieldId": "fld_po_num",
+                "FieldName": "PO Number",
+                "FormattedValue": "PO-GC-44720"
+              },
+              {
+                "FieldId": "fld_pay_terms",
+                "FieldName": "Payment Terms",
+                "FormattedValue": "Net 30"
+              },
+              {
+                "FieldId": "fld_currency",
+                "FieldName": "Currency",
+                "FormattedValue": "USD"
+              }
+            ]
+          },
+          {
+            "Name": "Vendor Details",
+            "Occurrence": 0,
+            "Fields": [
+              {
+                "FieldId": "fld_vend_name",
+                "FieldName": "Vendor Name",
+                "FormattedValue": "Acme Technology Solutions Inc."
+              },
+              {
+                "FieldId": "fld_vend_addr",
+                "FieldName": "Vendor Address",
+                "FormattedValue": "450 Silicon Valley Blvd, Suite 200, San Jose, CA 95110"
+              },
+              {
+                "FieldId": "fld_vend_email",
+                "FieldName": "Vendor Email",
+                "FormattedValue": "billing@acmetech.com"
+              },
+              {
+                "FieldId": "fld_vend_phone",
+                "FieldName": "Vendor Phone",
+                "FormattedValue": "+1 (408) 555-0192"
+              }
+            ]
+          },
+          {
+            "Name": "Bill To",
+            "Occurrence": 0,
+            "Fields": [
+              {
+                "FieldId": "fld_bt_name",
+                "FieldName": "Bill-To Name",
+                "FormattedValue": "GlobalCorp Procurement"
+              },
+              {
+                "FieldId": "fld_bt_addr",
+                "FieldName": "Bill-To Address",
+                "FormattedValue": "1200 Corporate Plaza, Floor 8, New York, NY 10001"
+              }
+            ]
+          },
+          {
+            "Name": "Invoice Totals",
+            "Occurrence": 0,
+            "Fields": [
+              {
+                "FieldId": "fld_subtotal",
+                "FieldName": "Subtotal",
+                "FormattedValue": "10,300.00 USD"
+              },
+              {
+                "FieldId": "fld_tax_rate",
+                "FieldName": "Tax Rate",
+                "FormattedValue": "8.5"
+              },
+              {
+                "FieldId": "fld_tax_amount",
+                "FieldName": "Tax Amount",
+                "FormattedValue": "875.50 USD"
+              },
+              {
+                "FieldId": "fld_total",
+                "FieldName": "Total Due",
+                "FormattedValue": "11,275.50 USD"
+              }
+            ]
+          },
+          {
+            "Name": "Line Items",
+            "Occurrence": 0,
+            "Fields": [
+              {
+                "FieldId": "fld_li_desc",
+                "FieldName": "Description",
+                "FormattedValue": "Enterprise SaaS License \u2014 Q2 2024"
+              },
+              {
+                "FieldId": "fld_li_qty",
+                "FieldName": "Quantity",
+                "FormattedValue": "50"
+              },
+              {
+                "FieldId": "fld_li_price",
+                "FieldName": "Unit Price",
+                "FormattedValue": "120.00 USD"
+              },
+              {
+                "FieldId": "fld_li_total",
+                "FieldName": "Line Total",
+                "FormattedValue": "6,000.00 USD"
+              }
+            ]
+          },
+          {
+            "Name": "Line Items",
+            "Occurrence": 1,
+            "Fields": [
+              {
+                "FieldId": "fld_li_desc",
+                "FieldName": "Description",
+                "FormattedValue": "Professional Services \u2014 System Integration"
+              },
+              {
+                "FieldId": "fld_li_qty",
+                "FieldName": "Quantity",
+                "FormattedValue": "8"
+              },
+              {
+                "FieldId": "fld_li_price",
+                "FieldName": "Unit Price",
+                "FormattedValue": "250.00 USD"
+              },
+              {
+                "FieldId": "fld_li_total",
+                "FieldName": "Line Total",
+                "FormattedValue": "2,000.00 USD"
+              }
+            ]
+          },
+          {
+            "Name": "Line Items",
+            "Occurrence": 2,
+            "Fields": [
+              {
+                "FieldId": "fld_li_desc",
+                "FieldName": "Description",
+                "FormattedValue": "24/7 Premium Support Package"
+              },
+              {
+                "FieldId": "fld_li_qty",
+                "FieldName": "Quantity",
+                "FormattedValue": "1"
+              },
+              {
+                "FieldId": "fld_li_price",
+                "FieldName": "Unit Price",
+                "FormattedValue": "1,500.00 USD"
+              },
+              {
+                "FieldId": "fld_li_total",
+                "FieldName": "Line Total",
+                "FormattedValue": "1,500.00 USD"
+              }
+            ]
+          },
+          {
+            "Name": "Line Items",
+            "Occurrence": 3,
+            "Fields": [
+              {
+                "FieldId": "fld_li_desc",
+                "FieldName": "Description",
+                "FormattedValue": "On-site Training (2 days)"
+              },
+              {
+                "FieldId": "fld_li_qty",
+                "FieldName": "Quantity",
+                "FormattedValue": "2"
+              },
+              {
+                "FieldId": "fld_li_price",
+                "FieldName": "Unit Price",
+                "FormattedValue": "400.00 USD"
+              },
+              {
+                "FieldId": "fld_li_total",
+                "FieldName": "Line Total",
+                "FormattedValue": "800.00 USD"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

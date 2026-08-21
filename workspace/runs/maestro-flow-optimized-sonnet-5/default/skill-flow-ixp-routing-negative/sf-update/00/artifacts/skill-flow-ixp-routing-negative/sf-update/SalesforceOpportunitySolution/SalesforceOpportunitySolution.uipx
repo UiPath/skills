@@ -1,0 +1,12 @@
+{
+  "DocVersion": "1.0.0",
+  "StudioMinVersion": "2025.10.0",
+  "SolutionId": "061b36a0-c279-4fcd-97ce-418899d736fd",
+  "Projects": [
+    {
+      "Type": "Flow",
+      "ProjectRelativePath": "SalesforceOpportunityUpdate/project.uiproj",
+      "Id": "60989f0b-58d7-44a5-8379-ae1e89b63d77"
+    }
+  ]
+}

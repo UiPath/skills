@@ -1,0 +1,12 @@
+{
+  "DocVersion": "1.0.0",
+  "StudioMinVersion": "2025.10.0",
+  "SolutionId": "442d705a-1bea-4db2-adb6-8c80ebfe9606",
+  "Projects": [
+    {
+      "Type": "Flow",
+      "ProjectRelativePath": "DriveToSlackTest/project.uiproj",
+      "Id": "2b908fd6-c939-4277-8529-3c7058dcff03"
+    }
+  ]
+}

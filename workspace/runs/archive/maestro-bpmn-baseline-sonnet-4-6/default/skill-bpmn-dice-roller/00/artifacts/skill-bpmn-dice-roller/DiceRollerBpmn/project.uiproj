@@ -1,0 +1,9 @@
+{
+  "name": "DiceRollerBpmn",
+  "projectVersion": "1.0.0",
+  "description": "Rolls a fair six-sided die and routes to a High (4-6) or Low (1-3) end event.",
+  "main": "DiceRollerBpmn.bpmn",
+  "contentType": "ProcessOrchestration",
+  "targetFramework": "Windows",
+  "dependencies": {}
+}

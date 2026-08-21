@@ -1,0 +1,25 @@
+2026-08-20 21:09:38 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-08-20 21:09:38 [INFO] coder_eval.orchestrator: API routing: aws_bedrock
+2026-08-20 21:09:38 [DEBUG] coder_eval.criteria: Discovered 15 criterion checkers
+2026-08-20 21:09:38 [DEBUG] coder_eval.criteria: Validated 15 criterion checkers
+2026-08-20 21:09:38 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-08-20 21:09:38 [DEBUG] coder_eval.orchestrator: Sending prompt: A Maestro BPMN debug session faulted. You have only the debug-session
+identifier:
+- debug instance i...
+2026-08-20 21:09:39 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Starting agent query stream...
+2026-08-20 21:11:21 [DEBUG] coder_eval.agents.claude_code_agent: [coder] session_id changed: None -> 07cc7a27-29f0-48cd-9359-8a76f03d1978
+2026-08-20 21:11:21 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Agent query stream ended
+2026-08-20 21:11:21 [DEBUG] coder_eval.utils: `uip` at /work/output/artifacts/skill-bpmn-debug-instance-inspect/mocks/uip is not inside a recognizable node_modules/@uipath tree
+2026-08-20 21:11:21 [DEBUG] coder_eval.orchestrator: Agent response received (1552 chars)
+2026-08-20 21:11:21 [DEBUG] coder_eval.orchestrator: Checking success criteria
+2026-08-20 21:11:21 [DEBUG] coder_eval.evaluation.checker: Criterion 'command_executed' score: 1.00
+2026-08-20 21:11:21 [DEBUG] coder_eval.evaluation.checker: Criterion 'command_executed' score: 1.00
+2026-08-20 21:11:21 [DEBUG] coder_eval.evaluation.checker: Criterion 'command_executed' score: 1.00
+2026-08-20 21:11:21 [DEBUG] coder_eval.evaluation.checker: Criterion 'file_contains' score: 1.00
+2026-08-20 21:11:21 [DEBUG] coder_eval.evaluation.checker: Criterion 'command_executed' score: 1.00
+2026-08-20 21:11:21 [INFO] coder_eval.orchestrator: Success criteria: 5/5 passed, weighted score: 1.000
+2026-08-20 21:11:21 [WARNING] coder_eval.orchestrator: Visible turns (19) exceeded expected_turns (14) at iteration 1 for task skill-bpmn-debug-instance-inspect. Run continues — max_turns remains the hard cap.
+2026-08-20 21:11:21 [DEBUG] coder_eval.utils: `uip` at /work/output/artifacts/skill-bpmn-debug-instance-inspect/mocks/uip is not inside a recognizable node_modules/@uipath tree
+2026-08-20 21:11:21 [INFO] coder_eval.orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+2026-08-20 21:11:21 [INFO] coder_eval.orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-bpmn-debug-instance-inspect
+2026-08-20 21:11:21 [INFO] coder_eval.orchestrator: Task finished: status=SUCCESS duration=107.2s score=1.000 iterations=1

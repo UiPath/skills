@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "TransformFilterDemo",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "a83ca987-26b5-4239-982a-64ee719e9e85",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "TransformFilterDemo"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Flow",
+      "name": "TransformFilterDemo",
+      "package": {
+        "key": "66050e9b-5530-4f07-acea-5ab173f227a9"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "9b4b8f14-11ac-48b8-91dc-77b37edba8d7",
+    "files": []
+  }
+}

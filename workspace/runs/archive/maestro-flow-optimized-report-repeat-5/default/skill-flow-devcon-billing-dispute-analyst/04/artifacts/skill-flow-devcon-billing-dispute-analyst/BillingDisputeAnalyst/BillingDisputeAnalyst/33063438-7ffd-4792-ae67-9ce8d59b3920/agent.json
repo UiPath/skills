@@ -1,0 +1,91 @@
+{
+  "version": "1.1.0",
+  "settings": {
+    "model": "gpt-5.4",
+    "maxTokens": 128000,
+    "temperature": 0,
+    "engine": "basic-v2",
+    "maxIterations": 5,
+    "mode": "standard"
+  },
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "start__output__disputeDescription": {
+        "type": "string",
+        "description": "The customer's description of the billing dispute"
+      },
+      "start__output__invoiceNumber": {
+        "type": "string",
+        "description": "The invoice number under dispute"
+      }
+    },
+    "required": [
+      "start__output__disputeDescription",
+      "start__output__invoiceNumber"
+    ]
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "determination": {
+        "type": "string",
+        "description": "The determination of the billing dispute (e.g., Valid, Invalid, Partial)"
+      },
+      "rationale": {
+        "type": "string",
+        "description": "The detailed rationale supporting the determination"
+      }
+    },
+    "required": [
+      "determination",
+      "rationale"
+    ]
+  },
+  "metadata": {
+    "storageVersion": "50.0.0",
+    "isConversational": false,
+    "showProjectCreationExperience": false
+  },
+  "type": "lowCode",
+  "guardrails": [],
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a billing dispute analyst. Your task is to analyze billing disputes based on company Standard Operating Procedures (SOP) retrieved from the knowledge base context. Review the dispute description and invoice number carefully, consult the SOP knowledge base to ground your analysis, then provide a clear determination (Valid, Invalid, or Partial) and a detailed rationale explaining your decision. Be concise, factual, and reference relevant SOP criteria in your rationale. Stop after providing the determination and rationale — do not continue further.",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "You are a billing dispute analyst. Your task is to analyze billing disputes based on company Standard Operating Procedures (SOP) retrieved from the knowledge base context. Review the dispute description and invoice number carefully, consult the SOP knowledge base to ground your analysis, then provide a clear determination (Valid, Invalid, or Partial) and a detailed rationale explaining your decision. Be concise, factual, and reference relevant SOP criteria in your rationale. Stop after providing the determination and rationale — do not continue further."
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "Please analyze the following billing dispute and provide your determination and rationale.\n\nInvoice Number: {{input.start__output__invoiceNumber}}\n\nDispute Description: {{input.start__output__disputeDescription}}\n\nBased on the SOP knowledge base, provide:\n1. determination: Your verdict (Valid, Invalid, or Partial)\n2. rationale: A clear explanation grounded in the SOP criteria",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "Please analyze the following billing dispute and provide your determination and rationale.\n\nInvoice Number: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__invoiceNumber"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\nDispute Description: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__disputeDescription"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\nBased on the SOP knowledge base, provide:\n1. determination: Your verdict (Valid, Invalid, or Partial)\n2. rationale: A clear explanation grounded in the SOP criteria"
+        }
+      ]
+    }
+  ],
+  "projectId": "33063438-7ffd-4792-ae67-9ce8d59b3920"
+}

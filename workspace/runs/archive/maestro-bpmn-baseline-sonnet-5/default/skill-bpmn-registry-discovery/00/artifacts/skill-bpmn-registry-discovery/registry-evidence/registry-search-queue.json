@@ -1,0 +1,50 @@
+{
+  "Result": "Success",
+  "Code": "RegistrySearchSuccess",
+  "Data": {
+    "ExtensionTypes": [
+      {
+        "ExtensionType": "Orchestrator.CreateQueueItem",
+        "Label": "Create queue item",
+        "BpmnElement": "bpmn:SendTask",
+        "ExtensionTag": "uipath:activity",
+        "InputPattern": "mergedBody",
+        "BindingPattern": "queue",
+        "RequiresDiscovery": "Yes"
+      },
+      {
+        "ExtensionType": "Orchestrator.CreateAndWaitForQueueItem",
+        "Label": "Create and wait for queue item",
+        "BpmnElement": "bpmn:ServiceTask",
+        "ExtensionTag": "uipath:activity",
+        "InputPattern": "mergedBody",
+        "BindingPattern": "queue",
+        "RequiresDiscovery": "Yes"
+      }
+    ],
+    "Connectors": [],
+    "Processes": [
+      {
+        "Name": "OrchestratorQueueTransaction",
+        "ProcessKey": "OrchestratorQueueTransaction",
+        "ProcessVersion": "1.0.0",
+        "PackageProcessKey": "OrchestratorQueueTransaction:1.0.0",
+        "ReleaseKey": "EE03063B-B7BB-4C4D-A395-8F81BCA73B78",
+        "Type": "Process",
+        "Folder": "Shared",
+        "FolderKey": "c4359cde-55f0-4f0e-9322-c6cdce74ab4c",
+        "FeedId": "001c61d7-2108-4130-b7ff-198c88ecbf79"
+      }
+    ],
+    "ProcessesByType": {
+      "Process": 1,
+      "ProcessOrchestration": 0,
+      "Agent": 0,
+      "Flow": 0,
+      "Api": 0,
+      "Function": 0,
+      "CaseManagement": 0,
+      "BusinessRules": 0
+    }
+  }
+}

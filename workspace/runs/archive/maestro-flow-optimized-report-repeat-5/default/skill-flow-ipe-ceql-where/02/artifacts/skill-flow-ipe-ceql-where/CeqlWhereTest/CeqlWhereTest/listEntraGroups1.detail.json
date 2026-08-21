@@ -1,0 +1,23 @@
+{
+  "_comment": "Planned --detail for uip maestro flow node configure. Requires a live connection. Replace <CONNECTION_UUID> and <FOLDER_KEY> with values from: uip is connections list uipath-microsoft-azureactivedirectory --all-folders --output json",
+  "connectionId": "<CONNECTION_UUID>",
+  "folderKey": "<FOLDER_KEY>",
+  "method": "GET",
+  "endpoint": "/groups",
+  "filter": {
+    "groupOperator": 0,
+    "index": 0,
+    "filters": [
+      {
+        "id": "displayName",
+        "operator": "Equals",
+        "value": {
+          "value": "active",
+          "rawString": "\"active\"",
+          "isLiteral": true
+        }
+      }
+    ],
+    "groups": []
+  }
+}

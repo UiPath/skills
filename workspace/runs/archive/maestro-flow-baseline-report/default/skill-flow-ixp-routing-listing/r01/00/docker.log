@@ -1,0 +1,7 @@
+20:47:19 [INFO   ] [default/skill-flow-ixp-routing-listing/r01/00] orchestrator: API routing: aws_bedrock
+20:49:11 [WARNING] [default/skill-flow-ixp-routing-listing/r01/00] agents.claude_code_agent: [coder] Agent exhausted max_turns (20); turn ended without completing
+20:49:11 [INFO   ] [default/skill-flow-ixp-routing-listing/r01/00] orchestrator: Success criteria: 2/2 passed, weighted score: 1.000
+20:49:11 [WARNING] [default/skill-flow-ixp-routing-listing/r01/00] orchestrator: Agent exhausted max_turns (20) without passing criteria.
+20:49:11 [INFO   ] [default/skill-flow-ixp-routing-listing/r01/00] orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+20:49:11 [INFO   ] [default/skill-flow-ixp-routing-listing/r01/00] orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-ixp-routing-listing/r01
+20:49:11 [INFO   ] [default/skill-flow-ixp-routing-listing/r01/00] orchestrator: Task finished: status=SUCCESS duration=117.6s score=1.000 iterations=1

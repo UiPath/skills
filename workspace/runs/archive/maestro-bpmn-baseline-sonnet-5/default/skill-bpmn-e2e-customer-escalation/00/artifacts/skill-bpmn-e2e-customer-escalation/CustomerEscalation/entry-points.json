@@ -1,0 +1,39 @@
+{
+  "$schema": "https://cloud.uipath.com/draft/2024-12/entry-point",
+  "$id": "entry-points.json",
+  "entryPoints": [
+    {
+      "filePath": "/content/CustomerEscalation.bpmn#Start_Manual",
+      "uniqueId": "9f1d3a2e-7b4c-4e8a-9d6f-2c5b8a1e3f70",
+      "type": "ProcessOrchestration",
+      "input": {
+        "type": "object",
+        "properties": {
+          "subject": {
+            "type": "string"
+          },
+          "senderDomain": {
+            "type": "string"
+          }
+        }
+      },
+      "output": {
+        "type": "object",
+        "properties": {
+          "urgent": {
+            "type": "boolean"
+          },
+          "vip": {
+            "type": "boolean"
+          },
+          "escalationResult": {
+            "type": "string"
+          },
+          "ticketId": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  ]
+}

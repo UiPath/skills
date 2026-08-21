@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+    xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+    xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+    xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+    xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:uipath="http://uipath.org/schema/bpmn"
+    id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn"
+    exporter="UiPath (https://bpmn.uipath.com)" exporterVersion="1.0">
+
+  <!-- Declared error referenced by the error end event and the event subprocess start event -->
+  <bpmn:error id="Error_PaymentFailed" name="PaymentFailed" errorCode="PAYMENT_FAILED" />
+
+  <bpmn:process id="Process_1" isExecutable="true">
+    <bpmn:extensionElements>
+      <uipath:migrationVersion version="11.5" />
+    </bpmn:extensionElements>
+
+    <!-- Main flow -->
+    <bpmn:startEvent id="Start_1" name="Start">
+      <bpmn:outgoing>Flow_StartToTask</bpmn:outgoing>
+    </bpmn:startEvent>
+
+    <bpmn:userTask id="Task_AttemptPayment" name="Attempt Payment">
+      <bpmn:incoming>Flow_StartToTask</bpmn:incoming>
+      <bpmn:outgoing>Flow_TaskToGw</bpmn:outgoing>
+    </bpmn:userTask>
+
+    <bpmn:exclusiveGateway id="Gw_PaymentResult" name="Payment OK?" default="Flow_GwToSuccess">
+      <bpmn:incoming>Flow_TaskToGw</bpmn:incoming>
+      <bpmn:outgoing>Flow_GwToError</bpmn:outgoing>
+      <bpmn:outgoing>Flow_GwToSuccess</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+
+    <!-- Failure branch: error end event that references the declared error -->
+    <bpmn:endEvent id="End_Error" name="Payment Failed">
+      <bpmn:incoming>Flow_GwToError</bpmn:incoming>
+      <bpmn:errorEventDefinition id="ErrDef_End" errorRef="Error_PaymentFailed" />
+    </bpmn:endEvent>
+
+    <!-- Success branch: plain end event -->
+    <bpmn:endEvent id="End_Success" name="Payment Complete">
+      <bpmn:incoming>Flow_GwToSuccess</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <!-- Sequence flows for main flow -->
+    <bpmn:sequenceFlow id="Flow_StartToTask" sourceRef="Start_1" targetRef="Task_AttemptPayment" />
+    <bpmn:sequenceFlow id="Flow_TaskToGw" sourceRef="Task_AttemptPayment" targetRef="Gw_PaymentResult" />
+    <bpmn:sequenceFlow id="Flow_GwToError" sourceRef="Gw_PaymentResult" targetRef="End_Error">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=false</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_GwToSuccess" sourceRef="Gw_PaymentResult" targetRef="End_Success" />
+
+    <!-- Event subprocess: triggered by the PaymentFailed error -->
+    <bpmn:subProcess id="SubProc_ErrorHandler" name="Handle Payment Error" triggeredByEvent="true">
+      <bpmn:startEvent id="Sub_Start" name="Payment Error Caught" isInterrupting="true">
+        <bpmn:outgoing>Flow_SubStartToTask</bpmn:outgoing>
+        <bpmn:errorEventDefinition id="ErrDef_SubStart" errorRef="Error_PaymentFailed" />
+      </bpmn:startEvent>
+
+      <bpmn:userTask id="Sub_Task_Handle" name="Handle Payment Error">
+        <bpmn:incoming>Flow_SubStartToTask</bpmn:incoming>
+        <bpmn:outgoing>Flow_SubTaskToEnd</bpmn:outgoing>
+      </bpmn:userTask>
+
+      <bpmn:endEvent id="Sub_End" name="Error Handled">
+        <bpmn:incoming>Flow_SubTaskToEnd</bpmn:incoming>
+      </bpmn:endEvent>
+
+      <bpmn:sequenceFlow id="Flow_SubStartToTask" sourceRef="Sub_Start" targetRef="Sub_Task_Handle" />
+      <bpmn:sequenceFlow id="Flow_SubTaskToEnd" sourceRef="Sub_Task_Handle" targetRef="Sub_End" />
+    </bpmn:subProcess>
+
+  </bpmn:process>
+
+  <bpmndi:BPMNDiagram id="Diagram_1">
+    <bpmndi:BPMNPlane id="Plane_1" bpmnElement="Process_1">
+
+      <!-- Main flow shapes -->
+      <bpmndi:BPMNShape id="S_Start_1" bpmnElement="Start_1">
+        <dc:Bounds x="160" y="118" width="36" height="36" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="S_Task_AttemptPayment" bpmnElement="Task_AttemptPayment">
+        <dc:Bounds x="250" y="96" width="100" height="80" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="S_Gw_PaymentResult" bpmnElement="Gw_PaymentResult">
+        <dc:Bounds x="410" y="111" width="50" height="50" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="S_End_Error" bpmnElement="End_Error">
+        <dc:Bounds x="532" y="50" width="36" height="36" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="S_End_Success" bpmnElement="End_Success">
+        <dc:Bounds x="532" y="185" width="36" height="36" />
+      </bpmndi:BPMNShape>
+
+      <!-- Main flow edges -->
+      <bpmndi:BPMNEdge id="E_Flow_StartToTask" bpmnElement="Flow_StartToTask">
+        <di:waypoint x="196" y="136" />
+        <di:waypoint x="250" y="136" />
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="E_Flow_TaskToGw" bpmnElement="Flow_TaskToGw">
+        <di:waypoint x="350" y="136" />
+        <di:waypoint x="410" y="136" />
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="E_Flow_GwToError" bpmnElement="Flow_GwToError">
+        <di:waypoint x="435" y="111" />
+        <di:waypoint x="435" y="68" />
+        <di:waypoint x="532" y="68" />
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="E_Flow_GwToSuccess" bpmnElement="Flow_GwToSuccess">
+        <di:waypoint x="435" y="161" />
+        <di:waypoint x="435" y="203" />
+        <di:waypoint x="532" y="203" />
+      </bpmndi:BPMNEdge>
+
+      <!-- Event subprocess container shape -->
+      <bpmndi:BPMNShape id="S_SubProc_ErrorHandler" bpmnElement="SubProc_ErrorHandler" isExpanded="true">
+        <dc:Bounds x="160" y="320" width="420" height="160" />
+      </bpmndi:BPMNShape>
+
+      <!-- Event subprocess nested shapes -->
+      <bpmndi:BPMNShape id="S_Sub_Start" bpmnElement="Sub_Start">
+        <dc:Bounds x="210" y="382" width="36" height="36" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="S_Sub_Task_Handle" bpmnElement="Sub_Task_Handle">
+        <dc:Bounds x="310" y="360" width="100" height="80" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="S_Sub_End" bpmnElement="Sub_End">
+        <dc:Bounds x="482" y="382" width="36" height="36" />
+      </bpmndi:BPMNShape>
+
+      <!-- Event subprocess nested edges -->
+      <bpmndi:BPMNEdge id="E_Flow_SubStartToTask" bpmnElement="Flow_SubStartToTask">
+        <di:waypoint x="246" y="400" />
+        <di:waypoint x="310" y="400" />
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="E_Flow_SubTaskToEnd" bpmnElement="Flow_SubTaskToEnd">
+        <di:waypoint x="410" y="400" />
+        <di:waypoint x="482" y="400" />
+      </bpmndi:BPMNEdge>
+
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+
+</bpmn:definitions>

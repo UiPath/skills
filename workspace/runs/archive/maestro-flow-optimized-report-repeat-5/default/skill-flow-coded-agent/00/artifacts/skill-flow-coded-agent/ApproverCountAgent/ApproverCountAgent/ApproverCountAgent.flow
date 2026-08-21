@@ -1,0 +1,403 @@
+{
+  "id": "aa30ac4b-def6-4c78-a772-096ed3eeb924",
+  "version": "1.8",
+  "name": "ApproverCountAgent",
+  "nodes": [
+    {
+      "id": "start",
+      "type": "core.trigger.manual",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Manual trigger"
+      },
+      "inputs": {
+        "entryPointId": "3662d40b-d205-456f-87bb-5093ba9177e1",
+        "isDefaultEntryPoint": true
+      }
+    },
+    {
+      "id": "approverCount1",
+      "type": "uipath.core.agent.2807988b-778e-4df2-a0a2-ca08762b1e99",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "ApproverCount"
+      },
+      "inputs": {
+        "sentence": {
+          "type": "literal",
+          "expression": "{{ $vars.sentence }}",
+          "fieldType": "string"
+        }
+      },
+      "model": {
+        "section": "In this solution"
+      }
+    },
+    {
+      "id": "end1",
+      "type": "core.control.end",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "End"
+      },
+      "inputs": {},
+      "outputs": {
+        "approver_count": {
+          "source": "=js:$vars.approverCount1.output.approver_count"
+        }
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "sourceNodeId": "start",
+      "sourcePort": "output",
+      "targetNodeId": "approverCount1",
+      "targetPort": "input"
+    },
+    {
+      "id": "e2",
+      "sourceNodeId": "approverCount1",
+      "sourcePort": "output",
+      "targetNodeId": "end1",
+      "targetPort": "input"
+    }
+  ],
+  "variables": {
+    "globals": [
+      {
+        "id": "sentence",
+        "direction": "in",
+        "type": "string",
+        "description": "A sentence describing the outcome of a proposal review round",
+        "triggerNodeId": "start"
+      },
+      {
+        "id": "approver_count",
+        "direction": "out",
+        "type": "number",
+        "description": "The number of people who approved the proposal"
+      }
+    ],
+    "nodes": [
+      {
+        "id": "approverCount1.output",
+        "type": "object",
+        "schema": {
+          "type": "object",
+          "properties": {
+            "approver_count": {
+              "description": "The number of people who approved the proposal",
+              "title": "Approver Count",
+              "type": "integer"
+            }
+          }
+        },
+        "binding": {
+          "nodeId": "approverCount1",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "approverCount1.error",
+        "type": "object",
+        "binding": {
+          "nodeId": "approverCount1",
+          "outputId": "error"
+        }
+      }
+    ],
+    "variableUpdates": {}
+  },
+  "bindings": [
+    {
+      "resource": "process",
+      "resourceSubType": "Agent",
+      "resourceKey": "2807988b-778e-4df2-a0a2-ca08762b1e99",
+      "orchestratorType": "agent",
+      "propertyAttribute": "name",
+      "value": "ApproverCount"
+    },
+    {
+      "resource": "process",
+      "resourceSubType": "Agent",
+      "resourceKey": "2807988b-778e-4df2-a0a2-ca08762b1e99",
+      "orchestratorType": "agent",
+      "propertyAttribute": "folderPath",
+      "value": ""
+    }
+  ],
+  "definitions": [
+    {
+      "nodeType": "core.trigger.manual",
+      "version": "1.0",
+      "category": "trigger",
+      "description": "Start workflow manually",
+      "tags": [
+        "trigger",
+        "start",
+        "manual"
+      ],
+      "sortOrder": 40,
+      "display": {
+        "label": "Manual trigger",
+        "icon": "play",
+        "shape": "circle"
+      },
+      "handleConfiguration": [
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "output",
+              "type": "source",
+              "handleType": "output",
+              "showButton": true,
+              "constraints": {
+                "forbiddenTargetCategories": [
+                  "trigger"
+                ]
+              }
+            }
+          ],
+          "visible": true
+        }
+      ],
+      "model": {
+        "type": "bpmn:StartEvent",
+        "entryPointId": true
+      },
+      "outputDefinition": {
+        "output": {
+          "type": "object",
+          "description": "Data passed when manually triggering the workflow.",
+          "source": "null",
+          "var": "output"
+        }
+      },
+      "toolbarExtensions": {
+        "design": {
+          "actions": [
+            {
+              "id": "change-trigger-type",
+              "icon": "square-mouse-pointer",
+              "label": "Change trigger type"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "nodeType": "uipath.core.agent.2807988b-778e-4df2-a0a2-ca08762b1e99",
+      "version": "1.0",
+      "category": "agent",
+      "runtimeConstraints": {
+        "exclude": [
+          "api-function"
+        ]
+      },
+      "description": "(In-solution) ApproverCount",
+      "tags": [
+        "in-solution",
+        "local"
+      ],
+      "sortOrder": 505,
+      "supportsErrorHandling": true,
+      "display": {
+        "label": "ApproverCount",
+        "icon": "autonomous-agent"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "output",
+              "type": "source",
+              "handleType": "output"
+            }
+          ]
+        }
+      ],
+      "toolbarExtensions": {
+        "design": {
+          "actions": [
+            {
+              "id": "open-workflow",
+              "icon": "external-link",
+              "label": "Open"
+            }
+          ]
+        }
+      },
+      "projectId": "2d5dcc80-159f-480c-a6ce-9503199742a1",
+      "model": {
+        "type": "bpmn:ServiceTask",
+        "serviceType": "Orchestrator.StartAgentJob",
+        "version": "v2",
+        "bindings": {
+          "resource": "process",
+          "resourceSubType": "Agent",
+          "resourceKey": "2807988b-778e-4df2-a0a2-ca08762b1e99",
+          "orchestratorType": "agent",
+          "values": [
+            {
+              "name": "name",
+              "propertyAttribute": "name",
+              "default": "ApproverCount"
+            },
+            {
+              "name": "folderPath",
+              "propertyAttribute": "folderPath",
+              "default": ""
+            }
+          ]
+        },
+        "projectId": "2d5dcc80-159f-480c-a6ce-9503199742a1",
+        "projectName": "ApproverCount",
+        "context": [
+          {
+            "name": "name",
+            "type": "string",
+            "value": "<bindings.name>"
+          },
+          {
+            "name": "folderPath",
+            "type": "string",
+            "value": "<bindings.folderPath>"
+          },
+          {
+            "name": "_label",
+            "type": "string",
+            "value": "ApproverCount"
+          }
+        ]
+      },
+      "form": {
+        "id": "activity-properties",
+        "title": "Agent",
+        "sections": [
+          {
+            "id": "inputs",
+            "title": "Inputs",
+            "collapsible": true,
+            "defaultExpanded": true,
+            "fields": [
+              {
+                "name": "inputs.sentence",
+                "type": "text",
+                "label": "sentence"
+              }
+            ]
+          }
+        ]
+      },
+      "inputDefinition": {
+        "type": "object",
+        "properties": {
+          "sentence": {
+            "description": "A sentence describing the outcome of a proposal review round",
+            "title": "Sentence",
+            "type": "string"
+          }
+        }
+      },
+      "inputDefaults": {
+        "sentence": ""
+      },
+      "outputDefinition": {
+        "output": {
+          "type": "object",
+          "source": "=this",
+          "var": "output",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "approver_count": {
+                "description": "The number of people who approved the proposal",
+                "title": "Approver Count",
+                "type": "integer"
+              }
+            }
+          }
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails",
+          "source": "=Error",
+          "var": "error",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "required": [
+              "code",
+              "message",
+              "detail",
+              "category",
+              "status"
+            ],
+            "properties": {
+              "code": {
+                "type": "string",
+                "description": "Error code as a string"
+              },
+              "message": {
+                "type": "string",
+                "description": "High-level error message"
+              },
+              "detail": {
+                "type": "string",
+                "description": "Detailed error description"
+              },
+              "category": {
+                "type": "string",
+                "description": "Error category"
+              },
+              "status": {
+                "type": "integer",
+                "description": "HTTP status code"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "debug": {
+        "runtime": "bpmnEngine"
+      }
+    }
+  ],
+  "layout": {
+    "nodes": {
+      "start": {
+        "position": {
+          "x": 256,
+          "y": 144
+        }
+      },
+      "approverCount1": {
+        "position": {
+          "x": 512,
+          "y": 144
+        }
+      },
+      "end1": {
+        "position": {
+          "x": 768,
+          "y": 144
+        }
+      }
+    }
+  }
+}

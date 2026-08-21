@@ -1,0 +1,1678 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>coder_eval · skill-flow-hitl-quality-brownfield-insert · default</title>
+<style>
+:root {
+  --bg-page: #0f1419;
+  --bg-card: #1a2129;
+  --bg-card-2: #232d38;
+  --bg-code: #0b0f14;
+  --fg: #e6edf3;
+  --fg-muted: #8b98a5;
+  --fg-dim: #6e7681;
+  --border: #30363d;
+  --accent: #58a6ff;
+  --score-high: #22c55e;
+  --score-mid: #f59e0b;
+  --score-low: #ef4444;
+  --status-success: #22c55e;
+  --status-failure: #f59e0b;
+  --status-error: #ef4444;
+  --status-neutral: #6e7681;
+  --shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+.light {
+  --bg-page: #ffffff;
+  --bg-card: #f6f8fa;
+  --bg-card-2: #eaeef2;
+  --bg-code: #f6f8fa;
+  --fg: #1f2328;
+  --fg-muted: #636c76;
+  --fg-dim: #8b949e;
+  --border: #d0d7de;
+  --accent: #0969da;
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial,
+               sans-serif;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--fg);
+  background: var(--bg-page);
+}
+.container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+h1, h2, h3, h4 { margin: 0 0 12px 0; line-height: 1.25; }
+h1 { font-size: 22px; font-weight: 600; }
+h2 { font-size: 18px; font-weight: 600; margin-top: 28px;
+     padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+h3 { font-size: 15px; font-weight: 600; color: var(--fg-muted); }
+h4 { font-size: 13px; font-weight: 600; color: var(--fg-muted); }
+p { margin: 0 0 8px 0; }
+.muted { color: var(--fg-muted); }
+.dim { color: var(--fg-dim); }
+.mono { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+        monospace; font-size: 12.5px; }
+code { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+       monospace; font-size: 12.5px; background: var(--bg-code);
+       border: 1px solid var(--border); padding: 1px 5px; border-radius: 3px; }
+pre { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+      monospace; font-size: 12.5px; background: var(--bg-code);
+      border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px;
+      margin: 6px 0; overflow-x: auto; white-space: pre-wrap;
+      word-wrap: break-word; }
+.header-bar { display: flex; align-items: center; justify-content: space-between;
+              margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+.title-group { flex: 1; min-width: 0; }
+.title-group .subtitle { color: var(--fg-muted); font-size: 13px;
+                         margin-top: 2px; word-break: break-all; }
+.badges { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.badge { display: inline-flex; align-items: center; gap: 6px;
+         padding: 4px 10px; border-radius: 12px; font-size: 12px;
+         font-weight: 600; background: var(--bg-card-2);
+         border: 1px solid var(--border); color: var(--fg); }
+.badge.success { background: color-mix(in srgb, var(--status-success) 20%, var(--bg-card-2));
+                 border-color: var(--status-success); color: var(--status-success); }
+.badge.failure { background: color-mix(in srgb, var(--status-failure) 20%, var(--bg-card-2));
+                 border-color: var(--status-failure); color: var(--status-failure); }
+.badge.error { background: color-mix(in srgb, var(--status-error) 20%, var(--bg-card-2));
+               border-color: var(--status-error); color: var(--status-error); }
+.badge.warning { background: color-mix(in srgb, #f4a52810 20%, var(--bg-card-2));
+                 border-color: #f4a528; color: #f4a528; }
+.badge.neutral { color: var(--fg-muted); }
+.score-pill { display: inline-block; padding: 2px 8px; border-radius: 10px;
+              font-size: 12px; font-weight: 700; min-width: 42px;
+              text-align: center; color: #0b0f14; }
+.score-high { background: var(--score-high); }
+.score-mid { background: var(--score-mid); }
+.score-low { background: var(--score-low); }
+.card { background: var(--bg-card); border: 1px solid var(--border);
+        border-radius: 8px; padding: 16px 20px; margin-bottom: 16px;
+        box-shadow: var(--shadow); }
+.card.highlight { border-left: 4px solid var(--accent); }
+.grid { display: grid; gap: 12px;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+.stat { background: var(--bg-card-2); padding: 10px 12px; border-radius: 6px;
+        border: 1px solid var(--border); }
+.stat .label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;
+               color: var(--fg-muted); margin-bottom: 4px; }
+.stat .value { font-size: 16px; font-weight: 600; }
+table { width: 100%; border-collapse: collapse; margin: 4px 0 12px 0; }
+th, td { text-align: left; padding: 8px 10px;
+         border-bottom: 1px solid var(--border); vertical-align: top;
+         font-size: 13px; }
+th { color: var(--fg-muted); font-weight: 600; font-size: 12px;
+     text-transform: uppercase; letter-spacing: 0.3px; }
+tr:last-child td { border-bottom: none; }
+details { margin: 6px 0; border: 1px solid var(--border); border-radius: 6px;
+          background: var(--bg-card-2); }
+details > summary { cursor: pointer; padding: 8px 12px; user-select: none;
+                    font-weight: 500; list-style: none; }
+details > summary::-webkit-details-marker { display: none; }
+details > summary::before { content: "▸ "; color: var(--fg-dim);
+                            display: inline-block; width: 14px;
+                            transition: transform 0.15s; }
+details[open] > summary::before { content: "▾ "; }
+details .details-body { padding: 0 12px 10px 12px; }
+.tool-row { display: flex; align-items: center; gap: 10px;
+            flex-wrap: wrap; font-size: 13px; }
+.tool-name { font-weight: 600; color: var(--accent); font-family: ui-monospace,
+             SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+.tool-status-ok { color: var(--status-success); font-size: 11px;
+                  font-weight: 600; }
+.tool-status-err { color: var(--status-error); font-size: 11px;
+                   font-weight: 600; }
+.tool-duration { color: var(--fg-muted); font-size: 12px; }
+.tool-seq { color: var(--fg-dim); font-size: 11px; font-weight: 600;
+            min-width: 24px; text-align: right; font-family: ui-monospace,
+            SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+.turn-header { display: flex; justify-content: space-between;
+               align-items: baseline; flex-wrap: wrap; gap: 10px;
+               margin-bottom: 10px; }
+.turn-meta { font-size: 12px; color: var(--fg-muted); }
+.criterion-row td:first-child { font-family: ui-monospace, SFMono-Regular,
+                                 "SF Mono", Menlo, Consolas, monospace;
+                                 color: var(--fg-muted); font-size: 12px; }
+.judge-section { display: flex; flex-direction: column; gap: 12px; }
+.judge-card { padding: 14px 16px; }
+.judge-card-head { display: flex; justify-content: space-between;
+                    align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+.judge-card-title { font-size: 14px; line-height: 1.4; flex: 1; min-width: 0; }
+.judge-card-score { flex-shrink: 0; }
+.judge-rationale { margin-top: 10px; padding: 10px 12px;
+                   background: var(--bg-code); border-radius: 4px;
+                   font-size: 13px; line-height: 1.5; }
+.judge-findings { margin: 8px 0 0 18px; padding-left: 4px; font-size: 13px;
+                   line-height: 1.6; }
+.judge-findings li { margin: 2px 0; }
+.nav-toggle { display: inline-block; padding: 5px 10px; font-size: 12px;
+              background: var(--bg-card-2); border: 1px solid var(--border);
+              border-radius: 5px; color: var(--fg); cursor: pointer; }
+.nav-toggle:hover { background: var(--bg-card); }
+.llm-next-steps { margin: 6px 0 0 20px; padding-left: 0; }
+.llm-next-steps li { margin: 3px 0; }
+.iteration-group { padding: 12px 16px 4px 16px; margin-bottom: 20px;
+                   border-radius: 0 6px 6px 0; border-left: 4px solid var(--status-neutral); }
+/* rgba fallback for browsers without color-mix (Chrome <111, Firefox <113, Safari <16.2). */
+.iteration-group--recovered { border-left-color: var(--status-success);
+                              background: rgba(34, 197, 94, 0.06);
+                              background: color-mix(in srgb, var(--status-success) 6%, transparent); }
+.iteration-group--terminal { border-left-color: var(--status-error);
+                             background: rgba(239, 68, 68, 0.06);
+                             background: color-mix(in srgb, var(--status-error) 6%, transparent); }
+.iteration-group__banner { margin: 0 0 12px 0; font-size: 14px; font-weight: 600; }
+.iteration-group--recovered .iteration-group__banner { color: var(--status-success); }
+.iteration-group--terminal .iteration-group__banner { color: var(--status-error); }
+.attempt-transition { display: flex; align-items: center; gap: 8px;
+                      margin: -6px 0 12px 8px; color: var(--status-error); font-size: 12.5px; }
+.attempt-transition__icon { font-weight: 700; }
+footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--border);
+         color: var(--fg-dim); font-size: 12px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="header-bar">
+  <div class="title-group">
+    <h1>Task: skill-flow-hitl-quality-brownfield-insert</h1>
+    <div class="subtitle">Quality test: agent inserts a HITL node into an existing flow without breaking the existing nodes or wiring. Tests that the agent can correctly remove an existing edge and re-wire it through a new HITL node.</div>
+  </div>
+  <div class="badges">
+    <span class="badge success">SUCCESS</span>
+    <span class="score-pill score-high">1.00</span>
+    <span class="badge neutral">claude-code · claude-sonnet-4-6</span>
+    <span class="badge neutral">7m 26s</span>
+    <span class="badge neutral">$1.3971</span>
+    <span class="badge warning">expected_turns exceeded (39/34)</span>
+    
+    <span class="nav-toggle" onclick="toggleTheme()">Toggle theme</span>
+  </div>
+</div>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Variant</div><div class="value">default</div></div>
+    <div class="stat"><div class="label">Started</div><div class="value mono">2026-08-19T16:52:14</div></div>
+    <div class="stat"><div class="label">Duration</div><div class="value">7m 26s</div></div>
+    <div class="stat"><div class="label">Turns (SDK)</div><div class="value">69</div></div>
+    <div class="stat"><div class="label">Commands</div><div class="value">38</div></div>
+  </div>
+</div>
+
+<h2>Success Criteria <span class="muted" style="font-weight:400">(5/5 passed)</span></h2>
+<div class="card" style="padding:0">
+<table>
+  <thead>
+    <tr>
+      <th style="width:15%">Type</th>
+      <th style="width:35%">Description</th>
+      <th style="width:10%">Score</th>
+      <th>Details</th>
+    </tr>
+  </thead>
+  <tbody>
+    
+<tr class="criterion-row">
+  <td>run_command</td>
+  <td>uip maestro flow validate passes after brownfield insert</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Command: python3 $EXPERIMENT_TASKS_PATH/uipath-maestro-flow/_shared/validate_flow.py</summary><div class="details-body"><pre style="margin:6px 0 0 0">Command: python3 $EXPERIMENT_TASKS_PATH/uipath-maestro-flow/_shared/validate_flow.py
+Exit code: 0 (expected: 0)
+Stdout:
+Validating ContractReview/ContractReview/ContractReview.flow
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FlowValidate&quot;,
+  &quot;Data&quot;: {
+    &quot;File&quot;: &quot;/work/output/artifacts/skill-flow-hitl-quality-brownfield-insert/ContractReview/ContractReview/ContractReview.flow&quot;,
+    &quot;Status&quot;: &quot;Valid&quot;
+  }
+}
+
+Stderr:
+[ManifestClient] fetchDynamicNodes ok: total=317 agent context nodes=2 external agent nodes=7 orchestrator nodes=263 IXP nodes=45</pre></div></details></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>run_command</td>
+  <td>Flow contains the original script node</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Command: python3 $EXPERIMENT_TASKS_PATH/uipath-maestro-flow/_shared/flow_contains.py --flow-name ContractReview &#x27;&quot;extractMeta&quot;&#x27;</summary><div class="details-body"><pre style="margin:6px 0 0 0">Command: python3 $EXPERIMENT_TASKS_PATH/uipath-maestro-flow/_shared/flow_contains.py --flow-name ContractReview &#x27;&quot;extractMeta&quot;&#x27;
+Exit code: 0 (expected: 0)
+Stdout:
+Found 1 .flow file(s): ContractReview/ContractReview/ContractReview.flow
+OK: all 1 assertion(s) satisfied by ContractReview/ContractReview/ContractReview.flow
+
+Stderr: (empty)</pre></div></details></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>run_command</td>
+  <td>Flow contains the inserted HITL node</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Command: python3 $EXPERIMENT_TASKS_PATH/uipath-maestro-flow/_shared/flow_contains.py --flow-name ContractReview &#x27;&quot;uipath.human-in-the-loop.quick-form&quot;&#x27;</summary><div class="details-body"><pre style="margin:6px 0 0 0">Command: python3 $EXPERIMENT_TASKS_PATH/uipath-maestro-flow/_shared/flow_contains.py --flow-name ContractReview &#x27;&quot;uipath.human-in-the-loop.quick-form&quot;&#x27;
+Exit code: 0 (expected: 0)
+Stdout:
+Found 1 .flow file(s): ContractReview/ContractReview/ContractReview.flow
+OK: all 1 assertion(s) satisfied by ContractReview/ContractReview/ContractReview.flow
+
+Stderr: (empty)</pre></div></details></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>run_command</td>
+  <td>HITL completed handle is wired</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Command: python3 $EXPERIMENT_TASKS_PATH/uipath-maestro-flow/_shared/flow_contains.py --flow-name ContractReview &#x27;completed&#x27;</summary><div class="details-body"><pre style="margin:6px 0 0 0">Command: python3 $EXPERIMENT_TASKS_PATH/uipath-maestro-flow/_shared/flow_contains.py --flow-name ContractReview &#x27;completed&#x27;
+Exit code: 0 (expected: 0)
+Stdout:
+Found 1 .flow file(s): ContractReview/ContractReview/ContractReview.flow
+OK: all 1 assertion(s) satisfied by ContractReview/ContractReview/ContractReview.flow
+
+Stderr: (empty)</pre></div></details></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>run_command</td>
+  <td>HITL has a boolean output field for the approval decision</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Command: python3 $EXPERIMENT_TASKS_PATH/uipath-maestro-flow/_shared/flow_contains.py --flow-name ContractReview &#x27;&quot;boolean&quot;&#x27;</summary><div class="details-body"><pre style="margin:6px 0 0 0">Command: python3 $EXPERIMENT_TASKS_PATH/uipath-maestro-flow/_shared/flow_contains.py --flow-name ContractReview &#x27;&quot;boolean&quot;&#x27;
+Exit code: 0 (expected: 0)
+Stdout:
+Found 1 .flow file(s): ContractReview/ContractReview/ContractReview.flow
+OK: all 1 assertion(s) satisfied by ContractReview/ContractReview/ContractReview.flow
+
+Stderr: (empty)</pre></div></details></td>
+</tr>
+
+  </tbody>
+</table>
+</div>
+<h2>Conversation Trace (1 iteration)</h2>
+<div class="card">
+  <div class="turn-header">
+    <h3>Iteration 1</h3>
+    <div class="badges">
+      <span class="badge neutral">69 assistant turns</span>
+      <span class="badge neutral">in 677 · out 24025 · cache 2589750</span>
+      <span class="badge neutral">7m 14s</span>
+      
+      
+      
+    </div>
+  </div>
+  <details>
+    <summary>Prompt to agent</summary>
+    <div class="details-body"><pre>Your working directory is: /work/output/artifacts/skill-flow-hitl-quality-brownfield-insert
+
+You are working on an existing UiPath Flow named &quot;ContractReview&quot;.
+
+Step 1 — Build the base flow:
+Create ContractReview as a 3-node flow:
+  Manual Trigger → Script (id: &quot;extractMeta&quot;, logs &quot;Extracting contract metadata&quot;) → End
+
+Step 2 — Insert HITL into the existing flow:
+Between the extractMeta Script node and the End node, insert a HITL node
+where a legal reviewer approves the contract:
+  - Reviewer sees (read-only): contract_id (text), contract_value (number)
+  - Reviewer fills in: approved (boolean, required), legal_notes (text, optional)
+  - Outcomes: Approve (primary), Reject
+
+After insertion the wiring must be:
+  Trigger → extractMeta →|output| HITL →|completed| End
+
+The original extractMeta → End edge must be removed.
+The extractMeta → HITL edge and HITL → End edge must be added.
+
+Validate the flow after building.
+</pre></div>
+  </details>
+  <details>
+    <summary>Agent response</summary>
+    <div class="details-body"><pre>[ASSISTANT] I&#x27;ll read the Author capability doc to plan the build correctly.
+[ASSISTANT] I&#x27;ll read the brownfield guide and HITL plugin docs in parallel, along with the script docs.
+[ASSISTANT] Now I have all the guidance needed. Let me plan the full execution:
+
+1. **T1**: Check for existing solutions, scaffold ContractReview, fetch registry defs
+2. **T2**: Read generated flow + Write 3-node base flow (Trigger → extractMeta → End)
+3. **T3**: Insert HITL between extractMeta and End using compose script
+4. **T4**: Read modified flow + Edit HITL `inputs.schema` (fields, outcomes, recipient)
+5. **T5**: audit + validate + format
+[ASSISTANT] No existing solutions. I&#x27;ll check the compose script&#x27;s insert-between syntax, then run T1.
+[ASSISTANT] Good — `uip` is available. Now T1: scaffold the solution+project, get registry definitions in parallel.
+[ASSISTANT] T1 complete. Now T2: read the scaffolded flow and build the 3-node base flow.
+[ASSISTANT] Now I have the exact node types and versions. Let me write the full 3-node base flow (T2).
+[ASSISTANT] Base flow written. Now Step 2: insert the HITL node between `extractMeta` and `done` using `flow_compose.py insert-between`.
+
+First I need the HITL definition. Since `uipath.human-in-the-loop.quick-form` is user-owned (per CAPABILITY.md), I need its definition from the registry.
+[ASSISTANT] The HITL node uses `input` as target port and `completed` as source port. Now I&#x27;ll use `flow_compose.py insert-between` to insert the HITL skeleton, then edit its full `inputs.schema` in place.
+[ASSISTANT] The `insert-between` script successfully:
+- Deleted the old `extractMeta → done` edge
+- Added `legalReview` node (HITL quick-form) with definition
+- Added `extractMeta → legalReview` and `legalReview → done` edges
+
+Now I need to edit the HITL node&#x27;s `inputs.schema` with the full field/outcome spec per the impl.md guide. The node currently has empty `inputs: {}`.
+[ASSISTANT] Now run audit + validate + format (T5):
+[ASSISTANT] The script node uses `success` as its source port (not `output`). I need to fix the edges. Let me check the actual port names from the registry definition and fix the edges.
+[ASSISTANT] The script node uses `success` not `output`. I need to fix:
+1. Edge `start → extractMeta`: `output` is correct for trigger (trigger uses `output`)
+2. Edge `extractMeta → legalReview`: must use `success` not `output`
+3. Also fix the script definition in the flow to reflect `success` port
+[ASSISTANT] Also fix the script definition to show `success` port (and remove `output` port from it):
+[ASSISTANT] Now run audit + validate + format:
+[ASSISTANT] Topology is now clean. The two `MISSING_NODE_VARIABLE` errors are regenerated by `flow format` — the audit doc says `format` fixes them. Let me run validate + format:
+[ASSISTANT] Multiple validation errors to fix. Let me read the current file to understand the exact state:
+[ASSISTANT] The validation errors show my hand-authored definitions don&#x27;t perfectly match registry schemas. The best fix is to replace `definitions[]` with verbatim registry output, fix `variables.nodes` format, and fix `variableUpdates`. Let me get the exact definitions:
+[ASSISTANT] Now I see the real registry definitions. The script node&#x27;s `debug.runtime` field is `&quot;clientScript&quot;` (not `breakpointSupported: true`), and `runtimeConstraints` in `core.control.end` needs to be checked. Let me get the full correct definitions and rewrite the flow with registry-verbatim definitions:
+[ASSISTANT] Good topology. Now write it — this is a full-file Write since definitions changed substantially. There are no CLI-owned nodes (HITL is user-owned), so Write is safe here.
+[ASSISTANT] Validation passes cleanly. Now run audit + format:
+[ASSISTANT] Format ran and regenerated 5 variable entries. Now re-run the audit to confirm it resolves:
+[ASSISTANT] All checks pass. Here&#x27;s a summary of what was built:
+
+---
+
+**ContractReview flow — complete**
+
+**File:** `ContractReview/ContractReview/ContractReview.flow`
+
+**</pre></div>
+  </details>
+  <h4 style="margin-top:12px">Tool Calls (38)</h4>
+  
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#0</span>
+      <span class="tool-name">Skill</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">16ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;skill&quot;: &quot;tmp:uipath-maestro-flow&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Launching skill: tmp:uipath-maestro-flow</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#1</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">346ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/CAPABILITY.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Author — Create and edit `.flow` files
+2	
+3	Capability index for building new flows (greenfield) and editing existing flows (brownfield). Author owns everything that happens on disk, locally, without `uip login`. Authoring journeys terminate at `validate` + `format`; from there, hand off to [operate/CAPABILITY.md](../operate/CAPABILITY.md) to publish, run, or debug.
+4	
+5	&gt; **Where you came from / where to go next.** Author is upstream of Operate (build the flow → ship it) and upstream of Diagnose only via Operate (build → run → diagnose). Publish/run/lifecycle lives in [operate/CAPABILITY.md](../operate/CAPABILITY.md); fault triage lives in [diagnose/CAPABILITY.md](../diagnose/CAPABILITY.md).
+6	&gt;
+7	&gt; **Inherits universal rules from [SKILL.md](../../SKILL.md)** — `--output json` + prefer `--output-filter` for extraction, no `flow debug` without consent, resource discovery order, never invoke other skills automatically, dropdown question pattern, solution layout, **plain-English narration + granular progress list (opt-in — silent by default; engage when the user asks for verbosity)**. The rules below are author-scoped and apply on top.
+8	
+9	## When to use this capability
+10	
+11	&lt;
+
+… (truncated, 30449 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#2</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">6ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/brownfield.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Brownfield — Edit an Existing Flow
+2	
+3	Recipe-driven journey for targeted changes to an existing `.flow` file. Author terminates at `validate` + `format`. To publish, run, or debug after edits, see [operate/CAPABILITY.md](../../operate/CAPABILITY.md).
+4	
+5	&gt; **Greenfield (creating a new flow) uses a different journey.** If the `.flow` file does not yet exist, see [greenfield.md](greenfield.md) instead.
+6	
+7	## Converting an existing project to Maestro
+8	
+9	A frequent request: *&quot;Can my existing project — e.g. a low-code agent plus a coded (C#) RPA rule engine — become a Maestro flow, and what would the structure look like?&quot;*
+10	
+11	There is **no automatic &quot;turn this project into a flow&quot; conversion, and you shouldn&#x27;t want one.** You don&#x27;t rewrite the project into a flow — you **re-host the orchestration and keep the parts**:
+12	
+13	1. **Keep the executors as-is.** Existing coded/RPA components and any existing agent stay their own artifacts. They are **not** rewritten into Maestro — they become **resource nodes** the flow calls (`uipath.core.rpa-workflow.*`, `uipath.core.agent.*`). See the relevant plugin&#x27;s `planning.md`.
+14	2. **Lift only the orchestration into Maestro.** The c
+
+… (truncated, 10317 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#3</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">6ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/plugins/hitl/impl.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# HITL Node — Implementation
+2	
+3	Two node types implement human-in-the-loop checkpoints. Choose based on whether you need an inline form or an existing deployed app.
+4	
+5	---
+6	
+7	## Option 1 — `uipath.human-in-the-loop.quick-form` (Inline Schema — OOTB)
+8	
+9	This is the preferred option. No registry pull, no app publishing, no tenant dependency. Write the node directly into the `.flow` file as JSON.
+10	
+11	**Full implementation guide, JSON examples, and schema conversion rules:**
+12	→ [`uipath-human-in-the-loop` skill — hitl-node-quickform.md](../../../../../../uipath-human-in-the-loop/references/hitl-node-quickform.md)
+13	
+14	&gt; **Note:** Skills are self-contained. This cross-skill reference is for documentation context only. The agent uses the `uipath-human-in-the-loop` skill to implement HITL nodes. This implementation guide is for implementation-phase topology resolution only — not for schema design or node writing.
+15	
+16	### Adding / Editing
+17	
+18	For add, delete, and wiring procedures, see [editing-operations.md](../../editing-operations.md). **Use `Edit` / `Write` for HITL node authoring.** Do not use the dedicated HITL CLI for this non-carve-out structural edit. Wire t
+
+… (truncated, 8406 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#4</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">224ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/greenfield.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Greenfield — Create a New Flow
+2	
+3	End-to-end journey for creating a Flow project from scratch. Author terminates at `validate` + `format`. To publish, run, or debug after this, see [operate/CAPABILITY.md](../../operate/CAPABILITY.md).
+4	
+5	&gt; **Brownfield edits use a different journey.** If the `.flow` file already exists, see [brownfield.md](brownfield.md) instead.
+6	
+7	## Should you plan first?
+8	
+9	For complex flows, produce a plan before building. Reference [planning-arch.md](planning-arch.md) and [planning-impl.md](planning-impl.md) for the node type catalog, port reference, wiring rules, and topology patterns.
+10	
+11	**Plan when:**
+12	- The flow has 5+ nodes with branching or parallel paths
+13	- The flow uses connectors or resources that need discovery
+14	- The user&#x27;s requirements are ambiguous and you need to confirm the approach
+15	
+16	**Don&#x27;t plan when:**
+17	- Adding/editing a single node in an existing flow (use [brownfield.md](brownfield.md))
+18	- The flow is a straightforward linear pipeline (trigger → action → action → end)
+19	- The user has already described the exact topology they want
+20	
+21	### Examples
+22	
+23	**Plan:** &quot;Build a flow that receives a Jira ticke
+
+… (truncated, 34831 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#5</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">238ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;find /work/output/artifacts/skill-flow-hitl-quality-brownfield-insert -maxdepth 2 -type f -name &#x27;*.uipx&#x27; -print 2&gt;/dev/null; echo \&quot;---\&quot;; ls /work/output/artifacts/skill-flow-hitl-quality-brownfield-insert/ 2&gt;/dev/null || echo \&quot;(empty)\&quot;&quot;,
+  &quot;description&quot;: &quot;Check for existing .uipx solutions and list directory&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>---</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#6</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">352ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/scripts/flow_compose.py insert-between --help 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Check insert-between help&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>usage: flow_compose.py insert-between [-h] --flow FLOW --upstream UPSTREAM
+                                      --downstream DOWNSTREAM
+                                      [--upstream-port UPSTREAM_PORT] --id ID
+                                      [--node-target-port NODE_TARGET_PORT]
+                                      [--node-source-port NODE_SOURCE_PORT]
+                                      --type TYPE
+                                      [--type-version TYPE_VERSION]
+                                      [--definition-file DEFINITION_FILE]
+                                      [--label LABEL] [--inputs INPUTS]
+
+options:
+  -h, --help            show this help message and exit
+  --flow FLOW
+  --upstream UPSTREAM
+  --downstream DOWNSTREAM
+  --upstream-port UPSTREAM_PORT
+                        disambiguate when several edges join the pair
+  --id ID
+  --node-target-port NODE_TARGET_PORT
+  --node-source-port NODE_SOURCE_PORT
+  --type TYPE
+  --type-version TYPE_VERSION
+  --definition-file DEFINITION_FILE
+  --label LABEL
+  --inputs INPUTS       JSON object for inputs</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#7</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">851ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip --version 2&gt;/dev/null || echo \&quot;no-uip\&quot;&quot;,
+  &quot;description&quot;: &quot;Check uip binary version&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1.201.0-dev.8272</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#8</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">14.81s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-hitl-quality-brownfield-insert \\\n  &amp;&amp; uip solution init \&quot;ContractReview\&quot; --output json \\\n  &amp;&amp; cd \&quot;ContractReview\&quot; \\\n  &amp;&amp; uip maestro flow init \&quot;ContractReview\&quot; --output json \\\n  &amp;&amp; cd \&quot;ContractReview\&quot; \\\n  &amp;&amp; uip maestro flow registry pull 2&gt;&amp;1 | tail -3&quot;,
+  &quot;description&quot;: &quot;Scaffold solution and flow project, pull registry&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;SolutionInit&quot;,
+  &quot;Data&quot;: {
+    &quot;Status&quot;: &quot;Created successfully&quot;,
+    &quot;Path&quot;: &quot;/work/output/artifacts/skill-flow-hitl-quality-brownfield-insert/ContractReview/ContractReview.uipx&quot;,
+    &quot;NextSteps&quot;: &quot;Read /work/output/artifacts/skill-flow-hitl-quality-brownfield-insert/ContractReview/AGENTS.md or /work/output/artifacts/skill-flow-hitl-quality-brownfield-insert/ContractReview/CLAUDE.md to understand the solution lifecycle, project types that can be used inside a solution, and related uip command references.&quot;
+  }
+}
+2026-08-19 16:55:41 INFO  [ResourceBuilder:ProjectCreateCommandHandler] Creating project [object Object]
+2026-08-19 16:55:41 INFO  [ResourceBuilder:MultiFileSolutionDefinitionProvider] Reading multi-file solution definition for solution %s /work/output/artifacts/skill-flow-hitl-quality-brownfield-insert/ContractReview
+2026-08-19 16:55:41 INFO  [ResourceBuilder:ProjectCreateCommandHandler] Generate artefact resources for project [object Object]
+2026-08-19 16:55:41 INFO  [ResourceBuilder:SolutionsMetadataReader] Reading metadata from %s. SolutionsMetadataReader
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FlowInit&quot;,
+  &quot;Data&quot;: {
+    &quot;Status&quot;: &quot;Created
+
+… (truncated, 1249 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#9</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">15.53s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry get core.control.end --output json 2&gt;/dev/null &gt; /tmp/end_def.json &amp;&amp; echo \&quot;OK\&quot; || echo \&quot;FAIL\&quot;&quot;,
+  &quot;description&quot;: &quot;Fetch End node definition&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>OK</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#10</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">17.21s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry get core.action.script --output json 2&gt;/dev/null &gt; /tmp/script_def.json &amp;&amp; echo \&quot;OK\&quot; || echo \&quot;FAIL\&quot;&quot;,
+  &quot;description&quot;: &quot;Fetch Script node definition&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>OK</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#11</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">5ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-hitl-quality-brownfield-insert/ContractReview/ContractReview/ContractReview.flow&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	{
+2	  &quot;id&quot;: &quot;77881635-e18d-4d7e-ac5c-71f3f3d15bde&quot;,
+3	  &quot;version&quot;: &quot;1.9&quot;,
+4	  &quot;name&quot;: &quot;ContractReview&quot;,
+5	  &quot;nodes&quot;: [
+6	    {
+7	      &quot;id&quot;: &quot;start&quot;,
+8	      &quot;type&quot;: &quot;core.trigger.manual&quot;,
+9	      &quot;typeVersion&quot;: &quot;1.0&quot;,
+10	      &quot;display&quot;: {
+11	        &quot;label&quot;: &quot;Manual trigger&quot;
+12	      },
+13	      &quot;inputs&quot;: {
+14	        &quot;entryPointId&quot;: &quot;68028ba4-8d10-4d5f-bed1-9dea34f9b686&quot;,
+15	        &quot;isDefaultEntryPoint&quot;: true
+16	      }
+17	    }
+18	  ],
+19	  &quot;edges&quot;: [],
+20	  &quot;definitions&quot;: [
+21	    {
+22	      &quot;nodeType&quot;: &quot;core.trigger.manual&quot;,
+23	      &quot;version&quot;: &quot;1.0&quot;,
+24	      &quot;category&quot;: &quot;trigger&quot;,
+25	      &quot;description&quot;: &quot;Start the process manually&quot;,
+26	      &quot;tags&quot;: [
+27	        &quot;trigger&quot;,
+28	        &quot;start&quot;,
+29	        &quot;manual&quot;
+30	      ],
+31	      &quot;sortOrder&quot;: 80,
+32	      &quot;display&quot;: {
+33	        &quot;label&quot;: &quot;Manual trigger&quot;,
+34	        &quot;icon&quot;: &quot;play&quot;,
+35	        &quot;shape&quot;: &quot;circle&quot;
+36	      },
+37	      &quot;handleConfiguration&quot;: [
+38	        {
+39	          &quot;position&quot;: &quot;right&quot;,
+40	          &quot;handles&quot;: [
+41	            {
+42	              &quot;id&quot;: &quot;output&quot;,
+43	              &quot;type&quot;: &quot;source&quot;,
+44	              &quot;handleType&quot;: &quot;output&quot;,
+45	              &quot;showButton&quot;: true,
+46	              &quot;constraints&quot;
+
+… (truncated, 1048 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#12</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-err">ERROR</span>
+      <span class="tool-duration">219ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 -c \&quot;\nimport json\nend = json.load(open(&#x27;/tmp/end_def.json&#x27;))\nscr = json.load(open(&#x27;/tmp/script_def.json&#x27;))\n# Extract just the definition node from Data.Node\nprint(&#x27;END_TYPE:&#x27;, end[&#x27;Data&#x27;][&#x27;Node&#x27;][&#x27;type&#x27;], &#x27;v&#x27;, end[&#x27;Data&#x27;][&#x27;Node&#x27;][&#x27;version&#x27;])\nprint(&#x27;SCRIPT_TYPE:&#x27;, scr[&#x27;Data&#x27;][&#x27;Node&#x27;][&#x27;type&#x27;], &#x27;v&#x27;, scr[&#x27;Data&#x27;][&#x27;Node&#x27;][&#x27;version&#x27;])\n\&quot;&quot;,
+  &quot;description&quot;: &quot;Inspect node type/version from registry&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Exit code 1
+Traceback (most recent call last):
+  File &quot;&lt;string&gt;&quot;, line 6, in &lt;module&gt;
+    print(&#x27;END_TYPE:&#x27;, end[&#x27;Data&#x27;][&#x27;Node&#x27;][&#x27;type&#x27;], &#x27;v&#x27;, end[&#x27;Data&#x27;][&#x27;Node&#x27;][&#x27;version&#x27;])
+                       ~~~~~~~~~~~~~~~~~~~^^^^^^^^
+KeyError: &#x27;type&#x27;</pre>
+    <h4>Error</h4><pre>Exit code 1
+Traceback (most recent call last):
+  File &quot;&lt;string&gt;&quot;, line 6, in &lt;module&gt;
+    print(&#x27;END_TYPE:&#x27;, end[&#x27;Data&#x27;][&#x27;Node&#x27;][&#x27;type&#x27;], &#x27;v&#x27;, end[&#x27;Data&#x27;][&#x27;Node&#x27;][&#x27;version&#x27;])
+                       ~~~~~~~~~~~~~~~~~~~^^^^^^^^
+KeyError: &#x27;type&#x27;</pre>
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#13</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">224ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 -c \&quot;\nimport json\nend = json.load(open(&#x27;/tmp/end_def.json&#x27;))\nscr = json.load(open(&#x27;/tmp/script_def.json&#x27;))\n# Shape inspection\nprint(&#x27;END keys:&#x27;, list(end[&#x27;Data&#x27;].keys()))\nprint(&#x27;SCRIPT keys:&#x27;, list(scr[&#x27;Data&#x27;].keys()))\n\&quot;&quot;,
+  &quot;description&quot;: &quot;Inspect registry get response shape&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>END keys: [&#x27;Node&#x27;]
+SCRIPT keys: [&#x27;Node&#x27;]</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#14</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">546ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 -c \&quot;\nimport json\nend = json.load(open(&#x27;/tmp/end_def.json&#x27;))\nscr = json.load(open(&#x27;/tmp/script_def.json&#x27;))\nprint(&#x27;END Node keys:&#x27;, list(end[&#x27;Data&#x27;][&#x27;Node&#x27;].keys()))\nprint(&#x27;SCRIPT Node keys:&#x27;, list(scr[&#x27;Data&#x27;][&#x27;Node&#x27;].keys()))\nprint(&#x27;END nodeType:&#x27;, end[&#x27;Data&#x27;][&#x27;Node&#x27;].get(&#x27;nodeType&#x27;), &#x27;version:&#x27;, end[&#x27;Data&#x27;][&#x27;Node&#x27;].get(&#x27;version&#x27;))\nprint(&#x27;SCRIPT nodeType:&#x27;, scr[&#x27;Data&#x27;][&#x27;Node&#x27;].get(&#x27;nodeType… (53 more chars)&quot;,
+  &quot;description&quot;: &quot;Inspect Node object keys&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>END Node keys: [&#x27;nodeType&#x27;, &#x27;version&#x27;, &#x27;category&#x27;, &#x27;description&#x27;, &#x27;tags&#x27;, &#x27;sortOrder&#x27;, &#x27;display&#x27;, &#x27;handleConfiguration&#x27;, &#x27;model&#x27;, &#x27;runtimeConstraints&#x27;]
+SCRIPT Node keys: [&#x27;nodeType&#x27;, &#x27;version&#x27;, &#x27;category&#x27;, &#x27;description&#x27;, &#x27;tags&#x27;, &#x27;sortOrder&#x27;, &#x27;supportsErrorHandling&#x27;, &#x27;display&#x27;, &#x27;handleConfiguration&#x27;, &#x27;debug&#x27;, &#x27;model&#x27;, &#x27;inputDefinition&#x27;, &#x27;inputDefaults&#x27;, &#x27;outputDefinition&#x27;, &#x27;form&#x27;]
+END nodeType: core.control.end version: 1.0
+SCRIPT nodeType: core.action.script version: 1.1</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#15</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">335ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 -c \&quot;\nimport json\nend = json.load(open(&#x27;/tmp/end_def.json&#x27;))\nscr = json.load(open(&#x27;/tmp/script_def.json&#x27;))\nprint(json.dumps(end[&#x27;Data&#x27;][&#x27;Node&#x27;], indent=2))\n\&quot; &gt; /tmp/end_node_full.json &amp;&amp; echo \&quot;saved\&quot;&quot;,
+  &quot;description&quot;: &quot;Save end node definition to file&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>saved</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#16</span>
+      <span class="tool-name">Write</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">258ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-hitl-quality-brownfield-insert/ContractReview/ContractReview/ContractReview.flow&quot;,
+  &quot;content&quot;: &quot;{\n  \&quot;id\&quot;: \&quot;77881635-e18d-4d7e-ac5c-71f3f3d15bde\&quot;,\n  \&quot;version\&quot;: \&quot;1.9\&quot;,\n  \&quot;name\&quot;: \&quot;ContractReview\&quot;,\n  \&quot;nodes\&quot;: [\n    {\n      \&quot;id\&quot;: \&quot;start\&quot;,\n      \&quot;type\&quot;: \&quot;core.trigger.manual\&quot;,\n      \&quot;typeVersion\&quot;: \&quot;1.0\&quot;,\n      \&quot;display\&quot;: {\n        \&quot;label\&quot;: \&quot;Manual trigger\&quot;\n      },\n      \&quot;inputs\&quot;: {\n        \&quot;entryPointId\&quot;: \&quot;68028ba4-8d10-4d5f-bed1-9dea34f9b686\&quot;,\n        \&quot;isDefaultEntryPoint\&quot;: true\n      }\n    },\n  … (5781 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>The file /work/output/artifacts/skill-flow-hitl-quality-brownfield-insert/ContractReview/ContractReview/ContractReview.flow has been updated successfully. (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#17</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.91s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-hitl-quality-brownfield-insert/ContractReview/ContractReview \\\n  &amp;&amp; uip maestro flow registry get uipath.human-in-the-loop.quick-form --output json 2&gt;/dev/null &gt; /tmp/hitl_def.json \\\n  &amp;&amp; python3 -c \&quot;import json; d=json.load(open(&#x27;/tmp/hitl_def.json&#x27;)); print(&#x27;keys:&#x27;, list(d.get(&#x27;Data&#x27;,{}).keys()))\&quot;&quot;,
+  &quot;description&quot;: &quot;Get HITL quick-form registry definition&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>keys: [&#x27;Node&#x27;]</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#18</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">153ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 -c \&quot;\nimport json\nd = json.load(open(&#x27;/tmp/hitl_def.json&#x27;))\nnode = d[&#x27;Data&#x27;][&#x27;Node&#x27;]\nprint(&#x27;nodeType:&#x27;, node.get(&#x27;nodeType&#x27;))\nprint(&#x27;version:&#x27;, node.get(&#x27;version&#x27;))\nprint(&#x27;handleConfiguration ports:&#x27;)\nfor hc in node.get(&#x27;handleConfiguration&#x27;, []):\n    for h in hc.get(&#x27;handles&#x27;, []):\n        print(&#x27; &#x27;, h.get(&#x27;id&#x27;), h.get(&#x27;type&#x27;), h.get(&#x27;handleType&#x27;))\n\&quot;&quot;,
+  &quot;description&quot;: &quot;Inspect HITL node definition ports&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>nodeType: uipath.human-in-the-loop.quick-form
+version: 1.0
+handleConfiguration ports:
+  input target input
+  completed source output</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#19</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">397ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-hitl-quality-brownfield-insert/ContractReview/ContractReview \\\n  &amp;&amp; python3 /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/scripts/flow_compose.py insert-between \\\n    --flow ContractReview.flow \\\n    --upstream extractMeta \\\n    --upstream-port output \\\n    --downstream done \\\n    --id legalReview \\\n    --type uipath.human-in-the-loop.quick-for… (169 more chars)&quot;,
+  &quot;description&quot;: &quot;Insert HITL between extractMeta and done&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>deleted 1 edge(s)
+added node legalReview (uipath.human-in-the-loop.quick-form v1.0); definition added; variables.nodes +2
+added edge edge_extractMeta_output_legalReview_input
+added edge edge_legalReview_completed_done_input
+inserted legalReview between extractMeta and done</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#20</span>
+      <span class="tool-name">Edit</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">26ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;replace_all&quot;: false,
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-hitl-quality-brownfield-insert/ContractReview/ContractReview/ContractReview.flow&quot;,
+  &quot;old_string&quot;: &quot;      \&quot;id\&quot;: \&quot;legalReview\&quot;,\n      \&quot;type\&quot;: \&quot;uipath.human-in-the-loop.quick-form\&quot;,\n      \&quot;typeVersion\&quot;: \&quot;1.0\&quot;,\n      \&quot;display\&quot;: {\n        \&quot;label\&quot;: \&quot;Legal Review\&quot;\n      },\n      \&quot;inputs\&quot;: {},\n      \&quot;outputs\&quot;: {\n        \&quot;output\&quot;: {\n          \&quot;type\&quot;: \&quot;object\&quot;,\n          \&quot;description\&quot;: \&quot;The return value of the node.\&quot;,\n          \&quot;source\&quot;: \&quot;=result.response\&quot;,\n          \&quot;var\&quot;: \&quot;output\&quot;\n        },\n        \&quot;s… (179 more chars)&quot;,
+  &quot;new_string&quot;: &quot;      \&quot;id\&quot;: \&quot;legalReview\&quot;,\n      \&quot;type\&quot;: \&quot;uipath.human-in-the-loop.quick-form\&quot;,\n      \&quot;typeVersion\&quot;: \&quot;1.0\&quot;,\n      \&quot;display\&quot;: {\n        \&quot;label\&quot;: \&quot;Legal Review\&quot;\n      },\n      \&quot;inputs\&quot;: {\n        \&quot;schema\&quot;: {\n          \&quot;schemaId\&quot;: \&quot;a1b2c3d4-e5f6-7890-abcd-ef1234567890\&quot;,\n          \&quot;fields\&quot;: [\n            {\n              \&quot;id\&quot;: \&quot;contract_id\&quot;,\n              \&quot;label\&quot;: \&quot;Contract ID\&quot;,\n              \&quot;type\&quot;: \&quot;… (2141 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>The file /work/output/artifacts/skill-flow-hitl-quality-brownfield-insert/ContractReview/ContractReview/ContractReview.flow has been updated successfully. (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#21</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-err">ERROR</span>
+      <span class="tool-duration">438ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-hitl-quality-brownfield-insert/ContractReview/ContractReview \\\n  &amp;&amp; python3 /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/scripts/audit_flow.py ContractReview.flow 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Run flow audit&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Exit code 1
+topology      1 error(s), 0 warning(s), 0 info
+    error   BAD_SOURCE_PORT            extractMeta                              core.action.script has no source port &#x27;output&#x27; (allowed: error, success)
+expressions   0 error(s), 0 warning(s), 0 info
+jint          0 error(s), 0 warning(s), 0 info
+bindings      0 error(s), 0 warning(s), 0 info
+runtime-gaps  2 error(s), 0 warning(s), 0 info
+    error   MISSING_NODE_VARIABLE      extractMeta                              no variables.nodes[] entry &#x27;extractMeta.output&#x27;; $vars.extractMeta.output resolves to undefined at runtime even though validate passes. `uip maestro flow format` regenerates it
+    error   MISSING_NODE_VARIABLE      start                                    no variables.nodes[] entry &#x27;start.output&#x27;; $vars.start.output resolves to undefined at runtime even though validate passes. `uip maestro flow format` regenerates it
+audit: FAIL (3 error(s))</pre>
+    <h4>Error</h4><pre>Exit code 1
+topology      1 error(s), 0 warning(s), 0 info
+    error   BAD_SOURCE_PORT            extractMeta                              core.action.script has no source port &#x27;output&#x27; (allowed: error, success)
+expressions   0 error(s), 0 warning(s), 0 info
+jint          0 error(s), 0 warning(s), 0 info
+bindings      0 error(s), 0 warning(s), 0 info
+runtime-gaps  2 error(s), 0 warning(s), 0 info
+    error   MISSING_NODE_VARIABLE      extractMeta                              no variables.nodes[] entry &#x27;extractMeta.output&#x27;; $vars.extractMeta.output resolves to undefined at runtime even though validate passes. `uip maestro flow format` regenerates it
+    error   MISSING_NODE_VARIABLE      start                                    no variables.nodes[] entry &#x27;start.output&#x27;; $vars.start.output resolves to undefined at runtime even though validate passes. `uip maestro flow format` regenerates it
+audit: FAIL (3 error(s))</pre>
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#22</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">182ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 -c \&quot;\nimport json\nscr = json.load(open(&#x27;/tmp/script_def.json&#x27;))\nnode = scr[&#x27;Data&#x27;][&#x27;Node&#x27;]\nfor hc in node.get(&#x27;handleConfiguration&#x27;, []):\n    for h in hc.get(&#x27;handles&#x27;, []):\n        print(&#x27;port:&#x27;, h.get(&#x27;id&#x27;), &#x27;type:&#x27;, h.get(&#x27;type&#x27;), &#x27;handleType:&#x27;, h.get(&#x27;handleType&#x27;))\n\&quot;&quot;,
+  &quot;description&quot;: &quot;Check actual script node port names from registry&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>port: input type: target handleType: input
+port: success type: source handleType: output
+port: error type: source handleType: output</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#23</span>
+      <span class="tool-name">Edit</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">20ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;replace_all&quot;: false,
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-hitl-quality-brownfield-insert/ContractReview/ContractReview/ContractReview.flow&quot;,
+  &quot;old_string&quot;: &quot;    {\n      \&quot;id\&quot;: \&quot;edge_extractMeta_output_legalReview_input\&quot;,\n      \&quot;sourceNodeId\&quot;: \&quot;extractMeta\&quot;,\n      \&quot;sourcePort\&quot;: \&quot;output\&quot;,\n      \&quot;targetNodeId\&quot;: \&quot;legalReview\&quot;,\n      \&quot;targetPort\&quot;: \&quot;input\&quot;\n    },&quot;,
+  &quot;new_string&quot;: &quot;    {\n      \&quot;id\&quot;: \&quot;edge_extractMeta_success_legalReview_input\&quot;,\n      \&quot;sourceNodeId\&quot;: \&quot;extractMeta\&quot;,\n      \&quot;sourcePort\&quot;: \&quot;success\&quot;,\n      \&quot;targetNodeId\&quot;: \&quot;legalReview\&quot;,\n      \&quot;targetPort\&quot;: \&quot;input\&quot;\n    },&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>The file /work/output/artifacts/skill-flow-hitl-quality-brownfield-insert/ContractReview/ContractReview/ContractReview.flow has been updated successfully. (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#24</span>
+      <span class="tool-name">Edit</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">21ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;replace_all&quot;: false,
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-hitl-quality-brownfield-insert/ContractReview/ContractReview/ContractReview.flow&quot;,
+  &quot;old_string&quot;: &quot;        {\n          \&quot;position\&quot;: \&quot;right\&quot;,\n          \&quot;handles\&quot;: [\n            {\n              \&quot;id\&quot;: \&quot;output\&quot;,\n              \&quot;type\&quot;: \&quot;source\&quot;,\n              \&quot;handleType\&quot;: \&quot;output\&quot;,\n              \&quot;showButton\&quot;: true\n            }\n          ],\n          \&quot;visible\&quot;: true\n        }\n      ],\n      \&quot;debug\&quot;: {\n        \&quot;breakpointSupported\&quot;: true\n      },\n      \&quot;model\&quot;: {\n        \&quot;type\&quot;: \&quot;bpmn:ScriptTask\&quot;,\n   … (36 more chars)&quot;,
+  &quot;new_string&quot;: &quot;        {\n          \&quot;position\&quot;: \&quot;right\&quot;,\n          \&quot;handles\&quot;: [\n            {\n              \&quot;id\&quot;: \&quot;success\&quot;,\n              \&quot;type\&quot;: \&quot;source\&quot;,\n              \&quot;handleType\&quot;: \&quot;output\&quot;,\n              \&quot;showButton\&quot;: true\n            },\n            {\n              \&quot;id\&quot;: \&quot;error\&quot;,\n              \&quot;type\&quot;: \&quot;source\&quot;,\n              \&quot;handleType\&quot;: \&quot;output\&quot;,\n              \&quot;showButton\&quot;: false\n            }\n          ],… (199 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>The file /work/output/artifacts/skill-flow-hitl-quality-brownfield-insert/ContractReview/ContractReview/ContractReview.flow has been updated successfully. (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#25</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-err">ERROR</span>
+      <span class="tool-duration">526ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-hitl-quality-brownfield-insert/ContractReview/ContractReview \\\n  &amp;&amp; python3 /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/scripts/audit_flow.py ContractReview.flow 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Re-run audit after port fix&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Exit code 1
+topology      0 error(s), 0 warning(s), 0 info
+expressions   0 error(s), 0 warning(s), 0 info
+jint          0 error(s), 0 warning(s), 0 info
+bindings      0 error(s), 0 warning(s), 0 info
+runtime-gaps  2 error(s), 0 warning(s), 0 info
+    error   MISSING_NODE_VARIABLE      extractMeta                              no variables.nodes[] entry &#x27;extractMeta.output&#x27;; $vars.extractMeta.output resolves to undefined at runtime even though validate passes. `uip maestro flow format` regenerates it
+    error   MISSING_NODE_VARIABLE      start                                    no variables.nodes[] entry &#x27;start.output&#x27;; $vars.start.output resolves to undefined at runtime even though validate passes. `uip maestro flow format` regenerates it
+audit: FAIL (2 error(s))</pre>
+    <h4>Error</h4><pre>Exit code 1
+topology      0 error(s), 0 warning(s), 0 info
+expressions   0 error(s), 0 warning(s), 0 info
+jint          0 error(s), 0 warning(s), 0 info
+bindings      0 error(s), 0 warning(s), 0 info
+runtime-gaps  2 error(s), 0 warning(s), 0 info
+    error   MISSING_NODE_VARIABLE      extractMeta                              no variables.nodes[] entry &#x27;extractMeta.output&#x27;; $vars.extractMeta.output resolves to undefined at runtime even though validate passes. `uip maestro flow format` regenerates it
+    error   MISSING_NODE_VARIABLE      start                                    no variables.nodes[] entry &#x27;start.output&#x27;; $vars.start.output resolves to undefined at runtime even though validate passes. `uip maestro flow format` regenerates it
+audit: FAIL (2 error(s))</pre>
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#26</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-err">ERROR</span>
+      <span class="tool-duration">1.26s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-hitl-quality-brownfield-insert/ContractReview/ContractReview \\\n  &amp;&amp; uip maestro flow validate ContractReview.flow --output json 2&gt;&amp;1 \\\n  &amp;&amp; echo \&quot;---FORMAT---\&quot; \\\n  &amp;&amp; uip maestro flow format ContractReview.flow --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Validate then format flow&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Exit code 1
+{
+  &quot;Result&quot;: &quot;Failure&quot;,
+  &quot;Message&quot;: &quot;Validation failed for /work/output/artifacts/skill-flow-hitl-quality-brownfield-insert/ContractReview/ContractReview/ContractReview.flow&quot;,
+  &quot;Instructions&quot;: &quot;Found 7 error(s):\n  - [error] [definitions[1].debug.runtime] Invalid input: expected string, received undefined\n  - [error] [definitions[2].runtimeConstraints] Invalid input\n  - [error] [variables.nodes[0].id] Invalid input: expected string, received undefined\n  - [error] [variables.nodes[0].binding] Invalid input: expected object, received undefined\n  - [error] [variables.nodes[1].id] Invalid input: expected string, received undefined\n  - [error] [variables.nodes[1].binding] Invalid input: expected object, received undefined\n  - [error] [variables.variableUpdates] Invalid input: expected record, received array&quot;,
+  &quot;ErrorCode&quot;: &quot;unknown_error&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}</pre>
+    <h4>Error</h4><pre>Exit code 1
+{
+  &quot;Result&quot;: &quot;Failure&quot;,
+  &quot;Message&quot;: &quot;Validation failed for /work/output/artifacts/skill-flow-hitl-quality-brownfield-insert/ContractReview/ContractReview/ContractReview.flow&quot;,
+  &quot;Instructions&quot;: &quot;Found 7 error(s):\n  - [error] [definitions[1].debug.runtime] Invalid input: expected string, received undefined\n  - [error] [definitions[2].runtimeConstraints] Invalid input\n  - [error] [variables.nodes[0].id] Invalid input: expected string, received undefined\n  - [error] [variables.nodes[0].binding] Invalid input: expected object, received undefined\n  - [error] [variables.nodes[1].id] Invalid input: expected string, received undefined\n  - [error] [variables.nodes[1].binding] Invalid input: expected object, received undefined\n  - [error] [variables.variableUpdates] Invalid input: expected record, received array&quot;,
+  &quot;ErrorCode&quot;: &quot;unknown_error&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}</pre>
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#27</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">5ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-hitl-quality-brownfield-insert/ContractReview/ContractReview/ContractReview.flow&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	{
+2	  &quot;id&quot;: &quot;77881635-e18d-4d7e-ac5c-71f3f3d15bde&quot;,
+3	  &quot;version&quot;: &quot;1.9&quot;,
+4	  &quot;name&quot;: &quot;ContractReview&quot;,
+5	  &quot;nodes&quot;: [
+6	    {
+7	      &quot;id&quot;: &quot;start&quot;,
+8	      &quot;type&quot;: &quot;core.trigger.manual&quot;,
+9	      &quot;typeVersion&quot;: &quot;1.0&quot;,
+10	      &quot;display&quot;: {
+11	        &quot;label&quot;: &quot;Manual trigger&quot;
+12	      },
+13	      &quot;inputs&quot;: {
+14	        &quot;entryPointId&quot;: &quot;68028ba4-8d10-4d5f-bed1-9dea34f9b686&quot;,
+15	        &quot;isDefaultEntryPoint&quot;: true
+16	      }
+17	    },
+18	    {
+19	      &quot;id&quot;: &quot;extractMeta&quot;,
+20	      &quot;type&quot;: &quot;core.action.script&quot;,
+21	      &quot;typeVersion&quot;: &quot;1.1&quot;,
+22	      &quot;display&quot;: {
+23	        &quot;label&quot;: &quot;Extract Metadata&quot;
+24	      },
+25	      &quot;inputs&quot;: {
+26	        &quot;script&quot;: &quot;log(&#x27;Extracting contract metadata&#x27;);\nreturn {};&quot;
+27	      }
+28	    },
+29	    {
+30	      &quot;id&quot;: &quot;done&quot;,
+31	      &quot;type&quot;: &quot;core.control.end&quot;,
+32	      &quot;typeVersion&quot;: &quot;1.0&quot;,
+33	      &quot;display&quot;: {
+34	        &quot;label&quot;: &quot;End&quot;
+35	      },
+36	      &quot;inputs&quot;: {}
+37	    },
+38	    {
+39	      &quot;id&quot;: &quot;legalReview&quot;,
+40	      &quot;type&quot;: &quot;uipath.human-in-the-loop.quick-form&quot;,
+41	      &quot;typeVersion&quot;: &quot;1.0&quot;,
+42	      &quot;display&quot;: {
+43	        &quot;label&quot;: &quot;Legal Review&quot;
+44	      },
+45	      &quot;inputs&quot;: {
+46	        &quot;schema&quot;: {
+47	          &quot;schemaId&quot;: &quot;a1b2c3d
+
+… (truncated, 15181 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#28</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">192ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 -c \&quot;\nimport json\nend = json.load(open(&#x27;/tmp/end_def.json&#x27;))\nscr = json.load(open(&#x27;/tmp/script_def.json&#x27;))\nhitl = json.load(open(&#x27;/tmp/hitl_def.json&#x27;))\n# Print each definition as-is from registry\nprint(&#x27;=== SCRIPT ===&#x27;)\nprint(json.dumps(scr[&#x27;Data&#x27;][&#x27;Node&#x27;], indent=2))\nprint(&#x27;=== END ===&#x27;)\nprint(json.dumps(end[&#x27;Data&#x27;][&#x27;Node&#x27;], indent=2))\n\&quot; 2&gt;&amp;1 | head -100&quot;,
+  &quot;description&quot;: &quot;Dump full registry definitions for script and end nodes&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>=== SCRIPT ===
+{
+  &quot;nodeType&quot;: &quot;core.action.script&quot;,
+  &quot;version&quot;: &quot;1.1&quot;,
+  &quot;category&quot;: &quot;data-operations&quot;,
+  &quot;description&quot;: &quot;Run custom JavaScript code&quot;,
+  &quot;tags&quot;: [
+    &quot;code&quot;,
+    &quot;javascript&quot;,
+    &quot;python&quot;
+  ],
+  &quot;sortOrder&quot;: 70,
+  &quot;supportsErrorHandling&quot;: true,
+  &quot;display&quot;: {
+    &quot;label&quot;: &quot;Script&quot;,
+    &quot;icon&quot;: &quot;code&quot;
+  },
+  &quot;handleConfiguration&quot;: [
+    {
+      &quot;position&quot;: &quot;left&quot;,
+      &quot;handles&quot;: [
+        {
+          &quot;id&quot;: &quot;input&quot;,
+          &quot;type&quot;: &quot;target&quot;,
+          &quot;handleType&quot;: &quot;input&quot;
+        }
+      ]
+    },
+    {
+      &quot;position&quot;: &quot;right&quot;,
+      &quot;handles&quot;: [
+        {
+          &quot;id&quot;: &quot;success&quot;,
+          &quot;type&quot;: &quot;source&quot;,
+          &quot;handleType&quot;: &quot;output&quot;
+        },
+        {
+          &quot;id&quot;: &quot;error&quot;,
+          &quot;label&quot;: &quot;Error&quot;,
+          &quot;type&quot;: &quot;source&quot;,
+          &quot;handleType&quot;: &quot;output&quot;,
+          &quot;visible&quot;: &quot;{inputs.errorHandlingEnabled}&quot;,
+          &quot;constraints&quot;: {
+            &quot;maxConnections&quot;: 1
+          }
+        }
+      ]
+    }
+  ],
+  &quot;debug&quot;: {
+    &quot;runtime&quot;: &quot;clientScript&quot;
+  },
+  &quot;model&quot;: {
+    &quot;type&quot;: &quot;bpmn:ScriptTask&quot;
+  },
+  &quot;inputDefinition&quot;: {
+    &quot;type&quot;: &quot;object&quot;,
+    &quot;properties&quot;: {
+      &quot;script&quot;: {
+        &quot;type&quot;: &quot;string&quot;,
+        &quot;minLength&quot;: 1,
+      
+
+… (truncated, 913 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#29</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">382ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 - &lt;&lt;&#x27;EOF&#x27; &gt; /tmp/build_flow.py\nimport json\n\n# Load all registry definitions\nend_node = json.load(open(&#x27;/tmp/end_def.json&#x27;))[&#x27;Data&#x27;][&#x27;Node&#x27;]\nscr_node = json.load(open(&#x27;/tmp/script_def.json&#x27;))[&#x27;Data&#x27;][&#x27;Node&#x27;]\nhitl_node = json.load(open(&#x27;/tmp/hitl_def.json&#x27;))[&#x27;Data&#x27;][&#x27;Node&#x27;]\n\n# Load manual trigger def from existing flow (already scaffolded correctly)\nflow = json.load(open(&#x27;/work/output/artifa… (4686 more chars)&quot;,
+  &quot;description&quot;: &quot;Build corrected flow using registry-verbatim definitions&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>script written</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#30</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-err">ERROR</span>
+      <span class="tool-duration">396ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 /tmp/build_flow.py &gt; /tmp/corrected_flow.json &amp;&amp; python3 -c \&quot;import json; d=json.load(open(&#x27;/tmp/corrected_flow.json&#x27;)); print(&#x27;nodes:&#x27;, [n[&#x27;id&#x27;] for n in d[&#x27;nodes&#x27;]]); print(&#x27;edges:&#x27;, [(e[&#x27;sourceNodeId&#x27;],e[&#x27;sourcePort&#x27;],e[&#x27;targetNodeId&#x27;]) for e in d[&#x27;edges&#x27;]])\&quot;&quot;,
+  &quot;description&quot;: &quot;Generate corrected flow and verify topology&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Exit code 1
+Traceback (most recent call last):
+  File &quot;/tmp/build_flow.py&quot;, line 15, in &lt;module&gt;
+    &quot;isDefaultEntryPoint&quot;: true
+                           ^^^^
+NameError: name &#x27;true&#x27; is not defined. Did you mean: &#x27;True&#x27;?</pre>
+    <h4>Error</h4><pre>Exit code 1
+Traceback (most recent call last):
+  File &quot;/tmp/build_flow.py&quot;, line 15, in &lt;module&gt;
+    &quot;isDefaultEntryPoint&quot;: true
+                           ^^^^
+NameError: name &#x27;true&#x27; is not defined. Did you mean: &#x27;True&#x27;?</pre>
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#31</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">637ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 - &lt;&lt;&#x27;PYEOF&#x27; &gt; /tmp/corrected_flow.json\nimport json\n\nend_node = json.load(open(&#x27;/tmp/end_def.json&#x27;))[&#x27;Data&#x27;][&#x27;Node&#x27;]\nscr_node = json.load(open(&#x27;/tmp/script_def.json&#x27;))[&#x27;Data&#x27;][&#x27;Node&#x27;]\nhitl_node = json.load(open(&#x27;/tmp/hitl_def.json&#x27;))[&#x27;Data&#x27;][&#x27;Node&#x27;]\nflow = json.load(open(&#x27;/work/output/artifacts/skill-flow-hitl-quality-brownfield-insert/ContractReview/ContractReview/ContractReview.flow&#x27;))\nma… (3341 more chars)&quot;,
+  &quot;description&quot;: &quot;Generate corrected flow JSON with registry-verbatim definitions&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>nodes: [&#x27;start&#x27;, &#x27;extractMeta&#x27;, &#x27;legalReview&#x27;, &#x27;done&#x27;]
+edges: [(&#x27;start&#x27;, &#x27;output&#x27;, &#x27;extractMeta&#x27;), (&#x27;extractMeta&#x27;, &#x27;success&#x27;, &#x27;legalReview&#x27;), (&#x27;legalReview&#x27;, &#x27;completed&#x27;, &#x27;done&#x27;)]</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#32</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">29ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cp /tmp/corrected_flow.json /work/output/artifacts/skill-flow-hitl-quality-brownfield-insert/ContractReview/ContractReview/ContractReview.flow &amp;&amp; echo \&quot;written\&quot;&quot;,
+  &quot;description&quot;: &quot;Write corrected flow file&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>written</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#33</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">0ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-hitl-quality-brownfield-insert/ContractReview/ContractReview/ContractReview.flow&quot;,
+  &quot;limit&quot;: 10
+}</pre>
+    <h4>Result</h4>
+    <pre>1	{
+2	  &quot;id&quot;: &quot;77881635-e18d-4d7e-ac5c-71f3f3d15bde&quot;,
+3	  &quot;version&quot;: &quot;1.9&quot;,
+4	  &quot;name&quot;: &quot;ContractReview&quot;,
+5	  &quot;nodes&quot;: [
+6	    {
+7	      &quot;id&quot;: &quot;start&quot;,
+8	      &quot;type&quot;: &quot;core.trigger.manual&quot;,
+9	      &quot;typeVersion&quot;: &quot;1.0&quot;,
+10	      &quot;display&quot;: {</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#34</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">4.53s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-hitl-quality-brownfield-insert/ContractReview/ContractReview \\\n  &amp;&amp; uip maestro flow validate ContractReview.flow --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Validate the corrected flow&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>[ManifestClient] fetchDynamicNodes ok: total=317 agent context nodes=2 external agent nodes=7 orchestrator nodes=263 IXP nodes=45
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FlowValidate&quot;,
+  &quot;Data&quot;: {
+    &quot;File&quot;: &quot;/work/output/artifacts/skill-flow-hitl-quality-brownfield-insert/ContractReview/ContractReview/ContractReview.flow&quot;,
+    &quot;Status&quot;: &quot;Valid&quot;
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#35</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-err">ERROR</span>
+      <span class="tool-duration">263ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-hitl-quality-brownfield-insert/ContractReview/ContractReview \\\n  &amp;&amp; python3 /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/scripts/audit_flow.py ContractReview.flow 2&gt;&amp;1 \\\n  &amp;&amp; echo \&quot;---FORMAT---\&quot; \\\n  &amp;&amp; uip maestro flow format ContractReview.flow --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Audit then format the flow&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Exit code 1
+topology      0 error(s), 0 warning(s), 0 info
+expressions   0 error(s), 0 warning(s), 0 info
+jint          0 error(s), 0 warning(s), 0 info
+bindings      0 error(s), 0 warning(s), 0 info
+runtime-gaps  3 error(s), 0 warning(s), 0 info
+    error   MISSING_NODE_VARIABLE      extractMeta                              no variables.nodes[] entry &#x27;extractMeta.output&#x27;; $vars.extractMeta.output resolves to undefined at runtime even though validate passes. `uip maestro flow format` regenerates it
+    error   MISSING_NODE_VARIABLE      legalReview                              no variables.nodes[] entry &#x27;legalReview.output&#x27;; $vars.legalReview.output resolves to undefined at runtime even though validate passes. `uip maestro flow format` regenerates it
+    error   MISSING_NODE_VARIABLE      start                                    no variables.nodes[] entry &#x27;start.output&#x27;; $vars.start.output resolves to undefined at runtime even though validate passes. `uip maestro flow format` regenerates it
+audit: FAIL (3 error(s))</pre>
+    <h4>Error</h4><pre>Exit code 1
+topology      0 error(s), 0 warning(s), 0 info
+expressions   0 error(s), 0 warning(s), 0 info
+jint          0 error(s), 0 warning(s), 0 info
+bindings      0 error(s), 0 warning(s), 0 info
+runtime-gaps  3 error(s), 0 warning(s), 0 info
+    error   MISSING_NODE_VARIABLE      extractMeta                              no variables.nodes[] entry &#x27;extractMeta.output&#x27;; $vars.extractMeta.output resolves to undefined at runtime even though validate passes. `uip maestro flow format` regenerates it
+    error   MISSING_NODE_VARIABLE      legalReview                              no variables.nodes[] entry &#x27;legalReview.output&#x27;; $vars.legalReview.output resolves to undefined at runtime even though validate passes. `uip maestro flow format` regenerates it
+    error   MISSING_NODE_VARIABLE      start                                    no variables.nodes[] entry &#x27;start.output&#x27;; $vars.start.output resolves to undefined at runtime even though validate passes. `uip maestro flow format` regenerates it
+audit: FAIL (3 error(s))</pre>
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#36</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.59s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-hitl-quality-brownfield-insert/ContractReview/ContractReview \\\n  &amp;&amp; uip maestro flow format ContractReview.flow --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Format the flow to regenerate variables.nodes&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FlowFormat&quot;,
+  &quot;Data&quot;: {
+    &quot;File&quot;: &quot;ContractReview.flow&quot;,
+    &quot;NodesTotal&quot;: 4,
+    &quot;EdgesTotal&quot;: 3,
+    &quot;NodesRepositioned&quot;: 3,
+    &quot;NodesResized&quot;: 0,
+    &quot;SubflowsTidied&quot;: 0,
+    &quot;VariableCount&quot;: 5
+  },
+  &quot;Instructions&quot;: &quot;Repositioned 3 of 4 nodes&quot;
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#37</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">250ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-hitl-quality-brownfield-insert/ContractReview/ContractReview \\\n  &amp;&amp; python3 /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/scripts/audit_flow.py ContractReview.flow 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Re-audit after format to confirm no remaining errors&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>topology      0 error(s), 0 warning(s), 0 info
+expressions   0 error(s), 0 warning(s), 0 info
+jint          0 error(s), 0 warning(s), 0 info
+bindings      0 error(s), 0 warning(s), 0 info
+runtime-gaps  0 error(s), 0 warning(s), 0 info
+audit: clean</pre>
+    
+  </div>
+</details>
+
+</div>
+
+<h2>Command Telemetry</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Total</div><div class="value">38</div></div>
+    <div class="stat"><div class="label">Successful</div><div class="value">32 (84%)</div></div>
+    <div class="stat"><div class="label">Failed</div><div class="value">6</div></div>
+    <div class="stat"><div class="label">Avg / cmd</div><div class="value">1.69s</div></div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 2fr;gap:16px;margin-top:12px">
+    <div>
+      <h4>By Tool</h4>
+      <table>
+        <thead><tr><th>Tool</th><th>Count</th></tr></thead>
+        <tbody><tr><td class='mono'>Bash</td><td>26</td></tr><tr><td class='mono'>Read</td><td>7</td></tr><tr><td class='mono'>Edit</td><td>3</td></tr><tr><td class='mono'>Skill</td><td>1</td></tr><tr><td class='mono'>Write</td><td>1</td></tr></tbody>
+      </table>
+    </div>
+    <div>
+      <h4>Slowest</h4>
+      <table>
+        <thead><tr><th>Tool</th><th>Duration</th><th>Parameters</th></tr></thead>
+        <tbody><tr><td class='mono'>Bash</td><td>17.21s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro flow registry get core.ac...</td></tr><tr><td class='mono'>Bash</td><td>15.53s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro flow registry get core.co...</td></tr><tr><td class='mono'>Bash</td><td>14.81s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;cd /work/output/artifacts/skill-flow-...</td></tr><tr><td class='mono'>Bash</td><td>4.53s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;cd /work/output/artifacts/skill-flow-...</td></tr><tr><td class='mono'>Bash</td><td>1.91s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;cd /work/output/artifacts/skill-flow-...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+  <p><strong>Most Common Pattern:</strong> <code>Bash → Bash → Bash</code></p><p><strong>Skill Tool Invoked:</strong> 1 time(s)</p>
+</div>
+
+<h2>Generation Metrics</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Total Latency</div><div class="value">7m 26s</div></div>
+    <div class="stat"><div class="label">Turns</div><div class="value">1</div></div>
+    <div class="stat"><div class="label">Assistant Turns</div><div class="value">69</div></div>
+    <div class="stat"><div class="label">Avg Turn Latency</div><div class="value">7m 14s</div></div>
+    
+  </div>
+</div>
+
+<h2>Token Usage</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Input (uncached)</div><div class="value">677</div></div>
+    <div class="stat"><div class="label">Output</div><div class="value">24,025</div></div>
+    <div class="stat"><div class="label">Cache Write</div><div class="value">68,727</div></div>
+    <div class="stat"><div class="label">Cache Read</div><div class="value">2,589,750</div></div>
+    <div class="stat"><div class="label">Total</div><div class="value">2,683,179</div></div>
+    <div class="stat"><div class="label">Cost</div><div class="value">$1.3971</div></div>
+  </div>
+</div>
+
+<h2>Agent Settings</h2>
+<div class="card" style="padding:0">
+  <table>
+    <tbody><tr><td class='mono dim'>Permission Mode</td><td>acceptEdits</td></tr><tr><td class='mono dim'>Allowed Tools</td><td>Skill, Bash, Read, Write, Edit, Glob, Grep</td></tr><tr><td class='mono dim'>Model</td><td>us.anthropic.claude-sonnet-4-6</td></tr><tr><td class='mono dim'>Max Turns</td><td>150</td></tr><tr><td class='mono dim'>System Prompt</td><td>You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted. </td></tr><tr><td class='mono dim'>System Prompt Mode</td><td>append</td></tr><tr><td class='mono dim'>Plugins</td><td>/home/azureuser/projects/skills/tmp</td></tr></tbody>
+  </table>
+</div>
+
+<h2>Environment</h2>
+<div class="card" style="padding:0">
+  <table>
+    <tbody><tr><td class='mono dim'>git_commit</td><td>unknown</td></tr><tr><td class='mono dim'>skills_git_commit</td><td>unknown</td></tr><tr><td class='mono dim'>cli_version</td><td>1.201.0-dev.8272</td></tr><tr><td class='mono dim'>tool_plugins</td><td>{&#x27;admin-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;agent-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;agenthub-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;aops-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;api-workflow-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;automation-hub-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;codedagent-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;codedapp-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;coder-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;context-grounding-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;conversational-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;data-fabric-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;docsai-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;function-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;gov-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;guardrails-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;insights-tool&#x27;: &#x27;1.201.0-dev.8276&#x27;, &#x27;integrationservice-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;ixp-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;llm-gateway-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;llmgw-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;maestro-tool&#x27;: &#x27;1.201.0-dev.8275&#x27;, &#x27;model-hub-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;orchestrator-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;platform-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;pm-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;rpa-legacy-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;rpa-tool&#x27;: &#x27;1.201.0-dev.20260809.3&#x27;, &#x27;solution-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;tasks-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;test-manager-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;traces-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;vertical-solutions-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;}</td></tr><tr><td class='mono dim'>coder_eval</td><td>0.9.6</td></tr><tr><td class='mono dim'>claude_code_cli</td><td>2.1.177 (Claude Code)</td></tr><tr><td class='mono dim'>uv</td><td>uv 0.12.5 (x86_64-unknown-linux-gnu)</td></tr><tr><td class='mono dim'>anthropic</td><td>0.122.0</td></tr><tr><td class='mono dim'>openai</td><td>3.2.0</td></tr><tr><td class='mono dim'>pydantic</td><td>2.12.5</td></tr><tr><td class='mono dim'>api_routing</td><td>aws_bedrock</td></tr><tr><td class='mono dim'>eval_routing</td><td>aws_bedrock</td></tr><tr><td class='mono dim'>aws_region</td><td>us-east-2</td></tr><tr><td class='mono dim'>bedrock_model</td><td>us.anthropic.claude-sonnet-4-6</td></tr><tr><td class='mono dim'>system_prompt_semantics</td><td>append</td></tr></tbody>
+  </table>
+</div>
+
+<footer>Generated by coder_eval · 2026-08-19T16:59:40</footer>
+</div>
+<script>
+function toggleTheme() {
+  document.documentElement.classList.toggle('light');
+  try {
+    const mode = document.documentElement.classList.contains('light') ? 'light' : 'dark';
+    localStorage.setItem('coder-eval-theme', mode);
+  } catch (e) { /* ignore */ }
+}
+(function() {
+  try {
+    if (localStorage.getItem('coder-eval-theme') === 'light') {
+      document.documentElement.classList.add('light');
+    }
+  } catch (e) { /* ignore */ }
+})();
+</script>
+</body>
+</html>

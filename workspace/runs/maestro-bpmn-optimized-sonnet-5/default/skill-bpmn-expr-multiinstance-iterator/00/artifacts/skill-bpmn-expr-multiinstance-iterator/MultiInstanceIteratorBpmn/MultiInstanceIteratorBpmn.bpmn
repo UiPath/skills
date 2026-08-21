@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:uipath="http://uipath.org/schema/bpmn" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" exporter="UiPath Maestro (https://uipath.com)" exporterVersion="1.201.0-dev.8275" xmlns:di="http://www.omg.org/spec/DD/20100524/DI">
+  <bpmn:process id="Process_MultiInstanceIterator" name="Maestro Process">
+    <bpmn:extensionElements>
+      <uipath:variables version="v1">
+        <uipath:input id="Var_Items" name="Items" type="array" elementId="Event_start" />
+      </uipath:variables>
+      <uipath:bindings version="v1" />
+    </bpmn:extensionElements>
+    <bpmn:startEvent id="Event_start" name="core.trigger.manual">
+      <bpmn:extensionElements>
+        <uipath:entryPointId value="1d604f2c-df31-458a-95b8-0d7b66cf9cea" />
+      </bpmn:extensionElements>
+      <bpmn:outgoing>Flow_ToSubProcess</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:subProcess id="SubProcess_Iterate" name="Iterate Items">
+      <bpmn:extensionElements>
+        <uipath:variables version="v1">
+          <uipath:output id="Var_CurrentLine" name="CurrentLine" type="string" />
+          <uipath:output id="Var_CurrentIndex" name="CurrentIndex" type="integer" />
+        </uipath:variables>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_ToSubProcess</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToEnd</bpmn:outgoing>
+      <bpmn:multiInstanceLoopCharacteristics isSequential="true">
+        <bpmn:extensionElements>
+          <uipath:loopCharacteristics inputCollection="=vars.Var_Items" inputElement="iterator[0]" />
+        </bpmn:extensionElements>
+      </bpmn:multiInstanceLoopCharacteristics>
+      <bpmn:startEvent id="Sub_Start" name="Item start">
+        <bpmn:outgoing>Flow_Sub_1</bpmn:outgoing>
+      </bpmn:startEvent>
+      <bpmn:task id="Task_MapCurrent" name="Map current item">
+        <bpmn:extensionElements>
+          <uipath:mapping version="v1">
+            <uipath:type value="BPMN.Variables" version="v1" />
+            <uipath:output name="CurrentLine" type="string" var="Var_CurrentLine" source="=iterator[0].item" />
+            <uipath:output name="CurrentIndex" type="integer" var="Var_CurrentIndex" source="=iterator[0].loopCounter" />
+          </uipath:mapping>
+        </bpmn:extensionElements>
+        <bpmn:incoming>Flow_Sub_1</bpmn:incoming>
+        <bpmn:outgoing>Flow_Sub_2</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:endEvent id="Sub_End" name="Item end">
+        <bpmn:incoming>Flow_Sub_2</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="Flow_Sub_1" sourceRef="Sub_Start" targetRef="Task_MapCurrent" />
+      <bpmn:sequenceFlow id="Flow_Sub_2" sourceRef="Task_MapCurrent" targetRef="Sub_End" />
+    </bpmn:subProcess>
+    <bpmn:endEvent id="End_1" name="Done">
+      <bpmn:incoming>Flow_ToEnd</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_ToSubProcess" sourceRef="Event_start" targetRef="SubProcess_Iterate" />
+    <bpmn:sequenceFlow id="Flow_ToEnd" sourceRef="SubProcess_Iterate" targetRef="End_1" />
+  </bpmn:process>
+
+  <bpmndi:BPMNDiagram id="Diagram_1">
+    <bpmndi:BPMNPlane id="Plane_1" bpmnElement="Process_MultiInstanceIterator">
+      <bpmndi:BPMNShape id="S_Event_start" bpmnElement="Event_start"><dc:Bounds x="160" y="142" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_SubProcess_Iterate" bpmnElement="SubProcess_Iterate" isExpanded="true"><dc:Bounds x="256" y="90" width="420" height="140" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Sub_Start" bpmnElement="Sub_Start"><dc:Bounds x="286" y="142" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Task_MapCurrent" bpmnElement="Task_MapCurrent"><dc:Bounds x="360" y="120" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Sub_End" bpmnElement="Sub_End"><dc:Bounds x="610" y="142" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_End_1" bpmnElement="End_1"><dc:Bounds x="736" y="142" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="E_Flow_ToSubProcess" bpmnElement="Flow_ToSubProcess"><di:waypoint x="196" y="160" /><di:waypoint x="256" y="160" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_ToEnd" bpmnElement="Flow_ToEnd"><di:waypoint x="676" y="160" /><di:waypoint x="736" y="160" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_Sub_1" bpmnElement="Flow_Sub_1"><di:waypoint x="322" y="160" /><di:waypoint x="360" y="160" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_Sub_2" bpmnElement="Flow_Sub_2"><di:waypoint x="460" y="160" /><di:waypoint x="610" y="160" /></bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

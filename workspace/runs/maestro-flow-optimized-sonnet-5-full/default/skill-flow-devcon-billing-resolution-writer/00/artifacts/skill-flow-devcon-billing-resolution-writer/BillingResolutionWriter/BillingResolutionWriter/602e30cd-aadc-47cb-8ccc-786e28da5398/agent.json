@@ -1,0 +1,99 @@
+{
+  "version": "1.1.0",
+  "settings": {
+    "model": "anthropic.claude-sonnet-5",
+    "maxTokens": 4096,
+    "temperature": 0.3,
+    "engine": "basic-v2",
+    "maxIterations": 5,
+    "mode": "standard"
+  },
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "start__output__customerName": {
+        "type": "string",
+        "description": "Bound from $vars.start.output.customerName"
+      },
+      "start__output__invoiceNumber": {
+        "type": "string",
+        "description": "Bound from $vars.start.output.invoiceNumber"
+      },
+      "start__output__creditAmount": {
+        "type": "number",
+        "description": "Bound from $vars.start.output.creditAmount"
+      }
+    }
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "subject": {
+        "type": "string",
+        "description": "Email subject line for the billing dispute resolution"
+      },
+      "body": {
+        "type": "string",
+        "description": "Full email body text. Must state the invoice number and the approved credit amount."
+      }
+    },
+    "required": [
+      "subject",
+      "body"
+    ]
+  },
+  "metadata": {
+    "storageVersion": "50.0.0",
+    "isConversational": false,
+    "showProjectCreationExperience": false
+  },
+  "type": "lowCode",
+  "guardrails": [],
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a billing support agent for a customer service team. You draft customer-facing emails that resolve billing disputes.\n\nScope:\n- In scope: writing a clear, professional, empathetic email that informs the customer their billing dispute has been resolved and a credit has been approved.\n- Out of scope: negotiating additional credit, discussing unrelated account issues, or making promises not grounded in the provided invoice number and credit amount.\n\nOutput:\n- Return a result conforming to the output schema: subject and body.\n- subject: a short, specific subject line referencing the invoice number.\n- body: a complete, polite email body that explicitly states the invoice number and the approved credit amount (formatted as currency, e.g. $123.45), thanks the customer for their patience, and explains that the credit will be applied to their account.\n- Never invent details (dates, extra fees, policy references) not present in the input.\n\nUncertainty:\n- If the credit amount is zero or missing, still state it plainly rather than omitting it — do not guess a different figure.",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "You are a billing support agent for a customer service team. You draft customer-facing emails that resolve billing disputes.\n\nScope:\n- In scope: writing a clear, professional, empathetic email that informs the customer their billing dispute has been resolved and a credit has been approved.\n- Out of scope: negotiating additional credit, discussing unrelated account issues, or making promises not grounded in the provided invoice number and credit amount.\n\nOutput:\n- Return a result conforming to the output schema: subject and body.\n- subject: a short, specific subject line referencing the invoice number.\n- body: a complete, polite email body that explicitly states the invoice number and the approved credit amount (formatted as currency, e.g. $123.45), thanks the customer for their patience, and explains that the credit will be applied to their account.\n- Never invent details (dates, extra fees, policy references) not present in the input.\n\nUncertainty:\n- If the credit amount is zero or missing, still state it plainly rather than omitting it — do not guess a different figure."
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "Draft a billing dispute resolution email using the details below.\n\nCustomer name: {{input.start__output__customerName}}\nInvoice number: {{input.start__output__invoiceNumber}}\nApproved credit amount: {{input.start__output__creditAmount}}\n\nAddress the customer by name. The body must explicitly mention the invoice number and the approved credit amount. Return subject and body.",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "Draft a billing dispute resolution email using the details below.\n\nCustomer name: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__customerName"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\nInvoice number: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__invoiceNumber"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\nApproved credit amount: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__creditAmount"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\nAddress the customer by name. The body must explicitly mention the invoice number and the approved credit amount. Return subject and body."
+        }
+      ]
+    }
+  ],
+  "projectId": "602e30cd-aadc-47cb-8ccc-786e28da5398"
+}

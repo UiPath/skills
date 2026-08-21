@@ -1,0 +1,90 @@
+{
+  "version": "2.0",
+  "resources": [
+    {
+      "resource": "connection",
+      "key": "",
+      "id": "connection",
+      "value": {
+        "ConnectionId": {
+          "defaultValue": "ImplicitConnection",
+          "isExpression": false,
+          "displayName": "uipath-uipath-http connection"
+        }
+      },
+      "metadata": {
+        "ActivityName": "POST Invoice to SAP Endpoint",
+        "BindingsVersion": "2.2",
+        "DisplayLabel": "uipath-uipath-http connection",
+        "UseConnectionService": "true",
+        "Connector": "uipath-uipath-http"
+      }
+    },
+    {
+      "resource": "ixpDeployment",
+      "key": "ff973488-5d89-8035-86ac-f980b4be6deb",
+      "id": "ixpDeploymentff973488-5d89-8035-86ac-f980b4be6deb",
+      "value": {
+        "folderPath": {
+          "defaultValue": "Shared",
+          "isExpression": false,
+          "displayName": "Folder path"
+        },
+        "name": {
+          "defaultValue": "InvoiceIXP",
+          "isExpression": false,
+          "displayName": "IXP model"
+        }
+      },
+      "metadata": {
+        "ActivityName": "Extract Invoice Fields",
+        "BindingsVersion": "2.2",
+        "DisplayLabel": "name",
+        "SolutionsSupport": "true"
+      }
+    },
+    {
+      "resource": "connection",
+      "key": "ae311606-25b7-43ef-9cd0-f3dc0b3a9b58",
+      "id": "connectionae311606-25b7-43ef-9cd0-f3dc0b3a9b58",
+      "value": {
+        "ConnectionId": {
+          "defaultValue": "ae311606-25b7-43ef-9cd0-f3dc0b3a9b58",
+          "isExpression": false,
+          "displayName": "uipath-microsoft-onedrive connection"
+        }
+      },
+      "metadata": {
+        "ActivityName": "New PDF in New Vendor Folder",
+        "BindingsVersion": "2.2",
+        "DisplayLabel": "uipath-microsoft-onedrive connection",
+        "UseConnectionService": "true",
+        "Connector": "uipath-microsoft-onedrive"
+      }
+    },
+    {
+      "resource": "EventTrigger",
+      "key": "c4359cde-55f0-4f0e-9322-c6cdce74ab4c",
+      "id": "EventTriggerc4359cde-55f0-4f0e-9322-c6cdce74ab4c",
+      "value": {
+        "ConnectionId": {
+          "defaultValue": "c4359cde-55f0-4f0e-9322-c6cdce74ab4c",
+          "isExpression": false
+        },
+        "EntryPointUniqueId": {
+          "defaultValue": "9fb7b420-6673-4c55-9a52-3087cdd2ca31",
+          "isExpression": false
+        }
+      },
+      "metadata": {
+        "UseConnectionService": "true",
+        "Connector": "uipath-microsoft-onedrive",
+        "ActivityName": "New PDF in New Vendor Folder",
+        "BindingsVersion": "2.2",
+        "ObjectName": "File",
+        "Operation": "FILE_CREATED",
+        "FilterExpression": ""
+      }
+    }
+  ]
+}

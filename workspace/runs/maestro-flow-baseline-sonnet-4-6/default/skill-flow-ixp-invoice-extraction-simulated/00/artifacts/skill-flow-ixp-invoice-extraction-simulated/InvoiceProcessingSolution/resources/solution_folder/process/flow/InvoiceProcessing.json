@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "InvoiceProcessing",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "152fbfb2-277e-48a9-861f-e32dc42f70a0",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "InvoiceProcessing"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Flow",
+      "name": "InvoiceProcessing",
+      "package": {
+        "key": "a4d1c322-c63e-4b6c-af05-7f9e9e806b2d"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "dc8dc9e0-a1c3-48e2-8991-83482d22d655",
+    "files": []
+  }
+}

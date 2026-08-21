@@ -1,0 +1,7 @@
+15:34:21 [INFO   ] [default/skill-flow-ipe-searchable-joins/00] orchestrator: API routing: aws_bedrock
+15:41:45 [INFO   ] [default/skill-flow-ipe-searchable-joins/00] evaluation.checker: Criterion 'run_command' FAILED (score=0.00, threshold=1.00): Command: python3 -c "import json,glob; flows=glob.glob('**/SearchableJoinsTest*.flow',recursive=True); assert flows; content=open(flows[0]).read(); assert 'uipath-salesforce-sfdc' in content, 'Connec…
+15:41:45 [INFO   ] [default/skill-flow-ipe-searchable-joins/00] evaluation.checker: Criterion 'command_executed' FAILED (score=0.00, threshold=1.00): Matched 0/1 required commands (filters: tool_name=Bash, pattern=/(uip|\$UIP)\s+(maestro\s+)?flow\s+validate/)
+15:41:45 [INFO   ] [default/skill-flow-ipe-searchable-joins/00] orchestrator: Success criteria: 1/3 passed, weighted score: 0.375
+15:41:45 [INFO   ] [default/skill-flow-ipe-searchable-joins/00] orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+15:41:45 [INFO   ] [default/skill-flow-ipe-searchable-joins/00] orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-ipe-searchable-joins
+15:41:45 [INFO   ] [default/skill-flow-ipe-searchable-joins/00] orchestrator: Task finished: status=FAILURE duration=451.3s score=0.375 iterations=1

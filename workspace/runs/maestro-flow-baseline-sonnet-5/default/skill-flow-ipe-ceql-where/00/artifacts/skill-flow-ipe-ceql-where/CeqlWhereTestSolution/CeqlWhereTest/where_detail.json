@@ -1,0 +1,26 @@
+{
+  "_comment": "Planned uip maestro flow node configure --detail payload for node 'listEntraGroups1' (uipath.connector.uipath-microsoft-azureactivedirectory.list-groups). No live UiPath tenant is available in this sandbox to run 'uip maestro flow node configure', so this sidecar captures the intended configuration for review instead of applying it live. The flow will not pass 'uip maestro flow validate' until a real 'node configure' is run against this node with this (or an equivalent) --detail payload.",
+  "connectionId": "26b7ac14-424a-45ae-88ee-88ae5c8794ce",
+  "connectionNote": "Resolved via: uip is connections list \"uipath-microsoft-azureactivedirectory\" --all-folders --output json. Connection name: 'Microsoft Azure Active Directory', owner sanjeet.manna@uipath.com, IsDefault: Yes, State: Enabled.",
+  "folderKey": "5da18ec0-7de1-4e57-aaf1-ddc8a369c199",
+  "method": "GET",
+  "endpoint": "/groups",
+  "objectName": "groups",
+  "filter": {
+    "groupOperator": 0,
+    "index": 0,
+    "filters": [
+      {
+        "id": "displayName",
+        "operator": "Equals",
+        "value": {
+          "value": "active",
+          "rawString": "\"active\"",
+          "isLiteral": true
+        }
+      }
+    ]
+  },
+  "filterNote": "Compiles to CEQL: displayName = 'active'. Sent under the 'where' query parameter (the FilterBuilder parameter for this operation per 'uip is resources describe uipath-microsoft-azureactivedirectory groups --operation List'). 'displayName' is searchable (SearchableOperators: ['=', 'IN']) on the groups response schema.",
+  "cliCommand": "uip maestro flow node configure CeqlWhereTest.flow listEntraGroups1 --detail \"$(cat where_detail.json)\" --output json"
+}

@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "InvoiceExtractionFlow",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "c3c4fab9-51bb-4df5-82ae-6bd4fa4b5f18",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "InvoiceExtractionFlow"
+    },
+    "locks": [],
+    "key": "7fa8a73a-3eb8-42af-a943-2f552a11255e",
+    "files": []
+  }
+}

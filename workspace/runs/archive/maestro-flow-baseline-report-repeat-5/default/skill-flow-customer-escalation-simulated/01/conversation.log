@@ -1,0 +1,88 @@
+=== USER (turn 1) — simulator-generated opener ===
+Hey there! I manage a customer support team and I'm drowning in emails. Someone told me UiPath could help automate some of this stuff. Can you build me something that automatically handles incoming support emails? I'm not technical at all, so I'll need you to take care of the details — just let me know if you have questions.
+
+=== AGENT (turn 1) — 23.4s, in=3 out=1060 ===
+Great news — UiPath is a perfect fit for this! Before I start building, I have a few quick questions so I can tailor the automation exactly to your team:
+
+1. **What email system do you use?** (e.g., Outlook/Microsoft 365, Gmail, or something else?)
+
+2. **What do you want to happen with incoming emails?** For example:
+   - Auto-reply to acknowledge receipt?
+   - Sort/categorize by topic (billing, technical issue, general question)?
+   - Route urgent emails to a specific person or team?
+   - Create support tickets automatically?
+
+3. **Do you have categories or keywords you already use?** For instance, do you flag emails with words like "urgent," "refund," or "outage" differently?
+
+4. **What's your team size / how many emails do you get per day?** This helps me decide whether to include smart AI-based classification or keep it simpler with rules.
+
+Even rough answers are totally fine — I'll handle all the technical details from there! 🙂
+
+=== USER (turn 2) ===
+We use Outlook — everyone on the team does. 
+
+For what I want to happen, basically I want the important emails to get fast, personal attention and not get lost in the pile. The less urgent stuff can go through a more standard process. So yeah, some kind of routing based on how important an email seems.
+
+As for keywords or categories — honestly I don't have a set list. I've never formalized it. If you have sensible defaults, just use those. I trust your judgment on what "urgent" looks like.
+
+Team is about 12 people, maybe 150-200 emails a day. Some days more. Does that help?
+
+=== AGENT (turn 2) — 977.7s, in=2951 out=58218, 92 tool calls ===
+Your automation is complete and fully validated. Here's what was built:
+
+---
+
+## EmailEscalationBot — Delivery Summary
+
+**Status: ✅ Build clean** — all 3 XAML files validate, full project builds with `Success: true`.
+
+### Files delivered
+
+| File | Purpose | Validation |
+|---|---|---|
+| `Main.xaml` | Trigger + routing orchestration | Build ✅ |
+| `Workflows/ClassifyUrgency.xaml` | Rules-based urgency scoring engine | 0 errors ✅ |
+| `GlobalExceptionHandler.xaml` | Project-wide fault handling | 0 errors ✅ |
+| `project.json` | Project config with entry point + GEH registration | ✅ |
+
+---
+
+### What it does, end to end
+
+1. **Trigger** — `NewEmailReceived` fires once per email arriving in your Inbox. Orchestrator manages the subscription; each email spawns a fresh job automatically.
+
+2. **Classification** — `ClassifyUrgency.xaml` scores every email on a 0–100+ scale using:
+   - Critical keywords in subject (+50) or body (+30): `urgent, critical, down, outage, emergency, breach, escalate, lawsuit, legal, SLA, ASAP, immediately`
+   - High-urgency keywords in subject (+25) or body (+15): `important, priority, not working, broken, issue, problem, help, stuck, failed, error, blocked, overdue, deadline`
+   - VIP/executive senders (ceo@, cto@, cfo@, vp@, president@): +35
+   - Outlook "Importance: High" flag: +30
+   - ALL-CAPS subject: +20
+   - Multiple !! or ?? in subject: +10
+   - Tier thresholds: **HIGH ≥ 50 · MEDIUM 25–49 · STANDARD < 25**
+
+3. **Auto-acknowledgement** — every sender immediately gets a threaded reply referencing their message ID, confirming receipt, and noting the team will follow up.
+
+4. **Routing — HIGH-priority path:**
+   - Tags email with `HIGH-PRIORITY` Outlook category (shows in red)
+   - Moves to `High-Priority Inbox` folder (auto-created on first run)
+   - Sends an HTML alert email to `support-escalations@yourcompany.com` with urgency score, classification reason, sender, and subject
+
+5. **Routing — STANDARD/MEDIUM path:**
+   - MEDIUM emails tagged with `MEDIUM-PRIORITY` category
+   - Both moved to `Standard Support Queue` folder (auto-created on first run)
+
+6. **Error handling** — try/catch in Main.xaml handles business vs system exceptions locally; the Global Exception Handler catches anything that escapes, retries transient failures up to 2×, and aborts cleanly on data errors.
+
+---
+
+### Before you deploy — checklist
+
+1. **Set your M365 connection** — open `Main.xaml` in Studio and set the `ConnectionId` on all O365 activities to your real Integration Service connection GUID. CLI to find it:
+   ```
+   uip is connections list uipath-microsoft-outlook365 --all-folders --output json
+   ```
+
+2. **Update escalation email** — in `Main.xaml`, change the `escalationTeamEmail` variable default from `support-escalations@yourcompany.com` to your actual team distribution list or shared mailbox.
+
+3. **Publish to Orchestrator** — run `uip rpa publish` and create a Trigger in Orchestrator pointing at this process. The `NewEmailReceived` activity will register as an email trigger automatically.
+

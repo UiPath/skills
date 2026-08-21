@@ -1,0 +1,10 @@
+{
+  "_comment": "Planned --detail payload for getProductReviews1 (uipath.connector.uipath-automattic-woocommerce.get-product-reviews). Cannot run node configure until a live WooCommerce connection is created. Replace <CONNECTION_UUID> and <FOLDER_KEY> with real values from: uip is connections list uipath-automattic-woocommerce --all-folders",
+  "connectionId": "<CONNECTION_UUID>",
+  "folderKey": "<FOLDER_KEY>",
+  "method": "GET",
+  "endpoint": "/search_product_review",
+  "queryParameters": {
+    "order": "=js:$vars.mapSortOrder.output.orderCode"
+  }
+}

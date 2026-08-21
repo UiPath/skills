@@ -1,0 +1,58 @@
+{
+  "_meta": {
+    "description": "Configuration payload for the Outlook 'email-received' connector trigger in a UiPath Flow. This is the value passed verbatim as --detail to 'uip maestro flow node configure <PROJECT>.flow <triggerId> --detail <...>'. Placeholder tokens enclosed in <ANGLE_BRACKETS> must be replaced before running node configure against a live tenant.",
+    "nodeType": "uipath.connector.trigger.microsoft-mail.email-received",
+    "connectorKey": "microsoft-mail",
+    "operation": "EMAIL_RECEIVED",
+    "objectName": "Message",
+    "activityType": "CuratedTrigger",
+    "placeholders": {
+      "<OUTLOOK_CONNECTION_ID>": "UUID of the Integration Service connection for Microsoft Mail. Resolve with: uip is connections list \"microsoft-mail\" --all-folders --output json  — pick the enabled connection (prefer IsDefault:Yes) and copy its Id field.",
+      "<ORCHESTRATOR_FOLDER_KEY>": "Numeric key of the Orchestrator folder that owns the connection. Shown as FolderKey in the connections list response, or retrieve with: uip folders list --output json.",
+      "<INBOX_FOLDER_ID>": "The IS object ID of the mailbox folder to monitor (e.g. Inbox). Resolve with: uip is resources run list \"microsoft-mail\" \"MailFolder\" --connection-id <OUTLOOK_CONNECTION_ID> --output json — match displayName 'Inbox' and copy the id field. This value is connection-scoped; do NOT reuse an ID from a different connection."
+    },
+    "howToApply": [
+      "1. uip solution init OutlookFlowSolution && cd OutlookFlowSolution",
+      "2. uip maestro flow init OutlookFlow",
+      "3. uip maestro flow node remove OutlookFlow/OutlookFlow.flow start --output json",
+      "4. uip maestro flow node add OutlookFlow/OutlookFlow.flow uipath.connector.trigger.microsoft-mail.email-received --label \"Email received\" --position 200,144 --output json   # note the generated nodeId",
+      "5. Replace placeholders in this file, then run:",
+      "   uip maestro flow node configure OutlookFlow/OutlookFlow.flow <nodeId> --detail \"$(cat trigger_detail.json | python3 -c 'import sys,json; d=json.load(sys.stdin); print(json.dumps(d[\"detail\"]))' )\" --output json",
+      "6. uip maestro flow validate OutlookFlow/OutlookFlow.flow",
+      "7. uip maestro flow format OutlookFlow/OutlookFlow.flow"
+    ]
+  },
+  "detail": {
+    "connectionId": "<OUTLOOK_CONNECTION_ID>",
+    "folderKey": "<ORCHESTRATOR_FOLDER_KEY>",
+    "eventMode": "polling",
+    "eventParameters": {
+      "parentFolderId": "<INBOX_FOLDER_ID>"
+    },
+    "filter": {
+      "groupOperator": 0,
+      "index": 0,
+      "filters": [
+        {
+          "id": "from",
+          "operator": "Equals",
+          "value": {
+            "value": "abc@xyz.com",
+            "rawString": "\"abc@xyz.com\"",
+            "isLiteral": true
+          }
+        },
+        {
+          "id": "subject",
+          "operator": "Contains",
+          "value": {
+            "value": "good day",
+            "rawString": "\"good day\"",
+            "isLiteral": true
+          }
+        }
+      ],
+      "groups": []
+    }
+  }
+}

@@ -1,0 +1,5 @@
+19:47:17 [INFO   ] [default/skill-flow-ixp-routing-listing/r03/01] orchestrator: API routing: aws_bedrock
+19:48:06 [INFO   ] [default/skill-flow-ixp-routing-listing/r03/01] orchestrator: Success criteria: 2/2 passed, weighted score: 1.000
+19:48:06 [INFO   ] [default/skill-flow-ixp-routing-listing/r03/01] orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+19:48:06 [INFO   ] [default/skill-flow-ixp-routing-listing/r03/01] orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-ixp-routing-listing/r03
+19:48:06 [INFO   ] [default/skill-flow-ixp-routing-listing/r03/01] orchestrator: Task finished: status=SUCCESS duration=51.5s score=1.000 iterations=1

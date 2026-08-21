@@ -1,0 +1,38 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "Billing Dispute SOP Index",
+    "kind": "Index",
+    "apiVersion": "ecs.uipath.com/v2",
+    "isOverridable": true,
+    "dependencies": [
+      {
+        "kind": "Bucket",
+        "name": "Billing Dispute SOP"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "Billing Dispute SOP Index",
+      "description": "SOP grounding for the Billing Dispute Analyst agent.",
+      "storageBucketReference": {
+        "name": "Billing Dispute SOP",
+        "key": "b5360d78-ae3e-4479-bb28-2ef8b72d083f",
+        "folderKey": "79a7d12e-da84-4bf4-ab60-7f34b44dd178"
+      },
+      "fileNameGlob": "All",
+      "dataSourceType": "StorageBucket",
+      "includeSubfolders": true,
+      "ingestionType": "Basic",
+      "encrypted": false
+    },
+    "locks": [],
+    "key": "cc45b9b4-dbf6-47b3-40ac-08debc0cec5b",
+    "files": []
+  }
+}

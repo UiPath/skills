@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "TimerEmailFlow",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "2ff71fd8-cc79-4df6-b82f-08cc2dc098b7",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "TimerEmailFlow"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Flow",
+      "name": "TimerEmailFlow",
+      "package": {
+        "key": "0e02ea61-b66a-4346-b25b-af845a7c29b4"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "e981f59d-49b6-4f7e-b8ca-88fda0f6f3ad",
+    "files": []
+  }
+}

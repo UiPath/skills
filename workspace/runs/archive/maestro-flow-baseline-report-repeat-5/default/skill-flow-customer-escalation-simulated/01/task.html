@@ -1,0 +1,3190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>coder_eval · skill-flow-customer-escalation-simulated · default</title>
+<style>
+:root {
+  --bg-page: #0f1419;
+  --bg-card: #1a2129;
+  --bg-card-2: #232d38;
+  --bg-code: #0b0f14;
+  --fg: #e6edf3;
+  --fg-muted: #8b98a5;
+  --fg-dim: #6e7681;
+  --border: #30363d;
+  --accent: #58a6ff;
+  --score-high: #22c55e;
+  --score-mid: #f59e0b;
+  --score-low: #ef4444;
+  --status-success: #22c55e;
+  --status-failure: #f59e0b;
+  --status-error: #ef4444;
+  --status-neutral: #6e7681;
+  --shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+.light {
+  --bg-page: #ffffff;
+  --bg-card: #f6f8fa;
+  --bg-card-2: #eaeef2;
+  --bg-code: #f6f8fa;
+  --fg: #1f2328;
+  --fg-muted: #636c76;
+  --fg-dim: #8b949e;
+  --border: #d0d7de;
+  --accent: #0969da;
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial,
+               sans-serif;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--fg);
+  background: var(--bg-page);
+}
+.container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+h1, h2, h3, h4 { margin: 0 0 12px 0; line-height: 1.25; }
+h1 { font-size: 22px; font-weight: 600; }
+h2 { font-size: 18px; font-weight: 600; margin-top: 28px;
+     padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+h3 { font-size: 15px; font-weight: 600; color: var(--fg-muted); }
+h4 { font-size: 13px; font-weight: 600; color: var(--fg-muted); }
+p { margin: 0 0 8px 0; }
+.muted { color: var(--fg-muted); }
+.dim { color: var(--fg-dim); }
+.mono { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+        monospace; font-size: 12.5px; }
+code { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+       monospace; font-size: 12.5px; background: var(--bg-code);
+       border: 1px solid var(--border); padding: 1px 5px; border-radius: 3px; }
+pre { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+      monospace; font-size: 12.5px; background: var(--bg-code);
+      border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px;
+      margin: 6px 0; overflow-x: auto; white-space: pre-wrap;
+      word-wrap: break-word; }
+.header-bar { display: flex; align-items: center; justify-content: space-between;
+              margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+.title-group { flex: 1; min-width: 0; }
+.title-group .subtitle { color: var(--fg-muted); font-size: 13px;
+                         margin-top: 2px; word-break: break-all; }
+.badges { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.badge { display: inline-flex; align-items: center; gap: 6px;
+         padding: 4px 10px; border-radius: 12px; font-size: 12px;
+         font-weight: 600; background: var(--bg-card-2);
+         border: 1px solid var(--border); color: var(--fg); }
+.badge.success { background: color-mix(in srgb, var(--status-success) 20%, var(--bg-card-2));
+                 border-color: var(--status-success); color: var(--status-success); }
+.badge.failure { background: color-mix(in srgb, var(--status-failure) 20%, var(--bg-card-2));
+                 border-color: var(--status-failure); color: var(--status-failure); }
+.badge.error { background: color-mix(in srgb, var(--status-error) 20%, var(--bg-card-2));
+               border-color: var(--status-error); color: var(--status-error); }
+.badge.warning { background: color-mix(in srgb, #f4a52810 20%, var(--bg-card-2));
+                 border-color: #f4a528; color: #f4a528; }
+.badge.neutral { color: var(--fg-muted); }
+.score-pill { display: inline-block; padding: 2px 8px; border-radius: 10px;
+              font-size: 12px; font-weight: 700; min-width: 42px;
+              text-align: center; color: #0b0f14; }
+.score-high { background: var(--score-high); }
+.score-mid { background: var(--score-mid); }
+.score-low { background: var(--score-low); }
+.card { background: var(--bg-card); border: 1px solid var(--border);
+        border-radius: 8px; padding: 16px 20px; margin-bottom: 16px;
+        box-shadow: var(--shadow); }
+.card.highlight { border-left: 4px solid var(--accent); }
+.grid { display: grid; gap: 12px;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+.stat { background: var(--bg-card-2); padding: 10px 12px; border-radius: 6px;
+        border: 1px solid var(--border); }
+.stat .label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;
+               color: var(--fg-muted); margin-bottom: 4px; }
+.stat .value { font-size: 16px; font-weight: 600; }
+table { width: 100%; border-collapse: collapse; margin: 4px 0 12px 0; }
+th, td { text-align: left; padding: 8px 10px;
+         border-bottom: 1px solid var(--border); vertical-align: top;
+         font-size: 13px; }
+th { color: var(--fg-muted); font-weight: 600; font-size: 12px;
+     text-transform: uppercase; letter-spacing: 0.3px; }
+tr:last-child td { border-bottom: none; }
+details { margin: 6px 0; border: 1px solid var(--border); border-radius: 6px;
+          background: var(--bg-card-2); }
+details > summary { cursor: pointer; padding: 8px 12px; user-select: none;
+                    font-weight: 500; list-style: none; }
+details > summary::-webkit-details-marker { display: none; }
+details > summary::before { content: "▸ "; color: var(--fg-dim);
+                            display: inline-block; width: 14px;
+                            transition: transform 0.15s; }
+details[open] > summary::before { content: "▾ "; }
+details .details-body { padding: 0 12px 10px 12px; }
+.tool-row { display: flex; align-items: center; gap: 10px;
+            flex-wrap: wrap; font-size: 13px; }
+.tool-name { font-weight: 600; color: var(--accent); font-family: ui-monospace,
+             SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+.tool-status-ok { color: var(--status-success); font-size: 11px;
+                  font-weight: 600; }
+.tool-status-err { color: var(--status-error); font-size: 11px;
+                   font-weight: 600; }
+.tool-duration { color: var(--fg-muted); font-size: 12px; }
+.tool-seq { color: var(--fg-dim); font-size: 11px; font-weight: 600;
+            min-width: 24px; text-align: right; font-family: ui-monospace,
+            SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+.turn-header { display: flex; justify-content: space-between;
+               align-items: baseline; flex-wrap: wrap; gap: 10px;
+               margin-bottom: 10px; }
+.turn-meta { font-size: 12px; color: var(--fg-muted); }
+.criterion-row td:first-child { font-family: ui-monospace, SFMono-Regular,
+                                 "SF Mono", Menlo, Consolas, monospace;
+                                 color: var(--fg-muted); font-size: 12px; }
+.judge-section { display: flex; flex-direction: column; gap: 12px; }
+.judge-card { padding: 14px 16px; }
+.judge-card-head { display: flex; justify-content: space-between;
+                    align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+.judge-card-title { font-size: 14px; line-height: 1.4; flex: 1; min-width: 0; }
+.judge-card-score { flex-shrink: 0; }
+.judge-rationale { margin-top: 10px; padding: 10px 12px;
+                   background: var(--bg-code); border-radius: 4px;
+                   font-size: 13px; line-height: 1.5; }
+.judge-findings { margin: 8px 0 0 18px; padding-left: 4px; font-size: 13px;
+                   line-height: 1.6; }
+.judge-findings li { margin: 2px 0; }
+.nav-toggle { display: inline-block; padding: 5px 10px; font-size: 12px;
+              background: var(--bg-card-2); border: 1px solid var(--border);
+              border-radius: 5px; color: var(--fg); cursor: pointer; }
+.nav-toggle:hover { background: var(--bg-card); }
+.llm-next-steps { margin: 6px 0 0 20px; padding-left: 0; }
+.llm-next-steps li { margin: 3px 0; }
+.iteration-group { padding: 12px 16px 4px 16px; margin-bottom: 20px;
+                   border-radius: 0 6px 6px 0; border-left: 4px solid var(--status-neutral); }
+/* rgba fallback for browsers without color-mix (Chrome <111, Firefox <113, Safari <16.2). */
+.iteration-group--recovered { border-left-color: var(--status-success);
+                              background: rgba(34, 197, 94, 0.06);
+                              background: color-mix(in srgb, var(--status-success) 6%, transparent); }
+.iteration-group--terminal { border-left-color: var(--status-error);
+                             background: rgba(239, 68, 68, 0.06);
+                             background: color-mix(in srgb, var(--status-error) 6%, transparent); }
+.iteration-group__banner { margin: 0 0 12px 0; font-size: 14px; font-weight: 600; }
+.iteration-group--recovered .iteration-group__banner { color: var(--status-success); }
+.iteration-group--terminal .iteration-group__banner { color: var(--status-error); }
+.attempt-transition { display: flex; align-items: center; gap: 8px;
+                      margin: -6px 0 12px 8px; color: var(--status-error); font-size: 12.5px; }
+.attempt-transition__icon { font-weight: 700; }
+footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--border);
+         color: var(--fg-dim); font-size: 12px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="header-bar">
+  <div class="title-group">
+    <h1>Task: skill-flow-customer-escalation-simulated</h1>
+    <div class="subtitle">Multi-branch Outlook→classify→decision escalation flow, but driven by a simulated non-technical user who withholds requirements until asked. Tests the agent&#x27;s ability to clarify a complex ambiguous ask before building. Validate-only — the sandbox has no live Outlook/Slack tenant.</div>
+  </div>
+  <div class="badges">
+    <span class="badge failure">MAX_TURNS_EXHAUSTED</span>
+    <span class="score-pill score-low">0.00</span>
+    <span class="badge neutral">claude-code · claude-sonnet-4-6</span>
+    <span class="badge neutral">17m 2s</span>
+    <span class="badge neutral">$3.5650</span>
+    
+    
+    <span class="nav-toggle" onclick="toggleTheme()">Toggle theme</span>
+  </div>
+</div>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Variant</div><div class="value">default</div></div>
+    <div class="stat"><div class="label">Started</div><div class="value mono">2026-07-24T19:45:43</div></div>
+    <div class="stat"><div class="label">Duration</div><div class="value">17m 2s</div></div>
+    <div class="stat"><div class="label">Turns (SDK)</div><div class="value">137</div></div>
+    <div class="stat"><div class="label">Commands</div><div class="value">92</div></div>
+  </div>
+</div>
+
+<h2>Simulation</h2>
+<div class="card" style="padding:0">
+  <table>
+    <tbody>
+      <tr><td class='mono dim'>Stop reason</td>
+          <td><span class="badge failure">turn cap reached</span>
+              <span class="mono dim"> (max_turns)</span></td></tr>
+      <tr><td class='mono dim'>Total turns</td><td>2</td></tr>
+      
+      <tr><td class='mono dim'>Simulator tokens</td>
+          <td>in 399 · out 468</td></tr>
+      
+    </tbody>
+  </table>
+</div>
+
+<h2>Success Criteria <span class="muted" style="font-weight:400">(1/3 passed)</span></h2>
+<div class="card" style="padding:0">
+<table>
+  <thead>
+    <tr>
+      <th style="width:15%">Type</th>
+      <th style="width:35%">Description</th>
+      <th style="width:10%">Score</th>
+      <th>Details</th>
+    </tr>
+  </thead>
+  <tbody>
+    
+<tr class="criterion-row">
+  <td>run_command</td>
+  <td>uip flow validate passes (any .flow)</td>
+  <td style="text-align:center"><span class="score-pill score-low">0.00</span></td>
+  <td><details><summary class="mono dim">Command: python3 -c &quot;import glob,subprocess,sys; flows=glob.glob(&#x27;**/*.flow&#x27;,recursive=True); sys.exit(&#x27;no .flow file found&#x27;) if not flows else sys.exit(subprocess.run([&#x27;uip&#x27;,&#x27;maestro&#x27;,&#x27;flow&#x27;,&#x27;validate&#x27;,flows[0],&#x27;--output&#x27;,&#x27;json&#x27;]).returncode)&quot;</summary><div class="details-body"><pre style="margin:6px 0 0 0">Command: python3 -c &quot;import glob,subprocess,sys; flows=glob.glob(&#x27;**/*.flow&#x27;,recursive=True); sys.exit(&#x27;no .flow file found&#x27;) if not flows else sys.exit(subprocess.run([&#x27;uip&#x27;,&#x27;maestro&#x27;,&#x27;flow&#x27;,&#x27;validate&#x27;,flows[0],&#x27;--output&#x27;,&#x27;json&#x27;]).returncode)&quot;
+Exit code: 1 (expected: 0)
+Stdout: (empty)
+Stderr:
+no .flow file found</pre></div></details></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>run_command</td>
+  <td>Flow performs the triage: trigger, urgency+VIP routing, Slack notify, email reply, ticket creation</td>
+  <td style="text-align:center"><span class="score-pill score-low">0.00</span></td>
+  <td><details><summary class="mono dim">Command: python3 $TASK_DIR/check_escalation_behavior.py</summary><div class="details-body"><pre style="margin:6px 0 0 0">Command: python3 $TASK_DIR/check_escalation_behavior.py
+Exit code: 1 (expected: 0)
+Stdout: (empty)
+Stderr:
+FAIL: No .flow file found (searched **/*.flow)</pre></div></details></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>run_command</td>
+  <td>Project/flow is named CustomerEscalation (elicited from the user)</td>
+  <td style="text-align:center"><span class="score-pill score-low">0.00</span></td>
+  <td><details><summary class="mono dim">Command: python3 -c &quot;import glob,sys; sys.exit(0 if glob.glob(&#x27;**/CustomerEscalation.flow&#x27;,recursive=True) else &#x27;expected a flow named CustomerEscalation.flow&#x27;)&quot;</summary><div class="details-body"><pre style="margin:6px 0 0 0">Command: python3 -c &quot;import glob,sys; sys.exit(0 if glob.glob(&#x27;**/CustomerEscalation.flow&#x27;,recursive=True) else &#x27;expected a flow named CustomerEscalation.flow&#x27;)&quot;
+Exit code: 1 (expected: 0)
+Stdout: (empty)
+Stderr:
+expected a flow named CustomerEscalation.flow</pre></div></details></td>
+</tr>
+
+  </tbody>
+</table>
+</div>
+<h2>Conversation Trace (2 iterations)</h2>
+<div class="card">
+  <div class="turn-header">
+    <h3>Iteration 1</h3>
+    <div class="badges">
+      <span class="badge neutral">2 assistant turns</span>
+      <span class="badge neutral">in 3 · out 1060 · cache 22982</span>
+      <span class="badge neutral">23.4s</span>
+      
+      
+      
+    </div>
+  </div>
+  <details>
+    <summary>Prompt to agent</summary>
+    <div class="details-body"><pre>Your working directory is: /work/output/artifacts/skill-flow-customer-escalation-simulated
+
+[ASSISTANT] Hey there! I manage a customer support team and I&#x27;m drowning in emails. Someone told me UiPath could help automate some of this stuff. Can you build me something that automatically handles incoming support emails? I&#x27;m not technical at all, so I&#x27;ll need you to take care of the details — just let me know if you have questions.
+[RESULT - SUCCESS] Hey there! I manage a customer support team and I&#x27;m drowning in emails. Someone told me UiPath could help automate some of this stuff. Can you build me something that automatically handles incoming support emails? I&#x27;m not technical at all, so I&#x27;ll need you to take care of the details — just let me know if you have questions.</pre></div>
+  </details>
+  <details>
+    <summary>Agent response</summary>
+    <div class="details-body"><pre>[ASSISTANT] Great news — UiPath is a perfect fit for this! Before I start building, I have a few quick questions so I can tailor the automation exactly to your team:
+
+1. **What email system do you use?** (e.g., Outlook/Microsoft 365, Gmail, or something else?)
+
+2. **What do you want to happen with incoming emails?** For example:
+   - Auto-reply to acknowledge receipt?
+   - Sort/categorize by topic (billing, technical issue, general question)?
+   - Route urgent emails to a specific person or team?
+   - Create support tickets automatically?
+
+3. **Do you have categories or keywords you already use?** For instance, do you flag emails with words like &quot;urgent,&quot; &quot;refund,&quot; or &quot;outage&quot; differently?
+
+4. **What&#x27;s your team size / how many emails do you get per day?** This helps me decide whether to include smart AI-based classification or keep it simpler with rules.
+
+Even rough answers are totally fine — I&#x27;ll handle all the technical details from there! 🙂
+[RESULT - SUCCESS] Great news — UiPath is a perfect fit for this! Before I start building, I have a few quick questions so I can tailor the automation exactly to your team:
+
+1. **What email system do you use?** (e.g., Outlook/Microsoft 365, Gmail, or something else?)
+
+2. **What do you want to happen with incoming emails?** For example:
+   - Auto-reply to acknowledge receipt?
+   - Sort/categorize by topic (billing, technical issue, general question)?
+   - Route urgent emails to a specific person or team?
+   - Create support tickets automatically?
+
+3. **Do you have categories or keywords you already use?** For instance, do you flag emails with words like &quot;urgent,&quot; &quot;refund,&quot; or &quot;outage&quot; differently?
+
+4. **What&#x27;s your team size / how many emails do you get per day?** This helps me decide whether to include smart AI-based classification or keep it simpler with rules.
+
+Even rough answers are totally fine — I&#x27;ll handle all the technical details from there! 🙂</pre></div>
+  </details>
+  <h4 style="margin-top:12px">Tool Calls (0)</h4>
+  <p class="muted">No tool calls recorded for this turn.</p>
+</div>
+
+<div class="card">
+  <div class="turn-header">
+    <h3>Iteration 2</h3>
+    <div class="badges">
+      <span class="badge neutral">135 assistant turns</span>
+      <span class="badge neutral">in 2951 · out 58218 · cache 6448755</span>
+      <span class="badge neutral">16m 18s</span>
+      <span class="badge failure">max_turns exhausted</span>
+      
+      
+    </div>
+  </div>
+  <details>
+    <summary>Prompt to agent</summary>
+    <div class="details-body"><pre>Your working directory is: /work/output/artifacts/skill-flow-customer-escalation-simulated
+
+[ASSISTANT] We use Outlook — everyone on the team does. 
+
+For what I want to happen, basically I want the important emails to get fast, personal attention and not get lost in the pile. The less urgent stuff can go through a more standard process. So yeah, some kind of routing based on how important an email seems.
+
+As for keywords or categories — honestly I don&#x27;t have a set list. I&#x27;ve never formalized it. If you have sensible defaults, just use those. I trust your judgment on what &quot;urgent&quot; looks like.
+
+Team is about 12 people, maybe 150-200 emails a day. Some days more. Does that help?
+[RESULT - SUCCESS] We use Outlook — everyone on the team does. 
+
+For what I want to happen, basically I want the important emails to get fast, personal attention and not get lost in the pile. The less urgent stuff can go through a more standard process. So yeah, some kind of routing based on how important an email seems.
+
+As for keywords or categories — honestly I don&#x27;t have a set list. I&#x27;ve never formalized it. If you have sensible defaults, just use those. I trust your judgment on what &quot;urgent&quot; looks like.
+
+Team is about 12 people, maybe 150-200 emails a day. Some days more. Does that help?</pre></div>
+  </details>
+  <details>
+    <summary>Agent response</summary>
+    <div class="details-body"><pre>[ASSISTANT] That&#x27;s very helpful — I have everything I need to get started. Here&#x27;s my plan:
+
+- **Outlook integration** to monitor your support inbox
+- **AI-based urgency classification** (using sensible default signals like tone, keywords, sender patterns)
+- **Two-tier routing**: escalate high-priority emails for personal attention, queue the rest for standard handling
+- Built for **150-200 emails/day** scale with a team of 12
+
+Let me build this now.
+[ASSISTANT] No existing UiPath project found — the `UiPath/` directory only has a `Logs` folder. Now let me read the required references before creating anything.
+[ASSISTANT] Now let me read the trigger pattern guide, IS connector XAML guide, and error handling guide in parallel:
+[ASSISTANT] Good. Now let me install the O365 package and discover trigger + mail activity docs in parallel:
+[ASSISTANT] The host is Linux — `Windows` target can&#x27;t run here. I need to re-init with `Portable` (Cross-platform) framework since the M365 integration uses the IS connector (no Windows-only capabilities needed):
+[ASSISTANT] Now let me read the key activity docs in parallel:
+[ASSISTANT] Now I have all the information I need. Let me author all the XAML files. Starting with the `ClassifyUrgency.xaml` helper (Task 4 — needed by Main.xaml), then Main.xaml, then GEH:
+[ASSISTANT] The `x:Exception` type isn&#x27;t in the XAML schema — I need `s:Exception`. Let me fix the Throw activity:
+[ASSISTANT] ClassifyUrgency.xaml validates clean. Now let me author Main.xaml:
+[ASSISTANT] There&#x27;s an XML comment issue — the `--` in the comment text on line 54. Let me find and fix:
+[ASSISTANT] The `--all-folders` in the XML comment is the problem. Fix both offending comments:
+[ASSISTANT] Two issues: (1) ConnectionId as variable expression fails the analyzer&#x27;s &quot;must provide connection&quot; rule — needs literal GUID placeholder; (2) Trigger placement rule. Let me also check InvokeWorkflowFile XAML shape:
+[ASSISTANT] Two fixes needed:
+1. `ConnectionId=[connectionId]` (variable expression) fails validator — must be literal or `{x:Null}`
+2. `InvokeWorkflowFile.Arguments` syntax needs Dictionary wrapping
+3. Trigger placement: need `entryPoints` in project.json
+[ASSISTANT] Now I understand the full picture. Let me fix Main.xaml to address all validation issues:
+
+1. Use literal `{x:Null}` for ConnectionId (placeholder — user sets at deploy time)
+2. Fix InvokeWorkflowFile Arguments syntax
+3. Fix entryPoints in project.json for trigger workflow
+[ASSISTANT] Now let me update project.json to register Main.xaml as an entry point (needed for the trigger to be recognized) and validate:
+[ASSISTANT] Now let me validate the new Main.xaml:
+[ASSISTANT] The `{x:Null}` still triggers the validation error. The trigger guide says a **placeholder GUID** passes validation. I also need to add `entryPoints` to project.json for the trigger placement error. Let me fix both:
+[ASSISTANT] The trigger guide says placeholder GUID `00000000-0000-0000-0000-000000000000` passes validate, and I need to add `entryPoints` to project.json. Let me also check the proper trigger XAML shape (the default uses `MailFolderArg` and `MailboxArg` child elements):
+[ASSISTANT] Now I have the exact format for `entryPoints`. Let me update project.json and fix the `ConnectionId` to use a placeholder GUID in Main.xaml:
+[ASSISTANT] Now fix all the `ConnectionId=&quot;{x:Null}&quot;` to use a placeholder GUID that passes validation. The trigger guide confirms `00000000-0000-0000-0000-000000000000` passes `validate` and `build`:
+[ASSISTANT] Now replace all remaining `ConnectionId=&quot;{x:Null}&quot;` with the placeholder GUID for all the mail activities:
+[ASSISTANT] Good progress — 8 connection errors resolved. The remaining error is the entry point registration. The `entryPoints` was just added to project.json; let me re-validate to ensure it picks it up:
+[ASSISTANT] The entryPoints in project.json didn&#x27;t resolve it. Let me look for how the trigger workflow registration actually works — maybe `main` in pro</pre></div>
+  </details>
+  <h4 style="margin-top:12px">Tool Calls (92)</h4>
+  
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#0</span>
+      <span class="tool-name">Skill</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">61ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;skill&quot;: &quot;uipath:uipath-rpa&quot;,
+  &quot;args&quot;: &quot;Build a UiPath RPA automation that monitors an Outlook inbox for incoming customer support emails, classifies each email by urgency using AI/rules-based logic (with sensible default urgency signals like escalation keywords, angry tone, SLA/outage mentions, VIP senders, etc.), and routes high-priority emails for immediate personal attention (flag + assign + notify) while routing lower-priority emai… (320 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Launching skill: uipath:uipath-rpa</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#1</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">165ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;find /work/output/artifacts/skill-flow-customer-escalation-simulated -name \&quot;project.json\&quot; 2&gt;/dev/null | head -5; ls /work/output/artifacts/skill-flow-customer-escalation-simulated/ 2&gt;/dev/null || echo \&quot;DIR_EMPTY_OR_MISSING\&quot;&quot;,
+  &quot;description&quot;: &quot;Check for existing project and directory contents&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>(Bash completed with no output)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#2</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">84ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip rpa activities find --query log --output json &gt; /dev/null 2&gt;&amp;1 &amp;\necho \&quot;pre-warm started\&quot;&quot;,
+  &quot;description&quot;: &quot;Pre-warm Studio host in background&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>pre-warm started</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#3</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">64ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;ls /work/output/artifacts/skill-flow-customer-escalation-simulated/ 2&gt;/dev/null &amp;&amp; echo \&quot;---exists---\&quot; || echo \&quot;DIR_MISSING_OR_EMPTY\&quot;&quot;,
+  &quot;description&quot;: &quot;List working directory contents&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>UiPath
+---exists---</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#4</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">78ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;find /work/output/artifacts/skill-flow-customer-escalation-simulated -name \&quot;project.json\&quot; 2&gt;/dev/null\nls /work/output/artifacts/skill-flow-customer-escalation-simulated/UiPath/ 2&gt;/dev/null&quot;,
+  &quot;description&quot;: &quot;Check for project.json and UiPath subdirectory&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Logs</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#5</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">20ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-rpa/references/environment-setup.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Environment Setup
+2	
+3	**Goal:** Resolve the project root before any other operations.
+4	
+5	## Studio Desktop vs headless Studio
+6	
+7	`uip rpa` runs against a **headless Studio** by default (codename Helm — ships as the `UiPath.Studio.Helm.{Platform}` NuGet package, auto-launched the first time a command needs it). **Studio Desktop is not required** for the standard authoring loop — `init`, `run`, `debug start`, `validate`, `build`, `activities find`, `packages install`, the `uia` group (indication, capture, interaction), etc. all work headless.
+8	
+9	Studio Desktop is only required for two interactive UI tools:
+10	- `uip rpa files diff` — opens an interactive diff window in Studio&#x27;s UI.
+11	- `uip rpa focus-activity` — selects an activity in Studio&#x27;s active workflow designer.
+12	
+13	For these two, see [§ Edge case: requiring Studio Desktop](#edge-case-requiring-studio-desktop) below.
+14	
+15	&gt; **First call is slow.** On a cold NuGet cache, the very first `uip rpa` invocation triggers a silent `dotnet restore` of the headless Studio package and may sit near-silent for 30–90 seconds (longer behind a slow feed). A heartbeat line every 15s confirms it&#x27;s still working. The default she
+
+… (truncated, 11528 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#6</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">430ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-rpa/references/xaml/xaml-basics-and-rules.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# XAML Basics and Rules
+2	
+3	Core concepts for UiPath workflow XAML files and rules for generating and/or editing XAML content.
+4	
+5	## XAML File Anatomy
+6	
+7	Every UiPath XAML workflow file has this structure:
+8	
+9	**`x:Class` naming rule:** The value must match the file&#x27;s relative path from the project root (without the `.xaml` extension), with folder separators replaced by **underscores** — not dots. For a root-level file `MyWorkflow.xaml` → `x:Class=&quot;MyWorkflow&quot;`. For a file in a subfolder `Workflows/SendEmail.xaml` → `x:Class=&quot;Workflows_SendEmail&quot;`. Using dots (e.g., `Workflows.SendEmail`) causes a validation error: *&quot;Invalid ActivityBuilder name … Suggested name …&quot;*.
+10	
+11	```xml
+12	&lt;Activity mc:Ignorable=&quot;sap sap2010 sads&quot; x:Class=&quot;FolderName_FileName&quot;
+13	  xmlns=&quot;http://schemas.microsoft.com/netfx/2009/xaml/activities&quot;
+14	  xmlns:mc=&quot;http://schemas.openxmlformats.org/markup-compatibility/2006&quot;
+15	  xmlns:sap=&quot;http://schemas.microsoft.com/netfx/2009/xaml/activities/presentation&quot;
+16	  xmlns:sap2010=&quot;http://schemas.microsoft.com/netfx/2010/xaml/activities/presentation&quot;
+17	  xmlns:sads=&quot;http://schemas.microsoft.com/netfx/2010/xaml/activities/debugger&quot;
+18	  xmlns:x=&quot;http://sc
+
+… (truncated, 49879 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#7</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">10ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-rpa/references/xaml/workflow-guide.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# XAML Workflow Guide
+2	
+3	Discovery-first approach with iterative error-driven refinement for generating and editing XAML workflows. Always understand before acting, start simple, and validate continuously.
+4	
+5	## Core Principles
+6	
+7	1. **Activity Docs Are the Source of Truth** — Installed packages may ship structured documentation at `{projectRoot}/.local/docs/packages/{PackageId}/`. When present, these docs contain source-accurate properties, types, defaults, enum values, conditional property groups, and working XAML examples. Always check for them first.
+8	2. **Know Before You Write** — **NEVER** generate XAML blind. Understand the project structure, packages, expression language, and existing patterns.
+9	3. **Use What You Know, Skip What You Don&#x27;t Need** — If you already know the package ID and activity class name, go directly to its doc file. Be efficient: the discovery steps are a priority ladder, not a mandatory checklist.
+10	4. **Start Minimal, Iterate to Correct** — Start one workflow at a time and break out logic into multiple files if needed. Build one activity at a time within each workflow. Write the smallest working XAML, validate with `uip rpa validate`, fix wha
+
+… (truncated, 15118 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#8</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">11ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-rpa/references/trigger-pattern-guide.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Trigger Pattern Guide
+2	
+3	Authoring and editing trigger workflows in XAML. Covers placement, lifecycle, `ui:TriggerScope` handling, and verification.
+4	
+5	## Two Trigger Types
+6	
+7	`uip rpa activities find` returns `isTrigger` and `triggerType` on every trigger activity. `triggerType` is the type discriminator.
+8	
+9	### Integration triggers (`triggerType: &quot;integration&quot;`) — strict placement
+10	
+11	- **MUST be the first activity** of `Main.xaml`&#x27;s root `Sequence`.
+12	- **CANNOT be placed inside `ui:TriggerScope`.**
+13	- **Connection asset:** required for IS-based triggers (Mail, GSuite, O365, Salesforce, Jira, Slack, ServiceNow, any `*.IntegrationService.Activities` package). Not required for Orchestrator-native triggers (`TimeTrigger`, `QueueTrigger`, `ManualTrigger`).
+14	- **Runtime behavior:** the activity is an **unwrap routine**. Orchestrator (or the IS webhook layer) holds the subscription, dispatches a fresh job per event, and injects event payload context. The activity&#x27;s `Execute` reads that context — e.g., `NewEmailReceived.ExecuteWithRetryAsync` reads `UiPathEventObjectId`, then calls `GraphServiceClient.GetEmailByIdAsync(...)` to fetch the email. It does not poll, wat
+
+… (truncated, 20244 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#9</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">122ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-rpa/references/error-handling-guide.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Error Handling Guide
+2	
+3	Production-grade error handling and resilience for modern UiPath projects (Windows / Cross-platform) — XAML and coded. Covers exception taxonomy, Try/Catch discipline, Retry Scope, ContinueOnError, Throw/Rethrow, screenshot-on-error, fail-fast validation, the Global Exception Handler, state recovery, transaction boundaries, idempotent/compensating writes, sensitive-data handling, and retry ownership across layers.
+4	
+5	Scope boundary — this guide owns the **decision layer and resilience patterns**. For mechanics owned elsewhere, link out, don&#x27;t restate:
+6	
+7	- Raw `TryCatch` / `Throw` / `Rethrow` XAML shapes + the Rule 24 `Sequence`-wrap → [common-activity-card.md](common-activity-card.md).
+8	- `ContinueOnError`-swallow gotcha, Studio Web `Throw.Exception` round-trip, `s:Exception` alias → [xaml/common-pitfalls.md](xaml/common-pitfalls.md).
+9	- Per-activity property surfaces → `activity-docs/UiPath.System.Activities/&lt;ver&gt;/activities/{RetryScope,TryCatch,Throw,Rethrow}.md`.
+10	- REFramework exception flow, queue retry, `MaxConsecutiveSystemExceptions` → [reframework-guide.md](reframework-guide.md).
+11	- C# expression-binding mechanics (`CSharpValue`/`CS
+
+… (truncated, 30546 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#10</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">126ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-rpa/references/is-connector-xaml-guide.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Authoring Integration Service `ConnectorActivity` XAML
+2	
+3	End-to-end playbook for building a headlessly-runnable IS `ConnectorActivity` XAML from a known connector + operation. Use this whenever the request is **&quot;call connector X for operation Y from a XAML workflow&quot;** and Studio&#x27;s designer is not available or not desired.
+4	
+5	## When to Use
+6	
+7	- Headless / scripted authoring of IS workflows (no Studio GUI in the loop).
+8	- CI-style generation where the XAML must be portable across machines.
+9	- Any time you know the connector key and operation name upfront (e.g., `uipath-salesforce-slack` + `send_message_to_channel_v2`).
+10	
+11	**Prefer this over per-product BAF activity packages** (`UiPath.Slack.Activities`, etc.). Those wrap IS internally and use a more complex BAF (Business Activity Framework) XAML shape that is equally fragile to hand-author. The IS `ConnectorActivity` flow below is schema-driven and mechanical.
+12	
+13	## Activity Shape
+14	
+15	```xml
+16	&lt;isactr:ConnectorActivity
+17	    Configuration=&quot;&lt;base64-gzip-blob&gt;&quot;
+18	    ConnectionId=&quot;&lt;CONNECTION_GUID&gt;&quot;
+19	    UiPathActivityTypeId=&quot;&lt;ACTIVITY_TYPE_GUID&gt;&quot;
+20	    xmlns:isactr=&quot;http://schemas.uipath.com/workflow/int
+
+… (truncated, 30056 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#11</span>
+      <span class="tool-name">TaskCreate</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">7ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;subject&quot;: &quot;Initialize UiPath project&quot;,
+  &quot;description&quot;: &quot;Create the EmailEscalationBot project via uip rpa init with Windows framework and VisualBasic expression language.&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Task #1 created successfully: Initialize UiPath project</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#12</span>
+      <span class="tool-name">TaskCreate</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">5ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;subject&quot;: &quot;Install O365 package and read activity docs&quot;,
+  &quot;description&quot;: &quot;Install UiPath.MicrosoftOffice365.Activities, read NewEmailReceived trigger doc and relevant email activity docs.&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Task #2 created successfully: Install O365 package and read activity docs</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#13</span>
+      <span class="tool-name">TaskCreate</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">30ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;subject&quot;: &quot;Author Main.xaml with email trigger and routing logic&quot;,
+  &quot;description&quot;: &quot;Write Main.xaml with NewEmailReceived trigger, urgency classification, high-priority escalation path, standard queue path, and auto-ACK reply.&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Task #3 created successfully: Author Main.xaml with email trigger and routing logic</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#14</span>
+      <span class="tool-name">TaskCreate</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">5ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;subject&quot;: &quot;Author ClassifyUrgency.xaml helper workflow&quot;,
+  &quot;description&quot;: &quot;Dedicated workflow to score email urgency based on keywords, subject line signals, and sender patterns. Returns urgency tier.&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Task #4 created successfully: Author ClassifyUrgency.xaml helper workflow</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#15</span>
+      <span class="tool-name">TaskCreate</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">7ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;subject&quot;: &quot;Author GlobalExceptionHandler.xaml and wire up error handling&quot;,
+  &quot;description&quot;: &quot;Create GEH scaffold and register in project.json for centralized logging and abort verdict.&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Task #5 created successfully: Author GlobalExceptionHandler.xaml and wire up error handling</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#16</span>
+      <span class="tool-name">TaskCreate</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">12ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;subject&quot;: &quot;Validate and build all files&quot;,
+  &quot;description&quot;: &quot;Per-file validate on all .xaml files, then project-level build to green.&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Task #6 created successfully: Validate and build all files</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#17</span>
+      <span class="tool-name">TaskUpdate</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">24ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;taskId&quot;: &quot;1&quot;,
+  &quot;status&quot;: &quot;in_progress&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Updated task #1 status</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#18</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.38s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip rpa init \\\n  --name \&quot;EmailEscalationBot\&quot; \\\n  --location \&quot;/work/output/artifacts/skill-flow-customer-escalation-simulated\&quot; \\\n  --template-id \&quot;BlankTemplate\&quot; \\\n  --expression-language VisualBasic \\\n  --target-framework Windows \\\n  --description \&quot;Monitors Outlook inbox, classifies email urgency via rules-based AI logic, routes high-priority emails for immediate attention and low-priority to stand… (68 more chars)&quot;,
+  &quot;description&quot;: &quot;Initialize EmailEscalationBot UiPath project&quot;,
+  &quot;timeout&quot;: 120000
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;ToolResult&quot;,
+  &quot;Data&quot;: {
+    &quot;success&quot;: true,
+    &quot;projectDirectory&quot;: &quot;/work/output/artifacts/skill-flow-customer-escalation-simulated/EmailEscalationBot&quot;,
+    &quot;errorMessage&quot;: null,
+    &quot;solutionRegistration&quot;: {
+      &quot;Status&quot;: &quot;NotInSolution&quot;,
+      &quot;Message&quot;: &quot;Project created in standalone mode; no parent .uipx solution found.&quot;,
+      &quot;Instructions&quot;: &quot;No parent solution was found by walking ancestor directories.\nStudio Web upload, `flow debug`, and packaging require an enclosing solution.\nTo link this project to a solution, run &#x27;uip solution init \&quot;&lt;SolutionName&gt;\&quot;&#x27; then &#x27;uip solution project add \&quot;/work/output/artifacts/skill-flow-customer-escalation-simulated/EmailEscalationBot\&quot; &lt;SolutionName&gt;.uipx&#x27;.&quot;
+    }
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#19</span>
+      <span class="tool-name">TaskUpdate</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">8ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;taskId&quot;: &quot;1&quot;,
+  &quot;status&quot;: &quot;completed&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Updated task #1 status</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#20</span>
+      <span class="tool-name">TaskUpdate</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">9ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;taskId&quot;: &quot;2&quot;,
+  &quot;status&quot;: &quot;in_progress&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Updated task #2 status</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#21</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">11ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-customer-escalation-simulated/EmailEscalationBot/project.json&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	{
+2	  &quot;name&quot;: &quot;EmailEscalationBot&quot;,
+3	  &quot;description&quot;: &quot;Monitors Outlook inbox, classifies email urgency via rules-based AI logic, routes high-priority emails for immediate attention and low-priority to standard queue, with auto-acknowledgement replies&quot;,
+4	  &quot;main&quot;: &quot;Main.xaml&quot;,
+5	  &quot;dependencies&quot;: {
+6	    &quot;UiPath.System.Activities&quot;: &quot;[26.6.1]&quot;
+7	  },
+8	  &quot;webServices&quot;: [],
+9	  &quot;entitiesStores&quot;: [],
+10	  &quot;schemaVersion&quot;: &quot;4.1&quot;,
+11	  &quot;studioVersion&quot;: &quot;26.0.199.0&quot;,
+12	  &quot;projectVersion&quot;: &quot;1.0.0&quot;,
+13	  &quot;runtimeOptions&quot;: {
+14	    &quot;autoDispose&quot;: false,
+15	    &quot;netFrameworkLazyLoading&quot;: false,
+16	    &quot;isPausable&quot;: false,
+17	    &quot;isAttended&quot;: false,
+18	    &quot;requiresUserInteraction&quot;: false,
+19	    &quot;supportsPersistence&quot;: false,
+20	    &quot;workflowSerialization&quot;: &quot;NewtonsoftJson&quot;,
+21	    &quot;excludedLoggedData&quot;: [
+22	      &quot;Private:*&quot;,
+23	      &quot;*password*&quot;
+24	    ],
+25	    &quot;executionType&quot;: &quot;Workflow&quot;,
+26	    &quot;readyForPiP&quot;: false,
+27	    &quot;startsInPiP&quot;: false,
+28	    &quot;mustRestoreAllDependencies&quot;: true,
+29	    &quot;pipType&quot;: &quot;ChildSession&quot;
+30	  },
+31	  &quot;designOptions&quot;: {
+32	    &quot;projectProfile&quot;: &quot;Developement&quot;,
+33	    &quot;outputType&quot;: &quot;Process&quot;,
+34	    &quot;libraryOptions&quot;: {
+35	      &quot;privateWorkflows&quot;: []
+
+
+… (truncated, 306 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#22</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">55ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-customer-escalation-simulated/EmailEscalationBot/Main.xaml&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	&lt;Activity mc:Ignorable=&quot;sap sap2010&quot; x:Class=&quot;Main&quot; mva:VisualBasic.Settings=&quot;{x:Null}&quot;
+2	xmlns=&quot;http://schemas.microsoft.com/netfx/2009/xaml/activities&quot;
+3	xmlns:mc=&quot;http://schemas.openxmlformats.org/markup-compatibility/2006&quot;
+4	xmlns:mva=&quot;clr-namespace:Microsoft.VisualBasic.Activities;assembly=System.Activities&quot;
+5	xmlns:sap=&quot;http://schemas.microsoft.com/netfx/2009/xaml/activities/presentation&quot;
+6	xmlns:sap2010=&quot;http://schemas.microsoft.com/netfx/2010/xaml/activities/presentation&quot;
+7	xmlns:sco=&quot;clr-namespace:System.Collections.ObjectModel;assembly=mscorlib&quot;
+8	xmlns:x=&quot;http://schemas.microsoft.com/winfx/2006/xaml&quot;&gt;
+9	    &lt;TextExpression.NamespacesForImplementation&gt;
+10	        &lt;sco:Collection x:TypeArguments=&quot;x:String&quot;&gt;
+11	            &lt;x:String&gt;System.Activities&lt;/x:String&gt;
+12	            &lt;x:String&gt;System.Activities.Statements&lt;/x:String&gt;
+13	            &lt;x:String&gt;System.Activities.Expressions&lt;/x:String&gt;
+14	            &lt;x:String&gt;System.Activities.Validation&lt;/x:String&gt;
+15	            &lt;x:String&gt;System.Activities.XamlIntegration&lt;/x:String&gt;
+16	            &lt;x:String&gt;Microsoft.VisualBasic&lt;/x:String&gt;
+17	            &lt;x:String&gt;Microsoft.VisualBasic.Activities&lt;/x:String&gt;
+18	            &lt;x:String&gt;
+
+… (truncated, 2730 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#23</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">6.71s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip rpa packages versions --package-id UiPath.MicrosoftOffice365.Activities --include-prerelease --project-dir \&quot;/work/output/artifacts/skill-flow-customer-escalation-simulated/EmailEscalationBot\&quot; --output json 2&gt;&amp;1 | head -60&quot;,
+  &quot;description&quot;: &quot;List O365 package versions&quot;,
+  &quot;timeout&quot;: 120000
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;ToolResult&quot;,
+  &quot;Data&quot;: {
+    &quot;packageId&quot;: &quot;UiPath.MicrosoftOffice365.Activities&quot;,
+    &quot;includePrerelease&quot;: true,
+    &quot;versions&quot;: [
+      &quot;3.11.0-alpha.12790775&quot;,
+      &quot;3.11.0-alpha.12777901&quot;,
+      &quot;3.11.0-alpha.12773188&quot;,
+      &quot;3.11.0-alpha.12736324&quot;,
+      &quot;3.11.0-alpha.12711697&quot;,
+      &quot;3.11.0-alpha.12696955&quot;,
+      &quot;3.11.0-alpha.12668439&quot;,
+      &quot;3.11.0-alpha.12656051&quot;,
+      &quot;3.11.0-alpha.12636113&quot;,
+      &quot;3.11.0-alpha.12635452&quot;,
+      &quot;3.11.0-alpha.12633397&quot;,
+      &quot;3.11.0-alpha.12620662&quot;,
+      &quot;3.11.0-alpha.12615106&quot;,
+      &quot;3.11.0-alpha.12614267&quot;,
+      &quot;3.11.0-alpha.12607029&quot;,
+      &quot;3.11.0-alpha.12599910&quot;,
+      &quot;3.11.0-alpha.12594996&quot;,
+      &quot;3.11.0-alpha.12584599&quot;,
+      &quot;3.11.0-alpha.12582792&quot;,
+      &quot;3.11.0-alpha.12554518&quot;,
+      &quot;3.11.0-alpha.12551439&quot;,
+      &quot;3.11.0-alpha.12543837&quot;,
+      &quot;3.11.0-alpha.12540544&quot;,
+      &quot;3.11.0-alpha.12538384&quot;,
+      &quot;3.11.0-alpha.12530965&quot;,
+      &quot;3.11.0-alpha.12524850&quot;,
+      &quot;3.11.0-alpha.12518457&quot;,
+      &quot;3.11.0-alpha.12512436&quot;,
+      &quot;3.11.0-alpha.12491969&quot;,
+      &quot;3.11.0-alpha.12479177&quot;,
+      &quot;3.11.0-alpha.12475956&quot;,
+      &quot;3.11.0-alpha.12464875&quot;,
+      &quot;3.11.0-alpha.12451440&quot;,
+      &quot;3.1
+
+… (truncated, 588 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#24</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-err">ERROR</span>
+      <span class="tool-duration">1.38s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip rpa packages install --packages &#x27;id=UiPath.MicrosoftOffice365.Activities,version=3.10.10&#x27; --project-dir \&quot;/work/output/artifacts/skill-flow-customer-escalation-simulated/EmailEscalationBot\&quot; --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Install O365 Activities package version 3.10.10&quot;,
+  &quot;timeout&quot;: 180000
+}</pre>
+    <h4>Result</h4>
+    <pre>Exit code 1
+[install-or-update-packages] error: IInteropProjectService.OpenProject threw UiPath.Studio.Helm.Project.HelmProjectLoadException: &quot;Failed to open project at &#x27;/work/output/artifacts/skill-flow-customer-escalation-simulated/EmailEscalationBot&#x27;: Cannot execute Windows projects on Linux platform&quot;.
+{
+  &quot;Result&quot;: &quot;Failure&quot;,
+  &quot;ErrorCode&quot;: &quot;unknown_error&quot;,
+  &quot;Message&quot;: &quot;{\&quot;success\&quot;:false,\&quot;errorMessage\&quot;:\&quot;IInteropProjectService.OpenProject threw UiPath.Studio.Helm.Project.HelmProjectLoadException: \\\&quot;Failed to open project at &#x27;/work/output/artifacts/skill-flow-customer-escalation-simulated/EmailEscalationBot&#x27;: Cannot execute Windows projects on Linux platform\\\&quot;.\&quot;}&quot;,
+  &quot;Instructions&quot;: &quot;If this is not the expected result check command arguments.&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}</pre>
+    <h4>Error</h4><pre>Exit code 1
+[install-or-update-packages] error: IInteropProjectService.OpenProject threw UiPath.Studio.Helm.Project.HelmProjectLoadException: &quot;Failed to open project at &#x27;/work/output/artifacts/skill-flow-customer-escalation-simulated/EmailEscalationBot&#x27;: Cannot execute Windows projects on Linux platform&quot;.
+{
+  &quot;Result&quot;: &quot;Failure&quot;,
+  &quot;ErrorCode&quot;: &quot;unknown_error&quot;,
+  &quot;Message&quot;: &quot;{\&quot;success\&quot;:false,\&quot;errorMessage\&quot;:\&quot;IInteropProjectService.OpenProject threw UiPath.Studio.Helm.Project.HelmProjectLoadException: \\\&quot;Failed to open project at &#x27;/work/output/artifacts/skill-flow-customer-escalation-simulated/EmailEscalationBot&#x27;: Cannot execute Windows projects on Linux platform\\\&quot;.\&quot;}&quot;,
+  &quot;Instructions&quot;: &quot;If this is not the expected result check command arguments.&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}</pre>
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#25</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.51s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;rm -rf /work/output/artifacts/skill-flow-customer-escalation-simulated/EmailEscalationBot &amp;&amp; uip rpa init \\\n  --name \&quot;EmailEscalationBot\&quot; \\\n  --location \&quot;/work/output/artifacts/skill-flow-customer-escalation-simulated\&quot; \\\n  --template-id \&quot;BlankTemplate\&quot; \\\n  --expression-language VisualBasic \\\n  --target-framework Portable \\\n  --description \&quot;Monitors Outlook inbox, classifies email urgency via rules… (162 more chars)&quot;,
+  &quot;description&quot;: &quot;Re-init project with Portable (Cross-platform) target framework for Linux compatibility&quot;,
+  &quot;timeout&quot;: 120000
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;ToolResult&quot;,
+  &quot;Data&quot;: {
+    &quot;success&quot;: true,
+    &quot;projectDirectory&quot;: &quot;/work/output/artifacts/skill-flow-customer-escalation-simulated/EmailEscalationBot&quot;,
+    &quot;errorMessage&quot;: null,
+    &quot;solutionRegistration&quot;: {
+      &quot;Status&quot;: &quot;NotInSolution&quot;,
+      &quot;Message&quot;: &quot;Project created in standalone mode; no parent .uipx solution found.&quot;,
+      &quot;Instructions&quot;: &quot;No parent solution was found by walking ancestor directories.\nStudio Web upload, `flow debug`, and packaging require an enclosing solution.\nTo link this project to a solution, run &#x27;uip solution init \&quot;&lt;SolutionName&gt;\&quot;&#x27; then &#x27;uip solution project add \&quot;/work/output/artifacts/skill-flow-customer-escalation-simulated/EmailEscalationBot\&quot; &lt;SolutionName&gt;.uipx&#x27;.&quot;
+    }
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#26</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">30.83s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip rpa packages install --packages &#x27;id=UiPath.MicrosoftOffice365.Activities,version=3.10.10&#x27; --project-dir \&quot;/work/output/artifacts/skill-flow-customer-escalation-simulated/EmailEscalationBot\&quot; --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Install O365 Activities package&quot;,
+  &quot;timeout&quot;: 180000
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;ToolResult&quot;,
+  &quot;Data&quot;: {
+    &quot;success&quot;: true
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#27</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">12ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cat /work/output/artifacts/skill-flow-customer-escalation-simulated/EmailEscalationBot/project.json&quot;,
+  &quot;description&quot;: &quot;Read updated project.json after package install&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;name&quot;: &quot;EmailEscalationBot&quot;,
+  &quot;description&quot;: &quot;Monitors Outlook inbox, classifies email urgency via rules-based AI logic, routes high-priority emails for immediate attention and low-priority to standard queue, with auto-acknowledgement replies&quot;,
+  &quot;main&quot;: &quot;Main.xaml&quot;,
+  &quot;dependencies&quot;: {
+    &quot;UiPath.System.Activities&quot;: &quot;[26.6.1]&quot;,
+    &quot;UiPath.MicrosoftOffice365.Activities&quot;: &quot;3.10.10&quot;
+  },
+  &quot;webServices&quot;: [],
+  &quot;entitiesStores&quot;: [],
+  &quot;schemaVersion&quot;: &quot;4.1&quot;,
+  &quot;studioVersion&quot;: &quot;26.0.199.0&quot;,
+  &quot;projectVersion&quot;: &quot;1.0.0&quot;,
+  &quot;runtimeOptions&quot;: {
+    &quot;autoDispose&quot;: false,
+    &quot;netFrameworkLazyLoading&quot;: false,
+    &quot;isPausable&quot;: false,
+    &quot;isAttended&quot;: false,
+    &quot;requiresUserInteraction&quot;: false,
+    &quot;supportsPersistence&quot;: false,
+    &quot;workflowSerialization&quot;: &quot;NewtonsoftJson&quot;,
+    &quot;excludedLoggedData&quot;: [
+      &quot;Private:*&quot;,
+      &quot;*password*&quot;
+    ],
+    &quot;executionType&quot;: &quot;Workflow&quot;,
+    &quot;readyForPiP&quot;: false,
+    &quot;startsInPiP&quot;: false,
+    &quot;mustRestoreAllDependencies&quot;: true,
+    &quot;pipType&quot;: &quot;ChildSession&quot;
+  },
+  &quot;designOptions&quot;: {
+    &quot;projectProfile&quot;: &quot;Developement&quot;,
+    &quot;outputType&quot;: &quot;Process&quot;,
+    &quot;libraryOptions&quot;: {
+      &quot;privateWorkflows&quot;: []
+    },
+    &quot;processOptions&quot;: {
+      &quot;ign
+
+… (truncated, 227 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#28</span>
+      <span class="tool-name">Glob</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">10ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;pattern&quot;: &quot;**/*.md&quot;,
+  &quot;path&quot;: &quot;/work/output/artifacts/skill-flow-customer-escalation-simulated/EmailEscalationBot/.local/docs/packages/UiPath.MicrosoftOffice365.Activities&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>EmailEscalationBot/.local/docs/packages/UiPath.MicrosoftOffice365.Activities/overview.md
+EmailEscalationBot/.local/docs/packages/UiPath.MicrosoftOffice365.Activities/activities/GetEventByIdConnections.md
+EmailEscalationBot/.local/docs/packages/UiPath.MicrosoftOffice365.Activities/activities/CreateEventConnections.md
+EmailEscalationBot/.local/docs/packages/UiPath.MicrosoftOffice365.Activities/activities/ForEachListConnections.md
+EmailEscalationBot/.local/docs/packages/UiPath.MicrosoftOffice365.Activities/activities/ForEachSheetConnections.md
+EmailEscalationBot/.local/docs/packages/UiPath.MicrosoftOffice365.Activities/activities/SendMailConnections.md
+EmailEscalationBot/.local/docs/packages/UiPath.MicrosoftOffice365.Activities/activities/CreateWorkbookConnections.md
+EmailEscalationBot/.local/docs/packages/UiPath.MicrosoftOffice365.Activities/activities/WaitForEventCreated.md
+EmailEscalationBot/.local/docs/packages/UiPath.MicrosoftOffice365.Activities/activities/MoveEmailConnections.md
+EmailEscalationBot/.local/docs/packages/UiPath.MicrosoftOffice365.Activities/activities/ModifyEventConnections.md
+EmailEscalationBot/.local/docs/packages/UiPath.MicrosoftOffice365.Activities/activities/
+
+… (truncated, 10411 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#29</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">6ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-customer-escalation-simulated/EmailEscalationBot/.local/docs/packages/UiPath.MicrosoftOffice365.Activities/activities/NewEmailReceived.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# New Email Received (Trigger)
+2	
+3	&gt; **Agent instruction — read all linked docs before proceeding:** Follow and read every hyperlinked reference document on this page in full before generating XAML. XAML structural patterns (BackupSlots, StoredValue, x:Reference, all-null attributes, namespace declarations) are defined in the linked component, type, and filter docs — not repeated here. If those linked docs also contain hyperlinks to other reference docs, follow those too.
+4	
+5	&gt; **Agent instruction — connection:** Before writing XAML, use the available tooling to resolve or search for a connection ID for the connector listed in this doc. If the connection ID cannot be resolved, leave ConnectionId=&quot;{x:Null}&quot;.
+6	
+7	`UiPath.MicrosoftOffice365.Activities.Mail.Triggers.NewEmailReceived`
+8	
+9	Trigger that fires when a new email is received in the specified mail folder.
+10	
+11	| Property | Value |
+12	|---|---|
+13	| **Package** | `UiPath.MicrosoftOffice365.Activities` |
+14	| **Category** | Mail |
+15	| **Connector** | `uipath-microsoft-outlook365` |
+16	
+17	## Input Properties
+18	
+19	| Property | Display Name | Category | Type | Required | Default | Description |
+20	|---|---|---|---|---|-
+
+… (truncated, 1863 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#30</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">10ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-customer-escalation-simulated/EmailEscalationBot/.local/docs/packages/UiPath.MicrosoftOffice365.Activities/activities/ReplyToEmailConnections.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Reply To Email
+2	
+3	&gt; **Agent instruction — read all linked docs before proceeding:** Follow and read every hyperlinked reference document on this page in full before generating XAML. XAML structural patterns (BackupSlots, StoredValue, x:Reference, all-null attributes, namespace declarations) are defined in the linked component, type, and filter docs — not repeated here. If those linked docs also contain hyperlinks to other reference docs, follow those too.
+4	
+5	&gt; **Agent instruction — connection:** Before writing XAML, use the available tooling to resolve or search for a connection ID for the connector listed in this doc. If the connection ID cannot be resolved, leave ConnectionId=&quot;{x:Null}&quot;.
+6	
+7	`UiPath.MicrosoftOffice365.Activities.Mail.ReplyToEmailConnections`
+8	
+9	Replies to an email message using Microsoft Office 365. Supports reply-all, additional recipients, attachments, custom subject, importance, and delivery/read receipts.
+10	
+11	| Property | Value |
+12	|---|---|
+13	| **Package** | `UiPath.MicrosoftOffice365.Activities` |
+14	| **Category** | Mail |
+15	| **Connector** | `uipath-microsoft-outlook365` |
+16	
+17	## Input Properties
+18	
+19	| Property | Display Name | Cate
+
+… (truncated, 5489 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#31</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">24ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-customer-escalation-simulated/EmailEscalationBot/.local/docs/packages/UiPath.MicrosoftOffice365.Activities/activities/MoveEmailConnections.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Move Email
+2	
+3	&gt; **Agent instruction — read all linked docs before proceeding:** Follow and read every hyperlinked reference document on this page in full before generating XAML. XAML structural patterns (BackupSlots, StoredValue, x:Reference, all-null attributes, namespace declarations) are defined in the linked component, type, and filter docs — not repeated here. If those linked docs also contain hyperlinks to other reference docs, follow those too.
+4	
+5	&gt; **Agent instruction — connection:** Before writing XAML, use the available tooling to resolve or search for a connection ID for the connector listed in this doc. If the connection ID cannot be resolved, leave ConnectionId=&quot;{x:Null}&quot;.
+6	
+7	`UiPath.MicrosoftOffice365.Activities.Mail.MoveEmailConnections`
+8	
+9	Moves an email to a folder within the same mailbox.
+10	
+11	| Property | Value |
+12	|---|---|
+13	| **Package** | `UiPath.MicrosoftOffice365.Activities` |
+14	| **Category** | Mail |
+15	| **Connector** | `uipath-microsoft-outlook365` |
+16	
+17	## Input Properties
+18	
+19	| Property | Display Name | Category | Type | Required | Default | Description |
+20	|---|---|---|---|---|---|---|
+21	| `ConnectionId` | Connection ID | | `
+
+… (truncated, 3899 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#32</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">27ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-customer-escalation-simulated/EmailEscalationBot/.local/docs/packages/UiPath.MicrosoftOffice365.Activities/activities/types/Office365Message.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Office365Message
+2	
+3	&gt; **Agent instruction — read all linked docs before proceeding:** Follow and read every hyperlinked reference document on this page in full before generating XAML. XAML structural patterns (BackupSlots, StoredValue, x:Reference, all-null attributes, namespace declarations) are defined in the linked component, type, and filter docs — not repeated here. If those linked docs also contain hyperlinks to other reference docs, follow those too.
+4	
+5	**Namespace:** `UiPath.MicrosoftOffice365.Models`
+6	**Inherits:** `BaseOffice365Message` (which extends `System.Net.Mail.MailMessage`)
+7	
+8	Represents an Outlook email message from Microsoft 365. Returned by mail activities such as GetEmailListConnections, GetEmailByIdConnections, ForEachEmailConnections, SendMailConnections, etc.
+9	
+10	## Properties
+11	
+12	### From Office365Message
+13	
+14	| Property | Type | Description |
+15	|----------|------|-------------|
+16	| `MessageId` | `String` | The Office 365 unique ID of the message. |
+17	| `BodyPreview` | `String` | A short preview of the email body. |
+18	| `Flag` | `FollowupFlag` | The follow-up flag status. |
+19	| `Importance` | `MessageImportance?` | The email importan
+
+… (truncated, 3616 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#33</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">17ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-rpa/references/activity-docs/UiPath.MicrosoftOffice365.Activities/3.8/activities/NewEmailReceived.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# NewEmailReceived — Trigger on Incoming Email
+2	
+3	**Integration trigger** (`isTrigger: true, triggerType: &quot;integration&quot;` from `uip rpa activities find`; requires a `ConnectionId` to an O365 Outlook connection). **Placement: strict** — first activity of `Main.xaml`&#x27;s root `Sequence`, never inside `ui:TriggerScope`. Orchestrator + Integration Service subscribe externally and dispatch a fresh job per email. See [trigger-pattern-guide.md](../../../../trigger-pattern-guide.md).
+4	
+5	Trigger activity (`umamt:` prefix). Null attributes: `ConnectionAccountName`, `ContinueOnError`, `Filter`, `JobData`, `UiPathEvent`, `UiPathEventConnector`, `UiPathEventObjectId`, `UiPathEventObjectType`
+6	
+7	```xml
+8	&lt;umamt:NewEmailReceived
+9	    ConnectionAccountName=&quot;{x:Null}&quot;
+10	    ContinueOnError=&quot;{x:Null}&quot;
+11	    Filter=&quot;{x:Null}&quot;
+12	    JobData=&quot;{x:Null}&quot;
+13	    UiPathEvent=&quot;{x:Null}&quot;
+14	    UiPathEventConnector=&quot;{x:Null}&quot;
+15	    UiPathEventObjectId=&quot;{x:Null}&quot;
+16	    UiPathEventObjectType=&quot;{x:Null}&quot;
+17	    AuthScopesInvalid=&quot;False&quot;
+18	    BrowserFolderId=&quot;INBOX&quot;
+19	    BrowserFolderName=&quot;Inbox&quot;
+20	    ConnectionId=&quot;00000000-0000-0000-0000-000000000000&quot;
+21	    DisplayName=&quot;New Email Received&quot;
+22	 
+
+… (truncated, 775 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#34</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">9ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-customer-escalation-simulated/EmailEscalationBot/.local/docs/packages/UiPath.MicrosoftOffice365.Activities/activities/MarkAsReadUnreadConnections.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Mark Email As Read/Unread
+2	
+3	&gt; **Agent instruction — read all linked docs before proceeding:** Follow and read every hyperlinked reference document on this page in full before generating XAML. XAML structural patterns (BackupSlots, StoredValue, x:Reference, all-null attributes, namespace declarations) are defined in the linked component, type, and filter docs — not repeated here. If those linked docs also contain hyperlinks to other reference docs, follow those too.
+4	
+5	&gt; **Agent instruction — connection:** Before writing XAML, use the available tooling to resolve or search for a connection ID for the connector listed in this doc. If the connection ID cannot be resolved, leave ConnectionId=&quot;{x:Null}&quot;.
+6	
+7	`UiPath.MicrosoftOffice365.Activities.Mail.MarkAsReadUnreadConnections`
+8	
+9	Marks an email as read or unread.
+10	
+11	| Property | Value |
+12	|---|---|
+13	| **Package** | `UiPath.MicrosoftOffice365.Activities` |
+14	| **Category** | Mail |
+15	| **Connector** | `uipath-microsoft-outlook365` |
+16	
+17	## Input Properties
+18	
+19	| Property | Display Name | Category | Type | Required | Default | Description |
+20	|---|---|---|---|---|---|---|
+21	| `ConnectionId` | Connection ID |
+
+… (truncated, 1414 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#35</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">13ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-customer-escalation-simulated/EmailEscalationBot/.local/docs/packages/UiPath.MicrosoftOffice365.Activities/activities/SetEmailCategoriesConnections.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Set Email Categories
+2	
+3	&gt; **Agent instruction — read all linked docs before proceeding:** Follow and read every hyperlinked reference document on this page in full before generating XAML. XAML structural patterns (BackupSlots, StoredValue, x:Reference, all-null attributes, namespace declarations) are defined in the linked component, type, and filter docs — not repeated here. If those linked docs also contain hyperlinks to other reference docs, follow those too.
+4	
+5	&gt; **Agent instruction — connection:** Before writing XAML, use the available tooling to resolve or search for a connection ID for the connector listed in this doc. If the connection ID cannot be resolved, leave ConnectionId=&quot;{x:Null}&quot;.
+6	
+7	`UiPath.MicrosoftOffice365.Activities.Mail.SetEmailCategoriesConnections`
+8	
+9	Assigns and/or removes categories on an email.
+10	
+11	| Property | Value |
+12	|---|---|
+13	| **Package** | `UiPath.MicrosoftOffice365.Activities` |
+14	| **Category** | Mail |
+15	| **Connector** | `uipath-microsoft-outlook365` |
+16	
+17	## Input Properties
+18	
+19	| Property | Display Name | Category | Type | Required | Default | Description |
+20	|---|---|---|---|---|---|---|
+21	| `ConnectionId` | Conne
+
+… (truncated, 4055 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#36</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">16ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-rpa/references/common-activity-card.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Common Activity Card
+2	
+3	**Package anchor:** `UiPath.System.Activities` 26.4 (verified against 26.4.1-preview).
+4	
+5	Copy-safe snippets for the 13 activities listed below. **Supersedes the Rule 21 discovery procedure for these activities only** — when authoring one of these, skip `activities find`, skip `activities get-default-xaml`, skip the per-activity `&lt;Activity&gt;.md` read, and copy the snippet here.
+6	
+7	For every other activity, full Rule 21 applies. Self-extending this card by personal judgment (&quot;this one feels simple, I&#x27;ll skip the procedure&quot;) is the failure mode.
+8	
+9	## Card entries
+10	
+11	`Sequence` · `If` · `Switch&lt;T&gt;` · `TryCatch` · `While` · `DoWhile` · `ForEach&lt;T&gt;` · `Assign` · `LogMessage` · `WriteLine` · `Delay` · `Throw` · `Rethrow`
+12	
+13	## How to read the snippets
+14	
+15	Snippets below are **fragments** intended to drop inside a complete `&lt;Activity&gt;` root. The root must declare:
+16	
+17	```xml
+18	xmlns=&quot;http://schemas.microsoft.com/netfx/2009/xaml/activities&quot;
+19	xmlns:x=&quot;http://schemas.microsoft.com/winfx/2006/xaml&quot;
+20	xmlns:ui=&quot;http://schemas.uipath.com/workflow/activities&quot;
+21	```
+22	
+23	Entries that need additional prefixes (`xmlns:s` for `System` types, `
+
+… (truncated, 18013 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#37</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">6ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-customer-escalation-simulated/EmailEscalationBot/.local/docs/packages/UiPath.MicrosoftOffice365.Activities/activities/SendMailConnections.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Send Mail
+2	
+3	&gt; **Agent instruction — read all linked docs before proceeding:** Follow and read every hyperlinked reference document on this page in full before generating XAML. XAML structural patterns (BackupSlots, StoredValue, x:Reference, all-null attributes, namespace declarations) are defined in the linked component, type, and filter docs — not repeated here. If those linked docs also contain hyperlinks to other reference docs, follow those too.
+4	
+5	&gt; **Agent instruction — connection:** Before writing XAML, use the available tooling to resolve or search for a connection ID for the connector listed in this doc. If the connection ID cannot be resolved, leave ConnectionId=&quot;{x:Null}&quot;.
+6	
+7	`UiPath.MicrosoftOffice365.Activities.Mail.SendMailConnections`
+8	
+9	Sends an email message using Microsoft Office 365 via Integration Service. Supports HTML or plain-text body, attachments, importance settings, delivery/read receipts, and sensitivity labels. Can also save as draft instead of sending.
+10	
+11	| Property | Value |
+12	|---|---|
+13	| **Package** | `UiPath.MicrosoftOffice365.Activities` |
+14	| **Category** | Mail |
+15	| **Connector** | `uipath-microsoft-outlook365` |
+16	
+17	##
+
+… (truncated, 6572 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#38</span>
+      <span class="tool-name">TaskUpdate</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">9ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;taskId&quot;: &quot;2&quot;,
+  &quot;status&quot;: &quot;completed&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Updated task #2 status</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#39</span>
+      <span class="tool-name">TaskUpdate</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">64ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;taskId&quot;: &quot;4&quot;,
+  &quot;status&quot;: &quot;in_progress&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Updated task #4 status</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#40</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">28ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;mkdir -p /work/output/artifacts/skill-flow-customer-escalation-simulated/EmailEscalationBot/Workflows&quot;,
+  &quot;description&quot;: &quot;Create Workflows subdirectory&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>(Bash completed with no output)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#41</span>
+      <span class="tool-name">Write</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">36ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-customer-escalation-simulated/EmailEscalationBot/Workflows/ClassifyUrgency.xaml&quot;,
+  &quot;content&quot;: &quot;&lt;Activity mc:Ignorable=\&quot;sap sap2010\&quot; x:Class=\&quot;Workflows_ClassifyUrgency\&quot;\n  xmlns=\&quot;http://schemas.microsoft.com/netfx/2009/xaml/activities\&quot;\n  xmlns:mc=\&quot;http://schemas.openxmlformats.org/markup-compatibility/2006\&quot;\n  xmlns:mva=\&quot;clr-namespace:Microsoft.VisualBasic.Activities;assembly=System.Activities\&quot;\n  xmlns:sap=\&quot;http://schemas.microsoft.com/netfx/2009/xaml/activities/presentation\&quot;\n  xmlns:sap2010=\&quot;… (26134 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>File created successfully at: /work/output/artifacts/skill-flow-customer-escalation-simulated/EmailEscalationBot/Workflows/ClassifyUrgency.xaml (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#42</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">46.05s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip rpa validate --file-path \&quot;Workflows/ClassifyUrgency.xaml\&quot; --project-dir \&quot;/work/output/artifacts/skill-flow-customer-escalation-simulated/EmailEscalationBot\&quot; --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Validate ClassifyUrgency.xaml&quot;,
+  &quot;timeout&quot;: 120000
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;ToolResult&quot;,
+  &quot;Data&quot;: {
+    &quot;message&quot;: &quot;Found 1 error(s):\n[error] /work/output/artifacts/skill-flow-customer-escalation-simulated/EmailEscalationBot/Workflows/ClassifyUrgency.xaml - Could not load /work/output/artifacts/skill-flow-customer-escalation-simulated/EmailEscalationBot/Workflows/ClassifyUrgency.xaml file: &#x27;Cannot create unknown type &#x27;{http://schemas.microsoft.com/netfx/2009/xaml/activities}InArgument({http://schemas.microsoft.com/winfx/2006/xaml}Exception)&#x27;.&#x27; Line number &#x27;67&#x27; and line position &#x27;16&#x27;. (ERROR, Validation Error)&quot;
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#43</span>
+      <span class="tool-name">Edit</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">25ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;replace_all&quot;: false,
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-customer-escalation-simulated/EmailEscalationBot/Workflows/ClassifyUrgency.xaml&quot;,
+  &quot;old_string&quot;: &quot;  xmlns:x=\&quot;http://schemas.microsoft.com/winfx/2006/xaml\&quot;\n  mva:VisualBasic.Settings=\&quot;{x:Null}\&quot;&gt;&quot;,
+  &quot;new_string&quot;: &quot;  xmlns:s=\&quot;clr-namespace:System;assembly=System.Private.CoreLib\&quot;\n  xmlns:x=\&quot;http://schemas.microsoft.com/winfx/2006/xaml\&quot;\n  mva:VisualBasic.Settings=\&quot;{x:Null}\&quot;&gt;&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>The file /work/output/artifacts/skill-flow-customer-escalation-simulated/EmailEscalationBot/Workflows/ClassifyUrgency.xaml has been updated successfully. (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#44</span>
+      <span class="tool-name">Edit</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">43ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;replace_all&quot;: false,
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-customer-escalation-simulated/EmailEscalationBot/Workflows/ClassifyUrgency.xaml&quot;,
+  &quot;old_string&quot;: &quot;          &lt;Throw.Exception&gt;\n              &lt;InArgument x:TypeArguments=\&quot;x:Exception\&quot;&gt;\n                &lt;VisualBasicValue x:TypeArguments=\&quot;x:Exception\&quot; ExpressionText=\&quot;New BusinessRuleException(&amp;quot;ClassifyUrgency: in_Email argument is Nothing&amp;quot;)\&quot; /&gt;&quot;,
+  &quot;new_string&quot;: &quot;          &lt;Throw.Exception&gt;\n              &lt;InArgument x:TypeArguments=\&quot;s:Exception\&quot;&gt;\n                &lt;VisualBasicValue x:TypeArguments=\&quot;s:Exception\&quot; ExpressionText=\&quot;New BusinessRuleException(&amp;quot;ClassifyUrgency: in_Email argument is Nothing&amp;quot;)\&quot; /&gt;&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>The file /work/output/artifacts/skill-flow-customer-escalation-simulated/EmailEscalationBot/Workflows/ClassifyUrgency.xaml has been updated successfully. (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#45</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">2.40s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip rpa validate --file-path \&quot;Workflows/ClassifyUrgency.xaml\&quot; --project-dir \&quot;/work/output/artifacts/skill-flow-customer-escalation-simulated/EmailEscalationBot\&quot; --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Validate ClassifyUrgency.xaml after fix&quot;,
+  &quot;timeout&quot;: 120000
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;ToolResult&quot;,
+  &quot;Data&quot;: {
+    &quot;message&quot;: &quot;No diagnostics found.&quot;
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#46</span>
+      <span class="tool-name">TaskUpdate</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">6ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;taskId&quot;: &quot;4&quot;,
+  &quot;status&quot;: &quot;completed&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Updated task #4 status</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#47</span>
+      <span class="tool-name">TaskUpdate</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">12ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;taskId&quot;: &quot;3&quot;,
+  &quot;status&quot;: &quot;in_progress&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Updated task #3 status</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#48</span>
+      <span class="tool-name">Write</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">140ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-customer-escalation-simulated/EmailEscalationBot/Main.xaml&quot;,
+  &quot;content&quot;: &quot;&lt;Activity mc:Ignorable=\&quot;sap sap2010\&quot; x:Class=\&quot;Main\&quot;\n  xmlns=\&quot;http://schemas.microsoft.com/netfx/2009/xaml/activities\&quot;\n  xmlns:mc=\&quot;http://schemas.openxmlformats.org/markup-compatibility/2006\&quot;\n  xmlns:mva=\&quot;clr-namespace:Microsoft.VisualBasic.Activities;assembly=System.Activities\&quot;\n  xmlns:s=\&quot;clr-namespace:System;assembly=System.Private.CoreLib\&quot;\n  xmlns:sap=\&quot;http://schemas.microsoft.com/netfx/2009/xam… (28479 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>The file /work/output/artifacts/skill-flow-customer-escalation-simulated/EmailEscalationBot/Main.xaml has been updated successfully. (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#49</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">2.02s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip rpa validate --file-path \&quot;Main.xaml\&quot; --project-dir \&quot;/work/output/artifacts/skill-flow-customer-escalation-simulated/EmailEscalationBot\&quot; --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Validate Main.xaml&quot;,
+  &quot;timeout&quot;: 120000
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;ToolResult&quot;,
+  &quot;Data&quot;: {
+    &quot;message&quot;: &quot;Found 1 error(s):\n[error] /work/output/artifacts/skill-flow-customer-escalation-simulated/EmailEscalationBot/Main.xaml - Could not load /work/output/artifacts/skill-flow-customer-escalation-simulated/EmailEscalationBot/Main.xaml file: An XML comment cannot contain &#x27;--&#x27;, and &#x27;-&#x27; cannot be the last character. Line 54, position 76. (ERROR, Validation Error)&quot;
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#50</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">35ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-customer-escalation-simulated/EmailEscalationBot/Main.xaml&quot;,
+  &quot;offset&quot;: 50,
+  &quot;limit&quot;: 10
+}</pre>
+    <h4>Result</h4>
+    <pre>50	      &lt;Variable x:TypeArguments=&quot;x:Int32&quot; Name=&quot;urgencyScore&quot; Default=&quot;0&quot; /&gt;
+51	      &lt;Variable x:TypeArguments=&quot;x:String&quot; Name=&quot;urgencyTier&quot; Default=&quot;&amp;quot;STANDARD&amp;quot;&quot; /&gt;
+52	      &lt;Variable x:TypeArguments=&quot;x:String&quot; Name=&quot;classificationReason&quot; Default=&quot;&amp;quot;&amp;quot;&quot; /&gt;
+53	      &lt;!-- O365 connection ID — replace with your real Integration Service connection GUID --&gt;
+54	      &lt;!-- To find it: uip is connections list uipath-microsoft-outlook365 --all-folders --output json --&gt;
+55	      &lt;Variable x:TypeArguments=&quot;x:String&quot; Name=&quot;connectionId&quot; Default=&quot;&amp;quot;00000000-0000-0000-0000-000000000000&amp;quot;&quot; /&gt;
+56	      &lt;!-- Escalation team inbox — TODO: replace with your real escalation mailbox/distribution list --&gt;
+57	      &lt;Variable x:TypeArguments=&quot;x:String&quot; Name=&quot;escalationTeamEmail&quot; Default=&quot;&amp;quot;support-escalations@yourcompany.com&amp;quot;&quot; /&gt;
+58	      &lt;!-- ACK reply body template (HTML) --&gt;
+59	      &lt;Variable x:TypeArguments=&quot;x:String&quot; Name=&quot;ackBodyHtml&quot; Default=&quot;&amp;quot;&amp;quot;&quot; /&gt;</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#51</span>
+      <span class="tool-name">Edit</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">34ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;replace_all&quot;: false,
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-customer-escalation-simulated/EmailEscalationBot/Main.xaml&quot;,
+  &quot;old_string&quot;: &quot;      &lt;!-- O365 connection ID — replace with your real Integration Service connection GUID --&gt;\n      &lt;!-- To find it: uip is connections list uipath-microsoft-outlook365 --all-folders --output json --&gt;&quot;,
+  &quot;new_string&quot;: &quot;      &lt;!-- O365 connection ID: replace with your real Integration Service connection GUID.\n           To find it, run: uip is connections list uipath-microsoft-outlook365 -all-folders -output json --&gt;&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>The file /work/output/artifacts/skill-flow-customer-escalation-simulated/EmailEscalationBot/Main.xaml has been updated successfully. (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#52</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.24s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip rpa validate --file-path \&quot;Main.xaml\&quot; --project-dir \&quot;/work/output/artifacts/skill-flow-customer-escalation-simulated/EmailEscalationBot\&quot; --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Validate Main.xaml after comment fix&quot;,
+  &quot;timeout&quot;: 120000
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;ToolResult&quot;,
+  &quot;Data&quot;: {
+    &quot;message&quot;: &quot;Found 1 error(s):\n[error] /work/output/artifacts/skill-flow-customer-escalation-simulated/EmailEscalationBot/Main.xaml - Could not load /work/output/artifacts/skill-flow-customer-escalation-simulated/EmailEscalationBot/Main.xaml file: An XML comment cannot contain &#x27;--&#x27;, and &#x27;-&#x27; cannot be the last character. Line 73, position 72. (ERROR, Validation Error)&quot;
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#53</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">2ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-customer-escalation-simulated/EmailEscalationBot/Main.xaml&quot;,
+  &quot;offset&quot;: 69,
+  &quot;limit&quot;: 10
+}</pre>
+    <h4>Result</h4>
+    <pre>69	         a fresh job that runs this workflow.
+70	
+71	         BEFORE DEPLOYMENT:
+72	           1. Replace ConnectionId with your real O365 connection GUID.
+73	              Run: uip is connections list uipath-microsoft-outlook365 --all-folders --output json
+74	           2. Optionally set FilterExpression to pre-filter server-side
+75	              (e.g. restrict to a specific folder or only unread emails).
+76	         ========================================================= --&gt;
+77	    &lt;umamt:NewEmailReceived
+78	      ConnectionAccountName=&quot;{x:Null}&quot;</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#54</span>
+      <span class="tool-name">Edit</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">23ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;replace_all&quot;: false,
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-customer-escalation-simulated/EmailEscalationBot/Main.xaml&quot;,
+  &quot;old_string&quot;: &quot;              Run: uip is connections list uipath-microsoft-outlook365 --all-folders --output json&quot;,
+  &quot;new_string&quot;: &quot;              Run: uip is connections list uipath-microsoft-outlook365 -all-folders -output json&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>The file /work/output/artifacts/skill-flow-customer-escalation-simulated/EmailEscalationBot/Main.xaml has been updated successfully. (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#55</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">31ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -n -- \&quot;--\&quot; /work/output/artifacts/skill-flow-customer-escalation-simulated/EmailEscalationBot/Main.xaml | grep \&quot;&lt;!--\&quot; | head -20&quot;,
+  &quot;description&quot;: &quot;Find any remaining double-hyphen inside XML comments&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>47:      &lt;!-- The email that triggered this run --&gt;
+49:      &lt;!-- Urgency classification outputs --&gt;
+53:      &lt;!-- O365 connection ID: replace with your real Integration Service connection GUID.
+56:      &lt;!-- Escalation team inbox — TODO: replace with your real escalation mailbox/distribution list --&gt;
+58:      &lt;!-- ACK reply body template (HTML) --&gt;
+60:      &lt;!-- Escalation notification body template (HTML) --&gt;
+64:    &lt;!-- =========================================================
+98:    &lt;!-- =========================================================
+105:          &lt;!-- Step 2a: Log receipt --&gt;
+114:          &lt;!-- Step 2b: Classify urgency by invoking helper workflow --&gt;
+126:          &lt;!-- Step 2c: Mark email as read (prevents duplicate processing on re-runs) --&gt;
+136:          &lt;!-- Step 2d: Send auto-acknowledgement reply to sender (ALL tiers) --&gt;
+187:          &lt;!-- Step 2e: Branch on urgency tier --&gt;
+195:              &lt;!-- ===================================================
+208:                &lt;!-- Tag email with HIGH-PRIORITY category in Outlook --&gt;
+230:                &lt;!-- Move email to High-Priority folder for visibility --&gt;
+265:                &lt;!-- Build escalation notification bo
+
+… (truncated, 277 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#56</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">2.48s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip rpa validate --file-path \&quot;Main.xaml\&quot; --project-dir \&quot;/work/output/artifacts/skill-flow-customer-escalation-simulated/EmailEscalationBot\&quot; --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Validate Main.xaml after second comment fix&quot;,
+  &quot;timeout&quot;: 120000
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;ToolResult&quot;,
+  &quot;Data&quot;: {
+    &quot;message&quot;: &quot;Found 9 error(s):\n[error] /work/output/artifacts/skill-flow-customer-escalation-simulated/EmailEscalationBot/Main.xaml - You must provide a value for Connection (ERROR, Validation Error) | activity: 1.414\n[error] /work/output/artifacts/skill-flow-customer-escalation-simulated/EmailEscalationBot/Main.xaml - You must provide a value for Connection (ERROR, Validation Error) | activity: 1.345\n[error] /work/output/artifacts/skill-flow-customer-escalation-simulated/EmailEscalationBot/Main.xaml - You must provide a value for Connection (ERROR, Validation Error) | activity: 1.292\n[error] /work/output/artifacts/skill-flow-customer-escalation-simulated/EmailEscalationBot/Main.xaml - You must provide a value for Connection (ERROR, Validation Error) | activity: 1.242\n[error] /work/output/artifacts/skill-flow-customer-escalation-simulated/EmailEscalationBot/Main.xaml - You must provide a value for Connection (ERROR, Validation Error) | activity: 1.212\n[error] /work/output/artifacts/skill-flow-customer-escalation-simulated/EmailEscalationBot/Main.xaml - You must provide a value for Connection (ERROR, Validation Er
+
+… (truncated, 575 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#57</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.44s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip rpa activities find --query \&quot;InvokeWorkflowFile\&quot; --project-dir \&quot;/work/output/artifacts/skill-flow-customer-escalation-simulated/EmailEscalationBot\&quot; --output json 2&gt;&amp;1 | head -30&quot;,
+  &quot;description&quot;: &quot;Find InvokeWorkflowFile activity class name&quot;,
+  &quot;timeout&quot;: 60000
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;ToolResult&quot;,
+  &quot;Data&quot;: [
+    {
+      &quot;className&quot;: &quot;UiPath.Core.Activities.InvokeWorkflowFile&quot;,
+      &quot;activityTypeId&quot;: &quot;&quot;,
+      &quot;description&quot;: &quot;&quot;,
+      &quot;packageName&quot;: &quot;UiPath.System.Activities&quot;,
+      &quot;packageDisplayName&quot;: &quot;UiPath.System.Activities&quot;,
+      &quot;packageVersion&quot;: &quot;26.6.1&quot;,
+      &quot;namespace&quot;: &quot;UiPath.Core.Activities&quot;,
+      &quot;assemblyName&quot;: &quot;UiPath.System.Activities&quot;,
+      &quot;configuration&quot;: &quot;&quot;
+    }
+  ]
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#58</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.56s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip rpa activities get-default-xaml --activity-class-name \&quot;UiPath.Core.Activities.InvokeWorkflowFile\&quot; --project-dir \&quot;/work/output/artifacts/skill-flow-customer-escalation-simulated/EmailEscalationBot\&quot; --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Get default XAML for InvokeWorkflowFile&quot;,
+  &quot;timeout&quot;: 60000
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;ToolResult&quot;,
+  &quot;Data&quot;: {
+    &quot;message&quot;: &quot;&lt;Activity x:Class=\&quot;InvokeWorkflowFile\&quot; xmlns=\&quot;http://schemas.microsoft.com/netfx/2009/xaml/activities\&quot; xmlns:scg=\&quot;clr-namespace:System.Collections.Generic;assembly=System.Private.CoreLib\&quot; xmlns:ui=\&quot;http://schemas.uipath.com/workflow/activities\&quot; xmlns:x=\&quot;http://schemas.microsoft.com/winfx/2006/xaml\&quot;&gt;\n  &lt;ui:InvokeWorkflowFile ArgumentsVariable=\&quot;{x:Null}\&quot; WorkflowFileName=\&quot;{x:Null}\&quot; UnSafe=\&quot;False\&quot;&gt;\n    &lt;ui:InvokeWorkflowFile.Arguments&gt;\n      &lt;scg:Dictionary x:TypeArguments=\&quot;x:String, Argument\&quot; /&gt;\n    &lt;/ui:InvokeWorkflowFile.Arguments&gt;\n  &lt;/ui:InvokeWorkflowFile&gt;\n&lt;/Activity&gt;&quot;
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#59</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-err">ERROR</span>
+      <span class="tool-duration">19ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-customer-escalation-simulated/EmailEscalationBot/.local/docs/packages/UiPath.MicrosoftOffice365.Activities/activities/overview.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>File does not exist. Note: your current working directory is /work/output/artifacts/skill-flow-customer-escalation-simulated.</pre>
+    <h4>Error</h4><pre>File does not exist. Note: your current working directory is /work/output/artifacts/skill-flow-customer-escalation-simulated.</pre>
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#60</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">20ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-customer-escalation-simulated/EmailEscalationBot/.local/docs/packages/UiPath.MicrosoftOffice365.Activities/activities/components/MailFolderArgument.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# MailFolderArgument
+2	
+3	&gt; **Agent instruction — read all linked docs before proceeding:** Follow and read every hyperlinked reference document on this page in full before generating XAML. XAML structural patterns (BackupSlots, StoredValue, x:Reference, all-null attributes, namespace declarations) are defined in the linked component, type, and filter docs — not repeated here. If those linked docs also contain hyperlinks to other reference docs, follow those too.
+4	
+5	**Namespace:** `UiPath.MicrosoftOffice365.Activities.Mail.Models`
+6	
+7	A composition argument object used by Outlook mail activities to specify a mail folder. The `SelectionMode` property determines which sub-properties are required.
+8	
+9	## InputMode -- SelectionMode (Mail.Enums.ItemSelectionMode)
+10	
+11	| Mode | Description | Required Properties | AI-XAML Suitable |
+12	|------|-------------|--------------------|--------------------|
+13	| `Browse` | Select a mail folder via the Studio designer browser widget. | `BrowserFolder`, `BrowserFolderId` | **Not suitable for AI-generated XAML** |
+14	| `EnterPath` | Specify a mail folder by name or path. | `ManualEntryFolder` | Yes |
+15	
+16	## Properties
+17	
+18	### Core
+19	
+
+
+… (truncated, 3354 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#61</span>
+      <span class="tool-name">Write</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">70ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-customer-escalation-simulated/EmailEscalationBot/Main.xaml&quot;,
+  &quot;content&quot;: &quot;&lt;Activity mc:Ignorable=\&quot;sap sap2010\&quot; x:Class=\&quot;Main\&quot;\n  xmlns=\&quot;http://schemas.microsoft.com/netfx/2009/xaml/activities\&quot;\n  xmlns:mc=\&quot;http://schemas.openxmlformats.org/markup-compatibility/2006\&quot;\n  xmlns:mva=\&quot;clr-namespace:Microsoft.VisualBasic.Activities;assembly=System.Activities\&quot;\n  xmlns:s=\&quot;clr-namespace:System;assembly=System.Private.CoreLib\&quot;\n  xmlns:sap=\&quot;http://schemas.microsoft.com/netfx/2009/xam… (26782 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>The file /work/output/artifacts/skill-flow-customer-escalation-simulated/EmailEscalationBot/Main.xaml has been updated successfully. (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#62</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">12ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-rpa/references/trigger-pattern-guide.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Trigger Pattern Guide
+2	
+3	Authoring and editing trigger workflows in XAML. Covers placement, lifecycle, `ui:TriggerScope` handling, and verification.
+4	
+5	## Two Trigger Types
+6	
+7	`uip rpa activities find` returns `isTrigger` and `triggerType` on every trigger activity. `triggerType` is the type discriminator.
+8	
+9	### Integration triggers (`triggerType: &quot;integration&quot;`) — strict placement
+10	
+11	- **MUST be the first activity** of `Main.xaml`&#x27;s root `Sequence`.
+12	- **CANNOT be placed inside `ui:TriggerScope`.**
+13	- **Connection asset:** required for IS-based triggers (Mail, GSuite, O365, Salesforce, Jira, Slack, ServiceNow, any `*.IntegrationService.Activities` package). Not required for Orchestrator-native triggers (`TimeTrigger`, `QueueTrigger`, `ManualTrigger`).
+14	- **Runtime behavior:** the activity is an **unwrap routine**. Orchestrator (or the IS webhook layer) holds the subscription, dispatches a fresh job per event, and injects event payload context. The activity&#x27;s `Execute` reads that context — e.g., `NewEmailReceived.ExecuteWithRetryAsync` reads `UiPathEventObjectId`, then calls `GraphServiceClient.GetEmailByIdAsync(...)` to fetch the email. It does not poll, wat
+
+… (truncated, 20244 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#63</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.87s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-customer-escalation-simulated/EmailEscalationBot &amp;&amp; uip rpa validate --file-path \&quot;Main.xaml\&quot; --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Validate Main.xaml for errors&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;ToolResult&quot;,
+  &quot;Data&quot;: {
+    &quot;message&quot;: &quot;Found 9 error(s):\n[error] /work/output/artifacts/skill-flow-customer-escalation-simulated/EmailEscalationBot/Main.xaml - You must provide a value for Connection (ERROR, Validation Error) | activity: 1.318\n[error] /work/output/artifacts/skill-flow-customer-escalation-simulated/EmailEscalationBot/Main.xaml - You must provide a value for Connection (ERROR, Validation Error) | activity: 1.264\n[error] /work/output/artifacts/skill-flow-customer-escalation-simulated/EmailEscalationBot/Main.xaml - You must provide a value for Connection (ERROR, Validation Error) | activity: 1.224\n[error] /work/output/artifacts/skill-flow-customer-escalation-simulated/EmailEscalationBot/Main.xaml - You must provide a value for Connection (ERROR, Validation Error) | activity: 1.187\n[error] /work/output/artifacts/skill-flow-customer-escalation-simulated/EmailEscalationBot/Main.xaml - You must provide a value for Connection (ERROR, Validation Error) | activity: 1.168\n[error] /work/output/artifacts/skill-flow-customer-escalation-simulated/EmailEscalationBot/Main.xaml - You must provide a value for Connection (ERROR, Validation Er
+
+… (truncated, 574 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#64</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">7ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-customer-escalation-simulated/EmailEscalationBot/project.json&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Wasted call — file unchanged since your last Read. Refer to that earlier tool_result instead.</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#65</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.25s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip rpa activities get-default-xaml --activity-class-name \&quot;UiPath.MicrosoftOffice365.Activities.Mail.Triggers.NewEmailReceived\&quot; --output json 2&gt;&amp;1 | head -80&quot;,
+  &quot;description&quot;: &quot;Get default XAML for NewEmailReceived to see exact ConnectionId format that passes validation&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;ToolResult&quot;,
+  &quot;Data&quot;: {
+    &quot;message&quot;: &quot;&lt;Activity x:Class=\&quot;NewEmailReceived\&quot; xmlns=\&quot;http://schemas.microsoft.com/netfx/2009/xaml/activities\&quot; xmlns:scg=\&quot;clr-namespace:System.Collections.Generic;assembly=System.Private.CoreLib\&quot; xmlns:umame=\&quot;clr-namespace:UiPath.MicrosoftOffice365.Activities.Mail.Enums;assembly=UiPath.MicrosoftOffice365.Activities\&quot; xmlns:umamm=\&quot;clr-namespace:UiPath.MicrosoftOffice365.Activities.Mail.Models;assembly=UiPath.MicrosoftOffice365.Activities\&quot; xmlns:umamt=\&quot;clr-namespace:UiPath.MicrosoftOffice365.Activities.Mail.Triggers;assembly=UiPath.MicrosoftOffice365.Activities\&quot; xmlns:usau=\&quot;clr-namespace:UiPath.Shared.Activities.Utils;assembly=UiPath.MicrosoftOffice365.Activities\&quot; xmlns:x=\&quot;http://schemas.microsoft.com/winfx/2006/xaml\&quot;&gt;\n  &lt;umamt:NewEmailReceived BrowserFolderName=\&quot;{x:Null}\&quot; ConnectionAccountName=\&quot;{x:Null}\&quot; ConnectionId=\&quot;{x:Null}\&quot; ContinueOnError=\&quot;{x:Null}\&quot; Filter=\&quot;{x:Null}\&quot; FilterExpression=\&quot;{x:Null}\&quot; JobData=\&quot;{x:Null}\&quot; Mailbox=\&quot;{x:Null}\&quot; MailboxBackup=\&quot;{x:Reference __ReferenceID0}\&quot; Result=\&quot;{x:Null}\&quot; UiPathEvent=\&quot;{x:Null}\&quot; UiPathEventConnector=\&quot;{x:Null}\&quot; UiPathEventObjectId=\&quot;{x:
+
+… (truncated, 1679 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#66</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">57ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -r \&quot;entryPoints\&quot; /home/azureuser/projects/skills/skills/uipath-rpa/references/ 2&gt;/dev/null | head -30&quot;,
+  &quot;description&quot;: &quot;Search for entryPoints format in skill references&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/home/azureuser/projects/skills/skills/uipath-rpa/references/legacy/project-structure.md:  &quot;entryPoints&quot;: [
+/home/azureuser/projects/skills/skills/uipath-rpa/references/legacy/project-structure.md:- **No `entryPoints` array** — all workflows are callable individually
+/home/azureuser/projects/skills/skills/uipath-rpa/references/legacy/activity-docs/_XAML-GUIDE.md:  &quot;entryPoints&quot;: [
+/home/azureuser/projects/skills/skills/uipath-rpa/references/project-structure.md:  &quot;entryPoints&quot;: [
+/home/azureuser/projects/skills/skills/uipath-rpa/references/project-structure.md:| `entryPoints` | Per-workflow metadata: filePath, uniqueId, input/output definitions (**Process projects only** — Tests and Library projects use empty `[]`) |
+/home/azureuser/projects/skills/skills/uipath-rpa/references/project-structure.md:3. **`main` entry point**: The default entrypoint that gets run if not specified otherwise. `entryPoints` array is only populated for **Process** projects — Tests and Library projects leave it empty (`[]`).
+/home/azureuser/projects/skills/skills/uipath-rpa/references/xaml/long-running-workflow-guide.md:5. **Register every file containing a Wait-and-Resume activity in `project.json` → `ent
+
+… (truncated, 5026 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#67</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">37ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;find /home/azureuser/projects/skills/skills/uipath-rpa/references/ -name \&quot;environment-setup.md\&quot; | xargs grep -A 5 -B 5 \&quot;entryPoints\&quot; 2&gt;/dev/null | head -50&quot;,
+  &quot;description&quot;: &quot;Find entryPoints references in environment setup guide&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/home/azureuser/projects/skills/skills/uipath-rpa/references/environment-setup.md-
+/home/azureuser/projects/skills/skills/uipath-rpa/references/environment-setup.md-**`init` always scaffolds XAML.** Regardless of flags, the templates produce XAML files: `BlankTemplate` → `Main.xaml`, `TestAutomationProjectTemplate` → `TestCase.xaml`, `LibraryProcessTemplate` → XAML library workflows. There is no flag that flips the scaffolding to coded.
+/home/azureuser/projects/skills/skills/uipath-rpa/references/environment-setup.md-
+/home/azureuser/projects/skills/skills/uipath-rpa/references/environment-setup.md-**`--expression-language` is independent of coded vs XAML.** It controls VB vs C# syntax inside XAML activity expressions — not whether the project has `.cs` workflow files. Coded workflows (`.cs` with `[Workflow]` / `[TestCase]`) work fine in both `VisualBasic` and `CSharp` projects.
+/home/azureuser/projects/skills/skills/uipath-rpa/references/environment-setup.md-
+/home/azureuser/projects/skills/skills/uipath-rpa/references/environment-setup.md:**To work in coded mode**, scaffold the project (always XAML), then add `.cs` workflow files following [coded/operations-guide.md § Add a Workf
+
+… (truncated, 2722 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#68</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">8ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-rpa/references/project-structure.md&quot;,
+  &quot;limit&quot;: 100
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# UiPath Project Structure
+2	
+3	## Directory Layout
+4	
+5	```
+6	MyProject/
+7	├── project.json          # Project manifest (name, dependencies, settings)
+8	├── Main.xaml             # Default entry point (XAML mode) ─┐ typically one
+9	├── Main.cs               # Default entry point (coded mode) ─┘ or the other
+10	├── *.xaml                # Additional XAML workflow files
+11	├── *.cs                  # Coded workflows, test cases, and source files
+12	├── *.cs.json             # Auto-generated by Studio — do not create manually
+13	├── .codedworkflows/      # Auto-generated coded workflow support files (ConnectionsFactory.cs, ConnectionsManager.cs, ISConnections.cs, etc.)
+14	├── .entities/            # Data Fabric entity manifest — EntitiesStore.json. Committed; source of truth for which entities are bound to the project. Managed via uip rpa data-fabric-entities install.
+15	├── .local/               # Local cache (package restore, compiled artifacts)
+16	│   ├── install/          # Restored NuGet packages
+17	│   ├── docs/             # Auto-generated activity documentation
+18	│   │   └── packages/     # Per-package doc folders
+19	│   ├── .codedworkflows/  # Auto-generated (ObjectReposi
+
+… (truncated, 3700 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#69</span>
+      <span class="tool-name">Write</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">17ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-customer-escalation-simulated/EmailEscalationBot/project.json&quot;,
+  &quot;content&quot;: &quot;{\n  \&quot;name\&quot;: \&quot;EmailEscalationBot\&quot;,\n  \&quot;description\&quot;: \&quot;Monitors Outlook inbox, classifies email urgency via rules-based AI logic, routes high-priority emails for immediate attention and low-priority to standard queue, with auto-acknowledgement replies\&quot;,\n  \&quot;main\&quot;: \&quot;Main.xaml\&quot;,\n  \&quot;dependencies\&quot;: {\n    \&quot;UiPath.System.Activities\&quot;: \&quot;[26.6.1]\&quot;,\n    \&quot;UiPath.MicrosoftOffice365.Activities\&quot;: \&quot;3.10.10\&quot;\n  },\n  \&quot;… (1254 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>The file /work/output/artifacts/skill-flow-customer-escalation-simulated/EmailEscalationBot/project.json has been updated successfully. (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#70</span>
+      <span class="tool-name">Edit</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">25ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;replace_all&quot;: false,
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-customer-escalation-simulated/EmailEscalationBot/Main.xaml&quot;,
+  &quot;old_string&quot;: &quot;      ConnectionId=\&quot;{x:Null}\&quot;\n      DisplayName=\&quot;New Email Received (Trigger)\&quot;&quot;,
+  &quot;new_string&quot;: &quot;      ConnectionId=\&quot;00000000-0000-0000-0000-000000000000\&quot;\n      DisplayName=\&quot;New Email Received (Trigger)\&quot;&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>The file /work/output/artifacts/skill-flow-customer-escalation-simulated/EmailEscalationBot/Main.xaml has been updated successfully. (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#71</span>
+      <span class="tool-name">Edit</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">21ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;replace_all&quot;: true,
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-customer-escalation-simulated/EmailEscalationBot/Main.xaml&quot;,
+  &quot;old_string&quot;: &quot;ConnectionId=\&quot;{x:Null}\&quot;&quot;,
+  &quot;new_string&quot;: &quot;ConnectionId=\&quot;00000000-0000-0000-0000-000000000000\&quot;&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>The file /work/output/artifacts/skill-flow-customer-escalation-simulated/EmailEscalationBot/Main.xaml has been updated. All occurrences were successfully replaced. (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#72</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.14s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip rpa validate --file-path \&quot;Main.xaml\&quot; --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Validate Main.xaml after placeholder GUID fix&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;ToolResult&quot;,
+  &quot;Data&quot;: {
+    &quot;message&quot;: &quot;Found 1 error(s):\n[error] /work/output/artifacts/skill-flow-customer-escalation-simulated/EmailEscalationBot/Main.xaml - Triggers can only be added to the main workflow or an entry point.&quot;
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#73</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.05s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip rpa validate --file-path \&quot;Main.xaml\&quot; --project-dir \&quot;.\&quot; --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Validate Main.xaml with explicit project-dir to pick up entryPoints&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;ToolResult&quot;,
+  &quot;Data&quot;: {
+    &quot;message&quot;: &quot;Found 1 error(s):\n[error] /work/output/artifacts/skill-flow-customer-escalation-simulated/EmailEscalationBot/Main.xaml - Triggers can only be added to the main workflow or an entry point.&quot;
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#74</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">26ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -r \&quot;main workflow or an entry point\&quot; /home/azureuser/projects/skills/skills/uipath-rpa/references/ 2&gt;/dev/null&quot;,
+  &quot;description&quot;: &quot;Search for the specific trigger error message in references&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>(Bash completed with no output)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#75</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">38.94s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -r \&quot;Triggers can only\&quot; /home/azureuser/projects/skills/ 2&gt;/dev/null&quot;,
+  &quot;description&quot;: &quot;Search for trigger placement error handling&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>(Bash completed with no output)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#76</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">977ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip rpa workflow-examples list --tags outlook --limit 5 --output json 2&gt;&amp;1 | head -60&quot;,
+  &quot;description&quot;: &quot;Look for workflow examples with trigger usage&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>[list-workflow-examples] error: Studio unknown does not support rpa-tool. Please upgrade to the latest version of UiPath Studio.
+{
+  &quot;Result&quot;: &quot;Failure&quot;,
+  &quot;ErrorCode&quot;: &quot;unknown_error&quot;,
+  &quot;Message&quot;: &quot;{\&quot;success\&quot;:false,\&quot;errorMessage\&quot;:\&quot;Studio unknown does not support rpa-tool. Please upgrade to the latest version of UiPath Studio.\&quot;}&quot;,
+  &quot;Instructions&quot;: &quot;If this is not the expected result check command arguments.&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#77</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">35ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;find /work/output -name \&quot;*.xaml\&quot; | xargs grep -l \&quot;NewEmailReceived\&quot; 2&gt;/dev/null&quot;,
+  &quot;description&quot;: &quot;Find any existing XAML files using the trigger pattern&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/work/output/artifacts/skill-flow-customer-escalation-simulated/EmailEscalationBot/Main.xaml</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#78</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.07s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;# Check if there are any analyzer rule details about triggers and entry points\nuip rpa analyzer-rules list --output json 2&gt;&amp;1 | grep -A 5 -i \&quot;trigger\\|entry\&quot; | head -60&quot;,
+  &quot;description&quot;: &quot;Check analyzer rules for trigger placement&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>    &quot;message&quot;: &quot;Found 49 enabled rule(s):\n\n# Activity\n[warning] ST-REL-006 (Activity) - Infinite Loop\n  recommendation: An infinite loop is a sequence of instructions which loops endlessly, either due to the loop having no terminating condition, having one that can never be met, or one that causes the loop to start over. Make sure to add a termination condition, or if this is on purpose, to document your code.\n  docs: https://docs.uipath.com/en/studio/standalone/latest/user-guide/st-rel-006\n[warning] ST-USG-005 (Activity) - Hardcoded Activity Properties\n  recommendation: Avoid using hardcoded values for Activity properties. Use default activity property values, variables and/or arguments as much as possible for keeping your process robust and dynamic.\n  parameters: IncludeActivities=System.Activities.Statements.StateMachine,System.Activities.Statements.State, ExcludeActivities=, IncludeProperties=*, ExcludeProperties=Fuzzy Selector, Selector, Window selector (Application instance), Message, Attribute, StartingCell, SheetName, StatusText, Text, EndPoint, Name, WorkflowFileName, AssetName\n  docs: https://docs.uipath.com/en/studio/standalone/latest/user-guide/st-usg-005\n[war
+
+… (truncated, 14217 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#79</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">28ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;# Look at the bundled activity docs for NewEmailReceived to understand entry point requirements\ncat /home/azureuser/projects/skills/skills/uipath-rpa/references/activity-docs/UiPath.MicrosoftOffice365.Activities/3.8/activities/NewEmailReceived.md 2&gt;/dev/null | head -80&quot;,
+  &quot;description&quot;: &quot;Read bundled NewEmailReceived activity doc&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre># NewEmailReceived — Trigger on Incoming Email
+
+**Integration trigger** (`isTrigger: true, triggerType: &quot;integration&quot;` from `uip rpa activities find`; requires a `ConnectionId` to an O365 Outlook connection). **Placement: strict** — first activity of `Main.xaml`&#x27;s root `Sequence`, never inside `ui:TriggerScope`. Orchestrator + Integration Service subscribe externally and dispatch a fresh job per email. See [trigger-pattern-guide.md](../../../../trigger-pattern-guide.md).
+
+Trigger activity (`umamt:` prefix). Null attributes: `ConnectionAccountName`, `ContinueOnError`, `Filter`, `JobData`, `UiPathEvent`, `UiPathEventConnector`, `UiPathEventObjectId`, `UiPathEventObjectType`
+
+```xml
+&lt;umamt:NewEmailReceived
+    ConnectionAccountName=&quot;{x:Null}&quot;
+    ContinueOnError=&quot;{x:Null}&quot;
+    Filter=&quot;{x:Null}&quot;
+    JobData=&quot;{x:Null}&quot;
+    UiPathEvent=&quot;{x:Null}&quot;
+    UiPathEventConnector=&quot;{x:Null}&quot;
+    UiPathEventObjectId=&quot;{x:Null}&quot;
+    UiPathEventObjectType=&quot;{x:Null}&quot;
+    AuthScopesInvalid=&quot;False&quot;
+    BrowserFolderId=&quot;INBOX&quot;
+    BrowserFolderName=&quot;Inbox&quot;
+    ConnectionId=&quot;00000000-0000-0000-0000-000000000000&quot;
+    DisplayName=&quot;New Email Received&quot;
+    FilterExpression=&quot;(parentFolderId==&#x27;INBOX&#x27;)&amp;amp;&amp;amp;(
+
+… (truncated, 657 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#80</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">117ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cat /work/output/artifacts/skill-flow-customer-escalation-simulated/EmailEscalationBot/project.json | python3 -c \&quot;import json,sys; d=json.load(sys.stdin); print(&#x27;main:&#x27;, d.get(&#x27;main&#x27;)); print(&#x27;entryPoints:&#x27;, d.get(&#x27;entryPoints&#x27;))\&quot;&quot;,
+  &quot;description&quot;: &quot;Verify project.json main and entryPoints fields&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>main: Main.xaml
+entryPoints: [{&#x27;filePath&#x27;: &#x27;Main.xaml&#x27;, &#x27;uniqueId&#x27;: &#x27;a1b2c3d4-e5f6-7890-abcd-ef1234567890&#x27;, &#x27;input&#x27;: [], &#x27;output&#x27;: []}]</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#81</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">830ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;# Look at a real example of a project with triggers and entryPoints\nfind /home/azureuser/projects/ -name \&quot;project.json\&quot; | xargs grep -l \&quot;entryPoints\&quot; 2&gt;/dev/null | head -5&quot;,
+  &quot;description&quot;: &quot;Find real project.json files with entryPoints&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/home/azureuser/projects/skills/tests/tasks/uipath-agents/lowcode/local_escalation/_fixtures/AgentWithLocalEscalation/SimpleApprovalApp/project.json
+/home/azureuser/projects/skills/tests/tasks/uipath-agents/lowcode/inline_solution_escalation/_fixtures/ReviewFlowSol/HumanReviewEscalation/project.json
+/home/azureuser/projects/skills/tests/tasks/uipath-agents/lowcode/solution_escalation/_fixtures/ReviewSol/HumanReviewEscalation/project.json
+/home/azureuser/projects/skills/tests/tasks/uipath-agents/lowcode/solution_rpa_tool/_fixtures/PayrollSol/CalculatePay/project.json
+/home/azureuser/projects/skills/tests/tasks/uipath-agents/lowcode/inline_solution_rpa_tool/_fixtures/PayrollFlowSol/CalculatePay/project.json</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#82</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">5.71s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;# Try building to get more info about the trigger error\nuip rpa build /work/output/artifacts/skill-flow-customer-escalation-simulated/EmailEscalationBot --log-level Debug --output json 2&gt;&amp;1 | head -60&quot;,
+  &quot;description&quot;: &quot;Build project with debug logging to understand trigger placement error&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>[DEBUG] CLI v1.199.0-dev.7970 starting — output=json, logLevel=debug, logFile=none
+[DEBUG] Storage initialized
+[DEBUG] [AppInsights] NodeAppInsightsTelemetryProvider initialized
+[DEBUG] Telemetry initialized
+[DEBUG] [Telemetry] auth context populated at startup
+[DEBUG] Discovered tool &#x27;solution-tool&#x27; v1.199.0-dev.7962 at /usr/lib/node_modules/@uipath/solution-tool/dist/tool.js
+[DEBUG] Discovered tool &#x27;agent-tool&#x27; v1.199.0-dev.7965 at /usr/lib/node_modules/@uipath/agent-tool/dist/tool.js
+[DEBUG] Discovered tool &#x27;agenthub-tool&#x27; v1.199.0-dev.7962 at /usr/lib/node_modules/@uipath/agenthub-tool/dist/tool.js
+[DEBUG] Discovered tool &#x27;conversational-tool&#x27; v1.199.0-dev.7962 at /usr/lib/node_modules/@uipath/conversational-tool/dist/tool.js
+[DEBUG] Discovered tool &#x27;codedagent-tool&#x27; v1.199.0-dev.7965 at /usr/lib/node_modules/@uipath/codedagent-tool/dist/tool.js
+[DEBUG] Discovered tool &#x27;context-grounding-tool&#x27; v1.199.0-dev.7962 at /usr/lib/node_modules/@uipath/context-grounding-tool/dist/tool.js
+[DEBUG] Discovered tool &#x27;functions-tool&#x27; v1.199.0-dev.7962 at /usr/lib/node_modules/@uipath/functions-tool/dist/tool.js
+[DEBUG] Discovered tool &#x27;codedapp-tool&#x27; v1.199.0-dev.7962 at /usr/lib/node_modules
+
+… (truncated, 5282 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#83</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">8.99s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip rpa build /work/output/artifacts/skill-flow-customer-escalation-simulated/EmailEscalationBot --log-level Warn --output json 2&gt;&amp;1 | tail -60&quot;,
+  &quot;description&quot;: &quot;Build project - get full output at Warn level&quot;,
+  &quot;timeout&quot;: 120000
+}</pre>
+    <h4>Result</h4>
+    <pre>[WARN] [Process] [EmailEscalationBot] Append reason display name is defined many times. Current allowed threshold is 1. Code contains 8.
+[WARN] [Process] [EmailEscalationBot] Add 30 display name is defined many times. Current allowed threshold is 1. Code contains 2.
+[WARN] [Process] [EmailEscalationBot] Your organization requires your project to have an Automation Hub URL defined.
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;Build&quot;,
+  &quot;Data&quot;: {
+    &quot;Success&quot;: true
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#84</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">994ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip rpa validate --file-path \&quot;Workflows/ClassifyUrgency.xaml\&quot; --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Validate ClassifyUrgency.xaml to confirm still clean&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;ToolResult&quot;,
+  &quot;Data&quot;: {
+    &quot;message&quot;: &quot;No diagnostics found.&quot;
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#85</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">158ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-rpa/references/error-handling-guide.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Error Handling Guide
+2	
+3	Production-grade error handling and resilience for modern UiPath projects (Windows / Cross-platform) — XAML and coded. Covers exception taxonomy, Try/Catch discipline, Retry Scope, ContinueOnError, Throw/Rethrow, screenshot-on-error, fail-fast validation, the Global Exception Handler, state recovery, transaction boundaries, idempotent/compensating writes, sensitive-data handling, and retry ownership across layers.
+4	
+5	Scope boundary — this guide owns the **decision layer and resilience patterns**. For mechanics owned elsewhere, link out, don&#x27;t restate:
+6	
+7	- Raw `TryCatch` / `Throw` / `Rethrow` XAML shapes + the Rule 24 `Sequence`-wrap → [common-activity-card.md](common-activity-card.md).
+8	- `ContinueOnError`-swallow gotcha, Studio Web `Throw.Exception` round-trip, `s:Exception` alias → [xaml/common-pitfalls.md](xaml/common-pitfalls.md).
+9	- Per-activity property surfaces → `activity-docs/UiPath.System.Activities/&lt;ver&gt;/activities/{RetryScope,TryCatch,Throw,Rethrow}.md`.
+10	- REFramework exception flow, queue retry, `MaxConsecutiveSystemExceptions` → [reframework-guide.md](reframework-guide.md).
+11	- C# expression-binding mechanics (`CSharpValue`/`CS
+
+… (truncated, 30546 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#86</span>
+      <span class="tool-name">Write</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">28ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-customer-escalation-simulated/EmailEscalationBot/GlobalExceptionHandler.xaml&quot;,
+  &quot;content&quot;: &quot;&lt;Activity mc:Ignorable=\&quot;sap sap2010\&quot; x:Class=\&quot;GlobalExceptionHandler\&quot;\n  xmlns=\&quot;http://schemas.microsoft.com/netfx/2009/xaml/activities\&quot;\n  xmlns:mc=\&quot;http://schemas.openxmlformats.org/markup-compatibility/2006\&quot;\n  xmlns:mva=\&quot;clr-namespace:Microsoft.VisualBasic.Activities;assembly=System.Activities\&quot;\n  xmlns:s=\&quot;clr-namespace:System;assembly=System.Private.CoreLib\&quot;\n  xmlns:sap=\&quot;http://schemas.microsoft.… (9554 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>File created successfully at: /work/output/artifacts/skill-flow-customer-escalation-simulated/EmailEscalationBot/GlobalExceptionHandler.xaml (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#87</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.14s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip rpa validate --file-path \&quot;GlobalExceptionHandler.xaml\&quot; --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Validate GlobalExceptionHandler.xaml&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;ToolResult&quot;,
+  &quot;Data&quot;: {
+    &quot;message&quot;: &quot;No diagnostics found.&quot;
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#88</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">6.44s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip rpa build /work/output/artifacts/skill-flow-customer-escalation-simulated/EmailEscalationBot --log-level Warn --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Full project build to confirm all files compile clean&quot;,
+  &quot;timeout&quot;: 120000
+}</pre>
+    <h4>Result</h4>
+    <pre>[WARN] [Process] [EmailEscalationBot] Append reason display name is defined many times. Current allowed threshold is 1. Code contains 8.
+[WARN] [Process] [EmailEscalationBot] Add 30 display name is defined many times. Current allowed threshold is 1. Code contains 2.
+[WARN] [Process] [EmailEscalationBot] Your organization requires your project to have an Automation Hub URL defined.
+[WARN] [Process] [EmailEscalationBot] Argument result does not respect the set pattern ^out_(dt_)?([A-Z]|[a-z])+([0-9])*$
+[WARN] [Process] [EmailEscalationBot] Argument errorInfo does not respect the set pattern ^in_(dt_)?([A-Z]|[a-z])+([0-9])*$
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;Build&quot;,
+  &quot;Data&quot;: {
+    &quot;Success&quot;: true
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#89</span>
+      <span class="tool-name">TaskUpdate</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">16ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;taskId&quot;: &quot;3&quot;,
+  &quot;status&quot;: &quot;completed&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Updated task #3 status</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#90</span>
+      <span class="tool-name">TaskUpdate</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">4ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;taskId&quot;: &quot;5&quot;,
+  &quot;status&quot;: &quot;completed&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Updated task #5 status</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#91</span>
+      <span class="tool-name">TaskUpdate</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">4ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;taskId&quot;: &quot;6&quot;,
+  &quot;status&quot;: &quot;completed&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Updated task #6 status</pre>
+    
+  </div>
+</details>
+
+</div>
+
+<h2>Command Telemetry</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Total</div><div class="value">92</div></div>
+    <div class="stat"><div class="label">Successful</div><div class="value">90 (98%)</div></div>
+    <div class="stat"><div class="label">Failed</div><div class="value">2</div></div>
+    <div class="stat"><div class="label">Avg / cmd</div><div class="value">1.87s</div></div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 2fr;gap:16px;margin-top:12px">
+    <div>
+      <h4>By Tool</h4>
+      <table>
+        <thead><tr><th>Tool</th><th>Count</th></tr></thead>
+        <tbody><tr><td class='mono'>Bash</td><td>38</td></tr><tr><td class='mono'>Read</td><td>25</td></tr><tr><td class='mono'>TaskUpdate</td><td>10</td></tr><tr><td class='mono'>TaskCreate</td><td>6</td></tr><tr><td class='mono'>Edit</td><td>6</td></tr><tr><td class='mono'>Write</td><td>5</td></tr><tr><td class='mono'>Skill</td><td>1</td></tr><tr><td class='mono'>Glob</td><td>1</td></tr></tbody>
+      </table>
+    </div>
+    <div>
+      <h4>Slowest</h4>
+      <table>
+        <thead><tr><th>Tool</th><th>Duration</th><th>Parameters</th></tr></thead>
+        <tbody><tr><td class='mono'>Bash</td><td>46.05s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip rpa validate --file-path &quot;Workflo...</td></tr><tr><td class='mono'>Bash</td><td>38.94s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;grep -r &quot;Triggers can only&quot; /home/azu...</td></tr><tr><td class='mono'>Bash</td><td>30.83s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip rpa packages install --packages \...</td></tr><tr><td class='mono'>Bash</td><td>8.99s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip rpa build /work/output/artifacts/...</td></tr><tr><td class='mono'>Bash</td><td>6.71s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip rpa packages versions --package-i...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+  <p><strong>Most Common Pattern:</strong> <code>Bash → Bash → Bash</code></p><p><strong>Skill Tool Invoked:</strong> 1 time(s)</p>
+</div>
+
+<h2>Generation Metrics</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Total Latency</div><div class="value">17m 2s</div></div>
+    <div class="stat"><div class="label">Turns</div><div class="value">2</div></div>
+    <div class="stat"><div class="label">Assistant Turns</div><div class="value">137</div></div>
+    <div class="stat"><div class="label">Avg Turn Latency</div><div class="value">8m 21s</div></div>
+    
+  </div>
+</div>
+
+<h2>Token Usage</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Input (uncached)</div><div class="value">2,954</div></div>
+    <div class="stat"><div class="label">Output</div><div class="value">59,278</div></div>
+    <div class="stat"><div class="label">Cache Write</div><div class="value">193,447</div></div>
+    <div class="stat"><div class="label">Cache Read</div><div class="value">6,471,737</div></div>
+    <div class="stat"><div class="label">Total</div><div class="value">6,727,416</div></div>
+    <div class="stat"><div class="label">Cost</div><div class="value">$3.5650</div></div>
+  </div>
+</div>
+
+<h2>Agent Settings</h2>
+<div class="card" style="padding:0">
+  <table>
+    <tbody><tr><td class='mono dim'>Permission Mode</td><td>acceptEdits</td></tr><tr><td class='mono dim'>Allowed Tools</td><td>Skill, Bash, Read, Write, Edit, Glob, Grep</td></tr><tr><td class='mono dim'>Model</td><td>us.anthropic.claude-sonnet-4-6</td></tr><tr><td class='mono dim'>Max Turns</td><td>90</td></tr><tr><td class='mono dim'>System Prompt</td><td>You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted. </td></tr><tr><td class='mono dim'>Plugins</td><td>/home/azureuser/projects/skills</td></tr></tbody>
+  </table>
+</div>
+
+<h2>Environment</h2>
+<div class="card" style="padding:0">
+  <table>
+    <tbody><tr><td class='mono dim'>git_commit</td><td>unknown</td></tr><tr><td class='mono dim'>skills_git_commit</td><td>unknown</td></tr><tr><td class='mono dim'>cli_version</td><td>1.199.0-dev.7970</td></tr><tr><td class='mono dim'>tool_plugins</td><td>{&#x27;admin-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;agent-tool&#x27;: &#x27;1.199.0-dev.7965&#x27;, &#x27;agenthub-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;aops-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;api-workflow-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;codedagent-tool&#x27;: &#x27;1.199.0-dev.7965&#x27;, &#x27;codedapp-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;coder-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;context-grounding-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;conversational-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;data-fabric-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;docsai-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;functions-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;gov-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;insights-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;integrationservice-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;ixp-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;llm-gateway-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;llmgw-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;maestro-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;orchestrator-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;platform-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;pm-tool&#x27;: &#x27;1.199.0-dev.7969&#x27;, &#x27;rpa-legacy-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;rpa-tool&#x27;: &#x27;1.199.0-dev.20260722.4&#x27;, &#x27;solution-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;tasks-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;test-manager-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;traces-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;vertical-solutions-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;}</td></tr><tr><td class='mono dim'>coder_eval</td><td>0.8.8</td></tr><tr><td class='mono dim'>claude_code_cli</td><td>2.1.177 (Claude Code)</td></tr><tr><td class='mono dim'>uv</td><td>uv 0.11.28 (x86_64-unknown-linux-gnu)</td></tr><tr><td class='mono dim'>anthropic</td><td>0.102.0</td></tr><tr><td class='mono dim'>openai</td><td>2.47.0</td></tr><tr><td class='mono dim'>pydantic</td><td>2.12.5</td></tr><tr><td class='mono dim'>api_routing</td><td>aws_bedrock</td></tr><tr><td class='mono dim'>aws_region</td><td>us-east-2</td></tr><tr><td class='mono dim'>bedrock_model</td><td>us.anthropic.claude-sonnet-4-6</td></tr></tbody>
+  </table>
+</div>
+
+<footer>Generated by coder_eval · 2026-07-24T20:02:45</footer>
+</div>
+<script>
+function toggleTheme() {
+  document.documentElement.classList.toggle('light');
+  try {
+    const mode = document.documentElement.classList.contains('light') ? 'light' : 'dark';
+    localStorage.setItem('coder-eval-theme', mode);
+  } catch (e) { /* ignore */ }
+}
+(function() {
+  try {
+    if (localStorage.getItem('coder-eval-theme') === 'light') {
+      document.documentElement.classList.add('light');
+    }
+  } catch (e) { /* ignore */ }
+})();
+</script>
+</body>
+</html>

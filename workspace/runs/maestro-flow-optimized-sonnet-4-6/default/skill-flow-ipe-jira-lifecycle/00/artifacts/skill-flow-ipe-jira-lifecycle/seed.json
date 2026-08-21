@@ -1,0 +1,21 @@
+{
+  "tag": "6e259684",
+  "project_key": "CE",
+  "issuetype_id": "11457",
+  "issues": [
+    {
+      "summary": "coder-eval jira lifecycle 6e259684 item1",
+      "priority": "High"
+    },
+    {
+      "summary": "coder-eval jira lifecycle 6e259684 item2",
+      "priority": "Low"
+    },
+    {
+      "summary": "coder-eval jira lifecycle 6e259684 item3",
+      "priority": "High"
+    }
+  ],
+  "escalated_marker": "ESCALATED 6e259684",
+  "routine_marker": "ROUTINE 6e259684"
+}

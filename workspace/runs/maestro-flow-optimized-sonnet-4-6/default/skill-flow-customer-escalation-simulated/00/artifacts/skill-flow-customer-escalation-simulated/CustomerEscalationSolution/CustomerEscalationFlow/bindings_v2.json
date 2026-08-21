@@ -1,0 +1,105 @@
+{
+  "version": "2.0",
+  "resources": [
+    {
+      "resource": "connection",
+      "key": "849e85d8-1aa9-4d52-8bbd-20041c8f05d8",
+      "id": "connection849e85d8-1aa9-4d52-8bbd-20041c8f05d8",
+      "value": {
+        "ConnectionId": {
+          "defaultValue": "849e85d8-1aa9-4d52-8bbd-20041c8f05d8",
+          "isExpression": false,
+          "displayName": "uipath-salesforce-slack connection"
+        }
+      },
+      "metadata": {
+        "ActivityName": "Notify Slack VIP Escalation",
+        "BindingsVersion": "2.2",
+        "DisplayLabel": "uipath-salesforce-slack connection",
+        "UseConnectionService": "true",
+        "Connector": "uipath-salesforce-slack"
+      }
+    },
+    {
+      "resource": "connection",
+      "key": "29aae689-111d-459f-9a4a-d1ad1d9d2761",
+      "id": "connection29aae689-111d-459f-9a4a-d1ad1d9d2761",
+      "value": {
+        "ConnectionId": {
+          "defaultValue": "29aae689-111d-459f-9a4a-d1ad1d9d2761",
+          "isExpression": false,
+          "displayName": "uipath-freshworks-freshdesk connection"
+        }
+      },
+      "metadata": {
+        "ActivityName": "Create Support Ticket",
+        "BindingsVersion": "2.2",
+        "DisplayLabel": "uipath-freshworks-freshdesk connection",
+        "UseConnectionService": "true",
+        "Connector": "uipath-freshworks-freshdesk"
+      }
+    },
+    {
+      "resource": "connection",
+      "key": "5af6fa90-234d-4b0d-a2f1-3815cfd9e15d",
+      "id": "connection5af6fa90-234d-4b0d-a2f1-3815cfd9e15d",
+      "value": {
+        "ConnectionId": {
+          "defaultValue": "5af6fa90-234d-4b0d-a2f1-3815cfd9e15d",
+          "isExpression": false,
+          "displayName": "uipath-microsoft-outlook365 connection"
+        }
+      },
+      "metadata": {
+        "ActivityName": "Reply Acknowledgment",
+        "BindingsVersion": "2.2",
+        "DisplayLabel": "uipath-microsoft-outlook365 connection",
+        "UseConnectionService": "true",
+        "Connector": "uipath-microsoft-outlook365"
+      }
+    },
+    {
+      "resource": "EventTrigger",
+      "key": "c4359cde-55f0-4f0e-9322-c6cdce74ab4c_emailReceived1",
+      "id": "EventTriggerc4359cde-55f0-4f0e-9322-c6cdce74ab4c_emailReceived1",
+      "value": {
+        "ConnectionId": {
+          "defaultValue": "c4359cde-55f0-4f0e-9322-c6cdce74ab4c",
+          "isExpression": false
+        },
+        "EntryPointUniqueId": {
+          "defaultValue": "0096a127-a03b-4f14-9845-944a3a16cad9",
+          "isExpression": false
+        }
+      },
+      "metadata": {
+        "UseConnectionService": "true",
+        "Connector": "uipath-microsoft-outlook365",
+        "ActivityName": "Email Received",
+        "BindingsVersion": "2.2",
+        "ObjectName": "Message",
+        "Operation": "EMAIL_RECEIVED",
+        "FilterExpression": ""
+      }
+    },
+    {
+      "resource": "Property",
+      "key": "EMAIL_RECEIVED",
+      "id": "Property_emailReceived1",
+      "value": {
+        "parentFolderId": {
+          "defaultValue": "AAMkADc3YmExNDZiLTY3ODMtNGZlMy1iNDQ0LTNiMTE0MDRjNzljMgAuAAAAAADoMGLM4jLUQ6xxQfoAdqTFAQBKthe0RNZlRpEaiq3vHYncAAAAAAEMAAA=",
+          "isExpression": false
+        }
+      },
+      "metadata": {
+        "TriggerCreateParameters": "parentFolderId",
+        "DebugQueryParameters": "parentFolderId",
+        "ActivityName": "Email Received",
+        "BindingsVersion": "2.2",
+        "ObjectName": "Message",
+        "ParentResourceKey": "EventTrigger.c4359cde-55f0-4f0e-9322-c6cdce74ab4c_emailReceived1"
+      }
+    }
+  ]
+}

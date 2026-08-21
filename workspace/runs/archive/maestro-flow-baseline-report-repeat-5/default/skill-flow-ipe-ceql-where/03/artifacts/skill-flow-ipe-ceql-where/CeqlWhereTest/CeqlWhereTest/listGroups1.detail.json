@@ -1,0 +1,23 @@
+{
+  "_comment": "Sidecar planned --detail payload for node listGroups1. Replace placeholder UUIDs before running `node configure`. This node will NOT pass `flow validate` until `node configure` is executed with a real connection.",
+  "connectionId": "<CONNECTION_UUID>",
+  "folderKey": "<FOLDER_KEY>",
+  "method": "GET",
+  "endpoint": "/groups",
+  "filter": {
+    "groupOperator": 0,
+    "index": 0,
+    "filters": [
+      {
+        "id": "displayName",
+        "operator": "Equals",
+        "value": {
+          "value": "active",
+          "rawString": "\"active\"",
+          "isLiteral": true
+        }
+      }
+    ],
+    "groups": []
+  }
+}

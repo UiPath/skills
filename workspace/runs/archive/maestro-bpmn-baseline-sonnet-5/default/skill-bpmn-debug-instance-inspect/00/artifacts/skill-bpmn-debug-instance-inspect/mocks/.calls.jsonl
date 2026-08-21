@@ -1,0 +1,21 @@
+{"ts": 1786744118.1501312, "args": "track", "matched_rule": null, "fixture": null, "exit_code": 0, "error": "unmocked_default"}
+{"ts": 1786744123.8749561, "args": "track", "matched_rule": null, "fixture": null, "exit_code": 0, "error": "unmocked_default"}
+{"ts": 1786744133.864581, "args": "maestro bpmn --help", "matched_rule": null, "fixture": null, "exit_code": 0, "error": "unmocked_default"}
+{"ts": 1786744134.1005971, "args": "track", "matched_rule": null, "fixture": null, "exit_code": 0, "error": "unmocked_default"}
+{"ts": 1786744136.9139404, "args": "maestro bpmn debug --help", "matched_rule": null, "fixture": null, "exit_code": 0, "error": "unmocked_default"}
+{"ts": 1786744137.1411586, "args": "maestro bpmn debug-instance --help", "matched_rule": null, "fixture": null, "exit_code": 0, "error": "unmocked_default"}
+{"ts": 1786744137.3872805, "args": "track", "matched_rule": null, "fixture": null, "exit_code": 0, "error": "unmocked_default"}
+{"ts": 1786744140.7035153, "args": "--help", "matched_rule": null, "fixture": null, "exit_code": 0, "error": "unmocked_default"}
+{"ts": 1786744141.4746938, "args": "maestro --help", "matched_rule": null, "fixture": null, "exit_code": 0, "error": "unmocked_default"}
+{"ts": 1786744141.8045647, "args": "maestro bpmn", "matched_rule": null, "fixture": null, "exit_code": 0, "error": "unmocked_default"}
+{"ts": 1786744142.7128565, "args": "track", "matched_rule": null, "fixture": null, "exit_code": 0, "error": "unmocked_default"}
+{"ts": 1786744144.9585595, "args": "--version", "matched_rule": null, "fixture": null, "exit_code": 0, "error": "unmocked_default"}
+{"ts": 1786744145.6710637, "args": "track", "matched_rule": null, "fixture": null, "exit_code": 0, "error": "unmocked_default"}
+{"ts": 1786744149.7440352, "args": "maestro bpmn debug-instance --help", "matched_rule": null, "fixture": null, "exit_code": 0, "error": "unmocked_default"}
+{"ts": 1786744150.1855078, "args": "track", "matched_rule": null, "fixture": null, "exit_code": 0, "error": "unmocked_default"}
+{"ts": 1786744161.3005314, "args": "maestro bpmn debug-instance incidents debug-fault-777 --output json", "matched_rule": "maestro bpmn debug-instance incidents debug-fault-777", "fixture": "debug-incidents.json", "exit_code": 0}
+{"ts": 1786744161.8885198, "args": "track", "matched_rule": null, "fixture": null, "exit_code": 0, "error": "unmocked_default"}
+{"ts": 1786744164.4066076, "args": "maestro bpmn debug-instance variables debug-fault-777 --output json", "matched_rule": "maestro bpmn debug-instance variables debug-fault-777", "fixture": "debug-variables.json", "exit_code": 0}
+{"ts": 1786744164.63563, "args": "maestro bpmn debug-instance variables-all debug-fault-777 --output json", "matched_rule": "maestro bpmn debug-instance variables-all debug-fault-777", "fixture": "debug-variables-all.json", "exit_code": 0}
+{"ts": 1786744165.0422828, "args": "track", "matched_rule": null, "fixture": null, "exit_code": 0, "error": "unmocked_default"}
+{"ts": 1786744182.50234, "args": "--version", "matched_rule": null, "fixture": null, "exit_code": 0, "error": "unmocked_default"}

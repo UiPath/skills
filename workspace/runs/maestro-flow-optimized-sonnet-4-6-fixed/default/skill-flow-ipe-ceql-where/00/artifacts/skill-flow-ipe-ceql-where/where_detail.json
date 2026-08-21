@@ -1,0 +1,53 @@
+{
+  "description": "CEQL where filter applied to the listGroups1 connector node (uipath.connector.uipath-microsoft-azureactivedirectory.list-groups)",
+  "connectorKey": "uipath-microsoft-azureactivedirectory",
+  "nodeId": "listGroups1",
+  "filterParameter": "where",
+  "filterParameterType": "FilterBuilder",
+  "ceqlString": "displayName = 'active'",
+  "filterTree": {
+    "groupOperator": 0,
+    "index": 0,
+    "filters": [
+      {
+        "id": "displayName",
+        "operator": "Equals",
+        "value": {
+          "value": "active",
+          "rawString": "\"active\"",
+          "isLiteral": true
+        }
+      }
+    ],
+    "groups": []
+  },
+  "nodeConfigureDetailPayload": {
+    "connectionId": "26b7ac14-424a-45ae-88ee-88ae5c8794ce",
+    "folderKey": "5da18ec0-7de1-4e57-aaf1-ddc8a369c199",
+    "method": "GET",
+    "endpoint": "/groups",
+    "filter": {
+      "groupOperator": 0,
+      "index": 0,
+      "filters": [
+        {
+          "id": "displayName",
+          "operator": "Equals",
+          "value": {
+            "value": "active",
+            "rawString": "\"active\"",
+            "isLiteral": true
+          }
+        }
+      ],
+      "groups": []
+    }
+  },
+  "notes": [
+    "The 'where' parameter is a FilterBuilder parameter (design.component === 'FilterBuilder').",
+    "The filter tree is passed via --detail.filter to node configure.",
+    "The CLI compiles it into both the runtime CEQL string at inputs.detail.queryParameters.where and the design-time tree at inputs.detail.configuration.essentialConfiguration.savedFilterTrees.where.",
+    "Field 'displayName' is confirmed in the connector's filterFields schema with operators ['=', 'IN'].",
+    "No live tenant run was performed; node configure was executed against the registered connection."
+  ]
+}

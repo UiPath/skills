@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "SfUpdate",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "865c4eeb-3da7-428c-85a0-30aee2e11a17",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "SfUpdate"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Flow",
+      "name": "SfUpdate",
+      "package": {
+        "key": "85a8dc57-5d7e-4067-8a44-b3fa02507506"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "7b2df3df-dbc7-486f-ba1e-1016cba93f89",
+    "files": []
+  }
+}

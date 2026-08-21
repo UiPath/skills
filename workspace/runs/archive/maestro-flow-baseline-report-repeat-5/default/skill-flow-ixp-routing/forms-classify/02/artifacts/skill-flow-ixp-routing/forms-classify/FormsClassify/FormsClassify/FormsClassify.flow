@@ -1,0 +1,291 @@
+{
+  "id": "1f35f1a7-2506-4595-a043-ff2dd21457c3",
+  "version": "1.8",
+  "name": "FormsClassify",
+  "nodes": [
+    {
+      "id": "extractFormFields",
+      "type": "uipath.ixp.ixp-uniform-residential-loan-application-fannie-mae-form-1003-ec9bb5b0-ixp.589568b1-5ea1-80ed-9db4-ada0d51cdc8d-c4359cde-55f0-4f0e-9322-c6cdce74ab4c",
+      "typeVersion": "1.0.0",
+      "display": {
+        "label": "Classify PDF Form & Extract Fields"
+      },
+      "inputs": {
+        "model": {
+          "id": "589568b1-5ea1-80ed-9db4-ada0d51cdc8d",
+          "modelName": "ixp-uniform-residential-loan-application-fannie-mae-form-1003-ec9bb5b0-ixp",
+          "modelDisplayName": "ixp-uniform-residential-loan-application-fannie-mae-form-1003-ec9bb5b0-ixp",
+          "folderKey": "c4359cde-55f0-4f0e-9322-c6cdce74ab4c",
+          "folderName": "Shared",
+          "folderPath": "c4359cde-55f0-4f0e-9322-c6cdce74ab4c",
+          "description": ""
+        },
+        "modelName": "ixp-uniform-residential-loan-application-fannie-mae-form-1003-ec9bb5b0-ixp",
+        "description": "",
+        "projectName": "ixp-uniform-residential-loan-application-fannie-mae-form-1003-ec9bb5b0-ixp",
+        "versionTag": "",
+        "folderKey": "c4359cde-55f0-4f0e-9322-c6cdce74ab4c",
+        "folderName": "Shared",
+        "fileRef": "=js:$vars.start.output.pdfFile",
+        "pageRange": ""
+      },
+      "outputs": {
+        "output": {
+          "name": "output",
+          "type": "object",
+          "source": "=this.result",
+          "var": "output",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "properties": {
+              "ExtractionResult": {
+                "type": "object",
+                "properties": {
+                  "DocumentId": { "type": "string" },
+                  "ResultsVersion": { "type": "integer" },
+                  "ResultsDocument": {
+                    "type": "object",
+                    "properties": {
+                      "Fields": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "FieldId": { "type": "string" },
+                            "FieldName": { "type": "string" },
+                            "FieldType": { "type": "string" },
+                            "IsMissing": { "type": "boolean" },
+                            "Values": { "type": "array", "items": { "type": "string" } },
+                            "Confidence": { "type": "integer" }
+                          }
+                        }
+                      },
+                      "Tables": { "type": "array", "items": { "type": "object" } }
+                    }
+                  }
+                }
+              },
+              "ExtractorPayloads": { "type": "object" },
+              "BusinessrulesResults": { "type": "array", "items": { "type": "object" } }
+            }
+          }
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails",
+          "source": "=Error",
+          "var": "error",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "required": ["code", "message", "detail", "category", "status"],
+            "properties": {
+              "code": { "type": "string" },
+              "message": { "type": "string" },
+              "detail": { "type": "string" },
+              "category": { "type": "string" },
+              "status": { "type": "integer" }
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "end",
+      "type": "core.control.end",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "End"
+      }
+    },
+    {
+      "id": "start",
+      "type": "core.trigger.manual",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Manual trigger"
+      },
+      "inputs": {
+        "entryPointId": "c3043aa5-9ee7-4c58-9e4d-c810d9e510dd",
+        "isDefaultEntryPoint": true
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge-start-to-extract",
+      "sourceNodeId": "start",
+      "targetNodeId": "extractFormFields",
+      "sourceHandle": "output",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge-extract-to-end",
+      "sourceNodeId": "extractFormFields",
+      "targetNodeId": "end",
+      "sourceHandle": "success",
+      "targetPort": "input"
+    }
+  ],
+  "definitions": [
+    {
+      "nodeType": "uipath.ixp.ixp-uniform-residential-loan-application-fannie-mae-form-1003-ec9bb5b0-ixp.589568b1-5ea1-80ed-9db4-ada0d51cdc8d-c4359cde-55f0-4f0e-9322-c6cdce74ab4c",
+      "version": "1.0.0",
+      "category": "document-extraction",
+      "tags": ["ixp", "document-understanding", "extraction"],
+      "description": "(Shared)",
+      "sortOrder": 537,
+      "display": {
+        "canvasLabel": "Extract",
+        "label": "ixp-uniform-residential-loan-application-fannie-mae-form-1003-ec9bb5b0-ixp",
+        "description": "(Shared)",
+        "icon": "file-text"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            { "id": "input", "type": "target", "handleType": "input" }
+          ]
+        },
+        {
+          "position": "right",
+          "handles": [
+            { "id": "success", "type": "source", "handleType": "output" },
+            {
+              "id": "error",
+              "label": "Error",
+              "type": "source",
+              "handleType": "output",
+              "visible": "{inputs.errorHandlingEnabled}",
+              "constraints": { "maxConnections": 1 }
+            }
+          ]
+        }
+      ],
+      "supportsErrorHandling": true,
+      "model": {
+        "type": "bpmn:ServiceTask",
+        "serviceType": "IXP.Extraction",
+        "bindings": {
+          "resource": "ixpDeployment",
+          "entityType": "ixpDeployment",
+          "resourceSubType": null,
+          "resourceKey": "589568b1-5ea1-80ed-9db4-ada0d51cdc8d",
+          "name": "ixp-uniform-residential-loan-application-fannie-mae-form-1003-ec9bb5b0-ixp",
+          "values": [
+            { "name": "name", "propertyAttribute": "name", "default": "ixp-uniform-residential-loan-application-fannie-mae-form-1003-ec9bb5b0-ixp" },
+            { "name": "folderPath", "propertyAttribute": "folderPath", "default": "Shared" }
+          ]
+        }
+      }
+    },
+    {
+      "nodeType": "core.control.end",
+      "version": "1.0",
+      "category": "control-flow",
+      "description": "Mark the end of a workflow path",
+      "tags": ["control-flow", "end", "finish", "complete"],
+      "sortOrder": 20,
+      "display": {
+        "label": "End",
+        "icon": "circle-check",
+        "shape": "circle"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            { "id": "input", "type": "target", "handleType": "input" }
+          ]
+        }
+      ],
+      "model": {
+        "type": "bpmn:EndEvent"
+      },
+      "runtimeConstraints": {
+        "exclude": ["api-function"]
+      }
+    },
+    {
+      "nodeType": "core.trigger.manual",
+      "version": "1.0",
+      "category": "trigger",
+      "description": "Start workflow manually",
+      "tags": [
+        "trigger",
+        "start",
+        "manual"
+      ],
+      "sortOrder": 40,
+      "display": {
+        "label": "Manual trigger",
+        "icon": "play",
+        "shape": "circle"
+      },
+      "handleConfiguration": [
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "output",
+              "type": "source",
+              "handleType": "output",
+              "showButton": true,
+              "constraints": {
+                "forbiddenTargetCategories": [
+                  "trigger"
+                ]
+              }
+            }
+          ],
+          "visible": true
+        }
+      ],
+      "model": {
+        "type": "bpmn:StartEvent",
+        "entryPointId": true
+      },
+      "outputDefinition": {
+        "output": {
+          "type": "object",
+          "description": "Data passed when manually triggering the workflow.",
+          "source": "null",
+          "var": "output"
+        }
+      },
+      "toolbarExtensions": {
+        "design": {
+          "actions": [
+            {
+              "id": "change-trigger-type",
+              "icon": "square-mouse-pointer",
+              "label": "Change trigger type"
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "layout": {
+    "nodes": {
+      "extractFormFields": {
+        "position": { "x": 0, "y": 0 },
+        "size": { "width": 96, "height": 96 },
+        "collapsed": false
+      },
+      "end": {
+        "position": { "x": 0, "y": 0 },
+        "size": { "width": 96, "height": 96 },
+        "collapsed": false
+      },
+      "start": {
+        "position": {
+          "x": 256,
+          "y": 144
+        }
+      }
+    }
+  }
+}

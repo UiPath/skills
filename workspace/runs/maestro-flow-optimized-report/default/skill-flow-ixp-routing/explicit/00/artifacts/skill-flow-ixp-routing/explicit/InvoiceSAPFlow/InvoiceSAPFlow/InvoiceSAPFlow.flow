@@ -1,0 +1,2973 @@
+{
+  "id": "4da20082-78ff-4dc8-a8e0-7beb71f6e09b",
+  "version": "1.8",
+  "name": "InvoiceSAPFlow",
+  "nodes": [
+    {
+      "id": "start",
+      "type": "core.trigger.manual",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Manual trigger"
+      },
+      "inputs": {
+        "entryPointId": "118a2142-6f25-4006-82f8-de6f1aad550b",
+        "isDefaultEntryPoint": true
+      }
+    },
+    {
+      "id": "downloadInvoicePdfFromSharepoint1",
+      "type": "uipath.connector.uipath-microsoft-onedrive.download-file",
+      "typeVersion": "1.0.0",
+      "display": {
+        "label": "Download Invoice PDF from SharePoint"
+      },
+      "inputs": {}
+    },
+    {
+      "id": "extractInvoiceFields",
+      "type": "uipath.ixp.invoiceixp-cef0d447-ixp.ff973488-5d89-8035-86ac-f980b4be6deb-c4359cde-55f0-4f0e-9322-c6cdce74ab4c",
+      "typeVersion": "1.0.0",
+      "display": {
+        "label": "Extract Invoice Fields"
+      },
+      "inputs": {
+        "model": {
+          "id": "ff973488-5d89-8035-86ac-f980b4be6deb",
+          "modelName": "invoiceixp-cef0d447-ixp",
+          "modelDisplayName": "InvoiceIXP",
+          "folderKey": "c4359cde-55f0-4f0e-9322-c6cdce74ab4c",
+          "folderName": "Shared",
+          "folderPath": "c4359cde-55f0-4f0e-9322-c6cdce74ab4c",
+          "description": ""
+        },
+        "modelName": "invoiceixp-cef0d447-ixp",
+        "projectName": "invoiceixp-cef0d447-ixp",
+        "folderKey": "c4359cde-55f0-4f0e-9322-c6cdce74ab4c",
+        "folderName": "Shared",
+        "versionTag": "",
+        "pageRange": "",
+        "fileRef": "=js:$vars.downloadInvoicePdfFromSharepoint1.output.content"
+      },
+      "outputs": {
+        "output": {
+          "name": "output",
+          "type": "object",
+          "source": "=this.result",
+          "var": "output",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "properties": {
+              "ExtractionResult": {
+                "type": "object",
+                "properties": {
+                  "DocumentId": {
+                    "type": "string"
+                  },
+                  "ResultsVersion": {
+                    "type": "integer"
+                  },
+                  "ResultsDocument": {
+                    "type": "object",
+                    "properties": {
+                      "Bounds": {
+                        "type": "object",
+                        "properties": {
+                          "PageCount": {
+                            "type": "integer"
+                          },
+                          "PageRange": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      "Language": {
+                        "type": "string"
+                      },
+                      "DocumentGroup": {
+                        "type": "string"
+                      },
+                      "DocumentCategory": {
+                        "type": "string"
+                      },
+                      "DocumentTypeId": {
+                        "type": "string"
+                      },
+                      "DocumentTypeName": {
+                        "type": "string"
+                      },
+                      "DocumentTypeDataVersion": {
+                        "type": "string"
+                      },
+                      "DataVersion": {
+                        "type": "string"
+                      },
+                      "DocumentTypeSource": {
+                        "type": "string"
+                      },
+                      "DocumentTypeField": {
+                        "type": "object",
+                        "properties": {
+                          "Components": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "FieldId": {
+                                  "type": "string"
+                                },
+                                "FieldName": {
+                                  "type": "string"
+                                },
+                                "FieldType": {
+                                  "type": "string"
+                                },
+                                "IsMissing": {
+                                  "type": "boolean"
+                                },
+                                "DataSource": {
+                                  "type": "string"
+                                },
+                                "Values": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  }
+                                },
+                                "DataVersion": {
+                                  "type": "integer"
+                                },
+                                "OperatorConfirmed": {
+                                  "type": "boolean"
+                                },
+                                "ValidatorNotes": {
+                                  "type": "string"
+                                },
+                                "ValidatorNotesInfo": {
+                                  "type": "string"
+                                }
+                              }
+                            }
+                          },
+                          "Value": {
+                            "type": "string"
+                          },
+                          "UnformattedValue": {
+                            "type": "string"
+                          },
+                          "Reference": {
+                            "type": "object",
+                            "properties": {
+                              "TextStartIndex": {
+                                "type": "integer"
+                              },
+                              "TextLength": {
+                                "type": "integer"
+                              },
+                              "Tokens": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "TextStartIndex": {
+                                      "type": "integer"
+                                    },
+                                    "TextLength": {
+                                      "type": "integer"
+                                    },
+                                    "Page": {
+                                      "type": "integer"
+                                    },
+                                    "PageWidth": {
+                                      "type": "integer"
+                                    },
+                                    "PageHeight": {
+                                      "type": "integer"
+                                    },
+                                    "Boxes": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "integer"
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          },
+                          "DerivedFields": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "FieldId": {
+                                  "type": "string"
+                                },
+                                "Value": {
+                                  "type": "string"
+                                }
+                              }
+                            }
+                          },
+                          "Confidence": {
+                            "type": "integer"
+                          },
+                          "OperatorConfirmed": {
+                            "type": "boolean"
+                          },
+                          "OcrConfidence": {
+                            "type": "integer"
+                          },
+                          "TextType": {
+                            "type": "string"
+                          },
+                          "ValidatorNotes": {
+                            "type": "string"
+                          },
+                          "ValidatorNotesInfo": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      "Fields": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "FieldId": {
+                              "type": "string"
+                            },
+                            "FieldName": {
+                              "type": "string"
+                            },
+                            "FieldType": {
+                              "type": "string"
+                            },
+                            "IsMissing": {
+                              "type": "boolean"
+                            },
+                            "DataSource": {
+                              "type": "string"
+                            },
+                            "Values": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            },
+                            "DataVersion": {
+                              "type": "integer"
+                            },
+                            "OperatorConfirmed": {
+                              "type": "boolean"
+                            },
+                            "ValidatorNotes": {
+                              "type": "string"
+                            },
+                            "ValidatorNotesInfo": {
+                              "type": "string"
+                            }
+                          }
+                        }
+                      },
+                      "Tables": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "FieldId": {
+                              "type": "string"
+                            },
+                            "FieldName": {
+                              "type": "string"
+                            },
+                            "IsMissing": {
+                              "type": "boolean"
+                            },
+                            "DataSource": {
+                              "type": "string"
+                            },
+                            "DataVersion": {
+                              "type": "integer"
+                            },
+                            "OperatorConfirmed": {
+                              "type": "boolean"
+                            },
+                            "Values": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "OperatorConfirmed": {
+                                    "type": "boolean"
+                                  },
+                                  "Confidence": {
+                                    "type": "integer"
+                                  },
+                                  "OcrConfidence": {
+                                    "type": "integer"
+                                  },
+                                  "Cells": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "properties": {
+                                        "RowIndex": {
+                                          "type": "integer"
+                                        },
+                                        "ColumnIndex": {
+                                          "type": "integer"
+                                        },
+                                        "IsHeader": {
+                                          "type": "boolean"
+                                        },
+                                        "IsMissing": {
+                                          "type": "boolean"
+                                        },
+                                        "OperatorConfirmed": {
+                                          "type": "boolean"
+                                        },
+                                        "DataSource": {
+                                          "type": "string"
+                                        },
+                                        "DataVersion": {
+                                          "type": "integer"
+                                        },
+                                        "Values": {
+                                          "type": "array",
+                                          "items": {
+                                            "type": "object",
+                                            "properties": {
+                                              "Components": {
+                                                "type": "array",
+                                                "items": {
+                                                  "type": "object",
+                                                  "properties": {
+                                                    "FieldId": {
+                                                      "type": "string"
+                                                    },
+                                                    "FieldName": {
+                                                      "type": "string"
+                                                    },
+                                                    "FieldType": {
+                                                      "type": "string"
+                                                    },
+                                                    "IsMissing": {
+                                                      "type": "boolean"
+                                                    },
+                                                    "DataSource": {
+                                                      "type": "string"
+                                                    },
+                                                    "Values": {
+                                                      "type": "array",
+                                                      "items": {
+                                                        "type": "string"
+                                                      }
+                                                    },
+                                                    "DataVersion": {
+                                                      "type": "integer"
+                                                    },
+                                                    "OperatorConfirmed": {
+                                                      "type": "boolean"
+                                                    },
+                                                    "ValidatorNotes": {
+                                                      "type": "string"
+                                                    },
+                                                    "ValidatorNotesInfo": {
+                                                      "type": "string"
+                                                    }
+                                                  }
+                                                }
+                                              },
+                                              "Value": {
+                                                "type": "string"
+                                              },
+                                              "UnformattedValue": {
+                                                "type": "string"
+                                              },
+                                              "Reference": {
+                                                "type": "object",
+                                                "properties": {
+                                                  "TextStartIndex": {
+                                                    "type": "integer"
+                                                  },
+                                                  "TextLength": {
+                                                    "type": "integer"
+                                                  },
+                                                  "Tokens": {
+                                                    "type": "array",
+                                                    "items": {
+                                                      "type": "object",
+                                                      "properties": {
+                                                        "TextStartIndex": {
+                                                          "type": "integer"
+                                                        },
+                                                        "TextLength": {
+                                                          "type": "integer"
+                                                        },
+                                                        "Page": {
+                                                          "type": "integer"
+                                                        },
+                                                        "PageWidth": {
+                                                          "type": "integer"
+                                                        },
+                                                        "PageHeight": {
+                                                          "type": "integer"
+                                                        },
+                                                        "Boxes": {
+                                                          "type": "array",
+                                                          "items": {
+                                                            "type": "integer"
+                                                          }
+                                                        }
+                                                      }
+                                                    }
+                                                  }
+                                                }
+                                              },
+                                              "DerivedFields": {
+                                                "type": "array",
+                                                "items": {
+                                                  "type": "object",
+                                                  "properties": {
+                                                    "FieldId": {
+                                                      "type": "string"
+                                                    },
+                                                    "Value": {
+                                                      "type": "string"
+                                                    }
+                                                  }
+                                                }
+                                              },
+                                              "Confidence": {
+                                                "type": "integer"
+                                              },
+                                              "OperatorConfirmed": {
+                                                "type": "boolean"
+                                              },
+                                              "OcrConfidence": {
+                                                "type": "integer"
+                                              },
+                                              "TextType": {
+                                                "type": "string"
+                                              },
+                                              "ValidatorNotes": {
+                                                "type": "string"
+                                              },
+                                              "ValidatorNotesInfo": {
+                                                "type": "string"
+                                              }
+                                            }
+                                          }
+                                        }
+                                      }
+                                    }
+                                  },
+                                  "ColumnInfo": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "properties": {
+                                        "FieldId": {
+                                          "type": "string"
+                                        },
+                                        "FieldName": {
+                                          "type": "string"
+                                        },
+                                        "FieldType": {
+                                          "type": "string"
+                                        }
+                                      }
+                                    }
+                                  },
+                                  "NumberOfRows": {
+                                    "type": "integer"
+                                  },
+                                  "ValidatorNotes": {
+                                    "type": "string"
+                                  },
+                                  "ValidatorNotesInfo": {
+                                    "type": "string"
+                                  }
+                                }
+                              }
+                            },
+                            "ValidatorNotes": {
+                              "type": "string"
+                            },
+                            "ValidatorNotesInfo": {
+                              "type": "string"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "ExtractorPayloads": {
+                    "type": "object",
+                    "properties": {
+                      "Id": {
+                        "type": "string"
+                      },
+                      "Payload": {
+                        "type": "string"
+                      },
+                      "SavedPayloadId": {
+                        "type": "string"
+                      },
+                      "TaxonomySchemaMapping": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "BusinessrulesResults": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "FieldId": {
+                          "type": "string"
+                        },
+                        "FieldType": {
+                          "type": "string"
+                        },
+                        "Criticality": {
+                          "type": "string"
+                        },
+                        "IsValid": {
+                          "type": "boolean"
+                        },
+                        "Results": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "Value": {
+                                "type": "object",
+                                "properties": {
+                                  "Value": {
+                                    "type": "string"
+                                  },
+                                  "DerivedValue": {
+                                    "type": "string"
+                                  }
+                                }
+                              },
+                              "IsValid": {
+                                "type": "boolean"
+                              },
+                              "Rules": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "Rule": {
+                                      "type": "object",
+                                      "properties": {
+                                        "Name": {
+                                          "type": "string"
+                                        },
+                                        "Type": {
+                                          "type": "string"
+                                        },
+                                        "LogicalOperator": {
+                                          "type": "string"
+                                        },
+                                        "comparisonOperator": {
+                                          "type": "string"
+                                        },
+                                        "Expression": {
+                                          "type": "string"
+                                        },
+                                        "SetValues": {
+                                          "type": "array",
+                                          "items": {
+                                            "type": "string"
+                                          }
+                                        }
+                                      }
+                                    },
+                                    "IsValid": {
+                                      "type": "boolean"
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        },
+                        "BrokenRules": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "Name": {
+                                "type": "string"
+                              },
+                              "Type": {
+                                "type": "string"
+                              },
+                              "LogicalOperator": {
+                                "type": "string"
+                              },
+                              "ComparisonOperator": {
+                                "type": "string"
+                              },
+                              "Expression": {
+                                "type": "string"
+                              },
+                              "SetValues": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                }
+                              }
+                            }
+                          }
+                        },
+                        "RowIndex": {
+                          "type": "integer"
+                        },
+                        "TableFieldId": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails",
+          "source": "=Error",
+          "var": "error",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "required": [
+              "code",
+              "message",
+              "detail",
+              "category",
+              "status"
+            ],
+            "properties": {
+              "code": {
+                "type": "string",
+                "description": "Error code as a string"
+              },
+              "message": {
+                "type": "string",
+                "description": "High-level error message"
+              },
+              "detail": {
+                "type": "string",
+                "description": "Detailed error description"
+              },
+              "category": {
+                "type": "string",
+                "description": "Error category"
+              },
+              "status": {
+                "type": "integer",
+                "description": "HTTP status code"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      }
+    },
+    {
+      "id": "postInvoiceToSap1",
+      "type": "uipath.connector.uipath-sap-bapi.execute-bapi-rfc",
+      "typeVersion": "1.0.0",
+      "display": {
+        "label": "Post Invoice to SAP"
+      },
+      "inputs": {}
+    },
+    {
+      "id": "end",
+      "type": "core.control.end",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "End"
+      },
+      "inputs": {}
+    }
+  ],
+  "edges": [
+    {
+      "id": "e-start-download",
+      "sourceNodeId": "start",
+      "sourcePort": "output",
+      "targetNodeId": "downloadInvoicePdfFromSharepoint1",
+      "targetPort": "input"
+    },
+    {
+      "id": "e-download-extract",
+      "sourceNodeId": "downloadInvoicePdfFromSharepoint1",
+      "sourcePort": "output",
+      "targetNodeId": "extractInvoiceFields",
+      "targetPort": "input"
+    },
+    {
+      "id": "e-extract-sap",
+      "sourceNodeId": "extractInvoiceFields",
+      "sourcePort": "success",
+      "targetNodeId": "postInvoiceToSap1",
+      "targetPort": "input"
+    },
+    {
+      "id": "e-sap-end",
+      "sourceNodeId": "postInvoiceToSap1",
+      "sourcePort": "output",
+      "targetNodeId": "end",
+      "targetPort": "input"
+    }
+  ],
+  "definitions": [
+    {
+      "nodeType": "core.trigger.manual",
+      "version": "1.0",
+      "category": "trigger",
+      "description": "Start workflow manually",
+      "tags": [
+        "trigger",
+        "start",
+        "manual"
+      ],
+      "sortOrder": 40,
+      "display": {
+        "label": "Manual trigger",
+        "icon": "play",
+        "shape": "circle"
+      },
+      "handleConfiguration": [
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "output",
+              "type": "source",
+              "handleType": "output",
+              "showButton": true,
+              "constraints": {
+                "forbiddenTargetCategories": [
+                  "trigger"
+                ]
+              }
+            }
+          ],
+          "visible": true
+        }
+      ],
+      "model": {
+        "type": "bpmn:StartEvent",
+        "entryPointId": true
+      },
+      "outputDefinition": {
+        "output": {
+          "type": "object",
+          "description": "Data passed when manually triggering the workflow.",
+          "source": "null",
+          "var": "output"
+        }
+      },
+      "toolbarExtensions": {
+        "design": {
+          "actions": [
+            {
+              "id": "change-trigger-type",
+              "icon": "square-mouse-pointer",
+              "label": "Change trigger type"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "nodeType": "uipath.connector.uipath-microsoft-onedrive.download-file",
+      "version": "1.0.0",
+      "category": "connector.196549",
+      "tags": [
+        "connector",
+        "activity",
+        "API.File.Download"
+      ],
+      "sortOrder": 515,
+      "supportsErrorHandling": true,
+      "description": "(Microsoft OneDrive & SharePoint) Downloads a file or folder from OneDrive & SharePoint",
+      "display": {
+        "label": "Download File",
+        "description": "(Microsoft OneDrive & SharePoint) Downloads a file or folder from OneDrive & SharePoint",
+        "icon": "https://alpha.uipath.com/311c6049-4966-4ef2-a6f3-8ceccaf38d54/studio_/typecache/icons/446b7cebc39ca4493877cbc53272aa7c685bfa43b8b4af6eb2dca0f39e2d1fc1.svg"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input",
+              "label": ""
+            }
+          ]
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "output",
+              "type": "source",
+              "handleType": "output",
+              "label": ""
+            },
+            {
+              "id": "error",
+              "label": "Error",
+              "type": "source",
+              "handleType": "output",
+              "visible": "{inputs.errorHandlingEnabled}",
+              "constraints": {
+                "maxConnections": 1
+              }
+            }
+          ]
+        }
+      ],
+      "model": {
+        "type": "bpmn:SendTask",
+        "serviceType": "Intsvc.ActivityExecution",
+        "bindings": {
+          "resource": "connection",
+          "resourceKey": "",
+          "values": [
+            {
+              "name": "uipath-microsoft-onedrive connection",
+              "propertyAttribute": "ConnectionId"
+            },
+            {
+              "name": "FolderKey",
+              "propertyAttribute": "FolderKey"
+            }
+          ]
+        },
+        "context": [
+          {
+            "name": "connectorKey",
+            "type": "string",
+            "value": "uipath-microsoft-onedrive"
+          },
+          {
+            "name": "operation",
+            "type": "string"
+          },
+          {
+            "name": "objectName",
+            "value": "DownloadFile",
+            "type": "string"
+          },
+          {
+            "name": "method",
+            "type": "string",
+            "value": "GET"
+          },
+          {
+            "name": "connection",
+            "type": "string",
+            "value": "<bindings.uipath-microsoft-onedrive connection>"
+          },
+          {
+            "name": "folderKey",
+            "type": "string",
+            "value": "<bindings.FolderKey>"
+          },
+          {
+            "name": "activityConfigurationVersion",
+            "type": "string",
+            "value": "v1"
+          },
+          {
+            "name": "metadata",
+            "body": {
+              "telemetryData": {
+                "connectorKey": "uipath-microsoft-onedrive",
+                "connectorName": "Download File"
+              },
+              "inputMetadata": {},
+              "errorState": {
+                "hasError": true
+              }
+            },
+            "type": "json"
+          }
+        ]
+      },
+      "form": {
+        "id": "connector-properties",
+        "title": "Connector configuration",
+        "sections": [
+          {
+            "id": "connector",
+            "title": "Connector",
+            "collapsible": true,
+            "defaultExpanded": true,
+            "fields": [
+              {
+                "label": "",
+                "name": "inputs.detail",
+                "type": "custom",
+                "component": "dap-config",
+                "componentProps": {
+                  "connectorDetail": {
+                    "isAppActivity": false,
+                    "packageId": "196549",
+                    "svgIconUrl": "icons/446b7cebc39ca4493877cbc53272aa7c685bfa43b8b4af6eb2dca0f39e2d1fc1.svg",
+                    "displayName": "Download File",
+                    "assemblyQualifiedName": "UiPath.IntegrationService.Activities.Runtime.Activities.ConnectorActivity, UiPath.IntegrationService.Activities.Runtime, Version=1.30.0.0, Culture=neutral, PublicKeyToken=null",
+                    "description": "Downloads a file or folder from OneDrive & SharePoint",
+                    "category": "",
+                    "activityColor": "#00A3EE",
+                    "configuration": "{\"connectorKey\":\"uipath-microsoft-onedrive\",\"objectName\":\"DownloadFile\",\"httpMethod\":\"GET\",\"activityType\":\"Curated\",\"version\":\"1.0.0\",\"supportsStreaming\":false,\"subType\":\"standard\"}",
+                    "uiPathActivityTypeId": "c0ed899b-e170-3111-bda7-fdae448fa4e5",
+                    "isExperimental": false,
+                    "helpUrlTemplate": "https://docs.uipath.com/{0}/activities/other/latest/integration-service/uipath-microsoft-onedrive-Download-File",
+                    "isEnabled": true,
+                    "targetPlatform": "CrossPlatform",
+                    "isAdvanced": false,
+                    "isRestricted": false,
+                    "hasWpfOnlyDesigner": false,
+                    "tags": [
+                      "API.File.Download"
+                    ]
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "inputDefinition": {},
+      "inputDefaults": {},
+      "outputDefinition": {
+        "output": {
+          "type": "object",
+          "description": "The return value of the connector.",
+          "source": "=result.response",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails",
+          "source": "=Error",
+          "var": "error",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "required": [
+              "code",
+              "message",
+              "detail",
+              "category",
+              "status"
+            ],
+            "properties": {
+              "code": {
+                "type": "string",
+                "description": "Error code as a string"
+              },
+              "message": {
+                "type": "string",
+                "description": "High-level error message"
+              },
+              "detail": {
+                "type": "string",
+                "description": "Detailed error description"
+              },
+              "category": {
+                "type": "string",
+                "description": "Error category"
+              },
+              "status": {
+                "type": "integer",
+                "description": "HTTP status code"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "debug": {
+        "runtime": "bpmnEngine"
+      }
+    },
+    {
+      "nodeType": "uipath.connector.uipath-sap-bapi.execute-bapi-rfc",
+      "version": "1.0.0",
+      "category": "connector.196586",
+      "tags": [
+        "connector",
+        "activity"
+      ],
+      "sortOrder": 515,
+      "supportsErrorHandling": true,
+      "description": "(SAP BAPI) Configure and execute a BAPI or RFC in SAP.",
+      "display": {
+        "label": "Execute BAPI/RFC",
+        "description": "(SAP BAPI) Configure and execute a BAPI or RFC in SAP.",
+        "icon": "https://alpha.uipath.com/311c6049-4966-4ef2-a6f3-8ceccaf38d54/studio_/typecache/icons/d7a5cc022c8c7ac7926ae5d52cceb7a376baa3541da97bde58c8d017409b31bf.svg"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input",
+              "label": ""
+            }
+          ]
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "output",
+              "type": "source",
+              "handleType": "output",
+              "label": ""
+            },
+            {
+              "id": "error",
+              "label": "Error",
+              "type": "source",
+              "handleType": "output",
+              "visible": "{inputs.errorHandlingEnabled}",
+              "constraints": {
+                "maxConnections": 1
+              }
+            }
+          ]
+        }
+      ],
+      "model": {
+        "type": "bpmn:SendTask",
+        "serviceType": "Intsvc.ActivityExecution",
+        "bindings": {
+          "resource": "connection",
+          "resourceKey": "",
+          "values": [
+            {
+              "name": "uipath-sap-bapi connection",
+              "propertyAttribute": "ConnectionId"
+            },
+            {
+              "name": "FolderKey",
+              "propertyAttribute": "FolderKey"
+            }
+          ]
+        },
+        "context": [
+          {
+            "name": "connectorKey",
+            "type": "string",
+            "value": "uipath-sap-bapi"
+          },
+          {
+            "name": "operation",
+            "type": "string"
+          },
+          {
+            "name": "objectName",
+            "value": "bapis::execute",
+            "type": "string"
+          },
+          {
+            "name": "method",
+            "type": "string",
+            "value": "POST"
+          },
+          {
+            "name": "connection",
+            "type": "string",
+            "value": "<bindings.uipath-sap-bapi connection>"
+          },
+          {
+            "name": "folderKey",
+            "type": "string",
+            "value": "<bindings.FolderKey>"
+          },
+          {
+            "name": "activityConfigurationVersion",
+            "type": "string",
+            "value": "v1"
+          },
+          {
+            "name": "metadata",
+            "body": {
+              "telemetryData": {
+                "connectorKey": "uipath-sap-bapi",
+                "connectorName": "Execute BAPI/RFC"
+              },
+              "inputMetadata": {},
+              "errorState": {
+                "hasError": true
+              }
+            },
+            "type": "json"
+          }
+        ]
+      },
+      "form": {
+        "id": "connector-properties",
+        "title": "Connector configuration",
+        "sections": [
+          {
+            "id": "connector",
+            "title": "Connector",
+            "collapsible": true,
+            "defaultExpanded": true,
+            "fields": [
+              {
+                "label": "",
+                "name": "inputs.detail",
+                "type": "custom",
+                "component": "dap-config",
+                "componentProps": {
+                  "connectorDetail": {
+                    "isAppActivity": false,
+                    "packageId": "196586",
+                    "svgIconUrl": "icons/d7a5cc022c8c7ac7926ae5d52cceb7a376baa3541da97bde58c8d017409b31bf.svg",
+                    "displayName": "Execute BAPI/RFC",
+                    "assemblyQualifiedName": "UiPath.IntegrationService.Activities.Runtime.Activities.ConnectorActivity, UiPath.IntegrationService.Activities.Runtime, Version=1.30.0.0, Culture=neutral, PublicKeyToken=null",
+                    "description": "Configure and execute a BAPI or RFC in SAP.",
+                    "category": "",
+                    "activityColor": "#2596BE",
+                    "configuration": "{\"connectorKey\":\"uipath-sap-bapi\",\"objectName\":\"bapis::execute\",\"httpMethod\":\"POST\",\"activityType\":\"Curated\",\"version\":\"1.0.0\",\"supportsStreaming\":false,\"subType\":\"standard\"}",
+                    "uiPathActivityTypeId": "9d045a67-65a9-3709-8ac0-a4ad85491566",
+                    "isExperimental": false,
+                    "helpUrlTemplate": "https://docs.uipath.com/{0}/activities/other/latest/integration-service/uipath-sap-bapi-Execute-BAPI-/-RFC",
+                    "isEnabled": true,
+                    "targetPlatform": "CrossPlatform",
+                    "isAdvanced": false,
+                    "isRestricted": false,
+                    "hasWpfOnlyDesigner": false,
+                    "tags": [
+                      ""
+                    ]
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "inputDefinition": {},
+      "inputDefaults": {},
+      "outputDefinition": {
+        "output": {
+          "type": "object",
+          "description": "The return value of the connector.",
+          "source": "=result.response",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails",
+          "source": "=Error",
+          "var": "error",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "required": [
+              "code",
+              "message",
+              "detail",
+              "category",
+              "status"
+            ],
+            "properties": {
+              "code": {
+                "type": "string",
+                "description": "Error code as a string"
+              },
+              "message": {
+                "type": "string",
+                "description": "High-level error message"
+              },
+              "detail": {
+                "type": "string",
+                "description": "Detailed error description"
+              },
+              "category": {
+                "type": "string",
+                "description": "Error category"
+              },
+              "status": {
+                "type": "integer",
+                "description": "HTTP status code"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "debug": {
+        "runtime": "bpmnEngine"
+      }
+    },
+    {
+      "nodeType": "uipath.ixp.invoiceixp-cef0d447-ixp.ff973488-5d89-8035-86ac-f980b4be6deb-c4359cde-55f0-4f0e-9322-c6cdce74ab4c",
+      "version": "1.0.0",
+      "category": "document-extraction",
+      "tags": [
+        "ixp",
+        "document-understanding",
+        "extraction"
+      ],
+      "description": "(Shared)",
+      "sortOrder": 537,
+      "display": {
+        "canvasLabel": "Extract",
+        "label": "InvoiceIXP",
+        "description": "(Shared)",
+        "icon": "file-text"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "success",
+              "type": "source",
+              "handleType": "output"
+            },
+            {
+              "id": "error",
+              "label": "Error",
+              "type": "source",
+              "handleType": "output",
+              "visible": "{inputs.errorHandlingEnabled}",
+              "constraints": {
+                "maxConnections": 1
+              }
+            }
+          ]
+        }
+      ],
+      "supportsErrorHandling": true,
+      "model": {
+        "type": "bpmn:ServiceTask",
+        "serviceType": "IXP.Extraction",
+        "bindings": {
+          "resource": "ixpDeployment",
+          "entityType": "ixpDeployment",
+          "resourceSubType": null,
+          "resourceKey": "ff973488-5d89-8035-86ac-f980b4be6deb",
+          "name": "InvoiceIXP",
+          "values": [
+            {
+              "name": "name",
+              "propertyAttribute": "name",
+              "default": "InvoiceIXP"
+            },
+            {
+              "name": "folderPath",
+              "propertyAttribute": "folderPath",
+              "default": "Shared"
+            }
+          ]
+        }
+      },
+      "form": {
+        "id": "ixp-standalone-form",
+        "title": "IXP",
+        "sections": [
+          {
+            "id": "ixp-model",
+            "title": "Configuration",
+            "fields": [
+              {
+                "name": "inputs.modelName",
+                "type": "text",
+                "label": "IXP model",
+                "rules": [
+                  {
+                    "id": "always-disabled",
+                    "conditions": [],
+                    "effects": {
+                      "disabled": true
+                    }
+                  }
+                ]
+              },
+              {
+                "name": "inputs.folderName",
+                "type": "text",
+                "label": "Folder",
+                "rules": [
+                  {
+                    "id": "always-disabled",
+                    "conditions": [],
+                    "effects": {
+                      "disabled": true
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "ixp-file-upload",
+            "title": "File input",
+            "collapsible": true,
+            "defaultExpanded": true,
+            "fields": [
+              {
+                "name": "inputs.fileRef",
+                "type": "file",
+                "label": "File",
+                "description": "File to extract data from",
+                "validation": {
+                  "required": true,
+                  "messages": {
+                    "required": "A file is required for extraction"
+                  }
+                }
+              },
+              {
+                "name": "inputs.pageRange",
+                "type": "text",
+                "label": "Page range",
+                "placeholder": "e.g. 1-5",
+                "description": "Optional page range to process."
+              }
+            ]
+          },
+          {
+            "id": "schema-definition",
+            "title": "Schema definition",
+            "collapsible": false,
+            "fields": [
+              {
+                "name": "inputs.model",
+                "type": "custom",
+                "component": "ixp-model-taxonomy",
+                "label": ""
+              }
+            ]
+          }
+        ]
+      },
+      "inputDefinition": {
+        "type": "object",
+        "properties": {
+          "projectName": {
+            "type": "string"
+          },
+          "projectId": {
+            "type": "string"
+          },
+          "versionTag": {
+            "type": "string"
+          },
+          "folderKey": {
+            "type": "string"
+          },
+          "folderName": {
+            "type": "string"
+          },
+          "model": {
+            "type": "object"
+          },
+          "modelName": {
+            "type": "string"
+          },
+          "fileRef": {
+            "type": "string"
+          },
+          "pageRange": {
+            "type": "string"
+          },
+          "attachmentConfig": {
+            "type": "object"
+          },
+          "attachment": {
+            "type": "object",
+            "description": "File to extract data from.",
+            "properties": {
+              "ID": {
+                "type": "string",
+                "description": "Orchestrator attachment key"
+              },
+              "FullName": {
+                "type": "string",
+                "description": "File name"
+              },
+              "MimeType": {
+                "type": "string",
+                "description": "The MIME type of the content"
+              },
+              "Metadata": {
+                "type": "object",
+                "description": "Dictionary of metadata",
+                "additionalProperties": {
+                  "type": "string"
+                }
+              }
+            },
+            "required": [
+              "ID"
+            ]
+          }
+        },
+        "required": [
+          "fileRef"
+        ]
+      },
+      "inputDefaults": {
+        "model": {
+          "id": "ff973488-5d89-8035-86ac-f980b4be6deb",
+          "modelName": "invoiceixp-cef0d447-ixp",
+          "modelDisplayName": "InvoiceIXP",
+          "folderKey": "c4359cde-55f0-4f0e-9322-c6cdce74ab4c",
+          "folderName": "Shared",
+          "folderPath": "c4359cde-55f0-4f0e-9322-c6cdce74ab4c",
+          "description": ""
+        },
+        "modelName": "invoiceixp-cef0d447-ixp",
+        "description": "",
+        "projectName": "invoiceixp-cef0d447-ixp",
+        "versionTag": "",
+        "folderKey": "c4359cde-55f0-4f0e-9322-c6cdce74ab4c",
+        "folderName": "Shared",
+        "fileRef": "",
+        "pageRange": ""
+      },
+      "outputDefinition": {
+        "output": {
+          "name": "output",
+          "type": "object",
+          "source": "=this.result",
+          "var": "output",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "properties": {
+              "ExtractionResult": {
+                "type": "object",
+                "properties": {
+                  "DocumentId": {
+                    "type": "string"
+                  },
+                  "ResultsVersion": {
+                    "type": "integer"
+                  },
+                  "ResultsDocument": {
+                    "type": "object",
+                    "properties": {
+                      "Bounds": {
+                        "type": "object",
+                        "properties": {
+                          "PageCount": {
+                            "type": "integer"
+                          },
+                          "PageRange": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      "Language": {
+                        "type": "string"
+                      },
+                      "DocumentGroup": {
+                        "type": "string"
+                      },
+                      "DocumentCategory": {
+                        "type": "string"
+                      },
+                      "DocumentTypeId": {
+                        "type": "string"
+                      },
+                      "DocumentTypeName": {
+                        "type": "string"
+                      },
+                      "DocumentTypeDataVersion": {
+                        "type": "string"
+                      },
+                      "DataVersion": {
+                        "type": "string"
+                      },
+                      "DocumentTypeSource": {
+                        "type": "string"
+                      },
+                      "DocumentTypeField": {
+                        "type": "object",
+                        "properties": {
+                          "Components": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "FieldId": {
+                                  "type": "string"
+                                },
+                                "FieldName": {
+                                  "type": "string"
+                                },
+                                "FieldType": {
+                                  "type": "string"
+                                },
+                                "IsMissing": {
+                                  "type": "boolean"
+                                },
+                                "DataSource": {
+                                  "type": "string"
+                                },
+                                "Values": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  }
+                                },
+                                "DataVersion": {
+                                  "type": "integer"
+                                },
+                                "OperatorConfirmed": {
+                                  "type": "boolean"
+                                },
+                                "ValidatorNotes": {
+                                  "type": "string"
+                                },
+                                "ValidatorNotesInfo": {
+                                  "type": "string"
+                                }
+                              }
+                            }
+                          },
+                          "Value": {
+                            "type": "string"
+                          },
+                          "UnformattedValue": {
+                            "type": "string"
+                          },
+                          "Reference": {
+                            "type": "object",
+                            "properties": {
+                              "TextStartIndex": {
+                                "type": "integer"
+                              },
+                              "TextLength": {
+                                "type": "integer"
+                              },
+                              "Tokens": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "TextStartIndex": {
+                                      "type": "integer"
+                                    },
+                                    "TextLength": {
+                                      "type": "integer"
+                                    },
+                                    "Page": {
+                                      "type": "integer"
+                                    },
+                                    "PageWidth": {
+                                      "type": "integer"
+                                    },
+                                    "PageHeight": {
+                                      "type": "integer"
+                                    },
+                                    "Boxes": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "integer"
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          },
+                          "DerivedFields": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "FieldId": {
+                                  "type": "string"
+                                },
+                                "Value": {
+                                  "type": "string"
+                                }
+                              }
+                            }
+                          },
+                          "Confidence": {
+                            "type": "integer"
+                          },
+                          "OperatorConfirmed": {
+                            "type": "boolean"
+                          },
+                          "OcrConfidence": {
+                            "type": "integer"
+                          },
+                          "TextType": {
+                            "type": "string"
+                          },
+                          "ValidatorNotes": {
+                            "type": "string"
+                          },
+                          "ValidatorNotesInfo": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      "Fields": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "FieldId": {
+                              "type": "string"
+                            },
+                            "FieldName": {
+                              "type": "string"
+                            },
+                            "FieldType": {
+                              "type": "string"
+                            },
+                            "IsMissing": {
+                              "type": "boolean"
+                            },
+                            "DataSource": {
+                              "type": "string"
+                            },
+                            "Values": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            },
+                            "DataVersion": {
+                              "type": "integer"
+                            },
+                            "OperatorConfirmed": {
+                              "type": "boolean"
+                            },
+                            "ValidatorNotes": {
+                              "type": "string"
+                            },
+                            "ValidatorNotesInfo": {
+                              "type": "string"
+                            }
+                          }
+                        }
+                      },
+                      "Tables": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "FieldId": {
+                              "type": "string"
+                            },
+                            "FieldName": {
+                              "type": "string"
+                            },
+                            "IsMissing": {
+                              "type": "boolean"
+                            },
+                            "DataSource": {
+                              "type": "string"
+                            },
+                            "DataVersion": {
+                              "type": "integer"
+                            },
+                            "OperatorConfirmed": {
+                              "type": "boolean"
+                            },
+                            "Values": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "OperatorConfirmed": {
+                                    "type": "boolean"
+                                  },
+                                  "Confidence": {
+                                    "type": "integer"
+                                  },
+                                  "OcrConfidence": {
+                                    "type": "integer"
+                                  },
+                                  "Cells": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "properties": {
+                                        "RowIndex": {
+                                          "type": "integer"
+                                        },
+                                        "ColumnIndex": {
+                                          "type": "integer"
+                                        },
+                                        "IsHeader": {
+                                          "type": "boolean"
+                                        },
+                                        "IsMissing": {
+                                          "type": "boolean"
+                                        },
+                                        "OperatorConfirmed": {
+                                          "type": "boolean"
+                                        },
+                                        "DataSource": {
+                                          "type": "string"
+                                        },
+                                        "DataVersion": {
+                                          "type": "integer"
+                                        },
+                                        "Values": {
+                                          "type": "array",
+                                          "items": {
+                                            "type": "object",
+                                            "properties": {
+                                              "Components": {
+                                                "type": "array",
+                                                "items": {
+                                                  "type": "object",
+                                                  "properties": {
+                                                    "FieldId": {
+                                                      "type": "string"
+                                                    },
+                                                    "FieldName": {
+                                                      "type": "string"
+                                                    },
+                                                    "FieldType": {
+                                                      "type": "string"
+                                                    },
+                                                    "IsMissing": {
+                                                      "type": "boolean"
+                                                    },
+                                                    "DataSource": {
+                                                      "type": "string"
+                                                    },
+                                                    "Values": {
+                                                      "type": "array",
+                                                      "items": {
+                                                        "type": "string"
+                                                      }
+                                                    },
+                                                    "DataVersion": {
+                                                      "type": "integer"
+                                                    },
+                                                    "OperatorConfirmed": {
+                                                      "type": "boolean"
+                                                    },
+                                                    "ValidatorNotes": {
+                                                      "type": "string"
+                                                    },
+                                                    "ValidatorNotesInfo": {
+                                                      "type": "string"
+                                                    }
+                                                  }
+                                                }
+                                              },
+                                              "Value": {
+                                                "type": "string"
+                                              },
+                                              "UnformattedValue": {
+                                                "type": "string"
+                                              },
+                                              "Reference": {
+                                                "type": "object",
+                                                "properties": {
+                                                  "TextStartIndex": {
+                                                    "type": "integer"
+                                                  },
+                                                  "TextLength": {
+                                                    "type": "integer"
+                                                  },
+                                                  "Tokens": {
+                                                    "type": "array",
+                                                    "items": {
+                                                      "type": "object",
+                                                      "properties": {
+                                                        "TextStartIndex": {
+                                                          "type": "integer"
+                                                        },
+                                                        "TextLength": {
+                                                          "type": "integer"
+                                                        },
+                                                        "Page": {
+                                                          "type": "integer"
+                                                        },
+                                                        "PageWidth": {
+                                                          "type": "integer"
+                                                        },
+                                                        "PageHeight": {
+                                                          "type": "integer"
+                                                        },
+                                                        "Boxes": {
+                                                          "type": "array",
+                                                          "items": {
+                                                            "type": "integer"
+                                                          }
+                                                        }
+                                                      }
+                                                    }
+                                                  }
+                                                }
+                                              },
+                                              "DerivedFields": {
+                                                "type": "array",
+                                                "items": {
+                                                  "type": "object",
+                                                  "properties": {
+                                                    "FieldId": {
+                                                      "type": "string"
+                                                    },
+                                                    "Value": {
+                                                      "type": "string"
+                                                    }
+                                                  }
+                                                }
+                                              },
+                                              "Confidence": {
+                                                "type": "integer"
+                                              },
+                                              "OperatorConfirmed": {
+                                                "type": "boolean"
+                                              },
+                                              "OcrConfidence": {
+                                                "type": "integer"
+                                              },
+                                              "TextType": {
+                                                "type": "string"
+                                              },
+                                              "ValidatorNotes": {
+                                                "type": "string"
+                                              },
+                                              "ValidatorNotesInfo": {
+                                                "type": "string"
+                                              }
+                                            }
+                                          }
+                                        }
+                                      }
+                                    }
+                                  },
+                                  "ColumnInfo": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "properties": {
+                                        "FieldId": {
+                                          "type": "string"
+                                        },
+                                        "FieldName": {
+                                          "type": "string"
+                                        },
+                                        "FieldType": {
+                                          "type": "string"
+                                        }
+                                      }
+                                    }
+                                  },
+                                  "NumberOfRows": {
+                                    "type": "integer"
+                                  },
+                                  "ValidatorNotes": {
+                                    "type": "string"
+                                  },
+                                  "ValidatorNotesInfo": {
+                                    "type": "string"
+                                  }
+                                }
+                              }
+                            },
+                            "ValidatorNotes": {
+                              "type": "string"
+                            },
+                            "ValidatorNotesInfo": {
+                              "type": "string"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "ExtractorPayloads": {
+                    "type": "object",
+                    "properties": {
+                      "Id": {
+                        "type": "string"
+                      },
+                      "Payload": {
+                        "type": "string"
+                      },
+                      "SavedPayloadId": {
+                        "type": "string"
+                      },
+                      "TaxonomySchemaMapping": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "BusinessrulesResults": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "FieldId": {
+                          "type": "string"
+                        },
+                        "FieldType": {
+                          "type": "string"
+                        },
+                        "Criticality": {
+                          "type": "string"
+                        },
+                        "IsValid": {
+                          "type": "boolean"
+                        },
+                        "Results": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "Value": {
+                                "type": "object",
+                                "properties": {
+                                  "Value": {
+                                    "type": "string"
+                                  },
+                                  "DerivedValue": {
+                                    "type": "string"
+                                  }
+                                }
+                              },
+                              "IsValid": {
+                                "type": "boolean"
+                              },
+                              "Rules": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "Rule": {
+                                      "type": "object",
+                                      "properties": {
+                                        "Name": {
+                                          "type": "string"
+                                        },
+                                        "Type": {
+                                          "type": "string"
+                                        },
+                                        "LogicalOperator": {
+                                          "type": "string"
+                                        },
+                                        "comparisonOperator": {
+                                          "type": "string"
+                                        },
+                                        "Expression": {
+                                          "type": "string"
+                                        },
+                                        "SetValues": {
+                                          "type": "array",
+                                          "items": {
+                                            "type": "string"
+                                          }
+                                        }
+                                      }
+                                    },
+                                    "IsValid": {
+                                      "type": "boolean"
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        },
+                        "BrokenRules": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "Name": {
+                                "type": "string"
+                              },
+                              "Type": {
+                                "type": "string"
+                              },
+                              "LogicalOperator": {
+                                "type": "string"
+                              },
+                              "ComparisonOperator": {
+                                "type": "string"
+                              },
+                              "Expression": {
+                                "type": "string"
+                              },
+                              "SetValues": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                }
+                              }
+                            }
+                          }
+                        },
+                        "RowIndex": {
+                          "type": "integer"
+                        },
+                        "TableFieldId": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails",
+          "source": "=Error",
+          "var": "error",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "required": [
+              "code",
+              "message",
+              "detail",
+              "category",
+              "status"
+            ],
+            "properties": {
+              "code": {
+                "type": "string",
+                "description": "Error code as a string"
+              },
+              "message": {
+                "type": "string",
+                "description": "High-level error message"
+              },
+              "detail": {
+                "type": "string",
+                "description": "Detailed error description"
+              },
+              "category": {
+                "type": "string",
+                "description": "Error category"
+              },
+              "status": {
+                "type": "integer",
+                "description": "HTTP status code"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "debug": {
+        "runtime": "bpmnEngine"
+      }
+    },
+    {
+      "nodeType": "core.control.end",
+      "version": "1.0",
+      "category": "control-flow",
+      "description": "Mark the end of a workflow path",
+      "tags": [
+        "control-flow",
+        "end",
+        "finish",
+        "complete"
+      ],
+      "sortOrder": 20,
+      "display": {
+        "label": "End",
+        "icon": "circle-check",
+        "shape": "circle"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        }
+      ],
+      "model": {
+        "type": "bpmn:EndEvent"
+      },
+      "runtimeConstraints": {
+        "exclude": [
+          "api-function"
+        ]
+      }
+    }
+  ],
+  "runtime": "maestro",
+  "bindings": [
+    {
+      "id": "b1HSfPtxH",
+      "name": "uipath-microsoft-onedrive connection",
+      "type": "string",
+      "resource": "connection",
+      "resourceKey": "",
+      "propertyAttribute": "ConnectionId"
+    },
+    {
+      "id": "bY1nAyEfT",
+      "name": "FolderKey",
+      "type": "string",
+      "resource": "connection",
+      "resourceKey": "",
+      "propertyAttribute": "FolderKey"
+    },
+    {
+      "id": "bUkFLJdcu",
+      "name": "uipath-sap-bapi connection",
+      "type": "string",
+      "resource": "connection",
+      "resourceKey": "",
+      "propertyAttribute": "ConnectionId"
+    }
+  ],
+  "variables": {
+    "nodes": [
+      {
+        "id": "start.output",
+        "type": "object",
+        "description": "Data passed when manually triggering the workflow.",
+        "binding": {
+          "nodeId": "start",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "downloadInvoicePdfFromSharepoint1.output",
+        "type": "object",
+        "description": "The return value of the connector.",
+        "binding": {
+          "nodeId": "downloadInvoicePdfFromSharepoint1",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "downloadInvoicePdfFromSharepoint1.error",
+        "type": "object",
+        "description": "Error information if the node fails",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "required": [
+            "code",
+            "message",
+            "detail",
+            "category",
+            "status"
+          ],
+          "properties": {
+            "code": {
+              "type": "string",
+              "description": "Error code as a string"
+            },
+            "message": {
+              "type": "string",
+              "description": "High-level error message"
+            },
+            "detail": {
+              "type": "string",
+              "description": "Detailed error description"
+            },
+            "category": {
+              "type": "string",
+              "description": "Error category"
+            },
+            "status": {
+              "type": "integer",
+              "description": "HTTP status code"
+            }
+          },
+          "additionalProperties": false
+        },
+        "binding": {
+          "nodeId": "downloadInvoicePdfFromSharepoint1",
+          "outputId": "error"
+        }
+      },
+      {
+        "id": "extractInvoiceFields.output",
+        "type": "object",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "ExtractionResult": {
+              "type": "object",
+              "properties": {
+                "DocumentId": {
+                  "type": "string"
+                },
+                "ResultsVersion": {
+                  "type": "integer"
+                },
+                "ResultsDocument": {
+                  "type": "object",
+                  "properties": {
+                    "Bounds": {
+                      "type": "object",
+                      "properties": {
+                        "PageCount": {
+                          "type": "integer"
+                        },
+                        "PageRange": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "Language": {
+                      "type": "string"
+                    },
+                    "DocumentGroup": {
+                      "type": "string"
+                    },
+                    "DocumentCategory": {
+                      "type": "string"
+                    },
+                    "DocumentTypeId": {
+                      "type": "string"
+                    },
+                    "DocumentTypeName": {
+                      "type": "string"
+                    },
+                    "DocumentTypeDataVersion": {
+                      "type": "string"
+                    },
+                    "DataVersion": {
+                      "type": "string"
+                    },
+                    "DocumentTypeSource": {
+                      "type": "string"
+                    },
+                    "DocumentTypeField": {
+                      "type": "object",
+                      "properties": {
+                        "Components": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "FieldId": {
+                                "type": "string"
+                              },
+                              "FieldName": {
+                                "type": "string"
+                              },
+                              "FieldType": {
+                                "type": "string"
+                              },
+                              "IsMissing": {
+                                "type": "boolean"
+                              },
+                              "DataSource": {
+                                "type": "string"
+                              },
+                              "Values": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                }
+                              },
+                              "DataVersion": {
+                                "type": "integer"
+                              },
+                              "OperatorConfirmed": {
+                                "type": "boolean"
+                              },
+                              "ValidatorNotes": {
+                                "type": "string"
+                              },
+                              "ValidatorNotesInfo": {
+                                "type": "string"
+                              }
+                            }
+                          }
+                        },
+                        "Value": {
+                          "type": "string"
+                        },
+                        "UnformattedValue": {
+                          "type": "string"
+                        },
+                        "Reference": {
+                          "type": "object",
+                          "properties": {
+                            "TextStartIndex": {
+                              "type": "integer"
+                            },
+                            "TextLength": {
+                              "type": "integer"
+                            },
+                            "Tokens": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "TextStartIndex": {
+                                    "type": "integer"
+                                  },
+                                  "TextLength": {
+                                    "type": "integer"
+                                  },
+                                  "Page": {
+                                    "type": "integer"
+                                  },
+                                  "PageWidth": {
+                                    "type": "integer"
+                                  },
+                                  "PageHeight": {
+                                    "type": "integer"
+                                  },
+                                  "Boxes": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "integer"
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        },
+                        "DerivedFields": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "FieldId": {
+                                "type": "string"
+                              },
+                              "Value": {
+                                "type": "string"
+                              }
+                            }
+                          }
+                        },
+                        "Confidence": {
+                          "type": "integer"
+                        },
+                        "OperatorConfirmed": {
+                          "type": "boolean"
+                        },
+                        "OcrConfidence": {
+                          "type": "integer"
+                        },
+                        "TextType": {
+                          "type": "string"
+                        },
+                        "ValidatorNotes": {
+                          "type": "string"
+                        },
+                        "ValidatorNotesInfo": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "Fields": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "FieldId": {
+                            "type": "string"
+                          },
+                          "FieldName": {
+                            "type": "string"
+                          },
+                          "FieldType": {
+                            "type": "string"
+                          },
+                          "IsMissing": {
+                            "type": "boolean"
+                          },
+                          "DataSource": {
+                            "type": "string"
+                          },
+                          "Values": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "DataVersion": {
+                            "type": "integer"
+                          },
+                          "OperatorConfirmed": {
+                            "type": "boolean"
+                          },
+                          "ValidatorNotes": {
+                            "type": "string"
+                          },
+                          "ValidatorNotesInfo": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    },
+                    "Tables": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "FieldId": {
+                            "type": "string"
+                          },
+                          "FieldName": {
+                            "type": "string"
+                          },
+                          "IsMissing": {
+                            "type": "boolean"
+                          },
+                          "DataSource": {
+                            "type": "string"
+                          },
+                          "DataVersion": {
+                            "type": "integer"
+                          },
+                          "OperatorConfirmed": {
+                            "type": "boolean"
+                          },
+                          "Values": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "OperatorConfirmed": {
+                                  "type": "boolean"
+                                },
+                                "Confidence": {
+                                  "type": "integer"
+                                },
+                                "OcrConfidence": {
+                                  "type": "integer"
+                                },
+                                "Cells": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "RowIndex": {
+                                        "type": "integer"
+                                      },
+                                      "ColumnIndex": {
+                                        "type": "integer"
+                                      },
+                                      "IsHeader": {
+                                        "type": "boolean"
+                                      },
+                                      "IsMissing": {
+                                        "type": "boolean"
+                                      },
+                                      "OperatorConfirmed": {
+                                        "type": "boolean"
+                                      },
+                                      "DataSource": {
+                                        "type": "string"
+                                      },
+                                      "DataVersion": {
+                                        "type": "integer"
+                                      },
+                                      "Values": {
+                                        "type": "array",
+                                        "items": {
+                                          "type": "object",
+                                          "properties": {
+                                            "Components": {
+                                              "type": "array",
+                                              "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                  "FieldId": {
+                                                    "type": "string"
+                                                  },
+                                                  "FieldName": {
+                                                    "type": "string"
+                                                  },
+                                                  "FieldType": {
+                                                    "type": "string"
+                                                  },
+                                                  "IsMissing": {
+                                                    "type": "boolean"
+                                                  },
+                                                  "DataSource": {
+                                                    "type": "string"
+                                                  },
+                                                  "Values": {
+                                                    "type": "array",
+                                                    "items": {
+                                                      "type": "string"
+                                                    }
+                                                  },
+                                                  "DataVersion": {
+                                                    "type": "integer"
+                                                  },
+                                                  "OperatorConfirmed": {
+                                                    "type": "boolean"
+                                                  },
+                                                  "ValidatorNotes": {
+                                                    "type": "string"
+                                                  },
+                                                  "ValidatorNotesInfo": {
+                                                    "type": "string"
+                                                  }
+                                                }
+                                              }
+                                            },
+                                            "Value": {
+                                              "type": "string"
+                                            },
+                                            "UnformattedValue": {
+                                              "type": "string"
+                                            },
+                                            "Reference": {
+                                              "type": "object",
+                                              "properties": {
+                                                "TextStartIndex": {
+                                                  "type": "integer"
+                                                },
+                                                "TextLength": {
+                                                  "type": "integer"
+                                                },
+                                                "Tokens": {
+                                                  "type": "array",
+                                                  "items": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                      "TextStartIndex": {
+                                                        "type": "integer"
+                                                      },
+                                                      "TextLength": {
+                                                        "type": "integer"
+                                                      },
+                                                      "Page": {
+                                                        "type": "integer"
+                                                      },
+                                                      "PageWidth": {
+                                                        "type": "integer"
+                                                      },
+                                                      "PageHeight": {
+                                                        "type": "integer"
+                                                      },
+                                                      "Boxes": {
+                                                        "type": "array",
+                                                        "items": {
+                                                          "type": "integer"
+                                                        }
+                                                      }
+                                                    }
+                                                  }
+                                                }
+                                              }
+                                            },
+                                            "DerivedFields": {
+                                              "type": "array",
+                                              "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                  "FieldId": {
+                                                    "type": "string"
+                                                  },
+                                                  "Value": {
+                                                    "type": "string"
+                                                  }
+                                                }
+                                              }
+                                            },
+                                            "Confidence": {
+                                              "type": "integer"
+                                            },
+                                            "OperatorConfirmed": {
+                                              "type": "boolean"
+                                            },
+                                            "OcrConfidence": {
+                                              "type": "integer"
+                                            },
+                                            "TextType": {
+                                              "type": "string"
+                                            },
+                                            "ValidatorNotes": {
+                                              "type": "string"
+                                            },
+                                            "ValidatorNotesInfo": {
+                                              "type": "string"
+                                            }
+                                          }
+                                        }
+                                      }
+                                    }
+                                  }
+                                },
+                                "ColumnInfo": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "FieldId": {
+                                        "type": "string"
+                                      },
+                                      "FieldName": {
+                                        "type": "string"
+                                      },
+                                      "FieldType": {
+                                        "type": "string"
+                                      }
+                                    }
+                                  }
+                                },
+                                "NumberOfRows": {
+                                  "type": "integer"
+                                },
+                                "ValidatorNotes": {
+                                  "type": "string"
+                                },
+                                "ValidatorNotesInfo": {
+                                  "type": "string"
+                                }
+                              }
+                            }
+                          },
+                          "ValidatorNotes": {
+                            "type": "string"
+                          },
+                          "ValidatorNotesInfo": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "ExtractorPayloads": {
+                  "type": "object",
+                  "properties": {
+                    "Id": {
+                      "type": "string"
+                    },
+                    "Payload": {
+                      "type": "string"
+                    },
+                    "SavedPayloadId": {
+                      "type": "string"
+                    },
+                    "TaxonomySchemaMapping": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "BusinessrulesResults": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "FieldId": {
+                        "type": "string"
+                      },
+                      "FieldType": {
+                        "type": "string"
+                      },
+                      "Criticality": {
+                        "type": "string"
+                      },
+                      "IsValid": {
+                        "type": "boolean"
+                      },
+                      "Results": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "Value": {
+                              "type": "object",
+                              "properties": {
+                                "Value": {
+                                  "type": "string"
+                                },
+                                "DerivedValue": {
+                                  "type": "string"
+                                }
+                              }
+                            },
+                            "IsValid": {
+                              "type": "boolean"
+                            },
+                            "Rules": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "Rule": {
+                                    "type": "object",
+                                    "properties": {
+                                      "Name": {
+                                        "type": "string"
+                                      },
+                                      "Type": {
+                                        "type": "string"
+                                      },
+                                      "LogicalOperator": {
+                                        "type": "string"
+                                      },
+                                      "comparisonOperator": {
+                                        "type": "string"
+                                      },
+                                      "Expression": {
+                                        "type": "string"
+                                      },
+                                      "SetValues": {
+                                        "type": "array",
+                                        "items": {
+                                          "type": "string"
+                                        }
+                                      }
+                                    }
+                                  },
+                                  "IsValid": {
+                                    "type": "boolean"
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      },
+                      "BrokenRules": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "Name": {
+                              "type": "string"
+                            },
+                            "Type": {
+                              "type": "string"
+                            },
+                            "LogicalOperator": {
+                              "type": "string"
+                            },
+                            "ComparisonOperator": {
+                              "type": "string"
+                            },
+                            "Expression": {
+                              "type": "string"
+                            },
+                            "SetValues": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            }
+                          }
+                        }
+                      },
+                      "RowIndex": {
+                        "type": "integer"
+                      },
+                      "TableFieldId": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "binding": {
+          "nodeId": "extractInvoiceFields",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "extractInvoiceFields.error",
+        "type": "object",
+        "description": "Error information if the node fails",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "required": [
+            "code",
+            "message",
+            "detail",
+            "category",
+            "status"
+          ],
+          "properties": {
+            "code": {
+              "type": "string",
+              "description": "Error code as a string"
+            },
+            "message": {
+              "type": "string",
+              "description": "High-level error message"
+            },
+            "detail": {
+              "type": "string",
+              "description": "Detailed error description"
+            },
+            "category": {
+              "type": "string",
+              "description": "Error category"
+            },
+            "status": {
+              "type": "integer",
+              "description": "HTTP status code"
+            }
+          },
+          "additionalProperties": false
+        },
+        "binding": {
+          "nodeId": "extractInvoiceFields",
+          "outputId": "error"
+        }
+      },
+      {
+        "id": "postInvoiceToSap1.output",
+        "type": "object",
+        "description": "The return value of the connector.",
+        "binding": {
+          "nodeId": "postInvoiceToSap1",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "postInvoiceToSap1.error",
+        "type": "object",
+        "description": "Error information if the node fails",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "required": [
+            "code",
+            "message",
+            "detail",
+            "category",
+            "status"
+          ],
+          "properties": {
+            "code": {
+              "type": "string",
+              "description": "Error code as a string"
+            },
+            "message": {
+              "type": "string",
+              "description": "High-level error message"
+            },
+            "detail": {
+              "type": "string",
+              "description": "Detailed error description"
+            },
+            "category": {
+              "type": "string",
+              "description": "Error category"
+            },
+            "status": {
+              "type": "integer",
+              "description": "HTTP status code"
+            }
+          },
+          "additionalProperties": false
+        },
+        "binding": {
+          "nodeId": "postInvoiceToSap1",
+          "outputId": "error"
+        }
+      }
+    ]
+  },
+  "layout": {
+    "nodes": {
+      "start": {
+        "position": {
+          "x": -192,
+          "y": 0
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        }
+      },
+      "downloadInvoicePdfFromSharepoint1": {
+        "position": {
+          "x": 0,
+          "y": 0
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        }
+      },
+      "extractInvoiceFields": {
+        "position": {
+          "x": 192,
+          "y": 0
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        }
+      },
+      "postInvoiceToSap1": {
+        "position": {
+          "x": 384,
+          "y": 0
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        }
+      },
+      "end": {
+        "position": {
+          "x": 576,
+          "y": 0
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        }
+      }
+    }
+  }
+}

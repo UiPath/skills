@@ -1,0 +1,38 @@
+# Same-ground campaign contract (Tao, 2026-08-10): loop-neutral v1-base
+# prompt; v1-weighted intersection criteria plus report-only offline advisories;
+# paired limit envelope. Cross-arm parity is enforced by the sync gate.
+task_id: skill-flow-ipe-drive-to-slack
+description: |
+  E2E cross-connector scenario — downloads a file from Google Drive and posts it into a Slack channel via the "Send File to channel" activity. Exercises binary file flow between two IS connectors in a single Flow.
+tags:
+  - uipath-maestro-flow
+  - integration
+  - lifecycle:generate
+  - shape:multi-node
+  - connector
+  - e2e
+  - uipath-google-drive
+  - uipath-salesforce-slack
+  - ipe
+  - mode:build
+run_limits:
+  expected_turns: 49
+  task_timeout: 1500
+  max_turns: 120
+  turn_timeout: 1500
+initial_prompt: "Create a new Flow project called \"DriveToSlackTest\" with a manual trigger.\nIt should download a file from Google Drive and then post that file into a \nSlack channel named \"coding-agent-testing\" using Slack.\nWire the file output of the download operation to the channel input of the slack send file.  \nValidate the final flow file.\nFor the Google Drive Download File activity, use the first available file.\nFor Send File, send as `user`.\nFor google drive, use the connection name 'is.sandboxes.test@gmail.com', and for slack\nuse the connection name 'is-sandboxes'.\n\nDo NOT ask for approval, confirmation, or feedback. Do NOT pause between planning and implementation. Build the complete flow end-to-end in a single pass.\n"
+success_criteria:
+  - type: command_executed
+    description: uip maestro flow validate was called
+    tool_name: Bash
+    command_pattern: (uip|\$UIP)\s+(maestro\s+)?flow\s+validate
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+  - type: run_command
+    description: 'Drive→Slack flow checks: structure and connector wiring'
+    command: python3 $TASK_DIR/check_drive_to_slack.py
+    timeout: 600
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "ContractRouting",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "29ef7cbe-2a0a-47c0-889c-bb7e342f0ed1",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "ContractRouting"
+    },
+    "locks": [],
+    "key": "5e641a02-b4d3-4b8f-bbf5-d4d4983bdea3",
+    "files": []
+  }
+}

@@ -1,0 +1,1178 @@
+{
+  "id": "ccb6c681-727a-433b-b03a-44025a92b98f",
+  "version": "1.8",
+  "name": "ExpenseApproval",
+  "nodes": [
+    {
+      "id": "start",
+      "type": "core.trigger.manual",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Manual trigger"
+      },
+      "inputs": {
+        "entryPointId": "89dc2aa3-2e01-4050-a5a0-2a8ae6db4486",
+        "isDefaultEntryPoint": true
+      },
+      "outputs": {
+        "output": {
+          "type": "object",
+          "description": "The return value of the trigger.",
+          "source": "=result.response",
+          "var": "output"
+        }
+      }
+    },
+    {
+      "id": "validateExpense",
+      "type": "core.action.script",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Validate Expense Report"
+      },
+      "inputs": {
+        "script": "var input = $vars.start.output;\nvar employeeId = input.employeeId || '';\nvar employeeName = input.employeeName || '';\nvar amount = input.amount || 0;\nvar description = input.description || '';\nvar category = input.category || 'General';\nvar receiptUrl = input.receiptUrl || '';\nvar submittedAt = input.submittedAt || new Date().toISOString();\nvar isValid = employeeId !== '' && employeeName !== '' && amount > 0 && description !== '';\nvar validationMessage = isValid ? 'Expense report is valid' : 'Missing required fields: employeeId, employeeName, amount, or description';\nreturn {\n  isValid: isValid,\n  validationMessage: validationMessage,\n  employeeId: employeeId,\n  employeeName: employeeName,\n  amount: amount,\n  description: description,\n  category: category,\n  receiptUrl: receiptUrl,\n  submittedAt: submittedAt,\n  expenseId: 'EXP-' + employeeId + '-' + Date.now()\n};"
+      },
+      "outputs": {
+        "output": {
+          "type": "object",
+          "description": "The return value of the script",
+          "source": "=result.response",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the script fails",
+          "source": "=result.Error",
+          "var": "error"
+        }
+      }
+    },
+    {
+      "id": "checkValidation",
+      "type": "core.logic.decision",
+      "typeVersion": "1.1",
+      "display": {
+        "label": "Is Expense Valid?"
+      },
+      "inputs": {
+        "expression": "$vars.validateExpense.output.isValid === true",
+        "trueLabel": "Valid",
+        "falseLabel": "Invalid"
+      }
+    },
+    {
+      "id": "logInvalidExpense",
+      "type": "core.action.script",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Log Invalid Submission"
+      },
+      "inputs": {
+        "script": "return {\n  status: 'rejected',\n  reason: 'validation_failed',\n  message: $vars.validateExpense.output.validationMessage,\n  employeeId: $vars.validateExpense.output.employeeId,\n  submittedAt: $vars.validateExpense.output.submittedAt,\n  loggedAt: new Date().toISOString()\n};"
+      },
+      "outputs": {
+        "output": {
+          "type": "object",
+          "description": "The return value of the script",
+          "source": "=result.response",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the script fails",
+          "source": "=result.Error",
+          "var": "error"
+        }
+      }
+    },
+    {
+      "id": "managerApproval",
+      "type": "uipath.human-in-the-loop.quick-form",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Manager Approval"
+      },
+      "inputs": {
+        "title": "Expense Report Approval Required",
+        "priority": "Medium",
+        "schema": {
+          "schemaId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+          "fields": [
+            {
+              "id": "expenseid",
+              "label": "Expense ID",
+              "type": "text",
+              "direction": "input",
+              "binding": "vars.validateExpense.output.expenseId"
+            },
+            {
+              "id": "employeename",
+              "label": "Employee Name",
+              "type": "text",
+              "direction": "input",
+              "binding": "vars.validateExpense.output.employeeName"
+            },
+            {
+              "id": "amount",
+              "label": "Amount ($)",
+              "type": "number",
+              "direction": "input",
+              "binding": "vars.validateExpense.output.amount"
+            },
+            {
+              "id": "category",
+              "label": "Category",
+              "type": "text",
+              "direction": "input",
+              "binding": "vars.validateExpense.output.category"
+            },
+            {
+              "id": "rejectionreason",
+              "label": "Rejection Reason (optional)",
+              "type": "text",
+              "direction": "output",
+              "variable": "vars.rejectionReason"
+            }
+          ],
+          "outcomes": [
+            {
+              "id": "approve",
+              "name": "Approve",
+              "type": "string",
+              "isPrimary": true,
+              "action": "Continue"
+            },
+            {
+              "id": "reject",
+              "name": "Reject",
+              "type": "string",
+              "isPrimary": false,
+              "action": "Continue"
+            }
+          ]
+        },
+        "recipient": {
+          "channels": [
+            "Email",
+            "ActionCenter"
+          ],
+          "connections": {},
+          "assignee": {
+            "type": "group",
+            "name": "expense-approvers"
+          }
+        }
+      },
+      "outputs": {
+        "output": {
+          "type": "object",
+          "description": "Task result data",
+          "source": "=result",
+          "var": "output",
+          "properties": {
+            "rejectionreason": {
+              "type": "string"
+            },
+            "Action": {
+              "type": "string",
+              "enum": [
+                "Approve",
+                "Reject"
+              ],
+              "default": "Approve"
+            }
+          }
+        },
+        "status": {
+          "type": "string",
+          "description": "Task completion status",
+          "source": "=result.Action",
+          "var": "status",
+          "enum": [
+            "Approve",
+            "Reject"
+          ],
+          "default": "Approve"
+        }
+      }
+    },
+    {
+      "id": "checkApproval",
+      "type": "core.logic.decision",
+      "typeVersion": "1.1",
+      "display": {
+        "label": "Approved by Manager?"
+      },
+      "inputs": {
+        "expression": "$vars.managerApproval.output.Action === 'Approve'",
+        "trueLabel": "Approved",
+        "falseLabel": "Rejected"
+      }
+    },
+    {
+      "id": "logApproved",
+      "type": "core.action.script",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Log Approved Expense"
+      },
+      "inputs": {
+        "script": "return {\n  status: 'approved',\n  expenseId: $vars.validateExpense.output.expenseId,\n  employeeId: $vars.validateExpense.output.employeeId,\n  employeeName: $vars.validateExpense.output.employeeName,\n  amount: $vars.validateExpense.output.amount,\n  description: $vars.validateExpense.output.description,\n  category: $vars.validateExpense.output.category,\n  submittedAt: $vars.validateExpense.output.submittedAt,\n  rejectionReason: $vars.managerApproval.output.rejectionreason || '',\n  approvedAt: new Date().toISOString(),\n  message: 'Expense approved — payment processing initiated'\n};"
+      },
+      "outputs": {
+        "output": {
+          "type": "object",
+          "description": "The return value of the script",
+          "source": "=result.response",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the script fails",
+          "source": "=result.Error",
+          "var": "error"
+        }
+      }
+    },
+    {
+      "id": "logRejected",
+      "type": "core.action.script",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Log Rejected Expense"
+      },
+      "inputs": {
+        "script": "return {\n  status: 'rejected',\n  reason: 'manager_rejected',\n  expenseId: $vars.validateExpense.output.expenseId,\n  employeeId: $vars.validateExpense.output.employeeId,\n  employeeName: $vars.validateExpense.output.employeeName,\n  amount: $vars.validateExpense.output.amount,\n  description: $vars.validateExpense.output.description,\n  category: $vars.validateExpense.output.category,\n  submittedAt: $vars.validateExpense.output.submittedAt,\n  rejectionReason: $vars.managerApproval.output.rejectionreason || '',\n  rejectedAt: new Date().toISOString(),\n  message: 'Expense rejected by manager — employee will be notified'\n};"
+      },
+      "outputs": {
+        "output": {
+          "type": "object",
+          "description": "The return value of the script",
+          "source": "=result.response",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the script fails",
+          "source": "=result.Error",
+          "var": "error"
+        }
+      }
+    },
+    {
+      "id": "doneApproved",
+      "type": "core.control.end",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Done - Approved"
+      },
+      "inputs": {}
+    },
+    {
+      "id": "doneRejected",
+      "type": "core.control.end",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Done - Rejected"
+      },
+      "inputs": {}
+    },
+    {
+      "id": "doneInvalid",
+      "type": "core.control.end",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Done - Invalid"
+      },
+      "inputs": {}
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge-start-validate",
+      "sourceNodeId": "start",
+      "sourcePort": "output",
+      "targetNodeId": "validateExpense",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge-validate-checkValidation",
+      "sourceNodeId": "validateExpense",
+      "sourcePort": "success",
+      "targetNodeId": "checkValidation",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge-checkValidation-invalid",
+      "sourceNodeId": "checkValidation",
+      "sourcePort": "false",
+      "targetNodeId": "logInvalidExpense",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge-checkValidation-valid",
+      "sourceNodeId": "checkValidation",
+      "sourcePort": "true",
+      "targetNodeId": "managerApproval",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge-logInvalid-doneInvalid",
+      "sourceNodeId": "logInvalidExpense",
+      "sourcePort": "success",
+      "targetNodeId": "doneInvalid",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge-managerApproval-checkApproval",
+      "sourceNodeId": "managerApproval",
+      "sourcePort": "completed",
+      "targetNodeId": "checkApproval",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge-checkApproval-approved",
+      "sourceNodeId": "checkApproval",
+      "sourcePort": "true",
+      "targetNodeId": "logApproved",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge-checkApproval-rejected",
+      "sourceNodeId": "checkApproval",
+      "sourcePort": "false",
+      "targetNodeId": "logRejected",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge-logApproved-doneApproved",
+      "sourceNodeId": "logApproved",
+      "sourcePort": "success",
+      "targetNodeId": "doneApproved",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge-logRejected-doneRejected",
+      "sourceNodeId": "logRejected",
+      "sourcePort": "success",
+      "targetNodeId": "doneRejected",
+      "targetPort": "input"
+    }
+  ],
+  "definitions": [
+    {
+      "nodeType": "core.trigger.manual",
+      "version": "1.0",
+      "category": "trigger",
+      "description": "Start workflow manually",
+      "tags": [
+        "trigger",
+        "start",
+        "manual"
+      ],
+      "sortOrder": 40,
+      "display": {
+        "label": "Manual trigger",
+        "icon": "play",
+        "shape": "circle"
+      },
+      "handleConfiguration": [
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "output",
+              "type": "source",
+              "handleType": "output",
+              "showButton": true,
+              "constraints": {
+                "forbiddenTargetCategories": [
+                  "trigger"
+                ]
+              }
+            }
+          ],
+          "visible": true
+        }
+      ],
+      "model": {
+        "type": "bpmn:StartEvent",
+        "entryPointId": true
+      },
+      "outputDefinition": {
+        "output": {
+          "type": "object",
+          "description": "Data passed when manually triggering the workflow.",
+          "source": "null",
+          "var": "output"
+        }
+      },
+      "toolbarExtensions": {
+        "design": {
+          "actions": [
+            {
+              "id": "change-trigger-type",
+              "icon": "square-mouse-pointer",
+              "label": "Change trigger type"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "nodeType": "core.action.script",
+      "version": "1.0",
+      "category": "data-operations",
+      "description": "Run custom JavaScript code",
+      "tags": [
+        "code",
+        "javascript",
+        "python"
+      ],
+      "sortOrder": 35,
+      "supportsErrorHandling": true,
+      "display": {
+        "label": "Script",
+        "icon": "code"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "success",
+              "type": "source",
+              "handleType": "output"
+            },
+            {
+              "id": "error",
+              "label": "Error",
+              "type": "source",
+              "handleType": "output",
+              "visible": "{inputs.errorHandlingEnabled}",
+              "constraints": {
+                "maxConnections": 1
+              }
+            }
+          ]
+        }
+      ],
+      "debug": {
+        "runtime": "clientScript"
+      },
+      "model": {
+        "type": "bpmn:ScriptTask"
+      },
+      "inputDefinition": {
+        "type": "object",
+        "properties": {
+          "script": {
+            "type": "string",
+            "minLength": 1,
+            "errorMessage": "A script function is required",
+            "validationSeverity": "warning"
+          }
+        },
+        "required": [
+          "script"
+        ]
+      },
+      "inputDefaults": {
+        "script": ""
+      },
+      "outputDefinition": {
+        "output": {
+          "type": "object",
+          "description": "The return value of the script",
+          "source": "=result.response",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails",
+          "source": "=Error",
+          "var": "error",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "required": [
+              "code",
+              "message",
+              "detail",
+              "category",
+              "status"
+            ],
+            "properties": {
+              "code": {
+                "type": "string",
+                "description": "Error code as a string"
+              },
+              "message": {
+                "type": "string",
+                "description": "High-level error message"
+              },
+              "detail": {
+                "type": "string",
+                "description": "Detailed error description"
+              },
+              "category": {
+                "type": "string",
+                "description": "Error category"
+              },
+              "status": {
+                "type": "integer",
+                "description": "HTTP status code"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "form": {
+        "id": "script-properties",
+        "title": "Script configuration",
+        "sections": [
+          {
+            "id": "script",
+            "title": "Script",
+            "collapsible": true,
+            "defaultExpanded": true,
+            "fields": [
+              {
+                "name": "inputs.script",
+                "type": "custom",
+                "component": "script-editor",
+                "componentProps": {
+                  "language": "javascript",
+                  "returnType": "any",
+                  "validationMode": "script",
+                  "minHeight": 200,
+                  "placeholder": " // Return an object with your result\nreturn {\n  message: \"Web request response\",\n  data: $vars.httpRequest1.output\n};"
+                },
+                "label": "Code",
+                "description": "JavaScript expression that returns a result object"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "nodeType": "core.logic.decision",
+      "version": "1.1",
+      "category": "control-flow",
+      "description": "Branch based on a true/false condition",
+      "tags": [
+        "control-flow",
+        "if",
+        "loop",
+        "switch"
+      ],
+      "sortOrder": 20,
+      "display": {
+        "label": "Decision",
+        "icon": "trending-up-down"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ],
+          "visible": true
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "true",
+              "type": "source",
+              "handleType": "output",
+              "label": "{inputs.trueLabel}",
+              "constraints": {
+                "minConnections": 1
+              }
+            },
+            {
+              "id": "false",
+              "type": "source",
+              "handleType": "output",
+              "label": "{inputs.falseLabel}"
+            }
+          ],
+          "visible": true
+        }
+      ],
+      "debug": {
+        "runtime": "clientScript"
+      },
+      "model": {
+        "type": "bpmn:InclusiveGateway"
+      },
+      "inputDefinition": {
+        "type": "object",
+        "properties": {
+          "expression": {
+            "type": "string",
+            "minLength": 1,
+            "errorMessage": "A condition expression is required"
+          },
+          "trueLabel": {
+            "type": "string"
+          },
+          "falseLabel": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "expression"
+        ]
+      },
+      "outputDefinition": {
+        "matchedCase": {
+          "type": "string",
+          "description": "The label of the matched branch (true/false label)",
+          "var": "matchedCase"
+        },
+        "matchedCaseId": {
+          "type": "string",
+          "description": "The branch that was taken (true or false)",
+          "var": "matchedCaseId"
+        }
+      },
+      "inputDefaults": {
+        "trueLabel": "True",
+        "falseLabel": "False"
+      },
+      "form": {
+        "id": "decision-properties",
+        "title": "Decision configuration",
+        "sections": [
+          {
+            "id": "condition",
+            "title": "Condition",
+            "fields": [
+              {
+                "name": "inputs.expression",
+                "type": "custom",
+                "component": "script-editor",
+                "componentProps": {
+                  "language": "javascript",
+                  "returnType": "boolean",
+                  "validationMode": "expression",
+                  "minHeight": 100,
+                  "placeholder": "e.g., $vars.data.status === \"approved\" && $vars.data.amount > 1000"
+                },
+                "label": "Expression",
+                "description": "JavaScript expression that evaluates to true or false"
+              },
+              {
+                "name": "inputs.trueLabel",
+                "type": "text",
+                "label": "True branch label",
+                "description": "Label shown when condition is true"
+              },
+              {
+                "name": "inputs.falseLabel",
+                "type": "text",
+                "label": "False branch label",
+                "description": "Label shown when condition is false"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "nodeType": "uipath.human-in-the-loop.quick-form",
+      "version": "1.0",
+      "category": "human-task",
+      "description": "Fast inline approvals with inline debug",
+      "tags": [
+        "human-task",
+        "hitl",
+        "human-in-the-loop",
+        "quick-form",
+        "approval"
+      ],
+      "sortOrder": 27,
+      "display": {
+        "label": "Quick Form",
+        "icon": "users",
+        "shape": "square"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ],
+          "visible": true
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "completed",
+              "type": "source",
+              "handleType": "output",
+              "showButton": true,
+              "constraints": {
+                "forbiddenTargetCategories": [
+                  "trigger"
+                ]
+              }
+            }
+          ],
+          "visible": true
+        }
+      ],
+      "model": {
+        "type": "bpmn:UserTask",
+        "serviceType": "Actions.HITL"
+      },
+      "inputDefaults": {
+        "schema": {
+          "fields": [],
+          "outcomes": [
+            {
+              "id": "submit",
+              "name": "Submit",
+              "type": "string",
+              "isPrimary": true,
+              "action": "Continue"
+            }
+          ]
+        },
+        "recipient": {
+          "channels": [
+            "Email",
+            "ActionCenter"
+          ],
+          "connections": {},
+          "assignee": {
+            "type": "group",
+            "name": "expense-approvers"
+          }
+        }
+      },
+      "outputDefinition": {
+        "output": {
+          "type": "object",
+          "description": "Task result data",
+          "source": "=result",
+          "var": "output"
+        },
+        "status": {
+          "type": "string",
+          "description": "Task completion status (completed, cancelled, timeout)",
+          "source": "=result.Action",
+          "var": "status"
+        }
+      },
+      "form": {
+        "id": "hitl-quick-form-properties",
+        "title": "Quick Form Task Configuration",
+        "sections": [
+          {
+            "id": "delivery",
+            "title": "Task Delivery",
+            "collapsible": true,
+            "defaultExpanded": true,
+            "fields": [
+              {
+                "name": "inputs.recipient",
+                "type": "custom",
+                "component": "hitl-channel-selector",
+                "label": "Delivery Channels",
+                "description": "Select where the task should be sent"
+              }
+            ]
+          },
+          {
+            "id": "schema",
+            "title": "Schema",
+            "collapsible": true,
+            "defaultExpanded": true,
+            "fields": [
+              {
+                "name": "inputs.schema",
+                "type": "custom",
+                "component": "hitl-schema-editor",
+                "label": "Task Schema",
+                "description": "Define the input and output parameters for this task"
+              }
+            ]
+          },
+          {
+            "id": "additional-properties",
+            "title": "Additional properties",
+            "collapsible": true,
+            "defaultExpanded": true,
+            "fields": [
+              {
+                "name": "inputs.title",
+                "type": "text",
+                "label": "Task title"
+              },
+              {
+                "name": "inputs.priority",
+                "type": "select",
+                "label": "Priority",
+                "options": [
+                  {
+                    "label": "Low",
+                    "value": "Low"
+                  },
+                  {
+                    "label": "Medium",
+                    "value": "Medium"
+                  },
+                  {
+                    "label": "High",
+                    "value": "High"
+                  }
+                ]
+              },
+              {
+                "name": "inputs.labels",
+                "type": "text",
+                "label": "Labels",
+                "placeholder": "Comma-separated (e.g. finance,approval)"
+              }
+            ]
+          }
+        ]
+      },
+      "runtimeConstraints": {
+        "exclude": [
+          "api-function"
+        ]
+      }
+    },
+    {
+      "nodeType": "core.control.end",
+      "version": "1.0",
+      "category": "control-flow",
+      "description": "Mark the end of a workflow path",
+      "tags": [
+        "control-flow",
+        "end",
+        "finish",
+        "complete"
+      ],
+      "sortOrder": 20,
+      "display": {
+        "label": "End",
+        "icon": "circle-check",
+        "shape": "circle"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        }
+      ],
+      "model": {
+        "type": "bpmn:EndEvent"
+      },
+      "runtimeConstraints": {
+        "exclude": [
+          "api-function"
+        ]
+      }
+    }
+  ],
+  "bindings": [],
+  "variables": {
+    "globals": [],
+    "nodes": [
+      {
+        "id": "start.output",
+        "type": "object",
+        "description": "The return value of the trigger.",
+        "binding": {
+          "nodeId": "start",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "validateExpense.output",
+        "type": "object",
+        "description": "The return value of the script",
+        "binding": {
+          "nodeId": "validateExpense",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "validateExpense.error",
+        "type": "object",
+        "description": "Error information if the script fails",
+        "binding": {
+          "nodeId": "validateExpense",
+          "outputId": "error"
+        }
+      },
+      {
+        "id": "checkValidation.matchedCase",
+        "type": "string",
+        "description": "The label of the matched branch (true/false label)",
+        "binding": {
+          "nodeId": "checkValidation",
+          "outputId": "matchedCase"
+        }
+      },
+      {
+        "id": "checkValidation.matchedCaseId",
+        "type": "string",
+        "description": "The branch that was taken (true or false)",
+        "binding": {
+          "nodeId": "checkValidation",
+          "outputId": "matchedCaseId"
+        }
+      },
+      {
+        "id": "logInvalidExpense.output",
+        "type": "object",
+        "description": "The return value of the script",
+        "binding": {
+          "nodeId": "logInvalidExpense",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "logInvalidExpense.error",
+        "type": "object",
+        "description": "Error information if the script fails",
+        "binding": {
+          "nodeId": "logInvalidExpense",
+          "outputId": "error"
+        }
+      },
+      {
+        "id": "managerApproval.output",
+        "type": "object",
+        "description": "Task result data",
+        "binding": {
+          "nodeId": "managerApproval",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "managerApproval.status",
+        "type": "string",
+        "description": "Task completion status",
+        "binding": {
+          "nodeId": "managerApproval",
+          "outputId": "status"
+        }
+      },
+      {
+        "id": "checkApproval.matchedCase",
+        "type": "string",
+        "description": "The label of the matched branch (true/false label)",
+        "binding": {
+          "nodeId": "checkApproval",
+          "outputId": "matchedCase"
+        }
+      },
+      {
+        "id": "checkApproval.matchedCaseId",
+        "type": "string",
+        "description": "The branch that was taken (true or false)",
+        "binding": {
+          "nodeId": "checkApproval",
+          "outputId": "matchedCaseId"
+        }
+      },
+      {
+        "id": "logApproved.output",
+        "type": "object",
+        "description": "The return value of the script",
+        "binding": {
+          "nodeId": "logApproved",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "logApproved.error",
+        "type": "object",
+        "description": "Error information if the script fails",
+        "binding": {
+          "nodeId": "logApproved",
+          "outputId": "error"
+        }
+      },
+      {
+        "id": "logRejected.output",
+        "type": "object",
+        "description": "The return value of the script",
+        "binding": {
+          "nodeId": "logRejected",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "logRejected.error",
+        "type": "object",
+        "description": "Error information if the script fails",
+        "binding": {
+          "nodeId": "logRejected",
+          "outputId": "error"
+        }
+      }
+    ]
+  },
+  "runtime": "maestro",
+  "layout": {
+    "nodes": {
+      "start": {
+        "position": {
+          "x": 0,
+          "y": 0
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "validateExpense": {
+        "position": {
+          "x": 192,
+          "y": 0
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "checkValidation": {
+        "position": {
+          "x": 384,
+          "y": 0
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "logInvalidExpense": {
+        "position": {
+          "x": 576,
+          "y": 96
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "managerApproval": {
+        "position": {
+          "x": 576,
+          "y": -96
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "checkApproval": {
+        "position": {
+          "x": 768,
+          "y": -96
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "logApproved": {
+        "position": {
+          "x": 960,
+          "y": -192
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "logRejected": {
+        "position": {
+          "x": 960,
+          "y": 0
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "doneApproved": {
+        "position": {
+          "x": 1152,
+          "y": -192
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "doneRejected": {
+        "position": {
+          "x": 1152,
+          "y": 0
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "doneInvalid": {
+        "position": {
+          "x": 768,
+          "y": 96
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      }
+    }
+  }
+}

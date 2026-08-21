@@ -1,0 +1,27 @@
+{
+  "$schema": "https://cloud.uipath.com/draft/2024-12/entry-point",
+  "$id": "entry-points.json",
+  "entryPoints": [
+    {
+      "filePath": "/content/ScriptNormalizer.bpmn#Start_Manual",
+      "uniqueId": "a6052f28-a91c-4bef-86d1-474b0a537420",
+      "type": "ProcessOrchestration",
+      "input": {
+        "type": "object",
+        "properties": {
+          "rawRequest": {
+            "type": "string"
+          }
+        }
+      },
+      "output": {
+        "type": "object",
+        "properties": {
+          "normalizedResponse": {
+            "type": "object"
+          }
+        }
+      }
+    }
+  ]
+}

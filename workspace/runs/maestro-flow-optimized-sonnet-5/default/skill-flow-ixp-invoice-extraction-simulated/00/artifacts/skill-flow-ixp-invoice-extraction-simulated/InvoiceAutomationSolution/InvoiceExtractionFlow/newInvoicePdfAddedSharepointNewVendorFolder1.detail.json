@@ -1,0 +1,33 @@
+{
+  "_comment": "PLANNED CONFIGURATION - NOT YET APPLIED. This flow was built with no live SharePoint connection/site authorized. IT must resolve the real connectionId, folderKey, and location/folder reference IDs, then run `uip maestro flow node configure` with this shape (or the equivalent in Studio Web) before the flow will pass `flow validate` or run.",
+  "connectionId": "<PLACEHOLDER_SHAREPOINT_CONNECTION_ID - IT to provide>",
+  "folderKey": "<PLACEHOLDER_ORCHESTRATOR_FOLDER_KEY - IT to provide>",
+  "eventMode": "polling",
+  "eventParameters": {
+    "ParentDriveID": "<PLACEHOLDER_SHAREPOINT_SITE_URL - IT to provide the 'New Vendor' library/drive reference, resolved via EventFolderPicker>"
+  },
+  "filter": {
+    "groupOperator": 0,
+    "index": 0,
+    "filters": [
+      {
+        "id": "ParentID",
+        "operator": "Equals",
+        "value": {
+          "value": "<PLACEHOLDER_NEW_VENDOR_FOLDER_ID - IT to resolve exact 'New Vendor' folder via EventFolderPicker>",
+          "rawString": "\"<PLACEHOLDER_NEW_VENDOR_FOLDER_ID>\"",
+          "isLiteral": true
+        }
+      },
+      {
+        "id": "Extension",
+        "operator": "Equals",
+        "value": {
+          "value": "pdf",
+          "rawString": "\"pdf\"",
+          "isLiteral": true
+        }
+      }
+    ]
+  }
+}

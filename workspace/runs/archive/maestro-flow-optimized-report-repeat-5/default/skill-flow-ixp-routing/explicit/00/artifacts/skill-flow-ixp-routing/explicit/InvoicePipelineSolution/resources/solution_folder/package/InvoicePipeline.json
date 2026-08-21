@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "InvoicePipeline",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "a0e90a50-e0f4-453a-9a40-9913771de46b",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "InvoicePipeline"
+    },
+    "locks": [],
+    "key": "de8c2a4b-40cb-4623-ab9d-0634e91a017b",
+    "files": []
+  }
+}

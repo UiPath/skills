@@ -1,0 +1,43 @@
+{
+  "version": "2.0",
+  "resources": [
+    {
+      "resource": "connection",
+      "key": "eba956fd-cf23-4006-b33d-8af5e54d00b2",
+      "id": "connectioneba956fd-cf23-4006-b33d-8af5e54d00b2",
+      "value": {
+        "ConnectionId": {
+          "defaultValue": "eba956fd-cf23-4006-b33d-8af5e54d00b2",
+          "isExpression": false,
+          "displayName": "uipath-http-webhook connection"
+        }
+      },
+      "metadata": {
+        "ActivityName": "Wait for HTTP Webhook",
+        "BindingsVersion": "2.2",
+        "DisplayLabel": "uipath-http-webhook connection",
+        "UseConnectionService": "true",
+        "Connector": "uipath-http-webhook"
+      }
+    },
+    {
+      "resource": "connection",
+      "key": "",
+      "id": "connection",
+      "value": {
+        "ConnectionId": {
+          "defaultValue": "ImplicitConnection",
+          "isExpression": false,
+          "displayName": "uipath-uipath-http connection"
+        }
+      },
+      "metadata": {
+        "ActivityName": "Wait for HTTP Webhook",
+        "BindingsVersion": "2.2",
+        "DisplayLabel": "uipath-uipath-http connection",
+        "UseConnectionService": "true",
+        "Connector": "uipath-http-webhook"
+      }
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+{"ts": 1787260198.483497, "args": "maestro bpmn --help", "matched_rule": null, "fixture": null, "exit_code": 0, "error": "unmocked_default"}
+{"ts": 1787260201.5308342, "args": "maestro bpmn debug --help", "matched_rule": null, "fixture": null, "exit_code": 0, "error": "unmocked_default"}
+{"ts": 1787260201.7529356, "args": "maestro bpmn debug-instance --help", "matched_rule": null, "fixture": null, "exit_code": 0, "error": "unmocked_default"}
+{"ts": 1787260202.3174074, "args": "maestro bpmn debug-session --help", "matched_rule": null, "fixture": null, "exit_code": 0, "error": "unmocked_default"}
+{"ts": 1787260206.1227393, "args": "--help", "matched_rule": null, "fixture": null, "exit_code": 0, "error": "unmocked_default"}
+{"ts": 1787260206.870963, "args": "maestro --help", "matched_rule": null, "fixture": null, "exit_code": 0, "error": "unmocked_default"}
+{"ts": 1787260210.2250423, "args": "--version", "matched_rule": null, "fixture": null, "exit_code": 0, "error": "unmocked_default"}
+{"ts": 1787260216.3923593, "args": "maestro bpmn instance incidents debug-fault-777 -f dummy --output json", "matched_rule": null, "fixture": null, "exit_code": 0, "error": "unmocked_default"}
+{"ts": 1787260250.7812688, "args": "maestro bpmn instance --help", "matched_rule": null, "fixture": null, "exit_code": 0, "error": "unmocked_default"}
+{"ts": 1787260263.3966362, "args": "maestro bpmn debug-instance incidents debug-fault-777 --output json", "matched_rule": "maestro bpmn debug-instance incidents debug-fault-777", "fixture": "debug-incidents.json", "exit_code": 0}
+{"ts": 1787260266.896714, "args": "maestro bpmn debug-instance variables debug-fault-777 --output json", "matched_rule": "maestro bpmn debug-instance variables debug-fault-777", "fixture": "debug-variables.json", "exit_code": 0}
+{"ts": 1787260267.3076193, "args": "maestro bpmn debug-instance variables-all debug-fault-777 --output json", "matched_rule": "maestro bpmn debug-instance variables-all debug-fault-777", "fixture": "debug-variables-all.json", "exit_code": 0}
+{"ts": 1787260281.4271939, "args": "--version", "matched_rule": null, "fixture": null, "exit_code": 0, "error": "unmocked_default"}

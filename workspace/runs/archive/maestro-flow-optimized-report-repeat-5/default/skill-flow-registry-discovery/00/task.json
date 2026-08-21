@@ -1,0 +1,1506 @@
+{
+  "task_id": "skill-flow-registry-discovery",
+  "task_description": "Skill-guided evaluation: agent uses the uipath-maestro-flow skill to explore available Flow node types via the registry. Tests whether the skill teaches the correct registry workflow (pull, list/search, get).\n",
+  "variant_id": "default",
+  "agent_type": "claude-code",
+  "model_used": "claude-sonnet-4-6",
+  "started_at": "2026-07-24T17:13:52.437922",
+  "completed_at": "2026-07-24T17:15:56.514248",
+  "duration_seconds": 124.07635140419006,
+  "final_status": "SUCCESS",
+  "max_turns_exhausted": false,
+  "weighted_score": 1.0,
+  "iteration_count": 1,
+  "success_criteria_results": [
+    {
+      "result_kind": "basic",
+      "criterion_type": "command_executed",
+      "description": "Agent pulled registry data",
+      "score": 1.0,
+      "details": "Matched 2/1 required commands (filters: tool_name=Bash, pattern=/uip\\s+(maestro\\s+)?flow\\s+registry\\s+pull/)\nExamples: ['uip maestro flow registry pull --output json 2>&1 | tee /work/output/artifacts/skill-flow-registry-discovery/registry_pu', 'uip maestro flow registry pull --output json 2>&1 | tee /work/output/artifacts/skill-flow-registry-discovery/registry_pu']",
+      "error": null,
+      "pass_threshold": 1.0,
+      "gating": true
+    },
+    {
+      "result_kind": "basic",
+      "criterion_type": "command_executed",
+      "description": "Agent listed or searched registry nodes",
+      "score": 1.0,
+      "details": "Matched 2/1 required commands (filters: tool_name=Bash, pattern=/uip\\s+(maestro\\s+)?flow\\s+registry\\s+(list|search)/)\nExamples: ['uip maestro flow registry search \"http\" --output json --output-filter \"[*].{NodeType:NodeType,DisplayName:DisplayName,De', 'uip maestro flow registry search \"script\" --output json --output-filter \"[*].{NodeType:NodeType,DisplayName:DisplayName,']",
+      "error": null,
+      "pass_threshold": 1.0,
+      "gating": true
+    },
+    {
+      "result_kind": "basic",
+      "criterion_type": "command_executed",
+      "description": "Agent retrieved details on the HTTP node type via registry get",
+      "score": 1.0,
+      "details": "Matched 2/1 required commands (filters: tool_name=Bash, pattern=/uip\\s+(maestro\\s+)?flow\\s+registry\\s+get\\s+.*core\\.action\\.http/)\nExamples: ['uip maestro flow registry get core.action.http --output json 2>&1 > /work/output/artifacts/skill-flow-registry-discovery', 'uip maestro flow registry get core.action.http.v2 --output json 2>&1 > /work/output/artifacts/skill-flow-registry-discov']",
+      "error": null,
+      "pass_threshold": 1.0,
+      "gating": true
+    },
+    {
+      "result_kind": "basic",
+      "criterion_type": "command_executed",
+      "description": "Agent retrieved details on the script node type via registry get",
+      "score": 1.0,
+      "details": "Matched 1/1 required commands (filters: tool_name=Bash, pattern=/uip\\s+(maestro\\s+)?flow\\s+registry\\s+get\\s+.*core\\.action\\.script/)\nExamples: ['uip maestro flow registry get core.action.script --output json 2>&1 > /work/output/artifacts/skill-flow-registry-discove']",
+      "error": null,
+      "pass_threshold": 1.0,
+      "gating": true
+    }
+  ],
+  "iterations": [
+    {
+      "iteration": 1,
+      "user_input": "Your working directory is: /work/output/artifacts/skill-flow-registry-discovery\n\nI want to build a UiPath Flow that makes an HTTP request and processes the\nresponse with a script. Before building anything, explore what node types\nare available in the Flow registry and find the right ones for this task.\n\nImportant:\n- The `uip` CLI is already available in the environment.\n- Start by refreshing the registry cache with `uip maestro flow registry pull --output json`.\n- After list/search identifies the candidates, inspect the exact schemas with\n  `uip maestro flow registry get core.action.http --output json` and\n  `uip maestro flow registry get core.action.script --output json`.\n- Use `--output json` on all uip commands.\n- Do not build the flow — just explore.\n",
+      "agent_output": "[ASSISTANT] I'll work through this in two turns: first pull the registry cache, then run the searches and schema inspections in parallel.\n[ASSISTANT] Registry is live (4 565 nodes cached). Now run the search for HTTP and script candidates, plus both `registry get` schema lookups — all in parallel.\n[ASSISTANT] `core.action.http` got a non-zero exit — the real type might be versioned. Let me read all four files at once and also probe the correct HTTP type name.\n[ASSISTANT] `core.action.http` doesn't exist — the real type is `core.action.http.v2`. Let me fetch that schema now.\n[ASSISTANT] Here is a complete summary of what the registry exploration found.\n\n---\n\n## Registry exploration results\n\n### Registry cache\n\n```\nResult: Success  |  Nodes: 4,565  |  FromCache: true  |  Age: 0 minutes\n```\n\n---\n\n## Node 1 — HTTP Request\n\n| Field | Value |\n|---|---|\n| **NodeType** | `core.action.http.v2` |\n| **Display name** | HTTP Request |\n| **Version** | 2.3 |\n| **Category** | `data-operations` |\n| **Ownership** | **CLI-owned** — must use `uip maestro flow node add` + `uip maestro flow node configure` |\n\n> ⚠️ `core.action.http` (without `.v2`) does **not** exist — the registry returns \"Node not found\". The versioned type `core.action.http.v2` is the only correct name.\n\n### Inputs\n\n| Input | Type | Default | Notes |\n|---|---|---|---|\n| `detail` | `=jsonString:` envelope | — | **CLI-only field.** Carries the actual HTTP method, URL, headers, body, auth config. Set via `node configure`. |\n| `branches` | array | `[]` | Optional conditional output branches on response status/properties |\n| `timeout` | ISO 8601 string | `PT15M` | e.g. `PT30S`, `PT1H` |\n| `retryCount` | number | `0` | Retries on failure |\n\n### Outputs\n\n| Variable path | Description |\n|---|---|\n| `=js:$vars.<nodeId>.output` | Full HTTP response object |\n| `=js:$vars.<nodeId>.error` | Error object: `{code, message, detail, category, status}` |\n\n### Handles\n\n- **input** (left) — flow enters here  \n- **default** (right) — normal success path  \n- **branch-{id}** (right, one per branch) — conditional paths on response status/body  \n- **error** (right, optional) — enabled by `errorHandlingEnabled`\n\n### How it works internally\n\n`core.action.http.v2` expands at build time into a BPMN SubProcess wrapping the `uipath-uipath-http` connector (`Intsvc.UnifiedHttpRequest`). It supports two authentication modes (managed/connector vs. manual) toggled by the `dap-http-toolbar` UI control and surfaced through the `detail` envelope.\n\n---\n\n## Node 2 — Script\n\n| Field | Value |\n|---|---|\n| **NodeType** | `core.action.script` |\n| **Display name** | Script |\n| **Version** | 1.0 |\n| **Category** | `data-operations` |\n| **Ownership** | **User-owned** — author directly in the `.flow` JSON with `Edit`/`Write` |\n\n### Inputs\n\n| Input | Type | Required | Notes |\n|---|---|---|---|\n| `script` | string | ✅ | JavaScript code. Use `return` to produce output. References other nodes via `$vars.<nodeId>.output`. |\n\n### Outputs\n\n| Variable path | Description |\n|---|---|\n| `=js:$vars.<nodeId>.output` | Whatever the script returns |\n| `=js:$vars.<nodeId>.error` | Error object: `{code, message, detail, category, status}` |\n\n### Handles\n\n- **input** (left)  \n- **success** (right) — normal exit  \n- **error** (right, optional) — enabled by `errorHandlingEnabled`\n\n---\n\n## How to wire them together\n\nTo pipe the HTTP response into the Script node, reference the HTTP node's output inside the script body using the `$vars.` prefix:\n\n```javascript\n// Inside core.action.script → inputs.script\nconst response = $vars.httpRequest1.output;\nconst parsed = JSON.parse(response.body);\nreturn {\n  status: response.statusCode,\n  result: parsed.someField\n};\n```\n\nThe critical rule: **always `$vars.<nodeId>.output`**, never the bare `<nodeId>.output` — the bare form resolves to `undefined` at runtime.\n\n---\n\n## Build plan (when you're ready)\n\n1. **Add the HTTP node** (CLI-owned):\n   ```bash\n   uip maestro flow node add core.action.http.v2 --id httpRequest1\n   uip maestro flow node configure httpRequest1 --method GET --url \"https://...\"\n   ```\n\n2. **Add the Script node** (user-owned — edit `.flow` JSON directly):\n   ```json\n   {\n     \"id\": \"processResponse1\",\n     \"type\": \"core.action.script\",\n     \"data\": {\n       \"inputs\": {\n         \"script\": \"const r = $vars.httpRequest1.output;\\nreturn { status: r.statusCode, body: r.body };\"\n       }\n     }\n   }\n   ```\n\n3. **Wire the edge**: connect `httpRequest1` (handle `default`) → `processResponse1` (handle `input`).\n[RESULT - SUCCESS] Here is a complete summary of what the registry exploration found.\n\n---\n\n## Registry exploration results\n\n### Registry cache\n\n```\nResult: Success  |  Nodes: 4,565  |  FromCache: true  |  Age: 0 minutes\n```\n\n---\n\n## Node 1 — HTTP Request\n\n| Field | Value |\n|---|---|\n| **NodeType** | `core.action.http.v2` |\n| **Display name** | HTTP Request |\n| **Version** | 2.3 |\n| **Category** | `data-operations` |\n| **Ownership** | **CLI-owned** — must use `uip maestro flow node add` + `uip maestro flow node configure` |\n\n> ⚠️ `core.action.http` (without `.v2`) does **not** exist — the registry returns \"Node not found\". The versioned type `core.action.http.v2` is the only correct name.\n\n### Inputs\n\n| Input | Type | Default | Notes |\n|---|---|---|---|\n| `detail` | `=jsonString:` envelope | — | **CLI-only field.** Carries the actual HTTP method, URL, headers, body, auth config. Set via `node configure`. |\n| `branches` | array | `[]` | Optional conditional output branches on response status/properties |\n| `timeout` | ISO 8601 string | `PT15M` | e.g. `PT30S`, `PT1H` |\n| `retryCount` | number | `0` | Retries on failure |\n\n### Outputs\n\n| Variable path | Description |\n|---|---|\n| `=js:$vars.<nodeId>.output` | Full HTTP response object |\n| `=js:$vars.<nodeId>.error` | Error object: `{code, message, detail, category, status}` |\n\n### Handles\n\n- **input** (left) — flow enters here  \n- **default** (right) — normal success path  \n- **branch-{id}** (right, one per branch) — conditional paths on response status/body  \n- **error** (right, optional) — enabled by `errorHandlingEnabled`\n\n### How it works internally\n\n`core.action.http.v2` expands at build time into a BPMN SubProcess wrapping the `uipath-uipath-http` connector (`Intsvc.UnifiedHttpRequest`). It supports two authentication modes (managed/connector vs. manual) toggled by the `dap-http-toolbar` UI control and surfaced through the `detail` envelope.\n\n---\n\n## Node 2 — Script\n\n| Field | Value |\n|---|---|\n| **NodeType** | `core.action.script` |\n| **Display name** | Script |\n| **Version** | 1.0 |\n| **Category** | `data-operations` |\n| **Ownership** | **User-owned** — author directly in the `.flow` JSON with `Edit`/`Write` |\n\n### Inputs\n\n| Input | Type | Required | Notes |\n|---|---|---|---|\n| `script` | string | ✅ | JavaScript code. Use `return` to produce output. References other nodes via `$vars.<nodeId>.output`. |\n\n### Outputs\n\n| Variable path | Description |\n|---|---|\n| `=js:$vars.<nodeId>.output` | Whatever the script returns |\n| `=js:$vars.<nodeId>.error` | Error object: `{code, message, detail, category, status}` |\n\n### Handles\n\n- **input** (left)  \n- **success** (right) — normal exit  \n- **error** (right, optional) — enabled by `errorHandlingEnabled`\n\n---\n\n## How to wire them together\n\nTo pipe the HTTP response into the Script node, reference the HTTP node's output inside the script body using the `$vars.` prefix:\n\n```javascript\n// Inside core.action.script → inputs.script\nconst response = $vars.httpRequest1.output;\nconst parsed = JSON.parse(response.body);\nreturn {\n  status: response.statusCode,\n  result: parsed.someField\n};\n```\n\nThe critical rule: **always `$vars.<nodeId>.output`**, never the bare `<nodeId>.output` — the bare form resolves to `undefined` at runtime.\n\n---\n\n## Build plan (when you're ready)\n\n1. **Add the HTTP node** (CLI-owned):\n   ```bash\n   uip maestro flow node add core.action.http.v2 --id httpRequest1\n   uip maestro flow node configure httpRequest1 --method GET --url \"https://...\"\n   ```\n\n2. **Add the Script node** (user-owned — edit `.flow` JSON directly):\n   ```json\n   {\n     \"id\": \"processResponse1\",\n     \"type\": \"core.action.script\",\n     \"data\": {\n       \"inputs\": {\n         \"script\": \"const r = $vars.httpRequest1.output;\\nreturn { status: r.statusCode, body: r.body };\"\n       }\n     }\n   }\n   ```\n\n3. **Wire the edge**: connect `httpRequest1` (handle `default`) → `processResponse1` (handle `input`).",
+      "commands": [
+        {
+          "tool_name": "Skill",
+          "tool_id": "toolu_bdrk_019yjX8J2FuQ5jYWyvzAXEAD",
+          "assistant_turn_index": 1,
+          "timestamp": "2026-07-24T17:14:02.148042",
+          "duration_ms": 25.14556108508259,
+          "generation_completed_at": "2026-07-24T17:14:02.148042",
+          "execution_started_at": "2026-07-24T17:14:02.148277",
+          "execution_completed_at": "2026-07-24T17:14:02.173423",
+          "parameters": {
+            "skill": "uipath:uipath-maestro-flow"
+          },
+          "result_status": "success",
+          "result_summary": "Launching skill: uipath:uipath-maestro-flow",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 0,
+          "result_tokens": 11
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_01McvkaQntaC1xFJmjn4iVQK",
+          "assistant_turn_index": 4,
+          "timestamp": "2026-07-24T17:14:16.973488",
+          "duration_ms": 9519.808646058664,
+          "generation_completed_at": "2026-07-24T17:14:16.973488",
+          "execution_started_at": "2026-07-24T17:14:16.973554",
+          "execution_completed_at": "2026-07-24T17:14:26.493363",
+          "parameters": {
+            "command": "uip maestro flow registry pull --output json 2>&1 | tee /work/output/artifacts/skill-flow-registry-discovery/registry_pull.json | python3 -c \"import sys,json; d=json.load(sys.stdin); print('Status:', d.get('Status')); print('Message:', d.get('Message','')[:200])\"",
+            "description": "Pull and refresh the Flow registry cache"
+          },
+          "result_status": "error",
+          "result_summary": "Exit code 1\nTraceback (most recent call last):\n  File \"<string>\", line 1, in <module>\n    import sys,json; d=json.load(sys.stdin); print('Status:', d.get('Status')); print('Message:', d.get('Message','')[:200])\n                       ~~~~~~~~~^^^^^^^^^^^\n  File \"/usr/local/lib/python3.13/json/__init__.py\", line 298, in load\n    return loads(fp.read(),\n        cls=cls, object_hook=object_hook,\n        parse_float=parse_float, parse_int=parse_int,\n        parse_constant=parse_constant, object_pairs_hook=object_pairs_hook, **kw)\n  File \"/usr/local/lib/python3.13/json/__init__.py\", line 352, in loads\n    return _default_decoder.decode(s)\n           ~~~~~~~~~~~~~~~~~~~~~~~^^^\n  File \"/usr/local/lib/python3.13/json/decoder.py\", line 345, in decode\n    obj, end = self.raw_decode(s, idx=_w(s, 0).end())\n               ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.13/json/decoder.py\", line 363, in raw_decode\n    raise JSONDecodeError(\"Expecting value\", s, err.value) from None\njson.decoder.JSONDecodeError: Expecting value: line 1 column 2 (char 1)",
+          "error_message": "Exit code 1\nTraceback (most recent call last):\n  File \"<string>\", line 1, in <module>\n    import sys,json; d=json.load(sys.stdin); print('Status:', d.get('Status')); print('Message:', d.get('Message','')[:200])\n                       ~~~~~~~~~^^^^^^^^^^^\n  File \"/usr/local/lib/python3.13/json/__init__.py\", line 298, in load\n    return loads(fp.read(),\n        cls=cls, object_hook=object_hook,\n        parse_float=parse_float, parse_int=parse_int,\n        parse_constant=parse_constant, object_pairs_hook=object_pairs_hook, **kw)\n  File \"/usr/local/lib/python3.13/json/__init__.py\", line 352, in loads\n    return _default_decoder.decode(s)\n           ~~~~~~~~~~~~~~~~~~~~~~~^^^\n  File \"/usr/local/lib/python3.13/json/decoder.py\", line 345, in decode\n    obj, end = self.raw_decode(s, idx=_w(s, 0).end())\n               ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.13/json/decoder.py\", line 363, in raw_decode\n    raise JSONDecodeError(\"Expecting value\", s, err.value) from None\njson.decoder.JSONDecodeError: Expecting value: line 1 column 2 (char 1)",
+          "result_data": null,
+          "sequence_number": 1,
+          "result_tokens": 269
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_01MpvVhYL3g2b4kQtoy7FCmj",
+          "assistant_turn_index": 5,
+          "timestamp": "2026-07-24T17:14:28.345115",
+          "duration_ms": 7248.703945893794,
+          "generation_completed_at": "2026-07-24T17:14:28.345115",
+          "execution_started_at": "2026-07-24T17:14:28.345393",
+          "execution_completed_at": "2026-07-24T17:14:35.594097",
+          "parameters": {
+            "command": "uip maestro flow registry pull --output json 2>&1 | tee /work/output/artifacts/skill-flow-registry-discovery/registry_pull.json | head -30",
+            "description": "Pull registry cache and show raw output"
+          },
+          "result_status": "success",
+          "result_summary": "{\n  \"Result\": \"Success\",\n  \"Code\": \"NodePullSuccess\",\n  \"Data\": {\n    \"NodesCount\": 4565,\n    \"FromCache\": true,\n    \"AgeMinutes\": 0,\n    \"Message\": \"Using cached nodes (age: 0m)\"\n  }\n}",
+          "error_message": null,
+          "result_data": {
+            "Result": "Success",
+            "Code": "NodePullSuccess",
+            "Data": {
+              "NodesCount": 4565,
+              "FromCache": true,
+              "AgeMinutes": 0,
+              "Message": "Using cached nodes (age: 0m)"
+            }
+          },
+          "sequence_number": 2,
+          "result_tokens": 47
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_01HJS5HoH8SxnVeK1jtMQgBK",
+          "assistant_turn_index": 7,
+          "timestamp": "2026-07-24T17:14:39.743883",
+          "duration_ms": 5184.072626987472,
+          "generation_completed_at": "2026-07-24T17:14:39.743883",
+          "execution_started_at": "2026-07-24T17:14:39.743936",
+          "execution_completed_at": "2026-07-24T17:14:44.928009",
+          "parameters": {
+            "command": "uip maestro flow registry search \"http\" --output json --output-filter \"[*].{NodeType:NodeType,DisplayName:DisplayName,Description:Description}\" 2>&1 > /work/output/artifacts/skill-flow-registry-discovery/search_http.json\necho \"EXIT:$?\"",
+            "description": "Search registry for http node types"
+          },
+          "result_status": "success",
+          "result_summary": "EXIT:0",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 3,
+          "result_tokens": 2
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_01VPxvBv6afLzo6pfRevEmR7",
+          "assistant_turn_index": 8,
+          "timestamp": "2026-07-24T17:14:40.503660",
+          "duration_ms": 10657.078608986922,
+          "generation_completed_at": "2026-07-24T17:14:40.503660",
+          "execution_started_at": "2026-07-24T17:14:40.503731",
+          "execution_completed_at": "2026-07-24T17:14:51.160810",
+          "parameters": {
+            "command": "uip maestro flow registry search \"script\" --output json --output-filter \"[*].{NodeType:NodeType,DisplayName:DisplayName,Description:Description}\" 2>&1 > /work/output/artifacts/skill-flow-registry-discovery/search_script.json\necho \"EXIT:$?\"",
+            "description": "Search registry for script node types"
+          },
+          "result_status": "success",
+          "result_summary": "EXIT:0",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 4,
+          "result_tokens": 2
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_01RGq6Hirad7U8okot5StFRD",
+          "assistant_turn_index": 9,
+          "timestamp": "2026-07-24T17:14:41.494459",
+          "duration_ms": 16578.310866025276,
+          "generation_completed_at": "2026-07-24T17:14:41.494459",
+          "execution_started_at": "2026-07-24T17:14:41.494515",
+          "execution_completed_at": "2026-07-24T17:14:58.072826",
+          "parameters": {
+            "command": "uip maestro flow registry get core.action.http --output json 2>&1 > /work/output/artifacts/skill-flow-registry-discovery/schema_http.json\necho \"EXIT:$?\"",
+            "description": "Fetch schema for core.action.http"
+          },
+          "result_status": "success",
+          "result_summary": "EXIT:1",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 5,
+          "result_tokens": 2
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_01DzzpfGMFc1d4tLp44KVb52",
+          "assistant_turn_index": 10,
+          "timestamp": "2026-07-24T17:14:42.165708",
+          "duration_ms": 26766.325821983628,
+          "generation_completed_at": "2026-07-24T17:14:42.165708",
+          "execution_started_at": "2026-07-24T17:14:42.165760",
+          "execution_completed_at": "2026-07-24T17:15:08.932086",
+          "parameters": {
+            "command": "uip maestro flow registry get core.action.script --output json 2>&1 > /work/output/artifacts/skill-flow-registry-discovery/schema_script.json\necho \"EXIT:$?\"",
+            "description": "Fetch schema for core.action.script"
+          },
+          "result_status": "success",
+          "result_summary": "EXIT:0",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 6,
+          "result_tokens": 2
+        },
+        {
+          "tool_name": "Read",
+          "tool_id": "toolu_bdrk_016Kz4yMMiYcmch7XKSp6aWj",
+          "assistant_turn_index": 13,
+          "timestamp": "2026-07-24T17:15:12.681991",
+          "duration_ms": 473.59725506976247,
+          "generation_completed_at": "2026-07-24T17:15:12.681991",
+          "execution_started_at": "2026-07-24T17:15:12.682044",
+          "execution_completed_at": "2026-07-24T17:15:13.155641",
+          "parameters": {
+            "file_path": "/work/output/artifacts/skill-flow-registry-discovery/search_http.json"
+          },
+          "result_status": "success",
+          "result_summary": "1\t{\n2\t  \"Result\": \"Success\",\n3\t  \"Code\": \"NodeSearchSuccess\",\n4\t  \"Data\": [\n5\t    {\n6\t      \"NodeType\": \"core.action.http.v2\",\n7\t      \"DisplayName\": \"HTTP Request\",\n8\t      \"Description\": \"HTTP request with managed authentication\"\n9\t    },\n10\t    {\n11\t      \"NodeType\": \"uipath.connector.uipath-http-webhook.get-trigger-event-output\",\n12\t      \"DisplayName\": \"Get Trigger Event Output\",\n13\t      \"Description\": \"(HTTP Webhook) Retrieves the full event response for HTTP webhook triggers created in Orchestrator\"\n14\t    },\n15\t    {\n16\t      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-activecampaign-activecampaign.activecampaign-http-request\",\n17\t      \"DisplayName\": \"ActiveCampaign HTTP Request\",\n18\t      \"Description\": \"(ActiveCampaign) Perform HTTP requests to interact with ActiveCampaign using existing connector and connection configuration.\"\n19\t    },\n20\t    {\n21\t      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-adobe-sign.http-request\",\n22\t      \"DisplayName\": \"HTTP Request\",\n23\t      \"Description\": \"(Adobe Acrobat Sign) Performs HTTP requests to Adobe Acrobat Sign by using existing connector and connection configuration\"\n24\t    },\n25\t    {\n26\t      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-adobe-pdfservices.http-request\",\n27\t      \"DisplayName\": \"HTTP Request\",\n28\t      \"Description\": \"(Adobe PDF Services) Performs HTTP requests to Adobe PDF Services by using existing connector and connection configuration\"\n29\t    },\n30\t    {\n31\t      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-amazon-connect.amazon-connect-http-request\",\n32\t      \"DisplayName\": \"Amazon Connect HTTP Request\",\n33\t      \"Description\": \"(Amazon Connect) Perform HTTP requests to interact with Amazon Connect using existing connector and connection configuration.\"\n34\t    },\n35\t    {\n36\t      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-amazon-polly.amazon-polly-http-request\",\n37\t      \"DisplayName\": \"Amazon Polly HTTP Request\",\n38\t      \"Description\": \"(Amazon Polly) Perform HTTP requests to interact with Amazon Polly using existing connector and connection configuration.\"\n39\t    },\n40\t    {\n41\t      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-amazon-ses.amazon-ses-http-request\",\n42\t      \"DisplayName\": \"Amazon SES HTTP Request\",\n43\t      \"Description\": \"(Amazon SES) Perform HTTP requests to interact with Amazon SES using existing connector and connection configuration.\"\n44\t    },\n45\t    {\n46\t      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-amazon-transcribe.http-request\",\n47\t      \"DisplayName\": \"HTTP Request\",\n48\t      \"Description\": \"(Amazon Transcribe) Performs HTTP requests to Amazon Transcribe by using existing connector and connection configuration\"\n49\t    },\n50\t    {\n51\t      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-anthropic-claude.anthropic-claude-http-request\",\n52\t      \"DisplayName\": \"Anthropic Claude HTTP Request\",\n53\t      \"Description\": \"(Anthropic Claude) Perform HTTP requests to interact with Anthropic Claude using existing connector and connection configuration.\"\n54\t    },\n55\t    {\n56\t      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-asana-asana.asana-http-request\",\n57\t      \"DisplayName\": \"Asana HTTP Request\",\n58\t      \"Description\": \"(Asana) Perform HTTP requests to interact with Asana using existing connector and connection configuration.\"\n59\t    },\n60\t    {\n61\t      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-aweber-aweber.aweber-http-request\",\n62\t      \"DisplayName\": \"Aweber HTTP Request\",\n63\t      \"Description\": \"(Aweber) Perform HTTP requests to interact with Aweber using existing connector and connection configuration.\"\n64\t    },\n65\t    {\n66\t      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-microsoft-azureformrecognizer.azure-ai-document-intelligence-http-request\",\n67\t      \"DisplayName\": \"Azure AI Document Intelligence HTTP Request\",\n68\t      \"Description\": \"(Azure AI Document Intelligence) Perform HTTP requests to interact with Azure AI Document Intelligence using existing connector and connection configuration.\"\n69\t    },\n70\t    {\n71\t      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-microsoft-azuremaps.azure-maps-http-request\",\n72\t      \"DisplayName\": \"Azure Maps HTTP Request\",\n73\t      \"Description\": \"(Azure Maps) Perform HTTP requests to interact with Azure Maps using existing connector and connection configuration.\"\n74\t    },\n75\t    {\n76\t      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-bamboo-bamboohr.bamboohr-http-request\",\n77\t      \"DisplayName\": \"BambooHR HTTP Request\",\n78\t      \"Description\": \"(BambooHR) Perform HTTP requests to interact with BambooHR using existing connector and connection configuration.\"\n79\t    },\n80\t    {\n81\t      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-box-box.box-http-request\",\n82\t      \"DisplayName\": \"Box HTTP Request\",\n83\t      \"Description\": \"(Box) Perform HTTP requests to interact with Box using existing connector and connection configuration.\"\n84\t    },\n85\t    {\n86\t      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-brevo-brevo.brevo-http-request\",\n87\t      \"DisplayName\": \"Brevo HTTP Request\",\n88\t      \"Description\": \"(Brevo) Perform HTTP requests to interact with Brevo using existing connector and connection configuration.\"\n89\t    },\n90\t    {\n91\t      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-calendly-calendly.calendly-http-request\",\n92\t      \"DisplayName\": \"Calendly HTTP Request\",\n93\t      \"Description\": \"(Calendly) Perform HTTP requests to interact with Calendly using existing connector and connection configuration.\"\n94\t    },\n95\t    {\n96\t      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-campaignmonitor-campaignmonitor.campaign-monitor-http-request\",\n97\t      \"DisplayName\": \"Campaign Monitor HTTP Request\",\n98\t      \"Description\": \"(Campaign Monitor) Perform HTTP requests to interact with Campaign Monitor using existing connector and connection configuration.\"\n99\t    },\n100\t    {\n101\t      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-cisco-webexteams.cisco-webex-teams-http-request\",\n102\t      \"DisplayName\": \"Cisco Webex Teams HTTP Request\",\n103\t      \"Description\": \"(Cisco Webex Teams) Perform HTTP requests to interact with Cisco Webex Teams using existing connector and connection configuration.\"\n104\t    },\n105\t    {\n106\t      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-citrix-sharefile.citrix-sharefile-http-request\",\n107\t      \"DisplayName\": \"Citrix ShareFile HTTP Request\",\n108\t      \"Description\": \"(Citrix ShareFile) Perform HTTP requests to interact with Citrix ShareFile using existing connector and connection configuration.\"\n109\t    },\n110\t    {\n111\t      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-hubspot-clearbit.clearbit-http-request\",\n112\t      \"DisplayName\": \"Clearbit HTTP Request\",\n113\t      \"Description\": \"(Clearbit) Perform HTTP requests to interact with Clearbit using existing connector and connection configuration.\"\n114\t    },\n115\t    {\n116\t      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-atlassian-confluence.http-request\",\n117\t      \"DisplayName\": \"HTTP Request\",\n118\t      \"Description\": \"(Confluence Cloud) Performs HTTP requests to Confluence Cloud by using existing connector and connection configuration\"\n119\t    },\n120\t    {\n121\t      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-constantcontact-constantcontact.constant-contact-http-request\",\n122\t      \"DisplayName\": \"Constant Contact HTTP Request\",\n123\t      \"Description\": \"(Constant Contact) Perform HTTP requests to interact with Constant Contact using existing connector and connection configuration.\"\n124\t    },\n125\t    {\n126\t      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-coupa-coupa.coupa-http-request\",\n127\t      \"DisplayName\": \"Coupa HTTP Request\",\n128\t      \"Description\": \"(Coupa) Perform HTTP requests to interact with Coupa using existing connector and connection configuration.\"\n129\t    },\n130\t    {\n131\t      \"NodeType\": \"uipath.agent.resource.tool.connector.custom-codereval-customconnectortest.custom-connector-test-http-request\",\n132\t      \"DisplayName\": \"custom connector test HTTP Request\",\n133\t      \"Description\": \"(custom connector test) Perform HTTP requests to interact with custom connector test using existing connector and connection configuration.\"\n134\t    },\n135\t    {\n136\t      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-customerio-customerio.customer.io-http-request\",\n137\t      \"DisplayName\": \"Customer.io HTTP Request\",\n138\t      \"Description\": \"(Customer.io) Perform HTTP requests to interact with Customer.io using existing connector and connection configuration.\"\n139\t    },\n140\t    {\n141\t      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-datadog-datadog.http-request\",\n142\t      \"DisplayName\": \"HTTP Request\",\n143\t      \"Description\": \"(Datadog) Performs HTTP requests to Datadog by using existing connector and connection configuration\"\n144\t    },\n145\t    {\n146\t      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-deputy-deputy.http-request\",\n147\t      \"DisplayName\": \"HTTP Request\",\n148\t      \"Description\": \"(Deputy) Performs HTTP requests to Deputy by using existing connector and connection configuration\"\n149\t    },\n150\t    {\n151\t      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-docusign-docusign.docusign-http-request\",\n152\t      \"DisplayName\": \"DocuSign HTTP Request\",\n153\t      \"Description\": \"(DocuSign) Perform HTTP requests to interact with DocuSign using existing connector and connection configuration.\"\n154\t    },\n155\t    {\n156\t      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-drip-drip.http-request\",\n157\t      \"DisplayName\": \"HTTP Request\",\n158\t      \"Description\": \"(Drip) Performs HTTP requests to Drip by using existing connector and connection configuration\"\n159\t    },\n160\t    {\n161\t      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-dropbox-dropbox.http-request\",\n162\t      \"DisplayName\": \"HTTP Request\",\n163\t      \"Description\": \"(Dropbox) Performs HTTP requests to Dropbox by using existing connector and connection configuration\"\n164\t    },\n165\t    {\n166\t      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-egnyte-egnyte.http-request\",\n167\t      \"DisplayName\": \"HTTP Request\",\n168\t      \"Description\": \"(Egnyte) Performs HTTP requests to Egnyte by using existing connector and connection configuration\"\n169\t    },\n170\t    {\n171\t      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-eventbrite-eventbrite.http-request\",\n172\t      \"DisplayName\": \"HTTP Request\",\n173\t      \"Description\": \"(Eventbrite) Performs HTTP requests to Eventbrite by using existing connector and connection configuration\"\n174\t    },\n175\t    {\n176\t      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-exchangerates-exchangerates.exchangerates-http-request\",\n177\t      \"DisplayName\": \"Exchangerates HTTP Request\",\n178\t      \"Description\": \"(Exchangerates) Perform HTTP requests to interact with Exchangerates using existing connector and connection configuration.\"\n179\t    },\n180\t    {\n181\t      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-expensify-expensify.http-request\",\n182\t      \"DisplayName\": \"HTTP Request\",\n183\t      \"Description\": \"(Expensify) Performs HTTP requests to Expensify by using existing connector and connection configuration\"\n184\t    },\n185\t    {\n186\t      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-meta-facebook.facebook-http-request\",\n187\t      \"DisplayName\": \"Facebook HTTP Request\",\n188\t      \"Description\": \"(Facebook) Perform HTTP requests to interact with Facebook using existing connector and connection configuration.\"\n189\t    },\n190\t    {\n191\t      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-freshworks-freshbooks.freshbooks-http-request\",\n192\t      \"DisplayName\": \"FreshBooks HTTP Request\",\n193\t      \"Description\": \"(FreshBooks) Perform HTTP requests to interact with FreshBooks using existing connector and connection configuration.\"\n194\t    },\n195\t    {\n196\t      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-freshworks-freshdesk.freshdesk-http-request\",\n197\t      \"DisplayName\": \"Freshdesk HTTP Request\",\n198\t      \"Description\": \"(Freshdesk) Perform HTTP requests to interact with Freshdesk using existing connector and connection configuration.\"\n199\t    },\n200\t    {\n201\t      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-freshworks-freshsales.http-request\",\n202\t      \"DisplayName\": \"HTTP Request\",\n203\t      \"Description\": \"(Freshsales) Performs HTTP requests to Freshsales by using existing connector and connection configuration\"\n204\t    },\n205\t    {\n206\t      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-freshworks-freshservice.freshservice-http-request\",\n207\t      \"DisplayName\": \"Freshservice HTTP Request\",\n208\t      \"Description\": \"(Freshservice) Perform HTTP requests to interact with Freshservice using existing connector and connection configuration.\"\n209\t    },\n210\t    {\n211\t      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-getresponse-getresponse.getresponse-http-request\",\n212\t      \"DisplayName\": \"GetResponse HTTP Request\",\n213\t      \"Description\": \"(GetResponse) Perform HTTP requests to interact with GetResponse using existing connector and connection configuration.\"\n214\t    },\n215\t    {\n216\t      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-microsoft-github.github-http-request\",\n217\t      \"DisplayName\": \"GitHub HTTP Request\",\n218\t      \"Description\": \"(GitHub) Perform HTTP requests to interact with GitHub using existing connector and connection configuration.\"\n219\t    },\n220\t    {\n221\t      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-google-gmail.gmail-http-request\",\n222\t      \"DisplayName\": \"Gmail HTTP Request\",\n223\t      \"Description\": \"(Gmail) Perform HTTP requests to interact with Gmail using existing connector and connection configuration.\"\n224\t    },\n225\t    {\n226\t      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-google-maps.google-maps-http-request\",\n227\t      \"DisplayName\": \"Google Maps HTTP Request\",\n228\t      \"Description\": \"(Google Maps) Perform HTTP requests to interact with Google Maps using existing connector and connection configuration.\"\n229\t    },\n230\t    {\n231\t      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-google-speechtotext.http-request\",\n232\t      \"DisplayName\": \"HTTP Request\",\n233\t      \"Description\": \"(Google Speech-to-Text) Performs HTTP requests to Google Speech-to-Text by using existing connector and connection configuration\"\n234\t    },\n235\t    {\n236\t      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-google-texttospeech.google-text-to-speech-http-request\",\n237\t      \"DisplayName\": \"Google Text-to-Speech HTTP Request\",\n238\t      \"Description\": \"(Google Text-to-Speech) Perform HTTP requests to interact with Google Text-to-Speech using existing connector and connection configuration.\"\n239\t    },\n240\t    {\n241\t      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-google-vertex.google-vertex-http-request\",\n242\t      \"DisplayName\": \"Google Vertex HTTP Request\",\n243\t      \"Description\": \"(Google Vertex) Perform HTTP requests to interact with Google Vertex using existing connector and connection configuration.\"\n244\t    },\n245\t    {\n246\t      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-logmein-gotowebinar.gotowebinar-http-request\",\n247\t      \"DisplayName\": \"GoToWebinar HTTP Request\",\n248\t      \"Description\": \"(GoToWebinar) Perform HTTP requests to interact with GoToWebinar using existing connector and connection configuration.\"\n249\t    },\n250\t    {\n251\t      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-greenhouse-greenhouse.http-request\",\n252\t      \"DisplayName\": \"HTTP Request\",\n253\t      \"Description\": \"(Greenhouse) Performs HTTP requests to Greenhouse by using existing connector and connection configuration\"\n254\t    },\n255\t    {\n256\t      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-hootsuite-hootsuite.hootsuite-http-request\",\n257\t      \"DisplayName\": \"Hootsuite HTTP Request\",\n258\t      \"Description\": \"(Hootsuite) Perform HTTP requests to interact with Hootsuite using existing connector and connection configuration.\"\n259\t    },\n260\t    {\n261\t      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-http-webhook.get-trigger-event-output\",\n262\t      \"DisplayName\": \"Get Trigger Event Output\",\n263\t      \"Description\": \"(HTTP Webhook) Retrieves the full event response for HTTP webhook triggers created in Orchestrator\"\n264\t    },\n265\t    {\n266\t      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-hubspot-crm.http-request\",\n267\t      \"DisplayName\": \"HTTP Request\",\n268\t      \"Description\": \"(HubSpot CRM) Performs HTTP requests to HubSpot CRM by using existing connector and connection configuration\"\n269\t    },\n270\t    {\n271\t      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-hubspot-marketing.http-request\",\n272\t      \"DisplayName\": \"HTTP Request\",\n273\t      \"Description\": \"(HubSpot Marketing) Performs HTTP requests to HubSpot Marketing by using existing connector and connection configuration\"\n274\t    },\n275\t    {\n276\t      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-icertis-icertis.icertis-http-request\",\n277\t      \"DisplayName\": \"Icertis HTTP Request\",\n278\t      \"Description\": \"(Icertis) Perform HTTP requests to interact with Icertis using existing connector and connection configuration.\"\n279\t    },\n280\t    {\n281\t      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-icontact-icontact.icontact-http-request\",\n282\t      \"DisplayName\": \"iContact HTTP Request\",\n283\t      \"Description\": \"(iContact) Perform HTTP requests to interact with iContact using existing connector and connection configuration.\"\n284\t    },\n285\t    {\n286\t      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-insightly-insightly.http-request\",\n287\t      \"DisplayName\": \"HTTP Request\",\n288\t      \"Description\": \"(Insightly CRM) Performs HTTP requests to Insightly CRM by using existing connector and connection configuration\"\n289\t    },\n290\t    {\n291\t      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-intercom-intercom.http-request\",\n292\t      \"DisplayName\": \"HTTP Request\",\n293\t      \"Description\": \"(Intercom) Performs HTTP requests to Intercom by using existing connector and connection configuration\"\n294\t    },\n295\t    {\n296\t      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-atlassian-jira.jira-http-request\",\n297\t      \"DisplayName\": \"Jira HTTP Request\",\n298\t      \"Description\": \"(Jira) Perform HTTP requests to interact with Jira using existing connector and connection configuration.\"\n299\t    },\n300\t    {\n301\t      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-keap-keap.keap-http-request\",\n302\t      \"DisplayName\": \"Keap HTTP Request\",\n303\t      \"Description\": \"(Keap) Perform HTTP requests to interact with Keap using existing connector and connection configuration.\"\n304\t    },\n305\t    {\n306\t      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-klaviyo-klaviyo.klaviyo-http-request\",\n307\t      \"DisplayName\": \"Klaviyo HTTP Request\",\n308\t      \"Description\": \"(Klaviyo) Perform HTTP requests to interact with Klaviyo using existing connector and connection configuration.\"\n309\t    },\n310\t    {\n311\t      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-microsoft-linkedin.linkedin-http-request\",\n312\t      \"DisplayName\": \"LinkedIn HTTP Request\",\n313\t      \"Description\": \"(LinkedIn) Perform HTTP requests to interact with LinkedIn using existing connector and connection configuration.\"\n314\t    },\n315\t    {\n316\t      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-mailchimp-mailchimp.mailchimp-http-request\",\n317\t      \"DisplayName\": \"Mailchimp HTTP Request\",\n318\t      \"Description\": \"(Mailchimp) Perform HTTP requests to interact with Mailchimp using existing connector and connection configuration.\"\n319\t    },\n320\t    {\n321\t      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-mailerlite-mailerlite.mailerlite-http-request\",\n322\t      \"DisplayName\": \"MailerLite HTTP Request\",\n323\t      \"Description\": \"(MailerLite) Perform HTTP requests to interact with MailerLite using existing connector and connection configuration.\"\n324\t    },\n325\t    {\n326\t      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-sinch-mailgun.mailgun-http-request\",\n327\t      \"DisplayName\": \"Mailgun HTTP Request\",\n328\t      \"Description\": \"(Mailgun) Perform HTTP requests to interact with Mailgun using existing connector and connection configuration.\"\n329\t    },\n330\t    {\n331\t      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-sinch-mailjet.mailjet-http-request\",\n332\t      \"DisplayName\": \"Mailjet HTTP Request\",\n333\t      \"Description\": \"(Mailjet) Perform HTTP requests to interact with Mailjet using existing connector and connection configuration.\"\n334\t    },\n335\t    {\n336\t      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-adobe-marketo.http-request\",\n337\t      \"DisplayName\": \"HTTP Request\",\n338\t      \"Description\": \"(Marketo) Performs HTTP requests to Marketo by using existing connector and connection configuration\"\n339\t    },\n340\t    {\n341\t      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-microsoft-365.microsoft-365-http-request\",\n342\t      \"DisplayName\": \"Microsoft 365 HTTP Request\",\n343\t      \"Description\": \"(Microsoft 365) Perform HTTP requests to interact with Microsoft 365 using existing connector and connection configuration.\"\n344\t    },\n345\t    {\n346\t      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-microsoft-azureopenai.microsoft-azure-openai-http-request\",\n347\t      \"DisplayName\": \"Microsoft Azure OpenAI HTTP Request\",\n348\t      \"Description\": \"(Microsoft Azure OpenAI) Perform HTTP requests to interact with Microsoft Azure OpenAI using existing connector and connection configuration.\"\n349\t    },\n350\t    {\n351\t      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-microsoft-dynamicscrm.microsoft-dynamics-365-crm-http-request\",\n352\t      \"DisplayName\": \"Microsoft Dynamics 365 CRM HTTP Request\",\n353\t      \"Description\": \"(Microsoft Dynamics 365 CRM) Perform HTTP requests to interact with Microsoft Dynamics 365 CRM using existing connector and connection configuration.\"\n354\t    },\n355\t    {\n356\t      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-microsoft-onedrive.microsoft-onedrive-sharepoint-http-request\",\n357\t      \"DisplayName\": \"Microsoft OneDrive & SharePoint HTTP Request\",\n358\t      \"Description\": \"(Microsoft OneDrive & SharePoint) Perform HTTP requests to interact with Microsoft OneDrive & SharePoint using existing connector and connection configuration.\"\n359\t    },\n360\t    {\n361\t      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-microsoft-outlook365.microsoft-outlook-365-http-request\",\n362\t      \"DisplayName\": \"Microsoft Outlook 365 HTTP Request\",\n363\t      \"Description\": \"(Microsoft Outlook 365) Perform HTTP requests to interact with Microsoft Outlook 365 using existing connector and connection configuration.\"\n364\t    },\n365\t    {\n366\t      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-microsoft-sentiment.microsoft-sentiment-http-request\",\n367\t      \"DisplayName\": \"Microsoft Sentiment HTTP Request\",\n368\t      \"Description\": \"(Microsoft Sentiment) Perform HTTP requests to interact with Microsoft Sentiment using existing connector and connection configuration.\"\n369\t    },\n370\t    {\n371\t      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-microsoft-teams.microsoft-teams-http-request\",\n372\t      \"DisplayName\": \"Microsoft Teams HTTP Request\",\n373\t      \"Description\": \"(Microsoft Teams) Perform HTTP requests to interact with Microsoft Teams using existing connector and connection configuration.\"\n374\t    },\n375\t    {\n376\t      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-microsoft-translator.microsoft-translator-http-request\",\n377\t      \"DisplayName\": \"Microsoft Translator HTTP Request\",\n378\t      \"Description\": \"(Microsoft Translator) Perform HTTP requests to interact with Microsoft Translator using existing connector and connection configuration.\"\n379\t    },\n380\t    {\n381\t      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-microsoft-vision.microsoft-vision-http-request\",\n382\t      \"DisplayName\": \"Microsoft Vision HTTP Request\",\n383\t      \"Description\": \"(Microsoft Vision) Perform HTTP requests to interact with Microsoft Vision using existing connector and connection configuration.\"\n384\t    },\n385\t    {\n386\t      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-miro-miro.miro-http-request\",\n387\t      \"DisplayName\": \"Miro HTTP Request\",\n388\t      \"Description\": \"(Miro) Perform HTTP requests to interact with Miro using existing connector and connection configuration.\"\n389\t    },\n390\t    {\n391\t      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-mock-teams.mock-microsoft-teams-http-request\",\n392\t      \"DisplayName\": \"Mock Microsoft Teams HTTP Request\",\n393\t      \"Description\": \"(Mock Microsoft Teams) Perform HTTP requests to interact with Mock Microsoft Teams using existing connector and connection configuration.\"\n394\t    },\n395\t    {\n396\t      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-mock-jira.mocked-jira-for-webhooks-http-request\",\n397\t      \"DisplayName\": \"Mocked Jira for webhooks HTTP Request\",\n398\t      \"Description\": \"(Mocked Jira for webhooks) Perform HTTP requests to interact with Mocked Jira for webhooks using existing connector and connection configuration.\"\n399\t    },\n400\t    {\n401\t      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-okta-okta.http-request\",\n402\t      \"DisplayName\": \"HTTP Request\",\n403\t      \"Description\": \"(Okta) Performs HTTP requests to Okta by using existing connector and connection configuration\"\n404\t    },\n405\t    {\n406\t      \"NodeType\": \"uipath.agent.resource.tool.connector.custom-codereval-openrestapi.open-rest-api-http-request\",\n407\t      \"DisplayName\": \"Open Rest API HTTP Request\",\n408\t      \"Description\": \"(Open Rest API) Perform HTTP requests to interact with Open Rest API using existing connector and connection configuration.\"\n409\t    },\n410\t    {\n411\t      \"NodeType\": \"uipath.agent.resource.tool.connector.custom-codereval-openmeteoapis.open-meteo-apis-http-request\",\n412\t      \"DisplayName\": \"Open-Meteo APIs HTTP Request\",\n413\t      \"Description\": \"(Open-Meteo APIs) Perform HTTP requests to interact with Open-Meteo APIs using existing connector and connection configuration.\"\n414\t    },\n415\t    {\n416\t      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-openai-openai.openai-http-request\",\n417\t      \"DisplayName\": \"OpenAI HTTP Request\",\n418\t      \"Description\": \"(OpenAI) Perform HTTP requests to interact with OpenAI using existing connector and connection configuration.\"\n419\t    },\n420\t    {\n421\t      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-openai-openaiv1compliant.openai-v1-compliant-llm-http-request\",\n422\t      \"DisplayName\": \"OpenAI V1 Compliant LLM HTTP Request\",\n423\t      \"Description\": \"(OpenAI V1 Compliant LLM) Perform HTTP requests to interact with OpenAI V1 Compliant LLM using existing connector and connection configuration.\"\n424\t    },\n425\t    {\n426\t      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-oracle-eloqua.oracle-eloqua-http-request\",\n427\t      \"DisplayName\": \"Oracle Eloqua HTTP Request\",\n428\t      \"Description\": \"(Oracle Eloqua) Perform HTTP requests to interact with Oracle Eloqua using existing connector and connection configuration.\"\n429\t    },\n430\t    {\n431\t      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-oracle-netsuite.oracle-netsuite-http-request\",\n432\t      \"DisplayName\": \"Oracle NetSuite HTTP Request\",\n433\t      \"Description\": \"(Oracle NetSuite) Perform HTTP requests to interact with Oracle NetSuite using existing connector and connection configuration.\"\n434\t    },\n435\t    {\n436\t      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-pagerduty-pagerduty.http-request\",\n437\t      \"DisplayName\": \"HTTP Request\",\n438\t      \"Description\": \"(PagerDuty) Performs HTTP requests to PagerDuty by using existing connector and connection configuration\"\n439\t    },\n440\t    {\n441\t      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-paypal-paypal.http-request\",\n442\t      \"DisplayName\": \"HTTP Request\",\n443\t      \"Description\": \"(PayPal) Performs HTTP requests to PayPal by using existing connector and connection configuration\"\n444\t    },\n445\t    {\n446\t      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-pdfmonkey-pdfmonkey.http-request\",\n447\t      \"DisplayName\": \"HTTP Request\",\n448\t      \"Description\": \"(PDFMonkey) Performs HTTP requests to PDFMonkey by using existing connector and connection configuration\"\n449\t    },\n450\t    {\n451\t      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-pinecone-pinecone.pinecone-http-request\",\n452\t      \"DisplayName\": \"Pinecone HTTP Request\",\n453\t      \"Description\": \"(Pinecone) Perform HTTP requests to interact with Pinecone using existing connector and connection configuration.\"\n454\t    },\n455\t    {\n456\t      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-pipedrive-pipedrive.pipedrive-http-request\",\n457\t      \"DisplayName\": \"Pipedrive HTTP Request\",\n458\t      \"Description\": \"(Pipedrive) Perform HTTP requests to interact with Pipedrive using existing connector and connection configuration.\"\n459\t    },\n460\t    {\n461\t      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-intuit-quickbooksonline.quickbooks-online-http-request\",\n462\t      \"DisplayName\": \"QuickBooks Online HTTP Request\",\n463\t      \"Description\": \"(QuickBooks Online) Perform HTTP requests to interact with QuickBooks Online using existing connector and connection configuration.\"\n464\t    },\n465\t    {\n466\t      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-salesforce-quip.quip-http-request\",\n467\t      \"DisplayName\": \"Quip HTTP Request\",\n468\t      \"Description\": \"(Quip) Perform HTTP requests to interact with Quip using existing connector and connection configuration.\"\n469\t    },\n470\t    {\n471\t      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-salesforce-sfdc.salesforce-http-request\",\n472\t      \"DisplayName\": \"Salesforce HTTP Request\",\n473\t      \"Description\": \"(Salesforce) Perform HTTP requests to interact with Salesforce using existing connector and connection configuration.\"\n474\t    },\n475\t    {\n476\t      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-salesforce-marketingcloud.salesforce-marketing-cloud-http-request\",\n477\t      \"DisplayName\": \"Salesforce Marketing Cloud HTTP Request\",\n478\t      \"Description\": \"(Salesforce Marketing Cloud) Perform HTTP requests to interact with Salesforce Marketing Cloud using existing connector and connection configuration.\"\n479\t    },\n480\t    {\n481\t      \"NodeType\": \"uipath.agent.resource.tool.connector.custom-codereval-sanjeettest.sanjeet-test-http-request\",\n482\t      \"DisplayName\": \"sanjeet test HTTP Request\",\n483\t      \"Description\": \"(sanjeet test) Perform HTTP requests to interact with sanjeet test using existing connector and connection configuration.\"\n484\t    },\n485\t    {\n486\t      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-sap-c4cv2.sap-cloud-for-customer-http-request\",\n487\t      \"DisplayName\": \"SAP Cloud for Customer HTTP Request\",\n488\t      \"Description\": \"(SAP Cloud for Customer) Perform HTTP requests to interact with SAP Cloud for Customer using existing connector and connection configuration.\"\n489\t    },\n490\t    {\n491\t      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-sap-concur.http-request\",\n492\t      \"DisplayName\": \"HTTP Request\",\n493\t      \"Description\": \"(SAP Concur) Performs HTTP requests to SAP Concur by using existing connector and connection configuration\"\n494\t    },\n495\t    {\n496\t      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-sap-odata.sap-odata-http-request\",\n497\t      \"DisplayName\": \"SAP OData HTTP Request\",\n498\t      \"Description\": \"(SAP OData) Perform HTTP requests to interact with SAP OData using existing connector and connection configuration.\"\n499\t    },\n500\t    {\n501\t      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-twilio-sendgrid.sendgrid-http-request\",\n502\t      \"DisplayName\": \"SendGrid HTTP Request\",\n503\t      \"Description\": \"(SendGrid) Perform HTTP requests to interact with SendGrid using existing connector and connection configuration.\"\n504\t    },\n505\t    {\n506\t      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-servicenow-servicenow.servicenow-http-request\",\n507\t      \"DisplayName\": \"ServiceNow HTTP Request\",\n508\t      \"Description\": \"(ServiceNow) Perform HTTP requests to interact with ServiceNow using existing connector and connection configuration.\"\n509\t    },\n510\t    {\n511\t      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-shopify-shopify.shopify-http-request\",\n512\t      \"DisplayName\": \"Shopify HTTP Request\",\n513\t      \"Description\": \"(Shopify) Perform HTTP requests to interact with Shopify using existing connector and connection configuration.\"\n514\t    },\n515\t    {\n516\t      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-salesforce-slack.slack-http-request\",\n517\t      \"DisplayName\": \"Slack HTTP Request\",\n518\t      \"Description\": \"(Slack) Perform HTTP requests to interact with Slack using existing connector and connection configuration.\"\n519\t    },\n520\t    {\n521\t      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-smartrecruiters-smartrecruiters.http-request\",\n522\t      \"DisplayName\": \"HTTP Request\",\n523\t      \"Description\": \"(SmartRecruiters) Performs HTTP requests to SmartRecruiters by using existing connector and connection configuration\"\n524\t    },\n525\t    {\n526\t      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-smartsheet-smartsheet.smartsheet-http-request\",\n527\t      \"DisplayName\": \"Smartsheet HTTP Request\",\n528\t      \"Description\": \"(Smartsheet) Perform HTTP requests to interact with Smartsheet using existing connector and connection configuration.\"\n529\t    },\n530\t    {\n531\t      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-snowflake-cortex.snowflake-cortex-http-request\",\n532\t      \"DisplayName\": \"Snowflake Cortex HTTP Request\",\n533\t      \"Description\": \"(Snowflake Cortex) Perform HTTP requests to interact with Snowflake Cortex using existing connector and connection configuration.\"\n534\t    },\n535\t    {\n536\t      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-stripe-stripe.stripe-http-request\",\n537\t      \"DisplayName\": \"Stripe HTTP Request\",\n538\t      \"Description\": \"(Stripe) Perform HTTP requests to interact with Stripe using existing connector and connection configuration.\"\n539\t    },\n540\t    {\n541\t      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-sugar-enterprise.sugar-enterprise-http-request\",\n542\t      \"DisplayName\": \"Sugar Enterprise HTTP Request\",\n543\t      \"Description\": \"(Sugar Enterprise) Perform HTTP requests to interact with Sugar Enterprise using existing connector and connection configuration.\"\n544\t    },\n545\t    {\n546\t      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-sugar-professional.sugar-professional-http-request\",\n547\t      \"DisplayName\": \"Sugar Professional HTTP Request\",\n548\t      \"Description\": \"(Sugar Professional) Perform HTTP requests to interact with Sugar Professional using existing connector and connection configuration.\"\n549\t    },\n550\t    {\n551\t      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-sugar-sell.sugar-sell-http-request\",\n552\t      \"DisplayName\": \"Sugar Sell HTTP Request\",\n553\t      \"Description\": \"(Sugar Sell) Perform HTTP requests to interact with Sugar Sell using existing connector and connection configuration.\"\n554\t    },\n555\t    {\n556\t      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-sugar-serve.sugar-serve-http-request\",\n557\t      \"DisplayName\": \"Sugar Serve HTTP Request\",\n558\t      \"Description\": \"(Sugar Serve) Perform HTTP requests to interact with Sugar Serve using existing connector and connection configuration.\"\n559\t    },\n560\t    {\n561\t      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-tangocard-tangocard.http-request\",\n562\t      \"DisplayName\": \"HTTP Request\",\n563\t      \"Description\": \"(TangoCard) Performs HTTP requests to TangoCard by using existing connector and connection configuration\"\n564\t    },\n565\t    {\n566\t      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-doist-todoist.todoist-http-request\",\n567\t      \"DisplayName\": \"Todoist HTTP Request\",\n568\t      \"Description\": \"(Todoist) Perform HTTP requests to interact with Todoist using existing connector and connection configuration.\"\n569\t    },\n570\t    {\n571\t      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-twilio-messaging.twilio-http-request\",\n572\t      \"DisplayName\": \"Twilio HTTP Request\",\n573\t      \"Description\": \"(Twilio) Perform HTTP requests to interact with Twilio using existing connector and connection configuration.\"\n574\t    },\n575\t    {\n576\t      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-ibm-watsonx.watsonx.ai-http-request\",\n577\t      \"DisplayName\": \"watsonx.ai HTTP Request\",\n578\t      \"Description\": \"(watsonx.ai) Perform HTTP requests to interact with watsonx.ai using existing connector and connection configuration.\"\n579\t    },\n580\t    {\n581\t      \"NodeType\": \"uipath.agent.resource.tool.connector.custom-codereval-whatsappapijoshi.whatsapp-api-joshi-http-request\",\n582\t      \"DisplayName\": \"WhatsApp API - Joshi HTTP Request\",\n583\t      \"Description\": \"(WhatsApp API - Joshi) Perform HTTP requests to interact with WhatsApp API - Joshi using existing connector and connection configuration.\"\n584\t    },\n585\t    {\n586\t      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-meta-whatsapp.whatsapp-business-http-request\",\n587\t      \"DisplayName\": \"WhatsApp Business HTTP Request\",\n588\t      \"Description\": \"(WhatsApp Business) Perform HTTP requests to interact with WhatsApp Business using existing connector and connection configuration.\"\n589\t    },\n590\t    {\n591\t      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-workable-workable.workable-http-request\",\n592\t      \"DisplayName\": \"Workable HTTP Request\",\n593\t      \"Description\": \"(Workable) Perform HTTP requests to interact with Workable using existing connector and connection configuration.\"\n594\t    },\n595\t    {\n596\t      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-workday-workdayrest.workday-rest-http-request\",\n597\t      \"DisplayName\": \"Workday REST HTTP Request\",\n598\t      \"Description\": \"(Workday REST) Perform HTTP requests to interact with Workday REST using existing connector and connection configuration.\"\n599\t    },\n600\t    {\n601\t      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-twitter-twitter.x-http-request\",\n602\t      \"DisplayName\": \"X HTTP Request\",\n603\t      \"Description\": \"(X) Perform HTTP requests to interact with X using existing connector and connection configuration.\"\n604\t    },\n605\t    {\n606\t      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-xero-xero.xero-http-request\",\n607\t      \"DisplayName\": \"Xero HTTP Request\",\n608\t      \"Description\": \"(Xero) Perform HTTP requests to interact with Xero using existing connector and connection configuration.\"\n609\t    },\n610\t    {\n611\t      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-google-youtube.youtube-http-request\",\n612\t      \"DisplayName\": \"YouTube HTTP Request\",\n613\t      \"Description\": \"(YouTube) Perform HTTP requests to interact with YouTube using existing connector and connection configuration.\"\n614\t    },\n615\t    {\n616\t      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-zendesk-zendesk.zendesk-http-request\",\n617\t      \"DisplayName\": \"Zendesk HTTP Request\",\n618\t      \"Description\": \"(Zendesk) Perform HTTP requests to interact with Zendesk using existing connector and connection configuration.\"\n619\t    },\n620\t    {\n621\t      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-zoho-campaigns.zoho-campaigns-http-request\",\n622\t      \"DisplayName\": \"Zoho Campaigns HTTP Request\",\n623\t      \"Description\": \"(Zoho Campaigns) Perform HTTP requests to interact with Zoho Campaigns using existing connector and connection configuration.\"\n624\t    },\n625\t    {\n626\t      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-zoho-desk.zoho-desk-http-request\",\n627\t      \"DisplayName\": \"Zoho Desk HTTP Request\",\n628\t      \"Description\": \"(Zoho Desk) Perform HTTP requests to interact with Zoho Desk using existing connector and connection configuration.\"\n629\t    },\n630\t    {\n631\t      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-zoho-mail.zoho-mail-http-request\",\n632\t      \"DisplayName\": \"Zoho Mail HTTP Request\",\n633\t      \"Description\": \"(Zoho Mail) Perform HTTP requests to interact with Zoho Mail using existing connector and connection configuration.\"\n634\t    },\n635\t    {\n636\t      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-zoom-zoom.http-request\",\n637\t      \"DisplayName\": \"HTTP Request\",\n638\t      \"Description\": \"(Zoom) Performs HTTP requests to Zoom by using existing connector and connection configuration\"\n639\t    },\n640\t    {\n641\t      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-zoominfo-zoominfo.zoominfo-http-request\",\n642\t      \"DisplayName\": \"ZoomInfo HTTP Request\",\n643\t      \"Description\": \"(ZoomInfo) Perform HTTP requests to interact with ZoomInfo using existing connector and connection configuration.\"\n644\t    },\n645\t    {\n646\t      \"NodeType\": \"uipath.connector.trigger.uipath-http-webhook.http-webhook\",\n647\t      \"DisplayName\": \"HTTP Webhook\",\n648\t      \"Description\": \"(HTTP Webhook) Triggers instantly when an event has occured\"\n649\t    },\n650\t    {\n651\t      \"NodeType\": \"uipath.connector.event.uipath-http-webhook.http-webhook\",\n652\t      \"DisplayName\": \"HTTP Webhook\",\n653\t      \"Description\": \"(HTTP Webhook) Triggers instantly when an event has occured\"\n654\t    }\n655\t  ]\n656\t}\n657\t",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 7,
+          "result_tokens": 10531
+        },
+        {
+          "tool_name": "Read",
+          "tool_id": "toolu_bdrk_01VZQ8vkzBi7XpGoZPywfoFA",
+          "assistant_turn_index": 14,
+          "timestamp": "2026-07-24T17:15:13.148144",
+          "duration_ms": 21.31957106757909,
+          "generation_completed_at": "2026-07-24T17:15:13.148144",
+          "execution_started_at": "2026-07-24T17:15:13.148193",
+          "execution_completed_at": "2026-07-24T17:15:13.169513",
+          "parameters": {
+            "file_path": "/work/output/artifacts/skill-flow-registry-discovery/schema_http.json"
+          },
+          "result_status": "success",
+          "result_summary": "1\t{\n2\t  \"Result\": \"Failure\",\n3\t  \"Message\": \"Node not found\",\n4\t  \"Instructions\": \"No node found with node type: core.action.http\",\n5\t  \"ErrorCode\": \"unknown_error\",\n6\t  \"Retry\": \"RetryWillNotFix\"\n7\t}\n8\t",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 8,
+          "result_tokens": 51
+        },
+        {
+          "tool_name": "Read",
+          "tool_id": "toolu_bdrk_015KorHvGgQv67tx2SSB9Lcg",
+          "assistant_turn_index": 15,
+          "timestamp": "2026-07-24T17:15:13.349195",
+          "duration_ms": 11.960442992858589,
+          "generation_completed_at": "2026-07-24T17:15:13.349195",
+          "execution_started_at": "2026-07-24T17:15:13.349247",
+          "execution_completed_at": "2026-07-24T17:15:13.361207",
+          "parameters": {
+            "file_path": "/work/output/artifacts/skill-flow-registry-discovery/search_script.json"
+          },
+          "result_status": "success",
+          "result_summary": "1\t{\n2\t  \"Result\": \"Success\",\n3\t  \"Code\": \"NodeSearchSuccess\",\n4\t  \"Data\": [\n5\t    {\n6\t      \"NodeType\": \"core.action.script\",\n7\t      \"DisplayName\": \"Script\",\n8\t      \"Description\": \"Run custom JavaScript code\"\n9\t    },\n10\t    {\n11\t      \"NodeType\": \"uipath.connector.uipath-amazon-transcribe.get-transcription-job-by-name\",\n12\t      \"DisplayName\": \"Get Transcription Job by Name\",\n13\t      \"Description\": \"(Amazon Transcribe) Retrieve details of a transcription job using its name in Amazon Transcribe.\"\n14\t    },\n15\t    {\n16\t      \"NodeType\": \"uipath.connector.uipath-freshworks-freshbooks.search-items\",\n17\t      \"DisplayName\": \"Search Items\",\n18\t      \"Description\": \"(FreshBooks) Search for items in FreshBooks by SKU or description.\"\n19\t    },\n20\t    {\n21\t      \"NodeType\": \"uipath.connector.uipath-microsoft-azure.list-nsgs\",\n22\t      \"DisplayName\": \"List NSGs\",\n23\t      \"Description\": \"(Microsoft Azure) Gets the list of network security group within the current subscription matching the filter criteria.\"\n24\t    },\n25\t    {\n26\t      \"NodeType\": \"uipath.connector.uipath-microsoft-azure.get-security-alert\",\n27\t      \"DisplayName\": \"Get Security Alert\",\n28\t      \"Description\": \"(Microsoft Azure) Gets the details of a security alert at subscription or resource group level\"\n29\t    },\n30\t    {\n31\t      \"NodeType\": \"uipath.connector.uipath-microsoft-azure.list-security-alerts\",\n32\t      \"DisplayName\": \"List Security Alerts\",\n33\t      \"Description\": \"(Microsoft Azure) List the security alerts by subscription level or resource group level or/and location level\"\n34\t    },\n35\t    {\n36\t      \"NodeType\": \"uipath.connector.uipath-microsoft-teams.list-all-transcripts\",\n37\t      \"DisplayName\": \"List All Transcripts\",\n38\t      \"Description\": \"(Microsoft Teams) Retrieve all transcripts from online Microsoft Teams meetings.\"\n39\t    },\n40\t    {\n41\t      \"NodeType\": \"uipath.connector.uipath-microsoft-teams.download-meeting-transcript-recording\",\n42\t      \"DisplayName\": \"Download Meeting Transcript/Recording\",\n43\t      \"Description\": \"(Microsoft Teams) Download the transcript or recording of a Microsoft Teams meeting.\"\n44\t    },\n45\t    {\n46\t      \"NodeType\": \"uipath.connector.uipath-microsoft-vision.describe-image\",\n47\t      \"DisplayName\": \"Describe Image\",\n48\t      \"Description\": \"(Microsoft Vision) Generate human-readable descriptions of images using Microsoft Vision.\"\n49\t    },\n50\t    {\n51\t      \"NodeType\": \"uipath.connector.uipath-mock-teams.list-all-transcripts\",\n52\t      \"DisplayName\": \"List All Transcripts\",\n53\t      \"Description\": \"(Mock Microsoft Teams) Retrieve all the transcripts of an online teams meeting\"\n54\t    },\n55\t    {\n56\t      \"NodeType\": \"uipath.connector.uipath-mock-teams.download-meeting-transcript-recording\",\n57\t      \"DisplayName\": \"Download Meeting Transcript/Recording\",\n58\t      \"Description\": \"(Mock Microsoft Teams) Download the transcript or recording file of an online teams meeting\"\n59\t    },\n60\t    {\n61\t      \"NodeType\": \"uipath.connector.uipath-salesforce-slack.set-channel-description\",\n62\t      \"DisplayName\": \"Set Channel Description\",\n63\t      \"Description\": \"(Slack) Sets the description of a channel\"\n64\t    },\n65\t    {\n66\t      \"NodeType\": \"uipath.connector.uipath-uipath-airdk.image-classification\",\n67\t      \"DisplayName\": \"Image Classification\",\n68\t      \"Description\": \"(UiPath GenAI Activities) Classify images using custom categories and descriptions with UiPath Integration Service.\"\n69\t    },\n70\t    {\n71\t      \"NodeType\": \"uipath.connector.uipath-zoom-zoom.get-meeting-recording\",\n72\t      \"DisplayName\": \"Get Meeting Recording\",\n73\t      \"Description\": \"(Zoom) Retrieve download URL and chat transcript of completed Zoom meetings saved in the cloud.\"\n74\t    },\n75\t    {\n76\t      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-amazon-transcribe.get-transcription-job-by-name\",\n77\t      \"DisplayName\": \"Get Transcription Job by Name\",\n78\t      \"Description\": \"(Amazon Transcribe) Retrieve details of a transcription job using its name in Amazon Transcribe.\"\n79\t    },\n80\t    {\n81\t      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-freshworks-freshbooks.search-items\",\n82\t      \"DisplayName\": \"Search Items\",\n83\t      \"Description\": \"(FreshBooks) Search for items in FreshBooks by SKU or description.\"\n84\t    },\n85\t    {\n86\t      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-microsoft-teams.list-all-transcripts\",\n87\t      \"DisplayName\": \"List All Transcripts\",\n88\t      \"Description\": \"(Microsoft Teams) Retrieve all transcripts from online Microsoft Teams meetings.\"\n89\t    },\n90\t    {\n91\t      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-microsoft-vision.describe-image\",\n92\t      \"DisplayName\": \"Describe Image\",\n93\t      \"Description\": \"(Microsoft Vision) Generate human-readable descriptions of images using Microsoft Vision.\"\n94\t    },\n95\t    {\n96\t      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-mock-teams.list-all-transcripts\",\n97\t      \"DisplayName\": \"List All Transcripts\",\n98\t      \"Description\": \"(Mock Microsoft Teams) Retrieve all the transcripts of an online teams meeting\"\n99\t    },\n100\t    {\n101\t      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-salesforce-slack.set-channel-description\",\n102\t      \"DisplayName\": \"Set Channel Description\",\n103\t      \"Description\": \"(Slack) Sets the description of a channel\"\n104\t    },\n105\t    {\n106\t      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-uipath-airdk.image-classification\",\n107\t      \"DisplayName\": \"Image Classification\",\n108\t      \"Description\": \"(UiPath GenAI Activities) Classify images using custom categories and descriptions with UiPath Integration Service.\"\n109\t    },\n110\t    {\n111\t      \"NodeType\": \"uipath.agent.resource.tool.connector.uipath-zoom-zoom.get-meeting-recording\",\n112\t      \"DisplayName\": \"Get Meeting Recording\",\n113\t      \"Description\": \"(Zoom) Retrieve download URL and chat transcript of completed Zoom meetings saved in the cloud.\"\n114\t    }\n115\t  ]\n116\t}\n117\t",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 9,
+          "result_tokens": 1504
+        },
+        {
+          "tool_name": "Read",
+          "tool_id": "toolu_bdrk_01PUGuemQbeCT7FZSeCJfPb6",
+          "assistant_turn_index": 16,
+          "timestamp": "2026-07-24T17:15:13.729912",
+          "duration_ms": 15.794901992194355,
+          "generation_completed_at": "2026-07-24T17:15:13.729912",
+          "execution_started_at": "2026-07-24T17:15:13.729965",
+          "execution_completed_at": "2026-07-24T17:15:13.745760",
+          "parameters": {
+            "file_path": "/work/output/artifacts/skill-flow-registry-discovery/schema_script.json"
+          },
+          "result_status": "success",
+          "result_summary": "1\t{\n2\t  \"Result\": \"Success\",\n3\t  \"Code\": \"NodeGetSuccess\",\n4\t  \"Data\": {\n5\t    \"Node\": {\n6\t      \"nodeType\": \"core.action.script\",\n7\t      \"version\": \"1.0\",\n8\t      \"category\": \"data-operations\",\n9\t      \"description\": \"Run custom JavaScript code\",\n10\t      \"tags\": [\n11\t        \"code\",\n12\t        \"javascript\",\n13\t        \"python\"\n14\t      ],\n15\t      \"sortOrder\": 35,\n16\t      \"supportsErrorHandling\": true,\n17\t      \"display\": {\n18\t        \"label\": \"Script\",\n19\t        \"icon\": \"code\"\n20\t      },\n21\t      \"handleConfiguration\": [\n22\t        {\n23\t          \"position\": \"left\",\n24\t          \"handles\": [\n25\t            {\n26\t              \"id\": \"input\",\n27\t              \"type\": \"target\",\n28\t              \"handleType\": \"input\"\n29\t            }\n30\t          ]\n31\t        },\n32\t        {\n33\t          \"position\": \"right\",\n34\t          \"handles\": [\n35\t            {\n36\t              \"id\": \"success\",\n37\t              \"type\": \"source\",\n38\t              \"handleType\": \"output\"\n39\t            },\n40\t            {\n41\t              \"id\": \"error\",\n42\t              \"label\": \"Error\",\n43\t              \"type\": \"source\",\n44\t              \"handleType\": \"output\",\n45\t              \"visible\": \"{inputs.errorHandlingEnabled}\",\n46\t              \"constraints\": {\n47\t                \"maxConnections\": 1\n48\t              }\n49\t            }\n50\t          ]\n51\t        }\n52\t      ],\n53\t      \"debug\": {\n54\t        \"runtime\": \"clientScript\"\n55\t      },\n56\t      \"model\": {\n57\t        \"type\": \"bpmn:ScriptTask\"\n58\t      },\n59\t      \"inputDefinition\": {\n60\t        \"type\": \"object\",\n61\t        \"properties\": {\n62\t          \"script\": {\n63\t            \"type\": \"string\",\n64\t            \"minLength\": 1,\n65\t            \"errorMessage\": \"A script function is required\",\n66\t            \"validationSeverity\": \"warning\"\n67\t          }\n68\t        },\n69\t        \"required\": [\n70\t          \"script\"\n71\t        ]\n72\t      },\n73\t      \"inputDefaults\": {\n74\t        \"script\": \"\"\n75\t      },\n76\t      \"outputDefinition\": {\n77\t        \"output\": {\n78\t          \"type\": \"object\",\n79\t          \"description\": \"The return value of the script\",\n80\t          \"source\": \"=result.response\",\n81\t          \"var\": \"output\"\n82\t        },\n83\t        \"error\": {\n84\t          \"type\": \"object\",\n85\t          \"description\": \"Error information if the node fails\",\n86\t          \"source\": \"=Error\",\n87\t          \"var\": \"error\",\n88\t          \"schema\": {\n89\t            \"$schema\": \"http://json-schema.org/draft-07/schema#\",\n90\t            \"type\": \"object\",\n91\t            \"required\": [\n92\t              \"code\",\n93\t              \"message\",\n94\t              \"detail\",\n95\t              \"category\",\n96\t              \"status\"\n97\t            ],\n98\t            \"properties\": {\n99\t              \"code\": {\n100\t                \"type\": \"string\",\n101\t                \"description\": \"Error code as a string\"\n102\t              },\n103\t              \"message\": {\n104\t                \"type\": \"string\",\n105\t                \"description\": \"High-level error message\"\n106\t              },\n107\t              \"detail\": {\n108\t                \"type\": \"string\",\n109\t                \"description\": \"Detailed error description\"\n110\t              },\n111\t              \"category\": {\n112\t                \"type\": \"string\",\n113\t                \"description\": \"Error category\"\n114\t              },\n115\t              \"status\": {\n116\t                \"type\": \"integer\",\n117\t                \"description\": \"HTTP status code\"\n118\t              }\n119\t            },\n120\t            \"additionalProperties\": false\n121\t          }\n122\t        }\n123\t      },\n124\t      \"form\": {\n125\t        \"id\": \"script-properties\",\n126\t        \"title\": \"Script configuration\",\n127\t        \"sections\": [\n128\t          {\n129\t            \"id\": \"script\",\n130\t            \"title\": \"Script\",\n131\t            \"collapsible\": true,\n132\t            \"defaultExpanded\": true,\n133\t            \"fields\": [\n134\t              {\n135\t                \"name\": \"inputs.script\",\n136\t                \"type\": \"custom\",\n137\t                \"component\": \"script-editor\",\n138\t                \"componentProps\": {\n139\t                  \"language\": \"javascript\",\n140\t                  \"returnType\": \"any\",\n141\t                  \"validationMode\": \"script\",\n142\t                  \"minHeight\": 200,\n143\t                  \"placeholder\": \" // Return an object with your result\\nreturn {\\n  message: \\\"Web request response\\\",\\n  data: $vars.httpRequest1.output\\n                  };\"\n144\t                },\n145\t                \"label\": \"Code\",\n146\t                \"description\": \"JavaScript expression that returns a result object\"\n147\t              }\n148\t            ]\n149\t          }\n150\t        ]\n151\t      }\n152\t    }\n153\t  }\n154\t}\n155\t",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 10,
+          "result_tokens": 1171
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_014ksdz2SZSMXnyE3ytGG2qM",
+          "assistant_turn_index": 18,
+          "timestamp": "2026-07-24T17:15:18.465917",
+          "duration_ms": 5462.022936088033,
+          "generation_completed_at": "2026-07-24T17:15:18.465917",
+          "execution_started_at": "2026-07-24T17:15:18.465965",
+          "execution_completed_at": "2026-07-24T17:15:23.927988",
+          "parameters": {
+            "command": "uip maestro flow registry get core.action.http.v2 --output json 2>&1 > /work/output/artifacts/skill-flow-registry-discovery/schema_http_v2.json && echo \"OK\"",
+            "description": "Fetch schema for core.action.http.v2"
+          },
+          "result_status": "success",
+          "result_summary": "OK",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 11,
+          "result_tokens": 1
+        },
+        {
+          "tool_name": "Read",
+          "tool_id": "toolu_bdrk_01AEyu8WXBdM1jR7tqZy7178",
+          "assistant_turn_index": 19,
+          "timestamp": "2026-07-24T17:15:25.533202",
+          "duration_ms": 114.85698295291513,
+          "generation_completed_at": "2026-07-24T17:15:25.533202",
+          "execution_started_at": "2026-07-24T17:15:25.533467",
+          "execution_completed_at": "2026-07-24T17:15:25.648324",
+          "parameters": {
+            "file_path": "/work/output/artifacts/skill-flow-registry-discovery/schema_http_v2.json"
+          },
+          "result_status": "success",
+          "result_summary": "1\t{\n2\t  \"Result\": \"Success\",\n3\t  \"Code\": \"NodeGetSuccess\",\n4\t  \"Data\": {\n5\t    \"Node\": {\n6\t      \"nodeType\": \"core.action.http.v2\",\n7\t      \"version\": \"2.3\",\n8\t      \"category\": \"data-operations\",\n9\t      \"description\": \"HTTP request with managed authentication\",\n10\t      \"tags\": [\n11\t        \"connector\",\n12\t        \"http\",\n13\t        \"api\",\n14\t        \"rest\",\n15\t        \"request\"\n16\t      ],\n17\t      \"sortOrder\": 35,\n18\t      \"supportsErrorHandling\": true,\n19\t      \"display\": {\n20\t        \"label\": \"HTTP Request\",\n21\t        \"icon\": \"app-window\"\n22\t      },\n23\t      \"handleConfiguration\": [\n24\t        {\n25\t          \"position\": \"left\",\n26\t          \"handles\": [\n27\t            {\n28\t              \"id\": \"input\",\n29\t              \"type\": \"target\",\n30\t              \"handleType\": \"input\",\n31\t              \"label\": \"\"\n32\t            }\n33\t          ]\n34\t        },\n35\t        {\n36\t          \"position\": \"right\",\n37\t          \"handles\": [\n38\t            {\n39\t              \"id\": \"branch-{item.id}\",\n40\t              \"type\": \"source\",\n41\t              \"handleType\": \"output\",\n42\t              \"label\": \"{item.name}\",\n43\t              \"repeat\": \"inputs.branches\"\n44\t            },\n45\t            {\n46\t              \"id\": \"default\",\n47\t              \"type\": \"source\",\n48\t              \"handleType\": \"output\",\n49\t              \"label\": \"\"\n50\t            },\n51\t            {\n52\t              \"id\": \"error\",\n53\t              \"label\": \"Error\",\n54\t              \"type\": \"source\",\n55\t              \"handleType\": \"output\",\n56\t              \"visible\": \"{inputs.errorHandlingEnabled}\",\n57\t              \"constraints\": {\n58\t                \"maxConnections\": 1\n59\t              }\n60\t            }\n61\t          ],\n62\t          \"visible\": true\n63\t        }\n64\t      ],\n65\t      \"debug\": {\n66\t        \"runtime\": \"bpmnEngine\"\n67\t      },\n68\t      \"model\": {\n69\t        \"type\": \"bpmn:ServiceTask\",\n70\t        \"serviceType\": \"Intsvc.UnifiedHttpRequest\",\n71\t        \"context\": [\n72\t          {\n73\t            \"name\": \"connectorKey\",\n74\t            \"type\": \"string\",\n75\t            \"value\": \"uipath-uipath-http\"\n76\t          },\n77\t          {\n78\t            \"name\": \"objectName\",\n79\t            \"type\": \"string\",\n80\t            \"value\": \"http-request\"\n81\t          },\n82\t          {\n83\t            \"name\": \"connection\",\n84\t            \"type\": \"string\",\n85\t            \"value\": \"<bindings.uipath-uipath-http connection>\"\n86\t          },\n87\t          {\n88\t            \"name\": \"folderKey\",\n89\t            \"type\": \"string\",\n90\t            \"value\": \"<bindings.FolderKey>\"\n91\t          },\n92\t          {\n93\t            \"name\": \"activityConfigurationVersion\",\n94\t            \"type\": \"string\",\n95\t            \"value\": \"v1\"\n96\t          },\n97\t          {\n98\t            \"name\": \"metadata\",\n99\t            \"body\": {\n100\t              \"telemetryData\": {\n101\t                \"connectorKey\": \"uipath-uipath-http\",\n102\t                \"connectorName\": \"HTTP Request\"\n103\t              },\n104\t              \"inputMetadata\": {},\n105\t              \"errorState\": {\n106\t                \"hasError\": true\n107\t              }\n108\t            },\n109\t            \"type\": \"json\"\n110\t          }\n111\t        ],\n112\t        \"expansion\": {\n113\t          \"processLevelVariables\": [\n114\t            {\n115\t              \"id\": \"{nodeId}.output\",\n116\t              \"name\": \"output\",\n117\t              \"type\": \"jsonSchema\",\n118\t              \"elementId\": \"{nodeId}\",\n119\t              \"custom\": true\n120\t            },\n121\t            {\n122\t              \"condition\": \"hasEdgeFromHandle('error')\",\n123\t              \"id\": \"{nodeId}.error\",\n124\t              \"name\": \"error\",\n125\t              \"type\": \"jsonSchema\",\n126\t              \"elementId\": \"{nodeId}\",\n127\t              \"custom\": true\n128\t            }\n129\t          ],\n130\t          \"nodes\": [\n131\t            {\n132\t              \"id\": \"{nodeId}\",\n133\t              \"type\": \"bpmn:SubProcess\",\n134\t              \"replaceOriginal\": true,\n135\t              \"data\": {\n136\t                \"label\": \"{node.data.label}\",\n137\t                \"isExpanded\": true,\n138\t                \"model\": {\n139\t                  \"serviceType\": \"BPMN.Variables\",\n140\t                  \"subprocessVariables\": {\n141\t                    \"inputOutputs\": [\n142\t                      {\n143\t                        \"id\": \"response\",\n144\t                        \"name\": \"response\",\n145\t                        \"type\": \"jsonSchema\",\n146\t                        \"variableType\": \"inputOutput\"\n147\t                      },\n148\t                      {\n149\t                        \"id\": \"error\",\n150\t                        \"name\": \"error\",\n151\t                        \"type\": \"jsonSchema\",\n152\t                        \"variableType\": \"inputOutput\"\n153\t                      }\n154\t                    ]\n155\t                  },\n156\t                  \"outputs\": [\n157\t                    {\n158\t                      \"name\": \"output\",\n159\t                      \"type\": \"jsonSchema\",\n160\t                      \"source\": \"=vars.response\",\n161\t                      \"var\": \"{nodeId}.output\",\n162\t                      \"custom\": true\n163\t                    },\n164\t                    {\n165\t                      \"name\": \"error\",\n166\t                      \"type\": \"jsonSchema\",\n167\t                      \"source\": \"=vars.error\",\n168\t                      \"var\": \"{nodeId}.error\",\n169\t                      \"custom\": true\n170\t                    }\n171\t                  ]\n172\t                }\n173\t              },\n174\t              \"nodes\": [\n175\t                {\n176\t                  \"id\": \"_Implicit_StartEvent_{nodeId}\",\n177\t                  \"type\": \"bpmn:StartEvent\",\n178\t                  \"parentId\": \"{nodeId}\",\n179\t                  \"position\": {\n180\t                    \"x\": 0,\n181\t                    \"y\": 0\n182\t                  },\n183\t                  \"data\": {\n184\t                    \"label\": \"HTTP Request Start\"\n185\t                  }\n186\t                },\n187\t                {\n188\t                  \"id\": \"_Implicit_HttpTask_{nodeId}\",\n189\t                  \"type\": \"bpmn:SendTask\",\n190\t                  \"parentId\": \"{nodeId}\",\n191\t                  \"position\": {\n192\t                    \"x\": 0,\n193\t                    \"y\": 0\n194\t                  },\n195\t                  \"propagate\": {\n196\t                    \"detail\": true,\n197\t                    \"retry\": {\n198\t                      \"condition\": \"node.data.inputs.retryCount > 0\",\n199\t                      \"maxRetryCount\": \"node.data.inputs.retryCount\",\n200\t                      \"retryBackoff\": \"node.data.inputs.timeout\",\n201\t                      \"retryBackoffDefault\": \"PT1S\",\n202\t                      \"retryAllErrors\": \"true\",\n203\t                      \"retryBackoffType\": \"Static\"\n204\t                    }\n205\t                  },\n206\t                  \"data\": {\n207\t                    \"label\": \"{node.data.label}\",\n208\t                    \"model\": {\n209\t                      \"serviceType\": \"Intsvc.UnifiedHttpRequest\",\n210\t                      \"context\": [\n211\t                        {\n212\t                          \"name\": \"connectorKey\",\n213\t                          \"type\": \"string\",\n214\t                          \"value\": \"uipath-uipath-http\"\n215\t                        },\n216\t                        {\n217\t                          \"name\": \"objectName\",\n218\t                          \"type\": \"string\",\n219\t                          \"value\": \"http-request\"\n220\t                        },\n221\t                        {\n222\t                          \"name\": \"connection\",\n223\t                          \"type\": \"string\",\n224\t                          \"value\": \"<bindings.uipath-uipath-http connection>\"\n225\t                        },\n226\t                        {\n227\t                          \"name\": \"folderKey\",\n228\t                          \"type\": \"string\",\n229\t                          \"value\": \"<bindings.FolderKey>\"\n230\t                        },\n231\t                        {\n232\t                          \"name\": \"activityConfigurationVersion\",\n233\t                          \"type\": \"string\",\n234\t                          \"value\": \"v1\"\n235\t                        },\n236\t                        {\n237\t                          \"name\": \"metadata\",\n238\t                          \"body\": {\n239\t                            \"telemetryData\": {\n240\t                              \"connectorKey\": \"uipath-uipath-http\",\n241\t                              \"connectorName\": \"HTTP Request\"\n242\t                            },\n243\t                            \"inputMetadata\": {},\n244\t                            \"errorState\": {\n245\t                              \"hasError\": true\n246\t                            }\n247\t                          },\n248\t                          \"type\": \"json\"\n249\t                        }\n250\t                      ],\n251\t                      \"outputs\": [\n252\t                        {\n253\t                          \"name\": \"response\",\n254\t                          \"type\": \"json\",\n255\t                          \"source\": \"=response\",\n256\t                          \"var\": \"response\",\n257\t                          \"internal\": true\n258\t                        }\n259\t                      ]\n260\t                    }\n261\t                  }\n262\t                },\n263\t                {\n264\t                  \"id\": \"_Implicit_Gateway_{nodeId}\",\n265\t                  \"type\": \"bpmn:ExclusiveGateway\",\n266\t                  \"parentId\": \"{nodeId}\",\n267\t                  \"position\": {\n268\t                    \"x\": 0,\n269\t                    \"y\": 0\n270\t                  },\n271\t                  \"condition\": \"node.data.inputs.branches.length > 0\",\n272\t                  \"data\": {\n273\t                    \"label\": \"Response branch\",\n274\t                    \"defaultFlowId\": \"_Implicit_Edge__Implicit_Gateway_{nodeId}__Implicit_EndEvent_Default_{nodeId}\"\n275\t                  }\n276\t                },\n277\t                {\n278\t                  \"forEach\": \"node.data.inputs.branches\",\n279\t                  \"id\": \"_Implicit_EndEvent_{branchName}_{nodeId}\",\n280\t                  \"type\": \"bpmn:EndEvent\",\n281\t                  \"parentId\": \"{nodeId}\",\n282\t                  \"position\": {\n283\t                    \"x\": 0,\n284\t                    \"y\": 0\n285\t                  },\n286\t                  \"data\": {\n287\t                    \"label\": \"{branch.name}\"\n288\t                  }\n289\t                },\n290\t                {\n291\t                  \"id\": \"_Implicit_EndEvent_Default_{nodeId}\",\n292\t                  \"type\": \"bpmn:EndEvent\",\n293\t                  \"parentId\": \"{nodeId}\",\n294\t                  \"position\": {\n295\t                    \"x\": 0,\n296\t                    \"y\": 0\n297\t                  },\n298\t                  \"data\": {\n299\t                    \"label\": \"Default\"\n300\t                  }\n301\t                },\n302\t                {\n303\t                  \"condition\": \"hasEdgeFromHandle('error')\",\n304\t                  \"id\": \"_Implicit_EndEvent_Failure_{nodeId}\",\n305\t                  \"type\": \"bpmn:EndEvent\",\n306\t                  \"parentId\": \"{nodeId}\",\n307\t                  \"position\": {\n308\t                    \"x\": 0,\n309\t                    \"y\": 0\n310\t                  },\n311\t                  \"data\": {\n312\t                    \"label\": \"Failure\",\n313\t                    \"model\": {\n314\t                      \"serviceType\": \"BPMN.Variables\",\n315\t                      \"outputs\": [\n316\t                        {\n317\t                          \"name\": \"error\",\n318\t                          \"type\": \"boolean\",\n319\t                          \"source\": \"=true\",\n320\t                          \"var\": \"error\",\n321\t                          \"internal\": true\n322\t                        }\n323\t                      ]\n324\t                    }\n325\t                  }\n326\t                },\n327\t                {\n328\t                  \"condition\": \"hasEdgeFromHandle('error')\",\n329\t                  \"id\": \"_Implicit_BoundaryError_{nodeId}\",\n330\t                  \"type\": \"bpmn:BoundaryEvent\",\n331\t                  \"parentId\": \"{nodeId}\",\n332\t                  \"position\": {\n333\t                    \"x\": 0,\n334\t                    \"y\": 0\n335\t                  },\n336\t                  \"data\": {\n337\t                    \"label\": \"Error\",\n338\t                    \"cancelActivity\": false,\n339\t                    \"attachedToId\": \"_Implicit_HttpTask_{nodeId}\",\n340\t                    \"eventDefinition\": {\n341\t                      \"type\": \"bpmn:ErrorEventDefinition\",\n342\t                      \"id\": \"_Implicit_BoundaryError_{nodeId}_Error\"\n343\t                    },\n344\t                    \"model\": {\n345\t                      \"outputs\": [\n346\t                        {\n347\t                          \"name\": \"Error\",\n348\t                          \"type\": \"jsonSchema\",\n349\t                          \"source\": \"=Error\",\n350\t                          \"var\": \"response\",\n351\t                          \"internal\": true\n352\t                        }\n353\t                      ]\n354\t                    }\n355\t                  }\n356\t                }\n357\t              ],\n358\t              \"edges\": [\n359\t                {\n360\t                  \"id\": \"_Implicit_Edge__Implicit_StartEvent_{nodeId}__Implicit_HttpTask_{nodeId}\",\n361\t                  \"source\": \"_Implicit_StartEvent_{nodeId}\",\n362\t                  \"target\": \"_Implicit_HttpTask_{nodeId}\",\n363\t                  \"type\": \"bpmn:SequenceFlow\",\n364\t                  \"data\": {}\n365\t                },\n366\t                {\n367\t                  \"condition\": \"node.data.inputs.branches.length === 0\",\n368\t                  \"id\": \"_Implicit_Edge__Implicit_HttpTask_{nodeId}__Implicit_EndEvent_Default_{nodeId}\",\n369\t                  \"source\": \"_Implicit_HttpTask_{nodeId}\",\n370\t                  \"target\": \"_Implicit_EndEvent_Default_{nodeId}\",\n371\t                  \"type\": \"bpmn:SequenceFlow\",\n372\t                  \"data\": {}\n373\t                },\n374\t                {\n375\t                  \"condition\": \"node.data.inputs.branches.length > 0\",\n376\t                  \"id\": \"_Implicit_Edge__Implicit_HttpTask_{nodeId}__Implicit_Gateway_{nodeId}\",\n377\t                  \"source\": \"_Implicit_HttpTask_{nodeId}\",\n378\t                  \"target\": \"_Implicit_Gateway_{nodeId}\",\n379\t                  \"type\": \"bpmn:SequenceFlow\",\n380\t                  \"data\": {}\n381\t                },\n382\t                {\n383\t                  \"forEach\": \"node.data.inputs.branches\",\n384\t                  \"condition\": \"node.data.inputs.branches.length > 0\",\n385\t                  \"id\": \"_Implicit_Edge__Implicit_Gateway_{nodeId}__Implicit_EndEvent_{branchName}_{nodeId}\",\n386\t                  \"source\": \"_Implicit_Gateway_{nodeId}\",\n387\t                  \"target\": \"_Implicit_EndEvent_{branchName}_{nodeId}\",\n388\t                  \"type\": \"bpmn:SequenceFlow\",\n389\t                  \"data\": {\n390\t                    \"conditionExpression\": \"{branch.conditionExpression}\",\n391\t                    \"label\": \"{branch.name}\"\n392\t                  }\n393\t                },\n394\t                {\n395\t                  \"condition\": \"node.data.inputs.branches.length > 0\",\n396\t                  \"id\": \"_Implicit_Edge__Implicit_Gateway_{nodeId}__Implicit_EndEvent_Default_{nodeId}\",\n397\t                  \"source\": \"_Implicit_Gateway_{nodeId}\",\n398\t                  \"target\": \"_Implicit_EndEvent_Default_{nodeId}\",\n399\t                  \"type\": \"bpmn:SequenceFlow\",\n400\t                  \"data\": {\n401\t                    \"label\": \"Default\"\n402\t                  }\n403\t                },\n404\t                {\n405\t                  \"condition\": \"hasEdgeFromHandle('error')\",\n406\t                  \"id\": \"_Implicit_Edge__Implicit_BoundaryError_{nodeId}__Implicit_EndEvent_Failure_{nodeId}\",\n407\t                  \"source\": \"_Implicit_BoundaryError_{nodeId}\",\n408\t                  \"target\": \"_Implicit_EndEvent_Failure_{nodeId}\",\n409\t                  \"type\": \"bpmn:SequenceFlow\",\n410\t                  \"data\": {}\n411\t                }\n412\t              ]\n413\t            },\n414\t            {\n415\t              \"id\": \"_Implicit_PostSubprocessGateway_{nodeId}\",\n416\t              \"type\": \"bpmn:ExclusiveGateway\",\n417\t              \"condition\": \"(node.data.inputs.branches.length > 0 || hasEdgeFromHandle('error')) && originalEdges.length > 0\",\n418\t              \"parentId\": null,\n419\t              \"position\": {\n420\t                \"x\": 0,\n421\t                \"y\": 0\n422\t              },\n423\t              \"data\": {\n424\t                \"label\": \"Post-Subprocess Branch\"\n425\t              }\n426\t            }\n427\t          ],\n428\t          \"edges\": [\n429\t            {\n430\t              \"condition\": \"(node.data.inputs.branches.length > 0 || hasEdgeFromHandle('error')) && originalEdges.length > 0\",\n431\t              \"id\": \"_Implicit_Edge_{nodeId}__Implicit_PostSubprocessGateway_{nodeId}\",\n432\t              \"source\": \"{nodeId}\",\n433\t              \"target\": \"_Implicit_PostSubprocessGateway_{nodeId}\",\n434\t              \"type\": \"bpmn:SequenceFlow\",\n435\t              \"data\": {}\n436\t            },\n437\t            {\n438\t              \"forEach\": \"node.data.inputs.branches\",\n439\t              \"condition\": \"node.data.inputs.branches.length > 0\",\n440\t              \"matchOriginalEdgeByHandle\": \"branch-{branch.id}\",\n441\t              \"preserveEdgeId\": true,\n442\t              \"source\": \"_Implicit_PostSubprocessGateway_{nodeId}\",\n443\t              \"type\": \"bpmn:SequenceFlow\",\n444\t              \"data\": {\n445\t                \"conditionExpression\": \"{branch.conditionExpression}\",\n446\t                \"label\": \"{branch.name}\"\n447\t              }\n448\t            },\n449\t            {\n450\t              \"condition\": \"node.data.inputs.branches.length > 0 || hasEdgeFromHandle('error')\",\n451\t              \"matchOriginalEdgeByHandle\": \"default\",\n452\t              \"preserveEdgeId\": true,\n453\t              \"source\": \"_Implicit_PostSubprocessGateway_{nodeId}\",\n454\t              \"type\": \"bpmn:SequenceFlow\",\n455\t              \"data\": {\n456\t                \"label\": \"Default\"\n457\t              }\n458\t            },\n459\t            {\n460\t              \"condition\": \"hasEdgeFromHandle('error')\",\n461\t              \"matchOriginalEdgeByHandle\": \"error\",\n462\t              \"preserveEdgeId\": true,\n463\t              \"source\": \"_Implicit_PostSubprocessGateway_{nodeId}\",\n464\t              \"type\": \"bpmn:SequenceFlow\",\n465\t              \"data\": {\n466\t                \"conditionExpression\": \"=js:vars.{nodeId}.error || vars.{nodeId}.output?.statusCode >= 400\",\n467\t                \"label\": \"Error\"\n468\t              }\n469\t            },\n470\t            {\n471\t              \"condition\": \"node.data.inputs.branches.length === 0 && !hasEdgeFromHandle('error')\",\n472\t              \"matchOriginalEdgeByHandle\": \"default\",\n473\t              \"preserveEdgeId\": true,\n474\t              \"source\": \"{nodeId}\",\n475\t              \"type\": \"bpmn:SequenceFlow\"\n476\t            }\n477\t          ]\n478\t        }\n479\t      },\n480\t      \"inputDefinition\": {\n481\t        \"type\": \"object\",\n482\t        \"properties\": {\n483\t          \"branches\": {\n484\t            \"type\": \"array\",\n485\t            \"items\": {\n486\t              \"type\": \"object\",\n487\t              \"properties\": {\n488\t                \"id\": {\n489\t                  \"type\": \"string\"\n490\t                },\n491\t                \"name\": {\n492\t                  \"type\": \"string\"\n493\t                },\n494\t                \"conditionExpression\": {\n495\t                  \"type\": \"string\"\n496\t                }\n497\t              }\n498\t            }\n499\t          },\n500\t          \"timeout\": {\n501\t            \"type\": \"string\",\n502\t            \"pattern\": \"^P(?!$)(\\\\d+Y)?(\\\\d+M)?(\\\\d+W)?(\\\\d+D)?(T(?=\\\\d)(\\\\d+H)?(\\\\d+M)?(\\\\d+S)?)?$\",\n503\t            \"errorMessage\": {\n504\t              \"pattern\": \"Timeout must be in ISO 8601 duration format (e.g., PT15M, PT1H, P1D)\"\n505\t            }\n506\t          },\n507\t          \"retryCount\": {\n508\t            \"type\": \"number\"\n509\t          }\n510\t        }\n511\t      },\n512\t      \"inputDefaults\": {\n513\t        \"branches\": [],\n514\t        \"timeout\": \"PT15M\",\n515\t        \"retryCount\": 0\n516\t      },\n517\t      \"outputDefinition\": {\n518\t        \"output\": {\n519\t          \"type\": \"object\",\n520\t          \"description\": \"HTTP response object\",\n521\t          \"source\": \"=response\",\n522\t          \"var\": \"output\"\n523\t        },\n524\t        \"error\": {\n525\t          \"type\": \"object\",\n526\t          \"description\": \"Error information if the node fails\",\n527\t          \"source\": \"=Error\",\n528\t          \"var\": \"error\",\n529\t          \"schema\": {\n530\t            \"$schema\": \"http://json-schema.org/draft-07/schema#\",\n531\t            \"type\": \"object\",\n532\t            \"required\": [\n533\t              \"code\",\n534\t              \"message\",\n535\t              \"detail\",\n536\t              \"category\",\n537\t              \"status\"\n538\t            ],\n539\t            \"properties\": {\n540\t              \"code\": {\n541\t                \"type\": \"string\",\n542\t                \"description\": \"Error code as a string\"\n543\t              },\n544\t              \"message\": {\n545\t                \"type\": \"string\",\n546\t                \"description\": \"High-level error message\"\n547\t              },\n548\t              \"detail\": {\n549\t                \"type\": \"string\",\n550\t                \"description\": \"Detailed error description\"\n551\t              },\n552\t              \"category\": {\n553\t                \"type\": \"string\",\n554\t                \"description\": \"Error category\"\n555\t              },\n556\t              \"status\": {\n557\t                \"type\": \"integer\",\n558\t                \"description\": \"HTTP status code\"\n559\t              }\n560\t            },\n561\t            \"additionalProperties\": false\n562\t          }\n563\t        }\n564\t      },\n565\t      \"form\": {\n566\t        \"id\": \"http-v2-properties\",\n567\t        \"title\": \"HTTP Request\",\n568\t        \"sections\": [\n569\t          {\n570\t            \"id\": \"http-config\",\n571\t            \"title\": \"Configuration\",\n572\t            \"collapsible\": true,\n573\t            \"defaultExpanded\": true,\n574\t            \"fields\": [\n575\t              {\n576\t                \"name\": \"inputs.dapHttpToolbar\",\n577\t                \"type\": \"custom\",\n578\t                \"component\": \"dap-http-toolbar\",\n579\t                \"label\": \"\"\n580\t              },\n581\t              {\n582\t                \"label\": \"\",\n583\t                \"name\": \"inputs.detail\",\n584\t                \"type\": \"custom\",\n585\t                \"component\": \"dap-config\",\n586\t                \"componentProps\": {\n587\t                  \"connectorDetail\": {\n588\t                    \"isAppActivity\": false,\n589\t                    \"packageId\": 196648,\n590\t                    \"svgIconUrl\": \"icons/0dad78c9d04c245b126d8edb4c451aa8a0d395d34731cf5702441f6284c70ccc.svg\",\n591\t                    \"displayName\": \"HTTP Request\",\n592\t                    \"assemblyQualifiedName\": \"UiPath.IntegrationService.Activities.Runtime.Activities.ConnectorActivity, UiPath.IntegrationService.Activities.Runtime, Version=1.22.0.0, Culture=neutral, PublicKeyToken=null\",\n593\t                    \"description\": \"Use HTTP requests to interact with APIs via the selected connector and connection configuration.\",\n594\t                    \"category\": \"\",\n595\t                    \"activityColor\": \"#E56D5C\",\n596\t                    \"configuration\": \"{\\\"connectorKey\\\":\\\"uipath-uipath-http\\\",\\\"objectName\\\":\\\"http-request\\\",\\\"httpMethod\\\":\\\"POST\\\",\\\"activityType\\\":\\\"Curated\\\",\\\"version\\\":\\\"1.0.0\\\"}\",\n597\t                    \"uiPathActivityTypeId\": \"5c4cc855-b42a-37e6-b910-de8588998fce\",\n598\t                    \"isExperimental\": false,\n599\t                    \"helpUrlTemplate\": \"https://docs.uipath.com/{0}/activities/other/latest/integration-service/uipath-uipath-http-HTTP-Request\",\n600\t                    \"isEnabled\": true,\n601\t                    \"targetPlatform\": \"CrossPlatform\",\n602\t                    \"isAdvanced\": false,\n603\t                    \"isRestricted\": false,\n604\t                    \"tags\": [\n605\t                      \"\"\n606\t                    ]\n607\t                  }\n608\t                }\n609\t              }\n610\t            ]\n611\t          },\n612\t          {\n613\t            \"id\": \"branches\",\n614\t            \"title\": \"Branches\",\n615\t            \"collapsible\": true,\n616\t            \"defaultExpanded\": false,\n617\t            \"fields\": [\n618\t              {\n619\t                \"name\": \"inputs.branches\",\n620\t                \"type\": \"custom\",\n621\t                \"component\": \"http-branch-editor\",\n622\t                \"label\": \"Response branches\",\n623\t                \"description\": \"Define conditional branches based on response status or properties\",\n624\t                \"componentProps\": {\n625\t                  \"expressionValidationFields\": [\n626\t                    {\n627\t                      \"subPath\": \"conditionExpression\",\n628\t                      \"validationMode\": \"expression\",\n629\t                      \"expectedType\": \"boolean\"\n630\t                    }\n631\t                  ]\n632\t                }\n633\t              }\n634\t            ]\n635\t          },\n636\t          {\n637\t            \"id\": \"advanced\",\n638\t            \"title\": \"Advanced\",\n639\t            \"collapsible\": true,\n640\t            \"defaultExpanded\": false,\n641\t            \"fields\": [\n642\t              {\n643\t                \"name\": \"inputs.timeout\",\n644\t                \"type\": \"text\",\n645\t                \"label\": \"Timeout\",\n646\t                \"description\": \"ISO 8601 duration format (e.g., PT15M for 15 minutes, PT1H for 1 hour)\"\n647\t              },\n648\t              {\n649\t                \"name\": \"inputs.retryCount\",\n650\t                \"type\": \"number\",\n651\t                \"label\": \"Retry count\",\n652\t                \"description\": \"Number of times to retry on failure\"\n653\t              }\n654\t            ]\n655\t          }\n656\t        ]\n657\t      }\n658\t    }\n659\t  }\n660\t}\n661\t",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 12,
+          "result_tokens": 6450
+        }
+      ],
+      "timestamp": "2026-07-24T17:15:56.468483",
+      "duration_seconds": 120.7425083470298,
+      "token_usage": {
+        "uncached_input_tokens": 10,
+        "output_tokens": 4007,
+        "cache_creation_input_tokens": 34471,
+        "cache_read_input_tokens": 282332,
+        "total_cost_usd": 0.27410085,
+        "input_tokens": 316813
+      },
+      "model_used": "claude-sonnet-4-6",
+      "assistant_turn_count": 22,
+      "messages": [
+        {
+          "role": "assistant",
+          "started_at": "2026-07-24T17:13:55.725034",
+          "completed_at": "2026-07-24T17:14:01.706926",
+          "generation_duration_ms": 5981.915327021852,
+          "content_blocks": [
+            {
+              "block_type": "thinking",
+              "sequence": 0,
+              "text": null,
+              "thinking": "The user wants me to explore the UiPath Flow registry to find the right node types for making HTTP requests and processing responses with scripts. Let me start by refreshing the registry cache and then exploring the available node types.\n\nLet me use the uipath-maestro-flow skill to guide this exploration.",
+              "signature": "Ev0DCmcIEBABGAIqQA8mtpF7n5vABc8i19Y3U0s+uE3wXAKU17qrYHNxIv2Tj1pvrCzzxOlpCLuzBPeq/G0BF263gXch/qqD6yJOlfUyEWNsYXVkZS1zb25uZXQtNC02OABCCHRoaW5raW5nEgx6NeMPSy3z1b/uuGkaDC/9MwDg+k4ZgdGE/yIwKN6zHEGUFC67OrtcbfVmkU/a4d7LzoXx3RDWgm2uFH+XtpgFqcthkVh2Npa8WWcGKsMCjw/+C7lj+EcDO9rnXEVJfjwr4fXE3F1d5oefmJtFxxdPXEDOC35kb2yC/kCjPE3xyGOxmitGnlzyXb0NQyqXKnucPeTN3VLyjxRhOZP6vkPuOJ2SHfIV8cRho1t4c6FvGS9NKsEk4kpTNx8QSnsQkf6UT1hfoLV6uhaERva8lLcyB3I9JiDh0FpaLiwCGwSlSNp+1Pjak3eHznZsWICXiV8ZC0WQiN5acbTQRMPhU5i13KWz5Z/1tDz7WBmAi32VaQhmigVPfLtVPBCGgSkkmUb/8G/8St4oQL3xKJrvBt52fNZTwLz40Of6k2QGkHwS6ZLhwpxUVTIU8MvPZLlMVmrQ/CF/BF5o3GpfEqsBlJkFQYerAF5VH+0naf10oG4L2+k+Ovkot7pGprdp8aUx7GoJIzxrA2WpHKmQArYYuVWWwScYAQ==",
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 2,
+          "output_tokens": 124,
+          "cache_creation_tokens": 3346,
+          "cache_read_tokens": 22982,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01UBb3PdnRUP3qdSmngZ1K8S",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-24T17:14:01.706926",
+          "completed_at": "2026-07-24T17:14:02.148042",
+          "generation_duration_ms": 441.1174999549985,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_019yjX8J2FuQ5jYWyvzAXEAD",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_019yjX8J2FuQ5jYWyvzAXEAD"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 18,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01UBb3PdnRUP3qdSmngZ1K8S",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-24T17:14:02.175519",
+          "completed_at": "2026-07-24T17:14:15.131962",
+          "generation_duration_ms": 12956.441738060676,
+          "content_blocks": [
+            {
+              "block_type": "thinking",
+              "sequence": 0,
+              "text": null,
+              "thinking": "The user wants to explore the UiPath Flow registry to find node types for HTTP requests and script processing. Let me read the Author capability documentation to understand the registry exploration workflow, then execute the commands.\n\nThe task is:\n1. Refresh registry cache with `uip maestro flow registry pull --output json`\n2. Search for HTTP and script node types\n3. Inspect exact schemas with `uip maestro flow registry get core.action.http --output json` and `uip maestro flow registry get core.action.script --output json`\n\nLet me first read the Author capability docs to understand the registry commands, then execute everything in a batched manner.\n\nActually, I already have enough from the skill instructions. \n\nNow I'll execute the registry commands in sequence—first pulling to refresh the cache, then searching for the HTTP and script node types, and finally fetching their detailed schemas. I'll use the node type IDs the user specified directly in the `get` commands, then write the results to files to keep things organized.",
+              "signature": "EsUUCmcIEBABGAIqQMfYoJubQGrEzepzd6ln+W4HJZVnxMKMh1jzNKo50f4weWZJqtyyET6R6hqZmG4adtzlvIqI7kQM5WvH2G+3xVYyEWNsYXVkZS1zb25uZXQtNC02OABCCHRoaW5raW5nEgyr5QiDsuxwMJSqwy8aDMgRSyrA6d8+rVgbBiIwZKFfEervOwDHgdHdz/bUVNJIQz4bOGH4wSpZDy6NNRIFaO5a+IMfAyvIwerT/UHzKosTDHm6+sWMvU44CIAWY0XZppC9FVjD/v4kN+eMvzGHPGSkVZzemyAc3Hlr+VEe7gLztc+n8d9Tv20KOQpNHsLw8KSmzKueDwtqDITfdhKaRRWFfx/YBXD+Pfiqozrmm7HkXgBbu+W32KdRiUOYDVgdcCSX3anPP07vYxB+0lKZZfVbLayFX4zAqCIuwD+Y5KZ/P3+SYhgAc0h15yH76usiZTmdArenIcjV1vJFyI8rjHV2+n+An3Vb0cF493SHJCHD9tW0IRu4FiLiLI1o1vwmOZJwFlprSbDi2opvdlCcdBjbfdYboYJBFCb5z8N/DjDLKkGWyHfDsPTpzE7gH7hK+2oyYFwmqjk/jjY52K38gloypqaVSQDTxjm02PDva8mbxGjiQbfP0OxIVxFGINYZnKTwg7IibUr/ZZb3s9zY0HP3XyC+P+0nWZ/CX0el2/IPw4wBqm5Cr8JRmsO1kHTh5FSltrcj253qSX24Wsh6QcK61V3CNRc2AxaxGYDPRp9n+PFTSODO3Mu2FKEZLJo0xxNQpUJb1wD04KXULwhyz8YXrCZw1hOS2aMElI4bm5yPAY3LtKhFqYMJswoOD1DbT3sD9l0B8tpxKFVWvWvBwuXVhZw8oc1xmZPBHIxi8gHToBtfz6peyQ5Ml6iDOLvnoo8F7rmzjNXl8e5C3kQ47NOauwhPbVQoXadp2T96jZfWYm7Oc6SspZsgvJaY+P2wLzqR04leL47iV3VluGw/2ggLK5/zQFHTFKmiC00megqblHXkyjM4kQnvM2WXfXblrtdASo5RGXHjD9NxycehvS3eQTsz70avXxm5c14u11iT3gokIz40CNh8+dRKOleei0t8UdU4iG0lffwqcqMxdLh4t3AuNxK3fqAafTGKQ71uPQfkkdqVjv9CP32iQJC6SuFZHyo68axVnCbu0nz2PtwIF9F6DkNDlLt6Zmb1oLqEVeI8bViNl5O0LRnBfvAt/q7EGTtGPS5MQAe0ejINUdRh1A4UIF7joTVoUGpRKAtwlosyzu64XjaYU0VkG82fSri4dgOAhOTTf1prRMN8r4bHVCRMbVYmNRCrynmMPt5e6y8u1+kd6qAg+rHJbaW0UcnSS9CjpMVKL8ufgtgviakUU43Yela9Z0AQ26UZZQPK1PZtagwVFhidvBGloTaKhSfXXD7kZl+l7gUJmUCYi5S9qouvDl5gYfSeqeH8h5CnNZbmD4uW8l4q0ZJF3QsM3xIfagWLes/Q/tgRaWEe3BJ/8rillYg3IcUJG2bvfvDYj8CHAKLDgs12vala5L/8WZVdqhU3PVy7SkmisI/m2IllAOejjS3SQy1de3AR2uVw3ZF0TQcl71nR5WNNF9c3+9usKk+8IwEZj24G+Ucr2vhdBzeqxdfO0qOX4FbUWObPOsyVyQLAMH7SvbFsos/JHTXt5izoPZSi22Fnavu3HUhM3t/d1NiRjtTYVFbNzwiKettqs3zGf3cyrl+CUNOFXETkePuxAHic89pZAo1IwZeimpN8M7cSq0iN97I9fano5PvFV9P/QI7IZYfxVhm8i5+m5bwSWxCtFU0JmAT+2NUctof/Qnej+OwtlbRr/nwgxrXHgfc2Z0/Kpb2HHIUaSvLnBaoIsLpta7eZCOm1TPHgpAAmUi8goDoDxoVVMOt/OEvp/Up2oO9Q+kGmLtgWUcv7nqvbkGRaImTTBdFNoZyvWEh+foBa+t9pS7Vv3NyBuEv/s07LPKLNRl6Cn/QxT2CcfE29zAW/4S20yNRVAH4EKYMbqUC4vDsBLs9eD62H/zgPhlZGApEC5oAnn5nf0c7PGk4FpVcQiZtpwgbMKwa2DbnnLRmP4vIGKl0DVCxFjTwLKQlsunnP7PjQqVG3lzfk8nY2NY3QoIBOrE6C2nWFEcmVo9ITon5EBOnAbLgkecDPhBEZINRFrK+JeGcYSasrrrss96ldqUWhhBWuK1KhKCfIf4/FoqWmZZ67wvvCtxGlrfBNCESjtetRiBQiBs/6nxKDK4n4XbNthyM6XKbRNDiNhOx7X2P8NbWILRH7TENsKeHZSIlgye8w4oTCX750Py2bgni7j/w062uM8HWvXv1XfUevA1udyLMVVfaVGnlF4Y6Ii9kvx7HkiYGzlU/P49biVK+A8V/OaJoP+H1bSVlXUalofQMabngVii/BYM60M7xMucwTircSfravJkjkBTrpZdLYXEVsYTVBtFVJfyD/Wvn5xQHe+eP5HUKwy4p9RopgYFWM85mbbmYN3n0IB+PIWysH92trKwJY89LUvB+1ZYga0DbcZZAIviczuPvc6NhDeaJtSt1vrOPV/UUiWaMY1FPim80kV/cVzalrhxjf8Epj8yTm8SypdvFNxuB2Hy5P4Qvp/jyI/lXAHMoATi3PYptZJ9ARQdzM+J0TxOtyedfJIqgJyTj1BXX6v9WGgmCp7+tcmvoeuwiUvIS/FrK46sOy7BEZQwmUxDfV3zTxmCQcrbQYM5Bbg8tIovuJJwLB9l3EEgBRFTD+134j/VUJ3e+z+P6kgiv0Ar+zSXcOegLOmWBmNFcAKwW6IfwTLFLY6Bf+RHXmYLHfkPiM+ywQmRqbd19L/RDiPQYA4JXbRV+mbuRRcvDxefaUN8Shno0aR2SFV6UrS4d+gxPImfrtW7iDi35wkCq70v8caVrcqdFAA8WQSM3bJJvdwO7oArbqPw+17BiMIIulozQBvi9LLy/f1nFhDSqJnvy+1wq2lp62+u8yFbIjl2tEpZ4gRibEVCjD+iFXDk28wGPoGD3qngZ/fN/GQ5NE18GAYrMx9EyVWJ7tVbvZFCXiSRZNhl9/oapW4dFQC67kqCbZuYnVK4Tob7f3VKk3QX/iitKZOYE5xH+xQCYPsXe1ePQyfD0Bo2FmAV7Ey0dQy/MqdUsmcoAvnvQ9+Gn7JWEPD7uvWpuDTYa+V94X0JK/EaMvbA/lJzCkb3jIYTb+hqnK7qCfbp5n2kNX2FpTYiWyasbPxeBMTc5xOzQeGbWURHcdaMPmAtE5FkTZ4YWqk8A9FP9WT+u1ca9LYuNzjrj4Ux0XBfg/OBsWo8zs7x/5Lp31PqTXoWlM5HkjZemNnWv8bJOVcRBKKr6lwVO6lGlMKewOv0mQEdGgExD5jccKepqBI03jYutqmNBbyV4S25s29pD7R6pA0M/VYBPkwRdTZ4bCDxrvigSwRtRnn0VHlk3ElclSUFNW6tZZV9vT7q06HOXitjnjHEKcINpT1K6hAy5P3zdMSg5hlhgB",
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 2,
+          "output_tokens": 545,
+          "cache_creation_tokens": 6262,
+          "cache_read_tokens": 26328,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01Jto6VPwmov6Z5eP6dMM3YS",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-24T17:14:15.131962",
+          "completed_at": "2026-07-24T17:14:15.151634",
+          "generation_duration_ms": 19.673823029734194,
+          "content_blocks": [
+            {
+              "block_type": "text",
+              "sequence": 0,
+              "text": "I'll work through this in two turns: first pull the registry cache, then run the searches and schema inspections in parallel.",
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 0,
+          "output_tokens": 65,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01Jto6VPwmov6Z5eP6dMM3YS",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-24T17:14:15.151634",
+          "completed_at": "2026-07-24T17:14:16.973488",
+          "generation_duration_ms": 1821.8519599176943,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01McvkaQntaC1xFJmjn4iVQK",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01McvkaQntaC1xFJmjn4iVQK"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 180,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01Jto6VPwmov6Z5eP6dMM3YS",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-24T17:14:26.493317",
+          "completed_at": "2026-07-24T17:14:28.345115",
+          "generation_duration_ms": 1851.7984140198678,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01MpvVhYL3g2b4kQtoy7FCmj",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01MpvVhYL3g2b4kQtoy7FCmj"
+          ],
+          "input_tokens": 1,
+          "output_tokens": 116,
+          "cache_creation_tokens": 562,
+          "cache_read_tokens": 32590,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_0165pscEEopLqiNQZbU1rQ5H",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-24T17:14:35.594035",
+          "completed_at": "2026-07-24T17:14:38.230091",
+          "generation_duration_ms": 2636.056229006499,
+          "content_blocks": [
+            {
+              "block_type": "text",
+              "sequence": 0,
+              "text": "Registry is live (4 565 nodes cached). Now run the search for HTTP and script candidates, plus both `registry get` schema lookups — all in parallel.",
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 1,
+          "output_tokens": 62,
+          "cache_creation_tokens": 203,
+          "cache_read_tokens": 33152,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01Q5sDTwn1HGhnMv2Q9gfqHq",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-24T17:14:38.230091",
+          "completed_at": "2026-07-24T17:14:39.743883",
+          "generation_duration_ms": 1513.7938889674842,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01HJS5HoH8SxnVeK1jtMQgBK",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01HJS5HoH8SxnVeK1jtMQgBK"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 132,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01Q5sDTwn1HGhnMv2Q9gfqHq",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-24T17:14:39.743883",
+          "completed_at": "2026-07-24T17:14:40.503660",
+          "generation_duration_ms": 759.7762299701571,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01VPxvBv6afLzo6pfRevEmR7",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01VPxvBv6afLzo6pfRevEmR7"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 134,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01Q5sDTwn1HGhnMv2Q9gfqHq",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-24T17:14:40.503660",
+          "completed_at": "2026-07-24T17:14:41.494459",
+          "generation_duration_ms": 990.7991570653394,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01RGq6Hirad7U8okot5StFRD",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01RGq6Hirad7U8okot5StFRD"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 94,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01Q5sDTwn1HGhnMv2Q9gfqHq",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-24T17:14:41.494459",
+          "completed_at": "2026-07-24T17:14:42.165708",
+          "generation_duration_ms": 671.2482469156384,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01DzzpfGMFc1d4tLp44KVb52",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01DzzpfGMFc1d4tLp44KVb52"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 97,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01Q5sDTwn1HGhnMv2Q9gfqHq",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-24T17:15:08.932055",
+          "completed_at": "2026-07-24T17:15:11.278112",
+          "generation_duration_ms": 2346.058366005309,
+          "content_blocks": [
+            {
+              "block_type": "thinking",
+              "sequence": 0,
+              "text": null,
+              "thinking": "The `core.action.http` registry get failed (exit 1). Let me check the actual content to understand what happened, and also check the actual node type name (maybe it's `core.action.http.v2`). Let me read the output files.",
+              "signature": "EqcDCmcIEBABGAIqQO/8lhh/2EBad3L9WgIxpkoriG2kyC1lZgeob8+iq8uV0R5gLzktOrJFuFliJ++V/IXeQ+FtFhsOmGtr2qKFmYYyEWNsYXVkZS1zb25uZXQtNC02OABCCHRoaW5raW5nEgxdfToBy9mCaocUAqcaDAHalOkZ0sdoFueLpyIwa8085C0TubR6qSPaZsF2WZBgJsE01ZuLq8uXC59VWghygzX3ic3VcYhkkvRQDD60Ku0BIf4tKe86/d4MAVV3O9LZLmjzWmOu3dKFYsoTtTBFoBh8ekkJgFbLzfrXmRF69WHrVtEaettGJo80PbwReVPw1BFumC3+8APxo7HDf78Sx0ZAl9GVAH11U6D7vcEIlH5RUY9Qg/L3lYHwkNO2M0kENLIKljuo+20qOf+7556XQT59HBDUd8uWhFhqR+I1hddzswGpMbiDt8umIJFcst7J8TtNbeHbJdOy/GYJZm8RkburGYk0QwNc+lmdRGuSe/lk0Y4RgqtL1IV/runhpl3SSyjDe2E3EoAsdp74KvxLPqhmEGsasyUUnRDLUNQsGAE=",
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 1,
+          "output_tokens": 104,
+          "cache_creation_tokens": 640,
+          "cache_read_tokens": 33355,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01Y4M1XGXwtsB6RhonAdmMTC",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-24T17:15:11.278112",
+          "completed_at": "2026-07-24T17:15:12.241453",
+          "generation_duration_ms": 963.3404760388657,
+          "content_blocks": [
+            {
+              "block_type": "text",
+              "sequence": 0,
+              "text": "`core.action.http` got a non-zero exit — the real type might be versioned. Let me read all four files at once and also probe the correct HTTP type name.",
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 0,
+          "output_tokens": 72,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01Y4M1XGXwtsB6RhonAdmMTC",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-24T17:15:12.241453",
+          "completed_at": "2026-07-24T17:15:12.681991",
+          "generation_duration_ms": 440.5376280192286,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_016Kz4yMMiYcmch7XKSp6aWj",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_016Kz4yMMiYcmch7XKSp6aWj"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 43,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01Y4M1XGXwtsB6RhonAdmMTC",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-24T17:15:12.681991",
+          "completed_at": "2026-07-24T17:15:13.148144",
+          "generation_duration_ms": 466.15387592464685,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01VZQ8vkzBi7XpGoZPywfoFA",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01VZQ8vkzBi7XpGoZPywfoFA"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 43,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01Y4M1XGXwtsB6RhonAdmMTC",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-24T17:15:13.169487",
+          "completed_at": "2026-07-24T17:15:13.349195",
+          "generation_duration_ms": 179.70792797859758,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_015KorHvGgQv67tx2SSB9Lcg",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_015KorHvGgQv67tx2SSB9Lcg"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 44,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01Y4M1XGXwtsB6RhonAdmMTC",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-24T17:15:13.361174",
+          "completed_at": "2026-07-24T17:15:13.729912",
+          "generation_duration_ms": 368.73687198385596,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01PUGuemQbeCT7FZSeCJfPb6",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01PUGuemQbeCT7FZSeCJfPb6"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 43,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01Y4M1XGXwtsB6RhonAdmMTC",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-24T17:15:13.745728",
+          "completed_at": "2026-07-24T17:15:16.734347",
+          "generation_duration_ms": 2988.619333016686,
+          "content_blocks": [
+            {
+              "block_type": "text",
+              "sequence": 0,
+              "text": "`core.action.http` doesn't exist — the real type is `core.action.http.v2`. Let me fetch that schema now.",
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 1,
+          "output_tokens": 51,
+          "cache_creation_tokens": 15881,
+          "cache_read_tokens": 33995,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01UT3SKz53RBfCdbDh1RqwgW",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-24T17:15:16.734347",
+          "completed_at": "2026-07-24T17:15:18.465917",
+          "generation_duration_ms": 1731.5687339287251,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_014ksdz2SZSMXnyE3ytGG2qM",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_014ksdz2SZSMXnyE3ytGG2qM"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 114,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01UT3SKz53RBfCdbDh1RqwgW",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-24T17:15:23.927958",
+          "completed_at": "2026-07-24T17:15:25.533202",
+          "generation_duration_ms": 1605.2446740213782,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01AEyu8WXBdM1jR7tqZy7178",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01AEyu8WXBdM1jR7tqZy7178"
+          ],
+          "input_tokens": 1,
+          "output_tokens": 75,
+          "cache_creation_tokens": 178,
+          "cache_read_tokens": 49876,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_016iD8CfBubj5JpHHzg9sgNH",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-24T17:15:25.648286",
+          "completed_at": "2026-07-24T17:15:39.733212",
+          "generation_duration_ms": 14084.92638496682,
+          "content_blocks": [
+            {
+              "block_type": "thinking",
+              "sequence": 0,
+              "text": null,
+              "thinking": "Now I have all the information needed. Let me summarize the findings clearly for the user.\n\nKey findings:\n\n**HTTP node:**\n- Correct type: `core.action.http.v2` (NOT `core.action.http` — that doesn't exist)\n- Version: 2.3, category: `data-operations`\n- Display: \"HTTP Request\"\n- CLI-owned node (connector/managed-HTTP type) — must use `uip maestro flow node add` + `uip maestro flow node configure`\n- Uses the `uipath-uipath-http` connector internally\n- Key inputs:\n  - `detail` contains the HTTP method, URL, headers, and body (configured via `node configure`)\n  - `branches` for optional conditional response handling based on status codes\n  - `timeout` with an ISO 8601 format (defaults to 15 minutes)\n  - `retryCount` for automatic retry logic\n- Output: `output` returns the HTTP response object accessible as `=js:$vars.<nodeId>.output`\n- Error handling: `error` object provides code, message, detail, category, and status information\n- Supports error handling with two auth modes available — managed connector mode and manual mode\n\nFor the Script node, it's a `core.action.script` type that executes JavaScript code directly in the flow. It takes a single `script` input containing the code to run, which can reference other node outputs via `$vars.<nodeId>.output`, and returns the result as `output`. It also supports the same error handling pattern with standard error schema and can be authored directly in the `.flow` JSON file.\n\nThe key distinction is that HTTP nodes are CLI-owned and configured through maestro commands, while Script nodes are user-owned and edited directly in the flow definition. To wire an HTTP response into a script, I reference it using `=js:$vars.<httpNodeId>.output` within the script's input.",
+              "signature": "EokSCmcIEBABGAIqQNBfCQWy92cdSLawbmBeTeZrR40AwplekmPXi+gZT2xC1QEZKrmC4ZNB+V7FSAK7kmI0ZUhMdavaDWM+dpQ1jxcyEWNsYXVkZS1zb25uZXQtNC02OABCCHRoaW5raW5nEgxw6PXX2pX4KY1NuiQaDLHPPY6nPnOYX8C9oiIw/vIJGE9IyK4Iz6l55qSVJp6ShswNiC5sF+btL0KifnnWDRk4JSinMD+wrhCdzO6GKs8QOHfQpnMH2d8rjz7R+RmcycYZu0z551BltmRVqi33XQJB35MZlAoBnTurreXvTG/cNQp2bEBvp7NRYEr3e5Y1TzkZ4QNuHTfUXzsL7UWsx22h8SFQbZSJul5Ayceq6CPdPqt74msWhNlTIFU+6z071IhEBe28+RDVaLRY0yDYFqTmiWJh3mmTJnQ/BJ5ifHRD445Qt4MelKMErRUGEdoAY1m3LuiBMkWyxiUsogF+xyz7sUX8rB+ZoO13MixwIjjbrAB5tKssyERdWtfQgTSudmuP6CY1DsbFrfbLD5jsemCj/NrQtcvipz5HekrY6pnuRZ05vEZvYXTxPihhqPCl0kcnxqPmqWxGErnTjIq7NldDcmsYrSUhzKNyVUMnKJOYP9httQeX4si24f0Ms2+rApuMkw8iCpW3vpcfcAmwhC01REHavxqDm83RSXh1xQhpJgqdm6uVYC9Cohj3SAQtXOAVxojAzN840U6Jxxov9I5+ceHKWBHyU0qhhAe3F4o8MVN349RPCsVCx1Er21xlY5CNk6egesH2Mo83qL4jjQqVLbVm2pZIypEbxON3tdynLX+szM811TvTEj8m9sq0q6cD8QDviWEQ9igBmrFo1CnKBfaCJPTSj6YNNPMp5Ra8c46scJzI5pbz2hUapB/TRUaUI3BlRyelVLeIbDJz+4Jf8BQ4HQoh/UIvt8QkPg6uhkzuvHOOYRopJApVzexcVrzkZbZnd5NJyTSpD6yqux/OmKOtkYQQuIYcWRAUGZhmNDU801HNWGOXm8dJnyTnZncyJUlLdCMM/jvAqwJNI/A9mZzpGg1TtiTIHIL6C1vh4GZaLC45+hgwmQaONh1agg8EZRsF1ENiRMvXOCqKZz38kTdXaFKFLiGWh1pBZpxpQ9vNOrkGfj4nZO7UksUj+NxkSXeDBUVDrkDQtZhZ/phnFkxEJWCh9P8M+9Sm36WZWgk7f6Z7HX+gc3ths++mor8qPqasiLBpES/SiQoBsNdsskwsK1CYbZM4UD4S+DGz9pp9jK9OYwczd00Rc9CSid7QH8BwfKMu4YoXcUm+bKkAjLfR/AGkIOI3D79awdfiNGLeoChmAhvRIZZ+g8myxXWqNv5iWeKd1uJdiiEv/ilsfrMx2oCw0SJx6kQ++d4iUMFZVjY1r9HeY7eg2GZ5B7GmuALzU/5atWpySC2nyhU7JyPFb3Tt45d6oPeWbk/qSQ16DdCmiMpIrO3h3YtGEggCqmieqXBU1SI4wuZB8ICiDG92HPd7O3sh/G4OIVfZYJPrlnuDtnGIMdHQfo4QNtaRIbuZXPa7ZiZ/JQfyJSMFm3ciedEIDXKu1nPcWIvd/AR85f00U/TdaP6yYyKKKZgwfDefLmLi1zXuuxyzxtYbYi1ImiyIWyXTeZiKboDysxDFjEt3HaetRJ/riVz0xNj6z/IBVeL0/DQX5IRn0n34u1LsPcGHVvS5Q28MOLIi6GUysgU5QTELswsXm7hGmU1VEP2xAEM8yhVZSSmyRjx9Uicp7/3+RNsA3b4xzHgJ4C9Tmw8v7ChqZYYGinhlrgQ01YB33QKQlVUx3a4GXcDjc7T1oux0ae9X5xt4Dd5Y/aGB378hzAG+JdVKxh5KOTSgpcMpRvB1Aiz0bQp3oXWiNPz10xPBTsCJQ3gcYmwCZG4SmOAs3awTypsIAf48ze++/IN/feDTv/sOvBoG1YP8zqIO3Xi8zm2oP89zRq6G3oE5f6PpQlaggYgsFKZG6Ubx0YUqjbSFwgOJ7DjjWi5Q7f654lWpDgEj6UxxGSiCBplpq6pDy2hPWisnSlCuT9b49Ios0YrfsXFRN1khF2dIYN25ehq5v+C8iNIpIqB/4OLIiODJcKBAhsrAvwQtfXPWT2zsao05Mqjj4xE94kacgevriCp+YHPwcy+g/Crzx0ddJi4tlIYqbHWNHwZSFfO1KwoTvbD3LcXDl7LNrPY0yyPAGSRN4JgLtTO1ydWmuEEccGZK950uOUjWIgQ3OahRgau6F8BEwTA6tm2oWnx2Y+lyhcNc7pY35GITovdG4C6YnMnCjoR8wcB4WeXeHXwTG0etiZJVXaZbmcIuUn65ZJZyKvX8VCafmP5MMqhl2Fbu/pEq1HCqv+nkwnbi3KkNwiu4zdByrYsnqeJd9n+dTNpNb9HENlAc2NMebtZw36nRMg04kOEwYdBa5avaQjhecya0tweChgv9/QXelwED9UhHhj4zgvGkPCfBWKpPqTQ79VoZacZ/eiItxWf89NVa0q0pHilzu34nbeyoHRF/292T9HmhjT1TnEOfUUE6XmKZAUAp/YNjHxBlB+uAnMmsyOc/JwDEj3Vlmlwfm+cR0S3//DhB23IbkUXiVZW1BcpAVOi2Yo3MR+PmPlXIXhNNBHgvVDohI6gGo3MrXleu210numeCc0+oiv+1v5QVzxpup4XiAZnCMC6EB0g/Tdkhl1c6/UcIS+Mfm5rmLpSQj4fzZ0x2KJUFn5DS8+qGm7us6xw6W6F1OXci7ap4/BCVhOhrNgYPTC7BodRS0ygTzv0QMjaMDZuBWgUxv/iI+biWzpjaigmiEFiPSD7jCQwWuCUD6LVVgHa0BQqIA0YPv2tKStDIEWnYiMd9srqXOUT65FUZjuu4CUS1XLSevH1BsKUFn6sFr4A8/8YiSqUEv3jKBK+z6sHaauwwzwUJeiEliauKj48tMlHFGyc8dsXyccThqk90XssBIh4ErIvkRdL5Ukwnpr2Lp6eYPRQGWbiAWWIpJ8B0mFbIaXxRrk2a7un66z+x+SP8lfbd1XpRI6BqxzPR+XZC3FatmJTW04aNS7gjPPInoKp9XznvGAE=",
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 1,
+          "output_tokens": 566,
+          "cache_creation_tokens": 7399,
+          "cache_read_tokens": 50054,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01FyiM6fQ146kgZZLwRgJ8Am",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-24T17:15:39.733212",
+          "completed_at": "2026-07-24T17:15:56.273242",
+          "generation_duration_ms": 16540.029385010712,
+          "content_blocks": [
+            {
+              "block_type": "text",
+              "sequence": 0,
+              "text": "Here is a complete summary of what the registry exploration found.\n\n---\n\n## Registry exploration results\n\n### Registry cache\n\n```\nResult: Success  |  Nodes: 4,565  |  FromCache: true  |  Age: 0 minutes\n```\n\n---\n\n## Node 1 — HTTP Request\n\n| Field | Value |\n|---|---|\n| **NodeType** | `core.action.http.v2` |\n| **Display name** | HTTP Request |\n| **Version** | 2.3 |\n| **Category** | `data-operations` |\n| **Ownership** | **CLI-owned** — must use `uip maestro flow node add` + `uip maestro flow node configure` |\n\n> ⚠️ `core.action.http` (without `.v2`) does **not** exist — the registry returns \"Node not found\". The versioned type `core.action.http.v2` is the only correct name.\n\n### Inputs\n\n| Input | Type | Default | Notes |\n|---|---|---|---|\n| `detail` | `=jsonString:` envelope | — | **CLI-only field.** Carries the actual HTTP method, URL, headers, body, auth config. Set via `node configure`. |\n| `branches` | array | `[]` | Optional conditional output branches on response status/properties |\n| `timeout` | ISO 8601 string | `PT15M` | e.g. `PT30S`, `PT1H` |\n| `retryCount` | number | `0` | Retries on failure |\n\n### Outputs\n\n| Variable path | Description |\n|---|---|\n| `=js:$vars.<nodeId>.output` | Full HTTP response object |\n| `=js:$vars.<nodeId>.error` | Error object: `{code, message, detail, category, status}` |\n\n### Handles\n\n- **input** (left) — flow enters here  \n- **default** (right) — normal success path  \n- **branch-{id}** (right, one per branch) — conditional paths on response status/body  \n- **error** (right, optional) — enabled by `errorHandlingEnabled`\n\n### How it works internally\n\n`core.action.http.v2` expands at build time into a BPMN SubProcess wrapping the `uipath-uipath-http` connector (`Intsvc.UnifiedHttpRequest`). It supports two authentication modes (managed/connector vs. manual) toggled by the `dap-http-toolbar` UI control and surfaced through the `detail` envelope.\n\n---\n\n## Node 2 — Script\n\n| Field | Value |\n|---|---|\n| **NodeType** | `core.action.script` |\n| **Display name** | Script |\n| **Version** | 1.0 |\n| **Category** | `data-operations` |\n| **Ownership** | **User-owned** — author directly in the `.flow` JSON with `Edit`/`Write` |\n\n### Inputs\n\n| Input | Type | Required | Notes |\n|---|---|---|---|\n| `script` | string | ✅ | JavaScript code. Use `return` to produce output. References other nodes via `$vars.<nodeId>.output`. |\n\n### Outputs\n\n| Variable path | Description |\n|---|---|\n| `=js:$vars.<nodeId>.output` | Whatever the script returns |\n| `=js:$vars.<nodeId>.error` | Error object: `{code, message, detail, category, status}` |\n\n### Handles\n\n- **input** (left)  \n- **success** (right) — normal exit  \n- **error** (right, optional) — enabled by `errorHandlingEnabled`\n\n---\n\n## How to wire them together\n\nTo pipe the HTTP response into the Script node, reference the HTTP node's output inside the script body using the `$vars.` prefix:\n\n```javascript\n// Inside core.action.script → inputs.script\nconst response = $vars.httpRequest1.output;\nconst parsed = JSON.parse(response.body);\nreturn {\n  status: response.statusCode,\n  result: parsed.someField\n};\n```\n\nThe critical rule: **always `$vars.<nodeId>.output`**, never the bare `<nodeId>.output` — the bare form resolves to `undefined` at runtime.\n\n---\n\n## Build plan (when you're ready)\n\n1. **Add the HTTP node** (CLI-owned):\n   ```bash\n   uip maestro flow node add core.action.http.v2 --id httpRequest1\n   uip maestro flow node configure httpRequest1 --method GET --url \"https://...\"\n   ```\n\n2. **Add the Script node** (user-owned — edit `.flow` JSON directly):\n   ```json\n   {\n     \"id\": \"processResponse1\",\n     \"type\": \"core.action.script\",\n     \"data\": {\n       \"inputs\": {\n         \"script\": \"const r = $vars.httpRequest1.output;\\nreturn { status: r.statusCode, body: r.body };\"\n       }\n     }\n   }\n   ```\n\n3. **Wire the edge**: connect `httpRequest1` (handle `default`) → `processResponse1` (handle `input`).",
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 0,
+          "output_tokens": 1285,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01FyiM6fQ146kgZZLwRgJ8Am",
+          "parent_tool_use_id": null
+        }
+      ],
+      "num_turns": 15,
+      "max_turns_exhausted": false,
+      "result_summary": {
+        "is_error": false,
+        "subtype": "success",
+        "stop_reason": "end_turn",
+        "result": "Here is a complete summary of what the registry exploration found.\n\n---\n\n## Registry exploration results\n\n### Registry cache\n\n```\nResult: Success  |  Nodes: 4,565  |  FromCache: true  |  Age: 0 minutes\n```\n\n---\n\n## Node 1 — HTTP Request\n\n| Field | Value |\n|---|---|\n| **NodeType** | `core.action.http.v2` |\n| **Display name** | HTTP Request |\n| **Version** | 2.3 |\n| **Category** | `data-operations` |\n| **Ownership** | **CLI-owned** — must use `uip maestro flow node add` + `uip maestro flow node configure` |\n\n> ⚠️ `core.action.http` (without `.v2`) does **not** exist — the registry returns \"Node not found\". The versioned type `core.action.http.v2` is the only correct name.\n\n### Inputs\n\n| Input | Type | Default | Notes |\n|---|---|---|---|\n| `detail` | `=jsonString:` envelope | — | **CLI-only field.** Carries the actual HTTP method, URL, headers, body, auth config. Set via `node configure`. |\n| `branches` | array | `[]` | Optional conditional output branches on response status/properties |\n| `timeout` | ISO 8601 string | `PT15M` | e.g. `PT30S`, `PT1H` |\n| `retryCount` | number | `0` | Retries on failure |\n\n### Outputs\n\n| Variable path | Description |\n|---|---|\n| `=js:$vars.<nodeId>.output` | Full HTTP response object |\n| `=js:$vars.<nodeId>.error` | Error object: `{code, message, detail, category, status}` |\n\n### Handles\n\n- **input** (left) — flow enters here  \n- **default** (right) — normal success path  \n- **branch-{id}** (right, one per branch) — conditional paths on response status/body  \n- **error** (right, optional) — enabled by `errorHandlingEnabled`\n\n### How it works internally\n\n`core.action.http.v2` expands at build time into a BPMN SubProcess wrapping the `uipath-uipath-http` connector (`Intsvc.UnifiedHttpRequest`). It supports two authentication modes (managed/connector vs. manual) toggled by the `dap-http-toolbar` UI control and surfaced through the `detail` envelope.\n\n---\n\n## Node 2 — Script\n\n| Field | Value |\n|---|---|\n| **NodeType** | `core.action.script` |\n| **Display name** | Script |\n| **Version** | 1.0 |\n| **Category** | `data-operations` |\n| **Ownership** | **User-owned** — author directly in the `.flow` JSON with `Edit`/`Write` |\n\n### Inputs\n\n| Input | Type | Required | Notes |\n|---|---|---|---|\n| `script` | string | ✅ | JavaScript code. Use `return` to produce output. References other nodes via `$vars.<nodeId>.output`. |\n\n### Outputs\n\n| Variable path | Description |\n|---|---|\n| `=js:$vars.<nodeId>.output` | Whatever the script returns |\n| `=js:$vars.<nodeId>.error` | Error object: `{code, message, detail, category, status}` |\n\n### Handles\n\n- **input** (left)  \n- **success** (right) — normal exit  \n- **error** (right, optional) — enabled by `errorHandlingEnabled`\n\n---\n\n## How to wire them together\n\nTo pipe the HTTP response into the Script node, reference the HTTP node's output inside the script body using the `$vars.` prefix:\n\n```javascript\n// Inside core.action.script → inputs.script\nconst response = $vars.httpRequest1.output;\nconst parsed = JSON.parse(response.body);\nreturn {\n  status: response.statusCode,\n  result: parsed.someField\n};\n```\n\nThe critical rule: **always `$vars.<nodeId>.output`**, never the bare `<nodeId>.output` — the bare form resolves to `undefined` at runtime.\n\n---\n\n## Build plan (when you're ready)\n\n1. **Add the HTTP node** (CLI-owned):\n   ```bash\n   uip maestro flow node add core.action.http.v2 --id httpRequest1\n   uip maestro flow node configure httpRequest1 --method GET --url \"https://...\"\n   ```\n\n2. **Add the Script node** (user-owned — edit `.flow` JSON directly):\n   ```json\n   {\n     \"id\": \"processResponse1\",\n     \"type\": \"core.action.script\",\n     \"data\": {\n       \"inputs\": {\n         \"script\": \"const r = $vars.httpRequest1.output;\\nreturn { status: r.statusCode, body: r.body };\"\n       }\n     }\n   }\n   ```\n\n3. **Wire the edge**: connect `httpRequest1` (handle `default`) → `processResponse1` (handle `input`)."
+      },
+      "crashed": false,
+      "crash_reason": null
+    }
+  ],
+  "error_message": null,
+  "error_details": null,
+  "error_log_tail": null,
+  "environment_info": {
+    "git_commit": "unknown",
+    "skills_git_commit": "unknown",
+    "cli_version": "1.199.0-dev.7970",
+    "tool_plugins": {
+      "admin-tool": "1.199.0-dev.7962",
+      "agent-tool": "1.199.0-dev.7965",
+      "agenthub-tool": "1.199.0-dev.7962",
+      "aops-tool": "1.199.0-dev.7962",
+      "api-workflow-tool": "1.199.0-dev.7962",
+      "codedagent-tool": "1.199.0-dev.7965",
+      "codedapp-tool": "1.199.0-dev.7962",
+      "coder-tool": "1.199.0-dev.7962",
+      "context-grounding-tool": "1.199.0-dev.7962",
+      "conversational-tool": "1.199.0-dev.7962",
+      "data-fabric-tool": "1.199.0-dev.7962",
+      "docsai-tool": "1.199.0-dev.7962",
+      "functions-tool": "1.199.0-dev.7962",
+      "gov-tool": "1.199.0-dev.7962",
+      "insights-tool": "1.199.0-dev.7962",
+      "integrationservice-tool": "1.199.0-dev.7962",
+      "ixp-tool": "1.199.0-dev.7962",
+      "llm-gateway-tool": "1.199.0-dev.7962",
+      "llmgw-tool": "1.199.0-dev.7962",
+      "maestro-tool": "1.199.0-dev.7962",
+      "orchestrator-tool": "1.199.0-dev.7962",
+      "platform-tool": "1.199.0-dev.7962",
+      "pm-tool": "1.199.0-dev.7969",
+      "rpa-legacy-tool": "1.199.0-dev.7962",
+      "rpa-tool": "1.199.0-dev.20260722.4",
+      "solution-tool": "1.199.0-dev.7962",
+      "tasks-tool": "1.199.0-dev.7962",
+      "test-manager-tool": "1.199.0-dev.7962",
+      "traces-tool": "1.199.0-dev.7962",
+      "vertical-solutions-tool": "1.199.0-dev.7962"
+    },
+    "coder_eval": "0.8.8",
+    "claude_code_cli": "2.1.177 (Claude Code)",
+    "uv": "uv 0.11.28 (x86_64-unknown-linux-gnu)",
+    "anthropic": "0.102.0",
+    "openai": "2.47.0",
+    "pydantic": "2.12.5",
+    "api_routing": "aws_bedrock",
+    "aws_region": "us-east-2",
+    "bedrock_model": "us.anthropic.claude-sonnet-4-6"
+  },
+  "agent_config": {
+    "type": "claude-code",
+    "model": "claude-sonnet-4-6",
+    "permission_mode": "acceptEdits",
+    "allowed_tools": [
+      "Skill",
+      "Bash",
+      "Read",
+      "Write",
+      "Edit",
+      "Glob",
+      "Grep"
+    ],
+    "disallowed_tools": null,
+    "plugins": [
+      {
+        "type": "local",
+        "path": "/home/azureuser/projects/skills/"
+      }
+    ],
+    "system_prompt": "You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted.\n",
+    "system_prompt_file": null,
+    "ignore_patterns": [],
+    "claude_settings": null,
+    "sdk_options": {},
+    "setting_sources": null
+  },
+  "sdk_options": {
+    "tools": null,
+    "allowed_tools": [
+      "Skill",
+      "Bash",
+      "Read",
+      "Write",
+      "Edit",
+      "Glob",
+      "Grep"
+    ],
+    "system_prompt": "You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted.\n",
+    "mcp_servers": {},
+    "strict_mcp_config": false,
+    "permission_mode": "acceptEdits",
+    "continue_conversation": false,
+    "resume": null,
+    "session_id": null,
+    "max_turns": 28,
+    "max_budget_usd": null,
+    "disallowed_tools": [
+      "ToolSearch"
+    ],
+    "model": "us.anthropic.claude-sonnet-4-6",
+    "fallback_model": null,
+    "betas": [],
+    "permission_prompt_tool_name": null,
+    "cwd": "/work/output/artifacts/skill-flow-registry-discovery",
+    "cli_path": null,
+    "settings": null,
+    "add_dirs": [],
+    "env": {
+      "PATH": "/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+      "PLUGIN_TOOLS_DIR": "/usr/lib/node_modules/@uipath",
+      "CLAUDE_CODE_USE_BEDROCK": "1",
+      "AWS_BEARER_TOKEN_BEDROCK": "***REDACTED***",
+      "AWS_REGION": "us-east-2",
+      "CLAUDE_CODE_ATTRIBUTION_HEADER": "0",
+      "ANTHROPIC_MODEL": "us.anthropic.claude-sonnet-4-6",
+      "ANTHROPIC_SMALL_FAST_MODEL": "us.anthropic.claude-sonnet-4-6"
+    },
+    "extra_args": {},
+    "max_buffer_size": null,
+    "can_use_tool": null,
+    "hooks": null,
+    "user": null,
+    "include_partial_messages": true,
+    "include_hook_events": false,
+    "fork_session": false,
+    "agents": null,
+    "setting_sources": [
+      "project"
+    ],
+    "skills": null,
+    "sandbox": null,
+    "plugins": [
+      {
+        "type": "local",
+        "path": "/home/azureuser/projects/skills"
+      }
+    ],
+    "max_thinking_tokens": null,
+    "thinking": null,
+    "effort": null,
+    "output_format": null,
+    "enable_file_checkpointing": false,
+    "session_store": null,
+    "session_store_flush": "batched",
+    "load_timeout_ms": 60000,
+    "task_budget": null
+  },
+  "sandbox_path": "/work/output/artifacts/skill-flow-registry-discovery",
+  "task_config": {
+    "resolved": {
+      "task_id": "skill-flow-registry-discovery",
+      "description": "Skill-guided evaluation: agent uses the uipath-maestro-flow skill to explore available Flow node types via the registry. Tests whether the skill teaches the correct registry workflow (pull, list/search, get).\n",
+      "initial_prompt": "I want to build a UiPath Flow that makes an HTTP request and processes the\nresponse with a script. Before building anything, explore what node types\nare available in the Flow registry and find the right ones for this task.\n\nImportant:\n- The `uip` CLI is already available in the environment.\n- Start by refreshing the registry cache with `uip maestro flow registry pull --output json`.\n- After list/search identifies the candidates, inspect the exact schemas with\n  `uip maestro flow registry get core.action.http --output json` and\n  `uip maestro flow registry get core.action.script --output json`.\n- Use `--output json` on all uip commands.\n- Do not build the flow — just explore.\n",
+      "initial_prompt_file": null,
+      "tags": [
+        "uipath-maestro-flow",
+        "smoke",
+        "lifecycle:discover",
+        "feature:registry"
+      ],
+      "skip": false,
+      "agent": {
+        "type": "claude-code",
+        "model": "claude-sonnet-4-6",
+        "permission_mode": "acceptEdits",
+        "allowed_tools": [
+          "Skill",
+          "Bash",
+          "Read",
+          "Write",
+          "Edit",
+          "Glob",
+          "Grep"
+        ],
+        "disallowed_tools": null,
+        "plugins": [
+          {
+            "type": "local",
+            "path": "/home/azureuser/projects/skills/"
+          }
+        ],
+        "system_prompt": "You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted.\n",
+        "system_prompt_file": null,
+        "ignore_patterns": [],
+        "claude_settings": null,
+        "sdk_options": {},
+        "setting_sources": null
+      },
+      "sandbox": {
+        "driver": "tempdir",
+        "docker": {
+          "image": "skills-image:latest",
+          "dockerfile_path": null,
+          "build": {
+            "buildkit": null,
+            "args": {},
+            "secrets": [],
+            "extra_args": []
+          },
+          "network": "bridge",
+          "working_dir": null,
+          "env_passthrough": [
+            "ANTHROPIC_API_KEY",
+            "API_BACKEND",
+            "UIPATH_LLM_BACKEND",
+            "UIPATH_ACCESS_TOKEN",
+            "UIPATH_URL",
+            "UIPATH_TENANT_ID",
+            "UIPATH_ORGANIZATION_ID",
+            "UIPATH_CLI_DISABLE_VERSION_SYNC",
+            "AWS_BEARER_TOKEN_BEDROCK",
+            "AWS_REGION",
+            "BEDROCK_MODEL",
+            "CLAUDE_CODE_USE_BEDROCK",
+            "ANTHROPIC_MODEL",
+            "CODEX_API_KEY",
+            "CODEX_BASE_URL",
+            "CODEX_MODEL",
+            "GEMINI_API_KEY",
+            "ANTIGRAVITY_MODEL",
+            "HOME"
+          ],
+          "env_passthrough_extra": [
+            "SKILLS_REPO_PATH",
+            "BEDROCK_MODEL",
+            "TASK_PARALLELISM",
+            "UIPATH_CLI_ENABLE_ENV_AUTH",
+            "UIPATH_CLI_AUTH_TOKEN",
+            "UIPATH_CLI_ORGANIZATION_NAME",
+            "UIPATH_CLI_ORGANIZATION_ID",
+            "UIPATH_CLI_TENANT_NAME",
+            "UIPATH_CLI_TENANT_ID",
+            "TRACES_SMOKE_PROCESS_KEY",
+            "CODEX_API_KEY",
+            "CODEX_BASE_URL"
+          ],
+          "extra_mounts": [
+            "~/.uipath:/.uipath:rw"
+          ]
+        },
+        "python": {
+          "env_packages": []
+        },
+        "node": null,
+        "limits": {
+          "timeout": 300,
+          "max_memory_mb": null,
+          "max_cpus": null,
+          "max_pids": null,
+          "max_disk_mb": null
+        },
+        "template_sources": null,
+        "mock_path_dirs": null,
+        "ignore_patterns": []
+      },
+      "success_criteria": [
+        {
+          "type": "command_executed",
+          "description": "Agent pulled registry data",
+          "weight": 1.0,
+          "pass_threshold": 1.0,
+          "suite_thresholds": null,
+          "stop_when": null,
+          "tool_name": "Bash",
+          "command_pattern": "uip\\s+(maestro\\s+)?flow\\s+registry\\s+pull",
+          "min_count": 1,
+          "max_count": null,
+          "require_success": false,
+          "exclude_pattern": null
+        },
+        {
+          "type": "command_executed",
+          "description": "Agent listed or searched registry nodes",
+          "weight": 1.5,
+          "pass_threshold": 1.0,
+          "suite_thresholds": null,
+          "stop_when": null,
+          "tool_name": "Bash",
+          "command_pattern": "uip\\s+(maestro\\s+)?flow\\s+registry\\s+(list|search)",
+          "min_count": 1,
+          "max_count": null,
+          "require_success": false,
+          "exclude_pattern": null
+        },
+        {
+          "type": "command_executed",
+          "description": "Agent retrieved details on the HTTP node type via registry get",
+          "weight": 1.5,
+          "pass_threshold": 1.0,
+          "suite_thresholds": null,
+          "stop_when": null,
+          "tool_name": "Bash",
+          "command_pattern": "uip\\s+(maestro\\s+)?flow\\s+registry\\s+get\\s+.*core\\.action\\.http",
+          "min_count": 1,
+          "max_count": null,
+          "require_success": false,
+          "exclude_pattern": null
+        },
+        {
+          "type": "command_executed",
+          "description": "Agent retrieved details on the script node type via registry get",
+          "weight": 1.5,
+          "pass_threshold": 1.0,
+          "suite_thresholds": null,
+          "stop_when": null,
+          "tool_name": "Bash",
+          "command_pattern": "uip\\s+(maestro\\s+)?flow\\s+registry\\s+get\\s+.*core\\.action\\.script",
+          "min_count": 1,
+          "max_count": null,
+          "require_success": false,
+          "exclude_pattern": null
+        }
+      ],
+      "run_limits": {
+        "max_turns": 28,
+        "expected_turns": 9,
+        "task_timeout": 900,
+        "turn_timeout": 900,
+        "max_input_tokens": null,
+        "max_output_tokens": null,
+        "max_total_tokens": null,
+        "max_usd": null,
+        "count_cached_input": false,
+        "count_cache_creation": false,
+        "stop_early": false
+      },
+      "reference": null,
+      "expected_commands": null,
+      "pre_run": [],
+      "post_run": [
+        {
+          "command": "find . -maxdepth 5 -type d \\( -name node_modules -o -name .npm-prefix -o -name .venv \\) -prune -exec rm -rf {} +",
+          "timeout": 30
+        }
+      ],
+      "dataset": null,
+      "suite_id": null,
+      "row_id": null,
+      "simulation": null
+    },
+    "source_yaml": "task_id: skill-flow-registry-discovery\ndescription: >\n  Skill-guided evaluation: agent uses the uipath-maestro-flow skill to explore\n  available Flow node types via the registry. Tests whether the skill teaches\n  the correct registry workflow (pull, list/search, get).\ntags: [uipath-maestro-flow, smoke, lifecycle:discover, feature:registry]\n\nrun_limits:\n  expected_turns: 9\n  max_turns: 28\n\ninitial_prompt: |\n  I want to build a UiPath Flow that makes an HTTP request and processes the\n  response with a script. Before building anything, explore what node types\n  are available in the Flow registry and find the right ones for this task.\n\n  Important:\n  - The `uip` CLI is already available in the environment.\n  - Start by refreshing the registry cache with `uip maestro flow registry pull --output json`.\n  - After list/search identifies the candidates, inspect the exact schemas with\n    `uip maestro flow registry get core.action.http --output json` and\n    `uip maestro flow registry get core.action.script --output json`.\n  - Use `--output json` on all uip commands.\n  - Do not build the flow — just explore.\n\nsuccess_criteria:\n  - type: command_executed\n    description: \"Agent pulled registry data\"\n    tool_name: \"Bash\"\n    command_pattern: 'uip\\s+(maestro\\s+)?flow\\s+registry\\s+pull'\n    min_count: 1\n    weight: 1.0\n    pass_threshold: 1.0\n\n  - type: command_executed\n    description: \"Agent listed or searched registry nodes\"\n    tool_name: \"Bash\"\n    command_pattern: 'uip\\s+(maestro\\s+)?flow\\s+registry\\s+(list|search)'\n    min_count: 1\n    weight: 1.5\n    pass_threshold: 1.0\n\n  - type: command_executed\n    description: \"Agent retrieved details on the HTTP node type via registry get\"\n    tool_name: \"Bash\"\n    command_pattern: 'uip\\s+(maestro\\s+)?flow\\s+registry\\s+get\\s+.*core\\.action\\.http'\n    min_count: 1\n    weight: 1.5\n    pass_threshold: 1.0\n\n  - type: command_executed\n    description: \"Agent retrieved details on the script node type via registry get\"\n    tool_name: \"Bash\"\n    command_pattern: 'uip\\s+(maestro\\s+)?flow\\s+registry\\s+get\\s+.*core\\.action\\.script'\n    min_count: 1\n    weight: 1.5\n    pass_threshold: 1.0\n",
+    "source_file": "/home/azureuser/projects/skills/tests/tasks/uipath-maestro-flow/smoke/task.yaml",
+    "lineage": {
+      "agent.type": {
+        "value": "claude-code",
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.permission_mode": {
+        "value": "acceptEdits",
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.model": {
+        "value": "claude-sonnet-4-6",
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.allowed_tools": {
+        "value": [
+          "Skill",
+          "Bash",
+          "Read",
+          "Write",
+          "Edit",
+          "Glob",
+          "Grep"
+        ],
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.plugins": {
+        "value": [
+          {
+            "type": "local",
+            "path": "/home/azureuser/projects/skills/"
+          }
+        ],
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.ignore_patterns": {
+        "value": [],
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.system_prompt": {
+        "value": "You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted.\n",
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "run_limits.max_turns": {
+        "value": 28,
+        "source": "task",
+        "source_detail": null
+      },
+      "run_limits.task_timeout": {
+        "value": 900,
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "run_limits.turn_timeout": {
+        "value": 900,
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "run_limits.expected_turns": {
+        "value": 9,
+        "source": "task",
+        "source_detail": null
+      },
+      "sandbox.driver": {
+        "value": "docker",
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "sandbox.docker": {
+        "value": {
+          "image": "skills-image:latest",
+          "env_passthrough_extra": [
+            "SKILLS_REPO_PATH",
+            "BEDROCK_MODEL",
+            "TASK_PARALLELISM",
+            "UIPATH_CLI_ENABLE_ENV_AUTH",
+            "UIPATH_CLI_AUTH_TOKEN",
+            "UIPATH_CLI_ORGANIZATION_NAME",
+            "UIPATH_CLI_ORGANIZATION_ID",
+            "UIPATH_CLI_TENANT_NAME",
+            "UIPATH_CLI_TENANT_ID",
+            "TRACES_SMOKE_PROCESS_KEY",
+            "CODEX_API_KEY",
+            "CODEX_BASE_URL"
+          ],
+          "extra_mounts": [
+            "~/.uipath:/.uipath:rw"
+          ]
+        },
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "repeats": {
+        "value": 5,
+        "source": "cli",
+        "source_detail": null
+      }
+    }
+  },
+  "command_stats": {
+    "total_commands": 13,
+    "commands_by_tool": {
+      "Skill": 1,
+      "Bash": 7,
+      "Read": 5
+    },
+    "total_command_time_ms": 82078.99816718418,
+    "avg_command_time_ms": 6313.769089783398,
+    "slowest_commands": [
+      {
+        "tool": "Bash",
+        "duration_ms": 26766.325821983628,
+        "parameters": {
+          "command": "uip maestro flow registry get core.action.script --output json 2>&1 > /work/output/artifacts/skill-flow-registry-discovery/schema_script.json\necho \"EXIT:$?\"",
+          "description": "Fetch schema for core.action.script"
+        },
+        "tool_id": "toolu_bdrk_01DzzpfGMFc1d4tLp44KVb52"
+      },
+      {
+        "tool": "Bash",
+        "duration_ms": 16578.310866025276,
+        "parameters": {
+          "command": "uip maestro flow registry get core.action.http --output json 2>&1 > /work/output/artifacts/skill-flow-registry-discovery/schema_http.json\necho \"EXIT:$?\"",
+          "description": "Fetch schema for core.action.http"
+        },
+        "tool_id": "toolu_bdrk_01RGq6Hirad7U8okot5StFRD"
+      },
+      {
+        "tool": "Bash",
+        "duration_ms": 10657.078608986922,
+        "parameters": {
+          "command": "uip maestro flow registry search \"script\" --output json --output-filter \"[*].{NodeType:NodeType,DisplayName:DisplayName,Description:Description}\" 2>&1 > /work/output/artifacts/skill-flow-registry-discovery/search_script.json\necho \"EXIT:$?\"",
+          "description": "Search registry for script node types"
+        },
+        "tool_id": "toolu_bdrk_01VPxvBv6afLzo6pfRevEmR7"
+      },
+      {
+        "tool": "Bash",
+        "duration_ms": 9519.808646058664,
+        "parameters": {
+          "command": "uip maestro flow registry pull --output json 2>&1 | tee /work/output/artifacts/skill-flow-registry-discovery/registry_pull.json | python3 -c \"import sys,json; d=json.load(sys.stdin); print('Status:', d.get('Status')); print('Message:', d.get('Message','')[:200])\"",
+          "description": "Pull and refresh the Flow registry cache"
+        },
+        "tool_id": "toolu_bdrk_01McvkaQntaC1xFJmjn4iVQK"
+      },
+      {
+        "tool": "Bash",
+        "duration_ms": 7248.703945893794,
+        "parameters": {
+          "command": "uip maestro flow registry pull --output json 2>&1 | tee /work/output/artifacts/skill-flow-registry-discovery/registry_pull.json | head -30",
+          "description": "Pull registry cache and show raw output"
+        },
+        "tool_id": "toolu_bdrk_01MpvVhYL3g2b4kQtoy7FCmj"
+      }
+    ],
+    "successful_commands": 12,
+    "failed_commands": 1,
+    "unknown_commands": 0,
+    "success_rate": 92.3076923076923,
+    "most_common_sequence": "Bash → Bash → Bash"
+  },
+  "total_token_usage": {
+    "uncached_input_tokens": 10,
+    "output_tokens": 4007,
+    "cache_creation_input_tokens": 34471,
+    "cache_read_input_tokens": 282332,
+    "total_cost_usd": 0.27410085,
+    "input_tokens": 316813
+  },
+  "total_assistant_turns": 22,
+  "expected_commands": null,
+  "actual_commands": 13,
+  "commands_efficiency": null,
+  "pre_run_results": [],
+  "post_run_results": [
+    {
+      "command": "find . -maxdepth 5 -type d \\( -name node_modules -o -name .npm-prefix -o -name .venv \\) -prune -exec rm -rf {} +",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "",
+      "duration_seconds": 0.008774757385253906,
+      "error": null
+    }
+  ],
+  "simulation": null,
+  "early_stop": null
+}

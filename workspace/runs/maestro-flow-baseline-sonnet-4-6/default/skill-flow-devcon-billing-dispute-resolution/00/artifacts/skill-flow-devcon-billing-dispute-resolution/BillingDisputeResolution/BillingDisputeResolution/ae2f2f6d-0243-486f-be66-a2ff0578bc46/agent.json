@@ -1,0 +1,135 @@
+{
+  "version": "1.1.0",
+  "settings": {
+    "model": "anthropic.claude-sonnet-4-5-20250929-v1:0",
+    "maxTokens": 8192,
+    "temperature": 0,
+    "engine": "basic-v2",
+    "maxIterations": 3,
+    "mode": "standard"
+  },
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "disputeAnalyst1__output__determination": {
+        "type": "string",
+        "description": "Dispute determination from the analyst"
+      },
+      "disputeAnalyst1__output__recommendedAction": {
+        "type": "string",
+        "description": "Recommended action from the analyst"
+      },
+      "disputeAnalyst1__output__creditAmount": {
+        "type": "number",
+        "description": "Credit amount to apply"
+      },
+      "disputeAnalyst1__output__rationale": {
+        "type": "string",
+        "description": "Rationale from the analyst"
+      },
+      "start__output__webhookPayload": {
+        "type": "object",
+        "description": "Webhook payload with customer and invoice details"
+      },
+      "normalizeData1__output__normalizedInvoiceNumber": {
+        "type": "string",
+        "description": "Normalized invoice number"
+      }
+    }
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "subject": {
+        "type": "string",
+        "description": "Email subject line"
+      },
+      "body": {
+        "type": "string",
+        "description": "Full email body text"
+      }
+    },
+    "required": [
+      "subject",
+      "body"
+    ]
+  },
+  "metadata": {
+    "storageVersion": "50.0.0",
+    "isConversational": false,
+    "showProjectCreationExperience": false
+  },
+  "type": "lowCode",
+  "guardrails": [],
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a Customer Communication Specialist. Write professional, empathetic billing dispute resolution emails. The email should: acknowledge the dispute, explain the determination and credit applied (if any), reference the invoice number, and provide next steps. Keep the tone professional and customer-friendly. Return exactly two fields: subject (a clear subject line) and body (the complete email text including salutation and sign-off).",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "You are a Customer Communication Specialist. Write professional, empathetic billing dispute resolution emails. The email should: acknowledge the dispute, explain the determination and credit applied (if any), reference the invoice number, and provide next steps. Keep the tone professional and customer-friendly. Return exactly two fields: subject (a clear subject line) and body (the complete email text including salutation and sign-off)."
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "Invoice Number: {{input.normalizeData1__output__normalizedInvoiceNumber}}\nDetermination: {{input.disputeAnalyst1__output__determination}}\nRecommended Action: {{input.disputeAnalyst1__output__recommendedAction}}\nCredit Amount: {{input.disputeAnalyst1__output__creditAmount}}\nRationale: {{input.disputeAnalyst1__output__rationale}}\nCustomer: {{input.start__output__webhookPayload}}\n\nWrite a resolution email for this billing dispute.",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "Invoice Number: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.normalizeData1__output__normalizedInvoiceNumber"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\nDetermination: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.disputeAnalyst1__output__determination"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\nRecommended Action: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.disputeAnalyst1__output__recommendedAction"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\nCredit Amount: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.disputeAnalyst1__output__creditAmount"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\nRationale: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.disputeAnalyst1__output__rationale"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\nCustomer: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__webhookPayload"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\nWrite a resolution email for this billing dispute."
+        }
+      ]
+    }
+  ],
+  "projectId": "ae2f2f6d-0243-486f-be66-a2ff0578bc46"
+}

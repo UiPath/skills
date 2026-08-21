@@ -1,0 +1,10 @@
+{
+  "instanceId": "inst-triage-001",
+  "scope": "subprocess",
+  "parentElementId": "SubProcess_TaxCalc",
+  "variables": [
+    { "name": "taxRate", "value": "0.00" },
+    { "name": "taxAmount", "value": "0.00" },
+    { "name": "taxableBase", "value": "1200.00" }
+  ]
+}

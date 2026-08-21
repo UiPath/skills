@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:uipath="http://uipath.org/schema/bpmn" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_1" targetNamespace="http://example.com/bpmn" exporter="UiPath Studio Web (https://uipath.com)" exporterVersion="local">
+  <bpmn:message id="Message_1" name="Message_1"/>
+  <bpmn:process id="Process_1" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_1" name="Start">
+      <bpmn:extensionElements>
+        <uipath:entryPointId value="6e90be0b-f1de-4c89-8a5d-e85c57f874cf"/>
+      </bpmn:extensionElements>
+      <bpmn:outgoing>edge___StartEvent_1-Activity_blAMrBLZNXYK</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:eventBasedGateway id="EventBasedGateway_1" name="Event-Based Gateway">
+      <bpmn:incoming>edge___Activity_blAMrB-EventBasedGateway_1CgT6WZ</bpmn:incoming>
+      <bpmn:outgoing>Flow_2</bpmn:outgoing>
+      <bpmn:outgoing>Flow_3</bpmn:outgoing>
+    </bpmn:eventBasedGateway>
+    <bpmn:intermediateCatchEvent id="IntermediateCatchEvent_1" name="Message Event">
+      <bpmn:incoming>Flow_2</bpmn:incoming>
+      <bpmn:outgoing>Flow_4</bpmn:outgoing>
+      <bpmn:messageEventDefinition messageRef="Message_1"/>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:intermediateCatchEvent id="IntermediateCatchEvent_2" name="Timer Event">
+      <bpmn:incoming>Flow_3</bpmn:incoming>
+      <bpmn:outgoing>Flow_5</bpmn:outgoing>
+      <bpmn:timerEventDefinition/>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:endEvent id="EndEvent_1" name="End Message">
+      <bpmn:incoming>Flow_4</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:endEvent id="EndEvent_2" name="End Timer">
+      <bpmn:incoming>Flow_5</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:task id="Activity_blAMrB" name="Task">
+      <bpmn:incoming>edge___StartEvent_1-Activity_blAMrBLZNXYK</bpmn:incoming>
+      <bpmn:outgoing>edge___Activity_blAMrB-EventBasedGateway_1CgT6WZ</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:sequenceFlow id="Flow_2" sourceRef="EventBasedGateway_1" targetRef="IntermediateCatchEvent_1"/>
+    <bpmn:sequenceFlow id="Flow_3" sourceRef="EventBasedGateway_1" targetRef="IntermediateCatchEvent_2"/>
+    <bpmn:sequenceFlow id="Flow_4" sourceRef="IntermediateCatchEvent_1" targetRef="EndEvent_1"/>
+    <bpmn:sequenceFlow id="Flow_5" sourceRef="IntermediateCatchEvent_2" targetRef="EndEvent_2"/>
+    <bpmn:sequenceFlow id="edge___StartEvent_1-Activity_blAMrBLZNXYK" sourceRef="StartEvent_1" targetRef="Activity_blAMrB"/>
+    <bpmn:sequenceFlow id="edge___Activity_blAMrB-EventBasedGateway_1CgT6WZ" sourceRef="Activity_blAMrB" targetRef="EventBasedGateway_1"/>
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Process_1">
+      <bpmndi:BPMNShape id="S_StartEvent_1" bpmnElement="StartEvent_1">
+        <dc:Bounds x="-27.378875569559415" y="107" width="36" height="36"/>
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="-27.378875569559415" y="148" width="36" height="14"/>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_EventBasedGateway_1" bpmnElement="EventBasedGateway_1">
+        <dc:Bounds x="200" y="100" width="50" height="50"/>
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="200" y="155" width="50" height="14"/>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_IntermediateCatchEvent_1" bpmnElement="IntermediateCatchEvent_1">
+        <dc:Bounds x="320" y="60" width="36" height="36"/>
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="320" y="101" width="36" height="14"/>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_IntermediateCatchEvent_2" bpmnElement="IntermediateCatchEvent_2">
+        <dc:Bounds x="320" y="150" width="36" height="36"/>
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="320" y="191" width="36" height="14"/>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_EndEvent_1" bpmnElement="EndEvent_1">
+        <dc:Bounds x="450" y="60" width="36" height="36"/>
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="450" y="101" width="36" height="14"/>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_EndEvent_2" bpmnElement="EndEvent_2">
+        <dc:Bounds x="450" y="150" width="36" height="36"/>
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="450" y="191" width="36" height="14"/>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Activity_blAMrB" bpmnElement="Activity_blAMrB">
+        <dc:Bounds x="51.89402095309063" y="85" width="100" height="80"/>
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="51.89402095309063" y="170" width="100" height="14"/>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_2" bpmnElement="Flow_2">
+        <di:waypoint x="250" y="125"/>
+        <di:waypoint x="285" y="125"/>
+        <di:waypoint x="285" y="78"/>
+        <di:waypoint x="320" y="78"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_3" bpmnElement="Flow_3">
+        <di:waypoint x="250" y="125"/>
+        <di:waypoint x="285" y="125"/>
+        <di:waypoint x="285" y="168"/>
+        <di:waypoint x="320" y="168"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_4" bpmnElement="Flow_4">
+        <di:waypoint x="356" y="78"/>
+        <di:waypoint x="450" y="78"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_5" bpmnElement="Flow_5">
+        <di:waypoint x="356" y="168"/>
+        <di:waypoint x="450" y="168"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_edge___StartEvent_1-Activity_blAMrBLZNXYK" bpmnElement="edge___StartEvent_1-Activity_blAMrBLZNXYK">
+        <di:waypoint x="9" y="125"/>
+        <di:waypoint x="52" y="125"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_edge___Activity_blAMrB-EventBasedGateway_1CgT6WZ" bpmnElement="edge___Activity_blAMrB-EventBasedGateway_1CgT6WZ">
+        <di:waypoint x="152" y="125"/>
+        <di:waypoint x="200" y="125"/>
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

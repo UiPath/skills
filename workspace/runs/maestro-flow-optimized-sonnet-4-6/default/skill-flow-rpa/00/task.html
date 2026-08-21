@@ -1,0 +1,1773 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>coder_eval · skill-flow-rpa · default</title>
+<style>
+:root {
+  --bg-page: #0f1419;
+  --bg-card: #1a2129;
+  --bg-card-2: #232d38;
+  --bg-code: #0b0f14;
+  --fg: #e6edf3;
+  --fg-muted: #8b98a5;
+  --fg-dim: #6e7681;
+  --border: #30363d;
+  --accent: #58a6ff;
+  --score-high: #22c55e;
+  --score-mid: #f59e0b;
+  --score-low: #ef4444;
+  --status-success: #22c55e;
+  --status-failure: #f59e0b;
+  --status-error: #ef4444;
+  --status-neutral: #6e7681;
+  --shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+.light {
+  --bg-page: #ffffff;
+  --bg-card: #f6f8fa;
+  --bg-card-2: #eaeef2;
+  --bg-code: #f6f8fa;
+  --fg: #1f2328;
+  --fg-muted: #636c76;
+  --fg-dim: #8b949e;
+  --border: #d0d7de;
+  --accent: #0969da;
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial,
+               sans-serif;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--fg);
+  background: var(--bg-page);
+}
+.container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+h1, h2, h3, h4 { margin: 0 0 12px 0; line-height: 1.25; }
+h1 { font-size: 22px; font-weight: 600; }
+h2 { font-size: 18px; font-weight: 600; margin-top: 28px;
+     padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+h3 { font-size: 15px; font-weight: 600; color: var(--fg-muted); }
+h4 { font-size: 13px; font-weight: 600; color: var(--fg-muted); }
+p { margin: 0 0 8px 0; }
+.muted { color: var(--fg-muted); }
+.dim { color: var(--fg-dim); }
+.mono { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+        monospace; font-size: 12.5px; }
+code { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+       monospace; font-size: 12.5px; background: var(--bg-code);
+       border: 1px solid var(--border); padding: 1px 5px; border-radius: 3px; }
+pre { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+      monospace; font-size: 12.5px; background: var(--bg-code);
+      border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px;
+      margin: 6px 0; overflow-x: auto; white-space: pre-wrap;
+      word-wrap: break-word; }
+.header-bar { display: flex; align-items: center; justify-content: space-between;
+              margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+.title-group { flex: 1; min-width: 0; }
+.title-group .subtitle { color: var(--fg-muted); font-size: 13px;
+                         margin-top: 2px; word-break: break-all; }
+.badges { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.badge { display: inline-flex; align-items: center; gap: 6px;
+         padding: 4px 10px; border-radius: 12px; font-size: 12px;
+         font-weight: 600; background: var(--bg-card-2);
+         border: 1px solid var(--border); color: var(--fg); }
+.badge.success { background: color-mix(in srgb, var(--status-success) 20%, var(--bg-card-2));
+                 border-color: var(--status-success); color: var(--status-success); }
+.badge.failure { background: color-mix(in srgb, var(--status-failure) 20%, var(--bg-card-2));
+                 border-color: var(--status-failure); color: var(--status-failure); }
+.badge.error { background: color-mix(in srgb, var(--status-error) 20%, var(--bg-card-2));
+               border-color: var(--status-error); color: var(--status-error); }
+.badge.warning { background: color-mix(in srgb, #f4a52810 20%, var(--bg-card-2));
+                 border-color: #f4a528; color: #f4a528; }
+.badge.neutral { color: var(--fg-muted); }
+.score-pill { display: inline-block; padding: 2px 8px; border-radius: 10px;
+              font-size: 12px; font-weight: 700; min-width: 42px;
+              text-align: center; color: #0b0f14; }
+.score-high { background: var(--score-high); }
+.score-mid { background: var(--score-mid); }
+.score-low { background: var(--score-low); }
+.card { background: var(--bg-card); border: 1px solid var(--border);
+        border-radius: 8px; padding: 16px 20px; margin-bottom: 16px;
+        box-shadow: var(--shadow); }
+.card.highlight { border-left: 4px solid var(--accent); }
+.grid { display: grid; gap: 12px;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+.stat { background: var(--bg-card-2); padding: 10px 12px; border-radius: 6px;
+        border: 1px solid var(--border); }
+.stat .label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;
+               color: var(--fg-muted); margin-bottom: 4px; }
+.stat .value { font-size: 16px; font-weight: 600; }
+table { width: 100%; border-collapse: collapse; margin: 4px 0 12px 0; }
+th, td { text-align: left; padding: 8px 10px;
+         border-bottom: 1px solid var(--border); vertical-align: top;
+         font-size: 13px; }
+th { color: var(--fg-muted); font-weight: 600; font-size: 12px;
+     text-transform: uppercase; letter-spacing: 0.3px; }
+tr:last-child td { border-bottom: none; }
+details { margin: 6px 0; border: 1px solid var(--border); border-radius: 6px;
+          background: var(--bg-card-2); }
+details > summary { cursor: pointer; padding: 8px 12px; user-select: none;
+                    font-weight: 500; list-style: none; }
+details > summary::-webkit-details-marker { display: none; }
+details > summary::before { content: "▸ "; color: var(--fg-dim);
+                            display: inline-block; width: 14px;
+                            transition: transform 0.15s; }
+details[open] > summary::before { content: "▾ "; }
+details .details-body { padding: 0 12px 10px 12px; }
+.tool-row { display: flex; align-items: center; gap: 10px;
+            flex-wrap: wrap; font-size: 13px; }
+.tool-name { font-weight: 600; color: var(--accent); font-family: ui-monospace,
+             SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+.tool-status-ok { color: var(--status-success); font-size: 11px;
+                  font-weight: 600; }
+.tool-status-err { color: var(--status-error); font-size: 11px;
+                   font-weight: 600; }
+.tool-duration { color: var(--fg-muted); font-size: 12px; }
+.tool-seq { color: var(--fg-dim); font-size: 11px; font-weight: 600;
+            min-width: 24px; text-align: right; font-family: ui-monospace,
+            SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+.turn-header { display: flex; justify-content: space-between;
+               align-items: baseline; flex-wrap: wrap; gap: 10px;
+               margin-bottom: 10px; }
+.turn-meta { font-size: 12px; color: var(--fg-muted); }
+.criterion-row td:first-child { font-family: ui-monospace, SFMono-Regular,
+                                 "SF Mono", Menlo, Consolas, monospace;
+                                 color: var(--fg-muted); font-size: 12px; }
+.judge-section { display: flex; flex-direction: column; gap: 12px; }
+.judge-card { padding: 14px 16px; }
+.judge-card-head { display: flex; justify-content: space-between;
+                    align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+.judge-card-title { font-size: 14px; line-height: 1.4; flex: 1; min-width: 0; }
+.judge-card-score { flex-shrink: 0; }
+.judge-rationale { margin-top: 10px; padding: 10px 12px;
+                   background: var(--bg-code); border-radius: 4px;
+                   font-size: 13px; line-height: 1.5; }
+.judge-findings { margin: 8px 0 0 18px; padding-left: 4px; font-size: 13px;
+                   line-height: 1.6; }
+.judge-findings li { margin: 2px 0; }
+.nav-toggle { display: inline-block; padding: 5px 10px; font-size: 12px;
+              background: var(--bg-card-2); border: 1px solid var(--border);
+              border-radius: 5px; color: var(--fg); cursor: pointer; }
+.nav-toggle:hover { background: var(--bg-card); }
+.llm-next-steps { margin: 6px 0 0 20px; padding-left: 0; }
+.llm-next-steps li { margin: 3px 0; }
+.iteration-group { padding: 12px 16px 4px 16px; margin-bottom: 20px;
+                   border-radius: 0 6px 6px 0; border-left: 4px solid var(--status-neutral); }
+/* rgba fallback for browsers without color-mix (Chrome <111, Firefox <113, Safari <16.2). */
+.iteration-group--recovered { border-left-color: var(--status-success);
+                              background: rgba(34, 197, 94, 0.06);
+                              background: color-mix(in srgb, var(--status-success) 6%, transparent); }
+.iteration-group--terminal { border-left-color: var(--status-error);
+                             background: rgba(239, 68, 68, 0.06);
+                             background: color-mix(in srgb, var(--status-error) 6%, transparent); }
+.iteration-group__banner { margin: 0 0 12px 0; font-size: 14px; font-weight: 600; }
+.iteration-group--recovered .iteration-group__banner { color: var(--status-success); }
+.iteration-group--terminal .iteration-group__banner { color: var(--status-error); }
+.attempt-transition { display: flex; align-items: center; gap: 8px;
+                      margin: -6px 0 12px 8px; color: var(--status-error); font-size: 12.5px; }
+.attempt-transition__icon { font-weight: 700; }
+footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--border);
+         color: var(--fg-dim); font-size: 12px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="header-bar">
+  <div class="title-group">
+    <h1>Task: skill-flow-rpa</h1>
+    <div class="subtitle">Create a UiPath Flow that uses the ProjectEuler RPA workflow to retrieve the title for problem 123. Exercises RPA resource node discovery, registry get, and node wiring.</div>
+  </div>
+  <div class="badges">
+    <span class="badge success">SUCCESS</span>
+    <span class="score-pill score-high">1.00</span>
+    <span class="badge neutral">claude-code · claude-sonnet-4-6</span>
+    <span class="badge neutral">6m 0s</span>
+    <span class="badge neutral">$0.9846</span>
+    <span class="badge warning">expected_turns exceeded (31/26)</span>
+    
+    <span class="nav-toggle" onclick="toggleTheme()">Toggle theme</span>
+  </div>
+</div>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Variant</div><div class="value">default</div></div>
+    <div class="stat"><div class="label">Started</div><div class="value mono">2026-08-19T16:53:51</div></div>
+    <div class="stat"><div class="label">Duration</div><div class="value">6m 0s</div></div>
+    <div class="stat"><div class="label">Turns (SDK)</div><div class="value">55</div></div>
+    <div class="stat"><div class="label">Commands</div><div class="value">30</div></div>
+  </div>
+</div>
+
+<h2>Success Criteria <span class="muted" style="font-weight:400">(2/2 passed)</span></h2>
+<div class="card" style="padding:0">
+<table>
+  <thead>
+    <tr>
+      <th style="width:15%">Type</th>
+      <th style="width:35%">Description</th>
+      <th style="width:10%">Score</th>
+      <th>Details</th>
+    </tr>
+  </thead>
+  <tbody>
+    
+<tr class="criterion-row">
+  <td>run_command</td>
+  <td>uip maestro flow validate passes on the flow file</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Command: python3 $EXPERIMENT_TASKS_PATH/uipath-maestro-flow/_shared/validate_flow.py</summary><div class="details-body"><pre style="margin:6px 0 0 0">Command: python3 $EXPERIMENT_TASKS_PATH/uipath-maestro-flow/_shared/validate_flow.py
+Exit code: 0 (expected: 0)
+Stdout:
+Validating ProjectEulerTitle/ProjectEulerTitle/ProjectEulerTitle.flow
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FlowValidate&quot;,
+  &quot;Data&quot;: {
+    &quot;File&quot;: &quot;/work/output/artifacts/skill-flow-rpa/ProjectEulerTitle/ProjectEulerTitle/ProjectEulerTitle.flow&quot;,
+    &quot;Status&quot;: &quot;Valid&quot;
+  }
+}
+
+Stderr:
+[ManifestClient] fetchDynamicNodes ok: total=317 agent context nodes=2 external agent nodes=7 orchestrator nodes=263 IXP nodes=45</pre></div></details></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>run_command</td>
+  <td>Flow has an RPA node and debug returns the problem title</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Command: python3 $TASK_DIR/check_rpa_flow.py</summary><div class="details-body"><pre style="margin:6px 0 0 0">Command: python3 $TASK_DIR/check_rpa_flow.py
+Exit code: 0 (expected: 0)
+Stdout:
+OK: RPA node present; output contains &#x27;prime square remainders&#x27;
+
+Stderr: (empty)</pre></div></details></td>
+</tr>
+
+  </tbody>
+</table>
+</div>
+<h2>Conversation Trace (1 iteration)</h2>
+<div class="card">
+  <div class="turn-header">
+    <h3>Iteration 1</h3>
+    <div class="badges">
+      <span class="badge neutral">55 assistant turns</span>
+      <span class="badge neutral">in 504 · out 15279 · cache 1712192</span>
+      <span class="badge neutral">4m 56s</span>
+      
+      
+      
+    </div>
+  </div>
+  <details>
+    <summary>Prompt to agent</summary>
+    <div class="details-body"><pre>Your working directory is: /work/output/artifacts/skill-flow-rpa
+
+Create a UiPath Flow project named &quot;ProjectEulerTitle&quot; that uses the
+ProjectEuler RPA workflow to retrieve the title for problem 123 and
+return it as an output.
+
+Validate the flow.
+Do NOT ask for approval, confirmation, or feedback. Do NOT pause between planning and implementation. Build the complete flow end-to-end in a single pass.
+</pre></div>
+  </details>
+  <details>
+    <summary>Agent response</summary>
+    <div class="details-body"><pre>[ASSISTANT] Now I&#x27;ll read the RPA plugin docs and check for existing solutions simultaneously.
+[ASSISTANT] No existing solutions found. Starting the T1 chain: scaffold solution + flow, pull registry, search for the RPA workflow.
+[ASSISTANT] Solution and flow scaffolded. Now searching for the ProjectEuler RPA workflow in the registry.
+[ASSISTANT] No &quot;ProjectEuler&quot; match by display name. The impl.md says the release name often differs — I need to check `resourceKey` in the full manifests. Let me inspect the &quot;RPA Workflow&quot; entries and any other candidates.
+[ASSISTANT] Found it: `uipath.core.rpa-workflow.486edc26-0658-4ac1-92c9-1ef953927151` with resourceKey `Shared/uipath-maestro-flow/ProjectEuler RPA.RPA Workflow`. Now let me get the full manifest.
+[ASSISTANT] The RPA workflow takes `problemId` (number, input) and returns `output.title` (string). Now reading the scaffolded flow for T2.
+[ASSISTANT] I have all the data needed. Now building the complete flow in T2 — adding the RPA node, End node, edges, variables, output mapping, and bindings.
+[ASSISTANT] Now I have all the data. Let me write the complete flow using `Write` (no CLI-owned nodes, so safe), constructing it from the registry data.
+[ASSISTANT] Now I have everything needed. Writing the complete flow file — the RPA workflow node is user-owned per the capability table, so `Write` is safe.
+[ASSISTANT] Now running audit + validate + format in one chain (T3).
+[ASSISTANT] Three validation errors in the `variables` section — missing `id` fields and `binding`. Let me check the format.
+[ASSISTANT] Now I know the issue — `variables.globals` entries need an `id` field, and `variables.nodes` entries need an `id` and `binding` field. Let me check `variables.nodes` format.
+[ASSISTANT] Now I know the exact format. The `variables.globals` entries need `id`, and `variables.nodes` entries need `id` (as `&quot;nodeId.outputId&quot;`) and a `binding` object. Also the End node `outputs` mapping format needs checking.
+[ASSISTANT] The End node `outputs` structure I used is correct. Now fixing the `variables` section — need `id` on each global and proper `id`+`binding` on nodes entries.
+[ASSISTANT] Validation passes. The remaining audit finding (`MISSING_NODE_VARIABLE` for `start.output`) is expected to be auto-fixed by `flow format`. Format ran and regenerated variables (`VariableCount: 3`). Let me check if `start.output` was added.
+[ASSISTANT] All checks pass. Here&#x27;s the summary:
+
+**Flow built and validated:** `ProjectEulerTitle/ProjectEulerTitle/ProjectEulerTitle.flow`
+
+**What was built:**
+- Manual trigger (`start`) → RPA node (`getEulerTitle`) → End node (`done`)
+- RPA node wired to `uipath.core.rpa-workflow.486edc26-...` (published as &quot;RPA Workflow&quot; in folder `Shared/uipath-maestro-flow/ProjectEuler RPA`)
+- Input `problemId: 123` hardcoded on the RPA node
+- Output variable `title` (type `string`, direction `out`) mapped on the End node from `=js:$vars.getEulerTitle.output.title`
+- `bindings[]` entries for `name` and `folderPath` referencing the correct `resourceKey`
+
+**Validation:** `uip maestro flow validate` — ✅ Valid  
+**Audit:** `audit_flow.py` — ✅ Clean (0 errors across all 5 checks)  
+**Format:** `uip maestro flow format` — ✅ Run, 3 nodes laid out
+
+What&#x27;s next?
+1. **Publish to Studio Web** — push the solution to Studio Web for visual editing/publishing
+2. **Debug the solution** — execute end-to-end against real systems (has real side effects; requires consent)
+3. **Deploy to Orchestrator** — pack and publish directly
+4. **Something else**
+[RESULT - SUCCESS] All checks pass. Here&#x27;s the summary:
+
+**Flow built and validated:** `ProjectEulerTitle/ProjectEulerTitle/ProjectEulerTitle.flow`
+
+**What was built:**
+- Manual trigger (`start`) → RPA node (`getEulerTitle`) → End node (`done`)
+- RPA node wired to `uipath.core.rpa-workflow.486edc26-...` (published as &quot;RPA Workflow&quot; in folder `Shared/uipath-maestro-flow/ProjectEuler RPA`)
+- Input `problemId: 123` hardcoded on the RPA node
+- Output variable `ti</pre></div>
+  </details>
+  <h4 style="margin-top:12px">Tool Calls (30)</h4>
+  
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#0</span>
+      <span class="tool-name">Skill</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">19ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;skill&quot;: &quot;tmp:uipath-maestro-flow&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Launching skill: tmp:uipath-maestro-flow</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#1</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">507ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/CAPABILITY.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Author — Create and edit `.flow` files
+2	
+3	Capability index for building new flows (greenfield) and editing existing flows (brownfield). Author owns everything that happens on disk, locally, without `uip login`. Authoring journeys terminate at `validate` + `format`; from there, hand off to [operate/CAPABILITY.md](../operate/CAPABILITY.md) to publish, run, or debug.
+4	
+5	&gt; **Where you came from / where to go next.** Author is upstream of Operate (build the flow → ship it) and upstream of Diagnose only via Operate (build → run → diagnose). Publish/run/lifecycle lives in [operate/CAPABILITY.md](../operate/CAPABILITY.md); fault triage lives in [diagnose/CAPABILITY.md](../diagnose/CAPABILITY.md).
+6	&gt;
+7	&gt; **Inherits universal rules from [SKILL.md](../../SKILL.md)** — `--output json` + prefer `--output-filter` for extraction, no `flow debug` without consent, resource discovery order, never invoke other skills automatically, dropdown question pattern, solution layout, **plain-English narration + granular progress list (opt-in — silent by default; engage when the user asks for verbosity)**. The rules below are author-scoped and apply on top.
+8	
+9	## When to use this capability
+10	
+11	&lt;
+
+… (truncated, 30449 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#2</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">189ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/greenfield.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Greenfield — Create a New Flow
+2	
+3	End-to-end journey for creating a Flow project from scratch. Author terminates at `validate` + `format`. To publish, run, or debug after this, see [operate/CAPABILITY.md](../../operate/CAPABILITY.md).
+4	
+5	&gt; **Brownfield edits use a different journey.** If the `.flow` file already exists, see [brownfield.md](brownfield.md) instead.
+6	
+7	## Should you plan first?
+8	
+9	For complex flows, produce a plan before building. Reference [planning-arch.md](planning-arch.md) and [planning-impl.md](planning-impl.md) for the node type catalog, port reference, wiring rules, and topology patterns.
+10	
+11	**Plan when:**
+12	- The flow has 5+ nodes with branching or parallel paths
+13	- The flow uses connectors or resources that need discovery
+14	- The user&#x27;s requirements are ambiguous and you need to confirm the approach
+15	
+16	**Don&#x27;t plan when:**
+17	- Adding/editing a single node in an existing flow (use [brownfield.md](brownfield.md))
+18	- The flow is a straightforward linear pipeline (trigger → action → action → end)
+19	- The user has already described the exact topology they want
+20	
+21	### Examples
+22	
+23	**Plan:** &quot;Build a flow that receives a Jira ticke
+
+… (truncated, 34831 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#3</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">13ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/plugins/rpa/impl.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# RPA Node — Implementation
+2	
+3	RPA nodes invoke RPA processes. Pattern: `uipath.core.rpa-workflow.{key}`.
+4	
+5	## Discovery
+6	
+7	**Published (tenant registry):**
+8	
+9	```bash
+10	uip maestro flow registry pull --force
+11	uip maestro flow registry search &quot;uipath.core.rpa-workflow&quot; --output json
+12	```
+13	
+14	Search the **node-type token** `uipath.core.rpa-workflow` — this lists every published RPA workflow — then pick the one you need by its `resourceKey` / folder path and description. Do **not** search by the process name from the request: `registry search` matches the Orchestrator **release name**, which is frequently unrelated to the name the user uses or the folder the process lives in. The requested name often appears only in the folder path, so a keyword search for it returns nothing even though the process exists. Match on the folder path inside `resourceKey`, not on a name keyword.
+15	
+16	**An empty result is not authoritative — do not conclude the process is unpublished.** Before treating &quot;not found&quot; as real, confirm all three hold: (a) you searched the `uipath.core.rpa-workflow` token, not a name keyword; (b) `registry pull --force` ran first; (c) you scanned the return
+
+… (truncated, 5441 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#4</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.68s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;find /work/output/artifacts/skill-flow-rpa -maxdepth 2 -type f -name &#x27;*.uipx&#x27; -print 2&gt;/dev/null; echo \&quot;---\&quot;; uip --version 2&gt;/dev/null || echo \&quot;uip not found\&quot;&quot;,
+  &quot;description&quot;: &quot;Check for existing solutions and uip version&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>---
+1.201.0-dev.8272</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#5</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">19.52s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip solution init \&quot;ProjectEulerTitle\&quot; --output json &amp;&amp; cd ProjectEulerTitle &amp;&amp; uip maestro flow init \&quot;ProjectEulerTitle\&quot; --output json &amp;&amp; cd ProjectEulerTitle &amp;&amp; uip maestro flow registry pull --force 2&gt;&amp;1 | tail -3&quot;,
+  &quot;description&quot;: &quot;Scaffold solution and flow project, pull registry&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;SolutionInit&quot;,
+  &quot;Data&quot;: {
+    &quot;Status&quot;: &quot;Created successfully&quot;,
+    &quot;Path&quot;: &quot;/work/output/artifacts/skill-flow-rpa/ProjectEulerTitle/ProjectEulerTitle.uipx&quot;,
+    &quot;NextSteps&quot;: &quot;Read /work/output/artifacts/skill-flow-rpa/ProjectEulerTitle/AGENTS.md or /work/output/artifacts/skill-flow-rpa/ProjectEulerTitle/CLAUDE.md to understand the solution lifecycle, project types that can be used inside a solution, and related uip command references.&quot;
+  }
+}
+2026-08-19 16:54:33 INFO  [ResourceBuilder:ProjectCreateCommandHandler] Creating project [object Object]
+2026-08-19 16:54:33 INFO  [ResourceBuilder:MultiFileSolutionDefinitionProvider] Reading multi-file solution definition for solution %s /work/output/artifacts/skill-flow-rpa/ProjectEulerTitle
+2026-08-19 16:54:33 INFO  [ResourceBuilder:ProjectCreateCommandHandler] Generate artefact resources for project [object Object]
+2026-08-19 16:54:33 INFO  [ResourceBuilder:SolutionsMetadataReader] Reading metadata from %s. SolutionsMetadataReader
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FlowInit&quot;,
+  &quot;Data&quot;: {
+    &quot;Status&quot;: &quot;Created successfully&quot;,
+    &quot;Path&quot;: &quot;/work/output/artifacts/skill-flow-rpa/ProjectEulerTitle/ProjectE
+
+… (truncated, 1069 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#6</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">20.72s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry get core.control.end --output json &gt; /tmp/end_def.json 2&gt;&amp;1 &amp;&amp; echo \&quot;OK\&quot; || echo \&quot;FAILED\&quot;&quot;,
+  &quot;description&quot;: &quot;Fetch End node definition&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>OK</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#7</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">3.19s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry search \&quot;uipath.core.rpa-workflow\&quot; --output json 2&gt;/dev/null | head -100&quot;,
+  &quot;description&quot;: &quot;Search for all RPA workflows in registry&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeSearchSuccess&quot;,
+  &quot;Data&quot;: [
+    {
+      &quot;NodeType&quot;: &quot;uipath.core.rpa-workflow.6235d64e-b190-4b7a-8918-723df964c068&quot;,
+      &quot;Category&quot;: &quot;rpa-workflow&quot;,
+      &quot;DisplayName&quot;: &quot;CoderEval TM Create TestCase&quot;,
+      &quot;Description&quot;: &quot;&quot;,
+      &quot;Version&quot;: &quot;1.0.0&quot;,
+      &quot;Tags&quot;: &quot;&quot;,
+      &quot;AvailableOnTenant&quot;: true
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.core.rpa-workflow.5cca97fb-fc5c-454a-8292-7d63ff7a47ec&quot;,
+      &quot;Category&quot;: &quot;rpa-workflow&quot;,
+      &quot;DisplayName&quot;: &quot;DeployToSharedFolder&quot;,
+      &quot;Description&quot;: &quot;Minimal process that logs a message, built and published to a Shared folder&quot;,
+      &quot;Version&quot;: &quot;1.0.0&quot;,
+      &quot;Tags&quot;: &quot;&quot;,
+      &quot;AvailableOnTenant&quot;: true
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.core.rpa-workflow.d6a6005a-ce7b-480e-a899-ed13d969c717&quot;,
+      &quot;Category&quot;: &quot;rpa-workflow&quot;,
+      &quot;DisplayName&quot;: &quot;DeployToSharedFolder_20260806_1909&quot;,
+      &quot;Description&quot;: &quot;Minimal automation deployed to Shared folder&quot;,
+      &quot;Version&quot;: &quot;1.0.0&quot;,
+      &quot;Tags&quot;: &quot;&quot;,
+      &quot;AvailableOnTenant&quot;: true
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.core.rpa-workflow.7a909b7f-df78-4f67-8efe-8a24bc529779&quot;,
+      &quot;Category&quot;: &quot;rpa-workflow&quot;,
+      &quot;DisplayName&quot;: &quot;DeployToSharedFold
+
+… (truncated, 2032 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#8</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">4.59s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry list --local --output json 2&gt;/dev/null | head -60&quot;,
+  &quot;description&quot;: &quot;List local in-solution resources&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeListSuccess&quot;,
+  &quot;Data&quot;: []
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#9</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-err">ERROR</span>
+      <span class="tool-duration">6.28s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry search \&quot;uipath.core.rpa-workflow\&quot; --output json --output-filter \&quot;[*].{NodeType:NodeType,DisplayName:DisplayName,Description:Description}\&quot; 2&gt;/dev/null | grep -i -E \&quot;euler|problem|title\&quot; || echo \&quot;No direct match - listing all\&quot;\nuip maestro flow registry search \&quot;uipath.core.rpa-workflow\&quot; --output json --output-filter \&quot;[*].{NodeType:NodeType,DisplayName:DisplayName,Description… (187 more chars)&quot;,
+  &quot;description&quot;: &quot;Scan all RPA workflows for ProjectEuler match&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Exit code 1
+No direct match - listing all</pre>
+    <h4>Error</h4><pre>Exit code 1
+No direct match - listing all</pre>
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#10</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">2.15s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry search \&quot;uipath.core.rpa-workflow\&quot; --output json 2&gt;/dev/null &gt; /tmp/rpa_all.json &amp;&amp; python3 -c \&quot;\nimport json\nwith open(&#x27;/tmp/rpa_all.json&#x27;) as f: data = json.load(f)\nitems = data.get(&#x27;Data&#x27;, [])\nprint(f&#x27;Total: {len(items)}&#x27;)\nfor r in items:\n    dn = r.get(&#x27;DisplayName&#x27;,&#x27;&#x27;)\n    desc = r.get(&#x27;Description&#x27;,&#x27;&#x27;)\n    nt = r.get(&#x27;NodeType&#x27;,&#x27;&#x27;)\n    if any(kw.lower() in (dn+desc+nt… (208 more chars)&quot;,
+  &quot;description&quot;: &quot;Parse full RPA registry list looking for ProjectEuler&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Total: 24
+--- All display names ---
+uipath.core.rpa-workflow.6235d64e-b190-4b7a-8918-723df964c068 | CoderEval TM Create TestCase
+uipath.core.rpa-workflow.5cca97fb-fc5c-454a-8292-7d63ff7a47ec | DeployToSharedFolder
+uipath.core.rpa-workflow.d6a6005a-ce7b-480e-a899-ed13d969c717 | DeployToSharedFolder_20260806_1909
+uipath.core.rpa-workflow.7a909b7f-df78-4f67-8efe-8a24bc529779 | DeployToSharedFolder_4yfo57ty
+uipath.core.rpa-workflow.ab2a7087-fa48-458e-adf1-d16ac5147f06 | DeployToSharedFolder_h5yai0zq
+uipath.core.rpa-workflow.2373fb4a-30f4-4013-a9a6-7a651e8ca1f7 | e2e-deploy-1903e5ac
+uipath.core.rpa-workflow.27c13294-4062-499f-9199-0d5423d0db77 | e2e-deploy-f940d20e
+uipath.core.rpa-workflow.b56747e5-2729-484d-aaf2-16531e91e97f | e2e-stub
+uipath.core.rpa-workflow.e1f50bab-4578-4dab-87a1-f64e757ee13d | e2e-stub
+uipath.core.rpa-workflow.14d255fb-c49b-4f57-8e52-d17fc18ea8d1 | e2e-stub
+uipath.core.rpa-workflow.db5e9db8-9fa1-413e-9be5-6701c6537bce | e2e-stub
+uipath.core.rpa-workflow.362354a8-a9bc-4db1-b4c0-2bfc16e54286 | e2e-stub
+uipath.core.rpa-workflow.c593051c-184a-4cea-93c4-a8b349a382db | e2e-stub-long
+uipath.core.rpa-workflow.56451439-d1d0-49c0-8cf0-1026425c8da3 | e2e-stub-short
+uipath.co
+
+… (truncated, 797 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#11</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">10.35s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;for nt in \&quot;uipath.core.rpa-workflow.f27d0f9b-6972-47d3-8874-ec8aed8e8e16\&quot; \&quot;uipath.core.rpa-workflow.486edc26-0658-4ac1-92c9-1ef953927151\&quot; \&quot;uipath.core.rpa-workflow.3b33cfb1-ef9e-4332-9815-0696e1f746af\&quot; \&quot;uipath.core.rpa-workflow.bc928f9d-34fb-45ab-8823-90654f2f4bb0\&quot; \&quot;uipath.core.rpa-workflow.0092feb3-152b-4d8d-ad97-d653f398c96e\&quot; \&quot;uipath.core.rpa-workflow.0bc08e50-b45a-401c-aec8-a720e1d190e3\&quot;; do\n  … (368 more chars)&quot;,
+  &quot;description&quot;: &quot;Inspect RPA workflow manifests for ProjectEuler resource key&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>=== uipath.core.rpa-workflow.f27d0f9b-6972-47d3-8874-ec8aed8e8e16 ===
+DisplayName: 
+resourceKey: Shared/uipath-agents/FibonacciRPA.FibonacciRPA
+desc: 
+=== uipath.core.rpa-workflow.486edc26-0658-4ac1-92c9-1ef953927151 ===
+DisplayName: 
+resourceKey: Shared/uipath-maestro-flow/ProjectEuler RPA.RPA Workflow
+desc: 
+=== uipath.core.rpa-workflow.3b33cfb1-ef9e-4332-9815-0696e1f746af ===
+DisplayName: 
+resourceKey: Shared/Solution 7.RPA Workflow
+desc: 
+=== uipath.core.rpa-workflow.bc928f9d-34fb-45ab-8823-90654f2f4bb0 ===
+DisplayName: 
+resourceKey: Shared/uipath-rpa-isActivities/RequestFailed_DAPRuntime.RPA Workflow
+desc: 
+=== uipath.core.rpa-workflow.0092feb3-152b-4d8d-ad97-d653f398c96e ===
+DisplayName: 
+resourceKey: Shared/uipath-maestro-case/CM-Golden-Expense-Reporting-Manual-Test.RPA Workflow
+desc: 
+=== uipath.core.rpa-workflow.0bc08e50-b45a-401c-aec8-a720e1d190e3 ===
+DisplayName: 
+resourceKey: Shared/uipath-maestro-case/CM-Golden-Expense-Reporting-106.RPA Workflow
+desc:</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#12</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.17s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry get \&quot;uipath.core.rpa-workflow.486edc26-0658-4ac1-92c9-1ef953927151\&quot; --output json 2&gt;/dev/null &gt; /tmp/rpa_euler.json &amp;&amp; python3 -c \&quot;\nimport json\nwith open(&#x27;/tmp/rpa_euler.json&#x27;) as f: d = json.load(f)\nnode = d[&#x27;Data&#x27;][&#x27;Node&#x27;]\nprint(&#x27;=== version ===&#x27;)\nprint(node.get(&#x27;version&#x27;))\nprint(&#x27;=== model ===&#x27;)\nprint(json.dumps(node.get(&#x27;model&#x27;,{}), indent=2))\nprint(&#x27;=== inputDefiniti… (238 more chars)&quot;,
+  &quot;description&quot;: &quot;Inspect full ProjectEuler RPA manifest&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>=== version ===
+1.0.0
+=== model ===
+{
+  &quot;type&quot;: &quot;bpmn:ServiceTask&quot;,
+  &quot;serviceType&quot;: &quot;Orchestrator.StartJob&quot;,
+  &quot;version&quot;: &quot;v2&quot;,
+  &quot;section&quot;: &quot;Published&quot;,
+  &quot;listingVersion&quot;: &quot;1.0.0&quot;,
+  &quot;bindings&quot;: {
+    &quot;resource&quot;: &quot;process&quot;,
+    &quot;resourceSubType&quot;: &quot;Process&quot;,
+    &quot;resourceKey&quot;: &quot;Shared/uipath-maestro-flow/ProjectEuler RPA.RPA Workflow&quot;,
+    &quot;orchestratorType&quot;: &quot;process&quot;,
+    &quot;values&quot;: [
+      {
+        &quot;name&quot;: &quot;name&quot;,
+        &quot;propertyAttribute&quot;: &quot;name&quot;,
+        &quot;default&quot;: &quot;RPA Workflow&quot;
+      },
+      {
+        &quot;name&quot;: &quot;folderPath&quot;,
+        &quot;propertyAttribute&quot;: &quot;folderPath&quot;,
+        &quot;default&quot;: &quot;Shared/uipath-maestro-flow/ProjectEuler RPA&quot;
+      }
+    ]
+  },
+  &quot;context&quot;: [
+    {
+      &quot;name&quot;: &quot;name&quot;,
+      &quot;type&quot;: &quot;string&quot;,
+      &quot;value&quot;: &quot;&lt;bindings.name&gt;&quot;
+    },
+    {
+      &quot;name&quot;: &quot;folderPath&quot;,
+      &quot;type&quot;: &quot;string&quot;,
+      &quot;value&quot;: &quot;&lt;bindings.folderPath&gt;&quot;
+    },
+    {
+      &quot;name&quot;: &quot;_label&quot;,
+      &quot;type&quot;: &quot;string&quot;,
+      &quot;value&quot;: &quot;RPA Workflow&quot;
+    }
+  ]
+}
+=== inputDefinition ===
+{
+  &quot;type&quot;: &quot;object&quot;,
+  &quot;properties&quot;: {
+    &quot;problemId&quot;: {
+      &quot;type&quot;: &quot;number&quot;
+    }
+  }
+}
+=== outputDefinition ===
+{
+  &quot;output&quot;: {
+    &quot;type&quot;: &quot;object&quot;,
+    &quot;source&quot;: &quot;=this&quot;,
+    &quot;var&quot;: &quot;output&quot;,
+
+
+… (truncated, 1126 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#13</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">47ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cat /work/output/artifacts/skill-flow-rpa/ProjectEulerTitle/ProjectEulerTitle/ProjectEulerTitle.flow&quot;,
+  &quot;description&quot;: &quot;Read scaffolded flow file&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;id&quot;: &quot;39e66936-e284-45c5-81ad-ec586bb7d185&quot;,
+  &quot;version&quot;: &quot;1.9&quot;,
+  &quot;name&quot;: &quot;ProjectEulerTitle&quot;,
+  &quot;nodes&quot;: [
+    {
+      &quot;id&quot;: &quot;start&quot;,
+      &quot;type&quot;: &quot;core.trigger.manual&quot;,
+      &quot;typeVersion&quot;: &quot;1.0&quot;,
+      &quot;display&quot;: {
+        &quot;label&quot;: &quot;Manual trigger&quot;
+      },
+      &quot;inputs&quot;: {
+        &quot;entryPointId&quot;: &quot;3ea490a8-4a9c-4fa4-87ba-780555061ffc&quot;,
+        &quot;isDefaultEntryPoint&quot;: true
+      }
+    }
+  ],
+  &quot;edges&quot;: [],
+  &quot;definitions&quot;: [
+    {
+      &quot;nodeType&quot;: &quot;core.trigger.manual&quot;,
+      &quot;version&quot;: &quot;1.0&quot;,
+      &quot;category&quot;: &quot;trigger&quot;,
+      &quot;description&quot;: &quot;Start the process manually&quot;,
+      &quot;tags&quot;: [
+        &quot;trigger&quot;,
+        &quot;start&quot;,
+        &quot;manual&quot;
+      ],
+      &quot;sortOrder&quot;: 80,
+      &quot;display&quot;: {
+        &quot;label&quot;: &quot;Manual trigger&quot;,
+        &quot;icon&quot;: &quot;play&quot;,
+        &quot;shape&quot;: &quot;circle&quot;
+      },
+      &quot;handleConfiguration&quot;: [
+        {
+          &quot;position&quot;: &quot;right&quot;,
+          &quot;handles&quot;: [
+            {
+              &quot;id&quot;: &quot;output&quot;,
+              &quot;type&quot;: &quot;source&quot;,
+              &quot;handleType&quot;: &quot;output&quot;,
+              &quot;showButton&quot;: true,
+              &quot;constraints&quot;: {
+                &quot;forbiddenTargetCategories&quot;: [
+                  &quot;trigger&quot;
+                ]
+              }
+            }
+
+… (truncated, 787 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#14</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">176ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 -c \&quot;\nimport json\nwith open(&#x27;/tmp/rpa_euler.json&#x27;) as f: d = json.load(f)\n# Print the full node definition to use in definitions[]\nnode = d[&#x27;Data&#x27;][&#x27;Node&#x27;]\nprint(json.dumps(node, indent=2))\n\&quot; 2&gt;/dev/null | head -80&quot;,
+  &quot;description&quot;: &quot;Inspect full node definition structure for definitions[] entry&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;nodeType&quot;: &quot;uipath.core.rpa-workflow.486edc26-0658-4ac1-92c9-1ef953927151&quot;,
+  &quot;version&quot;: &quot;1.0.0&quot;,
+  &quot;category&quot;: &quot;rpa-workflow&quot;,
+  &quot;runtimeConstraints&quot;: {
+    &quot;exclude&quot;: [
+      &quot;api-function&quot;
+    ]
+  },
+  &quot;description&quot;: &quot;&quot;,
+  &quot;tags&quot;: [],
+  &quot;sortOrder&quot;: 630,
+  &quot;supportsErrorHandling&quot;: true,
+  &quot;display&quot;: {
+    &quot;label&quot;: &quot;RPA Workflow&quot;,
+    &quot;icon&quot;: &quot;rpa&quot;
+  },
+  &quot;handleConfiguration&quot;: [
+    {
+      &quot;position&quot;: &quot;left&quot;,
+      &quot;handles&quot;: [
+        {
+          &quot;id&quot;: &quot;input&quot;,
+          &quot;type&quot;: &quot;target&quot;,
+          &quot;handleType&quot;: &quot;input&quot;
+        }
+      ]
+    },
+    {
+      &quot;position&quot;: &quot;right&quot;,
+      &quot;handles&quot;: [
+        {
+          &quot;id&quot;: &quot;output&quot;,
+          &quot;type&quot;: &quot;source&quot;,
+          &quot;handleType&quot;: &quot;output&quot;
+        },
+        {
+          &quot;id&quot;: &quot;error&quot;,
+          &quot;label&quot;: &quot;Error&quot;,
+          &quot;type&quot;: &quot;source&quot;,
+          &quot;handleType&quot;: &quot;output&quot;,
+          &quot;visible&quot;: &quot;{inputs.errorHandlingEnabled}&quot;,
+          &quot;constraints&quot;: {
+            &quot;maxConnections&quot;: 1
+          }
+        }
+      ]
+    }
+  ],
+  &quot;model&quot;: {
+    &quot;type&quot;: &quot;bpmn:ServiceTask&quot;,
+    &quot;serviceType&quot;: &quot;Orchestrator.StartJob&quot;,
+    &quot;version&quot;: &quot;v2&quot;,
+    &quot;section&quot;: &quot;Published&quot;,
+    &quot;listingVersion&quot;: &quot;1.0.0&quot;,
+    &quot;bindings&quot;: {
+      &quot;resour
+
+… (truncated, 615 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#15</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">3ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-rpa/ProjectEulerTitle/ProjectEulerTitle/ProjectEulerTitle.flow&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	{
+2	  &quot;id&quot;: &quot;39e66936-e284-45c5-81ad-ec586bb7d185&quot;,
+3	  &quot;version&quot;: &quot;1.9&quot;,
+4	  &quot;name&quot;: &quot;ProjectEulerTitle&quot;,
+5	  &quot;nodes&quot;: [
+6	    {
+7	      &quot;id&quot;: &quot;start&quot;,
+8	      &quot;type&quot;: &quot;core.trigger.manual&quot;,
+9	      &quot;typeVersion&quot;: &quot;1.0&quot;,
+10	      &quot;display&quot;: {
+11	        &quot;label&quot;: &quot;Manual trigger&quot;
+12	      },
+13	      &quot;inputs&quot;: {
+14	        &quot;entryPointId&quot;: &quot;3ea490a8-4a9c-4fa4-87ba-780555061ffc&quot;,
+15	        &quot;isDefaultEntryPoint&quot;: true
+16	      }
+17	    }
+18	  ],
+19	  &quot;edges&quot;: [],
+20	  &quot;definitions&quot;: [
+21	    {
+22	      &quot;nodeType&quot;: &quot;core.trigger.manual&quot;,
+23	      &quot;version&quot;: &quot;1.0&quot;,
+24	      &quot;category&quot;: &quot;trigger&quot;,
+25	      &quot;description&quot;: &quot;Start the process manually&quot;,
+26	      &quot;tags&quot;: [
+27	        &quot;trigger&quot;,
+28	        &quot;start&quot;,
+29	        &quot;manual&quot;
+30	      ],
+31	      &quot;sortOrder&quot;: 80,
+32	      &quot;display&quot;: {
+33	        &quot;label&quot;: &quot;Manual trigger&quot;,
+34	        &quot;icon&quot;: &quot;play&quot;,
+35	        &quot;shape&quot;: &quot;circle&quot;
+36	      },
+37	      &quot;handleConfiguration&quot;: [
+38	        {
+39	          &quot;position&quot;: &quot;right&quot;,
+40	          &quot;handles&quot;: [
+41	            {
+42	              &quot;id&quot;: &quot;output&quot;,
+43	              &quot;type&quot;: &quot;source&quot;,
+44	              &quot;handleType&quot;: &quot;output&quot;,
+45	              &quot;showButton&quot;: true,
+46	              &quot;constrain
+
+… (truncated, 1051 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#16</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">193ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cat /tmp/end_def.json | python3 -c \&quot;import sys,json; d=json.load(sys.stdin); print(json.dumps(d.get(&#x27;Data&#x27;,{}).get(&#x27;Node&#x27;, d.get(&#x27;Data&#x27;,{})), indent=2))\&quot; | head -60&quot;,
+  &quot;description&quot;: &quot;Inspect End node definition structure&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;nodeType&quot;: &quot;core.control.end&quot;,
+  &quot;version&quot;: &quot;1.0&quot;,
+  &quot;category&quot;: &quot;control-flow&quot;,
+  &quot;description&quot;: &quot;Mark the end of a process path&quot;,
+  &quot;tags&quot;: [
+    &quot;control-flow&quot;,
+    &quot;end&quot;,
+    &quot;finish&quot;,
+    &quot;complete&quot;
+  ],
+  &quot;sortOrder&quot;: 65,
+  &quot;display&quot;: {
+    &quot;label&quot;: &quot;End&quot;,
+    &quot;icon&quot;: &quot;circle-check&quot;,
+    &quot;shape&quot;: &quot;circle&quot;
+  },
+  &quot;handleConfiguration&quot;: [
+    {
+      &quot;position&quot;: &quot;left&quot;,
+      &quot;handles&quot;: [
+        {
+          &quot;id&quot;: &quot;input&quot;,
+          &quot;type&quot;: &quot;target&quot;,
+          &quot;handleType&quot;: &quot;input&quot;
+        }
+      ]
+    }
+  ],
+  &quot;model&quot;: {
+    &quot;type&quot;: &quot;bpmn:EndEvent&quot;
+  },
+  &quot;runtimeConstraints&quot;: {
+    &quot;exclude&quot;: [
+      &quot;api-function&quot;
+    ]
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#17</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">176ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 -c \&quot;\nimport json\n\n# Get full RPA definition\nwith open(&#x27;/tmp/rpa_euler.json&#x27;) as f:\n    rpa_data = json.load(f)\nrpa_def = rpa_data[&#x27;Data&#x27;][&#x27;Node&#x27;]\nprint(&#x27;=== RPA DEF nodeType:&#x27;, rpa_def.get(&#x27;nodeType&#x27;))\nprint(&#x27;=== RPA DEF full:&#x27;)\nprint(json.dumps(rpa_def, indent=2))\n\&quot;&quot;,
+  &quot;description&quot;: &quot;Dump full RPA node definition for inclusion in flow&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>=== RPA DEF nodeType: uipath.core.rpa-workflow.486edc26-0658-4ac1-92c9-1ef953927151
+=== RPA DEF full:
+{
+  &quot;nodeType&quot;: &quot;uipath.core.rpa-workflow.486edc26-0658-4ac1-92c9-1ef953927151&quot;,
+  &quot;version&quot;: &quot;1.0.0&quot;,
+  &quot;category&quot;: &quot;rpa-workflow&quot;,
+  &quot;runtimeConstraints&quot;: {
+    &quot;exclude&quot;: [
+      &quot;api-function&quot;
+    ]
+  },
+  &quot;description&quot;: &quot;&quot;,
+  &quot;tags&quot;: [],
+  &quot;sortOrder&quot;: 630,
+  &quot;supportsErrorHandling&quot;: true,
+  &quot;display&quot;: {
+    &quot;label&quot;: &quot;RPA Workflow&quot;,
+    &quot;icon&quot;: &quot;rpa&quot;
+  },
+  &quot;handleConfiguration&quot;: [
+    {
+      &quot;position&quot;: &quot;left&quot;,
+      &quot;handles&quot;: [
+        {
+          &quot;id&quot;: &quot;input&quot;,
+          &quot;type&quot;: &quot;target&quot;,
+          &quot;handleType&quot;: &quot;input&quot;
+        }
+      ]
+    },
+    {
+      &quot;position&quot;: &quot;right&quot;,
+      &quot;handles&quot;: [
+        {
+          &quot;id&quot;: &quot;output&quot;,
+          &quot;type&quot;: &quot;source&quot;,
+          &quot;handleType&quot;: &quot;output&quot;
+        },
+        {
+          &quot;id&quot;: &quot;error&quot;,
+          &quot;label&quot;: &quot;Error&quot;,
+          &quot;type&quot;: &quot;source&quot;,
+          &quot;handleType&quot;: &quot;output&quot;,
+          &quot;visible&quot;: &quot;{inputs.errorHandlingEnabled}&quot;,
+          &quot;constraints&quot;: {
+            &quot;maxConnections&quot;: 1
+          }
+        }
+      ]
+    }
+  ],
+  &quot;model&quot;: {
+    &quot;type&quot;: &quot;bpmn:ServiceTask&quot;,
+    &quot;serviceType&quot;: &quot;Orchestrator.StartJob&quot;,
+    &quot;vers
+
+… (truncated, 2868 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#18</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">123ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 -c \&quot;\nimport json\nwith open(&#x27;/tmp/end_def.json&#x27;) as f:\n    end_data = json.load(f)\nend_def = end_data[&#x27;Data&#x27;][&#x27;Node&#x27;]\nprint(json.dumps(end_def, indent=2))\n\&quot;&quot;,
+  &quot;description&quot;: &quot;Dump full End node definition&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;nodeType&quot;: &quot;core.control.end&quot;,
+  &quot;version&quot;: &quot;1.0&quot;,
+  &quot;category&quot;: &quot;control-flow&quot;,
+  &quot;description&quot;: &quot;Mark the end of a process path&quot;,
+  &quot;tags&quot;: [
+    &quot;control-flow&quot;,
+    &quot;end&quot;,
+    &quot;finish&quot;,
+    &quot;complete&quot;
+  ],
+  &quot;sortOrder&quot;: 65,
+  &quot;display&quot;: {
+    &quot;label&quot;: &quot;End&quot;,
+    &quot;icon&quot;: &quot;circle-check&quot;,
+    &quot;shape&quot;: &quot;circle&quot;
+  },
+  &quot;handleConfiguration&quot;: [
+    {
+      &quot;position&quot;: &quot;left&quot;,
+      &quot;handles&quot;: [
+        {
+          &quot;id&quot;: &quot;input&quot;,
+          &quot;type&quot;: &quot;target&quot;,
+          &quot;handleType&quot;: &quot;input&quot;
+        }
+      ]
+    }
+  ],
+  &quot;model&quot;: {
+    &quot;type&quot;: &quot;bpmn:EndEvent&quot;
+  },
+  &quot;runtimeConstraints&quot;: {
+    &quot;exclude&quot;: [
+      &quot;api-function&quot;
+    ]
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#19</span>
+      <span class="tool-name">Write</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">614ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-rpa/ProjectEulerTitle/ProjectEulerTitle/ProjectEulerTitle.flow&quot;,
+  &quot;content&quot;: &quot;{\n  \&quot;id\&quot;: \&quot;39e66936-e284-45c5-81ad-ec586bb7d185\&quot;,\n  \&quot;version\&quot;: \&quot;1.9\&quot;,\n  \&quot;name\&quot;: \&quot;ProjectEulerTitle\&quot;,\n  \&quot;nodes\&quot;: [\n    {\n      \&quot;id\&quot;: \&quot;start\&quot;,\n      \&quot;type\&quot;: \&quot;core.trigger.manual\&quot;,\n      \&quot;typeVersion\&quot;: \&quot;1.0\&quot;,\n      \&quot;display\&quot;: {\n        \&quot;label\&quot;: \&quot;Manual trigger\&quot;\n      },\n      \&quot;inputs\&quot;: {\n        \&quot;entryPointId\&quot;: \&quot;3ea490a8-4a9c-4fa4-87ba-780555061ffc\&quot;,\n        \&quot;isDefaultEntryPoint\&quot;: true\n      }\n    },… (9889 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>The file /work/output/artifacts/skill-flow-rpa/ProjectEulerTitle/ProjectEulerTitle/ProjectEulerTitle.flow has been updated successfully. (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#20</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-err">ERROR</span>
+      <span class="tool-duration">2.82s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;\\\n  python3 /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/scripts/audit_flow.py ProjectEulerTitle.flow --json-out /tmp/audit.json 2&gt;&amp;1; echo \&quot;AUDIT_EXIT:$?\&quot; &amp;&amp; \\\n  uip maestro flow validate ProjectEulerTitle.flow --output json 2&gt;&amp;1 &amp;&amp; echo \&quot;VALIDATE_DONE\&quot; &amp;&amp; \\\n  uip maestro flow format ProjectEulerTitle.flow --output json 2&gt;&amp;1 &amp;&amp; echo \&quot;FORMAT_DONE\&quot;&quot;,
+  &quot;description&quot;: &quot;Audit, validate, and format the flow&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Exit code 1
+topology      0 error(s), 0 warning(s), 0 info
+expressions   0 error(s), 0 warning(s), 0 info
+jint          0 error(s), 0 warning(s), 0 info
+bindings      0 error(s), 0 warning(s), 0 info
+runtime-gaps  1 error(s), 0 warning(s), 0 info
+    error   MISSING_NODE_VARIABLE      start                                    no variables.nodes[] entry &#x27;start.output&#x27;; $vars.start.output resolves to undefined at runtime even though validate passes. `uip maestro flow format` regenerates it
+full findings: /tmp/audit.json
+audit: FAIL (1 error(s))
+AUDIT_EXIT:1
+{
+  &quot;Result&quot;: &quot;Failure&quot;,
+  &quot;Message&quot;: &quot;Validation failed for /work/output/artifacts/skill-flow-rpa/ProjectEulerTitle/ProjectEulerTitle/ProjectEulerTitle.flow&quot;,
+  &quot;Instructions&quot;: &quot;Found 3 error(s):\n  - [error] [variables.globals[0].id] Invalid input: expected string, received undefined\n  - [error] [variables.nodes[0].id] Invalid input: expected string, received undefined\n  - [error] [variables.nodes[0].binding] Invalid input: expected object, received undefined&quot;,
+  &quot;ErrorCode&quot;: &quot;unknown_error&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}</pre>
+    <h4>Error</h4><pre>Exit code 1
+topology      0 error(s), 0 warning(s), 0 info
+expressions   0 error(s), 0 warning(s), 0 info
+jint          0 error(s), 0 warning(s), 0 info
+bindings      0 error(s), 0 warning(s), 0 info
+runtime-gaps  1 error(s), 0 warning(s), 0 info
+    error   MISSING_NODE_VARIABLE      start                                    no variables.nodes[] entry &#x27;start.output&#x27;; $vars.start.output resolves to undefined at runtime even though validate passes. `uip maestro flow format` regenerates it
+full findings: /tmp/audit.json
+audit: FAIL (1 error(s))
+AUDIT_EXIT:1
+{
+  &quot;Result&quot;: &quot;Failure&quot;,
+  &quot;Message&quot;: &quot;Validation failed for /work/output/artifacts/skill-flow-rpa/ProjectEulerTitle/ProjectEulerTitle/ProjectEulerTitle.flow&quot;,
+  &quot;Instructions&quot;: &quot;Found 3 error(s):\n  - [error] [variables.globals[0].id] Invalid input: expected string, received undefined\n  - [error] [variables.nodes[0].id] Invalid input: expected string, received undefined\n  - [error] [variables.nodes[0].binding] Invalid input: expected object, received undefined&quot;,
+  &quot;ErrorCode&quot;: &quot;unknown_error&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}</pre>
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#21</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">43ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -A 30 &#x27;\&quot;variables\&quot;&#x27; /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/shared/file-format.md | head -80&quot;,
+  &quot;description&quot;: &quot;Look up variables format in file-format.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>  &quot;variables&quot;: {},
+  &quot;layout&quot;: {
+    &quot;nodes&quot;: {}
+  }
+}
+```
+
+&gt; **Key order is NOT guaranteed — never anchor edits on it.** The skeleton above is illustrative; the CLI does not commit to a stable top-level key sequence or to which optional keys are present. Real flows vary: `runtime` may appear (and has been observed *before* `nodes`, not after `definitions`) or be absent entirely; `bindings`, `variables`, `solutionId`, `projectId`, and a trailing `metadata` object surface in different positions depending on CLI version and what the flow contains. When editing a `.flow`, anchor each `Edit` on the **target array&#x27;s own key** (`&quot;nodes&quot;: [`, `&quot;edges&quot;: [`, `&quot;definitions&quot;: [`, or `layout.nodes`) located in the text you just `Read` — never on &quot;the key that follows X.&quot; See [greenfield.md — Anchoring parallel `.flow` Edits](../author/references/greenfield.md#anchoring-parallel-flow-edits--anchor-on-what-you-read-not-on-key-order).
+
+Optional top-level `runtime`: a CLI-managed object that appears on some flows (e.g. after `uip maestro flow node add` for an HTTP/connector node) and is absent on others. It is not user-authored — do not add, remove, or anchor on it. Its presence and position are n
+
+… (truncated, 3403 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#22</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">36ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -n \&quot;variables.globals\\|globals\\[\\|\\\&quot;direction\\\&quot;\\|\\\&quot;id\\\&quot;.*variable\\|variables section\\|out variable\&quot; /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/shared/variables-and-expressions.md | head -40&quot;,
+  &quot;description&quot;: &quot;Look up correct variables.globals and variables.nodes format&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>21:- [Workflow Variables (`globals`)](#workflow-variables-globals)
+59:Workflow variables are declared in `variables.globals`. Each has a **direction** that determines its role.
+90:  &quot;direction&quot;: &quot;in&quot;,
+101:  &quot;direction&quot;: &quot;out&quot;,
+110:  &quot;direction&quot;: &quot;inout&quot;,
+120:  &quot;direction&quot;: &quot;in&quot;,
+143:  &quot;direction&quot;: &quot;in&quot;,
+154:  &quot;direction&quot;: &quot;in&quot;,
+166:  &quot;direction&quot;: &quot;in&quot;,
+270:        &quot;variableId&quot;: string,    // ID of the inout variable to update
+286:        &quot;direction&quot;: &quot;inout&quot;,
+292:        &quot;direction&quot;: &quot;inout&quot;,
+578:2. Add the variable object to `variables.globals`
+624:        &quot;direction&quot;: &quot;in&quot;,
+632:        &quot;direction&quot;: &quot;inout&quot;,
+638:        &quot;direction&quot;: &quot;out&quot;,</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#23</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">15ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/shared/variables-and-expressions.md&quot;,
+  &quot;offset&quot;: 55,
+  &quot;limit&quot;: 120
+}</pre>
+    <h4>Result</h4>
+    <pre>55	---
+56	
+57	## Workflow Variables (`globals`)
+58	
+59	Workflow variables are declared in `variables.globals`. Each has a **direction** that determines its role.
+60	
+61	### Directions
+62	
+63	| Direction | Role | Readable | Writable | Use case |
+64	| --- | --- | --- | --- | --- |
+65	| `in` | External input | Yes | No | Values passed when the flow is triggered or called |
+66	| `out` | Workflow output | Yes | Mapped on End node | Values returned when the flow completes |
+67	| `inout` | Internal state | Yes | Yes (via `variableUpdates`) | Counters, accumulators, flags shared across nodes |
+68	
+69	### Schema
+70	
+71	```typescript
+72	{
+73	  id: string              // Unique identifier, used in expressions as $vars.{id}
+74	  direction: &quot;in&quot; | &quot;out&quot; | &quot;inout&quot;
+75	  type?: string           // &quot;string&quot; (default), &quot;number&quot;, &quot;boolean&quot;, &quot;object&quot;, &quot;array&quot;, &quot;file&quot;
+76	  subType?: string        // Item type for arrays (e.g., &quot;object&quot;, &quot;string&quot;)
+77	  schema?: object         // JSON Schema (draft-07) for complex types
+78	  defaultValue?: unknown  // Initial value (must match type)
+79	  description?: string    // Human-readable description
+80	  triggerNodeId?: string  // Trigger node this input is assoc
+
+… (truncated, 2210 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#24</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">34ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/shared/variables-and-expressions.md&quot;,
+  &quot;offset&quot;: 200,
+  &quot;limit&quot;: 100
+}</pre>
+    <h4>Result</h4>
+    <pre>200	### Schema
+201	
+202	```typescript
+203	{
+204	  id: string              // Format: &quot;{nodeId}.{outputId}&quot;
+205	  type?: string           // Output type
+206	  subType?: string        // For complex types
+207	  schema?: object         // JSON Schema for structured outputs
+208	  description?: string    // What this output contains
+209	  binding: {
+210	    nodeId: string        // Source node ID
+211	    outputId: string      // Output port ID (e.g., &quot;output&quot;, &quot;error&quot;)
+212	  }
+213	}
+214	```
+215	
+216	### Example
+217	
+218	```json
+219	{
+220	  &quot;variables&quot;: {
+221	    &quot;nodes&quot;: [
+222	      {
+223	        &quot;id&quot;: &quot;fetchData.output&quot;,
+224	        &quot;type&quot;: &quot;object&quot;,
+225	        &quot;description&quot;: &quot;HTTP response body&quot;,
+226	        &quot;binding&quot;: {
+227	          &quot;nodeId&quot;: &quot;fetchData&quot;,
+228	          &quot;outputId&quot;: &quot;output&quot;
+229	        }
+230	      },
+231	      {
+232	        &quot;id&quot;: &quot;fetchData.error&quot;,
+233	        &quot;type&quot;: &quot;object&quot;,
+234	        &quot;description&quot;: &quot;Error details if the request fails&quot;,
+235	        &quot;schema&quot;: {
+236	          &quot;$schema&quot;: &quot;http://json-schema.org/draft-07/schema#&quot;,
+237	          &quot;type&quot;: &quot;object&quot;,
+238	          &quot;required&quot;: [&quot;code&quot;, &quot;message&quot;],
+239	          &quot;properties&quot;: {
+240	            &quot;code&quot;: { &quot;
+
+… (truncated, 1371 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#25</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">21ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -n \&quot;End node\\|outputs.*source\\|out.*variable\\|output mapping\&quot; /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/shared/variables-and-expressions.md | head -20&quot;,
+  &quot;description&quot;: &quot;Find End node output mapping format&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>14:&gt; Errors against **open output schemas** (HTTP response bodies, script returns, free-text agent output) and **wrong-direction reads** (e.g. reading an `out`-only variable) still slip past validate and surface only at `flow debug` or in production.
+52:| `nodes` | Node output variables (auto-generated when using CLI `node add`) |
+66:| `out` | Workflow output | Yes | Mapped on End node | Values returned when the flow completes |
+67:| `inout` | Internal state | Yes | Yes (via `variableUpdates`) | Counters, accumulators, flags shared across nodes |
+159:Accessed in expressions as `$vars.{triggerNodeId}.output.{id}` (the variable is nested under the trigger node&#x27;s output — NOT `$vars.{id}`).
+261:Variable updates assign new values to `inout` (state) variables at specific nodes. They execute when the node completes.
+270:        &quot;variableId&quot;: string,    // ID of the inout variable to update
+313:&gt; **Only `inout` variables can be updated.** Updating an `in` or `out` variable is invalid.
+321:Workflow output variables (`direction: &quot;out&quot;`) must be mapped on End nodes. The End node&#x27;s `outputs` object maps each output variable ID to a source expression.
+343:&gt; **Every `out` variable must have a m
+
+… (truncated, 402 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#26</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">18ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/shared/variables-and-expressions.md&quot;,
+  &quot;offset&quot;: 320,
+  &quot;limit&quot;: 50
+}</pre>
+    <h4>Result</h4>
+    <pre>320	
+321	Workflow output variables (`direction: &quot;out&quot;`) must be mapped on End nodes. The End node&#x27;s `outputs` object maps each output variable ID to a source expression.
+322	
+323	### Structure
+324	
+325	```json
+326	{
+327	  &quot;id&quot;: &quot;end1&quot;,
+328	  &quot;type&quot;: &quot;core.control.end&quot;,
+329	  &quot;typeVersion&quot;: &quot;1.0&quot;,
+330	  &quot;display&quot;: { &quot;label&quot;: &quot;End&quot; },
+331	  &quot;inputs&quot;: {},
+332	  &quot;outputs&quot;: {
+333	    &quot;totalAmount&quot;: {
+334	      &quot;source&quot;: &quot;=js:$vars.calculateTotal.output.amount&quot;
+335	    },
+336	    &quot;summary&quot;: {
+337	      &quot;source&quot;: &quot;=js:$vars.formatResult.output.text&quot;
+338	    }
+339	  }
+340	}
+341	```
+342	
+343	&gt; **Every `out` variable must have a mapping on every End node** that the flow can reach. Missing mappings cause runtime errors.
+344	
+345	---
+346	
+347	## Expression System
+348	
+349	Flow uses a **Jint-based JavaScript engine** (ES2020 subset) for expressions. There are two expression formats.
+350	
+351	### `=js:` Expressions (Full JavaScript)
+352	
+353	Used for conditions, input values, variable updates, and output mappings. The `=js:` prefix tells the engine to evaluate the rest as JavaScript.
+354	
+355	```
+356	=js:$vars.order.amount &gt; 1000 &amp;&amp; $vars.order.status === &quot;approved&quot;
+357	```
+358	
+359	### Template
+
+… (truncated, 1109 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#27</span>
+      <span class="tool-name">Edit</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">18ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;replace_all&quot;: false,
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-rpa/ProjectEulerTitle/ProjectEulerTitle/ProjectEulerTitle.flow&quot;,
+  &quot;old_string&quot;: &quot;  \&quot;variables\&quot;: {\n    \&quot;globals\&quot;: [\n      {\n        \&quot;name\&quot;: \&quot;title\&quot;,\n        \&quot;direction\&quot;: \&quot;out\&quot;,\n        \&quot;type\&quot;: \&quot;string\&quot;\n      }\n    ],\n    \&quot;nodes\&quot;: [\n      {\n        \&quot;nodeId\&quot;: \&quot;getEulerTitle\&quot;,\n        \&quot;outputs\&quot;: {\n          \&quot;output\&quot;: {\n            \&quot;type\&quot;: \&quot;object\&quot;,\n            \&quot;schema\&quot;: {\n              \&quot;type\&quot;: \&quot;object\&quot;,\n              \&quot;properties\&quot;: {\n                \&quot;title\&quot;: {\n                  \&quot;ty… (102 more chars)&quot;,
+  &quot;new_string&quot;: &quot;  \&quot;variables\&quot;: {\n    \&quot;globals\&quot;: [\n      {\n        \&quot;id\&quot;: \&quot;title\&quot;,\n        \&quot;direction\&quot;: \&quot;out\&quot;,\n        \&quot;type\&quot;: \&quot;string\&quot;\n      }\n    ],\n    \&quot;nodes\&quot;: [\n      {\n        \&quot;id\&quot;: \&quot;getEulerTitle.output\&quot;,\n        \&quot;type\&quot;: \&quot;object\&quot;,\n        \&quot;schema\&quot;: {\n          \&quot;type\&quot;: \&quot;object\&quot;,\n          \&quot;properties\&quot;: {\n            \&quot;title\&quot;: {\n              \&quot;type\&quot;: \&quot;string\&quot;\n            }\n          }\n        },\n        \&quot;bindin… (102 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>The file /work/output/artifacts/skill-flow-rpa/ProjectEulerTitle/ProjectEulerTitle/ProjectEulerTitle.flow has been updated successfully. (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#28</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">8.82s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/scripts/audit_flow.py ProjectEulerTitle.flow --json-out /tmp/audit2.json 2&gt;&amp;1; echo \&quot;AUDIT_EXIT:$?\&quot; &amp;&amp; \\\nuip maestro flow validate ProjectEulerTitle.flow --output json 2&gt;&amp;1 &amp;&amp; echo \&quot;VALIDATE_DONE\&quot; &amp;&amp; \\\nuip maestro flow format ProjectEulerTitle.flow --output json 2&gt;&amp;1 &amp;&amp; echo \&quot;FORMAT_DONE\&quot;&quot;,
+  &quot;description&quot;: &quot;Re-run audit, validate, and format&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>topology      0 error(s), 0 warning(s), 0 info
+expressions   0 error(s), 0 warning(s), 0 info
+jint          0 error(s), 0 warning(s), 0 info
+bindings      0 error(s), 0 warning(s), 0 info
+runtime-gaps  1 error(s), 0 warning(s), 0 info
+    error   MISSING_NODE_VARIABLE      start                                    no variables.nodes[] entry &#x27;start.output&#x27;; $vars.start.output resolves to undefined at runtime even though validate passes. `uip maestro flow format` regenerates it
+full findings: /tmp/audit2.json
+audit: FAIL (1 error(s))
+AUDIT_EXIT:1
+[ManifestClient] fetchDynamicNodes ok: total=317 agent context nodes=2 external agent nodes=7 orchestrator nodes=263 IXP nodes=45
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FlowValidate&quot;,
+  &quot;Data&quot;: {
+    &quot;File&quot;: &quot;/work/output/artifacts/skill-flow-rpa/ProjectEulerTitle/ProjectEulerTitle/ProjectEulerTitle.flow&quot;,
+    &quot;Status&quot;: &quot;Valid&quot;
+  }
+}
+VALIDATE_DONE
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FlowFormat&quot;,
+  &quot;Data&quot;: {
+    &quot;File&quot;: &quot;ProjectEulerTitle.flow&quot;,
+    &quot;NodesTotal&quot;: 3,
+    &quot;EdgesTotal&quot;: 2,
+    &quot;NodesRepositioned&quot;: 2,
+    &quot;NodesResized&quot;: 0,
+    &quot;SubflowsTidied&quot;: 0,
+    &quot;VariableCount&quot;: 3
+  },
+  &quot;Instructions&quot;: &quot;Repositioned 2 of 3 nodes&quot;
+}
+FORMAT_DON
+
+… (truncated, 1 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#29</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">735ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/scripts/audit_flow.py ProjectEulerTitle.flow 2&gt;&amp;1; echo \&quot;EXIT:$?\&quot;&quot;,
+  &quot;description&quot;: &quot;Run final audit after format&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>topology      0 error(s), 0 warning(s), 0 info
+expressions   0 error(s), 0 warning(s), 0 info
+jint          0 error(s), 0 warning(s), 0 info
+bindings      0 error(s), 0 warning(s), 0 info
+runtime-gaps  0 error(s), 0 warning(s), 0 info
+audit: clean
+EXIT:0</pre>
+    
+  </div>
+</details>
+
+</div>
+
+<h2>Command Telemetry</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Total</div><div class="value">30</div></div>
+    <div class="stat"><div class="label">Successful</div><div class="value">28 (93%)</div></div>
+    <div class="stat"><div class="label">Failed</div><div class="value">2</div></div>
+    <div class="stat"><div class="label">Avg / cmd</div><div class="value">2.81s</div></div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 2fr;gap:16px;margin-top:12px">
+    <div>
+      <h4>By Tool</h4>
+      <table>
+        <thead><tr><th>Tool</th><th>Count</th></tr></thead>
+        <tbody><tr><td class='mono'>Bash</td><td>20</td></tr><tr><td class='mono'>Read</td><td>7</td></tr><tr><td class='mono'>Skill</td><td>1</td></tr><tr><td class='mono'>Write</td><td>1</td></tr><tr><td class='mono'>Edit</td><td>1</td></tr></tbody>
+      </table>
+    </div>
+    <div>
+      <h4>Slowest</h4>
+      <table>
+        <thead><tr><th>Tool</th><th>Duration</th><th>Parameters</th></tr></thead>
+        <tbody><tr><td class='mono'>Bash</td><td>20.72s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro flow registry get core.co...</td></tr><tr><td class='mono'>Bash</td><td>19.52s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip solution init &quot;ProjectEulerTitle&quot;...</td></tr><tr><td class='mono'>Bash</td><td>10.35s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;for nt in &quot;uipath.core.rpa-workflow.f...</td></tr><tr><td class='mono'>Bash</td><td>8.82s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;python3 /home/azureuser/projects/skil...</td></tr><tr><td class='mono'>Bash</td><td>6.28s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro flow registry search &quot;uip...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+  <p><strong>Most Common Pattern:</strong> <code>Bash → Bash → Bash</code></p><p><strong>Skill Tool Invoked:</strong> 1 time(s)</p>
+</div>
+
+<h2>Generation Metrics</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Total Latency</div><div class="value">6m 0s</div></div>
+    <div class="stat"><div class="label">Turns</div><div class="value">1</div></div>
+    <div class="stat"><div class="label">Assistant Turns</div><div class="value">55</div></div>
+    <div class="stat"><div class="label">Avg Turn Latency</div><div class="value">4m 56s</div></div>
+    
+  </div>
+</div>
+
+<h2>Token Usage</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Input (uncached)</div><div class="value">504</div></div>
+    <div class="stat"><div class="label">Output</div><div class="value">15,279</div></div>
+    <div class="stat"><div class="label">Cache Write</div><div class="value">64,076</div></div>
+    <div class="stat"><div class="label">Cache Read</div><div class="value">1,712,192</div></div>
+    <div class="stat"><div class="label">Total</div><div class="value">1,792,051</div></div>
+    <div class="stat"><div class="label">Cost</div><div class="value">$0.9846</div></div>
+  </div>
+</div>
+
+<h2>Agent Settings</h2>
+<div class="card" style="padding:0">
+  <table>
+    <tbody><tr><td class='mono dim'>Permission Mode</td><td>acceptEdits</td></tr><tr><td class='mono dim'>Allowed Tools</td><td>Skill, Bash, Read, Write, Edit, Glob, Grep</td></tr><tr><td class='mono dim'>Model</td><td>us.anthropic.claude-sonnet-4-6</td></tr><tr><td class='mono dim'>Max Turns</td><td>40</td></tr><tr><td class='mono dim'>System Prompt</td><td>You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted. </td></tr><tr><td class='mono dim'>System Prompt Mode</td><td>append</td></tr><tr><td class='mono dim'>Plugins</td><td>/home/azureuser/projects/skills/tmp</td></tr></tbody>
+  </table>
+</div>
+
+<h2>Environment</h2>
+<div class="card" style="padding:0">
+  <table>
+    <tbody><tr><td class='mono dim'>git_commit</td><td>unknown</td></tr><tr><td class='mono dim'>skills_git_commit</td><td>unknown</td></tr><tr><td class='mono dim'>cli_version</td><td>1.201.0-dev.8272</td></tr><tr><td class='mono dim'>tool_plugins</td><td>{&#x27;admin-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;agent-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;agenthub-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;aops-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;api-workflow-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;automation-hub-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;codedagent-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;codedapp-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;coder-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;context-grounding-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;conversational-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;data-fabric-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;docsai-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;function-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;gov-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;guardrails-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;insights-tool&#x27;: &#x27;1.201.0-dev.8276&#x27;, &#x27;integrationservice-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;ixp-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;llm-gateway-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;llmgw-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;maestro-tool&#x27;: &#x27;1.201.0-dev.8275&#x27;, &#x27;model-hub-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;orchestrator-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;platform-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;pm-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;rpa-legacy-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;rpa-tool&#x27;: &#x27;1.201.0-dev.20260809.3&#x27;, &#x27;solution-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;tasks-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;test-manager-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;traces-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;vertical-solutions-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;}</td></tr><tr><td class='mono dim'>coder_eval</td><td>0.9.6</td></tr><tr><td class='mono dim'>claude_code_cli</td><td>2.1.177 (Claude Code)</td></tr><tr><td class='mono dim'>uv</td><td>uv 0.12.5 (x86_64-unknown-linux-gnu)</td></tr><tr><td class='mono dim'>anthropic</td><td>0.122.0</td></tr><tr><td class='mono dim'>openai</td><td>3.2.0</td></tr><tr><td class='mono dim'>pydantic</td><td>2.12.5</td></tr><tr><td class='mono dim'>api_routing</td><td>aws_bedrock</td></tr><tr><td class='mono dim'>eval_routing</td><td>aws_bedrock</td></tr><tr><td class='mono dim'>aws_region</td><td>us-east-2</td></tr><tr><td class='mono dim'>bedrock_model</td><td>us.anthropic.claude-sonnet-4-6</td></tr><tr><td class='mono dim'>system_prompt_semantics</td><td>append</td></tr></tbody>
+  </table>
+</div>
+
+<footer>Generated by coder_eval · 2026-08-19T16:59:51</footer>
+</div>
+<script>
+function toggleTheme() {
+  document.documentElement.classList.toggle('light');
+  try {
+    const mode = document.documentElement.classList.contains('light') ? 'light' : 'dark';
+    localStorage.setItem('coder-eval-theme', mode);
+  } catch (e) { /* ignore */ }
+}
+(function() {
+  try {
+    if (localStorage.getItem('coder-eval-theme') === 'light') {
+      document.documentElement.classList.add('light');
+    }
+  } catch (e) { /* ignore */ }
+})();
+</script>
+</body>
+</html>

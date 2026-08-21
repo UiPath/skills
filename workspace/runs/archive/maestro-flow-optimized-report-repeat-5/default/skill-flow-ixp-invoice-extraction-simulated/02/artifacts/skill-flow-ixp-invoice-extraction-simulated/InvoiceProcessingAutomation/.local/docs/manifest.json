@@ -1,0 +1,8 @@
+{
+  "UiPath.DocumentProcessing.Contracts": "2.3.0-alpha.12558356",
+  "UiPath.DocumentUnderstanding.Activities": "3.5.0-alpha.12781113",
+  "UiPath.MicrosoftOffice365.Activities": "3.10.10",
+  "UiPath.OCR.Activities": "4.5.0-alpha.12613643",
+  "UiPath.System.Activities": "26.6.1",
+  "UiPath.WebAPI.Activities": "2.6.0-alpha.12792369"
+}

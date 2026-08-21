@@ -1,0 +1,23 @@
+{
+  "_comment": "Planned node configure payload for node listEntraGroups1 (List Entra Groups). Run: uip maestro flow node configure CeqlWhereTest.flow listEntraGroups1 --detail \"$(cat where_detail.json | jq 'del(._comment)')\" --output json",
+  "connectionId": "<CONNECTION_ID>",
+  "folderKey": "<FOLDER_KEY>",
+  "method": "GET",
+  "endpoint": "/groups",
+  "filter": {
+    "groupOperator": 0,
+    "index": 0,
+    "filters": [
+      {
+        "id": "displayName",
+        "operator": "Equals",
+        "value": {
+          "value": "active",
+          "rawString": "\"active\"",
+          "isLiteral": true
+        }
+      }
+    ],
+    "groups": []
+  }
+}

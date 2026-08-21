@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "SlackSummary",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "9da5ca59-499e-46ce-894f-f5eab089830c",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "SlackSummary"
+    },
+    "locks": [],
+    "key": "05085edd-3f0a-4687-87a9-1aa76bbd7c97",
+    "files": []
+  }
+}

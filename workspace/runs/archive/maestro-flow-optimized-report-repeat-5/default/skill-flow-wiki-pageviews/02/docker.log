@@ -1,0 +1,9 @@
+17:39:31 [INFO   ] [default/skill-flow-wiki-pageviews/02] orchestrator: API routing: aws_bedrock
+17:48:25 [INFO   ] [default/skill-flow-wiki-pageviews/02] evaluation.checker: Criterion 'run_command' FAILED (score=0.00, threshold=1.00): Command: python3 $TASK_DIR/check_wiki_pageviews_flow.py uipath_success
+17:48:47 [INFO   ] [default/skill-flow-wiki-pageviews/02] orchestrator: Success criteria: 2/3 passed, weighted score: 0.615
+17:48:47 [INFO   ] [default/skill-flow-wiki-pageviews/02] orchestrator: Running post-run command: python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/cleanup_solutions.py
+17:48:49 [WARNING] [default/skill-flow-wiki-pageviews/02] orchestrator: [post_run stderr] cleanup_solutions: deleted 49d2f487-28bb-4029-c96c-08dee9aa01c9 (from WikiPageviews/WikiPageviews.uipx)
+17:48:49 [WARNING] [default/skill-flow-wiki-pageviews/02] orchestrator: [post_run stderr] cleanup_solutions: summary policy=always deleted=1 preserved=0 skipped=0 not_uploaded=0 failed=0
+17:48:49 [INFO   ] [default/skill-flow-wiki-pageviews/02] orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+17:48:49 [INFO   ] [default/skill-flow-wiki-pageviews/02] orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-wiki-pageviews
+17:48:49 [INFO   ] [default/skill-flow-wiki-pageviews/02] orchestrator: Task finished: status=FAILURE duration=560.8s score=0.615 iterations=1

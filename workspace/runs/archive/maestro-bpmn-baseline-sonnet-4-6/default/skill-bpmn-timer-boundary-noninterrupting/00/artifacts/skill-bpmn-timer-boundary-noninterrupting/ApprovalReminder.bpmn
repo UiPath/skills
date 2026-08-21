@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+    xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+    xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+    xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+    xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:uipath="http://uipath.org/schema/bpmn"
+    id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn"
+    exporter="UiPath (https://bpmn.uipath.com)" exporterVersion="1.0">
+
+  <bpmn:process id="Process_1" isExecutable="true">
+    <bpmn:extensionElements>
+      <uipath:migrationVersion version="11.5" />
+      <uipath:variables version="v1">
+        <uipath:inputOutput id="Var_HitlResult" name="HitlResult" type="Actions.HITL" />
+      </uipath:variables>
+    </bpmn:extensionElements>
+
+    <!-- Manual start: a plain none-start event triggered by a human operator -->
+    <bpmn:startEvent id="Start_1" name="Start">
+      <bpmn:outgoing>Flow_StartToReview</bpmn:outgoing>
+    </bpmn:startEvent>
+
+    <!-- UserTask: human reviews and approves the request (Actions.HITL from registry) -->
+    <bpmn:userTask id="Task_Review" name="Review and Approve Request">
+      <bpmn:extensionElements>
+        <uipath:activity version="v1">
+          <uipath:type value="Actions.HITL" version="v1" />
+          <uipath:context>
+            <uipath:input name="appId" value="" />
+            <uipath:input name="appVersion" value="" />
+            <uipath:input name="actions" value="" />
+            <uipath:input name="key" value="" />
+            <uipath:input name="taskTitle" value="Review and Approve Request" />
+          </uipath:context>
+          <uipath:input name="HitlTaskArguments" type="json" target="bodyField"><![CDATA[{}]]></uipath:input>
+          <uipath:output name="Process response" type="Actions.HITL" var="Var_HitlResult" />
+        </uipath:activity>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_StartToReview</bpmn:incoming>
+      <bpmn:outgoing>Flow_ReviewToEnd</bpmn:outgoing>
+    </bpmn:userTask>
+
+    <!-- Non-interrupting timer boundary event: fires after PT1H without cancelling Task_Review -->
+    <bpmn:boundaryEvent id="Boundary_Timer" name="1 Hour Elapsed"
+        attachedToRef="Task_Review" cancelActivity="false">
+      <bpmn:timerEventDefinition>
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT1H</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+      <bpmn:outgoing>Flow_TimerToReminder</bpmn:outgoing>
+    </bpmn:boundaryEvent>
+
+    <!-- Normal end event: reached when the userTask completes -->
+    <bpmn:endEvent id="End_Main" name="Request Processed">
+      <bpmn:incoming>Flow_ReviewToEnd</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <!-- Reminder task: sends a reminder without interrupting the userTask (BPMN.ScriptTask from registry) -->
+    <bpmn:scriptTask id="Task_Reminder" name="Send Reminder" scriptFormat="JavaScript">
+      <bpmn:extensionElements>
+        <uipath:scriptVersion value="v3" />
+        <uipath:mapping version="v1">
+          <uipath:type value="BPMN.ScriptTask" version="v1" />
+          <uipath:input name="args" type="json" target="bodyField"><![CDATA[{}]]></uipath:input>
+        </uipath:mapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_TimerToReminder</bpmn:incoming>
+      <bpmn:outgoing>Flow_ReminderToEnd</bpmn:outgoing>
+      <bpmn:script><![CDATA[
+return { response: "Reminder sent: approval request is still awaiting review." };
+]]></bpmn:script>
+    </bpmn:scriptTask>
+
+    <!-- Reminder end event: reached after the reminder task completes (timer path only) -->
+    <bpmn:endEvent id="End_Reminder" name="Reminder Sent">
+      <bpmn:incoming>Flow_ReminderToEnd</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <!-- Sequence flows -->
+    <bpmn:sequenceFlow id="Flow_StartToReview"   sourceRef="Start_1"       targetRef="Task_Review" />
+    <bpmn:sequenceFlow id="Flow_ReviewToEnd"     sourceRef="Task_Review"   targetRef="End_Main" />
+    <bpmn:sequenceFlow id="Flow_TimerToReminder" sourceRef="Boundary_Timer" targetRef="Task_Reminder" />
+    <bpmn:sequenceFlow id="Flow_ReminderToEnd"   sourceRef="Task_Reminder" targetRef="End_Reminder" />
+
+  </bpmn:process>
+
+  <bpmndi:BPMNDiagram id="Diagram_1">
+    <bpmndi:BPMNPlane id="Plane_1" bpmnElement="Process_1">
+
+      <!-- Main flow shapes (top row) -->
+      <bpmndi:BPMNShape id="S_Start_1" bpmnElement="Start_1">
+        <dc:Bounds x="152" y="82" width="36" height="36" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="S_Task_Review" bpmnElement="Task_Review">
+        <dc:Bounds x="248" y="60" width="100" height="80" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="S_End_Main" bpmnElement="End_Main">
+        <dc:Bounds x="418" y="82" width="36" height="36" />
+      </bpmndi:BPMNShape>
+
+      <!-- Non-interrupting timer boundary event: positioned on the bottom edge of Task_Review -->
+      <bpmndi:BPMNShape id="S_Boundary_Timer" bpmnElement="Boundary_Timer">
+        <dc:Bounds x="280" y="122" width="36" height="36" />
+      </bpmndi:BPMNShape>
+
+      <!-- Reminder path shapes (bottom row) -->
+      <bpmndi:BPMNShape id="S_Task_Reminder" bpmnElement="Task_Reminder">
+        <dc:Bounds x="248" y="240" width="100" height="80" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="S_End_Reminder" bpmnElement="End_Reminder">
+        <dc:Bounds x="418" y="258" width="36" height="36" />
+      </bpmndi:BPMNShape>
+
+      <!-- Sequence flow edges -->
+      <bpmndi:BPMNEdge id="E_StartToReview" bpmnElement="Flow_StartToReview">
+        <di:waypoint x="188" y="100" />
+        <di:waypoint x="248" y="100" />
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="E_ReviewToEnd" bpmnElement="Flow_ReviewToEnd">
+        <di:waypoint x="348" y="100" />
+        <di:waypoint x="418" y="100" />
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="E_TimerToReminder" bpmnElement="Flow_TimerToReminder">
+        <di:waypoint x="298" y="158" />
+        <di:waypoint x="298" y="240" />
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="E_ReminderToEnd" bpmnElement="Flow_ReminderToEnd">
+        <di:waypoint x="348" y="280" />
+        <di:waypoint x="418" y="276" />
+      </bpmndi:BPMNEdge>
+
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+
+</bpmn:definitions>

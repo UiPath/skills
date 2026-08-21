@@ -1,0 +1,13 @@
+{
+  "_comment": "Planned configuration for createResourceGroup1 (No-Live-Tenant). Run 'uip maestro flow node configure DTLLoadByDefaultTrueTest.flow createResourceGroup1 --detail \"$(cat createResourceGroup1.detail.json)\"' after filling in the placeholders.",
+  "connectionId": "<PLACEHOLDER: run 'uip is connections list uipath-microsoft-azure --all-folders --output json' to get connection Id>",
+  "folderKey": "<PLACEHOLDER: use FolderKey from the same connections list output>",
+  "method": "POST",
+  "endpoint": "/resourceGroup/resource/{resourceGroupName}",
+  "pathParameters": {
+    "resourceGroupName": "<PLACEHOLDER: desired resource group name, e.g. my-rg-westeurope>"
+  },
+  "bodyParameters": {
+    "location": "<PLACEHOLDER: Azure region — run 'uip is resources run list uipath-microsoft-azure locations --connection-id <id> --output json' to pick from the location dropdown, e.g. eastus, westeurope, australiaeast>"
+  }
+}

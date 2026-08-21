@@ -1,0 +1,6 @@
+06:11:05 [INFO   ] [default/skill-bpmn-message-catch/00] orchestrator: API routing: aws_bedrock
+06:15:01 [INFO   ] [default/skill-bpmn-message-catch/00] orchestrator: Success criteria: 3/3 passed, weighted score: 1.000
+06:15:01 [WARNING] [default/skill-bpmn-message-catch/00] orchestrator: Visible turns (22) exceeded expected_turns (16) at iteration 1 for task skill-bpmn-message-catch. Run continues — max_turns remains the hard cap.
+06:15:01 [INFO   ] [default/skill-bpmn-message-catch/00] orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+06:15:01 [INFO   ] [default/skill-bpmn-message-catch/00] orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-bpmn-message-catch
+06:15:01 [INFO   ] [default/skill-bpmn-message-catch/00] orchestrator: Task finished: status=SUCCESS duration=237.4s score=1.000 iterations=1

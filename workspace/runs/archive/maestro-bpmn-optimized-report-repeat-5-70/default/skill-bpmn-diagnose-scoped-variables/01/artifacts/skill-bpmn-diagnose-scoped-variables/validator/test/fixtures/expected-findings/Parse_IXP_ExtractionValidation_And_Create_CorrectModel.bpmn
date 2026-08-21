@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:uipath="http://uipath.org/schema/bpmn" >
+    <bpmn:process id="Process_1">
+
+        <bpmn:startEvent id="Start_1" name="Begin">
+            <bpmn:outgoing>Flow_1</bpmn:outgoing>
+        </bpmn:startEvent>
+
+        <bpmn:serviceTask id="Activity_Validate" name="IxP Extraction Validation">
+            <bpmn:incoming>Flow_1</bpmn:incoming>
+            <bpmn:outgoing>Flow_2</bpmn:outgoing>
+            <bpmn:extensionElements>
+              <uipath:activity version="v1">
+                <uipath:type value="IXP.ExtractionValidation" version="v2" />
+                <uipath:input name="extractionResult" type="jsonSchema" target="bodyField" value="= vars.content.extractionResult" />
+                <uipath:input name="documentId" type="string" target="bodyField" value="= vars.digitizedDocumentId" />
+                <uipath:input name="actionTitle" type="string" target="bodyField" value="Review Invoice Extraction" />
+                <uipath:input name="actionPriority" type="string" target="bodyField" value="Low" />
+                <uipath:input name="actionCatalog" type="string" target="bodyField" value="= vars.actionCatalog" />
+                <uipath:input name="actionFolder" type="string" target="bodyField" value="= vars.actionFolder" />
+                <uipath:input name="storageBucketName" type="string" target="bodyField" value="= vars.bucketName" />
+                <uipath:input name="storageBucketDirectoryPath" type="string" target="bodyField" value="= vars.bucketPath" />
+                <uipath:output name="Error" type="jsonSchema" source="=Error" var="validationError" />
+                <uipath:output name="content" type="jsonSchema" source="=result" var="validatedContent" />
+              </uipath:activity>
+          </bpmn:extensionElements>
+        </bpmn:serviceTask>
+
+        <bpmn:endEvent id="End_1" name="Finish">
+            <bpmn:incoming>Flow_2</bpmn:incoming>
+        </bpmn:endEvent>
+        <bpmn:sequenceFlow id="Flow_1" sourceRef="Start_1" targetRef="Activity_Validate" />
+        <bpmn:sequenceFlow id="Flow_2" sourceRef="Activity_Validate" targetRef="End_1" />
+    </bpmn:process>
+</bpmn:definitions>

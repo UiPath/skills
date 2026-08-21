@@ -1,0 +1,6 @@
+18:06:22 [INFO   ] [default/skill-flow-non-catalog-http-fallback/03] orchestrator: API routing: aws_bedrock
+18:11:06 [INFO   ] [default/skill-flow-non-catalog-http-fallback/03] evaluation.checker: Criterion 'run_command' FAILED (score=0.00, threshold=1.00): Command: python3 $TASK_DIR/check_non_catalog_http_fallback.py check_fallback
+18:11:06 [INFO   ] [default/skill-flow-non-catalog-http-fallback/03] orchestrator: Success criteria: 1/2 passed, weighted score: 0.400
+18:11:06 [INFO   ] [default/skill-flow-non-catalog-http-fallback/03] orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+18:11:06 [INFO   ] [default/skill-flow-non-catalog-http-fallback/03] orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-non-catalog-http-fallback
+18:11:06 [INFO   ] [default/skill-flow-non-catalog-http-fallback/03] orchestrator: Task finished: status=FAILURE duration=286.8s score=0.400 iterations=1

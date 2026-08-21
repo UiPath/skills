@@ -1,0 +1,30 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "Open-Meteo APIs",
+    "kind": "connector",
+    "apiVersion": "integrationservice.uipath.com/v1",
+    "isOverridable": true,
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [],
+    "spec": {
+      "name": "Open-Meteo APIs",
+      "key": "custom-codereval-openmeteoapis",
+      "version": "1.5.0",
+      "fileRef": "custom-codereval-openmeteoapis_1.5.0",
+      "fileName": "custom-codereval-openmeteoapis_1.5.0.connector"
+    },
+    "locks": [],
+    "key": "57785d89-6aac-3951-85c1-23bc7152b486",
+    "files": [
+      {
+        "key": "custom-codereval-openmeteoapis_1.5.0",
+        "name": "custom-codereval-openmeteoapis_1.5.0.connector",
+        "url": "https://alpha.uipath.com/codereval/defaulttenant/elements_/v3/element/elements/custom-codereval-openmeteoapis/export?version=1.5.0",
+        "kind": "Connector",
+        "version": "1.5.0"
+      }
+    ]
+  }
+}

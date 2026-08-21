@@ -1,0 +1,52 @@
+2026-07-24 20:24:14 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-24 20:24:14 [INFO] coder_eval.orchestrator: API routing: aws_bedrock
+2026-07-24 20:24:14 [DEBUG] coder_eval.criteria: Discovered 14 criterion checkers
+2026-07-24 20:24:14 [DEBUG] coder_eval.criteria: Validated 14 criterion checkers
+2026-07-24 20:24:14 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-24 20:24:14 [INFO] coder_eval.orchestrator: Running pre-run command: python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/e2e/jira_get_issue/seed_jira.py
+2026-07-24 20:24:19 [INFO] coder_eval.orchestrator: [pre_run stdout] OK: seeded live issue CE-198 (summary='coder-eval jira flow e2e fc69fb54')
+2026-07-24 20:24:19 [DEBUG] coder_eval.orchestrator: Sending prompt: Create a new Flow project called "JiraGetIssue" with a manual trigger.
+It should read a single Jira ...
+2026-07-24 20:24:19 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Starting agent query stream...
+2026-07-24 20:30:00 [DEBUG] coder_eval.agents.claude_code_agent: [coder] session_id changed: None -> 74798cc2-e466-4625-8bdd-ee00ac147fd6
+2026-07-24 20:30:00 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Agent query stream ended
+2026-07-24 20:30:00 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-24 20:30:00 [DEBUG] coder_eval.orchestrator: Agent response received (6151 chars)
+2026-07-24 20:30:00 [DEBUG] coder_eval.orchestrator: Checking success criteria
+2026-07-24 20:30:00 [DEBUG] coder_eval.evaluation.checker: Criterion 'command_executed' score: 1.00
+2026-07-24 20:30:00 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'JiraGetIssue checks: valid flow with Jira Get-Issue node referencing the seeded key, debug completes, and outputs carry the seeded summary': python3 $TASK_DIR/check_jira_get_issue.py
+2026-07-24 20:30:51 [DEBUG] coder_eval.sandbox: Command 'python3 $TASK_DIR/check_jira_get_issue.py' exited with code 1
+2026-07-24 20:30:51 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+OK: flow references uipath-atlassian-jira
+OK: flow references a Get-Issue op and the seeded key CE-198
+---
+2026-07-24 20:30:51 [DEBUG] coder_eval.sandbox: STDERR:
+---
+FAIL: flow debug exit 1
+stdout: {
+  "Result": "Failure",
+  "Message": "Failed during poll-instance-status: HTTP 403 on GET /api/v1/debug-instances/ee3e66d1-9e66-466d-b9fc-843679d28250/element-executions (traceId=7d36a838e85dc158d1392230e82fcb76)",
+  "Instructions": "Authentication/authorization rejected by GET /api/v1/debug-instances/ee3e66d1-9e66-466d-b9fc-843679d28250/element-executions. Run 'uip login' and verify the active tenant has access.",
+  "Context": {
+    "HttpStatus": 403,
+    "Stage": "poll-instance-status",
+    "Endpoint": "/api/v1/debug-instances/ee3e66d1-9e66-466d-b9fc-843679d28250/element-executions",
+    "Method": "GET",
+    "TraceId": "7d36a838e85dc158d1392230e82fcb76"
+  },
+  "ErrorCode": "permission_denied",
+  "Retry": "RetryWillNotFix"
+}
+
+stderr:
+---
+2026-07-24 20:30:51 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 0.00
+2026-07-24 20:30:51 [INFO] coder_eval.evaluation.checker: Criterion 'run_command' FAILED (score=0.00, threshold=1.00): Command: python3 $TASK_DIR/check_jira_get_issue.py
+2026-07-24 20:30:51 [INFO] coder_eval.orchestrator: Success criteria: 1/2 passed, weighted score: 0.286
+2026-07-24 20:30:51 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-24 20:30:51 [INFO] coder_eval.orchestrator: Running post-run command: python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/e2e/jira_get_issue/teardown_jira.py
+2026-07-24 20:30:58 [INFO] coder_eval.orchestrator: [post_run stdout] OK: deleted CE-198
+2026-07-24 20:30:58 [INFO] coder_eval.orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+2026-07-24 20:30:58 [INFO] coder_eval.orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-ipe-jira-get-issue
+2026-07-24 20:30:58 [INFO] coder_eval.orchestrator: Task finished: status=FAILURE duration=406.0s score=0.286 iterations=1

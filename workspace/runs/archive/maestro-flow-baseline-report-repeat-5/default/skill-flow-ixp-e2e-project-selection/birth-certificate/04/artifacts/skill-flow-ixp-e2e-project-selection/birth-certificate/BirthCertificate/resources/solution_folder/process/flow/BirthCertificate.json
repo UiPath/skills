@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "BirthCertificate",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "2547ebaf-f064-4929-8dc8-1bcb206b81b1",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "BirthCertificate"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Flow",
+      "name": "BirthCertificate",
+      "package": {
+        "key": "54a6dcac-0456-486b-8641-a86aff8c02f3"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "3fed5a92-0f25-481a-a1e1-960d77deab2d",
+    "files": []
+  }
+}

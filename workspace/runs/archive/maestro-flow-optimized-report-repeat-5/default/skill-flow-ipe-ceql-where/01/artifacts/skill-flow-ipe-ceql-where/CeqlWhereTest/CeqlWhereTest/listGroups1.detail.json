@@ -1,0 +1,23 @@
+{
+  "_comment": "Planned node configure payload for listGroups1. Run this when a live tenant is available: uip maestro flow node configure CeqlWhereTest.flow listGroups1 --detail \"$(cat listGroups1.detail.json | python3 -c 'import sys,json; d=json.load(sys.stdin); d.pop(\"_comment\",None); print(json.dumps(d))')\" --output json",
+  "connectionId": "26b7ac14-424a-45ae-88ee-88ae5c8794ce",
+  "folderKey": "5da18ec0-7de1-4e57-aaf1-ddc8a369c199",
+  "method": "GET",
+  "endpoint": "/groups",
+  "filter": {
+    "groupOperator": 0,
+    "index": 0,
+    "filters": [
+      {
+        "id": "displayName",
+        "operator": "Equals",
+        "value": {
+          "value": "active",
+          "rawString": "\"active\"",
+          "isLiteral": true
+        }
+      }
+    ],
+    "groups": []
+  }
+}

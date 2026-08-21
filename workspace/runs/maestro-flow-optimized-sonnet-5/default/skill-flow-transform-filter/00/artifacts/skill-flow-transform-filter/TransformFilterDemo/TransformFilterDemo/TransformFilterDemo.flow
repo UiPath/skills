@@ -1,0 +1,444 @@
+{
+  "id": "6f77c3df-fff1-4daf-ac10-423324049489",
+  "version": "1.9",
+  "name": "TransformFilterDemo",
+  "variables": {
+    "globals": [
+      {
+        "id": "items",
+        "direction": "in",
+        "type": "array",
+        "subType": "object",
+        "defaultValue": [
+          {
+            "amount": 50
+          },
+          {
+            "amount": 100
+          },
+          {
+            "amount": 150
+          },
+          {
+            "amount": 80
+          },
+          {
+            "amount": 200
+          }
+        ],
+        "description": "Static collection of sample records with an amount field"
+      },
+      {
+        "id": "filteredResult",
+        "direction": "out",
+        "type": "array",
+        "subType": "object",
+        "description": "Items whose amount is greater than or equal to 100"
+      }
+    ],
+    "nodes": [
+      {
+        "id": "start.output",
+        "type": "object",
+        "description": "Data passed when manually triggering the process.",
+        "binding": {
+          "nodeId": "start",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "filterHighAmount.output",
+        "type": "array",
+        "description": "The transformed data result",
+        "binding": {
+          "nodeId": "filterHighAmount",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "filterHighAmount.error",
+        "type": "object",
+        "description": "Error information if the node fails",
+        "binding": {
+          "nodeId": "filterHighAmount",
+          "outputId": "error"
+        }
+      },
+      {
+        "id": "end1.filteredResult",
+        "type": "string",
+        "binding": {
+          "nodeId": "end1",
+          "outputId": "filteredResult"
+        }
+      }
+    ],
+    "variableUpdates": {}
+  },
+  "nodes": [
+    {
+      "id": "start",
+      "type": "core.trigger.manual",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Manual trigger"
+      },
+      "inputs": {
+        "entryPointId": "e7758125-22dc-4539-be48-492d46e3513c",
+        "isDefaultEntryPoint": true
+      }
+    },
+    {
+      "id": "filterHighAmount",
+      "type": "core.action.transform.filter",
+      "typeVersion": "1.1",
+      "display": {
+        "label": "Filter High Amount"
+      },
+      "inputs": {
+        "collection": "$vars.items",
+        "operations": [
+          {
+            "id": "op1",
+            "type": "filter",
+            "config": {
+              "operation": "and",
+              "filters": [
+                {
+                  "id": "f1",
+                  "field": "amount",
+                  "condition": "greater_equal",
+                  "value": 100
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "outputs": {
+        "output": {
+          "type": "array",
+          "description": "The transformed data result",
+          "source": "=result.response",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails",
+          "source": "=Error",
+          "var": "error"
+        }
+      }
+    },
+    {
+      "id": "end1",
+      "type": "core.control.end",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "End"
+      },
+      "inputs": {},
+      "outputs": {
+        "filteredResult": {
+          "source": "=js:$vars.filterHighAmount.output"
+        }
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge_start_output_filterHighAmount_input",
+      "sourceNodeId": "start",
+      "sourcePort": "output",
+      "targetNodeId": "filterHighAmount",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge_filterHighAmount_output_end1_input",
+      "sourceNodeId": "filterHighAmount",
+      "sourcePort": "output",
+      "targetNodeId": "end1",
+      "targetPort": "input"
+    }
+  ],
+  "definitions": [
+    {
+      "nodeType": "core.trigger.manual",
+      "version": "1.0",
+      "category": "trigger",
+      "description": "Start the process manually",
+      "tags": [
+        "trigger",
+        "start",
+        "manual"
+      ],
+      "sortOrder": 80,
+      "display": {
+        "label": "Manual trigger",
+        "icon": "play",
+        "shape": "circle"
+      },
+      "handleConfiguration": [
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "output",
+              "type": "source",
+              "handleType": "output",
+              "showButton": true,
+              "constraints": {
+                "forbiddenTargetCategories": [
+                  "trigger"
+                ]
+              }
+            }
+          ],
+          "visible": true
+        }
+      ],
+      "model": {
+        "type": "bpmn:StartEvent",
+        "entryPointId": true
+      },
+      "outputDefinition": {
+        "output": {
+          "type": "object",
+          "description": "Data passed when manually triggering the process.",
+          "source": "null",
+          "var": "output"
+        }
+      },
+      "toolbarExtensions": {
+        "design": {
+          "actions": [
+            {
+              "id": "change-trigger-type",
+              "icon": "square-mouse-pointer",
+              "label": "Change trigger type"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "nodeType": "core.action.transform.filter",
+      "supportsErrorHandling": true,
+      "version": "1.1",
+      "category": "data",
+      "description": "Filter data by conditions",
+      "tags": [
+        "data",
+        "transformation",
+        "filter"
+      ],
+      "sortOrder": 31,
+      "display": {
+        "label": "Filter",
+        "icon": "list-filter"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "output",
+              "type": "source",
+              "handleType": "output"
+            },
+            {
+              "id": "error",
+              "label": "Error",
+              "type": "source",
+              "handleType": "output",
+              "visible": "{inputs.errorHandlingEnabled}",
+              "constraints": {
+                "maxConnections": 1
+              }
+            }
+          ]
+        }
+      ],
+      "debug": {
+        "runtime": "clientScript"
+      },
+      "model": {
+        "type": "bpmn:ScriptTask"
+      },
+      "inputDefinition": {
+        "type": "object",
+        "properties": {
+          "collection": {
+            "type": "string"
+          },
+          "operations": {
+            "type": "array"
+          }
+        }
+      },
+      "inputDefaults": {
+        "collection": "",
+        "operations": []
+      },
+      "outputDefinition": {
+        "output": {
+          "type": "array",
+          "description": "The transformed data result",
+          "source": "=result.response",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails",
+          "source": "=Error",
+          "var": "error",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "required": [
+              "code",
+              "message",
+              "detail",
+              "category",
+              "status"
+            ],
+            "properties": {
+              "code": {
+                "type": "string",
+                "description": "Error code as a string"
+              },
+              "message": {
+                "type": "string",
+                "description": "High-level error message"
+              },
+              "detail": {
+                "type": "string",
+                "description": "Detailed error description"
+              },
+              "category": {
+                "type": "string",
+                "description": "Error category"
+              },
+              "status": {
+                "type": "integer",
+                "description": "HTTP status code"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "form": {
+        "id": "data-transform-filter-form",
+        "title": "Filter",
+        "sections": [
+          {
+            "defaultExpanded": true,
+            "id": "filter-section",
+            "title": "Filter configuration",
+            "fields": [
+              {
+                "name": "inputs",
+                "type": "custom",
+                "component": "filter-operation-editor",
+                "componentProps": {},
+                "label": "Filter configuration"
+              }
+            ],
+            "collapsible": true
+          }
+        ]
+      },
+      "runtimeConstraints": {
+        "exclude": [
+          "api-function"
+        ]
+      }
+    },
+    {
+      "nodeType": "core.control.end",
+      "version": "1.0",
+      "category": "control-flow",
+      "description": "Mark the end of a process path",
+      "tags": [
+        "control-flow",
+        "end",
+        "finish",
+        "complete"
+      ],
+      "sortOrder": 65,
+      "display": {
+        "label": "End",
+        "icon": "circle-check",
+        "shape": "circle"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        }
+      ],
+      "model": {
+        "type": "bpmn:EndEvent"
+      },
+      "runtimeConstraints": {
+        "exclude": [
+          "api-function"
+        ]
+      }
+    }
+  ],
+  "runtime": "maestro",
+  "layout": {
+    "nodes": {
+      "start": {
+        "position": {
+          "x": -192,
+          "y": 0
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        }
+      },
+      "filterHighAmount": {
+        "position": {
+          "x": 0,
+          "y": 0
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "end1": {
+        "position": {
+          "x": 192,
+          "y": 0
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      }
+    }
+  }
+}

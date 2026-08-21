@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+    xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+    xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+    xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+    xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:uipath="http://uipath.org/schema/bpmn"
+    id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn"
+    exporter="UiPath (https://bpmn.uipath.com)" exporterVersion="1.0">
+
+  <bpmn:error id="Error_PaymentFailed" name="PaymentFailed" errorCode="PAYMENT_FAILED" />
+
+  <bpmn:process id="Process_1" isExecutable="true">
+    <bpmn:extensionElements>
+      <uipath:migrationVersion version="11.5" />
+      <uipath:variables version="v1">
+        <uipath:inputOutput id="Var_PaymentOk" name="PaymentOk" type="boolean" />
+      </uipath:variables>
+    </bpmn:extensionElements>
+
+    <!-- Manual start -->
+    <bpmn:startEvent id="Start_Manual" name="Start">
+      <bpmn:outgoing>Flow_1</bpmn:outgoing>
+    </bpmn:startEvent>
+
+    <!-- Task: attempt payment -->
+    <bpmn:task id="Task_Payment" name="Attempt Payment">
+      <bpmn:incoming>Flow_1</bpmn:incoming>
+      <bpmn:outgoing>Flow_2</bpmn:outgoing>
+    </bpmn:task>
+
+    <!-- Exclusive gateway: routes failure to error end, success to plain end -->
+    <bpmn:exclusiveGateway id="Gw_PayResult" name="Payment OK?" default="Flow_Ok">
+      <bpmn:incoming>Flow_2</bpmn:incoming>
+      <bpmn:outgoing>Flow_Fail</bpmn:outgoing>
+      <bpmn:outgoing>Flow_Ok</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+
+    <!-- Error end event: throws the declared error -->
+    <bpmn:endEvent id="End_Error" name="Payment Failed">
+      <bpmn:incoming>Flow_Fail</bpmn:incoming>
+      <bpmn:errorEventDefinition id="ErrDef_End" errorRef="Error_PaymentFailed" />
+    </bpmn:endEvent>
+
+    <!-- Plain end event: normal completion -->
+    <bpmn:endEvent id="End_Normal" name="Payment Completed">
+      <bpmn:incoming>Flow_Ok</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <!-- Sequence flows for main path -->
+    <bpmn:sequenceFlow id="Flow_1" sourceRef="Start_Manual" targetRef="Task_Payment" />
+    <bpmn:sequenceFlow id="Flow_2" sourceRef="Task_Payment" targetRef="Gw_PayResult" />
+    <bpmn:sequenceFlow id="Flow_Fail" sourceRef="Gw_PayResult" targetRef="End_Error">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=vars.Var_PaymentOk == false</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_Ok" sourceRef="Gw_PayResult" targetRef="End_Normal" />
+
+    <!-- Event subprocess: triggered by the PAYMENT_FAILED error -->
+    <bpmn:subProcess id="SubProc_ErrorHandler" name="Handle Payment Error" triggeredByEvent="true">
+
+      <!-- Single interrupting error start event catching the declared error -->
+      <bpmn:startEvent id="Start_ErrCatch" name="Payment Error Caught" isInterrupting="true">
+        <bpmn:outgoing>Flow_Nested1</bpmn:outgoing>
+        <bpmn:errorEventDefinition id="ErrDef_Catch" errorRef="Error_PaymentFailed" />
+      </bpmn:startEvent>
+
+      <!-- Handler task -->
+      <bpmn:task id="Task_Handler" name="Run Error Handler">
+        <bpmn:incoming>Flow_Nested1</bpmn:incoming>
+        <bpmn:outgoing>Flow_Nested2</bpmn:outgoing>
+      </bpmn:task>
+
+      <!-- Nested end event -->
+      <bpmn:endEvent id="End_Nested" name="Error Handled">
+        <bpmn:incoming>Flow_Nested2</bpmn:incoming>
+      </bpmn:endEvent>
+
+      <!-- Sequence flows inside the event subprocess -->
+      <bpmn:sequenceFlow id="Flow_Nested1" sourceRef="Start_ErrCatch" targetRef="Task_Handler" />
+      <bpmn:sequenceFlow id="Flow_Nested2" sourceRef="Task_Handler" targetRef="End_Nested" />
+
+    </bpmn:subProcess>
+
+  </bpmn:process>
+
+  <bpmndi:BPMNDiagram id="Diagram_1">
+    <bpmndi:BPMNPlane id="Plane_1" bpmnElement="Process_1">
+
+      <!-- Main process shapes -->
+      <bpmndi:BPMNShape id="S_Start_Manual" bpmnElement="Start_Manual">
+        <dc:Bounds x="160" y="100" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Task_Payment" bpmnElement="Task_Payment">
+        <dc:Bounds x="256" y="78" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Gw_PayResult" bpmnElement="Gw_PayResult">
+        <dc:Bounds x="416" y="93" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_End_Error" bpmnElement="End_Error">
+        <dc:Bounds x="536" y="42" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_End_Normal" bpmnElement="End_Normal">
+        <dc:Bounds x="536" y="150" width="36" height="36" />
+      </bpmndi:BPMNShape>
+
+      <!-- Event subprocess container (expanded) -->
+      <bpmndi:BPMNShape id="S_SubProc_ErrorHandler" bpmnElement="SubProc_ErrorHandler" isExpanded="true">
+        <dc:Bounds x="160" y="260" width="450" height="160" />
+      </bpmndi:BPMNShape>
+
+      <!-- Nested shapes inside event subprocess -->
+      <bpmndi:BPMNShape id="S_Start_ErrCatch" bpmnElement="Start_ErrCatch">
+        <dc:Bounds x="222" y="322" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Task_Handler" bpmnElement="Task_Handler">
+        <dc:Bounds x="318" y="300" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_End_Nested" bpmnElement="End_Nested">
+        <dc:Bounds x="490" y="322" width="36" height="36" />
+      </bpmndi:BPMNShape>
+
+      <!-- Main process edges -->
+      <bpmndi:BPMNEdge id="E_Flow_1" bpmnElement="Flow_1">
+        <di:waypoint x="196" y="118" />
+        <di:waypoint x="256" y="118" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_2" bpmnElement="Flow_2">
+        <di:waypoint x="356" y="118" />
+        <di:waypoint x="416" y="118" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_Fail" bpmnElement="Flow_Fail">
+        <di:waypoint x="441" y="93" />
+        <di:waypoint x="441" y="60" />
+        <di:waypoint x="536" y="60" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_Ok" bpmnElement="Flow_Ok">
+        <di:waypoint x="441" y="143" />
+        <di:waypoint x="441" y="168" />
+        <di:waypoint x="536" y="168" />
+      </bpmndi:BPMNEdge>
+
+      <!-- Edges inside event subprocess -->
+      <bpmndi:BPMNEdge id="E_Flow_Nested1" bpmnElement="Flow_Nested1">
+        <di:waypoint x="258" y="340" />
+        <di:waypoint x="318" y="340" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_Nested2" bpmnElement="Flow_Nested2">
+        <di:waypoint x="418" y="340" />
+        <di:waypoint x="490" y="340" />
+      </bpmndi:BPMNEdge>
+
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+
+</bpmn:definitions>

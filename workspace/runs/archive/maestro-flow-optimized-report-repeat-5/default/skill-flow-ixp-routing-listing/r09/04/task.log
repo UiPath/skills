@@ -1,0 +1,26 @@
+2026-07-24 18:39:52 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-24 18:39:52 [INFO] coder_eval.orchestrator: API routing: aws_bedrock
+2026-07-24 18:39:52 [DEBUG] coder_eval.criteria: Discovered 14 criterion checkers
+2026-07-24 18:39:52 [DEBUG] coder_eval.criteria: Validated 14 criterion checkers
+2026-07-24 18:39:52 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-24 18:39:53 [DEBUG] coder_eval.orchestrator: Sending prompt: Can you list the IxP models I can add to my flow?
+
+Important:
+- The `uip` CLI is already available.
+...
+2026-07-24 18:39:53 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Starting agent query stream...
+2026-07-24 18:40:36 [DEBUG] coder_eval.agents.claude_code_agent: [coder] session_id changed: None -> 816e63c3-01d6-4742-8e66-08d7ed2494f8
+2026-07-24 18:40:36 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Agent query stream ended
+2026-07-24 18:40:36 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-24 18:40:36 [DEBUG] coder_eval.orchestrator: Agent response received (1856 chars)
+2026-07-24 18:40:36 [DEBUG] coder_eval.orchestrator: Checking success criteria
+2026-07-24 18:40:36 [DEBUG] coder_eval.evaluation.checker: Criterion 'command_executed' score: 0.00
+2026-07-24 18:40:36 [INFO] coder_eval.evaluation.checker: Criterion 'command_executed' FAILED (score=0.00, threshold=0.90): Matched 0/1 required commands (filters: tool_name=Bash, pattern=/(?i)uip\s+maestro\s+flow\s+registry\s+(list\b|(search|list)\b[^\n]*\b(ixp|document|extract))/)
+2026-07-24 18:40:36 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'No .flow file was created (listing is read-only Q&A, not a build task)': ! find . -name "*.flow" -type f | grep -q .
+2026-07-24 18:40:36 [DEBUG] coder_eval.sandbox: Command '! find . -name "*.flow" -type f | grep -q .' exited with code 0
+2026-07-24 18:40:36 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-07-24 18:40:36 [INFO] coder_eval.orchestrator: Success criteria: 1/2 passed, weighted score: 0.500
+2026-07-24 18:40:36 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-24 18:40:36 [INFO] coder_eval.orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+2026-07-24 18:40:36 [INFO] coder_eval.orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-ixp-routing-listing/r09
+2026-07-24 18:40:36 [INFO] coder_eval.orchestrator: Task finished: status=FAILURE duration=46.8s score=0.500 iterations=1

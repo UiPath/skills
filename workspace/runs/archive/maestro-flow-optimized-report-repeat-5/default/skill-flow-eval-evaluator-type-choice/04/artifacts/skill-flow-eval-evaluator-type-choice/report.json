@@ -1,0 +1,8 @@
+{
+  "goal_a_type": "llm-judge-output",
+  "goal_a_reason": "Free-text paraphrases (e.g. 'Hi Alice!' vs 'Hello, Alice!') require semantic similarity scoring by an LLM judge; deterministic string matchers would fail on valid paraphrases, and trajectory types are unnecessary since no tool-call inspection is needed.",
+  "goal_b_type": "json-similarity",
+  "goal_b_reason": "Structured JSON output with known expected values calls for deterministic tree-based comparison that tolerates key ordering and minor whitespace differences without invoking an LLM.",
+  "goal_c_type": "contains",
+  "goal_c_reason": "A literal substring presence check ('deployment succeeded') is exactly the binary pass/fail pattern the contains evaluator is designed for, requiring no LLM and no structural comparison."
+}

@@ -1,0 +1,1123 @@
+{
+  "task_id": "skill-bpmn-diagnose-scoped-variables",
+  "task_description": "Diagnose coverage for the uipath-maestro-bpmn skill: a run completed but a downstream value is semantically wrong. The agent inspects subprocess-scoped runtime state with `instance variables --parent-element-id <id>` to find the offending variable inside the child scope, proving that \"completed\" does not mean \"semantically correct\". Read-only mocked CLI; no lifecycle mutations.\n",
+  "variant_id": "default",
+  "agent_type": "claude-code",
+  "model_used": "claude-sonnet-4-6",
+  "started_at": "2026-07-22T04:51:41.944835",
+  "completed_at": "2026-07-22T04:52:26.149753",
+  "duration_seconds": 44.20494484901428,
+  "final_status": "SUCCESS",
+  "max_turns_exhausted": false,
+  "weighted_score": 1.0,
+  "iteration_count": 1,
+  "success_criteria_results": [
+    {
+      "result_kind": "basic",
+      "criterion_type": "command_executed",
+      "description": "Agent read subprocess-scoped variables via --parent-element-id",
+      "score": 1.0,
+      "details": "Matched 1/1 required commands (filters: tool_name=Bash, pattern=/(uip|\\$UIP)\\s+maestro\\s+bpmn\\s+instance\\s+variables\\s+inst-triage-001\\b.*--parent-element-id\\s+SubProcess_TaxCalc/)\nExamples: ['uip maestro bpmn instance variables inst-triage-001 -f folder-public --parent-element-id SubProcess_TaxCalc --output jso']",
+      "error": null,
+      "pass_threshold": 1.0
+    },
+    {
+      "result_kind": "basic",
+      "criterion_type": "file_contains",
+      "description": "Diagnosis names the offending subprocess-scoped variable and its wrong value",
+      "score": 1.0,
+      "details": "Includes: 2/2 found; Score: 1.00",
+      "error": null,
+      "pass_threshold": 1.0
+    }
+  ],
+  "iterations": [
+    {
+      "iteration": 1,
+      "user_input": "Your working directory is: /work/output/artifacts/skill-bpmn-diagnose-scoped-variables\n\nA UiPath Maestro BPMN run finished with status Completed, but a stakeholder\nreports the tax on the invoice came out wrong. Diagnose using the mocked `uip`\nCLI on PATH. Public-safe identifiers:\n- instance id: inst-triage-001\n- folder key: folder-public\n- subprocess element id: SubProcess_TaxCalc\n\nProcess-level variables look plausible. The tax is computed inside the\nsubprocess `SubProcess_TaxCalc`, so inspect the variables scoped to that\nparent element to find the offending value. A Completed status only proves\ncontrol-flow finished, not that the values are correct.\n\nWrite your conclusion to diagnosis.md. Include these EXACT labeled lines:\n  OFFENDING_VARIABLE: <the subprocess-scoped variable that is wrong>\n  OFFENDING_VALUE: <its wrong value>\nThen add a short prose note on why a Completed run can still be semantically\nwrong.\n\nUse `uip maestro bpmn ...` reads with folder context; do not read `mocks/`,\n`fixtures/`, or any response JSON files directly. Do NOT retry, cancel,\nmigrate, move a cursor, debug, run, upload, publish, or deploy anything.\n",
+      "agent_output": "[ASSISTANT] The plan: (1) fetch process-level variables to confirm they look plausible, (2) fetch subprocess-scoped variables for `SubProcess_TaxCalc` to find the offending value, (3) write `diagnosis.md`.\n[ASSISTANT] The subprocess variables are clear: `taxRate` is `0.00`, so `taxAmount` is also `0.00` despite a correct `taxableBase` of `1200.00`. That's the offending variable. Now I'll write the diagnosis.\n[ASSISTANT] Here's what I found and documented:\n\n---\n\n## Diagnosis — `inst-triage-001`\n\n**Scope inspected:** Process-level variables (plausible, no anomaly) → Subprocess-scoped variables inside `SubProcess_TaxCalc` (offending value found).\n\n### Process-level variables — all look fine\n| Variable | Value |\n|---|---|\n| `invoiceTotal` | `1200.00` ✅ |\n| `runStatus` | `Completed` |\n\n### Subprocess-scoped variables (`SubProcess_TaxCalc`) — offender found\n| Variable | Value |\n|---|---|\n| `taxableBase` | `1200.00` ✅ |\n| **`taxRate`** | **`0.00` ❌** |\n| `taxAmount` | `0.00` ❌ (derived from wrong `taxRate`) |\n\n---\n\n### Labeled findings (written to `diagnosis.md`)\n\n```\nOFFENDING_VARIABLE: taxRate\nOFFENDING_VALUE: 0.00\n```\n\n### Why Completed ≠ semantically correct\n\nA **Completed** status only proves that every BPMN token reached a valid end event without triggering a fault, incident, or exception boundary. The engine tracks *control-flow* correctness, not *data* correctness. Here, `taxRate` resolved to `0.00` inside the subprocess scope — arithmetically valid, producing `taxAmount = 0.00` without any runtime exception. Because no fault fired, the instance transitioned to Completed normally. Only domain-level guards (e.g., a gateway asserting `taxAmount > 0`, an output-validation task, or a post-run audit) would catch this class of silent semantic error.\n[RESULT - SUCCESS] Here's what I found and documented:\n\n---\n\n## Diagnosis — `inst-triage-001`\n\n**Scope inspected:** Process-level variables (plausible, no anomaly) → Subprocess-scoped variables inside `SubProcess_TaxCalc` (offending value found).\n\n### Process-level variables — all look fine\n| Variable | Value |\n|---|---|\n| `invoiceTotal` | `1200.00` ✅ |\n| `runStatus` | `Completed` |\n\n### Subprocess-scoped variables (`SubProcess_TaxCalc`) — offender found\n| Variable | Value |\n|---|---|\n| `taxableBase` | `1200.00` ✅ |\n| **`taxRate`** | **`0.00` ❌** |\n| `taxAmount` | `0.00` ❌ (derived from wrong `taxRate`) |\n\n---\n\n### Labeled findings (written to `diagnosis.md`)\n\n```\nOFFENDING_VARIABLE: taxRate\nOFFENDING_VALUE: 0.00\n```\n\n### Why Completed ≠ semantically correct\n\nA **Completed** status only proves that every BPMN token reached a valid end event without triggering a fault, incident, or exception boundary. The engine tracks *control-flow* correctness, not *data* correctness. Here, `taxRate` resolved to `0.00` inside the subprocess scope — arithmetically valid, producing `taxAmount = 0.00` without any runtime exception. Because no fault fired, the instance transitioned to Completed normally. Only domain-level guards (e.g., a gateway asserting `taxAmount > 0`, an output-validation task, or a post-run audit) would catch this class of silent semantic error.",
+      "commands": [
+        {
+          "tool_name": "Skill",
+          "tool_id": "toolu_bdrk_01GLCZ6kcLMCac9nWhm5oJtN",
+          "assistant_turn_index": 1,
+          "timestamp": "2026-07-22T04:51:50.000926",
+          "duration_ms": 17.611960996873677,
+          "generation_completed_at": "2026-07-22T04:51:50.000926",
+          "execution_started_at": "2026-07-22T04:51:50.001191",
+          "execution_completed_at": "2026-07-22T04:51:50.018803",
+          "parameters": {
+            "skill": "tmp:uipath-maestro-bpmn",
+            "args": "Diagnose instance inst-triage-001 in folder folder-public. The run completed but the tax on the invoice is wrong. Process-level variables look plausible. The tax is computed inside subprocess SubProcess_TaxCalc — inspect the variables scoped to that parent element to find the offending value. Use `uip maestro bpmn` CLI reads only (no retries, cancels, or deploys). Write a diagnosis.md in the working directory with: OFFENDING_VARIABLE, OFFENDING_VALUE labeled lines, plus a prose note on why Completed status doesn't guarantee semantic correctness."
+          },
+          "result_status": "success",
+          "result_summary": "Launching skill: tmp:uipath-maestro-bpmn",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 0,
+          "result_tokens": 10
+        },
+        {
+          "tool_name": "Read",
+          "tool_id": "toolu_bdrk_015Sd7eUPXpHUXA5SCEmimKr",
+          "assistant_turn_index": 3,
+          "timestamp": "2026-07-22T04:51:52.539125",
+          "duration_ms": 17.8285549627617,
+          "generation_completed_at": "2026-07-22T04:51:52.539125",
+          "execution_started_at": "2026-07-22T04:51:52.539181",
+          "execution_completed_at": "2026-07-22T04:51:52.557010",
+          "parameters": {
+            "file_path": "/home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn/references/diagnose/CAPABILITY.md"
+          },
+          "result_status": "success",
+          "result_summary": "1\t# Diagnose - Investigate failed BPMN runs\n2\t\n3\tCapability index for post-run investigation.\n4\tDiagnose owns the diagnostic priority ladder for BPMN Process Orchestration runs: incidents, runtime variables,\n5\tdeployed BPMN asset correlation, element executions, cursors, generated package metadata, and traces.\n6\t\n7\t> **Where you came from / where to go next.** Diagnose is downstream of Operate (a debug or deployed run failed, hung,\n8\t> or behaved unexpectedly) and points back to Author for source fixes.\n9\t> Running and lifecycle live in [operate/CAPABILITY.md](../operate/CAPABILITY.md);\n10\t> source fixes live in [registry-workflow.md](../registry-workflow.md).\n11\t>\n12\t> **Inherits universal rules from [SKILL.md](../../SKILL.md).** BPMN source is model-authored; generated package files\n13\t> and Integration Service enrichment are CLI-owned.\n14\t> Use `uip maestro bpmn ... --output json` for diagnostic reads and redact private runtime data in summaries.\n15\t\n16\t## When to use this capability\n17\t\n18\t- Triage a failed debug or deployed process run.\n19\t- Read incidents and faulting element IDs.\n20\t- Inspect runtime variables and element executions.\n21\t- Fetch the deployed BPMN asset when local files may differ.\n22\t- Map runtime failures back to BPMN source and generated package metadata.\n23\t- Identify failures caused by unresolved Integration Service enrichment, bad bindings, missing diagrams, invalid mappings,\n24\t  or stale package files.\n25\t- Decide whether the safe next action is retry, cancel, migrate, cursor movement, re-authoring, package regeneration,\n26\t  or cloud configuration repair.\n27\t\n28\t## Critical rules\n29\t\n30\t1. **Investigate in priority order** - context, incidents, runtime variables, deployed BPMN asset,\n31\t   element executions/cursors, generated package files, then traces.\n32\t2. **Always include folder context on instance and incident reads** - `instance` commands require `--folder-key` or `-f`,\n33\t   and `incident get` requires `--folder-key`.\n34\t3. **Use the CLI as the diagnostic interface** - run `uip maestro bpmn ... --output json` reads. When mock or fixture\n35\t   files are present in a test harness, treat them as CLI backing data and do not read those files directly unless you\n36\t   are explicitly debugging the mock harness.\n37\t4. **Fetch deployed BPMN when local source may differ** - do not assume the working tree matches what ran.\n38\t5. **Map failures to BPMN element IDs** - use IDs to identify the source node, gateway, event, sequence flow,\n39\t   or extension that needs Author work.\n40\t6. **Separate runtime symptoms from ownership of the fix** - BPMN structure and mappings belong in Author;\n41\t   Integration Service enrichment and generated JSON come from CLI generation;\n42\t   folder/process/release choices belong to cloud configuration.\n43\t7. **Do not expose private runtime data** - redact tenant, user, connection, folder, URL, payload,\n44\t   and secret values in summaries.\n45\t8. **Do not mutate while diagnosing** - retry, cancel, migrate, and cursor movement are Operate actions and require\n46\t   explicit user consent after root cause analysis.\n47\t\n48\t## Workflow\n49\t\n50\t| Journey | Read |\n51\t| --- | --- |\n52\t| Triage a failed run | [references/troubleshooting-guide.md](references/troubleshooting-guide.md) |\n53\t| Recognize recurring failure patterns | [references/failure-modes.md](references/failure-modes.md) |\n54\t\n55\t## Common tasks\n56\t\n57\t| I need to... | Read these |\n58\t| --- | --- |\n59\t| Find the faulting element | [references/troubleshooting-guide.md](references/troubleshooting-guide.md) |\n60\t| Compare local and deployed BPMN | [references/troubleshooting-guide.md](references/troubleshooting-guide.md) |\n61\t| Inspect runtime variables, cursors, or element executions | [references/troubleshooting-guide.md](references/troubleshooting-guide.md) |\n62\t| Diagnose binding or generated JSON issues | [failure modes](references/failure-modes.md), [project layout](../shared/project-layout.md) |\n63\t| Diagnose Integration Service runtime issues | [failure modes](references/failure-modes.md) |\n64\t| Decide whether retry is safe | [troubleshooting guide](references/troubleshooting-guide.md), [manage guide](../operate/references/manage.md) |\n65\t| Fix the source | [registry-workflow.md](../registry-workflow.md) |\n66\t\n67\tFor Integration Service enrichment details, read\n68\t[registry-workflow.md](../registry-workflow.md).\n69\t\n70\t## Anti-patterns\n71\t\n72\t- **Never start with verbose traces when incidents are available.**\n73\t- **Never call runtime lifecycle commands while diagnosing.** Diagnose reads; Operate mutates after explicit consent.\n74\t- **Never assume local BPMN is the deployed asset.**\n75\t- **Never retry before root cause is known.**\n76\t- **Never paste private incident payloads or connection details into docs, commits, or issue comments.**\n77\t- **Never patch generated package files as the only fix for a BPMN source defect.**\n78\t\n79\t## References\n80\t\n81\t### Diagnose-scoped\n82\t\n83\t- [troubleshooting-guide.md](references/troubleshooting-guide.md) - diagnostic priority ladder\n84\t- [failure-modes.md](references/failure-modes.md) - recurring failure patterns\n85\t\n86\t### Cross-capability\n87\t\n88\t- [shared/bpmn-xml-contract.md](../structural-bpmn.md) - XML authoring and validation boundaries\n89\t- [shared/project-layout.md](../shared/project-layout.md) - generated files and package shape\n90\t- [shared/variables-bindings-expressions.md](../expression-authoring.md) - mappings and binding expressions\n91\t- [shared/public-safety.md](../public-safety.md) - redaction and sanitization\n92\t",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 1,
+          "result_tokens": 1396
+        },
+        {
+          "tool_name": "Read",
+          "tool_id": "toolu_bdrk_01JxkqmRfDShzhtoSfdYpxR1",
+          "assistant_turn_index": 4,
+          "timestamp": "2026-07-22T04:51:54.240783",
+          "duration_ms": 7.4703170685097575,
+          "generation_completed_at": "2026-07-22T04:51:54.240783",
+          "execution_started_at": "2026-07-22T04:51:54.241051",
+          "execution_completed_at": "2026-07-22T04:51:54.248521",
+          "parameters": {
+            "file_path": "/home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn/references/diagnose/references/troubleshooting-guide.md"
+          },
+          "result_status": "success",
+          "result_summary": "1\t# Troubleshooting Guide\n2\t\n3\tUse this priority ladder for failed or misbehaving BPMN runs.\n4\t\n5\t> **Read-only boundary:** this guide diagnoses.\n6\t> Retry, cancel, migrate, and cursor movement are Operate actions and require explicit user consent after root cause is known.\n7\t>\n8\t> **Folder context:** `uip maestro bpmn instance ...` commands require `--folder-key <FOLDER_KEY>` or\n9\t> `-f <FOLDER_KEY>`.\n10\t> `uip maestro bpmn incident get` requires `--folder-key <FOLDER_KEY>`.\n11\t\n12\t## Step 1 - Confirm context\n13\t\n14\tCollect public-safe identifiers:\n15\t\n16\t- Process or package name.\n17\t- Instance/job ID.\n18\t- Folder/context label.\n19\t- Approximate run time.\n20\t- Local commit or package version, if known.\n21\t- Whether the run came from `uip maestro bpmn debug` or `uip maestro bpmn process run`.\n22\t\n23\tDo not record secrets, tenant URLs, connection IDs, or payload data in public notes.\n24\t\n25\tIf you only have a deployed-process job key, start with:\n26\t\n27\t```bash\n28\tuip maestro bpmn job status <JOB_KEY> --folder-key <FOLDER_KEY> --output json\n29\t```\n30\t\n31\tParse the instance ID, folder context, process key, final status, and any trace/run identifiers from the JSON output.\n32\tFor debug runs, prefer the `instanceId` returned by\n33\t`uip maestro bpmn debug` and inspect it with `debug-instance` commands. Keep\n34\tdeployed-instance status reads and debug-session inspection separate.\n35\t\n36\t## Step 2 - Read incidents\n37\t\n38\tFind the incident category, message, and faulting BPMN element ID.\n39\tIf multiple incidents exist, start with the first root fault and avoid chasing downstream cancellation noise.\n40\t\n41\t```bash\n42\tuip maestro bpmn instance incidents <INSTANCE_ID> -f <FOLDER_KEY> --output json\n43\tuip maestro bpmn incident get <INCIDENT_ID> --folder-key <FOLDER_KEY> --output json\n44\tuip maestro bpmn incident summary --output json\n45\t```\n46\t\n47\tFor process-level incident overview:\n48\t\n49\t```bash\n50\tuip maestro bpmn processes incidents <PROCESS_KEY> --output json\n51\t```\n52\t\n53\t## Step 3 - Inspect runtime variables\n54\t\n55\tInspect variables around the faulting element.\n56\tRedact private payloads.\n57\tCheck whether expected outputs were missing, malformed, or literal strings instead of evaluated expressions.\n58\tIf the user reports a behavioral mismatch, inspect variables even when the final\n59\trun status is `Completed`; a completed run only proves control-flow completion,\n60\tnot semantic correctness.\n61\t\n62\t```bash\n63\tuip maestro bpmn instance variables <INSTANCE_ID> -f <FOLDER_KEY> --output json\n64\tuip maestro bpmn instance variables <INSTANCE_ID> -f <FOLDER_KEY> --parent-element-id <ELEMENT_ID> --output json\n65\t```\n66\t\n67\tFor affected elements, confirm runtime inputs and outputs match the modeled\n68\tcontract before changing source.\n69\t\n70\t## Step 4 - Correlate deployed BPMN\n71\t\n72\tFetch the deployed BPMN asset when local source may differ. Compare:\n73\t\n74\t- Faulting element ID.\n75\t- Root variables and mappings.\n76\t- Binding expressions.\n77\t- Integration Service extension content.\n78\t- Diagram and sequence-flow structure when the failure is import or package related.\n79\t\n80\t```bash\n81\tuip maestro bpmn instance asset <INSTANCE_ID> -f <FOLDER_KEY> --output json\n82\t```\n83\t\n84\tUse the incident's faulting element ID to locate the BPMN element in the deployed asset first, then compare to local\n85\t`.bpmn`.\n86\tIf they differ, diagnose what actually ran and treat local edits as a future fix, not as the executed definition.\n87\t\n88\t## Step 5 - Inspect element executions and cursors\n89\t\n90\tElement executions and cursors show where the runtime moved before it faulted or hung:\n91\t\n92\t```bash\n93\tuip maestro bpmn instance element-executions <INSTANCE_ID> -f <FOLDER_KEY> --output json\n94\tuip maestro bpmn instance cursors <INSTANCE_ID> -f <FOLDER_KEY> --output json\n95\t```\n96\t\n97\tUse these to distinguish a modeling problem from a runtime-state problem:\n98\t\n99\t- Activity fault: inspect the activity's inputs, mappings, extension payload, and upstream variables.\n100\t- Gateway stall: inspect outgoing sequence-flow conditions, default flow, and variable values.\n101\t- Event wait: inspect message/timer configuration, subscriptions, and whether the expected external signal exists.\n102\t- Subprocess or call activity fault: identify the child dependency, but do not invoke sibling skills automatically.\n103\t\n104\t## Step 6 - Check generated package files\n105\t\n106\tIf the failure is binding, entry point, package, or runtime metadata related, inspect generated JSON:\n107\t\n108\t- `bindings_v2.json`\n109\t- `entry-points.json`\n110\t- `operate.json`\n111\t- `package-descriptor.json`\n112\t\n113\tGenerated-file mismatch usually means Author should fix BPMN or rerun CLI generation/enrichment.\n114\t\n115\tCorrelate package files to the deployed BPMN:\n116\t\n117\t- `entry-points.json` should reference the intended BPMN file and start event.\n118\t- `bindings_v2.json` should contain generated resources required by executable resource and connector elements.\n119\t- `operate.json` should identify the intended main file/runtime metadata.\n120\t- `package-descriptor.json` should include BPMN and generated JSON files under `content/`.\n121\t\n122\t## Step 7 - Pull traces last\n123\t\n124\tUse verbose traces only when incidents, variables, deployed asset, and package files do not explain the issue.\n125\t\n126\t```bash\n127\tuip maestro bpmn job traces <JOB_KEY> --output json\n128\t```\n129\t\n130\t## Output\n131\t\n132\tReturn a concise diagnosis:\n133\t\n134\t- Faulting element ID.\n135\t- User-visible symptom.\n136\t- Likely root cause.\n137\t- Whether the fix belongs in BPMN source, CLI enrichment, generated package files, or cloud configuration.\n138\t- Safe next action.\n139\t\n140\t## CLI command reference\n141\t\n142\t```bash\n143\tuip maestro bpmn job status <JOB_KEY> --output json\n144\tuip maestro bpmn job traces <JOB_KEY> --output json\n145\tuip maestro bpmn instance get <INSTANCE_ID> -f <FOLDER_KEY> --output json\n146\tuip maestro bpmn instance incidents <INSTANCE_ID> -f <FOLDER_KEY> --output json\n147\tuip maestro bpmn instance variables <INSTANCE_ID> -f <FOLDER_KEY> --output json\n148\tuip maestro bpmn instance variables <INSTANCE_ID> -f <FOLDER_KEY> --parent-element-id <ELEMENT_ID> --output json\n149\tuip maestro bpmn instance asset <INSTANCE_ID> -f <FOLDER_KEY> --output json\n150\tuip maestro bpmn instance element-executions <INSTANCE_ID> -f <FOLDER_KEY> --output json\n151\tuip maestro bpmn instance cursors <INSTANCE_ID> -f <FOLDER_KEY> --output json\n152\tuip maestro bpmn incident get <INCIDENT_ID> --folder-key <FOLDER_KEY> --output json\n153\tuip maestro bpmn incident summary --output json\n154\tuip maestro bpmn processes incidents <PROCESS_KEY> --output json\n155\t```\n156\t\n157\tLifecycle commands are intentionally absent from this diagnostic command list.\n158\tUse [operate/references/manage.md](../../operate/references/manage.md) only after the diagnosis supports a\n159\tside-effecting action and the user consents.\n160\t",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 2,
+          "result_tokens": 1729
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_01RPL5AHSF32F3F9PvRCwdgK",
+          "assistant_turn_index": 7,
+          "timestamp": "2026-07-22T04:52:00.952386",
+          "duration_ms": 864.6737869130448,
+          "generation_completed_at": "2026-07-22T04:52:00.952386",
+          "execution_started_at": "2026-07-22T04:52:00.952464",
+          "execution_completed_at": "2026-07-22T04:52:01.817138",
+          "parameters": {
+            "command": "uip maestro bpmn instance variables inst-triage-001 -f folder-public --output json 2>&1",
+            "description": "Fetch process-level variables for inst-triage-001"
+          },
+          "result_status": "success",
+          "result_summary": "{\n  \"instanceId\": \"inst-triage-001\",\n  \"scope\": \"process\",\n  \"variables\": [\n    { \"name\": \"runStatus\", \"value\": \"Completed\" },\n    { \"name\": \"invoiceTotal\", \"value\": \"1200.00\" }\n  ]\n}",
+          "error_message": null,
+          "result_data": {
+            "instanceId": "inst-triage-001",
+            "scope": "process",
+            "variables": [
+              {
+                "name": "runStatus",
+                "value": "Completed"
+              },
+              {
+                "name": "invoiceTotal",
+                "value": "1200.00"
+              }
+            ]
+          },
+          "sequence_number": 3,
+          "result_tokens": 46
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_01D23jYm3pqMPrwW31P8ca83",
+          "assistant_turn_index": 8,
+          "timestamp": "2026-07-22T04:52:01.620468",
+          "duration_ms": 355.2358580054715,
+          "generation_completed_at": "2026-07-22T04:52:01.620468",
+          "execution_started_at": "2026-07-22T04:52:01.620535",
+          "execution_completed_at": "2026-07-22T04:52:01.975771",
+          "parameters": {
+            "command": "uip maestro bpmn instance variables inst-triage-001 -f folder-public --parent-element-id SubProcess_TaxCalc --output json 2>&1",
+            "description": "Fetch subprocess-scoped variables for SubProcess_TaxCalc"
+          },
+          "result_status": "success",
+          "result_summary": "{\n  \"instanceId\": \"inst-triage-001\",\n  \"scope\": \"subprocess\",\n  \"parentElementId\": \"SubProcess_TaxCalc\",\n  \"variables\": [\n    { \"name\": \"taxRate\", \"value\": \"0.00\" },\n    { \"name\": \"taxAmount\", \"value\": \"0.00\" },\n    { \"name\": \"taxableBase\", \"value\": \"1200.00\" }\n  ]\n}",
+          "error_message": null,
+          "result_data": {
+            "instanceId": "inst-triage-001",
+            "scope": "subprocess",
+            "parentElementId": "SubProcess_TaxCalc",
+            "variables": [
+              {
+                "name": "taxRate",
+                "value": "0.00"
+              },
+              {
+                "name": "taxAmount",
+                "value": "0.00"
+              },
+              {
+                "name": "taxableBase",
+                "value": "1200.00"
+              }
+            ]
+          },
+          "sequence_number": 4,
+          "result_tokens": 67
+        },
+        {
+          "tool_name": "Write",
+          "tool_id": "toolu_bdrk_01NFj8FAXAfhFUVjMwBW2AXG",
+          "assistant_turn_index": 11,
+          "timestamp": "2026-07-22T04:52:19.157103",
+          "duration_ms": 34.6283579710871,
+          "generation_completed_at": "2026-07-22T04:52:19.157103",
+          "execution_started_at": "2026-07-22T04:52:19.157176",
+          "execution_completed_at": "2026-07-22T04:52:19.191804",
+          "parameters": {
+            "file_path": "/work/output/artifacts/skill-bpmn-diagnose-scoped-variables/diagnosis.md",
+            "content": "# Diagnosis — inst-triage-001 (SubProcess_TaxCalc)\n\n## Summary\n\nInstance `inst-triage-001` finished with status **Completed**, but the tax on\nthe invoice is zero despite a non-zero invoice total. The fault is a subprocess-\nscoped variable inside `SubProcess_TaxCalc`, not a process-level variable.\n\n## Findings\n\n### Process-level variables (scope: process)\n\n| Variable | Value |\n|---|---|\n| runStatus | Completed |\n| invoiceTotal | 1200.00 |\n\nThese look plausible — the total is correctly carried at the process level.\n\n### Subprocess-scoped variables (scope: SubProcess_TaxCalc)\n\n| Variable | Value |\n|---|---|\n| taxableBase | 1200.00 |\n| taxRate | **0.00** |\n| taxAmount | 0.00 |\n\n`taxableBase` is correctly set to `1200.00`. However, `taxRate` resolved to\n`0.00` inside the subprocess, which caused `taxAmount` to multiply out to\n`0.00`. The tax was never applied.\n\n## Root-cause labels\n\nOFFENDING_VARIABLE: taxRate\nOFFENDING_VALUE: 0.00\n\n## Why a Completed run can still be semantically wrong\n\nA **Completed** status in UiPath Maestro BPMN only guarantees that every\ntoken in the process reached a valid end event without hitting a fault,\nexception boundary, or incident that forced the runtime to abort. The engine\ntracks *control-flow correctness* — did the sequence of gateways and tasks\nexecute without error? — not *data correctness*. A subprocess can receive a\nzero or null input variable, propagate it silently through every activity\ninside it, produce an arithmetically valid (but business-incorrect) output such\nas `0.00`, and hand that value back to the parent process without triggering\nany exception. Because no BPMN fault boundary fires and no incident is raised,\nthe instance transitions to **Completed** normally. In short, the runtime\nengine cannot know that `taxRate = 0.00` is wrong for this business case;\nonly domain-level assertions (output validation tasks, gateway checks on\n`taxAmount > 0`, or post-completion audits) would catch this class of semantic\nerror before it reaches a stakeholder.\n"
+          },
+          "result_status": "success",
+          "result_summary": "File created successfully at: /work/output/artifacts/skill-bpmn-diagnose-scoped-variables/diagnosis.md (file state is current in your context — no need to Read it back)",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 5,
+          "result_tokens": 42
+        }
+      ],
+      "timestamp": "2026-07-22T04:52:25.987859",
+      "duration_seconds": 42.290954853990115,
+      "token_usage": {
+        "uncached_input_tokens": 614,
+        "output_tokens": 2349,
+        "cache_creation_input_tokens": 11418,
+        "cache_read_input_tokens": 150516,
+        "total_cost_usd": 0.1250493,
+        "input_tokens": 162548
+      },
+      "model_used": "claude-sonnet-4-6",
+      "assistant_turn_count": 13,
+      "messages": [
+        {
+          "role": "assistant",
+          "started_at": "2026-07-22T04:51:43.696348",
+          "completed_at": "2026-07-22T04:51:47.325279",
+          "generation_duration_ms": 3628.9473029319197,
+          "content_blocks": [
+            {
+              "block_type": "thinking",
+              "sequence": 0,
+              "text": null,
+              "thinking": "The user wants me to diagnose a UiPath Maestro BPMN run that completed but produced wrong tax values. I need to use the `uip` CLI to inspect the instance variables, specifically scoped to the subprocess `SubProcess_TaxCalc`. Let me invoke the UiPath Maestro BPMN skill to help with this.",
+              "signature": "EuoDCmcIEBABGAIqQEcZNpgTMLd1k1hl7GIZem/B1j1szlpQySfvpr9ymEbGS+W8JyzjR653CTbcdQzd69LQAR31g0MWlMfCgcvgNqYyEWNsYXVkZS1zb25uZXQtNC02OABCCHRoaW5raW5nEgw36iaQbRxtP/7DY9saDH5epVdGq52cuGK7HiIwe6OPXn3wCHq4kqoxZl1Sc39KXlnmuEF09T1STnu46xg/Wwyu3YfqReT9Da/YYnWFKrACW6NrbiIad0yxb86MLDTl83VI03t2/w0cD9Msv1ipaAoT2GPVz7R6Gxw/vLoq4lflV4rU7jCEFr6IAMm/RCAELpm/5aZ21QLxqF61+SB0EWxtu8GxXyMqNt4neJjuHVtVJl0Ru69N/JDn8gQWyyBsCJl+uuf49H7/Mk4WRaYhC6IEGr/VECwGCoW3nOzl7WgL9MkkzrOEBAeaPzDcb11dqa+twm8CiWMz9vSFwkD8QhT/c1AqN9+E+ZaW0mzWo27m0viR2ClwNNB4PZOC6Sz2PGTXkAH8grw1TOC9vFVUV399VCIVCGfRa60IVP55TSHcuH9w4Uz4EJwYhzQJ3Je5wJIyaZFJBOgTCn84++F8GDZ2EtT3981f3elYyEnWWhVaNVjYK7nTZMs0M+7uDdqARRgB",
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 2,
+          "output_tokens": 98,
+          "cache_creation_tokens": 1817,
+          "cache_read_tokens": 18954,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01A14HJVnHkNGC9i8wRSJWjM",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-22T04:51:47.325279",
+          "completed_at": "2026-07-22T04:51:50.000926",
+          "generation_duration_ms": 2675.64694408793,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01GLCZ6kcLMCac9nWhm5oJtN",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01GLCZ6kcLMCac9nWhm5oJtN"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 208,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01A14HJVnHkNGC9i8wRSJWjM",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-22T04:51:50.020497",
+          "completed_at": "2026-07-22T04:51:51.780853",
+          "generation_duration_ms": 1760.3558629052714,
+          "content_blocks": [
+            {
+              "block_type": "thinking",
+              "sequence": 0,
+              "text": null,
+              "thinking": "Let me start by reading the SKILL.md and the diagnose capability reference to understand how to diagnose a BPMN instance using the CLI.",
+              "signature": "EtICCmcIEBABGAIqQPjMrBymHi6t97hlEbzWsuYKsgwz0FFvq/joG/whzoNPfJoNT+H5urrApcE9bCPYrNnXtDmKkOj65UdmkLXx9nkyEWNsYXVkZS1zb25uZXQtNC02OABCCHRoaW5raW5nEgyGt26HmxxpPxeH28caDPQXryOzwoUVuyyMwiIwv+tHwxs5Er3oAhn85+ULITzqcbBCgJg6KIqSF6T+CHHNAV3L+XGpziKynvx5zMtdKpgBuJSP0l3xqCTFBEjiyFwOpdj4W8QSyrrxvs0adlQE9V+4iixVCk3SVXAVzq2c3vzTFnWstLzVZAh85toqS3xpUjrdHagOqH9SjLp+BSoYbqNv4SuuxZd4zdQrhuy9II/9w69+QtnYrw2hjfg3mta8wSBnZ0A6V9VIu/sTE34bHxs/U7nBtnpou80VibgCvW/m6BgogwrFvZYYAQ==",
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 3,
+          "output_tokens": 72,
+          "cache_creation_tokens": 4419,
+          "cache_read_tokens": 20771,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_013y2zZVUXLxz1x9jau6aGaG",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-22T04:51:51.780853",
+          "completed_at": "2026-07-22T04:51:52.539125",
+          "generation_duration_ms": 758.2720490172505,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_015Sd7eUPXpHUXA5SCEmimKr",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_015Sd7eUPXpHUXA5SCEmimKr"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 62,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_013y2zZVUXLxz1x9jau6aGaG",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-22T04:51:52.556968",
+          "completed_at": "2026-07-22T04:51:54.240783",
+          "generation_duration_ms": 1683.8140110485256,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01JxkqmRfDShzhtoSfdYpxR1",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01JxkqmRfDShzhtoSfdYpxR1"
+          ],
+          "input_tokens": 1,
+          "output_tokens": 93,
+          "cache_creation_tokens": 1685,
+          "cache_read_tokens": 25190,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01Cb9vQS9xDnsXzxjFdrKY4v",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-22T04:51:54.248489",
+          "completed_at": "2026-07-22T04:51:59.612909",
+          "generation_duration_ms": 5364.418350975029,
+          "content_blocks": [
+            {
+              "block_type": "thinking",
+              "sequence": 0,
+              "text": null,
+              "thinking": "Now I understand the diagnostic workflow. The plan is:\n\n1. First, get the instance status/details\n2. Check instance variables at process level (already said to look plausible)\n3. Check variables scoped to `SubProcess_TaxCalc` using `--parent-element-id`\n4. Write diagnosis.md\n\nLet me run these CLI commands. I'll start with the process-level variables to confirm they look plausible, then inspect the subprocess-scoped variables.\n\nThe key command is:\n```bash\nuip maestro bpmn instance variables inst-triage-001 -f folder-public --parent-element-id SubProcess_TaxCalc --output json\n```\n\nNow I'll execute both commands to retrieve the process-level and subprocess-level variables.",
+              "signature": "EuIGCmcIEBABGAIqQPnsz4wGb2IoNVxXW7K0QuxlB62cnqlqOLcnQXR40zblEGO94iGREbyrtXjEiddeeF/bnyUjjw8Gl56icKXzcCQyEWNsYXVkZS1zb25uZXQtNC02OABCCHRoaW5raW5nEgzZTGROT7D+TatONxQaDJiM9KY7oHsoA3hMRSIwAHzwO4wQQ0ECirD8ldB3Yt+ubTbZWA5mBsk6sHCUpCawVe4yBtWV8mYUD5SlLZISKqgFLMmm44AmesipFs/MqTzSn9ZUaxMD0Ol/6iYOt+pk/FjVRKS2DWRBSeasCB6v3GgIWsMUfkXifWLYI5HbYT2sWNPfwW7XAGKbQD3C9mccm7qm2WNg2bx2gvxh1dschHhxYc/FIIpwR1aFWBL8jUu2wQKmmBY+54youKQZ5rIHKft4t2KL8HGxiHzpudBWms8Rmz80t/WnAmRdvzCXJ+JIv2ZLpnFkYMnPDc9YQlH/jOnFR0c8VyIg2tA/6MRlYnNrqE+XEYKMAQD1vEtI0dBXj0VRJo72IBQX/9OKi3O00jPDWw7bj0ofkc9JdV0KQomZ3aFXE/cRjTnL3OpVqiWSfhQZ6bQBAc6KuTBHa3YPX6RJK98XlC6y8PxWnXctB5MqoaqzMa6p4/DYT7/II1cHKOoMwUPnvs9xAdIweapKc1GkNz0IM8BePPlHrMMto6vNqqj9OT00pqp0spk9njFMtSo7LS5FAIoit9EDt37NeIO1Z639RFE2reohZ7Lj6PJfTHIIvLumiaLs5mtSR81VsPCi9h8iqaP8Tr5clpZ2ptTBMLm31+2QDNKO1EqZqw0nrfInEEogNCbNf3F0eCNiPgw3EL7EM1p4xF2t/q3iDH20t+XuXm3V7Rgd0vOQm5cR50RCNwcPKNccMl4UXdpSJSWHiE6/sc0HjN3ODgszRTgjagXwSAaN2iw8Fl2PmOUwUgZnt+9nfXJpTSiAbrGhRFA49yU+MO5VFaPEwlXFZnGEJan1jwg8ph9M6KYro/uuoqNbqwCwCyr6R/SWpZIcnKEgr0QLQU8omkHKYvWttAQ6myxkTr8UbqRvyC2iF8cgQTCeeGD96Ku67zPL7FyF1Kx/PfLDWgsoqTD/o8pk6GCSAIblTQpj41U+iGoiYpoPvXr+HXgNxAoYAQ==",
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 1,
+          "output_tokens": 245,
+          "cache_creation_tokens": 2234,
+          "cache_read_tokens": 26875,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01WNcvQbiCtrQ48KKxyZZ7Hu",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-22T04:51:59.612909",
+          "completed_at": "2026-07-22T04:52:00.120157",
+          "generation_duration_ms": 507.2490560123697,
+          "content_blocks": [
+            {
+              "block_type": "text",
+              "sequence": 0,
+              "text": "The plan: (1) fetch process-level variables to confirm they look plausible, (2) fetch subprocess-scoped variables for `SubProcess_TaxCalc` to find the offending value, (3) write `diagnosis.md`.",
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 0,
+          "output_tokens": 70,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01WNcvQbiCtrQ48KKxyZZ7Hu",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-22T04:52:00.120157",
+          "completed_at": "2026-07-22T04:52:00.952386",
+          "generation_duration_ms": 832.2283200686797,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01RPL5AHSF32F3F9PvRCwdgK",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01RPL5AHSF32F3F9PvRCwdgK"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 63,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01WNcvQbiCtrQ48KKxyZZ7Hu",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-22T04:52:00.952386",
+          "completed_at": "2026-07-22T04:52:01.620468",
+          "generation_duration_ms": 668.0822629714385,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01D23jYm3pqMPrwW31P8ca83",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01D23jYm3pqMPrwW31P8ca83"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 79,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01WNcvQbiCtrQ48KKxyZZ7Hu",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-22T04:52:01.975719",
+          "completed_at": "2026-07-22T04:52:06.710269",
+          "generation_duration_ms": 4734.550247085281,
+          "content_blocks": [
+            {
+              "block_type": "thinking",
+              "sequence": 0,
+              "text": null,
+              "thinking": "The process-level variables look plausible (`runStatus: Completed`, `invoiceTotal: 1200.00`). Inside the subprocess `SubProcess_TaxCalc`, I can see:\n- `taxRate: 0.00` — this is the offending variable. A tax rate of 0.00 means no tax is applied, resulting in `taxAmount: 0.00` even though `taxableBase: 1200.00` is correct.\n- `taxAmount: 0.00` — the result of applying a zero tax rate\n- `taxableBase: 1200.00` — correct\n\nThe root cause is `taxRate` being `0.00` instead of the expected non-zero tax rate. \n\nThat zero tax rate is the culprit—multiplying the taxable base by zero gives zero tax, which cascades into the incorrect invoice total. Now I'm documenting this finding in the diagnosis file.",
+              "signature": "EuAGCmcIEBABGAIqQC57TEPooIsTFCpKK0TCAEfowYSVVHlFKjp9xAQoMJ9YXFytErziwlrM76Q0SBOOCx5fqgxcip2veMNZBHnu2YEyEWNsYXVkZS1zb25uZXQtNC02OABCCHRoaW5raW5nEgxuiNzax0CkUdzfrqUaDAqfyt/rVC/bVcL+WiIwcKeJeM/FEwY43OC7J5j4jcZvGzJ+c33oV9fF7DuqJ9bN3pJT+6wq+5dMpE+0BZPYKqYFtOjp+YS4eKnVmau+vQ7D1bg7xWBdL4a3YPqSY7svSgUhhfA24DiDo4jt5UknLR1c3xblGlwGvQJY+0MzdfNw0q+vizj4M7cYSp8zyx06yGzJ1P04astb0S0V1ZmMH1DpIp01DB2brCX5bjZKPURUJyxQYjZ0LYZigZmQwxM5zmHQHuHu7GdahTi5rqnH5ocE53aBD6bfSaYF4pDDSpoEM3lkIePuc8IRHmm9oCsgQxnTldtNQkjyvFL2Y2t5530YACL7+uqBW/t/q0nTaRIQHbwIkY8c+rjFldHrBGMSaK/+XuPJYonuV3ES1DGny2kNWmPdOa4ocUAXN0Q7RHNNWZkK2q7LXBTCxbAS/0kqssxIXhke2PT38qtJk8YJsjCCYV9LORtL3DJD+daVaAMF5nDs/YRhu9Rgg1a5yKTNWspQXKGyvQ3dF5j9f+6khjr9NN3rnPXoDTuhXavW1VQeBu4AwBci3+gdtuNQFDlY1J9qfvQG2zzunImQt/UQPYf9ZAiRwWyX8HlHdv9waI3y62vbQ7zAt0mJN4gIsCfz8fy576Xy0GN3gnXF6BEI9ZtJQGkksJbwA4JEeZgvww/mfa4fX0t97x9jf7YMzZR1pU0HKffGynHuWIEEyvT/9Hq8aej5jNG9mYRvMakq8erXjheXY2UQ+qc0JvNvOBY592PZEpLdJhEgr0wkmyQvPdMGo+I9NWqiT0GQ9Uv1b9eB2ubVw47ozERxc6Dz81g1t27USXH8/TUDsYZHXjvGM6BYyvduXJwb+XuQMIvGH88cT0pmlb7lA9rJRcsKieexu02UuWtkj8eTbWI0IPsyTCxKYTrdIseAaRGZRCCSUt+RcIRwopakGutIitKS0Q71jZo0qDNpY2fOITDDHBF0DaJwkSGGY2RuGAE=",
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 1,
+          "output_tokens": 208,
+          "cache_creation_tokens": 508,
+          "cache_read_tokens": 29109,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01WMoPoiPGST3RSeKEaSENUj",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-22T04:52:06.710269",
+          "completed_at": "2026-07-22T04:52:07.033131",
+          "generation_duration_ms": 322.86194793414325,
+          "content_blocks": [
+            {
+              "block_type": "text",
+              "sequence": 0,
+              "text": "The subprocess variables are clear: `taxRate` is `0.00`, so `taxAmount` is also `0.00` despite a correct `taxableBase` of `1200.00`. That's the offending variable. Now I'll write the diagnosis.",
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 0,
+          "output_tokens": 58,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01WMoPoiPGST3RSeKEaSENUj",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-22T04:52:07.033131",
+          "completed_at": "2026-07-22T04:52:19.157103",
+          "generation_duration_ms": 12123.97051800508,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01NFj8FAXAfhFUVjMwBW2AXG",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01NFj8FAXAfhFUVjMwBW2AXG"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 657,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01WMoPoiPGST3RSeKEaSENUj",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-22T04:52:19.191774",
+          "completed_at": "2026-07-22T04:52:25.957489",
+          "generation_duration_ms": 6765.714681008831,
+          "content_blocks": [
+            {
+              "block_type": "text",
+              "sequence": 0,
+              "text": "Here's what I found and documented:\n\n---\n\n## Diagnosis — `inst-triage-001`\n\n**Scope inspected:** Process-level variables (plausible, no anomaly) → Subprocess-scoped variables inside `SubProcess_TaxCalc` (offending value found).\n\n### Process-level variables — all look fine\n| Variable | Value |\n|---|---|\n| `invoiceTotal` | `1200.00` ✅ |\n| `runStatus` | `Completed` |\n\n### Subprocess-scoped variables (`SubProcess_TaxCalc`) — offender found\n| Variable | Value |\n|---|---|\n| `taxableBase` | `1200.00` ✅ |\n| **`taxRate`** | **`0.00` ❌** |\n| `taxAmount` | `0.00` ❌ (derived from wrong `taxRate`) |\n\n---\n\n### Labeled findings (written to `diagnosis.md`)\n\n```\nOFFENDING_VARIABLE: taxRate\nOFFENDING_VALUE: 0.00\n```\n\n### Why Completed ≠ semantically correct\n\nA **Completed** status only proves that every BPMN token reached a valid end event without triggering a fault, incident, or exception boundary. The engine tracks *control-flow* correctness, not *data* correctness. Here, `taxRate` resolved to `0.00` inside the subprocess scope — arithmetically valid, producing `taxAmount = 0.00` without any runtime exception. Because no fault fired, the instance transitioned to Completed normally. Only domain-level guards (e.g., a gateway asserting `taxAmount > 0`, an output-validation task, or a post-run audit) would catch this class of silent semantic error.",
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 1,
+          "output_tokens": 412,
+          "cache_creation_tokens": 755,
+          "cache_read_tokens": 29617,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_018XY7R6WgX5eDMsaAt7RKMF",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "reconciliation",
+          "input_tokens": 605,
+          "output_tokens": 24,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "note": "Tokens the agent billed but never surfaced as a generation (fixed prompt overhead + sub-agent input/cache the stream doesn't bubble up). Booked here so the transcript reconciles to the turn total."
+        }
+      ],
+      "num_turns": 8,
+      "max_turns_exhausted": false,
+      "result_summary": {
+        "is_error": false,
+        "subtype": "success",
+        "stop_reason": "end_turn",
+        "result": "Here's what I found and documented:\n\n---\n\n## Diagnosis — `inst-triage-001`\n\n**Scope inspected:** Process-level variables (plausible, no anomaly) → Subprocess-scoped variables inside `SubProcess_TaxCalc` (offending value found).\n\n### Process-level variables — all look fine\n| Variable | Value |\n|---|---|\n| `invoiceTotal` | `1200.00` ✅ |\n| `runStatus` | `Completed` |\n\n### Subprocess-scoped variables (`SubProcess_TaxCalc`) — offender found\n| Variable | Value |\n|---|---|\n| `taxableBase` | `1200.00` ✅ |\n| **`taxRate`** | **`0.00` ❌** |\n| `taxAmount` | `0.00` ❌ (derived from wrong `taxRate`) |\n\n---\n\n### Labeled findings (written to `diagnosis.md`)\n\n```\nOFFENDING_VARIABLE: taxRate\nOFFENDING_VALUE: 0.00\n```\n\n### Why Completed ≠ semantically correct\n\nA **Completed** status only proves that every BPMN token reached a valid end event without triggering a fault, incident, or exception boundary. The engine tracks *control-flow* correctness, not *data* correctness. Here, `taxRate` resolved to `0.00` inside the subprocess scope — arithmetically valid, producing `taxAmount = 0.00` without any runtime exception. Because no fault fired, the instance transitioned to Completed normally. Only domain-level guards (e.g., a gateway asserting `taxAmount > 0`, an output-validation task, or a post-run audit) would catch this class of silent semantic error."
+      },
+      "crashed": false,
+      "crash_reason": null
+    }
+  ],
+  "error_message": null,
+  "error_details": null,
+  "error_log_tail": null,
+  "environment_info": {
+    "git_commit": "unknown",
+    "skills_git_commit": "unknown",
+    "cli_version": "1.197.0-alpha.20260626.7673",
+    "tool_plugins": {
+      "agent-tool": "1.197.0",
+      "agenthub-tool": "1.197.0",
+      "codedagent-tool": "1.197.0",
+      "data-fabric-tool": "1.197.0",
+      "functions-tool": "1.197.0",
+      "gov-tool": "1.197.0",
+      "insights-tool": "1.197.0",
+      "integrationservice-tool": "1.197.0",
+      "ixp-tool": "1.197.0",
+      "maestro-tool": "1.197.0",
+      "orchestrator-tool": "1.197.0",
+      "solution-tool": "1.197.0",
+      "tasks-tool": "1.197.0",
+      "test-manager-tool": "1.197.0"
+    },
+    "coder_eval": "0.8.4",
+    "claude_code_cli": "2.1.177 (Claude Code)",
+    "uv": "uv 0.11.28 (x86_64-unknown-linux-gnu)",
+    "anthropic": "0.102.0",
+    "openai": "2.46.0",
+    "pydantic": "2.12.5",
+    "api_routing": "aws_bedrock",
+    "aws_region": "us-east-2",
+    "bedrock_model": "us.anthropic.claude-sonnet-4-6"
+  },
+  "agent_config": {
+    "type": "claude-code",
+    "model": "claude-sonnet-4-6",
+    "permission_mode": "acceptEdits",
+    "allowed_tools": [
+      "Skill",
+      "Bash",
+      "Read",
+      "Write",
+      "Edit",
+      "Glob",
+      "Grep"
+    ],
+    "disallowed_tools": null,
+    "plugins": [
+      {
+        "type": "local",
+        "path": "/home/azureuser/projects/skills/tmp/"
+      }
+    ],
+    "system_prompt": "You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted.\n",
+    "system_prompt_file": null,
+    "ignore_patterns": [],
+    "claude_settings": null,
+    "sdk_options": {},
+    "setting_sources": null
+  },
+  "sdk_options": {
+    "tools": null,
+    "allowed_tools": [
+      "Skill",
+      "Bash",
+      "Read",
+      "Write",
+      "Edit",
+      "Glob",
+      "Grep"
+    ],
+    "system_prompt": "You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted.\n",
+    "mcp_servers": {},
+    "strict_mcp_config": false,
+    "permission_mode": "acceptEdits",
+    "continue_conversation": false,
+    "resume": null,
+    "session_id": null,
+    "max_turns": 40,
+    "max_budget_usd": null,
+    "disallowed_tools": [
+      "ToolSearch"
+    ],
+    "model": "us.anthropic.claude-sonnet-4-6",
+    "fallback_model": null,
+    "betas": [],
+    "permission_prompt_tool_name": null,
+    "cwd": "/work/output/artifacts/skill-bpmn-diagnose-scoped-variables",
+    "cli_path": null,
+    "settings": null,
+    "add_dirs": [],
+    "env": {
+      "PATH": "/work/output/artifacts/skill-bpmn-diagnose-scoped-variables/mocks:/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+      "PLUGIN_TOOLS_DIR": "/usr/lib/node_modules/@uipath",
+      "CLAUDE_CODE_USE_BEDROCK": "1",
+      "AWS_BEARER_TOKEN_BEDROCK": "***REDACTED***",
+      "AWS_REGION": "us-east-2",
+      "CLAUDE_CODE_ATTRIBUTION_HEADER": "0",
+      "ANTHROPIC_MODEL": "us.anthropic.claude-sonnet-4-6",
+      "ANTHROPIC_SMALL_FAST_MODEL": "us.anthropic.claude-sonnet-4-6"
+    },
+    "extra_args": {},
+    "max_buffer_size": null,
+    "can_use_tool": null,
+    "hooks": null,
+    "user": null,
+    "include_partial_messages": true,
+    "include_hook_events": false,
+    "fork_session": false,
+    "agents": null,
+    "setting_sources": [
+      "project"
+    ],
+    "skills": null,
+    "sandbox": null,
+    "plugins": [
+      {
+        "type": "local",
+        "path": "/home/azureuser/projects/skills/tmp"
+      }
+    ],
+    "max_thinking_tokens": null,
+    "thinking": null,
+    "effort": null,
+    "output_format": null,
+    "enable_file_checkpointing": false,
+    "session_store": null,
+    "session_store_flush": "batched",
+    "load_timeout_ms": 60000,
+    "task_budget": null
+  },
+  "sandbox_path": "/work/output/artifacts/skill-bpmn-diagnose-scoped-variables",
+  "task_config": {
+    "resolved": {
+      "task_id": "skill-bpmn-diagnose-scoped-variables",
+      "description": "Diagnose coverage for the uipath-maestro-bpmn skill: a run completed but a downstream value is semantically wrong. The agent inspects subprocess-scoped runtime state with `instance variables --parent-element-id <id>` to find the offending variable inside the child scope, proving that \"completed\" does not mean \"semantically correct\". Read-only mocked CLI; no lifecycle mutations.\n",
+      "initial_prompt": "A UiPath Maestro BPMN run finished with status Completed, but a stakeholder\nreports the tax on the invoice came out wrong. Diagnose using the mocked `uip`\nCLI on PATH. Public-safe identifiers:\n- instance id: inst-triage-001\n- folder key: folder-public\n- subprocess element id: SubProcess_TaxCalc\n\nProcess-level variables look plausible. The tax is computed inside the\nsubprocess `SubProcess_TaxCalc`, so inspect the variables scoped to that\nparent element to find the offending value. A Completed status only proves\ncontrol-flow finished, not that the values are correct.\n\nWrite your conclusion to diagnosis.md. Include these EXACT labeled lines:\n  OFFENDING_VARIABLE: <the subprocess-scoped variable that is wrong>\n  OFFENDING_VALUE: <its wrong value>\nThen add a short prose note on why a Completed run can still be semantically\nwrong.\n\nUse `uip maestro bpmn ...` reads with folder context; do not read `mocks/`,\n`fixtures/`, or any response JSON files directly. Do NOT retry, cancel,\nmigrate, move a cursor, debug, run, upload, publish, or deploy anything.\n",
+      "initial_prompt_file": null,
+      "tags": [
+        "uipath-maestro-bpmn",
+        "integration",
+        "mode:diagnose",
+        "lifecycle:discover"
+      ],
+      "skip": false,
+      "agent": {
+        "type": "claude-code",
+        "model": "claude-sonnet-4-6",
+        "permission_mode": "acceptEdits",
+        "allowed_tools": [
+          "Skill",
+          "Bash",
+          "Read",
+          "Write",
+          "Edit",
+          "Glob",
+          "Grep"
+        ],
+        "disallowed_tools": null,
+        "plugins": [
+          {
+            "type": "local",
+            "path": "/home/azureuser/projects/skills/tmp/"
+          }
+        ],
+        "system_prompt": "You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted.\n",
+        "system_prompt_file": null,
+        "ignore_patterns": [],
+        "claude_settings": null,
+        "sdk_options": {},
+        "setting_sources": null
+      },
+      "sandbox": {
+        "driver": "tempdir",
+        "docker": {
+          "image": "skills-image:latest",
+          "dockerfile_path": null,
+          "build": {
+            "buildkit": null,
+            "args": {},
+            "secrets": [],
+            "extra_args": []
+          },
+          "network": "bridge",
+          "working_dir": null,
+          "env_passthrough": [
+            "ANTHROPIC_API_KEY",
+            "API_BACKEND",
+            "UIPATH_LLM_BACKEND",
+            "UIPATH_ACCESS_TOKEN",
+            "UIPATH_URL",
+            "UIPATH_TENANT_ID",
+            "UIPATH_ORGANIZATION_ID",
+            "UIPATH_CLI_DISABLE_VERSION_SYNC",
+            "AWS_BEARER_TOKEN_BEDROCK",
+            "AWS_REGION",
+            "BEDROCK_MODEL",
+            "CLAUDE_CODE_USE_BEDROCK",
+            "ANTHROPIC_MODEL",
+            "CODEX_API_KEY",
+            "CODEX_BASE_URL",
+            "CODEX_MODEL",
+            "GEMINI_API_KEY",
+            "ANTIGRAVITY_MODEL",
+            "HOME"
+          ],
+          "env_passthrough_extra": [
+            "SKILLS_REPO_PATH",
+            "BEDROCK_MODEL",
+            "TASK_PARALLELISM",
+            "UIPATH_CLI_ENABLE_ENV_AUTH",
+            "UIPATH_CLI_AUTH_TOKEN",
+            "UIPATH_CLI_ORGANIZATION_NAME",
+            "UIPATH_CLI_ORGANIZATION_ID",
+            "UIPATH_CLI_TENANT_NAME",
+            "UIPATH_CLI_TENANT_ID",
+            "TRACES_SMOKE_PROCESS_KEY",
+            "CODEX_API_KEY",
+            "CODEX_BASE_URL"
+          ],
+          "extra_mounts": [
+            "~/.uipath:/.uipath:rw"
+          ]
+        },
+        "python": {
+          "env_packages": []
+        },
+        "node": null,
+        "limits": {
+          "timeout": 300,
+          "max_memory_mb": null,
+          "max_cpus": null,
+          "max_pids": null,
+          "max_disk_mb": null
+        },
+        "template_sources": [
+          {
+            "type": "template_dir",
+            "path": "/home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn",
+            "mount_point": ".",
+            "include_patterns": []
+          },
+          {
+            "type": "template_dir",
+            "path": "/home/azureuser/projects/skills/tmp/experiments/tasks/uipath-maestro-bpmn/_shared/mock_template",
+            "mount_point": ".",
+            "include_patterns": []
+          },
+          {
+            "type": "template_dir",
+            "path": "/home/azureuser/projects/skills/tmp/experiments/tasks/uipath-maestro-bpmn/diagnose/scoped_variables/fixtures",
+            "mount_point": ".",
+            "include_patterns": []
+          }
+        ],
+        "mock_path_dirs": [
+          "mocks"
+        ],
+        "ignore_patterns": []
+      },
+      "success_criteria": [
+        {
+          "type": "command_executed",
+          "description": "Agent read subprocess-scoped variables via --parent-element-id",
+          "weight": 1.5,
+          "pass_threshold": 1.0,
+          "suite_thresholds": null,
+          "stop_when": null,
+          "tool_name": "Bash",
+          "command_pattern": "(uip|\\$UIP)\\s+maestro\\s+bpmn\\s+instance\\s+variables\\s+inst-triage-001\\b.*--parent-element-id\\s+SubProcess_TaxCalc",
+          "min_count": 1,
+          "max_count": null,
+          "require_success": false,
+          "exclude_pattern": null
+        },
+        {
+          "type": "file_contains",
+          "description": "Diagnosis names the offending subprocess-scoped variable and its wrong value",
+          "weight": 3.0,
+          "pass_threshold": 1.0,
+          "suite_thresholds": null,
+          "stop_when": null,
+          "path": "diagnosis.md",
+          "includes": [
+            "OFFENDING_VARIABLE: taxRate",
+            "OFFENDING_VALUE: 0.00"
+          ],
+          "excludes": null
+        }
+      ],
+      "run_limits": {
+        "max_turns": 40,
+        "expected_turns": 16,
+        "task_timeout": 900,
+        "turn_timeout": 900,
+        "max_input_tokens": null,
+        "max_output_tokens": null,
+        "max_total_tokens": null,
+        "max_usd": null,
+        "count_cached_input": false,
+        "count_cache_creation": false,
+        "stop_early": false
+      },
+      "reference": null,
+      "expected_commands": null,
+      "pre_run": [],
+      "post_run": [
+        {
+          "command": "find . -maxdepth 5 -type d \\( -name node_modules -o -name .npm-prefix -o -name .venv \\) -prune -exec rm -rf {} +",
+          "timeout": 30
+        }
+      ],
+      "dataset": null,
+      "suite_id": null,
+      "row_id": null,
+      "simulation": null
+    },
+    "source_yaml": "task_id: skill-bpmn-diagnose-scoped-variables\ndescription: >\n  Diagnose coverage for the uipath-maestro-bpmn skill: a run completed but a\n  downstream value is semantically wrong. The agent inspects subprocess-scoped\n  runtime state with `instance variables --parent-element-id <id>` to find the\n  offending variable inside the child scope, proving that \"completed\" does not\n  mean \"semantically correct\". Read-only mocked CLI; no lifecycle mutations.\ntags: [uipath-maestro-bpmn, integration, \"mode:diagnose\", \"lifecycle:discover\"]\n\nrun_limits:\n  expected_turns: 16\n  max_turns: 40\n\nsandbox:\n  template_sources:\n    - type: template_dir\n      path: ../../../../../skills/uipath-maestro-bpmn\n    - type: template_dir\n      path: ../../_shared/mock_template\n    - type: template_dir\n      path: fixtures\n  mock_path_dirs:\n    - mocks\n\ninitial_prompt: |\n  A UiPath Maestro BPMN run finished with status Completed, but a stakeholder\n  reports the tax on the invoice came out wrong. Diagnose using the mocked `uip`\n  CLI on PATH. Public-safe identifiers:\n  - instance id: inst-triage-001\n  - folder key: folder-public\n  - subprocess element id: SubProcess_TaxCalc\n\n  Process-level variables look plausible. The tax is computed inside the\n  subprocess `SubProcess_TaxCalc`, so inspect the variables scoped to that\n  parent element to find the offending value. A Completed status only proves\n  control-flow finished, not that the values are correct.\n\n  Write your conclusion to diagnosis.md. Include these EXACT labeled lines:\n    OFFENDING_VARIABLE: <the subprocess-scoped variable that is wrong>\n    OFFENDING_VALUE: <its wrong value>\n  Then add a short prose note on why a Completed run can still be semantically\n  wrong.\n\n  Use `uip maestro bpmn ...` reads with folder context; do not read `mocks/`,\n  `fixtures/`, or any response JSON files directly. Do NOT retry, cancel,\n  migrate, move a cursor, debug, run, upload, publish, or deploy anything.\n\nsuccess_criteria:\n  - type: command_executed\n    description: \"Agent read subprocess-scoped variables via --parent-element-id\"\n    tool_name: \"Bash\"\n    command_pattern: '(uip|\\$UIP)\\s+maestro\\s+bpmn\\s+instance\\s+variables\\s+inst-triage-001\\b.*--parent-element-id\\s+SubProcess_TaxCalc'\n    min_count: 1\n    weight: 1.5\n    pass_threshold: 1.0\n\n  - type: file_contains\n    description: \"Diagnosis names the offending subprocess-scoped variable and its wrong value\"\n    path: \"diagnosis.md\"\n    includes:\n      - \"OFFENDING_VARIABLE: taxRate\"\n      - \"OFFENDING_VALUE: 0.00\"\n    weight: 3.0\n    pass_threshold: 1.0\n",
+    "source_file": "/home/azureuser/projects/skills/tmp/experiments/tasks/uipath-maestro-bpmn/diagnose/scoped_variables/task.yaml",
+    "lineage": {
+      "agent.type": {
+        "value": "claude-code",
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.permission_mode": {
+        "value": "acceptEdits",
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.model": {
+        "value": "claude-sonnet-4-6",
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.allowed_tools": {
+        "value": [
+          "Skill",
+          "Bash",
+          "Read",
+          "Write",
+          "Edit",
+          "Glob",
+          "Grep"
+        ],
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.plugins": {
+        "value": [
+          {
+            "type": "local",
+            "path": "/home/azureuser/projects/skills/tmp/"
+          }
+        ],
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.ignore_patterns": {
+        "value": [],
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.system_prompt": {
+        "value": "You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted.\n",
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "run_limits.max_turns": {
+        "value": 40,
+        "source": "task",
+        "source_detail": null
+      },
+      "run_limits.task_timeout": {
+        "value": 900,
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "run_limits.turn_timeout": {
+        "value": 900,
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "run_limits.expected_turns": {
+        "value": 16,
+        "source": "task",
+        "source_detail": null
+      },
+      "sandbox.driver": {
+        "value": "docker",
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "sandbox.docker": {
+        "value": {
+          "image": "skills-image:latest",
+          "env_passthrough_extra": [
+            "SKILLS_REPO_PATH",
+            "BEDROCK_MODEL",
+            "TASK_PARALLELISM",
+            "UIPATH_CLI_ENABLE_ENV_AUTH",
+            "UIPATH_CLI_AUTH_TOKEN",
+            "UIPATH_CLI_ORGANIZATION_NAME",
+            "UIPATH_CLI_ORGANIZATION_ID",
+            "UIPATH_CLI_TENANT_NAME",
+            "UIPATH_CLI_TENANT_ID",
+            "TRACES_SMOKE_PROCESS_KEY",
+            "CODEX_API_KEY",
+            "CODEX_BASE_URL"
+          ],
+          "extra_mounts": [
+            "~/.uipath:/.uipath:rw"
+          ]
+        },
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "sandbox.mock_path_dirs": {
+        "value": [
+          "mocks"
+        ],
+        "source": "task",
+        "source_detail": null
+      },
+      "sandbox.template_sources": {
+        "value": [
+          {
+            "type": "template_dir",
+            "path": "/home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn"
+          },
+          {
+            "type": "template_dir",
+            "path": "/home/azureuser/projects/skills/tmp/experiments/tasks/uipath-maestro-bpmn/_shared/mock_template"
+          },
+          {
+            "type": "template_dir",
+            "path": "/home/azureuser/projects/skills/tmp/experiments/tasks/uipath-maestro-bpmn/diagnose/scoped_variables/fixtures"
+          }
+        ],
+        "source": "task",
+        "source_detail": null
+      },
+      "repeats": {
+        "value": 5,
+        "source": "cli",
+        "source_detail": null
+      }
+    }
+  },
+  "command_stats": {
+    "total_commands": 6,
+    "commands_by_tool": {
+      "Skill": 1,
+      "Read": 2,
+      "Bash": 2,
+      "Write": 1
+    },
+    "total_command_time_ms": 1297.4488359177485,
+    "avg_command_time_ms": 216.2414726529581,
+    "slowest_commands": [
+      {
+        "tool": "Bash",
+        "duration_ms": 864.6737869130448,
+        "parameters": {
+          "command": "uip maestro bpmn instance variables inst-triage-001 -f folder-public --output json 2>&1",
+          "description": "Fetch process-level variables for inst-triage-001"
+        },
+        "tool_id": "toolu_bdrk_01RPL5AHSF32F3F9PvRCwdgK"
+      },
+      {
+        "tool": "Bash",
+        "duration_ms": 355.2358580054715,
+        "parameters": {
+          "command": "uip maestro bpmn instance variables inst-triage-001 -f folder-public --parent-element-id SubProcess_TaxCalc --output json 2>&1",
+          "description": "Fetch subprocess-scoped variables for SubProcess_TaxCalc"
+        },
+        "tool_id": "toolu_bdrk_01D23jYm3pqMPrwW31P8ca83"
+      },
+      {
+        "tool": "Write",
+        "duration_ms": 34.6283579710871,
+        "parameters": {
+          "file_path": "/work/output/artifacts/skill-bpmn-diagnose-scoped-variables/diagnosis.md",
+          "content": "# Diagnosis — inst-triage-001 (SubProcess_TaxCalc)\n\n## Summary\n\nInstance `inst-triage-001` finished with status **Completed**, but the tax on\nthe invoice is zero despite a non-zero invoice total. The fault is a subprocess-\nscoped variable inside `SubProcess_TaxCalc`, not a process-level variable.\n\n## Findings\n\n### Process-level variables (scope: process)\n\n| Variable | Value |\n|---|---|\n| runStatus | Completed |\n| invoiceTotal | 1200.00 |\n\nThese look plausible — the total is correctly carried at the process level.\n\n### Subprocess-scoped variables (scope: SubProcess_TaxCalc)\n\n| Variable | Value |\n|---|---|\n| taxableBase | 1200.00 |\n| taxRate | **0.00** |\n| taxAmount | 0.00 |\n\n`taxableBase` is correctly set to `1200.00`. However, `taxRate` resolved to\n`0.00` inside the subprocess, which caused `taxAmount` to multiply out to\n`0.00`. The tax was never applied.\n\n## Root-cause labels\n\nOFFENDING_VARIABLE: taxRate\nOFFENDING_VALUE: 0.00\n\n## Why a Completed run can still be semantically wrong\n\nA **Completed** status in UiPath Maestro BPMN only guarantees that every\ntoken in the process reached a valid end event without hitting a fault,\nexception boundary, or incident that forced the runtime to abort. The engine\ntracks *control-flow correctness* — did the sequence of gateways and tasks\nexecute without error? — not *data correctness*. A subprocess can receive a\nzero or null input variable, propagate it silently through every activity\ninside it, produce an arithmetically valid (but business-incorrect) output such\nas `0.00`, and hand that value back to the parent process without triggering\nany exception. Because no BPMN fault boundary fires and no incident is raised,\nthe instance transitions to **Completed** normally. In short, the runtime\nengine cannot know that `taxRate = 0.00` is wrong for this business case;\nonly domain-level assertions (output validation tasks, gateway checks on\n`taxAmount > 0`, or post-completion audits) would catch this class of semantic\nerror before it reaches a stakeholder.\n"
+        },
+        "tool_id": "toolu_bdrk_01NFj8FAXAfhFUVjMwBW2AXG"
+      },
+      {
+        "tool": "Read",
+        "duration_ms": 17.8285549627617,
+        "parameters": {
+          "file_path": "/home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn/references/diagnose/CAPABILITY.md"
+        },
+        "tool_id": "toolu_bdrk_015Sd7eUPXpHUXA5SCEmimKr"
+      },
+      {
+        "tool": "Skill",
+        "duration_ms": 17.611960996873677,
+        "parameters": {
+          "skill": "tmp:uipath-maestro-bpmn",
+          "args": "Diagnose instance inst-triage-001 in folder folder-public. The run completed but the tax on the invoice is wrong. Process-level variables look plausible. The tax is computed inside subprocess SubProcess_TaxCalc — inspect the variables scoped to that parent element to find the offending value. Use `uip maestro bpmn` CLI reads only (no retries, cancels, or deploys). Write a diagnosis.md in the working directory with: OFFENDING_VARIABLE, OFFENDING_VALUE labeled lines, plus a prose note on why Completed status doesn't guarantee semantic correctness."
+        },
+        "tool_id": "toolu_bdrk_01GLCZ6kcLMCac9nWhm5oJtN"
+      }
+    ],
+    "successful_commands": 6,
+    "failed_commands": 0,
+    "unknown_commands": 0,
+    "success_rate": 100.0,
+    "most_common_sequence": "Skill → Read → Read"
+  },
+  "total_token_usage": {
+    "uncached_input_tokens": 614,
+    "output_tokens": 2349,
+    "cache_creation_input_tokens": 11418,
+    "cache_read_input_tokens": 150516,
+    "total_cost_usd": 0.1250493,
+    "input_tokens": 162548
+  },
+  "total_assistant_turns": 13,
+  "expected_commands": null,
+  "actual_commands": 6,
+  "commands_efficiency": null,
+  "pre_run_results": [],
+  "post_run_results": [
+    {
+      "command": "find . -maxdepth 5 -type d \\( -name node_modules -o -name .npm-prefix -o -name .venv \\) -prune -exec rm -rf {} +",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "",
+      "duration_seconds": 0.003303050994873047,
+      "error": null
+    }
+  ],
+  "simulation": null,
+  "early_stop": null
+}

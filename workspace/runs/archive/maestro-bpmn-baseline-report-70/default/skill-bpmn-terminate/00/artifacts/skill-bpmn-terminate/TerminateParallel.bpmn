@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+    xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+    xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+    xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+    xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+    xmlns:uipath="http://uipath.org/schema/bpmn"
+    id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn"
+    exporter="UiPath (https://bpmn.uipath.com)" exporterVersion="1.0">
+
+  <bpmn:process id="Process_1" isExecutable="true">
+    <bpmn:extensionElements>
+      <uipath:migrationVersion version="11.5" />
+    </bpmn:extensionElements>
+
+    <!-- Start -->
+    <bpmn:startEvent id="Start_1" name="Start">
+      <bpmn:outgoing>Flow_StartToFork</bpmn:outgoing>
+    </bpmn:startEvent>
+
+    <!-- Parallel fork gateway -->
+    <bpmn:parallelGateway id="Fork_1" name="Fork">
+      <bpmn:incoming>Flow_StartToFork</bpmn:incoming>
+      <bpmn:outgoing>Flow_ForkToTerminate</bpmn:outgoing>
+      <bpmn:outgoing>Flow_ForkToTask</bpmn:outgoing>
+    </bpmn:parallelGateway>
+
+    <!-- Branch A: terminate end event -->
+    <bpmn:endEvent id="End_Terminate" name="Terminate Instance">
+      <bpmn:incoming>Flow_ForkToTerminate</bpmn:incoming>
+      <bpmn:terminateEventDefinition id="TermDef_1" />
+    </bpmn:endEvent>
+
+    <!-- Branch B: task then normal end event -->
+    <bpmn:task id="Task_BranchB" name="Branch B Task">
+      <bpmn:incoming>Flow_ForkToTask</bpmn:incoming>
+      <bpmn:outgoing>Flow_TaskToEnd</bpmn:outgoing>
+    </bpmn:task>
+
+    <bpmn:endEvent id="End_Normal" name="End">
+      <bpmn:incoming>Flow_TaskToEnd</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <!-- Sequence flows -->
+    <bpmn:sequenceFlow id="Flow_StartToFork"    sourceRef="Start_1"  targetRef="Fork_1" />
+    <bpmn:sequenceFlow id="Flow_ForkToTerminate" sourceRef="Fork_1"   targetRef="End_Terminate" />
+    <bpmn:sequenceFlow id="Flow_ForkToTask"      sourceRef="Fork_1"   targetRef="Task_BranchB" />
+    <bpmn:sequenceFlow id="Flow_TaskToEnd"       sourceRef="Task_BranchB" targetRef="End_Normal" />
+  </bpmn:process>
+
+  <bpmndi:BPMNDiagram id="Diagram_1">
+    <bpmndi:BPMNPlane id="Plane_1" bpmnElement="Process_1">
+
+      <!-- Start -->
+      <bpmndi:BPMNShape id="S_Start_1" bpmnElement="Start_1">
+        <dc:Bounds x="160" y="200" width="36" height="36" />
+      </bpmndi:BPMNShape>
+
+      <!-- Fork gateway -->
+      <bpmndi:BPMNShape id="S_Fork_1" bpmnElement="Fork_1">
+        <dc:Bounds x="270" y="193" width="50" height="50" />
+      </bpmndi:BPMNShape>
+
+      <!-- Branch A: terminate end event (top lane) -->
+      <bpmndi:BPMNShape id="S_End_Terminate" bpmnElement="End_Terminate">
+        <dc:Bounds x="430" y="100" width="36" height="36" />
+      </bpmndi:BPMNShape>
+
+      <!-- Branch B: task (bottom lane) -->
+      <bpmndi:BPMNShape id="S_Task_BranchB" bpmnElement="Task_BranchB">
+        <dc:Bounds x="400" y="278" width="100" height="80" />
+      </bpmndi:BPMNShape>
+
+      <!-- Branch B: normal end event -->
+      <bpmndi:BPMNShape id="S_End_Normal" bpmnElement="End_Normal">
+        <dc:Bounds x="570" y="300" width="36" height="36" />
+      </bpmndi:BPMNShape>
+
+      <!-- Edges -->
+      <bpmndi:BPMNEdge id="E_StartToFork" bpmnElement="Flow_StartToFork">
+        <di:waypoint x="196" y="218" />
+        <di:waypoint x="270" y="218" />
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="E_ForkToTerminate" bpmnElement="Flow_ForkToTerminate">
+        <di:waypoint x="295" y="193" />
+        <di:waypoint x="295" y="118" />
+        <di:waypoint x="430" y="118" />
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="E_ForkToTask" bpmnElement="Flow_ForkToTask">
+        <di:waypoint x="295" y="243" />
+        <di:waypoint x="295" y="318" />
+        <di:waypoint x="400" y="318" />
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="E_TaskToEnd" bpmnElement="Flow_TaskToEnd">
+        <di:waypoint x="500" y="318" />
+        <di:waypoint x="570" y="318" />
+      </bpmndi:BPMNEdge>
+
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

@@ -1,0 +1,8 @@
+20:55:46 [INFO   ] [default/skill-flow-bindings-idempotent-reconfigure/00] orchestrator: API routing: aws_bedrock
+21:01:17 [INFO   ] [default/skill-flow-bindings-idempotent-reconfigure/00] orchestrator: Success criteria: 5/5 passed, weighted score: 1.000
+21:01:17 [INFO   ] [default/skill-flow-bindings-idempotent-reconfigure/00] orchestrator: Running post-run command: python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/cleanup_solutions.py
+21:01:18 [WARNING] [default/skill-flow-bindings-idempotent-reconfigure/00] orchestrator: [post_run stderr] cleanup_solutions: solution c0a22cf4-ccaa-4f21-8d2e-b79e4c3e921f not uploaded (from BindingsIdempotent/BindingsIdempotent.uipx); nothing to clean up
+21:01:18 [WARNING] [default/skill-flow-bindings-idempotent-reconfigure/00] orchestrator: [post_run stderr] cleanup_solutions: summary policy=always deleted=0 preserved=0 skipped=0 not_uploaded=1 failed=0
+21:01:18 [INFO   ] [default/skill-flow-bindings-idempotent-reconfigure/00] orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+21:01:18 [INFO   ] [default/skill-flow-bindings-idempotent-reconfigure/00] orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-bindings-idempotent-reconfigure
+21:01:18 [INFO   ] [default/skill-flow-bindings-idempotent-reconfigure/00] orchestrator: Task finished: status=SUCCESS duration=334.2s score=1.000 iterations=1

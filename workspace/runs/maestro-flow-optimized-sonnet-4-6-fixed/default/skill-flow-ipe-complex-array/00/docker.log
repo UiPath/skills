@@ -1,0 +1,5 @@
+20:59:44 [INFO   ] [default/skill-flow-ipe-complex-array/00] orchestrator: API routing: aws_bedrock
+21:03:47 [INFO   ] [default/skill-flow-ipe-complex-array/00] orchestrator: Success criteria: 4/4 passed, weighted score: 0.875
+21:03:47 [INFO   ] [default/skill-flow-ipe-complex-array/00] orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+21:03:47 [INFO   ] [default/skill-flow-ipe-complex-array/00] orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-ipe-complex-array
+21:03:47 [INFO   ] [default/skill-flow-ipe-complex-array/00] orchestrator: Task finished: status=SUCCESS duration=259.3s score=0.875 iterations=1

@@ -1,0 +1,10 @@
+17:52:52 [INFO   ] [default/skill-flow-e2e-escalation-orchestrator-paths/00] orchestrator: API routing: aws_bedrock
+17:52:54 [INFO   ] [default/skill-flow-e2e-escalation-orchestrator-paths/00] orchestrator: Running pre-run command: python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/e2e/escalation_orchestrator_paths/seed.py
+17:52:54 [INFO   ] [default/skill-flow-e2e-escalation-orchestrator-paths/00] orchestrator: [pre_run stdout] seeded seed.json with 7 path cases
+18:09:40 [INFO   ] [default/skill-flow-e2e-escalation-orchestrator-paths/00] orchestrator: Success criteria: 3/3 passed, weighted score: 1.000
+18:09:40 [INFO   ] [default/skill-flow-e2e-escalation-orchestrator-paths/00] orchestrator: Running post-run command: python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/cleanup_solutions.py
+18:09:41 [WARNING] [default/skill-flow-e2e-escalation-orchestrator-paths/00] orchestrator: [post_run stderr] cleanup_solutions: deleted b10281d6-7242-42c6-9ca1-08defdfbf8f4 (from CustomerEscalationOrchestrator/CustomerEscalationOrchestrator.uipx)
+18:09:41 [WARNING] [default/skill-flow-e2e-escalation-orchestrator-paths/00] orchestrator: [post_run stderr] cleanup_solutions: summary policy=always deleted=1 preserved=0 skipped=0 not_uploaded=0 failed=0
+18:09:41 [INFO   ] [default/skill-flow-e2e-escalation-orchestrator-paths/00] orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+18:09:41 [INFO   ] [default/skill-flow-e2e-escalation-orchestrator-paths/00] orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-e2e-escalation-orchestrator-paths
+18:09:41 [INFO   ] [default/skill-flow-e2e-escalation-orchestrator-paths/00] orchestrator: Task finished: status=SUCCESS duration=1016.9s score=1.000 iterations=1

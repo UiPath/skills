@@ -1,0 +1,20 @@
+{
+  "connectionId": "<YOUR_ACT365_CONNECTION_UUID>",
+  "folderKey": "<YOUR_FOLDER_KEY>",
+  "method": "POST",
+  "endpoint": "/Interactions",
+  "bodyParameters": {
+    "subject": "Sales Call",
+    "type": "Call",
+    "startTime": "2026-07-24T09:00:00Z",
+    "endTime": "2026-07-24T09:30:00Z",
+    "timeZone": "Eastern Standard Time",
+    "details": "Recorded sales interaction with multiple contacts",
+    "isCompleted": true,
+    "contacts": [
+      { "id": "contact-id-001", "displayName": "Alice Smith" },
+      { "id": "contact-id-002", "displayName": "Bob Jones" },
+      { "id": "contact-id-003", "displayName": "Carol White" }
+    ]
+  }
+}

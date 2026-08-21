@@ -1,0 +1,6 @@
+{
+  "Name": "BellevueWeatherCheck",
+  "ProjectType": "Process",
+  "Description": "Checks the simulated weather for Bellevue and reports whether it is a nice day",
+  "MainFile": "Main.xaml"
+}

@@ -1,0 +1,8 @@
+21:57:46 [INFO   ] [default/skill-flow-bellevue-weather/00] orchestrator: API routing: aws_bedrock
+22:02:59 [INFO   ] [default/skill-flow-bellevue-weather/00] orchestrator: Success criteria: 2/2 passed, weighted score: 1.000
+22:02:59 [INFO   ] [default/skill-flow-bellevue-weather/00] orchestrator: Running post-run command: python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/cleanup_solutions.py
+22:03:00 [WARNING] [default/skill-flow-bellevue-weather/00] orchestrator: [post_run stderr] cleanup_solutions: deleted 3b578ebd-c05b-44fe-55d9-08defd62525a (from BellevueWeather/BellevueWeather.uipx)
+22:03:00 [WARNING] [default/skill-flow-bellevue-weather/00] orchestrator: [post_run stderr] cleanup_solutions: summary policy=always deleted=1 preserved=0 skipped=0 not_uploaded=0 failed=0
+22:03:00 [INFO   ] [default/skill-flow-bellevue-weather/00] orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+22:03:00 [INFO   ] [default/skill-flow-bellevue-weather/00] orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-bellevue-weather
+22:03:00 [INFO   ] [default/skill-flow-bellevue-weather/00] orchestrator: Task finished: status=SUCCESS duration=315.9s score=1.000 iterations=1

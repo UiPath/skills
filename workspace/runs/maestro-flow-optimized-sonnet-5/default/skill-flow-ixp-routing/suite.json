@@ -1,0 +1,94 @@
+{
+  "suite_id": "skill-flow-ixp-routing",
+  "variant_id": "default",
+  "rows_total": 5,
+  "rows_passed": 4,
+  "rows_failed": 1,
+  "rows_error": 0,
+  "pass_rate": 0.8,
+  "average_weighted_score": 0.8,
+  "criterion_stats": [
+    {
+      "criterion_type": "command_executed",
+      "rows_evaluated": 5,
+      "average_score": 0.8,
+      "error_count": 0
+    },
+    {
+      "criterion_type": "run_command",
+      "rows_evaluated": 5,
+      "average_score": 0.8,
+      "error_count": 0
+    }
+  ],
+  "failed_samples": [
+    {
+      "row_id": "receipts",
+      "task_id": "skill-flow-ixp-routing/receipts",
+      "final_status": "FAILURE",
+      "weighted_score": 0.0,
+      "failure_reasons": [
+        "Matched 0/1 required commands (filters: tool_name=Bash, pattern=/(?i)uip\\s+maestro\\s+flow\\s+registry\\s+(list\\b|(search|list|get)\\b[^\\n]*\\b(ixp|document|extract))/)",
+        "Command: grep -rqE \"\\\"type\\\"[[:space:]]*:[[:space:]]*\\\"(uipath\\.ixp|core\\.logic\\.mock)\" --include=\"*.flow\" .\nExit code: 1 (expected: 0)\nStdout: (empty)\nStderr: (empty)"
+      ],
+      "error_message": null,
+      "task_json_relpath": "default/skill-flow-ixp-routing/receipts/00/task.json",
+      "replicate_index": 0
+    }
+  ],
+  "criterion_aggregates": [
+    {
+      "criterion_type": "command_executed",
+      "description": "Agent searched the registry for IxP node types",
+      "rows_total": 5,
+      "rows_excluded": 0,
+      "metrics": {
+        "count": 5.0,
+        "mean": 0.8,
+        "median": 1.0,
+        "std": 0.4,
+        "min": 0.0,
+        "max": 1.0,
+        "completion_rate": 1.0
+      },
+      "threshold_checks": [
+        {
+          "metric": "mean",
+          "min_value": 0.85,
+          "actual_value": 0.8,
+          "passed": false
+        }
+      ],
+      "passed": false,
+      "details": {},
+      "error": null
+    },
+    {
+      "criterion_type": "run_command",
+      "description": "Agent added an IxP or core.logic.mock placeholder node to a .flow file (per references/plugins/ixp/impl.md)",
+      "rows_total": 5,
+      "rows_excluded": 0,
+      "metrics": {
+        "count": 5.0,
+        "mean": 0.8,
+        "median": 1.0,
+        "std": 0.4,
+        "min": 0.0,
+        "max": 1.0,
+        "completion_rate": 1.0
+      },
+      "threshold_checks": [
+        {
+          "metric": "mean",
+          "min_value": 0.85,
+          "actual_value": 0.8,
+          "passed": false
+        }
+      ],
+      "passed": false,
+      "details": {},
+      "error": null
+    }
+  ],
+  "passed": false
+}

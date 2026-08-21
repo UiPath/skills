@@ -1,0 +1,7 @@
+15:47:09 [INFO   ] [default/skill-flow-outlook-trigger-inbox/00] orchestrator: API routing: aws_bedrock
+15:51:00 [WARNING] [default/skill-flow-outlook-trigger-inbox/00] agents.claude_code_agent: [coder] Agent exhausted max_turns (40); turn ended without completing
+15:51:07 [INFO   ] [default/skill-flow-outlook-trigger-inbox/00] orchestrator: Success criteria: 6/6 passed, weighted score: 1.000
+15:51:07 [WARNING] [default/skill-flow-outlook-trigger-inbox/00] orchestrator: Agent exhausted max_turns (40) without passing criteria.
+15:51:07 [INFO   ] [default/skill-flow-outlook-trigger-inbox/00] orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+15:51:07 [INFO   ] [default/skill-flow-outlook-trigger-inbox/00] orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-outlook-trigger-inbox
+15:51:07 [INFO   ] [default/skill-flow-outlook-trigger-inbox/00] orchestrator: Task finished: status=SUCCESS duration=239.5s score=1.000 iterations=1

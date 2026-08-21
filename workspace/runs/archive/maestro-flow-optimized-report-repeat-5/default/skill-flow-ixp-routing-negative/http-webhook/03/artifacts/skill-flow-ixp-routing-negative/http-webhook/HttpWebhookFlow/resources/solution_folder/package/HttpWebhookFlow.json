@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "HttpWebhookFlow",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "9c14407d-423f-496d-83c0-9ea59dfdc436",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "HttpWebhookFlow"
+    },
+    "locks": [],
+    "key": "45274530-4485-4816-90fe-eddc70fde8ee",
+    "files": []
+  }
+}

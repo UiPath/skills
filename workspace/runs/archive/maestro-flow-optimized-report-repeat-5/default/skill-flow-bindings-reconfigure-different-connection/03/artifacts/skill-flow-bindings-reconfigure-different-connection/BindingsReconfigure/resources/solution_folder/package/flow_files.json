@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "flow_files",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "fbd0d438-15ea-4f21-9f1c-0a59ab926152",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "flow_files"
+    },
+    "locks": [],
+    "key": "d6020869-a965-47a8-b082-b4d738b7b8da",
+    "files": []
+  }
+}

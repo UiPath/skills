@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+    xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+    xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+    xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+    xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:uipath="http://uipath.org/schema/bpmn"
+    id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn"
+    exporter="UiPath (https://bpmn.uipath.com)" exporterVersion="1.0">
+
+  <bpmn:error id="Error_SyncFailed" name="SyncFailed" errorCode="SYNC_FAILED" />
+
+  <bpmn:process id="Process_1" isExecutable="true">
+    <bpmn:extensionElements>
+      <uipath:migrationVersion version="11.5" />
+      <uipath:variables version="v1">
+        <!-- Entry-point input variables (scoped to start event) -->
+        <uipath:inputOutput id="Var_CustomerId" name="customerId" type="string" elementId="Start_ManualTrigger" />
+        <uipath:inputOutput id="Var_RequestedBy" name="requestedBy" type="string" elementId="Start_ManualTrigger" />
+        <!-- Process-level working variables -->
+        <uipath:inputOutput id="Var_SyncRequest" name="syncRequest" type="object" />
+        <uipath:inputOutput id="Var_InvocationId" name="invocationId" type="string" />
+        <uipath:inputOutput id="Var_SyncStatus" name="syncStatus" type="string" />
+        <uipath:inputOutput id="Var_SyncResult" name="syncResult" type="object" />
+      </uipath:variables>
+    </bpmn:extensionElements>
+
+    <!-- Start event: manual trigger with customerId + requestedBy inputs -->
+    <bpmn:startEvent id="Start_ManualTrigger" name="Customer Sync Requested">
+      <bpmn:extensionElements>
+        <uipath:entryPointId value="EP_CustomerSync" />
+      </bpmn:extensionElements>
+      <bpmn:outgoing>Flow_StartToTask</bpmn:outgoing>
+    </bpmn:startEvent>
+
+    <!-- Service task: Orchestrator.ExecuteApiWorkflowAsync -->
+    <bpmn:serviceTask id="Task_RunCustomerSync" name="Run Customer Sync API Workflow">
+      <bpmn:extensionElements>
+        <uipath:activity version="v1">
+          <uipath:type value="Orchestrator.ExecuteApiWorkflowAsync" version="v1" />
+          <uipath:context>
+            <uipath:input name="releaseKey" value="" />
+            <uipath:input name="folderId" value="" />
+            <uipath:input name="folderPath" value="" />
+            <uipath:input name="name" value="" />
+          </uipath:context>
+          <uipath:input name="JobArguments" type="json" target="bodyField"><![CDATA[{"customerId":"=vars.Var_CustomerId","requestedBy":"=vars.Var_RequestedBy"}]]></uipath:input>
+          <uipath:output name="Process response" type="Orchestrator.RunJob" var="Var_SyncResult" />
+          <uipath:output name="invocationId" type="string" var="Var_InvocationId" source="=result.invocationId" />
+          <uipath:output name="syncStatus" type="string" var="Var_SyncStatus" source="=result.status" />
+        </uipath:activity>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_StartToTask</bpmn:incoming>
+      <bpmn:outgoing>Flow_TaskToEnd</bpmn:outgoing>
+    </bpmn:serviceTask>
+
+    <!-- Error boundary event on the service task -->
+    <bpmn:boundaryEvent id="Boundary_SyncError" attachedToRef="Task_RunCustomerSync" cancelActivity="true">
+      <bpmn:errorEventDefinition errorRef="Error_SyncFailed" />
+      <bpmn:outgoing>Flow_ErrorToFail</bpmn:outgoing>
+    </bpmn:boundaryEvent>
+
+    <!-- Success end event -->
+    <bpmn:endEvent id="End_Success" name="Sync Completed">
+      <bpmn:incoming>Flow_TaskToEnd</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <!-- Failure end event (error) -->
+    <bpmn:endEvent id="End_Failure" name="Sync Failed">
+      <bpmn:errorEventDefinition errorRef="Error_SyncFailed" />
+      <bpmn:incoming>Flow_ErrorToFail</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <!-- Sequence flows -->
+    <bpmn:sequenceFlow id="Flow_StartToTask" sourceRef="Start_ManualTrigger" targetRef="Task_RunCustomerSync" />
+    <bpmn:sequenceFlow id="Flow_TaskToEnd"   sourceRef="Task_RunCustomerSync"  targetRef="End_Success" />
+    <bpmn:sequenceFlow id="Flow_ErrorToFail" sourceRef="Boundary_SyncError"    targetRef="End_Failure" />
+  </bpmn:process>
+
+  <!--
+    Layout (left to right):
+      Start(160,82)  Task(256,60)  End_Success(416,82)
+                     Boundary(296,120) - below task right edge
+                     End_Failure(416,160)
+  -->
+  <bpmndi:BPMNDiagram id="Diagram_1">
+    <bpmndi:BPMNPlane id="Plane_1" bpmnElement="Process_1">
+
+      <bpmndi:BPMNShape id="S_Start_ManualTrigger" bpmnElement="Start_ManualTrigger">
+        <dc:Bounds x="160" y="82" width="36" height="36" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="S_Task_RunCustomerSync" bpmnElement="Task_RunCustomerSync">
+        <dc:Bounds x="256" y="60" width="100" height="80" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="S_Boundary_SyncError" bpmnElement="Boundary_SyncError">
+        <dc:Bounds x="338" y="122" width="36" height="36" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="S_End_Success" bpmnElement="End_Success">
+        <dc:Bounds x="418" y="82" width="36" height="36" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="S_End_Failure" bpmnElement="End_Failure">
+        <dc:Bounds x="418" y="180" width="36" height="36" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNEdge id="E_Flow_StartToTask" bpmnElement="Flow_StartToTask">
+        <di:waypoint x="196" y="100" />
+        <di:waypoint x="256" y="100" />
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="E_Flow_TaskToEnd" bpmnElement="Flow_TaskToEnd">
+        <di:waypoint x="356" y="100" />
+        <di:waypoint x="418" y="100" />
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="E_Flow_ErrorToFail" bpmnElement="Flow_ErrorToFail">
+        <di:waypoint x="356" y="140" />
+        <di:waypoint x="356" y="198" />
+        <di:waypoint x="418" y="198" />
+      </bpmndi:BPMNEdge>
+
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

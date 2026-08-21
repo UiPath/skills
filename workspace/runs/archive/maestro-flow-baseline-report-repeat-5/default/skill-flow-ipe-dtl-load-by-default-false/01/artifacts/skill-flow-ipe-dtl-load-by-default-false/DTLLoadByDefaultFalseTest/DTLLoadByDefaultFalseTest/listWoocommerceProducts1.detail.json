@@ -1,0 +1,10 @@
+{
+  "connectionId": "<WOOCOMMERCE_CONNECTION_UUID>",
+  "folderKey": "<ORCHESTRATOR_FOLDER_KEY>",
+  "method": "GET",
+  "endpoint": "/products",
+  "objectName": "products",
+  "queryParameters": {
+    "attribute_term": "=js:$vars.start.output.attributeTerm"
+  }
+}

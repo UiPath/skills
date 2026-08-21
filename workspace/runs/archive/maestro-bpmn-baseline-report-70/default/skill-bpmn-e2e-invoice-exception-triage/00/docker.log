@@ -1,0 +1,6 @@
+06:05:34 [INFO   ] [default/skill-bpmn-e2e-invoice-exception-triage/00] orchestrator: API routing: aws_bedrock
+06:12:37 [INFO   ] [default/skill-bpmn-e2e-invoice-exception-triage/00] orchestrator: Success criteria: 5/5 passed, weighted score: 1.000
+06:12:37 [WARNING] [default/skill-bpmn-e2e-invoice-exception-triage/00] orchestrator: Visible turns (29) exceeded expected_turns (25) at iteration 1 for task skill-bpmn-e2e-invoice-exception-triage. Run continues — max_turns remains the hard cap.
+06:12:37 [INFO   ] [default/skill-bpmn-e2e-invoice-exception-triage/00] orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+06:12:37 [INFO   ] [default/skill-bpmn-e2e-invoice-exception-triage/00] orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-bpmn-e2e-invoice-exception-triage
+06:12:37 [INFO   ] [default/skill-bpmn-e2e-invoice-exception-triage/00] orchestrator: Task finished: status=SUCCESS duration=429.6s score=1.000 iterations=1

@@ -1,0 +1,71 @@
+{
+  "version": "1.1.0",
+  "settings": {
+    "model": "gpt-4.1-2025-04-14",
+    "maxTokens": 4096,
+    "temperature": 0,
+    "engine": "basic-v2",
+    "maxIterations": 3,
+    "mode": "standard"
+  },
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "start__output__email": {
+        "type": "string",
+        "description": "The raw email content (subject + body) to classify."
+      }
+    }
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "category": {
+        "type": "string",
+        "description": "The support category the email belongs to."
+      },
+      "priority": {
+        "type": "string",
+        "description": "The priority level assigned to the email (Critical, High, Medium, or Low)."
+      }
+    },
+    "required": [
+      "category",
+      "priority"
+    ]
+  },
+  "metadata": {
+    "storageVersion": "50.0.0",
+    "isConversational": false,
+    "showProjectCreationExperience": false
+  },
+  "type": "lowCode",
+  "guardrails": [],
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are an email triage agent. Your job is to classify inbound support emails into a category and a priority level.\n\nValid categories:\n- Account Access: login issues, password resets, account lockouts, MFA problems\n- Billing: charges, refunds, invoices, subscriptions, payment failures\n- Technical Issue: bugs, errors, crashes, performance problems, integration failures\n- Feature Request: requests for new functionality, UX improvements, missing capabilities\n- General Inquiry: questions, information requests, how-to queries\n\nValid priority levels:\n- Critical: service outage, data loss, security breach, or complete inability to use the product\n- High: significant disruption to the user's core workflow; same-day response required\n- Medium: inconvenient but a workaround exists; standard SLA applies\n- Low: cosmetic issue, minor inconvenience, non-urgent request, or general question\n\nRules:\n1. Read the entire email carefully before classifying.\n2. Choose exactly ONE category and ONE priority level.\n3. Respond ONLY with a JSON object: {\"category\": \"<category>\", \"priority\": \"<priority>\"}.\n4. Do not include any explanation, preamble, or markdown fencing — output only the JSON object.\n5. If the email contains multiple issues, classify by the most severe.",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "You are an email triage agent. Your job is to classify inbound support emails into a category and a priority level.\n\nValid categories:\n- Account Access: login issues, password resets, account lockouts, MFA problems\n- Billing: charges, refunds, invoices, subscriptions, payment failures\n- Technical Issue: bugs, errors, crashes, performance problems, integration failures\n- Feature Request: requests for new functionality, UX improvements, missing capabilities\n- General Inquiry: questions, information requests, how-to queries\n\nValid priority levels:\n- Critical: service outage, data loss, security breach, or complete inability to use the product\n- High: significant disruption to the user's core workflow; same-day response required\n- Medium: inconvenient but a workaround exists; standard SLA applies\n- Low: cosmetic issue, minor inconvenience, non-urgent request, or general question\n\nRules:\n1. Read the entire email carefully before classifying.\n2. Choose exactly ONE category and ONE priority level.\n3. Respond ONLY with a JSON object: {\"category\": \"<category>\", \"priority\": \"<priority>\"}.\n4. Do not include any explanation, preamble, or markdown fencing — output only the JSON object.\n5. If the email contains multiple issues, classify by the most severe."
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "Classify the following support email and return a JSON object with \"category\" and \"priority\" fields.\n\nEmail:\n{{input.start__output__email}}",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "Classify the following support email and return a JSON object with \"category\" and \"priority\" fields.\n\nEmail:\n"
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__email"
+        }
+      ]
+    }
+  ],
+  "projectId": "ce8dc7fd-9711-482a-ad17-12b9d2a0b3da"
+}

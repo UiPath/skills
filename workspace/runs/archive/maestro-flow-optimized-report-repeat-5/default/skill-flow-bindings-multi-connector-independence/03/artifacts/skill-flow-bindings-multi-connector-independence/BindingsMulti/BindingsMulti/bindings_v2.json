@@ -1,0 +1,43 @@
+{
+  "version": "2.0",
+  "resources": [
+    {
+      "resource": "connection",
+      "key": "849e85d8-1aa9-4d52-8bbd-20041c8f05d8",
+      "id": "connection849e85d8-1aa9-4d52-8bbd-20041c8f05d8",
+      "value": {
+        "ConnectionId": {
+          "defaultValue": "849e85d8-1aa9-4d52-8bbd-20041c8f05d8",
+          "isExpression": false,
+          "displayName": "uipath-salesforce-slack connection"
+        }
+      },
+      "metadata": {
+        "ActivityName": "Send Slack Message",
+        "BindingsVersion": "2.2",
+        "DisplayLabel": "uipath-salesforce-slack connection",
+        "UseConnectionService": "true",
+        "Connector": "uipath-salesforce-slack"
+      }
+    },
+    {
+      "resource": "connection",
+      "key": "75dfafb4-3717-470c-a5f6-bdc144757a67",
+      "id": "connection75dfafb4-3717-470c-a5f6-bdc144757a67",
+      "value": {
+        "ConnectionId": {
+          "defaultValue": "75dfafb4-3717-470c-a5f6-bdc144757a67",
+          "isExpression": false,
+          "displayName": "uipath-microsoft-outlook365 connection"
+        }
+      },
+      "metadata": {
+        "ActivityName": "Get Outlook Email",
+        "BindingsVersion": "2.2",
+        "DisplayLabel": "uipath-microsoft-outlook365 connection",
+        "UseConnectionService": "true",
+        "Connector": "uipath-microsoft-outlook365"
+      }
+    }
+  ]
+}

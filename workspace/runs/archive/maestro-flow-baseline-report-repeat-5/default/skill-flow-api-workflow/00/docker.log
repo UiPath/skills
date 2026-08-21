@@ -1,0 +1,6 @@
+19:37:20 [INFO   ] [default/skill-flow-api-workflow/00] orchestrator: API routing: aws_bedrock
+19:42:03 [INFO   ] [default/skill-flow-api-workflow/00] evaluation.checker: Criterion 'run_command' FAILED (score=0.00, threshold=1.00): Command: python3 $TASK_DIR/check_api_workflow_flow.py
+19:42:03 [INFO   ] [default/skill-flow-api-workflow/00] orchestrator: Success criteria: 1/2 passed, weighted score: 0.375
+19:42:03 [INFO   ] [default/skill-flow-api-workflow/00] orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+19:42:03 [INFO   ] [default/skill-flow-api-workflow/00] orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-api-workflow
+19:42:03 [INFO   ] [default/skill-flow-api-workflow/00] orchestrator: Task finished: status=FAILURE duration=285.4s score=0.375 iterations=1

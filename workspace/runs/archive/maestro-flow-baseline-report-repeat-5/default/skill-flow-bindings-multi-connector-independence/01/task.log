@@ -1,0 +1,54 @@
+2026-07-24 19:48:21 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-24 19:48:21 [INFO] coder_eval.orchestrator: API routing: aws_bedrock
+2026-07-24 19:48:21 [DEBUG] coder_eval.criteria: Discovered 14 criterion checkers
+2026-07-24 19:48:21 [DEBUG] coder_eval.criteria: Validated 14 criterion checkers
+2026-07-24 19:48:21 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-24 19:48:22 [DEBUG] coder_eval.orchestrator: Sending prompt: Build a flow named "BindingsMulti" with TWO IS connector nodes backed
+by DIFFERENT connector keys, s...
+2026-07-24 19:48:22 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Starting agent query stream...
+2026-07-24 19:53:15 [DEBUG] coder_eval.agents.claude_code_agent: [coder] session_id changed: None -> 4501eb65-278b-4122-bf7b-42f9ad6ac45c
+2026-07-24 19:53:15 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Agent query stream ended
+2026-07-24 19:53:15 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-24 19:53:15 [DEBUG] coder_eval.orchestrator: Agent response received (4090 chars)
+2026-07-24 19:53:15 [DEBUG] coder_eval.orchestrator: Checking success criteria
+2026-07-24 19:53:15 [DEBUG] coder_eval.evaluation.checker: Criterion 'command_executed' score: 1.00
+2026-07-24 19:53:15 [DEBUG] coder_eval.evaluation.checker: Criterion 'command_executed' score: 1.00
+2026-07-24 19:53:15 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'conn_ids.json declares two distinct connection ids backed by different connector keys': python3 -c "import json; d=json.load(open('conn_ids.json')); assert d['a']!=d['b'], 'connection ids must differ'; assert d['ka']!=d['kb'], 'connector keys must differ'"
+2026-07-24 19:53:15 [DEBUG] coder_eval.sandbox: Command 'python3 -c "import json; d=json.load(open('conn_ids.json')); assert d['a']!=d['b'], 'connection ids must differ'; assert d['ka']!=d['kb'], 'connector keys must differ'"' exited with code 0
+2026-07-24 19:53:15 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-07-24 19:53:15 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'Flow file exists and is valid JSON': python3 $TASK_DIR/check_bindings.py structure '**/BindingsMulti*.flow'
+2026-07-24 19:53:16 [DEBUG] coder_eval.sandbox: Command 'python3 $TASK_DIR/check_bindings.py structure '**/BindingsMulti*.flow'' exited with code 0
+2026-07-24 19:53:16 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+OK: BindingsMulti/BindingsMulti/BindingsMulti.flow valid JSON with nodes + bindings
+---
+2026-07-24 19:53:16 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-07-24 19:53:16 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'Both connection ids appear in Connection bindings, each on its own ConnectionId row': python3 $TASK_DIR/check_bindings.py both_ids_present_from_json '**/BindingsMulti*.flow' conn_ids.json
+2026-07-24 19:53:16 [DEBUG] coder_eval.sandbox: Command 'python3 $TASK_DIR/check_bindings.py both_ids_present_from_json '**/BindingsMulti*.flow' conn_ids.json' exited with code 0
+2026-07-24 19:53:16 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+OK: BindingsMulti/BindingsMulti/BindingsMulti.flow both connections present in ConnectionId bindings
+---
+2026-07-24 19:53:16 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-07-24 19:53:16 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'No empty-keyed Connection bindings (cross-node aliasing surface)': python3 $TASK_DIR/check_bindings.py no_empty_stubs '**/BindingsMulti*.flow'
+2026-07-24 19:53:16 [DEBUG] coder_eval.sandbox: Command 'python3 $TASK_DIR/check_bindings.py no_empty_stubs '**/BindingsMulti*.flow'' exited with code 0
+2026-07-24 19:53:16 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+OK: BindingsMulti/BindingsMulti/BindingsMulti.flow has no empty-keyed Connection bindings
+---
+2026-07-24 19:53:16 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-07-24 19:53:16 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'No (name, propertyAttribute, resourceKey) triplet duplicates': python3 $TASK_DIR/check_bindings.py no_triplet_dups '**/BindingsMulti*.flow'
+2026-07-24 19:53:16 [DEBUG] coder_eval.sandbox: Command 'python3 $TASK_DIR/check_bindings.py no_triplet_dups '**/BindingsMulti*.flow'' exited with code 0
+2026-07-24 19:53:16 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+OK: BindingsMulti/BindingsMulti/BindingsMulti.flow has no duplicate Connection (name, propertyAttribute, resourceKey) triplets
+---
+2026-07-24 19:53:16 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-07-24 19:53:16 [INFO] coder_eval.orchestrator: Success criteria: 7/7 passed, weighted score: 1.000
+2026-07-24 19:53:16 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-24 19:53:16 [INFO] coder_eval.orchestrator: Running post-run command: python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/cleanup_solutions.py
+2026-07-24 19:53:18 [WARNING] coder_eval.orchestrator: [post_run stderr] cleanup_solutions: solution 9ab6b06a-df61-4dc2-bc20-0f2185136b40 not uploaded (from BindingsMulti/BindingsMulti.uipx); nothing to clean up
+2026-07-24 19:53:18 [WARNING] coder_eval.orchestrator: [post_run stderr] cleanup_solutions: summary policy=always deleted=0 preserved=0 skipped=0 not_uploaded=1 failed=0
+2026-07-24 19:53:18 [INFO] coder_eval.orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+2026-07-24 19:53:18 [INFO] coder_eval.orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-bindings-multi-connector-independence
+2026-07-24 19:53:18 [INFO] coder_eval.orchestrator: Task finished: status=SUCCESS duration=299.3s score=1.000 iterations=1

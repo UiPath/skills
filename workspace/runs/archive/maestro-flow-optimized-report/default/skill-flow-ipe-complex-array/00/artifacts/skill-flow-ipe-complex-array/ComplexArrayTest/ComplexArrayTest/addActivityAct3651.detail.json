@@ -1,0 +1,15 @@
+{
+  "connectionId": "<ACT_365_CONNECTION_UUID>",
+  "folderKey": "<ORCHESTRATOR_FOLDER_KEY>",
+  "method": "POST",
+  "endpoint": "/Interactions",
+  "bodyParameters": {
+    "subject": "Sales Interaction - Follow Up Call",
+    "type": "Call",
+    "startTime": "2026-07-24T09:00:00Z",
+    "endTime": "2026-07-24T09:30:00Z",
+    "timeZone": "America/New_York",
+    "details": "Follow-up sales call to discuss proposal",
+    "contacts": "=js:$vars.buildContacts.output.contacts"
+  }
+}

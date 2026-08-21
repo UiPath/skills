@@ -1,0 +1,21 @@
+{
+  "tag": "efe17307",
+  "project_key": "CE",
+  "issuetype_id": "11457",
+  "issues": [
+    {
+      "summary": "coder-eval jira lifecycle efe17307 item1",
+      "priority": "High"
+    },
+    {
+      "summary": "coder-eval jira lifecycle efe17307 item2",
+      "priority": "Low"
+    },
+    {
+      "summary": "coder-eval jira lifecycle efe17307 item3",
+      "priority": "High"
+    }
+  ],
+  "escalated_marker": "ESCALATED efe17307",
+  "routine_marker": "ROUTINE efe17307"
+}

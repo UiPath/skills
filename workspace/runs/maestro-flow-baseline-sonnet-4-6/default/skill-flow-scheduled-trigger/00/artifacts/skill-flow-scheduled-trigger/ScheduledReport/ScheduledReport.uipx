@@ -1,0 +1,12 @@
+{
+  "DocVersion": "1.0.0",
+  "StudioMinVersion": "2025.10.0",
+  "SolutionId": "146d0a4e-7542-4fe2-989c-808d96b72408",
+  "Projects": [
+    {
+      "Type": "Flow",
+      "ProjectRelativePath": "ScheduledReport/project.uiproj",
+      "Id": "be2c4c16-c210-46c3-bb75-17da2a6131b7"
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+04:30:49 [INFO   ] [default/skill-bpmn-e2e-live-debug/01] orchestrator: API routing: aws_bedrock
+04:39:21 [WARNING] [default/skill-bpmn-e2e-live-debug/01] agents.claude_code_agent: [coder] Agent exhausted max_turns (120); turn ended without completing
+04:39:21 [INFO   ] [default/skill-bpmn-e2e-live-debug/01] evaluation.checker: Criterion 'command_executed' FAILED (score=0.00, threshold=1.00): Matched 0/1 required commands (filters: tool_name=Bash, pattern=/(uip|\$UIP)\s+maestro\s+bpmn\s+debug-instance\s+variables(-all)?/)
+04:39:21 [INFO   ] [default/skill-bpmn-e2e-live-debug/01] evaluation.checker: Criterion 'run_command' FAILED (score=0.00, threshold=1.00): Command: python3 $TASK_DIR/check_live_debug.py
+04:39:21 [INFO   ] [default/skill-bpmn-e2e-live-debug/01] orchestrator: Success criteria: 1/3 passed, weighted score: 0.167
+04:39:21 [WARNING] [default/skill-bpmn-e2e-live-debug/01] orchestrator: Agent exhausted max_turns (120) without passing criteria.
+04:39:21 [WARNING] [default/skill-bpmn-e2e-live-debug/01] orchestrator: Visible turns (123) exceeded expected_turns (30) at iteration 1 for task skill-bpmn-e2e-live-debug. Run continues — max_turns remains the hard cap.
+04:39:21 [INFO   ] [default/skill-bpmn-e2e-live-debug/01] orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+04:39:21 [INFO   ] [default/skill-bpmn-e2e-live-debug/01] orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-bpmn-e2e-live-debug
+04:39:21 [INFO   ] [default/skill-bpmn-e2e-live-debug/01] orchestrator: Task finished: status=MAX_TURNS_EXHAUSTED duration=514.0s score=0.167 iterations=1

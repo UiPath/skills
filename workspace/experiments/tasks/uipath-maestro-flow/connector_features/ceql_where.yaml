@@ -1,0 +1,48 @@
+task_id: skill-flow-ipe-ceql-where
+description: >
+  Tests the CEQL where query IS feature — agent plans a structured filter
+  tree for the Microsoft Entra (Azure AD) connector's "List groups"
+  operation with a `displayName = "active"` filter, following the canonical
+  shape documented in the Filter Trees (CEQL) section of the
+  uipath-platform skill. The flow must reference the registered connector
+  key (`uipath-microsoft-azureactivedirectory`), use Decision + Terminate
+  for routing, and pass `uip maestro flow validate`.
+tags: [uipath-maestro-flow, integration, connector, ceql, filter, uipath-microsoft-azureactivedirectory, ipe, mode:build]
+
+run_limits:
+  expected_turns: 34
+  task_timeout: 1500
+  max_turns: 120
+  turn_timeout: 1200
+
+initial_prompt: |
+  This sandbox has no UiPath tenant, so you can't run the live node-configuration 
+  step. Instead, capture the filter you'd apply to the operation as where_detail.json 
+  so it can be reviewed.
+
+  Build a flow "CeqlWhereTest" with a manual trigger that lists Microsoft Entra (Azure AD) 
+  groups whose displayName equals "active". Find the registered Entra/Azure AD connector key 
+  before wiring the node.
+
+  Branch on the result: if the call fails, stop the flow immediately;
+  if it succeeds, log "CeqlWhere test passed".
+  Validate the final flow file.
+
+success_criteria:
+  - type: run_command
+    description: "where_detail.json (found anywhere under the solution) has a canonical CEQL filter tree on displayName='active'; flow references the registered Azure AD / Entra connector key with List Groups + Terminate nodes"
+    command: "python3 $TASK_DIR/check_ceql_where_flow.py"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 8.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "uip maestro flow validate was called"
+    tool_name: "Bash"
+    command_pattern: "(uip|\\$UIP)\\s+(maestro\\s+)?flow\\s+validate"
+    min_count: 1
+    require_success: true
+    weight: 2.0
+    pass_threshold: 1.0
+

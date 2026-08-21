@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+    xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+    xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+    xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+    xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:uipath="http://uipath.org/schema/bpmn"
+    id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn"
+    exporter="UiPath (https://bpmn.uipath.com)" exporterVersion="1.0">
+
+  <bpmn:process id="Process_1" isExecutable="true">
+    <bpmn:extensionElements>
+      <uipath:migrationVersion version="11.5" />
+      <uipath:variables version="v1">
+        <uipath:inputOutput id="Var_Items" name="Items" type="array" elementId="Start_1" />
+        <uipath:inputOutput id="Var_CurrentLine" name="CurrentLine" type="string" />
+        <uipath:inputOutput id="Var_CurrentIndex" name="CurrentIndex" type="number" />
+      </uipath:variables>
+    </bpmn:extensionElements>
+
+    <bpmn:startEvent id="Start_1" name="Start">
+      <bpmn:extensionElements>
+        <uipath:entryPointId value="EP_Start_1" />
+      </bpmn:extensionElements>
+      <bpmn:outgoing>Flow_StartToSubProc</bpmn:outgoing>
+    </bpmn:startEvent>
+
+    <bpmn:subProcess id="SubProc_1" name="Iterate Items">
+      <bpmn:incoming>Flow_StartToSubProc</bpmn:incoming>
+      <bpmn:outgoing>Flow_SubProcToEnd</bpmn:outgoing>
+
+      <bpmn:multiInstanceLoopCharacteristics isSequential="true">
+        <bpmn:extensionElements>
+          <uipath:loopCharacteristics
+              inputCollection="=vars.Var_Items" inputElement="iterator[0]" />
+        </bpmn:extensionElements>
+      </bpmn:multiInstanceLoopCharacteristics>
+
+      <bpmn:startEvent id="SubStart_1" name="Iteration Start">
+        <bpmn:outgoing>Flow_SubStartToTask</bpmn:outgoing>
+      </bpmn:startEvent>
+
+      <bpmn:scriptTask id="Task_MapVars" name="Map Item to Variables" scriptFormat="JavaScript">
+        <bpmn:extensionElements>
+          <uipath:scriptVersion value="v3" />
+          <uipath:mapping version="v1">
+            <uipath:type value="BPMN.ScriptTask" version="v1" />
+            <uipath:input name="args" type="json" target="bodyField"><![CDATA[{"currentLine":"=iterator[0].item","currentIndex":"=iterator[0].loopCounter"}]]></uipath:input>
+            <uipath:output name="currentLine" type="string" var="Var_CurrentLine" source="=result.response.currentLine" />
+            <uipath:output name="currentIndex" type="number" var="Var_CurrentIndex" source="=result.response.currentIndex" />
+          </uipath:mapping>
+        </bpmn:extensionElements>
+        <bpmn:incoming>Flow_SubStartToTask</bpmn:incoming>
+        <bpmn:outgoing>Flow_TaskToSubEnd</bpmn:outgoing>
+        <bpmn:script><![CDATA[return { response: { currentLine: currentLine, currentIndex: currentIndex } };]]></bpmn:script>
+      </bpmn:scriptTask>
+
+      <bpmn:endEvent id="SubEnd_1" name="Iteration End">
+        <bpmn:incoming>Flow_TaskToSubEnd</bpmn:incoming>
+      </bpmn:endEvent>
+
+      <bpmn:sequenceFlow id="Flow_SubStartToTask" sourceRef="SubStart_1" targetRef="Task_MapVars" />
+      <bpmn:sequenceFlow id="Flow_TaskToSubEnd" sourceRef="Task_MapVars" targetRef="SubEnd_1" />
+    </bpmn:subProcess>
+
+    <bpmn:endEvent id="End_1" name="End">
+      <bpmn:incoming>Flow_SubProcToEnd</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <bpmn:sequenceFlow id="Flow_StartToSubProc" sourceRef="Start_1" targetRef="SubProc_1" />
+    <bpmn:sequenceFlow id="Flow_SubProcToEnd" sourceRef="SubProc_1" targetRef="End_1" />
+  </bpmn:process>
+
+  <bpmndi:BPMNDiagram id="Diagram_1">
+    <bpmndi:BPMNPlane id="Plane_1" bpmnElement="Process_1">
+
+      <bpmndi:BPMNShape id="S_Start_1" bpmnElement="Start_1">
+        <dc:Bounds x="160" y="100" width="36" height="36" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="S_SubProc_1" bpmnElement="SubProc_1" isExpanded="true">
+        <dc:Bounds x="260" y="60" width="460" height="200" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="S_SubStart_1" bpmnElement="SubStart_1">
+        <dc:Bounds x="310" y="140" width="36" height="36" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="S_Task_MapVars" bpmnElement="Task_MapVars">
+        <dc:Bounds x="406" y="120" width="100" height="80" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="S_SubEnd_1" bpmnElement="SubEnd_1">
+        <dc:Bounds x="578" y="140" width="36" height="36" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="S_End_1" bpmnElement="End_1">
+        <dc:Bounds x="782" y="100" width="36" height="36" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNEdge id="E_Flow_StartToSubProc" bpmnElement="Flow_StartToSubProc">
+        <di:waypoint x="196" y="118" />
+        <di:waypoint x="260" y="160" />
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="E_Flow_SubProcToEnd" bpmnElement="Flow_SubProcToEnd">
+        <di:waypoint x="720" y="160" />
+        <di:waypoint x="782" y="118" />
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="E_Flow_SubStartToTask" bpmnElement="Flow_SubStartToTask">
+        <di:waypoint x="346" y="158" />
+        <di:waypoint x="406" y="160" />
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="E_Flow_TaskToSubEnd" bpmnElement="Flow_TaskToSubEnd">
+        <di:waypoint x="506" y="160" />
+        <di:waypoint x="578" y="158" />
+      </bpmndi:BPMNEdge>
+
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+
+</bpmn:definitions>

@@ -1,0 +1,1393 @@
+{
+  "task_id": "skill-flow-eval-local-crud",
+  "task_description": "Skill-guided evaluation: agent uses the uipath-maestro-flow skill's evaluate capability to scaffold a Flow project and exercise local eval CRUD — evaluator add (exact-match), eval set add, data point add, list. No login, no upload, no run. Tests whether the skill teaches the correct local-CRUD workflow and `--output json` discipline on every `uip maestro flow eval` command.\n",
+  "variant_id": "default",
+  "agent_type": "claude-code",
+  "model_used": "claude-sonnet-4-6",
+  "started_at": "2026-08-19T16:52:42.070922",
+  "completed_at": "2026-08-19T16:55:40.687090",
+  "duration_seconds": 178.6161937713623,
+  "final_status": "SUCCESS",
+  "max_turns_exhausted": false,
+  "weighted_score": 1.0,
+  "iteration_count": 1,
+  "success_criteria_results": [
+    {
+      "result_kind": "basic",
+      "criterion_type": "command_executed",
+      "description": "Agent created a solution",
+      "score": 1.0,
+      "details": "Matched 1/1 required commands (filters: tool_name=Bash, pattern=/(uip|\\$UIP)\\s+solution\\s+(new|init)/)\nExamples: ['\\\\\\n  uip solution init \"SmokeEval\" --output json && \\\\\\n  cd SmokeEval && \\\\\\n  uip maestro flow init \"SmokeEval\" --output js']",
+      "error": null,
+      "pass_threshold": 0.0,
+      "gating": true
+    },
+    {
+      "result_kind": "basic",
+      "criterion_type": "command_executed",
+      "description": "Agent initialized a Flow project",
+      "score": 1.0,
+      "details": "Matched 1/1 required commands (filters: tool_name=Bash, pattern=/(uip|\\$UIP)\\s+(maestro\\s+)?flow\\s+init/)\nExamples: ['\\\\\\n  uip solution init \"SmokeEval\" --output json && \\\\\\n  cd SmokeEval && \\\\\\n  uip maestro flow init \"SmokeEval\" --output js']",
+      "error": null,
+      "pass_threshold": 1.0,
+      "gating": true
+    },
+    {
+      "result_kind": "basic",
+      "criterion_type": "file_exists",
+      "description": "Flow file was created at the double-nested path",
+      "score": 1.0,
+      "details": "File 'SmokeEval/SmokeEval/SmokeEval.flow' exists",
+      "error": null,
+      "pass_threshold": 1.0,
+      "gating": true
+    },
+    {
+      "result_kind": "basic",
+      "criterion_type": "command_executed",
+      "description": "Agent added an evaluator with kebab-case --type exact-match",
+      "score": 1.0,
+      "details": "Matched 1/1 required commands (filters: tool_name=Bash, pattern=/(uip|\\$UIP)\\s+maestro\\s+flow\\s+eval\\s+evaluator\\s+add\\s+.*--type\\s+exact-match/)\nExamples: ['PROJ=/work/output/artifacts/skill-flow-eval-local-crud/SmokeEval/SmokeEval && \\\\\\nuip maestro flow eval evaluator add gree']",
+      "error": null,
+      "pass_threshold": 1.0,
+      "gating": true
+    },
+    {
+      "result_kind": "basic",
+      "criterion_type": "command_executed",
+      "description": "Agent created an eval set",
+      "score": 1.0,
+      "details": "Matched 1/1 required commands (filters: tool_name=Bash, pattern=/(uip|\\$UIP)\\s+maestro\\s+flow\\s+eval\\s+set\\s+add/)\nExamples: ['PROJ=/work/output/artifacts/skill-flow-eval-local-crud/SmokeEval/SmokeEval && \\\\\\nuip maestro flow eval evaluator add gree']",
+      "error": null,
+      "pass_threshold": 1.0,
+      "gating": true
+    },
+    {
+      "result_kind": "basic",
+      "criterion_type": "command_executed",
+      "description": "Agent added a data point with --inputs and --expected",
+      "score": 1.0,
+      "details": "Matched 1/1 required commands (filters: tool_name=Bash, pattern=/(uip|\\$UIP)\\s+maestro\\s+flow\\s+eval\\s+add\\s+.*(--inputs.*--expected|--expected.*--inputs)/)\nExamples: ['PROJ=/work/output/artifacts/skill-flow-eval-local-crud/SmokeEval/SmokeEval && \\\\\\nuip maestro flow eval add hello \\\\\\n  --se']",
+      "error": null,
+      "pass_threshold": 1.0,
+      "gating": true
+    },
+    {
+      "result_kind": "basic",
+      "criterion_type": "command_executed",
+      "description": "Agent listed evaluators or eval sets to verify",
+      "score": 1.0,
+      "details": "Matched 1/1 required commands (filters: tool_name=Bash, pattern=/(uip|\\$UIP)\\s+maestro\\s+flow\\s+eval\\s+(evaluator\\s+list|set\\s+list)/)\nExamples: ['PROJ=/work/output/artifacts/skill-flow-eval-local-crud/SmokeEval/SmokeEval && \\\\\\nuip maestro flow eval add hello \\\\\\n  --se']",
+      "error": null,
+      "pass_threshold": 1.0,
+      "gating": true
+    },
+    {
+      "result_kind": "basic",
+      "criterion_type": "run_command",
+      "description": "Evaluator + eval-set JSON files exist on disk with correct shape",
+      "score": 1.0,
+      "details": "Command: python3 $TASK_DIR/check_local_crud.py\nExit code: 0 (expected: 0)\nStdout:\nOK: evaluator file SmokeEval/SmokeEval/evals/d75f4620-8c2f-404e-b36d-2d5113154c1a/evaluators/greeting-match-7e14b060.json matches\nOK: eval set SmokeEval/SmokeEval/evals/d75f4620-8c2f-404e-b36d-2d5113154c1a/eval-sets/evaluation-set-smoke-set-00c9af36.json contains data point 'hello' with inputs + expected\n\nStderr: (empty)",
+      "error": null,
+      "pass_threshold": 1.0,
+      "gating": true
+    }
+  ],
+  "iterations": [
+    {
+      "iteration": 1,
+      "user_input": "Your working directory is: /work/output/artifacts/skill-flow-eval-local-crud\n\nScaffold a UiPath Flow project called \"SmokeEval\" inside a solution of the\nsame name, then build the eval scaffolding for it — purely local, no Studio\nWeb round-trip.\n\nSteps:\n1. Create the solution and the Flow project. The flow file MUST live at\n   `SmokeEval/SmokeEval/SmokeEval.flow` (double-nested layout) and be linked\n   via `uip solution project add`.\n\n2. Declare a string input variable named `name` on\n   `SmokeEval/SmokeEval/SmokeEval.flow` before adding data points. The\n   eval data point below uses `{\"name\":\"Alice\"}`, and `eval add` rejects\n   input keys that are not declared in the flow.\n\n3. Add an evaluator named `greeting-match` of type `exact-match`, scoped to\n   the Flow project at `SmokeEval/SmokeEval`. Use kebab-case for `--type`.\n\n4. Create an eval set named `Smoke Set` in the same project. (No\n   `--entry-point`, no `--evaluators` — defaults are fine.)\n\n5. Add one data point named `hello` to that eval set with inputs\n   `{\"name\":\"Alice\"}` and expected `{\"greeting\":\"Hello, Alice!\"}`.\n\n6. List evaluators and eval sets to confirm both were created.\n\nImportant:\n- Use `--output json` on every `uip maestro flow eval ...` command.\n- Do NOT call `uip login`. Do NOT call `uip solution upload`. Do NOT call\n  `uip maestro flow eval run *` — this task tests local CRUD only.\n- Do NOT run `uip maestro flow debug` or `uip maestro flow validate` — this\n  is not a flow-authoring test.\n",
+      "agent_output": "[ASSISTANT] I'll read the evaluate capability docs and CLI reference before planning.\n[ASSISTANT] I have everything I need. Let me first check for existing solutions, then chain the full scaffold + eval setup in one call.\n[ASSISTANT] No existing solutions. Now I'll run the full scaffold chain in one call.\n[ASSISTANT] Solution and project created, auto-registered. Now add the input variable, then the evaluator, eval set, and data point.\n[ASSISTANT] Everything is confirmed. Here's a summary of what was built:\n\n**Solution layout:** `SmokeEval/SmokeEval/SmokeEval.flow` (double-nested, auto-registered in `SmokeEval.uipx`)\n\n**Steps completed:**\n1. `uip solution init SmokeEval` → `uip maestro flow init SmokeEval` (inside solution dir) — project registered with `Status: Registered`\n2. `uip maestro flow variable add` — declared `name` as `in / string` on the flow\n3. `eval evaluator add greeting-match --type exact-match` → ID `greeting-match-7e14b060`\n4. `eval set add \"Smoke Set\"` → ID `00c9af36...`, automatically picked up the 1 evaluator\n5. `eval add hello --set \"Smoke Set\" --inputs '{\"name\":\"Alice\"}' --expected '{\"greeting\":\"Hello, Alice!\"}'`\n\n**Confirmation (list outputs):**\n- Evaluators: 1 — `greeting-match` (`uipath-exact-match`, target `*`)\n- Eval sets: 1 — `Smoke Set` (1 data point, 1 evaluator)\n[RESULT - SUCCESS] Everything is confirmed. Here's a summary of what was built:\n\n**Solution layout:** `SmokeEval/SmokeEval/SmokeEval.flow` (double-nested, auto-registered in `SmokeEval.uipx`)\n\n**Steps completed:**\n1. `uip solution init SmokeEval` → `uip maestro flow init SmokeEval` (inside solution dir) — project registered with `Status: Registered`\n2. `uip maestro flow variable add` — declared `name` as `in / string` on the flow\n3. `eval evaluator add greeting-match --type exact-match` → ID `greeting-match-7e14b060`\n4. `eval set add \"Smoke Set\"` → ID `00c9af36...`, automatically picked up the 1 evaluator\n5. `eval add hello --set \"Smoke Set\" --inputs '{\"name\":\"Alice\"}' --expected '{\"greeting\":\"Hello, Alice!\"}'`\n\n**Confirmation (list outputs):**\n- Evaluators: 1 — `greeting-match` (`uipath-exact-match`, target `*`)\n- Eval sets: 1 — `Smoke Set` (1 data point, 1 evaluator)",
+      "commands": [
+        {
+          "tool_name": "Skill",
+          "tool_id": "toolu_bdrk_016H5xBpYgh14dDzrazCgDAH",
+          "assistant_turn_index": 1,
+          "timestamp": "2026-08-19T16:52:57.883944",
+          "duration_ms": 36.124681995715946,
+          "generation_completed_at": "2026-08-19T16:52:57.883944",
+          "execution_started_at": "2026-08-19T16:52:57.884188",
+          "execution_completed_at": "2026-08-19T16:52:57.920313",
+          "parameters": {
+            "skill": "tmp:uipath-maestro-flow"
+          },
+          "result_status": "success",
+          "result_summary": "Launching skill: tmp:uipath-maestro-flow",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 0,
+          "result_tokens": 10
+        },
+        {
+          "tool_name": "Read",
+          "tool_id": "toolu_bdrk_016Zt8SXBH3dmA2iSNcqwt6J",
+          "assistant_turn_index": 4,
+          "timestamp": "2026-08-19T16:53:01.942410",
+          "duration_ms": 4.109486995730549,
+          "generation_completed_at": "2026-08-19T16:53:01.942410",
+          "execution_started_at": "2026-08-19T16:53:01.942478",
+          "execution_completed_at": "2026-08-19T16:53:01.946587",
+          "parameters": {
+            "file_path": "/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/evaluate/CAPABILITY.md"
+          },
+          "result_status": "success",
+          "result_summary": "1\t# Evaluate — Design and run Flow evaluations\n2\t\n3\tCapability index for `uip maestro flow eval` — evaluator CRUD (7 types), eval set CRUD with entry-point pinning, data point management with file attachments, and Studio Web run start/status/results/list/compare. Local CRUD is offline; runs require `uip login` and a Flow solution that already exists in Studio Web.\n4\t\n5\t> **Where you came from / where to go next.** Evaluate is downstream of Operate (ship the flow → evaluate it on Studio Web) and feeds back into Author (failing eval → fix the `.flow` → re-ship → re-evaluate). Build/edit lives in [author/CAPABILITY.md](../author/CAPABILITY.md); publish/deploy lives in [operate/CAPABILITY.md](../operate/CAPABILITY.md); fault triage on a debug or process run lives in [diagnose/CAPABILITY.md](../diagnose/CAPABILITY.md).\n6\t>\n7\t> **Inherits universal rules from [SKILL.md](../../SKILL.md)** — `--output json` + prefer `--output-filter` for extraction, no `flow debug` without consent, never invoke other skills automatically, dropdown question pattern, **plain-English narration + granular progress list (opt-in — silent by default; engage when the user asks for verbosity)**. The rules below are evaluate-scoped and apply on top.\n8\t\n9\t## When to use this capability\n10\t\n11\t- Add or remove data points (test cases) on a Flow eval set\n12\t- Create evaluators (`exact-match`, `json-similarity`, `contains`, `llm-judge-*` types) for a Flow project\n13\t- Create or remove eval sets, link them to evaluators, pin entry points\n14\t- Add, list, or remove simulations on data points (`uip maestro flow eval simulation`)\n15\t- Start an eval run on Studio Web, poll its status, fetch detailed results\n16\t- Compare two eval runs to verify a change improved scores without regressions\n17\t\n18\tFor agent (`agent.json`) evaluations read the `uipath-agents` skill. For BPMN evaluations read the `uipath-maestro-bpmn` skill — this capability covers Flow only.\n19\t\n20\t## Critical rules\n21\t\n22\t1. **Check Flow eval CLI availability once.** Run `uip maestro flow eval --help --output json` before using eval commands. If it returns `unknown command 'eval'`, the installed CLI does not expose Flow eval yet. Stop, report that the user needs a CLI/tool version with Flow eval support, and do not spend turns searching npm packages or source bundles.\n23\t<!--skill-flavor:upload-safety-critical-rule:start-->\n24\t2. **Never run `uip solution upload` automatically as part of an eval workflow.** The eval run requires the Flow solution to already exist in Studio Web, but uploading from the local working tree clobbers whatever is on Studio Web. If the project was pulled from Studio Web (`uip solution download`), edited locally in VS Code, or scaffolded on disk and never uploaded, an unprompted upload will overwrite or push unintended state. Ask the user explicitly before any `uip solution upload` — see [upload-safety.md](references/upload-safety.md).\n25\t<!--skill-flavor:upload-safety-critical-rule:end-->\n26\t3. **`--path` accepts a Flow project directory OR a solution directory containing exactly one Flow project.** If the solution holds multiple Flow projects, point `--path` at the specific project directory.\n27\t4. **Local CRUD does not require login.** `add`, `remove`, `list` (data points / eval sets / evaluators) edit JSON on disk. Only `uip maestro flow eval run *` requires `uip login` and an existing Studio Web solution.\n28\t5. **Pin a model on every LLM-judge evaluator.** Empty/missing `model` produces a cryptic 500 from the LLM gateway after retries. Pass `--model <name>` on `evaluator add` or set `model` in the JSON.\n29\t6. **Declare input variables before adding data points with `--inputs`.** `eval add` validates input keys against the Flow's declared input variables and fails fast on unknown keys. Add missing input variables first (for example, `uip maestro flow variable add My.flow name --direction in --type string --output json`) or change the data point input JSON to match the Flow schema.\n30\t7. **Let the CLI manage evaluator references.** Eval sets store `evaluatorRefs` as the evaluator file refs produced by `evaluator add` (for example, `greeting-match-1234abcd.json`). If the set should use every evaluator that already exists, omit `--evaluators` so the CLI writes those generated file refs. If you must pass `--evaluators`, pass the evaluator id or generated file base/ref from `evaluator add/list` — never the display name alone (`greeting-match`), because Studio Web does not resolve display-name refs.\n31\t8. **Pre-empt timeouts on `run start --wait`.** The CLI blocks until the run reaches a terminal state or `--timeout` elapses. `--timeout` only stops local blocking — the run continues server-side; query progress with `eval run status <run_id>`.\n32\t\n33\t## Quick Start\n34\t\n35\tStandard workflow: scaffold evaluators → create eval set → add data points → confirm project is in Studio Web → run.\n36\t\n37\t```bash\n38\t# 1. Add an evaluator (local; no login required)\n39\tuip maestro flow eval evaluator add greeting-quality \\\n40\t  --type llm-judge-output \\\n41\t  --model gpt-4.1-2025-04-14 \\\n42\t  --path ./MySolution/MyFlow --output json\n43\t\n44\t# 2. Create an eval set, pin the entry point, and let the CLI attach\n45\t#    all current evaluators by generated file ref\n46\tuip maestro flow eval set add \"Smoke Tests\" \\\n47\t  --entry-point /Main.bpmn#start \\\n48\t  --path ./MySolution/MyFlow --output json\n49\t\n50\t# 3. Add data points (test cases)\n51\t#    The `message` key must already be declared as a Flow input variable.\n52\tuip maestro flow eval add hello-test \\\n53\t  --set \"Smoke Tests\" \\\n54\t  --inputs '{\"message\":\"hello\"}' \\\n55\t  --expected '{\"reply\":\"Hello! How can I help you?\"}' \\\n56\t  --path ./MySolution/MyFlow --output json\n57\t\n58\t<!--skill-flavor:upload-safety-workflow-comment:start-->\n59\t# 4. Confirm the solution is in Studio Web\n60\t#    DO NOT auto-run `uip solution upload`. Ask the user. See upload-safety.md.\n61\t<!--skill-flavor:upload-safety-workflow-comment:end-->\n62\t\n63\t# 5. Start the run and wait\n64\tuip maestro flow eval run start \\\n65\t  --set \"Smoke Tests\" \\\n66\t  --path ./MySolution/MyFlow \\\n67\t  --wait --timeout 600 --output json\n68\t\n69\t# 6. Inspect failures\n70\tuip maestro flow eval run results <eval_set_run_id> \\\n71\t  --set \"Smoke Tests\" \\\n72\t  --only-failed --verbose \\\n73\t  --path ./MySolution/MyFlow --output json\n74\t```\n75\t\n76\t## Workflow\n77\t\n78\t| Journey | Read |\n79\t| --- | --- |\n80\t| Look up any `uip maestro flow eval` subcommand syntax, flags, defaults, output codes | [commands-reference.md](references/commands-reference.md) |\n81\t| Choose among the 7 evaluator types, write custom prompts, hand-write evaluator JSON | [evaluators-guide.md](references/evaluators-guide.md) |\n82\t| Create eval sets, add data points, map `--inputs`/`--expected`/`--criteria` to evaluator types, attach files | [eval-sets-guide.md](references/eval-sets-guide.md) |\n83\t| Start a Studio Web run, poll status, read results, export CSV/JSON, compare two runs | [running-guide.md](references/running-guide.md) |\n84\t<!--skill-flavor:upload-safety-workflow-row:start-->\n85\t| Decide whether to call `uip solution upload` (almost always: don't auto-run; ask first) | [upload-safety.md](references/upload-safety.md) |\n86\t<!--skill-flavor:upload-safety-workflow-row:end-->\n87\t\n88\t## Common tasks\n89\t\n90\t| I need to... | Read these |\n91\t| --- | --- |\n92\t| **Add an evaluator** | [evaluators-guide.md](references/evaluators-guide.md) + [commands-reference.md — Evaluators](references/commands-reference.md#evaluators) |\n93\t| **Pick the right evaluator type** | [evaluators-guide.md — When to Pick Each Type](references/evaluators-guide.md#when-to-pick-each-type) |\n94\t| **Create an eval set and pin an entry point** | [eval-sets-guide.md — Eval Set Lifecycle](references/eval-sets-guide.md#eval-set-lifecycle) |\n95\t| **Add a data point with file attachments** | [eval-sets-guide.md — `--input-file`](references/eval-sets-guide.md#--input-file-keypath) |\n96\t| **Set per-data-point criteria for trajectory evaluators** | [eval-sets-guide.md — `--criteria`](references/eval-sets-guide.md#--criteria) |\n97\t| **Add a simulation to a data point** | [eval-sets-guide.md — Simulations](references/eval-sets-guide.md#simulations-on-data-points) + [commands-reference.md — Simulations](references/commands-reference.md#simulations) |\n98\t| **Start a Studio Web eval run** | [running-guide.md — Start a Run](references/running-guide.md#start-a-run) |\n99\t| **Poll run status without `--wait`** | [running-guide.md — Check Status](references/running-guide.md#check-status) |\n100\t| **Inspect only failed data points** | [running-guide.md — Detailed Results](references/running-guide.md#detailed-results) (`--only-failed --verbose`) |\n101\t| **Compare two runs side-by-side** | [running-guide.md — Compare Two Runs](references/running-guide.md#compare-two-runs) |\n102\t<!--skill-flavor:upload-safety-task-row:start-->\n103\t| **Decide whether to call `uip solution upload`** | [upload-safety.md](references/upload-safety.md) |\n104\t<!--skill-flavor:upload-safety-task-row:end-->\n105\t| **Look up the `eval` subcommand tree, flags, defaults, output codes** | [commands-reference.md](references/commands-reference.md) |\n106\t| **My eval run failed** | [running-guide.md — Failure Detection](references/running-guide.md#failure-detection); for flow-level faults [diagnose/CAPABILITY.md](../diagnose/CAPABILITY.md) |\n107\t\n108\t## Anti-patterns\n109\t\n110\t<!--skill-flavor:upload-safety-antipattern:start-->\n111\t- **Don't auto-run `uip solution upload`.** Even when an eval run errors with \"solution not found in Studio Web\", stop and ask the user — see [upload-safety.md](references/upload-safety.md). The local project may be ahead of, or diverged from, Studio Web.\n112\t<!--skill-flavor:upload-safety-antipattern:end-->\n113\t- **Don't hand-write `evaluatorRefs` unless you are repairing an eval set.** Prefer the default all-evaluators behavior so the CLI writes generated file refs, or pass generated evaluator ids/file refs explicitly. Do not pass evaluator display names to `--evaluators`.\n114\t- **Don't pass `--type` in PascalCase.** Only kebab-case is accepted: `exact-match`, `json-similarity`, `contains`, `llm-judge-output`, `llm-judge-strict-json`, `llm-judge-trajectory`, `llm-judge-trajectory-simulation`.\n115\t- **Don't depend on a specific `--wait` polling cadence.** Treat `--wait` as a black-box block; if you need precise progress, omit it and call `eval run status` yourself.\n116\t- **Don't compare runs from different eval sets.** `eval run compare` aligns by data-point name within the set; cross-set deltas are meaningless.\n117\t- **Don't omit `--model` on LLM-judge evaluators.** The cloud worker fail-fasts before calling the LLM gateway.\n118\t- **Don't run evals during `flow debug`.** `debug` is a separate Studio Web session; evals run against the deployed/published solution. Mixing them produces confusing run IDs.\n119\t\n120\t## Completion Output\n121\t\n122\tAfter a run completes, report:\n123\t\n124\t1. **Eval set run ID** and aggregate score (from `run status`)\n125\t2. **Failed data points** (from `run results --only-failed --verbose`)\n126\t3. **Comparison delta** vs the previous run (`run compare`) if one exists\n127\t<!--skill-flavor:upload-safety-next-step:start-->\n128\t4. **Suggested next step** — fix the agent/flow, re-run, or accept the result. Do NOT suggest `uip solution upload` unless the user has explicitly asked to publish edits.\n129\t<!--skill-flavor:upload-safety-next-step:end-->\n130\t\n131\t## References\n132\t\n133\t### Evaluate-scoped\n134\t\n135\t- [commands-reference.md](references/commands-reference.md) — every `uip maestro flow eval` subcommand, flags, defaults, output `Code` enum\n136\t- [evaluators-guide.md](references/evaluators-guide.md) — 7 evaluator types mapped to internal `uipath-*` IDs, JSON shapes, template variables\n137\t- [eval-sets-guide.md](references/eval-sets-guide.md) — eval set + data point CRUD, `--inputs`/`--expected`/`--criteria`/`--input-file`/`--search-text`, simulations\n138\t- [running-guide.md](references/running-guide.md) — run start/status/results/list/compare, JMESPath `--output-filter`, failure detection\n139\t<!--skill-flavor:upload-safety-reference-entry:start-->\n140\t- [upload-safety.md](references/upload-safety.md) — the `solution upload` rule\n141\t<!--skill-flavor:upload-safety-reference-entry:end-->\n142\t\n143\t### Cross-capability (shared)\n144\t\n145\t- [shared/cli-commands.md](../shared/cli-commands.md) — flat CLI lookup including `eval` subcommands\n146\t- [shared/cli-conventions.md](../shared/cli-conventions.md) — login states, `--output json`, JSON output shape\n147\t",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 1,
+          "result_tokens": 3158
+        },
+        {
+          "tool_name": "Read",
+          "tool_id": "toolu_bdrk_01RJuk8tXAMf32aBHwEE6Rsr",
+          "assistant_turn_index": 5,
+          "timestamp": "2026-08-19T16:53:02.437503",
+          "duration_ms": 7.654285000171512,
+          "generation_completed_at": "2026-08-19T16:53:02.437503",
+          "execution_started_at": "2026-08-19T16:53:02.437564",
+          "execution_completed_at": "2026-08-19T16:53:02.445218",
+          "parameters": {
+            "file_path": "/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/shared/cli-commands.md"
+          },
+          "result_status": "success",
+          "result_summary": "1\t# uip maestro flow — CLI Command Reference\n2\t\n3\tAll commands output `{ \"Result\": \"Success\"|\"Failure\", \"Code\": \"...\", \"Data\": { ... } }`. Use `--output json` for programmatic use.\n4\t\n5\t> For node and edge commands (`node add/remove/list/configure`, `edge add/remove/list`), see the [Author CLI editing strategy](../author/references/editing-operations-cli.md). This file covers project setup, validation, registry, debug, and publishing commands.\n6\t\n7\t<!--skill-flavor:flow-init-command:start-->\n8\t## uip maestro flow init\n9\t\n10\tScaffold a new Flow project directory. Outside a solution, `flow init` auto-scaffolds `<ProjectName>Solution/` and nests the project in it. **Prefer creating the solution first** so its name matches the project name (see the [Author greenfield journey — Step 2](../author/references/greenfield.md)).\n11\t\n12\t```bash\n13\t# 1. Create solution first (for naming control)\n14\tuip solution init \"<SolutionName>\" --output json\n15\t\n16\t# 2. Init the flow project inside the solution folder.\n17\t#    Inside a solution directory, `flow init` auto-registers the project with\n18\t#    the parent `.uipx`. Outside any solution, it auto-scaffolds\n19\t#    `<ProjectName>Solution/<ProjectName>Solution.uipx`, nests the project in it,\n20\t#    and adds `Data.AutoCreatedSolution` to the response. Either way confirm via\n21\t#    `Data.SolutionRegistration.Status` (`Registered` or `AlreadyRegistered`).\n22\t#    `--skip-solution-registration` opts out of both (Status `OptedOut`).\n23\tcd <directory>/<SolutionName> && uip maestro flow init <ProjectName> --output json\n24\t\n25\t# 3. (Fallback only) Wire the project manually if registration was\n26\t#    `Skipped` / `Failed` (ambiguous discovery or `.uipx` write error), or the\n27\t#    rare `NotInSolution`. (`OptedOut` means `--skip-solution-registration` was\n28\t#    passed and the skip was intentional.)\n29\tuip solution projects add \\\n30\t  <directory>/<SolutionName>/<ProjectName> \\\n31\t  <directory>/<SolutionName>/<SolutionName>.uipx\n32\t```\n33\t\n34\tCreates `<ProjectName>/` with `project.uiproj`, `<ProjectName>.flow`, `bindings_v2.json`, `entry-points.json`, `operate.json`, and `package-descriptor.json` inside the solution directory.\n35\t<!--skill-flavor:flow-init-command:end-->\n36\t\n37\t## uip maestro flow validate\n38\t\n39\tValidate a `.flow` file locally — no auth, no network.\n40\t\n41\t```bash\n42\tuip maestro flow validate <path/to/file.flow>\n43\tuip maestro flow validate <path/to/file.flow> --output json\n44\tuip maestro flow validate <path/to/file.flow> --verbose --output json\n45\t\n46\t# With governance policy checks (requires login)\n47\tuip maestro flow validate <path/to/file.flow> --governance --output json\n48\t```\n49\t\n50\tChecks:\n51\t\n52\t- JSON parses correctly\n53\t- All required fields present (including `targetPort` on edges)\n54\t- Every node `type:typeVersion` has a matching entry in `definitions`\n55\t- Edge `sourceNodeId`/`targetNodeId` reference existing node `id`s\n56\t- Node `id`s are unique; edge `id`s are unique\n57\t\n58\tExit code 0 = valid, 1 = invalid.\n59\t\n60\t### `--governance` flag\n61\t\n62\tValidates agent nodes against organization governance policies fetched from the platform. Requires `uip login`. When governance data cannot be fetched (no login, platform unreachable), the command exits with a failure. Omit `--governance` to run local-only schema validation without auth.\n63\t\n64\t## uip maestro flow format\n65\t\n66\tAuto-layout nodes in the `.flow` file. Run after validation passes and before publishing or debugging — without format, hand-written or stale `layout` data can render as misshapen rectangles in Studio Web.\n67\t\n68\t```bash\n69\tuip maestro flow format <path/to/file.flow>\n70\tuip maestro flow format <path/to/file.flow> --output json\n71\t```\n72\t\n73\tFormat:\n74\t- Arranges nodes horizontally (left-to-right) and anchors to the leftmost node's original position so the user's general layout intent is preserved\n75\t- Sets each node's `size` to match its canvas shape — inline agents (`shape: rectangle`) → `{ \"width\": 288, \"height\": 96 }`, containers (loops/groups) → `{ \"width\": 560, \"height\": 320 }`, everything else (incl. referenced `uipath.core.agent.<guid>`) → `{ \"width\": 96, \"height\": 96 }`; sticky-note custom sizes are preserved\n76\t- Recurses into subflows and rewrites `subflows[<id>].layout` for each\n77\t- Backfills missing `position`/`size` entries\n78\t- Does not modify node logic, edges, definitions, or variables — only layout coordinates\n79\t\n80\tJSON output (`--output json`) reports counts in `Data`: `NodesTotal`, `EdgesTotal`, `NodesRepositioned`, `NodesResized`, `SubflowsTidied`.\n81\t\n82\t## uip maestro flow pack\n83\t\n84\tPack a Flow project into a `.nupkg` for Orchestrator deployment.\n85\t\n86\t```bash\n87\tuip maestro flow pack <project-path> <OutputDir>\n88\tuip maestro flow pack <project-path> <OutputDir> --version 2.0.0\n89\tuip maestro flow pack <project-path> <OutputDir> --output json\n90\t```\n91\t\n92\tRequires `content/package-descriptor.json` and `content/operate.json` in the project. Output: `<Name>.flow.Flow.<version>.nupkg`.\n93\t\n94\t<!--skill-flavor:upload-pack-note:start-->\n95\t> **Note:** `pack` + `uip solution publish` deploys directly to Orchestrator — the user cannot visualize or edit the flow in Studio Web via this path. Only use this when the user explicitly asks to deploy to Orchestrator. The default publish path is `uip solution upload` (see below). See [uipath-solution](/uipath:uipath-solution) for `solution publish` commands.\n96\t<!--skill-flavor:upload-pack-note:end-->\n97\t\n98\t## uip solution resources refresh\n99\t\n100\t<!--skill-flavor:upload-refresh-prereq:start-->\n101\tRe-scan all projects in the solution and sync resource declarations (connections, processes, queues, etc.) from their `bindings_v2.json` files. Creates new resources for bindings not yet in the solution, imports from Orchestrator when a matching resource exists. **Always run this before `uip solution upload` or `uip maestro flow debug`.**\n102\t<!--skill-flavor:upload-refresh-prereq:end-->\n103\t\n104\t```bash\n105\tuip solution resources refresh --solution-folder <SolutionDir> --output json\n106\t```\n107\t\n108\t<!--skill-flavor:upload-solution-dir-note:start-->\n109\t`<SolutionDir>` is the solution directory (containing the `.uipx` file). The command has no positional solution argument; omit `--solution-folder` only when the current directory is already the solution root.\n110\t<!--skill-flavor:upload-solution-dir-note:end-->\n111\t\n112\t## uip solution resources add / remove / edit\n113\t\n114\tAtomic single-resource mutations. Use these when you need to add, delete, or change one resource and don't want to scan every project's bindings the way `refresh` does — for example, when a flow needs a new local queue but no `bindings_v2.json` change is involved yet.\n115\t\n116\t```bash\n117\t# Local virtual stub (offline, no auth)\n118\tuip solution resources add --source local --kind Queue --name InvoiceQueue --output json\n119\t\n120\t# Import an existing Orchestrator resource\n121\tuip solution resources add --source remote --kind Queue --name InvoiceQueue --folder-path Sales/CRM --output json\n122\t\n123\t# Delete one resource by key\n124\tuip solution resources remove <KEY> --output json\n125\t\n126\t# Patch an existing resource's spec by key (JSON object is the only input)\n127\tuip solution resources edit <KEY> --patch '{\"maxNumberOfRetries\":5}' --output json\n128\tuip solution resources edit <KEY> --patch '{\"acceptAutomaticallyRetry\":false,\"retentionPeriod\":14}' --output json\n129\t\n130\t# Read the patch from stdin\n131\techo '{\"slaInHours\":\"4\"}' | uip solution resources edit <KEY> --patch - --output json\n132\t```\n133\t\n134\t`add` is idempotent on `(kind, name, folder)` for local and on resource key for remote; a retry returns `Status: \"Unchanged\"`. `edit` is the only command that mutates an existing resource's spec — `refresh` never overwrites; it skips resources already in the solution. None of these touch `bindings_v2.json` — if a flow node still binds the resource, the next `refresh` will re-import it. See [uipath-solution Step 9–11](/uipath:uipath-solution) for the full contract.\n135\t\n136\t<!--skill-flavor:upload-command-section:start-->\n137\t## uip solution upload\n138\t\n139\tUpload a solution directly to Studio Web. **Requires `uip login`.**\n140\t\n141\t```bash\n142\tuip solution upload <SolutionDir> --output json\n143\t```\n144\t\n145\t`uip solution upload` accepts the solution directory (the folder containing the `.uipx` file) directly — no intermediate bundling step is required. Use the exact solution root path (or `.` from inside the solution root). If your shell is inside a nested project folder, pass the absolute solution root path or `..`; do not pass the solution name again. Uploads the solution to Studio Web where the user can visualize, inspect, edit, and publish the flow from the browser.\n146\t\n147\t> **This is the default publish path.** When the user asks to \"publish\" without specifying where, run `uip solution upload <SolutionDir>` to push to Studio Web. Share the resulting URL with the user.\n148\t<!--skill-flavor:upload-command-section:end-->\n149\t\n150\t## uip maestro flow debug\n151\t\n152\tDebug a Flow in the cloud via Studio Web + Orchestrator. **Requires `uip login`.**\n153\t\n154\t```bash\n155\tUIPCLI_LOG_LEVEL=info uip maestro flow debug <path-to-project-dir> --output json\n156\t\n157\t# Pass input arguments to the flow\n158\tUIPCLI_LOG_LEVEL=info uip maestro flow debug <path-to-project-dir> --output json \\\n159\t  --inputs '{\"numberA\": 5, \"numberB\": 7}'\n160\t\n161\t# Bind local files to file-typed input variables (repeatable).\n162\t# Replace <variableId> and <localPath> with your own values.\n163\tUIPCLI_LOG_LEVEL=info uip maestro flow debug <path-to-project-dir> --output json \\\n164\t  --attachment <variableId>=<localPath> \\\n165\t  --attachment <variableId>=<localPath>\n166\t```\n167\t\n168\tThe argument is the **project directory path** (the folder containing `project.uiproj`). Use `<ProjectName>/` from the solution dir, or `.` if already inside the project dir. Always run `uip maestro flow validate` first.\n169\t\n170\tUse `--inputs` to pass a JSON object of input arguments when the flow has input parameters (e.g. trigger inputs or workflow arguments).\n171\t\n172\tUse `--attachment <variableId>=<localPath>` to upload a local file and bind it to a file-typed input variable. Repeat the flag for multiple files. The `<variableId>` (left of `=`) is required and must match the `id` of an entry in the flow's `variables.globals[]` with `direction:\"in\"` and `type:\"file\"` — see [Pre-flight](#attachment-preflight). A bare path with no `<variableId>=` prefix is rejected.\n173\t\n174\t<a id=\"attachment-preflight\"></a>\n175\t\n176\t#### Pre-flight: `--attachment` binding\n177\t\n178\tThe CLI does not validate `<variableId>` — a mismatch uploads successfully then faults at runtime when the binding resolves to undefined.\n179\t\n180\t1. Read `<flow>.flow` (it is plain JSON) and inspect `variables.globals[]`. Valid `<variableId>` values are entries where `direction` is `\"in\"` and `type` is `\"file\"`.\n181\t2. Confirm each `<variableId>` passed to `--attachment` appears in that list.\n182\t3. If none exist, add one to `variables.globals[]`: `{ \"id\": \"<variableId>\", \"direction\": \"in\", \"type\": \"file\", \"triggerNodeId\": \"<triggerId>\" }`.\n183\t\n184\t> **Reading the bound file in a Script node.** A `file` variable hydrates at runtime as an object; read the uploaded name via `$vars.{triggerNodeId}.output.{id}.FullName`. See [variables-and-expressions.md — Runtime shape of a `file` variable](variables-and-expressions.md#file-input).\n185\t\n186\tRun `uip maestro flow debug --help` for other options.\n187\t\n188\t### Reporting the run back to the user\n189\t\n190\tThe CLI response includes a **Studio Web URL** (where the user can inspect the run) and an **instanceId** (for log/trace correlation). Parse both from the JSON output — typically `Data.studioWebUrl` and `Data.instanceId` — and **always show them as the first two lines of the summary** you report back to the user:\n191\t\n192\t```\n193\tStudio Web URL: <url>\n194\tInstance ID: <instanceId>\n195\t\n196\t<run status, node traces, errors, etc.>\n197\t```\n198\t\n199\tIf either value is not present in the response, emit the label with `<not returned by CLI>` rather than dropping the line. Do not bury these values below the run summary — the user should see them immediately without scrolling.\n200\t\n201\t## uip maestro flow process\n202\t\n203\tManage deployed Flow processes in Orchestrator. **Requires `uip login`.**\n204\t\n205\t```bash\n206\tuip maestro flow process list --output json\n207\tuip maestro flow process run <process-key> <folder-key> --output json\n208\t\n209\t# Pass input arguments (JSON or @file.json)\n210\tuip maestro flow process run <process-key> <folder-key> --output json \\\n211\t  --inputs '{\"numberA\": 5, \"numberB\": 7}'\n212\t\n213\t# Bind local files to file-typed input variables (repeatable).\n214\t# Replace <variableId> and <localPath> with your own values.\n215\tuip maestro flow process run <process-key> <folder-key> --output json \\\n216\t  --attachment <variableId>=<localPath>\n217\t```\n218\t\n219\t`--attachment <variableId>=<localPath>` uploads a local file and binds it to a file-typed input variable. The `<variableId>` must match the `id` of an entry in `variables.globals[]` with `direction:\"in\"` and `type:\"file\"` — see [Pre-flight](#attachment-preflight). Repeat the flag for multiple files. Two `flow process run`-specific behaviors:\n220\t\n221\t- **Precedence on key collision:** when `--inputs` and `--attachment` both supply the same key, `--attachment` wins and the CLI logs an override warning.\n222\t- **`--validate` accepts pre-uploaded attachment references** for file-typed slots — the flag's JSON-schema check passes even though the slot's nominal type is `string`.\n223\t\n224\tRun `uip maestro flow process --help` for other subcommands.\n225\t\n226\t## uip maestro flow job\n227\t\n228\tMonitor Flow jobs. **Requires `uip login`.**\n229\t\n230\t```bash\n231\tuip maestro flow job status <job-key> --output json\n232\tuip maestro flow job traces <job-key> --output json\n233\t```\n234\t\n235\t## uip maestro flow hitl add\n236\t\n237\tAdd a Human-in-the-Loop QuickForm node to an existing `.flow` file. Writes the node JSON, adds the definition entry (once), and updates `variables.nodes` automatically.\n238\t\n239\t```bash\n240\t# Minimal — adds a bare node with no schema fields\n241\tuip maestro flow hitl add <path/to/file.flow> --output json\n242\t\n243\t# With label and priority\n244\tuip maestro flow hitl add <path/to/file.flow> \\\n245\t  --label \"Invoice Review\" \\\n246\t  --priority High \\\n247\t  --output json\n248\t\n249\t# With assignee (email or group name)\n250\tuip maestro flow hitl add <path/to/file.flow> \\\n251\t  --assignee reviewer@company.com \\\n252\t  --output json\n253\t\n254\tuip maestro flow hitl add <path/to/file.flow> \\\n255\t  --assignee finance-approvers \\\n256\t  --output json\n257\t\n258\t# With full schema (inputs, outputs, outcomes)\n259\tuip maestro flow hitl add <path/to/file.flow> \\\n260\t  --label \"Invoice Review\" \\\n261\t  --priority High \\\n262\t  --assignee finance-approvers \\\n263\t  --schema '{\"inputs\":[{\"name\":\"invoiceId\",\"binding\":\"fetchInvoice.output.invoiceId\"},{\"name\":\"amount\",\"type\":\"number\",\"binding\":\"fetchInvoice.output.amount\"}],\"outputs\":[{\"name\":\"decision\",\"required\":true}],\"outcomes\":[{\"name\":\"Approve\"},{\"name\":\"Reject\"}]}' \\\n264\t  --position 474,144 \\\n265\t  --output json\n266\t```\n267\t\n268\t| Flag | Description | Default |\n269\t|------|-------------|---------|\n270\t| `--label <text>` | Display label for the node | `\"Human in the Loop\"` |\n271\t| `--priority Low\\|Medium\\|High` | Task priority in Action Center | `Low` |\n272\t| `--assignee <email-or-group>` | User email (`staticEmail`) or group name (`staticGroupName`) | group (unassigned) |\n273\t| `--schema <json>` | JSON object describing form fields and outcomes — see schema format below | empty form |\n274\t| `--position <x,y>` | Canvas position | `0,0` |\n275\t\n276\t### `--schema` JSON format\n277\t\n278\t```json\n279\t{\n280\t  \"inputs\":  [{ \"name\": \"invoiceId\", \"binding\": \"fetchInvoice.output.invoiceId\" },\n281\t              { \"name\": \"amount\", \"type\": \"number\", \"binding\": \"fetchInvoice.output.amount\" }],\n282\t  \"outputs\": [{ \"name\": \"decision\", \"required\": true },\n283\t              { \"name\": \"notes\" }],\n284\t  \"inOuts\":  [{ \"name\": \"emailBody\" }],\n285\t  \"outcomes\":[{ \"name\": \"Approve\" }, { \"name\": \"Reject\" }]\n286\t}\n287\t```\n288\t\n289\t- `inputs` — read-only context fields shown to the reviewer; `binding` is the full `$vars` path (e.g. `fetchInvoice.output.invoiceId`)\n290\t- `outputs` — fields the human fills in; `variable` defaults to the field name\n291\t- `inOuts` — pre-filled editable fields (human can modify before submitting)\n292\t- `outcomes` — button labels; first is primary (Approve path); subsequent ones end the flow unless you re-wire them\n293\t\n294\t### Success output\n295\t\n296\t```json\n297\t{ \"Result\": \"Success\", \"Code\": \"HitlNodeAdded\", \"Data\": { \"NodeId\": \"invoiceReview1\", \"NodeType\": \"uipath.human-in-the-loop.quick-form\", \"Label\": \"Invoice Review\", \"DefinitionAdded\": true } }\n298\t```\n299\t\n300\tAfter adding, wire the `completed` port to the next node — an unwired `completed` blocks the flow indefinitely. See the [Author HITL plugin reference](../author/references/plugins/hitl/impl.md) for edge format.\n301\t\n302\t## uip maestro flow instance / uip maestro flow incident\n303\t\n304\tSee the [Diagnose troubleshooting guide](../diagnose/references/troubleshooting-guide.md) for the full diagnostic workflow and command reference for `instance` and `incident` subcommands.\n305\t\n306\t## uip maestro flow node / uip maestro flow edge\n307\t\n308\tSee the [Author CLI editing strategy](../author/references/editing-operations-cli.md) for complete `node add/remove/list/configure` and `edge add/remove/list` syntax, flags, and auto-managed behaviors.\n309\t\n310\t## uip maestro flow eval\n311\t\n312\tEvaluation surface — evaluator CRUD, eval set CRUD, data point CRUD, Studio Web run start/status/results/list/compare. Local CRUD requires no login; `eval run *` requires `uip login` and a Flow solution that already exists in Studio Web.\n313\t<!--skill-flavor:upload-safety-eval-surface-note:start-->\n314\t**Never auto-run `uip solution upload` to satisfy the Studio Web prerequisite** — see [evaluate/references/upload-safety.md](../evaluate/references/upload-safety.md).\n315\t<!--skill-flavor:upload-safety-eval-surface-note:end-->\n316\t\n317\t```bash\n318\t# Data points (test cases) — inline inside eval set JSON\n319\tuip maestro flow eval add <name>    --set <set> [flags]  --output json\n320\tuip maestro flow eval list          --set <set> --path <flow_project> --output json\n321\tuip maestro flow eval remove <id>   --set <set> --path <flow_project> --output json\n322\t\n323\t# Eval sets\n324\tuip maestro flow eval set add <name> [--evaluators <refs>] [--entry-point <id>] --path <flow_project> --output json\n325\tuip maestro flow eval set list      --path <flow_project> --output json\n326\tuip maestro flow eval set remove <id> --path <flow_project> --output json\n327\t\n328\t# Evaluators (7 types: exact-match, json-similarity, contains, llm-judge-output|strict-json|trajectory|trajectory-simulation)\n329\tuip maestro flow eval evaluator add <name> --type <type> [--model <m>] [--target-key <k>] [--prompt <p>] --path <flow_project> --output json\n330\tuip maestro flow eval evaluator list      --path <flow_project> --output json\n331\tuip maestro flow eval evaluator remove <id> --path <flow_project> --output json\n332\t\n333\t# Runs (require uip login + solution in Studio Web)\n334\tuip maestro flow eval run start <name>   --set <set> [--entry-point <e>] [--wait [--timeout <s>]] --path <flow_project> --output json\n335\tuip maestro flow eval run status <run_id> --set <set> --path <flow_project> --output json\n336\tuip maestro flow eval run results <run_id> --set <set> [--only-failed] [--verbose] [--export-format json|csv] --path <flow_project> --output json\n337\tuip maestro flow eval run list           --set <set> --path <flow_project> --output json\n338\tuip maestro flow eval run compare <run_a> --compare-to <run_b> --set <set> --path <flow_project> --output json\n339\t```\n340\t\n341\tFor full flag tables, evaluator type details, eval set JSON shape, and the run-safety rule, see the [Evaluate capability](../evaluate/CAPABILITY.md).\n342\t\n343\t## uip maestro flow registry\n344\t\n345\tManage the local node type cache. No auth required for OOTB nodes; login for tenant-specific connector nodes.\n346\t\n347\t```bash\n348\tuip maestro flow registry pull                             # refresh local cache (expires after 30 min)\n349\tuip maestro flow registry list --output json               # list all cached node types\n350\tuip maestro flow registry search <keyword> --output json   # search by name, tag, or category\n351\tuip maestro flow registry get <node-type> --output json     # get full schema for a node type\n352\t```\n353\t\n354\t`registry search` returns `Data` as a flat array (not `Data.Nodes`); fields are PascalCase. `NodeType` is the identifier you pass to `registry get <node-type>` (and later `node add`).\n355\t\n356\t```json\n357\t{ \"Data\": [\n358\t  {\n359\t    \"NodeType\": \"uipath.connector.uipath-salesforce-sfdc.list-records\",\n360\t    \"Category\": \"connector.196536\",\n361\t    \"DisplayName\": \"List Records\",\n362\t    \"Description\": \"(Salesforce) List records in Salesforce\",\n363\t    \"Version\": \"1.0.0\",\n364\t    \"Tags\": \"connector, activity\",\n365\t    \"AvailableOnTenant\": true\n366\t  }\n367\t] }\n368\t```\n369\t\n370\t`AvailableOnTenant` is a usability gate, not extra metadata to ignore:\n371\t\n372\t- `true` — the tenant registry can return this node; it is valid to continue with `registry get <NodeType>` or `node add <NodeType>`.\n373\t- `false` — the SDK knows about this node type, but the current tenant registry did not return it. Treat it as not enabled or not available for this tenant. Do **not** try nonexistent flags such as `--include-unavailable`; they are not supported. Choose an enabled alternative, use `--local` for in-solution resources, or report the feature/resource as unavailable.\n374\t\n375\tThe `Data.Node` object from `registry get` is what you paste into your `.flow` file's `definitions` array. Unlike `registry search` (PascalCase summary), `registry get` returns the definition **verbatim** — its keys keep the manifest's own casing, predominantly **camelCase** (`nodeType`, `inputDefinition`, `supportsErrorHandling`, `form`), exactly as they must appear in the `.flow`. Filter it with that casing (`--output-filter \"Node.inputDefinition\"`, not `Node.InputDefinition`).\n376\t\n377\tRun `uip maestro flow registry <subcommand> --help` for additional options (e.g., `--force`, `--filter`, `--connection-id`).\n378\t\n379\t## Connector commands (binding and reference resolution)\n380\t\n381\tSee the relevant node guide in `nodes/` for connector CLI commands and the configuration workflow.\n382\t\n383\t## Global options (all commands)\n384\t\n385\tAll `uip` commands support `--output json|yaml|table` and `--help`. Run any command with `--help` to discover all available options.\n386\t",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 2,
+          "result_tokens": 5731
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_01MKyeKT211VMtGeut19HVj3",
+          "assistant_turn_index": 8,
+          "timestamp": "2026-08-19T16:54:58.506825",
+          "duration_ms": 271.0132879728917,
+          "generation_completed_at": "2026-08-19T16:54:58.506825",
+          "execution_started_at": "2026-08-19T16:54:58.506878",
+          "execution_completed_at": "2026-08-19T16:54:58.777891",
+          "parameters": {
+            "command": "find /work/output/artifacts/skill-flow-eval-local-crud -maxdepth 2 -type f -name '*.uipx' -print 2>/dev/null; echo \"find exit: $?\"",
+            "description": "Check for existing .uipx solution files"
+          },
+          "result_status": "success",
+          "result_summary": "find exit: 0",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 3,
+          "result_tokens": 3
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_01EEdu2XoHi888NJivBFeWpf",
+          "assistant_turn_index": 10,
+          "timestamp": "2026-08-19T16:55:02.296852",
+          "duration_ms": 9929.340784001397,
+          "generation_completed_at": "2026-08-19T16:55:02.296852",
+          "execution_started_at": "2026-08-19T16:55:02.296932",
+          "execution_completed_at": "2026-08-19T16:55:12.226273",
+          "parameters": {
+            "command": "\\\n  uip solution init \"SmokeEval\" --output json && \\\n  cd SmokeEval && \\\n  uip maestro flow init \"SmokeEval\" --output json",
+            "description": "Create solution and init Flow project inside it",
+            "timeout": 60000
+          },
+          "result_status": "success",
+          "result_summary": "{\n  \"Result\": \"Success\",\n  \"Code\": \"SolutionInit\",\n  \"Data\": {\n    \"Status\": \"Created successfully\",\n    \"Path\": \"/work/output/artifacts/skill-flow-eval-local-crud/SmokeEval/SmokeEval.uipx\",\n    \"NextSteps\": \"Read /work/output/artifacts/skill-flow-eval-local-crud/SmokeEval/AGENTS.md or /work/output/artifacts/skill-flow-eval-local-crud/SmokeEval/CLAUDE.md to understand the solution lifecycle, project types that can be used inside a solution, and related uip command references.\"\n  }\n}\n2026-08-19 16:55:06 INFO  [ResourceBuilder:ProjectCreateCommandHandler] Creating project [object Object]\n2026-08-19 16:55:06 INFO  [ResourceBuilder:MultiFileSolutionDefinitionProvider] Reading multi-file solution definition for solution %s /work/output/artifacts/skill-flow-eval-local-crud/SmokeEval\n2026-08-19 16:55:06 INFO  [ResourceBuilder:ProjectCreateCommandHandler] Generate artefact resources for project [object Object]\n2026-08-19 16:55:06 INFO  [ResourceBuilder:SolutionsMetadataReader] Reading metadata from %s. SolutionsMetadataReader\n{\n  \"Result\": \"Success\",\n  \"Code\": \"FlowInit\",\n  \"Data\": {\n    \"Status\": \"Created successfully\",\n    \"Path\": \"/work/output/artifacts/skill-flow-eval-local-crud/SmokeEval/SmokeEval\",\n    \"SolutionRegistration\": {\n      \"Status\": \"Registered\",\n      \"Message\": \"Project registered in parent solution.\",\n      \"Solution\": \"/work/output/artifacts/skill-flow-eval-local-crud/SmokeEval/SmokeEval.uipx\",\n      \"Project\": \"SmokeEval/project.uiproj\",\n      \"ProjectId\": \"7a923b13-7aa1-42f2-8fcc-b4d88e7ca05e\",\n      \"Instructions\": \"The project is listed in the parent solution manifest.\\nPacking or uploading the solution will sync solution resources automatically.\\nTo sync resources before packaging, run 'uip solution resources refresh --solution-folder \\\"/work/output/artifacts/skill-flow-eval-local-crud/SmokeEval\\\"'.\"\n    },\n    \"ProjectArtifacts\": {\n      \"Created\": true\n    },\n    \"NextSteps\": \"The project is listed in the parent solution manifest.\\nPacking or uploading the solution will sync solution resources automatically.\\nTo sync resources before packaging, run 'uip solution resources refresh --solution-folder \\\"/work/output/artifacts/skill-flow-eval-local-crud/SmokeEval\\\"'.\"\n  }\n}",
+          "error_message": null,
+          "result_data": {
+            "Result": "Success",
+            "Code": "SolutionInit",
+            "Data": {
+              "Status": "Created successfully",
+              "Path": "/work/output/artifacts/skill-flow-eval-local-crud/SmokeEval/SmokeEval.uipx",
+              "NextSteps": "Read /work/output/artifacts/skill-flow-eval-local-crud/SmokeEval/AGENTS.md or /work/output/artifacts/skill-flow-eval-local-crud/SmokeEval/CLAUDE.md to understand the solution lifecycle, project types that can be used inside a solution, and related uip command references."
+            }
+          },
+          "sequence_number": 4,
+          "result_tokens": 557
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_01XGmj2U9eRi8ijFdFdmdQfG",
+          "assistant_turn_index": 12,
+          "timestamp": "2026-08-19T16:55:15.889135",
+          "duration_ms": 1670.6228109833319,
+          "generation_completed_at": "2026-08-19T16:55:15.889135",
+          "execution_started_at": "2026-08-19T16:55:15.889199",
+          "execution_completed_at": "2026-08-19T16:55:17.559822",
+          "parameters": {
+            "command": "uip maestro flow variable add \\\n  /work/output/artifacts/skill-flow-eval-local-crud/SmokeEval/SmokeEval/SmokeEval.flow \\\n  name --direction in --type string --output json",
+            "description": "Declare string input variable 'name' on the flow",
+            "timeout": 30000
+          },
+          "result_status": "success",
+          "result_summary": "{\n  \"Result\": \"Success\",\n  \"Code\": \"VariableAddSuccess\",\n  \"Data\": {\n    \"Variable\": {\n      \"Id\": \"name\",\n      \"Direction\": \"in\",\n      \"Type\": \"string\"\n    }\n  }\n}",
+          "error_message": null,
+          "result_data": {
+            "Result": "Success",
+            "Code": "VariableAddSuccess",
+            "Data": {
+              "Variable": {
+                "Id": "name",
+                "Direction": "in",
+                "Type": "string"
+              }
+            }
+          },
+          "sequence_number": 5,
+          "result_tokens": 42
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_01VA74mp7vcgcKQoFhdF54N8",
+          "assistant_turn_index": 13,
+          "timestamp": "2026-08-19T16:55:21.252841",
+          "duration_ms": 3645.8050849905703,
+          "generation_completed_at": "2026-08-19T16:55:21.252841",
+          "execution_started_at": "2026-08-19T16:55:21.253107",
+          "execution_completed_at": "2026-08-19T16:55:24.898912",
+          "parameters": {
+            "command": "PROJ=/work/output/artifacts/skill-flow-eval-local-crud/SmokeEval/SmokeEval && \\\nuip maestro flow eval evaluator add greeting-match \\\n  --type exact-match \\\n  --path \"$PROJ\" --output json && \\\nuip maestro flow eval set add \"Smoke Set\" \\\n  --path \"$PROJ\" --output json",
+            "description": "Add exact-match evaluator and eval set",
+            "timeout": 30000
+          },
+          "result_status": "success",
+          "result_summary": "{\n  \"Result\": \"Success\",\n  \"Code\": \"FlowEvalEvaluatorAdd\",\n  \"Data\": {\n    \"Name\": \"greeting-match\",\n    \"Id\": \"greeting-match-7e14b060\",\n    \"Type\": \"uipath-exact-match\",\n    \"File\": \"greeting-match-7e14b060.json\"\n  }\n}\n{\n  \"Result\": \"Success\",\n  \"Code\": \"FlowEvalSetAdd\",\n  \"Data\": {\n    \"Name\": \"Smoke Set\",\n    \"Id\": \"00c9af36-7b26-4d53-aa18-8c798ade599a\",\n    \"Evaluators\": 1,\n    \"File\": \"evaluation-set-smoke-set-00c9af36.json\"\n  }\n}",
+          "error_message": null,
+          "result_data": {
+            "Result": "Success",
+            "Code": "FlowEvalEvaluatorAdd",
+            "Data": {
+              "Name": "greeting-match",
+              "Id": "greeting-match-7e14b060",
+              "Type": "uipath-exact-match",
+              "File": "greeting-match-7e14b060.json"
+            }
+          },
+          "sequence_number": 6,
+          "result_tokens": 110
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_014M8fQBStHLB2aoByxMotX8",
+          "assistant_turn_index": 14,
+          "timestamp": "2026-08-19T16:55:28.759917",
+          "duration_ms": 4652.115836011944,
+          "generation_completed_at": "2026-08-19T16:55:28.759917",
+          "execution_started_at": "2026-08-19T16:55:28.760194",
+          "execution_completed_at": "2026-08-19T16:55:33.412310",
+          "parameters": {
+            "command": "PROJ=/work/output/artifacts/skill-flow-eval-local-crud/SmokeEval/SmokeEval && \\\nuip maestro flow eval add hello \\\n  --set \"Smoke Set\" \\\n  --inputs '{\"name\":\"Alice\"}' \\\n  --expected '{\"greeting\":\"Hello, Alice!\"}' \\\n  --path \"$PROJ\" --output json && \\\nuip maestro flow eval evaluator list --path \"$PROJ\" --output json && \\\nuip maestro flow eval set list --path \"$PROJ\" --output json",
+            "description": "Add data point, then list evaluators and eval sets to confirm",
+            "timeout": 30000
+          },
+          "result_status": "success",
+          "result_summary": "{\n  \"Result\": \"Success\",\n  \"Code\": \"FlowEvalAdd\",\n  \"Data\": {\n    \"Status\": \"Data point added\",\n    \"Name\": \"hello\",\n    \"Id\": \"6631bfed-732b-440a-8553-61d1b7853f74\",\n    \"Set\": \"Smoke Set\"\n  }\n}\n{\n  \"Result\": \"Success\",\n  \"Code\": \"FlowEvalEvaluatorList\",\n  \"Data\": [\n    {\n      \"Name\": \"greeting-match\",\n      \"Id\": \"greeting-match-7e14b060\",\n      \"Type\": \"uipath-exact-match\",\n      \"TargetKey\": \"*\",\n      \"File\": \"greeting-match-7e14b060.json\"\n    }\n  ]\n}\n{\n  \"Result\": \"Success\",\n  \"Code\": \"FlowEvalSetList\",\n  \"Data\": [\n    {\n      \"Name\": \"Smoke Set\",\n      \"Id\": \"00c9af36-7b26-4d53-aa18-8c798ade599a\",\n      \"DataPoints\": 1,\n      \"Evaluators\": 1,\n      \"File\": \"evaluation-set-smoke-set-00c9af36.json\"\n    }\n  ]\n}",
+          "error_message": null,
+          "result_data": {
+            "Result": "Success",
+            "Code": "FlowEvalAdd",
+            "Data": {
+              "Status": "Data point added",
+              "Name": "hello",
+              "Id": "6631bfed-732b-440a-8553-61d1b7853f74",
+              "Set": "Smoke Set"
+            }
+          },
+          "sequence_number": 7,
+          "result_tokens": 182
+        }
+      ],
+      "timestamp": "2026-08-19T16:55:40.467121",
+      "duration_seconds": 169.18872889701743,
+      "token_usage": {
+        "uncached_input_tokens": 839,
+        "output_tokens": 9576,
+        "cache_creation_input_tokens": 24857,
+        "cache_read_input_tokens": 364060,
+        "total_cost_usd": 0.34858874999999995,
+        "input_tokens": 389756
+      },
+      "model_used": "claude-sonnet-4-6",
+      "assistant_turn_count": 16,
+      "messages": [
+        {
+          "role": "assistant",
+          "started_at": "2026-08-19T16:52:51.277425",
+          "completed_at": "2026-08-19T16:52:57.437160",
+          "generation_duration_ms": 6159.757207002258,
+          "content_blocks": [
+            {
+              "block_type": "thinking",
+              "sequence": 0,
+              "text": null,
+              "thinking": "The user wants me to scaffold a UiPath Flow project called \"SmokeEval\" and build eval scaffolding locally. Let me invoke the UiPath Maestro Flow skill first to get the proper instructions.",
+              "signature": "EocDCmcIEBABGAIqQL+fo+jIrtCl57T4gZP/7vj78EeUPbeMT8+N0kwfDoxm4v6ctND/Vc1ZZ0MOYflEk3i3KiqyteQtQTDkF4ipnFAyEWNsYXVkZS1zb25uZXQtNC02OABCCHRoaW5raW5nEgyx5u4EwfQxNW9GtJQaDCy6Ocl3WXIJK9TtuyIwrz1JBEWftd/f/cnzJOZfovt5i5XhS1yxPfzNR6Camb2mkpm0nS8YwiQE5jakEOsrKs0BW9kbZLuvVcK+a0zqtYwFUKEFNjS0gAiREB2KcMSqP0Pu+FLjaaQOxFj32lc/4VwVqOaxsJuciCMhXcEjMq4fgAm6iH2Z59BwzQZQRYtw5qvxuzoYI5ZnOwGUoYS5ZnfOUCAEeHEnBOtjQ3PdnLeeuywv9C/aZc86Z9xCD9pITk7Br71+Vwq6B5z/0hDvubzRwoN/b3g7S/XM0v+Cn8t4frBENbnt6O3dWSDavhAahQQTPmVX2wDJ/Hco19Lbo6tkBvIFTRIuaY1QI92zbBgB",
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 2,
+          "output_tokens": 101,
+          "cache_creation_tokens": 2985,
+          "cache_read_tokens": 29085,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_019fgbxrdofSnax5vdTM4Brr",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-08-19T16:52:57.437160",
+          "completed_at": "2026-08-19T16:52:57.883944",
+          "generation_duration_ms": 446.7837320116814,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_016H5xBpYgh14dDzrazCgDAH",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_016H5xBpYgh14dDzrazCgDAH"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 22,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_019fgbxrdofSnax5vdTM4Brr",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-08-19T16:52:57.920621",
+          "completed_at": "2026-08-19T16:53:00.352699",
+          "generation_duration_ms": 2432.076060998952,
+          "content_blocks": [
+            {
+              "block_type": "thinking",
+              "sequence": 0,
+              "text": null,
+              "thinking": "Let me read the evaluate capability document to understand how to use the eval CLI commands properly.",
+              "signature": "Eq8CCmcIEBABGAIqQILCFulfp+zN9gNZnDkHVQhrVdpQBKSvatyWpfvNtCPw4w56MLxSLf+GTezJqMwNIr2/bjkSIAiJgB4fLGEddhQyEWNsYXVkZS1zb25uZXQtNC02OABCCHRoaW5raW5nEgz2G3A1mTQeCiMnxHgaDLVPOxfmieHkpMzybSIwBwiAAgypVOSr/k1PqH9bOWfEsOOUCfINIPaiNeoITCUc9aNE3C3zuq9hUSWC5D2kKna/7a4Bt42QltGP5nPxiK4F961xeKR5bGqyjTkSCK7ZZpDTidoJyFKkn87M/AzoOHuuAUpZmiSaOjHJWcMXBAfuhUp58FeuTmlJONjruDc5p20QZEiXn8c/WfwUfbMSYGWJuN7wmRhfInZdQ85Mr9GbDSp0xZf+GAE=",
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 2,
+          "output_tokens": 49,
+          "cache_creation_tokens": 8517,
+          "cache_read_tokens": 32070,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_0175b5GEYtUHKPFJQTZdrjF1",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-08-19T16:53:00.352699",
+          "completed_at": "2026-08-19T16:53:01.027851",
+          "generation_duration_ms": 675.1523650018498,
+          "content_blocks": [
+            {
+              "block_type": "text",
+              "sequence": 0,
+              "text": "I'll read the evaluate capability docs and CLI reference before planning.",
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 0,
+          "output_tokens": 36,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_0175b5GEYtUHKPFJQTZdrjF1",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-08-19T16:53:01.027851",
+          "completed_at": "2026-08-19T16:53:01.942410",
+          "generation_duration_ms": 914.5577870076522,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_016Zt8SXBH3dmA2iSNcqwt6J",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_016Zt8SXBH3dmA2iSNcqwt6J"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 57,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_0175b5GEYtUHKPFJQTZdrjF1",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-08-19T16:53:01.946540",
+          "completed_at": "2026-08-19T16:53:02.437503",
+          "generation_duration_ms": 490.9607020090334,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01RJuk8tXAMf32aBHwEE6Rsr",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01RJuk8tXAMf32aBHwEE6Rsr"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 57,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_0175b5GEYtUHKPFJQTZdrjF1",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-08-19T16:53:02.445187",
+          "completed_at": "2026-08-19T16:54:58.212312",
+          "generation_duration_ms": 115767.1244739904,
+          "content_blocks": [
+            {
+              "block_type": "thinking",
+              "sequence": 0,
+              "text": null,
+              "thinking": "Now I have enough context to plan and execute the full sequence. Let me outline what I need to do:\n\n1. Check for existing solutions in the working directory\n2. Create the SmokeEval solution\n3. `cd` into it and create the SmokeEval flow project\n4. Add a string input variable `name` to the flow\n5. Add evaluator `greeting-match` of type `exact-match`\n6. Create eval set `Smoke Set` (no `--entry-point`, no `--evaluators`)\n7. Add data point `hello` with inputs `{\"name\":\"Alice\"}` and expected `{\"greeting\":\"Hello, Alice!\"}`\n8. List evaluators and eval sets to confirm\n\nI need to check the command syntax for adding variables and evaluators. The variable add command takes the flow file, variable name, direction, and type. For the evaluator add command, I'll need the name, type, and potentially a model or target key depending on the evaluator type.\n\nLooking at the eval commands, I can add evaluators and eval sets to a flow project, then list them to verify they were created correctly. The eval add command chains these together by referencing a specific eval set and providing test inputs with expected outputs.\n\nNow I'm planning the full workflow: first check if any existing solutions are already in the artifacts directory, then scaffold a new solution and flow if needed, add the input variable, and start building out the evaluator configuration. I need to use absolute paths to avoid issues with directory changes, and the eval add command does take a `--path` flag pointing to the flow project. I'll organize this into two turns: first scaffolding the flow and adding the variable in one chained bash call, then running the eval commands. Writing shell commands... I need to use absolute paths to avoid getting lost in the directory structure. The solution init creates a new directory, and I need to cd into it before running flow init, so I'll construct the full path to the solution directory and use that explicitly in the commands. Writing shell commands... Writing setup commands...\n\nNow I'm reconsidering the directory structure and whether the `--path` parameter works as expected for the eval commands, since I need to verify if it accepts the nested flow path or if there's a different way to reference it. I need to verify the exact command syntax from the docs—it's `uip solution projects add` with plural \"projects\", not singular. Looking at the CLI documentation, there's also a fallback option to wire the project manually if the registration fails or is skipped.\n\nThe task explicitly asks to use `uip solution project add`, which seems to be the manual linking step. So I'm thinking the approach should be: create the solution, create the flow project (possibly with `--skip-solution-registration` to avoid automatic registration), then manually link them using the command specified in the task. I'm leaning toward using `uip solution projects add` explicitly to make the linking verifiable rather than relying on auto-registration. So the workflow would be: initialize the solution, create the flow project with registration skipped, then explicitly link it via the projects add command. I'm checking the command syntax to make sure I have the right path format for the directory and project file arguments. I'll use `--skip-solution-registration` when creating the flow so it doesn't auto-register, then explicitly run `uip solution project add` to satisfy the task requirement. This gives me a clean demonstration of the manual registration step. The task specifically requires calling `uip solution project add` explicitly, so using `--skip-solution-registration` with `flow init` followed by the project add command ensures a clean, conflict-free registration. I'm also noticing the CLI might use `projects` (plural) rather than `project` (singular) in the actual command. I'm working through the exact command syntax for adding a project to the solution, using either relative paths from the base directory or absolute paths, then moving on to the variable add command which follows a similar pattern with flow name, direction, and type parameters.\n\nNow I need to check the eval CLI availability first per the capability rules, then chain all the operations together in a single Bash call using `&&` to fail fast and capture all the results.\n\nWriting the Bash script... Writing shell commands... I'm debating whether to use `set -e` for automatic error handling or chain commands with `&&` for better visibility into which step fails, leaning toward the latter approach so I can see the exact error output if something goes wrong. Writing the bash script... Writing shell commands... I need to handle the help command check more carefully—if `uip maestro flow eval` is an unknown command, it'll return non-zero and stop the chain, which is what I want. But I should redirect stderr to stdout and use `|| true` to make it non-fatal, then check the output separately to decide whether to proceed with the rest of the eval commands.\n\nI'm also reconsidering whether `--skip-solution-registration` is needed based on the requirement that the flow file must be at `SmokeEval/SmokeEval/SmokeEval.flow`. I'll go with this approach and write out the final script. I need to account for the possibility that the command might be `uip solution projects add` instead of singular, though I'll use what the task specifies. For the eval commands, I'll scope them to `SmokeEval/SmokeEval` using the `--path` flag from the base directory.",
+              "signature": "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",
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 1,
+          "output_tokens": 7691,
+          "cache_creation_tokens": 10993,
+          "cache_read_tokens": 40587,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01Ju3rzDz7iSsJJ7wsoJKA9q",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-08-19T16:54:58.212312",
+          "completed_at": "2026-08-19T16:54:58.213147",
+          "generation_duration_ms": 0.8360690262634307,
+          "content_blocks": [
+            {
+              "block_type": "text",
+              "sequence": 0,
+              "text": "I have everything I need. Let me first check for existing solutions, then chain the full scaffold + eval setup in one call.",
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 0,
+          "output_tokens": 173,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01Ju3rzDz7iSsJJ7wsoJKA9q",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-08-19T16:54:58.213147",
+          "completed_at": "2026-08-19T16:54:58.506825",
+          "generation_duration_ms": 293.6762349854689,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01MKyeKT211VMtGeut19HVj3",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01MKyeKT211VMtGeut19HVj3"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 295,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01Ju3rzDz7iSsJJ7wsoJKA9q",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-08-19T16:54:58.777859",
+          "completed_at": "2026-08-19T16:55:00.439102",
+          "generation_duration_ms": 1661.244840011932,
+          "content_blocks": [
+            {
+              "block_type": "text",
+              "sequence": 0,
+              "text": "No existing solutions. Now I'll run the full scaffold chain in one call.",
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 1,
+          "output_tokens": 41,
+          "cache_creation_tokens": 172,
+          "cache_read_tokens": 51580,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01BNKZKK1Ear9rxeRphnwdv6",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-08-19T16:55:00.439102",
+          "completed_at": "2026-08-19T16:55:02.296852",
+          "generation_duration_ms": 1857.7488249866292,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01EEdu2XoHi888NJivBFeWpf",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01EEdu2XoHi888NJivBFeWpf"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 134,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01BNKZKK1Ear9rxeRphnwdv6",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-08-19T16:55:12.226214",
+          "completed_at": "2026-08-19T16:55:14.388894",
+          "generation_duration_ms": 2162.6804920088034,
+          "content_blocks": [
+            {
+              "block_type": "text",
+              "sequence": 0,
+              "text": "Solution and project created, auto-registered. Now add the input variable, then the evaluator, eval set, and data point.",
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 1,
+          "output_tokens": 55,
+          "cache_creation_tokens": 872,
+          "cache_read_tokens": 51752,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_018VzuXoJ7friw1rYLt1bQk5",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-08-19T16:55:14.388894",
+          "completed_at": "2026-08-19T16:55:15.889135",
+          "generation_duration_ms": 1500.2412419999018,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01XGmj2U9eRi8ijFdFdmdQfG",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01XGmj2U9eRi8ijFdFdmdQfG"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 129,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_018VzuXoJ7friw1rYLt1bQk5",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-08-19T16:55:17.559776",
+          "completed_at": "2026-08-19T16:55:21.252841",
+          "generation_duration_ms": 3693.0655339965597,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01VA74mp7vcgcKQoFhdF54N8",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01VA74mp7vcgcKQoFhdF54N8"
+          ],
+          "input_tokens": 1,
+          "output_tokens": 187,
+          "cache_creation_tokens": 358,
+          "cache_read_tokens": 52624,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01HbFyonBxRA9kroyA1C7j9Z",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-08-19T16:55:24.898864",
+          "completed_at": "2026-08-19T16:55:28.759917",
+          "generation_duration_ms": 3861.0533949977253,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_014M8fQBStHLB2aoByxMotX8",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_014M8fQBStHLB2aoByxMotX8"
+          ],
+          "input_tokens": 1,
+          "output_tokens": 229,
+          "cache_creation_tokens": 398,
+          "cache_read_tokens": 52982,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01BJ97idc6wd9BcMEcavzAp6",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-08-19T16:55:33.412257",
+          "completed_at": "2026-08-19T16:55:40.411982",
+          "generation_duration_ms": 6999.728070979472,
+          "content_blocks": [
+            {
+              "block_type": "text",
+              "sequence": 0,
+              "text": "Everything is confirmed. Here's a summary of what was built:\n\n**Solution layout:** `SmokeEval/SmokeEval/SmokeEval.flow` (double-nested, auto-registered in `SmokeEval.uipx`)\n\n**Steps completed:**\n1. `uip solution init SmokeEval` → `uip maestro flow init SmokeEval` (inside solution dir) — project registered with `Status: Registered`\n2. `uip maestro flow variable add` — declared `name` as `in / string` on the flow\n3. `eval evaluator add greeting-match --type exact-match` → ID `greeting-match-7e14b060`\n4. `eval set add \"Smoke Set\"` → ID `00c9af36...`, automatically picked up the 1 evaluator\n5. `eval add hello --set \"Smoke Set\" --inputs '{\"name\":\"Alice\"}' --expected '{\"greeting\":\"Hello, Alice!\"}'`\n\n**Confirmation (list outputs):**\n- Evaluators: 1 — `greeting-match` (`uipath-exact-match`, target `*`)\n- Eval sets: 1 — `Smoke Set` (1 data point, 1 evaluator)",
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 1,
+          "output_tokens": 297,
+          "cache_creation_tokens": 562,
+          "cache_read_tokens": 53380,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01JMB9KAJKUNsgcZQ7t8wqtR",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "reconciliation",
+          "input_tokens": 829,
+          "output_tokens": 23,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "note": "Tokens the agent billed but never surfaced as a generation (fixed prompt overhead + sub-agent input/cache the stream doesn't bubble up). Booked here so the transcript reconciles to the turn total."
+        }
+      ],
+      "num_turns": 10,
+      "max_turns_exhausted": false,
+      "result_summary": {
+        "is_error": false,
+        "subtype": "success",
+        "stop_reason": "end_turn",
+        "result": "Everything is confirmed. Here's a summary of what was built:\n\n**Solution layout:** `SmokeEval/SmokeEval/SmokeEval.flow` (double-nested, auto-registered in `SmokeEval.uipx`)\n\n**Steps completed:**\n1. `uip solution init SmokeEval` → `uip maestro flow init SmokeEval` (inside solution dir) — project registered with `Status: Registered`\n2. `uip maestro flow variable add` — declared `name` as `in / string` on the flow\n3. `eval evaluator add greeting-match --type exact-match` → ID `greeting-match-7e14b060`\n4. `eval set add \"Smoke Set\"` → ID `00c9af36...`, automatically picked up the 1 evaluator\n5. `eval add hello --set \"Smoke Set\" --inputs '{\"name\":\"Alice\"}' --expected '{\"greeting\":\"Hello, Alice!\"}'`\n\n**Confirmation (list outputs):**\n- Evaluators: 1 — `greeting-match` (`uipath-exact-match`, target `*`)\n- Eval sets: 1 — `Smoke Set` (1 data point, 1 evaluator)"
+      },
+      "provider_call_costs": [],
+      "crashed": false,
+      "crash_reason": null
+    }
+  ],
+  "error_message": null,
+  "error_details": null,
+  "error_log_tail": null,
+  "environment_info": {
+    "git_commit": "unknown",
+    "skills_git_commit": "unknown",
+    "cli_version": "1.201.0-dev.8272",
+    "tool_plugins": {
+      "admin-tool": "1.201.0-dev.8272",
+      "agent-tool": "1.201.0-dev.8272",
+      "agenthub-tool": "1.201.0-dev.8272",
+      "aops-tool": "1.201.0-dev.8272",
+      "api-workflow-tool": "1.201.0-dev.8272",
+      "automation-hub-tool": "1.201.0-dev.8272",
+      "codedagent-tool": "1.201.0-dev.8272",
+      "codedapp-tool": "1.201.0-dev.8272",
+      "coder-tool": "1.201.0-dev.8272",
+      "context-grounding-tool": "1.201.0-dev.8272",
+      "conversational-tool": "1.201.0-dev.8272",
+      "data-fabric-tool": "1.201.0-dev.8272",
+      "docsai-tool": "1.201.0-dev.8272",
+      "function-tool": "1.201.0-dev.8272",
+      "gov-tool": "1.201.0-dev.8272",
+      "guardrails-tool": "1.201.0-dev.8272",
+      "insights-tool": "1.201.0-dev.8276",
+      "integrationservice-tool": "1.201.0-dev.8272",
+      "ixp-tool": "1.201.0-dev.8272",
+      "llm-gateway-tool": "1.201.0-dev.8272",
+      "llmgw-tool": "1.201.0-dev.8272",
+      "maestro-tool": "1.201.0-dev.8275",
+      "model-hub-tool": "1.201.0-dev.8272",
+      "orchestrator-tool": "1.201.0-dev.8272",
+      "platform-tool": "1.201.0-dev.8272",
+      "pm-tool": "1.201.0-dev.8272",
+      "rpa-legacy-tool": "1.201.0-dev.8272",
+      "rpa-tool": "1.201.0-dev.20260809.3",
+      "solution-tool": "1.201.0-dev.8272",
+      "tasks-tool": "1.201.0-dev.8272",
+      "test-manager-tool": "1.201.0-dev.8272",
+      "traces-tool": "1.201.0-dev.8272",
+      "vertical-solutions-tool": "1.201.0-dev.8272"
+    },
+    "coder_eval": "0.9.6",
+    "claude_code_cli": "2.1.177 (Claude Code)",
+    "uv": "uv 0.12.5 (x86_64-unknown-linux-gnu)",
+    "anthropic": "0.122.0",
+    "openai": "3.2.0",
+    "pydantic": "2.12.5",
+    "api_routing": "aws_bedrock",
+    "eval_routing": "aws_bedrock",
+    "aws_region": "us-east-2",
+    "bedrock_model": "us.anthropic.claude-sonnet-4-6",
+    "system_prompt_semantics": "append"
+  },
+  "agent_config": {
+    "type": "claude-code",
+    "model": "claude-sonnet-4-6",
+    "permission_mode": "acceptEdits",
+    "allowed_tools": [
+      "Skill",
+      "Bash",
+      "Read",
+      "Write",
+      "Edit",
+      "Glob",
+      "Grep"
+    ],
+    "disallowed_tools": null,
+    "plugins": [
+      {
+        "type": "local",
+        "path": "/home/azureuser/projects/skills/tmp/"
+      }
+    ],
+    "system_prompt": "You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted.\n",
+    "system_prompt_file": null,
+    "ignore_patterns": [],
+    "system_prompt_mode": "append",
+    "claude_settings": null,
+    "sdk_options": {},
+    "setting_sources": null
+  },
+  "sdk_options": {
+    "tools": null,
+    "allowed_tools": [
+      "Skill",
+      "Bash",
+      "Read",
+      "Write",
+      "Edit",
+      "Glob",
+      "Grep"
+    ],
+    "system_prompt": {
+      "type": "preset",
+      "preset": "claude_code",
+      "exclude_dynamic_sections": true,
+      "append": "You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted.\n"
+    },
+    "mcp_servers": {},
+    "strict_mcp_config": false,
+    "permission_mode": "acceptEdits",
+    "continue_conversation": false,
+    "resume": null,
+    "session_id": null,
+    "max_turns": 60,
+    "max_budget_usd": null,
+    "disallowed_tools": [
+      "ToolSearch"
+    ],
+    "model": "us.anthropic.claude-sonnet-4-6",
+    "fallback_model": null,
+    "betas": [],
+    "permission_prompt_tool_name": null,
+    "cwd": "/work/output/artifacts/skill-flow-eval-local-crud",
+    "cli_path": null,
+    "settings": null,
+    "add_dirs": [],
+    "env": {
+      "PATH": "/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+      "PLUGIN_TOOLS_DIR": "/usr/lib/node_modules/@uipath",
+      "CLAUDE_CODE_USE_BEDROCK": "1",
+      "AWS_BEARER_TOKEN_BEDROCK": "***REDACTED***",
+      "AWS_REGION": "us-east-2",
+      "CLAUDE_CODE_ATTRIBUTION_HEADER": "0",
+      "ANTHROPIC_MODEL": "us.anthropic.claude-sonnet-4-6",
+      "ANTHROPIC_SMALL_FAST_MODEL": "us.anthropic.claude-sonnet-4-6"
+    },
+    "extra_args": {},
+    "max_buffer_size": null,
+    "can_use_tool": null,
+    "hooks": null,
+    "user": null,
+    "include_partial_messages": true,
+    "include_hook_events": false,
+    "fork_session": false,
+    "agents": null,
+    "setting_sources": [
+      "project"
+    ],
+    "skills": null,
+    "sandbox": null,
+    "plugins": [
+      {
+        "type": "local",
+        "path": "/home/azureuser/projects/skills/tmp"
+      }
+    ],
+    "max_thinking_tokens": null,
+    "thinking": null,
+    "effort": null,
+    "output_format": null,
+    "enable_file_checkpointing": false,
+    "session_store": null,
+    "session_store_flush": "batched",
+    "load_timeout_ms": 60000,
+    "task_budget": null
+  },
+  "sandbox_path": "/work/output/artifacts/skill-flow-eval-local-crud",
+  "task_config": {
+    "resolved": {
+      "task_id": "skill-flow-eval-local-crud",
+      "description": "Skill-guided evaluation: agent uses the uipath-maestro-flow skill's evaluate capability to scaffold a Flow project and exercise local eval CRUD — evaluator add (exact-match), eval set add, data point add, list. No login, no upload, no run. Tests whether the skill teaches the correct local-CRUD workflow and `--output json` discipline on every `uip maestro flow eval` command.\n",
+      "initial_prompt": "Scaffold a UiPath Flow project called \"SmokeEval\" inside a solution of the\nsame name, then build the eval scaffolding for it — purely local, no Studio\nWeb round-trip.\n\nSteps:\n1. Create the solution and the Flow project. The flow file MUST live at\n   `SmokeEval/SmokeEval/SmokeEval.flow` (double-nested layout) and be linked\n   via `uip solution project add`.\n\n2. Declare a string input variable named `name` on\n   `SmokeEval/SmokeEval/SmokeEval.flow` before adding data points. The\n   eval data point below uses `{\"name\":\"Alice\"}`, and `eval add` rejects\n   input keys that are not declared in the flow.\n\n3. Add an evaluator named `greeting-match` of type `exact-match`, scoped to\n   the Flow project at `SmokeEval/SmokeEval`. Use kebab-case for `--type`.\n\n4. Create an eval set named `Smoke Set` in the same project. (No\n   `--entry-point`, no `--evaluators` — defaults are fine.)\n\n5. Add one data point named `hello` to that eval set with inputs\n   `{\"name\":\"Alice\"}` and expected `{\"greeting\":\"Hello, Alice!\"}`.\n\n6. List evaluators and eval sets to confirm both were created.\n\nImportant:\n- Use `--output json` on every `uip maestro flow eval ...` command.\n- Do NOT call `uip login`. Do NOT call `uip solution upload`. Do NOT call\n  `uip maestro flow eval run *` — this task tests local CRUD only.\n- Do NOT run `uip maestro flow debug` or `uip maestro flow validate` — this\n  is not a flow-authoring test.\n",
+      "initial_prompt_file": null,
+      "tags": [
+        "uipath-maestro-flow",
+        "mode:build",
+        "lifecycle:generate",
+        "feature:eval"
+      ],
+      "skip": false,
+      "agent": {
+        "type": "claude-code",
+        "model": "claude-sonnet-4-6",
+        "permission_mode": "acceptEdits",
+        "allowed_tools": [
+          "Skill",
+          "Bash",
+          "Read",
+          "Write",
+          "Edit",
+          "Glob",
+          "Grep"
+        ],
+        "disallowed_tools": null,
+        "plugins": [
+          {
+            "type": "local",
+            "path": "/home/azureuser/projects/skills/tmp/"
+          }
+        ],
+        "system_prompt": "You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted.\n",
+        "system_prompt_file": null,
+        "ignore_patterns": [],
+        "system_prompt_mode": "append",
+        "claude_settings": null,
+        "sdk_options": {},
+        "setting_sources": null
+      },
+      "sandbox": {
+        "driver": "tempdir",
+        "docker": {
+          "image": "skills-image:latest",
+          "dockerfile_path": null,
+          "build": {
+            "buildkit": null,
+            "args": {},
+            "secrets": [],
+            "extra_args": []
+          },
+          "network": "bridge",
+          "working_dir": null,
+          "env_passthrough": [
+            "ANTHROPIC_API_KEY",
+            "API_BACKEND",
+            "UIPATH_LLM_BACKEND",
+            "UIPATH_ACCESS_TOKEN",
+            "UIPATH_URL",
+            "UIPATH_TENANT_ID",
+            "UIPATH_ORGANIZATION_ID",
+            "UIPATH_CLI_DISABLE_VERSION_SYNC",
+            "AWS_BEARER_TOKEN_BEDROCK",
+            "AWS_REGION",
+            "BEDROCK_MODEL",
+            "CLAUDE_CODE_USE_BEDROCK",
+            "ANTHROPIC_MODEL",
+            "LITELLM_BASE_URL",
+            "LITELLM_AUTH_TOKEN",
+            "LITELLM_MODEL",
+            "LITELLM_SMALL_MODEL",
+            "LITELLM_COST_LOG",
+            "CODEX_API_KEY",
+            "CODEX_BASE_URL",
+            "CODEX_MODEL",
+            "GEMINI_API_KEY",
+            "ANTIGRAVITY_MODEL",
+            "HOME"
+          ],
+          "env_passthrough_extra": [
+            "SKILLS_REPO_PATH",
+            "EXPERIMENT_TASKS_PATH",
+            "BEDROCK_MODEL",
+            "TASK_PARALLELISM",
+            "UIPATH_CLI_ENABLE_ENV_AUTH",
+            "UIPATH_CLI_AUTH_TOKEN",
+            "UIPATH_CLI_ORGANIZATION_NAME",
+            "UIPATH_CLI_ORGANIZATION_ID",
+            "UIPATH_CLI_TENANT_NAME",
+            "UIPATH_CLI_TENANT_ID",
+            "TRACES_SMOKE_PROCESS_KEY",
+            "CODEX_API_KEY",
+            "CODEX_BASE_URL"
+          ],
+          "extra_mounts": [
+            "~/.uipath:/.uipath:rw",
+            "/home/azureuser/projects/skills/tests/tasks/uipath-maestro-flow:/home/azureuser/projects/skills/tests/tasks/uipath-maestro-flow:ro"
+          ]
+        },
+        "python": {
+          "env_packages": []
+        },
+        "node": null,
+        "limits": {
+          "timeout": 300,
+          "max_memory_mb": null,
+          "max_cpus": null,
+          "max_pids": null,
+          "max_disk_mb": null
+        },
+        "template_sources": null,
+        "mock_path_dirs": null,
+        "record_cli": null,
+        "ignore_patterns": []
+      },
+      "success_criteria": [
+        {
+          "type": "command_executed",
+          "description": "Agent created a solution",
+          "weight": 1.0,
+          "pass_threshold": 0.0,
+          "suite_thresholds": null,
+          "stop_early": null,
+          "tool_name": "Bash",
+          "command_pattern": "(uip|\\$UIP)\\s+solution\\s+(new|init)",
+          "min_count": 1,
+          "max_count": null,
+          "require_success": false,
+          "exclude_pattern": null
+        },
+        {
+          "type": "command_executed",
+          "description": "Agent initialized a Flow project",
+          "weight": 1.0,
+          "pass_threshold": 1.0,
+          "suite_thresholds": null,
+          "stop_early": null,
+          "tool_name": "Bash",
+          "command_pattern": "(uip|\\$UIP)\\s+(maestro\\s+)?flow\\s+init",
+          "min_count": 1,
+          "max_count": null,
+          "require_success": false,
+          "exclude_pattern": null
+        },
+        {
+          "type": "file_exists",
+          "description": "Flow file was created at the double-nested path",
+          "weight": 1.0,
+          "pass_threshold": 1.0,
+          "suite_thresholds": null,
+          "path": "SmokeEval/SmokeEval/SmokeEval.flow"
+        },
+        {
+          "type": "command_executed",
+          "description": "Agent added an evaluator with kebab-case --type exact-match",
+          "weight": 2.0,
+          "pass_threshold": 1.0,
+          "suite_thresholds": null,
+          "stop_early": null,
+          "tool_name": "Bash",
+          "command_pattern": "(uip|\\$UIP)\\s+maestro\\s+flow\\s+eval\\s+evaluator\\s+add\\s+.*--type\\s+exact-match",
+          "min_count": 1,
+          "max_count": null,
+          "require_success": false,
+          "exclude_pattern": null
+        },
+        {
+          "type": "command_executed",
+          "description": "Agent created an eval set",
+          "weight": 2.0,
+          "pass_threshold": 1.0,
+          "suite_thresholds": null,
+          "stop_early": null,
+          "tool_name": "Bash",
+          "command_pattern": "(uip|\\$UIP)\\s+maestro\\s+flow\\s+eval\\s+set\\s+add",
+          "min_count": 1,
+          "max_count": null,
+          "require_success": false,
+          "exclude_pattern": null
+        },
+        {
+          "type": "command_executed",
+          "description": "Agent added a data point with --inputs and --expected",
+          "weight": 2.0,
+          "pass_threshold": 1.0,
+          "suite_thresholds": null,
+          "stop_early": null,
+          "tool_name": "Bash",
+          "command_pattern": "(uip|\\$UIP)\\s+maestro\\s+flow\\s+eval\\s+add\\s+.*(--inputs.*--expected|--expected.*--inputs)",
+          "min_count": 1,
+          "max_count": null,
+          "require_success": false,
+          "exclude_pattern": null
+        },
+        {
+          "type": "command_executed",
+          "description": "Agent listed evaluators or eval sets to verify",
+          "weight": 1.0,
+          "pass_threshold": 1.0,
+          "suite_thresholds": null,
+          "stop_early": null,
+          "tool_name": "Bash",
+          "command_pattern": "(uip|\\$UIP)\\s+maestro\\s+flow\\s+eval\\s+(evaluator\\s+list|set\\s+list)",
+          "min_count": 1,
+          "max_count": null,
+          "require_success": false,
+          "exclude_pattern": null
+        },
+        {
+          "type": "run_command",
+          "description": "Evaluator + eval-set JSON files exist on disk with correct shape",
+          "weight": 3.0,
+          "pass_threshold": 1.0,
+          "suite_thresholds": null,
+          "command": "python3 $TASK_DIR/check_local_crud.py",
+          "timeout": 10,
+          "expected_exit_code": 0,
+          "expected_stdout": null,
+          "stdout_match": "exact",
+          "score_from_stdout": false
+        }
+      ],
+      "run_limits": {
+        "max_turns": 60,
+        "expected_turns": 20,
+        "task_timeout": 900,
+        "turn_timeout": 900,
+        "max_input_tokens": null,
+        "max_output_tokens": null,
+        "max_total_tokens": null,
+        "max_usd": null,
+        "count_cached_input": false,
+        "count_cache_creation": false,
+        "stop_early": null,
+        "stop_early_gate_threshold": 1.0
+      },
+      "reference": null,
+      "expected_commands": null,
+      "pre_run": [],
+      "post_run": [
+        {
+          "command": "find . -maxdepth 5 -type d \\( -name node_modules -o -name .npm-prefix -o -name .venv \\) -prune -exec rm -rf {} +",
+          "timeout": 30
+        }
+      ],
+      "dataset": null,
+      "suite_id": null,
+      "row_id": null,
+      "simulation": null
+    },
+    "source_yaml": "task_id: skill-flow-eval-local-crud\ndescription: >\n  Skill-guided evaluation: agent uses the uipath-maestro-flow skill's evaluate\n  capability to scaffold a Flow project and exercise local eval CRUD —\n  evaluator add (exact-match), eval set add, data point add, list. No login,\n  no upload, no run. Tests whether the skill teaches the correct local-CRUD\n  workflow and `--output json` discipline on every `uip maestro flow eval`\n  command.\ntags: [uipath-maestro-flow, mode:build, lifecycle:generate, feature:eval]\n\nrun_limits:\n  expected_turns: 20\n  max_turns: 60\n\ninitial_prompt: |\n  Scaffold a UiPath Flow project called \"SmokeEval\" inside a solution of the\n  same name, then build the eval scaffolding for it — purely local, no Studio\n  Web round-trip.\n\n  Steps:\n  1. Create the solution and the Flow project. The flow file MUST live at\n     `SmokeEval/SmokeEval/SmokeEval.flow` (double-nested layout) and be linked\n     via `uip solution project add`.\n\n  2. Declare a string input variable named `name` on\n     `SmokeEval/SmokeEval/SmokeEval.flow` before adding data points. The\n     eval data point below uses `{\"name\":\"Alice\"}`, and `eval add` rejects\n     input keys that are not declared in the flow.\n\n  3. Add an evaluator named `greeting-match` of type `exact-match`, scoped to\n     the Flow project at `SmokeEval/SmokeEval`. Use kebab-case for `--type`.\n\n  4. Create an eval set named `Smoke Set` in the same project. (No\n     `--entry-point`, no `--evaluators` — defaults are fine.)\n\n  5. Add one data point named `hello` to that eval set with inputs\n     `{\"name\":\"Alice\"}` and expected `{\"greeting\":\"Hello, Alice!\"}`.\n\n  6. List evaluators and eval sets to confirm both were created.\n\n  Important:\n  - Use `--output json` on every `uip maestro flow eval ...` command.\n  - Do NOT call `uip login`. Do NOT call `uip solution upload`. Do NOT call\n    `uip maestro flow eval run *` — this task tests local CRUD only.\n  - Do NOT run `uip maestro flow debug` or `uip maestro flow validate` — this\n    is not a flow-authoring test.\n\nsuccess_criteria:\n  - type: command_executed\n    description: \"Agent created a solution\"\n    tool_name: \"Bash\"\n    command_pattern: '(uip|\\$UIP)\\s+solution\\s+(new|init)'\n    min_count: 1\n    weight: 1.0\n    pass_threshold: 0.0  # advisory: init auto-scaffolds the parent solution (CLI #2470)\n\n  - type: command_executed\n    description: \"Agent initialized a Flow project\"\n    tool_name: \"Bash\"\n    command_pattern: '(uip|\\$UIP)\\s+(maestro\\s+)?flow\\s+init'\n    min_count: 1\n    weight: 1.0\n    pass_threshold: 1.0\n\n  - type: file_exists\n    description: \"Flow file was created at the double-nested path\"\n    path: \"SmokeEval/SmokeEval/SmokeEval.flow\"\n    weight: 1.0\n    pass_threshold: 1.0\n\n  - type: command_executed\n    description: \"Agent added an evaluator with kebab-case --type exact-match\"\n    tool_name: \"Bash\"\n    command_pattern: '(uip|\\$UIP)\\s+maestro\\s+flow\\s+eval\\s+evaluator\\s+add\\s+.*--type\\s+exact-match'\n    min_count: 1\n    weight: 2.0\n    pass_threshold: 1.0\n\n  - type: command_executed\n    description: \"Agent created an eval set\"\n    tool_name: \"Bash\"\n    command_pattern: '(uip|\\$UIP)\\s+maestro\\s+flow\\s+eval\\s+set\\s+add'\n    min_count: 1\n    weight: 2.0\n    pass_threshold: 1.0\n\n  - type: command_executed\n    description: \"Agent added a data point with --inputs and --expected\"\n    tool_name: \"Bash\"\n    command_pattern: '(uip|\\$UIP)\\s+maestro\\s+flow\\s+eval\\s+add\\s+.*(--inputs.*--expected|--expected.*--inputs)'\n    min_count: 1\n    weight: 2.0\n    pass_threshold: 1.0\n\n  - type: command_executed\n    description: \"Agent listed evaluators or eval sets to verify\"\n    tool_name: \"Bash\"\n    command_pattern: '(uip|\\$UIP)\\s+maestro\\s+flow\\s+eval\\s+(evaluator\\s+list|set\\s+list)'\n    min_count: 1\n    weight: 1.0\n    pass_threshold: 1.0\n\n  - type: run_command\n    description: \"Evaluator + eval-set JSON files exist on disk with correct shape\"\n    command: \"python3 $TASK_DIR/check_local_crud.py\"\n    timeout: 10\n    expected_exit_code: 0\n    weight: 3.0\n    pass_threshold: 1.0\n",
+    "source_file": "/home/azureuser/projects/skills/tmp/experiments/tasks/uipath-maestro-flow/evaluate/task.yaml",
+    "lineage": {
+      "agent.type": {
+        "value": "claude-code",
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.permission_mode": {
+        "value": "acceptEdits",
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.model": {
+        "value": "claude-sonnet-4-6",
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.allowed_tools": {
+        "value": [
+          "Skill",
+          "Bash",
+          "Read",
+          "Write",
+          "Edit",
+          "Glob",
+          "Grep"
+        ],
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.plugins": {
+        "value": [
+          {
+            "type": "local",
+            "path": "/home/azureuser/projects/skills/tmp/"
+          }
+        ],
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.ignore_patterns": {
+        "value": [],
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.system_prompt": {
+        "value": "You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted.\n",
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "run_limits.max_turns": {
+        "value": 60,
+        "source": "task",
+        "source_detail": null
+      },
+      "run_limits.task_timeout": {
+        "value": 900,
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "run_limits.turn_timeout": {
+        "value": 900,
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "run_limits.expected_turns": {
+        "value": 20,
+        "source": "task",
+        "source_detail": null
+      },
+      "sandbox.driver": {
+        "value": "docker",
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "sandbox.docker": {
+        "value": {
+          "image": "skills-image:latest",
+          "env_passthrough_extra": [
+            "SKILLS_REPO_PATH",
+            "EXPERIMENT_TASKS_PATH",
+            "BEDROCK_MODEL",
+            "TASK_PARALLELISM",
+            "UIPATH_CLI_ENABLE_ENV_AUTH",
+            "UIPATH_CLI_AUTH_TOKEN",
+            "UIPATH_CLI_ORGANIZATION_NAME",
+            "UIPATH_CLI_ORGANIZATION_ID",
+            "UIPATH_CLI_TENANT_NAME",
+            "UIPATH_CLI_TENANT_ID",
+            "TRACES_SMOKE_PROCESS_KEY",
+            "CODEX_API_KEY",
+            "CODEX_BASE_URL"
+          ],
+          "extra_mounts": [
+            "~/.uipath:/.uipath:rw",
+            "/home/azureuser/projects/skills/tests/tasks/uipath-maestro-flow:/home/azureuser/projects/skills/tests/tasks/uipath-maestro-flow:ro"
+          ]
+        },
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "repeats": {
+        "value": 1,
+        "source": "default",
+        "source_detail": null
+      }
+    }
+  },
+  "command_stats": {
+    "total_commands": 8,
+    "commands_by_tool": {
+      "Skill": 1,
+      "Read": 2,
+      "Bash": 5
+    },
+    "total_command_time_ms": 20216.786257951753,
+    "avg_command_time_ms": 2527.098282243969,
+    "slowest_commands": [
+      {
+        "tool": "Bash",
+        "duration_ms": 9929.340784001397,
+        "parameters": {
+          "command": "\\\n  uip solution init \"SmokeEval\" --output json && \\\n  cd SmokeEval && \\\n  uip maestro flow init \"SmokeEval\" --output json",
+          "description": "Create solution and init Flow project inside it",
+          "timeout": 60000
+        },
+        "tool_id": "toolu_bdrk_01EEdu2XoHi888NJivBFeWpf"
+      },
+      {
+        "tool": "Bash",
+        "duration_ms": 4652.115836011944,
+        "parameters": {
+          "command": "PROJ=/work/output/artifacts/skill-flow-eval-local-crud/SmokeEval/SmokeEval && \\\nuip maestro flow eval add hello \\\n  --set \"Smoke Set\" \\\n  --inputs '{\"name\":\"Alice\"}' \\\n  --expected '{\"greeting\":\"Hello, Alice!\"}' \\\n  --path \"$PROJ\" --output json && \\\nuip maestro flow eval evaluator list --path \"$PROJ\" --output json && \\\nuip maestro flow eval set list --path \"$PROJ\" --output json",
+          "description": "Add data point, then list evaluators and eval sets to confirm",
+          "timeout": 30000
+        },
+        "tool_id": "toolu_bdrk_014M8fQBStHLB2aoByxMotX8"
+      },
+      {
+        "tool": "Bash",
+        "duration_ms": 3645.8050849905703,
+        "parameters": {
+          "command": "PROJ=/work/output/artifacts/skill-flow-eval-local-crud/SmokeEval/SmokeEval && \\\nuip maestro flow eval evaluator add greeting-match \\\n  --type exact-match \\\n  --path \"$PROJ\" --output json && \\\nuip maestro flow eval set add \"Smoke Set\" \\\n  --path \"$PROJ\" --output json",
+          "description": "Add exact-match evaluator and eval set",
+          "timeout": 30000
+        },
+        "tool_id": "toolu_bdrk_01VA74mp7vcgcKQoFhdF54N8"
+      },
+      {
+        "tool": "Bash",
+        "duration_ms": 1670.6228109833319,
+        "parameters": {
+          "command": "uip maestro flow variable add \\\n  /work/output/artifacts/skill-flow-eval-local-crud/SmokeEval/SmokeEval/SmokeEval.flow \\\n  name --direction in --type string --output json",
+          "description": "Declare string input variable 'name' on the flow",
+          "timeout": 30000
+        },
+        "tool_id": "toolu_bdrk_01XGmj2U9eRi8ijFdFdmdQfG"
+      },
+      {
+        "tool": "Bash",
+        "duration_ms": 271.0132879728917,
+        "parameters": {
+          "command": "find /work/output/artifacts/skill-flow-eval-local-crud -maxdepth 2 -type f -name '*.uipx' -print 2>/dev/null; echo \"find exit: $?\"",
+          "description": "Check for existing .uipx solution files"
+        },
+        "tool_id": "toolu_bdrk_01MKyeKT211VMtGeut19HVj3"
+      }
+    ],
+    "successful_commands": 8,
+    "failed_commands": 0,
+    "unknown_commands": 0,
+    "success_rate": 100.0,
+    "most_common_sequence": "Bash → Bash → Bash"
+  },
+  "total_token_usage": {
+    "uncached_input_tokens": 839,
+    "output_tokens": 9576,
+    "cache_creation_input_tokens": 24857,
+    "cache_read_input_tokens": 364060,
+    "total_cost_usd": 0.34858874999999995,
+    "input_tokens": 389756
+  },
+  "total_assistant_turns": 16,
+  "expected_commands": null,
+  "actual_commands": 8,
+  "commands_efficiency": null,
+  "pre_run_results": [],
+  "post_run_results": [
+    {
+      "command": "find . -maxdepth 5 -type d \\( -name node_modules -o -name .npm-prefix -o -name .venv \\) -prune -exec rm -rf {} +",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "",
+      "duration_seconds": 0.03236651420593262,
+      "error": null
+    }
+  ],
+  "simulation": null,
+  "early_stop": null
+}

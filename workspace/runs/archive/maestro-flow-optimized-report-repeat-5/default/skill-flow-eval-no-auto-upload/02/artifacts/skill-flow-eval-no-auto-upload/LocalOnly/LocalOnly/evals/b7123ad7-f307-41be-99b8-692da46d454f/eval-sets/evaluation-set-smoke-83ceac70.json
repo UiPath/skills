@@ -1,0 +1,33 @@
+{
+  "version": "1.0",
+  "id": "83ceac70-b71a-4454-92ef-4010422d75a3",
+  "name": "Smoke",
+  "evaluatorRefs": [
+    "greeting-match-687c7924.json"
+  ],
+  "evaluations": [
+    {
+      "id": "030add4d-8669-4b33-bef3-3a96f52ff94d",
+      "name": "alice-test",
+      "inputs": {
+        "name": "Alice"
+      },
+      "expectedOutput": {
+        "greeting": "Hello, Alice!"
+      },
+      "evaluationCriterias": {
+        "greeting-match-687c7924": {
+          "expectedOutput": {
+            "greeting": "Hello, Alice!"
+          }
+        }
+      },
+      "createdAt": "2026-07-24T17:42:07.133Z",
+      "updatedAt": "2026-07-24T17:42:07.133Z"
+    }
+  ],
+  "selectedEntrypoint": "start",
+  "fileName": "evaluation-set-smoke-83ceac70.json",
+  "createdAt": "2026-07-24T17:42:03.107Z",
+  "updatedAt": "2026-07-24T17:42:07.133Z"
+}

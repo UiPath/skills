@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "ReceiptExtraction",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "31d780f8-1920-48b4-aa1a-e7d2fcc28628",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "ReceiptExtraction"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Flow",
+      "name": "ReceiptExtraction",
+      "package": {
+        "key": "1cf750a2-dc37-4a2b-a75b-c55445a0eedb"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "fe3946f3-a9bc-41eb-8b71-549e96407639",
+    "files": []
+  }
+}

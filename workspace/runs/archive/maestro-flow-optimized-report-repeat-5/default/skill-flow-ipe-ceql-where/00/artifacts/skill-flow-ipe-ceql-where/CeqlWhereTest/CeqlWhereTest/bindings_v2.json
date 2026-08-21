@@ -1,0 +1,24 @@
+{
+  "version": "2.0",
+  "resources": [
+    {
+      "resource": "connection",
+      "key": "26b7ac14-424a-45ae-88ee-88ae5c8794ce",
+      "id": "connection26b7ac14-424a-45ae-88ee-88ae5c8794ce",
+      "value": {
+        "ConnectionId": {
+          "defaultValue": "26b7ac14-424a-45ae-88ee-88ae5c8794ce",
+          "isExpression": false,
+          "displayName": "uipath-microsoft-azureactivedirectory connection"
+        }
+      },
+      "metadata": {
+        "ActivityName": "List AAD Groups",
+        "BindingsVersion": "2.2",
+        "DisplayLabel": "uipath-microsoft-azureactivedirectory connection",
+        "UseConnectionService": "true",
+        "Connector": "uipath-microsoft-azureactivedirectory"
+      }
+    }
+  ]
+}

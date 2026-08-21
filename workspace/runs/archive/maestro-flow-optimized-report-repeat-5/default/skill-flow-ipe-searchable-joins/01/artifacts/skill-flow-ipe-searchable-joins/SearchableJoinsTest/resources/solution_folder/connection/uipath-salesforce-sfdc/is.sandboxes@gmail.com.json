@@ -1,0 +1,29 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "is.sandboxes@gmail.com",
+    "kind": "connection",
+    "type": "uipath-salesforce-sfdc",
+    "apiVersion": "integrationservice.uipath.com/v1",
+    "isOverridable": true,
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "files": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "connectorName": "Salesforce",
+      "name": "is.sandboxes@gmail.com",
+      "description": null,
+      "authenticationType": "AuthenticateAfterDeployment",
+      "connectorVersion": "1.14.1",
+      "connectorKey": "uipath-salesforce-sfdc",
+      "pollingInterval": 5
+    },
+    "locks": [],
+    "key": "f4f880b6-8148-42e4-a7f8-cd7de72a5141"
+  }
+}

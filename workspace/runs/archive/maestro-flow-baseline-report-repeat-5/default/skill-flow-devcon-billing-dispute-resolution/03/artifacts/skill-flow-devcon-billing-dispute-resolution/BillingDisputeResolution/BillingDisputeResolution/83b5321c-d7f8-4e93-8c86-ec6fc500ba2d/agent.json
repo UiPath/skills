@@ -1,0 +1,172 @@
+{
+  "version": "1.1.0",
+  "settings": {
+    "model": "gpt-5.4",
+    "maxTokens": 4096,
+    "temperature": 0,
+    "engine": "basic-v2",
+    "maxIterations": 5,
+    "mode": "standard"
+  },
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "start__output__webhookPayload": {
+        "type": "object",
+        "description": "Webhook payload with dispute details including customer account number, invoice number, and disputed line items"
+      },
+      "normalizeData__output__fields": {
+        "type": "array",
+        "description": "Normalized IxP extraction fields from the disputed invoice PDF"
+      },
+      "crmLookup1__output__value": {
+        "type": "object",
+        "description": "CRM customer records matching the account number"
+      },
+      "erpLookup1__output__value": {
+        "type": "object",
+        "description": "ERP invoice records matching the invoice number"
+      },
+      "discrepancyDetection__output__mismatches": {
+        "type": "array",
+        "description": "List of detected pricing mismatches between disputed and contract line items"
+      },
+      "discrepancyDetection__output__totalOvercharge": {
+        "type": "number",
+        "description": "Total amount overcharged across all mismatched line items"
+      },
+      "discrepancyDetection__output__totalUndercharge": {
+        "type": "number",
+        "description": "Total amount undercharged across all mismatched line items"
+      }
+    }
+  },
+  "outputSchema": {
+    "type": "object",
+    "required": [
+      "determination",
+      "recommendedAction",
+      "autoResolutionEligible",
+      "creditAmount",
+      "confidence",
+      "rationale"
+    ],
+    "properties": {
+      "determination": {
+        "type": "string",
+        "description": "A concise statement of the dispute determination (e.g., 'Overcharge confirmed on 3 line items')"
+      },
+      "recommendedAction": {
+        "type": "string",
+        "enum": [
+          "escalate_to_manager",
+          "auto_resolve",
+          "reject"
+        ],
+        "description": "Recommended action: escalate_to_manager, auto_resolve, or reject"
+      },
+      "autoResolutionEligible": {
+        "type": "boolean",
+        "description": "Whether the dispute qualifies for automatic resolution without manager approval"
+      },
+      "creditAmount": {
+        "type": "number",
+        "description": "Recommended credit amount in dollars (0 if no credit recommended)"
+      },
+      "confidence": {
+        "type": "number",
+        "description": "Confidence score between 0 and 1 for the determination"
+      },
+      "rationale": {
+        "type": "string",
+        "description": "Detailed explanation of the determination and recommended action"
+      }
+    }
+  },
+  "metadata": {
+    "storageVersion": "50.0.0",
+    "isConversational": false,
+    "showProjectCreationExperience": false
+  },
+  "type": "lowCode",
+  "guardrails": [],
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are an expert billing dispute analyst. Your role is to analyze billing disputes by examining the extracted invoice data, customer CRM records, ERP contract records, and identified pricing discrepancies. You apply the Billing Dispute Standard Operating Procedures to determine the validity of each dispute and recommend an appropriate resolution action.\n\nResolution rules:\n- If total overcharge is confirmed and <= $500, recommend 'auto_resolve' with creditAmount = totalOvercharge.\n- If total overcharge is confirmed and > $500, recommend 'escalate_to_manager'.\n- If no valid overcharge is detected or the dispute is frivolous, recommend 'reject' with creditAmount = 0.\n- Set autoResolutionEligible = true only when recommendedAction is 'auto_resolve'.\n- Confidence should reflect the quality and consistency of the evidence.\n\nAlways return a structured JSON response with all required fields.",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "You are an expert billing dispute analyst. Your role is to analyze billing disputes by examining the extracted invoice data, customer CRM records, ERP contract records, and identified pricing discrepancies. You apply the Billing Dispute Standard Operating Procedures to determine the validity of each dispute and recommend an appropriate resolution action.\n\nResolution rules:\n- If total overcharge is confirmed and <= $500, recommend 'auto_resolve' with creditAmount = totalOvercharge.\n- If total overcharge is confirmed and > $500, recommend 'escalate_to_manager'.\n- If no valid overcharge is detected or the dispute is frivolous, recommend 'reject' with creditAmount = 0.\n- Set autoResolutionEligible = true only when recommendedAction is 'auto_resolve'.\n- Confidence should reflect the quality and consistency of the evidence.\n\nAlways return a structured JSON response with all required fields."
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "Analyze the following billing dispute and provide your determination.\n\nWebhook Payload: {{input.start__output__webhookPayload}}\n\nExtracted Invoice Fields (IxP): {{input.normalizeData__output__fields}}\n\nCRM Customer Records: {{input.crmLookup1__output__value}}\n\nERP Contract Records: {{input.erpLookup1__output__value}}\n\nDetected Discrepancies: {{input.discrepancyDetection__output__mismatches}}\n\nTotal Overcharge: {{input.discrepancyDetection__output__totalOvercharge}}\n\nTotal Undercharge: {{input.discrepancyDetection__output__totalUndercharge}}\n\nReturn a JSON object with: determination, recommendedAction (one of: escalate_to_manager, auto_resolve, reject), autoResolutionEligible (boolean), creditAmount (number), confidence (number 0-1), rationale (string).",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "Analyze the following billing dispute and provide your determination.\n\nWebhook Payload: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__webhookPayload"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\nExtracted Invoice Fields (IxP): "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.normalizeData__output__fields"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\nCRM Customer Records: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.crmLookup1__output__value"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\nERP Contract Records: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.erpLookup1__output__value"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\nDetected Discrepancies: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.discrepancyDetection__output__mismatches"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\nTotal Overcharge: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.discrepancyDetection__output__totalOvercharge"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\nTotal Undercharge: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.discrepancyDetection__output__totalUndercharge"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\nReturn a JSON object with: determination, recommendedAction (one of: escalate_to_manager, auto_resolve, reject), autoResolutionEligible (boolean), creditAmount (number), confidence (number 0-1), rationale (string)."
+        }
+      ]
+    }
+  ],
+  "projectId": "83b5321c-d7f8-4e93-8c86-ec6fc500ba2d"
+}

@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "DiceRollerCLI",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "1bdf8296-a441-40bd-b12a-ffa4db6614f7",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "DiceRollerCLI"
+    },
+    "locks": [],
+    "key": "33a8950f-d9b9-44f1-824d-1cc1aa9ae02d",
+    "files": []
+  }
+}

@@ -1,0 +1,2050 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>coder_eval · skill-flow-bindings-idempotent-reconfigure · default</title>
+<style>
+:root {
+  --bg-page: #0f1419;
+  --bg-card: #1a2129;
+  --bg-card-2: #232d38;
+  --bg-code: #0b0f14;
+  --fg: #e6edf3;
+  --fg-muted: #8b98a5;
+  --fg-dim: #6e7681;
+  --border: #30363d;
+  --accent: #58a6ff;
+  --score-high: #22c55e;
+  --score-mid: #f59e0b;
+  --score-low: #ef4444;
+  --status-success: #22c55e;
+  --status-failure: #f59e0b;
+  --status-error: #ef4444;
+  --status-neutral: #6e7681;
+  --shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+.light {
+  --bg-page: #ffffff;
+  --bg-card: #f6f8fa;
+  --bg-card-2: #eaeef2;
+  --bg-code: #f6f8fa;
+  --fg: #1f2328;
+  --fg-muted: #636c76;
+  --fg-dim: #8b949e;
+  --border: #d0d7de;
+  --accent: #0969da;
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial,
+               sans-serif;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--fg);
+  background: var(--bg-page);
+}
+.container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+h1, h2, h3, h4 { margin: 0 0 12px 0; line-height: 1.25; }
+h1 { font-size: 22px; font-weight: 600; }
+h2 { font-size: 18px; font-weight: 600; margin-top: 28px;
+     padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+h3 { font-size: 15px; font-weight: 600; color: var(--fg-muted); }
+h4 { font-size: 13px; font-weight: 600; color: var(--fg-muted); }
+p { margin: 0 0 8px 0; }
+.muted { color: var(--fg-muted); }
+.dim { color: var(--fg-dim); }
+.mono { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+        monospace; font-size: 12.5px; }
+code { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+       monospace; font-size: 12.5px; background: var(--bg-code);
+       border: 1px solid var(--border); padding: 1px 5px; border-radius: 3px; }
+pre { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+      monospace; font-size: 12.5px; background: var(--bg-code);
+      border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px;
+      margin: 6px 0; overflow-x: auto; white-space: pre-wrap;
+      word-wrap: break-word; }
+.header-bar { display: flex; align-items: center; justify-content: space-between;
+              margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+.title-group { flex: 1; min-width: 0; }
+.title-group .subtitle { color: var(--fg-muted); font-size: 13px;
+                         margin-top: 2px; word-break: break-all; }
+.badges { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.badge { display: inline-flex; align-items: center; gap: 6px;
+         padding: 4px 10px; border-radius: 12px; font-size: 12px;
+         font-weight: 600; background: var(--bg-card-2);
+         border: 1px solid var(--border); color: var(--fg); }
+.badge.success { background: color-mix(in srgb, var(--status-success) 20%, var(--bg-card-2));
+                 border-color: var(--status-success); color: var(--status-success); }
+.badge.failure { background: color-mix(in srgb, var(--status-failure) 20%, var(--bg-card-2));
+                 border-color: var(--status-failure); color: var(--status-failure); }
+.badge.error { background: color-mix(in srgb, var(--status-error) 20%, var(--bg-card-2));
+               border-color: var(--status-error); color: var(--status-error); }
+.badge.warning { background: color-mix(in srgb, #f4a52810 20%, var(--bg-card-2));
+                 border-color: #f4a528; color: #f4a528; }
+.badge.neutral { color: var(--fg-muted); }
+.score-pill { display: inline-block; padding: 2px 8px; border-radius: 10px;
+              font-size: 12px; font-weight: 700; min-width: 42px;
+              text-align: center; color: #0b0f14; }
+.score-high { background: var(--score-high); }
+.score-mid { background: var(--score-mid); }
+.score-low { background: var(--score-low); }
+.card { background: var(--bg-card); border: 1px solid var(--border);
+        border-radius: 8px; padding: 16px 20px; margin-bottom: 16px;
+        box-shadow: var(--shadow); }
+.card.highlight { border-left: 4px solid var(--accent); }
+.grid { display: grid; gap: 12px;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+.stat { background: var(--bg-card-2); padding: 10px 12px; border-radius: 6px;
+        border: 1px solid var(--border); }
+.stat .label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;
+               color: var(--fg-muted); margin-bottom: 4px; }
+.stat .value { font-size: 16px; font-weight: 600; }
+table { width: 100%; border-collapse: collapse; margin: 4px 0 12px 0; }
+th, td { text-align: left; padding: 8px 10px;
+         border-bottom: 1px solid var(--border); vertical-align: top;
+         font-size: 13px; }
+th { color: var(--fg-muted); font-weight: 600; font-size: 12px;
+     text-transform: uppercase; letter-spacing: 0.3px; }
+tr:last-child td { border-bottom: none; }
+details { margin: 6px 0; border: 1px solid var(--border); border-radius: 6px;
+          background: var(--bg-card-2); }
+details > summary { cursor: pointer; padding: 8px 12px; user-select: none;
+                    font-weight: 500; list-style: none; }
+details > summary::-webkit-details-marker { display: none; }
+details > summary::before { content: "▸ "; color: var(--fg-dim);
+                            display: inline-block; width: 14px;
+                            transition: transform 0.15s; }
+details[open] > summary::before { content: "▾ "; }
+details .details-body { padding: 0 12px 10px 12px; }
+.tool-row { display: flex; align-items: center; gap: 10px;
+            flex-wrap: wrap; font-size: 13px; }
+.tool-name { font-weight: 600; color: var(--accent); font-family: ui-monospace,
+             SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+.tool-status-ok { color: var(--status-success); font-size: 11px;
+                  font-weight: 600; }
+.tool-status-err { color: var(--status-error); font-size: 11px;
+                   font-weight: 600; }
+.tool-duration { color: var(--fg-muted); font-size: 12px; }
+.tool-seq { color: var(--fg-dim); font-size: 11px; font-weight: 600;
+            min-width: 24px; text-align: right; font-family: ui-monospace,
+            SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+.turn-header { display: flex; justify-content: space-between;
+               align-items: baseline; flex-wrap: wrap; gap: 10px;
+               margin-bottom: 10px; }
+.turn-meta { font-size: 12px; color: var(--fg-muted); }
+.criterion-row td:first-child { font-family: ui-monospace, SFMono-Regular,
+                                 "SF Mono", Menlo, Consolas, monospace;
+                                 color: var(--fg-muted); font-size: 12px; }
+.judge-section { display: flex; flex-direction: column; gap: 12px; }
+.judge-card { padding: 14px 16px; }
+.judge-card-head { display: flex; justify-content: space-between;
+                    align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+.judge-card-title { font-size: 14px; line-height: 1.4; flex: 1; min-width: 0; }
+.judge-card-score { flex-shrink: 0; }
+.judge-rationale { margin-top: 10px; padding: 10px 12px;
+                   background: var(--bg-code); border-radius: 4px;
+                   font-size: 13px; line-height: 1.5; }
+.judge-findings { margin: 8px 0 0 18px; padding-left: 4px; font-size: 13px;
+                   line-height: 1.6; }
+.judge-findings li { margin: 2px 0; }
+.nav-toggle { display: inline-block; padding: 5px 10px; font-size: 12px;
+              background: var(--bg-card-2); border: 1px solid var(--border);
+              border-radius: 5px; color: var(--fg); cursor: pointer; }
+.nav-toggle:hover { background: var(--bg-card); }
+.llm-next-steps { margin: 6px 0 0 20px; padding-left: 0; }
+.llm-next-steps li { margin: 3px 0; }
+.iteration-group { padding: 12px 16px 4px 16px; margin-bottom: 20px;
+                   border-radius: 0 6px 6px 0; border-left: 4px solid var(--status-neutral); }
+/* rgba fallback for browsers without color-mix (Chrome <111, Firefox <113, Safari <16.2). */
+.iteration-group--recovered { border-left-color: var(--status-success);
+                              background: rgba(34, 197, 94, 0.06);
+                              background: color-mix(in srgb, var(--status-success) 6%, transparent); }
+.iteration-group--terminal { border-left-color: var(--status-error);
+                             background: rgba(239, 68, 68, 0.06);
+                             background: color-mix(in srgb, var(--status-error) 6%, transparent); }
+.iteration-group__banner { margin: 0 0 12px 0; font-size: 14px; font-weight: 600; }
+.iteration-group--recovered .iteration-group__banner { color: var(--status-success); }
+.iteration-group--terminal .iteration-group__banner { color: var(--status-error); }
+.attempt-transition { display: flex; align-items: center; gap: 8px;
+                      margin: -6px 0 12px 8px; color: var(--status-error); font-size: 12.5px; }
+.attempt-transition__icon { font-weight: 700; }
+footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--border);
+         color: var(--fg-dim); font-size: 12px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="header-bar">
+  <div class="title-group">
+    <h1>Task: skill-flow-bindings-idempotent-reconfigure</h1>
+    <div class="subtitle">Step 1 of the DAPField-mirrored upsert in `upsertConnectionResourceBinding` is the exact `(name, resource, resourceKey)` match path that refreshes `default` instead of appending. This eval covers it: configuring the same connector node twice with the same connection details must not grow the bindings array. The second configure should be a no-op on row count. See https://github.com/UiPath/cli/pull/2197 — the &quot;Step 1: exact match&quot; branch of `upsertConnectionResourceBinding`.</div>
+  </div>
+  <div class="badges">
+    <span class="badge success">SUCCESS</span>
+    <span class="score-pill score-high">1.00</span>
+    <span class="badge neutral">claude-code · claude-sonnet-5</span>
+    <span class="badge neutral">5m 2s</span>
+    <span class="badge neutral">$1.4130</span>
+    
+    
+    <span class="nav-toggle" onclick="toggleTheme()">Toggle theme</span>
+  </div>
+</div>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Variant</div><div class="value">default</div></div>
+    <div class="stat"><div class="label">Started</div><div class="value mono">2026-08-19T15:49:32</div></div>
+    <div class="stat"><div class="label">Duration</div><div class="value">5m 2s</div></div>
+    <div class="stat"><div class="label">Turns (SDK)</div><div class="value">83</div></div>
+    <div class="stat"><div class="label">Commands</div><div class="value">49</div></div>
+  </div>
+</div>
+
+<h2>Success Criteria <span class="muted" style="font-weight:400">(5/5 passed)</span></h2>
+<div class="card" style="padding:0">
+<table>
+  <thead>
+    <tr>
+      <th style="width:15%">Type</th>
+      <th style="width:35%">Description</th>
+      <th style="width:10%">Score</th>
+      <th>Details</th>
+    </tr>
+  </thead>
+  <tbody>
+    
+<tr class="criterion-row">
+  <td>command_executed</td>
+  <td>Agent called `node configure` at least twice</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Matched 2/2 required commands (filters: tool_name=Bash, pattern=/(uip|\$UIP)\s+(maestro\s+)?flow\s+node\s+configure/)</summary><div class="details-body"><pre style="margin:6px 0 0 0">Matched 2/2 required commands (filters: tool_name=Bash, pattern=/(uip|\$UIP)\s+(maestro\s+)?flow\s+node\s+configure/)
+Examples: [&#x27;cd /work/output/artifacts/skill-flow-bindings-idempotent-reconfigure/BindingsIdempotentSolution/BindingsIdempotent\nuip m&#x27;, &#x27;cd /work/output/artifacts/skill-flow-bindings-idempotent-reconfigure/BindingsIdempotentSolution/BindingsIdempotent\nuip m&#x27;]</pre></div></details></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>run_command</td>
+  <td>Both snapshots exist, valid JSON with bindings</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Command: python3 $TASK_DIR/check_bindings.py structure &#x27;after_first_configure.flow&#x27; &amp;&amp; python3 $TASK_DIR/check_bindings.py structure &#x27;after_second_configure.flow&#x27;</summary><div class="details-body"><pre style="margin:6px 0 0 0">Command: python3 $TASK_DIR/check_bindings.py structure &#x27;after_first_configure.flow&#x27; &amp;&amp; python3 $TASK_DIR/check_bindings.py structure &#x27;after_second_configure.flow&#x27;
+Exit code: 0 (expected: 0)
+Stdout:
+OK: after_first_configure.flow valid JSON with nodes + bindings
+OK: after_second_configure.flow valid JSON with nodes + bindings
+
+Stderr: (empty)</pre></div></details></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>run_command</td>
+  <td>Bindings count did not grow on second configure (idempotent)</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Command: python3 $TASK_DIR/check_bindings.py count_equal &#x27;after_first_configure.flow&#x27; &#x27;after_second_configure.flow&#x27;</summary><div class="details-body"><pre style="margin:6px 0 0 0">Command: python3 $TASK_DIR/check_bindings.py count_equal &#x27;after_first_configure.flow&#x27; &#x27;after_second_configure.flow&#x27;
+Exit code: 0 (expected: 0)
+Stdout:
+OK: after_first_configure.flow and after_second_configure.flow have equal bindings count = 2
+
+Stderr: (empty)</pre></div></details></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>run_command</td>
+  <td>No empty-keyed Connection bindings in final snapshot</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Command: python3 $TASK_DIR/check_bindings.py no_empty_stubs &#x27;after_second_configure.flow&#x27;</summary><div class="details-body"><pre style="margin:6px 0 0 0">Command: python3 $TASK_DIR/check_bindings.py no_empty_stubs &#x27;after_second_configure.flow&#x27;
+Exit code: 0 (expected: 0)
+Stdout:
+OK: after_second_configure.flow has no empty-keyed Connection bindings
+
+Stderr: (empty)</pre></div></details></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>run_command</td>
+  <td>ConnectionId resourceKey stable across both snapshots</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Command: python3 $TASK_DIR/check_bindings.py same_connection_id &#x27;after_first_configure.flow&#x27; &#x27;after_second_configure.flow&#x27;</summary><div class="details-body"><pre style="margin:6px 0 0 0">Command: python3 $TASK_DIR/check_bindings.py same_connection_id &#x27;after_first_configure.flow&#x27; &#x27;after_second_configure.flow&#x27;
+Exit code: 0 (expected: 0)
+Stdout:
+OK: ConnectionId resourceKey stable across snapshots ({&#x27;230c7602-7163-428c-8580-71825e8e4ca2&#x27;})
+
+Stderr: (empty)</pre></div></details></td>
+</tr>
+
+  </tbody>
+</table>
+</div>
+<h2>Conversation Trace (1 iteration)</h2>
+<div class="card">
+  <div class="turn-header">
+    <h3>Iteration 1</h3>
+    <div class="badges">
+      <span class="badge neutral">83 assistant turns</span>
+      <span class="badge neutral">in 658 · out 20807 · cache 2921975</span>
+      <span class="badge neutral">4m 58s</span>
+      
+      
+      
+    </div>
+  </div>
+  <details>
+    <summary>Prompt to agent</summary>
+    <div class="details-body"><pre>Your working directory is: /work/output/artifacts/skill-flow-bindings-idempotent-reconfigure
+
+Build a flow named &quot;BindingsIdempotent&quot; — Manual Trigger → IS connector
+node → End — saved as `BindingsIdempotent/flow_files/BindingsIdempotent.flow`
+with `BindingsIdempotent/project.uiproj`.
+
+Snapshot the .flow after the first configure:
+    cp BindingsIdempotent/flow_files/BindingsIdempotent.flow after_first_configure.flow
+
+Then run the EXACT SAME `node configure` invocation a second time (same
+node id, same --detail JSON). Snapshot again:
+    cp BindingsIdempotent/flow_files/BindingsIdempotent.flow after_second_configure.flow
+
+Both snapshots go at the sandbox root.
+</pre></div>
+  </details>
+  <details>
+    <summary>Agent response</summary>
+    <div class="details-body"><pre>[ASSISTANT] Good, we&#x27;re logged in and connected. Now let&#x27;s check IS connections available to pick a real connector.
+[ASSISTANT] This create-lead activity is simple: `Company` and `LastName` required, no reference resolution needed. This is a good IS connector node for our test flow. Let me set up the todo list and proceed.
+[ASSISTANT] Now let&#x27;s add the End node and wire edges. This requires user-owned edits (Edit tool), so let&#x27;s get the End node definition and read the current flow.
+[ASSISTANT] flow_edit.py is a good fit for add-node/add-edge (End node is user-owned, so this script is the right tool).
+[ASSISTANT] The port is &quot;output&quot;, not &quot;success&quot;. Let me fix that edge.
+[ASSISTANT] Topology looks good. Now let&#x27;s build the `--detail` JSON for the `node configure` call and run it the first time.
+[ASSISTANT] First configure succeeded. Now let&#x27;s set up the final directory layout and take the first snapshot.
+[ASSISTANT] First snapshot taken. Now let&#x27;s run the exact same configure invocation a second time on the CLI project copy (the source of truth the CLI operates on), then propagate to the mirrored location and take the second snapshot.
+[ASSISTANT] Identical checksums — the configure is idempotent at the `.flow` level. Let me verify `bindings_v2.json` didn&#x27;t accumulate duplicate entries, and run a full diff to be thorough.
+[ASSISTANT] No duplication — `bindings_v2.json` still has a single resource entry. Both `.flow` bindings and derived files are idempotent. Now let&#x27;s validate and format the flow, and finalize the layout.
+[ASSISTANT] Valid, no warnings. Now format and finalize the mirrored output.
+[ASSISTANT] Good — the two idempotency snapshots (taken before format) remain untouched. `format` was applied afterward to finalize the deliverable, which is the correct order.
+[ASSISTANT] Built and verified. Summary:
+
+- **Flow**: `BindingsIdempotent` — Manual Trigger (`start`) → Salesforce `Create Lead` connector node (`createLead1`) → End (`end`), saved at `BindingsIdempotent/flow_files/BindingsIdempotent.flow` with `BindingsIdempotent/project.uiproj`.
+- **Configure idempotency test**: ran `uip maestro flow node configure BindingsIdempotent.flow createLead1 --detail &lt;identical JSON&gt;` twice with the exact same invocation.
+  - `after_first_configure.flow` and `after_second_configure.flow` (both at the sandbox root) are **byte-identical** (same MD5: `0b097d1dd24f99e11df0c4f781a56ac8`), and `diff` reports no differences.
+  - `bindings_v2.json` also stayed at one binding entry — the connection binding wasn&#x27;t duplicated on re-configure.
+- The flow passed `flow validate` (Status: Valid, no warnings) and was run through `flow format` afterward for final layout — done only after both snapshots were captured, so it didn&#x27;t affect the idempotency comparison.
+[RESULT - SUCCESS] Built and verified. Summary:
+
+- **Flow**: `BindingsIdempotent` — Manual Trigger (`start`) → Salesforce `Create Lead` connector node (`createLead1`) → End (`end`), saved at `BindingsIdempotent/flow_files/BindingsIdempotent.flow` with `BindingsIdempotent/project.uiproj`.
+- **Configure idempotency test**: ran `uip maestro flow node configure BindingsIdempotent.flow createLead1 --detail &lt;identical JSON&gt;` twice with the exact same invocation.
+  - `after_first_configure.flow` and `after_second_configure.flow` (both at the sandbox root) are **byte-identical** (same MD5: `0b097d1dd24f99e11df0c4f781a56ac8`), and `diff` reports no differences.
+  - `bindings_v2.json` also stayed at one binding entry — the connection binding wasn&#x27;t duplicated on re-configure.
+- The flow passed `flow validate` (Status: Valid, no warnings) and was run through `flow format` afterward for final layout — done only after both snapshots were captured, so it didn&#x27;t affect the idempotency comparison.</pre></div>
+  </details>
+  <h4 style="margin-top:12px">Tool Calls (49)</h4>
+  
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#0</span>
+      <span class="tool-name">Skill</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">15ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;skill&quot;: &quot;tmp:uipath-maestro-flow&quot;,
+  &quot;args&quot;: &quot;Build a flow named \&quot;BindingsIdempotent\&quot; — Manual Trigger → IS connector node → End — saved as BindingsIdempotent/flow_files/BindingsIdempotent.flow with BindingsIdempotent/project.uiproj, in working directory /work/output/artifacts/skill-flow-bindings-idempotent-reconfigure.\n\nAfter building and running the first `node configure` on the IS connector node, snapshot the .flow file:\ncp BindingsIdempot… (596 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Launching skill: tmp:uipath-maestro-flow</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#1</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">46ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;pwd &amp;&amp; ls -la &amp;&amp; find . -maxdepth 3 2&gt;/dev/null&quot;,
+  &quot;description&quot;: &quot;Inspect working directory&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/work/output/artifacts/skill-flow-bindings-idempotent-reconfigure
+total 12
+drwxr-xr-x 3 root root 4096 Aug 19 15:49 .
+drwxr-xr-x 3 root root 4096 Aug 19 15:49 ..
+drwxr-xr-x 4 root root 4096 Aug 19 15:49 .venv
+.
+./.venv
+./.venv/CACHEDIR.TAG
+./.venv/lib64
+./.venv/pyvenv.cfg
+./.venv/lib
+./.venv/lib/python3.13
+./.venv/bin
+./.venv/bin/activate.csh
+./.venv/bin/activate.bat
+./.venv/bin/activate_this.py
+./.venv/bin/python
+./.venv/bin/pydoc.bat
+./.venv/bin/activate.ps1
+./.venv/bin/activate.xsh
+./.venv/bin/activate.nu
+./.venv/bin/python3.13
+./.venv/bin/activate
+./.venv/bin/activate.fish
+./.venv/bin/python3
+./.venv/bin/deactivate.bat
+./.venv/.gitignore</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#2</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">316ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;which uip &amp;&amp; uip --version 2&gt;&amp;1 | head -20&quot;,
+  &quot;description&quot;: &quot;Check uip CLI availability and version&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/usr/bin/uip
+1.201.0-dev.8272</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#3</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">6.56s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow init BindingsIdempotent --output json 2&gt;&amp;1 | tail -100&quot;,
+  &quot;description&quot;: &quot;Initialize the flow project&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>2026-08-19 15:49:59 INFO  [ResourceBuilder:ProjectCreateCommandHandler] Creating project [object Object]
+2026-08-19 15:49:59 INFO  [ResourceBuilder:MultiFileSolutionDefinitionProvider] Reading multi-file solution definition for solution %s /work/output/artifacts/skill-flow-bindings-idempotent-reconfigure/BindingsIdempotentSolution
+2026-08-19 15:49:59 INFO  [ResourceBuilder:ProjectCreateCommandHandler] Generate artefact resources for project [object Object]
+2026-08-19 15:49:59 INFO  [ResourceBuilder:SolutionsMetadataReader] Reading metadata from %s. SolutionsMetadataReader
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FlowInit&quot;,
+  &quot;Data&quot;: {
+    &quot;Status&quot;: &quot;Created successfully&quot;,
+    &quot;Path&quot;: &quot;/work/output/artifacts/skill-flow-bindings-idempotent-reconfigure/BindingsIdempotentSolution/BindingsIdempotent&quot;,
+    &quot;SolutionRegistration&quot;: {
+      &quot;Status&quot;: &quot;Registered&quot;,
+      &quot;Message&quot;: &quot;Project registered in parent solution.&quot;,
+      &quot;Solution&quot;: &quot;/work/output/artifacts/skill-flow-bindings-idempotent-reconfigure/BindingsIdempotentSolution/BindingsIdempotentSolution.uipx&quot;,
+      &quot;Project&quot;: &quot;BindingsIdempotent/project.uiproj&quot;,
+      &quot;ProjectId&quot;: &quot;1762ad34-7fa7-4713-9b34-5b9b2004474b&quot;,
+      &quot;Instructions
+
+… (truncated, 1078 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#4</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">12ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;find /work/output/artifacts/skill-flow-bindings-idempotent-reconfigure -maxdepth 4 -type f 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;List created files&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/work/output/artifacts/skill-flow-bindings-idempotent-reconfigure/.venv/CACHEDIR.TAG
+/work/output/artifacts/skill-flow-bindings-idempotent-reconfigure/.venv/pyvenv.cfg
+/work/output/artifacts/skill-flow-bindings-idempotent-reconfigure/.venv/bin/activate.csh
+/work/output/artifacts/skill-flow-bindings-idempotent-reconfigure/.venv/bin/activate.bat
+/work/output/artifacts/skill-flow-bindings-idempotent-reconfigure/.venv/bin/activate_this.py
+/work/output/artifacts/skill-flow-bindings-idempotent-reconfigure/.venv/bin/pydoc.bat
+/work/output/artifacts/skill-flow-bindings-idempotent-reconfigure/.venv/bin/activate.ps1
+/work/output/artifacts/skill-flow-bindings-idempotent-reconfigure/.venv/bin/activate.xsh
+/work/output/artifacts/skill-flow-bindings-idempotent-reconfigure/.venv/bin/activate.nu
+/work/output/artifacts/skill-flow-bindings-idempotent-reconfigure/.venv/bin/activate
+/work/output/artifacts/skill-flow-bindings-idempotent-reconfigure/.venv/bin/activate.fish
+/work/output/artifacts/skill-flow-bindings-idempotent-reconfigure/.venv/bin/deactivate.bat
+/work/output/artifacts/skill-flow-bindings-idempotent-reconfigure/.venv/.gitignore
+/work/output/artifacts/skill-flow-bindings-idempotent-reconf
+
+… (truncated, 452 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#5</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">7ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-bindings-idempotent-reconfigure/BindingsIdempotentSolution/BindingsIdempotent/project.uiproj&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	{
+2	  &quot;Name&quot;: &quot;BindingsIdempotent&quot;,
+3	  &quot;ProjectType&quot;: &quot;Flow&quot;
+4	}
+5	</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#6</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">5ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-bindings-idempotent-reconfigure/BindingsIdempotentSolution/BindingsIdempotent/BindingsIdempotent.flow&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	{
+2	  &quot;id&quot;: &quot;406d4c36-ad4c-46a8-91bf-568f86c50aaa&quot;,
+3	  &quot;version&quot;: &quot;1.9&quot;,
+4	  &quot;name&quot;: &quot;BindingsIdempotent&quot;,
+5	  &quot;nodes&quot;: [
+6	    {
+7	      &quot;id&quot;: &quot;start&quot;,
+8	      &quot;type&quot;: &quot;core.trigger.manual&quot;,
+9	      &quot;typeVersion&quot;: &quot;1.0&quot;,
+10	      &quot;display&quot;: {
+11	        &quot;label&quot;: &quot;Manual trigger&quot;
+12	      },
+13	      &quot;inputs&quot;: {
+14	        &quot;entryPointId&quot;: &quot;237078bc-cba1-4b89-8a18-1a686666e102&quot;,
+15	        &quot;isDefaultEntryPoint&quot;: true
+16	      }
+17	    }
+18	  ],
+19	  &quot;edges&quot;: [],
+20	  &quot;definitions&quot;: [
+21	    {
+22	      &quot;nodeType&quot;: &quot;core.trigger.manual&quot;,
+23	      &quot;version&quot;: &quot;1.0&quot;,
+24	      &quot;category&quot;: &quot;trigger&quot;,
+25	      &quot;description&quot;: &quot;Start the process manually&quot;,
+26	      &quot;tags&quot;: [
+27	        &quot;trigger&quot;,
+28	        &quot;start&quot;,
+29	        &quot;manual&quot;
+30	      ],
+31	      &quot;sortOrder&quot;: 80,
+32	      &quot;display&quot;: {
+33	        &quot;label&quot;: &quot;Manual trigger&quot;,
+34	        &quot;icon&quot;: &quot;play&quot;,
+35	        &quot;shape&quot;: &quot;circle&quot;
+36	      },
+37	      &quot;handleConfiguration&quot;: [
+38	        {
+39	          &quot;position&quot;: &quot;right&quot;,
+40	          &quot;handles&quot;: [
+41	            {
+42	              &quot;id&quot;: &quot;output&quot;,
+43	              &quot;type&quot;: &quot;source&quot;,
+44	              &quot;handleType&quot;: &quot;output&quot;,
+45	              &quot;showButton&quot;: true,
+46	              &quot;constrai
+
+… (truncated, 1052 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#7</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">6ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-bindings-idempotent-reconfigure/BindingsIdempotentSolution/BindingsIdempotent/operate.json&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	{
+2	  &quot;$schema&quot;: &quot;https://cloud.uipath.com/draft/2024-12/operate&quot;,
+3	  &quot;projectId&quot;: &quot;406d4c36-ad4c-46a8-91bf-568f86c50aaa&quot;,
+4	  &quot;contentType&quot;: &quot;Flow&quot;,
+5	  &quot;targetFramework&quot;: &quot;Portable&quot;,
+6	  &quot;runtimeOptions&quot;: {
+7	    &quot;requiresUserInteraction&quot;: false,
+8	    &quot;isAttended&quot;: false
+9	  }
+10	}
+11	</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#8</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">25ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cat /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/shared/cli-commands.md 2&gt;&amp;1 | head -150&quot;,
+  &quot;description&quot;: &quot;Read CLI commands reference&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre># uip maestro flow — CLI Command Reference
+
+All commands output `{ &quot;Result&quot;: &quot;Success&quot;|&quot;Failure&quot;, &quot;Code&quot;: &quot;...&quot;, &quot;Data&quot;: { ... } }`. Use `--output json` for programmatic use.
+
+&gt; For node and edge commands (`node add/remove/list/configure`, `edge add/remove/list`), see the [Author CLI editing strategy](../author/references/editing-operations-cli.md). This file covers project setup, validation, registry, debug, and publishing commands.
+
+&lt;!--skill-flavor:flow-init-command:start--&gt;
+## uip maestro flow init
+
+Scaffold a new Flow project directory. Outside a solution, `flow init` auto-scaffolds `&lt;ProjectName&gt;Solution/` and nests the project in it. **Prefer creating the solution first** so its name matches the project name (see the [Author greenfield journey — Step 2](../author/references/greenfield.md)).
+
+```bash
+# 1. Create solution first (for naming control)
+uip solution init &quot;&lt;SolutionName&gt;&quot; --output json
+
+# 2. Init the flow project inside the solution folder.
+#    Inside a solution directory, `flow init` auto-registers the project with
+#    the parent `.uipx`. Outside any solution, it auto-scaffolds
+#    `&lt;ProjectName&gt;Solution/&lt;ProjectName&gt;Solution.uipx`, nests the project in it,
+#   
+
+… (truncated, 7386 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#9</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.14s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow node --help 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Check node subcommand help&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>                             uip maestro flow node                              
+                          Manage nodes in a Flow file                           
+                Use --help with nested commands for more detail.                
+
+┌─ Usage ──────────────────────────────────────────────────────────────────────┐
+│ uip maestro flow node [options] [command]                                    │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Commands ───────────────────────────────────────────────────────────────────┐
+│ add         Add a node to a Flow file.                                       │
+│ configure   Configure a connector or managed HTTP node with connection and   │
+│             method details.                                                  │
+│ delete      Delete a node from a Flow file.                                  │
+│ help        display help for command                                         │
+│ list        List all nodes in a Flow file                                    │
+│ remove      Remove a node from a Flow file.                                  │
+└───────────────────────────────────────────────────────────────
+
+… (truncated, 908 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#10</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">417ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip whoami --output json 2&gt;&amp;1 | tail -30&quot;,
+  &quot;description&quot;: &quot;Check login status&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;ValidationError&quot;,
+  &quot;ErrorCode&quot;: &quot;invalid_argument&quot;,
+  &quot;Message&quot;: &quot;error: unknown command &#x27;whoami&#x27;&quot;,
+  &quot;Instructions&quot;: &quot;Run &#x27;uip --help&#x27; to list available commands.&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#11</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">27ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cat /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/editing-operations-cli.md 2&gt;&amp;1 | sed -n &#x27;1,200p&#x27;&quot;,
+  &quot;description&quot;: &quot;Read CLI editing operations reference for node add/configure&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre># Flow Editing Operations — CLI Carve-Outs
+
+This is **not** a structural editing guide. Use direct `.flow` authoring via [editing-operations-json.md](editing-operations-json.md) for OOTB node/edge/variable CRUD, trigger swaps, output mapping, subflows, inline-agent node/wiring, non-connector resources, and in-place updates.
+
+&gt; **When to use this file:** only for CLI-managed carve-outs documented by a plugin: connector activities, connector triggers, and managed HTTP nodes (both `node add` and `node configure`). If you landed here while adding/removing/wiring OOTB nodes, inline-agent nodes, non-connector resources, or other structural graph elements, go back to the Edit / Write guide.
+
+The primitive commands below are support commands for carve-out workflows only. They are not an opt-in path for non-carve-out structural edits.
+
+---
+
+## Primitive Commands for Carve-Out Workflows
+
+### Add a node
+
+```bash
+uip maestro flow node add &lt;ProjectName&gt;.flow &lt;node-type&gt; --output json \
+  --input &#x27;&lt;INPUT_JSON&gt;&#x27; \
+  --label &quot;&lt;LABEL&gt;&quot; \
+  --position &lt;X&gt;,&lt;Y&gt; \
+  --parent &lt;PARENT_NODE_ID&gt;
+```
+
+**What the CLI handles automatically:**
+- Inserts node into `nodes` array with a generated `id`
+- Copies th
+
+… (truncated, 6623 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#12</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">4.15s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry pull --force --output json 2&gt;&amp;1 | tail -40&quot;,
+  &quot;description&quot;: &quot;Pull the registry to check login/connectivity&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>[ManifestClient] fetchDynamicNodes ok: total=4880 connector nodes=3654 integration trigger nodes=896 agent context nodes=2 external agent nodes=7 orchestrator nodes=263 IXP nodes=45 IXP Models nodes=13
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodePullSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;NodesCount&quot;: 4763,
+    &quot;FromCache&quot;: false,
+    &quot;Source&quot;: &quot;authenticated&quot;,
+    &quot;CacheWritten&quot;: true,
+    &quot;Message&quot;: &quot;Synced fresh nodes&quot;
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#13</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.04s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip is connections list --all-folders --output json 2&gt;&amp;1 | tail -100&quot;,
+  &quot;description&quot;: &quot;List available IS connections across all folders&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>      &quot;ByoaConnection&quot;: &quot;No&quot;,
+      &quot;ElementInstanceId&quot;: 359774,
+      &quot;Folder&quot;: &quot;CM-Golden-Expense-Reporting-106&quot;,
+      &quot;FolderKey&quot;: &quot;32204ea1-4659-425b-a793-2266e2995e67&quot;,
+      &quot;Created&quot;: &quot;2026-07-10T00:50:50.180Z&quot;,
+      &quot;Updated&quot;: &quot;2026-08-19T15:25:01.650Z&quot;
+    },
+    {
+      &quot;Id&quot;: &quot;9eedfd47-e4c9-48a9-8ff3-7af335fab036&quot;,
+      &quot;Name&quot;: &quot;song.zhao@uipath.com&quot;,
+      &quot;ConnectorKey&quot;: &quot;uipath-microsoft-outlook365&quot;,
+      &quot;ConnectorName&quot;: &quot;Microsoft Outlook 365&quot;,
+      &quot;State&quot;: &quot;Enabled&quot;,
+      &quot;Owner&quot;: &quot;song.zhao@uipath.com&quot;,
+      &quot;IsDefault&quot;: &quot;No&quot;,
+      &quot;ByoaConnection&quot;: &quot;No&quot;,
+      &quot;ElementInstanceId&quot;: 362844,
+      &quot;Folder&quot;: &quot;uipath-maestro-case&quot;,
+      &quot;FolderKey&quot;: &quot;def71452-bad1-40fa-be08-da175e89bd1a&quot;,
+      &quot;Created&quot;: &quot;2026-07-17T04:11:38.386Z&quot;,
+      &quot;Updated&quot;: &quot;2026-08-19T15:04:01.206Z&quot;
+    },
+    {
+      &quot;Id&quot;: &quot;4e5d613a-96be-4ba7-b86b-ebe225d192f1&quot;,
+      &quot;Name&quot;: &quot;pat_databricks&quot;,
+      &quot;ConnectorKey&quot;: &quot;uipath-uipath-jdbc&quot;,
+      &quot;ConnectorName&quot;: &quot;Database Hub&quot;,
+      &quot;State&quot;: &quot;Enabled&quot;,
+      &quot;Owner&quot;: &quot;ad65a642-f5d0-430a-ba9c-9a3f3bbd1e9f&quot;,
+      &quot;IsDefault&quot;: &quot;Yes&quot;,
+      &quot;ByoaConnection&quot;: &quot;No&quot;,
+      &quot;ElementInstanceId&quot;: 364066,
+      &quot;Folder&quot;: &quot;uipath-maestro-flow&quot;,
+
+… (truncated, 2675 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#14</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.23s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry search \&quot;salesforce\&quot; --output json --output-filter \&quot;[*].{NodeType:NodeType,DisplayName:DisplayName}\&quot; 2&gt;&amp;1 | head -80&quot;,
+  &quot;description&quot;: &quot;Search registry for salesforce connector activities&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeSearchSuccess&quot;,
+  &quot;Data&quot;: [
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-salesforce-quip.upload-attachment-to-thread&quot;,
+      &quot;DisplayName&quot;: &quot;Upload Attachment to Thread&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-salesforce-quip.create-document-in-private-folder&quot;,
+      &quot;DisplayName&quot;: &quot;Create Document in Private Folder&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-salesforce-quip.search-threads&quot;,
+      &quot;DisplayName&quot;: &quot;Search Threads&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-salesforce-quip.create-chat-room&quot;,
+      &quot;DisplayName&quot;: &quot;Create Chat Room&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-salesforce-quip.find-user-by-email&quot;,
+      &quot;DisplayName&quot;: &quot;Find User by Email&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-salesforce-quip.send-message-to-thread&quot;,
+      &quot;DisplayName&quot;: &quot;Send Message to Thread&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-salesforce-quip.invite-people-to-chat-room&quot;,
+      &quot;DisplayName&quot;: &quot;Invite People to Chat Room&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-salesforce-quip.get-recent-messages-by-thread&quot;,
+      &quot;DisplayName&quot;: &quot;Get Rece
+
+… (truncated, 1486 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#15</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">33ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cat /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/plugins/connector/impl.md 2&gt;&amp;1 | sed -n &#x27;1,250p&#x27;&quot;,
+  &quot;description&quot;: &quot;Read connector impl.md for detail schema&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre># Connector Activity Nodes — Implementation
+
+How to configure connector activity nodes: connection binding, enriched metadata, reference field resolution, and debugging. Connection bindings are emitted by `uip maestro flow node configure` into the flow&#x27;s top-level `bindings[]`; `bindings_v2.json` is regenerated from them at debug/pack time and should never be hand-edited.
+
+For generic node/edge add, remove, and wiring procedures, see [editing-operations.md](../../editing-operations.md). This guide covers the connector-specific configuration workflow that must follow the generic node add.
+
+## How Connector Nodes Differ from OOTB
+
+1. **Connection binding required** — every connector node needs an IS connection (OAuth, API key, etc.) authored in the flow&#x27;s top-level `bindings[]` (which the CLI regenerates into `bindings_v2.json` at debug/pack time). Without it, the node cannot authenticate.
+2. **Enriched metadata via `--connection-id`** — call `registry get` with `--connection-id` to get connection-aware field metadata. Without it, only base fields are returned — custom fields, dynamic enums, and reference resolution are missing.
+3. **`inputs.detail` object** — connector nodes store o
+
+… (truncated, 25138 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#16</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">675ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry search \&quot;salesforce\&quot; --output json --output-filter \&quot;[*].{NodeType:NodeType,DisplayName:DisplayName}\&quot; 2&gt;&amp;1 | grep -i \&quot;sfdc\&quot; &quot;,
+  &quot;description&quot;: &quot;List all salesforce sfdc node types&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>      &quot;NodeType&quot;: &quot;uipath.connector.uipath-salesforce-sfdc.get-report-metadata&quot;,
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-salesforce-sfdc.create-opportunity&quot;,
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-salesforce-sfdc.create-bulk-upload-job&quot;,
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-salesforce-sfdc.create-account&quot;,
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-salesforce-sfdc.submit-a-record-for-approval-process&quot;,
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-salesforce-sfdc.search-records&quot;,
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-salesforce-sfdc.upload-file&quot;,
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-salesforce-sfdc.update-contact&quot;,
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-salesforce-sfdc.get-bulk-job-info&quot;,
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-salesforce-sfdc.update-lead&quot;,
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-salesforce-sfdc.get-lead&quot;,
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-salesforce-sfdc.download-soql-bulk-job-results&quot;,
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-salesforce-sfdc.add-file-to-record&quot;,
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-salesforce-sfdc.starts-or-aborts-bulk-job&quot;,
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-salesforce-sfdc.get-account&quot;,
+  
+
+… (truncated, 5614 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#17</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">2.82s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry get uipath.connector.uipath-salesforce-sfdc.get-lead --connection-id 230c7602-7163-428c-8580-71825e8e4ca2 --output json &gt; /tmp/get-lead.json 2&gt;/tmp/get-lead.err\necho \&quot;EXIT: $?\&quot;\ncat /tmp/get-lead.err | tail -20\npython3 -c \&quot;\nimport json\nd = json.load(open(&#x27;/tmp/get-lead.json&#x27;))\nnode = d[&#x27;Data&#x27;].get(&#x27;Node&#x27;, d[&#x27;Data&#x27;])\nprint(&#x27;inputDefinition fields:&#x27;)\nfor f in node.get(&#x27;input… (216 more chars)&quot;,
+  &quot;description&quot;: &quot;Get enriched node definition for get-lead with connection context&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>EXIT: 0
+inputDefinition fields:
+connectorMethodInfo: {
+  &quot;operation&quot;: &quot;Retrieve&quot;,
+  &quot;description&quot;: &quot;Get lead by ID&quot;,
+  &quot;method&quot;: &quot;GET&quot;,
+  &quot;parameters&quot;: [
+    {
+      &quot;name&quot;: &quot;curated_leadId&quot;,
+      &quot;description&quot;: &quot;Type upto 3 characters of the name or email to select the lead or pass lead ID. ID can also be retrieved from the event trigger output&quot;,
+      &quot;type&quot;: &quot;path&quot;,
+      &quot;dataType&quot;: &quot;string&quot;,
+      &quot;required&quot;: true,
+      &quot;displayName&quot;: &quot;Lead ID&quot;,
+      &quot;reference&quot;: {
+        &quot;objectName&quot;: &quot;curated_lead&quot;,
+        &quot;lookupNames&quot;: [
+          &quot;Name&quot;,
+          &quot;Id&quot;,
+          &quot;Email&quot;
+        ],
+        &quot;lookupValue&quot;: &quot;Id&quot;,
+        &quot;path&quot;: &quot;/curated_lead?fields=Name,Id,Email&quot;,
+        &quot;filterPattern&quot;: &quot;where=Name like &#x27;%{filter}%&#x27;&quot;
+      },
+      &quot;curated&quot;: false,
+      &quot;design&quot;: {
+        &quot;loadByDefault&quot;: true,
+        &quot;isMultiSelect&quot;: fal</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#18</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.85s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry get uipath.connector.uipath-salesforce-sfdc.create-lead --connection-id 230c7602-7163-428c-8580-71825e8e4ca2 --output json &gt; /tmp/create-lead.json 2&gt;/tmp/create-lead.err\ncat /tmp/create-lead.err | tail -20\npython3 -c \&quot;\nimport json\nd = json.load(open(&#x27;/tmp/create-lead.json&#x27;))\nnode = d[&#x27;Data&#x27;].get(&#x27;Node&#x27;, d[&#x27;Data&#x27;])\nprint(&#x27;inputDefinition fields:&#x27;)\nfor f in node.get(&#x27;inputD… (257 more chars)&quot;,
+  &quot;description&quot;: &quot;Get enriched node definition for create-lead&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>inputDefinition fields:
+ - City required= False type= string ref= False
+ - Company required= True type= string ref= False
+ - Country required= False type= string ref= False
+ - Description required= False type= string ref= False
+ - Email required= False type= string ref= False
+ - FirstName required= False type= string ref= False
+ - LastName required= True type= string ref= False
+ - LeadSource required= False type= string ref= False
+ - MobilePhone required= False type= string ref= False
+ - Phone required= False type= string ref= False
+ - PostalCode required= False type= string ref= False
+ - Rating required= False type= string ref= False
+ - Status required= False type= string ref= True
+ - Street required= False type= string ref= False
+ - Title required= False type= string ref= False
+ - AnnualRevenue required= False type= number ref= False
+ - CountryCode required= False type= string ref= False
+ - GeocodeAccuracy required= False type= string ref= False
+ - HasOptedOutOfEmail required= False type= boolean ref= False
+ - IndividualId required= False type= string ref= False
+ - Industry required= False type= string ref= False
+ - IsConverted required= False type= boolean ref= False
+ - IsUnread
+
+… (truncated, 1066 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#19</span>
+      <span class="tool-name">TaskCreate</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">8ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;subject&quot;: &quot;Add create-lead connector node + End node&quot;,
+  &quot;description&quot;: &quot;uip maestro flow node add for create-lead, Edit End node + edges&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Task #1 created successfully: Add create-lead connector node + End node</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#20</span>
+      <span class="tool-name">TaskCreate</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">3ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;subject&quot;: &quot;Configure connector node (1st time) + snapshot&quot;,
+  &quot;description&quot;: &quot;node configure with --detail JSON, then cp to after_first_configure.flow&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Task #2 created successfully: Configure connector node (1st time) + snapshot</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#21</span>
+      <span class="tool-name">TaskCreate</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">3ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;subject&quot;: &quot;Re-run identical configure (2nd time) + snapshot&quot;,
+  &quot;description&quot;: &quot;Same node configure invocation exactly, then cp to after_second_configure.flow&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Task #3 created successfully: Re-run identical configure (2nd time) + snapshot</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#22</span>
+      <span class="tool-name">TaskCreate</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">8ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;subject&quot;: &quot;Diff snapshots, validate, format, finalize project layout&quot;,
+  &quot;description&quot;: &quot;Move project to BindingsIdempotent/ path at sandbox root, ensure flow_files subdir, validate/format, diff two snapshots and report&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Task #4 created successfully: Diff snapshots, validate, format, finalize project layout</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#23</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">867ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-bindings-idempotent-reconfigure/BindingsIdempotentSolution/BindingsIdempotent\nuip maestro flow node add BindingsIdempotent.flow uipath.connector.uipath-salesforce-sfdc.create-lead \\\n  --label \&quot;Create Lead\&quot; --position 500,144 --output json 2&gt;&amp;1 | tail -60&quot;,
+  &quot;description&quot;: &quot;Add create-lead connector node to the flow&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeAddSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;Node&quot;: {
+      &quot;Id&quot;: &quot;createLead1&quot;,
+      &quot;Type&quot;: &quot;uipath.connector.uipath-salesforce-sfdc.create-lead&quot;,
+      &quot;TypeVersion&quot;: &quot;1.0.0&quot;,
+      &quot;Ui&quot;: {
+        &quot;Position&quot;: {
+          &quot;X&quot;: 500,
+          &quot;Y&quot;: 144
+        }
+      },
+      &quot;Display&quot;: {
+        &quot;Label&quot;: &quot;Create Lead&quot;
+      },
+      &quot;Inputs&quot;: {}
+    },
+    &quot;DefinitionAdded&quot;: true,
+    &quot;BindingsCreated&quot;: 0,
+    &quot;VariableCount&quot;: 3
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#24</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">945ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-bindings-idempotent-reconfigure/BindingsIdempotentSolution/BindingsIdempotent\nuip maestro flow registry get core.control.end --output json &gt; /tmp/end.json 2&gt;&amp;1\ncat /tmp/end.json | python3 -c \&quot;import json,sys; d=json.load(sys.stdin); print(json.dumps(d[&#x27;Data&#x27;], indent=2))\&quot; | head -80&quot;,
+  &quot;description&quot;: &quot;Fetch End node definition&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Node&quot;: {
+    &quot;nodeType&quot;: &quot;core.control.end&quot;,
+    &quot;version&quot;: &quot;1.0&quot;,
+    &quot;category&quot;: &quot;control-flow&quot;,
+    &quot;description&quot;: &quot;Mark the end of a process path&quot;,
+    &quot;tags&quot;: [
+      &quot;control-flow&quot;,
+      &quot;end&quot;,
+      &quot;finish&quot;,
+      &quot;complete&quot;
+    ],
+    &quot;sortOrder&quot;: 65,
+    &quot;display&quot;: {
+      &quot;label&quot;: &quot;End&quot;,
+      &quot;icon&quot;: &quot;circle-check&quot;,
+      &quot;shape&quot;: &quot;circle&quot;
+    },
+    &quot;handleConfiguration&quot;: [
+      {
+        &quot;position&quot;: &quot;left&quot;,
+        &quot;handles&quot;: [
+          {
+            &quot;id&quot;: &quot;input&quot;,
+            &quot;type&quot;: &quot;target&quot;,
+            &quot;handleType&quot;: &quot;input&quot;
+          }
+        ]
+      }
+    ],
+    &quot;model&quot;: {
+      &quot;type&quot;: &quot;bpmn:EndEvent&quot;
+    },
+    &quot;runtimeConstraints&quot;: {
+      &quot;exclude&quot;: [
+        &quot;api-function&quot;
+      ]
+    }
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#25</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">19ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;find /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/scripts -maxdepth 1 -type f | sort&quot;,
+  &quot;description&quot;: &quot;List available scripts&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/scripts/audit_expressions.py
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/scripts/audit_flow.py
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/scripts/check_bindings.py
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/scripts/check_runtime_gaps.py
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/scripts/check_topology.py
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/scripts/diagnose_run.py
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/scripts/encode_parameter_values.py
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/scripts/flow_compose.py
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/scripts/flow_edit.py
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/scripts/flow_lib.py
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/scripts/lint_jint.py
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/scripts/node_ownership.py
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/scripts/requirements.txt
+/home/azureuser/projects/skills/tmp/skills/uipath-ma
+
+… (truncated, 130 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#26</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">398ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-bindings-idempotent-reconfigure/BindingsIdempotentSolution/BindingsIdempotent\npython3 /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/scripts/flow_edit.py add-node --flow BindingsIdempotent.flow \\\n  --id end --type core.control.end --definition-file /tmp/end.json --label End 2&gt;&amp;1\necho \&quot;---\&quot;\npython3 /home/azureuser/projects/skills/tmp/skills/uipat… (390 more chars)&quot;,
+  &quot;description&quot;: &quot;Add End node and wire edges via flow_edit.py&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>added node end (core.control.end v1.0); definition added; variables.nodes +0
+---
+added edge edge_start_output_createLead1_input
+---
+added edge edge_createLead1_success_end_input</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#27</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">83ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-bindings-idempotent-reconfigure/BindingsIdempotentSolution/BindingsIdempotent\npython3 -c \&quot;\nimport json\nd = json.load(open(&#x27;BindingsIdempotent.flow&#x27;))\nfor defn in d[&#x27;definitions&#x27;]:\n    if defn[&#x27;nodeType&#x27;] == &#x27;uipath.connector.uipath-salesforce-sfdc.create-lead&#x27;:\n        print(json.dumps(defn.get(&#x27;handleConfiguration&#x27;), indent=2))\n\&quot;\n&quot;,
+  &quot;description&quot;: &quot;Check handle configuration ports for createLead1 node&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>[
+  {
+    &quot;position&quot;: &quot;left&quot;,
+    &quot;handles&quot;: [
+      {
+        &quot;id&quot;: &quot;input&quot;,
+        &quot;type&quot;: &quot;target&quot;,
+        &quot;handleType&quot;: &quot;input&quot;,
+        &quot;label&quot;: &quot;&quot;
+      }
+    ]
+  },
+  {
+    &quot;position&quot;: &quot;right&quot;,
+    &quot;handles&quot;: [
+      {
+        &quot;id&quot;: &quot;output&quot;,
+        &quot;type&quot;: &quot;source&quot;,
+        &quot;handleType&quot;: &quot;output&quot;,
+        &quot;label&quot;: &quot;&quot;
+      },
+      {
+        &quot;id&quot;: &quot;error&quot;,
+        &quot;label&quot;: &quot;Error&quot;,
+        &quot;type&quot;: &quot;source&quot;,
+        &quot;handleType&quot;: &quot;output&quot;,
+        &quot;visible&quot;: &quot;{inputs.errorHandlingEnabled}&quot;,
+        &quot;constraints&quot;: {
+          &quot;maxConnections&quot;: 1
+        }
+      }
+    ]
+  }
+]</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#28</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">266ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-bindings-idempotent-reconfigure/BindingsIdempotentSolution/BindingsIdempotent\npython3 /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/scripts/flow_edit.py --help 2&gt;&amp;1 | head -40\necho \&quot;---delete-edge---\&quot;\npython3 /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/scripts/flow_edit.py delete-edge --help 2&gt;&amp;1\n&quot;,
+  &quot;description&quot;: &quot;Check flow_edit delete-edge usage&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>usage: flow_edit.py [-h]
+                    {add-node,delete-node,add-edge,delete-edge,set-input,add-variable,add-output-mapping,add-variable-update} ...
+
+Primitive `.flow` mutations: node/edge CRUD, variables, output mappings.
+
+Each subcommand touches every array the operation implies (nodes, edges, definitions,
+variables.nodes, variables.variableUpdates, layout.nodes) in one pass and writes the file
+back with 2-space indent.
+
+positional arguments:
+  {add-node,delete-node,add-edge,delete-edge,set-input,add-variable,add-output-mapping,add-variable-update}
+    add-node            insert a node + definition + variables.nodes + layout
+                        entry
+    delete-node         remove a node and cascade
+                        edges/variables/updates/layout/definition
+    add-edge            add an edge with both ports; sets errorHandlingEnabled
+                        for error edges
+    delete-edge         remove an edge by id or by endpoints
+    set-input           in-place inputs update (dotted key path), preserves
+                        node id
+    add-variable        declare a workflow variable in variables.globals
+    add-output-mapping  map an out variable on an En
+
+… (truncated, 507 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#29</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">318ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-bindings-idempotent-reconfigure/BindingsIdempotentSolution/BindingsIdempotent\npython3 /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/scripts/flow_edit.py delete-edge --flow BindingsIdempotent.flow \\\n  --source createLead1 --source-port success --target end 2&gt;&amp;1\necho \&quot;---\&quot;\npython3 /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/scr… (142 more chars)&quot;,
+  &quot;description&quot;: &quot;Fix the edge port from success to output&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>deleted 1 edge(s)
+---
+added edge edge_createLead1_output_end_input</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#30</span>
+      <span class="tool-name">TaskUpdate</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">5ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;taskId&quot;: &quot;1&quot;,
+  &quot;status&quot;: &quot;completed&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Updated task #1 status</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#31</span>
+      <span class="tool-name">TaskUpdate</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">3ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;taskId&quot;: &quot;2&quot;,
+  &quot;status&quot;: &quot;in_progress&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Updated task #2 status</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#32</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">92ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-bindings-idempotent-reconfigure/BindingsIdempotentSolution/BindingsIdempotent\npython3 -c \&quot;\nimport json\nd = json.load(open(&#x27;BindingsIdempotent.flow&#x27;))\nprint(&#x27;nodes:&#x27;, [n[&#x27;id&#x27;] for n in d[&#x27;nodes&#x27;]])\nprint(&#x27;edges:&#x27;, [(e[&#x27;sourceNodeId&#x27;],e.get(&#x27;sourcePort&#x27;),e[&#x27;targetNodeId&#x27;],e.get(&#x27;targetPort&#x27;)) for e in d[&#x27;edges&#x27;]])\n\&quot;\n&quot;,
+  &quot;description&quot;: &quot;Verify flow topology before configuring&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>nodes: [&#x27;start&#x27;, &#x27;createLead1&#x27;, &#x27;end&#x27;]
+edges: [(&#x27;start&#x27;, &#x27;output&#x27;, &#x27;createLead1&#x27;, &#x27;input&#x27;), (&#x27;createLead1&#x27;, &#x27;output&#x27;, &#x27;end&#x27;, &#x27;input&#x27;)]</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#33</span>
+      <span class="tool-name">Write</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">5ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/tmp/create-lead-detail.json&quot;,
+  &quot;content&quot;: &quot;{\n  \&quot;connectionId\&quot;: \&quot;230c7602-7163-428c-8580-71825e8e4ca2\&quot;,\n  \&quot;folderKey\&quot;: \&quot;c4359cde-55f0-4f0e-9322-c6cdce74ab4c\&quot;,\n  \&quot;method\&quot;: \&quot;POST\&quot;,\n  \&quot;endpoint\&quot;: \&quot;/curated_lead\&quot;,\n  \&quot;bodyParameters\&quot;: {\n    \&quot;Company\&quot;: \&quot;Acme Test Co\&quot;,\n    \&quot;LastName\&quot;: \&quot;BindingsIdempotentTest\&quot;\n  }\n}\n&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>File created successfully at: /tmp/create-lead-detail.json (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#34</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">2.66s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-bindings-idempotent-reconfigure/BindingsIdempotentSolution/BindingsIdempotent\nuip maestro flow node configure BindingsIdempotent.flow createLead1 --detail \&quot;$(cat /tmp/create-lead-detail.json)\&quot; --output json 2&gt;&amp;1 | tail -80&quot;,
+  &quot;description&quot;: &quot;Run node configure the first time&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeConfigureSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;NodeId&quot;: &quot;createLead1&quot;,
+    &quot;BindingsCreated&quot;: 2,
+    &quot;DetailPopulated&quot;: true
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#35</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">26ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;SANDBOX=/work/output/artifacts/skill-flow-bindings-idempotent-reconfigure\nmkdir -p \&quot;$SANDBOX/BindingsIdempotent/flow_files\&quot;\ncp \&quot;$SANDBOX/BindingsIdempotentSolution/BindingsIdempotent/BindingsIdempotent.flow\&quot; \&quot;$SANDBOX/BindingsIdempotent/flow_files/BindingsIdempotent.flow\&quot;\ncp \&quot;$SANDBOX/BindingsIdempotentSolution/BindingsIdempotent/project.uiproj\&quot; \&quot;$SANDBOX/BindingsIdempotent/project.uiproj\&quot;\nls -la … (73 more chars)&quot;,
+  &quot;description&quot;: &quot;Set up requested BindingsIdempotent/flow_files layout at sandbox root&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/work/output/artifacts/skill-flow-bindings-idempotent-reconfigure/BindingsIdempotent/:
+total 16
+drwxr-xr-x 3 root root 4096 Aug 19 15:53 .
+drwxr-xr-x 5 root root 4096 Aug 19 15:53 ..
+drwxr-xr-x 2 root root 4096 Aug 19 15:53 flow_files
+-rw-r--r-- 1 root root   60 Aug 19 15:53 project.uiproj
+
+/work/output/artifacts/skill-flow-bindings-idempotent-reconfigure/BindingsIdempotent/flow_files/:
+total 24
+drwxr-xr-x 2 root root  4096 Aug 19 15:53 .
+drwxr-xr-x 3 root root  4096 Aug 19 15:53 ..
+-rw-r--r-- 1 root root 14344 Aug 19 15:53 BindingsIdempotent.flow</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#36</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">28ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;SANDBOX=/work/output/artifacts/skill-flow-bindings-idempotent-reconfigure\nls -la \&quot;$SANDBOX/BindingsIdempotentSolution/BindingsIdempotent/\&quot;\necho \&quot;---\&quot;\nfind \&quot;$SANDBOX/BindingsIdempotentSolution\&quot; -maxdepth 4&quot;,
+  &quot;description&quot;: &quot;List all files in the CLI-scaffolded project dir&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>total 36
+drwxr-xr-x 2 root root  4096 Aug 19 15:53 .
+drwxr-xr-x 4 root root  4096 Aug 19 15:49 ..
+-rw-r--r-- 1 root root 14344 Aug 19 15:53 BindingsIdempotent.flow
+-rw-r--r-- 1 root root   674 Aug 19 15:53 bindings_v2.json
+-rw-r--r-- 1 root root   268 Aug 19 15:49 operate.json
+-rw-r--r-- 1 root root    60 Aug 19 15:49 project.uiproj
+---
+/work/output/artifacts/skill-flow-bindings-idempotent-reconfigure/BindingsIdempotentSolution
+/work/output/artifacts/skill-flow-bindings-idempotent-reconfigure/BindingsIdempotentSolution/resources
+/work/output/artifacts/skill-flow-bindings-idempotent-reconfigure/BindingsIdempotentSolution/resources/solution_folder
+/work/output/artifacts/skill-flow-bindings-idempotent-reconfigure/BindingsIdempotentSolution/resources/solution_folder/process
+/work/output/artifacts/skill-flow-bindings-idempotent-reconfigure/BindingsIdempotentSolution/resources/solution_folder/process/flow
+/work/output/artifacts/skill-flow-bindings-idempotent-reconfigure/BindingsIdempotentSolution/resources/solution_folder/package
+/work/output/artifacts/skill-flow-bindings-idempotent-reconfigure/BindingsIdempotentSolution/resources/solution_folder/package/BindingsIdempotent.json
+/work/out
+
+… (truncated, 1027 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#37</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">24ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;SANDBOX=/work/output/artifacts/skill-flow-bindings-idempotent-reconfigure\ncp \&quot;$SANDBOX/BindingsIdempotent/flow_files/BindingsIdempotent.flow\&quot; \&quot;$SANDBOX/after_first_configure.flow\&quot;\nls -la \&quot;$SANDBOX/after_first_configure.flow\&quot;\nmd5sum \&quot;$SANDBOX/after_first_configure.flow\&quot;&quot;,
+  &quot;description&quot;: &quot;Snapshot after first configure&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>-rw-r--r-- 1 root root 14344 Aug 19 15:53 /work/output/artifacts/skill-flow-bindings-idempotent-reconfigure/after_first_configure.flow
+0b097d1dd24f99e11df0c4f781a56ac8  /work/output/artifacts/skill-flow-bindings-idempotent-reconfigure/after_first_configure.flow</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#38</span>
+      <span class="tool-name">TaskUpdate</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">3ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;taskId&quot;: &quot;2&quot;,
+  &quot;status&quot;: &quot;completed&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Updated task #2 status</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#39</span>
+      <span class="tool-name">TaskUpdate</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">2ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;taskId&quot;: &quot;3&quot;,
+  &quot;status&quot;: &quot;in_progress&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Updated task #3 status</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#40</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">2.28s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-bindings-idempotent-reconfigure/BindingsIdempotentSolution/BindingsIdempotent\nuip maestro flow node configure BindingsIdempotent.flow createLead1 --detail \&quot;$(cat /tmp/create-lead-detail.json)\&quot; --output json 2&gt;&amp;1 | tail -80&quot;,
+  &quot;description&quot;: &quot;Run the exact same node configure invocation a second time&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeConfigureSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;NodeId&quot;: &quot;createLead1&quot;,
+    &quot;BindingsCreated&quot;: 2,
+    &quot;DetailPopulated&quot;: true
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#41</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">26ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;SANDBOX=/work/output/artifacts/skill-flow-bindings-idempotent-reconfigure\ncp \&quot;$SANDBOX/BindingsIdempotentSolution/BindingsIdempotent/BindingsIdempotent.flow\&quot; \&quot;$SANDBOX/BindingsIdempotent/flow_files/BindingsIdempotent.flow\&quot;\ncp \&quot;$SANDBOX/BindingsIdempotent/flow_files/BindingsIdempotent.flow\&quot; \&quot;$SANDBOX/after_second_configure.flow\&quot;\nmd5sum \&quot;$SANDBOX/after_first_configure.flow\&quot; \&quot;$SANDBOX/after_second_co… (13 more chars)&quot;,
+  &quot;description&quot;: &quot;Update mirrored flow file and snapshot after second configure&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>0b097d1dd24f99e11df0c4f781a56ac8  /work/output/artifacts/skill-flow-bindings-idempotent-reconfigure/after_first_configure.flow
+0b097d1dd24f99e11df0c4f781a56ac8  /work/output/artifacts/skill-flow-bindings-idempotent-reconfigure/after_second_configure.flow</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#42</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">23ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;SANDBOX=/work/output/artifacts/skill-flow-bindings-idempotent-reconfigure\ndiff \&quot;$SANDBOX/after_first_configure.flow\&quot; \&quot;$SANDBOX/after_second_configure.flow\&quot; &amp;&amp; echo \&quot;NO DIFF - files identical\&quot;\necho \&quot;---bindings_v2.json---\&quot;\ncat \&quot;$SANDBOX/BindingsIdempotentSolution/BindingsIdempotent/bindings_v2.json\&quot;&quot;,
+  &quot;description&quot;: &quot;Diff the two snapshots and inspect bindings_v2.json for duplication&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>NO DIFF - files identical
+---bindings_v2.json---
+{
+  &quot;version&quot;: &quot;2.0&quot;,
+  &quot;resources&quot;: [
+    {
+      &quot;resource&quot;: &quot;connection&quot;,
+      &quot;key&quot;: &quot;230c7602-7163-428c-8580-71825e8e4ca2&quot;,
+      &quot;id&quot;: &quot;connection230c7602-7163-428c-8580-71825e8e4ca2&quot;,
+      &quot;value&quot;: {
+        &quot;ConnectionId&quot;: {
+          &quot;defaultValue&quot;: &quot;230c7602-7163-428c-8580-71825e8e4ca2&quot;,
+          &quot;isExpression&quot;: false,
+          &quot;displayName&quot;: &quot;uipath-salesforce-sfdc connection&quot;
+        }
+      },
+      &quot;metadata&quot;: {
+        &quot;ActivityName&quot;: &quot;Create Lead&quot;,
+        &quot;BindingsVersion&quot;: &quot;2.2&quot;,
+        &quot;DisplayLabel&quot;: &quot;uipath-salesforce-sfdc connection&quot;,
+        &quot;UseConnectionService&quot;: &quot;true&quot;,
+        &quot;Connector&quot;: &quot;uipath-salesforce-sfdc&quot;
+      }
+    }
+  ]
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#43</span>
+      <span class="tool-name">TaskUpdate</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">3ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;taskId&quot;: &quot;3&quot;,
+  &quot;status&quot;: &quot;completed&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Updated task #3 status</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#44</span>
+      <span class="tool-name">TaskUpdate</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">2ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;taskId&quot;: &quot;4&quot;,
+  &quot;status&quot;: &quot;in_progress&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Updated task #4 status</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#45</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">2.58s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-bindings-idempotent-reconfigure/BindingsIdempotentSolution/BindingsIdempotent\nuip maestro flow validate BindingsIdempotent.flow --output json 2&gt;&amp;1 | tail -60&quot;,
+  &quot;description&quot;: &quot;Validate the flow&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>[ManifestClient] fetchDynamicNodes ok: total=317 agent context nodes=2 external agent nodes=7 orchestrator nodes=263 IXP nodes=45
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FlowValidate&quot;,
+  &quot;Data&quot;: {
+    &quot;File&quot;: &quot;/work/output/artifacts/skill-flow-bindings-idempotent-reconfigure/BindingsIdempotentSolution/BindingsIdempotent/BindingsIdempotent.flow&quot;,
+    &quot;Status&quot;: &quot;Valid&quot;
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#46</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">827ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-bindings-idempotent-reconfigure/BindingsIdempotentSolution/BindingsIdempotent\nuip maestro flow format BindingsIdempotent.flow --output json 2&gt;&amp;1 | tail -30&quot;,
+  &quot;description&quot;: &quot;Format the flow for layout&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FlowFormat&quot;,
+  &quot;Data&quot;: {
+    &quot;File&quot;: &quot;BindingsIdempotent.flow&quot;,
+    &quot;NodesTotal&quot;: 3,
+    &quot;EdgesTotal&quot;: 2,
+    &quot;NodesRepositioned&quot;: 2,
+    &quot;NodesResized&quot;: 2,
+    &quot;SubflowsTidied&quot;: 0,
+    &quot;VariableCount&quot;: 3
+  },
+  &quot;Instructions&quot;: &quot;Repositioned 2 of 3 nodes. Set canonical size on 2 node(s)&quot;
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#47</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">30ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;SANDBOX=/work/output/artifacts/skill-flow-bindings-idempotent-reconfigure\ncp \&quot;$SANDBOX/BindingsIdempotentSolution/BindingsIdempotent/BindingsIdempotent.flow\&quot; \&quot;$SANDBOX/BindingsIdempotent/flow_files/BindingsIdempotent.flow\&quot;\ncp \&quot;$SANDBOX/BindingsIdempotentSolution/BindingsIdempotent/project.uiproj\&quot; \&quot;$SANDBOX/BindingsIdempotent/project.uiproj\&quot;\necho \&quot;Final layout:\&quot;\nfind \&quot;$SANDBOX/BindingsIdempotent\&quot; -… (195 more chars)&quot;,
+  &quot;description&quot;: &quot;Finalize mirrored project files, confirm snapshots untouched&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Final layout:
+/work/output/artifacts/skill-flow-bindings-idempotent-reconfigure/BindingsIdempotent/project.uiproj
+/work/output/artifacts/skill-flow-bindings-idempotent-reconfigure/BindingsIdempotent/flow_files/BindingsIdempotent.flow
+---sandbox root snapshots---
+-rw-r--r-- 1 root root 14344 Aug 19 15:53 /work/output/artifacts/skill-flow-bindings-idempotent-reconfigure/after_first_configure.flow
+-rw-r--r-- 1 root root 14344 Aug 19 15:54 /work/output/artifacts/skill-flow-bindings-idempotent-reconfigure/after_second_configure.flow
+---md5 check unaffected by format---
+0b097d1dd24f99e11df0c4f781a56ac8  /work/output/artifacts/skill-flow-bindings-idempotent-reconfigure/after_first_configure.flow
+0b097d1dd24f99e11df0c4f781a56ac8  /work/output/artifacts/skill-flow-bindings-idempotent-reconfigure/after_second_configure.flow</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#48</span>
+      <span class="tool-name">TaskUpdate</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">3ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;taskId&quot;: &quot;4&quot;,
+  &quot;status&quot;: &quot;completed&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Updated task #4 status</pre>
+    
+  </div>
+</details>
+
+</div>
+
+<h2>Command Telemetry</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Total</div><div class="value">49</div></div>
+    <div class="stat"><div class="label">Successful</div><div class="value">49 (100%)</div></div>
+    <div class="stat"><div class="label">Failed</div><div class="value">0</div></div>
+    <div class="stat"><div class="label">Avg / cmd</div><div class="value">651ms</div></div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 2fr;gap:16px;margin-top:12px">
+    <div>
+      <h4>By Tool</h4>
+      <table>
+        <thead><tr><th>Tool</th><th>Count</th></tr></thead>
+        <tbody><tr><td class='mono'>Bash</td><td>33</td></tr><tr><td class='mono'>TaskUpdate</td><td>7</td></tr><tr><td class='mono'>TaskCreate</td><td>4</td></tr><tr><td class='mono'>Read</td><td>3</td></tr><tr><td class='mono'>Skill</td><td>1</td></tr><tr><td class='mono'>Write</td><td>1</td></tr></tbody>
+      </table>
+    </div>
+    <div>
+      <h4>Slowest</h4>
+      <table>
+        <thead><tr><th>Tool</th><th>Duration</th><th>Parameters</th></tr></thead>
+        <tbody><tr><td class='mono'>Bash</td><td>6.56s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro flow init BindingsIdempot...</td></tr><tr><td class='mono'>Bash</td><td>4.15s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro flow registry pull --forc...</td></tr><tr><td class='mono'>Bash</td><td>2.82s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro flow registry get uipath....</td></tr><tr><td class='mono'>Bash</td><td>2.66s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;cd /work/output/artifacts/skill-flow-...</td></tr><tr><td class='mono'>Bash</td><td>2.58s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;cd /work/output/artifacts/skill-flow-...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+  <p><strong>Most Common Pattern:</strong> <code>Bash → Bash → Bash</code></p><p><strong>Skill Tool Invoked:</strong> 1 time(s)</p>
+</div>
+
+<h2>Generation Metrics</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Total Latency</div><div class="value">5m 2s</div></div>
+    <div class="stat"><div class="label">Turns</div><div class="value">1</div></div>
+    <div class="stat"><div class="label">Assistant Turns</div><div class="value">83</div></div>
+    <div class="stat"><div class="label">Avg Turn Latency</div><div class="value">4m 58s</div></div>
+    
+  </div>
+</div>
+
+<h2>Token Usage</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Input (uncached)</div><div class="value">658</div></div>
+    <div class="stat"><div class="label">Output</div><div class="value">20,807</div></div>
+    <div class="stat"><div class="label">Cache Write</div><div class="value">59,278</div></div>
+    <div class="stat"><div class="label">Cache Read</div><div class="value">2,921,975</div></div>
+    <div class="stat"><div class="label">Total</div><div class="value">3,002,718</div></div>
+    <div class="stat"><div class="label">Cost</div><div class="value">$1.4130</div></div>
+  </div>
+</div>
+
+<h2>Agent Settings</h2>
+<div class="card" style="padding:0">
+  <table>
+    <tbody><tr><td class='mono dim'>Permission Mode</td><td>acceptEdits</td></tr><tr><td class='mono dim'>Allowed Tools</td><td>Skill, Bash, Read, Write, Edit, Glob, Grep</td></tr><tr><td class='mono dim'>Model</td><td>us.anthropic.claude-sonnet-5</td></tr><tr><td class='mono dim'>Max Turns</td><td>60</td></tr><tr><td class='mono dim'>System Prompt</td><td>You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted. </td></tr><tr><td class='mono dim'>System Prompt Mode</td><td>append</td></tr><tr><td class='mono dim'>Plugins</td><td>/home/azureuser/projects/skills/tmp</td></tr></tbody>
+  </table>
+</div>
+
+<h2>Environment</h2>
+<div class="card" style="padding:0">
+  <table>
+    <tbody><tr><td class='mono dim'>git_commit</td><td>unknown</td></tr><tr><td class='mono dim'>skills_git_commit</td><td>unknown</td></tr><tr><td class='mono dim'>cli_version</td><td>1.201.0-dev.8272</td></tr><tr><td class='mono dim'>tool_plugins</td><td>{&#x27;admin-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;agent-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;agenthub-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;aops-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;api-workflow-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;automation-hub-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;codedagent-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;codedapp-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;coder-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;context-grounding-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;conversational-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;data-fabric-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;docsai-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;function-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;gov-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;guardrails-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;insights-tool&#x27;: &#x27;1.201.0-dev.8276&#x27;, &#x27;integrationservice-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;ixp-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;llm-gateway-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;llmgw-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;maestro-tool&#x27;: &#x27;1.201.0-dev.8275&#x27;, &#x27;model-hub-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;orchestrator-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;platform-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;pm-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;rpa-legacy-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;rpa-tool&#x27;: &#x27;1.201.0-dev.20260809.3&#x27;, &#x27;solution-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;tasks-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;test-manager-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;traces-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;vertical-solutions-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;}</td></tr><tr><td class='mono dim'>coder_eval</td><td>0.9.6</td></tr><tr><td class='mono dim'>claude_code_cli</td><td>2.1.177 (Claude Code)</td></tr><tr><td class='mono dim'>uv</td><td>uv 0.12.5 (x86_64-unknown-linux-gnu)</td></tr><tr><td class='mono dim'>anthropic</td><td>0.122.0</td></tr><tr><td class='mono dim'>openai</td><td>3.2.0</td></tr><tr><td class='mono dim'>pydantic</td><td>2.12.5</td></tr><tr><td class='mono dim'>api_routing</td><td>aws_bedrock</td></tr><tr><td class='mono dim'>eval_routing</td><td>aws_bedrock</td></tr><tr><td class='mono dim'>aws_region</td><td>us-east-2</td></tr><tr><td class='mono dim'>bedrock_model</td><td>us.anthropic.claude-sonnet-4-6</td></tr><tr><td class='mono dim'>system_prompt_semantics</td><td>append</td></tr></tbody>
+  </table>
+</div>
+
+<footer>Generated by coder_eval · 2026-08-19T15:54:33</footer>
+</div>
+<script>
+function toggleTheme() {
+  document.documentElement.classList.toggle('light');
+  try {
+    const mode = document.documentElement.classList.contains('light') ? 'light' : 'dark';
+    localStorage.setItem('coder-eval-theme', mode);
+  } catch (e) { /* ignore */ }
+}
+(function() {
+  try {
+    if (localStorage.getItem('coder-eval-theme') === 'light') {
+      document.documentElement.classList.add('light');
+    }
+  } catch (e) { /* ignore */ }
+})();
+</script>
+</body>
+</html>

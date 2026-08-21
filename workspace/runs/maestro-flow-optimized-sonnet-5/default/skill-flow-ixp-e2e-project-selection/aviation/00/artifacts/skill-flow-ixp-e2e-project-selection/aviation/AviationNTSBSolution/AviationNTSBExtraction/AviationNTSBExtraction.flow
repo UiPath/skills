@@ -1,0 +1,828 @@
+{
+  "id": "2556b010-5068-420b-ab08-ca2bbf27cc6f",
+  "version": "1.9",
+  "name": "AviationNTSBExtraction",
+  "nodes": [
+    {
+      "id": "start",
+      "type": "core.trigger.manual",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Manual trigger"
+      },
+      "inputs": {
+        "entryPointId": "caf2f074-5d59-41b2-988b-e0cda8740b49",
+        "isDefaultEntryPoint": true
+      }
+    },
+    {
+      "id": "extractNtsbReport",
+      "type": "uipath.ixp.aviation-investigation-final-report-demo-a42b1d4d-ixp.937c414b-7879-8059-8b29-e8401d2dd3ba-c4359cde-55f0-4f0e-9322-c6cdce74ab4c",
+      "typeVersion": "1.0.0",
+      "display": {
+        "label": "Extract NTSB Report Fields"
+      },
+      "inputs": {
+        "model": {
+          "id": "937c414b-7879-8059-8b29-e8401d2dd3ba",
+          "modelName": "aviation-investigation-final-report-demo-a42b1d4d-ixp",
+          "modelDisplayName": "aviation-investigation-final-report-demo-a42b1d4d-ixp",
+          "folderKey": "c4359cde-55f0-4f0e-9322-c6cdce74ab4c",
+          "folderName": "Shared",
+          "folderPath": "c4359cde-55f0-4f0e-9322-c6cdce74ab4c",
+          "description": ""
+        },
+        "modelName": "aviation-investigation-final-report-demo-a42b1d4d-ixp",
+        "description": "",
+        "projectName": "aviation-investigation-final-report-demo-a42b1d4d-ixp",
+        "versionTag": "",
+        "folderKey": "c4359cde-55f0-4f0e-9322-c6cdce74ab4c",
+        "folderName": "Shared",
+        "fileRef": "=js:$vars.start.output.ntsbReportFile",
+        "pageRange": ""
+      },
+      "outputs": {
+        "output": {
+          "name": "output",
+          "type": "object",
+          "source": "=this",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails",
+          "source": "=Error",
+          "var": "error"
+        }
+      }
+    },
+    {
+      "id": "logNtsbNumber",
+      "type": "core.action.script",
+      "typeVersion": "1.1",
+      "display": {
+        "label": "Log NTSB Number"
+      },
+      "inputs": {
+        "script": "const fields = ($vars.extractNtsbReport.output.ExtractionResult && $vars.extractNtsbReport.output.ExtractionResult.ResultsDocument && $vars.extractNtsbReport.output.ExtractionResult.ResultsDocument.Fields) || [];\nconst fieldValue = (name) => {\n  const f = fields.find(f => f.FieldName === name);\n  return (f && f.Values && f.Values[0]) || null;\n};\nconst ntsbNumber = fieldValue('NTSB Number');\nconst eventDate = fieldValue('Event Date');\nconst locationCity = fieldValue('Location City');\nconst locationState = fieldValue('Location State');\nconst aircraftMake = fieldValue('Aircraft Make');\nconst aircraftModel = fieldValue('Aircraft Model');\nconst aircraftDamage = fieldValue('Aircraft Damage');\nreturn {\n  ntsbNumber,\n  log: 'NTSB Number: ' + ntsbNumber,\n  eventDate,\n  locationCity,\n  locationState,\n  aircraftMake,\n  aircraftModel,\n  aircraftDamage\n};"
+      },
+      "outputs": {
+        "output": {
+          "type": "any",
+          "description": "The return value of the script",
+          "source": "=result.response",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails",
+          "source": "=Error",
+          "var": "error"
+        }
+      }
+    },
+    {
+      "id": "end",
+      "type": "core.control.end",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "End"
+      },
+      "inputs": {},
+      "outputs": {
+        "ntsbNumber": {
+          "source": "=js:$vars.logNtsbNumber.output.ntsbNumber"
+        },
+        "eventDate": {
+          "source": "=js:$vars.logNtsbNumber.output.eventDate"
+        },
+        "locationCity": {
+          "source": "=js:$vars.logNtsbNumber.output.locationCity"
+        },
+        "locationState": {
+          "source": "=js:$vars.logNtsbNumber.output.locationState"
+        },
+        "aircraftMake": {
+          "source": "=js:$vars.logNtsbNumber.output.aircraftMake"
+        },
+        "aircraftModel": {
+          "source": "=js:$vars.logNtsbNumber.output.aircraftModel"
+        },
+        "aircraftDamage": {
+          "source": "=js:$vars.logNtsbNumber.output.aircraftDamage"
+        }
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge_start_output_extractNtsbReport_input",
+      "sourceNodeId": "start",
+      "sourcePort": "output",
+      "targetNodeId": "extractNtsbReport",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge_extractNtsbReport_success_logNtsbNumber_input",
+      "sourceNodeId": "extractNtsbReport",
+      "sourcePort": "success",
+      "targetNodeId": "logNtsbNumber",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge_logNtsbNumber_success_end_input",
+      "sourceNodeId": "logNtsbNumber",
+      "sourcePort": "success",
+      "targetNodeId": "end",
+      "targetPort": "input"
+    }
+  ],
+  "definitions": [
+    {
+      "nodeType": "core.trigger.manual",
+      "version": "1.0",
+      "category": "trigger",
+      "description": "Start the process manually",
+      "tags": [
+        "trigger",
+        "start",
+        "manual"
+      ],
+      "sortOrder": 80,
+      "display": {
+        "label": "Manual trigger",
+        "icon": "play",
+        "shape": "circle"
+      },
+      "handleConfiguration": [
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "output",
+              "type": "source",
+              "handleType": "output",
+              "showButton": true,
+              "constraints": {
+                "forbiddenTargetCategories": [
+                  "trigger"
+                ]
+              }
+            }
+          ],
+          "visible": true
+        }
+      ],
+      "model": {
+        "type": "bpmn:StartEvent",
+        "entryPointId": true
+      },
+      "outputDefinition": {
+        "output": {
+          "type": "object",
+          "description": "Data passed when manually triggering the process.",
+          "source": "null",
+          "var": "output"
+        }
+      },
+      "toolbarExtensions": {
+        "design": {
+          "actions": [
+            {
+              "id": "change-trigger-type",
+              "icon": "square-mouse-pointer",
+              "label": "Change trigger type"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "nodeType": "uipath.ixp.aviation-investigation-final-report-demo-a42b1d4d-ixp.937c414b-7879-8059-8b29-e8401d2dd3ba-c4359cde-55f0-4f0e-9322-c6cdce74ab4c",
+      "version": "1.0.0",
+      "category": "document-extraction",
+      "tags": [
+        "ixp",
+        "document-understanding",
+        "extraction"
+      ],
+      "description": "(Shared)",
+      "sortOrder": 545,
+      "display": {
+        "canvasLabel": "Extract",
+        "label": "aviation-investigation-final-report-demo-a42b1d4d-ixp",
+        "description": "(Shared)",
+        "icon": "file-text"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "success",
+              "type": "source",
+              "handleType": "output"
+            },
+            {
+              "id": "error",
+              "label": "Error",
+              "type": "source",
+              "handleType": "output",
+              "visible": "{inputs.errorHandlingEnabled}",
+              "constraints": {
+                "maxConnections": 1
+              }
+            }
+          ]
+        }
+      ],
+      "supportsErrorHandling": true,
+      "model": {
+        "type": "bpmn:ServiceTask",
+        "serviceType": "IXP.Extraction",
+        "section": "Published",
+        "bindings": {
+          "resource": "ixpDeployment",
+          "entityType": "ixpDeployment",
+          "resourceSubType": null,
+          "resourceKey": "937c414b-7879-8059-8b29-e8401d2dd3ba",
+          "name": "aviation-investigation-final-report-demo-a42b1d4d-ixp",
+          "values": [
+            {
+              "name": "name",
+              "propertyAttribute": "name",
+              "default": "aviation-investigation-final-report-demo-a42b1d4d-ixp"
+            },
+            {
+              "name": "folderPath",
+              "propertyAttribute": "folderPath",
+              "default": "Shared"
+            }
+          ]
+        }
+      },
+      "form": {
+        "id": "ixp-standalone-form",
+        "title": "IXP",
+        "sections": [
+          {
+            "id": "ixp-model",
+            "title": "Configuration",
+            "fields": [
+              {
+                "name": "inputs.model",
+                "type": "custom",
+                "component": "ixp-model-folder-selector",
+                "label": ""
+              }
+            ]
+          },
+          {
+            "id": "ixp-file-upload",
+            "title": "File input",
+            "collapsible": true,
+            "defaultExpanded": true,
+            "fields": [
+              {
+                "name": "inputs.fileRef",
+                "type": "file",
+                "label": "File",
+                "description": "File to extract data from",
+                "validation": {
+                  "required": true,
+                  "messages": {
+                    "required": "A file is required for extraction"
+                  }
+                }
+              },
+              {
+                "name": "inputs.pageRange",
+                "type": "text",
+                "label": "Page range",
+                "placeholder": "e.g. 1-5",
+                "description": "Optional page range to process."
+              }
+            ]
+          },
+          {
+            "id": "schema-definition",
+            "title": "Schema definition",
+            "collapsible": false,
+            "fields": [
+              {
+                "name": "inputs.model",
+                "type": "custom",
+                "component": "ixp-model-taxonomy",
+                "label": ""
+              }
+            ]
+          }
+        ]
+      },
+      "debug": {
+        "runtime": "bpmnEngine"
+      },
+      "inputDefinition": {
+        "type": "object",
+        "properties": {
+          "projectName": {
+            "type": "string"
+          },
+          "projectId": {
+            "type": "string"
+          },
+          "versionTag": {
+            "type": "string"
+          },
+          "folderKey": {
+            "type": "string",
+            "minLength": 1
+          },
+          "folderName": {
+            "type": "string"
+          },
+          "model": {
+            "type": "object"
+          },
+          "modelName": {
+            "type": "string",
+            "minLength": 1
+          },
+          "fileRef": {
+            "type": "string",
+            "minLength": 1
+          },
+          "pageRange": {
+            "type": "string"
+          },
+          "attachmentConfig": {
+            "type": "object"
+          },
+          "attachment": {
+            "type": "object",
+            "description": "File to extract data from.",
+            "properties": {
+              "ID": {
+                "type": "string",
+                "description": "Orchestrator attachment key"
+              },
+              "FullName": {
+                "type": "string",
+                "description": "File name"
+              },
+              "MimeType": {
+                "type": "string",
+                "description": "The MIME type of the content"
+              },
+              "Metadata": {
+                "type": "object",
+                "description": "Dictionary of metadata",
+                "additionalProperties": {
+                  "type": "string"
+                }
+              }
+            },
+            "required": [
+              "ID"
+            ]
+          }
+        },
+        "required": [
+          "fileRef",
+          "modelName",
+          "folderKey"
+        ]
+      },
+      "inputDefaults": {
+        "model": {
+          "id": "937c414b-7879-8059-8b29-e8401d2dd3ba",
+          "modelName": null,
+          "modelDisplayName": "aviation-investigation-final-report-demo-a42b1d4d-ixp",
+          "folderKey": "c4359cde-55f0-4f0e-9322-c6cdce74ab4c",
+          "folderName": "Shared",
+          "folderPath": "c4359cde-55f0-4f0e-9322-c6cdce74ab4c",
+          "description": ""
+        },
+        "modelName": "aviation-investigation-final-report-demo-a42b1d4d-ixp",
+        "description": "",
+        "projectName": "aviation-investigation-final-report-demo-a42b1d4d-ixp",
+        "versionTag": "",
+        "folderKey": "c4359cde-55f0-4f0e-9322-c6cdce74ab4c",
+        "folderName": "Shared",
+        "fileRef": "",
+        "pageRange": ""
+      },
+      "outputDefinition": {
+        "output": {
+          "name": "output",
+          "type": "object",
+          "source": "=this",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails",
+          "source": "=Error",
+          "var": "error"
+        }
+      }
+    },
+    {
+      "nodeType": "core.action.script",
+      "version": "1.1",
+      "category": "data-operations",
+      "description": "Run custom JavaScript code",
+      "tags": [
+        "code",
+        "javascript",
+        "python"
+      ],
+      "sortOrder": 70,
+      "supportsErrorHandling": true,
+      "display": {
+        "label": "Script",
+        "icon": "code"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "success",
+              "type": "source",
+              "handleType": "output"
+            },
+            {
+              "id": "error",
+              "label": "Error",
+              "type": "source",
+              "handleType": "output",
+              "visible": "{inputs.errorHandlingEnabled}",
+              "constraints": {
+                "maxConnections": 1
+              }
+            }
+          ]
+        }
+      ],
+      "debug": {
+        "runtime": "clientScript"
+      },
+      "model": {
+        "type": "bpmn:ScriptTask"
+      },
+      "inputDefinition": {
+        "type": "object",
+        "properties": {
+          "script": {
+            "type": "string",
+            "minLength": 1,
+            "errorMessage": "Add a script function",
+            "validationSeverity": "warning"
+          }
+        },
+        "required": [
+          "script"
+        ]
+      },
+      "inputDefaults": {
+        "script": ""
+      },
+      "outputDefinition": {
+        "output": {
+          "type": "any",
+          "description": "The return value of the script",
+          "source": "=result.response",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails",
+          "source": "=Error",
+          "var": "error",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "required": [
+              "code",
+              "message",
+              "detail",
+              "category",
+              "status"
+            ],
+            "properties": {
+              "code": {
+                "type": "string",
+                "description": "Error code as a string"
+              },
+              "message": {
+                "type": "string",
+                "description": "High-level error message"
+              },
+              "detail": {
+                "type": "string",
+                "description": "Detailed error description"
+              },
+              "category": {
+                "type": "string",
+                "description": "Error category"
+              },
+              "status": {
+                "type": "integer",
+                "description": "HTTP status code"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "form": {
+        "id": "script-properties",
+        "title": "Script configuration",
+        "sections": [
+          {
+            "id": "script",
+            "title": "Script",
+            "collapsible": true,
+            "defaultExpanded": true,
+            "fields": [
+              {
+                "name": "inputs.script",
+                "type": "custom",
+                "component": "script-editor",
+                "componentProps": {
+                  "language": "javascript",
+                  "returnType": "any",
+                  "validationMode": "script",
+                  "minHeight": 200,
+                  "placeholder": " // Return any value\nreturn {\n  message: \"Web request response\",\n  data: $vars.httpRequest1.output\n};"
+                },
+                "label": "Code",
+                "description": "JavaScript expression that returns a result"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "nodeType": "core.control.end",
+      "version": "1.0",
+      "category": "control-flow",
+      "description": "Mark the end of a process path",
+      "tags": [
+        "control-flow",
+        "end",
+        "finish",
+        "complete"
+      ],
+      "sortOrder": 65,
+      "display": {
+        "label": "End",
+        "icon": "circle-check",
+        "shape": "circle"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        }
+      ],
+      "model": {
+        "type": "bpmn:EndEvent"
+      },
+      "runtimeConstraints": {
+        "exclude": [
+          "api-function"
+        ]
+      }
+    }
+  ],
+  "variables": {
+    "globals": [
+      {
+        "id": "ntsbReportFile",
+        "direction": "in",
+        "type": "file",
+        "description": "NTSB aviation accident investigation final-report PDF to extract data from",
+        "triggerNodeId": "start"
+      },
+      {
+        "id": "ntsbNumber",
+        "direction": "out",
+        "type": "string",
+        "description": "NTSB accident/incident number"
+      },
+      {
+        "id": "eventDate",
+        "direction": "out",
+        "type": "string",
+        "description": "Date of the aviation event"
+      },
+      {
+        "id": "locationCity",
+        "direction": "out",
+        "type": "string",
+        "description": "City where the event occurred"
+      },
+      {
+        "id": "locationState",
+        "direction": "out",
+        "type": "string",
+        "description": "State where the event occurred"
+      },
+      {
+        "id": "aircraftMake",
+        "direction": "out",
+        "type": "string",
+        "description": "Aircraft manufacturer"
+      },
+      {
+        "id": "aircraftModel",
+        "direction": "out",
+        "type": "string",
+        "description": "Aircraft model"
+      },
+      {
+        "id": "aircraftDamage",
+        "direction": "out",
+        "type": "string",
+        "description": "Extent of aircraft damage"
+      }
+    ],
+    "nodes": [
+      {
+        "id": "start.output",
+        "type": "object",
+        "description": "Data passed when manually triggering the process.",
+        "binding": {
+          "nodeId": "start",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "extractNtsbReport.output",
+        "type": "object",
+        "binding": {
+          "nodeId": "extractNtsbReport",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "extractNtsbReport.error",
+        "type": "object",
+        "description": "Error information if the node fails",
+        "binding": {
+          "nodeId": "extractNtsbReport",
+          "outputId": "error"
+        }
+      },
+      {
+        "id": "logNtsbNumber.output",
+        "type": "any",
+        "description": "The return value of the script",
+        "binding": {
+          "nodeId": "logNtsbNumber",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "logNtsbNumber.error",
+        "type": "object",
+        "description": "Error information if the node fails",
+        "binding": {
+          "nodeId": "logNtsbNumber",
+          "outputId": "error"
+        }
+      },
+      {
+        "id": "end.ntsbNumber",
+        "type": "string",
+        "binding": {
+          "nodeId": "end",
+          "outputId": "ntsbNumber"
+        }
+      },
+      {
+        "id": "end.eventDate",
+        "type": "string",
+        "binding": {
+          "nodeId": "end",
+          "outputId": "eventDate"
+        }
+      },
+      {
+        "id": "end.locationCity",
+        "type": "string",
+        "binding": {
+          "nodeId": "end",
+          "outputId": "locationCity"
+        }
+      },
+      {
+        "id": "end.locationState",
+        "type": "string",
+        "binding": {
+          "nodeId": "end",
+          "outputId": "locationState"
+        }
+      },
+      {
+        "id": "end.aircraftMake",
+        "type": "string",
+        "binding": {
+          "nodeId": "end",
+          "outputId": "aircraftMake"
+        }
+      },
+      {
+        "id": "end.aircraftModel",
+        "type": "string",
+        "binding": {
+          "nodeId": "end",
+          "outputId": "aircraftModel"
+        }
+      },
+      {
+        "id": "end.aircraftDamage",
+        "type": "string",
+        "binding": {
+          "nodeId": "end",
+          "outputId": "aircraftDamage"
+        }
+      }
+    ],
+    "variableUpdates": {}
+  },
+  "runtime": "maestro",
+  "layout": {
+    "nodes": {
+      "start": {
+        "position": {
+          "x": 256,
+          "y": 144
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        }
+      },
+      "extractNtsbReport": {
+        "position": {
+          "x": 448,
+          "y": 144
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        }
+      },
+      "logNtsbNumber": {
+        "position": {
+          "x": 640,
+          "y": 144
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        }
+      },
+      "end": {
+        "position": {
+          "x": 832,
+          "y": 144
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        }
+      }
+    }
+  }
+}

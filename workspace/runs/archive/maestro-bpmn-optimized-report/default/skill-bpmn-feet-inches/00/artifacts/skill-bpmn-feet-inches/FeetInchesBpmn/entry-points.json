@@ -1,0 +1,33 @@
+{
+  "entryPoints": [
+    {
+      "id": "entry_main",
+      "filePath": "/content/FeetInchesBpmn.bpmn#Start_1",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "number"
+          },
+          "direction": {
+            "type": "string"
+          }
+        }
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "parsedValue": {
+            "type": "number"
+          },
+          "convertedValue": {
+            "type": "number"
+          },
+          "result": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  ]
+}

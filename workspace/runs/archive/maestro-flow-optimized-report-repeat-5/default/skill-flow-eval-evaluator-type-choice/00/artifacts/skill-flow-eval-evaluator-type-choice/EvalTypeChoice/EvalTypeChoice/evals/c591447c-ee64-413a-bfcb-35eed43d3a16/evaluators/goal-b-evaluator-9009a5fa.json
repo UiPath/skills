@@ -1,0 +1,14 @@
+{
+  "version": "1.0",
+  "id": "goal-b-evaluator-9009a5fa",
+  "name": "goal-b-evaluator",
+  "description": "goal-b-evaluator evaluator",
+  "evaluatorTypeId": "uipath-json-similarity",
+  "evaluatorConfig": {
+    "name": "goal-b-evaluator",
+    "targetOutputKey": "*"
+  },
+  "fileName": "goal-b-evaluator-9009a5fa.json",
+  "createdAt": "2026-07-24T17:10:56.621Z",
+  "updatedAt": "2026-07-24T17:10:56.621Z"
+}

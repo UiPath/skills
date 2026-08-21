@@ -1,0 +1,192 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:uipath="http://uipath.org/schema/bpmn" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" exporter="UiPath Maestro (https://uipath.com)" exporterVersion="1.201.0-dev.8275">
+  <bpmn:process id="Process_InvoiceTriage" name="Invoice Triage" isExecutable="true">
+    <bpmn:extensionElements>
+      <uipath:variables version="v1">
+        <uipath:inputOutput id="Var_InvoiceId" name="invoiceId" type="string" elementId="Event_start" />
+        <uipath:inputOutput id="Var_Amount" name="amount" type="number" elementId="Event_start" />
+      </uipath:variables>
+      <uipath:bindings version="v1" />
+    </bpmn:extensionElements>
+    <bpmn:startEvent id="Event_start" name="core.trigger.manual">
+      <bpmn:extensionElements>
+        <uipath:entryPointId value="f9ea113b-62ff-484a-9248-a6b20d984392" />
+      </bpmn:extensionElements>
+      <bpmn:outgoing>Flow_StartToRecordIntake</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:task id="Task_RecordIntake" name="Record Invoice Intake">
+      <bpmn:incoming>Flow_StartToRecordIntake</bpmn:incoming>
+      <bpmn:outgoing>Flow_RecordIntakeToGateway</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:exclusiveGateway id="Gateway_InvoiceValueCheck" name="Amount &gt;= 1000?" default="Flow_ToAutoApproval">
+      <bpmn:incoming>Flow_RecordIntakeToGateway</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToManagerReview</bpmn:outgoing>
+      <bpmn:outgoing>Flow_ToAutoApproval</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:task id="Task_ManagerReview" name="Manager Review">
+      <bpmn:incoming>Flow_ToManagerReview</bpmn:incoming>
+      <bpmn:outgoing>Flow_ManagerReviewToMerge</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:task id="Task_AutoApproval" name="Auto Approval">
+      <bpmn:incoming>Flow_ToAutoApproval</bpmn:incoming>
+      <bpmn:outgoing>Flow_AutoApprovalToMerge</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:exclusiveGateway id="Gateway_DecisionMerge" name="Decision Merge">
+      <bpmn:incoming>Flow_ManagerReviewToMerge</bpmn:incoming>
+      <bpmn:incoming>Flow_AutoApprovalToMerge</bpmn:incoming>
+      <bpmn:outgoing>Flow_MergeToParallelSplit</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:parallelGateway id="Gateway_ParallelSplit" name="Parallel Split">
+      <bpmn:incoming>Flow_MergeToParallelSplit</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToNotifyRequester</bpmn:outgoing>
+      <bpmn:outgoing>Flow_ToArchiveDecision</bpmn:outgoing>
+    </bpmn:parallelGateway>
+    <bpmn:task id="Task_NotifyRequester" name="Notify Requester">
+      <bpmn:incoming>Flow_ToNotifyRequester</bpmn:incoming>
+      <bpmn:outgoing>Flow_NotifyRequesterToJoin</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:task id="Task_ArchiveDecision" name="Archive Decision">
+      <bpmn:incoming>Flow_ToArchiveDecision</bpmn:incoming>
+      <bpmn:outgoing>Flow_ArchiveDecisionToJoin</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:parallelGateway id="Gateway_ParallelJoin" name="Parallel Join">
+      <bpmn:incoming>Flow_NotifyRequesterToJoin</bpmn:incoming>
+      <bpmn:incoming>Flow_ArchiveDecisionToJoin</bpmn:incoming>
+      <bpmn:outgoing>Flow_JoinToEnd</bpmn:outgoing>
+    </bpmn:parallelGateway>
+    <bpmn:endEvent id="Event_End" name="Invoice Triage Complete">
+      <bpmn:incoming>Flow_JoinToEnd</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_StartToRecordIntake" sourceRef="Event_start" targetRef="Task_RecordIntake" />
+    <bpmn:sequenceFlow id="Flow_RecordIntakeToGateway" sourceRef="Task_RecordIntake" targetRef="Gateway_InvoiceValueCheck" />
+    <bpmn:sequenceFlow id="Flow_ToManagerReview" sourceRef="Gateway_InvoiceValueCheck" targetRef="Task_ManagerReview">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=vars.Var_Amount &gt;= 1000</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_ToAutoApproval" sourceRef="Gateway_InvoiceValueCheck" targetRef="Task_AutoApproval" />
+    <bpmn:sequenceFlow id="Flow_ManagerReviewToMerge" sourceRef="Task_ManagerReview" targetRef="Gateway_DecisionMerge" />
+    <bpmn:sequenceFlow id="Flow_AutoApprovalToMerge" sourceRef="Task_AutoApproval" targetRef="Gateway_DecisionMerge" />
+    <bpmn:sequenceFlow id="Flow_MergeToParallelSplit" sourceRef="Gateway_DecisionMerge" targetRef="Gateway_ParallelSplit" />
+    <bpmn:sequenceFlow id="Flow_ToNotifyRequester" sourceRef="Gateway_ParallelSplit" targetRef="Task_NotifyRequester" />
+    <bpmn:sequenceFlow id="Flow_ToArchiveDecision" sourceRef="Gateway_ParallelSplit" targetRef="Task_ArchiveDecision" />
+    <bpmn:sequenceFlow id="Flow_NotifyRequesterToJoin" sourceRef="Task_NotifyRequester" targetRef="Gateway_ParallelJoin" />
+    <bpmn:sequenceFlow id="Flow_ArchiveDecisionToJoin" sourceRef="Task_ArchiveDecision" targetRef="Gateway_ParallelJoin" />
+    <bpmn:sequenceFlow id="Flow_JoinToEnd" sourceRef="Gateway_ParallelJoin" targetRef="Event_End" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="Diagram_1">
+    <bpmndi:BPMNPlane id="Plane_1" bpmnElement="Process_InvoiceTriage">
+      <bpmndi:BPMNShape id="S_Event_start" bpmnElement="Event_start">
+        <dc:Bounds x="160" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="138" y="222" width="80" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Task_RecordIntake" bpmnElement="Task_RecordIntake">
+        <dc:Bounds x="250" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Gateway_InvoiceValueCheck" bpmnElement="Gateway_InvoiceValueCheck" isMarkerVisible="true">
+        <dc:Bounds x="410" y="175" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="388" y="135" width="94" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Task_ManagerReview" bpmnElement="Task_ManagerReview">
+        <dc:Bounds x="510" y="60" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Task_AutoApproval" bpmnElement="Task_AutoApproval">
+        <dc:Bounds x="510" y="260" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Gateway_DecisionMerge" bpmnElement="Gateway_DecisionMerge" isMarkerVisible="true">
+        <dc:Bounds x="670" y="175" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="655" y="232" width="80" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Gateway_ParallelSplit" bpmnElement="Gateway_ParallelSplit" isMarkerVisible="true">
+        <dc:Bounds x="770" y="175" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="753" y="135" width="84" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Task_NotifyRequester" bpmnElement="Task_NotifyRequester">
+        <dc:Bounds x="870" y="60" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Task_ArchiveDecision" bpmnElement="Task_ArchiveDecision">
+        <dc:Bounds x="870" y="260" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Gateway_ParallelJoin" bpmnElement="Gateway_ParallelJoin" isMarkerVisible="true">
+        <dc:Bounds x="1030" y="175" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1013" y="232" width="84" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Event_End" bpmnElement="Event_End">
+        <dc:Bounds x="1130" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1102" y="222" width="92" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_StartToRecordIntake" bpmnElement="Flow_StartToRecordIntake">
+        <di:waypoint x="196" y="200" />
+        <di:waypoint x="250" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_RecordIntakeToGateway" bpmnElement="Flow_RecordIntakeToGateway">
+        <di:waypoint x="350" y="200" />
+        <di:waypoint x="410" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_ToManagerReview" bpmnElement="Flow_ToManagerReview">
+        <di:waypoint x="435" y="175" />
+        <di:waypoint x="435" y="100" />
+        <di:waypoint x="510" y="100" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="440" y="130" width="70" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_ToAutoApproval" bpmnElement="Flow_ToAutoApproval">
+        <di:waypoint x="435" y="225" />
+        <di:waypoint x="435" y="300" />
+        <di:waypoint x="510" y="300" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="440" y="245" width="60" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_ManagerReviewToMerge" bpmnElement="Flow_ManagerReviewToMerge">
+        <di:waypoint x="610" y="100" />
+        <di:waypoint x="695" y="100" />
+        <di:waypoint x="695" y="175" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_AutoApprovalToMerge" bpmnElement="Flow_AutoApprovalToMerge">
+        <di:waypoint x="610" y="300" />
+        <di:waypoint x="695" y="300" />
+        <di:waypoint x="695" y="225" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_MergeToParallelSplit" bpmnElement="Flow_MergeToParallelSplit">
+        <di:waypoint x="720" y="200" />
+        <di:waypoint x="770" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_ToNotifyRequester" bpmnElement="Flow_ToNotifyRequester">
+        <di:waypoint x="795" y="175" />
+        <di:waypoint x="795" y="100" />
+        <di:waypoint x="870" y="100" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_ToArchiveDecision" bpmnElement="Flow_ToArchiveDecision">
+        <di:waypoint x="795" y="225" />
+        <di:waypoint x="795" y="300" />
+        <di:waypoint x="870" y="300" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_NotifyRequesterToJoin" bpmnElement="Flow_NotifyRequesterToJoin">
+        <di:waypoint x="970" y="100" />
+        <di:waypoint x="1055" y="100" />
+        <di:waypoint x="1055" y="175" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_ArchiveDecisionToJoin" bpmnElement="Flow_ArchiveDecisionToJoin">
+        <di:waypoint x="970" y="300" />
+        <di:waypoint x="1055" y="300" />
+        <di:waypoint x="1055" y="225" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_JoinToEnd" bpmnElement="Flow_JoinToEnd">
+        <di:waypoint x="1080" y="200" />
+        <di:waypoint x="1130" y="200" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

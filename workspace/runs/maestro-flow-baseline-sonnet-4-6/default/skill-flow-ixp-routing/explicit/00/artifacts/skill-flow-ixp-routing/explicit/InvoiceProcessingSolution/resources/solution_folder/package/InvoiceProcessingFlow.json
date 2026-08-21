@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "InvoiceProcessingFlow",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "754edc3c-789b-4c38-87b4-2a12d14e2d8d",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "InvoiceProcessingFlow"
+    },
+    "locks": [],
+    "key": "16cf3b3c-8e4e-4b47-b3c4-e884c5a479b2",
+    "files": []
+  }
+}

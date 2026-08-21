@@ -1,0 +1,5 @@
+18:36:02 [INFO   ] [default/skill-flow-scheduled-trigger/04] orchestrator: API routing: aws_bedrock
+18:38:02 [INFO   ] [default/skill-flow-scheduled-trigger/04] orchestrator: Success criteria: 2/2 passed, weighted score: 1.000
+18:38:02 [INFO   ] [default/skill-flow-scheduled-trigger/04] orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+18:38:02 [INFO   ] [default/skill-flow-scheduled-trigger/04] orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-scheduled-trigger
+18:38:02 [INFO   ] [default/skill-flow-scheduled-trigger/04] orchestrator: Task finished: status=SUCCESS duration=120.9s score=1.000 iterations=1

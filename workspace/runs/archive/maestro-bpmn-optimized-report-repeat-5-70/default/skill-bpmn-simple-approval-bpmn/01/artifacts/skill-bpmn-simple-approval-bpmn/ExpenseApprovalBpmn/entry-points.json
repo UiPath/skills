@@ -1,0 +1,32 @@
+{
+  "entryPoints": [
+    {
+      "id": "ep-expense-approval",
+      "filePath": "/content/ExpenseApprovalBpmn.bpmn#Start_1",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "expenseId": {
+            "type": "string"
+          },
+          "amount": {
+            "type": "number"
+          },
+          "decision": {
+            "type": "string"
+          },
+          "agentResponse": {
+            "type": "object"
+          },
+          "queueResult": {
+            "type": "object"
+          }
+        }
+      }
+    }
+  ]
+}

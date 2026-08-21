@@ -1,0 +1,1503 @@
+{
+  "task_id": "skill-bpmn-diagnose-stuck-gateway",
+  "task_description": "Diagnose coverage for the uipath-maestro-bpmn skill: a BPMN run is stuck (not faulted) at an exclusive gateway. The agent reads element-executions and cursors, identifies the blocking element, and explains why the token cannot advance (no outgoing condition matched and no default flow). Read-only mocked CLI; no lifecycle mutations.\n",
+  "variant_id": "default",
+  "agent_type": "claude-code",
+  "model_used": "claude-sonnet-4-6",
+  "started_at": "2026-07-22T04:38:53.577055",
+  "completed_at": "2026-07-22T04:39:45.280949",
+  "duration_seconds": 51.70393133163452,
+  "final_status": "SUCCESS",
+  "max_turns_exhausted": false,
+  "weighted_score": 1.0,
+  "iteration_count": 1,
+  "success_criteria_results": [
+    {
+      "result_kind": "basic",
+      "criterion_type": "command_executed",
+      "description": "Agent read element executions with folder context",
+      "score": 1.0,
+      "details": "Matched 1/1 required commands (filters: tool_name=Bash, pattern=/(uip|\\$UIP)\\s+maestro\\s+bpmn\\s+instance\\s+element-executions\\s+inst-triage-001\\b.*folder-public/)\nExamples: ['uip maestro bpmn instance element-executions inst-triage-001 -f folder-public --output json 2>&1 > /tmp/elem_exec.json; ']",
+      "error": null,
+      "pass_threshold": 1.0
+    },
+    {
+      "result_kind": "basic",
+      "criterion_type": "command_executed",
+      "description": "Agent read cursors with folder context",
+      "score": 1.0,
+      "details": "Matched 1/1 required commands (filters: tool_name=Bash, pattern=/(uip|\\$UIP)\\s+maestro\\s+bpmn\\s+instance\\s+cursors\\s+inst-triage-001\\b.*folder-public/)\nExamples: ['uip maestro bpmn instance cursors inst-triage-001 -f folder-public --output json 2>&1 > /tmp/cursors.json; echo \"EXIT:$?']",
+      "error": null,
+      "pass_threshold": 1.0
+    },
+    {
+      "result_kind": "basic",
+      "criterion_type": "file_contains",
+      "description": "Diagnosis names the stuck gateway and the missing-default root cause",
+      "score": 1.0,
+      "details": "Includes: 2/2 found; Score: 1.00",
+      "error": null,
+      "pass_threshold": 1.0
+    }
+  ],
+  "iterations": [
+    {
+      "iteration": 1,
+      "user_input": "Your working directory is: /work/output/artifacts/skill-bpmn-diagnose-stuck-gateway\n\nA UiPath Maestro BPMN run is stuck: it never faulted and never completed. It\nis parked mid-flow. Diagnose it using the mocked `uip` CLI already on PATH.\nPublic-safe identifiers:\n- instance id: inst-triage-001\n- folder key: folder-public\n\nUse element executions and cursors to find where the runtime stopped and why\nthe token cannot move forward.\n\nWrite your conclusion to diagnosis.md. Include these EXACT labeled lines:\n  STUCK_ELEMENT: <the element id where the run is blocked>\n  STUCK_REASON: <one line naming why it cannot advance>\nThe reason must state that no outgoing condition matched and the gateway has\nno default flow.\n\nUse `uip maestro bpmn ...` reads with folder context; do not read `mocks/`,\n`fixtures/`, or any response JSON files directly. Do NOT retry, cancel,\nmigrate, move a cursor, debug, run, upload, publish, or deploy anything.\n",
+      "agent_output": "[ASSISTANT] I have the diagnostic ladder. The run is stuck (not faulted), so incidents may be empty — but I'll check in parallel with element executions and cursors, which are the key signals for a hung run.\n[ASSISTANT] The diagnosis is clear from element executions + cursors. Let me also quickly grab the variable value to confirm the score falls in neither range:\n[ASSISTANT] I have everything needed from element executions and cursors. The variable detail endpoint isn't mocked but the cursor already explains it fully: `riskScore` is in the range [20, 80], matching neither condition (> 80 or < 20), and there's no default flow. Now I'll write the diagnosis.\n[ASSISTANT] ## Diagnosis complete\n\nThe run `inst-triage-001` is stuck at an **exclusive gateway** — never faulted, never completed. Here's what the CLI revealed:\n\n### What happened\n\n| # | Element | State |\n|---|---------|-------|\n| 1 | `Start_Manual` | ✅ Completed |\n| 2 | `ServiceTask_Score` | ✅ Completed |\n| 3 | **`Gw_ApprovalRoute`** | 🔴 **Blocked since 2026-05-01** |\n\nThe gateway has two outgoing conditions:\n- `Flow_HighRisk` → `=vars.riskScore > 80` — **false**\n- `Flow_LowRisk` → `=vars.riskScore < 20` — **false**\n\nNeither matched, and `hasDefaultFlow: false` means there is no fallback route. The token has nowhere to go.\n\n### Diagnosis labels (written to `diagnosis.md`)\n\n```\nSTUCK_ELEMENT: Gw_ApprovalRoute\nSTUCK_REASON: No outgoing condition matched (riskScore is between 20 and 80) and the gateway has no default flow.\n```\n\n### Fix (authoring — no cloud change yet)\nAdd a **default flow** on `Gw_ApprovalRoute` (or a third condition covering the 20–80 range) in the BPMN source. Repackage and redeploy, then with explicit consent migrate or cancel/restart the stuck instance.\n[RESULT - SUCCESS] ## Diagnosis complete\n\nThe run `inst-triage-001` is stuck at an **exclusive gateway** — never faulted, never completed. Here's what the CLI revealed:\n\n### What happened\n\n| # | Element | State |\n|---|---------|-------|\n| 1 | `Start_Manual` | ✅ Completed |\n| 2 | `ServiceTask_Score` | ✅ Completed |\n| 3 | **`Gw_ApprovalRoute`** | 🔴 **Blocked since 2026-05-01** |\n\nThe gateway has two outgoing conditions:\n- `Flow_HighRisk` → `=vars.riskScore > 80` — **false**\n- `Flow_LowRisk` → `=vars.riskScore < 20` — **false**\n\nNeither matched, and `hasDefaultFlow: false` means there is no fallback route. The token has nowhere to go.\n\n### Diagnosis labels (written to `diagnosis.md`)\n\n```\nSTUCK_ELEMENT: Gw_ApprovalRoute\nSTUCK_REASON: No outgoing condition matched (riskScore is between 20 and 80) and the gateway has no default flow.\n```\n\n### Fix (authoring — no cloud change yet)\nAdd a **default flow** on `Gw_ApprovalRoute` (or a third condition covering the 20–80 range) in the BPMN source. Repackage and redeploy, then with explicit consent migrate or cancel/restart the stuck instance.",
+      "commands": [
+        {
+          "tool_name": "Skill",
+          "tool_id": "toolu_bdrk_01EvegANANBJ3ZkrPYj4LJ8u",
+          "assistant_turn_index": 1,
+          "timestamp": "2026-07-22T04:38:58.171979",
+          "duration_ms": 12.003259966149926,
+          "generation_completed_at": "2026-07-22T04:38:58.171979",
+          "execution_started_at": "2026-07-22T04:38:58.172228",
+          "execution_completed_at": "2026-07-22T04:38:58.184231",
+          "parameters": {
+            "skill": "tmp:uipath-maestro-bpmn"
+          },
+          "result_status": "success",
+          "result_summary": "Launching skill: tmp:uipath-maestro-bpmn",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 0,
+          "result_tokens": 10
+        },
+        {
+          "tool_name": "Read",
+          "tool_id": "toolu_bdrk_01FCRfHPk4hP3gTgKzinYA7p",
+          "assistant_turn_index": 3,
+          "timestamp": "2026-07-22T04:39:00.659217",
+          "duration_ms": 9.210793068632483,
+          "generation_completed_at": "2026-07-22T04:39:00.659217",
+          "execution_started_at": "2026-07-22T04:39:00.659275",
+          "execution_completed_at": "2026-07-22T04:39:00.668486",
+          "parameters": {
+            "file_path": "/home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn/references/diagnose/CAPABILITY.md"
+          },
+          "result_status": "success",
+          "result_summary": "1\t# Diagnose - Investigate failed BPMN runs\n2\t\n3\tCapability index for post-run investigation.\n4\tDiagnose owns the diagnostic priority ladder for BPMN Process Orchestration runs: incidents, runtime variables,\n5\tdeployed BPMN asset correlation, element executions, cursors, generated package metadata, and traces.\n6\t\n7\t> **Where you came from / where to go next.** Diagnose is downstream of Operate (a debug or deployed run failed, hung,\n8\t> or behaved unexpectedly) and points back to Author for source fixes.\n9\t> Running and lifecycle live in [operate/CAPABILITY.md](../operate/CAPABILITY.md);\n10\t> source fixes live in [registry-workflow.md](../registry-workflow.md).\n11\t>\n12\t> **Inherits universal rules from [SKILL.md](../../SKILL.md).** BPMN source is model-authored; generated package files\n13\t> and Integration Service enrichment are CLI-owned.\n14\t> Use `uip maestro bpmn ... --output json` for diagnostic reads and redact private runtime data in summaries.\n15\t\n16\t## When to use this capability\n17\t\n18\t- Triage a failed debug or deployed process run.\n19\t- Read incidents and faulting element IDs.\n20\t- Inspect runtime variables and element executions.\n21\t- Fetch the deployed BPMN asset when local files may differ.\n22\t- Map runtime failures back to BPMN source and generated package metadata.\n23\t- Identify failures caused by unresolved Integration Service enrichment, bad bindings, missing diagrams, invalid mappings,\n24\t  or stale package files.\n25\t- Decide whether the safe next action is retry, cancel, migrate, cursor movement, re-authoring, package regeneration,\n26\t  or cloud configuration repair.\n27\t\n28\t## Critical rules\n29\t\n30\t1. **Investigate in priority order** - context, incidents, runtime variables, deployed BPMN asset,\n31\t   element executions/cursors, generated package files, then traces.\n32\t2. **Always include folder context on instance and incident reads** - `instance` commands require `--folder-key` or `-f`,\n33\t   and `incident get` requires `--folder-key`.\n34\t3. **Use the CLI as the diagnostic interface** - run `uip maestro bpmn ... --output json` reads. When mock or fixture\n35\t   files are present in a test harness, treat them as CLI backing data and do not read those files directly unless you\n36\t   are explicitly debugging the mock harness.\n37\t4. **Fetch deployed BPMN when local source may differ** - do not assume the working tree matches what ran.\n38\t5. **Map failures to BPMN element IDs** - use IDs to identify the source node, gateway, event, sequence flow,\n39\t   or extension that needs Author work.\n40\t6. **Separate runtime symptoms from ownership of the fix** - BPMN structure and mappings belong in Author;\n41\t   Integration Service enrichment and generated JSON come from CLI generation;\n42\t   folder/process/release choices belong to cloud configuration.\n43\t7. **Do not expose private runtime data** - redact tenant, user, connection, folder, URL, payload,\n44\t   and secret values in summaries.\n45\t8. **Do not mutate while diagnosing** - retry, cancel, migrate, and cursor movement are Operate actions and require\n46\t   explicit user consent after root cause analysis.\n47\t\n48\t## Workflow\n49\t\n50\t| Journey | Read |\n51\t| --- | --- |\n52\t| Triage a failed run | [references/troubleshooting-guide.md](references/troubleshooting-guide.md) |\n53\t| Recognize recurring failure patterns | [references/failure-modes.md](references/failure-modes.md) |\n54\t\n55\t## Common tasks\n56\t\n57\t| I need to... | Read these |\n58\t| --- | --- |\n59\t| Find the faulting element | [references/troubleshooting-guide.md](references/troubleshooting-guide.md) |\n60\t| Compare local and deployed BPMN | [references/troubleshooting-guide.md](references/troubleshooting-guide.md) |\n61\t| Inspect runtime variables, cursors, or element executions | [references/troubleshooting-guide.md](references/troubleshooting-guide.md) |\n62\t| Diagnose binding or generated JSON issues | [failure modes](references/failure-modes.md), [project layout](../shared/project-layout.md) |\n63\t| Diagnose Integration Service runtime issues | [failure modes](references/failure-modes.md) |\n64\t| Decide whether retry is safe | [troubleshooting guide](references/troubleshooting-guide.md), [manage guide](../operate/references/manage.md) |\n65\t| Fix the source | [registry-workflow.md](../registry-workflow.md) |\n66\t\n67\tFor Integration Service enrichment details, read\n68\t[registry-workflow.md](../registry-workflow.md).\n69\t\n70\t## Anti-patterns\n71\t\n72\t- **Never start with verbose traces when incidents are available.**\n73\t- **Never call runtime lifecycle commands while diagnosing.** Diagnose reads; Operate mutates after explicit consent.\n74\t- **Never assume local BPMN is the deployed asset.**\n75\t- **Never retry before root cause is known.**\n76\t- **Never paste private incident payloads or connection details into docs, commits, or issue comments.**\n77\t- **Never patch generated package files as the only fix for a BPMN source defect.**\n78\t\n79\t## References\n80\t\n81\t### Diagnose-scoped\n82\t\n83\t- [troubleshooting-guide.md](references/troubleshooting-guide.md) - diagnostic priority ladder\n84\t- [failure-modes.md](references/failure-modes.md) - recurring failure patterns\n85\t\n86\t### Cross-capability\n87\t\n88\t- [shared/bpmn-xml-contract.md](../structural-bpmn.md) - XML authoring and validation boundaries\n89\t- [shared/project-layout.md](../shared/project-layout.md) - generated files and package shape\n90\t- [shared/variables-bindings-expressions.md](../expression-authoring.md) - mappings and binding expressions\n91\t- [shared/public-safety.md](../public-safety.md) - redaction and sanitization\n92\t",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 1,
+          "result_tokens": 1396
+        },
+        {
+          "tool_name": "Read",
+          "tool_id": "toolu_bdrk_01N8r9KcHNKuNCNsjyrk9L2p",
+          "assistant_turn_index": 4,
+          "timestamp": "2026-07-22T04:39:02.126385",
+          "duration_ms": 7.676001056097448,
+          "generation_completed_at": "2026-07-22T04:39:02.126385",
+          "execution_started_at": "2026-07-22T04:39:02.126654",
+          "execution_completed_at": "2026-07-22T04:39:02.134330",
+          "parameters": {
+            "file_path": "/home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn/references/diagnose/references/troubleshooting-guide.md"
+          },
+          "result_status": "success",
+          "result_summary": "1\t# Troubleshooting Guide\n2\t\n3\tUse this priority ladder for failed or misbehaving BPMN runs.\n4\t\n5\t> **Read-only boundary:** this guide diagnoses.\n6\t> Retry, cancel, migrate, and cursor movement are Operate actions and require explicit user consent after root cause is known.\n7\t>\n8\t> **Folder context:** `uip maestro bpmn instance ...` commands require `--folder-key <FOLDER_KEY>` or\n9\t> `-f <FOLDER_KEY>`.\n10\t> `uip maestro bpmn incident get` requires `--folder-key <FOLDER_KEY>`.\n11\t\n12\t## Step 1 - Confirm context\n13\t\n14\tCollect public-safe identifiers:\n15\t\n16\t- Process or package name.\n17\t- Instance/job ID.\n18\t- Folder/context label.\n19\t- Approximate run time.\n20\t- Local commit or package version, if known.\n21\t- Whether the run came from `uip maestro bpmn debug` or `uip maestro bpmn process run`.\n22\t\n23\tDo not record secrets, tenant URLs, connection IDs, or payload data in public notes.\n24\t\n25\tIf you only have a deployed-process job key, start with:\n26\t\n27\t```bash\n28\tuip maestro bpmn job status <JOB_KEY> --folder-key <FOLDER_KEY> --output json\n29\t```\n30\t\n31\tParse the instance ID, folder context, process key, final status, and any trace/run identifiers from the JSON output.\n32\tFor debug runs, prefer the `instanceId` returned by\n33\t`uip maestro bpmn debug` and inspect it with `debug-instance` commands. Keep\n34\tdeployed-instance status reads and debug-session inspection separate.\n35\t\n36\t## Step 2 - Read incidents\n37\t\n38\tFind the incident category, message, and faulting BPMN element ID.\n39\tIf multiple incidents exist, start with the first root fault and avoid chasing downstream cancellation noise.\n40\t\n41\t```bash\n42\tuip maestro bpmn instance incidents <INSTANCE_ID> -f <FOLDER_KEY> --output json\n43\tuip maestro bpmn incident get <INCIDENT_ID> --folder-key <FOLDER_KEY> --output json\n44\tuip maestro bpmn incident summary --output json\n45\t```\n46\t\n47\tFor process-level incident overview:\n48\t\n49\t```bash\n50\tuip maestro bpmn processes incidents <PROCESS_KEY> --output json\n51\t```\n52\t\n53\t## Step 3 - Inspect runtime variables\n54\t\n55\tInspect variables around the faulting element.\n56\tRedact private payloads.\n57\tCheck whether expected outputs were missing, malformed, or literal strings instead of evaluated expressions.\n58\tIf the user reports a behavioral mismatch, inspect variables even when the final\n59\trun status is `Completed`; a completed run only proves control-flow completion,\n60\tnot semantic correctness.\n61\t\n62\t```bash\n63\tuip maestro bpmn instance variables <INSTANCE_ID> -f <FOLDER_KEY> --output json\n64\tuip maestro bpmn instance variables <INSTANCE_ID> -f <FOLDER_KEY> --parent-element-id <ELEMENT_ID> --output json\n65\t```\n66\t\n67\tFor affected elements, confirm runtime inputs and outputs match the modeled\n68\tcontract before changing source.\n69\t\n70\t## Step 4 - Correlate deployed BPMN\n71\t\n72\tFetch the deployed BPMN asset when local source may differ. Compare:\n73\t\n74\t- Faulting element ID.\n75\t- Root variables and mappings.\n76\t- Binding expressions.\n77\t- Integration Service extension content.\n78\t- Diagram and sequence-flow structure when the failure is import or package related.\n79\t\n80\t```bash\n81\tuip maestro bpmn instance asset <INSTANCE_ID> -f <FOLDER_KEY> --output json\n82\t```\n83\t\n84\tUse the incident's faulting element ID to locate the BPMN element in the deployed asset first, then compare to local\n85\t`.bpmn`.\n86\tIf they differ, diagnose what actually ran and treat local edits as a future fix, not as the executed definition.\n87\t\n88\t## Step 5 - Inspect element executions and cursors\n89\t\n90\tElement executions and cursors show where the runtime moved before it faulted or hung:\n91\t\n92\t```bash\n93\tuip maestro bpmn instance element-executions <INSTANCE_ID> -f <FOLDER_KEY> --output json\n94\tuip maestro bpmn instance cursors <INSTANCE_ID> -f <FOLDER_KEY> --output json\n95\t```\n96\t\n97\tUse these to distinguish a modeling problem from a runtime-state problem:\n98\t\n99\t- Activity fault: inspect the activity's inputs, mappings, extension payload, and upstream variables.\n100\t- Gateway stall: inspect outgoing sequence-flow conditions, default flow, and variable values.\n101\t- Event wait: inspect message/timer configuration, subscriptions, and whether the expected external signal exists.\n102\t- Subprocess or call activity fault: identify the child dependency, but do not invoke sibling skills automatically.\n103\t\n104\t## Step 6 - Check generated package files\n105\t\n106\tIf the failure is binding, entry point, package, or runtime metadata related, inspect generated JSON:\n107\t\n108\t- `bindings_v2.json`\n109\t- `entry-points.json`\n110\t- `operate.json`\n111\t- `package-descriptor.json`\n112\t\n113\tGenerated-file mismatch usually means Author should fix BPMN or rerun CLI generation/enrichment.\n114\t\n115\tCorrelate package files to the deployed BPMN:\n116\t\n117\t- `entry-points.json` should reference the intended BPMN file and start event.\n118\t- `bindings_v2.json` should contain generated resources required by executable resource and connector elements.\n119\t- `operate.json` should identify the intended main file/runtime metadata.\n120\t- `package-descriptor.json` should include BPMN and generated JSON files under `content/`.\n121\t\n122\t## Step 7 - Pull traces last\n123\t\n124\tUse verbose traces only when incidents, variables, deployed asset, and package files do not explain the issue.\n125\t\n126\t```bash\n127\tuip maestro bpmn job traces <JOB_KEY> --output json\n128\t```\n129\t\n130\t## Output\n131\t\n132\tReturn a concise diagnosis:\n133\t\n134\t- Faulting element ID.\n135\t- User-visible symptom.\n136\t- Likely root cause.\n137\t- Whether the fix belongs in BPMN source, CLI enrichment, generated package files, or cloud configuration.\n138\t- Safe next action.\n139\t\n140\t## CLI command reference\n141\t\n142\t```bash\n143\tuip maestro bpmn job status <JOB_KEY> --output json\n144\tuip maestro bpmn job traces <JOB_KEY> --output json\n145\tuip maestro bpmn instance get <INSTANCE_ID> -f <FOLDER_KEY> --output json\n146\tuip maestro bpmn instance incidents <INSTANCE_ID> -f <FOLDER_KEY> --output json\n147\tuip maestro bpmn instance variables <INSTANCE_ID> -f <FOLDER_KEY> --output json\n148\tuip maestro bpmn instance variables <INSTANCE_ID> -f <FOLDER_KEY> --parent-element-id <ELEMENT_ID> --output json\n149\tuip maestro bpmn instance asset <INSTANCE_ID> -f <FOLDER_KEY> --output json\n150\tuip maestro bpmn instance element-executions <INSTANCE_ID> -f <FOLDER_KEY> --output json\n151\tuip maestro bpmn instance cursors <INSTANCE_ID> -f <FOLDER_KEY> --output json\n152\tuip maestro bpmn incident get <INCIDENT_ID> --folder-key <FOLDER_KEY> --output json\n153\tuip maestro bpmn incident summary --output json\n154\tuip maestro bpmn processes incidents <PROCESS_KEY> --output json\n155\t```\n156\t\n157\tLifecycle commands are intentionally absent from this diagnostic command list.\n158\tUse [operate/references/manage.md](../../operate/references/manage.md) only after the diagnosis supports a\n159\tside-effecting action and the user consents.\n160\t",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 2,
+          "result_tokens": 1729
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_014F1ZLp5Mvp3t4rSyQqqSX9",
+          "assistant_turn_index": 7,
+          "timestamp": "2026-07-22T04:39:07.737610",
+          "duration_ms": 1571.7681950191036,
+          "generation_completed_at": "2026-07-22T04:39:07.737610",
+          "execution_started_at": "2026-07-22T04:39:07.737656",
+          "execution_completed_at": "2026-07-22T04:39:09.309424",
+          "parameters": {
+            "command": "uip maestro bpmn instance incidents inst-triage-001 -f folder-public --output json 2>&1 > /tmp/incidents.json; echo \"EXIT:$?\"",
+            "description": "Fetch incidents for the stuck instance"
+          },
+          "result_status": "success",
+          "result_summary": "EXIT:1",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 3,
+          "result_tokens": 2
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_01P7fLTeAzvAagdR8WJGk6ts",
+          "assistant_turn_index": 8,
+          "timestamp": "2026-07-22T04:39:08.449568",
+          "duration_ms": 1048.729800968431,
+          "generation_completed_at": "2026-07-22T04:39:08.449568",
+          "execution_started_at": "2026-07-22T04:39:08.449624",
+          "execution_completed_at": "2026-07-22T04:39:09.498354",
+          "parameters": {
+            "command": "uip maestro bpmn instance element-executions inst-triage-001 -f folder-public --output json 2>&1 > /tmp/elem_exec.json; echo \"EXIT:$?\"",
+            "description": "Fetch element executions for the stuck instance"
+          },
+          "result_status": "success",
+          "result_summary": "EXIT:0",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 4,
+          "result_tokens": 2
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_013fY6qVfgHMYeGYoa65884m",
+          "assistant_turn_index": 9,
+          "timestamp": "2026-07-22T04:39:09.081252",
+          "duration_ms": 601.4888510107994,
+          "generation_completed_at": "2026-07-22T04:39:09.081252",
+          "execution_started_at": "2026-07-22T04:39:09.081297",
+          "execution_completed_at": "2026-07-22T04:39:09.682786",
+          "parameters": {
+            "command": "uip maestro bpmn instance cursors inst-triage-001 -f folder-public --output json 2>&1 > /tmp/cursors.json; echo \"EXIT:$?\"",
+            "description": "Fetch cursors for the stuck instance"
+          },
+          "result_status": "success",
+          "result_summary": "EXIT:0",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 5,
+          "result_tokens": 2
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_01DpKKveV3itWweHsUi81vGU",
+          "assistant_turn_index": 10,
+          "timestamp": "2026-07-22T04:39:12.505198",
+          "duration_ms": 389.5451690768823,
+          "generation_completed_at": "2026-07-22T04:39:12.505198",
+          "execution_started_at": "2026-07-22T04:39:12.505468",
+          "execution_completed_at": "2026-07-22T04:39:12.895013",
+          "parameters": {
+            "command": "cat /tmp/elem_exec.json",
+            "description": "Read element executions output"
+          },
+          "result_status": "success",
+          "result_summary": "[\n  { \"elementId\": \"Start_Manual\", \"elementType\": \"startEvent\", \"state\": \"Completed\" },\n  { \"elementId\": \"ServiceTask_Score\", \"elementType\": \"serviceTask\", \"state\": \"Completed\" },\n  {\n    \"elementId\": \"Gw_ApprovalRoute\",\n    \"elementType\": \"exclusiveGateway\",\n    \"state\": \"Waiting\",\n    \"outgoingEvaluations\": [\n      { \"flowId\": \"Flow_HighRisk\", \"conditionExpression\": \"=vars.riskScore > 80\", \"evaluated\": false },\n      { \"flowId\": \"Flow_LowRisk\", \"conditionExpression\": \"=vars.riskScore < 20\", \"evaluated\": false }\n    ],\n    \"hasDefaultFlow\": false,\n    \"note\": \"No outgoing condition evaluated true and the gateway has no default flow.\"\n  }\n]",
+          "error_message": null,
+          "result_data": [
+            {
+              "elementId": "Start_Manual",
+              "elementType": "startEvent",
+              "state": "Completed"
+            },
+            {
+              "elementId": "ServiceTask_Score",
+              "elementType": "serviceTask",
+              "state": "Completed"
+            },
+            {
+              "elementId": "Gw_ApprovalRoute",
+              "elementType": "exclusiveGateway",
+              "state": "Waiting",
+              "outgoingEvaluations": [
+                {
+                  "flowId": "Flow_HighRisk",
+                  "conditionExpression": "=vars.riskScore > 80",
+                  "evaluated": false
+                },
+                {
+                  "flowId": "Flow_LowRisk",
+                  "conditionExpression": "=vars.riskScore < 20",
+                  "evaluated": false
+                }
+              ],
+              "hasDefaultFlow": false,
+              "note": "No outgoing condition evaluated true and the gateway has no default flow."
+            }
+          ],
+          "sequence_number": 6,
+          "result_tokens": 162
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_019YYx6a94NspZTLsf1Hyqj9",
+          "assistant_turn_index": 11,
+          "timestamp": "2026-07-22T04:39:12.882291",
+          "duration_ms": 14.390681986697018,
+          "generation_completed_at": "2026-07-22T04:39:12.882291",
+          "execution_started_at": "2026-07-22T04:39:12.882342",
+          "execution_completed_at": "2026-07-22T04:39:12.896733",
+          "parameters": {
+            "command": "cat /tmp/cursors.json",
+            "description": "Read cursors output"
+          },
+          "result_status": "success",
+          "result_summary": "[\n  {\n    \"elementId\": \"Gw_ApprovalRoute\",\n    \"elementType\": \"exclusiveGateway\",\n    \"state\": \"Blocked\",\n    \"blockedReason\": \"No outgoing sequence-flow condition evaluated true and no default flow is defined; the token cannot advance.\",\n    \"since\": \"2026-05-01T12:03:00Z\"\n  }\n]",
+          "error_message": null,
+          "result_data": [
+            {
+              "elementId": "Gw_ApprovalRoute",
+              "elementType": "exclusiveGateway",
+              "state": "Blocked",
+              "blockedReason": "No outgoing sequence-flow condition evaluated true and no default flow is defined; the token cannot advance.",
+              "since": "2026-05-01T12:03:00Z"
+            }
+          ],
+          "sequence_number": 7,
+          "result_tokens": 70
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_01BdeeN3jdEQDtQJcLfn9ZEY",
+          "assistant_turn_index": 14,
+          "timestamp": "2026-07-22T04:39:19.417246",
+          "duration_ms": 213.90466496814042,
+          "generation_completed_at": "2026-07-22T04:39:19.417246",
+          "execution_started_at": "2026-07-22T04:39:19.417322",
+          "execution_completed_at": "2026-07-22T04:39:19.631227",
+          "parameters": {
+            "command": "uip maestro bpmn instance variables inst-triage-001 -f folder-public --output json 2>&1 | python3 -c \"import sys,json; d=json.load(sys.stdin); [print(v) for v in d if 'riskScore' in v.get('name','')]\"",
+            "description": "Extract riskScore variable value"
+          },
+          "result_status": "error",
+          "result_summary": "Exit code 1\nTraceback (most recent call last):\n  File \"<string>\", line 1, in <module>\n    import sys,json; d=json.load(sys.stdin); [print(v) for v in d if 'riskScore' in v.get('name','')]\n                                                                                    ^^^^^\nAttributeError: 'str' object has no attribute 'get'",
+          "error_message": "Exit code 1\nTraceback (most recent call last):\n  File \"<string>\", line 1, in <module>\n    import sys,json; d=json.load(sys.stdin); [print(v) for v in d if 'riskScore' in v.get('name','')]\n                                                                                    ^^^^^\nAttributeError: 'str' object has no attribute 'get'",
+          "result_data": null,
+          "sequence_number": 8,
+          "result_tokens": 83
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_017tD7MTuPnRkJqyyfsgjeeS",
+          "assistant_turn_index": 15,
+          "timestamp": "2026-07-22T04:39:21.600689",
+          "duration_ms": 239.78468403220177,
+          "generation_completed_at": "2026-07-22T04:39:21.600689",
+          "execution_started_at": "2026-07-22T04:39:21.600977",
+          "execution_completed_at": "2026-07-22T04:39:21.840762",
+          "parameters": {
+            "command": "uip maestro bpmn instance variables inst-triage-001 -f folder-public --output json 2>&1 > /tmp/vars.json; python3 -c \"import json; d=json.load(open('/tmp/vars.json')); print([v for v in d if 'risk' in str(v).lower()])\"",
+            "description": "Get riskScore variable"
+          },
+          "result_status": "success",
+          "result_summary": "[]",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 9,
+          "result_tokens": 1
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_01TUhYr8mHU4ceC5Cxz3ruwQ",
+          "assistant_turn_index": 16,
+          "timestamp": "2026-07-22T04:39:23.365492",
+          "duration_ms": 92.23928209394217,
+          "generation_completed_at": "2026-07-22T04:39:23.365492",
+          "execution_started_at": "2026-07-22T04:39:23.365798",
+          "execution_completed_at": "2026-07-22T04:39:23.458037",
+          "parameters": {
+            "command": "python3 -c \"import json; d=json.load(open('/tmp/vars.json')); print(json.dumps(d, indent=2))\"",
+            "description": "Print all variables"
+          },
+          "result_status": "success",
+          "result_summary": "{\n  \"error\": \"unmocked public-safe BPMN command\"\n}",
+          "error_message": null,
+          "result_data": {
+            "error": "unmocked public-safe BPMN command"
+          },
+          "sequence_number": 10,
+          "result_tokens": 13
+        },
+        {
+          "tool_name": "Write",
+          "tool_id": "toolu_bdrk_01SkcBUHw43R6D6N1k6yRFvF",
+          "assistant_turn_index": 19,
+          "timestamp": "2026-07-22T04:39:39.501104",
+          "duration_ms": 32.91739395353943,
+          "generation_completed_at": "2026-07-22T04:39:39.501104",
+          "execution_started_at": "2026-07-22T04:39:39.501162",
+          "execution_completed_at": "2026-07-22T04:39:39.534079",
+          "parameters": {
+            "file_path": "/work/output/artifacts/skill-bpmn-diagnose-stuck-gateway/diagnosis.md",
+            "content": "# Run Diagnosis — inst-triage-001\n\n## Summary\n\nThe process instance `inst-triage-001` is parked and has not faulted.\nControl flow reached an exclusive gateway after the service task completed, but\nthe gateway cannot route the token to any outgoing path, so the instance\nremains indefinitely blocked.\n\n## Diagnostic trace (Step 5 — element executions and cursors)\n\n| Step | Element ID | Type | State |\n|------|-----------|------|-------|\n| 1 | `Start_Manual` | startEvent | Completed |\n| 2 | `ServiceTask_Score` | serviceTask | Completed |\n| 3 | `Gw_ApprovalRoute` | exclusiveGateway | **Waiting / Blocked** |\n\n### Outgoing flow evaluations at `Gw_ApprovalRoute`\n\n| Flow ID | Condition | Result |\n|---------|-----------|--------|\n| `Flow_HighRisk` | `=vars.riskScore > 80` | `false` (not evaluated true) |\n| `Flow_LowRisk` | `=vars.riskScore < 20` | `false` (not evaluated true) |\n\n`hasDefaultFlow: false` — no fallback route is modelled.\n\nThe cursor confirms the token has been blocked at this gateway since\n`2026-05-01T12:03:00Z`.\n\n## Root cause\n\nThe runtime value of `vars.riskScore` falls between 20 and 80 (inclusive),\nso neither outgoing condition expression evaluates to `true`.\nBecause the exclusive gateway declares **no default flow**, the BPMN runtime\nhas no route to take and the token stalls permanently.\nNo fault is raised; the instance simply never advances.\n\n## Labels\n\nSTUCK_ELEMENT: Gw_ApprovalRoute\nSTUCK_REASON: No outgoing condition matched (riskScore is between 20 and 80) and the gateway has no default flow.\n\n## Recommended fix (authoring — no cloud change required)\n\nIn the BPMN source, add a default sequence flow on `Gw_ApprovalRoute` that\nroutes mid-range scores to an appropriate path, **or** add a third outgoing\ncondition expression `=vars.riskScore >= 20 && vars.riskScore <= 80` covering\nthe missing band.  After the source change, repackage and redeploy; then, with\nexplicit user consent, migrate or cancel and restart the stuck instance.\n\n> **No mutations were performed during this diagnosis.**\n> Retry, cancel, migrate, and cursor movement require explicit user consent.\n"
+          },
+          "result_status": "success",
+          "result_summary": "File created successfully at: /work/output/artifacts/skill-bpmn-diagnose-stuck-gateway/diagnosis.md (file state is current in your context — no need to Read it back)",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 11,
+          "result_tokens": 42
+        }
+      ],
+      "timestamp": "2026-07-22T04:39:45.123234",
+      "duration_seconds": 50.0400844370015,
+      "token_usage": {
+        "uncached_input_tokens": 565,
+        "output_tokens": 5934,
+        "cache_creation_input_tokens": 12325,
+        "cache_read_input_tokens": 269737,
+        "total_cost_usd": 0.21784484999999998,
+        "input_tokens": 282627
+      },
+      "model_used": "claude-sonnet-4-6",
+      "assistant_turn_count": 21,
+      "messages": [
+        {
+          "role": "assistant",
+          "started_at": "2026-07-22T04:38:55.082295",
+          "completed_at": "2026-07-22T04:38:57.758434",
+          "generation_duration_ms": 2676.157543901354,
+          "content_blocks": [
+            {
+              "block_type": "thinking",
+              "sequence": 0,
+              "text": null,
+              "thinking": "The user wants me to diagnose a stuck UiPath Maestro BPMN run using the `uip` CLI. Let me use the UiPath Maestro BPMN skill to help with this task.\n\nLet me invoke the skill first.",
+              "signature": "Ev4CCmcIEBABGAIqQG4Mr1DOFHyYTEAseaWCklsQF1B6H5C1F1usbpyiLznPSvOUZY5+j76Eygiq4WQRjodmHQTkvgjBhvyg+k+Q9BYyEWNsYXVkZS1zb25uZXQtNC02OABCCHRoaW5raW5nEgwkiUrwdvg6W2bL27caDBMQarukvQNZrY8RxSIwzCczY8jdEZUVE7pB3O3583Jzwb1iDNkheoVwYrcwTyqrerGxXXvXIp3/WfkubHbeKsQB3D8KcKuoSrat1cY7JK3opi6M/315cyhVS910M2B3GBZ8o/PyjU2EO6ElRJhlTdNOc7Hx9NWKdgu8ocIPp6CaeUplnse1QF1NGFpISlLmfuilwNM2lkJnA9bo5E4GLYsbX8bv1bM5rbKuDJwaMoDZHfGEWYKHf+9mL3beXnze3iuflgYbOUspyr6UYcloBIbq3eyNr9DQpBjIltzo3CSI/B+qB0CyzMPsZPwklLZrl/J9dlsEyDS+JgB60MzkjwjBJ/LsPhgB",
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 2,
+          "output_tokens": 110,
+          "cache_creation_tokens": 1765,
+          "cache_read_tokens": 18954,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_019HnH5h2NDBexePM7SF1RZM",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-22T04:38:57.758434",
+          "completed_at": "2026-07-22T04:38:58.171979",
+          "generation_duration_ms": 413.5445400606841,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01EvegANANBJ3ZkrPYj4LJ8u",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01EvegANANBJ3ZkrPYj4LJ8u"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 25,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_019HnH5h2NDBexePM7SF1RZM",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-22T04:38:58.185345",
+          "completed_at": "2026-07-22T04:38:59.862341",
+          "generation_duration_ms": 1676.9967429572716,
+          "content_blocks": [
+            {
+              "block_type": "thinking",
+              "sequence": 0,
+              "text": null,
+              "thinking": "Let me start by reading the diagnose capability reference to understand what tools and commands are available for diagnosing a stuck BPMN run.",
+              "signature": "EtkCCmcIEBABGAIqQGxna5mOVHnQFHVE/U+vQ/0guZub8TlBdv12B40J51Z2pwHNCxoTiwpx8ssDLaIm0eJWVQPwdCr/Ae2Mb/GNLUEyEWNsYXVkZS1zb25uZXQtNC02OABCCHRoaW5raW5nEgwyr0vOIaeqBJvtfGEaDC23VVlv2G/d1hKoDSIwnUSiT3g9A1wAyQ0G/JdWFLiZX5GQAvtTvD51a6b9h5dP5C9gYksgEIfPEEwkD7A3Kp8B2eLW3RfdocG+YIP48ydFg3/Id3tl2CW2fw00iVyW53c1XNOjwstNM/teeNct6AUbYlD0gGRsYFnga7IAM89n09W2fWKLjmeE1KzUdaU/z/JkKSxcW18lUp3bKDNl5+HuMx7DuCsGwKgMO7FpEAegqVH+CGI6FockayoWctNKMVRQiff69vzhJIJWnMPMcxZskydhBwoDleW0O1Nav0B8GAE=",
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 2,
+          "output_tokens": 72,
+          "cache_creation_tokens": 4131,
+          "cache_read_tokens": 20719,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01XSqKFVVYDtSNejy5BbMng7",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-22T04:38:59.862341",
+          "completed_at": "2026-07-22T04:39:00.659217",
+          "generation_duration_ms": 796.8757940689102,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01FCRfHPk4hP3gTgKzinYA7p",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01FCRfHPk4hP3gTgKzinYA7p"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 60,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01XSqKFVVYDtSNejy5BbMng7",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-22T04:39:00.668453",
+          "completed_at": "2026-07-22T04:39:02.126385",
+          "generation_duration_ms": 1457.931181997992,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01N8r9KcHNKuNCNsjyrk9L2p",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01N8r9KcHNKuNCNsjyrk9L2p"
+          ],
+          "input_tokens": 1,
+          "output_tokens": 93,
+          "cache_creation_tokens": 1684,
+          "cache_read_tokens": 24850,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01H9HacSCNu3fLxTDz34L2jz",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-22T04:39:02.134302",
+          "completed_at": "2026-07-22T04:39:05.420037",
+          "generation_duration_ms": 3285.7342259958386,
+          "content_blocks": [
+            {
+              "block_type": "thinking",
+              "sequence": 0,
+              "text": null,
+              "thinking": "Now I have the diagnostic workflow clear. Let me follow the priority ladder:\n\n1. Check incidents first\n2. Inspect element executions and cursors (since the run is stuck/hung, not faulted)\n\nThe run is stuck (never faulted, never completed), so incidents may be empty. I'll check incidents first, then go straight to element executions and cursors. Let me run these in parallel.",
+              "signature": "EsMECmcIEBABGAIqQI/lcbtiiXBzWkLvdpHg8K3kCsmW5zxhyEFv4PjlZk+vfqKp/gonF11SbFalDwuzoZ2oDVIbK6UCIxbL9uCXKeIyEWNsYXVkZS1zb25uZXQtNC02OABCCHRoaW5raW5nEgz9N27xu6MPLL/YDusaDE9LpZKASaHL12E0jyIwFrgMp+QEpY6yBBqzYvXcGEm76/r7q1iBP0dRH7F9WfCpfTDxQhL5CiDb0JfqbTh5KokD1j7/0egBHNByi3gqR57GnV8eZQVxZdHPamEQBkgGRZEcDAmKpXLthwD81H/hIAVX4sHOuCvTwvMi6VgMPF4To+xawZaekt0qIszpXTJp+UbyRGWFIAIYbx1uJ49/0lJw0LuBVZBrLNwwha/jOYwJlpjy/Li/yKlKqlT5c0l/RW8u2V10NOUtYsT/1p6uh80e1YYf21Ba2Jt3dP/JC71Yg2k4iyVVOcXMy7TmhkY0HNPBqkHbtBC8+vkzsuTD6MPFoQg79ezF2f2M1goL9Aq2BXGcewan7YX9XU2o9OGPI57HL1aQ9rV6/tXP44CbRdbMaoKuZj0jsrMZ7ZCPNDA3BnLAtCvGO2Xqy2RxZl17e8b4HPciEdZ2LsZ4HHOJAm5E0cCMBcvDO3MsWKu/PhwfPsBH//enUhJWNS/KxZDsWPxfhO/xXGjO+i5oeDrGwoVqqqug+ADkHfSlDU0+Ko5augu7v1mUp1nYHfhaKmzjhh5eBpsU+obi/ykqp3BvGYZo7OH7rhFXvoY3GAE=",
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 1,
+          "output_tokens": 151,
+          "cache_creation_tokens": 2234,
+          "cache_read_tokens": 26534,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01BfVEP5M42xBLaWLcqUbFgk",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-22T04:39:05.420037",
+          "completed_at": "2026-07-22T04:39:06.779040",
+          "generation_duration_ms": 1359.0026579331607,
+          "content_blocks": [
+            {
+              "block_type": "text",
+              "sequence": 0,
+              "text": "I have the diagnostic ladder. The run is stuck (not faulted), so incidents may be empty — but I'll check in parallel with element executions and cursors, which are the key signals for a hung run.",
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 0,
+          "output_tokens": 78,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01BfVEP5M42xBLaWLcqUbFgk",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-22T04:39:06.779040",
+          "completed_at": "2026-07-22T04:39:07.737610",
+          "generation_duration_ms": 958.5699290037155,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_014F1ZLp5Mvp3t4rSyQqqSX9",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_014F1ZLp5Mvp3t4rSyQqqSX9"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 82,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01BfVEP5M42xBLaWLcqUbFgk",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-22T04:39:07.737610",
+          "completed_at": "2026-07-22T04:39:08.449568",
+          "generation_duration_ms": 711.9585430482402,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01P7fLTeAzvAagdR8WJGk6ts",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01P7fLTeAzvAagdR8WJGk6ts"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 89,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01BfVEP5M42xBLaWLcqUbFgk",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-22T04:39:08.449568",
+          "completed_at": "2026-07-22T04:39:09.081252",
+          "generation_duration_ms": 631.684607011266,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_013fY6qVfgHMYeGYoa65884m",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_013fY6qVfgHMYeGYoa65884m"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 79,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01BfVEP5M42xBLaWLcqUbFgk",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-22T04:39:09.682753",
+          "completed_at": "2026-07-22T04:39:12.505198",
+          "generation_duration_ms": 2822.445204015821,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01DpKKveV3itWweHsUi81vGU",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01DpKKveV3itWweHsUi81vGU"
+          ],
+          "input_tokens": 1,
+          "output_tokens": 77,
+          "cache_creation_tokens": 468,
+          "cache_read_tokens": 28768,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_0134rSnqZzMvoZZ1L3ZcPmq7",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-22T04:39:12.505198",
+          "completed_at": "2026-07-22T04:39:12.882291",
+          "generation_duration_ms": 377.09262396674603,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_019YYx6a94NspZTLsf1Hyqj9",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_019YYx6a94NspZTLsf1Hyqj9"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 66,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_0134rSnqZzMvoZZ1L3ZcPmq7",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-22T04:39:12.896700",
+          "completed_at": "2026-07-22T04:39:19.003616",
+          "generation_duration_ms": 6106.9148239912465,
+          "content_blocks": [
+            {
+              "block_type": "thinking",
+              "sequence": 0,
+              "text": null,
+              "thinking": "I have a clear diagnosis:\n\n1. The element executions show:\n   - `Start_Manual` (startEvent) - Completed\n   - `ServiceTask_Score` (serviceTask) - Completed\n   - `Gw_ApprovalRoute` (exclusiveGateway) - Waiting, with two outgoing conditions neither of which evaluated to true, and `hasDefaultFlow: false`\n\n2. The cursors confirm the token is blocked at `Gw_ApprovalRoute` with reason: \"No outgoing sequence-flow condition evaluated true and no default flow is defined; the token cannot advance.\"\n\nThe instance has a variable `vars.riskScore` that falls in neither the >80 range nor the <20 range (i.e., it's between 20 and 80 inclusive), so both conditions evaluated false. \n\nSince the gateway lacks a default flow, the token is stuck. Let me pull the actual riskScore value from the runtime variables to see exactly where it falls.",
+              "signature": "Ev4HCmcIEBABGAIqQFGWas0XRz+FFraywW/a/H180N/MSuyBzQGPiXmProNKKXy9+xSewYsAJw/dl5m2wiFgpdXdFNICNnFLojZStHwyEWNsYXVkZS1zb25uZXQtNC02OABCCHRoaW5raW5nEgyaYINmGivDpXaKzo4aDGg6ySVh+M806yJCTiIwsfuxA6Cv8b7kB8AqkSCz3Q6V7imJCt5Ht9quwnFvWx6DkUhVsS9D5+YXIOLr+PcXKsQGtBz1l4lWi2OeHW7RrLoeK+6uiymgmtCDeabavClSUBfdi9NWGOW5LrlbXUpuE9Wtec/91MC4ojiG49VaY4Ue5gN0itzLrMNlATSAXbahqFqA9/bwqD99OnFISGsyCCJQs1bxvArg8CVI5w6H7meCzazUl/Wq1fQ3W4GnSo9yqyfoolD+kzvZrcXJLUuCbsQO5MArrjQUBsLxnrhk0iJeicKc0wF+uSwdzCGcoUlAgeQm0Xv8c4tOgh+GJPMmdw5/BQ3/qw0zl3V7L9sfXbsSmx08hXnPR8RnOOSClQpE+LBUicL/+kUwxh9PVhdYhxlNFBtaLunTLUJEl7yRhwugOyHYkayiP87xWdV9jSs+DrDYgP+YGEFCQrvYuVgioVKPClYVoiIMLKAOX/X1v3aqe5UarOpKdx62zNFzMBip9nxt2k+rYnVjq90M1fdhAIWK8T0zZGq01e5SIUFSfFQf3jo7dfllZzXFsLXjEVus8aOyY0gOKmLVGSxu6pMh+rzid0bnpnvBubQUJGGLQY1IkAmAAf44fe3olLzmuiZi7IaRvhh7l7q229Aw4hBeeqIZgzw3cQPWAGFAbM1pm2tpDfP7qHILrfxmFJ/sEZ59GUN68uAQTR/Qh9KHcPj+2FgMepJtbFbR8Z0cEabIlFM0NrzrHfj7xF09e8jNNRfHbUBoADe5a4xLHSFYRN5s+4A/NvTNpXkEbjkCIATyDvP8LetKpA2VEoacyEeoJyB2D7Y66YrUQVmigHG7xjWGTDpfnTZDZoDyhDh0UXXyXZl3xbsJkmVE87ftLzc8+r0+rdl78KtJQNZPqxMOA/JRRSfUR8BuVsJ5hME6KTfQ39G0bi1MpqSchgzPsJHd9Qxt0aA+GOveTv+pTXXIa+0f1vAsXPWBhPhdwBKyzhoY1y2/Z/VubnGq1FrOPp3T2zmyghqA1ZKpUT85Vn/Im7Oyr39ffbqplwihykGYF902BhUo+TkWAawL0aj/ReRVyWkDIMMhslgVuuK3njwm6PHL22Jbb57NI7wFMRzw9mSMSXMVLLj9se3a5W5MxpNfnfAB/MbO6o17reoV9dHiuVi76Epb3EZVLRuMdb2IS9onBSPqoxqYGLkYAQ==",
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 1,
+          "output_tokens": 276,
+          "cache_creation_tokens": 521,
+          "cache_read_tokens": 29236,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01T99aHMFkMAnDBdeScnVCAH",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-22T04:39:19.003616",
+          "completed_at": "2026-07-22T04:39:19.017955",
+          "generation_duration_ms": 14.339779037982225,
+          "content_blocks": [
+            {
+              "block_type": "text",
+              "sequence": 0,
+              "text": "The diagnosis is clear from element executions + cursors. Let me also quickly grab the variable value to confirm the score falls in neither range:",
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 0,
+          "output_tokens": 49,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01T99aHMFkMAnDBdeScnVCAH",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-22T04:39:19.017955",
+          "completed_at": "2026-07-22T04:39:19.417246",
+          "generation_duration_ms": 399.2893589893356,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01BdeeN3jdEQDtQJcLfn9ZEY",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01BdeeN3jdEQDtQJcLfn9ZEY"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 90,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01T99aHMFkMAnDBdeScnVCAH",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-22T04:39:19.631187",
+          "completed_at": "2026-07-22T04:39:21.600689",
+          "generation_duration_ms": 1969.501501065679,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_017tD7MTuPnRkJqyyfsgjeeS",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_017tD7MTuPnRkJqyyfsgjeeS"
+          ],
+          "input_tokens": 1,
+          "output_tokens": 153,
+          "cache_creation_tokens": 393,
+          "cache_read_tokens": 29757,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_012AKuM92a9HnFYksZMZq1SP",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-22T04:39:21.840715",
+          "completed_at": "2026-07-22T04:39:23.365492",
+          "generation_duration_ms": 1524.7770739952102,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01TUhYr8mHU4ceC5Cxz3ruwQ",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01TUhYr8mHU4ceC5Cxz3ruwQ"
+          ],
+          "input_tokens": 1,
+          "output_tokens": 107,
+          "cache_creation_tokens": 166,
+          "cache_read_tokens": 30150,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01HCHc4eNxLxgk1PQQ78WqMk",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-22T04:39:23.457993",
+          "completed_at": "2026-07-22T04:39:26.047146",
+          "generation_duration_ms": 2589.154090033844,
+          "content_blocks": [
+            {
+              "block_type": "thinking",
+              "sequence": 0,
+              "text": null,
+              "thinking": "The variables endpoint isn't mocked for this scenario, which is fine — the element executions and cursors already give us a complete and definitive answer. The riskScore value sits in the range [20, 80] (i.e., neither > 80 nor < 20), so neither condition evaluates true, and there's no default flow. I have everything I need to write the diagnosis.",
+              "signature": "EqkECmcIEBABGAIqQKKJIJOPJF7LXob6xCOQmATlj9+yF0r00zWb8DNPYeEZC+hYMXzooH7W2ypEuH4WEEHWu2ov+Mjwc/jnCLU6jhQyEWNsYXVkZS1zb25uZXQtNC02OABCCHRoaW5raW5nEgzg8IJbUmhgyhMne80aDJuMjXe8RMO04UNBtiIwQZBUy5aqEtSWA0zBarp58lySsuZlibrBKcqvgLzNLEuQHR9zGyapoXuLsw0tSH9bKu8CkVaXBMrjOw2SbpWBU1qgaSQW1HybfefAsfQ3fAZaolx+7ffmObnTtZTBfCv1Qd/g+UeBL2g7uLaTtxJ9bAnQtcQeVj60EqTC9ta39+27clSKwJh7URaMqoXTXXfcbUW1Fi4Jdo7Hd19Yp7re3TwvsMqFyKf9MPl2WjMvn/0eVfHLKfc2qYE/2s89ryyS2Cix5aaNwbQYGmY9Iy+8+jVMome5ef2/mUL/qqJYFzP2ja93yTERXRxtVAMj2qxh3I+koVVYLWR7xJXb+aWY3v2r+nSQ0/cAWNahHJ4VTO3wDw9Bu+7UlMzrNFrBUp0tACEfTq3gHgJ348kQpHz5oCyPnULmgOAD+iag+AY+ZlJb/tDvddjj/9lIja6Krh7khIgxeHLwncBmhVu+gVMEJ0+InPE94zhl0P+X+cqff+kC3HQl/9/Te1yIvA0EN10ojmL7FAqe5gAw7Icjs8jJe7Kj8d5Df8XeKuvNEkUthipx5hgB",
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 1,
+          "output_tokens": 104,
+          "cache_creation_tokens": 137,
+          "cache_read_tokens": 30316,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_013SjwjcjbBN8T4W3df6p5tu",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-22T04:39:26.047146",
+          "completed_at": "2026-07-22T04:39:27.466729",
+          "generation_duration_ms": 1419.5827519288287,
+          "content_blocks": [
+            {
+              "block_type": "text",
+              "sequence": 0,
+              "text": "I have everything needed from element executions and cursors. The variable detail endpoint isn't mocked but the cursor already explains it fully: `riskScore` is in the range [20, 80], matching neither condition (> 80 or < 20), and there's no default flow. Now I'll write the diagnosis.",
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 0,
+          "output_tokens": 85,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_013SjwjcjbBN8T4W3df6p5tu",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-22T04:39:27.466729",
+          "completed_at": "2026-07-22T04:39:39.501104",
+          "generation_duration_ms": 12034.373683971353,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01SkcBUHw43R6D6N1k6yRFvF",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01SkcBUHw43R6D6N1k6yRFvF"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 683,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_013SjwjcjbBN8T4W3df6p5tu",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-22T04:39:39.534049",
+          "completed_at": "2026-07-22T04:39:45.097246",
+          "generation_duration_ms": 5563.195960014127,
+          "content_blocks": [
+            {
+              "block_type": "text",
+              "sequence": 0,
+              "text": "## Diagnosis complete\n\nThe run `inst-triage-001` is stuck at an **exclusive gateway** — never faulted, never completed. Here's what the CLI revealed:\n\n### What happened\n\n| # | Element | State |\n|---|---------|-------|\n| 1 | `Start_Manual` | ✅ Completed |\n| 2 | `ServiceTask_Score` | ✅ Completed |\n| 3 | **`Gw_ApprovalRoute`** | 🔴 **Blocked since 2026-05-01** |\n\nThe gateway has two outgoing conditions:\n- `Flow_HighRisk` → `=vars.riskScore > 80` — **false**\n- `Flow_LowRisk` → `=vars.riskScore < 20` — **false**\n\nNeither matched, and `hasDefaultFlow: false` means there is no fallback route. The token has nowhere to go.\n\n### Diagnosis labels (written to `diagnosis.md`)\n\n```\nSTUCK_ELEMENT: Gw_ApprovalRoute\nSTUCK_REASON: No outgoing condition matched (riskScore is between 20 and 80) and the gateway has no default flow.\n```\n\n### Fix (authoring — no cloud change yet)\nAdd a **default flow** on `Gw_ApprovalRoute` (or a third condition covering the 20–80 range) in the BPMN source. Repackage and redeploy, then with explicit consent migrate or cancel/restart the stuck instance.",
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 1,
+          "output_tokens": 364,
+          "cache_creation_tokens": 826,
+          "cache_read_tokens": 30453,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01EkyPdp1P5vqwu4G8bAgxgH",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "reconciliation",
+          "input_tokens": 553,
+          "output_tokens": 3041,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "note": "Tokens the agent billed but never surfaced as a generation (fixed prompt overhead + sub-agent input/cache the stream doesn't bubble up). Booked here so the transcript reconciles to the turn total."
+        }
+      ],
+      "num_turns": 14,
+      "max_turns_exhausted": false,
+      "result_summary": {
+        "is_error": false,
+        "subtype": "success",
+        "stop_reason": "end_turn",
+        "result": "## Diagnosis complete\n\nThe run `inst-triage-001` is stuck at an **exclusive gateway** — never faulted, never completed. Here's what the CLI revealed:\n\n### What happened\n\n| # | Element | State |\n|---|---------|-------|\n| 1 | `Start_Manual` | ✅ Completed |\n| 2 | `ServiceTask_Score` | ✅ Completed |\n| 3 | **`Gw_ApprovalRoute`** | 🔴 **Blocked since 2026-05-01** |\n\nThe gateway has two outgoing conditions:\n- `Flow_HighRisk` → `=vars.riskScore > 80` — **false**\n- `Flow_LowRisk` → `=vars.riskScore < 20` — **false**\n\nNeither matched, and `hasDefaultFlow: false` means there is no fallback route. The token has nowhere to go.\n\n### Diagnosis labels (written to `diagnosis.md`)\n\n```\nSTUCK_ELEMENT: Gw_ApprovalRoute\nSTUCK_REASON: No outgoing condition matched (riskScore is between 20 and 80) and the gateway has no default flow.\n```\n\n### Fix (authoring — no cloud change yet)\nAdd a **default flow** on `Gw_ApprovalRoute` (or a third condition covering the 20–80 range) in the BPMN source. Repackage and redeploy, then with explicit consent migrate or cancel/restart the stuck instance."
+      },
+      "crashed": false,
+      "crash_reason": null
+    }
+  ],
+  "error_message": null,
+  "error_details": null,
+  "error_log_tail": null,
+  "environment_info": {
+    "git_commit": "unknown",
+    "skills_git_commit": "unknown",
+    "cli_version": "1.197.0-alpha.20260626.7673",
+    "tool_plugins": {
+      "agent-tool": "1.197.0",
+      "agenthub-tool": "1.197.0",
+      "codedagent-tool": "1.197.0",
+      "data-fabric-tool": "1.197.0",
+      "functions-tool": "1.197.0",
+      "gov-tool": "1.197.0",
+      "insights-tool": "1.197.0",
+      "integrationservice-tool": "1.197.0",
+      "ixp-tool": "1.197.0",
+      "maestro-tool": "1.197.0",
+      "orchestrator-tool": "1.197.0",
+      "solution-tool": "1.197.0",
+      "tasks-tool": "1.197.0",
+      "test-manager-tool": "1.197.0"
+    },
+    "coder_eval": "0.8.4",
+    "claude_code_cli": "2.1.177 (Claude Code)",
+    "uv": "uv 0.11.28 (x86_64-unknown-linux-gnu)",
+    "anthropic": "0.102.0",
+    "openai": "2.46.0",
+    "pydantic": "2.12.5",
+    "api_routing": "aws_bedrock",
+    "aws_region": "us-east-2",
+    "bedrock_model": "us.anthropic.claude-sonnet-4-6"
+  },
+  "agent_config": {
+    "type": "claude-code",
+    "model": "claude-sonnet-4-6",
+    "permission_mode": "acceptEdits",
+    "allowed_tools": [
+      "Skill",
+      "Bash",
+      "Read",
+      "Write",
+      "Edit",
+      "Glob",
+      "Grep"
+    ],
+    "disallowed_tools": null,
+    "plugins": [
+      {
+        "type": "local",
+        "path": "/home/azureuser/projects/skills/tmp/"
+      }
+    ],
+    "system_prompt": "You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted.\n",
+    "system_prompt_file": null,
+    "ignore_patterns": [],
+    "claude_settings": null,
+    "sdk_options": {},
+    "setting_sources": null
+  },
+  "sdk_options": {
+    "tools": null,
+    "allowed_tools": [
+      "Skill",
+      "Bash",
+      "Read",
+      "Write",
+      "Edit",
+      "Glob",
+      "Grep"
+    ],
+    "system_prompt": "You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted.\n",
+    "mcp_servers": {},
+    "strict_mcp_config": false,
+    "permission_mode": "acceptEdits",
+    "continue_conversation": false,
+    "resume": null,
+    "session_id": null,
+    "max_turns": 40,
+    "max_budget_usd": null,
+    "disallowed_tools": [
+      "ToolSearch"
+    ],
+    "model": "us.anthropic.claude-sonnet-4-6",
+    "fallback_model": null,
+    "betas": [],
+    "permission_prompt_tool_name": null,
+    "cwd": "/work/output/artifacts/skill-bpmn-diagnose-stuck-gateway",
+    "cli_path": null,
+    "settings": null,
+    "add_dirs": [],
+    "env": {
+      "PATH": "/work/output/artifacts/skill-bpmn-diagnose-stuck-gateway/mocks:/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+      "PLUGIN_TOOLS_DIR": "/usr/lib/node_modules/@uipath",
+      "CLAUDE_CODE_USE_BEDROCK": "1",
+      "AWS_BEARER_TOKEN_BEDROCK": "***REDACTED***",
+      "AWS_REGION": "us-east-2",
+      "CLAUDE_CODE_ATTRIBUTION_HEADER": "0",
+      "ANTHROPIC_MODEL": "us.anthropic.claude-sonnet-4-6",
+      "ANTHROPIC_SMALL_FAST_MODEL": "us.anthropic.claude-sonnet-4-6"
+    },
+    "extra_args": {},
+    "max_buffer_size": null,
+    "can_use_tool": null,
+    "hooks": null,
+    "user": null,
+    "include_partial_messages": true,
+    "include_hook_events": false,
+    "fork_session": false,
+    "agents": null,
+    "setting_sources": [
+      "project"
+    ],
+    "skills": null,
+    "sandbox": null,
+    "plugins": [
+      {
+        "type": "local",
+        "path": "/home/azureuser/projects/skills/tmp"
+      }
+    ],
+    "max_thinking_tokens": null,
+    "thinking": null,
+    "effort": null,
+    "output_format": null,
+    "enable_file_checkpointing": false,
+    "session_store": null,
+    "session_store_flush": "batched",
+    "load_timeout_ms": 60000,
+    "task_budget": null
+  },
+  "sandbox_path": "/work/output/artifacts/skill-bpmn-diagnose-stuck-gateway",
+  "task_config": {
+    "resolved": {
+      "task_id": "skill-bpmn-diagnose-stuck-gateway",
+      "description": "Diagnose coverage for the uipath-maestro-bpmn skill: a BPMN run is stuck (not faulted) at an exclusive gateway. The agent reads element-executions and cursors, identifies the blocking element, and explains why the token cannot advance (no outgoing condition matched and no default flow). Read-only mocked CLI; no lifecycle mutations.\n",
+      "initial_prompt": "A UiPath Maestro BPMN run is stuck: it never faulted and never completed. It\nis parked mid-flow. Diagnose it using the mocked `uip` CLI already on PATH.\nPublic-safe identifiers:\n- instance id: inst-triage-001\n- folder key: folder-public\n\nUse element executions and cursors to find where the runtime stopped and why\nthe token cannot move forward.\n\nWrite your conclusion to diagnosis.md. Include these EXACT labeled lines:\n  STUCK_ELEMENT: <the element id where the run is blocked>\n  STUCK_REASON: <one line naming why it cannot advance>\nThe reason must state that no outgoing condition matched and the gateway has\nno default flow.\n\nUse `uip maestro bpmn ...` reads with folder context; do not read `mocks/`,\n`fixtures/`, or any response JSON files directly. Do NOT retry, cancel,\nmigrate, move a cursor, debug, run, upload, publish, or deploy anything.\n",
+      "initial_prompt_file": null,
+      "tags": [
+        "uipath-maestro-bpmn",
+        "integration",
+        "mode:diagnose",
+        "lifecycle:discover"
+      ],
+      "skip": false,
+      "agent": {
+        "type": "claude-code",
+        "model": "claude-sonnet-4-6",
+        "permission_mode": "acceptEdits",
+        "allowed_tools": [
+          "Skill",
+          "Bash",
+          "Read",
+          "Write",
+          "Edit",
+          "Glob",
+          "Grep"
+        ],
+        "disallowed_tools": null,
+        "plugins": [
+          {
+            "type": "local",
+            "path": "/home/azureuser/projects/skills/tmp/"
+          }
+        ],
+        "system_prompt": "You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted.\n",
+        "system_prompt_file": null,
+        "ignore_patterns": [],
+        "claude_settings": null,
+        "sdk_options": {},
+        "setting_sources": null
+      },
+      "sandbox": {
+        "driver": "tempdir",
+        "docker": {
+          "image": "skills-image:latest",
+          "dockerfile_path": null,
+          "build": {
+            "buildkit": null,
+            "args": {},
+            "secrets": [],
+            "extra_args": []
+          },
+          "network": "bridge",
+          "working_dir": null,
+          "env_passthrough": [
+            "ANTHROPIC_API_KEY",
+            "API_BACKEND",
+            "UIPATH_LLM_BACKEND",
+            "UIPATH_ACCESS_TOKEN",
+            "UIPATH_URL",
+            "UIPATH_TENANT_ID",
+            "UIPATH_ORGANIZATION_ID",
+            "UIPATH_CLI_DISABLE_VERSION_SYNC",
+            "AWS_BEARER_TOKEN_BEDROCK",
+            "AWS_REGION",
+            "BEDROCK_MODEL",
+            "CLAUDE_CODE_USE_BEDROCK",
+            "ANTHROPIC_MODEL",
+            "CODEX_API_KEY",
+            "CODEX_BASE_URL",
+            "CODEX_MODEL",
+            "GEMINI_API_KEY",
+            "ANTIGRAVITY_MODEL",
+            "HOME"
+          ],
+          "env_passthrough_extra": [
+            "SKILLS_REPO_PATH",
+            "BEDROCK_MODEL",
+            "TASK_PARALLELISM",
+            "UIPATH_CLI_ENABLE_ENV_AUTH",
+            "UIPATH_CLI_AUTH_TOKEN",
+            "UIPATH_CLI_ORGANIZATION_NAME",
+            "UIPATH_CLI_ORGANIZATION_ID",
+            "UIPATH_CLI_TENANT_NAME",
+            "UIPATH_CLI_TENANT_ID",
+            "TRACES_SMOKE_PROCESS_KEY",
+            "CODEX_API_KEY",
+            "CODEX_BASE_URL"
+          ],
+          "extra_mounts": [
+            "~/.uipath:/.uipath:rw"
+          ]
+        },
+        "python": {
+          "env_packages": []
+        },
+        "node": null,
+        "limits": {
+          "timeout": 300,
+          "max_memory_mb": null,
+          "max_cpus": null,
+          "max_pids": null,
+          "max_disk_mb": null
+        },
+        "template_sources": [
+          {
+            "type": "template_dir",
+            "path": "/home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn",
+            "mount_point": ".",
+            "include_patterns": []
+          },
+          {
+            "type": "template_dir",
+            "path": "/home/azureuser/projects/skills/tmp/experiments/tasks/uipath-maestro-bpmn/_shared/mock_template",
+            "mount_point": ".",
+            "include_patterns": []
+          },
+          {
+            "type": "template_dir",
+            "path": "/home/azureuser/projects/skills/tmp/experiments/tasks/uipath-maestro-bpmn/diagnose/stuck_gateway/fixtures",
+            "mount_point": ".",
+            "include_patterns": []
+          }
+        ],
+        "mock_path_dirs": [
+          "mocks"
+        ],
+        "ignore_patterns": []
+      },
+      "success_criteria": [
+        {
+          "type": "command_executed",
+          "description": "Agent read element executions with folder context",
+          "weight": 1.5,
+          "pass_threshold": 1.0,
+          "suite_thresholds": null,
+          "stop_when": null,
+          "tool_name": "Bash",
+          "command_pattern": "(uip|\\$UIP)\\s+maestro\\s+bpmn\\s+instance\\s+element-executions\\s+inst-triage-001\\b.*folder-public",
+          "min_count": 1,
+          "max_count": null,
+          "require_success": false,
+          "exclude_pattern": null
+        },
+        {
+          "type": "command_executed",
+          "description": "Agent read cursors with folder context",
+          "weight": 1.5,
+          "pass_threshold": 1.0,
+          "suite_thresholds": null,
+          "stop_when": null,
+          "tool_name": "Bash",
+          "command_pattern": "(uip|\\$UIP)\\s+maestro\\s+bpmn\\s+instance\\s+cursors\\s+inst-triage-001\\b.*folder-public",
+          "min_count": 1,
+          "max_count": null,
+          "require_success": false,
+          "exclude_pattern": null
+        },
+        {
+          "type": "file_contains",
+          "description": "Diagnosis names the stuck gateway and the missing-default root cause",
+          "weight": 3.0,
+          "pass_threshold": 1.0,
+          "suite_thresholds": null,
+          "stop_when": null,
+          "path": "diagnosis.md",
+          "includes": [
+            "STUCK_ELEMENT: Gw_ApprovalRoute",
+            "default"
+          ],
+          "excludes": null
+        }
+      ],
+      "run_limits": {
+        "max_turns": 40,
+        "expected_turns": 16,
+        "task_timeout": 900,
+        "turn_timeout": 900,
+        "max_input_tokens": null,
+        "max_output_tokens": null,
+        "max_total_tokens": null,
+        "max_usd": null,
+        "count_cached_input": false,
+        "count_cache_creation": false,
+        "stop_early": false
+      },
+      "reference": null,
+      "expected_commands": null,
+      "pre_run": [],
+      "post_run": [
+        {
+          "command": "find . -maxdepth 5 -type d \\( -name node_modules -o -name .npm-prefix -o -name .venv \\) -prune -exec rm -rf {} +",
+          "timeout": 30
+        }
+      ],
+      "dataset": null,
+      "suite_id": null,
+      "row_id": null,
+      "simulation": null
+    },
+    "source_yaml": "task_id: skill-bpmn-diagnose-stuck-gateway\ndescription: >\n  Diagnose coverage for the uipath-maestro-bpmn skill: a BPMN run is stuck (not\n  faulted) at an exclusive gateway. The agent reads element-executions and\n  cursors, identifies the blocking element, and explains why the token cannot\n  advance (no outgoing condition matched and no default flow). Read-only mocked\n  CLI; no lifecycle mutations.\ntags: [uipath-maestro-bpmn, integration, \"mode:diagnose\", \"lifecycle:discover\"]\n\nrun_limits:\n  expected_turns: 16\n  max_turns: 40\n\nsandbox:\n  template_sources:\n    - type: template_dir\n      path: ../../../../../skills/uipath-maestro-bpmn\n    - type: template_dir\n      path: ../../_shared/mock_template\n    - type: template_dir\n      path: fixtures\n  mock_path_dirs:\n    - mocks\n\ninitial_prompt: |\n  A UiPath Maestro BPMN run is stuck: it never faulted and never completed. It\n  is parked mid-flow. Diagnose it using the mocked `uip` CLI already on PATH.\n  Public-safe identifiers:\n  - instance id: inst-triage-001\n  - folder key: folder-public\n\n  Use element executions and cursors to find where the runtime stopped and why\n  the token cannot move forward.\n\n  Write your conclusion to diagnosis.md. Include these EXACT labeled lines:\n    STUCK_ELEMENT: <the element id where the run is blocked>\n    STUCK_REASON: <one line naming why it cannot advance>\n  The reason must state that no outgoing condition matched and the gateway has\n  no default flow.\n\n  Use `uip maestro bpmn ...` reads with folder context; do not read `mocks/`,\n  `fixtures/`, or any response JSON files directly. Do NOT retry, cancel,\n  migrate, move a cursor, debug, run, upload, publish, or deploy anything.\n\nsuccess_criteria:\n  - type: command_executed\n    description: \"Agent read element executions with folder context\"\n    tool_name: \"Bash\"\n    command_pattern: '(uip|\\$UIP)\\s+maestro\\s+bpmn\\s+instance\\s+element-executions\\s+inst-triage-001\\b.*folder-public'\n    min_count: 1\n    weight: 1.5\n    pass_threshold: 1.0\n\n  - type: command_executed\n    description: \"Agent read cursors with folder context\"\n    tool_name: \"Bash\"\n    command_pattern: '(uip|\\$UIP)\\s+maestro\\s+bpmn\\s+instance\\s+cursors\\s+inst-triage-001\\b.*folder-public'\n    min_count: 1\n    weight: 1.5\n    pass_threshold: 1.0\n\n  - type: file_contains\n    description: \"Diagnosis names the stuck gateway and the missing-default root cause\"\n    path: \"diagnosis.md\"\n    includes:\n      - \"STUCK_ELEMENT: Gw_ApprovalRoute\"\n      - \"default\"\n    weight: 3.0\n    pass_threshold: 1.0\n",
+    "source_file": "/home/azureuser/projects/skills/tmp/experiments/tasks/uipath-maestro-bpmn/diagnose/stuck_gateway/task.yaml",
+    "lineage": {
+      "agent.type": {
+        "value": "claude-code",
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.permission_mode": {
+        "value": "acceptEdits",
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.model": {
+        "value": "claude-sonnet-4-6",
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.allowed_tools": {
+        "value": [
+          "Skill",
+          "Bash",
+          "Read",
+          "Write",
+          "Edit",
+          "Glob",
+          "Grep"
+        ],
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.plugins": {
+        "value": [
+          {
+            "type": "local",
+            "path": "/home/azureuser/projects/skills/tmp/"
+          }
+        ],
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.ignore_patterns": {
+        "value": [],
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.system_prompt": {
+        "value": "You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted.\n",
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "run_limits.max_turns": {
+        "value": 40,
+        "source": "task",
+        "source_detail": null
+      },
+      "run_limits.task_timeout": {
+        "value": 900,
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "run_limits.turn_timeout": {
+        "value": 900,
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "run_limits.expected_turns": {
+        "value": 16,
+        "source": "task",
+        "source_detail": null
+      },
+      "sandbox.driver": {
+        "value": "docker",
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "sandbox.docker": {
+        "value": {
+          "image": "skills-image:latest",
+          "env_passthrough_extra": [
+            "SKILLS_REPO_PATH",
+            "BEDROCK_MODEL",
+            "TASK_PARALLELISM",
+            "UIPATH_CLI_ENABLE_ENV_AUTH",
+            "UIPATH_CLI_AUTH_TOKEN",
+            "UIPATH_CLI_ORGANIZATION_NAME",
+            "UIPATH_CLI_ORGANIZATION_ID",
+            "UIPATH_CLI_TENANT_NAME",
+            "UIPATH_CLI_TENANT_ID",
+            "TRACES_SMOKE_PROCESS_KEY",
+            "CODEX_API_KEY",
+            "CODEX_BASE_URL"
+          ],
+          "extra_mounts": [
+            "~/.uipath:/.uipath:rw"
+          ]
+        },
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "sandbox.mock_path_dirs": {
+        "value": [
+          "mocks"
+        ],
+        "source": "task",
+        "source_detail": null
+      },
+      "sandbox.template_sources": {
+        "value": [
+          {
+            "type": "template_dir",
+            "path": "/home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn"
+          },
+          {
+            "type": "template_dir",
+            "path": "/home/azureuser/projects/skills/tmp/experiments/tasks/uipath-maestro-bpmn/_shared/mock_template"
+          },
+          {
+            "type": "template_dir",
+            "path": "/home/azureuser/projects/skills/tmp/experiments/tasks/uipath-maestro-bpmn/diagnose/stuck_gateway/fixtures"
+          }
+        ],
+        "source": "task",
+        "source_detail": null
+      },
+      "repeats": {
+        "value": 5,
+        "source": "cli",
+        "source_detail": null
+      }
+    }
+  },
+  "command_stats": {
+    "total_commands": 12,
+    "commands_by_tool": {
+      "Skill": 1,
+      "Read": 2,
+      "Bash": 8,
+      "Write": 1
+    },
+    "total_command_time_ms": 4233.658777200617,
+    "avg_command_time_ms": 352.8048981000514,
+    "slowest_commands": [
+      {
+        "tool": "Bash",
+        "duration_ms": 1571.7681950191036,
+        "parameters": {
+          "command": "uip maestro bpmn instance incidents inst-triage-001 -f folder-public --output json 2>&1 > /tmp/incidents.json; echo \"EXIT:$?\"",
+          "description": "Fetch incidents for the stuck instance"
+        },
+        "tool_id": "toolu_bdrk_014F1ZLp5Mvp3t4rSyQqqSX9"
+      },
+      {
+        "tool": "Bash",
+        "duration_ms": 1048.729800968431,
+        "parameters": {
+          "command": "uip maestro bpmn instance element-executions inst-triage-001 -f folder-public --output json 2>&1 > /tmp/elem_exec.json; echo \"EXIT:$?\"",
+          "description": "Fetch element executions for the stuck instance"
+        },
+        "tool_id": "toolu_bdrk_01P7fLTeAzvAagdR8WJGk6ts"
+      },
+      {
+        "tool": "Bash",
+        "duration_ms": 601.4888510107994,
+        "parameters": {
+          "command": "uip maestro bpmn instance cursors inst-triage-001 -f folder-public --output json 2>&1 > /tmp/cursors.json; echo \"EXIT:$?\"",
+          "description": "Fetch cursors for the stuck instance"
+        },
+        "tool_id": "toolu_bdrk_013fY6qVfgHMYeGYoa65884m"
+      },
+      {
+        "tool": "Bash",
+        "duration_ms": 389.5451690768823,
+        "parameters": {
+          "command": "cat /tmp/elem_exec.json",
+          "description": "Read element executions output"
+        },
+        "tool_id": "toolu_bdrk_01DpKKveV3itWweHsUi81vGU"
+      },
+      {
+        "tool": "Bash",
+        "duration_ms": 239.78468403220177,
+        "parameters": {
+          "command": "uip maestro bpmn instance variables inst-triage-001 -f folder-public --output json 2>&1 > /tmp/vars.json; python3 -c \"import json; d=json.load(open('/tmp/vars.json')); print([v for v in d if 'risk' in str(v).lower()])\"",
+          "description": "Get riskScore variable"
+        },
+        "tool_id": "toolu_bdrk_017tD7MTuPnRkJqyyfsgjeeS"
+      }
+    ],
+    "successful_commands": 11,
+    "failed_commands": 1,
+    "unknown_commands": 0,
+    "success_rate": 91.66666666666666,
+    "most_common_sequence": "Bash → Bash → Bash"
+  },
+  "total_token_usage": {
+    "uncached_input_tokens": 565,
+    "output_tokens": 5934,
+    "cache_creation_input_tokens": 12325,
+    "cache_read_input_tokens": 269737,
+    "total_cost_usd": 0.21784484999999998,
+    "input_tokens": 282627
+  },
+  "total_assistant_turns": 21,
+  "expected_commands": null,
+  "actual_commands": 12,
+  "commands_efficiency": null,
+  "pre_run_results": [],
+  "post_run_results": [
+    {
+      "command": "find . -maxdepth 5 -type d \\( -name node_modules -o -name .npm-prefix -o -name .venv \\) -prune -exec rm -rf {} +",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "",
+      "duration_seconds": 0.0032961368560791016,
+      "error": null
+    }
+  ],
+  "simulation": null,
+  "early_stop": null
+}

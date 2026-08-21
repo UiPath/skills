@@ -1,0 +1,222 @@
+{
+  "version": "1.0",
+  "id": "ec2cfacb-8555-41f4-bc80-44535f9d8fd1",
+  "name": "Invoice Parsing Smoke Test",
+  "evaluatorRefs": [
+    "invoice-fields-check-f2c09d9f.json"
+  ],
+  "evaluations": [
+    {
+      "id": "03be1436-4659-449c-9304-86535b1a9fef",
+      "name": "acme-tech-invoice",
+      "inputs": {},
+      "expectedOutput": {
+        "extractedData": {
+          "invoiceNumber": "INV-2024-0042",
+          "invoiceDate": "2024-03-15",
+          "dueDate": "2024-04-14",
+          "poNumber": "PO-8891",
+          "paymentTerms": "Net 30",
+          "currency": "USD",
+          "vendorName": "Acme Technologies Inc.",
+          "vendorAddress": "123 Innovation Drive, San Jose, CA 95110",
+          "vendorEmail": "billing@acmetech.com",
+          "billToName": "Contoso Corp",
+          "billToAddress": "456 Enterprise Blvd, Austin, TX 78701",
+          "subtotal": "4750.00",
+          "taxRate": "8.25%",
+          "taxAmount": "391.88",
+          "totalDue": "5141.88"
+        }
+      },
+      "evaluationCriterias": {
+        "invoice-fields-check-f2c09d9f": {
+          "expectedOutput": {
+            "extractedData": {
+              "invoiceNumber": "INV-2024-0042",
+              "invoiceDate": "2024-03-15",
+              "dueDate": "2024-04-14",
+              "poNumber": "PO-8891",
+              "paymentTerms": "Net 30",
+              "currency": "USD",
+              "vendorName": "Acme Technologies Inc.",
+              "vendorAddress": "123 Innovation Drive, San Jose, CA 95110",
+              "vendorEmail": "billing@acmetech.com",
+              "billToName": "Contoso Corp",
+              "billToAddress": "456 Enterprise Blvd, Austin, TX 78701",
+              "subtotal": "4750.00",
+              "taxRate": "8.25%",
+              "taxAmount": "391.88",
+              "totalDue": "5141.88"
+            }
+          }
+        }
+      },
+      "createdAt": "2026-07-24T17:36:00.277Z",
+      "updatedAt": "2026-07-24T17:36:39.741Z",
+      "simulations": [
+        {
+          "componentId": "newInvoiceInSharepoint1",
+          "componentType": "connector",
+          "componentDescription": "SharePoint File Created trigger — mocked file reference",
+          "simulationStrategy": "Static",
+          "mockValue": {
+            "ReferenceID": "01ZQOZ3CROCP6UGVC34BC3VYM7R3ZIIXVV - 01SAMPLE1FILEID2FOR3EVAL4TESTING",
+            "FullName": "invoice_acme_tech_001.pdf",
+            "Extension": "pdf",
+            "MIMEType": "application/pdf",
+            "ParentID": "01ZQOZ3CROCP6UGVC34BC3VYM7R3ZIIXVV",
+            "ParentDriveID": "b!NqflADV1F0OyTPKj8kXJf9qob1-JXAtJovOyZmUVjnp3MSH5K3ABSIKgQEloSUDs",
+            "URL": "https://uipathstaging-my.sharepoint.com/personal/officeactivities1_uipathstaging_onmicrosoft_com/Documents/New%20Vendor/invoice_acme_tech_001.pdf",
+            "Type": "file",
+            "isFolder": "false"
+          }
+        },
+        {
+          "componentId": "extractInvoice",
+          "componentType": "connector",
+          "componentDescription": "IXP extraction node — mocked invoice fields",
+          "simulationStrategy": "Static",
+          "mockValue": {
+            "ExtractionResult": {
+              "DocumentId": "eval-doc-001",
+              "ResultsVersion": 1,
+              "ResultsDocument": {
+                "Language": "en",
+                "DocumentGroup": "Financial",
+                "DocumentCategory": "Invoice",
+                "DocumentTypeId": "invoice",
+                "DocumentTypeName": "Invoice",
+                "Fields": [
+                  {
+                    "FieldName": "Invoice Number",
+                    "Values": [
+                      "INV-2024-0042"
+                    ],
+                    "IsMissing": false
+                  },
+                  {
+                    "FieldName": "Invoice Date",
+                    "Values": [
+                      "2024-03-15"
+                    ],
+                    "IsMissing": false
+                  },
+                  {
+                    "FieldName": "Due Date",
+                    "Values": [
+                      "2024-04-14"
+                    ],
+                    "IsMissing": false
+                  },
+                  {
+                    "FieldName": "PO Number",
+                    "Values": [
+                      "PO-8891"
+                    ],
+                    "IsMissing": false
+                  },
+                  {
+                    "FieldName": "Payment Terms",
+                    "Values": [
+                      "Net 30"
+                    ],
+                    "IsMissing": false
+                  },
+                  {
+                    "FieldName": "Currency",
+                    "Values": [
+                      "USD"
+                    ],
+                    "IsMissing": false
+                  },
+                  {
+                    "FieldName": "Vendor Name",
+                    "Values": [
+                      "Acme Technologies Inc."
+                    ],
+                    "IsMissing": false
+                  },
+                  {
+                    "FieldName": "Vendor Address",
+                    "Values": [
+                      "123 Innovation Drive, San Jose, CA 95110"
+                    ],
+                    "IsMissing": false
+                  },
+                  {
+                    "FieldName": "Vendor Email",
+                    "Values": [
+                      "billing@acmetech.com"
+                    ],
+                    "IsMissing": false
+                  },
+                  {
+                    "FieldName": "Bill-To Name",
+                    "Values": [
+                      "Contoso Corp"
+                    ],
+                    "IsMissing": false
+                  },
+                  {
+                    "FieldName": "Bill-To Address",
+                    "Values": [
+                      "456 Enterprise Blvd, Austin, TX 78701"
+                    ],
+                    "IsMissing": false
+                  },
+                  {
+                    "FieldName": "Subtotal",
+                    "Values": [
+                      "4750.00"
+                    ],
+                    "IsMissing": false
+                  },
+                  {
+                    "FieldName": "Tax Rate",
+                    "Values": [
+                      "8.25%"
+                    ],
+                    "IsMissing": false
+                  },
+                  {
+                    "FieldName": "Tax Amount",
+                    "Values": [
+                      "391.88"
+                    ],
+                    "IsMissing": false
+                  },
+                  {
+                    "FieldName": "Total Due",
+                    "Values": [
+                      "5141.88"
+                    ],
+                    "IsMissing": false
+                  }
+                ],
+                "Tables": []
+              }
+            }
+          }
+        },
+        {
+          "componentId": "postInvoiceToSap1",
+          "componentType": "connector",
+          "componentDescription": "SAP HTTP POST — mocked success response",
+          "simulationStrategy": "Static",
+          "mockValue": {
+            "statusCode": 201,
+            "body": {
+              "id": "SAP-DOC-2024-0042",
+              "status": "created"
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "selectedEntrypoint": "newInvoiceInSharepoint1",
+  "fileName": "evaluation-set-invoice-parsing-smoke-test-ec2cfacb.json",
+  "createdAt": "2026-07-24T17:35:13.735Z",
+  "updatedAt": "2026-07-24T17:36:39.741Z"
+}

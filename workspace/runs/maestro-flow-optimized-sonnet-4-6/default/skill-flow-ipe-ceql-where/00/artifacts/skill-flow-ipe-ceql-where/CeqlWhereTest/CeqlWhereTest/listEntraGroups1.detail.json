@@ -1,0 +1,27 @@
+{
+  "_comment": "Planned --detail payload for: uip maestro flow node configure CeqlWhereTest.flow listEntraGroups1 --detail \"$(cat listEntraGroups1.detail.json)\"",
+  "_connector_key": "uipath-microsoft-azureactivedirectory",
+  "_node_type": "uipath.connector.uipath-microsoft-azureactivedirectory.list-groups",
+  "connectionId": "<CONNECTION_UUID>",
+  "folderKey": "<FOLDER_KEY>",
+  "method": "GET",
+  "endpoint": "/groups",
+  "filter": {
+    "logicalOperator": "AND",
+    "groups": [
+      {
+        "logicalOperator": "AND",
+        "rules": [
+          {
+            "fieldId": "displayName",
+            "operator": "=",
+            "value": {
+              "value": "active",
+              "isLiteral": true
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

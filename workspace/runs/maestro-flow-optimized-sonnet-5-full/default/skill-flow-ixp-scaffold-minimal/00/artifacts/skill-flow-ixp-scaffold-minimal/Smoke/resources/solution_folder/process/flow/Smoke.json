@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "Smoke",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "93454507-c6ba-4a6f-86c8-0b116fbed85c",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "Smoke"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Flow",
+      "name": "Smoke",
+      "package": {
+        "key": "9ccdb0da-1849-4675-be88-1fb23768fa48"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "bbe909f4-c4ba-4c8f-9bc0-809ef6fd3408",
+    "files": []
+  }
+}

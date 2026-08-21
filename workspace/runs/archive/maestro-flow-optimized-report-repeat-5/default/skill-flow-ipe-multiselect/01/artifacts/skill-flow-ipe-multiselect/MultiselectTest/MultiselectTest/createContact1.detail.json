@@ -1,0 +1,14 @@
+{
+  "_comment": "Planned configuration for createContact1 (uipath-act-act365 Create Contact). Run `uip maestro flow node configure MultiselectTest.flow createContact1 --detail \"$(cat createContact1.detail.json | python3 -c 'import json,sys; d=json.load(sys.stdin); del d[\"_comment\"]; print(json.dumps(d))')\" --output json` after creating an Act! 365 connection in Integration Service.",
+  "connectionId": "<REPLACE_WITH_CONNECTION_UUID>",
+  "folderKey": "<REPLACE_WITH_FOLDER_KEY>",
+  "method": "POST",
+  "endpoint": "/CuratedContacts",
+  "bodyParameters": {
+    "firstName": "Test",
+    "lastName": "Contact",
+    "emailAddress": "test.contact@example.com",
+    "company": "Acme Corp",
+    "groups": ["Alpha Team", "Beta Group", "Gamma Circle"]
+  }
+}

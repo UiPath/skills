@@ -1,0 +1,33 @@
+{
+  "$schema": "https://cloud.uipath.com/draft/2024-12/entry-point",
+  "$id": "entry-points.json",
+  "entryPoints": [
+    {
+      "filePath": "/content/BusinessRuleDecision.bpmn#Start_ManualEntry",
+      "uniqueId": "4acb66c9-7f4e-4897-a061-03d745cc405e",
+      "type": "ProcessOrchestration",
+      "input": {
+        "type": "object",
+        "properties": {
+          "ApplicantScore": {
+            "type": "number"
+          },
+          "RequestedAmount": {
+            "type": "number"
+          }
+        }
+      },
+      "output": {
+        "type": "object",
+        "properties": {
+          "RuleOutcome": {
+            "type": "string"
+          },
+          "RuleReason": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,35 @@
+2026-08-19 15:41:49 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-08-19 15:41:49 [INFO] coder_eval.orchestrator: API routing: aws_bedrock
+2026-08-19 15:41:49 [DEBUG] coder_eval.criteria: Discovered 15 criterion checkers
+2026-08-19 15:41:49 [DEBUG] coder_eval.criteria: Validated 15 criterion checkers
+2026-08-19 15:41:49 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-08-19 15:41:49 [INFO] coder_eval.orchestrator: Running pre-run command: python3 $EXPERIMENT_TASKS_PATH/uipath-maestro-flow/e2e/jira_get_issue/seed_jira.py
+2026-08-19 15:41:53 [INFO] coder_eval.orchestrator: [pre_run stdout] OK: seeded live issue CE-675 (summary='coder-eval jira flow e2e 934e9d9b')
+2026-08-19 15:41:53 [DEBUG] coder_eval.orchestrator: Sending prompt: Create a new Flow project called "JiraGetIssue" with a manual trigger.
+It should read a single Jira ...
+2026-08-19 15:41:53 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Starting agent query stream...
+2026-08-19 15:48:24 [DEBUG] coder_eval.agents.claude_code_agent: [coder] session_id changed: None -> 80d80454-28c2-46a7-a04c-d547a80d8dc1
+2026-08-19 15:48:24 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Agent query stream ended
+2026-08-19 15:48:24 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-08-19 15:48:24 [DEBUG] coder_eval.orchestrator: Agent response received (3916 chars)
+2026-08-19 15:48:24 [DEBUG] coder_eval.orchestrator: Checking success criteria
+2026-08-19 15:48:24 [DEBUG] coder_eval.evaluation.checker: Criterion 'command_executed' score: 1.00
+2026-08-19 15:48:24 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'JiraGetIssue checks: valid flow with Jira Get-Issue node referencing the seeded key, debug completes, and outputs carry the seeded summary': python3 $TASK_DIR/check_jira_get_issue.py
+2026-08-19 15:48:47 [DEBUG] coder_eval.sandbox: Command 'python3 $TASK_DIR/check_jira_get_issue.py' exited with code 0
+2026-08-19 15:48:47 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+OK: flow references uipath-atlassian-jira
+OK: flow references a Get-Issue op and the seeded key CE-675
+OK: flow debug completed
+OK: flow outputs contain the seeded issue summary
+PASS: all JiraGetIssue checks passed
+---
+2026-08-19 15:48:47 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-08-19 15:48:47 [INFO] coder_eval.orchestrator: Success criteria: 2/2 passed, weighted score: 1.000
+2026-08-19 15:48:47 [WARNING] coder_eval.orchestrator: Visible turns (45) exceeded expected_turns (40) at iteration 1 for task skill-flow-ipe-jira-get-issue. Run continues — max_turns remains the hard cap.
+2026-08-19 15:48:47 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-08-19 15:48:47 [INFO] coder_eval.orchestrator: Running post-run command: python3 $EXPERIMENT_TASKS_PATH/uipath-maestro-flow/e2e/jira_get_issue/teardown_jira.py
+2026-08-19 15:48:49 [INFO] coder_eval.orchestrator: [post_run stdout] OK: deleted CE-675
+2026-08-19 15:48:49 [INFO] coder_eval.orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+2026-08-19 15:48:49 [INFO] coder_eval.orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-ipe-jira-get-issue
+2026-08-19 15:48:49 [INFO] coder_eval.orchestrator: Task finished: status=SUCCESS duration=421.5s score=1.000 iterations=1

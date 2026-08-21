@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+        <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:uipath="http://uipath.org/schema/bpmn" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="sample-diagram" targetNamespace="http://bpmn.io/schema/bpmn">
+          <bpmn:error id="Error_Specific" name="SpecificError" errorCode="1001"/>
+          <bpmn:process id="Process_1" isExecutable="true">
+            <bpmn:extensionElements>
+              <uipath:bindings version="v1">
+                <uipath:binding id="bXLQ9136S" name="releaseKey" type="string" default="E360463F-AC40-4C05-B9E8-795F616894F8" resource="process" resourceKey="E360463F-AC40-4C05-B9E8-795F616894F8" propertyAttribute="Key"/>
+              </uipath:bindings>
+            </bpmn:extensionElements>
+            <bpmn:startEvent id="Event_Start">
+              <bpmn:extensionElements>
+                <uipath:entryPointId value="84c06be4-0cd2-438a-9b38-6be5de3e49a1"/>
+              </bpmn:extensionElements>
+              <bpmn:outgoing>flow1</bpmn:outgoing>
+            </bpmn:startEvent>
+            <bpmn:serviceTask id="Activity_Failing">
+              <bpmn:extensionElements>
+                <uipath:activity version="v1">
+                  <uipath:type value="Orchestrator.StartJob" version="v1"/>
+                  <uipath:context>
+                    <uipath:input name="releaseKey" type="string" value="=bindings.bXLQ9136S"/>
+                    <uipath:input name="name" type="string" value="TestJob"/>
+                    <uipath:input name="folderId" type="string" value="1543099"/>
+                  </uipath:context>
+                </uipath:activity>
+              </bpmn:extensionElements>
+              <bpmn:incoming>flow1</bpmn:incoming>
+              <bpmn:outgoing>flow2</bpmn:outgoing>
+            </bpmn:serviceTask>
+            <bpmn:endEvent id="Event_NormalEnd">
+              <bpmn:incoming>flow2</bpmn:incoming>
+            </bpmn:endEvent>
+            <bpmn:subProcess id="Activity_ErrorHandler" triggeredByEvent="true">
+              <bpmn:startEvent id="Event_ErrorStart" isInterrupting="true">
+                <bpmn:outgoing>flow3</bpmn:outgoing>
+                <bpmn:errorEventDefinition errorRef="Error_Specific"/>
+              </bpmn:startEvent>
+              <bpmn:endEvent id="Event_ErrorEnd">
+                <bpmn:incoming>flow3</bpmn:incoming>
+              </bpmn:endEvent>
+              <bpmn:sequenceFlow id="flow3" sourceRef="Event_ErrorStart" targetRef="Event_ErrorEnd"/>
+            </bpmn:subProcess>
+            <bpmn:sequenceFlow id="flow1" sourceRef="Event_Start" targetRef="Activity_Failing"/>
+            <bpmn:sequenceFlow id="flow2" sourceRef="Activity_Failing" targetRef="Event_NormalEnd"/>
+          </bpmn:process>
+        </bpmn:definitions>

@@ -1,0 +1,6 @@
+{
+  "Name": "CustomerSupportEmailTriage",
+  "ProjectType": "Process",
+  "Description": "Automatically reads, classifies, and routes incoming customer support emails by category and priority",
+  "MainFile": "Main.xaml"
+}

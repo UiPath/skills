@@ -1,0 +1,7 @@
+{"ts": 1786753882.9453151, "args": "track", "matched_rule": null, "fixture": null, "exit_code": 0, "error": "unmocked_default"}
+{"ts": 1786753886.6685522, "args": "track", "matched_rule": null, "fixture": null, "exit_code": 0, "error": "unmocked_default"}
+{"ts": 1786753899.4740303, "args": "maestro bpmn debug ./OrderApproval --input {\"orderId\": \"ORD-9001\", \"amount\": 1875} --output json", "matched_rule": "maestro bpmn debug ", "fixture": "debug-run.json", "exit_code": 0}
+{"ts": 1786753900.3972976, "args": "track", "matched_rule": null, "fixture": null, "exit_code": 0, "error": "unmocked_default"}
+{"ts": 1786753902.9901779, "args": "maestro bpmn debug-instance variables debug-run-042 --output json", "matched_rule": "maestro bpmn debug-instance variables debug-run-042", "fixture": "debug-variables.json", "exit_code": 0}
+{"ts": 1786753903.4414139, "args": "track", "matched_rule": null, "fixture": null, "exit_code": 0, "error": "unmocked_default"}
+{"ts": 1786753913.3577037, "args": "--version", "matched_rule": null, "fixture": null, "exit_code": 0, "error": "unmocked_default"}

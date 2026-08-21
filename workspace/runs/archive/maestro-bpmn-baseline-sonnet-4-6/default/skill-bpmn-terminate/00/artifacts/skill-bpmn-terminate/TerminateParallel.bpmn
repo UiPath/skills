@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+    xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+    xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+    xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+    xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:uipath="http://uipath.org/schema/bpmn"
+    id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn"
+    exporter="UiPath (https://bpmn.uipath.com)" exporterVersion="1.0">
+
+  <bpmn:process id="Process_1" isExecutable="true">
+    <bpmn:extensionElements>
+      <uipath:migrationVersion version="11.5" />
+      <uipath:variables version="v1">
+        <uipath:inputOutput id="Var_Result" name="Result" type="string" />
+      </uipath:variables>
+    </bpmn:extensionElements>
+
+    <!-- Start event -->
+    <bpmn:startEvent id="Start_1" name="Start">
+      <bpmn:outgoing>Flow_Start_Fork</bpmn:outgoing>
+    </bpmn:startEvent>
+
+    <!-- Parallel fork gateway: one in, two out -->
+    <bpmn:parallelGateway id="Gw_Fork" name="Fork">
+      <bpmn:incoming>Flow_Start_Fork</bpmn:incoming>
+      <bpmn:outgoing>Flow_Fork_BranchA</bpmn:outgoing>
+      <bpmn:outgoing>Flow_Fork_BranchB</bpmn:outgoing>
+    </bpmn:parallelGateway>
+
+    <!-- Branch A: goes directly to a terminate end event -->
+    <bpmn:endEvent id="End_Terminate" name="Terminate Instance">
+      <bpmn:incoming>Flow_Fork_BranchA</bpmn:incoming>
+      <bpmn:terminateEventDefinition />
+    </bpmn:endEvent>
+
+    <!-- Branch B: runs a task then reaches a normal end event -->
+    <bpmn:scriptTask id="Task_BranchB" name="Branch B Work" scriptFormat="JavaScript">
+      <bpmn:extensionElements>
+        <uipath:scriptVersion value="v3" />
+        <uipath:mapping version="v1">
+          <uipath:type value="BPMN.ScriptTask" version="v1" />
+          <uipath:input name="args" type="json" target="bodyField"><![CDATA[{}]]></uipath:input>
+          <uipath:output name="result" type="string" var="Var_Result" source="=result.response" />
+        </uipath:mapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_Fork_BranchB</bpmn:incoming>
+      <bpmn:outgoing>Flow_BranchB_End</bpmn:outgoing>
+      <bpmn:script><![CDATA[return { response: "branch-b-complete" };]]></bpmn:script>
+    </bpmn:scriptTask>
+
+    <!-- Branch B normal (none) end event -->
+    <bpmn:endEvent id="End_Normal" name="End">
+      <bpmn:incoming>Flow_BranchB_End</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <!-- Sequence flows -->
+    <bpmn:sequenceFlow id="Flow_Start_Fork"  sourceRef="Start_1"    targetRef="Gw_Fork"      />
+    <bpmn:sequenceFlow id="Flow_Fork_BranchA" sourceRef="Gw_Fork"   targetRef="End_Terminate" />
+    <bpmn:sequenceFlow id="Flow_Fork_BranchB" sourceRef="Gw_Fork"   targetRef="Task_BranchB" />
+    <bpmn:sequenceFlow id="Flow_BranchB_End"  sourceRef="Task_BranchB" targetRef="End_Normal" />
+  </bpmn:process>
+
+  <bpmndi:BPMNDiagram id="Diagram_1">
+    <bpmndi:BPMNPlane id="Plane_1" bpmnElement="Process_1">
+
+      <!-- Start event: x=160 y=200 (center y=218) -->
+      <bpmndi:BPMNShape id="S_Start_1" bpmnElement="Start_1">
+        <dc:Bounds x="160" y="200" width="36" height="36" />
+      </bpmndi:BPMNShape>
+
+      <!-- Parallel fork gateway: x=260 y=193 (center y=218) -->
+      <bpmndi:BPMNShape id="S_Gw_Fork" bpmnElement="Gw_Fork">
+        <dc:Bounds x="260" y="193" width="50" height="50" />
+      </bpmndi:BPMNShape>
+
+      <!-- Branch A terminate end event: x=400 y=100 (center y=118) -->
+      <bpmndi:BPMNShape id="S_End_Terminate" bpmnElement="End_Terminate">
+        <dc:Bounds x="400" y="100" width="36" height="36" />
+      </bpmndi:BPMNShape>
+
+      <!-- Branch B script task: x=380 y=258 -->
+      <bpmndi:BPMNShape id="S_Task_BranchB" bpmnElement="Task_BranchB">
+        <dc:Bounds x="380" y="258" width="100" height="80" />
+      </bpmndi:BPMNShape>
+
+      <!-- Branch B normal end event: x=540 y=280 (center y=298) -->
+      <bpmndi:BPMNShape id="S_End_Normal" bpmnElement="End_Normal">
+        <dc:Bounds x="540" y="280" width="36" height="36" />
+      </bpmndi:BPMNShape>
+
+      <!-- Edge: Start -> Fork -->
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_Start_Fork" bpmnElement="Flow_Start_Fork">
+        <di:waypoint x="196" y="218" />
+        <di:waypoint x="260" y="218" />
+      </bpmndi:BPMNEdge>
+
+      <!-- Edge: Fork -> Branch A terminate end -->
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_Fork_BranchA" bpmnElement="Flow_Fork_BranchA">
+        <di:waypoint x="285" y="193" />
+        <di:waypoint x="285" y="118" />
+        <di:waypoint x="400" y="118" />
+      </bpmndi:BPMNEdge>
+
+      <!-- Edge: Fork -> Branch B task -->
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_Fork_BranchB" bpmnElement="Flow_Fork_BranchB">
+        <di:waypoint x="285" y="243" />
+        <di:waypoint x="285" y="298" />
+        <di:waypoint x="380" y="298" />
+      </bpmndi:BPMNEdge>
+
+      <!-- Edge: Branch B task -> normal end -->
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_BranchB_End" bpmnElement="Flow_BranchB_End">
+        <di:waypoint x="480" y="298" />
+        <di:waypoint x="540" y="298" />
+      </bpmndi:BPMNEdge>
+
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

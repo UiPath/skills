@@ -1,0 +1,8 @@
+21:00:30 [INFO   ] [default/skill-flow-outlook-waitfor-email/04] orchestrator: API routing: aws_bedrock
+21:05:24 [INFO   ] [default/skill-flow-outlook-waitfor-email/04] orchestrator: Success criteria: 2/2 passed, weighted score: 1.000
+21:05:24 [INFO   ] [default/skill-flow-outlook-waitfor-email/04] orchestrator: Running post-run command: python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/cleanup_solutions.py
+21:05:26 [WARNING] [default/skill-flow-outlook-waitfor-email/04] orchestrator: [post_run stderr] cleanup_solutions: solution 879cac42-0258-41e8-8066-20ad65ee4c6b not uploaded (from OutlookWaitForEmail/OutlookWaitForEmail.uipx); nothing to clean up
+21:05:26 [WARNING] [default/skill-flow-outlook-waitfor-email/04] orchestrator: [post_run stderr] cleanup_solutions: summary policy=always deleted=0 preserved=0 skipped=0 not_uploaded=1 failed=0
+21:05:26 [INFO   ] [default/skill-flow-outlook-waitfor-email/04] orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+21:05:26 [INFO   ] [default/skill-flow-outlook-waitfor-email/04] orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-outlook-waitfor-email
+21:05:26 [INFO   ] [default/skill-flow-outlook-waitfor-email/04] orchestrator: Task finished: status=SUCCESS duration=299.6s score=1.000 iterations=1

@@ -1,0 +1,5 @@
+04:49:31 [INFO   ] [default/skill-bpmn-diagnose-deployed-drift/02] orchestrator: API routing: aws_bedrock
+04:50:03 [INFO   ] [default/skill-bpmn-diagnose-deployed-drift/02] orchestrator: Success criteria: 2/2 passed, weighted score: 1.000
+04:50:03 [INFO   ] [default/skill-bpmn-diagnose-deployed-drift/02] orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+04:50:03 [INFO   ] [default/skill-bpmn-diagnose-deployed-drift/02] orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-bpmn-diagnose-deployed-drift
+04:50:03 [INFO   ] [default/skill-bpmn-diagnose-deployed-drift/02] orchestrator: Task finished: status=SUCCESS duration=33.8s score=1.000 iterations=1

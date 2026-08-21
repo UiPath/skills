@@ -1,0 +1,8 @@
+18:04:19 [INFO   ] [default/skill-flow-devcon-billing-resolution-writer/03] orchestrator: API routing: aws_bedrock
+18:09:03 [INFO   ] [default/skill-flow-devcon-billing-resolution-writer/03] orchestrator: Success criteria: 2/2 passed, weighted score: 1.000
+18:09:03 [INFO   ] [default/skill-flow-devcon-billing-resolution-writer/03] orchestrator: Running post-run command: python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/cleanup_solutions.py
+18:09:04 [WARNING] [default/skill-flow-devcon-billing-resolution-writer/03] orchestrator: [post_run stderr] cleanup_solutions: deleted d7ec32ab-5a86-478f-4e26-08dee9abf020 (from BillingResolutionWriter/BillingResolutionWriter.uipx)
+18:09:04 [WARNING] [default/skill-flow-devcon-billing-resolution-writer/03] orchestrator: [post_run stderr] cleanup_solutions: summary policy=always deleted=1 preserved=0 skipped=0 not_uploaded=0 failed=0
+18:09:04 [INFO   ] [default/skill-flow-devcon-billing-resolution-writer/03] orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+18:09:04 [INFO   ] [default/skill-flow-devcon-billing-resolution-writer/03] orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-devcon-billing-resolution-writer
+18:09:04 [INFO   ] [default/skill-flow-devcon-billing-resolution-writer/03] orchestrator: Task finished: status=SUCCESS duration=287.1s score=1.000 iterations=1

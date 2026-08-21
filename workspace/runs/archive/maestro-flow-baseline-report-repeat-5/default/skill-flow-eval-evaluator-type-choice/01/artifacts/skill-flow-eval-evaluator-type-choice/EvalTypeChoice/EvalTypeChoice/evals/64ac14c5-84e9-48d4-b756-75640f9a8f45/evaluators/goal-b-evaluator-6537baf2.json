@@ -1,0 +1,14 @@
+{
+  "version": "1.0",
+  "id": "goal-b-evaluator-6537baf2",
+  "name": "goal-b-evaluator",
+  "description": "Deterministic tree-based comparison of structured JSON order details, tolerating key ordering and minor whitespace",
+  "evaluatorTypeId": "uipath-json-similarity",
+  "evaluatorConfig": {
+    "name": "goal-b-evaluator",
+    "targetOutputKey": "*"
+  },
+  "fileName": "goal-b-evaluator-6537baf2.json",
+  "createdAt": "2026-07-24T19:51:28.842Z",
+  "updatedAt": "2026-07-24T19:51:28.842Z"
+}

@@ -1,0 +1,10 @@
+17:03:58 [INFO   ] [default/skill-flow-switch/00] orchestrator: API routing: aws_bedrock
+17:08:51 [INFO   ] [default/skill-flow-switch/00] evaluation.checker: Criterion 'run_command' FAILED (score=0.00, threshold=1.00): Command: python3 $TASK_DIR/check_switch_flow.py
+17:08:51 [INFO   ] [default/skill-flow-switch/00] orchestrator: Success criteria: 1/2 passed, weighted score: 0.375
+17:08:51 [WARNING] [default/skill-flow-switch/00] orchestrator: Visible turns (29) exceeded expected_turns (25) at iteration 1 for task skill-flow-switch. Run continues — max_turns remains the hard cap.
+17:08:51 [INFO   ] [default/skill-flow-switch/00] orchestrator: Running post-run command: python3 $EXPERIMENT_TASKS_PATH/uipath-maestro-flow/_shared/cleanup_solutions.py
+17:08:52 [WARNING] [default/skill-flow-switch/00] orchestrator: [post_run stderr] cleanup_solutions: deleted dfefbfc2-bb2c-4e06-9c6e-08defdfbf8f4 (from SeasonLookup/SeasonLookup.uipx)
+17:08:52 [WARNING] [default/skill-flow-switch/00] orchestrator: [post_run stderr] cleanup_solutions: summary policy=always deleted=1 preserved=0 skipped=0 not_uploaded=0 failed=0
+17:08:52 [INFO   ] [default/skill-flow-switch/00] orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+17:08:52 [INFO   ] [default/skill-flow-switch/00] orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-switch
+17:08:52 [INFO   ] [default/skill-flow-switch/00] orchestrator: Task finished: status=FAILURE duration=301.5s score=0.375 iterations=1

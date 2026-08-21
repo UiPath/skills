@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "BellevueWeatherCheck",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "ec431ce5-be38-43fe-a917-a35b62d92f5c",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "BellevueWeatherCheck"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Flow",
+      "name": "BellevueWeatherCheck",
+      "package": {
+        "key": "428045cb-9211-40d4-b389-bb424f77c52c"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "6710fa2c-fe91-4ed5-97be-7d1ec64586e0",
+    "files": []
+  }
+}

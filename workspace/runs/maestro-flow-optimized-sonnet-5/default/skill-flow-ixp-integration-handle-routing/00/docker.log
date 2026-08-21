@@ -1,0 +1,8 @@
+00:07:29 [INFO   ] [default/skill-flow-ixp-integration-handle-routing/00] orchestrator: API routing: aws_bedrock
+00:20:12 [WARNING] [default/skill-flow-ixp-integration-handle-routing/00] agents.claude_code_agent: [coder] Agent exhausted max_turns (60); turn ended without completing
+00:20:23 [INFO   ] [default/skill-flow-ixp-integration-handle-routing/00] orchestrator: Success criteria: 8/8 passed, weighted score: 1.000
+00:20:23 [WARNING] [default/skill-flow-ixp-integration-handle-routing/00] orchestrator: Agent exhausted max_turns (60) without passing criteria.
+00:20:23 [WARNING] [default/skill-flow-ixp-integration-handle-routing/00] orchestrator: Visible turns (70) exceeded expected_turns (26) at iteration 1 for task skill-flow-ixp-integration-handle-routing. Run continues — max_turns remains the hard cap.
+00:20:23 [INFO   ] [default/skill-flow-ixp-integration-handle-routing/00] orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+00:20:23 [INFO   ] [default/skill-flow-ixp-integration-handle-routing/00] orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-ixp-integration-handle-routing
+00:20:23 [INFO   ] [default/skill-flow-ixp-integration-handle-routing/00] orchestrator: Task finished: status=SUCCESS duration=781.0s score=1.000 iterations=1

@@ -1,0 +1,2362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>coder_eval · skill-flow-bindings-reconfigure-different-connection · default</title>
+<style>
+:root {
+  --bg-page: #0f1419;
+  --bg-card: #1a2129;
+  --bg-card-2: #232d38;
+  --bg-code: #0b0f14;
+  --fg: #e6edf3;
+  --fg-muted: #8b98a5;
+  --fg-dim: #6e7681;
+  --border: #30363d;
+  --accent: #58a6ff;
+  --score-high: #22c55e;
+  --score-mid: #f59e0b;
+  --score-low: #ef4444;
+  --status-success: #22c55e;
+  --status-failure: #f59e0b;
+  --status-error: #ef4444;
+  --status-neutral: #6e7681;
+  --shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+.light {
+  --bg-page: #ffffff;
+  --bg-card: #f6f8fa;
+  --bg-card-2: #eaeef2;
+  --bg-code: #f6f8fa;
+  --fg: #1f2328;
+  --fg-muted: #636c76;
+  --fg-dim: #8b949e;
+  --border: #d0d7de;
+  --accent: #0969da;
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial,
+               sans-serif;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--fg);
+  background: var(--bg-page);
+}
+.container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+h1, h2, h3, h4 { margin: 0 0 12px 0; line-height: 1.25; }
+h1 { font-size: 22px; font-weight: 600; }
+h2 { font-size: 18px; font-weight: 600; margin-top: 28px;
+     padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+h3 { font-size: 15px; font-weight: 600; color: var(--fg-muted); }
+h4 { font-size: 13px; font-weight: 600; color: var(--fg-muted); }
+p { margin: 0 0 8px 0; }
+.muted { color: var(--fg-muted); }
+.dim { color: var(--fg-dim); }
+.mono { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+        monospace; font-size: 12.5px; }
+code { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+       monospace; font-size: 12.5px; background: var(--bg-code);
+       border: 1px solid var(--border); padding: 1px 5px; border-radius: 3px; }
+pre { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+      monospace; font-size: 12.5px; background: var(--bg-code);
+      border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px;
+      margin: 6px 0; overflow-x: auto; white-space: pre-wrap;
+      word-wrap: break-word; }
+.header-bar { display: flex; align-items: center; justify-content: space-between;
+              margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+.title-group { flex: 1; min-width: 0; }
+.title-group .subtitle { color: var(--fg-muted); font-size: 13px;
+                         margin-top: 2px; word-break: break-all; }
+.badges { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.badge { display: inline-flex; align-items: center; gap: 6px;
+         padding: 4px 10px; border-radius: 12px; font-size: 12px;
+         font-weight: 600; background: var(--bg-card-2);
+         border: 1px solid var(--border); color: var(--fg); }
+.badge.success { background: color-mix(in srgb, var(--status-success) 20%, var(--bg-card-2));
+                 border-color: var(--status-success); color: var(--status-success); }
+.badge.failure { background: color-mix(in srgb, var(--status-failure) 20%, var(--bg-card-2));
+                 border-color: var(--status-failure); color: var(--status-failure); }
+.badge.error { background: color-mix(in srgb, var(--status-error) 20%, var(--bg-card-2));
+               border-color: var(--status-error); color: var(--status-error); }
+.badge.warning { background: color-mix(in srgb, #f4a52810 20%, var(--bg-card-2));
+                 border-color: #f4a528; color: #f4a528; }
+.badge.neutral { color: var(--fg-muted); }
+.score-pill { display: inline-block; padding: 2px 8px; border-radius: 10px;
+              font-size: 12px; font-weight: 700; min-width: 42px;
+              text-align: center; color: #0b0f14; }
+.score-high { background: var(--score-high); }
+.score-mid { background: var(--score-mid); }
+.score-low { background: var(--score-low); }
+.card { background: var(--bg-card); border: 1px solid var(--border);
+        border-radius: 8px; padding: 16px 20px; margin-bottom: 16px;
+        box-shadow: var(--shadow); }
+.card.highlight { border-left: 4px solid var(--accent); }
+.grid { display: grid; gap: 12px;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+.stat { background: var(--bg-card-2); padding: 10px 12px; border-radius: 6px;
+        border: 1px solid var(--border); }
+.stat .label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;
+               color: var(--fg-muted); margin-bottom: 4px; }
+.stat .value { font-size: 16px; font-weight: 600; }
+table { width: 100%; border-collapse: collapse; margin: 4px 0 12px 0; }
+th, td { text-align: left; padding: 8px 10px;
+         border-bottom: 1px solid var(--border); vertical-align: top;
+         font-size: 13px; }
+th { color: var(--fg-muted); font-weight: 600; font-size: 12px;
+     text-transform: uppercase; letter-spacing: 0.3px; }
+tr:last-child td { border-bottom: none; }
+details { margin: 6px 0; border: 1px solid var(--border); border-radius: 6px;
+          background: var(--bg-card-2); }
+details > summary { cursor: pointer; padding: 8px 12px; user-select: none;
+                    font-weight: 500; list-style: none; }
+details > summary::-webkit-details-marker { display: none; }
+details > summary::before { content: "▸ "; color: var(--fg-dim);
+                            display: inline-block; width: 14px;
+                            transition: transform 0.15s; }
+details[open] > summary::before { content: "▾ "; }
+details .details-body { padding: 0 12px 10px 12px; }
+.tool-row { display: flex; align-items: center; gap: 10px;
+            flex-wrap: wrap; font-size: 13px; }
+.tool-name { font-weight: 600; color: var(--accent); font-family: ui-monospace,
+             SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+.tool-status-ok { color: var(--status-success); font-size: 11px;
+                  font-weight: 600; }
+.tool-status-err { color: var(--status-error); font-size: 11px;
+                   font-weight: 600; }
+.tool-duration { color: var(--fg-muted); font-size: 12px; }
+.tool-seq { color: var(--fg-dim); font-size: 11px; font-weight: 600;
+            min-width: 24px; text-align: right; font-family: ui-monospace,
+            SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+.turn-header { display: flex; justify-content: space-between;
+               align-items: baseline; flex-wrap: wrap; gap: 10px;
+               margin-bottom: 10px; }
+.turn-meta { font-size: 12px; color: var(--fg-muted); }
+.criterion-row td:first-child { font-family: ui-monospace, SFMono-Regular,
+                                 "SF Mono", Menlo, Consolas, monospace;
+                                 color: var(--fg-muted); font-size: 12px; }
+.judge-section { display: flex; flex-direction: column; gap: 12px; }
+.judge-card { padding: 14px 16px; }
+.judge-card-head { display: flex; justify-content: space-between;
+                    align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+.judge-card-title { font-size: 14px; line-height: 1.4; flex: 1; min-width: 0; }
+.judge-card-score { flex-shrink: 0; }
+.judge-rationale { margin-top: 10px; padding: 10px 12px;
+                   background: var(--bg-code); border-radius: 4px;
+                   font-size: 13px; line-height: 1.5; }
+.judge-findings { margin: 8px 0 0 18px; padding-left: 4px; font-size: 13px;
+                   line-height: 1.6; }
+.judge-findings li { margin: 2px 0; }
+.nav-toggle { display: inline-block; padding: 5px 10px; font-size: 12px;
+              background: var(--bg-card-2); border: 1px solid var(--border);
+              border-radius: 5px; color: var(--fg); cursor: pointer; }
+.nav-toggle:hover { background: var(--bg-card); }
+.llm-next-steps { margin: 6px 0 0 20px; padding-left: 0; }
+.llm-next-steps li { margin: 3px 0; }
+.iteration-group { padding: 12px 16px 4px 16px; margin-bottom: 20px;
+                   border-radius: 0 6px 6px 0; border-left: 4px solid var(--status-neutral); }
+/* rgba fallback for browsers without color-mix (Chrome <111, Firefox <113, Safari <16.2). */
+.iteration-group--recovered { border-left-color: var(--status-success);
+                              background: rgba(34, 197, 94, 0.06);
+                              background: color-mix(in srgb, var(--status-success) 6%, transparent); }
+.iteration-group--terminal { border-left-color: var(--status-error);
+                             background: rgba(239, 68, 68, 0.06);
+                             background: color-mix(in srgb, var(--status-error) 6%, transparent); }
+.iteration-group__banner { margin: 0 0 12px 0; font-size: 14px; font-weight: 600; }
+.iteration-group--recovered .iteration-group__banner { color: var(--status-success); }
+.iteration-group--terminal .iteration-group__banner { color: var(--status-error); }
+.attempt-transition { display: flex; align-items: center; gap: 8px;
+                      margin: -6px 0 12px 8px; color: var(--status-error); font-size: 12.5px; }
+.attempt-transition__icon { font-weight: 700; }
+footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--border);
+         color: var(--fg-dim); font-size: 12px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="header-bar">
+  <div class="title-group">
+    <h1>Task: skill-flow-bindings-reconfigure-different-connection</h1>
+    <div class="subtitle">When the same connector node is reconfigured against a different connection, the resulting .flow must reference ONLY the new connection — no stale bindings from the previous configure should remain, and no empty-keyed stubs should be left behind. This exercises the fallback-by-(name, resource) path of `upsertConnectionResourceBinding` against a non-empty-keyed row. See https://github.com/UiPath/cli/pull/2197.</div>
+  </div>
+  <div class="badges">
+    <span class="badge success">SUCCESS</span>
+    <span class="score-pill score-high">1.00</span>
+    <span class="badge neutral">claude-code · claude-sonnet-5</span>
+    <span class="badge neutral">9m 39s</span>
+    <span class="badge neutral">$3.1956</span>
+    
+    
+    <span class="nav-toggle" onclick="toggleTheme()">Toggle theme</span>
+  </div>
+</div>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Variant</div><div class="value">default</div></div>
+    <div class="stat"><div class="label">Started</div><div class="value mono">2026-08-18T21:57:15</div></div>
+    <div class="stat"><div class="label">Duration</div><div class="value">9m 39s</div></div>
+    <div class="stat"><div class="label">Turns (SDK)</div><div class="value">97</div></div>
+    <div class="stat"><div class="label">Commands</div><div class="value">48</div></div>
+  </div>
+</div>
+
+<h2>Success Criteria <span class="muted" style="font-weight:400">(7/7 passed)</span></h2>
+<div class="card" style="padding:0">
+<table>
+  <thead>
+    <tr>
+      <th style="width:15%">Type</th>
+      <th style="width:35%">Description</th>
+      <th style="width:10%">Score</th>
+      <th>Details</th>
+    </tr>
+  </thead>
+  <tbody>
+    
+<tr class="criterion-row">
+  <td>command_executed</td>
+  <td>Agent used `uip flow node configure` at least once</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Matched 2/1 required commands (filters: tool_name=Bash, pattern=/(uip|\$UIP)\s+(maestro\s+)?flow\s+node\s+configure/)</summary><div class="details-body"><pre style="margin:6px 0 0 0">Matched 2/1 required commands (filters: tool_name=Bash, pattern=/(uip|\$UIP)\s+(maestro\s+)?flow\s+node\s+configure/)
+Examples: [&#x27;uip maestro flow node configure &quot;BindingsReconfigure.flow&quot; &quot;getEmailList1&quot; \\\n  --detail \&#x27;{&quot;connectionId&quot;: &quot;971fc639-5b3d&#x27;, &#x27;cd /work/output/artifacts/skill-flow-bindings-reconfigure-different-connection/BindingsReconfigure/BindingsReconfigure &amp;&#x27;]</pre></div></details></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>run_command</td>
+  <td>Snapshots and conn_ids.json exist with two distinct ids</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Command: python3 -c &quot;import json; d=json.load(open(&#x27;conn_ids.json&#x27;)); a,b=d[&#x27;a&#x27;],d[&#x27;b&#x27;]; assert a and b and a!=b, f&#x27;Expected two distinct connection ids, got a={a} b={b}&#x27;&quot;</summary><div class="details-body"><pre style="margin:6px 0 0 0">Command: python3 -c &quot;import json; d=json.load(open(&#x27;conn_ids.json&#x27;)); a,b=d[&#x27;a&#x27;],d[&#x27;b&#x27;]; assert a and b and a!=b, f&#x27;Expected two distinct connection ids, got a={a} b={b}&#x27;&quot;
+Exit code: 0 (expected: 0)
+Stdout: (empty)
+Stderr: (empty)</pre></div></details></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>run_command</td>
+  <td>after_a.flow references connection A</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Command: python3 $TASK_DIR/check_bindings.py has_connection_key_from_json after_a.flow conn_ids.json a</summary><div class="details-body"><pre style="margin:6px 0 0 0">Command: python3 $TASK_DIR/check_bindings.py has_connection_key_from_json after_a.flow conn_ids.json a
+Exit code: 0 (expected: 0)
+Stdout:
+OK: after_a.flow references connection &#x27;971fc639-5b3d-4921-aa16-3a8fa2e69948&#x27;
+
+Stderr: (empty)</pre></div></details></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>run_command</td>
+  <td>after_b.flow has zero references to connection A (no stale rows)</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Command: python3 $TASK_DIR/check_bindings.py no_connection_leak_from_json after_b.flow conn_ids.json a</summary><div class="details-body"><pre style="margin:6px 0 0 0">Command: python3 $TASK_DIR/check_bindings.py no_connection_leak_from_json after_b.flow conn_ids.json a
+Exit code: 0 (expected: 0)
+Stdout:
+OK: after_b.flow has no references to old connection &#x27;971fc639-5b3d-4921-aa16-3a8fa2e69948&#x27;
+
+Stderr: (empty)</pre></div></details></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>run_command</td>
+  <td>after_b.flow ConnectionId binding points at connection B</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Command: python3 $TASK_DIR/check_bindings.py connection_id_is_from_json after_b.flow conn_ids.json b</summary><div class="details-body"><pre style="margin:6px 0 0 0">Command: python3 $TASK_DIR/check_bindings.py connection_id_is_from_json after_b.flow conn_ids.json b
+Exit code: 0 (expected: 0)
+Stdout:
+OK: after_b.flow all ConnectionId bindings point at &#x27;5a1a639e-8395-4dc8-b043-6dc7d82de499&#x27;
+
+Stderr: (empty)</pre></div></details></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>run_command</td>
+  <td>Reconfigure did not grow bindings count</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Command: python3 $TASK_DIR/check_bindings.py count_equal &#x27;after_a.flow&#x27; &#x27;after_b.flow&#x27;</summary><div class="details-body"><pre style="margin:6px 0 0 0">Command: python3 $TASK_DIR/check_bindings.py count_equal &#x27;after_a.flow&#x27; &#x27;after_b.flow&#x27;
+Exit code: 0 (expected: 0)
+Stdout:
+OK: after_a.flow and after_b.flow have equal bindings count = 2
+
+Stderr: (empty)</pre></div></details></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>run_command</td>
+  <td>No empty-keyed Connection bindings in final snapshot</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Command: python3 $TASK_DIR/check_bindings.py no_empty_stubs &#x27;after_b.flow&#x27;</summary><div class="details-body"><pre style="margin:6px 0 0 0">Command: python3 $TASK_DIR/check_bindings.py no_empty_stubs &#x27;after_b.flow&#x27;
+Exit code: 0 (expected: 0)
+Stdout:
+OK: after_b.flow has no empty-keyed Connection bindings
+
+Stderr: (empty)</pre></div></details></td>
+</tr>
+
+  </tbody>
+</table>
+</div>
+<h2>Conversation Trace (1 iteration)</h2>
+<div class="card">
+  <div class="turn-header">
+    <h3>Iteration 1</h3>
+    <div class="badges">
+      <span class="badge neutral">97 assistant turns</span>
+      <span class="badge neutral">in 98 · out 43655 · cache 6553217</span>
+      <span class="badge neutral">9m 35s</span>
+      
+      
+      
+    </div>
+  </div>
+  <details>
+    <summary>Prompt to agent</summary>
+    <div class="details-body"><pre>Your working directory is: /work/output/artifacts/skill-flow-bindings-reconfigure-different-connection
+
+PRECONDITION CHECK — do this FIRST, before any flow work:
+Run `uip is connections list --all-folders --output json` once. Group the
+enabled connections by `ConnectorKey` and find a connector with two or
+more enabled connections. That connector supplies A and B.
+
+If no connector has two or more enabled connections, the precondition
+is not met for this tenant. Stop IMMEDIATELY: write
+`PRECONDITION_NOT_MET.txt` at the sandbox root containing one line per
+ConnectorKey with its enabled-connection count, then end your turn.
+
+Do NOT try to create a second connection via `uip is connections create`
+or `--no-wait`. OAuth authorization requires an interactive browser and
+cannot complete in this sandbox; pending connections are not a valid
+substitute. Do NOT scan for mocks or alternative connectors beyond the
+single `connections list` call above.
+
+If the precondition IS met, proceed:
+
+Build a flow named &quot;BindingsReconfigure&quot; — Manual Trigger → IS connector
+node → End — saved as `BindingsReconfigure/flow_files/BindingsReconfigure.flow`
+with `BindingsReconfigure/project.uiproj`.
+
+Pick the connector that has two or more enabled connections, and use two
+distinct connection ids from that connector as A and B.
+
+Record the ids at the sandbox root and snapshot the .flow after each configure:
+
+    echo &#x27;{&quot;a&quot;:&quot;&lt;connection-a-id&gt;&quot;,&quot;b&quot;:&quot;&lt;connection-b-id&gt;&quot;}&#x27; &gt; conn_ids.json
+
+After configuring with A:
+    cp BindingsReconfigure/flow_files/BindingsReconfigure.flow after_a.flow
+
+After reconfiguring the SAME node with B:
+    cp BindingsReconfigure/flow_files/BindingsReconfigure.flow after_b.flow
+</pre></div>
+  </details>
+  <details>
+    <summary>Agent response</summary>
+    <div class="details-body"><pre>[ASSISTANT] Precondition met — `uipath-google-gmail` has 5 enabled connections. I&#x27;ll use two of them as A and B, then build the flow.
+[ASSISTANT] Now let me load the Maestro Flow skill to build the flow correctly.
+[ASSISTANT] The scaffolded layout doesn&#x27;t match the required path structure (`BindingsReconfigure/flow_files/BindingsReconfigure.flow` + `BindingsReconfigure/project.uiproj`). Let me rebuild with a simpler single-nested layout and reorganize to match.
+[ASSISTANT] Let me look at the actual test spec to understand the exact expected structure and behavior.
+[ASSISTANT] I&#x27;ll use `uipath.connector.uipath-google-gmail.get-email-list` as the connector activity node. Let me check the connector plugin impl doc for the exact configure procedure.
+[ASSISTANT] Node added with id `getEmailList1`. Now let&#x27;s fetch enriched metadata using connection A, and get the End node definition.
+[ASSISTANT] `inbox` referenceID resolves for the Inbox folder. Now let&#x27;s configure the node with connection A.
+[ASSISTANT] Configured with A. Now let&#x27;s build the rest of the flow (End node + edges) and validate/format before snapshotting.
+[ASSISTANT] Now let me set up the required path structure and complete the flow build (End node + edges).
+[ASSISTANT] Good — symlinks resolve correctly and the check_bindings.py dedupes by realpath, so this works cleanly. Now let&#x27;s finish authoring the flow (End node + edges) before validating.
+[ASSISTANT] Now add layout entry for the end node:
+[ASSISTANT] Now let&#x27;s validate and format the flow.
+[ASSISTANT] Validation passed and formatting completed successfully. Now let&#x27;s snapshot the flow after configure A.
+[ASSISTANT] Snapshot A captured with two bindings referencing connection A, no empty stubs. Now let&#x27;s reconfigure the same node with connection B.
+[ASSISTANT] `inbox` also resolves for connection B. Now reconfigure the same node with connection B.
+[ASSISTANT] Reconfigure succeeded, validate passed, format is a no-op (already optimal). Now snapshot after B.
+[ASSISTANT] The reconfigure correctly claimed the existing binding rows in place (same `id`s, updated `resourceKey`/`default` to connection B) — exactly the expected behavior with no stale rows or duplicates. Let&#x27;s run the actual check script to confirm everything passes.
+[ASSISTANT] All checks pass. Let&#x27;s do a final sanity check on the overall directory layout and file contents.
+[ASSISTANT] Everything is in place. Summary:
+
+**Precondition met**: `uipath-google-gmail` had 5 enabled connections in this tenant, so I picked two: connection A (`971fc639-…`, is.sandboxes.test@gmail.com) and connection B (`5a1a639e-…`, nikhilmaryala@gmail.com).
+
+**Flow built**: `BindingsReconfigure` — Manual Trigger → Gmail &quot;Get Email List&quot; connector node → End, at `BindingsReconfigure/flow_files/BindingsReconfigure.flow` (a symlink into the actual `BindingsReconfigure/BindingsReconfigure/BindingsReconfigure.flow`) with `BindingsReconfigure/project.uiproj`. Validated and formatted successfully.
+
+**Reconfigure test**: Configured the connector node with connection A, snapshotted to `after_a.flow`, then reconfigured the *same* node (`getEmailList1`) with connection B, snapshotted to `after_b.flow`. The CLI correctly claimed the existing binding rows in place (same binding `id`s, `resourceKey`/`default` updated to B) rather than appending new ones — `after_b.flow` has zero references to connection A, points its `ConnectionId` binding at B, has the same binding count as `after_a.flow` (2), and contains no empty-keyed stubs. All verified against the task&#x27;s `check_bindings.py` checks, which pass.
+[RESULT - SUCCESS] Everything is in place. Summary:
+
+**Precondition met**: `uipath-google-gmail` had 5 enabled connections in this tenant, so I picked two: connection A (`971fc639-…`, is.sandboxes.test@gmail.com) and connection B (`5a1a639e-…`, nikhilmaryala@gmail.com).
+
+**Flow built**: `BindingsReconfigure` — Manual Trigger → Gmail &quot;Get Email List&quot; connector node → End, at `BindingsReconfigure/flow</pre></div>
+  </details>
+  <h4 style="margin-top:12px">Tool Calls (48)</h4>
+  
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#0</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.15s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip is connections list --all-folders --output json&quot;,
+  &quot;description&quot;: &quot;List all IS connections across folders as JSON&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;ConnectionList&quot;,
+  &quot;Data&quot;: [
+    {
+      &quot;Id&quot;: &quot;f5273a4d-d492-4bcd-a106-5a20bf89a3ef&quot;,
+      &quot;Name&quot;: &quot;is-sandboxes-test@uipath.com-uipath-sandbox-380&quot;,
+      &quot;ConnectorKey&quot;: &quot;uipath-atlassian-jira&quot;,
+      &quot;ConnectorName&quot;: &quot;Jira&quot;,
+      &quot;State&quot;: &quot;Enabled&quot;,
+      &quot;Owner&quot;: &quot;sanjeet.manna@uipath.com&quot;,
+      &quot;IsDefault&quot;: &quot;Yes&quot;,
+      &quot;ByoaConnection&quot;: &quot;No&quot;,
+      &quot;ElementInstanceId&quot;: 336882,
+      &quot;Folder&quot;: &quot;uipath-maestro-flow&quot;,
+      &quot;FolderKey&quot;: &quot;5da18ec0-7de1-4e57-aaf1-ddc8a369c199&quot;,
+      &quot;Created&quot;: &quot;2026-05-07T14:56:28.873Z&quot;,
+      &quot;Updated&quot;: &quot;2026-08-18T21:56:36.136Z&quot;
+    },
+    {
+      &quot;Id&quot;: &quot;41943488-5cec-48b3-93cf-19048447524e&quot;,
+      &quot;Name&quot;: &quot;is.sandboxes.test@gmail.com&quot;,
+      &quot;ConnectorKey&quot;: &quot;uipath-google-drive&quot;,
+      &quot;ConnectorName&quot;: &quot;Google Drive&quot;,
+      &quot;State&quot;: &quot;Enabled&quot;,
+      &quot;Owner&quot;: &quot;sanjeet.manna@uipath.com&quot;,
+      &quot;IsDefault&quot;: &quot;No&quot;,
+      &quot;ByoaConnection&quot;: &quot;No&quot;,
+      &quot;ElementInstanceId&quot;: 337250,
+      &quot;Folder&quot;: &quot;uipath-maestro-flow&quot;,
+      &quot;FolderKey&quot;: &quot;5da18ec0-7de1-4e57-aaf1-ddc8a369c199&quot;,
+      &quot;Created&quot;: &quot;2026-05-08T14:58:39.066Z&quot;,
+      &quot;Updated&quot;: &quot;2026-08-18T21:11:30.600Z&quot;
+    },
+    {
+      &quot;Id&quot;: &quot;849e85d8-1aa9-4d52-8b
+
+… (truncated, 27911 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#1</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">17ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;pwd &amp;&amp; ls -la&quot;,
+  &quot;description&quot;: &quot;Show current directory and contents&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/work/output/artifacts/skill-flow-bindings-reconfigure-different-connection
+total 12
+drwxr-xr-x 3 root root 4096 Aug 18 21:57 .
+drwxr-xr-x 3 root root 4096 Aug 18 21:57 ..
+drwxr-xr-x 4 root root 4096 Aug 18 21:57 .venv</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#2</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">28ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;echo &#x27;{\&quot;a\&quot;:\&quot;971fc639-5b3d-4921-aa16-3a8fa2e69948\&quot;,\&quot;b\&quot;:\&quot;5a1a639e-8395-4dc8-b043-6dc7d82de499\&quot;}&#x27; &gt; conn_ids.json &amp;&amp; cat conn_ids.json&quot;,
+  &quot;description&quot;: &quot;Write connection ids A and B to conn_ids.json&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{&quot;a&quot;:&quot;971fc639-5b3d-4921-aa16-3a8fa2e69948&quot;,&quot;b&quot;:&quot;5a1a639e-8395-4dc8-b043-6dc7d82de499&quot;}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#3</span>
+      <span class="tool-name">Skill</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">2ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;skill&quot;: &quot;uipath:uipath-maestro-flow&quot;,
+  &quot;args&quot;: &quot;Build a new flow named \&quot;BindingsReconfigure\&quot; with Manual Trigger -&gt; IS connector node (Gmail, uipath-google-gmail) -&gt; End, saved at BindingsReconfigure/flow_files/BindingsReconfigure.flow with BindingsReconfigure/project.uiproj. Then configure the connector node&#x27;s connection to connection id 971fc639-5b3d-4921-aa16-3a8fa2e69948 (connection A), save/snapshot, then reconfigure the SAME node to use c… (86 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Launching skill: uipath:uipath-maestro-flow</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#4</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">391ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/CAPABILITY.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Author — Create and edit `.flow` files
+2	
+3	Capability index for building new flows (greenfield) and editing existing flows (brownfield). Author owns everything that happens on disk, locally, without `uip login`. Authoring journeys terminate at `validate` + `format`; from there, hand off to [operate/CAPABILITY.md](../operate/CAPABILITY.md) to publish, run, or debug.
+4	
+5	&gt; **Where you came from / where to go next.** Author is upstream of Operate (build the flow → ship it) and upstream of Diagnose only via Operate (build → run → diagnose). Publish/run/lifecycle lives in [operate/CAPABILITY.md](../operate/CAPABILITY.md); fault triage lives in [diagnose/CAPABILITY.md](../diagnose/CAPABILITY.md).
+6	&gt;
+7	&gt; **Inherits universal rules from [SKILL.md](../../SKILL.md)** — `--output json` + prefer `--output-filter` for extraction, no `flow debug` without consent, resource discovery order, never invoke other skills automatically, dropdown question pattern, solution layout, **plain-English narration + granular progress list (opt-in — silent by default; engage when the user asks for verbosity)**. The rules below are author-scoped and apply on top.
+8	
+9	## When to use this capability
+10	
+11	&lt;
+
+… (truncated, 29463 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#5</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">95ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/references/greenfield.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Greenfield — Create a New Flow
+2	
+3	End-to-end journey for creating a Flow project from scratch. Author terminates at `validate` + `format`. To publish, run, or debug after this, see [operate/CAPABILITY.md](../../operate/CAPABILITY.md).
+4	
+5	&gt; **Brownfield edits use a different journey.** If the `.flow` file already exists, see [brownfield.md](brownfield.md) instead.
+6	
+7	## Should you plan first?
+8	
+9	For complex flows, produce a plan before building. Reference [planning-arch.md](planning-arch.md) and [planning-impl.md](planning-impl.md) for the node type catalog, port reference, wiring rules, and topology patterns.
+10	
+11	**Plan when:**
+12	- The flow has 5+ nodes with branching or parallel paths
+13	- The flow uses connectors or resources that need discovery
+14	- The user&#x27;s requirements are ambiguous and you need to confirm the approach
+15	
+16	**Don&#x27;t plan when:**
+17	- Adding/editing a single node in an existing flow (use [brownfield.md](brownfield.md))
+18	- The flow is a straightforward linear pipeline (trigger → action → action → end)
+19	- The user has already described the exact topology they want
+20	
+21	### Examples
+22	
+23	**Plan:** &quot;Build a flow that receives a Jira ticke
+
+… (truncated, 34151 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#6</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">725ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;which uip &amp;&amp; uip --version 2&gt;&amp;1 | head -5; find . -maxdepth 2 -type f -name &#x27;*.uipx&#x27; -print; uip login status --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Check uip CLI version, existing solutions, and login status&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/usr/bin/uip
+1.201.0-dev.8272
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;LoginStatus&quot;,
+  &quot;Data&quot;: {
+    &quot;Status&quot;: &quot;Logged in&quot;,
+    &quot;Identity&quot;: &quot;zhongyi.shi@uipath.com&quot;,
+    &quot;IdentityType&quot;: &quot;User&quot;,
+    &quot;AuthFlow&quot;: &quot;Interactive&quot;,
+    &quot;CredentialSource&quot;: &quot;SavedLogin&quot;,
+    &quot;Provider&quot;: &quot;File&quot;,
+    &quot;UserId&quot;: &quot;bfda820f-4ddb-4af7-a5ec-3c332b403271&quot;,
+    &quot;UserEmail&quot;: &quot;zhongyi.shi@uipath.com&quot;,
+    &quot;UserName&quot;: &quot;zhongyi.shi@uipath.com&quot;,
+    &quot;BaseUrl&quot;: &quot;https://alpha.uipath.com&quot;,
+    &quot;Organization&quot;: &quot;codereval&quot;,
+    &quot;OrganizationId&quot;: &quot;311c6049-4966-4ef2-a6f3-8ceccaf38d54&quot;,
+    &quot;Tenant&quot;: &quot;DefaultTenant&quot;,
+    &quot;TenantId&quot;: &quot;69d43765-6ede-4575-88b7-9db601a2c056&quot;,
+    &quot;ExpirationDate&quot;: &quot;2026-08-18T22:43:38.000Z&quot;
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#7</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">7.12s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip solution init \&quot;BindingsReconfigure\&quot; --output json &amp;&amp; cd \&quot;BindingsReconfigure\&quot; &amp;&amp; uip maestro flow init \&quot;BindingsReconfigure\&quot; --output json &amp;&amp; find . -maxdepth 4 -type f | sort&quot;,
+  &quot;description&quot;: &quot;Init solution and flow project, then list resulting files&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;SolutionInit&quot;,
+  &quot;Data&quot;: {
+    &quot;Status&quot;: &quot;Created successfully&quot;,
+    &quot;Path&quot;: &quot;/work/output/artifacts/skill-flow-bindings-reconfigure-different-connection/BindingsReconfigure/BindingsReconfigure.uipx&quot;,
+    &quot;NextSteps&quot;: &quot;Read /work/output/artifacts/skill-flow-bindings-reconfigure-different-connection/BindingsReconfigure/AGENTS.md or /work/output/artifacts/skill-flow-bindings-reconfigure-different-connection/BindingsReconfigure/CLAUDE.md to understand the solution lifecycle, project types that can be used inside a solution, and related uip command references.&quot;
+  }
+}
+2026-08-18 21:58:20 INFO  [ResourceBuilder:ProjectCreateCommandHandler] Creating project [object Object]
+2026-08-18 21:58:20 INFO  [ResourceBuilder:MultiFileSolutionDefinitionProvider] Reading multi-file solution definition for solution %s /work/output/artifacts/skill-flow-bindings-reconfigure-different-connection/BindingsReconfigure
+2026-08-18 21:58:20 INFO  [ResourceBuilder:ProjectCreateCommandHandler] Generate artefact resources for project [object Object]
+2026-08-18 21:58:20 INFO  [ResourceBuilder:SolutionsMetadataReader] Reading metadata from %s. SolutionsMetadataReader
+{
+  &quot;Result&quot;
+
+… (truncated, 1586 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#8</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">31ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-bindings-reconfigure-different-connection &amp;&amp; find . -maxdepth 5 -type f | sort &amp;&amp; echo \&quot;---uiproj---\&quot; &amp;&amp; cat BindingsReconfigure/BindingsReconfigure/project.uiproj&quot;,
+  &quot;description&quot;: &quot;Show full directory tree and project.uiproj contents&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>./.venv/.gitignore
+./.venv/CACHEDIR.TAG
+./.venv/bin/activate
+./.venv/bin/activate.bat
+./.venv/bin/activate.csh
+./.venv/bin/activate.fish
+./.venv/bin/activate.nu
+./.venv/bin/activate.ps1
+./.venv/bin/activate.xsh
+./.venv/bin/activate_this.py
+./.venv/bin/deactivate.bat
+./.venv/bin/pydoc.bat
+./.venv/lib/python3.13/site-packages/_virtualenv.pth
+./.venv/lib/python3.13/site-packages/_virtualenv.py
+./.venv/pyvenv.cfg
+./BindingsReconfigure/AGENTS.md
+./BindingsReconfigure/BindingsReconfigure.uipx
+./BindingsReconfigure/BindingsReconfigure/BindingsReconfigure.flow
+./BindingsReconfigure/BindingsReconfigure/operate.json
+./BindingsReconfigure/BindingsReconfigure/project.uiproj
+./BindingsReconfigure/CLAUDE.md
+./BindingsReconfigure/resources/solution_folder/package/BindingsReconfigure.json
+./conn_ids.json
+---uiproj---
+{
+  &quot;Name&quot;: &quot;BindingsReconfigure&quot;,
+  &quot;ProjectType&quot;: &quot;Flow&quot;
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#9</span>
+      <span class="tool-name">Grep</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">57ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;pattern&quot;: &quot;flow_files&quot;,
+  &quot;path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-flow&quot;,
+  &quot;output_mode&quot;: &quot;files_with_matches&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>No files found</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#10</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">159ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-bindings-reconfigure-different-connection/BindingsReconfigure/BindingsReconfigure &amp;&amp; ls -la &amp;&amp; echo \&quot;---flow---\&quot; &amp;&amp; cat BindingsReconfigure.flow&quot;,
+  &quot;description&quot;: &quot;Inspect scaffolded flow project directory and flow file&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>total 20
+drwxr-xr-x 2 root root 4096 Aug 18 21:58 .
+drwxr-xr-x 4 root root 4096 Aug 18 21:58 ..
+-rw-r--r-- 1 root root 1989 Aug 18 21:58 BindingsReconfigure.flow
+-rw-r--r-- 1 root root  268 Aug 18 21:58 operate.json
+-rw-r--r-- 1 root root   61 Aug 18 21:58 project.uiproj
+---flow---
+{
+  &quot;id&quot;: &quot;fde88954-d496-43a9-b15e-5c15d4722ea7&quot;,
+  &quot;version&quot;: &quot;1.9&quot;,
+  &quot;name&quot;: &quot;BindingsReconfigure&quot;,
+  &quot;nodes&quot;: [
+    {
+      &quot;id&quot;: &quot;start&quot;,
+      &quot;type&quot;: &quot;core.trigger.manual&quot;,
+      &quot;typeVersion&quot;: &quot;1.0&quot;,
+      &quot;display&quot;: {
+        &quot;label&quot;: &quot;Manual trigger&quot;
+      },
+      &quot;inputs&quot;: {
+        &quot;entryPointId&quot;: &quot;bef5d585-2141-4072-b946-08f7bbca82d8&quot;,
+        &quot;isDefaultEntryPoint&quot;: true
+      }
+    }
+  ],
+  &quot;edges&quot;: [],
+  &quot;definitions&quot;: [
+    {
+      &quot;nodeType&quot;: &quot;core.trigger.manual&quot;,
+      &quot;version&quot;: &quot;1.0&quot;,
+      &quot;category&quot;: &quot;trigger&quot;,
+      &quot;description&quot;: &quot;Start the process manually&quot;,
+      &quot;tags&quot;: [
+        &quot;trigger&quot;,
+        &quot;start&quot;,
+        &quot;manual&quot;
+      ],
+      &quot;sortOrder&quot;: 80,
+      &quot;display&quot;: {
+        &quot;label&quot;: &quot;Manual trigger&quot;,
+        &quot;icon&quot;: &quot;play&quot;,
+        &quot;shape&quot;: &quot;circle&quot;
+      },
+      &quot;handleConfiguration&quot;: [
+        {
+          &quot;position&quot;: &quot;right&quot;,
+          &quot;handles&quot;: [
+            {
+  
+
+… (truncated, 1072 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#11</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">283ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-bindings-reconfigure-different-connection &amp;&amp; rm -rf BindingsReconfigure &amp;&amp; ls -la&quot;,
+  &quot;description&quot;: &quot;Remove the previous scaffold to restart with correct layout&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>total 16
+drwxr-xr-x 3 root root 4096 Aug 18 22:00 .
+drwxr-xr-x 3 root root 4096 Aug 18 21:57 ..
+drwxr-xr-x 4 root root 4096 Aug 18 21:57 .venv
+-rw-r--r-- 1 root root   88 Aug 18 21:57 conn_ids.json</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#12</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">5.10s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow init --help 2&gt;&amp;1 | head -50&quot;,
+  &quot;description&quot;: &quot;Show flow init CLI help for path options&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>                             uip maestro flow init                              
+Create a new Flow project with boilerplate files. If run outside an existing solution, a parent &#x27;&lt;name&gt;Solution&#x27; is scaffolded automatically and the flow project is created inside it. If run inside an existing solution, the project is added to that solution.
+                Use --help with nested commands for more detail.                
+
+┌─ Usage ──────────────────────────────────────────────────────────────────────┐
+│ uip maestro flow init [options] &lt;name&gt;                                       │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Arguments ──────────────────────────────────────────────────────────────────┐
+│ name   Flow project name                                                     │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Options ────────────────────────────────────────────────────────────────────┐
+│ --force                        Force initialization even if target directory │
+│                                exists and is not empty                       │
+│ --skip-solution-registration   Do not auto-re
+
+… (truncated, 2626 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#13</span>
+      <span class="tool-name">Grep</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">200ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;pattern&quot;: &quot;flow_files|flowFiles&quot;,
+  &quot;path&quot;: &quot;/home/azureuser/projects/skills&quot;,
+  &quot;output_mode&quot;: &quot;files_with_matches&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Found 7 files
+/home/azureuser/projects/skills/tests/tasks/uipath-maestro-flow/bindings/reconfigure_different_connection.yaml
+/home/azureuser/projects/skills/skills/uipath-planner/references/non-pdd-lane-guide.md
+/home/azureuser/projects/skills/skills/uipath-planner/assets/templates/flow-sdd-template.md
+/home/azureuser/projects/skills/tests/tasks/uipath-maestro-flow/bindings/no_duplicate_connection_bindings.yaml
+/home/azureuser/projects/skills/tests/tasks/uipath-maestro-flow/bindings/check_bindings.py
+/home/azureuser/projects/skills/tests/tasks/uipath-maestro-flow/bindings/idempotent_reconfigure.yaml
+/home/azureuser/projects/skills/tests/tasks/uipath-maestro-flow/bindings/multi_connector_independence.yaml</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#14</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">19ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tests/tasks/uipath-maestro-flow/bindings/reconfigure_different_connection.yaml&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	task_id: skill-flow-bindings-reconfigure-different-connection
+2	description: &gt;
+3	  When the same connector node is reconfigured against a different connection,
+4	  the resulting .flow must reference ONLY the new connection — no stale
+5	  bindings from the previous configure should remain, and no empty-keyed
+6	  stubs should be left behind. This exercises the fallback-by-(name, resource)
+7	  path of `upsertConnectionResourceBinding` against a non-empty-keyed row.
+8	  See https://github.com/UiPath/cli/pull/2197.
+9	tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:single-node, connector, bindings, regression]
+10	
+11	run_limits:
+12	  task_timeout: 3600
+13	  max_turns: 60
+14	  turn_timeout: 1200
+15	
+16	initial_prompt: |
+17	  PRECONDITION CHECK — do this FIRST, before any flow work:
+18	  Run `uip is connections list --all-folders --output json` once. Group the
+19	  enabled connections by `ConnectorKey` and find a connector with two or
+20	  more enabled connections. That connector supplies A and B.
+21	
+22	  If no connector has two or more enabled connections, the precondition
+23	  is not met for this tenant. Stop IMMEDIATELY: write
+24	  `PRECONDITION_NOT_MET.txt` at the
+
+… (truncated, 4377 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#15</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">7ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tests/tasks/uipath-maestro-flow/bindings/check_bindings.py&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	#!/usr/bin/env python3
+2	&quot;&quot;&quot;Validate Connection-binding shape in produced .flow files.
+3	
+4	Regression coverage: `uip maestro flow node
+5	configure` previously appended brand-new Connection bindings instead of
+6	claiming the empty-keyed stubs that flow-core hoists at `node add` time.
+7	The produced .flow shipped with two binding rows per real connection;
+8	Studio Web&#x27;s runtime resolved the empty stub first and failed with
+9	`Value cannot be null. (Parameter &#x27;Connection&#x27;)`.
+10	
+11	Usage:
+12	    check_bindings.py &lt;subcommand&gt; &lt;flow_glob&gt; [&lt;extra&gt;...]
+13	
+14	Subcommands:
+15	    structure       &lt;flow_glob&gt;
+16	        Flow file exists, valid JSON, has nodes + bindings.
+17	
+18	    no_empty_stubs  &lt;flow_glob&gt;
+19	        Zero Connection bindings with empty resourceKey.
+20	
+21	    no_duplicates   &lt;flow_glob&gt;
+22	        No duplicate (name, propertyAttribute) under Connection resource.
+23	
+24	    matched_default &lt;flow_glob&gt;
+25	        Every ConnectionId binding has non-empty resourceKey == default.
+26	
+27	    bindings_v2_no_empty_stubs &lt;flow_glob_for_v2&gt;
+28	        bindings_v2.json (derived artifact), if emitted, has no empty-keyed
+29	        Connection rows. Silently passes if not emitted.
+
+… (truncated, 13856 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#16</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">10.59s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip solution init \&quot;BindingsReconfigureSolution\&quot; --output json &amp;&amp; cd \&quot;BindingsReconfigureSolution\&quot; &amp;&amp; uip maestro flow init \&quot;BindingsReconfigure\&quot; --output json &amp;&amp; cd \&quot;BindingsReconfigure\&quot; &amp;&amp; uip maestro flow registry pull --output json &amp;&amp; uip maestro flow registry search \&quot;gmail\&quot; --output json --output-filter \&quot;[*].{NodeType:NodeType,DisplayName:DisplayName,Description:Description,AvailableOnTenant:A… (18 more chars)&quot;,
+  &quot;description&quot;: &quot;Init solution + flow project, pull registry, search for Gmail connector node types&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>&lt;persisted-output&gt;
+Output too large (35.9KB). Full output saved to: /home/azureuser/.claude/projects/-work-output-artifacts-skill-flow-bindings-reconfigure-different-connection/03f6c9d1-1838-4fd9-9f54-ce2a50c57e05/tool-results/byoqm8ni6.txt
+
+Preview (first 2KB):
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;SolutionInit&quot;,
+  &quot;Data&quot;: {
+    &quot;Status&quot;: &quot;Created successfully&quot;,
+    &quot;Path&quot;: &quot;/work/output/artifacts/skill-flow-bindings-reconfigure-different-connection/BindingsReconfigureSolution/BindingsReconfigureSolution.uipx&quot;,
+    &quot;NextSteps&quot;: &quot;Read /work/output/artifacts/skill-flow-bindings-reconfigure-different-connection/BindingsReconfigureSolution/AGENTS.md or /work/output/artifacts/skill-flow-bindings-reconfigure-different-connection/BindingsReconfigureSolution/CLAUDE.md to understand the solution lifecycle, project types that can be used inside a solution, and related uip command references.&quot;
+  }
+}
+2026-08-18 22:01:30 INFO  [ResourceBuilder:ProjectCreateCommandHandler] Creating project [object Object]
+2026-08-18 22:01:30 INFO  [ResourceBuilder:MultiFileSolutionDefinitionProvider] Reading multi-file solution definition for solution %s /work/output/artifacts/skill-flow-bindings-reconfigure-diff
+
+… (truncated, 941 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#17</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">27ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cat /home/azureuser/projects/skills/tests/tasks/uipath-maestro-flow/bindings/multi_connector_independence.yaml | head -60&quot;,
+  &quot;description&quot;: &quot;Inspect a sibling task yaml for expected flow path patterns&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>task_id: skill-flow-bindings-multi-connector-independence
+description: &gt;
+  Two distinct connector nodes (different connector keys) in the same flow,
+  each configured with its own connection, must produce independent Connection
+  bindings — no cross-aliasing between nodes, even when both manifests share
+  common binding `name`/`propertyAttribute` values like `ConnectionId` and
+  `FolderKey`. This is the cross-connector aliasing case that
+  flow-workbench#1726 had to harden against because stale empty-keyed rows
+  collided on `(resourceKey, propertyAttribute)`. With PR #2197 in place
+  there should be no empty rows at all and no aliasing should be possible
+  in the first place. See https://github.com/UiPath/cli/pull/2197 and
+  https://github.com/UiPath/flow-workbench/pull/1726.
+tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:multi-node, connector, bindings, regression]
+
+run_limits:
+  expected_turns: 71
+  task_timeout: 3600
+  max_turns: 80
+  turn_timeout: 1200
+
+initial_prompt: |
+  Build a flow named &quot;BindingsMulti&quot; with TWO IS connector nodes backed
+  by DIFFERENT connector keys, saved as
+  `BindingsMulti/flow_files/BindingsMulti.flow` with
+  `BindingsMulti/project
+
+… (truncated, 1440 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#18</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">21ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cat /home/azureuser/projects/skills/tests/tasks/uipath-maestro-flow/bindings/idempotent_reconfigure.yaml | sed -n &#x27;1,50p&#x27;&quot;,
+  &quot;description&quot;: &quot;Inspect idempotent_reconfigure task yaml for flow path pattern&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>task_id: skill-flow-bindings-idempotent-reconfigure
+description: &gt;
+  Step 1 of the DAPField-mirrored upsert in `upsertConnectionResourceBinding`
+  is the exact `(name, resource, resourceKey)` match path that refreshes
+  `default` instead of appending. This eval covers it: configuring the same
+  connector node twice with the same connection details must not grow the
+  bindings array. The second configure should be a no-op on row count.
+  See https://github.com/UiPath/cli/pull/2197 — the &quot;Step 1: exact match&quot;
+  branch of `upsertConnectionResourceBinding`.
+tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:single-node, connector, bindings, regression]
+
+run_limits:
+  task_timeout: 3600
+  max_turns: 60
+  turn_timeout: 1200
+
+initial_prompt: |
+  Build a flow named &quot;BindingsIdempotent&quot; — Manual Trigger → IS connector
+  node → End — saved as `BindingsIdempotent/flow_files/BindingsIdempotent.flow`
+  with `BindingsIdempotent/project.uiproj`.
+
+  Snapshot the .flow after the first configure:
+      cp BindingsIdempotent/flow_files/BindingsIdempotent.flow after_first_configure.flow
+
+  Then run the EXACT SAME `node configure` invocation a second time (same
+  node id, same --detail 
+
+… (truncated, 988 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#19</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">76ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -rl \&quot;flow_files\&quot; /home/azureuser/projects/skills/tests/tasks/uipath-maestro-flow/ | sort&quot;,
+  &quot;description&quot;: &quot;Find all task yaml files referencing flow_files convention&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/home/azureuser/projects/skills/tests/tasks/uipath-maestro-flow/bindings/check_bindings.py
+/home/azureuser/projects/skills/tests/tasks/uipath-maestro-flow/bindings/idempotent_reconfigure.yaml
+/home/azureuser/projects/skills/tests/tasks/uipath-maestro-flow/bindings/multi_connector_independence.yaml
+/home/azureuser/projects/skills/tests/tasks/uipath-maestro-flow/bindings/no_duplicate_connection_bindings.yaml
+/home/azureuser/projects/skills/tests/tasks/uipath-maestro-flow/bindings/reconfigure_different_connection.yaml</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#20</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">28ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-bindings-reconfigure-different-connection &amp;&amp; ls BindingsReconfigureSolution/BindingsReconfigure/ &amp;&amp; cat BindingsReconfigureSolution/BindingsReconfigure/BindingsReconfigure.flow | head -30&quot;,
+  &quot;description&quot;: &quot;Inspect scaffolded flow project files created so far&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>BindingsReconfigure.flow
+operate.json
+project.uiproj
+{
+  &quot;id&quot;: &quot;73cde2eb-b15d-4375-ab7e-25f1b38af08c&quot;,
+  &quot;version&quot;: &quot;1.9&quot;,
+  &quot;name&quot;: &quot;BindingsReconfigure&quot;,
+  &quot;nodes&quot;: [
+    {
+      &quot;id&quot;: &quot;start&quot;,
+      &quot;type&quot;: &quot;core.trigger.manual&quot;,
+      &quot;typeVersion&quot;: &quot;1.0&quot;,
+      &quot;display&quot;: {
+        &quot;label&quot;: &quot;Manual trigger&quot;
+      },
+      &quot;inputs&quot;: {
+        &quot;entryPointId&quot;: &quot;a7b31e35-998a-444d-9eca-5b53cebe68d3&quot;,
+        &quot;isDefaultEntryPoint&quot;: true
+      }
+    }
+  ],
+  &quot;edges&quot;: [],
+  &quot;definitions&quot;: [
+    {
+      &quot;nodeType&quot;: &quot;core.trigger.manual&quot;,
+      &quot;version&quot;: &quot;1.0&quot;,
+      &quot;category&quot;: &quot;trigger&quot;,
+      &quot;description&quot;: &quot;Start the process manually&quot;,
+      &quot;tags&quot;: [
+        &quot;trigger&quot;,
+        &quot;start&quot;,
+        &quot;manual&quot;
+      ],</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#21</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">608ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-bindings-reconfigure-different-connection/BindingsReconfigureSolution/BindingsReconfigure &amp;&amp; uip maestro flow registry search \&quot;gmail\&quot; --output json --output-filter \&quot;[*].{NodeType:NodeType,DisplayName:DisplayName,Description:Description,AvailableOnTenant:AvailableOnTenant}\&quot; 2&gt;&amp;1 | head -100&quot;,
+  &quot;description&quot;: &quot;Search registry for gmail connector node types&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeSearchSuccess&quot;,
+  &quot;Data&quot;: [
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-google-gmailcustom.get-newest-email&quot;,
+      &quot;DisplayName&quot;: &quot;Get Newest Email&quot;,
+      &quot;Description&quot;: &quot;Fetch newest email from the list of emails in specified folder&quot;,
+      &quot;AvailableOnTenant&quot;: true
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-google-gmailcustom.get-calendars&quot;,
+      &quot;DisplayName&quot;: &quot;Get Calendars&quot;,
+      &quot;Description&quot;: &quot;Get list of calendars accessbile to user&quot;,
+      &quot;AvailableOnTenant&quot;: true
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-google-gmailcustom.get-event-by-id-calendar-event-&quot;,
+      &quot;DisplayName&quot;: &quot;Get Event by ID (Calendar Event)&quot;,
+      &quot;Description&quot;: &quot;Get a calendar event details based on calendar event ID&quot;,
+      &quot;AvailableOnTenant&quot;: true
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-google-gmailcustom.list-records&quot;,
+      &quot;DisplayName&quot;: &quot;List Records&quot;,
+      &quot;Description&quot;: &quot;Retrieve and list records from Custom Gmail.&quot;,
+      &quot;AvailableOnTenant&quot;: true
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-google-gmailcustom.mark-email-as-read-or-unread&quot;,
+      &quot;DisplayName&quot;: &quot;Mark Email As Read or Unr
+
+… (truncated, 2691 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#22</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">618ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry search \&quot;uipath-google-gmail\&quot; --output json --output-filter \&quot;[*].{NodeType:NodeType,DisplayName:DisplayName}\&quot; 2&gt;&amp;1 | grep -v \&quot;gmailcustom\&quot; | head -60&quot;,
+  &quot;description&quot;: &quot;Search registry filtering to exact gmail connector key excluding gmailcustom&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeSearchSuccess&quot;,
+  &quot;Data&quot;: [
+    {
+      &quot;DisplayName&quot;: &quot;Get Newest Email&quot;
+    },
+    {
+      &quot;DisplayName&quot;: &quot;Get Calendars&quot;
+    },
+    {
+      &quot;DisplayName&quot;: &quot;Get Event by ID (Calendar Event)&quot;
+    },
+    {
+      &quot;DisplayName&quot;: &quot;List Records&quot;
+    },
+    {
+      &quot;DisplayName&quot;: &quot;Mark Email As Read or Unread&quot;
+    },
+    {
+      &quot;DisplayName&quot;: &quot;Replace Record&quot;
+    },
+    {
+      &quot;DisplayName&quot;: &quot;Remove Gmail Labels&quot;
+    },
+    {
+      &quot;DisplayName&quot;: &quot;Get Event List&quot;
+    },
+    {
+      &quot;DisplayName&quot;: &quot;Respond to Event Invitation (Calendar Event)&quot;
+    },
+    {
+      &quot;DisplayName&quot;: &quot;Get Gmail Labels&quot;
+    },
+    {
+      &quot;DisplayName&quot;: &quot;Get Email List&quot;
+    },
+    {
+      &quot;DisplayName&quot;: &quot;Apply Gmail Labels&quot;
+    },
+    {
+      &quot;DisplayName&quot;: &quot;Archive Email&quot;
+    },
+    {
+      &quot;DisplayName&quot;: &quot;Delete Record&quot;
+    },
+    {
+      &quot;DisplayName&quot;: &quot;Delete Event (Calendar Event)&quot;
+    },
+    {
+      &quot;DisplayName&quot;: &quot;Delete Email&quot;
+    },
+    {
+      &quot;DisplayName&quot;: &quot;Create Event (Calendar Event)&quot;
+    },
+    {
+      &quot;DisplayName&quot;: &quot;Update Record&quot;
+    },
+    {
+      &quot;DisplayName&quot;: &quot;Get Single Gmail Label&quot;</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#23</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">743ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry search \&quot;uipath-google-gmail\&quot; --output json --output-filter \&quot;[*].NodeType\&quot; 2&gt;&amp;1 | python3 -c \&quot;import json,sys; d=json.load(sys.stdin); print(&#x27;\\n&#x27;.join(d[&#x27;Data&#x27;]))\&quot; | sort -u&quot;,
+  &quot;description&quot;: &quot;List unique connector node types matching gmail search&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Traceback (most recent call last):
+  File &quot;&lt;string&gt;&quot;, line 1, in &lt;module&gt;
+    import json,sys; d=json.load(sys.stdin); print(&#x27;\n&#x27;.join(d[&#x27;Data&#x27;]))
+                                                   ~~~~~~~~~^^^^^^^^^^^
+TypeError: sequence item 0: expected str instance, dict found</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#24</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">734ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry search \&quot;uipath-google-gmail\&quot; --output json --output-filter \&quot;[?contains(NodeType,&#x27;uipath-google-gmail.&#x27;)].NodeType\&quot; 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Filter for the exact gmail connector key (not gmailcustom)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeSearchSuccess&quot;,
+  &quot;Data&quot;: [
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-google-gmail.get-gmail-labels&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-google-gmail.forward-event&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-google-gmail.turn-on-automatic-replies&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-google-gmail.get-event-by-id-calendar-event-&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-google-gmail.download-email-attachment-by-attachment-id&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-google-gmail.update-record-deprecated-&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-google-gmail.delete-email&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-google-gmail.replace-record-deprecated-&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-google-gmail.list-email-attachments&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-google-gmail.apply-gmail-labels&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-google-gmail.list-records-deprecated-&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-google-gmail.download-email&quot;
+    },
+    {
+      
+
+… (truncated, 7540 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#25</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">130ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/references/plugins/connector/impl.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Connector Activity Nodes — Implementation
+2	
+3	How to configure connector activity nodes: connection binding, enriched metadata, reference field resolution, and debugging. Connection bindings are emitted by `uip maestro flow node configure` into the flow&#x27;s top-level `bindings[]`; `bindings_v2.json` is regenerated from them at debug/pack time and should never be hand-edited.
+4	
+5	For generic node/edge add, remove, and wiring procedures, see [editing-operations.md](../../editing-operations.md). This guide covers the connector-specific configuration workflow that must follow the generic node add.
+6	
+7	## How Connector Nodes Differ from OOTB
+8	
+9	1. **Connection binding required** — every connector node needs an IS connection (OAuth, API key, etc.) authored in the flow&#x27;s top-level `bindings[]` (which the CLI regenerates into `bindings_v2.json` at debug/pack time). Without it, the node cannot authenticate.
+10	2. **Enriched metadata via `--connection-id`** — call `registry get` with `--connection-id` to get connection-aware field metadata. Without it, only base fields are returned — custom fields, dynamic enums, and reference resolution are missing.
+11	3. **`inputs.detail` object** —
+
+… (truncated, 66128 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#26</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">705ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow node add \&quot;BindingsReconfigure.flow\&quot; uipath.connector.uipath-google-gmail.get-email-list --label \&quot;Get Email List\&quot; --output json&quot;,
+  &quot;description&quot;: &quot;Add the Gmail connector node to the flow&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeAddSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;Node&quot;: {
+      &quot;Id&quot;: &quot;getEmailList1&quot;,
+      &quot;Type&quot;: &quot;uipath.connector.uipath-google-gmail.get-email-list&quot;,
+      &quot;TypeVersion&quot;: &quot;1.0.0&quot;,
+      &quot;Ui&quot;: {
+        &quot;Position&quot;: {
+          &quot;X&quot;: 0,
+          &quot;Y&quot;: 0
+        }
+      },
+      &quot;Display&quot;: {
+        &quot;Label&quot;: &quot;Get Email List&quot;
+      },
+      &quot;Inputs&quot;: {}
+    },
+    &quot;DefinitionAdded&quot;: true,
+    &quot;BindingsCreated&quot;: 0,
+    &quot;VariableCount&quot;: 3
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#27</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">918ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry get uipath.connector.uipath-google-gmail.get-email-list --connection-id 971fc639-5b3d-4921-aa16-3a8fa2e69948 --output json &gt; /tmp/gmail_getemaillist.json; echo \&quot;exit: $?\&quot;; python3 -c \&quot;\nimport json\nd = json.load(open(&#x27;/tmp/gmail_getemaillist.json&#x27;))\nnode = d[&#x27;Data&#x27;]\nprint(&#x27;connectorMethodInfo:&#x27;, json.dumps(node.get(&#x27;connectorMethodInfo&#x27;), indent=2))\nprint(&#x27;---form config--… (6 more chars)&quot;,
+  &quot;description&quot;: &quot;Get enriched registry metadata for the Gmail node with connection A&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>exit: 0
+connectorMethodInfo: null
+---form config---</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#28</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">88ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 -c \&quot;\nimport json\nd = json.load(open(&#x27;/tmp/gmail_getemaillist.json&#x27;))\nnode = d[&#x27;Data&#x27;]\nprint(list(node.keys()))\n\&quot;\n&quot;,
+  &quot;description&quot;: &quot;List top-level keys in registry get response&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>[&#x27;Node&#x27;]</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#29</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">97ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 -c \&quot;\nimport json\nd = json.load(open(&#x27;/tmp/gmail_getemaillist.json&#x27;))\nnode = d[&#x27;Data&#x27;][&#x27;Node&#x27;]\nprint(list(node.keys()))\nprint()\nprint(&#x27;connectorMethodInfo:&#x27;, json.dumps(node.get(&#x27;connectorMethodInfo&#x27;), indent=2))\n\&quot;\n&quot;,
+  &quot;description&quot;: &quot;Inspect Node keys and connectorMethodInfo&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>[&#x27;nodeType&#x27;, &#x27;version&#x27;, &#x27;category&#x27;, &#x27;tags&#x27;, &#x27;sortOrder&#x27;, &#x27;supportsErrorHandling&#x27;, &#x27;description&#x27;, &#x27;display&#x27;, &#x27;handleConfiguration&#x27;, &#x27;model&#x27;, &#x27;form&#x27;, &#x27;inputDefinition&#x27;, &#x27;inputDefaults&#x27;, &#x27;outputDefinition&#x27;, &#x27;debug&#x27;, &#x27;connectorMethodInfo&#x27;, &#x27;outputResponseDefinition&#x27;]
+
+connectorMethodInfo: {
+  &quot;operation&quot;: &quot;List&quot;,
+  &quot;description&quot;: &quot;Lists emails according to filter criteria&quot;,
+  &quot;method&quot;: &quot;GET&quot;,
+  &quot;parameters&quot;: [
+    {
+      &quot;name&quot;: &quot;pageSize&quot;,
+      &quot;description&quot;: &quot;The page size. Max and defaults to 10 if not provided.&quot;,
+      &quot;type&quot;: &quot;query&quot;,
+      &quot;dataType&quot;: &quot;integer&quot;,
+      &quot;required&quot;: false,
+      &quot;format&quot;: &quot;int32&quot;,
+      &quot;curated&quot;: false,
+      &quot;displayName&quot;: &quot;Page size&quot;
+    },
+    {
+      &quot;name&quot;: &quot;nextPage&quot;,
+      &quot;description&quot;: &quot;The next page cursor, taken from the response header `elements-next-page-token`&quot;,
+      &quot;type&quot;: &quot;query&quot;,
+      &quot;dataType&quot;: &quot;string&quot;,
+      &quot;required&quot;: false,
+      &quot;curated&quot;: false,
+      &quot;displayName&quot;: &quot;Next page&quot;
+    },
+    {
+      &quot;name&quot;: &quot;withAttachmentsOnly&quot;,
+      &quot;description&quot;: &quot;Return emails with only attachment.&quot;,
+      &quot;type&quot;: &quot;query&quot;,
+      &quot;dataType&quot;: &quot;boolean&quot;,
+      &quot;required&quot;: false,
+      &quot;defaultValue&quot;: false,
+      &quot;displayName&quot;: &quot;With a
+
+… (truncated, 5019 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#30</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">702ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip is connections list \&quot;uipath-google-gmail\&quot; --all-folders --output json | python3 -c \&quot;\nimport json,sys\nd = json.load(sys.stdin)\nfor c in d[&#x27;Data&#x27;]:\n    print(c[&#x27;Id&#x27;], c[&#x27;State&#x27;], c[&#x27;FolderKey&#x27;], c[&#x27;Name&#x27;])\n\&quot;&quot;,
+  &quot;description&quot;: &quot;List gmail connections with folder keys&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>971fc639-5b3d-4921-aa16-3a8fa2e69948 Enabled 5da18ec0-7de1-4e57-aaf1-ddc8a369c199 is.sandboxes.test@gmail.com
+5a1a639e-8395-4dc8-b043-6dc7d82de499 Enabled c4359cde-55f0-4f0e-9322-c6cdce74ab4c nikhilmaryala@gmail.com
+28717c8b-e16d-45e3-a0e8-318e1134a108 Enabled c4359cde-55f0-4f0e-9322-c6cdce74ab4c gmail-20260601185119978
+155c13a0-1958-4957-87ba-773e1471487d Enabled c4359cde-55f0-4f0e-9322-c6cdce74ab4c Productivity Google Gmail
+f96b0594-e9bb-46b1-9c28-2e9ad5604338 Enabled def71452-bad1-40fa-be08-da175e89bd1a is.sandboxes.test@gmail.com</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#31</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">692ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip is resources run list \&quot;uipath-google-gmail\&quot; \&quot;folder\&quot; --connection-id 971fc639-5b3d-4921-aa16-3a8fa2e69948 --output json 2&gt;&amp;1 | head -100&quot;,
+  &quot;description&quot;: &quot;Resolve Gmail folder reference field for connection A&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;ExecuteOperation&quot;,
+  &quot;Data&quot;: {
+    &quot;items&quot;: [
+      {
+        &quot;messageListVisibility&quot;: &quot;hide&quot;,
+        &quot;parentReference&quot;: &quot;&quot;,
+        &quot;isFolder&quot;: true,
+        &quot;displayName&quot;: &quot;Chat&quot;,
+        &quot;name&quot;: &quot;CHAT&quot;,
+        &quot;id&quot;: &quot;CHAT&quot;,
+        &quot;labelListVisibility&quot;: &quot;labelHide&quot;,
+        &quot;type&quot;: &quot;system&quot;,
+        &quot;referenceID&quot;: &quot;chat&quot;
+      },
+      {
+        &quot;parentReference&quot;: &quot;&quot;,
+        &quot;isFolder&quot;: true,
+        &quot;displayName&quot;: &quot;Sent&quot;,
+        &quot;name&quot;: &quot;SENT&quot;,
+        &quot;id&quot;: &quot;SENT&quot;,
+        &quot;type&quot;: &quot;system&quot;,
+        &quot;referenceID&quot;: &quot;sent&quot;
+      },
+      {
+        &quot;parentReference&quot;: &quot;&quot;,
+        &quot;isFolder&quot;: true,
+        &quot;displayName&quot;: &quot;Inbox&quot;,
+        &quot;name&quot;: &quot;INBOX&quot;,
+        &quot;id&quot;: &quot;INBOX&quot;,
+        &quot;type&quot;: &quot;system&quot;,
+        &quot;referenceID&quot;: &quot;inbox&quot;
+      },
+      {
+        &quot;messageListVisibility&quot;: &quot;hide&quot;,
+        &quot;parentReference&quot;: &quot;&quot;,
+        &quot;isFolder&quot;: true,
+        &quot;displayName&quot;: &quot;Important&quot;,
+        &quot;name&quot;: &quot;IMPORTANT&quot;,
+        &quot;id&quot;: &quot;IMPORTANT&quot;,
+        &quot;labelListVisibility&quot;: &quot;labelHide&quot;,
+        &quot;type&quot;: &quot;system&quot;,
+        &quot;referenceID&quot;: &quot;important&quot;
+      },
+      {
+        &quot;messageListVisibility&quot;: &quot;hide&quot;,
+        &quot;parentReference&quot;: &quot;&quot;,
+        &quot;isFolde
+
+… (truncated, 1304 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#32</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.26s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow node configure \&quot;BindingsReconfigure.flow\&quot; \&quot;getEmailList1\&quot; \\\n  --detail &#x27;{\&quot;connectionId\&quot;: \&quot;971fc639-5b3d-4921-aa16-3a8fa2e69948\&quot;, \&quot;folderKey\&quot;: \&quot;5da18ec0-7de1-4e57-aaf1-ddc8a369c199\&quot;, \&quot;method\&quot;: \&quot;GET\&quot;, \&quot;endpoint\&quot;: \&quot;/hubs/general/ListEmails\&quot;, \&quot;queryParameters\&quot;: {\&quot;emailFolder\&quot;: \&quot;inbox\&quot;}}&#x27; \\\n  --output json&quot;,
+  &quot;description&quot;: &quot;Configure the Gmail node with connection A&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeConfigureSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;NodeId&quot;: &quot;getEmailList1&quot;,
+    &quot;BindingsCreated&quot;: 2,
+    &quot;DetailPopulated&quot;: true
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#33</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">617ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry get core.control.end --output json &gt; /tmp/end_def.json &amp;&amp; cat /tmp/end_def.json&quot;,
+  &quot;description&quot;: &quot;Get the End node registry definition&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeGetSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;Node&quot;: {
+      &quot;nodeType&quot;: &quot;core.control.end&quot;,
+      &quot;version&quot;: &quot;1.0&quot;,
+      &quot;category&quot;: &quot;control-flow&quot;,
+      &quot;description&quot;: &quot;Mark the end of a process path&quot;,
+      &quot;tags&quot;: [
+        &quot;control-flow&quot;,
+        &quot;end&quot;,
+        &quot;finish&quot;,
+        &quot;complete&quot;
+      ],
+      &quot;sortOrder&quot;: 65,
+      &quot;display&quot;: {
+        &quot;label&quot;: &quot;End&quot;,
+        &quot;icon&quot;: &quot;circle-check&quot;,
+        &quot;shape&quot;: &quot;circle&quot;
+      },
+      &quot;handleConfiguration&quot;: [
+        {
+          &quot;position&quot;: &quot;left&quot;,
+          &quot;handles&quot;: [
+            {
+              &quot;id&quot;: &quot;input&quot;,
+              &quot;type&quot;: &quot;target&quot;,
+              &quot;handleType&quot;: &quot;input&quot;
+            }
+          ]
+        }
+      ],
+      &quot;model&quot;: {
+        &quot;type&quot;: &quot;bpmn:EndEvent&quot;
+      },
+      &quot;runtimeConstraints&quot;: {
+        &quot;exclude&quot;: [
+          &quot;api-function&quot;
+        ]
+      }
+    }
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#34</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">9ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-bindings-reconfigure-different-connection/BindingsReconfigureSolution/BindingsReconfigure/BindingsReconfigure.flow&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	{
+2	  &quot;id&quot;: &quot;73cde2eb-b15d-4375-ab7e-25f1b38af08c&quot;,
+3	  &quot;version&quot;: &quot;1.9&quot;,
+4	  &quot;name&quot;: &quot;BindingsReconfigure&quot;,
+5	  &quot;nodes&quot;: [
+6	    {
+7	      &quot;id&quot;: &quot;start&quot;,
+8	      &quot;type&quot;: &quot;core.trigger.manual&quot;,
+9	      &quot;typeVersion&quot;: &quot;1.0&quot;,
+10	      &quot;display&quot;: {
+11	        &quot;label&quot;: &quot;Manual trigger&quot;
+12	      },
+13	      &quot;inputs&quot;: {
+14	        &quot;entryPointId&quot;: &quot;a7b31e35-998a-444d-9eca-5b53cebe68d3&quot;,
+15	        &quot;isDefaultEntryPoint&quot;: true
+16	      }
+17	    },
+18	    {
+19	      &quot;id&quot;: &quot;getEmailList1&quot;,
+20	      &quot;type&quot;: &quot;uipath.connector.uipath-google-gmail.get-email-list&quot;,
+21	      &quot;typeVersion&quot;: &quot;1.0.0&quot;,
+22	      &quot;display&quot;: {
+23	        &quot;label&quot;: &quot;Get Email List&quot;
+24	      },
+25	      &quot;inputs&quot;: {
+26	        &quot;detail&quot;: {
+27	          &quot;connector&quot;: &quot;uipath-google-gmail&quot;,
+28	          &quot;connectionId&quot;: &quot;971fc639-5b3d-4921-aa16-3a8fa2e69948&quot;,
+29	          &quot;connectionResourceId&quot;: &quot;971fc639-5b3d-4921-aa16-3a8fa2e69948&quot;,
+30	          &quot;connectionFolderKey&quot;: &quot;5da18ec0-7de1-4e57-aaf1-ddc8a369c199&quot;,
+31	          &quot;method&quot;: &quot;GET&quot;,
+32	          &quot;endpoint&quot;: &quot;/hubs/general/ListEmails&quot;,
+33	          &quot;queryParameters&quot;: {
+34	            &quot;emailFolder&quot;: &quot;inbox&quot;
+35	          },
+36	          &quot;uiPathActivityTypeId&quot;: &quot;c9ec0f18-4e1b-
+
+… (truncated, 13285 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#35</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">27ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-bindings-reconfigure-different-connection &amp;&amp; mv BindingsReconfigureSolution BindingsReconfigure &amp;&amp; find BindingsReconfigure -maxdepth 3 -type f | sort&quot;,
+  &quot;description&quot;: &quot;Rename solution folder to BindingsReconfigure to match required top-level path&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>BindingsReconfigure/AGENTS.md
+BindingsReconfigure/BindingsReconfigure/BindingsReconfigure.flow
+BindingsReconfigure/BindingsReconfigure/bindings_v2.json
+BindingsReconfigure/BindingsReconfigure/operate.json
+BindingsReconfigure/BindingsReconfigure/project.uiproj
+BindingsReconfigure/BindingsReconfigureSolution.uipx
+BindingsReconfigure/CLAUDE.md</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#36</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">42ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;mkdir -p BindingsReconfigure/flow_files &amp;&amp; ln -s ../BindingsReconfigure/BindingsReconfigure.flow BindingsReconfigure/flow_files/BindingsReconfigure.flow &amp;&amp; ln -s BindingsReconfigure/project.uiproj BindingsReconfigure/project.uiproj &amp;&amp; ls -la BindingsReconfigure/ BindingsReconfigure/flow_files/&quot;,
+  &quot;description&quot;: &quot;Create flow_files symlink and project.uiproj symlink at required paths&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>BindingsReconfigure/:
+total 64
+drwxr-xr-x 5 root root  4096 Aug 18 22:05 .
+drwxr-xr-x 4 root root  4096 Aug 18 22:04 ..
+-rw-r--r-- 1 root root 20136 Aug 18 22:01 AGENTS.md
+drwxr-xr-x 2 root root  4096 Aug 18 22:04 BindingsReconfigure
+-rw-r--r-- 1 root root   292 Aug 18 22:01 BindingsReconfigureSolution.uipx
+-rw-r--r-- 1 root root 20136 Aug 18 22:01 CLAUDE.md
+drwxr-xr-x 2 root root  4096 Aug 18 22:05 flow_files
+lrwxrwxrwx 1 root root    34 Aug 18 22:05 project.uiproj -&gt; BindingsReconfigure/project.uiproj
+drwxr-xr-x 3 root root  4096 Aug 18 22:01 resources
+
+BindingsReconfigure/flow_files/:
+total 8
+drwxr-xr-x 2 root root 4096 Aug 18 22:05 .
+drwxr-xr-x 5 root root 4096 Aug 18 22:05 ..
+lrwxrwxrwx 1 root root   47 Aug 18 22:05 BindingsReconfigure.flow -&gt; ../BindingsReconfigure/BindingsReconfigure.flow</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#37</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">15ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;readlink -f BindingsReconfigure/flow_files/BindingsReconfigure.flow &amp;&amp; readlink -f BindingsReconfigure/project.uiproj &amp;&amp; cat BindingsReconfigure/project.uiproj&quot;,
+  &quot;description&quot;: &quot;Verify symlinks resolve to correct target files&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/work/output/artifacts/skill-flow-bindings-reconfigure-different-connection/BindingsReconfigure/BindingsReconfigure/BindingsReconfigure.flow
+/work/output/artifacts/skill-flow-bindings-reconfigure-different-connection/BindingsReconfigure/BindingsReconfigure/project.uiproj
+{
+  &quot;Name&quot;: &quot;BindingsReconfigure&quot;,
+  &quot;ProjectType&quot;: &quot;Flow&quot;
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#38</span>
+      <span class="tool-name">Edit</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">14ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;replace_all&quot;: false,
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-bindings-reconfigure-different-connection/BindingsReconfigure/BindingsReconfigure/BindingsReconfigure.flow&quot;,
+  &quot;old_string&quot;: &quot;  \&quot;nodes\&quot;: [\n    {\n      \&quot;id\&quot;: \&quot;start\&quot;,&quot;,
+  &quot;new_string&quot;: &quot;  \&quot;nodes\&quot;: [\n    {\n      \&quot;id\&quot;: \&quot;end\&quot;,\n      \&quot;type\&quot;: \&quot;core.control.end\&quot;,\n      \&quot;typeVersion\&quot;: \&quot;1.0\&quot;,\n      \&quot;display\&quot;: {\n        \&quot;label\&quot;: \&quot;End\&quot;\n      }\n    },\n    {\n      \&quot;id\&quot;: \&quot;start\&quot;,&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>The file /work/output/artifacts/skill-flow-bindings-reconfigure-different-connection/BindingsReconfigure/BindingsReconfigure/BindingsReconfigure.flow has been updated successfully. (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#39</span>
+      <span class="tool-name">Edit</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">18ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;replace_all&quot;: false,
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-bindings-reconfigure-different-connection/BindingsReconfigure/BindingsReconfigure/BindingsReconfigure.flow&quot;,
+  &quot;old_string&quot;: &quot;  \&quot;edges\&quot;: [],\n  \&quot;definitions\&quot;: [\n    {\n      \&quot;nodeType\&quot;: \&quot;core.trigger.manual\&quot;,&quot;,
+  &quot;new_string&quot;: &quot;  \&quot;edges\&quot;: [\n    {\n      \&quot;id\&quot;: \&quot;edge_start_output_getEmailList1_input\&quot;,\n      \&quot;sourceNodeId\&quot;: \&quot;start\&quot;,\n      \&quot;sourcePort\&quot;: \&quot;output\&quot;,\n      \&quot;targetNodeId\&quot;: \&quot;getEmailList1\&quot;,\n      \&quot;targetPort\&quot;: \&quot;input\&quot;\n    },\n    {\n      \&quot;id\&quot;: \&quot;edge_getEmailList1_output_end_input\&quot;,\n      \&quot;sourceNodeId\&quot;: \&quot;getEmailList1\&quot;,\n      \&quot;sourcePort\&quot;: \&quot;output\&quot;,\n      \&quot;targetNodeId\&quot;: \&quot;end\&quot;,\n      \&quot;targetPort\&quot;: \&quot;input\&quot;\n    }\n  ],… (866 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>The file /work/output/artifacts/skill-flow-bindings-reconfigure-different-connection/BindingsReconfigure/BindingsReconfigure/BindingsReconfigure.flow has been updated successfully. (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#40</span>
+      <span class="tool-name">Edit</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">14ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;replace_all&quot;: false,
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-bindings-reconfigure-different-connection/BindingsReconfigure/BindingsReconfigure/BindingsReconfigure.flow&quot;,
+  &quot;old_string&quot;: &quot;  \&quot;layout\&quot;: {\n    \&quot;nodes\&quot;: {\n      \&quot;start\&quot;: {&quot;,
+  &quot;new_string&quot;: &quot;  \&quot;layout\&quot;: {\n    \&quot;nodes\&quot;: {\n      \&quot;end\&quot;: {\n        \&quot;position\&quot;: {\n          \&quot;x\&quot;: 0,\n          \&quot;y\&quot;: 0\n        }\n      },\n      \&quot;start\&quot;: {&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>The file /work/output/artifacts/skill-flow-bindings-reconfigure-different-connection/BindingsReconfigure/BindingsReconfigure/BindingsReconfigure.flow has been updated successfully. (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#41</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">3.59s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-bindings-reconfigure-different-connection/BindingsReconfigure/BindingsReconfigure &amp;&amp; uip maestro flow validate \&quot;BindingsReconfigure.flow\&quot; --output json &amp;&amp; uip maestro flow format \&quot;BindingsReconfigure.flow\&quot; --output json&quot;,
+  &quot;description&quot;: &quot;Validate and format the flow&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>[ManifestClient] fetchDynamicNodes ok: total=315 agent context nodes=2 external agent nodes=7 orchestrator nodes=261 IXP nodes=45
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FlowValidate&quot;,
+  &quot;Data&quot;: {
+    &quot;File&quot;: &quot;/work/output/artifacts/skill-flow-bindings-reconfigure-different-connection/BindingsReconfigure/BindingsReconfigure/BindingsReconfigure.flow&quot;,
+    &quot;Status&quot;: &quot;Valid&quot;
+  }
+}
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FlowFormat&quot;,
+  &quot;Data&quot;: {
+    &quot;File&quot;: &quot;BindingsReconfigure.flow&quot;,
+    &quot;NodesTotal&quot;: 3,
+    &quot;EdgesTotal&quot;: 2,
+    &quot;NodesRepositioned&quot;: 2,
+    &quot;NodesResized&quot;: 3,
+    &quot;SubflowsTidied&quot;: 0,
+    &quot;VariableCount&quot;: 3
+  },
+  &quot;Instructions&quot;: &quot;Repositioned 2 of 3 nodes. Set canonical size on 3 node(s)&quot;
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#42</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">89ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-bindings-reconfigure-different-connection &amp;&amp; cp BindingsReconfigure/flow_files/BindingsReconfigure.flow after_a.flow &amp;&amp; ls -la after_a.flow &amp;&amp; python3 -c \&quot;\nimport json\nd = json.load(open(&#x27;after_a.flow&#x27;))\nprint(json.dumps(d[&#x27;bindings&#x27;], indent=2))\n\&quot;&quot;,
+  &quot;description&quot;: &quot;Snapshot flow after configuring with connection A and inspect bindings&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>-rw-r--r-- 1 root root 14513 Aug 18 22:06 after_a.flow
+[
+  {
+    &quot;id&quot;: &quot;bF720XQIj&quot;,
+    &quot;name&quot;: &quot;uipath-google-gmail connection&quot;,
+    &quot;type&quot;: &quot;string&quot;,
+    &quot;resource&quot;: &quot;connection&quot;,
+    &quot;resourceKey&quot;: &quot;971fc639-5b3d-4921-aa16-3a8fa2e69948&quot;,
+    &quot;propertyAttribute&quot;: &quot;ConnectionId&quot;,
+    &quot;default&quot;: &quot;971fc639-5b3d-4921-aa16-3a8fa2e69948&quot;
+  },
+  {
+    &quot;id&quot;: &quot;bnaj4Ivce&quot;,
+    &quot;name&quot;: &quot;FolderKey&quot;,
+    &quot;type&quot;: &quot;string&quot;,
+    &quot;resource&quot;: &quot;connection&quot;,
+    &quot;resourceKey&quot;: &quot;971fc639-5b3d-4921-aa16-3a8fa2e69948&quot;,
+    &quot;propertyAttribute&quot;: &quot;FolderKey&quot;,
+    &quot;default&quot;: &quot;5da18ec0-7de1-4e57-aaf1-ddc8a369c199&quot;
+  }
+]</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#43</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">897ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip is resources run list \&quot;uipath-google-gmail\&quot; \&quot;folder\&quot; --connection-id 5a1a639e-8395-4dc8-b043-6dc7d82de499 --output json 2&gt;&amp;1 | python3 -c \&quot;\nimport json,sys\nd = json.load(sys.stdin)\nfor item in d[&#x27;Data&#x27;][&#x27;items&#x27;][:5]:\n    print(item.get(&#x27;referenceID&#x27;), item.get(&#x27;displayName&#x27;))\n\&quot;&quot;,
+  &quot;description&quot;: &quot;Resolve Gmail folder reference field for connection B&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>chat Chat
+sent Sent
+inbox Inbox
+important Important
+trash Trash</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#44</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">9.03s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-bindings-reconfigure-different-connection/BindingsReconfigure/BindingsReconfigure &amp;&amp; uip maestro flow node configure \&quot;BindingsReconfigure.flow\&quot; \&quot;getEmailList1\&quot; \\\n  --detail &#x27;{\&quot;connectionId\&quot;: \&quot;5a1a639e-8395-4dc8-b043-6dc7d82de499\&quot;, \&quot;folderKey\&quot;: \&quot;c4359cde-55f0-4f0e-9322-c6cdce74ab4c\&quot;, \&quot;method\&quot;: \&quot;GET\&quot;, \&quot;endpoint\&quot;: \&quot;/hubs/general/ListEmails\&quot;, \&quot;queryParameters\&quot;: {\&quot;e… (187 more chars)&quot;,
+  &quot;description&quot;: &quot;Reconfigure the same node with connection B, then validate and format&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeConfigureSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;NodeId&quot;: &quot;getEmailList1&quot;,
+    &quot;BindingsCreated&quot;: 2,
+    &quot;DetailPopulated&quot;: true
+  }
+}
+[ManifestClient] fetchDynamicNodes ok: total=315 agent context nodes=2 external agent nodes=7 orchestrator nodes=261 IXP nodes=45
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FlowValidate&quot;,
+  &quot;Data&quot;: {
+    &quot;File&quot;: &quot;/work/output/artifacts/skill-flow-bindings-reconfigure-different-connection/BindingsReconfigure/BindingsReconfigure/BindingsReconfigure.flow&quot;,
+    &quot;Status&quot;: &quot;Valid&quot;
+  }
+}
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FlowFormat&quot;,
+  &quot;Data&quot;: {
+    &quot;File&quot;: &quot;BindingsReconfigure.flow&quot;,
+    &quot;NodesTotal&quot;: 3,
+    &quot;EdgesTotal&quot;: 2,
+    &quot;NodesRepositioned&quot;: 0,
+    &quot;NodesResized&quot;: 0,
+    &quot;SubflowsTidied&quot;: 0,
+    &quot;VariableCount&quot;: 3
+  },
+  &quot;Instructions&quot;: &quot;All nodes already in optimal positions&quot;
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#45</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">83ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-bindings-reconfigure-different-connection &amp;&amp; cp BindingsReconfigure/flow_files/BindingsReconfigure.flow after_b.flow &amp;&amp; python3 -c \&quot;\nimport json\nd = json.load(open(&#x27;after_b.flow&#x27;))\nprint(json.dumps(d[&#x27;bindings&#x27;], indent=2))\n\&quot;&quot;,
+  &quot;description&quot;: &quot;Snapshot flow after configuring with connection B and inspect bindings&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>[
+  {
+    &quot;id&quot;: &quot;bF720XQIj&quot;,
+    &quot;name&quot;: &quot;uipath-google-gmail connection&quot;,
+    &quot;type&quot;: &quot;string&quot;,
+    &quot;resource&quot;: &quot;connection&quot;,
+    &quot;resourceKey&quot;: &quot;5a1a639e-8395-4dc8-b043-6dc7d82de499&quot;,
+    &quot;propertyAttribute&quot;: &quot;ConnectionId&quot;,
+    &quot;default&quot;: &quot;5a1a639e-8395-4dc8-b043-6dc7d82de499&quot;
+  },
+  {
+    &quot;id&quot;: &quot;bnaj4Ivce&quot;,
+    &quot;name&quot;: &quot;FolderKey&quot;,
+    &quot;type&quot;: &quot;string&quot;,
+    &quot;resource&quot;: &quot;connection&quot;,
+    &quot;resourceKey&quot;: &quot;5a1a639e-8395-4dc8-b043-6dc7d82de499&quot;,
+    &quot;propertyAttribute&quot;: &quot;FolderKey&quot;,
+    &quot;default&quot;: &quot;c4359cde-55f0-4f0e-9322-c6cdce74ab4c&quot;
+  }
+]</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#46</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">573ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;\\\necho \&quot;--- structure check ---\&quot; &amp;&amp; \\\npython3 /home/azureuser/projects/skills/tests/tasks/uipath-maestro-flow/bindings/check_bindings.py has_connection_key_from_json after_a.flow conn_ids.json a &amp;&amp; \\\npython3 /home/azureuser/projects/skills/tests/tasks/uipath-maestro-flow/bindings/check_bindings.py no_connection_leak_from_json after_b.flow conn_ids.json a &amp;&amp; \\\npython3 /home/azureuser/projects/skill… (527 more chars)&quot;,
+  &quot;description&quot;: &quot;Run all check_bindings.py validations against the produced snapshots&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>--- structure check ---
+OK: after_a.flow references connection &#x27;971fc639-5b3d-4921-aa16-3a8fa2e69948&#x27;
+OK: after_b.flow has no references to old connection &#x27;971fc639-5b3d-4921-aa16-3a8fa2e69948&#x27;
+OK: after_b.flow all ConnectionId bindings point at &#x27;5a1a639e-8395-4dc8-b043-6dc7d82de499&#x27;
+OK: after_a.flow and after_b.flow have equal bindings count = 2
+OK: after_b.flow has no empty-keyed Connection bindings
+conn_ids.json OK</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#47</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">25ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;echo \&quot;=== Root files ===\&quot; &amp;&amp; ls -la *.json *.flow 2&gt;/dev/null &amp;&amp; echo &amp;&amp; echo \&quot;=== BindingsReconfigure required paths ===\&quot; &amp;&amp; ls -la BindingsReconfigure/flow_files/ BindingsReconfigure/project.uiproj &amp;&amp; echo &amp;&amp; echo \&quot;=== conn_ids.json ===\&quot; &amp;&amp; cat conn_ids.json&quot;,
+  &quot;description&quot;: &quot;Final check of all required output artifacts&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>=== Root files ===
+-rw-r--r-- 1 root root 14513 Aug 18 22:06 after_a.flow
+-rw-r--r-- 1 root root 14513 Aug 18 22:06 after_b.flow
+-rw-r--r-- 1 root root    88 Aug 18 21:57 conn_ids.json
+
+=== BindingsReconfigure required paths ===
+lrwxrwxrwx 1 root root   34 Aug 18 22:05 BindingsReconfigure/project.uiproj -&gt; BindingsReconfigure/project.uiproj
+
+BindingsReconfigure/flow_files/:
+total 8
+drwxr-xr-x 2 root root 4096 Aug 18 22:05 .
+drwxr-xr-x 5 root root 4096 Aug 18 22:05 ..
+lrwxrwxrwx 1 root root   47 Aug 18 22:05 BindingsReconfigure.flow -&gt; ../BindingsReconfigure/BindingsReconfigure.flow
+
+=== conn_ids.json ===
+{&quot;a&quot;:&quot;971fc639-5b3d-4921-aa16-3a8fa2e69948&quot;,&quot;b&quot;:&quot;5a1a639e-8395-4dc8-b043-6dc7d82de499&quot;}</pre>
+    
+  </div>
+</details>
+
+</div>
+
+<h2>Command Telemetry</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Total</div><div class="value">48</div></div>
+    <div class="stat"><div class="label">Successful</div><div class="value">48 (100%)</div></div>
+    <div class="stat"><div class="label">Failed</div><div class="value">0</div></div>
+    <div class="stat"><div class="label">Avg / cmd</div><div class="value">1.01s</div></div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 2fr;gap:16px;margin-top:12px">
+    <div>
+      <h4>By Tool</h4>
+      <table>
+        <thead><tr><th>Tool</th><th>Count</th></tr></thead>
+        <tbody><tr><td class='mono'>Bash</td><td>36</td></tr><tr><td class='mono'>Read</td><td>6</td></tr><tr><td class='mono'>Edit</td><td>3</td></tr><tr><td class='mono'>Grep</td><td>2</td></tr><tr><td class='mono'>Skill</td><td>1</td></tr></tbody>
+      </table>
+    </div>
+    <div>
+      <h4>Slowest</h4>
+      <table>
+        <thead><tr><th>Tool</th><th>Duration</th><th>Parameters</th></tr></thead>
+        <tbody><tr><td class='mono'>Bash</td><td>10.59s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip solution init &quot;BindingsReconfigur...</td></tr><tr><td class='mono'>Bash</td><td>9.03s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;cd /work/output/artifacts/skill-flow-...</td></tr><tr><td class='mono'>Bash</td><td>7.12s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip solution init &quot;BindingsReconfigur...</td></tr><tr><td class='mono'>Bash</td><td>5.10s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro flow init --help 2&gt;&amp;1 | h...</td></tr><tr><td class='mono'>Bash</td><td>3.59s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;cd /work/output/artifacts/skill-flow-...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+  <p><strong>Most Common Pattern:</strong> <code>Bash → Bash → Bash</code></p><p><strong>Skill Tool Invoked:</strong> 1 time(s)</p>
+</div>
+
+<h2>Generation Metrics</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Total Latency</div><div class="value">9m 39s</div></div>
+    <div class="stat"><div class="label">Turns</div><div class="value">1</div></div>
+    <div class="stat"><div class="label">Assistant Turns</div><div class="value">97</div></div>
+    <div class="stat"><div class="label">Avg Turn Latency</div><div class="value">9m 35s</div></div>
+    
+  </div>
+</div>
+
+<h2>Token Usage</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Input (uncached)</div><div class="value">98</div></div>
+    <div class="stat"><div class="label">Output</div><div class="value">43,655</div></div>
+    <div class="stat"><div class="label">Cache Write</div><div class="value">153,193</div></div>
+    <div class="stat"><div class="label">Cache Read</div><div class="value">6,553,217</div></div>
+    <div class="stat"><div class="label">Total</div><div class="value">6,750,163</div></div>
+    <div class="stat"><div class="label">Cost</div><div class="value">$3.1956</div></div>
+  </div>
+</div>
+
+<h2>Agent Settings</h2>
+<div class="card" style="padding:0">
+  <table>
+    <tbody><tr><td class='mono dim'>Permission Mode</td><td>acceptEdits</td></tr><tr><td class='mono dim'>Allowed Tools</td><td>Skill, Bash, Read, Write, Edit, Glob, Grep</td></tr><tr><td class='mono dim'>Model</td><td>us.anthropic.claude-sonnet-5</td></tr><tr><td class='mono dim'>Max Turns</td><td>60</td></tr><tr><td class='mono dim'>System Prompt</td><td>You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted. </td></tr><tr><td class='mono dim'>System Prompt Mode</td><td>append</td></tr><tr><td class='mono dim'>Plugins</td><td>/home/azureuser/projects/skills</td></tr></tbody>
+  </table>
+</div>
+
+<h2>Environment</h2>
+<div class="card" style="padding:0">
+  <table>
+    <tbody><tr><td class='mono dim'>git_commit</td><td>unknown</td></tr><tr><td class='mono dim'>skills_git_commit</td><td>unknown</td></tr><tr><td class='mono dim'>cli_version</td><td>1.201.0-dev.8272</td></tr><tr><td class='mono dim'>tool_plugins</td><td>{&#x27;admin-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;agent-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;agenthub-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;aops-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;api-workflow-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;automation-hub-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;codedagent-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;codedapp-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;coder-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;context-grounding-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;conversational-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;data-fabric-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;docsai-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;function-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;gov-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;guardrails-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;insights-tool&#x27;: &#x27;1.201.0-dev.8276&#x27;, &#x27;integrationservice-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;ixp-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;llm-gateway-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;llmgw-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;maestro-tool&#x27;: &#x27;1.201.0-dev.8275&#x27;, &#x27;model-hub-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;orchestrator-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;platform-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;pm-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;rpa-legacy-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;rpa-tool&#x27;: &#x27;1.201.0-dev.20260809.3&#x27;, &#x27;solution-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;tasks-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;test-manager-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;traces-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;vertical-solutions-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;}</td></tr><tr><td class='mono dim'>coder_eval</td><td>0.9.6</td></tr><tr><td class='mono dim'>claude_code_cli</td><td>2.1.177 (Claude Code)</td></tr><tr><td class='mono dim'>uv</td><td>uv 0.12.5 (x86_64-unknown-linux-gnu)</td></tr><tr><td class='mono dim'>anthropic</td><td>0.122.0</td></tr><tr><td class='mono dim'>openai</td><td>3.2.0</td></tr><tr><td class='mono dim'>pydantic</td><td>2.12.5</td></tr><tr><td class='mono dim'>api_routing</td><td>aws_bedrock</td></tr><tr><td class='mono dim'>eval_routing</td><td>aws_bedrock</td></tr><tr><td class='mono dim'>aws_region</td><td>us-east-2</td></tr><tr><td class='mono dim'>bedrock_model</td><td>us.anthropic.claude-sonnet-4-6</td></tr><tr><td class='mono dim'>system_prompt_semantics</td><td>append</td></tr></tbody>
+  </table>
+</div>
+
+<footer>Generated by coder_eval · 2026-08-18T22:06:53</footer>
+</div>
+<script>
+function toggleTheme() {
+  document.documentElement.classList.toggle('light');
+  try {
+    const mode = document.documentElement.classList.contains('light') ? 'light' : 'dark';
+    localStorage.setItem('coder-eval-theme', mode);
+  } catch (e) { /* ignore */ }
+}
+(function() {
+  try {
+    if (localStorage.getItem('coder-eval-theme') === 'light') {
+      document.documentElement.classList.add('light');
+    }
+  } catch (e) { /* ignore */ }
+})();
+</script>
+</body>
+</html>

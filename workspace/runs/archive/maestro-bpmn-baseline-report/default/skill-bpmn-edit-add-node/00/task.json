@@ -1,0 +1,1752 @@
+{
+  "task_id": "skill-bpmn-edit-add-node",
+  "task_description": "Brownfield edit: insert a new script task into an existing, valid Maestro BPMN between two adjacent tasks, rewiring the sequence flow and diagram while preserving element ids, uipath:* payloads, and uipath:migrationVersion.\n",
+  "variant_id": "default",
+  "agent_type": "claude-code",
+  "model_used": "claude-sonnet-4-6",
+  "started_at": "2026-07-20T23:02:10.215645",
+  "completed_at": "2026-07-20T23:03:52.467631",
+  "duration_seconds": 102.2520124912262,
+  "final_status": "SUCCESS",
+  "max_turns_exhausted": false,
+  "weighted_score": 1.0,
+  "iteration_count": 1,
+  "success_criteria_results": [
+    {
+      "result_kind": "basic",
+      "criterion_type": "file_exists",
+      "description": "The edited BPMN file is still present",
+      "score": 1.0,
+      "details": "File 'OrderIntake.bpmn' exists",
+      "error": null,
+      "pass_threshold": 1.0
+    },
+    {
+      "result_kind": "basic",
+      "criterion_type": "file_contains",
+      "description": "Preserve-only payload round-tripped untouched",
+      "score": 1.0,
+      "details": "Includes: 2/2 found; Score: 1.00",
+      "error": null,
+      "pass_threshold": 1.0
+    },
+    {
+      "result_kind": "basic",
+      "criterion_type": "run_command",
+      "description": "New script node inserted and wired, untouched content preserved, file still structurally sound",
+      "score": 1.0,
+      "details": "Command: python3 $TASK_DIR/check_add_node.py\nExit code: 0 (expected: 0)\nStdout:\nOK: script node inserted, flow rewired, untouched content preserved\n\nStderr: (empty)",
+      "error": null,
+      "pass_threshold": 1.0
+    }
+  ],
+  "iterations": [
+    {
+      "iteration": 1,
+      "user_input": "Your working directory is: /work/output/artifacts/skill-bpmn-edit-add-node\n\nLoad and follow the uipath-maestro-bpmn skill.\n\nA valid Maestro BPMN file `OrderIntake.bpmn` is in the working directory. Its\nflow is: \"Validate Order\" (Task_Validate) -> \"Notify Customer\" (Task_Notify).\n\nInsert a new script task named \"Reserve Stock\" BETWEEN \"Validate Order\" and\n\"Notify Customer\", so the order becomes\nValidate Order -> Reserve Stock -> Notify Customer. Rewire the sequence flows\nand update the diagram so the new node and its flows render.\n\nMake a SURGICAL edit: preserve everything you did not author — the existing\nelement ids, the uipath:* extension payloads, uipath:migrationVersion, and the\nprocess variables must round-trip untouched.\n\nValidate the edited file locally before finishing. Do not upload, publish,\ndeploy, debug, run, or pack anything, and do not pause for approval — make the\nedit end to end in one pass.\n",
+      "agent_output": "[ASSISTANT] Now I have a clear picture. I'll make surgical edits to insert `Task_Reserve` between `Task_Validate` and `Task_Notify`. Here's the plan:\n\n1. Rewire `Flow_VN` to point at the new `Task_Reserve` instead of `Task_Notify`\n2. Update `Task_Notify`'s `<bpmn:incoming>` to the new flow `Flow_RN`\n3. Insert the new `<bpmn:scriptTask id=\"Task_Reserve\">` element\n4. Add `<bpmn:sequenceFlow id=\"Flow_RN\">` from `Task_Reserve` to `Task_Notify`\n5. Shift `Task_Notify` and `End_1` right in the diagram to make room\n6. Add the new shape and edge for `Task_Reserve`, and update waypoints\n[ASSISTANT] Now let me make the surgical edits. I'll do them one by one to keep precision.\n\n**Step 1:** Retarget `Flow_VN` from `Task_Notify` → `Task_Reserve`, and update `Task_Notify`'s `<bpmn:incoming>` to `Flow_RN`.\n[ASSISTANT] **Step 2:** Update `Task_Validate`'s `<bpmn:outgoing>` — it already says `Flow_VN`, which is now retargeted to `Task_Reserve`. That's correct, no change needed there.\n\n**Step 3:** Update the diagram — shift `Task_Notify` right (from x=410 to x=570), shift `End_1` right (from x=570 to x=730), insert shape for `Task_Reserve` at x=410, add edge for `Flow_RN`, and update waypoints for `Flow_NE`.\n[ASSISTANT] Now let me verify the final file looks correct:\n[ASSISTANT] The file looks exactly right. Now run the validator:\n[ASSISTANT] The validator returns **VALID** (exit 0).\n[ASSISTANT] The edit is complete and validated. Here's a summary of every surgical change made to `OrderIntake.bpmn`:\n\n---\n\n### Changes made\n\n**Process flow elements (3 changes):**\n\n1. **New `<bpmn:scriptTask id=\"Task_Reserve\">`** inserted between `Task_Validate` and `Task_Notify` — a `BPMN.ScriptTask` with `scriptFormat=\"JavaScript\"`, `uipath:scriptVersion v3`, and the same `uipath:mapping` pattern as the other script tasks. Reads `Var_Qty` as input, returns `\"reserved\"`.\n\n2. **`Flow_VN` retargeted** — `sourceRef=\"Task_Validate\" targetRef=\"Task_Reserve\"` (was `Task_Notify`).\n\n3. **New `<bpmn:sequenceFlow id=\"Flow_RN\">`** added — `sourceRef=\"Task_Reserve\" targetRef=\"Task_Notify\"`.\n\n4. **`Task_Notify` incoming ref** updated from `Flow_VN` → `Flow_RN`.\n\n**Diagram (4 changes, all additive or coordinate shifts):**\n\n5. **New `BPMNShape` for `Task_Reserve`** at `x=410 y=78 w=100 h=80` (the slot previously occupied by `Task_Notify`).\n6. **`Task_Notify` shape** shifted right: `x=570` (was 410).\n7. **`End_1` shape** shifted right: `x=730` (was 570).\n8. **New `BPMNEdge E_Flow_RN`** for `Flow_RN` with waypoints `510→570` at y=118.\n9. **`E_Flow_NE` waypoints** updated: `670→730` at y=118 (was `510→570`).\n\n**Preserved untouched:** `Definitions_OrderIntake`, `Process_OrderIntake`, `uipath:migrationVersion version=\"11.5\"`, `uipath:caseManagement` CDATA payload, both process variables (`Var_OrderId`, `Var_Qty`), all of `Task_Validate`'s extension XML, `Task_Notify`'s original extension XML, `Flow_S1`, `Flow_VN` id, `Flow_NE` id, all shape ids, and the `E_Flow_VN` waypoints.\n[RESULT - SUCCESS] The edit is complete and validated. Here's a summary of every surgical change made to `OrderIntake.bpmn`:\n\n---\n\n### Changes made\n\n**Process flow elements (3 changes):**\n\n1. **New `<bpmn:scriptTask id=\"Task_Reserve\">`** inserted between `Task_Validate` and `Task_Notify` — a `BPMN.ScriptTask` with `scriptFormat=\"JavaScript\"`, `uipath:scriptVersion v3`, and the same `uipath:mapping` pattern as the other script tasks. Reads `Var_Qty` as input, returns `\"reserved\"`.\n\n2. **`Flow_VN` retargeted** — `sourceRef=\"Task_Validate\" targetRef=\"Task_Reserve\"` (was `Task_Notify`).\n\n3. **New `<bpmn:sequenceFlow id=\"Flow_RN\">`** added — `sourceRef=\"Task_Reserve\" targetRef=\"Task_Notify\"`.\n\n4. **`Task_Notify` incoming ref** updated from `Flow_VN` → `Flow_RN`.\n\n**Diagram (4 changes, all additive or coordinate shifts):**\n\n5. **New `BPMNShape` for `Task_Reserve`** at `x=410 y=78 w=100 h=80` (the slot previously occupied by `Task_Notify`).\n6. **`Task_Notify` shape** shifted right: `x=570` (was 410).\n7. **`End_1` shape** shifted right: `x=730` (was 570).\n8. **New `BPMNEdge E_Flow_RN`** for `Flow_RN` with waypoints `510→570` at y=118.\n9. **`E_Flow_NE` waypoints** updated: `670→730` at y=118 (was `510→570`).\n\n**Preserved untouched:** `Definitions_OrderIntake`, `Process_OrderIntake`, `uipath:migrationVersion version=\"11.5\"`, `uipath:caseManagement` CDATA payload, both process variables (`Var_OrderId`, `Var_Qty`), all of `Task_Validate`'s extension XML, `Task_Notify`'s original extension XML, `Flow_S1`, `Flow_VN` id, `Flow_NE` id, all shape ids, and the `E_Flow_VN` waypoints.",
+      "commands": [
+        {
+          "tool_name": "Skill",
+          "tool_id": "toolu_bdrk_01FbgTd3vtCKCNFKwzTDJGb6",
+          "assistant_turn_index": 1,
+          "timestamp": "2026-07-20T23:02:19.227569",
+          "duration_ms": 254.04192507266998,
+          "generation_completed_at": "2026-07-20T23:02:19.227569",
+          "execution_started_at": "2026-07-20T23:02:19.227846",
+          "execution_completed_at": "2026-07-20T23:02:19.481888",
+          "parameters": {
+            "skill": "uipath:uipath-maestro-bpmn"
+          },
+          "result_status": "success",
+          "result_summary": "Launching skill: uipath:uipath-maestro-bpmn",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 0,
+          "result_tokens": 11
+        },
+        {
+          "tool_name": "Read",
+          "tool_id": "toolu_bdrk_01LpmPDSw91sxDVcXMy2k5iZ",
+          "assistant_turn_index": 3,
+          "timestamp": "2026-07-20T23:02:22.717999",
+          "duration_ms": 895.7789270207286,
+          "generation_completed_at": "2026-07-20T23:02:22.717999",
+          "execution_started_at": "2026-07-20T23:02:22.718068",
+          "execution_completed_at": "2026-07-20T23:02:23.613847",
+          "parameters": {
+            "file_path": "/work/output/artifacts/skill-bpmn-edit-add-node/OrderIntake.bpmn"
+          },
+          "result_status": "success",
+          "result_summary": "1\t<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n2\t<bpmn:definitions\n3\t    xmlns:bpmn=\"http://www.omg.org/spec/BPMN/20100524/MODEL\"\n4\t    xmlns:bpmndi=\"http://www.omg.org/spec/BPMN/20100524/DI\"\n5\t    xmlns:dc=\"http://www.omg.org/spec/DD/20100524/DC\"\n6\t    xmlns:di=\"http://www.omg.org/spec/DD/20100524/DI\"\n7\t    xmlns:uipath=\"http://uipath.org/schema/bpmn\"\n8\t    id=\"Definitions_OrderIntake\" targetNamespace=\"http://bpmn.io/schema/bpmn\"\n9\t    exporter=\"UiPath (https://bpmn.uipath.com)\" exporterVersion=\"1.0\">\n10\t  <bpmn:process id=\"Process_OrderIntake\" isExecutable=\"true\">\n11\t    <bpmn:extensionElements>\n12\t      <uipath:migrationVersion version=\"11.5\" />\n13\t      <uipath:caseManagement version=\"v1\"><![CDATA[{\"owner\":\"order-ops\",\"opaque\":\"preserve-only-do-not-touch\"}]]></uipath:caseManagement>\n14\t      <uipath:variables version=\"v1\">\n15\t        <uipath:inputOutput id=\"Var_OrderId\" name=\"OrderId\" type=\"string\" />\n16\t        <uipath:inputOutput id=\"Var_Qty\" name=\"Qty\" type=\"number\" />\n17\t      </uipath:variables>\n18\t    </bpmn:extensionElements>\n19\t    <bpmn:startEvent id=\"Start_1\" name=\"Start\"><bpmn:outgoing>Flow_S1</bpmn:outgoing></bpmn:startEvent>\n20\t    <bpmn:scriptTask id=\"Task_Validate\" name=\"Validate Order\" scriptFormat=\"JavaScript\">\n21\t      <bpmn:extensionElements>\n22\t        <uipath:scriptVersion value=\"v3\" />\n23\t        <uipath:mapping version=\"v1\">\n24\t          <uipath:type value=\"BPMN.ScriptTask\" version=\"v1\" />\n25\t          <uipath:input name=\"args\"><![CDATA[{\"orderId\":\"=vars.Var_OrderId\"}]]></uipath:input>\n26\t          <uipath:output name=\"qty\" type=\"number\" var=\"Var_Qty\" source=\"=result.response\" />\n27\t        </uipath:mapping>\n28\t      </bpmn:extensionElements>\n29\t      <bpmn:incoming>Flow_S1</bpmn:incoming><bpmn:outgoing>Flow_VN</bpmn:outgoing>\n30\t      <bpmn:script><![CDATA[return { response: orderId ? 1 : 0 };]]></bpmn:script>\n31\t    </bpmn:scriptTask>\n32\t    <bpmn:scriptTask id=\"Task_Notify\" name=\"Notify Customer\" scriptFormat=\"JavaScript\">\n33\t      <bpmn:extensionElements>\n34\t        <uipath:scriptVersion value=\"v3\" />\n35\t        <uipath:mapping version=\"v1\">\n36\t          <uipath:type value=\"BPMN.ScriptTask\" version=\"v1\" />\n37\t          <uipath:input name=\"args\"><![CDATA[{\"qty\":\"=vars.Var_Qty\"}]]></uipath:input>\n38\t        </uipath:mapping>\n39\t      </bpmn:extensionElements>\n40\t      <bpmn:incoming>Flow_VN</bpmn:incoming><bpmn:outgoing>Flow_NE</bpmn:outgoing>\n41\t      <bpmn:script><![CDATA[return { response: \"notified\" };]]></bpmn:script>\n42\t    </bpmn:scriptTask>\n43\t    <bpmn:endEvent id=\"End_1\" name=\"Done\"><bpmn:incoming>Flow_NE</bpmn:incoming></bpmn:endEvent>\n44\t    <bpmn:sequenceFlow id=\"Flow_S1\" sourceRef=\"Start_1\" targetRef=\"Task_Validate\" />\n45\t    <bpmn:sequenceFlow id=\"Flow_VN\" sourceRef=\"Task_Validate\" targetRef=\"Task_Notify\" />\n46\t    <bpmn:sequenceFlow id=\"Flow_NE\" sourceRef=\"Task_Notify\" targetRef=\"End_1\" />\n47\t  </bpmn:process>\n48\t  <bpmndi:BPMNDiagram id=\"Diagram_1\">\n49\t    <bpmndi:BPMNPlane id=\"Plane_1\" bpmnElement=\"Process_OrderIntake\">\n50\t      <bpmndi:BPMNShape id=\"S_Start_1\" bpmnElement=\"Start_1\"><dc:Bounds x=\"160\" y=\"100\" width=\"36\" height=\"36\" /></bpmndi:BPMNShape>\n51\t      <bpmndi:BPMNShape id=\"S_Task_Validate\" bpmnElement=\"Task_Validate\"><dc:Bounds x=\"250\" y=\"78\" width=\"100\" height=\"80\" /></bpmndi:BPMNShape>\n52\t      <bpmndi:BPMNShape id=\"S_Task_Notify\" bpmnElement=\"Task_Notify\"><dc:Bounds x=\"410\" y=\"78\" width=\"100\" height=\"80\" /></bpmndi:BPMNShape>\n53\t      <bpmndi:BPMNShape id=\"S_End_1\" bpmnElement=\"End_1\"><dc:Bounds x=\"570\" y=\"100\" width=\"36\" height=\"36\" /></bpmndi:BPMNShape>\n54\t      <bpmndi:BPMNEdge id=\"E_Flow_S1\" bpmnElement=\"Flow_S1\"><di:waypoint x=\"196\" y=\"118\" /><di:waypoint x=\"250\" y=\"118\" /></bpmndi:BPMNEdge>\n55\t      <bpmndi:BPMNEdge id=\"E_Flow_VN\" bpmnElement=\"Flow_VN\"><di:waypoint x=\"350\" y=\"118\" /><di:waypoint x=\"410\" y=\"118\" /></bpmndi:BPMNEdge>\n56\t      <bpmndi:BPMNEdge id=\"E_Flow_NE\" bpmnElement=\"Flow_NE\"><di:waypoint x=\"510\" y=\"118\" /><di:waypoint x=\"570\" y=\"118\" /></bpmndi:BPMNEdge>\n57\t    </bpmndi:BPMNPlane>\n58\t  </bpmndi:BPMNDiagram>\n59\t</bpmn:definitions>\n60\t",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 1,
+          "result_tokens": 1022
+        },
+        {
+          "tool_name": "Read",
+          "tool_id": "toolu_bdrk_01PuJgiGPiVB7bSXpUGe7oD2",
+          "assistant_turn_index": 4,
+          "timestamp": "2026-07-20T23:02:23.466386",
+          "duration_ms": 872.9075379669666,
+          "generation_completed_at": "2026-07-20T23:02:23.466386",
+          "execution_started_at": "2026-07-20T23:02:23.466441",
+          "execution_completed_at": "2026-07-20T23:02:24.339349",
+          "parameters": {
+            "file_path": "/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/structural-bpmn.md"
+          },
+          "result_status": "success",
+          "result_summary": "1\t# Structural BPMN (what the registry does not emit)\n2\t\n3\tThe registry's `xmlTemplate`s give you the `uipath:*` payload for each node\n4\t(see [registry-workflow.md](registry-workflow.md)). They do **not** give you the\n5\tstructural BPMN that holds those nodes together. This file is the ground truth\n6\tfor everything you author by hand around the templates.\n7\t\n8\tTwo sources define the contract:\n9\t\n10\t- the registry spec `bpmn-spec.json` — enumerates which BPMN element types and\n11\t  event definitions exist, via its `bpmnElements` section;\n12\t- the Studio Web canvas serializer\n13\t  (`PO.Frontend/src/services/serialization/`) — defines how that XML must be\n14\t  shaped to import and round-trip.\n15\t\n16\tWhere the registry stops, the canvas serializer is authoritative. Each\n17\tgap below is labelled **REGISTRY GAP** — the registry exposes no template for\n18\tit, so author it from this reference.\n19\t\n20\t## The document scaffold (REGISTRY GAP)\n21\t\n22\tThe registry emits no `<bpmn:definitions>` / `<bpmn:process>` root and no\n23\tnamespace declarations. Author this shell yourself. The canvas import detector\n24\t(`exporter.ts`) requires: a root `<…:definitions>` carrying a BPMN-spec\n25\tnamespace, at least one `<bpmn:process>`, and (to render) a\n26\t`<bpmndi:BPMNDiagram>`.\n27\t\n28\t```xml\n29\t<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n30\t<bpmn:definitions\n31\t    xmlns:bpmn=\"http://www.omg.org/spec/BPMN/20100524/MODEL\"\n32\t    xmlns:bpmndi=\"http://www.omg.org/spec/BPMN/20100524/DI\"\n33\t    xmlns:dc=\"http://www.omg.org/spec/DD/20100524/DC\"\n34\t    xmlns:di=\"http://www.omg.org/spec/DD/20100524/DI\"\n35\t    xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n36\t    xmlns:uipath=\"http://uipath.org/schema/bpmn\"\n37\t    id=\"Definitions_1\" targetNamespace=\"http://bpmn.io/schema/bpmn\"\n38\t    exporter=\"UiPath (https://bpmn.uipath.com)\" exporterVersion=\"1.0\">\n39\t  <bpmn:process id=\"Process_1\" isExecutable=\"true\">\n40\t    <!-- variables, flow nodes, sequence flows -->\n41\t  </bpmn:process>\n42\t  <bpmndi:BPMNDiagram id=\"Diagram_1\">\n43\t    <bpmndi:BPMNPlane id=\"Plane_1\" bpmnElement=\"Process_1\">\n44\t      <!-- one BPMNShape per node, one BPMNEdge per flow -->\n45\t    </bpmndi:BPMNPlane>\n46\t  </bpmndi:BPMNDiagram>\n47\t</bpmn:definitions>\n48\t```\n49\t\n50\tThe `uipath:` namespace URI is exactly `http://uipath.org/schema/bpmn`. All\n51\t`uipath:*` tags inside `extensionElements` are lower-camelCase\n52\t(`uipath:activity`, `uipath:variables`, `uipath:loopCharacteristics`, …).\n53\t\n54\tEvery `uipath:activity` / `uipath:event` / `uipath:mapping` carries its node\n55\ttype as a **child** element — `<uipath:type value=\"<Type>\" version=\"v1\" />` —\n56\tnever as a `type=` attribute on the wrapper. This holds both for templated nodes\n57\tand for any shell you author or preserve by hand.\n58\t\n59\tXML comments must not contain `--` (double-hyphen): it is invalid XML and the\n60\tfile will fail to parse. Never paste CLI commands or flags\n61\t(`--output`, `--connection-id`) into `<!-- … -->`. Keep comments minimal.\n62\t\n63\t## A complete minimal file (author from this, not from fixtures)\n64\t\n65\tThis is the whole shape — variables, an entry point, one node, a branch, and\n66\tthe diagram — in one valid file. Author from this skeleton plus the registry\n67\ttemplates for your nodes. **Do not read the validator's `test/fixtures/` to\n68\tinfer the pattern**; those are validator test data, and reading them is the\n69\tmain reason authoring runs out of time. Swap the `scriptTask` payload for the\n70\tregistry `xmlTemplate` of whatever node you need.\n71\t\n72\t```xml\n73\t<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n74\t<bpmn:definitions\n75\t    xmlns:bpmn=\"http://www.omg.org/spec/BPMN/20100524/MODEL\"\n76\t    xmlns:bpmndi=\"http://www.omg.org/spec/BPMN/20100524/DI\"\n77\t    xmlns:dc=\"http://www.omg.org/spec/DD/20100524/DC\"\n78\t    xmlns:di=\"http://www.omg.org/spec/DD/20100524/DI\"\n79\t    xmlns:uipath=\"http://uipath.org/schema/bpmn\"\n80\t    id=\"Definitions_1\" targetNamespace=\"http://bpmn.io/schema/bpmn\"\n81\t    exporter=\"UiPath (https://bpmn.uipath.com)\" exporterVersion=\"1.0\">\n82\t  <bpmn:process id=\"Process_1\" isExecutable=\"true\">\n83\t    <bpmn:extensionElements>\n84\t      <uipath:migrationVersion version=\"11.5\" />\n85\t      <uipath:variables version=\"v1\">\n86\t        <uipath:inputOutput id=\"Var_Amount\" name=\"Amount\" type=\"number\" />\n87\t        <uipath:inputOutput id=\"Var_Tier\" name=\"Tier\" type=\"string\" />\n88\t      </uipath:variables>\n89\t    </bpmn:extensionElements>\n90\t    <bpmn:startEvent id=\"Start_1\" name=\"Start\"><bpmn:outgoing>Flow_1</bpmn:outgoing></bpmn:startEvent>\n91\t    <bpmn:scriptTask id=\"Task_Tier\" name=\"Classify\" scriptFormat=\"JavaScript\">\n92\t      <bpmn:extensionElements>\n93\t        <uipath:scriptVersion value=\"v3\" />\n94\t        <uipath:mapping version=\"v1\">\n95\t          <uipath:type value=\"BPMN.ScriptTask\" version=\"v1\" />\n96\t          <uipath:input name=\"args\"><![CDATA[{\"amount\":\"=vars.Var_Amount\"}]]></uipath:input>\n97\t          <uipath:output name=\"tier\" type=\"string\" var=\"Var_Tier\" source=\"=result.response\" />\n98\t        </uipath:mapping>\n99\t      </bpmn:extensionElements>\n100\t      <bpmn:incoming>Flow_1</bpmn:incoming><bpmn:outgoing>Flow_2</bpmn:outgoing>\n101\t      <bpmn:script><![CDATA[return { response: amount > 1000 ? \"high\" : \"low\" };]]></bpmn:script>\n102\t    </bpmn:scriptTask>\n103\t    <bpmn:exclusiveGateway id=\"Gw_1\" name=\"Tier?\" default=\"Flow_Low\">\n104\t      <bpmn:incoming>Flow_2</bpmn:incoming>\n105\t      <bpmn:outgoing>Flow_High</bpmn:outgoing><bpmn:outgoing>Flow_Low</bpmn:outgoing>\n106\t    </bpmn:exclusiveGateway>\n107\t    <bpmn:endEvent id=\"End_High\" name=\"High\"><bpmn:incoming>Flow_High</bpmn:incoming></bpmn:endEvent>\n108\t    <bpmn:endEvent id=\"End_Low\" name=\"Low\"><bpmn:incoming>Flow_Low</bpmn:incoming></bpmn:endEvent>\n109\t    <bpmn:sequenceFlow id=\"Flow_1\" sourceRef=\"Start_1\" targetRef=\"Task_Tier\" />\n110\t    <bpmn:sequenceFlow id=\"Flow_2\" sourceRef=\"Task_Tier\" targetRef=\"Gw_1\" />\n111\t    <bpmn:sequenceFlow id=\"Flow_High\" sourceRef=\"Gw_1\" targetRef=\"End_High\">\n112\t      <bpmn:conditionExpression xsi:type=\"bpmn:tFormalExpression\"\n113\t        xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">=vars.Var_Tier == \"high\"</bpmn:conditionExpression>\n114\t    </bpmn:sequenceFlow>\n115\t    <bpmn:sequenceFlow id=\"Flow_Low\" sourceRef=\"Gw_1\" targetRef=\"End_Low\" />\n116\t  </bpmn:process>\n117\t  <bpmndi:BPMNDiagram id=\"Diagram_1\">\n118\t    <bpmndi:BPMNPlane id=\"Plane_1\" bpmnElement=\"Process_1\">\n119\t      <bpmndi:BPMNShape id=\"S_Start\" bpmnElement=\"Start_1\"><dc:Bounds x=\"160\" y=\"100\" width=\"36\" height=\"36\" /></bpmndi:BPMNShape>\n120\t      <bpmndi:BPMNShape id=\"S_Task\" bpmnElement=\"Task_Tier\"><dc:Bounds x=\"250\" y=\"78\" width=\"100\" height=\"80\" /></bpmndi:BPMNShape>\n121\t      <bpmndi:BPMNShape id=\"S_Gw\" bpmnElement=\"Gw_1\"><dc:Bounds x=\"410\" y=\"93\" width=\"50\" height=\"50\" /></bpmndi:BPMNShape>\n122\t      <bpmndi:BPMNShape id=\"S_High\" bpmnElement=\"End_High\"><dc:Bounds x=\"520\" y=\"40\" width=\"36\" height=\"36\" /></bpmndi:BPMNShape>\n123\t      <bpmndi:BPMNShape id=\"S_Low\" bpmnElement=\"End_Low\"><dc:Bounds x=\"520\" y=\"160\" width=\"36\" height=\"36\" /></bpmndi:BPMNShape>\n124\t      <bpmndi:BPMNEdge id=\"E_1\" bpmnElement=\"Flow_1\"><di:waypoint x=\"196\" y=\"118\" /><di:waypoint x=\"250\" y=\"118\" /></bpmndi:BPMNEdge>\n125\t      <bpmndi:BPMNEdge id=\"E_2\" bpmnElement=\"Flow_2\"><di:waypoint x=\"350\" y=\"118\" /><di:waypoint x=\"410\" y=\"118\" /></bpmndi:BPMNEdge>\n126\t      <bpmndi:BPMNEdge id=\"E_High\" bpmnElement=\"Flow_High\"><di:waypoint x=\"435\" y=\"93\" /><di:waypoint x=\"435\" y=\"58\" /><di:waypoint x=\"520\" y=\"58\" /></bpmndi:BPMNEdge>\n127\t      <bpmndi:BPMNEdge id=\"E_Low\" bpmnElement=\"Flow_Low\"><di:waypoint x=\"435\" y=\"143\" /><di:waypoint x=\"435\" y=\"178\" /><di:waypoint x=\"520\" y=\"178\" /></bpmndi:BPMNEdge>\n128\t    </bpmndi:BPMNPlane>\n129\t  </bpmndi:BPMNDiagram>\n130\t</bpmn:definitions>\n131\t```\n132\t\n133\t## Variables (`BPMN.Variables`)\n134\t\n135\tDeclare root variables with the `BPMN.Variables` registry template attached to\n136\tthe process via `extensionElements`, or use the canvas `<uipath:variables>`\n137\tblock directly. Variable bodies are CDATA. Reference variables in expressions as\n138\t`vars.<id>` — see [expression-authoring.md](expression-authoring.md).\n139\tSub-process-scoped variables go in that sub-process's own `<uipath:variables>`.\n140\t\n141\t## Script tasks (`BPMN.ScriptTask`) — Jint runtime contract\n142\t\n143\t`bpmn:scriptTask scriptFormat=\"JavaScript\"` runs under **Jint**, not Node.js or\n144\ta browser. The mapping payload comes from the `BPMN.ScriptTask` registry\n145\ttemplate, but the runtime contract is fixed:\n146\t\n147\t- Only these helpers exist: `uipath.aggregate`, `uipath._aggregate`,\n148\t  `uipath._pipe`, and a no-op `console`. No npm packages, filesystem, network,\n149\t  browser globals, or long-running async behavior. Execution envelope is ~64 MB\n150\t  / 30 s.\n151\t- Set `uipath:scriptVersion value=\"v3\"` for new scripts; preserve an imported\n152\t  `value=\"v2\"`. For v2+ the script returns JSON under `response`.\n153\t- Mapped `args` fields are read as **top-level identifiers** in the script body\n154\t  (`amount`, not `args.amount`); the input mapping itself stays `name=\"args\"`\n155\t  and maps each field by variable id (`=vars.Var_Amount`).\n156\t- Map the return back through `source=\"=result.response\"` (scalar) or\n157\t  `source=\"=result.response.<field>\"` (object field); `var` points at a declared\n158\t  variable id (do not put the target id in `name`).\n159\t\n160\t```xml\n161\t<bpmn:scriptTask id=\"Task_RiskScore\" name=\"Risk Score\" scriptFormat=\"JavaScript\">\n162\t  <bpmn:extensionElements>\n163\t    <uipath:scriptVersion value=\"v3\" />\n164\t    <uipath:mapping version=\"v1\">\n165\t      <uipath:type value=\"BPMN.ScriptTask\" version=\"v1\" />\n166\t      <uipath:input name=\"args\"><![CDATA[{\"amount\":\"=vars.Var_Amount\",\"daysOverdue\":\"=vars.Var_DaysOverdue\"}]]></uipath:input>\n167\t      <uipath:output name=\"riskScore\" type=\"number\" var=\"Var_RiskScore\" source=\"=result.response\" />\n168\t    </uipath:mapping>\n169\t  </bpmn:extensionElements>\n170\t  <bpmn:script><![CDATA[\n171\tvar score = amount * 0.01 + daysOverdue * 2;\n172\treturn { response: score };\n173\t]]></bpmn:script>\n174\t</bpmn:scriptTask>\n175\t```\n176\t\n177\t## Sequence flows, conditions, and gateway defaults (REGISTRY GAP)\n178\t\n179\tThe registry never emits `<bpmn:sequenceFlow>`, conditions, or the gateway\n180\t`default` attribute. Author all of them.\n181\t\n182\t- A flow: `<bpmn:sequenceFlow id=\"Flow_1\" sourceRef=\"A\" targetRef=\"B\" />`. The\n183\t  source/target nodes must also list `<bpmn:incoming>`/`<bpmn:outgoing>`\n184\t  (the registry templates leave `{incomingEdge}`/`{outgoingEdge}` placeholders\n185\t  for exactly these).\n186\t- Conditional flow body: `<bpmn:conditionExpression xsi:type=\"bpmn:tFormalExpression\">=vars.Var_X == \"approved\"</bpmn:conditionExpression>`.\n187\t  The canvas normalizes the body to start with `=` — always lead with `=`.\n188\t- Gateway default flow: set `default=\"Flow_else\"` on the gateway element, and\n189\t  give that flow no condition.\n190\t\n191\t## Gateways\n192\t\n193\tAuthor these gateway types for new BPMN: `bpmn:ExclusiveGateway`,\n194\t`bpmn:ParallelGateway`, `bpmn:InclusiveGateway`, `bpmn:EventBasedGateway`.\n195\t`bpmn:ComplexGateway` round-trips structurally but is **preserve-only** — do not\n196\tgenerate it for new authoring (see [Do not generate for new\n197\tauthoring](#do-not-generate-for-new-authoring-preserve-on-round-trip-only)).\n198\t\n199\t- **Exclusive (XOR)**: each non-default outgoing flow needs a\n200\t  `conditionExpression`; exactly one outgoing flow is the `default`. (Validator\n201\t  rule `MISSING_CONDITION_EXPRESSION`.)\n202\t- **Parallel (AND)**: fork = one in, many out; join = many in, one out. No\n203\t  conditions.\n204\t- **Inclusive (OR)**: conditions on outgoing flows; multiple may be taken.\n205\t- **Event-based**: routes to the first of several catch events / receive tasks\n206\t  to fire; its outgoing flows target intermediate catch events or receive tasks.\n207\t- A gateway with exactly one incoming and one outgoing flow is rejected\n208\t  (`SUPERFLUOUS_GATEWAY`). Activities/events must not have more than one\n209\t  incoming flow — join with a gateway, not a \"fake join\" (`FAKE_JOIN`).\n210\t\n211\t## Events and the event-definition matrix\n212\t\n213\t`bpmn-spec.json` `bpmnElements.events` enumerates which event definitions each\n214\tevent element can carry on **round-trip**. For **new authoring**, only the\n215\t**none**, **Message**, **Timer**, **Error** (on end + boundary), and\n216\t**Terminate** (on end events only) definitions are generated. Conditional,\n217\tSignal, Escalation, Compensate, Cancel, Link, multiple, and parallel-multiple\n218\tdefinitions are **preserve-only** — keep them when imported, but do not generate\n219\tthem for new BPMN (see [Do not generate for new\n220\tauthoring](#do-not-generate-for-new-authoring-preserve-on-round-trip-only)).\n221\t\n222\tThe matrix below is the round-trip acceptance per element; **preserve-only**\n223\tmarks definitions that the skill keeps but does not author for new files.\n224\t\n225\t| Event element | Authorable | Preserve-only (round-trip) |\n226\t| --- | --- | --- |\n227\t| `bpmn:StartEvent` | none, Message, Timer | Conditional, Signal |\n228\t| `bpmn:IntermediateThrowEvent` | none, Message | Escalation, Signal, Link, Compensate |\n229\t| `bpmn:IntermediateCatchEvent` | Message, Timer | Escalation, Signal, Conditional, Link, Compensate |\n230\t| `bpmn:EndEvent` | none, Message, Error, Terminate | Escalation, Compensate, Signal |\n231\t| `bpmn:BoundaryEvent` | Message, Timer, Error | Escalation, Conditional, Signal, Compensate |\n232\t\n233\tPayload shapes the canvas serializes:\n234\t\n235\t- **Timer**: `<bpmn:timerEventDefinition><bpmn:timeDuration xsi:type=\"bpmn:tFormalExpression\">PT30M</bpmn:timeDuration></bpmn:timerEventDefinition>`\n236\t  (or `timeDate` / `timeCycle`). Static durations must be valid ISO-8601;\n237\t  week designators (`PnW`) are unsupported. Expression-mode is allowed and\n238\t  accepts either prefix — `=…` or `@…`.\n239\t- **Message**: `<bpmn:messageEventDefinition messageRef=\"Message_1\" />` with a\n240\t  `<bpmn:message id=\"Message_1\" name=\"…\"/>` declared at definitions level. The\n241\t  Maestro internal-message events (`Maestro.ReceiveMessageEvent` /\n242\t  `Maestro.SendMessageEvent`) carry the `uipath:event` payload **and** a bare\n243\t  `<bpmn:messageEventDefinition />` (see their registry templates).\n244\t- **Error**: `<bpmn:errorEventDefinition errorRef=\"Error_1\" />` with a\n245\t  `<bpmn:error id=\"Error_1\" name=\"…\" errorCode=\"…\"/>` at definitions level. An\n246\t  error end event with no `errorRef` fails to parse at runtime\n247\t  (`ERROR_END_EVENT_MISSING_EXCEPTION`); an error referenced by a boundary event\n248\t  must declare an `errorCode` (`ERROR_BOUNDARY_EVENT_REQUIRES_ERROR_CODE`).\n249\t- **Terminate** (end events only): emit the bare\n250\t  `<bpmn:terminateEventDefinition />`.\n251\t\n252\tPreserve-only payloads — keep these when imported, but do not author them for\n253\tnew files:\n254\t\n255\t- **Signal**: `<bpmn:signalEventDefinition signalRef=\"Signal_1\" />` with a\n256\t  definitions-level `<bpmn:signal/>`.\n257\t- **Escalation**: `<bpmn:escalationEventDefinition escalationRef=\"Escalation_1\" />`\n258\t  with a `<bpmn:escalation id=\"Escalation_1\" name=\"…\" escalationCode=\"…\"/>`\n259\t  declared at definitions level (parallel to message/error/signal).\n260\t- **Conditional / Link / Compensate**: the bare definition element; the canvas\n261\t  round-trips it.\n262\t\n263\t### Boundary events (REGISTRY GAP for `attachedToRef` / `cancelActivity`)\n264\t\n265\tA boundary event attaches to an activity and catches an event on it. The\n266\tregistry exposes no boundary template; author it:\n267\t\n268\t```xml\n269\t<bpmn:boundaryEvent id=\"Boundary_Timeout\" attachedToRef=\"Task_DoWork\" cancelActivity=\"true\">\n270\t  <bpmn:timerEventDefinition>\n271\t    <bpmn:timeDuration xsi:type=\"bpmn:tFormalExpression\">PT15M</bpmn:timeDuration>\n272\t  </bpmn:timerEventDefinition>\n273\t  <bpmn:outgoing>Flow_OnTimeout</bpmn:outgoing>\n274\t</bpmn:boundaryEvent>\n275\t```\n276\t\n277\t- `attachedToRef` = id of the activity it sits on. The boundary event and that\n278\t  activity must be `flowElements` of the same parent scope.\n279\t- `cancelActivity=\"true\"` = interrupting (default); `cancelActivity=\"false\"` =\n280\t  non-interrupting. Per the spec, non-interrupting is available for\n281\t  Message/Timer/Escalation/Conditional/Signal — **not** Error or Compensate.\n282\t- Only one catch-all (no `errorRef`) error boundary event per task, and no two\n283\t  error boundary events with the same error code on one task\n284\t  (`MULTIPLE_CATCH_ALL_BOUNDARY_EVENTS_ON_TASK`,\n285\t  `DUPLICATE_ERROR_BOUNDARY_EVENT_ON_TASK`).\n286\t\n287\t### Retry and error mapping (REGISTRY GAP)\n288\t\n289\tUiPath-specific retry and error-mapping metadata live inside an activity's\n290\t`extensionElements`. The error **code** lives on the declared\n291\t`bpmn:error errorCode=\"…\"`; `uipath:*` elements reference it through `errorRef`.\n292\t\n293\t```xml\n294\t<uipath:retry maxRetryCount=\"2\" retryBackoff=\"PT30S\" retryBackoffType=\"exponential\"\n295\t              maxDuration=\"PT5M\" exponentialBase=\"2\" retryAllErrors=\"false\">\n296\t  <uipath:errorDefinition errorRef=\"Error_ServiceUnavailable\" />\n297\t</uipath:retry>\n298\t<uipath:errorMapping version=\"v1\">\n299\t  <uipath:error id=\"Mapped_ServiceUnavailable\" errorRef=\"Error_ServiceUnavailable\"\n300\t                priority=\"1\" condition=\"=vars.error.code == &quot;SERVICE_UNAVAILABLE&quot;\"\n301\t                detail=\"Service unavailable\" retryable=\"true\" />\n302\t</uipath:errorMapping>\n303\t```\n304\t\n305\t- `uipath:retry` attributes: `maxRetryCount`, `retryBackoff`, `retryBackoffType`,\n306\t  `maxDuration`, `exponentialBase`, `retryAllErrors`. Do not use stale aliases\n307\t  (`maxAttempts`, `interval`).\n308\t- `uipath:error` (mapping) fields: `id`, `errorRef`, `priority`, `condition`,\n309\t  `detail`, `retryable` (`true`/`false`). Conditions read the runtime error via\n310\t  `vars.error` and contain no assignments. Do not put `code=` on `uipath:error`;\n311\t  model the code on `bpmn:error errorCode` and reference via `errorRef`.\n312\t\n313\t## Subprocess, call activity, event subprocess (REGISTRY GAP for structure)\n314\t\n315\t- **SubProcess** (`bpmn:SubProcess`): a container with its own nested\n316\t  `flowElements` (start event, nodes, end event) and its own scoped\n317\t  `<uipath:variables>`. Variants: `collapsed`, `expanded`, `eventSubprocess`.\n318\t  The shape carries `isExpanded` for the collapsed/expanded distinction.\n319\t- **Event subprocess**: a `bpmn:SubProcess` with `triggeredByEvent=\"true\"`. It\n320\t  must have **exactly one** start event, and that start event **must carry an\n321\t  event definition** (with `isInterrupting`) — a blank start event is invalid for\n322\t  an event subprocess.\n323\t- **Call activity** (`bpmn:CallActivity`): invokes a *separate* Maestro\n324\t  instance. The registry provides the `uipath:activity` payload for the\n325\t  Orchestrator agentic/case-management call-activity types\n326\t  (`Orchestrator.StartAgenticProcess[Async]`, `…CaseMgmtProcess[Async]`). A\n327\t  plain BPMN `calledElement` round-trips but is not specially authored by the\n328\t  canvas layer.\n329\t- Each scope (process or sub-process) may have at most one blank (untyped) start\n330\t  event (`MULTIPLE_BLANK_START_EVENTS`).\n331\t\n332\t> SubProcess scopes operations *within the same instance*; CallActivity invokes\n333\t> a *separate* Maestro instance. Do not conflate them.\n334\t\n335\t## Multi-instance / loop characteristics (REGISTRY GAP — canvas supports it)\n336\t\n337\tThe registry spec enumerates **no** multi-instance or loop markers\n338\t(`grep` for `multiInstance`/`loopCharacteristics` in `bpmn-spec.json` returns\n339\tnothing). This is a genuine registry gap. The Studio Web canvas, however, **does**\n340\tserialize them (`elements/nodes.ts`), so author them from the canvas contract:\n341\t\n342\t```xml\n343\t<bpmn:multiInstanceLoopCharacteristics isSequential=\"true\">\n344\t  <bpmn:completionCondition xsi:type=\"bpmn:tFormalExpression\">=vars.Var_Done</bpmn:completionCondition>\n345\t  <bpmn:extensionElements>\n346\t    <uipath:loopCharacteristics\n347\t        inputCollection=\"=vars.Var_Items\" inputElement=\"item\" />\n348\t  </bpmn:extensionElements>\n349\t</bpmn:multiInstanceLoopCharacteristics>\n350\t```\n351\t\n352\t- `isSequential=\"true\"` = one at a time; `false` = parallel.\n353\t- The collection/item binding lives in the `uipath:loopCharacteristics`\n354\t  extension (`inputCollection`, `inputElement`), **not** in `loopCardinality`\n355\t  (the canvas never reads `loopCardinality`).\n356\t- The loop element **must declare `inputElement`** — do not rely on reading a\n357\t  bare `iterator`/`iterator.item` downstream without it. For a multi-instance\n358\t  **subprocess** body, bind `inputElement=\"iterator[0]\"` on\n359\t  `uipath:loopCharacteristics` and pass the current item into body activities\n360\t  with `=iterator[0].item`. Do not assume a bare alias such as `=currentItem` is\n361\t  in scope inside a marker subprocess body unless the file already uses it.\n362\t- Inside the body, read the current item with the `iterator` namespace — see\n363\t  [expression-authoring.md](expression-authoring.md).\n364\t- `bpmn:standardLoopCharacteristics` is also recognized (no uipath extension).\n365\t\n366\tBecause the registry exposes no template for this, treat it as a documented\n367\tauthoring path backed by the canvas serializer, and tell the user it is a\n368\tregistry gap if they ask why no `registry get` covers it.\n369\t\n370\t## Do not generate for new authoring (preserve on round-trip only)\n371\t\n372\tThese structures are **not** authored for new Maestro BPMN. If they appear in an\n373\timported or brownfield file, preserve them and report that the skill cannot\n374\tsafely regenerate or normalize them. Planned / preview / TBD statuses count as\n375\tunsupported for generation until current tooling confirms them.\n376\t\n377\t- Gateway: `bpmn:complexGateway`.\n378\t- Tasks / containers: `bpmn:manualTask`, `bpmn:adHocSubProcess`,\n379\t  `bpmn:transaction`.\n380\t- Event definitions: `conditionalEventDefinition`, `signalEventDefinition`,\n381\t  `escalationEventDefinition`, `compensateEventDefinition`,\n382\t  `cancelEventDefinition`, `linkEventDefinition`, multiple, and\n383\t  parallel-multiple event definitions.\n384\t- Markers: standard-loop and compensation markers (use only documented\n385\t  multi-instance parallel/sequential metadata for new loops).\n386\t- Terminate is supported **only** on end events — not on start, boundary,\n387\t  intermediate-catch, or intermediate-throw events.\n388\t- Preserve-only `uipath:*` extension payloads: keep these when imported, and when\n389\t  a file legitimately needs one, reproduce the shape (with synthetic, public-safe\n390\t  contents) rather than inventing a new one.\n391\t  - **Typed activity/event shells always use the lowercase `<uipath:activity>` /\n392\t    `<uipath:event>` wrapper with a `<uipath:type value=\"<Type>\" version=\"v1\" />`\n393\t    child** — including types not served by the live registry (e.g.\n394\t    `Maestro.CasePlanScheduler`, `Maestro.CaseManagerGuardrails`,\n395\t    `Maestro.CaseRulesEvaluator`). Do **not** substitute the capital-`A`\n396\t    `<uipath:Activity>` element for a typed shell.\n397\t  - The capital-`A` `<uipath:Activity>` element is a **separate** generic\n398\t    preserve-only payload (its own element, not a wrapper for typed shells).\n399\t  - `uipath:caseManagement` is a versioned body-string element —\n400\t    `<uipath:caseManagement version=\"v1\">…synthetic payload…</uipath:caseManagement>`.\n401\t  - `<uipath:scriptVersion value=\"v2\" />` is legacy: author `v3` for new scripts,\n402\t    preserve `v2` where it already exists.\n403\t\n404\t## Diagram interchange — `bpmndi` (REGISTRY GAP — always generated)\n405\t\n406\tThe registry emits no diagram. Import is **diagram-driven**: the canvas builds\n407\tnodes from `BPMNShape`s and edges from `BPMNEdge`s, not by walking\n408\t`flowElements`. **A node with no shape is invisible; a flow with no edge is\n409\tdropped.** You must generate the full `BPMNDiagram` yourself.\n410\t\n411\t- One `<bpmndi:BPMNShape id=\"S_<nodeId>\" bpmnElement=\"<nodeId>\">` per node, with\n412\t  `<dc:Bounds x= y= width= height= />`. SubProcess shapes carry `isExpanded`.\n413\t- One `<bpmndi:BPMNEdge id=\"BPMNEdge_<flowId>\" bpmnElement=\"<flowId>\">` per\n414\t  sequence flow, with `<di:waypoint x= y= />` points.\n415\t- Lay nodes out left-to-right with non-overlapping bounds. Typical sizes: tasks\n416\t  100×80, events 36×36, gateways 50×50.\n417\t\n418\tExample:\n419\t\n420\t```xml\n421\t<bpmndi:BPMNShape id=\"S_StartEvent_1\" bpmnElement=\"StartEvent_1\">\n422\t  <dc:Bounds x=\"160\" y=\"100\" width=\"36\" height=\"36\" />\n423\t</bpmndi:BPMNShape>\n424\t<bpmndi:BPMNEdge id=\"BPMNEdge_Flow_1\" bpmnElement=\"Flow_1\">\n425\t  <di:waypoint x=\"196\" y=\"118\" />\n426\t  <di:waypoint x=\"260\" y=\"118\" />\n427\t</bpmndi:BPMNEdge>\n428\t```\n429\t\n430\t## Editing operations\n431\t\n432\tSafe, surgical edits on an existing `.bpmn` (preserve content you did not author\n433\t— see [SKILL.md](../SKILL.md#editing-an-existing-bpmn-preserve-what-you-did-not-author)):\n434\t\n435\t- **Add / delete / reconnect a node**: add the element with a stable id and its\n436\t  `<bpmn:incoming>`/`<bpmn:outgoing>` refs, add the sequence-flow elements in the\n437\t  owning scope, and add/update its `BPMNShape` and edge waypoints. On delete,\n438\t  remove orphaned flows and DI edges and recheck entry-point variables, output\n439\t  mappings, and binding references.\n440\t- **Insert a gateway**: split the existing sequence flow into an incoming and an\n441\t  outgoing flow, add conditions to the outgoing flows plus one `default`, add a\n442\t  matching join only if branches actually need synchronization, then re-waypoint\n443\t  the diagram (gateway shape + all edges).\n444\t- **Move logic into a subprocess**: move only elements that share a valid scope,\n445\t  re-scope their variables, recreate legal subprocess flow boundaries, and add a\n446\t  second diagram plane for the subprocess so nested content renders.\n447\t- **Add an entry point**: use a root-level start event, add a stable unique\n448\t  `uipath:entryPointId`, and declare input/output variables whose `elementId`\n449\t  matches that start event.\n450\t\n451\tDo not patch generated JSON to fix source behavior — change the `.bpmn` and\n452\tregenerate. For `Intsvc.*` activities/triggers, hand editing to CLI enrichment.\n453\t\n454\t### Edit red-flags\n455\t\n456\tRe-check after any edit:\n457\t\n458\t- A diagram plane references a missing process, collaboration, or subprocess.\n459\t- A rendered element lacks a shape or its flow lacks an edge/waypoint.\n460\t- An entry-point variable points at the wrong start event.\n461\t- A `uipath:context` value references a missing binding.\n462\t- A topology edit rewrote unrelated `uipath:*` extension XML.\n463\t- An Integration Service element carries hand-authored connection details.\n464\t\n465\t## Validation\n466\t\n467\tThere is **no** `uip maestro bpmn validate` CLI command. The skill ships its own\n468\toffline validator that reconstructs the PO.Frontend Node/Edge/CanvasState model\n469\tfrom the parsed BPMN and runs **every** canvas validation rule — run it as the\n470\tprimary check:\n471\t\n472\t```bash\n473\tcd skills/uipath-maestro-bpmn/validator && npm install --silent\n474\tnode validate-bpmn.mjs <file.bpmn>   # prints VALID and exits 0, or prints errors and exits 1\n475\t```\n476\t\n477\t`VALID` / exit 0 means the document passes all rules. Any other output lists the\n478\tblocking errors (gateway/condition, fake-join, superfluous-gateway, error\n479\tend/boundary event, timer-duration, single-blank-start, variable-reference, and\n480\tIS-connector checks). See [validator/README.md](../validator/README.md).\n481\t\n482\tIf Node is unavailable, fall back to a well-formed-XML parse plus the structural\n483\tchecklist below — it mirrors the same blocking rules:\n484\t\n485\t```bash\n486\tpython3 -c \"import xml.etree.ElementTree as ET; ET.parse('<file.bpmn>')\"\n487\t```\n488\t\n489\tThen walk the structural checklist:\n490\t\n491\t1. Root is `<…:definitions>` with the BPMN + `uipath` namespaces.\n492\t2. Exactly one `<bpmndi:BPMNDiagram>` with a shape per node and an edge per flow.\n493\t3. Every `sourceRef`/`targetRef`/`attachedToRef`/`*Ref` resolves to a declared id.\n494\t4. Each XOR gateway: non-default flows have conditions; exactly one default.\n495\t5. No activity/event has more than one incoming flow.\n496\t6. Each event subprocess has exactly one start event, and it carries an event\n497\t   definition (with `isInterrupting`).\n498\t7. Every `vars.<id>` reference resolves to a declared variable.\n499\t8. Each `uipath:*` payload was produced from a `registry get` template, not\n500\t   hand-written.\n501\t",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 2,
+          "result_tokens": 7125
+        },
+        {
+          "tool_name": "TaskCreate",
+          "tool_id": "toolu_bdrk_01AS4xoNgcsJqoSZvraujcTL",
+          "assistant_turn_index": 7,
+          "timestamp": "2026-07-20T23:02:45.876918",
+          "duration_ms": 19.50926799327135,
+          "generation_completed_at": "2026-07-20T23:02:45.876918",
+          "execution_started_at": "2026-07-20T23:02:45.876971",
+          "execution_completed_at": "2026-07-20T23:02:45.896480",
+          "parameters": {
+            "subject": "Insert Task_Reserve script task between Task_Validate and Task_Notify",
+            "description": "Surgically edit OrderIntake.bpmn to insert a new \"Reserve Stock\" script task (Task_Reserve) between Task_Validate and Task_Notify, rewire sequence flows, and update the diagram."
+          },
+          "result_status": "success",
+          "result_summary": "Task #1 created successfully: Insert Task_Reserve script task between Task_Validate and Task_Notify",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 3,
+          "result_tokens": 25
+        },
+        {
+          "tool_name": "TaskUpdate",
+          "tool_id": "toolu_bdrk_01UQabedE9YqKtjBzMGwLVWy",
+          "assistant_turn_index": 8,
+          "timestamp": "2026-07-20T23:02:48.153210",
+          "duration_ms": 143.42068403493613,
+          "generation_completed_at": "2026-07-20T23:02:48.153210",
+          "execution_started_at": "2026-07-20T23:02:48.156651",
+          "execution_completed_at": "2026-07-20T23:02:48.300072",
+          "parameters": {
+            "taskId": "1",
+            "status": "in_progress"
+          },
+          "result_status": "success",
+          "result_summary": "Updated task #1 status",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 4,
+          "result_tokens": 6
+        },
+        {
+          "tool_name": "Edit",
+          "tool_id": "toolu_bdrk_01N58H1zoskJnx31bewyW9N1",
+          "assistant_turn_index": 10,
+          "timestamp": "2026-07-20T23:03:00.322968",
+          "duration_ms": 24.000809993594885,
+          "generation_completed_at": "2026-07-20T23:03:00.322968",
+          "execution_started_at": "2026-07-20T23:03:00.323024",
+          "execution_completed_at": "2026-07-20T23:03:00.347025",
+          "parameters": {
+            "replace_all": false,
+            "file_path": "/work/output/artifacts/skill-bpmn-edit-add-node/OrderIntake.bpmn",
+            "old_string": "    <bpmn:scriptTask id=\"Task_Notify\" name=\"Notify Customer\" scriptFormat=\"JavaScript\">\n      <bpmn:extensionElements>\n        <uipath:scriptVersion value=\"v3\" />\n        <uipath:mapping version=\"v1\">\n          <uipath:type value=\"BPMN.ScriptTask\" version=\"v1\" />\n          <uipath:input name=\"args\"><![CDATA[{\"qty\":\"=vars.Var_Qty\"}]]></uipath:input>\n        </uipath:mapping>\n      </bpmn:extensionElements>\n      <bpmn:incoming>Flow_VN</bpmn:incoming><bpmn:outgoing>Flow_NE</bpmn:outgoing>\n      <bpmn:script><![CDATA[return { response: \"notified\" };]]></bpmn:script>\n    </bpmn:scriptTask>\n    <bpmn:endEvent id=\"End_1\" name=\"Done\"><bpmn:incoming>Flow_NE</bpmn:incoming></bpmn:endEvent>\n    <bpmn:sequenceFlow id=\"Flow_S1\" sourceRef=\"Start_1\" targetRef=\"Task_Validate\" />\n    <bpmn:sequenceFlow id=\"Flow_VN\" sourceRef=\"Task_Validate\" targetRef=\"Task_Notify\" />\n    <bpmn:sequenceFlow id=\"Flow_NE\" sourceRef=\"Task_Notify\" targetRef=\"End_1\" />",
+            "new_string": "    <bpmn:scriptTask id=\"Task_Reserve\" name=\"Reserve Stock\" scriptFormat=\"JavaScript\">\n      <bpmn:extensionElements>\n        <uipath:scriptVersion value=\"v3\" />\n        <uipath:mapping version=\"v1\">\n          <uipath:type value=\"BPMN.ScriptTask\" version=\"v1\" />\n          <uipath:input name=\"args\"><![CDATA[{\"qty\":\"=vars.Var_Qty\"}]]></uipath:input>\n        </uipath:mapping>\n      </bpmn:extensionElements>\n      <bpmn:incoming>Flow_VN</bpmn:incoming><bpmn:outgoing>Flow_RN</bpmn:outgoing>\n      <bpmn:script><![CDATA[return { response: \"reserved\" };]]></bpmn:script>\n    </bpmn:scriptTask>\n    <bpmn:scriptTask id=\"Task_Notify\" name=\"Notify Customer\" scriptFormat=\"JavaScript\">\n      <bpmn:extensionElements>\n        <uipath:scriptVersion value=\"v3\" />\n        <uipath:mapping version=\"v1\">\n          <uipath:type value=\"BPMN.ScriptTask\" version=\"v1\" />\n          <uipath:input name=\"args\"><![CDATA[{\"qty\":\"=vars.Var_Qty\"}]]></uipath:input>\n        </uipath:mapping>\n      </bpmn:extensionElements>\n      <bpmn:incoming>Flow_RN</bpmn:incoming><bpmn:outgoing>Flow_NE</bpmn:outgoing>\n      <bpmn:script><![CDATA[return { response: \"notified\" };]]></bpmn:script>\n    </bpmn:scriptTask>\n    <bpmn:endEvent id=\"End_1\" name=\"Done\"><bpmn:incoming>Flow_NE</bpmn:incoming></bpmn:endEvent>\n    <bpmn:sequenceFlow id=\"Flow_S1\" sourceRef=\"Start_1\" targetRef=\"Task_Validate\" />\n    <bpmn:sequenceFlow id=\"Flow_VN\" sourceRef=\"Task_Validate\" targetRef=\"Task_Reserve\" />\n    <bpmn:sequenceFlow id=\"Flow_RN\" sourceRef=\"Task_Reserve\" targetRef=\"Task_Notify\" />\n    <bpmn:sequenceFlow id=\"Flow_NE\" sourceRef=\"Task_Notify\" targetRef=\"End_1\" />"
+          },
+          "result_status": "success",
+          "result_summary": "The file /work/output/artifacts/skill-bpmn-edit-add-node/OrderIntake.bpmn has been updated successfully. (file state is current in your context — no need to Read it back)",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 5,
+          "result_tokens": 43
+        },
+        {
+          "tool_name": "Edit",
+          "tool_id": "toolu_bdrk_01JBFJyMoWfWrRBaAFdneTTt",
+          "assistant_turn_index": 12,
+          "timestamp": "2026-07-20T23:03:11.049109",
+          "duration_ms": 52.37831606063992,
+          "generation_completed_at": "2026-07-20T23:03:11.049109",
+          "execution_started_at": "2026-07-20T23:03:11.049177",
+          "execution_completed_at": "2026-07-20T23:03:11.101555",
+          "parameters": {
+            "replace_all": false,
+            "file_path": "/work/output/artifacts/skill-bpmn-edit-add-node/OrderIntake.bpmn",
+            "old_string": "      <bpmndi:BPMNShape id=\"S_Task_Notify\" bpmnElement=\"Task_Notify\"><dc:Bounds x=\"410\" y=\"78\" width=\"100\" height=\"80\" /></bpmndi:BPMNShape>\n      <bpmndi:BPMNShape id=\"S_End_1\" bpmnElement=\"End_1\"><dc:Bounds x=\"570\" y=\"100\" width=\"36\" height=\"36\" /></bpmndi:BPMNShape>\n      <bpmndi:BPMNEdge id=\"E_Flow_S1\" bpmnElement=\"Flow_S1\"><di:waypoint x=\"196\" y=\"118\" /><di:waypoint x=\"250\" y=\"118\" /></bpmndi:BPMNEdge>\n      <bpmndi:BPMNEdge id=\"E_Flow_VN\" bpmnElement=\"Flow_VN\"><di:waypoint x=\"350\" y=\"118\" /><di:waypoint x=\"410\" y=\"118\" /></bpmndi:BPMNEdge>\n      <bpmndi:BPMNEdge id=\"E_Flow_NE\" bpmnElement=\"Flow_NE\"><di:waypoint x=\"510\" y=\"118\" /><di:waypoint x=\"570\" y=\"118\" /></bpmndi:BPMNEdge>",
+            "new_string": "      <bpmndi:BPMNShape id=\"S_Task_Reserve\" bpmnElement=\"Task_Reserve\"><dc:Bounds x=\"410\" y=\"78\" width=\"100\" height=\"80\" /></bpmndi:BPMNShape>\n      <bpmndi:BPMNShape id=\"S_Task_Notify\" bpmnElement=\"Task_Notify\"><dc:Bounds x=\"570\" y=\"78\" width=\"100\" height=\"80\" /></bpmndi:BPMNShape>\n      <bpmndi:BPMNShape id=\"S_End_1\" bpmnElement=\"End_1\"><dc:Bounds x=\"730\" y=\"100\" width=\"36\" height=\"36\" /></bpmndi:BPMNShape>\n      <bpmndi:BPMNEdge id=\"E_Flow_S1\" bpmnElement=\"Flow_S1\"><di:waypoint x=\"196\" y=\"118\" /><di:waypoint x=\"250\" y=\"118\" /></bpmndi:BPMNEdge>\n      <bpmndi:BPMNEdge id=\"E_Flow_VN\" bpmnElement=\"Flow_VN\"><di:waypoint x=\"350\" y=\"118\" /><di:waypoint x=\"410\" y=\"118\" /></bpmndi:BPMNEdge>\n      <bpmndi:BPMNEdge id=\"E_Flow_RN\" bpmnElement=\"Flow_RN\"><di:waypoint x=\"510\" y=\"118\" /><di:waypoint x=\"570\" y=\"118\" /></bpmndi:BPMNEdge>\n      <bpmndi:BPMNEdge id=\"E_Flow_NE\" bpmnElement=\"Flow_NE\"><di:waypoint x=\"670\" y=\"118\" /><di:waypoint x=\"730\" y=\"118\" /></bpmndi:BPMNEdge>"
+          },
+          "result_status": "success",
+          "result_summary": "The file /work/output/artifacts/skill-bpmn-edit-add-node/OrderIntake.bpmn has been updated successfully. (file state is current in your context — no need to Read it back)",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 6,
+          "result_tokens": 43
+        },
+        {
+          "tool_name": "Read",
+          "tool_id": "toolu_bdrk_01GURLZp3kZZNxhWZngDAzyF",
+          "assistant_turn_index": 14,
+          "timestamp": "2026-07-20T23:03:13.750807",
+          "duration_ms": 6.807732977904379,
+          "generation_completed_at": "2026-07-20T23:03:13.750807",
+          "execution_started_at": "2026-07-20T23:03:13.750857",
+          "execution_completed_at": "2026-07-20T23:03:13.757665",
+          "parameters": {
+            "file_path": "/work/output/artifacts/skill-bpmn-edit-add-node/OrderIntake.bpmn"
+          },
+          "result_status": "success",
+          "result_summary": "1\t<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n2\t<bpmn:definitions\n3\t    xmlns:bpmn=\"http://www.omg.org/spec/BPMN/20100524/MODEL\"\n4\t    xmlns:bpmndi=\"http://www.omg.org/spec/BPMN/20100524/DI\"\n5\t    xmlns:dc=\"http://www.omg.org/spec/DD/20100524/DC\"\n6\t    xmlns:di=\"http://www.omg.org/spec/DD/20100524/DI\"\n7\t    xmlns:uipath=\"http://uipath.org/schema/bpmn\"\n8\t    id=\"Definitions_OrderIntake\" targetNamespace=\"http://bpmn.io/schema/bpmn\"\n9\t    exporter=\"UiPath (https://bpmn.uipath.com)\" exporterVersion=\"1.0\">\n10\t  <bpmn:process id=\"Process_OrderIntake\" isExecutable=\"true\">\n11\t    <bpmn:extensionElements>\n12\t      <uipath:migrationVersion version=\"11.5\" />\n13\t      <uipath:caseManagement version=\"v1\"><![CDATA[{\"owner\":\"order-ops\",\"opaque\":\"preserve-only-do-not-touch\"}]]></uipath:caseManagement>\n14\t      <uipath:variables version=\"v1\">\n15\t        <uipath:inputOutput id=\"Var_OrderId\" name=\"OrderId\" type=\"string\" />\n16\t        <uipath:inputOutput id=\"Var_Qty\" name=\"Qty\" type=\"number\" />\n17\t      </uipath:variables>\n18\t    </bpmn:extensionElements>\n19\t    <bpmn:startEvent id=\"Start_1\" name=\"Start\"><bpmn:outgoing>Flow_S1</bpmn:outgoing></bpmn:startEvent>\n20\t    <bpmn:scriptTask id=\"Task_Validate\" name=\"Validate Order\" scriptFormat=\"JavaScript\">\n21\t      <bpmn:extensionElements>\n22\t        <uipath:scriptVersion value=\"v3\" />\n23\t        <uipath:mapping version=\"v1\">\n24\t          <uipath:type value=\"BPMN.ScriptTask\" version=\"v1\" />\n25\t          <uipath:input name=\"args\"><![CDATA[{\"orderId\":\"=vars.Var_OrderId\"}]]></uipath:input>\n26\t          <uipath:output name=\"qty\" type=\"number\" var=\"Var_Qty\" source=\"=result.response\" />\n27\t        </uipath:mapping>\n28\t      </bpmn:extensionElements>\n29\t      <bpmn:incoming>Flow_S1</bpmn:incoming><bpmn:outgoing>Flow_VN</bpmn:outgoing>\n30\t      <bpmn:script><![CDATA[return { response: orderId ? 1 : 0 };]]></bpmn:script>\n31\t    </bpmn:scriptTask>\n32\t    <bpmn:scriptTask id=\"Task_Reserve\" name=\"Reserve Stock\" scriptFormat=\"JavaScript\">\n33\t      <bpmn:extensionElements>\n34\t        <uipath:scriptVersion value=\"v3\" />\n35\t        <uipath:mapping version=\"v1\">\n36\t          <uipath:type value=\"BPMN.ScriptTask\" version=\"v1\" />\n37\t          <uipath:input name=\"args\"><![CDATA[{\"qty\":\"=vars.Var_Qty\"}]]></uipath:input>\n38\t        </uipath:mapping>\n39\t      </bpmn:extensionElements>\n40\t      <bpmn:incoming>Flow_VN</bpmn:incoming><bpmn:outgoing>Flow_RN</bpmn:outgoing>\n41\t      <bpmn:script><![CDATA[return { response: \"reserved\" };]]></bpmn:script>\n42\t    </bpmn:scriptTask>\n43\t    <bpmn:scriptTask id=\"Task_Notify\" name=\"Notify Customer\" scriptFormat=\"JavaScript\">\n44\t      <bpmn:extensionElements>\n45\t        <uipath:scriptVersion value=\"v3\" />\n46\t        <uipath:mapping version=\"v1\">\n47\t          <uipath:type value=\"BPMN.ScriptTask\" version=\"v1\" />\n48\t          <uipath:input name=\"args\"><![CDATA[{\"qty\":\"=vars.Var_Qty\"}]]></uipath:input>\n49\t        </uipath:mapping>\n50\t      </bpmn:extensionElements>\n51\t      <bpmn:incoming>Flow_RN</bpmn:incoming><bpmn:outgoing>Flow_NE</bpmn:outgoing>\n52\t      <bpmn:script><![CDATA[return { response: \"notified\" };]]></bpmn:script>\n53\t    </bpmn:scriptTask>\n54\t    <bpmn:endEvent id=\"End_1\" name=\"Done\"><bpmn:incoming>Flow_NE</bpmn:incoming></bpmn:endEvent>\n55\t    <bpmn:sequenceFlow id=\"Flow_S1\" sourceRef=\"Start_1\" targetRef=\"Task_Validate\" />\n56\t    <bpmn:sequenceFlow id=\"Flow_VN\" sourceRef=\"Task_Validate\" targetRef=\"Task_Reserve\" />\n57\t    <bpmn:sequenceFlow id=\"Flow_RN\" sourceRef=\"Task_Reserve\" targetRef=\"Task_Notify\" />\n58\t    <bpmn:sequenceFlow id=\"Flow_NE\" sourceRef=\"Task_Notify\" targetRef=\"End_1\" />\n59\t  </bpmn:process>\n60\t  <bpmndi:BPMNDiagram id=\"Diagram_1\">\n61\t    <bpmndi:BPMNPlane id=\"Plane_1\" bpmnElement=\"Process_OrderIntake\">\n62\t      <bpmndi:BPMNShape id=\"S_Start_1\" bpmnElement=\"Start_1\"><dc:Bounds x=\"160\" y=\"100\" width=\"36\" height=\"36\" /></bpmndi:BPMNShape>\n63\t      <bpmndi:BPMNShape id=\"S_Task_Validate\" bpmnElement=\"Task_Validate\"><dc:Bounds x=\"250\" y=\"78\" width=\"100\" height=\"80\" /></bpmndi:BPMNShape>\n64\t      <bpmndi:BPMNShape id=\"S_Task_Reserve\" bpmnElement=\"Task_Reserve\"><dc:Bounds x=\"410\" y=\"78\" width=\"100\" height=\"80\" /></bpmndi:BPMNShape>\n65\t      <bpmndi:BPMNShape id=\"S_Task_Notify\" bpmnElement=\"Task_Notify\"><dc:Bounds x=\"570\" y=\"78\" width=\"100\" height=\"80\" /></bpmndi:BPMNShape>\n66\t      <bpmndi:BPMNShape id=\"S_End_1\" bpmnElement=\"End_1\"><dc:Bounds x=\"730\" y=\"100\" width=\"36\" height=\"36\" /></bpmndi:BPMNShape>\n67\t      <bpmndi:BPMNEdge id=\"E_Flow_S1\" bpmnElement=\"Flow_S1\"><di:waypoint x=\"196\" y=\"118\" /><di:waypoint x=\"250\" y=\"118\" /></bpmndi:BPMNEdge>\n68\t      <bpmndi:BPMNEdge id=\"E_Flow_VN\" bpmnElement=\"Flow_VN\"><di:waypoint x=\"350\" y=\"118\" /><di:waypoint x=\"410\" y=\"118\" /></bpmndi:BPMNEdge>\n69\t      <bpmndi:BPMNEdge id=\"E_Flow_RN\" bpmnElement=\"Flow_RN\"><di:waypoint x=\"510\" y=\"118\" /><di:waypoint x=\"570\" y=\"118\" /></bpmndi:BPMNEdge>\n70\t      <bpmndi:BPMNEdge id=\"E_Flow_NE\" bpmnElement=\"Flow_NE\"><di:waypoint x=\"670\" y=\"118\" /><di:waypoint x=\"730\" y=\"118\" /></bpmndi:BPMNEdge>\n71\t    </bpmndi:BPMNPlane>\n72\t  </bpmndi:BPMNDiagram>\n73\t</bpmn:definitions>\n74\t",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 7,
+          "result_tokens": 1274
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_01RVtkL2HdPuKeah8PgkBLnw",
+          "assistant_turn_index": 17,
+          "timestamp": "2026-07-20T23:03:19.058864",
+          "duration_ms": 518.2898279745132,
+          "generation_completed_at": "2026-07-20T23:03:19.058864",
+          "execution_started_at": "2026-07-20T23:03:19.058928",
+          "execution_completed_at": "2026-07-20T23:03:19.577218",
+          "parameters": {
+            "command": "cd /home/azureuser/projects/skills/skills/uipath-maestro-bpmn/validator && npm install --silent 2>&1 | tail -3 && node validate-bpmn.mjs /work/output/artifacts/skill-bpmn-edit-add-node/OrderIntake.bpmn",
+            "description": "Install validator deps and validate the edited BPMN file"
+          },
+          "result_status": "error",
+          "result_summary": "Exit code 1\nnode:internal/modules/package_json_reader:314\n  throw new ERR_MODULE_NOT_FOUND(packageName, fileURLToPath(base), null);\n        ^\n\nError [ERR_MODULE_NOT_FOUND]: Cannot find package 'bpmn-moddle' imported from /home/azureuser/projects/skills/skills/uipath-maestro-bpmn/validator/validate-bpmn.mjs\n    at Object.getPackageJSONURL (node:internal/modules/package_json_reader:314:9)\n    at packageResolve (node:internal/modules/esm/resolve:768:81)\n    at moduleResolve (node:internal/modules/esm/resolve:855:18)\n    at defaultResolve (node:internal/modules/esm/resolve:985:11)\n    at #cachedDefaultResolve (node:internal/modules/esm/loader:747:20)\n    at ModuleLoader.resolve (node:internal/modules/esm/loader:724:38)\n    at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:320:38)\n    at ModuleJob._link (node:internal/modules/esm/module_job:182:49) {\n  code: 'ERR_MODULE_NOT_FOUND'\n}\n\nNode.js v22.23.1",
+          "error_message": "Exit code 1\nnode:internal/modules/package_json_reader:314\n  throw new ERR_MODULE_NOT_FOUND(packageName, fileURLToPath(base), null);\n        ^\n\nError [ERR_MODULE_NOT_FOUND]: Cannot find package 'bpmn-moddle' imported from /home/azureuser/projects/skills/skills/uipath-maestro-bpmn/validator/validate-bpmn.mjs\n    at Object.getPackageJSONURL (node:internal/modules/package_json_reader:314:9)\n    at packageResolve (node:internal/modules/esm/resolve:768:81)\n    at moduleResolve (node:internal/modules/esm/resolve:855:18)\n    at defaultResolve (node:internal/modules/esm/resolve:985:11)\n    at #cachedDefaultResolve (node:internal/modules/esm/loader:747:20)\n    at ModuleLoader.resolve (node:internal/modules/esm/loader:724:38)\n    at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:320:38)\n    at ModuleJob._link (node:internal/modules/esm/module_job:182:49) {\n  code: 'ERR_MODULE_NOT_FOUND'\n}\n\nNode.js v22.23.1",
+          "result_data": null,
+          "sequence_number": 8,
+          "result_tokens": 233
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_01DpeyJE5Vxn4wWYRvYyUEak",
+          "assistant_turn_index": 18,
+          "timestamp": "2026-07-20T23:03:21.823123",
+          "duration_ms": 273.4928260324523,
+          "generation_completed_at": "2026-07-20T23:03:21.823123",
+          "execution_started_at": "2026-07-20T23:03:21.823334",
+          "execution_completed_at": "2026-07-20T23:03:22.096827",
+          "parameters": {
+            "command": "cd /home/azureuser/projects/skills/skills/uipath-maestro-bpmn/validator && npm install 2>&1 | tail -5",
+            "description": "Run full npm install to get all dependencies"
+          },
+          "result_status": "success",
+          "result_summary": "npm error errno -2\nnpm error enoent ENOENT: no such file or directory, mkdir '/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/validator/node_modules'\nnpm error enoent This is related to npm not being able to find a file.\nnpm error enoent\nnpm error A complete log of this run can be found in: /home/azureuser/.npm/_logs/2026-07-20T23_03_21_876Z-debug-0.log\nShell cwd was reset to /work/output/artifacts/skill-bpmn-edit-add-node",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 9,
+          "result_tokens": 110
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_01DS8zamj41SaDKzR1s9R2pU",
+          "assistant_turn_index": 19,
+          "timestamp": "2026-07-20T23:03:24.012000",
+          "duration_ms": 14.727271045558155,
+          "generation_completed_at": "2026-07-20T23:03:24.012000",
+          "execution_started_at": "2026-07-20T23:03:24.012244",
+          "execution_completed_at": "2026-07-20T23:03:24.026971",
+          "parameters": {
+            "command": "ls -la /home/azureuser/projects/skills/skills/uipath-maestro-bpmn/validator/",
+            "description": "List validator directory contents"
+          },
+          "result_status": "success",
+          "result_summary": "total 232\ndrwxrwxr-x 4 1000 1000  4096 Jul 14 00:18 .\ndrwxrwxr-x 4 1000 1000  4096 Jul 14 00:18 ..\n-rw-rw-r-- 1 1000 1000 14435 Jul 14 00:18 README.md\n-rw-rw-r-- 1 1000 1000 99114 Jul 14 00:18 bpmn-spec.json\n-rw-rw-r-- 1 1000 1000 16339 Jul 14 00:18 model.mjs\n-rw-rw-r-- 1 1000 1000   499 Jul 14 00:18 package.json\n-rw-rw-r-- 1 1000 1000 56927 Jul 14 00:18 rules.mjs\ndrwxrwxr-x 2 1000 1000  4096 Jul 14 00:18 samples\ndrwxrwxr-x 3 1000 1000  4096 Jul 14 00:18 test\n-rw-rw-r-- 1 1000 1000 14048 Jul 14 00:18 uipath-moddle.v1.json\n-rw-rw-r-- 1 1000 1000  6270 Jul 14 00:18 validate-bpmn.mjs",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 10,
+          "result_tokens": 147
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_014HUc6CBGqnbLF6Zbn4Hmgp",
+          "assistant_turn_index": 20,
+          "timestamp": "2026-07-20T23:03:25.872227",
+          "duration_ms": 12.992796953767538,
+          "generation_completed_at": "2026-07-20T23:03:25.872227",
+          "execution_started_at": "2026-07-20T23:03:25.872445",
+          "execution_completed_at": "2026-07-20T23:03:25.885438",
+          "parameters": {
+            "command": "cat /home/azureuser/projects/skills/skills/uipath-maestro-bpmn/validator/package.json",
+            "description": "Read package.json to check dependencies"
+          },
+          "result_status": "success",
+          "result_summary": "{\n  \"name\": \"uipath-maestro-bpmn-validator\",\n  \"private\": true,\n  \"type\": \"module\",\n  \"description\": \"Offline semantic validator for UiPath Maestro BPMN XML. Reconstructs the PO.Frontend Node/Edge/CanvasState model from the parsed BPMN and runs all 19 PO.Frontend validation rules.\",\n  \"bin\": {\n    \"validate-bpmn\": \"./validate-bpmn.mjs\"\n  },\n  \"scripts\": {\n    \"test\": \"node test/run-tests.mjs\"\n  },\n  \"dependencies\": {\n    \"bpmn-moddle\": \"^9.0.2\",\n    \"luxon\": \"^3.4.4\",\n    \"sax\": \"^1.6.0\"\n  }\n}",
+          "error_message": null,
+          "result_data": {
+            "name": "uipath-maestro-bpmn-validator",
+            "private": true,
+            "type": "module",
+            "description": "Offline semantic validator for UiPath Maestro BPMN XML. Reconstructs the PO.Frontend Node/Edge/CanvasState model from the parsed BPMN and runs all 19 PO.Frontend validation rules.",
+            "bin": {
+              "validate-bpmn": "./validate-bpmn.mjs"
+            },
+            "scripts": {
+              "test": "node test/run-tests.mjs"
+            },
+            "dependencies": {
+              "bpmn-moddle": "^9.0.2",
+              "luxon": "^3.4.4",
+              "sax": "^1.6.0"
+            }
+          },
+          "sequence_number": 11,
+          "result_tokens": 125
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_01Xqui51sFUABWTo4nBgivLz",
+          "assistant_turn_index": 21,
+          "timestamp": "2026-07-20T23:03:28.263775",
+          "duration_ms": 14.309580088593066,
+          "generation_completed_at": "2026-07-20T23:03:28.263775",
+          "execution_started_at": "2026-07-20T23:03:28.263978",
+          "execution_completed_at": "2026-07-20T23:03:28.278288",
+          "parameters": {
+            "command": "mkdir -p /home/azureuser/projects/skills/skills/uipath-maestro-bpmn/validator/node_modules && cd /home/azureuser/projects/skills/skills/uipath-maestro-bpmn/validator && npm install 2>&1 | tail -5",
+            "description": "Create node_modules dir and run npm install"
+          },
+          "result_status": "error",
+          "result_summary": "Exit code 1\nmkdir: cannot create directory ‘/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/validator/node_modules’: Read-only file system",
+          "error_message": "Exit code 1\nmkdir: cannot create directory ‘/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/validator/node_modules’: Read-only file system",
+          "result_data": null,
+          "sequence_number": 12,
+          "result_tokens": 38
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_012z8pz79HV8d6KbucMkuJ9w",
+          "assistant_turn_index": 22,
+          "timestamp": "2026-07-20T23:03:30.503208",
+          "duration_ms": 486.677331966348,
+          "generation_completed_at": "2026-07-20T23:03:30.503208",
+          "execution_started_at": "2026-07-20T23:03:30.503407",
+          "execution_completed_at": "2026-07-20T23:03:30.990084",
+          "parameters": {
+            "command": "cp -r /home/azureuser/projects/skills/skills/uipath-maestro-bpmn/validator /tmp/bpmn-validator && cd /tmp/bpmn-validator && npm install --silent 2>&1 | tail -5",
+            "description": "Copy validator to writable /tmp and install dependencies"
+          },
+          "result_status": "success",
+          "result_summary": "Shell cwd was reset to /work/output/artifacts/skill-bpmn-edit-add-node",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 13,
+          "result_tokens": 18
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_01EZduRjkdMhZgtPWPKCzvfi",
+          "assistant_turn_index": 23,
+          "timestamp": "2026-07-20T23:03:33.159310",
+          "duration_ms": 350.2192299347371,
+          "generation_completed_at": "2026-07-20T23:03:33.159310",
+          "execution_started_at": "2026-07-20T23:03:33.159615",
+          "execution_completed_at": "2026-07-20T23:03:33.509834",
+          "parameters": {
+            "command": "cd /tmp/bpmn-validator && npm install 2>&1",
+            "description": "Install validator npm dependencies in /tmp",
+            "timeout": 60000
+          },
+          "result_status": "success",
+          "result_summary": "up to date, audited 8 packages in 274ms\n\nfound 0 vulnerabilities\nShell cwd was reset to /work/output/artifacts/skill-bpmn-edit-add-node",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 14,
+          "result_tokens": 34
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_01GvQVHj3K7eA1zbF7JV53Uk",
+          "assistant_turn_index": 24,
+          "timestamp": "2026-07-20T23:03:36.425556",
+          "duration_ms": 87.50506001524627,
+          "generation_completed_at": "2026-07-20T23:03:36.425556",
+          "execution_started_at": "2026-07-20T23:03:36.425772",
+          "execution_completed_at": "2026-07-20T23:03:36.513277",
+          "parameters": {
+            "command": "node /tmp/bpmn-validator/validate-bpmn.mjs /work/output/artifacts/skill-bpmn-edit-add-node/OrderIntake.bpmn",
+            "description": "Run BPMN validator on the edited file"
+          },
+          "result_status": "success",
+          "result_summary": "VALID",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 15,
+          "result_tokens": 2
+        },
+        {
+          "tool_name": "TaskUpdate",
+          "tool_id": "toolu_bdrk_01AuSXvkBTTNChBvtT7j2mKw",
+          "assistant_turn_index": 26,
+          "timestamp": "2026-07-20T23:03:38.651861",
+          "duration_ms": 8.999023004435003,
+          "generation_completed_at": "2026-07-20T23:03:38.651861",
+          "execution_started_at": "2026-07-20T23:03:38.651905",
+          "execution_completed_at": "2026-07-20T23:03:38.660904",
+          "parameters": {
+            "taskId": "1",
+            "status": "completed"
+          },
+          "result_status": "success",
+          "result_summary": "Updated task #1 status",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 16,
+          "result_tokens": 6
+        }
+      ],
+      "timestamp": "2026-07-20T23:03:52.355389",
+      "duration_seconds": 97.67464476800524,
+      "token_usage": {
+        "uncached_input_tokens": 19,
+        "output_tokens": 5996,
+        "cache_creation_input_tokens": 44550,
+        "cache_read_input_tokens": 628270,
+        "total_cost_usd": 0.4455405,
+        "input_tokens": 672839
+      },
+      "model_used": "claude-sonnet-4-6",
+      "assistant_turn_count": 28,
+      "messages": [
+        {
+          "role": "assistant",
+          "started_at": "2026-07-20T23:02:14.680123",
+          "completed_at": "2026-07-20T23:02:18.795471",
+          "generation_duration_ms": 4115.372300031595,
+          "content_blocks": [
+            {
+              "block_type": "thinking",
+              "sequence": 0,
+              "text": null,
+              "thinking": "The user wants me to load the uipath-maestro-bpmn skill and then edit a BPMN file to insert a new script task between two existing tasks. Let me start by loading the skill.",
+              "signature": "EvcCCmcIDxABGAIqQPCGFj6XqiCnQ8Nb2dQLRjeUM2lRR/gUFAUmpv+2QWXS+JcImGBVUlQ/SdyL7rKcHp+392IJTYLN/E0K/i5WEAUyEWNsYXVkZS1zb25uZXQtNC02OABCCHRoaW5raW5nEgwf5/XvqgA9DAQLy2oaDIRJOjfLgBJ6kWvzGiIwZSl+jfV9VMxCwJVeK5e2JSWdJqAEeLzzFwJ3aRUMS0jMU5FrKK4QE2a5dPZDvIWnKr0BVUe++veqSVGtBrrv0nyyqYdKAqbzcrdqiXoBcxYjVRlggTQW9ArqTZ8gx0QdttF1O2NG7+LIrjagoqI7knl5dFLfRU/W1nXyberLmhfH/+ujw/LMoYLnoZK9IaRBLw90HEKIOqSKUvLlbysfVsCTg49GG2Nfb6FRyKbjzMemInhQHWoxQMfHeztVlrRzYUSYzsXtamGg4uQ/E7b2wfX8N9zXAtQUua2OnVSWjOaCUzanz7PXyvOuQOrJZr1DGAE=",
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 2,
+          "output_tokens": 100,
+          "cache_creation_tokens": 22027,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01HfQyFYLdCDLZoKg9nAYTZc",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-20T23:02:18.795471",
+          "completed_at": "2026-07-20T23:02:19.227569",
+          "generation_duration_ms": 432.09861998911947,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01FbgTd3vtCKCNFKwzTDJGb6",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01FbgTd3vtCKCNFKwzTDJGb6"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 26,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01HfQyFYLdCDLZoKg9nAYTZc",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-20T23:02:19.482210",
+          "completed_at": "2026-07-20T23:02:21.751708",
+          "generation_duration_ms": 2269.495964050293,
+          "content_blocks": [
+            {
+              "block_type": "thinking",
+              "sequence": 0,
+              "text": null,
+              "thinking": "Let me start by reading the existing BPMN file to understand its structure, then read the structural-bpmn reference to understand how to properly insert a new script task node.",
+              "signature": "EvsCCmcIDxABGAIqQBW3BaumSpznaC2NEkTF+LOxETICSnJDYB8FkHKZkIBElf/4pzqEiOjJH8PZxAD/GcS/CvZz43tZVrd2IgZuTV8yEWNsYXVkZS1zb25uZXQtNC02OABCCHRoaW5raW5nEgxiGWEPN3L1TH5Ld+MaDLVlGLVpNKj2ctT6WyIwjo+uSOy+Lz06iRXeRcvQD7ppNlNJcvNxvVI14fMhAhok5IhVfg0nzwMFyx5xu+PcKsEBjYx8i7v/hIQ4noBlhi70+SNxok+qd++fkqgCt0pN4x6iJteLvc6ukWRGs7UfCs5SEma7dKyhGYV748APleFSzCL8CSdxM8qkEqHHJfehpBkAWoTDqM6+m9cZK3zaZR6NWjo0M/RYukM33lIOPyCuongXVI0ElhnGuiYJ4ula2ab5ItXLdfB2TVTvPEvKHki/KoQkaIcLRlVS656psrPF4qysKjQZG4Zj5JT7/IgBBwLfY55iXZXstCrZ8QoSoRfj+RgB",
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 2,
+          "output_tokens": 95,
+          "cache_creation_tokens": 2999,
+          "cache_read_tokens": 22027,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01NFBFhTizkNiwogecefxpEQ",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-20T23:02:21.751708",
+          "completed_at": "2026-07-20T23:02:22.717999",
+          "generation_duration_ms": 966.2905209697783,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01LpmPDSw91sxDVcXMy2k5iZ",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01LpmPDSw91sxDVcXMy2k5iZ"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 46,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01NFBFhTizkNiwogecefxpEQ",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-20T23:02:22.717999",
+          "completed_at": "2026-07-20T23:02:23.466386",
+          "generation_duration_ms": 748.3877310296521,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01PuJgiGPiVB7bSXpUGe7oD2",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01PuJgiGPiVB7bSXpUGe7oD2"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 58,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01NFBFhTizkNiwogecefxpEQ",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-20T23:02:24.339311",
+          "completed_at": "2026-07-20T23:02:43.298129",
+          "generation_duration_ms": 18958.817807026207,
+          "content_blocks": [
+            {
+              "block_type": "thinking",
+              "sequence": 0,
+              "text": null,
+              "thinking": "Now I have a clear picture of the existing file and the rules. Let me plan the surgical edit:\n\n**Current flow:**\n- `Start_1` → `Flow_S1` → `Task_Validate` → `Flow_VN` → `Task_Notify` → `Flow_NE` → `End_1`\n\n**Target flow:**\n- `Start_1` → `Flow_S1` → `Task_Validate` → `Flow_VR` → `Task_Reserve` → `Flow_RN` → `Task_Notify` → `Flow_NE` → `End_1`\n\n**Changes needed:**\nI'll keep `Flow_VN` but redirect its `targetRef` to point to `Task_Reserve` instead of `Task_Notify`, then create a new flow element `Flow_RN` that connects `Task_Reserve` to `Task_Notify`. This way `Task_Validate`'s outgoing reference stays the same, and I'm just inserting the new task in the middle of the sequence. Now I'm looking at the diagram positioning—I need to insert Task_Reserve between Task_Validate and Task_Notify, which means shifting Task_Notify and End_1 to the right to accommodate the new task in the workflow layout. edge to Task_Notify left edge: (510,118) → (570,118), and from Task_Notify to End_1: (670,118) → (730,118).\n\nNow I'm making the surgical edits to the BPMN XML: redirecting the Flow_VN edge to point to Task_Reserve instead of Task_Notify, adding the new Task_Reserve element and Flow_RN sequence flow, then updating the shape positions for Task_Notify and End_1 along with all the affected edge coordinates.",
+              "signature": "EqUbCmcIDxABGAIqQPJPmtbU6BU8CBwdk7d0uQg2BV+l5hFoK2IX4y7WU23UMC9qIs3eSY2dDrjkUJHVqh362QgRD2iH4phctDsAkz4yEWNsYXVkZS1zb25uZXQtNC02OABCCHRoaW5raW5nEgy0h+Gg0oaTzItKyDcaDMkxinmahGLQN/EuLSIw1k4gbK3iAk0CkPSWlcH0r02XeAUXfoMOJREeNVggYN5WVgMQB5WliCRwZC+sgCkGKusZrnoYMzYAfpmV3fK/5Ebd1kvDgunR5Hf/Jz5vnqsW4SsELXGnu5SZaPYF5k5dd0mM2XlOC6CTUcZGowoagy6M+ki+ZZuUYcBlDYoIIyROgd9tVaSkBDORYjxSvoTvem6N/3lEeO+yRnw4hiVT5iI/bMyoHdHJKjIJPpJBAJOkAHbpBPKkfhvAFTZDL7JbJ4Qfd+L8yZLcOwLVL/M8qmtQ/9OgAeeaCRfKdBaSu8alBXRrBF67bs4VHKe1s987r6GsIDLHuuX/+28dAiWB+VVV0C2CZUsKWG8+WNedt05FtMMYdDfjdP2e0m6HNxfj4AScelzIEvjxasElB472qrzG/HvcMf/AZ6I3n8CBTct2WNCnl7LMjgCwx56PIh9R/XiFJSBsa2iI49dEX616aKJDeIv6if12dGCPilwmo/H9JGvEgK8ofG7yRgFawFtznqsHC/pqqNN+WshoCK48vCEx7wRQk5fxZgwN5rRkDNN89nMJFv8duYf2c6T9FYDvk9KHmwmt8ORrJCbzszi+MAczSw5Eee5HLtp/PzQ0QeUK3Cdp8O+6iFyAAbARWMYSdts/QAJCOFBLRYB5Msebl3RoYRvFk7n9sTRG2HnpuU3F3sYdHE4F6HFMWFnRBxehp6nEOGPpFFjCvd7f/2kcpfrrVK/Hd373i2K32aUDK9oC9TOzJQOgfY1tsV1361FMt9nMx0Kts/junWlYE1XnBegLLGP0t97ci/uR/iGAse4fq2RxQiYTi4Zd/zHwl6/nRecLI/yQn5w8jGaJldZmcAaSLl9RxbPd5fuW/Cv9i/4O+IMV/wfOtH/z1H9LCPcuDabsyEq0k0kd4gd0HCMyYnwy6M7x4aq8oaV61qtGapXR08OojVLLKarkl1rKC3sgR/Mh552aUa4Ic9s/QgsegEvUI4PlWKYE7FhZJF9HWCwXRT77AuHeO353Magawr5nzL3YdefQhuKCBHJUU2Pkgdpxl+Gs5PiY+v9bVIACbsOyBwSH3j+849WXObjbsJuxl0x3+rDwq5BV2yy55GqBgG9JPpIPzyWm3wcYc12VrjuTDU0kzaddmRuZiQZ53KFALC+R2yBkeeE/T183mbTYEeS6p2Tozcp5Uj0biSkjPc5nA7Fr/NkRDCH+ODwCRRgbB3/Hobk9q91LABe0o3QYPAs29NoiRqgrif3QC+IFGEzEZJ6njzUReCnb7gd9V7rNeEcSX1y8zCmsNH7fj0j3etjYppm4GgT7j+JIgJ4ZzGQRs1YoMfvNJs+LpHnd4iBevYvexnMSQD+zvknRXV6+vVlfNhWgMtd/HQeZZtCL+8r0frQrXYQj+79aFDA0OD9KgIV3C3kPulhxLBY9g72eDk3ugAYCXwdDRMBjJ1S+ZI4bWAs/QSuBtxtvEKFKrvvJ6KCJEbDWi0H1WaP545wAamPXkfgiGBiP74utpCfCr1nyFNc1Uo1V3My5nrYfHPQk8KyZx5F9Kfuv+eXBOVPmD7+o4LFtOuuoVxqHosYdfYcdtLr9hW7jg49Oy2goakagj+fkaDnO9L2gbV5dPfAYJrWmxqnve6TiszMxBMNmDzQ0G35k8dUZii+1P0PK5JwKkihEYbISC+MMKRD9P/2gin8AGTPta9wp0XiMLAXEdfJhrQEZ8gK8OxXGvYP5sMEgDdSwdgxvUwFhfOS/seAuKSuM7TdIHi1YVdrh/8YWRYe6t/X1tW57TKk2R0RTNrTZAObzWA8Qv4fZUk6fA0nYeJBI7nhhjX3bfOpwcyrVNdQM2hgH9OjuQa2krLAb4c8GyX4oTQB99+jsux2u3yIP/rKEiwhG5UzmvTiK69EesP4AuZblkHmalQeA86gi3XmLQs1siiTAVyUA10qV4aufWHCf+3BSk9uwvp/cAaGgRGMhJD6NACxueujiHQFLgHj2ig2FMd6MAJw/8o5vdJwIrC2ZeGaTw1GaLcnkbVco00wvGMc6NY7gK76OU2CGhuZuUWcJUYCbmOTofASakzsym2MchqjFx3POH8Fkvd8szqVc2VHT455NIYw+hbp0kEkrEL08rOnk1HzmRezbwpidxB/4i9uiGzsC5D4mWeFB9rfGZDM/Nvv/hy8IrReyTuauODmgOVLWa57s/kos4uR7p2jq0AN7XTbtgFRsghkc6Hr9y4BBBt7eNtr/DdodaHzsdSyhDwsIGgQrVMnUBw+tRYXb/vyakW/zNggua7nynlS6AXgdBfMIrwrqHmca0hhuGASthDPRPPzb/wqmkx96kEG/fmw5S1TIQlBE5UGdborAgZoDV2U2DFZOOCP+CpRn9ddsP0LUBTMX5SWVX/xY6QU1QnZXkiGcAvBrv+H6D/4D6OpFNRpZrVT/D6ftnMFm4kMUgjDQLt8np3zyHnPAaE0WznkPZNnm5mA+mercEhi9BYjGScZ1vrcXbBOVsRCCcgWzlcXCQ7l5V22UvLmcwWM24UQNvWRaC5Id5krA2NrrZUykIA0EwLsT19mr9O7j/8heECLp2B87lsuHssdYro7Gg7wZ8EryzX78bmsJuoqXB9wRKRUZ5p8tJOLq0D9oCeVcckGMsIRVzKuZVCw1JCpabqBWgvkM+C8iJPb96nVmSysTvgKFv87OtKRKpWGBssW6SB+nHMe5EJ3tyMxO26mh5p4C7Z/wz+qgN+Wbv2/RPTMYrtc3HEhvUG5SZ79HXQlHCbP7SH6Es/vDKPnqPcbtEH5QNQk9gtgifCrhMz3borW15xBoAvEmsepMdZtFoLJw+K7xZbX7dAGjukkCL7b1Xx7/2onP2W/5eAA3MeIlYQ4D++IyW3l1TJwokCX611qHZrMwbZmI7kWif5ufXO7IiuzrDE9msmQvactV4Grz7nT0rmXBSNBA+xIm1vhtAwfJmrO4yLBeAAdqou/Cqdsqn9USEFZ3Cx1R/QUJKIX0oxi1QotpqpXrhkcYY+Iz+u9fhWjWHeWfs/b/7sahLDA5F0KWdvUQ54l4zBjYLocAh/5r3947pj5J5HfdKFgot3llqutUfxisqOBwVlniudu6tmTH/w8DTo7dJdUHFB3YWqWi7NURPr5yOnTrOe+WQRkYXX4kEs/MgaovdvvF+f+f1mfZAkV0+tItGVQJ64MFcN5PGl8zAd73n1g9ZiACI5XJPUAZ4f6KvPWL67QEfNsk08MqoSwihvouYBsk+iPHPdZrPdg3a8RtfUeYIMh1YdPFDPjWcwJWpw82RsCIymuI2T+uN9QwXY3AtzsFOqapn57y5K8bRQn9M7WOV9/ENpBeYcOHG8bKczkJxcEyMi3ARnvr44D6okrBLoJ3sFiCqGxetRJ+zloHXc0feRZhhsXtFKZ4VPkE/Tdhdjbxta/lcZ/foCE0pC80G24mPYUDAwrZaQZNk3d7qlE7/FLV9QFhPbw9tF5XL0R8m5h1Or28MDUpIGCUHRC3IHXxj0UaGqaQlBITOVWfuIh6UREXm+WhC2kYG16LQFDnwsy/8wr7StQOkc4gLGa4AmXKptOxh9S0NXlhqZ5vI5p/QdTMIokx3A/YLytUuJHNSuP3Xdn6OzrfT0VchJsB63KkiebO3m5F45OgJjnx5tmT9J5shC/r54lWbvsyjs0cPE7wsVHnrWpQhe9wINqlkyrWpwki7UpRf+JKhgL8HorYgVBIEjDlIgakIyqF6wScHEeYNM/ZvgymjPfUpQKVtMUqJOuKnxUq30gLkb2Fo1gEbgqOloJm8VEdnU85d2JxuKbXpiC8cgc5LKPP1rsiDeSnOD0PTJ0GjthGLRgF7jwpCCA0iN8CZ6uW8zb1JRgAHZ0opXezFQioBFIqJSwPmmSn4EwjTxD96017A/hgQTLn1Fkq7lgyjm4Jwpc9aCtEA9iEMltMADTbQe5bkEwtt2MMzqS9QyvGYfSw21YkmBBEgPHj1Cwo4FMno6h//Prv+jskUhbB3YhpPwLj7ot6rRo8iiPFgf04zgfKL1w7Lm3/23tJJnULRxvOMU1FfeMuPJWgremhM5vaDjErvNwZOEofez/Vfav4R2kdhLHsbsGNMUD4PaMgJdh16anfYlp0K/p8VCYhxN7xLXhYCF8cgYXOV885WoOIpcnupp9Jfymm/zolkOfeqJS9PTpLrVKtlVlMkcD/n38RuG6gmjjrCeLDOgAtj18WQ53o34rgpVLCRe4vYk6svzsD/gn59fa6sd97iLv/9Gl1lfY9fv86oW8pybzgfFWa7Jq8Hf8OxNnpZiF0a/MVKxUgnE2k7WW1Y4adqUDXA1RbiK7Su+EWZSY4mRZliwzqr6lSElQsgtpDfD3qceGnleTs5utdzM3DX+AahL+gbHhZz3ARLe8B54cRBj/bhCQHtrpFj12rne8UUW+K3ku66/hm1Fv1PvTDaZed+taCxXp+BJOux9Rfq8iQU7AyNqMRdL7xrUb8CIgBzhgB",
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 1,
+          "output_tokens": 944,
+          "cache_creation_tokens": 11839,
+          "cache_read_tokens": 25026,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01XvYuVsX4gBWR1cDDvfYksm",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-20T23:02:43.298129",
+          "completed_at": "2026-07-20T23:02:44.604777",
+          "generation_duration_ms": 1306.648051016964,
+          "content_blocks": [
+            {
+              "block_type": "text",
+              "sequence": 0,
+              "text": "Now I have a clear picture. I'll make surgical edits to insert `Task_Reserve` between `Task_Validate` and `Task_Notify`. Here's the plan:\n\n1. Rewire `Flow_VN` to point at the new `Task_Reserve` instead of `Task_Notify`\n2. Update `Task_Notify`'s `<bpmn:incoming>` to the new flow `Flow_RN`\n3. Insert the new `<bpmn:scriptTask id=\"Task_Reserve\">` element\n4. Add `<bpmn:sequenceFlow id=\"Flow_RN\">` from `Task_Reserve` to `Task_Notify`\n5. Shift `Task_Notify` and `End_1` right in the diagram to make room\n6. Add the new shape and edge for `Task_Reserve`, and update waypoints",
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 0,
+          "output_tokens": 411,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01XvYuVsX4gBWR1cDDvfYksm",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-20T23:02:44.604777",
+          "completed_at": "2026-07-20T23:02:45.876918",
+          "generation_duration_ms": 1272.1412169048563,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01AS4xoNgcsJqoSZvraujcTL",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01AS4xoNgcsJqoSZvraujcTL"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 210,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01XvYuVsX4gBWR1cDDvfYksm",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-20T23:02:45.896449",
+          "completed_at": "2026-07-20T23:02:48.153210",
+          "generation_duration_ms": 2256.7604039795697,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01UQabedE9YqKtjBzMGwLVWy",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01UQabedE9YqKtjBzMGwLVWy"
+          ],
+          "input_tokens": 1,
+          "output_tokens": 72,
+          "cache_creation_tokens": 364,
+          "cache_read_tokens": 36865,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_0148jCnJJ1dxSAvaRF4THBgn",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-20T23:02:48.300036",
+          "completed_at": "2026-07-20T23:02:50.684430",
+          "generation_duration_ms": 2384.3934909673408,
+          "content_blocks": [
+            {
+              "block_type": "text",
+              "sequence": 0,
+              "text": "Now let me make the surgical edits. I'll do them one by one to keep precision.\n\n**Step 1:** Retarget `Flow_VN` from `Task_Notify` → `Task_Reserve`, and update `Task_Notify`'s `<bpmn:incoming>` to `Flow_RN`.",
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 1,
+          "output_tokens": 79,
+          "cache_creation_tokens": 90,
+          "cache_read_tokens": 37229,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01Wi79ThP3BzkAMxwWLrup24",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-20T23:02:50.684430",
+          "completed_at": "2026-07-20T23:03:00.322968",
+          "generation_duration_ms": 9638.538492959924,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01N58H1zoskJnx31bewyW9N1",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01N58H1zoskJnx31bewyW9N1"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 1106,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01Wi79ThP3BzkAMxwWLrup24",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-20T23:03:00.346997",
+          "completed_at": "2026-07-20T23:03:04.522974",
+          "generation_duration_ms": 4175.976596889086,
+          "content_blocks": [
+            {
+              "block_type": "text",
+              "sequence": 0,
+              "text": "**Step 2:** Update `Task_Validate`'s `<bpmn:outgoing>` — it already says `Flow_VN`, which is now retargeted to `Task_Reserve`. That's correct, no change needed there.\n\n**Step 3:** Update the diagram — shift `Task_Notify` right (from x=410 to x=570), shift `End_1` right (from x=570 to x=730), insert shape for `Task_Reserve` at x=410, add edge for `Flow_RN`, and update waypoints for `Flow_NE`.",
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 1,
+          "output_tokens": 178,
+          "cache_creation_tokens": 1264,
+          "cache_read_tokens": 37319,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01PMCSWDsMgGbNihN4JHfUQR",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-20T23:03:04.522974",
+          "completed_at": "2026-07-20T23:03:11.049109",
+          "generation_duration_ms": 6526.135700056329,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01JBFJyMoWfWrRBaAFdneTTt",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01JBFJyMoWfWrRBaAFdneTTt"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 886,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01PMCSWDsMgGbNihN4JHfUQR",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-20T23:03:11.101519",
+          "completed_at": "2026-07-20T23:03:13.326358",
+          "generation_duration_ms": 2224.8395539354533,
+          "content_blocks": [
+            {
+              "block_type": "text",
+              "sequence": 0,
+              "text": "Now let me verify the final file looks correct:",
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 1,
+          "output_tokens": 32,
+          "cache_creation_tokens": 1143,
+          "cache_read_tokens": 38583,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01Bexbt3YUVr6tow241Wcsq8",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-20T23:03:13.326358",
+          "completed_at": "2026-07-20T23:03:13.750807",
+          "generation_duration_ms": 424.4494530139491,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01GURLZp3kZZNxhWZngDAzyF",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01GURLZp3kZZNxhWZngDAzyF"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 57,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01Bexbt3YUVr6tow241Wcsq8",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-20T23:03:13.757631",
+          "completed_at": "2026-07-20T23:03:16.130076",
+          "generation_duration_ms": 2372.4436030024663,
+          "content_blocks": [
+            {
+              "block_type": "thinking",
+              "sequence": 0,
+              "text": null,
+              "thinking": "The file looks correct. Now let me run the validator to confirm it passes.",
+              "signature": "EpQCCmcIDxABGAIqQBNRRP+PXOPCJdgiFyLcEmxQCrw/djCqg8l4MVncFhMZX/OqDp9dRbiKTk78tAbkdT3/yJ6Lbwj/Iib7fKbnKw4yEWNsYXVkZS1zb25uZXQtNC02OABCCHRoaW5raW5nEgzeBwgDvxd19pnwygkaDNNVGnJDw2V1mSwEKCIwrPU9KNFiUcPnBaeS99d15e7S0zqOmHuIhb7mld6M4XW7vp+Qjb3sswGaPiYL/9M0KlvIQc8CbOlmN9HXGoGnYZJc4set+RWuvlkuVuHLssRrrUyRaQ60+mijrTpAe+fEiq8UotMxDOQZbWj/2LusIV/X47YtZKYBPy2MOHbSuSFZsr0rraYUHEGm4LSWGAE=",
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 1,
+          "output_tokens": 35,
+          "cache_creation_tokens": 2298,
+          "cache_read_tokens": 39726,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01NefG1qUUnEz67CEHBm6k1X",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-20T23:03:16.130076",
+          "completed_at": "2026-07-20T23:03:16.563545",
+          "generation_duration_ms": 433.4686410147697,
+          "content_blocks": [
+            {
+              "block_type": "text",
+              "sequence": 0,
+              "text": "The file looks exactly right. Now run the validator:",
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 0,
+          "output_tokens": 25,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01NefG1qUUnEz67CEHBm6k1X",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-20T23:03:16.563545",
+          "completed_at": "2026-07-20T23:03:19.058864",
+          "generation_duration_ms": 2495.3202879987657,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01RVtkL2HdPuKeah8PgkBLnw",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01RVtkL2HdPuKeah8PgkBLnw"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 139,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01NefG1qUUnEz67CEHBm6k1X",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-20T23:03:19.577167",
+          "completed_at": "2026-07-20T23:03:21.823123",
+          "generation_duration_ms": 2245.958334999159,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01DpeyJE5Vxn4wWYRvYyUEak",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01DpeyJE5Vxn4wWYRvYyUEak"
+          ],
+          "input_tokens": 1,
+          "output_tokens": 113,
+          "cache_creation_tokens": 528,
+          "cache_read_tokens": 42024,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01QZzJ26uTpyWKvbPerL6XU7",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-20T23:03:22.096793",
+          "completed_at": "2026-07-20T23:03:24.012000",
+          "generation_duration_ms": 1915.2070089476183,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01DS8zamj41SaDKzR1s9R2pU",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01DS8zamj41SaDKzR1s9R2pU"
+          ],
+          "input_tokens": 1,
+          "output_tokens": 100,
+          "cache_creation_tokens": 274,
+          "cache_read_tokens": 42552,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_0185ywSqX4PKToTfLaBUCAws",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-20T23:03:24.026944",
+          "completed_at": "2026-07-20T23:03:25.872227",
+          "generation_duration_ms": 1845.2826329739764,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_014HUc6CBGqnbLF6Zbn4Hmgp",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_014HUc6CBGqnbLF6Zbn4Hmgp"
+          ],
+          "input_tokens": 1,
+          "output_tokens": 104,
+          "cache_creation_tokens": 618,
+          "cache_read_tokens": 42826,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01CnAaRWQW62xuikN9mHug23",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-20T23:03:25.885389",
+          "completed_at": "2026-07-20T23:03:28.263775",
+          "generation_duration_ms": 2378.3857149537653,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01Xqui51sFUABWTo4nBgivLz",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01Xqui51sFUABWTo4nBgivLz"
+          ],
+          "input_tokens": 1,
+          "output_tokens": 147,
+          "cache_creation_tokens": 319,
+          "cache_read_tokens": 43444,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01AePYWkWvLCumfNufwmfhRf",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-20T23:03:28.278256",
+          "completed_at": "2026-07-20T23:03:30.503208",
+          "generation_duration_ms": 2224.9527339590713,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_012z8pz79HV8d6KbucMkuJ9w",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_012z8pz79HV8d6KbucMkuJ9w"
+          ],
+          "input_tokens": 1,
+          "output_tokens": 137,
+          "cache_creation_tokens": 212,
+          "cache_read_tokens": 43763,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01DwLfV9X8ZtFjJACrtKKw5K",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-20T23:03:30.990049",
+          "completed_at": "2026-07-20T23:03:33.159310",
+          "generation_duration_ms": 2169.2613089689985,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01EZduRjkdMhZgtPWPKCzvfi",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01EZduRjkdMhZgtPWPKCzvfi"
+          ],
+          "input_tokens": 1,
+          "output_tokens": 108,
+          "cache_creation_tokens": 173,
+          "cache_read_tokens": 43975,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_0114vmvfan1bg3dViY3Gxk7m",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-20T23:03:33.509805",
+          "completed_at": "2026-07-20T23:03:36.425556",
+          "generation_duration_ms": 2915.7502689631656,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01GvQVHj3K7eA1zbF7JV53Uk",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01GvQVHj3K7eA1zbF7JV53Uk"
+          ],
+          "input_tokens": 1,
+          "output_tokens": 121,
+          "cache_creation_tokens": 166,
+          "cache_read_tokens": 44148,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01V2rwimDFSZdKapLCYyMtEH",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-20T23:03:36.513250",
+          "completed_at": "2026-07-20T23:03:38.261843",
+          "generation_duration_ms": 1748.5933649586514,
+          "content_blocks": [
+            {
+              "block_type": "text",
+              "sequence": 0,
+              "text": "The validator returns **VALID** (exit 0).",
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 1,
+          "output_tokens": 38,
+          "cache_creation_tokens": 135,
+          "cache_read_tokens": 44314,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01AsJkJohtWVteVHDpZMugnD",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-20T23:03:38.261843",
+          "completed_at": "2026-07-20T23:03:38.651861",
+          "generation_duration_ms": 390.0174309965223,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01AuSXvkBTTNChBvtT7j2mKw",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01AuSXvkBTTNChBvtT7j2mKw"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 45,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01AsJkJohtWVteVHDpZMugnD",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-20T23:03:38.660874",
+          "completed_at": "2026-07-20T23:03:52.285532",
+          "generation_duration_ms": 13624.65725291986,
+          "content_blocks": [
+            {
+              "block_type": "text",
+              "sequence": 0,
+              "text": "The edit is complete and validated. Here's a summary of every surgical change made to `OrderIntake.bpmn`:\n\n---\n\n### Changes made\n\n**Process flow elements (3 changes):**\n\n1. **New `<bpmn:scriptTask id=\"Task_Reserve\">`** inserted between `Task_Validate` and `Task_Notify` — a `BPMN.ScriptTask` with `scriptFormat=\"JavaScript\"`, `uipath:scriptVersion v3`, and the same `uipath:mapping` pattern as the other script tasks. Reads `Var_Qty` as input, returns `\"reserved\"`.\n\n2. **`Flow_VN` retargeted** — `sourceRef=\"Task_Validate\" targetRef=\"Task_Reserve\"` (was `Task_Notify`).\n\n3. **New `<bpmn:sequenceFlow id=\"Flow_RN\">`** added — `sourceRef=\"Task_Reserve\" targetRef=\"Task_Notify\"`.\n\n4. **`Task_Notify` incoming ref** updated from `Flow_VN` → `Flow_RN`.\n\n**Diagram (4 changes, all additive or coordinate shifts):**\n\n5. **New `BPMNShape` for `Task_Reserve`** at `x=410 y=78 w=100 h=80` (the slot previously occupied by `Task_Notify`).\n6. **`Task_Notify` shape** shifted right: `x=570` (was 410).\n7. **`End_1` shape** shifted right: `x=730` (was 570).\n8. **New `BPMNEdge E_Flow_RN`** for `Flow_RN` with waypoints `510→570` at y=118.\n9. **`E_Flow_NE` waypoints** updated: `670→730` at y=118 (was `510→570`).\n\n**Preserved untouched:** `Definitions_OrderIntake`, `Process_OrderIntake`, `uipath:migrationVersion version=\"11.5\"`, `uipath:caseManagement` CDATA payload, both process variables (`Var_OrderId`, `Var_Qty`), all of `Task_Validate`'s extension XML, `Task_Notify`'s original extension XML, `Flow_S1`, `Flow_VN` id, `Flow_NE` id, all shape ids, and the `E_Flow_VN` waypoints.",
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 1,
+          "output_tokens": 584,
+          "cache_creation_tokens": 101,
+          "cache_read_tokens": 44449,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01EUsSFL8nsN2sd51VM6ThXt",
+          "parent_tool_use_id": null
+        }
+      ],
+      "num_turns": 19,
+      "max_turns_exhausted": false,
+      "result_summary": {
+        "is_error": false,
+        "subtype": "success",
+        "stop_reason": "end_turn",
+        "result": "The edit is complete and validated. Here's a summary of every surgical change made to `OrderIntake.bpmn`:\n\n---\n\n### Changes made\n\n**Process flow elements (3 changes):**\n\n1. **New `<bpmn:scriptTask id=\"Task_Reserve\">`** inserted between `Task_Validate` and `Task_Notify` — a `BPMN.ScriptTask` with `scriptFormat=\"JavaScript\"`, `uipath:scriptVersion v3`, and the same `uipath:mapping` pattern as the other script tasks. Reads `Var_Qty` as input, returns `\"reserved\"`.\n\n2. **`Flow_VN` retargeted** — `sourceRef=\"Task_Validate\" targetRef=\"Task_Reserve\"` (was `Task_Notify`).\n\n3. **New `<bpmn:sequenceFlow id=\"Flow_RN\">`** added — `sourceRef=\"Task_Reserve\" targetRef=\"Task_Notify\"`.\n\n4. **`Task_Notify` incoming ref** updated from `Flow_VN` → `Flow_RN`.\n\n**Diagram (4 changes, all additive or coordinate shifts):**\n\n5. **New `BPMNShape` for `Task_Reserve`** at `x=410 y=78 w=100 h=80` (the slot previously occupied by `Task_Notify`).\n6. **`Task_Notify` shape** shifted right: `x=570` (was 410).\n7. **`End_1` shape** shifted right: `x=730` (was 570).\n8. **New `BPMNEdge E_Flow_RN`** for `Flow_RN` with waypoints `510→570` at y=118.\n9. **`E_Flow_NE` waypoints** updated: `670→730` at y=118 (was `510→570`).\n\n**Preserved untouched:** `Definitions_OrderIntake`, `Process_OrderIntake`, `uipath:migrationVersion version=\"11.5\"`, `uipath:caseManagement` CDATA payload, both process variables (`Var_OrderId`, `Var_Qty`), all of `Task_Validate`'s extension XML, `Task_Notify`'s original extension XML, `Flow_S1`, `Flow_VN` id, `Flow_NE` id, all shape ids, and the `E_Flow_VN` waypoints."
+      },
+      "crashed": false,
+      "crash_reason": null
+    }
+  ],
+  "error_message": null,
+  "error_details": null,
+  "error_log_tail": null,
+  "environment_info": {
+    "git_commit": "unknown",
+    "skills_git_commit": "unknown",
+    "cli_version": "1.197.0-alpha.20260626.7673",
+    "tool_plugins": {
+      "agent-tool": "1.197.0-alpha.20260626.7673",
+      "agenthub-tool": "1.197.0-alpha.20260626.7673",
+      "codedagent-tool": "1.197.0-alpha.20260626.7673",
+      "data-fabric-tool": "1.197.0-alpha.20260626.7673",
+      "functions-tool": "1.197.0-alpha.20260626.7673",
+      "gov-tool": "1.197.0-alpha.20260626.7673",
+      "insights-tool": "1.197.0-alpha.20260626.7673",
+      "integrationservice-tool": "1.197.0-alpha.20260626.7673",
+      "ixp-tool": "1.197.0-alpha.20260626.7673",
+      "maestro-tool": "1.197.0-alpha.20260626.7673",
+      "orchestrator-tool": "1.197.0-alpha.20260626.7673",
+      "solution-tool": "1.197.0-alpha.20260626.7673",
+      "tasks-tool": "1.197.0-alpha.20260626.7673",
+      "test-manager-tool": "1.197.0-alpha.20260626.7673"
+    },
+    "coder_eval": "0.8.4",
+    "claude_code_cli": "2.1.177 (Claude Code)",
+    "uv": "uv 0.11.28 (x86_64-unknown-linux-gnu)",
+    "anthropic": "0.102.0",
+    "openai": "2.46.0",
+    "pydantic": "2.12.5",
+    "api_routing": "aws_bedrock",
+    "aws_region": "us-east-2",
+    "bedrock_model": "us.anthropic.claude-sonnet-4-6"
+  },
+  "agent_config": {
+    "type": "claude-code",
+    "model": "claude-sonnet-4-6",
+    "permission_mode": "acceptEdits",
+    "allowed_tools": [
+      "Skill",
+      "Bash",
+      "Read",
+      "Write",
+      "Edit",
+      "Glob",
+      "Grep"
+    ],
+    "disallowed_tools": null,
+    "plugins": [
+      {
+        "type": "local",
+        "path": "/home/azureuser/projects/skills/"
+      }
+    ],
+    "system_prompt": "You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted.\n",
+    "system_prompt_file": null,
+    "ignore_patterns": [],
+    "claude_settings": null,
+    "sdk_options": {},
+    "setting_sources": null
+  },
+  "sdk_options": {
+    "tools": null,
+    "allowed_tools": [
+      "Skill",
+      "Bash",
+      "Read",
+      "Write",
+      "Edit",
+      "Glob",
+      "Grep"
+    ],
+    "system_prompt": "You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted.\n",
+    "mcp_servers": {},
+    "strict_mcp_config": false,
+    "permission_mode": "acceptEdits",
+    "continue_conversation": false,
+    "resume": null,
+    "session_id": null,
+    "max_turns": 80,
+    "max_budget_usd": null,
+    "disallowed_tools": [
+      "ToolSearch"
+    ],
+    "model": "us.anthropic.claude-sonnet-4-6",
+    "fallback_model": null,
+    "betas": [],
+    "permission_prompt_tool_name": null,
+    "cwd": "/work/output/artifacts/skill-bpmn-edit-add-node",
+    "cli_path": null,
+    "settings": null,
+    "add_dirs": [],
+    "env": {
+      "PATH": "/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+      "PLUGIN_TOOLS_DIR": "/usr/lib/node_modules/@uipath",
+      "CLAUDE_CODE_USE_BEDROCK": "1",
+      "AWS_BEARER_TOKEN_BEDROCK": "***REDACTED***",
+      "AWS_REGION": "us-east-2",
+      "CLAUDE_CODE_ATTRIBUTION_HEADER": "0",
+      "ANTHROPIC_MODEL": "us.anthropic.claude-sonnet-4-6",
+      "ANTHROPIC_SMALL_FAST_MODEL": "us.anthropic.claude-sonnet-4-6"
+    },
+    "extra_args": {},
+    "max_buffer_size": null,
+    "can_use_tool": null,
+    "hooks": null,
+    "user": null,
+    "include_partial_messages": true,
+    "include_hook_events": false,
+    "fork_session": false,
+    "agents": null,
+    "setting_sources": [
+      "project"
+    ],
+    "skills": null,
+    "sandbox": null,
+    "plugins": [
+      {
+        "type": "local",
+        "path": "/home/azureuser/projects/skills"
+      }
+    ],
+    "max_thinking_tokens": null,
+    "thinking": null,
+    "effort": null,
+    "output_format": null,
+    "enable_file_checkpointing": false,
+    "session_store": null,
+    "session_store_flush": "batched",
+    "load_timeout_ms": 60000,
+    "task_budget": null
+  },
+  "sandbox_path": "/work/output/artifacts/skill-bpmn-edit-add-node",
+  "task_config": {
+    "resolved": {
+      "task_id": "skill-bpmn-edit-add-node",
+      "description": "Brownfield edit: insert a new script task into an existing, valid Maestro BPMN between two adjacent tasks, rewiring the sequence flow and diagram while preserving element ids, uipath:* payloads, and uipath:migrationVersion.\n",
+      "initial_prompt": "Load and follow the uipath-maestro-bpmn skill.\n\nA valid Maestro BPMN file `OrderIntake.bpmn` is in the working directory. Its\nflow is: \"Validate Order\" (Task_Validate) -> \"Notify Customer\" (Task_Notify).\n\nInsert a new script task named \"Reserve Stock\" BETWEEN \"Validate Order\" and\n\"Notify Customer\", so the order becomes\nValidate Order -> Reserve Stock -> Notify Customer. Rewire the sequence flows\nand update the diagram so the new node and its flows render.\n\nMake a SURGICAL edit: preserve everything you did not author — the existing\nelement ids, the uipath:* extension payloads, uipath:migrationVersion, and the\nprocess variables must round-trip untouched.\n\nValidate the edited file locally before finishing. Do not upload, publish,\ndeploy, debug, run, or pack anything, and do not pause for approval — make the\nedit end to end in one pass.\n",
+      "initial_prompt_file": null,
+      "tags": [
+        "uipath-maestro-bpmn",
+        "integration",
+        "mode:build",
+        "lifecycle:generate",
+        "shape:multi-node"
+      ],
+      "skip": false,
+      "agent": {
+        "type": "claude-code",
+        "model": "claude-sonnet-4-6",
+        "permission_mode": "acceptEdits",
+        "allowed_tools": [
+          "Skill",
+          "Bash",
+          "Read",
+          "Write",
+          "Edit",
+          "Glob",
+          "Grep"
+        ],
+        "disallowed_tools": null,
+        "plugins": [
+          {
+            "type": "local",
+            "path": "/home/azureuser/projects/skills/"
+          }
+        ],
+        "system_prompt": "You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted.\n",
+        "system_prompt_file": null,
+        "ignore_patterns": [],
+        "claude_settings": null,
+        "sdk_options": {},
+        "setting_sources": null
+      },
+      "sandbox": {
+        "driver": "tempdir",
+        "docker": {
+          "image": "skills-image:latest",
+          "dockerfile_path": null,
+          "build": {
+            "buildkit": null,
+            "args": {},
+            "secrets": [],
+            "extra_args": []
+          },
+          "network": "bridge",
+          "working_dir": null,
+          "env_passthrough": [
+            "ANTHROPIC_API_KEY",
+            "API_BACKEND",
+            "UIPATH_LLM_BACKEND",
+            "UIPATH_ACCESS_TOKEN",
+            "UIPATH_URL",
+            "UIPATH_TENANT_ID",
+            "UIPATH_ORGANIZATION_ID",
+            "UIPATH_CLI_DISABLE_VERSION_SYNC",
+            "AWS_BEARER_TOKEN_BEDROCK",
+            "AWS_REGION",
+            "BEDROCK_MODEL",
+            "CLAUDE_CODE_USE_BEDROCK",
+            "ANTHROPIC_MODEL",
+            "CODEX_API_KEY",
+            "CODEX_BASE_URL",
+            "CODEX_MODEL",
+            "GEMINI_API_KEY",
+            "ANTIGRAVITY_MODEL",
+            "HOME"
+          ],
+          "env_passthrough_extra": [
+            "SKILLS_REPO_PATH",
+            "BEDROCK_MODEL",
+            "TASK_PARALLELISM",
+            "UIPATH_CLI_ENABLE_ENV_AUTH",
+            "UIPATH_CLI_AUTH_TOKEN",
+            "UIPATH_CLI_ORGANIZATION_NAME",
+            "UIPATH_CLI_ORGANIZATION_ID",
+            "UIPATH_CLI_TENANT_NAME",
+            "UIPATH_CLI_TENANT_ID",
+            "TRACES_SMOKE_PROCESS_KEY",
+            "CODEX_API_KEY",
+            "CODEX_BASE_URL"
+          ],
+          "extra_mounts": [
+            "~/.uipath:/.uipath:rw"
+          ]
+        },
+        "python": {
+          "env_packages": []
+        },
+        "node": null,
+        "limits": {
+          "timeout": 300,
+          "max_memory_mb": null,
+          "max_cpus": null,
+          "max_pids": null,
+          "max_disk_mb": null
+        },
+        "template_sources": [
+          {
+            "type": "template_dir",
+            "path": "/home/azureuser/projects/skills/skills/uipath-maestro-bpmn",
+            "mount_point": ".",
+            "include_patterns": []
+          },
+          {
+            "type": "template_dir",
+            "path": "/home/azureuser/projects/skills/tests/tasks/uipath-maestro-bpmn/edit/add_node/fixture",
+            "mount_point": ".",
+            "include_patterns": []
+          }
+        ],
+        "mock_path_dirs": null,
+        "ignore_patterns": []
+      },
+      "success_criteria": [
+        {
+          "type": "file_exists",
+          "description": "The edited BPMN file is still present",
+          "weight": 1.0,
+          "pass_threshold": 1.0,
+          "suite_thresholds": null,
+          "stop_when": null,
+          "path": "OrderIntake.bpmn"
+        },
+        {
+          "type": "file_contains",
+          "description": "Preserve-only payload round-tripped untouched",
+          "weight": 1.0,
+          "pass_threshold": 1.0,
+          "suite_thresholds": null,
+          "stop_when": null,
+          "path": "OrderIntake.bpmn",
+          "includes": [
+            "preserve-only-do-not-touch",
+            "uipath:migrationVersion"
+          ],
+          "excludes": null
+        },
+        {
+          "type": "run_command",
+          "description": "New script node inserted and wired, untouched content preserved, file still structurally sound",
+          "weight": 4.0,
+          "pass_threshold": 1.0,
+          "suite_thresholds": null,
+          "stop_when": null,
+          "command": "python3 $TASK_DIR/check_add_node.py",
+          "timeout": 30,
+          "expected_exit_code": 0,
+          "expected_stdout": null,
+          "stdout_match": "exact",
+          "score_from_stdout": false
+        }
+      ],
+      "run_limits": {
+        "max_turns": 80,
+        "expected_turns": 20,
+        "task_timeout": 900,
+        "turn_timeout": 900,
+        "max_input_tokens": null,
+        "max_output_tokens": null,
+        "max_total_tokens": null,
+        "max_usd": null,
+        "count_cached_input": false,
+        "count_cache_creation": false,
+        "stop_early": false
+      },
+      "reference": null,
+      "expected_commands": null,
+      "pre_run": [],
+      "post_run": [
+        {
+          "command": "find . -maxdepth 5 -type d \\( -name node_modules -o -name .npm-prefix -o -name .venv \\) -prune -exec rm -rf {} +",
+          "timeout": 30
+        }
+      ],
+      "dataset": null,
+      "suite_id": null,
+      "row_id": null,
+      "simulation": null
+    },
+    "source_yaml": "task_id: skill-bpmn-edit-add-node\ndescription: >\n  Brownfield edit: insert a new script task into an existing, valid Maestro BPMN\n  between two adjacent tasks, rewiring the sequence flow and diagram while\n  preserving element ids, uipath:* payloads, and uipath:migrationVersion.\ntags: [uipath-maestro-bpmn, integration, \"mode:build\", \"lifecycle:generate\", \"shape:multi-node\"]\n\nrun_limits:\n  expected_turns: 20\n  max_turns: 80\n\nsandbox:\n  template_sources:\n    - type: template_dir\n      path: ../../../../../skills/uipath-maestro-bpmn\n    - type: template_dir\n      path: fixture\n\ninitial_prompt: |\n  Load and follow the uipath-maestro-bpmn skill.\n\n  A valid Maestro BPMN file `OrderIntake.bpmn` is in the working directory. Its\n  flow is: \"Validate Order\" (Task_Validate) -> \"Notify Customer\" (Task_Notify).\n\n  Insert a new script task named \"Reserve Stock\" BETWEEN \"Validate Order\" and\n  \"Notify Customer\", so the order becomes\n  Validate Order -> Reserve Stock -> Notify Customer. Rewire the sequence flows\n  and update the diagram so the new node and its flows render.\n\n  Make a SURGICAL edit: preserve everything you did not author — the existing\n  element ids, the uipath:* extension payloads, uipath:migrationVersion, and the\n  process variables must round-trip untouched.\n\n  Validate the edited file locally before finishing. Do not upload, publish,\n  deploy, debug, run, or pack anything, and do not pause for approval — make the\n  edit end to end in one pass.\n\nsuccess_criteria:\n  - type: file_exists\n    description: \"The edited BPMN file is still present\"\n    path: \"OrderIntake.bpmn\"\n    weight: 1.0\n    pass_threshold: 1.0\n\n  - type: file_contains\n    description: \"Preserve-only payload round-tripped untouched\"\n    path: \"OrderIntake.bpmn\"\n    includes:\n      - \"preserve-only-do-not-touch\"\n      - 'uipath:migrationVersion'\n    weight: 1.0\n    pass_threshold: 1.0\n\n  - type: run_command\n    description: \"New script node inserted and wired, untouched content preserved, file still structurally sound\"\n    command: \"python3 $TASK_DIR/check_add_node.py\"\n    timeout: 30\n    expected_exit_code: 0\n    weight: 4.0\n    pass_threshold: 1.0\n",
+    "source_file": "/home/azureuser/projects/skills/tests/tasks/uipath-maestro-bpmn/edit/add_node/task.yaml",
+    "lineage": {
+      "agent.type": {
+        "value": "claude-code",
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.permission_mode": {
+        "value": "acceptEdits",
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.model": {
+        "value": "claude-sonnet-4-6",
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.allowed_tools": {
+        "value": [
+          "Skill",
+          "Bash",
+          "Read",
+          "Write",
+          "Edit",
+          "Glob",
+          "Grep"
+        ],
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.plugins": {
+        "value": [
+          {
+            "type": "local",
+            "path": "/home/azureuser/projects/skills/"
+          }
+        ],
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.ignore_patterns": {
+        "value": [],
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.system_prompt": {
+        "value": "You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted.\n",
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "run_limits.max_turns": {
+        "value": 80,
+        "source": "task",
+        "source_detail": null
+      },
+      "run_limits.task_timeout": {
+        "value": 900,
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "run_limits.turn_timeout": {
+        "value": 900,
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "run_limits.expected_turns": {
+        "value": 20,
+        "source": "task",
+        "source_detail": null
+      },
+      "sandbox.driver": {
+        "value": "docker",
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "sandbox.docker": {
+        "value": {
+          "image": "skills-image:latest",
+          "env_passthrough_extra": [
+            "SKILLS_REPO_PATH",
+            "BEDROCK_MODEL",
+            "TASK_PARALLELISM",
+            "UIPATH_CLI_ENABLE_ENV_AUTH",
+            "UIPATH_CLI_AUTH_TOKEN",
+            "UIPATH_CLI_ORGANIZATION_NAME",
+            "UIPATH_CLI_ORGANIZATION_ID",
+            "UIPATH_CLI_TENANT_NAME",
+            "UIPATH_CLI_TENANT_ID",
+            "TRACES_SMOKE_PROCESS_KEY",
+            "CODEX_API_KEY",
+            "CODEX_BASE_URL"
+          ],
+          "extra_mounts": [
+            "~/.uipath:/.uipath:rw"
+          ]
+        },
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "sandbox.template_sources": {
+        "value": [
+          {
+            "type": "template_dir",
+            "path": "/home/azureuser/projects/skills/skills/uipath-maestro-bpmn"
+          },
+          {
+            "type": "template_dir",
+            "path": "/home/azureuser/projects/skills/tests/tasks/uipath-maestro-bpmn/edit/add_node/fixture"
+          }
+        ],
+        "source": "task",
+        "source_detail": null
+      },
+      "repeats": {
+        "value": 1,
+        "source": "default",
+        "source_detail": null
+      }
+    }
+  },
+  "command_stats": {
+    "total_commands": 17,
+    "commands_by_tool": {
+      "Skill": 1,
+      "Read": 3,
+      "TaskCreate": 1,
+      "TaskUpdate": 2,
+      "Edit": 2,
+      "Bash": 8
+    },
+    "total_command_time_ms": 4036.0581481363624,
+    "avg_command_time_ms": 237.41518518449192,
+    "slowest_commands": [
+      {
+        "tool": "Read",
+        "duration_ms": 895.7789270207286,
+        "parameters": {
+          "file_path": "/work/output/artifacts/skill-bpmn-edit-add-node/OrderIntake.bpmn"
+        },
+        "tool_id": "toolu_bdrk_01LpmPDSw91sxDVcXMy2k5iZ"
+      },
+      {
+        "tool": "Read",
+        "duration_ms": 872.9075379669666,
+        "parameters": {
+          "file_path": "/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/structural-bpmn.md"
+        },
+        "tool_id": "toolu_bdrk_01PuJgiGPiVB7bSXpUGe7oD2"
+      },
+      {
+        "tool": "Bash",
+        "duration_ms": 518.2898279745132,
+        "parameters": {
+          "command": "cd /home/azureuser/projects/skills/skills/uipath-maestro-bpmn/validator && npm install --silent 2>&1 | tail -3 && node validate-bpmn.mjs /work/output/artifacts/skill-bpmn-edit-add-node/OrderIntake.bpmn",
+          "description": "Install validator deps and validate the edited BPMN file"
+        },
+        "tool_id": "toolu_bdrk_01RVtkL2HdPuKeah8PgkBLnw"
+      },
+      {
+        "tool": "Bash",
+        "duration_ms": 486.677331966348,
+        "parameters": {
+          "command": "cp -r /home/azureuser/projects/skills/skills/uipath-maestro-bpmn/validator /tmp/bpmn-validator && cd /tmp/bpmn-validator && npm install --silent 2>&1 | tail -5",
+          "description": "Copy validator to writable /tmp and install dependencies"
+        },
+        "tool_id": "toolu_bdrk_012z8pz79HV8d6KbucMkuJ9w"
+      },
+      {
+        "tool": "Bash",
+        "duration_ms": 350.2192299347371,
+        "parameters": {
+          "command": "cd /tmp/bpmn-validator && npm install 2>&1",
+          "description": "Install validator npm dependencies in /tmp",
+          "timeout": 60000
+        },
+        "tool_id": "toolu_bdrk_01EZduRjkdMhZgtPWPKCzvfi"
+      }
+    ],
+    "successful_commands": 15,
+    "failed_commands": 2,
+    "unknown_commands": 0,
+    "success_rate": 88.23529411764706,
+    "most_common_sequence": "Bash → Bash → Bash"
+  },
+  "total_token_usage": {
+    "uncached_input_tokens": 19,
+    "output_tokens": 5996,
+    "cache_creation_input_tokens": 44550,
+    "cache_read_input_tokens": 628270,
+    "total_cost_usd": 0.4455405,
+    "input_tokens": 672839
+  },
+  "total_assistant_turns": 28,
+  "expected_commands": null,
+  "actual_commands": 17,
+  "commands_efficiency": null,
+  "pre_run_results": [],
+  "post_run_results": [
+    {
+      "command": "find . -maxdepth 5 -type d \\( -name node_modules -o -name .npm-prefix -o -name .venv \\) -prune -exec rm -rf {} +",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "",
+      "duration_seconds": 0.0036542415618896484,
+      "error": null
+    }
+  ],
+  "simulation": null,
+  "early_stop": null
+}

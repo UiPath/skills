@@ -1,0 +1,104 @@
+2026-07-24 20:58:44 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-24 20:58:44 [INFO] coder_eval.orchestrator: API routing: aws_bedrock
+2026-07-24 20:58:44 [DEBUG] coder_eval.criteria: Discovered 14 criterion checkers
+2026-07-24 20:58:44 [DEBUG] coder_eval.criteria: Validated 14 criterion checkers
+2026-07-24 20:58:44 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-24 20:58:44 [DEBUG] coder_eval.orchestrator: Sending prompt: Build a Maestro flow that reads scanned birth certificates and extracts the child's full name, date ...
+2026-07-24 20:58:44 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Starting agent query stream...
+2026-07-24 21:01:54 [DEBUG] coder_eval.agents.claude_code_agent: [coder] session_id changed: None -> acd1201b-25e0-4f3c-9ad2-a58d22829252
+2026-07-24 21:01:54 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Agent query stream ended
+2026-07-24 21:01:54 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-24 21:01:54 [DEBUG] coder_eval.orchestrator: Agent response received (5398 chars)
+2026-07-24 21:01:54 [DEBUG] coder_eval.orchestrator: Checking success criteria
+2026-07-24 21:01:54 [DEBUG] coder_eval.evaluation.checker: Criterion 'skill_triggered' score: 1.00
+2026-07-24 21:01:54 [DEBUG] coder_eval.evaluation.checker: Criterion 'command_executed' score: 1.00
+2026-07-24 21:01:54 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'uip maestro flow validate passes on the generated flow': f=$(find ../.. -name "*.flow" -print -quit); [ -n "$f" ] && uip maestro flow validate "$f" --output json
+2026-07-24 21:02:00 [DEBUG] coder_eval.sandbox: Command 'f=$(find ../.. -name "*.flow" -print -quit); [ -n "$f" ] && uip maestro flow validate "$f" --output json' exited with code 0
+2026-07-24 21:02:00 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+{
+  "Result": "Success",
+  "Code": "FlowValidate",
+  "Data": {
+    "File": "/work/output/artifacts/skill-flow-ixp-e2e-project-selection/birth-certificate/BirthCertificate/BirthCertificate/BirthCertificate.flow",
+    "Status": "Valid"
+  }
+}
+---
+2026-07-24 21:02:00 [DEBUG] coder_eval.sandbox: STDERR:
+---
+[ManifestClient] fetchDynamicNodes ok: total=207 agent context nodes=2 external agent nodes=6 orchestrator nodes=158 IXP nodes=41
+---
+2026-07-24 21:02:00 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-07-24 21:02:00 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'Generated flow contains a real uipath.ixp.* node': grep -rqE "\"type\"[[:space:]]*:[[:space:]]*\"uipath\.ixp\." --include="*.flow" ../..
+2026-07-24 21:02:00 [DEBUG] coder_eval.sandbox: Command 'grep -rqE "\"type\"[[:space:]]*:[[:space:]]*\"uipath\.ixp\." --include="*.flow" ../..' exited with code 0
+2026-07-24 21:02:00 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-07-24 21:02:00 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'Generated flow does NOT contain a core.logic.mock fallback': ! grep -rqE "\"type\"[[:space:]]*:[[:space:]]*\"core\.logic\.mock\"" --include="*.flow" ../..
+2026-07-24 21:02:00 [DEBUG] coder_eval.sandbox: Command '! grep -rqE "\"type\"[[:space:]]*:[[:space:]]*\"core\.logic\.mock\"" --include="*.flow" ../..' exited with code 0
+2026-07-24 21:02:00 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-07-24 21:02:00 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'IxP node references the exact published model for this row's domain (strict)': case "$(pwd)" in
+  *aviation*)
+    model='aviation-investigation-final-report-demo-a42b1d4d-ixp'
+    nt='uipath\.ixp\.aviation-investigation-final-report-demo-a42b1d4d-ixp\.'
+    ;;
+  *birth*)
+    model='birth_certificates_oob-6252526a-ixp'
+    nt='uipath\.ixp\.birth-certificates-oob-6252526a-ixp\.'
+    ;;
+  *)
+    echo "Unknown row in pwd: $(pwd)" >&2
+    exit 2
+    ;;
+esac
+f=$(find ../.. -name "*.flow" -print -quit)
+if [ -z "$f" ]; then
+  echo "no .flow file under ../.." >&2
+  exit 1
+fi
+if ! grep -qF "\"modelName\": \"${model}\"" "$f"; then
+  echo "modelName mismatch — expected '${model}' in $f" >&2
+  grep -E '"modelName"' "$f" >&2 || true
+  exit 1
+fi
+if ! grep -qE "\"type\"[[:space:]]*:[[:space:]]*\"${nt}" "$f"; then
+  echo "NodeType mismatch — expected prefix '${nt}' in $f" >&2
+  grep -E '"type"[[:space:]]*:[[:space:]]*"uipath\.ixp' "$f" >&2 || true
+  exit 1
+fi
+
+2026-07-24 21:02:00 [DEBUG] coder_eval.sandbox: Command 'case "$(pwd)" in
+  *aviation*)
+    model='aviation-investigation-final-report-demo-a42b1d4d-ixp'
+    nt='uipath\.ixp\.aviation-investigation-final-report-demo-a42b1d4d-ixp\.'
+    ;;
+  *birth*)
+    model='birth_certificates_oob-6252526a-ixp'
+    nt='uipath\.ixp\.birth-certificates-oob-6252526a-ixp\.'
+    ;;
+  *)
+    echo "Unknown row in pwd: $(pwd)" >&2
+    exit 2
+    ;;
+esac
+f=$(find ../.. -name "*.flow" -print -quit)
+if [ -z "$f" ]; then
+  echo "no .flow file under ../.." >&2
+  exit 1
+fi
+if ! grep -qF "\"modelName\": \"${model}\"" "$f"; then
+  echo "modelName mismatch — expected '${model}' in $f" >&2
+  grep -E '"modelName"' "$f" >&2 || true
+  exit 1
+fi
+if ! grep -qE "\"type\"[[:space:]]*:[[:space:]]*\"${nt}" "$f"; then
+  echo "NodeType mismatch — expected prefix '${nt}' in $f" >&2
+  grep -E '"type"[[:space:]]*:[[:space:]]*"uipath\.ixp' "$f" >&2 || true
+  exit 1
+fi
+' exited with code 0
+2026-07-24 21:02:00 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-07-24 21:02:00 [INFO] coder_eval.orchestrator: Success criteria: 6/6 passed, weighted score: 1.000
+2026-07-24 21:02:00 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-24 21:02:00 [INFO] coder_eval.orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+2026-07-24 21:02:00 [INFO] coder_eval.orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-ixp-e2e-project-selection/birth-certificate
+2026-07-24 21:02:00 [INFO] coder_eval.orchestrator: Task finished: status=SUCCESS duration=198.6s score=1.000 iterations=1

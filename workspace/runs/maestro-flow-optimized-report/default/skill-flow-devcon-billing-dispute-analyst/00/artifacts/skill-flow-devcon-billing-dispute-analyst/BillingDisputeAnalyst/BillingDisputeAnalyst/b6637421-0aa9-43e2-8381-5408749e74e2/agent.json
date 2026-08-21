@@ -1,0 +1,87 @@
+{
+  "version": "1.1.0",
+  "settings": {
+    "model": "claude-sonnet-4-6",
+    "maxTokens": 16000,
+    "temperature": 0,
+    "engine": "basic-v2",
+    "maxIterations": 5,
+    "mode": "standard"
+  },
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "start__output__disputeDescription": {
+        "type": "string",
+        "description": "The description of the billing dispute submitted by the customer."
+      },
+      "start__output__invoiceNumber": {
+        "type": "string",
+        "description": "The invoice number associated with the billing dispute."
+      }
+    },
+    "required": [
+      "start__output__disputeDescription",
+      "start__output__invoiceNumber"
+    ]
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "determination": {
+        "type": "string",
+        "description": "The determination of the billing dispute (e.g., Approved, Denied, Escalated)."
+      },
+      "rationale": {
+        "type": "string",
+        "description": "The detailed rationale supporting the determination."
+      }
+    },
+    "required": [
+      "determination",
+      "rationale"
+    ]
+  },
+  "metadata": {
+    "storageVersion": "50.0.0",
+    "isConversational": false,
+    "showProjectCreationExperience": false
+  },
+  "type": "lowCode",
+  "guardrails": [],
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a billing dispute analyst. Analyze the provided billing dispute using the grounded knowledge from the Billing Dispute SOP. Based on the SOP guidelines, evaluate the dispute and return your analysis as a JSON object with exactly two fields: 'determination' (a concise verdict such as Approved, Denied, or Escalated) and 'rationale' (a detailed explanation of your reasoning referencing relevant SOP policies). Always ground your analysis in the retrieved SOP content.",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "You are a billing dispute analyst. Analyze the provided billing dispute using the grounded knowledge from the Billing Dispute SOP. Based on the SOP guidelines, evaluate the dispute and return your analysis as a JSON object with exactly two fields: 'determination' (a concise verdict such as Approved, Denied, or Escalated) and 'rationale' (a detailed explanation of your reasoning referencing relevant SOP policies). Always ground your analysis in the retrieved SOP content."
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "Invoice Number: {{input.start__output__invoiceNumber}}\n\nDispute Description: {{input.start__output__disputeDescription}}",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "Invoice Number: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__invoiceNumber"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\nDispute Description: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__disputeDescription"
+        }
+      ]
+    }
+  ],
+  "projectId": "b6637421-0aa9-43e2-8381-5408749e74e2"
+}

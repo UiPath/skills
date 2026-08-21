@@ -1,0 +1,455 @@
+### skill-bpmn-http-weather
+DESC: HTTP activity eval: agent uses the uipath-maestro-bpmn skill to model a connectionless HTTP call to a public weather API (Open-Meteo) as a bpmn:sendTask with the registry Intsvc.HttpExecution wrapper in manual mode, capturing the response into a declared variable. Ports the Flow Open-Meteo weather single-node test to a connectionless BPMN HTTP node. Authoring only — no cloud effects, no live call.
+DELTA cost $3.608->$1.265 (-64.9%) | thk 26->0 (-26) | tr 60980->25494 (-35486) | calls 83.0->39.0 (-44.0) | time 675->265s | REAL=True levers=tool_calls,turns,tr_tok,output_tok | n(kept) B=1/1 O=1/1
+BASE rep=00 tools={'Skill': 1, 'Bash': 64, 'Read': 15, 'Agent': 1, 'Write': 2} uip={'maestro bpmn registry': 4.0, 'maestro bpmn validate': 1.0} inline_py=15.0 bursts>=1.5k=[]
+BASE TRACE: Skill:uipath:uipath-maestro-bpmn → Bashx3 → Read:structural-bpmn.md → Read:registry-workflow.md → Bashx3 → Read:expression-authoring.md → Bashx3 → Read:project-layout.md → Bashx13 → Read:local-metadata-regeneration-guide.md → Bashx4 → Agent → Read:public-safety.md → Bashx5 → Read:bpmn-spec.json → Read:check_http_weather.py → Read:http_weather.yaml → Bashx3 → Read:registry-workflow.md → Bashx3 → Read:cli-conventions.md → Bashx17 → Read:check_http_weather.py → Bash → Read:http_weather.yaml → Bash → Read:bpmn_check.py → Bashx2 → Read:bpmn_check.py → Bashx2 → Write:OpenMeteoWeatherHttp.bpmn → Bash → Write:project.uiproj → Bashx3
+OPT rep=00 tools={'Skill': 1, 'Bash': 23, 'Read': 5, 'Grep': 8, 'Write': 2} uip={'maestro bpmn validate': 2.0, '--version 2': 1.0, 'maestro bpmn registry': 1.0, 'maestro bpmn init': 1.0, 'maestro bpmn format': 1.0} inline_py=4.0 bursts>=1.5k=[]
+OPT TRACE: Skill:tmp:uipath-maestro-bpmn → Bash → Read:registry-workflow.md → Bashx5 → Grep:HttpExecution|bindings\.|variablesRoot|BPMN.Variables|Var_|process-level variable|root variable → Read:structural-bpmn.md → Grep:HttpExecution|literal|bindings\.|manual mode|url=|parameters → Grep:HttpExecution|UnifiedHttpRequest → Bash → Grep:manual|literal|HttpExecution|CDATA → Bash → Grep:uipath:input name=\"headers\"|uipath:input name=\"parameters\"|uipath:input name=\"body\"|uipath:input name=\"url\" → Read:public-safety.md → Bash → Grep:variableTypes|allowedTypes|inputOutput.*type|\"object\"|\"json\" → Bash → Grep:type=\"object\"|type=\"json\"|inputOutput|variable type|Var_.*type → Read:expression-authoring.md → Bashx3 → Grep:inputOutput|uipath:output.*type=\"object\"|Var_.*Response|HttpResponse → Bashx3 → Write:OpenMeteoWeatherHttp.bpmn → Bashx3 → Read:local-metadata-regeneration-guide.md → Write:project.uiproj → Bashx4
+
+### skill-bpmn-hitl-completed-wired
+DESC: Smoke test (ported from flow hitl/smoke_02): agent places an Actions.HITL user task and wires its completion outcome to a downstream step that reaches an end event — the BPMN equivalent of wiring the flow HITL "completed" port to the next node.
+DELTA cost $3.434->$1.700 (-50.5%) | thk 0->0 (+0) | tr 52292->32104 (-20188) | calls 58.0->41.0 (-17.0) | time 904->516s | REAL=True levers=tool_calls,turns,tr_tok,output_tok | n(kept) B=1/1 O=1/1
+BASE rep=00 tools={'Skill': 1, 'Bash': 35, 'Read': 18, 'Grep': 2, 'Edit': 2} uip={'maestro bpmn registry': 4.0, 'maestro bpmn init': 2.0, 'maestro bpmn validate': 2.0, 'maestro bpmn --help': 1.0, 'maestro bpmn update-metadata': 1.0} inline_py=9.0 bursts>=1.5k=[]
+BASE TRACE: Skill:uipath:uipath-maestro-bpmn → Bash → Read:structural-bpmn.md → Bashx3 → Read:registry-workflow.md → Bashx2 → Read:hitl-node-apptask.md → Bashx3 → Grep:actions → Read:SKILL.md → Read:hitl-node-quickform.md → Read:hitl-node-coded-action-app.md → Read:hitl-patterns.md → Bash → Read:public-safety.md → Read:expression-authoring.md → Bashx2 → Read:project-layout.md → Read:local-metadata-regeneration-guide.md → Bashx8 → Read:PurchaseApprovalBpmn.bpmn → Bash → Read:entry-points.json → Read:bindings_v2.json → Read:operate.json → Read:package-descriptor.json → Grep:elementId → Bashx9 → Edit:PurchaseApprovalBpmn.bpmn → Read:PurchaseApprovalBpmn.bpmn → Edit:PurchaseApprovalBpmn.bpmn → Bashx4 → Read:PurchaseApprovalBpmn.bpmn → Bash
+OPT rep=00 tools={'Skill': 1, 'Bash': 29, 'Read': 6, 'Grep': 1, 'Write': 2, 'Edit': 1, 'SendMessage': 1} uip={'maestro bpmn registry': 3.0, 'maestro bpmn validate': 3.0, 'maestro bpmn format': 2.0, '--version 2': 1.0} inline_py=5.0 bursts>=1.5k=[]
+OPT TRACE: Skill:tmp:uipath-maestro-bpmn → Bash → Read:structural-bpmn.md → Bash → Read:registry-workflow.md → Bash → Read:expression-authoring.md → Bashx2 → Read:public-safety.md → Bashx4 → Read:local-metadata-regeneration-guide.md → Read:project-layout.md → Grep:entryPointId → Bashx10 → Write:PurchaseApprovalBpmn.bpmn → Bashx4 → Edit:PurchaseApprovalBpmn.bpmn → Bashx4 → Write:project.uiproj → Bashx2 → SendMessage
+
+### skill-bpmn-inclusive-gateway-forkjoin
+DESC: Structural advanced-event eval: agent uses the uipath-maestro-bpmn skill to author an INCLUSIVE (OR) gateway fork with conditioned branches and a real inclusive join. Exercises the FAKE_JOIN / SUPERFLUOUS_GATEWAY rules (join with a gateway, not by pointing two flows at one activity). Authoring only — no cloud effects.
+DELTA cost $2.008->$0.549 (-72.7%) | thk 0->0 (+0) | tr 21128->14381 (-6747) | calls 35.0->12.0 (-23.0) | time 629->140s | REAL=True levers=tool_calls,turns,tr_tok,output_tok | n(kept) B=1/1 O=1/1
+BASE rep=00 tools={'Skill': 1, 'Bash': 29, 'Read': 4, 'Write': 1} uip={'maestro bpmn registry': 5.0, 'is connections list': 2.0, 'maestro bpmn validate': 2.0, '--version 2': 1.0} inline_py=7.0 bursts>=1.5k=[]
+BASE TRACE: Skill:uipath:uipath-maestro-bpmn → Bash → Read:structural-bpmn.md → Bashx9 → Read:expression-authoring.md → Bashx4 → Read:public-safety.md → Bashx4 → Read:registry-workflow.md → Bashx9 → Write:NotificationFanout.bpmn → Bashx2
+OPT rep=00 tools={'Skill': 1, 'Bash': 6, 'Read': 3, 'Grep': 1, 'Write': 1} uip={'maestro bpmn registry': 3.0, '--version 2': 1.0, 'maestro bpmn format': 1.0, 'maestro bpmn validate': 1.0} inline_py=1.0 bursts>=1.5k=[]
+OPT TRACE: Skill:tmp:uipath-maestro-bpmn → Bash → Read:registry-workflow.md → Bash → Read:structural-bpmn.md → Bashx2 → Grep:type="boolean"|inputOutput|uipath:variables → Read:expression-authoring.md → Write:NotificationFanout.bpmn → Bashx2
+
+### skill-bpmn-callactivity-agentic-process
+DESC: Node eval: agent uses the uipath-maestro-bpmn skill to invoke a separate agentic Maestro instance via Orchestrator.StartAgenticProcess, correctly hosted on a bpmn:callActivity (a CallActivity invokes a SEPARATE instance) rather than an in-instance serviceTask. Authoring only — no cloud effects.
+DELTA cost $1.934->$0.498 (-74.3%) | thk 0->0 (+0) | tr 25301->12251 (-13050) | calls 46.0->14.0 (-32.0) | time 444->117s | REAL=True levers=tool_calls,turns,tr_tok,output_tok | n(kept) B=1/1 O=1/1
+BASE rep=00 tools={'Skill': 1, 'Bash': 42, 'Write': 2, 'Edit': 1} uip={'maestro bpmn registry': 3.0, 'maestro bpmn validate': 2.0} inline_py=3.0 bursts>=1.5k=[]
+BASE TRACE: Skill:uipath:uipath-maestro-bpmn → Bashx35 → Write:CallActivityAgenticBpmn.bpmn → Write:project.uiproj → Bashx3 → Edit:CallActivityAgenticBpmn.bpmn → Bashx4
+OPT rep=00 tools={'Skill': 1, 'Bash': 9, 'Read': 2, 'Write': 2} uip={'maestro bpmn registry': 3.0, 'maestro bpmn validate': 2.0, 'maestro bpmn format': 1.0} inline_py=3.0 bursts>=1.5k=[]
+OPT TRACE: Skill:tmp:uipath-maestro-bpmn → Bashx3 → Read:structural-bpmn.md → Write:CallActivityAgenticBpmn.bpmn → Read:project-layout.md → Bashx2 → Write:project.uiproj → Bashx4
+
+### skill-bpmn-script-jint-guidance
+DESC: Script task eval: agent authors a BPMN script task that follows the Jint runtime boundary instead of Node.js, browser, filesystem, or network APIs.
+DELTA cost $3.075->$1.822 (-40.8%) | thk 0->0 (+0) | tr 41051->31475 (-9576) | calls 71.0->48.0 (-23.0) | time 755->414s | REAL=True levers=tool_calls,turns,tr_tok,output_tok | n(kept) B=1/1 O=1/1
+BASE rep=00 tools={'Skill': 1, 'Bash': 47, 'Grep': 8, 'Read': 13, 'Write': 1, 'Edit': 1} uip={'maestro bpmn validate': 5.0, 'maestro bpmn registry': 3.0, 'maestro bpmn update-metadata': 3.0, 'maestro bpmn init': 2.0, '--version 2': 1.0, 'maestro bpmn --help': 1.0} inline_py=10.0 bursts>=1.5k=[]
+BASE TRACE: Skill:uipath:uipath-maestro-bpmn → Bashx17 → Grep:entryPointId|entryPoint → Grep:elementId → Grep:manualStart|ManualStart|manual start|entry point|EntryPoint → Bashx5 → Grep:uipath:variables|uipath:input |uipath:output |uipath:inputOutput|inputOutput|"variables" → Bashx2 → Read:RiskScoreScriptBpmn.bpmn → Read:project.uiproj → Read:entry-points.json → Read:operate.json → Read:package-descriptor.json → Read:bindings_v2.json → Bashx3 → Grep:uipath:input id=|uipath:output id=|uipath:inputOutput → Bashx4 → Grep:core.trigger.manual|entryPointId|uipath:input.*elementId|elementId= → Bash → Grep:uipath:input |uipath:output |uipath:inputOutput |elementId → Grep:amount|daysOverdue|riskScore|elementId= → Bashx7 → Write:RiskScoreScriptBpmn.bpmn → Bashx2 → Read:entry-points.json → Read:project.uiproj → Read:operate.json → Read:package-descriptor.json → Read:bindings_v2.json → Read:RiskScoreScriptBpmn.bpmn → Bashx3 → Edit:RiskScoreScriptBpmn.bpmn → Bashx2 → …(+2 more)
+OPT rep=00 tools={'Skill': 1, 'Bash': 33, 'Read': 11, 'Grep': 1, 'Write': 1, 'Edit': 1} uip={'maestro bpmn registry': 4.0, 'maestro bpmn init': 2.0, 'maestro bpmn validate': 2.0, '--version 2': 1.0, 'maestro bpmn format': 1.0} inline_py=6.0 bursts>=1.5k=[]
+OPT TRACE: Skill:tmp:uipath-maestro-bpmn → Bash → Read:structural-bpmn.md → Read:project-layout.md → Bashx3 → Read:expression-authoring.md → Bashx2 → Read:local-metadata-regeneration-guide.md → Bashx2 → Read:entry-points.json → Read:operate.json → Read:package-descriptor.json → Read:bindings_v2.json → Bashx3 → Grep:inputOutput|uipath:input |uipath:output |elementId → Bashx4 → Read:Parse_Script_Task_V2_And_Create_Correct_Model.bpmn → Bash → Read:RiskScoreScriptBpmn.bpmn → Bashx5 → Write:RiskScoreScriptBpmn.bpmn → Bashx7 → Edit:RiskScoreScriptBpmn.bpmn → Bashx3 → Read:RiskScoreScriptBpmn.bpmn → Bashx2
+
+### skill-bpmn-rpa-job
+DESC: Resource-node eval: agent uses the uipath-maestro-bpmn skill to model an RPA job invocation as a bpmn:serviceTask with the registry Orchestrator.StartJob wrapper, binding job arguments as input and capturing the job response into a declared variable. Differentiates from the hitl/rpa wrapper-presence eval by grading input/output variable binding. Authoring only — no cloud effects.
+DELTA cost $1.858->$0.917 (-50.7%) | thk 0->0 (+0) | tr 22708->21281 (-1427) | calls 39.0->25.0 (-14.0) | time 608->198s | REAL=True levers=tool_calls,turns,output_tok | n(kept) B=1/1 O=1/1
+BASE rep=00 tools={'Skill': 1, 'Bash': 22, 'Read': 6, 'Grep': 8, 'Write': 2} uip={'maestro bpmn registry': 6.0, '--version 2': 1.0, 'maestro bpmn validate': 1.0} inline_py=10.0 bursts>=1.5k=[]
+BASE TRACE: Skill:uipath:uipath-maestro-bpmn → Bashx6 → Read:structural-bpmn.md → Read:project-layout.md → Bashx4 → Read:public-safety.md → Read:expression-authoring.md → Bashx2 → Grep:inputOutput|defaultValue|uipath:input |uipath:output |elementId → Read:local-metadata-regeneration-guide.md → Read:registry-workflow.md → Bash → Grep:entryPointId → Bash → Grep:Orchestrator.StartJob → Bashx2 → Grep:uipath:bindings|uipath:binding  → Grep:entryPointId|uipath:entryPointId → Bashx2 → Grep:uipath:inputOutput|uipath:variables → Grep:entryPointIdx2 → Bashx2 → Write:InvoiceExtractionRpa.bpmn → Write:project.uiproj → Bashx2
+OPT rep=00 tools={'Skill': 1, 'Bash': 17, 'Read': 5, 'Write': 2} uip={'maestro bpmn registry': 2.0, '--version 2': 1.0, 'maestro bpmn format': 1.0, 'maestro bpmn validate': 1.0} inline_py=6.0 bursts>=1.5k=[]
+OPT TRACE: Skill:tmp:uipath-maestro-bpmn → Bash → Read:registry-workflow.md → Bashx5 → Read:structural-bpmn.md → Read:project-layout.md → Bash → Read:expression-authoring.md → Bashx6 → Write:InvoiceExtractionRpa.bpmn → Write:project.uiproj → Bashx2 → Read:InvoiceExtractionRpa.bpmn → Bashx2
+
+### skill-bpmn-e2e-customer-escalation
+DESC: Skill-guided e2e evaluation (ported from the Flow customer_escalation eval): agent uses the uipath-maestro-bpmn skill to author a synthetic BPMN process that classifies an inbound request with two script tasks, routes on the combined signal through an exclusive gateway, and escalates via a human user task on the high-touch path while a standard path generates a ticket in a script task. Includes fu
+DELTA cost $3.118->$2.240 (-28.2%) | thk 0->0 (+0) | tr 54511->28614 (-25897) | calls 64.0->46.0 (-18.0) | time 607->704s | REAL=True levers=tool_calls,turns,tr_tok,output_tok | n(kept) B=1/1 O=1/1
+BASE rep=00 tools={'Skill': 1, 'Bash': 39, 'Read': 9, 'Grep': 12, 'Write': 2, 'Edit': 1} uip={'maestro bpmn registry': 5.0, 'maestro bpmn validate': 3.0, 'maestro bpmn update-metadata': 2.0, '--version 2': 1.0, 'maestro bpmn init': 1.0, 'maestro bpmn --help': 1.0} inline_py=4.0 bursts>=1.5k=[]
+BASE TRACE: Skill:uipath:uipath-maestro-bpmn → Bash → Read:registry-workflow.md → Bash → Read:structural-bpmn.md → Bashx3 → Read:public-safety.md → Read:local-metadata-regeneration-guide.md → Read:project-layout.md → Grep:entryPointId|elementId → Read:expression-authoring.md → Grep:entryPointId|uipath:input |uipath:inputOutput|uipath:output  → Bash → Grep:entryPointId|uipath:input |elementId= → Grep:entryPointId → Grep:manualStart|ManualStart|entryPoint|StartEvent.*xmlTemplate|Manual start → Bash → Grep:bpmnElements|startEvent → Bash → Grep:Actions.HITL → Grep:elementId → Grep:entryPointId|uipath:variables|uipath:inputOutput → Bashx5 → Read:cli-conventions.md → Read:CAPABILITY.md → Bashx9 → Grep:uipath:input id=|elementId=|uipath:inputOutput → Bashx5 → Grep:conditionExpression.*&amp;&amp;|&&" → Grep:js:vars\..*&amp;&amp;|conditionExpression[^<]*&amp;&amp; → Bashx2 → Write:CustomerEscalation.bpmn → Read:CustomerEscalation.bpmn → …(+4 more)
+OPT rep=00 tools={'Skill': 1, 'Bash': 23, 'Read': 8, 'Grep': 12, 'Write': 2} uip={'maestro bpmn registry': 3.0, 'maestro bpmn validate': 2.0, '--version 2': 1.0, 'maestro bpmn init': 1.0, 'maestro bpmn update-metadata': 1.0, 'maestro bpmn pack': 1.0} inline_py=4.0 bursts>=1.5k=[]
+OPT TRACE: Skill:tmp:uipath-maestro-bpmn → Bash → Read:structural-bpmn.md → Read:registry-workflow.md → Bash → Read:project-layout.md → Read:local-metadata-regeneration-guide.md → Bashx4 → Grep:elementId|entryPointId|uipath:input |uipath:output  → Grep:entryPointId|elementId|inputOutput|uipath:variables → Read:expression-authoring.md → Bashx2 → Grep:elementId → Grep:entryPointId|StartEvent.*Manual|manual start|Var_Amount|inputOutput → Grep:entryPointId|manualTrigger|manual start|inputOutput|elementId → Bash → Grep:uipath:variables|uipath:input id=|uipath:output id=|uipath:inputOutput → Bashx4 → Read:public-safety.md → Grep:Actions.HITL|taskTitle|appId → Bash → Grep:uipath:input\b|uipath:output\b|uipath:inputOutput\b → Read:failure-modes.md → Grep:elementId=|uipath:input id=|uipath:output id=|uipath:inputOutput id=|core.trigger.manual|entryPointId → Grep:&&|\\|\\||and\b|logical → Bash → Grep:&amp;&amp;|conditionExpression → Bashx2 → Grep:Actions.HITL|HitlTaskArguments|var=\"Var_"  → Bash → Write:CustomerEscalation.bpmn → Read:CustomerEscalation.bpmn → Write:CustomerEscalation.bpmn → Bashx5
+
+### skill-bpmn-expr-computed-js
+DESC: Expression-authoring eval: agent uses the uipath-maestro-bpmn skill to author a computed inline-JavaScript expression with the exact case-sensitive `=js:` prefix (no space after the colon) inside a json-typed mapping that still emits valid JSON. Grades the `=js:` escape-hatch rules from references/expression-authoring.md. Authoring only — no cloud effects.
+DELTA cost $2.810->$2.128 (-24.3%) | thk 0->0 (+0) | tr 53178->29673 (-23505) | calls 56.0->53.0 (-3.0) | time 576->536s | REAL=True levers=tool_calls,turns,tr_tok,output_tok | n(kept) B=1/1 O=1/1
+BASE rep=00 tools={'Skill': 1, 'Bash': 31, 'Read': 9, 'Grep': 14, 'Write': 1} uip={'maestro bpmn registry': 5.0, 'maestro bpmn validate': 1.0} inline_py=10.0 bursts>=1.5k=[]
+BASE TRACE: Skill:uipath:uipath-maestro-bpmn → Bashx5 → Read:expression-authoring.md → Read:structural-bpmn.md → Bash → Read:public-safety.md → Read:project-layout.md → Bash → Grep:"integer"|variableTypes|VariableType → Grep:variableType|\"number\"|\"string\"|\"boolean\" → Grep:manual|entryPoint|EntryPoint → Read:registry-workflow.md → Bashx2 → Grep:entryPointId|entry point|Manual start|manual start → Read:local-metadata-regeneration-guide.md → Grep:uipath:input |uipath:output |uipath:inputOutput |elementId= → Grep:entryPointId|Start_Manual|manual start|ManualStart → Grep:"integer"|type="integer"|uipath:input  → Grep:elementId=|entryPointId=|uipath:input id=|uipath:inputOutput id= → Bash → Grep:uipath:output|uipath:variables|type=\\"json\\"|type=\\"object\\" → Grep:migrationVersion|uipath:variables version → Grep:manual|Manual → Grep:uipath:input |uipath:inputOutput |uipath:output |elementId → Bash → Grep:Orchestrator.RunJob|OutputType|uipath:output var=|type=\\"Orchestrator|var=\"Var_"  → Grep:entryPointId → Bashx6 → Read:bpmn_check.py → Bash → Read:check_computed_js.py → Read:computed_js.yaml → Bashx9 → …(+2 more)
+OPT rep=00 tools={'Skill': 1, 'Bash': 38, 'Read': 5, 'Grep': 7, 'Write': 2} uip={'maestro bpmn registry': 3.0, 'maestro bpmn validate': 2.0, '--version 2': 1.0} inline_py=16.0 bursts>=1.5k=[]
+OPT TRACE: Skill:tmp:uipath-maestro-bpmn → Bash → Read:registry-workflow.md → Read:expression-authoring.md → Read:structural-bpmn.md → Bashx4 → Read:public-safety.md → Bashx16 → Read:project-layout.md → Bashx3 → Grep:elementId → Grep:entryPointIdx2 → Bashx2 → Grep:manual|entry point|Entry_|startEvent → Grep:manual start|Entry_|entryPointId → Bashx2 → Grep:entryPointId → Bash → Grep:elementId= → Bashx5 → Write:ComputedJsBpmn.bpmn → Bashx2 → Write:project.uiproj → Bashx2
+
+### skill-bpmn-feet-inches
+DESC: Skill-guided evaluation (ported from the Flow feet_inches eval): agent uses the uipath-maestro-bpmn skill to author a BPMN process as a sequential pipeline of script tasks that pass a value through parse, convert, and format steps. Exercises a linear script-task chain with variable passing between nodes. Authoring only — no cloud effects.
+DELTA cost $2.854->$2.176 (-23.8%) | thk 0->0 (+0) | tr 29816->40381 (+10565) | calls 59.0->62.0 (+3.0) | time 867->538s | REAL=True levers=tool_calls,turns,tr_tok,output_tok | n(kept) B=1/1 O=1/1
+BASE rep=00 tools={'Skill': 1, 'Bash': 35, 'Read': 8, 'Grep': 12, 'TaskStop': 1, 'Write': 2} uip={'maestro bpmn registry': 4.0, '2': 1.0, 'maestro bpmn validate': 1.0} inline_py=10.0 bursts>=1.5k=[]
+BASE TRACE: Skill:uipath:uipath-maestro-bpmn → Bash → Read:structural-bpmn.md → Read:registry-workflow.md → Read:project-layout.md → Bashx4 → Read:expression-authoring.md → Bash → Grep:entryPointId → Read:local-metadata-regeneration-guide.md → Grep:elementId → Grep:uipath:input\b|uipath:output\b|uipath:inputOutput\b → Grep:entryPointId|elementId → Bashx2 → Grep:elementId=|uipath:input |uipath:inputOutput |uipath:output  → Bashx2 → Grep:"bpmn:StartEvent"|startEvent → Bashx2 → TaskStop → Read:failure-modes.md → Grep:entryPointId|EntryPoint → Bashx5 → Grep:inputOutput|"input"|"output" → Grep:uipath:input |uipath:inputOutput |uipath:output  → Bash → Grep:uipath:entryPointId|entry-point|EntryPoint → Read:cli-conventions.md → Bashx3 → Grep:entryPointId → Bash → Grep:entryPoint|EntryPoint|startEvent|input → Bashx6 → Read:Process.bpmn → …(+5 more)
+OPT rep=00 tools={'Skill': 1, 'Bash': 56, 'Read': 4, 'Write': 1} uip={'maestro bpmn registry': 4.0, 'maestro bpmn validate': 3.0, '--version 2': 1.0, 'maestro bpmn init': 1.0, 'maestro bpmn format': 1.0, 'maestro bpmn update-metadata': 1.0} inline_py=6.0 bursts>=1.5k=[]
+OPT TRACE: Skill:tmp:uipath-maestro-bpmn → Bashx38 → Read:FeetInchesBpmn.bpmn → Bashx5 → Read:structural-bpmn.md → Bashx5 → Read:FeetInchesBpmn.bpmn → Bashx3 → Write:FeetInchesBpmn.bpmn → Bashx5 → Read:FeetInchesBpmn.bpmn
+
+### skill-bpmn-script-task-group-by
+DESC: Skill-guided evaluation: agent uses the uipath-maestro-bpmn skill to author a Jint-safe script task that runs a group-by with aggregation (grouping rows by a field and producing an aggregate value). Script tasks are how BPMN processes reshape data. Authoring only — no cloud effects.
+DELTA cost $1.524->$0.902 (-40.8%) | thk 0->0 (+0) | tr 18466->26125 (+7659) | calls 43.0->31.0 (-12.0) | time 343->206s | REAL=True levers=tool_calls,turns,tr_tok,output_tok | n(kept) B=1/1 O=1/1
+BASE rep=00 tools={'Skill': 1, 'Bash': 38, 'Read': 3, 'Write': 1} uip={'maestro bpmn registry': 4.0, '--version 2': 1.0, 'maestro bpmn validate': 1.0} inline_py=14.0 bursts>=1.5k=[]
+BASE TRACE: Skill:uipath:uipath-maestro-bpmn → Bashx14 → Read:expression-authoring.md → Bashx18 → Read:RiskScoring.bpmn → Bashx3 → Read:CustomerExport.bpmn → Bash → Write:ScriptTaskGroupByDemo.bpmn → Bashx2
+OPT rep=00 tools={'Skill': 1, 'Bash': 24, 'Read': 4, 'Grep': 1, 'Write': 1} uip={'maestro bpmn registry': 3.0, 'maestro bpmn validate': 2.0, '--version 2': 1.0, 'maestro bpmn format': 1.0} inline_py=5.0 bursts>=1.5k=[]
+OPT TRACE: Skill:tmp:uipath-maestro-bpmn → Bash → Read:registry-workflow.md → Bash → Read:structural-bpmn.md → Bashx3 → Read:expression-authoring.md → Bashx4 → Grep:value=|defaultValue|initialValue → Bashx8 → Write:ScriptTaskGroupByDemo.bpmn → Bashx7 → Read:ScriptTaskGroupByDemo.bpmn
+
+### skill-bpmn-edit-update-node
+DESC: Brownfield edit: change one script task's logic (a threshold constant) in an existing, valid Maestro BPMN without restructuring the process or touching any sibling node, ids, or preserve-only payloads.
+DELTA cost $0.919->$0.299 (-67.4%) | thk 0->0 (+0) | tr 9152->4911 (-4241) | calls 22.0->9.0 (-13.0) | time 336->93s | REAL=True levers=tool_calls,turns,output_tok | n(kept) B=1/1 O=1/1
+BASE rep=00 tools={'Skill': 1, 'Bash': 18, 'Read': 2, 'Edit': 1} uip={'maestro bpmn validate': 4.0, '--version 2': 1.0, 'uip maestro bpmn': 1.0, 'maestro bpmn check': 1.0, 'maestro bpmn registry': 1.0} inline_py=1.0 bursts>=1.5k=[]
+BASE TRACE: Skill:uipath:uipath-maestro-bpmn → Bash → Read:RiskScoring.bpmn → Edit:RiskScoring.bpmn → Bashx11 → Read:structural-bpmn.md → Bashx6
+OPT rep=00 tools={'Skill': 1, 'Bash': 7, 'Edit': 1} uip={'maestro bpmn validate': 2.0, '--version 2': 1.0} inline_py=1.0 bursts>=1.5k=[]
+OPT TRACE: Skill:tmp:uipath-maestro-bpmn → Bash → Edit:RiskScoring.bpmn → Bashx6
+
+### skill-bpmn-event-trigger-start
+DESC: Connector trigger start-event eval: agent uses the uipath-maestro-bpmn skill to start a process from an Integration Service connector event (e.g. an email received) using the registry Intsvc.EventTrigger wrapper on a bpmn:startEvent, kept as a public-safe draft because connection binding and trigger properties are CLI-owned enrichment. Ports the Flow connector-trigger inbox test to a BPMN connecto
+DELTA cost $1.315->$0.744 (-43.4%) | thk 0->0 (+0) | tr 18877->18214 (-663) | calls 39.0->22.0 (-17.0) | time 260->166s | REAL=True levers=tool_calls,turns,output_tok | n(kept) B=1/1 O=1/1
+BASE rep=00 tools={'Skill': 1, 'Bash': 36, 'Write': 2} uip={'maestro bpmn registry': 5.0, '--version 2': 1.0} inline_py=4.0 bursts>=1.5k=[]
+BASE TRACE: Skill:uipath:uipath-maestro-bpmn → Bashx34 → Write:InboxTriggerBpmn.bpmn → Write:project.uiproj → Bashx2
+OPT rep=00 tools={'Skill': 1, 'Bash': 13, 'Read': 5, 'Write': 3} uip={'maestro bpmn registry': 4.0, '--version 2': 1.0, 'is connections list': 1.0, 'maestro bpmn format': 1.0} inline_py=5.0 bursts>=1.5k=[]
+OPT TRACE: Skill:tmp:uipath-maestro-bpmn → Bash → Read:registry-workflow.md → Bashx7 → Read:structural-bpmn.md → Write:InboxTriggerBpmn.bpmn → Read:project-layout.md → Read:local-metadata-regeneration-guide.md → Write:project.uiproj → Bashx2 → Read:InboxTriggerBpmn.bpmn → Bashx2 → Write:DRAFT_NOTES.md → Bash
+
+### skill-bpmn-loop-multiply
+DESC: Skill-guided evaluation (ported from the Flow loop_multiply eval): agent uses the uipath-maestro-bpmn skill to author a BPMN process that multiplies a collection of numbers using a sequential multi-instance marker over a script task. Exercises the multi-instance / loop-characteristics registry gap (sequential accumulation). Authoring only — no cloud effects.
+DELTA cost $2.728->$2.205 (-19.2%) | thk 0->0 (+0) | tr 39156->44787 (+5631) | calls 60.0->48.0 (-12.0) | time 704->438s | REAL=True levers=tool_calls,turns,tr_tok,output_tok | n(kept) B=1/1 O=1/1
+BASE rep=00 tools={'Skill': 1, 'Bash': 54, 'Read': 3, 'Write': 2} uip={'maestro bpmn registry': 3.0, '--version 2': 1.0, 'maestro bpmn validate': 1.0} inline_py=17.0 bursts>=1.5k=[]
+BASE TRACE: Skill:uipath:uipath-maestro-bpmn → Bash → Read:structural-bpmn.md → Bash → Read:expression-authoring.md → Bashx6 → Read:project-layout.md → Bashx43 → Write:LoopMultiplyBpmn.bpmn → Write:project.uiproj → Bashx3
+OPT rep=00 tools={'Skill': 1, 'Bash': 41, 'Read': 4, 'Write': 2} uip={'maestro bpmn registry': 3.0, 'maestro bpmn validate': 2.0, '--version 2': 1.0} inline_py=6.0 bursts>=1.5k=[]
+OPT TRACE: Skill:tmp:uipath-maestro-bpmn → Bash → Read:structural-bpmn.md → Bashx3 → Read:expression-authoring.md → Bashx19 → Read:ReadingListBpmn.bpmn → Bashx3 → Read:project-layout.md → Bashx13 → Write:LoopMultiplyBpmn.bpmn → Write:project.uiproj → Bashx2
+
+### skill-bpmn-gateway-sequence-flows
+DESC: Authoring eval: agent creates a BPMN skeleton with gateway branching, joining, default routing, sequence-flow conditions, and BPMN DI.
+DELTA cost $2.661->$2.247 (-15.6%) | thk 0->0 (+0) | tr 38754->36543 (-2211) | calls 40.0->39.0 (-1.0) | time 839->732s | REAL=True levers=output_tok | n(kept) B=1/1 O=1/1
+BASE rep=00 tools={'Skill': 1, 'Read': 7, 'Grep': 9, 'Bash': 21, 'Write': 2} uip={'maestro bpmn registry': 3.0, '--version 2': 1.0, 'maestro bpmn validate': 1.0} inline_py=5.0 bursts>=1.5k=[]
+BASE TRACE: Skill:uipath:uipath-maestro-bpmn → Read:structural-bpmn.md → Read:project-layout.md → Read:registry-workflow.md → Read:expression-authoring.md → Grep:entryPointId|entryPoint → Read:local-metadata-regeneration-guide.md → Bash → Grep:entryPointId → Grep:uipath:input |uipath:inputOutput |elementId= → Grep:entryPointId|migrationVersion|uipath:variables|inputOutput → Grep:entryPointId → Bashx3 → Grep:uipath:input\b|uipath:output\b|uipath:inputOutput|entryPointId → Bashx3 → Grep:entryPointId|elementId=|uipath:input |uipath:output  → Bashx2 → Read:cli-conventions.md → Grep:entryPointId → Bash → Grep:uipath:variables|uipath:inputOutput|elementId → Bashx6 → Read:invoice_exception_triage.yaml → Bashx3 → Write:InvoiceTriageBpmn.bpmn → Bashx2 → Write:project.uiproj
+OPT rep=00 tools={'Skill': 1, 'Read': 9, 'Bash': 22, 'Grep': 6, 'Write': 1} uip={'maestro bpmn registry': 4.0, 'maestro bpmn init': 2.0, 'maestro bpmn format': 2.0, '2': 1.0, 'maestro bpmn validate': 1.0} inline_py=2.0 bursts>=1.5k=[]
+OPT TRACE: Skill:tmp:uipath-maestro-bpmn → Read:structural-bpmn.md → Read:project-layout.md → Bash → Read:registry-workflow.md → Bashx2 → Grep:entryPointId|elementId|uipath:variables|inputOutput → Bash → Grep:entryPointId|elementId|manual|Manual → Grep:entryPointId|elementId → Grep:entryPointId|elementId|manual|Manual → Grep:entryPointId|elementId → Read:local-metadata-regeneration-guide.md → Read:expression-authoring.md → Grep:entryPointId → Bashx4 → Read:StartEventWithOutputs.bpmn → Bash → Read:ExclusiveWithParallelGateway.bpmn → Bashx8 → Read:InvoiceTriageBpmn.bpmn → Bash → Write:InvoiceTriageBpmn.bpmn → Bashx2 → Read:InvoiceTriageBpmn.bpmn → Bashx2
+
+### skill-bpmn-author-validate
+DESC: Skill-guided evaluation: agent uses the uipath-maestro-bpmn skill to author a small registry-driven Maestro BPMN process (start -> exclusive gateway with two conditioned branches -> end), with a BPMN diagram, then validates it with a local well-formed-XML / structural check. Authoring only — no cloud effects.
+DELTA cost $1.005->$0.655 (-34.8%) | thk 0->0 (+0) | tr 18714->13551 (-5163) | calls 21.0->15.0 (-6.0) | time 274->162s | REAL=True levers=tool_calls,turns,tr_tok,output_tok | n(kept) B=1/1 O=1/1
+BASE rep=00 tools={'Skill': 1, 'Read': 4, 'Bash': 11, 'Grep': 3, 'Write': 2} uip={'maestro bpmn registry': 2.0, '--version 2': 1.0, 'maestro bpmn validate': 1.0} inline_py=1.0 bursts>=1.5k=[]
+BASE TRACE: Skill:uipath:uipath-maestro-bpmn → Read:structural-bpmn.md → Bashx3 → Read:registry-workflow.md → Bash → Read:project-layout.md → Bash → Read:local-metadata-regeneration-guide.md → Bashx2 → Grep:entryPointId → Bash → Grep:entryPoint|ENTRY_POINT|MULTIPLE_BLANK_START → Grep:elementId|inputOutput|uipath:variables|entryPointId → Write:InvoiceApproval.bpmn → Write:project.uiproj → Bashx3
+OPT rep=00 tools={'Skill': 1, 'Bash': 10, 'Write': 2, 'Grep': 1, 'Read': 1} uip={'maestro bpmn registry': 3.0, '2': 1.0, 'maestro bpmn format': 1.0, 'maestro bpmn validate': 1.0} inline_py=2.0 bursts>=1.5k=[]
+OPT TRACE: Skill:tmp:uipath-maestro-bpmn → Bashx5 → Write:InvoiceApproval.bpmn → Bash → Grep:project.uiproj → Bash → Write:project.uiproj → Bashx2 → Read:InvoiceApproval.bpmn → Bash
+
+### skill-bpmn-edit-add-node
+DESC: Brownfield edit: insert a new script task into an existing, valid Maestro BPMN between two adjacent tasks, rewiring the sequence flow and diagram while preserving element ids, uipath:* payloads, and uipath:migrationVersion.
+DELTA cost $0.616->$0.352 (-42.8%) | thk 0->0 (+0) | tr 3217->1956 (-1261) | calls 13.0->9.0 (-4.0) | time 197->168s | REAL=True levers=tool_calls,turns,output_tok | n(kept) B=1/1 O=1/1
+BASE rep=00 tools={'Skill': 1, 'Read': 2, 'Bash': 7, 'Edit': 3} uip={'maestro bpmn validate': 4.0, 'maestro bpmn registry': 1.0} inline_py=2.0 bursts>=1.5k=[]
+BASE TRACE: Skill:uipath:uipath-maestro-bpmn → Read:OrderIntake.bpmn → Bash → Edit:OrderIntake.bpmnx2 → Bashx2 → Read:OrderIntake.bpmn → Edit:OrderIntake.bpmn → Bashx4
+OPT rep=00 tools={'Skill': 1, 'Read': 1, 'Bash': 4, 'Edit': 3} uip={'maestro bpmn validate': 2.0, 'maestro bpmn registry': 1.0} inline_py=1.0 bursts>=1.5k=[]
+OPT TRACE: Skill:tmp:uipath-maestro-bpmn → Read:OrderIntake.bpmn → Bash → Edit:OrderIntake.bpmnx2 → Bash → Edit:OrderIntake.bpmn → Bashx2
+
+### skill-bpmn-edit-remove-node
+DESC: Brownfield edit: delete a middle task from an existing, valid Maestro BPMN and heal the sequence flow (source connects directly to the former successor), removing orphaned diagram interchange and preserving untouched content.
+DELTA cost $0.720->$0.466 (-35.3%) | thk 0->0 (+0) | tr 7414->5323 (-2091) | calls 16.0->11.0 (-5.0) | time 205->164s | REAL=True levers=tool_calls,turns | n(kept) B=1/1 O=1/1
+BASE rep=00 tools={'Skill': 1, 'Read': 2, 'Edit': 3, 'Bash': 10} uip={'maestro bpmn validate': 2.0} inline_py=1.0 bursts>=1.5k=[]
+BASE TRACE: Skill:uipath:uipath-maestro-bpmn → Read:ShipmentReview.bpmn → Edit:ShipmentReview.bpmnx3 → Read:ShipmentReview.bpmn → Bashx10
+OPT rep=00 tools={'Skill': 1, 'Read': 2, 'Edit': 3, 'Bash': 5} uip={'maestro bpmn validate': 2.0, '--version 2': 1.0} inline_py=0.0 bursts>=1.5k=[]
+OPT TRACE: Skill:tmp:uipath-maestro-bpmn → Read:ShipmentReview.bpmn → Edit:ShipmentReview.bpmnx3 → Read:ShipmentReview.bpmn → Bashx5
+
+### skill-bpmn-script-task-map
+DESC: Skill-guided evaluation: agent uses the uipath-maestro-bpmn skill to author a Jint-safe script task that runs a map operation (uppercasing a field over a collection). Script tasks are how BPMN processes reshape data. Authoring only — no cloud effects.
+DELTA cost $1.705->$1.461 (-14.3%) | thk 0->0 (+0) | tr 35488->14849 (-20639) | calls 44.0->57.0 (+13.0) | time 296->297s | REAL=True levers=tool_calls,turns,tr_tok | n(kept) B=1/1 O=1/1
+BASE rep=00 tools={'Skill': 1, 'Bash': 38, 'Read': 3, 'Write': 1, 'Edit': 1} uip={'maestro bpmn registry': 4.0, '--version 2': 1.0, 'maestro bpmn validate': 1.0} inline_py=11.0 bursts>=1.5k=[]
+BASE TRACE: Skill:uipath:uipath-maestro-bpmn → Bashx5 → Read:structural-bpmn.md → Read:expression-authoring.md → Bashx16 → Read:registry-workflow.md → Bashx15 → Write:ScriptTaskMapDemo.bpmn → Edit:ScriptTaskMapDemo.bpmn → Bashx2
+OPT rep=00 tools={'Skill': 1, 'Bash': 23, 'Grep': 29, 'Read': 3, 'Write': 1} uip={'maestro bpmn registry': 3.0} inline_py=13.0 bursts>=1.5k=[]
+OPT TRACE: Skill:tmp:uipath-maestro-bpmn → Bashx2 → Grep:ScriptTask|scriptFormat|scriptVersion|Jint → Grep:ScriptTask|scriptFormat|scriptVersion|Jint|script → Grep:ScriptTask|scriptFormat|scriptVersion|Jintx2 → Read:structural-bpmn.md → Bash → Read:structural-bpmn.md → Grep:type=\"(json|object|array|collection)\"|inputOutput.*type=|variable types|type\": → Grep:type=\"(string|number|boolean|object|array)\"|Var_.*type=|uipath:inputOutput → Grep:uipath:inputOutput id= → Bashx4 → Grep:type=\"array\"|type=\"object\"|type=\"collection\"|Var_.*array|collection type → Grep:type="x2 → Bashx3 → Grep:array|object → Grep:"array"|"object" → Bashx5 → Grep:type="|Var_|variable type|supported types → Grep:"array"|'array'|type=.array|arrayOf|collection → Bash → Grep:inputOutput → Bash → Grep:INVALID_TYPE|VARIABLE_TYPE|allowedVariableTypes|variableTypes → Grep:"string"|"number"|"boolean" → Grep:rule|Rule|code|Code → Bash → Read:expression-authoring.md → Grep:people|Person|collection|array|list → Bash → Grep:boolean|VARIABLE_TYPE|valid.*type|type.*valid → Grep:object|array|json → Bash → …(+9 more)
+
+### skill-bpmn-hitl-brownfield-insert
+DESC: Quality test (ported from flow hitl/quality_04): agent inserts a HITL approval gate into an EXISTING .bpmn (shipped as a fixture) with a surgical edit — preserving every original element ID and script, removing only the one edge it splices, and adding the HITL node with a diagram shape.
+DELTA cost $1.015->$0.788 (-22.3%) | thk 0->0 (+0) | tr 13026->13573 (+547) | calls 26.0->23.0 (-3.0) | time 245->213s | REAL=True levers=tool_calls,turns | n(kept) B=1/1 O=1/1
+BASE rep=00 tools={'Skill': 1, 'Bash': 19, 'Read': 3, 'Edit': 3} uip={'maestro bpmn registry': 2.0, 'maestro bpmn validate': 2.0, '--version 2': 1.0} inline_py=3.0 bursts>=1.5k=[]
+BASE TRACE: Skill:uipath:uipath-maestro-bpmn → Bash → Read:OrderFulfillmentBpmn.bpmn → Bashx9 → Read:hitl-node-apptask.md → Bashx4 → Edit:OrderFulfillmentBpmn.bpmnx3 → Read:OrderFulfillmentBpmn.bpmn → Bashx5
+OPT rep=00 tools={'Skill': 1, 'Bash': 17, 'Read': 2, 'Edit': 3} uip={'maestro bpmn registry': 2.0, 'maestro bpmn validate': 2.0, '--version 2': 1.0} inline_py=3.0 bursts>=1.5k=[]
+OPT TRACE: Skill:tmp:uipath-maestro-bpmn → Bashx2 → Read:OrderFulfillmentBpmn.bpmn → Bashx12 → Edit:OrderFulfillmentBpmn.bpmnx3 → Bashx2 → Read:OrderFulfillmentBpmn.bpmn → Bash
+
+### skill-bpmn-parallel-fork-join
+DESC: Skill-guided evaluation: agent uses the uipath-maestro-bpmn skill to author a parallel gateway fork into two concurrent branches that a parallel gateway synchronizes (join) before the end — the BPMN analogue of a Flow parallel-sync merge. Authoring only — no cloud effects.
+DELTA cost $0.460->$0.252 (-45.3%) | thk 0->0 (+0) | tr 8288->8685 (+397) | calls 7.0->5.0 (-2.0) | time 74->69s | REAL=False levers=none | n(kept) B=1/1 O=1/1
+BASE rep=00 tools={'Skill': 1, 'Read': 1, 'Bash': 4, 'Write': 1} uip={'2': 1.0} inline_py=1.0 bursts>=1.5k=[]
+BASE TRACE: Skill:uipath:uipath-maestro-bpmn → Read:structural-bpmn.md → Bashx2 → Write:ParallelSync.bpmn → Bashx2
+OPT rep=00 tools={'Skill': 1, 'Bash': 2, 'Read': 1, 'Write': 1} uip={'maestro bpmn validate': 1.0} inline_py=0.0 bursts>=1.5k=[]
+OPT TRACE: Skill:tmp:uipath-maestro-bpmn → Bash → Read:biqomnuwu.txt → Write:ParallelSync.bpmn → Bash
+
+### skill-bpmn-registry-discovery
+DESC: Registry discovery eval: agent uses the Maestro BPMN registry surface to discover documented agent, queue, and connector wrapper types and to save public-safe CLI evidence for the skill's supported-element map without inventing private resource metadata. Requires the `uip` CLI on PATH.
+DELTA cost $0.589->$0.387 (-34.4%) | thk 0->0 (+0) | tr 5712->3583 (-2129) | calls 17.0->11.0 (-6.0) | time 112->135s | REAL=True levers=tool_calls,turns | n(kept) B=1/1 O=1/1
+BASE rep=00 tools={'Skill': 1, 'Bash': 16} uip={'maestro bpmn registry': 7.0, '--version': 1.0} inline_py=7.0 bursts>=1.5k=[]
+BASE TRACE: Skill:uipath:uipath-maestro-bpmn → Bashx16
+OPT rep=00 tools={'Skill': 1, 'Bash': 10} uip={'maestro bpmn registry': 7.0, '--version 2': 1.0} inline_py=2.0 bursts>=1.5k=[]
+OPT TRACE: Skill:tmp:uipath-maestro-bpmn → Bashx10
+
+### skill-bpmn-timer-start
+DESC: Timer start-event eval: agent uses the uipath-maestro-bpmn skill to author a scheduled (timer) start event that fires on a recurring hourly cycle, using the registry Intsvc.TimerTrigger wrapper on a bpmn:startEvent with a bpmn:timerEventDefinition. Ports the Flow scheduled-trigger smoke test to a BPMN timer start event. Authoring only — a timer only fires in a live engine, so this validates the st
+DELTA cost $0.809->$0.617 (-23.8%) | thk 0->0 (+0) | tr 17184->16268 (-916) | calls 27.0->18.0 (-9.0) | time 155->129s | REAL=True levers=tool_calls,turns | n(kept) B=1/1 O=1/1
+BASE rep=00 tools={'Skill': 1, 'Bash': 16, 'Read': 4, 'Grep': 4, 'Write': 2} uip={'maestro bpmn registry': 5.0, '--version 2': 1.0, 'maestro bpmn validate': 1.0} inline_py=6.0 bursts>=1.5k=[]
+BASE TRACE: Skill:uipath:uipath-maestro-bpmn → Bashx7 → Read:structural-bpmn.md → Bash → Read:registry-workflow.md → Bash → Grep:variableType|inputOutput|\"custom\" → Bash → Grep:inputOutput|type=\"object\"|type=\"custom\"|variable type" pattern → Grep:uipath:inputOutput|type=" → Bashx3 → Grep:type="object"|type="custom" → Write:ScheduledReportBpmn.bpmn → Read:project-layout.md → Read:local-metadata-regeneration-guide.md → Write:project.uiproj → Bashx3
+OPT rep=00 tools={'Skill': 1, 'Bash': 10, 'Read': 4, 'Write': 2, 'Edit': 1} uip={'maestro bpmn registry': 2.0, '--version 2': 1.0, 'maestro bpmn format': 1.0, 'maestro bpmn validate': 1.0} inline_py=1.0 bursts>=1.5k=[]
+OPT TRACE: Skill:tmp:uipath-maestro-bpmn → Bash → Read:registry-workflow.md → Bash → Read:structural-bpmn.md → Bashx3 → Write:ScheduledReportBpmn.bpmn → Read:project-layout.md → Bash → Write:project.uiproj → Bash → Read:ScheduledReportBpmn.bpmn → Bash → Edit:ScheduledReportBpmn.bpmn → Bashx2
+
+### skill-bpmn-debug-instance-inspect
+DESC: Skill-guided diagnosis of a FAULTED Maestro BPMN debug instance against a mocked `uip` CLI. Given a debug-session instance id, the agent must use the `debug-instance` inspection ladder (incidents, then variables/variables-all) rather than the production `instance` verbs, and must not operate (retry / cancel) a debug instance. It identifies the faulting element id and the offending variable value i
+DELTA cost $0.492->$0.306 (-37.9%) | thk 0->0 (+0) | tr 4727->4305 (-422) | calls 13.0->12.0 (-1.0) | time 81->89s | REAL=False levers=none | n(kept) B=1/1 O=1/1
+BASE rep=00 tools={'Skill': 1, 'Read': 3, 'Bash': 8, 'Write': 1} uip={'maestro bpmn debug-instance': 3.0, 'maestro bpmn --help': 1.0, 'maestro bpmn debug': 1.0, '--help 2': 1.0, '--version 2': 1.0} inline_py=0.0 bursts>=1.5k=[]
+BASE TRACE: Skill:uipath:uipath-maestro-bpmn → Read:CAPABILITY.md → Read:troubleshooting-guide.md → Bashx6 → Read:run.md → Bashx2 → Write:diagnosis.md
+OPT rep=00 tools={'Skill': 1, 'Read': 2, 'Bash': 8, 'Write': 1} uip={'maestro bpmn debug-instance': 4.0, 'maestro bpmn --help': 1.0, 'maestro bpmn -h': 1.0, '--help 2': 1.0, '2': 1.0} inline_py=0.0 bursts>=1.5k=[]
+OPT TRACE: Skill:tmp:uipath-maestro-bpmn → Read:CAPABILITY.md → Read:troubleshooting-guide.md → Bashx8 → Write:diagnosis.md
+
+### skill-bpmn-edit-add-output
+DESC: Brownfield edit: add a new output mapping to an existing script task in a valid Maestro BPMN and declare the backing variable in BPMN.Variables, without disturbing the existing output, variables, or preserve-only payloads.
+DELTA cost $0.510->$0.370 (-27.4%) | thk 0->0 (+0) | tr 11613->5658 (-5955) | calls 12.0->10.0 (-2.0) | time 109->116s | REAL=True levers=tr_tok | n(kept) B=1/1 O=1/1
+BASE rep=00 tools={'Skill': 1, 'Read': 4, 'Edit': 3, 'Bash': 4} uip={'maestro bpmn validate': 3.0} inline_py=0.0 bursts>=1.5k=[]
+BASE TRACE: Skill:uipath:uipath-maestro-bpmn → Read:Invoicing.bpmn → Edit:Invoicing.bpmnx2 → Bashx2 → Read:structural-bpmn.md → Bash → Read:Invoicing.bpmn → Edit:Invoicing.bpmn → Bash → Read:Invoicing.bpmn
+OPT rep=00 tools={'Skill': 1, 'Read': 1, 'Edit': 2, 'Bash': 6} uip={'maestro bpmn validate': 2.0} inline_py=1.0 bursts>=1.5k=[]
+OPT TRACE: Skill:tmp:uipath-maestro-bpmn → Read:Invoicing.bpmn → Edit:Invoicing.bpmnx2 → Bashx6
+
+### skill-bpmn-debug-not-validation
+DESC: Discipline guard for the skill's "never run `uip maestro bpmn debug` as validation" rule. Given a small greenfield authoring task with a "make sure it's correct" bar, the agent must confirm correctness with LOCAL validation (`uip maestro bpmn validate`, or a well-formed-XML parse if the CLI is unavailable) and must NOT reach for a cloud debug session to prove correctness. Authoring only — no cloud
+DELTA cost $0.474->$0.336 (-29.0%) | thk 0->0 (+0) | tr 9207->8166 (-1041) | calls 8.0->5.0 (-3.0) | time 73->67s | REAL=True levers=tool_calls,turns | n(kept) B=1/1 O=1/1
+BASE rep=00 tools={'Skill': 1, 'Read': 1, 'Bash': 5, 'Write': 1} uip={'--version 2': 1.0, 'maestro bpmn validate': 1.0} inline_py=0.0 bursts>=1.5k=[]
+BASE TRACE: Skill:uipath:uipath-maestro-bpmn → Read:structural-bpmn.md → Bashx3 → Write:PriorityRouting.bpmn → Bashx2
+OPT rep=00 tools={'Skill': 1, 'Bash': 2, 'Read': 1, 'Write': 1} uip={'maestro bpmn validate': 1.0} inline_py=0.0 bursts>=1.5k=[]
+OPT TRACE: Skill:tmp:uipath-maestro-bpmn → Bash → Read:structural-bpmn.md → Write:PriorityRouting.bpmn → Bash
+
+### skill-bpmn-safety-sanitize
+DESC: Public-safety negative eval: a fixture .bpmn is seeded with fake-but-realistic private values (a tenant URL, a folder key, a connection id, and person names). The agent must use the uipath-maestro-bpmn skill's public-safety rules to scrub every private value to synthetic placeholders before the file could be shared or committed, while keeping the graph valid. Grades removal of every seeded string 
+DELTA cost $0.333->$0.213 (-36.0%) | thk 0->0 (+0) | tr 2007->3263 (+1256) | calls 9.0->10.0 (+1.0) | time 60->51s | REAL=False levers=none | n(kept) B=1/1 O=1/1
+BASE rep=00 tools={'Skill': 1, 'Read': 2, 'Edit': 4, 'Bash': 2} uip={} inline_py=1.0 bursts>=1.5k=[]
+BASE TRACE: Skill:uipath:uipath-maestro-bpmn → Read:public-safety.md → Read:CustomerExport.bpmn → Edit:CustomerExport.bpmnx4 → Bashx2
+OPT rep=00 tools={'Skill': 1, 'Read': 3, 'Bash': 2, 'Edit': 4} uip={} inline_py=1.0 bursts>=1.5k=[]
+OPT TRACE: Skill:tmp:uipath-maestro-bpmn → Read:public-safety.md → Bash → Read:CustomerExport.bpmn → Edit:CustomerExport.bpmnx4 → Bash → Read:CustomerExport.bpmn
+
+### skill-bpmn-dice-roller
+DESC: Skill-guided evaluation (ported from the Flow dice_roller eval): agent uses the uipath-maestro-bpmn skill to author a BPMN process with a script task that produces a random die value and an exclusive gateway that classifies the result. Exercises script-task randomness and gateway-on-result routing. Authoring only — no cloud effects.
+DELTA cost $0.682->$0.564 (-17.2%) | thk 0->0 (+0) | tr 13801->13953 (+152) | calls 18.0->16.0 (-2.0) | time 160->139s | REAL=False levers=none | n(kept) B=1/1 O=1/1
+BASE rep=00 tools={'Skill': 1, 'Bash': 8, 'Read': 4, 'Grep': 3, 'Write': 2} uip={'maestro bpmn registry': 3.0, '--version 2': 1.0, 'maestro bpmn validate': 1.0} inline_py=2.0 bursts>=1.5k=[]
+BASE TRACE: Skill:uipath:uipath-maestro-bpmn → Bash → Read:structural-bpmn.md → Bashx2 → Read:project-layout.md → Read:expression-authoring.md → Bash → Read:local-metadata-regeneration-guide.md → Bash → Grep:entryPointId|Manual|manual start → Grep:entryPointId → Bash → Write:DiceRollerBpmn.bpmn → Grep:manual|Manual|entryPointId → Write:project.uiproj → Bashx2
+OPT rep=00 tools={'Skill': 1, 'Bash': 12, 'Read': 2, 'Write': 1} uip={'maestro bpmn registry': 3.0, '2': 1.0, 'maestro bpmn init': 1.0, 'maestro bpmn format': 1.0, 'maestro bpmn validate': 1.0} inline_py=0.0 bursts>=1.5k=[]
+OPT TRACE: Skill:tmp:uipath-maestro-bpmn → Bashx2 → Read:b2s5khx63.txt → Bashx7 → Read:DiceRollerBpmn.bpmn → Write:DiceRollerBpmn.bpmn → Bashx3
+
+### skill-bpmn-diagnose-job-traces
+DESC: Diagnose coverage for the uipath-maestro-bpmn skill: a job faulted with no incident and no faulting element on the job summary. The agent follows the diagnostic priority ladder — cheaper reads (job status / incidents) first — and only then uses `job traces` as the last resort to recover the faulting element and its timing. Read-only mocked CLI; no lifecycle mutations.
+DELTA cost $0.356->$0.246 (-30.9%) | thk 0->0 (+0) | tr 3642->3555 (-87) | calls 11.0->8.0 (-3.0) | time 72->81s | REAL=True levers=tool_calls,turns | n(kept) B=1/1 O=1/1
+BASE rep=00 tools={'Skill': 1, 'Read': 2, 'Bash': 7, 'Write': 1} uip={'maestro bpmn instance': 4.0, 'maestro bpmn job': 2.0, 'maestro bpmn incident': 1.0} inline_py=0.0 bursts>=1.5k=[]
+BASE TRACE: Skill:uipath:uipath-maestro-bpmn → Read:CAPABILITY.md → Read:troubleshooting-guide.md → Bashx7 → Write:diagnosis.md
+OPT rep=00 tools={'Skill': 1, 'Read': 2, 'Bash': 4, 'Write': 1} uip={'maestro bpmn job': 2.0, 'maestro bpmn instance': 1.0, 'maestro bpmn incident': 1.0} inline_py=0.0 bursts>=1.5k=[]
+OPT TRACE: Skill:tmp:uipath-maestro-bpmn → Read:CAPABILITY.md → Read:troubleshooting-guide.md → Bashx4 → Write:diagnosis.md
+
+### skill-bpmn-timer-boundary-noninterrupting
+DESC: Structural advanced-event eval: agent uses the uipath-maestro-bpmn skill to attach a NON-INTERRUPTING timer boundary event (cancelActivity="false") to a userTask — a reminder/escalation timer that fires without cancelling the task. Exercises the boundary attachedToRef/cancelActivity contract and timer duration validity. Authoring only — no cloud effects.
+DELTA cost $0.718->$0.609 (-15.2%) | thk 0->0 (+0) | tr 18223->14811 (-3412) | calls 15.0->16.0 (+1.0) | time 218->178s | REAL=False levers=none | n(kept) B=1/1 O=1/1
+BASE rep=00 tools={'Skill': 1, 'Bash': 10, 'Read': 3, 'Write': 1} uip={'maestro bpmn registry': 7.0, '--version 2': 1.0, 'maestro bpmn validate': 1.0} inline_py=2.0 bursts>=1.5k=[]
+BASE TRACE: Skill:uipath:uipath-maestro-bpmn → Bash → Read:structural-bpmn.md → Bashx4 → Read:registry-workflow.md → Bash → Read:public-safety.md → Bashx3 → Write:ApprovalReminder.bpmn → Bash
+OPT rep=00 tools={'Skill': 1, 'Bash': 9, 'Read': 5, 'Write': 1} uip={'maestro bpmn registry': 2.0, '--version 2': 1.0, 'maestro bpmn validate': 1.0} inline_py=2.0 bursts>=1.5k=[]
+OPT TRACE: Skill:tmp:uipath-maestro-bpmn → Bash → Read:structural-bpmn.md → Bash → Read:registry-workflow.md → Bash → Read:get-hitl.json → Read:get-scripttask.json → Read:public-safety.md → Bashx4 → Write:ApprovalReminder.bpmn → Bashx2
+
+### skill-bpmn-queue-create-and-wait
+DESC: Node eval: agent uses the uipath-maestro-bpmn skill to model the synchronous queue wrapper Orchestrator.CreateAndWaitForQueueItem on a bpmn:serviceTask with a bound request input and a captured output — distinct from the fire-and-forget Orchestrator.CreateQueueItem that rides a bpmn:sendTask. Authoring only — no cloud effects.
+DELTA cost $2.097->$2.001 (-4.6%) | thk 0->0 (+0) | tr 34951->30635 (-4316) | calls 41.0->44.0 (+3.0) | time 502->614s | REAL=True levers=tool_calls,turns,output_tok | n(kept) B=1/1 O=1/1
+BASE rep=00 tools={'Skill': 1, 'Bash': 23, 'Read': 7, 'Grep': 7, 'Write': 2, 'Edit': 1} uip={'maestro bpmn registry': 5.0, 'maestro bpmn validate': 2.0} inline_py=8.0 bursts>=1.5k=[]
+BASE TRACE: Skill:uipath:uipath-maestro-bpmn → Bashx5 → Read:structural-bpmn.md → Read:project-layout.md → Read:registry-workflow.md → Read:expression-authoring.md → Bashx2 → Grep:uipath:bindings → Read:local-metadata-regeneration-guide.md → Grep:resource="queue"|resource=\\"queue\\"|BindingPattern.*queue|queueName → Grep:uipath:binding | resource="queue"|resource="process"|releaseKey" value=|queueName" value= → Grep:uipath:binding → Bashx2 → Grep:entryPointId → Grep:uipath:binding|releaseKey|resource=\"process\" → Read:public-safety.md → Bash → Grep:type=\\"json\\"|uipath:inputOutput|uipath:output id= → Bashx8 → Write:QueueCreateAndWaitBpmn.bpmn → Write:project.uiproj → Bashx2 → Edit:QueueCreateAndWaitBpmn.bpmn → Bashx2 → Read:QueueCreateAndWaitBpmn.bpmn → Bash
+OPT rep=00 tools={'Skill': 1, 'Bash': 33, 'Read': 7, 'Write': 2, 'Edit': 1} uip={'maestro bpmn registry': 4.0, 'maestro bpmn format': 1.0, 'maestro bpmn validate': 1.0} inline_py=10.0 bursts>=1.5k=[]
+OPT TRACE: Skill:tmp:uipath-maestro-bpmn → Bash → Read:registry-workflow.md → Bash → Read:structural-bpmn.md → Bashx3 → Read:public-safety.md → Bashx3 → Read:expression-authoring.md → Bashx5 → Read:cli-conventions.md → Bash → Read:project-layout.md → Bashx14 → Write:QueueCreateAndWaitBpmn.bpmn → Write:project.uiproj → Bash → Read:QueueCreateAndWaitBpmn.bpmn → Bash → Edit:QueueCreateAndWaitBpmn.bpmn → Bashx3
+
+### skill-bpmn-diagnose-deployed-drift
+DESC: Diagnose coverage for the uipath-maestro-bpmn skill: the deployed BPMN asset that actually ran differs from the local `.bpmn` source. The agent fetches the deployed asset with `instance asset`, diffs it against the local file, and reports the drifted element as the root cause instead of assuming local source is what ran. Read-only mocked CLI; no lifecycle mutations.
+DELTA cost $0.310->$0.218 (-29.6%) | thk 0->0 (+0) | tr 2431->3297 (+866) | calls 5.0->7.0 (+2.0) | time 52->78s | REAL=False levers=none | n(kept) B=1/1 O=1/1
+BASE rep=00 tools={'Skill': 1, 'Read': 1, 'Bash': 2, 'Write': 1} uip={'maestro bpmn instance': 1.0} inline_py=0.0 bursts>=1.5k=[]
+BASE TRACE: Skill:uipath:uipath-maestro-bpmn → Read:OrderRouting.bpmn → Bashx2 → Write:diagnosis.md
+OPT rep=00 tools={'Skill': 1, 'Read': 3, 'Bash': 2, 'Write': 1} uip={'maestro bpmn instance': 1.0} inline_py=1.0 bursts>=1.5k=[]
+OPT TRACE: Skill:tmp:uipath-maestro-bpmn → Read:CAPABILITY.md → Read:OrderRouting.bpmn → Bash → Read:deployed_asset.json → Bash → Write:diagnosis.md
+
+### skill-bpmn-operate-diagnose-minimal-fault-triage
+DESC: Minimal lifecycle coverage for the uipath-maestro-bpmn skill's Operate and Diagnose guidance. The agent inspects a mocked failed BPMN run, follows the diagnostic priority ladder, and recommends the safe next operate action without performing lifecycle mutations.
+DELTA cost $0.375->$0.303 (-19.1%) | thk 0->0 (+0) | tr 3895->4262 (+367) | calls 10.0->10.0 (+0.0) | time 122->83s | REAL=False levers=none | n(kept) B=1/1 O=1/1
+BASE rep=00 tools={'Skill': 1, 'Bash': 8, 'Write': 1} uip={'maestro bpmn job': 2.0, 'maestro bpmn instance': 2.0, 'maestro bpmn incident': 1.0} inline_py=0.0 bursts>=1.5k=[]
+BASE TRACE: Skill:uipath:uipath-maestro-bpmn → Bashx8 → Write:diagnosis.md
+OPT rep=00 tools={'Skill': 1, 'Read': 2, 'Bash': 6, 'Write': 1} uip={'maestro bpmn job': 2.0, 'maestro bpmn instance': 2.0, 'maestro bpmn incident': 1.0, 'maestro bpmn --help': 1.0} inline_py=0.0 bursts>=1.5k=[]
+OPT TRACE: Skill:tmp:uipath-maestro-bpmn → Read:CAPABILITY.md → Read:troubleshooting-guide.md → Bashx6 → Write:diagnosis.md
+
+### skill-bpmn-diagnose-scoped-variables
+DESC: Diagnose coverage for the uipath-maestro-bpmn skill: a run completed but a downstream value is semantically wrong. The agent inspects subprocess-scoped runtime state with `instance variables --parent-element-id <id>` to find the offending variable inside the child scope, proving that "completed" does not mean "semantically correct". Read-only mocked CLI; no lifecycle mutations.
+DELTA cost $0.271->$0.225 (-16.9%) | thk 0->0 (+0) | tr 3480->3280 (-200) | calls 9.0->10.0 (+1.0) | time 65->55s | REAL=False levers=none | n(kept) B=1/1 O=1/1
+BASE rep=00 tools={'Skill': 1, 'Read': 2, 'Bash': 5, 'Write': 1} uip={'maestro bpmn instance': 5.0} inline_py=0.0 bursts>=1.5k=[]
+BASE TRACE: Skill:uipath:uipath-maestro-bpmn → Read:CAPABILITY.md → Read:troubleshooting-guide.md → Bashx5 → Write:diagnosis.md
+OPT rep=00 tools={'Skill': 1, 'Bash': 8, 'Write': 1} uip={'maestro bpmn instance': 5.0} inline_py=0.0 bursts>=1.5k=[]
+OPT TRACE: Skill:tmp:uipath-maestro-bpmn → Bashx8 → Write:diagnosis.md
+
+### skill-bpmn-calculator
+DESC: Skill-guided evaluation (ported from the Flow calculator eval): agent uses the uipath-maestro-bpmn skill to author a BPMN process that routes on an operator variable through a multi-way exclusive gateway to one script task per arithmetic operation. Exercises multi-branch exclusive-gateway routing, script tasks, and BPMN DI. Authoring only — no cloud effects.
+DELTA cost $1.790->$1.744 (-2.5%) | thk 0->0 (+0) | tr 32854->26848 (-6006) | calls 37.0->51.0 (+14.0) | time 360->508s | REAL=True levers=tool_calls,turns,tr_tok,output_tok | n(kept) B=1/1 O=1/1
+BASE rep=00 tools={'Skill': 1, 'Bash': 22, 'Read': 8, 'Grep': 4, 'Write': 2} uip={'maestro bpmn registry': 4.0, '--version 2': 1.0, 'maestro bpmn validate': 1.0} inline_py=1.0 bursts>=1.5k=[]
+BASE TRACE: Skill:uipath:uipath-maestro-bpmn → Bash → Read:structural-bpmn.md → Read:registry-workflow.md → Read:expression-authoring.md → Bash → Read:project-layout.md → Read:local-metadata-regeneration-guide.md → Bashx5 → Grep:entryPointId|uipath:input |uipath:output |uipath:inputOutput → Grep:elementId → Grep:entryPointIdx2 → Bashx9 → Read:Process.bpmn → Bashx2 → Read:ReadingListBpmn.bpmn → Bashx2 → Read:CalculatorBpmn.bpmn → Write:CalculatorBpmn.bpmn → Write:project.uiproj → Bashx2
+OPT rep=00 tools={'Skill': 1, 'Bash': 41, 'Read': 3, 'Grep': 4, 'Write': 2} uip={'maestro bpmn registry': 5.0, '--version 2': 1.0, 'maestro bpmn format': 1.0, 'maestro bpmn validate': 1.0} inline_py=8.0 bursts>=1.5k=[]
+OPT TRACE: Skill:tmp:uipath-maestro-bpmn → Bashx4 → Read:structural-bpmn.md → Bashx17 → Grep:entryPointId → Bashx2 → Grep:entryPointId → Bashx2 → Grep:entryPointId|manual start|ManualStart|entry point → Grep:entryPointId|manual start|entry point → Bashx10 → Read:structural-bpmn.md → Bashx3 → Write:CalculatorBpmn.bpmn → Write:project.uiproj → Bashx2 → Read:CalculatorBpmn.bpmn → Bash
+
+### skill-bpmn-debug-workflow-mocked
+DESC: Skill-guided evaluation of the correct Maestro BPMN debug workflow against a mocked `uip` CLI. The agent debugs an existing local project with inputs, captures the instance id the debug command returns, then inspects the run via the `debug-instance` commands and summarizes the runtime variable values. The summary values are only discoverable from the mocked CLI JSON, so a prose guess cannot pass. 
+DELTA cost $0.262->$0.217 (-17.1%) | thk 0->0 (+0) | tr 3444->3333 (-111) | calls 8.0->8.0 (+0.0) | time 41->64s | REAL=False levers=none | n(kept) B=1/1 O=1/1
+BASE rep=00 tools={'Skill': 1, 'Read': 2, 'Bash': 3, 'Write': 2} uip={'maestro bpmn debug': 1.0, 'maestro bpmn debug-instance': 1.0} inline_py=0.0 bursts>=1.5k=[]
+BASE TRACE: Skill:uipath:uipath-maestro-bpmn → Read:CAPABILITY.md → Read:run.md → Bash → Write:inputs.json → Bashx2 → Write:summary.md
+OPT rep=00 tools={'Skill': 1, 'Bash': 6, 'Write': 1} uip={'--version 2': 1.0, 'maestro bpmn debug': 1.0, 'maestro bpmn debug-instance': 1.0} inline_py=0.0 bursts>=1.5k=[]
+OPT TRACE: Skill:tmp:uipath-maestro-bpmn → Bashx6 → Write:summary.md
+
+### skill-bpmn-timer
+DESC: Skill-guided evaluation: agent uses the uipath-maestro-bpmn skill to author an intermediate timer catch event (the BPMN analogue of a Flow Delay) that waits a fixed ISO-8601 duration between the start and end. Authoring only — no cloud effects.
+DELTA cost $0.241->$0.200 (-17.1%) | thk 0->0 (+0) | tr 7590->8116 (+526) | calls 4.0->4.0 (+0.0) | time 35->50s | REAL=False levers=none | n(kept) B=1/1 O=1/1
+BASE rep=00 tools={'Skill': 1, 'Bash': 2, 'Write': 1} uip={'maestro bpmn validate': 1.0} inline_py=0.0 bursts>=1.5k=[]
+BASE TRACE: Skill:uipath:uipath-maestro-bpmn → Bash → Write:TimerWait.bpmn → Bash
+OPT rep=00 tools={'Skill': 1, 'Read': 1, 'Write': 1, 'Bash': 1} uip={'maestro bpmn validate': 1.0} inline_py=0.0 bursts>=1.5k=[]
+OPT TRACE: Skill:tmp:uipath-maestro-bpmn → Read:structural-bpmn.md → Write:TimerWait.bpmn → Bash
+
+### skill-bpmn-error-boundary-handler
+DESC: Structural error-handling eval: agent uses the uipath-maestro-bpmn skill to attach an INTERRUPTING error boundary event (cancelActivity="true") with a configured error code to a service-call task, routing the caught error to a recovery path. Exercises the ERROR_BOUNDARY_EVENT_REQUIRES_ERROR_CODE and duplicate catch-all boundary rules. Authoring only — no cloud effects.
+DELTA cost $0.858->$0.823 (-4.1%) | thk 0->0 (+0) | tr 16988->21079 (+4091) | calls 20.0->18.0 (-2.0) | time 222->244s | REAL=False levers=none | n(kept) B=1/1 O=1/1
+BASE rep=00 tools={'Skill': 1, 'Bash': 14, 'Read': 4, 'Write': 1} uip={'maestro bpmn registry': 4.0, '--version 2': 1.0, 'maestro bpmn validate': 1.0} inline_py=8.0 bursts>=1.5k=[]
+BASE TRACE: Skill:uipath:uipath-maestro-bpmn → Bashx8 → Read:structural-bpmn.md → Read:registry-workflow.md → Read:public-safety.md → Bash → Read:expression-authoring.md → Bashx2 → Write:InvoiceServiceRecovery.bpmn → Bashx3
+OPT rep=00 tools={'Skill': 1, 'Bash': 10, 'Read': 6, 'Write': 1} uip={'maestro bpmn registry': 4.0, '--version 2': 1.0, 'maestro bpmn format': 1.0, 'maestro bpmn validate': 1.0} inline_py=1.0 bursts>=1.5k=[]
+OPT TRACE: Skill:tmp:uipath-maestro-bpmn → Bashx5 → Read:http.json → Read:structural-bpmn.md → Bash → Read:registry-workflow.md → Read:expression-authoring.md → Read:public-safety.md → Bash → Write:InvoiceServiceRecovery.bpmn → Bashx3 → Read:InvoiceServiceRecovery.bpmn
+
+### skill-bpmn-diagnose-validate-fix-loop
+DESC: Diagnose-and-repair loop for the uipath-maestro-bpmn skill. A pre-broken Maestro BPMN file ships two blocking defects (an exclusive-gateway branch with no condition expression, and a condition expression that references an undeclared variable). The agent runs `uip maestro bpmn validate`, reads the reported findings, fixes the root causes in BPMN source, and re-validates until the file is clean. Pu
+DELTA cost $0.177->$0.154 (-12.9%) | thk 0->0 (+0) | tr 1429->1426 (-3) | calls 5.0->5.0 (+0.0) | time 28->47s | REAL=False levers=none | n(kept) B=1/1 O=1/1
+BASE rep=00 tools={'Skill': 1, 'Bash': 2, 'Read': 1, 'Edit': 1} uip={'maestro bpmn validate': 2.0} inline_py=0.0 bursts>=1.5k=[]
+BASE TRACE: Skill:uipath:uipath-maestro-bpmn → Bash → Read:ExpenseApproval.bpmn → Edit:ExpenseApproval.bpmn → Bash
+OPT rep=00 tools={'Skill': 1, 'Bash': 2, 'Read': 1, 'Edit': 1} uip={'maestro bpmn validate': 2.0} inline_py=0.0 bursts>=1.5k=[]
+OPT TRACE: Skill:tmp:uipath-maestro-bpmn → Bash → Read:ExpenseApproval.bpmn → Edit:ExpenseApproval.bpmn → Bash
+
+### skill-bpmn-edit-move-node
+DESC: Brownfield edit: reorder two adjacent tasks in an existing, valid Maestro BPMN by rewiring the sequence flows (BPMN has no positional move — the edit is a pure rewiring), keeping both node payloads and the diagram consistent.
+DELTA cost $0.425->$0.402 (-5.3%) | thk 0->0 (+0) | tr 3859->4272 (+413) | calls 9.0->11.0 (+2.0) | time 106->116s | REAL=False levers=none | n(kept) B=1/1 O=1/1
+BASE rep=00 tools={'Skill': 1, 'Read': 2, 'Edit': 2, 'Bash': 4} uip={'maestro bpmn validate': 2.0} inline_py=0.0 bursts>=1.5k=[]
+BASE TRACE: Skill:uipath:uipath-maestro-bpmn → Read:Onboarding.bpmn → Edit:Onboarding.bpmnx2 → Bashx4 → Read:Onboarding.bpmn
+OPT rep=00 tools={'Skill': 1, 'Read': 2, 'Edit': 3, 'Bash': 5} uip={'maestro bpmn validate': 2.0} inline_py=0.0 bursts>=1.5k=[]
+OPT TRACE: Skill:tmp:uipath-maestro-bpmn → Read:Onboarding.bpmn → Edit:Onboarding.bpmnx2 → Read:Onboarding.bpmn → Edit:Onboarding.bpmn → Bashx5
+
+### skill-bpmn-diagnose-stuck-gateway
+DESC: Diagnose coverage for the uipath-maestro-bpmn skill: a BPMN run is stuck (not faulted) at an exclusive gateway. The agent reads element-executions and cursors, identifies the blocking element, and explains why the token cannot advance (no outgoing condition matched and no default flow). Read-only mocked CLI; no lifecycle mutations.
+DELTA cost $0.400->$0.392 (-2.0%) | thk 0->0 (+0) | tr 5148->4330 (-818) | calls 9.0->14.0 (+5.0) | time 69->104s | REAL=True levers=tool_calls,turns | n(kept) B=1/1 O=1/1
+BASE rep=00 tools={'Skill': 1, 'Read': 3, 'Bash': 4, 'Write': 1} uip={'maestro bpmn instance': 4.0} inline_py=0.0 bursts>=1.5k=[]
+BASE TRACE: Skill:uipath:uipath-maestro-bpmn → Read:CAPABILITY.md → Read:troubleshooting-guide.md → Read:failure-modes.md → Bashx4 → Write:diagnosis.md
+OPT rep=00 tools={'Skill': 1, 'Read': 2, 'Bash': 10, 'Write': 1} uip={'maestro bpmn instance': 5.0, '--help 2': 1.0, 'maestro bpmn': 1.0, '2': 1.0} inline_py=0.0 bursts>=1.5k=[]
+OPT TRACE: Skill:tmp:uipath-maestro-bpmn → Read:CAPABILITY.md → Read:troubleshooting-guide.md → Bashx10 → Write:diagnosis.md
+
+### skill-bpmn-hitl-boolean-decision
+DESC: Quality test (ported from flow hitl/quality_03): agent models the approval decision as a genuine boolean — a boolean-typed HITL output bound to a boolean-typed variable — and the gateway condition treats it as a boolean (not compared to a quoted string literal / stringly-typed).
+DELTA cost $2.188->$2.251 (+2.9%) | thk 0->0 (+0) | tr 41690->38824 (-2866) | calls 37.0->44.0 (+7.0) | time 531->682s | REAL=True levers=tool_calls,turns,output_tok | n(kept) B=1/1 O=1/1
+BASE rep=00 tools={'Skill': 1, 'Bash': 25, 'Read': 8, 'Write': 2, 'Edit': 1} uip={'maestro bpmn registry': 4.0, 'maestro bpmn validate': 3.0, '--version 2': 1.0} inline_py=6.0 bursts>=1.5k=[]
+BASE TRACE: Skill:uipath:uipath-maestro-bpmn → Bashx6 → Read:structural-bpmn.md → Read:registry-workflow.md → Read:expression-authoring.md → Bashx2 → Read:hitl-node-apptask.md → Bashx6 → Read:hitl-node-quickform.md → Read:hitl-patterns.md → Bashx3 → Read:project-layout.md → Read:local-metadata-regeneration-guide.md → Bashx5 → Write:VendorApprovalBpmn.bpmn → Write:project.uiproj → Bash → Edit:VendorApprovalBpmn.bpmn → Bashx2
+OPT rep=00 tools={'Skill': 1, 'Bash': 29, 'Read': 8, 'Grep': 4, 'Write': 2} uip={'maestro bpmn registry': 3.0, '--version 2': 1.0, 'maestro bpmn validate': 1.0} inline_py=7.0 bursts>=1.5k=[]
+OPT TRACE: Skill:tmp:uipath-maestro-bpmn → Bash → Read:registry-workflow.md → Bash → Read:structural-bpmn.md → Bashx3 → Grep:Actions.HITL → Grep:"Actions.HITL"|HitlTaskArguments|outputSchema|formFields|resultSchema → Bashx2 → Grep:Actions.HITL|HitlTaskArguments|uipath:output.*var= → Bash → Read:expression-authoring.md → Bashx3 → Read:SKILL.md → Bashx4 → Read:HitlTaskOnly.bpmn → Bashx2 → Read:project-layout.md → Bash → Read:ScriptWritesVariableThenGatewayBranches.bpmn → Bash → Grep:boolean → Bash → Read:local-metadata-regeneration-guide.md → Bashx6 → Write:VendorApprovalBpmn.bpmn → Bashx2 → Write:project.uiproj → Bash
+
+### skill-bpmn-diagnose-incident-root-cause
+DESC: Diagnose coverage for the uipath-maestro-bpmn skill: given multiple incidents on one failed BPMN instance, the agent distinguishes the FIRST root fault from downstream cancellation noise using `incident get` and `incident summary`, and names the true faulting element. Read-only mocked CLI; no lifecycle mutations.
+DELTA cost $0.270->$0.347 (+28.6%) | thk 0->0 (+0) | tr 3710->3718 (+8) | calls 9.0->10.0 (+1.0) | time 46->72s | REAL=False levers=none | n(kept) B=1/1 O=1/1
+BASE rep=00 tools={'Skill': 1, 'Read': 2, 'Bash': 5, 'Write': 1} uip={'maestro bpmn instance': 3.0, 'maestro bpmn incident': 2.0} inline_py=0.0 bursts>=1.5k=[]
+BASE TRACE: Skill:uipath:uipath-maestro-bpmn → Read:CAPABILITY.md → Read:troubleshooting-guide.md → Bashx5 → Write:diagnosis.md
+OPT rep=00 tools={'Skill': 1, 'Read': 2, 'Bash': 6, 'Write': 1} uip={'maestro bpmn instance': 3.0, 'maestro bpmn incident': 2.0} inline_py=0.0 bursts>=1.5k=[]
+OPT TRACE: Skill:tmp:uipath-maestro-bpmn → Read:CAPABILITY.md → Read:troubleshooting-guide.md → Bashx6 → Write:diagnosis.md
+
+### skill-bpmn-smoke-registry-discovery
+DESC: Skill-guided evaluation: agent uses the uipath-maestro-bpmn skill to discover Maestro BPMN extension types via the registry CLI (pull, list/search, get) before authoring anything. Tests that the skill teaches the registry-driven discovery loop instead of hand-authoring uipath:* XML from prose.
+DELTA cost $0.259->$0.340 (+31.2%) | thk 0->0 (+0) | tr 2641->1757 (-884) | calls 8.0->9.0 (+1.0) | time 44->104s | REAL=False levers=none | n(kept) B=1/1 O=1/1
+BASE rep=00 tools={'Skill': 1, 'Bash': 7} uip={'maestro bpmn registry': 3.0} inline_py=0.0 bursts>=1.5k=[]
+BASE TRACE: Skill:uipath:uipath-maestro-bpmn → Bashx7
+OPT rep=00 tools={'Skill': 1, 'Bash': 8} uip={'maestro bpmn registry': 3.0, '--version 2': 1.0} inline_py=2.0 bursts>=1.5k=[]
+OPT TRACE: Skill:tmp:uipath-maestro-bpmn → Bashx8
+
+### skill-bpmn-simple-approval-bpmn
+DESC: Authoring eval: agent composes a model-authored simple approval BPMN that combines StartAgentJob, an exclusive gateway, CreateQueueItem, a script task, declared root variables, numeric migration metadata, and BPMN DI. Mirrors the manual smoke "simple approval" scenario.
+DELTA cost $3.867->$3.952 (+2.2%) | thk 0->0 (+0) | tr 39767->52400 (+12633) | calls 76.0->78.0 (+2.0) | time 831->903s | REAL=True levers=tr_tok | n(kept) B=1/1 O=1/1
+BASE rep=00 tools={'Skill': 1, 'Bash': 64, 'Read': 7, 'Write': 2, 'Edit': 2} uip={'maestro bpmn registry': 5.0, 'maestro bpmn validate': 2.0, '--version 2': 1.0, 'uip maestro bpmn': 1.0} inline_py=10.0 bursts>=1.5k=[]
+BASE TRACE: Skill:uipath:uipath-maestro-bpmn → Bashx6 → Read:structural-bpmn.md → Read:expression-authoring.md → Bash → Read:registry-workflow.md → Read:project-layout.md → Bash → Read:local-metadata-regeneration-guide.md → Bashx19 → Read:public-safety.md → Bashx24 → Write:ExpenseApprovalBpmn.bpmn → Bash → Write:project.uiproj → Bashx8 → Edit:ExpenseApprovalBpmn.bpmn → Bash → Edit:ExpenseApprovalBpmn.bpmn → Bashx2 → Read:ExpenseApprovalBpmn.bpmn → Bash
+OPT rep=00 tools={'Skill': 1, 'Bash': 46, 'Read': 24, 'Write': 1, 'Edit': 6} uip={'maestro bpmn validate': 6.0, 'maestro bpmn registry': 3.0, 'maestro bpmn update-metadata': 3.0, 'maestro bpmn init': 2.0, '--version 2': 1.0, 'maestro bpmn format': 1.0} inline_py=11.0 bursts>=1.5k=[]
+OPT TRACE: Skill:tmp:uipath-maestro-bpmn → Bash → Read:registry-workflow.md → Read:structural-bpmn.md → Bashx3 → Read:StartAgentJob.json → Read:CreateQueueItem.json → Read:ScriptTask.json → Read:Variables.json → Bashx3 → Read:expression-authoring.md → Read:project-layout.md → Bashx3 → Read:entry-points.json → Read:operate.json → Read:package-descriptor.json → Read:bindings_v2.json → Read:cli-conventions.md → Read:local-metadata-regeneration-guide.md → Bashx12 → Read:public-safety.md → Bashx4 → Read:ExpenseApprovalBpmn.bpmn → Bash → Write:ExpenseApprovalBpmn.bpmn → Bash → Edit:ExpenseApprovalBpmn.bpmnx2 → Bashx9 → Edit:ExpenseApprovalBpmn.bpmn → Bashx2 → Read:ExpenseApprovalBpmn.bpmn → Edit:ExpenseApprovalBpmn.bpmnx2 → Bashx3 → …(+10 more)
+
+### skill-bpmn-terminate
+DESC: Skill-guided evaluation: agent uses the uipath-maestro-bpmn skill to author a process where one branch ends in a terminate end event (a hard stop of the whole instance) while a parallel branch ends normally. Authoring only — no cloud effects.
+DELTA cost $0.390->$0.482 (+23.6%) | thk 0->0 (+0) | tr 8660->9175 (+515) | calls 8.0->10.0 (+2.0) | time 87->132s | REAL=False levers=none | n(kept) B=1/1 O=1/1
+BASE rep=00 tools={'Skill': 1, 'Read': 1, 'Bash': 5, 'Write': 1} uip={'maestro bpmn registry': 2.0, '--version 2': 1.0, 'maestro bpmn validate': 1.0} inline_py=0.0 bursts>=1.5k=[]
+BASE TRACE: Skill:uipath:uipath-maestro-bpmn → Read:structural-bpmn.md → Bashx4 → Write:TerminateParallel.bpmn → Bash
+OPT rep=00 tools={'Skill': 1, 'Bash': 6, 'Read': 2, 'Write': 1} uip={'--version 2': 1.0, 'maestro bpmn registry': 1.0, 'maestro bpmn format': 1.0, 'maestro bpmn validate': 1.0} inline_py=0.0 bursts>=1.5k=[]
+OPT TRACE: Skill:tmp:uipath-maestro-bpmn → Bashx2 → Read:blauot39o.txt → Bashx2 → Write:TerminateParallel.bpmn → Bashx2 → Read:TerminateParallel.bpmn
+
+### skill-bpmn-multi-city-weather
+DESC: Skill-guided evaluation (ported from the Flow multi_city_weather eval): agent uses the uipath-maestro-bpmn skill to author a BPMN process that classifies a list of cities using a PARALLEL multi-instance marker over a per-item script task. Exercises the multi-instance / loop-characteristics registry gap (parallel fan-out with a collection output). Authoring only — no cloud effects and no live conne
+DELTA cost $2.031->$2.133 (+5.0%) | thk 0->0 (+0) | tr 39406->33113 (-6293) | calls 55.0->55.0 (+0.0) | time 631->586s | REAL=True levers=tr_tok,output_tok | n(kept) B=1/1 O=1/1
+BASE rep=00 tools={'Skill': 1, 'Bash': 48, 'Read': 3, 'TaskOutput': 1, 'Write': 2} uip={'maestro bpmn registry': 4.0, '--version 2': 1.0, 'maestro bpmn validate': 1.0} inline_py=10.0 bursts>=1.5k=[]
+BASE TRACE: Skill:uipath:uipath-maestro-bpmn → Bashx21 → Read:project-layout.md → Read:public-safety.md → Bashx14 → TaskOutput → Bashx12 → Write:MultiCityWeatherBpmn.bpmn → Write:project.uiproj → Bash → Read:MultiCityWeatherBpmn.bpmn
+OPT rep=00 tools={'Skill': 1, 'Bash': 44, 'Read': 8, 'Grep': 1, 'Write': 1} uip={'maestro bpmn registry': 2.0, '2': 1.0, 'maestro bpmn init': 1.0, 'maestro bpmn format': 1.0, 'maestro bpmn validate': 1.0} inline_py=6.0 bursts>=1.5k=[]
+OPT TRACE: Skill:tmp:uipath-maestro-bpmn → Bash → Read:structural-bpmn.md → Read:expression-authoring.md → Read:registry-workflow.md → Bashx12 → Grep:type="(string|number|boolean|object|array|json|collection)" → Bashx11 → Read:MultiCityWeatherBpmn.bpmn → Bashx3 → Read:MultiCityWeatherBpmn.bpmn → Bashx9 → Read:project-layout.md → Bashx3 → Read:MultiCityWeatherBpmn.bpmn → Write:MultiCityWeatherBpmn.bpmn → Bashx2 → Read:MultiCityWeatherBpmn.bpmn → Bashx3
+
+### skill-bpmn-switch
+DESC: Skill-guided evaluation: agent uses the uipath-maestro-bpmn skill to author a multi-way exclusive gateway (the BPMN analogue of a Flow Switch) that maps a quarter number to a season name across 3+ conditioned branches plus a default. Authoring only — no cloud effects.
+DELTA cost $0.361->$0.465 (+28.5%) | thk 0->0 (+0) | tr 8238->11742 (+3504) | calls 7.0->11.0 (+4.0) | time 70->129s | REAL=True levers=tool_calls,turns | n(kept) B=1/1 O=1/1
+BASE rep=00 tools={'Skill': 1, 'Read': 1, 'Bash': 4, 'Write': 1} uip={'--version 2': 1.0, 'maestro bpmn validate': 1.0} inline_py=1.0 bursts>=1.5k=[]
+BASE TRACE: Skill:uipath:uipath-maestro-bpmn → Read:structural-bpmn.md → Bashx2 → Write:SeasonLookup.bpmn → Bashx2
+OPT rep=00 tools={'Skill': 1, 'Read': 3, 'Bash': 6, 'Write': 1} uip={'--version 2': 1.0, 'maestro bpmn format': 1.0, 'maestro bpmn validate': 1.0} inline_py=0.0 bursts>=1.5k=[]
+OPT TRACE: Skill:tmp:uipath-maestro-bpmn → Read:structural-bpmn.md → Read:registry-workflow.md → Bashx4 → Write:SeasonLookup.bpmn → Bashx2 → Read:SeasonLookup.bpmn
+
+### skill-bpmn-event-based-gateway
+DESC: Structural advanced-event eval: agent uses the uipath-maestro-bpmn skill to author an EVENT-BASED gateway racing a message catch against a timer catch (first-catcher-wins). Exercises the event-based gateway target contract (outgoing flows target intermediate catch events). Authoring only — no cloud effects.
+DELTA cost $0.704->$0.823 (+16.8%) | thk 0->0 (+0) | tr 16460->19132 (+2672) | calls 14.0->19.0 (+5.0) | time 158->241s | REAL=True levers=tool_calls,turns | n(kept) B=1/1 O=1/1
+BASE rep=00 tools={'Skill': 1, 'Bash': 9, 'Read': 2, 'Write': 1, 'Edit': 1} uip={'maestro bpmn registry': 5.0, 'maestro bpmn validate': 2.0, '--version 2': 1.0} inline_py=0.0 bursts>=1.5k=[]
+BASE TRACE: Skill:uipath:uipath-maestro-bpmn → Bashx4 → Read:structural-bpmn.md → Bash → Read:registry-workflow.md → Bash → Write:PaymentRace.bpmn → Bash → Edit:PaymentRace.bpmn → Bashx2
+OPT rep=00 tools={'Skill': 1, 'Bash': 12, 'Read': 3, 'Write': 1, 'Edit': 1, 'Grep': 1} uip={'maestro bpmn registry': 3.0, 'maestro bpmn format': 2.0, 'maestro bpmn validate': 2.0, '--version 2': 1.0} inline_py=2.0 bursts>=1.5k=[]
+OPT TRACE: Skill:tmp:uipath-maestro-bpmn → Bashx3 → Read:structural-bpmn.md → Bashx4 → Read:registry-workflow.md → Bash → Write:PaymentRace.bpmn → Bashx2 → Edit:PaymentRace.bpmn → Grep:separateInputs|InputFields|target="bodyField" → Bash → Read:PaymentRace.bpmn → Bash
+
+### skill-bpmn-message-catch
+DESC: Intermediate catch-event eval: agent uses the uipath-maestro-bpmn skill to add a mid-flow wait step that pauses the process until a message arrives, using the registry Maestro.ReceiveMessageEvent wrapper on a bpmn:intermediateCatchEvent while preserving the process start. Ports the Flow wait-for-email test to a BPMN intermediate catch event (internal message). Authoring only — a wait only resolves
+DELTA cost $0.696->$0.845 (+21.4%) | thk 0->0 (+0) | tr 17585->16074 (-1511) | calls 16.0->26.0 (+10.0) | time 142->257s | REAL=True levers=tool_calls,turns | n(kept) B=1/1 O=1/1
+BASE rep=00 tools={'Skill': 1, 'Bash': 8, 'Read': 4, 'Write': 2, 'Edit': 1} uip={'maestro bpmn registry': 3.0, 'maestro bpmn validate': 2.0} inline_py=0.0 bursts>=1.5k=[]
+BASE TRACE: Skill:uipath:uipath-maestro-bpmn → Bashx3 → Read:structural-bpmn.md → Bash → Read:registry-workflow.md → Write:AwaitApprovalMessage.bpmn → Read:project-layout.md → Read:local-metadata-regeneration-guide.md → Write:project.uiproj → Bashx2 → Edit:AwaitApprovalMessage.bpmn → Bashx2
+OPT rep=00 tools={'Skill': 1, 'Bash': 18, 'Read': 3, 'Write': 2, 'Edit': 2} uip={'maestro bpmn registry': 3.0, 'maestro bpmn validate': 2.0, 'maestro bpmn format': 1.0} inline_py=0.0 bursts>=1.5k=[]
+OPT TRACE: Skill:tmp:uipath-maestro-bpmn → Bashx5 → Read:structural-bpmn.md → Bashx3 → Write:AwaitApprovalMessage.bpmn → Bashx2 → Write:project.uiproj → Bashx5 → Read:registry-workflow.md → Edit:AwaitApprovalMessage.bpmn → Bash → Edit:AwaitApprovalMessage.bpmn → Bash → Read:AwaitApprovalMessage.bpmn → Bash
+
+### skill-bpmn-error-event-subprocess
+DESC: Structural error-handling eval: agent uses the uipath-maestro-bpmn skill to author a process that throws a configured error END event and catches it in an EVENT subprocess (triggeredByEvent="true") whose single interrupting error start event handles it. Exercises the ERROR_END_EVENT_MISSING_EXCEPTION and event-subprocess start-event rules. Authoring only — no cloud effects.
+DELTA cost $0.722->$0.905 (+25.4%) | thk 0->0 (+0) | tr 11828->14175 (+2347) | calls 13.0->18.0 (+5.0) | time 216->344s | REAL=True levers=tool_calls,turns,output_tok | n(kept) B=1/1 O=1/1
+BASE rep=00 tools={'Skill': 1, 'Read': 1, 'Bash': 10, 'Write': 1} uip={'maestro bpmn registry': 5.0, '--version 2': 1.0, 'maestro bpmn validate': 1.0} inline_py=3.0 bursts>=1.5k=[]
+BASE TRACE: Skill:uipath:uipath-maestro-bpmn → Read:structural-bpmn.md → Bashx9 → Write:PaymentErrorHandling.bpmn → Bash
+OPT rep=00 tools={'Skill': 1, 'Bash': 12, 'Read': 2, 'Grep': 2, 'Write': 1} uip={'maestro bpmn registry': 3.0, '--version 2': 1.0, 'maestro bpmn validate': 1.0} inline_py=5.0 bursts>=1.5k=[]
+OPT TRACE: Skill:tmp:uipath-maestro-bpmn → Bash → Read:structural-bpmn.md → Bashx4 → Grep:triggeredByEvent|eventSubprocess|BPMNPlane → Bashx2 → Grep:bpmn:task\b|<bpmn:task |plain task|generic task → Read:registry-workflow.md → Bashx3 → Write:PaymentErrorHandling.bpmn → Bashx2
+
+### skill-bpmn-subprocess
+DESC: Skill-guided evaluation: agent uses the uipath-maestro-bpmn skill to encapsulate logic inside a container (an embedded bpmn:subProcess or a bpmn:callActivity) — the BPMN analogue of a Flow Subflow. Authoring only — no cloud effects.
+DELTA cost $1.543->$1.755 (+13.8%) | thk 0->0 (+0) | tr 18887->24187 (+5300) | calls 32.0->33.0 (+1.0) | time 403->583s | REAL=True levers=tr_tok,output_tok | n(kept) B=1/1 O=1/1
+BASE rep=00 tools={'Skill': 1, 'Bash': 22, 'Grep': 8, 'Write': 1} uip={'maestro bpmn registry': 3.0, 'maestro bpmn validate': 1.0} inline_py=3.0 bursts>=1.5k=[]
+BASE TRACE: Skill:uipath:uipath-maestro-bpmn → Bashx9 → Grep:entryPointId → Bash → Grep:ntryPoint → Bash → Grep:entryPoint → Bash → Grep:subProcess|SubProcess → Grep:SubProcess|isExpanded → Bashx3 → Grep:uipath:input |uipath:inputOutput|uipath:output  → Bash → Grep:BPMNPlane|plane → Bash → Grep:elementId → Bashx4 → Write:SubflowDemo.bpmn → Bash
+OPT rep=00 tools={'Skill': 1, 'Bash': 30, 'Read': 1, 'Write': 1} uip={'maestro bpmn registry': 2.0, 'maestro bpmn validate': 2.0, '2': 1.0, 'maestro bpmn format': 1.0} inline_py=6.0 bursts>=1.5k=[]
+OPT TRACE: Skill:tmp:uipath-maestro-bpmn → Bash → Read:bfcttnor4.txt → Bashx27 → Write:SubflowDemo.bpmn → Bashx2
+
+### skill-bpmn-hitl-result-downstream
+DESC: Quality test (ported from flow hitl/quality_02): agent makes the human's decision actually drive downstream flow — an exclusive gateway condition references the HITL activity's output variable via a vars.<id> expression, and that variable is declared.
+DELTA cost $1.724->$1.940 (+12.5%) | thk 0->0 (+0) | tr 25567->24123 (-1444) | calls 27.0->37.0 (+10.0) | time 634->655s | REAL=True levers=tool_calls,turns | n(kept) B=1/1 O=1/1
+BASE rep=00 tools={'Skill': 1, 'Bash': 22, 'Grep': 2, 'Read': 1, 'Write': 1} uip={'maestro bpmn registry': 5.0, 'maestro bpmn init': 1.0, 'maestro bpmn validate': 1.0} inline_py=5.0 bursts>=1.5k=[]
+BASE TRACE: Skill:uipath:uipath-maestro-bpmn → Bashx10 → Grep:uipath:variables|inputOutput|Var_ → Grep:uipath:output → Bashx8 → Read:ExpenseApprovalBpmn.bpmn → Bashx2 → Write:ExpenseApprovalBpmn.bpmn → Bashx2
+OPT rep=00 tools={'Skill': 1, 'Bash': 29, 'Read': 5, 'Write': 2} uip={'maestro bpmn registry': 4.0, 'maestro bpmn format': 2.0, '--version 2': 1.0, 'maestro bpmn init': 1.0, 'maestro bpmn validate': 1.0} inline_py=11.0 bursts>=1.5k=[]
+OPT TRACE: Skill:tmp:uipath-maestro-bpmn → Bash → Read:structural-bpmn.md → Bashx5 → Read:registry-workflow.md → Bashx12 → Read:public-safety.md → Bashx6 → Write:ExpenseApprovalBpmn.bpmn → Read:project-layout.md → Bashx2 → Write:project.uiproj → Bashx2 → Read:ExpenseApprovalBpmn.bpmn → Bash
+
+### skill-bpmn-hitl-rpa-wrappers
+DESC: Node wrapper eval: agent models HITL and RPA as BPMN-native wrappers using documented non-Integration-Service UiPath activity shells.
+DELTA cost $0.793->$1.062 (+34.0%) | thk 0->0 (+0) | tr 16981->21469 (+4488) | calls 20.0->28.0 (+8.0) | time 139->348s | REAL=True levers=tool_calls,turns,output_tok | n(kept) B=1/1 O=1/1
+BASE rep=00 tools={'Skill': 1, 'Bash': 14, 'Read': 3, 'Write': 1, 'Edit': 1} uip={'maestro bpmn registry': 4.0, 'maestro bpmn init': 3.0, '--version 2': 1.0, 'maestro bpmn validate': 1.0} inline_py=1.0 bursts>=1.5k=[]
+BASE TRACE: Skill:uipath:uipath-maestro-bpmn → Bashx6 → Read:structural-bpmn.md → Read:project-layout.md → Bashx4 → Read:EmployeeAccessBpmn.bpmn → Bash → Write:EmployeeAccessBpmn.bpmn → Edit:EmployeeAccessBpmn.bpmn → Bashx3
+OPT rep=00 tools={'Skill': 1, 'Bash': 18, 'Read': 6, 'Grep': 1, 'Write': 2} uip={'maestro bpmn registry': 2.0, 'maestro bpmn validate': 2.0, '--version 2': 1.0, 'maestro bpmn format': 1.0} inline_py=5.0 bursts>=1.5k=[]
+OPT TRACE: Skill:tmp:uipath-maestro-bpmn → Bashx7 → Read:structural-bpmn.md → Read:public-safety.md → Read:project-layout.md → Bashx5 → Grep:entryPointId → Read:registry-workflow.md → Read:HitlTaskOnly.bpmn → Read:extensions-orchestrator-start-job.bpmn → Bash → Write:EmployeeAccessBpmn.bpmn → Write:project.uiproj → Bashx5
+
+### skill-bpmn-hitl-multi-outcome-routing
+DESC: Smoke test (ported from flow hitl/smoke_03): agent routes an Actions.HITL user task's outcome through an exclusive gateway into three distinct paths (approve / reject / escalate), with conditioned branches plus a default and a BPMN diagram.
+DELTA cost $0.966->$1.309 (+35.5%) | thk 0->0 (+0) | tr 20572->22044 (+1472) | calls 20.0->31.0 (+11.0) | time 223->405s | REAL=True levers=tool_calls,turns,output_tok | n(kept) B=1/1 O=1/1
+BASE rep=00 tools={'Skill': 1, 'Bash': 13, 'Read': 4, 'Write': 2} uip={'maestro bpmn registry': 4.0, '--version': 1.0, 'maestro bpmn validate': 1.0} inline_py=1.0 bursts>=1.5k=[]
+BASE TRACE: Skill:uipath:uipath-maestro-bpmn → Bash → Read:structural-bpmn.md → Bash → Read:registry-workflow.md → Bashx3 → Read:project-layout.md → Read:expression-authoring.md → Bashx6 → Write:LeaveRequestBpmn.bpmn → Write:project.uiproj → Bashx2
+OPT rep=00 tools={'Skill': 1, 'Bash': 24, 'Read': 5, 'Write': 1} uip={'maestro bpmn registry': 4.0, 'maestro bpmn init': 2.0, '--version 2': 1.0, 'maestro bpmn format': 1.0, 'maestro bpmn validate': 1.0} inline_py=8.0 bursts>=1.5k=[]
+OPT TRACE: Skill:tmp:uipath-maestro-bpmn → Bash → Read:registry-workflow.md → Bash → Read:structural-bpmn.md → Bashx7 → Read:expression-authoring.md → Bashx7 → Read:project-layout.md → Bashx5 → Read:LeaveRequestBpmn.bpmn → Write:LeaveRequestBpmn.bpmn → Bashx3
+
+### skill-bpmn-reading-list
+DESC: Skill-guided evaluation (ported from the Flow reading_list eval): agent uses the uipath-maestro-bpmn skill to author a BPMN process that curates a book catalog through a filter script task then a map script task. Exercises a list-processing script composition with a hardcoded collection and staged transforms. Authoring only — no cloud effects.
+DELTA cost $1.814->$2.474 (+36.4%) | thk 0->0 (+0) | tr 37603->26543 (-11060) | calls 39.0->50.0 (+11.0) | time 400->796s | REAL=True levers=tool_calls,turns,tr_tok,output_tok | n(kept) B=1/1 O=1/1
+BASE rep=00 tools={'Skill': 1, 'Read': 5, 'Bash': 22, 'Grep': 9, 'Write': 2} uip={'maestro bpmn registry': 3.0, '--version 2': 1.0, 'maestro bpmn validate': 1.0} inline_py=7.0 bursts>=1.5k=[]
+BASE TRACE: Skill:uipath:uipath-maestro-bpmn → Read:structural-bpmn.md → Read:registry-workflow.md → Read:expression-authoring.md → Bashx5 → Grep:uipath:inputOutput → Grep:CDATA → Grep:type="json"|uipath:output id=|uipath:inputOutput id=|CDATA\[\[|defaultValue|manual start|entryPointId → Grep:uipath:output|uipath:inputOutput|uipath:input "  → Grep:manual start|no runtime input|hardcoded|blank start → Grep:type=\"json\"|type=\"array\"|uipath:variables|CDATA → Bashx2 → Grep:uipath:output|uipath:inputOutput|elementId=|Var_.*CDATA|literal → Bashx2 → Grep:value=\"|defaultValue|literal value|hardcod|constant → Bash → Read:local-metadata-regeneration-guide.md → Read:project-layout.md → Bashx2 → Grep:json|array|CDATA|inputOutput|uipath:variables → Bashx7 → Write:ReadingListBpmn.bpmn → Write:project.uiproj → Bashx3
+OPT rep=00 tools={'Skill': 1, 'Bash': 42, 'Read': 5, 'Write': 2} uip={'maestro bpmn registry': 2.0, 'maestro bpmn validate': 2.0, '2': 1.0, 'maestro bpmn format': 1.0} inline_py=19.0 bursts>=1.5k=[]
+OPT TRACE: Skill:tmp:uipath-maestro-bpmn → Bash → Read:structural-bpmn.md → Bashx3 → Read:expression-authoring.md → Bashx2 → Read:project-layout.md → Bashx13 → Read:registry-workflow.md → Bashx8 → Read:local-metadata-regeneration-guide.md → Bashx11 → Write:ReadingListBpmn.bpmn → Write:project.uiproj → Bashx4
+
+### skill-bpmn-e2e-live-debug
+DESC: First Maestro BPMN eval that EXECUTES a process. The agent authors a tiny, deterministic BPMN project (manual start, one Jint script task that computes the product of the constants 6 and 7 into a `product` variable, an end event), runs a live `uip maestro bpmn debug` session against Studio Web, and inspects runtime variables via `debug-instance variables-all`. The agent saves the raw variables-all
+DELTA cost $2.190->$3.392 (+54.9%) | thk 0->0 (+0) | tr 30796->40364 (+9568) | calls 63.0->82.0 (+19.0) | time 380->1874s | REAL=True levers=tool_calls,turns,tr_tok,output_tok | n(kept) B=1/1 O=1/1
+BASE rep=00 tools={'Skill': 1, 'Bash': 51, 'Read': 7, 'Write': 2, 'Grep': 1, 'Edit': 1} uip={'maestro bpmn debug': 5.0, 'maestro bpmn registry': 3.0, 'maestro bpmn validate': 3.0, 'solution projects import': 3.0, 'maestro bpmn update-metadata': 3.0, 'maestro bpmn debug-instance': 3.0} inline_py=2.0 bursts>=1.5k=[]
+BASE TRACE: Skill:uipath:uipath-maestro-bpmn → Bashx3 → Read:structural-bpmn.md → Bashx4 → Read:project-layout.md → Read:CAPABILITY.mdx2 → Read:run.md → Read:troubleshooting-guide.md → Write:ProductCalc.bpmn → Read:local-metadata-regeneration-guide.md → Write:project.uiproj → Bashx15 → Grep:entryPointId → Bashx6 → Edit:ProductCalc.bpmn → Bashx23
+OPT rep=00 tools={'Skill': 1, 'Bash': 63, 'Read': 11, 'Write': 2, 'TaskOutput': 4, 'Edit': 1} uip={'maestro bpmn debug-instance': 8.0, 'maestro bpmn debug': 5.0, 'maestro bpmn registry': 4.0, 'solution projects import': 3.0, 'maestro bpmn init': 2.0, 'maestro bpmn validate': 2.0} inline_py=2.0 bursts>=1.5k=[]
+OPT TRACE: Skill:tmp:uipath-maestro-bpmn → Bash → Read:structural-bpmn.md → Bash → Read:registry-workflow.md → Bashx4 → Read:project-layout.md → Read:CAPABILITY.mdx2 → Read:run.md → Read:troubleshooting-guide.md → Write:ProductCalc.bpmn → Bash → Read:local-metadata-regeneration-guide.md → Write:project.uiproj → Bashx4 → Read:entry-points.json → Bashx12 → TaskOutputx2 → Bashx18 → TaskOutput → Bashx10 → Read:failure-modes.md → Bashx4 → Read:ProductCalc.bpmn → Edit:ProductCalc.bpmn → Bashx5 → TaskOutput → Bashx3
+
+### skill-bpmn-expr-error-mapping
+DESC: Expression-authoring eval: agent uses the uipath-maestro-bpmn skill to author a uipath:errorMapping block whose condition branches on the runtime error object via `=vars.error.code == "..."` after a failed activity. Grades the error-mapping expression shape from references/expression-authoring.md. Authoring only — no cloud effects.
+DELTA cost $1.275->$2.793 (+119.1%) | thk 0->0 (+0) | tr 21887->30921 (+9034) | calls 24.0->61.0 (+37.0) | time 343->913s | REAL=True levers=tool_calls,turns,tr_tok,output_tok | n(kept) B=1/1 O=1/1
+BASE rep=00 tools={'Skill': 1, 'Bash': 16, 'Read': 5, 'Write': 2} uip={'maestro bpmn registry': 7.0, 'is connections list': 1.0, 'maestro bpmn validate': 1.0} inline_py=2.0 bursts>=1.5k=[]
+BASE TRACE: Skill:uipath:uipath-maestro-bpmn → Bash → Read:structural-bpmn.md → Bash → Read:registry-workflow.md → Bashx4 → Read:expression-authoring.md → Bashx2 → Read:public-safety.md → Bashx2 → Write:ErrorMappingBpmn.bpmn → Read:project-layout.md → Bash → Write:project.uiproj → Bashx5
+OPT rep=00 tools={'Skill': 1, 'Bash': 39, 'Read': 8, 'Write': 2, 'Grep': 5, 'Glob': 1, 'Edit': 5} uip={'maestro bpmn registry': 7.0, 'maestro bpmn validate': 3.0, 'is connections list': 1.0, 'maestro bpmn format': 1.0} inline_py=11.0 bursts>=1.5k=[]
+OPT TRACE: Skill:tmp:uipath-maestro-bpmn → Bash → Read:structural-bpmn.md → Bash → Read:registry-workflow.md → Bashx9 → Read:public-safety.md → Read:expression-authoring.md → Read:project-layout.md → Bashx3 → Read:local-metadata-regeneration-guide.md → Bashx8 → Write:ErrorMappingBpmn.bpmn → Bashx5 → Grep:uipath:entryPointId|entryPointId → Grep:entryPointId → Bashx2 → Grep:entryPointIdx3 → Glob:*bpmn* → Bashx3 → Edit:ErrorMappingBpmn.bpmnx3 → Read:ErrorMappingBpmn.bpmn → Edit:ErrorMappingBpmn.bpmnx2 → Bashx4 → Write:project.uiproj → Read:ErrorMappingBpmn.bpmn → Bashx3

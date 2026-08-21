@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "NTSBAviationFlow",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "2d59e743-e195-4489-b288-be75238d6d73",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "NTSBAviationFlow"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Flow",
+      "name": "NTSBAviationFlow",
+      "package": {
+        "key": "4f58cb77-16e7-4aaa-a23c-1813b56c4943"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "f42dbb8b-7ab7-4a92-8f8c-afbc595404d3",
+    "files": []
+  }
+}

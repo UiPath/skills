@@ -1,0 +1,374 @@
+{
+  "id": "34c9d303-c7cb-403f-9989-f23f274643f0",
+  "version": "1.9",
+  "name": "DelayDemo",
+  "nodes": [
+    {
+      "id": "start",
+      "type": "core.trigger.manual",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Manual trigger"
+      },
+      "inputs": {
+        "entryPointId": "62cc6290-ca6a-43bf-bf1f-f7ade4238672",
+        "isDefaultEntryPoint": true
+      }
+    },
+    {
+      "id": "wait15min",
+      "type": "core.logic.delay",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Wait 15 Minutes"
+      },
+      "inputs": {
+        "timerType": "timeDuration",
+        "timerPreset": "PT15M"
+      },
+      "outputs": {
+        "output": {
+          "type": "object",
+          "description": "The return value of the node.",
+          "source": "=result.response",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails.",
+          "source": "=Error",
+          "var": "error"
+        }
+      }
+    },
+    {
+      "id": "flowEnd",
+      "type": "core.control.end",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "End"
+      },
+      "inputs": {}
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge_start_output_wait15min_input",
+      "sourceNodeId": "start",
+      "sourcePort": "output",
+      "targetNodeId": "wait15min",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge_wait15min_output_flowEnd_input",
+      "sourceNodeId": "wait15min",
+      "sourcePort": "output",
+      "targetNodeId": "flowEnd",
+      "targetPort": "input"
+    }
+  ],
+  "definitions": [
+    {
+      "nodeType": "core.logic.delay",
+      "version": "1.0",
+      "category": "wait-for-event",
+      "description": "Pause execution for a duration or until a date",
+      "tags": [
+        "control",
+        "flow",
+        "logic",
+        "delay",
+        "timer",
+        "wait"
+      ],
+      "sortOrder": 90,
+      "display": {
+        "label": "Delay",
+        "icon": "timer"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "output",
+              "type": "source",
+              "handleType": "output"
+            }
+          ]
+        }
+      ],
+      "model": {
+        "type": "bpmn:IntermediateCatchEvent",
+        "eventDefinition": "bpmn:TimerEventDefinition",
+        "values": {
+          "timerType": "inputs.timerType",
+          "timerValue": "inputs.timerValue",
+          "timerPreset": "inputs.timerPreset",
+          "timerDate": "inputs.timerDate"
+        }
+      },
+      "inputDefinition": {
+        "type": "object",
+        "properties": {
+          "timerType": {
+            "type": "string",
+            "minLength": 1,
+            "errorMessage": "Timer type is required"
+          },
+          "timerPreset": {
+            "type": "string",
+            "minLength": 1,
+            "errorMessage": "Duration is required"
+          },
+          "timerValue": {
+            "type": "string"
+          },
+          "timerDate": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "timerType",
+          "timerPreset"
+        ],
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "timerType": {
+                  "const": "timeDuration"
+                },
+                "timerPreset": {
+                  "const": "custom"
+                }
+              },
+              "required": [
+                "timerType",
+                "timerPreset"
+              ]
+            },
+            "then": {
+              "properties": {
+                "timerValue": {
+                  "type": "string",
+                  "minLength": 1,
+                  "pattern": "^P(?!$)(\\d+Y)?(\\d+M)?(\\d+W)?(\\d+D)?(T(?=\\d)(\\d+H)?(\\d+M)?(\\d+S)?)?$",
+                  "errorMessage": "Custom duration is required (ISO 8601 format, e.g., PT15M, PT1H, P1D)"
+                }
+              },
+              "required": [
+                "timerValue"
+              ]
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "timerType": {
+                  "const": "timeDate"
+                }
+              },
+              "required": [
+                "timerType"
+              ]
+            },
+            "then": {
+              "properties": {
+                "timerDate": {
+                  "type": "string",
+                  "minLength": 1,
+                  "errorMessage": "Date is required"
+                }
+              },
+              "required": [
+                "timerDate"
+              ]
+            }
+          }
+        ]
+      },
+      "inputDefaults": {
+        "timerType": "timeDuration",
+        "timerPreset": "PT15M"
+      }
+    },
+    {
+      "nodeType": "core.control.end",
+      "version": "1.0",
+      "category": "control-flow",
+      "description": "Mark the end of a process path",
+      "tags": [
+        "control-flow",
+        "end",
+        "finish",
+        "complete"
+      ],
+      "sortOrder": 65,
+      "display": {
+        "label": "End",
+        "icon": "circle-check",
+        "shape": "circle"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        }
+      ],
+      "model": {
+        "type": "bpmn:EndEvent"
+      },
+      "runtimeConstraints": {
+        "exclude": [
+          "api-function"
+        ]
+      }
+    },
+    {
+      "nodeType": "core.trigger.manual",
+      "version": "1.0",
+      "category": "trigger",
+      "description": "Start the process manually",
+      "tags": [
+        "trigger",
+        "start",
+        "manual"
+      ],
+      "sortOrder": 80,
+      "display": {
+        "label": "Manual trigger",
+        "icon": "play",
+        "shape": "circle"
+      },
+      "handleConfiguration": [
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "output",
+              "type": "source",
+              "handleType": "output",
+              "showButton": true,
+              "constraints": {
+                "forbiddenTargetCategories": [
+                  "trigger"
+                ]
+              }
+            }
+          ],
+          "visible": true
+        }
+      ],
+      "model": {
+        "type": "bpmn:StartEvent",
+        "entryPointId": true
+      },
+      "outputDefinition": {
+        "output": {
+          "type": "object",
+          "description": "Data passed when manually triggering the process.",
+          "source": "null",
+          "var": "output"
+        }
+      },
+      "toolbarExtensions": {
+        "design": {
+          "actions": [
+            {
+              "id": "change-trigger-type",
+              "icon": "square-mouse-pointer",
+              "label": "Change trigger type"
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "variables": {
+    "globals": [],
+    "nodes": [
+      {
+        "id": "start.output",
+        "type": "object",
+        "description": "Data passed when manually triggering the process.",
+        "binding": {
+          "nodeId": "start",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "wait15min.output",
+        "type": "object",
+        "description": "The return value of the node.",
+        "binding": {
+          "nodeId": "wait15min",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "wait15min.error",
+        "type": "object",
+        "description": "Error information if the node fails.",
+        "binding": {
+          "nodeId": "wait15min",
+          "outputId": "error"
+        }
+      }
+    ]
+  },
+  "runtime": "maestro",
+  "layout": {
+    "nodes": {
+      "start": {
+        "position": {
+          "x": -192,
+          "y": 0
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "wait15min": {
+        "position": {
+          "x": 0,
+          "y": 0
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "flowEnd": {
+        "position": {
+          "x": 192,
+          "y": 0
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      }
+    }
+  }
+}

@@ -1,0 +1,6 @@
+04:29:30 [INFO   ] [default/skill-bpmn-subprocess/01] orchestrator: API routing: aws_bedrock
+04:35:32 [INFO   ] [default/skill-bpmn-subprocess/01] evaluation.checker: Criterion 'llm_judge' FAILED (score=0.50, threshold=0.70): score=0.500
+04:35:32 [INFO   ] [default/skill-bpmn-subprocess/01] orchestrator: Success criteria: 3/4 passed, weighted score: 0.889
+04:35:32 [INFO   ] [default/skill-bpmn-subprocess/01] orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+04:35:32 [INFO   ] [default/skill-bpmn-subprocess/01] orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-bpmn-subprocess
+04:35:32 [INFO   ] [default/skill-bpmn-subprocess/01] orchestrator: Task finished: status=FAILURE duration=363.1s score=0.889 iterations=1

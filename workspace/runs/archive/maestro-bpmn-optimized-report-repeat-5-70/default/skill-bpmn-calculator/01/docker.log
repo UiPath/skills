@@ -1,0 +1,6 @@
+04:40:38 [INFO   ] [default/skill-bpmn-calculator/01] orchestrator: API routing: aws_bedrock
+04:44:21 [INFO   ] [default/skill-bpmn-calculator/01] orchestrator: Success criteria: 3/3 passed, weighted score: 1.000
+04:44:21 [WARNING] [default/skill-bpmn-calculator/01] orchestrator: Visible turns (26) exceeded expected_turns (22) at iteration 1 for task skill-bpmn-calculator. Run continues — max_turns remains the hard cap.
+04:44:21 [INFO   ] [default/skill-bpmn-calculator/01] orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+04:44:21 [INFO   ] [default/skill-bpmn-calculator/01] orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-bpmn-calculator
+04:44:21 [INFO   ] [default/skill-bpmn-calculator/01] orchestrator: Task finished: status=SUCCESS duration=224.8s score=1.000 iterations=1

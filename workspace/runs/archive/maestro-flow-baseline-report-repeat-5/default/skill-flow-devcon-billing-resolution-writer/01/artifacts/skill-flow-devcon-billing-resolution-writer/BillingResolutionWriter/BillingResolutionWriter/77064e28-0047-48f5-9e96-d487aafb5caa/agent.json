@@ -1,0 +1,100 @@
+{
+  "version": "1.1.0",
+  "settings": {
+    "model": "gpt-5.4",
+    "maxTokens": 128000,
+    "temperature": 0,
+    "engine": "basic-v2",
+    "maxIterations": 3,
+    "mode": "standard"
+  },
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "start__output__customerName": {
+        "type": "string",
+        "description": "Customer name from flow input"
+      },
+      "start__output__invoiceNumber": {
+        "type": "string",
+        "description": "Invoice number from flow input"
+      },
+      "start__output__creditAmount": {
+        "type": "number",
+        "description": "Approved credit amount from flow input"
+      }
+    },
+    "required": [
+      "start__output__customerName",
+      "start__output__invoiceNumber",
+      "start__output__creditAmount"
+    ]
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "subject": {
+        "type": "string",
+        "description": "Email subject line for the billing dispute resolution"
+      },
+      "body": {
+        "type": "string",
+        "description": "Full email body for the billing dispute resolution"
+      }
+    },
+    "required": [
+      "subject",
+      "body"
+    ]
+  },
+  "metadata": {
+    "storageVersion": "50.0.0",
+    "isConversational": false,
+    "showProjectCreationExperience": false
+  },
+  "type": "lowCode",
+  "guardrails": [],
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a customer service specialist who drafts professional, empathetic billing-dispute resolution emails on behalf of a company. Given a customer name, invoice number, and approved credit amount, you produce a concise resolution email. Your response must be a valid JSON object with exactly two string fields: \"subject\" (the email subject line) and \"body\" (the complete email body). The body must address the customer by name, reference the invoice number, and state the approved credit amount clearly. Do not include any text outside the JSON object.",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "You are a customer service specialist who drafts professional, empathetic billing-dispute resolution emails on behalf of a company. Given a customer name, invoice number, and approved credit amount, you produce a concise resolution email. Your response must be a valid JSON object with exactly two string fields: \"subject\" (the email subject line) and \"body\" (the complete email body). The body must address the customer by name, reference the invoice number, and state the approved credit amount clearly. Do not include any text outside the JSON object."
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "Customer: {{input.start__output__customerName}}\nInvoice: {{input.start__output__invoiceNumber}}\nApproved credit: {{input.start__output__creditAmount}}",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "Customer: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__customerName"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\nInvoice: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__invoiceNumber"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\nApproved credit: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__creditAmount"
+        }
+      ]
+    }
+  ],
+  "projectId": "77064e28-0047-48f5-9e96-d487aafb5caa"
+}

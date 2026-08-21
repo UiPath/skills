@@ -1,0 +1,10 @@
+16:52:29 [INFO   ] [default/skill-flow-ipe-jira-get-issue/00] orchestrator: API routing: aws_bedrock
+16:52:29 [INFO   ] [default/skill-flow-ipe-jira-get-issue/00] orchestrator: Running pre-run command: python3 $EXPERIMENT_TASKS_PATH/uipath-maestro-flow/e2e/jira_get_issue/seed_jira.py
+16:52:42 [INFO   ] [default/skill-flow-ipe-jira-get-issue/00] orchestrator: [pre_run stdout] OK: seeded live issue CE-678 (summary='coder-eval jira flow e2e d00ed4de')
+16:58:43 [INFO   ] [default/skill-flow-ipe-jira-get-issue/00] orchestrator: Success criteria: 2/2 passed, weighted score: 1.000
+16:58:43 [WARNING] [default/skill-flow-ipe-jira-get-issue/00] orchestrator: Visible turns (44) exceeded expected_turns (40) at iteration 1 for task skill-flow-ipe-jira-get-issue. Run continues — max_turns remains the hard cap.
+16:58:43 [INFO   ] [default/skill-flow-ipe-jira-get-issue/00] orchestrator: Running post-run command: python3 $EXPERIMENT_TASKS_PATH/uipath-maestro-flow/e2e/jira_get_issue/teardown_jira.py
+16:58:48 [INFO   ] [default/skill-flow-ipe-jira-get-issue/00] orchestrator: [post_run stdout] OK: deleted CE-678
+16:58:48 [INFO   ] [default/skill-flow-ipe-jira-get-issue/00] orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+16:58:48 [INFO   ] [default/skill-flow-ipe-jira-get-issue/00] orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-ipe-jira-get-issue
+16:58:48 [INFO   ] [default/skill-flow-ipe-jira-get-issue/00] orchestrator: Task finished: status=SUCCESS duration=384.1s score=1.000 iterations=1

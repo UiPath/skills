@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "EmployeeAccessBpmn",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "3575ca33-857e-4d3b-9ff3-1e648e1a8e65",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "EmployeeAccessBpmn"
+    },
+    "locks": [],
+    "key": "d0a97ca3-6d60-45f1-8451-afe16f67a6cf",
+    "files": []
+  }
+}

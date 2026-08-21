@@ -1,0 +1,18 @@
+{
+  "version": "1.0",
+  "id": "triage-judge-0d82cc02",
+  "name": "triage-judge",
+  "description": "Score semantic similarity of triage classification against expected category and priority",
+  "evaluatorTypeId": "uipath-llm-judge-output-semantic-similarity",
+  "evaluatorConfig": {
+    "name": "triage-judge",
+    "prompt": "As an expert evaluator, analyze the semantic similarity of these JSON contents to determine a score from 0-100. Focus on comparing the meaning and contextual equivalence of corresponding fields, accounting for alternative valid expressions, synonyms, and reasonable variations in language while maintaining high standards for accuracy and completeness. Provide your score with a justification, explaining briefly and concisely why you gave that score.\n----\nExpectedOutput:\n{{ExpectedOutput}}\n----\nActualOutput:\n{{ActualOutput}}\n",
+    "temperature": 0,
+    "maxTokens": 8192,
+    "targetOutputKey": "*",
+    "model": "gpt-4.1-2025-04-14"
+  },
+  "fileName": "triage-judge-0d82cc02.json",
+  "createdAt": "2026-07-24T18:37:10.287Z",
+  "updatedAt": "2026-07-24T18:37:10.287Z"
+}

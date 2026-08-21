@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "AviationNTSBExtraction",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "b19f4c4d-4411-4b87-bee4-125dce3b0b0b",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "AviationNTSBExtraction"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Flow",
+      "name": "AviationNTSBExtraction",
+      "package": {
+        "key": "40027b6f-e980-4c90-b407-60a98bb6f8f9"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "c863dfb7-bebd-4cd6-ac00-54f2b852f258",
+    "files": []
+  }
+}

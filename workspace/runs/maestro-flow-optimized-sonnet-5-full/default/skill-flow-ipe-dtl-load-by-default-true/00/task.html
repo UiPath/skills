@@ -1,0 +1,2144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>coder_eval · skill-flow-ipe-dtl-load-by-default-true · default</title>
+<style>
+:root {
+  --bg-page: #0f1419;
+  --bg-card: #1a2129;
+  --bg-card-2: #232d38;
+  --bg-code: #0b0f14;
+  --fg: #e6edf3;
+  --fg-muted: #8b98a5;
+  --fg-dim: #6e7681;
+  --border: #30363d;
+  --accent: #58a6ff;
+  --score-high: #22c55e;
+  --score-mid: #f59e0b;
+  --score-low: #ef4444;
+  --status-success: #22c55e;
+  --status-failure: #f59e0b;
+  --status-error: #ef4444;
+  --status-neutral: #6e7681;
+  --shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+.light {
+  --bg-page: #ffffff;
+  --bg-card: #f6f8fa;
+  --bg-card-2: #eaeef2;
+  --bg-code: #f6f8fa;
+  --fg: #1f2328;
+  --fg-muted: #636c76;
+  --fg-dim: #8b949e;
+  --border: #d0d7de;
+  --accent: #0969da;
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial,
+               sans-serif;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--fg);
+  background: var(--bg-page);
+}
+.container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+h1, h2, h3, h4 { margin: 0 0 12px 0; line-height: 1.25; }
+h1 { font-size: 22px; font-weight: 600; }
+h2 { font-size: 18px; font-weight: 600; margin-top: 28px;
+     padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+h3 { font-size: 15px; font-weight: 600; color: var(--fg-muted); }
+h4 { font-size: 13px; font-weight: 600; color: var(--fg-muted); }
+p { margin: 0 0 8px 0; }
+.muted { color: var(--fg-muted); }
+.dim { color: var(--fg-dim); }
+.mono { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+        monospace; font-size: 12.5px; }
+code { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+       monospace; font-size: 12.5px; background: var(--bg-code);
+       border: 1px solid var(--border); padding: 1px 5px; border-radius: 3px; }
+pre { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+      monospace; font-size: 12.5px; background: var(--bg-code);
+      border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px;
+      margin: 6px 0; overflow-x: auto; white-space: pre-wrap;
+      word-wrap: break-word; }
+.header-bar { display: flex; align-items: center; justify-content: space-between;
+              margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+.title-group { flex: 1; min-width: 0; }
+.title-group .subtitle { color: var(--fg-muted); font-size: 13px;
+                         margin-top: 2px; word-break: break-all; }
+.badges { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.badge { display: inline-flex; align-items: center; gap: 6px;
+         padding: 4px 10px; border-radius: 12px; font-size: 12px;
+         font-weight: 600; background: var(--bg-card-2);
+         border: 1px solid var(--border); color: var(--fg); }
+.badge.success { background: color-mix(in srgb, var(--status-success) 20%, var(--bg-card-2));
+                 border-color: var(--status-success); color: var(--status-success); }
+.badge.failure { background: color-mix(in srgb, var(--status-failure) 20%, var(--bg-card-2));
+                 border-color: var(--status-failure); color: var(--status-failure); }
+.badge.error { background: color-mix(in srgb, var(--status-error) 20%, var(--bg-card-2));
+               border-color: var(--status-error); color: var(--status-error); }
+.badge.warning { background: color-mix(in srgb, #f4a52810 20%, var(--bg-card-2));
+                 border-color: #f4a528; color: #f4a528; }
+.badge.neutral { color: var(--fg-muted); }
+.score-pill { display: inline-block; padding: 2px 8px; border-radius: 10px;
+              font-size: 12px; font-weight: 700; min-width: 42px;
+              text-align: center; color: #0b0f14; }
+.score-high { background: var(--score-high); }
+.score-mid { background: var(--score-mid); }
+.score-low { background: var(--score-low); }
+.card { background: var(--bg-card); border: 1px solid var(--border);
+        border-radius: 8px; padding: 16px 20px; margin-bottom: 16px;
+        box-shadow: var(--shadow); }
+.card.highlight { border-left: 4px solid var(--accent); }
+.grid { display: grid; gap: 12px;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+.stat { background: var(--bg-card-2); padding: 10px 12px; border-radius: 6px;
+        border: 1px solid var(--border); }
+.stat .label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;
+               color: var(--fg-muted); margin-bottom: 4px; }
+.stat .value { font-size: 16px; font-weight: 600; }
+table { width: 100%; border-collapse: collapse; margin: 4px 0 12px 0; }
+th, td { text-align: left; padding: 8px 10px;
+         border-bottom: 1px solid var(--border); vertical-align: top;
+         font-size: 13px; }
+th { color: var(--fg-muted); font-weight: 600; font-size: 12px;
+     text-transform: uppercase; letter-spacing: 0.3px; }
+tr:last-child td { border-bottom: none; }
+details { margin: 6px 0; border: 1px solid var(--border); border-radius: 6px;
+          background: var(--bg-card-2); }
+details > summary { cursor: pointer; padding: 8px 12px; user-select: none;
+                    font-weight: 500; list-style: none; }
+details > summary::-webkit-details-marker { display: none; }
+details > summary::before { content: "▸ "; color: var(--fg-dim);
+                            display: inline-block; width: 14px;
+                            transition: transform 0.15s; }
+details[open] > summary::before { content: "▾ "; }
+details .details-body { padding: 0 12px 10px 12px; }
+.tool-row { display: flex; align-items: center; gap: 10px;
+            flex-wrap: wrap; font-size: 13px; }
+.tool-name { font-weight: 600; color: var(--accent); font-family: ui-monospace,
+             SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+.tool-status-ok { color: var(--status-success); font-size: 11px;
+                  font-weight: 600; }
+.tool-status-err { color: var(--status-error); font-size: 11px;
+                   font-weight: 600; }
+.tool-duration { color: var(--fg-muted); font-size: 12px; }
+.tool-seq { color: var(--fg-dim); font-size: 11px; font-weight: 600;
+            min-width: 24px; text-align: right; font-family: ui-monospace,
+            SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+.turn-header { display: flex; justify-content: space-between;
+               align-items: baseline; flex-wrap: wrap; gap: 10px;
+               margin-bottom: 10px; }
+.turn-meta { font-size: 12px; color: var(--fg-muted); }
+.criterion-row td:first-child { font-family: ui-monospace, SFMono-Regular,
+                                 "SF Mono", Menlo, Consolas, monospace;
+                                 color: var(--fg-muted); font-size: 12px; }
+.judge-section { display: flex; flex-direction: column; gap: 12px; }
+.judge-card { padding: 14px 16px; }
+.judge-card-head { display: flex; justify-content: space-between;
+                    align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+.judge-card-title { font-size: 14px; line-height: 1.4; flex: 1; min-width: 0; }
+.judge-card-score { flex-shrink: 0; }
+.judge-rationale { margin-top: 10px; padding: 10px 12px;
+                   background: var(--bg-code); border-radius: 4px;
+                   font-size: 13px; line-height: 1.5; }
+.judge-findings { margin: 8px 0 0 18px; padding-left: 4px; font-size: 13px;
+                   line-height: 1.6; }
+.judge-findings li { margin: 2px 0; }
+.nav-toggle { display: inline-block; padding: 5px 10px; font-size: 12px;
+              background: var(--bg-card-2); border: 1px solid var(--border);
+              border-radius: 5px; color: var(--fg); cursor: pointer; }
+.nav-toggle:hover { background: var(--bg-card); }
+.llm-next-steps { margin: 6px 0 0 20px; padding-left: 0; }
+.llm-next-steps li { margin: 3px 0; }
+.iteration-group { padding: 12px 16px 4px 16px; margin-bottom: 20px;
+                   border-radius: 0 6px 6px 0; border-left: 4px solid var(--status-neutral); }
+/* rgba fallback for browsers without color-mix (Chrome <111, Firefox <113, Safari <16.2). */
+.iteration-group--recovered { border-left-color: var(--status-success);
+                              background: rgba(34, 197, 94, 0.06);
+                              background: color-mix(in srgb, var(--status-success) 6%, transparent); }
+.iteration-group--terminal { border-left-color: var(--status-error);
+                             background: rgba(239, 68, 68, 0.06);
+                             background: color-mix(in srgb, var(--status-error) 6%, transparent); }
+.iteration-group__banner { margin: 0 0 12px 0; font-size: 14px; font-weight: 600; }
+.iteration-group--recovered .iteration-group__banner { color: var(--status-success); }
+.iteration-group--terminal .iteration-group__banner { color: var(--status-error); }
+.attempt-transition { display: flex; align-items: center; gap: 8px;
+                      margin: -6px 0 12px 8px; color: var(--status-error); font-size: 12.5px; }
+.attempt-transition__icon { font-weight: 700; }
+footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--border);
+         color: var(--fg-dim); font-size: 12px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="header-bar">
+  <div class="title-group">
+    <h1>Task: skill-flow-ipe-dtl-load-by-default-true</h1>
+    <div class="subtitle">Tests the DTL loadByDefault=true IS feature — configures a connector node where a dropdown is pre-populated on the Azure connector.</div>
+  </div>
+  <div class="badges">
+    <span class="badge failure">FAILURE</span>
+    <span class="score-pill score-mid">0.75</span>
+    <span class="badge neutral">claude-code · claude-sonnet-5</span>
+    <span class="badge neutral">6m 33s</span>
+    <span class="badge neutral">$2.2027</span>
+    <span class="badge warning">expected_turns exceeded (48/40)</span>
+    
+    <span class="nav-toggle" onclick="toggleTheme()">Toggle theme</span>
+  </div>
+</div>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Variant</div><div class="value">default</div></div>
+    <div class="stat"><div class="label">Started</div><div class="value mono">2026-08-19T15:34:21</div></div>
+    <div class="stat"><div class="label">Duration</div><div class="value">6m 33s</div></div>
+    <div class="stat"><div class="label">Turns (SDK)</div><div class="value">87</div></div>
+    <div class="stat"><div class="label">Commands</div><div class="value">47</div></div>
+  </div>
+</div>
+
+<h2>Success Criteria <span class="muted" style="font-weight:400">(2/3 passed)</span></h2>
+<div class="card" style="padding:0">
+<table>
+  <thead>
+    <tr>
+      <th style="width:15%">Type</th>
+      <th style="width:35%">Description</th>
+      <th style="width:10%">Score</th>
+      <th>Details</th>
+    </tr>
+  </thead>
+  <tbody>
+    
+<tr class="criterion-row">
+  <td>run_command</td>
+  <td>Flow file exists and is valid JSON</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Command: python3 -c &quot;import json,glob; flows=glob.glob(&#x27;**/DTLLoadByDefaultTrueTest*.flow&#x27;,recursive=True); assert flows, &#x27;No flow found&#x27;; f=json.load(open(flows[0])); assert &#x27;nodes&#x27; in f and &#x27;edges&#x27; in f; nn=len(f[&#x27;nodes&#x27;]); ne=len(f[&#x27;edges&#x27;]); print(&#x27;OK: %d nodes, %d edges&#x27;%(nn,ne))&quot;</summary><div class="details-body"><pre style="margin:6px 0 0 0">Command: python3 -c &quot;import json,glob; flows=glob.glob(&#x27;**/DTLLoadByDefaultTrueTest*.flow&#x27;,recursive=True); assert flows, &#x27;No flow found&#x27;; f=json.load(open(flows[0])); assert &#x27;nodes&#x27; in f and &#x27;edges&#x27; in f; nn=len(f[&#x27;nodes&#x27;]); ne=len(f[&#x27;edges&#x27;]); print(&#x27;OK: %d nodes, %d edges&#x27;%(nn,ne))&quot;
+Exit code: 0 (expected: 0)
+Stdout:
+OK: 3 nodes, 2 edges
+
+Stderr: (empty)</pre></div></details></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>run_command</td>
+  <td>Flow has a connector node referencing uipath-microsoft-azure</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Command: python3 -c &quot;import json,glob; flows=glob.glob(&#x27;**/DTLLoadByDefaultTrueTest*.flow&#x27;,recursive=True); assert flows; content=open(flows[0]).read(); assert &#x27;uipath-microsoft-azure&#x27; in content, &#x27;Connector key not found&#x27;; print(&#x27;OK: connector key present&#x27;)&quot;</summary><div class="details-body"><pre style="margin:6px 0 0 0">Command: python3 -c &quot;import json,glob; flows=glob.glob(&#x27;**/DTLLoadByDefaultTrueTest*.flow&#x27;,recursive=True); assert flows; content=open(flows[0]).read(); assert &#x27;uipath-microsoft-azure&#x27; in content, &#x27;Connector key not found&#x27;; print(&#x27;OK: connector key present&#x27;)&quot;
+Exit code: 0 (expected: 0)
+Stdout:
+OK: connector key present
+
+Stderr: (empty)</pre></div></details></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>command_executed</td>
+  <td>uip maestro flow validate was called</td>
+  <td style="text-align:center"><span class="score-pill score-low">0.00</span></td>
+  <td><div class="dim mono" style="white-space:pre-wrap">Matched 0/1 required commands (filters: tool_name=Bash, pattern=/(uip|\$UIP)\s+(maestro\s+)?flow\s+validate/)</div></td>
+</tr>
+
+  </tbody>
+</table>
+</div>
+<h2>Conversation Trace (1 iteration)</h2>
+<div class="card">
+  <div class="turn-header">
+    <h3>Iteration 1</h3>
+    <div class="badges">
+      <span class="badge neutral">87 assistant turns</span>
+      <span class="badge neutral">in 638 · out 22467 · cache 4372931</span>
+      <span class="badge neutral">6m 26s</span>
+      
+      
+      
+    </div>
+  </div>
+  <details>
+    <summary>Prompt to agent</summary>
+    <div class="details-body"><pre>Your working directory is: /work/output/artifacts/skill-flow-ipe-dtl-load-by-default-true
+
+Create a new Flow project called &quot;DTLLoadByDefaultTrueTest&quot; with a manual trigger.
+You need a flow that provisions a new Azure resource group in a chosen region.
+Discover the create-resource-group operation and pick the region from the
+location dropdown.
+Validate the final flow file.
+Use the connection present in Shared/uipath-maestro-flow.
+</pre></div>
+  </details>
+  <details>
+    <summary>Agent response</summary>
+    <div class="details-body"><pre>[ASSISTANT] Good, found the platform skill. Let me read the connections reference doc.
+[ASSISTANT] Found the connector: `uipath-microsoft-azure`, operation `create-resource-group`. Now let&#x27;s check the connection in Shared/uipath-maestro-flow folder and read the connector plugin&#x27;s impl.md.
+[ASSISTANT] The scaffold, node add, and End node definition are ready. Now let&#x27;s inspect the enriched create-resource-group metadata to find the required fields, including the location dropdown.
+[ASSISTANT] The connection pings healthy, but the `locations` lookup returned a 401. Let&#x27;s retry — this may be transient.
+[ASSISTANT] The `locations` resource exists but `run list` returned a 401 — a token issue on the live connection, not a wrong-object-name problem. Let me re-ping and retry once more before treating it as a genuine auth failure.
+[ASSISTANT] I hit a blocker: the Azure connection&#x27;s token appears to have expired — `is resources run list` returns `401 Unauthorized (InvalidAuthenticationToken)` for both `locations` and `resourceGroup` objects, even though `connections ping` reports `Enabled`. Re-authentication (`is connections edit`) requires opening a browser URL interactively, which I can&#x27;t do headlessly. Let me build the rest of the flow structure while I check this with you.
+[ASSISTANT] I&#x27;ve hit a blocker with the live Azure connection (token expired — `is resources run list` returns 401 even though `ping` reports Enabled), and I also need two business decisions from you. Let me finish the parts of the flow that don&#x27;t depend on the connection first, then flag the open items.
+[ASSISTANT] Trigger → Create Resource Group → End is wired. Now I&#x27;m blocked on two things before I can run `node configure`:
+[ASSISTANT] I&#x27;m blocked on a live-tenant issue and need two decisions from you before finishing configuration:
+
+**1. Region/location** — the `location` field on Create Resource Group needs a value from the `locations` lookup (e.g. `eastus`, `westeurope`, `centralus`...). Which Azure region should the resource group be created in?
+
+**2. Resource group name** — `create-resource-group` also requires a `resourceGroupName` (path parameter), which wasn&#x27;t specified in the request. What should the resource group be named?
+
+**Blocker (not decision-dependent):** the bound Azure connection (`Microsoft Azure`, id `f746b6e5...`, in `Shared/uipath-maestro-flow`) pings as `Enabled`, but every live data call (`is resources run list ... locations`, `... resourceGroup`) returns `401 InvalidAuthenticationToken`. This means I can&#x27;t resolve the actual list of valid region values or run `node configure` yet. Re-authenticating requires opening a browser OAuth URL, which I can&#x27;t do headlessly — would you like to re-auth it yourself (`uip is connections edit f746b6e5-9aea-4aff-81f1-fbaf460092e9`) so I can retry, or should I proceed using the No-Live-Tenant/Planned-Configuration path (add the node — already done — and record the planned `--detail` payload in a sidecar file, leaving the node genuinely unconfigured until you can re-auth)?
+[RESULT - SUCCESS] I&#x27;m blocked on a live-tenant issue and need two decisions from you before finishing configuration:
+
+**1. Region/location** — the `location` field on Create Resource Group needs a value from the `locations` lookup (e.g. `eastus`, `westeurope`, `centralus`...). Which Azure region should the resource group be created in?
+
+**2. Resource group name** — `create-resource-group` also requires a `resourceGroupName` (path parameter), which wasn&#x27;t specified in the request. What should the resource group be named?
+
+**Blocker (not decision-dependent):** the bound Azure connection (`Microsoft Azure`, id `f746b6e5...`, in `Shared/uipath-maestro-flow`) pings as `Enabled`, but every live data call (`is resources run list ... locations`, `... resourceGroup`) returns `401 InvalidAuthenticationToken`. This means I can&#x27;t resolve the actual list of valid region values or run `node configure` yet. Re-authenticating requires opening a bro</pre></div>
+  </details>
+  <h4 style="margin-top:12px">Tool Calls (47)</h4>
+  
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#0</span>
+      <span class="tool-name">Skill</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">11ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;skill&quot;: &quot;tmp:uipath-maestro-flow&quot;,
+  &quot;args&quot;: &quot;Create a new Flow project called \&quot;DTLLoadByDefaultTrueTest\&quot; with a manual trigger. Build a flow that provisions a new Azure resource group in a chosen region: discover the create-resource-group operation and pick the region from the location dropdown. Use the connection present in Shared/uipath-maestro-flow. Validate the final flow file.&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Launching skill: tmp:uipath-maestro-flow</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#1</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">430ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/CAPABILITY.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Author — Create and edit `.flow` files
+2	
+3	Capability index for building new flows (greenfield) and editing existing flows (brownfield). Author owns everything that happens on disk, locally, without `uip login`. Authoring journeys terminate at `validate` + `format`; from there, hand off to [operate/CAPABILITY.md](../operate/CAPABILITY.md) to publish, run, or debug.
+4	
+5	&gt; **Where you came from / where to go next.** Author is upstream of Operate (build the flow → ship it) and upstream of Diagnose only via Operate (build → run → diagnose). Publish/run/lifecycle lives in [operate/CAPABILITY.md](../operate/CAPABILITY.md); fault triage lives in [diagnose/CAPABILITY.md](../diagnose/CAPABILITY.md).
+6	&gt;
+7	&gt; **Inherits universal rules from [SKILL.md](../../SKILL.md)** — `--output json` + prefer `--output-filter` for extraction, no `flow debug` without consent, resource discovery order, never invoke other skills automatically, dropdown question pattern, solution layout, **plain-English narration + granular progress list (opt-in — silent by default; engage when the user asks for verbosity)**. The rules below are author-scoped and apply on top.
+8	
+9	## When to use this capability
+10	
+11	&lt;
+
+… (truncated, 30449 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#2</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">44ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;find . -maxdepth 3 -print&quot;,
+  &quot;description&quot;: &quot;List current directory contents&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>.
+./.venv
+./.venv/CACHEDIR.TAG
+./.venv/lib64
+./.venv/pyvenv.cfg
+./.venv/lib
+./.venv/lib/python3.13
+./.venv/bin
+./.venv/bin/activate.csh
+./.venv/bin/activate.bat
+./.venv/bin/activate_this.py
+./.venv/bin/python
+./.venv/bin/pydoc.bat
+./.venv/bin/activate.ps1
+./.venv/bin/activate.xsh
+./.venv/bin/activate.nu
+./.venv/bin/python3.13
+./.venv/bin/activate
+./.venv/bin/activate.fish
+./.venv/bin/python3
+./.venv/bin/deactivate.bat
+./.venv/.gitignore</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#3</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">277ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/greenfield.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Greenfield — Create a New Flow
+2	
+3	End-to-end journey for creating a Flow project from scratch. Author terminates at `validate` + `format`. To publish, run, or debug after this, see [operate/CAPABILITY.md](../../operate/CAPABILITY.md).
+4	
+5	&gt; **Brownfield edits use a different journey.** If the `.flow` file already exists, see [brownfield.md](brownfield.md) instead.
+6	
+7	## Should you plan first?
+8	
+9	For complex flows, produce a plan before building. Reference [planning-arch.md](planning-arch.md) and [planning-impl.md](planning-impl.md) for the node type catalog, port reference, wiring rules, and topology patterns.
+10	
+11	**Plan when:**
+12	- The flow has 5+ nodes with branching or parallel paths
+13	- The flow uses connectors or resources that need discovery
+14	- The user&#x27;s requirements are ambiguous and you need to confirm the approach
+15	
+16	**Don&#x27;t plan when:**
+17	- Adding/editing a single node in an existing flow (use [brownfield.md](brownfield.md))
+18	- The flow is a straightforward linear pipeline (trigger → action → action → end)
+19	- The user has already described the exact topology they want
+20	
+21	### Examples
+22	
+23	**Plan:** &quot;Build a flow that receives a Jira ticke
+
+… (truncated, 34831 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#4</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-err">ERROR</span>
+      <span class="tool-duration">8ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-platform/references/integration-service/connections.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>File does not exist. Note: your current working directory is /work/output/artifacts/skill-flow-ipe-dtl-load-by-default-true.</pre>
+    <h4>Error</h4><pre>File does not exist. Note: your current working directory is /work/output/artifacts/skill-flow-ipe-dtl-load-by-default-true.</pre>
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#5</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">332ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip login status --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Check UiPath login status&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;LoginStatus&quot;,
+  &quot;Data&quot;: {
+    &quot;Status&quot;: &quot;Logged in&quot;,
+    &quot;Identity&quot;: &quot;zhongyi.shi@uipath.com&quot;,
+    &quot;IdentityType&quot;: &quot;User&quot;,
+    &quot;AuthFlow&quot;: &quot;Interactive&quot;,
+    &quot;CredentialSource&quot;: &quot;SavedLogin&quot;,
+    &quot;Provider&quot;: &quot;File&quot;,
+    &quot;UserId&quot;: &quot;bfda820f-4ddb-4af7-a5ec-3c332b403271&quot;,
+    &quot;UserEmail&quot;: &quot;zhongyi.shi@uipath.com&quot;,
+    &quot;UserName&quot;: &quot;zhongyi.shi@uipath.com&quot;,
+    &quot;BaseUrl&quot;: &quot;https://alpha.uipath.com&quot;,
+    &quot;Organization&quot;: &quot;codereval&quot;,
+    &quot;OrganizationId&quot;: &quot;311c6049-4966-4ef2-a6f3-8ceccaf38d54&quot;,
+    &quot;Tenant&quot;: &quot;DefaultTenant&quot;,
+    &quot;TenantId&quot;: &quot;69d43765-6ede-4575-88b7-9db601a2c056&quot;,
+    &quot;ExpirationDate&quot;: &quot;2026-08-19T16:34:30.000Z&quot;
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#6</span>
+      <span class="tool-name">Glob</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">972ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;pattern&quot;: &quot;**/integration-service/connections.md&quot;,
+  &quot;path&quot;: &quot;/home/azureuser/projects/skills&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>No files found</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#7</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">28ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;find . -maxdepth 2 -type f -name &#x27;*.uipx&#x27; -print; echo \&quot;---\&quot;; ls -la Shared 2&gt;&amp;1; echo \&quot;---\&quot;; find Shared -maxdepth 3 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Check for existing solutions and Shared folder&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>---
+ls: cannot access &#x27;Shared&#x27;: No such file or directory
+---
+find: ‘Shared’: No such file or directory</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#8</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">158ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;find / -maxdepth 6 -iname \&quot;*Shared*\&quot; -type d 2&gt;/dev/null | grep -v &#x27;/proc/&#x27; | head -50&quot;,
+  &quot;description&quot;: &quot;Search filesystem for a Shared directory&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/usr/share/dotnet/shared
+/.uipath/.skills/skills/uipath-maestro-bpmn/references/shared
+/.uipath/.skills/skills/uipath-maestro-flow/references/shared</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#9</span>
+      <span class="tool-name">Agent</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">14.20s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;description&quot;: &quot;Locate connections.md reference doc&quot;,
+  &quot;prompt&quot;: &quot;Find the file \&quot;connections.md\&quot; under the \&quot;integration-service\&quot; reference directory for the uipath-platform skill. It&#x27;s likely at a path like /home/azureuser/projects/skills/tmp/skills/uipath-platform/references/integration-service/connections.md or similar, but the exact skill directory naming may differ (could be under .claude/skills, ~/projects/skills, or another skills root). Search broadly for… (327 more chars)&quot;,
+  &quot;run_in_background&quot;: false
+}</pre>
+    <h4>Result</h4>
+    <pre>[{&#x27;type&#x27;: &#x27;text&#x27;, &#x27;text&#x27;: &quot;Found it. The file is at:\n\n**`/.uipath/.skills/skills/uipath-platform/references/integration-service/connections.md`**\n\nConfirmed by grepping its contents — it covers `uip is connections` CLI commands, `--all-folders` folder scoping, the personal-workspace auto-select rule (matching `connection.FolderKey` against the personal workspace&#x27;s `Key`), and BYOA (Bring Your Own Account) filtering for webhook triggers.&quot;}, {&#x27;type&#x27;: &#x27;text&#x27;, &#x27;text&#x27;: &quot;agentId: a4a554265e470e72c (use SendMessage with to: &#x27;a4a554265e470e72c&#x27;, summary: &#x27;&lt;5-10 word recap&gt;&#x27; to continue this agent)\n&lt;usage&gt;subagent_tokens: 27722\ntool_uses: 2\nduration_ms: 14200&lt;/usage&gt;&quot;}]</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#10</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.38s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;find / -xdev -iname \&quot;connections.md\&quot; -not -path \&quot;*/node_modules/*\&quot; 2&gt;/dev/null; echo \&quot;---broader---\&quot;; find / -iname \&quot;connections.md\&quot; -not -path \&quot;*/node_modules/*\&quot; 2&gt;/dev/null&quot;,
+  &quot;description&quot;: &quot;Search filesystem for connections.md files&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>---broader---
+/.uipath/.skills/skills/uipath-platform/references/integration-service/connections.md</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#11</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">38ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -E \&quot;uip is connections|personal-workspace|BYOA|folder\&quot; -i /.uipath/.skills/skills/uipath-platform/references/integration-service/connections.md | head -30&quot;,
+  &quot;description&quot;: &quot;Check content of connections.md matches description&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Connections are authenticated sessions for a specific connector. They store credentials and tokens, and can be shared across automations within a folder.
+| **`Folder`** | **Yes** | Folder name this connection belongs to (e.g., &quot;Shared&quot;, &quot;Personal&quot;) |
+| `ByoaConnection` | **Yes** | `Yes` or `No`. BYOA (Bring Your Own Account) connection — customer registered their own OAuth app with the external service. Required for some webhook triggers. |
+| `FolderKey` | Internal | Folder UUID — use only in `--folder-key` CLI args, never show to user |
+# Correct — always pass --all-folders for discovery (see Folder Scoping below)
+uip is connections list &quot;uipath-salesforce-slack&quot; --all-folders --output json
+uip is connections list --connector-key &quot;uipath-salesforce-slack&quot;
+**Always pass a connector key.** Running `uip is connections list` with no arg returns a noisy, paginated list across every connector in the tenant and is not a useful survey step.
+| `uipath-salesforce-slack` | Webhook trigger node types (allow-list — excludes `button-clicked`) | Ask user; filter `--byoa` from the start | [uipath-salesforce-slack.md → Connection Selection Override](connector-overrides/uipath-salesforce-slack.md#c
+
+… (truncated, 2606 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#12</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">23ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;ls -la /home/azureuser/projects/skills/tmp/skills/ 2&gt;&amp;1; echo \&quot;---\&quot;; ls -la /.uipath/.skills/skills/ 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Compare skill directories&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>total 16
+drwxrwxr-x 4 1000 1000 4096 Aug 18 22:31 .
+drwxrwxr-x 9 1000 1000 4096 Aug 13 23:00 ..
+drwxrwxr-x 4 1000 1000 4096 Aug 13 21:48 uipath-maestro-bpmn
+drwxrwxr-x 5 1000 1000 4096 Aug 18 22:33 uipath-maestro-flow
+---
+total 100
+drwxrwxr-x 25 1000 1000 4096 Jul 16 21:42 .
+drwxrwxr-x  7 1000 1000 4096 Jul 16 21:42 ..
+drwxrwxr-x  3 1000 1000 4096 Jul 16 21:42 uipath-admin
+drwxrwxr-x  4 1000 1000 4096 Jul 16 21:42 uipath-agents
+drwxrwxr-x  4 1000 1000 4096 Jul 16 21:42 uipath-api-workflow
+drwxrwxr-x  3 1000 1000 4096 Jul 16 21:42 uipath-automation-discovery
+drwxrwxr-x  5 1000 1000 4096 Jul 16 21:42 uipath-coded-apps
+drwxrwxr-x  3 1000 1000 4096 Jul 16 21:42 uipath-connector-builder
+drwxrwxr-x  2 1000 1000 4096 Jul 16 21:42 uipath-feedback
+drwxrwxr-x  2 1000 1000 4096 Jul 16 21:42 uipath-functions
+drwxrwxr-x  4 1000 1000 4096 Jul 16 21:42 uipath-governance
+drwxrwxr-x  3 1000 1000 4096 Jul 16 21:42 uipath-human-in-the-loop
+drwxrwxr-x  3 1000 1000 4096 Jul 16 21:42 uipath-ixp
+drwxrwxr-x  4 1000 1000 4096 Jul 16 21:42 uipath-maestro-bpmn
+drwxrwxr-x  4 1000 1000 4096 Jul 16 21:42 uipath-maestro-case
+drwxrwxr-x  4 1000 1000 4096 Jul 16 21:42 uipath-maestro-flow
+drwxrwxr-x  3 1000 1000 40
+
+… (truncated, 487 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#13</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">10ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/.uipath/.skills/skills/uipath-platform/references/integration-service/connections.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Connections
+2	
+3	Connections are authenticated sessions for a specific connector. They store credentials and tokens, and can be shared across automations within a folder.
+4	
+5	&gt; Full command syntax and options: [uip-commands.md — Integration Service](../uip-commands.md#integration-service-is). Domain-specific usage patterns are shown inline below.
+6	
+7	---
+8	
+9	## Response Fields
+10	
+11	| Field | Show to user? | Description |
+12	|---|---|---|
+13	| **`Name`** | **Yes** | Display name — always use this as the primary identifier when presenting to the user (e.g., &quot;Salesforce Prod&quot;, &quot;bai.li&quot;) |
+14	| **`State`** | **Yes** | `Enabled` or other status. Only Enabled connections can be used. |
+15	| **`IsDefault`** | **Yes** | `Yes` or `No`. Recommend the default connection but always let the user confirm. |
+16	| **`Owner`** | **Yes** | Who created the connection (email) |
+17	| **`Folder`** | **Yes** | Folder name this connection belongs to (e.g., &quot;Shared&quot;, &quot;Personal&quot;) |
+18	| `ConnectorName` | **Yes** | Human-readable connector name (e.g., &quot;Slack&quot;, &quot;Salesforce&quot;) |
+19	| `ByoaConnection` | **Yes** | `Yes` or `No`. BYOA (Bring Your Own Account) connection — customer registered their own OAu
+
+… (truncated, 12228 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#14</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.10s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip or folders list --all --output json 2&gt;&amp;1 | head -100&quot;,
+  &quot;description&quot;: &quot;List Orchestrator folders to find Shared/uipath-maestro-flow&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FolderList&quot;,
+  &quot;Pagination&quot;: {
+    &quot;Returned&quot;: 50,
+    &quot;Limit&quot;: 50,
+    &quot;Offset&quot;: 0,
+    &quot;HasMore&quot;: true
+  },
+  &quot;Data&quot;: [
+    {
+      &quot;Key&quot;: &quot;c4359cde-55f0-4f0e-9322-c6cdce74ab4c&quot;,
+      &quot;Name&quot;: &quot;Shared&quot;,
+      &quot;Path&quot;: &quot;Shared&quot;,
+      &quot;Description&quot;: &quot;&quot;,
+      &quot;Type&quot;: &quot;Standard&quot;,
+      &quot;ParentKey&quot;: &quot;&quot;,
+      &quot;FeedType&quot;: &quot;Processes&quot;,
+      &quot;PermissionModel&quot;: &quot;FineGrained&quot;
+    },
+    {
+      &quot;Key&quot;: &quot;6cd43909-9841-4275-a72e-1d4b6a76e6b7&quot;,
+      &quot;Name&quot;: &quot;uipath-platform&quot;,
+      &quot;Path&quot;: &quot;Shared/uipath-platform&quot;,
+      &quot;Description&quot;: &quot;&quot;,
+      &quot;Type&quot;: &quot;Standard&quot;,
+      &quot;ParentKey&quot;: &quot;c4359cde-55f0-4f0e-9322-c6cdce74ab4c&quot;,
+      &quot;FeedType&quot;: &quot;Processes&quot;,
+      &quot;PermissionModel&quot;: &quot;FineGrained&quot;
+    },
+    {
+      &quot;Key&quot;: &quot;5da18ec0-7de1-4e57-aaf1-ddc8a369c199&quot;,
+      &quot;Name&quot;: &quot;uipath-maestro-flow&quot;,
+      &quot;Path&quot;: &quot;Shared/uipath-maestro-flow&quot;,
+      &quot;Description&quot;: &quot;&quot;,
+      &quot;Type&quot;: &quot;Standard&quot;,
+      &quot;ParentKey&quot;: &quot;c4359cde-55f0-4f0e-9322-c6cdce74ab4c&quot;,
+      &quot;FeedType&quot;: &quot;Processes&quot;,
+      &quot;PermissionModel&quot;: &quot;FineGrained&quot;
+    },
+    {
+      &quot;Key&quot;: &quot;040287b3-85b2-4052-a4e1-b2c14bd0c49b&quot;,
+      &quot;Name&quot;: &quot;uipath-agents&quot;,
+      &quot;Path&quot;: &quot;Shared/uipath-agents&quot;,
+      &quot;Des
+
+… (truncated, 1887 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#15</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">8.05s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry pull --force --output json 2&gt;&amp;1 | tail -20\necho \&quot;=== search azure ===\&quot;\nuip maestro flow registry search \&quot;azure\&quot; --output json --output-filter \&quot;[*].{NodeType:NodeType,DisplayName:DisplayName,Description:Description,AvailableOnTenant:AvailableOnTenant}\&quot; 2&gt;&amp;1\n&quot;,
+  &quot;description&quot;: &quot;Pull registry and search for azure connector&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>&lt;persisted-output&gt;
+Output too large (48.9KB). Full output saved to: /home/azureuser/.claude/projects/-work-output-artifacts-skill-flow-ipe-dtl-load-by-default-true/34b6a514-b6cf-4bdf-b64b-8d7c23156e10/tool-results/bcl9mkfg8.txt
+
+Preview (first 2KB):
+[ManifestClient] fetchDynamicNodes ok: total=4881 connector nodes=3654 integration trigger nodes=896 agent context nodes=2 external agent nodes=7 orchestrator nodes=264 IXP nodes=45 IXP Models nodes=13
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodePullSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;NodesCount&quot;: 4764,
+    &quot;FromCache&quot;: false,
+    &quot;Source&quot;: &quot;authenticated&quot;,
+    &quot;CacheWritten&quot;: true,
+    &quot;Message&quot;: &quot;Synced fresh nodes&quot;
+  }
+}
+=== search azure ===
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeSearchSuccess&quot;,
+  &quot;Data&quot;: [
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-microsoft-azureformrecognizer.get-analysis-results&quot;,
+      &quot;DisplayName&quot;: &quot;Get Analysis Results&quot;,
+      &quot;Description&quot;: &quot;Retrieve analyzed document results using Azure AI Document Intelligence after a successful analysis operation.&quot;,
+      &quot;AvailableOnTenant&quot;: true
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-microsoft-azureformrecognizer.get-record&quot;,
+      &quot;DisplayName&quot;: &quot;Get Record&quot;
+
+… (truncated, 987 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#16</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">4.31s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;echo \&quot;=== search resource-group ===\&quot;\nuip maestro flow registry search \&quot;resource group\&quot; --output json --output-filter \&quot;[*].{NodeType:NodeType,DisplayName:DisplayName,Description:Description,AvailableOnTenant:AvailableOnTenant}\&quot; 2&gt;&amp;1\necho \&quot;=== search resource manager ===\&quot;\nuip maestro flow registry search \&quot;resource manager\&quot; --output json --output-filter \&quot;[*].{NodeType:NodeType,DisplayName:DisplayName… (68 more chars)&quot;,
+  &quot;description&quot;: &quot;Search registry for resource group / resource manager connector&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>=== search resource-group ===
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeSearchSuccess&quot;,
+  &quot;Data&quot;: [
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-microsoft-azure.create-resource-group&quot;,
+      &quot;DisplayName&quot;: &quot;Create Resource Group&quot;,
+      &quot;Description&quot;: &quot;Create RG&quot;,
+      &quot;AvailableOnTenant&quot;: true
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-microsoft-azure.get-resource-group&quot;,
+      &quot;DisplayName&quot;: &quot;Get Resource Group&quot;,
+      &quot;Description&quot;: &quot;Get Resource Group by ID&quot;,
+      &quot;AvailableOnTenant&quot;: true
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-microsoft-azure.get-security-alert&quot;,
+      &quot;DisplayName&quot;: &quot;Get Security Alert&quot;,
+      &quot;Description&quot;: &quot;Gets the details of a security alert at subscription or resource group level&quot;,
+      &quot;AvailableOnTenant&quot;: true
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-microsoft-azure.list-security-alerts&quot;,
+      &quot;DisplayName&quot;: &quot;List Security Alerts&quot;,
+      &quot;Description&quot;: &quot;List the security alerts by subscription level or resource group level or/and location level&quot;,
+      &quot;AvailableOnTenant&quot;: true
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-microsoft-azure.delete-resource-group&quot;,
+      &quot;DisplayName&quot;: &quot;Delete R
+
+… (truncated, 488 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#17</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.03s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip is connections list \&quot;uipath-microsoft-azure\&quot; --all-folders --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;List connections for uipath-microsoft-azure connector&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;ConnectionList&quot;,
+  &quot;Data&quot;: [
+    {
+      &quot;Id&quot;: &quot;f746b6e5-9aea-4aff-81f1-fbaf460092e9&quot;,
+      &quot;Name&quot;: &quot;Microsoft Azure&quot;,
+      &quot;ConnectorKey&quot;: &quot;uipath-microsoft-azure&quot;,
+      &quot;ConnectorName&quot;: &quot;Microsoft Azure&quot;,
+      &quot;State&quot;: &quot;Enabled&quot;,
+      &quot;Owner&quot;: &quot;sanjeet.manna@uipath.com&quot;,
+      &quot;IsDefault&quot;: &quot;Yes&quot;,
+      &quot;ByoaConnection&quot;: &quot;Yes&quot;,
+      &quot;ElementInstanceId&quot;: 368898,
+      &quot;Folder&quot;: &quot;uipath-maestro-flow&quot;,
+      &quot;FolderKey&quot;: &quot;5da18ec0-7de1-4e57-aaf1-ddc8a369c199&quot;,
+      &quot;Created&quot;: &quot;2026-07-28T12:44:00.326Z&quot;,
+      &quot;Updated&quot;: &quot;2026-08-19T15:25:02.623Z&quot;
+    }
+  ]
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#18</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">561ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/plugins/connector/impl.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Connector Activity Nodes — Implementation
+2	
+3	How to configure connector activity nodes: connection binding, enriched metadata, reference field resolution, and debugging. Connection bindings are emitted by `uip maestro flow node configure` into the flow&#x27;s top-level `bindings[]`; `bindings_v2.json` is regenerated from them at debug/pack time and should never be hand-edited.
+4	
+5	For generic node/edge add, remove, and wiring procedures, see [editing-operations.md](../../editing-operations.md). This guide covers the connector-specific configuration workflow that must follow the generic node add.
+6	
+7	## How Connector Nodes Differ from OOTB
+8	
+9	1. **Connection binding required** — every connector node needs an IS connection (OAuth, API key, etc.) authored in the flow&#x27;s top-level `bindings[]` (which the CLI regenerates into `bindings_v2.json` at debug/pack time). Without it, the node cannot authenticate.
+10	2. **Enriched metadata via `--connection-id`** — call `registry get` with `--connection-id` to get connection-aware field metadata. Without it, only base fields are returned — custom fields, dynamic enums, and reference resolution are missing.
+11	3. **`inputs.detail` object** —
+
+… (truncated, 66612 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#19</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">10.16s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip solution init \&quot;DTLLoadByDefaultTrueTest\&quot; --output json \\\n  &amp;&amp; cd \&quot;DTLLoadByDefaultTrueTest\&quot; \\\n  &amp;&amp; uip maestro flow init \&quot;DTLLoadByDefaultTrueTest\&quot; --output json \\\n  &amp;&amp; cd \&quot;DTLLoadByDefaultTrueTest\&quot; \\\n  &amp;&amp; uip maestro flow registry pull --output json \\\n  &amp;&amp; uip maestro flow node add \&quot;DTLLoadByDefaultTrueTest.flow\&quot; uipath.connector.uipath-microsoft-azure.create-resource-group --label \&quot;Create Re… (28 more chars)&quot;,
+  &quot;description&quot;: &quot;Scaffold solution, flow project, pull registry, add create-resource-group node&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;SolutionInit&quot;,
+  &quot;Data&quot;: {
+    &quot;Status&quot;: &quot;Created successfully&quot;,
+    &quot;Path&quot;: &quot;/work/output/artifacts/skill-flow-ipe-dtl-load-by-default-true/DTLLoadByDefaultTrueTest/DTLLoadByDefaultTrueTest.uipx&quot;,
+    &quot;NextSteps&quot;: &quot;Read /work/output/artifacts/skill-flow-ipe-dtl-load-by-default-true/DTLLoadByDefaultTrueTest/AGENTS.md or /work/output/artifacts/skill-flow-ipe-dtl-load-by-default-true/DTLLoadByDefaultTrueTest/CLAUDE.md to understand the solution lifecycle, project types that can be used inside a solution, and related uip command references.&quot;
+  }
+}
+2026-08-19 15:36:21 INFO  [ResourceBuilder:ProjectCreateCommandHandler] Creating project [object Object]
+2026-08-19 15:36:21 INFO  [ResourceBuilder:MultiFileSolutionDefinitionProvider] Reading multi-file solution definition for solution %s /work/output/artifacts/skill-flow-ipe-dtl-load-by-default-true/DTLLoadByDefaultTrueTest
+2026-08-19 15:36:21 INFO  [ResourceBuilder:ProjectCreateCommandHandler] Generate artefact resources for project [object Object]
+2026-08-19 15:36:21 INFO  [ResourceBuilder:SolutionsMetadataReader] Reading metadata from %s. SolutionsMetadataReader
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;Flo
+
+… (truncated, 1990 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#20</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">10.22s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry get core.control.end --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Get End node definition&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeGetSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;Node&quot;: {
+      &quot;nodeType&quot;: &quot;core.control.end&quot;,
+      &quot;version&quot;: &quot;1.0&quot;,
+      &quot;category&quot;: &quot;control-flow&quot;,
+      &quot;description&quot;: &quot;Mark the end of a process path&quot;,
+      &quot;tags&quot;: [
+        &quot;control-flow&quot;,
+        &quot;end&quot;,
+        &quot;finish&quot;,
+        &quot;complete&quot;
+      ],
+      &quot;sortOrder&quot;: 65,
+      &quot;display&quot;: {
+        &quot;label&quot;: &quot;End&quot;,
+        &quot;icon&quot;: &quot;circle-check&quot;,
+        &quot;shape&quot;: &quot;circle&quot;
+      },
+      &quot;handleConfiguration&quot;: [
+        {
+          &quot;position&quot;: &quot;left&quot;,
+          &quot;handles&quot;: [
+            {
+              &quot;id&quot;: &quot;input&quot;,
+              &quot;type&quot;: &quot;target&quot;,
+              &quot;handleType&quot;: &quot;input&quot;
+            }
+          ]
+        }
+      ],
+      &quot;model&quot;: {
+        &quot;type&quot;: &quot;bpmn:EndEvent&quot;
+      },
+      &quot;runtimeConstraints&quot;: {
+        &quot;exclude&quot;: [
+          &quot;api-function&quot;
+        ]
+      }
+    }
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#21</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">10.60s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry get uipath.connector.uipath-microsoft-azure.create-resource-group --connection-id \&quot;f746b6e5-9aea-4aff-81f1-fbaf460092e9\&quot; --output json 2&gt;&amp;1 &gt; /tmp/crg_registry.json; wc -l /tmp/crg_registry.json&quot;,
+  &quot;description&quot;: &quot;Get enriched create-resource-group node definition with connection&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>335 /tmp/crg_registry.json</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#22</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">7ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/tmp/crg_registry.json&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	{
+2	  &quot;Result&quot;: &quot;Success&quot;,
+3	  &quot;Code&quot;: &quot;NodeGetSuccess&quot;,
+4	  &quot;Data&quot;: {
+5	    &quot;Node&quot;: {
+6	      &quot;nodeType&quot;: &quot;uipath.connector.uipath-microsoft-azure.create-resource-group&quot;,
+7	      &quot;version&quot;: &quot;1.0.0&quot;,
+8	      &quot;category&quot;: &quot;connector.196513&quot;,
+9	      &quot;tags&quot;: [
+10	        &quot;connector&quot;,
+11	        &quot;activity&quot;
+12	      ],
+13	      &quot;sortOrder&quot;: 520,
+14	      &quot;supportsErrorHandling&quot;: true,
+15	      &quot;description&quot;: &quot;Create RG&quot;,
+16	      &quot;display&quot;: {
+17	        &quot;label&quot;: &quot;Create Resource Group&quot;,
+18	        &quot;description&quot;: &quot;Create RG&quot;,
+19	        &quot;icon&quot;: &quot;https://alpha.uipath.com/311c6049-4966-4ef2-a6f3-8ceccaf38d54/studio_/typecache/icons/13dcd33fa6ea0c047e22169242e1209fe698a189bd1007605feaacbe6d51b530.svg&quot;,
+20	        &quot;sourceDisplayName&quot;: &quot;Microsoft Azure&quot;
+21	      },
+22	      &quot;handleConfiguration&quot;: [
+23	        {
+24	          &quot;position&quot;: &quot;left&quot;,
+25	          &quot;handles&quot;: [
+26	            {
+27	              &quot;id&quot;: &quot;input&quot;,
+28	              &quot;type&quot;: &quot;target&quot;,
+29	              &quot;handleType&quot;: &quot;input&quot;,
+30	              &quot;label&quot;: &quot;&quot;
+31	            }
+32	          ]
+33	        },
+34	        {
+35	          &quot;position&quot;: &quot;right&quot;,
+36	          &quot;handles&quot;: [
+37	            {
+38	              &quot;id&quot;: &quot;output&quot;,
+39	  
+
+… (truncated, 10709 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#23</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">504ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip is resources describe \&quot;uipath-microsoft-azure\&quot; \&quot;resourceGroup::resource\&quot; --connection-id \&quot;f746b6e5-9aea-4aff-81f1-fbaf460092e9\&quot; --operation Create --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Describe create-resource-group resource for full metadata&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;ResourceMetadata&quot;,
+  &quot;Data&quot;: {
+    &quot;Name&quot;: &quot;resourceGroup::resource&quot;,
+    &quot;DisplayName&quot;: &quot;Resource Group&quot;,
+    &quot;ElementKey&quot;: &quot;uipath-microsoft-azure&quot;,
+    &quot;Operation&quot;: {
+      &quot;Method&quot;: &quot;POST&quot;,
+      &quot;Name&quot;: &quot;Create&quot;,
+      &quot;Description&quot;: &quot;Replace a ResourceGroup resource {resourceGroupName} by ID&quot;,
+      &quot;Path&quot;: &quot;/resourceGroup/resource/{resourceGroupName}&quot;,
+      &quot;Curated&quot;: &quot;Create Resource Group&quot;
+    },
+    &quot;Parameters&quot;: [
+      {
+        &quot;Name&quot;: &quot;resourceGroupName&quot;,
+        &quot;Type&quot;: &quot;path&quot;,
+        &quot;DataType&quot;: &quot;string&quot;,
+        &quot;Required&quot;: true,
+        &quot;DisplayName&quot;: &quot;Name&quot;,
+        &quot;Description&quot;: &quot;The resource group name&quot;
+      }
+    ],
+    &quot;RequestFields&quot;: [
+      {
+        &quot;Name&quot;: &quot;location&quot;,
+        &quot;Type&quot;: &quot;string&quot;,
+        &quot;DisplayName&quot;: &quot;Resource group location&quot;,
+        &quot;Description&quot;: &quot;The geographical location where the resource group is hosted.&quot;,
+        &quot;Reference&quot;: {
+          &quot;ObjectName&quot;: &quot;locations&quot;,
+          &quot;LookupNames&quot;: [
+            &quot;metadata.pairedRegion[*].name&quot;
+          ],
+          &quot;LookupValue&quot;: &quot;metadata.pairedRegion[*].name&quot;,
+          &quot;Path&quot;: &quot;/locations&quot;,
+          &quot;Hydration&quot;: {}
+        },
+        &quot;Required&quot;: 
+
+… (truncated, 2767 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#24</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">883ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip is resources run list \&quot;uipath-microsoft-azure\&quot; \&quot;locations\&quot; --connection-id \&quot;f746b6e5-9aea-4aff-81f1-fbaf460092e9\&quot; --output json 2&gt;&amp;1 | head -100&quot;,
+  &quot;description&quot;: &quot;Resolve locations reference field for the location dropdown&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Failure&quot;,
+  &quot;Message&quot;: &quot;401 Unauthorized&quot;,
+  &quot;Instructions&quot;: &quot;{\&quot;requestId\&quot;:\&quot;6a85cd98e4b0ca2482a89573\&quot;,\&quot;providerErrorCode\&quot;:401,\&quot;message\&quot;:\&quot;Unauthorized\&quot;,\&quot;providerMessage\&quot;:\&quot;error - {code=InvalidAuthenticationToken, message=The access token is invalid.}\&quot;}&quot;,
+  &quot;ErrorCode&quot;: &quot;unknown_error&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#25</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">600ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip is connections ping \&quot;f746b6e5-9aea-4aff-81f1-fbaf460092e9\&quot; --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Check connection health via ping&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;ConnectionPing&quot;,
+  &quot;Data&quot;: {
+    &quot;ConnectionId&quot;: &quot;f746b6e5-9aea-4aff-81f1-fbaf460092e9&quot;,
+    &quot;Status&quot;: &quot;Enabled&quot;,
+    &quot;Message&quot;: &quot;Connection is active.&quot;
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#26</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">632ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip is resources run list \&quot;uipath-microsoft-azure\&quot; \&quot;locations\&quot; --connection-id \&quot;f746b6e5-9aea-4aff-81f1-fbaf460092e9\&quot; --output json 2&gt;&amp;1 | head -150&quot;,
+  &quot;description&quot;: &quot;Retry locations lookup&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Failure&quot;,
+  &quot;Message&quot;: &quot;401 Unauthorized&quot;,
+  &quot;Instructions&quot;: &quot;{\&quot;requestId\&quot;:\&quot;6a85cda1e4b0927dcbc5c99a\&quot;,\&quot;providerErrorCode\&quot;:401,\&quot;message\&quot;:\&quot;Unauthorized\&quot;,\&quot;providerMessage\&quot;:\&quot;error - {code=InvalidAuthenticationToken, message=The access token is invalid.}\&quot;}&quot;,
+  &quot;ErrorCode&quot;: &quot;unknown_error&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#27</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">5ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/.uipath/.skills/skills/uipath-platform/references/integration-service/resources.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Resources
+2	
+3	Resources represent the data objects available through a connector (e.g., Salesforce Account, Contact, Opportunity). Each resource supports a set of CRUD operations.
+4	
+5	&gt; Full command syntax and options: [uip-commands.md — Integration Service](../uip-commands.md#integration-service-is). Domain-specific usage patterns are shown inline below.
+6	
+7	## Contents
+8	- Listing and Describing Resources
+9	- Response Fields
+10	- Describe Response
+11	- Describe Failures
+12	- Parent-Field-Driven Custom Fields (api-type ObjectActions)
+13	- Execute Operations
+14	- Pagination
+15	- Execute Error Handling
+16	
+17	For reference field resolution (simple refs, dependency chains, required field validation), see [reference-resolution.md](reference-resolution.md).
+18	
+19	---
+20	
+21	## Listing and Describing Resources
+22	
+23	**Always pass `--connection-id`** to get connection-specific metadata including custom objects and fields. Without it, only standard objects/fields are returned.
+24	
+25	## Response Fields
+26	
+27	| Field | Description |
+28	|---|---|
+29	| **`Name`** | Resource identifier (used in commands) |
+30	| `DisplayName` | Human-readable name |
+31	| `Path` | API path for this re
+
+… (truncated, 11510 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#28</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">366ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip is resources run list \&quot;uipath-microsoft-azure\&quot; \&quot;locations\&quot; --connection-id \&quot;f746b6e5-9aea-4aff-81f1-fbaf460092e9\&quot; --refresh --output json 2&gt;&amp;1 | head -100&quot;,
+  &quot;description&quot;: &quot;Retry locations lookup with cache refresh&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;ValidationError&quot;,
+  &quot;ErrorCode&quot;: &quot;invalid_argument&quot;,
+  &quot;Message&quot;: &quot;error: unknown option &#x27;--refresh&#x27;&quot;,
+  &quot;Instructions&quot;: &quot;Run &#x27;uip is resources run list uipath-microsoft-azure locations --help&#x27; for usage information.&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#29</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">911ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip is resources run list --help 2&gt;&amp;1\necho \&quot;---\&quot;\nuip is resources list \&quot;uipath-microsoft-azure\&quot; --connection-id \&quot;f746b6e5-9aea-4aff-81f1-fbaf460092e9\&quot; --output json 2&gt;&amp;1 | head -50&quot;,
+  &quot;description&quot;: &quot;Check run list help and resources list&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>                           uip is resources run list                            
+                                List all records                                
+                Use --help with nested commands for more detail.                
+
+┌─ Usage ──────────────────────────────────────────────────────────────────────┐
+│ uip is resources run list [options] &lt;connector-key&gt; &lt;object-name&gt;            │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Arguments ──────────────────────────────────────────────────────────────────┐
+│ connector-key   Connector key                                                │
+│ object-name     Object name                                                  │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Options ────────────────────────────────────────────────────────────────────┐
+│ --connection-id &lt;id&gt;           Connection/Instance ID (required)             │
+│ --query &lt;params&gt;               Query parameters (key=value&amp;key=value or      │
+│                                JSON)                                         │
+│ -h, --help                     display help for command      
+
+… (truncated, 3414 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#30</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">496ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip is resources list \&quot;uipath-microsoft-azure\&quot; --connection-id \&quot;f746b6e5-9aea-4aff-81f1-fbaf460092e9\&quot; --output json --output-filter \&quot;[?Name==&#x27;locations&#x27;]\&quot; 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Check if locations resource exists in connector catalog&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;ResourceList&quot;,
+  &quot;Data&quot;: [
+    {
+      &quot;Name&quot;: &quot;locations&quot;,
+      &quot;DisplayName&quot;: &quot;Locations&quot;,
+      &quot;Path&quot;: &quot;/locations&quot;,
+      &quot;Type&quot;: &quot;standard&quot;,
+      &quot;SubType&quot;: &quot;standard&quot;,
+      &quot;Custom&quot;: &quot;no&quot;,
+      &quot;ElementKey&quot;: &quot;uipath-microsoft-azure&quot;
+    }
+  ]
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#31</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-err">ERROR</span>
+      <span class="tool-duration">1.21s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip is connections ping \&quot;f746b6e5-9aea-4aff-81f1-fbaf460092e9\&quot; --output json 2&gt;&amp;1\necho \&quot;---retry run list---\&quot;\nuip is resources run list \&quot;uipath-microsoft-azure\&quot; \&quot;locations\&quot; --connection-id \&quot;f746b6e5-9aea-4aff-81f1-fbaf460092e9\&quot; --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Re-ping connection and retry locations lookup&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Exit code 1
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;ConnectionPing&quot;,
+  &quot;Data&quot;: {
+    &quot;ConnectionId&quot;: &quot;f746b6e5-9aea-4aff-81f1-fbaf460092e9&quot;,
+    &quot;Status&quot;: &quot;Enabled&quot;,
+    &quot;Message&quot;: &quot;Connection is active.&quot;
+  }
+}
+---retry run list---
+{
+  &quot;Result&quot;: &quot;Failure&quot;,
+  &quot;Message&quot;: &quot;401 Unauthorized&quot;,
+  &quot;Instructions&quot;: &quot;{\&quot;requestId\&quot;:\&quot;6a85cdbfe4b0ca2482a89638\&quot;,\&quot;providerErrorCode\&quot;:401,\&quot;message\&quot;:\&quot;Unauthorized\&quot;,\&quot;providerMessage\&quot;:\&quot;error - {code=InvalidAuthenticationToken, message=The access token is invalid.}\&quot;}&quot;,
+  &quot;ErrorCode&quot;: &quot;unknown_error&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}</pre>
+    <h4>Error</h4><pre>Exit code 1
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;ConnectionPing&quot;,
+  &quot;Data&quot;: {
+    &quot;ConnectionId&quot;: &quot;f746b6e5-9aea-4aff-81f1-fbaf460092e9&quot;,
+    &quot;Status&quot;: &quot;Enabled&quot;,
+    &quot;Message&quot;: &quot;Connection is active.&quot;
+  }
+}
+---retry run list---
+{
+  &quot;Result&quot;: &quot;Failure&quot;,
+  &quot;Message&quot;: &quot;401 Unauthorized&quot;,
+  &quot;Instructions&quot;: &quot;{\&quot;requestId\&quot;:\&quot;6a85cdbfe4b0ca2482a89638\&quot;,\&quot;providerErrorCode\&quot;:401,\&quot;message\&quot;:\&quot;Unauthorized\&quot;,\&quot;providerMessage\&quot;:\&quot;error - {code=InvalidAuthenticationToken, message=The access token is invalid.}\&quot;}&quot;,
+  &quot;ErrorCode&quot;: &quot;unknown_error&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}</pre>
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#32</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">516ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip is resources execute list \&quot;uipath-microsoft-azure\&quot; \&quot;locations\&quot; --connection-id \&quot;f746b6e5-9aea-4aff-81f1-fbaf460092e9\&quot; --output json 2&gt;&amp;1 | head -80&quot;,
+  &quot;description&quot;: &quot;Try execute list instead of run list for locations&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;ValidationError&quot;,
+  &quot;ErrorCode&quot;: &quot;invalid_argument&quot;,
+  &quot;Message&quot;: &quot;error: unknown command &#x27;execute&#x27;&quot;,
+  &quot;Instructions&quot;: &quot;Run &#x27;uip --help&#x27; to list available commands.&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#33</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.11s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;echo \&quot;=== try resourceGroup list (sanity check that connection works for other objects) ===\&quot;\nuip is resources run list \&quot;uipath-microsoft-azure\&quot; \&quot;resourceGroup\&quot; --connection-id \&quot;f746b6e5-9aea-4aff-81f1-fbaf460092e9\&quot; --output json 2&gt;&amp;1 | head -60&quot;,
+  &quot;description&quot;: &quot;Sanity check connection works for other resource objects&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>=== try resourceGroup list (sanity check that connection works for other objects) ===
+{
+  &quot;Result&quot;: &quot;Failure&quot;,
+  &quot;Message&quot;: &quot;401 Unauthorized&quot;,
+  &quot;Instructions&quot;: &quot;{\&quot;requestId\&quot;:\&quot;6a85cdcde4b00f843af77257\&quot;,\&quot;providerErrorCode\&quot;:401,\&quot;message\&quot;:\&quot;Unauthorized\&quot;,\&quot;providerMessage\&quot;:\&quot;error - {code=InvalidAuthenticationToken, message=The access token is invalid.}\&quot;}&quot;,
+  &quot;ErrorCode&quot;: &quot;unknown_error&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#34</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">497ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip is connections edit --help 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Check connections edit command options&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>                            uip is connections edit                             
+                   Re-authenticate a connection (OAuth flow)                    
+                Use --help with nested commands for more detail.                
+
+┌─ Usage ──────────────────────────────────────────────────────────────────────┐
+│ uip is connections edit [options] &lt;connection-id&gt;                            │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Arguments ──────────────────────────────────────────────────────────────────┐
+│ connection-id   Connection ID                                                │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Options ────────────────────────────────────────────────────────────────────┐
+│ --no-browser                   Don&#x27;t auto-open browser                       │
+│ --no-wait                      Return pending authorization details without  │
+│                                polling                                       │
+│ -h, --help                     display help for command                      │
+│ --output                       Output format (default: json) 
+
+… (truncated, 1314 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#35</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">339ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip is resources describe \&quot;uipath-microsoft-azure\&quot; \&quot;locations\&quot; --connection-id \&quot;f746b6e5-9aea-4aff-81f1-fbaf460092e9\&quot; --output json 2&gt;&amp;1 | head -60&quot;,
+  &quot;description&quot;: &quot;Try describe on locations object to see if metadata call also 401s&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;ResourceMetadata&quot;,
+  &quot;Data&quot;: {
+    &quot;Name&quot;: &quot;locations&quot;,
+    &quot;DisplayName&quot;: &quot;Locations&quot;,
+    &quot;ElementKey&quot;: &quot;uipath-microsoft-azure&quot;,
+    &quot;AvailableOperations&quot;: [
+      {
+        &quot;Method&quot;: &quot;GET&quot;,
+        &quot;Name&quot;: &quot;List&quot;,
+        &quot;Description&quot;: &quot;Search for Locations&quot;,
+        &quot;Path&quot;: &quot;/locations&quot;
+      }
+    ],
+    &quot;Hint&quot;: &quot;Use --operation &lt;Create|List|Retrieve|Update|Delete|Replace&gt; to see fields for a specific operation.&quot;
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#36</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">474ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip is resources list \&quot;uipath-microsoft-azure\&quot; --connection-id \&quot;f746b6e5-9aea-4aff-81f1-fbaf460092e9\&quot; --output json --output-filter \&quot;[?contains(Name,&#x27;subscription&#x27;)]\&quot; 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Find subscription-related object to test if 401 is connector-wide&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;ResourceList&quot;,
+  &quot;Data&quot;: []
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#37</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">386ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip is resources describe \&quot;uipath-microsoft-azure\&quot; \&quot;locations\&quot; --connection-id \&quot;f746b6e5-9aea-4aff-81f1-fbaf460092e9\&quot; --operation List --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Describe locations List operation for required params&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;ResourceMetadata&quot;,
+  &quot;Data&quot;: {
+    &quot;Name&quot;: &quot;locations&quot;,
+    &quot;DisplayName&quot;: &quot;Locations&quot;,
+    &quot;ElementKey&quot;: &quot;uipath-microsoft-azure&quot;,
+    &quot;Operation&quot;: {
+      &quot;Method&quot;: &quot;GET&quot;,
+      &quot;Name&quot;: &quot;List&quot;,
+      &quot;Description&quot;: &quot;Search for Locations&quot;,
+      &quot;Path&quot;: &quot;/locations&quot;
+    },
+    &quot;Parameters&quot;: [
+      {
+        &quot;Name&quot;: &quot;pageSize&quot;,
+        &quot;Type&quot;: &quot;query&quot;,
+        &quot;DataType&quot;: &quot;integer&quot;,
+        &quot;Required&quot;: false,
+        &quot;DisplayName&quot;: &quot;Page size&quot;,
+        &quot;Description&quot;: &quot;The number of resources to return in a given page&quot;
+      },
+      {
+        &quot;Name&quot;: &quot;nextPage&quot;,
+        &quot;Type&quot;: &quot;query&quot;,
+        &quot;DataType&quot;: &quot;string&quot;,
+        &quot;Required&quot;: false,
+        &quot;DisplayName&quot;: &quot;Next page&quot;,
+        &quot;Description&quot;: &quot;The next page token&quot;
+      },
+      {
+        &quot;Name&quot;: &quot;includeExtendedLocations&quot;,
+        &quot;Type&quot;: &quot;query&quot;,
+        &quot;DataType&quot;: &quot;boolean&quot;,
+        &quot;Required&quot;: false,
+        &quot;DisplayName&quot;: &quot;IncludeExtendedLocations&quot;,
+        &quot;Description&quot;: &quot;Whether to include extended locations.&quot;
+      }
+    ],
+    &quot;RequestFields&quot;: [],
+    &quot;ResponseFields&quot;: [
+      {
+        &quot;Name&quot;: &quot;metadata.geographyGroup&quot;,
+        &quot;Type&quot;: &quot;string&quot;,
+        &quot;DisplayName&quot;: &quot;Geograp
+
+… (truncated, 3221 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#38</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-err">ERROR</span>
+      <span class="tool-duration">694ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip is resources run list \&quot;uipath-microsoft-azure\&quot; \&quot;locations\&quot; --connection-id \&quot;f746b6e5-9aea-4aff-81f1-fbaf460092e9\&quot; --query \&quot;pageSize=5\&quot; --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Retry locations list with explicit pageSize param&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Exit code 1
+{
+  &quot;Result&quot;: &quot;Failure&quot;,
+  &quot;Message&quot;: &quot;401 Unauthorized&quot;,
+  &quot;Instructions&quot;: &quot;{\&quot;requestId\&quot;:\&quot;6a85ce0ee4b00f843af77367\&quot;,\&quot;providerErrorCode\&quot;:401,\&quot;message\&quot;:\&quot;Unauthorized\&quot;,\&quot;providerMessage\&quot;:\&quot;error - {code=InvalidAuthenticationToken, message=The access token is invalid.}\&quot;}&quot;,
+  &quot;ErrorCode&quot;: &quot;unknown_error&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}</pre>
+    <h4>Error</h4><pre>Exit code 1
+{
+  &quot;Result&quot;: &quot;Failure&quot;,
+  &quot;Message&quot;: &quot;401 Unauthorized&quot;,
+  &quot;Instructions&quot;: &quot;{\&quot;requestId\&quot;:\&quot;6a85ce0ee4b00f843af77367\&quot;,\&quot;providerErrorCode\&quot;:401,\&quot;message\&quot;:\&quot;Unauthorized\&quot;,\&quot;providerMessage\&quot;:\&quot;error - {code=InvalidAuthenticationToken, message=The access token is invalid.}\&quot;}&quot;,
+  &quot;ErrorCode&quot;: &quot;unknown_error&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}</pre>
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#39</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.07s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;timeout 20 uip is connections edit \&quot;f746b6e5-9aea-4aff-81f1-fbaf460092e9\&quot; --no-browser --no-wait --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Attempt non-interactive re-authentication to check for pending auth URL&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;ConnectionAuthorizationPending&quot;,
+  &quot;Data&quot;: {
+    &quot;Status&quot;: &quot;AuthorizationPending&quot;,
+    &quot;SessionId&quot;: &quot;e5ba1fb9-9eca-44c0-9309-2311ad448c88&quot;,
+    &quot;AuthUrl&quot;: &quot;https://alpha.uipath.com/codereval/defaulttenant/provisioning_/pre-auth?session_id=e5ba1fb9-9eca-44c0-9309-2311ad448c88&amp;state=bGFuZz0&quot;,
+    &quot;Instructions&quot;: &quot;Open AuthUrl to authorize the connection, then run &#x27;uip is connections list&#x27; or &#x27;uip is connections ping &lt;connection-id&gt;&#x27; to verify the connection.&quot;,
+    &quot;ConnectionId&quot;: &quot;f746b6e5-9aea-4aff-81f1-fbaf460092e9&quot;,
+    &quot;ExpiresAt&quot;: 1787154703000
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#40</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.11s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip is connections list \&quot;uipath-microsoft-azure\&quot; --all-folders --refresh --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Refresh connections cache to see if token refreshes&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;ConnectionList&quot;,
+  &quot;Data&quot;: [
+    {
+      &quot;Id&quot;: &quot;f746b6e5-9aea-4aff-81f1-fbaf460092e9&quot;,
+      &quot;Name&quot;: &quot;Microsoft Azure&quot;,
+      &quot;ConnectorKey&quot;: &quot;uipath-microsoft-azure&quot;,
+      &quot;ConnectorName&quot;: &quot;Microsoft Azure&quot;,
+      &quot;State&quot;: &quot;Enabled&quot;,
+      &quot;Owner&quot;: &quot;sanjeet.manna@uipath.com&quot;,
+      &quot;IsDefault&quot;: &quot;Yes&quot;,
+      &quot;ByoaConnection&quot;: &quot;Yes&quot;,
+      &quot;ElementInstanceId&quot;: 368898,
+      &quot;Folder&quot;: &quot;uipath-maestro-flow&quot;,
+      &quot;FolderKey&quot;: &quot;5da18ec0-7de1-4e57-aaf1-ddc8a369c199&quot;,
+      &quot;Created&quot;: &quot;2026-07-28T12:44:00.326Z&quot;,
+      &quot;Updated&quot;: &quot;2026-08-19T15:37:35.113Z&quot;
+    }
+  ]
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#41</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-err">ERROR</span>
+      <span class="tool-duration">5.65s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;sleep 5\nuip is resources run list \&quot;uipath-microsoft-azure\&quot; \&quot;locations\&quot; --connection-id \&quot;f746b6e5-9aea-4aff-81f1-fbaf460092e9\&quot; --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Wait and retry locations lookup once more&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Exit code 1
+{
+  &quot;Result&quot;: &quot;Failure&quot;,
+  &quot;Message&quot;: &quot;401 Unauthorized&quot;,
+  &quot;Instructions&quot;: &quot;{\&quot;requestId\&quot;:\&quot;6a85ce45e4b0ca2482a898b6\&quot;,\&quot;providerErrorCode\&quot;:401,\&quot;message\&quot;:\&quot;Unauthorized\&quot;,\&quot;providerMessage\&quot;:\&quot;error - {code=InvalidAuthenticationToken, message=The access token is invalid.}\&quot;}&quot;,
+  &quot;ErrorCode&quot;: &quot;unknown_error&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}</pre>
+    <h4>Error</h4><pre>Exit code 1
+{
+  &quot;Result&quot;: &quot;Failure&quot;,
+  &quot;Message&quot;: &quot;401 Unauthorized&quot;,
+  &quot;Instructions&quot;: &quot;{\&quot;requestId\&quot;:\&quot;6a85ce45e4b0ca2482a898b6\&quot;,\&quot;providerErrorCode\&quot;:401,\&quot;message\&quot;:\&quot;Unauthorized\&quot;,\&quot;providerMessage\&quot;:\&quot;error - {code=InvalidAuthenticationToken, message=The access token is invalid.}\&quot;}&quot;,
+  &quot;ErrorCode&quot;: &quot;unknown_error&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}</pre>
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#42</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">4ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-ipe-dtl-load-by-default-true/DTLLoadByDefaultTrueTest/DTLLoadByDefaultTrueTest/DTLLoadByDefaultTrueTest.flow&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	{
+2	  &quot;id&quot;: &quot;c7f34b91-81ec-4c38-95a4-54f539e27cd5&quot;,
+3	  &quot;version&quot;: &quot;1.9&quot;,
+4	  &quot;name&quot;: &quot;DTLLoadByDefaultTrueTest&quot;,
+5	  &quot;nodes&quot;: [
+6	    {
+7	      &quot;id&quot;: &quot;start&quot;,
+8	      &quot;type&quot;: &quot;core.trigger.manual&quot;,
+9	      &quot;typeVersion&quot;: &quot;1.0&quot;,
+10	      &quot;display&quot;: {
+11	        &quot;label&quot;: &quot;Manual trigger&quot;
+12	      },
+13	      &quot;inputs&quot;: {
+14	        &quot;entryPointId&quot;: &quot;d0658cd0-141b-4166-b9fd-b09d5e713705&quot;,
+15	        &quot;isDefaultEntryPoint&quot;: true
+16	      }
+17	    },
+18	    {
+19	      &quot;id&quot;: &quot;createResourceGroup1&quot;,
+20	      &quot;type&quot;: &quot;uipath.connector.uipath-microsoft-azure.create-resource-group&quot;,
+21	      &quot;typeVersion&quot;: &quot;1.0.0&quot;,
+22	      &quot;display&quot;: {
+23	        &quot;label&quot;: &quot;Create Resource Group&quot;
+24	      },
+25	      &quot;inputs&quot;: {}
+26	    }
+27	  ],
+28	  &quot;edges&quot;: [],
+29	  &quot;definitions&quot;: [
+30	    {
+31	      &quot;nodeType&quot;: &quot;core.trigger.manual&quot;,
+32	      &quot;version&quot;: &quot;1.0&quot;,
+33	      &quot;category&quot;: &quot;trigger&quot;,
+34	      &quot;description&quot;: &quot;Start the process manually&quot;,
+35	      &quot;tags&quot;: [
+36	        &quot;trigger&quot;,
+37	        &quot;start&quot;,
+38	        &quot;manual&quot;
+39	      ],
+40	      &quot;sortOrder&quot;: 80,
+41	      &quot;display&quot;: {
+42	        &quot;label&quot;: &quot;Manual trigger&quot;,
+43	        &quot;icon&quot;: &quot;play&quot;,
+44	        &quot;shape&quot;: &quot;circle&quot;
+45	      },
+46	      &quot;handleC
+
+… (truncated, 11789 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#43</span>
+      <span class="tool-name">Edit</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">25ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;replace_all&quot;: false,
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-ipe-dtl-load-by-default-true/DTLLoadByDefaultTrueTest/DTLLoadByDefaultTrueTest/DTLLoadByDefaultTrueTest.flow&quot;,
+  &quot;old_string&quot;: &quot;  \&quot;nodes\&quot;: [\n    {\n      \&quot;id\&quot;: \&quot;start\&quot;,&quot;,
+  &quot;new_string&quot;: &quot;  \&quot;nodes\&quot;: [\n    {\n      \&quot;id\&quot;: \&quot;end\&quot;,\n      \&quot;type\&quot;: \&quot;core.control.end\&quot;,\n      \&quot;typeVersion\&quot;: \&quot;1.0\&quot;,\n      \&quot;display\&quot;: {\n        \&quot;label\&quot;: \&quot;End\&quot;\n      },\n      \&quot;inputs\&quot;: {}\n    },\n    {\n      \&quot;id\&quot;: \&quot;start\&quot;,&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>The file /work/output/artifacts/skill-flow-ipe-dtl-load-by-default-true/DTLLoadByDefaultTrueTest/DTLLoadByDefaultTrueTest/DTLLoadByDefaultTrueTest.flow has been updated successfully. (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#44</span>
+      <span class="tool-name">Edit</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">23ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;replace_all&quot;: false,
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-ipe-dtl-load-by-default-true/DTLLoadByDefaultTrueTest/DTLLoadByDefaultTrueTest/DTLLoadByDefaultTrueTest.flow&quot;,
+  &quot;old_string&quot;: &quot;  \&quot;edges\&quot;: [],\n  \&quot;definitions\&quot;: [\n    {\n      \&quot;nodeType\&quot;: \&quot;core.trigger.manual\&quot;,&quot;,
+  &quot;new_string&quot;: &quot;  \&quot;edges\&quot;: [\n    {\n      \&quot;id\&quot;: \&quot;edge_start_output_createResourceGroup1_input\&quot;,\n      \&quot;sourceNodeId\&quot;: \&quot;start\&quot;,\n      \&quot;sourcePort\&quot;: \&quot;output\&quot;,\n      \&quot;targetNodeId\&quot;: \&quot;createResourceGroup1\&quot;,\n      \&quot;targetPort\&quot;: \&quot;input\&quot;\n    },\n    {\n      \&quot;id\&quot;: \&quot;edge_createResourceGroup1_output_end_input\&quot;,\n      \&quot;sourceNodeId\&quot;: \&quot;createResourceGroup1\&quot;,\n      \&quot;sourcePort\&quot;: \&quot;output\&quot;,\n      \&quot;targetNodeId\&quot;: \&quot;end\&quot;,\n      \&quot;tar… (894 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>The file /work/output/artifacts/skill-flow-ipe-dtl-load-by-default-true/DTLLoadByDefaultTrueTest/DTLLoadByDefaultTrueTest/DTLLoadByDefaultTrueTest.flow has been updated successfully. (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#45</span>
+      <span class="tool-name">Edit</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">23ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;replace_all&quot;: false,
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-ipe-dtl-load-by-default-true/DTLLoadByDefaultTrueTest/DTLLoadByDefaultTrueTest/DTLLoadByDefaultTrueTest.flow&quot;,
+  &quot;old_string&quot;: &quot;  \&quot;layout\&quot;: {\n    \&quot;nodes\&quot;: {\n      \&quot;start\&quot;: {\n        \&quot;position\&quot;: {\n          \&quot;x\&quot;: 256,\n          \&quot;y\&quot;: 144\n        }\n      },\n      \&quot;createResourceGroup1\&quot;: {\n        \&quot;position\&quot;: {\n          \&quot;x\&quot;: 0,\n          \&quot;y\&quot;: 0\n        }\n      }\n    }\n  }&quot;,
+  &quot;new_string&quot;: &quot;  \&quot;layout\&quot;: {\n    \&quot;nodes\&quot;: {\n      \&quot;start\&quot;: {\n        \&quot;position\&quot;: {\n          \&quot;x\&quot;: 256,\n          \&quot;y\&quot;: 144\n        }\n      },\n      \&quot;createResourceGroup1\&quot;: {\n        \&quot;position\&quot;: {\n          \&quot;x\&quot;: 0,\n          \&quot;y\&quot;: 0\n        }\n      },\n      \&quot;end\&quot;: {\n        \&quot;position\&quot;: {\n          \&quot;x\&quot;: 512,\n          \&quot;y\&quot;: 144\n        }\n      }\n    }\n  }&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>The file /work/output/artifacts/skill-flow-ipe-dtl-load-by-default-true/DTLLoadByDefaultTrueTest/DTLLoadByDefaultTrueTest/DTLLoadByDefaultTrueTest.flow has been updated successfully. (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#46</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-err">ERROR</span>
+      <span class="tool-duration">751ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip is resources run list \&quot;uipath-microsoft-azure\&quot; \&quot;locations\&quot; --connection-id \&quot;f746b6e5-9aea-4aff-81f1-fbaf460092e9\&quot; --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Final retry of locations lookup before reporting blocker&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Exit code 1
+{
+  &quot;Result&quot;: &quot;Failure&quot;,
+  &quot;Message&quot;: &quot;401 Unauthorized&quot;,
+  &quot;Instructions&quot;: &quot;{\&quot;requestId\&quot;:\&quot;6a85ce7de4b0ca2482a89a03\&quot;,\&quot;providerErrorCode\&quot;:401,\&quot;message\&quot;:\&quot;Unauthorized\&quot;,\&quot;providerMessage\&quot;:\&quot;error - {code=InvalidAuthenticationToken, message=The access token is invalid.}\&quot;}&quot;,
+  &quot;ErrorCode&quot;: &quot;unknown_error&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}</pre>
+    <h4>Error</h4><pre>Exit code 1
+{
+  &quot;Result&quot;: &quot;Failure&quot;,
+  &quot;Message&quot;: &quot;401 Unauthorized&quot;,
+  &quot;Instructions&quot;: &quot;{\&quot;requestId\&quot;:\&quot;6a85ce7de4b0ca2482a89a03\&quot;,\&quot;providerErrorCode\&quot;:401,\&quot;message\&quot;:\&quot;Unauthorized\&quot;,\&quot;providerMessage\&quot;:\&quot;error - {code=InvalidAuthenticationToken, message=The access token is invalid.}\&quot;}&quot;,
+  &quot;ErrorCode&quot;: &quot;unknown_error&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}</pre>
+  </div>
+</details>
+
+</div>
+
+<h2>Command Telemetry</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Total</div><div class="value">47</div></div>
+    <div class="stat"><div class="label">Successful</div><div class="value">42 (89%)</div></div>
+    <div class="stat"><div class="label">Failed</div><div class="value">5</div></div>
+    <div class="stat"><div class="label">Avg / cmd</div><div class="value">1.75s</div></div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 2fr;gap:16px;margin-top:12px">
+    <div>
+      <h4>By Tool</h4>
+      <table>
+        <thead><tr><th>Tool</th><th>Count</th></tr></thead>
+        <tbody><tr><td class='mono'>Bash</td><td>33</td></tr><tr><td class='mono'>Read</td><td>8</td></tr><tr><td class='mono'>Edit</td><td>3</td></tr><tr><td class='mono'>Skill</td><td>1</td></tr><tr><td class='mono'>Glob</td><td>1</td></tr><tr><td class='mono'>Agent</td><td>1</td></tr></tbody>
+      </table>
+    </div>
+    <div>
+      <h4>Slowest</h4>
+      <table>
+        <thead><tr><th>Tool</th><th>Duration</th><th>Parameters</th></tr></thead>
+        <tbody><tr><td class='mono'>Agent</td><td>14.20s</td><td class='mono dim'>{&#x27;description&#x27;: &#x27;Locate connections.md reference d...</td></tr><tr><td class='mono'>Bash</td><td>10.60s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro flow registry get uipath....</td></tr><tr><td class='mono'>Bash</td><td>10.22s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro flow registry get core.co...</td></tr><tr><td class='mono'>Bash</td><td>10.16s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip solution init &quot;DTLLoadByDefaultTr...</td></tr><tr><td class='mono'>Bash</td><td>8.05s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro flow registry pull --forc...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+  <p><strong>Most Common Pattern:</strong> <code>Bash → Bash → Bash</code></p><p><strong>Skill Tool Invoked:</strong> 1 time(s)</p>
+</div>
+
+<h2>Generation Metrics</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Total Latency</div><div class="value">6m 33s</div></div>
+    <div class="stat"><div class="label">Turns</div><div class="value">1</div></div>
+    <div class="stat"><div class="label">Assistant Turns</div><div class="value">87</div></div>
+    <div class="stat"><div class="label">Avg Turn Latency</div><div class="value">6m 26s</div></div>
+    
+  </div>
+</div>
+
+<h2>Token Usage</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Input (uncached)</div><div class="value">638</div></div>
+    <div class="stat"><div class="label">Output</div><div class="value">22,467</div></div>
+    <div class="stat"><div class="label">Cache Write</div><div class="value">147,187</div></div>
+    <div class="stat"><div class="label">Cache Read</div><div class="value">4,372,931</div></div>
+    <div class="stat"><div class="label">Total</div><div class="value">4,543,223</div></div>
+    <div class="stat"><div class="label">Cost</div><div class="value">$2.2027</div></div>
+  </div>
+</div>
+
+<h2>Agent Settings</h2>
+<div class="card" style="padding:0">
+  <table>
+    <tbody><tr><td class='mono dim'>Permission Mode</td><td>acceptEdits</td></tr><tr><td class='mono dim'>Allowed Tools</td><td>Skill, Bash, Read, Write, Edit, Glob, Grep</td></tr><tr><td class='mono dim'>Model</td><td>us.anthropic.claude-sonnet-5</td></tr><tr><td class='mono dim'>Max Turns</td><td>120</td></tr><tr><td class='mono dim'>System Prompt</td><td>You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted. </td></tr><tr><td class='mono dim'>System Prompt Mode</td><td>append</td></tr><tr><td class='mono dim'>Plugins</td><td>/home/azureuser/projects/skills/tmp</td></tr></tbody>
+  </table>
+</div>
+
+<h2>Environment</h2>
+<div class="card" style="padding:0">
+  <table>
+    <tbody><tr><td class='mono dim'>git_commit</td><td>unknown</td></tr><tr><td class='mono dim'>skills_git_commit</td><td>unknown</td></tr><tr><td class='mono dim'>cli_version</td><td>1.201.0-dev.8272</td></tr><tr><td class='mono dim'>tool_plugins</td><td>{&#x27;admin-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;agent-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;agenthub-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;aops-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;api-workflow-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;automation-hub-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;codedagent-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;codedapp-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;coder-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;context-grounding-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;conversational-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;data-fabric-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;docsai-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;function-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;gov-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;guardrails-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;insights-tool&#x27;: &#x27;1.201.0-dev.8276&#x27;, &#x27;integrationservice-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;ixp-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;llm-gateway-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;llmgw-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;maestro-tool&#x27;: &#x27;1.201.0-dev.8275&#x27;, &#x27;model-hub-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;orchestrator-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;platform-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;pm-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;rpa-legacy-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;rpa-tool&#x27;: &#x27;1.201.0-dev.20260809.3&#x27;, &#x27;solution-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;tasks-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;test-manager-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;traces-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;vertical-solutions-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;}</td></tr><tr><td class='mono dim'>coder_eval</td><td>0.9.6</td></tr><tr><td class='mono dim'>claude_code_cli</td><td>2.1.177 (Claude Code)</td></tr><tr><td class='mono dim'>uv</td><td>uv 0.12.5 (x86_64-unknown-linux-gnu)</td></tr><tr><td class='mono dim'>anthropic</td><td>0.122.0</td></tr><tr><td class='mono dim'>openai</td><td>3.2.0</td></tr><tr><td class='mono dim'>pydantic</td><td>2.12.5</td></tr><tr><td class='mono dim'>api_routing</td><td>aws_bedrock</td></tr><tr><td class='mono dim'>eval_routing</td><td>aws_bedrock</td></tr><tr><td class='mono dim'>aws_region</td><td>us-east-2</td></tr><tr><td class='mono dim'>bedrock_model</td><td>us.anthropic.claude-sonnet-4-6</td></tr><tr><td class='mono dim'>system_prompt_semantics</td><td>append</td></tr></tbody>
+  </table>
+</div>
+
+<footer>Generated by coder_eval · 2026-08-19T15:40:54</footer>
+</div>
+<script>
+function toggleTheme() {
+  document.documentElement.classList.toggle('light');
+  try {
+    const mode = document.documentElement.classList.contains('light') ? 'light' : 'dark';
+    localStorage.setItem('coder-eval-theme', mode);
+  } catch (e) { /* ignore */ }
+}
+(function() {
+  try {
+    if (localStorage.getItem('coder-eval-theme') === 'light') {
+      document.documentElement.classList.add('light');
+    }
+  } catch (e) { /* ignore */ }
+})();
+</script>
+</body>
+</html>

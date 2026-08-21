@@ -1,0 +1,6 @@
+20:42:15 [INFO   ] [default/skill-flow-ipe-ceql-where/03] orchestrator: API routing: aws_bedrock
+20:49:15 [INFO   ] [default/skill-flow-ipe-ceql-where/03] orchestrator: Success criteria: 2/2 passed, weighted score: 1.000
+20:49:15 [WARNING] [default/skill-flow-ipe-ceql-where/03] orchestrator: Visible turns (35) exceeded expected_turns (34) at iteration 1 for task skill-flow-ipe-ceql-where. Run continues — max_turns remains the hard cap.
+20:49:15 [INFO   ] [default/skill-flow-ipe-ceql-where/03] orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+20:49:15 [INFO   ] [default/skill-flow-ipe-ceql-where/03] orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-ipe-ceql-where
+20:49:15 [INFO   ] [default/skill-flow-ipe-ceql-where/03] orchestrator: Task finished: status=SUCCESS duration=423.4s score=1.000 iterations=1

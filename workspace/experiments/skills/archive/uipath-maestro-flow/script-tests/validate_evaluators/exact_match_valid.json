@@ -1,0 +1,13 @@
+{
+  "id": "11111111-1111-1111-1111-111111111111",
+  "name": "exact-greeting",
+  "description": "Strict greeting match",
+  "version": "1.0",
+  "evaluatorTypeId": "uipath-exact-match",
+  "evaluatorConfig": {
+    "name": "exact-greeting",
+    "targetOutputKey": "greeting",
+    "caseSensitive": false,
+    "negated": false
+  }
+}

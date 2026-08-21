@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "ContractApproval",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "6b49f74f-8243-42dc-9437-30a62d5befa8",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "ContractApproval"
+    },
+    "locks": [],
+    "key": "98836756-3801-4fa4-a970-06a85fb1d304",
+    "files": []
+  }
+}

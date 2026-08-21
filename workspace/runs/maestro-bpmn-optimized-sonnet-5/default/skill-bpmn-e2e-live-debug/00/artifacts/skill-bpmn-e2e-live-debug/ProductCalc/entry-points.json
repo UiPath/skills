@@ -1,0 +1,23 @@
+{
+  "$schema": "https://cloud.uipath.com/draft/2024-12/entry-point",
+  "$id": "entry-points.json",
+  "entryPoints": [
+    {
+      "filePath": "/content/ProductCalc.bpmn#Start_1",
+      "uniqueId": "42a58be1-0c25-4080-b4bd-91b7e5b243e5",
+      "type": "ProcessOrchestration",
+      "input": {
+        "type": "object",
+        "properties": {}
+      },
+      "output": {
+        "type": "object",
+        "properties": {
+          "product": {
+            "type": "integer"
+          }
+        }
+      }
+    }
+  ]
+}

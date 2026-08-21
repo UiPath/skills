@@ -1,0 +1,232 @@
+=== USER (turn 1) — simulator-generated opener ===
+Hi there! I'm hoping you can help me out. I process vendor invoices all day and it's a lot of manual work — I'm looking to automate the whole thing. Can you build me a flow that handles it automatically?
+
+=== AGENT (turn 1) — 123.8s, in=16 out=5732, 14 tool calls ===
+I found several invoice-specific IxP extraction models already published on the tenant, which is great — we can wire a real extraction node right away. Before I design the flow, I have three quick questions to lock down the architecture:
+
+---
+
+**Question 1 — How do vendor invoices arrive to trigger the flow?**
+
+1. **Email attachment** — an invoice lands as an email attachment (e.g. Outlook inbox)
+2. **Manual / on-demand** — a user triggers the flow and passes the invoice file in
+3. **Scheduled batch** — a scheduled run picks up invoices from a folder or storage bucket
+4. **Something else** (describe your intake channel)
+
+---
+
+**Question 2 — Which IxP extraction model should I use?**
+
+I found three invoice-related models published on your tenant:
+
+1. **InvoiceIXP** — general-purpose invoice model (Shared)
+2. **idp-benchmark---invoices** — IDP benchmark invoice model (Shared)
+3. **invoices-billing** — invoice model scoped to a Billing Dispute solution (Shared/uipath-maestro-flow/BillingDispute)
+4. **Something else** — name a specific model, or I can use the best-fit default
+
+---
+
+**Question 3 — After fields are extracted, what should happen?**
+
+1. **Human review (HITL)** — route extracted data to a human to validate before taking action
+2. **Post to an ERP / system of record** — write the structured data directly to a system (SAP, Workday, QuickBooks, etc.)
+3. **Notify a Slack / email channel** — send a summary of extracted invoice data to a team
+4. **Queue for RPA processing** — push the structured data onto an Orchestrator queue for a robot to handle
+5. **Just extract and output** — return the extracted fields as flow output (no downstream action yet)
+6. **Something else**
+
+=== USER (turn 2) ===
+Oh great, these are easy ones!
+
+1. They come in through a SharePoint folder — PDFs just show up there and I need the flow to pick them up automatically. The folder is called **New Vendor**.
+
+2. The one we use is the **Invoice Model** — that's what our IT folks set up for us.
+
+3. Definitely option 2 — we need everything pushed straight into **SAP**. That's our system of record for all invoices.
+
+Does that help? Can you get started on it?
+
+=== AGENT (turn 2) — 162.3s, in=6 out=8484, 8 tool calls ===
+I have everything I need. Here's the architectural plan — please review and approve it before I build.
+
+---
+
+## 📋 Architectural Plan: Vendor Invoice Processing Flow
+
+### 1. Summary
+
+This flow fires automatically when a PDF lands in your SharePoint **New Vendor** folder. It downloads the file, runs it through the **InvoiceIXP** extraction model to pull structured fields, parses the key values into a clean payload, and posts the invoice directly to SAP via a BAPI/RFC call. Failures at any step route to an error-logging path so no invoice is silently lost.
+
+---
+
+### 2. Flow Diagram
+
+```mermaid
+graph LR
+    trigger(New File in SharePoint)
+    downloadFile[Download Invoice PDF]
+    extractInvoice[Extract Invoice Fields]
+    parseFields[Parse Invoice Fields]
+    postToSap[Post Invoice to SAP BAPI]
+    doneSuccess(Done)
+    logDownloadErr[Log Download Error]
+    logExtractErr[Log Extraction Error]
+    logSapErr[Log SAP Post Error]
+    doneErr(Done with Error)
+    trigger -->|output| downloadFile
+    downloadFile -->|output| extractInvoice
+    downloadFile -->|error| logDownloadErr
+    extractInvoice -->|success| parseFields
+    extractInvoice -->|error| logExtractErr
+    parseFields -->|success| postToSap
+    postToSap -->|output| doneSuccess
+    postToSap -->|error| logSapErr
+    logDownloadErr -->|success| doneErr
+    logExtractErr -->|success| doneErr
+    logSapErr -->|success| doneErr
+```
+
+---
+
+### 3. Node Table
+
+| # | Node ID | Name | Category | Node Type | Notes |
+|---|---|---|---|---|---|
+| 1 | `trigger` | New File in SharePoint | trigger | `uipath.connector.trigger.uipath-microsoft-onedrive.file-created` | Fires on any new file in the drive; Phase 2: filter to "New Vendor" folder path |
+| 2 | `downloadFile` | Download Invoice PDF | connector | `uipath.connector.uipath-microsoft-onedrive.download-file` | Phase 2: bind SharePoint connection; input file ID from trigger output |
+| 3 | `extractInvoice` | Extract Invoice Fields | ixp | `uipath.ixp.invoiceixp-cef0d447-ixp.ff973488-5d89-8035-86ac-f980b4be6deb-c4359cde-55f0-4f0e-9322-c6cdce74ab4c` | InvoiceIXP model (Shared); fileRef wired from download output |
+| 4 | `parseFields` | Parse Invoice Fields | action | `core.action.script` | Jint script: reads `Fields[]` by FieldName; returns vendor, invoiceNumber, amount, date, currency |
+| 5 | `postToSap` | Post Invoice to SAP BAPI | connector | `uipath.connector.uipath-sap-bapi.execute-bapi-rfc` | Phase 2: bind SAP connection; BAPI = `BAPI_INCOMINGINVOICE_CREATE`; **connection must be created first** — see Open Questions |
+| 6 | `doneSuccess` | Done | control | `core.control.end` | Success terminal |
+| 7 | `logDownloadErr` | Log Download Error | action | `core.action.script` | Returns `{ error: $vars.downloadFile.error.message }` |
+| 8 | `logExtractErr` | Log Extraction Error | action | `core.action.script` | Returns `{ error: $vars.extractInvoice.error.message }` |
+| 9 | `logSapErr` | Log SAP Post Error | action | `core.action.script` | Returns `{ error: $vars.postToSap.error.message }` |
+| 10 | `doneErr` | Done with Error | control | `core.control.end` | Error terminal |
+
+---
+
+### 4. Edge Table
+
+| # | Source Node | Source Port | Target Node | Target Port | Label |
+|---|---|---|---|---|---|
+| 1 | `trigger` | `output` | `downloadFile` | `input` | New file detected |
+| 2 | `downloadFile` | `output` | `extractInvoice` | `input` | File downloaded |
+| 3 | `downloadFile` | `error` | `logDownloadErr` | `input` | Download failed |
+| 4 | `extractInvoice` | `success` | `parseFields` | `input` | Extraction succeeded |
+| 5 | `extractInvoice` | `error` | `logExtractErr` | `input` | Extraction failed |
+| 6 | `parseFields` | `success` | `postToSap` | `input` | Fields parsed |
+| 7 | `postToSap` | `output` | `doneSuccess` | `input` | Invoice posted |
+| 8 | `postToSap` | `error` | `logSapErr` | `input` | SAP post failed |
+| 9 | `logDownloadErr` | `success` | `doneErr` | `input` | — |
+| 10 | `logExtractErr` | `success` | `doneErr` | `input` | — |
+| 11 | `logSapErr` | `success` | `doneErr` | `input` | — |
+
+---
+
+### 5. Connector Summary
+
+| Node ID | Service | Connector Key | Connection Status |
+|---|---|---|---|
+| `trigger`, `downloadFile` | Microsoft OneDrive & SharePoint | `uipath-microsoft-onedrive` | ✅ Healthy ("Productivity O365 OneDrive", Enabled) |
+| `postToSap` | SAP BAPI | `uipath-sap-bapi` | ❌ No connection — must be created before debug/deploy |
+
+---
+
+### 6. Open Questions
+
+**[REQUIRED]** A SAP BAPI connection doesn't yet exist on your tenant. Your IT team will need to create one in UiPath Integration Service (Settings → Connections) using the **SAP BAPI** connector before this flow can run end-to-end. The flow itself will be fully built — the SAP node will just need the connection bound once it's available.
+
+**[OPTIONAL]** Which SAP version are you on? If you're on S/4HANA, we can alternatively use the **SAP OData** connector (`insert-record` against the Supplier Invoice API) instead of BAPI. Let me know if you'd like that instead.
+
+**[OPTIONAL]** Should successfully processed invoices be moved out of the **New Vendor** folder (e.g., to a "Processed" folder) after posting to SAP? I can add a final Move step.
+
+---
+
+Does this plan look right? Once you approve, I'll build the full `.flow` file, wire everything up, validate, and format it — ready for you to publish to Studio Web.
+
+=== USER (turn 3) ===
+Looks mostly right but a couple things are off.
+
+First — the model. I said we use the **Invoice Model**, not "InvoiceIXP." Please use the right one.
+
+Second — the SAP part. I'm not sure what a BAPI is, but our IT person told me SAP receives the data through a **web address/endpoint** — like a link you send the invoice info to. Can you do it that way instead?
+
+And honestly all the technical questions at the bottom — I trust you to sort those out. I just need it to pull invoices from that folder and get the data into SAP. Can you go ahead and build it?
+
+=== AGENT (turn 3) — 284.0s, in=4 out=15664, 4 tool calls ===
+Good news on SAP — "web address/endpoint" maps perfectly to a standard HTTP call, so no connector or connection needed. I'll wire that as an HTTP POST with a placeholder URL that you or IT fills in.
+
+One thing I do need before I can start: **"Invoice Model" doesn't appear in the flow registry under that name.** When I search the tenant, the only published invoice extraction models are:
+
+1. **InvoiceIXP** *(Shared folder — general-purpose invoice model)*
+2. **idp-benchmark---invoices** *(Shared folder — IDP benchmark invoice model)*
+3. **invoices-billing** *(Shared/BillingDispute — tied to a billing dispute solution)*
+4. **Something else** — if IT published it under a different name, let me know what to search for
+
+Which one is yours? I need to pick the right one before building because each model extracts different field names (vendor number, invoice total, line items, etc.), and the wrong model means the extracted data won't match. One answer and I'll start building immediately.
+
+=== USER (turn 4) ===
+Hmm, I just know it as the "Invoice Model" — that's what IT called it when they set things up. I don't know what it's called in the system behind the scenes. Could it be listed under a slightly different name? Maybe just pick the one that sounds most like a general invoice model and go with it — I trust you to make the right call there.
+
+=== AGENT (turn 4) — 978.7s, in=7029 out=54802, 53 tool calls ===
+**Status: Valid** ✅ — same 2 warnings (both expected, both ignorable). The flow is complete.
+
+---
+
+Your **Vendor Invoice Processing** automation is built and validated. Here's exactly what was assembled:
+
+---
+
+## ✅ Flow Complete — `VendorInvoiceProcessing.flow`
+
+### What it does
+
+| Step | Node | What happens |
+|---|---|---|
+| **Trigger** | New File in SharePoint | Fires automatically whenever a PDF lands in your **New Vendor** folder — polling mode, PDF-only filter |
+| **Download** | Download Invoice PDF | Fetches the PDF from SharePoint using the file's reference ID |
+| **Extract** | Extract Invoice Fields | Runs the **InvoiceIXP** model — pulls Invoice Number, Invoice Date, Due Date, PO Number, Currency, Vendor Name, Total Amount, Total Due, Payment Terms, Subtotal, Tax Amount |
+| **Parse** | Parse Invoice Fields | Script node maps the extracted field array into clean named properties |
+| **Post to SAP** | Post Invoice to SAP | HTTP POST to your SAP endpoint with all the invoice fields as JSON |
+| **Success terminal** | Done — Invoice Posted | Flow ends cleanly on success |
+| **Error handling** | Log Download Error / Log Extract Error / Log SAP Error | Each step has its own error branch that logs the failure details |
+| **Error terminal** | Done — Error | All error paths converge here |
+
+### One thing to do before it can run
+
+The SAP URL is currently a placeholder — `https://YOUR-SAP-ENDPOINT/api/invoices`. Ask your IT team for the actual endpoint address, then open the **Post Invoice to SAP** node in Studio Web and replace it.
+
+---
+
+<details>
+<summary><strong>What's next? (click to expand)</strong></summary>
+
+**Option 1 — Open in Studio Web (visual editing/review)**
+```bash
+cd /work/output/artifacts/skill-flow-ixp-invoice-extraction-simulated/VendorInvoiceProcessing
+uip solution upload . --output json
+```
+This returns a `DesignerUrl` you can open in your browser to see the canvas, review connections, and update the SAP URL visually.
+
+**Option 2 — Debug locally**
+```bash
+cd /work/output/artifacts/skill-flow-ixp-invoice-extraction-simulated/VendorInvoiceProcessing/VendorInvoiceProcessing
+uip maestro flow debug VendorInvoiceProcessing.flow
+```
+Drop a PDF into your New Vendor folder and watch it run step by step. The polling trigger will fire within its interval.
+
+**Option 3 — Pack & Deploy to Orchestrator**
+```bash
+cd /work/output/artifacts/skill-flow-ixp-invoice-extraction-simulated/VendorInvoiceProcessing
+uip solution pack . ./out
+uip solution publish ./out/*.zip
+uip solution deploy run --name VendorInvoiceProcessing --package-name VendorInvoiceProcessing --folder-name Shared
+```
+
+</details>
+
+=== USER (turn 5) — stop token — dialog ending ===
+Okay, so there's actually a `.flow` file in there and it's been validated — that's what I needed to hear. The SharePoint folder's set up, the invoice data gets pulled out, and it sends everything over to SAP. That's exactly what I was after.
+
+I'll have IT swap in the real SAP endpoint when we're ready to go live. Thanks for getting this done!
+

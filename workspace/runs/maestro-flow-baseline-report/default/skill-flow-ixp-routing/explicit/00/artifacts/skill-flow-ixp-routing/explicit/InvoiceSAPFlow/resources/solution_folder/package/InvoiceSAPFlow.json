@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "InvoiceSAPFlow",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "e43cae42-6a03-46fe-9d17-5e8c4e2e1c03",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "InvoiceSAPFlow"
+    },
+    "locks": [],
+    "key": "c7486d71-da94-4dee-a0de-0a5641409640",
+    "files": []
+  }
+}

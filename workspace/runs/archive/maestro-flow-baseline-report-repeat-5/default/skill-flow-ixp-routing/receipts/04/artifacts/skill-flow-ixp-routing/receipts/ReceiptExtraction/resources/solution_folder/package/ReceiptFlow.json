@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "ReceiptFlow",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "6404c116-5f31-4335-9c1e-bfdf88cf9297",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "ReceiptFlow"
+    },
+    "locks": [],
+    "key": "3bf67d78-5f3d-4a0b-8392-bc53d60617d4",
+    "files": []
+  }
+}

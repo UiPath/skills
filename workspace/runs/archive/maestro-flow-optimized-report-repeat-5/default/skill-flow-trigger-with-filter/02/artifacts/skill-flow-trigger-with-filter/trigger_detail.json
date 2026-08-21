@@ -1,0 +1,51 @@
+{
+  "_comment": [
+    "Outlook connector trigger configuration for UiPath Maestro Flow.",
+    "Apply by running:",
+    "  uip maestro flow node configure <PROJECT>.flow <triggerId> --detail \"$(cat trigger_detail.json)\" --output json",
+    "",
+    "Placeholders that require live-tenant resolution before running node configure:",
+    "  connectionId  — UUID from: uip is connections list 'uipath-microsoft-outlook365' --all-folders --output json",
+    "  folderKey     — Orchestrator folder key tied to that connection",
+    "  parentFolderId (eventParameters) — resolved inbox/folder ID from:",
+    "                  uip is resources run list 'uipath-microsoft-outlook365' 'MailFolder'",
+    "                  --connection-id <connectionId> --output json",
+    "                  (look for displayName 'Inbox' or the folder you want; use its 'id' field)",
+    "",
+    "eventMode is set to 'polling' (Outlook email-received is a polling trigger).",
+    "If registry get returns 'webhooks' for your tenant, change eventMode accordingly.",
+    "",
+    "Node type:  uipath.connector.trigger.uipath-microsoft-outlook365.email-received",
+    "Filter:     AND( from == 'abc@xyz.com',  subject contains 'good day' )"
+  ],
+  "connectionId": "<OUTLOOK_CONNECTION_ID>",
+  "folderKey": "<ORCHESTRATOR_FOLDER_KEY>",
+  "eventMode": "polling",
+  "eventParameters": {
+    "parentFolderId": "<RESOLVED_INBOX_FOLDER_ID>"
+  },
+  "filter": {
+    "groupOperator": 0,
+    "index": 0,
+    "filters": [
+      {
+        "id": "from",
+        "operator": "Equals",
+        "value": {
+          "value": "abc@xyz.com",
+          "rawString": "\"abc@xyz.com\"",
+          "isLiteral": true
+        }
+      },
+      {
+        "id": "subject",
+        "operator": "Contains",
+        "value": {
+          "value": "good day",
+          "rawString": "\"good day\"",
+          "isLiteral": true
+        }
+      }
+    ]
+  }
+}

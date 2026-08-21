@@ -1,0 +1,115 @@
+{
+  "version": "1.1.0",
+  "settings": {
+    "model": "gpt-5.4",
+    "maxTokens": 128000,
+    "temperature": 0,
+    "engine": "basic-v2",
+    "maxIterations": 3,
+    "mode": "standard"
+  },
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "start__output__customerName": {
+        "type": "string",
+        "description": "Name of the customer"
+      },
+      "start__output__invoiceNumber": {
+        "type": "string",
+        "description": "Invoice number for the billing dispute"
+      },
+      "start__output__creditAmount": {
+        "type": "number",
+        "description": "Approved credit amount to apply"
+      }
+    }
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "subject": {
+        "type": "string",
+        "description": "The email subject line"
+      },
+      "body": {
+        "type": "string",
+        "description": "The email body text"
+      }
+    },
+    "required": [
+      "subject",
+      "body"
+    ]
+  },
+  "metadata": {
+    "storageVersion": "50.0.0",
+    "isConversational": false,
+    "showProjectCreationExperience": false
+  },
+  "type": "lowCode",
+  "guardrails": [],
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a customer support specialist who drafts professional, empathetic billing-dispute resolution emails. When given customer details, draft a concise resolution email and return a JSON object with exactly two fields: \"subject\" (the email subject line) and \"body\" (the full email body text). The body must reference the invoice number and the approved credit amount. Do not include any other text outside the JSON object.",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "You are a customer support specialist who drafts professional, empathetic billing-dispute resolution emails. When given customer details, draft a concise resolution email and return a JSON object with exactly two fields: \"subject\" (the email subject line) and \"body\" (the full email body text). The body must reference the invoice number and the approved credit amount. Do not include any other text outside the JSON object."
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "Customer name: {{input.start__output__customerName}}\nInvoice number: {{input.start__output__invoiceNumber}}\nApproved credit amount: {{input.start__output__creditAmount}}\n\nDraft a billing-dispute resolution email for this customer. The email body must mention invoice number {{input.start__output__invoiceNumber}} and the approved credit of {{input.start__output__creditAmount}}.",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "Customer name: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__customerName"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\nInvoice number: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__invoiceNumber"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\nApproved credit amount: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__creditAmount"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\nDraft a billing-dispute resolution email for this customer. The email body must mention invoice number "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__invoiceNumber"
+        },
+        {
+          "type": "simpleText",
+          "rawString": " and the approved credit of "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__creditAmount"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "."
+        }
+      ]
+    }
+  ],
+  "projectId": "c54527fb-428f-4a60-b313-bca1faf08150"
+}

@@ -1,0 +1,10 @@
+{"ts": 1785218744.8099415, "args": "track", "matched_rule": null, "fixture": null, "exit_code": 1, "error": "unmocked_default"}
+{"ts": 1785218748.2794724, "args": "track", "matched_rule": null, "fixture": null, "exit_code": 1, "error": "unmocked_default"}
+{"ts": 1785218749.1382284, "args": "maestro bpmn instance asset --instance-id inst-triage-001 --folder-key folder-public", "matched_rule": null, "fixture": null, "exit_code": 1, "error": "unmocked_default"}
+{"ts": 1785218751.7373617, "args": "maestro bpmn instance asset --help", "matched_rule": null, "fixture": null, "exit_code": 1, "error": "unmocked_default"}
+{"ts": 1785218752.0504735, "args": "track", "matched_rule": null, "fixture": null, "exit_code": 1, "error": "unmocked_default"}
+{"ts": 1785218753.6465693, "args": "--help", "matched_rule": null, "fixture": null, "exit_code": 1, "error": "unmocked_default"}
+{"ts": 1785218753.860069, "args": "track", "matched_rule": null, "fixture": null, "exit_code": 1, "error": "unmocked_default"}
+{"ts": 1785218755.713815, "args": "maestro bpmn instance asset inst-triage-001 folder-public", "matched_rule": "instance asset inst-triage-001", "fixture": "instance-asset.json", "exit_code": 0}
+{"ts": 1785218755.9331276, "args": "track", "matched_rule": null, "fixture": null, "exit_code": 1, "error": "unmocked_default"}
+{"ts": 1785218778.4126408, "args": "--version", "matched_rule": null, "fixture": null, "exit_code": 1, "error": "unmocked_default"}

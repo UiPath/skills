@@ -1,0 +1,54 @@
+2026-08-18 21:51:44 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-08-18 21:51:44 [INFO] coder_eval.orchestrator: API routing: aws_bedrock
+2026-08-18 21:51:44 [DEBUG] coder_eval.criteria: Discovered 15 criterion checkers
+2026-08-18 21:51:44 [DEBUG] coder_eval.criteria: Validated 15 criterion checkers
+2026-08-18 21:51:44 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-08-18 21:51:44 [DEBUG] coder_eval.orchestrator: Sending prompt: Create a UiPath Flow named "OutlookTriggerInbox" with a Microsoft Outlook 365
+email-received trigger...
+2026-08-18 21:51:44 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Starting agent query stream...
+2026-08-18 21:55:07 [DEBUG] coder_eval.agents.claude_code_agent: [coder] session_id changed: None -> 0db3f9a7-41c2-4fce-ac68-0ec63188a96d
+2026-08-18 21:55:07 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Agent query stream ended
+2026-08-18 21:55:07 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-08-18 21:55:07 [DEBUG] coder_eval.orchestrator: Agent response received (3089 chars)
+2026-08-18 21:55:07 [DEBUG] coder_eval.orchestrator: Checking success criteria
+2026-08-18 21:55:07 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'uip maestro flow validate passes on the flow file': python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py
+2026-08-18 21:55:12 [DEBUG] coder_eval.sandbox: Command 'python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py' exited with code 0
+2026-08-18 21:55:12 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+Validating OutlookTriggerInboxSolution/OutlookTriggerInbox/OutlookTriggerInbox.flow
+{
+  "Result": "Success",
+  "Code": "FlowValidate",
+  "Data": {
+    "File": "/work/output/artifacts/skill-flow-outlook-trigger-inbox/OutlookTriggerInboxSolution/OutlookTriggerInbox/OutlookTriggerInbox.flow",
+    "Status": "Valid"
+  }
+}
+---
+2026-08-18 21:55:12 [DEBUG] coder_eval.sandbox: STDERR:
+---
+[ManifestClient] fetchDynamicNodes ok: total=315 agent context nodes=2 external agent nodes=7 orchestrator nodes=261 IXP nodes=45
+---
+2026-08-18 21:55:12 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-08-18 21:55:12 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'Flow has a uipath-microsoft-outlook365 email-received trigger node': python3 $TASK_DIR/check_outlook_trigger_inbox.py check_trigger_node
+2026-08-18 21:55:12 [DEBUG] coder_eval.sandbox: Command 'python3 $TASK_DIR/check_outlook_trigger_inbox.py check_trigger_node' exited with code 0
+2026-08-18 21:55:12 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+OK: Outlook email-received trigger node present
+---
+2026-08-18 21:55:12 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-08-18 21:55:12 [DEBUG] coder_eval.evaluation.checker: Criterion 'command_executed' score: 1.00
+2026-08-18 21:55:12 [DEBUG] coder_eval.evaluation.checker: Criterion 'command_executed' score: 1.00
+2026-08-18 21:55:12 [DEBUG] coder_eval.evaluation.checker: Criterion 'command_executed' score: 1.00
+2026-08-18 21:55:12 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'Flow's parentFolderId is a live MailFolder ID on the bound Outlook connection': python3 $TASK_DIR/check_outlook_trigger_inbox.py check_folder_id_fresh
+2026-08-18 21:55:18 [DEBUG] coder_eval.sandbox: Command 'python3 $TASK_DIR/check_outlook_trigger_inbox.py check_folder_id_fresh' exited with code 0
+2026-08-18 21:55:18 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+OK: parentFolderId resolves on current connection (12 folders checked)
+---
+2026-08-18 21:55:18 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-08-18 21:55:18 [INFO] coder_eval.orchestrator: Success criteria: 6/6 passed, weighted score: 1.000
+2026-08-18 21:55:18 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-08-18 21:55:18 [INFO] coder_eval.orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+2026-08-18 21:55:18 [INFO] coder_eval.orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-outlook-trigger-inbox
+2026-08-18 21:55:18 [INFO] coder_eval.orchestrator: Task finished: status=SUCCESS duration=217.0s score=1.000 iterations=1

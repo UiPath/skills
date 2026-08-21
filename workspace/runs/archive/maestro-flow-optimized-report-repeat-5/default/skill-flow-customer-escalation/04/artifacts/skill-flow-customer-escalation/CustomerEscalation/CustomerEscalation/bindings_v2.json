@@ -1,0 +1,86 @@
+{
+  "version": "2.0",
+  "resources": [
+    {
+      "resource": "connection",
+      "key": "5af6fa90-234d-4b0d-a2f1-3815cfd9e15d",
+      "id": "connection5af6fa90-234d-4b0d-a2f1-3815cfd9e15d",
+      "value": {
+        "ConnectionId": {
+          "defaultValue": "5af6fa90-234d-4b0d-a2f1-3815cfd9e15d",
+          "isExpression": false,
+          "displayName": "uipath-microsoft-outlook365 connection"
+        }
+      },
+      "metadata": {
+        "ActivityName": "Email Received",
+        "BindingsVersion": "2.2",
+        "DisplayLabel": "uipath-microsoft-outlook365 connection",
+        "UseConnectionService": "true",
+        "Connector": "uipath-microsoft-outlook365"
+      }
+    },
+    {
+      "resource": "connection",
+      "key": "849e85d8-1aa9-4d52-8bbd-20041c8f05d8",
+      "id": "connection849e85d8-1aa9-4d52-8bbd-20041c8f05d8",
+      "value": {
+        "ConnectionId": {
+          "defaultValue": "849e85d8-1aa9-4d52-8bbd-20041c8f05d8",
+          "isExpression": false,
+          "displayName": "uipath-salesforce-slack connection"
+        }
+      },
+      "metadata": {
+        "ActivityName": "Notify Slack - High Touch",
+        "BindingsVersion": "2.2",
+        "DisplayLabel": "uipath-salesforce-slack connection",
+        "UseConnectionService": "true",
+        "Connector": "uipath-salesforce-slack"
+      }
+    },
+    {
+      "resource": "EventTrigger",
+      "key": "5af6fa90-234d-4b0d-a2f1-3815cfd9e15d",
+      "id": "EventTrigger5af6fa90-234d-4b0d-a2f1-3815cfd9e15d",
+      "value": {
+        "ConnectionId": {
+          "defaultValue": "5af6fa90-234d-4b0d-a2f1-3815cfd9e15d",
+          "isExpression": false
+        },
+        "EntryPointUniqueId": {
+          "defaultValue": "90188d26-570c-46f6-8256-6b79d4733854",
+          "isExpression": false
+        }
+      },
+      "metadata": {
+        "UseConnectionService": "true",
+        "Connector": "uipath-microsoft-outlook365",
+        "ActivityName": "Email Received",
+        "BindingsVersion": "2.2",
+        "ObjectName": "Message",
+        "Operation": "EMAIL_RECEIVED",
+        "FilterExpression": "(parentFolderId == 'AAMkADc3YmExNDZiLTY3ODMtNGZlMy1iNDQ0LTNiMTE0MDRjNzljMgAuAAAAAADoMGLM4jLUQ6xxQfoAdqTFAQBKthe0RNZlRpEaiq3vHYncAAAAAAEMAAA=')"
+      }
+    },
+    {
+      "resource": "Property",
+      "key": "EMAIL_RECEIVED",
+      "id": "Property_emailReceived1",
+      "value": {
+        "parentFolderId": {
+          "defaultValue": "AAMkADc3YmExNDZiLTY3ODMtNGZlMy1iNDQ0LTNiMTE0MDRjNzljMgAuAAAAAADoMGLM4jLUQ6xxQfoAdqTFAQBKthe0RNZlRpEaiq3vHYncAAAAAAEMAAA=",
+          "isExpression": false
+        }
+      },
+      "metadata": {
+        "TriggerCreateParameters": "parentFolderId",
+        "DebugQueryParameters": "parentFolderId",
+        "ActivityName": "Email Received",
+        "BindingsVersion": "2.2",
+        "ObjectName": "Message",
+        "ParentResourceKey": "EventTrigger.5af6fa90-234d-4b0d-a2f1-3815cfd9e15d"
+      }
+    }
+  ]
+}

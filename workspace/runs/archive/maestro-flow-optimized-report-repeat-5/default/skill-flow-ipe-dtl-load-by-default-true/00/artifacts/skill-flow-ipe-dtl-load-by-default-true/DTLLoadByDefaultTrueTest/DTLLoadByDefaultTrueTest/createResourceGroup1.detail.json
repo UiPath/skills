@@ -1,0 +1,12 @@
+{
+  "connectionId": "<AZURE_CONNECTION_UUID>",
+  "folderKey": "<ORCHESTRATOR_FOLDER_KEY>",
+  "method": "POST",
+  "endpoint": "/resourceGroup/resource/{resourceGroupName}",
+  "pathParameters": {
+    "resourceGroupName": "<resource-group-name>"
+  },
+  "bodyParameters": {
+    "location": "<azure-region-e.g.-eastus>"
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "_comment": "Planned node configure payload for createResourceGroup1. Run the command below after creating a Microsoft Azure IS connection.",
+  "_command": "uip maestro flow node configure DTLLoadByDefaultTrueTest.flow createResourceGroup1 --detail \"$(cat createResourceGroup1.detail.json | python3 -c \"import json,sys; d=json.load(sys.stdin); del d['_comment']; del d['_command']; print(json.dumps(d))\")\" --output json",
+  "connectionId": "<REPLACE_WITH_CONNECTION_UUID>",
+  "folderKey": "<REPLACE_WITH_FOLDER_KEY>",
+  "method": "POST",
+  "endpoint": "/resourceGroup/resource/{resourceGroupName}",
+  "pathParameters": {
+    "resourceGroupName": "<REPLACE_WITH_RESOURCE_GROUP_NAME>"
+  },
+  "bodyParameters": {
+    "location": "<REPLACE_WITH_LOCATION_e.g._eastus>"
+  }
+}

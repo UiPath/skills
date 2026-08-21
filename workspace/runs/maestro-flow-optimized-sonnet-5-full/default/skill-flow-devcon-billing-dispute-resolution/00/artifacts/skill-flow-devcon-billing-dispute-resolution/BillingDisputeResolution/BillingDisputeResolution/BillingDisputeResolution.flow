@@ -1,0 +1,5075 @@
+{
+  "id": "831ff9db-a63f-4663-8978-e9767bb5d4be",
+  "version": "1.9",
+  "name": "BillingDisputeResolution",
+  "nodes": [
+    {
+      "id": "start",
+      "type": "core.trigger.manual",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Manual trigger"
+      },
+      "inputs": {
+        "entryPointId": "2e0ab29c-2c1c-42f1-b225-84d355bfb2b8",
+        "isDefaultEntryPoint": true
+      }
+    },
+    {
+      "id": "crmLookup1",
+      "type": "uipath.connector.uipath-uipath-dataservice.query-entity-records",
+      "typeVersion": "1.0.0",
+      "display": {
+        "label": "CRM Lookup"
+      },
+      "inputs": {
+        "detail": {
+          "connector": "uipath-uipath-dataservice",
+          "connectionId": "d61e5d0e-04af-4f93-95cc-151d81fa08dc",
+          "connectionResourceId": "d61e5d0e-04af-4f93-95cc-151d81fa08dc",
+          "connectionFolderKey": "c4359cde-55f0-4f0e-9322-c6cdce74ab4c",
+          "method": "POST",
+          "endpoint": "/v2/{entityName}/qer",
+          "pathParameters": {
+            "entityName": "BillingDisputeCRM"
+          },
+          "uiPathActivityTypeId": "703065b9-a310-33b8-9d4d-12df0a6f520b",
+          "errorState": {
+            "issues": []
+          },
+          "queryParameters": {
+            "queryExpression": "accountNumber = '{var_5651cd1f}'"
+          },
+          "filterVariables": {
+            "var_5651cd1f": "=js:$vars.start.output.webhookPayload.customer.accountNumber"
+          },
+          "configuration": "=jsonString:{\"essentialConfiguration\":{\"connectorVersion\":\"1.73.0-dev.2\",\"customFieldsRequestDetails\":{\"objectActionName\":\"GenerateSchema\",\"parameterValues\":[[\"entityName\",\"BillingDisputeCRM\"]]},\"instanceParameters\":{\"connectorKey\":\"uipath-uipath-dataservice\",\"objectName\":\"QueryEntityRecordsCurated\",\"httpMethod\":\"POST\",\"activityType\":\"Curated\",\"version\":\"1.0.0\",\"supportsStreaming\":false,\"subType\":\"standard\"},\"objectName\":\"QueryEntityRecordsCurated\",\"operation\":\"list\",\"packageVersion\":\"1.0.0\",\"httpMethod\":\"POST\",\"path\":\"/v2/{entityName}/qer\",\"unifiedTypesCompatible\":true,\"savedFilterTrees\":{\"queryExpression\":{\"groupOperator\":0,\"index\":0,\"filters\":[{\"id\":\"accountNumber\",\"operator\":\"Equals\",\"value\":{\"value\":\"=js:$vars.start.output.webhookPayload.customer.accountNumber\",\"rawString\":\"accountNumber\",\"isLiteral\":false}}],\"groups\":[]}}}}",
+          "inputMetadata": {
+            "operation": "list",
+            "pagination": {
+              "maxPageSize": 1000
+            },
+            "expressionResolutionFields": [
+              "queryExpression"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "erpLookup1",
+      "type": "uipath.connector.uipath-uipath-dataservice.query-entity-records",
+      "typeVersion": "1.0.0",
+      "display": {
+        "label": "ERP Lookup"
+      },
+      "inputs": {
+        "detail": {
+          "connector": "uipath-uipath-dataservice",
+          "connectionId": "d61e5d0e-04af-4f93-95cc-151d81fa08dc",
+          "connectionResourceId": "d61e5d0e-04af-4f93-95cc-151d81fa08dc",
+          "connectionFolderKey": "c4359cde-55f0-4f0e-9322-c6cdce74ab4c",
+          "method": "POST",
+          "endpoint": "/v2/{entityName}/qer",
+          "pathParameters": {
+            "entityName": "BillingDisputeERP"
+          },
+          "uiPathActivityTypeId": "703065b9-a310-33b8-9d4d-12df0a6f520b",
+          "errorState": {
+            "issues": []
+          },
+          "queryParameters": {
+            "queryExpression": "invoiceNumber = '{var_12236f48}'"
+          },
+          "filterVariables": {
+            "var_12236f48": "=js:$vars.normalizeInvoiceNumber.output.normalizedInvoiceNumber"
+          },
+          "configuration": "=jsonString:{\"essentialConfiguration\":{\"connectorVersion\":\"1.73.0-dev.2\",\"customFieldsRequestDetails\":{\"objectActionName\":\"GenerateSchema\",\"parameterValues\":[[\"entityName\",\"BillingDisputeERP\"]]},\"instanceParameters\":{\"connectorKey\":\"uipath-uipath-dataservice\",\"objectName\":\"QueryEntityRecordsCurated\",\"httpMethod\":\"POST\",\"activityType\":\"Curated\",\"version\":\"1.0.0\",\"supportsStreaming\":false,\"subType\":\"standard\"},\"objectName\":\"QueryEntityRecordsCurated\",\"operation\":\"list\",\"packageVersion\":\"1.0.0\",\"httpMethod\":\"POST\",\"path\":\"/v2/{entityName}/qer\",\"unifiedTypesCompatible\":true,\"savedFilterTrees\":{\"queryExpression\":{\"groupOperator\":0,\"index\":0,\"filters\":[{\"id\":\"invoiceNumber\",\"operator\":\"Equals\",\"value\":{\"value\":\"=js:$vars.normalizeInvoiceNumber.output.normalizedInvoiceNumber\",\"rawString\":\"invoiceNumber\",\"isLiteral\":false}}],\"groups\":[]}}}}",
+          "inputMetadata": {
+            "operation": "list",
+            "pagination": {
+              "maxPageSize": 1000
+            },
+            "expressionResolutionFields": [
+              "queryExpression"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "extractInvoice",
+      "type": "uipath.ixp.invoices-billing-f0c606f9-ixp.99f5bbfa-5f29-8033-8662-25001b6bb18e-79a7d12e-da84-4bf4-ab60-7f34b44dd178",
+      "typeVersion": "1.0.0",
+      "display": {
+        "label": "Extract Invoice Fields"
+      },
+      "inputs": {
+        "model": {
+          "id": "99f5bbfa-5f29-8033-8662-25001b6bb18e",
+          "modelName": "invoices-billing-f0c606f9-ixp",
+          "modelDisplayName": "invoices-billing",
+          "folderKey": "79a7d12e-da84-4bf4-ab60-7f34b44dd178",
+          "folderName": "Shared/uipath-maestro-flow/BillingDispute",
+          "folderPath": "c4359cde-55f0-4f0e-9322-c6cdce74ab4c.5da18ec0-7de1-4e57-aaf1-ddc8a369c199.79a7d12e-da84-4bf4-ab60-7f34b44dd178",
+          "description": ""
+        },
+        "modelName": "invoices-billing-f0c606f9-ixp",
+        "description": "",
+        "projectName": "invoices-billing-f0c606f9-ixp",
+        "versionTag": "",
+        "folderKey": "79a7d12e-da84-4bf4-ab60-7f34b44dd178",
+        "folderName": "Shared/uipath-maestro-flow/BillingDispute",
+        "fileRef": "=js:$vars.start.output.disputedInvoice",
+        "pageRange": ""
+      },
+      "outputs": {
+        "output": {
+          "name": "output",
+          "type": "object",
+          "source": "=this",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails",
+          "source": "=Error",
+          "var": "error"
+        }
+      }
+    },
+    {
+      "id": "normalizeData",
+      "type": "core.action.script",
+      "typeVersion": "1.1",
+      "display": {
+        "label": "Normalize Data"
+      },
+      "inputs": {
+        "script": "const fields = ($vars.extractInvoice.output.ExtractionResult && $vars.extractInvoice.output.ExtractionResult.ResultsDocument && $vars.extractInvoice.output.ExtractionResult.ResultsDocument.Fields) || [];\nconst normalized = fields.map(function (f) {\n  const firstValue = (f.Values && f.Values.length > 0) ? f.Values[0] : null;\n  return {\n    Id: f.FieldId,\n    Name: f.FieldName,\n    Value: firstValue,\n    Type: f.FieldType,\n    IsMissing: f.IsMissing,\n    Confidence: f.Confidence\n  };\n});\nreturn { fields: normalized, count: normalized.length };"
+      },
+      "outputs": {
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails.",
+          "source": "=Error",
+          "var": "error"
+        },
+        "output": {
+          "type": "object",
+          "description": "The return value of the node.",
+          "source": "=result.response",
+          "var": "output"
+        }
+      }
+    },
+    {
+      "id": "normalizeInvoiceNumber",
+      "type": "core.action.script",
+      "typeVersion": "1.1",
+      "display": {
+        "label": "Normalize Invoice Number"
+      },
+      "inputs": {
+        "script": "const raw = ($vars.start.output.webhookPayload.invoice && $vars.start.output.webhookPayload.invoice.invoiceNumber) || '';\nlet normalized = String(raw).trim().toUpperCase();\nif (normalized.indexOf('MCS-') !== 0) {\n  normalized = 'MCS-' + normalized;\n}\nreturn { normalizedInvoiceNumber: normalized };"
+      },
+      "outputs": {
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails.",
+          "source": "=Error",
+          "var": "error"
+        },
+        "output": {
+          "type": "object",
+          "description": "The return value of the node.",
+          "source": "=result.response",
+          "var": "output"
+        }
+      }
+    },
+    {
+      "id": "mergeLookups",
+      "type": "core.logic.merge",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Merge Lookups"
+      },
+      "inputs": {},
+      "outputs": {
+        "output": {
+          "type": "object",
+          "description": "Merged upstream branch outputs.",
+          "source": "=this",
+          "var": "output"
+        }
+      }
+    },
+    {
+      "id": "discrepancyDetection",
+      "type": "core.action.script",
+      "typeVersion": "1.1",
+      "display": {
+        "label": "Discrepancy Detection"
+      },
+      "inputs": {
+        "script": "const disputedLines = ($vars.start.output.webhookPayload.dispute && $vars.start.output.webhookPayload.dispute.disputedLineItems) || [];\nconst erpRows = $vars.erpLookup1.output || [];\n\nlet totalOvercharge = 0;\nlet totalUndercharge = 0;\nconst lineResults = [];\n\ndisputedLines.forEach(function (disputed) {\n  const erpRow = erpRows.find(function (row) { return Number(row.lineNumber) === Number(disputed.lineNumber); });\n  if (!erpRow) {\n    lineResults.push({\n      lineNumber: disputed.lineNumber,\n      description: disputed.description,\n      disputedAmount: disputed.amount,\n      contractedAmount: null,\n      difference: null,\n      matched: false\n    });\n    return;\n  }\n  const disputedAmount = Number(disputed.amount) || 0;\n  const contractedAmount = Number(erpRow.amount) || 0;\n  const difference = disputedAmount - contractedAmount;\n  if (difference > 0) {\n    totalOvercharge += difference;\n  } else if (difference < 0) {\n    totalUndercharge += Math.abs(difference);\n  }\n  lineResults.push({\n    lineNumber: disputed.lineNumber,\n    description: disputed.description,\n    disputedQuantity: disputed.quantity,\n    disputedUnitPrice: disputed.unitPrice,\n    disputedAmount: disputedAmount,\n    contractedQuantity: erpRow.quantity,\n    contractedUnitPrice: erpRow.unitPrice,\n    contractedAmount: contractedAmount,\n    difference: difference,\n    matched: true\n  });\n});\n\nreturn {\n  lineResults: lineResults,\n  totalOvercharge: totalOvercharge,\n  totalUndercharge: totalUndercharge,\n  hasDiscrepancies: (totalOvercharge > 0 || totalUndercharge > 0)\n};"
+      },
+      "outputs": {
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails.",
+          "source": "=Error",
+          "var": "error"
+        },
+        "output": {
+          "type": "object",
+          "description": "The return value of the node.",
+          "source": "=result.response",
+          "var": "output"
+        }
+      }
+    },
+    {
+      "id": "disputeAnalystAgent",
+      "type": "uipath.agent.autonomous",
+      "typeVersion": "1.3",
+      "display": {
+        "label": "Dispute Analyst Agent"
+      },
+      "inputs": {
+        "source": "708b01a4-4261-4fdb-80bf-a698f3edae40",
+        "agentInputVariables": [
+          {
+            "id": "normalizeData__output__fields",
+            "type": "array",
+            "binding": "=$vars.normalizeData.output.fields",
+            "description": "Normalized invoice fields extracted from the disputed invoice"
+          },
+          {
+            "id": "crmLookup1__output",
+            "type": "array",
+            "binding": "=$vars.crmLookup1.output",
+            "description": "CRM account records for the disputing customer"
+          },
+          {
+            "id": "erpLookup1__output",
+            "type": "array",
+            "binding": "=$vars.erpLookup1.output",
+            "description": "ERP contract line items for the disputed invoice"
+          },
+          {
+            "id": "discrepancyDetection__output",
+            "type": "object",
+            "binding": "=$vars.discrepancyDetection.output",
+            "description": "Computed pricing discrepancy summary"
+          },
+          {
+            "id": "normalizeInvoiceNumber__output__normalizedInvoiceNumber",
+            "type": "string",
+            "binding": "=$vars.normalizeInvoiceNumber.output.normalizedInvoiceNumber",
+            "description": "Normalized invoice number"
+          }
+        ],
+        "agentOutputVariables": [
+          {
+            "id": "determination",
+            "type": "string"
+          },
+          {
+            "id": "recommendedAction",
+            "type": "string"
+          },
+          {
+            "id": "autoResolutionEligible",
+            "type": "boolean"
+          },
+          {
+            "id": "creditAmount",
+            "type": "number"
+          },
+          {
+            "id": "confidence",
+            "type": "number"
+          },
+          {
+            "id": "rationale",
+            "type": "string"
+          }
+        ]
+      },
+      "outputs": {
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails.",
+          "source": "=Error",
+          "var": "error"
+        }
+      }
+    },
+    {
+      "id": "contextIndexNode",
+      "type": "uipath.agent.resource.context.index.billing-dispute-sop-index.cc45b9b4-dbf6-47b3-40ac-08debc0cec5b",
+      "typeVersion": "1.0.0",
+      "display": {
+        "label": "Billing Dispute SOP Index"
+      },
+      "inputs": {
+        "source": "da9282cc-1c12-4f2b-b4a9-7304a9a64f84"
+      }
+    },
+    {
+      "id": "switchRecommendedAction",
+      "type": "core.logic.switch",
+      "typeVersion": "1.1",
+      "display": {
+        "label": "Route by Recommended Action"
+      },
+      "inputs": {
+        "cases": [
+          {
+            "id": "escalate_to_manager",
+            "label": "Escalate to Manager",
+            "expression": "$vars.disputeAnalystAgent.output.recommendedAction === \"escalate_to_manager\""
+          },
+          {
+            "id": "auto_resolve",
+            "label": "Auto Resolve",
+            "expression": "$vars.disputeAnalystAgent.output.recommendedAction === \"auto_resolve\""
+          },
+          {
+            "id": "reject",
+            "label": "Reject",
+            "expression": "$vars.disputeAnalystAgent.output.recommendedAction === \"reject\""
+          }
+        ]
+      }
+    },
+    {
+      "id": "logCreditAmount",
+      "type": "core.action.script",
+      "typeVersion": "1.1",
+      "display": {
+        "label": "Log Credit Amount"
+      },
+      "inputs": {
+        "script": "const creditAmount = $vars.disputeAnalystAgent.output.creditAmount;\nreturn { creditAmount: creditAmount };"
+      },
+      "outputs": {
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails.",
+          "source": "=Error",
+          "var": "error"
+        },
+        "output": {
+          "type": "object",
+          "description": "The return value of the node.",
+          "source": "=result.response",
+          "var": "output"
+        }
+      }
+    },
+    {
+      "id": "approvalDecision",
+      "type": "core.logic.decision",
+      "typeVersion": "1.2",
+      "display": {
+        "label": "Manager Approval Decision"
+      },
+      "inputs": {
+        "expression": "false",
+        "trueLabel": "Rejected",
+        "falseLabel": "Approved"
+      }
+    },
+    {
+      "id": "financialPosting",
+      "type": "uipath.core.api-workflow.07d45a91-9413-4dad-82ff-28306c2d85ea",
+      "typeVersion": "1.0.0",
+      "display": {
+        "label": "FinancialPostingFunction"
+      },
+      "inputs": {
+        "invoiceNumber": "=js:$vars.normalizeInvoiceNumber.output.normalizedInvoiceNumber"
+      },
+      "outputs": {
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails.",
+          "source": "=Error",
+          "var": "error"
+        }
+      }
+    },
+    {
+      "id": "resolutionWriterAgent",
+      "type": "uipath.agent.autonomous",
+      "typeVersion": "1.3",
+      "display": {
+        "label": "Resolution Writer Agent"
+      },
+      "inputs": {
+        "source": "08dcc59a-5117-4035-aa7f-43d5a7431036",
+        "agentInputVariables": [
+          {
+            "id": "normalizeInvoiceNumber__output__normalizedInvoiceNumber",
+            "type": "string",
+            "binding": "=$vars.normalizeInvoiceNumber.output.normalizedInvoiceNumber",
+            "description": "Normalized invoice number"
+          },
+          {
+            "id": "disputeAnalystAgent__output__creditAmount",
+            "type": "number",
+            "binding": "=$vars.disputeAnalystAgent.output.creditAmount",
+            "description": "Approved credit amount"
+          },
+          {
+            "id": "disputeAnalystAgent__output__determination",
+            "type": "string",
+            "binding": "=$vars.disputeAnalystAgent.output.determination",
+            "description": "Analyst determination"
+          },
+          {
+            "id": "disputeAnalystAgent__output__rationale",
+            "type": "string",
+            "binding": "=$vars.disputeAnalystAgent.output.rationale",
+            "description": "Analyst rationale"
+          }
+        ],
+        "agentOutputVariables": [
+          {
+            "id": "subject",
+            "type": "string"
+          },
+          {
+            "id": "body",
+            "type": "string"
+          }
+        ]
+      },
+      "outputs": {
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails.",
+          "source": "=Error",
+          "var": "error"
+        }
+      }
+    },
+    {
+      "id": "endResolution",
+      "type": "core.control.end",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Return Resolution"
+      },
+      "inputs": {},
+      "outputs": {
+        "determination": {
+          "source": "=js:$vars.disputeAnalystAgent.output.determination"
+        },
+        "recommendedAction": {
+          "source": "=js:$vars.disputeAnalystAgent.output.recommendedAction"
+        },
+        "creditAmount": {
+          "source": "=js:$vars.disputeAnalystAgent.output.creditAmount"
+        },
+        "rationale": {
+          "source": "=js:$vars.disputeAnalystAgent.output.rationale"
+        },
+        "resolutionEmailBody": {
+          "source": "=js:$vars.resolutionWriterAgent.output.body"
+        }
+      }
+    },
+    {
+      "id": "endRejection",
+      "type": "core.control.end",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Return Rejection"
+      },
+      "inputs": {},
+      "outputs": {
+        "determination": {
+          "source": "=js:$vars.disputeAnalystAgent.output.determination"
+        },
+        "recommendedAction": {
+          "source": "=js:$vars.disputeAnalystAgent.output.recommendedAction"
+        },
+        "creditAmount": {
+          "source": "=js:$vars.disputeAnalystAgent.output.creditAmount"
+        },
+        "rationale": {
+          "source": "=js:$vars.disputeAnalystAgent.output.rationale"
+        },
+        "resolutionEmailBody": {
+          "source": "=js:'No resolution email was drafted because the dispute was rejected by the analyst.'"
+        }
+      }
+    },
+    {
+      "id": "endManagerRejection",
+      "type": "core.control.end",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Return Manager Rejection"
+      },
+      "inputs": {},
+      "outputs": {
+        "determination": {
+          "source": "=js:$vars.disputeAnalystAgent.output.determination"
+        },
+        "recommendedAction": {
+          "source": "=js:$vars.disputeAnalystAgent.output.recommendedAction"
+        },
+        "creditAmount": {
+          "source": "=js:$vars.disputeAnalystAgent.output.creditAmount"
+        },
+        "rationale": {
+          "source": "=js:$vars.disputeAnalystAgent.output.rationale"
+        },
+        "resolutionEmailBody": {
+          "source": "=js:'No resolution email was drafted because the dispute was rejected by the manager.'"
+        }
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge_start_output_extractInvoice_input",
+      "sourceNodeId": "start",
+      "sourcePort": "output",
+      "targetNodeId": "extractInvoice",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge_extractInvoice_success_normalizeData_input",
+      "sourceNodeId": "extractInvoice",
+      "sourcePort": "success",
+      "targetNodeId": "normalizeData",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge_normalizeData_success_normalizeInvoiceNumber_input",
+      "sourceNodeId": "normalizeData",
+      "sourcePort": "success",
+      "targetNodeId": "normalizeInvoiceNumber",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge_normalizeInvoiceNumber_success_crmLookup1_input",
+      "sourceNodeId": "normalizeInvoiceNumber",
+      "sourcePort": "success",
+      "targetNodeId": "crmLookup1",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge_normalizeInvoiceNumber_success_erpLookup1_input",
+      "sourceNodeId": "normalizeInvoiceNumber",
+      "sourcePort": "success",
+      "targetNodeId": "erpLookup1",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge_crmLookup1_output_mergeLookups_input",
+      "sourceNodeId": "crmLookup1",
+      "sourcePort": "output",
+      "targetNodeId": "mergeLookups",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge_erpLookup1_output_mergeLookups_input",
+      "sourceNodeId": "erpLookup1",
+      "sourcePort": "output",
+      "targetNodeId": "mergeLookups",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge_mergeLookups_output_discrepancyDetection_input",
+      "sourceNodeId": "mergeLookups",
+      "sourcePort": "output",
+      "targetNodeId": "discrepancyDetection",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge_discrepancyDetection_success_disputeAnalystAgent_input",
+      "sourceNodeId": "discrepancyDetection",
+      "sourcePort": "success",
+      "targetNodeId": "disputeAnalystAgent",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge_disputeAnalystAgent_context_contextIndexNode_input",
+      "sourceNodeId": "disputeAnalystAgent",
+      "sourcePort": "context",
+      "targetNodeId": "contextIndexNode",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge_disputeAnalystAgent_success_switchRecommendedAction_input",
+      "sourceNodeId": "disputeAnalystAgent",
+      "sourcePort": "success",
+      "targetNodeId": "switchRecommendedAction",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge_switchRecommendedAction_case-escalate_to_manager_approvalDecision_input",
+      "sourceNodeId": "switchRecommendedAction",
+      "sourcePort": "case-escalate_to_manager",
+      "targetNodeId": "approvalDecision",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge_switchRecommendedAction_case-auto_resolve_logCreditAmount_input",
+      "sourceNodeId": "switchRecommendedAction",
+      "sourcePort": "case-auto_resolve",
+      "targetNodeId": "logCreditAmount",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge_switchRecommendedAction_case-reject_endRejection_input",
+      "sourceNodeId": "switchRecommendedAction",
+      "sourcePort": "case-reject",
+      "targetNodeId": "endRejection",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge_logCreditAmount_success_financialPosting_input",
+      "sourceNodeId": "logCreditAmount",
+      "sourcePort": "success",
+      "targetNodeId": "financialPosting",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge_approvalDecision_false_financialPosting_input",
+      "sourceNodeId": "approvalDecision",
+      "sourcePort": "false",
+      "targetNodeId": "financialPosting",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge_approvalDecision_true_endManagerRejection_input",
+      "sourceNodeId": "approvalDecision",
+      "sourcePort": "true",
+      "targetNodeId": "endManagerRejection",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge_financialPosting_output_resolutionWriterAgent_input",
+      "sourceNodeId": "financialPosting",
+      "sourcePort": "output",
+      "targetNodeId": "resolutionWriterAgent",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge_resolutionWriterAgent_success_endResolution_input",
+      "sourceNodeId": "resolutionWriterAgent",
+      "sourcePort": "success",
+      "targetNodeId": "endResolution",
+      "targetPort": "input"
+    }
+  ],
+  "definitions": [
+    {
+      "nodeType": "core.trigger.manual",
+      "version": "1.0",
+      "category": "trigger",
+      "description": "Start the process manually",
+      "tags": [
+        "trigger",
+        "start",
+        "manual"
+      ],
+      "sortOrder": 80,
+      "display": {
+        "label": "Manual trigger",
+        "icon": "play",
+        "shape": "circle"
+      },
+      "handleConfiguration": [
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "output",
+              "type": "source",
+              "handleType": "output",
+              "showButton": true,
+              "constraints": {
+                "forbiddenTargetCategories": [
+                  "trigger"
+                ]
+              }
+            }
+          ],
+          "visible": true
+        }
+      ],
+      "model": {
+        "type": "bpmn:StartEvent",
+        "entryPointId": true
+      },
+      "outputDefinition": {
+        "output": {
+          "type": "object",
+          "description": "Data passed when manually triggering the process.",
+          "source": "null",
+          "var": "output"
+        }
+      },
+      "toolbarExtensions": {
+        "design": {
+          "actions": [
+            {
+              "id": "change-trigger-type",
+              "icon": "square-mouse-pointer",
+              "label": "Change trigger type"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "nodeType": "uipath.connector.uipath-uipath-dataservice.query-entity-records",
+      "version": "1.0.0",
+      "category": "connector.196550",
+      "tags": [
+        "connector",
+        "activity"
+      ],
+      "sortOrder": 520,
+      "supportsErrorHandling": true,
+      "description": "Retrieves a list of records for the selected Entity from Data Fabric, according to specified filters.",
+      "display": {
+        "label": "Query Entity Records",
+        "description": "Retrieves a list of records for the selected Entity from Data Fabric, according to specified filters.",
+        "icon": "https://alpha.uipath.com/311c6049-4966-4ef2-a6f3-8ceccaf38d54/studio_/typecache/icons/98381fa079bbcf73264f551006d6ef7580fb53992f3d9f94361eb5d9e06040cb.svg",
+        "sourceDisplayName": "UiPath Data Fabric"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input",
+              "label": ""
+            }
+          ]
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "output",
+              "type": "source",
+              "handleType": "output",
+              "label": ""
+            },
+            {
+              "id": "error",
+              "label": "Error",
+              "type": "source",
+              "handleType": "output",
+              "visible": "{inputs.errorHandlingEnabled}",
+              "constraints": {
+                "maxConnections": 1
+              }
+            }
+          ]
+        }
+      ],
+      "model": {
+        "type": "bpmn:SendTask",
+        "serviceType": "Intsvc.ActivityExecution",
+        "bindings": {
+          "resource": "connection",
+          "resourceKey": "",
+          "values": [
+            {
+              "name": "uipath-uipath-dataservice connection",
+              "propertyAttribute": "ConnectionId"
+            },
+            {
+              "name": "FolderKey",
+              "propertyAttribute": "FolderKey"
+            }
+          ]
+        },
+        "context": [
+          {
+            "name": "connectorKey",
+            "type": "string",
+            "value": "uipath-uipath-dataservice"
+          },
+          {
+            "name": "operation",
+            "type": "string"
+          },
+          {
+            "name": "objectName",
+            "value": "QueryEntityRecordsCurated",
+            "type": "string"
+          },
+          {
+            "name": "method",
+            "type": "string",
+            "value": "POST"
+          },
+          {
+            "name": "connection",
+            "type": "string",
+            "value": "<bindings.uipath-uipath-dataservice connection>"
+          },
+          {
+            "name": "folderKey",
+            "type": "string",
+            "value": "<bindings.FolderKey>"
+          },
+          {
+            "name": "activityConfigurationVersion",
+            "type": "string",
+            "value": "v1"
+          },
+          {
+            "name": "metadata",
+            "body": {
+              "telemetryData": {
+                "connectorKey": "uipath-uipath-dataservice",
+                "connectorName": "Query Entity Records"
+              },
+              "inputMetadata": {},
+              "errorState": {
+                "hasError": true
+              }
+            },
+            "type": "json"
+          }
+        ]
+      },
+      "form": {
+        "id": "connector-properties",
+        "title": "Connector configuration",
+        "sections": [
+          {
+            "id": "connector",
+            "title": "Connector",
+            "collapsible": true,
+            "defaultExpanded": true,
+            "fields": [
+              {
+                "label": "",
+                "name": "inputs.detail",
+                "type": "custom",
+                "component": "dap-config",
+                "componentProps": {
+                  "connectorDetail": {
+                    "isAppActivity": false,
+                    "packageId": "196550",
+                    "svgIconUrl": "icons/98381fa079bbcf73264f551006d6ef7580fb53992f3d9f94361eb5d9e06040cb.svg",
+                    "displayName": "Query Entity Records",
+                    "assemblyQualifiedName": "UiPath.IntegrationService.Activities.Runtime.Activities.ConnectorActivity, UiPath.IntegrationService.Activities.Runtime, Version=1.31.0.0, Culture=neutral, PublicKeyToken=null",
+                    "description": "Retrieves a list of records for the selected Entity from Data Fabric, according to specified filters.",
+                    "category": "",
+                    "activityColor": "#E56D5C",
+                    "configuration": "{\"connectorKey\":\"uipath-uipath-dataservice\",\"objectName\":\"QueryEntityRecordsCurated\",\"httpMethod\":\"POST\",\"activityType\":\"Curated\",\"version\":\"1.0.0\",\"supportsStreaming\":false,\"subType\":\"standard\"}",
+                    "uiPathActivityTypeId": "703065b9-a310-33b8-9d4d-12df0a6f520b",
+                    "isExperimental": false,
+                    "helpUrlTemplate": "https://docs.uipath.com/{0}/activities/other/latest/integration-service/uipath-uipath-dataservice-Query-Entity-Records",
+                    "isEnabled": true,
+                    "targetPlatform": "CrossPlatform",
+                    "isAdvanced": false,
+                    "isRestricted": false,
+                    "hasWpfOnlyDesigner": false,
+                    "tags": [
+                      ""
+                    ]
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "inputDefinition": {},
+      "inputDefaults": {},
+      "outputDefinition": {
+        "output": {
+          "type": "object",
+          "description": "The return value of the connector.",
+          "source": "=result.response",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails",
+          "source": "=Error",
+          "var": "error",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "required": [
+              "code",
+              "message",
+              "detail",
+              "category",
+              "status"
+            ],
+            "properties": {
+              "code": {
+                "type": "string",
+                "description": "Error code as a string"
+              },
+              "message": {
+                "type": "string",
+                "description": "High-level error message"
+              },
+              "detail": {
+                "type": "string",
+                "description": "Detailed error description"
+              },
+              "category": {
+                "type": "string",
+                "description": "Error category"
+              },
+              "status": {
+                "type": "integer",
+                "description": "HTTP status code"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "debug": {
+        "runtime": "bpmnEngine"
+      }
+    },
+    {
+      "nodeType": "uipath.ixp.invoices-billing-f0c606f9-ixp.99f5bbfa-5f29-8033-8662-25001b6bb18e-79a7d12e-da84-4bf4-ab60-7f34b44dd178",
+      "version": "1.0.0",
+      "category": "document-extraction",
+      "tags": [
+        "ixp",
+        "document-understanding",
+        "extraction"
+      ],
+      "description": "(Shared/uipath-maestro-flow/BillingDispute)",
+      "sortOrder": 545,
+      "display": {
+        "canvasLabel": "Extract",
+        "label": "invoices-billing",
+        "description": "(Shared/uipath-maestro-flow/BillingDispute)",
+        "icon": "file-text"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "success",
+              "type": "source",
+              "handleType": "output"
+            },
+            {
+              "id": "error",
+              "label": "Error",
+              "type": "source",
+              "handleType": "output",
+              "visible": "{inputs.errorHandlingEnabled}",
+              "constraints": {
+                "maxConnections": 1
+              }
+            }
+          ]
+        }
+      ],
+      "supportsErrorHandling": true,
+      "model": {
+        "type": "bpmn:ServiceTask",
+        "serviceType": "IXP.Extraction",
+        "section": "Published",
+        "bindings": {
+          "resource": "ixpDeployment",
+          "entityType": "ixpDeployment",
+          "resourceSubType": null,
+          "resourceKey": "99f5bbfa-5f29-8033-8662-25001b6bb18e",
+          "name": "invoices-billing",
+          "values": [
+            {
+              "name": "name",
+              "propertyAttribute": "name",
+              "default": "invoices-billing"
+            },
+            {
+              "name": "folderPath",
+              "propertyAttribute": "folderPath",
+              "default": "Shared/uipath-maestro-flow/BillingDispute"
+            }
+          ]
+        }
+      },
+      "form": {
+        "id": "ixp-standalone-form",
+        "title": "IXP",
+        "sections": [
+          {
+            "id": "ixp-model",
+            "title": "Configuration",
+            "fields": [
+              {
+                "name": "inputs.model",
+                "type": "custom",
+                "component": "ixp-model-folder-selector",
+                "label": ""
+              }
+            ]
+          },
+          {
+            "id": "ixp-file-upload",
+            "title": "File input",
+            "collapsible": true,
+            "defaultExpanded": true,
+            "fields": [
+              {
+                "name": "inputs.fileRef",
+                "type": "file",
+                "label": "File",
+                "description": "File to extract data from",
+                "validation": {
+                  "required": true,
+                  "messages": {
+                    "required": "A file is required for extraction"
+                  }
+                }
+              },
+              {
+                "name": "inputs.pageRange",
+                "type": "text",
+                "label": "Page range",
+                "placeholder": "e.g. 1-5",
+                "description": "Optional page range to process."
+              }
+            ]
+          },
+          {
+            "id": "schema-definition",
+            "title": "Schema definition",
+            "collapsible": false,
+            "fields": [
+              {
+                "name": "inputs.model",
+                "type": "custom",
+                "component": "ixp-model-taxonomy",
+                "label": ""
+              }
+            ]
+          }
+        ]
+      },
+      "debug": {
+        "runtime": "bpmnEngine"
+      },
+      "inputDefinition": {
+        "type": "object",
+        "properties": {
+          "projectName": {
+            "type": "string"
+          },
+          "projectId": {
+            "type": "string"
+          },
+          "versionTag": {
+            "type": "string"
+          },
+          "folderKey": {
+            "type": "string",
+            "minLength": 1
+          },
+          "folderName": {
+            "type": "string"
+          },
+          "model": {
+            "type": "object"
+          },
+          "modelName": {
+            "type": "string",
+            "minLength": 1
+          },
+          "fileRef": {
+            "type": "string",
+            "minLength": 1
+          },
+          "pageRange": {
+            "type": "string"
+          },
+          "attachmentConfig": {
+            "type": "object"
+          },
+          "attachment": {
+            "type": "object",
+            "description": "File to extract data from.",
+            "properties": {
+              "ID": {
+                "type": "string",
+                "description": "Orchestrator attachment key"
+              },
+              "FullName": {
+                "type": "string",
+                "description": "File name"
+              },
+              "MimeType": {
+                "type": "string",
+                "description": "The MIME type of the content"
+              },
+              "Metadata": {
+                "type": "object",
+                "description": "Dictionary of metadata",
+                "additionalProperties": {
+                  "type": "string"
+                }
+              }
+            },
+            "required": [
+              "ID"
+            ]
+          }
+        },
+        "required": [
+          "fileRef",
+          "modelName",
+          "folderKey"
+        ]
+      },
+      "inputDefaults": {
+        "model": {
+          "id": "99f5bbfa-5f29-8033-8662-25001b6bb18e",
+          "modelName": "invoices-billing-f0c606f9-ixp",
+          "modelDisplayName": "invoices-billing",
+          "folderKey": "79a7d12e-da84-4bf4-ab60-7f34b44dd178",
+          "folderName": "Shared/uipath-maestro-flow/BillingDispute",
+          "folderPath": "c4359cde-55f0-4f0e-9322-c6cdce74ab4c.5da18ec0-7de1-4e57-aaf1-ddc8a369c199.79a7d12e-da84-4bf4-ab60-7f34b44dd178",
+          "description": ""
+        },
+        "modelName": "invoices-billing-f0c606f9-ixp",
+        "description": "",
+        "projectName": "invoices-billing-f0c606f9-ixp",
+        "versionTag": "",
+        "folderKey": "79a7d12e-da84-4bf4-ab60-7f34b44dd178",
+        "folderName": "Shared/uipath-maestro-flow/BillingDispute",
+        "fileRef": "",
+        "pageRange": ""
+      },
+      "outputDefinition": {
+        "output": {
+          "name": "output",
+          "type": "object",
+          "source": "=this",
+          "var": "output",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "properties": {
+              "ExtractionResult": {
+                "type": "object",
+                "properties": {
+                  "DocumentId": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "ResultsVersion": {
+                    "type": "integer",
+                    "format": "int32",
+                    "minimum": -2147483648,
+                    "maximum": 2147483647
+                  },
+                  "ResultsDocument": {
+                    "type": "object",
+                    "properties": {
+                      "Bounds": {
+                        "type": "object",
+                        "properties": {
+                          "PageCount": {
+                            "type": "integer",
+                            "format": "int32",
+                            "minimum": -2147483648,
+                            "maximum": 2147483647
+                          },
+                          "PageRange": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          }
+                        },
+                        "additionalProperties": false
+                      },
+                      "Language": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "DocumentGroup": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "DocumentCategory": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "DocumentTypeId": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "DocumentTypeName": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "DocumentTypeDataVersion": {
+                        "type": "integer",
+                        "format": "int32",
+                        "minimum": -2147483648,
+                        "maximum": 2147483647
+                      },
+                      "DataVersion": {
+                        "type": "integer",
+                        "format": "int32",
+                        "minimum": -2147483648,
+                        "maximum": 2147483647
+                      },
+                      "DocumentTypeSource": {
+                        "enum": [
+                          "Automatic",
+                          "Manual",
+                          "ManuallyChanged",
+                          "Defaulted",
+                          "External"
+                        ],
+                        "type": "string"
+                      },
+                      "DocumentTypeField": {
+                        "type": "object",
+                        "properties": {
+                          "Components": {
+                            "type": [
+                              "array",
+                              "null"
+                            ],
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "FieldId": {
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ]
+                                },
+                                "FieldName": {
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ]
+                                },
+                                "FieldType": {
+                                  "enum": [
+                                    "Text",
+                                    "Number",
+                                    "Date",
+                                    "Name",
+                                    "Address",
+                                    "Keyword",
+                                    "Set",
+                                    "Boolean",
+                                    "Table",
+                                    "Internal",
+                                    "FieldGroup",
+                                    "MonetaryQuantity"
+                                  ],
+                                  "type": "string"
+                                },
+                                "IsMissing": {
+                                  "type": "boolean"
+                                },
+                                "DataSource": {
+                                  "enum": [
+                                    "Automatic",
+                                    "Manual",
+                                    "ManuallyChanged",
+                                    "Defaulted",
+                                    "External"
+                                  ],
+                                  "type": "string"
+                                },
+                                "Values": {
+                                  "type": [
+                                    "array",
+                                    "null"
+                                  ],
+                                  "items": {
+                                    "type": "any"
+                                  }
+                                },
+                                "DataVersion": {
+                                  "type": "integer",
+                                  "format": "int32",
+                                  "minimum": -2147483648,
+                                  "maximum": 2147483647
+                                },
+                                "OperatorConfirmed": {
+                                  "type": "boolean"
+                                },
+                                "ValidatorNotes": {
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ]
+                                },
+                                "ValidatorNotesInfo": {
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ]
+                                }
+                              },
+                              "additionalProperties": false
+                            }
+                          },
+                          "Value": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "UnformattedValue": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "Reference": {
+                            "type": "object",
+                            "properties": {
+                              "TextStartIndex": {
+                                "type": "integer",
+                                "format": "int32",
+                                "minimum": -2147483648,
+                                "maximum": 2147483647
+                              },
+                              "TextLength": {
+                                "type": "integer",
+                                "format": "int32",
+                                "minimum": -2147483648,
+                                "maximum": 2147483647
+                              },
+                              "Tokens": {
+                                "type": [
+                                  "array",
+                                  "null"
+                                ],
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "TextStartIndex": {
+                                      "type": "integer",
+                                      "format": "int32",
+                                      "minimum": -2147483648,
+                                      "maximum": 2147483647
+                                    },
+                                    "TextLength": {
+                                      "type": "integer",
+                                      "format": "int32",
+                                      "minimum": -2147483648,
+                                      "maximum": 2147483647
+                                    },
+                                    "Page": {
+                                      "type": "integer",
+                                      "format": "int32",
+                                      "minimum": -2147483648,
+                                      "maximum": 2147483647
+                                    },
+                                    "PageWidth": {
+                                      "type": "number",
+                                      "format": "float",
+                                      "minimum": -3.402823669209385e+38,
+                                      "maximum": 3.402823669209385e+38
+                                    },
+                                    "PageHeight": {
+                                      "type": "number",
+                                      "format": "float",
+                                      "minimum": -3.402823669209385e+38,
+                                      "maximum": 3.402823669209385e+38
+                                    },
+                                    "Boxes": {
+                                      "type": [
+                                        "array",
+                                        "null"
+                                      ],
+                                      "items": {
+                                        "maxItems": 4,
+                                        "minItems": 4,
+                                        "type": "array",
+                                        "items": {
+                                          "type": "number"
+                                        }
+                                      }
+                                    }
+                                  },
+                                  "additionalProperties": false
+                                }
+                              }
+                            },
+                            "additionalProperties": false
+                          },
+                          "DerivedFields": {
+                            "type": [
+                              "array",
+                              "null"
+                            ],
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "FieldId": {
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ]
+                                },
+                                "Value": {
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ]
+                                }
+                              },
+                              "additionalProperties": false
+                            }
+                          },
+                          "Confidence": {
+                            "type": "number",
+                            "format": "float",
+                            "minimum": -3.402823669209385e+38,
+                            "maximum": 3.402823669209385e+38
+                          },
+                          "OperatorConfirmed": {
+                            "type": "boolean"
+                          },
+                          "OcrConfidence": {
+                            "type": "number",
+                            "format": "float",
+                            "minimum": -3.402823669209385e+38,
+                            "maximum": 3.402823669209385e+38
+                          },
+                          "TextType": {
+                            "enum": [
+                              "Unknown",
+                              "Text",
+                              "Checkbox",
+                              "Handwriting",
+                              "Barcode",
+                              "QRcode",
+                              "Stamp",
+                              "Logo",
+                              "Circle",
+                              "Underline",
+                              "Cut"
+                            ],
+                            "type": "string"
+                          },
+                          "ValidatorNotes": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "ValidatorNotesInfo": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          }
+                        },
+                        "additionalProperties": false
+                      },
+                      "Fields": {
+                        "type": [
+                          "array",
+                          "null"
+                        ],
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "FieldId": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "FieldName": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "FieldType": {
+                              "enum": [
+                                "Text",
+                                "Number",
+                                "Date",
+                                "Name",
+                                "Address",
+                                "Keyword",
+                                "Set",
+                                "Boolean",
+                                "Table",
+                                "Internal",
+                                "FieldGroup",
+                                "MonetaryQuantity"
+                              ],
+                              "type": "string"
+                            },
+                            "IsMissing": {
+                              "type": "boolean"
+                            },
+                            "DataSource": {
+                              "enum": [
+                                "Automatic",
+                                "Manual",
+                                "ManuallyChanged",
+                                "Defaulted",
+                                "External"
+                              ],
+                              "type": "string"
+                            },
+                            "Values": {
+                              "type": [
+                                "array",
+                                "null"
+                              ],
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "Components": {
+                                    "type": [
+                                      "array",
+                                      "null"
+                                    ],
+                                    "items": {
+                                      "type": "any"
+                                    }
+                                  },
+                                  "Value": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  },
+                                  "UnformattedValue": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  },
+                                  "Reference": {
+                                    "type": "object",
+                                    "properties": {
+                                      "TextStartIndex": {
+                                        "type": "integer",
+                                        "format": "int32",
+                                        "minimum": -2147483648,
+                                        "maximum": 2147483647
+                                      },
+                                      "TextLength": {
+                                        "type": "integer",
+                                        "format": "int32",
+                                        "minimum": -2147483648,
+                                        "maximum": 2147483647
+                                      },
+                                      "Tokens": {
+                                        "type": [
+                                          "array",
+                                          "null"
+                                        ],
+                                        "items": {
+                                          "type": "object",
+                                          "properties": {
+                                            "TextStartIndex": {
+                                              "type": "integer",
+                                              "format": "int32",
+                                              "minimum": -2147483648,
+                                              "maximum": 2147483647
+                                            },
+                                            "TextLength": {
+                                              "type": "integer",
+                                              "format": "int32",
+                                              "minimum": -2147483648,
+                                              "maximum": 2147483647
+                                            },
+                                            "Page": {
+                                              "type": "integer",
+                                              "format": "int32",
+                                              "minimum": -2147483648,
+                                              "maximum": 2147483647
+                                            },
+                                            "PageWidth": {
+                                              "type": "number",
+                                              "format": "float",
+                                              "minimum": -3.402823669209385e+38,
+                                              "maximum": 3.402823669209385e+38
+                                            },
+                                            "PageHeight": {
+                                              "type": "number",
+                                              "format": "float",
+                                              "minimum": -3.402823669209385e+38,
+                                              "maximum": 3.402823669209385e+38
+                                            },
+                                            "Boxes": {
+                                              "type": [
+                                                "array",
+                                                "null"
+                                              ],
+                                              "items": {
+                                                "maxItems": 4,
+                                                "minItems": 4,
+                                                "type": "array",
+                                                "items": {
+                                                  "type": "number"
+                                                }
+                                              }
+                                            }
+                                          },
+                                          "additionalProperties": false
+                                        }
+                                      }
+                                    },
+                                    "additionalProperties": false
+                                  },
+                                  "DerivedFields": {
+                                    "type": [
+                                      "array",
+                                      "null"
+                                    ],
+                                    "items": {
+                                      "type": "object",
+                                      "properties": {
+                                        "FieldId": {
+                                          "type": [
+                                            "string",
+                                            "null"
+                                          ]
+                                        },
+                                        "Value": {
+                                          "type": [
+                                            "string",
+                                            "null"
+                                          ]
+                                        }
+                                      },
+                                      "additionalProperties": false
+                                    }
+                                  },
+                                  "Confidence": {
+                                    "type": "number",
+                                    "format": "float",
+                                    "minimum": -3.402823669209385e+38,
+                                    "maximum": 3.402823669209385e+38
+                                  },
+                                  "OperatorConfirmed": {
+                                    "type": "boolean"
+                                  },
+                                  "OcrConfidence": {
+                                    "type": "number",
+                                    "format": "float",
+                                    "minimum": -3.402823669209385e+38,
+                                    "maximum": 3.402823669209385e+38
+                                  },
+                                  "TextType": {
+                                    "enum": [
+                                      "Unknown",
+                                      "Text",
+                                      "Checkbox",
+                                      "Handwriting",
+                                      "Barcode",
+                                      "QRcode",
+                                      "Stamp",
+                                      "Logo",
+                                      "Circle",
+                                      "Underline",
+                                      "Cut"
+                                    ],
+                                    "type": "string"
+                                  },
+                                  "ValidatorNotes": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  },
+                                  "ValidatorNotesInfo": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  }
+                                },
+                                "additionalProperties": false
+                              }
+                            },
+                            "DataVersion": {
+                              "type": "integer",
+                              "format": "int32",
+                              "minimum": -2147483648,
+                              "maximum": 2147483647
+                            },
+                            "OperatorConfirmed": {
+                              "type": "boolean"
+                            },
+                            "ValidatorNotes": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "ValidatorNotesInfo": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            }
+                          },
+                          "additionalProperties": false
+                        }
+                      },
+                      "Tables": {
+                        "type": [
+                          "array",
+                          "null"
+                        ],
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "FieldId": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "FieldName": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "IsMissing": {
+                              "type": "boolean"
+                            },
+                            "DataSource": {
+                              "enum": [
+                                "Automatic",
+                                "Manual",
+                                "ManuallyChanged",
+                                "Defaulted",
+                                "External"
+                              ],
+                              "type": "string"
+                            },
+                            "DataVersion": {
+                              "type": "integer",
+                              "format": "int32",
+                              "minimum": -2147483648,
+                              "maximum": 2147483647
+                            },
+                            "OperatorConfirmed": {
+                              "type": "boolean"
+                            },
+                            "Values": {
+                              "type": [
+                                "array",
+                                "null"
+                              ],
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "OperatorConfirmed": {
+                                    "type": "boolean"
+                                  },
+                                  "Confidence": {
+                                    "type": "number",
+                                    "format": "float",
+                                    "minimum": -3.402823669209385e+38,
+                                    "maximum": 3.402823669209385e+38
+                                  },
+                                  "OcrConfidence": {
+                                    "type": "number",
+                                    "format": "float",
+                                    "minimum": -3.402823669209385e+38,
+                                    "maximum": 3.402823669209385e+38
+                                  },
+                                  "Cells": {
+                                    "type": [
+                                      "array",
+                                      "null"
+                                    ],
+                                    "items": {
+                                      "type": "object",
+                                      "properties": {
+                                        "RowIndex": {
+                                          "type": "integer",
+                                          "format": "int32",
+                                          "minimum": -2147483648,
+                                          "maximum": 2147483647
+                                        },
+                                        "ColumnIndex": {
+                                          "type": "integer",
+                                          "format": "int32",
+                                          "minimum": -2147483648,
+                                          "maximum": 2147483647
+                                        },
+                                        "IsHeader": {
+                                          "type": "boolean"
+                                        },
+                                        "IsMissing": {
+                                          "type": "boolean"
+                                        },
+                                        "OperatorConfirmed": {
+                                          "type": "boolean"
+                                        },
+                                        "DataSource": {
+                                          "enum": [
+                                            "Automatic",
+                                            "Manual",
+                                            "ManuallyChanged",
+                                            "Defaulted",
+                                            "External"
+                                          ],
+                                          "type": "string"
+                                        },
+                                        "DataVersion": {
+                                          "type": "integer",
+                                          "format": "int32",
+                                          "minimum": -2147483648,
+                                          "maximum": 2147483647
+                                        },
+                                        "Values": {
+                                          "type": [
+                                            "array",
+                                            "null"
+                                          ],
+                                          "items": {
+                                            "type": "object",
+                                            "properties": {
+                                              "Components": {
+                                                "type": [
+                                                  "array",
+                                                  "null"
+                                                ],
+                                                "items": {
+                                                  "type": "object",
+                                                  "properties": {
+                                                    "FieldId": {
+                                                      "type": [
+                                                        "string",
+                                                        "null"
+                                                      ]
+                                                    },
+                                                    "FieldName": {
+                                                      "type": [
+                                                        "string",
+                                                        "null"
+                                                      ]
+                                                    },
+                                                    "FieldType": {
+                                                      "enum": [
+                                                        "Text",
+                                                        "Number",
+                                                        "Date",
+                                                        "Name",
+                                                        "Address",
+                                                        "Keyword",
+                                                        "Set",
+                                                        "Boolean",
+                                                        "Table",
+                                                        "Internal",
+                                                        "FieldGroup",
+                                                        "MonetaryQuantity"
+                                                      ],
+                                                      "type": "string"
+                                                    },
+                                                    "IsMissing": {
+                                                      "type": "boolean"
+                                                    },
+                                                    "DataSource": {
+                                                      "enum": [
+                                                        "Automatic",
+                                                        "Manual",
+                                                        "ManuallyChanged",
+                                                        "Defaulted",
+                                                        "External"
+                                                      ],
+                                                      "type": "string"
+                                                    },
+                                                    "Values": {
+                                                      "type": [
+                                                        "array",
+                                                        "null"
+                                                      ],
+                                                      "items": {
+                                                        "type": "any"
+                                                      }
+                                                    },
+                                                    "DataVersion": {
+                                                      "type": "integer",
+                                                      "format": "int32",
+                                                      "minimum": -2147483648,
+                                                      "maximum": 2147483647
+                                                    },
+                                                    "OperatorConfirmed": {
+                                                      "type": "boolean"
+                                                    },
+                                                    "ValidatorNotes": {
+                                                      "type": [
+                                                        "string",
+                                                        "null"
+                                                      ]
+                                                    },
+                                                    "ValidatorNotesInfo": {
+                                                      "type": [
+                                                        "string",
+                                                        "null"
+                                                      ]
+                                                    }
+                                                  },
+                                                  "additionalProperties": false
+                                                }
+                                              },
+                                              "Value": {
+                                                "type": [
+                                                  "string",
+                                                  "null"
+                                                ]
+                                              },
+                                              "UnformattedValue": {
+                                                "type": [
+                                                  "string",
+                                                  "null"
+                                                ]
+                                              },
+                                              "Reference": {
+                                                "type": "object",
+                                                "properties": {
+                                                  "TextStartIndex": {
+                                                    "type": "integer",
+                                                    "format": "int32",
+                                                    "minimum": -2147483648,
+                                                    "maximum": 2147483647
+                                                  },
+                                                  "TextLength": {
+                                                    "type": "integer",
+                                                    "format": "int32",
+                                                    "minimum": -2147483648,
+                                                    "maximum": 2147483647
+                                                  },
+                                                  "Tokens": {
+                                                    "type": [
+                                                      "array",
+                                                      "null"
+                                                    ],
+                                                    "items": {
+                                                      "type": "object",
+                                                      "properties": {
+                                                        "TextStartIndex": {
+                                                          "type": "integer",
+                                                          "format": "int32",
+                                                          "minimum": -2147483648,
+                                                          "maximum": 2147483647
+                                                        },
+                                                        "TextLength": {
+                                                          "type": "integer",
+                                                          "format": "int32",
+                                                          "minimum": -2147483648,
+                                                          "maximum": 2147483647
+                                                        },
+                                                        "Page": {
+                                                          "type": "integer",
+                                                          "format": "int32",
+                                                          "minimum": -2147483648,
+                                                          "maximum": 2147483647
+                                                        },
+                                                        "PageWidth": {
+                                                          "type": "number",
+                                                          "format": "float",
+                                                          "minimum": -3.402823669209385e+38,
+                                                          "maximum": 3.402823669209385e+38
+                                                        },
+                                                        "PageHeight": {
+                                                          "type": "number",
+                                                          "format": "float",
+                                                          "minimum": -3.402823669209385e+38,
+                                                          "maximum": 3.402823669209385e+38
+                                                        },
+                                                        "Boxes": {
+                                                          "type": [
+                                                            "array",
+                                                            "null"
+                                                          ],
+                                                          "items": {
+                                                            "maxItems": 4,
+                                                            "minItems": 4,
+                                                            "type": "array",
+                                                            "items": {
+                                                              "type": "number"
+                                                            }
+                                                          }
+                                                        }
+                                                      },
+                                                      "additionalProperties": false
+                                                    }
+                                                  }
+                                                },
+                                                "additionalProperties": false
+                                              },
+                                              "DerivedFields": {
+                                                "type": [
+                                                  "array",
+                                                  "null"
+                                                ],
+                                                "items": {
+                                                  "type": "object",
+                                                  "properties": {
+                                                    "FieldId": {
+                                                      "type": [
+                                                        "string",
+                                                        "null"
+                                                      ]
+                                                    },
+                                                    "Value": {
+                                                      "type": [
+                                                        "string",
+                                                        "null"
+                                                      ]
+                                                    }
+                                                  },
+                                                  "additionalProperties": false
+                                                }
+                                              },
+                                              "Confidence": {
+                                                "type": "number",
+                                                "format": "float",
+                                                "minimum": -3.402823669209385e+38,
+                                                "maximum": 3.402823669209385e+38
+                                              },
+                                              "OperatorConfirmed": {
+                                                "type": "boolean"
+                                              },
+                                              "OcrConfidence": {
+                                                "type": "number",
+                                                "format": "float",
+                                                "minimum": -3.402823669209385e+38,
+                                                "maximum": 3.402823669209385e+38
+                                              },
+                                              "TextType": {
+                                                "enum": [
+                                                  "Unknown",
+                                                  "Text",
+                                                  "Checkbox",
+                                                  "Handwriting",
+                                                  "Barcode",
+                                                  "QRcode",
+                                                  "Stamp",
+                                                  "Logo",
+                                                  "Circle",
+                                                  "Underline",
+                                                  "Cut"
+                                                ],
+                                                "type": "string"
+                                              },
+                                              "ValidatorNotes": {
+                                                "type": [
+                                                  "string",
+                                                  "null"
+                                                ]
+                                              },
+                                              "ValidatorNotesInfo": {
+                                                "type": [
+                                                  "string",
+                                                  "null"
+                                                ]
+                                              }
+                                            },
+                                            "additionalProperties": false
+                                          }
+                                        }
+                                      },
+                                      "additionalProperties": false
+                                    }
+                                  },
+                                  "ColumnInfo": {
+                                    "type": [
+                                      "array",
+                                      "null"
+                                    ],
+                                    "items": {
+                                      "type": "object",
+                                      "properties": {
+                                        "FieldId": {
+                                          "type": [
+                                            "string",
+                                            "null"
+                                          ]
+                                        },
+                                        "FieldName": {
+                                          "type": [
+                                            "string",
+                                            "null"
+                                          ]
+                                        },
+                                        "FieldType": {
+                                          "enum": [
+                                            "Text",
+                                            "Number",
+                                            "Date",
+                                            "Name",
+                                            "Address",
+                                            "Keyword",
+                                            "Set",
+                                            "Boolean",
+                                            "Table",
+                                            "Internal",
+                                            "FieldGroup",
+                                            "MonetaryQuantity"
+                                          ],
+                                          "type": "string"
+                                        }
+                                      },
+                                      "additionalProperties": false
+                                    }
+                                  },
+                                  "NumberOfRows": {
+                                    "type": "integer",
+                                    "format": "int32",
+                                    "minimum": -2147483648,
+                                    "maximum": 2147483647
+                                  },
+                                  "ValidatorNotes": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  },
+                                  "ValidatorNotesInfo": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  }
+                                },
+                                "additionalProperties": false
+                              }
+                            },
+                            "ValidatorNotes": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "ValidatorNotesInfo": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            }
+                          },
+                          "additionalProperties": false
+                        }
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  "ExtractorPayloads": {
+                    "type": [
+                      "array",
+                      "null"
+                    ],
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "Id": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "Payload": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "SavedPayloadId": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "TaxonomySchemaMapping": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "BusinessRulesResults": {
+                    "type": [
+                      "array",
+                      "null"
+                    ],
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "FieldId": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "FieldType": {
+                          "enum": [
+                            "Text",
+                            "Number",
+                            "Date",
+                            "Name",
+                            "Address",
+                            "Keyword",
+                            "Set",
+                            "Boolean",
+                            "Table",
+                            "Internal",
+                            "FieldGroup",
+                            "MonetaryQuantity"
+                          ],
+                          "type": "string"
+                        },
+                        "Criticality": {
+                          "enum": [
+                            "Must",
+                            "Should"
+                          ],
+                          "type": "string"
+                        },
+                        "IsValid": {
+                          "type": "boolean"
+                        },
+                        "Results": {
+                          "type": [
+                            "array",
+                            "null"
+                          ],
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "Value": {
+                                "type": "object",
+                                "properties": {
+                                  "Value": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  },
+                                  "DerivedValue": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  }
+                                },
+                                "additionalProperties": false
+                              },
+                              "IsValid": {
+                                "type": "boolean"
+                              },
+                              "Rules": {
+                                "type": [
+                                  "array",
+                                  "null"
+                                ],
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "Rule": {
+                                      "type": "object",
+                                      "properties": {
+                                        "Name": {
+                                          "type": [
+                                            "string",
+                                            "null"
+                                          ]
+                                        },
+                                        "Type": {
+                                          "enum": [
+                                            "Mandatory",
+                                            "PossibleValues",
+                                            "Regex",
+                                            "StartsWith",
+                                            "EndsWith",
+                                            "FixedLength",
+                                            "IsNumeric",
+                                            "IsDate",
+                                            "IsEmail",
+                                            "Contains",
+                                            "Expression",
+                                            "TableExpression",
+                                            "IsEmpty"
+                                          ],
+                                          "type": "string"
+                                        },
+                                        "LogicalOperator": {
+                                          "enum": [
+                                            "AND",
+                                            "OR"
+                                          ],
+                                          "type": "string"
+                                        },
+                                        "ComparisonOperator": {
+                                          "enum": [
+                                            "Equals",
+                                            "NotEquals",
+                                            "Greater",
+                                            "Less",
+                                            "GreaterOrEqual",
+                                            "LessOrEqual"
+                                          ],
+                                          "type": "string"
+                                        },
+                                        "Expression": {
+                                          "type": [
+                                            "string",
+                                            "null"
+                                          ]
+                                        },
+                                        "SetValues": {
+                                          "type": [
+                                            "array",
+                                            "null"
+                                          ],
+                                          "items": {
+                                            "type": "string"
+                                          }
+                                        }
+                                      },
+                                      "additionalProperties": false
+                                    },
+                                    "IsValid": {
+                                      "type": "boolean"
+                                    }
+                                  },
+                                  "additionalProperties": false
+                                }
+                              }
+                            },
+                            "additionalProperties": false
+                          }
+                        },
+                        "BrokenRules": {
+                          "type": [
+                            "array",
+                            "null"
+                          ],
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "Name": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "Type": {
+                                "enum": [
+                                  "Mandatory",
+                                  "PossibleValues",
+                                  "Regex",
+                                  "StartsWith",
+                                  "EndsWith",
+                                  "FixedLength",
+                                  "IsNumeric",
+                                  "IsDate",
+                                  "IsEmail",
+                                  "Contains",
+                                  "Expression",
+                                  "TableExpression",
+                                  "IsEmpty"
+                                ],
+                                "type": "string"
+                              },
+                              "LogicalOperator": {
+                                "enum": [
+                                  "AND",
+                                  "OR"
+                                ],
+                                "type": "string"
+                              },
+                              "ComparisonOperator": {
+                                "enum": [
+                                  "Equals",
+                                  "NotEquals",
+                                  "Greater",
+                                  "Less",
+                                  "GreaterOrEqual",
+                                  "LessOrEqual"
+                                ],
+                                "type": "string"
+                              },
+                              "Expression": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "SetValues": {
+                                "type": [
+                                  "array",
+                                  "null"
+                                ],
+                                "items": {
+                                  "type": "string"
+                                }
+                              }
+                            },
+                            "additionalProperties": false
+                          }
+                        },
+                        "RowIndex": {
+                          "type": [
+                            "integer",
+                            "null"
+                          ],
+                          "format": "int32",
+                          "minimum": -2147483648,
+                          "maximum": 2147483647
+                        },
+                        "TableFieldId": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  }
+                },
+                "additionalProperties": false
+              },
+              "Taxonomy": {
+                "type": "object",
+                "properties": {
+                  "DataContractVersion": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "default": "1.2"
+                  },
+                  "DocumentTypes": {
+                    "type": [
+                      "array",
+                      "null"
+                    ],
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "DocumentTypeId": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "Group": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "Category": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "Name": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "OptionalUniqueIdentifier": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "TypeField": {
+                          "type": "object",
+                          "properties": {
+                            "FieldId": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "FieldName": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            }
+                          },
+                          "additionalProperties": false
+                        },
+                        "Fields": {
+                          "type": [
+                            "array",
+                            "null"
+                          ],
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "FieldId": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "FieldName": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "IsMultiValue": {
+                                "type": "boolean"
+                              },
+                              "Type": {
+                                "enum": [
+                                  "Text",
+                                  "Number",
+                                  "Date",
+                                  "Name",
+                                  "Address",
+                                  "Keyword",
+                                  "Set",
+                                  "Boolean",
+                                  "Table",
+                                  "Internal",
+                                  "FieldGroup",
+                                  "MonetaryQuantity"
+                                ],
+                                "type": "string"
+                              },
+                              "DeriveFieldsFormat": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "Components": {
+                                "type": [
+                                  "array",
+                                  "null"
+                                ],
+                                "items": {
+                                  "type": "any"
+                                }
+                              },
+                              "SetValues": {
+                                "type": [
+                                  "array",
+                                  "null"
+                                ],
+                                "items": {
+                                  "type": "string"
+                                }
+                              },
+                              "Metadata": {
+                                "type": [
+                                  "array",
+                                  "null"
+                                ],
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "Key": {
+                                      "type": [
+                                        "string",
+                                        "null"
+                                      ]
+                                    },
+                                    "Value": {
+                                      "type": [
+                                        "string",
+                                        "null"
+                                      ]
+                                    }
+                                  },
+                                  "additionalProperties": false
+                                }
+                              },
+                              "RuleSet": {
+                                "type": "object",
+                                "properties": {
+                                  "Criticality": {
+                                    "enum": [
+                                      "Must",
+                                      "Should"
+                                    ],
+                                    "type": "string"
+                                  },
+                                  "Rules": {
+                                    "type": [
+                                      "array",
+                                      "null"
+                                    ],
+                                    "items": {
+                                      "type": "object",
+                                      "properties": {
+                                        "Name": {
+                                          "type": [
+                                            "string",
+                                            "null"
+                                          ]
+                                        },
+                                        "Type": {
+                                          "enum": [
+                                            "Mandatory",
+                                            "PossibleValues",
+                                            "Regex",
+                                            "StartsWith",
+                                            "EndsWith",
+                                            "FixedLength",
+                                            "IsNumeric",
+                                            "IsDate",
+                                            "IsEmail",
+                                            "Contains",
+                                            "Expression",
+                                            "TableExpression",
+                                            "IsEmpty"
+                                          ],
+                                          "type": "string"
+                                        },
+                                        "LogicalOperator": {
+                                          "enum": [
+                                            "AND",
+                                            "OR"
+                                          ],
+                                          "type": "string"
+                                        },
+                                        "ComparisonOperator": {
+                                          "enum": [
+                                            "Equals",
+                                            "NotEquals",
+                                            "Greater",
+                                            "Less",
+                                            "GreaterOrEqual",
+                                            "LessOrEqual"
+                                          ],
+                                          "type": "string"
+                                        },
+                                        "Expression": {
+                                          "type": [
+                                            "string",
+                                            "null"
+                                          ]
+                                        },
+                                        "SetValues": {
+                                          "type": [
+                                            "array",
+                                            "null"
+                                          ],
+                                          "items": {
+                                            "type": "string"
+                                          }
+                                        }
+                                      },
+                                      "additionalProperties": false
+                                    }
+                                  }
+                                },
+                                "additionalProperties": false
+                              },
+                              "DefaultValue": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "DataSource": {
+                                "type": "object",
+                                "properties": {
+                                  "ResourceId": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  },
+                                  "ElementFieldId": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  }
+                                },
+                                "additionalProperties": false
+                              }
+                            },
+                            "additionalProperties": false
+                          }
+                        },
+                        "Metadata": {
+                          "type": [
+                            "array",
+                            "null"
+                          ],
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "Key": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "Value": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              }
+                            },
+                            "additionalProperties": false
+                          }
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "Groups": {
+                    "type": [
+                      "array",
+                      "null"
+                    ],
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "Name": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "Categories": {
+                          "type": [
+                            "array",
+                            "null"
+                          ],
+                          "items": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "SupportedLanguages": {
+                    "type": [
+                      "array",
+                      "null"
+                    ],
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "Name": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "Code": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "ReportAsExceptionSettings": {
+                    "type": "object",
+                    "properties": {
+                      "ExceptionReasonOptions": {
+                        "type": [
+                          "array",
+                          "null"
+                        ],
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "ExceptionReason": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            }
+                          },
+                          "additionalProperties": false
+                        }
+                      }
+                    },
+                    "additionalProperties": false
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails",
+          "source": "=Error",
+          "var": "error",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "required": [
+              "code",
+              "message",
+              "detail",
+              "category",
+              "status"
+            ],
+            "properties": {
+              "code": {
+                "type": "string",
+                "description": "Error code as a string"
+              },
+              "message": {
+                "type": "string",
+                "description": "High-level error message"
+              },
+              "detail": {
+                "type": "string",
+                "description": "Detailed error description"
+              },
+              "category": {
+                "type": "string",
+                "description": "Error category"
+              },
+              "status": {
+                "type": "integer",
+                "description": "HTTP status code"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      }
+    },
+    {
+      "nodeType": "core.action.script",
+      "version": "1.1",
+      "category": "data-operations",
+      "description": "Run custom JavaScript code",
+      "tags": [
+        "code",
+        "javascript",
+        "python"
+      ],
+      "sortOrder": 70,
+      "supportsErrorHandling": true,
+      "display": {
+        "label": "Script",
+        "icon": "code"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "success",
+              "type": "source",
+              "handleType": "output"
+            },
+            {
+              "id": "error",
+              "label": "Error",
+              "type": "source",
+              "handleType": "output",
+              "visible": "{inputs.errorHandlingEnabled}",
+              "constraints": {
+                "maxConnections": 1
+              }
+            }
+          ]
+        }
+      ],
+      "debug": {
+        "runtime": "clientScript"
+      },
+      "model": {
+        "type": "bpmn:ScriptTask"
+      },
+      "inputDefinition": {
+        "type": "object",
+        "properties": {
+          "script": {
+            "type": "string",
+            "minLength": 1,
+            "errorMessage": "Add a script function",
+            "validationSeverity": "warning"
+          }
+        },
+        "required": [
+          "script"
+        ]
+      },
+      "inputDefaults": {
+        "script": ""
+      },
+      "outputDefinition": {
+        "output": {
+          "type": "any",
+          "description": "The return value of the script",
+          "source": "=result.response",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails",
+          "source": "=Error",
+          "var": "error",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "required": [
+              "code",
+              "message",
+              "detail",
+              "category",
+              "status"
+            ],
+            "properties": {
+              "code": {
+                "type": "string",
+                "description": "Error code as a string"
+              },
+              "message": {
+                "type": "string",
+                "description": "High-level error message"
+              },
+              "detail": {
+                "type": "string",
+                "description": "Detailed error description"
+              },
+              "category": {
+                "type": "string",
+                "description": "Error category"
+              },
+              "status": {
+                "type": "integer",
+                "description": "HTTP status code"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "form": {
+        "id": "script-properties",
+        "title": "Script configuration",
+        "sections": [
+          {
+            "id": "script",
+            "title": "Script",
+            "collapsible": true,
+            "defaultExpanded": true,
+            "fields": [
+              {
+                "name": "inputs.script",
+                "type": "custom",
+                "component": "script-editor",
+                "componentProps": {
+                  "language": "javascript",
+                  "returnType": "any",
+                  "validationMode": "script",
+                  "minHeight": 200,
+                  "placeholder": " // Return any value\nreturn {\n  message: \"Web request response\",\n  data: $vars.httpRequest1.output\n};"
+                },
+                "label": "Code",
+                "description": "JavaScript expression that returns a result"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "nodeType": "core.logic.merge",
+      "version": "1.0",
+      "category": "control-flow",
+      "description": "Join parallel branches into one path",
+      "tags": [
+        "control-flow",
+        "merge"
+      ],
+      "sortOrder": 64,
+      "display": {
+        "label": "Merge",
+        "icon": "merge"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ],
+          "visible": true
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "output",
+              "type": "source",
+              "handleType": "output"
+            }
+          ],
+          "visible": true
+        }
+      ],
+      "model": {
+        "type": "bpmn:ParallelGateway"
+      },
+      "runtimeConstraints": {
+        "exclude": [
+          "api-function"
+        ]
+      }
+    },
+    {
+      "nodeType": "uipath.agent.autonomous",
+      "version": "1.3",
+      "category": "agent",
+      "description": "AI agent that completes tasks autonomously",
+      "tags": [
+        "agentic",
+        "ai",
+        "autonomous",
+        "agent"
+      ],
+      "sortOrder": 10,
+      "supportsErrorHandling": true,
+      "display": {
+        "label": "Autonomous agent",
+        "icon": "autonomous-agent",
+        "shape": "rectangle"
+      },
+      "handleConfiguration": [
+        {
+          "position": "top",
+          "handles": [
+            {
+              "id": "escalation",
+              "type": "source",
+              "handleType": "artifact",
+              "label": "Escalations",
+              "showButton": true,
+              "constraints": {
+                "allowedTargets": [
+                  {
+                    "nodeType": "uipath.agent.resource.escalation"
+                  },
+                  {
+                    "nodeType": "uipath.agent.resource.escalation.*"
+                  }
+                ],
+                "validationMessage": "Only Agent Escalation nodes can connect here",
+                "addNodePanel": {
+                  "searchScope": "deep",
+                  "searchProviders": []
+                }
+              }
+            }
+          ]
+        },
+        {
+          "position": "bottom",
+          "handles": [
+            {
+              "id": "context",
+              "type": "source",
+              "handleType": "artifact",
+              "label": "Context",
+              "showButton": true,
+              "constraints": {
+                "allowedTargets": [
+                  {
+                    "nodeType": "uipath.agent.resource.context.*"
+                  }
+                ],
+                "validationMessage": "Only Context resource nodes can connect here",
+                "addNodePanel": {
+                  "searchScope": "deep",
+                  "searchProviders": [],
+                  "refreshOnFocus": "context",
+                  "createNewActions": [
+                    {
+                      "label": "Create new Context",
+                      "icon": "plus",
+                      "description": "Opens in a new tab",
+                      "urlTemplate": "/{org}/agents_/indexes/add",
+                      "categoryId": "agent"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "id": "tool",
+              "type": "source",
+              "handleType": "artifact",
+              "label": "Tools",
+              "showButton": true,
+              "constraints": {
+                "allowedTargets": [
+                  {
+                    "nodeType": "uipath.agent.resource.tool.*"
+                  }
+                ],
+                "validationMessage": "Only Tool resource nodes can connect here",
+                "addNodePanel": {
+                  "searchScope": "deep",
+                  "searchProviders": [],
+                  "refreshOnFocus": "mcp",
+                  "createNewActions": [
+                    {
+                      "label": "Create new MCP server",
+                      "icon": "plus",
+                      "urlTemplate": "/{org}/{tenant}/orchestrator_/mcp",
+                      "categoryId": "agent.tool.mcp"
+                    }
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "success",
+              "type": "source",
+              "handleType": "output",
+              "isDefaultForType": true
+            },
+            {
+              "id": "error",
+              "label": "Error",
+              "type": "source",
+              "handleType": "output",
+              "visible": "{inputs.errorHandlingEnabled}",
+              "constraints": {
+                "maxConnections": 1
+              }
+            }
+          ]
+        }
+      ],
+      "form": {
+        "id": "settings-form",
+        "title": "Agent settings",
+        "metadata": {
+          "propertyPanel": {
+            "sectionTabs": {
+              "section-advanced": "advanced"
+            }
+          }
+        },
+        "mode": "onChange",
+        "reValidateMode": "onChange",
+        "sections": [
+          {
+            "id": "section-1",
+            "title": "Agent settings",
+            "collapsible": true,
+            "defaultExpanded": true,
+            "fields": [
+              {
+                "name": "inputs.mode",
+                "type": "custom",
+                "component": "agent-harness-picker",
+                "label": ""
+              },
+              {
+                "name": "inputs.model",
+                "type": "custom",
+                "component": "agent-model-picker",
+                "label": "Model",
+                "componentProps": {
+                  "placeholder": "gpt-4o-2024-11-20"
+                }
+              },
+              {
+                "name": "inputs.systemPrompt",
+                "type": "custom",
+                "component": "prompt-editor",
+                "label": "System prompt",
+                "componentProps": {
+                  "multiline": true,
+                  "minRows": 4,
+                  "maxRows": 20,
+                  "placeholder": "Enter the system prompt"
+                }
+              },
+              {
+                "name": "inputs.userPrompt",
+                "type": "custom",
+                "component": "prompt-editor",
+                "label": "User prompt",
+                "componentProps": {
+                  "multiline": true,
+                  "minRows": 3,
+                  "maxRows": 15,
+                  "placeholder": "Enter the user prompt"
+                }
+              }
+            ]
+          },
+          {
+            "id": "section-advanced",
+            "title": "Advanced settings",
+            "collapsible": true,
+            "defaultExpanded": false,
+            "fields": [
+              {
+                "name": "inputs.temperature",
+                "type": "slider",
+                "label": "Temperature",
+                "defaultValue": 0,
+                "min": 0,
+                "max": 1,
+                "step": 0.01
+              },
+              {
+                "name": "inputs.maxTokenPerResponse",
+                "type": "slider",
+                "label": "Maximum tokens per response",
+                "defaultValue": 16384,
+                "min": 0,
+                "step": 1,
+                "maxRef": {
+                  "fromField": "inputs.modelMaxTokens",
+                  "fallback": 16384
+                }
+              },
+              {
+                "name": "inputs.maxIterations",
+                "type": "slider",
+                "label": "Maximum iterations",
+                "defaultValue": 25,
+                "min": 1,
+                "max": 100,
+                "step": 1
+              }
+            ]
+          },
+          {
+            "id": "guardrails",
+            "collapsible": false,
+            "fields": [
+              {
+                "name": "inputs.guardrails",
+                "type": "custom",
+                "component": "guardrails-editor",
+                "label": "",
+                "componentProps": {
+                  "toolName": "Agent",
+                  "scope": "Agent"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "inputDefinition": {
+        "type": "object",
+        "properties": {
+          "systemPrompt": {
+            "type": "string",
+            "minLength": 1,
+            "errorMessage": {
+              "minLength": "System prompt is required"
+            }
+          },
+          "userPrompt": {
+            "type": "string",
+            "minLength": 1,
+            "errorMessage": {
+              "minLength": "User prompt is required"
+            }
+          },
+          "model": {
+            "type": "string",
+            "minLength": 1,
+            "errorMessage": {
+              "minLength": "Model is required"
+            }
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "standard",
+              "advanced"
+            ]
+          },
+          "temperature": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "maxTokenPerResponse": {
+            "type": "number",
+            "minimum": 0
+          },
+          "modelMaxTokens": {
+            "type": "number",
+            "minimum": 0
+          },
+          "maxIterations": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 100
+          },
+          "guardrails": {
+            "type": "array"
+          },
+          "agentInputVariables": {
+            "type": "array"
+          },
+          "agentOutputVariables": {
+            "type": "array"
+          }
+        },
+        "required": [
+          "systemPrompt",
+          "userPrompt",
+          "model"
+        ]
+      },
+      "inputDefaults": {
+        "systemPrompt": "You are an agentic assistant.",
+        "userPrompt": "What is the current date?",
+        "model": "gpt-4o-2024-11-20",
+        "mode": "standard",
+        "agentInputVariables": [],
+        "agentOutputVariables": [
+          {
+            "id": "content",
+            "type": "string"
+          }
+        ]
+      },
+      "outputDefinition": {
+        "output": {
+          "type": "object",
+          "description": "Agent response",
+          "var": "output",
+          "properties": {
+            "content": {
+              "type": "string",
+              "description": "The agent response text"
+            }
+          }
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails",
+          "source": "=Error",
+          "var": "error",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "required": [
+              "code",
+              "message",
+              "detail",
+              "category",
+              "status"
+            ],
+            "properties": {
+              "code": {
+                "type": "string",
+                "description": "Error code as a string"
+              },
+              "message": {
+                "type": "string",
+                "description": "High-level error message"
+              },
+              "detail": {
+                "type": "string",
+                "description": "Detailed error description"
+              },
+              "category": {
+                "type": "string",
+                "description": "Error category"
+              },
+              "status": {
+                "type": "integer",
+                "description": "HTTP status code"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "model": {
+        "source": true,
+        "type": "bpmn:ServiceTask",
+        "serviceType": "Orchestrator.StartInlineAgentJob",
+        "version": "v2",
+        "context": [
+          {
+            "name": "_label",
+            "type": "string",
+            "value": ""
+          },
+          {
+            "name": "name",
+            "type": "string",
+            "value": ""
+          },
+          {
+            "name": "entryPoint",
+            "type": "string",
+            "value": ""
+          }
+        ]
+      },
+      "debug": {
+        "runtime": "bpmnEngine"
+      }
+    },
+    {
+      "nodeType": "uipath.agent.resource.context.index.billing-dispute-sop-index.cc45b9b4-dbf6-47b3-40ac-08debc0cec5b",
+      "version": "1.0.0",
+      "category": "agent",
+      "tags": [
+        "agent-context",
+        "index"
+      ],
+      "description": "SOP grounding for the Billing Dispute Analyst agent.",
+      "sortOrder": 510,
+      "display": {
+        "label": "Billing Dispute SOP Index",
+        "description": "SOP grounding for the Billing Dispute Analyst agent.",
+        "icon": "file-text",
+        "shape": "circle"
+      },
+      "handleConfiguration": [
+        {
+          "position": "top",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "artifact",
+              "constraints": {
+                "maxConnections": 1,
+                "allowedSources": [
+                  {
+                    "nodeType": "uipath.agent.autonomous",
+                    "handleId": "context"
+                  },
+                  {
+                    "nodeType": "uipath.agent.conversational",
+                    "handleId": "context"
+                  },
+                  {
+                    "nodeType": "uipath.agent.voice",
+                    "handleId": "context"
+                  }
+                ],
+                "validationMessage": "Only Agent's context handle can connect here"
+              }
+            }
+          ]
+        }
+      ],
+      "model": {
+        "source": true
+      },
+      "form": {
+        "id": "context-index-form",
+        "title": "Context index",
+        "sections": [
+          {
+            "id": "index-settings",
+            "title": "Index settings",
+            "collapsible": true,
+            "defaultExpanded": true,
+            "fields": [
+              {
+                "name": "inputs",
+                "type": "custom",
+                "component": "index-settings-editor",
+                "label": ""
+              }
+            ]
+          }
+        ]
+      },
+      "inputDefinition": {
+        "type": "object",
+        "properties": {
+          "indexId": {
+            "type": "string"
+          },
+          "indexName": {
+            "type": "string"
+          },
+          "folderKey": {
+            "type": "string"
+          },
+          "folderPath": {
+            "type": "string"
+          },
+          "retrievalMode": {
+            "type": "string"
+          },
+          "query": {
+            "type": "object"
+          },
+          "threshold": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "resultCount": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 40
+          },
+          "fileExtension": {
+            "type": "string"
+          },
+          "folderPathPrefix": {
+            "type": "object"
+          },
+          "citations": {
+            "type": "string"
+          },
+          "outputColumns": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "description": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "webSearchGrounding": {
+            "type": "object",
+            "properties": {
+              "value": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "retrievalMode": {
+                  "not": {
+                    "enum": [
+                      "deeprag",
+                      "batchtransform"
+                    ]
+                  }
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "query": {
+                  "oneOf": [
+                    {
+                      "properties": {
+                        "mode": {
+                          "const": "prompt"
+                        },
+                        "promptValue": {
+                          "type": "string",
+                          "minLength": 1
+                        }
+                      },
+                      "required": [
+                        "mode",
+                        "promptValue"
+                      ]
+                    },
+                    {
+                      "properties": {
+                        "mode": {
+                          "const": "text-builder"
+                        },
+                        "textValue": {
+                          "type": "string",
+                          "minLength": 1
+                        }
+                      },
+                      "required": [
+                        "mode",
+                        "textValue"
+                      ]
+                    },
+                    {
+                      "properties": {
+                        "mode": {
+                          "const": "variable"
+                        },
+                        "argumentPath": {
+                          "type": "string",
+                          "minLength": 1
+                        }
+                      },
+                      "required": [
+                        "mode",
+                        "argumentPath"
+                      ]
+                    }
+                  ],
+                  "errorMessage": "Query is required"
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "retrievalMode": {
+                  "const": "deeprag"
+                }
+              },
+              "required": [
+                "retrievalMode"
+              ]
+            },
+            "then": {
+              "properties": {
+                "query": {
+                  "oneOf": [
+                    {
+                      "properties": {
+                        "mode": {
+                          "const": "prompt"
+                        },
+                        "promptValue": {
+                          "type": "string",
+                          "minLength": 1
+                        }
+                      },
+                      "required": [
+                        "mode",
+                        "promptValue"
+                      ]
+                    },
+                    {
+                      "properties": {
+                        "mode": {
+                          "const": "text-builder"
+                        },
+                        "textValue": {
+                          "type": "string",
+                          "minLength": 1
+                        }
+                      },
+                      "required": [
+                        "mode",
+                        "textValue"
+                      ]
+                    },
+                    {
+                      "properties": {
+                        "mode": {
+                          "const": "variable"
+                        },
+                        "argumentPath": {
+                          "type": "string",
+                          "minLength": 1
+                        }
+                      },
+                      "required": [
+                        "mode",
+                        "argumentPath"
+                      ]
+                    }
+                  ],
+                  "errorMessage": "DeepRAG task is required"
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "retrievalMode": {
+                  "const": "batchtransform"
+                }
+              },
+              "required": [
+                "retrievalMode"
+              ]
+            },
+            "then": {
+              "properties": {
+                "query": {
+                  "oneOf": [
+                    {
+                      "properties": {
+                        "mode": {
+                          "const": "prompt"
+                        },
+                        "promptValue": {
+                          "type": "string",
+                          "minLength": 1
+                        }
+                      },
+                      "required": [
+                        "mode",
+                        "promptValue"
+                      ]
+                    },
+                    {
+                      "properties": {
+                        "mode": {
+                          "const": "text-builder"
+                        },
+                        "textValue": {
+                          "type": "string",
+                          "minLength": 1
+                        }
+                      },
+                      "required": [
+                        "mode",
+                        "textValue"
+                      ]
+                    },
+                    {
+                      "properties": {
+                        "mode": {
+                          "const": "variable"
+                        },
+                        "argumentPath": {
+                          "type": "string",
+                          "minLength": 1
+                        }
+                      },
+                      "required": [
+                        "mode",
+                        "argumentPath"
+                      ]
+                    }
+                  ],
+                  "errorMessage": "Batch transform task is required"
+                },
+                "outputColumns": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "name": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "description": {
+                        "type": "string",
+                        "minLength": 1,
+                        "errorMessage": "Description is required for every output column"
+                      }
+                    },
+                    "required": [
+                      "name",
+                      "description"
+                    ]
+                  },
+                  "errorMessage": {
+                    "minItems": "At least one output column is required"
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "inputDefaults": {
+        "indexId": "cc45b9b4-dbf6-47b3-40ac-08debc0cec5b",
+        "indexName": "Billing Dispute SOP Index",
+        "folderKey": "79a7d12e-da84-4bf4-ab60-7f34b44dd178",
+        "folderPath": "Shared/uipath-maestro-flow/BillingDispute",
+        "retrievalMode": "semantic",
+        "query": {
+          "mode": "prompt",
+          "textValue": "",
+          "promptValue": "The query for the Semantic strategy",
+          "argumentPath": ""
+        },
+        "threshold": 0,
+        "resultCount": 3,
+        "fileExtension": "All",
+        "folderPathPrefix": {
+          "mode": "text-builder",
+          "textValue": "",
+          "promptValue": "",
+          "argumentPath": ""
+        },
+        "citations": "enabled",
+        "outputColumns": [],
+        "webSearchGrounding": {
+          "value": "enabled"
+        }
+      }
+    },
+    {
+      "nodeType": "core.logic.switch",
+      "version": "1.1",
+      "category": "control-flow",
+      "description": "Route to one of many branches by condition",
+      "tags": [
+        "control-flow",
+        "switch",
+        "case",
+        "when"
+      ],
+      "sortOrder": 62,
+      "display": {
+        "label": "Switch",
+        "icon": "between-horizontal-start"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ],
+          "visible": true
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "case-{item.id}",
+              "type": "source",
+              "handleType": "output",
+              "label": "{item.label || 'Case ' + (index + 1)}",
+              "repeat": "inputs.cases"
+            },
+            {
+              "id": "default",
+              "type": "source",
+              "handleType": "output",
+              "label": "Default"
+            }
+          ],
+          "visible": true
+        }
+      ],
+      "debug": {
+        "runtime": "clientScript"
+      },
+      "model": {
+        "type": "bpmn:ExclusiveGateway"
+      },
+      "inputDefinition": {
+        "type": "object",
+        "properties": {
+          "cases": {
+            "type": "array",
+            "minItems": 1,
+            "errorMessage": "At least one case is required",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "label": {
+                  "type": "string"
+                },
+                "expression": {
+                  "type": "string",
+                  "minLength": 1,
+                  "errorMessage": "Add a condition"
+                }
+              },
+              "required": [
+                "expression"
+              ]
+            }
+          }
+        },
+        "required": [
+          "cases"
+        ]
+      },
+      "outputDefinition": {
+        "matchedCase": {
+          "type": "string",
+          "description": "The label of the matched case",
+          "var": "matchedCase"
+        },
+        "matchedCaseId": {
+          "type": "string",
+          "description": "The ID of the matched case (\"default\" for the default branch)",
+          "var": "matchedCaseId"
+        }
+      },
+      "inputDefaults": {
+        "cases": [
+          {
+            "id": "default-1",
+            "label": "Case 1",
+            "expression": ""
+          },
+          {
+            "id": "default-2",
+            "label": "Case 2",
+            "expression": ""
+          }
+        ]
+      },
+      "form": {
+        "id": "switch-properties",
+        "title": "Switch configuration",
+        "sections": [
+          {
+            "id": "cases",
+            "title": "Cases",
+            "description": "Each case is evaluated in order. The first condition that returns true is taken.",
+            "collapsible": true,
+            "defaultExpanded": true,
+            "fields": [
+              {
+                "name": "inputs.cases",
+                "type": "custom",
+                "label": "Switch cases",
+                "component": "case-list-editor",
+                "componentProps": {
+                  "minCases": 1,
+                  "maxCases": 10,
+                  "expressionPlaceholder": "$vars.httpRequest1.output.statusCode >= 200 && $vars.httpRequest1.output.statusCode < 300",
+                  "expressionValidationFields": [
+                    {
+                      "subPath": "expression",
+                      "validationMode": "expression",
+                      "expectedType": "boolean"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "runtimeConstraints": {
+        "exclude": [
+          "api-function"
+        ]
+      }
+    },
+    {
+      "nodeType": "core.logic.decision",
+      "version": "1.2",
+      "category": "control-flow",
+      "description": "Branch on a true or false condition",
+      "tags": [
+        "control-flow",
+        "if",
+        "loop",
+        "switch"
+      ],
+      "sortOrder": 61,
+      "display": {
+        "label": "Decision",
+        "icon": "trending-up-down"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ],
+          "visible": true
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "true",
+              "type": "source",
+              "handleType": "output",
+              "label": "{inputs.trueLabel}",
+              "constraints": {
+                "minConnections": 1
+              }
+            },
+            {
+              "id": "false",
+              "type": "source",
+              "handleType": "output",
+              "label": "{inputs.falseLabel}"
+            }
+          ],
+          "visible": true
+        }
+      ],
+      "debug": {
+        "runtime": "clientScript"
+      },
+      "model": {
+        "type": "bpmn:InclusiveGateway"
+      },
+      "inputDefinition": {
+        "type": "object",
+        "properties": {
+          "expression": {
+            "type": "string",
+            "minLength": 1,
+            "errorMessage": "Add a condition"
+          },
+          "trueLabel": {
+            "type": "string"
+          },
+          "falseLabel": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "expression"
+        ]
+      },
+      "outputDefinition": {
+        "matchedCase": {
+          "type": "string",
+          "description": "The label of the matched branch (true/false label)",
+          "var": "matchedCase"
+        },
+        "matchedCaseId": {
+          "type": "string",
+          "description": "The branch that was taken (true or false)",
+          "var": "matchedCaseId"
+        }
+      },
+      "inputDefaults": {
+        "trueLabel": "True",
+        "falseLabel": "False"
+      },
+      "form": {
+        "id": "decision-properties",
+        "title": "Decision configuration",
+        "sections": [
+          {
+            "id": "condition",
+            "title": "Condition",
+            "fields": [
+              {
+                "name": "inputs.expression",
+                "type": "custom",
+                "component": "code-editor",
+                "componentProps": {
+                  "singleLine": true,
+                  "mode": "expression",
+                  "toggleable": false,
+                  "language": "javascript",
+                  "returnType": "boolean",
+                  "validationMode": "expression",
+                  "showVariableButton": true,
+                  "placeholder": "$vars.httpRequest1.output.statusCode >= 200 && $vars.httpRequest1.output.statusCode < 300"
+                },
+                "label": "Condition",
+                "description": "The condition must be a JavaScript expression that evaluates to true or false."
+              },
+              {
+                "name": "inputs.trueLabel",
+                "type": "text",
+                "label": "True branch label",
+                "description": "This label appears on the true branch."
+              },
+              {
+                "name": "inputs.falseLabel",
+                "type": "text",
+                "label": "False branch label",
+                "description": "This label appears on the false branch."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "nodeType": "uipath.core.api-workflow.07d45a91-9413-4dad-82ff-28306c2d85ea",
+      "version": "1.0.0",
+      "category": "api-workflow",
+      "runtimeConstraints": {
+        "exclude": [
+          "api-function"
+        ]
+      },
+      "description": "",
+      "tags": [],
+      "sortOrder": 600,
+      "supportsErrorHandling": true,
+      "display": {
+        "label": "FinancialPostingFunction",
+        "icon": "api"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "output",
+              "type": "source",
+              "handleType": "output"
+            },
+            {
+              "id": "error",
+              "label": "Error",
+              "type": "source",
+              "handleType": "output",
+              "visible": "{inputs.errorHandlingEnabled}",
+              "constraints": {
+                "maxConnections": 1
+              }
+            }
+          ]
+        }
+      ],
+      "model": {
+        "type": "bpmn:ServiceTask",
+        "serviceType": "Orchestrator.ExecuteApiWorkflowAsync",
+        "version": "v2",
+        "section": "Published",
+        "listingVersion": "1.0.0",
+        "bindings": {
+          "resource": "process",
+          "resourceSubType": "Api",
+          "resourceKey": "Shared/uipath-maestro-flow/BillingDispute.FinancialPostingFunction",
+          "orchestratorType": "api",
+          "values": [
+            {
+              "name": "name",
+              "propertyAttribute": "name",
+              "default": "FinancialPostingFunction"
+            },
+            {
+              "name": "folderPath",
+              "propertyAttribute": "folderPath",
+              "default": "Shared/uipath-maestro-flow/BillingDispute"
+            }
+          ]
+        },
+        "context": [
+          {
+            "name": "name",
+            "type": "string",
+            "value": "<bindings.name>"
+          },
+          {
+            "name": "folderPath",
+            "type": "string",
+            "value": "<bindings.folderPath>"
+          },
+          {
+            "name": "_label",
+            "type": "string",
+            "value": "FinancialPostingFunction"
+          }
+        ]
+      },
+      "form": {
+        "id": "activity-properties",
+        "title": "API workflow",
+        "sections": [
+          {
+            "id": "inputs",
+            "title": "Inputs",
+            "collapsible": true,
+            "defaultExpanded": true,
+            "fields": [
+              {
+                "name": "inputs.invoiceNumber",
+                "type": "text",
+                "label": "invoiceNumber"
+              }
+            ]
+          }
+        ]
+      },
+      "inputDefinition": {
+        "type": "object",
+        "properties": {
+          "invoiceNumber": {
+            "type": "string"
+          }
+        }
+      },
+      "inputDefaults": {
+        "invoiceNumber": ""
+      },
+      "outputDefinition": {
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails",
+          "source": "=Error",
+          "var": "error",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "required": [
+              "code",
+              "message",
+              "detail",
+              "category",
+              "status"
+            ],
+            "properties": {
+              "code": {
+                "type": "string",
+                "description": "Error code as a string"
+              },
+              "message": {
+                "type": "string",
+                "description": "High-level error message"
+              },
+              "detail": {
+                "type": "string",
+                "description": "Detailed error description"
+              },
+              "category": {
+                "type": "string",
+                "description": "Error category"
+              },
+              "status": {
+                "type": "integer",
+                "description": "HTTP status code"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "debug": {
+        "runtime": "bpmnEngine"
+      }
+    },
+    {
+      "nodeType": "core.control.end",
+      "version": "1.0",
+      "category": "control-flow",
+      "description": "Mark the end of a process path",
+      "tags": [
+        "control-flow",
+        "end",
+        "finish",
+        "complete"
+      ],
+      "sortOrder": 65,
+      "display": {
+        "label": "End",
+        "icon": "circle-check",
+        "shape": "circle"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        }
+      ],
+      "model": {
+        "type": "bpmn:EndEvent"
+      },
+      "runtimeConstraints": {
+        "exclude": [
+          "api-function"
+        ]
+      }
+    }
+  ],
+  "runtime": "maestro",
+  "bindings": [
+    {
+      "id": "bhozvdcC5",
+      "name": "uipath-uipath-dataservice connection",
+      "type": "string",
+      "resource": "connection",
+      "resourceKey": "d61e5d0e-04af-4f93-95cc-151d81fa08dc",
+      "propertyAttribute": "ConnectionId",
+      "default": "d61e5d0e-04af-4f93-95cc-151d81fa08dc"
+    },
+    {
+      "id": "bfogSi5l8",
+      "name": "FolderKey",
+      "type": "string",
+      "resource": "connection",
+      "resourceKey": "d61e5d0e-04af-4f93-95cc-151d81fa08dc",
+      "propertyAttribute": "FolderKey",
+      "default": "c4359cde-55f0-4f0e-9322-c6cdce74ab4c"
+    },
+    {
+      "id": "bFinancialPostingName",
+      "name": "name",
+      "type": "string",
+      "resource": "process",
+      "resourceKey": "Shared/uipath-maestro-flow/BillingDispute.FinancialPostingFunction",
+      "default": "FinancialPostingFunction",
+      "propertyAttribute": "name",
+      "resourceSubType": "Api"
+    },
+    {
+      "id": "bFinancialPostingFolderPath",
+      "name": "folderPath",
+      "type": "string",
+      "resource": "process",
+      "resourceKey": "Shared/uipath-maestro-flow/BillingDispute.FinancialPostingFunction",
+      "default": "Shared/uipath-maestro-flow/BillingDispute",
+      "propertyAttribute": "folderPath",
+      "resourceSubType": "Api"
+    }
+  ],
+  "variables": {
+    "nodes": [
+      {
+        "id": "start.output",
+        "type": "object",
+        "description": "Data passed when manually triggering the process.",
+        "binding": {
+          "nodeId": "start",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "crmLookup1.output",
+        "type": "object",
+        "description": "The return value of the connector.",
+        "binding": {
+          "nodeId": "crmLookup1",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "crmLookup1.error",
+        "type": "object",
+        "description": "Error information if the node fails",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "required": [
+            "code",
+            "message",
+            "detail",
+            "category",
+            "status"
+          ],
+          "properties": {
+            "code": {
+              "type": "string",
+              "description": "Error code as a string"
+            },
+            "message": {
+              "type": "string",
+              "description": "High-level error message"
+            },
+            "detail": {
+              "type": "string",
+              "description": "Detailed error description"
+            },
+            "category": {
+              "type": "string",
+              "description": "Error category"
+            },
+            "status": {
+              "type": "integer",
+              "description": "HTTP status code"
+            }
+          },
+          "additionalProperties": false
+        },
+        "binding": {
+          "nodeId": "crmLookup1",
+          "outputId": "error"
+        }
+      },
+      {
+        "id": "erpLookup1.output",
+        "type": "object",
+        "description": "The return value of the connector.",
+        "binding": {
+          "nodeId": "erpLookup1",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "erpLookup1.error",
+        "type": "object",
+        "description": "Error information if the node fails",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "required": [
+            "code",
+            "message",
+            "detail",
+            "category",
+            "status"
+          ],
+          "properties": {
+            "code": {
+              "type": "string",
+              "description": "Error code as a string"
+            },
+            "message": {
+              "type": "string",
+              "description": "High-level error message"
+            },
+            "detail": {
+              "type": "string",
+              "description": "Detailed error description"
+            },
+            "category": {
+              "type": "string",
+              "description": "Error category"
+            },
+            "status": {
+              "type": "integer",
+              "description": "HTTP status code"
+            }
+          },
+          "additionalProperties": false
+        },
+        "binding": {
+          "nodeId": "erpLookup1",
+          "outputId": "error"
+        }
+      },
+      {
+        "id": "extractInvoice.output",
+        "type": "object",
+        "binding": {
+          "nodeId": "extractInvoice",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "extractInvoice.error",
+        "type": "object",
+        "description": "Error information if the node fails",
+        "binding": {
+          "nodeId": "extractInvoice",
+          "outputId": "error"
+        }
+      },
+      {
+        "id": "normalizeData.error",
+        "type": "object",
+        "description": "Error information if the node fails.",
+        "binding": {
+          "nodeId": "normalizeData",
+          "outputId": "error"
+        }
+      },
+      {
+        "id": "normalizeData.output",
+        "type": "object",
+        "description": "The return value of the node.",
+        "binding": {
+          "nodeId": "normalizeData",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "normalizeInvoiceNumber.error",
+        "type": "object",
+        "description": "Error information if the node fails.",
+        "binding": {
+          "nodeId": "normalizeInvoiceNumber",
+          "outputId": "error"
+        }
+      },
+      {
+        "id": "normalizeInvoiceNumber.output",
+        "type": "object",
+        "description": "The return value of the node.",
+        "binding": {
+          "nodeId": "normalizeInvoiceNumber",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "discrepancyDetection.error",
+        "type": "object",
+        "description": "Error information if the node fails.",
+        "binding": {
+          "nodeId": "discrepancyDetection",
+          "outputId": "error"
+        }
+      },
+      {
+        "id": "discrepancyDetection.output",
+        "type": "object",
+        "description": "The return value of the node.",
+        "binding": {
+          "nodeId": "discrepancyDetection",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "disputeAnalystAgent.error",
+        "type": "object",
+        "description": "Error information if the node fails.",
+        "binding": {
+          "nodeId": "disputeAnalystAgent",
+          "outputId": "error"
+        }
+      },
+      {
+        "id": "switchRecommendedAction.matchedCase",
+        "type": "string",
+        "description": "The label of the matched case",
+        "binding": {
+          "nodeId": "switchRecommendedAction",
+          "outputId": "matchedCase"
+        }
+      },
+      {
+        "id": "switchRecommendedAction.matchedCaseId",
+        "type": "string",
+        "description": "The ID of the matched case (\"default\" for the default branch)",
+        "binding": {
+          "nodeId": "switchRecommendedAction",
+          "outputId": "matchedCaseId"
+        }
+      },
+      {
+        "id": "logCreditAmount.error",
+        "type": "object",
+        "description": "Error information if the node fails.",
+        "binding": {
+          "nodeId": "logCreditAmount",
+          "outputId": "error"
+        }
+      },
+      {
+        "id": "logCreditAmount.output",
+        "type": "object",
+        "description": "The return value of the node.",
+        "binding": {
+          "nodeId": "logCreditAmount",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "approvalDecision.matchedCase",
+        "type": "string",
+        "description": "The label of the matched branch (true/false label)",
+        "binding": {
+          "nodeId": "approvalDecision",
+          "outputId": "matchedCase"
+        }
+      },
+      {
+        "id": "approvalDecision.matchedCaseId",
+        "type": "string",
+        "description": "The branch that was taken (true or false)",
+        "binding": {
+          "nodeId": "approvalDecision",
+          "outputId": "matchedCaseId"
+        }
+      },
+      {
+        "id": "financialPosting.error",
+        "type": "object",
+        "description": "Error information if the node fails.",
+        "binding": {
+          "nodeId": "financialPosting",
+          "outputId": "error"
+        }
+      },
+      {
+        "id": "resolutionWriterAgent.error",
+        "type": "object",
+        "description": "Error information if the node fails.",
+        "binding": {
+          "nodeId": "resolutionWriterAgent",
+          "outputId": "error"
+        }
+      },
+      {
+        "id": "endResolution.determination",
+        "type": "string",
+        "binding": {
+          "nodeId": "endResolution",
+          "outputId": "determination"
+        }
+      },
+      {
+        "id": "endResolution.recommendedAction",
+        "type": "string",
+        "binding": {
+          "nodeId": "endResolution",
+          "outputId": "recommendedAction"
+        }
+      },
+      {
+        "id": "endResolution.creditAmount",
+        "type": "string",
+        "binding": {
+          "nodeId": "endResolution",
+          "outputId": "creditAmount"
+        }
+      },
+      {
+        "id": "endResolution.rationale",
+        "type": "string",
+        "binding": {
+          "nodeId": "endResolution",
+          "outputId": "rationale"
+        }
+      },
+      {
+        "id": "endResolution.resolutionEmailBody",
+        "type": "string",
+        "binding": {
+          "nodeId": "endResolution",
+          "outputId": "resolutionEmailBody"
+        }
+      },
+      {
+        "id": "endRejection.determination",
+        "type": "string",
+        "binding": {
+          "nodeId": "endRejection",
+          "outputId": "determination"
+        }
+      },
+      {
+        "id": "endRejection.recommendedAction",
+        "type": "string",
+        "binding": {
+          "nodeId": "endRejection",
+          "outputId": "recommendedAction"
+        }
+      },
+      {
+        "id": "endRejection.creditAmount",
+        "type": "string",
+        "binding": {
+          "nodeId": "endRejection",
+          "outputId": "creditAmount"
+        }
+      },
+      {
+        "id": "endRejection.rationale",
+        "type": "string",
+        "binding": {
+          "nodeId": "endRejection",
+          "outputId": "rationale"
+        }
+      },
+      {
+        "id": "endRejection.resolutionEmailBody",
+        "type": "string",
+        "binding": {
+          "nodeId": "endRejection",
+          "outputId": "resolutionEmailBody"
+        }
+      },
+      {
+        "id": "endManagerRejection.determination",
+        "type": "string",
+        "binding": {
+          "nodeId": "endManagerRejection",
+          "outputId": "determination"
+        }
+      },
+      {
+        "id": "endManagerRejection.recommendedAction",
+        "type": "string",
+        "binding": {
+          "nodeId": "endManagerRejection",
+          "outputId": "recommendedAction"
+        }
+      },
+      {
+        "id": "endManagerRejection.creditAmount",
+        "type": "string",
+        "binding": {
+          "nodeId": "endManagerRejection",
+          "outputId": "creditAmount"
+        }
+      },
+      {
+        "id": "endManagerRejection.rationale",
+        "type": "string",
+        "binding": {
+          "nodeId": "endManagerRejection",
+          "outputId": "rationale"
+        }
+      },
+      {
+        "id": "endManagerRejection.resolutionEmailBody",
+        "type": "string",
+        "binding": {
+          "nodeId": "endManagerRejection",
+          "outputId": "resolutionEmailBody"
+        }
+      },
+      {
+        "id": "mergeLookups.output",
+        "type": "object",
+        "binding": {
+          "nodeId": "mergeLookups",
+          "outputId": "output"
+        }
+      }
+    ],
+    "globals": [
+      {
+        "id": "disputedInvoice",
+        "direction": "in",
+        "type": "file",
+        "description": "The disputed invoice PDF",
+        "triggerNodeId": "start"
+      },
+      {
+        "id": "webhookPayload",
+        "direction": "in",
+        "type": "object",
+        "description": "The billing-dispute submission event",
+        "triggerNodeId": "start"
+      },
+      {
+        "id": "determination",
+        "direction": "out",
+        "type": "string",
+        "description": "Analyst determination"
+      },
+      {
+        "id": "recommendedAction",
+        "direction": "out",
+        "type": "string",
+        "description": "escalate_to_manager | auto_resolve | reject"
+      },
+      {
+        "id": "creditAmount",
+        "direction": "out",
+        "type": "number",
+        "description": "Approved credit amount"
+      },
+      {
+        "id": "rationale",
+        "direction": "out",
+        "type": "string",
+        "description": "Analyst rationale"
+      },
+      {
+        "id": "resolutionEmailBody",
+        "direction": "out",
+        "type": "string",
+        "description": "Resolution email body, or note that none was drafted"
+      }
+    ]
+  },
+  "layout": {
+    "nodes": {
+      "start": {
+        "position": {
+          "x": -768,
+          "y": 96
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        }
+      },
+      "crmLookup1": {
+        "position": {
+          "x": 0,
+          "y": 0
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        }
+      },
+      "erpLookup1": {
+        "position": {
+          "x": 0,
+          "y": 192
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        }
+      },
+      "extractInvoice": {
+        "position": {
+          "x": -576,
+          "y": 96
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "normalizeData": {
+        "position": {
+          "x": -384,
+          "y": 96
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "normalizeInvoiceNumber": {
+        "position": {
+          "x": -192,
+          "y": 96
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "mergeLookups": {
+        "position": {
+          "x": 192,
+          "y": 0
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "discrepancyDetection": {
+        "position": {
+          "x": 384,
+          "y": 0
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "disputeAnalystAgent": {
+        "position": {
+          "x": 576,
+          "y": -96
+        },
+        "size": {
+          "width": 288,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "contextIndexNode": {
+        "position": {
+          "x": 624,
+          "y": 96
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "switchRecommendedAction": {
+        "position": {
+          "x": 960,
+          "y": 0
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "logCreditAmount": {
+        "position": {
+          "x": 1152,
+          "y": 0
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "approvalDecision": {
+        "position": {
+          "x": 1152,
+          "y": -192
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "financialPosting": {
+        "position": {
+          "x": 1344,
+          "y": -96
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "resolutionWriterAgent": {
+        "position": {
+          "x": 1536,
+          "y": -96
+        },
+        "size": {
+          "width": 288,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "endResolution": {
+        "position": {
+          "x": 1920,
+          "y": -96
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "endRejection": {
+        "position": {
+          "x": 1152,
+          "y": 192
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "endManagerRejection": {
+        "position": {
+          "x": 1344,
+          "y": -288
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      }
+    }
+  }
+}

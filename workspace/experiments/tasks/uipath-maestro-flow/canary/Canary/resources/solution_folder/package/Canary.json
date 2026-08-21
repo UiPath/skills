@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "Canary",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "9716cd9a-1b63-4cbd-8aa1-a842e510cfa6",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "Canary"
+    },
+    "locks": [],
+    "key": "d3bf64e4-a739-4768-82fa-4ea5853445e5",
+    "files": []
+  }
+}

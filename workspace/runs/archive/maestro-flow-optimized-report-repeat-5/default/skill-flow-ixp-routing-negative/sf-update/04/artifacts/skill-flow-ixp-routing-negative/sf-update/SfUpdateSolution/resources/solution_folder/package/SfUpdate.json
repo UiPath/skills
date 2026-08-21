@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "SfUpdate",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "6e3f63f9-4478-43e2-a713-2df3a7d16a50",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "SfUpdate"
+    },
+    "locks": [],
+    "key": "a560df33-c7bb-4388-887b-3c3f1485f44e",
+    "files": []
+  }
+}

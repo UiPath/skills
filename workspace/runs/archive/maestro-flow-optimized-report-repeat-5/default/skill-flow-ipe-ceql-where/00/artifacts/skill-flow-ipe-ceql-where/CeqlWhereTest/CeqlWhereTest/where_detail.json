@@ -1,0 +1,30 @@
+{
+  "_comment": "Planned --detail payload for node listAadGroups1 (List AAD Groups). Connector key: uipath-microsoft-azureactivedirectory. No-live-tenant sandbox: connectionId and folderKey are filled from the registered connection discovered via 'uip is connections list'. The 'filter' block is the structured FilterBuilder tree passed to 'uip maestro flow node configure --detail'. The CLI compiles it to the runtime CEQL string (queryParameters.where) and the design-time AST (savedFilterTrees.where) in lockstep.",
+  "connector": "uipath-microsoft-azureactivedirectory",
+  "activity": "list-groups",
+  "nodeId": "listAadGroups1",
+  "connectionId": "26b7ac14-424a-45ae-88ee-88ae5c8794ce",
+  "folderKey": "5da18ec0-7de1-4e57-aaf1-ddc8a369c199",
+  "method": "GET",
+  "endpoint": "/groups",
+  "objectName": "groups",
+  "filter": {
+    "_comment": "Passed as --detail.filter to 'uip maestro flow node configure'. CLI compiles to CEQL: displayName = 'active'. The FilterBuilder parameter name is 'where' (from connectorMethodInfo.parameters[].name where design.component == 'FilterBuilder'). The field 'displayName' is filterable (searchableOperators: ['=', 'IN']). Operator 'Equals' compiles to CEQL '='.",
+    "groupOperator": 0,
+    "index": 0,
+    "filters": [
+      {
+        "id": "displayName",
+        "operator": "Equals",
+        "value": {
+          "value": "active",
+          "rawString": "\"active\"",
+          "isLiteral": true
+        }
+      }
+    ],
+    "groups": []
+  },
+  "compiled_ceql": "displayName = 'active'",
+  "filterParam": "where"
+}

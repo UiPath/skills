@@ -1,0 +1,1904 @@
+{
+  "task_id": "skill-bpmn-registry-discovery",
+  "task_description": "Registry discovery eval: agent uses the Maestro BPMN registry surface to discover documented agent, queue, and connector wrapper types and to save public-safe CLI evidence for the skill's supported-element map without inventing private resource metadata. Requires the `uip` CLI on PATH.\n",
+  "variant_id": "default",
+  "agent_type": "claude-code",
+  "model_used": "claude-sonnet-5",
+  "started_at": "2026-08-14T21:48:19.289012",
+  "completed_at": "2026-08-14T21:50:11.064874",
+  "duration_seconds": 111.7758846282959,
+  "final_status": "SUCCESS",
+  "max_turns_exhausted": false,
+  "weighted_score": 1.0,
+  "iteration_count": 1,
+  "success_criteria_results": [
+    {
+      "result_kind": "basic",
+      "criterion_type": "file_exists",
+      "description": "Registry discovery evidence directory was created",
+      "score": 1.0,
+      "details": "File 'registry-evidence' exists",
+      "error": null,
+      "pass_threshold": 1.0
+    },
+    {
+      "result_kind": "basic",
+      "criterion_type": "command_executed",
+      "description": "Agent ran a Maestro BPMN registry list call",
+      "score": 1.0,
+      "details": "Matched 2/1 required commands (filters: tool_name=Bash, pattern=/(uip|\\$UIP)\\s+(maestro\\s+)?bpmn\\s+registry\\s+list/)\nExamples: ['uip maestro bpmn registry list --limit -1 --output json > registry-evidence/registry-list-all.json 2>/tmp/list.err\\necho ', 'uip maestro bpmn registry search --help 2>&1 | head -50\\necho \"---\"\\nuip maestro bpmn registry list --help 2>&1 | head -50']",
+      "error": null,
+      "pass_threshold": 1.0
+    },
+    {
+      "result_kind": "basic",
+      "criterion_type": "command_executed",
+      "description": "Agent ran a Maestro BPMN registry search call",
+      "score": 1.0,
+      "details": "Matched 4/1 required commands (filters: tool_name=Bash, pattern=/(uip|\\$UIP)\\s+(maestro\\s+)?bpmn\\s+registry\\s+search/)\nExamples: ['uip maestro bpmn registry search --help 2>&1 | head -50\\necho \"---\"\\nuip maestro bpmn registry list --help 2>&1 | head -50', 'uip maestro bpmn registry search agent --output json > registry-evidence/registry-search-agent.json 2>/tmp/search-agent.', 'uip maestro bpmn registry search queue --output json > registry-evidence/registry-search-queue.json 2>/tmp/search-queue.']",
+      "error": null,
+      "pass_threshold": 1.0
+    },
+    {
+      "result_kind": "basic",
+      "criterion_type": "command_executed",
+      "description": "Agent ran a Maestro BPMN registry get call",
+      "score": 1.0,
+      "details": "Matched 1/1 required commands (filters: tool_name=Bash, pattern=/(uip|\\$UIP)\\s+(maestro\\s+)?bpmn\\s+registry\\s+get/)\nExamples: ['uip maestro bpmn registry get Orchestrator.StartAgentJob --output json > registry-evidence/registry-get-Orchestrator.Sta']",
+      "error": null,
+      "pass_threshold": 1.0
+    },
+    {
+      "result_kind": "basic",
+      "criterion_type": "run_command",
+      "description": "Registry evidence covers documented agent, queue, and connector wrapper types",
+      "score": 1.0,
+      "details": "Command: python3 $TASK_DIR/check_registry_discovery.py\nExit code: 0 (expected: 0)\nStdout:\nOK: registry-evidence covers agent/queue/connector wrappers across 7 files\n\nStderr: (empty)",
+      "error": null,
+      "pass_threshold": 1.0
+    }
+  ],
+  "iterations": [
+    {
+      "iteration": 1,
+      "user_input": "Your working directory is: /work/output/artifacts/skill-bpmn-registry-discovery\n\nUse the installed `uip` CLI's Maestro BPMN registry surface to discover the\ndocumented wrapper surface for agent, queue, and connector resource types.\nSave evidence locally without uploading, publishing, deploying, debugging, or\nrunning anything.\n\nRequirements:\n- Save outputs under a local `registry-evidence/` directory you create.\n- Capture raw JSON evidence for the overall registry catalog, a filtered\n  lookup for at least one documented agent or queue wrapper type, and the\n  detailed registry record for at least one documented wrapper type.\n- Use `--output json` for parsed CLI calls and write only the raw JSON output\n  files into `registry-evidence/`.\n- Do not invent connection IDs, folder keys, tenant URLs, real connector\n  keys, or release keys.\n- Do not upload, publish, deploy, debug, or run anything.\n",
+      "agent_output": "[ASSISTANT] Registry pull succeeded. Now let's list the full catalog and inspect it to find agent/queue/connector types.\n[ASSISTANT] Good, this covers the agent wrapper filtered lookup. Now let's also do a queue search and a connector search for completeness, and get the detailed record for one documented type (e.g. `Orchestrator.StartAgentJob` and `Orchestrator.CreateQueueItem`).\n[ASSISTANT] Now let's get detailed registry records for representative documented wrapper types — one agent type, one queue type, and one connector type.\n[ASSISTANT] All commands succeeded and returned valid, non-failure JSON. Let's verify each file's content quickly to confirm they contain real registry records (not error envelopes), then finalize.\n[ASSISTANT] All three detailed records contain real, well-formed registry data (Result: Success, full templates with XmlTemplate, ContextFields, BindingInfo — no fabricated IDs, all placeholders remain `{id}`, `{name}`, etc.). Let's do a final listing and cleanup check.\n[ASSISTANT] All evidence collected successfully with the live `uip` CLI (no fallback needed — the registry synced fresh and every call returned real success payloads). Summary of `registry-evidence/`:\n\n| File | Command | Contents |\n|---|---|---|\n| `registry-list-all.json` | `uip maestro bpmn registry list --limit -1 --output json` | Full catalog: 30 extension types (`ExtensionTypes`), 27 `Connectors`, 138 `Processes` with `ProcessesByType` breakdown |\n| `registry-search-agent.json` | `uip maestro bpmn registry search agent --output json` | Filtered lookup surfacing agent wrapper types: `Orchestrator.StartAgentJob`, `Intsvc.AsyncExecution`/`SyncAgentExecution`/`AsyncAgentExecution`, `Orchestrator.StartAgenticProcess`, etc. |\n| `registry-search-queue.json` | `uip maestro bpmn registry search queue --output json` | Filtered lookup for queue wrapper types: `Orchestrator.CreateQueueItem`, `Orchestrator.CreateAndWaitForQueueItem` |\n| `registry-search-connector.json` | `uip maestro bpmn registry search connector --output json` | Filtered lookup for connector wrapper types (Integration Service `Intsvc.*` activities/events) |\n| `registry-get-Orchestrator.StartAgentJob.json` | `uip maestro bpmn registry get Orchestrator.StartAgentJob --output json` | Detailed record: BPMN placement, context fields, binding info, and full `xmlTemplate` for the agent wrapper |\n| `registry-get-Orchestrator.CreateQueueItem.json` | `uip maestro bpmn registry get Orchestrator.CreateQueueItem --output json` | Detailed record for the queue wrapper (binding pattern `queue`, `queueName` binding info, template) |\n| `registry-get-Intsvc.ActivityExecution.json` | `uip maestro bpmn registry get Intsvc.ActivityExecution --output json` | Detailed record for the generic connector-activity wrapper (connection/folderKey bindings, discovery notes, template) |\n\nAll 7 files are raw, unmodified `--output json` CLI output, all valid JSON, all `\"Result\": \"Success\"`. No connection IDs, folder keys, tenant URLs, connector keys, or release keys were invented — every identifier-like field in the templates is a placeholder (`{id}`, `{connectorKey}`, `{connectionBindingId}`, etc.) as returned by the registry itself. Nothing was uploaded, published, deployed, debugged, or run — this was pure discovery/evidence capture.\n[RESULT - SUCCESS] All evidence collected successfully with the live `uip` CLI (no fallback needed — the registry synced fresh and every call returned real success payloads). Summary of `registry-evidence/`:\n\n| File | Command | Contents |\n|---|---|---|\n| `registry-list-all.json` | `uip maestro bpmn registry list --limit -1 --output json` | Full catalog: 30 extension types (`ExtensionTypes`), 27 `Connectors`, 138 `Processes` with `ProcessesByType` breakdown |\n| `registry-search-agent.json` | `uip maestro bpmn registry search agent --output json` | Filtered lookup surfacing agent wrapper types: `Orchestrator.StartAgentJob`, `Intsvc.AsyncExecution`/`SyncAgentExecution`/`AsyncAgentExecution`, `Orchestrator.StartAgenticProcess`, etc. |\n| `registry-search-queue.json` | `uip maestro bpmn registry search queue --output json` | Filtered lookup for queue wrapper types: `Orchestrator.CreateQueueItem`, `Orchestrator.CreateAndWaitForQueueItem` |\n| `registry-search-connector.json` | `uip maestro bpmn registry search connector --output json` | Filtered lookup for connector wrapper types (Integration Service `Intsvc.*` activities/events) |\n| `registry-get-Orchestrator.StartAgentJob.json` | `uip maestro bpmn registry get Orchestrator.StartAgentJob --output json` | Detailed record: BPMN placement, context fields, binding info, and full `xmlTemplate` for the agent wrapper |\n| `registry-get-Orchestrator.CreateQueueItem.json` | `uip maestro bpmn registry get Orchestrator.CreateQueueItem --output json` | Detailed record for the queue wrapper (binding pattern `queue`, `queueName` binding info, template) |\n| `registry-get-Intsvc.ActivityExecution.json` | `uip maestro bpmn registry get Intsvc.ActivityExecution --output json` | Detailed record for the generic connector-activity wrapper (connection/folderKey bindings, discovery notes, template) |\n\nAll 7 files are raw, unmodified `--output json` CLI output, all valid JSON, all `\"Result\": \"Success\"`. No connection IDs, folder keys, tenant URLs, connector keys, or release keys were invented — every identifier-like field in the templates is a placeholder (`{id}`, `{connectorKey}`, `{connectionBindingId}`, etc.) as returned by the registry itself. Nothing was uploaded, published, deployed, debugged, or run — this was pure discovery/evidence capture.",
+      "commands": [
+        {
+          "tool_name": "Skill",
+          "tool_id": "toolu_bdrk_01XV2vLSDBgHD2w494uWge26",
+          "assistant_turn_index": 1,
+          "timestamp": "2026-08-14T21:48:39.429034",
+          "duration_ms": 17.98124399920198,
+          "generation_completed_at": "2026-08-14T21:48:39.429034",
+          "execution_started_at": "2026-08-14T21:48:39.429277",
+          "execution_completed_at": "2026-08-14T21:48:39.447258",
+          "parameters": {
+            "skill": "uipath:uipath-maestro-bpmn",
+            "args": "Discover the documented wrapper surface for agent, queue, and connector resource types using the installed `uip` CLI's Maestro BPMN registry commands. Save raw JSON evidence locally (no uploading/publishing/deploying/running) under a new `registry-evidence/` directory in the current working directory (/work/output/artifacts/skill-bpmn-registry-discovery). Requirements: (1) capture the overall registry catalog as raw JSON, (2) capture a filtered lookup for at least one documented agent or queue wrapper type as raw JSON, (3) capture the detailed registry record for at least one documented wrapper type as raw JSON. Use `--output json` for all parsed CLI calls and write only the raw JSON output into registry-evidence/. Do not invent connection IDs, folder keys, tenant URLs, connector keys, or release keys. Do not upload, publish, deploy, debug, or run anything — this is discovery/evidence-gathering only."
+          },
+          "result_status": "success",
+          "result_summary": "Launching skill: uipath:uipath-maestro-bpmn",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 0,
+          "result_tokens": 11
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_01LzojZXKpJ8g5s3ziNQQWSo",
+          "assistant_turn_index": 3,
+          "timestamp": "2026-08-14T21:48:43.363061",
+          "duration_ms": 630.1029009991908,
+          "generation_completed_at": "2026-08-14T21:48:43.363061",
+          "execution_started_at": "2026-08-14T21:48:43.363123",
+          "execution_completed_at": "2026-08-14T21:48:43.993226",
+          "parameters": {
+            "command": "mkdir -p registry-evidence && pwd && ls -la && which uip && uip --version",
+            "description": "Set up evidence directory and check uip CLI availability"
+          },
+          "result_status": "success",
+          "result_summary": "/work/output/artifacts/skill-bpmn-registry-discovery\ntotal 16\ndrwxr-xr-x 4 root root 4096 Aug 14 21:48 .\ndrwxr-xr-x 3 root root 4096 Aug 14 21:48 ..\ndrwxr-xr-x 4 root root 4096 Aug 14 21:48 .venv\ndrwxr-xr-x 2 root root 4096 Aug 14 21:48 registry-evidence\n/usr/bin/uip\n1.201.0-dev.8272",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 1,
+          "result_tokens": 71
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_01KB5xiXkQ8stD1dXak1vvR1",
+          "assistant_turn_index": 5,
+          "timestamp": "2026-08-14T21:48:47.670247",
+          "duration_ms": 7246.249724000336,
+          "generation_completed_at": "2026-08-14T21:48:47.670247",
+          "execution_started_at": "2026-08-14T21:48:47.670333",
+          "execution_completed_at": "2026-08-14T21:48:54.916583",
+          "parameters": {
+            "command": "uip maestro bpmn registry pull --output json 2>&1 | tee /tmp/pull.log | head -c 2000",
+            "description": "Pull the Maestro BPMN registry cache once"
+          },
+          "result_status": "success",
+          "result_summary": "{\n  \"Result\": \"Success\",\n  \"Code\": \"RegistryPullSuccess\",\n  \"Data\": {\n    \"ExtensionTypeCount\": 30,\n    \"ConnectorCount\": 27,\n    \"ProcessCount\": 138,\n    \"ProcessCountsByType\": {\n      \"Process\": 24,\n      \"ProcessOrchestration\": 21,\n      \"Agent\": 15,\n      \"Flow\": 38,\n      \"Api\": 23,\n      \"Function\": 6,\n      \"CaseManagement\": 11,\n      \"BusinessRules\": 0\n    },\n    \"FromCache\": false,\n    \"CacheWritten\": true,\n    \"Message\": \"Synced fresh registry\"\n  }\n}",
+          "error_message": null,
+          "result_data": {
+            "Result": "Success",
+            "Code": "RegistryPullSuccess",
+            "Data": {
+              "ExtensionTypeCount": 30,
+              "ConnectorCount": 27,
+              "ProcessCount": 138,
+              "ProcessCountsByType": {
+                "Process": 24,
+                "ProcessOrchestration": 21,
+                "Agent": 15,
+                "Flow": 38,
+                "Api": 23,
+                "Function": 6,
+                "CaseManagement": 11,
+                "BusinessRules": 0
+              },
+              "FromCache": false,
+              "CacheWritten": true,
+              "Message": "Synced fresh registry"
+            }
+          },
+          "sequence_number": 2,
+          "result_tokens": 116
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_01M3DcrtCZrTUfyhvovJpmDc",
+          "assistant_turn_index": 7,
+          "timestamp": "2026-08-14T21:48:58.803576",
+          "duration_ms": 993.3344119999674,
+          "generation_completed_at": "2026-08-14T21:48:58.803576",
+          "execution_started_at": "2026-08-14T21:48:58.803633",
+          "execution_completed_at": "2026-08-14T21:48:59.796967",
+          "parameters": {
+            "command": "uip maestro bpmn registry list --limit -1 --output json > registry-evidence/registry-list-all.json 2>/tmp/list.err\necho \"exit=$?\"\nwc -c registry-evidence/registry-list-all.json\ncat /tmp/list.err",
+            "description": "Capture the full registry catalog as raw JSON"
+          },
+          "result_status": "success",
+          "result_summary": "exit=0\n83132 registry-evidence/registry-list-all.json",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 3,
+          "result_tokens": 14
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_01BP1vNwsiDBHDHSagc4F6f2",
+          "assistant_turn_index": 8,
+          "timestamp": "2026-08-14T21:49:02.359929",
+          "duration_ms": 158.76797199962311,
+          "generation_completed_at": "2026-08-14T21:49:02.359929",
+          "execution_started_at": "2026-08-14T21:49:02.360186",
+          "execution_completed_at": "2026-08-14T21:49:02.518954",
+          "parameters": {
+            "command": "python3 -c \"\nimport json\nd = json.load(open('registry-evidence/registry-list-all.json'))\nprint(type(d), list(d.keys()) if isinstance(d, dict) else len(d))\n\"\n",
+            "description": "Inspect top-level shape of registry list JSON"
+          },
+          "result_status": "success",
+          "result_summary": "<class 'dict'> ['Result', 'Code', 'Data']",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 4,
+          "result_tokens": 11
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_01EmZsnheyv378rxHcn6hAde",
+          "assistant_turn_index": 9,
+          "timestamp": "2026-08-14T21:49:05.551858",
+          "duration_ms": 238.0937019997873,
+          "generation_completed_at": "2026-08-14T21:49:05.551858",
+          "execution_started_at": "2026-08-14T21:49:05.552144",
+          "execution_completed_at": "2026-08-14T21:49:05.790238",
+          "parameters": {
+            "command": "python3 -c \"\nimport json\nd = json.load(open('registry-evidence/registry-list-all.json'))\ndata = d['Data']\nprint(type(data))\nif isinstance(data, dict):\n    print(list(data.keys()))\nelif isinstance(data, list):\n    print(len(data))\n    print(json.dumps(data[0], indent=2)[:1000])\n\"\n",
+            "description": "Inspect Data field structure"
+          },
+          "result_status": "success",
+          "result_summary": "<class 'dict'>\n['ExtensionTypes', 'Connectors', 'Processes', 'ProcessesByType']",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 5,
+          "result_tokens": 20
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_01Ep3TuHZjgrsagoReJd5rPH",
+          "assistant_turn_index": 10,
+          "timestamp": "2026-08-14T21:49:08.369857",
+          "duration_ms": 144.70704500035936,
+          "generation_completed_at": "2026-08-14T21:49:08.369857",
+          "execution_started_at": "2026-08-14T21:49:08.370116",
+          "execution_completed_at": "2026-08-14T21:49:08.514823",
+          "parameters": {
+            "command": "python3 -c \"\nimport json\nd = json.load(open('registry-evidence/registry-list-all.json'))\ndata = d['Data']\next = data['ExtensionTypes']\nprint('ExtensionTypes count:', len(ext))\nprint(json.dumps(ext[0], indent=2))\n\"\n",
+            "description": "Inspect ExtensionTypes entries"
+          },
+          "result_status": "success",
+          "result_summary": "ExtensionTypes count: 30\n{\n  \"ExtensionType\": \"uipath:Activity\",\n  \"Label\": \"Canvas activity\",\n  \"BpmnElement\": \"bpmn:ServiceTask\",\n  \"ExtensionTag\": \"uipath:activity\",\n  \"InputPattern\": \"none\",\n  \"BindingPattern\": \"none\",\n  \"RequiresDiscovery\": \"No\"\n}",
+          "error_message": null,
+          "result_data": {
+            "ExtensionType": "uipath:Activity",
+            "Label": "Canvas activity",
+            "BpmnElement": "bpmn:ServiceTask",
+            "ExtensionTag": "uipath:activity",
+            "InputPattern": "none",
+            "BindingPattern": "none",
+            "RequiresDiscovery": "No"
+          },
+          "sequence_number": 6,
+          "result_tokens": 63
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_01YVPS6KDi1vrZJ9P19nEduB",
+          "assistant_turn_index": 11,
+          "timestamp": "2026-08-14T21:49:13.437903",
+          "duration_ms": 440.38205499964533,
+          "generation_completed_at": "2026-08-14T21:49:13.437903",
+          "execution_started_at": "2026-08-14T21:49:13.438141",
+          "execution_completed_at": "2026-08-14T21:49:13.878523",
+          "parameters": {
+            "command": "python3 -c \"\nimport json\nd = json.load(open('registry-evidence/registry-list-all.json'))\next = d['Data']['ExtensionTypes']\nfor e in ext:\n    print(e['ExtensionType'], '|', e['Label'], '|', e['ExtensionTag'])\n\"\n",
+            "description": "List all extension types with labels"
+          },
+          "result_status": "success",
+          "result_summary": "uipath:Activity | Canvas activity | uipath:activity\nActions.HITL | Create action app task | uipath:activity\nOrchestrator.StartJob | Start and wait for RPA workflow | uipath:activity\nOrchestrator.StartAgentJob | Start and wait for agent | uipath:activity\nOrchestrator.BusinessRules | Execute business rule [Preview] | uipath:activity\nIntsvc.ActivityExecution | Execute connector activity | uipath:activity\nIntsvc.HttpExecution | Execute HTTP request (Legacy) | uipath:activity\nIntsvc.UnifiedHttpRequest | Execute HTTP request | uipath:activity\nIntsvc.WaitForEvent | Wait for connector event | uipath:event\nIntsvc.EventTrigger | Wait for connector event (trigger) | uipath:event\nIntsvc.AsyncExecution | Start and wait for external agent | uipath:activity\nIntsvc.SyncAgentExecution | Start and wait for external agent | uipath:activity\nIntsvc.AsyncAgentExecution | Start and wait for external agent | uipath:activity\nIntsvc.SyncWorkflowExecution | Start and wait for external workflow | uipath:activity\nIntsvc.AsyncWorkflowExecution | Start and wait for external workflow | uipath:activity\nOrchestrator.ExecuteApiWorkflowAsync | Start and wait for API workflow [Preview] | uipath:activity\nOrchestrator.CreateQueueItem | Create queue item | uipath:activity\nOrchestrator.CreateAndWaitForQueueItem | Create and wait for queue item | uipath:activity\nOrchestrator.StartAgenticProcess | Start and wait for agentic process | uipath:activity\nOrchestrator.StartAgenticProcessAsync | Start agentic process | uipath:activity\nOrchestrator.StartCaseMgmtProcess | Start and wait for case management | uipath:activity\nOrchestrator.StartCaseMgmtProcessAsync | Start case management | uipath:activity\nA2A.AgentExecution | Start and wait for A2A agent | uipath:activity\nBPMN.Variables | BPMN Variables | uipath:mapping\nBPMN.ScriptTask | Execute script | uipath:mapping\nIntsvc.TimerTrigger | Timer trigger | uipath:activity\nMaestro.ReceiveMessageEvent | Receive internal message | uipath:event\nMaestro.SendMessageEvent | Send internal message | uipath:event\nMaestro.CaseRulesEvaluator | Case rules evaluator | uipath:activity\nMaestro.CaseManagerGuardrails | Case manager guardrails | uipath:activity",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 7,
+          "result_tokens": 545
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_018L3ykso3HyDH32oBTHZLqZ",
+          "assistant_turn_index": 13,
+          "timestamp": "2026-08-14T21:49:18.178844",
+          "duration_ms": 4215.550738000275,
+          "generation_completed_at": "2026-08-14T21:49:18.178844",
+          "execution_started_at": "2026-08-14T21:49:18.178900",
+          "execution_completed_at": "2026-08-14T21:49:22.394451",
+          "parameters": {
+            "command": "uip maestro bpmn registry search --help 2>&1 | head -50\necho \"---\"\nuip maestro bpmn registry list --help 2>&1 | head -50",
+            "description": "Check available filter options for registry search/list"
+          },
+          "result_status": "success",
+          "result_summary": "                        uip maestro bpmn registry search                        \nSearch the registry by keyword across extension types, connectors, and processes\n                Use --help with nested commands for more detail.                \n\n┌─ Usage ──────────────────────────────────────────────────────────────────────┐\n│ uip maestro bpmn registry search [options] <keyword>                         │\n└──────────────────────────────────────────────────────────────────────────────┘\n\n┌─ Arguments ──────────────────────────────────────────────────────────────────┐\n│ keyword   Search term matched against extensionType, label, connector name,  │\n│           process name                                                       │\n└──────────────────────────────────────────────────────────────────────────────┘\n\n┌─ Options ────────────────────────────────────────────────────────────────────┐\n│ -h, --help                     display help for command                      │\n│ --output                       Output format (default: json)                 │\n│ <table|json|yaml|plain>                                                      │\n│ --output-filter <expression>   JMESPath expression applied to the Data field │\n│                                of the response envelope                      │\n│ --log-level                    Log level threshold (default: info)           │\n│ <debug|info|warn|error>                                                      │\n│ --log-file <path>              Write logs to file instead of stderr          │\n│ --profile <name>               Use a named login profile                     │\n└──────────────────────────────────────────────────────────────────────────────┘\n\n┌─ Examples ───────────────────────────────────────────────────────────────────┐\n│ Search the registry by keyword                                               │\n│                                                                              │\n│   $ uip maestro bpmn registry search connector                               │\n│                                                                              │\n│   ExtensionTypes:                                                            │\n│     ExtensionType    Label       BpmnEleme…  ExtensionTag     RequiresDi…    │\n│     ───────────────  ──────────  ──────────  ───────────────  ───────────    │\n│     Intsvc.Activit…  Execute A…  bpmn:Serv…  uipath:activit…  Yes            │\n│   Connectors                                                                 │\n│   Processes                                                                  │\n└──────────────────────────────────────────────────────────────────────────────┘\n\nExamples:\n  uip maestro bpmn registry search connector\n  uip maestro bpmn registry search queue\n  uip maestro bpmn registry search slack\n  uip maestro bpmn registry search agent\n---\n                         uip maestro bpmn registry list                         \nList cached extension types and discovered resources (default: first 30). Use --limit -1 for all.\n                Use --help with nested commands for more detail.                \n\n┌─ Usage ──────────────────────────────────────────────────────────────────────┐\n│ uip maestro bpmn registry list [options]                                     │\n└──────────────────────────────────────────────────────────────────────────────┘\n\n┌─ Options ────────────────────────────────────────────────────────────────────┐\n│ -l, --limit <n>                Number of entries to return (default: 30, -1  │\n│                                for all)                                      │\n│ -h, --help                     display help for command                      │\n│ --output                       Output format (default: json)                 │\n│ <table|json|yaml|plain>                                                      │\n│ --output-filter <expression>   JMESPath expression applied to the Data field │\n│                                of the response envelope                      │\n│ --log-level                    Log level threshold (default: info)           │\n│ <debug|info|warn|error>                                                      │\n│ --log-file <path>              Write logs to file instead of stderr          │\n│ --profile <name>               Use a named login profile                     │\n└──────────────────────────────────────────────────────────────────────────────┘\n\n┌─ Examples ───────────────────────────────────────────────────────────────────┐\n│ List cached extension types in the maestro registry                          │\n│                                                                              │\n│   $ uip maestro bpmn registry list --limit 1                                 │\n│                                                                              │\n│   ExtensionTypes:                                                            │\n│     ExtensionType      Label    BpmnElement    ExtensionTag  RequiresDisc…   │\n│     ─────────────────  ───────  ─────────────  ────────────  ─────────────   │\n│     Orchestrator.Sta…  Start …  bpmn:Service…  uipath:star…  No              │\n│   Connectors                                                                 │\n│   Processes                                                                  │\n└──────────────────────────────────────────────────────────────────────────────┘\n\nExamples:\n  uip maestro bpmn registry list\n  uip maestro bpmn registry list --limit 100\n  uip maestro bpmn registry list --limit -1",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 8,
+          "result_tokens": 1381
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_01Rp3hBdqEPX1mpbjf9ek8Fo",
+          "assistant_turn_index": 15,
+          "timestamp": "2026-08-14T21:49:26.294883",
+          "duration_ms": 1060.5327570001464,
+          "generation_completed_at": "2026-08-14T21:49:26.294883",
+          "execution_started_at": "2026-08-14T21:49:26.294940",
+          "execution_completed_at": "2026-08-14T21:49:27.355473",
+          "parameters": {
+            "command": "uip maestro bpmn registry search agent --output json > registry-evidence/registry-search-agent.json 2>/tmp/search-agent.err\necho \"exit=$?\"; cat /tmp/search-agent.err\nwc -c registry-evidence/registry-search-agent.json",
+            "description": "Filtered registry lookup for agent wrapper types"
+          },
+          "result_status": "success",
+          "result_summary": "exit=0\n22296 registry-evidence/registry-search-agent.json",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 9,
+          "result_tokens": 15
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_01WhpvpzTSJqNGmg8etYuRGs",
+          "assistant_turn_index": 17,
+          "timestamp": "2026-08-14T21:49:31.620433",
+          "duration_ms": 101.93669000000227,
+          "generation_completed_at": "2026-08-14T21:49:31.620433",
+          "execution_started_at": "2026-08-14T21:49:31.620542",
+          "execution_completed_at": "2026-08-14T21:49:31.722479",
+          "parameters": {
+            "command": "python3 -c \"\nimport json\nd = json.load(open('registry-evidence/registry-search-agent.json'))\nprint(json.dumps(d, indent=2)[:1500])\n\"",
+            "description": "Preview agent search evidence content"
+          },
+          "result_status": "success",
+          "result_summary": "{\n  \"Result\": \"Success\",\n  \"Code\": \"RegistrySearchSuccess\",\n  \"Data\": {\n    \"ExtensionTypes\": [\n      {\n        \"ExtensionType\": \"Orchestrator.StartAgentJob\",\n        \"Label\": \"Start and wait for agent\",\n        \"BpmnElement\": \"bpmn:ServiceTask\",\n        \"ExtensionTag\": \"uipath:activity\",\n        \"InputPattern\": \"mergedBody\",\n        \"BindingPattern\": \"process\",\n        \"RequiresDiscovery\": \"Yes\"\n      },\n      {\n        \"ExtensionType\": \"Intsvc.AsyncExecution\",\n        \"Label\": \"Start and wait for external agent\",\n        \"BpmnElement\": \"bpmn:ServiceTask\",\n        \"ExtensionTag\": \"uipath:activity\",\n        \"InputPattern\": \"separateInputs\",\n        \"BindingPattern\": \"connection\",\n        \"RequiresDiscovery\": \"Yes\"\n      },\n      {\n        \"ExtensionType\": \"Intsvc.SyncAgentExecution\",\n        \"Label\": \"Start and wait for external agent\",\n        \"BpmnElement\": \"bpmn:ServiceTask\",\n        \"ExtensionTag\": \"uipath:activity\",\n        \"InputPattern\": \"separateInputs\",\n        \"BindingPattern\": \"connection\",\n        \"RequiresDiscovery\": \"Yes\"\n      },\n      {\n        \"ExtensionType\": \"Intsvc.AsyncAgentExecution\",\n        \"Label\": \"Start and wait for external agent\",\n        \"BpmnElement\": \"bpmn:ServiceTask\",\n        \"ExtensionTag\": \"uipath:activity\",\n        \"InputPattern\": \"separateInputs\",\n        \"BindingPattern\": \"connection\",\n        \"RequiresDiscovery\": \"Yes\"\n      },\n      {\n        \"ExtensionType\": \"Orchestrator.StartAgenticProcess\",\n        \"Label\": \"Start and wait for agen",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 10,
+          "result_tokens": 375
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_01CWKGvUCdM3919LWNLqywTg",
+          "assistant_turn_index": 19,
+          "timestamp": "2026-08-14T21:49:36.057404",
+          "duration_ms": 904.5369620007477,
+          "generation_completed_at": "2026-08-14T21:49:36.057404",
+          "execution_started_at": "2026-08-14T21:49:36.057459",
+          "execution_completed_at": "2026-08-14T21:49:36.961996",
+          "parameters": {
+            "command": "uip maestro bpmn registry search queue --output json > registry-evidence/registry-search-queue.json 2>/tmp/search-queue.err\necho \"exit=$?\"; cat /tmp/search-queue.err\nwc -c registry-evidence/registry-search-queue.json",
+            "description": "Filtered registry lookup for queue wrapper types"
+          },
+          "result_status": "success",
+          "result_summary": "exit=0\n1451 registry-evidence/registry-search-queue.json",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 11,
+          "result_tokens": 14
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_01RARj9nHU4Gx1Ev6TTskWNt",
+          "assistant_turn_index": 20,
+          "timestamp": "2026-08-14T21:49:39.333525",
+          "duration_ms": 23.003489000075206,
+          "generation_completed_at": "2026-08-14T21:49:39.333525",
+          "execution_started_at": "2026-08-14T21:49:39.333879",
+          "execution_completed_at": "2026-08-14T21:49:39.356882",
+          "parameters": {
+            "command": "cat registry-evidence/registry-search-queue.json",
+            "description": "Preview queue search evidence"
+          },
+          "result_status": "success",
+          "result_summary": "{\n  \"Result\": \"Success\",\n  \"Code\": \"RegistrySearchSuccess\",\n  \"Data\": {\n    \"ExtensionTypes\": [\n      {\n        \"ExtensionType\": \"Orchestrator.CreateQueueItem\",\n        \"Label\": \"Create queue item\",\n        \"BpmnElement\": \"bpmn:SendTask\",\n        \"ExtensionTag\": \"uipath:activity\",\n        \"InputPattern\": \"mergedBody\",\n        \"BindingPattern\": \"queue\",\n        \"RequiresDiscovery\": \"Yes\"\n      },\n      {\n        \"ExtensionType\": \"Orchestrator.CreateAndWaitForQueueItem\",\n        \"Label\": \"Create and wait for queue item\",\n        \"BpmnElement\": \"bpmn:ServiceTask\",\n        \"ExtensionTag\": \"uipath:activity\",\n        \"InputPattern\": \"mergedBody\",\n        \"BindingPattern\": \"queue\",\n        \"RequiresDiscovery\": \"Yes\"\n      }\n    ],\n    \"Connectors\": [],\n    \"Processes\": [\n      {\n        \"Name\": \"OrchestratorQueueTransaction\",\n        \"ProcessKey\": \"OrchestratorQueueTransaction\",\n        \"ProcessVersion\": \"1.0.0\",\n        \"PackageProcessKey\": \"OrchestratorQueueTransaction:1.0.0\",\n        \"ReleaseKey\": \"EE03063B-B7BB-4C4D-A395-8F81BCA73B78\",\n        \"Type\": \"Process\",\n        \"Folder\": \"Shared\",\n        \"FolderKey\": \"c4359cde-55f0-4f0e-9322-c6cdce74ab4c\",\n        \"FeedId\": \"001c61d7-2108-4130-b7ff-198c88ecbf79\"\n      }\n    ],\n    \"ProcessesByType\": {\n      \"Process\": 1,\n      \"ProcessOrchestration\": 0,\n      \"Agent\": 0,\n      \"Flow\": 0,\n      \"Api\": 0,\n      \"Function\": 0,\n      \"CaseManagement\": 0,\n      \"BusinessRules\": 0\n    }\n  }\n}",
+          "error_message": null,
+          "result_data": {
+            "Result": "Success",
+            "Code": "RegistrySearchSuccess",
+            "Data": {
+              "ExtensionTypes": [
+                {
+                  "ExtensionType": "Orchestrator.CreateQueueItem",
+                  "Label": "Create queue item",
+                  "BpmnElement": "bpmn:SendTask",
+                  "ExtensionTag": "uipath:activity",
+                  "InputPattern": "mergedBody",
+                  "BindingPattern": "queue",
+                  "RequiresDiscovery": "Yes"
+                },
+                {
+                  "ExtensionType": "Orchestrator.CreateAndWaitForQueueItem",
+                  "Label": "Create and wait for queue item",
+                  "BpmnElement": "bpmn:ServiceTask",
+                  "ExtensionTag": "uipath:activity",
+                  "InputPattern": "mergedBody",
+                  "BindingPattern": "queue",
+                  "RequiresDiscovery": "Yes"
+                }
+              ],
+              "Connectors": [],
+              "Processes": [
+                {
+                  "Name": "OrchestratorQueueTransaction",
+                  "ProcessKey": "OrchestratorQueueTransaction",
+                  "ProcessVersion": "1.0.0",
+                  "PackageProcessKey": "OrchestratorQueueTransaction:1.0.0",
+                  "ReleaseKey": "EE03063B-B7BB-4C4D-A395-8F81BCA73B78",
+                  "Type": "Process",
+                  "Folder": "Shared",
+                  "FolderKey": "c4359cde-55f0-4f0e-9322-c6cdce74ab4c",
+                  "FeedId": "001c61d7-2108-4130-b7ff-198c88ecbf79"
+                }
+              ],
+              "ProcessesByType": {
+                "Process": 1,
+                "ProcessOrchestration": 0,
+                "Agent": 0,
+                "Flow": 0,
+                "Api": 0,
+                "Function": 0,
+                "CaseManagement": 0,
+                "BusinessRules": 0
+              }
+            }
+          },
+          "sequence_number": 12,
+          "result_tokens": 363
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_01JDFfXU5QS7vvE21bboSJHd",
+          "assistant_turn_index": 22,
+          "timestamp": "2026-08-14T21:49:44.185287",
+          "duration_ms": 1007.4908240003424,
+          "generation_completed_at": "2026-08-14T21:49:44.185287",
+          "execution_started_at": "2026-08-14T21:49:44.185338",
+          "execution_completed_at": "2026-08-14T21:49:45.192829",
+          "parameters": {
+            "command": "uip maestro bpmn registry search connector --output json > registry-evidence/registry-search-connector.json 2>/tmp/search-connector.err\necho \"exit=$?\"; cat /tmp/search-connector.err\nwc -c registry-evidence/registry-search-connector.json",
+            "description": "Filtered registry lookup for connector wrapper types"
+          },
+          "result_status": "success",
+          "result_summary": "exit=0\n2955 registry-evidence/registry-search-connector.json",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 13,
+          "result_tokens": 15
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_011JdF4RSYvtuU9tijGURigB",
+          "assistant_turn_index": 24,
+          "timestamp": "2026-08-14T21:49:50.179865",
+          "duration_ms": 2072.9553689998284,
+          "generation_completed_at": "2026-08-14T21:49:50.179865",
+          "execution_started_at": "2026-08-14T21:49:50.179919",
+          "execution_completed_at": "2026-08-14T21:49:52.252874",
+          "parameters": {
+            "command": "uip maestro bpmn registry get Orchestrator.StartAgentJob --output json > registry-evidence/registry-get-Orchestrator.StartAgentJob.json 2>/tmp/get-agent.err\necho \"agent exit=$?\"; cat /tmp/get-agent.err\nwc -c registry-evidence/registry-get-Orchestrator.StartAgentJob.json\n\nuip maestro bpmn registry get Orchestrator.CreateQueueItem --output json > registry-evidence/registry-get-Orchestrator.CreateQueueItem.json 2>/tmp/get-queue.err\necho \"queue exit=$?\"; cat /tmp/get-queue.err\nwc -c registry-evidence/registry-get-Orchestrator.CreateQueueItem.json\n\nuip maestro bpmn registry get Intsvc.ActivityExecution --output json > registry-evidence/registry-get-Intsvc.ActivityExecution.json 2>/tmp/get-connector.err\necho \"connector exit=$?\"; cat /tmp/get-connector.err\nwc -c registry-evidence/registry-get-Intsvc.ActivityExecution.json",
+            "description": "Capture detailed registry records for agent, queue, connector wrapper types"
+          },
+          "result_status": "success",
+          "result_summary": "agent exit=0\n2551 registry-evidence/registry-get-Orchestrator.StartAgentJob.json\nqueue exit=0\n2726 registry-evidence/registry-get-Orchestrator.CreateQueueItem.json\nconnector exit=0\n6505 registry-evidence/registry-get-Intsvc.ActivityExecution.json",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 14,
+          "result_tokens": 62
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_01Mdds4LE3GCdvSR81hPDkzv",
+          "assistant_turn_index": 26,
+          "timestamp": "2026-08-14T21:49:56.324146",
+          "duration_ms": 262.22706899989134,
+          "generation_completed_at": "2026-08-14T21:49:56.324146",
+          "execution_started_at": "2026-08-14T21:49:56.324199",
+          "execution_completed_at": "2026-08-14T21:49:56.586426",
+          "parameters": {
+            "command": "for f in registry-evidence/registry-get-*.json; do\n  echo \"=== $f ===\"\n  python3 -c \"\nimport json,sys\nd = json.load(open('$f'))\nprint('Result:', d.get('Result'), '| Code:', d.get('Code'))\ndata = d.get('Data', {})\nif isinstance(data, dict):\n    print('Data keys:', list(data.keys()))\n    print('ExtensionType:', data.get('ExtensionType'))\n\"\ndone",
+            "description": "Verify detailed get evidence files contain real data"
+          },
+          "result_status": "success",
+          "result_summary": "=== registry-evidence/registry-get-Intsvc.ActivityExecution.json ===\nResult: Success | Code: RegistryGetSuccess\nData keys: ['ExtensionType']\nExtensionType: {'ExtensionType': 'Intsvc.ActivityExecution', 'Label': 'Execute connector activity', 'BpmnElement': 'bpmn:SendTask', 'Placements': {'Activity': {'Type': 'bpmn:SendTask'}, 'IntermediateEvent': {'Type': 'bpmn:IntermediateThrowEvent', 'EventDefinition': {'Type': 'bpmn:MessageEventDefinition'}}, 'EndEvent': {'Type': 'bpmn:EndEvent', 'EventDefinition': {'Type': 'bpmn:MessageEventDefinition'}}}, 'ExtensionTag': 'uipath:activity', 'ContextFields': [{'Name': 'activityConfigurationVersion', 'DisplayName': 'Activity configuration version', 'Type': 'string', 'Required': False, 'Hidden': True, 'IsPrimaryKey': False, 'Binding': False, 'DefaultValue': 'v1', 'Enum': ['v1'], 'Description': 'Marks the Integration Service activity format used by this template'}, {'Name': 'connectorKey', 'DisplayName': 'Connector key', 'Type': 'string', 'Required': True, 'Hidden': True, 'IsPrimaryKey': False, 'Binding': False, 'DefaultValue': None}, {'Name': 'connection', 'DisplayName': 'Connection', 'Type': 'string', 'Required': False, 'Hidden': True, 'IsPrimaryKey': False, 'Binding': True, 'DefaultValue': None, 'BindingInfo': {'Resource': 'Connection', 'ResourceKeyPattern': '${resourceKey}', 'PropertyAttribute': 'ConnectionId'}}, {'Name': 'folderKey', 'DisplayName': 'Folder key', 'Type': 'string', 'Required': False, 'Hidden': True, 'IsPrimaryKey': False, 'Binding': True, 'DefaultValue': None, 'BindingInfo': {'Resource': 'Connection', 'ResourceKeyPattern': '${resourceKey}', 'PropertyAttribute': 'folderKey'}}, {'Name': 'operation', 'DisplayName': 'Operation', 'Type': 'string', 'Required': True, 'Hidden': True, 'IsPrimaryKey': True, 'Binding': False, 'DefaultValue': None, 'Description': 'Activity catalog Name used as the runtime operation'}, {'Name': 'objectName', 'DisplayName': 'Object name', 'Type': 'string', 'Required': True, 'Hidden': True, 'IsPrimaryKey': False, 'Binding': False, 'DefaultValue': None, 'Description': 'Activity catalog ObjectName'}, {'Name': 'method', 'DisplayName': 'Method', 'Type': 'string', 'Required': True, 'Hidden': True, 'IsPrimaryKey': False, 'Binding': False, 'DefaultValue': None, 'Description': 'Activity catalog MethodName'}, {'Name': 'path', 'DisplayName': 'Path', 'Type': 'string', 'Required': True, 'Hidden': True, 'IsPrimaryKey': False, 'Binding': False, 'DefaultValue': None, 'Description': 'Request path returned by resource metadata'}, {'Name': 'metadata', 'DisplayName': 'Metadata', 'Type': 'json', 'Required': False, 'Hidden': True, 'IsPrimaryKey': False, 'Binding': False, 'DefaultValue': {}, 'Description': 'Optional activity metadata'}], 'InputFields': [], 'InputPattern': 'separateInputs', 'InputName': 'body', 'InputTarget': 'body', 'OutputSource': '=response', 'OutputType': 'jsonSchema', 'OutputName': 'response', 'UseRelativeSource': False, 'BindingPattern': 'connection', 'RequiresDiscovery': True, 'IsDynamic': True, 'XmlTemplate': '<bpmn:sendTask id=\"{id}\" name=\"{name}\">\\n  <bpmn:extensionElements>\\n    <uipath:activity version=\"v1\">\\n      <uipath:type value=\"Intsvc.ActivityExecution\" version=\"v1\" />\\n      <uipath:context>\\n        <uipath:input name=\"connectorKey\" type=\"string\" value=\"{connectorKey}\" />\\n        <uipath:input name=\"connection\" type=\"string\" value=\"=bindings.{connectionBindingId}\" />\\n        <uipath:input name=\"folderKey\" type=\"string\" value=\"=bindings.{folderBindingId}\" />\\n        <uipath:input name=\"operation\" type=\"string\" value=\"{operation}\" />\\n        <uipath:input name=\"objectName\" type=\"string\" value=\"{objectName}\" />\\n        <uipath:input name=\"method\" type=\"string\" value=\"{method}\" />\\n        <uipath:input name=\"path\" type=\"string\" value=\"{path}\" />\\n        <uipath:input name=\"activityConfigurationVersion\" type=\"string\" value=\"v1\" />\\n        <uipath:input name=\"metadata\" type=\"json\"><![CDATA[{}]]></uipath:input>\\n      </uipath:context>\\n      <uipath:output name=\"response\" type=\"jsonSchema\" source=\"=response\" var=\"{varId}\" />\\n    </uipath:activity>\\n  </bpmn:extensionElements>\\n  <bpmn:incoming>{incomingEdge}</bpmn:incoming>\\n  <bpmn:outgoing>{outgoingEdge}</bpmn:outgoing>\\n</bpmn:sendTask>', 'DiscoveryNotes': 'Use `uip is activities list <connector-key> --output json` to select an activity. Set operation from Name, then describe ObjectName to get its current path, parameters, and fields.', 'InputNotes': \"Add each request field from the selected operation as its own uipath:input. Keep the field's type and target: path, query, body, or file.\", 'ContextFieldNotes': 'connection points to a root binding for a Connection resource. When folder scoping is required, folderKey points to a second binding for the same resourceKey. Use propertyAttribute ConnectionId for connection and folderKey for folderKey. Omit folderKey when the selected activity has no folder scoping, and omit both fields only when it does not use a connection.', 'ExtensionTagNotes': 'In isExecution array, NOT in isEvents array, so uses uipath:activity'}\n=== registry-evidence/registry-get-Orchestrator.CreateQueueItem.json ===\nResult: Success | Code: RegistryGetSuccess\nData keys: ['ExtensionType']\nExtensionType: {'ExtensionType': 'Orchestrator.CreateQueueItem', 'Label': 'Create queue item', 'BpmnElement': 'bpmn:SendTask', 'Placements': {'Activity': {'Type': 'bpmn:SendTask'}}, 'ExtensionTag': 'uipath:activity', 'ContextFields': [{'Name': 'queueName', 'DisplayName': 'Queue name', 'Type': 'string', 'Required': False, 'Hidden': True, 'IsPrimaryKey': False, 'Binding': False, 'DefaultValue': None, 'BindingInfo': {'Resource': 'queue', 'ResourceKeyPattern': '${metadata.key}', 'PropertyAttribute': 'Key'}}, {'Name': 'folderId', 'Type': 'string', 'Required': False, 'Hidden': True, 'IsPrimaryKey': False, 'Binding': False, 'DefaultValue': None}, {'Name': 'folderPath', 'Type': 'string', 'Required': False, 'Hidden': True, 'IsPrimaryKey': False, 'Binding': False, 'DefaultValue': None}], 'InputPattern': 'mergedBody', 'InputName': 'ItemData', 'InputTarget': 'body', 'OutputSource': None, 'OutputType': 'Orchestrator.CreateQueueItem', 'OutputName': 'response', 'UseRelativeSource': True, 'BindingPattern': 'queue', 'BindingInfo': {'Resource': 'queue', 'ResourceKeyPattern': '${metadata.key}', 'PropertyAttribute': 'Key', 'ContextField': 'queueName'}, 'RequiresDiscovery': True, 'IsDynamic': True, 'XmlTemplate': '<bpmn:SendTask id=\"{id}\" name=\"{name}\">\\n  <bpmn:extensionElements>\\n    <uipath:activity version=\"v1\">\\n      <uipath:type value=\"Orchestrator.CreateQueueItem\" version=\"v1\" />\\n      <uipath:context>\\n        <uipath:input name=\"queueName\" value=\"{queueName}\" />\\n        <uipath:input name=\"folderId\" value=\"{folderId}\" />\\n        <uipath:input name=\"folderPath\" value=\"{folderPath}\" />\\n      </uipath:context>\\n      <uipath:input name=\"ItemData\" type=\"json\" target=\"body\"><![CDATA[{}]]></uipath:input>\\n      <uipath:output name=\"response\" type=\"Orchestrator.CreateQueueItem\" var=\"{varId}\" />\\n    </uipath:activity>\\n  </bpmn:extensionElements>\\n  <bpmn:incoming>{incomingEdge}</bpmn:incoming>\\n  <bpmn:outgoing>{outgoingEdge}</bpmn:outgoing>\\n</bpmn:SendTask>', 'DiscoveryNotes': 'Uses getQueueDefinitions(serviceType, search) to list available queues'}\n=== registry-evidence/registry-get-Orchestrator.StartAgentJob.json ===\nResult: Success | Code: RegistryGetSuccess\nData keys: ['ExtensionType']\nExtensionType: {'ExtensionType': 'Orchestrator.StartAgentJob', 'Label': 'Start and wait for agent', 'BpmnElement': 'bpmn:ServiceTask', 'Placements': {'Activity': {'Type': 'bpmn:ServiceTask'}}, 'ExtensionTag': 'uipath:activity', 'ContextFields': [{'Name': 'name', 'DisplayName': 'Agent', 'Type': 'string', 'Required': True, 'Hidden': True, 'IsPrimaryKey': False, 'Binding': True, 'DefaultValue': None, 'BindingInfo': {'Resource': 'process', 'ResourceKeyPattern': '${metadata.key}', 'PropertyAttribute': 'name'}}, {'Name': 'folderPath', 'Type': 'string', 'Required': True, 'Hidden': True, 'IsPrimaryKey': False, 'Binding': True, 'DefaultValue': None, 'BindingInfo': {'Resource': 'process', 'ResourceKeyPattern': '${metadata.key}', 'PropertyAttribute': 'folderPath'}}], 'InputPattern': 'mergedBody', 'InputName': 'JobArguments', 'InputTarget': 'bodyField', 'OutputSource': None, 'OutputType': 'Orchestrator.RunJob', 'OutputName': 'Process response', 'UseRelativeSource': True, 'BindingPattern': 'process', 'BindingInfo': {'Resource': 'process', 'ResourceKeyPattern': '${metadata.key}', 'PropertyAttribute': 'name', 'ContextField': 'name'}, 'RequiresDiscovery': True, 'IsDynamic': True, 'XmlTemplate': '<bpmn:ServiceTask id=\"{id}\" name=\"{name}\">\\n  <uipath:activity type=\"Orchestrator.StartAgentJob\" version=\"v1\">\\n    <uipath:context>\\n      <uipath:input name=\"name\" value=\"=bindings.{nameBindingId}\" />\\n      <uipath:input name=\"folderPath\" value=\"=bindings.{folderPathBindingId}\" />\\n    </uipath:context>\\n    <uipath:input name=\"JobArguments\" type=\"json\" target=\"bodyField\"><![CDATA[{}]]></uipath:input>\\n    <uipath:output name=\"Process response\" type=\"Orchestrator.RunJob\" var=\"{varId}\" />\\n  </uipath:activity>\\n  <bpmn:incoming>{incomingEdge}</bpmn:incoming>\\n  <bpmn:outgoing>{outgoingEdge}</bpmn:outgoing>\\n</bpmn:ServiceTask>', 'DiscoveryNotes': \"Uses getSupportedOrchestratorTasks('agent', search) to list available agents\"}",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 15,
+          "result_tokens": 2349
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_017ubfRxooApMDSEusYX3GZc",
+          "assistant_turn_index": 28,
+          "timestamp": "2026-08-14T21:50:01.047604",
+          "duration_ms": 536.5702510007395,
+          "generation_completed_at": "2026-08-14T21:50:01.047604",
+          "execution_started_at": "2026-08-14T21:50:01.047655",
+          "execution_completed_at": "2026-08-14T21:50:01.584225",
+          "parameters": {
+            "command": "ls -la registry-evidence/\necho \"---\"\necho \"Checking for any accidental non-JSON / error content:\"\nfor f in registry-evidence/*.json; do\n  python3 -c \"import json; json.load(open('$f'))\" && echo \"$f: valid JSON\" || echo \"$f: INVALID JSON\"\ndone",
+            "description": "Final listing and JSON validity check of all evidence files"
+          },
+          "result_status": "success",
+          "result_summary": "total 140\ndrwxr-xr-x 2 root root  4096 Aug 14 21:49 .\ndrwxr-xr-x 4 root root  4096 Aug 14 21:48 ..\n-rw-r--r-- 1 root root  6505 Aug 14 21:49 registry-get-Intsvc.ActivityExecution.json\n-rw-r--r-- 1 root root  2726 Aug 14 21:49 registry-get-Orchestrator.CreateQueueItem.json\n-rw-r--r-- 1 root root  2551 Aug 14 21:49 registry-get-Orchestrator.StartAgentJob.json\n-rw-r--r-- 1 root root 83132 Aug 14 21:48 registry-list-all.json\n-rw-r--r-- 1 root root 22296 Aug 14 21:49 registry-search-agent.json\n-rw-r--r-- 1 root root  2955 Aug 14 21:49 registry-search-connector.json\n-rw-r--r-- 1 root root  1451 Aug 14 21:49 registry-search-queue.json\n---\nChecking for any accidental non-JSON / error content:\nregistry-evidence/registry-get-Intsvc.ActivityExecution.json: valid JSON\nregistry-evidence/registry-get-Orchestrator.CreateQueueItem.json: valid JSON\nregistry-evidence/registry-get-Orchestrator.StartAgentJob.json: valid JSON\nregistry-evidence/registry-list-all.json: valid JSON\nregistry-evidence/registry-search-agent.json: valid JSON\nregistry-evidence/registry-search-connector.json: valid JSON\nregistry-evidence/registry-search-queue.json: valid JSON",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 16,
+          "result_tokens": 287
+        }
+      ],
+      "timestamp": "2026-08-14T21:50:10.949423",
+      "duration_seconds": 103.44517537199954,
+      "token_usage": {
+        "uncached_input_tokens": 36,
+        "output_tokens": 5230,
+        "cache_creation_input_tokens": 63508,
+        "cache_read_input_tokens": 909249,
+        "total_cost_usd": 0.5894877000000001,
+        "input_tokens": 972793
+      },
+      "model_used": "claude-sonnet-5",
+      "assistant_turn_count": 30,
+      "messages": [
+        {
+          "role": "assistant",
+          "started_at": "2026-08-14T21:48:27.503258",
+          "completed_at": "2026-08-14T21:48:36.128294",
+          "generation_duration_ms": 8625.059690999478,
+          "content_blocks": [
+            {
+              "block_type": "thinking",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": "EtMCCnIIEBABGAIqQIEqiHnEDIYbKXcw8Ty6oIOYdFdVP3k1K1pJ7SAlArkYehhdf6P4RniColKdcjPbUpczSaINfIJgZAYLFTSL1P8yDmNsYXVkZS1zYWZmcm9uOABCCHRoaW5raW5nWgw3OTM4MzUwMTkyODASDCVug4pZfJ9rlW2fHBoMY8WT6fh/zQSSa8KXIjBCsgqbzJJTFn0+e+7JGdZ3ZGolEd7vmGAIxtDNk8CwAc8n2OwjsA+Ux40pY4c1i/EqjgFIOluloW4WIkjNgj2u58CUwx5WVUmN7XvW7/XbJAZ8N0R2kSKDsY8C335+57alvehjOw4WHaY17Kh80iQ8sfWrlBCt9ZT04PespesVZDTtoPh/JqndvLjS1dByat59LVRkRbj5qYFSjEkPuTMUI6Bz1qoiuyOWLH+tTW/9AhtihkxoDdpLWyNv9Ealjg0BGAE=",
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 2,
+          "output_tokens": 0,
+          "cache_creation_tokens": 43262,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-5",
+          "message_id": "msg_bdrk_imme5pxmadrcecyya3dtiosudwp6fpuyzj42rgjkze2awehhohja",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-08-14T21:48:36.128294",
+          "completed_at": "2026-08-14T21:48:39.429034",
+          "generation_duration_ms": 3300.7397230003335,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01XV2vLSDBgHD2w494uWge26",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01XV2vLSDBgHD2w494uWge26"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 459,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-5",
+          "message_id": "msg_bdrk_imme5pxmadrcecyya3dtiosudwp6fpuyzj42rgjkze2awehhohja",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-08-14T21:48:39.448477",
+          "completed_at": "2026-08-14T21:48:42.437731",
+          "generation_duration_ms": 2989.253252999333,
+          "content_blocks": [
+            {
+              "block_type": "thinking",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": "EtEDCnIIEBABGAIqQHv9x9lt7ER2wfOybthCr/NJqnzSOeOvuebeZUdg43CLCxXuete2/H0SJSjrRk2Hu/wxxlujAXXQAW2YxI5diy4yDmNsYXVkZS1zYWZmcm9uOABCCHRoaW5raW5nWgw3OTM4MzUwMTkyODASDI8/M6gtI6NuEiEnBhoMHDqO+2yv9wLQb179IjCC5GYyn6L05Wzcha3Ovc2ja69COBsu6e++IqrmBUiA14BuggOpVQO4XNOedwv2B9oqjAJNqWYfO9u+THIS7h/GS1fweJRs2mMgMtLBIZJuLpVPsrDaBHvDQP8NdmktPwl10GGSp+ssALcGOonhvxsIxX2EWLHp6GGYfjHUA3qeeCj16fxOxxzt2/z8rz29ohkI0WUcdKEtWh09wvYyBNiAx/kqoxQpYoycZz7HvI98ns3Yzvnx1J52NqTh4DLG8bU+DiMVGpx8IeoLUNFcGi7AJTBhNW/G0sqqPj2hWynImomjDL5dmNlekBWF4yazImvX03fpB5r5RoFb2Q61SHw3yY9Vzp/2KN8okSzT75zczL5drnpqhsjF/Ceuk7s4aynOVZu+xqNz+uTRe8aHxjfe5w4LyabUFh/MTeyTTurmGAE=",
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 2,
+          "output_tokens": 0,
+          "cache_creation_tokens": 6935,
+          "cache_read_tokens": 43262,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-5",
+          "message_id": "msg_bdrk_w6onim4dkb2ho75nhyrsh36ahhxasmyjxokuyugpcnfb75nwtjka",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-08-14T21:48:42.437731",
+          "completed_at": "2026-08-14T21:48:43.363061",
+          "generation_duration_ms": 925.3297370005384,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01LzojZXKpJ8g5s3ziNQQWSo",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01LzojZXKpJ8g5s3ziNQQWSo"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 224,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-5",
+          "message_id": "msg_bdrk_w6onim4dkb2ho75nhyrsh36ahhxasmyjxokuyugpcnfb75nwtjka",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-08-14T21:48:43.993179",
+          "completed_at": "2026-08-14T21:48:46.653500",
+          "generation_duration_ms": 2660.3222769999775,
+          "content_blocks": [
+            {
+              "block_type": "thinking",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": "ErQCCnIIEBABGAIqQNTObCLIGropgE1biGzYNPt6LC5bMyziVe97hSa5swTm9xd/gWUb2n2m7+nCKgA6Ewxy6SW5grzbjFkxBjTpnDwyDmNsYXVkZS1zYWZmcm9uOABCCHRoaW5raW5nWgw3OTM4MzUwMTkyODASDKCPGfaEKgrCh/zRfhoMRVzpOnVtgASzsMyvIjAl2bCZmu9lX0CUTiw81MlV79JRq2lSO1cxMzf+3I86paUGsKmOyxdUF1TIelAtoTMqcIhDbvzwr9Ff4cc6PUi0z3wRYYQ8+abfQFK0BAdrSchI/TgxTXQqnBqDGm/lkKqrbQE+IVwFxGton014ANhM1gb3o51kPvQ+RblId9/eQG5thEKvEQKIo+9a6vWniAQC9Z0CjAm3ERU5ygtQlSEIEEMYAQ==",
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 2,
+          "output_tokens": 0,
+          "cache_creation_tokens": 296,
+          "cache_read_tokens": 50197,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-5",
+          "message_id": "msg_bdrk_yjbutnz32ymg6l4tphivpt4vun3kjldzcpxdhp5mlr7drbx3dw2q",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-08-14T21:48:46.653500",
+          "completed_at": "2026-08-14T21:48:47.670247",
+          "generation_duration_ms": 1016.7466250004509,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01KB5xiXkQ8stD1dXak1vvR1",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01KB5xiXkQ8stD1dXak1vvR1"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 184,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-5",
+          "message_id": "msg_bdrk_yjbutnz32ymg6l4tphivpt4vun3kjldzcpxdhp5mlr7drbx3dw2q",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-08-14T21:48:54.916516",
+          "completed_at": "2026-08-14T21:48:57.535122",
+          "generation_duration_ms": 2618.606916999852,
+          "content_blocks": [
+            {
+              "block_type": "text",
+              "sequence": 0,
+              "text": "Registry pull succeeded. Now let's list the full catalog and inspect it to find agent/queue/connector types.",
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 2,
+          "output_tokens": 58,
+          "cache_creation_tokens": 357,
+          "cache_read_tokens": 50493,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-5",
+          "message_id": "msg_bdrk_cjxpg666yo556bzx2ezuyrjnpeq6iovgnypjksyjzwq6se427x2a",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-08-14T21:48:57.535122",
+          "completed_at": "2026-08-14T21:48:58.803576",
+          "generation_duration_ms": 1268.4532639996178,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01M3DcrtCZrTUfyhvovJpmDc",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01M3DcrtCZrTUfyhvovJpmDc"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 151,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-5",
+          "message_id": "msg_bdrk_cjxpg666yo556bzx2ezuyrjnpeq6iovgnypjksyjzwq6se427x2a",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-08-14T21:48:59.796934",
+          "completed_at": "2026-08-14T21:49:02.359929",
+          "generation_duration_ms": 2562.9964809995727,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01BP1vNwsiDBHDHSagc4F6f2",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01BP1vNwsiDBHDHSagc4F6f2"
+          ],
+          "input_tokens": 2,
+          "output_tokens": 151,
+          "cache_creation_tokens": 237,
+          "cache_read_tokens": 50850,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-5",
+          "message_id": "msg_bdrk_hgfs5gxtxqjein65eumvdkb4penttfholmz3ycmzuyxvraciay2q",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-08-14T21:49:02.518917",
+          "completed_at": "2026-08-14T21:49:05.551858",
+          "generation_duration_ms": 3032.941092999863,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01EmZsnheyv378rxHcn6hAde",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01EmZsnheyv378rxHcn6hAde"
+          ],
+          "input_tokens": 2,
+          "output_tokens": 196,
+          "cache_creation_tokens": 179,
+          "cache_read_tokens": 51087,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-5",
+          "message_id": "msg_bdrk_cirgj6d6jjtvkplmcwvfm4fhybir4537rrllvfgsvsqig3nbbjfq",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-08-14T21:49:05.790173",
+          "completed_at": "2026-08-14T21:49:08.369857",
+          "generation_duration_ms": 2579.6843799998896,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01Ep3TuHZjgrsagoReJd5rPH",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01Ep3TuHZjgrsagoReJd5rPH"
+          ],
+          "input_tokens": 2,
+          "output_tokens": 179,
+          "cache_creation_tokens": 243,
+          "cache_read_tokens": 51266,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-5",
+          "message_id": "msg_bdrk_xrkrws7rqkaovmkl6wlnjzgkpalstedu4bwat7myksl3c7cfxupa",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-08-14T21:49:08.514771",
+          "completed_at": "2026-08-14T21:49:13.437903",
+          "generation_duration_ms": 4923.131892000129,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01YVPS6KDi1vrZJ9P19nEduB",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01YVPS6KDi1vrZJ9P19nEduB"
+          ],
+          "input_tokens": 2,
+          "output_tokens": 175,
+          "cache_creation_tokens": 316,
+          "cache_read_tokens": 51509,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-5",
+          "message_id": "msg_bdrk_pumkvnsrugkjhhaxuys5pjnikjrpfatkxff3ie5jpejzqvc3ti7a",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-08-14T21:49:13.878488",
+          "completed_at": "2026-08-14T21:49:17.558013",
+          "generation_duration_ms": 3679.5260069993674,
+          "content_blocks": [
+            {
+              "block_type": "thinking",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": "EvUDCnIIEBABGAIqQDVOfq0RtZLBrHn5bRaIB1w+IL84iGiSD7g7bnevXSbD1ESjJyr55ZC/dHexQP1m3ekLQIWVM28sqGIpz0GslpcyDmNsYXVkZS1zYWZmcm9uOABCCHRoaW5raW5nWgw3OTM4MzUwMTkyODASDEhkiS3XyKAfvr0LOhoMsNtdp/3UNWf0Ez4zIjA1KXSgXVY5FTQcH21l9c8WopcSP17sWnI8E+plDwImVmw1tTi/vWy41dxooMaCqMcqsAKNpvu0ymYa2pxZrF1LpSn5b2wA7rF1NvdLYzZ/ztTdGCDJ/zuMFCbi2DQRNAJ9BCJJETyEGb1pNOffiVIVSiHYi9y3vdIUCwfPr3VUevcHcSCapVS6RIkvH/vToabfcRL5wC3f4zVC2Bv+ioW12t7t4+IcssWDpcyiGT9pYF88v9d07qxlhw0PXRRybwpNe6ZLcV6muTsdui46VTmq6kzuvUKfTUUHadCTXy8dsI6VZuAacLcImxpsJlyb3vR7dNnuM/yu7pfhSgso4eP9OJw+zRskbsInW20PVkEPpvZykyeiiyT5qGKfoHolOb90wWIufDW7V+tJgY43DRNo/7yfTlkcxzAED9Ph2UjaYUa7sTK/upgXTs9a3ZZeB6zGFl+sdqDr+Atu2G8jwj5FV/heGAE=",
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 2,
+          "output_tokens": 0,
+          "cache_creation_tokens": 1131,
+          "cache_read_tokens": 51825,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-5",
+          "message_id": "msg_bdrk_rttwerwibwzswt5ejos5jn4qe36f2p4w6vnm3a6ylfww2xfjgbva",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-08-14T21:49:17.558013",
+          "completed_at": "2026-08-14T21:49:18.178844",
+          "generation_duration_ms": 620.8309399999052,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_018L3ykso3HyDH32oBTHZLqZ",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_018L3ykso3HyDH32oBTHZLqZ"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 257,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-5",
+          "message_id": "msg_bdrk_rttwerwibwzswt5ejos5jn4qe36f2p4w6vnm3a6ylfww2xfjgbva",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-08-14T21:49:22.394415",
+          "completed_at": "2026-08-14T21:49:25.324253",
+          "generation_duration_ms": 2929.839082000399,
+          "content_blocks": [
+            {
+              "block_type": "thinking",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": "Eo8DCnIIEBABGAIqQLuShJG2Flvl0B1iTC6SGiX/y1TM/YzUEfUK0ZfnYff7jZQCN+KIEk5hkCsprweU74l57e6JDeAGCPLITb+N20gyDmNsYXVkZS1zYWZmcm9uOABCCHRoaW5raW5nWgw3OTM4MzUwMTkyODASDMSm3+s0BDN1Z4iLcBoMl+frIjdXaiplc7rnIjC6uSGd1GFhHw7A2DWwUBfQkkVAl4hm3jGYdi8USxDm8oCC1jyq+mXw3OWP9pWVjXUqygE/v9+wgJXFX6xJDyaF4QWgLyKOpZ1FDP5tm2BIIPFIhyI2VQCs0i0yQawtNdEaIqW04SfAK81KSgk3GcVIfjQEjzGp7EhSuk0AlVTaOLz0/8P0OPhwRZnP4drKbx99TIdC94nPKBHjUHL6rsq1t7ijLC7B544v3Wt30v9sfehvmJifXBG6OTgFo16+wfk5PXmXOs0PAFNGIPO8XeNH15vgwkl60Sr09hhO2c3PttvdCwYEra0bwhh+zA97c23mwz0U6z4w09rFNR0+GAE=",
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 2,
+          "output_tokens": 0,
+          "cache_creation_tokens": 1805,
+          "cache_read_tokens": 52956,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-5",
+          "message_id": "msg_bdrk_trzlw7nwueatgyw7yqj4cjbs2fdcnvowqd6r22frrllcrp5ndstq",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-08-14T21:49:25.324253",
+          "completed_at": "2026-08-14T21:49:26.294883",
+          "generation_duration_ms": 970.629753999674,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01Rp3hBdqEPX1mpbjf9ek8Fo",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01Rp3hBdqEPX1mpbjf9ek8Fo"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 240,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-5",
+          "message_id": "msg_bdrk_trzlw7nwueatgyw7yqj4cjbs2fdcnvowqd6r22frrllcrp5ndstq",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-08-14T21:49:27.355438",
+          "completed_at": "2026-08-14T21:49:30.958339",
+          "generation_duration_ms": 3602.9006259996095,
+          "content_blocks": [
+            {
+              "block_type": "thinking",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": "EtkECnIIEBABGAIqQCxXBNQFvnXUhyNQhVHBWzMgLALFT2qeT6IesxVYjH9OipQ8jIPbC/KA1ni/4LIJhLnAo6r6nqPfWmN/yFWLyk4yDmNsYXVkZS1zYWZmcm9uOABCCHRoaW5raW5nWgw3OTM4MzUwMTkyODASDG5a0lgaEdtJAhj5SxoMY7cuCQRp/yWZJjIZIjDscHF3R2jhZ2TKuBODJnQPO8RqDwgTzYWigeqaAbc9ujDW39cDjwxuxHEjx2X0VZIqlAMrCQdUbcFgV3d039eh8gKBbifFPdDD5ktXE4m4dTLhi1QmUmYGOoLnum9/wPmZbVrY74bcmonhvy/m6x3kSBTIVJdPD8ksjhbjC0Omkd3QOX5sGtadwCuqqyYF8bKaK84mhJTJOGKqGs7LtR7Ab+w154s4mAglBGMerRkTK/ApNRaMWqlrahLdqMDWCoypqlw6hEhnvMz6WhXJff5V5e95bIbKmGfQ/hx1HQm57NaXi3R8G21II3p9pFLRMDPRxF4vmIs7BSY04Qyv3d2gVUborF8hL4h5kXfvjolIbS/40F3fOXOhPl9pvvxKwhRH3VKvT05lv/nA6fUFnfKHyz96i5zm5FR/cMpdHa3BTRECN9UMqlNfrEZOKdh1mkr36ajRDh4cbP+HZJXbX1rrJ2e54xWJ+ZUFodwNaTN4Bj7LoRGWwSvSpJdTsLD1Je89uN4k4upd1YY4e9hKUdsC5bjOJ5u4txqufLQ0X9aSL66PYRW3Iik+W5ELzUNLNRArAcIxD16pRhySCjuUM/b8Nk29L/GcqhgB",
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 2,
+          "output_tokens": 0,
+          "cache_creation_tokens": 205,
+          "cache_read_tokens": 54761,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-5",
+          "message_id": "msg_bdrk_6itnnqqtp2fp2742oihcrrlp2r25mjnrdolqkk6fj3jexe22g5da",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-08-14T21:49:30.958339",
+          "completed_at": "2026-08-14T21:49:31.620433",
+          "generation_duration_ms": 662.094715999956,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01WhpvpzTSJqNGmg8etYuRGs",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01WhpvpzTSJqNGmg8etYuRGs"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 255,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-5",
+          "message_id": "msg_bdrk_6itnnqqtp2fp2742oihcrrlp2r25mjnrdolqkk6fj3jexe22g5da",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-08-14T21:49:31.722392",
+          "completed_at": "2026-08-14T21:49:34.989321",
+          "generation_duration_ms": 3266.9301719997748,
+          "content_blocks": [
+            {
+              "block_type": "text",
+              "sequence": 0,
+              "text": "Good, this covers the agent wrapper filtered lookup. Now let's also do a queue search and a connector search for completeness, and get the detailed record for one documented type (e.g. `Orchestrator.StartAgentJob` and `Orchestrator.CreateQueueItem`).",
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 2,
+          "output_tokens": 121,
+          "cache_creation_tokens": 792,
+          "cache_read_tokens": 54966,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-5",
+          "message_id": "msg_bdrk_amwnzhyslgkblsa52awnakn5jzeo25h4sw75psp4csokmkrbtdfq",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-08-14T21:49:34.989321",
+          "completed_at": "2026-08-14T21:49:36.057404",
+          "generation_duration_ms": 1068.0832699999883,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01CWKGvUCdM3919LWNLqywTg",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01CWKGvUCdM3919LWNLqywTg"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 148,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-5",
+          "message_id": "msg_bdrk_amwnzhyslgkblsa52awnakn5jzeo25h4sw75psp4csokmkrbtdfq",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-08-14T21:49:36.961962",
+          "completed_at": "2026-08-14T21:49:39.333525",
+          "generation_duration_ms": 2371.5626160001193,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01RARj9nHU4Gx1Ev6TTskWNt",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01RARj9nHU4Gx1Ev6TTskWNt"
+          ],
+          "input_tokens": 2,
+          "output_tokens": 93,
+          "cache_creation_tokens": 298,
+          "cache_read_tokens": 55758,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-5",
+          "message_id": "msg_bdrk_oataipvk6zvv2yhmtmdpl7pvjkpnllkyzjasr2blywbei4mah6fa",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-08-14T21:49:39.356820",
+          "completed_at": "2026-08-14T21:49:43.074500",
+          "generation_duration_ms": 3717.6800209999783,
+          "content_blocks": [
+            {
+              "block_type": "thinking",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": "EssECnIIEBABGAIqQPAl7qxuOtfqB/zRRO/zXc4bsg9bLon5hKPgIZD2Q4wZ5kFKktEvWjRoGis4eVPDyiYWBOtC7BEk04wrNh3zpOEyDmNsYXVkZS1zYWZmcm9uOABCCHRoaW5raW5nWgw3OTM4MzUwMTkyODASDOEUdGlgMKPKMKFKOxoMgLE+k6jMeezAR7awIjCJgZPgaJRA489UDeRdZIdQebISLZKjBc5m6zZ3ocDcgK50s8mg9l9wUwdFusOAgMUqhgPeCjqMb63dvPfwzGV/nwM8qiLS66fHRzhUYpGFMJQKaMknKJVZUWg387eg2+ym0pkqbL31CAGBubejd53f+b09WyE6LRTjP0nsHZ5i2FyWUXY5XpwX1akoZQUlRT9d6YNjGtYkiaXEMXZAkoLGksIiEq4yjzwGDi721sahn1Zdc9Cud09ARV7/Ros8SnRA/sqmMmWN4AoGclsVLmZ901yPki1u+Fu7nTvz8Wf8dmgzMzHOoYjmvDVKxPXuBBC137WyMKQCeV8s88SjP/xz81PuPaMNxIirJZMBYSUsZwB5EKNHKRH3ZX98d2uqNGem7/CtxfjUwIcPO7AqKbHbc0WOQKZotbxtDfHhek96bMDhOnbDSwt+MJc9FneSRLRflQJXF9glUNOuuLDP57G195eXDD67q5sp/f3bpjN29/gnRnM/TFafKpI9PfvN71wzNqy6gukvXRcQ8KSupsyzeDkQ8QOhjIEP5b8jt8XvCopLlyLkWsBQddyXJ3CjrIYsTn97UwP5zO0YAQ==",
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 2,
+          "output_tokens": 0,
+          "cache_creation_tokens": 802,
+          "cache_read_tokens": 56056,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-5",
+          "message_id": "msg_bdrk_spqyh6pth6eligpojmlu7qpu3bnmatl7ujug53w5aqzaq264yv5q",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-08-14T21:49:43.074500",
+          "completed_at": "2026-08-14T21:49:44.185287",
+          "generation_duration_ms": 1110.7867089995125,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01JDFfXU5QS7vvE21bboSJHd",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01JDFfXU5QS7vvE21bboSJHd"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 299,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-5",
+          "message_id": "msg_bdrk_spqyh6pth6eligpojmlu7qpu3bnmatl7ujug53w5aqzaq264yv5q",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-08-14T21:49:45.192796",
+          "completed_at": "2026-08-14T21:49:47.563213",
+          "generation_duration_ms": 2370.416746999581,
+          "content_blocks": [
+            {
+              "block_type": "text",
+              "sequence": 0,
+              "text": "Now let's get detailed registry records for representative documented wrapper types — one agent type, one queue type, and one connector type.",
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 2,
+          "output_tokens": 67,
+          "cache_creation_tokens": 205,
+          "cache_read_tokens": 56858,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-5",
+          "message_id": "msg_bdrk_hiitpog5fezinefrqpudlacymvjlco2hxeww4xu3fvcbwppduiga",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-08-14T21:49:47.563213",
+          "completed_at": "2026-08-14T21:49:50.179865",
+          "generation_duration_ms": 2616.652628000338,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_011JdF4RSYvtuU9tijGURigB",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_011JdF4RSYvtuU9tijGURigB"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 456,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-5",
+          "message_id": "msg_bdrk_hiitpog5fezinefrqpudlacymvjlco2hxeww4xu3fvcbwppduiga",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-08-14T21:49:52.252844",
+          "completed_at": "2026-08-14T21:49:54.739862",
+          "generation_duration_ms": 2487.0183689999976,
+          "content_blocks": [
+            {
+              "block_type": "text",
+              "sequence": 0,
+              "text": "All commands succeeded and returned valid, non-failure JSON. Let's verify each file's content quickly to confirm they contain real registry records (not error envelopes), then finalize.",
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 2,
+          "output_tokens": 87,
+          "cache_creation_tokens": 644,
+          "cache_read_tokens": 57063,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-5",
+          "message_id": "msg_bdrk_apsqqpqtjxoldhe4jar46zxltmzc4nrt6vkwytk4pxurym5dzhta",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-08-14T21:49:54.739862",
+          "completed_at": "2026-08-14T21:49:56.324146",
+          "generation_duration_ms": 1584.2838189992108,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01Mdds4LE3GCdvSR81hPDkzv",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01Mdds4LE3GCdvSR81hPDkzv"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 210,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-5",
+          "message_id": "msg_bdrk_apsqqpqtjxoldhe4jar46zxltmzc4nrt6vkwytk4pxurym5dzhta",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-08-14T21:49:56.586398",
+          "completed_at": "2026-08-14T21:49:59.845597",
+          "generation_duration_ms": 3259.1994459999114,
+          "content_blocks": [
+            {
+              "block_type": "text",
+              "sequence": 0,
+              "text": "All three detailed records contain real, well-formed registry data (Result: Success, full templates with XmlTemplate, ContextFields, BindingInfo — no fabricated IDs, all placeholders remain `{id}`, `{name}`, etc.). Let's do a final listing and cleanup check.",
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 2,
+          "output_tokens": 121,
+          "cache_creation_tokens": 4928,
+          "cache_read_tokens": 57707,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-5",
+          "message_id": "msg_bdrk_jl6dbh6gcks3wt7ay5kdggphv57n6h4z5tpvoem2oog3oaqrsr4q",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-08-14T21:49:59.845597",
+          "completed_at": "2026-08-14T21:50:01.047604",
+          "generation_duration_ms": 1202.0064949992957,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_017ubfRxooApMDSEusYX3GZc",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_017ubfRxooApMDSEusYX3GZc"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 166,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-5",
+          "message_id": "msg_bdrk_jl6dbh6gcks3wt7ay5kdggphv57n6h4z5tpvoem2oog3oaqrsr4q",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-08-14T21:50:01.584190",
+          "completed_at": "2026-08-14T21:50:10.915340",
+          "generation_duration_ms": 9331.150523999895,
+          "content_blocks": [
+            {
+              "block_type": "text",
+              "sequence": 0,
+              "text": "All evidence collected successfully with the live `uip` CLI (no fallback needed — the registry synced fresh and every call returned real success payloads). Summary of `registry-evidence/`:\n\n| File | Command | Contents |\n|---|---|---|\n| `registry-list-all.json` | `uip maestro bpmn registry list --limit -1 --output json` | Full catalog: 30 extension types (`ExtensionTypes`), 27 `Connectors`, 138 `Processes` with `ProcessesByType` breakdown |\n| `registry-search-agent.json` | `uip maestro bpmn registry search agent --output json` | Filtered lookup surfacing agent wrapper types: `Orchestrator.StartAgentJob`, `Intsvc.AsyncExecution`/`SyncAgentExecution`/`AsyncAgentExecution`, `Orchestrator.StartAgenticProcess`, etc. |\n| `registry-search-queue.json` | `uip maestro bpmn registry search queue --output json` | Filtered lookup for queue wrapper types: `Orchestrator.CreateQueueItem`, `Orchestrator.CreateAndWaitForQueueItem` |\n| `registry-search-connector.json` | `uip maestro bpmn registry search connector --output json` | Filtered lookup for connector wrapper types (Integration Service `Intsvc.*` activities/events) |\n| `registry-get-Orchestrator.StartAgentJob.json` | `uip maestro bpmn registry get Orchestrator.StartAgentJob --output json` | Detailed record: BPMN placement, context fields, binding info, and full `xmlTemplate` for the agent wrapper |\n| `registry-get-Orchestrator.CreateQueueItem.json` | `uip maestro bpmn registry get Orchestrator.CreateQueueItem --output json` | Detailed record for the queue wrapper (binding pattern `queue`, `queueName` binding info, template) |\n| `registry-get-Intsvc.ActivityExecution.json` | `uip maestro bpmn registry get Intsvc.ActivityExecution --output json` | Detailed record for the generic connector-activity wrapper (connection/folderKey bindings, discovery notes, template) |\n\nAll 7 files are raw, unmodified `--output json` CLI output, all valid JSON, all `\"Result\": \"Success\"`. No connection IDs, folder keys, tenant URLs, connector keys, or release keys were invented — every identifier-like field in the templates is a placeholder (`{id}`, `{connectorKey}`, `{connectionBindingId}`, etc.) as returned by the registry itself. Nothing was uploaded, published, deployed, debugged, or run — this was pure discovery/evidence capture.",
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 2,
+          "output_tokens": 933,
+          "cache_creation_tokens": 873,
+          "cache_read_tokens": 62635,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-5",
+          "message_id": "msg_bdrk_wyedjz46njp43fqyn3662zx5vdfvubniphg2kdpc5hihxceci5oq",
+          "parent_tool_use_id": null
+        }
+      ],
+      "num_turns": 19,
+      "max_turns_exhausted": false,
+      "result_summary": {
+        "is_error": false,
+        "subtype": "success",
+        "stop_reason": "end_turn",
+        "result": "All evidence collected successfully with the live `uip` CLI (no fallback needed — the registry synced fresh and every call returned real success payloads). Summary of `registry-evidence/`:\n\n| File | Command | Contents |\n|---|---|---|\n| `registry-list-all.json` | `uip maestro bpmn registry list --limit -1 --output json` | Full catalog: 30 extension types (`ExtensionTypes`), 27 `Connectors`, 138 `Processes` with `ProcessesByType` breakdown |\n| `registry-search-agent.json` | `uip maestro bpmn registry search agent --output json` | Filtered lookup surfacing agent wrapper types: `Orchestrator.StartAgentJob`, `Intsvc.AsyncExecution`/`SyncAgentExecution`/`AsyncAgentExecution`, `Orchestrator.StartAgenticProcess`, etc. |\n| `registry-search-queue.json` | `uip maestro bpmn registry search queue --output json` | Filtered lookup for queue wrapper types: `Orchestrator.CreateQueueItem`, `Orchestrator.CreateAndWaitForQueueItem` |\n| `registry-search-connector.json` | `uip maestro bpmn registry search connector --output json` | Filtered lookup for connector wrapper types (Integration Service `Intsvc.*` activities/events) |\n| `registry-get-Orchestrator.StartAgentJob.json` | `uip maestro bpmn registry get Orchestrator.StartAgentJob --output json` | Detailed record: BPMN placement, context fields, binding info, and full `xmlTemplate` for the agent wrapper |\n| `registry-get-Orchestrator.CreateQueueItem.json` | `uip maestro bpmn registry get Orchestrator.CreateQueueItem --output json` | Detailed record for the queue wrapper (binding pattern `queue`, `queueName` binding info, template) |\n| `registry-get-Intsvc.ActivityExecution.json` | `uip maestro bpmn registry get Intsvc.ActivityExecution --output json` | Detailed record for the generic connector-activity wrapper (connection/folderKey bindings, discovery notes, template) |\n\nAll 7 files are raw, unmodified `--output json` CLI output, all valid JSON, all `\"Result\": \"Success\"`. No connection IDs, folder keys, tenant URLs, connector keys, or release keys were invented — every identifier-like field in the templates is a placeholder (`{id}`, `{connectorKey}`, `{connectionBindingId}`, etc.) as returned by the registry itself. Nothing was uploaded, published, deployed, debugged, or run — this was pure discovery/evidence capture."
+      },
+      "crashed": false,
+      "crash_reason": null
+    }
+  ],
+  "error_message": null,
+  "error_details": null,
+  "error_log_tail": null,
+  "environment_info": {
+    "git_commit": "unknown",
+    "skills_git_commit": "unknown",
+    "cli_version": "1.201.0-dev.8272",
+    "tool_plugins": {
+      "admin-tool": "1.201.0-dev.8272",
+      "agent-tool": "1.201.0-dev.8272",
+      "agenthub-tool": "1.201.0-dev.8272",
+      "aops-tool": "1.201.0-dev.8272",
+      "api-workflow-tool": "1.201.0-dev.8272",
+      "automation-hub-tool": "1.201.0-dev.8272",
+      "codedagent-tool": "1.201.0-dev.8272",
+      "codedapp-tool": "1.201.0-dev.8272",
+      "coder-tool": "1.201.0-dev.8272",
+      "context-grounding-tool": "1.201.0-dev.8272",
+      "conversational-tool": "1.201.0-dev.8272",
+      "data-fabric-tool": "1.201.0-dev.8272",
+      "docsai-tool": "1.201.0-dev.8272",
+      "function-tool": "1.201.0-dev.8272",
+      "gov-tool": "1.201.0-dev.8272",
+      "guardrails-tool": "1.201.0-dev.8272",
+      "insights-tool": "1.201.0-dev.8276",
+      "integrationservice-tool": "1.201.0-dev.8272",
+      "ixp-tool": "1.201.0-dev.8272",
+      "llm-gateway-tool": "1.201.0-dev.8272",
+      "llmgw-tool": "1.201.0-dev.8272",
+      "maestro-tool": "1.201.0-dev.8275",
+      "model-hub-tool": "1.201.0-dev.8272",
+      "orchestrator-tool": "1.201.0-dev.8272",
+      "platform-tool": "1.201.0-dev.8272",
+      "pm-tool": "1.201.0-dev.8272",
+      "rpa-legacy-tool": "1.201.0-dev.8272",
+      "rpa-tool": "1.201.0-dev.20260809.3",
+      "solution-tool": "1.201.0-dev.8272",
+      "tasks-tool": "1.201.0-dev.8272",
+      "test-manager-tool": "1.201.0-dev.8272",
+      "traces-tool": "1.201.0-dev.8272",
+      "vertical-solutions-tool": "1.201.0-dev.8272"
+    },
+    "coder_eval": "0.8.8",
+    "claude_code_cli": "2.1.177 (Claude Code)",
+    "uv": "uv 0.11.28 (x86_64-unknown-linux-gnu)",
+    "anthropic": "0.122.0",
+    "openai": "3.0.0",
+    "pydantic": "2.12.5",
+    "api_routing": "aws_bedrock",
+    "aws_region": "us-east-2",
+    "bedrock_model": "us.anthropic.claude-sonnet-4-6"
+  },
+  "agent_config": {
+    "type": "claude-code",
+    "model": "claude-sonnet-5",
+    "permission_mode": "acceptEdits",
+    "allowed_tools": [
+      "Skill",
+      "Bash",
+      "Read",
+      "Write",
+      "Edit",
+      "Glob",
+      "Grep"
+    ],
+    "disallowed_tools": null,
+    "plugins": [
+      {
+        "type": "local",
+        "path": "/home/azureuser/projects/skills/"
+      }
+    ],
+    "system_prompt": "You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted.\n",
+    "system_prompt_file": null,
+    "ignore_patterns": [],
+    "claude_settings": null,
+    "sdk_options": {},
+    "setting_sources": null
+  },
+  "sdk_options": {
+    "tools": null,
+    "allowed_tools": [
+      "Skill",
+      "Bash",
+      "Read",
+      "Write",
+      "Edit",
+      "Glob",
+      "Grep"
+    ],
+    "system_prompt": "You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted.\n",
+    "mcp_servers": {},
+    "strict_mcp_config": false,
+    "permission_mode": "acceptEdits",
+    "continue_conversation": false,
+    "resume": null,
+    "session_id": null,
+    "max_turns": 60,
+    "max_budget_usd": null,
+    "disallowed_tools": [
+      "ToolSearch"
+    ],
+    "model": "us.anthropic.claude-sonnet-5",
+    "fallback_model": null,
+    "betas": [],
+    "permission_prompt_tool_name": null,
+    "cwd": "/work/output/artifacts/skill-bpmn-registry-discovery",
+    "cli_path": null,
+    "settings": null,
+    "add_dirs": [],
+    "env": {
+      "PATH": "/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+      "PLUGIN_TOOLS_DIR": "/usr/lib/node_modules/@uipath",
+      "CLAUDE_CODE_USE_BEDROCK": "1",
+      "AWS_BEARER_TOKEN_BEDROCK": "***REDACTED***",
+      "AWS_REGION": "us-east-2",
+      "CLAUDE_CODE_ATTRIBUTION_HEADER": "0",
+      "ANTHROPIC_MODEL": "us.anthropic.claude-sonnet-5",
+      "ANTHROPIC_SMALL_FAST_MODEL": "us.anthropic.claude-sonnet-4-6"
+    },
+    "extra_args": {},
+    "max_buffer_size": null,
+    "can_use_tool": null,
+    "hooks": null,
+    "user": null,
+    "include_partial_messages": true,
+    "include_hook_events": false,
+    "fork_session": false,
+    "agents": null,
+    "setting_sources": [
+      "project"
+    ],
+    "skills": null,
+    "sandbox": null,
+    "plugins": [
+      {
+        "type": "local",
+        "path": "/home/azureuser/projects/skills"
+      }
+    ],
+    "max_thinking_tokens": null,
+    "thinking": null,
+    "effort": null,
+    "output_format": null,
+    "enable_file_checkpointing": false,
+    "session_store": null,
+    "session_store_flush": "batched",
+    "load_timeout_ms": 60000,
+    "task_budget": null
+  },
+  "sandbox_path": "/work/output/artifacts/skill-bpmn-registry-discovery",
+  "task_config": {
+    "resolved": {
+      "task_id": "skill-bpmn-registry-discovery",
+      "description": "Registry discovery eval: agent uses the Maestro BPMN registry surface to discover documented agent, queue, and connector wrapper types and to save public-safe CLI evidence for the skill's supported-element map without inventing private resource metadata. Requires the `uip` CLI on PATH.\n",
+      "initial_prompt": "Use the installed `uip` CLI's Maestro BPMN registry surface to discover the\ndocumented wrapper surface for agent, queue, and connector resource types.\nSave evidence locally without uploading, publishing, deploying, debugging, or\nrunning anything.\n\nRequirements:\n- Save outputs under a local `registry-evidence/` directory you create.\n- Capture raw JSON evidence for the overall registry catalog, a filtered\n  lookup for at least one documented agent or queue wrapper type, and the\n  detailed registry record for at least one documented wrapper type.\n- Use `--output json` for parsed CLI calls and write only the raw JSON output\n  files into `registry-evidence/`.\n- Do not invent connection IDs, folder keys, tenant URLs, real connector\n  keys, or release keys.\n- Do not upload, publish, deploy, debug, or run anything.\n",
+      "initial_prompt_file": null,
+      "tags": [
+        "uipath-maestro-bpmn",
+        "integration",
+        "mode:build",
+        "lifecycle:inspect",
+        "connector",
+        "feature:connections",
+        "resource"
+      ],
+      "skip": false,
+      "agent": {
+        "type": "claude-code",
+        "model": "claude-sonnet-5",
+        "permission_mode": "acceptEdits",
+        "allowed_tools": [
+          "Skill",
+          "Bash",
+          "Read",
+          "Write",
+          "Edit",
+          "Glob",
+          "Grep"
+        ],
+        "disallowed_tools": null,
+        "plugins": [
+          {
+            "type": "local",
+            "path": "/home/azureuser/projects/skills/"
+          }
+        ],
+        "system_prompt": "You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted.\n",
+        "system_prompt_file": null,
+        "ignore_patterns": [],
+        "claude_settings": null,
+        "sdk_options": {},
+        "setting_sources": null
+      },
+      "sandbox": {
+        "driver": "tempdir",
+        "docker": {
+          "image": "skills-image:latest",
+          "dockerfile_path": null,
+          "build": {
+            "buildkit": null,
+            "args": {},
+            "secrets": [],
+            "extra_args": []
+          },
+          "network": "bridge",
+          "working_dir": null,
+          "env_passthrough": [
+            "ANTHROPIC_API_KEY",
+            "API_BACKEND",
+            "UIPATH_LLM_BACKEND",
+            "UIPATH_ACCESS_TOKEN",
+            "UIPATH_URL",
+            "UIPATH_TENANT_ID",
+            "UIPATH_ORGANIZATION_ID",
+            "UIPATH_CLI_DISABLE_VERSION_SYNC",
+            "AWS_BEARER_TOKEN_BEDROCK",
+            "AWS_REGION",
+            "BEDROCK_MODEL",
+            "CLAUDE_CODE_USE_BEDROCK",
+            "ANTHROPIC_MODEL",
+            "CODEX_API_KEY",
+            "CODEX_BASE_URL",
+            "CODEX_MODEL",
+            "GEMINI_API_KEY",
+            "ANTIGRAVITY_MODEL",
+            "HOME"
+          ],
+          "env_passthrough_extra": [
+            "SKILLS_REPO_PATH",
+            "BEDROCK_MODEL",
+            "TASK_PARALLELISM",
+            "UIPATH_CLI_ENABLE_ENV_AUTH",
+            "UIPATH_CLI_AUTH_TOKEN",
+            "UIPATH_CLI_ORGANIZATION_NAME",
+            "UIPATH_CLI_ORGANIZATION_ID",
+            "UIPATH_CLI_TENANT_NAME",
+            "UIPATH_CLI_TENANT_ID",
+            "TRACES_SMOKE_PROCESS_KEY",
+            "CODEX_API_KEY",
+            "CODEX_BASE_URL"
+          ],
+          "extra_mounts": [
+            "~/.uipath:/.uipath:rw"
+          ]
+        },
+        "python": {
+          "env_packages": []
+        },
+        "node": null,
+        "limits": {
+          "timeout": 300,
+          "max_memory_mb": null,
+          "max_cpus": null,
+          "max_pids": null,
+          "max_disk_mb": null
+        },
+        "template_sources": null,
+        "mock_path_dirs": null,
+        "ignore_patterns": []
+      },
+      "success_criteria": [
+        {
+          "type": "file_exists",
+          "description": "Registry discovery evidence directory was created",
+          "weight": 1.0,
+          "pass_threshold": 1.0,
+          "suite_thresholds": null,
+          "stop_when": null,
+          "path": "registry-evidence"
+        },
+        {
+          "type": "command_executed",
+          "description": "Agent ran a Maestro BPMN registry list call",
+          "weight": 1.5,
+          "pass_threshold": 1.0,
+          "suite_thresholds": null,
+          "stop_when": null,
+          "tool_name": "Bash",
+          "command_pattern": "(uip|\\$UIP)\\s+(maestro\\s+)?bpmn\\s+registry\\s+list",
+          "min_count": 1,
+          "max_count": null,
+          "require_success": false,
+          "exclude_pattern": null
+        },
+        {
+          "type": "command_executed",
+          "description": "Agent ran a Maestro BPMN registry search call",
+          "weight": 1.5,
+          "pass_threshold": 1.0,
+          "suite_thresholds": null,
+          "stop_when": null,
+          "tool_name": "Bash",
+          "command_pattern": "(uip|\\$UIP)\\s+(maestro\\s+)?bpmn\\s+registry\\s+search",
+          "min_count": 1,
+          "max_count": null,
+          "require_success": false,
+          "exclude_pattern": null
+        },
+        {
+          "type": "command_executed",
+          "description": "Agent ran a Maestro BPMN registry get call",
+          "weight": 1.5,
+          "pass_threshold": 1.0,
+          "suite_thresholds": null,
+          "stop_when": null,
+          "tool_name": "Bash",
+          "command_pattern": "(uip|\\$UIP)\\s+(maestro\\s+)?bpmn\\s+registry\\s+get",
+          "min_count": 1,
+          "max_count": null,
+          "require_success": false,
+          "exclude_pattern": null
+        },
+        {
+          "type": "run_command",
+          "description": "Registry evidence covers documented agent, queue, and connector wrapper types",
+          "weight": 4.0,
+          "pass_threshold": 1.0,
+          "suite_thresholds": null,
+          "stop_when": null,
+          "command": "python3 $TASK_DIR/check_registry_discovery.py",
+          "timeout": 30,
+          "expected_exit_code": 0,
+          "expected_stdout": null,
+          "stdout_match": "exact",
+          "score_from_stdout": false
+        }
+      ],
+      "run_limits": {
+        "max_turns": 60,
+        "expected_turns": 28,
+        "task_timeout": 900,
+        "turn_timeout": 900,
+        "max_input_tokens": null,
+        "max_output_tokens": null,
+        "max_total_tokens": null,
+        "max_usd": null,
+        "count_cached_input": false,
+        "count_cache_creation": false,
+        "stop_early": false
+      },
+      "reference": null,
+      "expected_commands": null,
+      "pre_run": [],
+      "post_run": [
+        {
+          "command": "find . -maxdepth 5 -type d \\( -name node_modules -o -name .npm-prefix -o -name .venv \\) -prune -exec rm -rf {} +",
+          "timeout": 30
+        }
+      ],
+      "dataset": null,
+      "suite_id": null,
+      "row_id": null,
+      "simulation": null
+    },
+    "source_yaml": "task_id: skill-bpmn-registry-discovery\ndescription: >\n  Registry discovery eval: agent uses the Maestro BPMN registry surface to\n  discover documented agent, queue, and connector wrapper types and to save\n  public-safe CLI evidence for the skill's supported-element map without\n  inventing private resource metadata. Requires the `uip` CLI on PATH.\ntags: [uipath-maestro-bpmn, integration, \"mode:build\", \"lifecycle:inspect\", connector, \"feature:connections\", resource]\n\nrun_limits:\n  expected_turns: 28\n  max_turns: 60\ninitial_prompt: |\n  Use the installed `uip` CLI's Maestro BPMN registry surface to discover the\n  documented wrapper surface for agent, queue, and connector resource types.\n  Save evidence locally without uploading, publishing, deploying, debugging, or\n  running anything.\n\n  Requirements:\n  - Save outputs under a local `registry-evidence/` directory you create.\n  - Capture raw JSON evidence for the overall registry catalog, a filtered\n    lookup for at least one documented agent or queue wrapper type, and the\n    detailed registry record for at least one documented wrapper type.\n  - Use `--output json` for parsed CLI calls and write only the raw JSON output\n    files into `registry-evidence/`.\n  - Do not invent connection IDs, folder keys, tenant URLs, real connector\n    keys, or release keys.\n  - Do not upload, publish, deploy, debug, or run anything.\n\nsuccess_criteria:\n  - type: file_exists\n    description: \"Registry discovery evidence directory was created\"\n    path: \"registry-evidence\"\n    weight: 1.0\n    pass_threshold: 1.0\n\n  - type: command_executed\n    description: \"Agent ran a Maestro BPMN registry list call\"\n    tool_name: \"Bash\"\n    command_pattern: '(uip|\\$UIP)\\s+(maestro\\s+)?bpmn\\s+registry\\s+list'\n    min_count: 1\n    weight: 1.5\n    pass_threshold: 1.0\n\n  - type: command_executed\n    description: \"Agent ran a Maestro BPMN registry search call\"\n    tool_name: \"Bash\"\n    command_pattern: '(uip|\\$UIP)\\s+(maestro\\s+)?bpmn\\s+registry\\s+search'\n    min_count: 1\n    weight: 1.5\n    pass_threshold: 1.0\n\n  - type: command_executed\n    description: \"Agent ran a Maestro BPMN registry get call\"\n    tool_name: \"Bash\"\n    command_pattern: '(uip|\\$UIP)\\s+(maestro\\s+)?bpmn\\s+registry\\s+get'\n    min_count: 1\n    weight: 1.5\n    pass_threshold: 1.0\n\n  - type: run_command\n    description: \"Registry evidence covers documented agent, queue, and connector wrapper types\"\n    command: \"python3 $TASK_DIR/check_registry_discovery.py\"\n    timeout: 30\n    expected_exit_code: 0\n    weight: 4.0\n    pass_threshold: 1.0\n",
+    "source_file": "/home/azureuser/projects/skills/tests/tasks/uipath-maestro-bpmn/connector/task.yaml",
+    "lineage": {
+      "agent.type": {
+        "value": "claude-code",
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.permission_mode": {
+        "value": "acceptEdits",
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.model": {
+        "value": "claude-sonnet-5",
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.allowed_tools": {
+        "value": [
+          "Skill",
+          "Bash",
+          "Read",
+          "Write",
+          "Edit",
+          "Glob",
+          "Grep"
+        ],
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.plugins": {
+        "value": [
+          {
+            "type": "local",
+            "path": "/home/azureuser/projects/skills/"
+          }
+        ],
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.ignore_patterns": {
+        "value": [],
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.system_prompt": {
+        "value": "You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted.\n",
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "run_limits.max_turns": {
+        "value": 60,
+        "source": "task",
+        "source_detail": null
+      },
+      "run_limits.task_timeout": {
+        "value": 900,
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "run_limits.turn_timeout": {
+        "value": 900,
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "run_limits.expected_turns": {
+        "value": 28,
+        "source": "task",
+        "source_detail": null
+      },
+      "sandbox.driver": {
+        "value": "docker",
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "sandbox.docker": {
+        "value": {
+          "image": "skills-image:latest",
+          "env_passthrough_extra": [
+            "SKILLS_REPO_PATH",
+            "BEDROCK_MODEL",
+            "TASK_PARALLELISM",
+            "UIPATH_CLI_ENABLE_ENV_AUTH",
+            "UIPATH_CLI_AUTH_TOKEN",
+            "UIPATH_CLI_ORGANIZATION_NAME",
+            "UIPATH_CLI_ORGANIZATION_ID",
+            "UIPATH_CLI_TENANT_NAME",
+            "UIPATH_CLI_TENANT_ID",
+            "TRACES_SMOKE_PROCESS_KEY",
+            "CODEX_API_KEY",
+            "CODEX_BASE_URL"
+          ],
+          "extra_mounts": [
+            "~/.uipath:/.uipath:rw"
+          ]
+        },
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "repeats": {
+        "value": 1,
+        "source": "default",
+        "source_detail": null
+      }
+    }
+  },
+  "command_stats": {
+    "total_commands": 17,
+    "commands_by_tool": {
+      "Skill": 1,
+      "Bash": 16
+    },
+    "total_command_time_ms": 20054.42320400016,
+    "avg_command_time_ms": 1179.67195317648,
+    "slowest_commands": [
+      {
+        "tool": "Bash",
+        "duration_ms": 7246.249724000336,
+        "parameters": {
+          "command": "uip maestro bpmn registry pull --output json 2>&1 | tee /tmp/pull.log | head -c 2000",
+          "description": "Pull the Maestro BPMN registry cache once"
+        },
+        "tool_id": "toolu_bdrk_01KB5xiXkQ8stD1dXak1vvR1"
+      },
+      {
+        "tool": "Bash",
+        "duration_ms": 4215.550738000275,
+        "parameters": {
+          "command": "uip maestro bpmn registry search --help 2>&1 | head -50\necho \"---\"\nuip maestro bpmn registry list --help 2>&1 | head -50",
+          "description": "Check available filter options for registry search/list"
+        },
+        "tool_id": "toolu_bdrk_018L3ykso3HyDH32oBTHZLqZ"
+      },
+      {
+        "tool": "Bash",
+        "duration_ms": 2072.9553689998284,
+        "parameters": {
+          "command": "uip maestro bpmn registry get Orchestrator.StartAgentJob --output json > registry-evidence/registry-get-Orchestrator.StartAgentJob.json 2>/tmp/get-agent.err\necho \"agent exit=$?\"; cat /tmp/get-agent.err\nwc -c registry-evidence/registry-get-Orchestrator.StartAgentJob.json\n\nuip maestro bpmn registry get Orchestrator.CreateQueueItem --output json > registry-evidence/registry-get-Orchestrator.CreateQueueItem.json 2>/tmp/get-queue.err\necho \"queue exit=$?\"; cat /tmp/get-queue.err\nwc -c registry-evidence/registry-get-Orchestrator.CreateQueueItem.json\n\nuip maestro bpmn registry get Intsvc.ActivityExecution --output json > registry-evidence/registry-get-Intsvc.ActivityExecution.json 2>/tmp/get-connector.err\necho \"connector exit=$?\"; cat /tmp/get-connector.err\nwc -c registry-evidence/registry-get-Intsvc.ActivityExecution.json",
+          "description": "Capture detailed registry records for agent, queue, connector wrapper types"
+        },
+        "tool_id": "toolu_bdrk_011JdF4RSYvtuU9tijGURigB"
+      },
+      {
+        "tool": "Bash",
+        "duration_ms": 1060.5327570001464,
+        "parameters": {
+          "command": "uip maestro bpmn registry search agent --output json > registry-evidence/registry-search-agent.json 2>/tmp/search-agent.err\necho \"exit=$?\"; cat /tmp/search-agent.err\nwc -c registry-evidence/registry-search-agent.json",
+          "description": "Filtered registry lookup for agent wrapper types"
+        },
+        "tool_id": "toolu_bdrk_01Rp3hBdqEPX1mpbjf9ek8Fo"
+      },
+      {
+        "tool": "Bash",
+        "duration_ms": 1007.4908240003424,
+        "parameters": {
+          "command": "uip maestro bpmn registry search connector --output json > registry-evidence/registry-search-connector.json 2>/tmp/search-connector.err\necho \"exit=$?\"; cat /tmp/search-connector.err\nwc -c registry-evidence/registry-search-connector.json",
+          "description": "Filtered registry lookup for connector wrapper types"
+        },
+        "tool_id": "toolu_bdrk_01JDFfXU5QS7vvE21bboSJHd"
+      }
+    ],
+    "successful_commands": 17,
+    "failed_commands": 0,
+    "unknown_commands": 0,
+    "success_rate": 100.0,
+    "most_common_sequence": "Bash → Bash → Bash"
+  },
+  "total_token_usage": {
+    "uncached_input_tokens": 36,
+    "output_tokens": 5230,
+    "cache_creation_input_tokens": 63508,
+    "cache_read_input_tokens": 909249,
+    "total_cost_usd": 0.5894877000000001,
+    "input_tokens": 972793
+  },
+  "total_assistant_turns": 30,
+  "expected_commands": null,
+  "actual_commands": 17,
+  "commands_efficiency": null,
+  "pre_run_results": [],
+  "post_run_results": [
+    {
+      "command": "find . -maxdepth 5 -type d \\( -name node_modules -o -name .npm-prefix -o -name .venv \\) -prune -exec rm -rf {} +",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "",
+      "duration_seconds": 0.0031447410583496094,
+      "error": null
+    }
+  ],
+  "simulation": null,
+  "early_stop": null
+}

@@ -1,0 +1,91 @@
+2026-08-19 21:11:06 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-08-19 21:11:06 [INFO] coder_eval.orchestrator: API routing: aws_bedrock
+2026-08-19 21:11:06 [DEBUG] coder_eval.criteria: Discovered 15 criterion checkers
+2026-08-19 21:11:06 [DEBUG] coder_eval.criteria: Validated 15 criterion checkers
+2026-08-19 21:11:06 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-08-19 21:11:07 [DEBUG] coder_eval.orchestrator: Sending prompt: Build a UiPath Flow project named "InvoiceRouter" that processes vendor
+invoices:
+
+1. Manual trigger...
+2026-08-19 21:11:07 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Starting agent query stream...
+2026-08-19 21:17:48 [DEBUG] coder_eval.agents.claude_code_agent: [coder] session_id changed: None -> b74dbaad-69c5-4450-8e3f-8f23b93510bd
+2026-08-19 21:17:48 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Agent query stream ended
+2026-08-19 21:17:48 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-08-19 21:17:48 [DEBUG] coder_eval.orchestrator: Agent response received (5664 chars)
+2026-08-19 21:17:48 [DEBUG] coder_eval.orchestrator: Checking success criteria
+2026-08-19 21:17:48 [DEBUG] coder_eval.evaluation.checker: Criterion 'skill_triggered' score: 1.00
+2026-08-19 21:17:48 [DEBUG] coder_eval.evaluation.checker: Criterion 'command_executed' score: 1.00
+2026-08-19 21:17:48 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'uip maestro flow validate passes on InvoiceRouter.flow': python3 $EXPERIMENT_TASKS_PATH/uipath-maestro-flow/_shared/validate_flow.py
+2026-08-19 21:17:51 [DEBUG] coder_eval.sandbox: Command 'python3 $EXPERIMENT_TASKS_PATH/uipath-maestro-flow/_shared/validate_flow.py' exited with code 0
+2026-08-19 21:17:51 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+Validating InvoiceRouter/InvoiceRouter/InvoiceRouter.flow
+{
+  "Result": "Success",
+  "Code": "FlowValidate",
+  "Data": {
+    "File": "/work/output/artifacts/skill-flow-ixp-integration-handle-routing/InvoiceRouter/InvoiceRouter/InvoiceRouter.flow",
+    "Status": "Valid"
+  }
+}
+---
+2026-08-19 21:17:51 [DEBUG] coder_eval.sandbox: STDERR:
+---
+[ManifestClient] fetchDynamicNodes ok: total=318 agent context nodes=2 external agent nodes=7 orchestrator nodes=263 IXP nodes=46
+---
+2026-08-19 21:17:51 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-08-19 21:17:51 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'Generated flow contains an IxP extraction node or core.logic.mock fallback': grep -rqE "\"type\"[[:space:]]*:[[:space:]]*\"(uipath\.ixp|core\.logic\.mock)" --include="*.flow" .
+2026-08-19 21:17:51 [DEBUG] coder_eval.sandbox: Command 'grep -rqE "\"type\"[[:space:]]*:[[:space:]]*\"(uipath\.ixp|core\.logic\.mock)" --include="*.flow" .' exited with code 0
+2026-08-19 21:17:51 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-08-19 21:17:51 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'Flow contains a Decision node (core.logic.decision)': set -e
+flow=$(find . -name '*.flow' -print -quit)
+grep -qF 'core.logic.decision' "$flow"
+
+2026-08-19 21:17:51 [DEBUG] coder_eval.sandbox: Command 'set -e
+flow=$(find . -name '*.flow' -print -quit)
+grep -qF 'core.logic.decision' "$flow"
+' exited with code 0
+2026-08-19 21:17:51 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-08-19 21:17:51 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'Decision condition references the canonical IxP output path ($vars.<ixp>.output.ExtractionResult.ResultsDocument.Fields)': set -e
+flow=$(find . -name '*.flow' -print -quit)
+grep -qF '$vars.'           "$flow"
+grep -qF 'ExtractionResult' "$flow"
+grep -qF 'ResultsDocument'  "$flow"
+grep -qF 'Fields'           "$flow"
+
+2026-08-19 21:17:51 [DEBUG] coder_eval.sandbox: Command 'set -e
+flow=$(find . -name '*.flow' -print -quit)
+grep -qF '$vars.'           "$flow"
+grep -qF 'ExtractionResult' "$flow"
+grep -qF 'ResultsDocument'  "$flow"
+grep -qF 'Fields'           "$flow"
+' exited with code 0
+2026-08-19 21:17:51 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-08-19 21:17:51 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'Both branch script nodes are present by name': set -e
+flow=$(find . -name '*.flow' -print -quit)
+grep -qF 'HighValueReview' "$flow"
+grep -qF 'AutoApprove'     "$flow"
+
+2026-08-19 21:17:51 [DEBUG] coder_eval.sandbox: Command 'set -e
+flow=$(find . -name '*.flow' -print -quit)
+grep -qF 'HighValueReview' "$flow"
+grep -qF 'AutoApprove'     "$flow"
+' exited with code 0
+2026-08-19 21:17:51 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-08-19 21:17:51 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'Both Decision branches wired (true and false handles)': set -e
+flow=$(find . -name '*.flow' -print -quit)
+grep -qF '"true"'  "$flow"
+grep -qF '"false"' "$flow"
+
+2026-08-19 21:17:51 [DEBUG] coder_eval.sandbox: Command 'set -e
+flow=$(find . -name '*.flow' -print -quit)
+grep -qF '"true"'  "$flow"
+grep -qF '"false"' "$flow"
+' exited with code 0
+2026-08-19 21:17:51 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-08-19 21:17:51 [INFO] coder_eval.orchestrator: Success criteria: 8/8 passed, weighted score: 1.000
+2026-08-19 21:17:51 [WARNING] coder_eval.orchestrator: Visible turns (34) exceeded expected_turns (26) at iteration 1 for task skill-flow-ixp-integration-handle-routing. Run continues — max_turns remains the hard cap.
+2026-08-19 21:17:51 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-08-19 21:17:51 [INFO] coder_eval.orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+2026-08-19 21:17:51 [INFO] coder_eval.orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-ixp-integration-handle-routing
+2026-08-19 21:17:51 [INFO] coder_eval.orchestrator: Task finished: status=SUCCESS duration=407.3s score=1.000 iterations=1

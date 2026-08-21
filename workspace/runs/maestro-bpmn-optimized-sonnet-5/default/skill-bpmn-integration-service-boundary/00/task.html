@@ -1,0 +1,1667 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>coder_eval · skill-bpmn-integration-service-boundary · default</title>
+<style>
+:root {
+  --bg-page: #0f1419;
+  --bg-card: #1a2129;
+  --bg-card-2: #232d38;
+  --bg-code: #0b0f14;
+  --fg: #e6edf3;
+  --fg-muted: #8b98a5;
+  --fg-dim: #6e7681;
+  --border: #30363d;
+  --accent: #58a6ff;
+  --score-high: #22c55e;
+  --score-mid: #f59e0b;
+  --score-low: #ef4444;
+  --status-success: #22c55e;
+  --status-failure: #f59e0b;
+  --status-error: #ef4444;
+  --status-neutral: #6e7681;
+  --shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+.light {
+  --bg-page: #ffffff;
+  --bg-card: #f6f8fa;
+  --bg-card-2: #eaeef2;
+  --bg-code: #f6f8fa;
+  --fg: #1f2328;
+  --fg-muted: #636c76;
+  --fg-dim: #8b949e;
+  --border: #d0d7de;
+  --accent: #0969da;
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial,
+               sans-serif;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--fg);
+  background: var(--bg-page);
+}
+.container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+h1, h2, h3, h4 { margin: 0 0 12px 0; line-height: 1.25; }
+h1 { font-size: 22px; font-weight: 600; }
+h2 { font-size: 18px; font-weight: 600; margin-top: 28px;
+     padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+h3 { font-size: 15px; font-weight: 600; color: var(--fg-muted); }
+h4 { font-size: 13px; font-weight: 600; color: var(--fg-muted); }
+p { margin: 0 0 8px 0; }
+.muted { color: var(--fg-muted); }
+.dim { color: var(--fg-dim); }
+.mono { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+        monospace; font-size: 12.5px; }
+code { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+       monospace; font-size: 12.5px; background: var(--bg-code);
+       border: 1px solid var(--border); padding: 1px 5px; border-radius: 3px; }
+pre { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+      monospace; font-size: 12.5px; background: var(--bg-code);
+      border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px;
+      margin: 6px 0; overflow-x: auto; white-space: pre-wrap;
+      word-wrap: break-word; }
+.header-bar { display: flex; align-items: center; justify-content: space-between;
+              margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+.title-group { flex: 1; min-width: 0; }
+.title-group .subtitle { color: var(--fg-muted); font-size: 13px;
+                         margin-top: 2px; word-break: break-all; }
+.badges { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.badge { display: inline-flex; align-items: center; gap: 6px;
+         padding: 4px 10px; border-radius: 12px; font-size: 12px;
+         font-weight: 600; background: var(--bg-card-2);
+         border: 1px solid var(--border); color: var(--fg); }
+.badge.success { background: color-mix(in srgb, var(--status-success) 20%, var(--bg-card-2));
+                 border-color: var(--status-success); color: var(--status-success); }
+.badge.failure { background: color-mix(in srgb, var(--status-failure) 20%, var(--bg-card-2));
+                 border-color: var(--status-failure); color: var(--status-failure); }
+.badge.error { background: color-mix(in srgb, var(--status-error) 20%, var(--bg-card-2));
+               border-color: var(--status-error); color: var(--status-error); }
+.badge.warning { background: color-mix(in srgb, #f4a52810 20%, var(--bg-card-2));
+                 border-color: #f4a528; color: #f4a528; }
+.badge.neutral { color: var(--fg-muted); }
+.score-pill { display: inline-block; padding: 2px 8px; border-radius: 10px;
+              font-size: 12px; font-weight: 700; min-width: 42px;
+              text-align: center; color: #0b0f14; }
+.score-high { background: var(--score-high); }
+.score-mid { background: var(--score-mid); }
+.score-low { background: var(--score-low); }
+.card { background: var(--bg-card); border: 1px solid var(--border);
+        border-radius: 8px; padding: 16px 20px; margin-bottom: 16px;
+        box-shadow: var(--shadow); }
+.card.highlight { border-left: 4px solid var(--accent); }
+.grid { display: grid; gap: 12px;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+.stat { background: var(--bg-card-2); padding: 10px 12px; border-radius: 6px;
+        border: 1px solid var(--border); }
+.stat .label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;
+               color: var(--fg-muted); margin-bottom: 4px; }
+.stat .value { font-size: 16px; font-weight: 600; }
+table { width: 100%; border-collapse: collapse; margin: 4px 0 12px 0; }
+th, td { text-align: left; padding: 8px 10px;
+         border-bottom: 1px solid var(--border); vertical-align: top;
+         font-size: 13px; }
+th { color: var(--fg-muted); font-weight: 600; font-size: 12px;
+     text-transform: uppercase; letter-spacing: 0.3px; }
+tr:last-child td { border-bottom: none; }
+details { margin: 6px 0; border: 1px solid var(--border); border-radius: 6px;
+          background: var(--bg-card-2); }
+details > summary { cursor: pointer; padding: 8px 12px; user-select: none;
+                    font-weight: 500; list-style: none; }
+details > summary::-webkit-details-marker { display: none; }
+details > summary::before { content: "▸ "; color: var(--fg-dim);
+                            display: inline-block; width: 14px;
+                            transition: transform 0.15s; }
+details[open] > summary::before { content: "▾ "; }
+details .details-body { padding: 0 12px 10px 12px; }
+.tool-row { display: flex; align-items: center; gap: 10px;
+            flex-wrap: wrap; font-size: 13px; }
+.tool-name { font-weight: 600; color: var(--accent); font-family: ui-monospace,
+             SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+.tool-status-ok { color: var(--status-success); font-size: 11px;
+                  font-weight: 600; }
+.tool-status-err { color: var(--status-error); font-size: 11px;
+                   font-weight: 600; }
+.tool-duration { color: var(--fg-muted); font-size: 12px; }
+.tool-seq { color: var(--fg-dim); font-size: 11px; font-weight: 600;
+            min-width: 24px; text-align: right; font-family: ui-monospace,
+            SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+.turn-header { display: flex; justify-content: space-between;
+               align-items: baseline; flex-wrap: wrap; gap: 10px;
+               margin-bottom: 10px; }
+.turn-meta { font-size: 12px; color: var(--fg-muted); }
+.criterion-row td:first-child { font-family: ui-monospace, SFMono-Regular,
+                                 "SF Mono", Menlo, Consolas, monospace;
+                                 color: var(--fg-muted); font-size: 12px; }
+.judge-section { display: flex; flex-direction: column; gap: 12px; }
+.judge-card { padding: 14px 16px; }
+.judge-card-head { display: flex; justify-content: space-between;
+                    align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+.judge-card-title { font-size: 14px; line-height: 1.4; flex: 1; min-width: 0; }
+.judge-card-score { flex-shrink: 0; }
+.judge-rationale { margin-top: 10px; padding: 10px 12px;
+                   background: var(--bg-code); border-radius: 4px;
+                   font-size: 13px; line-height: 1.5; }
+.judge-findings { margin: 8px 0 0 18px; padding-left: 4px; font-size: 13px;
+                   line-height: 1.6; }
+.judge-findings li { margin: 2px 0; }
+.nav-toggle { display: inline-block; padding: 5px 10px; font-size: 12px;
+              background: var(--bg-card-2); border: 1px solid var(--border);
+              border-radius: 5px; color: var(--fg); cursor: pointer; }
+.nav-toggle:hover { background: var(--bg-card); }
+.llm-next-steps { margin: 6px 0 0 20px; padding-left: 0; }
+.llm-next-steps li { margin: 3px 0; }
+.iteration-group { padding: 12px 16px 4px 16px; margin-bottom: 20px;
+                   border-radius: 0 6px 6px 0; border-left: 4px solid var(--status-neutral); }
+/* rgba fallback for browsers without color-mix (Chrome <111, Firefox <113, Safari <16.2). */
+.iteration-group--recovered { border-left-color: var(--status-success);
+                              background: rgba(34, 197, 94, 0.06);
+                              background: color-mix(in srgb, var(--status-success) 6%, transparent); }
+.iteration-group--terminal { border-left-color: var(--status-error);
+                             background: rgba(239, 68, 68, 0.06);
+                             background: color-mix(in srgb, var(--status-error) 6%, transparent); }
+.iteration-group__banner { margin: 0 0 12px 0; font-size: 14px; font-weight: 600; }
+.iteration-group--recovered .iteration-group__banner { color: var(--status-success); }
+.iteration-group--terminal .iteration-group__banner { color: var(--status-error); }
+.attempt-transition { display: flex; align-items: center; gap: 8px;
+                      margin: -6px 0 12px 8px; color: var(--status-error); font-size: 12.5px; }
+.attempt-transition__icon { font-weight: 700; }
+footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--border);
+         color: var(--fg-dim); font-size: 12px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="header-bar">
+  <div class="title-group">
+    <h1>Task: skill-bpmn-integration-service-boundary</h1>
+    <div class="subtitle">Integration Service boundary eval: agent creates BPMN source shape and an explicit CLI-enrichment handoff without hand-authoring connector-owned connection metadata or running cloud-side commands.</div>
+  </div>
+  <div class="badges">
+    <span class="badge failure">FAILURE</span>
+    <span class="score-pill score-low">0.17</span>
+    <span class="badge neutral">claude-code · claude-sonnet-5</span>
+    <span class="badge neutral">10m 49s</span>
+    <span class="badge neutral">$1.8958</span>
+    <span class="badge warning">expected_turns exceeded (35/19)</span>
+    
+    <span class="nav-toggle" onclick="toggleTheme()">Toggle theme</span>
+  </div>
+</div>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Variant</div><div class="value">default</div></div>
+    <div class="stat"><div class="label">Started</div><div class="value mono">2026-08-20T21:05:39</div></div>
+    <div class="stat"><div class="label">Duration</div><div class="value">10m 49s</div></div>
+    <div class="stat"><div class="label">Turns (SDK)</div><div class="value">62</div></div>
+    <div class="stat"><div class="label">Commands</div><div class="value">34</div></div>
+  </div>
+</div>
+
+<h2>Success Criteria <span class="muted" style="font-weight:400">(1/2 passed)</span></h2>
+<div class="card" style="padding:0">
+<table>
+  <thead>
+    <tr>
+      <th style="width:15%">Type</th>
+      <th style="width:35%">Description</th>
+      <th style="width:10%">Score</th>
+      <th>Details</th>
+    </tr>
+  </thead>
+  <tbody>
+    
+<tr class="criterion-row">
+  <td>file_exists</td>
+  <td>BPMN source was created</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><div class="dim mono" style="white-space:pre-wrap">File &#x27;SlackDigestBoundaryBpmn/SlackDigestBoundaryBpmn.bpmn&#x27; exists</div></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>run_command</td>
+  <td>Integration Service draft stays inside the CLI-owned boundary</td>
+  <td style="text-align:center"><span class="score-pill score-low">0.00</span></td>
+  <td><details><summary class="mono dim">Command: python3 $TASK_DIR/check_integration_service_boundary.py</summary><div class="details-body"><pre style="margin:6px 0 0 0">Command: python3 $TASK_DIR/check_integration_service_boundary.py
+Exit code: 1 (expected: 0)
+Stdout: (empty)
+Stderr:
+FAIL: draft boundary should not hand-author generated package files: [&#x27;bindings_v2.json&#x27;, &#x27;entry-points.json&#x27;, &#x27;operate.json&#x27;, &#x27;package-descriptor.json&#x27;]</pre></div></details></td>
+</tr>
+
+  </tbody>
+</table>
+</div>
+<h2>Conversation Trace (1 iteration)</h2>
+<div class="card">
+  <div class="turn-header">
+    <h3>Iteration 1</h3>
+    <div class="badges">
+      <span class="badge neutral">62 assistant turns</span>
+      <span class="badge neutral">in 670 · out 51756 · cache 2363389</span>
+      <span class="badge neutral">10m 37s</span>
+      
+      
+      
+    </div>
+  </div>
+  <details>
+    <summary>Prompt to agent</summary>
+    <div class="details-body"><pre>Your working directory is: /work/output/artifacts/skill-bpmn-integration-service-boundary
+
+Create a local BPMN draft project named &quot;SlackDigestBoundaryBpmn&quot;.
+The intended process is:
+manual start -&gt; prepare digest -&gt; send Slack digest through Integration
+Service -&gt; end.
+
+Requirements:
+- Author the BPMN source shape, variables, mappings, and diagram geometry.
+- Represent the Slack Integration Service step only as a draft executable
+  boundary: use a supported BPMN wrapper for Integration Service intent and
+  make clear that connector operation metadata, connection binding, dynamic
+  schemas, generated outputs, `bindings_v2.json`, and package metadata are
+  CLI-owned enrichment.
+- Add a README or notes file that states the exact CLI-owned enrichment
+  blockers before upload or run.
+- Do not invent connection IDs, folder keys, tenant URLs, connector resource
+  keys, generated schemas, or package metadata.
+- Do not upload, publish, deploy, debug, or run the process.
+</pre></div>
+  </details>
+  <details>
+    <summary>Agent response</summary>
+    <div class="details-body"><pre>[ASSISTANT] CLI is available. Let me discover the registry for the Integration Service connector wrapper type.
+[ASSISTANT] Now I have what I need. Let me author the full BPMN with variables, prepare-digest script task, the Integration Service draft boundary send task, and end event.
+[ASSISTANT] Now let&#x27;s try `uip maestro bpmn format` to generate/normalize the diagram, then validate.
+[ASSISTANT] The CLI regenerated the diagram correctly. Now let&#x27;s validate.
+[ASSISTANT] Two of the 6 errors are self-inflicted bugs (malformed XML comment containing `--`), which I&#x27;ll fix. The other 4 (missing `connectorKey`, `operation`, `objectName`, `method`, `path`) are the intentional CLI-owned draft blockers — fixing those with invented values is exactly what&#x27;s forbidden, so those will remain and get documented in the README instead.
+[ASSISTANT] Found it — I pasted CLI flags (`--connection-id`, `--object-name`) into an XML comment, which contains literal `--` and breaks XML. Let me fix both comments to avoid `--`.
+[ASSISTANT] The XML is well-formed; the remaining 6 errors are exactly the expected CLI-owned enrichment gaps (connectorKey, operation, objectName, method, path context inputs, and the required-field check) — confirming the draft boundary is intentionally incomplete pending CLI enrichment. Now let&#x27;s write the README documenting these as blockers.
+[ASSISTANT] Let&#x27;s do a final sanity check of the whole project directory.
+[ASSISTANT] Everything is confirmed as expected: the file is well-formed XML, and the only validation failures are the 6 intentional CLI-owned enrichment gaps on the draft Slack node, exactly as documented in the README.
+
+The local draft project **SlackDigestBoundaryBpmn** is complete at `/work/output/artifacts/skill-bpmn-integration-service-boundary/SlackDigestBoundaryBpmn/`:
+
+- **`SlackDigestBoundaryBpmn.bpmn`** — manual start → `Task_PrepareDigest` (script task producing `Var_DigestText`) → `Task_SendSlackDigest` (draft `Intsvc.ActivityExecution` `bpmn:sendTask`, the registry-supported Integration Service wrapper, authored from the live template with all connector context fields left blank) → end. Full diagram geometry generated via `uip maestro bpmn format`.
+- **`README.md`** — states the exact 6 CLI-owned blockers (connector operation metadata, connection binding, dynamic schemas, generated outputs, `bindings_v2.json`, package metadata) with the precise CLI commands to resolve each, and quotes the validator output confirming the draft state.
+- Scaffold files (`project.uiproj`, `entry-points.json`, `operate.json`, `package-descriptor.json`, `bindings_v2.json`) are untouched from `uip maestro bpmn init`.
+
+No connection IDs, folder keys, tenant URLs, connector resource keys, schemas, or package metadata were invented, and nothing was uploaded, published, deployed, debugged, or run.
+[RESULT - SUCCESS] Everything is confirmed as expected: the file is well-formed XML, and the only validation failures are the 6 intentional CLI-owned enrichment gaps on the draft Slack node, exactly as documented in the README.
+
+The local draft project **SlackDigestBoundaryBpmn** is complete at `/work/output/artifacts/skill-bpmn-integration-service-boundary/SlackDigestBoundaryBpmn/`:
+
+- **`SlackDigestBoundaryBpmn.bpmn`** — manual start → `Task_PrepareDigest` (script task producing `Var_DigestText`) → `Task_SendSlackDigest` (draft `Intsvc.ActivityExecution` `bpmn:sendTask`, the registry-supported Integration Service wrapper, authored from the live template with all connector context fields left blank) → end. Full diagram geometry generated via `uip maestro bpmn format`.
+- **`README.md`** — states the exact 6 CLI-owned blockers (connector operation metadata, connection binding, dynamic schemas, generated outputs, `bindings_v2.json`, package metadata) with the precise CLI commands to resolve each, and quotes the validator output confirming the draft state.
+- Scaffold files (`project.uiproj`, `entry-points.json`, `operate.json`, `package-descr</pre></div>
+  </details>
+  <h4 style="margin-top:12px">Tool Calls (34)</h4>
+  
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#0</span>
+      <span class="tool-name">Skill</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">20ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;skill&quot;: &quot;tmp:uipath-maestro-bpmn&quot;,
+  &quot;args&quot;: &quot;Create a local BPMN draft project named \&quot;SlackDigestBoundaryBpmn\&quot; in the current working directory (/work/output/artifacts/skill-bpmn-integration-service-boundary).\n\nProcess intent: manual start -&gt; prepare digest -&gt; send Slack digest through Integration Service -&gt; end.\n\nRequirements:\n- Author the BPMN source shape, variables, mappings, and diagram geometry (DI) for this process.\n- Represent the \&quot;s… (850 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Launching skill: tmp:uipath-maestro-bpmn</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#1</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">248ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;ls /home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn/references/ &amp;&amp; echo --- &amp;&amp; ls /home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn/&quot;,
+  &quot;description&quot;: &quot;List skill reference files&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>cli-conventions.md
+diagnose
+expression-authoring.md
+operate
+public-safety.md
+registry-workflow.md
+shared
+structural-bpmn.md
+---
+SKILL.md
+references
+validator</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#2</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">763ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;which uip &amp;&amp; uip --version 2&gt;&amp;1 | head -20&quot;,
+  &quot;description&quot;: &quot;Check uip CLI availability&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/usr/bin/uip
+1.201.0-dev.8272</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#3</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">15.23s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro bpmn registry pull --output json &gt; /tmp/registry-pull.json 2&gt;&amp;1; echo \&quot;exit: $?\&quot;; tail -c 2000 /tmp/registry-pull.json&quot;,
+  &quot;description&quot;: &quot;Pull registry cache&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>exit: 0
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;RegistryPullSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;ExtensionTypeCount&quot;: 30,
+    &quot;ConnectorCount&quot;: 27,
+    &quot;ProcessCount&quot;: 140,
+    &quot;ProcessCountsByType&quot;: {
+      &quot;Process&quot;: 24,
+      &quot;ProcessOrchestration&quot;: 21,
+      &quot;Agent&quot;: 16,
+      &quot;Flow&quot;: 38,
+      &quot;Api&quot;: 24,
+      &quot;Function&quot;: 6,
+      &quot;CaseManagement&quot;: 11,
+      &quot;BusinessRules&quot;: 0
+    },
+    &quot;FromCache&quot;: false,
+    &quot;CacheWritten&quot;: true,
+    &quot;Message&quot;: &quot;Synced fresh registry&quot;
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#4</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">14.45s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn/references/registry-workflow.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Registry workflow
+2	
+3	Every `uipath:*` payload in a Maestro `.bpmn` comes from the registry — never
+4	from prose, never hand-written. This file is the loop for turning user intent
+5	into registry-backed XML.
+6	
+7	## 1. Sync and discover
+8	
+9	```bash
+10	uip maestro bpmn registry pull            # sync + cache (login for connectors/processes)
+11	uip maestro bpmn registry list --limit -1 --output json   # all extension types
+12	uip maestro bpmn registry search &lt;keyword&gt; --output json  # find a type by intent
+13	uip is connections list --all-folders --output json   # live IS connections (all folders)
+14	```
+15	
+16	Map the user&#x27;s intent to an extension type from the list. Confirm the choice
+17	with the user (and the specific connection / process / queue) before authoring.
+18	**Never fabricate an identifier** — see [cli-conventions.md](cli-conventions.md).
+19	
+20	**Connection discovery must be exhaustive.** Always pass `--all-folders` to
+21	`uip is connections list` — connections live in many folders and a folder-scoped
+22	listing silently misses them. An empty or unmatched result from a missing
+23	`--all-folders`, or from a connector key guessed from a brand name rather than
+24	fou
+
+… (truncated, 11879 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#5</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">5.12s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro bpmn registry search slack --output json 2&gt;&amp;1 | tee /tmp/registry-search-slack.json | head -100&quot;,
+  &quot;description&quot;: &quot;Search registry for slack-related extension types&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;RegistrySearchSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;ExtensionTypes&quot;: [],
+    &quot;Connectors&quot;: [
+      {
+        &quot;Key&quot;: &quot;uipath-salesforce-slack&quot;,
+        &quot;Name&quot;: &quot;Slack&quot;,
+        &quot;Connections&quot;: 3,
+        &quot;Activities&quot;: 0,
+        &quot;Triggers&quot;: 0
+      }
+    ],
+    &quot;Processes&quot;: [
+      {
+        &quot;Name&quot;: &quot;invoice-email-slack-digest&quot;,
+        &quot;ProcessKey&quot;: &quot;invoice-email-slack-digest.flow.Flow&quot;,
+        &quot;ProcessVersion&quot;: &quot;1.0.0&quot;,
+        &quot;PackageProcessKey&quot;: &quot;invoice-email-slack-digest.flow.Flow:1.0.0&quot;,
+        &quot;ReleaseKey&quot;: &quot;71232005-C41F-4B9B-BD97-8D00CF89213C&quot;,
+        &quot;Type&quot;: &quot;Flow&quot;,
+        &quot;Folder&quot;: &quot;Shared/uipath-maestro-flow&quot;,
+        &quot;FolderKey&quot;: &quot;5da18ec0-7de1-4e57-aaf1-ddc8a369c199&quot;,
+        &quot;FeedId&quot;: &quot;001c61d7-2108-4130-b7ff-198c88ecbf79&quot;
+      },
+      {
+        &quot;Name&quot;: &quot;SlackEmojiListTest&quot;,
+        &quot;ProcessKey&quot;: &quot;SlackEmojiListTest.flow.Flow&quot;,
+        &quot;ProcessVersion&quot;: &quot;1.0.0&quot;,
+        &quot;PackageProcessKey&quot;: &quot;SlackEmojiListTest.flow.Flow:1.0.0&quot;,
+        &quot;ReleaseKey&quot;: &quot;898368F7-D639-49AE-BD2C-7A3C1FD9AE46&quot;,
+        &quot;Type&quot;: &quot;Flow&quot;,
+        &quot;Folder&quot;: &quot;Shared/uipath-maestro-flow&quot;,
+        &quot;FolderKey&quot;: &quot;5da18ec0-7de1-4e57-aaf1-ddc8a369c199&quot;,
+        &quot;FeedId&quot;
+
+… (truncated, 1307 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#6</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">8.60s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro bpmn registry get Intsvc.ActivityExecution --output json &gt; /tmp/reg-intsvc-activity.json 2&gt;&amp;1; echo \&quot;exit: $?\&quot;; cat /tmp/reg-intsvc-activity.json&quot;,
+  &quot;description&quot;: &quot;Get Intsvc.ActivityExecution template (unenriched draft)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>exit: 0
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;RegistryGetSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;ExtensionType&quot;: {
+      &quot;ExtensionType&quot;: &quot;Intsvc.ActivityExecution&quot;,
+      &quot;Label&quot;: &quot;Execute connector activity&quot;,
+      &quot;BpmnElement&quot;: &quot;bpmn:SendTask&quot;,
+      &quot;Placements&quot;: {
+        &quot;Activity&quot;: {
+          &quot;Type&quot;: &quot;bpmn:SendTask&quot;
+        },
+        &quot;IntermediateEvent&quot;: {
+          &quot;Type&quot;: &quot;bpmn:IntermediateThrowEvent&quot;,
+          &quot;EventDefinition&quot;: {
+            &quot;Type&quot;: &quot;bpmn:MessageEventDefinition&quot;
+          }
+        },
+        &quot;EndEvent&quot;: {
+          &quot;Type&quot;: &quot;bpmn:EndEvent&quot;,
+          &quot;EventDefinition&quot;: {
+            &quot;Type&quot;: &quot;bpmn:MessageEventDefinition&quot;
+          }
+        }
+      },
+      &quot;ExtensionTag&quot;: &quot;uipath:activity&quot;,
+      &quot;ContextFields&quot;: [
+        {
+          &quot;Name&quot;: &quot;activityConfigurationVersion&quot;,
+          &quot;DisplayName&quot;: &quot;Activity configuration version&quot;,
+          &quot;Type&quot;: &quot;string&quot;,
+          &quot;Required&quot;: false,
+          &quot;Hidden&quot;: true,
+          &quot;IsPrimaryKey&quot;: false,
+          &quot;Binding&quot;: false,
+          &quot;DefaultValue&quot;: &quot;v1&quot;,
+          &quot;Enum&quot;: [
+            &quot;v1&quot;
+          ],
+          &quot;Description&quot;: &quot;Marks the Integration Service activity format used by this template&quot;
+        },
+       
+
+… (truncated, 5312 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#7</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">8.60s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn/references/structural-bpmn.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Structural BPMN (what the registry does not emit)
+2	
+3	The registry&#x27;s `xmlTemplate`s give you the `uipath:*` payload for each node
+4	(see [registry-workflow.md](registry-workflow.md)). They do **not** give you the
+5	structural BPMN that holds those nodes together. This file is the ground truth
+6	for everything you author by hand around the templates.
+7	
+8	Two sources define the contract:
+9	
+10	- the registry spec `bpmn-spec.json` — enumerates which BPMN element types and
+11	  event definitions exist, via its `bpmnElements` section;
+12	- the Studio Web canvas serializer
+13	  (`PO.Frontend/src/services/serialization/`) — defines how that XML must be
+14	  shaped to import and round-trip.
+15	
+16	Where the registry stops, the canvas serializer is authoritative. Each
+17	gap below is labelled **REGISTRY GAP** — the registry exposes no template for
+18	it, so author it from this reference.
+19	
+20	BPMN XML element names are case-sensitive. Use the exact lower-camel BPMN tag
+21	names the serializer emits, such as `&lt;bpmn:startEvent&gt;`,
+22	`&lt;bpmn:intermediateCatchEvent&gt;`, `&lt;bpmn:scriptTask&gt;`, and `&lt;bpmn:endEvent&gt;`.
+23	Do not use PascalCase variants like `&lt;bpmn:IntermediateCatchEvent&gt;`; XML a
+
+… (truncated, 30984 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#8</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">2.56s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip is activities list uipath-salesforce-slack --output json 2&gt;&amp;1 | head -100&quot;,
+  &quot;description&quot;: &quot;List Slack connector activities (discovery only, read-only)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;ActivityList&quot;,
+  &quot;Data&quot;: [
+    {
+      &quot;Name&quot;: &quot;AddUsersToUsergroup&quot;,
+      &quot;DisplayName&quot;: &quot;Add Users to User Group&quot;,
+      &quot;Description&quot;: &quot;Add a list of users to a user group in a connected Slack workspace.&quot;,
+      &quot;ObjectName&quot;: &quot;add_users_usergroups&quot;,
+      &quot;MethodName&quot;: &quot;POST&quot;,
+      &quot;Operation&quot;: &quot;N/A&quot;,
+      &quot;IsCurated&quot;: &quot;Yes&quot;
+    },
+    {
+      &quot;Name&quot;: &quot;ChannelArchive&quot;,
+      &quot;DisplayName&quot;: &quot;Archive Channel&quot;,
+      &quot;Description&quot;: &quot;Archive an existing Slack channel for all users.&quot;,
+      &quot;ObjectName&quot;: &quot;channel_archive&quot;,
+      &quot;MethodName&quot;: &quot;POST&quot;,
+      &quot;Operation&quot;: &quot;N/A&quot;,
+      &quot;IsCurated&quot;: &quot;Yes&quot;
+    },
+    {
+      &quot;Name&quot;: &quot;ChannelUnarchive&quot;,
+      &quot;DisplayName&quot;: &quot;Unarchive Channel&quot;,
+      &quot;Description&quot;: &quot;Unarchive an existing channel&quot;,
+      &quot;ObjectName&quot;: &quot;channel_unarchive&quot;,
+      &quot;MethodName&quot;: &quot;POST&quot;,
+      &quot;Operation&quot;: &quot;N/A&quot;,
+      &quot;IsCurated&quot;: &quot;Yes&quot;
+    },
+    {
+      &quot;Name&quot;: &quot;ConversationsJoin&quot;,
+      &quot;DisplayName&quot;: &quot;Join Channel&quot;,
+      &quot;Description&quot;: &quot;Join a public Slack channel as the bot user or authenticated user.&quot;,
+      &quot;ObjectName&quot;: &quot;conversations_join_POST&quot;,
+      &quot;MethodName&quot;: &quot;POST&quot;,
+      &quot;Operation&quot;: &quot;N/A&quot;,
+      &quot;IsCurate
+
+… (truncated, 2019 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#9</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">4.76s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip is connections list --all-folders --output json 2&gt;&amp;1 | head -100&quot;,
+  &quot;description&quot;: &quot;List live IS connections across all folders (read-only discovery)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;ConnectionList&quot;,
+  &quot;Data&quot;: [
+    {
+      &quot;Id&quot;: &quot;f5273a4d-d492-4bcd-a106-5a20bf89a3ef&quot;,
+      &quot;Name&quot;: &quot;is-sandboxes-test@uipath.com-uipath-sandbox-380&quot;,
+      &quot;ConnectorKey&quot;: &quot;uipath-atlassian-jira&quot;,
+      &quot;ConnectorName&quot;: &quot;Jira&quot;,
+      &quot;State&quot;: &quot;Enabled&quot;,
+      &quot;Owner&quot;: &quot;sanjeet.manna@uipath.com&quot;,
+      &quot;IsDefault&quot;: &quot;Yes&quot;,
+      &quot;ByoaConnection&quot;: &quot;No&quot;,
+      &quot;ElementInstanceId&quot;: 336882,
+      &quot;Folder&quot;: &quot;uipath-maestro-flow&quot;,
+      &quot;FolderKey&quot;: &quot;5da18ec0-7de1-4e57-aaf1-ddc8a369c199&quot;,
+      &quot;Created&quot;: &quot;2026-05-07T14:56:28.873Z&quot;,
+      &quot;Updated&quot;: &quot;2026-08-20T20:34:09.006Z&quot;
+    },
+    {
+      &quot;Id&quot;: &quot;41943488-5cec-48b3-93cf-19048447524e&quot;,
+      &quot;Name&quot;: &quot;is.sandboxes.test@gmail.com&quot;,
+      &quot;ConnectorKey&quot;: &quot;uipath-google-drive&quot;,
+      &quot;ConnectorName&quot;: &quot;Google Drive&quot;,
+      &quot;State&quot;: &quot;Enabled&quot;,
+      &quot;Owner&quot;: &quot;sanjeet.manna@uipath.com&quot;,
+      &quot;IsDefault&quot;: &quot;No&quot;,
+      &quot;ByoaConnection&quot;: &quot;No&quot;,
+      &quot;ElementInstanceId&quot;: 337250,
+      &quot;Folder&quot;: &quot;uipath-maestro-flow&quot;,
+      &quot;FolderKey&quot;: &quot;5da18ec0-7de1-4e57-aaf1-ddc8a369c199&quot;,
+      &quot;Created&quot;: &quot;2026-05-08T14:58:39.066Z&quot;,
+      &quot;Updated&quot;: &quot;2026-08-20T18:32:05.586Z&quot;
+    },
+    {
+      &quot;Id&quot;: &quot;849e85d8-1aa9-4d52-8b
+
+… (truncated, 2271 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#10</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.21s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip is activities list uipath-salesforce-slack --output json 2&gt;&amp;1 &gt; /tmp/slack-activities.json; grep -i -A5 &#x27;\&quot;Name\&quot;: \&quot;Send&#x27; /tmp/slack-activities.json; echo ---; grep -i -B2 -A5 &#x27;message&#x27; /tmp/slack-activities.json | head -80&quot;,
+  &quot;description&quot;: &quot;Find Slack send-message activity in the full list&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>      &quot;Name&quot;: &quot;SendButtonResponse&quot;,
+      &quot;DisplayName&quot;: &quot;Send Button Response&quot;,
+      &quot;Description&quot;: &quot;Handle and respond to button click events in Slack.&quot;,
+      &quot;ObjectName&quot;: &quot;send_button_response&quot;,
+      &quot;MethodName&quot;: &quot;POST&quot;,
+      &quot;Operation&quot;: &quot;N/A&quot;,
+--
+      &quot;Name&quot;: &quot;SendMessage&quot;,
+      &quot;DisplayName&quot;: &quot;Send Message to Channel&quot;,
+      &quot;Description&quot;: &quot;Send messages to public or private Slack channels.&quot;,
+      &quot;ObjectName&quot;: &quot;send_message_to_channel_v2&quot;,
+      &quot;MethodName&quot;: &quot;POST&quot;,
+      &quot;Operation&quot;: &quot;N/A&quot;,
+--
+      &quot;Name&quot;: &quot;SendMessageToUser&quot;,
+      &quot;DisplayName&quot;: &quot;Send Message to User&quot;,
+      &quot;Description&quot;: &quot;Send a message to an individual user in Slack.&quot;,
+      &quot;ObjectName&quot;: &quot;send_message_to_user_v2&quot;,
+      &quot;MethodName&quot;: &quot;POST&quot;,
+      &quot;Operation&quot;: &quot;N/A&quot;,
+--
+      &quot;Name&quot;: &quot;SendReply&quot;,
+      &quot;DisplayName&quot;: &quot;Send Reply&quot;,
+      &quot;Description&quot;: &quot;Send a reply to a message in a Slack channel.&quot;,
+      &quot;ObjectName&quot;: &quot;send_reply_v2&quot;,
+      &quot;MethodName&quot;: &quot;POST&quot;,
+      &quot;Operation&quot;: &quot;N/A&quot;,
+---
+    {
+      &quot;Name&quot;: &quot;ConversationsOpen&quot;,
+      &quot;DisplayName&quot;: &quot;Create Group Direct Message&quot;,
+      &quot;Description&quot;: &quot;Create a group direct message in Slack to facilitate sending messages to multiple user
+
+… (truncated, 987 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#11</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">5ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn/references/shared/project-layout.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Project Layout
+2	
+3	Maestro BPMN Process Orchestration projects use BPMN XML as source and generated JSON files as package/runtime metadata.
+4	
+5	## Canonical source files
+6	
+7	- `&lt;project&gt;.bpmn` - BPMN process source and UiPath extension XML. For a new
+8	  project, keep the BPMN source basename exactly aligned with the project
+9	  directory/name. For example, `InvoiceTriageBpmn/InvoiceTriageBpmn.bpmn`, not
+10	  `InvoiceTriageBpmn/invoice-triage-bpmn.bpmn`.
+11	- `project.uiproj` - UiPath project metadata. Keep it in the same project
+12	  directory as the main BPMN file: `InvoiceTriageBpmn/project.uiproj`, not next
+13	  to the project directory.
+14	
+15	For a new local project, place source files under a single project directory.
+16	`uip maestro bpmn init &lt;ProjectName&gt; --output json` nests that directory inside
+17	a solution. Inside a solution it registers the project with the parent `.uipx`;
+18	outside any solution it auto-scaffolds `&lt;ProjectName&gt;Solution/` and nests the
+19	project inside (the response adds `Data.AutoCreatedSolution` =
+20	`{ Name, Path, SolutionFile }` and reports `SolutionRegistration.Status:
+21	Registered`; re-running is idempotent and reports `AlreadyRegister
+
+… (truncated, 3181 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#12</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">13ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn/references/public-safety.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Public Safety
+2	
+3	This skill is intended for a public skills repository. Keep all content, examples, fixtures, logs, and commits safe to publish.
+4	
+5	## Never include
+6	
+7	- Raw exported BPMN from customers, tenants, demos, or operator-supplied examples.
+8	- Tenant URLs, organization names, folder keys, connection IDs, release keys, queue IDs, process IDs, user IDs, or email addresses.
+9	- Private process names, business payloads, screenshots, exported package contents, or traces.
+10	- Local absolute paths from developer machines.
+11	- Temporary mission notes, task transcripts, or Rookery-only context.
+12	- Internal-only repository paths as runtime instructions for the skill user.
+13	
+14	## Use instead
+15	
+16	- Synthetic process names such as `InvoiceApproval`.
+17	- Synthetic element IDs such as `Task_ValidateRequest`.
+18	- Placeholder resource labels such as `&lt;PROCESS_NAME&gt;`, `&lt;FOLDER_KEY&gt;`, or `&lt;CONNECTION_NAME&gt;` when the user must provide a real value.
+19	- Short structural examples that demonstrate XML shape without private data.
+20	- Summaries of behavior rather than copied private XML.
+21	
+22	## XML placeholder escaping
+23	
+24	Angle-bracket placeholders are safe only wh
+
+… (truncated, 982 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#13</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">3.38s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro bpmn init SlackDigestBoundaryBpmn --skip-solution-registration --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Initialize local BPMN project without solution wrapper&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;MaestroInit&quot;,
+  &quot;Data&quot;: {
+    &quot;Status&quot;: &quot;Created successfully&quot;,
+    &quot;Path&quot;: &quot;/work/output/artifacts/skill-bpmn-integration-service-boundary/SlackDigestBoundaryBpmn&quot;,
+    &quot;SolutionRegistration&quot;: {
+      &quot;Status&quot;: &quot;OptedOut&quot;,
+      &quot;Message&quot;: &quot;Solution auto-registration skipped (--skip-solution-registration).&quot;,
+      &quot;Instructions&quot;: &quot;Automatic solution registration was skipped because --skip-solution-registration was passed.\nTo register this project later, run &#x27;uip solution projects add \&quot;/work/output/artifacts/skill-bpmn-integration-service-boundary/SlackDigestBoundaryBpmn\&quot; &lt;SolutionName&gt;.uipx&#x27; from within the solution.&quot;
+    },
+    &quot;NextSteps&quot;: &quot;Automatic solution registration was skipped because --skip-solution-registration was passed.\nTo register this project later, run &#x27;uip solution projects add \&quot;/work/output/artifacts/skill-bpmn-integration-service-boundary/SlackDigestBoundaryBpmn\&quot; &lt;SolutionName&gt;.uipx&#x27; from within the solution.&quot;
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#14</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">73ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;find /work/output/artifacts/skill-bpmn-integration-service-boundary/SlackDigestBoundaryBpmn -type f | xargs -I{} sh -c &#x27;echo \&quot;== {} ==\&quot;; cat \&quot;{}\&quot;&#x27;&quot;,
+  &quot;description&quot;: &quot;Inspect generated scaffold files&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>== /work/output/artifacts/skill-bpmn-integration-service-boundary/SlackDigestBoundaryBpmn/entry-points.json ==
+{
+  &quot;$schema&quot;: &quot;https://cloud.uipath.com/draft/2024-12/entry-point&quot;,
+  &quot;$id&quot;: &quot;entry-points.json&quot;,
+  &quot;entryPoints&quot;: [
+    {
+      &quot;filePath&quot;: &quot;/content/SlackDigestBoundaryBpmn.bpmn#Event_start&quot;,
+      &quot;uniqueId&quot;: &quot;2e6c93b9-8c14-4c15-a0e8-a1567c545abe&quot;,
+      &quot;type&quot;: &quot;ProcessOrchestration&quot;,
+      &quot;input&quot;: {
+        &quot;type&quot;: &quot;object&quot;,
+        &quot;properties&quot;: {}
+      },
+      &quot;output&quot;: {
+        &quot;type&quot;: &quot;object&quot;,
+        &quot;properties&quot;: {}
+      },
+      &quot;displayName&quot;: &quot;Manual trigger&quot;
+    }
+  ]
+}
+== /work/output/artifacts/skill-bpmn-integration-service-boundary/SlackDigestBoundaryBpmn/SlackDigestBoundaryBpmn.bpmn ==
+&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;
+&lt;bpmn:definitions xmlns:bpmn=&quot;http://www.omg.org/spec/BPMN/20100524/MODEL&quot; xmlns:uipath=&quot;http://uipath.org/schema/bpmn&quot; xmlns:bpmndi=&quot;http://www.omg.org/spec/BPMN/20100524/DI&quot; xmlns:dc=&quot;http://www.omg.org/spec/DD/20100524/DC&quot; exporter=&quot;UiPath Maestro (https://uipath.com)&quot; exporterVersion=&quot;1.201.0-dev.8275&quot;&gt;
+  &lt;bpmn:process id=&quot;Process_1&quot; name=&quot;Maestro Process&quot;&gt;
+    &lt;bpmn:extensionElements&gt;
+      &lt;uipath:variables version=&quot;v1&quot; /&gt;
+
+… (truncated, 2250 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#15</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">6.75s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro bpmn registry get BPMN.ScriptTask --output json 2&gt;&amp;1\necho \&quot;===VARIABLES===\&quot;\nuip maestro bpmn registry get BPMN.Variables --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Get registry templates for script task and variables mapping&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;RegistryGetSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;ExtensionType&quot;: {
+      &quot;ExtensionType&quot;: &quot;BPMN.ScriptTask&quot;,
+      &quot;Label&quot;: &quot;Execute script&quot;,
+      &quot;BpmnElement&quot;: &quot;bpmn:ScriptTask&quot;,
+      &quot;Placements&quot;: {},
+      &quot;ExtensionTag&quot;: &quot;uipath:mapping&quot;,
+      &quot;ContextFields&quot;: [],
+      &quot;InputPattern&quot;: &quot;scriptArgs&quot;,
+      &quot;InputName&quot;: &quot;args&quot;,
+      &quot;InputTarget&quot;: &quot;bodyField&quot;,
+      &quot;OutputSource&quot;: null,
+      &quot;OutputType&quot;: null,
+      &quot;BindingPattern&quot;: &quot;none&quot;,
+      &quot;RequiresDiscovery&quot;: false,
+      &quot;IsDynamic&quot;: false,
+      &quot;XmlTemplate&quot;: &quot;&lt;bpmn:ScriptTask id=\&quot;{id}\&quot; name=\&quot;{name}\&quot;&gt;\n  &lt;bpmn:extensionElements&gt;\n    &lt;uipath:mapping version=\&quot;v1\&quot;&gt;\n      &lt;uipath:type value=\&quot;BPMN.ScriptTask\&quot; version=\&quot;v1\&quot; /&gt;\n      &lt;uipath:input name=\&quot;args\&quot; type=\&quot;json\&quot; target=\&quot;bodyField\&quot;&gt;&lt;![CDATA[{}]]&gt;&lt;/uipath:input&gt;\n    &lt;/uipath:mapping&gt;\n  &lt;/bpmn:extensionElements&gt;\n  &lt;bpmn:incoming&gt;{incomingEdge}&lt;/bpmn:incoming&gt;\n  &lt;bpmn:outgoing&gt;{outgoingEdge}&lt;/bpmn:outgoing&gt;\n&lt;/bpmn:ScriptTask&gt;&quot;,
+      &quot;InputNotes&quot;: &quot;Inputs are merged into a single json input named &#x27;args&#x27; with target &#x27;bodyField&#x27;. An inputSchema is created from the input variables.&quot;,
+      &quot;ExtensionTagNotes&quot;: &quot;bpmn:S
+
+… (truncated, 1511 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#16</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.50s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip is activities describe uipath-salesforce-slack send_message_to_channel_v2 --output json 2&gt;&amp;1 | head -150&quot;,
+  &quot;description&quot;: &quot;Attempt to describe Slack send-message object for path/schema (read-only discovery)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;ValidationError&quot;,
+  &quot;ErrorCode&quot;: &quot;invalid_argument&quot;,
+  &quot;Message&quot;: &quot;error: unknown command &#x27;describe&#x27;&quot;,
+  &quot;Instructions&quot;: &quot;Run &#x27;uip --help&#x27; to list available commands.&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#17</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">13ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-bpmn-integration-service-boundary/SlackDigestBoundaryBpmn/SlackDigestBoundaryBpmn.bpmn&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;
+2	&lt;bpmn:definitions xmlns:bpmn=&quot;http://www.omg.org/spec/BPMN/20100524/MODEL&quot; xmlns:uipath=&quot;http://uipath.org/schema/bpmn&quot; xmlns:bpmndi=&quot;http://www.omg.org/spec/BPMN/20100524/DI&quot; xmlns:dc=&quot;http://www.omg.org/spec/DD/20100524/DC&quot; exporter=&quot;UiPath Maestro (https://uipath.com)&quot; exporterVersion=&quot;1.201.0-dev.8275&quot;&gt;
+3	  &lt;bpmn:process id=&quot;Process_1&quot; name=&quot;Maestro Process&quot;&gt;
+4	    &lt;bpmn:extensionElements&gt;
+5	      &lt;uipath:variables version=&quot;v1&quot; /&gt;
+6	      &lt;uipath:bindings version=&quot;v1&quot; /&gt;
+7	    &lt;/bpmn:extensionElements&gt;
+8	    &lt;bpmn:startEvent id=&quot;Event_start&quot; name=&quot;core.trigger.manual&quot;&gt;
+9	      &lt;bpmn:extensionElements&gt;
+10	        &lt;uipath:entryPointId value=&quot;2e6c93b9-8c14-4c15-a0e8-a1567c545abe&quot; /&gt;
+11	      &lt;/bpmn:extensionElements&gt;
+12	      &lt;bpmn:outgoing&gt;_Implicit_EndEvent_Flow&lt;/bpmn:outgoing&gt;
+13	    &lt;/bpmn:startEvent&gt;
+14	    &lt;bpmn:endEvent id=&quot;_Implicit_EndEvent&quot;&gt;
+15	      &lt;bpmn:incoming&gt;_Implicit_EndEvent_Flow&lt;/bpmn:incoming&gt;
+16	    &lt;/bpmn:endEvent&gt;
+17	    &lt;bpmn:sequenceFlow id=&quot;_Implicit_EndEvent_Flow&quot; sourceRef=&quot;Event_start&quot; targetRef=&quot;_Implicit_EndEvent&quot; /&gt;
+18	  &lt;/bpmn:process&gt;
+19	  &lt;bpmndi:BPMNDiagram id=&quot;Diagram_1&quot;&gt;
+20	    &lt;bpmndi:BPMNPlane id=&quot;
+
+… (truncated, 407 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#18</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">741ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip is activities --help 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Check available subcommands for activities discovery&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>                               uip is activities                                
+                  Manage UiPath Integration Service activities                  
+                Use --help with nested commands for more detail.                
+
+┌─ Usage ──────────────────────────────────────────────────────────────────────┐
+│ uip is activities [options] [command]                                        │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Commands ───────────────────────────────────────────────────────────────────┐
+│ help   display help for command                                              │
+│ list   List activities for a connector                                       │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Options ────────────────────────────────────────────────────────────────────┐
+│ -h, --help                     display help for command                      │
+│ --output                       Output format (default: json)                 │
+│ &lt;table|json|yaml|plain&gt;                                                      │
+│ --output-filter &lt;expression&gt;   JMESPath expression applied to
+
+… (truncated, 503 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#19</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">3.10s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro bpmn registry get Intsvc.ActivityExecution --connection-id 849e85d8-1aa9-4d52-8bbd-20041c8f05d8 --object-name send_message_to_channel_v2 --output json 2&gt;&amp;1 | head -150&quot;,
+  &quot;description&quot;: &quot;Test enrichment call shape only to see what CLI would supply (not committing to enrich)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;RegistryGetSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;ExtensionType&quot;: {
+      &quot;ExtensionType&quot;: &quot;Intsvc.ActivityExecution&quot;,
+      &quot;Label&quot;: &quot;Execute connector activity&quot;,
+      &quot;BpmnElement&quot;: &quot;bpmn:SendTask&quot;,
+      &quot;Placements&quot;: {
+        &quot;Activity&quot;: {
+          &quot;Type&quot;: &quot;bpmn:SendTask&quot;
+        },
+        &quot;IntermediateEvent&quot;: {
+          &quot;Type&quot;: &quot;bpmn:IntermediateThrowEvent&quot;,
+          &quot;EventDefinition&quot;: {
+            &quot;Type&quot;: &quot;bpmn:MessageEventDefinition&quot;
+          }
+        },
+        &quot;EndEvent&quot;: {
+          &quot;Type&quot;: &quot;bpmn:EndEvent&quot;,
+          &quot;EventDefinition&quot;: {
+            &quot;Type&quot;: &quot;bpmn:MessageEventDefinition&quot;
+          }
+        }
+      },
+      &quot;ExtensionTag&quot;: &quot;uipath:activity&quot;,
+      &quot;ContextFields&quot;: [
+        {
+          &quot;Name&quot;: &quot;activityConfigurationVersion&quot;,
+          &quot;DisplayName&quot;: &quot;Activity configuration version&quot;,
+          &quot;Type&quot;: &quot;string&quot;,
+          &quot;Required&quot;: false,
+          &quot;Hidden&quot;: true,
+          &quot;IsPrimaryKey&quot;: false,
+          &quot;Binding&quot;: false,
+          &quot;DefaultValue&quot;: &quot;v1&quot;,
+          &quot;Enum&quot;: [
+            &quot;v1&quot;
+          ],
+          &quot;Description&quot;: &quot;Marks the Integration Service activity format used by this template&quot;
+        },
+        {
+     
+
+… (truncated, 4639 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#20</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">2.30s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro bpmn registry get Intsvc.ActivityExecution --connection-id 849e85d8-1aa9-4d52-8bbd-20041c8f05d8 --object-name send_message_to_channel_v2 --output json 2&gt;&amp;1 &gt; /tmp/enrich-test.json\npython3 -c \&quot;\nimport json\nd = json.load(open(&#x27;/tmp/enrich-test.json&#x27;))\nprint(list(d[&#x27;Data&#x27;][&#x27;ExtensionType&#x27;].keys()))\nprint(&#x27;ISEnrichment&#x27; in d[&#x27;Data&#x27;][&#x27;ExtensionType&#x27;])\n\&quot;&quot;,
+  &quot;description&quot;: &quot;Check if ISEnrichment block appears in the response&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>[&#x27;ExtensionType&#x27;, &#x27;Label&#x27;, &#x27;BpmnElement&#x27;, &#x27;Placements&#x27;, &#x27;ExtensionTag&#x27;, &#x27;ContextFields&#x27;, &#x27;InputFields&#x27;, &#x27;InputPattern&#x27;, &#x27;InputName&#x27;, &#x27;InputTarget&#x27;, &#x27;OutputSource&#x27;, &#x27;OutputType&#x27;, &#x27;OutputName&#x27;, &#x27;UseRelativeSource&#x27;, &#x27;BindingPattern&#x27;, &#x27;RequiresDiscovery&#x27;, &#x27;IsDynamic&#x27;, &#x27;XmlTemplate&#x27;, &#x27;DiscoveryNotes&#x27;, &#x27;InputNotes&#x27;, &#x27;ContextFieldNotes&#x27;, &#x27;ExtensionTagNotes&#x27;]
+False</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#21</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">21ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -n -B3 -A25 \&quot;inputOutput\\|elementId\\|entryPoint\&quot; /home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn/references/expression-authoring.md | head -150&quot;,
+  &quot;description&quot;: &quot;Search expression-authoring.md for entry point / variable input patterns&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>81-  reachable by control flow.
+82-- An output variable you intend to expose in runtime inspection (via
+83-  `debug-instance variables-all` or `instance variables`) must be root-scoped —
+84:  declare its `uipath:output` or `uipath:inputOutput` WITHOUT an `elementId`. A
+85:  variable scoped with `elementId` is bound to that element and is not surfaced
+86-  as a root/global runtime variable. Preserve exact variable ids: if the
+87-  requested variable id is `product`, declare `id=&quot;product&quot;` and map to
+88-  `var=&quot;product&quot;`, not `Product` or `Var_Product`. Current BPMN live debug may
+89-  expose the root output definition while still returning the value as `null`;
+90-  treat that as a runtime/debug API limitation, not proof that the authored
+91-  mapping is absent.
+92-- Subprocess variables stay scoped to that subprocess.
+93:- Output mappings should target `uipath:inputOutput` or `uipath:output`
+94-  variables, not read-only `uipath:input` variables.
+95-- Entry point inputs that must later be updated need a separate mutable
+96:  `uipath:inputOutput` variable and an explicit mapping from the entry input.
+97:- Trigger-bound values are commonly represented as `uipath:inputOutput`
+98:  vari
+
+… (truncated, 492 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#22</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">25ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -rn \&quot;core.trigger\&quot; /home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn/ 2&gt;/dev/null&quot;,
+  &quot;description&quot;: &quot;Search skill references for core.trigger.manual convention&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>(Bash completed with no output)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#23</span>
+      <span class="tool-name">Write</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">24ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-bpmn-integration-service-boundary/SlackDigestBoundaryBpmn/SlackDigestBoundaryBpmn.bpmn&quot;,
+  &quot;content&quot;: &quot;&lt;?xml version=\&quot;1.0\&quot; encoding=\&quot;UTF-8\&quot;?&gt;\n&lt;bpmn:definitions xmlns:bpmn=\&quot;http://www.omg.org/spec/BPMN/20100524/MODEL\&quot; xmlns:uipath=\&quot;http://uipath.org/schema/bpmn\&quot; xmlns:bpmndi=\&quot;http://www.omg.org/spec/BPMN/20100524/DI\&quot; xmlns:dc=\&quot;http://www.omg.org/spec/DD/20100524/DC\&quot; xmlns:xsi=\&quot;http://www.w3.org/2001/XMLSchema-instance\&quot; exporter=\&quot;UiPath Maestro (https://uipath.com)\&quot; exporterVersion=\&quot;1.201.0-dev.8275\&quot;… (6349 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>The file /work/output/artifacts/skill-bpmn-integration-service-boundary/SlackDigestBoundaryBpmn/SlackDigestBoundaryBpmn.bpmn has been updated successfully. (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#24</span>
+      <span class="tool-name">Edit</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">46ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;replace_all&quot;: false,
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-bpmn-integration-service-boundary/SlackDigestBoundaryBpmn/SlackDigestBoundaryBpmn.bpmn&quot;,
+  &quot;old_string&quot;: &quot;&lt;bpmn:definitions xmlns:bpmn=\&quot;http://www.omg.org/spec/BPMN/20100524/MODEL\&quot; xmlns:uipath=\&quot;http://uipath.org/schema/bpmn\&quot; xmlns:bpmndi=\&quot;http://www.omg.org/spec/BPMN/20100524/DI\&quot; xmlns:dc=\&quot;http://www.omg.org/spec/DD/20100524/DC\&quot; xmlns:xsi=\&quot;http://www.w3.org/2001/XMLSchema-instance\&quot; exporter=\&quot;UiPath Maestro (https://uipath.com)\&quot; exporterVersion=\&quot;1.201.0-dev.8275\&quot;&gt;&quot;,
+  &quot;new_string&quot;: &quot;&lt;bpmn:definitions xmlns:bpmn=\&quot;http://www.omg.org/spec/BPMN/20100524/MODEL\&quot; xmlns:uipath=\&quot;http://uipath.org/schema/bpmn\&quot; xmlns:bpmndi=\&quot;http://www.omg.org/spec/BPMN/20100524/DI\&quot; xmlns:dc=\&quot;http://www.omg.org/spec/DD/20100524/DC\&quot; xmlns:di=\&quot;http://www.omg.org/spec/DD/20100524/DI\&quot; xmlns:xsi=\&quot;http://www.w3.org/2001/XMLSchema-instance\&quot; exporter=\&quot;UiPath Maestro (https://uipath.com)\&quot; exporterVersion=\&quot;1.201.… (12 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>The file /work/output/artifacts/skill-bpmn-integration-service-boundary/SlackDigestBoundaryBpmn/SlackDigestBoundaryBpmn.bpmn has been updated successfully. (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#25</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.59s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-bpmn-integration-service-boundary/SlackDigestBoundaryBpmn &amp;&amp; uip maestro bpmn format SlackDigestBoundaryBpmn.bpmn --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Format BPMN to regenerate diagram geometry&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;MaestroBpmnFormat&quot;,
+  &quot;Data&quot;: {
+    &quot;File&quot;: &quot;/work/output/artifacts/skill-bpmn-integration-service-boundary/SlackDigestBoundaryBpmn/SlackDigestBoundaryBpmn.bpmn&quot;,
+    &quot;ShapeCount&quot;: 4,
+    &quot;EdgeCount&quot;: 3
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#26</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.95s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro bpmn validate SlackDigestBoundaryBpmn.bpmn --output json 2&gt;&amp;1; echo \&quot;exit: $?\&quot;&quot;,
+  &quot;description&quot;: &quot;Validate the BPMN source against canvas rules&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Failure&quot;,
+  &quot;Message&quot;: &quot;Validation failed for /work/output/artifacts/skill-bpmn-integration-service-boundary/SlackDigestBoundaryBpmn/SlackDigestBoundaryBpmn.bpmn&quot;,
+  &quot;Instructions&quot;: &quot;Found 6 error(s):\n  - [error] [bpmn:sendTask#Task_SendSlackDigest \&quot;Send Slack digest (draft - Integration Service)\&quot;] Integration Service activity is missing required context input \&quot;connectorKey\&quot;.\n  - [error] [bpmn:sendTask#Task_SendSlackDigest \&quot;Send Slack digest (draft - Integration Service)\&quot;] Integration Service activity is missing required context input \&quot;operation\&quot;.\n  - [error] [bpmn:sendTask#Task_SendSlackDigest \&quot;Send Slack digest (draft - Integration Service)\&quot;] Integration Service activity is missing required context input \&quot;objectName\&quot;.\n  - [error] [bpmn:sendTask#Task_SendSlackDigest \&quot;Send Slack digest (draft - Integration Service)\&quot;] Integration Service activity is missing required context input \&quot;method\&quot;.\n  - [error] [bpmn:sendTask#Task_SendSlackDigest \&quot;Send Slack digest (draft - Integration Service)\&quot;] Integration Service activity is missing required context input \&quot;path\&quot;.\n  - [error] [(xml)] XML_NOT_WELL_FORMED: XML is not well-formed: Malformed comment (nea
+
+… (truncated, 83 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#27</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">8ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-bpmn-integration-service-boundary/SlackDigestBoundaryBpmn/SlackDigestBoundaryBpmn.bpmn&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Wasted call — file unchanged since your last Read. Refer to that earlier tool_result instead.</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#28</span>
+      <span class="tool-name">Edit</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">19ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;replace_all&quot;: false,
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-bpmn-integration-service-boundary/SlackDigestBoundaryBpmn/SlackDigestBoundaryBpmn.bpmn&quot;,
+  &quot;old_string&quot;: &quot;      &lt;!-- DRAFT: no uipath:bindings declared. A real Slack connection binding\n           (resource=\&quot;Connection\&quot;, propertyAttribute=\&quot;ConnectionId\&quot;) must be\n           added by CLI enrichment (uip maestro bpmn registry get\n           Intsvc.ActivityExecution --connection-id &lt;id&gt; --object-name\n           &lt;object&gt;) before this process can run. --&gt;\n      &lt;uipath:bindings version=\&quot;v1\&quot; /&gt;&quot;,
+  &quot;new_string&quot;: &quot;      &lt;!-- DRAFT: no uipath:bindings declared. A real Slack connection binding\n           (resource=\&quot;Connection\&quot;, propertyAttribute=\&quot;ConnectionId\&quot;) must be\n           added by CLI enrichment (see README.md) before this process can run. --&gt;\n      &lt;uipath:bindings version=\&quot;v1\&quot; /&gt;&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>The file /work/output/artifacts/skill-bpmn-integration-service-boundary/SlackDigestBoundaryBpmn/SlackDigestBoundaryBpmn.bpmn has been updated successfully. (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#29</span>
+      <span class="tool-name">Edit</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">83ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;replace_all&quot;: false,
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-bpmn-integration-service-boundary/SlackDigestBoundaryBpmn/SlackDigestBoundaryBpmn.bpmn&quot;,
+  &quot;old_string&quot;: &quot;    &lt;!--\n      DRAFT Integration Service boundary — Intsvc.ActivityExecution wraps the\n      \&quot;send Slack digest\&quot; intent as a bpmn:sendTask. This is a structural\n      placeholder only. The following are intentionally left unfilled and are\n      CLI-owned enrichment, not authored here:\n        - connectorKey / operation / objectName / method / path (activity\n          catalog metadata from `uip is … (669 more chars)&quot;,
+  &quot;new_string&quot;: &quot;    &lt;!--\n      DRAFT Integration Service boundary: Intsvc.ActivityExecution wraps the\n      \&quot;send Slack digest\&quot; intent as a bpmn:sendTask. This is a structural\n      placeholder only. The context inputs below are intentionally left\n      unfilled: connectorKey, operation, objectName, method, path, connection\n      binding, and the response schema are all CLI owned enrichment, not\n      authored he… (214 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>The file /work/output/artifacts/skill-bpmn-integration-service-boundary/SlackDigestBoundaryBpmn/SlackDigestBoundaryBpmn.bpmn has been updated successfully. (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#30</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">2.09s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 -c \&quot;import xml.etree.ElementTree as ET; ET.parse(&#x27;SlackDigestBoundaryBpmn.bpmn&#x27;); print(&#x27;well-formed OK&#x27;)\&quot; &amp;&amp; uip maestro bpmn validate SlackDigestBoundaryBpmn.bpmn --output json 2&gt;&amp;1; echo \&quot;exit: $?\&quot;&quot;,
+  &quot;description&quot;: &quot;Check well-formedness then re-validate&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>well-formed OK
+{
+  &quot;Result&quot;: &quot;Failure&quot;,
+  &quot;Message&quot;: &quot;Validation failed for /work/output/artifacts/skill-bpmn-integration-service-boundary/SlackDigestBoundaryBpmn/SlackDigestBoundaryBpmn.bpmn&quot;,
+  &quot;Instructions&quot;: &quot;Found 6 error(s):\n  - [error] [bpmn:sendTask#Task_SendSlackDigest \&quot;Send Slack digest (draft - Integration Service)\&quot;] Integration Service activity is missing required context input \&quot;connectorKey\&quot;.\n  - [error] [bpmn:sendTask#Task_SendSlackDigest \&quot;Send Slack digest (draft - Integration Service)\&quot;] Integration Service activity is missing required context input \&quot;operation\&quot;.\n  - [error] [bpmn:sendTask#Task_SendSlackDigest \&quot;Send Slack digest (draft - Integration Service)\&quot;] Integration Service activity is missing required context input \&quot;objectName\&quot;.\n  - [error] [bpmn:sendTask#Task_SendSlackDigest \&quot;Send Slack digest (draft - Integration Service)\&quot;] Integration Service activity is missing required context input \&quot;method\&quot;.\n  - [error] [bpmn:sendTask#Task_SendSlackDigest \&quot;Send Slack digest (draft - Integration Service)\&quot;] Integration Service activity is missing required context input \&quot;path\&quot;.\n  - [error] [Task_SendSlackDigest] EMPTY_REQUIRED_FIELD: The field &#x27;conn
+
+… (truncated, 170 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#31</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">15ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;ls /work/output/artifacts/skill-bpmn-integration-service-boundary/SlackDigestBoundaryBpmn/&quot;,
+  &quot;description&quot;: &quot;List project files before adding README&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>SlackDigestBoundaryBpmn.bpmn
+bindings_v2.json
+entry-points.json
+operate.json
+package-descriptor.json
+project.uiproj</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#32</span>
+      <span class="tool-name">Write</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">20ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-bpmn-integration-service-boundary/SlackDigestBoundaryBpmn/README.md&quot;,
+  &quot;content&quot;: &quot;# SlackDigestBoundaryBpmn (local draft)\n\nLocal Maestro Process Orchestration draft. **Not uploaded, published, deployed,\ndebugged, or run.** This project only exists as local BPMN source plus\nuntouched scaffold metadata from `uip maestro bpmn init`.\n\n## Process\n\n```\nmanual start -&gt; prepare digest (script task) -&gt; send Slack digest (draft Integration\nService boundary) -&gt; end\n```\n\n- `Event_start` (`… (5334 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>File created successfully at: /work/output/artifacts/skill-bpmn-integration-service-boundary/SlackDigestBoundaryBpmn/README.md (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#33</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-err">ERROR</span>
+      <span class="tool-duration">1.44s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;echo \&quot;=== files ===\&quot; &amp;&amp; ls -la &amp;&amp; echo \&quot;=== bpmn well-formed ===\&quot; &amp;&amp; python3 -c \&quot;import xml.etree.ElementTree as ET; ET.parse(&#x27;SlackDigestBoundaryBpmn.bpmn&#x27;); print(&#x27;OK&#x27;)\&quot; &amp;&amp; echo \&quot;=== validate ===\&quot; &amp;&amp; uip maestro bpmn validate SlackDigestBoundaryBpmn.bpmn --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Final check of project structure, well-formedness, and validation output&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Exit code 1
+=== files ===
+total 44
+drwxr-xr-x 2 root root 4096 Aug 20 21:16 .
+drwxr-xr-x 4 root root 4096 Aug 20 21:09 ..
+-rw-r--r-- 1 root root 5766 Aug 20 21:16 README.md
+-rw-r--r-- 1 root root 5842 Aug 20 21:15 SlackDigestBoundaryBpmn.bpmn
+-rw-r--r-- 1 root root   42 Aug 20 21:09 bindings_v2.json
+-rw-r--r-- 1 root root  496 Aug 20 21:09 entry-points.json
+-rw-r--r-- 1 root root  347 Aug 20 21:09 operate.json
+-rw-r--r-- 1 root root  285 Aug 20 21:09 package-descriptor.json
+-rw-r--r-- 1 root root   81 Aug 20 21:09 project.uiproj
+=== bpmn well-formed ===
+OK
+=== validate ===
+{
+  &quot;Result&quot;: &quot;Failure&quot;,
+  &quot;Message&quot;: &quot;Validation failed for /work/output/artifacts/skill-bpmn-integration-service-boundary/SlackDigestBoundaryBpmn/SlackDigestBoundaryBpmn.bpmn&quot;,
+  &quot;Instructions&quot;: &quot;Found 6 error(s):\n  - [error] [bpmn:sendTask#Task_SendSlackDigest \&quot;Send Slack digest (draft - Integration Service)\&quot;] Integration Service activity is missing required context input \&quot;connectorKey\&quot;.\n  - [error] [bpmn:sendTask#Task_SendSlackDigest \&quot;Send Slack digest (draft - Integration Service)\&quot;] Integration Service activity is missing required context input \&quot;operation\&quot;.\n  - [error] [bpmn:sendTask#Task_SendSlac
+
+… (truncated, 727 more chars)</pre>
+    <h4>Error</h4><pre>Exit code 1
+=== files ===
+total 44
+drwxr-xr-x 2 root root 4096 Aug 20 21:16 .
+drwxr-xr-x 4 root root 4096 Aug 20 21:09 ..
+-rw-r--r-- 1 root root 5766 Aug 20 21:16 README.md
+-rw-r--r-- 1 root root 5842 Aug 20 21:15 SlackDigestBoundaryBpmn.bpmn
+-rw-r--r-- 1 root root   42 Aug 20 21:09 bindings_v2.json
+-rw-r--r-- 1 root root  496 Aug 20 21:09 entry-points.json
+-rw-r--r-- 1 root root  347 Aug 20 21:09 operate.json
+-rw-r--r-- 1 root root  285 Aug 20 21:09 package-descriptor.json
+-rw-r--r-- 1 root root   81 Aug 20 21:09 project.uiproj
+=== bpmn well-formed ===
+OK
+=== validate ===
+{
+  &quot;Result&quot;: &quot;Failure&quot;,
+  &quot;Message&quot;: &quot;Validation failed for /work/output/artifacts/skill-bpmn-integration-service-boundary/SlackDigestBoundaryBpmn/SlackDigestBoundaryBpmn.bpmn&quot;,
+  &quot;Instructions&quot;: &quot;Found 6 error(s):\n  - [error] [bpmn:sendTask#Task_SendSlackDigest \&quot;Send Slack digest (draft - Integration Service)\&quot;] Integration Service activity is missing required context input \&quot;connectorKey\&quot;.\n  - [error] [bpmn:sendTask#Task_SendSlackDigest \&quot;Send Slack digest (draft - Integration Service)\&quot;] Integration Service activity is missing required context input \&quot;operation\&quot;.\n  - [error] [bpmn:sendTask#Task_SendSlackDigest \&quot;Send Slack digest (draft - Integration Service)\&quot;] Integration Service activity is missing required context input \&quot;objectName\&quot;.\n  - [error] [bpmn:sendTask#Task_SendSlackDigest \&quot;Send Slack digest (draft - Integration Service)\&quot;] Integration Service activity is missing required context input \&quot;method\&quot;.\n  - [error] [bpmn:sendTask#Task_SendSlackDigest \&quot;Send Slack digest (draft - Integration Service)\&quot;] Integration Service activity is missing required context input \&quot;path\&quot;.\n  - [error] [Task_SendSlackDigest] EMPTY_REQUIRED_FIELD: The field &#x27;connectorKey&#x27; in node &#x27;Send Slack digest (draft - Integration Service)&#x27; is required but has no value.&quot;,
+  &quot;ErrorCode&quot;: &quot;unknown_error&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}</pre>
+  </div>
+</details>
+
+</div>
+
+<h2>Command Telemetry</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Total</div><div class="value">34</div></div>
+    <div class="stat"><div class="label">Successful</div><div class="value">33 (97%)</div></div>
+    <div class="stat"><div class="label">Failed</div><div class="value">1</div></div>
+    <div class="stat"><div class="label">Avg / cmd</div><div class="value">2.55s</div></div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 2fr;gap:16px;margin-top:12px">
+    <div>
+      <h4>By Tool</h4>
+      <table>
+        <thead><tr><th>Tool</th><th>Count</th></tr></thead>
+        <tbody><tr><td class='mono'>Bash</td><td>22</td></tr><tr><td class='mono'>Read</td><td>6</td></tr><tr><td class='mono'>Edit</td><td>3</td></tr><tr><td class='mono'>Write</td><td>2</td></tr><tr><td class='mono'>Skill</td><td>1</td></tr></tbody>
+      </table>
+    </div>
+    <div>
+      <h4>Slowest</h4>
+      <table>
+        <thead><tr><th>Tool</th><th>Duration</th><th>Parameters</th></tr></thead>
+        <tbody><tr><td class='mono'>Bash</td><td>15.23s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro bpmn registry pull --outp...</td></tr><tr><td class='mono'>Read</td><td>14.45s</td><td class='mono dim'>{&#x27;file_path&#x27;: &#x27;/home/azureuser/projects/skills/tmp...</td></tr><tr><td class='mono'>Bash</td><td>8.60s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro bpmn registry get Intsvc....</td></tr><tr><td class='mono'>Read</td><td>8.60s</td><td class='mono dim'>{&#x27;file_path&#x27;: &#x27;/home/azureuser/projects/skills/tmp...</td></tr><tr><td class='mono'>Bash</td><td>6.75s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro bpmn registry get BPMN.Sc...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+  <p><strong>Most Common Pattern:</strong> <code>Bash → Bash → Bash</code></p><p><strong>Skill Tool Invoked:</strong> 1 time(s)</p>
+</div>
+
+<h2>Generation Metrics</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Total Latency</div><div class="value">10m 49s</div></div>
+    <div class="stat"><div class="label">Turns</div><div class="value">1</div></div>
+    <div class="stat"><div class="label">Assistant Turns</div><div class="value">62</div></div>
+    <div class="stat"><div class="label">Avg Turn Latency</div><div class="value">10m 37s</div></div>
+    
+  </div>
+</div>
+
+<h2>Token Usage</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Input (uncached)</div><div class="value">670</div></div>
+    <div class="stat"><div class="label">Output</div><div class="value">51,756</div></div>
+    <div class="stat"><div class="label">Cache Write</div><div class="value">108,923</div></div>
+    <div class="stat"><div class="label">Cache Read</div><div class="value">2,363,389</div></div>
+    <div class="stat"><div class="label">Total</div><div class="value">2,524,738</div></div>
+    <div class="stat"><div class="label">Cost</div><div class="value">$1.8958</div></div>
+  </div>
+</div>
+
+<h2>Agent Settings</h2>
+<div class="card" style="padding:0">
+  <table>
+    <tbody><tr><td class='mono dim'>Permission Mode</td><td>acceptEdits</td></tr><tr><td class='mono dim'>Allowed Tools</td><td>Skill, Bash, Read, Write, Edit, Glob, Grep</td></tr><tr><td class='mono dim'>Model</td><td>us.anthropic.claude-sonnet-5</td></tr><tr><td class='mono dim'>Max Turns</td><td>80</td></tr><tr><td class='mono dim'>System Prompt</td><td>You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted. </td></tr><tr><td class='mono dim'>System Prompt Mode</td><td>append</td></tr><tr><td class='mono dim'>Plugins</td><td>/home/azureuser/projects/skills/tmp</td></tr></tbody>
+  </table>
+</div>
+
+<h2>Environment</h2>
+<div class="card" style="padding:0">
+  <table>
+    <tbody><tr><td class='mono dim'>git_commit</td><td>unknown</td></tr><tr><td class='mono dim'>skills_git_commit</td><td>unknown</td></tr><tr><td class='mono dim'>cli_version</td><td>1.201.0-dev.8272</td></tr><tr><td class='mono dim'>tool_plugins</td><td>{&#x27;admin-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;agent-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;agenthub-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;aops-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;api-workflow-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;automation-hub-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;codedagent-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;codedapp-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;coder-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;context-grounding-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;conversational-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;data-fabric-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;docsai-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;function-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;gov-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;guardrails-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;insights-tool&#x27;: &#x27;1.201.0-dev.8276&#x27;, &#x27;integrationservice-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;ixp-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;llm-gateway-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;llmgw-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;maestro-tool&#x27;: &#x27;1.201.0-dev.8275&#x27;, &#x27;model-hub-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;orchestrator-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;platform-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;pm-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;rpa-legacy-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;rpa-tool&#x27;: &#x27;1.201.0-dev.20260809.3&#x27;, &#x27;solution-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;tasks-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;test-manager-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;traces-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;vertical-solutions-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;}</td></tr><tr><td class='mono dim'>coder_eval</td><td>0.9.6</td></tr><tr><td class='mono dim'>claude_code_cli</td><td>2.1.177 (Claude Code)</td></tr><tr><td class='mono dim'>uv</td><td>uv 0.12.5 (x86_64-unknown-linux-gnu)</td></tr><tr><td class='mono dim'>anthropic</td><td>0.122.0</td></tr><tr><td class='mono dim'>openai</td><td>3.2.0</td></tr><tr><td class='mono dim'>pydantic</td><td>2.12.5</td></tr><tr><td class='mono dim'>api_routing</td><td>aws_bedrock</td></tr><tr><td class='mono dim'>eval_routing</td><td>aws_bedrock</td></tr><tr><td class='mono dim'>aws_region</td><td>us-east-2</td></tr><tr><td class='mono dim'>bedrock_model</td><td>us.anthropic.claude-sonnet-4-6</td></tr><tr><td class='mono dim'>system_prompt_semantics</td><td>append</td></tr></tbody>
+  </table>
+</div>
+
+<footer>Generated by coder_eval · 2026-08-20T21:16:29</footer>
+</div>
+<script>
+function toggleTheme() {
+  document.documentElement.classList.toggle('light');
+  try {
+    const mode = document.documentElement.classList.contains('light') ? 'light' : 'dark';
+    localStorage.setItem('coder-eval-theme', mode);
+  } catch (e) { /* ignore */ }
+}
+(function() {
+  try {
+    if (localStorage.getItem('coder-eval-theme') === 'light') {
+      document.documentElement.classList.add('light');
+    }
+  } catch (e) { /* ignore */ }
+})();
+</script>
+</body>
+</html>

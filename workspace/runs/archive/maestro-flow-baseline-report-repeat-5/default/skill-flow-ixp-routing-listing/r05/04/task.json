@@ -1,0 +1,1104 @@
+{
+  "task_id": "skill-flow-ixp-routing-listing/r05",
+  "task_description": "IxP listing routing — user asks what IxP models / runtime projects are available from a Maestro flow. Read-only Q&A, not a build task.\nAsserts the agent ran the IxP registry-search listing command (per references/plugins/ixp/impl.md — Listing Published Models). Also asserts the agent did NOT take the build path: no .flow file should be created for a listing question.\nFailure here is signal about the IxP plugin's Listing Published Models / Listing Available Models sections — do NOT relax assertions, tighten the copy.\n",
+  "variant_id": "default",
+  "agent_type": "claude-code",
+  "model_used": "claude-sonnet-4-6",
+  "started_at": "2026-07-24T20:51:17.543626",
+  "completed_at": "2026-07-24T20:51:56.035089",
+  "duration_seconds": 38.49147415161133,
+  "final_status": "FAILURE",
+  "max_turns_exhausted": false,
+  "weighted_score": 0.5,
+  "iteration_count": 1,
+  "success_criteria_results": [
+    {
+      "result_kind": "basic",
+      "criterion_type": "command_executed",
+      "description": "Agent searched the registry for IxP node types (listing path)",
+      "score": 0.0,
+      "details": "Matched 0/1 required commands (filters: tool_name=Bash, pattern=/(?i)uip\\s+maestro\\s+flow\\s+registry\\s+(list\\b|(search|list)\\b[^\\n]*\\b(ixp|document|extract))/)",
+      "error": null,
+      "pass_threshold": 0.9,
+      "gating": true
+    },
+    {
+      "result_kind": "basic",
+      "criterion_type": "run_command",
+      "description": "No .flow file was created (listing is read-only Q&A, not a build task)",
+      "score": 1.0,
+      "details": "Command: ! find . -name \"*.flow\" -type f | grep -q .\nExit code: 0 (expected: 0)\nStdout: (empty)\nStderr: (empty)",
+      "error": null,
+      "pass_threshold": 0.9,
+      "gating": true
+    }
+  ],
+  "iterations": [
+    {
+      "iteration": 1,
+      "user_input": "Your working directory is: /work/output/artifacts/skill-flow-ixp-routing-listing/r05\n\nWhat extraction models are available to my Maestro flow?\n\nImportant:\n- The `uip` CLI is already available.\n- Use `--output json` on all uip commands.\n",
+      "agent_output": "[ASSISTANT] Based on the `uip ixp projects configure-model --help` output, the following **extraction models** are available for your Maestro flow's IXP projects:\n\n| Model | Identifier |\n|---|---|\n| Gemini 2.5 Flash | `gemini_2_5_flash` |\n| Gemini 2.5 Pro | `gemini_2_5_pro` |\n| GPT-4o (2024-05-13) | `gpt_4o_2024_05_13` |\n\n> **Note:** The `--model` option is validated server-side, so these are the examples documented in the CLI — additional models may be available depending on your tenant configuration.\n\nYou can also pair any model with an **intelligent pre-processing** option:\n- `none` — no pre-processing\n- `table_mini` — lightweight table detection\n- `table` — full table pre-processing\n\n**Example usage** to configure the project found in your environment (`vendor_invoices-3e19dd82-ixp`):\n```bash\nuip ixp projects configure-model vendor_invoices-3e19dd82-ixp \\\n  --model gemini_2_5_pro \\\n  --preprocessing table \\\n  --output json\n```\n[RESULT - SUCCESS] Based on the `uip ixp projects configure-model --help` output, the following **extraction models** are available for your Maestro flow's IXP projects:\n\n| Model | Identifier |\n|---|---|\n| Gemini 2.5 Flash | `gemini_2_5_flash` |\n| Gemini 2.5 Pro | `gemini_2_5_pro` |\n| GPT-4o (2024-05-13) | `gpt_4o_2024_05_13` |\n\n> **Note:** The `--model` option is validated server-side, so these are the examples documented in the CLI — additional models may be available depending on your tenant configuration.\n\nYou can also pair any model with an **intelligent pre-processing** option:\n- `none` — no pre-processing\n- `table_mini` — lightweight table detection\n- `table` — full table pre-processing\n\n**Example usage** to configure the project found in your environment (`vendor_invoices-3e19dd82-ixp`):\n```bash\nuip ixp projects configure-model vendor_invoices-3e19dd82-ixp \\\n  --model gemini_2_5_pro \\\n  --preprocessing table \\\n  --output json\n```",
+      "commands": [
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_01C4uZT5hFTN9TYk4umN4aDo",
+          "assistant_turn_index": 1,
+          "timestamp": "2026-07-24T20:51:28.621048",
+          "duration_ms": 1388.284221990034,
+          "generation_completed_at": "2026-07-24T20:51:28.621048",
+          "execution_started_at": "2026-07-24T20:51:28.621312",
+          "execution_completed_at": "2026-07-24T20:51:30.009596",
+          "parameters": {
+            "command": "uip ixp extraction-models list --output json 2>&1 | head -100",
+            "description": "List available IXP extraction models"
+          },
+          "result_status": "success",
+          "result_summary": "{\n  \"Result\": \"ValidationError\",\n  \"ErrorCode\": \"invalid_argument\",\n  \"Message\": \"error: unknown command 'extraction-models'\",\n  \"Instructions\": \"Run 'uip --help' to list available commands.\",\n  \"Retry\": \"RetryWillNotFix\"\n}",
+          "error_message": null,
+          "result_data": {
+            "Result": "ValidationError",
+            "ErrorCode": "invalid_argument",
+            "Message": "error: unknown command 'extraction-models'",
+            "Instructions": "Run 'uip --help' to list available commands.",
+            "Retry": "RetryWillNotFix"
+          },
+          "sequence_number": 0,
+          "result_tokens": 56
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_01P1jfbTUXWZQV9E9nLR3Yox",
+          "assistant_turn_index": 2,
+          "timestamp": "2026-07-24T20:51:31.791488",
+          "duration_ms": 922.5696789799258,
+          "generation_completed_at": "2026-07-24T20:51:31.791488",
+          "execution_started_at": "2026-07-24T20:51:31.791886",
+          "execution_completed_at": "2026-07-24T20:51:32.714456",
+          "parameters": {
+            "command": "uip ixp --help 2>&1",
+            "description": "List IXP subcommands"
+          },
+          "result_status": "success",
+          "result_summary": "                                    uip ixp                                     \nUiPath IXP Tool for managing projects, prompts, predictions and model publishing\n                Use --help with nested commands for more detail.                \n\n┌─ Usage ──────────────────────────────────────────────────────────────────────┐\n│ uip ixp [options] [command]                                                  │\n└──────────────────────────────────────────────────────────────────────────────┘\n\n┌─ Commands ───────────────────────────────────────────────────────────────────┐\n│ data-types    Manage data types (entity_defs) — the reusable type            │\n│               definitions fields reference via field_type_id                 │\n│ deployments   Inspect IXP deployments — project taxonomy pinned to a         │\n│               specific trained model version                                 │\n│ documents     Read IXP document content                                      │\n│ fields        Edit fields within a project's field groups (label_defs)       │\n│ groups        Manage field groups (label_defs) — the document type           │\n│               containers for fields                                          │\n│ help          display help for command                                       │\n│ labellings    Manage IXP labellings and predictions                          │\n│ projects      Manage IXP training projects                                   │\n└──────────────────────────────────────────────────────────────────────────────┘\n\n┌─ Options ────────────────────────────────────────────────────────────────────┐\n│ -h, --help                     display help for command                      │\n│ --output                       Output format (default: json)                 │\n│ <table|json|yaml|plain>                                                      │\n│ --output-filter <expression>   JMESPath expression applied to the Data field │\n│                                of the response envelope                      │\n│ --log-level                    Log level threshold (default: info)           │\n│ <debug|info|warn|error>                                                      │\n│ --log-file <path>              Write logs to file instead of stderr          │\n│ --profile <name>               Use a named login profile                     │\n└──────────────────────────────────────────────────────────────────────────────┘",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 1,
+          "result_tokens": 608
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_01QYurjKC5vMYu9sYeC7E4RE",
+          "assistant_turn_index": 3,
+          "timestamp": "2026-07-24T20:51:34.484285",
+          "duration_ms": 941.1367239663377,
+          "generation_completed_at": "2026-07-24T20:51:34.484285",
+          "execution_started_at": "2026-07-24T20:51:34.484524",
+          "execution_completed_at": "2026-07-24T20:51:35.425661",
+          "parameters": {
+            "command": "uip ixp deployments --help 2>&1",
+            "description": "Check deployments subcommands for model info"
+          },
+          "result_status": "success",
+          "result_summary": "                              uip ixp deployments                               \nInspect IXP deployments — project taxonomy pinned to a specific trained model version\n                Use --help with nested commands for more detail.                \n\n┌─ Usage ──────────────────────────────────────────────────────────────────────┐\n│ uip ixp deployments [options] [command]                                      │\n└──────────────────────────────────────────────────────────────────────────────┘\n\n┌─ Commands ───────────────────────────────────────────────────────────────────┐\n│ get-taxonomy   Get the project taxonomy (data types + field groups) at a     │\n│                specific trained model version                                │\n│ help           display help for command                                      │\n└──────────────────────────────────────────────────────────────────────────────┘\n\n┌─ Options ────────────────────────────────────────────────────────────────────┐\n│ -h, --help                     display help for command                      │\n│ --output                       Output format (default: json)                 │\n│ <table|json|yaml|plain>                                                      │\n│ --output-filter <expression>   JMESPath expression applied to the Data field │\n│                                of the response envelope                      │\n│ --log-level                    Log level threshold (default: info)           │\n│ <debug|info|warn|error>                                                      │\n│ --log-file <path>              Write logs to file instead of stderr          │\n│ --profile <name>               Use a named login profile                     │\n└──────────────────────────────────────────────────────────────────────────────┘",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 2,
+          "result_tokens": 448
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_01YWnLd88PHz2Md5d1WGHwGP",
+          "assistant_turn_index": 4,
+          "timestamp": "2026-07-24T20:51:35.182514",
+          "duration_ms": 2066.4169288938865,
+          "generation_completed_at": "2026-07-24T20:51:35.182514",
+          "execution_started_at": "2026-07-24T20:51:35.182622",
+          "execution_completed_at": "2026-07-24T20:51:37.249039",
+          "parameters": {
+            "command": "uip ixp projects list --output json 2>&1",
+            "description": "List IXP projects to find extraction models"
+          },
+          "result_status": "success",
+          "result_summary": "{\n  \"Result\": \"Success\",\n  \"Code\": \"IxpProjectsList\",\n  \"Data\": {\n    \"Projects\": [\n      {\n        \"Id\": \"b8d3ea65-59c5-8021-8427-a0406ce6218b\",\n        \"Name\": \"vendor_invoices-3e19dd82-ixp\",\n        \"Title\": \"Vendor Invoices\",\n        \"CreatedAt\": \"2026-07-24T17:03:52.973749+00:00\"\n      }\n    ],\n    \"Total\": 1,\n    \"Offset\": 0,\n    \"Limit\": 50\n  }\n}",
+          "error_message": null,
+          "result_data": {
+            "Result": "Success",
+            "Code": "IxpProjectsList",
+            "Data": {
+              "Projects": [
+                {
+                  "Id": "b8d3ea65-59c5-8021-8427-a0406ce6218b",
+                  "Name": "vendor_invoices-3e19dd82-ixp",
+                  "Title": "Vendor Invoices",
+                  "CreatedAt": "2026-07-24T17:03:52.973749+00:00"
+                }
+              ],
+              "Total": 1,
+              "Offset": 0,
+              "Limit": 50
+            }
+          },
+          "sequence_number": 3,
+          "result_tokens": 89
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_019rMsZjk7fEtG86En61R5Cf",
+          "assistant_turn_index": 6,
+          "timestamp": "2026-07-24T20:51:40.276563",
+          "duration_ms": 1126.5406920574605,
+          "generation_completed_at": "2026-07-24T20:51:40.276563",
+          "execution_started_at": "2026-07-24T20:51:40.276624",
+          "execution_completed_at": "2026-07-24T20:51:41.403165",
+          "parameters": {
+            "command": "uip ixp projects --help 2>&1",
+            "description": "Check projects subcommands"
+          },
+          "result_status": "success",
+          "result_summary": "                                uip ixp projects                                \n                          Manage IXP training projects                          \n                Use --help with nested commands for more detail.                \n\n┌─ Usage ──────────────────────────────────────────────────────────────────────┐\n│ uip ixp projects [options] [command]                                         │\n└──────────────────────────────────────────────────────────────────────────────┘\n\n┌─ Commands ───────────────────────────────────────────────────────────────────┐\n│ configure-model   Configure the extraction model settings for a project      │\n│ create            Create an IXP project, upload documents, and suggest a     │\n│                   taxonomy                                                   │\n│ delete            Permanently delete a project — its documents, taxonomy,    │\n│                   and trained models. Irreversible; requires --yes.          │\n│ get               Get an IXP training project by name                        │\n│ get-metrics       Get validation metrics for an IXP project                  │\n│ get-taxonomy      Export the project's raw IXP taxonomy artifact (data types │\n│                   + field groups). This is an IXP-internal format intended   │\n│                   for re-import into another project (see                    │\n│                   `import-taxonomy`), not a curated, human-readable view.    │\n│ help              display help for command                                   │\n│ import-taxonomy   Import a taxonomy from a local JSON file into an existing  │\n│                   project                                                    │\n│ list              List all IXP training projects                             │\n│ list-models       List all model versions and tags for a project             │\n│ publish           Publish a model version, optionally tagging it as live or  │\n│                   staging                                                    │\n│ unpublish         Unpublish a model version. The version stays trained and   │\n│                   listable; it is only removed from the published set.       │\n│ untag             Remove the tag from a model version. The version stays     │\n│                   trained and published; only its tag pointer is cleared.    │\n│ update-prompt     Update the project's overall extraction instructions — the │\n│                   taxonomy-wide prompt that gives the model context relevant │\n│                   across every field group. Matches the IXP UI's 'Overall    │\n│                   extraction instructions' field on the Manage Taxonomy      │\n│                   page. Distinct from each field group's own prompt (see     │\n│                   `groups update-prompts`) and per-field prompts (see        │\n│                   `fields update-prompts`).                                  │\n│ update-title      Update the display title of a project                      │\n└──────────────────────────────────────────────────────────────────────────────┘\n\n┌─ Options ────────────────────────────────────────────────────────────────────┐\n│ -h, --help                     display help for command                      │\n│ --output                       Output format (default: json)                 │\n│ <table|json|yaml|plain>                                                      │\n│ --output-filter <expression>   JMESPath expression applied to the Data field │\n│                                of the response envelope                      │\n│ --log-level                    Log level threshold (default: info)           │\n│ <debug|info|warn|error>                                                      │\n│ --log-file <path>              Write logs to file instead of stderr          │\n│ --profile <name>               Use a named login profile                     │\n└──────────────────────────────────────────────────────────────────────────────┘",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 4,
+          "result_tokens": 993
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_01GCqWFKnDgwffshSovbPxBb",
+          "assistant_turn_index": 7,
+          "timestamp": "2026-07-24T20:51:40.997603",
+          "duration_ms": 430.4670540150255,
+          "generation_completed_at": "2026-07-24T20:51:40.997603",
+          "execution_started_at": "2026-07-24T20:51:40.997658",
+          "execution_completed_at": "2026-07-24T20:51:41.428125",
+          "parameters": {
+            "command": "ls /work/output/artifacts/skill-flow-ixp-routing-listing/r05/ 2>&1",
+            "description": "List files in working directory"
+          },
+          "result_status": "success",
+          "result_summary": "(Bash completed with no output)",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 5,
+          "result_tokens": 8
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_01Td6Fj1TKKHqAeGAeRKRXRU",
+          "assistant_turn_index": 8,
+          "timestamp": "2026-07-24T20:51:43.015925",
+          "duration_ms": 1504.7835829900578,
+          "generation_completed_at": "2026-07-24T20:51:43.015925",
+          "execution_started_at": "2026-07-24T20:51:43.017608",
+          "execution_completed_at": "2026-07-24T20:51:44.522392",
+          "parameters": {
+            "command": "uip ixp projects configure-model --help 2>&1",
+            "description": "Check configure-model subcommand for available extraction models"
+          },
+          "result_status": "success",
+          "result_summary": "                        uip ixp projects configure-model                        \n             Configure the extraction model settings for a project              \n                Use --help with nested commands for more detail.                \n\n┌─ Usage ──────────────────────────────────────────────────────────────────────┐\n│ uip ixp projects configure-model [options] <project-name>                    │\n└──────────────────────────────────────────────────────────────────────────────┘\n\n┌─ Arguments ──────────────────────────────────────────────────────────────────┐\n│ project-name   Project name                                                  │\n└──────────────────────────────────────────────────────────────────────────────┘\n\n┌─ Options ────────────────────────────────────────────────────────────────────┐\n│ --model <version>              Extraction model name, validated server-side  │\n│                                (e.g. gemini_2_5_flash, gemini_2_5_pro,       │\n│                                gpt_4o_2024_05_13)                            │\n│ --preprocessing <type>         Intelligent pre-processing: none, table_mini, │\n│                                table                                         │\n│ -h, --help                     display help for command                      │\n│ --output                       Output format (default: json)                 │\n│ <table|json|yaml|plain>                                                      │\n│ --output-filter <expression>   JMESPath expression applied to the Data field │\n│                                of the response envelope                      │\n│ --log-level                    Log level threshold (default: info)           │\n│ <debug|info|warn|error>                                                      │\n│ --log-file <path>              Write logs to file instead of stderr          │\n│ --profile <name>               Use a named login profile                     │\n└──────────────────────────────────────────────────────────────────────────────┘\n\n┌─ Examples ───────────────────────────────────────────────────────────────────┐\n│ Tune extraction model: select model and preprocessing                        │\n│                                                                              │\n│   $ uip ixp projects configure-model my-invoices --model gemini_2_5_pro --preprocessing table │\n│                                                                              │\n│   ProjectName  my-invoices                                                   │\n│   Config:                                                                    │\n└──────────────────────────────────────────────────────────────────────────────┘",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 6,
+          "result_tokens": 674
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_01XbasFnhN12xykXdUnUSPaq",
+          "assistant_turn_index": 9,
+          "timestamp": "2026-07-24T20:51:46.395821",
+          "duration_ms": 1704.0418609976768,
+          "generation_completed_at": "2026-07-24T20:51:46.395821",
+          "execution_started_at": "2026-07-24T20:51:46.396088",
+          "execution_completed_at": "2026-07-24T20:51:48.100130",
+          "parameters": {
+            "command": "uip ixp projects get vendor_invoices-3e19dd82-ixp --output json 2>&1",
+            "description": "Get project details including current model configuration"
+          },
+          "result_status": "success",
+          "result_summary": "{\n  \"Result\": \"Success\",\n  \"Code\": \"IxpProjectsGet\",\n  \"Data\": {\n    \"Id\": \"b8d3ea65-59c5-8021-8427-a0406ce6218b\",\n    \"Name\": \"vendor_invoices-3e19dd82-ixp\",\n    \"Title\": \"Vendor Invoices\",\n    \"CreatedAt\": \"2026-07-24T17:03:52.973749+00:00\"\n  }\n}",
+          "error_message": null,
+          "result_data": {
+            "Result": "Success",
+            "Code": "IxpProjectsGet",
+            "Data": {
+              "Id": "b8d3ea65-59c5-8021-8427-a0406ce6218b",
+              "Name": "vendor_invoices-3e19dd82-ixp",
+              "Title": "Vendor Invoices",
+              "CreatedAt": "2026-07-24T17:03:52.973749+00:00"
+            }
+          },
+          "sequence_number": 7,
+          "result_tokens": 62
+        }
+      ],
+      "timestamp": "2026-07-24T20:51:55.931089",
+      "duration_seconds": 35.60019035695586,
+      "token_usage": {
+        "uncached_input_tokens": 8,
+        "output_tokens": 1349,
+        "cache_creation_input_tokens": 6946,
+        "cache_read_input_tokens": 189131,
+        "total_cost_usd": 0.10304579999999999,
+        "input_tokens": 196085
+      },
+      "model_used": "claude-sonnet-4-6",
+      "assistant_turn_count": 12,
+      "messages": [
+        {
+          "role": "assistant",
+          "started_at": "2026-07-24T20:51:20.328448",
+          "completed_at": "2026-07-24T20:51:27.761110",
+          "generation_duration_ms": 7432.684527011588,
+          "content_blocks": [
+            {
+              "block_type": "thinking",
+              "sequence": 0,
+              "text": null,
+              "thinking": "The user wants to know what extraction models are available to their Maestro flow. Let me use the `uip` CLI to find this information. This seems related to UiPath IXP (Intelligent eXtraction Platform) or Document Understanding capabilities. Let me invoke the appropriate skill or run the CLI command directly.\n\nLet me first try to find out what IXP-related commands are available.",
+              "signature": "EscECmcIEBABGAIqQAMl+8wTM6SqvJe1osGtLrcPFoN8sTdl+w/3jGChH4MUKVY6Q9hnhxcoD6l95Htac9XHnH4b1gG/LYIOL8Ah0RYyEWNsYXVkZS1zb25uZXQtNC02OABCCHRoaW5raW5nEgwCPTk269EDR8Trct0aDNuy2Y4/RXm0n+noEiIwaqz1s8KfzEwnTjyJyAdvU7O1sMgwRLeZsMIKz7WkzGbXq2fmTw2l87ioaOOWKHDzKo0DZixoTPDooZY9LTHRNS6gx69PobM11PJkneZxoZn+ZWUOLC6ETec98yZjwDTlXri8KBuJtRHlb4Ry0Z71Q9a8NKxD3vLZReJhw0LXN5vbQ2JEGBLq8RP2zNnU8ifPYWn1Gnl/GcadR0ddQ11JsDrEVgbGxw6w+E08cN/DpUo2OFTTFIonq0jyhdBGISH6soqJDhLiQnZkaGBGjji5yVBaPSX7A0WLLBOlfBVj9WWXSPeoBaUPRykVTQrAEEVujwFD5if4r+htcOa+ZvKbaLO7U+spMNIH94kSBL7LHjEalvY5QFj6UqRHwYCZ38JHbhhNd7863GTSrxxxVOrLiqOCdgo+xPyBr2sHkfPyEzkU5DTiUV6dBKRY06OEPLXzMtxVjuRCChMdGV6Yzh1ubrdmnI23gZLiCKoRafuNrD+EFyqNsiIvNxnbFyvgLtj2ECS9WDBt7LJmg3SIebi7cuyN5P05QTaKe28oOSQXf5ybstDzzt3jyvdEn87+GyrFIkvbuWfciQIXbCkiTwUH/hgB",
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 2,
+          "output_tokens": 145,
+          "cache_creation_tokens": 3228,
+          "cache_read_tokens": 22982,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01HLgAEdHhbcGx3idXQgjt3t",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-24T20:51:27.761110",
+          "completed_at": "2026-07-24T20:51:28.621048",
+          "generation_duration_ms": 859.9386279238388,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01C4uZT5hFTN9TYk4umN4aDo",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01C4uZT5hFTN9TYk4umN4aDo"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 51,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01HLgAEdHhbcGx3idXQgjt3t",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-24T20:51:30.009356",
+          "completed_at": "2026-07-24T20:51:31.791488",
+          "generation_duration_ms": 1782.1323139360175,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01P1jfbTUXWZQV9E9nLR3Yox",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01P1jfbTUXWZQV9E9nLR3Yox"
+          ],
+          "input_tokens": 1,
+          "output_tokens": 85,
+          "cache_creation_tokens": 181,
+          "cache_read_tokens": 26210,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_0138pZYasWc8tt7TKfyR9FT7",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-24T20:51:32.714408",
+          "completed_at": "2026-07-24T20:51:34.484285",
+          "generation_duration_ms": 1769.8781759245321,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01QYurjKC5vMYu9sYeC7E4RE",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01QYurjKC5vMYu9sYeC7E4RE"
+          ],
+          "input_tokens": 1,
+          "output_tokens": 78,
+          "cache_creation_tokens": 654,
+          "cache_read_tokens": 26391,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01TPeVS6sQYSMoBAzNPRmXhC",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-24T20:51:34.484285",
+          "completed_at": "2026-07-24T20:51:35.182514",
+          "generation_duration_ms": 698.2288680737838,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01YWnLd88PHz2Md5d1WGHwGP",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01YWnLd88PHz2Md5d1WGHwGP"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 84,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01TPeVS6sQYSMoBAzNPRmXhC",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-24T20:51:37.248984",
+          "completed_at": "2026-07-24T20:51:39.689236",
+          "generation_duration_ms": 2440.25160104502,
+          "content_blocks": [
+            {
+              "block_type": "thinking",
+              "sequence": 0,
+              "text": null,
+              "thinking": "Now let me look at the Maestro flow in the working directory to understand what extraction models are configured or available for routing. Let me also check if there's a way to list models via the IXP CLI or look at the flow files.",
+              "signature": "ErIDCmcIEBABGAIqQHwfTHcQcPaTDfwSt4XdHgtS5NxDEfvAdRlPPMFSpx2ldSwEqj+4ShAvY05hZ8Y744tEULPkhz6zCT0HnWQkzMQyEWNsYXVkZS1zb25uZXQtNC02OABCCHRoaW5raW5nEgxRARcbSquujf6g4esaDE+ZLEJP7bkXZwI/8yIwMb9Q+cvi4UfHX+K5B78cdRIEM8USpTWyOmD/xhiH4w9Iitgglqm99ZwQDQ7CJSIyKvgBoAJygRNtUg75mzs1XDcQ4vYhRMmQO0O39bbAPW7xj7BX8oa10zUSkZDAsFLXU4H0ypwNO098kwZhR8Jcxza3JK+BvLkZJHc6p6EDFeJSkTucbfUEAJNRLgD2ummqEmUGiaQFwEZQiadiQIt++RPVPdgDUNnksigMBSDoOeBnp/QnLrUn1RXHpAT88sKhCs+KEn/F9+FSl0p7++6HtnYUu6Lg5Eq4PUmag8i2hvjepgJLfZnF/148eqFo3XZ5M8yAjhFQYWcrGkOxvM3UjsWZWalNPn09MO0f/9t33Af/aYJuNQhXF//oE1Z44SVXGGL1i+ZBPPX9oEcYAQ==",
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 1,
+          "output_tokens": 117,
+          "cache_creation_tokens": 801,
+          "cache_read_tokens": 27045,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_012N6k3DKtDx8VeNVBTSqZLY",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-24T20:51:39.689236",
+          "completed_at": "2026-07-24T20:51:40.276563",
+          "generation_duration_ms": 587.3273719334975,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_019rMsZjk7fEtG86En61R5Cf",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_019rMsZjk7fEtG86En61R5Cf"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 47,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_012N6k3DKtDx8VeNVBTSqZLY",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-24T20:51:40.276563",
+          "completed_at": "2026-07-24T20:51:40.997603",
+          "generation_duration_ms": 721.040360047482,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01GCqWFKnDgwffshSovbPxBb",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01GCqWFKnDgwffshSovbPxBb"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 68,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_012N6k3DKtDx8VeNVBTSqZLY",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-24T20:51:41.428095",
+          "completed_at": "2026-07-24T20:51:43.015925",
+          "generation_duration_ms": 1587.8289609681815,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01Td6Fj1TKKHqAeGAeRKRXRU",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01Td6Fj1TKKHqAeGAeRKRXRU"
+          ],
+          "input_tokens": 1,
+          "output_tokens": 93,
+          "cache_creation_tokens": 1120,
+          "cache_read_tokens": 27846,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_016uus7HM2JJQktwwmaXC3BZ",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-24T20:51:44.522355",
+          "completed_at": "2026-07-24T20:51:46.395821",
+          "generation_duration_ms": 1873.4665159136057,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01XbasFnhN12xykXdUnUSPaq",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01XbasFnhN12xykXdUnUSPaq"
+          ],
+          "input_tokens": 1,
+          "output_tokens": 102,
+          "cache_creation_tokens": 725,
+          "cache_read_tokens": 28966,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01WvveDcpjkxK76KjdBaCP76",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-24T20:51:48.100081",
+          "completed_at": "2026-07-24T20:51:52.196257",
+          "generation_duration_ms": 4096.176552935503,
+          "content_blocks": [
+            {
+              "block_type": "thinking",
+              "sequence": 0,
+              "text": null,
+              "thinking": "The `configure-model --help` output revealed the available extraction models. Let me summarize what I found:\n\nFrom the `--model` option description in `uip ixp projects configure-model --help`:\n- `gemini_2_5_flash`\n- `gemini_2_5_pro`\n- `gpt_4o_2024_05_13`\n\nThese are the examples listed (validated server-side), though the CLI notes the list is \"validated server-side\" meaning there could be more. But based on what the CLI documents, these are the known/documented options.\n\nAlso from `--preprocessing`:\n- `none`\n- `table_mini`\n- `table`",
+              "signature": "EoMGCmcIEBABGAIqQA+uHkDx1A+ikU8q/yGLsx3oDXIftKa4BffSe8TFt67AEad70rRYS2x/BywiP7ICTxRK2F2bFG7q3WgoXFeUHdkyEWNsYXVkZS1zb25uZXQtNC02OABCCHRoaW5raW5nEgyeJ7vtaYx02m/zhewaDBNNLGXEwKQgxO/aSiIwA4esl6lT8VVVov2kOqmD9qhekidLRsb0xPh6BI9gmo9tBpu3GJwS3zvr02j0i/KpKskEtyRwm58jT8oJ+HbHPVcFmUqnQ90zUASO3/ch5p0PwzdaqWdwruoh8HCDKV9VhTQmdIkaioVGZpI3sko6DW0qEcs8SJ8PevNVSpJJUPSf3AUbgCJEvnduPIOxs7eIO9mumRgkqRzgZsxscSzTQr9n8ChC+hyalOUFIQObnBjyX2Zr2s8eQBuXZGXxVYE5Ixy8xnps/IqzXireGDmC+2O1Psl5GYlmvan4cxAG7M2oZ+JTYHgIXLMHynHtAvvfKijXbBinEWLjcxm+Yysm4GN0c3qtwil2JOiqpsPmKHK2G60FSi7I5/Hg2lODh38w02q3nO+hWCGxysGMZPyBWTv4Sdg3GnIGmYYQBUyNWtE1YrsI6hYGAhWuSlPbi6OrABNm5BNFEkWBx7t0b7PVc+hrZ5/8Z9lxwmGnCkdNSjegyl/hEbbs4fTdPHhFfLGJA5NXXvZYM4ELLtSFeu685Yiok7g3FtyXdKz/hEQu6eOoCsp/TD8pQ1RXlTPBklTTWJ31kB7wYSygXJR89BvpiUJzgG7HNmFTaw4ic0GmPQ5+gP56XGnRdKzXRIbJqUK6Uq5B4xWYTqeOjnoJQHlExaBH3J4/AkT9p3JoMGvfaHc6WOfLIVV4jdsUTjA6Wrm3u/IbHz1CHhRalPieQBlzf9O4ZwaMpPJJfzqUXqixJpQ/nxaoH8Nx/F7+y8DFrY2LKHV+TG2bK2z8muIpoT2WZc48taPIUmUHr+16naSTuZN1MOErdVjHKY/FPw2KgMXC6WC5dulpzhEhJDcKGAE=",
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 1,
+          "output_tokens": 175,
+          "cache_creation_tokens": 237,
+          "cache_read_tokens": 29691,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_013P6kE5rUXH8vk74DNA2az4",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-24T20:51:52.196257",
+          "completed_at": "2026-07-24T20:51:55.813037",
+          "generation_duration_ms": 3616.778963012621,
+          "content_blocks": [
+            {
+              "block_type": "text",
+              "sequence": 0,
+              "text": "Based on the `uip ixp projects configure-model --help` output, the following **extraction models** are available for your Maestro flow's IXP projects:\n\n| Model | Identifier |\n|---|---|\n| Gemini 2.5 Flash | `gemini_2_5_flash` |\n| Gemini 2.5 Pro | `gemini_2_5_pro` |\n| GPT-4o (2024-05-13) | `gpt_4o_2024_05_13` |\n\n> **Note:** The `--model` option is validated server-side, so these are the examples documented in the CLI — additional models may be available depending on your tenant configuration.\n\nYou can also pair any model with an **intelligent pre-processing** option:\n- `none` — no pre-processing\n- `table_mini` — lightweight table detection\n- `table` — full table pre-processing\n\n**Example usage** to configure the project found in your environment (`vendor_invoices-3e19dd82-ixp`):\n```bash\nuip ixp projects configure-model vendor_invoices-3e19dd82-ixp \\\n  --model gemini_2_5_pro \\\n  --preprocessing table \\\n  --output json\n```",
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 0,
+          "output_tokens": 304,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_013P6kE5rUXH8vk74DNA2az4",
+          "parent_tool_use_id": null
+        }
+      ],
+      "num_turns": 9,
+      "max_turns_exhausted": false,
+      "result_summary": {
+        "is_error": false,
+        "subtype": "success",
+        "stop_reason": "end_turn",
+        "result": "Based on the `uip ixp projects configure-model --help` output, the following **extraction models** are available for your Maestro flow's IXP projects:\n\n| Model | Identifier |\n|---|---|\n| Gemini 2.5 Flash | `gemini_2_5_flash` |\n| Gemini 2.5 Pro | `gemini_2_5_pro` |\n| GPT-4o (2024-05-13) | `gpt_4o_2024_05_13` |\n\n> **Note:** The `--model` option is validated server-side, so these are the examples documented in the CLI — additional models may be available depending on your tenant configuration.\n\nYou can also pair any model with an **intelligent pre-processing** option:\n- `none` — no pre-processing\n- `table_mini` — lightweight table detection\n- `table` — full table pre-processing\n\n**Example usage** to configure the project found in your environment (`vendor_invoices-3e19dd82-ixp`):\n```bash\nuip ixp projects configure-model vendor_invoices-3e19dd82-ixp \\\n  --model gemini_2_5_pro \\\n  --preprocessing table \\\n  --output json\n```"
+      },
+      "crashed": false,
+      "crash_reason": null
+    }
+  ],
+  "error_message": null,
+  "error_details": null,
+  "error_log_tail": "2026-07-24 20:51:20 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js\n2026-07-24 20:51:20 [INFO] coder_eval.orchestrator: API routing: aws_bedrock\n2026-07-24 20:51:20 [DEBUG] coder_eval.criteria: Discovered 14 criterion checkers\n2026-07-24 20:51:20 [DEBUG] coder_eval.criteria: Validated 14 criterion checkers\n2026-07-24 20:51:20 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js\n2026-07-24 20:51:20 [DEBUG] coder_eval.orchestrator: Sending prompt: What extraction models are available to my Maestro flow?\n\nImportant:\n- The `uip` CLI is already avai...\n2026-07-24 20:51:20 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Starting agent query stream...\n2026-07-24 20:51:55 [DEBUG] coder_eval.agents.claude_code_agent: [coder] session_id changed: None -> 719a7220-9663-4c7a-b4a0-a16063e8a7da\n2026-07-24 20:51:55 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Agent query stream ended\n2026-07-24 20:51:55 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js\n2026-07-24 20:51:55 [DEBUG] coder_eval.orchestrator: Agent response received (1896 chars)\n2026-07-24 20:51:55 [DEBUG] coder_eval.orchestrator: Checking success criteria\n2026-07-24 20:51:55 [DEBUG] coder_eval.evaluation.checker: Criterion 'command_executed' score: 0.00\n2026-07-24 20:51:55 [INFO] coder_eval.evaluation.checker: Criterion 'command_executed' FAILED (score=0.00, threshold=0.90): Matched 0/1 required commands (filters: tool_name=Bash, pattern=/(?i)uip\\s+maestro\\s+flow\\s+registry\\s+(list\\b|(search|list)\\b[^\\n]*\\b(ixp|document|extract))/)\n2026-07-24 20:51:55 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'No .flow file was created (listing is read-only Q&A, not a build task)': ! find . -name \"*.flow\" -type f | grep -q .\n2026-07-24 20:51:56 [DEBUG] coder_eval.sandbox: Command '! find . -name \"*.flow\" -type f | grep -q .' exited with code 0\n2026-07-24 20:51:56 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00\n2026-07-24 20:51:56 [INFO] coder_eval.orchestrator: Success criteria: 1/2 passed, weighted score: 0.500\n2026-07-24 20:51:56 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js\n2026-07-24 20:51:56 [INFO] coder_eval.orchestrator: Running post-run command: find . -maxdepth 5 -type d \\( -name node_modules -o -name .npm-prefix -o -name .venv \\) -prune -exec rm -rf {} +\n2026-07-24 20:51:56 [INFO] coder_eval.orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-ixp-routing-listing/r05\n",
+  "environment_info": {
+    "git_commit": "unknown",
+    "skills_git_commit": "unknown",
+    "cli_version": "1.199.0-dev.7970",
+    "tool_plugins": {
+      "admin-tool": "1.199.0-dev.7962",
+      "agent-tool": "1.199.0-dev.7965",
+      "agenthub-tool": "1.199.0-dev.7962",
+      "aops-tool": "1.199.0-dev.7962",
+      "api-workflow-tool": "1.199.0-dev.7962",
+      "codedagent-tool": "1.199.0-dev.7965",
+      "codedapp-tool": "1.199.0-dev.7962",
+      "coder-tool": "1.199.0-dev.7962",
+      "context-grounding-tool": "1.199.0-dev.7962",
+      "conversational-tool": "1.199.0-dev.7962",
+      "data-fabric-tool": "1.199.0-dev.7962",
+      "docsai-tool": "1.199.0-dev.7962",
+      "functions-tool": "1.199.0-dev.7962",
+      "gov-tool": "1.199.0-dev.7962",
+      "insights-tool": "1.199.0-dev.7962",
+      "integrationservice-tool": "1.199.0-dev.7962",
+      "ixp-tool": "1.199.0-dev.7962",
+      "llm-gateway-tool": "1.199.0-dev.7962",
+      "llmgw-tool": "1.199.0-dev.7962",
+      "maestro-tool": "1.199.0-dev.7962",
+      "orchestrator-tool": "1.199.0-dev.7962",
+      "platform-tool": "1.199.0-dev.7962",
+      "pm-tool": "1.199.0-dev.7969",
+      "rpa-legacy-tool": "1.199.0-dev.7962",
+      "rpa-tool": "1.199.0-dev.20260722.4",
+      "solution-tool": "1.199.0-dev.7962",
+      "tasks-tool": "1.199.0-dev.7962",
+      "test-manager-tool": "1.199.0-dev.7962",
+      "traces-tool": "1.199.0-dev.7962",
+      "vertical-solutions-tool": "1.199.0-dev.7962"
+    },
+    "coder_eval": "0.8.8",
+    "claude_code_cli": "2.1.177 (Claude Code)",
+    "uv": "uv 0.11.28 (x86_64-unknown-linux-gnu)",
+    "anthropic": "0.102.0",
+    "openai": "2.47.0",
+    "pydantic": "2.12.5",
+    "api_routing": "aws_bedrock",
+    "aws_region": "us-east-2",
+    "bedrock_model": "us.anthropic.claude-sonnet-4-6"
+  },
+  "agent_config": {
+    "type": "claude-code",
+    "model": "claude-sonnet-4-6",
+    "permission_mode": "acceptEdits",
+    "allowed_tools": [
+      "Skill",
+      "Bash",
+      "Read",
+      "Write",
+      "Edit",
+      "Glob",
+      "Grep"
+    ],
+    "disallowed_tools": null,
+    "plugins": [
+      {
+        "type": "local",
+        "path": "/home/azureuser/projects/skills/"
+      }
+    ],
+    "system_prompt": "You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted.\n",
+    "system_prompt_file": null,
+    "ignore_patterns": [],
+    "claude_settings": null,
+    "sdk_options": {},
+    "setting_sources": null
+  },
+  "sdk_options": {
+    "tools": null,
+    "allowed_tools": [
+      "Skill",
+      "Bash",
+      "Read",
+      "Write",
+      "Edit",
+      "Glob",
+      "Grep"
+    ],
+    "system_prompt": "You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted.\n",
+    "mcp_servers": {},
+    "strict_mcp_config": false,
+    "permission_mode": "acceptEdits",
+    "continue_conversation": false,
+    "resume": null,
+    "session_id": null,
+    "max_turns": 20,
+    "max_budget_usd": null,
+    "disallowed_tools": [
+      "ToolSearch"
+    ],
+    "model": "us.anthropic.claude-sonnet-4-6",
+    "fallback_model": null,
+    "betas": [],
+    "permission_prompt_tool_name": null,
+    "cwd": "/work/output/artifacts/skill-flow-ixp-routing-listing/r05",
+    "cli_path": null,
+    "settings": null,
+    "add_dirs": [],
+    "env": {
+      "PATH": "/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+      "PLUGIN_TOOLS_DIR": "/usr/lib/node_modules/@uipath",
+      "CLAUDE_CODE_USE_BEDROCK": "1",
+      "AWS_BEARER_TOKEN_BEDROCK": "***REDACTED***",
+      "AWS_REGION": "us-east-2",
+      "CLAUDE_CODE_ATTRIBUTION_HEADER": "0",
+      "ANTHROPIC_MODEL": "us.anthropic.claude-sonnet-4-6",
+      "ANTHROPIC_SMALL_FAST_MODEL": "us.anthropic.claude-sonnet-4-6"
+    },
+    "extra_args": {},
+    "max_buffer_size": null,
+    "can_use_tool": null,
+    "hooks": null,
+    "user": null,
+    "include_partial_messages": true,
+    "include_hook_events": false,
+    "fork_session": false,
+    "agents": null,
+    "setting_sources": [
+      "project"
+    ],
+    "skills": null,
+    "sandbox": null,
+    "plugins": [
+      {
+        "type": "local",
+        "path": "/home/azureuser/projects/skills"
+      }
+    ],
+    "max_thinking_tokens": null,
+    "thinking": null,
+    "effort": null,
+    "output_format": null,
+    "enable_file_checkpointing": false,
+    "session_store": null,
+    "session_store_flush": "batched",
+    "load_timeout_ms": 60000,
+    "task_budget": null
+  },
+  "sandbox_path": "/work/output/artifacts/skill-flow-ixp-routing-listing/r05",
+  "task_config": {
+    "resolved": {
+      "task_id": "skill-flow-ixp-routing-listing/r05",
+      "description": "IxP listing routing — user asks what IxP models / runtime projects are available from a Maestro flow. Read-only Q&A, not a build task.\nAsserts the agent ran the IxP registry-search listing command (per references/plugins/ixp/impl.md — Listing Published Models). Also asserts the agent did NOT take the build path: no .flow file should be created for a listing question.\nFailure here is signal about the IxP plugin's Listing Published Models / Listing Available Models sections — do NOT relax assertions, tighten the copy.\n",
+      "initial_prompt": "What extraction models are available to my Maestro flow?\n\nImportant:\n- The `uip` CLI is already available.\n- Use `--output json` on all uip commands.\n",
+      "initial_prompt_file": null,
+      "tags": [
+        "uipath-maestro-flow",
+        "integration",
+        "mode:operate",
+        "lifecycle:discover",
+        "node:ixp"
+      ],
+      "skip": false,
+      "agent": {
+        "type": "claude-code",
+        "model": "claude-sonnet-4-6",
+        "permission_mode": "acceptEdits",
+        "allowed_tools": [
+          "Skill",
+          "Bash",
+          "Read",
+          "Write",
+          "Edit",
+          "Glob",
+          "Grep"
+        ],
+        "disallowed_tools": null,
+        "plugins": [
+          {
+            "type": "local",
+            "path": "/home/azureuser/projects/skills/"
+          }
+        ],
+        "system_prompt": "You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted.\n",
+        "system_prompt_file": null,
+        "ignore_patterns": [],
+        "claude_settings": null,
+        "sdk_options": {},
+        "setting_sources": null
+      },
+      "sandbox": {
+        "driver": "tempdir",
+        "docker": {
+          "image": "skills-image:latest",
+          "dockerfile_path": null,
+          "build": {
+            "buildkit": null,
+            "args": {},
+            "secrets": [],
+            "extra_args": []
+          },
+          "network": "bridge",
+          "working_dir": null,
+          "env_passthrough": [
+            "ANTHROPIC_API_KEY",
+            "API_BACKEND",
+            "UIPATH_LLM_BACKEND",
+            "UIPATH_ACCESS_TOKEN",
+            "UIPATH_URL",
+            "UIPATH_TENANT_ID",
+            "UIPATH_ORGANIZATION_ID",
+            "UIPATH_CLI_DISABLE_VERSION_SYNC",
+            "AWS_BEARER_TOKEN_BEDROCK",
+            "AWS_REGION",
+            "BEDROCK_MODEL",
+            "CLAUDE_CODE_USE_BEDROCK",
+            "ANTHROPIC_MODEL",
+            "CODEX_API_KEY",
+            "CODEX_BASE_URL",
+            "CODEX_MODEL",
+            "GEMINI_API_KEY",
+            "ANTIGRAVITY_MODEL",
+            "HOME"
+          ],
+          "env_passthrough_extra": [
+            "SKILLS_REPO_PATH",
+            "BEDROCK_MODEL",
+            "TASK_PARALLELISM",
+            "UIPATH_CLI_ENABLE_ENV_AUTH",
+            "UIPATH_CLI_AUTH_TOKEN",
+            "UIPATH_CLI_ORGANIZATION_NAME",
+            "UIPATH_CLI_ORGANIZATION_ID",
+            "UIPATH_CLI_TENANT_NAME",
+            "UIPATH_CLI_TENANT_ID",
+            "TRACES_SMOKE_PROCESS_KEY",
+            "CODEX_API_KEY",
+            "CODEX_BASE_URL"
+          ],
+          "extra_mounts": [
+            "~/.uipath:/.uipath:rw"
+          ]
+        },
+        "python": {
+          "env_packages": []
+        },
+        "node": null,
+        "limits": {
+          "timeout": 300,
+          "max_memory_mb": null,
+          "max_cpus": null,
+          "max_pids": null,
+          "max_disk_mb": null
+        },
+        "template_sources": null,
+        "mock_path_dirs": null,
+        "ignore_patterns": []
+      },
+      "success_criteria": [
+        {
+          "type": "command_executed",
+          "description": "Agent searched the registry for IxP node types (listing path)",
+          "weight": 1.0,
+          "pass_threshold": 0.9,
+          "suite_thresholds": {
+            "mean": 0.85
+          },
+          "stop_when": null,
+          "tool_name": "Bash",
+          "command_pattern": "(?i)uip\\s+maestro\\s+flow\\s+registry\\s+(list\\b|(search|list)\\b[^\\n]*\\b(ixp|document|extract))",
+          "min_count": 1,
+          "max_count": null,
+          "require_success": false,
+          "exclude_pattern": null
+        },
+        {
+          "type": "run_command",
+          "description": "No .flow file was created (listing is read-only Q&A, not a build task)",
+          "weight": 1.0,
+          "pass_threshold": 0.9,
+          "suite_thresholds": {
+            "mean": 0.85
+          },
+          "stop_when": null,
+          "command": "! find . -name \"*.flow\" -type f | grep -q .",
+          "timeout": 30,
+          "expected_exit_code": 0,
+          "expected_stdout": null,
+          "stdout_match": "exact",
+          "score_from_stdout": false
+        }
+      ],
+      "run_limits": {
+        "max_turns": 20,
+        "expected_turns": null,
+        "task_timeout": 300,
+        "turn_timeout": 300,
+        "max_input_tokens": null,
+        "max_output_tokens": null,
+        "max_total_tokens": null,
+        "max_usd": null,
+        "count_cached_input": false,
+        "count_cache_creation": false,
+        "stop_early": false
+      },
+      "reference": null,
+      "expected_commands": null,
+      "pre_run": [],
+      "post_run": [
+        {
+          "command": "find . -maxdepth 5 -type d \\( -name node_modules -o -name .npm-prefix -o -name .venv \\) -prune -exec rm -rf {} +",
+          "timeout": 30
+        }
+      ],
+      "dataset": null,
+      "suite_id": "skill-flow-ixp-routing-listing",
+      "row_id": "r05",
+      "simulation": null
+    },
+    "source_yaml": "task_id: skill-flow-ixp-routing-listing\ndescription: >\n  IxP listing routing — user asks what IxP models / runtime projects are\n  available from a Maestro flow. Read-only Q&A, not a build task.\n\n  Asserts the agent ran the IxP registry-search listing command (per\n  references/plugins/ixp/impl.md — Listing Published Models). Also asserts the\n  agent did NOT take the build path: no .flow file should be created for a\n  listing question.\n\n  Failure here is signal about the IxP plugin's Listing Published Models /\n  Listing Available Models sections — do NOT relax assertions, tighten the\n  copy.\n\ntags: [uipath-maestro-flow, integration, mode:operate, lifecycle:discover, node:ixp]\n\ndataset:\n  rows:\n    - id: r01\n      prompt: \"What IxP models can I access in maestro?\"\n    - id: r02\n      prompt: \"What document extractors can I add to this flow?\"\n    - id: r03\n      prompt: \"List the published IxP extractors available to my .flow\"\n    - id: r04\n      prompt: \"Which IxP runtime projects can I wire into a Maestro flow node?\"\n    - id: r05\n      prompt: \"What extraction models are available to my Maestro flow?\"\n    - id: r06\n      prompt: \"Show me the IxP document-understanding models I can use in maestro\"\n    - id: r07\n      prompt: \"Which document-extraction models can this flow call?\"\n    - id: r08\n      prompt: \"What are my options for IxP nodes in a Maestro flow?\"\n    - id: r09\n      prompt: \"Can you list the IxP models I can add to my flow?\"\n    - id: r10\n      prompt: \"What published IxP extractors can a flow node reference?\"\n\ninitial_prompt: |\n  ${row.prompt}\n\n  Important:\n  - The `uip` CLI is already available.\n  - Use `--output json` on all uip commands.\n\nsuccess_criteria:\n  # IxP registry-search check (omits `get`) — see routing.yaml for the pattern breakdown.\n  - type: command_executed\n    description: \"Agent searched the registry for IxP node types (listing path)\"\n    tool_name: \"Bash\"\n    command_pattern: '(?i)uip\\s+maestro\\s+flow\\s+registry\\s+(list\\b|(search|list)\\b[^\\n]*\\b(ixp|document|extract))'\n    min_count: 1\n    suite_thresholds: {mean: 0.85}\n\n  # Inverted check: a listing/Q&A task should NOT create a .flow file.\n  # `! find ... | grep -q .` exits 0 when no .flow file is found (PASS)\n  # and 1 when one exists (FAIL).\n  - type: run_command\n    description: \"No .flow file was created (listing is read-only Q&A, not a build task)\"\n    command: '! find . -name \"*.flow\" -type f | grep -q .'\n    expected_exit_code: 0\n    suite_thresholds: {mean: 0.85}\n\nrun_limits:\n  max_turns: 20\n  turn_timeout: 300\n  task_timeout: 300\n",
+    "source_file": "/home/azureuser/projects/skills/tests/tasks/uipath-maestro-flow/ixp/task.yaml",
+    "lineage": {
+      "agent.type": {
+        "value": "claude-code",
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.permission_mode": {
+        "value": "acceptEdits",
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.model": {
+        "value": "claude-sonnet-4-6",
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.allowed_tools": {
+        "value": [
+          "Skill",
+          "Bash",
+          "Read",
+          "Write",
+          "Edit",
+          "Glob",
+          "Grep"
+        ],
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.plugins": {
+        "value": [
+          {
+            "type": "local",
+            "path": "/home/azureuser/projects/skills/"
+          }
+        ],
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.ignore_patterns": {
+        "value": [],
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.system_prompt": {
+        "value": "You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted.\n",
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "run_limits.max_turns": {
+        "value": 20,
+        "source": "task",
+        "source_detail": null
+      },
+      "run_limits.task_timeout": {
+        "value": 300,
+        "source": "task",
+        "source_detail": null
+      },
+      "run_limits.turn_timeout": {
+        "value": 300,
+        "source": "task",
+        "source_detail": null
+      },
+      "sandbox.driver": {
+        "value": "docker",
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "sandbox.docker": {
+        "value": {
+          "image": "skills-image:latest",
+          "env_passthrough_extra": [
+            "SKILLS_REPO_PATH",
+            "BEDROCK_MODEL",
+            "TASK_PARALLELISM",
+            "UIPATH_CLI_ENABLE_ENV_AUTH",
+            "UIPATH_CLI_AUTH_TOKEN",
+            "UIPATH_CLI_ORGANIZATION_NAME",
+            "UIPATH_CLI_ORGANIZATION_ID",
+            "UIPATH_CLI_TENANT_NAME",
+            "UIPATH_CLI_TENANT_ID",
+            "TRACES_SMOKE_PROCESS_KEY",
+            "CODEX_API_KEY",
+            "CODEX_BASE_URL"
+          ],
+          "extra_mounts": [
+            "~/.uipath:/.uipath:rw"
+          ]
+        },
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "repeats": {
+        "value": 5,
+        "source": "cli",
+        "source_detail": null
+      }
+    }
+  },
+  "command_stats": {
+    "total_commands": 8,
+    "commands_by_tool": {
+      "Bash": 8
+    },
+    "total_command_time_ms": 10084.240743890405,
+    "avg_command_time_ms": 1260.5300929863006,
+    "slowest_commands": [
+      {
+        "tool": "Bash",
+        "duration_ms": 2066.4169288938865,
+        "parameters": {
+          "command": "uip ixp projects list --output json 2>&1",
+          "description": "List IXP projects to find extraction models"
+        },
+        "tool_id": "toolu_bdrk_01YWnLd88PHz2Md5d1WGHwGP"
+      },
+      {
+        "tool": "Bash",
+        "duration_ms": 1704.0418609976768,
+        "parameters": {
+          "command": "uip ixp projects get vendor_invoices-3e19dd82-ixp --output json 2>&1",
+          "description": "Get project details including current model configuration"
+        },
+        "tool_id": "toolu_bdrk_01XbasFnhN12xykXdUnUSPaq"
+      },
+      {
+        "tool": "Bash",
+        "duration_ms": 1504.7835829900578,
+        "parameters": {
+          "command": "uip ixp projects configure-model --help 2>&1",
+          "description": "Check configure-model subcommand for available extraction models"
+        },
+        "tool_id": "toolu_bdrk_01Td6Fj1TKKHqAeGAeRKRXRU"
+      },
+      {
+        "tool": "Bash",
+        "duration_ms": 1388.284221990034,
+        "parameters": {
+          "command": "uip ixp extraction-models list --output json 2>&1 | head -100",
+          "description": "List available IXP extraction models"
+        },
+        "tool_id": "toolu_bdrk_01C4uZT5hFTN9TYk4umN4aDo"
+      },
+      {
+        "tool": "Bash",
+        "duration_ms": 1126.5406920574605,
+        "parameters": {
+          "command": "uip ixp projects --help 2>&1",
+          "description": "Check projects subcommands"
+        },
+        "tool_id": "toolu_bdrk_019rMsZjk7fEtG86En61R5Cf"
+      }
+    ],
+    "successful_commands": 8,
+    "failed_commands": 0,
+    "unknown_commands": 0,
+    "success_rate": 100.0,
+    "most_common_sequence": "Bash → Bash → Bash"
+  },
+  "total_token_usage": {
+    "uncached_input_tokens": 8,
+    "output_tokens": 1349,
+    "cache_creation_input_tokens": 6946,
+    "cache_read_input_tokens": 189131,
+    "total_cost_usd": 0.10304579999999999,
+    "input_tokens": 196085
+  },
+  "total_assistant_turns": 12,
+  "expected_commands": null,
+  "actual_commands": 8,
+  "commands_efficiency": null,
+  "pre_run_results": [],
+  "post_run_results": [
+    {
+      "command": "find . -maxdepth 5 -type d \\( -name node_modules -o -name .npm-prefix -o -name .venv \\) -prune -exec rm -rf {} +",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "",
+      "duration_seconds": 0.0045318603515625,
+      "error": null
+    }
+  ],
+  "simulation": null,
+  "early_stop": null
+}

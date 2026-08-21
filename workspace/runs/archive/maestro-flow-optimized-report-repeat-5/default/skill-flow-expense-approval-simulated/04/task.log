@@ -1,0 +1,73 @@
+2026-07-24 18:26:27 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-24 18:26:27 [INFO] coder_eval.orchestrator: API routing: aws_bedrock
+2026-07-24 18:26:27 [DEBUG] coder_eval.criteria: Discovered 14 criterion checkers
+2026-07-24 18:26:27 [DEBUG] coder_eval.criteria: Validated 14 criterion checkers
+2026-07-24 18:26:27 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-24 18:26:27 [INFO] coder_eval.simulation.user_simulator: User simulator: Claude Code agent backend (route=BedrockRoute)
+2026-07-24 18:26:27 [DEBUG] coder_eval.agents.claude_code_agent: [simulator] Starting agent query stream...
+2026-07-24 18:26:33 [DEBUG] coder_eval.agents.claude_code_agent: [simulator] session_id changed: None -> 9e092d11-6206-4ea1-82f3-c552e36c0543
+2026-07-24 18:26:33 [DEBUG] coder_eval.agents.claude_code_agent: [simulator] Agent query stream ended
+2026-07-24 18:26:33 [INFO] coder_eval.orchestrator: Simulation turn 1/18
+2026-07-24 18:26:33 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Starting agent query stream...
+2026-07-24 18:30:59 [DEBUG] coder_eval.agents.claude_code_agent: [coder] session_id changed: None -> abb28246-cee4-45d1-ae9f-21bb69f20643
+2026-07-24 18:30:59 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Agent query stream ended
+2026-07-24 18:30:59 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-24 18:30:59 [DEBUG] coder_eval.agents.claude_code_agent: [simulator] Starting agent query stream...
+2026-07-24 18:31:28 [DEBUG] coder_eval.agents.claude_code_agent: [simulator] Agent query stream ended
+2026-07-24 18:31:28 [INFO] coder_eval.orchestrator: Simulation turn 2/18
+2026-07-24 18:31:28 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Starting agent query stream...
+2026-07-24 18:31:57 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Agent query stream ended
+2026-07-24 18:31:57 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-24 18:31:57 [DEBUG] coder_eval.agents.claude_code_agent: [simulator] Starting agent query stream...
+2026-07-24 18:32:09 [DEBUG] coder_eval.agents.claude_code_agent: [simulator] Agent query stream ended
+2026-07-24 18:32:09 [INFO] coder_eval.orchestrator: Simulation turn 3/18
+2026-07-24 18:32:09 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Starting agent query stream...
+2026-07-24 18:35:17 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Agent query stream ended
+2026-07-24 18:35:17 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-24 18:35:17 [DEBUG] coder_eval.agents.claude_code_agent: [simulator] Starting agent query stream...
+2026-07-24 18:35:37 [DEBUG] coder_eval.agents.claude_code_agent: [simulator] Agent query stream ended
+2026-07-24 18:35:37 [INFO] coder_eval.orchestrator: Simulation turn 4/18
+2026-07-24 18:35:37 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Starting agent query stream...
+2026-07-24 18:35:54 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Agent query stream ended
+2026-07-24 18:35:54 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-24 18:35:54 [DEBUG] coder_eval.agents.claude_code_agent: [simulator] Starting agent query stream...
+2026-07-24 18:36:00 [DEBUG] coder_eval.agents.claude_code_agent: [simulator] Agent query stream ended
+2026-07-24 18:36:00 [INFO] coder_eval.orchestrator: Simulation turn 5/18
+2026-07-24 18:36:00 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Starting agent query stream...
+2026-07-24 18:36:36 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Agent query stream ended
+2026-07-24 18:36:36 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-24 18:36:36 [DEBUG] coder_eval.agents.claude_code_agent: [simulator] Starting agent query stream...
+2026-07-24 18:36:50 [DEBUG] coder_eval.agents.claude_code_agent: [simulator] Agent query stream ended
+2026-07-24 18:36:50 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'uip flow validate passes (any .flow)': python3 -c "import glob,subprocess,sys; flows=glob.glob('**/*.flow',recursive=True); sys.exit('no .flow file found') if not flows else sys.exit(subprocess.run(['uip','maestro','flow','validate',flows[0],'--output','json']).returncode)"
+2026-07-24 18:36:57 [DEBUG] coder_eval.sandbox: Command 'python3 -c "import glob,subprocess,sys; flows=glob.glob('**/*.flow',recursive=True); sys.exit('no .flow file found') if not flows else sys.exit(subprocess.run(['uip','maestro','flow','validate',flows[0],'--output','json']).returncode)"' exited with code 0
+2026-07-24 18:36:57 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+{
+  "Result": "Success",
+  "Code": "FlowValidate",
+  "Data": {
+    "File": "/work/output/artifacts/skill-flow-expense-approval-simulated/ExpenseApproval/ExpenseApproval/ExpenseApproval.flow",
+    "Status": "Valid"
+  }
+}
+---
+2026-07-24 18:36:57 [DEBUG] coder_eval.sandbox: STDERR:
+---
+[ManifestClient] fetchDynamicNodes ok: total=207 agent context nodes=2 external agent nodes=6 orchestrator nodes=158 IXP nodes=41
+---
+2026-07-24 18:36:57 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-07-24 18:36:57 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'Flow has a correct inline HITL schema, decision capture, completed wiring, and downstream .output access': python3 -c "import json,glob; flows=glob.glob('**/*.flow',recursive=True); assert flows,'No flow file'; f=json.load(open(flows[0])); nodes=f['nodes']; edges=f.get('edges',[]); hitl=[n for n in nodes if str(n.get('type','')).startswith('uipath.human-in-the-loop')]; assert len(hitl)==1,'need exactly 1 HITL node'; h=hitl[0]; hid=h.get('id'); schema=h.get('inputs',{}).get('schema',{}); fields=schema.get('fields',[]); outcomes=schema.get('outcomes',[]) or []; assert fields,'HITL needs fields'; ft=lambda fl,k:(fl.get(k) or '').lower() if isinstance(fl.get(k),str) else ''; assert any((ft(x,'id')=='amount' or 'amount' in ft(x,'label')) and x.get('type')=='number' for x in fields),'amount must be a number field'; dec=[x for x in fields if x.get('direction') in ('output','inOut') and any(k in ft(x,'id') for k in ('approval','approved','decision'))]; onames={str(o.get('name') or o.get('id') or '').lower() for o in outcomes}; okdec=any(x.get('type')=='boolean' for x in dec) or (any('approve' in o for o in onames) and any('reject' in o for o in onames)); assert okdec,'need boolean decision field or approve/reject outcomes'; rk=('reason','comment','explanation','justification','note'); assert any(x.get('direction') in ('output','inOut') and x.get('type') in ('text','string','textarea') and any(k in ft(x,'id') or k in ft(x,'label') for k in rk) for x in fields),'need a text reason output field'; assert any(e.get('sourceNodeId')==hid and e.get('sourcePort') in ('completed','outcome-completed') for e in edges),'HITL completed handle must be wired'; scripts=[str(n.get('inputs',{}).get('script','')) for n in nodes if n.get('type')=='core.action.script']; assert any((chr(36)+'vars.'+str(hid)+'.output') in s for s in scripts),'downstream script must read HITL output via vars.<hitl>.output'; print('OK')"
+2026-07-24 18:36:57 [DEBUG] coder_eval.sandbox: Command 'python3 -c "import json,glob; flows=glob.glob('**/*.flow',recursive=True); assert flows,'No flow file'; f=json.load(open(flows[0])); nodes=f['nodes']; edges=f.get('edges',[]); hitl=[n for n in nodes if str(n.get('type','')).startswith('uipath.human-in-the-loop')]; assert len(hitl)==1,'need exactly 1 HITL node'; h=hitl[0]; hid=h.get('id'); schema=h.get('inputs',{}).get('schema',{}); fields=schema.get('fields',[]); outcomes=schema.get('outcomes',[]) or []; assert fields,'HITL needs fields'; ft=lambda fl,k:(fl.get(k) or '').lower() if isinstance(fl.get(k),str) else ''; assert any((ft(x,'id')=='amount' or 'amount' in ft(x,'label')) and x.get('type')=='number' for x in fields),'amount must be a number field'; dec=[x for x in fields if x.get('direction') in ('output','inOut') and any(k in ft(x,'id') for k in ('approval','approved','decision'))]; onames={str(o.get('name') or o.get('id') or '').lower() for o in outcomes}; okdec=any(x.get('type')=='boolean' for x in dec) or (any('approve' in o for o in onames) and any('reject' in o for o in onames)); assert okdec,'need boolean decision field or approve/reject outcomes'; rk=('reason','comment','explanation','justification','note'); assert any(x.get('direction') in ('output','inOut') and x.get('type') in ('text','string','textarea') and any(k in ft(x,'id') or k in ft(x,'label') for k in rk) for x in fields),'need a text reason output field'; assert any(e.get('sourceNodeId')==hid and e.get('sourcePort') in ('completed','outcome-completed') for e in edges),'HITL completed handle must be wired'; scripts=[str(n.get('inputs',{}).get('script','')) for n in nodes if n.get('type')=='core.action.script']; assert any((chr(36)+'vars.'+str(hid)+'.output') in s for s in scripts),'downstream script must read HITL output via vars.<hitl>.output'; print('OK')"' exited with code 0
+2026-07-24 18:36:57 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+OK
+---
+2026-07-24 18:36:57 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-07-24 18:36:57 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'Project/flow is named ExpenseApproval (elicited from the user)': python3 -c "import glob,sys; sys.exit(0 if glob.glob('**/ExpenseApproval.flow',recursive=True) else 'expected a flow named ExpenseApproval.flow')"
+2026-07-24 18:36:57 [DEBUG] coder_eval.sandbox: Command 'python3 -c "import glob,sys; sys.exit(0 if glob.glob('**/ExpenseApproval.flow',recursive=True) else 'expected a flow named ExpenseApproval.flow')"' exited with code 0
+2026-07-24 18:36:57 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-07-24 18:36:57 [INFO] coder_eval.orchestrator: Simulation dialog ended: stop_reason=stop_token turns=5 criteria_passed=True
+2026-07-24 18:36:57 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-24 18:36:57 [INFO] coder_eval.orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+2026-07-24 18:36:57 [INFO] coder_eval.orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-expense-approval-simulated
+2026-07-24 18:36:57 [INFO] coder_eval.orchestrator: Task finished: status=SUCCESS duration=633.6s score=1.000 iterations=5

@@ -1,0 +1,13 @@
+{
+  "connectionId": "<ACT365_CONNECTION_UUID>",
+  "folderKey": "<ORCHESTRATOR_FOLDER_KEY>",
+  "method": "POST",
+  "endpoint": "/CuratedContacts",
+  "bodyParameters": {
+    "firstName": "Jane",
+    "lastName": "Doe",
+    "emailAddress": "jane.doe@example.com",
+    "company": "Acme Corp",
+    "groups": ["Sales", "Marketing", "Partners"]
+  }
+}

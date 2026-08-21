@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "GroupDirectMessage",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "bff71aec-5612-4b93-9c86-9eb78b0a301d",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "GroupDirectMessage"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Flow",
+      "name": "GroupDirectMessage",
+      "package": {
+        "key": "b25c12c0-de4c-4262-958f-1a4ed8f18c64"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "497d0bdf-8ac9-4e3f-90b8-1e3b72c83347",
+    "files": []
+  }
+}

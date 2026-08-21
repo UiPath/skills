@@ -1,0 +1,27 @@
+{
+  "Result": "Success",
+  "Code": "RegistryGetSuccess",
+  "Data": {
+    "ExtensionType": {
+      "ExtensionType": "Intsvc.TimerTrigger",
+      "Label": "Timer trigger",
+      "BpmnElement": "bpmn:StartEvent",
+      "Placements": {},
+      "ExtensionTag": "uipath:activity",
+      "ContextFields": [],
+      "InputPattern": "none",
+      "OutputSource": ".",
+      "OutputType": "custom",
+      "OutputName": "result",
+      "UseRelativeSource": false,
+      "BindingPattern": "none",
+      "RequiresDiscovery": false,
+      "IsDynamic": false,
+      "XmlTemplate": "<bpmn:StartEvent id=\"{id}\" name=\"{name}\">\n  <bpmn:extensionElements>\n    <uipath:activity version=\"v1\">\n      <uipath:type value=\"Intsvc.TimerTrigger\" version=\"v1\" />\n      <uipath:output name=\"result\" type=\"custom\" source=\".\" var=\"{varId}\" />\n    </uipath:activity>\n  </bpmn:extensionElements>\n  <bpmn:timerEventDefinition><bpmn:timeDuration xsi:type=\"bpmn:tFormalExpression\">PT1H</bpmn:timeDuration></bpmn:timerEventDefinition>\n  <bpmn:incoming>{incomingEdge}</bpmn:incoming>\n  <bpmn:outgoing>{outgoingEdge}</bpmn:outgoing>\n</bpmn:StartEvent>",
+      "InputNotes": "No jsonBody, no input fields, no isSplitInputs in design schema",
+      "BpmnElementNotes": "Used via timer event definition on start events; not directly in FPS_TO_NODE_MAPPING",
+      "ExtensionTagNotes": "NOT in isEvents array, uses uipath:activity. However, isIntsvcTriggerDesignSchemaType returns true.",
+      "InputFields": []
+    }
+  }
+}

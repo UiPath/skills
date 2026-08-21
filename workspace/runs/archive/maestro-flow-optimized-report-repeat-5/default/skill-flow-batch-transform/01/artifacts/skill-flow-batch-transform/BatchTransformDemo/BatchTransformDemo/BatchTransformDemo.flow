@@ -1,0 +1,472 @@
+{
+  "id": "0ab932db-aa0d-4145-aaeb-20281f2a6748",
+  "version": "1.8",
+  "name": "BatchTransformDemo",
+  "nodes": [
+    {
+      "id": "start",
+      "type": "core.trigger.manual",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Manual trigger"
+      },
+      "inputs": {
+        "entryPointId": "34735bf4-f1d7-443d-b240-b3b2a8c7cf7e",
+        "isDefaultEntryPoint": true
+      }
+    },
+    {
+      "id": "batchTransform1",
+      "type": "uipath.pattern.batch-transform",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Batch Transform"
+      },
+      "inputs": {
+        "attachment": "=js:$vars.start.output.csvFile",
+        "prompt": "Classify each row by category and write a one-line summary.",
+        "enableWebSearchGrounding": false,
+        "outputColumns": [
+          {
+            "name": "Category",
+            "description": "One of: Utility, Software, Travel, Other"
+          },
+          {
+            "name": "Summary",
+            "description": "Plain-English one-line summary of the row"
+          }
+        ]
+      },
+      "outputs": {
+        "output": {
+          "type": "file",
+          "source": "=response",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails",
+          "source": "=Error",
+          "var": "error"
+        }
+      }
+    },
+    {
+      "id": "end",
+      "type": "core.control.end",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "End"
+      },
+      "outputs": {
+        "result": {
+          "source": "=js:$vars.batchTransform1.output"
+        }
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge1",
+      "sourceNodeId": "start",
+      "sourcePort": "output",
+      "targetNodeId": "batchTransform1",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge2",
+      "sourceNodeId": "batchTransform1",
+      "sourcePort": "output",
+      "targetNodeId": "end",
+      "targetPort": "input"
+    }
+  ],
+  "definitions": [
+    {
+      "nodeType": "core.trigger.manual",
+      "version": "1.0",
+      "category": "trigger",
+      "description": "Start workflow manually",
+      "tags": [
+        "trigger",
+        "start",
+        "manual"
+      ],
+      "sortOrder": 40,
+      "display": {
+        "label": "Manual trigger",
+        "icon": "play",
+        "shape": "circle"
+      },
+      "handleConfiguration": [
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "output",
+              "type": "source",
+              "handleType": "output",
+              "showButton": true,
+              "constraints": {
+                "forbiddenTargetCategories": [
+                  "trigger"
+                ]
+              }
+            }
+          ],
+          "visible": true
+        }
+      ],
+      "model": {
+        "type": "bpmn:StartEvent",
+        "entryPointId": true
+      },
+      "outputDefinition": {
+        "output": {
+          "type": "object",
+          "description": "Data passed when manually triggering the workflow.",
+          "source": "null",
+          "var": "output"
+        }
+      },
+      "toolbarExtensions": {
+        "design": {
+          "actions": [
+            {
+              "id": "change-trigger-type",
+              "icon": "square-mouse-pointer",
+              "label": "Change trigger type"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "nodeType": "uipath.pattern.batch-transform",
+      "version": "1.0",
+      "category": "data-operations",
+      "tags": [
+        "batch",
+        "transform",
+        "csv"
+      ],
+      "sortOrder": 35,
+      "supportsErrorHandling": true,
+      "description": "Add AI-generated columns to a CSV",
+      "display": {
+        "label": "Batch Transform",
+        "icon": "grid-2x2-plus"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "output",
+              "type": "source",
+              "handleType": "output"
+            },
+            {
+              "id": "error",
+              "label": "Error",
+              "type": "source",
+              "handleType": "output",
+              "visible": "{inputs.errorHandlingEnabled}",
+              "constraints": {
+                "maxConnections": 1
+              }
+            }
+          ]
+        }
+      ],
+      "model": {
+        "type": "bpmn:ServiceTask",
+        "serviceType": "ECS.BatchTransform"
+      },
+      "inputDefinition": {
+        "type": "object",
+        "properties": {
+          "attachment": {
+            "type": "string"
+          },
+          "prompt": {
+            "type": "string"
+          },
+          "enableWebSearchGrounding": {
+            "type": "boolean"
+          },
+          "outputColumns": {
+            "type": "array"
+          }
+        }
+      },
+      "inputDefaults": {
+        "attachment": "",
+        "prompt": "",
+        "enableWebSearchGrounding": false,
+        "outputColumns": [
+          {
+            "name": "OutputColumn1",
+            "description": "Describe what this new column should contain"
+          }
+        ]
+      },
+      "outputDefinition": {
+        "output": {
+          "type": "file",
+          "source": "=response",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails",
+          "source": "=Error",
+          "var": "error",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "required": [
+              "code",
+              "message",
+              "detail",
+              "category",
+              "status"
+            ],
+            "properties": {
+              "code": {
+                "type": "string",
+                "description": "Error code as a string"
+              },
+              "message": {
+                "type": "string",
+                "description": "High-level error message"
+              },
+              "detail": {
+                "type": "string",
+                "description": "Detailed error description"
+              },
+              "category": {
+                "type": "string",
+                "description": "Error category"
+              },
+              "status": {
+                "type": "integer",
+                "description": "HTTP status code"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "form": {
+        "id": "batch-transform-properties",
+        "title": "Batch Transform Configuration",
+        "sections": [
+          {
+            "id": "source",
+            "title": "Data source",
+            "collapsible": true,
+            "defaultExpanded": true,
+            "fields": [
+              {
+                "name": "inputs.attachment",
+                "type": "file",
+                "label": "Attachment",
+                "description": "CSV file to transform",
+                "validation": {
+                  "required": true,
+                  "messages": {
+                    "required": "Attachment is required"
+                  }
+                }
+              },
+              {
+                "name": "inputs.prompt",
+                "type": "custom",
+                "component": "prompt-editor",
+                "label": "Prompt",
+                "description": "Specify the task or query for batch processing",
+                "componentProps": {
+                  "multiline": true,
+                  "minRows": 4,
+                  "maxRows": 20,
+                  "placeholder": "Specify the task or query for batch processing"
+                },
+                "validation": {
+                  "required": true,
+                  "messages": {
+                    "required": "Prompt is required"
+                  }
+                }
+              },
+              {
+                "name": "inputs.enableWebSearchGrounding",
+                "type": "checkbox",
+                "label": "Enable web search grounding",
+                "description": "When enabled, batch transform can use web search to ground or enrich results during processing."
+              }
+            ]
+          },
+          {
+            "id": "outputColumns",
+            "title": "Output columns",
+            "collapsible": true,
+            "defaultExpanded": true,
+            "fields": [
+              {
+                "name": "inputs.outputColumns",
+                "type": "custom",
+                "component": "output-columns-editor",
+                "label": "",
+                "description": "Define the columns to be added to the output data",
+                "componentProps": {
+                  "maxColumns": 10,
+                  "namePlaceholder": "Column name",
+                  "descriptionPlaceholder": "Describe what this new column should contain",
+                  "addButtonPlacement": "footer"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "nodeType": "core.control.end",
+      "version": "1.0",
+      "category": "control-flow",
+      "description": "Mark the end of a workflow path",
+      "tags": [
+        "control-flow",
+        "end",
+        "finish",
+        "complete"
+      ],
+      "sortOrder": 20,
+      "display": {
+        "label": "End",
+        "icon": "circle-check",
+        "shape": "circle"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        }
+      ],
+      "model": {
+        "type": "bpmn:EndEvent"
+      },
+      "runtimeConstraints": {
+        "exclude": [
+          "api-function"
+        ]
+      }
+    }
+  ],
+  "variables": {
+    "globals": [
+      {
+        "id": "csvFile",
+        "direction": "in",
+        "type": "file",
+        "triggerNodeId": "start"
+      },
+      {
+        "id": "result",
+        "direction": "out",
+        "type": "file"
+      }
+    ],
+    "nodes": [
+      {
+        "id": "start.output",
+        "type": "object",
+        "description": "Data passed when manually triggering the workflow.",
+        "binding": {
+          "nodeId": "start",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "batchTransform1.output",
+        "type": "file",
+        "binding": {
+          "nodeId": "batchTransform1",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "batchTransform1.error",
+        "type": "object",
+        "description": "Error information if the node fails",
+        "binding": {
+          "nodeId": "batchTransform1",
+          "outputId": "error"
+        }
+      },
+      {
+        "id": "end.result",
+        "type": "string",
+        "binding": {
+          "nodeId": "end",
+          "outputId": "result"
+        }
+      }
+    ]
+  },
+  "runtime": "maestro",
+  "layout": {
+    "nodes": {
+      "start": {
+        "position": {
+          "x": -192,
+          "y": 0
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "batchTransform1": {
+        "position": {
+          "x": 0,
+          "y": 0
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "end": {
+        "position": {
+          "x": 192,
+          "y": 0
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      }
+    }
+  }
+}

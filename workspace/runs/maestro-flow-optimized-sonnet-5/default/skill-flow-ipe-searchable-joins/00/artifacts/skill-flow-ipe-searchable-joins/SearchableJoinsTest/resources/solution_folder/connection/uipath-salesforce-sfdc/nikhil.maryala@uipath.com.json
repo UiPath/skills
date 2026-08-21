@@ -1,0 +1,29 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "nikhil.maryala@uipath.com",
+    "kind": "connection",
+    "type": "uipath-salesforce-sfdc",
+    "apiVersion": "integrationservice.uipath.com/v1",
+    "isOverridable": true,
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "files": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "connectorName": "Salesforce",
+      "name": "nikhil.maryala@uipath.com",
+      "description": null,
+      "authenticationType": "AuthenticateAfterDeployment",
+      "connectorVersion": "1.16.0",
+      "connectorKey": "uipath-salesforce-sfdc",
+      "pollingInterval": 5
+    },
+    "locks": [],
+    "key": "230c7602-7163-428c-8580-71825e8e4ca2"
+  }
+}

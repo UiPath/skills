@@ -1,0 +1,660 @@
+2026-07-24 19:30:11 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-24 19:30:11 [INFO] coder_eval.orchestrator: API routing: aws_bedrock
+2026-07-24 19:30:12 [DEBUG] coder_eval.criteria: Discovered 14 criterion checkers
+2026-07-24 19:30:12 [DEBUG] coder_eval.criteria: Validated 14 criterion checkers
+2026-07-24 19:30:12 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-24 19:30:12 [INFO] coder_eval.orchestrator: Running pre-run command: python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/e2e/jira_search_triage/seed_jira.py
+2026-07-24 19:30:19 [INFO] coder_eval.orchestrator: [pre_run stdout] OK: seeded 2 issues ['CE-182', 'CE-183'] (tag=47f08d99) for JQL search
+2026-07-24 19:30:19 [DEBUG] coder_eval.orchestrator: Sending prompt: Create a new Flow project called "JiraSearchTriage" with a manual trigger.
+
+Read `seed.json` in the ...
+2026-07-24 19:30:19 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Starting agent query stream...
+2026-07-24 19:35:22 [DEBUG] coder_eval.agents.claude_code_agent: [coder] session_id changed: None -> 7d8d90c0-781c-4d6d-a900-6f0ec74175b5
+2026-07-24 19:35:22 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Agent query stream ended
+2026-07-24 19:35:22 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-24 19:35:22 [DEBUG] coder_eval.orchestrator: Agent response received (4278 chars)
+2026-07-24 19:35:22 [DEBUG] coder_eval.orchestrator: Checking success criteria
+2026-07-24 19:35:22 [DEBUG] coder_eval.evaluation.checker: Criterion 'command_executed' score: 1.00
+2026-07-24 19:35:22 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'JiraSearchTriage checks: valid flow with a JQL search feeding a loop of Add-Comment, debug completes, and both seeded issues carry the triage comment': python3 $TASK_DIR/check_jira_search_triage.py
+2026-07-24 19:35:42 [DEBUG] coder_eval.sandbox: Command 'python3 $TASK_DIR/check_jira_search_triage.py' exited with code 1
+2026-07-24 19:35:42 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+OK: flow references uipath-atlassian-jira
+OK: flow references a JQL search op and a loop node
+---
+2026-07-24 19:35:42 [DEBUG] coder_eval.sandbox: STDERR:
+---
+FAIL: flow debug exit 1
+stdout: {
+  "Result": "Failure",
+  "Code": "FlowDebug",
+  "Message": "Debug session Faulted. [400008] Failed to evaluate the input collection variable for the marker element (element loop1)",
+  "Instructions": "Incident(s):\n  - [400008] Failed to evaluate the input collection variable for the marker element (element loop1)\nRun 'uip maestro flow debug-instance incidents 959f4ed3-7d05-4d7e-baec-65698a407e40' for the full backend payload (incidentId, errorDetails, AI summary). traceId=959f4ed37d054d7ebaec65698a407e40.",
+  "Context": {
+    "ErrorCode": "400008",
+    "TraceId": "959f4ed37d054d7ebaec65698a407e40"
+  },
+  "Data": {
+    "jobKey": "959f4ed3-7d05-4d7e-baec-65698a407e40",
+    "instanceId": "959f4ed3-7d05-4d7e-baec-65698a407e40",
+    "runId": "019f95a0-2f98-73aa-936d-312a06aa637f",
+    "folderKey": "410fae2d-89b3-4cd1-a991-7359bda90c0b",
+    "finalStatus": "Faulted",
+    "solutionId": "9864892c-9230-42d6-750d-08dee9b21193",
+    "studioWebUrl": "https://alpha.uipath.com/codereval/studio_/designer/1e1c2a8b-cbd4-437b-9500-e487eca9508e?solutionId=9864892c-9230-42d6-750d-08dee9b21193",
+    "elementExecutions": [
+      {
+        "elementId": "start",
+        "elementType": "StartEvent",
+        "status": "Completed",
+        "startedAt": "2026-07-24T19:35:35.5926266Z",
+        "completedAt": "2026-07-24T19:35:35.8516344Z"
+      },
+      {
+        "elementId": "searchIssuesByJql1",
+        "elementType": "SendTask",
+        "status": "Completed",
+        "startedAt": "2026-07-24T19:35:36.1572263Z",
+        "completedAt": "2026-07-24T19:35:37.2796211Z"
+      },
+      {
+        "elementId": "loop1",
+        "elementType": "SubProcess",
+        "status": "Failed",
+        "startedAt": "2026-07-24T19:35:37.6758355Z"
+      }
+    ],
+    "variables": {
+      "elements": [
+        {
+          "elementId": "start",
+          "elementRunId": "76a1ab94-e8ae-401d-8b05-20435f199495",
+          "isMarker": false,
+          "inputs": {},
+          "inputDefinitions": {},
+          "outputs": {}
+        },
+        {
+          "elementId": "searchIssuesByJql1",
+          "elementRunId": "28435d19-4f95-4a7f-8a12-a6f6224105cf",
+          "isMarker": false,
+          "inputs": {
+            "queryParameters": {
+              "jql": "project = CE AND summary ~ \"47f08d99\""
+            }
+          },
+          "inputDefinitions": {},
+          "outputs": {
+            "response": [
+              {
+                "self": "https://api.atlassian.com/ex/jira/f2c10d6a-7a1c-4934-a500-dcd95b517cdf/rest/api/2/issue/251436",
+                "expand": "renderedFields,names,schema,operations,editmeta,changelog,versionedRepresentations",
+                "id": "251436",
+                "fields": {
+                  "aggregateprogress": {
+                    "progress": 0,
+                    "total": 0
+                  },
+                  "comment": {
+                    "maxResults": 0,
+                    "self": "https://api.atlassian.com/ex/jira/f2c10d6a-7a1c-4934-a500-dcd95b517cdf/rest/api/2/issue/251436/comment",
+                    "startAt": 0,
+                    "total": 0
+                  },
+                  "created": "2026-07-24T19:30:18.506+00:00",
+                  "creator": {
+                    "accountId": "712020:b53bf3dc-8817-419e-99e1-5670aeb7ffe6",
+                    "accountType": "atlassian",
+                    "active": true,
+                    "avatarUrls": {
+                      "16x16": "https://secure.gravatar.com/avatar/3d0aa8b78ffd977d742893bc3016b084?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FI-5.png",
+                      "24x24": "https://secure.gravatar.com/avatar/3d0aa8b78ffd977d742893bc3016b084?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FI-5.png",
+                      "32x32": "https://secure.gravatar.com/avatar/3d0aa8b78ffd977d742893bc3016b084?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FI-5.png",
+                      "48x48": "https://secure.gravatar.com/avatar/3d0aa8b78ffd977d742893bc3016b084?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FI-5.png"
+                    },
+                    "displayName": "is-sandboxes-test@uipath.com",
+                    "emailAddress": "is-sandboxes-test@uipath.com",
+                    "self": "https://api.atlassian.com/ex/jira/f2c10d6a-7a1c-4934-a500-dcd95b517cdf/rest/api/2/user?accountId=712020%3Ab53bf3dc-8817-419e-99e1-5670aeb7ffe6",
+                    "timeZone": "UTC"
+                  },
+                  "issuetype": {
+                    "avatarId": 10318,
+                    "description": "A small, distinct piece of work.",
+                    "entityId": "fe539ac2-a4c7-4e7e-a548-04817d49a0d7",
+                    "hierarchyLevel": 0,
+                    "iconUrl": "https://api.atlassian.com/ex/jira/f2c10d6a-7a1c-4934-a500-dcd95b517cdf/rest/api/2/universal_avatar/view/type/issuetype/avatar/10318?size=medium",
+                    "id": "11457",
+                    "name": "Task",
+                    "self": "https://api.atlassian.com/ex/jira/f2c10d6a-7a1c-4934-a500-dcd95b517cdf/rest/api/2/issuetype/11457",
+                    "subtask": false
+                  },
+                  "priority": {
+                    "iconUrl": "https://uipath-sandbox-380.atlassian.net/images/icons/priorities/medium_new.svg",
+                    "id": "3",
+                    "name": "Medium",
+                    "self": "https://api.atlassian.com/ex/jira/f2c10d6a-7a1c-4934-a500-dcd95b517cdf/rest/api/2/priority/3"
+                  },
+                  "progress": {
+                    "progress": 0,
+                    "total": 0
+                  },
+                  "project": {
+                    "avatarUrls": {
+                      "16x16": "https://api.atlassian.com/ex/jira/f2c10d6a-7a1c-4934-a500-dcd95b517cdf/rest/api/2/universal_avatar/view/type/project/avatar/10402?size=xsmall",
+                      "24x24": "https://api.atlassian.com/ex/jira/f2c10d6a-7a1c-4934-a500-dcd95b517cdf/rest/api/2/universal_avatar/view/type/project/avatar/10402?size=small",
+                      "32x32": "https://api.atlassian.com/ex/jira/f2c10d6a-7a1c-4934-a500-dcd95b517cdf/rest/api/2/universal_avatar/view/type/project/avatar/10402?size=medium",
+                      "48x48": "https://api.atlassian.com/ex/jira/f2c10d6a-7a1c-4934-a500-dcd95b517cdf/rest/api/2/universal_avatar/view/type/project/avatar/10402"
+                    },
+                    "id": "11814",
+                    "key": "CE",
+                    "name": "Coder Eval",
+                    "projectTypeKey": "business",
+                    "self": "https://api.atlassian.com/ex/jira/f2c10d6a-7a1c-4934-a500-dcd95b517cdf/rest/api/2/project/11814",
+                    "simplified": true
+                  },
+                  "rank_Customfield10019": "0|i12df3:",
+                  "reporter": {
+                    "accountId": "712020:b53bf3dc-8817-419e-99e1-5670aeb7ffe6",
+                    "accountType": "atlassian",
+                    "active": true,
+                    "avatarUrls": {
+                      "16x16": "https://secure.gravatar.com/avatar/3d0aa8b78ffd977d742893bc3016b084?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FI-5.png",
+                      "24x24": "https://secure.gravatar.com/avatar/3d0aa8b78ffd977d742893bc3016b084?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FI-5.png",
+                      "32x32": "https://secure.gravatar.com/avatar/3d0aa8b78ffd977d742893bc3016b084?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FI-5.png",
+                      "48x48": "https://secure.gravatar.com/avatar/3d0aa8b78ffd977d742893bc3016b084?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FI-5.png"
+                    },
+                    "displayName": "is-sandboxes-test@uipath.com",
+                    "emailAddress": "is-sandboxes-test@uipath.com",
+                    "self": "https://api.atlassian.com/ex/jira/f2c10d6a-7a1c-4934-a500-dcd95b517cdf/rest/api/2/user?accountId=712020%3Ab53bf3dc-8817-419e-99e1-5670aeb7ffe6",
+                    "timeZone": "UTC"
+                  },
+                  "status": {
+                    "description": "",
+                    "iconUrl": "https://uipath-sandbox-380.atlassian.net/images/icons/statuses/generic.png",
+                    "id": "11450",
+                    "name": "To Do",
+                    "self": "https://api.atlassian.com/ex/jira/f2c10d6a-7a1c-4934-a500-dcd95b517cdf/rest/api/2/status/11450",
+                    "statusCategory": {
+                      "colorName": "blue-gray",
+                      "id": 2,
+                      "key": "new",
+                      "name": "To Do",
+                      "self": "https://api.atlassian.com/ex/jira/f2c10d6a-7a1c-4934-a500-dcd95b517cdf/rest/api/2/statuscategory/2"
+                    }
+                  },
+                  "statusCategory": {
+                    "colorName": "blue-gray",
+                    "id": 2,
+                    "key": "new",
+                    "name": "To Do",
+                    "self": "https://api.atlassian.com/ex/jira/f2c10d6a-7a1c-4934-a500-dcd95b517cdf/rest/api/2/statuscategory/2"
+                  },
+                  "statuscategorychangedate": "2026-07-24T19:30:18.749+00:00",
+                  "summary": "coder-eval jira search-triage 47f08d99 #2",
+                  "updated": "2026-07-24T19:30:18.587+00:00",
+                  "votes": {
+                    "hasVoted": false,
+                    "self": "https://api.atlassian.com/ex/jira/f2c10d6a-7a1c-4934-a500-dcd95b517cdf/rest/api/2/issue/CE-183/votes",
+                    "votes": 0
+                  },
+                  "watches": {
+                    "isWatching": true,
+                    "self": "https://api.atlassian.com/ex/jira/f2c10d6a-7a1c-4934-a500-dcd95b517cdf/rest/api/2/issue/CE-183/watchers",
+                    "watchCount": 1
+                  },
+                  "worklog": {
+                    "maxResults": 20,
+                    "startAt": 0,
+                    "total": 0
+                  },
+                  "workratio": -1
+                },
+                "key": "CE-183"
+              },
+              {
+                "self": "https://api.atlassian.com/ex/jira/f2c10d6a-7a1c-4934-a500-dcd95b517cdf/rest/api/2/issue/251435",
+                "expand": "renderedFields,names,schema,operations,editmeta,changelog,versionedRepresentations",
+                "id": "251435",
+                "fields": {
+                  "aggregateprogress": {
+                    "progress": 0,
+                    "total": 0
+                  },
+                  "comment": {
+                    "maxResults": 0,
+                    "self": "https://api.atlassian.com/ex/jira/f2c10d6a-7a1c-4934-a500-dcd95b517cdf/rest/api/2/issue/251435/comment",
+                    "startAt": 0,
+                    "total": 0
+                  },
+                  "created": "2026-07-24T19:30:16.073+00:00",
+                  "creator": {
+                    "accountId": "712020:b53bf3dc-8817-419e-99e1-5670aeb7ffe6",
+                    "accountType": "atlassian",
+                    "active": true,
+                    "avatarUrls": {
+                      "16x16": "https://secure.gravatar.com/avatar/3d0aa8b78ffd977d742893bc3016b084?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FI-5.png",
+                      "24x24": "https://secure.gravatar.com/avatar/3d0aa8b78ffd977d742893bc3016b084?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FI-5.png",
+                      "32x32": "https://secure.gravatar.com/avatar/3d0aa8b78ffd977d742893bc3016b084?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FI-5.png",
+                      "48x48": "https://secure.gravatar.com/avatar/3d0aa8b78ffd977d742893bc3016b084?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FI-5.png"
+                    },
+                    "displayName": "is-sandboxes-test@uipath.com",
+                    "emailAddress": "is-sandboxes-test@uipath.com",
+                    "self": "https://api.atlassian.com/ex/jira/f2c10d6a-7a1c-4934-a500-dcd95b517cdf/rest/api/2/user?accountId=712020%3Ab53bf3dc-8817-419e-99e1-5670aeb7ffe6",
+                    "timeZone": "UTC"
+                  },
+                  "issuetype": {
+                    "avatarId": 10318,
+                    "description": "A small, distinct piece of work.",
+                    "entityId": "fe539ac2-a4c7-4e7e-a548-04817d49a0d7",
+                    "hierarchyLevel": 0,
+                    "iconUrl": "https://api.atlassian.com/ex/jira/f2c10d6a-7a1c-4934-a500-dcd95b517cdf/rest/api/2/universal_avatar/view/type/issuetype/avatar/10318?size=medium",
+                    "id": "11457",
+                    "name": "Task",
+                    "self": "https://api.atlassian.com/ex/jira/f2c10d6a-7a1c-4934-a500-dcd95b517cdf/rest/api/2/issuetype/11457",
+                    "subtask": false
+                  },
+                  "priority": {
+                    "iconUrl": "https://uipath-sandbox-380.atlassian.net/images/icons/priorities/medium_new.svg",
+                    "id": "3",
+                    "name": "Medium",
+                    "self": "https://api.atlassian.com/ex/jira/f2c10d6a-7a1c-4934-a500-dcd95b517cdf/rest/api/2/priority/3"
+                  },
+                  "progress": {
+                    "progress": 0,
+                    "total": 0
+                  },
+                  "project": {
+                    "avatarUrls": {
+                      "16x16": "https://api.atlassian.com/ex/jira/f2c10d6a-7a1c-4934-a500-dcd95b517cdf/rest/api/2/universal_avatar/view/type/project/avatar/10402?size=xsmall",
+                      "24x24": "https://api.atlassian.com/ex/jira/f2c10d6a-7a1c-4934-a500-dcd95b517cdf/rest/api/2/universal_avatar/view/type/project/avatar/10402?size=small",
+                      "32x32": "https://api.atlassian.com/ex/jira/f2c10d6a-7a1c-4934-a500-dcd95b517cdf/rest/api/2/universal_avatar/view/type/project/avatar/10402?size=medium",
+                      "48x48": "https://api.atlassian.com/ex/jira/f2c10d6a-7a1c-4934-a500-dcd95b517cdf/rest/api/2/universal_avatar/view/type/project/avatar/10402"
+                    },
+                    "id": "11814",
+                    "key": "CE",
+                    "name": "Coder Eval",
+                    "projectTypeKey": "business",
+                    "self": "https://api.atlassian.com/ex/jira/f2c10d6a-7a1c-4934-a500-dcd95b517cdf/rest/api/2/project/11814",
+                    "simplified": true
+                  },
+                  "rank_Customfield10019": "0|i12dev:",
+                  "reporter": {
+                    "accountId": "712020:b53bf3dc-8817-419e-99e1-5670aeb7ffe6",
+                    "accountType": "atlassian",
+                    "active": true,
+                    "avatarUrls": {
+                      "16x16": "https://secure.gravatar.com/avatar/3d0aa8b78ffd977d742893bc3016b084?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FI-5.png",
+                      "24x24": "https://secure.gravatar.com/avatar/3d0aa8b78ffd977d742893bc3016b084?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FI-5.png",
+                      "32x32": "https://secure.gravatar.com/avatar/3d0aa8b78ffd977d742893bc3016b084?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FI-5.png",
+                      "48x48": "https://secure.gravatar.com/avatar/3d0aa8b78ffd977d742893bc3016b084?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FI-5.png"
+                    },
+                    "displayName": "is-sandboxes-test@uipath.com",
+                    "emailAddress": "is-sandboxes-test@uipath.com",
+                    "self": "https://api.atlassian.com/ex/jira/f2c10d6a-7a1c-4934-a500-dcd95b517cdf/rest/api/2/user?accountId=712020%3Ab53bf3dc-8817-419e-99e1-5670aeb7ffe6",
+                    "timeZone": "UTC"
+                  },
+                  "status": {
+                    "description": "",
+                    "iconUrl": "https://uipath-sandbox-380.atlassian.net/images/icons/statuses/generic.png",
+                    "id": "11450",
+                    "name": "To Do",
+                    "self": "https://api.atlassian.com/ex/jira/f2c10d6a-7a1c-4934-a500-dcd95b517cdf/rest/api/2/status/11450",
+                    "statusCategory": {
+                      "colorName": "blue-gray",
+                      "id": 2,
+                      "key": "new",
+                      "name": "To Do",
+                      "self": "https://api.atlassian.com/ex/jira/f2c10d6a-7a1c-4934-a500-dcd95b517cdf/rest/api/2/statuscategory/2"
+                    }
+                  },
+                  "statusCategory": {
+                    "colorName": "blue-gray",
+                    "id": 2,
+                    "key": "new",
+                    "name": "To Do",
+                    "self": "https://api.atlassian.com/ex/jira/f2c10d6a-7a1c-4934-a500-dcd95b517cdf/rest/api/2/statuscategory/2"
+                  },
+                  "statuscategorychangedate": "2026-07-24T19:30:16.457+00:00",
+                  "summary": "coder-eval jira search-triage 47f08d99 #1",
+                  "updated": "2026-07-24T19:30:16.195+00:00",
+                  "votes": {
+                    "hasVoted": false,
+                    "self": "https://api.atlassian.com/ex/jira/f2c10d6a-7a1c-4934-a500-dcd95b517cdf/rest/api/2/issue/CE-182/votes",
+                    "votes": 0
+                  },
+                  "watches": {
+                    "isWatching": true,
+                    "self": "https://api.atlassian.com/ex/jira/f2c10d6a-7a1c-4934-a500-dcd95b517cdf/rest/api/2/issue/CE-182/watchers",
+                    "watchCount": 1
+                  },
+                  "worklog": {
+                    "maxResults": 20,
+                    "startAt": 0,
+                    "total": 0
+                  },
+                  "workratio": -1
+                },
+                "key": "CE-182"
+              }
+            ]
+          }
+        }
+      ],
+      "globals": {
+        "searchIssuesByJql1.output": [
+          {
+            "self": "https://api.atlassian.com/ex/jira/f2c10d6a-7a1c-4934-a500-dcd95b517cdf/rest/api/2/issue/251436",
+            "expand": "renderedFields,names,schema,operations,editmeta,changelog,versionedRepresentations",
+            "id": "251436",
+            "fields": {
+              "project": {
+                "avatarUrls": {
+                  "16x16": "https://api.atlassian.com/ex/jira/f2c10d6a-7a1c-4934-a500-dcd95b517cdf/rest/api/2/universal_avatar/view/type/project/avatar/10402?size=xsmall",
+                  "24x24": "https://api.atlassian.com/ex/jira/f2c10d6a-7a1c-4934-a500-dcd95b517cdf/rest/api/2/universal_avatar/view/type/project/avatar/10402?size=small",
+                  "32x32": "https://api.atlassian.com/ex/jira/f2c10d6a-7a1c-4934-a500-dcd95b517cdf/rest/api/2/universal_avatar/view/type/project/avatar/10402?size=medium",
+                  "48x48": "https://api.atlassian.com/ex/jira/f2c10d6a-7a1c-4934-a500-dcd95b517cdf/rest/api/2/universal_avatar/view/type/project/avatar/10402"
+                },
+                "id": "11814",
+                "key": "CE",
+                "name": "Coder Eval",
+                "projectTypeKey": "business",
+                "self": "https://api.atlassian.com/ex/jira/f2c10d6a-7a1c-4934-a500-dcd95b517cdf/rest/api/2/project/11814",
+                "simplified": true
+              },
+              "rank_Customfield10019": "0|i12df3:",
+              "creator": {
+                "accountId": "712020:b53bf3dc-8817-419e-99e1-5670aeb7ffe6",
+                "accountType": "atlassian",
+                "active": true,
+                "avatarUrls": {
+                  "16x16": "https://secure.gravatar.com/avatar/3d0aa8b78ffd977d742893bc3016b084?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FI-5.png",
+                  "24x24": "https://secure.gravatar.com/avatar/3d0aa8b78ffd977d742893bc3016b084?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FI-5.png",
+                  "32x32": "https://secure.gravatar.com/avatar/3d0aa8b78ffd977d742893bc3016b084?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FI-5.png",
+                  "48x48": "https://secure.gravatar.com/avatar/3d0aa8b78ffd977d742893bc3016b084?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FI-5.png"
+                },
+                "displayName": "is-sandboxes-test@uipath.com",
+                "emailAddress": "is-sandboxes-test@uipath.com",
+                "self": "https://api.atlassian.com/ex/jira/f2c10d6a-7a1c-4934-a500-dcd95b517cdf/rest/api/2/user?accountId=712020%3Ab53bf3dc-8817-419e-99e1-5670aeb7ffe6",
+                "timeZone": "UTC"
+              },
+              "status": {
+                "description": "",
+                "iconUrl": "https://uipath-sandbox-380.atlassian.net/images/icons/statuses/generic.png",
+                "id": "11450",
+                "name": "To Do",
+                "self": "https://api.atlassian.com/ex/jira/f2c10d6a-7a1c-4934-a500-dcd95b517cdf/rest/api/2/status/11450",
+                "statusCategory": {
+                  "colorName": "blue-gray",
+                  "id": 2,
+                  "key": "new",
+                  "name": "To Do",
+                  "self": "https://api.atlassian.com/ex/jira/f2c10d6a-7a1c-4934-a500-dcd95b517cdf/rest/api/2/statuscategory/2"
+                }
+              },
+              "workratio": -1,
+              "created": "2026-07-24T19:30:18.506+00:00",
+              "reporter": {
+                "accountId": "712020:b53bf3dc-8817-419e-99e1-5670aeb7ffe6",
+                "accountType": "atlassian",
+                "active": true,
+                "avatarUrls": {
+                  "16x16": "https://secure.gravatar.com/avatar/3d0aa8b78ffd977d742893bc3016b084?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FI-5.png",
+                  "24x24": "https://secure.gravatar.com/avatar/3d0aa8b78ffd977d742893bc3016b084?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FI-5.png",
+                  "32x32": "https://secure.gravatar.com/avatar/3d0aa8b78ffd977d742893bc3016b084?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FI-5.png",
+                  "48x48": "https://secure.gravatar.com/avatar/3d0aa8b78ffd977d742893bc3016b084?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FI-5.png"
+                },
+                "displayName": "is-sandboxes-test@uipath.com",
+                "emailAddress": "is-sandboxes-test@uipath.com",
+                "self": "https://api.atlassian.com/ex/jira/f2c10d6a-7a1c-4934-a500-dcd95b517cdf/rest/api/2/user?accountId=712020%3Ab53bf3dc-8817-419e-99e1-5670aeb7ffe6",
+                "timeZone": "UTC"
+              },
+              "watches": {
+                "isWatching": true,
+                "self": "https://api.atlassian.com/ex/jira/f2c10d6a-7a1c-4934-a500-dcd95b517cdf/rest/api/2/issue/CE-183/watchers",
+                "watchCount": 1
+              },
+              "updated": "2026-07-24T19:30:18.587+00:00",
+              "aggregateprogress": {
+                "progress": 0,
+                "total": 0
+              },
+              "progress": {
+                "progress": 0,
+                "total": 0
+              },
+              "statusCategory": {
+                "colorName": "blue-gray",
+                "id": 2,
+                "key": "new",
+                "name": "To Do",
+                "self": "https://api.atlassian.com/ex/jira/f2c10d6a-7a1c-4934-a500-dcd95b517cdf/rest/api/2/statuscategory/2"
+              },
+              "statuscategorychangedate": "2026-07-24T19:30:18.749+00:00",
+              "issuetype": {
+                "avatarId": 10318,
+                "description": "A small, distinct piece of work.",
+                "entityId": "fe539ac2-a4c7-4e7e-a548-04817d49a0d7",
+                "hierarchyLevel": 0,
+                "iconUrl": "https://api.atlassian.com/ex/jira/f2c10d6a-7a1c-4934-a500-dcd95b517cdf/rest/api/2/universal_avatar/view/type/issuetype/avatar/10318?size=medium",
+                "id": "11457",
+                "name": "Task",
+                "self": "https://api.atlassian.com/ex/jira/f2c10d6a-7a1c-4934-a500-dcd95b517cdf/rest/api/2/issuetype/11457",
+                "subtask": false
+              },
+              "summary": "coder-eval jira search-triage 47f08d99 #2",
+              "worklog": {
+                "maxResults": 20,
+                "startAt": 0,
+                "total": 0
+              },
+              "votes": {
+                "hasVoted": false,
+                "self": "https://api.atlassian.com/ex/jira/f2c10d6a-7a1c-4934-a500-dcd95b517cdf/rest/api/2/issue/CE-183/votes",
+                "votes": 0
+              },
+              "priority": {
+                "iconUrl": "https://uipath-sandbox-380.atlassian.net/images/icons/priorities/medium_new.svg",
+                "id": "3",
+                "name": "Medium",
+                "self": "https://api.atlassian.com/ex/jira/f2c10d6a-7a1c-4934-a500-dcd95b517cdf/rest/api/2/priority/3"
+              },
+              "comment": {
+                "maxResults": 0,
+                "self": "https://api.atlassian.com/ex/jira/f2c10d6a-7a1c-4934-a500-dcd95b517cdf/rest/api/2/issue/251436/comment",
+                "startAt": 0,
+                "total": 0
+              }
+            },
+            "key": "CE-183"
+          },
+          {
+            "self": "https://api.atlassian.com/ex/jira/f2c10d6a-7a1c-4934-a500-dcd95b517cdf/rest/api/2/issue/251435",
+            "expand": "renderedFields,names,schema,operations,editmeta,changelog,versionedRepresentations",
+            "id": "251435",
+            "fields": {
+              "project": {
+                "avatarUrls": {
+                  "16x16": "https://api.atlassian.com/ex/jira/f2c10d6a-7a1c-4934-a500-dcd95b517cdf/rest/api/2/universal_avatar/view/type/project/avatar/10402?size=xsmall",
+                  "24x24": "https://api.atlassian.com/ex/jira/f2c10d6a-7a1c-4934-a500-dcd95b517cdf/rest/api/2/universal_avatar/view/type/project/avatar/10402?size=small",
+                  "32x32": "https://api.atlassian.com/ex/jira/f2c10d6a-7a1c-4934-a500-dcd95b517cdf/rest/api/2/universal_avatar/view/type/project/avatar/10402?size=medium",
+                  "48x48": "https://api.atlassian.com/ex/jira/f2c10d6a-7a1c-4934-a500-dcd95b517cdf/rest/api/2/universal_avatar/view/type/project/avatar/10402"
+                },
+                "id": "11814",
+                "key": "CE",
+                "name": "Coder Eval",
+                "projectTypeKey": "business",
+                "self": "https://api.atlassian.com/ex/jira/f2c10d6a-7a1c-4934-a500-dcd95b517cdf/rest/api/2/project/11814",
+                "simplified": true
+              },
+              "rank_Customfield10019": "0|i12dev:",
+              "creator": {
+                "accountId": "712020:b53bf3dc-8817-419e-99e1-5670aeb7ffe6",
+                "accountType": "atlassian",
+                "active": true,
+                "avatarUrls": {
+                  "16x16": "https://secure.gravatar.com/avatar/3d0aa8b78ffd977d742893bc3016b084?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FI-5.png",
+                  "24x24": "https://secure.gravatar.com/avatar/3d0aa8b78ffd977d742893bc3016b084?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FI-5.png",
+                  "32x32": "https://secure.gravatar.com/avatar/3d0aa8b78ffd977d742893bc3016b084?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FI-5.png",
+                  "48x48": "https://secure.gravatar.com/avatar/3d0aa8b78ffd977d742893bc3016b084?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FI-5.png"
+                },
+                "displayName": "is-sandboxes-test@uipath.com",
+                "emailAddress": "is-sandboxes-test@uipath.com",
+                "self": "https://api.atlassian.com/ex/jira/f2c10d6a-7a1c-4934-a500-dcd95b517cdf/rest/api/2/user?accountId=712020%3Ab53bf3dc-8817-419e-99e1-5670aeb7ffe6",
+                "timeZone": "UTC"
+              },
+              "status": {
+                "description": "",
+                "iconUrl": "https://uipath-sandbox-380.atlassian.net/images/icons/statuses/generic.png",
+                "id": "11450",
+                "name": "To Do",
+                "self": "https://api.atlassian.com/ex/jira/f2c10d6a-7a1c-4934-a500-dcd95b517cdf/rest/api/2/status/11450",
+                "statusCategory": {
+                  "colorName": "blue-gray",
+                  "id": 2,
+                  "key": "new",
+                  "name": "To Do",
+                  "self": "https://api.atlassian.com/ex/jira/f2c10d6a-7a1c-4934-a500-dcd95b517cdf/rest/api/2/statuscategory/2"
+                }
+              },
+              "workratio": -1,
+              "created": "2026-07-24T19:30:16.073+00:00",
+              "reporter": {
+                "accountId": "712020:b53bf3dc-8817-419e-99e1-5670aeb7ffe6",
+                "accountType": "atlassian",
+                "active": true,
+                "avatarUrls": {
+                  "16x16": "https://secure.gravatar.com/avatar/3d0aa8b78ffd977d742893bc3016b084?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FI-5.png",
+                  "24x24": "https://secure.gravatar.com/avatar/3d0aa8b78ffd977d742893bc3016b084?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FI-5.png",
+                  "32x32": "https://secure.gravatar.com/avatar/3d0aa8b78ffd977d742893bc3016b084?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FI-5.png",
+                  "48x48": "https://secure.gravatar.com/avatar/3d0aa8b78ffd977d742893bc3016b084?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FI-5.png"
+                },
+                "displayName": "is-sandboxes-test@uipath.com",
+                "emailAddress": "is-sandboxes-test@uipath.com",
+                "self": "https://api.atlassian.com/ex/jira/f2c10d6a-7a1c-4934-a500-dcd95b517cdf/rest/api/2/user?accountId=712020%3Ab53bf3dc-8817-419e-99e1-5670aeb7ffe6",
+                "timeZone": "UTC"
+              },
+              "watches": {
+                "isWatching": true,
+                "self": "https://api.atlassian.com/ex/jira/f2c10d6a-7a1c-4934-a500-dcd95b517cdf/rest/api/2/issue/CE-182/watchers",
+                "watchCount": 1
+              },
+              "updated": "2026-07-24T19:30:16.195+00:00",
+              "aggregateprogress": {
+                "progress": 0,
+                "total": 0
+              },
+              "progress": {
+                "progress": 0,
+                "total": 0
+              },
+              "statusCategory": {
+                "colorName": "blue-gray",
+                "id": 2,
+                "key": "new",
+                "name": "To Do",
+                "self": "https://api.atlassian.com/ex/jira/f2c10d6a-7a1c-4934-a500-dcd95b517cdf/rest/api/2/statuscategory/2"
+              },
+              "statuscategorychangedate": "2026-07-24T19:30:16.457+00:00",
+              "issuetype": {
+                "avatarId": 10318,
+                "description": "A small, distinct piece of work.",
+                "entityId": "fe539ac2-a4c7-4e7e-a548-04817d49a0d7",
+                "hierarchyLevel": 0,
+                "iconUrl": "https://api.atlassian.com/ex/jira/f2c10d6a-7a1c-4934-a500-dcd95b517cdf/rest/api/2/universal_avatar/view/type/issuetype/avatar/10318?size=medium",
+                "id": "11457",
+                "name": "Task",
+                "self": "https://api.atlassian.com/ex/jira/f2c10d6a-7a1c-4934-a500-dcd95b517cdf/rest/api/2/issuetype/11457",
+                "subtask": false
+              },
+              "summary": "coder-eval jira search-triage 47f08d99 #1",
+              "worklog": {
+                "maxResults": 20,
+                "startAt": 0,
+                "total": 0
+              },
+              "votes": {
+                "hasVoted": false,
+                "self": "https://api.atlassian.com/ex/jira/f2c10d6a-7a1c-4934-a500-dcd95b517cdf/rest/api/2/issue/CE-182/votes",
+                "votes": 0
+              },
+              "priority": {
+                "iconUrl": "https://uipath-sandbox-380.atlassian.net/images/icons/priorities/medium_new.svg",
+                "id": "3",
+                "name": "Medium",
+                "self": "https://api.atlassian.com/ex/jira/f2c10d6a-7a1c-4934-a500-dcd95b517cdf/rest/api/2/priority/3"
+              },
+              "comment": {
+                "maxResults": 0,
+                "self": "https://api.atlassian.com/ex/jira/f2c10d6a-7a1c-4934-a500-dcd95b517cdf/rest/api/2/issue/251435/comment",
+                "startAt": 0,
+                "total": 0
+              }
+            },
+            "key": "CE-182"
+          }
+        ],
+        "loop1.output": null
+      },
+      "instanceId": "959f4ed3-7d05-4d7e-baec-65698a407e40",
+      "workflowId": "959f4ed3-7d05-4d7e-baec-65698a407e40/BpmnGenericWorkflow",
+      "parentElementId": null,
+      "globalDefinitions": {
+        "searchIssuesByJql1.output": {
+          "name": "output",
+          "type": "jsonSchema"
+        },
+        "loop1.output": {
+          "name": "output",
+          "type": "array"
+        }
+      }
+    },
+    "incidents": [
+      {
+        "id": "0eb3ef90-cd5d-442c-82a2-b14b00b19a23",
+        "tenantId": "69d43765-6ede-4575-88b7-9db601a2c056",
+        "organizationId": "311c6049-4966-4ef2-a6f3-8ceccaf38d54",
+        "instanceId": "959f4ed3-7d05-4d7e-baec-65698a407e40",
+        "runId": "019f95a0-3d57-76f3-893a-5331ee8f7a06",
+        "elementId": "loop1",
+        "elementRunId": "94df6033-6275-426c-886f-e08f48577841",
+        "folderKey": "410fae2d-89b3-4cd1-a991-7359bda90c0b",
+        "processKey": null,
+        "packageVersion": "",
+        "incidentId": "94df6033-6275-426c-886f-e08f48577841",
+        "incidentStatus": "Open",
+        "incidentType": "User",
+        "errorCode": "400008",
+        "errorMessage": "Failed to evaluate the input collection variable for the marker element",
+        "errorTimeUtc": "2026-07-24T19:35:37.868466Z",
+        "errorDetails": "Failed to evaluate the input collection variable for the marker element",
+        "comment": null,
+        "userUpdated": null,
+        "debugMode": "Default",
+        "incidentUpdateTimeUtc": null,
+        "traceId": "959f4ed37d054d7ebaec65698a407e40",
+        "dependentFaultCode": null,
+        "incidentSeverity": "Error",
+        "aiSummary": null,
+        "aiRecommendations": null,
+        "processType": null,
+        "sourceElementId": null
+      }
+    ]
+  },
+  "ErrorCode": "unknown_error",
+  "Retry": "RetryWillNotFix"
+}
+
+stderr:
+---
+2026-07-24 19:35:42 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 0.00
+2026-07-24 19:35:42 [INFO] coder_eval.evaluation.checker: Criterion 'run_command' FAILED (score=0.00, threshold=1.00): Command: python3 $TASK_DIR/check_jira_search_triage.py
+2026-07-24 19:35:42 [INFO] coder_eval.orchestrator: Success criteria: 1/2 passed, weighted score: 0.286
+2026-07-24 19:35:42 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-24 19:35:42 [INFO] coder_eval.orchestrator: Running post-run command: python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/e2e/jira_search_triage/teardown_jira.py
+2026-07-24 19:35:46 [INFO] coder_eval.orchestrator: [post_run stdout] OK: deleted CE-182
+2026-07-24 19:35:47 [INFO] coder_eval.orchestrator: [post_run stdout] OK: deleted CE-183
+2026-07-24 19:35:47 [INFO] coder_eval.orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+2026-07-24 19:35:47 [INFO] coder_eval.orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-ipe-jira-search-triage
+2026-07-24 19:35:47 [INFO] coder_eval.orchestrator: Task finished: status=FAILURE duration=336.7s score=0.286 iterations=1

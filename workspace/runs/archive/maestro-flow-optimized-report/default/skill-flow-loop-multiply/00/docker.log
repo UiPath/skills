@@ -1,0 +1,8 @@
+23:57:55 [INFO   ] [default/skill-flow-loop-multiply/00] orchestrator: API routing: aws_bedrock
+00:03:44 [INFO   ] [default/skill-flow-loop-multiply/00] orchestrator: Success criteria: 2/2 passed, weighted score: 1.000
+00:03:44 [INFO   ] [default/skill-flow-loop-multiply/00] orchestrator: Running post-run command: python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/cleanup_solutions.py
+00:03:47 [WARNING] [default/skill-flow-loop-multiply/00] orchestrator: [post_run stderr] cleanup_solutions: deleted cdb51ca4-6432-4081-3479-08dee8fa7fa1 (from LoopMultiply/LoopMultiply.uipx)
+00:03:47 [WARNING] [default/skill-flow-loop-multiply/00] orchestrator: [post_run stderr] cleanup_solutions: summary policy=always deleted=1 preserved=0 skipped=0 not_uploaded=0 failed=0
+00:03:47 [INFO   ] [default/skill-flow-loop-multiply/00] orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+00:03:47 [INFO   ] [default/skill-flow-loop-multiply/00] orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-loop-multiply
+00:03:47 [INFO   ] [default/skill-flow-loop-multiply/00] orchestrator: Task finished: status=SUCCESS duration=359.9s score=1.000 iterations=1

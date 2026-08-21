@@ -1,0 +1,445 @@
+{
+  "id": "2016e70c-7ca1-4ead-8f2d-41e04964a929",
+  "version": "1.9",
+  "name": "ProjectEulerTitle",
+  "nodes": [
+    {
+      "id": "start",
+      "type": "core.trigger.manual",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Manual trigger"
+      },
+      "inputs": {
+        "entryPointId": "356bee53-426f-438f-89af-ba7736678855",
+        "isDefaultEntryPoint": true
+      }
+    },
+    {
+      "id": "getEulerTitle",
+      "type": "uipath.core.rpa-workflow.486edc26-0658-4ac1-92c9-1ef953927151",
+      "typeVersion": "1.0.0",
+      "display": {
+        "label": "Get Euler Problem Title"
+      },
+      "inputs": {
+        "problemId": 123
+      },
+      "outputs": {
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails.",
+          "source": "=Error",
+          "var": "error"
+        }
+      }
+    },
+    {
+      "id": "end",
+      "type": "core.control.end",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "End"
+      },
+      "inputs": {},
+      "outputs": {
+        "title": {
+          "source": "=js:$vars.getEulerTitle.output.title"
+        }
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge_start_output_getEulerTitle_input",
+      "sourceNodeId": "start",
+      "sourcePort": "output",
+      "targetNodeId": "getEulerTitle",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge_getEulerTitle_output_end_input",
+      "sourceNodeId": "getEulerTitle",
+      "sourcePort": "output",
+      "targetNodeId": "end",
+      "targetPort": "input"
+    }
+  ],
+  "definitions": [
+    {
+      "nodeType": "core.trigger.manual",
+      "version": "1.0",
+      "category": "trigger",
+      "description": "Start the process manually",
+      "tags": [
+        "trigger",
+        "start",
+        "manual"
+      ],
+      "sortOrder": 80,
+      "display": {
+        "label": "Manual trigger",
+        "icon": "play",
+        "shape": "circle"
+      },
+      "handleConfiguration": [
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "output",
+              "type": "source",
+              "handleType": "output",
+              "showButton": true,
+              "constraints": {
+                "forbiddenTargetCategories": [
+                  "trigger"
+                ]
+              }
+            }
+          ],
+          "visible": true
+        }
+      ],
+      "model": {
+        "type": "bpmn:StartEvent",
+        "entryPointId": true
+      },
+      "outputDefinition": {
+        "output": {
+          "type": "object",
+          "description": "Data passed when manually triggering the process.",
+          "source": "null",
+          "var": "output"
+        }
+      },
+      "toolbarExtensions": {
+        "design": {
+          "actions": [
+            {
+              "id": "change-trigger-type",
+              "icon": "square-mouse-pointer",
+              "label": "Change trigger type"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "nodeType": "uipath.core.rpa-workflow.486edc26-0658-4ac1-92c9-1ef953927151",
+      "version": "1.0.0",
+      "category": "rpa-workflow",
+      "runtimeConstraints": {
+        "exclude": [
+          "api-function"
+        ]
+      },
+      "description": "",
+      "tags": [],
+      "sortOrder": 630,
+      "supportsErrorHandling": true,
+      "display": {
+        "label": "RPA Workflow",
+        "icon": "rpa"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "output",
+              "type": "source",
+              "handleType": "output"
+            },
+            {
+              "id": "error",
+              "label": "Error",
+              "type": "source",
+              "handleType": "output",
+              "visible": "{inputs.errorHandlingEnabled}",
+              "constraints": {
+                "maxConnections": 1
+              }
+            }
+          ]
+        }
+      ],
+      "model": {
+        "type": "bpmn:ServiceTask",
+        "serviceType": "Orchestrator.StartJob",
+        "version": "v2",
+        "section": "Published",
+        "listingVersion": "1.0.0",
+        "bindings": {
+          "resource": "process",
+          "resourceSubType": "Process",
+          "resourceKey": "Shared/uipath-maestro-flow/ProjectEuler RPA.RPA Workflow",
+          "orchestratorType": "process",
+          "values": [
+            {
+              "name": "name",
+              "propertyAttribute": "name",
+              "default": "RPA Workflow"
+            },
+            {
+              "name": "folderPath",
+              "propertyAttribute": "folderPath",
+              "default": "Shared/uipath-maestro-flow/ProjectEuler RPA"
+            }
+          ]
+        },
+        "context": [
+          {
+            "name": "name",
+            "type": "string",
+            "value": "<bindings.name>"
+          },
+          {
+            "name": "folderPath",
+            "type": "string",
+            "value": "<bindings.folderPath>"
+          },
+          {
+            "name": "_label",
+            "type": "string",
+            "value": "RPA Workflow"
+          }
+        ]
+      },
+      "form": {
+        "id": "activity-properties",
+        "title": "RPA workflow",
+        "sections": [
+          {
+            "id": "inputs",
+            "title": "Inputs",
+            "collapsible": true,
+            "defaultExpanded": true,
+            "fields": [
+              {
+                "name": "inputs.problemId",
+                "type": "number",
+                "label": "problemId"
+              }
+            ]
+          }
+        ]
+      },
+      "inputDefinition": {
+        "type": "object",
+        "properties": {
+          "problemId": {
+            "type": "number"
+          }
+        }
+      },
+      "inputDefaults": {
+        "problemId": 0
+      },
+      "outputDefinition": {
+        "output": {
+          "type": "object",
+          "source": "=this",
+          "var": "output",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "title": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails",
+          "source": "=Error",
+          "var": "error",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "required": [
+              "code",
+              "message",
+              "detail",
+              "category",
+              "status"
+            ],
+            "properties": {
+              "code": {
+                "type": "string",
+                "description": "Error code as a string"
+              },
+              "message": {
+                "type": "string",
+                "description": "High-level error message"
+              },
+              "detail": {
+                "type": "string",
+                "description": "Detailed error description"
+              },
+              "category": {
+                "type": "string",
+                "description": "Error category"
+              },
+              "status": {
+                "type": "integer",
+                "description": "HTTP status code"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "debug": {
+        "runtime": "bpmnEngine"
+      }
+    },
+    {
+      "nodeType": "core.control.end",
+      "version": "1.0",
+      "category": "control-flow",
+      "description": "Mark the end of a process path",
+      "tags": [
+        "control-flow",
+        "end",
+        "finish",
+        "complete"
+      ],
+      "sortOrder": 65,
+      "display": {
+        "label": "End",
+        "icon": "circle-check",
+        "shape": "circle"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        }
+      ],
+      "model": {
+        "type": "bpmn:EndEvent"
+      },
+      "runtimeConstraints": {
+        "exclude": [
+          "api-function"
+        ]
+      }
+    }
+  ],
+  "variables": {
+    "globals": [
+      {
+        "id": "title",
+        "direction": "out",
+        "type": "string",
+        "description": "The title of the ProjectEuler problem"
+      }
+    ],
+    "nodes": [
+      {
+        "id": "start.output",
+        "type": "object",
+        "description": "Data passed when manually triggering the process.",
+        "binding": {
+          "nodeId": "start",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "getEulerTitle.error",
+        "type": "object",
+        "description": "Error information if the node fails.",
+        "binding": {
+          "nodeId": "getEulerTitle",
+          "outputId": "error"
+        }
+      },
+      {
+        "id": "end.title",
+        "type": "string",
+        "binding": {
+          "nodeId": "end",
+          "outputId": "title"
+        }
+      }
+    ]
+  },
+  "bindings": [
+    {
+      "id": "bShared_uipath_maestro_flow_ProjectEuler_RPA_RPA_Workflow_folderPath",
+      "name": "folderPath",
+      "type": "string",
+      "resourceKey": "Shared/uipath-maestro-flow/ProjectEuler RPA.RPA Workflow",
+      "resource": "process",
+      "default": "Shared/uipath-maestro-flow/ProjectEuler RPA",
+      "propertyAttribute": "folderPath",
+      "resourceSubType": "Process"
+    },
+    {
+      "id": "bShared_uipath_maestro_flow_ProjectEuler_RPA_RPA_Workflow_name",
+      "name": "name",
+      "type": "string",
+      "resourceKey": "Shared/uipath-maestro-flow/ProjectEuler RPA.RPA Workflow",
+      "resource": "process",
+      "default": "RPA Workflow",
+      "propertyAttribute": "name",
+      "resourceSubType": "Process"
+    }
+  ],
+  "runtime": "maestro",
+  "layout": {
+    "nodes": {
+      "start": {
+        "position": {
+          "x": -192,
+          "y": 0
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "getEulerTitle": {
+        "position": {
+          "x": 0,
+          "y": 0
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "end": {
+        "position": {
+          "x": 192,
+          "y": 0
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      }
+    }
+  }
+}

@@ -1,0 +1,93 @@
+=== USER (turn 1) — simulator-generated opener ===
+Hey there! I'm hoping you can help me out. I deal with vendor invoices all day and right now everything is super manual — I get PDFs and I have to key everything into SAP by hand. It's a nightmare. I heard you can build an automation for this kind of thing. Can you help me set something up?
+
+=== AGENT (turn 1) — 46.0s, in=8 out=1829, 6 tool calls ===
+You're in fantastic shape — you actually already have a fully trained and live IXP model ready to go! Here's the complete picture:
+
+---
+
+## 🎉 Your "Vendor Invoices" IXP Model Is Ready
+
+**Model:** Version 5 · Powered by Gemini 2.5 Flash · Tagged as **`live`**
+**Quality:** ⭐ **F1 = 1.00 (100%) across every single field** — trained on 5 documents
+
+---
+
+### What it extracts from every invoice PDF:
+
+| Group | Fields |
+|---|---|
+| **Vendor Invoice** (header) | Invoice Number, Invoice Date, Due Date, PO Number, Payment Terms, Currency, Subtotal, Tax Rate, Tax Amount, Total Due |
+| **Vendor Details** | Vendor Name, Vendor Address, Vendor Email, Vendor Phone Number |
+| **Bill-To Details** | Bill-To Name, Bill-To Address |
+| **Line Items** *(repeating — one row per item)* | Description, Quantity, Unit Price, Amount |
+
+That's **20 fields** covering everything you'd need to key into SAP, including all the individual line items automatically.
+
+---
+
+### What happens next
+
+The IXP model itself is done and published. The remaining steps to complete your end-to-end automation are **product-side** steps I can point you toward:
+
+1. **Deploy the model to an Orchestrator folder** — this makes it available to downstream automations. Do this in-product: [Building & Deploying Models](https://docs.uipath.com/ixp/automation-cloud/latest/user-guide/building-and-deploying-models)
+
+2. **Build the RPA workflow** — a UiPath process that:
+   - Watches your email/shared folder for new invoice PDFs
+   - Sends each PDF through this IXP model to extract the 20 fields
+   - Posts the structured data into SAP (via SAP connector or UI automation)
+
+   For this step I can hand you off to the **UiPath RPA** skill if you'd like help building that automation.
+
+---
+
+**Would you like me to help you build the RPA workflow that wires this model up to SAP?** Just say the word and we can get that piece designed too.
+
+=== USER (turn 2) ===
+Yes please, let's get that built! I just want the whole thing to run automatically so I don't have to touch anything. What do you need to know to get started?
+
+=== AGENT (turn 2) — 35.6s, in=6 out=1276, 2 tool calls ===
+No existing project found. Here are the three things I need to know to build this end-to-end:
+
+---
+
+**1. Where do the invoice PDFs arrive?**
+- 📧 A specific email inbox (e.g. invoices@yourcompany.com) — I can watch it automatically for new attachments
+- 📁 A shared/network folder — I can poll it on a schedule
+- Something else (SharePoint, shared drive, etc.)?
+
+**2. How do you want data entered into SAP?**
+- **SAP UI automation** — the robot opens SAP GUI and types into the screens directly (most common; works with any SAP setup)
+- **SAP BAPI/RFC** — direct integration via function module calls (faster, no GUI needed, but requires SAP technical setup)
+
+**3. What's the SAP transaction you use for invoice entry?**
+- Is it **FB60** (vendor invoice - direct posting)?
+- **MIRO** (invoice verification against a PO)?
+- Or something else your company uses?
+
+Once I know these three things, I can build the complete automation — from PDF arriving, through IXP extraction, all the way to SAP entry — with nothing for you to touch manually.
+
+=== USER (turn 3) ===
+Oh it comes through SharePoint — that's where all our invoices end up. And for getting it into SAP, I don't think you'd be doing any screen clicking — we actually have an endpoint set up on the SAP side that's supposed to receive the data. So more of a "send it over" kind of thing rather than the robot typing it in. Does that work with what you're building?
+
+=== AGENT (turn 3) — 42.7s, in=3 out=2000 ===
+That works perfectly — this is actually a cleaner architecture than UI automation. The flow will be:
+
+**SharePoint** (new invoice PDF) → **IXP** (extract 20 fields) → **HTTP POST** to your SAP endpoint
+
+Just one more question before I start building:
+
+**What format does your SAP endpoint expect?**
+- **REST / JSON** — most common for modern SAP Integration Suite / API Gateway setups
+- **SOAP / XML** — classic SAP web service
+- **OData** — SAP OData service (also JSON-based)
+
+Also — I'll store the endpoint URL, credentials/API key, and the SharePoint library path as **Orchestrator assets** (not hardcoded), so your team can update them without touching the automation code. Does that sound right, or do you have a preference for how config is managed?
+
+=== USER (turn 4) ===
+Honestly, I have no idea about the format stuff — that's way above my pay grade! Our IT team set up the endpoint and just told me it accepts the invoice data as a POST. I'd assume they know what they're doing on the SAP side. Can you just set it up to do a POST and we can sort out the details with IT if needed?
+
+And yeah, storing the config separately sounds smart so IT can update it without bugging you. That works for me.
+
+When can you start building?
+

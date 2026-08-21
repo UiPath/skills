@@ -1,0 +1,74 @@
+{
+  "version": "1.1.0",
+  "settings": {
+    "model": "gpt-4.1-2025-04-14",
+    "maxTokens": 4096,
+    "temperature": 0,
+    "engine": "basic-v2",
+    "maxIterations": 3,
+    "mode": "standard"
+  },
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "start__output__email": {
+        "type": "string",
+        "description": "The raw email text to triage, bound from $vars.start.output.email"
+      }
+    },
+    "required": [
+      "start__output__email"
+    ]
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "category": {
+        "type": "string",
+        "description": "Support category (e.g. Account Access, Billing, Technical Issue, General Inquiry)"
+      },
+      "priority": {
+        "type": "string",
+        "description": "Priority level: High, Medium, or Low"
+      }
+    },
+    "required": [
+      "category",
+      "priority"
+    ]
+  },
+  "metadata": {
+    "storageVersion": "50.0.0",
+    "isConversational": false,
+    "showProjectCreationExperience": false
+  },
+  "type": "lowCode",
+  "guardrails": [],
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are an expert customer-support triage specialist. Your sole task is to read incoming support emails and classify them into a category and a priority level.\n\nCategories (choose exactly one):\n- Account Access — login failures, password resets, locked accounts, MFA issues\n- Billing — charges, invoices, refunds, subscription changes\n- Technical Issue — bugs, crashes, errors, unexpected behaviour\n- General Inquiry — questions, feature requests, feedback, anything else\n\nPriority levels (choose exactly one):\n- High — user is completely blocked, data loss risk, or explicit urgency expressed\n- Medium — user is impacted but has a workaround, or the issue is intermittent\n- Low — minor inconvenience, general question, or no time-sensitive element\n\nRespond ONLY with a JSON object matching the output schema: {\"category\": \"<category>\", \"priority\": \"<priority>\"}. Do not include any additional text, explanation, or markdown.",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "You are an expert customer-support triage specialist. Your sole task is to read incoming support emails and classify them into a category and a priority level.\n\nCategories (choose exactly one):\n- Account Access — login failures, password resets, locked accounts, MFA issues\n- Billing — charges, invoices, refunds, subscription changes\n- Technical Issue — bugs, crashes, errors, unexpected behaviour\n- General Inquiry — questions, feature requests, feedback, anything else\n\nPriority levels (choose exactly one):\n- High — user is completely blocked, data loss risk, or explicit urgency expressed\n- Medium — user is impacted but has a workaround, or the issue is intermittent\n- Low — minor inconvenience, general question, or no time-sensitive element\n\nRespond ONLY with a JSON object matching the output schema: {\"category\": \"<category>\", \"priority\": \"<priority>\"}. Do not include any additional text, explanation, or markdown."
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "Triage this support email and return the classification JSON:\n\n{{input.start__output__email}}",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "Triage this support email and return the classification JSON:\n\n"
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__email"
+        }
+      ]
+    }
+  ],
+  "projectId": "3006c51b-9718-4b35-b051-fc524f79cdfa"
+}

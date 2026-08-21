@@ -1,0 +1,2996 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>coder_eval · skill-bpmn-message-send-receive-pair · default</title>
+<style>
+:root {
+  --bg-page: #0f1419;
+  --bg-card: #1a2129;
+  --bg-card-2: #232d38;
+  --bg-code: #0b0f14;
+  --fg: #e6edf3;
+  --fg-muted: #8b98a5;
+  --fg-dim: #6e7681;
+  --border: #30363d;
+  --accent: #58a6ff;
+  --score-high: #22c55e;
+  --score-mid: #f59e0b;
+  --score-low: #ef4444;
+  --status-success: #22c55e;
+  --status-failure: #f59e0b;
+  --status-error: #ef4444;
+  --status-neutral: #6e7681;
+  --shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+.light {
+  --bg-page: #ffffff;
+  --bg-card: #f6f8fa;
+  --bg-card-2: #eaeef2;
+  --bg-code: #f6f8fa;
+  --fg: #1f2328;
+  --fg-muted: #636c76;
+  --fg-dim: #8b949e;
+  --border: #d0d7de;
+  --accent: #0969da;
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial,
+               sans-serif;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--fg);
+  background: var(--bg-page);
+}
+.container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+h1, h2, h3, h4 { margin: 0 0 12px 0; line-height: 1.25; }
+h1 { font-size: 22px; font-weight: 600; }
+h2 { font-size: 18px; font-weight: 600; margin-top: 28px;
+     padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+h3 { font-size: 15px; font-weight: 600; color: var(--fg-muted); }
+h4 { font-size: 13px; font-weight: 600; color: var(--fg-muted); }
+p { margin: 0 0 8px 0; }
+.muted { color: var(--fg-muted); }
+.dim { color: var(--fg-dim); }
+.mono { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+        monospace; font-size: 12.5px; }
+code { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+       monospace; font-size: 12.5px; background: var(--bg-code);
+       border: 1px solid var(--border); padding: 1px 5px; border-radius: 3px; }
+pre { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+      monospace; font-size: 12.5px; background: var(--bg-code);
+      border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px;
+      margin: 6px 0; overflow-x: auto; white-space: pre-wrap;
+      word-wrap: break-word; }
+.header-bar { display: flex; align-items: center; justify-content: space-between;
+              margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+.title-group { flex: 1; min-width: 0; }
+.title-group .subtitle { color: var(--fg-muted); font-size: 13px;
+                         margin-top: 2px; word-break: break-all; }
+.badges { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.badge { display: inline-flex; align-items: center; gap: 6px;
+         padding: 4px 10px; border-radius: 12px; font-size: 12px;
+         font-weight: 600; background: var(--bg-card-2);
+         border: 1px solid var(--border); color: var(--fg); }
+.badge.success { background: color-mix(in srgb, var(--status-success) 20%, var(--bg-card-2));
+                 border-color: var(--status-success); color: var(--status-success); }
+.badge.failure { background: color-mix(in srgb, var(--status-failure) 20%, var(--bg-card-2));
+                 border-color: var(--status-failure); color: var(--status-failure); }
+.badge.error { background: color-mix(in srgb, var(--status-error) 20%, var(--bg-card-2));
+               border-color: var(--status-error); color: var(--status-error); }
+.badge.warning { background: color-mix(in srgb, #f4a52810 20%, var(--bg-card-2));
+                 border-color: #f4a528; color: #f4a528; }
+.badge.neutral { color: var(--fg-muted); }
+.score-pill { display: inline-block; padding: 2px 8px; border-radius: 10px;
+              font-size: 12px; font-weight: 700; min-width: 42px;
+              text-align: center; color: #0b0f14; }
+.score-high { background: var(--score-high); }
+.score-mid { background: var(--score-mid); }
+.score-low { background: var(--score-low); }
+.card { background: var(--bg-card); border: 1px solid var(--border);
+        border-radius: 8px; padding: 16px 20px; margin-bottom: 16px;
+        box-shadow: var(--shadow); }
+.card.highlight { border-left: 4px solid var(--accent); }
+.grid { display: grid; gap: 12px;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+.stat { background: var(--bg-card-2); padding: 10px 12px; border-radius: 6px;
+        border: 1px solid var(--border); }
+.stat .label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;
+               color: var(--fg-muted); margin-bottom: 4px; }
+.stat .value { font-size: 16px; font-weight: 600; }
+table { width: 100%; border-collapse: collapse; margin: 4px 0 12px 0; }
+th, td { text-align: left; padding: 8px 10px;
+         border-bottom: 1px solid var(--border); vertical-align: top;
+         font-size: 13px; }
+th { color: var(--fg-muted); font-weight: 600; font-size: 12px;
+     text-transform: uppercase; letter-spacing: 0.3px; }
+tr:last-child td { border-bottom: none; }
+details { margin: 6px 0; border: 1px solid var(--border); border-radius: 6px;
+          background: var(--bg-card-2); }
+details > summary { cursor: pointer; padding: 8px 12px; user-select: none;
+                    font-weight: 500; list-style: none; }
+details > summary::-webkit-details-marker { display: none; }
+details > summary::before { content: "▸ "; color: var(--fg-dim);
+                            display: inline-block; width: 14px;
+                            transition: transform 0.15s; }
+details[open] > summary::before { content: "▾ "; }
+details .details-body { padding: 0 12px 10px 12px; }
+.tool-row { display: flex; align-items: center; gap: 10px;
+            flex-wrap: wrap; font-size: 13px; }
+.tool-name { font-weight: 600; color: var(--accent); font-family: ui-monospace,
+             SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+.tool-status-ok { color: var(--status-success); font-size: 11px;
+                  font-weight: 600; }
+.tool-status-err { color: var(--status-error); font-size: 11px;
+                   font-weight: 600; }
+.tool-duration { color: var(--fg-muted); font-size: 12px; }
+.tool-seq { color: var(--fg-dim); font-size: 11px; font-weight: 600;
+            min-width: 24px; text-align: right; font-family: ui-monospace,
+            SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+.turn-header { display: flex; justify-content: space-between;
+               align-items: baseline; flex-wrap: wrap; gap: 10px;
+               margin-bottom: 10px; }
+.turn-meta { font-size: 12px; color: var(--fg-muted); }
+.criterion-row td:first-child { font-family: ui-monospace, SFMono-Regular,
+                                 "SF Mono", Menlo, Consolas, monospace;
+                                 color: var(--fg-muted); font-size: 12px; }
+.judge-section { display: flex; flex-direction: column; gap: 12px; }
+.judge-card { padding: 14px 16px; }
+.judge-card-head { display: flex; justify-content: space-between;
+                    align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+.judge-card-title { font-size: 14px; line-height: 1.4; flex: 1; min-width: 0; }
+.judge-card-score { flex-shrink: 0; }
+.judge-rationale { margin-top: 10px; padding: 10px 12px;
+                   background: var(--bg-code); border-radius: 4px;
+                   font-size: 13px; line-height: 1.5; }
+.judge-findings { margin: 8px 0 0 18px; padding-left: 4px; font-size: 13px;
+                   line-height: 1.6; }
+.judge-findings li { margin: 2px 0; }
+.nav-toggle { display: inline-block; padding: 5px 10px; font-size: 12px;
+              background: var(--bg-card-2); border: 1px solid var(--border);
+              border-radius: 5px; color: var(--fg); cursor: pointer; }
+.nav-toggle:hover { background: var(--bg-card); }
+.llm-next-steps { margin: 6px 0 0 20px; padding-left: 0; }
+.llm-next-steps li { margin: 3px 0; }
+.iteration-group { padding: 12px 16px 4px 16px; margin-bottom: 20px;
+                   border-radius: 0 6px 6px 0; border-left: 4px solid var(--status-neutral); }
+/* rgba fallback for browsers without color-mix (Chrome <111, Firefox <113, Safari <16.2). */
+.iteration-group--recovered { border-left-color: var(--status-success);
+                              background: rgba(34, 197, 94, 0.06);
+                              background: color-mix(in srgb, var(--status-success) 6%, transparent); }
+.iteration-group--terminal { border-left-color: var(--status-error);
+                             background: rgba(239, 68, 68, 0.06);
+                             background: color-mix(in srgb, var(--status-error) 6%, transparent); }
+.iteration-group__banner { margin: 0 0 12px 0; font-size: 14px; font-weight: 600; }
+.iteration-group--recovered .iteration-group__banner { color: var(--status-success); }
+.iteration-group--terminal .iteration-group__banner { color: var(--status-error); }
+.attempt-transition { display: flex; align-items: center; gap: 8px;
+                      margin: -6px 0 12px 8px; color: var(--status-error); font-size: 12.5px; }
+.attempt-transition__icon { font-weight: 700; }
+footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--border);
+         color: var(--fg-dim); font-size: 12px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="header-bar">
+  <div class="title-group">
+    <h1>Task: skill-bpmn-message-send-receive-pair</h1>
+    <div class="subtitle">Structural advanced-event eval: agent uses the uipath-maestro-bpmn skill to author a correlated internal-message pair — a Maestro.SendMessageEvent (intermediateThrow) followed by a Maestro.ReceiveMessageEvent (intermediateCatch) that share a consistent message reference. Exercises registry-driven authoring of the Maestro internal-message wrappers. Authoring only — no cloud effects.</div>
+  </div>
+  <div class="badges">
+    <span class="badge error">ERROR</span>
+    <span class="score-pill score-low">0.00</span>
+    <span class="badge neutral">claude-code · claude-sonnet-5</span>
+    <span class="badge neutral">15m 2s</span>
+    <span class="badge neutral">$3.6633</span>
+    <span class="badge warning">expected_turns exceeded (70/20)</span>
+    
+    <span class="nav-toggle" onclick="toggleTheme()">Toggle theme</span>
+  </div>
+</div>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Variant</div><div class="value">default</div></div>
+    <div class="stat"><div class="label">Started</div><div class="value mono">2026-08-14T21:51:07</div></div>
+    <div class="stat"><div class="label">Duration</div><div class="value">15m 2s</div></div>
+    <div class="stat"><div class="label">Turns (SDK)</div><div class="value">133</div></div>
+    <div class="stat"><div class="label">Commands</div><div class="value">70</div></div>
+  </div>
+</div>
+
+<div class="card">
+  <h2 style="margin-top:0;border:none;padding:0">Success Criteria</h2>
+  <p class="muted">No criteria were evaluated (task may have errored before
+  the checker ran).</p>
+</div>
+
+<h2>Error</h2>
+<div class="card" style="border-left:4px solid var(--status-error)">
+  <div class="badges" style="margin-bottom:10px">
+    <span class="badge error">agent_timeout</span>
+    <span class="badge neutral">orchestrator.iteration_1</span>
+    <span class="badge neutral">non-retryable</span>
+  </div>
+  <h4>Message</h4>
+  <pre>Agent turn timed out after 900s (iteration 1)</pre>
+  <details><summary>Logs</summary><div class="details-body"><pre>2026-08-14 21:51:09 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-08-14 21:51:09 [INFO] coder_eval.orchestrator: API routing: aws_bedrock
+2026-08-14 21:51:09 [DEBUG] coder_eval.criteria: Discovered 14 criterion checkers
+2026-08-14 21:51:09 [DEBUG] coder_eval.criteria: Validated 14 criterion checkers
+2026-08-14 21:51:09 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-08-14 21:51:09 [DEBUG] coder_eval.orchestrator: Sending prompt: Load and follow the uipath-maestro-bpmn skill.
+
+Author a single Maestro BPMN file `OrderCoordination...
+2026-08-14 21:51:09 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Starting agent query stream...
+2026-08-14 22:06:09 [DEBUG] coder_eval.orchestrator: [skill-bpmn-message-send-receive-pair] Drained partial turn record (attempt 1, iteration 1): 70 commands
+2026-08-14 22:06:09 [ERROR] coder_eval.errors.executor: [skill-bpmn-message-send-receive-pair] Agent communication failed (non-retryable): agent_timeout - Agent turn timed out after 900s (iteration 1)
+2026-08-14 22:06:09 [ERROR] coder_eval.orchestrator: Evaluation failed: Agent turn timed out after 900s (iteration 1)
+Traceback (most recent call last):
+  File &quot;/usr/local/lib/python3.13/site-packages/anyio/streams/memory.py&quot;, line 117, in receive
+    return self.receive_nowait()
+           ~~~~~~~~~~~~~~~~~~~^^
+  File &quot;/usr/local/lib/python3.13/site-packages/anyio/streams/memory.py&quot;, line 112, in receive_nowait
+    raise WouldBlock
+anyio.WouldBlock
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File &quot;/opt/coder_eval/src/coder_eval/agents/claude_code_agent.py&quot;, line 915, in communicate
+    await self._pump_messages(state, query_kwargs, deadline, should_stop)
+  File &quot;/opt/coder_eval/src/coder_eval/agents/claude_code_agent.py&quot;, line 1025, in _pump_messages
+    async for message in query(**query_kwargs):
+    ...&lt;8 lines&gt;...
+            break
+  File &quot;/usr/local/lib/python3.13/site-packages/claude_agent_sdk/query.py&quot;, line 123, in query
+    async for message in client.process_query(
+    ...&lt;2 lines&gt;...
+        yield message
+  File &quot;/usr/local/lib/python3.13/site-packages/claude_agent_sdk/_internal/client.py&quot;, line 75, in process_query
+    async for msg in inner:
+        yield msg
+  File &quot;/usr/local/lib/python3.13/site-packages/claude_agent_sdk/_internal/client.py&quot;, line 227, in _process_query_inner
+    async for data in query.receive_messages():
+    ...&lt;2 lines&gt;...
+            yield message
+  File &quot;/usr/local/lib/python3.13/site-packages/claude_agent_sdk/_internal/query.py&quot;, line 847, in receive_messages
+    async for message in self._message_receive:
+    ...&lt;6 lines&gt;...
+        yield message
+  File &quot;/usr/local/lib/python3.13/site-packages/anyio/abc/_streams.py&quot;, line 35, in __anext__
+    return await self.receive()
+           ^^^^^^^^^^^^^^^^^^^^
+  File &quot;/usr/local/lib/python3.13/site-packages/anyio/streams/memory.py&quot;, line 125, in receive
+    await receive_event.wait()
+  File &quot;/usr/local/lib/python3.13/site-packages/anyio/_backends/_asyncio.py&quot;, line 1804, in wait
+    await self._event.wait()
+  File &quot;/usr/local/lib/python3.13/asyncio/locks.py&quot;, line 213, in wait
+    await fut
+asyncio.exceptions.CancelledError
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File &quot;/opt/coder_eval/src/coder_eval/orchestrator.py&quot;, line 475, in run
+    success = await self._evaluation_loop()
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File &quot;/opt/coder_eval/src/coder_eval/orchestrator.py&quot;, line 1387, in _evaluation_loop
+    turn_record = await self._communicate_with_retry(
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...&lt;3 lines&gt;...
+    )
+    ^
+  File &quot;/opt/coder_eval/src/coder_eval/orchestrator.py&quot;, line 1263, in _communicate_with_retry
+    turn_record = await execute_with_retry(
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...&lt;8 lines&gt;...
+    )
+    ^
+  File &quot;/opt/coder_eval/src/coder_eval/errors/executor.py&quot;, line 71, in execute_with_retry
+    return await operation()
+           ^^^^^^^^^^^^^^^^^
+  File &quot;/opt/coder_eval/src/coder_eval/orchestrator.py&quot;, line 1245, in _communicate_attempt
+    return await asyncio.wait_for(coro, timeout=outer_timeout)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File &quot;/usr/local/lib/python3.13/asyncio/tasks.py&quot;, line 507, in wait_for
+    return await fut
+           ^^^^^^^^^
+  File &quot;/opt/coder_eval/src/coder_eval/agents/claude_code_agent.py&quot;, line 927, in communicate
+    self._finalize_and_raise_timeout(state.finalize, timeout)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+  File &quot;/opt/coder_eval/src/coder_eval/agent.py&quot;, line 130, in _finalize_and_raise_timeout
+    raise TurnTimeoutError(timeout, iteration=self._iteration)
+coder_eval.errors.timeout.TurnTimeoutError: Agent turn timed out after 900s (iteration 1)
+2026-08-14 22:06:09 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-08-14 22:06:09 [INFO] coder_eval.orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+2026-08-14 22:06:09 [INFO] coder_eval.orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-bpmn-message-send-receive-pair
+</pre></div></details>
+</div>
+<h2>Conversation Trace (1 iteration, 1 attempt)</h2>
+<div class="card">
+  <div class="turn-header">
+    <h3>Iteration 1</h3>
+    <div class="badges">
+      <span class="badge neutral">133 assistant turns</span>
+      <span class="badge neutral">in 140 · out 73171 · cache 7196197</span>
+      <span class="badge neutral">15m 0s</span>
+      
+      <span class="badge error">crashed (partial)</span>
+      
+    </div>
+  </div>
+  <details>
+    <summary>Prompt to agent</summary>
+    <div class="details-body"><pre>Your working directory is: /work/output/artifacts/skill-bpmn-message-send-receive-pair
+
+Load and follow the uipath-maestro-bpmn skill.
+
+Author a single Maestro BPMN file `OrderCoordination.bpmn` in the working
+directory that signals and awaits an internal message:
+  - a manual start,
+  - a task that prepares an order packet,
+  - a Maestro.SendMessageEvent on a bpmn:intermediateThrowEvent that signals
+    the order is ready,
+  - a Maestro.ReceiveMessageEvent on a bpmn:intermediateCatchEvent that awaits
+    that same message,
+  - an end event.
+
+Requirements:
+- Discover the Maestro.SendMessageEvent and Maestro.ReceiveMessageEvent types
+  via the registry and author each node from its registry xmlTemplate — do not
+  hand-author uipath:* XML from prose. The send wrapper goes on an
+  intermediateThrowEvent, the receive wrapper on an intermediateCatchEvent, and
+  each carries a bpmn:messageEventDefinition.
+- The two events MUST share a consistent message reference (the same message
+  name / correlation key) so the receive matches the send.
+- Structural BPMN (sequence flows, the scaffold) comes from the skill&#x27;s
+  structural reference. Include a bpmndi:BPMNDiagram with a BPMNShape for every
+  node (including both message events) and a BPMNEdge for every sequence flow.
+- Validate the file locally before finishing by running
+  `uip maestro bpmn validate &lt;file&gt;` (or a well-formed-XML parse plus the
+  structural checklist if the CLI is unavailable).
+
+Do NOT upload, publish, deploy, debug, run, or pack anything. Do NOT ask for
+approval, confirmation, or feedback, and do NOT pause between planning and
+implementation. Build the complete file end-to-end in a single pass.
+</pre></div>
+  </details>
+  <details>
+    <summary>Agent response</summary>
+    <div class="details-body"><pre>[ASSISTANT] Now I have everything needed. Let me author the file directly from the skeleton plus the registry templates.
+[ASSISTANT] Now let&#x27;s validate.
+[ASSISTANT] Found the root cause: `Maestro.ReceiveMessageEvent` uses the `separateInputs` pattern (not in the split-inputs array), so validation expects a direct `uipath:input name=&quot;Reference&quot;` field, not the `ItemData` JSON wrapper shown in the template placeholder. Let me fix that specific input.
+[ASSISTANT] Now let&#x27;s re-validate.
+[ASSISTANT] This confirms it: the ItemData-merging logic only fires for `isSplitInputsEvents` list members (only `Maestro.SendMessageEvent`). Let&#x27;s look at that context more.
+[ASSISTANT] Let&#x27;s check `packager-tool-7qh62xfn.js`&#x27;s BpmnValidateService directly since that&#x27;s what the CLI&#x27;s `validate` invokes.
+[ASSISTANT] So `BpmnValidateService` here refers to the imported class at the top of the file. Let&#x27;s check the import.
+[ASSISTANT] So the actual validate command uses `packager-tool-2y3cxgtc.js`&#x27;s `BpmnValidateService`, not `packager-tool-bnqptw8n.js`. Let&#x27;s inspect that one.</pre></div>
+  </details>
+  <h4 style="margin-top:12px">Tool Calls (70)</h4>
+  
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#0</span>
+      <span class="tool-name">Skill</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">12ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;skill&quot;: &quot;uipath:uipath-maestro-bpmn&quot;,
+  &quot;args&quot;: &quot;Author a single Maestro BPMN file OrderCoordination.bpmn in /work/output/artifacts/skill-bpmn-message-send-receive-pair. Flow: manual start -&gt; task that prepares an order packet -&gt; Maestro.SendMessageEvent on a bpmn:intermediateThrowEvent signaling the order is ready -&gt; Maestro.ReceiveMessageEvent on a bpmn:intermediateCatchEvent awaiting that same message -&gt; end event. Discover Maestro.SendMessag… (432 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Launching skill: uipath:uipath-maestro-bpmn</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#1</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">3.21s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;mkdir -p registry-evidence &amp;&amp; uip maestro bpmn registry pull --output json &gt; registry-evidence/pull.json 2&gt;&amp;1; echo EXIT:$?; tail -c 500 registry-evidence/pull.json&quot;,
+  &quot;description&quot;: &quot;Pull Maestro BPMN registry cache&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>EXIT:0
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;RegistryPullSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;ExtensionTypeCount&quot;: 30,
+    &quot;ConnectorCount&quot;: 27,
+    &quot;ProcessCount&quot;: 138,
+    &quot;ProcessCountsByType&quot;: {
+      &quot;Process&quot;: 24,
+      &quot;ProcessOrchestration&quot;: 21,
+      &quot;Agent&quot;: 15,
+      &quot;Flow&quot;: 38,
+      &quot;Api&quot;: 23,
+      &quot;Function&quot;: 6,
+      &quot;CaseManagement&quot;: 11,
+      &quot;BusinessRules&quot;: 0
+    },
+    &quot;FromCache&quot;: false,
+    &quot;CacheWritten&quot;: true,
+    &quot;Message&quot;: &quot;Synced fresh registry&quot;
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#2</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.45s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro bpmn registry get Maestro.SendMessageEvent --output json &gt; registry-evidence/send.json 2&gt;&amp;1; echo EXIT:$?\nuip maestro bpmn registry get Maestro.ReceiveMessageEvent --output json &gt; registry-evidence/receive.json 2&gt;&amp;1; echo EXIT:$?\necho \&quot;---SEND---\&quot;; cat registry-evidence/send.json\necho \&quot;---RECEIVE---\&quot;; cat registry-evidence/receive.json&quot;,
+  &quot;description&quot;: &quot;Get registry templates for send/receive message events&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>EXIT:0
+EXIT:0
+---SEND---
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;RegistryGetSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;ExtensionType&quot;: {
+      &quot;ExtensionType&quot;: &quot;Maestro.SendMessageEvent&quot;,
+      &quot;Label&quot;: &quot;Send internal message&quot;,
+      &quot;BpmnElement&quot;: &quot;bpmn:IntermediateThrowEvent&quot;,
+      &quot;Placements&quot;: {
+        &quot;IntermediateEvent&quot;: {
+          &quot;Type&quot;: &quot;bpmn:IntermediateThrowEvent&quot;,
+          &quot;EventDefinition&quot;: {
+            &quot;Type&quot;: &quot;bpmn:MessageEventDefinition&quot;
+          }
+        },
+        &quot;EndEvent&quot;: {
+          &quot;Type&quot;: &quot;bpmn:EndEvent&quot;,
+          &quot;EventDefinition&quot;: {
+            &quot;Type&quot;: &quot;bpmn:MessageEventDefinition&quot;
+          }
+        }
+      },
+      &quot;ExtensionTag&quot;: &quot;uipath:event&quot;,
+      &quot;ContextFields&quot;: [
+        {
+          &quot;Name&quot;: &quot;name&quot;,
+          &quot;DisplayName&quot;: &quot;Message name&quot;,
+          &quot;Type&quot;: &quot;string&quot;,
+          &quot;Required&quot;: true,
+          &quot;Hidden&quot;: false,
+          &quot;IsPrimaryKey&quot;: false,
+          &quot;Binding&quot;: false,
+          &quot;DefaultValue&quot;: null
+        },
+        {
+          &quot;Name&quot;: &quot;_label&quot;,
+          &quot;Type&quot;: &quot;string&quot;,
+          &quot;Required&quot;: false,
+          &quot;Hidden&quot;: true,
+          &quot;IsPrimaryKey&quot;: false,
+          &quot;Binding&quot;: false,
+          &quot;DefaultValue&quot;: null
+        },
+        {
+     
+
+… (truncated, 6149 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#3</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">362ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/structural-bpmn.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Structural BPMN (what the registry does not emit)
+2	
+3	The registry&#x27;s `xmlTemplate`s give you the `uipath:*` payload for each node
+4	(see [registry-workflow.md](registry-workflow.md)). They do **not** give you the
+5	structural BPMN that holds those nodes together. This file is the ground truth
+6	for everything you author by hand around the templates.
+7	
+8	Two sources define the contract:
+9	
+10	- the registry spec `bpmn-spec.json` — enumerates which BPMN element types and
+11	  event definitions exist, via its `bpmnElements` section;
+12	- the Studio Web canvas serializer
+13	  (`PO.Frontend/src/services/serialization/`) — defines how that XML must be
+14	  shaped to import and round-trip.
+15	
+16	Where the registry stops, the canvas serializer is authoritative. Each
+17	gap below is labelled **REGISTRY GAP** — the registry exposes no template for
+18	it, so author it from this reference.
+19	
+20	BPMN XML element names are case-sensitive. Use the exact lower-camel BPMN tag
+21	names the serializer emits, such as `&lt;bpmn:startEvent&gt;`,
+22	`&lt;bpmn:intermediateCatchEvent&gt;`, `&lt;bpmn:scriptTask&gt;`, and `&lt;bpmn:endEvent&gt;`.
+23	Do not use PascalCase variants like `&lt;bpmn:IntermediateCatchEvent&gt;`; XML a
+
+… (truncated, 30791 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#4</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">605ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro bpmn registry get BPMN.ScriptTask --output json &gt; registry-evidence/scripttask.json 2&gt;&amp;1; echo EXIT:$?; cat registry-evidence/scripttask.json&quot;,
+  &quot;description&quot;: &quot;Get registry template for script task&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>EXIT:0
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;RegistryGetSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;ExtensionType&quot;: {
+      &quot;ExtensionType&quot;: &quot;BPMN.ScriptTask&quot;,
+      &quot;Label&quot;: &quot;Execute script&quot;,
+      &quot;BpmnElement&quot;: &quot;bpmn:ScriptTask&quot;,
+      &quot;Placements&quot;: {},
+      &quot;ExtensionTag&quot;: &quot;uipath:mapping&quot;,
+      &quot;ContextFields&quot;: [],
+      &quot;InputPattern&quot;: &quot;scriptArgs&quot;,
+      &quot;InputName&quot;: &quot;args&quot;,
+      &quot;InputTarget&quot;: &quot;bodyField&quot;,
+      &quot;OutputSource&quot;: null,
+      &quot;OutputType&quot;: null,
+      &quot;BindingPattern&quot;: &quot;none&quot;,
+      &quot;RequiresDiscovery&quot;: false,
+      &quot;IsDynamic&quot;: false,
+      &quot;XmlTemplate&quot;: &quot;&lt;bpmn:ScriptTask id=\&quot;{id}\&quot; name=\&quot;{name}\&quot;&gt;\n  &lt;bpmn:extensionElements&gt;\n    &lt;uipath:mapping version=\&quot;v1\&quot;&gt;\n      &lt;uipath:type value=\&quot;BPMN.ScriptTask\&quot; version=\&quot;v1\&quot; /&gt;\n      &lt;uipath:input name=\&quot;args\&quot; type=\&quot;json\&quot; target=\&quot;bodyField\&quot;&gt;&lt;![CDATA[{}]]&gt;&lt;/uipath:input&gt;\n    &lt;/uipath:mapping&gt;\n  &lt;/bpmn:extensionElements&gt;\n  &lt;bpmn:incoming&gt;{incomingEdge}&lt;/bpmn:incoming&gt;\n  &lt;bpmn:outgoing&gt;{outgoingEdge}&lt;/bpmn:outgoing&gt;\n&lt;/bpmn:ScriptTask&gt;&quot;,
+      &quot;InputNotes&quot;: &quot;Inputs are merged into a single json input named &#x27;args&#x27; with target &#x27;bodyField&#x27;. An inputSchema is created from the input variables.&quot;,
+      &quot;ExtensionTagNotes&quot;: 
+
+… (truncated, 177 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#5</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">296ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;find / -iname \&quot;bpmn-spec.json\&quot; 2&gt;/dev/null | head -5&quot;,
+  &quot;description&quot;: &quot;Locate bpmn-spec.json validator reference&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/validator/bpmn-spec.json
+/home/azureuser/projects/skills/tmp/coder_eval/runs/maestro-bpmn-baseline-1/default/skill-bpmn-edit-remove-node/00/artifacts/skill-bpmn-edit-remove-node/validator/bpmn-spec.json
+/home/azureuser/projects/skills/tmp/coder_eval/runs/maestro-bpmn-baseline-1/default/skill-bpmn-reading-list/00/artifacts/skill-bpmn-reading-list/validator/bpmn-spec.json
+/home/azureuser/projects/skills/tmp/coder_eval/runs/maestro-bpmn-baseline-1/default/skill-bpmn-diagnose-scoped-variables/00/artifacts/skill-bpmn-diagnose-scoped-variables/validator/bpmn-spec.json
+/home/azureuser/projects/skills/tmp/coder_eval/runs/maestro-bpmn-baseline-1/default/skill-bpmn-edit-add-node/00/artifacts/skill-bpmn-edit-add-node/validator/bpmn-spec.json</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#6</span>
+      <span class="tool-name">Write</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">15ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-bpmn-message-send-receive-pair/OrderCoordination.bpmn&quot;,
+  &quot;content&quot;: &quot;&lt;?xml version=\&quot;1.0\&quot; encoding=\&quot;UTF-8\&quot;?&gt;\n&lt;bpmn:definitions\n    xmlns:bpmn=\&quot;http://www.omg.org/spec/BPMN/20100524/MODEL\&quot;\n    xmlns:bpmndi=\&quot;http://www.omg.org/spec/BPMN/20100524/DI\&quot;\n    xmlns:dc=\&quot;http://www.omg.org/spec/DD/20100524/DC\&quot;\n    xmlns:di=\&quot;http://www.omg.org/spec/DD/20100524/DI\&quot;\n    xmlns:xsi=\&quot;http://www.w3.org/2001/XMLSchema-instance\&quot;\n    xmlns:uipath=\&quot;http://uipath.org/schema/bpmn\&quot;\n    id=… (5530 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>File created successfully at: /work/output/artifacts/skill-bpmn-message-send-receive-pair/OrderCoordination.bpmn (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#7</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">644ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro bpmn validate OrderCoordination.bpmn --output json 2&gt;&amp;1; echo EXIT:$?&quot;,
+  &quot;description&quot;: &quot;Validate the authored BPMN file&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Failure&quot;,
+  &quot;Message&quot;: &quot;Validation failed for /work/output/artifacts/skill-bpmn-message-send-receive-pair/OrderCoordination.bpmn&quot;,
+  &quot;Instructions&quot;: &quot;Found 4 error(s):\n  - [error] [bpmn:intermediateCatchEvent#Event_ReceiveOrderReady \&quot;Await order ready\&quot;] Maestro.ReceiveMessageEvent is missing required input payload \&quot;Reference\&quot;.\n  - [error] [uipath:input \&quot;ItemData\&quot;] Maestro.ReceiveMessageEvent does not support input payload \&quot;ItemData\&quot;.\n  - [error] [Event_SendOrderReady] EMPTY_REQUIRED_FIELD: The field &#x27;Reference&#x27; in node &#x27;Send order ready&#x27; is required but has no value.\n  - [error] [Event_ReceiveOrderReady] EMPTY_REQUIRED_FIELD: The field &#x27;Reference&#x27; in node &#x27;Await order ready&#x27; is required but has no value.\n  - [warning] [Event_SendOrderReady] MISSING_ROOT_VARIABLE: Node &#x27;Send order ready&#x27; references an output variable with no matching scope variable.\n  - [warning] [Event_ReceiveOrderReady] MISSING_ROOT_VARIABLE: Node &#x27;Await order ready&#x27; references an output variable with no matching scope variable.&quot;,
+  &quot;ErrorCode&quot;: &quot;unknown_error&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}
+EXIT:1</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#8</span>
+      <span class="tool-name">Grep</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">12ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;pattern&quot;: &quot;Maestro\\.(Send|Receive)MessageEvent&quot;,
+  &quot;path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-bpmn&quot;,
+  &quot;-C&quot;: 15
+}</pre>
+    <h4>Result</h4>
+    <pre>Found 4 files
+/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/registry-workflow.md
+/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/structural-bpmn.md
+/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/SKILL.md
+/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/validator/bpmn-spec.json</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#9</span>
+      <span class="tool-name">Grep</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">7ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;pattern&quot;: &quot;Maestro\\.(Send|Receive)MessageEvent&quot;,
+  &quot;path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/registry-workflow.md&quot;,
+  &quot;-C&quot;: 20
+}</pre>
+    <h4>Result</h4>
+    <pre>Found 1 file
+/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/registry-workflow.md</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#10</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">21ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -n -B5 -A40 \&quot;Maestro.SendMessageEvent\&quot; /home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/registry-workflow.md&quot;,
+  &quot;description&quot;: &quot;Show context around SendMessageEvent example in registry-workflow.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>207-| `Intsvc.{Async,SyncAgent,AsyncAgent,SyncWorkflow,AsyncWorkflow}Execution` | `bpmn:serviceTask` | activity |
+208-| `A2A.AgentExecution` | `bpmn:serviceTask` | activity |
+209-| `BPMN.Variables` | `bpmn:task` | mapping |
+210-| `BPMN.ScriptTask` | `bpmn:scriptTask` | mapping |
+211-| `Maestro.ReceiveMessageEvent` | `bpmn:intermediateCatchEvent` | event |
+212:| `Maestro.SendMessageEvent` | `bpmn:intermediateThrowEvent` | event |
+213-| `Maestro.CaseRulesEvaluator` / `Maestro.CaseManagerGuardrails` | `bpmn:serviceTask` | activity |
+214-
+215-This table is a discovery aid, not a substitute for `registry get` — always pull
+216-the live template before authoring.
+217-
+218-If a registry `xmlTemplate` returns a PascalCase BPMN host tag such as
+219-`bpmn:SendTask` or `bpmn:ReceiveTask`, normalize only the BPMN host element
+220-names to the serializer&#x27;s lower-camel form (`bpmn:sendTask`,
+221-`bpmn:receiveTask`) when inserting it into a source file. Keep the
+222-`uipath:*` payload and its `uipath:type` value unchanged.
+223-
+224-Event types stay event-wrapped even when you place them on task-like BPMN
+225-hosts: `Intsvc.WaitForEvent`, `Intsvc.EventTrigger`,
+226:`Maestro.ReceiveMessageEvent`, a
+
+… (truncated, 76 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#11</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">23ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -n -B5 -A60 \&quot;ReceiveMessageEvent\\|SendMessageEvent\&quot; /home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/registry-workflow.md | head -200&quot;,
+  &quot;description&quot;: &quot;Search full registry-workflow.md for internal message event example&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>36-only a failure envelope (for example `&quot;Result&quot;: &quot;Failure&quot;`) instead of registry
+37-content. For discovery-only tasks, keep that failed output in the transcript or
+38-`registry-evidence/cli-error.txt`, then replace the final raw evidence JSON with
+39-the matching entries from `validator/bpmn-spec.json`. The final saved evidence
+40-must literally contain the requested extension type strings, such as
+41:`Orchestrator.StartJob` and `Maestro.ReceiveMessageEvent`, not just the failure
+42-envelope.
+43-
+44-## 2. Get the template for each chosen type
+45-
+46-```bash
+47-uip maestro bpmn registry get &lt;extensionType&gt; --output json
+48-```
+49-
+50-`Data.ExtensionType` contains everything needed to author the node:
+51-
+52-| Field | Use |
+53-| --- | --- |
+54-| `xmlTemplate` | The literal node XML with `{placeholder}` slots. **Author from this; fill placeholders only.** |
+55-| `bpmnElement` | The host BPMN element the template uses (for source files, normalize to lower-camel such as `bpmn:serviceTask`). |
+56-| `extensionTag` | `uipath:activity`, `uipath:event`, or `uipath:mapping`. |
+57-| `contextFields[]` | The `uipath:context` inputs; each may carry its own `bindingInfo`. |
+58-| `bindingInfo` | 
+
+… (truncated, 3787 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#12</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">104ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 - &lt;&lt;&#x27;EOF&#x27;\nimport json\nwith open(&#x27;/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/validator/bpmn-spec.json&#x27;) as f:\n    spec = json.load(f)\n\ndef find(obj, key, path=\&quot;\&quot;):\n    results = []\n    if isinstance(obj, dict):\n        for k, v in obj.items():\n            if key.lower() in str(k).lower():\n                results.append((path+\&quot;/\&quot;+k, v if not isinstance(v,(dict,list)) else typ… (276 more chars)&quot;,
+  &quot;description&quot;: &quot;Search bpmn-spec.json for SendMessageEvent structure&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>(&#x27;/extensionTypes/Maestro.SendMessageEvent&#x27;, &lt;class &#x27;dict&#x27;&gt;)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#13</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">97ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 -c \&quot;\nimport json\nwith open(&#x27;/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/validator/bpmn-spec.json&#x27;) as f:\n    spec = json.load(f)\nprint(json.dumps(spec[&#x27;extensionTypes&#x27;][&#x27;Maestro.SendMessageEvent&#x27;], indent=2))\nprint(&#x27;----RECEIVE----&#x27;)\nprint(json.dumps(spec[&#x27;extensionTypes&#x27;][&#x27;Maestro.ReceiveMessageEvent&#x27;], indent=2))\n\&quot;&quot;,
+  &quot;description&quot;: &quot;Print spec entries for send/receive message events&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;extensionType&quot;: &quot;Maestro.SendMessageEvent&quot;,
+  &quot;label&quot;: &quot;Send internal message&quot;,
+  &quot;bpmnElement&quot;: &quot;bpmn:IntermediateThrowEvent&quot;,
+  &quot;placements&quot;: {
+    &quot;intermediateEvent&quot;: {
+      &quot;type&quot;: &quot;bpmn:IntermediateThrowEvent&quot;,
+      &quot;eventDefinition&quot;: {
+        &quot;type&quot;: &quot;bpmn:MessageEventDefinition&quot;
+      }
+    },
+    &quot;endEvent&quot;: {
+      &quot;type&quot;: &quot;bpmn:EndEvent&quot;,
+      &quot;eventDefinition&quot;: {
+        &quot;type&quot;: &quot;bpmn:MessageEventDefinition&quot;
+      }
+    }
+  },
+  &quot;extensionTag&quot;: &quot;uipath:event&quot;,
+  &quot;contextFields&quot;: [
+    {
+      &quot;name&quot;: &quot;name&quot;,
+      &quot;displayName&quot;: &quot;Message name&quot;,
+      &quot;type&quot;: &quot;string&quot;,
+      &quot;required&quot;: true,
+      &quot;hidden&quot;: false,
+      &quot;isPrimaryKey&quot;: false,
+      &quot;binding&quot;: false,
+      &quot;defaultValue&quot;: null
+    },
+    {
+      &quot;name&quot;: &quot;_label&quot;,
+      &quot;type&quot;: &quot;string&quot;,
+      &quot;required&quot;: false,
+      &quot;hidden&quot;: true,
+      &quot;isPrimaryKey&quot;: false,
+      &quot;binding&quot;: false,
+      &quot;defaultValue&quot;: null
+    },
+    {
+      &quot;name&quot;: &quot;inputSchema&quot;,
+      &quot;displayName&quot;: &quot;Input schema&quot;,
+      &quot;type&quot;: &quot;jsonSchema&quot;,
+      &quot;required&quot;: true,
+      &quot;hidden&quot;: true,
+      &quot;isPrimaryKey&quot;: false,
+      &quot;binding&quot;: false,
+      &quot;defaultValue&quot;: null
+    }
+  ],
+  &quot;inputPattern&quot;: &quot;splitInputsItemData&quot;,
+  &quot;i
+
+… (truncated, 5238 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#14</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">21ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -rn \&quot;EMPTY_REQUIRED_FIELD\\|MISSING_ROOT_VARIABLE\\|does not support input payload\\|missing required input payload\&quot; /home/azureuser/projects/skills/skills/uipath-maestro-bpmn/ 2&gt;/dev/null | grep -v \&quot;\\.json:\&quot; | head -30&quot;,
+  &quot;description&quot;: &quot;Search skill docs for validator rule explanations&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>(Bash completed with no output)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#15</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">19ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -n \&quot;ItemData\\|Reference\&quot; OrderCoordination.bpmn&quot;,
+  &quot;description&quot;: &quot;Inspect written ItemData content in file&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>46:          &lt;uipath:input name=&quot;ItemData&quot; type=&quot;json&quot; target=&quot;body&quot;&gt;&lt;![CDATA[{&quot;Reference&quot;:&quot;OrderReadyCorrelation&quot;,&quot;SpecificContent&quot;:{&quot;orderPacket&quot;:&quot;=vars.Var_OrderPacket&quot;},&quot;Error&quot;:&quot;&quot;,&quot;TimeToLive&quot;:&quot;&quot;}]]&gt;&lt;/uipath:input&gt;
+62:          &lt;uipath:input name=&quot;ItemData&quot; type=&quot;json&quot; target=&quot;body&quot;&gt;&lt;![CDATA[{&quot;Reference&quot;:&quot;OrderReadyCorrelation&quot;}]]&gt;&lt;/uipath:input&gt;</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#16</span>
+      <span class="tool-name">Grep</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">15ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;pattern&quot;: &quot;separateInputs|target=\\\&quot;bodyField\\\&quot;&quot;,
+  &quot;path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-bpmn&quot;,
+  &quot;-C&quot;: 5
+}</pre>
+    <h4>Result</h4>
+    <pre>Found 3 files
+/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/expression-authoring.md
+/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/structural-bpmn.md
+/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/validator/bpmn-spec.json</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#17</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">96ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 -c \&quot;\nimport json\nwith open(&#x27;/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/validator/bpmn-spec.json&#x27;) as f:\n    spec = json.load(f)\nfor k,v in spec[&#x27;extensionTypes&#x27;].items():\n    if v.get(&#x27;inputPattern&#x27;) == &#x27;separateInputs&#x27;:\n        print(k)\n\&quot;\n&quot;,
+  &quot;description&quot;: &quot;Find other extension types using separateInputs pattern&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Intsvc.ActivityExecution
+Intsvc.UnifiedHttpRequest
+Intsvc.WaitForEvent
+Intsvc.EventTrigger
+Intsvc.AsyncExecution
+Intsvc.SyncAgentExecution
+Intsvc.AsyncAgentExecution
+Intsvc.SyncWorkflowExecution
+Intsvc.AsyncWorkflowExecution
+Maestro.ReceiveMessageEvent</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#18</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">91ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 -c \&quot;\nimport json\nwith open(&#x27;/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/validator/bpmn-spec.json&#x27;) as f:\n    spec = json.load(f)\nprint(spec[&#x27;extensionTypes&#x27;][&#x27;Intsvc.WaitForEvent&#x27;][&#x27;xmlTemplate&#x27;])\n\&quot;\n&quot;,
+  &quot;description&quot;: &quot;Inspect WaitForEvent template for separateInputs pattern example&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>&lt;bpmn:ReceiveTask id=&quot;{id}&quot; name=&quot;{name}&quot;&gt;
+  &lt;bpmn:extensionElements&gt;
+    &lt;uipath:event version=&quot;v1&quot;&gt;
+      &lt;uipath:type value=&quot;Intsvc.WaitForEvent&quot; version=&quot;v1&quot; /&gt;
+      &lt;uipath:output name=&quot;result&quot; type=&quot;custom&quot; source=&quot;.&quot; var=&quot;{varId}&quot; /&gt;
+    &lt;/uipath:event&gt;
+  &lt;/bpmn:extensionElements&gt;
+  &lt;bpmn:incoming&gt;{incomingEdge}&lt;/bpmn:incoming&gt;
+  &lt;bpmn:outgoing&gt;{outgoingEdge}&lt;/bpmn:outgoing&gt;
+&lt;/bpmn:ReceiveTask&gt;</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#19</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">16ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;find /home/azureuser/projects/skills/skills/uipath-maestro-bpmn/validator -type f | head -50&quot;,
+  &quot;description&quot;: &quot;List validator directory contents&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/validator/bpmn-spec.json</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#20</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">16ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -n \&quot;separateInputs\\|splitInputsItemData\\|InputPattern\\|inputPattern\&quot; -A3 -B3 /home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/registry-workflow.md&quot;,
+  &quot;description&quot;: &quot;Search registry-workflow.md for inputPattern explanation&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>56-| `extensionTag` | `uipath:activity`, `uipath:event`, or `uipath:mapping`. |
+57-| `contextFields[]` | The `uipath:context` inputs; each may carry its own `bindingInfo`. |
+58-| `bindingInfo` | How the node binds to a resource (see §4). |
+59:| `inputPattern` / `inputName` / `inputTarget` | How the request body input is shaped. |
+60-| `requiresDiscovery` / `isDynamic` | Whether a concrete resource must be resolved first. |
+61-
+62-The placeholders you fill are the obvious ones: `{id}`, `{name}`,</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#21</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">95ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 -c \&quot;\nimport json\nwith open(&#x27;/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/validator/bpmn-spec.json&#x27;) as f:\n    spec = json.load(f)\nprint(spec[&#x27;extensionTypes&#x27;][&#x27;Intsvc.EventTrigger&#x27;][&#x27;xmlTemplate&#x27;])\nprint(&#x27;---inputFields---&#x27;)\nprint(json.dumps(spec[&#x27;extensionTypes&#x27;][&#x27;Intsvc.EventTrigger&#x27;].get(&#x27;inputFields&#x27;), indent=2))\n\&quot;\n&quot;,
+  &quot;description&quot;: &quot;Inspect EventTrigger template inputFields for separateInputs pattern example&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>&lt;bpmn:StartEvent id=&quot;{id}&quot; name=&quot;{name}&quot;&gt;
+  &lt;bpmn:extensionElements&gt;
+    &lt;uipath:event version=&quot;v1&quot;&gt;
+      &lt;uipath:type value=&quot;Intsvc.EventTrigger&quot; version=&quot;v1&quot; /&gt;
+      &lt;uipath:output name=&quot;result&quot; type=&quot;custom&quot; source=&quot;.&quot; var=&quot;{varId}&quot; /&gt;
+    &lt;/uipath:event&gt;
+  &lt;/bpmn:extensionElements&gt;
+  &lt;bpmn:messageEventDefinition /&gt;
+  &lt;bpmn:incoming&gt;{incomingEdge}&lt;/bpmn:incoming&gt;
+  &lt;bpmn:outgoing&gt;{outgoingEdge}&lt;/bpmn:outgoing&gt;
+&lt;/bpmn:StartEvent&gt;
+---inputFields---
+[
+  {
+    &quot;name&quot;: &quot;connectionId&quot;,
+    &quot;displayName&quot;: &quot;Connection ID&quot;,
+    &quot;type&quot;: &quot;string&quot;,
+    &quot;required&quot;: true,
+    &quot;hidden&quot;: false,
+    &quot;isPrimaryKey&quot;: false,
+    &quot;binding&quot;: true,
+    &quot;defaultValue&quot;: null,
+    &quot;description&quot;: &quot;Connection ID for the IS connector (bindable)&quot;
+  },
+  {
+    &quot;name&quot;: &quot;connectorKey&quot;,
+    &quot;displayName&quot;: &quot;Connector key&quot;,
+    &quot;type&quot;: &quot;string&quot;,
+    &quot;required&quot;: true,
+    &quot;hidden&quot;: false,
+    &quot;isPrimaryKey&quot;: false,
+    &quot;binding&quot;: false,
+    &quot;defaultValue&quot;: null,
+    &quot;description&quot;: &quot;Integration Service connector identifier&quot;
+  },
+  {
+    &quot;name&quot;: &quot;folderId&quot;,
+    &quot;displayName&quot;: &quot;Folder ID&quot;,
+    &quot;type&quot;: &quot;string&quot;,
+    &quot;required&quot;: true,
+    &quot;hidden&quot;: false,
+    &quot;isPrimaryKey&quot;: false,
+    &quot;binding&quot;: false,
+    &quot;defaultVa
+
+… (truncated, 1686 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#22</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">4.19s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;which uip; uip --version 2&gt;&amp;1; npm root -g 2&gt;/dev/null; find / -iname \&quot;*.js\&quot; -path \&quot;*maestro*\&quot; 2&gt;/dev/null | grep -vi node_modules | head -20\nfind / -iname \&quot;*PO.Frontend*\&quot; 2&gt;/dev/null | head\nfind / -path \&quot;*uip*\&quot; -iname \&quot;*.js\&quot; 2&gt;/dev/null | xargs grep -l \&quot;EMPTY_REQUIRED_FIELD\&quot; 2&gt;/dev/null | head -5&quot;,
+  &quot;description&quot;: &quot;Locate uip CLI installation and search for validator source&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/usr/bin/uip
+1.201.0-dev.8272
+/usr/lib/node_modules
+/home/azureuser/projects/skills/tmp/coder_eval/runs/archive/maestro-flow-optimized-report/default/skill-flow-cli-dice-roller-simulated/00/artifacts/skill-flow-cli-dice-roller-simulated/roll.js
+/home/azureuser/projects/skills/tmp/coder_eval/runs/archive/maestro-flow-optimized-report-repeat-5/default/skill-flow-cli-dice-roller-simulated/02/artifacts/skill-flow-cli-dice-roller-simulated/roll.js
+/usr/lib/node_modules/@uipath/maestro-tool/dist/index-8bsngk9y.js
+/usr/lib/node_modules/@uipath/maestro-tool/dist/index-2dvhe3at.js
+/usr/lib/node_modules/@uipath/maestro-tool/dist/tool-2ab1nank.js
+/usr/lib/node_modules/@uipath/cli/dist/index.browser.js</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#23</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">68ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -o \&quot;EMPTY_REQUIRED_FIELD[^\\\&quot;]*\&quot; /usr/lib/node_modules/@uipath/maestro-tool/dist/*.js | head -5\necho \&quot;---\&quot;\ngrep -n \&quot;separateInputs\&quot; /usr/lib/node_modules/@uipath/maestro-tool/dist/*.js | head -20&quot;,
+  &quot;description&quot;: &quot;Search maestro-tool bundle for validation rule and separateInputs logic&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/usr/lib/node_modules/@uipath/maestro-tool/dist/index-2dvhe3at.js:EMPTY_REQUIRED_FIELD
+/usr/lib/node_modules/@uipath/maestro-tool/dist/index-2dvhe3at.js:EMPTY_REQUIRED_FIELD
+/usr/lib/node_modules/@uipath/maestro-tool/dist/index-2dvhe3at.js:EMPTY_REQUIRED_FIELD
+/usr/lib/node_modules/@uipath/maestro-tool/dist/index-2dvhe3at.js:EMPTY_REQUIRED_FIELD
+/usr/lib/node_modules/@uipath/maestro-tool/dist/index-8bsngk9y.js:EMPTY_REQUIRED_FIELD
+---
+/usr/lib/node_modules/@uipath/maestro-tool/dist/index-2dvhe3at.js:6625:      inputPattern: &quot;separateInputs&quot;,
+/usr/lib/node_modules/@uipath/maestro-tool/dist/index-2dvhe3at.js:6833:      inputPattern: &quot;separateInputs&quot;,
+/usr/lib/node_modules/@uipath/maestro-tool/dist/index-2dvhe3at.js:6887:      inputPattern: &quot;separateInputs&quot;,
+/usr/lib/node_modules/@uipath/maestro-tool/dist/index-2dvhe3at.js:7025:      inputPattern: &quot;separateInputs&quot;,
+/usr/lib/node_modules/@uipath/maestro-tool/dist/index-2dvhe3at.js:7222:      inputPattern: &quot;separateInputs&quot;,
+/usr/lib/node_modules/@uipath/maestro-tool/dist/index-2dvhe3at.js:7327:      inputPattern: &quot;separateInputs&quot;,
+/usr/lib/node_modules/@uipath/maestro-tool/dist/index-2dvhe3at.js:7432:      inputPattern: &quot;separateInputs&quot;
+
+… (truncated, 1494 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#24</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">27ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;sed -n &#x27;8440,8540p&#x27; /usr/lib/node_modules/@uipath/maestro-tool/dist/index-2dvhe3at.js&quot;,
+  &quot;description&quot;: &quot;Inspect ReceiveMessageEvent spec entry in bundle&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>      placements: {
+        startEvent: {
+          type: &quot;bpmn:StartEvent&quot;,
+          eventDefinition: {
+            type: &quot;bpmn:MessageEventDefinition&quot;
+          }
+        },
+        intermediateEvent: {
+          type: &quot;bpmn:IntermediateCatchEvent&quot;,
+          eventDefinition: {
+            type: &quot;bpmn:MessageEventDefinition&quot;
+          }
+        },
+        boundaryEvent: {
+          type: &quot;bpmn:BoundaryEvent&quot;,
+          eventDefinition: {
+            type: &quot;bpmn:MessageEventDefinition&quot;
+          }
+        }
+      },
+      extensionTag: &quot;uipath:event&quot;,
+      contextFields: [
+        {
+          name: &quot;name&quot;,
+          displayName: &quot;Message name&quot;,
+          type: &quot;string&quot;,
+          required: true,
+          hidden: false,
+          isPrimaryKey: false,
+          binding: false,
+          defaultValue: null
+        },
+        {
+          name: &quot;_label&quot;,
+          type: &quot;string&quot;,
+          required: false,
+          hidden: true,
+          isPrimaryKey: false,
+          binding: false,
+          defaultValue: null
+        }
+      ],
+      inputPattern: &quot;separateInputs&quot;,
+      inputName: &quot;ItemData&quot;,
+      inputTarget: &quot;body&quot;,
+      outputSource: null,
+      outputType: &quot;Maestro.Recei
+
+… (truncated, 2069 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#25</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">27ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -n \&quot;separateInputs\&quot; -A5 -B30 /usr/lib/node_modules/@uipath/maestro-tool/dist/index-8bsngk9y.js | grep -n \&quot;separateInputs\\|function\\|=&gt;\&quot; | head -40&quot;,
+  &quot;description&quot;: &quot;Search for separateInputs pattern handling function&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>(Bash completed with no output)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#26</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">77ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -n \&quot;does not support input payload\\|is missing required input payload\&quot; /usr/lib/node_modules/@uipath/maestro-tool/dist/*.js /usr/lib/node_modules/@uipath/cli/dist/*.js 2&gt;/dev/null&quot;,
+  &quot;description&quot;: &quot;Locate the exact validator error message strings&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/usr/lib/node_modules/@uipath/maestro-tool/dist/packager-tool-bnqptw8n.js:3410:          message: `${contract.extensionType} is missing required input payload &quot;${expectedName}&quot;.`,
+/usr/lib/node_modules/@uipath/maestro-tool/dist/packager-tool-bnqptw8n.js:3421:            message: `${contract.extensionType} does not support input payload &quot;${extraInput.attributes.name ?? &quot;&quot;}&quot;.`,
+/usr/lib/node_modules/@uipath/maestro-tool/dist/packager-tool-bnqptw8n.js:3436:          message: `${contract.extensionType} is missing required input payload &quot;${field.name}&quot;.`,
+/usr/lib/node_modules/@uipath/maestro-tool/dist/packager-tool-bnqptw8n.js:3457:          message: `${contract.extensionType} does not support input payload &quot;${name}&quot;.`,
+/usr/lib/node_modules/@uipath/cli/dist/index.browser.js:1343:&lt;/bpmn:ServiceTask&gt;`,bpmnElementNotes:&quot;Not in FPS_TO_NODE_MAPPING activity section; used internally for case management processes. Likely bpmn:ServiceTask or bpmn:Task.&quot;}},bpmnElements:{gateways:{&quot;bpmn:ExclusiveGateway&quot;:{bpmnElement:&quot;bpmn:ExclusiveGateway&quot;,category:&quot;gateway&quot;},&quot;bpmn:ParallelGateway&quot;:{bpmnElement:&quot;bpmn:ParallelGateway&quot;,category:&quot;gateway&quot;},&quot;bpmn:InclusiveGateway&quot;:{bpmnElement:&quot;bpmn:InclusiveGatew
+
+… (truncated, 26668 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#27</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">45ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -n \&quot;EMPTY_REQUIRED_FIELD\&quot; /usr/lib/node_modules/@uipath/maestro-tool/dist/*.js | head -20&quot;,
+  &quot;description&quot;: &quot;Locate EMPTY_REQUIRED_FIELD rule implementation&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/usr/lib/node_modules/@uipath/maestro-tool/dist/index-2dvhe3at.js:16458:        code: &quot;EMPTY_REQUIRED_FIELD&quot;,
+/usr/lib/node_modules/@uipath/maestro-tool/dist/index-2dvhe3at.js:16786:            code: &quot;EVENT_OBJECT_EMPTY_REQUIRED_FIELD&quot;,
+/usr/lib/node_modules/@uipath/maestro-tool/dist/index-2dvhe3at.js:17476:  &quot;EMPTY_REQUIRED_FIELD&quot;,
+/usr/lib/node_modules/@uipath/maestro-tool/dist/index-2dvhe3at.js:17489:  &quot;EVENT_OBJECT_EMPTY_REQUIRED_FIELD&quot;,
+/usr/lib/node_modules/@uipath/maestro-tool/dist/index-8bsngk9y.js:188183:              code: &quot;EMPTY_REQUIRED_FIELD&quot;,
+/usr/lib/node_modules/@uipath/maestro-tool/dist/index-8bsngk9y.js:190879:            code: &quot;EMPTY_REQUIRED_FIELD&quot;,
+/usr/lib/node_modules/@uipath/maestro-tool/dist/index-8bsngk9y.js:190922:        code: &quot;EMPTY_REQUIRED_FIELD&quot;,
+/usr/lib/node_modules/@uipath/maestro-tool/dist/index-8bsngk9y.js:190942:            code: &quot;EMPTY_REQUIRED_FIELD&quot;,
+/usr/lib/node_modules/@uipath/maestro-tool/dist/index-8bsngk9y.js:190980:            code: &quot;EMPTY_REQUIRED_FIELD&quot;,
+/usr/lib/node_modules/@uipath/maestro-tool/dist/index-8bsngk9y.js:191001:            code: &quot;EMPTY_REQUIRED_FIELD&quot;,
+/usr/lib/node_modules/@uipath/maestro-tool/dist/tool-2ab1nank.js:1
+
+… (truncated, 506 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#28</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">31ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;sed -n &#x27;190840,191010p&#x27; /usr/lib/node_modules/@uipath/maestro-tool/dist/index-8bsngk9y.js&quot;,
+  &quot;description&quot;: &quot;Inspect canvas rule logic around EMPTY_REQUIRED_FIELD for message events&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>  function validateRequiredFieldsInCaseManagerData({
+    elementToValidate
+  }) {
+    return validateRequiredFieldsInTasks({
+      allTasks: elementToValidate.data?.tasks?.flatMap((tasksSet) =&gt; tasksSet.flat()) ?? [],
+      elementId: elementToValidate.id
+    });
+  }
+  function validateRequiredFieldsInTasks({ allTasks, elementId }) {
+    const errors2 = [];
+    for (const task of allTasks) {
+      if (!Object.keys(task.data).length) {
+        continue;
+      }
+      const taskName = nameForCaseManagementTask(task);
+      if (task.type === &quot;wait-for-timer&quot;) {
+        const timerError = validateWaitForTimerFields({
+          task,
+          elementId,
+          taskName
+        });
+        if (timerError) {
+          errors2.push(timerError);
+        }
+        continue;
+      }
+      const error53 = validateFieldsInTask({
+        task,
+        elementId,
+        elementName: taskName,
+        errorKey: &quot;case_management_stage_task_required_field_missing_error_description&quot;
+      });
+      if (error53) {
+        errors2.push(error53);
+      }
+      if (task.type === &quot;action&quot;) {
+        const actionData = task.data;
+        if (!error53 &amp;&amp; (actionData.name || isHitlQuickMode(actionData.c
+
+… (truncated, 4597 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#29</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">21ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;sed -n &#x27;11680,11850p&#x27; /usr/lib/node_modules/@uipath/maestro-tool/dist/tool-2ab1nank.js&quot;,
+  &quot;description&quot;: &quot;Inspect EMPTY_REQUIRED_FIELD checks in tool-2ab1nank.js&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>          message: `Stage &quot;${stageName}&quot; task &quot;${taskName}&quot; has no entry condition (it would never run)`,
+          severity: &quot;error&quot;
+        });
+        continue;
+      }
+      issues.push(...this.validateConditionsBattery({
+        conditions: task.entryConditions,
+        schema,
+        currentStage: stage,
+        path,
+        elementLabel: `Stage &quot;${stageName}&quot; task &quot;${taskName}&quot;`,
+        duplicateCode: &quot;CASE_MGMT_TASK_ENTRY_CONDITION_DUPLICATE&quot;,
+        profile: &quot;full&quot;
+      }));
+    }
+    return issues;
+  }
+  validateStructure(schema) {
+    const issues = [];
+    const hasTrigger = schema.nodes.some((n) =&gt; n.type === &quot;case-management:Trigger&quot;);
+    if (!hasTrigger) {
+      issues.push({
+        code: &quot;CASE_MGMT_NO_TRIGGER_NODE&quot;,
+        path: &quot;nodes&quot;,
+        message: &quot;The case definition has no trigger node&quot;,
+        severity: &quot;error&quot;
+      });
+    }
+    const hasStage = schema.nodes.some((n) =&gt; n.type === &quot;case-management:Stage&quot;);
+    if (!hasStage) {
+      issues.push({
+        code: &quot;CASE_MGMT_NO_STAGE_NODE&quot;,
+        path: &quot;nodes&quot;,
+        message: &quot;The case definition has no stage nodes&quot;,
+        severity: &quot;error&quot;
+      });
+    }
+    return issues;
+  }
+  validateTrig
+
+… (truncated, 4874 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#30</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.07s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro bpmn registry --help 2&gt;&amp;1\necho \&quot;---\&quot;\nuip maestro bpmn registry get --help 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Check registry get CLI subcommand options&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>                           uip maestro bpmn registry                            
+Browse and search the Maestro BPMN registry to discover available extension types, connectors, and processes. Use &#x27;pull&#x27; to sync, &#x27;search&#x27; to find entries, &#x27;get&#x27; to inspect full spec.
+                Use --help with nested commands for more detail.                
+
+┌─ Usage ──────────────────────────────────────────────────────────────────────┐
+│ uip maestro bpmn registry [options] [command]                                │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Commands ───────────────────────────────────────────────────────────────────┐
+│ get      Get the full spec for a single extension type. Optionally enrich    │
+│          connector types with live IS metadata.                              │
+│ help     display help for command                                            │
+│ list     List cached extension types and discovered resources (default:      │
+│          first 30). Use --limit -1 for all.                                  │
+│ pull     Fetch and cache the Maestro BPMN registry (login for full           │
+│          discovery)                     
+
+… (truncated, 5335 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#31</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">16ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -n \&quot;is required but has no value\\|EVENT_OBJECT\&quot; /usr/lib/node_modules/@uipath/maestro-tool/dist/index-2dvhe3at.js | head -20&quot;,
+  &quot;description&quot;: &quot;Find event object validation rule text&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>16459:        message: `The field &#x27;${badName}&#x27; in node &#x27;${label}&#x27; is required but has no value.`,
+16747:var EVENT_OBJECT_FIELD_CONFIGS = [
+16759:  for (const config of EVENT_OBJECT_FIELD_CONFIGS) {
+16786:            code: &quot;EVENT_OBJECT_EMPTY_REQUIRED_FIELD&quot;,
+16794:            code: &quot;EVENT_OBJECT_DUPLICATE_FIELD&quot;,
+17489:  &quot;EVENT_OBJECT_EMPTY_REQUIRED_FIELD&quot;,
+17490:  &quot;EVENT_OBJECT_DUPLICATE_FIELD&quot;,</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#32</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">13ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;sed -n &#x27;16380,16470p&#x27; /usr/lib/node_modules/@uipath/maestro-tool/dist/index-2dvhe3at.js&quot;,
+  &quot;description&quot;: &quot;Inspect field required-checking logic near EMPTY_REQUIRED_FIELD&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>  }
+  return errors;
+}
+function validateNoAssignmentsInExpressions(nodes, edges) {
+  if (!nodes || !edges)
+    return [];
+  const errors = [];
+  for (const edge of edges) {
+    const expr = edge.data?.conditionExpression;
+    if (expr &amp;&amp; expressionHasAssignment(expr)) {
+      errors.push({
+        code: &quot;ASSIGNMENT_NOT_ALLOWED&quot;,
+        message: &quot;Expression must not contain an assignment operator.&quot;,
+        severity: SEVERITY.WARNING,
+        elementId: edge.id,
+        sourceId: edge.source,
+        targetId: edge.target
+      });
+    }
+  }
+  for (const node of nodes) {
+    const mappings = node.data?.uipath?.errorMapping;
+    if (!Array.isArray(mappings))
+      continue;
+    for (const m of mappings) {
+      if (m?.condition &amp;&amp; expressionHasAssignment(m.condition)) {
+        errors.push({
+          code: &quot;ASSIGNMENT_NOT_ALLOWED&quot;,
+          message: &quot;Error-mapping condition must not contain an assignment operator.&quot;,
+          severity: SEVERITY.WARNING,
+          elementId: node.id
+        });
+      }
+    }
+  }
+  return errors;
+}
+function validateRequiredFields(nodes) {
+  if (!nodes)
+    return [];
+  const errors = [];
+  for (const node of nodes) {
+    const uipath = node.data?.ui
+
+… (truncated, 1515 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#33</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">19ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -n \&quot;requiredFieldNames\\|uipath.inputs\\s*=\\|inputs:.*inputFields\\|function.*[Dd]eserialize\&quot; /usr/lib/node_modules/@uipath/maestro-tool/dist/index-2dvhe3at.js | head -40&quot;,
+  &quot;description&quot;: &quot;Search for XML-to-node deserialization logic building uipath.inputs&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>15157:  uipath.inputs = (actEl.input ?? []).map(mapInput);
+15216:    uipath.requiredFieldNames = [...requiredNames];
+16438:    else if (Array.isArray(uipath.requiredFieldNames)) {
+16451:      const absent = uipath.requiredFieldNames.find((name2) =&gt; !presentNames.has(name2));</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#34</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">18ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;sed -n &#x27;15100,15230p&#x27; /usr/lib/node_modules/@uipath/maestro-tool/dist/index-2dvhe3at.js&quot;,
+  &quot;description&quot;: &quot;Inspect input mapping deserialization logic for event nodes&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>  const defs = el?.eventDefinitions;
+  if (!defs?.length)
+    return;
+  const d = defs[0];
+  const out = { type: d.$type, id: d.id };
+  if (d.errorRef)
+    out.errorRef = refId(d.errorRef);
+  if (d.messageRef)
+    out.messageRef = refId(d.messageRef);
+  if (d.signalRef)
+    out.signalRef = refId(d.signalRef);
+  if (d.escalationRef)
+    out.escalationRef = refId(d.escalationRef);
+  if (d.$type === &quot;bpmn:TimerEventDefinition&quot;) {
+    if (d.timeDuration) {
+      out.timerType = &quot;timeDuration&quot;;
+      out.timeDuration = typeof d.timeDuration === &quot;string&quot; ? d.timeDuration : d.timeDuration.body;
+    } else if (d.timeCycle) {
+      out.timerType = &quot;timeCycle&quot;;
+      out.timeCycle = typeof d.timeCycle === &quot;string&quot; ? d.timeCycle : d.timeCycle.body;
+    } else if (d.timeDate) {
+      out.timerType = &quot;timeDate&quot;;
+      out.timeDate = typeof d.timeDate === &quot;string&quot; ? d.timeDate : d.timeDate.body;
+    }
+  }
+  return out;
+}
+function mapUiPathActivity(actEl) {
+  const uipath = {};
+  uipath.serviceType = typeof actEl.type === &quot;string&quot; ? actEl.type : actEl.type?.value;
+  uipath.version = (typeof actEl.type === &quot;string&quot; ? undefined : actEl.type?.version) ?? actEl.version ?? &quot;v1&quot;;
+  uipath.skipCondition
+
+… (truncated, 2744 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#35</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">13ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -n \&quot;requiredFieldIndex\\|inputFields\&quot; /usr/lib/node_modules/@uipath/maestro-tool/dist/index-2dvhe3at.js | head -30&quot;,
+  &quot;description&quot;: &quot;Find requiredFieldIndex construction and inputFields link&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>6624:      inputFields: [],
+6907:      contextFieldNotes: &quot;Context fields are empty in design schema; all field definitions are in inputFields below&quot;,
+6909:      inputFields: [
+7046:      contextFieldNotes: &quot;Context fields are empty in design schema; all field definitions are in inputFields below&quot;,
+7048:      inputFields: [
+8313:      inputFields: [
+8434:      inputFields: []
+8510:      inputFields: [
+8604:      inputFields: [
+15075:var requiredFieldIndexCache;
+15077:  if (requiredFieldIndexCache)
+15078:    return requiredFieldIndexCache;
+15087:    for (const f of def.inputFields ?? []) {
+15094:  requiredFieldIndexCache = index;
+15190:function buildNodeUiPath(el, requiredFieldIndex) {
+15206:  const requiredNames = st ? requiredFieldIndex.get(st) : undefined;
+15248:function buildNode(el, parent, requiredFieldIndex) {
+15260:  const uipath = buildNodeUiPath(el, requiredFieldIndex);
+15304:function collectContainer(container, requiredFieldIndex, nodesOut, edgesOut, rootParentId) {
+15311:    const node = buildNode(el, container, requiredFieldIndex);
+15316:      collectContainer(el, requiredFieldIndex, nodesOut, edgesOut, rootParentId);
+15328:  const requiredFieldIndex = loadRequiredField
+
+… (truncated, 167 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#36</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">24ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -n \&quot;ItemData\\|splitInputsItemData\\|isSplitInputsEvents\&quot; /usr/lib/node_modules/@uipath/maestro-tool/dist/index-2dvhe3at.js | head -60&quot;,
+  &quot;description&quot;: &quot;Search deserializer for ItemData-splitting logic&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>7810:      inputName: &quot;ItemData&quot;,
+7834:      &lt;uipath:input name=&quot;ItemData&quot; type=&quot;json&quot; target=&quot;body&quot;&gt;&lt;![CDATA[{}]]&gt;&lt;/uipath:input&gt;
+7889:      inputName: &quot;ItemData&quot;,
+7914:      &lt;uipath:input name=&quot;ItemData&quot; type=&quot;json&quot; target=&quot;body&quot;&gt;&lt;![CDATA[{}]]&gt;&lt;/uipath:input&gt;
+8483:      inputName: &quot;ItemData&quot;,
+8500:      &lt;uipath:input name=&quot;ItemData&quot; type=&quot;json&quot; target=&quot;body&quot;&gt;&lt;![CDATA[{}]]&gt;&lt;/uipath:input&gt;
+8508:      inputNotes: &quot;isSplitInputs=true in design schema but NOT in isSplitInputsEvents code array, so inputs are NOT merged into ItemData for this type. They remain separate.&quot;,
+8575:      inputPattern: &quot;splitInputsItemData&quot;,
+8576:      inputName: &quot;ItemData&quot;,
+8594:      &lt;uipath:input name=&quot;ItemData&quot; type=&quot;json&quot; target=&quot;body&quot;&gt;&lt;![CDATA[{&quot;Reference&quot;:&quot;&quot;,&quot;SpecificContent&quot;:{},&quot;Error&quot;:&quot;&quot;,&quot;TimeToLive&quot;:&quot;&quot;}]]&gt;&lt;/uipath:input&gt;
+8602:      inputNotes: &quot;In isSplitInputsEvents array. Inputs are merged into a single ItemData JSON body at serialization time. Uses SEND_MESSAGE_EVENT_INPUT_SCHEMA as the inputSchema.&quot;,
+9079:    isSplitInputsEventsArray: [</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#37</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">6ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-bpmn-message-send-receive-pair/OrderCoordination.bpmn&quot;,
+  &quot;offset&quot;: 50,
+  &quot;limit&quot;: 15
+}</pre>
+    <h4>Result</h4>
+    <pre>50	      &lt;bpmn:messageEventDefinition messageRef=&quot;Message_OrderReady&quot; /&gt;
+51	      &lt;bpmn:incoming&gt;Flow_2&lt;/bpmn:incoming&gt;
+52	      &lt;bpmn:outgoing&gt;Flow_3&lt;/bpmn:outgoing&gt;
+53	    &lt;/bpmn:intermediateThrowEvent&gt;
+54	    &lt;bpmn:intermediateCatchEvent id=&quot;Event_ReceiveOrderReady&quot; name=&quot;Await order ready&quot;&gt;
+55	      &lt;bpmn:extensionElements&gt;
+56	        &lt;uipath:event version=&quot;v1&quot;&gt;
+57	          &lt;uipath:type value=&quot;Maestro.ReceiveMessageEvent&quot; version=&quot;v1&quot; /&gt;
+58	          &lt;uipath:context&gt;
+59	            &lt;uipath:input name=&quot;name&quot; value=&quot;OrderReady&quot; /&gt;
+60	            &lt;uipath:input name=&quot;_label&quot; value=&quot;Await order ready&quot; /&gt;
+61	          &lt;/uipath:context&gt;
+62	          &lt;uipath:input name=&quot;ItemData&quot; type=&quot;json&quot; target=&quot;body&quot;&gt;&lt;![CDATA[{&quot;Reference&quot;:&quot;OrderReadyCorrelation&quot;}]]&gt;&lt;/uipath:input&gt;
+63	          &lt;uipath:output name=&quot;response&quot; type=&quot;Maestro.ReceiveMessageEvent&quot; var=&quot;Var_ReceiveOrderReadyResponse&quot; /&gt;
+64	        &lt;/uipath:event&gt;</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#38</span>
+      <span class="tool-name">Edit</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">19ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;replace_all&quot;: false,
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-bpmn-message-send-receive-pair/OrderCoordination.bpmn&quot;,
+  &quot;old_string&quot;: &quot;          &lt;uipath:input name=\&quot;ItemData\&quot; type=\&quot;json\&quot; target=\&quot;body\&quot;&gt;&lt;![CDATA[{\&quot;Reference\&quot;:\&quot;OrderReadyCorrelation\&quot;}]]&gt;&lt;/uipath:input&gt;\n          &lt;uipath:output name=\&quot;response\&quot; type=\&quot;Maestro.ReceiveMessageEvent\&quot; var=\&quot;Var_ReceiveOrderReadyResponse\&quot; /&gt;&quot;,
+  &quot;new_string&quot;: &quot;          &lt;uipath:input name=\&quot;Reference\&quot; type=\&quot;string\&quot; target=\&quot;bodyField\&quot;&gt;OrderReadyCorrelation&lt;/uipath:input&gt;\n          &lt;uipath:output name=\&quot;response\&quot; type=\&quot;Maestro.ReceiveMessageEvent\&quot; var=\&quot;Var_ReceiveOrderReadyResponse\&quot; /&gt;&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>The file /work/output/artifacts/skill-bpmn-message-send-receive-pair/OrderCoordination.bpmn has been updated successfully. (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#39</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">589ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro bpmn validate OrderCoordination.bpmn --output json 2&gt;&amp;1; echo EXIT:$?&quot;,
+  &quot;description&quot;: &quot;Re-validate the BPMN file after fixing ReceiveMessageEvent input shape&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Failure&quot;,
+  &quot;Message&quot;: &quot;Validation failed for /work/output/artifacts/skill-bpmn-message-send-receive-pair/OrderCoordination.bpmn&quot;,
+  &quot;Instructions&quot;: &quot;Found 1 error(s):\n  - [error] [Event_SendOrderReady] EMPTY_REQUIRED_FIELD: The field &#x27;Reference&#x27; in node &#x27;Send order ready&#x27; is required but has no value.\n  - [warning] [Event_SendOrderReady] MISSING_ROOT_VARIABLE: Node &#x27;Send order ready&#x27; references an output variable with no matching scope variable.\n  - [warning] [Event_ReceiveOrderReady] MISSING_ROOT_VARIABLE: Node &#x27;Await order ready&#x27; references an output variable with no matching scope variable.&quot;,
+  &quot;ErrorCode&quot;: &quot;unknown_error&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}
+EXIT:1</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#40</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">19ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -n \&quot;splitInputsItemData\\|ItemData\\|SpecificContent\&quot; /usr/lib/node_modules/@uipath/maestro-tool/dist/index-2dvhe3at.js | grep -v \&quot;8594\\|8500\\|8483\\|7834\\|7810\\|7889\\|7914\&quot; &quot;,
+  &quot;description&quot;: &quot;Search for split ItemData reverse-parsing logic&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>8508:      inputNotes: &quot;isSplitInputs=true in design schema but NOT in isSplitInputsEvents code array, so inputs are NOT merged into ItemData for this type. They remain separate.&quot;,
+8575:      inputPattern: &quot;splitInputsItemData&quot;,
+8576:      inputName: &quot;ItemData&quot;,
+8602:      inputNotes: &quot;In isSplitInputsEvents array. Inputs are merged into a single ItemData JSON body at serialization time. Uses SEND_MESSAGE_EVENT_INPUT_SCHEMA as the inputSchema.&quot;,
+8618:          name: &quot;SpecificContent&quot;,</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#41</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">15ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -n \&quot;isSplitInputsEventsArray\\|SPLIT_INPUTS\\|splitInputs\&quot; /usr/lib/node_modules/@uipath/maestro-tool/dist/index-2dvhe3at.js&quot;,
+  &quot;description&quot;: &quot;Find split-inputs-events handling in deserializer/validator&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>8575:      inputPattern: &quot;splitInputsItemData&quot;,
+9079:    isSplitInputsEventsArray: [</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#42</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">28ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -n \&quot;isSplitInputsEventsArray\\|unpackItemData\\|expandItemData\\|parseItemData\&quot; /usr/lib/node_modules/@uipath/maestro-tool/dist/index-2dvhe3at.js /usr/lib/node_modules/@uipath/maestro-tool/dist/index-8bsngk9y.js /usr/lib/node_modules/@uipath/maestro-tool/dist/tool-2ab1nank.js 2&gt;/dev/null&quot;,
+  &quot;description&quot;: &quot;Search for ItemData unpack logic across bundles&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/usr/lib/node_modules/@uipath/maestro-tool/dist/index-2dvhe3at.js:9079:    isSplitInputsEventsArray: [</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#43</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">14ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;sed -n &#x27;15060,15100p&#x27; /usr/lib/node_modules/@uipath/maestro-tool/dist/index-2dvhe3at.js&quot;,
+  &quot;description&quot;: &quot;Inspect loadRequiredFieldIndex function&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>  dc: DcPackage,
+  di: DiPackage,
+  bioc: BiocPackage,
+  color: BpmnInColorPackage
+};
+function SimpleBpmnModdle(additionalPackages, options) {
+  const pks = assign({}, packages, additionalPackages);
+  return new BpmnModdle(pks, options);
+}
+var import_sax = __toESM(require_sax(), 1);
+function refId(ref) {
+  if (ref === undefined)
+    return;
+  return typeof ref === &quot;string&quot; ? ref : ref.id;
+}
+var requiredFieldIndexCache;
+function loadRequiredFieldIndex() {
+  if (requiredFieldIndexCache)
+    return requiredFieldIndexCache;
+  const index = new Map;
+  for (const [serviceType, def] of Object.entries(BPMN_SPEC.extensionTypes ?? {})) {
+    const names = new Set;
+    for (const f of def.contextFields ?? []) {
+      if (f.required &amp;&amp; !(f.hidden &amp;&amp; f.defaultValue !== null &amp;&amp; f.defaultValue !== undefined)) {
+        names.add(f.name);
+      }
+    }
+    for (const f of def.inputFields ?? []) {
+      if (f.required)
+        names.add(f.name);
+    }
+    if (names.size)
+      index.set(serviceType, names);
+  }
+  requiredFieldIndexCache = index;
+  return index;
+}
+var ext = (el) =&gt; el?.extensionElements?.values ?? [];
+var findExt = (el, type) =&gt; ext(el).find((e) =&gt; e.$type === type);
+function eventD
+
+… (truncated, 54 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#44</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">15ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -n \&quot;JSON.parse\\|body.*JSON\\|splitInputsItemData\\|unpackMerged\\|mergeAware\&quot; /usr/lib/node_modules/@uipath/maestro-tool/dist/index-2dvhe3at.js | sed -n &#x27;1,60p&#x27;&quot;,
+  &quot;description&quot;: &quot;Search for JSON parsing of merged ItemData input near deserialization&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>8575:      inputPattern: &quot;splitInputsItemData&quot;,
+16844:    return collectExpressionsFromObject(JSON.parse(trimmed));
+16922:      schema = JSON.parse(schema);
+17047:    const parsed = JSON.parse(value);</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#45</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">20ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;sed -n &#x27;9060,9100p&#x27; /usr/lib/node_modules/@uipath/maestro-tool/dist/index-2dvhe3at.js&quot;,
+  &quot;description&quot;: &quot;Inspect isSplitInputsEventsArray context&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>        &quot;If nodeType is bpmn:ScriptTask or bpmn:SubProcess =&gt; uipath:mapping&quot;,
+        &quot;Otherwise =&gt; uipath:activity&quot;
+      ]
+    },
+    isEventsArray: [
+      &quot;Intsvc.WaitForEvent&quot;,
+      &quot;Intsvc.EventTrigger&quot;,
+      &quot;Maestro.ReceiveMessageEvent&quot;,
+      &quot;Maestro.SendMessageEvent&quot;
+    ],
+    isExecutionArray: [
+      &quot;Intsvc.ActivityExecution&quot;,
+      &quot;Intsvc.AsyncExecution&quot;,
+      &quot;Intsvc.SyncAgentExecution&quot;,
+      &quot;Intsvc.AsyncAgentExecution&quot;,
+      &quot;Intsvc.SyncWorkflowExecution&quot;,
+      &quot;Intsvc.AsyncWorkflowExecution&quot;,
+      &quot;Intsvc.UnifiedHttpRequest&quot;
+    ],
+    isSplitInputsEventsArray: [
+      &quot;Maestro.SendMessageEvent&quot;
+    ]
+  }
+};
+var BPMN_SPEC = bpmn_spec_default;
+var STATIC_UIPATH_EXTENSION_TAG_NAMES = [
+  &quot;binding&quot;,
+  &quot;bindings&quot;,
+  &quot;caseManagement&quot;,
+  &quot;context&quot;,
+  &quot;entryPointId&quot;,
+  &quot;error&quot;,
+  &quot;errorDefinition&quot;,
+  &quot;errorMapping&quot;,
+  &quot;input&quot;,
+  &quot;inputOutput&quot;,
+  &quot;inputSchema&quot;,
+  &quot;intsvcActivityConfig&quot;,
+  &quot;isTransactionRoot&quot;,
+  &quot;loopCharacteristics&quot;,
+  &quot;migrationVersion&quot;,</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#46</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">21ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -n \&quot;validateRequiredFields\\b\&quot; /usr/lib/node_modules/@uipath/maestro-tool/dist/index-2dvhe3at.js&quot;,
+  &quot;description&quot;: &quot;Find all call sites of validateRequiredFields&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>16417:function validateRequiredFields(nodes) {
+17446:  errors.push(...validateRequiredFields(nodes));</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#47</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">65ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -n \&quot;validateBpmn\\|class.*Valid\\|function.*[Vv]alidate.*(\&quot; /usr/lib/node_modules/@uipath/maestro-tool/dist/tool-2ab1nank.js | head -40\necho \&quot;---\&quot;\ngrep -rn \&quot;bpmn validate\\|BpmnValidateService\\|runCanvasValidation\\|validateProject\\b\&quot; /usr/lib/node_modules/@uipath/cli/dist/*.js 2&gt;/dev/null | head -20&quot;,
+  &quot;description&quot;: &quot;Find CLI validate command wiring&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>&lt;persisted-output&gt;
+Output too large (111.8KB). Full output saved to: /home/azureuser/.claude/projects/-work-output-artifacts-skill-bpmn-message-send-receive-pair/bfac7660-6526-44fd-bfb3-af6c0d573d1d/tool-results/bjpz1fhfn.txt
+
+Preview (first 2KB):
+2151:async function validateCaseInputs(config, inputs) {
+5249:function validateUnit(unit) {
+5255:function validateCount(count) {
+5790:function validateActivityInputDetails(raw, isHttpRequest) {
+5836:function validateTriggerInputDetails(raw) {
+10766:function validateCeqlFilterShape(taskId, stageId, inputs, configurationStr) {
+11002:class CaseValidateService {
+12545:function validateBindOptions(options, fieldKeys) {
+---
+/usr/lib/node_modules/@uipath/cli/dist/index.browser.js:1343:&lt;/bpmn:ServiceTask&gt;`,bpmnElementNotes:&quot;Not in FPS_TO_NODE_MAPPING activity section; used internally for case management processes. Likely bpmn:ServiceTask or bpmn:Task.&quot;}},bpmnElements:{gateways:{&quot;bpmn:ExclusiveGateway&quot;:{bpmnElement:&quot;bpmn:ExclusiveGateway&quot;,category:&quot;gateway&quot;},&quot;bpmn:ParallelGateway&quot;:{bpmnElement:&quot;bpmn:ParallelGateway&quot;,category:&quot;gateway&quot;},&quot;bpmn:InclusiveGateway&quot;:{bpmnElement:&quot;bpmn:InclusiveGateway&quot;,category:&quot;gateway&quot;},&quot;bpmn:ComplexGateway&quot;:{bpmnEleme
+
+… (truncated, 1072 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#48</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">39ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -n \&quot;ItemData\&quot; /usr/lib/node_modules/@uipath/maestro-tool/dist/index-8bsngk9y.js | head -40&quot;,
+  &quot;description&quot;: &quot;Search index-8bsngk9y.js for ItemData handling (likely canvas layer)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>165114:              name: &quot;ItemData&quot;,
+165255:              name: &quot;ItemData&quot;,
+165324:              name: &quot;ItemData&quot;,
+165536:              name: &quot;ItemData&quot;,
+203672:              name: &quot;ItemData&quot;,
+227160:              name: &quot;ItemData&quot;,
+245851:      if (isSplitInputsEvents.includes(uipath.serviceType) &amp;&amp; newUipath.inputs?.length &amp;&amp; !newUipath.inputs.some((i) =&gt; i.name === &quot;ItemData&quot;)) {
+245857:            name: designSchema?.structure?.input?.jsonBody?.name ?? &quot;ItemData&quot;,</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#49</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">30ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;sed -n &#x27;245780,245900p&#x27; /usr/lib/node_modules/@uipath/maestro-tool/dist/index-8bsngk9y.js&quot;,
+  &quot;description&quot;: &quot;Inspect ItemData merge logic for SendMessageEvent&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>              retryable
+            };
+          })
+        })
+      ] : []
+    ];
+    if ((nodeType === &quot;bpmn:StartEvent&quot; || nodeType === &quot;bpmn:EndEvent&quot; || nodeType === &quot;bpmn:Task&quot;) &amp;&amp; serviceType === &quot;BPMN.Variables&quot; || nodeType === &quot;bpmn:ScriptTask&quot; || nodeType === &quot;bpmn:SubProcess&quot;) {
+      return [
+        ...createModdleExtensionVariableMapping({
+          inputs,
+          outputs,
+          context,
+          inputSchema,
+          outputSchema,
+          scriptVersion,
+          caseManagement,
+          skipCondition
+        }),
+        ...errorHandlingExtensions
+      ];
+    }
+    if (nodeType === &quot;bpmn:MultiInstanceLoopCharacteristics&quot;) {
+      return createModdleExtensionLoopCharacteristics({ inputCollection, inputElement });
+    }
+    const uipath = { serviceType, context, inputs, outputs, inputSchema, outputSchema, version: version3, scriptVersion, caseManagement, skipCondition };
+    const uipathNodeType = isEvents.includes(serviceType) ? &quot;uipath:Event&quot; : &quot;uipath:Activity&quot;;
+    const extensionTasks = [
+      ...extensionElementNodeHasContent(uipath) ? [createModdleExtensionTask(uipath, uipathNodeType)] : [],
+      ...errorHandlingExtensions
+    ];
+    return extens
+
+… (truncated, 4814 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#50</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">55ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -n \&quot;\\\&quot;validate\\\&quot;\\|&#x27;validate&#x27;\\|bpmn.*validate\\|runCanvasRules\\|canvasValidation\\|validateRequiredFields\&quot; /usr/lib/node_modules/@uipath/cli/dist/index.browser.js | head -20&quot;,
+  &quot;description&quot;: &quot;Find bpmn validate command entry point in CLI dist&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>&lt;persisted-output&gt;
+Output too large (3.4MB). Full output saved to: /home/azureuser/.claude/projects/-work-output-artifacts-skill-bpmn-message-send-receive-pair/bfac7660-6526-44fd-bfb3-af6c0d573d1d/tool-results/bvwe2asrh.txt
+
+Preview (first 2KB):
+81:`)}o.formatToString=i})(I||={})});function GWi(e,t){return{product_area:e,mode:t}}function R3m(e){let t={};for(let[r,n,i]of e){let o=GWi(r,n);for(let u of i)t[u]=o}return t}function F3m(e){let t=[];for(let[r,n,i]of e){let o=GWi(r,n);for(let u of i)t.push({prefix:u,attribution:o})}return t}function M3m(e){if(typeof e!=&quot;string&quot;)return;let t=e.trim().toLowerCase();if(!t)return;let r=t.includes(&quot; &quot;)?t.split(/\s+/).filter(i=&gt;i.length&gt;0).filter(i=&gt;!i.startsWith(&quot;-&quot;)):t.split(&quot;.&quot;).filter(i=&gt;i.length&gt;0);return r.length===0?void 0:(r[0]===&quot;uip&quot;?r:[&quot;uip&quot;,...r]).join(&quot;.&quot;)}function U3m(e){let t=M3m(e);if(t)return B3m.find(({prefix:r})=&gt;t===r||t.startsWith(`${r}.`))?.attribution}function V3m(e,t){if(typeof e!=&quot;string&quot;)return;let r=e.trim().toLowerCase();if(!r)return;let n=r.startsWith(HWi);if(n&amp;&amp;!t.allowLegacyNamespace)return;let i=n?r.slice(HWi.length):r;if(!(i.length&gt;80||!P3m.test(i)||!N3m.has(i)))return i}function $3m(e){return V3m(e,{allowLegacyN
+
+… (truncated, 1070 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#51</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">42ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -n \&quot;SpecificContent\\|TimeToLive\\|isSplitInputsEvents\\b\&quot; /usr/lib/node_modules/@uipath/maestro-tool/dist/index-8bsngk9y.js | head -40&quot;,
+  &quot;description&quot;: &quot;Search canvas layer for split-inputs-events unpack logic reading ItemData&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>166235:          SpecificContent: {
+166251:            name: &quot;SpecificContent&quot;,
+203676:                SpecificContent: messageData,
+203679:                TimeToLive: &quot;&quot;
+227164:                SpecificContent: messageData,
+227167:                TimeToLive: &quot;&quot;
+245368:      SpecificContent: { type: &quot;object&quot;, title: &quot;Item information&quot; },
+245369:      TimeToLive: { type: &quot;duration&quot;, title: &quot;Time to live&quot; }
+245431:  var isSplitInputsEvents = [&quot;Maestro.SendMessageEvent&quot;];
+245851:      if (isSplitInputsEvents.includes(uipath.serviceType) &amp;&amp; newUipath.inputs?.length &amp;&amp; !newUipath.inputs.some((i) =&gt; i.name === &quot;ItemData&quot;)) {</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#52</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">15ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -n \&quot;ItemData\&quot; /usr/lib/node_modules/@uipath/maestro-tool/dist/index-2dvhe3at.js&quot;,
+  &quot;description&quot;: &quot;Search validator bundle for ItemData unmerge logic&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>7810:      inputName: &quot;ItemData&quot;,
+7834:      &lt;uipath:input name=&quot;ItemData&quot; type=&quot;json&quot; target=&quot;body&quot;&gt;&lt;![CDATA[{}]]&gt;&lt;/uipath:input&gt;
+7889:      inputName: &quot;ItemData&quot;,
+7914:      &lt;uipath:input name=&quot;ItemData&quot; type=&quot;json&quot; target=&quot;body&quot;&gt;&lt;![CDATA[{}]]&gt;&lt;/uipath:input&gt;
+8483:      inputName: &quot;ItemData&quot;,
+8500:      &lt;uipath:input name=&quot;ItemData&quot; type=&quot;json&quot; target=&quot;body&quot;&gt;&lt;![CDATA[{}]]&gt;&lt;/uipath:input&gt;
+8508:      inputNotes: &quot;isSplitInputs=true in design schema but NOT in isSplitInputsEvents code array, so inputs are NOT merged into ItemData for this type. They remain separate.&quot;,
+8575:      inputPattern: &quot;splitInputsItemData&quot;,
+8576:      inputName: &quot;ItemData&quot;,
+8594:      &lt;uipath:input name=&quot;ItemData&quot; type=&quot;json&quot; target=&quot;body&quot;&gt;&lt;![CDATA[{&quot;Reference&quot;:&quot;&quot;,&quot;SpecificContent&quot;:{},&quot;Error&quot;:&quot;&quot;,&quot;TimeToLive&quot;:&quot;&quot;}]]&gt;&lt;/uipath:input&gt;
+8602:      inputNotes: &quot;In isSplitInputsEvents array. Inputs are merged into a single ItemData JSON body at serialization time. Uses SEND_MESSAGE_EVENT_INPUT_SCHEMA as the inputSchema.&quot;,</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#53</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">15ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -rn \&quot;Reference\\b\&quot; /home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/*.md /home/azureuser/projects/skills/skills/uipath-maestro-bpmn/SKILL.md 2&gt;/dev/null&quot;,
+  &quot;description&quot;: &quot;Search skill markdown docs for Reference field guidance&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/structural-bpmn.md:143:block directly. Variable bodies are CDATA. Reference variables in expressions as</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#54</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">17ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -n \&quot;splitInputsItemData\\|SPLIT_INPUTS\\|unmergeItemData\\|inputPattern ===\\|inputPattern==\&quot; /usr/lib/node_modules/@uipath/maestro-tool/dist/index-2dvhe3at.js&quot;,
+  &quot;description&quot;: &quot;Search validator for inputPattern-aware unmerge special-casing&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>8575:      inputPattern: &quot;splitInputsItemData&quot;,</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#55</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">15ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -rn \&quot;SendMessageEvent\\|ReceiveMessageEvent\&quot; /usr/lib/node_modules/@uipath/maestro-tool/dist/tool-2ab1nank.js | head -40&quot;,
+  &quot;description&quot;: &quot;Search tool-2ab1nank.js for message event specific validation&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>(Bash completed with no output)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#56</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">60ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -n \&quot;index-2dvhe3at\\|index-8bsngk9y\\|packager-tool-bnqptw8n\\|tool-2ab1nank\&quot; /usr/lib/node_modules/@uipath/cli/dist/index.browser.js | head -20\necho \&quot;---maestro-tool package.json---\&quot;\ncat /usr/lib/node_modules/@uipath/maestro-tool/package.json 2&gt;/dev/null | head -30&quot;,
+  &quot;description&quot;: &quot;Check which bundles the CLI actually imports&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>---maestro-tool package.json---
+{
+  &quot;name&quot;: &quot;@uipath/maestro-tool&quot;,
+  &quot;license&quot;: &quot;MIT&quot;,
+  &quot;version&quot;: &quot;1.201.0-dev.8275&quot;,
+  &quot;description&quot;: &quot;Create, debug, and run Maestro projects and jobs.&quot;,
+  &quot;private&quot;: false,
+  &quot;repository&quot;: {
+    &quot;type&quot;: &quot;git&quot;,
+    &quot;url&quot;: &quot;https://github.com/UiPath/cli.git&quot;,
+    &quot;directory&quot;: &quot;packages/maestro-tool&quot;
+  },
+  &quot;publishConfig&quot;: {
+    &quot;registry&quot;: &quot;https://npm.pkg.github.com/@uipath&quot;
+  },
+  &quot;keywords&quot;: [
+    &quot;cli-tool&quot;
+  ],
+  &quot;type&quot;: &quot;module&quot;,
+  &quot;main&quot;: &quot;./dist/tool.js&quot;,
+  &quot;exports&quot;: {
+    &quot;.&quot;: &quot;./dist/tool.js&quot;,
+    &quot;./packager-tool&quot;: &quot;./dist/packager-tool.js&quot;
+  },
+  &quot;bin&quot;: {
+    &quot;maestro-tool&quot;: &quot;./dist/index.js&quot;
+  },
+  &quot;files&quot;: [
+    &quot;dist&quot;
+  ],
+  &quot;scripts&quot;: {</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#57</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">36ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -n \&quot;class.*BpmnValidateService\\|BpmnValidateService\&quot; /usr/lib/node_modules/@uipath/maestro-tool/dist/*.js&quot;,
+  &quot;description&quot;: &quot;Locate BpmnValidateService class definitions across bundles&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/usr/lib/node_modules/@uipath/maestro-tool/dist/bpmn-refresh-service-meprbm0a.js:9:  BpmnValidateService,
+/usr/lib/node_modules/@uipath/maestro-tool/dist/bpmn-refresh-service-meprbm0a.js:313:    const result = await new BpmnValidateService(fileSystem).validateFile(this.fs.path.join(projectPath, bpmnFile));
+/usr/lib/node_modules/@uipath/maestro-tool/dist/packager-tool-2y3cxgtc.js:281:class BpmnValidateService {
+/usr/lib/node_modules/@uipath/maestro-tool/dist/packager-tool-2y3cxgtc.js:447:    const { BpmnValidateService: BpmnProjectValidateService } = await import(&quot;./project-validator-g2ke2m4j.js&quot;);
+/usr/lib/node_modules/@uipath/maestro-tool/dist/packager-tool-2y3cxgtc.js:458:export { BPMN_PACKAGE_FILES, entryPointDisplayName, buildBpmnPackageMetadata, formatBpmnPackageFile, isJsonObject, BpmnValidateService };
+/usr/lib/node_modules/@uipath/maestro-tool/dist/packager-tool-7qh62xfn.js:13:  BpmnValidateService,
+/usr/lib/node_modules/@uipath/maestro-tool/dist/packager-tool-7qh62xfn.js:4761:    const validator = new BpmnValidateService(this.fs);
+/usr/lib/node_modules/@uipath/maestro-tool/dist/packager-tool-7qh62xfn.js:6159:    const service = new BpmnValidateService;
+/usr/lib/node_module
+
+… (truncated, 686 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#58</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">27ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -n \&quot;validate\\b\&quot; /usr/lib/node_modules/@uipath/maestro-tool/dist/index.js 2&gt;/dev/null | head -20\nfind /usr/lib/node_modules/@uipath/maestro-tool/dist -name \&quot;index.js\&quot;\ncat /usr/lib/node_modules/@uipath/maestro-tool/dist/index.js 2&gt;/dev/null | head -5&quot;,
+  &quot;description&quot;: &quot;Inspect maestro-tool CLI entry index.js&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/usr/lib/node_modules/@uipath/maestro-tool/dist/index.js
+#!/usr/bin/env node
+import {
+  metadata,
+  registerCommands
+} from &quot;./packager-tool-7qh62xfn.js&quot;;</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#59</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">20ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -n \&quot;class BpmnValidateService\\|extends BpmnValidateService\&quot; /usr/lib/node_modules/@uipath/maestro-tool/dist/packager-tool-7qh62xfn.js\nsed -n &#x27;4740,4790p&#x27; /usr/lib/node_modules/@uipath/maestro-tool/dist/packager-tool-7qh62xfn.js&quot;,
+  &quot;description&quot;: &quot;Locate the actual validate command implementation used by CLI&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>    if (!stats?.isDirectory()) {
+      throw new Error(`Project path must be a directory: ${projectPath}`);
+    }
+    const descriptorPath = this.fs.path.join(projectPath, &quot;package-descriptor.json&quot;);
+    if (!await this.fs.exists(descriptorPath)) {
+      throw new Error(`Missing package-descriptor.json in: ${projectPath}`);
+    }
+    await this.validateProjectJsonFile(descriptorPath, &quot;package-descriptor.json&quot;);
+    const operatePath = this.fs.path.join(projectPath, &quot;operate.json&quot;);
+    if (!await this.fs.exists(operatePath)) {
+      throw new Error(`Missing operate.json in: ${projectPath}`);
+    }
+    await this.validateProjectJsonFile(operatePath, &quot;operate.json&quot;);
+    const entries = await this.fs.readdir(projectPath);
+    if (entries.includes(&quot;entry-points.json&quot;)) {
+      await this.validateProjectJsonFile(this.fs.path.join(projectPath, &quot;entry-points.json&quot;), &quot;entry-points.json&quot;);
+    }
+    const bpmnFiles = entries.filter((entry) =&gt; entry.endsWith(&quot;.bpmn&quot;) || entry.endsWith(&quot;.xml&quot;));
+    if (bpmnFiles.length === 0) {
+      throw new Error(`Missing BPMN file in: ${projectPath}`);
+    }
+    const validator = new BpmnValidateService(this.fs);
+    for (const file of bpmnFiles) {
+    
+
+… (truncated, 1029 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#60</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">16ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -n \&quot;\\\&quot;validate\\\&quot;\\|&#x27;validate&#x27;\\|command(\\\&quot;validate\\\&quot;\\|program\\.\\|registerCommands\&quot; /usr/lib/node_modules/@uipath/maestro-tool/dist/packager-tool-7qh62xfn.js | head -30&quot;,
+  &quot;description&quot;: &quot;Find validate subcommand registration&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>2900:  program.command(&quot;format&quot;).description(&quot;Generate or replace the bpmndi:BPMNDiagram layout section in a BPMN file using a left-to-right BFS layout.&quot;).argument(&quot;&lt;bpmn&gt;&quot;, &quot;Path to the .bpmn file&quot;).option(&quot;--output-file &lt;file&gt;&quot;, &quot;Output path (default: overwrite &lt;bpmn&gt;)&quot;).examples(EXAMPLES).trackedAction(processContext, async (bpmnPath, options) =&gt; {
+3310:  program.command(&quot;update-metadata&quot;).description(&quot;Write (or check) project.uiproj, operate.json, entry-points.json, bindings_v2.json, and package-descriptor.json from a BPMN file. Refreshes only the fields derived from the BPMN and preserves everything else already in those files. Pass --dry-run to report drift without writing.&quot;).argument(&quot;&lt;bpmn&gt;&quot;, &quot;Path to the .bpmn file&quot;).option(&quot;--output-dir &lt;dir&gt;&quot;, &quot;Directory for the metadata JSON files (default: directory of &lt;bpmn&gt;). In --dry-run mode, this is the directory whose existing files are checked.&quot;).option(&quot;--dry-run&quot;, &quot;Report drift against the BPMN file without writing anything.&quot;).examples(EXAMPLES2).trackedAction(processContext, async (bpmnPath, options) =&gt; {
+4101:  program.command(&quot;debug&quot;).description(&quot;Debug a maestro project by uploading to Studio Web and running a debug sessio
+
+… (truncated, 3478 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#61</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">12ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;sed -n &#x27;6155,6215p&#x27; /usr/lib/node_modules/@uipath/maestro-tool/dist/packager-tool-7qh62xfn.js&quot;,
+  &quot;description&quot;: &quot;Inspect validate command action code&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>  }
+];
+var registerValidateCommand = (program) =&gt; {
+  program.command(&quot;validate&quot;).description(&quot;Validate a Maestro BPMN .bpmn or .xml file&quot;).argument(&quot;&lt;file&gt;&quot;, &quot;Path to the .bpmn or .xml file to validate&quot;).examples(BPMN_VALIDATE_EXAMPLES).trackedAction(processContext, async (file) =&gt; {
+    const service = new BpmnValidateService;
+    const exitCode = await service.execute(file);
+    if (exitCode) {
+      processContext.exit(exitCode);
+    }
+  });
+};
+
+// src/tool.ts
+var metadata = {
+  name: &quot;maestro-tool&quot;,
+  version: package_default.version,
+  description: &quot;Create, debug, and run Maestro projects and jobs.&quot;,
+  commandPrefix: &quot;maestro&quot;
+};
+var registerBpmnCommands = (program) =&gt; {
+  registerInitCommand(program);
+  registerRefreshCommand(program);
+  registerPackCommand(program);
+  registerValidateCommand(program);
+  registerDebugCommand(program);
+  registerDebugInstancesCommand(program);
+  registerProcessCommand(program);
+  registerJobCommand(program);
+  registerInstancesCommand(program);
+  registerProcessesCommand(program);
+  registerIncidentsCommand(program);
+  registerRegistryCommand(program);
+  registerFormatCommand(program);
+  registerUpdateMetadataCommand(program);
+};
+var shouldHy
+
+… (truncated, 694 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#62</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">16ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -n \&quot;^import\\|BpmnValidateService,\&quot; /usr/lib/node_modules/@uipath/maestro-tool/dist/packager-tool-7qh62xfn.js | head -20&quot;,
+  &quot;description&quot;: &quot;Find where BpmnValidateService is imported from in this file&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1:import {
+6:import {
+12:import {
+13:  BpmnValidateService,
+17:import {
+37:import {
+47:import {
+66:import {
+69:import {
+73:import {
+3798:import crypto2 from &quot;node:crypto&quot;;
+5928:import { createHash } from &quot;node:crypto&quot;;</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#63</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">11ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;sed -n &#x27;1,20p&#x27; /usr/lib/node_modules/@uipath/maestro-tool/dist/packager-tool-7qh62xfn.js&quot;,
+  &quot;description&quot;: &quot;Show import statements at top of file&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>import {
+  buildSolutionPackageFromDir,
+  createZipFromDir,
+  uploadOrOverwriteSolution
+} from &quot;./packager-tool-df8f5938.js&quot;;
+import {
+  findSolutionFile,
+  prepareProjectLocation,
+  tryRegisterProjectInParentSolution,
+  updateSolutionFile
+} from &quot;./packager-tool-exwxemmz.js&quot;;
+import {
+  BpmnValidateService,
+  buildBpmnPackageMetadata,
+  formatBpmnPackageFile
+} from &quot;./packager-tool-2y3cxgtc.js&quot;;
+import {
+  BPMN_SPEC,
+  VALID_PACKAGE_NAME_REGEX,
+  VALID_PROJECT_NAME_REGEX,</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#64</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">19ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;wc -l /usr/lib/node_modules/@uipath/maestro-tool/dist/packager-tool-2y3cxgtc.js\nsed -n &#x27;1,50p&#x27; /usr/lib/node_modules/@uipath/maestro-tool/dist/packager-tool-2y3cxgtc.js&quot;,
+  &quot;description&quot;: &quot;Inspect the actual BpmnValidateService used by validate command&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>461 /usr/lib/node_modules/@uipath/maestro-tool/dist/packager-tool-2y3cxgtc.js
+import {
+  SUPPORTED_UIPATH_EXTENSION_TAG_NAMES
+} from &quot;./packager-tool-c0n5jv07.js&quot;;
+import {
+  OutputFormatter,
+  RESULTS,
+  catchError,
+  logger
+} from &quot;./packager-tool-hcqxktpy.js&quot;;
+import {
+  getFileSystem
+} from &quot;./packager-tool-1cb0d5e0.js&quot;;
+import {
+  __require
+} from &quot;./packager-tool-wckvcay0.js&quot;;
+
+// src/services/bpmn-package-metadata.ts
+var BPMN_PACKAGE_FILES = [
+  &quot;entry-points.json&quot;,
+  &quot;bindings_v2.json&quot;,
+  &quot;operate.json&quot;,
+  &quot;package-descriptor.json&quot;
+];
+var SCHEMA_ANNOTATIONS = [&quot;title&quot;, &quot;description&quot;, &quot;$comment&quot;];
+function entryPointDisplayName(name) {
+  const value = name?.trim();
+  return !value || value === &quot;core.trigger.manual&quot; ? &quot;Manual trigger&quot; : value;
+}
+function buildBpmnPackageMetadata(options) {
+  if (options.entryPoints.length === 0) {
+    throw new Error(&quot;At least one manual start event is required.&quot;);
+  }
+  const existing = options.existing ?? {};
+  const existingEntries = readExistingEntries(existing[&quot;entry-points.json&quot;]);
+  const entryPoints = options.entryPoints.map((entryPoint) =&gt; {
+    const filePath = entryPointPath(options.bpmnFile, entryPoint.startEventId);
+    const old
+
+… (truncated, 609 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#65</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">10ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -n \&quot;class BpmnValidateService\\|execute(\&quot; /usr/lib/node_modules/@uipath/maestro-tool/dist/packager-tool-2y3cxgtc.js&quot;,
+  &quot;description&quot;: &quot;Find class definition and execute method in this file&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>281:class BpmnValidateService {
+286:  async execute(filePath) {</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#66</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">10ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;sed -n &#x27;281,461p&#x27; /usr/lib/node_modules/@uipath/maestro-tool/dist/packager-tool-2y3cxgtc.js&quot;,
+  &quot;description&quot;: &quot;Read full BpmnValidateService implementation used by validate CLI command&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>class BpmnValidateService {
+  fs;
+  constructor(fs = getFileSystem()) {
+    this.fs = fs;
+  }
+  async execute(filePath) {
+    const [error, result] = await catchError(this.validateFile(filePath));
+    if (error) {
+      OutputFormatter.error({
+        Result: RESULTS.Failure,
+        Message: &quot;BPMN validation failed&quot;,
+        Instructions: error.message
+      });
+      if (error.stack) {
+        logger.error(&quot;Stack trace:&quot;);
+        logger.error(error.stack);
+      }
+      return 1;
+    }
+    if (!result.success) {
+      OutputFormatter.error({
+        Result: RESULTS.Failure,
+        Message: `Validation failed for ${result.filePath}`,
+        Instructions: `Found ${result.issues.filter((i) =&gt; i.severity === &quot;error&quot;).length} error(s):
+${result.issues.map(formatIssueLine).join(`
+`)}`
+      });
+      return 1;
+    }
+    const warnings = result.issues.filter((i) =&gt; i.severity === &quot;warning&quot;);
+    OutputFormatter.success({
+      Result: RESULTS.Success,
+      Code: &quot;BpmnValidate&quot;,
+      Data: {
+        File: result.filePath,
+        Status: &quot;Valid&quot;,
+        ProcessCount: result.processCount,
+        StartEventCount: result.startEventCount,
+        UiPathExtensionCount: result.uipathExt
+
+… (truncated, 5713 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#67</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">11ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -n \&quot;isSplitInputsEventsArray\\|expandSplitInputs\\|unpackSplitInputs\\|JSON.parse(.*ItemData\\|itemData\\b\&quot; /usr/lib/node_modules/@uipath/maestro-tool/dist/index-2dvhe3at.js&quot;,
+  &quot;description&quot;: &quot;Search for ItemData unpacking before validateRequiredFields&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>9079:    isSplitInputsEventsArray: [</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#68</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">13ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -n \&quot;inputPattern\\|body.*JSON\\.parse\\|JSON.parse(i\\.\\|JSON.parse(input\&quot; /usr/lib/node_modules/@uipath/maestro-tool/dist/index-2dvhe3at.js | head -30&quot;,
+  &quot;description&quot;: &quot;Search validator bundle for inputPattern-aware body JSON parsing of merged inputs&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>6145:      inputPattern: &quot;none&quot;,
+6211:      inputPattern: &quot;mergedBody&quot;,
+6296:      inputPattern: &quot;mergedBody&quot;,
+6372:      inputPattern: &quot;mergedBody&quot;,
+6456:      inputPattern: &quot;mergedBody&quot;,
+6625:      inputPattern: &quot;separateInputs&quot;,
+6733:      inputPattern: &quot;none&quot;,
+6833:      inputPattern: &quot;separateInputs&quot;,
+6887:      inputPattern: &quot;separateInputs&quot;,
+7025:      inputPattern: &quot;separateInputs&quot;,
+7222:      inputPattern: &quot;separateInputs&quot;,
+7327:      inputPattern: &quot;separateInputs&quot;,
+7432:      inputPattern: &quot;separateInputs&quot;,
+7537:      inputPattern: &quot;separateInputs&quot;,
+7642:      inputPattern: &quot;separateInputs&quot;,
+7729:      inputPattern: &quot;mergedBody&quot;,
+7809:      inputPattern: &quot;mergedBody&quot;,
+7888:      inputPattern: &quot;mergedBody&quot;,
+7977:      inputPattern: &quot;mergedBody&quot;,
+8066:      inputPattern: &quot;mergedBody&quot;,
+8155:      inputPattern: &quot;mergedBody&quot;,
+8244:      inputPattern: &quot;mergedBody&quot;,
+8290:      inputPattern: &quot;mergedBody&quot;,
+8358:      inputPattern: &quot;none&quot;,
+8384:      inputPattern: &quot;scriptArgs&quot;,
+8412:      inputPattern: &quot;none&quot;,
+8482:      inputPattern: &quot;separateInputs&quot;,
+8575:      inputPattern: &quot;splitInputsItemData&quot;,
+8680:      inputPattern: &quot;mergedBody&quot;,
+8735:      inputPattern: &quot;mergedBody&quot;,</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#69</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">16ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -n \&quot;function validateBpmnCanvas\\|buildNode\\b\\|collectContainer\\b\&quot; /usr/lib/node_modules/@uipath/maestro-tool/dist/index-2dvhe3at.js | head -20&quot;,
+  &quot;description&quot;: &quot;Locate validateBpmnCanvas entry and buildNode functions&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>15248:function buildNode(el, parent, requiredFieldIndex) {
+15304:function collectContainer(container, requiredFieldIndex, nodesOut, edgesOut, rootParentId) {
+15311:    const node = buildNode(el, container, requiredFieldIndex);
+15316:      collectContainer(el, requiredFieldIndex, nodesOut, edgesOut, rootParentId);
+15382:        collectContainer(proc, requiredFieldIndex, nodes, edges, p.id);
+15402:      collectContainer(proc, requiredFieldIndex, nodes, edges, undefined);
+18343:async function validateBpmnCanvas(xml2) {</pre>
+    
+  </div>
+</details>
+
+</div>
+
+<h2>Command Telemetry</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Total</div><div class="value">70</div></div>
+    <div class="stat"><div class="label">Successful</div><div class="value">70 (100%)</div></div>
+    <div class="stat"><div class="label">Failed</div><div class="value">0</div></div>
+    <div class="stat"><div class="label">Avg / cmd</div><div class="value">203ms</div></div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 2fr;gap:16px;margin-top:12px">
+    <div>
+      <h4>By Tool</h4>
+      <table>
+        <thead><tr><th>Tool</th><th>Count</th></tr></thead>
+        <tbody><tr><td class='mono'>Bash</td><td>62</td></tr><tr><td class='mono'>Grep</td><td>3</td></tr><tr><td class='mono'>Read</td><td>2</td></tr><tr><td class='mono'>Skill</td><td>1</td></tr><tr><td class='mono'>Write</td><td>1</td></tr><tr><td class='mono'>Edit</td><td>1</td></tr></tbody>
+      </table>
+    </div>
+    <div>
+      <h4>Slowest</h4>
+      <table>
+        <thead><tr><th>Tool</th><th>Duration</th><th>Parameters</th></tr></thead>
+        <tbody><tr><td class='mono'>Bash</td><td>4.19s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;which uip; uip --version 2&gt;&amp;1; npm ro...</td></tr><tr><td class='mono'>Bash</td><td>3.21s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;mkdir -p registry-evidence &amp;&amp; uip mae...</td></tr><tr><td class='mono'>Bash</td><td>1.45s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro bpmn registry get Maestro...</td></tr><tr><td class='mono'>Bash</td><td>1.07s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro bpmn registry --help 2&gt;&amp;1...</td></tr><tr><td class='mono'>Bash</td><td>644ms</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro bpmn validate OrderCoordi...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+  <p><strong>Most Common Pattern:</strong> <code>Bash → Bash → Bash</code></p><p><strong>Skill Tool Invoked:</strong> 1 time(s)</p>
+</div>
+
+<h2>Generation Metrics</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Total Latency</div><div class="value">15m 2s</div></div>
+    <div class="stat"><div class="label">Turns</div><div class="value">1</div></div>
+    <div class="stat"><div class="label">Assistant Turns</div><div class="value">133</div></div>
+    <div class="stat"><div class="label">Avg Turn Latency</div><div class="value">15m 0s</div></div>
+    <div class="stat"><div class="label">Crashed Partials</div><div class="value">1 (0 recovered, 1 terminal)</div></div>
+  </div>
+</div>
+
+<h2>Token Usage</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Input (uncached)</div><div class="value">140</div></div>
+    <div class="stat"><div class="label">Output</div><div class="value">73,171</div></div>
+    <div class="stat"><div class="label">Cache Write</div><div class="value">108,397</div></div>
+    <div class="stat"><div class="label">Cache Read</div><div class="value">7,196,197</div></div>
+    <div class="stat"><div class="label">Total</div><div class="value">7,377,905</div></div>
+    <div class="stat"><div class="label">Cost</div><div class="value">$3.6633</div></div>
+  </div>
+</div>
+
+<h2>Agent Settings</h2>
+<div class="card" style="padding:0">
+  <table>
+    <tbody><tr><td class='mono dim'>Permission Mode</td><td>acceptEdits</td></tr><tr><td class='mono dim'>Allowed Tools</td><td>Skill, Bash, Read, Write, Edit, Glob, Grep</td></tr><tr><td class='mono dim'>Model</td><td>us.anthropic.claude-sonnet-5</td></tr><tr><td class='mono dim'>Max Turns</td><td>80</td></tr><tr><td class='mono dim'>System Prompt</td><td>You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted. </td></tr><tr><td class='mono dim'>Plugins</td><td>/home/azureuser/projects/skills</td></tr></tbody>
+  </table>
+</div>
+
+<h2>Environment</h2>
+<div class="card" style="padding:0">
+  <table>
+    <tbody><tr><td class='mono dim'>git_commit</td><td>unknown</td></tr><tr><td class='mono dim'>skills_git_commit</td><td>unknown</td></tr><tr><td class='mono dim'>cli_version</td><td>1.201.0-dev.8272</td></tr><tr><td class='mono dim'>tool_plugins</td><td>{&#x27;admin-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;agent-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;agenthub-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;aops-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;api-workflow-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;automation-hub-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;codedagent-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;codedapp-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;coder-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;context-grounding-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;conversational-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;data-fabric-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;docsai-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;function-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;gov-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;guardrails-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;insights-tool&#x27;: &#x27;1.201.0-dev.8276&#x27;, &#x27;integrationservice-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;ixp-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;llm-gateway-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;llmgw-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;maestro-tool&#x27;: &#x27;1.201.0-dev.8275&#x27;, &#x27;model-hub-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;orchestrator-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;platform-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;pm-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;rpa-legacy-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;rpa-tool&#x27;: &#x27;1.201.0-dev.20260809.3&#x27;, &#x27;solution-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;tasks-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;test-manager-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;traces-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;vertical-solutions-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;}</td></tr><tr><td class='mono dim'>coder_eval</td><td>0.8.8</td></tr><tr><td class='mono dim'>claude_code_cli</td><td>2.1.177 (Claude Code)</td></tr><tr><td class='mono dim'>uv</td><td>uv 0.11.28 (x86_64-unknown-linux-gnu)</td></tr><tr><td class='mono dim'>anthropic</td><td>0.122.0</td></tr><tr><td class='mono dim'>openai</td><td>3.0.0</td></tr><tr><td class='mono dim'>pydantic</td><td>2.12.5</td></tr><tr><td class='mono dim'>api_routing</td><td>aws_bedrock</td></tr><tr><td class='mono dim'>aws_region</td><td>us-east-2</td></tr><tr><td class='mono dim'>bedrock_model</td><td>us.anthropic.claude-sonnet-4-6</td></tr></tbody>
+  </table>
+</div>
+
+<footer>Generated by coder_eval · 2026-08-14T22:06:09</footer>
+</div>
+<script>
+function toggleTheme() {
+  document.documentElement.classList.toggle('light');
+  try {
+    const mode = document.documentElement.classList.contains('light') ? 'light' : 'dark';
+    localStorage.setItem('coder-eval-theme', mode);
+  } catch (e) { /* ignore */ }
+}
+(function() {
+  try {
+    if (localStorage.getItem('coder-eval-theme') === 'light') {
+      document.documentElement.classList.add('light');
+    }
+  } catch (e) { /* ignore */ }
+})();
+</script>
+</body>
+</html>

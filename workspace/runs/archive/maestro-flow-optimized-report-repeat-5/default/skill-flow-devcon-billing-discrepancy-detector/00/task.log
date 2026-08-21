@@ -1,0 +1,1464 @@
+2026-07-24 17:14:05 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-24 17:14:05 [INFO] coder_eval.orchestrator: API routing: aws_bedrock
+2026-07-24 17:14:06 [DEBUG] coder_eval.criteria: Discovered 14 criterion checkers
+2026-07-24 17:14:06 [DEBUG] coder_eval.criteria: Validated 14 criterion checkers
+2026-07-24 17:14:06 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-24 17:14:06 [DEBUG] coder_eval.orchestrator: Sending prompt: Build a Maestro Flow "BillingDiscrepancyDetector" (in a solution of the same
+name) that checks a dis...
+2026-07-24 17:14:06 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Starting agent query stream...
+2026-07-24 17:23:35 [DEBUG] coder_eval.agents.claude_code_agent: [coder] session_id changed: None -> ee1aca66-621c-4ff7-ad88-445e237098da
+2026-07-24 17:23:35 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Agent query stream ended
+2026-07-24 17:23:35 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-24 17:23:35 [DEBUG] coder_eval.orchestrator: Agent response received (10025 chars)
+2026-07-24 17:23:35 [DEBUG] coder_eval.orchestrator: Checking success criteria
+2026-07-24 17:23:35 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'uip maestro flow validate passes on the flow file': uip maestro flow validate BillingDiscrepancyDetector/BillingDiscrepancyDetector/BillingDiscrepancyDetector.flow
+2026-07-24 17:23:41 [DEBUG] coder_eval.sandbox: Command 'uip maestro flow validate BillingDiscrepancyDetector/BillingDiscrepancyDetector/BillingDiscrepancyDetector.flow' exited with code 0
+2026-07-24 17:23:41 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+{
+  "Result": "Success",
+  "Code": "FlowValidate",
+  "Data": {
+    "File": "/work/output/artifacts/skill-flow-devcon-billing-discrepancy-detector/BillingDiscrepancyDetector/BillingDiscrepancyDetector/BillingDiscrepancyDetector.flow",
+    "Status": "Valid",
+    "Warnings": "1 warning(s):\n  - [nodes[queryErpRecords1].inputs.detail.connectionResourceId] Connection \"d61e5d0e-04af-4f93-95cc-151d81fa08dc\" is referenced by 2 nodes (nodes[queryErpRecords1], nodes[queryCrmRecord1]). Shared connections cause cross-node state leakage at runtime. If this is intentional (e.g. two connectors on the same SaaS account), ignore this warning; otherwise create a separate connection per node."
+  }
+}
+---
+2026-07-24 17:23:41 [DEBUG] coder_eval.sandbox: STDERR:
+---
+[ManifestClient] fetchDynamicNodes ok: total=206 agent context nodes=2 external agent nodes=6 orchestrator nodes=158 IXP nodes=40
+---
+2026-07-24 17:23:41 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-07-24 17:23:41 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'Check requires a merge node (parallel branches) and debugs once; flow computed overcharge=1610, count=1, invoice MCS-2026-04872, tier Enterprise': python3 $TASK_DIR/check_billing_discrepancy_detector.py
+2026-07-24 17:24:04 [DEBUG] coder_eval.sandbox: Command 'python3 $TASK_DIR/check_billing_discrepancy_detector.py' exited with code 1
+2026-07-24 17:24:04 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+debug inputs: {'invoiceNumber': 'MCS-2026-04872', 'accountNumber': 'ACCT-98201-NE', 'disputedLineNumber': 5, 'disputedUnitPrice': 300, 'disputedQuantity': 14}
+---
+2026-07-24 17:24:04 [DEBUG] coder_eval.sandbox: STDERR:
+---
+=== FLOW_DEBUG_RAW_CAPTURE BEGIN (No output equals expected 1610) ===
+SUMMARY: {"finalStatus": "Completed", "globals": {"computeResult.error": null, "accountTier": "", "start.output.invoiceNumber": "MCS-2026-04872", "start.output.disputedUnitPrice": 300, "matchedInvoiceNumber": "MCS-2026-04872", "computeResult.output": {"totalOvercharge": 4200, "discrepancyCount": 1, "matchedInvoiceNumber": "MCS-2026-04872", "accountTier": ""}, "totalOvercharge": 4200, "start.output.disputedLineNumber": 5, "start.output.accountNumber": "ACCT-98201-NE", "discrepancyCount": 1, "queryCrmRecord1.output": [{"accountManagerName": "David Park", "priorDisputeSummary": "DSP-2025-00187 valid (qty/amount, $340)", "CreatedBy": {"CreateTime": "2026-05-27T16:46:23.5633333+00:00", "Email": "milo.shields@uipath.com", "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51", "IsActive": false, "Name": "Milo Shields", "Type": 0, "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"}, "accountName": "Northwind Electronics Corp.", "CreateTime": "2026-05-27T16:54:09.6360927+00:00", "accountManagerSlackId": "U04MNOP1234", "accountNumber": "ACCT-98201-NE", "accountTier": "Enterprise", "UpdatedBy": {"CreateTime": "2026-05-27T16:46:23.5633333+00:00", "Email": "milo.shields@uipath.com", "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51", "IsActive": false, "Name": "Milo Shields", "Type": 0, "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"}, "RecordOwner": {"CreateTime": "2026-05-27T16:46:23.5633333+00:00", "Email": "milo.shields@uipath.com", "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51", "IsActive": false, "Name": "Milo Shields", "Type": 0, "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"}, "UpdateTime": "2026-05-27T16:54:09.6360927+00:00", "priorInvalidDisputes": "0", "priorValidDisputes": "1", "onTimePaymentRate": 0.96, "accountManagerEmail": "david.park@meridiancloud.com", "Id": "7BD74BFB-D7A2-41CB-9139-019E6A5B9DE4"}], "queryErpRecords1.output": [{"unitPrice": 1200, "amount": 1200, "CreatedBy": {"CreateTime": "2026-05-27T16:46:23.5633333+00:00", "Email": "milo.shields@uipath.com", "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51", "IsActive": false, "Name": "Milo Shields", "Type": 0, "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"}, "quantity": 1, "lineItemId": "MCS-2026-04872-L01", "CreateTime": "2026-05-27T16:54:19.0495953+00:00", "description": "Cloud Hosting - Standard Tier", "accountNumber": "ACCT-98201-NE", "UpdatedBy": {"CreateTime": "2026-05-27T16:46:23.5633333+00:00", "Email": "milo.shields@uipath.com", "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51", "IsActive": false, "Name": "Milo Shields", "Type": 0, "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"}, "RecordOwner": {"CreateTime": "2026-05-27T16:46:23.5633333+00:00", "Email": "milo.shields@uipath.com", "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51", "IsActive": false, "Name": "Milo Shields", "Type": 0, "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"}, "UpdateTime": "2026-05-27T16:54:19.0495953+00:00", "invoiceNumber": "MCS-2026-04872", "Id": "2D599E95-3083-46C4-9954-019E6A5BC2A9", "lineNumber": 1}, {"unitPrice": 2500, "amount": 2500, "CreatedBy": {"CreateTime": "2026-05-27T16:46:23.5633333+00:00", "Email": "milo.shields@uipath.com", "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51", "IsActive": false, "Name": "Milo Shields", "Type": 0, "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"}, "quantity": 1, "lineItemId": "MCS-2026-04872-L02", "CreateTime": "2026-05-27T16:54:19.0495953+00:00", "description": "Premium Support Package", "accountNumber": "ACCT-98201-NE", "UpdatedBy": {"CreateTime": "2026-05-27T16:46:23.5633333+00:00", "Email": "milo.shields@uipath.com", "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51", "IsActive": false, "Name": "Milo Shields", "Type": 0, "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"}, "RecordOwner": {"CreateTime": "2026-05-27T16:46:23.5633333+00:00", "Email": "milo.shields@uipath.com", "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51", "IsActive": false, "Name": "Milo Shields", "Type": 0, "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"}, "sowStatus": "Active", "sowReference": "NW-2025-014", "UpdateTime": "2026-05-27T16:54:19.0495953+00:00", "invoiceNumber": "MCS-2026-04872", "Id": "DF729F08-E6CA-48B5-95CB-019E6A5BC2AA", "lineNumber": 2}, {"unitPrice": 0.18, "amount": 180, "CreatedBy": {"CreateTime": "2026-05-27T16:46:23.5633333+00:00", "Email": "milo.shields@uipath.com", "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51", "IsActive": false, "Name": "Milo Shields", "Type": 0, "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"}, "quantity": 1000, "lineItemId": "MCS-2026-04872-L03", "CreateTime": "2026-05-27T16:54:19.0495953+00:00", "description": "Storage Premium", "accountNumber": "ACCT-98201-NE", "UpdatedBy": {"CreateTime": "2026-05-27T16:46:23.5633333+00:00", "Email": "milo.shields@uipath.com", "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51", "IsActive": false, "Name": "Milo Shields", "Type": 0, "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"}, "RecordOwner": {"CreateTime": "2026-05-27T16:46:23.5633333+00:00", "Email": "milo.shields@uipath.com", "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51", "IsActive": false, "Name": "Milo Shields", "Type": 0, "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"}, "UpdateTime": "2026-05-27T16:54:19.0495953+00:00", "invoiceNumber": "MCS-2026-04872", "Id": "25825404-3AA7-4345-832E-019E6A5BC2AB", "lineNumber": 3}, {"unitPrice": 325, "amount": 1300, "CreatedBy": {"CreateTime": "2026-05-27T16:46:23.5633333+00:00", "Email": "milo.shields@uipath.com", "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51", "IsActive": false, "Name": "Milo Shields", "Type": 0, "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"}, "quantity": 4, "lineItemId": "MCS-2026-04872-L04", "CreateTime": "2026-05-27T16:54:19.0495953+00:00", "hoursLogged": 4, "description": "Solutions Architect Consulting", "accountNumber": "ACCT-98201-NE", "UpdatedBy": {"CreateTime": "2026-05-27T16:46:23.5633333+00:00", "Email": "milo.shields@uipath.com", "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51", "IsActive": false, "Name": "Milo Shields", "Type": 0, "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"}, "RecordOwner": {"CreateTime": "2026-05-27T16:46:23.5633333+00:00", "Email": "milo.shields@uipath.com", "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51", "IsActive": false, "Name": "Milo Shields", "Type": 0, "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"}, "UpdateTime": "2026-05-27T16:54:19.0495953+00:00", "invoiceNumber": "MCS-2026-04872", "Id": "30991201-6484-4908-A8F0-019E6A5BC2AC", "lineNumber": 4}, {"unitPrice": 185, "amount": 2590, "timeSheetReference": "TS-2026-02-NW022", "CreatedBy": {"CreateTime": "2026-05-27T16:46:23.5633333+00:00", "Email": "milo.shields@uipath.com", "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51", "IsActive": false, "Name": "Milo Shields", "Type": 0, "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"}, "quantity": 14, "contractedRate": 185, "lineItemId": "MCS-2026-04872-L05", "CreateTime": "2026-05-27T16:54:19.0495953+00:00", "hoursLogged": 14, "description": "Custom Integration Build", "accountNumber": "ACCT-98201-NE", "UpdatedBy": {"CreateTime": "2026-05-27T16:46:23.5633333+00:00", "Email": "milo.shields@uipath.com", "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51", "IsActive": false, "Name": "Milo Shields", "Type": 0, "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"}, "projectStatus": "In Progress", "RecordOwner": {"CreateTime": "2026-05-27T16:46:23.5633333+00:00", "Email": "milo.shields@uipath.com", "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51", "IsActive": false, "Name": "Milo Shields", "Type": 0, "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"}, "projectCode": "PRJ-NW-2026-022", "sowStatus": "In Progress", "sowReference": "NW-2026-022", "UpdateTime": "2026-05-27T16:54:19.0495953+00:00", "invoiceNumber": "MCS-2026-04872", "Id": "00871493-55EC-47CA-802D-019E6A5BC2AD", "lineNumber": 5}, {"unitPrice": 35, "amount": 700, "CreatedBy": {"CreateTime": "2026-05-27T16:46:23.5633333+00:00", "Email": "milo.shields@uipath.com", "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51", "IsActive": false, "Name": "Milo Shields", "Type": 0, "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"}, "quantity": 20, "lineItemId": "MCS-2026-04872-L06", "CreateTime": "2026-05-27T16:54:19.0495953+00:00", "description": "Data Transfer", "accountNumber": "ACCT-98201-NE", "UpdatedBy": {"CreateTime": "2026-05-27T16:46:23.5633333+00:00", "Email": "milo.shields@uipath.com", "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51", "IsActive": false, "Name": "Milo Shields", "Type": 0, "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"}, "RecordOwner": {"CreateTime": "2026-05-27T16:46:23.5633333+00:00", "Email": "milo.shields@uipath.com", "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51", "IsActive": false, "Name": "Milo Shields", "Type": 0, "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"}, "UpdateTime": "2026-05-27T16:54:19.0495953+00:00", "invoiceNumber": "MCS-2026-04872", "Id": "A38117FF-1110-45C7-AC05-019E6A5BC2AE", "lineNumber": 6}, {"unitPrice": 275, "amount": 11000, "timeSheetReference": "TS-2026-02-MW019", "CreatedBy": {"CreateTime": "2026-05-27T16:46:23.5633333+00:00", "Email": "milo.shields@uipath.com", "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51", "IsActive": false, "Name": "Milo Shields", "Type": 0, "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"}, "quantity": 40, "contractedRate": 275, "lineItemId": "MCS-2026-04872-L07", "CreateTime": "2026-05-27T16:54:19.0495953+00:00", "hoursLogged": 40, "description": "Professional Services - Migration", "accountNumber": "ACCT-98201-NE", "UpdatedBy": {"CreateTime": "2026-05-27T16:46:23.5633333+00:00", "Email": "milo.shields@uipath.com", "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51", "IsActive": false, "Name": "Milo Shields", "Type": 0, "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"}, "projectStatus": "Completed", "RecordOwner": {"CreateTime": "2026-05-27T16:46:23.5633333+00:00", "Email": "milo.shields@uipath.com", "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51", "IsActive": false, "Name": "Milo Shields", "Type": 0, "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"}, "projectCode": "PRJ-MW-2026-019", "sowStatus": "Completed", "sowReference": "MW-2026-019", "UpdateTime": "2026-05-27T16:54:19.0495953+00:00", "invoiceNumber": "MCS-2026-04872", "Id": "26229790-183C-443A-B61A-019E6A5BC2AF", "lineNumber": 7}, {"unitPrice": 275, "amount": 11000, "timeSheetReference": "TS-2026-02-MW019", "CreatedBy": {"CreateTime": "2026-05-27T16:46:23.5633333+00:00", "Email": "milo.shields@uipath.com", "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51", "IsActive": false, "Name": "Milo Shields", "Type": 0, "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"}, "quantity": 40, "contractedRate": 275, "lineItemId": "MCS-2026-04872-L08", "CreateTime": "2026-05-27T16:54:19.0495953+00:00", "hoursLogged": 40, "description": "Professional Services - Migration", "accountNumber": "ACCT-98201-NE", "UpdatedBy": {"CreateTime": "2026-05-27T16:46:23.5633333+00:00", "Email": "milo.shields@uipath.com", "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51", "IsActive": false, "Name": "Milo Shields", "Type": 0, "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"}, "projectStatus": "Completed", "RecordOwner": {"CreateTime": "2026-05-27T16:46:23.5633333+00:00", "Email": "milo.shields@uipath.com", "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51", "IsActive": false, "Name": "Milo Shields", "Type": 0, "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"}, "projectCode": "PRJ-MW-2026-019", "sowStatus": "Completed", "sowReference": "MW-2026-019", "UpdateTime": "2026-05-27T16:54:19.0495953+00:00", "invoiceNumber": "MCS-2026-04872", "Id": "C936F931-8ADC-4871-8C06-019E6A5BC2B0", "lineNumber": 8}], "start.output.disputedQuantity": 14}, "globalVariables": null, "elementOutputs": [{"id": "start", "outputs": {}}, {"id": "queryCrmRecord1", "outputs": {"response": [{"accountManagerName": "David Park", "priorDisputeSummary": "DSP-2025-00187 valid (qty/amount, $340)", "CreatedBy": {"CreateTime": "2026-05-27T16:46:23.5633333+00:00", "Email": "milo.shields@uipath.com", "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51", "IsActive": false, "Name": "Milo Shields", "Type": 0, "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"}, "accountName": "Northwind Electronics Corp.", "CreateTime": "2026-05-27T16:54:09.6360927+00:00", "accountManagerSlackId": "U04MNOP1234", "accountNumber": "ACCT-98201-NE", "accountTier": "Enterprise", "UpdatedBy": {"CreateTime": "2026-05-27T16:46:23.5633333+00:00", "Email": "milo.shields@uipath.com", "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51", "IsActive": false, "Name": "Milo Shields", "Type": 0, "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"}, "RecordOwner": {"CreateTime": "2026-05-27T16:46:23.5633333+00:00", "Email": "milo.shields@uipath.com", "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51", "IsActive": false, "Name": "Milo Shields", "Type": 0, "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"}, "UpdateTime": "2026-05-27T16:54:09.6360927+00:00", "priorInvalidDisputes": "0", "priorValidDisputes": "1", "onTimePaymentRate": 0.96, "accountManagerEmail": "david.park@meridiancloud.com", "Id": "7BD74BFB-D7A2-41CB-9139-019E6A5B9DE4"}]}}, {"id": "queryErpRecords1", "outputs": {"response": [{"unitPrice": 1200, "amount": 1200, "CreatedBy": {"CreateTime": "2026-05-27T16:46:23.5633333+00:00", "Email": "milo.shields@uipath.com", "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51", "IsActive": false, "Name": "Milo Shields", "Type": 0, "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"}, "quantity": 1, "lineItemId": "MCS-2026-04872-L01", "CreateTime": "2026-05-27T16:54:19.0495953+00:00", "description": "Cloud Hosting - Standard Tier", "accountNumber": "ACCT-98201-NE", "UpdatedBy": {"CreateTime": "2026-05-27T16:46:23.5633333+00:00", "Email": "milo.shields@uipath.com", "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51", "IsActive": false, "Name": "Milo Shields", "Type": 0, "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"}, "RecordOwner": {"CreateTime": "2026-05-27T16:46:23.5633333+00:00", "Email": "milo.shields@uipath.com", "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51", "IsActive": false, "Name": "Milo Shields", "Type": 0, "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"}, "UpdateTime": "2026-05-27T16:54:19.0495953+00:00", "invoiceNumber": "MCS-2026-04872", "Id": "2D599E95-3083-46C4-9954-019E6A5BC2A9", "lineNumber": 1}, {"unitPrice": 2500, "amount": 2500, "CreatedBy": {"CreateTime": "2026-05-27T16:46:23.5633333+00:00", "Email": "milo.shields@uipath.com", "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51", "IsActive": false, "Name": "Milo Shields", "Type": 0, "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"}, "quantity": 1, "lineItemId": "MCS-2026-04872-L02", "CreateTime": "2026-05-27T16:54:19.0495953+00:00", "description": "Premium Support Package", "accountNumber": "ACCT-98201-NE", "UpdatedBy": {"CreateTime": "2026-05-27T16:46:23.5633333+00:00", "Email": "milo.shields@uipath.com", "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51", "IsActive": false, "Name": "Milo Shields", "Type": 0, "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"}, "RecordOwner": {"CreateTime": "2026-05-27T16:46:23.5633333+00:00", "Email": "milo.shields@uipath.com", "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51", "IsActive": false, "Name": "Milo Shields", "Type": 0, "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"}, "sowStatus": "Active", "sowReference": "NW-2025-014", "UpdateTime": "2026-05-27T16:54:19.0495953+00:00", "invoiceNumber": "MCS-2026-04872", "Id": "DF729F08-E6CA-48B5-95CB-019E6A5BC2AA", "lineNumber": 2}, {"unitPrice": 0.18, "amount": 180, "CreatedBy": {"CreateTime": "2026-05-27T16:46:23.5633333+00:00", "Email": "milo.shields@uipath.com", "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51", "IsActive": false, "Name": "Milo Shields", "Type": 0, "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"}, "quantity": 1000, "lineItemId": "MCS-2026-04872-L03", "CreateTime": "2026-05-27T16:54:19.0495953+00:00", "description": "Storage Premium", "accountNumber": "ACCT-98201-NE", "UpdatedBy": {"CreateTime": "2026-05-27T16:46:23.5633333+00:00", "Email": "milo.shields@uipath.com", "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51", "IsActive": false, "Name": "Milo Shields", "Type": 0, "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"}, "RecordOwner": {"CreateTime": "2026-05-27T16:46:23.5633333+00:00", "Email": "milo.shields@uipath.com", "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51", "IsActive": false, "Name": "Milo Shields", "Type": 0, "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"}, "UpdateTime": "2026-05-27T16:54:19.0495953+00:00", "invoiceNumber": "MCS-2026-04872", "Id": "25825404-3AA7-4345-832E-019E6A5BC2AB", "lineNumber": 3}, {"unitPrice": 325, "amount": 1300, "CreatedBy": {"CreateTime": "2026-05-27T16:46:23.5633333+00:00", "Email": "milo.shields@uipath.com", "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51", "IsActive": false, "Name": "Milo Shields", "Type": 0, "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"}, "quantity": 4, "lineItemId": "MCS-2026-04872-L04", "CreateTime": "2026-05-27T16:54:19.0495953+00:00", "hoursLogged": 4, "description": "Solutions Architect Consulting", "accountNumber": "ACCT-98201-NE", "UpdatedBy": {"CreateTime": "2026-05-27T16:46:23.5633333+00:00", "Email": "milo.shields@uipath.com", "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51", "IsActive": false, "Name": "Milo Shields", "Type": 0, "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"}, "RecordOwner": {"CreateTime": "2026-05-27T16:46:23.5633333+00:00", "Email": "milo.shields@uipath.com", "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51", "IsActive": false, "Name": "Milo Shields", "Type": 0, "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"}, "UpdateTime": "2026-05-27T16:54:19.0495953+00:00", "invoiceNumber": "MCS-2026-04872", "Id": "30991201-6484-4908-A8F0-019E6A5BC2AC", "lineNumber": 4}, {"unitPrice": 185, "amount": 2590, "timeSheetReference": "TS-2026-02-NW022", "CreatedBy": {"CreateTime": "2026-05-27T16:46:23.5633333+00:00", "Email": "milo.shields@uipath.com", "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51", "IsActive": false, "Name": "Milo Shields", "Type": 0, "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"}, "quantity": 14, "contractedRate": 185, "lineItemId": "MCS-2026-04872-L05", "CreateTime": "2026-05-27T16:54:19.0495953+00:00", "hoursLogged": 14, "description": "Custom Integration Build", "accountNumber": "ACCT-98201-NE", "UpdatedBy": {"CreateTime": "2026-05-27T16:46:23.5633333+00:00", "Email": "milo.shields@uipath.com", "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51", "IsActive": false, "Name": "Milo Shields", "Type": 0, "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"}, "projectStatus": "In Progress", "RecordOwner": {"CreateTime": "2026-05-27T16:46:23.5633333+00:00", "Email": "milo.shields@uipath.com", "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51", "IsActive": false, "Name": "Milo Shields", "Type": 0, "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"}, "projectCode": "PRJ-NW-2026-022", "sowStatus": "In Progress", "sowReference": "NW-2026-022", "UpdateTime": "2026-05-27T16:54:19.0495953+00:00", "invoiceNumber": "MCS-2026-04872", "Id": "00871493-55EC-47CA-802D-019E6A5BC2AD", "lineNumber": 5}, {"unitPrice": 35, "amount": 700, "CreatedBy": {"CreateTime": "2026-05-27T16:46:23.5633333+00:00", "Email": "milo.shields@uipath.com", "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51", "IsActive": false, "Name": "Milo Shields", "Type": 0, "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"}, "quantity": 20, "lineItemId": "MCS-2026-04872-L06", "CreateTime": "2026-05-27T16:54:19.0495953+00:00", "description": "Data Transfer", "accountNumber": "ACCT-98201-NE", "UpdatedBy": {"CreateTime": "2026-05-27T16:46:23.5633333+00:00", "Email": "milo.shields@uipath.com", "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51", "IsActive": false, "Name": "Milo Shields", "Type": 0, "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"}, "RecordOwner": {"CreateTime": "2026-05-27T16:46:23.5633333+00:00", "Email": "milo.shields@uipath.com", "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51", "IsActive": false, "Name": "Milo Shields", "Type": 0, "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"}, "UpdateTime": "2026-05-27T16:54:19.0495953+00:00", "invoiceNumber": "MCS-2026-04872", "Id": "A38117FF-1110-45C7-AC05-019E6A5BC2AE", "lineNumber": 6}, {"unitPrice": 275, "amount": 11000, "timeSheetReference": "TS-2026-02-MW019", "CreatedBy": {"CreateTime": "2026-05-27T16:46:23.5633333+00:00", "Email": "milo.shields@uipath.com", "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51", "IsActive": false, "Name": "Milo Shields", "Type": 0, "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"}, "quantity": 40, "contractedRate": 275, "lineItemId": "MCS-2026-04872-L07", "CreateTime": "2026-05-27T16:54:19.0495953+00:00", "hoursLogged": 40, "description": "Professional Services - Migration", "accountNumber": "ACCT-98201-NE", "UpdatedBy": {"CreateTime": "2026-05-27T16:46:23.5633333+00:00", "Email": "milo.shields@uipath.com", "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51", "IsActive": false, "Name": "Milo Shields", "Type": 0, "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"}, "projectStatus": "Completed", "RecordOwner": {"CreateTime": "2026-05-27T16:46:23.5633333+00:00", "Email": "milo.shields@uipath.com", "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51", "IsActive": false, "Name": "Milo Shields", "Type": 0, "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"}, "projectCode": "PRJ-MW-2026-019", "sowStatus": "Completed", "sowReference": "MW-2026-019", "UpdateTime": "2026-05-27T16:54:19.0495953+00:00", "invoiceNumber": "MCS-2026-04872", "Id": "26229790-183C-443A-B61A-019E6A5BC2AF", "lineNumber": 7}, {"unitPrice": 275, "amount": 11000, "timeSheetReference": "TS-2026-02-MW019", "CreatedBy": {"CreateTime": "2026-05-27T16:46:23.5633333+00:00", "Email": "milo.shields@uipath.com", "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51", "IsActive": false, "Name": "Milo Shields", "Type": 0, "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"}, "quantity": 40, "contractedRate": 275, "lineItemId": "MCS-2026-04872-L08", "CreateTime": "2026-05-27T16:54:19.0495953+00:00", "hoursLogged": 40, "description": "Professional Services - Migration", "accountNumber": "ACCT-98201-NE", "UpdatedBy": {"CreateTime": "2026-05-27T16:46:23.5633333+00:00", "Email": "milo.shields@uipath.com", "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51", "IsActive": false, "Name": "Milo Shields", "Type": 0, "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"}, "projectStatus": "Completed", "RecordOwner": {"CreateTime": "2026-05-27T16:46:23.5633333+00:00", "Email": "milo.shields@uipath.com", "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51", "IsActive": false, "Name": "Milo Shields", "Type": 0, "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"}, "projectCode": "PRJ-MW-2026-019", "sowStatus": "Completed", "sowReference": "MW-2026-019", "UpdateTime": "2026-05-27T16:54:19.0495953+00:00", "invoiceNumber": "MCS-2026-04872", "Id": "C936F931-8ADC-4871-8C06-019E6A5BC2B0", "lineNumber": 8}]}}, {"id": "computeResult", "outputs": {"response": {"totalOvercharge": 4200, "discrepancyCount": 1, "matchedInvoiceNumber": "MCS-2026-04872", "accountTier": ""}}}, {"id": "end", "outputs": {}}], "elementExecutions": [{"id": "start", "type": "StartEvent", "status": "Completed"}, {"id": "queryCrmRecord1", "type": "SendTask", "status": "Completed"}, {"id": "queryErpRecords1", "type": "SendTask", "status": "Completed"}, {"id": "mergeBranches", "type": "ParallelGateway", "status": "Completed"}, {"id": "computeResult", "type": "ScriptTask", "status": "Completed"}, {"id": "end", "type": "EndEvent", "status": "Completed"}], "incidents": null}
+RAW: {
+  "Result": "Success",
+  "Code": "FlowDebug",
+  "Data": {
+    "jobKey": "0661fd8b-b954-461c-acde-dc7203d8b1ff",
+    "instanceId": "0661fd8b-b954-461c-acde-dc7203d8b1ff",
+    "runId": "019f9527-9e3a-76e7-ab8c-f1db9f340483",
+    "folderKey": "410fae2d-89b3-4cd1-a991-7359bda90c0b",
+    "finalStatus": "Completed",
+    "solutionId": "d3605fbf-8e89-4133-4ac0-08dee9a25385",
+    "studioWebUrl": "https://alpha.uipath.com/codereval/studio_/designer/11dee6b2-d8b8-4cdc-9bb1-acb6eb845911?solutionId=d3605fbf-8e89-4133-4ac0-08dee9a25385",
+    "elementExecutions": [
+      {
+        "elementId": "start",
+        "elementType": "StartEvent",
+        "status": "Completed",
+        "startedAt": "2026-07-24T17:23:53.2832997Z",
+        "completedAt": "2026-07-24T17:23:53.8329498Z"
+      },
+      {
+        "elementId": "queryCrmRecord1",
+        "elementType": "SendTask",
+        "status": "Completed",
+        "startedAt": "2026-07-24T17:23:54.2495441Z",
+        "completedAt": "2026-07-24T17:23:59.8993312Z"
+      },
+      {
+        "elementId": "queryErpRecords1",
+        "elementType": "SendTask",
+        "status": "Completed",
+        "startedAt": "2026-07-24T17:23:54.313156Z",
+        "completedAt": "2026-07-24T17:23:58.543377Z"
+      },
+      {
+        "elementId": "mergeBranches",
+        "elementType": "ParallelGateway",
+        "status": "Completed",
+        "startedAt": "2026-07-24T17:24:00.6051005Z",
+        "completedAt": "2026-07-24T17:24:00.797157Z"
+      },
+      {
+        "elementId": "computeResult",
+        "elementType": "ScriptTask",
+        "status": "Completed",
+        "startedAt": "2026-07-24T17:24:01.2021541Z",
+        "completedAt": "2026-07-24T17:24:01.5679796Z"
+      },
+      {
+        "elementId": "end",
+        "elementType": "EndEvent",
+        "status": "Completed",
+        "startedAt": "2026-07-24T17:24:01.9249714Z",
+        "completedAt": "2026-07-24T17:24:02.3491185Z"
+      }
+    ],
+    "variables": {
+      "elements": [
+        {
+          "elementId": "start",
+          "elementRunId": "52305ad1-23ae-4f21-a8a9-a9e533775f0e",
+          "isMarker": false,
+          "inputs": {},
+          "inputDefinitions": {},
+          "outputs": {}
+        },
+        {
+          "elementId": "queryCrmRecord1",
+          "elementRunId": "9eb2e6e8-1612-49b1-b150-92c73a6869fa",
+          "isMarker": false,
+          "inputs": {
+            "queryParameters": {
+              "queryExpression": "accountNumber = 'ACCT-98201-NE'"
+            },
+            "pathParameters": {
+              "entityName": "BillingDisputeCRM"
+            }
+          },
+          "inputDefinitions": {},
+          "outputs": {
+            "response": [
+              {
+                "accountManagerName": "David Park",
+                "priorDisputeSummary": "DSP-2025-00187 valid (qty/amount, $340)",
+                "CreatedBy": {
+                  "CreateTime": "2026-05-27T16:46:23.5633333+00:00",
+                  "Email": "milo.shields@uipath.com",
+                  "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51",
+                  "IsActive": false,
+                  "Name": "Milo Shields",
+                  "Type": 0,
+                  "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"
+                },
+                "accountName": "Northwind Electronics Corp.",
+                "CreateTime": "2026-05-27T16:54:09.6360927+00:00",
+                "accountManagerSlackId": "U04MNOP1234",
+                "accountNumber": "ACCT-98201-NE",
+                "accountTier": "Enterprise",
+                "UpdatedBy": {
+                  "CreateTime": "2026-05-27T16:46:23.5633333+00:00",
+                  "Email": "milo.shields@uipath.com",
+                  "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51",
+                  "IsActive": false,
+                  "Name": "Milo Shields",
+                  "Type": 0,
+                  "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"
+                },
+                "RecordOwner": {
+                  "CreateTime": "2026-05-27T16:46:23.5633333+00:00",
+                  "Email": "milo.shields@uipath.com",
+                  "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51",
+                  "IsActive": false,
+                  "Name": "Milo Shields",
+                  "Type": 0,
+                  "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"
+                },
+                "UpdateTime": "2026-05-27T16:54:09.6360927+00:00",
+                "priorInvalidDisputes": "0",
+                "priorValidDisputes": "1",
+                "onTimePaymentRate": 0.96,
+                "accountManagerEmail": "david.park@meridiancloud.com",
+                "Id": "7BD74BFB-D7A2-41CB-9139-019E6A5B9DE4"
+              }
+            ]
+          }
+        },
+        {
+          "elementId": "queryErpRecords1",
+          "elementRunId": "424a4547-493f-4338-a4b7-f476c432025d",
+          "isMarker": false,
+          "inputs": {
+            "queryParameters": {
+              "queryExpression": "invoiceNumber = 'MCS-2026-04872'"
+            },
+            "pathParameters": {
+              "entityName": "BillingDisputeERP"
+            }
+          },
+          "inputDefinitions": {},
+          "outputs": {
+            "response": [
+              {
+                "unitPrice": 1200,
+                "amount": 1200,
+                "CreatedBy": {
+                  "CreateTime": "2026-05-27T16:46:23.5633333+00:00",
+                  "Email": "milo.shields@uipath.com",
+                  "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51",
+                  "IsActive": false,
+                  "Name": "Milo Shields",
+                  "Type": 0,
+                  "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"
+                },
+                "quantity": 1,
+                "lineItemId": "MCS-2026-04872-L01",
+                "CreateTime": "2026-05-27T16:54:19.0495953+00:00",
+                "description": "Cloud Hosting - Standard Tier",
+                "accountNumber": "ACCT-98201-NE",
+                "UpdatedBy": {
+                  "CreateTime": "2026-05-27T16:46:23.5633333+00:00",
+                  "Email": "milo.shields@uipath.com",
+                  "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51",
+                  "IsActive": false,
+                  "Name": "Milo Shields",
+                  "Type": 0,
+                  "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"
+                },
+                "RecordOwner": {
+                  "CreateTime": "2026-05-27T16:46:23.5633333+00:00",
+                  "Email": "milo.shields@uipath.com",
+                  "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51",
+                  "IsActive": false,
+                  "Name": "Milo Shields",
+                  "Type": 0,
+                  "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"
+                },
+                "UpdateTime": "2026-05-27T16:54:19.0495953+00:00",
+                "invoiceNumber": "MCS-2026-04872",
+                "Id": "2D599E95-3083-46C4-9954-019E6A5BC2A9",
+                "lineNumber": 1
+              },
+              {
+                "unitPrice": 2500,
+                "amount": 2500,
+                "CreatedBy": {
+                  "CreateTime": "2026-05-27T16:46:23.5633333+00:00",
+                  "Email": "milo.shields@uipath.com",
+                  "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51",
+                  "IsActive": false,
+                  "Name": "Milo Shields",
+                  "Type": 0,
+                  "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"
+                },
+                "quantity": 1,
+                "lineItemId": "MCS-2026-04872-L02",
+                "CreateTime": "2026-05-27T16:54:19.0495953+00:00",
+                "description": "Premium Support Package",
+                "accountNumber": "ACCT-98201-NE",
+                "UpdatedBy": {
+                  "CreateTime": "2026-05-27T16:46:23.5633333+00:00",
+                  "Email": "milo.shields@uipath.com",
+                  "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51",
+                  "IsActive": false,
+                  "Name": "Milo Shields",
+                  "Type": 0,
+                  "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"
+                },
+                "RecordOwner": {
+                  "CreateTime": "2026-05-27T16:46:23.5633333+00:00",
+                  "Email": "milo.shields@uipath.com",
+                  "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51",
+                  "IsActive": false,
+                  "Name": "Milo Shields",
+                  "Type": 0,
+                  "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"
+                },
+                "sowStatus": "Active",
+                "sowReference": "NW-2025-014",
+                "UpdateTime": "2026-05-27T16:54:19.0495953+00:00",
+                "invoiceNumber": "MCS-2026-04872",
+                "Id": "DF729F08-E6CA-48B5-95CB-019E6A5BC2AA",
+                "lineNumber": 2
+              },
+              {
+                "unitPrice": 0.18,
+                "amount": 180,
+                "CreatedBy": {
+                  "CreateTime": "2026-05-27T16:46:23.5633333+00:00",
+                  "Email": "milo.shields@uipath.com",
+                  "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51",
+                  "IsActive": false,
+                  "Name": "Milo Shields",
+                  "Type": 0,
+                  "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"
+                },
+                "quantity": 1000,
+                "lineItemId": "MCS-2026-04872-L03",
+                "CreateTime": "2026-05-27T16:54:19.0495953+00:00",
+                "description": "Storage Premium",
+                "accountNumber": "ACCT-98201-NE",
+                "UpdatedBy": {
+                  "CreateTime": "2026-05-27T16:46:23.5633333+00:00",
+                  "Email": "milo.shields@uipath.com",
+                  "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51",
+                  "IsActive": false,
+                  "Name": "Milo Shields",
+                  "Type": 0,
+                  "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"
+                },
+                "RecordOwner": {
+                  "CreateTime": "2026-05-27T16:46:23.5633333+00:00",
+                  "Email": "milo.shields@uipath.com",
+                  "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51",
+                  "IsActive": false,
+                  "Name": "Milo Shields",
+                  "Type": 0,
+                  "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"
+                },
+                "UpdateTime": "2026-05-27T16:54:19.0495953+00:00",
+                "invoiceNumber": "MCS-2026-04872",
+                "Id": "25825404-3AA7-4345-832E-019E6A5BC2AB",
+                "lineNumber": 3
+              },
+              {
+                "unitPrice": 325,
+                "amount": 1300,
+                "CreatedBy": {
+                  "CreateTime": "2026-05-27T16:46:23.5633333+00:00",
+                  "Email": "milo.shields@uipath.com",
+                  "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51",
+                  "IsActive": false,
+                  "Name": "Milo Shields",
+                  "Type": 0,
+                  "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"
+                },
+                "quantity": 4,
+                "lineItemId": "MCS-2026-04872-L04",
+                "CreateTime": "2026-05-27T16:54:19.0495953+00:00",
+                "hoursLogged": 4,
+                "description": "Solutions Architect Consulting",
+                "accountNumber": "ACCT-98201-NE",
+                "UpdatedBy": {
+                  "CreateTime": "2026-05-27T16:46:23.5633333+00:00",
+                  "Email": "milo.shields@uipath.com",
+                  "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51",
+                  "IsActive": false,
+                  "Name": "Milo Shields",
+                  "Type": 0,
+                  "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"
+                },
+                "RecordOwner": {
+                  "CreateTime": "2026-05-27T16:46:23.5633333+00:00",
+                  "Email": "milo.shields@uipath.com",
+                  "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51",
+                  "IsActive": false,
+                  "Name": "Milo Shields",
+                  "Type": 0,
+                  "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"
+                },
+                "UpdateTime": "2026-05-27T16:54:19.0495953+00:00",
+                "invoiceNumber": "MCS-2026-04872",
+                "Id": "30991201-6484-4908-A8F0-019E6A5BC2AC",
+                "lineNumber": 4
+              },
+              {
+                "unitPrice": 185,
+                "amount": 2590,
+                "timeSheetReference": "TS-2026-02-NW022",
+                "CreatedBy": {
+                  "CreateTime": "2026-05-27T16:46:23.5633333+00:00",
+                  "Email": "milo.shields@uipath.com",
+                  "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51",
+                  "IsActive": false,
+                  "Name": "Milo Shields",
+                  "Type": 0,
+                  "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"
+                },
+                "quantity": 14,
+                "contractedRate": 185,
+                "lineItemId": "MCS-2026-04872-L05",
+                "CreateTime": "2026-05-27T16:54:19.0495953+00:00",
+                "hoursLogged": 14,
+                "description": "Custom Integration Build",
+                "accountNumber": "ACCT-98201-NE",
+                "UpdatedBy": {
+                  "CreateTime": "2026-05-27T16:46:23.5633333+00:00",
+                  "Email": "milo.shields@uipath.com",
+                  "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51",
+                  "IsActive": false,
+                  "Name": "Milo Shields",
+                  "Type": 0,
+                  "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"
+                },
+                "projectStatus": "In Progress",
+                "RecordOwner": {
+                  "CreateTime": "2026-05-27T16:46:23.5633333+00:00",
+                  "Email": "milo.shields@uipath.com",
+                  "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51",
+                  "IsActive": false,
+                  "Name": "Milo Shields",
+                  "Type": 0,
+                  "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"
+                },
+                "projectCode": "PRJ-NW-2026-022",
+                "sowStatus": "In Progress",
+                "sowReference": "NW-2026-022",
+                "UpdateTime": "2026-05-27T16:54:19.0495953+00:00",
+                "invoiceNumber": "MCS-2026-04872",
+                "Id": "00871493-55EC-47CA-802D-019E6A5BC2AD",
+                "lineNumber": 5
+              },
+              {
+                "unitPrice": 35,
+                "amount": 700,
+                "CreatedBy": {
+                  "CreateTime": "2026-05-27T16:46:23.5633333+00:00",
+                  "Email": "milo.shields@uipath.com",
+                  "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51",
+                  "IsActive": false,
+                  "Name": "Milo Shields",
+                  "Type": 0,
+                  "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"
+                },
+                "quantity": 20,
+                "lineItemId": "MCS-2026-04872-L06",
+                "CreateTime": "2026-05-27T16:54:19.0495953+00:00",
+                "description": "Data Transfer",
+                "accountNumber": "ACCT-98201-NE",
+                "UpdatedBy": {
+                  "CreateTime": "2026-05-27T16:46:23.5633333+00:00",
+                  "Email": "milo.shields@uipath.com",
+                  "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51",
+                  "IsActive": false,
+                  "Name": "Milo Shields",
+                  "Type": 0,
+                  "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"
+                },
+                "RecordOwner": {
+                  "CreateTime": "2026-05-27T16:46:23.5633333+00:00",
+                  "Email": "milo.shields@uipath.com",
+                  "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51",
+                  "IsActive": false,
+                  "Name": "Milo Shields",
+                  "Type": 0,
+                  "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"
+                },
+                "UpdateTime": "2026-05-27T16:54:19.0495953+00:00",
+                "invoiceNumber": "MCS-2026-04872",
+                "Id": "A38117FF-1110-45C7-AC05-019E6A5BC2AE",
+                "lineNumber": 6
+              },
+              {
+                "unitPrice": 275,
+                "amount": 11000,
+                "timeSheetReference": "TS-2026-02-MW019",
+                "CreatedBy": {
+                  "CreateTime": "2026-05-27T16:46:23.5633333+00:00",
+                  "Email": "milo.shields@uipath.com",
+                  "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51",
+                  "IsActive": false,
+                  "Name": "Milo Shields",
+                  "Type": 0,
+                  "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"
+                },
+                "quantity": 40,
+                "contractedRate": 275,
+                "lineItemId": "MCS-2026-04872-L07",
+                "CreateTime": "2026-05-27T16:54:19.0495953+00:00",
+                "hoursLogged": 40,
+                "description": "Professional Services - Migration",
+                "accountNumber": "ACCT-98201-NE",
+                "UpdatedBy": {
+                  "CreateTime": "2026-05-27T16:46:23.5633333+00:00",
+                  "Email": "milo.shields@uipath.com",
+                  "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51",
+                  "IsActive": false,
+                  "Name": "Milo Shields",
+                  "Type": 0,
+                  "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"
+                },
+                "projectStatus": "Completed",
+                "RecordOwner": {
+                  "CreateTime": "2026-05-27T16:46:23.5633333+00:00",
+                  "Email": "milo.shields@uipath.com",
+                  "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51",
+                  "IsActive": false,
+                  "Name": "Milo Shields",
+                  "Type": 0,
+                  "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"
+                },
+                "projectCode": "PRJ-MW-2026-019",
+                "sowStatus": "Completed",
+                "sowReference": "MW-2026-019",
+                "UpdateTime": "2026-05-27T16:54:19.0495953+00:00",
+                "invoiceNumber": "MCS-2026-04872",
+                "Id": "26229790-183C-443A-B61A-019E6A5BC2AF",
+                "lineNumber": 7
+              },
+              {
+                "unitPrice": 275,
+                "amount": 11000,
+                "timeSheetReference": "TS-2026-02-MW019",
+                "CreatedBy": {
+                  "CreateTime": "2026-05-27T16:46:23.5633333+00:00",
+                  "Email": "milo.shields@uipath.com",
+                  "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51",
+                  "IsActive": false,
+                  "Name": "Milo Shields",
+                  "Type": 0,
+                  "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"
+                },
+                "quantity": 40,
+                "contractedRate": 275,
+                "lineItemId": "MCS-2026-04872-L08",
+                "CreateTime": "2026-05-27T16:54:19.0495953+00:00",
+                "hoursLogged": 40,
+                "description": "Professional Services - Migration",
+                "accountNumber": "ACCT-98201-NE",
+                "UpdatedBy": {
+                  "CreateTime": "2026-05-27T16:46:23.5633333+00:00",
+                  "Email": "milo.shields@uipath.com",
+                  "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51",
+                  "IsActive": false,
+                  "Name": "Milo Shields",
+                  "Type": 0,
+                  "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"
+                },
+                "projectStatus": "Completed",
+                "RecordOwner": {
+                  "CreateTime": "2026-05-27T16:46:23.5633333+00:00",
+                  "Email": "milo.shields@uipath.com",
+                  "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51",
+                  "IsActive": false,
+                  "Name": "Milo Shields",
+                  "Type": 0,
+                  "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"
+                },
+                "projectCode": "PRJ-MW-2026-019",
+                "sowStatus": "Completed",
+                "sowReference": "MW-2026-019",
+                "UpdateTime": "2026-05-27T16:54:19.0495953+00:00",
+                "invoiceNumber": "MCS-2026-04872",
+                "Id": "C936F931-8ADC-4871-8C06-019E6A5BC2B0",
+                "lineNumber": 8
+              }
+            ]
+          }
+        },
+        {
+          "elementId": "computeResult",
+          "elementRunId": "bbd9f1ad-7e2e-4576-be59-98623d29b9d2",
+          "isMarker": false,
+          "inputs": {
+            "args": {
+              "vars": {
+                "start.output.disputedUnitPrice": 300,
+                "end.accountTier": null,
+                "queryErpRecords1.output": [
+                  {
+                    "unitPrice": 1200,
+                    "amount": 1200,
+                    "CreatedBy": {
+                      "CreateTime": "2026-05-27T16:46:23.5633333+00:00",
+                      "Email": "milo.shields@uipath.com",
+                      "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51",
+                      "IsActive": false,
+                      "Name": "Milo Shields",
+                      "Type": 0,
+                      "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"
+                    },
+                    "quantity": 1,
+                    "lineItemId": "MCS-2026-04872-L01",
+                    "CreateTime": "2026-05-27T16:54:19.0495953+00:00",
+                    "description": "Cloud Hosting - Standard Tier",
+                    "accountNumber": "ACCT-98201-NE",
+                    "UpdatedBy": {
+                      "CreateTime": "2026-05-27T16:46:23.5633333+00:00",
+                      "Email": "milo.shields@uipath.com",
+                      "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51",
+                      "IsActive": false,
+                      "Name": "Milo Shields",
+                      "Type": 0,
+                      "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"
+                    },
+                    "RecordOwner": {
+                      "CreateTime": "2026-05-27T16:46:23.5633333+00:00",
+                      "Email": "milo.shields@uipath.com",
+                      "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51",
+                      "IsActive": false,
+                      "Name": "Milo Shields",
+                      "Type": 0,
+                      "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"
+                    },
+                    "UpdateTime": "2026-05-27T16:54:19.0495953+00:00",
+                    "invoiceNumber": "MCS-2026-04872",
+                    "Id": "2D599E95-3083-46C4-9954-019E6A5BC2A9",
+                    "lineNumber": 1
+                  },
+                  {
+                    "unitPrice": 2500,
+                    "amount": 2500,
+                    "CreatedBy": {
+                      "CreateTime": "2026-05-27T16:46:23.5633333+00:00",
+                      "Email": "milo.shields@uipath.com",
+                      "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51",
+                      "IsActive": false,
+                      "Name": "Milo Shields",
+                      "Type": 0,
+                      "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"
+                    },
+                    "quantity": 1,
+                    "lineItemId": "MCS-2026-04872-L02",
+                    "CreateTime": "2026-05-27T16:54:19.0495953+00:00",
+                    "description": "Premium Support Package",
+                    "accountNumber": "ACCT-98201-NE",
+                    "UpdatedBy": {
+                      "CreateTime": "2026-05-27T16:46:23.5633333+00:00",
+                      "Email": "milo.shields@uipath.com",
+                      "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51",
+                      "IsActive": false,
+                      "Name": "Milo Shields",
+                      "Type": 0,
+                      "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"
+                    },
+                    "RecordOwner": {
+                      "CreateTime": "2026-05-27T16:46:23.5633333+00:00",
+                      "Email": "milo.shields@uipath.com",
+                      "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51",
+                      "IsActive": false,
+                      "Name": "Milo Shields",
+                      "Type": 0,
+                      "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"
+                    },
+                    "sowStatus": "Active",
+                    "sowReference": "NW-2025-014",
+                    "UpdateTime": "2026-05-27T16:54:19.0495953+00:00",
+                    "invoiceNumber": "MCS-2026-04872",
+                    "Id": "DF729F08-E6CA-48B5-95CB-019E6A5BC2AA",
+                    "lineNumber": 2
+                  },
+                  {
+                    "unitPrice": 0.18,
+                    "amount": 180,
+                    "CreatedBy": {
+                      "CreateTime": "2026-05-27T16:46:23.5633333+00:00",
+                      "Email": "milo.shields@uipath.com",
+                      "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51",
+                      "IsActive": false,
+                      "Name": "Milo Shields",
+                      "Type": 0,
+                      "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"
+                    },
+                    "quantity": 1000,
+                    "lineItemId": "MCS-2026-04872-L03",
+                    "CreateTime": "2026-05-27T16:54:19.0495953+00:00",
+                    "description": "Storage Premium",
+                    "accountNumber": "ACCT-98201-NE",
+                    "UpdatedBy": {
+                      "CreateTime": "2026-05-27T16:46:23.5633333+00:00",
+                      "Email": "milo.shields@uipath.com",
+                      "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51",
+                      "IsActive": false,
+                      "Name": "Milo Shields",
+                      "Type": 0,
+                      "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"
+                    },
+                    "RecordOwner": {
+                      "CreateTime": "2026-05-27T16:46:23.5633333+00:00",
+                      "Email": "milo.shields@uipath.com",
+                      "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51",
+                      "IsActive": false,
+                      "Name": "Milo Shields",
+                      "Type": 0,
+                      "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"
+                    },
+                    "UpdateTime": "2026-05-27T16:54:19.0495953+00:00",
+                    "invoiceNumber": "MCS-2026-04872",
+                    "Id": "25825404-3AA7-4345-832E-019E6A5BC2AB",
+                    "lineNumber": 3
+                  },
+                  {
+                    "unitPrice": 325,
+                    "amount": 1300,
+                    "CreatedBy": {
+                      "CreateTime": "2026-05-27T16:46:23.5633333+00:00",
+                      "Email": "milo.shields@uipath.com",
+                      "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51",
+                      "IsActive": false,
+                      "Name": "Milo Shields",
+                      "Type": 0,
+                      "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"
+                    },
+                    "quantity": 4,
+                    "lineItemId": "MCS-2026-04872-L04",
+                    "CreateTime": "2026-05-27T16:54:19.0495953+00:00",
+                    "hoursLogged": 4,
+                    "description": "Solutions Architect Consulting",
+                    "accountNumber": "ACCT-98201-NE",
+                    "UpdatedBy": {
+                      "CreateTime": "2026-05-27T16:46:23.5633333+00:00",
+                      "Email": "milo.shields@uipath.com",
+                      "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51",
+                      "IsActive": false,
+                      "Name": "Milo Shields",
+                      "Type": 0,
+                      "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"
+                    },
+                    "RecordOwner": {
+                      "CreateTime": "2026-05-27T16:46:23.5633333+00:00",
+                      "Email": "milo.shields@uipath.com",
+                      "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51",
+                      "IsActive": false,
+                      "Name": "Milo Shields",
+                      "Type": 0,
+                      "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"
+                    },
+                    "UpdateTime": "2026-05-27T16:54:19.0495953+00:00",
+                    "invoiceNumber": "MCS-2026-04872",
+                    "Id": "30991201-6484-4908-A8F0-019E6A5BC2AC",
+                    "lineNumber": 4
+                  },
+                  {
+                    "unitPrice": 185,
+                    "amount": 2590,
+                    "timeSheetReference": "TS-2026-02-NW022",
+                    "CreatedBy": {
+                      "CreateTime": "2026-05-27T16:46:23.5633333+00:00",
+                      "Email": "milo.shields@uipath.com",
+                      "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51",
+                      "IsActive": false,
+                      "Name": "Milo Shields",
+                      "Type": 0,
+                      "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"
+                    },
+                    "quantity": 14,
+                    "contractedRate": 185,
+                    "lineItemId": "MCS-2026-04872-L05",
+                    "CreateTime": "2026-05-27T16:54:19.0495953+00:00",
+                    "hoursLogged": 14,
+                    "description": "Custom Integration Build",
+                    "accountNumber": "ACCT-98201-NE",
+                    "UpdatedBy": {
+                      "CreateTime": "2026-05-27T16:46:23.5633333+00:00",
+                      "Email": "milo.shields@uipath.com",
+                      "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51",
+                      "IsActive": false,
+                      "Name": "Milo Shields",
+                      "Type": 0,
+                      "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"
+                    },
+                    "projectStatus": "In Progress",
+                    "RecordOwner": {
+                      "CreateTime": "2026-05-27T16:46:23.5633333+00:00",
+                      "Email": "milo.shields@uipath.com",
+                      "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51",
+                      "IsActive": false,
+                      "Name": "Milo Shields",
+                      "Type": 0,
+                      "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"
+                    },
+                    "projectCode": "PRJ-NW-2026-022",
+                    "sowStatus": "In Progress",
+                    "sowReference": "NW-2026-022",
+                    "UpdateTime": "2026-05-27T16:54:19.0495953+00:00",
+                    "invoiceNumber": "MCS-2026-04872",
+                    "Id": "00871493-55EC-47CA-802D-019E6A5BC2AD",
+                    "lineNumber": 5
+                  },
+                  {
+                    "unitPrice": 35,
+                    "amount": 700,
+                    "CreatedBy": {
+                      "CreateTime": "2026-05-27T16:46:23.5633333+00:00",
+                      "Email": "milo.shields@uipath.com",
+                      "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51",
+                      "IsActive": false,
+                      "Name": "Milo Shields",
+                      "Type": 0,
+                      "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"
+                    },
+                    "quantity": 20,
+                    "lineItemId": "MCS-2026-04872-L06",
+                    "CreateTime": "2026-05-27T16:54:19.0495953+00:00",
+                    "description": "Data Transfer",
+                    "accountNumber": "ACCT-98201-NE",
+                    "UpdatedBy": {
+                      "CreateTime": "2026-05-27T16:46:23.5633333+00:00",
+                      "Email": "milo.shields@uipath.com",
+                      "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51",
+                      "IsActive": false,
+                      "Name": "Milo Shields",
+                      "Type": 0,
+                      "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"
+                    },
+                    "RecordOwner": {
+                      "CreateTime": "2026-05-27T16:46:23.5633333+00:00",
+                      "Email": "milo.shields@uipath.com",
+                      "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51",
+                      "IsActive": false,
+                      "Name": "Milo Shields",
+                      "Type": 0,
+                      "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"
+                    },
+                    "UpdateTime": "2026-05-27T16:54:19.0495953+00:00",
+                    "invoiceNumber": "MCS-2026-04872",
+                    "Id": "A38117FF-1110-45C7-AC05-019E6A5BC2AE",
+                    "lineNumber": 6
+                  },
+                  {
+                    "unitPrice": 275,
+                    "amount": 11000,
+                    "timeSheetReference": "TS-2026-02-MW019",
+                    "CreatedBy": {
+                      "CreateTime": "2026-05-27T16:46:23.5633333+00:00",
+                      "Email": "milo.shields@uipath.com",
+                      "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51",
+                      "IsActive": false,
+                      "Name": "Milo Shields",
+                      "Type": 0,
+                      "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"
+                    },
+                    "quantity": 40,
+                    "contractedRate": 275,
+                    "lineItemId": "MCS-2026-04872-L07",
+                    "CreateTime": "2026-05-27T16:54:19.0495953+00:00",
+                    "hoursLogged": 40,
+                    "description": "Professional Services - Migration",
+                    "accountNumber": "ACCT-98201-NE",
+                    "UpdatedBy": {
+                      "CreateTime": "2026-05-27T16:46:23.5633333+00:00",
+                      "Email": "milo.shields@uipath.com",
+                      "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51",
+                      "IsActive": false,
+                      "Name": "Milo Shields",
+                      "Type": 0,
+                      "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"
+                    },
+                    "projectStatus": "Completed",
+                    "RecordOwner": {
+                      "CreateTime": "2026-05-27T16:46:23.5633333+00:00",
+                      "Email": "milo.shields@uipath.com",
+                      "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51",
+                      "IsActive": false,
+                      "Name": "Milo Shields",
+                      "Type": 0,
+                      "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"
+                    },
+                    "projectCode": "PRJ-MW-2026-019",
+                    "sowStatus": "Completed",
+                    "sowReference": "MW-2026-019",
+                    "UpdateTime": "2026-05-27T16:54:19.0495953+00:00",
+                    "invoiceNumber": "MCS-2026-04872",
+                    "Id": "26229790-183C-443A-B61A-019E6A5BC2AF",
+                    "lineNumber": 7
+                  },
+                  {
+                    "unitPrice": 275,
+                    "amount": 11000,
+                    "timeSheetReference": "TS-2026-02-MW019",
+                    "CreatedBy": {
+                      "CreateTime": "2026-05-27T16:46:23.5633333+00:00",
+                      "Email": "milo.shields@uipath.com",
+                      "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51",
+                      "IsActive": false,
+                      "Name": "Milo Shields",
+                      "Type": 0,
+                      "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"
+                    },
+                    "quantity": 40,
+                    "contractedRate": 275,
+                    "lineItemId": "MCS-2026-04872-L08",
+                    "CreateTime": "2026-05-27T16:54:19.0495953+00:00",
+                    "hoursLogged": 40,
+                    "description": "Professional Services - Migration",
+                    "accountNumber": "ACCT-98201-NE",
+                    "UpdatedBy": {
+                      "CreateTime": "2026-05-27T16:46:23.5633333+00:00",
+                      "Email": "milo.shields@uipath.com",
+                      "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51",
+                      "IsActive": false,
+                      "Name": "Milo Shields",
+                      "Type": 0,
+                      "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"
+                    },
+                    "projectStatus": "Completed",
+                    "RecordOwner": {
+                      "CreateTime": "2026-05-27T16:46:23.5633333+00:00",
+                      "Email": "milo.shields@uipath.com",
+                      "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51",
+                      "IsActive": false,
+                      "Name": "Milo Shields",
+                      "Type": 0,
+                      "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"
+                    },
+                    "projectCode": "PRJ-MW-2026-019",
+                    "sowStatus": "Completed",
+                    "sowReference": "MW-2026-019",
+                    "UpdateTime": "2026-05-27T16:54:19.0495953+00:00",
+                    "invoiceNumber": "MCS-2026-04872",
+                    "Id": "C936F931-8ADC-4871-8C06-019E6A5BC2B0",
+                    "lineNumber": 8
+                  }
+                ],
+                "accountNumber": "ACCT-98201-NE",
+                "start.output.invoiceNumber": "MCS-2026-04872",
+                "disputedUnitPrice": 300,
+                "disputedLineNumber": 5,
+                "queryCrmRecord1.error": null,
+                "queryCrmRecord1.output": [
+                  {
+                    "accountManagerName": "David Park",
+                    "priorDisputeSummary": "DSP-2025-00187 valid (qty/amount, $340)",
+                    "CreatedBy": {
+                      "CreateTime": "2026-05-27T16:46:23.5633333+00:00",
+                      "Email": "milo.shields@uipath.com",
+                      "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51",
+                      "IsActive": false,
+                      "Name": "Milo Shields",
+                      "Type": 0,
+                      "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"
+                    },
+                    "accountName": "Northwind Electronics Corp.",
+                    "CreateTime": "2026-05-27T16:54:09.6360927+00:00",
+                    "accountManagerSlackId": "U04MNOP1234",
+                    "accountNumber": "ACCT-98201-NE",
+                    "accountTier": "Enterprise",
+                    "UpdatedBy": {
+                      "CreateTime": "2026-05-27T16:46:23.5633333+00:00",
+                      "Email": "milo.shields@uipath.com",
+                      "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51",
+                      "IsActive": false,
+                      "Name": "Milo Shields",
+                      "Type": 0,
+                      "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"
+                    },
+                    "RecordOwner": {
+                      "CreateTime": "2026-05-27T16:46:23.5633333+00:00",
+                      "Email": "milo.shields@uipath.com",
+                      "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51",
+                      "IsActive": false,
+                      "Name": "Milo Shields",
+                      "Type": 0,
+                      "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"
+                    },
+                    "UpdateTime": "2026-05-27T16:54:09.6360927+00:00",
+                    "priorInvalidDisputes": "0",
+                    "priorValidDisputes": "1",
+                    "onTimePaymentRate": 0.96,
+                    "accountManagerEmail": "david.park@meridiancloud.com",
+                    "Id": "7BD74BFB-D7A2-41CB-9139-019E6A5B9DE4"
+                  }
+                ],
+                "start.output.disputedLineNumber": 5,
+                "end.discrepancyCount": null,
+                "queryErpRecords1.error": null,
+                "invoiceNumber": "MCS-2026-04872",
+                "computeResult.output": null,
+                "discrepancyCount": null,
+                "end.totalOvercharge": null,
+                "computeResult.error": null,
+                "accountTier": null,
+                "start.output.accountNumber": "ACCT-98201-NE",
+                "end.matchedInvoiceNumber": null,
+                "start.output.disputedQuantity": 14,
+                "totalOvercharge": null,
+                "disputedQuantity": 14,
+                "matchedInvoiceNumber": null
+              },
+              "metadata": {
+                "FolderKey": "410fae2d-89b3-4cd1-a991-7359bda90c0b",
+                "InstanceId": "0661fd8b-b954-461c-acde-dc7203d8b1ff",
+                "ElementCount": {
+                  "queryCrmRecord1": 1,
+                  "queryErpRecords1": 1,
+                  "start": 1
+                },
+                "ExternalId": "07085195",
+                "ProcessKey": null
+              }
+            }
+          },
+          "inputDefinitions": {},
+          "outputs": {
+            "response": {
+              "totalOvercharge": 4200,
+              "discrepancyCount": 1,
+              "matchedInvoiceNumber": "MCS-2026-04872",
+              "accountTier": ""
+            }
+          }
+        },
+        {
+          "elementId": "end",
+          "elementRunId": "d4590a00-6fdb-489c-9525-647e8d9adf56",
+          "isMarker": false,
+          "inputs": {},
+          "inputDefinitions": {},
+          "outputs": {}
+        }
+      ],
+      "globals": {
+        "computeResult.error": null,
+        "accountTier": "",
+        "start.output.invoiceNumber": "MCS-2026-04872",
+        "start.output.disputedUnitPrice": 300,
+        "matchedInvoiceNumber": "MCS-2026-04872",
+        "computeResult.output": {
+          "totalOvercharge": 4200,
+          "discrepancyCount": 1,
+          "matchedInvoiceNumber": "MCS-2026-04872",
+          "accountTier": ""
+        },
+        "totalOvercharge": 4200,
+        "start.output.disputedLineNumber": 5,
+        "start.output.accountNumber": "ACCT-98201-NE",
+        "discrepancyCount": 1,
+        "queryCrmRecord1.output": [
+          {
+            "accountManagerName": "David Park",
+            "priorDisputeSummary": "DSP-2025-00187 valid (qty/amount, $340)",
+            "CreatedBy": {
+              "CreateTime": "2026-05-27T16:46:23.5633333+00:00",
+              "Email": "milo.shields@uipath.com",
+              "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51",
+              "IsActive": false,
+              "Name": "Milo Shields",
+              "Type": 0,
+              "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"
+            },
+            "accountName": "Northwind Electronics Corp.",
+            "CreateTime": "2026-05-27T16:54:09.6360927+00:00",
+            "accountManagerSlackId": "U04MNOP1234",
+            "accountNumber": "ACCT-98201-NE",
+            "accountTier": "Enterprise",
+            "UpdatedBy": {
+              "CreateTime": "2026-05-27T16:46:23.5633333+00:00",
+              "Email": "milo.shields@uipath.com",
+              "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51",
+              "IsActive": false,
+              "Name": "Milo Shields",
+              "Type": 0,
+              "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"
+            },
+            "RecordOwner": {
+              "CreateTime": "2026-05-27T16:46:23.5633333+00:00",
+              "Email": "milo.shields@uipath.com",
+              "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51",
+              "IsActive": false,
+              "Name": "Milo Shields",
+              "Type": 0,
+              "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"
+            },
+            "UpdateTime": "2026-05-27T16:54:09.6360927+00:00",
+            "priorInvalidDisputes": "0",
+            "priorValidDisputes": "1",
+            "onTimePaymentRate": 0.96,
+            "accountManagerEmail": "david.park@meridiancloud.com",
+            "Id": "7BD74BFB-D7A2-41CB-9139-019E6A5B9DE4"
+          }
+        ],
+        "queryErpRecords1.output": [
+          {
+            "unitPrice": 1200,
+            "amount": 1200,
+            "CreatedBy": {
+              "CreateTime": "2026-05-27T16:46:23.5633333+00:00",
+              "Email": "milo.shields@uipath.com",
+              "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51",
+              "IsActive": false,
+              "Name": "Milo Shields",
+              "Type": 0,
+              "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"
+            },
+            "quantity": 1,
+            "lineItemId": "MCS-2026-04872-L01",
+            "CreateTime": "2026-05-27T16:54:19.0495953+00:00",
+            "description": "Cloud Hosting - Standard Tier",
+            "accountNumber": "ACCT-98201-NE",
+            "UpdatedBy": {
+              "CreateTime": "2026-05-27T16:46:23.5633333+00:00",
+              "Email": "milo.shields@uipath.com",
+              "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51",
+              "IsActive": false,
+              "Name": "Milo Shields",
+              "Type": 0,
+              "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"
+            },
+            "RecordOwner": {
+              "CreateTime": "2026-05-27T16:46:23.5633333+00:00",
+              "Email": "milo.shields@uipath.com",
+              "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51",
+              "IsActive": false,
+              "Name": "Milo Shields",
+              "Type": 0,
+              "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"
+            },
+            "UpdateTime": "2026-05-27T16:54:19.0495953+00:00",
+            "invoiceNumber": "MCS-2026-04872",
+            "Id": "2D599E95-3083-46C4-9954-019E6A5BC2A9",
+            "lineNumber": 1
+          },
+          {
+            "unitPrice": 2500,
+            "amount": 2500,
+            "CreatedBy": {
+              "CreateTime": "2026-05-27T16:46:23.5633333+00:00",
+              "Email": "milo.shields@uipath.com",
+              "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51",
+              "IsActive": false,
+              "Name": "Milo Shields",
+              "Type": 0,
+              "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"
+            },
+            "quantity": 1,
+            "lineItemId": "MCS-2026-04872-L02",
+            "CreateTime": "2026-05-27T16:54:19.0495953+00:00",
+            "description": "Premium Support Package",
+            "accountNumber": "ACCT-98201-NE",
+            "UpdatedBy": {
+              "CreateTime": "2026-05-27T16:46:23.5633333+00:00",
+              "Email": "milo.shields@uipath.com",
+              "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51",
+              "IsActive": false,
+              "Name": "Milo Shields",
+              "Type": 0,
+              "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"
+            },
+            "RecordOwner": {
+              "CreateTime": "2026-05-27T16:46:23.5633333+00:00",
+              "Email": "milo.shields@uipath.com",
+              "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51",
+              "IsActive": false,
+              "Name": "Milo Shields",
+              "Type": 0,
+              "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"
+            },
+            "sowStatus": "Active",
+            "sowReference": "NW-2025-014",
+            "UpdateTime": "2026-05-27T16:54:19.0495953+00:00",
+            "invoiceNumber": "MCS-2026-04872",
+            "Id": "DF729F08-E6CA-48B5-95CB-019E6A5BC2AA",
+            "lineNumber": 2
+          },
+          {
+            "unitPrice": 0.18,
+            "amount": 180,
+            "CreatedBy": {
+              "CreateTime": "2026-05-27T16:46:23.5633333+00:00",
+              "Email": "milo.shields@uipath.com",
+              "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51",
+              "IsActive": false,
+              "Name": "Milo Shields",
+              "Type": 0,
+              "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"
+            },
+            "quantity": 1000,
+            "lineItemId": "MCS-2026-04872-L03",
+            "CreateTime": "2026-05-27T16:54:19.0495953+00:00",
+            "description": "Storage Premium",
+            "accountNumber": "ACCT-98201-NE",
+            "UpdatedBy": {
+              "CreateTime": "2026-05-27T16:46:23.5633333+00:00",
+              "Email": "milo.shields@uipath.com",
+              "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51",
+              "IsActive": false,
+              "Name": "Milo Shields",
+              "Type": 0,
+              "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"
+            },
+            "RecordOwner": {
+              "CreateTime": "2026-05-27T16:46:23.5633333+00:00",
+              "Email": "milo.shields@uipath.com",
+              "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51",
+              "IsActive": false,
+              "Name": "Milo Shields",
+              "Type": 0,
+              "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"
+            },
+            "UpdateTime": "2026-05-27T16:54:19.0495953+00:00",
+            "invoiceNumber": "MCS-2026-04872",
+            "Id": "25825404-3AA7-4345-832E-019E6A5BC2AB",
+            "lineNumber": 3
+          },
+          {
+            "unitPrice": 325,
+            "amount": 1300,
+            "CreatedBy": {
+              "CreateTime": "2026-05-27T16:46:23.5633333+00:00",
+              "Email": "milo.shields@uipath.com",
+              "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51",
+              "IsActive": false,
+              "Name": "Milo Shields",
+              "Type": 0,
+              "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"
+            },
+            "quantity": 4,
+            "lineItemId": "MCS-2026-04872-L04",
+            "CreateTime": "2026-05-27T16:54:19.0495953+00:00",
+            "hoursLogged": 4,
+            "description": "Solutions Architect Consulting",
+            "accountNumber": "ACCT-98201-NE",
+            "UpdatedBy": {
+              "CreateTime": "2026-05-27T16:46:23.5633333+00:00",
+              "Email": "milo.shields@uipath.com",
+              "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51",
+              "IsActive": false,
+              "Name": "Milo Shields",
+              "Type": 0,
+              "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"
+            },
+            "RecordOwner": {
+              "CreateTime": "2026-05-27T16:46:23.5633333+00:00",
+              "Email": "milo.shields@uipath.com",
+              "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51",
+              "IsActive": false,
+              "Name": "Milo Shields",
+              "Type": 0,
+              "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"
+            },
+            "UpdateTime": "2026-05-27T16:54:19.0495953+00:00",
+            "invoiceNumber": "MCS-2026-04872",
+            "Id": "30991201-6484-4908-A8F0-019E6A5BC2AC",
+            "lineNumber": 4
+          },
+          {
+            "unitPrice": 185,
+            "amount": 2590,
+            "timeSheetReference": "TS-2026-02-NW022",
+            "CreatedBy": {
+              "CreateTime": "2026-05-27T16:46:23.5633333+00:00",
+              "Email": "milo.shields@uipath.com",
+              "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51",
+              "IsActive": false,
+              "Name": "Milo Shields",
+              "Type": 0,
+              "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"
+            },
+            "quantity": 14,
+            "contractedRate": 185,
+            "lineItemId": "MCS-2026-04872-L05",
+            "CreateTime": "2026-05-27T16:54:19.0495953+00:00",
+            "hoursLogged": 14,
+            "description": "Custom Integration Build",
+            "accountNumber": "ACCT-98201-NE",
+            "UpdatedBy": {
+              "CreateTime": "2026-05-27T16:46:23.5633333+00:00",
+              "Email": "milo.shields@uipath.com",
+              "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51",
+              "IsActive": false,
+              "Name": "Milo Shields",
+              "Type": 0,
+              "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"
+            },
+            "projectStatus": "In Progress",
+            "RecordOwner": {
+              "CreateTime": "2026-05-27T16:46:23.5633333+00:00",
+              "Email": "milo.shields@uipath.com",
+              "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51",
+              "IsActive": false,
+              "Name": "Milo Shields",
+              "Type": 0,
+              "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"
+            },
+            "projectCode": "PRJ-NW-2026-022",
+            "sowStatus": "In Progress",
+            "sowReference": "NW-2026-022",
+            "UpdateTime": "2026-05-27T16:54:19.0495953+00:00",
+            "invoiceNumber": "MCS-2026-04872",
+            "Id": "00871493-55EC-47CA-802D-019E6A5BC2AD",
+            "lineNumber": 5
+          },
+          {
+            "unitPrice": 35,
+            "amount": 700,
+            "CreatedBy": {
+              "CreateTime": "2026-05-27T16:46:23.5633333+00:00",
+              "Email": "milo.shields@uipath.com",
+              "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51",
+              "IsActive": false,
+              "Name": "Milo Shields",
+              "Type": 0,
+              "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"
+            },
+            "quantity": 20,
+            "lineItemId": "MCS-2026-04872-L06",
+            "CreateTime": "2026-05-27T16:54:19.0495953+00:00",
+            "description": "Data Transfer",
+            "accountNumber": "ACCT-98201-NE",
+            "UpdatedBy": {
+              "CreateTime": "2026-05-27T16:46:23.5633333+00:00",
+              "Email": "milo.shields@uipath.com",
+              "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51",
+              "IsActive": false,
+              "Name": "Milo Shields",
+              "Type": 0,
+              "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"
+            },
+            "RecordOwner": {
+              "CreateTime": "2026-05-27T16:46:23.5633333+00:00",
+              "Email": "milo.shields@uipath.com",
+              "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51",
+              "IsActive": false,
+              "Name": "Milo Shields",
+              "Type": 0,
+              "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"
+            },
+            "UpdateTime": "2026-05-27T16:54:19.0495953+00:00",
+            "invoiceNumber": "MCS-2026-04872",
+            "Id": "A38117FF-1110-45C7-AC05-019E6A5BC2AE",
+            "lineNumber": 6
+          },
+          {
+            "unitPrice": 275,
+            "amount": 11000,
+            "timeSheetReference": "TS-2026-02-MW019",
+            "CreatedBy": {
+              "CreateTime": "2026-05-27T16:46:23.5633333+00:00",
+              "Email": "milo.shields@uipath.com",
+              "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51",
+              "IsActive": false,
+              "Name": "Milo Shields",
+              "Type": 0,
+              "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"
+            },
+            "quantity": 40,
+            "contractedRate": 275,
+            "lineItemId": "MCS-2026-04872-L07",
+            "CreateTime": "2026-05-27T16:54:19.0495953+00:00",
+            "hoursLogged": 40,
+            "description": "Professional Services - Migration",
+            "accountNumber": "ACCT-98201-NE",
+            "UpdatedBy": {
+              "CreateTime": "2026-05-27T16:46:23.5633333+00:00",
+              "Email": "milo.shields@uipath.com",
+              "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51",
+              "IsActive": false,
+              "Name": "Milo Shields",
+              "Type": 0,
+              "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"
+            },
+            "projectStatus": "Completed",
+            "RecordOwner": {
+              "CreateTime": "2026-05-27T16:46:23.5633333+00:00",
+              "Email": "milo.shields@uipath.com",
+              "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51",
+              "IsActive": false,
+              "Name": "Milo Shields",
+              "Type": 0,
+              "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"
+            },
+            "projectCode": "PRJ-MW-2026-019",
+            "sowStatus": "Completed",
+            "sowReference": "MW-2026-019",
+            "UpdateTime": "2026-05-27T16:54:19.0495953+00:00",
+            "invoiceNumber": "MCS-2026-04872",
+            "Id": "26229790-183C-443A-B61A-019E6A5BC2AF",
+            "lineNumber": 7
+          },
+          {
+            "unitPrice": 275,
+            "amount": 11000,
+            "timeSheetReference": "TS-2026-02-MW019",
+            "CreatedBy": {
+              "CreateTime": "2026-05-27T16:46:23.5633333+00:00",
+              "Email": "milo.shields@uipath.com",
+              "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51",
+              "IsActive": false,
+              "Name": "Milo Shields",
+              "Type": 0,
+              "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"
+            },
+            "quantity": 40,
+            "contractedRate": 275,
+            "lineItemId": "MCS-2026-04872-L08",
+            "CreateTime": "2026-05-27T16:54:19.0495953+00:00",
+            "hoursLogged": 40,
+            "description": "Professional Services - Migration",
+            "accountNumber": "ACCT-98201-NE",
+            "UpdatedBy": {
+              "CreateTime": "2026-05-27T16:46:23.5633333+00:00",
+              "Email": "milo.shields@uipath.com",
+              "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51",
+              "IsActive": false,
+              "Name": "Milo Shields",
+              "Type": 0,
+              "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"
+            },
+            "projectStatus": "Completed",
+            "RecordOwner": {
+              "CreateTime": "2026-05-27T16:46:23.5633333+00:00",
+              "Email": "milo.shields@uipath.com",
+              "Id": "6DC2D731-C5CD-4064-A428-A30606C68F51",
+              "IsActive": false,
+              "Name": "Milo Shields",
+              "Type": 0,
+              "UpdateTime": "2026-06-11T17:16:14.3866667+00:00"
+            },
+            "projectCode": "PRJ-MW-2026-019",
+            "sowStatus": "Completed",
+            "sowReference": "MW-2026-019",
+            "UpdateTime": "2026-05-27T16:54:19.0495953+00:00",
+            "invoiceNumber": "MCS-2026-04872",
+            "Id": "C936F931-8ADC-4871-8C06-019E6A5BC2B0",
+            "lineNumber": 8
+          }
+        ],
+        "start.output.disputedQuantity": 14
+      },
+      "instanceId": "0661fd8b-b954-461c-acde-dc7203d8b1ff",
+      "workflowId": "0661fd8b-b954-461c-acde-dc7203d8b1ff/BpmnGenericWorkflow",
+      "parentElementId": null,
+      "globalDefinitions": {
+        "computeResult.error": {
+          "name": "error",
+          "type": "object"
+        },
+        "accountTier": {
+          "name": "accountTier",
+          "type": "string"
+        },
+        "start.output.invoiceNumber": {
+          "name": "invoiceNumber",
+          "type": "string"
+        },
+        "start.output.disputedUnitPrice": {
+          "name": "disputedUnitPrice",
+          "type": "number"
+        },
+        "matchedInvoiceNumber": {
+          "name": "matchedInvoiceNumber",
+          "type": "string"
+        },
+        "computeResult.output": {
+          "name": "output",
+          "type": "object"
+        },
+        "totalOvercharge": {
+          "name": "totalOvercharge",
+          "type": "number"
+        },
+        "start.output.disputedLineNumber": {
+          "name": "disputedLineNumber",
+          "type": "number"
+        },
+        "start.output.accountNumber": {
+          "name": "accountNumber",
+          "type": "string"
+        },
+        "discrepancyCount": {
+          "name": "discrepancyCount",
+          "type": "number"
+        },
+        "queryCrmRecord1.output": {
+          "name": "output",
+          "type": "jsonSchema"
+        },
+        "queryErpRecords1.output": {
+          "name": "output",
+          "type": "jsonSchema"
+        },
+        "start.output.disputedQuantity": {
+          "name": "disputedQuantity",
+          "type": "number"
+        }
+      }
+    }
+  },
+  "Instructions": "Debug completed with status: Completed"
+}
+=== FLOW_DEBUG_RAW_CAPTURE END ===
+FAIL: No output equals expected 1610
+Outputs: [null, "", "mcs-2026-04872", 300, "mcs-2026-04872", 4200, 1, "mcs-2026-04872", "", 4200, 5, "acct-98201-ne", 1, "david park", "dsp-2025-00187 valid (qty/amount, $340)", "2026-05-27t16:46:23.5633333+00:00", "milo.shields@uipath.com", "6dc2d731-c5cd-4064-a428-a30606c68f51", false, "milo shields", 0, "2026-06-11t17:16:14.3866667+00:00", "northwind electronics corp.", "2026-05-27t16:54:09.6360927+00:00", "u04mnop1234", "acct-98201-ne", "enterprise", "2026-05-27t16:46:23.5633333+00:00", "milo.shields@uipath.com", "6dc2d731-c5cd-4064-a428-a30606c68f51", false, "milo shields", 0, "2026-06-11t17:16:14.3866667+00:00", "2026-05-27t16:46:23.5633333+00:00", "milo.shields@uipath.com", "6dc2d731-c5cd-4064-a428-a30606c68f51", false, "milo shields", 0, "2026-06-11t17:16:14.3866667+00:00", "2026-05-27t16:54:09.6360927+00:00", "0", "1", 0.96, "david.park@meridiancloud.com", "7bd74bfb-d7a2-41cb-9139-019e6a5b9de4", 1200, 1200, "2026-05-27t16:46:23.5633333+00:00", "milo.shields@uipath.com", "6dc2d731-c5cd-
+---
+2026-07-24 17:24:04 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 0.00
+2026-07-24 17:24:04 [INFO] coder_eval.evaluation.checker: Criterion 'run_command' FAILED (score=0.00, threshold=1.00): Command: python3 $TASK_DIR/check_billing_discrepancy_detector.py
+2026-07-24 17:24:04 [INFO] coder_eval.orchestrator: Success criteria: 1/2 passed, weighted score: 0.375
+2026-07-24 17:24:04 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-24 17:24:04 [INFO] coder_eval.orchestrator: Running post-run command: python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/cleanup_solutions.py
+2026-07-24 17:24:06 [WARNING] coder_eval.orchestrator: [post_run stderr] cleanup_solutions: deleted d3605fbf-8e89-4133-4ac0-08dee9a25385 (from BillingDiscrepancyDetector/BillingDiscrepancyDetector.uipx)
+2026-07-24 17:24:06 [WARNING] coder_eval.orchestrator: [post_run stderr] cleanup_solutions: summary policy=always deleted=1 preserved=0 skipped=0 not_uploaded=0 failed=0
+2026-07-24 17:24:06 [INFO] coder_eval.orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+2026-07-24 17:24:06 [INFO] coder_eval.orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-devcon-billing-discrepancy-detector
+2026-07-24 17:24:06 [INFO] coder_eval.orchestrator: Task finished: status=FAILURE duration=603.4s score=0.375 iterations=1

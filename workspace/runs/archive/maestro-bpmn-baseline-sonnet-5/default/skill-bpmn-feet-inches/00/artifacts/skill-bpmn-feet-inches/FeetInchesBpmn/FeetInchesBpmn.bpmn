@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+    xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+    xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+    xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+    xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:uipath="http://uipath.org/schema/bpmn"
+    id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn"
+    exporter="UiPath (https://bpmn.uipath.com)" exporterVersion="1.0">
+  <bpmn:process id="Process_1" name="FeetInchesBpmn" isExecutable="true">
+    <bpmn:extensionElements>
+      <uipath:migrationVersion version="11.5" />
+      <uipath:variables version="v1">
+        <uipath:input id="Var_Value" name="value" type="number" elementId="Start_Manual" />
+        <uipath:input id="Var_Direction" name="direction" type="string" elementId="Start_Manual" />
+        <uipath:inputOutput id="Var_NormValue" name="normValue" type="number" />
+        <uipath:inputOutput id="Var_NormDirection" name="normDirection" type="string" />
+        <uipath:inputOutput id="Var_ConvertedValue" name="convertedValue" type="number" />
+        <uipath:inputOutput id="Var_ConvertedUnit" name="convertedUnit" type="string" />
+        <uipath:output id="Var_Result" name="result" type="string" />
+      </uipath:variables>
+    </bpmn:extensionElements>
+
+    <bpmn:startEvent id="Start_Manual" name="Manual Start">
+      <bpmn:extensionElements>
+        <uipath:entryPointId value="a1e2c9d4-6f3b-4e21-9c7a-0d5b8f2a41c3" />
+      </bpmn:extensionElements>
+      <bpmn:outgoing>Flow_1</bpmn:outgoing>
+    </bpmn:startEvent>
+
+    <bpmn:scriptTask id="Task_Normalize" name="Normalize Inputs" scriptFormat="JavaScript">
+      <bpmn:extensionElements>
+        <uipath:scriptVersion value="v3" />
+        <uipath:mapping version="v1">
+          <uipath:type value="BPMN.ScriptTask" version="v1" />
+          <uipath:input name="args" type="json" target="bodyField"><![CDATA[{"value":"=vars.Var_Value","direction":"=vars.Var_Direction"}]]></uipath:input>
+          <uipath:output name="normValue" type="number" var="Var_NormValue" source="=result.response.value" />
+          <uipath:output name="normDirection" type="string" var="Var_NormDirection" source="=result.response.direction" />
+        </uipath:mapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_1</bpmn:incoming>
+      <bpmn:outgoing>Flow_2</bpmn:outgoing>
+      <bpmn:script><![CDATA[
+var parsedValue = Number(value);
+var parsedDirection = (direction || "").toString().trim().toLowerCase();
+return { response: { value: parsedValue, direction: parsedDirection } };
+]]></bpmn:script>
+    </bpmn:scriptTask>
+
+    <bpmn:scriptTask id="Task_Convert" name="Apply Conversion" scriptFormat="JavaScript">
+      <bpmn:extensionElements>
+        <uipath:scriptVersion value="v3" />
+        <uipath:mapping version="v1">
+          <uipath:type value="BPMN.ScriptTask" version="v1" />
+          <uipath:input name="args" type="json" target="bodyField"><![CDATA[{"value":"=vars.Var_NormValue","direction":"=vars.Var_NormDirection"}]]></uipath:input>
+          <uipath:output name="convertedValue" type="number" var="Var_ConvertedValue" source="=result.response.converted" />
+          <uipath:output name="convertedUnit" type="string" var="Var_ConvertedUnit" source="=result.response.unit" />
+        </uipath:mapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_2</bpmn:incoming>
+      <bpmn:outgoing>Flow_3</bpmn:outgoing>
+      <bpmn:script><![CDATA[
+var converted;
+var unit;
+if (direction === "f2i") {
+  converted = value * 12;
+  unit = "inches";
+} else if (direction === "i2f") {
+  converted = value / 12;
+  unit = "feet";
+} else if (direction === "y2f") {
+  converted = value * 3;
+  unit = "feet";
+} else {
+  converted = value;
+  unit = "unknown";
+}
+return { response: { converted: converted, unit: unit } };
+]]></bpmn:script>
+    </bpmn:scriptTask>
+
+    <bpmn:scriptTask id="Task_Format" name="Format Result" scriptFormat="JavaScript">
+      <bpmn:extensionElements>
+        <uipath:scriptVersion value="v3" />
+        <uipath:mapping version="v1">
+          <uipath:type value="BPMN.ScriptTask" version="v1" />
+          <uipath:input name="args" type="json" target="bodyField"><![CDATA[{"value":"=vars.Var_ConvertedValue","unit":"=vars.Var_ConvertedUnit"}]]></uipath:input>
+          <uipath:output name="result" type="string" var="Var_Result" source="=result.response" />
+        </uipath:mapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_3</bpmn:incoming>
+      <bpmn:outgoing>Flow_4</bpmn:outgoing>
+      <bpmn:script><![CDATA[
+return { response: value + " " + unit };
+]]></bpmn:script>
+    </bpmn:scriptTask>
+
+    <bpmn:endEvent id="End_1" name="Done">
+      <bpmn:incoming>Flow_4</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <bpmn:sequenceFlow id="Flow_1" sourceRef="Start_Manual" targetRef="Task_Normalize" />
+    <bpmn:sequenceFlow id="Flow_2" sourceRef="Task_Normalize" targetRef="Task_Convert" />
+    <bpmn:sequenceFlow id="Flow_3" sourceRef="Task_Convert" targetRef="Task_Format" />
+    <bpmn:sequenceFlow id="Flow_4" sourceRef="Task_Format" targetRef="End_1" />
+  </bpmn:process>
+
+  <bpmndi:BPMNDiagram id="Diagram_1">
+    <bpmndi:BPMNPlane id="Plane_1" bpmnElement="Process_1">
+      <bpmndi:BPMNShape id="S_Start_Manual" bpmnElement="Start_Manual">
+        <dc:Bounds x="160" y="100" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Task_Normalize" bpmnElement="Task_Normalize">
+        <dc:Bounds x="250" y="78" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Task_Convert" bpmnElement="Task_Convert">
+        <dc:Bounds x="410" y="78" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Task_Format" bpmnElement="Task_Format">
+        <dc:Bounds x="570" y="78" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_End_1" bpmnElement="End_1">
+        <dc:Bounds x="730" y="100" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_1" bpmnElement="Flow_1">
+        <di:waypoint x="196" y="118" />
+        <di:waypoint x="250" y="118" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_2" bpmnElement="Flow_2">
+        <di:waypoint x="350" y="118" />
+        <di:waypoint x="410" y="118" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_3" bpmnElement="Flow_3">
+        <di:waypoint x="510" y="118" />
+        <di:waypoint x="570" y="118" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_4" bpmnElement="Flow_4">
+        <di:waypoint x="670" y="118" />
+        <di:waypoint x="730" y="118" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

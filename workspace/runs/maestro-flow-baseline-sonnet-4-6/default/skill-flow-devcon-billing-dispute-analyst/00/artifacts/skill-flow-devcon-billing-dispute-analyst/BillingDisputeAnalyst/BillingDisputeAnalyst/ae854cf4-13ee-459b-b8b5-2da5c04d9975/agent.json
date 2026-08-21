@@ -1,0 +1,87 @@
+{
+  "version": "1.1.0",
+  "settings": {
+    "model": "anthropic.claude-sonnet-4-5-20250929-v1:0",
+    "maxTokens": 64000,
+    "temperature": 0,
+    "engine": "basic-v2",
+    "maxIterations": 5,
+    "mode": "standard"
+  },
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "start__output__disputeDescription": {
+        "type": "string",
+        "description": "Description of the billing dispute from the trigger"
+      },
+      "start__output__invoiceNumber": {
+        "type": "string",
+        "description": "Invoice number under dispute from the trigger"
+      }
+    }
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "determination": {
+        "type": "string",
+        "description": "The agent's determination: 'valid', 'invalid', or 'partial'"
+      },
+      "rationale": {
+        "type": "string",
+        "description": "The reasoning behind the determination, referencing the SOP"
+      }
+    },
+    "required": [
+      "determination",
+      "rationale"
+    ]
+  },
+  "metadata": {
+    "storageVersion": "50.0.0",
+    "isConversational": false,
+    "showProjectCreationExperience": false
+  },
+  "type": "lowCode",
+  "guardrails": [],
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a billing dispute analyst. Your task is to analyze billing disputes submitted by customers and produce a structured determination grounded on the company's Billing Dispute Standard Operating Procedures (SOP).\n\nUse the Billing Dispute SOP Index context tool to retrieve relevant SOP sections. Call the context tool at most 2 times. After the last call, stop retrieving and decide with the evidence you already have.\n\nIf the retrieved content does not cover a specific detail, state that in the rationale, but still always return both 'determination' and 'rationale' fields. Never end a run without a determination.\n\nReturn exactly two fields:\n- determination: one of 'valid', 'invalid', or 'partial'\n- rationale: a concise explanation referencing the applicable SOP provisions",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "You are a billing dispute analyst. Your task is to analyze billing disputes submitted by customers and produce a structured determination grounded on the company's Billing Dispute Standard Operating Procedures (SOP).\n\nUse the Billing Dispute SOP Index context tool to retrieve relevant SOP sections. Call the context tool at most 2 times. After the last call, stop retrieving and decide with the evidence you already have.\n\nIf the retrieved content does not cover a specific detail, state that in the rationale, but still always return both 'determination' and 'rationale' fields. Never end a run without a determination.\n\nReturn exactly two fields:\n- determination: one of 'valid', 'invalid', or 'partial'\n- rationale: a concise explanation referencing the applicable SOP provisions"
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "Please analyze the following billing dispute:\n\nInvoice Number: {{input.start__output__invoiceNumber}}\n\nDispute Description: {{input.start__output__disputeDescription}}\n\nUsing the Billing Dispute SOP, determine whether this dispute is valid, invalid, or partial, and provide a detailed rationale.",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "Please analyze the following billing dispute:\n\nInvoice Number: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__invoiceNumber"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\nDispute Description: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__disputeDescription"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\nUsing the Billing Dispute SOP, determine whether this dispute is valid, invalid, or partial, and provide a detailed rationale."
+        }
+      ]
+    }
+  ],
+  "projectId": "ae854cf4-13ee-459b-b8b5-2da5c04d9975"
+}

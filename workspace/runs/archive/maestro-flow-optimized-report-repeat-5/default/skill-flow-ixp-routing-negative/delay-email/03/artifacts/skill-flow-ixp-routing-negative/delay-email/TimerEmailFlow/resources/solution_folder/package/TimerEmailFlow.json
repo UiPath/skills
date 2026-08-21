@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "TimerEmailFlow",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "eb4de9c7-5283-427e-b4a5-21b4e9b559e8",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "TimerEmailFlow"
+    },
+    "locks": [],
+    "key": "edd63602-296d-4c9f-a435-39b7ed3e9dc3",
+    "files": []
+  }
+}

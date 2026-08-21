@@ -1,0 +1,48 @@
+{
+  "Result": "Success",
+  "Code": "DebugInstanceVariablesAll",
+  "Data": {
+    "Variables": [
+      {
+        "Elements": [
+          {
+            "ElementId": "Event_start",
+            "ElementRunId": "17a8d61e-e78d-4809-969d-293e342b03e7",
+            "IsMarker": false,
+            "Inputs": {},
+            "InputDefinitions": {},
+            "Outputs": {}
+          },
+          {
+            "ElementId": "Task_Multiply",
+            "ElementRunId": "b05ea3b2-f1f5-4dee-903c-1b65838bec1d",
+            "IsMarker": false,
+            "Inputs": {},
+            "InputDefinitions": {},
+            "Outputs": {}
+          },
+          {
+            "ElementId": "Event_end",
+            "ElementRunId": "59f41ef5-b59f-4850-b35d-976c0c89e335",
+            "IsMarker": false,
+            "Inputs": {},
+            "InputDefinitions": {},
+            "Outputs": {}
+          }
+        ],
+        "Globals": {
+          "Product": null
+        },
+        "InstanceId": "bf266802-b9de-4a93-9cc8-e4b161e6a22b",
+        "WorkflowId": "bf266802-b9de-4a93-9cc8-e4b161e6a22b/BpmnGenericWorkflow",
+        "ParentElementId": null,
+        "GlobalDefinitions": {
+          "Product": {
+            "Name": "product",
+            "Type": "integer"
+          }
+        }
+      }
+    ]
+  }
+}

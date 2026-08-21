@@ -1,0 +1,24 @@
+{
+  "version": "2.0",
+  "resources": [
+    {
+      "resource": "connection",
+      "key": "f746b6e5-9aea-4aff-81f1-fbaf460092e9",
+      "id": "connectionf746b6e5-9aea-4aff-81f1-fbaf460092e9",
+      "value": {
+        "ConnectionId": {
+          "defaultValue": "f746b6e5-9aea-4aff-81f1-fbaf460092e9",
+          "isExpression": false,
+          "displayName": "uipath-microsoft-azure connection"
+        }
+      },
+      "metadata": {
+        "ActivityName": "Create Resource Group",
+        "BindingsVersion": "2.2",
+        "DisplayLabel": "uipath-microsoft-azure connection",
+        "UseConnectionService": "true",
+        "Connector": "uipath-microsoft-azure"
+      }
+    }
+  ]
+}

@@ -1,0 +1,546 @@
+{
+  "id": "6584bfec-34c0-4ed6-9f90-c02d2ca27aad",
+  "version": "1.8",
+  "name": "SubflowDemo",
+  "nodes": [
+    {
+      "id": "start",
+      "type": "core.trigger.manual",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Manual trigger"
+      },
+      "inputs": {
+        "entryPointId": "552deffa-35bd-4487-87c3-e72924fbda33",
+        "isDefaultEntryPoint": true
+      },
+      "outputs": {
+        "output": {
+          "type": "object",
+          "description": "Data passed when manually triggering the workflow.",
+          "source": "null",
+          "var": "output"
+        }
+      }
+    },
+    {
+      "id": "reverseSubflow",
+      "type": "core.subflow",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Reverse String"
+      },
+      "inputs": {
+        "text": "=js:$vars.start.output.text"
+      },
+      "outputs": {
+        "output": {
+          "type": "object",
+          "description": "The return value of the subflow",
+          "source": "=result.response",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the subflow fails",
+          "source": "=result.Error",
+          "var": "error"
+        }
+      }
+    },
+    {
+      "id": "end",
+      "type": "core.control.end",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "End"
+      },
+      "inputs": {},
+      "outputs": {
+        "reversedText": {
+          "source": "=js:$vars.reverseSubflow.output.reversed"
+        }
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "sourceNodeId": "start",
+      "sourcePort": "output",
+      "targetNodeId": "reverseSubflow",
+      "targetPort": "input"
+    },
+    {
+      "id": "e2",
+      "sourceNodeId": "reverseSubflow",
+      "sourcePort": "output",
+      "targetNodeId": "end",
+      "targetPort": "input"
+    }
+  ],
+  "variables": {
+    "globals": [
+      {
+        "id": "text",
+        "direction": "in",
+        "type": "string",
+        "defaultValue": "",
+        "triggerNodeId": "start"
+      },
+      {
+        "id": "reversedText",
+        "direction": "out",
+        "type": "string",
+        "defaultValue": ""
+      }
+    ],
+    "nodes": [
+      {
+        "id": "start.output",
+        "type": "object",
+        "description": "Data passed when manually triggering the workflow.",
+        "binding": {
+          "nodeId": "start",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "reverseSubflow.output",
+        "type": "object",
+        "description": "The return value of the subflow",
+        "binding": {
+          "nodeId": "reverseSubflow",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "reverseSubflow.error",
+        "type": "object",
+        "description": "Error information if the subflow fails",
+        "binding": {
+          "nodeId": "reverseSubflow",
+          "outputId": "error"
+        }
+      },
+      {
+        "id": "end.reversedText",
+        "type": "string",
+        "binding": {
+          "nodeId": "end",
+          "outputId": "reversedText"
+        }
+      }
+    ]
+  },
+  "definitions": [
+    {
+      "nodeType": "core.trigger.manual",
+      "version": "1.0",
+      "category": "trigger",
+      "description": "Start workflow manually",
+      "tags": [
+        "trigger",
+        "start",
+        "manual"
+      ],
+      "sortOrder": 40,
+      "display": {
+        "label": "Manual trigger",
+        "icon": "play",
+        "shape": "circle"
+      },
+      "handleConfiguration": [
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "output",
+              "type": "source",
+              "handleType": "output",
+              "showButton": true,
+              "constraints": {
+                "forbiddenTargetCategories": [
+                  "trigger"
+                ]
+              }
+            }
+          ],
+          "visible": true
+        }
+      ],
+      "model": {
+        "type": "bpmn:StartEvent",
+        "entryPointId": true
+      },
+      "outputDefinition": {
+        "output": {
+          "type": "object",
+          "description": "Data passed when manually triggering the workflow.",
+          "source": "null",
+          "var": "output"
+        }
+      },
+      "toolbarExtensions": {
+        "design": {
+          "actions": [
+            {
+              "id": "change-trigger-type",
+              "icon": "square-mouse-pointer",
+              "label": "Change trigger type"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "nodeType": "core.subflow",
+      "version": "1.0",
+      "category": "logic",
+      "description": "A reusable group of nodes encapsulated as a subflow",
+      "tags": [
+        "subflow",
+        "reusable",
+        "group"
+      ],
+      "sortOrder": 50,
+      "supportsErrorHandling": true,
+      "display": {
+        "label": "Subflow",
+        "icon": "layers"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ],
+          "visible": true
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "output",
+              "type": "source",
+              "handleType": "output"
+            },
+            {
+              "id": "error",
+              "label": "Error",
+              "type": "source",
+              "handleType": "output",
+              "visible": "{inputs.errorHandlingEnabled}",
+              "constraints": {
+                "maxConnections": 1
+              }
+            }
+          ],
+          "visible": true
+        }
+      ],
+      "model": {
+        "type": "bpmn:SubProcess"
+      }
+    },
+    {
+      "nodeType": "core.action.script",
+      "version": "1.0",
+      "category": "logic",
+      "description": "Execute a JavaScript script",
+      "tags": [
+        "script",
+        "javascript",
+        "code"
+      ],
+      "sortOrder": 30,
+      "supportsErrorHandling": true,
+      "display": {
+        "label": "Script",
+        "icon": "code"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "success",
+              "type": "source",
+              "handleType": "output"
+            },
+            {
+              "id": "error",
+              "label": "Error",
+              "type": "source",
+              "handleType": "output",
+              "visible": "{inputs.errorHandlingEnabled}",
+              "constraints": {
+                "maxConnections": 1
+              }
+            }
+          ]
+        }
+      ],
+      "model": {
+        "type": "bpmn:ScriptTask"
+      }
+    },
+    {
+      "nodeType": "core.control.end",
+      "version": "1.0",
+      "category": "control",
+      "description": "End the workflow",
+      "tags": [
+        "end",
+        "finish",
+        "complete"
+      ],
+      "sortOrder": 90,
+      "display": {
+        "label": "End",
+        "icon": "circle-dot",
+        "shape": "circle"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ],
+          "visible": true
+        }
+      ],
+      "model": {
+        "type": "bpmn:EndEvent"
+      }
+    }
+  ],
+  "runtime": "maestro",
+  "layout": {
+    "nodes": {
+      "start": {
+        "position": {
+          "x": 256,
+          "y": 144
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "reverseSubflow": {
+        "position": {
+          "x": 448,
+          "y": 144
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "end": {
+        "position": {
+          "x": 640,
+          "y": 144
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      }
+    }
+  },
+  "subflows": {
+    "reverseSubflow": {
+      "nodes": [
+        {
+          "id": "subflowStart",
+          "type": "core.trigger.manual",
+          "typeVersion": "1.0",
+          "display": {
+            "label": "Start"
+          },
+          "inputs": {
+            "entryPointId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+            "isDefaultEntryPoint": true
+          },
+          "outputs": {
+            "output": {
+              "type": "object",
+              "description": "Data passed when manually triggering the workflow.",
+              "source": "null",
+              "var": "output"
+            }
+          }
+        },
+        {
+          "id": "scriptReverse",
+          "type": "core.action.script",
+          "typeVersion": "1.0",
+          "display": {
+            "label": "Reverse Text"
+          },
+          "inputs": {
+            "script": "var text = $vars.subflowStart.output.text || ''; var reversed = text.split('').reverse().join(''); return { reversed: reversed };"
+          },
+          "outputs": {
+            "output": {
+              "type": "object",
+              "description": "The return value of the script",
+              "source": "=result.response",
+              "var": "output"
+            },
+            "error": {
+              "type": "object",
+              "description": "Error information if the script fails",
+              "source": "=result.Error",
+              "var": "error"
+            }
+          }
+        },
+        {
+          "id": "subflowEnd",
+          "type": "core.control.end",
+          "typeVersion": "1.0",
+          "display": {
+            "label": "End"
+          },
+          "inputs": {},
+          "outputs": {
+            "reversed": {
+              "source": "=js:$vars.scriptReverse.output.reversed"
+            }
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": "sf-e1",
+          "sourceNodeId": "subflowStart",
+          "sourcePort": "output",
+          "targetNodeId": "scriptReverse",
+          "targetPort": "input"
+        },
+        {
+          "id": "sf-e2",
+          "sourceNodeId": "scriptReverse",
+          "sourcePort": "success",
+          "targetNodeId": "subflowEnd",
+          "targetPort": "input"
+        }
+      ],
+      "variables": {
+        "globals": [
+          {
+            "id": "text",
+            "direction": "in",
+            "type": "string",
+            "defaultValue": "",
+            "triggerNodeId": "subflowStart"
+          },
+          {
+            "id": "reversed",
+            "direction": "out",
+            "type": "string",
+            "defaultValue": ""
+          }
+        ],
+        "nodes": [
+          {
+            "id": "subflowStart.output",
+            "type": "object",
+            "description": "Data passed when manually triggering the workflow.",
+            "binding": {
+              "nodeId": "subflowStart",
+              "outputId": "output"
+            }
+          },
+          {
+            "id": "scriptReverse.output",
+            "type": "object",
+            "description": "The return value of the script",
+            "binding": {
+              "nodeId": "scriptReverse",
+              "outputId": "output"
+            }
+          },
+          {
+            "id": "scriptReverse.error",
+            "type": "object",
+            "description": "Error information if the script fails",
+            "binding": {
+              "nodeId": "scriptReverse",
+              "outputId": "error"
+            }
+          },
+          {
+            "id": "subflowEnd.reversed",
+            "type": "string",
+            "binding": {
+              "nodeId": "subflowEnd",
+              "outputId": "reversed"
+            }
+          }
+        ]
+      },
+      "layout": {
+        "nodes": {
+          "subflowStart": {
+            "position": {
+              "x": 208,
+              "y": 144
+            },
+            "size": {
+              "width": 96,
+              "height": 96
+            },
+            "collapsed": false
+          },
+          "scriptReverse": {
+            "position": {
+              "x": 400,
+              "y": 144
+            },
+            "size": {
+              "width": 96,
+              "height": 96
+            },
+            "collapsed": false
+          },
+          "subflowEnd": {
+            "position": {
+              "x": 592,
+              "y": 144
+            },
+            "size": {
+              "width": 96,
+              "height": 96
+            },
+            "collapsed": false
+          }
+        }
+      }
+    }
+  }
+}

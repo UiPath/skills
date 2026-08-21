@@ -1,0 +1,72 @@
+{
+  "name": "min-dash",
+  "version": "4.2.3",
+  "description": "Minimum utility toolbelt",
+  "main": "dist/index.cjs",
+  "module": "dist/index.esm.js",
+  "types": "dist/index.d.ts",
+  "type": "module",
+  "exports": {
+    ".": {
+      "import": "./dist/index.esm.js",
+      "require": "./dist/index.cjs",
+      "types": "./dist/index.d.ts"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "all": "run-s lint test distro test:types",
+    "bundle": "rollup -c --bundleConfigAsCjs",
+    "copy": "cpx 'lib/*.d.ts' dist",
+    "distro": "run-s copy bundle test:integration test:bundle",
+    "dev": "npm test -- --watch",
+    "lint": "eslint .",
+    "prepublishOnly": "run-s distro",
+    "test": "mocha -r source-map-support/register --full-trace test/*.spec.js",
+    "test:bundle": "rollup -c test/bundling/rollup.config.js",
+    "test:integration": "mocha --full-trace test/integration/*.spec.{cjs,js}",
+    "test:types": "run-s test:types:*",
+    "test:types:cjs": "tsc --noEmit",
+    "test:types:esm": "tsc --noEmit --module node16"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bpmn-io/min-dash.git"
+  },
+  "keywords": [
+    "lodash",
+    "utility",
+    "tool",
+    "belt"
+  ],
+  "author": "bpmn.io <http://bpmn.io>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/bpmn-io/min-dash/issues"
+  },
+  "sideEffects": false,
+  "homepage": "https://github.com/bpmn-io/min-dash",
+  "devDependencies": {
+    "@rollup/plugin-node-resolve": "^15.3.1",
+    "@rollup/plugin-terser": "^0.4.4",
+    "@types/mocha": "^10.0.10",
+    "@types/node": "^20.11.5",
+    "@types/sinon": "^17.0.3",
+    "@types/sinon-chai": "^3.2.12",
+    "chai": "^4.5.0",
+    "cpx": "^1.5.0",
+    "eslint": "^8.56.0",
+    "eslint-plugin-bpmn-io": "^1.0.0",
+    "mocha": "^10.8.2",
+    "npm-run-all": "^4.1.1",
+    "rollup": "^4.34.7",
+    "sinon": "^17.0.1",
+    "sinon-chai": "^3.7.0",
+    "source-map-support": "^0.5.19",
+    "ts-expect": "^1.3.0",
+    "typescript": "^5.3.3"
+  }
+}

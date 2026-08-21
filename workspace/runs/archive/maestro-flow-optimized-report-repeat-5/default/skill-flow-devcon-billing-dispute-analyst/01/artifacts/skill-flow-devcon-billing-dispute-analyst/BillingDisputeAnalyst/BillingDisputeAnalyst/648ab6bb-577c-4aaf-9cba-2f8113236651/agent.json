@@ -1,0 +1,87 @@
+{
+  "version": "1.1.0",
+  "settings": {
+    "model": "gpt-5.4",
+    "maxTokens": 128000,
+    "temperature": 0,
+    "engine": "basic-v2",
+    "maxIterations": 10,
+    "mode": "standard"
+  },
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "start__output__disputeDescription": {
+        "type": "string",
+        "description": "Description of the billing dispute from the customer"
+      },
+      "start__output__invoiceNumber": {
+        "type": "string",
+        "description": "Invoice number associated with the billing dispute"
+      }
+    }
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "determination": {
+        "type": "string",
+        "description": "The determination of the billing dispute (e.g. Valid, Invalid, Partially Valid)"
+      },
+      "rationale": {
+        "type": "string",
+        "description": "The detailed rationale for the determination"
+      }
+    },
+    "required": [
+      "determination",
+      "rationale"
+    ]
+  },
+  "metadata": {
+    "storageVersion": "50.0.0",
+    "isConversational": false,
+    "showProjectCreationExperience": false
+  },
+  "type": "lowCode",
+  "guardrails": [],
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a billing dispute analyst. Your role is to analyze billing disputes using the organization's Standard Operating Procedures (SOPs) retrieved from the context index. When analyzing a dispute:\n1. Review the dispute description and invoice number carefully.\n2. Use the SOP knowledge from context to determine if the dispute is valid, invalid, or partially valid.\n3. Provide a clear determination (one of: Valid, Invalid, Partially Valid).\n4. Provide a detailed rationale explaining your reasoning based on the SOPs.\nReturn ONLY a JSON object with exactly two fields: determination (string) and rationale (string).",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "You are a billing dispute analyst. Your role is to analyze billing disputes using the organization's Standard Operating Procedures (SOPs) retrieved from the context index. When analyzing a dispute:\n1. Review the dispute description and invoice number carefully.\n2. Use the SOP knowledge from context to determine if the dispute is valid, invalid, or partially valid.\n3. Provide a clear determination (one of: Valid, Invalid, Partially Valid).\n4. Provide a detailed rationale explaining your reasoning based on the SOPs.\nReturn ONLY a JSON object with exactly two fields: determination (string) and rationale (string)."
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "Please analyze the following billing dispute:\n\nInvoice Number: {{input.start__output__invoiceNumber}}\n\nDispute Description: {{input.start__output__disputeDescription}}\n\nBased on the SOP guidelines available in context, provide your determination and rationale.",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "Please analyze the following billing dispute:\n\nInvoice Number: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__invoiceNumber"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\nDispute Description: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__disputeDescription"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\nBased on the SOP guidelines available in context, provide your determination and rationale."
+        }
+      ]
+    }
+  ],
+  "projectId": "648ab6bb-577c-4aaf-9cba-2f8113236651"
+}

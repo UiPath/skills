@@ -1,0 +1,58 @@
+task_id: skill-flow-hitl-smoke-completed-port
+description: >
+  Smoke test: agent wires the HITL node's `outcome-completed` output port
+  (the current registry handle labelled Completed). Verifies correct edge structure in
+  a three-node approval flow.
+tags: [uipath-maestro-flow, uipath-human-in-the-loop, smoke, mode:build, lifecycle:generate, shape:multi-node, node:hitl]
+
+run_limits:
+  expected_turns: 24
+  max_turns: 105
+  # 600s was too tight for this multi-node HITL build on Bedrock: one
+  # over-exploring turn hit 604s (commands ~38s; the rest was model latency)
+  # and ERRORed before criteria ran. 900 matches sibling
+  # smoke_03_multi_outcome_routing and the experiment default.
+  turn_timeout: 900
+
+initial_prompt: |
+  Build a UiPath Flow named "PurchaseApproval" with this structure:
+    Manual Trigger -> HITL (manager approves purchase) -> Script (log approval) -> End
+
+  The reviewer's form should be inline — rendered by Action Center.
+  The HITL node shows the reviewer: purchase amount and vendor name.
+  Outcomes: Approve and Reject.
+
+  Wire the output of the HITL step to the Script node.
+  The Script node logs: "Approval recorded."
+
+  Validate the flow after building.
+
+success_criteria:
+  - type: run_command
+    description: "Flow file was created"
+    command: "python3 $EXPERIMENT_TASKS_PATH/uipath-maestro-flow/_shared/flow_contains.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Flow wires the HITL completed output port"
+    command: "python3 $EXPERIMENT_TASKS_PATH/uipath-maestro-flow/_shared/flow_contains.py 'completed'"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # Bare 'completed', not '"completed"': the port handle serializes by node
+  # version — v1.0 wires `"sourcePort": "completed"`, v1.1 `"outcome-completed"`.
+  # Version pick is non-deterministic (#1088 removed hardcoded versions), and the
+  # unquoted substring matches both. The validate step below catches malformed edges.
+
+  - type: run_command
+    description: "uip maestro flow validate passes"
+    command: "python3 $EXPERIMENT_TASKS_PATH/uipath-maestro-flow/_shared/validate_flow.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0

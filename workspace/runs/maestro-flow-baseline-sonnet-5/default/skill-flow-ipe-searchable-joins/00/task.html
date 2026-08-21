@@ -1,0 +1,2267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>coder_eval · skill-flow-ipe-searchable-joins · default</title>
+<style>
+:root {
+  --bg-page: #0f1419;
+  --bg-card: #1a2129;
+  --bg-card-2: #232d38;
+  --bg-code: #0b0f14;
+  --fg: #e6edf3;
+  --fg-muted: #8b98a5;
+  --fg-dim: #6e7681;
+  --border: #30363d;
+  --accent: #58a6ff;
+  --score-high: #22c55e;
+  --score-mid: #f59e0b;
+  --score-low: #ef4444;
+  --status-success: #22c55e;
+  --status-failure: #f59e0b;
+  --status-error: #ef4444;
+  --status-neutral: #6e7681;
+  --shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+.light {
+  --bg-page: #ffffff;
+  --bg-card: #f6f8fa;
+  --bg-card-2: #eaeef2;
+  --bg-code: #f6f8fa;
+  --fg: #1f2328;
+  --fg-muted: #636c76;
+  --fg-dim: #8b949e;
+  --border: #d0d7de;
+  --accent: #0969da;
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial,
+               sans-serif;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--fg);
+  background: var(--bg-page);
+}
+.container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+h1, h2, h3, h4 { margin: 0 0 12px 0; line-height: 1.25; }
+h1 { font-size: 22px; font-weight: 600; }
+h2 { font-size: 18px; font-weight: 600; margin-top: 28px;
+     padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+h3 { font-size: 15px; font-weight: 600; color: var(--fg-muted); }
+h4 { font-size: 13px; font-weight: 600; color: var(--fg-muted); }
+p { margin: 0 0 8px 0; }
+.muted { color: var(--fg-muted); }
+.dim { color: var(--fg-dim); }
+.mono { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+        monospace; font-size: 12.5px; }
+code { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+       monospace; font-size: 12.5px; background: var(--bg-code);
+       border: 1px solid var(--border); padding: 1px 5px; border-radius: 3px; }
+pre { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+      monospace; font-size: 12.5px; background: var(--bg-code);
+      border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px;
+      margin: 6px 0; overflow-x: auto; white-space: pre-wrap;
+      word-wrap: break-word; }
+.header-bar { display: flex; align-items: center; justify-content: space-between;
+              margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+.title-group { flex: 1; min-width: 0; }
+.title-group .subtitle { color: var(--fg-muted); font-size: 13px;
+                         margin-top: 2px; word-break: break-all; }
+.badges { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.badge { display: inline-flex; align-items: center; gap: 6px;
+         padding: 4px 10px; border-radius: 12px; font-size: 12px;
+         font-weight: 600; background: var(--bg-card-2);
+         border: 1px solid var(--border); color: var(--fg); }
+.badge.success { background: color-mix(in srgb, var(--status-success) 20%, var(--bg-card-2));
+                 border-color: var(--status-success); color: var(--status-success); }
+.badge.failure { background: color-mix(in srgb, var(--status-failure) 20%, var(--bg-card-2));
+                 border-color: var(--status-failure); color: var(--status-failure); }
+.badge.error { background: color-mix(in srgb, var(--status-error) 20%, var(--bg-card-2));
+               border-color: var(--status-error); color: var(--status-error); }
+.badge.warning { background: color-mix(in srgb, #f4a52810 20%, var(--bg-card-2));
+                 border-color: #f4a528; color: #f4a528; }
+.badge.neutral { color: var(--fg-muted); }
+.score-pill { display: inline-block; padding: 2px 8px; border-radius: 10px;
+              font-size: 12px; font-weight: 700; min-width: 42px;
+              text-align: center; color: #0b0f14; }
+.score-high { background: var(--score-high); }
+.score-mid { background: var(--score-mid); }
+.score-low { background: var(--score-low); }
+.card { background: var(--bg-card); border: 1px solid var(--border);
+        border-radius: 8px; padding: 16px 20px; margin-bottom: 16px;
+        box-shadow: var(--shadow); }
+.card.highlight { border-left: 4px solid var(--accent); }
+.grid { display: grid; gap: 12px;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+.stat { background: var(--bg-card-2); padding: 10px 12px; border-radius: 6px;
+        border: 1px solid var(--border); }
+.stat .label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;
+               color: var(--fg-muted); margin-bottom: 4px; }
+.stat .value { font-size: 16px; font-weight: 600; }
+table { width: 100%; border-collapse: collapse; margin: 4px 0 12px 0; }
+th, td { text-align: left; padding: 8px 10px;
+         border-bottom: 1px solid var(--border); vertical-align: top;
+         font-size: 13px; }
+th { color: var(--fg-muted); font-weight: 600; font-size: 12px;
+     text-transform: uppercase; letter-spacing: 0.3px; }
+tr:last-child td { border-bottom: none; }
+details { margin: 6px 0; border: 1px solid var(--border); border-radius: 6px;
+          background: var(--bg-card-2); }
+details > summary { cursor: pointer; padding: 8px 12px; user-select: none;
+                    font-weight: 500; list-style: none; }
+details > summary::-webkit-details-marker { display: none; }
+details > summary::before { content: "▸ "; color: var(--fg-dim);
+                            display: inline-block; width: 14px;
+                            transition: transform 0.15s; }
+details[open] > summary::before { content: "▾ "; }
+details .details-body { padding: 0 12px 10px 12px; }
+.tool-row { display: flex; align-items: center; gap: 10px;
+            flex-wrap: wrap; font-size: 13px; }
+.tool-name { font-weight: 600; color: var(--accent); font-family: ui-monospace,
+             SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+.tool-status-ok { color: var(--status-success); font-size: 11px;
+                  font-weight: 600; }
+.tool-status-err { color: var(--status-error); font-size: 11px;
+                   font-weight: 600; }
+.tool-duration { color: var(--fg-muted); font-size: 12px; }
+.tool-seq { color: var(--fg-dim); font-size: 11px; font-weight: 600;
+            min-width: 24px; text-align: right; font-family: ui-monospace,
+            SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+.turn-header { display: flex; justify-content: space-between;
+               align-items: baseline; flex-wrap: wrap; gap: 10px;
+               margin-bottom: 10px; }
+.turn-meta { font-size: 12px; color: var(--fg-muted); }
+.criterion-row td:first-child { font-family: ui-monospace, SFMono-Regular,
+                                 "SF Mono", Menlo, Consolas, monospace;
+                                 color: var(--fg-muted); font-size: 12px; }
+.judge-section { display: flex; flex-direction: column; gap: 12px; }
+.judge-card { padding: 14px 16px; }
+.judge-card-head { display: flex; justify-content: space-between;
+                    align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+.judge-card-title { font-size: 14px; line-height: 1.4; flex: 1; min-width: 0; }
+.judge-card-score { flex-shrink: 0; }
+.judge-rationale { margin-top: 10px; padding: 10px 12px;
+                   background: var(--bg-code); border-radius: 4px;
+                   font-size: 13px; line-height: 1.5; }
+.judge-findings { margin: 8px 0 0 18px; padding-left: 4px; font-size: 13px;
+                   line-height: 1.6; }
+.judge-findings li { margin: 2px 0; }
+.nav-toggle { display: inline-block; padding: 5px 10px; font-size: 12px;
+              background: var(--bg-card-2); border: 1px solid var(--border);
+              border-radius: 5px; color: var(--fg); cursor: pointer; }
+.nav-toggle:hover { background: var(--bg-card); }
+.llm-next-steps { margin: 6px 0 0 20px; padding-left: 0; }
+.llm-next-steps li { margin: 3px 0; }
+.iteration-group { padding: 12px 16px 4px 16px; margin-bottom: 20px;
+                   border-radius: 0 6px 6px 0; border-left: 4px solid var(--status-neutral); }
+/* rgba fallback for browsers without color-mix (Chrome <111, Firefox <113, Safari <16.2). */
+.iteration-group--recovered { border-left-color: var(--status-success);
+                              background: rgba(34, 197, 94, 0.06);
+                              background: color-mix(in srgb, var(--status-success) 6%, transparent); }
+.iteration-group--terminal { border-left-color: var(--status-error);
+                             background: rgba(239, 68, 68, 0.06);
+                             background: color-mix(in srgb, var(--status-error) 6%, transparent); }
+.iteration-group__banner { margin: 0 0 12px 0; font-size: 14px; font-weight: 600; }
+.iteration-group--recovered .iteration-group__banner { color: var(--status-success); }
+.iteration-group--terminal .iteration-group__banner { color: var(--status-error); }
+.attempt-transition { display: flex; align-items: center; gap: 8px;
+                      margin: -6px 0 12px 8px; color: var(--status-error); font-size: 12.5px; }
+.attempt-transition__icon { font-weight: 700; }
+footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--border);
+         color: var(--fg-dim); font-size: 12px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="header-bar">
+  <div class="title-group">
+    <h1>Task: skill-flow-ipe-searchable-joins</h1>
+    <div class="subtitle">Tests the searchable joins IS feature — configures a connector node with a join on a related object on the Salesforce connector.</div>
+  </div>
+  <div class="badges">
+    <span class="badge success">SUCCESS</span>
+    <span class="score-pill score-high">1.00</span>
+    <span class="badge neutral">claude-code · claude-sonnet-5</span>
+    <span class="badge neutral">8m 28s</span>
+    <span class="badge neutral">$2.1682</span>
+    
+    
+    <span class="nav-toggle" onclick="toggleTheme()">Toggle theme</span>
+  </div>
+</div>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Variant</div><div class="value">default</div></div>
+    <div class="stat"><div class="label">Started</div><div class="value mono">2026-08-18T21:57:38</div></div>
+    <div class="stat"><div class="label">Duration</div><div class="value">8m 28s</div></div>
+    <div class="stat"><div class="label">Turns (SDK)</div><div class="value">75</div></div>
+    <div class="stat"><div class="label">Commands</div><div class="value">42</div></div>
+  </div>
+</div>
+
+<h2>Success Criteria <span class="muted" style="font-weight:400">(3/3 passed)</span></h2>
+<div class="card" style="padding:0">
+<table>
+  <thead>
+    <tr>
+      <th style="width:15%">Type</th>
+      <th style="width:35%">Description</th>
+      <th style="width:10%">Score</th>
+      <th>Details</th>
+    </tr>
+  </thead>
+  <tbody>
+    
+<tr class="criterion-row">
+  <td>run_command</td>
+  <td>Flow file exists and is valid JSON</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Command: python3 -c &quot;import json,glob; flows=glob.glob(&#x27;**/SearchableJoinsTest*.flow&#x27;,recursive=True); assert flows, &#x27;No flow found&#x27;; f=json.load(open(flows[0])); assert &#x27;nodes&#x27; in f and &#x27;edges&#x27; in f; nn=len(f[&#x27;nodes&#x27;]); ne=len(f[&#x27;edges&#x27;]); print(&#x27;OK: %d nodes, %d edges&#x27;%(nn,ne))&quot;</summary><div class="details-body"><pre style="margin:6px 0 0 0">Command: python3 -c &quot;import json,glob; flows=glob.glob(&#x27;**/SearchableJoinsTest*.flow&#x27;,recursive=True); assert flows, &#x27;No flow found&#x27;; f=json.load(open(flows[0])); assert &#x27;nodes&#x27; in f and &#x27;edges&#x27; in f; nn=len(f[&#x27;nodes&#x27;]); ne=len(f[&#x27;edges&#x27;]); print(&#x27;OK: %d nodes, %d edges&#x27;%(nn,ne))&quot;
+Exit code: 0 (expected: 0)
+Stdout:
+OK: 5 nodes, 4 edges
+
+Stderr: (empty)</pre></div></details></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>run_command</td>
+  <td>Flow has a connector node referencing uipath-salesforce-sfdc</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Command: python3 -c &quot;import json,glob; flows=glob.glob(&#x27;**/SearchableJoinsTest*.flow&#x27;,recursive=True); assert flows; content=open(flows[0]).read(); assert &#x27;uipath-salesforce-sfdc&#x27; in content, &#x27;Connector key not found&#x27;; print(&#x27;OK: connector key present&#x27;)&quot;</summary><div class="details-body"><pre style="margin:6px 0 0 0">Command: python3 -c &quot;import json,glob; flows=glob.glob(&#x27;**/SearchableJoinsTest*.flow&#x27;,recursive=True); assert flows; content=open(flows[0]).read(); assert &#x27;uipath-salesforce-sfdc&#x27; in content, &#x27;Connector key not found&#x27;; print(&#x27;OK: connector key present&#x27;)&quot;
+Exit code: 0 (expected: 0)
+Stdout:
+OK: connector key present
+
+Stderr: (empty)</pre></div></details></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>command_executed</td>
+  <td>uip maestro flow validate was called</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Matched 2/1 required commands (filters: tool_name=Bash, pattern=/(uip|\$UIP)\s+(maestro\s+)?flow\s+validate/)</summary><div class="details-body"><pre style="margin:6px 0 0 0">Matched 2/1 required commands (filters: tool_name=Bash, pattern=/(uip|\$UIP)\s+(maestro\s+)?flow\s+validate/)
+Examples: [&#x27;cd /work/output/artifacts/skill-flow-ipe-searchable-joins/SearchableJoinsTest/SearchableJoinsTest\nuip maestro flow node &#x27;, &#x27;cd /work/output/artifacts/skill-flow-ipe-searchable-joins/SearchableJoinsTest/SearchableJoinsTest\nuip maestro flow valid&#x27;]</pre></div></details></td>
+</tr>
+
+  </tbody>
+</table>
+</div>
+<h2>Conversation Trace (1 iteration)</h2>
+<div class="card">
+  <div class="turn-header">
+    <h3>Iteration 1</h3>
+    <div class="badges">
+      <span class="badge neutral">75 assistant turns</span>
+      <span class="badge neutral">in 62 · out 37078 · cache 3672517</span>
+      <span class="badge neutral">8m 26s</span>
+      
+      
+      
+    </div>
+  </div>
+  <details>
+    <summary>Prompt to agent</summary>
+    <div class="details-body"><pre>Your working directory is: /work/output/artifacts/skill-flow-ipe-searchable-joins
+
+Create a Flow project called &quot;SearchableJoinsTest&quot; with a manual trigger. 
+Build a flow that pulls Salesforce accounts and, for each account, also brings 
+back its related opportunities in the same query. Then branch on whether the account 
+has any opportunities and end the flow on each path. Validate the flow.
+Use the connection present in Shared/uipath-maestro-flow.
+</pre></div>
+  </details>
+  <details>
+    <summary>Agent response</summary>
+    <div class="details-body"><pre>[ASSISTANT] This task is squarely in the uipath-maestro-flow skill&#x27;s domain (.flow authoring, connector nodes, validation). Let me invoke it.
+[ASSISTANT] Good, there&#x27;s `--all --name` for filtering. Let me use that.
+[ASSISTANT] The only Salesforce connection in `Shared/uipath-maestro-flow` is currently in a **Failed** state (vendor connection error). I&#x27;ll proceed and use it as directed since it&#x27;s the one specified, but I&#x27;ll flag this prominently — the flow will need re-authentication before it can actually run. Let me continue building.
+[ASSISTANT] No existing solutions found — I&#x27;ll scaffold a new one named after the flow.
+[ASSISTANT] Solution and flow scaffolded, node added with id `searchAccountsWithOpportunities1`. Now let&#x27;s fetch the `core.control.end` and `core.logic.decision` definitions in parallel and read the flow file.
+[ASSISTANT] Base describe succeeded (the parent-field GenerateQuerySchema preview failed due to a transient vendor issue, but that only affects live schema preview — the required-field set is static: just `query`). I have everything needed. Now I&#x27;ll build the decision + end nodes.
+
+**Design decision** (documenting since it&#x27;s a judgment call, per rule #17): since a single relationship SOQL query returns a list of accounts each carrying a nested `Opportunities` subquery result, I&#x27;ll branch on whether the **first returned account** has any related opportunities (`records[0].Opportunities.totalSize &gt; 0`). This demonstrates consuming the joined result cleanly; a true &quot;for each account&quot; fan-out would need a Loop node nested inside — but the request says &quot;end the flow on each path&quot; (singular end), which points to one decision + two ends, not a per-iteration branch. I&#x27;ll flag this assumption in my final report.
+[ASSISTANT] Validation passed and format ran cleanly (5 nodes, 4 edges). Let me confirm the final flow&#x27;s `variables.nodes[]` entry for the decision node&#x27;s output resolved correctly, and check there are no lingering validation warnings.
+[ASSISTANT] Clean validation, no warnings.
+
+## Summary
+
+Built the **SearchableJoinsTest** flow at `SearchableJoinsTest/SearchableJoinsTest/SearchableJoinsTest.flow`:
+
+- **Manual trigger** → **Salesforce &quot;Search using SOQL&quot;** connector node (relationship query: `SELECT Id, Name, (SELECT Id, Name, Amount, StageName FROM Opportunities) FROM Account` — pulls accounts and their related opportunities in one query) → **Decision** node checking whether the first returned account has any opportunities (`Opportunities.totalSize &gt; 0`) → **two End nodes**, one per branch.
+- Used the connection bound to `Shared/uipath-maestro-flow` (`0fddf20e-f229-4ee9-acb3-c5be50034839`), as requested.
+- `flow validate` → **Valid**, no warnings. `flow format` ran after.
+
+Two things you should know:
+
+1. **The Salesforce connection is currently `Failed`** (vendor connection error, not something I can fix from here) — the flow is correctly wired to it, but it won&#x27;t actually pull data until it&#x27;s re-authenticated (`uip is connections edit 0fddf20e-f229-4ee9-acb3-c5be50034839`). This also blocked live schema-preview against the query, though the required fields for this activity are static, so that&#x27;s a preview-only limitation.
+2. **Branching design assumption**: &quot;for each account&quot; plus &quot;branch and end&quot; is ambiguous between (a) branching once on the query&#x27;s first account, or (b) looping over every account with a per-item branch. I built (a) — a single decision/end pair right after the query — since the request said &quot;end the flow on each path&quot; (singular), not &quot;for each account.&quot; If you actually want a per-account loop with branching inside it, that&#x27;s a straightforward extension (add a `core.logic.loop` around the decision+ends) — let me know.
+
+What&#x27;s next — pick one: **Publish to Studio Web** (recommended), **Debug the flow** (needs your consent — has real side effects and the connection needs to be healthy first), **Deploy to Orchestrator**, or **something else**?
+[RESULT - SUCCESS] Clean validation, no warn</pre></div>
+  </details>
+  <h4 style="margin-top:12px">Tool Calls (42)</h4>
+  
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#0</span>
+      <span class="tool-name">Skill</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">22ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;skill&quot;: &quot;uipath:uipath-maestro-flow&quot;,
+  &quot;args&quot;: &quot;Create a Flow project called \&quot;SearchableJoinsTest\&quot; with a manual trigger. Build a flow that pulls Salesforce accounts and, for each account, also brings back its related opportunities in the same query (a searchable/relationship join query on Account with a subquery for Opportunities). Then branch (If/Else) on whether the account has any opportunities, and end the flow on each path. Use the connec… (73 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Launching skill: uipath:uipath-maestro-flow</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#1</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">350ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/CAPABILITY.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Author — Create and edit `.flow` files
+2	
+3	Capability index for building new flows (greenfield) and editing existing flows (brownfield). Author owns everything that happens on disk, locally, without `uip login`. Authoring journeys terminate at `validate` + `format`; from there, hand off to [operate/CAPABILITY.md](../operate/CAPABILITY.md) to publish, run, or debug.
+4	
+5	&gt; **Where you came from / where to go next.** Author is upstream of Operate (build the flow → ship it) and upstream of Diagnose only via Operate (build → run → diagnose). Publish/run/lifecycle lives in [operate/CAPABILITY.md](../operate/CAPABILITY.md); fault triage lives in [diagnose/CAPABILITY.md](../diagnose/CAPABILITY.md).
+6	&gt;
+7	&gt; **Inherits universal rules from [SKILL.md](../../SKILL.md)** — `--output json` + prefer `--output-filter` for extraction, no `flow debug` without consent, resource discovery order, never invoke other skills automatically, dropdown question pattern, solution layout, **plain-English narration + granular progress list (opt-in — silent by default; engage when the user asks for verbosity)**. The rules below are author-scoped and apply on top.
+8	
+9	## When to use this capability
+10	
+11	&lt;
+
+… (truncated, 29463 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#2</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">95ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/references/greenfield.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Greenfield — Create a New Flow
+2	
+3	End-to-end journey for creating a Flow project from scratch. Author terminates at `validate` + `format`. To publish, run, or debug after this, see [operate/CAPABILITY.md](../../operate/CAPABILITY.md).
+4	
+5	&gt; **Brownfield edits use a different journey.** If the `.flow` file already exists, see [brownfield.md](brownfield.md) instead.
+6	
+7	## Should you plan first?
+8	
+9	For complex flows, produce a plan before building. Reference [planning-arch.md](planning-arch.md) and [planning-impl.md](planning-impl.md) for the node type catalog, port reference, wiring rules, and topology patterns.
+10	
+11	**Plan when:**
+12	- The flow has 5+ nodes with branching or parallel paths
+13	- The flow uses connectors or resources that need discovery
+14	- The user&#x27;s requirements are ambiguous and you need to confirm the approach
+15	
+16	**Don&#x27;t plan when:**
+17	- Adding/editing a single node in an existing flow (use [brownfield.md](brownfield.md))
+18	- The flow is a straightforward linear pipeline (trigger → action → action → end)
+19	- The user has already described the exact topology they want
+20	
+21	### Examples
+22	
+23	**Plan:** &quot;Build a flow that receives a Jira ticke
+
+… (truncated, 34151 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#3</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">5ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/references/plugins/connector/planning.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Connector Activity Nodes — Planning
+2	
+3	Connector activity nodes call external services (Jira, Slack, Salesforce, Outlook, etc.) via UiPath Integration Service. They are dynamically loaded — not built-in — and appear in the registry after `uip login` + `uip maestro flow registry pull`.
+4	
+5	## When to Use
+6	
+7	Use a connector activity node when the flow needs to **call an external service that has a pre-built UiPath connector**. Connectors handle auth (OAuth, API keys), token refresh, and error formatting automatically at runtime. Note: design-time reference resolution (looking up records by name during authoring) still requires the agent to paginate — see [impl.md](impl.md).
+8	
+9	### Decision Order
+10	
+11	Prefer higher tiers when connecting to external services:
+12	
+13	| Tier | Approach | When to Use |
+14	| --- | --- | --- |
+15	| 1 | **IS connector activity** (this node type) | A connector exists and its activities cover the use case |
+16	| 2 | **Managed HTTP Request** (`core.action.http.v2`) | A connector exists but lacks the specific curated activity — uses the connector&#x27;s IS connection for auth |
+17	| 3 | **Managed HTTP Request — manual mode** (`core.action.http.v2`) | No 
+
+… (truncated, 8594 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#4</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">346ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;find . -maxdepth 2 -type f -name &#x27;*.uipx&#x27; -print &amp;&amp; echo \&quot;---LOGIN---\&quot; &amp;&amp; uip login status --output json&quot;,
+  &quot;description&quot;: &quot;Check for existing solutions and login status&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>---LOGIN---
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;LoginStatus&quot;,
+  &quot;Data&quot;: {
+    &quot;Status&quot;: &quot;Logged in&quot;,
+    &quot;Identity&quot;: &quot;zhongyi.shi@uipath.com&quot;,
+    &quot;IdentityType&quot;: &quot;User&quot;,
+    &quot;AuthFlow&quot;: &quot;Interactive&quot;,
+    &quot;CredentialSource&quot;: &quot;SavedLogin&quot;,
+    &quot;Provider&quot;: &quot;File&quot;,
+    &quot;UserId&quot;: &quot;bfda820f-4ddb-4af7-a5ec-3c332b403271&quot;,
+    &quot;UserEmail&quot;: &quot;zhongyi.shi@uipath.com&quot;,
+    &quot;UserName&quot;: &quot;zhongyi.shi@uipath.com&quot;,
+    &quot;BaseUrl&quot;: &quot;https://alpha.uipath.com&quot;,
+    &quot;Organization&quot;: &quot;codereval&quot;,
+    &quot;OrganizationId&quot;: &quot;311c6049-4966-4ef2-a6f3-8ceccaf38d54&quot;,
+    &quot;Tenant&quot;: &quot;DefaultTenant&quot;,
+    &quot;TenantId&quot;: &quot;69d43765-6ede-4575-88b7-9db601a2c056&quot;,
+    &quot;ExpirationDate&quot;: &quot;2026-08-18T22:43:38.000Z&quot;
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#5</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">5.80s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry pull --force --output json &amp;&amp; uip maestro flow registry search \&quot;salesforce\&quot; --output json --output-filter \&quot;[*].{NodeType:NodeType,DisplayName:DisplayName,Description:Description,AvailableOnTenant:AvailableOnTenant}\&quot;&quot;,
+  &quot;description&quot;: &quot;Refresh registry and search for Salesforce connector nodes&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>&lt;persisted-output&gt;
+Output too large (46KB). Full output saved to: /home/azureuser/.claude/projects/-work-output-artifacts-skill-flow-ipe-searchable-joins/ea79895f-3bea-4cb9-96f9-b31d6ea91abd/tool-results/b5vc4xd2j.txt
+
+Preview (first 2KB):
+[ManifestClient] fetchDynamicNodes ok: total=4878 connector nodes=3654 integration trigger nodes=896 agent context nodes=2 external agent nodes=7 orchestrator nodes=261 IXP nodes=45 IXP Models nodes=13
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodePullSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;NodesCount&quot;: 4761,
+    &quot;FromCache&quot;: false,
+    &quot;Source&quot;: &quot;authenticated&quot;,
+    &quot;CacheWritten&quot;: true,
+    &quot;Message&quot;: &quot;Synced fresh nodes&quot;
+  }
+}
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeSearchSuccess&quot;,
+  &quot;Data&quot;: [
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-salesforce-quip.upload-attachment-to-thread&quot;,
+      &quot;DisplayName&quot;: &quot;Upload Attachment to Thread&quot;,
+      &quot;Description&quot;: &quot;Upload a file to a Quip thread for use in subsequent messages within the same thread.&quot;,
+      &quot;AvailableOnTenant&quot;: true
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-salesforce-quip.create-document-in-private-folder&quot;,
+      &quot;DisplayName&quot;: &quot;Create Document in Private Folder&quot;,
+      &quot;Description&quot;: &quot;
+
+… (truncated, 1041 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#6</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-err">ERROR</span>
+      <span class="tool-duration">158ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cat /home/azureuser/.claude/projects/-work-output-artifacts-skill-flow-ipe-searchable-joins/ea79895f-3bea-4cb9-96f9-b31d6ea91abd/tool-results/b5vc4xd2j.txt | python3 -c \&quot;\nimport json,sys\ndata=sys.stdin.read()\n# find the JSON part\nidx = data.find(&#x27;{&#x27;)\nobj = json.loads(data[idx:])\nfor row in obj[&#x27;Data&#x27;]:\n    nt = row[&#x27;NodeType&#x27;]\n    if &#x27;salesforce&#x27; in nt and &#x27;quip&#x27; not in nt:\n        print(nt, &#x27;|&#x27;, … (22 more chars)&quot;,
+  &quot;description&quot;: &quot;Filter search results for actual Salesforce connector nodes (excluding Quip)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Exit code 1
+Traceback (most recent call last):
+  File &quot;&lt;string&gt;&quot;, line 6, in &lt;module&gt;
+    obj = json.loads(data[idx:])
+  File &quot;/usr/local/lib/python3.13/json/__init__.py&quot;, line 352, in loads
+    return _default_decoder.decode(s)
+           ~~~~~~~~~~~~~~~~~~~~~~~^^^
+  File &quot;/usr/local/lib/python3.13/json/decoder.py&quot;, line 348, in decode
+    raise JSONDecodeError(&quot;Extra data&quot;, s, end)
+json.decoder.JSONDecodeError: Extra data: line 12 column 1 (char 213)</pre>
+    <h4>Error</h4><pre>Exit code 1
+Traceback (most recent call last):
+  File &quot;&lt;string&gt;&quot;, line 6, in &lt;module&gt;
+    obj = json.loads(data[idx:])
+  File &quot;/usr/local/lib/python3.13/json/__init__.py&quot;, line 352, in loads
+    return _default_decoder.decode(s)
+           ~~~~~~~~~~~~~~~~~~~~~~~^^^
+  File &quot;/usr/local/lib/python3.13/json/decoder.py&quot;, line 348, in decode
+    raise JSONDecodeError(&quot;Extra data&quot;, s, end)
+json.decoder.JSONDecodeError: Extra data: line 12 column 1 (char 213)</pre>
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#7</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">112ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -o &#x27;\&quot;NodeType\&quot;: \&quot;uipath.connector.uipath-salesforce[^\&quot;]*\&quot;&#x27; /home/azureuser/.claude/projects/-work-output-artifacts-skill-flow-ipe-searchable-joins/ea79895f-3bea-4cb9-96f9-b31d6ea91abd/tool-results/b5vc4xd2j.txt | sort -u | grep -v quip&quot;,
+  &quot;description&quot;: &quot;List unique Salesforce connector node types excluding Quip&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>&quot;NodeType&quot;: &quot;uipath.connector.uipath-salesforce-marketingcloud.add-or-update-row-in-data-extension&quot;
+&quot;NodeType&quot;: &quot;uipath.connector.uipath-salesforce-marketingcloud.add-subscriber-to-list&quot;
+&quot;NodeType&quot;: &quot;uipath.connector.uipath-salesforce-marketingcloud.create-campaign&quot;
+&quot;NodeType&quot;: &quot;uipath.connector.uipath-salesforce-marketingcloud.create-contact&quot;
+&quot;NodeType&quot;: &quot;uipath.connector.uipath-salesforce-marketingcloud.delete-record&quot;
+&quot;NodeType&quot;: &quot;uipath.connector.uipath-salesforce-marketingcloud.get-campaign&quot;
+&quot;NodeType&quot;: &quot;uipath.connector.uipath-salesforce-marketingcloud.get-record&quot;
+&quot;NodeType&quot;: &quot;uipath.connector.uipath-salesforce-marketingcloud.insert-record&quot;
+&quot;NodeType&quot;: &quot;uipath.connector.uipath-salesforce-marketingcloud.list-all-records&quot;
+&quot;NodeType&quot;: &quot;uipath.connector.uipath-salesforce-marketingcloud.list-data-extension-rows&quot;
+&quot;NodeType&quot;: &quot;uipath.connector.uipath-salesforce-marketingcloud.replace-record&quot;
+&quot;NodeType&quot;: &quot;uipath.connector.uipath-salesforce-marketingcloud.update-contact&quot;
+&quot;NodeType&quot;: &quot;uipath.connector.uipath-salesforce-marketingcloud.update-record&quot;
+&quot;NodeType&quot;: &quot;uipath.connector.uipath-salesforce-marketingcloud.upload-content&quot;
+&quot;NodeType&quot;: &quot;uipath.connector.uipath-salesforce-sfdc.add-file
+
+… (truncated, 4176 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#8</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.28s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry get uipath.connector.uipath-salesforce-sfdc.search-using-soql --output json 2&gt;&amp;1 | head -200&quot;,
+  &quot;description&quot;: &quot;Get schema for Salesforce search-using-soql node&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeGetSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;Node&quot;: {
+      &quot;nodeType&quot;: &quot;uipath.connector.uipath-salesforce-sfdc.search-using-soql&quot;,
+      &quot;version&quot;: &quot;1.0.0&quot;,
+      &quot;category&quot;: &quot;connector.196536&quot;,
+      &quot;tags&quot;: [
+        &quot;connector&quot;,
+        &quot;activity&quot;
+      ],
+      &quot;sortOrder&quot;: 520,
+      &quot;supportsErrorHandling&quot;: true,
+      &quot;description&quot;: &quot;Retrieve records using Salesforce Object Query Language (SOQL).&quot;,
+      &quot;display&quot;: {
+        &quot;label&quot;: &quot;Search using SOQL&quot;,
+        &quot;description&quot;: &quot;Retrieve records using Salesforce Object Query Language (SOQL).&quot;,
+        &quot;icon&quot;: &quot;https://alpha.uipath.com/311c6049-4966-4ef2-a6f3-8ceccaf38d54/studio_/typecache/icons/a45b36eb4096ef0e24767bd2bd5c455e41d9458726786077a14c840bc12391db.svg&quot;,
+        &quot;sourceDisplayName&quot;: &quot;Salesforce&quot;
+      },
+      &quot;handleConfiguration&quot;: [
+        {
+          &quot;position&quot;: &quot;left&quot;,
+          &quot;handles&quot;: [
+            {
+              &quot;id&quot;: &quot;input&quot;,
+              &quot;type&quot;: &quot;target&quot;,
+              &quot;handleType&quot;: &quot;input&quot;,
+              &quot;label&quot;: &quot;&quot;
+            }
+          ]
+        },
+        {
+          &quot;position&quot;: &quot;right&quot;,
+          &quot;handles&quot;: [
+            {
+              &quot;id&quot;: &quot;output&quot;,
+              &quot;
+
+… (truncated, 5502 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#9</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.64s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip is connections list \&quot;uipath-salesforce-sfdc\&quot; --all-folders --output json&quot;,
+  &quot;description&quot;: &quot;List Salesforce connections across all folders&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;ConnectionList&quot;,
+  &quot;Data&quot;: [
+    {
+      &quot;Id&quot;: &quot;0fddf20e-f229-4ee9-acb3-c5be50034839&quot;,
+      &quot;Name&quot;: &quot;qa+churros@cloud-elements.com&quot;,
+      &quot;ConnectorKey&quot;: &quot;uipath-salesforce-sfdc&quot;,
+      &quot;ConnectorName&quot;: &quot;Salesforce&quot;,
+      &quot;State&quot;: &quot;Failed&quot;,
+      &quot;Owner&quot;: &quot;jiyang.zhou@uipath.com&quot;,
+      &quot;IsDefault&quot;: &quot;No&quot;,
+      &quot;ByoaConnection&quot;: &quot;No&quot;,
+      &quot;ElementInstanceId&quot;: 338085,
+      &quot;Folder&quot;: &quot;uipath-maestro-flow&quot;,
+      &quot;FolderKey&quot;: &quot;5da18ec0-7de1-4e57-aaf1-ddc8a369c199&quot;,
+      &quot;Created&quot;: &quot;2026-05-11T18:06:12.390Z&quot;,
+      &quot;Updated&quot;: &quot;2026-08-18T06:13:05.833Z&quot;
+    },
+    {
+      &quot;Id&quot;: &quot;f4f880b6-8148-42e4-a7f8-cd7de72a5141&quot;,
+      &quot;Name&quot;: &quot;is.sandboxes@gmail.com&quot;,
+      &quot;ConnectorKey&quot;: &quot;uipath-salesforce-sfdc&quot;,
+      &quot;ConnectorName&quot;: &quot;Salesforce&quot;,
+      &quot;State&quot;: &quot;Failed&quot;,
+      &quot;Owner&quot;: &quot;baishali.ghosh@uipath.com&quot;,
+      &quot;IsDefault&quot;: &quot;No&quot;,
+      &quot;ByoaConnection&quot;: &quot;No&quot;,
+      &quot;ElementInstanceId&quot;: 358154,
+      &quot;Folder&quot;: &quot;uipath-maestro-case&quot;,
+      &quot;FolderKey&quot;: &quot;def71452-bad1-40fa-be08-da175e89bd1a&quot;,
+      &quot;Created&quot;: &quot;2026-07-06T13:22:23.500Z&quot;,
+      &quot;Updated&quot;: &quot;2026-08-13T15:36:45.106Z&quot;
+    },
+    {
+      &quot;Id&quot;: &quot;230c7602-7163-428c-8580-71825e8e4ca2&quot;,
+ 
+
+… (truncated, 690 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#10</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">821ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip orchestrator folders list --output json 2&gt;&amp;1 | head -100&quot;,
+  &quot;description&quot;: &quot;List orchestrator folders to check for Shared/uipath-maestro-flow path&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FolderList&quot;,
+  &quot;Pagination&quot;: {
+    &quot;Returned&quot;: 50,
+    &quot;Limit&quot;: 50,
+    &quot;Offset&quot;: 0,
+    &quot;HasMore&quot;: true
+  },
+  &quot;Data&quot;: [
+    {
+      &quot;Key&quot;: &quot;410fae2d-89b3-4cd1-a991-7359bda90c0b&quot;,
+      &quot;Name&quot;: &quot;zhongyi.shi@uipath.com&#x27;s workspace&quot;,
+      &quot;Path&quot;: &quot;zhongyi.shi@uipath.com&#x27;s workspace&quot;,
+      &quot;Description&quot;: &quot;&quot;,
+      &quot;Type&quot;: &quot;Personal&quot;,
+      &quot;ParentKey&quot;: &quot;&quot;
+    },
+    {
+      &quot;Key&quot;: &quot;45972b24-e93c-49a6-8f33-a40dc2fff44f&quot;,
+      &quot;Name&quot;: &quot;Debug_AcrUserList&quot;,
+      &quot;Path&quot;: &quot;zhongyi.shi@uipath.com&#x27;s workspace/Debug_AcrUserList&quot;,
+      &quot;Description&quot;: &quot;&quot;,
+      &quot;Type&quot;: &quot;DebugSolution&quot;,
+      &quot;ParentKey&quot;: &quot;410fae2d-89b3-4cd1-a991-7359bda90c0b&quot;
+    },
+    {
+      &quot;Key&quot;: &quot;7420ce0c-3c3e-4d59-8d79-2cf20e01b832&quot;,
+      &quot;Name&quot;: &quot;Debug_AcrUserList 1&quot;,
+      &quot;Path&quot;: &quot;zhongyi.shi@uipath.com&#x27;s workspace/Debug_AcrUserList 1&quot;,
+      &quot;Description&quot;: &quot;&quot;,
+      &quot;Type&quot;: &quot;DebugSolution&quot;,
+      &quot;ParentKey&quot;: &quot;410fae2d-89b3-4cd1-a991-7359bda90c0b&quot;
+    },
+    {
+      &quot;Key&quot;: &quot;d28398c8-0da9-4e63-8152-76f7421fc524&quot;,
+      &quot;Name&quot;: &quot;Debug_AcrUserList 2&quot;,
+      &quot;Path&quot;: &quot;zhongyi.shi@uipath.com&#x27;s workspace/Debug_AcrUserList 2&quot;,
+      &quot;Description&quot;: &quot;&quot;,
+      &quot;Type&quot;: &quot;DebugSolution&quot;,
+ 
+
+… (truncated, 2195 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#11</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">892ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip orchestrator folders list --output json 2&gt;&amp;1 | python3 -c \&quot;\nimport json,sys\ndata = json.load(sys.stdin)\nfor f in data[&#x27;Data&#x27;]:\n    if &#x27;maestro-flow&#x27; in f[&#x27;Path&#x27;].lower() or &#x27;shared&#x27; in f[&#x27;Path&#x27;].lower():\n        print(f[&#x27;Path&#x27;], &#x27;|&#x27;, f[&#x27;Key&#x27;])\n\&quot;&quot;,
+  &quot;description&quot;: &quot;Search all folders for Shared or maestro-flow paths&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>(Bash completed with no output)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#12</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">5.07s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;for offset in 0 50 100 150 200 250 300 350 400; do\n  uip orchestrator folders list --output json --output-filter \&quot;Data[*].Path\&quot; 2&gt;/dev/null\ndone | python3 -c \&quot;\nimport json,sys\nfor line in sys.stdin:\n    line=line.strip()\n    if not line: continue\n\&quot; \necho \&quot;trying search param instead\&quot;\nuip orchestrator folders list --query \&quot;uipath-maestro-flow\&quot; --output json 2&gt;&amp;1 | head -60&quot;,
+  &quot;description&quot;: &quot;Try searching folders by name query&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>trying search param instead
+{
+  &quot;Result&quot;: &quot;ValidationError&quot;,
+  &quot;ErrorCode&quot;: &quot;invalid_argument&quot;,
+  &quot;Message&quot;: &quot;error: unknown option &#x27;--query&#x27;&quot;,
+  &quot;Instructions&quot;: &quot;Run &#x27;uip orchestrator folders list --help&#x27; for usage information.&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#13</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">13.98s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;for off in 0 50 100 150 200 250 300 350 400 450 500; do\n  uip orchestrator folders list --output json 2&gt;/dev/null\ndone &gt; /tmp/allfolders.json\ngrep -B2 -A2 &#x27;\&quot;uipath-maestro-flow\&quot;&#x27; /tmp/allfolders.json | head -80&quot;,
+  &quot;description&quot;: &quot;Search all fetched folder pages for uipath-maestro-flow folder name&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>(Bash completed with no output)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#14</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">593ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip orchestrator folders list --help 2&gt;&amp;1 | head -40&quot;,
+  &quot;description&quot;: &quot;Check orchestrator folders list command help for pagination flags&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>                              uip or folders list                               
+List folders the current user has access to. Use --all to list all folders in the tenant (supports filtering and sorting).
+                Use --help with nested commands for more detail.                
+
+┌─ Usage ──────────────────────────────────────────────────────────────────────┐
+│ uip or folders list [options]                                                │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Options ────────────────────────────────────────────────────────────────────┐
+│ -a, --all                      List all folders in the tenant (Standard and  │
+│                                Solution). Enables filtering and sorting      │
+│                                options                                       │
+│ -n, --name &lt;name&gt;              Filter by folder name (contains match).       │
+│                                Requires --all                                │
+│ --path &lt;path&gt;                  Filter by folder path prefix (e.g., &#x27;Shared&#x27;  │
+│                                lists all under Shared). Requires --all       │
+│ --type &lt;type&gt;       
+
+… (truncated, 1841 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#15</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">2.28s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip orchestrator folders list --all --name \&quot;uipath-maestro-flow\&quot; --output json&quot;,
+  &quot;description&quot;: &quot;Find the Shared/uipath-maestro-flow folder by name filter&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FolderList&quot;,
+  &quot;Pagination&quot;: {
+    &quot;Returned&quot;: 2,
+    &quot;Limit&quot;: 50,
+    &quot;Offset&quot;: 0,
+    &quot;HasMore&quot;: false
+  },
+  &quot;Data&quot;: [
+    {
+      &quot;Key&quot;: &quot;5da18ec0-7de1-4e57-aaf1-ddc8a369c199&quot;,
+      &quot;Name&quot;: &quot;uipath-maestro-flow&quot;,
+      &quot;Path&quot;: &quot;Shared/uipath-maestro-flow&quot;,
+      &quot;Description&quot;: &quot;&quot;,
+      &quot;Type&quot;: &quot;Standard&quot;,
+      &quot;ParentKey&quot;: &quot;c4359cde-55f0-4f0e-9322-c6cdce74ab4c&quot;,
+      &quot;FeedType&quot;: &quot;Processes&quot;,
+      &quot;PermissionModel&quot;: &quot;FineGrained&quot;
+    },
+    {
+      &quot;Key&quot;: &quot;e78d0db7-2ec8-48f7-b3d0-1a805b46953a&quot;,
+      &quot;Name&quot;: &quot;uipath-maestro-flow 1&quot;,
+      &quot;Path&quot;: &quot;Shared/uipath-maestro-flow 1&quot;,
+      &quot;Description&quot;: &quot;&quot;,
+      &quot;Type&quot;: &quot;Solution&quot;,
+      &quot;ParentKey&quot;: &quot;c4359cde-55f0-4f0e-9322-c6cdce74ab4c&quot;,
+      &quot;FeedType&quot;: &quot;Processes&quot;,
+      &quot;PermissionModel&quot;: &quot;FineGrained&quot;
+    }
+  ]
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#16</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">795ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip is connections list \&quot;uipath-salesforce-sfdc\&quot; --all-folders --output json --output-filter \&quot;[?FolderKey==&#x27;5da18ec0-7de1-4e57-aaf1-ddc8a369c199&#x27;]\&quot;&quot;,
+  &quot;description&quot;: &quot;Filter connections to only the one scoped to Shared/uipath-maestro-flow folder&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;ConnectionList&quot;,
+  &quot;Data&quot;: [
+    {
+      &quot;Id&quot;: &quot;0fddf20e-f229-4ee9-acb3-c5be50034839&quot;,
+      &quot;Name&quot;: &quot;qa+churros@cloud-elements.com&quot;,
+      &quot;ConnectorKey&quot;: &quot;uipath-salesforce-sfdc&quot;,
+      &quot;ConnectorName&quot;: &quot;Salesforce&quot;,
+      &quot;State&quot;: &quot;Failed&quot;,
+      &quot;Owner&quot;: &quot;jiyang.zhou@uipath.com&quot;,
+      &quot;IsDefault&quot;: &quot;No&quot;,
+      &quot;ByoaConnection&quot;: &quot;No&quot;,
+      &quot;ElementInstanceId&quot;: &quot;&quot;,
+      &quot;Folder&quot;: &quot;uipath-maestro-flow&quot;,
+      &quot;FolderKey&quot;: &quot;5da18ec0-7de1-4e57-aaf1-ddc8a369c199&quot;,
+      &quot;Created&quot;: &quot;2026-05-11T18:06:12.390Z&quot;,
+      &quot;Updated&quot;: &quot;&quot;
+    }
+  ],
+  &quot;Warning&quot;: &quot;Connection(s) not enabled: qa+churros@cloud-elements.com, is.sandboxes@gmail.com. Only Enabled connections can be used for operations. Run &#x27;uip is connections edit &lt;connection-id&gt;&#x27; to re-authenticate.&quot;
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#17</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">19ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/references/plugins/decision/impl.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Decision Node — Implementation
+2	
+3	## Node Type
+4	
+5	`core.logic.decision`
+6	
+7	## Registry Validation
+8	
+9	```bash
+10	uip maestro flow registry get core.logic.decision --output json
+11	```
+12	
+13	Confirm: input port `input`, output ports `true` and `false`, required input `expression`. Set the node instance `typeVersion` to the `version` field from this response — do not hardcode it.
+14	
+15	## JSON Structure
+16	
+17	```json
+18	{
+19	  &quot;id&quot;: &quot;checkStatus&quot;,
+20	  &quot;type&quot;: &quot;core.logic.decision&quot;,
+21	  &quot;typeVersion&quot;: &quot;&lt;DEFINITION_VERSION&gt;&quot;,
+22	  &quot;display&quot;: { &quot;label&quot;: &quot;Check Status&quot; },
+23	  &quot;inputs&quot;: {
+24	    &quot;expression&quot;: &quot;$vars.fetchData.output.statusCode === 200&quot;
+25	  }
+26	}
+27	```
+28	
+29	## Adding / Editing
+30	
+31	For step-by-step add, delete, and wiring procedures, see [editing-operations.md](../../editing-operations.md). Use the JSON structure above for the node-specific `inputs`.
+32	
+33	## Expression Examples
+34	
+35	```javascript
+36	// Simple comparison
+37	$vars.fetchData.output.statusCode === 200
+38	
+39	// Boolean field
+40	$vars.processData.output.isValid
+41	
+42	// Compound condition
+43	$vars.httpCall.output.statusCode === 200 &amp;&amp; $vars.httpCall.output.body.count &gt; 0
+44	
+45	// S
+
+… (truncated, 735 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#18</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">10ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/references/plugins/end/impl.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# End Node — Implementation
+2	
+3	## Node Type
+4	
+5	`core.control.end`
+6	
+7	## Registry Validation
+8	
+9	```bash
+10	uip maestro flow registry get core.control.end --output json
+11	```
+12	
+13	Confirm: input port `input`, no output ports. Set the node instance `typeVersion` to the `version` field from this response — do not hardcode it.
+14	
+15	## JSON Structure
+16	
+17	### Without Output Mapping
+18	
+19	```json
+20	{
+21	  &quot;id&quot;: &quot;doneSuccess&quot;,
+22	  &quot;type&quot;: &quot;core.control.end&quot;,
+23	  &quot;typeVersion&quot;: &quot;&lt;DEFINITION_VERSION&gt;&quot;,
+24	  &quot;display&quot;: { &quot;label&quot;: &quot;Done&quot; },
+25	  &quot;inputs&quot;: {}
+26	}
+27	```
+28	
+29	### With Output Mapping
+30	
+31	When the workflow declares `out` variables, every End node must map all of them:
+32	
+33	```json
+34	{
+35	  &quot;id&quot;: &quot;doneSuccess&quot;,
+36	  &quot;type&quot;: &quot;core.control.end&quot;,
+37	  &quot;typeVersion&quot;: &quot;&lt;DEFINITION_VERSION&gt;&quot;,
+38	  &quot;display&quot;: { &quot;label&quot;: &quot;Done&quot; },
+39	  &quot;inputs&quot;: {},
+40	  &quot;outputs&quot;: {
+41	    &quot;processedCount&quot;: {
+42	      &quot;source&quot;: &quot;=js:$vars.processData.output.count&quot;
+43	    },
+44	    &quot;resultSummary&quot;: {
+45	      &quot;source&quot;: &quot;=js:$vars.formatOutput.output.summary&quot;
+46	    }
+47	  }
+48	}
+49	```
+50	
+51	Each key in `outputs` must match a variable `id` from `variables.globals` where `dire
+
+… (truncated, 904 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#19</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">120ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/references/plugins/connector/impl.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Connector Activity Nodes — Implementation
+2	
+3	How to configure connector activity nodes: connection binding, enriched metadata, reference field resolution, and debugging. Connection bindings are emitted by `uip maestro flow node configure` into the flow&#x27;s top-level `bindings[]`; `bindings_v2.json` is regenerated from them at debug/pack time and should never be hand-edited.
+4	
+5	For generic node/edge add, remove, and wiring procedures, see [editing-operations.md](../../editing-operations.md). This guide covers the connector-specific configuration workflow that must follow the generic node add.
+6	
+7	## How Connector Nodes Differ from OOTB
+8	
+9	1. **Connection binding required** — every connector node needs an IS connection (OAuth, API key, etc.) authored in the flow&#x27;s top-level `bindings[]` (which the CLI regenerates into `bindings_v2.json` at debug/pack time). Without it, the node cannot authenticate.
+10	2. **Enriched metadata via `--connection-id`** — call `registry get` with `--connection-id` to get connection-aware field metadata. Without it, only base fields are returned — custom fields, dynamic enums, and reference resolution are missing.
+11	3. **`inputs.detail` object** —
+
+… (truncated, 66128 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#20</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">18ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/references/plugins/loop/impl.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Loop Node — Implementation
+2	
+3	## Node Type
+4	
+5	`core.logic.loop`
+6	
+7	## Registry Validation
+8	
+9	```bash
+10	uip maestro flow registry get core.logic.loop --output json
+11	```
+12	
+13	Confirm: input ports `input` and `loopBack`, output ports `success` and `output`, required input `collection`. Set the node instance `typeVersion` to the `version` field from this response — do not hardcode it.
+14	
+15	## JSON Structure
+16	
+17	### Loop node
+18	
+19	```json
+20	{
+21	  &quot;id&quot;: &quot;loop1&quot;,
+22	  &quot;type&quot;: &quot;core.logic.loop&quot;,
+23	  &quot;typeVersion&quot;: &quot;&lt;DEFINITION_VERSION&gt;&quot;,
+24	  &quot;display&quot;: { &quot;label&quot;: &quot;Loop over items&quot; },
+25	  &quot;inputs&quot;: {
+26	    &quot;collection&quot;: &quot;=js:$vars.fetchData.output.body.items&quot;,
+27	    &quot;parallel&quot;: false
+28	  }
+29	}
+30	```
+31	
+32	&gt; **Collection source shape depends on the node type.** Connector `list` activities return the bare array — `&quot;collection&quot;: &quot;=js:$vars.searchIssuesByJql1.output&quot;`, NOT `.output.issues` / `.output.items`. HTTP nodes differ — envelope preserved: `.output.body.&lt;key&gt;` as above. See [connector/impl.md — Connector output shape](../connector/impl.md).
+33	
+34	Set `&quot;parallel&quot;: true` to execute all iterations concurrently.
+35	
+36	### Loop body nodes — `parentId` req
+
+… (truncated, 13499 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#21</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">9ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/references/plugins/loop/planning.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Loop Node — Planning
+2	
+3	## Node Type
+4	
+5	`core.logic.loop`
+6	
+7	## When to Use
+8	
+9	Use a Loop node to iterate over a collection of items. Supports sequential and parallel execution.
+10	
+11	### Selection Heuristics
+12	
+13	| Situation | Use Loop? |
+14	| --- | --- |
+15	| Process each item in an array | Yes |
+16	| Run the same operation on multiple inputs concurrently | Yes (with `parallel: true`) |
+17	| Simple data transformation on a collection | No — use [Transform](../transform/planning.md) |
+18	| Distribute work items to robots | No — use [Queue](../queue/planning.md) |
+19	
+20	## Ports
+21	
+22	| Input Port(s) | Output Port(s) |
+23	| --- | --- |
+24	| `input`, `loopBack` | `success`, `output`, `error` |
+25	
+26	- `loopBack` — receives the edge returning from the last node inside the loop body
+27	- `success` — fires after all iterations complete
+28	- `output` — carries aggregated results from all iterations
+29	- `error` — implicit error port shared with all action nodes; fires when the loop or an iteration throws. See [Implicit error port on action nodes](../../../../shared/file-format.md#implicit-error-port-on-action-nodes).
+30	
+31	## Key Inputs
+32	
+33	| Input | Required | Des
+
+… (truncated, 1061 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#22</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.32s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry get uipath.connector.uipath-salesforce-sfdc.search-using-soql --connection-id 0fddf20e-f229-4ee9-acb3-c5be50034839 --output json &gt; /tmp/soql_node.json 2&gt;&amp;1\npython3 -c \&quot;\nimport json\nd = json.load(open(&#x27;/tmp/soql_node.json&#x27;))\nn = d[&#x27;Data&#x27;][&#x27;Node&#x27;]\nprint(&#x27;version:&#x27;, n.get(&#x27;version&#x27;))\nprint(&#x27;connectorMethodInfo:&#x27;, json.dumps(n.get(&#x27;connectorMethodInfo&#x27;, {}), indent=2))\nprint(… (99 more chars)&quot;,
+  &quot;description&quot;: &quot;Extract version, method/path info, and input fields for the SOQL search node&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>version: 1.0.0
+connectorMethodInfo: {
+  &quot;operation&quot;: &quot;List&quot;,
+  &quot;description&quot;: &quot;Retrieve records by using Salesforce Object Query Language (SOQL)&quot;,
+  &quot;method&quot;: &quot;POST&quot;,
+  &quot;path&quot;: &quot;/curated_soqlQuery&quot;,
+  &quot;operationId&quot;: &quot;createCurated_soqlQuery&quot;,
+  &quot;curated&quot;: {
+    &quot;name&quot;: &quot;ExecuteQuery&quot;,
+    &quot;displayName&quot;: &quot;Search using SOQL&quot;,
+    &quot;description&quot;: &quot;Retrieve records using Salesforce Object Query Language (SOQL).&quot;,
+    &quot;isHidden&quot;: false
+  },
+  &quot;responseDisplayName&quot;: &quot;Query results&quot;,
+  &quot;responseDescription&quot;: &quot;The query results&quot;,
+  &quot;isHidden&quot;: true,
+  &quot;design&quot;: {
+    &quot;actions&quot;: [
+      {
+        &quot;actionType&quot;: &quot;api&quot;,
+        &quot;rules&quot;: [
+          {
+            &quot;type&quot;: &quot;field&quot;,
+            &quot;refFieldName&quot;: &quot;generateSchema&quot;,
+            &quot;isCleared&quot;: false,
+            &quot;isVariable&quot;: false
+          },
+          {
+            &quot;type&quot;: &quot;field&quot;,
+            &quot;refFieldName&quot;: &quot;query&quot;,
+            &quot;refFieldValues&quot;: [
+              &quot;*&quot;
+            ],
+            &quot;isCleared&quot;: false,
+            &quot;isVariable&quot;: false
+          }
+        ],
+        &quot;name&quot;: &quot;GenerateQuerySchema&quot;,
+        &quot;apiConfiguration&quot;: {
+          &quot;url&quot;: &quot;/generate-soql-schema&quot;,
+          &quot;method&quot;: &quot;POST&quot;,
+          &quot;body&quot;: {
+            &quot;
+
+… (truncated, 2608 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#23</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.75s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry get core.logic.decision --output json --output-filter \&quot;{version:Node.version, inputPorts: Node.handleConfiguration}\&quot; \necho \&quot;---end---\&quot;\nuip maestro flow registry get core.control.end --output json --output-filter \&quot;{version:Node.version}\&quot;\necho \&quot;---trigger---\&quot;\nuip maestro flow registry get core.trigger.manual --output json --output-filter \&quot;{version:Node.version}\&quot;&quot;,
+  &quot;description&quot;: &quot;Get version info for decision, end, and manual trigger node types&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeGetSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;version&quot;: &quot;1.2&quot;,
+    &quot;inputPorts&quot;: [
+      {
+        &quot;position&quot;: &quot;left&quot;,
+        &quot;handles&quot;: [
+          {
+            &quot;id&quot;: &quot;input&quot;,
+            &quot;type&quot;: &quot;target&quot;,
+            &quot;handleType&quot;: &quot;input&quot;
+          }
+        ],
+        &quot;visible&quot;: true
+      },
+      {
+        &quot;position&quot;: &quot;right&quot;,
+        &quot;handles&quot;: [
+          {
+            &quot;id&quot;: &quot;true&quot;,
+            &quot;type&quot;: &quot;source&quot;,
+            &quot;handleType&quot;: &quot;output&quot;,
+            &quot;label&quot;: &quot;{inputs.trueLabel}&quot;,
+            &quot;constraints&quot;: {
+              &quot;minConnections&quot;: 1
+            }
+          },
+          {
+            &quot;id&quot;: &quot;false&quot;,
+            &quot;type&quot;: &quot;source&quot;,
+            &quot;handleType&quot;: &quot;output&quot;,
+            &quot;label&quot;: &quot;{inputs.falseLabel}&quot;
+          }
+        ],
+        &quot;visible&quot;: true
+      }
+    ]
+  }
+}
+---end---
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeGetSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;version&quot;: &quot;1.0&quot;
+  }
+}
+---trigger---
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeGetSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;version&quot;: &quot;1.0&quot;
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#24</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.55s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;find / -path /proc -prune -o -path \&quot;*uipath-platform/references/integration-service/resources.md\&quot; -print 2&gt;/dev/null&quot;,
+  &quot;description&quot;: &quot;Locate the platform resources.md doc for parent-field-driven custom fields procedure&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/home/azureuser/projects/skills/skills/uipath-platform/references/integration-service/resources.md
+/.uipath/.skills/skills/uipath-platform/references/integration-service/resources.md</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#25</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">21ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -n \&quot;Parent-Field-Driven\&quot; -A 80 /home/azureuser/projects/skills/skills/uipath-platform/references/integration-service/resources.md | head -120&quot;,
+  &quot;description&quot;: &quot;Read parent-field-driven custom fields section of resources.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>12:- Parent-Field-Driven Custom Fields (api-type ObjectActions)
+13-- Execute Operations
+14-- Pagination
+15-- Execute Error Handling
+16-
+17-For reference field resolution (simple refs, dependency chains, required field validation), see [reference-resolution.md](reference-resolution.md).
+18-
+19----
+20-
+21-## Listing and Describing Resources
+22-
+23-**Always pass `--connection-id`** to get connection-specific metadata including custom objects and fields. Without it, only standard objects/fields are returned.
+24-
+25-## Response Fields
+26-
+27-| Field | Description |
+28-|---|---|
+29-| **`Name`** | Resource identifier (used in commands) |
+30-| `DisplayName` | Human-readable name |
+31-| `Path` | API path for this resource |
+32-| `Type` | Resource type (standard, custom) |
+33-| `SubType` | Sub-type (e.g., method, entity) |
+34-
+35-## Describe Response
+36-
+37-The describe command returns metadata from the raw API. The output depends on whether `--operation` is provided.
+38-
+39-### Without `--operation` — operation summary
+40-
+41-Returns which operations the resource supports:
+42-
+43-| Field | Description |
+44-|---|---|
+45-| **`availableOperations`** | List of operations — each with `method` (G
+
+… (truncated, 5831 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#26</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">772ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip is resources describe uipath-salesforce-sfdc curated_soqlQuery \\\n  --connection-id \&quot;0fddf20e-f229-4ee9-acb3-c5be50034839\&quot; --operation Create \\\n  -f generateSchema=true \\\n  -f query=\&quot;SELECT Id, Name, (SELECT Id, Name, Amount, StageName FROM Opportunities) FROM Account\&quot; \\\n  --output json 2&gt;&amp;1 | tee /tmp/soql_describe.json | head -150&quot;,
+  &quot;description&quot;: &quot;Run parent-field-driven describe with the SOQL query to preview schema&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Failure&quot;,
+  &quot;Message&quot;: &quot;Failed to invoke design action &#x27;GenerateQuerySchema&#x27;&quot;,
+  &quot;Instructions&quot;: &quot;Design action &#x27;GenerateQuerySchema&#x27; failed: 403 Forbidden — {\&quot;requestId\&quot;:\&quot;6a84d67fe4b038b1a10bbe38\&quot;,\&quot;name\&quot;:\&quot;3501bd5b-fcc9-4dca-b121-f593795525fd\&quot;,\&quot;message\&quot;:\&quot;Failed to make connection to the vendor\&quot;}&quot;,
+  &quot;ErrorCode&quot;: &quot;unknown_error&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#27</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-err">ERROR</span>
+      <span class="tool-duration">837ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip is connections list \&quot;uipath-salesforce-sfdc\&quot; --all-folders --output json --output-filter \&quot;[?FolderKey==&#x27;5da18ec0-7de1-4e57-aaf1-ddc8a369c199&#x27;]\&quot;\necho \&quot;---ping---\&quot;\nuip is connections ping \&quot;0fddf20e-f229-4ee9-acb3-c5be50034839\&quot; --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Re-check connection state and ping the connection&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Exit code 1
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;ConnectionList&quot;,
+  &quot;Data&quot;: [
+    {
+      &quot;Id&quot;: &quot;0fddf20e-f229-4ee9-acb3-c5be50034839&quot;,
+      &quot;Name&quot;: &quot;qa+churros@cloud-elements.com&quot;,
+      &quot;ConnectorKey&quot;: &quot;uipath-salesforce-sfdc&quot;,
+      &quot;ConnectorName&quot;: &quot;Salesforce&quot;,
+      &quot;State&quot;: &quot;Failed&quot;,
+      &quot;Owner&quot;: &quot;jiyang.zhou@uipath.com&quot;,
+      &quot;IsDefault&quot;: &quot;No&quot;,
+      &quot;ByoaConnection&quot;: &quot;No&quot;,
+      &quot;ElementInstanceId&quot;: &quot;&quot;,
+      &quot;Folder&quot;: &quot;uipath-maestro-flow&quot;,
+      &quot;FolderKey&quot;: &quot;5da18ec0-7de1-4e57-aaf1-ddc8a369c199&quot;,
+      &quot;Created&quot;: &quot;2026-05-11T18:06:12.390Z&quot;,
+      &quot;Updated&quot;: &quot;&quot;
+    }
+  ],
+  &quot;Warning&quot;: &quot;Connection(s) not enabled: qa+churros@cloud-elements.com, is.sandboxes@gmail.com. Only Enabled connections can be used for operations. Run &#x27;uip is connections edit &lt;connection-id&gt;&#x27; to re-authenticate.&quot;
+}
+---ping---
+{
+  &quot;Result&quot;: &quot;Failure&quot;,
+  &quot;Message&quot;: &quot;Connection &#x27;0fddf20e-f229-4ee9-acb3-c5be50034839&#x27; is not enabled (status: Failed). Reason: {\&quot;requestId\&quot;:\&quot;6a84d688e4b038b1a10bbe6b\&quot;,\&quot;name\&quot;:\&quot;3501bd5b-fcc9-4dca-b121-f593795525fd\&quot;,\&quot;message\&quot;:\&quot;Failed to make connection to the vendor\&quot;}&quot;,
+  &quot;Instructions&quot;: &quot;Review the reported reason before choosing remediation. Re-authenticate only
+
+… (truncated, 121 more chars)</pre>
+    <h4>Error</h4><pre>Exit code 1
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;ConnectionList&quot;,
+  &quot;Data&quot;: [
+    {
+      &quot;Id&quot;: &quot;0fddf20e-f229-4ee9-acb3-c5be50034839&quot;,
+      &quot;Name&quot;: &quot;qa+churros@cloud-elements.com&quot;,
+      &quot;ConnectorKey&quot;: &quot;uipath-salesforce-sfdc&quot;,
+      &quot;ConnectorName&quot;: &quot;Salesforce&quot;,
+      &quot;State&quot;: &quot;Failed&quot;,
+      &quot;Owner&quot;: &quot;jiyang.zhou@uipath.com&quot;,
+      &quot;IsDefault&quot;: &quot;No&quot;,
+      &quot;ByoaConnection&quot;: &quot;No&quot;,
+      &quot;ElementInstanceId&quot;: &quot;&quot;,
+      &quot;Folder&quot;: &quot;uipath-maestro-flow&quot;,
+      &quot;FolderKey&quot;: &quot;5da18ec0-7de1-4e57-aaf1-ddc8a369c199&quot;,
+      &quot;Created&quot;: &quot;2026-05-11T18:06:12.390Z&quot;,
+      &quot;Updated&quot;: &quot;&quot;
+    }
+  ],
+  &quot;Warning&quot;: &quot;Connection(s) not enabled: qa+churros@cloud-elements.com, is.sandboxes@gmail.com. Only Enabled connections can be used for operations. Run &#x27;uip is connections edit &lt;connection-id&gt;&#x27; to re-authenticate.&quot;
+}
+---ping---
+{
+  &quot;Result&quot;: &quot;Failure&quot;,
+  &quot;Message&quot;: &quot;Connection &#x27;0fddf20e-f229-4ee9-acb3-c5be50034839&#x27; is not enabled (status: Failed). Reason: {\&quot;requestId\&quot;:\&quot;6a84d688e4b038b1a10bbe6b\&quot;,\&quot;name\&quot;:\&quot;3501bd5b-fcc9-4dca-b121-f593795525fd\&quot;,\&quot;message\&quot;:\&quot;Failed to make connection to the vendor\&quot;}&quot;,
+  &quot;Instructions&quot;: &quot;Review the reported reason before choosing remediation. Re-authenticate only if the reason indicates expired or invalid credentials.&quot;,
+  &quot;ErrorCode&quot;: &quot;unknown_error&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}</pre>
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#28</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">19ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -n \&quot;Failed\\|not enabled\\|unhealthy\\|State.*Enabled\&quot; /home/azureuser/projects/skills/skills/uipath-platform/references/integration-service/connections.md | head -40&quot;,
+  &quot;description&quot;: &quot;Check connections.md for guidance on unhealthy/failed connections&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>14:| **`State`** | **Yes** | `Enabled` or other status. Only Enabled connections can be used. |
+69:- `State: Enabled`
+101:2. Present all enabled connections to the user using **Name, Owner, and Folder** (never UUIDs), **recommending** the default (`IsDefault: Yes`, `State: Enabled`):
+112:5. If not enabled (from list `State` or ping result) → prompt user to re-authenticate via `is connections edit &lt;id&gt;`, then re-ping.
+249:- Connection pings successfully (`State: Enabled`)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#29</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">6ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-platform/references/integration-service/connections.md&quot;,
+  &quot;offset&quot;: 60,
+  &quot;limit&quot;: 120
+}</pre>
+    <h4>Result</h4>
+    <pre>60	| `uipath-salesforce-slack` | Webhook trigger node types (allow-list — excludes `button-clicked`) | Ask user; filter `--byoa` from the start | [uipath-salesforce-slack.md → Connection Selection Override](connector-overrides/uipath-salesforce-slack.md#connection-selection-override) |
+61	
+62	To add a new override, see [connector-overrides/README.md](connector-overrides/README.md).
+63	
+64	---
+65	
+66	**Auto-select rule (no prompt) — when all three hold:**
+67	
+68	- `IsDefault: Yes`
+69	- `State: Enabled`
+70	- `Folder` is the user&#x27;s personal workspace
+71	
+72	Bind silently and skip the presentation steps below.
+73	
+74	Detect the user&#x27;s personal workspace once per session — list all folders and filter for the personal type:
+75	
+76	```bash
+77	uip or folders list --all --output json
+78	# → Data: [{ Name, Key, Path, Description, Type, ParentKey }]
+79	# Filter entries where Type == &quot;Personal&quot;
+80	```
+81	
+82	Match `connection.FolderKey` against the personal workspace&#x27;s `Key`. If the call returns multiple personal workspaces (admin tenant) or no match, fall through to the presentation flow.
+83	
+84	**Otherwise — present connections to the user.** Recommend the default but let the user confirm.
+8
+
+… (truncated, 5315 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#30</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">11ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;pwd &amp;&amp; find . -maxdepth 2 -type f -name &#x27;*.uipx&#x27; -print&quot;,
+  &quot;description&quot;: &quot;Check current directory and existing solutions&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/work/output/artifacts/skill-flow-ipe-searchable-joins</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#31</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">7.97s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;set -e\nuip solution init \&quot;SearchableJoinsTest\&quot; --output json \\\n  &amp;&amp; cd \&quot;SearchableJoinsTest\&quot; \\\n  &amp;&amp; uip maestro flow init \&quot;SearchableJoinsTest\&quot; --output json \\\n  &amp;&amp; cd \&quot;SearchableJoinsTest\&quot; \\\n  &amp;&amp; uip maestro flow registry pull --output json \\\n  &amp;&amp; uip maestro flow node add \&quot;SearchableJoinsTest.flow\&quot; uipath.connector.uipath-salesforce-sfdc.search-using-soql --label \&quot;Search Accounts with Opportunit… (18 more chars)&quot;,
+  &quot;description&quot;: &quot;Scaffold solution + flow project, pull registry, add the Salesforce SOQL connector node&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;SolutionInit&quot;,
+  &quot;Data&quot;: {
+    &quot;Status&quot;: &quot;Created successfully&quot;,
+    &quot;Path&quot;: &quot;/work/output/artifacts/skill-flow-ipe-searchable-joins/SearchableJoinsTest/SearchableJoinsTest.uipx&quot;,
+    &quot;NextSteps&quot;: &quot;Read /work/output/artifacts/skill-flow-ipe-searchable-joins/SearchableJoinsTest/AGENTS.md or /work/output/artifacts/skill-flow-ipe-searchable-joins/SearchableJoinsTest/CLAUDE.md to understand the solution lifecycle, project types that can be used inside a solution, and related uip command references.&quot;
+  }
+}
+2026-08-18 22:03:28 INFO  [ResourceBuilder:ProjectCreateCommandHandler] Creating project [object Object]
+2026-08-18 22:03:28 INFO  [ResourceBuilder:MultiFileSolutionDefinitionProvider] Reading multi-file solution definition for solution %s /work/output/artifacts/skill-flow-ipe-searchable-joins/SearchableJoinsTest
+2026-08-18 22:03:28 INFO  [ResourceBuilder:ProjectCreateCommandHandler] Generate artefact resources for project [object Object]
+2026-08-18 22:03:28 INFO  [ResourceBuilder:SolutionsMetadataReader] Reading metadata from %s. SolutionsMetadataReader
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FlowInit&quot;,
+  &quot;Data&quot;: {
+    &quot;Status&quot;: &quot;Created successfully&quot;,
+
+… (truncated, 1887 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#32</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">648ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry get core.control.end --output json&quot;,
+  &quot;description&quot;: &quot;Get core.control.end full definition&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeGetSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;Node&quot;: {
+      &quot;nodeType&quot;: &quot;core.control.end&quot;,
+      &quot;version&quot;: &quot;1.0&quot;,
+      &quot;category&quot;: &quot;control-flow&quot;,
+      &quot;description&quot;: &quot;Mark the end of a process path&quot;,
+      &quot;tags&quot;: [
+        &quot;control-flow&quot;,
+        &quot;end&quot;,
+        &quot;finish&quot;,
+        &quot;complete&quot;
+      ],
+      &quot;sortOrder&quot;: 65,
+      &quot;display&quot;: {
+        &quot;label&quot;: &quot;End&quot;,
+        &quot;icon&quot;: &quot;circle-check&quot;,
+        &quot;shape&quot;: &quot;circle&quot;
+      },
+      &quot;handleConfiguration&quot;: [
+        {
+          &quot;position&quot;: &quot;left&quot;,
+          &quot;handles&quot;: [
+            {
+              &quot;id&quot;: &quot;input&quot;,
+              &quot;type&quot;: &quot;target&quot;,
+              &quot;handleType&quot;: &quot;input&quot;
+            }
+          ]
+        }
+      ],
+      &quot;model&quot;: {
+        &quot;type&quot;: &quot;bpmn:EndEvent&quot;
+      },
+      &quot;runtimeConstraints&quot;: {
+        &quot;exclude&quot;: [
+          &quot;api-function&quot;
+        ]
+      }
+    }
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#33</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">797ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry get core.logic.decision --output json&quot;,
+  &quot;description&quot;: &quot;Get core.logic.decision full definition&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeGetSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;Node&quot;: {
+      &quot;nodeType&quot;: &quot;core.logic.decision&quot;,
+      &quot;version&quot;: &quot;1.2&quot;,
+      &quot;category&quot;: &quot;control-flow&quot;,
+      &quot;description&quot;: &quot;Branch on a true or false condition&quot;,
+      &quot;tags&quot;: [
+        &quot;control-flow&quot;,
+        &quot;if&quot;,
+        &quot;loop&quot;,
+        &quot;switch&quot;
+      ],
+      &quot;sortOrder&quot;: 61,
+      &quot;display&quot;: {
+        &quot;label&quot;: &quot;Decision&quot;,
+        &quot;icon&quot;: &quot;trending-up-down&quot;
+      },
+      &quot;handleConfiguration&quot;: [
+        {
+          &quot;position&quot;: &quot;left&quot;,
+          &quot;handles&quot;: [
+            {
+              &quot;id&quot;: &quot;input&quot;,
+              &quot;type&quot;: &quot;target&quot;,
+              &quot;handleType&quot;: &quot;input&quot;
+            }
+          ],
+          &quot;visible&quot;: true
+        },
+        {
+          &quot;position&quot;: &quot;right&quot;,
+          &quot;handles&quot;: [
+            {
+              &quot;id&quot;: &quot;true&quot;,
+              &quot;type&quot;: &quot;source&quot;,
+              &quot;handleType&quot;: &quot;output&quot;,
+              &quot;label&quot;: &quot;{inputs.trueLabel}&quot;,
+              &quot;constraints&quot;: {
+                &quot;minConnections&quot;: 1
+              }
+            },
+            {
+              &quot;id&quot;: &quot;false&quot;,
+              &quot;type&quot;: &quot;source&quot;,
+              &quot;handleType&quot;: &quot;output&quot;,
+              &quot;label&quot;: &quot;{inputs.falseLabel}&quot;
+     
+
+… (truncated, 2610 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#34</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">247ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-ipe-searchable-joins/SearchableJoinsTest/SearchableJoinsTest/SearchableJoinsTest.flow&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	{
+2	  &quot;id&quot;: &quot;23c64c5e-e653-4322-8a7a-7b216ed6fb4b&quot;,
+3	  &quot;version&quot;: &quot;1.9&quot;,
+4	  &quot;name&quot;: &quot;SearchableJoinsTest&quot;,
+5	  &quot;nodes&quot;: [
+6	    {
+7	      &quot;id&quot;: &quot;start&quot;,
+8	      &quot;type&quot;: &quot;core.trigger.manual&quot;,
+9	      &quot;typeVersion&quot;: &quot;1.0&quot;,
+10	      &quot;display&quot;: {
+11	        &quot;label&quot;: &quot;Manual trigger&quot;
+12	      },
+13	      &quot;inputs&quot;: {
+14	        &quot;entryPointId&quot;: &quot;73b4d1d1-d5e5-4882-a031-f26fa9998f00&quot;,
+15	        &quot;isDefaultEntryPoint&quot;: true
+16	      }
+17	    },
+18	    {
+19	      &quot;id&quot;: &quot;searchAccountsWithOpportunities1&quot;,
+20	      &quot;type&quot;: &quot;uipath.connector.uipath-salesforce-sfdc.search-using-soql&quot;,
+21	      &quot;typeVersion&quot;: &quot;1.0.0&quot;,
+22	      &quot;display&quot;: {
+23	        &quot;label&quot;: &quot;Search Accounts with Opportunities&quot;
+24	      },
+25	      &quot;inputs&quot;: {}
+26	    }
+27	  ],
+28	  &quot;edges&quot;: [],
+29	  &quot;definitions&quot;: [
+30	    {
+31	      &quot;nodeType&quot;: &quot;core.trigger.manual&quot;,
+32	      &quot;version&quot;: &quot;1.0&quot;,
+33	      &quot;category&quot;: &quot;trigger&quot;,
+34	      &quot;description&quot;: &quot;Start the process manually&quot;,
+35	      &quot;tags&quot;: [
+36	        &quot;trigger&quot;,
+37	        &quot;start&quot;,
+38	        &quot;manual&quot;
+39	      ],
+40	      &quot;sortOrder&quot;: 80,
+41	      &quot;display&quot;: {
+42	        &quot;label&quot;: &quot;Manual trigger&quot;,
+43	        &quot;icon&quot;: &quot;play&quot;,
+44	        &quot;shape&quot;: &quot;circle&quot;
+45	      },
+4
+
+… (truncated, 11990 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#35</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">523ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip is resources describe uipath-salesforce-sfdc curated_soqlQuery --connection-id \&quot;0fddf20e-f229-4ee9-acb3-c5be50034839\&quot; --operation Create --output json 2&gt;&amp;1 | head -150&quot;,
+  &quot;description&quot;: &quot;Try base describe (without parent field) for the SOQL query object to inspect response schema&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;ResourceMetadata&quot;,
+  &quot;Data&quot;: {
+    &quot;Name&quot;: &quot;curated_soqlQuery&quot;,
+    &quot;DisplayName&quot;: &quot;Search using SOQL&quot;,
+    &quot;ElementKey&quot;: &quot;uipath-salesforce-sfdc&quot;,
+    &quot;Operation&quot;: {
+      &quot;Method&quot;: &quot;POST&quot;,
+      &quot;Name&quot;: &quot;Create&quot;,
+      &quot;Description&quot;: &quot;Retrieve records by using Salesforce Object Query Language (SOQL)&quot;,
+      &quot;Path&quot;: &quot;/curated_soqlQuery&quot;,
+      &quot;Curated&quot;: &quot;Search using SOQL&quot;
+    },
+    &quot;Parameters&quot;: [
+      {
+        &quot;Name&quot;: &quot;nextPage&quot;,
+        &quot;Type&quot;: &quot;query&quot;,
+        &quot;DataType&quot;: &quot;string&quot;,
+        &quot;Required&quot;: false,
+        &quot;DisplayName&quot;: &quot;Next page&quot;,
+        &quot;Description&quot;: &quot;The Next page to get from set of bulk results&quot;
+      },
+      {
+        &quot;Name&quot;: &quot;pageSize&quot;,
+        &quot;Type&quot;: &quot;query&quot;,
+        &quot;DataType&quot;: &quot;integer&quot;,
+        &quot;Required&quot;: false,
+        &quot;DisplayName&quot;: &quot;Page size&quot;,
+        &quot;Description&quot;: &quot;Page Size is optional. If not supplied the entire file is returned. Use this along with next page to paginate the bulk results. If paging is done results are always a JSON array&quot;
+      }
+    ],
+    &quot;RequestFields&quot;: [
+      {
+        &quot;Name&quot;: &quot;query&quot;,
+        &quot;Type&quot;: &quot;string&quot;,
+        &quot;DisplayName&quot;: &quot;Query&quot;,
+        &quot;Description&quot;: &quot;Provide the SO
+
+… (truncated, 2808 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#36</span>
+      <span class="tool-name">Edit</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">20ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;replace_all&quot;: false,
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-ipe-searchable-joins/SearchableJoinsTest/SearchableJoinsTest/SearchableJoinsTest.flow&quot;,
+  &quot;old_string&quot;: &quot;  \&quot;nodes\&quot;: [\n    {\n      \&quot;id\&quot;: \&quot;start\&quot;,&quot;,
+  &quot;new_string&quot;: &quot;  \&quot;nodes\&quot;: [\n    {\n      \&quot;id\&quot;: \&quot;decision1\&quot;,\n      \&quot;type\&quot;: \&quot;core.logic.decision\&quot;,\n      \&quot;typeVersion\&quot;: \&quot;1.2\&quot;,\n      \&quot;display\&quot;: { \&quot;label\&quot;: \&quot;Has Opportunities?\&quot; },\n      \&quot;inputs\&quot;: {\n        \&quot;expression\&quot;: \&quot;=js:$vars.searchAccountsWithOpportunities1.output.records &amp;&amp; $vars.searchAccountsWithOpportunities1.output.records[0] &amp;&amp; $vars.searchAccountsWithOpportunities1.output.records[0].Opportunities &amp;&amp; $va… (580 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>The file /work/output/artifacts/skill-flow-ipe-searchable-joins/SearchableJoinsTest/SearchableJoinsTest/SearchableJoinsTest.flow has been updated successfully. (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#37</span>
+      <span class="tool-name">Edit</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">13ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;replace_all&quot;: false,
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-ipe-searchable-joins/SearchableJoinsTest/SearchableJoinsTest/SearchableJoinsTest.flow&quot;,
+  &quot;old_string&quot;: &quot;  \&quot;edges\&quot;: [],&quot;,
+  &quot;new_string&quot;: &quot;  \&quot;edges\&quot;: [\n    { \&quot;id\&quot;: \&quot;edge_start_output_searchAccountsWithOpportunities1_input\&quot;, \&quot;sourceNodeId\&quot;: \&quot;start\&quot;, \&quot;sourcePort\&quot;: \&quot;output\&quot;, \&quot;targetNodeId\&quot;: \&quot;searchAccountsWithOpportunities1\&quot;, \&quot;targetPort\&quot;: \&quot;input\&quot; },\n    { \&quot;id\&quot;: \&quot;edge_searchAccountsWithOpportunities1_output_decision1_input\&quot;, \&quot;sourceNodeId\&quot;: \&quot;searchAccountsWithOpportunities1\&quot;, \&quot;sourcePort\&quot;: \&quot;output\&quot;, \&quot;targetNodeId\&quot;: \&quot;decision1\&quot;, \&quot;targetP… (372 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>The file /work/output/artifacts/skill-flow-ipe-searchable-joins/SearchableJoinsTest/SearchableJoinsTest/SearchableJoinsTest.flow has been updated successfully. (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#38</span>
+      <span class="tool-name">Edit</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">14ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;replace_all&quot;: false,
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-ipe-searchable-joins/SearchableJoinsTest/SearchableJoinsTest/SearchableJoinsTest.flow&quot;,
+  &quot;old_string&quot;: &quot;  \&quot;definitions\&quot;: [\n    {\n      \&quot;nodeType\&quot;: \&quot;core.trigger.manual\&quot;,&quot;,
+  &quot;new_string&quot;: &quot;  \&quot;definitions\&quot;: [\n    {\n      \&quot;nodeType\&quot;: \&quot;core.logic.decision\&quot;,\n      \&quot;version\&quot;: \&quot;1.2\&quot;,\n      \&quot;category\&quot;: \&quot;control-flow\&quot;,\n      \&quot;description\&quot;: \&quot;Branch on a true or false condition\&quot;,\n      \&quot;tags\&quot;: [\&quot;control-flow\&quot;, \&quot;if\&quot;, \&quot;loop\&quot;, \&quot;switch\&quot;],\n      \&quot;sortOrder\&quot;: 61,\n      \&quot;display\&quot;: { \&quot;label\&quot;: \&quot;Decision\&quot;, \&quot;icon\&quot;: \&quot;trending-up-down\&quot; },\n      \&quot;handleConfiguration\&quot;: [\n        {\n          \&quot;position\&quot;: \&quot;lef… (3290 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>The file /work/output/artifacts/skill-flow-ipe-searchable-joins/SearchableJoinsTest/SearchableJoinsTest/SearchableJoinsTest.flow has been updated successfully. (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#39</span>
+      <span class="tool-name">Edit</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">11ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;replace_all&quot;: false,
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-ipe-searchable-joins/SearchableJoinsTest/SearchableJoinsTest/SearchableJoinsTest.flow&quot;,
+  &quot;old_string&quot;: &quot;  \&quot;layout\&quot;: {\n    \&quot;nodes\&quot;: {\n      \&quot;start\&quot;: {\n        \&quot;position\&quot;: {\n          \&quot;x\&quot;: 256,\n          \&quot;y\&quot;: 144\n        }\n      },\n      \&quot;searchAccountsWithOpportunities1\&quot;: {\n        \&quot;position\&quot;: {\n          \&quot;x\&quot;: 0,\n          \&quot;y\&quot;: 0\n        }\n      }\n    }\n  }&quot;,
+  &quot;new_string&quot;: &quot;  \&quot;layout\&quot;: {\n    \&quot;nodes\&quot;: {\n      \&quot;decision1\&quot;: { \&quot;position\&quot;: { \&quot;x\&quot;: 0, \&quot;y\&quot;: 0 }, \&quot;size\&quot;: { \&quot;width\&quot;: 96, \&quot;height\&quot;: 96 } },\n      \&quot;endHasOpportunities\&quot;: { \&quot;position\&quot;: { \&quot;x\&quot;: 0, \&quot;y\&quot;: 0 }, \&quot;size\&quot;: { \&quot;width\&quot;: 96, \&quot;height\&quot;: 96 } },\n      \&quot;endNoOpportunities\&quot;: { \&quot;position\&quot;: { \&quot;x\&quot;: 0, \&quot;y\&quot;: 0 }, \&quot;size\&quot;: { \&quot;width\&quot;: 96, \&quot;height\&quot;: 96 } },\n      \&quot;start\&quot;: {\n        \&quot;position\&quot;: {\n          \&quot;x\&quot;: 256,\n          \&quot;… (155 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>The file /work/output/artifacts/skill-flow-ipe-searchable-joins/SearchableJoinsTest/SearchableJoinsTest/SearchableJoinsTest.flow has been updated successfully. (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#40</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">9.32s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-ipe-searchable-joins/SearchableJoinsTest/SearchableJoinsTest\nuip maestro flow node configure \&quot;SearchableJoinsTest.flow\&quot; \&quot;searchAccountsWithOpportunities1\&quot; \\\n  --detail &#x27;{\&quot;connectionId\&quot;:\&quot;0fddf20e-f229-4ee9-acb3-c5be50034839\&quot;,\&quot;folderKey\&quot;:\&quot;5da18ec0-7de1-4e57-aaf1-ddc8a369c199\&quot;,\&quot;method\&quot;:\&quot;POST\&quot;,\&quot;endpoint\&quot;:\&quot;/curated_soqlQuery\&quot;,\&quot;bodyParameters\&quot;:{\&quot;query\&quot;:\&quot;SELECT Id, Na… (240 more chars)&quot;,
+  &quot;description&quot;: &quot;Configure the SOQL connector node with the relationship query, then validate and format the flow&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeConfigureSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;NodeId&quot;: &quot;searchAccountsWithOpportunities1&quot;,
+    &quot;BindingsCreated&quot;: 2,
+    &quot;DetailPopulated&quot;: true
+  }
+}
+[ManifestClient] fetchDynamicNodes ok: total=315 agent context nodes=2 external agent nodes=7 orchestrator nodes=261 IXP nodes=45
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FlowValidate&quot;,
+  &quot;Data&quot;: {
+    &quot;File&quot;: &quot;/work/output/artifacts/skill-flow-ipe-searchable-joins/SearchableJoinsTest/SearchableJoinsTest/SearchableJoinsTest.flow&quot;,
+    &quot;Status&quot;: &quot;Valid&quot;
+  }
+}
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FlowFormat&quot;,
+  &quot;Data&quot;: {
+    &quot;File&quot;: &quot;SearchableJoinsTest.flow&quot;,
+    &quot;NodesTotal&quot;: 5,
+    &quot;EdgesTotal&quot;: 4,
+    &quot;NodesRepositioned&quot;: 4,
+    &quot;NodesResized&quot;: 2,
+    &quot;SubflowsTidied&quot;: 0,
+    &quot;VariableCount&quot;: 5
+  },
+  &quot;Instructions&quot;: &quot;Repositioned 4 of 5 nodes. Set canonical size on 2 node(s)&quot;
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#41</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">3.30s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-ipe-searchable-joins/SearchableJoinsTest/SearchableJoinsTest\nuip maestro flow validate \&quot;SearchableJoinsTest.flow\&quot; --output json&quot;,
+  &quot;description&quot;: &quot;Re-run validate to check for any warnings in Data.Warnings&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>[ManifestClient] fetchDynamicNodes ok: total=315 agent context nodes=2 external agent nodes=7 orchestrator nodes=261 IXP nodes=45
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FlowValidate&quot;,
+  &quot;Data&quot;: {
+    &quot;File&quot;: &quot;/work/output/artifacts/skill-flow-ipe-searchable-joins/SearchableJoinsTest/SearchableJoinsTest/SearchableJoinsTest.flow&quot;,
+    &quot;Status&quot;: &quot;Valid&quot;
+  }
+}</pre>
+    
+  </div>
+</details>
+
+</div>
+
+<h2>Command Telemetry</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Total</div><div class="value">42</div></div>
+    <div class="stat"><div class="label">Successful</div><div class="value">40 (95%)</div></div>
+    <div class="stat"><div class="label">Failed</div><div class="value">2</div></div>
+    <div class="stat"><div class="label">Avg / cmd</div><div class="value">1.51s</div></div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 2fr;gap:16px;margin-top:12px">
+    <div>
+      <h4>By Tool</h4>
+      <table>
+        <thead><tr><th>Tool</th><th>Count</th></tr></thead>
+        <tbody><tr><td class='mono'>Bash</td><td>27</td></tr><tr><td class='mono'>Read</td><td>10</td></tr><tr><td class='mono'>Edit</td><td>4</td></tr><tr><td class='mono'>Skill</td><td>1</td></tr></tbody>
+      </table>
+    </div>
+    <div>
+      <h4>Slowest</h4>
+      <table>
+        <thead><tr><th>Tool</th><th>Duration</th><th>Parameters</th></tr></thead>
+        <tbody><tr><td class='mono'>Bash</td><td>13.98s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;for off in 0 50 100 150 200 250 300 3...</td></tr><tr><td class='mono'>Bash</td><td>9.32s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;cd /work/output/artifacts/skill-flow-...</td></tr><tr><td class='mono'>Bash</td><td>7.97s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;set -e\nuip solution init &quot;Searchable...</td></tr><tr><td class='mono'>Bash</td><td>5.80s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro flow registry pull --forc...</td></tr><tr><td class='mono'>Bash</td><td>5.07s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;for offset in 0 50 100 150 200 250 30...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+  <p><strong>Most Common Pattern:</strong> <code>Bash → Bash → Bash</code></p><p><strong>Skill Tool Invoked:</strong> 1 time(s)</p>
+</div>
+
+<h2>Generation Metrics</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Total Latency</div><div class="value">8m 28s</div></div>
+    <div class="stat"><div class="label">Turns</div><div class="value">1</div></div>
+    <div class="stat"><div class="label">Assistant Turns</div><div class="value">75</div></div>
+    <div class="stat"><div class="label">Avg Turn Latency</div><div class="value">8m 26s</div></div>
+    
+  </div>
+</div>
+
+<h2>Token Usage</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Input (uncached)</div><div class="value">62</div></div>
+    <div class="stat"><div class="label">Output</div><div class="value">37,078</div></div>
+    <div class="stat"><div class="label">Cache Write</div><div class="value">136,016</div></div>
+    <div class="stat"><div class="label">Cache Read</div><div class="value">3,672,517</div></div>
+    <div class="stat"><div class="label">Total</div><div class="value">3,845,673</div></div>
+    <div class="stat"><div class="label">Cost</div><div class="value">$2.1682</div></div>
+  </div>
+</div>
+
+<h2>Agent Settings</h2>
+<div class="card" style="padding:0">
+  <table>
+    <tbody><tr><td class='mono dim'>Permission Mode</td><td>acceptEdits</td></tr><tr><td class='mono dim'>Allowed Tools</td><td>Skill, Bash, Read, Write, Edit, Glob, Grep</td></tr><tr><td class='mono dim'>Model</td><td>us.anthropic.claude-sonnet-5</td></tr><tr><td class='mono dim'>Max Turns</td><td>120</td></tr><tr><td class='mono dim'>System Prompt</td><td>You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted. </td></tr><tr><td class='mono dim'>System Prompt Mode</td><td>append</td></tr><tr><td class='mono dim'>Plugins</td><td>/home/azureuser/projects/skills</td></tr></tbody>
+  </table>
+</div>
+
+<h2>Environment</h2>
+<div class="card" style="padding:0">
+  <table>
+    <tbody><tr><td class='mono dim'>git_commit</td><td>unknown</td></tr><tr><td class='mono dim'>skills_git_commit</td><td>unknown</td></tr><tr><td class='mono dim'>cli_version</td><td>1.201.0-dev.8272</td></tr><tr><td class='mono dim'>tool_plugins</td><td>{&#x27;admin-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;agent-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;agenthub-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;aops-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;api-workflow-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;automation-hub-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;codedagent-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;codedapp-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;coder-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;context-grounding-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;conversational-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;data-fabric-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;docsai-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;function-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;gov-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;guardrails-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;insights-tool&#x27;: &#x27;1.201.0-dev.8276&#x27;, &#x27;integrationservice-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;ixp-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;llm-gateway-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;llmgw-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;maestro-tool&#x27;: &#x27;1.201.0-dev.8275&#x27;, &#x27;model-hub-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;orchestrator-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;platform-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;pm-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;rpa-legacy-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;rpa-tool&#x27;: &#x27;1.201.0-dev.20260809.3&#x27;, &#x27;solution-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;tasks-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;test-manager-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;traces-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;vertical-solutions-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;}</td></tr><tr><td class='mono dim'>coder_eval</td><td>0.9.6</td></tr><tr><td class='mono dim'>claude_code_cli</td><td>2.1.177 (Claude Code)</td></tr><tr><td class='mono dim'>uv</td><td>uv 0.12.5 (x86_64-unknown-linux-gnu)</td></tr><tr><td class='mono dim'>anthropic</td><td>0.122.0</td></tr><tr><td class='mono dim'>openai</td><td>3.2.0</td></tr><tr><td class='mono dim'>pydantic</td><td>2.12.5</td></tr><tr><td class='mono dim'>api_routing</td><td>aws_bedrock</td></tr><tr><td class='mono dim'>eval_routing</td><td>aws_bedrock</td></tr><tr><td class='mono dim'>aws_region</td><td>us-east-2</td></tr><tr><td class='mono dim'>bedrock_model</td><td>us.anthropic.claude-sonnet-4-6</td></tr><tr><td class='mono dim'>system_prompt_semantics</td><td>append</td></tr></tbody>
+  </table>
+</div>
+
+<footer>Generated by coder_eval · 2026-08-18T22:06:07</footer>
+</div>
+<script>
+function toggleTheme() {
+  document.documentElement.classList.toggle('light');
+  try {
+    const mode = document.documentElement.classList.contains('light') ? 'light' : 'dark';
+    localStorage.setItem('coder-eval-theme', mode);
+  } catch (e) { /* ignore */ }
+}
+(function() {
+  try {
+    if (localStorage.getItem('coder-eval-theme') === 'light') {
+      document.documentElement.classList.add('light');
+    }
+  } catch (e) { /* ignore */ }
+})();
+</script>
+</body>
+</html>

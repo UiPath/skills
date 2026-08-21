@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "WebhookValidation",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "8a21267d-b4a1-4563-96e3-224c118a7366",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "WebhookValidation"
+    },
+    "locks": [],
+    "key": "818b5a1e-2f11-4f09-926a-58644f184742",
+    "files": []
+  }
+}

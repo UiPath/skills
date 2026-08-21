@@ -1,0 +1,24 @@
+{
+  "version": "2.0",
+  "resources": [
+    {
+      "resource": "connection",
+      "key": "0fddf20e-f229-4ee9-acb3-c5be50034839",
+      "id": "connection0fddf20e-f229-4ee9-acb3-c5be50034839",
+      "value": {
+        "ConnectionId": {
+          "defaultValue": "0fddf20e-f229-4ee9-acb3-c5be50034839",
+          "isExpression": false,
+          "displayName": "uipath-salesforce-sfdc connection"
+        }
+      },
+      "metadata": {
+        "ActivityName": "List Open Opportunities",
+        "BindingsVersion": "2.2",
+        "DisplayLabel": "uipath-salesforce-sfdc connection",
+        "UseConnectionService": "true",
+        "Connector": "uipath-salesforce-sfdc"
+      }
+    }
+  ]
+}

@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+    xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+    xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+    xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+    xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:uipath="http://uipath.org/schema/bpmn"
+    id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn"
+    exporter="UiPath (https://bpmn.uipath.com)" exporterVersion="1.0">
+
+  <bpmn:error id="Error_PaymentFailed" name="Payment Failed" errorCode="PAYMENT_FAILED" />
+
+  <bpmn:process id="Process_PaymentErrorHandling" name="Payment Error Handling" isExecutable="true">
+    <bpmn:extensionElements>
+      <uipath:migrationVersion version="11.5" />
+      <uipath:variables version="v1">
+        <uipath:inputOutput id="Var_PaymentStatus" name="PaymentStatus" type="string" />
+      </uipath:variables>
+    </bpmn:extensionElements>
+
+    <bpmn:startEvent id="Start_Main" name="Start">
+      <bpmn:outgoing>Flow_1</bpmn:outgoing>
+    </bpmn:startEvent>
+
+    <bpmn:scriptTask id="Task_AttemptPayment" name="Attempt Payment" scriptFormat="JavaScript">
+      <bpmn:extensionElements>
+        <uipath:scriptVersion value="v3" />
+        <uipath:mapping version="v1">
+          <uipath:type value="BPMN.ScriptTask" version="v1" />
+          <uipath:input name="args" type="json" target="bodyField"><![CDATA[{}]]></uipath:input>
+          <uipath:output name="paymentStatus" type="string" var="Var_PaymentStatus" source="=result.response" />
+        </uipath:mapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_1</bpmn:incoming>
+      <bpmn:outgoing>Flow_2</bpmn:outgoing>
+      <bpmn:script><![CDATA[
+var succeeded = Math.random() > 0.5;
+return { response: succeeded ? "success" : "failed" };
+]]></bpmn:script>
+    </bpmn:scriptTask>
+
+    <bpmn:exclusiveGateway id="Gw_PaymentResult" name="Payment OK?" default="Flow_Success">
+      <bpmn:incoming>Flow_2</bpmn:incoming>
+      <bpmn:outgoing>Flow_Failed</bpmn:outgoing>
+      <bpmn:outgoing>Flow_Success</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+
+    <bpmn:endEvent id="End_PaymentFailed" name="Payment Failed">
+      <bpmn:incoming>Flow_Failed</bpmn:incoming>
+      <bpmn:errorEventDefinition id="ErrorEventDefinition_End" errorRef="Error_PaymentFailed" />
+    </bpmn:endEvent>
+
+    <bpmn:endEvent id="End_PaymentSuccess" name="Payment Succeeded">
+      <bpmn:incoming>Flow_Success</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <bpmn:sequenceFlow id="Flow_1" sourceRef="Start_Main" targetRef="Task_AttemptPayment" />
+    <bpmn:sequenceFlow id="Flow_2" sourceRef="Task_AttemptPayment" targetRef="Gw_PaymentResult" />
+    <bpmn:sequenceFlow id="Flow_Failed" sourceRef="Gw_PaymentResult" targetRef="End_PaymentFailed">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=vars.Var_PaymentStatus == "failed"</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_Success" sourceRef="Gw_PaymentResult" targetRef="End_PaymentSuccess" />
+
+    <bpmn:subProcess id="EventSub_PaymentErrorHandler" name="Handle Payment Error" triggeredByEvent="true">
+      <bpmn:extensionElements>
+        <uipath:variables version="v1">
+          <uipath:inputOutput id="Var_ErrorHandlingResult" name="ErrorHandlingResult" type="string" />
+        </uipath:variables>
+      </bpmn:extensionElements>
+
+      <bpmn:startEvent id="Start_ErrorCatch" name="Payment Failed" isInterrupting="true">
+        <bpmn:outgoing>Flow_Sub1</bpmn:outgoing>
+        <bpmn:errorEventDefinition id="ErrorEventDefinition_Start" errorRef="Error_PaymentFailed" />
+      </bpmn:startEvent>
+
+      <bpmn:scriptTask id="Task_HandlePaymentError" name="Handle Payment Error" scriptFormat="JavaScript">
+        <bpmn:extensionElements>
+          <uipath:scriptVersion value="v3" />
+          <uipath:mapping version="v1">
+            <uipath:type value="BPMN.ScriptTask" version="v1" />
+            <uipath:input name="args" type="json" target="bodyField"><![CDATA[{}]]></uipath:input>
+            <uipath:output name="errorHandlingResult" type="string" var="Var_ErrorHandlingResult" source="=result.response" />
+          </uipath:mapping>
+        </bpmn:extensionElements>
+        <bpmn:incoming>Flow_Sub1</bpmn:incoming>
+        <bpmn:outgoing>Flow_Sub2</bpmn:outgoing>
+        <bpmn:script><![CDATA[
+return { response: "handled" };
+]]></bpmn:script>
+      </bpmn:scriptTask>
+
+      <bpmn:endEvent id="End_ErrorHandled" name="Error Handled">
+        <bpmn:incoming>Flow_Sub2</bpmn:incoming>
+      </bpmn:endEvent>
+
+      <bpmn:sequenceFlow id="Flow_Sub1" sourceRef="Start_ErrorCatch" targetRef="Task_HandlePaymentError" />
+      <bpmn:sequenceFlow id="Flow_Sub2" sourceRef="Task_HandlePaymentError" targetRef="End_ErrorHandled" />
+    </bpmn:subProcess>
+
+  </bpmn:process>
+
+  <bpmndi:BPMNDiagram id="Diagram_1">
+    <bpmndi:BPMNPlane id="Plane_1" bpmnElement="Process_PaymentErrorHandling">
+      <bpmndi:BPMNShape id="S_Start_Main" bpmnElement="Start_Main">
+        <dc:Bounds x="160" y="200" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Task_AttemptPayment" bpmnElement="Task_AttemptPayment">
+        <dc:Bounds x="250" y="178" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Gw_PaymentResult" bpmnElement="Gw_PaymentResult">
+        <dc:Bounds x="410" y="193" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_End_PaymentSuccess" bpmnElement="End_PaymentSuccess">
+        <dc:Bounds x="520" y="200" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_End_PaymentFailed" bpmnElement="End_PaymentFailed">
+        <dc:Bounds x="520" y="320" width="36" height="36" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="S_EventSub_PaymentErrorHandler" bpmnElement="EventSub_PaymentErrorHandler" isExpanded="true">
+        <dc:Bounds x="160" y="440" width="520" height="160" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Start_ErrorCatch" bpmnElement="Start_ErrorCatch">
+        <dc:Bounds x="190" y="502" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Task_HandlePaymentError" bpmnElement="Task_HandlePaymentError">
+        <dc:Bounds x="270" y="480" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_End_ErrorHandled" bpmnElement="End_ErrorHandled">
+        <dc:Bounds x="440" y="502" width="36" height="36" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_1" bpmnElement="Flow_1">
+        <di:waypoint x="196" y="218" />
+        <di:waypoint x="250" y="218" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_2" bpmnElement="Flow_2">
+        <di:waypoint x="350" y="218" />
+        <di:waypoint x="410" y="218" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_Success" bpmnElement="Flow_Success">
+        <di:waypoint x="460" y="218" />
+        <di:waypoint x="520" y="218" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_Failed" bpmnElement="Flow_Failed">
+        <di:waypoint x="435" y="243" />
+        <di:waypoint x="435" y="338" />
+        <di:waypoint x="520" y="338" />
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_Sub1" bpmnElement="Flow_Sub1">
+        <di:waypoint x="226" y="520" />
+        <di:waypoint x="270" y="520" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_Sub2" bpmnElement="Flow_Sub2">
+        <di:waypoint x="370" y="520" />
+        <di:waypoint x="440" y="520" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+
+</bpmn:definitions>

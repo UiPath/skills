@@ -1,0 +1,14 @@
+{
+  "_comment": "Planned configuration for createAct365Contact1 (uipath.connector.uipath-act-act365.create-contact). Run the following command once an Act! 365 connection exists to configure this node:\n\nuip maestro flow node configure MultiselectTest.flow createAct365Contact1 \\\n  --detail '{\"connectionId\":\"<YOUR_CONNECTION_ID>\",\"folderKey\":\"<YOUR_FOLDER_KEY>\",\"method\":\"POST\",\"endpoint\":\"/CuratedContacts\",\"bodyParameters\":{\"firstName\":\"Jane\",\"lastName\":\"Doe\",\"emailAddress\":\"jane.doe@example.com\",\"company\":\"Acme Corp\",\"groups\":[\"group-id-1\",\"group-id-2\",\"group-id-3\"]}}' \\\n  --output json\n\nThe 'groups' field (requestFields name 'groups[*]') is the multi-select Groups array.\nStrip the '[*]' suffix from the wire key and pass an array of group IDs.\nGroup IDs can be resolved with:\n  uip is resources run list uipath-act-act365 Groups --connection-id <YOUR_CONNECTION_ID> --output json",
+  "connectionId": "<YOUR_CONNECTION_ID>",
+  "folderKey": "<YOUR_FOLDER_KEY>",
+  "method": "POST",
+  "endpoint": "/CuratedContacts",
+  "bodyParameters": {
+    "firstName": "Jane",
+    "lastName": "Doe",
+    "emailAddress": "jane.doe@example.com",
+    "company": "Acme Corp",
+    "groups": ["group-id-1", "group-id-2", "group-id-3"]
+  }
+}

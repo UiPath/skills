@@ -1,0 +1,12 @@
+[ManifestClient] fetchDynamicNodes ok: total=4683 connector nodes=3572 integration trigger nodes=892 agent context nodes=2 external agent nodes=6 orchestrator nodes=159 IXP nodes=39 IXP Models nodes=13
+{
+  "Result": "Success",
+  "Code": "NodePullSuccess",
+  "Data": {
+    "NodesCount": 4565,
+    "FromCache": false,
+    "Source": "authenticated",
+    "CacheWritten": true,
+    "Message": "Synced fresh nodes"
+  }
+}

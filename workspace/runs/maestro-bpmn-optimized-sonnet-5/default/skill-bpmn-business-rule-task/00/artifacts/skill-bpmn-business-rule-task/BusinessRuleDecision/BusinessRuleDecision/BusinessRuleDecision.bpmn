@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+    xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+    xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+    xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+    xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:uipath="http://uipath.org/schema/bpmn"
+    id="Definitions_BusinessRuleDecision" targetNamespace="http://bpmn.io/schema/bpmn"
+    exporter="UiPath (https://bpmn.uipath.com)" exporterVersion="1.0">
+  <bpmn:process id="Process_BusinessRuleDecision" isExecutable="true">
+    <bpmn:extensionElements>
+      <uipath:migrationVersion version="11.5" />
+      <uipath:variables version="v1">
+        <uipath:inputOutput id="Var_ApplicantScore" name="ApplicantScore" type="number" elementId="Start_ManualEntry" />
+        <uipath:inputOutput id="Var_RequestedAmount" name="RequestedAmount" type="number" elementId="Start_ManualEntry" />
+        <uipath:inputOutput id="Var_RuleOutcome" name="RuleOutcome" type="string" />
+        <uipath:inputOutput id="Var_RuleReason" name="RuleReason" type="string" />
+      </uipath:variables>
+    </bpmn:extensionElements>
+    <bpmn:startEvent id="Start_ManualEntry" name="Start Loan Precheck">
+      <bpmn:extensionElements>
+        <uipath:entryPointId value="4acb66c9-7f4e-4897-a061-03d745cc405e" />
+      </bpmn:extensionElements>
+      <bpmn:outgoing>Flow_StartToRule</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:businessRuleTask id="Task_EvaluateEligibility" name="Evaluate Eligibility">
+      <bpmn:extensionElements>
+        <uipath:activity version="v1">
+          <uipath:type value="Orchestrator.BusinessRules" version="v1" />
+          <uipath:context>
+            <uipath:input name="releaseKey" value="&lt;BUSINESS_RULE_PROCESS_KEY&gt;" />
+            <uipath:input name="folderId" value="" />
+            <uipath:input name="folderPath" value="Shared" />
+            <uipath:input name="name" value="Loan Eligibility Rule" />
+          </uipath:context>
+          <uipath:input name="JobArguments" type="json" target="bodyField"><![CDATA[{"applicantScore":"=vars.Var_ApplicantScore","requestedAmount":"=vars.Var_RequestedAmount"}]]></uipath:input>
+          <uipath:output name="outcome" type="string" source="=outcome" var="Var_RuleOutcome" />
+          <uipath:output name="reason" type="string" source="=reason" var="Var_RuleReason" />
+        </uipath:activity>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_StartToRule</bpmn:incoming>
+      <bpmn:outgoing>Flow_RuleToGateway</bpmn:outgoing>
+    </bpmn:businessRuleTask>
+    <bpmn:exclusiveGateway id="Gw_RuleOutcome" name="Rule Outcome?" default="Flow_ToReview">
+      <bpmn:incoming>Flow_RuleToGateway</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToApproved</bpmn:outgoing>
+      <bpmn:outgoing>Flow_ToReview</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:endEvent id="End_Approved" name="Approved">
+      <bpmn:incoming>Flow_ToApproved</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:endEvent id="End_Review" name="Needs Review">
+      <bpmn:incoming>Flow_ToReview</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_StartToRule" sourceRef="Start_ManualEntry" targetRef="Task_EvaluateEligibility" />
+    <bpmn:sequenceFlow id="Flow_RuleToGateway" sourceRef="Task_EvaluateEligibility" targetRef="Gw_RuleOutcome" />
+    <bpmn:sequenceFlow id="Flow_ToApproved" sourceRef="Gw_RuleOutcome" targetRef="End_Approved">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=vars.Var_RuleOutcome == "approved"</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_ToReview" sourceRef="Gw_RuleOutcome" targetRef="End_Review" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="Diagram_BusinessRuleDecision">
+    <bpmndi:BPMNPlane id="Plane_BusinessRuleDecision" bpmnElement="Process_BusinessRuleDecision">
+      <bpmndi:BPMNShape id="S_Start_ManualEntry" bpmnElement="Start_ManualEntry">
+        <dc:Bounds x="160" y="100" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Task_EvaluateEligibility" bpmnElement="Task_EvaluateEligibility">
+        <dc:Bounds x="250" y="78" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Gw_RuleOutcome" bpmnElement="Gw_RuleOutcome">
+        <dc:Bounds x="410" y="93" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_End_Approved" bpmnElement="End_Approved">
+        <dc:Bounds x="520" y="40" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_End_Review" bpmnElement="End_Review">
+        <dc:Bounds x="520" y="160" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="E_Flow_StartToRule" bpmnElement="Flow_StartToRule">
+        <di:waypoint x="196" y="118" />
+        <di:waypoint x="250" y="118" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_RuleToGateway" bpmnElement="Flow_RuleToGateway">
+        <di:waypoint x="350" y="118" />
+        <di:waypoint x="410" y="118" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_ToApproved" bpmnElement="Flow_ToApproved">
+        <di:waypoint x="435" y="93" />
+        <di:waypoint x="435" y="58" />
+        <di:waypoint x="520" y="58" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_ToReview" bpmnElement="Flow_ToReview">
+        <di:waypoint x="435" y="143" />
+        <di:waypoint x="435" y="178" />
+        <di:waypoint x="520" y="178" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

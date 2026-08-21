@@ -1,0 +1,2504 @@
+{
+  "Packages": [
+    {
+      "Package": {
+        "Id": "UiPath.IntegrationService.Activities",
+        "Version": "1.29.0"
+      },
+      "Assemblies": [
+        "/home/azureuser/.nuget/packages/microsoft.aspnetcore.hosting.abstractions/2.3.0/lib/netstandard2.0/Microsoft.AspNetCore.Hosting.Abstractions.dll",
+        "/home/azureuser/.nuget/packages/microsoft.aspnetcore.hosting.server.abstractions/2.3.0/lib/netstandard2.0/Microsoft.AspNetCore.Hosting.Server.Abstractions.dll",
+        "/home/azureuser/.nuget/packages/microsoft.aspnetcore.http.abstractions/2.3.0/lib/netstandard2.0/Microsoft.AspNetCore.Http.Abstractions.dll",
+        "/home/azureuser/.nuget/packages/microsoft.aspnetcore.http.extensions/2.3.0/lib/netstandard2.0/Microsoft.AspNetCore.Http.Extensions.dll",
+        "/home/azureuser/.nuget/packages/microsoft.aspnetcore.http.features/2.3.0/lib/netstandard2.0/Microsoft.AspNetCore.Http.Features.dll",
+        "/home/azureuser/.nuget/packages/microsoft.aspnetcore.staticfiles/2.3.0/lib/netstandard2.0/Microsoft.AspNetCore.StaticFiles.dll",
+        "/home/azureuser/.nuget/packages/microsoft.extensions.configuration/8.0.0/lib/net8.0/Microsoft.Extensions.Configuration.dll",
+        "/home/azureuser/.nuget/packages/microsoft.extensions.configuration.abstractions/8.0.0/lib/net8.0/Microsoft.Extensions.Configuration.Abstractions.dll",
+        "/home/azureuser/.nuget/packages/microsoft.extensions.configuration.binder/8.0.0/lib/net8.0/Microsoft.Extensions.Configuration.Binder.dll",
+        "/home/azureuser/.nuget/packages/microsoft.extensions.dependencyinjection/8.0.1/lib/net8.0/Microsoft.Extensions.DependencyInjection.dll",
+        "/home/azureuser/.nuget/packages/microsoft.extensions.dependencyinjection.abstractions/9.0.3/lib/net8.0/Microsoft.Extensions.DependencyInjection.Abstractions.dll",
+        "/home/azureuser/.nuget/packages/microsoft.extensions.diagnostics/8.0.1/lib/net8.0/Microsoft.Extensions.Diagnostics.dll",
+        "/home/azureuser/.nuget/packages/microsoft.extensions.diagnostics.abstractions/8.0.1/lib/net8.0/Microsoft.Extensions.Diagnostics.Abstractions.dll",
+        "/home/azureuser/.nuget/packages/microsoft.extensions.fileproviders.abstractions/8.0.0/lib/net8.0/Microsoft.Extensions.FileProviders.Abstractions.dll",
+        "/home/azureuser/.nuget/packages/microsoft.extensions.hosting.abstractions/8.0.1/lib/net8.0/Microsoft.Extensions.Hosting.Abstractions.dll",
+        "/home/azureuser/.nuget/packages/microsoft.extensions.http/8.0.1/lib/net8.0/Microsoft.Extensions.Http.dll",
+        "/home/azureuser/.nuget/packages/microsoft.extensions.http.polly/8.0.12/lib/netstandard2.0/Microsoft.Extensions.Http.Polly.dll",
+        "/home/azureuser/.nuget/packages/microsoft.extensions.logging/8.0.1/lib/net8.0/Microsoft.Extensions.Logging.dll",
+        "/home/azureuser/.nuget/packages/microsoft.extensions.logging.abstractions/9.0.3/lib/net8.0/Microsoft.Extensions.Logging.Abstractions.dll",
+        "/home/azureuser/.nuget/packages/microsoft.extensions.options/9.0.3/lib/net8.0/Microsoft.Extensions.Options.dll",
+        "/home/azureuser/.nuget/packages/microsoft.extensions.options.configurationextensions/8.0.0/lib/net8.0/Microsoft.Extensions.Options.ConfigurationExtensions.dll",
+        "/home/azureuser/.nuget/packages/microsoft.extensions.primitives/9.0.3/lib/net8.0/Microsoft.Extensions.Primitives.dll",
+        "/home/azureuser/.nuget/packages/microsoft.extensions.webencoders/8.0.11/lib/net8.0/Microsoft.Extensions.WebEncoders.dll",
+        "/home/azureuser/.nuget/packages/microsoft.net.http.headers/2.3.0/lib/netstandard2.0/Microsoft.Net.Http.Headers.dll",
+        "/home/azureuser/.nuget/packages/microsoft.win32.systemevents/6.0.0/lib/net6.0/Microsoft.Win32.SystemEvents.dll",
+        "/home/azureuser/.nuget/packages/newtonsoft.json/13.0.3/lib/net6.0/Newtonsoft.Json.dll",
+        "/home/azureuser/.nuget/packages/nito.asyncex.context/5.1.2/lib/netstandard2.0/Nito.AsyncEx.Context.dll",
+        "/home/azureuser/.nuget/packages/nito.asyncex.coordination/5.1.2/lib/netstandard2.0/Nito.AsyncEx.Coordination.dll",
+        "/home/azureuser/.nuget/packages/nito.asyncex.interop.waithandles/5.1.2/lib/netstandard2.0/Nito.AsyncEx.Interop.WaitHandles.dll",
+        "/home/azureuser/.nuget/packages/nito.asyncex.oop/5.1.2/lib/netstandard2.0/Nito.AsyncEx.Oop.dll",
+        "/home/azureuser/.nuget/packages/nito.asyncex.tasks/5.1.2/lib/netstandard2.0/Nito.AsyncEx.Tasks.dll",
+        "/home/azureuser/.nuget/packages/nito.cancellation/1.1.2/lib/netstandard2.0/Nito.Cancellation.dll",
+        "/home/azureuser/.nuget/packages/nito.collections.deque/1.1.1/lib/netstandard2.0/Nito.Collections.Deque.dll",
+        "/home/azureuser/.nuget/packages/nito.disposables/2.2.1/lib/netstandard2.1/Nito.Disposables.dll",
+        "/home/azureuser/.nuget/packages/polly/7.2.4/lib/netstandard2.0/Polly.dll",
+        "/home/azureuser/.nuget/packages/polly.contrib.waitandretry/1.1.1/lib/netstandard2.0/Polly.Contrib.WaitAndRetry.dll",
+        "/home/azureuser/.nuget/packages/polly.extensions.http/3.0.0/lib/netstandard2.0/Polly.Extensions.Http.dll",
+        "/home/azureuser/.nuget/packages/system.activities.viewmodels/1.20260514.1/lib/net6.0/System.Activities.ViewModels.dll",
+        "/home/azureuser/.nuget/packages/system.configuration.configurationmanager/6.0.0/lib/net6.0/System.Configuration.ConfigurationManager.dll",
+        "/home/azureuser/.nuget/packages/system.drawing.common/6.0.0/runtimes/unix/lib/net6.0/System.Drawing.Common.dll",
+        "/home/azureuser/.nuget/packages/system.io.abstractions/3.0.10/lib/netstandard2.0/System.IO.Abstractions.dll",
+        "/home/azureuser/.nuget/packages/system.runtime.caching/6.0.0/lib/net6.0/System.Runtime.Caching.dll",
+        "/home/azureuser/.nuget/packages/system.security.cryptography.protecteddata/6.0.0/lib/net6.0/System.Security.Cryptography.ProtectedData.dll",
+        "/home/azureuser/.nuget/packages/system.security.permissions/6.0.0/lib/net6.0/System.Security.Permissions.dll",
+        "/home/azureuser/.nuget/packages/system.windows.extensions/6.0.0/lib/net6.0/System.Windows.Extensions.dll",
+        "/home/azureuser/.nuget/packages/uipath.codedworkflows/24.10.2/lib/net6.0/UiPath.CodedWorkflows.dll",
+        "/home/azureuser/.nuget/packages/uipath.connectionclient/2.0.15/lib/net6.0/ConnectionClient.dll",
+        "/home/azureuser/.nuget/packages/uipath.integrationservice.activities/1.29.0/lib/net8.0/UiPath.IntegrationService.Activities.Runtime.dll",
+        "/home/azureuser/.nuget/packages/uipath.integrationservice.activities/1.29.0/lib/net8.0/UiPath.IntegrationService.Activities.dll",
+        "/home/azureuser/.nuget/packages/uipath.integrationservice.adapters/1.2.0/lib/net8.0/UiPath.IntegrationService.Adapters.dll",
+        "/home/azureuser/.nuget/packages/uipath.integrationservice.client/1.2.0/lib/net8.0/UiPath.IntegrationService.Client.dll",
+        "/home/azureuser/.nuget/packages/uipath.opentelemetry.contracts/2.9.1/lib/netstandard2.0/UiPath.OpenTelemetry.Contracts.dll",
+        "/home/azureuser/.nuget/packages/uipath.platform/26.4.0/lib/net6.0/UiPath.Platform.dll",
+        "/home/azureuser/.nuget/packages/uipath.telemetry.client/2.9.1/lib/netstandard2.0/TelemetryClient.dll"
+      ],
+      "Path": "/home/azureuser/.nuget/packages/uipath.integrationservice.activities/1.29.0"
+    },
+    {
+      "Package": {
+        "Id": "UiPath.System.Activities",
+        "Version": "26.6.1"
+      },
+      "Assemblies": [
+        "/home/azureuser/.nuget/packages/csvhelper/33.0.1/lib/net8.0/CsvHelper.dll",
+        "/home/azureuser/.nuget/packages/dynamicexpresso.core/2.12.0/lib/netstandard2.0/DynamicExpresso.Core.dll",
+        "/home/azureuser/.nuget/packages/microsoft.aspnet.signalr.client/2.4.3/lib/netstandard2.0/Microsoft.AspNet.SignalR.Client.dll",
+        "/home/azureuser/.nuget/packages/microsoft.aspnetcore.connections.abstractions/6.0.36/lib/net6.0/Microsoft.AspNetCore.Connections.Abstractions.dll",
+        "/home/azureuser/.nuget/packages/microsoft.aspnetcore.http.connections.client/6.0.36/lib/net6.0/Microsoft.AspNetCore.Http.Connections.Client.dll",
+        "/home/azureuser/.nuget/packages/microsoft.aspnetcore.http.connections.common/6.0.36/lib/net6.0/Microsoft.AspNetCore.Http.Connections.Common.dll",
+        "/home/azureuser/.nuget/packages/microsoft.aspnetcore.signalr.client/6.0.36/lib/net6.0/Microsoft.AspNetCore.SignalR.Client.dll",
+        "/home/azureuser/.nuget/packages/microsoft.aspnetcore.signalr.client.core/6.0.36/lib/net6.0/Microsoft.AspNetCore.SignalR.Client.Core.dll",
+        "/home/azureuser/.nuget/packages/microsoft.aspnetcore.signalr.common/6.0.36/lib/net6.0/Microsoft.AspNetCore.SignalR.Common.dll",
+        "/home/azureuser/.nuget/packages/microsoft.aspnetcore.signalr.protocols.json/6.0.36/lib/net6.0/Microsoft.AspNetCore.SignalR.Protocols.Json.dll",
+        "/home/azureuser/.nuget/packages/microsoft.codeanalysis.common/4.5.0-2.22527.10/lib/netcoreapp3.1/Microsoft.CodeAnalysis.dll",
+        "/home/azureuser/.nuget/packages/microsoft.codeanalysis.csharp/4.5.0-2.22527.10/lib/netcoreapp3.1/Microsoft.CodeAnalysis.CSharp.dll",
+        "/home/azureuser/.nuget/packages/microsoft.codeanalysis.visualbasic/4.5.0-2.22527.10/lib/netcoreapp3.1/Microsoft.CodeAnalysis.VisualBasic.dll",
+        "/home/azureuser/.nuget/packages/microsoft.extensions.caching.abstractions/9.0.3/lib/net8.0/Microsoft.Extensions.Caching.Abstractions.dll",
+        "/home/azureuser/.nuget/packages/microsoft.extensions.caching.memory/9.0.3/lib/net8.0/Microsoft.Extensions.Caching.Memory.dll",
+        "/home/azureuser/.nuget/packages/microsoft.extensions.dependencyinjection/8.0.1/lib/net8.0/Microsoft.Extensions.DependencyInjection.dll",
+        "/home/azureuser/.nuget/packages/microsoft.extensions.dependencyinjection.abstractions/9.0.3/lib/net8.0/Microsoft.Extensions.DependencyInjection.Abstractions.dll",
+        "/home/azureuser/.nuget/packages/microsoft.extensions.features/6.0.36/lib/net6.0/Microsoft.Extensions.Features.dll",
+        "/home/azureuser/.nuget/packages/microsoft.extensions.logging/8.0.1/lib/net8.0/Microsoft.Extensions.Logging.dll",
+        "/home/azureuser/.nuget/packages/microsoft.extensions.logging.abstractions/9.0.3/lib/net8.0/Microsoft.Extensions.Logging.Abstractions.dll",
+        "/home/azureuser/.nuget/packages/microsoft.extensions.options/9.0.3/lib/net8.0/Microsoft.Extensions.Options.dll",
+        "/home/azureuser/.nuget/packages/microsoft.extensions.primitives/9.0.3/lib/net8.0/Microsoft.Extensions.Primitives.dll",
+        "/home/azureuser/.nuget/packages/microsoft.rest.clientruntime/2.3.24/lib/netstandard2.0/Microsoft.Rest.ClientRuntime.dll",
+        "/home/azureuser/.nuget/packages/net.adamec.lib.common.dmn.engine/1.1.1/lib/netstandard2.0/net.adamec.lib.common.dmn.engine.dll",
+        "/home/azureuser/.nuget/packages/newtonsoft.json/13.0.3/lib/net6.0/Newtonsoft.Json.dll",
+        "/home/azureuser/.nuget/packages/nito.asyncex.context/5.1.2/lib/netstandard2.0/Nito.AsyncEx.Context.dll",
+        "/home/azureuser/.nuget/packages/nito.asyncex.coordination/5.1.2/lib/netstandard2.0/Nito.AsyncEx.Coordination.dll",
+        "/home/azureuser/.nuget/packages/nito.asyncex.interop.waithandles/5.1.2/lib/netstandard2.0/Nito.AsyncEx.Interop.WaitHandles.dll",
+        "/home/azureuser/.nuget/packages/nito.asyncex.oop/5.1.2/lib/netstandard2.0/Nito.AsyncEx.Oop.dll",
+        "/home/azureuser/.nuget/packages/nito.asyncex.tasks/5.1.2/lib/netstandard2.0/Nito.AsyncEx.Tasks.dll",
+        "/home/azureuser/.nuget/packages/nito.cancellation/1.1.2/lib/netstandard2.0/Nito.Cancellation.dll",
+        "/home/azureuser/.nuget/packages/nito.collections.deque/1.1.1/lib/netstandard2.0/Nito.Collections.Deque.dll",
+        "/home/azureuser/.nuget/packages/nito.disposables/2.2.1/lib/netstandard2.1/Nito.Disposables.dll",
+        "/home/azureuser/.nuget/packages/nlog/4.7.15/lib/netstandard2.0/NLog.dll",
+        "/home/azureuser/.nuget/packages/radcommons.core/2.0.1/lib/netstandard2.0/net.adamec.lib.common.core.dll",
+        "/home/azureuser/.nuget/packages/sharpziplib/1.4.2/lib/net6.0/ICSharpCode.SharpZipLib.dll",
+        "/home/azureuser/.nuget/packages/system.activities.viewmodels/1.20260514.1/lib/net6.0/System.Activities.ViewModels.dll",
+        "/home/azureuser/.nuget/packages/system.io.abstractions/3.0.10/lib/netstandard2.0/System.IO.Abstractions.dll",
+        "/home/azureuser/.nuget/packages/system.io.pipelines/6.0.3/lib/net6.0/System.IO.Pipelines.dll",
+        "/home/azureuser/.nuget/packages/uipath.codedworkflows/24.10.2/lib/net6.0/UiPath.CodedWorkflows.dll",
+        "/home/azureuser/.nuget/packages/uipath.errorinfo/25.10.2/lib/net8.0/UiPath.ErrorInfo.dll",
+        "/home/azureuser/.nuget/packages/uipath.opentelemetry.contracts/2.9.1/lib/netstandard2.0/UiPath.OpenTelemetry.Contracts.dll",
+        "/home/azureuser/.nuget/packages/uipath.platform/26.4.0/lib/net6.0/UiPath.Platform.dll",
+        "/home/azureuser/.nuget/packages/uipath.plugin.activities.tracing/0.6.3/lib/net8.0/UiPath.Plugin.Activities.Tracing.dll",
+        "/home/azureuser/.nuget/packages/uipath.system.activities/26.6.1/lib/net6.0/UiPath.System.Activities.Rules.dll",
+        "/home/azureuser/.nuget/packages/uipath.system.activities/26.6.1/lib/net6.0/UiPath.System.Activities.ViewModels.dll",
+        "/home/azureuser/.nuget/packages/uipath.system.activities.runtime/26.6.1/lib/net6.0/UiPath.System.Activities.Package.Runtime.dll",
+        "/home/azureuser/.nuget/packages/uipath.system.activities.runtime.portable/26.6.1/lib/net6.0/UiPath.OrchestratorClient.dll",
+        "/home/azureuser/.nuget/packages/uipath.system.activities.runtime.portable/26.6.1/lib/net6.0/UiPath.ServiceClients.dll",
+        "/home/azureuser/.nuget/packages/uipath.system.activities.runtime.portable/26.6.1/lib/net6.0/UiPath.System.Activities.Api.dll",
+        "/home/azureuser/.nuget/packages/uipath.system.activities.runtime.portable/26.6.1/lib/net6.0/UiPath.System.Activities.dll",
+        "/home/azureuser/.nuget/packages/uipath.telemetry.client/2.9.1/lib/netstandard2.0/TelemetryClient.dll"
+      ],
+      "Path": "/home/azureuser/.nuget/packages/uipath.system.activities/26.6.1"
+    }
+  ],
+  "Conflicts": [],
+  "ResolvedDependencies": {
+    "CsvHelper": {
+      "Id": "CsvHelper",
+      "Version": "33.0.1",
+      "Dependencies": []
+    },
+    "DynamicExpresso.Core": {
+      "Id": "DynamicExpresso.Core",
+      "Version": "2.12.0",
+      "Dependencies": [
+        {
+          "Item1": "Microsoft.CSharp",
+          "Item2": "[4.7.0, )"
+        }
+      ]
+    },
+    "Microsoft.AspNet.SignalR.Client": {
+      "Id": "Microsoft.AspNet.SignalR.Client",
+      "Version": "2.4.3",
+      "Dependencies": [
+        {
+          "Item1": "Newtonsoft.Json",
+          "Item2": "[11.0.2, )"
+        }
+      ]
+    },
+    "Microsoft.AspNetCore.Connections.Abstractions": {
+      "Id": "Microsoft.AspNetCore.Connections.Abstractions",
+      "Version": "6.0.36",
+      "Dependencies": [
+        {
+          "Item1": "Microsoft.Extensions.Features",
+          "Item2": "[6.0.36, )"
+        },
+        {
+          "Item1": "System.IO.Pipelines",
+          "Item2": "[6.0.3, )"
+        }
+      ]
+    },
+    "Microsoft.AspNetCore.Hosting.Abstractions": {
+      "Id": "Microsoft.AspNetCore.Hosting.Abstractions",
+      "Version": "2.3.0",
+      "Dependencies": [
+        {
+          "Item1": "Microsoft.AspNetCore.Hosting.Server.Abstractions",
+          "Item2": "[2.3.0, )"
+        },
+        {
+          "Item1": "Microsoft.AspNetCore.Http.Abstractions",
+          "Item2": "[2.3.0, )"
+        },
+        {
+          "Item1": "Microsoft.Extensions.Hosting.Abstractions",
+          "Item2": "[8.0.1, )"
+        }
+      ]
+    },
+    "Microsoft.AspNetCore.Hosting.Server.Abstractions": {
+      "Id": "Microsoft.AspNetCore.Hosting.Server.Abstractions",
+      "Version": "2.3.0",
+      "Dependencies": [
+        {
+          "Item1": "Microsoft.AspNetCore.Http.Features",
+          "Item2": "[2.3.0, )"
+        },
+        {
+          "Item1": "Microsoft.Extensions.Configuration.Abstractions",
+          "Item2": "[8.0.0, )"
+        }
+      ]
+    },
+    "Microsoft.AspNetCore.Http.Abstractions": {
+      "Id": "Microsoft.AspNetCore.Http.Abstractions",
+      "Version": "2.3.0",
+      "Dependencies": [
+        {
+          "Item1": "Microsoft.AspNetCore.Http.Features",
+          "Item2": "[2.3.0, )"
+        },
+        {
+          "Item1": "System.Text.Encodings.Web",
+          "Item2": "[8.0.0, )"
+        }
+      ]
+    },
+    "Microsoft.AspNetCore.Http.Connections.Client": {
+      "Id": "Microsoft.AspNetCore.Http.Connections.Client",
+      "Version": "6.0.36",
+      "Dependencies": [
+        {
+          "Item1": "Microsoft.AspNetCore.Http.Connections.Common",
+          "Item2": "[6.0.36, )"
+        },
+        {
+          "Item1": "Microsoft.Extensions.Logging.Abstractions",
+          "Item2": "[6.0.4, )"
+        },
+        {
+          "Item1": "Microsoft.Extensions.Options",
+          "Item2": "[6.0.1, )"
+        }
+      ]
+    },
+    "Microsoft.AspNetCore.Http.Connections.Common": {
+      "Id": "Microsoft.AspNetCore.Http.Connections.Common",
+      "Version": "6.0.36",
+      "Dependencies": [
+        {
+          "Item1": "Microsoft.AspNetCore.Connections.Abstractions",
+          "Item2": "[6.0.36, )"
+        }
+      ]
+    },
+    "Microsoft.AspNetCore.Http.Extensions": {
+      "Id": "Microsoft.AspNetCore.Http.Extensions",
+      "Version": "2.3.0",
+      "Dependencies": [
+        {
+          "Item1": "Microsoft.Net.Http.Headers",
+          "Item2": "[2.3.0, )"
+        },
+        {
+          "Item1": "Microsoft.AspNetCore.Http.Abstractions",
+          "Item2": "[2.3.0, )"
+        },
+        {
+          "Item1": "Microsoft.Extensions.FileProviders.Abstractions",
+          "Item2": "[8.0.0, )"
+        },
+        {
+          "Item1": "System.Buffers",
+          "Item2": "[4.6.0, )"
+        }
+      ]
+    },
+    "Microsoft.AspNetCore.Http.Features": {
+      "Id": "Microsoft.AspNetCore.Http.Features",
+      "Version": "2.3.0",
+      "Dependencies": [
+        {
+          "Item1": "Microsoft.Extensions.Primitives",
+          "Item2": "[8.0.0, )"
+        }
+      ]
+    },
+    "Microsoft.AspNetCore.SignalR.Client": {
+      "Id": "Microsoft.AspNetCore.SignalR.Client",
+      "Version": "6.0.36",
+      "Dependencies": [
+        {
+          "Item1": "Microsoft.AspNetCore.SignalR.Client.Core",
+          "Item2": "[6.0.36, )"
+        },
+        {
+          "Item1": "Microsoft.AspNetCore.Http.Connections.Client",
+          "Item2": "[6.0.36, )"
+        }
+      ]
+    },
+    "Microsoft.AspNetCore.SignalR.Client.Core": {
+      "Id": "Microsoft.AspNetCore.SignalR.Client.Core",
+      "Version": "6.0.36",
+      "Dependencies": [
+        {
+          "Item1": "Microsoft.AspNetCore.SignalR.Protocols.Json",
+          "Item2": "[6.0.36, )"
+        },
+        {
+          "Item1": "Microsoft.AspNetCore.SignalR.Common",
+          "Item2": "[6.0.36, )"
+        },
+        {
+          "Item1": "Microsoft.Extensions.DependencyInjection",
+          "Item2": "[6.0.2, )"
+        },
+        {
+          "Item1": "Microsoft.Extensions.Logging",
+          "Item2": "[6.0.1, )"
+        },
+        {
+          "Item1": "System.Threading.Channels",
+          "Item2": "[6.0.0, )"
+        }
+      ]
+    },
+    "Microsoft.AspNetCore.SignalR.Common": {
+      "Id": "Microsoft.AspNetCore.SignalR.Common",
+      "Version": "6.0.36",
+      "Dependencies": [
+        {
+          "Item1": "Microsoft.AspNetCore.Connections.Abstractions",
+          "Item2": "[6.0.36, )"
+        },
+        {
+          "Item1": "Microsoft.Extensions.Options",
+          "Item2": "[6.0.1, )"
+        }
+      ]
+    },
+    "Microsoft.AspNetCore.SignalR.Protocols.Json": {
+      "Id": "Microsoft.AspNetCore.SignalR.Protocols.Json",
+      "Version": "6.0.36",
+      "Dependencies": [
+        {
+          "Item1": "Microsoft.AspNetCore.SignalR.Common",
+          "Item2": "[6.0.36, )"
+        }
+      ]
+    },
+    "Microsoft.AspNetCore.StaticFiles": {
+      "Id": "Microsoft.AspNetCore.StaticFiles",
+      "Version": "2.3.0",
+      "Dependencies": [
+        {
+          "Item1": "Microsoft.AspNetCore.Hosting.Abstractions",
+          "Item2": "[2.3.0, )"
+        },
+        {
+          "Item1": "Microsoft.AspNetCore.Http.Extensions",
+          "Item2": "[2.3.0, )"
+        },
+        {
+          "Item1": "Microsoft.Extensions.FileProviders.Abstractions",
+          "Item2": "[8.0.0, )"
+        },
+        {
+          "Item1": "Microsoft.Extensions.Logging.Abstractions",
+          "Item2": "[8.0.2, )"
+        },
+        {
+          "Item1": "Microsoft.Extensions.WebEncoders",
+          "Item2": "[8.0.11, )"
+        }
+      ]
+    },
+    "Microsoft.CodeAnalysis.Analyzers": {
+      "Id": "Microsoft.CodeAnalysis.Analyzers",
+      "Version": "3.3.3",
+      "Dependencies": []
+    },
+    "Microsoft.CodeAnalysis.Common": {
+      "Id": "Microsoft.CodeAnalysis.Common",
+      "Version": "4.5.0-2.22527.10",
+      "Dependencies": [
+        {
+          "Item1": "Microsoft.CodeAnalysis.Analyzers",
+          "Item2": "[3.3.3, )"
+        },
+        {
+          "Item1": "System.Collections.Immutable",
+          "Item2": "[6.0.0, )"
+        },
+        {
+          "Item1": "System.Memory",
+          "Item2": "[4.5.5, )"
+        },
+        {
+          "Item1": "System.Reflection.Metadata",
+          "Item2": "[5.0.0, )"
+        },
+        {
+          "Item1": "System.Runtime.CompilerServices.Unsafe",
+          "Item2": "[6.0.0, )"
+        },
+        {
+          "Item1": "System.Text.Encoding.CodePages",
+          "Item2": "[6.0.0, )"
+        },
+        {
+          "Item1": "System.Threading.Tasks.Extensions",
+          "Item2": "[4.5.4, )"
+        }
+      ]
+    },
+    "Microsoft.CodeAnalysis.CSharp": {
+      "Id": "Microsoft.CodeAnalysis.CSharp",
+      "Version": "4.5.0-2.22527.10",
+      "Dependencies": [
+        {
+          "Item1": "Microsoft.CodeAnalysis.Common",
+          "Item2": "[4.5.0-2.22527.10, 4.5.0-2.22527.10]"
+        }
+      ]
+    },
+    "Microsoft.CodeAnalysis.VisualBasic": {
+      "Id": "Microsoft.CodeAnalysis.VisualBasic",
+      "Version": "4.5.0-2.22527.10",
+      "Dependencies": [
+        {
+          "Item1": "Microsoft.CodeAnalysis.Common",
+          "Item2": "[4.5.0-2.22527.10, 4.5.0-2.22527.10]"
+        }
+      ]
+    },
+    "Microsoft.CSharp": {
+      "Id": "Microsoft.CSharp",
+      "Version": "4.7.0",
+      "Dependencies": []
+    },
+    "Microsoft.Extensions.Caching.Abstractions": {
+      "Id": "Microsoft.Extensions.Caching.Abstractions",
+      "Version": "9.0.3",
+      "Dependencies": [
+        {
+          "Item1": "Microsoft.Extensions.Primitives",
+          "Item2": "[9.0.3, )"
+        }
+      ]
+    },
+    "Microsoft.Extensions.Caching.Memory": {
+      "Id": "Microsoft.Extensions.Caching.Memory",
+      "Version": "9.0.3",
+      "Dependencies": [
+        {
+          "Item1": "Microsoft.Extensions.Caching.Abstractions",
+          "Item2": "[9.0.3, )"
+        },
+        {
+          "Item1": "Microsoft.Extensions.DependencyInjection.Abstractions",
+          "Item2": "[9.0.3, )"
+        },
+        {
+          "Item1": "Microsoft.Extensions.Logging.Abstractions",
+          "Item2": "[9.0.3, )"
+        },
+        {
+          "Item1": "Microsoft.Extensions.Options",
+          "Item2": "[9.0.3, )"
+        },
+        {
+          "Item1": "Microsoft.Extensions.Primitives",
+          "Item2": "[9.0.3, )"
+        }
+      ]
+    },
+    "Microsoft.Extensions.Configuration": {
+      "Id": "Microsoft.Extensions.Configuration",
+      "Version": "8.0.0",
+      "Dependencies": [
+        {
+          "Item1": "Microsoft.Extensions.Configuration.Abstractions",
+          "Item2": "[8.0.0, )"
+        },
+        {
+          "Item1": "Microsoft.Extensions.Primitives",
+          "Item2": "[8.0.0, )"
+        }
+      ]
+    },
+    "Microsoft.Extensions.Configuration.Abstractions": {
+      "Id": "Microsoft.Extensions.Configuration.Abstractions",
+      "Version": "8.0.0",
+      "Dependencies": [
+        {
+          "Item1": "Microsoft.Extensions.Primitives",
+          "Item2": "[8.0.0, )"
+        }
+      ]
+    },
+    "Microsoft.Extensions.Configuration.Binder": {
+      "Id": "Microsoft.Extensions.Configuration.Binder",
+      "Version": "8.0.0",
+      "Dependencies": [
+        {
+          "Item1": "Microsoft.Extensions.Configuration.Abstractions",
+          "Item2": "[8.0.0, )"
+        }
+      ]
+    },
+    "Microsoft.Extensions.DependencyInjection": {
+      "Id": "Microsoft.Extensions.DependencyInjection",
+      "Version": "8.0.1",
+      "Dependencies": [
+        {
+          "Item1": "Microsoft.Extensions.DependencyInjection.Abstractions",
+          "Item2": "[8.0.2, )"
+        }
+      ]
+    },
+    "Microsoft.Extensions.DependencyInjection.Abstractions": {
+      "Id": "Microsoft.Extensions.DependencyInjection.Abstractions",
+      "Version": "9.0.3",
+      "Dependencies": []
+    },
+    "Microsoft.Extensions.Diagnostics": {
+      "Id": "Microsoft.Extensions.Diagnostics",
+      "Version": "8.0.1",
+      "Dependencies": [
+        {
+          "Item1": "Microsoft.Extensions.Configuration",
+          "Item2": "[8.0.0, )"
+        },
+        {
+          "Item1": "Microsoft.Extensions.Diagnostics.Abstractions",
+          "Item2": "[8.0.1, )"
+        },
+        {
+          "Item1": "Microsoft.Extensions.Options.ConfigurationExtensions",
+          "Item2": "[8.0.0, )"
+        }
+      ]
+    },
+    "Microsoft.Extensions.Diagnostics.Abstractions": {
+      "Id": "Microsoft.Extensions.Diagnostics.Abstractions",
+      "Version": "8.0.1",
+      "Dependencies": [
+        {
+          "Item1": "Microsoft.Extensions.DependencyInjection.Abstractions",
+          "Item2": "[8.0.2, )"
+        },
+        {
+          "Item1": "Microsoft.Extensions.Options",
+          "Item2": "[8.0.2, )"
+        }
+      ]
+    },
+    "Microsoft.Extensions.Features": {
+      "Id": "Microsoft.Extensions.Features",
+      "Version": "6.0.36",
+      "Dependencies": []
+    },
+    "Microsoft.Extensions.FileProviders.Abstractions": {
+      "Id": "Microsoft.Extensions.FileProviders.Abstractions",
+      "Version": "8.0.0",
+      "Dependencies": [
+        {
+          "Item1": "Microsoft.Extensions.Primitives",
+          "Item2": "[8.0.0, )"
+        }
+      ]
+    },
+    "Microsoft.Extensions.Hosting.Abstractions": {
+      "Id": "Microsoft.Extensions.Hosting.Abstractions",
+      "Version": "8.0.1",
+      "Dependencies": [
+        {
+          "Item1": "Microsoft.Extensions.Configuration.Abstractions",
+          "Item2": "[8.0.0, )"
+        },
+        {
+          "Item1": "Microsoft.Extensions.DependencyInjection.Abstractions",
+          "Item2": "[8.0.2, )"
+        },
+        {
+          "Item1": "Microsoft.Extensions.Diagnostics.Abstractions",
+          "Item2": "[8.0.1, )"
+        },
+        {
+          "Item1": "Microsoft.Extensions.FileProviders.Abstractions",
+          "Item2": "[8.0.0, )"
+        },
+        {
+          "Item1": "Microsoft.Extensions.Logging.Abstractions",
+          "Item2": "[8.0.2, )"
+        }
+      ]
+    },
+    "Microsoft.Extensions.Http": {
+      "Id": "Microsoft.Extensions.Http",
+      "Version": "8.0.1",
+      "Dependencies": [
+        {
+          "Item1": "Microsoft.Extensions.Configuration.Abstractions",
+          "Item2": "[8.0.0, )"
+        },
+        {
+          "Item1": "Microsoft.Extensions.DependencyInjection.Abstractions",
+          "Item2": "[8.0.2, )"
+        },
+        {
+          "Item1": "Microsoft.Extensions.Diagnostics",
+          "Item2": "[8.0.1, )"
+        },
+        {
+          "Item1": "Microsoft.Extensions.Logging.Abstractions",
+          "Item2": "[8.0.2, )"
+        },
+        {
+          "Item1": "Microsoft.Extensions.Logging",
+          "Item2": "[8.0.1, )"
+        },
+        {
+          "Item1": "Microsoft.Extensions.Options",
+          "Item2": "[8.0.2, )"
+        }
+      ]
+    },
+    "Microsoft.Extensions.Http.Polly": {
+      "Id": "Microsoft.Extensions.Http.Polly",
+      "Version": "8.0.12",
+      "Dependencies": [
+        {
+          "Item1": "Microsoft.Extensions.Http",
+          "Item2": "[8.0.1, )"
+        },
+        {
+          "Item1": "Polly",
+          "Item2": "[7.2.4, )"
+        },
+        {
+          "Item1": "Polly.Extensions.Http",
+          "Item2": "[3.0.0, )"
+        }
+      ]
+    },
+    "Microsoft.Extensions.Logging": {
+      "Id": "Microsoft.Extensions.Logging",
+      "Version": "8.0.1",
+      "Dependencies": [
+        {
+          "Item1": "Microsoft.Extensions.DependencyInjection",
+          "Item2": "[8.0.1, )"
+        },
+        {
+          "Item1": "Microsoft.Extensions.Logging.Abstractions",
+          "Item2": "[8.0.2, )"
+        },
+        {
+          "Item1": "Microsoft.Extensions.Options",
+          "Item2": "[8.0.2, )"
+        }
+      ]
+    },
+    "Microsoft.Extensions.Logging.Abstractions": {
+      "Id": "Microsoft.Extensions.Logging.Abstractions",
+      "Version": "9.0.3",
+      "Dependencies": [
+        {
+          "Item1": "Microsoft.Extensions.DependencyInjection.Abstractions",
+          "Item2": "[9.0.3, )"
+        },
+        {
+          "Item1": "System.Diagnostics.DiagnosticSource",
+          "Item2": "[9.0.3, )"
+        }
+      ]
+    },
+    "Microsoft.Extensions.Options": {
+      "Id": "Microsoft.Extensions.Options",
+      "Version": "9.0.3",
+      "Dependencies": [
+        {
+          "Item1": "Microsoft.Extensions.DependencyInjection.Abstractions",
+          "Item2": "[9.0.3, )"
+        },
+        {
+          "Item1": "Microsoft.Extensions.Primitives",
+          "Item2": "[9.0.3, )"
+        }
+      ]
+    },
+    "Microsoft.Extensions.Options.ConfigurationExtensions": {
+      "Id": "Microsoft.Extensions.Options.ConfigurationExtensions",
+      "Version": "8.0.0",
+      "Dependencies": [
+        {
+          "Item1": "Microsoft.Extensions.Configuration.Abstractions",
+          "Item2": "[8.0.0, )"
+        },
+        {
+          "Item1": "Microsoft.Extensions.Configuration.Binder",
+          "Item2": "[8.0.0, )"
+        },
+        {
+          "Item1": "Microsoft.Extensions.DependencyInjection.Abstractions",
+          "Item2": "[8.0.0, )"
+        },
+        {
+          "Item1": "Microsoft.Extensions.Options",
+          "Item2": "[8.0.0, )"
+        },
+        {
+          "Item1": "Microsoft.Extensions.Primitives",
+          "Item2": "[8.0.0, )"
+        }
+      ]
+    },
+    "Microsoft.Extensions.Primitives": {
+      "Id": "Microsoft.Extensions.Primitives",
+      "Version": "9.0.3",
+      "Dependencies": []
+    },
+    "Microsoft.Extensions.WebEncoders": {
+      "Id": "Microsoft.Extensions.WebEncoders",
+      "Version": "8.0.11",
+      "Dependencies": [
+        {
+          "Item1": "Microsoft.Extensions.DependencyInjection.Abstractions",
+          "Item2": "[8.0.2, )"
+        },
+        {
+          "Item1": "Microsoft.Extensions.Options",
+          "Item2": "[8.0.2, )"
+        }
+      ]
+    },
+    "Microsoft.Net.Http.Headers": {
+      "Id": "Microsoft.Net.Http.Headers",
+      "Version": "2.3.0",
+      "Dependencies": [
+        {
+          "Item1": "Microsoft.Extensions.Primitives",
+          "Item2": "[8.0.0, )"
+        },
+        {
+          "Item1": "System.Buffers",
+          "Item2": "[4.6.0, )"
+        }
+      ]
+    },
+    "Microsoft.NETCore.Platforms": {
+      "Id": "Microsoft.NETCore.Platforms",
+      "Version": "2.0.0",
+      "Dependencies": []
+    },
+    "Microsoft.Rest.ClientRuntime": {
+      "Id": "Microsoft.Rest.ClientRuntime",
+      "Version": "2.3.24",
+      "Dependencies": [
+        {
+          "Item1": "Newtonsoft.Json",
+          "Item2": "[10.0.3, )"
+        }
+      ]
+    },
+    "Microsoft.VisualBasic": {
+      "Id": "Microsoft.VisualBasic",
+      "Version": "10.3.0",
+      "Dependencies": []
+    },
+    "Microsoft.Win32.SystemEvents": {
+      "Id": "Microsoft.Win32.SystemEvents",
+      "Version": "6.0.0",
+      "Dependencies": []
+    },
+    "net.adamec.lib.common.dmn.engine": {
+      "Id": "net.adamec.lib.common.dmn.engine",
+      "Version": "1.1.1",
+      "Dependencies": [
+        {
+          "Item1": "DynamicExpresso.Core",
+          "Item2": "[2.12.0, )"
+        },
+        {
+          "Item1": "NLog",
+          "Item2": "[4.7.15, )"
+        },
+        {
+          "Item1": "RadCommons.core",
+          "Item2": "[2.0.1, )"
+        }
+      ]
+    },
+    "Newtonsoft.Json": {
+      "Id": "Newtonsoft.Json",
+      "Version": "13.0.3",
+      "Dependencies": []
+    },
+    "Nito.AsyncEx": {
+      "Id": "Nito.AsyncEx",
+      "Version": "5.1.2",
+      "Dependencies": [
+        {
+          "Item1": "Nito.AsyncEx.Context",
+          "Item2": "[5.1.2, )"
+        },
+        {
+          "Item1": "Nito.AsyncEx.Coordination",
+          "Item2": "[5.1.2, )"
+        },
+        {
+          "Item1": "Nito.AsyncEx.Interop.WaitHandles",
+          "Item2": "[5.1.2, )"
+        },
+        {
+          "Item1": "Nito.AsyncEx.Oop",
+          "Item2": "[5.1.2, )"
+        },
+        {
+          "Item1": "Nito.AsyncEx.Tasks",
+          "Item2": "[5.1.2, )"
+        },
+        {
+          "Item1": "Nito.Cancellation",
+          "Item2": "[1.1.2, )"
+        }
+      ]
+    },
+    "Nito.AsyncEx.Context": {
+      "Id": "Nito.AsyncEx.Context",
+      "Version": "5.1.2",
+      "Dependencies": [
+        {
+          "Item1": "Nito.AsyncEx.Tasks",
+          "Item2": "[5.1.2, )"
+        }
+      ]
+    },
+    "Nito.AsyncEx.Coordination": {
+      "Id": "Nito.AsyncEx.Coordination",
+      "Version": "5.1.2",
+      "Dependencies": [
+        {
+          "Item1": "Nito.AsyncEx.Tasks",
+          "Item2": "[5.1.2, )"
+        },
+        {
+          "Item1": "Nito.Collections.Deque",
+          "Item2": "[1.1.1, )"
+        }
+      ]
+    },
+    "Nito.AsyncEx.Interop.WaitHandles": {
+      "Id": "Nito.AsyncEx.Interop.WaitHandles",
+      "Version": "5.1.2",
+      "Dependencies": [
+        {
+          "Item1": "Nito.AsyncEx.Tasks",
+          "Item2": "[5.1.2, )"
+        }
+      ]
+    },
+    "Nito.AsyncEx.Oop": {
+      "Id": "Nito.AsyncEx.Oop",
+      "Version": "5.1.2",
+      "Dependencies": [
+        {
+          "Item1": "Nito.AsyncEx.Coordination",
+          "Item2": "[5.1.2, )"
+        }
+      ]
+    },
+    "Nito.AsyncEx.Tasks": {
+      "Id": "Nito.AsyncEx.Tasks",
+      "Version": "5.1.2",
+      "Dependencies": [
+        {
+          "Item1": "Nito.Disposables",
+          "Item2": "[2.2.1, )"
+        }
+      ]
+    },
+    "Nito.Cancellation": {
+      "Id": "Nito.Cancellation",
+      "Version": "1.1.2",
+      "Dependencies": [
+        {
+          "Item1": "Nito.Disposables",
+          "Item2": "[2.2.1, )"
+        }
+      ]
+    },
+    "Nito.Collections.Deque": {
+      "Id": "Nito.Collections.Deque",
+      "Version": "1.1.1",
+      "Dependencies": []
+    },
+    "Nito.Disposables": {
+      "Id": "Nito.Disposables",
+      "Version": "2.2.1",
+      "Dependencies": [
+        {
+          "Item1": "System.Collections.Immutable",
+          "Item2": "[1.7.1, )"
+        }
+      ]
+    },
+    "NLog": {
+      "Id": "NLog",
+      "Version": "4.7.15",
+      "Dependencies": []
+    },
+    "Polly": {
+      "Id": "Polly",
+      "Version": "7.2.4",
+      "Dependencies": []
+    },
+    "Polly.Contrib.WaitAndRetry": {
+      "Id": "Polly.Contrib.WaitAndRetry",
+      "Version": "1.1.1",
+      "Dependencies": []
+    },
+    "Polly.Extensions.Http": {
+      "Id": "Polly.Extensions.Http",
+      "Version": "3.0.0",
+      "Dependencies": [
+        {
+          "Item1": "Polly",
+          "Item2": "[7.1.0, )"
+        }
+      ]
+    },
+    "RadCommons.core": {
+      "Id": "RadCommons.core",
+      "Version": "2.0.1",
+      "Dependencies": [
+        {
+          "Item1": "NLog",
+          "Item2": "[4.6.5, )"
+        },
+        {
+          "Item1": "Newtonsoft.Json",
+          "Item2": "[12.0.2, )"
+        }
+      ]
+    },
+    "SharpZipLib": {
+      "Id": "SharpZipLib",
+      "Version": "1.4.2",
+      "Dependencies": []
+    },
+    "System.Activities.ViewModels": {
+      "Id": "System.Activities.ViewModels",
+      "Version": "1.20260514.1",
+      "Dependencies": []
+    },
+    "System.Buffers": {
+      "Id": "System.Buffers",
+      "Version": "4.6.0",
+      "Dependencies": []
+    },
+    "System.Collections.Immutable": {
+      "Id": "System.Collections.Immutable",
+      "Version": "6.0.0",
+      "Dependencies": [
+        {
+          "Item1": "System.Runtime.CompilerServices.Unsafe",
+          "Item2": "[6.0.0, )"
+        }
+      ]
+    },
+    "System.Configuration.ConfigurationManager": {
+      "Id": "System.Configuration.ConfigurationManager",
+      "Version": "6.0.0",
+      "Dependencies": [
+        {
+          "Item1": "System.Security.Cryptography.ProtectedData",
+          "Item2": "[6.0.0, )"
+        },
+        {
+          "Item1": "System.Security.Permissions",
+          "Item2": "[6.0.0, )"
+        }
+      ]
+    },
+    "System.Diagnostics.DiagnosticSource": {
+      "Id": "System.Diagnostics.DiagnosticSource",
+      "Version": "9.0.3",
+      "Dependencies": []
+    },
+    "System.Drawing.Common": {
+      "Id": "System.Drawing.Common",
+      "Version": "6.0.0",
+      "Dependencies": [
+        {
+          "Item1": "Microsoft.Win32.SystemEvents",
+          "Item2": "[6.0.0, )"
+        }
+      ]
+    },
+    "System.IO.Abstractions": {
+      "Id": "System.IO.Abstractions",
+      "Version": "3.0.10",
+      "Dependencies": [
+        {
+          "Item1": "System.IO.FileSystem.AccessControl",
+          "Item2": "[4.5.0, )"
+        }
+      ]
+    },
+    "System.IO.FileSystem.AccessControl": {
+      "Id": "System.IO.FileSystem.AccessControl",
+      "Version": "4.5.0",
+      "Dependencies": [
+        {
+          "Item1": "System.Security.AccessControl",
+          "Item2": "[4.5.0, )"
+        },
+        {
+          "Item1": "System.Security.Principal.Windows",
+          "Item2": "[4.5.0, )"
+        }
+      ]
+    },
+    "System.IO.Pipelines": {
+      "Id": "System.IO.Pipelines",
+      "Version": "6.0.3",
+      "Dependencies": []
+    },
+    "System.Memory": {
+      "Id": "System.Memory",
+      "Version": "4.5.5",
+      "Dependencies": []
+    },
+    "System.Reflection.Metadata": {
+      "Id": "System.Reflection.Metadata",
+      "Version": "5.0.0",
+      "Dependencies": []
+    },
+    "System.Runtime.Caching": {
+      "Id": "System.Runtime.Caching",
+      "Version": "6.0.0",
+      "Dependencies": [
+        {
+          "Item1": "System.Configuration.ConfigurationManager",
+          "Item2": "[6.0.0, )"
+        }
+      ]
+    },
+    "System.Runtime.CompilerServices.Unsafe": {
+      "Id": "System.Runtime.CompilerServices.Unsafe",
+      "Version": "6.0.0",
+      "Dependencies": []
+    },
+    "System.Security.AccessControl": {
+      "Id": "System.Security.AccessControl",
+      "Version": "6.0.0",
+      "Dependencies": []
+    },
+    "System.Security.Cryptography.ProtectedData": {
+      "Id": "System.Security.Cryptography.ProtectedData",
+      "Version": "6.0.0",
+      "Dependencies": []
+    },
+    "System.Security.Permissions": {
+      "Id": "System.Security.Permissions",
+      "Version": "6.0.0",
+      "Dependencies": [
+        {
+          "Item1": "System.Security.AccessControl",
+          "Item2": "[6.0.0, )"
+        },
+        {
+          "Item1": "System.Windows.Extensions",
+          "Item2": "[6.0.0, )"
+        }
+      ]
+    },
+    "System.Security.Principal.Windows": {
+      "Id": "System.Security.Principal.Windows",
+      "Version": "4.5.0",
+      "Dependencies": [
+        {
+          "Item1": "Microsoft.NETCore.Platforms",
+          "Item2": "[2.0.0, )"
+        }
+      ]
+    },
+    "System.Text.Encoding.CodePages": {
+      "Id": "System.Text.Encoding.CodePages",
+      "Version": "6.0.0",
+      "Dependencies": [
+        {
+          "Item1": "System.Runtime.CompilerServices.Unsafe",
+          "Item2": "[6.0.0, )"
+        }
+      ]
+    },
+    "System.Text.Encodings.Web": {
+      "Id": "System.Text.Encodings.Web",
+      "Version": "8.0.0",
+      "Dependencies": []
+    },
+    "System.Threading.Channels": {
+      "Id": "System.Threading.Channels",
+      "Version": "6.0.0",
+      "Dependencies": []
+    },
+    "System.Threading.Tasks.Dataflow": {
+      "Id": "System.Threading.Tasks.Dataflow",
+      "Version": "8.0.0",
+      "Dependencies": []
+    },
+    "System.Threading.Tasks.Extensions": {
+      "Id": "System.Threading.Tasks.Extensions",
+      "Version": "4.5.4",
+      "Dependencies": []
+    },
+    "System.ValueTuple": {
+      "Id": "System.ValueTuple",
+      "Version": "4.5.0",
+      "Dependencies": []
+    },
+    "System.Windows.Extensions": {
+      "Id": "System.Windows.Extensions",
+      "Version": "6.0.0",
+      "Dependencies": [
+        {
+          "Item1": "System.Drawing.Common",
+          "Item2": "[6.0.0, )"
+        }
+      ]
+    },
+    "UiPath.CodedWorkflows": {
+      "Id": "UiPath.CodedWorkflows",
+      "Version": "24.10.2",
+      "Dependencies": [
+        {
+          "Item1": "Microsoft.Extensions.DependencyInjection",
+          "Item2": "[6.0.0, )"
+        },
+        {
+          "Item1": "Microsoft.Extensions.DependencyInjection.Abstractions",
+          "Item2": "[6.0.0, )"
+        },
+        {
+          "Item1": "Newtonsoft.Json",
+          "Item2": "[13.0.1, )"
+        },
+        {
+          "Item1": "System.IO.Abstractions",
+          "Item2": "[3.0.10, )"
+        },
+        {
+          "Item1": "System.ValueTuple",
+          "Item2": "[4.5.0, )"
+        }
+      ]
+    },
+    "UiPath.ConnectionClient": {
+      "Id": "UiPath.ConnectionClient",
+      "Version": "2.0.15",
+      "Dependencies": [
+        {
+          "Item1": "Newtonsoft.Json",
+          "Item2": "[13.0.3, )"
+        },
+        {
+          "Item1": "System.Runtime.Caching",
+          "Item2": "[6.0.0, )"
+        }
+      ]
+    },
+    "UiPath.ErrorInfo": {
+      "Id": "UiPath.ErrorInfo",
+      "Version": "25.10.2",
+      "Dependencies": [
+        {
+          "Item1": "Newtonsoft.Json",
+          "Item2": "[13.0.3, )"
+        },
+        {
+          "Item1": "System.Diagnostics.DiagnosticSource",
+          "Item2": "[8.0.1, )"
+        }
+      ]
+    },
+    "UiPath.IntegrationService.Activities": {
+      "Id": "UiPath.IntegrationService.Activities",
+      "Version": "1.29.0",
+      "Dependencies": [
+        {
+          "Item1": "Microsoft.Extensions.DependencyInjection",
+          "Item2": "[8.0.1, )"
+        },
+        {
+          "Item1": "Microsoft.Extensions.Http",
+          "Item2": "[8.0.1, )"
+        },
+        {
+          "Item1": "Microsoft.Extensions.Http.Polly",
+          "Item2": "[8.0.12, )"
+        },
+        {
+          "Item1": "Nito.AsyncEx.Coordination",
+          "Item2": "[5.1.2, )"
+        },
+        {
+          "Item1": "Polly.Contrib.WaitAndRetry",
+          "Item2": "[1.1.1, )"
+        },
+        {
+          "Item1": "System.Activities.ViewModels",
+          "Item2": "[1.0.0-20250925.3, )"
+        },
+        {
+          "Item1": "UiPath.CodedWorkflows",
+          "Item2": "[24.10.2, )"
+        },
+        {
+          "Item1": "UiPath.ConnectionClient",
+          "Item2": "[2.0.15, )"
+        },
+        {
+          "Item1": "UiPath.IntegrationService.Client",
+          "Item2": "[1.2.0, )"
+        },
+        {
+          "Item1": "UiPath.Platform",
+          "Item2": "[25.12.0, )"
+        },
+        {
+          "Item1": "UiPath.Telemetry.Client",
+          "Item2": "[2.6.1, )"
+        }
+      ]
+    },
+    "UiPath.IntegrationService.Adapters": {
+      "Id": "UiPath.IntegrationService.Adapters",
+      "Version": "1.2.0",
+      "Dependencies": [
+        {
+          "Item1": "Microsoft.AspNetCore.StaticFiles",
+          "Item2": "[2.3.0, )"
+        },
+        {
+          "Item1": "UiPath.Platform",
+          "Item2": "[24.12.2, )"
+        }
+      ]
+    },
+    "UiPath.IntegrationService.Client": {
+      "Id": "UiPath.IntegrationService.Client",
+      "Version": "1.2.0",
+      "Dependencies": [
+        {
+          "Item1": "UiPath.IntegrationService.Adapters",
+          "Item2": "[1.2.0, )"
+        },
+        {
+          "Item1": "Microsoft.Extensions.Http.Polly",
+          "Item2": "[8.0.12, )"
+        },
+        {
+          "Item1": "Newtonsoft.Json",
+          "Item2": "[13.0.3, )"
+        },
+        {
+          "Item1": "Polly.Contrib.WaitAndRetry",
+          "Item2": "[1.1.1, )"
+        }
+      ]
+    },
+    "UiPath.OpenTelemetry.Contracts": {
+      "Id": "UiPath.OpenTelemetry.Contracts",
+      "Version": "2.9.1",
+      "Dependencies": [
+        {
+          "Item1": "System.Diagnostics.DiagnosticSource",
+          "Item2": "[6.0.0, )"
+        }
+      ]
+    },
+    "UiPath.Platform": {
+      "Id": "UiPath.Platform",
+      "Version": "26.4.0",
+      "Dependencies": [
+        {
+          "Item1": "Newtonsoft.Json",
+          "Item2": "[13.0.1, )"
+        },
+        {
+          "Item1": "Nito.AsyncEx",
+          "Item2": "[5.1.2, )"
+        },
+        {
+          "Item1": "System.IO.Abstractions",
+          "Item2": "[3.0.10, )"
+        },
+        {
+          "Item1": "System.Threading.Tasks.Dataflow",
+          "Item2": "[6.0.0, )"
+        },
+        {
+          "Item1": "System.ValueTuple",
+          "Item2": "[4.5.0, )"
+        }
+      ]
+    },
+    "UiPath.Plugin.Activities.Tracing": {
+      "Id": "UiPath.Plugin.Activities.Tracing",
+      "Version": "0.6.3",
+      "Dependencies": []
+    },
+    "UiPath.System.Activities": {
+      "Id": "UiPath.System.Activities",
+      "Version": "26.6.1",
+      "Dependencies": [
+        {
+          "Item1": "UiPath.System.Activities.Runtime",
+          "Item2": "[26.6.1, )"
+        },
+        {
+          "Item1": "CsvHelper",
+          "Item2": "[33.0.1, )"
+        },
+        {
+          "Item1": "Microsoft.AspNet.SignalR.Client",
+          "Item2": "[2.4.3, )"
+        },
+        {
+          "Item1": "Microsoft.AspNetCore.SignalR.Client",
+          "Item2": "[6.0.36, )"
+        },
+        {
+          "Item1": "Microsoft.CSharp",
+          "Item2": "[4.7.0, )"
+        },
+        {
+          "Item1": "Microsoft.CodeAnalysis.CSharp",
+          "Item2": "[4.5.0-2.22527.10, )"
+        },
+        {
+          "Item1": "Microsoft.CodeAnalysis.Common",
+          "Item2": "[4.5.0-2.22527.10, )"
+        },
+        {
+          "Item1": "Microsoft.CodeAnalysis.VisualBasic",
+          "Item2": "[4.5.0-2.22527.10, )"
+        },
+        {
+          "Item1": "Microsoft.Extensions.Caching.Abstractions",
+          "Item2": "[9.0.3, )"
+        },
+        {
+          "Item1": "Microsoft.Extensions.Caching.Memory",
+          "Item2": "[9.0.3, )"
+        },
+        {
+          "Item1": "Microsoft.Rest.ClientRuntime",
+          "Item2": "[2.3.24, )"
+        },
+        {
+          "Item1": "Microsoft.VisualBasic",
+          "Item2": "[10.3.0, )"
+        },
+        {
+          "Item1": "SharpZipLib",
+          "Item2": "[1.4.2, )"
+        },
+        {
+          "Item1": "System.Activities.ViewModels",
+          "Item2": "[1.20260514.1, )"
+        },
+        {
+          "Item1": "UiPath.CodedWorkflows",
+          "Item2": "[24.10.1, )"
+        },
+        {
+          "Item1": "UiPath.ErrorInfo",
+          "Item2": "[25.10.2, )"
+        },
+        {
+          "Item1": "UiPath.Platform",
+          "Item2": "[26.4.0, )"
+        },
+        {
+          "Item1": "UiPath.Plugin.Activities.Tracing",
+          "Item2": "[0.6.3, )"
+        },
+        {
+          "Item1": "UiPath.Telemetry.Client",
+          "Item2": "[2.9.1, )"
+        },
+        {
+          "Item1": "net.adamec.lib.common.dmn.engine",
+          "Item2": "[1.1.1, )"
+        }
+      ]
+    },
+    "UiPath.System.Activities.Runtime": {
+      "Id": "UiPath.System.Activities.Runtime",
+      "Version": "26.6.1",
+      "Dependencies": [
+        {
+          "Item1": "UiPath.System.Activities.Runtime.Portable",
+          "Item2": "[26.6.1, )"
+        }
+      ]
+    },
+    "UiPath.System.Activities.Runtime.Portable": {
+      "Id": "UiPath.System.Activities.Runtime.Portable",
+      "Version": "26.6.1",
+      "Dependencies": [
+        {
+          "Item1": "CsvHelper",
+          "Item2": "[33.0.1, )"
+        },
+        {
+          "Item1": "Microsoft.AspNet.SignalR.Client",
+          "Item2": "[2.4.3, )"
+        },
+        {
+          "Item1": "Microsoft.AspNetCore.SignalR.Client",
+          "Item2": "[6.0.36, )"
+        },
+        {
+          "Item1": "Microsoft.CSharp",
+          "Item2": "[4.7.0, )"
+        },
+        {
+          "Item1": "Microsoft.CodeAnalysis.CSharp",
+          "Item2": "[4.5.0-2.22527.10, )"
+        },
+        {
+          "Item1": "Microsoft.CodeAnalysis.Common",
+          "Item2": "[4.5.0-2.22527.10, )"
+        },
+        {
+          "Item1": "Microsoft.CodeAnalysis.VisualBasic",
+          "Item2": "[4.5.0-2.22527.10, )"
+        },
+        {
+          "Item1": "Microsoft.Extensions.Caching.Abstractions",
+          "Item2": "[9.0.3, )"
+        },
+        {
+          "Item1": "Microsoft.Extensions.Caching.Memory",
+          "Item2": "[9.0.3, )"
+        },
+        {
+          "Item1": "Microsoft.Rest.ClientRuntime",
+          "Item2": "[2.3.24, )"
+        },
+        {
+          "Item1": "Microsoft.VisualBasic",
+          "Item2": "[10.3.0, )"
+        },
+        {
+          "Item1": "SharpZipLib",
+          "Item2": "[1.4.2, )"
+        },
+        {
+          "Item1": "UiPath.CodedWorkflows",
+          "Item2": "[24.10.1, )"
+        },
+        {
+          "Item1": "UiPath.ErrorInfo",
+          "Item2": "[25.10.2, )"
+        },
+        {
+          "Item1": "UiPath.Platform",
+          "Item2": "[26.4.0, )"
+        },
+        {
+          "Item1": "UiPath.Plugin.Activities.Tracing",
+          "Item2": "[0.6.3, )"
+        },
+        {
+          "Item1": "UiPath.Telemetry.Client",
+          "Item2": "[2.9.1, )"
+        },
+        {
+          "Item1": "net.adamec.lib.common.dmn.engine",
+          "Item2": "[1.1.1, )"
+        }
+      ]
+    },
+    "UiPath.Telemetry.Client": {
+      "Id": "UiPath.Telemetry.Client",
+      "Version": "2.9.1",
+      "Dependencies": [
+        {
+          "Item1": "UiPath.OpenTelemetry.Contracts",
+          "Item2": "[2.9.1, )"
+        },
+        {
+          "Item1": "Newtonsoft.Json",
+          "Item2": "[13.0.1, )"
+        },
+        {
+          "Item1": "System.Threading.Tasks.Dataflow",
+          "Item2": "[8.0.0, )"
+        },
+        {
+          "Item1": "System.ValueTuple",
+          "Item2": "[4.5.0, )"
+        }
+      ]
+    }
+  },
+  "AllPackages": [
+    {
+      "Package": {
+        "Id": "CsvHelper",
+        "Version": "33.0.1"
+      },
+      "Assemblies": [
+        "/home/azureuser/.nuget/packages/csvhelper/33.0.1/lib/net8.0/CsvHelper.dll"
+      ],
+      "Path": "/home/azureuser/.nuget/packages/csvhelper/33.0.1"
+    },
+    {
+      "Package": {
+        "Id": "DynamicExpresso.Core",
+        "Version": "2.12.0"
+      },
+      "Assemblies": [
+        "/home/azureuser/.nuget/packages/dynamicexpresso.core/2.12.0/lib/netstandard2.0/DynamicExpresso.Core.dll"
+      ],
+      "Path": "/home/azureuser/.nuget/packages/dynamicexpresso.core/2.12.0"
+    },
+    {
+      "Package": {
+        "Id": "Microsoft.AspNet.SignalR.Client",
+        "Version": "2.4.3"
+      },
+      "Assemblies": [
+        "/home/azureuser/.nuget/packages/microsoft.aspnet.signalr.client/2.4.3/lib/netstandard2.0/Microsoft.AspNet.SignalR.Client.dll"
+      ],
+      "Path": "/home/azureuser/.nuget/packages/microsoft.aspnet.signalr.client/2.4.3"
+    },
+    {
+      "Package": {
+        "Id": "Microsoft.AspNetCore.Connections.Abstractions",
+        "Version": "6.0.36"
+      },
+      "Assemblies": [
+        "/home/azureuser/.nuget/packages/microsoft.aspnetcore.connections.abstractions/6.0.36/lib/net6.0/Microsoft.AspNetCore.Connections.Abstractions.dll"
+      ],
+      "Path": "/home/azureuser/.nuget/packages/microsoft.aspnetcore.connections.abstractions/6.0.36"
+    },
+    {
+      "Package": {
+        "Id": "Microsoft.AspNetCore.Hosting.Abstractions",
+        "Version": "2.3.0"
+      },
+      "Assemblies": [
+        "/home/azureuser/.nuget/packages/microsoft.aspnetcore.hosting.abstractions/2.3.0/lib/netstandard2.0/Microsoft.AspNetCore.Hosting.Abstractions.dll"
+      ],
+      "Path": "/home/azureuser/.nuget/packages/microsoft.aspnetcore.hosting.abstractions/2.3.0"
+    },
+    {
+      "Package": {
+        "Id": "Microsoft.AspNetCore.Hosting.Server.Abstractions",
+        "Version": "2.3.0"
+      },
+      "Assemblies": [
+        "/home/azureuser/.nuget/packages/microsoft.aspnetcore.hosting.server.abstractions/2.3.0/lib/netstandard2.0/Microsoft.AspNetCore.Hosting.Server.Abstractions.dll"
+      ],
+      "Path": "/home/azureuser/.nuget/packages/microsoft.aspnetcore.hosting.server.abstractions/2.3.0"
+    },
+    {
+      "Package": {
+        "Id": "Microsoft.AspNetCore.Http.Abstractions",
+        "Version": "2.3.0"
+      },
+      "Assemblies": [
+        "/home/azureuser/.nuget/packages/microsoft.aspnetcore.http.abstractions/2.3.0/lib/netstandard2.0/Microsoft.AspNetCore.Http.Abstractions.dll"
+      ],
+      "Path": "/home/azureuser/.nuget/packages/microsoft.aspnetcore.http.abstractions/2.3.0"
+    },
+    {
+      "Package": {
+        "Id": "Microsoft.AspNetCore.Http.Connections.Client",
+        "Version": "6.0.36"
+      },
+      "Assemblies": [
+        "/home/azureuser/.nuget/packages/microsoft.aspnetcore.http.connections.client/6.0.36/lib/net6.0/Microsoft.AspNetCore.Http.Connections.Client.dll"
+      ],
+      "Path": "/home/azureuser/.nuget/packages/microsoft.aspnetcore.http.connections.client/6.0.36"
+    },
+    {
+      "Package": {
+        "Id": "Microsoft.AspNetCore.Http.Connections.Common",
+        "Version": "6.0.36"
+      },
+      "Assemblies": [
+        "/home/azureuser/.nuget/packages/microsoft.aspnetcore.http.connections.common/6.0.36/lib/net6.0/Microsoft.AspNetCore.Http.Connections.Common.dll"
+      ],
+      "Path": "/home/azureuser/.nuget/packages/microsoft.aspnetcore.http.connections.common/6.0.36"
+    },
+    {
+      "Package": {
+        "Id": "Microsoft.AspNetCore.Http.Extensions",
+        "Version": "2.3.0"
+      },
+      "Assemblies": [
+        "/home/azureuser/.nuget/packages/microsoft.aspnetcore.http.extensions/2.3.0/lib/netstandard2.0/Microsoft.AspNetCore.Http.Extensions.dll"
+      ],
+      "Path": "/home/azureuser/.nuget/packages/microsoft.aspnetcore.http.extensions/2.3.0"
+    },
+    {
+      "Package": {
+        "Id": "Microsoft.AspNetCore.Http.Features",
+        "Version": "2.3.0"
+      },
+      "Assemblies": [
+        "/home/azureuser/.nuget/packages/microsoft.aspnetcore.http.features/2.3.0/lib/netstandard2.0/Microsoft.AspNetCore.Http.Features.dll"
+      ],
+      "Path": "/home/azureuser/.nuget/packages/microsoft.aspnetcore.http.features/2.3.0"
+    },
+    {
+      "Package": {
+        "Id": "Microsoft.AspNetCore.SignalR.Client",
+        "Version": "6.0.36"
+      },
+      "Assemblies": [
+        "/home/azureuser/.nuget/packages/microsoft.aspnetcore.signalr.client/6.0.36/lib/net6.0/Microsoft.AspNetCore.SignalR.Client.dll"
+      ],
+      "Path": "/home/azureuser/.nuget/packages/microsoft.aspnetcore.signalr.client/6.0.36"
+    },
+    {
+      "Package": {
+        "Id": "Microsoft.AspNetCore.SignalR.Client.Core",
+        "Version": "6.0.36"
+      },
+      "Assemblies": [
+        "/home/azureuser/.nuget/packages/microsoft.aspnetcore.signalr.client.core/6.0.36/lib/net6.0/Microsoft.AspNetCore.SignalR.Client.Core.dll"
+      ],
+      "Path": "/home/azureuser/.nuget/packages/microsoft.aspnetcore.signalr.client.core/6.0.36"
+    },
+    {
+      "Package": {
+        "Id": "Microsoft.AspNetCore.SignalR.Common",
+        "Version": "6.0.36"
+      },
+      "Assemblies": [
+        "/home/azureuser/.nuget/packages/microsoft.aspnetcore.signalr.common/6.0.36/lib/net6.0/Microsoft.AspNetCore.SignalR.Common.dll"
+      ],
+      "Path": "/home/azureuser/.nuget/packages/microsoft.aspnetcore.signalr.common/6.0.36"
+    },
+    {
+      "Package": {
+        "Id": "Microsoft.AspNetCore.SignalR.Protocols.Json",
+        "Version": "6.0.36"
+      },
+      "Assemblies": [
+        "/home/azureuser/.nuget/packages/microsoft.aspnetcore.signalr.protocols.json/6.0.36/lib/net6.0/Microsoft.AspNetCore.SignalR.Protocols.Json.dll"
+      ],
+      "Path": "/home/azureuser/.nuget/packages/microsoft.aspnetcore.signalr.protocols.json/6.0.36"
+    },
+    {
+      "Package": {
+        "Id": "Microsoft.AspNetCore.StaticFiles",
+        "Version": "2.3.0"
+      },
+      "Assemblies": [
+        "/home/azureuser/.nuget/packages/microsoft.aspnetcore.staticfiles/2.3.0/lib/netstandard2.0/Microsoft.AspNetCore.StaticFiles.dll"
+      ],
+      "Path": "/home/azureuser/.nuget/packages/microsoft.aspnetcore.staticfiles/2.3.0"
+    },
+    {
+      "Package": {
+        "Id": "Microsoft.CodeAnalysis.Analyzers",
+        "Version": "3.3.3"
+      },
+      "Assemblies": [],
+      "Path": "/home/azureuser/.nuget/packages/microsoft.codeanalysis.analyzers/3.3.3"
+    },
+    {
+      "Package": {
+        "Id": "Microsoft.CodeAnalysis.Common",
+        "Version": "4.5.0-2.22527.10"
+      },
+      "Assemblies": [
+        "/home/azureuser/.nuget/packages/microsoft.codeanalysis.common/4.5.0-2.22527.10/lib/netcoreapp3.1/Microsoft.CodeAnalysis.dll"
+      ],
+      "Path": "/home/azureuser/.nuget/packages/microsoft.codeanalysis.common/4.5.0-2.22527.10"
+    },
+    {
+      "Package": {
+        "Id": "Microsoft.CodeAnalysis.CSharp",
+        "Version": "4.5.0-2.22527.10"
+      },
+      "Assemblies": [
+        "/home/azureuser/.nuget/packages/microsoft.codeanalysis.csharp/4.5.0-2.22527.10/lib/netcoreapp3.1/Microsoft.CodeAnalysis.CSharp.dll"
+      ],
+      "Path": "/home/azureuser/.nuget/packages/microsoft.codeanalysis.csharp/4.5.0-2.22527.10"
+    },
+    {
+      "Package": {
+        "Id": "Microsoft.CodeAnalysis.VisualBasic",
+        "Version": "4.5.0-2.22527.10"
+      },
+      "Assemblies": [
+        "/home/azureuser/.nuget/packages/microsoft.codeanalysis.visualbasic/4.5.0-2.22527.10/lib/netcoreapp3.1/Microsoft.CodeAnalysis.VisualBasic.dll"
+      ],
+      "Path": "/home/azureuser/.nuget/packages/microsoft.codeanalysis.visualbasic/4.5.0-2.22527.10"
+    },
+    {
+      "Package": {
+        "Id": "Microsoft.CSharp",
+        "Version": "4.7.0"
+      },
+      "Assemblies": [
+        "/home/azureuser/.nuget/packages/microsoft.csharp/4.7.0/lib/netcoreapp2.0/_._"
+      ],
+      "Path": "/home/azureuser/.nuget/packages/microsoft.csharp/4.7.0"
+    },
+    {
+      "Package": {
+        "Id": "Microsoft.Extensions.Caching.Abstractions",
+        "Version": "9.0.3"
+      },
+      "Assemblies": [
+        "/home/azureuser/.nuget/packages/microsoft.extensions.caching.abstractions/9.0.3/lib/net8.0/Microsoft.Extensions.Caching.Abstractions.dll"
+      ],
+      "Path": "/home/azureuser/.nuget/packages/microsoft.extensions.caching.abstractions/9.0.3"
+    },
+    {
+      "Package": {
+        "Id": "Microsoft.Extensions.Caching.Memory",
+        "Version": "9.0.3"
+      },
+      "Assemblies": [
+        "/home/azureuser/.nuget/packages/microsoft.extensions.caching.memory/9.0.3/lib/net8.0/Microsoft.Extensions.Caching.Memory.dll"
+      ],
+      "Path": "/home/azureuser/.nuget/packages/microsoft.extensions.caching.memory/9.0.3"
+    },
+    {
+      "Package": {
+        "Id": "Microsoft.Extensions.Configuration",
+        "Version": "8.0.0"
+      },
+      "Assemblies": [
+        "/home/azureuser/.nuget/packages/microsoft.extensions.configuration/8.0.0/lib/net8.0/Microsoft.Extensions.Configuration.dll"
+      ],
+      "Path": "/home/azureuser/.nuget/packages/microsoft.extensions.configuration/8.0.0"
+    },
+    {
+      "Package": {
+        "Id": "Microsoft.Extensions.Configuration.Abstractions",
+        "Version": "8.0.0"
+      },
+      "Assemblies": [
+        "/home/azureuser/.nuget/packages/microsoft.extensions.configuration.abstractions/8.0.0/lib/net8.0/Microsoft.Extensions.Configuration.Abstractions.dll"
+      ],
+      "Path": "/home/azureuser/.nuget/packages/microsoft.extensions.configuration.abstractions/8.0.0"
+    },
+    {
+      "Package": {
+        "Id": "Microsoft.Extensions.Configuration.Binder",
+        "Version": "8.0.0"
+      },
+      "Assemblies": [
+        "/home/azureuser/.nuget/packages/microsoft.extensions.configuration.binder/8.0.0/lib/net8.0/Microsoft.Extensions.Configuration.Binder.dll"
+      ],
+      "Path": "/home/azureuser/.nuget/packages/microsoft.extensions.configuration.binder/8.0.0"
+    },
+    {
+      "Package": {
+        "Id": "Microsoft.Extensions.DependencyInjection",
+        "Version": "8.0.1"
+      },
+      "Assemblies": [
+        "/home/azureuser/.nuget/packages/microsoft.extensions.dependencyinjection/8.0.1/lib/net8.0/Microsoft.Extensions.DependencyInjection.dll"
+      ],
+      "Path": "/home/azureuser/.nuget/packages/microsoft.extensions.dependencyinjection/8.0.1"
+    },
+    {
+      "Package": {
+        "Id": "Microsoft.Extensions.DependencyInjection.Abstractions",
+        "Version": "9.0.3"
+      },
+      "Assemblies": [
+        "/home/azureuser/.nuget/packages/microsoft.extensions.dependencyinjection.abstractions/9.0.3/lib/net8.0/Microsoft.Extensions.DependencyInjection.Abstractions.dll"
+      ],
+      "Path": "/home/azureuser/.nuget/packages/microsoft.extensions.dependencyinjection.abstractions/9.0.3"
+    },
+    {
+      "Package": {
+        "Id": "Microsoft.Extensions.Diagnostics",
+        "Version": "8.0.1"
+      },
+      "Assemblies": [
+        "/home/azureuser/.nuget/packages/microsoft.extensions.diagnostics/8.0.1/lib/net8.0/Microsoft.Extensions.Diagnostics.dll"
+      ],
+      "Path": "/home/azureuser/.nuget/packages/microsoft.extensions.diagnostics/8.0.1"
+    },
+    {
+      "Package": {
+        "Id": "Microsoft.Extensions.Diagnostics.Abstractions",
+        "Version": "8.0.1"
+      },
+      "Assemblies": [
+        "/home/azureuser/.nuget/packages/microsoft.extensions.diagnostics.abstractions/8.0.1/lib/net8.0/Microsoft.Extensions.Diagnostics.Abstractions.dll"
+      ],
+      "Path": "/home/azureuser/.nuget/packages/microsoft.extensions.diagnostics.abstractions/8.0.1"
+    },
+    {
+      "Package": {
+        "Id": "Microsoft.Extensions.Features",
+        "Version": "6.0.36"
+      },
+      "Assemblies": [
+        "/home/azureuser/.nuget/packages/microsoft.extensions.features/6.0.36/lib/net6.0/Microsoft.Extensions.Features.dll"
+      ],
+      "Path": "/home/azureuser/.nuget/packages/microsoft.extensions.features/6.0.36"
+    },
+    {
+      "Package": {
+        "Id": "Microsoft.Extensions.FileProviders.Abstractions",
+        "Version": "8.0.0"
+      },
+      "Assemblies": [
+        "/home/azureuser/.nuget/packages/microsoft.extensions.fileproviders.abstractions/8.0.0/lib/net8.0/Microsoft.Extensions.FileProviders.Abstractions.dll"
+      ],
+      "Path": "/home/azureuser/.nuget/packages/microsoft.extensions.fileproviders.abstractions/8.0.0"
+    },
+    {
+      "Package": {
+        "Id": "Microsoft.Extensions.Hosting.Abstractions",
+        "Version": "8.0.1"
+      },
+      "Assemblies": [
+        "/home/azureuser/.nuget/packages/microsoft.extensions.hosting.abstractions/8.0.1/lib/net8.0/Microsoft.Extensions.Hosting.Abstractions.dll"
+      ],
+      "Path": "/home/azureuser/.nuget/packages/microsoft.extensions.hosting.abstractions/8.0.1"
+    },
+    {
+      "Package": {
+        "Id": "Microsoft.Extensions.Http",
+        "Version": "8.0.1"
+      },
+      "Assemblies": [
+        "/home/azureuser/.nuget/packages/microsoft.extensions.http/8.0.1/lib/net8.0/Microsoft.Extensions.Http.dll"
+      ],
+      "Path": "/home/azureuser/.nuget/packages/microsoft.extensions.http/8.0.1"
+    },
+    {
+      "Package": {
+        "Id": "Microsoft.Extensions.Http.Polly",
+        "Version": "8.0.12"
+      },
+      "Assemblies": [
+        "/home/azureuser/.nuget/packages/microsoft.extensions.http.polly/8.0.12/lib/netstandard2.0/Microsoft.Extensions.Http.Polly.dll"
+      ],
+      "Path": "/home/azureuser/.nuget/packages/microsoft.extensions.http.polly/8.0.12"
+    },
+    {
+      "Package": {
+        "Id": "Microsoft.Extensions.Logging",
+        "Version": "8.0.1"
+      },
+      "Assemblies": [
+        "/home/azureuser/.nuget/packages/microsoft.extensions.logging/8.0.1/lib/net8.0/Microsoft.Extensions.Logging.dll"
+      ],
+      "Path": "/home/azureuser/.nuget/packages/microsoft.extensions.logging/8.0.1"
+    },
+    {
+      "Package": {
+        "Id": "Microsoft.Extensions.Logging.Abstractions",
+        "Version": "9.0.3"
+      },
+      "Assemblies": [
+        "/home/azureuser/.nuget/packages/microsoft.extensions.logging.abstractions/9.0.3/lib/net8.0/Microsoft.Extensions.Logging.Abstractions.dll"
+      ],
+      "Path": "/home/azureuser/.nuget/packages/microsoft.extensions.logging.abstractions/9.0.3"
+    },
+    {
+      "Package": {
+        "Id": "Microsoft.Extensions.Options",
+        "Version": "9.0.3"
+      },
+      "Assemblies": [
+        "/home/azureuser/.nuget/packages/microsoft.extensions.options/9.0.3/lib/net8.0/Microsoft.Extensions.Options.dll"
+      ],
+      "Path": "/home/azureuser/.nuget/packages/microsoft.extensions.options/9.0.3"
+    },
+    {
+      "Package": {
+        "Id": "Microsoft.Extensions.Options.ConfigurationExtensions",
+        "Version": "8.0.0"
+      },
+      "Assemblies": [
+        "/home/azureuser/.nuget/packages/microsoft.extensions.options.configurationextensions/8.0.0/lib/net8.0/Microsoft.Extensions.Options.ConfigurationExtensions.dll"
+      ],
+      "Path": "/home/azureuser/.nuget/packages/microsoft.extensions.options.configurationextensions/8.0.0"
+    },
+    {
+      "Package": {
+        "Id": "Microsoft.Extensions.Primitives",
+        "Version": "9.0.3"
+      },
+      "Assemblies": [
+        "/home/azureuser/.nuget/packages/microsoft.extensions.primitives/9.0.3/lib/net8.0/Microsoft.Extensions.Primitives.dll"
+      ],
+      "Path": "/home/azureuser/.nuget/packages/microsoft.extensions.primitives/9.0.3"
+    },
+    {
+      "Package": {
+        "Id": "Microsoft.Extensions.WebEncoders",
+        "Version": "8.0.11"
+      },
+      "Assemblies": [
+        "/home/azureuser/.nuget/packages/microsoft.extensions.webencoders/8.0.11/lib/net8.0/Microsoft.Extensions.WebEncoders.dll"
+      ],
+      "Path": "/home/azureuser/.nuget/packages/microsoft.extensions.webencoders/8.0.11"
+    },
+    {
+      "Package": {
+        "Id": "Microsoft.Net.Http.Headers",
+        "Version": "2.3.0"
+      },
+      "Assemblies": [
+        "/home/azureuser/.nuget/packages/microsoft.net.http.headers/2.3.0/lib/netstandard2.0/Microsoft.Net.Http.Headers.dll"
+      ],
+      "Path": "/home/azureuser/.nuget/packages/microsoft.net.http.headers/2.3.0"
+    },
+    {
+      "Package": {
+        "Id": "Microsoft.NETCore.Platforms",
+        "Version": "2.0.0"
+      },
+      "Assemblies": [
+        "/home/azureuser/.nuget/packages/microsoft.netcore.platforms/2.0.0/lib/netstandard1.0/_._"
+      ],
+      "Path": "/home/azureuser/.nuget/packages/microsoft.netcore.platforms/2.0.0"
+    },
+    {
+      "Package": {
+        "Id": "Microsoft.Rest.ClientRuntime",
+        "Version": "2.3.24"
+      },
+      "Assemblies": [
+        "/home/azureuser/.nuget/packages/microsoft.rest.clientruntime/2.3.24/lib/netstandard2.0/Microsoft.Rest.ClientRuntime.dll"
+      ],
+      "Path": "/home/azureuser/.nuget/packages/microsoft.rest.clientruntime/2.3.24"
+    },
+    {
+      "Package": {
+        "Id": "Microsoft.VisualBasic",
+        "Version": "10.3.0"
+      },
+      "Assemblies": [
+        "/home/azureuser/.nuget/packages/microsoft.visualbasic/10.3.0/lib/netcoreapp2.0/_._"
+      ],
+      "Path": "/home/azureuser/.nuget/packages/microsoft.visualbasic/10.3.0"
+    },
+    {
+      "Package": {
+        "Id": "Microsoft.Win32.SystemEvents",
+        "Version": "6.0.0"
+      },
+      "Assemblies": [
+        "/home/azureuser/.nuget/packages/microsoft.win32.systemevents/6.0.0/lib/net6.0/Microsoft.Win32.SystemEvents.dll"
+      ],
+      "Path": "/home/azureuser/.nuget/packages/microsoft.win32.systemevents/6.0.0"
+    },
+    {
+      "Package": {
+        "Id": "net.adamec.lib.common.dmn.engine",
+        "Version": "1.1.1"
+      },
+      "Assemblies": [
+        "/home/azureuser/.nuget/packages/net.adamec.lib.common.dmn.engine/1.1.1/lib/netstandard2.0/net.adamec.lib.common.dmn.engine.dll"
+      ],
+      "Path": "/home/azureuser/.nuget/packages/net.adamec.lib.common.dmn.engine/1.1.1"
+    },
+    {
+      "Package": {
+        "Id": "Newtonsoft.Json",
+        "Version": "13.0.3"
+      },
+      "Assemblies": [
+        "/home/azureuser/.nuget/packages/newtonsoft.json/13.0.3/lib/net6.0/Newtonsoft.Json.dll"
+      ],
+      "Path": "/home/azureuser/.nuget/packages/newtonsoft.json/13.0.3"
+    },
+    {
+      "Package": {
+        "Id": "Nito.AsyncEx",
+        "Version": "5.1.2"
+      },
+      "Assemblies": [],
+      "Path": "/home/azureuser/.nuget/packages/nito.asyncex/5.1.2"
+    },
+    {
+      "Package": {
+        "Id": "Nito.AsyncEx.Context",
+        "Version": "5.1.2"
+      },
+      "Assemblies": [
+        "/home/azureuser/.nuget/packages/nito.asyncex.context/5.1.2/lib/netstandard2.0/Nito.AsyncEx.Context.dll"
+      ],
+      "Path": "/home/azureuser/.nuget/packages/nito.asyncex.context/5.1.2"
+    },
+    {
+      "Package": {
+        "Id": "Nito.AsyncEx.Coordination",
+        "Version": "5.1.2"
+      },
+      "Assemblies": [
+        "/home/azureuser/.nuget/packages/nito.asyncex.coordination/5.1.2/lib/netstandard2.0/Nito.AsyncEx.Coordination.dll"
+      ],
+      "Path": "/home/azureuser/.nuget/packages/nito.asyncex.coordination/5.1.2"
+    },
+    {
+      "Package": {
+        "Id": "Nito.AsyncEx.Interop.WaitHandles",
+        "Version": "5.1.2"
+      },
+      "Assemblies": [
+        "/home/azureuser/.nuget/packages/nito.asyncex.interop.waithandles/5.1.2/lib/netstandard2.0/Nito.AsyncEx.Interop.WaitHandles.dll"
+      ],
+      "Path": "/home/azureuser/.nuget/packages/nito.asyncex.interop.waithandles/5.1.2"
+    },
+    {
+      "Package": {
+        "Id": "Nito.AsyncEx.Oop",
+        "Version": "5.1.2"
+      },
+      "Assemblies": [
+        "/home/azureuser/.nuget/packages/nito.asyncex.oop/5.1.2/lib/netstandard2.0/Nito.AsyncEx.Oop.dll"
+      ],
+      "Path": "/home/azureuser/.nuget/packages/nito.asyncex.oop/5.1.2"
+    },
+    {
+      "Package": {
+        "Id": "Nito.AsyncEx.Tasks",
+        "Version": "5.1.2"
+      },
+      "Assemblies": [
+        "/home/azureuser/.nuget/packages/nito.asyncex.tasks/5.1.2/lib/netstandard2.0/Nito.AsyncEx.Tasks.dll"
+      ],
+      "Path": "/home/azureuser/.nuget/packages/nito.asyncex.tasks/5.1.2"
+    },
+    {
+      "Package": {
+        "Id": "Nito.Cancellation",
+        "Version": "1.1.2"
+      },
+      "Assemblies": [
+        "/home/azureuser/.nuget/packages/nito.cancellation/1.1.2/lib/netstandard2.0/Nito.Cancellation.dll"
+      ],
+      "Path": "/home/azureuser/.nuget/packages/nito.cancellation/1.1.2"
+    },
+    {
+      "Package": {
+        "Id": "Nito.Collections.Deque",
+        "Version": "1.1.1"
+      },
+      "Assemblies": [
+        "/home/azureuser/.nuget/packages/nito.collections.deque/1.1.1/lib/netstandard2.0/Nito.Collections.Deque.dll"
+      ],
+      "Path": "/home/azureuser/.nuget/packages/nito.collections.deque/1.1.1"
+    },
+    {
+      "Package": {
+        "Id": "Nito.Disposables",
+        "Version": "2.2.1"
+      },
+      "Assemblies": [
+        "/home/azureuser/.nuget/packages/nito.disposables/2.2.1/lib/netstandard2.1/Nito.Disposables.dll"
+      ],
+      "Path": "/home/azureuser/.nuget/packages/nito.disposables/2.2.1"
+    },
+    {
+      "Package": {
+        "Id": "NLog",
+        "Version": "4.7.15"
+      },
+      "Assemblies": [
+        "/home/azureuser/.nuget/packages/nlog/4.7.15/lib/netstandard2.0/NLog.dll"
+      ],
+      "Path": "/home/azureuser/.nuget/packages/nlog/4.7.15"
+    },
+    {
+      "Package": {
+        "Id": "Polly",
+        "Version": "7.2.4"
+      },
+      "Assemblies": [
+        "/home/azureuser/.nuget/packages/polly/7.2.4/lib/netstandard2.0/Polly.dll"
+      ],
+      "Path": "/home/azureuser/.nuget/packages/polly/7.2.4"
+    },
+    {
+      "Package": {
+        "Id": "Polly.Contrib.WaitAndRetry",
+        "Version": "1.1.1"
+      },
+      "Assemblies": [
+        "/home/azureuser/.nuget/packages/polly.contrib.waitandretry/1.1.1/lib/netstandard2.0/Polly.Contrib.WaitAndRetry.dll"
+      ],
+      "Path": "/home/azureuser/.nuget/packages/polly.contrib.waitandretry/1.1.1"
+    },
+    {
+      "Package": {
+        "Id": "Polly.Extensions.Http",
+        "Version": "3.0.0"
+      },
+      "Assemblies": [
+        "/home/azureuser/.nuget/packages/polly.extensions.http/3.0.0/lib/netstandard2.0/Polly.Extensions.Http.dll"
+      ],
+      "Path": "/home/azureuser/.nuget/packages/polly.extensions.http/3.0.0"
+    },
+    {
+      "Package": {
+        "Id": "RadCommons.core",
+        "Version": "2.0.1"
+      },
+      "Assemblies": [
+        "/home/azureuser/.nuget/packages/radcommons.core/2.0.1/lib/netstandard2.0/net.adamec.lib.common.core.dll"
+      ],
+      "Path": "/home/azureuser/.nuget/packages/radcommons.core/2.0.1"
+    },
+    {
+      "Package": {
+        "Id": "SharpZipLib",
+        "Version": "1.4.2"
+      },
+      "Assemblies": [
+        "/home/azureuser/.nuget/packages/sharpziplib/1.4.2/lib/net6.0/ICSharpCode.SharpZipLib.dll"
+      ],
+      "Path": "/home/azureuser/.nuget/packages/sharpziplib/1.4.2"
+    },
+    {
+      "Package": {
+        "Id": "System.Activities.ViewModels",
+        "Version": "1.20260514.1"
+      },
+      "Assemblies": [
+        "/home/azureuser/.nuget/packages/system.activities.viewmodels/1.20260514.1/lib/net6.0/System.Activities.ViewModels.dll"
+      ],
+      "Path": "/home/azureuser/.nuget/packages/system.activities.viewmodels/1.20260514.1"
+    },
+    {
+      "Package": {
+        "Id": "System.Buffers",
+        "Version": "4.6.0"
+      },
+      "Assemblies": [
+        "/home/azureuser/.nuget/packages/system.buffers/4.6.0/lib/netcoreapp2.1/_._"
+      ],
+      "Path": "/home/azureuser/.nuget/packages/system.buffers/4.6.0"
+    },
+    {
+      "Package": {
+        "Id": "System.Collections.Immutable",
+        "Version": "6.0.0"
+      },
+      "Assemblies": [
+        "/home/azureuser/.nuget/packages/system.collections.immutable/6.0.0/lib/net6.0/System.Collections.Immutable.dll"
+      ],
+      "Path": "/home/azureuser/.nuget/packages/system.collections.immutable/6.0.0"
+    },
+    {
+      "Package": {
+        "Id": "System.Configuration.ConfigurationManager",
+        "Version": "6.0.0"
+      },
+      "Assemblies": [
+        "/home/azureuser/.nuget/packages/system.configuration.configurationmanager/6.0.0/lib/net6.0/System.Configuration.ConfigurationManager.dll"
+      ],
+      "Path": "/home/azureuser/.nuget/packages/system.configuration.configurationmanager/6.0.0"
+    },
+    {
+      "Package": {
+        "Id": "System.Diagnostics.DiagnosticSource",
+        "Version": "9.0.3"
+      },
+      "Assemblies": [
+        "/home/azureuser/.nuget/packages/system.diagnostics.diagnosticsource/9.0.3/lib/net8.0/System.Diagnostics.DiagnosticSource.dll"
+      ],
+      "Path": "/home/azureuser/.nuget/packages/system.diagnostics.diagnosticsource/9.0.3"
+    },
+    {
+      "Package": {
+        "Id": "System.Drawing.Common",
+        "Version": "6.0.0"
+      },
+      "Assemblies": [
+        "/home/azureuser/.nuget/packages/system.drawing.common/6.0.0/runtimes/unix/lib/net6.0/System.Drawing.Common.dll"
+      ],
+      "Path": "/home/azureuser/.nuget/packages/system.drawing.common/6.0.0"
+    },
+    {
+      "Package": {
+        "Id": "System.IO.Abstractions",
+        "Version": "3.0.10"
+      },
+      "Assemblies": [
+        "/home/azureuser/.nuget/packages/system.io.abstractions/3.0.10/lib/netstandard2.0/System.IO.Abstractions.dll"
+      ],
+      "Path": "/home/azureuser/.nuget/packages/system.io.abstractions/3.0.10"
+    },
+    {
+      "Package": {
+        "Id": "System.IO.FileSystem.AccessControl",
+        "Version": "4.5.0"
+      },
+      "Assemblies": [
+        "/home/azureuser/.nuget/packages/system.io.filesystem.accesscontrol/4.5.0/lib/netstandard2.0/System.IO.FileSystem.AccessControl.dll"
+      ],
+      "Path": "/home/azureuser/.nuget/packages/system.io.filesystem.accesscontrol/4.5.0"
+    },
+    {
+      "Package": {
+        "Id": "System.IO.Pipelines",
+        "Version": "6.0.3"
+      },
+      "Assemblies": [
+        "/home/azureuser/.nuget/packages/system.io.pipelines/6.0.3/lib/net6.0/System.IO.Pipelines.dll"
+      ],
+      "Path": "/home/azureuser/.nuget/packages/system.io.pipelines/6.0.3"
+    },
+    {
+      "Package": {
+        "Id": "System.Memory",
+        "Version": "4.5.5"
+      },
+      "Assemblies": [
+        "/home/azureuser/.nuget/packages/system.memory/4.5.5/lib/netcoreapp2.1/_._"
+      ],
+      "Path": "/home/azureuser/.nuget/packages/system.memory/4.5.5"
+    },
+    {
+      "Package": {
+        "Id": "System.Reflection.Metadata",
+        "Version": "5.0.0"
+      },
+      "Assemblies": [
+        "/home/azureuser/.nuget/packages/system.reflection.metadata/5.0.0/lib/netstandard2.0/System.Reflection.Metadata.dll"
+      ],
+      "Path": "/home/azureuser/.nuget/packages/system.reflection.metadata/5.0.0"
+    },
+    {
+      "Package": {
+        "Id": "System.Runtime.Caching",
+        "Version": "6.0.0"
+      },
+      "Assemblies": [
+        "/home/azureuser/.nuget/packages/system.runtime.caching/6.0.0/lib/net6.0/System.Runtime.Caching.dll"
+      ],
+      "Path": "/home/azureuser/.nuget/packages/system.runtime.caching/6.0.0"
+    },
+    {
+      "Package": {
+        "Id": "System.Runtime.CompilerServices.Unsafe",
+        "Version": "6.0.0"
+      },
+      "Assemblies": [
+        "/home/azureuser/.nuget/packages/system.runtime.compilerservices.unsafe/6.0.0/lib/net6.0/System.Runtime.CompilerServices.Unsafe.dll"
+      ],
+      "Path": "/home/azureuser/.nuget/packages/system.runtime.compilerservices.unsafe/6.0.0"
+    },
+    {
+      "Package": {
+        "Id": "System.Security.AccessControl",
+        "Version": "6.0.0"
+      },
+      "Assemblies": [
+        "/home/azureuser/.nuget/packages/system.security.accesscontrol/6.0.0/lib/net6.0/System.Security.AccessControl.dll"
+      ],
+      "Path": "/home/azureuser/.nuget/packages/system.security.accesscontrol/6.0.0"
+    },
+    {
+      "Package": {
+        "Id": "System.Security.Cryptography.ProtectedData",
+        "Version": "6.0.0"
+      },
+      "Assemblies": [
+        "/home/azureuser/.nuget/packages/system.security.cryptography.protecteddata/6.0.0/lib/net6.0/System.Security.Cryptography.ProtectedData.dll"
+      ],
+      "Path": "/home/azureuser/.nuget/packages/system.security.cryptography.protecteddata/6.0.0"
+    },
+    {
+      "Package": {
+        "Id": "System.Security.Permissions",
+        "Version": "6.0.0"
+      },
+      "Assemblies": [
+        "/home/azureuser/.nuget/packages/system.security.permissions/6.0.0/lib/net6.0/System.Security.Permissions.dll"
+      ],
+      "Path": "/home/azureuser/.nuget/packages/system.security.permissions/6.0.0"
+    },
+    {
+      "Package": {
+        "Id": "System.Security.Principal.Windows",
+        "Version": "4.5.0"
+      },
+      "Assemblies": [
+        "/home/azureuser/.nuget/packages/system.security.principal.windows/4.5.0/runtimes/unix/lib/netcoreapp2.0/System.Security.Principal.Windows.dll"
+      ],
+      "Path": "/home/azureuser/.nuget/packages/system.security.principal.windows/4.5.0"
+    },
+    {
+      "Package": {
+        "Id": "System.Text.Encoding.CodePages",
+        "Version": "6.0.0"
+      },
+      "Assemblies": [
+        "/home/azureuser/.nuget/packages/system.text.encoding.codepages/6.0.0/lib/net6.0/System.Text.Encoding.CodePages.dll"
+      ],
+      "Path": "/home/azureuser/.nuget/packages/system.text.encoding.codepages/6.0.0"
+    },
+    {
+      "Package": {
+        "Id": "System.Text.Encodings.Web",
+        "Version": "8.0.0"
+      },
+      "Assemblies": [
+        "/home/azureuser/.nuget/packages/system.text.encodings.web/8.0.0/lib/net8.0/System.Text.Encodings.Web.dll"
+      ],
+      "Path": "/home/azureuser/.nuget/packages/system.text.encodings.web/8.0.0"
+    },
+    {
+      "Package": {
+        "Id": "System.Threading.Channels",
+        "Version": "6.0.0"
+      },
+      "Assemblies": [
+        "/home/azureuser/.nuget/packages/system.threading.channels/6.0.0/lib/net6.0/System.Threading.Channels.dll"
+      ],
+      "Path": "/home/azureuser/.nuget/packages/system.threading.channels/6.0.0"
+    },
+    {
+      "Package": {
+        "Id": "System.Threading.Tasks.Dataflow",
+        "Version": "8.0.0"
+      },
+      "Assemblies": [
+        "/home/azureuser/.nuget/packages/system.threading.tasks.dataflow/8.0.0/lib/net8.0/System.Threading.Tasks.Dataflow.dll"
+      ],
+      "Path": "/home/azureuser/.nuget/packages/system.threading.tasks.dataflow/8.0.0"
+    },
+    {
+      "Package": {
+        "Id": "System.Threading.Tasks.Extensions",
+        "Version": "4.5.4"
+      },
+      "Assemblies": [
+        "/home/azureuser/.nuget/packages/system.threading.tasks.extensions/4.5.4/lib/netcoreapp2.1/_._"
+      ],
+      "Path": "/home/azureuser/.nuget/packages/system.threading.tasks.extensions/4.5.4"
+    },
+    {
+      "Package": {
+        "Id": "System.ValueTuple",
+        "Version": "4.5.0"
+      },
+      "Assemblies": [
+        "/home/azureuser/.nuget/packages/system.valuetuple/4.5.0/lib/netcoreapp2.0/_._"
+      ],
+      "Path": "/home/azureuser/.nuget/packages/system.valuetuple/4.5.0"
+    },
+    {
+      "Package": {
+        "Id": "System.Windows.Extensions",
+        "Version": "6.0.0"
+      },
+      "Assemblies": [
+        "/home/azureuser/.nuget/packages/system.windows.extensions/6.0.0/lib/net6.0/System.Windows.Extensions.dll"
+      ],
+      "Path": "/home/azureuser/.nuget/packages/system.windows.extensions/6.0.0"
+    },
+    {
+      "Package": {
+        "Id": "UiPath.CodedWorkflows",
+        "Version": "24.10.2"
+      },
+      "Assemblies": [
+        "/home/azureuser/.nuget/packages/uipath.codedworkflows/24.10.2/lib/net6.0/UiPath.CodedWorkflows.dll"
+      ],
+      "Path": "/home/azureuser/.nuget/packages/uipath.codedworkflows/24.10.2"
+    },
+    {
+      "Package": {
+        "Id": "UiPath.ConnectionClient",
+        "Version": "2.0.15"
+      },
+      "Assemblies": [
+        "/home/azureuser/.nuget/packages/uipath.connectionclient/2.0.15/lib/net6.0/ConnectionClient.dll"
+      ],
+      "Path": "/home/azureuser/.nuget/packages/uipath.connectionclient/2.0.15"
+    },
+    {
+      "Package": {
+        "Id": "UiPath.ErrorInfo",
+        "Version": "25.10.2"
+      },
+      "Assemblies": [
+        "/home/azureuser/.nuget/packages/uipath.errorinfo/25.10.2/lib/net8.0/UiPath.ErrorInfo.dll"
+      ],
+      "Path": "/home/azureuser/.nuget/packages/uipath.errorinfo/25.10.2"
+    },
+    {
+      "Package": {
+        "Id": "UiPath.IntegrationService.Activities",
+        "Version": "1.29.0"
+      },
+      "Assemblies": [
+        "/home/azureuser/.nuget/packages/uipath.integrationservice.activities/1.29.0/lib/net8.0/UiPath.IntegrationService.Activities.Runtime.dll",
+        "/home/azureuser/.nuget/packages/uipath.integrationservice.activities/1.29.0/lib/net8.0/UiPath.IntegrationService.Activities.dll"
+      ],
+      "Path": "/home/azureuser/.nuget/packages/uipath.integrationservice.activities/1.29.0"
+    },
+    {
+      "Package": {
+        "Id": "UiPath.IntegrationService.Adapters",
+        "Version": "1.2.0"
+      },
+      "Assemblies": [
+        "/home/azureuser/.nuget/packages/uipath.integrationservice.adapters/1.2.0/lib/net8.0/UiPath.IntegrationService.Adapters.dll"
+      ],
+      "Path": "/home/azureuser/.nuget/packages/uipath.integrationservice.adapters/1.2.0"
+    },
+    {
+      "Package": {
+        "Id": "UiPath.IntegrationService.Client",
+        "Version": "1.2.0"
+      },
+      "Assemblies": [
+        "/home/azureuser/.nuget/packages/uipath.integrationservice.client/1.2.0/lib/net8.0/UiPath.IntegrationService.Client.dll"
+      ],
+      "Path": "/home/azureuser/.nuget/packages/uipath.integrationservice.client/1.2.0"
+    },
+    {
+      "Package": {
+        "Id": "UiPath.OpenTelemetry.Contracts",
+        "Version": "2.9.1"
+      },
+      "Assemblies": [
+        "/home/azureuser/.nuget/packages/uipath.opentelemetry.contracts/2.9.1/lib/netstandard2.0/UiPath.OpenTelemetry.Contracts.dll"
+      ],
+      "Path": "/home/azureuser/.nuget/packages/uipath.opentelemetry.contracts/2.9.1"
+    },
+    {
+      "Package": {
+        "Id": "UiPath.Platform",
+        "Version": "26.4.0"
+      },
+      "Assemblies": [
+        "/home/azureuser/.nuget/packages/uipath.platform/26.4.0/lib/net6.0/UiPath.Platform.dll"
+      ],
+      "Path": "/home/azureuser/.nuget/packages/uipath.platform/26.4.0"
+    },
+    {
+      "Package": {
+        "Id": "UiPath.Plugin.Activities.Tracing",
+        "Version": "0.6.3"
+      },
+      "Assemblies": [
+        "/home/azureuser/.nuget/packages/uipath.plugin.activities.tracing/0.6.3/lib/net8.0/UiPath.Plugin.Activities.Tracing.dll"
+      ],
+      "Path": "/home/azureuser/.nuget/packages/uipath.plugin.activities.tracing/0.6.3"
+    },
+    {
+      "Package": {
+        "Id": "UiPath.System.Activities",
+        "Version": "26.6.1"
+      },
+      "Assemblies": [
+        "/home/azureuser/.nuget/packages/uipath.system.activities/26.6.1/lib/net6.0/UiPath.System.Activities.Rules.dll",
+        "/home/azureuser/.nuget/packages/uipath.system.activities/26.6.1/lib/net6.0/UiPath.System.Activities.ViewModels.dll"
+      ],
+      "Path": "/home/azureuser/.nuget/packages/uipath.system.activities/26.6.1"
+    },
+    {
+      "Package": {
+        "Id": "UiPath.System.Activities.Runtime",
+        "Version": "26.6.1"
+      },
+      "Assemblies": [
+        "/home/azureuser/.nuget/packages/uipath.system.activities.runtime/26.6.1/lib/net6.0/UiPath.System.Activities.Package.Runtime.dll"
+      ],
+      "Path": "/home/azureuser/.nuget/packages/uipath.system.activities.runtime/26.6.1"
+    },
+    {
+      "Package": {
+        "Id": "UiPath.System.Activities.Runtime.Portable",
+        "Version": "26.6.1"
+      },
+      "Assemblies": [
+        "/home/azureuser/.nuget/packages/uipath.system.activities.runtime.portable/26.6.1/lib/net6.0/UiPath.OrchestratorClient.dll",
+        "/home/azureuser/.nuget/packages/uipath.system.activities.runtime.portable/26.6.1/lib/net6.0/UiPath.ServiceClients.dll",
+        "/home/azureuser/.nuget/packages/uipath.system.activities.runtime.portable/26.6.1/lib/net6.0/UiPath.System.Activities.Api.dll",
+        "/home/azureuser/.nuget/packages/uipath.system.activities.runtime.portable/26.6.1/lib/net6.0/UiPath.System.Activities.dll"
+      ],
+      "Path": "/home/azureuser/.nuget/packages/uipath.system.activities.runtime.portable/26.6.1"
+    },
+    {
+      "Package": {
+        "Id": "UiPath.Telemetry.Client",
+        "Version": "2.9.1"
+      },
+      "Assemblies": [
+        "/home/azureuser/.nuget/packages/uipath.telemetry.client/2.9.1/lib/netstandard2.0/TelemetryClient.dll"
+      ],
+      "Path": "/home/azureuser/.nuget/packages/uipath.telemetry.client/2.9.1"
+    }
+  ]
+}

@@ -1,0 +1,28 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "is-sandboxes",
+    "kind": "connection",
+    "type": "uipath-salesforce-slack",
+    "apiVersion": "integrationservice.uipath.com/v1",
+    "isOverridable": true,
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "connectorName": "Slack",
+      "name": "is-sandboxes",
+      "authenticationType": "AuthenticateAfterDeployment",
+      "connectorVersion": "2.14.7",
+      "connectorKey": "uipath-salesforce-slack",
+      "pollingInterval": 5
+    },
+    "locks": [],
+    "key": "849e85d8-1aa9-4d52-8bbd-20041c8f05d8",
+    "files": []
+  }
+}

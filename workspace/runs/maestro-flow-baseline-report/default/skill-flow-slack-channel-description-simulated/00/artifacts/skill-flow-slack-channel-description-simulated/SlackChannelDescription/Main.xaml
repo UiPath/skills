@@ -1,0 +1,189 @@
+<Activity mc:Ignorable="sap sap2010" x:Class="Main"
+  mva:VisualBasic.Settings="{x:Null}"
+  xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities"
+  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+  xmlns:mva="clr-namespace:Microsoft.VisualBasic.Activities;assembly=System.Activities"
+  xmlns:njl="clr-namespace:Newtonsoft.Json.Linq;assembly=Newtonsoft.Json"
+  xmlns:sap="http://schemas.microsoft.com/netfx/2009/xaml/activities/presentation"
+  xmlns:sap2010="http://schemas.microsoft.com/netfx/2010/xaml/activities/presentation"
+  xmlns:scg="clr-namespace:System.Collections.Generic;assembly=mscorlib"
+  xmlns:sco="clr-namespace:System.Collections.ObjectModel;assembly=mscorlib"
+  xmlns:ui="http://schemas.uipath.com/workflow/activities"
+  xmlns:uwah="clr-namespace:UiPath.Web.Activities.Http;assembly=UiPath.Web.Activities"
+  xmlns:uwahm="clr-namespace:UiPath.Web.Activities.Http.Models;assembly=UiPath.Web.Activities"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+  <x:Members>
+    <x:Property Name="in_SlackBotToken" Type="InArgument(x:String)" />
+    <x:Property Name="in_ChannelId" Type="InArgument(x:String)" />
+    <x:Property Name="out_ChannelDescription" Type="OutArgument(x:String)" />
+  </x:Members>
+
+  <TextExpression.NamespacesForImplementation>
+    <sco:Collection x:TypeArguments="x:String">
+      <x:String>System.Activities</x:String>
+      <x:String>System.Activities.Statements</x:String>
+      <x:String>System.Activities.Expressions</x:String>
+      <x:String>System.Activities.Validation</x:String>
+      <x:String>System.Activities.XamlIntegration</x:String>
+      <x:String>Microsoft.VisualBasic</x:String>
+      <x:String>Microsoft.VisualBasic.Activities</x:String>
+      <x:String>System</x:String>
+      <x:String>System.Collections</x:String>
+      <x:String>System.Collections.Generic</x:String>
+      <x:String>System.Collections.ObjectModel</x:String>
+      <x:String>System.Data</x:String>
+      <x:String>System.Diagnostics</x:String>
+      <x:String>System.IO</x:String>
+      <x:String>System.Linq</x:String>
+      <x:String>System.Xml</x:String>
+      <x:String>System.Xml.Linq</x:String>
+      <x:String>UiPath.Core</x:String>
+      <x:String>UiPath.Core.Activities</x:String>
+      <x:String>UiPath.Web.Activities</x:String>
+      <x:String>UiPath.Web.Activities.Http</x:String>
+      <x:String>UiPath.Web.Activities.Http.Models</x:String>
+      <x:String>Newtonsoft.Json.Linq</x:String>
+    </sco:Collection>
+  </TextExpression.NamespacesForImplementation>
+
+  <TextExpression.ReferencesForImplementation>
+    <sco:Collection x:TypeArguments="AssemblyReference">
+      <AssemblyReference>System.Activities</AssemblyReference>
+      <AssemblyReference>Microsoft.VisualBasic</AssemblyReference>
+      <AssemblyReference>System.Private.CoreLib</AssemblyReference>
+      <AssemblyReference>mscorlib</AssemblyReference>
+      <AssemblyReference>System.Data</AssemblyReference>
+      <AssemblyReference>System.Data.Common</AssemblyReference>
+      <AssemblyReference>System</AssemblyReference>
+      <AssemblyReference>System.Linq</AssemblyReference>
+      <AssemblyReference>System.Core</AssemblyReference>
+      <AssemblyReference>System.Xml</AssemblyReference>
+      <AssemblyReference>System.Xml.Linq</AssemblyReference>
+      <AssemblyReference>System.Xaml</AssemblyReference>
+      <AssemblyReference>UiPath.System.Activities</AssemblyReference>
+      <AssemblyReference>UiPath.Web.Activities</AssemblyReference>
+      <AssemblyReference>Newtonsoft.Json</AssemblyReference>
+    </sco:Collection>
+  </TextExpression.ReferencesForImplementation>
+
+  <Sequence DisplayName="Get Slack Channel Description" sap2010:WorkflowViewState.IdRef="Sequence_1">
+    <Sequence.Variables>
+      <Variable x:TypeArguments="scg:Dictionary(x:String, x:String)" Name="authHeaders" />
+      <Variable x:TypeArguments="uwahm:HttpResponseSummary" Name="httpResponse" />
+      <Variable x:TypeArguments="njl:JObject" Name="jsonObject" />
+      <Variable x:TypeArguments="x:String" Name="channelDescription" />
+    </Sequence.Variables>
+
+    <!-- Step 1: Log start -->
+    <ui:LogMessage Level="Info" DisplayName="Log: Starting Request">
+      <ui:LogMessage.Message>
+        <InArgument x:TypeArguments="x:Object">
+          <VisualBasicValue x:TypeArguments="x:Object" ExpressionText="&quot;Fetching description for Slack channel: &quot; &amp; in_ChannelId" />
+        </InArgument>
+      </ui:LogMessage.Message>
+    </ui:LogMessage>
+
+    <!-- Step 2: Build Authorization headers dictionary -->
+    <Assign x:TypeArguments="scg:Dictionary(x:String, x:String)" DisplayName="Build Auth Headers">
+      <Assign.To>
+        <OutArgument x:TypeArguments="scg:Dictionary(x:String, x:String)">
+          <VisualBasicReference x:TypeArguments="scg:Dictionary(x:String, x:String)" ExpressionText="authHeaders" />
+        </OutArgument>
+      </Assign.To>
+      <Assign.Value>
+        <InArgument x:TypeArguments="scg:Dictionary(x:String, x:String)">
+          <VisualBasicValue x:TypeArguments="scg:Dictionary(x:String, x:String)" ExpressionText="New Dictionary(Of String, String) From {{&quot;Authorization&quot;, &quot;Bearer &quot; &amp; in_SlackBotToken}}" />
+        </InArgument>
+      </Assign.Value>
+    </Assign>
+
+    <!-- Step 3: Call Slack API - GET conversations.info -->
+    <uwah:NetHttpRequest
+      DisplayName="GET Slack conversations.info"
+      Method="GET"
+      RequestBodyType="None"
+      AuthenticationType="None"
+      RetryPolicyType="None"
+      ContinueOnError="False"
+      sap2010:WorkflowViewState.IdRef="NetHttpRequest_1">
+      <uwah:NetHttpRequest.RequestUrl>
+        <InArgument x:TypeArguments="x:String">
+          <VisualBasicValue x:TypeArguments="x:String" ExpressionText="&quot;https://slack.com/api/conversations.info?channel=&quot; &amp; in_ChannelId" />
+        </InArgument>
+      </uwah:NetHttpRequest.RequestUrl>
+      <uwah:NetHttpRequest.Headers>
+        <InArgument x:TypeArguments="scg:Dictionary(x:String, x:String)">
+          <VisualBasicValue x:TypeArguments="scg:Dictionary(x:String, x:String)" ExpressionText="authHeaders" />
+        </InArgument>
+      </uwah:NetHttpRequest.Headers>
+      <uwah:NetHttpRequest.Result>
+        <OutArgument x:TypeArguments="uwahm:HttpResponseSummary">
+          <VisualBasicReference x:TypeArguments="uwahm:HttpResponseSummary" ExpressionText="httpResponse" />
+        </OutArgument>
+      </uwah:NetHttpRequest.Result>
+    </uwah:NetHttpRequest>
+
+    <!-- Step 4: Deserialize JSON response -->
+    <ui:DeserializeJson x:TypeArguments="njl:JObject"
+      DisplayName="Deserialize JSON Response"
+      sap2010:WorkflowViewState.IdRef="DeserializeJson_1">
+      <ui:DeserializeJson.JsonString>
+        <InArgument x:TypeArguments="x:String">
+          <VisualBasicValue x:TypeArguments="x:String" ExpressionText="httpResponse.TextContent" />
+        </InArgument>
+      </ui:DeserializeJson.JsonString>
+      <ui:DeserializeJson.JsonObject>
+        <OutArgument x:TypeArguments="njl:JObject">
+          <VisualBasicReference x:TypeArguments="njl:JObject" ExpressionText="jsonObject" />
+        </OutArgument>
+      </ui:DeserializeJson.JsonObject>
+    </ui:DeserializeJson>
+
+    <!-- Step 5: Extract the channel description from purpose.value -->
+    <Assign x:TypeArguments="x:String" DisplayName="Extract Channel Description">
+      <Assign.To>
+        <OutArgument x:TypeArguments="x:String">
+          <VisualBasicReference x:TypeArguments="x:String" ExpressionText="channelDescription" />
+        </OutArgument>
+      </Assign.To>
+      <Assign.Value>
+        <InArgument x:TypeArguments="x:String">
+          <VisualBasicValue x:TypeArguments="x:String" ExpressionText="jsonObject(&quot;channel&quot;)(&quot;purpose&quot;)(&quot;value&quot;).ToString()" />
+        </InArgument>
+      </Assign.Value>
+    </Assign>
+
+    <!-- Step 6: Set the output argument -->
+    <Assign x:TypeArguments="x:String" DisplayName="Set Output Argument">
+      <Assign.To>
+        <OutArgument x:TypeArguments="x:String">
+          <VisualBasicReference x:TypeArguments="x:String" ExpressionText="out_ChannelDescription" />
+        </OutArgument>
+      </Assign.To>
+      <Assign.Value>
+        <InArgument x:TypeArguments="x:String">
+          <VisualBasicValue x:TypeArguments="x:String" ExpressionText="channelDescription" />
+        </InArgument>
+      </Assign.Value>
+    </Assign>
+
+    <!-- Step 7: Log and display the result -->
+    <ui:LogMessage Level="Info" DisplayName="Log: Channel Description">
+      <ui:LogMessage.Message>
+        <InArgument x:TypeArguments="x:Object">
+          <VisualBasicValue x:TypeArguments="x:Object" ExpressionText="&quot;Channel description: &quot; &amp; channelDescription" />
+        </InArgument>
+      </ui:LogMessage.Message>
+    </ui:LogMessage>
+
+    <WriteLine DisplayName="Output: Channel Description">
+      <WriteLine.Text>
+        <InArgument x:TypeArguments="x:String">
+          <VisualBasicValue x:TypeArguments="x:String" ExpressionText="&quot;Channel Description: &quot; &amp; channelDescription" />
+        </InArgument>
+      </WriteLine.Text>
+    </WriteLine>
+
+  </Sequence>
+</Activity>

@@ -1,0 +1,45 @@
+=== USER (turn 1) — simulator-generated opener ===
+Hey there! I'm hoping you can help me out — I process vendor invoices all day and I'm trying to get something built that takes care of it automatically. What I need is a flow that watches a folder I have in SharePoint and, whenever a new PDF invoice drops in there, it picks it up, pulls out the important stuff — invoice number, vendor name, invoice date, total amount, and all the line items — and then sends that data over to SAP by doing a plain POST to a web address our IT team gave us.
+
+The big thing is it has to be built as a UiPath Maestro Flow — not an API workflow, not a regular script, specifically a Maestro Flow. And before I sign off on it I'd want it validated.
+
+One thing I should mention upfront: IT hasn't connected our SharePoint account or our SAP account in this environment yet, so nothing here can actually run right now. But I don't want that to hold things up — I want the whole thing built and wired up correctly, every step in place and ready to go, so that when IT flips the switch it just works. Please don't wait on IT or go looking for live accounts.
+
+Feel free to ask me anything you need to know before you get started!
+
+=== AGENT (turn 1) — 158.3s, in=976 out=11036, 20 tool calls ===
+Before I start building, I need a few decisions from you (the skill requires this before wiring nodes to avoid guessing business-critical config):
+
+**1. Which IxP invoice-extraction model should the flow use?** Your tenant has several published:
+
+| # | Model | Notes |
+|---|---|---|
+| 1 | `idp-benchmark---invoices-c735405a-ixp` | Generic benchmark invoice model |
+| 2 | `InvoiceIXP` | Named specifically for invoices |
+| 3 | `invoices-billing` (in `BillingDispute` project) | Also invoice-focused |
+| 4 | Something else | Tell me the exact model name |
+
+**2. SharePoint trigger details** — I'll wire this as a "File Created" event on the Microsoft OneDrive/SharePoint connector (the only SharePoint-folder-watch trigger available). I need:
+- The SharePoint site/drive and folder path to watch (e.g. `Shared Documents/Invoices`) — since the account isn't connected yet, a **placeholder path** is fine (e.g. `/Invoices` ) and IT can correct it later. Confirm that's OK, or give me the real path if you know it.
+
+**3. SAP POST endpoint** — you described this as a **plain HTTP POST to a URL IT provided**, not the SAP connector. I'll build this as a Managed HTTP node in **manual mode** (raw URL, not connector-authenticated) per your description. Please confirm:
+- The placeholder URL to use (e.g. `https://sap-middleware.internal.example.com/api/invoices` — just a stand-in until IT gives the real one)
+- Any auth header IT mentioned (e.g. Bearer token, API key header) — or say "none yet, plain POST with no auth for now"
+
+**4. Error handling** — if the SAP POST fails (e.g. non-2xx response), should the flow just fault (visible failure, default), or do you want a specific fallback (e.g. log and end gracefully, retry)? Same question for IxP extraction failure.
+
+If you'd rather I just pick sensible defaults and note them as assumptions so we can move faster, say so and I'll proceed with: model `InvoiceIXP`, folder placeholder `/Invoices`, SAP URL placeholder `https://sap-middleware.example.com/api/invoices` with no auth, and "fault on failure" (no special error handling) for both steps.
+
+=== USER (turn 2) ===
+Good questions — let me answer them all at once so you can just get going.
+
+For the extraction model, our IT team set up something called the **Invoice Model** — that's what we use for reading invoices, so please use that one.
+
+For the SharePoint folder, the folder is called **New Vendor** — use that as the folder name in the path, and yes, a placeholder is totally fine for the full site address since IT hasn't connected it yet. Whatever looks right to you, IT can fix the rest when they hook it up.
+
+For the SAP web address, I don't have the exact URL in front of me right now — IT will plug that in when they connect everything. Just use a sensible placeholder like the one you suggested, plain POST, no auth headers for now.
+
+For error handling, let's keep it simple — just have it fault visibly if something goes wrong. I'd rather know about a failure than have it quietly do nothing.
+
+Go ahead and build it!
+

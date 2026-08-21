@@ -1,0 +1,8 @@
+00:31:13 [INFO   ] [default/skill-bpmn-contract-variant-wrappers/00] orchestrator: API routing: aws_bedrock
+00:59:42 [WARNING] [default/skill-bpmn-contract-variant-wrappers/00] agents.claude_code_agent: [coder] Agent exhausted max_turns (90); turn ended without completing
+00:59:42 [INFO   ] [default/skill-bpmn-contract-variant-wrappers/00] orchestrator: Success criteria: 1/1 passed, weighted score: 1.000
+00:59:42 [WARNING] [default/skill-bpmn-contract-variant-wrappers/00] orchestrator: Agent exhausted max_turns (90) without passing criteria.
+00:59:42 [WARNING] [default/skill-bpmn-contract-variant-wrappers/00] orchestrator: Visible turns (104) exceeded expected_turns (20) at iteration 1 for task skill-bpmn-contract-variant-wrappers. Run continues — max_turns remains the hard cap.
+00:59:42 [INFO   ] [default/skill-bpmn-contract-variant-wrappers/00] orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+00:59:42 [INFO   ] [default/skill-bpmn-contract-variant-wrappers/00] orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-bpmn-contract-variant-wrappers
+00:59:42 [INFO   ] [default/skill-bpmn-contract-variant-wrappers/00] orchestrator: Task finished: status=SUCCESS duration=1718.6s score=1.000 iterations=1

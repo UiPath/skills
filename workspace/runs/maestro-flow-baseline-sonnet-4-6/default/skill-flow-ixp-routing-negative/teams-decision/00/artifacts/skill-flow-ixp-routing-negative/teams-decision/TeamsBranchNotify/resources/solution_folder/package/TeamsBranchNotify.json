@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "TeamsBranchNotify",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "831f6e8b-f8a2-459b-a7b2-f1eb8302a3a4",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "TeamsBranchNotify"
+    },
+    "locks": [],
+    "key": "9cceb673-821b-4087-8caa-5a83e0bcbab8",
+    "files": []
+  }
+}

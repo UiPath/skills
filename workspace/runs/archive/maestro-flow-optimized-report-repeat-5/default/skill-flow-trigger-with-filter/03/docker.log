@@ -1,0 +1,6 @@
+18:15:36 [INFO   ] [default/skill-flow-trigger-with-filter/03] orchestrator: API routing: aws_bedrock
+18:20:17 [INFO   ] [default/skill-flow-trigger-with-filter/03] orchestrator: Success criteria: 1/1 passed, weighted score: 1.000
+18:20:17 [WARNING] [default/skill-flow-trigger-with-filter/03] orchestrator: Visible turns (25) exceeded expected_turns (7) at iteration 1 for task skill-flow-trigger-with-filter. Run continues — max_turns remains the hard cap.
+18:20:17 [INFO   ] [default/skill-flow-trigger-with-filter/03] orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+18:20:17 [INFO   ] [default/skill-flow-trigger-with-filter/03] orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-trigger-with-filter
+18:20:17 [INFO   ] [default/skill-flow-trigger-with-filter/03] orchestrator: Task finished: status=SUCCESS duration=284.4s score=1.000 iterations=1

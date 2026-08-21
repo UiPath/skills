@@ -1,0 +1,269 @@
+<Activity mc:Ignorable="sap sap2010" x:Class="Workflows_ClassifyEmail"
+  xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities"
+  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+  xmlns:mva="clr-namespace:Microsoft.VisualBasic.Activities;assembly=System.Activities"
+  xmlns:sap="http://schemas.microsoft.com/netfx/2009/xaml/activities/presentation"
+  xmlns:sap2010="http://schemas.microsoft.com/netfx/2010/xaml/activities/presentation"
+  xmlns:sco="clr-namespace:System.Collections.ObjectModel;assembly=System.Private.CoreLib"
+  xmlns:ui="http://schemas.uipath.com/workflow/activities"
+  xmlns:uipm="clr-namespace:UiPath.Mail;assembly=UiPath.Mail"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+  <x:Members>
+    <!-- IN: The email to classify -->
+    <x:Property Name="in_Email" Type="InArgument(uipm:UiPathMailMessage)" />
+    <!-- OUT: Category — Billing, Technical, Account, Returns, General -->
+    <x:Property Name="out_Category" Type="OutArgument(x:String)" />
+    <!-- OUT: Priority — High, Normal, Low -->
+    <x:Property Name="out_Priority" Type="OutArgument(x:String)" />
+  </x:Members>
+
+  <mva:VisualBasic.Settings>
+    <x:Null />
+  </mva:VisualBasic.Settings>
+
+  <TextExpression.NamespacesForImplementation>
+    <sco:Collection x:TypeArguments="x:String">
+      <x:String>System</x:String>
+      <x:String>System.Text.RegularExpressions</x:String>
+      <x:String>UiPath.Mail</x:String>
+      <x:String>UiPath.Core</x:String>
+      <x:String>UiPath.Core.Activities</x:String>
+    </sco:Collection>
+  </TextExpression.NamespacesForImplementation>
+  <TextExpression.ReferencesForImplementation>
+    <sco:Collection x:TypeArguments="AssemblyReference">
+      <AssemblyReference>System</AssemblyReference>
+      <AssemblyReference>System.Activities</AssemblyReference>
+      <AssemblyReference>System.Private.CoreLib</AssemblyReference>
+      <AssemblyReference>System.Text.RegularExpressions</AssemblyReference>
+      <AssemblyReference>UiPath.System.Activities</AssemblyReference>
+      <AssemblyReference>UiPath.Mail.Activities</AssemblyReference>
+      <AssemblyReference>UiPath.Mail</AssemblyReference>
+    </sco:Collection>
+  </TextExpression.ReferencesForImplementation>
+
+  <Sequence DisplayName="Classify Email" sap2010:WorkflowViewState.IdRef="Sequence_1">
+    <Sequence.Variables>
+      <Variable x:TypeArguments="x:String" Name="subjectLower" Default="&quot;&quot;" />
+      <Variable x:TypeArguments="x:String" Name="bodyLower" Default="&quot;&quot;" />
+      <Variable x:TypeArguments="x:String" Name="category" Default="&quot;General&quot;" />
+      <Variable x:TypeArguments="x:String" Name="priority" Default="&quot;Normal&quot;" />
+    </Sequence.Variables>
+
+    <!-- Normalise subject and body to lowercase for keyword matching -->
+    <Assign x:TypeArguments="x:String" DisplayName="Normalise Subject">
+      <Assign.To>
+        <OutArgument x:TypeArguments="x:String">
+          <VisualBasicReference x:TypeArguments="x:String" ExpressionText="subjectLower" />
+        </OutArgument>
+      </Assign.To>
+      <Assign.Value>
+        <InArgument x:TypeArguments="x:String">
+          <VisualBasicValue x:TypeArguments="x:String" ExpressionText="If(in_Email IsNot Nothing AndAlso in_Email.Subject IsNot Nothing, in_Email.Subject.ToLowerInvariant(), &quot;&quot;)" />
+        </InArgument>
+      </Assign.Value>
+    </Assign>
+
+    <Assign x:TypeArguments="x:String" DisplayName="Normalise Body">
+      <Assign.To>
+        <OutArgument x:TypeArguments="x:String">
+          <VisualBasicReference x:TypeArguments="x:String" ExpressionText="bodyLower" />
+        </OutArgument>
+      </Assign.To>
+      <Assign.Value>
+        <InArgument x:TypeArguments="x:String">
+          <VisualBasicValue x:TypeArguments="x:String" ExpressionText="If(in_Email IsNot Nothing AndAlso in_Email.Body IsNot Nothing, in_Email.Body.ToLowerInvariant(), &quot;&quot;)" />
+        </InArgument>
+      </Assign.Value>
+    </Assign>
+
+    <!-- ── CATEGORY CLASSIFICATION ── -->
+    <!-- Billing / payment keywords -->
+    <If DisplayName="Is Billing?">
+      <If.Condition>
+        <InArgument x:TypeArguments="x:Boolean">
+          <VisualBasicValue x:TypeArguments="x:Boolean" ExpressionText="subjectLower.Contains(&quot;invoice&quot;) OrElse subjectLower.Contains(&quot;billing&quot;) OrElse subjectLower.Contains(&quot;payment&quot;) OrElse subjectLower.Contains(&quot;charge&quot;) OrElse bodyLower.Contains(&quot;invoice&quot;) OrElse bodyLower.Contains(&quot;billing&quot;) OrElse bodyLower.Contains(&quot;payment&quot;) OrElse bodyLower.Contains(&quot;charge&quot;)" />
+        </InArgument>
+      </If.Condition>
+      <If.Then>
+        <Sequence DisplayName="Set Billing">
+          <Assign x:TypeArguments="x:String" DisplayName="Category = Billing">
+            <Assign.To>
+              <OutArgument x:TypeArguments="x:String">
+                <VisualBasicReference x:TypeArguments="x:String" ExpressionText="category" />
+              </OutArgument>
+            </Assign.To>
+            <Assign.Value>
+              <InArgument x:TypeArguments="x:String">
+                <VisualBasicValue x:TypeArguments="x:String" ExpressionText="&quot;Billing&quot;" />
+              </InArgument>
+            </Assign.Value>
+          </Assign>
+        </Sequence>
+      </If.Then>
+    </If>
+
+    <!-- Technical / bug / error keywords -->
+    <If DisplayName="Is Technical?">
+      <If.Condition>
+        <InArgument x:TypeArguments="x:Boolean">
+          <VisualBasicValue x:TypeArguments="x:Boolean" ExpressionText="category = &quot;General&quot; AndAlso (subjectLower.Contains(&quot;error&quot;) OrElse subjectLower.Contains(&quot;bug&quot;) OrElse subjectLower.Contains(&quot;crash&quot;) OrElse subjectLower.Contains(&quot;broken&quot;) OrElse subjectLower.Contains(&quot;not working&quot;) OrElse subjectLower.Contains(&quot;technical&quot;) OrElse bodyLower.Contains(&quot;error&quot;) OrElse bodyLower.Contains(&quot;bug&quot;) OrElse bodyLower.Contains(&quot;crash&quot;))" />
+        </InArgument>
+      </If.Condition>
+      <If.Then>
+        <Sequence DisplayName="Set Technical">
+          <Assign x:TypeArguments="x:String" DisplayName="Category = Technical">
+            <Assign.To>
+              <OutArgument x:TypeArguments="x:String">
+                <VisualBasicReference x:TypeArguments="x:String" ExpressionText="category" />
+              </OutArgument>
+            </Assign.To>
+            <Assign.Value>
+              <InArgument x:TypeArguments="x:String">
+                <VisualBasicValue x:TypeArguments="x:String" ExpressionText="&quot;Technical&quot;" />
+              </InArgument>
+            </Assign.Value>
+          </Assign>
+        </Sequence>
+      </If.Then>
+    </If>
+
+    <!-- Account / login / password keywords -->
+    <If DisplayName="Is Account?">
+      <If.Condition>
+        <InArgument x:TypeArguments="x:Boolean">
+          <VisualBasicValue x:TypeArguments="x:Boolean" ExpressionText="category = &quot;General&quot; AndAlso (subjectLower.Contains(&quot;account&quot;) OrElse subjectLower.Contains(&quot;login&quot;) OrElse subjectLower.Contains(&quot;password&quot;) OrElse subjectLower.Contains(&quot;access&quot;) OrElse subjectLower.Contains(&quot;register&quot;) OrElse bodyLower.Contains(&quot;account&quot;) OrElse bodyLower.Contains(&quot;login&quot;) OrElse bodyLower.Contains(&quot;password&quot;))" />
+        </InArgument>
+      </If.Condition>
+      <If.Then>
+        <Sequence DisplayName="Set Account">
+          <Assign x:TypeArguments="x:String" DisplayName="Category = Account">
+            <Assign.To>
+              <OutArgument x:TypeArguments="x:String">
+                <VisualBasicReference x:TypeArguments="x:String" ExpressionText="category" />
+              </OutArgument>
+            </Assign.To>
+            <Assign.Value>
+              <InArgument x:TypeArguments="x:String">
+                <VisualBasicValue x:TypeArguments="x:String" ExpressionText="&quot;Account&quot;" />
+              </InArgument>
+            </Assign.Value>
+          </Assign>
+        </Sequence>
+      </If.Then>
+    </If>
+
+    <!-- Returns / refund keywords -->
+    <If DisplayName="Is Returns?">
+      <If.Condition>
+        <InArgument x:TypeArguments="x:Boolean">
+          <VisualBasicValue x:TypeArguments="x:Boolean" ExpressionText="category = &quot;General&quot; AndAlso (subjectLower.Contains(&quot;return&quot;) OrElse subjectLower.Contains(&quot;refund&quot;) OrElse subjectLower.Contains(&quot;cancel&quot;) OrElse subjectLower.Contains(&quot;exchange&quot;) OrElse bodyLower.Contains(&quot;return&quot;) OrElse bodyLower.Contains(&quot;refund&quot;) OrElse bodyLower.Contains(&quot;cancel&quot;))" />
+        </InArgument>
+      </If.Condition>
+      <If.Then>
+        <Sequence DisplayName="Set Returns">
+          <Assign x:TypeArguments="x:String" DisplayName="Category = Returns">
+            <Assign.To>
+              <OutArgument x:TypeArguments="x:String">
+                <VisualBasicReference x:TypeArguments="x:String" ExpressionText="category" />
+              </OutArgument>
+            </Assign.To>
+            <Assign.Value>
+              <InArgument x:TypeArguments="x:String">
+                <VisualBasicValue x:TypeArguments="x:String" ExpressionText="&quot;Returns&quot;" />
+              </InArgument>
+            </Assign.Value>
+          </Assign>
+        </Sequence>
+      </If.Then>
+    </If>
+
+    <!-- ── PRIORITY CLASSIFICATION ── -->
+    <!-- High priority keywords -->
+    <If DisplayName="Is High Priority?">
+      <If.Condition>
+        <InArgument x:TypeArguments="x:Boolean">
+          <VisualBasicValue x:TypeArguments="x:Boolean" ExpressionText="subjectLower.Contains(&quot;urgent&quot;) OrElse subjectLower.Contains(&quot;asap&quot;) OrElse subjectLower.Contains(&quot;emergency&quot;) OrElse subjectLower.Contains(&quot;critical&quot;) OrElse subjectLower.Contains(&quot;immediately&quot;) OrElse bodyLower.Contains(&quot;urgent&quot;) OrElse bodyLower.Contains(&quot;asap&quot;) OrElse bodyLower.Contains(&quot;emergency&quot;)" />
+        </InArgument>
+      </If.Condition>
+      <If.Then>
+        <Sequence DisplayName="Set High Priority">
+          <Assign x:TypeArguments="x:String" DisplayName="Priority = High">
+            <Assign.To>
+              <OutArgument x:TypeArguments="x:String">
+                <VisualBasicReference x:TypeArguments="x:String" ExpressionText="priority" />
+              </OutArgument>
+            </Assign.To>
+            <Assign.Value>
+              <InArgument x:TypeArguments="x:String">
+                <VisualBasicValue x:TypeArguments="x:String" ExpressionText="&quot;High&quot;" />
+              </InArgument>
+            </Assign.Value>
+          </Assign>
+        </Sequence>
+      </If.Then>
+    </If>
+
+    <!-- Low priority — informational / feedback keywords -->
+    <If DisplayName="Is Low Priority?">
+      <If.Condition>
+        <InArgument x:TypeArguments="x:Boolean">
+          <VisualBasicValue x:TypeArguments="x:Boolean" ExpressionText="priority = &quot;Normal&quot; AndAlso (subjectLower.Contains(&quot;feedback&quot;) OrElse subjectLower.Contains(&quot;suggestion&quot;) OrElse subjectLower.Contains(&quot;newsletter&quot;) OrElse subjectLower.Contains(&quot;unsubscribe&quot;))" />
+        </InArgument>
+      </If.Condition>
+      <If.Then>
+        <Sequence DisplayName="Set Low Priority">
+          <Assign x:TypeArguments="x:String" DisplayName="Priority = Low">
+            <Assign.To>
+              <OutArgument x:TypeArguments="x:String">
+                <VisualBasicReference x:TypeArguments="x:String" ExpressionText="priority" />
+              </OutArgument>
+            </Assign.To>
+            <Assign.Value>
+              <InArgument x:TypeArguments="x:String">
+                <VisualBasicValue x:TypeArguments="x:String" ExpressionText="&quot;Low&quot;" />
+              </InArgument>
+            </Assign.Value>
+          </Assign>
+        </Sequence>
+      </If.Then>
+    </If>
+
+    <!-- Assign output arguments -->
+    <Assign x:TypeArguments="x:String" DisplayName="Output Category">
+      <Assign.To>
+        <OutArgument x:TypeArguments="x:String">
+          <VisualBasicReference x:TypeArguments="x:String" ExpressionText="out_Category" />
+        </OutArgument>
+      </Assign.To>
+      <Assign.Value>
+        <InArgument x:TypeArguments="x:String">
+          <VisualBasicValue x:TypeArguments="x:String" ExpressionText="category" />
+        </InArgument>
+      </Assign.Value>
+    </Assign>
+
+    <Assign x:TypeArguments="x:String" DisplayName="Output Priority">
+      <Assign.To>
+        <OutArgument x:TypeArguments="x:String">
+          <VisualBasicReference x:TypeArguments="x:String" ExpressionText="out_Priority" />
+        </OutArgument>
+      </Assign.To>
+      <Assign.Value>
+        <InArgument x:TypeArguments="x:String">
+          <VisualBasicValue x:TypeArguments="x:String" ExpressionText="priority" />
+        </InArgument>
+      </Assign.Value>
+    </Assign>
+
+    <ui:LogMessage Level="Info" DisplayName="Log: Classification result">
+      <ui:LogMessage.Message>
+        <InArgument x:TypeArguments="x:Object">
+          <VisualBasicValue x:TypeArguments="x:Object" ExpressionText="&quot;[ClassifyEmail] Category=&quot; &amp; category &amp; &quot; Priority=&quot; &amp; priority &amp; &quot; Subject=&quot; &amp; If(in_Email IsNot Nothing, in_Email.Subject, &quot;&lt;null&gt;&quot;)" />
+        </InArgument>
+      </ui:LogMessage.Message>
+    </ui:LogMessage>
+
+  </Sequence>
+</Activity>

@@ -1,0 +1,29 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "is.sandboxes.test@gmail.com",
+    "kind": "connection",
+    "type": "uipath-google-drive",
+    "apiVersion": "integrationservice.uipath.com/v1",
+    "isOverridable": true,
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "files": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "connectorName": "Google Drive",
+      "name": "is.sandboxes.test@gmail.com",
+      "description": null,
+      "authenticationType": "AuthenticateAfterDeployment",
+      "connectorVersion": "1.13.15",
+      "connectorKey": "uipath-google-drive",
+      "pollingInterval": 5
+    },
+    "locks": [],
+    "key": "2ab97e15-b5bb-4f73-9573-97e62912f5fb"
+  }
+}

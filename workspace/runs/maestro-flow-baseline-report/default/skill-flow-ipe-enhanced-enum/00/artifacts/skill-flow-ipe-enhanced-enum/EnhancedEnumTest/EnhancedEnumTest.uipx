@@ -1,0 +1,12 @@
+{
+  "DocVersion": "1.0.0",
+  "StudioMinVersion": "2025.10.0",
+  "SolutionId": "84a04e9d-498d-450b-ba7b-2bdbc54281c2",
+  "Projects": [
+    {
+      "Type": "Flow",
+      "ProjectRelativePath": "EnhancedEnumTest/project.uiproj",
+      "Id": "1695af85-e93c-419d-bd96-7c89113a06fa"
+    }
+  ]
+}

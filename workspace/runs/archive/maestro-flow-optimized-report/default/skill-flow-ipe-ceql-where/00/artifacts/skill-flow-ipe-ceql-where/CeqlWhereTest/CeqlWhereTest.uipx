@@ -1,0 +1,12 @@
+{
+  "DocVersion": "1.0.0",
+  "StudioMinVersion": "2025.10.0",
+  "SolutionId": "9494b591-a0e2-4ebb-b32c-3cb8cc3ad3d8",
+  "Projects": [
+    {
+      "Type": "Flow",
+      "ProjectRelativePath": "CeqlWhereTest/project.uiproj",
+      "Id": "04653f04-236e-4632-8004-2ab8e0780808"
+    }
+  ]
+}

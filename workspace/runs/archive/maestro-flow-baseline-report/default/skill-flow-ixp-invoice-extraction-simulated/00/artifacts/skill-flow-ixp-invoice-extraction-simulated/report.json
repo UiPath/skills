@@ -1,0 +1,129 @@
+{
+  "project": {
+    "Id": "proj-8f3a2c11-ixp",
+    "Name": "vendor-invoices-f8a3c211-ixp",
+    "Title": "Vendor Invoices",
+    "CreatedAt": "2024-03-30T09:00:00Z",
+    "Model": "gemini_2_5_flash",
+    "Preprocessing": "table_mini",
+    "Status": "Active"
+  },
+  "documents": [
+    {
+      "id": "baa83524f2e36559.be3c34e620e98487",
+      "filename": "invoice_acme_tech_001.pdf"
+    },
+    {
+      "id": "cf44de3bb208e6b4.c9b682c631e620a7",
+      "filename": "invoice_summit_supplies_002.pdf"
+    },
+    {
+      "id": "fc73280dda3f607d.3a4a9dc40959dd7b",
+      "filename": "invoice_rapid_logistics_003.pdf"
+    },
+    {
+      "id": "0335e10ceb19bcda.0e0ff33d9fa2fef0",
+      "filename": "invoice_cloudwave_004.pdf"
+    },
+    {
+      "id": "6303f815399fece0.91e26309e4a1e61b",
+      "filename": "invoice_meridian_consulting_005.pdf"
+    }
+  ],
+  "taxonomy_summary": {
+    "field_groups": 5,
+    "total_fields": 20,
+    "groups": [
+      {
+        "name": "Invoice Header",
+        "repeatable": false,
+        "field_count": 6
+      },
+      {
+        "name": "Vendor Details",
+        "repeatable": false,
+        "field_count": 4
+      },
+      {
+        "name": "Bill To",
+        "repeatable": false,
+        "field_count": 2
+      },
+      {
+        "name": "Invoice Totals",
+        "repeatable": false,
+        "field_count": 4
+      },
+      {
+        "name": "Line Items",
+        "repeatable": true,
+        "field_count": 4
+      }
+    ]
+  },
+  "labelling_summary": {
+    "documents_processed": 5,
+    "total_confirmed": 170,
+    "ocr_corrections": 2,
+    "marked_missing": 2,
+    "not_confirmed": 0
+  },
+  "metrics": {
+    "model_version": 1,
+    "project_score": 1.0,
+    "quality": "Good",
+    "validated_documents": 5,
+    "field_groups": [
+      {
+        "FieldGroup": "Invoice Header",
+        "F1": 1.0,
+        "Precision": 1.0,
+        "Recall": 1.0,
+        "Documents": 5,
+        "TP": 30,
+        "FP": 0,
+        "FN": 0
+      },
+      {
+        "FieldGroup": "Vendor Details",
+        "F1": 1.0,
+        "Precision": 1.0,
+        "Recall": 1.0,
+        "Documents": 5,
+        "TP": 20,
+        "FP": 0,
+        "FN": 0
+      },
+      {
+        "FieldGroup": "Bill To",
+        "F1": 1.0,
+        "Precision": 1.0,
+        "Recall": 1.0,
+        "Documents": 5,
+        "TP": 10,
+        "FP": 0,
+        "FN": 0
+      },
+      {
+        "FieldGroup": "Invoice Totals",
+        "F1": 1.0,
+        "Precision": 1.0,
+        "Recall": 1.0,
+        "Documents": 5,
+        "TP": 18,
+        "FP": 0,
+        "FN": 0
+      },
+      {
+        "FieldGroup": "Line Items",
+        "F1": 1.0,
+        "Precision": 1.0,
+        "Recall": 1.0,
+        "Documents": 5,
+        "TP": 92,
+        "FP": 0,
+        "FN": 0
+      }
+    ]
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "name": "PurchaseApprovalBpmn",
+  "description": "Purchase approval process with HITL review and approval recording.",
+  "main": "PurchaseApprovalBpmn.bpmn",
+  "contentType": "ProcessOrchestration",
+  "projectVersion": "1.0.0",
+  "runtimeOptions": {}
+}

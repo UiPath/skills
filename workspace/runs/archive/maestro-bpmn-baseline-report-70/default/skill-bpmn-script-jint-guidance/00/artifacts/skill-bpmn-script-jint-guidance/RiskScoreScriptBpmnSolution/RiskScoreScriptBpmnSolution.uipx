@@ -1,0 +1,12 @@
+{
+  "DocVersion": "1.0.0",
+  "StudioMinVersion": "2025.10.0",
+  "SolutionId": "252763c5-69b1-4388-bce8-6052ca9155dd",
+  "Projects": [
+    {
+      "Type": "processOrchestration",
+      "ProjectRelativePath": "RiskScoreScriptBpmn/project.uiproj",
+      "Id": "c9db0334-0be5-4a10-bc7c-b7a9bbffa1fa"
+    }
+  ]
+}

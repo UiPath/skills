@@ -1,0 +1,7 @@
+18:14:13 [INFO   ] [default/skill-flow-registry-discovery/03] orchestrator: API routing: aws_bedrock
+18:15:44 [INFO   ] [default/skill-flow-registry-discovery/03] evaluation.checker: Criterion 'command_executed' FAILED (score=0.00, threshold=1.00): Matched 0/1 required commands (filters: tool_name=Bash, pattern=/uip\s+(maestro\s+)?flow\s+registry\s+pull/)
+18:15:44 [INFO   ] [default/skill-flow-registry-discovery/03] orchestrator: Success criteria: 3/4 passed, weighted score: 0.818
+18:15:44 [WARNING] [default/skill-flow-registry-discovery/03] orchestrator: Visible turns (10) exceeded expected_turns (9) at iteration 1 for task skill-flow-registry-discovery. Run continues — max_turns remains the hard cap.
+18:15:44 [INFO   ] [default/skill-flow-registry-discovery/03] orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+18:15:44 [INFO   ] [default/skill-flow-registry-discovery/03] orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-registry-discovery
+18:15:44 [INFO   ] [default/skill-flow-registry-discovery/03] orchestrator: Task finished: status=FAILURE duration=92.9s score=0.818 iterations=1

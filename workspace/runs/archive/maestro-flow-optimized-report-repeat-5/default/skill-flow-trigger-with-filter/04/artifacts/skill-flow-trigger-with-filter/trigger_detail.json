@@ -1,0 +1,46 @@
+{
+  "_meta": {
+    "description": "Planned --detail payload for uip maestro flow node configure on the Outlook 'email received' connector trigger. Placeholders marked with < > must be resolved before the command is run against a live tenant.",
+    "nodeType": "uipath.connector.trigger.<connector-key>.email-received",
+    "connectorKeyNote": "Confirm the exact connector key by running: uip maestro flow registry search 'outlook email received' --output json --output-filter '[*].{NodeType:NodeType,DisplayName:DisplayName}'",
+    "configureCommand": "uip maestro flow node configure <PROJECT>.flow <triggerId> --output json --detail \"$(cat trigger_detail_payload.json)\"",
+    "steps": {
+      "1_getConnection": "uip is connections list \"<connector-key>\" --all-folders --output json",
+      "2_getEnrichedMetadata": "uip maestro flow registry get uipath.connector.trigger.<connector-key>.email-received --connection-id <CONNECTION_ID> --output json",
+      "3_resolveParentFolderId": "uip is resources run list \"<connector-key>\" \"MailFolder\" --connection-id <CONNECTION_ID> --output json",
+      "4_verifyFilterFieldNames": "Read filterFields.fields[].name from the registry get response above — verify 'from' and 'subject' are present before finalising the filter tree"
+    }
+  },
+  "detail": {
+    "connectionId": "<OUTLOOK_CONNECTION_ID>",
+    "folderKey": "<ORCHESTRATOR_FOLDER_KEY>",
+    "eventMode": "<polling|webhooks>",
+    "eventParameters": {
+      "parentFolderId": "<INBOX_OR_TARGET_FOLDER_ID>"
+    },
+    "filter": {
+      "groupOperator": 0,
+      "index": 0,
+      "filters": [
+        {
+          "id": "from",
+          "operator": "Equals",
+          "value": {
+            "value": "abc@xyz.com",
+            "rawString": "\"abc@xyz.com\"",
+            "isLiteral": true
+          }
+        },
+        {
+          "id": "subject",
+          "operator": "Contains",
+          "value": {
+            "value": "good day",
+            "rawString": "\"good day\"",
+            "isLiteral": true
+          }
+        }
+      ]
+    }
+  }
+}

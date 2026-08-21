@@ -1,0 +1,29 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "nikhilmaryala@gmail.com",
+    "kind": "connection",
+    "type": "uipath-google-gmailcustom",
+    "apiVersion": "integrationservice.uipath.com/v1",
+    "isOverridable": true,
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "files": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "connectorName": "Gmail",
+      "name": "nikhilmaryala@gmail.com",
+      "description": null,
+      "authenticationType": "AuthenticateAfterDeployment",
+      "connectorVersion": "1.24.7",
+      "connectorKey": "uipath-google-gmailcustom",
+      "pollingInterval": 5
+    },
+    "locks": [],
+    "key": "5a1a639e-8395-4dc8-b043-6dc7d82de499"
+  }
+}

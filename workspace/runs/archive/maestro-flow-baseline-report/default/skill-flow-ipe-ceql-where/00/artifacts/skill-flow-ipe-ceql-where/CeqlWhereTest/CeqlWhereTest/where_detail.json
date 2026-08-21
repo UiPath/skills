@@ -1,0 +1,30 @@
+{
+  "_comment": "Planned node configure --detail payload for listAadGroups1 (uipath.connector.uipath-microsoft-azureactivedirectory.list-groups). Cannot be applied automatically — no live tenant. Run: uip maestro flow node configure CeqlWhereTest.flow listAadGroups1 --detail \"$(cat where_detail.json)\" --output json from inside the project directory after supplying real connectionId and folderKey.",
+  "_connector_key": "uipath-microsoft-azureactivedirectory",
+  "_connector_name": "Microsoft Azure Active Directory",
+  "_activity": "List Groups",
+  "_operation": "List",
+  "_filter_param": "where",
+  "_filter_param_component": "FilterBuilder",
+  "_ceql_compiled": "displayName = 'active'",
+  "connectionId": "<REPLACE_WITH_CONNECTION_ID>",
+  "folderKey": "<REPLACE_WITH_FOLDER_KEY>",
+  "method": "GET",
+  "endpoint": "/groups",
+  "filter": {
+    "groupOperator": 0,
+    "index": 0,
+    "filters": [
+      {
+        "id": "displayName",
+        "operator": "Equals",
+        "value": {
+          "value": "active",
+          "rawString": "\"active\"",
+          "isLiteral": true
+        }
+      }
+    ],
+    "groups": []
+  }
+}

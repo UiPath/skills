@@ -1,0 +1,43 @@
+{
+  "_comment": "Configuration passed to `uip maestro flow node configure <PROJECT>.flow <triggerId> --detail '<this-object>'`",
+  "_note": "All PLACEHOLDER values must be replaced before running node configure against a live tenant.",
+
+  "connectionId": "<OUTLOOK_CONNECTION_ID>",
+  "folderKey": "<ORCHESTRATOR_FOLDER_KEY>",
+
+  "eventMode": "webhooks",
+
+  "queryParameters": {
+    "sharedMailboxAddress": ""
+  },
+
+  "eventParameters": {
+    "parentFolderId": "<INBOX_FOLDER_ID>"
+  },
+
+  "filter": {
+    "groupOperator": 0,
+    "index": 0,
+    "filters": [
+      {
+        "id": "fromAddress",
+        "operator": "Equals",
+        "value": {
+          "value": "abc@xyz.com",
+          "rawString": "\"abc@xyz.com\"",
+          "isLiteral": true
+        }
+      },
+      {
+        "id": "subject",
+        "operator": "Contains",
+        "value": {
+          "value": "good day",
+          "rawString": "\"good day\"",
+          "isLiteral": true
+        }
+      }
+    ],
+    "groups": []
+  }
+}

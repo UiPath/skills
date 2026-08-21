@@ -1,0 +1,104 @@
+{
+  "version": "1.1.0",
+  "settings": {
+    "model": "gpt-5.4",
+    "maxTokens": 128000,
+    "temperature": 0,
+    "engine": "basic-v2",
+    "maxIterations": 5,
+    "mode": "standard"
+  },
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "start__output__customerName": {
+        "type": "string",
+        "description": "Bound from $vars.start.output.customerName"
+      },
+      "start__output__invoiceNumber": {
+        "type": "string",
+        "description": "Bound from $vars.start.output.invoiceNumber"
+      },
+      "start__output__creditAmount": {
+        "type": "number",
+        "description": "Bound from $vars.start.output.creditAmount"
+      }
+    },
+    "required": [
+      "start__output__customerName",
+      "start__output__invoiceNumber",
+      "start__output__creditAmount"
+    ]
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "subject": {
+        "type": "string",
+        "description": "Subject line of the billing-dispute resolution email"
+      },
+      "body": {
+        "type": "string",
+        "description": "Body of the billing-dispute resolution email"
+      }
+    },
+    "required": [
+      "subject",
+      "body"
+    ]
+  },
+  "metadata": {
+    "storageVersion": "50.0.0",
+    "isConversational": false,
+    "showProjectCreationExperience": false
+  },
+  "type": "lowCode",
+  "guardrails": [],
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a customer support specialist at a billing department. Your task is to draft professional, empathetic customer-facing emails that resolve billing disputes. When given a customer name, invoice number, and approved credit amount, you produce a well-structured resolution email with a subject line and a body. The body must clearly state the invoice number and the approved credit amount. Keep the tone professional and reassuring. Return only the subject and body fields with no additional commentary.",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "You are a customer support specialist at a billing department. Your task is to draft professional, empathetic customer-facing emails that resolve billing disputes. When given a customer name, invoice number, and approved credit amount, you produce a well-structured resolution email with a subject line and a body. The body must clearly state the invoice number and the approved credit amount. Keep the tone professional and reassuring. Return only the subject and body fields with no additional commentary."
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "Draft a billing-dispute resolution email for the following details:\n- Customer Name: {{input.start__output__customerName}}\n- Invoice Number: {{input.start__output__invoiceNumber}}\n- Approved Credit Amount: {{input.start__output__creditAmount}}\n\nReturn a JSON object with \"subject\" (the email subject line) and \"body\" (the full email body text).",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "Draft a billing-dispute resolution email for the following details:\n- Customer Name: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__customerName"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n- Invoice Number: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__invoiceNumber"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n- Approved Credit Amount: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__creditAmount"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\nReturn a JSON object with \"subject\" (the email subject line) and \"body\" (the full email body text)."
+        }
+      ]
+    }
+  ],
+  "projectId": "413eef60-1bc4-4534-9bcb-d6cfd2535f6b"
+}

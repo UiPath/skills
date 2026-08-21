@@ -1,0 +1,24 @@
+{
+  "$resourceType": "context",
+  "id": "11343347-18cf-4efb-a690-7e4ec651c776",
+  "referenceKey": null,
+  "name": "BillingDisputeSOPIndex",
+  "description": "",
+  "contextType": "index",
+  "folderPath": "Shared/uipath-maestro-flow/BillingDispute",
+  "indexName": "Billing Dispute SOP Index",
+  "settings": {
+    "retrievalMode": "semantic",
+    "query": {
+      "variant": "dynamic"
+    },
+    "folderPathPrefix": {
+      "variant": "static"
+    },
+    "fileExtension": {
+      "value": "All"
+    },
+    "threshold": 0,
+    "resultCount": 3
+  }
+}

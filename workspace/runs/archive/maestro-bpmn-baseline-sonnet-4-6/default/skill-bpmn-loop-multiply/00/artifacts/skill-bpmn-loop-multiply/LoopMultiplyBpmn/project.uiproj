@@ -1,0 +1,7 @@
+{
+  "name": "LoopMultiplyBpmn",
+  "description": "Sequential multi-instance multiply over a number collection.",
+  "main": "LoopMultiplyBpmn.bpmn",
+  "contentType": "ProcessOrchestration",
+  "schemaVersion": "1.0"
+}

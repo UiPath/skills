@@ -1,0 +1,1754 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>coder_eval · skill-flow-ipe-ceql-where · default</title>
+<style>
+:root {
+  --bg-page: #0f1419;
+  --bg-card: #1a2129;
+  --bg-card-2: #232d38;
+  --bg-code: #0b0f14;
+  --fg: #e6edf3;
+  --fg-muted: #8b98a5;
+  --fg-dim: #6e7681;
+  --border: #30363d;
+  --accent: #58a6ff;
+  --score-high: #22c55e;
+  --score-mid: #f59e0b;
+  --score-low: #ef4444;
+  --status-success: #22c55e;
+  --status-failure: #f59e0b;
+  --status-error: #ef4444;
+  --status-neutral: #6e7681;
+  --shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+.light {
+  --bg-page: #ffffff;
+  --bg-card: #f6f8fa;
+  --bg-card-2: #eaeef2;
+  --bg-code: #f6f8fa;
+  --fg: #1f2328;
+  --fg-muted: #636c76;
+  --fg-dim: #8b949e;
+  --border: #d0d7de;
+  --accent: #0969da;
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial,
+               sans-serif;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--fg);
+  background: var(--bg-page);
+}
+.container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+h1, h2, h3, h4 { margin: 0 0 12px 0; line-height: 1.25; }
+h1 { font-size: 22px; font-weight: 600; }
+h2 { font-size: 18px; font-weight: 600; margin-top: 28px;
+     padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+h3 { font-size: 15px; font-weight: 600; color: var(--fg-muted); }
+h4 { font-size: 13px; font-weight: 600; color: var(--fg-muted); }
+p { margin: 0 0 8px 0; }
+.muted { color: var(--fg-muted); }
+.dim { color: var(--fg-dim); }
+.mono { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+        monospace; font-size: 12.5px; }
+code { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+       monospace; font-size: 12.5px; background: var(--bg-code);
+       border: 1px solid var(--border); padding: 1px 5px; border-radius: 3px; }
+pre { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+      monospace; font-size: 12.5px; background: var(--bg-code);
+      border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px;
+      margin: 6px 0; overflow-x: auto; white-space: pre-wrap;
+      word-wrap: break-word; }
+.header-bar { display: flex; align-items: center; justify-content: space-between;
+              margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+.title-group { flex: 1; min-width: 0; }
+.title-group .subtitle { color: var(--fg-muted); font-size: 13px;
+                         margin-top: 2px; word-break: break-all; }
+.badges { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.badge { display: inline-flex; align-items: center; gap: 6px;
+         padding: 4px 10px; border-radius: 12px; font-size: 12px;
+         font-weight: 600; background: var(--bg-card-2);
+         border: 1px solid var(--border); color: var(--fg); }
+.badge.success { background: color-mix(in srgb, var(--status-success) 20%, var(--bg-card-2));
+                 border-color: var(--status-success); color: var(--status-success); }
+.badge.failure { background: color-mix(in srgb, var(--status-failure) 20%, var(--bg-card-2));
+                 border-color: var(--status-failure); color: var(--status-failure); }
+.badge.error { background: color-mix(in srgb, var(--status-error) 20%, var(--bg-card-2));
+               border-color: var(--status-error); color: var(--status-error); }
+.badge.warning { background: color-mix(in srgb, #f4a52810 20%, var(--bg-card-2));
+                 border-color: #f4a528; color: #f4a528; }
+.badge.neutral { color: var(--fg-muted); }
+.score-pill { display: inline-block; padding: 2px 8px; border-radius: 10px;
+              font-size: 12px; font-weight: 700; min-width: 42px;
+              text-align: center; color: #0b0f14; }
+.score-high { background: var(--score-high); }
+.score-mid { background: var(--score-mid); }
+.score-low { background: var(--score-low); }
+.card { background: var(--bg-card); border: 1px solid var(--border);
+        border-radius: 8px; padding: 16px 20px; margin-bottom: 16px;
+        box-shadow: var(--shadow); }
+.card.highlight { border-left: 4px solid var(--accent); }
+.grid { display: grid; gap: 12px;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+.stat { background: var(--bg-card-2); padding: 10px 12px; border-radius: 6px;
+        border: 1px solid var(--border); }
+.stat .label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;
+               color: var(--fg-muted); margin-bottom: 4px; }
+.stat .value { font-size: 16px; font-weight: 600; }
+table { width: 100%; border-collapse: collapse; margin: 4px 0 12px 0; }
+th, td { text-align: left; padding: 8px 10px;
+         border-bottom: 1px solid var(--border); vertical-align: top;
+         font-size: 13px; }
+th { color: var(--fg-muted); font-weight: 600; font-size: 12px;
+     text-transform: uppercase; letter-spacing: 0.3px; }
+tr:last-child td { border-bottom: none; }
+details { margin: 6px 0; border: 1px solid var(--border); border-radius: 6px;
+          background: var(--bg-card-2); }
+details > summary { cursor: pointer; padding: 8px 12px; user-select: none;
+                    font-weight: 500; list-style: none; }
+details > summary::-webkit-details-marker { display: none; }
+details > summary::before { content: "▸ "; color: var(--fg-dim);
+                            display: inline-block; width: 14px;
+                            transition: transform 0.15s; }
+details[open] > summary::before { content: "▾ "; }
+details .details-body { padding: 0 12px 10px 12px; }
+.tool-row { display: flex; align-items: center; gap: 10px;
+            flex-wrap: wrap; font-size: 13px; }
+.tool-name { font-weight: 600; color: var(--accent); font-family: ui-monospace,
+             SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+.tool-status-ok { color: var(--status-success); font-size: 11px;
+                  font-weight: 600; }
+.tool-status-err { color: var(--status-error); font-size: 11px;
+                   font-weight: 600; }
+.tool-duration { color: var(--fg-muted); font-size: 12px; }
+.tool-seq { color: var(--fg-dim); font-size: 11px; font-weight: 600;
+            min-width: 24px; text-align: right; font-family: ui-monospace,
+            SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+.turn-header { display: flex; justify-content: space-between;
+               align-items: baseline; flex-wrap: wrap; gap: 10px;
+               margin-bottom: 10px; }
+.turn-meta { font-size: 12px; color: var(--fg-muted); }
+.criterion-row td:first-child { font-family: ui-monospace, SFMono-Regular,
+                                 "SF Mono", Menlo, Consolas, monospace;
+                                 color: var(--fg-muted); font-size: 12px; }
+.judge-section { display: flex; flex-direction: column; gap: 12px; }
+.judge-card { padding: 14px 16px; }
+.judge-card-head { display: flex; justify-content: space-between;
+                    align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+.judge-card-title { font-size: 14px; line-height: 1.4; flex: 1; min-width: 0; }
+.judge-card-score { flex-shrink: 0; }
+.judge-rationale { margin-top: 10px; padding: 10px 12px;
+                   background: var(--bg-code); border-radius: 4px;
+                   font-size: 13px; line-height: 1.5; }
+.judge-findings { margin: 8px 0 0 18px; padding-left: 4px; font-size: 13px;
+                   line-height: 1.6; }
+.judge-findings li { margin: 2px 0; }
+.nav-toggle { display: inline-block; padding: 5px 10px; font-size: 12px;
+              background: var(--bg-card-2); border: 1px solid var(--border);
+              border-radius: 5px; color: var(--fg); cursor: pointer; }
+.nav-toggle:hover { background: var(--bg-card); }
+.llm-next-steps { margin: 6px 0 0 20px; padding-left: 0; }
+.llm-next-steps li { margin: 3px 0; }
+.iteration-group { padding: 12px 16px 4px 16px; margin-bottom: 20px;
+                   border-radius: 0 6px 6px 0; border-left: 4px solid var(--status-neutral); }
+/* rgba fallback for browsers without color-mix (Chrome <111, Firefox <113, Safari <16.2). */
+.iteration-group--recovered { border-left-color: var(--status-success);
+                              background: rgba(34, 197, 94, 0.06);
+                              background: color-mix(in srgb, var(--status-success) 6%, transparent); }
+.iteration-group--terminal { border-left-color: var(--status-error);
+                             background: rgba(239, 68, 68, 0.06);
+                             background: color-mix(in srgb, var(--status-error) 6%, transparent); }
+.iteration-group__banner { margin: 0 0 12px 0; font-size: 14px; font-weight: 600; }
+.iteration-group--recovered .iteration-group__banner { color: var(--status-success); }
+.iteration-group--terminal .iteration-group__banner { color: var(--status-error); }
+.attempt-transition { display: flex; align-items: center; gap: 8px;
+                      margin: -6px 0 12px 8px; color: var(--status-error); font-size: 12.5px; }
+.attempt-transition__icon { font-weight: 700; }
+footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--border);
+         color: var(--fg-dim); font-size: 12px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="header-bar">
+  <div class="title-group">
+    <h1>Task: skill-flow-ipe-ceql-where</h1>
+    <div class="subtitle">Tests the CEQL where query IS feature — agent plans a structured filter tree for the Microsoft Entra (Azure AD) connector&#x27;s &quot;List groups&quot; operation with a `displayName = &quot;active&quot;` filter, following the canonical shape documented in the Filter Trees (CEQL) section of the uipath-platform skill. The flow must reference the registered connector key (`uipath-microsoft-azureactivedirectory`), use Decision + Terminate for routing, and pass `uip maestro flow validate`.</div>
+  </div>
+  <div class="badges">
+    <span class="badge success">SUCCESS</span>
+    <span class="score-pill score-high">1.00</span>
+    <span class="badge neutral">claude-code · claude-sonnet-4-6</span>
+    <span class="badge neutral">8m 19s</span>
+    <span class="badge neutral">$1.4675</span>
+    <span class="badge warning">expected_turns exceeded (38/34)</span>
+    
+    <span class="nav-toggle" onclick="toggleTheme()">Toggle theme</span>
+  </div>
+</div>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Variant</div><div class="value">default</div></div>
+    <div class="stat"><div class="label">Started</div><div class="value mono">2026-07-24T18:18:08</div></div>
+    <div class="stat"><div class="label">Duration</div><div class="value">8m 19s</div></div>
+    <div class="stat"><div class="label">Turns (SDK)</div><div class="value">63</div></div>
+    <div class="stat"><div class="label">Commands</div><div class="value">37</div></div>
+  </div>
+</div>
+
+<h2>Success Criteria <span class="muted" style="font-weight:400">(2/2 passed)</span></h2>
+<div class="card" style="padding:0">
+<table>
+  <thead>
+    <tr>
+      <th style="width:15%">Type</th>
+      <th style="width:35%">Description</th>
+      <th style="width:10%">Score</th>
+      <th>Details</th>
+    </tr>
+  </thead>
+  <tbody>
+    
+<tr class="criterion-row">
+  <td>run_command</td>
+  <td>where_detail.json (found anywhere under the solution) has a canonical CEQL filter tree on displayName=&#x27;active&#x27;; flow references the registered Azure AD / Entra connector key with List Groups + Terminate nodes</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Command: python3 $TASK_DIR/check_ceql_where_flow.py</summary><div class="details-body"><pre style="margin:6px 0 0 0">Command: python3 $TASK_DIR/check_ceql_where_flow.py
+Exit code: 0 (expected: 0)
+Stdout:
+OK: where_detail.json carries canonical CEQL filter tree on displayName=&#x27;active&#x27;; flow targets uipath-microsoft-azureactivedirectory List Groups; Terminate node present
+
+Stderr: (empty)</pre></div></details></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>command_executed</td>
+  <td>uip maestro flow validate was called</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Matched 2/1 required commands (filters: tool_name=Bash, pattern=/(uip|\$UIP)\s+(maestro\s+)?flow\s+validate/, require_success=True)</summary><div class="details-body"><pre style="margin:6px 0 0 0">Matched 2/1 required commands (filters: tool_name=Bash, pattern=/(uip|\$UIP)\s+(maestro\s+)?flow\s+validate/, require_success=True)
+Examples: [&#x27;cd /work/output/artifacts/skill-flow-ipe-ceql-where/CeqlWhereTest/CeqlWhereTest \\\n  &amp;&amp; uip maestro flow validate CeqlWhe&#x27;, &#x27;echo &quot;=== Final file layout ===&quot;\nfind /work/output/artifacts/skill-flow-ipe-ceql-where -type f | sort\n\necho &quot;&quot;\necho &quot;===&#x27;]</pre></div></details></td>
+</tr>
+
+  </tbody>
+</table>
+</div>
+<h2>Conversation Trace (1 iteration)</h2>
+<div class="card">
+  <div class="turn-header">
+    <h3>Iteration 1</h3>
+    <div class="badges">
+      <span class="badge neutral">63 assistant turns</span>
+      <span class="badge neutral">in 34 · out 24613 · cache 2568209</span>
+      <span class="badge neutral">8m 15s</span>
+      
+      
+      
+    </div>
+  </div>
+  <details>
+    <summary>Prompt to agent</summary>
+    <div class="details-body"><pre>Your working directory is: /work/output/artifacts/skill-flow-ipe-ceql-where
+
+This sandbox has no UiPath tenant, so you can&#x27;t run the live node-configuration 
+step. Instead, capture the filter you&#x27;d apply to the operation as where_detail.json 
+so it can be reviewed.
+
+Build a flow &quot;CeqlWhereTest&quot; with a manual trigger that lists Microsoft Entra (Azure AD) 
+groups whose displayName equals &quot;active&quot;. Find the registered Entra/Azure AD connector key 
+before wiring the node.
+
+Branch on the result: if the call fails, stop the flow with the error &quot;CeqlWhere test failed&quot;; 
+if it succeeds, log &quot;CeqlWhere test passed&quot;. 
+Validate the final flow file.
+</pre></div>
+  </details>
+  <details>
+    <summary>Agent response</summary>
+    <div class="details-body"><pre>[ASSISTANT] Now I have enough context. Let me plan the build, then execute in three turns.
+
+**Plan:**
+1. **T1** — Check existing solutions, search registry for Azure AD/Entra connector, scaffold solution + project, `node add` the connector list-groups node
+2. **T2** — Read scaffolded `.flow`, add user-owned nodes (Decision, Terminate, Script-log, End), wire all edges
+3. **T3** — Write `where_detail.json` (no live tenant), validate, format
+
+Let me start T1:
+[ASSISTANT] No existing solutions. Now T1 — scaffold + registry search + `node add`, all in one chain:
+[ASSISTANT] Connector key confirmed: **`uipath-microsoft-azureactivedirectory`**, activity: **`list-groups`**. Now T1 — scaffold + node add:
+[ASSISTANT] Node added: `listEntraGroups1`. Now let me get exact definition versions for the user-owned nodes:
+[ASSISTANT] Versions: `end=1.0`, `decision=1.1`, `terminate=1.0`, `script=1.0`. Now T2 — read the scaffolded `.flow`, then build all user-owned nodes and edges in one batch:
+[ASSISTANT] Good. Now I have the scaffolded flow. Let me check the full terminate definition and then do T2 in one batch:
+[ASSISTANT] Good. Now T2: write all user-owned nodes, definitions, edges, layout, and `variables.nodes` in one Write (since the file needs to change significantly):
+[ASSISTANT] Now let me check the filter tree reference before writing the flow:
+[ASSISTANT] Now I have everything needed. Let me read the `list-groups` registry get to understand what the `where`/filter param name is for this connector:
+[ASSISTANT] The `where` parameter uses FilterBuilder. Now I need to know if `displayName` is a searchable field. Let me check the `is resources describe` response — but since there&#x27;s no live tenant, I&#x27;ll use what the registry metadata tells us. Let me check `inputDefinition` for filterable fields:
+[ASSISTANT] Now I have everything I need. I&#x27;ll write the complete `.flow` file with all nodes, edges, definitions, and variables. The flow topology is:
+
+`start → listEntraGroups1 [error port] → decision [on $vars.listEntraGroups1.error !== null] → true → terminate | false → scriptLog → end`
+
+But actually: the connector&#x27;s `error` port fires when the call fails. The Decision should check whether there was an error. Let me use the `error` port from the connector node to route directly to terminate, and the `output`/`success` port to route to the log script + end. The connector has `output` and `error` ports.
+
+For the branch: `error` → Decision isn&#x27;t needed if I wire directly from the connector&#x27;s `error` and `output` ports.
+
+**Topology:**
+- `start` → `listEntraGroups1` (via `input` targetPort)
+- `listEntraGroups1` (error port) → `terminateOnError`
+- `listEntraGroups1` (output port) → `logSuccess` (script node)
+- `logSuccess` (success port) → `end`
+[ASSISTANT] Now write the complete `.flow` file:
+[ASSISTANT] Now T3 — validate, format, and write `where_detail.json`:
+[ASSISTANT] Need to add `errorHandlingEnabled: true` to the `listEntraGroups1` node inputs:
+[ASSISTANT] ✅ **Validate: Success** — 5 nodes, 4 edges, valid. Now write `where_detail.json`:
+[ASSISTANT] Everything is complete. Here&#x27;s the summary:
+
+---
+
+## ✅ CeqlWhereTest — Build Complete
+
+### What was built
+
+**File:** `CeqlWhereTest/CeqlWhereTest/CeqlWhereTest.flow`
+
+**Connector key discovered:** `uipath-microsoft-azureactivedirectory`  
+Found via `uip maestro flow registry search azure` — the node type `uipath.connector.uipath-microsoft-azureactivedirectory.list-groups` was confirmed before wiring, not guessed from the brand name.
+
+**Flow topology (5 nodes, 4 edges):**
+
+```
+Manual trigger (start)
+        │ output
+        ▼
+List Entra Groups (listEntraGroups1)   ← errorHandlingEnabled: true
+        │ output (success)    │ error (failure)
+        ▼                     ▼
+  Log Pass (script)     CeqlWhere test failed (terminate)
+  returns { message:    &quot;CeqlWhere test passed&quot; }
+        │ success
+        ▼
+       End
+```
+
+| Node | Type | Role |
+|---|---|---|
+| `start` | `core.trigger.manual` | Manual t</pre></div>
+  </details>
+  <h4 style="margin-top:12px">Tool Calls (37)</h4>
+  
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#0</span>
+      <span class="tool-name">Skill</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">16ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;skill&quot;: &quot;uipath:uipath-maestro-flow&quot;,
+  &quot;args&quot;: &quot;Build a flow \&quot;CeqlWhereTest\&quot; with a manual trigger that lists Microsoft Entra (Azure AD) groups whose displayName equals \&quot;active\&quot;. Find the registered Entra/Azure AD connector key before wiring the node. Branch on the result: if the call fails, stop the flow with the error \&quot;CeqlWhere test failed\&quot;; if it succeeds, log \&quot;CeqlWhere test passed\&quot;. Since this sandbox has no UiPath tenant, capture the fil… (55 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Launching skill: uipath:uipath-maestro-flow</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#1</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">378ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/CAPABILITY.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Author — Create and edit `.flow` files
+2	
+3	Capability index for building new flows (greenfield) and editing existing flows (brownfield). Author owns everything that happens on disk, locally, without `uip login`. Authoring journeys terminate at `validate` + `format`; from there, hand off to [operate/CAPABILITY.md](../operate/CAPABILITY.md) to publish, run, or debug.
+4	
+5	&gt; **Where you came from / where to go next.** Author is upstream of Operate (build the flow → ship it) and upstream of Diagnose only via Operate (build → run → diagnose). Publish/run/lifecycle lives in [operate/CAPABILITY.md](../operate/CAPABILITY.md); fault triage lives in [diagnose/CAPABILITY.md](../diagnose/CAPABILITY.md).
+6	&gt;
+7	&gt; **Inherits universal rules from [SKILL.md](../../SKILL.md)** — `--output json` + prefer `--output-filter` for extraction, no `flow debug` without consent, resource discovery order, never invoke other skills automatically, dropdown question pattern, solution layout, **plain-English narration + granular progress list (opt-in — silent by default; engage when the user asks for verbosity)**. The rules below are author-scoped and apply on top.
+8	
+9	## When to use this capability
+10	
+11	-
+
+… (truncated, 25996 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#2</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">181ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/references/greenfield.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Greenfield — Create a New Flow
+2	
+3	End-to-end journey for creating a Flow project from scratch. Author terminates at `validate` + `format`. To publish, run, or debug after this, see [operate/CAPABILITY.md](../../operate/CAPABILITY.md).
+4	
+5	&gt; **Brownfield edits use a different journey.** If the `.flow` file already exists, see [brownfield.md](brownfield.md) instead.
+6	
+7	## Should you plan first?
+8	
+9	For complex flows, produce a plan before building. Reference [planning-arch.md](planning-arch.md) and [planning-impl.md](planning-impl.md) for the node type catalog, port reference, wiring rules, and topology patterns.
+10	
+11	**Plan when:**
+12	- The flow has 5+ nodes with branching or parallel paths
+13	- The flow uses connectors or resources that need discovery
+14	- The user&#x27;s requirements are ambiguous and you need to confirm the approach
+15	
+16	**Don&#x27;t plan when:**
+17	- Adding/editing a single node in an existing flow (use [brownfield.md](brownfield.md))
+18	- The flow is a straightforward linear pipeline (trigger → action → action → end)
+19	- The user has already described the exact topology they want
+20	
+21	### Examples
+22	
+23	**Plan:** &quot;Build a flow that receives a Jira ticke
+
+… (truncated, 30834 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#3</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">146ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/references/plugins/connector/impl.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Connector Activity Nodes — Implementation
+2	
+3	How to configure connector activity nodes: connection binding, enriched metadata, reference field resolution, and debugging. Connection bindings are emitted by `uip maestro flow node configure` into the flow&#x27;s top-level `bindings[]`; `bindings_v2.json` is regenerated from them at debug/pack time and should never be hand-edited.
+4	
+5	For generic node/edge add, remove, and wiring procedures, see [editing-operations.md](../../editing-operations.md). This guide covers the connector-specific configuration workflow that must follow the generic node add.
+6	
+7	## How Connector Nodes Differ from OOTB
+8	
+9	1. **Connection binding required** — every connector node needs an IS connection (OAuth, API key, etc.) authored in the flow&#x27;s top-level `bindings[]` (which the CLI regenerates into `bindings_v2.json` at debug/pack time). Without it, the node cannot authenticate.
+10	2. **Enriched metadata via `--connection-id`** — call `registry get` with `--connection-id` to get connection-aware field metadata. Without it, only base fields are returned — custom fields, dynamic enums, and reference resolution are missing.
+11	3. **`inputs.detail` object** —
+
+… (truncated, 59526 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#4</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">93ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;ls *.uipx */*.uipx 2&gt;/dev/null &amp;&amp; echo \&quot;FOUND_SOLUTIONS\&quot; || echo \&quot;NO_SOLUTIONS\&quot;&quot;,
+  &quot;description&quot;: &quot;Check for existing solutions in working directory&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>NO_SOLUTIONS</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#5</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">8ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/references/plugins/connector/planning.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Connector Activity Nodes — Planning
+2	
+3	Connector activity nodes call external services (Jira, Slack, Salesforce, Outlook, etc.) via UiPath Integration Service. They are dynamically loaded — not built-in — and appear in the registry after `uip login` + `uip maestro flow registry pull`.
+4	
+5	## When to Use
+6	
+7	Use a connector activity node when the flow needs to **call an external service that has a pre-built UiPath connector**. Connectors handle auth (OAuth, API keys), token refresh, and error formatting automatically at runtime. Note: design-time reference resolution (looking up records by name during authoring) still requires the agent to paginate — see [impl.md](impl.md).
+8	
+9	### Decision Order
+10	
+11	Prefer higher tiers when connecting to external services:
+12	
+13	| Tier | Approach | When to Use |
+14	| --- | --- | --- |
+15	| 1 | **IS connector activity** (this node type) | A connector exists and its activities cover the use case |
+16	| 2 | **Managed HTTP Request** (`core.action.http.v2`) | A connector exists but lacks the specific curated activity — uses the connector&#x27;s IS connection for auth |
+17	| 3 | **Managed HTTP Request — manual mode** (`core.action.http.v2`) | No 
+
+… (truncated, 8594 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#6</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">23ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/shared/cli-conventions.md&quot;,
+  &quot;limit&quot;: 80
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# CLI Conventions
+2	
+3	Shared conventions for the `uip` CLI that apply across **all three capabilities** (Author, Operate, Diagnose). Read this first when invoking any `uip` command — every capability assumes these mechanics.
+4	
+5	## 1. Resolve the `uip` binary and detect command prefix
+6	
+7	The `uip` CLI is installed via npm. Resolve the binary (it may not be on PATH in nvm environments) and detect the command namespace.
+8	
+9	```bash
+10	UIP=$(command -v uip 2&gt;/dev/null || echo &quot;$(npm root -g 2&gt;/dev/null | sed &#x27;s|/node_modules$||&#x27;)/bin/uip&quot;)
+11	CURRENT=$($UIP --version 2&gt;/dev/null | awk &#x27;{print $NF}&#x27;)
+12	```
+13	
+14	If `uip` is not found at all, install it:
+15	
+16	```bash
+17	npm install -g @uipath/cli@latest
+18	```
+19	
+20	If `npm install -g` fails with a permission error, prompt the user to re-run with appropriate privileges — do not retry automatically.
+21	
+22	### Command prefix by version
+23	
+24	| Installed version | Command prefix | Example |
+25	| --- | --- | --- |
+26	| **≥ 0.3.4** | `uip maestro flow` | `uip maestro flow init MyProject` |
+27	| **&lt; 0.3.4** | `uip flow` | `uip flow init MyProject` &lt;!-- uip-check-skip --&gt; |
+28	
+29	```bash
+30	MIN_VERSION=&quot;0.3.4&quot;
+31	if [ &quot;$(printf 
+
+… (truncated, 4030 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#7</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">24.82s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-ipe-ceql-where\n\n# Resolve binary + detect prefix\nUIP=$(command -v uip 2&gt;/dev/null || echo \&quot;$(npm root -g 2&gt;/dev/null | sed &#x27;s|/node_modules$||&#x27;)/bin/uip\&quot;)\nCURRENT=$($UIP --version 2&gt;/dev/null | awk &#x27;{print $NF}&#x27;)\necho \&quot;UIP=$UIP version=$CURRENT\&quot;\n\n# Search offline local registry for Azure/Entra nodes (no login needed for OOTB; connector nodes only show with logi… (611 more chars)&quot;,
+  &quot;description&quot;: &quot;Resolve uip binary and search registry for Azure AD / Entra connector&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>&lt;persisted-output&gt;
+Output too large (31KB). Full output saved to: /home/azureuser/.claude/projects/-work-output-artifacts-skill-flow-ipe-ceql-where/4d31d0c8-4b88-4900-9aaf-6bb1fa9a5ca2/tool-results/b9d4shi7o.txt
+
+Preview (first 2KB):
+UIP=/usr/bin/uip version=1.199.0-dev.7970
+=== REGISTRY SEARCH azure ===
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeSearchSuccess&quot;,
+  &quot;Data&quot;: [
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-microsoft-azureformrecognizer.get-analysis-results&quot;,
+      &quot;DisplayName&quot;: &quot;Get Analysis Results&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-microsoft-azureformrecognizer.get-record&quot;,
+      &quot;DisplayName&quot;: &quot;Get Record&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-microsoft-azureformrecognizer.list-records&quot;,
+      &quot;DisplayName&quot;: &quot;List Records&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-microsoft-azureformrecognizer.get-status&quot;,
+      &quot;DisplayName&quot;: &quot;Get Status&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-microsoft-azureformrecognizer.analyze-document&quot;,
+      &quot;DisplayName&quot;: &quot;Analyze Document&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-microsoft-azuredefenderforcloud.request-storage-scan&quot;,
+      &quot;DisplayName&quot;: 
+
+… (truncated, 1033 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#8</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">23.49s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/references/plugins/decision/impl.md&quot;,
+  &quot;limit&quot;: 60
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Decision Node — Implementation
+2	
+3	## Node Type
+4	
+5	`core.logic.decision`
+6	
+7	## Registry Validation
+8	
+9	```bash
+10	uip maestro flow registry get core.logic.decision --output json
+11	```
+12	
+13	Confirm: input port `input`, output ports `true` and `false`, required input `expression`. Set the node instance `typeVersion` to the `version` field from this response — do not hardcode it.
+14	
+15	## JSON Structure
+16	
+17	```json
+18	{
+19	  &quot;id&quot;: &quot;checkStatus&quot;,
+20	  &quot;type&quot;: &quot;core.logic.decision&quot;,
+21	  &quot;typeVersion&quot;: &quot;&lt;DEFINITION_VERSION&gt;&quot;,
+22	  &quot;display&quot;: { &quot;label&quot;: &quot;Check Status&quot; },
+23	  &quot;inputs&quot;: {
+24	    &quot;expression&quot;: &quot;$vars.fetchData.output.statusCode === 200&quot;
+25	  }
+26	}
+27	```
+28	
+29	## Adding / Editing
+30	
+31	For step-by-step add, delete, and wiring procedures, see [editing-operations.md](../../editing-operations.md). Use the JSON structure above for the node-specific `inputs`.
+32	
+33	## Expression Examples
+34	
+35	```javascript
+36	// Simple comparison
+37	$vars.fetchData.output.statusCode === 200
+38	
+39	// Boolean field
+40	$vars.processData.output.isValid
+41	
+42	// Compound condition
+43	$vars.httpCall.output.statusCode === 200 &amp;&amp; $vars.httpCall.output.body.count &gt; 0
+44	
+45	// S
+
+… (truncated, 517 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#9</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">22.85s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/references/plugins/terminate/impl.md&quot;,
+  &quot;limit&quot;: 60
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Terminate Node — Implementation
+2	
+3	## Node Type
+4	
+5	`core.logic.terminate`
+6	
+7	## Registry Validation
+8	
+9	```bash
+10	uip maestro flow registry get core.logic.terminate --output json
+11	```
+12	
+13	Confirm: input port `input`, no output ports. Set the node instance `typeVersion` to the `version` field from this response — do not hardcode it.
+14	
+15	## JSON Structure
+16	
+17	```json
+18	{
+19	  &quot;id&quot;: &quot;abortOnError&quot;,
+20	  &quot;type&quot;: &quot;core.logic.terminate&quot;,
+21	  &quot;typeVersion&quot;: &quot;&lt;DEFINITION_VERSION&gt;&quot;,
+22	  &quot;display&quot;: { &quot;label&quot;: &quot;Abort&quot; },
+23	  &quot;inputs&quot;: {}
+24	}
+25	```
+26	
+27	## Adding / Editing
+28	
+29	For step-by-step add, delete, and wiring procedures, see [editing-operations.md](../../editing-operations.md). Use the JSON structure above for the node-specific `inputs`.
+30	
+31	## Common Pattern — Error Handler
+32	
+33	```text
+34	HTTP Request -&gt; Decision (error?) -&gt; true -&gt; Log Error (Script) -&gt; Terminate
+35	                                  -&gt; false -&gt; Process -&gt; End
+36	```
+37	
+38	The Decision node checks `$vars.httpCall.error`, routes to a Script that logs the error, then Terminate aborts the flow.
+39	
+40	## Debug
+41	
+42	| Error | Cause | Fix |
+43	| --- | --- | --- |
+44	| Terminate ha
+
+… (truncated, 261 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#10</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">165ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cat /home/azureuser/.claude/projects/-work-output-artifacts-skill-flow-ipe-ceql-where/4d31d0c8-4b88-4900-9aaf-6bb1cf3a7ca2/tool-results/b9d4shi7o.txt 2&gt;/dev/null || \\\n  grep -A2 &#x27;\&quot;entra\\|activedirector\\|azuread\\|graph\\|azureactivedir&#x27; /home/azureuser/.claude/projects/-work-output-artifacts-skill-flow-ipe-ceql-where/4d31d0c8-4b88-4900-9aaf-6bb1cf3a7ca2/tool-results/b9d4shi7o.txt 2&gt;/dev/null || echo… (169 more chars)&quot;,
+  &quot;description&quot;: &quot;Locate saved output file path&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>NOFILE
+4d31d0c8-4b88-4900-9aaf-6bb1fa9a5ca2
+4d31d0c8-4b88-4900-9aaf-6bb1fa9a5ca2.jsonl</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#11</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">36ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;ls /home/azureuser/.claude/projects/-work-output-artifacts-skill-flow-ipe-ceql-where/4d31d0c8-4b88-4900-9aaf-6bb1fa9a5ca2/tool-results/ 2&gt;/dev/null&quot;,
+  &quot;description&quot;: &quot;Find saved output files&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>b9d4shi7o.txt</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#12</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">22ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -i \&quot;entra\\|activedirectory\\|azuread\\|azure.ad\\|graph.microsoft\\|azureactivedir\&quot; \\\n  /home/azureuser/.claude/projects/-work-output-artifacts-skill-flow-ipe-ceql-where/4d31d0c8-4b88-4900-9aaf-6bb1fa9a5ca2/tool-results/b9d4shi7o.txt&quot;,
+  &quot;description&quot;: &quot;Search saved output for Entra/Azure AD connector entries&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>      &quot;NodeType&quot;: &quot;uipath.connector.uipath-microsoft-azure.add-vm-to-hostpool&quot;,
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-microsoft-azureactivedirectory.get-group-by-id&quot;,
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-microsoft-azureactivedirectory.delete-lifecycle-policy&quot;,
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-microsoft-azureactivedirectory.assign-license&quot;,
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-microsoft-azureactivedirectory.get-user&quot;,
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-microsoft-azureactivedirectory.create-lifecycle-policy&quot;,
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-microsoft-azureactivedirectory.get-group-by-name&quot;,
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-microsoft-azureactivedirectory.remove-owner-from-group&quot;,
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-microsoft-azureactivedirectory.list-owners-of-a-group&quot;,
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-microsoft-azureactivedirectory.remove-member-from-role&quot;,
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-microsoft-azureactivedirectory.update-lifecycle-policy&quot;,
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-microsoft-azureactivedirectory.getgroupmembersdelta&quot;,
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-microsoft-azureacti
+
+… (truncated, 8452 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#13</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">20.88s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-ipe-ceql-where\n\nuip solution init \&quot;CeqlWhereTest\&quot; --output json 2&gt;/dev/null \\\n  &amp;&amp; cd \&quot;CeqlWhereTest\&quot; \\\n  &amp;&amp; uip maestro flow init \&quot;CeqlWhereTest\&quot; --output json 2&gt;/dev/null \\\n  &amp;&amp; cd \&quot;CeqlWhereTest\&quot; \\\n  &amp;&amp; uip maestro flow registry pull 2&gt;/dev/null \\\n  &amp;&amp; uip maestro flow node add \&quot;CeqlWhereTest.flow\&quot; \\\n      \&quot;uipath.connector.uipath-microsoft-azureactivedirect… (78 more chars)&quot;,
+  &quot;description&quot;: &quot;Scaffold solution+project, pull registry, add connector node&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;SolutionInit&quot;,
+  &quot;Data&quot;: {
+    &quot;Status&quot;: &quot;Created successfully&quot;,
+    &quot;Path&quot;: &quot;/work/output/artifacts/skill-flow-ipe-ceql-where/CeqlWhereTest/CeqlWhereTest.uipx&quot;,
+    &quot;NextSteps&quot;: &quot;Read /work/output/artifacts/skill-flow-ipe-ceql-where/CeqlWhereTest/AGENTS.md or /work/output/artifacts/skill-flow-ipe-ceql-where/CeqlWhereTest/CLAUDE.md to understand the solution lifecycle, project types that can be used inside a solution, and related uip command references.&quot;
+  }
+}
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FlowInit&quot;,
+  &quot;Data&quot;: {
+    &quot;Status&quot;: &quot;Created successfully&quot;,
+    &quot;Path&quot;: &quot;/work/output/artifacts/skill-flow-ipe-ceql-where/CeqlWhereTest/CeqlWhereTest&quot;,
+    &quot;SolutionRegistration&quot;: {
+      &quot;Status&quot;: &quot;Registered&quot;,
+      &quot;Message&quot;: &quot;Project registered in parent solution.&quot;,
+      &quot;Solution&quot;: &quot;/work/output/artifacts/skill-flow-ipe-ceql-where/CeqlWhereTest/CeqlWhereTest.uipx&quot;,
+      &quot;Project&quot;: &quot;CeqlWhereTest/project.uiproj&quot;,
+      &quot;ProjectId&quot;: &quot;548b8db0-f3ad-43a7-a32d-29161b6304b6&quot;,
+      &quot;Instructions&quot;: &quot;The project is listed in the parent solution manifest.\nPacking or uploading the solution will sync solution resources automatically.\nTo sync resources befo
+
+… (truncated, 1194 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#14</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">26.11s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-ipe-ceql-where/CeqlWhereTest/CeqlWhereTest 2&gt;/dev/null || true\nuip maestro flow registry get \&quot;core.control.end\&quot; --output json 2&gt;/dev/null | python3 -c \&quot;import sys,json; d=json.load(sys.stdin); print(d[&#x27;Data&#x27;][&#x27;version&#x27;])\&quot; 2&gt;/dev/null &amp;\nuip maestro flow registry get \&quot;core.logic.decision\&quot; --output json 2&gt;/dev/null | python3 -c \&quot;import sys,json; d=json.load(sys.st… (431 more chars)&quot;,
+  &quot;description&quot;: &quot;Get node type versions from registry (parallel)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>DONE_REGISTRY_GETS</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#15</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-err">ERROR</span>
+      <span class="tool-duration">14.79s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-ipe-ceql-where/CeqlWhereTest/CeqlWhereTest\n\nuip maestro flow registry get \&quot;core.control.end\&quot; --output json 2&gt;/dev/null &gt; /tmp/def_end.json\nuip maestro flow registry get \&quot;core.logic.decision\&quot; --output json 2&gt;/dev/null &gt; /tmp/def_decision.json\nuip maestro flow registry get \&quot;core.logic.terminate\&quot; --output json 2&gt;/dev/null &gt; /tmp/def_terminate.json\nuip maestro flow… (334 more chars)&quot;,
+  &quot;description&quot;: &quot;Get definition versions for user-owned node types&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Exit code 1
+Traceback (most recent call last):
+  File &quot;&lt;string&gt;&quot;, line 5, in &lt;module&gt;
+    print(name, d[&#x27;Data&#x27;][&#x27;version&#x27;])
+                ~~~~~~~~~^^^^^^^^^^^
+KeyError: &#x27;version&#x27;</pre>
+    <h4>Error</h4><pre>Exit code 1
+Traceback (most recent call last):
+  File &quot;&lt;string&gt;&quot;, line 5, in &lt;module&gt;
+    print(name, d[&#x27;Data&#x27;][&#x27;version&#x27;])
+                ~~~~~~~~~^^^^^^^^^^^
+KeyError: &#x27;version&#x27;</pre>
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#16</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">354ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 -c \&quot;\nimport json\nfor name, f in [(&#x27;end&#x27;,&#x27;/tmp/def_end.json&#x27;),(&#x27;decision&#x27;,&#x27;/tmp/def_decision.json&#x27;),(&#x27;terminate&#x27;,&#x27;/tmp/def_terminate.json&#x27;),(&#x27;script&#x27;,&#x27;/tmp/def_script.json&#x27;)]:\n    d = json.load(open(f))\n    data = d.get(&#x27;Data&#x27;, {})\n    print(name, &#x27;keys:&#x27;, list(data.keys())[:8])\n    print(name, &#x27;type:&#x27;, data.get(&#x27;type&#x27;,&#x27;?&#x27;), &#x27;version:&#x27;, data.get(&#x27;version&#x27;, data.get(&#x27;Version&#x27;, data.get(&#x27;type… (18 more chars)&quot;,
+  &quot;description&quot;: &quot;Inspect registry get response shape for version field&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>end keys: [&#x27;Node&#x27;]
+end type: ? version: ?
+decision keys: [&#x27;Node&#x27;]
+decision type: ? version: ?
+terminate keys: [&#x27;Node&#x27;]
+terminate type: ? version: ?
+script keys: [&#x27;Node&#x27;]
+script type: ? version: ?</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#17</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">198ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 -c \&quot;\nimport json\nfor name, f in [(&#x27;end&#x27;,&#x27;/tmp/def_end.json&#x27;),(&#x27;decision&#x27;,&#x27;/tmp/def_decision.json&#x27;),(&#x27;terminate&#x27;,&#x27;/tmp/def_terminate.json&#x27;),(&#x27;script&#x27;,&#x27;/tmp/def_script.json&#x27;)]:\n    d = json.load(open(f))\n    node = d[&#x27;Data&#x27;][&#x27;Node&#x27;]\n    print(name, &#x27;version:&#x27;, node.get(&#x27;version&#x27;,&#x27;?&#x27;), &#x27;typeVersion:&#x27;, node.get(&#x27;typeVersion&#x27;,&#x27;?&#x27;), &#x27;keys:&#x27;, list(node.keys())[:10])\n\&quot;&quot;,
+  &quot;description&quot;: &quot;Extract version from Data.Node&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>end version: 1.0 typeVersion: ? keys: [&#x27;nodeType&#x27;, &#x27;version&#x27;, &#x27;category&#x27;, &#x27;description&#x27;, &#x27;tags&#x27;, &#x27;sortOrder&#x27;, &#x27;display&#x27;, &#x27;handleConfiguration&#x27;, &#x27;model&#x27;, &#x27;runtimeConstraints&#x27;]
+decision version: 1.1 typeVersion: ? keys: [&#x27;nodeType&#x27;, &#x27;version&#x27;, &#x27;category&#x27;, &#x27;description&#x27;, &#x27;tags&#x27;, &#x27;sortOrder&#x27;, &#x27;display&#x27;, &#x27;handleConfiguration&#x27;, &#x27;debug&#x27;, &#x27;model&#x27;]
+terminate version: 1.0 typeVersion: ? keys: [&#x27;nodeType&#x27;, &#x27;version&#x27;, &#x27;category&#x27;, &#x27;description&#x27;, &#x27;tags&#x27;, &#x27;sortOrder&#x27;, &#x27;display&#x27;, &#x27;handleConfiguration&#x27;, &#x27;model&#x27;, &#x27;runtimeConstraints&#x27;]
+script version: 1.0 typeVersion: ? keys: [&#x27;nodeType&#x27;, &#x27;version&#x27;, &#x27;category&#x27;, &#x27;description&#x27;, &#x27;tags&#x27;, &#x27;sortOrder&#x27;, &#x27;supportsErrorHandling&#x27;, &#x27;display&#x27;, &#x27;handleConfiguration&#x27;, &#x27;debug&#x27;]</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#18</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">7ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-ipe-ceql-where/CeqlWhereTest/CeqlWhereTest/CeqlWhereTest.flow&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	{
+2	  &quot;id&quot;: &quot;0bd5aa84-8ae5-4249-9a73-4ec5700ca2e1&quot;,
+3	  &quot;version&quot;: &quot;1.8&quot;,
+4	  &quot;name&quot;: &quot;CeqlWhereTest&quot;,
+5	  &quot;nodes&quot;: [
+6	    {
+7	      &quot;id&quot;: &quot;start&quot;,
+8	      &quot;type&quot;: &quot;core.trigger.manual&quot;,
+9	      &quot;typeVersion&quot;: &quot;1.0&quot;,
+10	      &quot;display&quot;: {
+11	        &quot;label&quot;: &quot;Manual trigger&quot;
+12	      },
+13	      &quot;inputs&quot;: {
+14	        &quot;entryPointId&quot;: &quot;87b4d0d4-0cc0-4f3c-af02-af078c19cd35&quot;,
+15	        &quot;isDefaultEntryPoint&quot;: true
+16	      }
+17	    },
+18	    {
+19	      &quot;id&quot;: &quot;listEntraGroups1&quot;,
+20	      &quot;type&quot;: &quot;uipath.connector.uipath-microsoft-azureactivedirectory.list-groups&quot;,
+21	      &quot;typeVersion&quot;: &quot;1.0.0&quot;,
+22	      &quot;display&quot;: {
+23	        &quot;label&quot;: &quot;List Entra Groups&quot;
+24	      },
+25	      &quot;inputs&quot;: {}
+26	    }
+27	  ],
+28	  &quot;edges&quot;: [],
+29	  &quot;definitions&quot;: [
+30	    {
+31	      &quot;nodeType&quot;: &quot;core.trigger.manual&quot;,
+32	      &quot;version&quot;: &quot;1.0&quot;,
+33	      &quot;category&quot;: &quot;trigger&quot;,
+34	      &quot;description&quot;: &quot;Start workflow manually&quot;,
+35	      &quot;tags&quot;: [
+36	        &quot;trigger&quot;,
+37	        &quot;start&quot;,
+38	        &quot;manual&quot;
+39	      ],
+40	      &quot;sortOrder&quot;: 40,
+41	      &quot;display&quot;: {
+42	        &quot;label&quot;: &quot;Manual trigger&quot;,
+43	        &quot;icon&quot;: &quot;play&quot;,
+44	        &quot;shape&quot;: &quot;circle&quot;
+45	      },
+46	      &quot;handleConfiguration&quot;: [
+
+
+… (truncated, 11815 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#19</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">165ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;# Extract exact definitions JSON blobs needed for T2 edits\npython3 -c \&quot;\nimport json\nfor name, f in [(&#x27;end&#x27;,&#x27;/tmp/def_end.json&#x27;),(&#x27;decision&#x27;,&#x27;/tmp/def_decision.json&#x27;),(&#x27;terminate&#x27;,&#x27;/tmp/def_terminate.json&#x27;),(&#x27;script&#x27;,&#x27;/tmp/def_script.json&#x27;)]:\n    d = json.load(open(f))\n    node = d[&#x27;Data&#x27;][&#x27;Node&#x27;]\n    print(f&#x27;=={name}==&#x27;)\n    print(json.dumps({&#x27;nodeType&#x27;: node[&#x27;nodeType&#x27;], &#x27;version&#x27;: node[&#x27;version&#x27;… (102 more chars)&quot;,
+  &quot;description&quot;: &quot;Extract definition structures for user-owned nodes&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>==end==
+{
+  &quot;nodeType&quot;: &quot;core.control.end&quot;,
+  &quot;version&quot;: &quot;1.0&quot;,
+  &quot;category&quot;: &quot;control-flow&quot;,
+  &quot;description&quot;: &quot;Mark the end of a workflow path&quot;,
+  &quot;tags&quot;: [
+    &quot;control-flow&quot;,
+    &quot;end&quot;,
+    &quot;finish&quot;,
+    &quot;complete&quot;
+  ],
+  &quot;sortOrder&quot;: 20,
+  &quot;display&quot;: {
+    &quot;label&quot;: &quot;End&quot;,
+    &quot;icon&quot;: &quot;circle-check&quot;,
+    &quot;shape&quot;: &quot;circle&quot;
+  },
+  &quot;handleConfiguration&quot;: [
+    {
+      &quot;position&quot;: &quot;left&quot;,
+      &quot;handles&quot;: [
+        {
+          &quot;id&quot;: &quot;input&quot;,
+          &quot;type&quot;: &quot;target&quot;,
+          &quot;handleType&quot;: &quot;input&quot;
+        }
+      ]
+    }
+  ],
+  &quot;model&quot;: {
+    &quot;type&quot;: &quot;bpmn:EndEvent&quot;
+  },
+  &quot;runtimeConstraints&quot;: {
+  
+
+==decision==
+{
+  &quot;nodeType&quot;: &quot;core.logic.decision&quot;,
+  &quot;version&quot;: &quot;1.1&quot;,
+  &quot;category&quot;: &quot;control-flow&quot;,
+  &quot;description&quot;: &quot;Branch based on a true/false condition&quot;,
+  &quot;tags&quot;: [
+    &quot;control-flow&quot;,
+    &quot;if&quot;,
+    &quot;loop&quot;,
+    &quot;switch&quot;
+  ],
+  &quot;sortOrder&quot;: 20,
+  &quot;display&quot;: {
+    &quot;label&quot;: &quot;Decision&quot;,
+    &quot;icon&quot;: &quot;trending-up-down&quot;
+  },
+  &quot;handleConfiguration&quot;: [
+    {
+      &quot;position&quot;: &quot;left&quot;,
+      &quot;handles&quot;: [
+        {
+          &quot;id&quot;: &quot;input&quot;,
+          &quot;type&quot;: &quot;target&quot;,
+          &quot;handleType&quot;: &quot;input&quot;
+        }
+      ],
+      &quot;visible&quot;: true
+    },
+    {
+      &quot;position&quot;: &quot;right&quot;,
+      &quot;h
+
+… (truncated, 1250 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#20</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">562ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 -c \&quot;\nimport json\nd = json.load(open(&#x27;/tmp/def_terminate.json&#x27;))\nnode = d[&#x27;Data&#x27;][&#x27;Node&#x27;]\nprint(json.dumps(node.get(&#x27;model&#x27;,{}), indent=2))\nprint(&#x27;---form---&#x27;)\nprint(json.dumps(node.get(&#x27;form&#x27;,{}), indent=2)[:800])\nprint(&#x27;---debug---&#x27;)\nprint(json.dumps(node.get(&#x27;debug&#x27;,{}), indent=2))\n\&quot;&quot;,
+  &quot;description&quot;: &quot;Check terminate node model and form for errorMessage input support&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;type&quot;: &quot;bpmn:EndEvent&quot;,
+  &quot;eventDefinition&quot;: &quot;bpmn:TerminateEventDefinition&quot;
+}
+---form---
+{}
+---debug---
+{}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#21</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">559ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 -c \&quot;\nimport json\nfor name,f in [(&#x27;terminate&#x27;,&#x27;/tmp/def_terminate.json&#x27;),(&#x27;end&#x27;,&#x27;/tmp/def_end.json&#x27;),(&#x27;script&#x27;,&#x27;/tmp/def_script.json&#x27;),(&#x27;decision&#x27;,&#x27;/tmp/def_decision.json&#x27;)]:\n    node = json.load(open(f))[&#x27;Data&#x27;][&#x27;Node&#x27;]\n    m = node.get(&#x27;model&#x27;,{})\n    inp = m.get(&#x27;inputs&#x27;,{}) or node.get(&#x27;inputDefinition&#x27;,{})\n    print(name, &#x27;model.inputs:&#x27;, list(inp.keys()) if inp else &#x27;(none)&#x27;)\n    prin… (156 more chars)&quot;,
+  &quot;description&quot;: &quot;Check terminate and script node input/output handles&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>terminate model.inputs: (none)
+terminate handleConfig output handles: []
+end model.inputs: (none)
+end handleConfig output handles: []
+script model.inputs: [&#x27;type&#x27;, &#x27;properties&#x27;, &#x27;required&#x27;]
+script handleConfig output handles: [&#x27;success&#x27;, &#x27;error&#x27;]
+decision model.inputs: [&#x27;type&#x27;, &#x27;properties&#x27;, &#x27;required&#x27;]
+decision handleConfig output handles: [&#x27;true&#x27;, &#x27;false&#x27;]</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#22</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">277ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 -c \&quot;\nimport json\n# Check script node model.inputs properties\nnode = json.load(open(&#x27;/tmp/def_script.json&#x27;))[&#x27;Data&#x27;][&#x27;Node&#x27;]\nm = node.get(&#x27;model&#x27;,{})\ninp = m.get(&#x27;inputs&#x27;,{})\nprint(&#x27;script model.inputs.properties:&#x27;, json.dumps(inp.get(&#x27;properties&#x27;,{}), indent=2)[:800])\nprint(&#x27;outputDefinition:&#x27;, json.dumps(node.get(&#x27;outputDefinition&#x27;,{}), indent=2)[:400])\n\&quot;&quot;,
+  &quot;description&quot;: &quot;Check script node input properties schema&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>script model.inputs.properties: {}
+outputDefinition: {
+  &quot;output&quot;: {
+    &quot;type&quot;: &quot;object&quot;,
+    &quot;description&quot;: &quot;The return value of the script&quot;,
+    &quot;source&quot;: &quot;=result.response&quot;,
+    &quot;var&quot;: &quot;output&quot;
+  },
+  &quot;error&quot;: {
+    &quot;type&quot;: &quot;object&quot;,
+    &quot;description&quot;: &quot;Error information if the node fails&quot;,
+    &quot;source&quot;: &quot;=Error&quot;,
+    &quot;var&quot;: &quot;error&quot;,
+    &quot;schema&quot;: {
+      &quot;$schema&quot;: &quot;http://json-schema.org/draft-07/schema#&quot;,
+      &quot;type&quot;: &quot;object&quot;,
+      &quot;requir</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#23</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">131ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 - &lt;&lt;&#x27;PYEOF&#x27;\nimport json, sys\n\nend_node = json.load(open(&#x27;/tmp/def_end.json&#x27;))[&#x27;Data&#x27;][&#x27;Node&#x27;]\ndec_node = json.load(open(&#x27;/tmp/def_decision.json&#x27;))[&#x27;Data&#x27;][&#x27;Node&#x27;]\nter_node = json.load(open(&#x27;/tmp/def_terminate.json&#x27;))[&#x27;Data&#x27;][&#x27;Node&#x27;]\nscr_node = json.load(open(&#x27;/tmp/def_script.json&#x27;))[&#x27;Data&#x27;][&#x27;Node&#x27;]\n\n# Just print runtimeConstraints for end and terminate\nprint(\&quot;end runtimeConstraints:\&quot;, json… (174 more chars)&quot;,
+  &quot;description&quot;: &quot;Check runtimeConstraints for end and terminate definitions&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>end runtimeConstraints: {
+  &quot;exclude&quot;: [
+    &quot;api-function&quot;
+  ]
+}
+terminate runtimeConstraints: {
+  &quot;exclude&quot;: [
+    &quot;api-function&quot;
+  ]
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#24</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">274ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 - &lt;&lt;&#x27;PYEOF&#x27;\nimport json\n\n# Load all definitions (full)\nend_def = json.load(open(&#x27;/tmp/def_end.json&#x27;))[&#x27;Data&#x27;][&#x27;Node&#x27;]\ndec_def = json.load(open(&#x27;/tmp/def_decision.json&#x27;))[&#x27;Data&#x27;][&#x27;Node&#x27;]\nter_def = json.load(open(&#x27;/tmp/def_terminate.json&#x27;))[&#x27;Data&#x27;][&#x27;Node&#x27;]\nscr_def = json.load(open(&#x27;/tmp/def_script.json&#x27;))[&#x27;Data&#x27;][&#x27;Node&#x27;]\n\n# Print terminate full inputs model to confirm no errorMessage\nter_mod… (94 more chars)&quot;,
+  &quot;description&quot;: &quot;Confirm terminate node model structure&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>terminate model: {
+  &quot;type&quot;: &quot;bpmn:EndEvent&quot;,
+  &quot;eventDefinition&quot;: &quot;bpmn:TerminateEventDefinition&quot;
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#25</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">877ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;find /home/azureuser/projects/skills -name \&quot;activities.md\&quot; 2&gt;/dev/null | head -5&quot;,
+  &quot;description&quot;: &quot;Find the activities.md with filter tree docs&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/home/azureuser/projects/skills/skills/uipath-rpa/references/activity-docs/UiPath.Forms.Activities/26.0/activities.md
+/home/azureuser/projects/skills/skills/uipath-rpa/references/activity-docs/UiPath.Callout.Activities/26.0/activities.md
+/home/azureuser/projects/skills/skills/uipath-platform/references/integration-service/activities.md</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#26</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">22ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -A 60 \&quot;Filter Trees (CEQL)\&quot; /home/azureuser/projects/skills/skills/uipath-platform/references/integration-service/activities.md | head -80&quot;,
+  &quot;description&quot;: &quot;Read CEQL filter tree shape&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>## Filter Trees (CEQL)
+
+Some IS activities — most notably **List All Records** and other list/query operations — accept a server-side filter expressed in **CEQL** (Connector Expression Query Language). As with trigger filters (which compile to JMESPath), CEQL filters are authored as a **structured filter tree** and the CLI compiles them to a CEQL string. Authoring as a tree keeps the CLI and Studio Web in lockstep so the activity round-trips cleanly when re-opened in SW.
+
+### Contract — three signals from IS metadata
+
+The CLI reads the live IS metadata response and uses three signals to wire the filter:
+
+1. **The activity supports CEQL** when one of its `parameters` declares `design.component === &quot;FilterBuilder&quot;`. That parameter&#x27;s `name` is the connector-specific key the compiled CEQL string is sent under — most commonly `where`, but **not always** (e.g. Salesforce uses `q`). Activities with no such parameter do not support server-side filtering — pass no `filter` and filter downstream.
+2. **A field is filterable** when its IS metadata entry has `searchable: true`. Type alone does not gate it — the connector flags fields explicitly. Fields without `searchable: true` are rejected by
+
+… (truncated, 3335 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#27</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">5.60s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry get \&quot;uipath.connector.uipath-microsoft-azureactivedirectory.list-groups\&quot; --output json 2&gt;/dev/null \\\n  | python3 -c \&quot;\nimport json,sys\nd = json.load(sys.stdin)\nnode = d[&#x27;Data&#x27;][&#x27;Node&#x27;]\n# Find FilterBuilder param and connectorMethodInfo\ncm = node.get(&#x27;connectorMethodInfo&#x27;, {})\nprint(&#x27;connectorMethodInfo keys:&#x27;, list(cm.keys()))\nparams = cm.get(&#x27;parameters&#x27;, [])\nfor p in par… (160 more chars)&quot;,
+  &quot;description&quot;: &quot;Get list-groups connector node FilterBuilder param name&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>connectorMethodInfo keys: [&#x27;operation&#x27;, &#x27;description&#x27;, &#x27;method&#x27;, &#x27;parameters&#x27;, &#x27;path&#x27;, &#x27;operationId&#x27;, &#x27;curated&#x27;, &#x27;hasCEQL&#x27;]
+param: pageSize query
+param: fields query
+param: nextPage query
+FILTERBUILDER param: {&#x27;name&#x27;: &#x27;where&#x27;, &#x27;description&#x27;: &#x27;The CEQL search expression, or the where clause, without the WHERE keyword. For example, to search for objects last modified on or after Oct 22, 2019’, the search expression will be where=lastModifiedDate&gt;=’2019-10-22T00:00:00.000Z&#x27;, &#x27;type&#x27;: &#x27;query&#x27;, &#x27;dataType&#x27;: &#x27;string&#x27;, &#x27;required&#x27;: False, &#x27;displayName&#x27;: &#x27;Where&#x27;, &#x27;curated&#x27;: False, &#x27;design&#x27;: {&#x27;component&#x27;: &#x27;FilterBuilder&#x27;, &#x27;loadByDefault&#x27;: False, &#x27;isMultiSelect&#x27;: False, &#x27;enableUserOverride&#x27;: False, &#x27;isHidden&#x27;: False, &#x27;validation&#x27;: False}}
+param: where query</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#28</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">3.68s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry get \&quot;uipath.connector.uipath-microsoft-azureactivedirectory.list-groups\&quot; --output json 2&gt;/dev/null \\\n  | python3 -c \&quot;\nimport json,sys\nd = json.load(sys.stdin)\nnode = d[&#x27;Data&#x27;][&#x27;Node&#x27;]\nindef = node.get(&#x27;inputDefinition&#x27;, {})\nfields = indef.get(&#x27;fields&#x27;, [])\nprint(&#x27;inputDefinition fields count:&#x27;, len(fields))\nfor f in fields[:10]:\n    print(&#x27;  field:&#x27;, f.get(&#x27;name&#x27;), &#x27;searc… (215 more chars)&quot;,
+  &quot;description&quot;: &quot;Check list-groups inputDefinition for searchable displayName field&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>inputDefinition fields count: 0
+method: GET path: /groups hasCEQL: True</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#29</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">18ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/references/plugins/script/impl.md&quot;,
+  &quot;limit&quot;: 80
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Script Node — Implementation
+2	
+3	## Node Type
+4	
+5	`core.action.script`
+6	
+7	## Registry validation
+8	
+9	```bash
+10	uip maestro flow registry get core.action.script --output json
+11	```
+12	
+13	Confirm: input port `input`, output port `success`, required input `script` (string, non-empty). See [Action Node Structure — Registry validation](../../../../shared/action-nodes.md#registry-validation) for the shared pattern.
+14	
+15	## JSON structure
+16	
+17	Follow the [Action Node Structure — Standard JSON skeleton](../../../../shared/action-nodes.md#standard-json-skeleton). The script-specific input is a single `script` string:
+18	
+19	```json
+20	{
+21	  &quot;inputs&quot;: {
+22	    &quot;script&quot;: &quot;const items = $vars.fetchData.output.body.items;\nconst total = items.reduce((sum, i) =&gt; sum + i.amount, 0);\nreturn { total, count: items.length };&quot;
+23	  }
+24	}
+25	```
+26	
+27	## Adding and editing
+28	
+29	See [Action Node Structure — Adding and editing procedures](../../../../shared/action-nodes.md#adding-and-editing-procedures). The script node uses the standard input port `input` and output port `success`; no plugin-specific wiring.
+30	
+31	## Script rules
+32	
+33	1. **Top-level body — no `function main()` w
+
+… (truncated, 2229 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#30</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">109ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 - &lt;&lt;&#x27;PYEOF&#x27;\nimport json\n\nend_def = json.load(open(&#x27;/tmp/def_end.json&#x27;))[&#x27;Data&#x27;][&#x27;Node&#x27;]\nter_def = json.load(open(&#x27;/tmp/def_terminate.json&#x27;))[&#x27;Data&#x27;][&#x27;Node&#x27;]\nscr_def = json.load(open(&#x27;/tmp/def_script.json&#x27;))[&#x27;Data&#x27;][&#x27;Node&#x27;]\n\n# Print handle configs to confirm port names\nfor name, d in [(&#x27;end&#x27;, end_def), (&#x27;terminate&#x27;, ter_def), (&#x27;script&#x27;, scr_def)]:\n    hc = d.get(&#x27;handleConfiguration&#x27;, [])\n … (128 more chars)&quot;,
+  &quot;description&quot;: &quot;Confirm port names for end/terminate/script nodes&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>end [(&#x27;left&#x27;, &#x27;input&#x27;, &#x27;target&#x27;)]
+terminate [(&#x27;left&#x27;, &#x27;input&#x27;, &#x27;target&#x27;)]
+script [(&#x27;left&#x27;, &#x27;input&#x27;, &#x27;target&#x27;), (&#x27;right&#x27;, &#x27;success&#x27;, &#x27;source&#x27;), (&#x27;right&#x27;, &#x27;error&#x27;, &#x27;source&#x27;)]</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#31</span>
+      <span class="tool-name">Write</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">72ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-ipe-ceql-where/CeqlWhereTest/CeqlWhereTest/CeqlWhereTest.flow&quot;,
+  &quot;content&quot;: &quot;{\n  \&quot;id\&quot;: \&quot;0bd5aa84-8ae5-4249-9a73-4ec5700ca2e1\&quot;,\n  \&quot;version\&quot;: \&quot;1.8\&quot;,\n  \&quot;name\&quot;: \&quot;CeqlWhereTest\&quot;,\n  \&quot;nodes\&quot;: [\n    {\n      \&quot;id\&quot;: \&quot;start\&quot;,\n      \&quot;type\&quot;: \&quot;core.trigger.manual\&quot;,\n      \&quot;typeVersion\&quot;: \&quot;1.0\&quot;,\n      \&quot;display\&quot;: {\n        \&quot;label\&quot;: \&quot;Manual trigger\&quot;\n      },\n      \&quot;inputs\&quot;: {\n        \&quot;entryPointId\&quot;: \&quot;87b4d0d4-0cc0-4f3c-af02-af078c19cd35\&quot;,\n        \&quot;isDefaultEntryPoint\&quot;: true\n      }\n    },\n   … (16827 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>The file /work/output/artifacts/skill-flow-ipe-ceql-where/CeqlWhereTest/CeqlWhereTest/CeqlWhereTest.flow has been updated successfully. (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#32</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-err">ERROR</span>
+      <span class="tool-duration">4.75s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-ipe-ceql-where/CeqlWhereTest/CeqlWhereTest \\\n  &amp;&amp; uip maestro flow validate CeqlWhereTest.flow --output json 2&gt;/dev/null&quot;,
+  &quot;description&quot;: &quot;Validate the flow file&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Exit code 1
+{
+  &quot;Result&quot;: &quot;Failure&quot;,
+  &quot;Message&quot;: &quot;Validation failed for /work/output/artifacts/skill-flow-ipe-ceql-where/CeqlWhereTest/CeqlWhereTest/CeqlWhereTest.flow&quot;,
+  &quot;Instructions&quot;: &quot;Found 1 error(s):\n  - [error] [nodes[listEntraGroups1].inputs.errorHandlingEnabled] Node \&quot;listEntraGroups1\&quot; has an outgoing sourcePort: \&quot;error\&quot; edge, but inputs.errorHandlingEnabled is not true. The \&quot;error\&quot; handle is only available when inputs.errorHandlingEnabled is true. Run \&quot;uip maestro flow format\&quot; or set inputs.errorHandlingEnabled to true on the source node.&quot;,
+  &quot;ErrorCode&quot;: &quot;unknown_error&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}</pre>
+    <h4>Error</h4><pre>Exit code 1
+{
+  &quot;Result&quot;: &quot;Failure&quot;,
+  &quot;Message&quot;: &quot;Validation failed for /work/output/artifacts/skill-flow-ipe-ceql-where/CeqlWhereTest/CeqlWhereTest/CeqlWhereTest.flow&quot;,
+  &quot;Instructions&quot;: &quot;Found 1 error(s):\n  - [error] [nodes[listEntraGroups1].inputs.errorHandlingEnabled] Node \&quot;listEntraGroups1\&quot; has an outgoing sourcePort: \&quot;error\&quot; edge, but inputs.errorHandlingEnabled is not true. The \&quot;error\&quot; handle is only available when inputs.errorHandlingEnabled is true. Run \&quot;uip maestro flow format\&quot; or set inputs.errorHandlingEnabled to true on the source node.&quot;,
+  &quot;ErrorCode&quot;: &quot;unknown_error&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}</pre>
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#33</span>
+      <span class="tool-name">Edit</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">18ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;replace_all&quot;: false,
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-ipe-ceql-where/CeqlWhereTest/CeqlWhereTest/CeqlWhereTest.flow&quot;,
+  &quot;old_string&quot;: &quot;    {\n      \&quot;id\&quot;: \&quot;listEntraGroups1\&quot;,\n      \&quot;type\&quot;: \&quot;uipath.connector.uipath-microsoft-azureactivedirectory.list-groups\&quot;,\n      \&quot;typeVersion\&quot;: \&quot;1.0.0\&quot;,\n      \&quot;display\&quot;: {\n        \&quot;label\&quot;: \&quot;List Entra Groups\&quot;\n      },\n      \&quot;inputs\&quot;: {}\n    },&quot;,
+  &quot;new_string&quot;: &quot;    {\n      \&quot;id\&quot;: \&quot;listEntraGroups1\&quot;,\n      \&quot;type\&quot;: \&quot;uipath.connector.uipath-microsoft-azureactivedirectory.list-groups\&quot;,\n      \&quot;typeVersion\&quot;: \&quot;1.0.0\&quot;,\n      \&quot;display\&quot;: {\n        \&quot;label\&quot;: \&quot;List Entra Groups\&quot;\n      },\n      \&quot;inputs\&quot;: {\n        \&quot;errorHandlingEnabled\&quot;: true\n      }\n    },&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>The file /work/output/artifacts/skill-flow-ipe-ceql-where/CeqlWhereTest/CeqlWhereTest/CeqlWhereTest.flow has been updated successfully. (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#34</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">8.07s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-ipe-ceql-where/CeqlWhereTest/CeqlWhereTest \\\n  &amp;&amp; uip maestro flow validate CeqlWhereTest.flow --output json 2&gt;/dev/null \\\n  &amp;&amp; uip maestro flow format CeqlWhereTest.flow --output json 2&gt;/dev/null&quot;,
+  &quot;description&quot;: &quot;Validate and format the flow&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FlowValidate&quot;,
+  &quot;Data&quot;: {
+    &quot;File&quot;: &quot;/work/output/artifacts/skill-flow-ipe-ceql-where/CeqlWhereTest/CeqlWhereTest/CeqlWhereTest.flow&quot;,
+    &quot;Status&quot;: &quot;Valid&quot;
+  }
+}
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FlowFormat&quot;,
+  &quot;Data&quot;: {
+    &quot;File&quot;: &quot;CeqlWhereTest.flow&quot;,
+    &quot;NodesTotal&quot;: 5,
+    &quot;EdgesTotal&quot;: 4,
+    &quot;NodesRepositioned&quot;: 4,
+    &quot;NodesResized&quot;: 0,
+    &quot;SubflowsTidied&quot;: 0,
+    &quot;VariableCount&quot;: 5
+  },
+  &quot;Instructions&quot;: &quot;Repositioned 4 of 5 nodes&quot;
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#35</span>
+      <span class="tool-name">Write</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">34ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-ipe-ceql-where/where_detail.json&quot;,
+  &quot;content&quot;: &quot;{\n  \&quot;_comment\&quot;: \&quot;Planned node configure --detail payload for listEntraGroups1. Cannot run uip maestro flow node configure without a live tenant. Placeholder UUIDs must be replaced with real values before running node configure.\&quot;,\n  \&quot;_node_id\&quot;: \&quot;listEntraGroups1\&quot;,\n  \&quot;_node_type\&quot;: \&quot;uipath.connector.uipath-microsoft-azureactivedirectory.list-groups\&quot;,\n  \&quot;_connector_key\&quot;: \&quot;uipath-microsoft-azureactived… (2660 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>File created successfully at: /work/output/artifacts/skill-flow-ipe-ceql-where/where_detail.json (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#36</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">5.74s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;echo \&quot;=== Final file layout ===\&quot;\nfind /work/output/artifacts/skill-flow-ipe-ceql-where -type f | sort\n\necho \&quot;\&quot;\necho \&quot;=== Validate one final time after format ===\&quot;\ncd /work/output/artifacts/skill-flow-ipe-ceql-where/CeqlWhereTest/CeqlWhereTest \\\n  &amp;&amp; uip maestro flow validate CeqlWhereTest.flow --output json 2&gt;/dev/null&quot;,
+  &quot;description&quot;: &quot;Final layout check and re-validate after format&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>=== Final file layout ===
+/work/output/artifacts/skill-flow-ipe-ceql-where/.venv/.gitignore
+/work/output/artifacts/skill-flow-ipe-ceql-where/.venv/CACHEDIR.TAG
+/work/output/artifacts/skill-flow-ipe-ceql-where/.venv/bin/activate
+/work/output/artifacts/skill-flow-ipe-ceql-where/.venv/bin/activate.bat
+/work/output/artifacts/skill-flow-ipe-ceql-where/.venv/bin/activate.csh
+/work/output/artifacts/skill-flow-ipe-ceql-where/.venv/bin/activate.fish
+/work/output/artifacts/skill-flow-ipe-ceql-where/.venv/bin/activate.nu
+/work/output/artifacts/skill-flow-ipe-ceql-where/.venv/bin/activate.ps1
+/work/output/artifacts/skill-flow-ipe-ceql-where/.venv/bin/activate_this.py
+/work/output/artifacts/skill-flow-ipe-ceql-where/.venv/bin/deactivate.bat
+/work/output/artifacts/skill-flow-ipe-ceql-where/.venv/bin/pydoc.bat
+/work/output/artifacts/skill-flow-ipe-ceql-where/.venv/lib/python3.13/site-packages/_virtualenv.pth
+/work/output/artifacts/skill-flow-ipe-ceql-where/.venv/lib/python3.13/site-packages/_virtualenv.py
+/work/output/artifacts/skill-flow-ipe-ceql-where/.venv/pyvenv.cfg
+/work/output/artifacts/skill-flow-ipe-ceql-where/CeqlWhereTest/AGENTS.md
+/work/output/artifacts/skill-flow-ipe-ceql-where/CeqlWh
+
+… (truncated, 929 more chars)</pre>
+    
+  </div>
+</details>
+
+</div>
+
+<h2>Command Telemetry</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Total</div><div class="value">37</div></div>
+    <div class="stat"><div class="label">Successful</div><div class="value">35 (95%)</div></div>
+    <div class="stat"><div class="label">Failed</div><div class="value">2</div></div>
+    <div class="stat"><div class="label">Avg / cmd</div><div class="value">4.47s</div></div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 2fr;gap:16px;margin-top:12px">
+    <div>
+      <h4>By Tool</h4>
+      <table>
+        <thead><tr><th>Tool</th><th>Count</th></tr></thead>
+        <tbody><tr><td class='mono'>Bash</td><td>24</td></tr><tr><td class='mono'>Read</td><td>9</td></tr><tr><td class='mono'>Write</td><td>2</td></tr><tr><td class='mono'>Skill</td><td>1</td></tr><tr><td class='mono'>Edit</td><td>1</td></tr></tbody>
+      </table>
+    </div>
+    <div>
+      <h4>Slowest</h4>
+      <table>
+        <thead><tr><th>Tool</th><th>Duration</th><th>Parameters</th></tr></thead>
+        <tbody><tr><td class='mono'>Bash</td><td>26.11s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;cd /work/output/artifacts/skill-flow-...</td></tr><tr><td class='mono'>Bash</td><td>24.82s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;cd /work/output/artifacts/skill-flow-...</td></tr><tr><td class='mono'>Read</td><td>23.49s</td><td class='mono dim'>{&#x27;file_path&#x27;: &#x27;/home/azureuser/projects/skills/ski...</td></tr><tr><td class='mono'>Read</td><td>22.85s</td><td class='mono dim'>{&#x27;file_path&#x27;: &#x27;/home/azureuser/projects/skills/ski...</td></tr><tr><td class='mono'>Bash</td><td>20.88s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;cd /work/output/artifacts/skill-flow-...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+  <p><strong>Most Common Pattern:</strong> <code>Bash → Bash → Bash</code></p><p><strong>Skill Tool Invoked:</strong> 1 time(s)</p>
+</div>
+
+<h2>Generation Metrics</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Total Latency</div><div class="value">8m 19s</div></div>
+    <div class="stat"><div class="label">Turns</div><div class="value">1</div></div>
+    <div class="stat"><div class="label">Assistant Turns</div><div class="value">63</div></div>
+    <div class="stat"><div class="label">Avg Turn Latency</div><div class="value">8m 15s</div></div>
+    
+  </div>
+</div>
+
+<h2>Token Usage</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Input (uncached)</div><div class="value">34</div></div>
+    <div class="stat"><div class="label">Output</div><div class="value">24,613</div></div>
+    <div class="stat"><div class="label">Cache Write</div><div class="value">87,398</div></div>
+    <div class="stat"><div class="label">Cache Read</div><div class="value">2,568,209</div></div>
+    <div class="stat"><div class="label">Total</div><div class="value">2,680,254</div></div>
+    <div class="stat"><div class="label">Cost</div><div class="value">$1.4675</div></div>
+  </div>
+</div>
+
+<h2>Agent Settings</h2>
+<div class="card" style="padding:0">
+  <table>
+    <tbody><tr><td class='mono dim'>Permission Mode</td><td>acceptEdits</td></tr><tr><td class='mono dim'>Allowed Tools</td><td>Skill, Bash, Read, Write, Edit, Glob, Grep</td></tr><tr><td class='mono dim'>Model</td><td>us.anthropic.claude-sonnet-4-6</td></tr><tr><td class='mono dim'>Max Turns</td><td>120</td></tr><tr><td class='mono dim'>System Prompt</td><td>You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted. </td></tr><tr><td class='mono dim'>Plugins</td><td>/home/azureuser/projects/skills</td></tr></tbody>
+  </table>
+</div>
+
+<h2>Environment</h2>
+<div class="card" style="padding:0">
+  <table>
+    <tbody><tr><td class='mono dim'>git_commit</td><td>unknown</td></tr><tr><td class='mono dim'>skills_git_commit</td><td>unknown</td></tr><tr><td class='mono dim'>cli_version</td><td>1.199.0-dev.7970</td></tr><tr><td class='mono dim'>tool_plugins</td><td>{&#x27;admin-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;agent-tool&#x27;: &#x27;1.199.0-dev.7965&#x27;, &#x27;agenthub-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;aops-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;api-workflow-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;codedagent-tool&#x27;: &#x27;1.199.0-dev.7965&#x27;, &#x27;codedapp-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;coder-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;context-grounding-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;conversational-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;data-fabric-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;docsai-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;functions-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;gov-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;insights-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;integrationservice-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;ixp-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;llm-gateway-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;llmgw-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;maestro-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;orchestrator-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;platform-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;pm-tool&#x27;: &#x27;1.199.0-dev.7969&#x27;, &#x27;rpa-legacy-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;rpa-tool&#x27;: &#x27;1.199.0-dev.20260722.4&#x27;, &#x27;solution-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;tasks-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;test-manager-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;traces-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;vertical-solutions-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;}</td></tr><tr><td class='mono dim'>coder_eval</td><td>0.8.8</td></tr><tr><td class='mono dim'>claude_code_cli</td><td>2.1.177 (Claude Code)</td></tr><tr><td class='mono dim'>uv</td><td>uv 0.11.28 (x86_64-unknown-linux-gnu)</td></tr><tr><td class='mono dim'>anthropic</td><td>0.102.0</td></tr><tr><td class='mono dim'>openai</td><td>2.47.0</td></tr><tr><td class='mono dim'>pydantic</td><td>2.12.5</td></tr><tr><td class='mono dim'>api_routing</td><td>aws_bedrock</td></tr><tr><td class='mono dim'>aws_region</td><td>us-east-2</td></tr><tr><td class='mono dim'>bedrock_model</td><td>us.anthropic.claude-sonnet-4-6</td></tr></tbody>
+  </table>
+</div>
+
+<footer>Generated by coder_eval · 2026-07-24T18:26:28</footer>
+</div>
+<script>
+function toggleTheme() {
+  document.documentElement.classList.toggle('light');
+  try {
+    const mode = document.documentElement.classList.contains('light') ? 'light' : 'dark';
+    localStorage.setItem('coder-eval-theme', mode);
+  } catch (e) { /* ignore */ }
+}
+(function() {
+  try {
+    if (localStorage.getItem('coder-eval-theme') === 'light') {
+      document.documentElement.classList.add('light');
+    }
+  } catch (e) { /* ignore */ }
+})();
+</script>
+</body>
+</html>

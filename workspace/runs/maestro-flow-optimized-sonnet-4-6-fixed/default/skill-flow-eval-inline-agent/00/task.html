@@ -1,0 +1,1271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>coder_eval · skill-flow-eval-inline-agent · default</title>
+<style>
+:root {
+  --bg-page: #0f1419;
+  --bg-card: #1a2129;
+  --bg-card-2: #232d38;
+  --bg-code: #0b0f14;
+  --fg: #e6edf3;
+  --fg-muted: #8b98a5;
+  --fg-dim: #6e7681;
+  --border: #30363d;
+  --accent: #58a6ff;
+  --score-high: #22c55e;
+  --score-mid: #f59e0b;
+  --score-low: #ef4444;
+  --status-success: #22c55e;
+  --status-failure: #f59e0b;
+  --status-error: #ef4444;
+  --status-neutral: #6e7681;
+  --shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+.light {
+  --bg-page: #ffffff;
+  --bg-card: #f6f8fa;
+  --bg-card-2: #eaeef2;
+  --bg-code: #f6f8fa;
+  --fg: #1f2328;
+  --fg-muted: #636c76;
+  --fg-dim: #8b949e;
+  --border: #d0d7de;
+  --accent: #0969da;
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial,
+               sans-serif;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--fg);
+  background: var(--bg-page);
+}
+.container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+h1, h2, h3, h4 { margin: 0 0 12px 0; line-height: 1.25; }
+h1 { font-size: 22px; font-weight: 600; }
+h2 { font-size: 18px; font-weight: 600; margin-top: 28px;
+     padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+h3 { font-size: 15px; font-weight: 600; color: var(--fg-muted); }
+h4 { font-size: 13px; font-weight: 600; color: var(--fg-muted); }
+p { margin: 0 0 8px 0; }
+.muted { color: var(--fg-muted); }
+.dim { color: var(--fg-dim); }
+.mono { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+        monospace; font-size: 12.5px; }
+code { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+       monospace; font-size: 12.5px; background: var(--bg-code);
+       border: 1px solid var(--border); padding: 1px 5px; border-radius: 3px; }
+pre { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+      monospace; font-size: 12.5px; background: var(--bg-code);
+      border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px;
+      margin: 6px 0; overflow-x: auto; white-space: pre-wrap;
+      word-wrap: break-word; }
+.header-bar { display: flex; align-items: center; justify-content: space-between;
+              margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+.title-group { flex: 1; min-width: 0; }
+.title-group .subtitle { color: var(--fg-muted); font-size: 13px;
+                         margin-top: 2px; word-break: break-all; }
+.badges { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.badge { display: inline-flex; align-items: center; gap: 6px;
+         padding: 4px 10px; border-radius: 12px; font-size: 12px;
+         font-weight: 600; background: var(--bg-card-2);
+         border: 1px solid var(--border); color: var(--fg); }
+.badge.success { background: color-mix(in srgb, var(--status-success) 20%, var(--bg-card-2));
+                 border-color: var(--status-success); color: var(--status-success); }
+.badge.failure { background: color-mix(in srgb, var(--status-failure) 20%, var(--bg-card-2));
+                 border-color: var(--status-failure); color: var(--status-failure); }
+.badge.error { background: color-mix(in srgb, var(--status-error) 20%, var(--bg-card-2));
+               border-color: var(--status-error); color: var(--status-error); }
+.badge.warning { background: color-mix(in srgb, #f4a52810 20%, var(--bg-card-2));
+                 border-color: #f4a528; color: #f4a528; }
+.badge.neutral { color: var(--fg-muted); }
+.score-pill { display: inline-block; padding: 2px 8px; border-radius: 10px;
+              font-size: 12px; font-weight: 700; min-width: 42px;
+              text-align: center; color: #0b0f14; }
+.score-high { background: var(--score-high); }
+.score-mid { background: var(--score-mid); }
+.score-low { background: var(--score-low); }
+.card { background: var(--bg-card); border: 1px solid var(--border);
+        border-radius: 8px; padding: 16px 20px; margin-bottom: 16px;
+        box-shadow: var(--shadow); }
+.card.highlight { border-left: 4px solid var(--accent); }
+.grid { display: grid; gap: 12px;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+.stat { background: var(--bg-card-2); padding: 10px 12px; border-radius: 6px;
+        border: 1px solid var(--border); }
+.stat .label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;
+               color: var(--fg-muted); margin-bottom: 4px; }
+.stat .value { font-size: 16px; font-weight: 600; }
+table { width: 100%; border-collapse: collapse; margin: 4px 0 12px 0; }
+th, td { text-align: left; padding: 8px 10px;
+         border-bottom: 1px solid var(--border); vertical-align: top;
+         font-size: 13px; }
+th { color: var(--fg-muted); font-weight: 600; font-size: 12px;
+     text-transform: uppercase; letter-spacing: 0.3px; }
+tr:last-child td { border-bottom: none; }
+details { margin: 6px 0; border: 1px solid var(--border); border-radius: 6px;
+          background: var(--bg-card-2); }
+details > summary { cursor: pointer; padding: 8px 12px; user-select: none;
+                    font-weight: 500; list-style: none; }
+details > summary::-webkit-details-marker { display: none; }
+details > summary::before { content: "▸ "; color: var(--fg-dim);
+                            display: inline-block; width: 14px;
+                            transition: transform 0.15s; }
+details[open] > summary::before { content: "▾ "; }
+details .details-body { padding: 0 12px 10px 12px; }
+.tool-row { display: flex; align-items: center; gap: 10px;
+            flex-wrap: wrap; font-size: 13px; }
+.tool-name { font-weight: 600; color: var(--accent); font-family: ui-monospace,
+             SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+.tool-status-ok { color: var(--status-success); font-size: 11px;
+                  font-weight: 600; }
+.tool-status-err { color: var(--status-error); font-size: 11px;
+                   font-weight: 600; }
+.tool-duration { color: var(--fg-muted); font-size: 12px; }
+.tool-seq { color: var(--fg-dim); font-size: 11px; font-weight: 600;
+            min-width: 24px; text-align: right; font-family: ui-monospace,
+            SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+.turn-header { display: flex; justify-content: space-between;
+               align-items: baseline; flex-wrap: wrap; gap: 10px;
+               margin-bottom: 10px; }
+.turn-meta { font-size: 12px; color: var(--fg-muted); }
+.criterion-row td:first-child { font-family: ui-monospace, SFMono-Regular,
+                                 "SF Mono", Menlo, Consolas, monospace;
+                                 color: var(--fg-muted); font-size: 12px; }
+.judge-section { display: flex; flex-direction: column; gap: 12px; }
+.judge-card { padding: 14px 16px; }
+.judge-card-head { display: flex; justify-content: space-between;
+                    align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+.judge-card-title { font-size: 14px; line-height: 1.4; flex: 1; min-width: 0; }
+.judge-card-score { flex-shrink: 0; }
+.judge-rationale { margin-top: 10px; padding: 10px 12px;
+                   background: var(--bg-code); border-radius: 4px;
+                   font-size: 13px; line-height: 1.5; }
+.judge-findings { margin: 8px 0 0 18px; padding-left: 4px; font-size: 13px;
+                   line-height: 1.6; }
+.judge-findings li { margin: 2px 0; }
+.nav-toggle { display: inline-block; padding: 5px 10px; font-size: 12px;
+              background: var(--bg-card-2); border: 1px solid var(--border);
+              border-radius: 5px; color: var(--fg); cursor: pointer; }
+.nav-toggle:hover { background: var(--bg-card); }
+.llm-next-steps { margin: 6px 0 0 20px; padding-left: 0; }
+.llm-next-steps li { margin: 3px 0; }
+.iteration-group { padding: 12px 16px 4px 16px; margin-bottom: 20px;
+                   border-radius: 0 6px 6px 0; border-left: 4px solid var(--status-neutral); }
+/* rgba fallback for browsers without color-mix (Chrome <111, Firefox <113, Safari <16.2). */
+.iteration-group--recovered { border-left-color: var(--status-success);
+                              background: rgba(34, 197, 94, 0.06);
+                              background: color-mix(in srgb, var(--status-success) 6%, transparent); }
+.iteration-group--terminal { border-left-color: var(--status-error);
+                             background: rgba(239, 68, 68, 0.06);
+                             background: color-mix(in srgb, var(--status-error) 6%, transparent); }
+.iteration-group__banner { margin: 0 0 12px 0; font-size: 14px; font-weight: 600; }
+.iteration-group--recovered .iteration-group__banner { color: var(--status-success); }
+.iteration-group--terminal .iteration-group__banner { color: var(--status-error); }
+.attempt-transition { display: flex; align-items: center; gap: 8px;
+                      margin: -6px 0 12px 8px; color: var(--status-error); font-size: 12.5px; }
+.attempt-transition__icon { font-weight: 700; }
+footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--border);
+         color: var(--fg-dim); font-size: 12px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="header-bar">
+  <div class="title-group">
+    <h1>Task: skill-flow-eval-inline-agent</h1>
+    <div class="subtitle">Skill-guided evaluation: agent uses the uipath-maestro-flow skill to build a Flow whose work is done by an INLINE agent node (uipath.agent.autonomous), then wires eval scaffolding that targets it — an `llm-judge-output` evaluator (the correct choice for a non-deterministic agent output, NOT the `exact-match` the deterministic script-node eval tasks use), an eval set, and one data point. Purely local CRUD: no login, no upload, no run. Guards the Author(inline-agent) → Evaluate handoff and the evaluator-type decision.</div>
+  </div>
+  <div class="badges">
+    <span class="badge success">SUCCESS</span>
+    <span class="score-pill score-high">1.00</span>
+    <span class="badge neutral">claude-code · claude-sonnet-4-6</span>
+    <span class="badge neutral">5m 19s</span>
+    <span class="badge neutral">$0.8056</span>
+    
+    
+    <span class="nav-toggle" onclick="toggleTheme()">Toggle theme</span>
+  </div>
+</div>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Variant</div><div class="value">default</div></div>
+    <div class="stat"><div class="label">Started</div><div class="value mono">2026-08-19T21:13:03</div></div>
+    <div class="stat"><div class="label">Duration</div><div class="value">5m 19s</div></div>
+    <div class="stat"><div class="label">Turns (SDK)</div><div class="value">32</div></div>
+    <div class="stat"><div class="label">Commands</div><div class="value">17</div></div>
+  </div>
+</div>
+
+<h2>Success Criteria <span class="muted" style="font-weight:400">(11/11 passed)</span></h2>
+<div class="card" style="padding:0">
+<table>
+  <thead>
+    <tr>
+      <th style="width:15%">Type</th>
+      <th style="width:35%">Description</th>
+      <th style="width:10%">Score</th>
+      <th>Details</th>
+    </tr>
+  </thead>
+  <tbody>
+    
+<tr class="criterion-row">
+  <td>command_executed</td>
+  <td>Agent scaffolded the inline agent with uip agent init --inline-in-flow</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Matched 1/1 required commands (filters: tool_name=Bash, pattern=/(uip|\$UIP)\s+agent\s+init\s+.*--inline-in-flow/)</summary><div class="details-body"><pre style="margin:6px 0 0 0">Matched 1/1 required commands (filters: tool_name=Bash, pattern=/(uip|\$UIP)\s+agent\s+init\s+.*--inline-in-flow/)
+Examples: [&#x27;cd /work/output/artifacts/skill-flow-eval-inline-agent \\\n  &amp;&amp; echo &quot;=== Checking for existing solutions ===&quot; \\\n  &amp;&amp; find&#x27;]</pre></div></details></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>file_exists</td>
+  <td>Flow file was created at the double-nested path</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><div class="dim mono" style="white-space:pre-wrap">File &#x27;TriageEval/TriageEval/TriageEval.flow&#x27; exists</div></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>file_contains</td>
+  <td>Flow contains the inline agent node type</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><div class="dim mono" style="white-space:pre-wrap">Includes: 1/1 found; Score: 1.00</div></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>command_executed</td>
+  <td>Agent validated the flow</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Matched 1/1 required commands (filters: tool_name=Bash, pattern=/(uip|\$UIP)\s+(maestro\s+)?flow\s+validate/)</summary><div class="details-body"><pre style="margin:6px 0 0 0">Matched 1/1 required commands (filters: tool_name=Bash, pattern=/(uip|\$UIP)\s+(maestro\s+)?flow\s+validate/)
+Examples: [&#x27;cd /work/output/artifacts/skill-flow-eval-inline-agent/TriageEval/TriageEval \\\n  &amp;&amp; echo &quot;=== Agent refresh ===&quot; \\\n  &amp;&amp; &#x27;]</pre></div></details></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>command_executed</td>
+  <td>Agent added an llm-judge-output evaluator with a --model</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Matched 1/1 required commands (filters: tool_name=Bash, pattern=/(uip|\$UIP)\s+maestro\s+flow\s+eval\s+evaluator\s+add\s+.*--type\s+llm-judge-output.*--model|(uip|\$UIP)\s+maestro\s+flow\s+eval\s+evaluator\s+add\s+.*--model.*--type\s+llm-judge-output/)</summary><div class="details-body"><pre style="margin:6px 0 0 0">Matched 1/1 required commands (filters: tool_name=Bash, pattern=/(uip|\$UIP)\s+maestro\s+flow\s+eval\s+evaluator\s+add\s+.*--type\s+llm-judge-output.*--model|(uip|\$UIP)\s+maestro\s+flow\s+eval\s+evaluator\s+add\s+.*--model.*--type\s+llm-judge-output/)
+Examples: [&#x27;cd /work/output/artifacts/skill-flow-eval-inline-agent/TriageEval/TriageEval \\\n  &amp;&amp; echo &quot;=== Check flow eval availabili&#x27;]</pre></div></details></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>command_executed</td>
+  <td>Agent did NOT pick a deterministic evaluator for the non-deterministic agent output</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><div class="dim mono" style="white-space:pre-wrap">Matched 0 matches (allowed range 0..0) commands (filters: tool_name=Bash, pattern=/(uip|\$UIP)\s+maestro\s+flow\s+eval\s+evaluator\s+add\s+.*--type\s+(exact-match|contains)\b/)</div></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>command_executed</td>
+  <td>Agent created an eval set</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Matched 1/1 required commands (filters: tool_name=Bash, pattern=/(uip|\$UIP)\s+maestro\s+flow\s+eval\s+set\s+add/)</summary><div class="details-body"><pre style="margin:6px 0 0 0">Matched 1/1 required commands (filters: tool_name=Bash, pattern=/(uip|\$UIP)\s+maestro\s+flow\s+eval\s+set\s+add/)
+Examples: [&#x27;cd /work/output/artifacts/skill-flow-eval-inline-agent/TriageEval/TriageEval \\\n  &amp;&amp; echo &quot;=== Check flow eval availabili&#x27;]</pre></div></details></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>command_executed</td>
+  <td>Agent did not pass evaluator display name to eval set add</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><div class="dim mono" style="white-space:pre-wrap">Matched 0 matches (allowed range 0..0) commands (filters: tool_name=Bash, pattern=/(uip|\$UIP)\s+maestro\s+flow\s+eval\s+set\s+add\s+.*--evaluators(=|\s+)[&quot;&#x27;]?(?:[^&quot;&#x27;\s,]+,\s*)*triage-judge[&quot;&#x27;]?(?![-\w])/)</div></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>command_executed</td>
+  <td>Agent added a data point with --inputs and --expected</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Matched 1/1 required commands (filters: tool_name=Bash, pattern=/(uip|\$UIP)\s+maestro\s+flow\s+eval\s+add\s+.*(--inputs.*--expected|--expected.*--inputs)/)</summary><div class="details-body"><pre style="margin:6px 0 0 0">Matched 1/1 required commands (filters: tool_name=Bash, pattern=/(uip|\$UIP)\s+maestro\s+flow\s+eval\s+add\s+.*(--inputs.*--expected|--expected.*--inputs)/)
+Examples: [&#x27;cd /work/output/artifacts/skill-flow-eval-inline-agent/TriageEval/TriageEval \\\n  &amp;&amp; echo &quot;=== Check flow eval availabili&#x27;]</pre></div></details></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>command_executed</td>
+  <td>Local CRUD only — agent did not start an eval run</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><div class="dim mono" style="white-space:pre-wrap">Matched 0 matches (allowed range 0..0) commands (filters: tool_name=Bash, pattern=/(uip|\$UIP)\s+maestro\s+flow\s+eval\s+run\s+start/)</div></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>run_command</td>
+  <td>Inline agent + llm-judge evaluator + eval set with a data point all exist on disk</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Command: python3 &quot;$TASK_DIR/check_inline_agent_eval.py&quot;</summary><div class="details-body"><pre style="margin:6px 0 0 0">Command: python3 &quot;$TASK_DIR/check_inline_agent_eval.py&quot;
+Exit code: 0 (expected: 0)
+Stdout:
+OK: inline agent at TriageEval/TriageEval/5cdff5ae-790a-459c-8fcd-4444abacab58/agent.json
+OK: llm-judge-output evaluator TriageEval/TriageEval/evals/d349ef25-92aa-42e5-b3cf-22f8bfb600b3/evaluators/triage-judge-f742ab52.json with model=&#x27;gpt-4.1-2025-04-14&#x27;
+OK: eval set TriageEval/TriageEval/evals/d349ef25-92aa-42e5-b3cf-22f8bfb600b3/eval-sets/evaluation-set-triage-cases-03906fba.json has data point &#x27;password-reset&#x27; with inputs + expected
+
+Stderr: (empty)</pre></div></details></td>
+</tr>
+
+  </tbody>
+</table>
+</div>
+<h2>Conversation Trace (1 iteration)</h2>
+<div class="card">
+  <div class="turn-header">
+    <h3>Iteration 1</h3>
+    <div class="badges">
+      <span class="badge neutral">32 assistant turns</span>
+      <span class="badge neutral">in 1068 · out 20459 · cache 727777</span>
+      <span class="badge neutral">5m 17s</span>
+      
+      
+      
+    </div>
+  </div>
+  <details>
+    <summary>Prompt to agent</summary>
+    <div class="details-body"><pre>Your working directory is: /work/output/artifacts/skill-flow-eval-inline-agent
+
+Build a UiPath Flow whose reasoning is done by an inline agent, then add
+evaluation scaffolding for it — purely local, no Studio Web round-trip.
+Use the `uipath-maestro-flow` skill — both the `author` and `evaluate`
+capabilities apply.
+
+Flow:
+- Solution `TriageEval`, Flow project `TriageEval`. The flow file MUST live
+  at `TriageEval/TriageEval/TriageEval.flow` (double-nested layout) and be
+  linked via `uip solution project add`.
+- One start trigger with a string input variable named `email`.
+- One inline agent node (uipath.agent.autonomous) that classifies the
+  inbound `email` into a category and a priority. Scaffold it with
+  `uip agent init --inline-in-flow`. Configure it to a production bar:
+  pick a current model (not the scaffold default), write a real system
+  prompt for the classification task, and declare a typed outputSchema
+  with `category` and `priority` fields.
+- One end node whose output is mapped from the inline agent&#x27;s result.
+- Validate the flow with `uip maestro flow validate` before adding eval
+  scaffolding.
+
+Eval scaffolding (the agent output is non-deterministic LLM text — choose
+the evaluator type accordingly):
+- One evaluator named `triage-judge`. Pick the `--type` that scores
+  natural-language / semantic similarity of a non-deterministic output
+  against an expected value. Pass `--model gpt-4.1-2025-04-14`. Do NOT use
+  a deterministic evaluator type (`exact-match`/`contains`) — the agent&#x27;s
+  wording will vary run to run.
+- One eval set named `Triage Cases`. Create it after the evaluator and omit
+  `--evaluators` so the CLI links the current evaluators via generated file
+  refs. Do NOT pass the display name `triage-judge` to `--evaluators`.
+- One data point named `password-reset` with inputs
+  `{&quot;email&quot;:&quot;Subject: Can&#x27;t log in\n\nI forgot my password and the reset
+  link is broken. Please help ASAP.&quot;}` and an expected output describing
+  the classification, e.</pre></div>
+  </details>
+  <details>
+    <summary>Agent response</summary>
+    <div class="details-body"><pre>[ASSISTANT] I need to read the Author and Evaluate capability references before building.
+[ASSISTANT] Now I&#x27;ll read the greenfield guide, inline-agent plugin, and evaluate references in parallel.
+[ASSISTANT] Now I have all the context I need. Starting T1: scaffold + registry pull + agent init + definition fetches.
+[ASSISTANT] Scaffold done. Agent `projectId` is `5cdff5ae-790a-459c-8fcd-4444abacab58`. Now T2: read the flow + definitions.
+[ASSISTANT] Now I have all definitions. I&#x27;ll build both the flow JSON and the agent.json in one pass, then run T3.
+[ASSISTANT] Now T3: refresh agent, validate flow + format, then add eval scaffolding.
+[ASSISTANT] Flow validates and formats cleanly. The two `UNPREFIXED_REF` warnings are expected — the `binding` field on `agentInputVariables` uses `=$vars.` (not `=js:$vars.`), which is the documented form per the inline-agent spec. Now adding eval scaffolding.
+[ASSISTANT] Everything succeeded. Let me verify the final file layout.
+[ASSISTANT] Everything is in place. Here&#x27;s what was built:
+
+---
+
+**Solution layout** — `TriageEval/TriageEval/TriageEval.flow` (double-nested, registered in `TriageEval.uipx`)
+
+**Flow nodes:**
+- `start` — `core.trigger.manual` with a string input variable `email` (`direction: in`, `triggerNodeId: start`)
+- `triageAgent` — `uipath.agent.autonomous` (v1.3), `inputs.source = 5cdff5ae-790a-459c-8fcd-4444abacab58`
+  - `agentInputVariables`: binds `=$vars.start.output.email` → flattened key `start__output__email`
+  - `agentOutputVariables`: `category` (string), `priority` (string)
+- `end` — `core.control.end` with output mappings `=js:$vars.triageAgent.output.category` and `=js:$vars.triageAgent.output.priority`
+
+**agent.json** (`5cdff5ae-.../agent.json`):
+- Model: `gpt-4.1-2025-04-14` (overriding scaffold default)
+- Temperature: 0, maxIterations: 5 (single-shot classification, no tools)
+- Real system prompt: role, category enum, priority rules, stop instruction
+- User prompt: `{{input.start__output__email}}`
+- Typed `outputSchema` with `category` and `priority` (both required)
+- `inputSchema` declares `start__output__email`
+
+**Eval scaffolding:**
+- Evaluator `triage-judge` (`triage-judge-f742ab52.json`) — type `llm-judge-output` (semantic similarity), model `gpt-4.1-2025-04-14`
+- Eval set `Triage Cases` — CLI linked the evaluator via generated file ref (no display name passed)
+- Data point `password-reset` — inputs `{&quot;email&quot;: &quot;Subject: Can&#x27;t log in\n\n...&quot;}`, expected `{&quot;category&quot;:&quot;Account Access&quot;,&quot;priority&quot;:&quot;High&quot;}`
+
+**Validation:** `uip maestro flow validate` → `Valid`. `uip agent validate --inline-in-flow` → `Valid`. `uip maestro flow format` → repositioned 2 nodes.
+[RESULT - SUCCESS] Everything is in place. Here&#x27;s what was built:
+
+---
+
+**Solution layout** — `TriageEval/TriageEval/TriageEval.flow` (double-nested, registered in `TriageEval.uipx`)
+
+**Flow nodes:**
+- `start` — `core.trigger.manual` with a string input variable `email` (`direction: in`, `triggerNodeId: start`)
+- `triageAgent` — `uipath.agent.autonomous` (v1.3), `inputs.source = 5cdff5ae-790a-459c-8fcd-4444abacab58`
+  - `agentInputVariables`: binds `=$vars.start.output.email` → flattened key `start__output__email`
+  - `agentOutputVariables`: `category` (string), `priority` (string)
+- `end` — `core.control.end` with output mappings `=js:$vars.triageAgent.output.category` and `=js:$vars.triageAgent.output.priority`
+
+**agent.json** (`5cdff5ae-.../agent.json`):
+- Model: `gpt-4.1-2025-04-14` (overriding scaffold default)
+- Temperature: 0, maxIterations: 5 (single-shot classification, no tools)
+- Real system prompt: role, category enum, priority rules, stop instruction
+- User prompt: `{{input.start__output__email}}`
+- Typed `outputSchema` with `category` and `priority` (both required)
+- `inputSchema` declares `start__output__email`
+
+**Eval scaffolding:**
+- Evaluator `triage-judge` (`triage-judge-f742ab52.json`) — type `llm-judge-output` (semantic similarity), model `gpt-4.1-2025-04-14`
+- Eval set `Triage Cases` — CLI</pre></div>
+  </details>
+  <h4 style="margin-top:12px">Tool Calls (17)</h4>
+  
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#0</span>
+      <span class="tool-name">Skill</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">20ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;skill&quot;: &quot;tmp:uipath-maestro-flow&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Launching skill: tmp:uipath-maestro-flow</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#1</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">482ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/CAPABILITY.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Author — Create and edit `.flow` files
+2	
+3	Capability index for building new flows (greenfield) and editing existing flows (brownfield). Author owns everything that happens on disk, locally, without `uip login`. Authoring journeys terminate at `validate` + `format`; from there, hand off to [operate/CAPABILITY.md](../operate/CAPABILITY.md) to publish, run, or debug.
+4	
+5	&gt; **Where you came from / where to go next.** Author is upstream of Operate (build the flow → ship it) and upstream of Diagnose only via Operate (build → run → diagnose). Publish/run/lifecycle lives in [operate/CAPABILITY.md](../operate/CAPABILITY.md); fault triage lives in [diagnose/CAPABILITY.md](../diagnose/CAPABILITY.md).
+6	&gt;
+7	&gt; **Inherits universal rules from [SKILL.md](../../SKILL.md)** — `--output json` + prefer `--output-filter` for extraction, no `flow debug` without consent, resource discovery order, never invoke other skills automatically, dropdown question pattern, solution layout, **plain-English narration + granular progress list (opt-in — silent by default; engage when the user asks for verbosity)**. The rules below are author-scoped and apply on top.
+8	
+9	## When to use this capability
+10	
+11	&lt;
+
+… (truncated, 30472 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#2</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">5ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/evaluate/CAPABILITY.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Evaluate — Design and run Flow evaluations
+2	
+3	Capability index for `uip maestro flow eval` — evaluator CRUD (7 types), eval set CRUD with entry-point pinning, data point management with file attachments, and Studio Web run start/status/results/list/compare. Local CRUD is offline; runs require `uip login` and a Flow solution that already exists in Studio Web.
+4	
+5	&gt; **Where you came from / where to go next.** Evaluate is downstream of Operate (ship the flow → evaluate it on Studio Web) and feeds back into Author (failing eval → fix the `.flow` → re-ship → re-evaluate). Build/edit lives in [author/CAPABILITY.md](../author/CAPABILITY.md); publish/deploy lives in [operate/CAPABILITY.md](../operate/CAPABILITY.md); fault triage on a debug or process run lives in [diagnose/CAPABILITY.md](../diagnose/CAPABILITY.md).
+6	&gt;
+7	&gt; **Inherits universal rules from [SKILL.md](../../SKILL.md)** — `--output json` + prefer `--output-filter` for extraction, no `flow debug` without consent, never invoke other skills automatically, dropdown question pattern, **plain-English narration + granular progress list (opt-in — silent by default; engage when the user asks for verbosity)**. The rules below are
+
+… (truncated, 11432 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#3</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">90ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/greenfield.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Greenfield — Create a New Flow
+2	
+3	End-to-end journey for creating a Flow project from scratch. Author terminates at `validate` + `format`. To publish, run, or debug after this, see [operate/CAPABILITY.md](../../operate/CAPABILITY.md).
+4	
+5	&gt; **Brownfield edits use a different journey.** If the `.flow` file already exists, see [brownfield.md](brownfield.md) instead.
+6	
+7	## Should you plan first?
+8	
+9	For complex flows, produce a plan before building. Reference [planning-arch.md](planning-arch.md) and [planning-impl.md](planning-impl.md) for the node type catalog, port reference, wiring rules, and topology patterns.
+10	
+11	**Plan when:**
+12	- The flow has 5+ nodes with branching or parallel paths
+13	- The flow uses connectors or resources that need discovery
+14	- The user&#x27;s requirements are ambiguous and you need to confirm the approach
+15	
+16	**Don&#x27;t plan when:**
+17	- Adding/editing a single node in an existing flow (use [brownfield.md](brownfield.md))
+18	- The flow is a straightforward linear pipeline (trigger → action → action → end)
+19	- The user has already described the exact topology they want
+20	
+21	### Examples
+22	
+23	**Plan:** &quot;Build a flow that receives a Jira ticke
+
+… (truncated, 35412 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#4</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">97ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/plugins/inline-agent/impl.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Inline Agent Node — Implementation
+2	
+3	This plugin covers **flow-specific** operations for inline agent nodes: adding the node, wiring edges, JSON structure, and flow validation. For agent-side concerns (agent.json configuration, resource.json authoring, solution resources, prompts), see the `uipath-agents` skill — specifically `lowcode/capabilities/inline-in-flow/inline-in-flow.md`.
+4	
+5	Node type: `uipath.agent.autonomous`. The agent is bound to a local subdirectory via `inputs.source = &lt;projectId&gt;`. The node&#x27;s BPMN type and `serviceType` (`Orchestrator.StartInlineAgentJob`) come from the definition in `definitions[]`.
+6	
+7	For coded (Python) agents, use the [`agent`](../agent/impl.md) plugin (`uipath.core.agent.{key}`) — inline agents are low-code only.
+8	
+9	## Prerequisite — Scaffold the Inline Agent
+10	
+11	```bash
+12	uip agent init &quot;&lt;FlowProjectDir&gt;&quot; --inline-in-flow --output json
+13	```
+14	
+15	This creates `&lt;FlowProjectDir&gt;/&lt;projectId-uuid&gt;/` with:
+16	
+17	- `agent.json` — agent definition (model, prompts, schemas)
+18	- `flow-layout.json` — empty `{}`
+19	- `evals/eval-sets/` — empty
+20	- `features/` — empty
+21	- `resources/` — empty (add tool resource files here later)
+22
+
+… (truncated, 44873 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#5</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">13ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/evaluate/references/evaluators-guide.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Flow Evaluators Guide
+2	
+3	The seven evaluator types for `uip maestro flow eval evaluator add --type &lt;type&gt;`. Flow uses the same `uipath-*` evaluator type IDs as the coded evaluator engine (NOT the legacy IDs the low-code `uipath-agents` skill uses). Each `--type` kebab-case value maps to a `uipath-*` evaluator under the hood:
+4	
+5	| `--type` flag | Internal `evaluatorTypeId` | LLM-based | Score scale |
+6	|---------------|---------------------------|-----------|-------------|
+7	| `exact-match` | `uipath-exact-match` | No | Binary (0/1) |
+8	| `json-similarity` | `uipath-json-similarity` | No | Continuous (0–1) |
+9	| `contains` | `uipath-contains` | No | Binary (0/1) |
+10	| `llm-judge-output` | `uipath-llm-judge-output-semantic-similarity` | Yes | Continuous (0–1) |
+11	| `llm-judge-strict-json` | `uipath-llm-judge-output-strict-json-similarity` | Yes | Continuous (0–1) |
+12	| `llm-judge-trajectory` | `uipath-llm-judge-trajectory-similarity` | Yes | Continuous (0–1) |
+13	| `llm-judge-trajectory-simulation` | `uipath-llm-judge-trajectory-simulation` | Yes | Continuous (0–1) |
+14	
+15	The four classification and tool-call evaluators (`uipath-binary-classification`, `uipath-multiclass
+
+… (truncated, 6452 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#6</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">6ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/evaluate/references/eval-sets-guide.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Eval Sets and Data Points
+2	
+3	An eval set is a JSON file that bundles test cases (data points) with the evaluators that score them. Each Flow project can have multiple eval sets — typically one per scenario (smoke, regression, edge cases).
+4	
+5	## Eval Set Lifecycle
+6	
+7	```bash
+8	# Create
+9	uip maestro flow eval set add &quot;&lt;set_name&gt;&quot; \
+10	  [--evaluators &lt;ref1&gt;,&lt;ref2&gt;] \
+11	  [--entry-point &lt;node_id&gt;] \
+12	  --path &lt;flow_project&gt; --output json
+13	
+14	# List
+15	uip maestro flow eval set list --path &lt;flow_project&gt; --output json
+16	
+17	# Remove
+18	uip maestro flow eval set remove &quot;&lt;id_or_name&gt;&quot; --path &lt;flow_project&gt; --output json
+19	```
+20	
+21	### `--evaluators`
+22	
+23	Comma-separated list of evaluator IDs or generated file base names. When omitted, the new eval set links to **all evaluators** present in the project at creation time and writes the generated evaluator file refs (for example, `greeting-match-62c0793a.json`). Prefer omission when the eval set should use every current evaluator.
+24	
+25	Do **not** pass an evaluator display name such as `greeting-match` to `--evaluators`; that writes the display name into `evaluatorRefs`, and Studio Web eval runs will not resolve it. I
+
+… (truncated, 10011 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#7</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">14.72s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-eval-inline-agent \\\n  &amp;&amp; echo \&quot;=== Checking for existing solutions ===\&quot; \\\n  &amp;&amp; find . -maxdepth 2 -type f -name &#x27;*.uipx&#x27; -print 2&gt;/dev/null \\\n  &amp;&amp; echo \&quot;=== Creating solution ===\&quot; \\\n  &amp;&amp; uip solution init \&quot;TriageEval\&quot; --output json \\\n  &amp;&amp; cd TriageEval \\\n  &amp;&amp; echo \&quot;=== Creating flow project ===\&quot; \\\n  &amp;&amp; uip maestro flow init \&quot;TriageEval\&quot; --output json \\\n  &amp;&amp; ech… (615 more chars)&quot;,
+  &quot;description&quot;: &quot;T1: scaffold solution+flow, pull registry, init inline agent, fetch definitions&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>=== Checking for existing solutions ===
+=== Creating solution ===
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;SolutionInit&quot;,
+  &quot;Data&quot;: {
+    &quot;Status&quot;: &quot;Created successfully&quot;,
+    &quot;Path&quot;: &quot;/work/output/artifacts/skill-flow-eval-inline-agent/TriageEval/TriageEval.uipx&quot;,
+    &quot;NextSteps&quot;: &quot;Read /work/output/artifacts/skill-flow-eval-inline-agent/TriageEval/AGENTS.md or /work/output/artifacts/skill-flow-eval-inline-agent/TriageEval/CLAUDE.md to understand the solution lifecycle, project types that can be used inside a solution, and related uip command references.&quot;
+  }
+}
+=== Creating flow project ===
+2026-08-19 21:15:41 INFO  [ResourceBuilder:ProjectCreateCommandHandler] Creating project [object Object]
+2026-08-19 21:15:41 INFO  [ResourceBuilder:MultiFileSolutionDefinitionProvider] Reading multi-file solution definition for solution %s /work/output/artifacts/skill-flow-eval-inline-agent/TriageEval
+2026-08-19 21:15:41 INFO  [ResourceBuilder:ProjectCreateCommandHandler] Generate artefact resources for project [object Object]
+2026-08-19 21:15:41 INFO  [ResourceBuilder:SolutionsMetadataReader] Reading metadata from %s. SolutionsMetadataReader
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FlowInit&quot;,
+  &quot;Data&quot;: 
+
+… (truncated, 2928 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#8</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">3ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-eval-inline-agent/TriageEval/TriageEval/TriageEval.flow&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	{
+2	  &quot;id&quot;: &quot;d349ef25-92aa-42e5-b3cf-22f8bfb600b3&quot;,
+3	  &quot;version&quot;: &quot;1.9&quot;,
+4	  &quot;name&quot;: &quot;TriageEval&quot;,
+5	  &quot;nodes&quot;: [
+6	    {
+7	      &quot;id&quot;: &quot;start&quot;,
+8	      &quot;type&quot;: &quot;core.trigger.manual&quot;,
+9	      &quot;typeVersion&quot;: &quot;1.0&quot;,
+10	      &quot;display&quot;: {
+11	        &quot;label&quot;: &quot;Manual trigger&quot;
+12	      },
+13	      &quot;inputs&quot;: {
+14	        &quot;entryPointId&quot;: &quot;37ee1437-ef43-40ba-8702-75c0705d4c98&quot;,
+15	        &quot;isDefaultEntryPoint&quot;: true
+16	      }
+17	    }
+18	  ],
+19	  &quot;edges&quot;: [],
+20	  &quot;definitions&quot;: [
+21	    {
+22	      &quot;nodeType&quot;: &quot;core.trigger.manual&quot;,
+23	      &quot;version&quot;: &quot;1.0&quot;,
+24	      &quot;category&quot;: &quot;trigger&quot;,
+25	      &quot;description&quot;: &quot;Start the process manually&quot;,
+26	      &quot;tags&quot;: [
+27	        &quot;trigger&quot;,
+28	        &quot;start&quot;,
+29	        &quot;manual&quot;
+30	      ],
+31	      &quot;sortOrder&quot;: 80,
+32	      &quot;display&quot;: {
+33	        &quot;label&quot;: &quot;Manual trigger&quot;,
+34	        &quot;icon&quot;: &quot;play&quot;,
+35	        &quot;shape&quot;: &quot;circle&quot;
+36	      },
+37	      &quot;handleConfiguration&quot;: [
+38	        {
+39	          &quot;position&quot;: &quot;right&quot;,
+40	          &quot;handles&quot;: [
+41	            {
+42	              &quot;id&quot;: &quot;output&quot;,
+43	              &quot;type&quot;: &quot;source&quot;,
+44	              &quot;handleType&quot;: &quot;output&quot;,
+45	              &quot;showButton&quot;: true,
+46	              &quot;constraints&quot;: {
+
+
+… (truncated, 1044 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#9</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">91ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cat /tmp/end_def.json | python3 -c \&quot;import json,sys; d=json.load(sys.stdin); print(json.dumps(d[&#x27;Data&#x27;][&#x27;Node&#x27;], indent=2))\&quot; 2&gt;/dev/null || python3 -c \&quot;import json; d=json.load(open(&#x27;/tmp/end_def.json&#x27;)); print(json.dumps(d.get(&#x27;Data&#x27;,d), indent=2))\&quot;&quot;,
+  &quot;description&quot;: &quot;Extract end node definition&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;nodeType&quot;: &quot;core.control.end&quot;,
+  &quot;version&quot;: &quot;1.0&quot;,
+  &quot;category&quot;: &quot;control-flow&quot;,
+  &quot;description&quot;: &quot;Mark the end of a process path&quot;,
+  &quot;tags&quot;: [
+    &quot;control-flow&quot;,
+    &quot;end&quot;,
+    &quot;finish&quot;,
+    &quot;complete&quot;
+  ],
+  &quot;sortOrder&quot;: 65,
+  &quot;display&quot;: {
+    &quot;label&quot;: &quot;End&quot;,
+    &quot;icon&quot;: &quot;circle-check&quot;,
+    &quot;shape&quot;: &quot;circle&quot;
+  },
+  &quot;handleConfiguration&quot;: [
+    {
+      &quot;position&quot;: &quot;left&quot;,
+      &quot;handles&quot;: [
+        {
+          &quot;id&quot;: &quot;input&quot;,
+          &quot;type&quot;: &quot;target&quot;,
+          &quot;handleType&quot;: &quot;input&quot;
+        }
+      ]
+    }
+  ],
+  &quot;model&quot;: {
+    &quot;type&quot;: &quot;bpmn:EndEvent&quot;
+  },
+  &quot;runtimeConstraints&quot;: {
+    &quot;exclude&quot;: [
+      &quot;api-function&quot;
+    ]
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#10</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">90ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cat /tmp/agent_def.json | python3 -c \&quot;import json,sys; d=json.load(sys.stdin); print(json.dumps(d[&#x27;Data&#x27;][&#x27;Node&#x27;], indent=2))\&quot; 2&gt;/dev/null || python3 -c \&quot;import json; d=json.load(open(&#x27;/tmp/agent_def.json&#x27;)); print(json.dumps(d.get(&#x27;Data&#x27;,d), indent=2))\&quot;&quot;,
+  &quot;description&quot;: &quot;Extract autonomous agent node definition&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;nodeType&quot;: &quot;uipath.agent.autonomous&quot;,
+  &quot;version&quot;: &quot;1.3&quot;,
+  &quot;category&quot;: &quot;agent&quot;,
+  &quot;description&quot;: &quot;AI agent that completes tasks autonomously&quot;,
+  &quot;tags&quot;: [
+    &quot;agentic&quot;,
+    &quot;ai&quot;,
+    &quot;autonomous&quot;,
+    &quot;agent&quot;
+  ],
+  &quot;sortOrder&quot;: 10,
+  &quot;supportsErrorHandling&quot;: true,
+  &quot;display&quot;: {
+    &quot;label&quot;: &quot;Autonomous agent&quot;,
+    &quot;icon&quot;: &quot;autonomous-agent&quot;,
+    &quot;shape&quot;: &quot;rectangle&quot;
+  },
+  &quot;handleConfiguration&quot;: [
+    {
+      &quot;position&quot;: &quot;top&quot;,
+      &quot;handles&quot;: [
+        {
+          &quot;id&quot;: &quot;escalation&quot;,
+          &quot;type&quot;: &quot;source&quot;,
+          &quot;handleType&quot;: &quot;artifact&quot;,
+          &quot;label&quot;: &quot;Escalations&quot;,
+          &quot;showButton&quot;: true,
+          &quot;constraints&quot;: {
+            &quot;allowedTargets&quot;: [
+              {
+                &quot;nodeType&quot;: &quot;uipath.agent.resource.escalation&quot;
+              },
+              {
+                &quot;nodeType&quot;: &quot;uipath.agent.resource.escalation.*&quot;
+              }
+            ],
+            &quot;validationMessage&quot;: &quot;Only Agent Escalation nodes can connect here&quot;,
+            &quot;addNodePanel&quot;: {
+              &quot;searchScope&quot;: &quot;deep&quot;,
+              &quot;searchProviders&quot;: []
+            }
+          }
+        }
+      ]
+    },
+    {
+      &quot;position&quot;: &quot;bottom&quot;,
+      &quot;handles&quot;: [
+        {
+       
+
+… (truncated, 8912 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#11</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">3ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-eval-inline-agent/TriageEval/TriageEval/5cdff5ae-790a-459c-8fcd-4444abacab58/agent.json&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	{
+2	  &quot;version&quot;: &quot;1.1.0&quot;,
+3	  &quot;settings&quot;: {
+4	    &quot;model&quot;: &quot;gpt-5.4&quot;,
+5	    &quot;maxTokens&quot;: 128000,
+6	    &quot;temperature&quot;: 0,
+7	    &quot;engine&quot;: &quot;basic-v2&quot;,
+8	    &quot;maxIterations&quot;: 25,
+9	    &quot;mode&quot;: &quot;standard&quot;
+10	  },
+11	  &quot;inputSchema&quot;: {
+12	    &quot;type&quot;: &quot;object&quot;,
+13	    &quot;properties&quot;: {}
+14	  },
+15	  &quot;outputSchema&quot;: {
+16	    &quot;type&quot;: &quot;object&quot;,
+17	    &quot;properties&quot;: {
+18	      &quot;content&quot;: {
+19	        &quot;type&quot;: &quot;string&quot;,
+20	        &quot;description&quot;: &quot;Output content&quot;
+21	      }
+22	    }
+23	  },
+24	  &quot;metadata&quot;: {
+25	    &quot;storageVersion&quot;: &quot;50.0.0&quot;,
+26	    &quot;isConversational&quot;: false,
+27	    &quot;showProjectCreationExperience&quot;: false
+28	  },
+29	  &quot;type&quot;: &quot;lowCode&quot;,
+30	  &quot;guardrails&quot;: [],
+31	  &quot;messages&quot;: [
+32	    {
+33	      &quot;role&quot;: &quot;system&quot;,
+34	      &quot;content&quot;: &quot;&quot;,
+35	      &quot;contentTokens&quot;: []
+36	    },
+37	    {
+38	      &quot;role&quot;: &quot;user&quot;,
+39	      &quot;content&quot;: &quot;&quot;,
+40	      &quot;contentTokens&quot;: []
+41	    }
+42	  ],
+43	  &quot;projectId&quot;: &quot;5cdff5ae-790a-459c-8fcd-4444abacab58&quot;
+44	}
+45	</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#12</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">106ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 - &lt;&lt;&#x27;PY&#x27;\nimport json\n\n# Build definitions from registry\nend_def = json.load(open(\&quot;/tmp/end_def.json\&quot;))[\&quot;Data\&quot;][\&quot;Node\&quot;]\nagent_def = json.load(open(\&quot;/tmp/agent_def.json\&quot;))[\&quot;Data\&quot;][\&quot;Node\&quot;]\n\nflow = {\n  \&quot;id\&quot;: \&quot;d349ef25-92aa-42e5-b3cf-22f8bfb600b3\&quot;,\n  \&quot;version\&quot;: \&quot;1.9\&quot;,\n  \&quot;name\&quot;: \&quot;TriageEval\&quot;,\n  \&quot;nodes\&quot;: [\n    {\n      \&quot;id\&quot;: \&quot;start\&quot;,\n      \&quot;type\&quot;: \&quot;core.trigger.manual\&quot;,\n      \&quot;typeVersion\&quot;: \&quot;1.0\&quot;,… (3954 more chars)&quot;,
+  &quot;description&quot;: &quot;Write complete TriageEval.flow JSON via Python&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Flow written OK</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#13</span>
+      <span class="tool-name">Write</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">10ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-eval-inline-agent/TriageEval/TriageEval/5cdff5ae-790a-459c-8fcd-4444abacab58/agent.json&quot;,
+  &quot;content&quot;: &quot;{\n  \&quot;version\&quot;: \&quot;1.1.0\&quot;,\n  \&quot;projectId\&quot;: \&quot;5cdff5ae-790a-459c-8fcd-4444abacab58\&quot;,\n  \&quot;settings\&quot;: {\n    \&quot;model\&quot;: \&quot;gpt-4.1-2025-04-14\&quot;,\n    \&quot;maxTokens\&quot;: 128000,\n    \&quot;temperature\&quot;: 0,\n    \&quot;engine\&quot;: \&quot;basic-v2\&quot;,\n    \&quot;maxIterations\&quot;: 5,\n    \&quot;mode\&quot;: \&quot;standard\&quot;\n  },\n  \&quot;inputSchema\&quot;: {\n    \&quot;type\&quot;: \&quot;object\&quot;,\n    \&quot;properties\&quot;: {\n      \&quot;start__output__email\&quot;: {\n        \&quot;type\&quot;: \&quot;string\&quot;,\n        \&quot;description\&quot;: \&quot;Bo… (2488 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>The file /work/output/artifacts/skill-flow-eval-inline-agent/TriageEval/TriageEval/5cdff5ae-790a-459c-8fcd-4444abacab58/agent.json has been updated successfully. (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#14</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">5.36s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-eval-inline-agent/TriageEval/TriageEval \\\n  &amp;&amp; echo \&quot;=== Agent refresh ===\&quot; \\\n  &amp;&amp; uip agent refresh \&quot;5cdff5ae-790a-459c-8fcd-4444abacab58\&quot; --inline-in-flow --output json \\\n  &amp;&amp; echo \&quot;=== Agent validate ===\&quot; \\\n  &amp;&amp; uip agent validate \&quot;5cdff5ae-790a-459c-8fcd-4444abacab58\&quot; --inline-in-flow --output json \\\n  &amp;&amp; echo \&quot;=== Audit flow ===\&quot; \\\n  &amp;&amp; python3 /home/azure… (292 more chars)&quot;,
+  &quot;description&quot;: &quot;T3: agent refresh+validate, audit, flow validate+format&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>=== Agent refresh ===
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;AgentRefresh&quot;,
+  &quot;Data&quot;: {
+    &quot;Status&quot;: &quot;Refreshed — storage schema already at 50.0.0; artifacts regenerated&quot;,
+    &quot;ProjectDir&quot;: &quot;/work/output/artifacts/skill-flow-eval-inline-agent/TriageEval/TriageEval/5cdff5ae-790a-459c-8fcd-4444abacab58&quot;,
+    &quot;Model&quot;: &quot;gpt-4.1-2025-04-14&quot;,
+    &quot;StorageVersion&quot;: &quot;50.0.0&quot;,
+    &quot;MigrationApplied&quot;: false,
+    &quot;Validated&quot;: {
+      &quot;Agent&quot;: true,
+      &quot;Resources&quot;: 0,
+      &quot;EvalSets&quot;: 0,
+      &quot;Evaluators&quot;: 0
+    },
+    &quot;InlineInFlow&quot;: true,
+    &quot;DerivedFilesGenerated&quot;: true,
+    &quot;DerivedFiles&quot;: 0,
+    &quot;FlowShellified&quot;: true,
+    &quot;FlowResourceNodesStripped&quot;: 0
+  }
+}
+=== Agent validate ===
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;AgentValidation&quot;,
+  &quot;Data&quot;: {
+    &quot;Status&quot;: &quot;Valid&quot;,
+    &quot;ProjectDir&quot;: &quot;/work/output/artifacts/skill-flow-eval-inline-agent/TriageEval/TriageEval/5cdff5ae-790a-459c-8fcd-4444abacab58&quot;,
+    &quot;Model&quot;: &quot;gpt-4.1-2025-04-14&quot;,
+    &quot;StorageVersion&quot;: &quot;50.0.0&quot;,
+    &quot;Validated&quot;: {
+      &quot;Agent&quot;: true,
+      &quot;Resources&quot;: 0,
+      &quot;EvalSets&quot;: 0,
+      &quot;Evaluators&quot;: 0
+    },
+    &quot;InlineInFlow&quot;: true
+  }
+}
+=== Audit flow ===
+repaired 2 item(s):
+  add-node-variable start.output
+  set-lay
+
+… (truncated, 1340 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#15</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">2.43s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-eval-inline-agent/TriageEval/TriageEval \\\n  &amp;&amp; echo \&quot;=== Check flow eval availability ===\&quot; \\\n  &amp;&amp; uip maestro flow eval --help --output json 2&gt;&amp;1 | head -5 \\\n  &amp;&amp; echo \&quot;=== Add evaluator ===\&quot; \\\n  &amp;&amp; uip maestro flow eval evaluator add triage-judge \\\n      --type llm-judge-output \\\n      --model gpt-4.1-2025-04-14 \\\n      --path . \\\n      --output json \\\n  &amp;&amp; ec… (524 more chars)&quot;,
+  &quot;description&quot;: &quot;Add evaluator, eval set, and data point&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>=== Check flow eval availability ===
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;Help&quot;,
+  &quot;Data&quot;: {
+    &quot;Command&quot;: &quot;eval&quot;,
+=== Add evaluator ===
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FlowEvalEvaluatorAdd&quot;,
+  &quot;Data&quot;: {
+    &quot;Name&quot;: &quot;triage-judge&quot;,
+    &quot;Id&quot;: &quot;triage-judge-f742ab52&quot;,
+    &quot;Type&quot;: &quot;uipath-llm-judge-output-semantic-similarity&quot;,
+    &quot;File&quot;: &quot;triage-judge-f742ab52.json&quot;
+  }
+}
+=== Create eval set (no --evaluators so CLI links all current evaluators) ===
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FlowEvalSetAdd&quot;,
+  &quot;Data&quot;: {
+    &quot;Name&quot;: &quot;Triage Cases&quot;,
+    &quot;Id&quot;: &quot;03906fba-0ecf-469a-80c9-b46c78830fd1&quot;,
+    &quot;Evaluators&quot;: 1,
+    &quot;File&quot;: &quot;evaluation-set-triage-cases-03906fba.json&quot;
+  }
+}
+=== Add data point ===
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FlowEvalAdd&quot;,
+  &quot;Data&quot;: {
+    &quot;Status&quot;: &quot;Data point added&quot;,
+    &quot;Name&quot;: &quot;password-reset&quot;,
+    &quot;Id&quot;: &quot;8549e7e7-9227-4695-b77f-aecf1ea132d7&quot;,
+    &quot;Set&quot;: &quot;Triage Cases&quot;
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#16</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">12ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;find /work/output/artifacts/skill-flow-eval-inline-agent/TriageEval -type f | sort&quot;,
+  &quot;description&quot;: &quot;Show final file tree&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/work/output/artifacts/skill-flow-eval-inline-agent/TriageEval/AGENTS.md
+/work/output/artifacts/skill-flow-eval-inline-agent/TriageEval/CLAUDE.md
+/work/output/artifacts/skill-flow-eval-inline-agent/TriageEval/TriageEval.uipx
+/work/output/artifacts/skill-flow-eval-inline-agent/TriageEval/TriageEval/5cdff5ae-790a-459c-8fcd-4444abacab58/agent.json
+/work/output/artifacts/skill-flow-eval-inline-agent/TriageEval/TriageEval/5cdff5ae-790a-459c-8fcd-4444abacab58/flow-layout.json
+/work/output/artifacts/skill-flow-eval-inline-agent/TriageEval/TriageEval/TriageEval.flow
+/work/output/artifacts/skill-flow-eval-inline-agent/TriageEval/TriageEval/evals/d349ef25-92aa-42e5-b3cf-22f8bfb600b3/eval-sets/evaluation-set-triage-cases-03906fba.json
+/work/output/artifacts/skill-flow-eval-inline-agent/TriageEval/TriageEval/evals/d349ef25-92aa-42e5-b3cf-22f8bfb600b3/evaluators/triage-judge-f742ab52.json
+/work/output/artifacts/skill-flow-eval-inline-agent/TriageEval/TriageEval/operate.json
+/work/output/artifacts/skill-flow-eval-inline-agent/TriageEval/TriageEval/project.uiproj
+/work/output/artifacts/skill-flow-eval-inline-agent/TriageEval/resources/solution_folder/package/TriageEval.json
+/work/output/artifacts
+
+… (truncated, 95 more chars)</pre>
+    
+  </div>
+</details>
+
+</div>
+
+<h2>Command Telemetry</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Total</div><div class="value">17</div></div>
+    <div class="stat"><div class="label">Successful</div><div class="value">17 (100%)</div></div>
+    <div class="stat"><div class="label">Failed</div><div class="value">0</div></div>
+    <div class="stat"><div class="label">Avg / cmd</div><div class="value">1.38s</div></div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 2fr;gap:16px;margin-top:12px">
+    <div>
+      <h4>By Tool</h4>
+      <table>
+        <thead><tr><th>Tool</th><th>Count</th></tr></thead>
+        <tbody><tr><td class='mono'>Read</td><td>8</td></tr><tr><td class='mono'>Bash</td><td>7</td></tr><tr><td class='mono'>Skill</td><td>1</td></tr><tr><td class='mono'>Write</td><td>1</td></tr></tbody>
+      </table>
+    </div>
+    <div>
+      <h4>Slowest</h4>
+      <table>
+        <thead><tr><th>Tool</th><th>Duration</th><th>Parameters</th></tr></thead>
+        <tbody><tr><td class='mono'>Bash</td><td>14.72s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;cd /work/output/artifacts/skill-flow-...</td></tr><tr><td class='mono'>Bash</td><td>5.36s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;cd /work/output/artifacts/skill-flow-...</td></tr><tr><td class='mono'>Bash</td><td>2.43s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;cd /work/output/artifacts/skill-flow-...</td></tr><tr><td class='mono'>Read</td><td>482ms</td><td class='mono dim'>{&#x27;file_path&#x27;: &#x27;/home/azureuser/projects/skills/tmp...</td></tr><tr><td class='mono'>Bash</td><td>106ms</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;python3 - &lt;&lt;\&#x27;PY\&#x27;\nimport json\n\n# ...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+  <p><strong>Most Common Pattern:</strong> <code>Read → Read → Read</code></p><p><strong>Skill Tool Invoked:</strong> 1 time(s)</p>
+</div>
+
+<h2>Generation Metrics</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Total Latency</div><div class="value">5m 19s</div></div>
+    <div class="stat"><div class="label">Turns</div><div class="value">1</div></div>
+    <div class="stat"><div class="label">Assistant Turns</div><div class="value">32</div></div>
+    <div class="stat"><div class="label">Avg Turn Latency</div><div class="value">5m 17s</div></div>
+    
+  </div>
+</div>
+
+<h2>Token Usage</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Input (uncached)</div><div class="value">1,068</div></div>
+    <div class="stat"><div class="label">Output</div><div class="value">20,459</div></div>
+    <div class="stat"><div class="label">Cache Write</div><div class="value">73,914</div></div>
+    <div class="stat"><div class="label">Cache Read</div><div class="value">727,777</div></div>
+    <div class="stat"><div class="label">Total</div><div class="value">823,218</div></div>
+    <div class="stat"><div class="label">Cost</div><div class="value">$0.8056</div></div>
+  </div>
+</div>
+
+<h2>Agent Settings</h2>
+<div class="card" style="padding:0">
+  <table>
+    <tbody><tr><td class='mono dim'>Permission Mode</td><td>acceptEdits</td></tr><tr><td class='mono dim'>Allowed Tools</td><td>Skill, Bash, Read, Write, Edit, Glob, Grep</td></tr><tr><td class='mono dim'>Model</td><td>us.anthropic.claude-sonnet-4-6</td></tr><tr><td class='mono dim'>Max Turns</td><td>75</td></tr><tr><td class='mono dim'>System Prompt</td><td>You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted. </td></tr><tr><td class='mono dim'>System Prompt Mode</td><td>append</td></tr><tr><td class='mono dim'>Plugins</td><td>/home/azureuser/projects/skills/tmp</td></tr></tbody>
+  </table>
+</div>
+
+<h2>Environment</h2>
+<div class="card" style="padding:0">
+  <table>
+    <tbody><tr><td class='mono dim'>git_commit</td><td>unknown</td></tr><tr><td class='mono dim'>skills_git_commit</td><td>unknown</td></tr><tr><td class='mono dim'>cli_version</td><td>1.201.0-dev.8272</td></tr><tr><td class='mono dim'>tool_plugins</td><td>{&#x27;admin-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;agent-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;agenthub-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;aops-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;api-workflow-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;automation-hub-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;codedagent-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;codedapp-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;coder-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;context-grounding-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;conversational-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;data-fabric-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;docsai-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;function-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;gov-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;guardrails-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;insights-tool&#x27;: &#x27;1.201.0-dev.8276&#x27;, &#x27;integrationservice-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;ixp-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;llm-gateway-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;llmgw-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;maestro-tool&#x27;: &#x27;1.201.0-dev.8275&#x27;, &#x27;model-hub-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;orchestrator-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;platform-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;pm-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;rpa-legacy-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;rpa-tool&#x27;: &#x27;1.201.0-dev.20260809.3&#x27;, &#x27;solution-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;tasks-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;test-manager-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;traces-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;vertical-solutions-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;}</td></tr><tr><td class='mono dim'>coder_eval</td><td>0.9.6</td></tr><tr><td class='mono dim'>claude_code_cli</td><td>2.1.177 (Claude Code)</td></tr><tr><td class='mono dim'>uv</td><td>uv 0.12.5 (x86_64-unknown-linux-gnu)</td></tr><tr><td class='mono dim'>anthropic</td><td>0.122.0</td></tr><tr><td class='mono dim'>openai</td><td>3.2.0</td></tr><tr><td class='mono dim'>pydantic</td><td>2.12.5</td></tr><tr><td class='mono dim'>api_routing</td><td>aws_bedrock</td></tr><tr><td class='mono dim'>eval_routing</td><td>aws_bedrock</td></tr><tr><td class='mono dim'>aws_region</td><td>us-east-2</td></tr><tr><td class='mono dim'>bedrock_model</td><td>us.anthropic.claude-sonnet-4-6</td></tr><tr><td class='mono dim'>system_prompt_semantics</td><td>append</td></tr></tbody>
+  </table>
+</div>
+
+<footer>Generated by coder_eval · 2026-08-19T21:18:22</footer>
+</div>
+<script>
+function toggleTheme() {
+  document.documentElement.classList.toggle('light');
+  try {
+    const mode = document.documentElement.classList.contains('light') ? 'light' : 'dark';
+    localStorage.setItem('coder-eval-theme', mode);
+  } catch (e) { /* ignore */ }
+}
+(function() {
+  try {
+    if (localStorage.getItem('coder-eval-theme') === 'light') {
+      document.documentElement.classList.add('light');
+    }
+  } catch (e) { /* ignore */ }
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,1855 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>coder_eval · skill-flow-move-node · default</title>
+<style>
+:root {
+  --bg-page: #0f1419;
+  --bg-card: #1a2129;
+  --bg-card-2: #232d38;
+  --bg-code: #0b0f14;
+  --fg: #e6edf3;
+  --fg-muted: #8b98a5;
+  --fg-dim: #6e7681;
+  --border: #30363d;
+  --accent: #58a6ff;
+  --score-high: #22c55e;
+  --score-mid: #f59e0b;
+  --score-low: #ef4444;
+  --status-success: #22c55e;
+  --status-failure: #f59e0b;
+  --status-error: #ef4444;
+  --status-neutral: #6e7681;
+  --shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+.light {
+  --bg-page: #ffffff;
+  --bg-card: #f6f8fa;
+  --bg-card-2: #eaeef2;
+  --bg-code: #f6f8fa;
+  --fg: #1f2328;
+  --fg-muted: #636c76;
+  --fg-dim: #8b949e;
+  --border: #d0d7de;
+  --accent: #0969da;
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial,
+               sans-serif;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--fg);
+  background: var(--bg-page);
+}
+.container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+h1, h2, h3, h4 { margin: 0 0 12px 0; line-height: 1.25; }
+h1 { font-size: 22px; font-weight: 600; }
+h2 { font-size: 18px; font-weight: 600; margin-top: 28px;
+     padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+h3 { font-size: 15px; font-weight: 600; color: var(--fg-muted); }
+h4 { font-size: 13px; font-weight: 600; color: var(--fg-muted); }
+p { margin: 0 0 8px 0; }
+.muted { color: var(--fg-muted); }
+.dim { color: var(--fg-dim); }
+.mono { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+        monospace; font-size: 12.5px; }
+code { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+       monospace; font-size: 12.5px; background: var(--bg-code);
+       border: 1px solid var(--border); padding: 1px 5px; border-radius: 3px; }
+pre { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+      monospace; font-size: 12.5px; background: var(--bg-code);
+      border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px;
+      margin: 6px 0; overflow-x: auto; white-space: pre-wrap;
+      word-wrap: break-word; }
+.header-bar { display: flex; align-items: center; justify-content: space-between;
+              margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+.title-group { flex: 1; min-width: 0; }
+.title-group .subtitle { color: var(--fg-muted); font-size: 13px;
+                         margin-top: 2px; word-break: break-all; }
+.badges { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.badge { display: inline-flex; align-items: center; gap: 6px;
+         padding: 4px 10px; border-radius: 12px; font-size: 12px;
+         font-weight: 600; background: var(--bg-card-2);
+         border: 1px solid var(--border); color: var(--fg); }
+.badge.success { background: color-mix(in srgb, var(--status-success) 20%, var(--bg-card-2));
+                 border-color: var(--status-success); color: var(--status-success); }
+.badge.failure { background: color-mix(in srgb, var(--status-failure) 20%, var(--bg-card-2));
+                 border-color: var(--status-failure); color: var(--status-failure); }
+.badge.error { background: color-mix(in srgb, var(--status-error) 20%, var(--bg-card-2));
+               border-color: var(--status-error); color: var(--status-error); }
+.badge.warning { background: color-mix(in srgb, #f4a52810 20%, var(--bg-card-2));
+                 border-color: #f4a528; color: #f4a528; }
+.badge.neutral { color: var(--fg-muted); }
+.score-pill { display: inline-block; padding: 2px 8px; border-radius: 10px;
+              font-size: 12px; font-weight: 700; min-width: 42px;
+              text-align: center; color: #0b0f14; }
+.score-high { background: var(--score-high); }
+.score-mid { background: var(--score-mid); }
+.score-low { background: var(--score-low); }
+.card { background: var(--bg-card); border: 1px solid var(--border);
+        border-radius: 8px; padding: 16px 20px; margin-bottom: 16px;
+        box-shadow: var(--shadow); }
+.card.highlight { border-left: 4px solid var(--accent); }
+.grid { display: grid; gap: 12px;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+.stat { background: var(--bg-card-2); padding: 10px 12px; border-radius: 6px;
+        border: 1px solid var(--border); }
+.stat .label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;
+               color: var(--fg-muted); margin-bottom: 4px; }
+.stat .value { font-size: 16px; font-weight: 600; }
+table { width: 100%; border-collapse: collapse; margin: 4px 0 12px 0; }
+th, td { text-align: left; padding: 8px 10px;
+         border-bottom: 1px solid var(--border); vertical-align: top;
+         font-size: 13px; }
+th { color: var(--fg-muted); font-weight: 600; font-size: 12px;
+     text-transform: uppercase; letter-spacing: 0.3px; }
+tr:last-child td { border-bottom: none; }
+details { margin: 6px 0; border: 1px solid var(--border); border-radius: 6px;
+          background: var(--bg-card-2); }
+details > summary { cursor: pointer; padding: 8px 12px; user-select: none;
+                    font-weight: 500; list-style: none; }
+details > summary::-webkit-details-marker { display: none; }
+details > summary::before { content: "▸ "; color: var(--fg-dim);
+                            display: inline-block; width: 14px;
+                            transition: transform 0.15s; }
+details[open] > summary::before { content: "▾ "; }
+details .details-body { padding: 0 12px 10px 12px; }
+.tool-row { display: flex; align-items: center; gap: 10px;
+            flex-wrap: wrap; font-size: 13px; }
+.tool-name { font-weight: 600; color: var(--accent); font-family: ui-monospace,
+             SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+.tool-status-ok { color: var(--status-success); font-size: 11px;
+                  font-weight: 600; }
+.tool-status-err { color: var(--status-error); font-size: 11px;
+                   font-weight: 600; }
+.tool-duration { color: var(--fg-muted); font-size: 12px; }
+.tool-seq { color: var(--fg-dim); font-size: 11px; font-weight: 600;
+            min-width: 24px; text-align: right; font-family: ui-monospace,
+            SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+.turn-header { display: flex; justify-content: space-between;
+               align-items: baseline; flex-wrap: wrap; gap: 10px;
+               margin-bottom: 10px; }
+.turn-meta { font-size: 12px; color: var(--fg-muted); }
+.criterion-row td:first-child { font-family: ui-monospace, SFMono-Regular,
+                                 "SF Mono", Menlo, Consolas, monospace;
+                                 color: var(--fg-muted); font-size: 12px; }
+.judge-section { display: flex; flex-direction: column; gap: 12px; }
+.judge-card { padding: 14px 16px; }
+.judge-card-head { display: flex; justify-content: space-between;
+                    align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+.judge-card-title { font-size: 14px; line-height: 1.4; flex: 1; min-width: 0; }
+.judge-card-score { flex-shrink: 0; }
+.judge-rationale { margin-top: 10px; padding: 10px 12px;
+                   background: var(--bg-code); border-radius: 4px;
+                   font-size: 13px; line-height: 1.5; }
+.judge-findings { margin: 8px 0 0 18px; padding-left: 4px; font-size: 13px;
+                   line-height: 1.6; }
+.judge-findings li { margin: 2px 0; }
+.nav-toggle { display: inline-block; padding: 5px 10px; font-size: 12px;
+              background: var(--bg-card-2); border: 1px solid var(--border);
+              border-radius: 5px; color: var(--fg); cursor: pointer; }
+.nav-toggle:hover { background: var(--bg-card); }
+.llm-next-steps { margin: 6px 0 0 20px; padding-left: 0; }
+.llm-next-steps li { margin: 3px 0; }
+.iteration-group { padding: 12px 16px 4px 16px; margin-bottom: 20px;
+                   border-radius: 0 6px 6px 0; border-left: 4px solid var(--status-neutral); }
+/* rgba fallback for browsers without color-mix (Chrome <111, Firefox <113, Safari <16.2). */
+.iteration-group--recovered { border-left-color: var(--status-success);
+                              background: rgba(34, 197, 94, 0.06);
+                              background: color-mix(in srgb, var(--status-success) 6%, transparent); }
+.iteration-group--terminal { border-left-color: var(--status-error);
+                             background: rgba(239, 68, 68, 0.06);
+                             background: color-mix(in srgb, var(--status-error) 6%, transparent); }
+.iteration-group__banner { margin: 0 0 12px 0; font-size: 14px; font-weight: 600; }
+.iteration-group--recovered .iteration-group__banner { color: var(--status-success); }
+.iteration-group--terminal .iteration-group__banner { color: var(--status-error); }
+.attempt-transition { display: flex; align-items: center; gap: 8px;
+                      margin: -6px 0 12px 8px; color: var(--status-error); font-size: 12.5px; }
+.attempt-transition__icon { font-weight: 700; }
+footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--border);
+         color: var(--fg-dim); font-size: 12px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="header-bar">
+  <div class="title-group">
+    <h1>Task: skill-flow-move-node</h1>
+    <div class="subtitle">Move the decision node before formatSummary so both branches merge back into formatSummary, then a single end node. Exercises reordering nodes and merging branches.</div>
+  </div>
+  <div class="badges">
+    <span class="badge failure">MAX_TURNS_EXHAUSTED</span>
+    <span class="score-pill score-low">0.38</span>
+    <span class="badge neutral">claude-code · claude-sonnet-5</span>
+    <span class="badge neutral">8m 49s</span>
+    <span class="badge neutral">$2.1178</span>
+    <span class="badge warning">expected_turns exceeded (42/11)</span>
+    
+    <span class="nav-toggle" onclick="toggleTheme()">Toggle theme</span>
+  </div>
+</div>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Variant</div><div class="value">default</div></div>
+    <div class="stat"><div class="label">Started</div><div class="value mono">2026-08-19T15:51:27</div></div>
+    <div class="stat"><div class="label">Duration</div><div class="value">8m 49s</div></div>
+    <div class="stat"><div class="label">Turns (SDK)</div><div class="value">81</div></div>
+    <div class="stat"><div class="label">Commands</div><div class="value">42</div></div>
+  </div>
+</div>
+
+<h2>Success Criteria <span class="muted" style="font-weight:400">(1/2 passed)</span></h2>
+<div class="card" style="padding:0">
+<table>
+  <thead>
+    <tr>
+      <th style="width:15%">Type</th>
+      <th style="width:35%">Description</th>
+      <th style="width:10%">Score</th>
+      <th>Details</th>
+    </tr>
+  </thead>
+  <tbody>
+    
+<tr class="criterion-row">
+  <td>run_command</td>
+  <td>uip maestro flow validate passes on the flow file</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Command: python3 $EXPERIMENT_TASKS_PATH/uipath-maestro-flow/_shared/validate_flow.py</summary><div class="details-body"><pre style="margin:6px 0 0 0">Command: python3 $EXPERIMENT_TASKS_PATH/uipath-maestro-flow/_shared/validate_flow.py
+Exit code: 0 (expected: 0)
+Stdout:
+Validating BellevueWeather/BellevueWeather/BellevueWeather.flow
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FlowValidate&quot;,
+  &quot;Data&quot;: {
+    &quot;File&quot;: &quot;/work/output/artifacts/skill-flow-move-node/BellevueWeather/BellevueWeather/BellevueWeather.flow&quot;,
+    &quot;Status&quot;: &quot;Valid&quot;
+  }
+}
+
+Stderr:
+[ManifestClient] fetchDynamicNodes ok: total=317 agent context nodes=2 external agent nodes=7 orchestrator nodes=263 IXP nodes=45</pre></div></details></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>run_command</td>
+  <td>Flow debug runs with merged branches, output contains branch message</td>
+  <td style="text-align:center"><span class="score-pill score-low">0.00</span></td>
+  <td><details><summary class="mono dim">Command: python3 $TASK_DIR/check_move_node.py</summary><div class="details-body"><pre style="margin:6px 0 0 0">Command: python3 $TASK_DIR/check_move_node.py
+Exit code: 1 (expected: 0)
+Stdout: (empty)
+Stderr:
+FAIL: no edge from &#x27;getWeather&#x27; to &#x27;checkTemperature&#x27;</pre></div></details></td>
+</tr>
+
+  </tbody>
+</table>
+</div>
+<h2>Conversation Trace (1 iteration)</h2>
+<div class="card">
+  <div class="turn-header">
+    <h3>Iteration 1</h3>
+    <div class="badges">
+      <span class="badge neutral">81 assistant turns</span>
+      <span class="badge neutral">in 583 · out 41447 · cache 3949660</span>
+      <span class="badge neutral">8m 39s</span>
+      <span class="badge failure">max_turns exhausted</span>
+      
+      
+    </div>
+  </div>
+  <details>
+    <summary>Prompt to agent</summary>
+    <div class="details-body"><pre>Your working directory is: /work/output/artifacts/skill-flow-move-node
+
+Rearrange the flow so the decision happens right after the HTTP call. Both the true and false branches should merge back into formatSummary, which then goes to a single end node. formatSummary should pick the message (&#x27;nice day&#x27; or &#x27;bring a jacket&#x27;) based on which branch the decision took.
+
+Validate the flow.
+Do NOT ask for approval, confirmation, or feedback. Do NOT pause between planning and implementation. Build the complete flow end-to-end in a single pass.
+</pre></div>
+  </details>
+  <details>
+    <summary>Agent response</summary>
+    <div class="details-body"><pre>[ASSISTANT] This is a UiPath Maestro Flow (.flow) file. Let me invoke the appropriate skill to handle this properly.
+[RESULT - ERROR] </pre></div>
+  </details>
+  <h4 style="margin-top:12px">Tool Calls (42)</h4>
+  
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#0</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">44ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;ls -la /work/output/artifacts/skill-flow-move-node/&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>total 16
+drwxr-xr-x 4 root root 4096 Aug 19 15:51 .
+drwxr-xr-x 3 root root 4096 Aug 19 15:51 ..
+drwxr-xr-x 4 root root 4096 Aug 19 15:51 .venv
+drwxr-xr-x 4 root root 4096 Aug 19 15:51 BellevueWeather</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#1</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">26ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;find /work/output/artifacts/skill-flow-move-node/BellevueWeather -type f | head -100&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/work/output/artifacts/skill-flow-move-node/BellevueWeather/resources/solution_folder/process/flow/BellevueWeather.json
+/work/output/artifacts/skill-flow-move-node/BellevueWeather/resources/solution_folder/package/BellevueWeather.json
+/work/output/artifacts/skill-flow-move-node/BellevueWeather/BellevueWeather/project.uiproj
+/work/output/artifacts/skill-flow-move-node/BellevueWeather/BellevueWeather/BellevueWeather.flow
+/work/output/artifacts/skill-flow-move-node/BellevueWeather/BellevueWeather.uipx</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#2</span>
+      <span class="tool-name">Skill</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">7ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;skill&quot;: &quot;tmp:uipath-maestro-flow&quot;,
+  &quot;args&quot;: &quot;Rearrange the flow in /work/output/artifacts/skill-flow-move-node/BellevueWeather/BellevueWeather/BellevueWeather.flow so the decision happens right after the HTTP call. Both the true and false branches should merge back into formatSummary, which then goes to a single end node. formatSummary should pick the message (&#x27;nice day&#x27; or &#x27;bring a jacket&#x27;) based on which branch the decision took. Validate … (114 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Launching skill: tmp:uipath-maestro-flow</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#3</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">346ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-move-node/BellevueWeather/BellevueWeather/BellevueWeather.flow&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	{
+2	  &quot;id&quot;: &quot;51e93e69-8d7b-4543-b079-cec6c73673ff&quot;,
+3	  &quot;version&quot;: &quot;1.6&quot;,
+4	  &quot;name&quot;: &quot;BellevueWeather&quot;,
+5	  &quot;nodes&quot;: [
+6	    {
+7	      &quot;id&quot;: &quot;start&quot;,
+8	      &quot;type&quot;: &quot;core.trigger.manual&quot;,
+9	      &quot;typeVersion&quot;: &quot;1.0&quot;,
+10	      &quot;display&quot;: {
+11	        &quot;label&quot;: &quot;Manual trigger&quot;
+12	      },
+13	      &quot;inputs&quot;: {},
+14	      &quot;outputs&quot;: {
+15	        &quot;output&quot;: {
+16	          &quot;type&quot;: &quot;object&quot;,
+17	          &quot;description&quot;: &quot;The return value of the trigger.&quot;,
+18	          &quot;source&quot;: {
+19	            &quot;type&quot;: &quot;literal&quot;,
+20	            &quot;expression&quot;: &quot;=result.response&quot;,
+21	            &quot;fieldType&quot;: &quot;string&quot;
+22	          },
+23	          &quot;var&quot;: &quot;output&quot;
+24	        }
+25	      },
+26	      &quot;model&quot;: {
+27	        &quot;type&quot;: &quot;bpmn:StartEvent&quot;,
+28	        &quot;entryPointId&quot;: &quot;916591de-a9b0-4145-9106-ac51175c293e&quot;
+29	      }
+30	    },
+31	    {
+32	      &quot;id&quot;: &quot;getWeather&quot;,
+33	      &quot;type&quot;: &quot;core.action.http&quot;,
+34	      &quot;typeVersion&quot;: &quot;1.2&quot;,
+35	      &quot;display&quot;: {
+36	        &quot;label&quot;: &quot;Get Bellevue Weather&quot;
+37	      },
+38	      &quot;inputs&quot;: {
+39	        &quot;mode&quot;: &quot;manual&quot;,
+40	        &quot;method&quot;: &quot;GET&quot;,
+41	        &quot;url&quot;: &quot;https://api.open-meteo.com/v1/forecast?latitude=47.6101&amp;longitude=-122.2015&amp;current=temperature_2m&amp;tempe
+
+… (truncated, 76419 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#4</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">28ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cat /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/shared/file-format.md 2&gt;/dev/null | head -200&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre># UiPath Flow File Format
+
+The `.flow` file is a JSON document at `&lt;ProjectName&gt;.flow` in the project root. It is the **only file you should edit** — other generated files will be overwritten.
+
+## Table of contents
+
+- [Top-level structure](#top-level-structure)
+- [Project structure (generated scaffold)](#project-structure-generated-scaffold)
+- [Node instance](#node-instance)
+- [Layout](#layout)
+- [Edge — both ports required](#edge--both-ports-required)
+- [Definition entry](#definition-entry)
+- [Common node types](#common-node-types)
+- [Standard ports by node type](#standard-ports-by-node-type)
+- [Implicit error port on action nodes](#implicit-error-port-on-action-nodes)
+- [Minimal working example — dice roller](#minimal-working-example--dice-roller)
+- [entry-points.json — auto-generated, do not edit](#entry-pointsjson--auto-generated-do-not-edit)
+- [Bindings — Orchestrator resource bindings (top-level `bindings[]`)](#bindings--orchestrator-resource-bindings-top-level-bindings)
+- [Bindings — connector connection binding](#bindings--connector-connection-binding)
+
+## Top-level structure
+
+```json
+{
+  &quot;id&quot;: &quot;&lt;uuid&gt;&quot;,
+  &quot;version&quot;: &quot;&lt;scaffolded file-format version&gt;&quot;,
+  &quot;name&quot;: &quot;MyFlow&quot;,
+ 
+
+… (truncated, 12030 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#5</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">24ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -rn \&quot;matchedCase\\|core.logic.decision\&quot; /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/ | grep -v \&quot;/file-format.md\&quot; | head -60&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/shared/node-output-wiring.md:67:| **Decision** (`core.logic.decision`) | `inputs.expression` | **NO** — already JS, do not prefix |
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/CAPABILITY.md:31:| Control flow | `core.logic.decision`, `core.logic.switch`, `core.logic.loop`, `core.logic.merge`, `core.control.end`, `core.logic.terminate`, `core.subflow` |
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/editing-operations-json.md:258:  &quot;type&quot;: &quot;core.logic.decision&quot;,
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/planning-arch.md:151:| `core.logic.decision` | [decision](plugins/decision/planning.md) | Binary branching (if/else) based on a boolean condition |
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/planning-arch.md:232:| `core.logic.decision` | `input` | `true`, `false` |
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/planning-arch.md:452:| 3 | checkHasOrders | Any Orders | control | `core.logic.d
+
+… (truncated, 937 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#6</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">27ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -rln \&quot;core.logic.merge\&quot; /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/ &quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/shared/file-format.md
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/CAPABILITY.md
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/planning-arch.md
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/planning-impl.md
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/plugins/merge/planning.md
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/plugins/merge/impl.md</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#7</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">6ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/plugins/merge/impl.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Merge Node — Implementation
+2	
+3	## Node Type
+4	
+5	`core.logic.merge`
+6	
+7	## Registry Validation
+8	
+9	```bash
+10	uip maestro flow registry get core.logic.merge --output json
+11	```
+12	
+13	Confirm: input port `input` (accepts multiple connections), output port `output`. Set the node instance `typeVersion` to the `version` field from this response — do not hardcode it.
+14	
+15	## JSON Structure
+16	
+17	```json
+18	{
+19	  &quot;id&quot;: &quot;joinBranches&quot;,
+20	  &quot;type&quot;: &quot;core.logic.merge&quot;,
+21	  &quot;typeVersion&quot;: &quot;&lt;DEFINITION_VERSION&gt;&quot;,
+22	  &quot;display&quot;: { &quot;label&quot;: &quot;Join Branches&quot; },
+23	  &quot;inputs&quot;: {}
+24	}
+25	```
+26	
+27	## Adding / Editing
+28	
+29	For step-by-step add, delete, and wiring procedures, see [editing-operations.md](../../editing-operations.md). Use the JSON structure above for the node-specific `inputs`.
+30	
+31	## Wiring
+32	
+33	- `input` — accepts multiple incoming edges (one per parallel branch). All branches must reach the merge before it continues.
+34	- `output` — single outgoing edge to the next downstream node.
+35	
+36	See [editing-operations.md](../../editing-operations.md) for edge add procedures.
+37	
+38	## Debug
+39	
+40	| Error | Cause | Fix |
+41	| --- | --- | --- |
+42	| Merge never co
+
+… (truncated, 238 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#8</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">5ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/plugins/merge/planning.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Merge Node — Planning
+2	
+3	## Node Type
+4	
+5	`core.logic.merge`
+6	
+7	## When to Use
+8	
+9	Use a Merge node to synchronize parallel branches before continuing. It waits for all incoming paths to complete.
+10	
+11	### Selection Heuristics
+12	
+13	| Situation | Use Merge? |
+14	| --- | --- |
+15	| Two or more parallel branches need to join before continuing | Yes |
+16	| Sequential pipeline (no parallel branches) | No — wire nodes directly |
+17	
+18	## Ports
+19	
+20	| Input Port | Output Port(s) |
+21	| --- | --- |
+22	| `input` (accepts multiple connections) | `output` |
+23	
+24	## Wiring Rules
+25	
+26	- Connect each parallel branch&#x27;s terminal node to the Merge node&#x27;s `input` port
+27	- Merge accepts multiple incoming edges on the same `input` port
+28	- Execution continues from `output` only after all incoming paths complete
+29	- Use after forking from a single node to multiple downstream nodes
+30	</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#9</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">5ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/plugins/decision/impl.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Decision Node — Implementation
+2	
+3	## Node Type
+4	
+5	`core.logic.decision`
+6	
+7	## Registry Validation
+8	
+9	```bash
+10	uip maestro flow registry get core.logic.decision --output json
+11	```
+12	
+13	Confirm: input port `input`, output ports `true` and `false`, required input `expression`. Set the node instance `typeVersion` to the `version` field from this response — do not hardcode it.
+14	
+15	## JSON Structure
+16	
+17	```json
+18	{
+19	  &quot;id&quot;: &quot;checkStatus&quot;,
+20	  &quot;type&quot;: &quot;core.logic.decision&quot;,
+21	  &quot;typeVersion&quot;: &quot;&lt;DEFINITION_VERSION&gt;&quot;,
+22	  &quot;display&quot;: { &quot;label&quot;: &quot;Check Status&quot; },
+23	  &quot;inputs&quot;: {
+24	    &quot;expression&quot;: &quot;$vars.fetchData.output.statusCode === 200&quot;
+25	  }
+26	}
+27	```
+28	
+29	## Adding / Editing
+30	
+31	For step-by-step add, delete, and wiring procedures, see [editing-operations.md](../../editing-operations.md). Use the JSON structure above for the node-specific `inputs`.
+32	
+33	## Expression Examples
+34	
+35	```javascript
+36	// Simple comparison
+37	$vars.fetchData.output.statusCode === 200
+38	
+39	// Boolean field
+40	$vars.processData.output.isValid
+41	
+42	// Compound condition
+43	$vars.httpCall.output.statusCode === 200 &amp;&amp; $vars.httpCall.output.body.count &gt; 0
+44	
+45	// S
+
+… (truncated, 735 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#10</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">25ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -n \&quot;multiple incoming\\|converg\\|exclusive\\|fan-in\\|join\&quot; /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/editing-operations.md /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/shared/node-output-wiring.md /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/planning-arch.md 2&gt;/dev/null&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/planning-arch.md:270:9. Merge nodes accept multiple incoming edges (one per parallel path being synchronized)
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/planning-arch.md:324:**The error path must end somewhere the caller can tell apart from success.** Routing `error` into the next happy-path node, or into the same End node the success path reaches, makes every failure look like a completed run — the flow &quot;always looks successful&quot; while the API call it depended on never succeeded. Terminal options: a distinct End node mapping an error/status `out` variable, a `core.logic.terminate` when recovery is impossible, or a recovery branch that rejoins the happy path only after obtaining valid data (a retry that succeeded, a fallback source that returned data).
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/planning-arch.md:508:**Script:** `python3 scripts/validate_mermaid.py &lt;plan-or-diagram-file&gt;` checks the syntax rules and the decidable structural rules, reading either raw mermaid or the fenced `mermaid` 
+
+… (truncated, 490 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#11</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">11ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/planning-arch.md&quot;,
+  &quot;offset&quot;: 240,
+  &quot;limit&quot;: 90
+}</pre>
+    <h4>Result</h4>
+    <pre>240	| `uipath.agent.autonomous` | `input` | `success`, `error`, `tool`, `context`, `escalation` |
+241	| `uipath.core.agent.*` | `input` | `output`, `error` |
+242	| `uipath.core.rpa-workflow.*` | `input` | `output`, `error` |
+243	| `uipath.core.human-task.*` | `input` | `output`, `error` |
+244	| `uipath.core.flow.*` | `input` | `output`, `error` |
+245	| `uipath.core.agentic-process.*` | `input` | `output`, `error` |
+246	| `uipath.core.api-workflow.*` | `input` | `output`, `error` |
+247	| `uipath.ixp.*` | `input` | `success`, `error` |
+248	| `uipath.connector.*` (activities) | `input` | `output`, `error` |
+249	| `core.action.queue.create` | `input` | `success` |
+250	| `core.action.queue.create-and-wait` | `input` | `success` |
+251	| `uipath.human-in-the-loop.quick-form` | `input` | `completed` |
+252	| `uipath.core.human-task.{key}` | `input` | `output` |
+253	
+254	&gt; **`error` is an implicit source port** on every action node (any node with `supportsErrorHandling: true`), and it is **off by default**. Wire it only when the requirements state what should happen if that node fails — a failed HTTP call, script exception, transform error, agent fault. With no error edge the node faults the
+
+… (truncated, 5542 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#12</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">18ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -n \&quot;multiple incoming\\|multiple edges\\|target port\\|fan-in\\|converge\&quot; /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/shared/file-format.md /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/editing-operations*.md 2&gt;/dev/null&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/editing-operations-json.md:372:   - upstream → decision (target port: `input`)
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/editing-operations-json.md:373:   - decision → true branch (source port: `true`, target port: `input`)
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/editing-operations-json.md:374:   - decision → false branch (source port: `false`, target port: `input`)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#13</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">27ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;sed -n &#x27;1,80p&#x27; /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/scripts/check_topology.py 2&gt;/dev/null | head -100&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>#!/usr/bin/env python3
+&quot;&quot;&quot;Check `.flow` wiring against the Standard Port Reference and the wiring rules.
+
+Reports port names that do not exist for a node type, triggers used as targets, End/terminate
+used as sources, missing incoming/outgoing edges, unbalanced decision/switch branches,
+dangling nodes, illegal cycles, and error edges without inputs.errorHandlingEnabled.
+&quot;&quot;&quot;
+import argparse
+import sys
+
+import flow_lib as fl
+
+EXACT = {
+    &quot;core.trigger.manual&quot;: ([], [&quot;output&quot;]),
+    &quot;core.trigger.scheduled&quot;: ([], [&quot;output&quot;]),
+    &quot;core.action.script&quot;: ([&quot;input&quot;], [&quot;success&quot;, &quot;error&quot;]),
+    &quot;core.action.http.v2&quot;: ([&quot;input&quot;], [&quot;default&quot;, &quot;error&quot;]),
+    &quot;core.action.http&quot;: ([&quot;input&quot;], [&quot;default&quot;, &quot;error&quot;]),
+    &quot;core.action.transform&quot;: ([&quot;input&quot;], [&quot;output&quot;, &quot;error&quot;]),
+    &quot;uipath.pattern.batch-transform&quot;: ([&quot;input&quot;], [&quot;output&quot;, &quot;error&quot;]),
+    &quot;uipath.pattern.deep-rag&quot;: ([&quot;input&quot;], [&quot;output&quot;, &quot;error&quot;]),
+    &quot;core.logic.delay&quot;: ([&quot;input&quot;], [&quot;output&quot;]),
+    &quot;core.logic.decision&quot;: ([&quot;input&quot;], [&quot;true&quot;, &quot;false&quot;]),
+    &quot;core.logic.switch&quot;: ([&quot;input&quot;], [&quot;default&quot;]),
+    &quot;core.logic.loop&quot;: ([&quot;input&quot;, &quot;loopBack&quot;], [&quot;success&quot;, &quot;output&quot;, &quot;error&quot;]),
+    &quot;core.logic.merge&quot;: ([&quot;input&quot;], [&quot;output&quot;]),
+
+
+… (truncated, 2464 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#14</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">12ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;sed -n &#x27;80,220p&#x27; /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/scripts/check_topology.py&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>        src, tgt = e.get(&quot;sourceNodeId&quot;), e.get(&quot;targetNodeId&quot;)
+        sp, tp = e.get(&quot;sourcePort&quot;), e.get(&quot;targetPort&quot;)
+        if not sp:
+            out.append(fl.finding(&quot;error&quot;, &quot;MISSING_SOURCE_PORT&quot;, &quot;edge has no sourcePort&quot;, edge=eid))
+        if not tp:
+            out.append(fl.finding(&quot;error&quot;, &quot;MISSING_TARGET_PORT&quot;, &quot;edge has no targetPort; validate rejects this&quot;, edge=eid))
+        for role, nid in ((&quot;sourceNodeId&quot;, src), (&quot;targetNodeId&quot;, tgt)):
+            if nid not in nodes:
+                out.append(fl.finding(&quot;error&quot;, &quot;UNKNOWN_NODE_REF&quot;, &quot;%s %r does not exist&quot; % (role, nid), edge=eid))
+        if src in nodes and sp:
+            stype = nodes[src].get(&quot;type&quot;, &quot;&quot;)
+            spec = ports(stype)
+            if spec is None:
+                out.append(fl.finding(&quot;info&quot;, &quot;UNKNOWN_NODE_TYPE&quot;,
+                                      &quot;%s is not in the port reference; ports not checked&quot; % stype, node=src))
+            else:
+                allowed = set(spec[1])
+                if not fl.is_trigger(stype) and not fl.is_terminal(stype):
+                    allowed.add(&quot;error&quot;)
+                dyn = DYNAMIC_SOURCE.get(stype)
+                ok = sp in allowed or (dyn and sp.
+
+… (truncated, 4273 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#15</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">375ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;which uip; uip --version 2&gt;&amp;1 | head -5; cd /work/output/artifacts/skill-flow-move-node/BellevueWeather/BellevueWeather &amp;&amp; ls -la&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/usr/bin/uip
+1.201.0-dev.8272
+total 80
+drwxr-xr-x 2 root root  4096 Aug 19 15:51 .
+drwxr-xr-x 4 root root  4096 Aug 19 15:51 ..
+-rw-rw-r-- 1 root root 67366 Aug 18 23:16 BellevueWeather.flow
+-rw-rw-r-- 1 root root    57 Aug 18 23:16 project.uiproj</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#16</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">144ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow &amp;&amp; python3 scripts/flow_edit.py --help 2&gt;&amp;1 | head -60&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>usage: flow_edit.py [-h]
+                    {add-node,delete-node,add-edge,delete-edge,set-input,add-variable,add-output-mapping,add-variable-update} ...
+
+Primitive `.flow` mutations: node/edge CRUD, variables, output mappings.
+
+Each subcommand touches every array the operation implies (nodes, edges, definitions,
+variables.nodes, variables.variableUpdates, layout.nodes) in one pass and writes the file
+back with 2-space indent.
+
+positional arguments:
+  {add-node,delete-node,add-edge,delete-edge,set-input,add-variable,add-output-mapping,add-variable-update}
+    add-node            insert a node + definition + variables.nodes + layout
+                        entry
+    delete-node         remove a node and cascade
+                        edges/variables/updates/layout/definition
+    add-edge            add an edge with both ports; sets errorHandlingEnabled
+                        for error edges
+    delete-edge         remove an edge by id or by endpoints
+    set-input           in-place inputs update (dotted key path), preserves
+                        node id
+    add-variable        declare a workflow variable in variables.globals
+    add-output-mapping  map an out variable on an En
+
+… (truncated, 247 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#17</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">744ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow &amp;&amp; python3 scripts/flow_edit.py add-output-mapping --help 2&gt;&amp;1; echo ---; python3 scripts/flow_edit.py add-edge --help 2&gt;&amp;1; echo ---; python3 scripts/flow_edit.py delete-edge --help 2&gt;&amp;1; echo ---; python3 scripts/flow_edit.py delete-node --help 2&gt;&amp;1; echo ---; python3 scripts/flow_edit.py add-node --help 2&gt;&amp;1; echo ---; python3 sc… (40 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>usage: flow_edit.py add-output-mapping [-h] --flow FLOW --end-node END_NODE
+                                       --var VAR --source SOURCE
+
+options:
+  -h, --help           show this help message and exit
+  --flow FLOW
+  --end-node END_NODE
+  --var VAR
+  --source SOURCE      e.g. =js:$vars.calc.output.amount
+---
+usage: flow_edit.py add-edge [-h] --flow FLOW --source SOURCE
+                             --source-port SOURCE_PORT --target TARGET
+                             --target-port TARGET_PORT [--id ID]
+
+options:
+  -h, --help            show this help message and exit
+  --flow FLOW
+  --source SOURCE
+  --source-port SOURCE_PORT
+  --target TARGET
+  --target-port TARGET_PORT
+  --id ID               default
+                        edge_&lt;source&gt;_&lt;sourcePort&gt;_&lt;target&gt;_&lt;targetPort&gt;
+---
+usage: flow_edit.py delete-edge [-h] --flow FLOW [--id ID] [--source SOURCE]
+                                [--source-port SOURCE_PORT] [--target TARGET]
+
+options:
+  -h, --help            show this help message and exit
+  --flow FLOW
+  --id ID
+  --source SOURCE
+  --source-port SOURCE_PORT
+  --target TARGET
+---
+usage: flow_edit.py delete-node [-h] --flow FLOW --id ID
+
+options:
+  -h, --help   show this h
+
+… (truncated, 1409 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#18</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">26ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -n \&quot;converg\\|rejoin\\|both branches\\|merge back\\|branches.*same\\|same node\\|multiple incoming\&quot; -r /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/ | grep -vi \&quot;hitl\\|human-task\&quot;&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/diagnose/references/failure-modes.md:163:2. **Error path rejoins the happy path** — an `error` edge targets the next happy-path node, or reaches the same End node the success path reaches. The failure then runs the success path&#x27;s output mappings against the failed node&#x27;s empty output.
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/shared/file-format.md:325:An `error` edge must not rejoin the happy path. When it does, every failure walks the success route and the run reports `Completed` while the work never happened — the flow &quot;always looks successful.&quot;
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/shared/file-format.md:333:| ✓ | A recovery branch that rejoins **only after obtaining valid data** — a retry that succeeded, or a fallback source that returned data | Downstream runs on real data, not on the failed node&#x27;s empty output |
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/CAPABILITY.md:80:16. **Error handling is off by default — never enable it on a node that handles no stated failure.** (`scripts/check_runtime_gaps.p
+
+… (truncated, 3312 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#19</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">22ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -n \&quot;InclusiveGateway\\|ExclusiveGateway\\|converg\\|rejoin\\|single downstream\\|both branches lead\\|target.*same node\\|multiple incoming edges into\&quot; -r /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/ | grep -i \&quot;decision\\|gateway\\|converg\&quot;&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/planning-arch.md:508:**Script:** `python3 scripts/validate_mermaid.py &lt;plan-or-diagram-file&gt;` checks the syntax rules and the decidable structural rules, reading either raw mermaid or the fenced `mermaid` block inside the plan. Add `--cross-check-tables` to warn when a node id in the plan&#x27;s node/edge tables is missing from the diagram. Exit 1 on any violation. The rules that depend on intent — edge directions matching the flow, parallel branches forking and converging — stay yours to check.
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/planning-arch.md:536:6. **Parallel branches** must visually fork from one node and converge at a Merge node</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#20</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">23ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -rn \&quot;reconverg\\|converge.*decision\\|decision.*converge\\|both branches.*same\\|rejoin.*decision\\|if/else.*merge\\|InclusiveGateway\&quot; /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/ 2&gt;/dev/null&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>(Bash completed with no output)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#21</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">4ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/shared/node-output-wiring.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Wiring Node Outputs to Downstream Inputs
+2	
+3	How to reference one node&#x27;s output (or any `$vars.*` value) from another node&#x27;s input fields. This is the **single source of truth** for `=js:` expression rules in `.flow` JSON. All node-type plugins (connector, http, script, decision, end, etc.) defer to this file.
+4	
+5	&gt; **Read this before** writing any field that needs to reference a previous node&#x27;s output, a workflow variable, or any other `$vars.*` / `$metadata.*` value. Skipping `=js:` is the #1 cause of &quot;the value at runtime was the literal string `vars.X.output.Id`&quot; failures (MST-9107).
+6	
+7	---
+8	
+9	## The Rule (one sentence)
+10	
+11	**Any string that references `$vars.*`, `$metadata.*`, or `$self.*` MUST start with `=js:`. Otherwise it is a literal string at runtime.**
+12	
+13	---
+14	
+15	## What Goes Wrong Without `=js:`
+16	
+17	The Flow runtime serializes string fields into BPMN. The serializer rewrites the canvas-form tokens (`$vars` → `vars`) **whether or not the `=js:` prefix is present**. This means a missing prefix is silent — `flow validate` passes, the file looks plausible, but at runtime the BPMN engine sees a plain string and never evaluates it.
+18	
+19	Three failure
+
+… (truncated, 8495 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#22</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">23ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -rn \&quot;matchedCase\\|matchedCaseId\&quot; /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/ &quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>(Bash completed with no output)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#23</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">20ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -n \&quot;checkStatus\\|both branches converge\\|reconverge\\|converge back\\|rejoin.*decision\\|if/else.*same\\|two edges.*same node\\|targetPort.*input.*twice\&quot; -r /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/ 2&gt;/dev/null&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/editing-operations-json.md:257:  &quot;id&quot;: &quot;checkStatus&quot;,
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/plugins/decision/impl.md:19:  &quot;id&quot;: &quot;checkStatus&quot;,</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#24</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">15ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -rn \&quot;core.logic.decision\&quot; -A3 -B10 /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/planning-arch.md | head -100&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>141-| `uipath.pattern.deep-rag` (Summarize) | [summarize](plugins/summarize/planning.md) | Comprehensive synthesis / Q&amp;A over one attached document, with optional per-claim citations. Gated by tenant flag `canvas.nodes.summarize` |
+142-| `core.logic.delay` | [delay](plugins/delay/planning.md) | Pause execution for a duration or until a specific date |
+143-| `core.action.queue.create` | [queue](plugins/queue/planning.md) | Distribute work to robots — fire-and-forget |
+144-| `core.action.queue.create-and-wait` | [queue](plugins/queue/planning.md) | Distribute work to robots — wait for result |
+145-| `uipath.human-in-the-loop.quick-form` | [hitl](plugins/hitl/planning.md) | Pause flow for a human to review, approve, or fill in data — inline schema, no app required |
+146-
+147-### Control Flow
+148-
+149-| Node Type | Plugin | When to Select |
+150-| --- | --- | --- |
+151:| `core.logic.decision` | [decision](plugins/decision/planning.md) | Binary branching (if/else) based on a boolean condition |
+152-| `core.logic.switch` | [switch](plugins/switch/planning.md) | Multi-way branching (3+ paths) based on ordered case expressions |
+153-| `core.logic.loop` | [loop](plugins/loop/planning.md) | I
+
+… (truncated, 1970 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#25</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">3.41s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow &amp;&amp; uip maestro flow registry get core.action.script --output json 2&gt;&amp;1 | python3 -m json.tool | grep -A30 \&quot;handleConfiguration\&quot;&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Expecting value: line 1 column 2 (char 1)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#26</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">569ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow &amp;&amp; uip maestro flow registry get core.action.script --output json 2&gt;&amp;1 | head -20&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeGetSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;Node&quot;: {
+      &quot;nodeType&quot;: &quot;core.action.script&quot;,
+      &quot;version&quot;: &quot;1.1&quot;,
+      &quot;category&quot;: &quot;data-operations&quot;,
+      &quot;description&quot;: &quot;Run custom JavaScript code&quot;,
+      &quot;tags&quot;: [
+        &quot;code&quot;,
+        &quot;javascript&quot;,
+        &quot;python&quot;
+      ],
+      &quot;sortOrder&quot;: 70,
+      &quot;supportsErrorHandling&quot;: true,
+      &quot;display&quot;: {
+        &quot;label&quot;: &quot;Script&quot;,
+        &quot;icon&quot;: &quot;code&quot;
+      },
+Shell cwd was reset to /work/output/artifacts/skill-flow-move-node</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#27</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">51ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -rn \&quot;no-op\\|pass-through\\|straight to\\|directly to the next node\\|converge directly\\|without.*merge\\|skip.*merge\&quot; /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/ 2&gt;/dev/null&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/plugins/connector-trigger/impl.md:305:A no-op filter — used when the user wants all events to fire the trigger — is `null` or `{&quot;groupOperator&quot;: null, &quot;index&quot;: 0, &quot;filters&quot;: []}`. Prefer **omitting** the `filter` field entirely.
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/plugins/ixp/impl.md:359:4. Wire edges per the parent [editing-operations.md](../../editing-operations.md) guide. `core.logic.mock` is a no-op pass-through — no `inputs`, no `outputs` block, no `bindings_v2.json` changes.
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/plugins/terminate/impl.md:39:Wire the action node&#x27;s implicit `error` source port straight to the handler; the Script logs `$vars.httpCall.error`, then Terminate aborts the flow. Do **not** put a Decision downstream to test for an error — a failing node has already faulted the flow before execution reaches it.
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/plugins/inline-agent/impl.md:406:&gt; **Refresh also shell-ifies the paren
+
+… (truncated, 1183 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#28</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">31ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -rn \&quot;InclusiveGateway\\|gateway.*join\\|converging gateway\\|matching gateway\&quot; /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/ 2&gt;/dev/null&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>(Bash completed with no output)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#29</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">30ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -n \&quot;def \\|MULTIPLE\\|DUPLICATE_TARGET\\|multiple incoming edge\\|in_edges\&quot; /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/scripts/flow_lib.py 2&gt;/dev/null | head -40&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>20:def die(msg, code=2):
+25:def load(path):
+46:def save(path, flow):
+52:def node_map(flow):
+56:def is_trigger(ntype):
+60:def is_terminal(ntype):
+64:def is_cli_owned(ntype):
+70:def is_resource_node(ntype):
+74:def out_edges(flow, nid, port=None):
+81:def in_edges(flow, nid):
+85:def definition_for(flow, node):
+99:def unwrap_definition(payload):
+119:def declared_outputs(definition):
+123:    outdef = definition.get(&quot;outputDefinition&quot;) or {}
+131:def terminals_from(flow, start, seen=None):
+147:def finding(severity, code, message, node=None, edge=None, path=None):
+158:def location(f):
+165:def report(findings, fmt, title):
+189:def expected_size(ntype):
+198:def is_orch_job(ntype):</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#30</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">42ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -n \&quot;def declared_outputs\&quot; -A20 /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/scripts/flow_lib.py&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>119:def declared_outputs(definition):
+120-    &quot;&quot;&quot;Output ids the manifest declares, sorted for determinism.&quot;&quot;&quot;
+121-    if not isinstance(definition, dict):
+122-        return []
+123-    outdef = definition.get(&quot;outputDefinition&quot;) or {}
+124-    if isinstance(outdef, dict):
+125-        props = outdef.get(&quot;properties&quot;) if isinstance(outdef.get(&quot;properties&quot;), dict) else outdef
+126-        if isinstance(props, dict) and props:
+127-            return sorted(k for k in props if isinstance(k, str))
+128-    return []
+129-
+130-
+131-def terminals_from(flow, start, seen=None):
+132-    &quot;&quot;&quot;End/terminate nodes reachable from `start` following non-error ports.&quot;&quot;&quot;
+133-    seen = set() if seen is None else seen
+134-    if start in seen:
+135-        return set()
+136-    seen.add(start)
+137-    nodes = node_map(flow)
+138-    if is_terminal((nodes.get(start) or {}).get(&quot;type&quot;, &quot;&quot;)):
+139-        return {start}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#31</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">22ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -n \&quot;matchedCase\\|outputId\\|multiple output\\|separate output\&quot; /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/shared/variables-and-expressions.md /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/shared/file-format.md 2&gt;/dev/null&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/shared/variables-and-expressions.md:196:Node variables represent outputs produced by nodes during execution. They are read-only and referenced via `$vars.{nodeId}.{outputId}`.
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/shared/variables-and-expressions.md:204:  id: string              // Format: &quot;{nodeId}.{outputId}&quot;
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/shared/variables-and-expressions.md:211:    outputId: string      // Output port ID (e.g., &quot;output&quot;, &quot;error&quot;)
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/shared/variables-and-expressions.md:228:          &quot;outputId&quot;: &quot;output&quot;
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/shared/variables-and-expressions.md:249:          &quot;outputId&quot;: &quot;error&quot;
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/shared/variables-and-expressions.md:400:| `$vars` | All workflow and node variables | `$vars.{variableId}` or `$vars.{nodeId}.{outputId}` |
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/shared/variables
+
+… (truncated, 1715 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#32</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">14ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -rn \&quot;matchedCase\\|core.logic.decision\&quot; -B5 -A30 /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/editing-operations-json.md | sed -n &#x27;1,80p&#x27;&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>253-Use `Edit` to modify the `inputs` object of the target node in-place. No need to delete and re-add.
+254-
+255-```json
+256-{
+257-  &quot;id&quot;: &quot;checkStatus&quot;,
+258:  &quot;type&quot;: &quot;core.logic.decision&quot;,
+259-  &quot;inputs&quot;: {
+260-    &quot;expression&quot;: &quot;$vars.fetchData.output.statusCode === 200&quot;
+261-  }
+262-}
+263-```
+264-
+265-This is a key advantage of `Edit` — input updates are a single field edit, not the delete + re-add pattern required by the CLI.
+266-
+267----
+268-
+269-## Variable Operations
+270-
+271-These are `Edit`-only — the CLI does not support variable management. There is no fallback strategy. `scripts/flow_edit.py add-variable | add-output-mapping | add-variable-update` writes the three shapes below (it refuses a `variableUpdates` entry for a variable that is not `inout`, and refuses an output mapping on a node that is not End/terminate).
+272-
+273-### Add a workflow variable
+274-
+275-**Tool:** `Edit`
+276-
+277-Use `Edit` to add an entry to `variables.globals`:
+278-
+279-```json
+280-{
+281-  &quot;id&quot;: &quot;&lt;VARIABLE_ID&gt;&quot;,
+282-  &quot;direction&quot;: &quot;in|out|inout&quot;,
+283-  &quot;type&quot;: &quot;string|number|boolean|object|array|file&quot;,
+284-  &quot;defaultValue&quot;: &quot;&lt;OPTIONAL_DEFAULT&gt;&quot;,
+285-  &quot;description&quot;: &quot;&lt;OPTIONAL_DESCRIPTION&gt;&quot;
+286
+
+… (truncated, 15 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#33</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">20ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;sed -n &#x27;1,400p&#x27; /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/scripts/flow_edit.py | grep -n \&quot;def add_edge\\|def cmd_add_edge\\|duplicate\\|already\\|exist\&quot; &quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>70:    existing = {v.get(&quot;id&quot;) for v in flow[&quot;variables&quot;][&quot;nodes&quot;] if isinstance(v, dict)}
+73:        if vid in existing:
+85:        fl.die(&quot;node id %r already exists&quot; % args.id)
+176:def add_edge(args):
+181:            fl.die(&quot;%s node %r does not exist in the flow&quot; % (role, nid))
+187:        fl.die(&quot;edge id %r already exists&quot; % eid)
+252:        fl.die(&quot;variable %r already declared&quot; % args.id)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#34</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">3ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/scripts/flow_edit.py&quot;,
+  &quot;offset&quot;: 176,
+  &quot;limit&quot;: 40
+}</pre>
+    <h4>Result</h4>
+    <pre>176	def add_edge(args):
+177	    flow = fl.load(args.flow)
+178	    nodes = fl.node_map(flow)
+179	    for role, nid in ((&quot;source&quot;, args.source), (&quot;target&quot;, args.target)):
+180	        if nid not in nodes:
+181	            fl.die(&quot;%s node %r does not exist in the flow&quot; % (role, nid))
+182	    if not args.target_port:
+183	        fl.die(&quot;--target-port is required on every edge; validate rejects edges without it&quot;)
+184	    eid = args.id or &quot;edge_%s_%s_%s_%s&quot; % (args.source, args.source_port, args.target, args.target_port)
+185	    _check_id(&quot;edge&quot;, eid)
+186	    if any(e.get(&quot;id&quot;) == eid for e in flow[&quot;edges&quot;]):
+187	        fl.die(&quot;edge id %r already exists&quot; % eid)
+188	    flow[&quot;edges&quot;].append({
+189	        &quot;id&quot;: eid,
+190	        &quot;sourceNodeId&quot;: args.source,
+191	        &quot;sourcePort&quot;: args.source_port,
+192	        &quot;targetNodeId&quot;: args.target,
+193	        &quot;targetPort&quot;: args.target_port,
+194	    })
+195	    flagged = False
+196	    if args.source_port == &quot;error&quot;:
+197	        nodes[args.source].setdefault(&quot;inputs&quot;, {})[&quot;errorHandlingEnabled&quot;] = True
+198	        flagged = True
+199	    fl.save(args.flow, flow)
+200	    print(&quot;added edge %s%s&quot; % (eid, &quot;; set inputs.errorHandlingEnabled on &quot; + args.sour
+
+… (truncated, 599 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#35</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">26ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -rn \&quot;matchedCase\\|core.logic.decision\&quot; /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/scripts/*.py 2&gt;/dev/null&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/scripts/audit_expressions.py:53:    if ntype == &quot;core.logic.decision&quot; and path == &quot;inputs.expression&quot;:
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/scripts/check_topology.py:23:    &quot;core.logic.decision&quot;: ([&quot;input&quot;], [&quot;true&quot;, &quot;false&quot;]),
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/scripts/check_topology.py:135:        if ntype == &quot;core.logic.decision&quot;:
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/scripts/flow_compose.py:65:    _edit([&quot;add-node&quot;, &quot;--flow&quot;, args.flow, &quot;--id&quot;, args.id, &quot;--type&quot;, &quot;core.logic.decision&quot;,</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#36</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">5ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/scripts/flow_compose.py&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	#!/usr/bin/env python3
+2	&quot;&quot;&quot;Composite `.flow` graph rewrites. Chains flow_edit primitives in the documented order.&quot;&quot;&quot;
+3	import argparse
+4	import json
+5	import sys
+6	
+7	import flow_lib as fl
+8	import flow_edit
+9	
+10	
+11	def _edit(argv):
+12	    rc = flow_edit.main(argv)
+13	    if rc:
+14	        raise SystemExit(rc)
+15	
+16	
+17	def _node_args(args):
+18	    out = [&quot;--type&quot;, args.type]
+19	    if args.type_version:
+20	        out += [&quot;--type-version&quot;, args.type_version]
+21	    if args.definition_file:
+22	        out += [&quot;--definition-file&quot;, args.definition_file]
+23	    if args.label:
+24	        out += [&quot;--label&quot;, args.label]
+25	    if args.inputs:
+26	        out += [&quot;--inputs&quot;, args.inputs]
+27	    return out
+28	
+29	
+30	def _find_edge(flow, source, target, source_port=None):
+31	    for e in flow[&quot;edges&quot;]:
+32	        if e.get(&quot;sourceNodeId&quot;) == source and e.get(&quot;targetNodeId&quot;) == target:
+33	            if source_port is None or e.get(&quot;sourcePort&quot;) == source_port:
+34	                return e
+35	    return None
+36	
+37	
+38	def insert_between(args):
+39	    flow = fl.load(args.flow)
+40	    edge = _find_edge(flow, args.upstream, args.downstream, args.upstream_port)
+41	    if edge is None:
+42	  
+
+… (truncated, 7742 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#37</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">205ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -n \&quot;def \\|MERGE\\|CONVERGE\\|multiple.*incoming\\|fan-in\\|decision.*merge\&quot; /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/scripts/check_runtime_gaps.py 2&gt;/dev/null | head -60&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>20:def collect(flow, reference_fields=False):
+145:def main(argv=None):</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#38</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">44ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -rn \&quot;reconverge\\|two edges into\\|both edges target\\|same target node\\|two incoming edges on a non-merge\\|exclusive.*converge\&quot; /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/ 2&gt;/dev/null&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>(Bash completed with no output)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#39</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">24ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -n \&quot;maxConnections\\|minConnections\\|multiple.*target\\|single incoming\\|only one incoming\&quot; /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/shared/file-format.md /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/planning-arch.md 2&gt;/dev/null&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>(Bash completed with no output)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#40</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">137ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -rn \&quot;reconverge\\|both.*target the same\\|target the same node\\one\\|exclusive.*wire.*same\\|if.*else.*same next\\|both branches lead to\\|both branches.*wire\&quot; /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/ 2&gt;/dev/null; echo ---; grep -rn \&quot;Decision\&quot; /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/planning-arch.md | head -20&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>---
+25:### Decision table
+178:See [inline-agent/planning.md — Inline vs Published Agent Decision Table](plugins/inline-agent/planning.md#inline-vs-published-agent-decision-table) for the full decision matrix.
+267:6. Decision nodes produce exactly two outgoing edges: one from `true`, one from `false`
+290:Trigger -&gt; Fetch Data -&gt; Decision
+316:When they do, wire the action node&#x27;s implicit `error` source port directly to a handler — this catches node-level failures (network errors, timeouts, non-2xx HTTP responses, script exceptions, transform faults). Do NOT put a Decision downstream to check for errors — by the time execution reaches the Decision, a failing node has already faulted the flow.
+326:Use a downstream Decision/Switch only for **content-based routing on a successful response** (e.g., `items.length &gt; 0`), not as a failure detector. HTTP also supports `inputs.branches` for that. See [Implicit error port on action nodes](../../shared/file-format.md#implicit-error-port-on-action-nodes) — the `Error port vs other branching` table spells out when to use each.
+344:Trigger -&gt; Script (prepare) -&gt; RPA Process (extract from legacy app) -&gt; Agent (classify) -&gt; Decision (confidence high)
+
+… (truncated, 234 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#41</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">6ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/plugins/end/impl.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# End Node — Implementation
+2	
+3	## Node Type
+4	
+5	`core.control.end`
+6	
+7	## Registry Validation
+8	
+9	```bash
+10	uip maestro flow registry get core.control.end --output json
+11	```
+12	
+13	Confirm: input port `input`, no output ports. Set the node instance `typeVersion` to the `version` field from this response — do not hardcode it.
+14	
+15	## JSON Structure
+16	
+17	### Without Output Mapping
+18	
+19	```json
+20	{
+21	  &quot;id&quot;: &quot;doneSuccess&quot;,
+22	  &quot;type&quot;: &quot;core.control.end&quot;,
+23	  &quot;typeVersion&quot;: &quot;&lt;DEFINITION_VERSION&gt;&quot;,
+24	  &quot;display&quot;: { &quot;label&quot;: &quot;Done&quot; },
+25	  &quot;inputs&quot;: {}
+26	}
+27	```
+28	
+29	### With Output Mapping
+30	
+31	When the workflow declares `out` variables, every End node must map all of them:
+32	
+33	```json
+34	{
+35	  &quot;id&quot;: &quot;doneSuccess&quot;,
+36	  &quot;type&quot;: &quot;core.control.end&quot;,
+37	  &quot;typeVersion&quot;: &quot;&lt;DEFINITION_VERSION&gt;&quot;,
+38	  &quot;display&quot;: { &quot;label&quot;: &quot;Done&quot; },
+39	  &quot;inputs&quot;: {},
+40	  &quot;outputs&quot;: {
+41	    &quot;processedCount&quot;: {
+42	      &quot;source&quot;: &quot;=js:$vars.processData.output.count&quot;
+43	    },
+44	    &quot;resultSummary&quot;: {
+45	      &quot;source&quot;: &quot;=js:$vars.formatOutput.output.summary&quot;
+46	    }
+47	  }
+48	}
+49	```
+50	
+51	Each key in `outputs` must match a variable `id` from `variables.globals` where `dire
+
+… (truncated, 904 more chars)</pre>
+    
+  </div>
+</details>
+
+</div>
+
+<h2>Command Telemetry</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Total</div><div class="value">42</div></div>
+    <div class="stat"><div class="label">Successful</div><div class="value">42 (100%)</div></div>
+    <div class="stat"><div class="label">Failed</div><div class="value">0</div></div>
+    <div class="stat"><div class="label">Avg / cmd</div><div class="value">158ms</div></div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 2fr;gap:16px;margin-top:12px">
+    <div>
+      <h4>By Tool</h4>
+      <table>
+        <thead><tr><th>Tool</th><th>Count</th></tr></thead>
+        <tbody><tr><td class='mono'>Bash</td><td>32</td></tr><tr><td class='mono'>Read</td><td>9</td></tr><tr><td class='mono'>Skill</td><td>1</td></tr></tbody>
+      </table>
+    </div>
+    <div>
+      <h4>Slowest</h4>
+      <table>
+        <thead><tr><th>Tool</th><th>Duration</th><th>Parameters</th></tr></thead>
+        <tbody><tr><td class='mono'>Bash</td><td>3.41s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;cd /home/azureuser/projects/skills/tm...</td></tr><tr><td class='mono'>Bash</td><td>744ms</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;cd /home/azureuser/projects/skills/tm...</td></tr><tr><td class='mono'>Bash</td><td>569ms</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;cd /home/azureuser/projects/skills/tm...</td></tr><tr><td class='mono'>Bash</td><td>375ms</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;which uip; uip --version 2&gt;&amp;1 | head ...</td></tr><tr><td class='mono'>Read</td><td>346ms</td><td class='mono dim'>{&#x27;file_path&#x27;: &#x27;/work/output/artifacts/skill-flow-m...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+  <p><strong>Most Common Pattern:</strong> <code>Bash → Bash → Bash</code></p><p><strong>Skill Tool Invoked:</strong> 1 time(s)</p>
+</div>
+
+<h2>Generation Metrics</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Total Latency</div><div class="value">8m 49s</div></div>
+    <div class="stat"><div class="label">Turns</div><div class="value">1</div></div>
+    <div class="stat"><div class="label">Assistant Turns</div><div class="value">81</div></div>
+    <div class="stat"><div class="label">Avg Turn Latency</div><div class="value">8m 39s</div></div>
+    
+  </div>
+</div>
+
+<h2>Token Usage</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Input (uncached)</div><div class="value">583</div></div>
+    <div class="stat"><div class="label">Output</div><div class="value">41,447</div></div>
+    <div class="stat"><div class="label">Cache Write</div><div class="value">82,518</div></div>
+    <div class="stat"><div class="label">Cache Read</div><div class="value">3,949,660</div></div>
+    <div class="stat"><div class="label">Total</div><div class="value">4,074,208</div></div>
+    <div class="stat"><div class="label">Cost</div><div class="value">$2.1178</div></div>
+  </div>
+</div>
+
+<h2>Agent Settings</h2>
+<div class="card" style="padding:0">
+  <table>
+    <tbody><tr><td class='mono dim'>Permission Mode</td><td>acceptEdits</td></tr><tr><td class='mono dim'>Allowed Tools</td><td>Skill, Bash, Read, Write, Edit, Glob, Grep</td></tr><tr><td class='mono dim'>Model</td><td>us.anthropic.claude-sonnet-5</td></tr><tr><td class='mono dim'>Max Turns</td><td>40</td></tr><tr><td class='mono dim'>System Prompt</td><td>You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted. </td></tr><tr><td class='mono dim'>System Prompt Mode</td><td>append</td></tr><tr><td class='mono dim'>Plugins</td><td>/home/azureuser/projects/skills/tmp</td></tr></tbody>
+  </table>
+</div>
+
+<h2>Environment</h2>
+<div class="card" style="padding:0">
+  <table>
+    <tbody><tr><td class='mono dim'>git_commit</td><td>unknown</td></tr><tr><td class='mono dim'>skills_git_commit</td><td>unknown</td></tr><tr><td class='mono dim'>cli_version</td><td>1.201.0-dev.8272</td></tr><tr><td class='mono dim'>tool_plugins</td><td>{&#x27;admin-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;agent-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;agenthub-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;aops-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;api-workflow-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;automation-hub-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;codedagent-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;codedapp-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;coder-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;context-grounding-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;conversational-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;data-fabric-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;docsai-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;function-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;gov-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;guardrails-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;insights-tool&#x27;: &#x27;1.201.0-dev.8276&#x27;, &#x27;integrationservice-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;ixp-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;llm-gateway-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;llmgw-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;maestro-tool&#x27;: &#x27;1.201.0-dev.8275&#x27;, &#x27;model-hub-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;orchestrator-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;platform-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;pm-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;rpa-legacy-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;rpa-tool&#x27;: &#x27;1.201.0-dev.20260809.3&#x27;, &#x27;solution-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;tasks-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;test-manager-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;traces-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;vertical-solutions-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;}</td></tr><tr><td class='mono dim'>coder_eval</td><td>0.9.6</td></tr><tr><td class='mono dim'>claude_code_cli</td><td>2.1.177 (Claude Code)</td></tr><tr><td class='mono dim'>uv</td><td>uv 0.12.5 (x86_64-unknown-linux-gnu)</td></tr><tr><td class='mono dim'>anthropic</td><td>0.122.0</td></tr><tr><td class='mono dim'>openai</td><td>3.2.0</td></tr><tr><td class='mono dim'>pydantic</td><td>2.12.5</td></tr><tr><td class='mono dim'>api_routing</td><td>aws_bedrock</td></tr><tr><td class='mono dim'>eval_routing</td><td>aws_bedrock</td></tr><tr><td class='mono dim'>aws_region</td><td>us-east-2</td></tr><tr><td class='mono dim'>bedrock_model</td><td>us.anthropic.claude-sonnet-4-6</td></tr><tr><td class='mono dim'>system_prompt_semantics</td><td>append</td></tr></tbody>
+  </table>
+</div>
+
+<footer>Generated by coder_eval · 2026-08-19T16:00:17</footer>
+</div>
+<script>
+function toggleTheme() {
+  document.documentElement.classList.toggle('light');
+  try {
+    const mode = document.documentElement.classList.contains('light') ? 'light' : 'dark';
+    localStorage.setItem('coder-eval-theme', mode);
+  } catch (e) { /* ignore */ }
+}
+(function() {
+  try {
+    if (localStorage.getItem('coder-eval-theme') === 'light') {
+      document.documentElement.classList.add('light');
+    }
+  } catch (e) { /* ignore */ }
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,86 @@
+=== USER (turn 1) — simulator-generated opener ===
+Hi — I need your help building a UiPath Maestro Flow that we can get validated before we sign off on it. The project and solution should both be named **CustomerEscalationTriage**.
+
+Here's the business logic I need it to encode:
+
+- An **Enterprise** customer whose production system is **down** with **no workaround available** is our most critical situation — that's a Severity 1.
+- Informational or routine follow-up cases with no production impact are low-priority — Severity 3.
+- Engineering gets pulled in for Sev1 cases but not for Sev3.
+- We never auto-send responses to customers — acknowledgements are always staged for a human reviewer first, so the response mode should always be **Draft**.
+- Whatever correlation ID comes in with the request must be carried through as the case key, so our downstream systems can link everything up.
+
+One important note: the **businessImpact** field is free-form text that the requester types in themselves — it might be a short phrase or a full sentence describing what they're experiencing. It won't be a fixed code or keyword, so the wording will vary.
+
+The flow's declared inputs and outputs **must use these exact names** — downstream systems depend on them:
+
+- **Inputs:** `customerTier`, `productionDown`, `workaroundAvailable`, `businessImpact`, `correlationId`
+- **Outputs:** `severity`, `engineeringNeeded`, `responseMode`, `caseKey`
+
+Please ask me anything you need to know before you start building, and then let's get this validated.
+
+=== AGENT (turn 1) — 31.4s, in=1135 out=2371 ===
+Before I start building, a few things I need nailed down so the flow's logic (and validation) hold up:
+
+1. **Severity coverage** — the rules only define the two extremes:
+   - Sev1: Enterprise + prod down + no workaround
+   - Sev3: informational/routine, no production impact
+
+   What about everything in between (e.g., Enterprise prod down *with* a workaround, or a non-Enterprise customer with prod down and no workaround)? Is there a **Sev2**, or should anything not matching the Sev1 condition just fall through to Sev3? I don't want to silently misclassify a real outage from a non-Enterprise account as "informational."
+
+2. **Role of `businessImpact`** — since it's free text, is it purely a **pass-through/logged field** (recorded on the case but not used to decide severity), or do you want the flow to actually **interpret it** (e.g., an LLM/AI node reading the text to catch cases where the customer describes something severe even if the structured fields don't clearly indicate Sev1)? This changes whether we need an AI classification node or just a straightforward rules step.
+
+3. **`customerTier` values** — what's the full set of valid tiers (e.g., Enterprise, Business, Standard, Free)? I want the condition check to be explicit rather than just "if not Enterprise."
+
+4. **Trigger** — how does this flow get kicked off? API/webhook call, manual trigger, or invoked as a subflow from another process? This affects how I define the entry point.
+
+5. **Downstream of "Draft" response** — does the flow just output `responseMode = "Draft"` as a flag for another system to pick up, or do you also want a human-in-the-loop **approval/action step** inside this flow itself (e.g., an Action Center task) before it's considered "staged"?
+
+Once I have these, I'll build the `.flow` project (via the Maestro Flow skill), wire up the exact input/output names you specified, and get it validated.
+
+=== USER (turn 2) ===
+Good questions — let me answer all of them so you can just build.
+
+1. **Severity coverage** — yes, there is a Sev2. If production is down or degraded *but a viable workaround exists*, that's Sev2. Engineering is needed for Sev2 as well, same as Sev1. Anything that doesn't hit Sev1 or Sev2 conditions falls to Sev3. So: no workaround → Sev1 (if Enterprise + prod down) or escalate accordingly; workaround available → Sev2; no production impact at all → Sev3.
+
+2. **`businessImpact`** — treat it as a pass-through. It gets recorded on the case (carried through for context) but the severity decision is driven entirely by the structured fields. No AI interpretation node needed.
+
+3. **`customerTier` values** — the valid tiers are **Enterprise**, **Business**, and **Standard**. Enterprise is the only tier that can trigger Sev1 under our policy; the others follow the same Sev2/Sev3 logic based on production status and workaround availability.
+
+4. **Trigger** — treat it as a standalone entry point invoked externally (API call or direct invocation). The grader will run it directly with seeded inputs, so just make sure the entry point accepts the declared inputs cleanly.
+
+5. **Downstream of "Draft"** — `responseMode = "Draft"` is purely an output flag for the downstream system to act on. No Action Center step or human approval task inside this flow itself.
+
+That should cover everything — go ahead and build it.
+
+=== AGENT (turn 2) — 188.3s, in=26 out=16015, 18 tool calls ===
+Everything is clean. Here's the summary.
+
+**Built:** `CustomerEscalationTriage/CustomerEscalationTriage/CustomerEscalationTriage.flow` (solution and project both named `CustomerEscalationTriage`, double-nested layout).
+
+**Structure:** Manual trigger (`start`) → Script node (`triageDecision`, implements the severity/engineering/response/case-key logic) → End node (`end`, maps all four outputs). Standalone entry point, invoked directly — no schedule/attended trigger.
+
+**Validation:** `flow validate` → `Status: "Valid"`. `flow format` applied (repositioned/resized nodes). `audit_flow.py` → clean across topology, expressions, jint, bindings, and runtime-gaps (0 errors, 0 warnings).
+
+**Decision table implemented** (evaluated in order inside the script node):
+
+| customerTier | productionDown | workaroundAvailable | severity | engineeringNeeded |
+|---|---|---|---|---|
+| Enterprise | true | **false** | **Sev1** | true |
+| Enterprise | true | true | Sev2 | true |
+| Business | true | false | Sev2 | true |
+| Business | true | true | Sev2 | true |
+| Standard | true | false | Sev2 | true |
+| Standard | true | true | Sev2 | true |
+| any | false | any | Sev3 | false |
+
+- `responseMode` is always the literal `"Draft"`.
+- `caseKey` is `correlationId` passed through unchanged.
+- `businessImpact` is declared as an input but not read anywhere in the decision logic — pass-through/context only, per your instruction.
+
+This matches your confirmation: Enterprise+down+no workaround→Sev1; any tier+down+workaround→Sev2; non-Enterprise+down+no workaround→Sev2; not down→Sev3.
+
+The flow is ready for sign-off. Next step would normally be publish/debug/deploy — let me know if you want to proceed with any of those, or if this is just for validation at this stage.
+
+=== USER (turn 3) — stop token — dialog ending ===
+That all lines up with our policy — the decision table is correct, the output contract matches exactly, and keeping `businessImpact` as a pass-through is right. No publish or debug needed from your end; the grader takes it from here.
+

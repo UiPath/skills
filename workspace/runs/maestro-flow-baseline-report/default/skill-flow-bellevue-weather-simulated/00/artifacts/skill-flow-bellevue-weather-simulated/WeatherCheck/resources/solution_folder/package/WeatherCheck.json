@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "WeatherCheck",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "65423e8f-3a27-4d44-a11d-0f07b7f03dd3",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "WeatherCheck"
+    },
+    "locks": [],
+    "key": "38d4ff60-bc6f-4645-8cc8-fbac54055d77",
+    "files": []
+  }
+}

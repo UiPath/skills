@@ -1,0 +1,7 @@
+{
+  "projectVersion": "1.0.0",
+  "ProjectType": "ProcessOrchestration",
+  "Name": "ApproverCountAgent",
+  "main": "ApproverCountAgent.bpmn",
+  "description": "Invokes an Agent Builder agent to count approvers in a sentence."
+}

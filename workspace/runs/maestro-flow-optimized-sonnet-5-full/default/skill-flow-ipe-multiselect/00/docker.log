@@ -1,0 +1,8 @@
+15:48:14 [INFO   ] [default/skill-flow-ipe-multiselect/00] orchestrator: API routing: aws_bedrock
+15:50:49 [INFO   ] [default/skill-flow-ipe-multiselect/00] evaluation.checker: Criterion 'run_command' FAILED (score=0.00, threshold=1.00): Command: python3 -c "import json,glob,sys; flows=glob.glob('**/*.flow',recursive=True); sys.exit('no .flow found') if not flows else None; f=json.load(open(flows[0])); assert 'nodes' in f and 'edges'…
+15:50:50 [INFO   ] [default/skill-flow-ipe-multiselect/00] evaluation.checker: Criterion 'run_command' FAILED (score=0.00, threshold=1.00): Command: python3 $TASK_DIR/check_multiselect_flow.py
+15:50:50 [INFO   ] [default/skill-flow-ipe-multiselect/00] evaluation.checker: Criterion 'command_executed' FAILED (score=0.00, threshold=1.00): Matched 0/1 required commands (filters: tool_name=Bash, pattern=/(uip|\$UIP)\s+(maestro\s+)?flow\s+validate/)
+15:50:50 [INFO   ] [default/skill-flow-ipe-multiselect/00] orchestrator: Success criteria: 0/3 passed, weighted score: 0.000
+15:50:50 [INFO   ] [default/skill-flow-ipe-multiselect/00] orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+15:50:50 [INFO   ] [default/skill-flow-ipe-multiselect/00] orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-ipe-multiselect
+15:50:50 [INFO   ] [default/skill-flow-ipe-multiselect/00] orchestrator: Task finished: status=FAILURE duration=156.8s score=0.000 iterations=1

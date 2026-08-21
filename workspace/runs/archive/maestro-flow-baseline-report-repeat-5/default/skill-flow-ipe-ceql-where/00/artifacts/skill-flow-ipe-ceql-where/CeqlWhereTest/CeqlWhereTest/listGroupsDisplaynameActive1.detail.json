@@ -1,0 +1,28 @@
+{
+  "_comment": "Planned --detail payload for: uip maestro flow node configure CeqlWhereTest.flow listGroupsDisplaynameActive1 --detail '<payload>'",
+  "_connector_key": "uipath-microsoft-azureactivedirectory",
+  "_node_type": "uipath.connector.uipath-microsoft-azureactivedirectory.list-groups",
+  "_configure_pending": true,
+  "_reason": "No live tenant connection available in this sandbox; run node configure once a healthy IS connection exists.",
+
+  "connectionId": "<CONNECTION_UUID>",
+  "folderKey": "<FOLDER_KEY>",
+  "method": "GET",
+  "endpoint": "/groups",
+  "filter": {
+    "groupOperator": 0,
+    "index": 0,
+    "filters": [
+      {
+        "id": "displayName",
+        "operator": "Equals",
+        "value": {
+          "value": "active",
+          "rawString": "\"active\"",
+          "isLiteral": true
+        }
+      }
+    ],
+    "groups": []
+  }
+}

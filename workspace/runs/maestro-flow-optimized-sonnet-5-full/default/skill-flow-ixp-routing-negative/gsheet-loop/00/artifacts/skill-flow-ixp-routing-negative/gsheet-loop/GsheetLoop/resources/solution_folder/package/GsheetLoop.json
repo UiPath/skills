@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "GsheetLoop",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "7c4086c3-2b86-40dd-9112-16eac824b1c1",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "GsheetLoop"
+    },
+    "locks": [],
+    "key": "f7aaba26-1787-4e78-8154-fffc234275b3",
+    "files": []
+  }
+}

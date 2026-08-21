@@ -1,0 +1,6 @@
+{
+  "Name": "SlackChannelDescription",
+  "ProjectType": "Process",
+  "Description": "Fetches the description of the #office-bellevue Slack channel and displays it on screen",
+  "MainFile": "Main.xaml"
+}

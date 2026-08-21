@@ -1,0 +1,11 @@
+{
+  "_note": "PENDING CONFIGURATION: Replace connection IDs and run `uip maestro flow node configure CustomerEscalation.flow replyTicketDetails1 --detail \"$(cat replyTicketDetails1.detail.json)\"`",
+  "connectionId": "<OUTLOOK_CONNECTION_ID>",
+  "folderKey": "<OUTLOOK_FOLDER_KEY>",
+  "method": "POST",
+  "endpoint": "/ReplyToEmail",
+  "bodyParameters": {
+    "messageId": "=js:$vars.emailReceived1.output.id",
+    "comment": "=js:$vars.generateTicket1.output.replyBody"
+  }
+}

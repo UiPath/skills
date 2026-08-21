@@ -1,0 +1,84 @@
+{
+  "version": "2.0",
+  "resources": [
+    {
+      "resource": "connection",
+      "key": "",
+      "id": "connection",
+      "value": {
+        "ConnectionId": {
+          "isExpression": false,
+          "displayName": "uipath-mock-outlook connection"
+        }
+      },
+      "metadata": {
+        "ActivityName": "Email Received",
+        "BindingsVersion": "2.2",
+        "DisplayLabel": "uipath-mock-outlook connection",
+        "UseConnectionService": "true",
+        "Connector": "uipath-mock-outlook"
+      }
+    },
+    {
+      "resource": "connection",
+      "key": "849e85d8-1aa9-4d52-8bbd-20041c8f05d8",
+      "id": "connection849e85d8-1aa9-4d52-8bbd-20041c8f05d8",
+      "value": {
+        "ConnectionId": {
+          "defaultValue": "849e85d8-1aa9-4d52-8bbd-20041c8f05d8",
+          "isExpression": false,
+          "displayName": "uipath-salesforce-slack connection"
+        }
+      },
+      "metadata": {
+        "ActivityName": "Slack Alert to Channel",
+        "BindingsVersion": "2.2",
+        "DisplayLabel": "uipath-salesforce-slack connection",
+        "UseConnectionService": "true",
+        "Connector": "uipath-salesforce-slack"
+      }
+    },
+    {
+      "resource": "connection",
+      "key": "29aae689-111d-459f-9a4a-d1ad1d9d2761",
+      "id": "connection29aae689-111d-459f-9a4a-d1ad1d9d2761",
+      "value": {
+        "ConnectionId": {
+          "defaultValue": "29aae689-111d-459f-9a4a-d1ad1d9d2761",
+          "isExpression": false,
+          "displayName": "uipath-freshworks-freshdesk connection"
+        }
+      },
+      "metadata": {
+        "ActivityName": "Create Freshdesk Ticket",
+        "BindingsVersion": "2.2",
+        "DisplayLabel": "uipath-freshworks-freshdesk connection",
+        "UseConnectionService": "true",
+        "Connector": "uipath-freshworks-freshdesk"
+      }
+    },
+    {
+      "resource": "EventTrigger",
+      "key": "emailReceived1",
+      "id": "EventTriggeremailReceived1",
+      "value": {
+        "ConnectionId": {
+          "isExpression": false
+        },
+        "EntryPointUniqueId": {
+          "defaultValue": "725b0094-4b2e-44b0-9038-6014572a66de",
+          "isExpression": false
+        }
+      },
+      "metadata": {
+        "UseConnectionService": "true",
+        "Connector": "uipath-mock-outlook",
+        "ActivityName": "Email Received",
+        "BindingsVersion": "2.2",
+        "ObjectName": "Message",
+        "Operation": "EMAIL_RECEIVED",
+        "FilterExpression": ""
+      }
+    }
+  ]
+}

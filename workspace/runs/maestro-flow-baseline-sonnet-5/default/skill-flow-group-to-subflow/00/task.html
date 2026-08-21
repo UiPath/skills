@@ -1,0 +1,1452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>coder_eval · skill-flow-group-to-subflow · default</title>
+<style>
+:root {
+  --bg-page: #0f1419;
+  --bg-card: #1a2129;
+  --bg-card-2: #232d38;
+  --bg-code: #0b0f14;
+  --fg: #e6edf3;
+  --fg-muted: #8b98a5;
+  --fg-dim: #6e7681;
+  --border: #30363d;
+  --accent: #58a6ff;
+  --score-high: #22c55e;
+  --score-mid: #f59e0b;
+  --score-low: #ef4444;
+  --status-success: #22c55e;
+  --status-failure: #f59e0b;
+  --status-error: #ef4444;
+  --status-neutral: #6e7681;
+  --shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+.light {
+  --bg-page: #ffffff;
+  --bg-card: #f6f8fa;
+  --bg-card-2: #eaeef2;
+  --bg-code: #f6f8fa;
+  --fg: #1f2328;
+  --fg-muted: #636c76;
+  --fg-dim: #8b949e;
+  --border: #d0d7de;
+  --accent: #0969da;
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial,
+               sans-serif;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--fg);
+  background: var(--bg-page);
+}
+.container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+h1, h2, h3, h4 { margin: 0 0 12px 0; line-height: 1.25; }
+h1 { font-size: 22px; font-weight: 600; }
+h2 { font-size: 18px; font-weight: 600; margin-top: 28px;
+     padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+h3 { font-size: 15px; font-weight: 600; color: var(--fg-muted); }
+h4 { font-size: 13px; font-weight: 600; color: var(--fg-muted); }
+p { margin: 0 0 8px 0; }
+.muted { color: var(--fg-muted); }
+.dim { color: var(--fg-dim); }
+.mono { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+        monospace; font-size: 12.5px; }
+code { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+       monospace; font-size: 12.5px; background: var(--bg-code);
+       border: 1px solid var(--border); padding: 1px 5px; border-radius: 3px; }
+pre { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+      monospace; font-size: 12.5px; background: var(--bg-code);
+      border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px;
+      margin: 6px 0; overflow-x: auto; white-space: pre-wrap;
+      word-wrap: break-word; }
+.header-bar { display: flex; align-items: center; justify-content: space-between;
+              margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+.title-group { flex: 1; min-width: 0; }
+.title-group .subtitle { color: var(--fg-muted); font-size: 13px;
+                         margin-top: 2px; word-break: break-all; }
+.badges { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.badge { display: inline-flex; align-items: center; gap: 6px;
+         padding: 4px 10px; border-radius: 12px; font-size: 12px;
+         font-weight: 600; background: var(--bg-card-2);
+         border: 1px solid var(--border); color: var(--fg); }
+.badge.success { background: color-mix(in srgb, var(--status-success) 20%, var(--bg-card-2));
+                 border-color: var(--status-success); color: var(--status-success); }
+.badge.failure { background: color-mix(in srgb, var(--status-failure) 20%, var(--bg-card-2));
+                 border-color: var(--status-failure); color: var(--status-failure); }
+.badge.error { background: color-mix(in srgb, var(--status-error) 20%, var(--bg-card-2));
+               border-color: var(--status-error); color: var(--status-error); }
+.badge.warning { background: color-mix(in srgb, #f4a52810 20%, var(--bg-card-2));
+                 border-color: #f4a528; color: #f4a528; }
+.badge.neutral { color: var(--fg-muted); }
+.score-pill { display: inline-block; padding: 2px 8px; border-radius: 10px;
+              font-size: 12px; font-weight: 700; min-width: 42px;
+              text-align: center; color: #0b0f14; }
+.score-high { background: var(--score-high); }
+.score-mid { background: var(--score-mid); }
+.score-low { background: var(--score-low); }
+.card { background: var(--bg-card); border: 1px solid var(--border);
+        border-radius: 8px; padding: 16px 20px; margin-bottom: 16px;
+        box-shadow: var(--shadow); }
+.card.highlight { border-left: 4px solid var(--accent); }
+.grid { display: grid; gap: 12px;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+.stat { background: var(--bg-card-2); padding: 10px 12px; border-radius: 6px;
+        border: 1px solid var(--border); }
+.stat .label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;
+               color: var(--fg-muted); margin-bottom: 4px; }
+.stat .value { font-size: 16px; font-weight: 600; }
+table { width: 100%; border-collapse: collapse; margin: 4px 0 12px 0; }
+th, td { text-align: left; padding: 8px 10px;
+         border-bottom: 1px solid var(--border); vertical-align: top;
+         font-size: 13px; }
+th { color: var(--fg-muted); font-weight: 600; font-size: 12px;
+     text-transform: uppercase; letter-spacing: 0.3px; }
+tr:last-child td { border-bottom: none; }
+details { margin: 6px 0; border: 1px solid var(--border); border-radius: 6px;
+          background: var(--bg-card-2); }
+details > summary { cursor: pointer; padding: 8px 12px; user-select: none;
+                    font-weight: 500; list-style: none; }
+details > summary::-webkit-details-marker { display: none; }
+details > summary::before { content: "▸ "; color: var(--fg-dim);
+                            display: inline-block; width: 14px;
+                            transition: transform 0.15s; }
+details[open] > summary::before { content: "▾ "; }
+details .details-body { padding: 0 12px 10px 12px; }
+.tool-row { display: flex; align-items: center; gap: 10px;
+            flex-wrap: wrap; font-size: 13px; }
+.tool-name { font-weight: 600; color: var(--accent); font-family: ui-monospace,
+             SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+.tool-status-ok { color: var(--status-success); font-size: 11px;
+                  font-weight: 600; }
+.tool-status-err { color: var(--status-error); font-size: 11px;
+                   font-weight: 600; }
+.tool-duration { color: var(--fg-muted); font-size: 12px; }
+.tool-seq { color: var(--fg-dim); font-size: 11px; font-weight: 600;
+            min-width: 24px; text-align: right; font-family: ui-monospace,
+            SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+.turn-header { display: flex; justify-content: space-between;
+               align-items: baseline; flex-wrap: wrap; gap: 10px;
+               margin-bottom: 10px; }
+.turn-meta { font-size: 12px; color: var(--fg-muted); }
+.criterion-row td:first-child { font-family: ui-monospace, SFMono-Regular,
+                                 "SF Mono", Menlo, Consolas, monospace;
+                                 color: var(--fg-muted); font-size: 12px; }
+.judge-section { display: flex; flex-direction: column; gap: 12px; }
+.judge-card { padding: 14px 16px; }
+.judge-card-head { display: flex; justify-content: space-between;
+                    align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+.judge-card-title { font-size: 14px; line-height: 1.4; flex: 1; min-width: 0; }
+.judge-card-score { flex-shrink: 0; }
+.judge-rationale { margin-top: 10px; padding: 10px 12px;
+                   background: var(--bg-code); border-radius: 4px;
+                   font-size: 13px; line-height: 1.5; }
+.judge-findings { margin: 8px 0 0 18px; padding-left: 4px; font-size: 13px;
+                   line-height: 1.6; }
+.judge-findings li { margin: 2px 0; }
+.nav-toggle { display: inline-block; padding: 5px 10px; font-size: 12px;
+              background: var(--bg-card-2); border: 1px solid var(--border);
+              border-radius: 5px; color: var(--fg); cursor: pointer; }
+.nav-toggle:hover { background: var(--bg-card); }
+.llm-next-steps { margin: 6px 0 0 20px; padding-left: 0; }
+.llm-next-steps li { margin: 3px 0; }
+.iteration-group { padding: 12px 16px 4px 16px; margin-bottom: 20px;
+                   border-radius: 0 6px 6px 0; border-left: 4px solid var(--status-neutral); }
+/* rgba fallback for browsers without color-mix (Chrome <111, Firefox <113, Safari <16.2). */
+.iteration-group--recovered { border-left-color: var(--status-success);
+                              background: rgba(34, 197, 94, 0.06);
+                              background: color-mix(in srgb, var(--status-success) 6%, transparent); }
+.iteration-group--terminal { border-left-color: var(--status-error);
+                             background: rgba(239, 68, 68, 0.06);
+                             background: color-mix(in srgb, var(--status-error) 6%, transparent); }
+.iteration-group__banner { margin: 0 0 12px 0; font-size: 14px; font-weight: 600; }
+.iteration-group--recovered .iteration-group__banner { color: var(--status-success); }
+.iteration-group--terminal .iteration-group__banner { color: var(--status-error); }
+.attempt-transition { display: flex; align-items: center; gap: 8px;
+                      margin: -6px 0 12px 8px; color: var(--status-error); font-size: 12.5px; }
+.attempt-transition__icon { font-weight: 700; }
+footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--border);
+         color: var(--fg-dim); font-size: 12px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="header-bar">
+  <div class="title-group">
+    <h1>Task: skill-flow-group-to-subflow</h1>
+    <div class="subtitle">Extract the getWeather HTTP node and formatSummary Script node into a subflow named &quot;fetchAndFormat&quot;. The subflow returns the formatted temperature data and the main flow keeps the decision and end nodes. Exercises subflow creation from existing nodes.</div>
+  </div>
+  <div class="badges">
+    <span class="badge success">SUCCESS</span>
+    <span class="score-pill score-high">1.00</span>
+    <span class="badge neutral">claude-code · claude-sonnet-5</span>
+    <span class="badge neutral">8m 16s</span>
+    <span class="badge neutral">$1.8749</span>
+    <span class="badge warning">expected_turns exceeded (32/13)</span>
+    
+    <span class="nav-toggle" onclick="toggleTheme()">Toggle theme</span>
+  </div>
+</div>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Variant</div><div class="value">default</div></div>
+    <div class="stat"><div class="label">Started</div><div class="value mono">2026-08-18T21:57:32</div></div>
+    <div class="stat"><div class="label">Duration</div><div class="value">8m 16s</div></div>
+    <div class="stat"><div class="label">Turns (SDK)</div><div class="value">61</div></div>
+    <div class="stat"><div class="label">Commands</div><div class="value">31</div></div>
+  </div>
+</div>
+
+<h2>Success Criteria <span class="muted" style="font-weight:400">(2/2 passed)</span></h2>
+<div class="card" style="padding:0">
+<table>
+  <thead>
+    <tr>
+      <th style="width:15%">Type</th>
+      <th style="width:35%">Description</th>
+      <th style="width:10%">Score</th>
+      <th>Details</th>
+    </tr>
+  </thead>
+  <tbody>
+    
+<tr class="criterion-row">
+  <td>run_command</td>
+  <td>uip maestro flow validate passes on the flow file</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Command: python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py</summary><div class="details-body"><pre style="margin:6px 0 0 0">Command: python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py
+Exit code: 0 (expected: 0)
+Stdout:
+Validating BellevueWeather/BellevueWeather/BellevueWeather.flow
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FlowValidate&quot;,
+  &quot;Data&quot;: {
+    &quot;File&quot;: &quot;/work/output/artifacts/skill-flow-group-to-subflow/BellevueWeather/BellevueWeather/BellevueWeather.flow&quot;,
+    &quot;Status&quot;: &quot;Valid&quot;
+  }
+}
+
+Stderr:
+[ManifestClient] fetchDynamicNodes ok: total=315 agent context nodes=2 external agent nodes=7 orchestrator nodes=261 IXP nodes=45</pre></div></details></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>run_command</td>
+  <td>Flow debug runs with subflow, output contains branch message</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Command: python3 $TASK_DIR/check_group_to_subflow.py</summary><div class="details-body"><pre style="margin:6px 0 0 0">Command: python3 $TASK_DIR/check_group_to_subflow.py
+Exit code: 0 (expected: 0)
+Stdout:
+OK: fetchAndFormat subflow present, old nodes removed, debug output valid
+
+Stderr: (empty)</pre></div></details></td>
+</tr>
+
+  </tbody>
+</table>
+</div>
+<h2>Conversation Trace (1 iteration)</h2>
+<div class="card">
+  <div class="turn-header">
+    <h3>Iteration 1</h3>
+    <div class="badges">
+      <span class="badge neutral">61 assistant turns</span>
+      <span class="badge neutral">in 52 · out 45462 · cache 2774063</span>
+      <span class="badge neutral">7m 53s</span>
+      
+      
+      
+    </div>
+  </div>
+  <details>
+    <summary>Prompt to agent</summary>
+    <div class="details-body"><pre>Your working directory is: /work/output/artifacts/skill-flow-group-to-subflow
+
+Move getWeather and formatSummary into a subflow called &quot;fetchAndFormat&quot;. The subflow should output the temperatureF value. The rest of the main flow (decision + end nodes) stays but reads from the subflow output.
+
+Validate the flow.
+Do NOT ask for approval, confirmation, or feedback. Do NOT pause between planning and implementation. Build the complete flow end-to-end in a single pass.
+</pre></div>
+  </details>
+  <details>
+    <summary>Agent response</summary>
+    <div class="details-body"><pre>[ASSISTANT] This is a UiPath Maestro Flow (.flow) task — moving nodes into a subflow. Let me invoke the maestro-flow skill.
+[ASSISTANT] Now I have enough context on the subflow pattern. Let me construct the full updated flow file, moving `getWeather` and `formatSummary` into a `fetchAndFormat` subflow that outputs `temperatureF`, with the main flow reading from that subflow&#x27;s output.
+[ASSISTANT] Now I&#x27;ll rebuild the flow. First, add the `core.subflow` definition to the top-level `definitions` array.
+[ASSISTANT] Now let&#x27;s replace the main flow nodes (remove getWeather/formatSummary, add fetchAndFormat subflow node) and update downstream references.
+[ASSISTANT] Now update `variables.nodes` (replace getWeather/formatSummary entries with fetchAndFormat entries) and update layout to remove the old node entries and add the new one.
+[ASSISTANT] Now update the top-level layout — replace getWeather/formatSummary entries with a fetchAndFormat entry (format will fix positions/sizes anyway, but need valid structure).
+[ASSISTANT] Now let&#x27;s add the `subflows.fetchAndFormat` object with its own nodes (start, getWeather, formatSummary, end), edges, variables, and layout.
+[ASSISTANT] Let me view the end of the file to find where to insert the `subflows` top-level key.
+[ASSISTANT] Now let&#x27;s validate and format the flow.
+[ASSISTANT] Valid, no warnings. Now let&#x27;s format the flow to regenerate layout/variables.nodes cleanly.
+[ASSISTANT] Format ran successfully. Let&#x27;s re-validate after formatting to confirm everything is still consistent.
+[ASSISTANT] The flow is valid with no warnings. Let me do a final check of the subflow structure to confirm the format step preserved everything correctly.
+[ASSISTANT] The flow is now correctly restructured and validates cleanly with no warnings.
+
+**Summary of changes to `BellevueWeather.flow`:**
+- Added a `core.subflow` node `fetchAndFormat` in the main flow, wired `start → fetchAndFormat → checkTemperature`.
+- Moved `getWeather` (HTTP call) and `formatSummary` (script) into `subflows.fetchAndFormat`, with its own Start/End nodes (`fetchAndFormatStart` → `getWeather` → `formatSummary` → `fetchAndFormatEnd`).
+- The subflow declares an `out` global `temperatureF`, mapped on its End node from `$vars.formatSummary.output.temperatureF`.
+- The main flow&#x27;s decision (`checkTemperature`) and both End nodes (`endNiceDay`, `endBringJacket`) now read `$vars.fetchAndFormat.output.temperatureF` instead of `$vars.formatSummary.output.temperatureF`.
+- Ran `uip maestro flow format` to regenerate layout/variable bookkeeping, then `uip maestro flow validate` — result: **Valid**, no warnings.
+[RESULT - SUCCESS] The flow is now correctly restructured and validates cleanly with no warnings.
+
+**Summary of changes to `BellevueWeather.flow`:**
+- Added a `core.subflow` node `fetchAndFormat` in the main flow, wired `start → fetchAndFormat → checkTemperature`.
+- Moved `getWeather` (HTTP call) and `formatSummary` (script) into `subflows.fetchAndFormat`, with its own Start/End nodes (`fetchAndFormatStart` → `getWeather` → `formatSummary` → `fetchAndFormatEnd`).
+- The subflow declares an `out` global `temperatureF`, mapped on its End node from `$vars.formatSummary.output.temperatureF`.
+- The main flow&#x27;s decision (`checkTemperature`) and both End nodes (`endNiceDay`, `endBringJacket`) now read `$vars.fetchAndFormat.output.temperatureF` instead of `$vars.formatSummary.output.temperatureF`.
+- Ran `uip maestro flow format` to regenerate layout/variable bookkeeping, then `uip maestro flow validate` — result: **Valid**, no warnings.</pre></div>
+  </details>
+  <h4 style="margin-top:12px">Tool Calls (31)</h4>
+  
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#0</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">63ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;ls -la /work/output/artifacts/skill-flow-group-to-subflow&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>total 16
+drwxr-xr-x 4 root root 4096 Aug 18 21:57 .
+drwxr-xr-x 3 root root 4096 Aug 18 21:57 ..
+drwxr-xr-x 4 root root 4096 Aug 18 21:57 .venv
+drwxr-xr-x 4 root root 4096 Aug 18 21:57 BellevueWeather</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#1</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">32ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;find /work/output/artifacts/skill-flow-group-to-subflow/BellevueWeather -type f | grep -v .venv&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/work/output/artifacts/skill-flow-group-to-subflow/BellevueWeather/resources/solution_folder/process/flow/BellevueWeather.json
+/work/output/artifacts/skill-flow-group-to-subflow/BellevueWeather/resources/solution_folder/package/BellevueWeather.json
+/work/output/artifacts/skill-flow-group-to-subflow/BellevueWeather/BellevueWeather/project.uiproj
+/work/output/artifacts/skill-flow-group-to-subflow/BellevueWeather/BellevueWeather/BellevueWeather.flow
+/work/output/artifacts/skill-flow-group-to-subflow/BellevueWeather/BellevueWeather.uipx</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#2</span>
+      <span class="tool-name">Skill</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">13ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;skill&quot;: &quot;uipath:uipath-maestro-flow&quot;,
+  &quot;args&quot;: &quot;Move getWeather and formatSummary nodes into a new subflow called \&quot;fetchAndFormat\&quot; in /work/output/artifacts/skill-flow-group-to-subflow/BellevueWeather/BellevueWeather/BellevueWeather.flow. The subflow should output the temperatureF value. The rest of the main flow (decision + end nodes) stays in the main flow but reads temperatureF from the subflow&#x27;s output. Build end-to-end without pausing for … (33 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Launching skill: uipath:uipath-maestro-flow</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#3</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">425ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-group-to-subflow/BellevueWeather/BellevueWeather/BellevueWeather.flow&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	{
+2	  &quot;id&quot;: &quot;51e93e69-8d7b-4543-b079-cec6c73673ff&quot;,
+3	  &quot;version&quot;: &quot;1.6&quot;,
+4	  &quot;name&quot;: &quot;BellevueWeather&quot;,
+5	  &quot;nodes&quot;: [
+6	    {
+7	      &quot;id&quot;: &quot;start&quot;,
+8	      &quot;type&quot;: &quot;core.trigger.manual&quot;,
+9	      &quot;typeVersion&quot;: &quot;1.0&quot;,
+10	      &quot;display&quot;: {
+11	        &quot;label&quot;: &quot;Manual trigger&quot;
+12	      },
+13	      &quot;inputs&quot;: {},
+14	      &quot;outputs&quot;: {
+15	        &quot;output&quot;: {
+16	          &quot;type&quot;: &quot;object&quot;,
+17	          &quot;description&quot;: &quot;The return value of the trigger.&quot;,
+18	          &quot;source&quot;: {
+19	            &quot;type&quot;: &quot;literal&quot;,
+20	            &quot;expression&quot;: &quot;=result.response&quot;,
+21	            &quot;fieldType&quot;: &quot;string&quot;
+22	          },
+23	          &quot;var&quot;: &quot;output&quot;
+24	        }
+25	      },
+26	      &quot;model&quot;: {
+27	        &quot;type&quot;: &quot;bpmn:StartEvent&quot;,
+28	        &quot;entryPointId&quot;: &quot;916591de-a9b0-4145-9106-ac51175c293e&quot;
+29	      }
+30	    },
+31	    {
+32	      &quot;id&quot;: &quot;getWeather&quot;,
+33	      &quot;type&quot;: &quot;core.action.http&quot;,
+34	      &quot;typeVersion&quot;: &quot;1.2&quot;,
+35	      &quot;display&quot;: {
+36	        &quot;label&quot;: &quot;Get Bellevue Weather&quot;
+37	      },
+38	      &quot;inputs&quot;: {
+39	        &quot;mode&quot;: &quot;manual&quot;,
+40	        &quot;method&quot;: &quot;GET&quot;,
+41	        &quot;url&quot;: &quot;https://api.open-meteo.com/v1/forecast?latitude=47.6101&amp;longitude=-122.2015&amp;current=temperature_2m&amp;tempe
+
+… (truncated, 76419 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#4</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">46ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -n \&quot;subflow\&quot; -ri /home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/CAPABILITY.md | head -50&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>17:- Manage variables, subflows, expressions, and output wiring
+31:| Control flow | `core.logic.decision`, `core.logic.switch`, `core.logic.loop`, `core.logic.merge`, `core.control.end`, `core.logic.terminate`, `core.subflow` |
+74:12. **Always run `flow format` after edits** — `uip maestro flow format &lt;ProjectName&gt;.flow` is the canonical layout step. Format arranges nodes horizontally, sets each node&#x27;s `size` by its canvas shape (inline agents → 288×96, containers → 560×320, everything else → 96×96), and recurses into subflows (`subflows[&lt;id&gt;].layout`). Skipping format is the most common cause of misshapen nodes in Studio Web.
+75:13. **Don&#x27;t hand-write `layout.nodes` or `subflows[&lt;id&gt;].layout`** — these are owned by `flow format`. When authoring nodes, any placeholder `position` is fine (e.g. `{ x: 0, y: 0 }`); format rewrites it on save. Sticky notes (`type: &quot;stickyNote&quot;`) are the one exception — format preserves their custom size and position. See [shared/file-format.md — Layout](../shared/file-format.md#layout).
+114:| **Create a subflow** | [plugins/subflow/impl.md](references/plugins/subflow/impl.md) + [Edit/Write: Create a subflow](references/editing-operations-json.md#create-
+
+… (truncated, 221 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#5</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">8ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/references/plugins/subflow/impl.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Subflow Node — Implementation
+2	
+3	## Node Type
+4	
+5	`core.subflow`
+6	
+7	## Registry Validation
+8	
+9	```bash
+10	uip maestro flow registry get core.subflow --output json
+11	```
+12	
+13	Confirm: input port `input`, output ports `output` and `error`. Set the node instance `typeVersion` to the `version` field from this response — do not hardcode it.
+14	
+15	## Parent Node JSON
+16	
+17	```json
+18	{
+19	  &quot;id&quot;: &quot;subflow1&quot;,
+20	  &quot;type&quot;: &quot;core.subflow&quot;,
+21	  &quot;typeVersion&quot;: &quot;&lt;DEFINITION_VERSION&gt;&quot;,
+22	  &quot;display&quot;: { &quot;label&quot;: &quot;Add Numbers&quot;, &quot;icon&quot;: &quot;layers&quot; },
+23	  &quot;inputs&quot;: {
+24	    &quot;a&quot;: 2,
+25	    &quot;b&quot;: 3
+26	  },
+27	  &quot;outputs&quot;: {
+28	    &quot;error&quot;: {
+29	      &quot;type&quot;: &quot;object&quot;,
+30	      &quot;description&quot;: &quot;Error information if the subflow fails&quot;,
+31	      &quot;source&quot;: &quot;=Error&quot;,
+32	      &quot;var&quot;: &quot;error&quot;
+33	    }
+34	  }
+35	}
+36	```
+37	
+38	**Declare `error` only — `output` is derived.** Authoring it makes the converter copy your `source` verbatim; `&quot;=result.response&quot;` then resolves to null at runtime while `flow validate` passes. See [file-format.md § Node outputs](../../../../shared/file-format.md#node-outputs).
+39	
+40	## Subflow Definition
+41	
+42	Subflow contents are stored in a top-level `subflows` obje
+
+… (truncated, 8927 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#6</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">29ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -n -i \&quot;subflow\&quot; -A 30 /home/azureuser/projects/skills/skills/uipath-maestro-flow/references/shared/file-format.md | head -150&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>116:| `inputs.isDefaultEntryPoint` | Trigger nodes in subflows | Boolean marking the default entry point when a subflow has multiple triggers |
+117-| `inputs.source` | `uipath.agent.autonomous` and every attached `uipath.agent.resource.*` node (tool, escalation, context) | For `uipath.agent.autonomous`: the inline agent&#x27;s `projectId`. For resource nodes: the attached resource UUID. Definitions declare `model.source: true`; flow-core hoists onto the instance — no instance `model` block. |
+118-| `inputs.color`, `inputs.content` | Sticky-note nodes | Visual content of the sticky note |
+119-
+120-Example — manual start trigger:
+121-
+122-```json
+123-{
+124-  &quot;id&quot;: &quot;start&quot;,
+125-  &quot;type&quot;: &quot;core.trigger.manual&quot;,
+126-  &quot;typeVersion&quot;: &quot;1.0&quot;,
+127-  &quot;display&quot;: { &quot;label&quot;: &quot;Manual trigger&quot; },
+128-  &quot;inputs&quot;: {
+129-    &quot;entryPointId&quot;: &quot;3d4a8c34-5682-4ebe-a6bc-d92a18830bb5&quot;
+130-  },
+131-  &quot;outputs&quot;: {
+132-    &quot;output&quot;: { &quot;type&quot;: &quot;object&quot;, &quot;description&quot;: &quot;Data passed when manually triggering the process.&quot;, &quot;source&quot;: &quot;null&quot;, &quot;var&quot;: &quot;output&quot; }
+133-  }
+134-}
+135-```
+136-
+137-### Node outputs
+138-
+139-`$vars.&lt;sourceNodeId&gt;.&lt;outputId&gt;` resolution at runtime is driven by **`variables.nodes[]`**, not by the
+
+… (truncated, 6664 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#7</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">5.65s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-group-to-subflow/BellevueWeather &amp;&amp; uip maestro flow registry get core.subflow --output json 2&gt;&amp;1 | head -100&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>[ManifestClient] fetchDynamicNodes ok: total=4878 connector nodes=3654 integration trigger nodes=896 agent context nodes=2 external agent nodes=7 orchestrator nodes=261 IXP nodes=45 IXP Models nodes=13
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeGetSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;Node&quot;: {
+      &quot;nodeType&quot;: &quot;core.subflow&quot;,
+      &quot;version&quot;: &quot;1.0&quot;,
+      &quot;category&quot;: &quot;flow&quot;,
+      &quot;description&quot;: &quot;Group steps into a reusable subflow&quot;,
+      &quot;tags&quot;: [
+        &quot;subflow&quot;,
+        &quot;composite&quot;,
+        &quot;container&quot;,
+        &quot;subprocess&quot;
+      ],
+      &quot;sortOrder&quot;: 120,
+      &quot;supportsErrorHandling&quot;: true,
+      &quot;display&quot;: {
+        &quot;label&quot;: &quot;Subflow&quot;,
+        &quot;icon&quot;: &quot;layers&quot;
+      },
+      &quot;handleConfiguration&quot;: [
+        {
+          &quot;position&quot;: &quot;left&quot;,
+          &quot;handles&quot;: [
+            {
+              &quot;id&quot;: &quot;input&quot;,
+              &quot;type&quot;: &quot;target&quot;,
+              &quot;handleType&quot;: &quot;input&quot;
+            }
+          ],
+          &quot;visible&quot;: true
+        },
+        {
+          &quot;position&quot;: &quot;right&quot;,
+          &quot;handles&quot;: [
+            {
+              &quot;id&quot;: &quot;output&quot;,
+              &quot;type&quot;: &quot;source&quot;,
+              &quot;handleType&quot;: &quot;output&quot;
+            },
+            {
+              &quot;id&quot;: &quot;error&quot;,
+              &quot;label&quot;:
+
+… (truncated, 1591 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#8</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">4.95s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/references/editing-operations-json.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Flow Editing Operations — Edit / Write Strategy
+2	
+3	All flow file modifications via the `Edit` and `Write` tools (read-modify-write of the `.flow` JSON file). This strategy gives full control over every field but requires manual management of definitions, variables, and edge integrity.
+4	
+5	&gt; **Apply every recipe in this file with the `Edit` tool (default) or the `Write` tool (only when ≥70% of nodes change).** Each recipe shows the JSON payload that goes into the `new_string` parameter of an `Edit` call. `python`, `node`, `jq`, `sed`, `awk`, and shell heredocs are a last resort for mutations and require explicit user approval after you&#x27;ve surfaced the trade-offs — see SKILL.md rule on scripted mutations and [editing-operations.md — Why not Python / Node / jq / sed?](editing-operations.md#why-not-python--node--jq--sed).
+6	&gt;
+7	&gt; **When to use this strategy:** Edit / Write is required for all non-carve-out `.flow` edits. Use Flow CLI only for connector activity, connector-trigger, and managed HTTP carve-outs documented by their plugins. Inline-agent project lifecycle uses `uip agent init --inline-in-flow` / `uip agent refresh --inline-in-flow` / `uip agent validate --inline-in-f
+
+… (truncated, 33296 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#9</span>
+      <span class="tool-name">Grep</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">26ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;pattern&quot;: &quot;definitions&quot;,
+  &quot;path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/shared/file-format.md&quot;,
+  &quot;output_mode&quot;: &quot;content&quot;,
+  &quot;-n&quot;: true
+}</pre>
+    <h4>Result</h4>
+    <pre>30:  &quot;definitions&quot;: [],
+39:[Omitted long matching line]
+47:[Omitted long matching line]
+95:[Omitted long matching line]
+105:[Omitted long matching line]
+143:- `definitions[]` entry copied verbatim from `uip maestro flow registry get` (carries the manifest `outputDefinition`).
+147:Skipping `variables.nodes[]` produces a flow that passes `flow validate` but resolves `$vars.&lt;sourceNodeId&gt;.output` to `undefined` at runtime (MST-9972). `uip maestro flow format` regenerates `variables.nodes[]` from `nodes[]` + `definitions[]`, so always run it after structural edits — the omission becomes self-healing.
+248:Every node type appearing in `nodes` must have a matching entry in `definitions`. Get the correct definition from:
+254:Copy the returned node definition object into your `definitions` array. Depending on CLI/plugin version, that object may appear at `Data.Node` or as the top-level object containing fields such as `nodeType`, `version`, and `handleConfiguration`. Do not write definitions by hand — always pull from the registry to ensure schema compliance.
+272:&gt; The BPMN type for each node (e.g., `bpmn:StartEvent`, `bpmn:ScriptTask`) lives in the `definitions` entry copied from `uip maes
+
+… (truncated, 1370 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#10</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">27ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -n \&quot;subflows\\.\&quot; /home/azureuser/projects/skills/skills/uipath-maestro-flow/references/shared/file-format.md | head -30&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>(Bash completed with no output)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#11</span>
+      <span class="tool-name">Grep</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">14ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;pattern&quot;: &quot;subflowNodeId|\\.output\\.result|subflow.*output|accessible via\&quot;&quot;,
+  &quot;path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/references/plugins/subflow/impl.md&quot;,
+  &quot;output_mode&quot;: &quot;content&quot;,
+  &quot;-n&quot;: true
+}</pre>
+    <h4>Result</h4>
+    <pre>10:uip maestro flow registry get core.subflow --output json
+73:            &quot;script&quot;: &quot;return { result: $vars.subflow1Start.output.a + $vars.subflow1Start.output.b };&quot;
+97:            &quot;result&quot;: { &quot;source&quot;: &quot;=js:$vars.script1.output.result&quot; }
+174:**Parent trigger + subflow node** — the subflow node reads the trigger output and maps it to
+198:(with its **own** `triggerNodeId: &quot;&lt;subflowStart&gt;&quot;`) → `$vars.&lt;subflowStart&gt;.output.text`
+207:3. Subflow `in` variables **must** have `triggerNodeId` set to the subflow&#x27;s Start node ID — this makes them accessible via `$vars.{startNodeId}.output.{varId}`
+208:4. Subflow `variables.globals` with `direction: &quot;out&quot;` map to the parent node&#x27;s outputs, accessible via `$vars.{subflowNodeId}.output` in the parent flow
+224:| `$vars.inputData` undefined inside subflow script | Missing `triggerNodeId` on subflow `in` variable, or using `$vars.{varId}` directly | Add `triggerNodeId: &quot;{startNodeId}&quot;` to each `in` variable and access via `$vars.{startNodeId}.output.{varId}` |
+227:| Subflow output is null | Missing output mapping on subflow&#x27;s End node | Map all `out` variables in the End node&#x27;s `outputs` |</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#12</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">21ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -rn \&quot;subflow\&quot; /home/azureuser/projects/skills/skills/uipath-maestro-flow/references/ -il&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/diagnose/references/troubleshooting-guide.md
+/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/diagnose/references/failure-modes.md
+/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/evaluate/references/commands-reference.md
+/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/shared/file-format.md
+/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/shared/node-output-wiring.md
+/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/shared/variables-and-expressions.md
+/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/shared/cli-commands.md
+/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/CAPABILITY.md
+/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/references/editing-operations-json.md
+/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/references/editing-operations-cli.md
+/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/references/planning-arch.md
+/home/azureuser/projects/skills/skills/uipath-maest
+
+… (truncated, 708 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#13</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.92s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry get core.subflow --output json 2&gt;/dev/null &gt; /tmp/subflow_def.json; cat /tmp/subflow_def.json | python3 -m json.tool 2&gt;/dev/null || python3 -c \&quot;import json;print(json.dumps(json.load(open(&#x27;/tmp/subflow_def.json&#x27;))[&#x27;Data&#x27;][&#x27;Node&#x27;], indent=2))\&quot;&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+    &quot;Result&quot;: &quot;Success&quot;,
+    &quot;Code&quot;: &quot;NodeGetSuccess&quot;,
+    &quot;Data&quot;: {
+        &quot;Node&quot;: {
+            &quot;nodeType&quot;: &quot;core.subflow&quot;,
+            &quot;version&quot;: &quot;1.0&quot;,
+            &quot;category&quot;: &quot;flow&quot;,
+            &quot;description&quot;: &quot;Group steps into a reusable subflow&quot;,
+            &quot;tags&quot;: [
+                &quot;subflow&quot;,
+                &quot;composite&quot;,
+                &quot;container&quot;,
+                &quot;subprocess&quot;
+            ],
+            &quot;sortOrder&quot;: 120,
+            &quot;supportsErrorHandling&quot;: true,
+            &quot;display&quot;: {
+                &quot;label&quot;: &quot;Subflow&quot;,
+                &quot;icon&quot;: &quot;layers&quot;
+            },
+            &quot;handleConfiguration&quot;: [
+                {
+                    &quot;position&quot;: &quot;left&quot;,
+                    &quot;handles&quot;: [
+                        {
+                            &quot;id&quot;: &quot;input&quot;,
+                            &quot;type&quot;: &quot;target&quot;,
+                            &quot;handleType&quot;: &quot;input&quot;
+                        }
+                    ],
+                    &quot;visible&quot;: true
+                },
+                {
+                    &quot;position&quot;: &quot;right&quot;,
+                    &quot;handles&quot;: [
+                        {
+                            &quot;id&quot;: &quot;output&quot;,
+                            &quot;type&quot;: &quot;source&quot;,
+     
+
+… (truncated, 2653 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#14</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">82ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -n \&quot;definitions\&quot; -B2 -A5 /home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/references/plugins/subflow/impl.md /home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/references/plugins/subflow/planning.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>(Bash completed with no output)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#15</span>
+      <span class="tool-name">Grep</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">94ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;pattern&quot;: &quot;definitions.*subflow|subflow.*definitions|definitions\\[\\] is (global|shared|top-level)|shared across subflows|definitions.*global\&quot;&quot;,
+  &quot;path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/shared/file-format.md&quot;,
+  &quot;output_mode&quot;: &quot;content&quot;,
+  &quot;-n&quot;: true
+}</pre>
+    <h4>Result</h4>
+    <pre>No matches found</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#16</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">96ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 -c \&quot;import uuid; print(uuid.uuid4())\&quot;&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>6af12102-5c88-45d1-8821-4ea04f2e3b2d</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#17</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">37ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -n \&quot;definitions\&quot; /home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/references/plugins/subflow/impl.md /home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/references/plugins/subflow/planning.md /home/azureuser/projects/skills/skills/uipath-maestro-flow/references/shared/file-format.md | grep -i subflow\necho ---\ngrep -n \&quot;\\\&quot;definitions\\\&quot;\&quot; -A3 /… (229 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>---
+30:  &quot;definitions&quot;: [],
+31-  &quot;bindings&quot;: [],
+32-  &quot;variables&quot;: {},
+33-  &quot;layout&quot;: {
+--
+39:&gt; **Key order is NOT guaranteed — never anchor edits on it.** The skeleton above is illustrative; the CLI does not commit to a stable top-level key sequence or to which optional keys are present. Real flows vary: `runtime` may appear (and has been observed *before* `nodes`, not after `definitions`) or be absent entirely; `bindings`, `variables`, `solutionId`, `projectId`, and a trailing `metadata` object surface in different positions depending on CLI version and what the flow contains. When editing a `.flow`, anchor each `Edit` on the **target array&#x27;s own key** (`&quot;nodes&quot;: [`, `&quot;edges&quot;: [`, `&quot;definitions&quot;: [`, or `layout.nodes`) located in the text you just `Read` — never on &quot;the key that follows X.&quot; See [greenfield.md — Anchoring parallel `.flow` Edits](../author/references/greenfield.md#anchoring-parallel-flow-edits--anchor-on-what-you-read-not-on-key-order).
+40-
+41-Optional top-level `runtime`: a CLI-managed object that appears on some flows (e.g. after `uip maestro flow node add` for an HTTP/connector node) and is absent on others. It is not user-authored — do not add, remove, or ancho
+
+… (truncated, 153 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#18</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">53ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -rn \&quot;definitions\&quot; /home/azureuser/projects/skills/skills/uipath-maestro-flow/references/shared/file-format.md | sed -n &#x27;1,40p&#x27;\necho \&quot;---search whole repo for subflow+definitions relationship---\&quot;\ngrep -rn \&quot;definitions\&quot; /home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/references/plugins/subflow/*.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>30:  &quot;definitions&quot;: [],
+39:&gt; **Key order is NOT guaranteed — never anchor edits on it.** The skeleton above is illustrative; the CLI does not commit to a stable top-level key sequence or to which optional keys are present. Real flows vary: `runtime` may appear (and has been observed *before* `nodes`, not after `definitions`) or be absent entirely; `bindings`, `variables`, `solutionId`, `projectId`, and a trailing `metadata` object surface in different positions depending on CLI version and what the flow contains. When editing a `.flow`, anchor each `Edit` on the **target array&#x27;s own key** (`&quot;nodes&quot;: [`, `&quot;edges&quot;: [`, `&quot;definitions&quot;: [`, or `layout.nodes`) located in the text you just `Read` — never on &quot;the key that follows X.&quot; See [greenfield.md — Anchoring parallel `.flow` Edits](../author/references/greenfield.md#anchoring-parallel-flow-edits--anchor-on-what-you-read-not-on-key-order).
+47:&gt; **Don&#x27;t confuse top-level `version` with `definitions[].version` / `typeVersion`.** Node-definition `version` (and matching node-instance `typeVersion`) are validated by `versionSchema`, a regex that accepts both `x.y` and `x.y.z` (`/^\d+\.\d+(\.\d+)?$/`, error `&#x27;Version must be in format &quot;x.y
+
+… (truncated, 4394 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#19</span>
+      <span class="tool-name">Edit</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">25ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;replace_all&quot;: false,
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-group-to-subflow/BellevueWeather/BellevueWeather/BellevueWeather.flow&quot;,
+  &quot;old_string&quot;: &quot;    {\n      \&quot;nodeType\&quot;: \&quot;core.control.end\&quot;,\n      \&quot;version\&quot;: \&quot;1.0\&quot;,\n      \&quot;description\&quot;: \&quot;Mark the end of a workflow path\&quot;,\n      \&quot;category\&quot;: \&quot;control-flow\&quot;,\n      \&quot;tags\&quot;: [\n        \&quot;control-flow\&quot;,\n        \&quot;end\&quot;,\n        \&quot;finish\&quot;,\n        \&quot;complete\&quot;\n      ],\n      \&quot;sortOrder\&quot;: 20,\n      \&quot;display\&quot;: {\n        \&quot;label\&quot;: \&quot;End\&quot;,\n        \&quot;icon\&quot;: \&quot;circle-check\&quot;,\n        \&quot;shape\&quot;: \&quot;circle\&quot;\n      },\n      \&quot;h… (309 more chars)&quot;,
+  &quot;new_string&quot;: &quot;    {\n      \&quot;nodeType\&quot;: \&quot;core.control.end\&quot;,\n      \&quot;version\&quot;: \&quot;1.0\&quot;,\n      \&quot;description\&quot;: \&quot;Mark the end of a workflow path\&quot;,\n      \&quot;category\&quot;: \&quot;control-flow\&quot;,\n      \&quot;tags\&quot;: [\n        \&quot;control-flow\&quot;,\n        \&quot;end\&quot;,\n        \&quot;finish\&quot;,\n        \&quot;complete\&quot;\n      ],\n      \&quot;sortOrder\&quot;: 20,\n      \&quot;display\&quot;: {\n        \&quot;label\&quot;: \&quot;End\&quot;,\n        \&quot;icon\&quot;: \&quot;circle-check\&quot;,\n        \&quot;shape\&quot;: \&quot;circle\&quot;\n      },\n      \&quot;h… (2961 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>The file /work/output/artifacts/skill-flow-group-to-subflow/BellevueWeather/BellevueWeather/BellevueWeather.flow has been updated successfully. (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#20</span>
+      <span class="tool-name">Edit</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">16ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;replace_all&quot;: false,
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-group-to-subflow/BellevueWeather/BellevueWeather/BellevueWeather.flow&quot;,
+  &quot;old_string&quot;: &quot;    {\n      \&quot;id\&quot;: \&quot;getWeather\&quot;,\n      \&quot;type\&quot;: \&quot;core.action.http\&quot;,\n      \&quot;typeVersion\&quot;: \&quot;1.2\&quot;,\n      \&quot;display\&quot;: {\n        \&quot;label\&quot;: \&quot;Get Bellevue Weather\&quot;\n      },\n      \&quot;inputs\&quot;: {\n        \&quot;mode\&quot;: \&quot;manual\&quot;,\n        \&quot;method\&quot;: \&quot;GET\&quot;,\n        \&quot;url\&quot;: \&quot;https://api.open-meteo.com/v1/forecast?latitude=47.6101&amp;longitude=-122.2015&amp;current=temperature_2m&amp;temperature_unit=fahrenheit\&quot;,\n        \&quot;headers\&quot;: {},\n … (3611 more chars)&quot;,
+  &quot;new_string&quot;: &quot;    {\n      \&quot;id\&quot;: \&quot;fetchAndFormat\&quot;,\n      \&quot;type\&quot;: \&quot;core.subflow\&quot;,\n      \&quot;typeVersion\&quot;: \&quot;1.0\&quot;,\n      \&quot;display\&quot;: {\n        \&quot;label\&quot;: \&quot;fetchAndFormat\&quot;,\n        \&quot;icon\&quot;: \&quot;layers\&quot;\n      },\n      \&quot;inputs\&quot;: {},\n      \&quot;outputs\&quot;: {\n        \&quot;error\&quot;: {\n          \&quot;type\&quot;: \&quot;object\&quot;,\n          \&quot;description\&quot;: \&quot;Error information if the subflow fails\&quot;,\n          \&quot;source\&quot;: \&quot;=Error\&quot;,\n          \&quot;var\&quot;: \&quot;error\&quot;\n        }\n… (1694 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>The file /work/output/artifacts/skill-flow-group-to-subflow/BellevueWeather/BellevueWeather/BellevueWeather.flow has been updated successfully. (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#21</span>
+      <span class="tool-name">Edit</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">15ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;replace_all&quot;: false,
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-group-to-subflow/BellevueWeather/BellevueWeather/BellevueWeather.flow&quot;,
+  &quot;old_string&quot;: &quot;  \&quot;edges\&quot;: [\n    {\n      \&quot;id\&quot;: \&quot;edge-start-getWeather\&quot;,\n      \&quot;sourceNodeId\&quot;: \&quot;start\&quot;,\n      \&quot;sourcePort\&quot;: \&quot;output\&quot;,\n      \&quot;targetNodeId\&quot;: \&quot;getWeather\&quot;,\n      \&quot;targetPort\&quot;: \&quot;input\&quot;\n    },\n    {\n      \&quot;id\&quot;: \&quot;edge-getWeather-formatSummary\&quot;,\n      \&quot;sourceNodeId\&quot;: \&quot;getWeather\&quot;,\n      \&quot;sourcePort\&quot;: \&quot;default\&quot;,\n      \&quot;targetNodeId\&quot;: \&quot;formatSummary\&quot;,\n      \&quot;targetPort\&quot;: \&quot;input\&quot;\n    },\n    {\n      \&quot;id\&quot;: \&quot;e… (183 more chars)&quot;,
+  &quot;new_string&quot;: &quot;  \&quot;edges\&quot;: [\n    {\n      \&quot;id\&quot;: \&quot;edge-start-fetchAndFormat\&quot;,\n      \&quot;sourceNodeId\&quot;: \&quot;start\&quot;,\n      \&quot;sourcePort\&quot;: \&quot;output\&quot;,\n      \&quot;targetNodeId\&quot;: \&quot;fetchAndFormat\&quot;,\n      \&quot;targetPort\&quot;: \&quot;input\&quot;\n    },\n    {\n      \&quot;id\&quot;: \&quot;edge-fetchAndFormat-checkTemperature\&quot;,\n      \&quot;sourceNodeId\&quot;: \&quot;fetchAndFormat\&quot;,\n      \&quot;sourcePort\&quot;: \&quot;output\&quot;,\n      \&quot;targetNodeId\&quot;: \&quot;checkTemperature\&quot;,\n      \&quot;targetPort\&quot;: \&quot;input\&quot;\n    },&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>The file /work/output/artifacts/skill-flow-group-to-subflow/BellevueWeather/BellevueWeather/BellevueWeather.flow has been updated successfully. (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#22</span>
+      <span class="tool-name">Edit</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">16ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;replace_all&quot;: false,
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-group-to-subflow/BellevueWeather/BellevueWeather/BellevueWeather.flow&quot;,
+  &quot;old_string&quot;: &quot;    \&quot;nodes\&quot;: [\n      {\n        \&quot;id\&quot;: \&quot;getWeather.output\&quot;,\n        \&quot;type\&quot;: \&quot;object\&quot;,\n        \&quot;description\&quot;: \&quot;HTTP response from open-meteo API\&quot;,\n        \&quot;binding\&quot;: {\n          \&quot;nodeId\&quot;: \&quot;getWeather\&quot;,\n          \&quot;outputId\&quot;: \&quot;output\&quot;\n        }\n      },\n      {\n        \&quot;id\&quot;: \&quot;getWeather.error\&quot;,\n        \&quot;type\&quot;: \&quot;object\&quot;,\n        \&quot;description\&quot;: \&quot;Error if weather fetch fails\&quot;,\n        \&quot;binding\&quot;: {\n       … (587 more chars)&quot;,
+  &quot;new_string&quot;: &quot;    \&quot;nodes\&quot;: [\n      {\n        \&quot;id\&quot;: \&quot;fetchAndFormat.output\&quot;,\n        \&quot;type\&quot;: \&quot;object\&quot;,\n        \&quot;description\&quot;: \&quot;Subflow output containing the formatted weather temperature\&quot;,\n        \&quot;binding\&quot;: {\n          \&quot;nodeId\&quot;: \&quot;fetchAndFormat\&quot;,\n          \&quot;outputId\&quot;: \&quot;output\&quot;\n        }\n      },\n      {\n        \&quot;id\&quot;: \&quot;fetchAndFormat.error\&quot;,\n        \&quot;type\&quot;: \&quot;object\&quot;,\n        \&quot;description\&quot;: \&quot;Error if the fetch-an… (142 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>The file /work/output/artifacts/skill-flow-group-to-subflow/BellevueWeather/BellevueWeather/BellevueWeather.flow has been updated successfully. (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#23</span>
+      <span class="tool-name">Edit</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">17ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;replace_all&quot;: false,
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-group-to-subflow/BellevueWeather/BellevueWeather/BellevueWeather.flow&quot;,
+  &quot;old_string&quot;: &quot;      \&quot;getWeather\&quot;: {\n        \&quot;position\&quot;: {\n          \&quot;x\&quot;: 450,\n          \&quot;y\&quot;: 144\n        },\n        \&quot;size\&quot;: {\n          \&quot;width\&quot;: 96,\n          \&quot;height\&quot;: 96\n        },\n        \&quot;collapsed\&quot;: false\n      },\n      \&quot;formatSummary\&quot;: {\n        \&quot;position\&quot;: {\n          \&quot;x\&quot;: 700,\n          \&quot;y\&quot;: 144\n        },\n        \&quot;size\&quot;: {\n          \&quot;width\&quot;: 96,\n          \&quot;height\&quot;: 96\n        },\n        \&quot;collapsed\&quot;: fa… (12 more chars)&quot;,
+  &quot;new_string&quot;: &quot;      \&quot;fetchAndFormat\&quot;: {\n        \&quot;position\&quot;: {\n          \&quot;x\&quot;: 450,\n          \&quot;y\&quot;: 144\n        },\n        \&quot;size\&quot;: {\n          \&quot;width\&quot;: 96,\n          \&quot;height\&quot;: 96\n        },\n        \&quot;collapsed\&quot;: false\n      },&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>The file /work/output/artifacts/skill-flow-group-to-subflow/BellevueWeather/BellevueWeather/BellevueWeather.flow has been updated successfully. (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#24</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">5ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-group-to-subflow/BellevueWeather/BellevueWeather/BellevueWeather.flow&quot;,
+  &quot;offset&quot;: 1980,
+  &quot;limit&quot;: 100
+}</pre>
+    <h4>Result</h4>
+    <pre>1980	        {
+1981	          &quot;position&quot;: &quot;right&quot;,
+1982	          &quot;handles&quot;: [
+1983	            {
+1984	              &quot;id&quot;: &quot;true&quot;,
+1985	              &quot;type&quot;: &quot;source&quot;,
+1986	              &quot;handleType&quot;: &quot;output&quot;,
+1987	              &quot;label&quot;: &quot;{inputs.trueLabel}&quot;,
+1988	              &quot;constraints&quot;: {
+1989	                &quot;minConnections&quot;: 1
+1990	              }
+1991	            },
+1992	            {
+1993	              &quot;id&quot;: &quot;false&quot;,
+1994	              &quot;type&quot;: &quot;source&quot;,
+1995	              &quot;handleType&quot;: &quot;output&quot;,
+1996	              &quot;label&quot;: &quot;{inputs.falseLabel}&quot;,
+1997	              &quot;constraints&quot;: {
+1998	                &quot;minConnections&quot;: 1
+1999	              }
+2000	            }
+2001	          ],
+2002	          &quot;visible&quot;: true
+2003	        }
+2004	      ],
+2005	      &quot;inputDefaults&quot;: {
+2006	        &quot;trueLabel&quot;: &quot;True&quot;,
+2007	        &quot;falseLabel&quot;: &quot;False&quot;
+2008	      },
+2009	      &quot;inputDefinition&quot;: {
+2010	        &quot;type&quot;: &quot;object&quot;,
+2011	        &quot;properties&quot;: {
+2012	          &quot;expression&quot;: {
+2013	            &quot;type&quot;: &quot;string&quot;,
+2014	            &quot;minLength&quot;: 1,
+2015	            &quot;errorMessage&quot;: &quot;A condition expression is required&quot;
+2016	          },
+2017	          &quot;trueLabel&quot;: {
+2018	            &quot;ty
+
+… (truncated, 1690 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#25</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">15ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;wc -l /work/output/artifacts/skill-flow-group-to-subflow/BellevueWeather/BellevueWeather/BellevueWeather.flow\ntail -60 /work/output/artifacts/skill-flow-group-to-subflow/BellevueWeather/BellevueWeather/BellevueWeather.flow&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>2274 /work/output/artifacts/skill-flow-group-to-subflow/BellevueWeather/BellevueWeather/BellevueWeather.flow
+  &quot;layout&quot;: {
+    &quot;nodes&quot;: {
+      &quot;start&quot;: {
+        &quot;position&quot;: {
+          &quot;x&quot;: 200,
+          &quot;y&quot;: 144
+        },
+        &quot;size&quot;: {
+          &quot;width&quot;: 96,
+          &quot;height&quot;: 96
+        },
+        &quot;collapsed&quot;: false
+      },
+      &quot;fetchAndFormat&quot;: {
+        &quot;position&quot;: {
+          &quot;x&quot;: 450,
+          &quot;y&quot;: 144
+        },
+        &quot;size&quot;: {
+          &quot;width&quot;: 96,
+          &quot;height&quot;: 96
+        },
+        &quot;collapsed&quot;: false
+      },
+      &quot;checkTemperature&quot;: {
+        &quot;position&quot;: {
+          &quot;x&quot;: 950,
+          &quot;y&quot;: 144
+        },
+        &quot;size&quot;: {
+          &quot;width&quot;: 96,
+          &quot;height&quot;: 96
+        },
+        &quot;collapsed&quot;: false
+      },
+      &quot;endNiceDay&quot;: {
+        &quot;position&quot;: {
+          &quot;x&quot;: 1200,
+          &quot;y&quot;: 44
+        },
+        &quot;size&quot;: {
+          &quot;width&quot;: 96,
+          &quot;height&quot;: 96
+        },
+        &quot;collapsed&quot;: false
+      },
+      &quot;endBringJacket&quot;: {
+        &quot;position&quot;: {
+          &quot;x&quot;: 1200,
+          &quot;y&quot;: 244
+        },
+        &quot;size&quot;: {
+          &quot;width&quot;: 96,
+          &quot;height&quot;: 96
+        },
+        &quot;collapsed&quot;: false
+      }
+    }
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#26</span>
+      <span class="tool-name">Edit</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">28ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;replace_all&quot;: false,
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-group-to-subflow/BellevueWeather/BellevueWeather/BellevueWeather.flow&quot;,
+  &quot;old_string&quot;: &quot;      \&quot;endBringJacket\&quot;: {\n        \&quot;position\&quot;: {\n          \&quot;x\&quot;: 1200,\n          \&quot;y\&quot;: 244\n        },\n        \&quot;size\&quot;: {\n          \&quot;width\&quot;: 96,\n          \&quot;height\&quot;: 96\n        },\n        \&quot;collapsed\&quot;: false\n      }\n    }\n  }\n}&quot;,
+  &quot;new_string&quot;: &quot;      \&quot;endBringJacket\&quot;: {\n        \&quot;position\&quot;: {\n          \&quot;x\&quot;: 1200,\n          \&quot;y\&quot;: 244\n        },\n        \&quot;size\&quot;: {\n          \&quot;width\&quot;: 96,\n          \&quot;height\&quot;: 96\n        },\n        \&quot;collapsed\&quot;: false\n      }\n    }\n  },\n  \&quot;subflows\&quot;: {\n    \&quot;fetchAndFormat\&quot;: {\n      \&quot;nodes\&quot;: [\n        {\n          \&quot;id\&quot;: \&quot;fetchAndFormatStart\&quot;,\n          \&quot;type\&quot;: \&quot;core.trigger.manual\&quot;,\n          \&quot;typeVersion\&quot;: \&quot;1.0\&quot;,\n … (6908 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>The file /work/output/artifacts/skill-flow-group-to-subflow/BellevueWeather/BellevueWeather/BellevueWeather.flow has been updated successfully. (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#27</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">3.07s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-group-to-subflow/BellevueWeather/BellevueWeather &amp;&amp; python3 -c \&quot;import json; json.load(open(&#x27;BellevueWeather.flow&#x27;))\&quot; &amp;&amp; echo \&quot;JSON OK\&quot;\nuip maestro flow validate BellevueWeather.flow --output json 2&gt;&amp;1&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>JSON OK
+[ManifestClient] fetchDynamicNodes ok: total=315 agent context nodes=2 external agent nodes=7 orchestrator nodes=261 IXP nodes=45
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FlowValidate&quot;,
+  &quot;Data&quot;: {
+    &quot;File&quot;: &quot;/work/output/artifacts/skill-flow-group-to-subflow/BellevueWeather/BellevueWeather/BellevueWeather.flow&quot;,
+    &quot;Status&quot;: &quot;Valid&quot;
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#28</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">819ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow format BellevueWeather.flow --output json 2&gt;&amp;1&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FlowFormat&quot;,
+  &quot;Data&quot;: {
+    &quot;File&quot;: &quot;BellevueWeather.flow&quot;,
+    &quot;NodesTotal&quot;: 9,
+    &quot;EdgesTotal&quot;: 7,
+    &quot;NodesRepositioned&quot;: 8,
+    &quot;NodesResized&quot;: 0,
+    &quot;SubflowsTidied&quot;: 1,
+    &quot;VariableCount&quot;: 12
+  },
+  &quot;Instructions&quot;: &quot;Repositioned 8 of 9 nodes. Tidied 1 subflow(s)&quot;
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#29</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">2.97s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow validate BellevueWeather.flow --output json 2&gt;&amp;1&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>[ManifestClient] fetchDynamicNodes ok: total=315 agent context nodes=2 external agent nodes=7 orchestrator nodes=261 IXP nodes=45
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FlowValidate&quot;,
+  &quot;Data&quot;: {
+    &quot;File&quot;: &quot;/work/output/artifacts/skill-flow-group-to-subflow/BellevueWeather/BellevueWeather/BellevueWeather.flow&quot;,
+    &quot;Status&quot;: &quot;Valid&quot;
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#30</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">90ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 -c \&quot;\nimport json\nf = json.load(open(&#x27;BellevueWeather.flow&#x27;))\nprint(&#x27;top nodes:&#x27;, [n[&#x27;id&#x27;] for n in f[&#x27;nodes&#x27;]])\nprint(&#x27;subflows keys:&#x27;, list(f.get(&#x27;subflows&#x27;, {}).keys()))\nsf = f[&#x27;subflows&#x27;][&#x27;fetchAndFormat&#x27;]\nprint(&#x27;subflow nodes:&#x27;, [n[&#x27;id&#x27;] for n in sf[&#x27;nodes&#x27;]])\nprint(&#x27;subflow edges:&#x27;, [(e[&#x27;sourceNodeId&#x27;], e[&#x27;sourcePort&#x27;], e[&#x27;targetNodeId&#x27;]) for e in sf[&#x27;edges&#x27;]])\nprint(&#x27;subflow globals:… (195 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>top nodes: [&#x27;start&#x27;, &#x27;fetchAndFormat&#x27;, &#x27;checkTemperature&#x27;, &#x27;endNiceDay&#x27;, &#x27;endBringJacket&#x27;]
+subflows keys: [&#x27;fetchAndFormat&#x27;]
+subflow nodes: [&#x27;fetchAndFormatStart&#x27;, &#x27;getWeather&#x27;, &#x27;formatSummary&#x27;, &#x27;fetchAndFormatEnd&#x27;]
+subflow edges: [(&#x27;fetchAndFormatStart&#x27;, &#x27;output&#x27;, &#x27;getWeather&#x27;), (&#x27;getWeather&#x27;, &#x27;default&#x27;, &#x27;formatSummary&#x27;), (&#x27;formatSummary&#x27;, &#x27;success&#x27;, &#x27;fetchAndFormatEnd&#x27;)]
+subflow globals: [{&#x27;id&#x27;: &#x27;temperatureF&#x27;, &#x27;direction&#x27;: &#x27;out&#x27;, &#x27;type&#x27;: &#x27;number&#x27;, &#x27;description&#x27;: &#x27;Formatted Bellevue temperature in Fahrenheit&#x27;}]
+end outputs: {&#x27;temperatureF&#x27;: {&#x27;source&#x27;: &#x27;=js:$vars.formatSummary.output.temperatureF&#x27;}}
+variables.nodes (main): [{&#x27;id&#x27;: &#x27;start.output&#x27;, &#x27;type&#x27;: &#x27;object&#x27;, &#x27;description&#x27;: &#x27;The return value of the trigger.&#x27;, &#x27;binding&#x27;: {&#x27;nodeId&#x27;: &#x27;start&#x27;, &#x27;outputId&#x27;: &#x27;output&#x27;}}, {&#x27;id&#x27;: &#x27;fetchAndFormat.error&#x27;, &#x27;type&#x27;: &#x27;object&#x27;, &#x27;description&#x27;: &#x27;Error information if the subflow fails&#x27;, &#x27;binding&#x27;: {&#x27;nodeId&#x27;: &#x27;fetchAndFormat&#x27;, &#x27;outputId&#x27;: &#x27;error&#x27;}}, {&#x27;id&#x27;: &#x27;checkTemperature.matchedCase&#x27;, &#x27;type&#x27;: &#x27;string&#x27;, &#x27;description&#x27;: &#x27;The label of the matched branch (true/false label)&#x27;, &#x27;binding&#x27;: {&#x27;nodeId&#x27;: &#x27;checkTemperature&#x27;, &#x27;outputId&#x27;: &#x27;matchedCase&#x27;}}, {&#x27;id&#x27;: &#x27;checkTemperature.matchedCaseId&#x27;, &#x27;type&#x27;: &#x27;stri
+
+… (truncated, 361 more chars)</pre>
+    
+  </div>
+</details>
+
+</div>
+
+<h2>Command Telemetry</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Total</div><div class="value">31</div></div>
+    <div class="stat"><div class="label">Successful</div><div class="value">31 (100%)</div></div>
+    <div class="stat"><div class="label">Failed</div><div class="value">0</div></div>
+    <div class="stat"><div class="label">Avg / cmd</div><div class="value">667ms</div></div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 2fr;gap:16px;margin-top:12px">
+    <div>
+      <h4>By Tool</h4>
+      <table>
+        <thead><tr><th>Tool</th><th>Count</th></tr></thead>
+        <tbody><tr><td class='mono'>Bash</td><td>17</td></tr><tr><td class='mono'>Edit</td><td>6</td></tr><tr><td class='mono'>Read</td><td>4</td></tr><tr><td class='mono'>Grep</td><td>3</td></tr><tr><td class='mono'>Skill</td><td>1</td></tr></tbody>
+      </table>
+    </div>
+    <div>
+      <h4>Slowest</h4>
+      <table>
+        <thead><tr><th>Tool</th><th>Duration</th><th>Parameters</th></tr></thead>
+        <tbody><tr><td class='mono'>Bash</td><td>5.65s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;cd /work/output/artifacts/skill-flow-...</td></tr><tr><td class='mono'>Read</td><td>4.95s</td><td class='mono dim'>{&#x27;file_path&#x27;: &#x27;/home/azureuser/projects/skills/ski...</td></tr><tr><td class='mono'>Bash</td><td>3.07s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;cd /work/output/artifacts/skill-flow-...</td></tr><tr><td class='mono'>Bash</td><td>2.97s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro flow validate BellevueWea...</td></tr><tr><td class='mono'>Bash</td><td>1.92s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro flow registry get core.su...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+  <p><strong>Most Common Pattern:</strong> <code>Bash → Bash → Bash</code></p><p><strong>Skill Tool Invoked:</strong> 1 time(s)</p>
+</div>
+
+<h2>Generation Metrics</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Total Latency</div><div class="value">8m 16s</div></div>
+    <div class="stat"><div class="label">Turns</div><div class="value">1</div></div>
+    <div class="stat"><div class="label">Assistant Turns</div><div class="value">61</div></div>
+    <div class="stat"><div class="label">Avg Turn Latency</div><div class="value">7m 53s</div></div>
+    
+  </div>
+</div>
+
+<h2>Token Usage</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Input (uncached)</div><div class="value">52</div></div>
+    <div class="stat"><div class="label">Output</div><div class="value">45,462</div></div>
+    <div class="stat"><div class="label">Cache Write</div><div class="value">96,163</div></div>
+    <div class="stat"><div class="label">Cache Read</div><div class="value">2,774,063</div></div>
+    <div class="stat"><div class="label">Total</div><div class="value">2,915,740</div></div>
+    <div class="stat"><div class="label">Cost</div><div class="value">$1.8749</div></div>
+  </div>
+</div>
+
+<h2>Agent Settings</h2>
+<div class="card" style="padding:0">
+  <table>
+    <tbody><tr><td class='mono dim'>Permission Mode</td><td>acceptEdits</td></tr><tr><td class='mono dim'>Allowed Tools</td><td>Skill, Bash, Read, Write, Edit, Glob, Grep</td></tr><tr><td class='mono dim'>Model</td><td>us.anthropic.claude-sonnet-5</td></tr><tr><td class='mono dim'>Max Turns</td><td>40</td></tr><tr><td class='mono dim'>System Prompt</td><td>You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted. </td></tr><tr><td class='mono dim'>System Prompt Mode</td><td>append</td></tr><tr><td class='mono dim'>Plugins</td><td>/home/azureuser/projects/skills</td></tr></tbody>
+  </table>
+</div>
+
+<h2>Environment</h2>
+<div class="card" style="padding:0">
+  <table>
+    <tbody><tr><td class='mono dim'>git_commit</td><td>unknown</td></tr><tr><td class='mono dim'>skills_git_commit</td><td>unknown</td></tr><tr><td class='mono dim'>cli_version</td><td>1.201.0-dev.8272</td></tr><tr><td class='mono dim'>tool_plugins</td><td>{&#x27;admin-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;agent-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;agenthub-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;aops-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;api-workflow-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;automation-hub-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;codedagent-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;codedapp-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;coder-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;context-grounding-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;conversational-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;data-fabric-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;docsai-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;function-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;gov-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;guardrails-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;insights-tool&#x27;: &#x27;1.201.0-dev.8276&#x27;, &#x27;integrationservice-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;ixp-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;llm-gateway-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;llmgw-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;maestro-tool&#x27;: &#x27;1.201.0-dev.8275&#x27;, &#x27;model-hub-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;orchestrator-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;platform-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;pm-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;rpa-legacy-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;rpa-tool&#x27;: &#x27;1.201.0-dev.20260809.3&#x27;, &#x27;solution-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;tasks-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;test-manager-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;traces-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;vertical-solutions-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;}</td></tr><tr><td class='mono dim'>coder_eval</td><td>0.9.6</td></tr><tr><td class='mono dim'>claude_code_cli</td><td>2.1.177 (Claude Code)</td></tr><tr><td class='mono dim'>uv</td><td>uv 0.12.5 (x86_64-unknown-linux-gnu)</td></tr><tr><td class='mono dim'>anthropic</td><td>0.122.0</td></tr><tr><td class='mono dim'>openai</td><td>3.2.0</td></tr><tr><td class='mono dim'>pydantic</td><td>2.12.5</td></tr><tr><td class='mono dim'>api_routing</td><td>aws_bedrock</td></tr><tr><td class='mono dim'>eval_routing</td><td>aws_bedrock</td></tr><tr><td class='mono dim'>aws_region</td><td>us-east-2</td></tr><tr><td class='mono dim'>bedrock_model</td><td>us.anthropic.claude-sonnet-4-6</td></tr><tr><td class='mono dim'>system_prompt_semantics</td><td>append</td></tr></tbody>
+  </table>
+</div>
+
+<footer>Generated by coder_eval · 2026-08-18T22:05:48</footer>
+</div>
+<script>
+function toggleTheme() {
+  document.documentElement.classList.toggle('light');
+  try {
+    const mode = document.documentElement.classList.contains('light') ? 'light' : 'dark';
+    localStorage.setItem('coder-eval-theme', mode);
+  } catch (e) { /* ignore */ }
+}
+(function() {
+  try {
+    if (localStorage.getItem('coder-eval-theme') === 'light') {
+      document.documentElement.classList.add('light');
+    }
+  } catch (e) { /* ignore */ }
+})();
+</script>
+</body>
+</html>

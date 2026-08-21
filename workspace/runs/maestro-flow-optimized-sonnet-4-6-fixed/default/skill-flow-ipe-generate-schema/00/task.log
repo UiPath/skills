@@ -1,0 +1,28 @@
+2026-08-19 20:57:58 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-08-19 20:57:58 [INFO] coder_eval.orchestrator: API routing: aws_bedrock
+2026-08-19 20:57:58 [DEBUG] coder_eval.criteria: Discovered 15 criterion checkers
+2026-08-19 20:57:58 [DEBUG] coder_eval.criteria: Validated 15 criterion checkers
+2026-08-19 20:57:58 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-08-19 20:57:58 [DEBUG] coder_eval.orchestrator: Sending prompt: Create a new Flow project called "GenerateSchemaTest" with a manual trigger
+that runs the Atlassian ...
+2026-08-19 20:57:59 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Starting agent query stream...
+2026-08-19 21:03:42 [DEBUG] coder_eval.agents.claude_code_agent: [coder] session_id changed: None -> 3e5d82d3-48e5-483e-9edd-68e4b4a7196c
+2026-08-19 21:03:42 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Agent query stream ended
+2026-08-19 21:03:42 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-08-19 21:03:42 [DEBUG] coder_eval.orchestrator: Agent response received (4892 chars)
+2026-08-19 21:03:42 [DEBUG] coder_eval.orchestrator: Checking success criteria
+2026-08-19 21:03:42 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'Flow is valid JSON with Jira Create Issue node, customFieldsRequestDetails has both parent-field tuples under GenerateSchema, and bodyParameters carries a non-empty fields.summary': python3 $TASK_DIR/check_generate_schema.py
+2026-08-19 21:03:42 [DEBUG] coder_eval.sandbox: Command 'python3 $TASK_DIR/check_generate_schema.py' exited with code 0
+2026-08-19 21:03:42 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+OK: 3 nodes, 2 edges; Jira Create Issue node present; customFieldsRequestDetails has both parent-field tuples; fields.summary='Test issue created from GenerateSchemaTest flow'
+---
+2026-08-19 21:03:42 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-08-19 21:03:42 [DEBUG] coder_eval.evaluation.checker: Criterion 'command_executed' score: 0.00
+2026-08-19 21:03:42 [INFO] coder_eval.evaluation.checker: Criterion 'command_executed' FAILED (score=0.00, threshold=1.00): Matched 0/1 required commands (filters: tool_name=Bash, pattern=/(uip|\$UIP)\s+is\s+resources\s+describe.+(-f|--field)[=\s]+["']?fields\.project\.key/)
+2026-08-19 21:03:42 [DEBUG] coder_eval.evaluation.checker: Criterion 'command_executed' score: 1.00
+2026-08-19 21:03:42 [INFO] coder_eval.orchestrator: Success criteria: 2/3 passed, weighted score: 0.800
+2026-08-19 21:03:42 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-08-19 21:03:42 [INFO] coder_eval.orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+2026-08-19 21:03:42 [INFO] coder_eval.orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-ipe-generate-schema
+2026-08-19 21:03:42 [INFO] coder_eval.orchestrator: Task finished: status=FAILURE duration=356.6s score=0.800 iterations=1

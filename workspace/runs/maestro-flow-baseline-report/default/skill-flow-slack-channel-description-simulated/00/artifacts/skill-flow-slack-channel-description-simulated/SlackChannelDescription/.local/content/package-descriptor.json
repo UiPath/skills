@@ -1,0 +1,8 @@
+{
+  "$schema": "https://cloud.uipath.com/draft/2024-12/package-descriptor",
+  "files": {
+    "bindings.json": "content/bindings_v2.json",
+    "entry-points.json": "content/entry-points.json",
+    "operate.json": "content/operate.json"
+  }
+}

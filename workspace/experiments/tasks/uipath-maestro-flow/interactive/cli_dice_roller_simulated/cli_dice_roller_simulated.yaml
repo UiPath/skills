@@ -1,0 +1,106 @@
+task_id: skill-flow-cli-dice-roller-simulated
+description: >
+  Dice-roller flow via CLI mode, but driven by a simulated non-technical user
+  who withholds requirements until asked. Tests the agent's ability to
+  clarify ambiguous asks before building.
+tags: [uipath-maestro-flow, e2e, mode:build, lifecycle:generate, shape:multi-node, simulation]
+run_limits:
+  # Ceiling on agent turns across the whole dialog, with generous headroom so a
+  # long build is never truncated mid-flow. The dialog length itself is bounded
+  # by simulation.max_turns below.
+  max_turns: 60
+  task_timeout: 2400
+  turn_timeout: 1200
+
+agent:
+  # Override only the system prompt; type, permission_mode, allowed_tools,
+  # plugins, and sandbox all inherit from the experiment (tests/README.md —
+  # don't duplicate the full agent block).
+  system_prompt: |
+    If you're unsure of anything, ask for more information.
+
+# No initial_prompt — the simulator generates turn 1 from its persona + goal.
+
+simulation:
+  enabled: true
+
+  persona: |
+    You are a non-technical operations analyst. You have heard of UiPath but
+    have never built a flow yourself. You speak in plain English, never in code.
+    You are friendly but impatient: if the agent dithers, prod it to just build
+    something. You cannot read or write code — if the agent shows you code, say
+    "I trust you, just make it work."
+
+  goal: |
+    You want a UiPath Flow that rolls a single six-sided die and shows you the
+    number that came up.
+
+    OPENING MESSAGE: open the way you would to a colleague — a couple of short
+    sentences covering the outcome you want plus the rules that matter: one
+    die, six sides, numbers 1 through 6, and you want the rolled number shown
+    as the result rather than buried somewhere nobody looks. Say that it has
+    to be built as a UiPath Maestro Flow — not an API workflow, not a
+    standalone script — and that you want it validated before you sign off. Do
+    not name files or paths and do not use technical wording. How the agent
+    builds it is its own business — you have no opinion on CLI commands vs
+    editing files. Close by inviting the agent to ask you anything it needs
+    before it starts building. Keep the withheld items below to yourself until
+    it asks.
+
+    WITHHELD — reveal each of these ONLY if the agent asks about it:
+      - The project name should be "DiceRoller".
+      - You want "uip maestro flow validate" to pass before you sign off.
+      - You want to see it actually produce a number when it runs before you sign off.
+
+  constraints:
+    - "Never paste or read code. If shown code, say 'I trust you, just make it work.'"
+    - "Do not mention 'CLI', 'uip', 'node', or 'edge' unless the agent brings them up first."
+    - "Do not reveal the project name 'DiceRoller' unless asked what to name it."
+    - "The one thing worth pushing back on: if the agent reports it built something that is not a Maestro Flow at all (e.g. an API workflow), tell it you specifically want a Maestro Flow — i.e. a `.flow` file in the workspace — and are not satisfied until there is one."
+    - "If the agent asks you anything before it starts building, answer every outstanding question in ONE message — include any withheld fact it asked about, stated plainly — and then let it build."
+    - "When the agent reports it built the flow, do not end yet if it hasn't shown you the result: before you sign off you want to see it actually run and produce a number 1 through 6. If it only says the flow is built and validated, ask it once to run it and show you the roll. Once the agent has both built the flow AND shown you a run that produced a number 1 through 6, the conversation is over: reply with exactly <<<END>>> on its own line. Do not ask for a rebuild, polish, or alternative designs, and do not raise any requirement beyond seeing it actually work — the grader verifies the result from here."
+  max_turns: 8
+  stop_token: "<<<END>>>"
+  stop_on_criteria_pass: false
+  check_criteria: end_of_dialog
+  n_trials: 1
+
+success_criteria:
+  # Name-agnostic: any .flow the agent built must validate. The exact project
+  # name is scored separately below so a working-but-misnamed flow still earns
+  # most of the credit. (`**` skips dot-dirs, so .uipath/.skills flows are ignored.)
+  - type: run_command
+    description: "uip flow validate passes (any .flow)"
+    command: "python3 -c \"import glob,subprocess,sys; flows=glob.glob('**/*.flow',recursive=True); sys.exit('no .flow file found') if not flows else sys.exit(subprocess.run(['uip','maestro','flow','validate',flows[0],'--output','json']).returncode)\""
+    timeout: 60
+    expected_exit_code: 0
+    weight: 4.0
+    pass_threshold: 1.0
+
+  # Runtime check (mirrors the retired non-simulated original, check_dice_runs.py):
+  # a Script node executes and the output is an integer in [1, 6]. Supersedes a
+  # static grep for "random", which a flow that never executes would still pass.
+  - type: run_command
+    description: "Flow debug runs; Script node executed and output is an integer in [1,6]"
+    command: "python3 $TASK_DIR/check_dice_runs.py"
+    # Cloud `flow debug` on this task regularly exceeds the old 240s inner
+    # budget (measured: 2 of 3 codex runs raised subprocess.TimeoutExpired), so
+    # the criterion was scoring 0 on runner latency rather than on the flow.
+    # 660 leaves headroom over the checker's own 600s run_debug timeout.
+    timeout: 660
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # The project name is a WITHHELD, COSMETIC requirement (persona reveals it only
+  # if asked what to name it) — the flow behaves identically whatever it's called.
+  # Non-gating: reports whether the agent elicited the exact name (score 1/0), but
+  # pass_threshold 0 keeps a cosmetic miss from failing the task and the low weight
+  # keeps it from dominating the score.
+  - type: run_command
+    description: "Project/flow is named DiceRoller (elicited from the user)"
+    command: "python3 -c \"import glob,sys; sys.exit(0 if glob.glob('**/DiceRoller.flow',recursive=True) else 'expected a flow named DiceRoller.flow')\""
+    timeout: 15
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 0

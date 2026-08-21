@@ -1,0 +1,95 @@
+=== USER (turn 1) — simulator-generated opener ===
+Hey! I need your help building something to take the chaos out of my team's support inbox. Here's what I'm after:
+
+Whenever a new email lands in our Outlook inbox, I want an automated flow to kick in on its own and figure out what to do with it. Two things matter: whether the email looks urgent, and whether the sender is one of our VIP customers. If an email is both urgent AND from a VIP, I want a message posted in Slack to give us a heads-up, plus an acknowledgment reply sent straight back to that sender. For everything else — urgent but not VIP, VIP but not urgent, or neither — I want a support ticket created automatically and a reply sent to the sender with the ticket details.
+
+One thing I'm firm on: this has to be built as a UiPath Maestro Flow — not an API workflow, not a standalone script. I've been told that's the right format for this kind of thing and I want to make sure we end up with exactly that.
+
+Once it's built, I want it validated before I sign off on it.
+
+Before you dive in, feel free to ask me anything you need to know — happy to answer so you get it right first time.
+
+=== AGENT (turn 1) — 115.7s, in=950 out=5235, 12 tool calls ===
+I have the connectors. Before finalizing the architecture, I have a few key questions where the answer shapes the build.
+
+---
+
+**Before I draw up the plan, three quick decisions from you:**
+
+**1. Urgency detection — how should the flow decide an email "looks urgent"?**
+
+1. Keyword scan in subject/body — e.g. "urgent", "critical", "ASAP", "emergency" (script node, no extra service needed)
+2. Microsoft 365 email importance/priority flag (`high` importance)
+3. Both — flag OR keywords
+4. Something else
+
+**2. VIP detection — how should the flow know the sender is a VIP?**
+
+1. A hardcoded list of VIP email addresses passed in as a flow input variable (simple, no extra service)
+2. CRM lookup (e.g. Salesforce, HubSpot) — checks if sender exists in VIP segment
+3. Something else
+
+**3. Ticketing system — which should the ticket be created in?**
+
+Multiple connectors are available on your tenant:
+
+1. **Freshdesk** (`uipath-freshworks-freshdesk`)
+2. **Freshservice** (`uipath-freshworks-freshservice`)
+3. **Zendesk** (`uipath-zendesk-zendesk`)
+4. **ServiceNow** (creates an incident, `uipath-servicenow-servicenow`)
+5. Something else
+
+=== USER (turn 2) ===
+Good questions — let me knock them all out at once so you can get moving.
+
+For urgency, I honestly don't have a set list. You decide, use your best judgment — keywords in the subject and body sounds perfectly sensible to me.
+
+Same goes for VIP — I don't have a hard rule. Whatever feels reasonable to you, go with it. A domain or address list sounds fine.
+
+For the ticketing system, let's go with **Freshdesk** — that's what the team is already using.
+
+Now go build it!
+
+=== AGENT (turn 2) — 741.3s, in=1723 out=36479, 61 tool calls ===
+The build is complete and validated. Here's the sign-off report:
+
+---
+
+## Build Complete
+
+**File:** `CustomerEscalationSolution/CustomerEscalationFlow/CustomerEscalationFlow.flow`
+
+### What was built
+
+A 10-node Maestro Flow that triggers on every new email in your Outlook 365 inbox and routes it via two-stage classification:
+
+| Node | Type | Role |
+|---|---|---|
+| `emailReceived1` | Outlook 365 trigger | Fires on new inbox email |
+| `classifyEmail1` | Script | Keyword scan (urgent) + domain/address check (VIP) |
+| `checkUrgent1` | Decision | Routes on `isUrgent` flag |
+| `checkVip1` | Decision | Routes on `isVip` flag (urgent path only) |
+| `notifySlackVipEscalation1` | Slack connector | Posts to `#vip-escalations` channel |
+| `replyAcknowledgment1` | Outlook 365 connector | Sends VIP acknowledgment reply |
+| `doneVipEscalation` | End | Terminal — VIP escalation path |
+| `createSupportTicket1` | Freshdesk connector | Creates support ticket |
+| `replyWithTicketDetails1` | Outlook 365 connector | Replies with ticket ID and link |
+| `doneTicketCreated` | End | Terminal — standard ticket path |
+
+**Routing logic:**
+- Urgent **AND** VIP → Slack alert + acknowledgment reply → done
+- Urgent only, VIP only, or neither → Freshdesk ticket + ticket-details reply → done
+
+### Validate result
+
+`Status: Valid` — 0 errors, 1 informational warning (intentional: trigger + both reply nodes share the same Outlook 365 connection because they're all using the same mailbox account).
+
+### Before deploying — two things you need to update
+
+1. **Slack channel ID** — `notifySlackVipEscalation1` is configured with placeholder `#vip-escalations`. Open the flow and replace it with your real Slack channel ID (the `C...` style ID, not the display name). You can get it from Slack → right-click the channel → Copy link.
+
+2. **VIP list** — the classifier uses placeholder domains (`vip-client.com`, `bigaccount.com`, `enterprise.com`) and addresses (`ceo@example.com`, `vip@example.com`). Edit the `classifyEmail1` script node and replace those with your actual VIP senders.
+
+=== USER (turn 3) — stop token — dialog ending ===
+That's exactly what I asked for. Maestro Flow, right routing logic, Freshdesk for tickets, Slack for the VIP alerts — all validated. We're good.
+

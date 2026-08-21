@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "AviationNTSBExtraction",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "b19f4c4d-4411-4b87-bee4-125dce3b0b0b",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "AviationNTSBExtraction"
+    },
+    "locks": [],
+    "key": "40027b6f-e980-4c90-b407-60a98bb6f8f9",
+    "files": []
+  }
+}

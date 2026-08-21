@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "ProductCalc",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "d2c82528-b1d1-4edf-ad32-d60ec8557ddd",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "ProductCalc"
+    },
+    "locks": [],
+    "key": "67d27180-9ad7-43c3-a6aa-0f5c2092f82e",
+    "files": []
+  }
+}

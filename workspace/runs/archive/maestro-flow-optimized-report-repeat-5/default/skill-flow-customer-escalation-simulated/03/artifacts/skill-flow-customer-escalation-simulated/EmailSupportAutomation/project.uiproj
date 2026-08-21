@@ -1,0 +1,6 @@
+{
+  "Name": "EmailSupportAutomation",
+  "ProjectType": "Process",
+  "Description": "Automatically handles incoming customer support emails: reads, categorizes by urgency/topic, auto-replies, routes to queue, and logs for the support team",
+  "MainFile": "Main.xaml"
+}

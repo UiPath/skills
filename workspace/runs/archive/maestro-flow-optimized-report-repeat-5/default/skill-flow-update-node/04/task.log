@@ -1,0 +1,284 @@
+2026-07-24 18:29:11 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-24 18:29:11 [INFO] coder_eval.orchestrator: API routing: aws_bedrock
+2026-07-24 18:29:11 [DEBUG] coder_eval.criteria: Discovered 14 criterion checkers
+2026-07-24 18:29:11 [DEBUG] coder_eval.criteria: Validated 14 criterion checkers
+2026-07-24 18:29:11 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-24 18:29:12 [DEBUG] coder_eval.orchestrator: Sending prompt: Update the flow to ensure if temperature is greater than 60F returns a summary with a message field ...
+2026-07-24 18:29:12 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Starting agent query stream...
+2026-07-24 18:29:41 [DEBUG] coder_eval.agents.claude_code_agent: [coder] session_id changed: None -> 53a2bdcf-ecb0-407a-9379-0afc9eacae48
+2026-07-24 18:29:41 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Agent query stream ended
+2026-07-24 18:29:41 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-24 18:29:41 [DEBUG] coder_eval.orchestrator: Agent response received (1996 chars)
+2026-07-24 18:29:41 [DEBUG] coder_eval.orchestrator: Checking success criteria
+2026-07-24 18:29:41 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'uip maestro flow validate passes on the flow file': uip maestro flow validate BellevueWeather/BellevueWeather/BellevueWeather.flow
+2026-07-24 18:29:47 [DEBUG] coder_eval.sandbox: Command 'uip maestro flow validate BellevueWeather/BellevueWeather/BellevueWeather.flow' exited with code 0
+2026-07-24 18:29:47 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+{
+  "Result": "Success",
+  "Code": "FlowValidate",
+  "Data": {
+    "File": "/work/output/artifacts/skill-flow-update-node/BellevueWeather/BellevueWeather/BellevueWeather.flow",
+    "Status": "Valid"
+  }
+}
+---
+2026-07-24 18:29:47 [DEBUG] coder_eval.sandbox: STDERR:
+---
+[ManifestClient] fetchDynamicNodes ok: total=207 agent context nodes=2 external agent nodes=6 orchestrator nodes=158 IXP nodes=41
+---
+2026-07-24 18:29:47 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-07-24 18:29:47 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'Flow debug runs and output contains 'amazing day' or 'go home'': python3 $TASK_DIR/check_update_node.py
+2026-07-24 18:30:08 [DEBUG] coder_eval.sandbox: Command 'python3 $TASK_DIR/check_update_node.py' exited with code 1
+2026-07-24 18:30:08 [DEBUG] coder_eval.sandbox: STDERR:
+---
+FAIL: flow debug exit 1
+stdout: {
+  "Result": "Failure",
+  "Code": "FlowDebug",
+  "Message": "Debug session Faulted. [300501] Error invoking script task (element formatSummary)",
+  "Instructions": "Incident(s):\n  - [300501] Error invoking script task (element formatSummary)\nRun 'uip maestro flow debug-instance incidents 8541cc25-d8b6-4043-bb18-c8632ae2e152' for the full backend payload (incidentId, errorDetails, AI summary). traceId=8541cc25d8b64043bb18c8632ae2e152.",
+  "Context": {
+    "ErrorCode": "300501",
+    "TraceId": "8541cc25d8b64043bb18c8632ae2e152"
+  },
+  "Data": {
+    "jobKey": "8541cc25-d8b6-4043-bb18-c8632ae2e152",
+    "instanceId": "8541cc25-d8b6-4043-bb18-c8632ae2e152",
+    "runId": "019f9564-22ba-7040-825d-fb1b16eca060",
+    "folderKey": "410fae2d-89b3-4cd1-a991-7359bda90c0b",
+    "finalStatus": "Faulted",
+    "solutionId": "ec645604-c4ee-4ae4-4e6e-08dee9abf020",
+    "studioWebUrl": "https://alpha.uipath.com/codereval/studio_/designer/c50c630f-2363-45b3-b1b0-14cac4de5f13?solutionId=ec645604-c4ee-4ae4-4e6e-08dee9abf020",
+    "elementExecutions": [
+      {
+        "elementId": "start",
+        "elementType": "StartEvent",
+        "status": "Completed",
+        "startedAt": "2026-07-24T18:29:59.4841963Z",
+        "completedAt": "2026-07-24T18:29:59.6986993Z"
+      },
+      {
+        "elementId": "getWeather",
+        "elementType": "SubProcess",
+        "status": "Completed",
+        "startedAt": "2026-07-24T18:30:00.0394386Z",
+        "completedAt": "2026-07-24T18:30:04.0609115Z"
+      },
+      {
+        "elementId": "_Implicit_StartEvent_getWeather",
+        "elementType": "StartEvent",
+        "status": "Completed",
+        "startedAt": "2026-07-24T18:30:00.6290896Z",
+        "completedAt": "2026-07-24T18:30:00.9275973Z"
+      },
+      {
+        "elementId": "_Implicit_HttpTask_getWeather",
+        "elementType": "SendTask",
+        "status": "Completed",
+        "startedAt": "2026-07-24T18:30:01.336867Z",
+        "completedAt": "2026-07-24T18:30:02.3848043Z"
+      },
+      {
+        "elementId": "_Implicit_EndEvent_Default_getWeather",
+        "elementType": "EndEvent",
+        "status": "Completed",
+        "startedAt": "2026-07-24T18:30:02.8999758Z",
+        "completedAt": "2026-07-24T18:30:03.2049763Z"
+      },
+      {
+        "elementId": "formatSummary",
+        "elementType": "ScriptTask",
+        "status": "Failed",
+        "startedAt": "2026-07-24T18:30:04.3976593Z"
+      }
+    ],
+    "variables": {
+      "elements": [
+        {
+          "elementId": "start",
+          "elementRunId": "07871ad3-0f0d-4800-847b-561f3cda8df2",
+          "isMarker": false,
+          "inputs": {},
+          "inputDefinitions": {},
+          "outputs": {}
+        },
+        {
+          "elementId": "getWeather",
+          "elementRunId": "be92aa04-63d4-452f-8815-a5fc1049e33d",
+          "isMarker": false,
+          "inputs": {},
+          "inputDefinitions": {},
+          "outputs": {
+            "response": {
+              "statusCode": 503,
+              "reasonPhrase": "Service Unavailable",
+              "headers": {
+                "Date": "Fri, 24 Jul 2026 18:30:01 GMT",
+                "Connection": "keep-alive"
+              },
+              "isSuccessStatusCode": false,
+              "body": {
+                "error": true,
+                "reason": "The service is overloaded"
+              }
+            }
+          }
+        },
+        {
+          "elementId": "formatSummary",
+          "elementRunId": "d0954b50-11a6-465e-a5d9-bdc61d7bf958",
+          "isMarker": false,
+          "inputs": {
+            "args": {
+              "vars": {
+                "getWeather.output": {
+                  "statusCode": 503,
+                  "reasonPhrase": "Service Unavailable",
+                  "headers": {
+                    "Date": "Fri, 24 Jul 2026 18:30:01 GMT",
+                    "Connection": "keep-alive"
+                  },
+                  "isSuccessStatusCode": false,
+                  "body": {
+                    "error": true,
+                    "reason": "The service is overloaded"
+                  }
+                },
+                "formatSummary.output": null,
+                "summary": null,
+                "getWeather.error": null,
+                "formatSummary.error": null,
+                "response": {
+                  "statusCode": 503,
+                  "reasonPhrase": "Service Unavailable",
+                  "headers": {
+                    "Date": "Fri, 24 Jul 2026 18:30:01 GMT",
+                    "Connection": "keep-alive"
+                  },
+                  "isSuccessStatusCode": false,
+                  "body": {
+                    "error": true,
+                    "reason": "The service is overloaded"
+                  }
+                },
+                "getWeather.boundaryError": null,
+                "error": null
+              },
+              "metadata": {
+                "FolderKey": "410fae2d-89b3-4cd1-a991-7359bda90c0b",
+                "ElementCount": {
+                  "start": 1
+                },
+                "ExternalId": "35681829",
+                "InstanceId": "8541cc25-d8b6-4043-bb18-c8632ae2e152",
+                "ProcessKey": null
+              }
+            }
+          },
+          "inputDefinitions": {},
+          "outputs": {}
+        }
+      ],
+      "globals": {
+        "summary": null,
+        "getWeather.error": null,
+        "formatSummary.output": null,
+        "getWeather.output": {
+          "statusCode": 503,
+          "reasonPhrase": "Service Unavailable",
+          "headers": {
+            "Date": "Fri, 24 Jul 2026 18:30:01 GMT",
+            "Connection": "keep-alive"
+          },
+          "isSuccessStatusCode": false,
+          "body": {
+            "error": true,
+            "reason": "The service is overloaded"
+          }
+        },
+        "formatSummary.error": {
+          "code": "400",
+          "message": "Error invoking script task",
+          "detail": "Cannot read property 'temperature_2m' of undefined",
+          "category": "User",
+          "status": 400,
+          "response": null,
+          "element": "Format Weather Summary"
+        }
+      },
+      "instanceId": "8541cc25-d8b6-4043-bb18-c8632ae2e152",
+      "workflowId": "8541cc25-d8b6-4043-bb18-c8632ae2e152/BpmnGenericWorkflow",
+      "parentElementId": null,
+      "globalDefinitions": {
+        "summary": {
+          "name": "summary",
+          "type": "object"
+        },
+        "getWeather.error": {
+          "name": "error",
+          "type": "object"
+        },
+        "formatSummary.output": {
+          "name": "output",
+          "type": "object"
+        },
+        "getWeather.output": {
+          "name": "output",
+          "type": "jsonSchema"
+        },
+        "formatSummary.error": {
+          "name": "error",
+          "type": "object"
+        }
+      }
+    },
+    "incidents": [
+      {
+        "id": "eb34d7a4-04ff-4075-8297-9deee3629c00",
+        "tenantId": "69d43765-6ede-4575-88b7-9db601a2c056",
+        "organizationId": "311c6049-4966-4ef2-a6f3-8ceccaf38d54",
+        "instanceId": "8541cc25-d8b6-4043-bb18-c8632ae2e152",
+        "runId": "019f9564-2d24-7f0d-88e6-74c0ed223513",
+        "elementId": "formatSummary",
+        "elementRunId": "d0954b50-11a6-465e-a5d9-bdc61d7bf958",
+        "folderKey": "410fae2d-89b3-4cd1-a991-7359bda90c0b",
+        "processKey": null,
+        "packageVersion": "",
+        "incidentId": "d0954b50-11a6-465e-a5d9-bdc61d7bf958",
+        "incidentStatus": "Open",
+        "incidentType": "User",
+        "errorCode": "300501",
+        "errorMessage": "Error invoking script task",
+        "errorTimeUtc": "2026-07-24T18:30:05.0327563Z",
+        "errorDetails": "Cannot read property 'temperature_2m' of undefined",
+        "comment": null,
+        "userUpdated": null,
+        "debugMode": "Default",
+        "incidentUpdateTimeUtc": null,
+        "traceId": "8541cc25d8b64043bb18c8632ae2e152",
+        "dependentFaultCode": null,
+        "incidentSeverity": "Error",
+        "aiSummary": null,
+        "aiRecommendations": null,
+        "processType": null,
+        "sourceElementId": null
+      }
+    ]
+  },
+  "ErrorCode": "unknown_error",
+  "Retry": "RetryWillNotFix"
+}
+
+stderr:
+---
+2026-07-24 18:30:08 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 0.00
+2026-07-24 18:30:08 [INFO] coder_eval.evaluation.checker: Criterion 'run_command' FAILED (score=0.00, threshold=1.00): Command: python3 $TASK_DIR/check_update_node.py
+2026-07-24 18:30:08 [INFO] coder_eval.orchestrator: Success criteria: 1/2 passed, weighted score: 0.375
+2026-07-24 18:30:08 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-24 18:30:08 [INFO] coder_eval.orchestrator: Running post-run command: python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/cleanup_solutions.py
+2026-07-24 18:30:10 [WARNING] coder_eval.orchestrator: [post_run stderr] cleanup_solutions: deleted ec645604-c4ee-4ae4-4e6e-08dee9abf020 (from BellevueWeather/BellevueWeather.uipx)
+2026-07-24 18:30:10 [WARNING] coder_eval.orchestrator: [post_run stderr] cleanup_solutions: summary policy=always deleted=1 preserved=0 skipped=0 not_uploaded=0 failed=0
+2026-07-24 18:30:10 [INFO] coder_eval.orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+2026-07-24 18:30:10 [INFO] coder_eval.orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-update-node
+2026-07-24 18:30:10 [INFO] coder_eval.orchestrator: Task finished: status=FAILURE duration=59.7s score=0.375 iterations=1

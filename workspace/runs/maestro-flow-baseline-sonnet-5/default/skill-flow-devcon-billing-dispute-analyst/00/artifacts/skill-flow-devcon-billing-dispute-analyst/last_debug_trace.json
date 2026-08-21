@@ -1,0 +1,112 @@
+{
+  "Result": "Success",
+  "Code": "FlowDebug",
+  "Data": {
+    "jobKey": "73d74127-bd06-4ac2-8b6d-90e3afc10161",
+    "instanceId": "73d74127-bd06-4ac2-8b6d-90e3afc10161",
+    "runId": "01a016dd-b2c0-701b-8f18-cc3e08a5cd1e",
+    "folderKey": "410fae2d-89b3-4cd1-a991-7359bda90c0b",
+    "finalStatus": "Completed",
+    "solutionId": "9c83d736-62c6-4459-1864-08defd629f77",
+    "studioWebUrl": "https://alpha.uipath.com/codereval/studio_/designer/7fba7f9c-bfd3-41fa-adf3-05a01fbf06df?solutionId=9c83d736-62c6-4459-1864-08defd629f77",
+    "elementExecutions": [
+      {
+        "elementId": "start",
+        "elementType": "StartEvent",
+        "status": "Completed",
+        "startedAt": "2026-08-18T21:53:46.7037163Z",
+        "completedAt": "2026-08-18T21:53:47.0973288Z"
+      },
+      {
+        "elementId": "autonomousAgent1",
+        "elementType": "ServiceTask",
+        "status": "Completed",
+        "startedAt": "2026-08-18T21:53:47.4958867Z",
+        "completedAt": "2026-08-18T21:54:17.957954Z"
+      },
+      {
+        "elementId": "end1",
+        "elementType": "EndEvent",
+        "status": "Completed",
+        "startedAt": "2026-08-18T21:54:18.20562Z",
+        "completedAt": "2026-08-18T21:54:18.6841523Z"
+      }
+    ],
+    "variables": {
+      "elements": [
+        {
+          "elementId": "start",
+          "elementRunId": "cb589c7a-db1a-4087-9f97-9af91eb65ce6",
+          "isMarker": false,
+          "inputs": {},
+          "inputDefinitions": {},
+          "outputs": {}
+        },
+        {
+          "elementId": "autonomousAgent1",
+          "elementRunId": "f923db62-884b-40d2-9420-4203a5ca9019",
+          "isMarker": false,
+          "inputs": {
+            "JobArguments": {
+              "input": ""
+            }
+          },
+          "inputDefinitions": {},
+          "outputs": {
+            "rationale": "The dispute submission provided to me contains only unresolved template placeholders (\"input.start__output__invoiceNumber\" and \"input.start__output__disputeDescription\") instead of actual data. Per the SOP's Process Flow Overview (§3), resolution requires a canonical invoice number (normalized per §2 to the MCS-YYYY-NNNNN format) to run the ERP line-item query, and a categorized dispute description matching one of the five in-scope dispute types (duplicate charge, incorrect amount, service not delivered, incorrect rate, unauthorized charge) to select the correct validation procedure in §5. Without a real invoice number, no ERP/CRM data retrieval or line-item reconciliation can be performed, and without an actual dispute description, the dispute type cannot be classified against §5's type-specific procedures. The SOP does not address how to handle a submission with missing or placeholder core fields, so per this agent's operating rules I cannot fabricate an invoice number or dispute reason. Therefore this dispute cannot be validated, credited, or denied at this time and must be returned for the actual invoice number and dispute description before analysis can proceed.",
+            "determination": "Needs More Information"
+          }
+        },
+        {
+          "elementId": "end1",
+          "elementRunId": "fe83147e-e751-4c38-8b34-e69b41e32b5f",
+          "isMarker": false,
+          "inputs": {},
+          "inputDefinitions": {},
+          "outputs": {}
+        }
+      ],
+      "globals": {
+        "rationale": "The dispute submission provided to me contains only unresolved template placeholders (\"input.start__output__invoiceNumber\" and \"input.start__output__disputeDescription\") instead of actual data. Per the SOP's Process Flow Overview (§3), resolution requires a canonical invoice number (normalized per §2 to the MCS-YYYY-NNNNN format) to run the ERP line-item query, and a categorized dispute description matching one of the five in-scope dispute types (duplicate charge, incorrect amount, service not delivered, incorrect rate, unauthorized charge) to select the correct validation procedure in §5. Without a real invoice number, no ERP/CRM data retrieval or line-item reconciliation can be performed, and without an actual dispute description, the dispute type cannot be classified against §5's type-specific procedures. The SOP does not address how to handle a submission with missing or placeholder core fields, so per this agent's operating rules I cannot fabricate an invoice number or dispute reason. Therefore this dispute cannot be validated, credited, or denied at this time and must be returned for the actual invoice number and dispute description before analysis can proceed.",
+        "start.output.disputeDescription": "Charged 14 units at $300 but the contracted unit price is $290.",
+        "determination": "Needs More Information",
+        "autonomousAgent1.error": null,
+        "start.output.invoiceNumber": "MCS-2026-04872",
+        "autonomousAgent1.output": {
+          "determination": "Needs More Information",
+          "rationale": "The dispute submission provided to me contains only unresolved template placeholders (\"input.start__output__invoiceNumber\" and \"input.start__output__disputeDescription\") instead of actual data. Per the SOP's Process Flow Overview (§3), resolution requires a canonical invoice number (normalized per §2 to the MCS-YYYY-NNNNN format) to run the ERP line-item query, and a categorized dispute description matching one of the five in-scope dispute types (duplicate charge, incorrect amount, service not delivered, incorrect rate, unauthorized charge) to select the correct validation procedure in §5. Without a real invoice number, no ERP/CRM data retrieval or line-item reconciliation can be performed, and without an actual dispute description, the dispute type cannot be classified against §5's type-specific procedures. The SOP does not address how to handle a submission with missing or placeholder core fields, so per this agent's operating rules I cannot fabricate an invoice number or dispute reason. Therefore this dispute cannot be validated, credited, or denied at this time and must be returned for the actual invoice number and dispute description before analysis can proceed."
+        }
+      },
+      "instanceId": "73d74127-bd06-4ac2-8b6d-90e3afc10161",
+      "workflowId": "73d74127-bd06-4ac2-8b6d-90e3afc10161/BpmnGenericWorkflow",
+      "parentElementId": null,
+      "globalDefinitions": {
+        "rationale": {
+          "name": "rationale",
+          "type": "string"
+        },
+        "start.output.disputeDescription": {
+          "name": "disputeDescription",
+          "type": "string"
+        },
+        "determination": {
+          "name": "determination",
+          "type": "string"
+        },
+        "autonomousAgent1.error": {
+          "name": "error",
+          "type": "object"
+        },
+        "start.output.invoiceNumber": {
+          "name": "invoiceNumber",
+          "type": "string"
+        },
+        "autonomousAgent1.output": {
+          "name": "output",
+          "type": "object"
+        }
+      }
+    }
+  },
+  "Instructions": "Debug completed with status: Completed"
+}

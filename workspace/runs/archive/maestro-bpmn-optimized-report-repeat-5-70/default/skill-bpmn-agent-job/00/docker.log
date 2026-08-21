@@ -1,0 +1,6 @@
+04:26:59 [INFO   ] [default/skill-bpmn-agent-job/00] orchestrator: API routing: aws_bedrock
+04:31:32 [INFO   ] [default/skill-bpmn-agent-job/00] orchestrator: Success criteria: 3/3 passed, weighted score: 1.000
+04:31:32 [WARNING] [default/skill-bpmn-agent-job/00] orchestrator: Visible turns (18) exceeded expected_turns (16) at iteration 1 for task skill-bpmn-agent-job. Run continues — max_turns remains the hard cap.
+04:31:32 [INFO   ] [default/skill-bpmn-agent-job/00] orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+04:31:32 [INFO   ] [default/skill-bpmn-agent-job/00] orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-bpmn-agent-job
+04:31:32 [INFO   ] [default/skill-bpmn-agent-job/00] orchestrator: Task finished: status=SUCCESS duration=274.8s score=1.000 iterations=1

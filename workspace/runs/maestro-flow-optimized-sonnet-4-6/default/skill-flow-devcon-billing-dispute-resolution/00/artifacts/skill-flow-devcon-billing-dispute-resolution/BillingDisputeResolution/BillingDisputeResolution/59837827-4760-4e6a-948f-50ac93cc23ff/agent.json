@@ -1,0 +1,123 @@
+{
+  "version": "1.1.0",
+  "settings": {
+    "model": "anthropic.claude-opus-4-8",
+    "maxTokens": 4000,
+    "temperature": 0.3,
+    "engine": "basic-v2",
+    "maxIterations": 5,
+    "mode": "standard"
+  },
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "normalizeData__output__invoiceNumber": {
+        "type": "string",
+        "description": "The normalized invoice number (MCS- prefixed)"
+      },
+      "disputeAnalyst__output__creditAmount": {
+        "type": "number",
+        "description": "The approved credit amount"
+      },
+      "disputeAnalyst__output__determination": {
+        "type": "string",
+        "description": "The analyst's determination summary"
+      },
+      "disputeAnalyst__output__rationale": {
+        "type": "string",
+        "description": "The analyst's rationale for the determination"
+      },
+      "start__output__webhookPayload": {
+        "type": "object",
+        "description": "The original billing dispute webhook payload"
+      }
+    }
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "subject": {
+        "type": "string",
+        "description": "Email subject line for the resolution notification"
+      },
+      "body": {
+        "type": "string",
+        "description": "Email body with resolution details, citing invoice number and credit amount"
+      }
+    },
+    "required": [
+      "subject",
+      "body"
+    ]
+  },
+  "metadata": {
+    "storageVersion": "50.0.0",
+    "isConversational": false,
+    "showProjectCreationExperience": false
+  },
+  "type": "lowCode",
+  "guardrails": [],
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a customer service resolution email writer. Your task is to draft a professional, empathetic customer-facing email resolving a billing dispute. The email must:\n1. Be addressed to the customer professionally\n2. Reference the specific invoice number\n3. Clearly state the approved credit amount\n4. Briefly explain the determination without excessive technical detail\n5. Be concise, clear, and customer-friendly\n\nReturn exactly two fields: subject (the email subject line) and body (the full email body). Never end your run without returning both fields.",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "You are a customer service resolution email writer. Your task is to draft a professional, empathetic customer-facing email resolving a billing dispute. The email must:\n1. Be addressed to the customer professionally\n2. Reference the specific invoice number\n3. Clearly state the approved credit amount\n4. Briefly explain the determination without excessive technical detail\n5. Be concise, clear, and customer-friendly\n\nReturn exactly two fields: subject (the email subject line) and body (the full email body). Never end your run without returning both fields."
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "Please draft the resolution email for the following billing dispute:\n\nInvoice Number: {{input.normalizeData__output__invoiceNumber}}\nApproved Credit Amount: {{input.disputeAnalyst__output__creditAmount}}\nDetermination: {{input.disputeAnalyst__output__determination}}\nRationale: {{input.disputeAnalyst__output__rationale}}\nCustomer Information: {{input.start__output__webhookPayload}}\n\nDraft a professional resolution email citing the invoice number and the approved credit amount.",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "Please draft the resolution email for the following billing dispute:\n\nInvoice Number: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.normalizeData__output__invoiceNumber"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\nApproved Credit Amount: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.disputeAnalyst__output__creditAmount"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\nDetermination: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.disputeAnalyst__output__determination"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\nRationale: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.disputeAnalyst__output__rationale"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\nCustomer Information: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__webhookPayload"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\nDraft a professional resolution email citing the invoice number and the approved credit amount."
+        }
+      ]
+    }
+  ],
+  "projectId": "59837827-4760-4e6a-948f-50ac93cc23ff"
+}

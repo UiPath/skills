@@ -1,0 +1,74 @@
+{
+    "$schema": "https://cloud.uipath.com/draft/2024-12/entry-point",
+    "$id": "entry-points.json",
+    "entryPoints": [
+        {
+            "filePath": "agent",
+            "uniqueId": "4165e96c-a643-4b69-a7d4-98bb98cf66ed",
+            "type": "agent",
+            "input": {
+                "type": "object",
+                "properties": {
+                    "sentence": {
+                        "description": "A sentence describing the outcome of a proposal review round.",
+                        "title": "Sentence",
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "sentence"
+                ]
+            },
+            "output": {
+                "type": "object",
+                "properties": {
+                    "approved_count": {
+                        "description": "The number of people who approved.",
+                        "title": "Approved Count",
+                        "type": "integer"
+                    }
+                },
+                "required": [
+                    "approved_count"
+                ]
+            },
+            "graph": {
+                "nodes": [
+                    {
+                        "id": "__start__",
+                        "name": "__start__",
+                        "type": "__start__",
+                        "subgraph": null,
+                        "metadata": {}
+                    },
+                    {
+                        "id": "classify_people",
+                        "name": "classify_people",
+                        "type": "node",
+                        "subgraph": null,
+                        "metadata": {}
+                    },
+                    {
+                        "id": "__end__",
+                        "name": "__end__",
+                        "type": "__end__",
+                        "subgraph": null,
+                        "metadata": {}
+                    }
+                ],
+                "edges": [
+                    {
+                        "source": "__start__",
+                        "target": "classify_people",
+                        "label": null
+                    },
+                    {
+                        "source": "classify_people",
+                        "target": "__end__",
+                        "label": null
+                    }
+                ]
+            }
+        }
+    ]
+}

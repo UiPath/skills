@@ -1,0 +1,176 @@
+{
+  "suite_id": "skill-flow-ixp-e2e-project-selection",
+  "variant_id": "default",
+  "rows_total": 2,
+  "rows_passed": 2,
+  "rows_failed": 0,
+  "rows_error": 0,
+  "pass_rate": 1.0,
+  "average_weighted_score": 1.0,
+  "criterion_stats": [
+    {
+      "criterion_type": "command_executed",
+      "rows_evaluated": 2,
+      "average_score": 1.0,
+      "error_count": 0
+    },
+    {
+      "criterion_type": "run_command",
+      "rows_evaluated": 8,
+      "average_score": 1.0,
+      "error_count": 0
+    },
+    {
+      "criterion_type": "skill_triggered",
+      "rows_evaluated": 2,
+      "average_score": 1.0,
+      "error_count": 0
+    }
+  ],
+  "failed_samples": [],
+  "criterion_aggregates": [
+    {
+      "criterion_type": "skill_triggered",
+      "description": "Agent invoked the uipath-maestro-flow Skill",
+      "rows_total": 2,
+      "rows_excluded": 0,
+      "metrics": {
+        "count": 2.0,
+        "mean": 1.0,
+        "median": 1.0,
+        "std": 0.0,
+        "min": 1.0,
+        "max": 1.0,
+        "precision.yes": 1.0,
+        "recall.yes": 1.0,
+        "f1.yes": 1.0,
+        "accuracy": 1.0,
+        "macro_f1": 1.0,
+        "weighted_f1": 1.0,
+        "micro_f1": 1.0,
+        "completion_rate": 1.0
+      },
+      "threshold_checks": [],
+      "passed": true,
+      "details": {
+        "labels": [
+          "yes"
+        ],
+        "per_label": [
+          {
+            "label": "yes",
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0,
+            "support": 2
+          }
+        ],
+        "confusion": [
+          {
+            "expected": "yes",
+            "observed": "yes",
+            "count": 2
+          }
+        ],
+        "total_pairs": 2
+      },
+      "error": null
+    },
+    {
+      "criterion_type": "command_executed",
+      "description": "Agent searched the registry for IxP node types",
+      "rows_total": 2,
+      "rows_excluded": 0,
+      "metrics": {
+        "count": 2.0,
+        "mean": 1.0,
+        "median": 1.0,
+        "std": 0.0,
+        "min": 1.0,
+        "max": 1.0,
+        "completion_rate": 1.0
+      },
+      "threshold_checks": [],
+      "passed": true,
+      "details": {},
+      "error": null
+    },
+    {
+      "criterion_type": "run_command",
+      "description": "uip maestro flow validate passes on the generated flow",
+      "rows_total": 2,
+      "rows_excluded": 0,
+      "metrics": {
+        "count": 2.0,
+        "mean": 1.0,
+        "median": 1.0,
+        "std": 0.0,
+        "min": 1.0,
+        "max": 1.0,
+        "completion_rate": 1.0
+      },
+      "threshold_checks": [],
+      "passed": true,
+      "details": {},
+      "error": null
+    },
+    {
+      "criterion_type": "run_command",
+      "description": "Generated flow contains a real uipath.ixp.* node",
+      "rows_total": 2,
+      "rows_excluded": 0,
+      "metrics": {
+        "count": 2.0,
+        "mean": 1.0,
+        "median": 1.0,
+        "std": 0.0,
+        "min": 1.0,
+        "max": 1.0,
+        "completion_rate": 1.0
+      },
+      "threshold_checks": [],
+      "passed": true,
+      "details": {},
+      "error": null
+    },
+    {
+      "criterion_type": "run_command",
+      "description": "Generated flow does NOT contain a core.logic.mock fallback",
+      "rows_total": 2,
+      "rows_excluded": 0,
+      "metrics": {
+        "count": 2.0,
+        "mean": 1.0,
+        "median": 1.0,
+        "std": 0.0,
+        "min": 1.0,
+        "max": 1.0,
+        "completion_rate": 1.0
+      },
+      "threshold_checks": [],
+      "passed": true,
+      "details": {},
+      "error": null
+    },
+    {
+      "criterion_type": "run_command",
+      "description": "IxP node references the exact published model for this row's domain (strict)",
+      "rows_total": 2,
+      "rows_excluded": 0,
+      "metrics": {
+        "count": 2.0,
+        "mean": 1.0,
+        "median": 1.0,
+        "std": 0.0,
+        "min": 1.0,
+        "max": 1.0,
+        "completion_rate": 1.0
+      },
+      "threshold_checks": [],
+      "passed": true,
+      "details": {},
+      "error": null
+    }
+  ],
+  "passed": true
+}

@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:uipath="http://uipath.org/schema/bpmn" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" exporter="UiPath Maestro (https://uipath.com)" exporterVersion="1.201.0-dev.8275">
+  <bpmn:process id="Process_1" name="CustomerEscalation" isExecutable="true">
+    <bpmn:extensionElements>
+      <uipath:variables version="v1">
+        <uipath:inputOutput id="Var_Subject" name="Subject" type="string" elementId="Event_start" />
+        <uipath:inputOutput id="Var_SenderDomain" name="SenderDomain" type="string" elementId="Event_start" />
+        <uipath:output id="Var_Urgent" name="Urgent" type="boolean" />
+        <uipath:output id="Var_Vip" name="Vip" type="boolean" />
+        <uipath:output id="Var_EscalationResult" name="EscalationResult" type="object" />
+        <uipath:output id="Var_TicketId" name="TicketId" type="string" />
+      </uipath:variables>
+      <uipath:bindings version="v1" />
+    </bpmn:extensionElements>
+    <bpmn:startEvent id="Event_start" name="core.trigger.manual">
+      <bpmn:extensionElements>
+        <uipath:entryPointId value="2ed5c3e2-a057-4f33-8136-9d4f07e32f50" />
+      </bpmn:extensionElements>
+      <bpmn:outgoing>Flow_Start_ToClassifyUrgency</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:scriptTask id="Task_ClassifyUrgency" name="classifyUrgency" scriptFormat="JavaScript">
+      <bpmn:extensionElements>
+        <uipath:scriptVersion value="v3" />
+        <uipath:mapping version="v1">
+          <uipath:type value="BPMN.ScriptTask" version="v1" />
+          <uipath:input name="args" type="json" target="bodyField"><![CDATA[{"subject":"=vars.Var_Subject"}]]></uipath:input>
+          <uipath:output name="urgent" type="boolean" var="Var_Urgent" source="=result.response" />
+        </uipath:mapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_Start_ToClassifyUrgency</bpmn:incoming>
+      <bpmn:outgoing>Flow_ClassifyUrgency_ToClassifyVip</bpmn:outgoing>
+      <bpmn:script><![CDATA[
+var text = (subject || "").toLowerCase();
+var urgent = text.indexOf("urgent") !== -1 || text.indexOf("asap") !== -1 || text.indexOf("escalate") !== -1;
+return { response: urgent };
+]]></bpmn:script>
+    </bpmn:scriptTask>
+    <bpmn:scriptTask id="Task_ClassifyVip" name="classifyVip" scriptFormat="JavaScript">
+      <bpmn:extensionElements>
+        <uipath:scriptVersion value="v3" />
+        <uipath:mapping version="v1">
+          <uipath:type value="BPMN.ScriptTask" version="v1" />
+          <uipath:input name="args" type="json" target="bodyField"><![CDATA[{"senderDomain":"=vars.Var_SenderDomain"}]]></uipath:input>
+          <uipath:output name="vip" type="boolean" var="Var_Vip" source="=result.response" />
+        </uipath:mapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_ClassifyUrgency_ToClassifyVip</bpmn:incoming>
+      <bpmn:outgoing>Flow_ClassifyVip_ToGateway</bpmn:outgoing>
+      <bpmn:script><![CDATA[
+var vipDomains = ["globex-vip.example", "acme-platinum.example"];
+var domain = (senderDomain || "").toLowerCase();
+var vip = vipDomains.indexOf(domain) !== -1;
+return { response: vip };
+]]></bpmn:script>
+    </bpmn:scriptTask>
+    <bpmn:exclusiveGateway id="Gateway_RouteEscalation" name="routeEscalation" default="Flow_Gateway_ToCreateTicket">
+      <bpmn:incoming>Flow_ClassifyVip_ToGateway</bpmn:incoming>
+      <bpmn:outgoing>Flow_Gateway_ToEscalate</bpmn:outgoing>
+      <bpmn:outgoing>Flow_Gateway_ToCreateTicket</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:userTask id="Task_EscalateToSpecialist" name="Escalate to specialist">
+      <bpmn:extensionElements>
+        <uipath:activity version="v1">
+          <uipath:type value="Actions.HITL" version="v1" />
+          <uipath:context>
+            <uipath:input name="appId" value="&lt;ACTION_APP_ID&gt;" />
+            <uipath:input name="appVersion" value="1" />
+            <uipath:input name="actions" value="&lt;ACTION_APP_ACTIONS&gt;" />
+            <uipath:input name="key" value="&lt;FOLDER_KEY&gt;" />
+            <uipath:input name="taskTitle" value="Escalate to specialist" />
+          </uipath:context>
+          <uipath:input name="HitlTaskArguments" type="json" target="bodyField"><![CDATA[{"subject":"=vars.Var_Subject","senderDomain":"=vars.Var_SenderDomain"}]]></uipath:input>
+          <uipath:output name="Process response" type="Actions.HITL" var="Var_EscalationResult" />
+        </uipath:activity>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_Gateway_ToEscalate</bpmn:incoming>
+      <bpmn:outgoing>Flow_Escalate_ToEndEscalated</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:scriptTask id="Task_CreateTicket" name="createTicket" scriptFormat="JavaScript">
+      <bpmn:extensionElements>
+        <uipath:scriptVersion value="v3" />
+        <uipath:mapping version="v1">
+          <uipath:type value="BPMN.ScriptTask" version="v1" />
+          <uipath:input name="args" type="json" target="bodyField"><![CDATA[{"subject":"=vars.Var_Subject","senderDomain":"=vars.Var_SenderDomain"}]]></uipath:input>
+          <uipath:output name="ticketId" type="string" var="Var_TicketId" source="=result.response" />
+        </uipath:mapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_Gateway_ToCreateTicket</bpmn:incoming>
+      <bpmn:outgoing>Flow_CreateTicket_ToEndTicketCreated</bpmn:outgoing>
+      <bpmn:script><![CDATA[
+var seed = (subject ? subject.length : 0) + (senderDomain ? senderDomain.length : 0);
+var ticketId = "TCK-" + (100000 + (seed * 37) % 900000);
+return { response: ticketId };
+]]></bpmn:script>
+    </bpmn:scriptTask>
+    <bpmn:endEvent id="End_Escalated" name="Escalated">
+      <bpmn:incoming>Flow_Escalate_ToEndEscalated</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:endEvent id="End_TicketCreated" name="Ticket created">
+      <bpmn:incoming>Flow_CreateTicket_ToEndTicketCreated</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_Start_ToClassifyUrgency" sourceRef="Event_start" targetRef="Task_ClassifyUrgency" />
+    <bpmn:sequenceFlow id="Flow_ClassifyUrgency_ToClassifyVip" sourceRef="Task_ClassifyUrgency" targetRef="Task_ClassifyVip" />
+    <bpmn:sequenceFlow id="Flow_ClassifyVip_ToGateway" sourceRef="Task_ClassifyVip" targetRef="Gateway_RouteEscalation" />
+    <bpmn:sequenceFlow id="Flow_Gateway_ToEscalate" sourceRef="Gateway_RouteEscalation" targetRef="Task_EscalateToSpecialist">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">=vars.Var_Urgent == true &amp;&amp; vars.Var_Vip == true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_Gateway_ToCreateTicket" sourceRef="Gateway_RouteEscalation" targetRef="Task_CreateTicket" />
+    <bpmn:sequenceFlow id="Flow_Escalate_ToEndEscalated" sourceRef="Task_EscalateToSpecialist" targetRef="End_Escalated" />
+    <bpmn:sequenceFlow id="Flow_CreateTicket_ToEndTicketCreated" sourceRef="Task_CreateTicket" targetRef="End_TicketCreated" />
+  </bpmn:process>
+
+  <bpmndi:BPMNDiagram id="Diagram_1">
+    <bpmndi:BPMNPlane id="Plane_1" bpmnElement="Process_1">
+      <bpmndi:BPMNShape id="S_End_Escalated" bpmnElement="End_Escalated"><dc:Bounds x="846" y="100" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_End_TicketCreated" bpmnElement="End_TicketCreated"><dc:Bounds x="846" y="166" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Event_start" bpmnElement="Event_start"><dc:Bounds x="160" y="100" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Gateway_RouteEscalation" bpmnElement="Gateway_RouteEscalation"><dc:Bounds x="576" y="100" width="50" height="50" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Task_ClassifyUrgency" bpmnElement="Task_ClassifyUrgency"><dc:Bounds x="256" y="100" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Task_ClassifyVip" bpmnElement="Task_ClassifyVip"><dc:Bounds x="416" y="100" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Task_CreateTicket" bpmnElement="Task_CreateTicket"><dc:Bounds x="686" y="100" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Task_EscalateToSpecialist" bpmnElement="Task_EscalateToSpecialist"><dc:Bounds x="686" y="210" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="E_Flow_ClassifyUrgency_ToClassifyVip" bpmnElement="Flow_ClassifyUrgency_ToClassifyVip"><di:waypoint x="306" y="140" /><di:waypoint x="466" y="140" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_ClassifyVip_ToGateway" bpmnElement="Flow_ClassifyVip_ToGateway"><di:waypoint x="466" y="140" /><di:waypoint x="601" y="125" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_CreateTicket_ToEndTicketCreated" bpmnElement="Flow_CreateTicket_ToEndTicketCreated"><di:waypoint x="736" y="140" /><di:waypoint x="864" y="184" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_Escalate_ToEndEscalated" bpmnElement="Flow_Escalate_ToEndEscalated"><di:waypoint x="736" y="250" /><di:waypoint x="864" y="118" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_Gateway_ToCreateTicket" bpmnElement="Flow_Gateway_ToCreateTicket"><di:waypoint x="601" y="125" /><di:waypoint x="736" y="140" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_Gateway_ToEscalate" bpmnElement="Flow_Gateway_ToEscalate"><di:waypoint x="601" y="125" /><di:waypoint x="736" y="250" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_Start_ToClassifyUrgency" bpmnElement="Flow_Start_ToClassifyUrgency"><di:waypoint x="178" y="118" /><di:waypoint x="306" y="140" /></bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

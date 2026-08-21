@@ -1,0 +1,22 @@
+{
+  "run_id": "1b960a85dc16",
+  "cases": [
+    {
+      "name": "enterprise-production-down-sev1",
+      "inputs": {
+        "senderEmail": "jane.doe@acmecorp.com",
+        "subject": "Production down: checkout API returning 500s",
+        "body": "Critical outage since 09:15 UTC. All checkout requests are failing with HTTP 500 and orders are blocked.",
+        "customerTier": "Enterprise",
+        "productionDown": true,
+        "workaroundAvailable": false,
+        "correlationId": "E2E-1b960a85dc16-SEV1"
+      },
+      "expected": {
+        "severity": "Sev1",
+        "engineeringNeeded": true,
+        "caseKey": "E2E-1b960a85dc16-SEV1"
+      }
+    }
+  ]
+}

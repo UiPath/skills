@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+    xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+    xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+    xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+    xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+    xmlns:uipath="http://uipath.org/schema/bpmn"
+    id="Definitions_RiskScoring" targetNamespace="http://bpmn.io/schema/bpmn"
+    exporter="UiPath (https://bpmn.uipath.com)" exporterVersion="1.0">
+  <bpmn:process id="Process_RiskScoring" isExecutable="true">
+    <bpmn:extensionElements>
+      <uipath:migrationVersion version="11.5" />
+      <uipath:caseManagement version="v1"><![CDATA[{"owner":"risk-team","opaque":"preserve-only-do-not-touch"}]]></uipath:caseManagement>
+      <uipath:variables version="v1">
+        <uipath:inputOutput id="Var_Amount" name="Amount" type="number" />
+        <uipath:inputOutput id="Var_Tier" name="Tier" type="string" />
+        <uipath:inputOutput id="Var_Message" name="Message" type="string" />
+      </uipath:variables>
+    </bpmn:extensionElements>
+    <bpmn:startEvent id="Start_1" name="Start"><bpmn:outgoing>Flow_SS</bpmn:outgoing></bpmn:startEvent>
+    <bpmn:scriptTask id="Task_Score" name="Score Risk" scriptFormat="JavaScript">
+      <bpmn:extensionElements>
+        <uipath:scriptVersion value="v3" />
+        <uipath:mapping version="v1">
+          <uipath:type value="BPMN.ScriptTask" version="v1" />
+          <uipath:input name="args"><![CDATA[{"amount":"=vars.Var_Amount"}]]></uipath:input>
+          <uipath:output name="tier" type="string" var="Var_Tier" source="=result.response" />
+        </uipath:mapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_SS</bpmn:incoming><bpmn:outgoing>Flow_SF</bpmn:outgoing>
+      <bpmn:script><![CDATA[return { response: amount > 1000 ? "high" : "low" };]]></bpmn:script>
+    </bpmn:scriptTask>
+    <bpmn:scriptTask id="Task_Format" name="Format Message" scriptFormat="JavaScript">
+      <bpmn:extensionElements>
+        <uipath:scriptVersion value="v3" />
+        <uipath:mapping version="v1">
+          <uipath:type value="BPMN.ScriptTask" version="v1" />
+          <uipath:input name="args"><![CDATA[{"tier":"=vars.Var_Tier"}]]></uipath:input>
+          <uipath:output name="message" type="string" var="Var_Message" source="=result.response" />
+        </uipath:mapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_SF</bpmn:incoming><bpmn:outgoing>Flow_FE</bpmn:outgoing>
+      <bpmn:script><![CDATA[return { response: "risk tier is " + tier };]]></bpmn:script>
+    </bpmn:scriptTask>
+    <bpmn:endEvent id="End_1" name="Done"><bpmn:incoming>Flow_FE</bpmn:incoming></bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_SS" sourceRef="Start_1" targetRef="Task_Score" />
+    <bpmn:sequenceFlow id="Flow_SF" sourceRef="Task_Score" targetRef="Task_Format" />
+    <bpmn:sequenceFlow id="Flow_FE" sourceRef="Task_Format" targetRef="End_1" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="Diagram_1">
+    <bpmndi:BPMNPlane id="Plane_1" bpmnElement="Process_RiskScoring">
+      <bpmndi:BPMNShape id="S_Start_1" bpmnElement="Start_1"><dc:Bounds x="160" y="100" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Task_Score" bpmnElement="Task_Score"><dc:Bounds x="250" y="78" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Task_Format" bpmnElement="Task_Format"><dc:Bounds x="410" y="78" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_End_1" bpmnElement="End_1"><dc:Bounds x="570" y="100" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="E_Flow_SS" bpmnElement="Flow_SS"><di:waypoint x="196" y="118" /><di:waypoint x="250" y="118" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_SF" bpmnElement="Flow_SF"><di:waypoint x="350" y="118" /><di:waypoint x="410" y="118" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_FE" bpmnElement="Flow_FE"><di:waypoint x="510" y="118" /><di:waypoint x="570" y="118" /></bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

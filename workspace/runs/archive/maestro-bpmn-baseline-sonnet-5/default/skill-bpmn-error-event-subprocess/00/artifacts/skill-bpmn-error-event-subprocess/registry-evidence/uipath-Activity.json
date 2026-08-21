@@ -1,0 +1,32 @@
+{
+  "Result": "Success",
+  "Code": "RegistryGetSuccess",
+  "Data": {
+    "ExtensionType": {
+      "ExtensionType": "uipath:Activity",
+      "Label": "Canvas activity",
+      "BpmnElement": "bpmn:ServiceTask",
+      "Placements": {
+        "ServiceTask": {
+          "Type": "bpmn:ServiceTask"
+        },
+        "Task": {
+          "Type": "bpmn:Task"
+        },
+        "BoundaryEvent": {
+          "Type": "bpmn:BoundaryEvent"
+        }
+      },
+      "ExtensionTag": "uipath:activity",
+      "ContextFields": [],
+      "InputPattern": "none",
+      "OutputSource": null,
+      "OutputType": null,
+      "BindingPattern": "none",
+      "RequiresDiscovery": false,
+      "IsDynamic": true,
+      "XmlTemplate": null,
+      "OutputNotes": "Studio Web canvas can emit custom output-only activity payloads for placeholder tasks and error boundary metadata."
+    }
+  }
+}

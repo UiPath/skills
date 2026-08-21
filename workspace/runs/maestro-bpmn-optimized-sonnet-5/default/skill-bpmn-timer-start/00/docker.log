@@ -1,0 +1,6 @@
+21:07:05 [INFO   ] [default/skill-bpmn-timer-start/00] orchestrator: API routing: aws_bedrock
+21:09:18 [INFO   ] [default/skill-bpmn-timer-start/00] orchestrator: Success criteria: 4/4 passed, weighted score: 1.000
+21:09:18 [WARNING] [default/skill-bpmn-timer-start/00] orchestrator: Visible turns (23) exceeded expected_turns (18) at iteration 1 for task skill-bpmn-timer-start. Run continues — max_turns remains the hard cap.
+21:09:18 [INFO   ] [default/skill-bpmn-timer-start/00] orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+21:09:19 [INFO   ] [default/skill-bpmn-timer-start/00] orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-bpmn-timer-start
+21:09:19 [INFO   ] [default/skill-bpmn-timer-start/00] orchestrator: Task finished: status=SUCCESS duration=139.4s score=1.000 iterations=1

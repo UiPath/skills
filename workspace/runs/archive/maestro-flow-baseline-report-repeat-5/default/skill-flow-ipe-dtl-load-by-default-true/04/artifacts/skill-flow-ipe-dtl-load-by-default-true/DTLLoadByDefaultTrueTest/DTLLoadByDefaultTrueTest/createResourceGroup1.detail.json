@@ -1,0 +1,14 @@
+{
+  "_comment": "Planned configuration for createResourceGroup1 — run 'uip maestro flow node configure DTLLoadByDefaultTrueTest.flow createResourceGroup1 --detail \"$(cat createResourceGroup1.detail.json)\"' after creating an Azure IS connection.",
+  "connectionId": "<AZURE_CONNECTION_UUID>",
+  "folderKey": "<FOLDER_KEY>",
+  "method": "POST",
+  "endpoint": "/subscriptions/{subscriptionId}/resourcegroups/{resourceGroupName}",
+  "bodyParameters": {
+    "location": "=js:$vars.location"
+  },
+  "pathParameters": {
+    "subscriptionId": "<SUBSCRIPTION_ID>",
+    "resourceGroupName": "=js:$vars.resourceGroupName"
+  }
+}

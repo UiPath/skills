@@ -1,0 +1,123 @@
+{
+  "version": "2.0",
+  "resources": [
+    {
+      "resource": "connection",
+      "key": "75dfafb4-3717-470c-a5f6-bdc144757a67",
+      "id": "connection75dfafb4-3717-470c-a5f6-bdc144757a67",
+      "value": {
+        "ConnectionId": {
+          "defaultValue": "75dfafb4-3717-470c-a5f6-bdc144757a67",
+          "isExpression": false,
+          "displayName": "uipath-microsoft-outlook365 connection"
+        }
+      },
+      "metadata": {
+        "ActivityName": "New Email Received",
+        "BindingsVersion": "2.2",
+        "DisplayLabel": "uipath-microsoft-outlook365 connection",
+        "UseConnectionService": "true",
+        "Connector": "uipath-microsoft-outlook365"
+      }
+    },
+    {
+      "resource": "connection",
+      "key": "849e85d8-1aa9-4d52-8bbd-20041c8f05d8",
+      "id": "connection849e85d8-1aa9-4d52-8bbd-20041c8f05d8",
+      "value": {
+        "ConnectionId": {
+          "defaultValue": "849e85d8-1aa9-4d52-8bbd-20041c8f05d8",
+          "isExpression": false,
+          "displayName": "uipath-salesforce-slack connection"
+        }
+      },
+      "metadata": {
+        "ActivityName": "Notify VIP Escalations Channel",
+        "BindingsVersion": "2.2",
+        "DisplayLabel": "uipath-salesforce-slack connection",
+        "UseConnectionService": "true",
+        "Connector": "uipath-salesforce-slack"
+      }
+    },
+    {
+      "resource": "connection",
+      "key": "",
+      "id": "connection",
+      "value": {
+        "ConnectionId": {
+          "isExpression": false,
+          "displayName": "uipath-microsoft-outlook365 connection"
+        }
+      },
+      "metadata": {
+        "ActivityName": "New Email Received",
+        "BindingsVersion": "2.2",
+        "DisplayLabel": "uipath-microsoft-outlook365 connection",
+        "UseConnectionService": "true",
+        "Connector": "uipath-microsoft-outlook365"
+      }
+    },
+    {
+      "resource": "connection",
+      "key": "4c517348-3c4e-4f05-8d8e-2dfc666410c2",
+      "id": "connection4c517348-3c4e-4f05-8d8e-2dfc666410c2",
+      "value": {
+        "ConnectionId": {
+          "defaultValue": "4c517348-3c4e-4f05-8d8e-2dfc666410c2",
+          "isExpression": false,
+          "displayName": "uipath-servicenow-servicenow connection"
+        }
+      },
+      "metadata": {
+        "ActivityName": "Create Support Ticket",
+        "BindingsVersion": "2.2",
+        "DisplayLabel": "uipath-servicenow-servicenow connection",
+        "UseConnectionService": "true",
+        "Connector": "uipath-servicenow-servicenow"
+      }
+    },
+    {
+      "resource": "EventTrigger",
+      "key": "75dfafb4-3717-470c-a5f6-bdc144757a67_newEmailReceived1",
+      "id": "EventTrigger75dfafb4-3717-470c-a5f6-bdc144757a67_newEmailReceived1",
+      "value": {
+        "ConnectionId": {
+          "defaultValue": "75dfafb4-3717-470c-a5f6-bdc144757a67",
+          "isExpression": false
+        },
+        "EntryPointUniqueId": {
+          "defaultValue": "8f1460e4-2714-4e73-948f-6e3b98b2dd3d",
+          "isExpression": false
+        }
+      },
+      "metadata": {
+        "UseConnectionService": "true",
+        "Connector": "uipath-microsoft-outlook365",
+        "ActivityName": "New Email Received",
+        "BindingsVersion": "2.2",
+        "ObjectName": "Message",
+        "Operation": "EMAIL_RECEIVED",
+        "FilterExpression": ""
+      }
+    },
+    {
+      "resource": "Property",
+      "key": "EMAIL_RECEIVED",
+      "id": "Property_newEmailReceived1",
+      "value": {
+        "parentFolderId": {
+          "defaultValue": "AAMkAGNiNDVjZmJmLTczOTEtNDQ2MS04Njc2LTUwM2I3ZDgxOWQwMAAuAAAAAAAJJRkzOJfsTKZfQqhMUHzlAQAJDKUrZhoLQZ5wELpOfJPCAAAAAAEMAAA=",
+          "isExpression": false
+        }
+      },
+      "metadata": {
+        "TriggerCreateParameters": "parentFolderId",
+        "DebugQueryParameters": "parentFolderId",
+        "ActivityName": "New Email Received",
+        "BindingsVersion": "2.2",
+        "ObjectName": "Message",
+        "ParentResourceKey": "EventTrigger.75dfafb4-3717-470c-a5f6-bdc144757a67_newEmailReceived1"
+      }
+    }
+  ]
+}

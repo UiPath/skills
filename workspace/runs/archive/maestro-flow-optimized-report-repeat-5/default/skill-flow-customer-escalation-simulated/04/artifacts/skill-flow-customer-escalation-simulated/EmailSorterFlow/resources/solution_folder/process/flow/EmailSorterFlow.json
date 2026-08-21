@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "EmailSorterFlow",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "cc238c84-0245-48ff-9984-4cd8ad30eed5",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "EmailSorterFlow"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Flow",
+      "name": "EmailSorterFlow",
+      "package": {
+        "key": "8878874f-5b31-4ca1-b9de-8e7dd405414b"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "7336461c-f8d9-4bb4-8174-996c1976323b",
+    "files": []
+  }
+}

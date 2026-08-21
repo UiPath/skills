@@ -1,0 +1,1350 @@
+{
+  "task_id": "skill-bpmn-debug-workflow-mocked",
+  "task_description": "Skill-guided evaluation of the correct Maestro BPMN debug workflow against a mocked `uip` CLI. The agent debugs an existing local project with inputs, captures the instance id the debug command returns, then inspects the run via the `debug-instance` commands and summarizes the runtime variable values. The summary values are only discoverable from the mocked CLI JSON, so a prose guess cannot pass. No cloud side effects — the CLI is backed by a local fixture harness.\n",
+  "variant_id": "default",
+  "agent_type": "claude-code",
+  "model_used": "claude-sonnet-4-6",
+  "started_at": "2026-07-22T05:16:04.390085",
+  "completed_at": "2026-07-22T05:16:40.212919",
+  "duration_seconds": 35.82288885116577,
+  "final_status": "SUCCESS",
+  "max_turns_exhausted": false,
+  "weighted_score": 1.0,
+  "iteration_count": 1,
+  "success_criteria_results": [
+    {
+      "result_kind": "basic",
+      "criterion_type": "command_executed",
+      "description": "Agent started a debug session with inputs",
+      "score": 1.0,
+      "details": "Matched 1/1 required commands (filters: tool_name=Bash, pattern=/(uip|\\$UIP)\\s+maestro\\s+bpmn\\s+debug\\s+[\\s\\S]*--inputs?/)\nExamples: ['echo \\'{\"orderId\":\"ORD-9001\",\"amount\":1875}\\' > inputs.json && uip maestro bpmn debug ./OrderApproval --inputs @inputs.jso']",
+      "error": null,
+      "pass_threshold": 1.0
+    },
+    {
+      "result_kind": "basic",
+      "criterion_type": "command_executed",
+      "description": "Agent inspected the debug instance's runtime variables",
+      "score": 1.0,
+      "details": "Matched 1/1 required commands (filters: tool_name=Bash, pattern=/(uip|\\$UIP)\\s+maestro\\s+bpmn\\s+debug-instance\\s+variables(-all)?\\s+[\"']?debug-run-042/)\nExamples: ['uip maestro bpmn debug-instance variables-all debug-run-042 --output json > vars_out.json 2>&1; echo \"exit:$?\"']",
+      "error": null,
+      "pass_threshold": 1.0
+    },
+    {
+      "result_kind": "basic",
+      "criterion_type": "file_contains",
+      "description": "Summary reports the runtime variable values only obtainable from the debug session",
+      "score": 1.0,
+      "details": "Includes: 3/3 found; Score: 1.00",
+      "error": null,
+      "pass_threshold": 1.0
+    },
+    {
+      "result_kind": "basic",
+      "criterion_type": "command_executed",
+      "description": "Agent did not read the mocked fixture JSON directly instead of the CLI",
+      "score": 1.0,
+      "details": "Matched 0 matches (allowed range 0..0) commands (filters: tool_name=Bash, pattern=/(cat|less|head|tail|grep)\\s+[\\s\\S]*mocks/responses/)",
+      "error": null,
+      "pass_threshold": 1.0
+    }
+  ],
+  "iterations": [
+    {
+      "iteration": 1,
+      "user_input": "Your working directory is: /work/output/artifacts/skill-bpmn-debug-workflow-mocked\n\nA local Maestro BPMN project already exists at `./OrderApproval`. Debug it\nand report what the run produced.\n\nSteps:\n- Start a debug session for the project, passing these inputs:\n  `{\"orderId\": \"ORD-9001\", \"amount\": 1875}`.\n- Read the identifiers the debug command returns (job key, instance id,\n  final status) from its JSON output.\n- Using the returned instance id, inspect the debug session's runtime\n  variables with the appropriate `debug-instance` command.\n- Write a concise `summary.md` that reports the final status and names every\n  runtime variable value the debug session produced.\n\nThe `uip` CLI is already available and is backed by a local test harness.\nYou have consent to run this debug session. Use\n`uip maestro bpmn ... --output json` for CLI reads. Do NOT inspect `mocks/`,\n`fixtures/`, or any response JSON files directly — get every value from the\nCLI. Do NOT upload, publish, deploy, or pack anything.\n",
+      "agent_output": "[ASSISTANT] Now I have the full workflow. Plan:\n1. Write inputs JSON, run `uip maestro bpmn debug ./OrderApproval --inputs @inputs.json --output json`, capture output to file\n2. Parse job key, instance id, final status from that output\n3. Run `uip maestro bpmn debug-instance variables-all <INSTANCE_ID> --output json`, capture to file\n4. Write `summary.md`\n[ASSISTANT] All data collected. Now write `summary.md`.\n[ASSISTANT] Here is what the debug session produced:\n\n---\n\n**Debug Session — OrderApproval**\n\n| Field | Value |\n|---|---|\n| Job Key | `job-debug-042` |\n| Instance ID | `debug-run-042` |\n| Run ID | `run-042` |\n| Solution ID | `sol-042` |\n| **Final Status** | **Completed** |\n\n**Runtime variables** (from `debug-instance variables-all debug-run-042`):\n\n| Variable | Value |\n|---|---|\n| `orderId` | `\"ORD-9001\"` |\n| `amount` | `1875` |\n| `approvalDecision` | `\"AutoApproved\"` |\n| `reviewerTier` | `\"Tier2\"` |\n\nElement `ScriptTask_Classify` also held scoped copies of `amount` (`1875`) and `approvalDecision` (`\"AutoApproved\"`).\n\n**`summary.md`** has been written to the working directory with all of the above.\n[RESULT - SUCCESS] Here is what the debug session produced:\n\n---\n\n**Debug Session — OrderApproval**\n\n| Field | Value |\n|---|---|\n| Job Key | `job-debug-042` |\n| Instance ID | `debug-run-042` |\n| Run ID | `run-042` |\n| Solution ID | `sol-042` |\n| **Final Status** | **Completed** |\n\n**Runtime variables** (from `debug-instance variables-all debug-run-042`):\n\n| Variable | Value |\n|---|---|\n| `orderId` | `\"ORD-9001\"` |\n| `amount` | `1875` |\n| `approvalDecision` | `\"AutoApproved\"` |\n| `reviewerTier` | `\"Tier2\"` |\n\nElement `ScriptTask_Classify` also held scoped copies of `amount` (`1875`) and `approvalDecision` (`\"AutoApproved\"`).\n\n**`summary.md`** has been written to the working directory with all of the above.",
+      "commands": [
+        {
+          "tool_name": "Skill",
+          "tool_id": "toolu_bdrk_01M9U18DaDv4z9PEW773tZGL",
+          "assistant_turn_index": 1,
+          "timestamp": "2026-07-22T05:16:10.064685",
+          "duration_ms": 22.111137048341334,
+          "generation_completed_at": "2026-07-22T05:16:10.064685",
+          "execution_started_at": "2026-07-22T05:16:10.064931",
+          "execution_completed_at": "2026-07-22T05:16:10.087042",
+          "parameters": {
+            "skill": "tmp:uipath-maestro-bpmn",
+            "args": "Debug the OrderApproval BPMN project at ./OrderApproval. Start a debug session with inputs {\"orderId\": \"ORD-9001\", \"amount\": 1875}, read the job key, instance id, and final status from the JSON output, then inspect runtime variables using the debug-instance command with the returned instance id. Finally write a summary.md with the final status and all runtime variable values."
+          },
+          "result_status": "success",
+          "result_summary": "Launching skill: tmp:uipath-maestro-bpmn",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 0,
+          "result_tokens": 10
+        },
+        {
+          "tool_name": "Read",
+          "tool_id": "toolu_bdrk_01SKwupMsGNMCueo6Dj5nR7K",
+          "assistant_turn_index": 3,
+          "timestamp": "2026-07-22T05:16:14.917459",
+          "duration_ms": 488.6171059915796,
+          "generation_completed_at": "2026-07-22T05:16:14.917459",
+          "execution_started_at": "2026-07-22T05:16:14.917525",
+          "execution_completed_at": "2026-07-22T05:16:15.406142",
+          "parameters": {
+            "file_path": "/home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn/references/diagnose/CAPABILITY.md"
+          },
+          "result_status": "success",
+          "result_summary": "1\t# Diagnose - Investigate failed BPMN runs\n2\t\n3\tCapability index for post-run investigation.\n4\tDiagnose owns the diagnostic priority ladder for BPMN Process Orchestration runs: incidents, runtime variables,\n5\tdeployed BPMN asset correlation, element executions, cursors, generated package metadata, and traces.\n6\t\n7\t> **Where you came from / where to go next.** Diagnose is downstream of Operate (a debug or deployed run failed, hung,\n8\t> or behaved unexpectedly) and points back to Author for source fixes.\n9\t> Running and lifecycle live in [operate/CAPABILITY.md](../operate/CAPABILITY.md);\n10\t> source fixes live in [registry-workflow.md](../registry-workflow.md).\n11\t>\n12\t> **Inherits universal rules from [SKILL.md](../../SKILL.md).** BPMN source is model-authored; generated package files\n13\t> and Integration Service enrichment are CLI-owned.\n14\t> Use `uip maestro bpmn ... --output json` for diagnostic reads and redact private runtime data in summaries.\n15\t\n16\t## When to use this capability\n17\t\n18\t- Triage a failed debug or deployed process run.\n19\t- Read incidents and faulting element IDs.\n20\t- Inspect runtime variables and element executions.\n21\t- Fetch the deployed BPMN asset when local files may differ.\n22\t- Map runtime failures back to BPMN source and generated package metadata.\n23\t- Identify failures caused by unresolved Integration Service enrichment, bad bindings, missing diagrams, invalid mappings,\n24\t  or stale package files.\n25\t- Decide whether the safe next action is retry, cancel, migrate, cursor movement, re-authoring, package regeneration,\n26\t  or cloud configuration repair.\n27\t\n28\t## Critical rules\n29\t\n30\t1. **Investigate in priority order** - context, incidents, runtime variables, deployed BPMN asset,\n31\t   element executions/cursors, generated package files, then traces.\n32\t2. **Always include folder context on instance and incident reads** - `instance` commands require `--folder-key` or `-f`,\n33\t   and `incident get` requires `--folder-key`.\n34\t3. **Use the CLI as the diagnostic interface** - run `uip maestro bpmn ... --output json` reads. When mock or fixture\n35\t   files are present in a test harness, treat them as CLI backing data and do not read those files directly unless you\n36\t   are explicitly debugging the mock harness.\n37\t4. **Fetch deployed BPMN when local source may differ** - do not assume the working tree matches what ran.\n38\t5. **Map failures to BPMN element IDs** - use IDs to identify the source node, gateway, event, sequence flow,\n39\t   or extension that needs Author work.\n40\t6. **Separate runtime symptoms from ownership of the fix** - BPMN structure and mappings belong in Author;\n41\t   Integration Service enrichment and generated JSON come from CLI generation;\n42\t   folder/process/release choices belong to cloud configuration.\n43\t7. **Do not expose private runtime data** - redact tenant, user, connection, folder, URL, payload,\n44\t   and secret values in summaries.\n45\t8. **Do not mutate while diagnosing** - retry, cancel, migrate, and cursor movement are Operate actions and require\n46\t   explicit user consent after root cause analysis.\n47\t\n48\t## Workflow\n49\t\n50\t| Journey | Read |\n51\t| --- | --- |\n52\t| Triage a failed run | [references/troubleshooting-guide.md](references/troubleshooting-guide.md) |\n53\t| Recognize recurring failure patterns | [references/failure-modes.md](references/failure-modes.md) |\n54\t\n55\t## Common tasks\n56\t\n57\t| I need to... | Read these |\n58\t| --- | --- |\n59\t| Find the faulting element | [references/troubleshooting-guide.md](references/troubleshooting-guide.md) |\n60\t| Compare local and deployed BPMN | [references/troubleshooting-guide.md](references/troubleshooting-guide.md) |\n61\t| Inspect runtime variables, cursors, or element executions | [references/troubleshooting-guide.md](references/troubleshooting-guide.md) |\n62\t| Diagnose binding or generated JSON issues | [failure modes](references/failure-modes.md), [project layout](../shared/project-layout.md) |\n63\t| Diagnose Integration Service runtime issues | [failure modes](references/failure-modes.md) |\n64\t| Decide whether retry is safe | [troubleshooting guide](references/troubleshooting-guide.md), [manage guide](../operate/references/manage.md) |\n65\t| Fix the source | [registry-workflow.md](../registry-workflow.md) |\n66\t\n67\tFor Integration Service enrichment details, read\n68\t[registry-workflow.md](../registry-workflow.md).\n69\t\n70\t## Anti-patterns\n71\t\n72\t- **Never start with verbose traces when incidents are available.**\n73\t- **Never call runtime lifecycle commands while diagnosing.** Diagnose reads; Operate mutates after explicit consent.\n74\t- **Never assume local BPMN is the deployed asset.**\n75\t- **Never retry before root cause is known.**\n76\t- **Never paste private incident payloads or connection details into docs, commits, or issue comments.**\n77\t- **Never patch generated package files as the only fix for a BPMN source defect.**\n78\t\n79\t## References\n80\t\n81\t### Diagnose-scoped\n82\t\n83\t- [troubleshooting-guide.md](references/troubleshooting-guide.md) - diagnostic priority ladder\n84\t- [failure-modes.md](references/failure-modes.md) - recurring failure patterns\n85\t\n86\t### Cross-capability\n87\t\n88\t- [shared/bpmn-xml-contract.md](../structural-bpmn.md) - XML authoring and validation boundaries\n89\t- [shared/project-layout.md](../shared/project-layout.md) - generated files and package shape\n90\t- [shared/variables-bindings-expressions.md](../expression-authoring.md) - mappings and binding expressions\n91\t- [shared/public-safety.md](../public-safety.md) - redaction and sanitization\n92\t",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 1,
+          "result_tokens": 1396
+        },
+        {
+          "tool_name": "Read",
+          "tool_id": "toolu_bdrk_01GvHZnG6CC5D537cg7WKxTL",
+          "assistant_turn_index": 4,
+          "timestamp": "2026-07-22T05:16:15.391239",
+          "duration_ms": 13.516630046069622,
+          "generation_completed_at": "2026-07-22T05:16:15.391239",
+          "execution_started_at": "2026-07-22T05:16:15.391292",
+          "execution_completed_at": "2026-07-22T05:16:15.404809",
+          "parameters": {
+            "file_path": "/home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn/references/operate/CAPABILITY.md"
+          },
+          "result_status": "success",
+          "result_summary": "1\t# Operate - Package, ship, run, and manage BPMN processes\n2\t\n3\tCapability index for BPMN Process Orchestration lifecycle work. Operate owns the steps that prepare a BPMN project\n4\tfor the cloud and the steps that touch the cloud: package generation, Studio Web upload, Orchestrator publish/deploy,\n5\tdebug/run, job inspection, and instance lifecycle.\n6\tThese actions may contact UiPath services or external systems.\n7\t\n8\t> **Where you came from / where to go next.** Operate is downstream of Author (model-authored BPMN plus CLI\n9\t> validation/enrichment) and upstream of Diagnose (runtime faults and state inspection).\n10\t> BPMN source work lives in [registry-workflow.md](../registry-workflow.md);\n11\t> post-run investigation lives in [diagnose/CAPABILITY.md](../diagnose/CAPABILITY.md).\n12\t>\n13\t> **Inherits universal rules from [SKILL.md](../../SKILL.md).** In particular: BPMN XML is source, generated package\n14\t> files and Integration Service enrichment are CLI-owned, parsed CLI output uses `--output json`, and\n15\t> upload/publish/deploy/debug/run/lifecycle actions require explicit user consent.\n16\t\n17\t## When to use this capability\n18\t\n19\t- Package a Maestro BPMN Process Orchestration project.\n20\t- Upload a project to Studio Web.\n21\t- Publish or deploy a packaged process when explicitly requested.\n22\t- Debug or run a process instance after explicit consent.\n23\t- Inspect jobs, processes, process versions, instances, variables, incidents, and traces.\n24\t- Pause, resume, cancel, retry, migrate, or move a running instance when explicitly requested.\n25\t- Refresh or regenerate CLI-owned package metadata before a cloud action.\n26\t\n27\t## Critical rules\n28\t\n29\t1. **Never debug or run without explicit consent** - execution can call connectors, start child processes, create Action\n30\t   Center work, mutate queues, send messages, or update external systems.\n31\t2. **Ask before every cloud-side mutation** - upload, publish, deploy, debug, process run, pause, resume, cancel, retry,\n32\t   migrate, and cursor movement require a clear user decision for that action.\n33\t3. **Validate before operate** - do not upload, publish, debug, or run until Author validation is complete or the user\n34\t   explicitly accepts known draft warnings.\n35\t4. **Refresh or regenerate package metadata before cloud actions** - stale `bindings_v2.json`, `entry-points.json`,\n36\t   `operate.json`, or `package-descriptor.json` can break import or runtime even when the BPMN source is correct.\n37\t5. **Keep source and package ownership clear** - fix process structure, variables, mappings, events, and documented non-IS\n38\t   extensions in `.bpmn`; rerun CLI generation/enrichment for generated package JSON and Integration Service metadata.\n39\t6. **Default publish wording to Studio Web upload unless the user explicitly asks for Orchestrator deployment** - keep deploy semantics explicit.\n40\t7. **Always include folder context on runtime commands that require it** - `process run` takes `<FOLDER_KEY>` and\n41\t   `instance`/`incident get` commands require `--folder-key` or `-f`.\n42\t8. **Report identifiers plainly** - summarize returned Studio Web URLs, package paths, solution IDs, process keys,\n43\t   job keys, instance IDs, run IDs, final status, and folder context when available.\n44\t9. **Do not retry before diagnosis** - identify root cause first, then decide whether retry, cancel, migrate,\n45\t   cursor movement, or source repair is appropriate.\n46\t\n47\t## Workflow\n48\t\n49\t| Journey | Read |\n50\t| --- | --- |\n51\t| Package and upload or publish | [references/ship.md](references/ship.md) |\n52\t| Debug/run and inspect execution | [references/run.md](references/run.md) |\n53\t| Manage a running instance | [references/manage.md](references/manage.md) |\n54\t\n55\t## Common tasks\n56\t\n57\t| I need to... | Read these |\n58\t| --- | --- |\n59\t| Prepare for Studio Web upload | [references/ship.md](references/ship.md), [shared/project-layout.md](../shared/project-layout.md) |\n60\t| Deploy to Orchestrator | [references/ship.md](references/ship.md) |\n61\t| Run/debug a BPMN process | [references/run.md](references/run.md) |\n62\t| Inspect job or instance status | [references/run.md](references/run.md) |\n63\t| Pause/resume/cancel/retry | [references/manage.md](references/manage.md) |\n64\t| Migrate or move an instance cursor | [references/manage.md](references/manage.md) |\n65\t| Correlate a running instance to deployed BPMN | [diagnose/CAPABILITY.md](../diagnose/CAPABILITY.md) |\n66\t| Diagnose a failed run | [diagnose/CAPABILITY.md](../diagnose/CAPABILITY.md) |\n67\t\n68\t## Anti-patterns\n69\t\n70\t- **Never treat package generation as source authoring** - generated files reflect BPMN plus enrichment.\n71\t- **Never upload a draft with unresolved Integration Service enrichment unless the user explicitly wants a non-executable\n72\t  draft review.**\n73\t- **Never run lifecycle commands just to validate XML.**\n74\t- **Never default to Orchestrator deploy when the user says \"publish.\"** Use Studio Web upload unless the target is explicit.\n75\t- **Never use `debug` as a substitute for validation.** Debug executes the process against real services.\n76\t- **Never retry a faulted instance without checking incidents and deployed asset correlation.**\n77\t\n78\t## References\n79\t\n80\t### Operate-scoped\n81\t\n82\t- [ship.md](references/ship.md) - package, upload, publish, deploy\n83\t- [run.md](references/run.md) - debug, run, status, traces\n84\t- [manage.md](references/manage.md) - pause, resume, cancel, retry, migrate, cursor movement\n85\t\n86\t### Cross-capability\n87\t\n88\t- [shared/project-layout.md](../shared/project-layout.md) - package files and content\n89\t- [shared/cli-conventions.md](../cli-conventions.md) - side effects, login, JSON output\n90\t- [author/validation.md](../structural-bpmn.md) - pre-operate validation\n91\t- [diagnose/CAPABILITY.md](../diagnose/CAPABILITY.md) - failure investigation\n92\t",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 2,
+          "result_tokens": 1470
+        },
+        {
+          "tool_name": "Read",
+          "tool_id": "toolu_bdrk_01LEcLPYgyyyNxr1Feq8y6U5",
+          "assistant_turn_index": 5,
+          "timestamp": "2026-07-22T05:16:18.526406",
+          "duration_ms": 630.1500670379028,
+          "generation_completed_at": "2026-07-22T05:16:18.526406",
+          "execution_started_at": "2026-07-22T05:16:18.526654",
+          "execution_completed_at": "2026-07-22T05:16:19.156804",
+          "parameters": {
+            "file_path": "/home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn/references/operate/references/run.md"
+          },
+          "result_status": "success",
+          "result_summary": "1\t# Run - Debug, process run, and status inspection\n2\t\n3\tUse this journey to debug or run a BPMN Process Orchestration project and inspect execution status.\n4\tDebug and deployed process runs are side-effecting operations.\n5\tStatus, incidents, variables, and deployed-asset reads are inspection operations.\n6\t\n7\t## Consent gate\n8\t\n9\tBefore any debug or process run:\n10\t\n11\t- Explain that execution can call connectors, start child processes, create human tasks, mutate queues, send messages,\n12\t  or update external systems.\n13\t- Confirm input arguments and target folder/context.\n14\t- Confirm the project has passed validation and required CLI-owned enrichment.\n15\t- Ask for explicit consent for this run. Prior consent for upload, validation, or packaging is not consent to execute.\n16\t\n17\t## Debug - controlled Studio Web run\n18\t\n19\tUse debug when the user wants to upload a local BPMN project to Studio Web and run a debug session with full Studio Web\n20\tvisibility.\n21\t\n22\tFor local project debug, prefer a solution context so generated resources,\n23\tbindings, and debug metadata are available. Initialize a solution, import the\n24\tBPMN project, refresh resources, and run debug from the solution directory:\n25\t\n26\t```bash\n27\tuip solution init <SolutionName> --output json\n28\tuip solution project import --source <ProjectDir> --solutionFile <SolutionName>/<SolutionName>.uipx --output json\n29\tuip solution resources refresh --solution-folder <SolutionName> --output json\n30\tcd <SolutionName> && uip maestro bpmn debug <ProjectDirName> --output json\n31\t```\n32\t\n33\t```bash\n34\tuip maestro bpmn debug [project-path] --output json\n35\t```\n36\t\n37\tPass input arguments only after confirming the values and redacting secrets from summaries:\n38\t\n39\t```bash\n40\tuip maestro bpmn debug [project-path] --inputs @inputs.json --output json\n41\t```\n42\t\n43\tIf a target folder is needed, provide the folder ID exposed by the CLI:\n44\t\n45\t```bash\n46\tuip maestro bpmn debug [project-path] --folder-id <FOLDER_ID> --output json\n47\t```\n48\t\n49\tParse and report returned identifiers such as `Data.jobKey`, `Data.instanceId`, `Data.runId`, `Data.solutionId`,\n50\tand `Data.finalStatus`.\n51\tIf Studio Web URL is not returned, print `Studio Web URL: <not returned by CLI>`.\n52\t\n53\t> **The debug command output has element statuses, not variable values.** Its\n54\t> element-execution list reports each element's status (Completed/Faulted) but\n55\t> never the runtime *values*. A Completed final status with all elements green\n56\t> proves the process ran — NOT that any output variable holds the expected value.\n57\t> To read a computed business result, take the returned instance id and run\n58\t> `uip maestro bpmn debug-instance variables-all <INSTANCE_ID> --output json`\n59\t> (below). Debug instances are ephemeral — read variables in the same session,\n60\t> right after the debug run. Match returned keys case-insensitively\n61\t> (`finalStatus`/`FinalStatus`, `instanceId`/`InstanceId`, `elementExecutions`/\n62\t> `ElementExecutions`) — the CLI's JSON key casing varies by version.\n63\t\n64\t## Process run - deployed process\n65\t\n66\tUse process run only for a process already deployed to Orchestrator.\n67\t\n68\t```bash\n69\tuip maestro bpmn process list --output json\n70\tuip maestro bpmn process get <PROCESS_KEY> <FEED_ID> --output json\n71\tuip maestro bpmn process run <PROCESS_KEY> <FOLDER_KEY> --inputs @inputs.json --validate --output json\n72\t```\n73\t\n74\t`process run` requires the folder key as a positional argument.\n75\tUse `--release-key`, `--feed-id`, or `--robot-ids` only when the user provides those deployment-specific choices\n76\tor the process discovery output clearly identifies them.\n77\t\n78\t## Job and instance inspection\n79\t\n80\tUse status first, then incidents and variables if the status is faulted or ambiguous:\n81\t\n82\t```bash\n83\tuip maestro bpmn job status <JOB_KEY> --folder-key <FOLDER_KEY> --output json\n84\tuip maestro bpmn instance get <INSTANCE_ID> -f <FOLDER_KEY> --output json\n85\tuip maestro bpmn instance incidents <INSTANCE_ID> -f <FOLDER_KEY> --output json\n86\t```\n87\t\n88\tUse traces only when status, incidents, variables, and deployed BPMN correlation are insufficient:\n89\t\n90\t```bash\n91\tuip maestro bpmn job traces <JOB_KEY> --output json\n92\t```\n93\t\n94\tFor debug instances, prefer the `debug-instance` inspection commands when\n95\tstandard deployed-instance commands do not have debug-session context. Use the\n96\tidentifiers returned by the debug command as the source of truth.\n97\t\n98\t```bash\n99\tuip maestro bpmn debug-instance incidents <INSTANCE_ID> --output json\n100\tuip maestro bpmn debug-instance variables <INSTANCE_ID> --output json\n101\tuip maestro bpmn debug-instance variables-all <INSTANCE_ID> --output json\n102\t```\n103\t\n104\t## Execution summary\n105\t\n106\tWhen a run starts, report:\n107\t\n108\t- Studio Web URL, if returned.\n109\t- Process key, job key, run ID, solution ID, or instance ID, if returned.\n110\t- Folder/context, if known.\n111\t- Input summary, with secrets redacted.\n112\t- Final status if the command waited for completion.\n113\t- Next inspection command or status path.\n114\t\n115\tWhen the user cares about a business result, final status alone is insufficient.\n116\tAlso report the relevant output variable or the reason it could not be\n117\tinspected.\n118\t\n119\t## Status and traces\n120\t\n121\tStart with status and incidents before verbose traces.\n122\tTraces can be large and should be pulled only when incidents and variables are insufficient.\n123\t\n124\tIf execution faults, hand off to [diagnose/CAPABILITY.md](../../diagnose/CAPABILITY.md).\n125\t\n126\t## Anti-patterns\n127\t\n128\t- **Never run `uip maestro bpmn debug` as validation.** Use Author validation and packaging checks for correctness;\n129\t  debug executes the process.\n130\t- **Never reuse stale inputs silently.** Confirm every side-effecting run's input set and redact secrets from summaries.\n131\t- **Never skip folder context for deployed runs.** `process run` requires `<FOLDER_KEY>` and instance inspection commands\n132\t  require `--folder-key` or `-f`.\n133\t- **Never start diagnosis from traces.** Use incidents, variables, deployed BPMN asset, and element executions first.\n134\t",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 3,
+          "result_tokens": 1537
+        },
+        {
+          "tool_name": "Read",
+          "tool_id": "toolu_bdrk_01RMsHkBhrh2CZj3aCp33EH5",
+          "assistant_turn_index": 6,
+          "timestamp": "2026-07-22T05:16:19.143640",
+          "duration_ms": 15.439711976796389,
+          "generation_completed_at": "2026-07-22T05:16:19.143640",
+          "execution_started_at": "2026-07-22T05:16:19.143688",
+          "execution_completed_at": "2026-07-22T05:16:19.159128",
+          "parameters": {
+            "file_path": "/home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn/references/diagnose/references/troubleshooting-guide.md"
+          },
+          "result_status": "success",
+          "result_summary": "1\t# Troubleshooting Guide\n2\t\n3\tUse this priority ladder for failed or misbehaving BPMN runs.\n4\t\n5\t> **Read-only boundary:** this guide diagnoses.\n6\t> Retry, cancel, migrate, and cursor movement are Operate actions and require explicit user consent after root cause is known.\n7\t>\n8\t> **Folder context:** `uip maestro bpmn instance ...` commands require `--folder-key <FOLDER_KEY>` or\n9\t> `-f <FOLDER_KEY>`.\n10\t> `uip maestro bpmn incident get` requires `--folder-key <FOLDER_KEY>`.\n11\t\n12\t## Step 1 - Confirm context\n13\t\n14\tCollect public-safe identifiers:\n15\t\n16\t- Process or package name.\n17\t- Instance/job ID.\n18\t- Folder/context label.\n19\t- Approximate run time.\n20\t- Local commit or package version, if known.\n21\t- Whether the run came from `uip maestro bpmn debug` or `uip maestro bpmn process run`.\n22\t\n23\tDo not record secrets, tenant URLs, connection IDs, or payload data in public notes.\n24\t\n25\tIf you only have a deployed-process job key, start with:\n26\t\n27\t```bash\n28\tuip maestro bpmn job status <JOB_KEY> --folder-key <FOLDER_KEY> --output json\n29\t```\n30\t\n31\tParse the instance ID, folder context, process key, final status, and any trace/run identifiers from the JSON output.\n32\tFor debug runs, prefer the `instanceId` returned by\n33\t`uip maestro bpmn debug` and inspect it with `debug-instance` commands. Keep\n34\tdeployed-instance status reads and debug-session inspection separate.\n35\t\n36\t## Step 2 - Read incidents\n37\t\n38\tFind the incident category, message, and faulting BPMN element ID.\n39\tIf multiple incidents exist, start with the first root fault and avoid chasing downstream cancellation noise.\n40\t\n41\t```bash\n42\tuip maestro bpmn instance incidents <INSTANCE_ID> -f <FOLDER_KEY> --output json\n43\tuip maestro bpmn incident get <INCIDENT_ID> --folder-key <FOLDER_KEY> --output json\n44\tuip maestro bpmn incident summary --output json\n45\t```\n46\t\n47\tFor process-level incident overview:\n48\t\n49\t```bash\n50\tuip maestro bpmn processes incidents <PROCESS_KEY> --output json\n51\t```\n52\t\n53\t## Step 3 - Inspect runtime variables\n54\t\n55\tInspect variables around the faulting element.\n56\tRedact private payloads.\n57\tCheck whether expected outputs were missing, malformed, or literal strings instead of evaluated expressions.\n58\tIf the user reports a behavioral mismatch, inspect variables even when the final\n59\trun status is `Completed`; a completed run only proves control-flow completion,\n60\tnot semantic correctness.\n61\t\n62\t```bash\n63\tuip maestro bpmn instance variables <INSTANCE_ID> -f <FOLDER_KEY> --output json\n64\tuip maestro bpmn instance variables <INSTANCE_ID> -f <FOLDER_KEY> --parent-element-id <ELEMENT_ID> --output json\n65\t```\n66\t\n67\tFor affected elements, confirm runtime inputs and outputs match the modeled\n68\tcontract before changing source.\n69\t\n70\t## Step 4 - Correlate deployed BPMN\n71\t\n72\tFetch the deployed BPMN asset when local source may differ. Compare:\n73\t\n74\t- Faulting element ID.\n75\t- Root variables and mappings.\n76\t- Binding expressions.\n77\t- Integration Service extension content.\n78\t- Diagram and sequence-flow structure when the failure is import or package related.\n79\t\n80\t```bash\n81\tuip maestro bpmn instance asset <INSTANCE_ID> -f <FOLDER_KEY> --output json\n82\t```\n83\t\n84\tUse the incident's faulting element ID to locate the BPMN element in the deployed asset first, then compare to local\n85\t`.bpmn`.\n86\tIf they differ, diagnose what actually ran and treat local edits as a future fix, not as the executed definition.\n87\t\n88\t## Step 5 - Inspect element executions and cursors\n89\t\n90\tElement executions and cursors show where the runtime moved before it faulted or hung:\n91\t\n92\t```bash\n93\tuip maestro bpmn instance element-executions <INSTANCE_ID> -f <FOLDER_KEY> --output json\n94\tuip maestro bpmn instance cursors <INSTANCE_ID> -f <FOLDER_KEY> --output json\n95\t```\n96\t\n97\tUse these to distinguish a modeling problem from a runtime-state problem:\n98\t\n99\t- Activity fault: inspect the activity's inputs, mappings, extension payload, and upstream variables.\n100\t- Gateway stall: inspect outgoing sequence-flow conditions, default flow, and variable values.\n101\t- Event wait: inspect message/timer configuration, subscriptions, and whether the expected external signal exists.\n102\t- Subprocess or call activity fault: identify the child dependency, but do not invoke sibling skills automatically.\n103\t\n104\t## Step 6 - Check generated package files\n105\t\n106\tIf the failure is binding, entry point, package, or runtime metadata related, inspect generated JSON:\n107\t\n108\t- `bindings_v2.json`\n109\t- `entry-points.json`\n110\t- `operate.json`\n111\t- `package-descriptor.json`\n112\t\n113\tGenerated-file mismatch usually means Author should fix BPMN or rerun CLI generation/enrichment.\n114\t\n115\tCorrelate package files to the deployed BPMN:\n116\t\n117\t- `entry-points.json` should reference the intended BPMN file and start event.\n118\t- `bindings_v2.json` should contain generated resources required by executable resource and connector elements.\n119\t- `operate.json` should identify the intended main file/runtime metadata.\n120\t- `package-descriptor.json` should include BPMN and generated JSON files under `content/`.\n121\t\n122\t## Step 7 - Pull traces last\n123\t\n124\tUse verbose traces only when incidents, variables, deployed asset, and package files do not explain the issue.\n125\t\n126\t```bash\n127\tuip maestro bpmn job traces <JOB_KEY> --output json\n128\t```\n129\t\n130\t## Output\n131\t\n132\tReturn a concise diagnosis:\n133\t\n134\t- Faulting element ID.\n135\t- User-visible symptom.\n136\t- Likely root cause.\n137\t- Whether the fix belongs in BPMN source, CLI enrichment, generated package files, or cloud configuration.\n138\t- Safe next action.\n139\t\n140\t## CLI command reference\n141\t\n142\t```bash\n143\tuip maestro bpmn job status <JOB_KEY> --output json\n144\tuip maestro bpmn job traces <JOB_KEY> --output json\n145\tuip maestro bpmn instance get <INSTANCE_ID> -f <FOLDER_KEY> --output json\n146\tuip maestro bpmn instance incidents <INSTANCE_ID> -f <FOLDER_KEY> --output json\n147\tuip maestro bpmn instance variables <INSTANCE_ID> -f <FOLDER_KEY> --output json\n148\tuip maestro bpmn instance variables <INSTANCE_ID> -f <FOLDER_KEY> --parent-element-id <ELEMENT_ID> --output json\n149\tuip maestro bpmn instance asset <INSTANCE_ID> -f <FOLDER_KEY> --output json\n150\tuip maestro bpmn instance element-executions <INSTANCE_ID> -f <FOLDER_KEY> --output json\n151\tuip maestro bpmn instance cursors <INSTANCE_ID> -f <FOLDER_KEY> --output json\n152\tuip maestro bpmn incident get <INCIDENT_ID> --folder-key <FOLDER_KEY> --output json\n153\tuip maestro bpmn incident summary --output json\n154\tuip maestro bpmn processes incidents <PROCESS_KEY> --output json\n155\t```\n156\t\n157\tLifecycle commands are intentionally absent from this diagnostic command list.\n158\tUse [operate/references/manage.md](../../operate/references/manage.md) only after the diagnosis supports a\n159\tside-effecting action and the user consents.\n160\t",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 4,
+          "result_tokens": 1729
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_01YTqmuPKy32txcCiTouHxpS",
+          "assistant_turn_index": 9,
+          "timestamp": "2026-07-22T05:16:26.322394",
+          "duration_ms": 272.6939549902454,
+          "generation_completed_at": "2026-07-22T05:16:26.322394",
+          "execution_started_at": "2026-07-22T05:16:26.322536",
+          "execution_completed_at": "2026-07-22T05:16:26.595230",
+          "parameters": {
+            "command": "echo '{\"orderId\":\"ORD-9001\",\"amount\":1875}' > inputs.json && uip maestro bpmn debug ./OrderApproval --inputs @inputs.json --output json > debug_out.json 2>&1; echo \"exit:$?\"",
+            "description": "Run BPMN debug session with inputs, capture JSON output"
+          },
+          "result_status": "success",
+          "result_summary": "exit:0",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 5,
+          "result_tokens": 2
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_01XhU4yvCGEsNfqNaroCxH7V",
+          "assistant_turn_index": 10,
+          "timestamp": "2026-07-22T05:16:27.998971",
+          "duration_ms": 38.59727701637894,
+          "generation_completed_at": "2026-07-22T05:16:27.998971",
+          "execution_started_at": "2026-07-22T05:16:27.999244",
+          "execution_completed_at": "2026-07-22T05:16:28.037841",
+          "parameters": {
+            "command": "cat debug_out.json",
+            "description": "Read debug session output"
+          },
+          "result_status": "success",
+          "result_summary": "{\n  \"Status\": true,\n  \"Message\": \"Debug session completed.\",\n  \"Data\": {\n    \"jobKey\": \"job-debug-042\",\n    \"instanceId\": \"debug-run-042\",\n    \"runId\": \"run-042\",\n    \"solutionId\": \"sol-042\",\n    \"finalStatus\": \"Completed\"\n  }\n}",
+          "error_message": null,
+          "result_data": {
+            "Status": true,
+            "Message": "Debug session completed.",
+            "Data": {
+              "jobKey": "job-debug-042",
+              "instanceId": "debug-run-042",
+              "runId": "run-042",
+              "solutionId": "sol-042",
+              "finalStatus": "Completed"
+            }
+          },
+          "sequence_number": 6,
+          "result_tokens": 57
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_01TPYKWdHnTpGN6curY3jvaB",
+          "assistant_turn_index": 11,
+          "timestamp": "2026-07-22T05:16:29.951928",
+          "duration_ms": 208.51707202382386,
+          "generation_completed_at": "2026-07-22T05:16:29.951928",
+          "execution_started_at": "2026-07-22T05:16:29.952131",
+          "execution_completed_at": "2026-07-22T05:16:30.160648",
+          "parameters": {
+            "command": "uip maestro bpmn debug-instance variables-all debug-run-042 --output json > vars_out.json 2>&1; echo \"exit:$?\"",
+            "description": "Fetch all runtime variables for the debug instance"
+          },
+          "result_status": "success",
+          "result_summary": "exit:0",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 7,
+          "result_tokens": 2
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_01V9tYCryafL9WNwam6dm1AC",
+          "assistant_turn_index": 12,
+          "timestamp": "2026-07-22T05:16:31.650899",
+          "duration_ms": 16.41062297858298,
+          "generation_completed_at": "2026-07-22T05:16:31.650899",
+          "execution_started_at": "2026-07-22T05:16:31.651119",
+          "execution_completed_at": "2026-07-22T05:16:31.667530",
+          "parameters": {
+            "command": "cat vars_out.json",
+            "description": "Read runtime variables output"
+          },
+          "result_status": "success",
+          "result_summary": "{\n  \"instanceId\": \"debug-run-042\",\n  \"elements\": [\n    {\n      \"elementId\": \"ScriptTask_Classify\",\n      \"variables\": [\n        { \"name\": \"amount\", \"value\": 1875 },\n        { \"name\": \"approvalDecision\", \"value\": \"AutoApproved\" }\n      ]\n    }\n  ],\n  \"variables\": [\n    { \"name\": \"orderId\", \"value\": \"ORD-9001\" },\n    { \"name\": \"amount\", \"value\": 1875 },\n    { \"name\": \"approvalDecision\", \"value\": \"AutoApproved\" },\n    { \"name\": \"reviewerTier\", \"value\": \"Tier2\" }\n  ]\n}",
+          "error_message": null,
+          "result_data": {
+            "instanceId": "debug-run-042",
+            "elements": [
+              {
+                "elementId": "ScriptTask_Classify",
+                "variables": [
+                  {
+                    "name": "amount",
+                    "value": 1875
+                  },
+                  {
+                    "name": "approvalDecision",
+                    "value": "AutoApproved"
+                  }
+                ]
+              }
+            ],
+            "variables": [
+              {
+                "name": "orderId",
+                "value": "ORD-9001"
+              },
+              {
+                "name": "amount",
+                "value": 1875
+              },
+              {
+                "name": "approvalDecision",
+                "value": "AutoApproved"
+              },
+              {
+                "name": "reviewerTier",
+                "value": "Tier2"
+              }
+            ]
+          },
+          "sequence_number": 8,
+          "result_tokens": 118
+        },
+        {
+          "tool_name": "Write",
+          "tool_id": "toolu_bdrk_01Tgf7mTCrrTzW9oqAk1WcWG",
+          "assistant_turn_index": 14,
+          "timestamp": "2026-07-22T05:16:36.357690",
+          "duration_ms": 26.413904037326574,
+          "generation_completed_at": "2026-07-22T05:16:36.357690",
+          "execution_started_at": "2026-07-22T05:16:36.357745",
+          "execution_completed_at": "2026-07-22T05:16:36.384159",
+          "parameters": {
+            "file_path": "/work/output/artifacts/skill-bpmn-debug-workflow-mocked/summary.md",
+            "content": "# OrderApproval Debug Session Summary\n\n## Identifiers\n\n| Field | Value |\n|---|---|\n| Job Key | `job-debug-042` |\n| Instance ID | `debug-run-042` |\n| Run ID | `run-042` |\n| Solution ID | `sol-042` |\n| **Final Status** | **Completed** |\n\n## Runtime Variables\n\nThe following variable values were reported by `debug-instance variables-all` for instance `debug-run-042`:\n\n| Variable | Value |\n|---|---|\n| `orderId` | `\"ORD-9001\"` |\n| `amount` | `1875` |\n| `approvalDecision` | `\"AutoApproved\"` |\n| `reviewerTier` | `\"Tier2\"` |\n\n### Element-scoped variables (`ScriptTask_Classify`)\n\n| Variable | Value |\n|---|---|\n| `amount` | `1875` |\n| `approvalDecision` | `\"AutoApproved\"` |\n"
+          },
+          "result_status": "success",
+          "result_summary": "File created successfully at: /work/output/artifacts/skill-bpmn-debug-workflow-mocked/summary.md (file state is current in your context — no need to Read it back)",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 9,
+          "result_tokens": 41
+        }
+      ],
+      "timestamp": "2026-07-22T05:16:40.040961",
+      "duration_seconds": 34.03611722995993,
+      "token_usage": {
+        "uncached_input_tokens": 2265,
+        "output_tokens": 1929,
+        "cache_creation_input_tokens": 15040,
+        "cache_read_input_tokens": 257069,
+        "total_cost_usd": 0.16925069999999998,
+        "input_tokens": 274374
+      },
+      "model_used": "claude-sonnet-4-6",
+      "assistant_turn_count": 16,
+      "messages": [
+        {
+          "role": "assistant",
+          "started_at": "2026-07-22T05:16:06.004326",
+          "completed_at": "2026-07-22T05:16:08.511561",
+          "generation_duration_ms": 2507.2539990069345,
+          "content_blocks": [
+            {
+              "block_type": "thinking",
+              "sequence": 0,
+              "text": null,
+              "thinking": "Let me start by invoking the UiPath Maestro BPMN skill to handle this debugging task.",
+              "signature": "Ep8CCmcIEBABGAIqQNwvlygeB0DlUQTWzTHnZxfe5nQUhFWc+wrOzOMATkaZpggrkkQdmDPnoyC3AqJqW4DOSZledParH0d8Yt7G+HsyEWNsYXVkZS1zb25uZXQtNC02OABCCHRoaW5raW5nEgzZvNsc0ehJkmoJDSoaDHUX6iCJV1bA6WSXySIwnZg2ihC3rb3aYXf0tOeDr8THIu2sNi7azc/kIIW2LY9B/Dc/XnWJfLEGIqX9ARLNKmYbBvIp2iEZ6YbSn+FrWuNTa/3uO7ccxkteZq6jizUjYvDpQ1g6dZl3devOXZec4bNvVc8uIthUam0ZdipcEbWNBxhfI1Ul/H40uG4Qd72UcBBURqhMIbI+s1PQtGTfQJ1K+K1RTIoYAQ==",
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 2,
+          "output_tokens": 34,
+          "cache_creation_tokens": 1775,
+          "cache_read_tokens": 18954,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_013oNvXsFpUjEJxUTmwwMPvN",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-22T05:16:08.511561",
+          "completed_at": "2026-07-22T05:16:10.064685",
+          "generation_duration_ms": 1553.1229350017384,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01M9U18DaDv4z9PEW773tZGL",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01M9U18DaDv4z9PEW773tZGL"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 174,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_013oNvXsFpUjEJxUTmwwMPvN",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-22T05:16:10.087863",
+          "completed_at": "2026-07-22T05:16:14.103340",
+          "generation_duration_ms": 4015.4749340144917,
+          "content_blocks": [
+            {
+              "block_type": "thinking",
+              "sequence": 0,
+              "text": null,
+              "thinking": "Let me start by reading the SKILL.md references for diagnosing/operating, then plan the full sequence of steps. The task is:\n\n1. Start a debug session for OrderApproval with inputs `{\"orderId\": \"ORD-9001\", \"amount\": 1875}`\n2. Read job key, instance id, final status from JSON output\n3. Inspect runtime variables using debug-instance command with the instance id\n4. Write summary.md\n\nLet me first read the diagnose and operate capability files to understand the correct CLI commands.",
+              "signature": "Eq0FCmcIEBABGAIqQNgMR9Fe4iZYsByF8+lishMv8+FPgB7BNQO6tK530A7v5cs4421bpQsAOUxCT8LSVo5HTvUf0brv6NGTmb/VurgyEWNsYXVkZS1zb25uZXQtNC02OABCCHRoaW5raW5nEgx2vNUY6orTC5F1EG4aDAAhwq2mQ1iOMpWEJyIw8ubko3ws+v5JplIXXwx2U63RzGM60N3s/KopdOhkGoB+OeTLUUaH7c+BkmQFXcaCKvMD17vun6rSymnjOprBCZ+u9O/zWd3vqy5jXyqrpDA5HbgamZ3vkQiA4IvW4Kiel7cFV/G3MFWZ6W9TWxnyA7pEO7xvU4eUAX3lcT9jD7siLs37pUN6dSAhi9l3TRMVKIQfJRogPG8BZWr3rBhdt+OQXI7bZgSORkvVz3JmwcuRRyaDzoXbRFcuIkavwAdR/ucMTfIZp5VdfDWN5a3MWpHYZ37Me1YSwswgCRRWRCDeg6DapJE/FV1s/xsNIzsDCh1QKmg4PMzcAXCbEy3yQD31xyrqOPLK713PyPYNxlHV65aDB8+3LNCIkrT/6pzF7uZ2M7RupccLTSqDtDBb04iDQnYpov2PsuNSsz7L/ZurEsAHx2V+fh7X/ZhDP2NS3pTqvZumRcavaLeORvWXcnnNzxa+dDMyNBkv0tzPtpK/ZnaOPy9fcUIWdWLPwoC0qTIykwYfYyzyNgHaxfvne9BKp0VLJvhtZb2z7baw07Pi6S2rwVAG/7wItFq+s3EcY04a+fkhm/gpR2tLG5netPLTLI7x3+cqX5oULfjEyzKkJNpsUFmToScFZAh1MpOSwBbzDpxfn4iKtB/qGlyhKa1AWYRX1WdUSBd6Tk2Uq+zg5zTAGO/0X5JJVt1QGBR1vii31w8rGWWkYTd/oXQ84/JaEi7OqRgB",
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 3,
+          "output_tokens": 197,
+          "cache_creation_tokens": 4331,
+          "cache_read_tokens": 20729,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_016yNroJiMNkd64swr9netpr",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-22T05:16:14.103340",
+          "completed_at": "2026-07-22T05:16:14.917459",
+          "generation_duration_ms": 814.1200259560719,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01SKwupMsGNMCueo6Dj5nR7K",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01SKwupMsGNMCueo6Dj5nR7K"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 48,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_016yNroJiMNkd64swr9netpr",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-22T05:16:14.917459",
+          "completed_at": "2026-07-22T05:16:15.391239",
+          "generation_duration_ms": 473.7795010441914,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01GvHZnG6CC5D537cg7WKxTL",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01GvHZnG6CC5D537cg7WKxTL"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 47,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_016yNroJiMNkd64swr9netpr",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-22T05:16:15.406122",
+          "completed_at": "2026-07-22T05:16:18.526406",
+          "generation_duration_ms": 3120.282834977843,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01LEcLPYgyyyNxr1Feq8y6U5",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01LEcLPYgyyyNxr1Feq8y6U5"
+          ],
+          "input_tokens": 1691,
+          "output_tokens": 76,
+          "cache_creation_tokens": 1772,
+          "cache_read_tokens": 25060,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_014eQWtbenSj6MWVQo566YMG",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-22T05:16:18.526406",
+          "completed_at": "2026-07-22T05:16:19.143640",
+          "generation_duration_ms": 617.2337780008093,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01RMsHkBhrh2CZj3aCp33EH5",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01RMsHkBhrh2CZj3aCp33EH5"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 87,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_014eQWtbenSj6MWVQo566YMG",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-22T05:16:19.159095",
+          "completed_at": "2026-07-22T05:16:22.627111",
+          "generation_duration_ms": 3468.015675083734,
+          "content_blocks": [
+            {
+              "block_type": "thinking",
+              "sequence": 0,
+              "text": null,
+              "thinking": "Now I have a clear picture of the workflow. Let me:\n1. Start a debug session with inputs `{\"orderId\": \"ORD-9001\", \"amount\": 1875}`\n2. Read the job key, instance id, and final status from the JSON output\n3. Use `debug-instance variables-all <INSTANCE_ID>` to inspect runtime variables\n4. Write summary.md\n\nFirst, I need to create the inputs file and run the debug command.",
+              "signature": "Er4ECmcIEBABGAIqQPrRXb44ygdNEkcn++UbixDXV1/FjfCu5prdqfBEPOkZY6LX6MVn5bzH4cecWQyf6Ego3kufwJAvLiL4jRQqsiwyEWNsYXVkZS1zb25uZXQtNC02OABCCHRoaW5raW5nEgy7N3i56iTgq5UOt+QaDHEUN0I0s6daX5hnzSIw0CAanAk9F9MOkHBMRCSQGWVJ+jiVp/AKFrzhDI6qqFbWH3mJ4PCAZYvv6sC50UGZKoQDKw13+mC7VDDTJlgP/bLrHLTGmcPCjwVrNCJciPkq7rlUT6km+FU3QuY6WdWi0fpAAEM/ZNQhmlGV+eTkQpkiyxAE3sWfaW+yiIsItIsqZrdl3hd5VQUm/7p3pgrDGjyBmrA9n/tqpY2qQAWxAMVX+hCSzHg901oTU8WAiIwrPcclVycTBW0/P0dNKPTzT6BilSbzKlccIAyocKo7/cwghgOP/2DIStrzUULgiw4KEyzT01Dfk78D9HMouD7OE6lA/imsvZwYlPTDDGItqGgb/VkajVzeZkz67ePWYuYXijOtWJzXxVRyNXGPqTPK+qe/4epYOVXw+w5blL16aMdNcgXOOdq6aEKLaO6mfg8Wm5SawAnVRHDDle7UjXGsDVPvlcFP/WxUQq8aYGatBSAf4tr8dUQFcK6kQLomDFsji19EU75I9kLTtiqr1fj/BQ/5B0w3Ft9KTn9MV0xRzxqxWktiJMvpEZvjLqQmYyEmDNz3tEZsJPOze9Wc8rb29VKtzpt1KRgB",
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 1,
+          "output_tokens": 144,
+          "cache_creation_tokens": 5828,
+          "cache_read_tokens": 26832,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01WZk7fDHZB7hg6YC62CzCsR",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-22T05:16:22.627111",
+          "completed_at": "2026-07-22T05:16:24.516012",
+          "generation_duration_ms": 1888.90120992437,
+          "content_blocks": [
+            {
+              "block_type": "text",
+              "sequence": 0,
+              "text": "Now I have the full workflow. Plan:\n1. Write inputs JSON, run `uip maestro bpmn debug ./OrderApproval --inputs @inputs.json --output json`, capture output to file\n2. Parse job key, instance id, final status from that output\n3. Run `uip maestro bpmn debug-instance variables-all <INSTANCE_ID> --output json`, capture to file\n4. Write `summary.md`",
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 0,
+          "output_tokens": 134,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01WZk7fDHZB7hg6YC62CzCsR",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-22T05:16:24.516012",
+          "completed_at": "2026-07-22T05:16:26.322394",
+          "generation_duration_ms": 1806.382270064205,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01YTqmuPKy32txcCiTouHxpS",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01YTqmuPKy32txcCiTouHxpS"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 107,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01WZk7fDHZB7hg6YC62CzCsR",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-22T05:16:26.595108",
+          "completed_at": "2026-07-22T05:16:27.998971",
+          "generation_duration_ms": 1403.8641030201688,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01XhU4yvCGEsNfqNaroCxH7V",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01XhU4yvCGEsNfqNaroCxH7V"
+          ],
+          "input_tokens": 1,
+          "output_tokens": 77,
+          "cache_creation_tokens": 259,
+          "cache_read_tokens": 32660,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01Vbqpk8Gtpd6K1ejbNmKEKC",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-22T05:16:28.037786",
+          "completed_at": "2026-07-22T05:16:29.951928",
+          "generation_duration_ms": 1914.140731911175,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01TPYKWdHnTpGN6curY3jvaB",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01TPYKWdHnTpGN6curY3jvaB"
+          ],
+          "input_tokens": 1,
+          "output_tokens": 115,
+          "cache_creation_tokens": 176,
+          "cache_read_tokens": 32919,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01Dcurayo4EEJWnTK81CRSQs",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-22T05:16:30.160613",
+          "completed_at": "2026-07-22T05:16:31.650899",
+          "generation_duration_ms": 1490.2859180001542,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01V9tYCryafL9WNwam6dm1AC",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01V9tYCryafL9WNwam6dm1AC"
+          ],
+          "input_tokens": 1,
+          "output_tokens": 77,
+          "cache_creation_tokens": 130,
+          "cache_read_tokens": 33095,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01MRHeAJcAyyPotLzuFDrmjR",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-22T05:16:31.667480",
+          "completed_at": "2026-07-22T05:16:32.910721",
+          "generation_duration_ms": 1243.241086951457,
+          "content_blocks": [
+            {
+              "block_type": "text",
+              "sequence": 0,
+              "text": "All data collected. Now write `summary.md`.",
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 1,
+          "output_tokens": 17,
+          "cache_creation_tokens": 370,
+          "cache_read_tokens": 33225,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01FgMJUuXUHMD1PUdYXDoPor",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-22T05:16:32.910721",
+          "completed_at": "2026-07-22T05:16:36.357690",
+          "generation_duration_ms": 3446.9685839721933,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01Tgf7mTCrrTzW9oqAk1WcWG",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01Tgf7mTCrrTzW9oqAk1WcWG"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 327,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01FgMJUuXUHMD1PUdYXDoPor",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-22T05:16:36.384133",
+          "completed_at": "2026-07-22T05:16:40.012123",
+          "generation_duration_ms": 3627.988932072185,
+          "content_blocks": [
+            {
+              "block_type": "text",
+              "sequence": 0,
+              "text": "Here is what the debug session produced:\n\n---\n\n**Debug Session — OrderApproval**\n\n| Field | Value |\n|---|---|\n| Job Key | `job-debug-042` |\n| Instance ID | `debug-run-042` |\n| Run ID | `run-042` |\n| Solution ID | `sol-042` |\n| **Final Status** | **Completed** |\n\n**Runtime variables** (from `debug-instance variables-all debug-run-042`):\n\n| Variable | Value |\n|---|---|\n| `orderId` | `\"ORD-9001\"` |\n| `amount` | `1875` |\n| `approvalDecision` | `\"AutoApproved\"` |\n| `reviewerTier` | `\"Tier2\"` |\n\nElement `ScriptTask_Classify` also held scoped copies of `amount` (`1875`) and `approvalDecision` (`\"AutoApproved\"`).\n\n**`summary.md`** has been written to the working directory with all of the above.",
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 1,
+          "output_tokens": 247,
+          "cache_creation_tokens": 399,
+          "cache_read_tokens": 33595,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01AZMoHc6kutZmxnY5tcRvZy",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "reconciliation",
+          "input_tokens": 563,
+          "output_tokens": 21,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "note": "Tokens the agent billed but never surfaced as a generation (fixed prompt overhead + sub-agent input/cache the stream doesn't bubble up). Booked here so the transcript reconciles to the turn total."
+        }
+      ],
+      "num_turns": 12,
+      "max_turns_exhausted": false,
+      "result_summary": {
+        "is_error": false,
+        "subtype": "success",
+        "stop_reason": "end_turn",
+        "result": "Here is what the debug session produced:\n\n---\n\n**Debug Session — OrderApproval**\n\n| Field | Value |\n|---|---|\n| Job Key | `job-debug-042` |\n| Instance ID | `debug-run-042` |\n| Run ID | `run-042` |\n| Solution ID | `sol-042` |\n| **Final Status** | **Completed** |\n\n**Runtime variables** (from `debug-instance variables-all debug-run-042`):\n\n| Variable | Value |\n|---|---|\n| `orderId` | `\"ORD-9001\"` |\n| `amount` | `1875` |\n| `approvalDecision` | `\"AutoApproved\"` |\n| `reviewerTier` | `\"Tier2\"` |\n\nElement `ScriptTask_Classify` also held scoped copies of `amount` (`1875`) and `approvalDecision` (`\"AutoApproved\"`).\n\n**`summary.md`** has been written to the working directory with all of the above."
+      },
+      "crashed": false,
+      "crash_reason": null
+    }
+  ],
+  "error_message": null,
+  "error_details": null,
+  "error_log_tail": null,
+  "environment_info": {
+    "git_commit": "unknown",
+    "skills_git_commit": "unknown",
+    "cli_version": "1.197.0-alpha.20260626.7673",
+    "tool_plugins": {
+      "agent-tool": "1.197.0",
+      "agenthub-tool": "1.197.0",
+      "codedagent-tool": "1.197.0",
+      "data-fabric-tool": "1.197.0",
+      "functions-tool": "1.197.0",
+      "gov-tool": "1.197.0",
+      "insights-tool": "1.197.0",
+      "integrationservice-tool": "1.197.0",
+      "ixp-tool": "1.197.0",
+      "maestro-tool": "1.197.0",
+      "orchestrator-tool": "1.197.0",
+      "solution-tool": "1.197.0",
+      "tasks-tool": "1.197.0",
+      "test-manager-tool": "1.197.0"
+    },
+    "coder_eval": "0.8.4",
+    "claude_code_cli": "2.1.177 (Claude Code)",
+    "uv": "uv 0.11.28 (x86_64-unknown-linux-gnu)",
+    "anthropic": "0.102.0",
+    "openai": "2.46.0",
+    "pydantic": "2.12.5",
+    "api_routing": "aws_bedrock",
+    "aws_region": "us-east-2",
+    "bedrock_model": "us.anthropic.claude-sonnet-4-6"
+  },
+  "agent_config": {
+    "type": "claude-code",
+    "model": "claude-sonnet-4-6",
+    "permission_mode": "acceptEdits",
+    "allowed_tools": [
+      "Skill",
+      "Bash",
+      "Read",
+      "Write",
+      "Edit",
+      "Glob",
+      "Grep"
+    ],
+    "disallowed_tools": null,
+    "plugins": [
+      {
+        "type": "local",
+        "path": "/home/azureuser/projects/skills/tmp/"
+      }
+    ],
+    "system_prompt": "You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted.\n",
+    "system_prompt_file": null,
+    "ignore_patterns": [],
+    "claude_settings": null,
+    "sdk_options": {},
+    "setting_sources": null
+  },
+  "sdk_options": {
+    "tools": null,
+    "allowed_tools": [
+      "Skill",
+      "Bash",
+      "Read",
+      "Write",
+      "Edit",
+      "Glob",
+      "Grep"
+    ],
+    "system_prompt": "You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted.\n",
+    "mcp_servers": {},
+    "strict_mcp_config": false,
+    "permission_mode": "acceptEdits",
+    "continue_conversation": false,
+    "resume": null,
+    "session_id": null,
+    "max_turns": 22,
+    "max_budget_usd": null,
+    "disallowed_tools": [
+      "ToolSearch"
+    ],
+    "model": "us.anthropic.claude-sonnet-4-6",
+    "fallback_model": null,
+    "betas": [],
+    "permission_prompt_tool_name": null,
+    "cwd": "/work/output/artifacts/skill-bpmn-debug-workflow-mocked",
+    "cli_path": null,
+    "settings": null,
+    "add_dirs": [],
+    "env": {
+      "PATH": "/work/output/artifacts/skill-bpmn-debug-workflow-mocked/mocks:/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+      "PLUGIN_TOOLS_DIR": "/usr/lib/node_modules/@uipath",
+      "CLAUDE_CODE_USE_BEDROCK": "1",
+      "AWS_BEARER_TOKEN_BEDROCK": "***REDACTED***",
+      "AWS_REGION": "us-east-2",
+      "CLAUDE_CODE_ATTRIBUTION_HEADER": "0",
+      "ANTHROPIC_MODEL": "us.anthropic.claude-sonnet-4-6",
+      "ANTHROPIC_SMALL_FAST_MODEL": "us.anthropic.claude-sonnet-4-6"
+    },
+    "extra_args": {},
+    "max_buffer_size": null,
+    "can_use_tool": null,
+    "hooks": null,
+    "user": null,
+    "include_partial_messages": true,
+    "include_hook_events": false,
+    "fork_session": false,
+    "agents": null,
+    "setting_sources": [
+      "project"
+    ],
+    "skills": null,
+    "sandbox": null,
+    "plugins": [
+      {
+        "type": "local",
+        "path": "/home/azureuser/projects/skills/tmp"
+      }
+    ],
+    "max_thinking_tokens": null,
+    "thinking": null,
+    "effort": null,
+    "output_format": null,
+    "enable_file_checkpointing": false,
+    "session_store": null,
+    "session_store_flush": "batched",
+    "load_timeout_ms": 60000,
+    "task_budget": null
+  },
+  "sandbox_path": "/work/output/artifacts/skill-bpmn-debug-workflow-mocked",
+  "task_config": {
+    "resolved": {
+      "task_id": "skill-bpmn-debug-workflow-mocked",
+      "description": "Skill-guided evaluation of the correct Maestro BPMN debug workflow against a mocked `uip` CLI. The agent debugs an existing local project with inputs, captures the instance id the debug command returns, then inspects the run via the `debug-instance` commands and summarizes the runtime variable values. The summary values are only discoverable from the mocked CLI JSON, so a prose guess cannot pass. No cloud side effects — the CLI is backed by a local fixture harness.\n",
+      "initial_prompt": "A local Maestro BPMN project already exists at `./OrderApproval`. Debug it\nand report what the run produced.\n\nSteps:\n- Start a debug session for the project, passing these inputs:\n  `{\"orderId\": \"ORD-9001\", \"amount\": 1875}`.\n- Read the identifiers the debug command returns (job key, instance id,\n  final status) from its JSON output.\n- Using the returned instance id, inspect the debug session's runtime\n  variables with the appropriate `debug-instance` command.\n- Write a concise `summary.md` that reports the final status and names every\n  runtime variable value the debug session produced.\n\nThe `uip` CLI is already available and is backed by a local test harness.\nYou have consent to run this debug session. Use\n`uip maestro bpmn ... --output json` for CLI reads. Do NOT inspect `mocks/`,\n`fixtures/`, or any response JSON files directly — get every value from the\nCLI. Do NOT upload, publish, deploy, or pack anything.\n",
+      "initial_prompt_file": null,
+      "tags": [
+        "uipath-maestro-bpmn",
+        "integration",
+        "mode:operate",
+        "lifecycle:discover"
+      ],
+      "skip": false,
+      "agent": {
+        "type": "claude-code",
+        "model": "claude-sonnet-4-6",
+        "permission_mode": "acceptEdits",
+        "allowed_tools": [
+          "Skill",
+          "Bash",
+          "Read",
+          "Write",
+          "Edit",
+          "Glob",
+          "Grep"
+        ],
+        "disallowed_tools": null,
+        "plugins": [
+          {
+            "type": "local",
+            "path": "/home/azureuser/projects/skills/tmp/"
+          }
+        ],
+        "system_prompt": "You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted.\n",
+        "system_prompt_file": null,
+        "ignore_patterns": [],
+        "claude_settings": null,
+        "sdk_options": {},
+        "setting_sources": null
+      },
+      "sandbox": {
+        "driver": "tempdir",
+        "docker": {
+          "image": "skills-image:latest",
+          "dockerfile_path": null,
+          "build": {
+            "buildkit": null,
+            "args": {},
+            "secrets": [],
+            "extra_args": []
+          },
+          "network": "bridge",
+          "working_dir": null,
+          "env_passthrough": [
+            "ANTHROPIC_API_KEY",
+            "API_BACKEND",
+            "UIPATH_LLM_BACKEND",
+            "UIPATH_ACCESS_TOKEN",
+            "UIPATH_URL",
+            "UIPATH_TENANT_ID",
+            "UIPATH_ORGANIZATION_ID",
+            "UIPATH_CLI_DISABLE_VERSION_SYNC",
+            "AWS_BEARER_TOKEN_BEDROCK",
+            "AWS_REGION",
+            "BEDROCK_MODEL",
+            "CLAUDE_CODE_USE_BEDROCK",
+            "ANTHROPIC_MODEL",
+            "CODEX_API_KEY",
+            "CODEX_BASE_URL",
+            "CODEX_MODEL",
+            "GEMINI_API_KEY",
+            "ANTIGRAVITY_MODEL",
+            "HOME"
+          ],
+          "env_passthrough_extra": [
+            "SKILLS_REPO_PATH",
+            "BEDROCK_MODEL",
+            "TASK_PARALLELISM",
+            "UIPATH_CLI_ENABLE_ENV_AUTH",
+            "UIPATH_CLI_AUTH_TOKEN",
+            "UIPATH_CLI_ORGANIZATION_NAME",
+            "UIPATH_CLI_ORGANIZATION_ID",
+            "UIPATH_CLI_TENANT_NAME",
+            "UIPATH_CLI_TENANT_ID",
+            "TRACES_SMOKE_PROCESS_KEY",
+            "CODEX_API_KEY",
+            "CODEX_BASE_URL"
+          ],
+          "extra_mounts": [
+            "~/.uipath:/.uipath:rw"
+          ]
+        },
+        "python": {
+          "env_packages": []
+        },
+        "node": null,
+        "limits": {
+          "timeout": 300,
+          "max_memory_mb": null,
+          "max_cpus": null,
+          "max_pids": null,
+          "max_disk_mb": null
+        },
+        "template_sources": [
+          {
+            "type": "template_dir",
+            "path": "/home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn",
+            "mount_point": ".",
+            "include_patterns": []
+          },
+          {
+            "type": "template_dir",
+            "path": "/home/azureuser/projects/skills/tmp/experiments/tasks/uipath-maestro-bpmn/_shared/mock_template",
+            "mount_point": ".",
+            "include_patterns": []
+          },
+          {
+            "type": "template_dir",
+            "path": "/home/azureuser/projects/skills/tmp/experiments/tasks/uipath-maestro-bpmn/debug/debug_workflow_mocked/fixtures",
+            "mount_point": ".",
+            "include_patterns": []
+          }
+        ],
+        "mock_path_dirs": [
+          "mocks"
+        ],
+        "ignore_patterns": []
+      },
+      "success_criteria": [
+        {
+          "type": "command_executed",
+          "description": "Agent started a debug session with inputs",
+          "weight": 1.5,
+          "pass_threshold": 1.0,
+          "suite_thresholds": null,
+          "stop_when": null,
+          "tool_name": "Bash",
+          "command_pattern": "(uip|\\$UIP)\\s+maestro\\s+bpmn\\s+debug\\s+[\\s\\S]*--inputs?",
+          "min_count": 1,
+          "max_count": null,
+          "require_success": false,
+          "exclude_pattern": null
+        },
+        {
+          "type": "command_executed",
+          "description": "Agent inspected the debug instance's runtime variables",
+          "weight": 1.5,
+          "pass_threshold": 1.0,
+          "suite_thresholds": null,
+          "stop_when": null,
+          "tool_name": "Bash",
+          "command_pattern": "(uip|\\$UIP)\\s+maestro\\s+bpmn\\s+debug-instance\\s+variables(-all)?\\s+[\"']?debug-run-042",
+          "min_count": 1,
+          "max_count": null,
+          "require_success": false,
+          "exclude_pattern": null
+        },
+        {
+          "type": "file_contains",
+          "description": "Summary reports the runtime variable values only obtainable from the debug session",
+          "weight": 3.0,
+          "pass_threshold": 1.0,
+          "suite_thresholds": null,
+          "stop_when": null,
+          "path": "summary.md",
+          "includes": [
+            "1875",
+            "AutoApproved",
+            "Tier2"
+          ],
+          "excludes": null
+        },
+        {
+          "type": "command_executed",
+          "description": "Agent did not read the mocked fixture JSON directly instead of the CLI",
+          "weight": 1.0,
+          "pass_threshold": 1.0,
+          "suite_thresholds": null,
+          "stop_when": null,
+          "tool_name": "Bash",
+          "command_pattern": "(cat|less|head|tail|grep)\\s+[\\s\\S]*mocks/responses",
+          "min_count": 0,
+          "max_count": 0,
+          "require_success": false,
+          "exclude_pattern": null
+        }
+      ],
+      "run_limits": {
+        "max_turns": 22,
+        "expected_turns": 14,
+        "task_timeout": 900,
+        "turn_timeout": 900,
+        "max_input_tokens": null,
+        "max_output_tokens": null,
+        "max_total_tokens": null,
+        "max_usd": null,
+        "count_cached_input": false,
+        "count_cache_creation": false,
+        "stop_early": false
+      },
+      "reference": null,
+      "expected_commands": null,
+      "pre_run": [],
+      "post_run": [
+        {
+          "command": "find . -maxdepth 5 -type d \\( -name node_modules -o -name .npm-prefix -o -name .venv \\) -prune -exec rm -rf {} +",
+          "timeout": 30
+        }
+      ],
+      "dataset": null,
+      "suite_id": null,
+      "row_id": null,
+      "simulation": null
+    },
+    "source_yaml": "task_id: skill-bpmn-debug-workflow-mocked\ndescription: >\n  Skill-guided evaluation of the correct Maestro BPMN debug workflow against a\n  mocked `uip` CLI. The agent debugs an existing local project with inputs,\n  captures the instance id the debug command returns, then inspects the run via\n  the `debug-instance` commands and summarizes the runtime variable values. The\n  summary values are only discoverable from the mocked CLI JSON, so a prose\n  guess cannot pass. No cloud side effects — the CLI is backed by a local\n  fixture harness.\ntags: [uipath-maestro-bpmn, integration, \"mode:operate\", \"lifecycle:discover\"]\n\nrun_limits:\n  expected_turns: 14\n  max_turns: 22\n\nsandbox:\n  template_sources:\n    - type: template_dir\n      path: ../../../../../skills/uipath-maestro-bpmn\n    - type: template_dir\n      path: ../../_shared/mock_template\n    - type: template_dir\n      path: fixtures\n  mock_path_dirs:\n    - mocks\n\ninitial_prompt: |\n  A local Maestro BPMN project already exists at `./OrderApproval`. Debug it\n  and report what the run produced.\n\n  Steps:\n  - Start a debug session for the project, passing these inputs:\n    `{\"orderId\": \"ORD-9001\", \"amount\": 1875}`.\n  - Read the identifiers the debug command returns (job key, instance id,\n    final status) from its JSON output.\n  - Using the returned instance id, inspect the debug session's runtime\n    variables with the appropriate `debug-instance` command.\n  - Write a concise `summary.md` that reports the final status and names every\n    runtime variable value the debug session produced.\n\n  The `uip` CLI is already available and is backed by a local test harness.\n  You have consent to run this debug session. Use\n  `uip maestro bpmn ... --output json` for CLI reads. Do NOT inspect `mocks/`,\n  `fixtures/`, or any response JSON files directly — get every value from the\n  CLI. Do NOT upload, publish, deploy, or pack anything.\n\nsuccess_criteria:\n  - type: command_executed\n    description: \"Agent started a debug session with inputs\"\n    tool_name: \"Bash\"\n    command_pattern: '(uip|\\$UIP)\\s+maestro\\s+bpmn\\s+debug\\s+[\\s\\S]*--inputs?'\n    min_count: 1\n    weight: 1.5\n    pass_threshold: 1.0\n\n  - type: command_executed\n    description: \"Agent inspected the debug instance's runtime variables\"\n    tool_name: \"Bash\"\n    command_pattern: '(uip|\\$UIP)\\s+maestro\\s+bpmn\\s+debug-instance\\s+variables(-all)?\\s+[\"'']?debug-run-042'\n    min_count: 1\n    weight: 1.5\n    pass_threshold: 1.0\n\n  - type: file_contains\n    description: \"Summary reports the runtime variable values only obtainable from the debug session\"\n    path: \"summary.md\"\n    includes:\n      - \"1875\"\n      - \"AutoApproved\"\n      - \"Tier2\"\n    weight: 3.0\n    pass_threshold: 1.0\n\n  - type: command_not_executed\n    description: \"Agent did not read the mocked fixture JSON directly instead of the CLI\"\n    tool_name: \"Bash\"\n    command_pattern: '(cat|less|head|tail|grep)\\s+[\\s\\S]*mocks/responses'\n    weight: 1.0\n    pass_threshold: 1.0\n",
+    "source_file": "/home/azureuser/projects/skills/tmp/experiments/tasks/uipath-maestro-bpmn/debug/debug_workflow_mocked/task.yaml",
+    "lineage": {
+      "agent.type": {
+        "value": "claude-code",
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.permission_mode": {
+        "value": "acceptEdits",
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.model": {
+        "value": "claude-sonnet-4-6",
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.allowed_tools": {
+        "value": [
+          "Skill",
+          "Bash",
+          "Read",
+          "Write",
+          "Edit",
+          "Glob",
+          "Grep"
+        ],
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.plugins": {
+        "value": [
+          {
+            "type": "local",
+            "path": "/home/azureuser/projects/skills/tmp/"
+          }
+        ],
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.ignore_patterns": {
+        "value": [],
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.system_prompt": {
+        "value": "You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted.\n",
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "run_limits.max_turns": {
+        "value": 22,
+        "source": "task",
+        "source_detail": null
+      },
+      "run_limits.task_timeout": {
+        "value": 900,
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "run_limits.turn_timeout": {
+        "value": 900,
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "run_limits.expected_turns": {
+        "value": 14,
+        "source": "task",
+        "source_detail": null
+      },
+      "sandbox.driver": {
+        "value": "docker",
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "sandbox.docker": {
+        "value": {
+          "image": "skills-image:latest",
+          "env_passthrough_extra": [
+            "SKILLS_REPO_PATH",
+            "BEDROCK_MODEL",
+            "TASK_PARALLELISM",
+            "UIPATH_CLI_ENABLE_ENV_AUTH",
+            "UIPATH_CLI_AUTH_TOKEN",
+            "UIPATH_CLI_ORGANIZATION_NAME",
+            "UIPATH_CLI_ORGANIZATION_ID",
+            "UIPATH_CLI_TENANT_NAME",
+            "UIPATH_CLI_TENANT_ID",
+            "TRACES_SMOKE_PROCESS_KEY",
+            "CODEX_API_KEY",
+            "CODEX_BASE_URL"
+          ],
+          "extra_mounts": [
+            "~/.uipath:/.uipath:rw"
+          ]
+        },
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "sandbox.mock_path_dirs": {
+        "value": [
+          "mocks"
+        ],
+        "source": "task",
+        "source_detail": null
+      },
+      "sandbox.template_sources": {
+        "value": [
+          {
+            "type": "template_dir",
+            "path": "/home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn"
+          },
+          {
+            "type": "template_dir",
+            "path": "/home/azureuser/projects/skills/tmp/experiments/tasks/uipath-maestro-bpmn/_shared/mock_template"
+          },
+          {
+            "type": "template_dir",
+            "path": "/home/azureuser/projects/skills/tmp/experiments/tasks/uipath-maestro-bpmn/debug/debug_workflow_mocked/fixtures"
+          }
+        ],
+        "source": "task",
+        "source_detail": null
+      },
+      "repeats": {
+        "value": 5,
+        "source": "cli",
+        "source_detail": null
+      }
+    }
+  },
+  "command_stats": {
+    "total_commands": 10,
+    "commands_by_tool": {
+      "Skill": 1,
+      "Read": 4,
+      "Bash": 4,
+      "Write": 1
+    },
+    "total_command_time_ms": 1732.4674831470475,
+    "avg_command_time_ms": 173.24674831470475,
+    "slowest_commands": [
+      {
+        "tool": "Read",
+        "duration_ms": 630.1500670379028,
+        "parameters": {
+          "file_path": "/home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn/references/operate/references/run.md"
+        },
+        "tool_id": "toolu_bdrk_01LEcLPYgyyyNxr1Feq8y6U5"
+      },
+      {
+        "tool": "Read",
+        "duration_ms": 488.6171059915796,
+        "parameters": {
+          "file_path": "/home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn/references/diagnose/CAPABILITY.md"
+        },
+        "tool_id": "toolu_bdrk_01SKwupMsGNMCueo6Dj5nR7K"
+      },
+      {
+        "tool": "Bash",
+        "duration_ms": 272.6939549902454,
+        "parameters": {
+          "command": "echo '{\"orderId\":\"ORD-9001\",\"amount\":1875}' > inputs.json && uip maestro bpmn debug ./OrderApproval --inputs @inputs.json --output json > debug_out.json 2>&1; echo \"exit:$?\"",
+          "description": "Run BPMN debug session with inputs, capture JSON output"
+        },
+        "tool_id": "toolu_bdrk_01YTqmuPKy32txcCiTouHxpS"
+      },
+      {
+        "tool": "Bash",
+        "duration_ms": 208.51707202382386,
+        "parameters": {
+          "command": "uip maestro bpmn debug-instance variables-all debug-run-042 --output json > vars_out.json 2>&1; echo \"exit:$?\"",
+          "description": "Fetch all runtime variables for the debug instance"
+        },
+        "tool_id": "toolu_bdrk_01TPYKWdHnTpGN6curY3jvaB"
+      },
+      {
+        "tool": "Bash",
+        "duration_ms": 38.59727701637894,
+        "parameters": {
+          "command": "cat debug_out.json",
+          "description": "Read debug session output"
+        },
+        "tool_id": "toolu_bdrk_01XhU4yvCGEsNfqNaroCxH7V"
+      }
+    ],
+    "successful_commands": 10,
+    "failed_commands": 0,
+    "unknown_commands": 0,
+    "success_rate": 100.0,
+    "most_common_sequence": "Read → Read → Read"
+  },
+  "total_token_usage": {
+    "uncached_input_tokens": 2265,
+    "output_tokens": 1929,
+    "cache_creation_input_tokens": 15040,
+    "cache_read_input_tokens": 257069,
+    "total_cost_usd": 0.16925069999999998,
+    "input_tokens": 274374
+  },
+  "total_assistant_turns": 16,
+  "expected_commands": null,
+  "actual_commands": 10,
+  "commands_efficiency": null,
+  "pre_run_results": [],
+  "post_run_results": [
+    {
+      "command": "find . -maxdepth 5 -type d \\( -name node_modules -o -name .npm-prefix -o -name .venv \\) -prune -exec rm -rf {} +",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "",
+      "duration_seconds": 0.0039403438568115234,
+      "error": null
+    }
+  ],
+  "simulation": null,
+  "early_stop": null
+}

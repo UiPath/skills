@@ -1,0 +1,64 @@
+task_id: skill-bpmn-diagnose-deployed-drift
+description: >
+  Diagnose coverage for the uipath-maestro-bpmn skill: the deployed BPMN asset
+  that actually ran differs from the local `.bpmn` source. The agent fetches the
+  deployed asset with `instance asset`, diffs it against the local file, and
+  reports the drifted element as the root cause instead of assuming local source
+  is what ran. Read-only mocked CLI; no lifecycle mutations.
+tags: [uipath-maestro-bpmn, integration, "mode:diagnose", "lifecycle:discover"]
+
+run_limits:
+  expected_turns: 16
+  max_turns: 40
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../../../../skills/uipath-maestro-bpmn
+    - type: template_dir
+      path: ../../_shared/mock_template
+    - type: template_dir
+      path: fixtures
+  mock_path_dirs:
+    - mocks
+
+initial_prompt: |
+  A UiPath Maestro BPMN instance behaved differently from the local source. The
+  local file `OrderRouting.bpmn` is in the working directory, but you must NOT
+  assume it is what actually ran. Diagnose using the mocked `uip` CLI on PATH.
+  Public-safe identifiers:
+  - instance id: inst-triage-001
+  - folder key: folder-public
+
+  Fetch the DEPLOYED BPMN asset that ran, then compare it element-by-element
+  against the local `OrderRouting.bpmn`. Find the one element whose definition
+  differs between deployed and local.
+
+  Write your conclusion to diagnosis.md. Include these EXACT labeled lines:
+    DRIFTED_ELEMENT: <the id of the element that differs>
+    DRIFT: deployed-differs-from-local
+  Then add a short prose note describing how the deployed definition differs
+  from local (the drifted value on each side).
+
+  Reading the local `OrderRouting.bpmn` is expected. Get the deployed asset ONLY
+  via the `uip maestro bpmn instance asset` command; do not read `mocks/`,
+  `fixtures/`, or any response JSON files directly. Do NOT retry, cancel,
+  migrate, move a cursor, debug, run, upload, publish, or deploy anything.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent fetched the deployed BPMN asset with folder context"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+instance\s+asset\s+inst-triage-001\b.*folder-public'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Diagnosis names the drifted element and states deployed differs from local"
+    path: "diagnosis.md"
+    includes:
+      - "DRIFTED_ELEMENT: Flow_HighValue"
+      - "deployed-differs-from-local"
+    weight: 3.0
+    pass_threshold: 1.0

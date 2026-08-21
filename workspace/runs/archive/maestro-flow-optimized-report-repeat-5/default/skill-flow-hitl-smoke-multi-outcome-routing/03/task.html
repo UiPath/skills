@@ -1,0 +1,1317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>coder_eval · skill-flow-hitl-smoke-multi-outcome-routing · default</title>
+<style>
+:root {
+  --bg-page: #0f1419;
+  --bg-card: #1a2129;
+  --bg-card-2: #232d38;
+  --bg-code: #0b0f14;
+  --fg: #e6edf3;
+  --fg-muted: #8b98a5;
+  --fg-dim: #6e7681;
+  --border: #30363d;
+  --accent: #58a6ff;
+  --score-high: #22c55e;
+  --score-mid: #f59e0b;
+  --score-low: #ef4444;
+  --status-success: #22c55e;
+  --status-failure: #f59e0b;
+  --status-error: #ef4444;
+  --status-neutral: #6e7681;
+  --shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+.light {
+  --bg-page: #ffffff;
+  --bg-card: #f6f8fa;
+  --bg-card-2: #eaeef2;
+  --bg-code: #f6f8fa;
+  --fg: #1f2328;
+  --fg-muted: #636c76;
+  --fg-dim: #8b949e;
+  --border: #d0d7de;
+  --accent: #0969da;
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial,
+               sans-serif;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--fg);
+  background: var(--bg-page);
+}
+.container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+h1, h2, h3, h4 { margin: 0 0 12px 0; line-height: 1.25; }
+h1 { font-size: 22px; font-weight: 600; }
+h2 { font-size: 18px; font-weight: 600; margin-top: 28px;
+     padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+h3 { font-size: 15px; font-weight: 600; color: var(--fg-muted); }
+h4 { font-size: 13px; font-weight: 600; color: var(--fg-muted); }
+p { margin: 0 0 8px 0; }
+.muted { color: var(--fg-muted); }
+.dim { color: var(--fg-dim); }
+.mono { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+        monospace; font-size: 12.5px; }
+code { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+       monospace; font-size: 12.5px; background: var(--bg-code);
+       border: 1px solid var(--border); padding: 1px 5px; border-radius: 3px; }
+pre { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+      monospace; font-size: 12.5px; background: var(--bg-code);
+      border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px;
+      margin: 6px 0; overflow-x: auto; white-space: pre-wrap;
+      word-wrap: break-word; }
+.header-bar { display: flex; align-items: center; justify-content: space-between;
+              margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+.title-group { flex: 1; min-width: 0; }
+.title-group .subtitle { color: var(--fg-muted); font-size: 13px;
+                         margin-top: 2px; word-break: break-all; }
+.badges { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.badge { display: inline-flex; align-items: center; gap: 6px;
+         padding: 4px 10px; border-radius: 12px; font-size: 12px;
+         font-weight: 600; background: var(--bg-card-2);
+         border: 1px solid var(--border); color: var(--fg); }
+.badge.success { background: color-mix(in srgb, var(--status-success) 20%, var(--bg-card-2));
+                 border-color: var(--status-success); color: var(--status-success); }
+.badge.failure { background: color-mix(in srgb, var(--status-failure) 20%, var(--bg-card-2));
+                 border-color: var(--status-failure); color: var(--status-failure); }
+.badge.error { background: color-mix(in srgb, var(--status-error) 20%, var(--bg-card-2));
+               border-color: var(--status-error); color: var(--status-error); }
+.badge.warning { background: color-mix(in srgb, #f4a52810 20%, var(--bg-card-2));
+                 border-color: #f4a528; color: #f4a528; }
+.badge.neutral { color: var(--fg-muted); }
+.score-pill { display: inline-block; padding: 2px 8px; border-radius: 10px;
+              font-size: 12px; font-weight: 700; min-width: 42px;
+              text-align: center; color: #0b0f14; }
+.score-high { background: var(--score-high); }
+.score-mid { background: var(--score-mid); }
+.score-low { background: var(--score-low); }
+.card { background: var(--bg-card); border: 1px solid var(--border);
+        border-radius: 8px; padding: 16px 20px; margin-bottom: 16px;
+        box-shadow: var(--shadow); }
+.card.highlight { border-left: 4px solid var(--accent); }
+.grid { display: grid; gap: 12px;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+.stat { background: var(--bg-card-2); padding: 10px 12px; border-radius: 6px;
+        border: 1px solid var(--border); }
+.stat .label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;
+               color: var(--fg-muted); margin-bottom: 4px; }
+.stat .value { font-size: 16px; font-weight: 600; }
+table { width: 100%; border-collapse: collapse; margin: 4px 0 12px 0; }
+th, td { text-align: left; padding: 8px 10px;
+         border-bottom: 1px solid var(--border); vertical-align: top;
+         font-size: 13px; }
+th { color: var(--fg-muted); font-weight: 600; font-size: 12px;
+     text-transform: uppercase; letter-spacing: 0.3px; }
+tr:last-child td { border-bottom: none; }
+details { margin: 6px 0; border: 1px solid var(--border); border-radius: 6px;
+          background: var(--bg-card-2); }
+details > summary { cursor: pointer; padding: 8px 12px; user-select: none;
+                    font-weight: 500; list-style: none; }
+details > summary::-webkit-details-marker { display: none; }
+details > summary::before { content: "▸ "; color: var(--fg-dim);
+                            display: inline-block; width: 14px;
+                            transition: transform 0.15s; }
+details[open] > summary::before { content: "▾ "; }
+details .details-body { padding: 0 12px 10px 12px; }
+.tool-row { display: flex; align-items: center; gap: 10px;
+            flex-wrap: wrap; font-size: 13px; }
+.tool-name { font-weight: 600; color: var(--accent); font-family: ui-monospace,
+             SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+.tool-status-ok { color: var(--status-success); font-size: 11px;
+                  font-weight: 600; }
+.tool-status-err { color: var(--status-error); font-size: 11px;
+                   font-weight: 600; }
+.tool-duration { color: var(--fg-muted); font-size: 12px; }
+.tool-seq { color: var(--fg-dim); font-size: 11px; font-weight: 600;
+            min-width: 24px; text-align: right; font-family: ui-monospace,
+            SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+.turn-header { display: flex; justify-content: space-between;
+               align-items: baseline; flex-wrap: wrap; gap: 10px;
+               margin-bottom: 10px; }
+.turn-meta { font-size: 12px; color: var(--fg-muted); }
+.criterion-row td:first-child { font-family: ui-monospace, SFMono-Regular,
+                                 "SF Mono", Menlo, Consolas, monospace;
+                                 color: var(--fg-muted); font-size: 12px; }
+.judge-section { display: flex; flex-direction: column; gap: 12px; }
+.judge-card { padding: 14px 16px; }
+.judge-card-head { display: flex; justify-content: space-between;
+                    align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+.judge-card-title { font-size: 14px; line-height: 1.4; flex: 1; min-width: 0; }
+.judge-card-score { flex-shrink: 0; }
+.judge-rationale { margin-top: 10px; padding: 10px 12px;
+                   background: var(--bg-code); border-radius: 4px;
+                   font-size: 13px; line-height: 1.5; }
+.judge-findings { margin: 8px 0 0 18px; padding-left: 4px; font-size: 13px;
+                   line-height: 1.6; }
+.judge-findings li { margin: 2px 0; }
+.nav-toggle { display: inline-block; padding: 5px 10px; font-size: 12px;
+              background: var(--bg-card-2); border: 1px solid var(--border);
+              border-radius: 5px; color: var(--fg); cursor: pointer; }
+.nav-toggle:hover { background: var(--bg-card); }
+.llm-next-steps { margin: 6px 0 0 20px; padding-left: 0; }
+.llm-next-steps li { margin: 3px 0; }
+.iteration-group { padding: 12px 16px 4px 16px; margin-bottom: 20px;
+                   border-radius: 0 6px 6px 0; border-left: 4px solid var(--status-neutral); }
+/* rgba fallback for browsers without color-mix (Chrome <111, Firefox <113, Safari <16.2). */
+.iteration-group--recovered { border-left-color: var(--status-success);
+                              background: rgba(34, 197, 94, 0.06);
+                              background: color-mix(in srgb, var(--status-success) 6%, transparent); }
+.iteration-group--terminal { border-left-color: var(--status-error);
+                             background: rgba(239, 68, 68, 0.06);
+                             background: color-mix(in srgb, var(--status-error) 6%, transparent); }
+.iteration-group__banner { margin: 0 0 12px 0; font-size: 14px; font-weight: 600; }
+.iteration-group--recovered .iteration-group__banner { color: var(--status-success); }
+.iteration-group--terminal .iteration-group__banner { color: var(--status-error); }
+.attempt-transition { display: flex; align-items: center; gap: 8px;
+                      margin: -6px 0 12px 8px; color: var(--status-error); font-size: 12.5px; }
+.attempt-transition__icon { font-weight: 700; }
+footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--border);
+         color: var(--fg-dim); font-size: 12px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="header-bar">
+  <div class="title-group">
+    <h1>Task: skill-flow-hitl-smoke-multi-outcome-routing</h1>
+    <div class="subtitle">Smoke test: agent builds a flow where a Decision node reads the HITL reviewer&#x27;s boolean field and routes to two separate downstream branches. Verifies both true and false edges of the Decision node are wired.</div>
+  </div>
+  <div class="badges">
+    <span class="badge success">SUCCESS</span>
+    <span class="score-pill score-high">1.00</span>
+    <span class="badge neutral">claude-code · claude-sonnet-4-6</span>
+    <span class="badge neutral">3m 35s</span>
+    <span class="badge neutral">$0.5947</span>
+    
+    
+    <span class="nav-toggle" onclick="toggleTheme()">Toggle theme</span>
+  </div>
+</div>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Variant</div><div class="value">default</div></div>
+    <div class="stat"><div class="label">Started</div><div class="value mono">2026-07-24T18:15:09</div></div>
+    <div class="stat"><div class="label">Duration</div><div class="value">3m 35s</div></div>
+    <div class="stat"><div class="label">Turns (SDK)</div><div class="value">33</div></div>
+    <div class="stat"><div class="label">Commands</div><div class="value">23</div></div>
+  </div>
+</div>
+
+<h2>Success Criteria <span class="muted" style="font-weight:400">(5/5 passed)</span></h2>
+<div class="card" style="padding:0">
+<table>
+  <thead>
+    <tr>
+      <th style="width:15%">Type</th>
+      <th style="width:35%">Description</th>
+      <th style="width:10%">Score</th>
+      <th>Details</th>
+    </tr>
+  </thead>
+  <tbody>
+    
+<tr class="criterion-row">
+  <td>run_command</td>
+  <td>uip maestro flow validate passes</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Command: uip maestro flow validate LeaveRequest/LeaveRequest/LeaveRequest.flow --output json</summary><div class="details-body"><pre style="margin:6px 0 0 0">Command: uip maestro flow validate LeaveRequest/LeaveRequest/LeaveRequest.flow --output json
+Exit code: 0 (expected: 0)
+Stdout:
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FlowValidate&quot;,
+  &quot;Data&quot;: {
+    &quot;File&quot;: &quot;/work/output/artifacts/skill-flow-hitl-smoke-multi-outcome-routing/LeaveRequest/LeaveRequest/LeaveRequest.flow&quot;,
+    &quot;Status&quot;: &quot;Valid&quot;
+  }
+}
+
+Stderr:
+[ManifestClient] fetchDynamicNodes ok: total=207 agent context nodes=2 external agent nodes=6 orchestrator nodes=158 IXP nodes=41</pre></div></details></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>file_contains</td>
+  <td>Flow contains inline HITL node</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><div class="dim mono" style="white-space:pre-wrap">Includes: 1/1 found; Score: 1.00</div></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>file_contains</td>
+  <td>Flow contains a Decision node</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><div class="dim mono" style="white-space:pre-wrap">Includes: 1/1 found; Score: 1.00</div></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>file_contains</td>
+  <td>Decision node references HITL output variable</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><div class="dim mono" style="white-space:pre-wrap">Includes: 2/2 found; Score: 1.00</div></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>file_contains</td>
+  <td>Both Decision branches are wired (true and false handles present)</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><div class="dim mono" style="white-space:pre-wrap">Includes: 2/2 found; Score: 1.00</div></td>
+</tr>
+
+  </tbody>
+</table>
+</div>
+<h2>Conversation Trace (1 iteration)</h2>
+<div class="card">
+  <div class="turn-header">
+    <h3>Iteration 1</h3>
+    <div class="badges">
+      <span class="badge neutral">33 assistant turns</span>
+      <span class="badge neutral">in 25 · out 9563 · cache 1046844</span>
+      <span class="badge neutral">3m 26s</span>
+      
+      
+      
+    </div>
+  </div>
+  <details>
+    <summary>Prompt to agent</summary>
+    <div class="details-body"><pre>Your working directory is: /work/output/artifacts/skill-flow-hitl-smoke-multi-outcome-routing
+
+Build a UiPath Flow named &quot;LeaveRequest&quot; with this structure:
+
+1. Manual trigger
+2. HITL node — manager reviews leave request:
+     - Reviewer sees (read-only): employee name, number of days
+     - Reviewer fills in: approved (boolean)
+     - Outcomes: Approve (primary), Reject
+3. Decision node — branches on the reviewer&#x27;s approved field from the HITL output
+4. true branch  → Script node that logs &quot;Leave approved&quot; → End
+5. false branch → Script node that logs &quot;Leave rejected&quot; → End
+
+Use the inline quickform HITL node (uipath.human-in-the-loop.quick-form).
+Wire: Trigger → HITL →|completed| Decision → both branches → Script → End
+
+The Decision node condition must reference the HITL output using the
+correct runtime variable path ($vars.&lt;nodeId&gt;.output.&lt;fieldName&gt;).
+
+Validate the flow after building.
+</pre></div>
+  </details>
+  <details>
+    <summary>Agent response</summary>
+    <div class="details-body"><pre>[ASSISTANT] No existing flow file found. I need to scaffold a new solution + flow project, then build the full `LeaveRequest` flow. Let me start by resolving the `uip` binary and scaffolding.
+[ASSISTANT] Now I have the scaffolded flow. Let me look up the correct node types for Decision, Script, and End nodes before building the complete flow:
+[ASSISTANT] Now I have all the registry types. Let me also check the script node&#x27;s full definition:
+[ASSISTANT] Now I have all the info I need. Let me build the complete flow:
+[ASSISTANT] ✅ **Validation passed — Status: Valid**
+
+Here&#x27;s a summary of what was built:
+
+---
+
+## LeaveRequest Flow — Build Summary
+
+**File:** `LeaveRequest/LeaveRequest/LeaveRequest.flow`
+
+### What was inserted
+
+| Node ID | Type | Label |
+|---|---|---|
+| `start` | `core.trigger.manual` | Manual trigger |
+| `managerReview1` | `uipath.human-in-the-loop.quick-form` | Manager Review |
+| `approvalDecision1` | `core.logic.decision` | Approved? |
+| `logApproved1` | `core.action.script` | Log Approved |
+| `logRejected1` | `core.action.script` | Log Rejected |
+| `end1` | `core.control.end` | End (Approved) |
+| `end2` | `core.control.end` | End (Rejected) |
+
+---
+
+### HITL Schema — `managerReview1`
+
+| Field | Direction | Type | Binding / Variable |
+|---|---|---|---|
+| **Employee Name** (`employeename`) | `input` (read-only) | `string` | `vars.start.output.employeeName` |
+| **Number of Days** (`numberofdays`) | `input` (read-only) | `number` | `vars.start.output.numberOfDays` |
+| **Approved** (`approved`) | `output` (reviewer fills in) | `boolean` | `vars.approved` |
+
+**Outcomes:** `Approve` (primary, Continue) · `Reject` (secondary, End)
+
+---
+
+### Edges wired
+
+| Edge | Source → Target |
+|---|---|
+| `start-output-managerReview1-input` | Trigger `output` → HITL `input` |
+| `managerReview1-completed-approvalDecision1-input` | HITL `completed` → Decision `input` |
+| `approvalDecision1-true-logApproved1-input` | Decision `true` → Log Approved `input` |
+| `approvalDecision1-false-logRejected1-input` | Decision `false` → Log Rejected `input` |
+| `logApproved1-success-end1-input` | Log Approved `success` → End1 `input` |
+| `logRejected1-success-end2-input` | Log Rejected `success` → End2 `input` |
+
+---
+
+### Decision condition
+
+```javascript
+$vars.managerReview1.output.approved === true
+```
+
+This references the HITL output using `$vars.&lt;nodeId&gt;.output.&lt;fieldId&gt;` — `managerReview1` is the node ID, `approved` is the field `id`. The `true` branch logs `&quot;Leave approved&quot;`; the `false` branch logs `&quot;Leave rejected&quot;`.
+
+---
+
+### Runtime variables
+
+| Path | Type | Contents |
+|---|---|---|
+| `$vars.managerReview1.output` | `object` | All output field values (including `approved`) |
+| `$vars.managerReview1.output.approved` | `boolean` | The manager&#x27;s approval decision |
+| `$vars.managerReview1.status` | `string` | Selected outcome name (`&quot;Approve&quot;` or `&quot;Reject&quot;`) |
+
+---
+
+### Validation result
+
+```
+{ &quot;Status&quot;: &quot;Valid&quot; }
+```
+
+**Production readiness:** QuickForm — no additional build steps. Pack and publish the solution via `uip solution pack . ./out` and `uip solution publish` when ready to deploy.
+[RESULT - SUCCESS] ✅ **Validation passed — Status: Valid**
+
+Here&#x27;s a summary of what was built:
+
+---
+
+## LeaveRequest Flow — Build Summary
+
+**File:** `LeaveRequest/LeaveRequest/LeaveRequest.flow`
+
+### What was inserted
+
+| Node ID | Type | Label |
+|---|---|---|
+| `start` | `core.trigger.manual` | Manual trigger |
+| `managerReview1` | `uipath.human-in-the-loop.quick-form` | Manager Review |
+| `approvalDecision1` | `core.logic.decision` | Approved? |
+| `logApproved1` | `core.action.script` | Log Approved |
+| `logRejected1` | `core.action.script` | Log Rejected |
+| `end1` | `core.control.end` | End (Approved) |
+| `end2` | `core.control.end` | End (Rejected) |
+
+---
+
+### HITL Schema — `managerReview1`
+
+| Field | Direction | Type | Binding / Variable |
+|---|---|---|---|
+| **Employee Name** (`employeename`) | `input` (read-only) | `string` | `vars.start.output.</pre></div>
+  </details>
+  <h4 style="margin-top:12px">Tool Calls (23)</h4>
+  
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#0</span>
+      <span class="tool-name">Skill</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">46ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;skill&quot;: &quot;uipath:uipath-human-in-the-loop&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Launching skill: uipath:uipath-human-in-the-loop</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#1</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">105ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-human-in-the-loop/references/hitl-node-quickform.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# HITL QuickForm Node — Direct JSON Reference
+2	
+3	The agent writes the `uipath.human-in-the-loop.quick-form` node directly into the `.flow` file as JSON. **Direct JSON is the default.** A CLI opt-in is available when the user explicitly requests it, or as a fallback if direct JSON writing fails — see [CLI reference: uip maestro flow hitl add](../../uipath-maestro-flow/references/shared/cli-commands.md#uip-maestro-flow-hitl-add).
+4	
+5	---
+6	
+7	## Step 1 — Extract the Schema Through Conversation
+8	
+9	Before designing the schema, ask these focused questions if the business description doesn&#x27;t answer them. **Ask all missing ones in a single message — never one at a time.**
+10	
+11	| What you need to know | Question to ask |
+12	|---|---|
+13	| What the reviewer sees | &quot;What information does the reviewer need to make their decision?&quot; |
+14	| What they fill in | &quot;Does the reviewer need to enter any data, or just click Approve/Reject?&quot; |
+15	| What actions they take | &quot;What are the named actions — e.g. Approve/Reject, or something domain-specific like Accept/Negotiate/Decline?&quot; |
+16	
+17	**Common business descriptions → schema translations:**
+18	
+19	| Business description | Schema shape |
+20
+
+… (truncated, 20340 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#2</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">145ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;find . -name \&quot;*.flow\&quot; -maxdepth 4 | head -5; find . -name \&quot;agent.json\&quot; -maxdepth 4 | head -3; ls -la&quot;,
+  &quot;description&quot;: &quot;Check working directory for existing flow files&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>total 12
+drwxr-xr-x 3 root root 4096 Jul 24 18:15 .
+drwxr-xr-x 3 root root 4096 Jul 24 18:15 ..
+drwxr-xr-x 4 root root 4096 Jul 24 18:15 .venv</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#3</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.24s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;UIP=$(command -v uip 2&gt;/dev/null || echo \&quot;not-found\&quot;)\necho \&quot;uip at: $UIP\&quot;\nif [ \&quot;$UIP\&quot; = \&quot;not-found\&quot; ]; then\n  NPM_ROOT=$(npm root -g 2&gt;/dev/null | sed &#x27;s|/node_modules$||&#x27;)\n  echo \&quot;npm global root: $NPM_ROOT\&quot;\n  ls \&quot;$NPM_ROOT/bin/uip\&quot; 2&gt;/dev/null &amp;&amp; echo \&quot;found at $NPM_ROOT/bin/uip\&quot;\nfi\nuip --version 2&gt;/dev/null || echo \&quot;uip not in PATH\&quot;&quot;,
+  &quot;description&quot;: &quot;Resolve uip binary&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>uip at: /usr/bin/uip
+1.199.0-dev.7970</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#4</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.29s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-hitl-smoke-multi-outcome-routing\nuip solution init --help --output json 2&gt;&amp;1 | head -20&quot;,
+  &quot;description&quot;: &quot;Check solution init command availability&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;Help&quot;,
+  &quot;Data&quot;: {
+    &quot;Command&quot;: &quot;init&quot;,
+    &quot;Description&quot;: &quot;Initialize a new empty UiPath solution. Creates a directory named after the solution containing a .uipx manifest file with an empty Projects array, plus AGENTS.md and CLAUDE.md briefing files that orient AI coding agents to the solution. Use &#x27;solution projects add&#x27; to add projects afterward.&quot;,
+    &quot;Usage&quot;: &quot;uip solution init [options] &lt;solutionName&gt;&quot;,
+    &quot;Arguments&quot;: [
+      {
+        &quot;Name&quot;: &quot;solutionName&quot;,
+        &quot;Description&quot;: &quot;Solution name or path. Creates a directory with this name containing a .uipx manifest file.&quot;,
+        &quot;Required&quot;: true
+      }
+    ],
+    &quot;Options&quot;: [
+      {
+        &quot;Flags&quot;: &quot;-h, --help&quot;,
+        &quot;Description&quot;: &quot;display help for command&quot;
+      }
+    ],</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#5</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.79s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-hitl-smoke-multi-outcome-routing\nuip solution init LeaveRequest --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Initialize LeaveRequest solution&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;SolutionInit&quot;,
+  &quot;Data&quot;: {
+    &quot;Status&quot;: &quot;Created successfully&quot;,
+    &quot;Path&quot;: &quot;/work/output/artifacts/skill-flow-hitl-smoke-multi-outcome-routing/LeaveRequest/LeaveRequest.uipx&quot;,
+    &quot;NextSteps&quot;: &quot;Read /work/output/artifacts/skill-flow-hitl-smoke-multi-outcome-routing/LeaveRequest/AGENTS.md or /work/output/artifacts/skill-flow-hitl-smoke-multi-outcome-routing/LeaveRequest/CLAUDE.md to understand the solution lifecycle, project types that can be used inside a solution, and related uip command references.&quot;
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#6</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">10.76s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-hitl-smoke-multi-outcome-routing/LeaveRequest\nuip maestro flow init LeaveRequest --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Initialize LeaveRequest flow project inside solution&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>2026-07-24 18:15:48 INFO  [ResourceBuilder:ProjectCreateCommandHandler] Creating project [object Object]
+2026-07-24 18:15:48 INFO  [ResourceBuilder:MultiFileSolutionDefinitionProvider] Reading multi-file solution definition for solution %s /work/output/artifacts/skill-flow-hitl-smoke-multi-outcome-routing/LeaveRequest
+2026-07-24 18:15:48 INFO  [ResourceBuilder:ProjectCreateCommandHandler] Generate artefact resources for project [object Object]
+2026-07-24 18:15:48 INFO  [ResourceBuilder:SolutionsMetadataReader] Reading metadata from %s. SolutionsMetadataReader
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FlowInit&quot;,
+  &quot;Data&quot;: {
+    &quot;Status&quot;: &quot;Created successfully&quot;,
+    &quot;Path&quot;: &quot;/work/output/artifacts/skill-flow-hitl-smoke-multi-outcome-routing/LeaveRequest/LeaveRequest&quot;,
+    &quot;SolutionRegistration&quot;: {
+      &quot;Status&quot;: &quot;Registered&quot;,
+      &quot;Message&quot;: &quot;Project registered in parent solution.&quot;,
+      &quot;Solution&quot;: &quot;/work/output/artifacts/skill-flow-hitl-smoke-multi-outcome-routing/LeaveRequest/LeaveRequest.uipx&quot;,
+      &quot;Project&quot;: &quot;LeaveRequest/project.uiproj&quot;,
+      &quot;ProjectId&quot;: &quot;d19fb90c-63f0-4cda-9d13-a5b1384eb9b7&quot;,
+      &quot;Instructions&quot;: &quot;The project is listed in the parent solution manifest.\nPacki
+
+… (truncated, 648 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#7</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">23ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;find /work/output/artifacts/skill-flow-hitl-smoke-multi-outcome-routing/LeaveRequest -name \&quot;*.flow\&quot; 2&gt;/dev/null&quot;,
+  &quot;description&quot;: &quot;Find the generated flow file&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/work/output/artifacts/skill-flow-hitl-smoke-multi-outcome-routing/LeaveRequest/LeaveRequest/LeaveRequest.flow</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#8</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">14ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-hitl-smoke-multi-outcome-routing/LeaveRequest/LeaveRequest/LeaveRequest.flow&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	{
+2	  &quot;id&quot;: &quot;a871fb8a-24df-4e3b-91d9-fc8dbd6280a1&quot;,
+3	  &quot;version&quot;: &quot;1.8&quot;,
+4	  &quot;name&quot;: &quot;LeaveRequest&quot;,
+5	  &quot;nodes&quot;: [
+6	    {
+7	      &quot;id&quot;: &quot;start&quot;,
+8	      &quot;type&quot;: &quot;core.trigger.manual&quot;,
+9	      &quot;typeVersion&quot;: &quot;1.0&quot;,
+10	      &quot;display&quot;: {
+11	        &quot;label&quot;: &quot;Manual trigger&quot;
+12	      },
+13	      &quot;inputs&quot;: {
+14	        &quot;entryPointId&quot;: &quot;a8f84345-ef21-4abc-92c1-1e5e44b45c0b&quot;,
+15	        &quot;isDefaultEntryPoint&quot;: true
+16	      }
+17	    }
+18	  ],
+19	  &quot;edges&quot;: [],
+20	  &quot;definitions&quot;: [
+21	    {
+22	      &quot;nodeType&quot;: &quot;core.trigger.manual&quot;,
+23	      &quot;version&quot;: &quot;1.0&quot;,
+24	      &quot;category&quot;: &quot;trigger&quot;,
+25	      &quot;description&quot;: &quot;Start workflow manually&quot;,
+26	      &quot;tags&quot;: [
+27	        &quot;trigger&quot;,
+28	        &quot;start&quot;,
+29	        &quot;manual&quot;
+30	      ],
+31	      &quot;sortOrder&quot;: 40,
+32	      &quot;display&quot;: {
+33	        &quot;label&quot;: &quot;Manual trigger&quot;,
+34	        &quot;icon&quot;: &quot;play&quot;,
+35	        &quot;shape&quot;: &quot;circle&quot;
+36	      },
+37	      &quot;handleConfiguration&quot;: [
+38	        {
+39	          &quot;position&quot;: &quot;right&quot;,
+40	          &quot;handles&quot;: [
+41	            {
+42	              &quot;id&quot;: &quot;output&quot;,
+43	              &quot;type&quot;: &quot;source&quot;,
+44	              &quot;handleType&quot;: &quot;output&quot;,
+45	              &quot;showButton&quot;: true,
+46	              &quot;constraints&quot;: {
+4
+
+… (truncated, 1044 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#9</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">108ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;find /home/azureuser/projects/skills -name \&quot;*.md\&quot; | xargs grep -l \&quot;core.condition\\|decision\\|core.end\\|core.script\\|script node\&quot; 2&gt;/dev/null | head -10&quot;,
+  &quot;description&quot;: &quot;Find flow node type references&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/home/azureuser/projects/skills/optimization/runs/maestro-bpmn-baseline-report/experiment.md
+/home/azureuser/projects/skills/optimization/runs/maestro-bpmn-baseline-report/default/skill-bpmn-edit-remove-node/00/artifacts/skill-bpmn-edit-remove-node/references/registry-workflow.md
+/home/azureuser/projects/skills/optimization/runs/maestro-bpmn-baseline-report/default/skill-bpmn-edit-remove-node/00/artifacts/skill-bpmn-edit-remove-node/references/operate/CAPABILITY.md
+/home/azureuser/projects/skills/optimization/runs/maestro-bpmn-baseline-report/default/skill-bpmn-edit-remove-node/00/artifacts/skill-bpmn-edit-remove-node/references/operate/references/manage.md
+/home/azureuser/projects/skills/optimization/runs/maestro-bpmn-baseline-report/default/skill-bpmn-reading-list/00/artifacts/skill-bpmn-reading-list/references/registry-workflow.md
+/home/azureuser/projects/skills/optimization/runs/maestro-bpmn-baseline-report/default/skill-bpmn-reading-list/00/artifacts/skill-bpmn-reading-list/references/operate/CAPABILITY.md
+/home/azureuser/projects/skills/optimization/runs/maestro-bpmn-baseline-report/default/skill-bpmn-reading-list/00/artifacts/skill-bpmn-reading-list/references/operate/refere
+
+… (truncated, 587 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#10</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.16s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;find /home/azureuser/projects/skills -name \&quot;*.md\&quot; -path \&quot;*/maestro-flow/*\&quot; | head -20&quot;,
+  &quot;description&quot;: &quot;Find maestro flow skill references&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>(Bash completed with no output)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#11</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">3.07s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;find /home/azureuser/projects/skills -name \&quot;*.md\&quot; | xargs grep -l \&quot;core.decision\\|core.end\\|nodeType.*script\\|core.script\&quot; 2&gt;/dev/null | head -10&quot;,
+  &quot;description&quot;: &quot;Find decision/end/script node type references&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/shared/action-nodes.md
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/shared/action-nodes.md
+/home/azureuser/projects/skills/tmp/original-skills/uipath-maestro-flow/references/shared/action-nodes.md
+/home/azureuser/projects/skills/tmp/experiments/skills/uipath-maestro-flow/references/shared/action-nodes.md</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#12</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">15ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/shared/action-nodes.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Action Node Structure
+2	
+3	Reference for the boilerplate shared by every action-node `impl.md` in this skill. Plugin docs should link here for the standard parts and only spell out what is plugin-specific: the registry type string, plugin-specific input fields, plugin-specific rules, debug entries, and node-type configuration workflows.
+4	
+5	## Registry validation
+6	
+7	Every action node should validate its registry contract before authoring:
+8	
+9	```bash
+10	uip maestro flow registry get &lt;node-type&gt; --output json
+11	```
+12	
+13	`registry get` returns the manifest at `Data.Node`. Do **not** inspect `Data` directly as if it were the node manifest.
+14	
+15	```json
+16	{
+17	  &quot;Data&quot;: {
+18	    &quot;Node&quot;: {
+19	      &quot;nodeType&quot;: &quot;core.action.script&quot;,
+20	      &quot;version&quot;: &quot;1.0&quot;,
+21	      &quot;handleConfiguration&quot;: [
+22	        { &quot;position&quot;: &quot;left&quot;, &quot;handles&quot;: [{ &quot;id&quot;: &quot;input&quot;, &quot;type&quot;: &quot;target&quot; }] },
+23	        { &quot;position&quot;: &quot;right&quot;, &quot;handles&quot;: [{ &quot;id&quot;: &quot;success&quot;, &quot;type&quot;: &quot;source&quot; }] }
+24	      ],
+25	      &quot;inputDefinition&quot;: {},
+26	      &quot;outputDefinition&quot;: {}
+27	    }
+28	  }
+29	}
+30	```
+31	
+32	Inspect:
+33	
+34	- `Data.Node.handleConfiguration` — input port name and output port name(s). Array of pos
+
+… (truncated, 3572 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#13</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">15.95s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry get core.action.script --output json 2&gt;&amp;1 | head -60\necho \&quot;---\&quot;\nuip maestro flow registry get core.condition --output json 2&gt;&amp;1 | head -60\necho \&quot;---\&quot;\nuip maestro flow registry get core.end --output json 2&gt;&amp;1 | head -40&quot;,
+  &quot;description&quot;: &quot;Get registry definitions for script, decision, and end nodes&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>[ManifestClient] fetchDynamicNodes ok: total=4684 connector nodes=3572 integration trigger nodes=892 agent context nodes=2 external agent nodes=6 orchestrator nodes=158 IXP nodes=41 IXP Models nodes=13
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeGetSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;Node&quot;: {
+      &quot;nodeType&quot;: &quot;core.action.script&quot;,
+      &quot;version&quot;: &quot;1.0&quot;,
+      &quot;category&quot;: &quot;data-operations&quot;,
+      &quot;description&quot;: &quot;Run custom JavaScript code&quot;,
+      &quot;tags&quot;: [
+        &quot;code&quot;,
+        &quot;javascript&quot;,
+        &quot;python&quot;
+      ],
+      &quot;sortOrder&quot;: 35,
+      &quot;supportsErrorHandling&quot;: true,
+      &quot;display&quot;: {
+        &quot;label&quot;: &quot;Script&quot;,
+        &quot;icon&quot;: &quot;code&quot;
+      },
+      &quot;handleConfiguration&quot;: [
+        {
+          &quot;position&quot;: &quot;left&quot;,
+          &quot;handles&quot;: [
+            {
+              &quot;id&quot;: &quot;input&quot;,
+              &quot;type&quot;: &quot;target&quot;,
+              &quot;handleType&quot;: &quot;input&quot;
+            }
+          ]
+        },
+        {
+          &quot;position&quot;: &quot;right&quot;,
+          &quot;handles&quot;: [
+            {
+              &quot;id&quot;: &quot;success&quot;,
+              &quot;type&quot;: &quot;source&quot;,
+              &quot;handleType&quot;: &quot;output&quot;
+            },
+            {
+              &quot;id&quot;: &quot;error&quot;,
+              &quot;label&quot;: &quot;Error&quot;,
+              &quot;type&quot;: &quot;source&quot;,
+       
+
+… (truncated, 735 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#14</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">3.93s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry list --output json 2&gt;&amp;1 | python3 -c \&quot;\nimport json, sys\ndata = json.load(sys.stdin)\nnodes = data.get(&#x27;Data&#x27;, {}).get(&#x27;Nodes&#x27;, [])\n# look for decision/condition/gateway and end/terminate nodes\nfor n in nodes:\n  nt = n.get(&#x27;nodeType&#x27;,&#x27;&#x27;)\n  if any(k in nt.lower() for k in [&#x27;decision&#x27;,&#x27;condition&#x27;,&#x27;gate&#x27;,&#x27;end&#x27;,&#x27;terminat&#x27;,&#x27;exclusive&#x27;]):\n    print(nt)\n\&quot; 2&gt;&amp;1 | head -30&quot;,
+  &quot;description&quot;: &quot;Search registry for decision and end node types&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Traceback (most recent call last):
+  File &quot;&lt;string&gt;&quot;, line 4, in &lt;module&gt;
+    nodes = data.get(&#x27;Data&#x27;, {}).get(&#x27;Nodes&#x27;, [])
+            ^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: &#x27;list&#x27; object has no attribute &#x27;get&#x27;</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#15</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">3.97s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry list --output json 2&gt;&amp;1 | python3 -c \&quot;\nimport json, sys\ndata = json.load(sys.stdin)\nnodes = data.get(&#x27;Data&#x27;, [])\nif isinstance(nodes, list):\n  for n in nodes:\n    nt = n.get(&#x27;nodeType&#x27;,&#x27;&#x27;) if isinstance(n, dict) else str(n)\n    if any(k in nt.lower() for k in [&#x27;decision&#x27;,&#x27;condition&#x27;,&#x27;gate&#x27;,&#x27;end&#x27;,&#x27;terminat&#x27;,&#x27;exclusive&#x27;]):\n      print(nt)\n\&quot; 2&gt;&amp;1 | head -30&quot;,
+  &quot;description&quot;: &quot;Search registry list for decision and end node types&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>(Bash completed with no output)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#16</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">3.64s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry list --output json 2&gt;&amp;1 | python3 -c \&quot;\nimport json, sys\nraw = sys.stdin.read()\ndata = json.loads(raw)\n# explore structure\nif isinstance(data, dict):\n  print(&#x27;Keys:&#x27;, list(data.keys()))\n  d = data.get(&#x27;Data&#x27;)\n  print(&#x27;Data type:&#x27;, type(d).__name__)\n  if isinstance(d, list):\n    print(&#x27;First item:&#x27;, d[0] if d else &#x27;empty&#x27;)\n  elif isinstance(d, dict):\n    print(&#x27;Data keys:&#x27;,… (23 more chars)&quot;,
+  &quot;description&quot;: &quot;Explore registry list structure&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Keys: [&#x27;Result&#x27;, &#x27;Code&#x27;, &#x27;Data&#x27;]
+Data type: list
+First item: {&#x27;NodeType&#x27;: &#x27;core.logic.mock&#x27;, &#x27;Category&#x27;: &#x27;control-flow&#x27;, &#x27;DisplayName&#x27;: &#x27;Mock&#x27;, &#x27;Description&#x27;: &#x27;Placeholder node for prototyping&#x27;, &#x27;Version&#x27;: &#x27;1.0&#x27;, &#x27;Tags&#x27;: &#x27;blank, todo&#x27;, &#x27;AvailableOnTenant&#x27;: True}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#17</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">4.80s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry list --output json 2&gt;&amp;1 | python3 -c \&quot;\nimport json, sys\ndata = json.loads(sys.stdin.read())\nnodes = data.get(&#x27;Data&#x27;, [])\nfor n in nodes:\n  nt = n.get(&#x27;NodeType&#x27;,&#x27;&#x27;)\n  if any(k in nt.lower() for k in [&#x27;decision&#x27;,&#x27;condition&#x27;,&#x27;gate&#x27;,&#x27;end&#x27;,&#x27;terminat&#x27;,&#x27;exclusive&#x27;]):\n    print(nt, &#x27;|&#x27;, n.get(&#x27;DisplayName&#x27;,&#x27;&#x27;), &#x27;|&#x27;, n.get(&#x27;Category&#x27;,&#x27;&#x27;))\n\&quot; 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Search for decision/end node types in registry&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>core.logic.decision | Decision | control-flow
+core.control.end | End | control-flow
+core.logic.terminate | Terminate | control-flow</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#18</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">7.75s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry get core.logic.decision --output json 2&gt;&amp;1\necho \&quot;===\&quot;\nuip maestro flow registry get core.control.end --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Get registry definitions for decision and end nodes&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeGetSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;Node&quot;: {
+      &quot;nodeType&quot;: &quot;core.logic.decision&quot;,
+      &quot;version&quot;: &quot;1.1&quot;,
+      &quot;category&quot;: &quot;control-flow&quot;,
+      &quot;description&quot;: &quot;Branch based on a true/false condition&quot;,
+      &quot;tags&quot;: [
+        &quot;control-flow&quot;,
+        &quot;if&quot;,
+        &quot;loop&quot;,
+        &quot;switch&quot;
+      ],
+      &quot;sortOrder&quot;: 20,
+      &quot;display&quot;: {
+        &quot;label&quot;: &quot;Decision&quot;,
+        &quot;icon&quot;: &quot;trending-up-down&quot;
+      },
+      &quot;handleConfiguration&quot;: [
+        {
+          &quot;position&quot;: &quot;left&quot;,
+          &quot;handles&quot;: [
+            {
+              &quot;id&quot;: &quot;input&quot;,
+              &quot;type&quot;: &quot;target&quot;,
+              &quot;handleType&quot;: &quot;input&quot;
+            }
+          ],
+          &quot;visible&quot;: true
+        },
+        {
+          &quot;position&quot;: &quot;right&quot;,
+          &quot;handles&quot;: [
+            {
+              &quot;id&quot;: &quot;true&quot;,
+              &quot;type&quot;: &quot;source&quot;,
+              &quot;handleType&quot;: &quot;output&quot;,
+              &quot;label&quot;: &quot;{inputs.trueLabel}&quot;,
+              &quot;constraints&quot;: {
+                &quot;minConnections&quot;: 1
+              }
+            },
+            {
+              &quot;id&quot;: &quot;false&quot;,
+              &quot;type&quot;: &quot;source&quot;,
+              &quot;handleType&quot;: &quot;output&quot;,
+              &quot;label&quot;: &quot;{inputs.falseLabel}&quot;
+  
+
+… (truncated, 3337 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#19</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">3.98s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry get core.action.script --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Get full script node registry definition&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeGetSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;Node&quot;: {
+      &quot;nodeType&quot;: &quot;core.action.script&quot;,
+      &quot;version&quot;: &quot;1.0&quot;,
+      &quot;category&quot;: &quot;data-operations&quot;,
+      &quot;description&quot;: &quot;Run custom JavaScript code&quot;,
+      &quot;tags&quot;: [
+        &quot;code&quot;,
+        &quot;javascript&quot;,
+        &quot;python&quot;
+      ],
+      &quot;sortOrder&quot;: 35,
+      &quot;supportsErrorHandling&quot;: true,
+      &quot;display&quot;: {
+        &quot;label&quot;: &quot;Script&quot;,
+        &quot;icon&quot;: &quot;code&quot;
+      },
+      &quot;handleConfiguration&quot;: [
+        {
+          &quot;position&quot;: &quot;left&quot;,
+          &quot;handles&quot;: [
+            {
+              &quot;id&quot;: &quot;input&quot;,
+              &quot;type&quot;: &quot;target&quot;,
+              &quot;handleType&quot;: &quot;input&quot;
+            }
+          ]
+        },
+        {
+          &quot;position&quot;: &quot;right&quot;,
+          &quot;handles&quot;: [
+            {
+              &quot;id&quot;: &quot;success&quot;,
+              &quot;type&quot;: &quot;source&quot;,
+              &quot;handleType&quot;: &quot;output&quot;
+            },
+            {
+              &quot;id&quot;: &quot;error&quot;,
+              &quot;label&quot;: &quot;Error&quot;,
+              &quot;type&quot;: &quot;source&quot;,
+              &quot;handleType&quot;: &quot;output&quot;,
+              &quot;visible&quot;: &quot;{inputs.errorHandlingEnabled}&quot;,
+              &quot;constraints&quot;: {
+                &quot;maxConnections&quot;: 1
+              }
+            }
+          ]
+    
+
+… (truncated, 2969 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#20</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">250ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 -c \&quot;import uuid; print(uuid.uuid4())\&quot;&quot;,
+  &quot;description&quot;: &quot;Generate UUID for schema ID&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>d99ffc4d-f806-46ab-8901-b620dd997d61</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#21</span>
+      <span class="tool-name">Write</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">80ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-hitl-smoke-multi-outcome-routing/LeaveRequest/LeaveRequest/LeaveRequest.flow&quot;,
+  &quot;content&quot;: &quot;{\n  \&quot;id\&quot;: \&quot;a871fb8a-24df-4e3b-91d9-fc8dbd6280a1\&quot;,\n  \&quot;version\&quot;: \&quot;1.8\&quot;,\n  \&quot;name\&quot;: \&quot;LeaveRequest\&quot;,\n  \&quot;nodes\&quot;: [\n    {\n      \&quot;id\&quot;: \&quot;start\&quot;,\n      \&quot;type\&quot;: \&quot;core.trigger.manual\&quot;,\n      \&quot;typeVersion\&quot;: \&quot;1.0\&quot;,\n      \&quot;display\&quot;: {\n        \&quot;label\&quot;: \&quot;Manual trigger\&quot;\n      },\n      \&quot;inputs\&quot;: {\n        \&quot;entryPointId\&quot;: \&quot;a8f84345-ef21-4abc-92c1-1e5e44b45c0b\&quot;,\n        \&quot;isDefaultEntryPoint\&quot;: true\n      }\n    },\n    … (13718 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>The file /work/output/artifacts/skill-flow-hitl-smoke-multi-outcome-routing/LeaveRequest/LeaveRequest/LeaveRequest.flow has been updated successfully. (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#22</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">4.37s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-hitl-smoke-multi-outcome-routing\nuip maestro flow validate LeaveRequest/LeaveRequest/LeaveRequest.flow --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Validate the LeaveRequest flow&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>[ManifestClient] fetchDynamicNodes ok: total=207 agent context nodes=2 external agent nodes=6 orchestrator nodes=158 IXP nodes=41
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FlowValidate&quot;,
+  &quot;Data&quot;: {
+    &quot;File&quot;: &quot;/work/output/artifacts/skill-flow-hitl-smoke-multi-outcome-routing/LeaveRequest/LeaveRequest/LeaveRequest.flow&quot;,
+    &quot;Status&quot;: &quot;Valid&quot;
+  }
+}</pre>
+    
+  </div>
+</details>
+
+</div>
+
+<h2>Command Telemetry</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Total</div><div class="value">23</div></div>
+    <div class="stat"><div class="label">Successful</div><div class="value">23 (100%)</div></div>
+    <div class="stat"><div class="label">Failed</div><div class="value">0</div></div>
+    <div class="stat"><div class="label">Avg / cmd</div><div class="value">2.98s</div></div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 2fr;gap:16px;margin-top:12px">
+    <div>
+      <h4>By Tool</h4>
+      <table>
+        <thead><tr><th>Tool</th><th>Count</th></tr></thead>
+        <tbody><tr><td class='mono'>Bash</td><td>18</td></tr><tr><td class='mono'>Read</td><td>3</td></tr><tr><td class='mono'>Skill</td><td>1</td></tr><tr><td class='mono'>Write</td><td>1</td></tr></tbody>
+      </table>
+    </div>
+    <div>
+      <h4>Slowest</h4>
+      <table>
+        <thead><tr><th>Tool</th><th>Duration</th><th>Parameters</th></tr></thead>
+        <tbody><tr><td class='mono'>Bash</td><td>15.95s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro flow registry get core.ac...</td></tr><tr><td class='mono'>Bash</td><td>10.76s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;cd /work/output/artifacts/skill-flow-...</td></tr><tr><td class='mono'>Bash</td><td>7.75s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro flow registry get core.lo...</td></tr><tr><td class='mono'>Bash</td><td>4.80s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro flow registry list --outp...</td></tr><tr><td class='mono'>Bash</td><td>4.37s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;cd /work/output/artifacts/skill-flow-...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+  <p><strong>Most Common Pattern:</strong> <code>Bash → Bash → Bash</code></p><p><strong>Skill Tool Invoked:</strong> 1 time(s)</p>
+</div>
+
+<h2>Generation Metrics</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Total Latency</div><div class="value">3m 35s</div></div>
+    <div class="stat"><div class="label">Turns</div><div class="value">1</div></div>
+    <div class="stat"><div class="label">Assistant Turns</div><div class="value">33</div></div>
+    <div class="stat"><div class="label">Avg Turn Latency</div><div class="value">3m 26s</div></div>
+    
+  </div>
+</div>
+
+<h2>Token Usage</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Input (uncached)</div><div class="value">25</div></div>
+    <div class="stat"><div class="label">Output</div><div class="value">9,563</div></div>
+    <div class="stat"><div class="label">Cache Write</div><div class="value">36,577</div></div>
+    <div class="stat"><div class="label">Cache Read</div><div class="value">1,046,844</div></div>
+    <div class="stat"><div class="label">Total</div><div class="value">1,093,009</div></div>
+    <div class="stat"><div class="label">Cost</div><div class="value">$0.5947</div></div>
+  </div>
+</div>
+
+<h2>Agent Settings</h2>
+<div class="card" style="padding:0">
+  <table>
+    <tbody><tr><td class='mono dim'>Permission Mode</td><td>acceptEdits</td></tr><tr><td class='mono dim'>Allowed Tools</td><td>Skill, Bash, Read, Write, Edit, Glob, Grep</td></tr><tr><td class='mono dim'>Model</td><td>us.anthropic.claude-sonnet-4-6</td></tr><tr><td class='mono dim'>Max Turns</td><td>80</td></tr><tr><td class='mono dim'>System Prompt</td><td>You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted. </td></tr><tr><td class='mono dim'>Plugins</td><td>/home/azureuser/projects/skills</td></tr></tbody>
+  </table>
+</div>
+
+<h2>Environment</h2>
+<div class="card" style="padding:0">
+  <table>
+    <tbody><tr><td class='mono dim'>git_commit</td><td>unknown</td></tr><tr><td class='mono dim'>skills_git_commit</td><td>unknown</td></tr><tr><td class='mono dim'>cli_version</td><td>1.199.0-dev.7970</td></tr><tr><td class='mono dim'>tool_plugins</td><td>{&#x27;admin-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;agent-tool&#x27;: &#x27;1.199.0-dev.7965&#x27;, &#x27;agenthub-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;aops-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;api-workflow-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;codedagent-tool&#x27;: &#x27;1.199.0-dev.7965&#x27;, &#x27;codedapp-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;coder-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;context-grounding-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;conversational-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;data-fabric-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;docsai-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;functions-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;gov-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;insights-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;integrationservice-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;ixp-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;llm-gateway-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;llmgw-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;maestro-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;orchestrator-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;platform-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;pm-tool&#x27;: &#x27;1.199.0-dev.7969&#x27;, &#x27;rpa-legacy-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;rpa-tool&#x27;: &#x27;1.199.0-dev.20260722.4&#x27;, &#x27;solution-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;tasks-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;test-manager-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;traces-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;vertical-solutions-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;}</td></tr><tr><td class='mono dim'>coder_eval</td><td>0.8.8</td></tr><tr><td class='mono dim'>claude_code_cli</td><td>2.1.177 (Claude Code)</td></tr><tr><td class='mono dim'>uv</td><td>uv 0.11.28 (x86_64-unknown-linux-gnu)</td></tr><tr><td class='mono dim'>anthropic</td><td>0.102.0</td></tr><tr><td class='mono dim'>openai</td><td>2.47.0</td></tr><tr><td class='mono dim'>pydantic</td><td>2.12.5</td></tr><tr><td class='mono dim'>api_routing</td><td>aws_bedrock</td></tr><tr><td class='mono dim'>aws_region</td><td>us-east-2</td></tr><tr><td class='mono dim'>bedrock_model</td><td>us.anthropic.claude-sonnet-4-6</td></tr></tbody>
+  </table>
+</div>
+
+<footer>Generated by coder_eval · 2026-07-24T18:18:44</footer>
+</div>
+<script>
+function toggleTheme() {
+  document.documentElement.classList.toggle('light');
+  try {
+    const mode = document.documentElement.classList.contains('light') ? 'light' : 'dark';
+    localStorage.setItem('coder-eval-theme', mode);
+  } catch (e) { /* ignore */ }
+}
+(function() {
+  try {
+    if (localStorage.getItem('coder-eval-theme') === 'light') {
+      document.documentElement.classList.add('light');
+    }
+  } catch (e) { /* ignore */ }
+})();
+</script>
+</body>
+</html>

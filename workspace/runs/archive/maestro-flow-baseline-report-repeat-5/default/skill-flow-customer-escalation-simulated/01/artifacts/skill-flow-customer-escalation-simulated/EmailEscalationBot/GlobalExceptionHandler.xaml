@@ -1,0 +1,176 @@
+<Activity mc:Ignorable="sap sap2010" x:Class="GlobalExceptionHandler"
+  xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities"
+  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+  xmlns:mva="clr-namespace:Microsoft.VisualBasic.Activities;assembly=System.Activities"
+  xmlns:s="clr-namespace:System;assembly=System.Private.CoreLib"
+  xmlns:sap="http://schemas.microsoft.com/netfx/2009/xaml/activities/presentation"
+  xmlns:sap2010="http://schemas.microsoft.com/netfx/2010/xaml/activities/presentation"
+  xmlns:sco="clr-namespace:System.Collections.ObjectModel;assembly=System.Private.CoreLib"
+  xmlns:scg="clr-namespace:System.Collections.Generic;assembly=System.Private.CoreLib"
+  xmlns:ui="http://schemas.uipath.com/workflow/activities"
+  xmlns:uico="http://schemas.uipath.com/workflow/activities/contracts"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+  mva:VisualBasic.Settings="{x:Null}">
+
+  <x:Members>
+    <x:Property Name="errorInfo" Type="InArgument(uico:ExceptionHandlerArgs)">
+      <x:Property.Attributes>
+        <RequiredArgumentAttribute />
+      </x:Property.Attributes>
+    </x:Property>
+    <x:Property Name="result" Type="OutArgument(uico:ErrorAction)">
+      <x:Property.Attributes>
+        <RequiredArgumentAttribute />
+      </x:Property.Attributes>
+    </x:Property>
+  </x:Members>
+
+  <TextExpression.NamespacesForImplementation>
+    <sco:Collection x:TypeArguments="x:String">
+      <x:String>System</x:String>
+      <x:String>System.Collections.Generic</x:String>
+      <x:String>UiPath.Core</x:String>
+      <x:String>UiPath.Core.Activities</x:String>
+      <x:String>UiPath.Activities.Contracts</x:String>
+    </sco:Collection>
+  </TextExpression.NamespacesForImplementation>
+  <TextExpression.ReferencesForImplementation>
+    <sco:Collection x:TypeArguments="AssemblyReference">
+      <AssemblyReference>System.Activities</AssemblyReference>
+      <AssemblyReference>System.Private.CoreLib</AssemblyReference>
+      <AssemblyReference>UiPath.System.Activities</AssemblyReference>
+      <AssemblyReference>UiPath.Activities.Contracts</AssemblyReference>
+    </sco:Collection>
+  </TextExpression.ReferencesForImplementation>
+
+  <Sequence DisplayName="Global Exception Handler" sap2010:WorkflowViewState.IdRef="Sequence_GEH">
+
+    <!-- Log every unhandled exception with full detail for observability -->
+    <ui:LogMessage Level="Error" DisplayName="Log: Unhandled exception details">
+      <ui:LogMessage.Message>
+        <InArgument x:TypeArguments="x:Object">
+          <VisualBasicValue x:TypeArguments="x:Object" ExpressionText="$&quot;[EmailEscalationBot][GEH] Unhandled exception - ActivityName={If(errorInfo.ActivityInfo IsNot Nothing, errorInfo.ActivityInfo.Name, &quot;&lt;unknown&gt;&quot;)} ActivityType={If(errorInfo.ActivityInfo IsNot Nothing, errorInfo.ActivityInfo.TypeName, &quot;&lt;unknown&gt;&quot;)} RetryCount={errorInfo.RetryCount} ExceptionType={errorInfo.Exception.GetType().Name} Message={errorInfo.Exception.Message} StackTrace={errorInfo.Exception.StackTrace}&quot;" />
+        </InArgument>
+      </ui:LogMessage.Message>
+    </ui:LogMessage>
+
+    <!--
+      Verdict logic — three decision branches:
+
+      1. BusinessRuleException: bad data — abort immediately (retrying won't fix it)
+      2. Scaffolding activities (Throw/Rethrow/TryCatch/Sequence): let them propagate normally
+      3. Everything else (transient system errors): retry up to 2 times, then abort
+
+      This prevents the runaway retry loop described in the error-handling guide.
+    -->
+    <If DisplayName="Route: BusinessRuleException?">
+      <If.Condition>
+        <InArgument x:TypeArguments="x:Boolean">
+          <VisualBasicValue x:TypeArguments="x:Boolean" ExpressionText="TypeOf errorInfo.Exception Is BusinessRuleException" />
+        </InArgument>
+      </If.Condition>
+      <If.Then>
+        <!-- Business exception: data won't change on retry — abort and let Orchestrator log it -->
+        <Sequence DisplayName="Then">
+          <ui:LogMessage Level="Warn" DisplayName="Log: Business rule exception - aborting">
+            <ui:LogMessage.Message>
+              <InArgument x:TypeArguments="x:Object">
+                <VisualBasicValue x:TypeArguments="x:Object" ExpressionText="&quot;[EmailEscalationBot][GEH] Business rule violation - aborting job. No retry warranted: &quot; &amp; errorInfo.Exception.Message" />
+              </InArgument>
+            </ui:LogMessage.Message>
+          </ui:LogMessage>
+          <Assign DisplayName="Set result: Abort (business exception)">
+            <Assign.To>
+              <OutArgument x:TypeArguments="uico:ErrorAction">[result]</OutArgument>
+            </Assign.To>
+            <Assign.Value>
+              <InArgument x:TypeArguments="uico:ErrorAction">[ErrorAction.Abort]</InArgument>
+            </Assign.Value>
+          </Assign>
+        </Sequence>
+      </If.Then>
+      <If.Else>
+        <Sequence DisplayName="Else">
+          <If DisplayName="Route: Scaffolding activity?">
+            <If.Condition>
+              <InArgument x:TypeArguments="x:Boolean">
+                <VisualBasicValue x:TypeArguments="x:Boolean" ExpressionText="New HashSet(Of String)(New String(){&quot;Throw&quot;,&quot;Rethrow&quot;,&quot;TryCatch&quot;,&quot;Sequence&quot;,&quot;RetryScope&quot;}).Contains(If(errorInfo.ActivityInfo IsNot Nothing, errorInfo.ActivityInfo.TypeName, &quot;&quot;))" />
+              </InArgument>
+            </If.Condition>
+            <If.Then>
+              <!-- Let scaffolding activities propagate normally via Continue (re-throw) -->
+              <Sequence DisplayName="Then">
+                <ui:LogMessage Level="Info" DisplayName="Log: Scaffolding activity - continuing propagation">
+                  <ui:LogMessage.Message>
+                    <InArgument x:TypeArguments="x:Object">
+                      <VisualBasicValue x:TypeArguments="x:Object" ExpressionText="&quot;[EmailEscalationBot][GEH] Scaffolding activity fault - continuing propagation: &quot; &amp; If(errorInfo.ActivityInfo IsNot Nothing, errorInfo.ActivityInfo.TypeName, &quot;&lt;unknown&gt;&quot;)" />
+                    </InArgument>
+                  </ui:LogMessage.Message>
+                </ui:LogMessage>
+                <Assign DisplayName="Set result: Continue (re-throw)">
+                  <Assign.To>
+                    <OutArgument x:TypeArguments="uico:ErrorAction">[result]</OutArgument>
+                  </Assign.To>
+                  <Assign.Value>
+                    <InArgument x:TypeArguments="uico:ErrorAction">[ErrorAction.Continue]</InArgument>
+                  </Assign.Value>
+                </Assign>
+              </Sequence>
+            </If.Then>
+            <If.Else>
+              <!-- Transient system exception: retry up to 2 times, then abort -->
+              <Sequence DisplayName="Else">
+                <If DisplayName="Route: Retry count under limit?">
+                  <If.Condition>
+                    <InArgument x:TypeArguments="x:Boolean">
+                      <VisualBasicValue x:TypeArguments="x:Boolean" ExpressionText="errorInfo.RetryCount &lt; 2" />
+                    </InArgument>
+                  </If.Condition>
+                  <If.Then>
+                    <Sequence DisplayName="Then">
+                      <ui:LogMessage Level="Warn" DisplayName="Log: Transient error - will retry">
+                        <ui:LogMessage.Message>
+                          <InArgument x:TypeArguments="x:Object">
+                            <VisualBasicValue x:TypeArguments="x:Object" ExpressionText="&quot;[EmailEscalationBot][GEH] Transient system error (attempt &quot; &amp; (errorInfo.RetryCount + 1).ToString() &amp; &quot;/2) - retrying activity: &quot; &amp; If(errorInfo.ActivityInfo IsNot Nothing, errorInfo.ActivityInfo.Name, &quot;&lt;unknown&gt;&quot;)" />
+                          </InArgument>
+                        </ui:LogMessage.Message>
+                      </ui:LogMessage>
+                      <Assign DisplayName="Set result: Retry">
+                        <Assign.To>
+                          <OutArgument x:TypeArguments="uico:ErrorAction">[result]</OutArgument>
+                        </Assign.To>
+                        <Assign.Value>
+                          <InArgument x:TypeArguments="uico:ErrorAction">[ErrorAction.Retry]</InArgument>
+                        </Assign.Value>
+                      </Assign>
+                    </Sequence>
+                  </If.Then>
+                  <If.Else>
+                    <Sequence DisplayName="Else">
+                      <ui:LogMessage Level="Error" DisplayName="Log: Retry limit reached - aborting">
+                        <ui:LogMessage.Message>
+                          <InArgument x:TypeArguments="x:Object">
+                            <VisualBasicValue x:TypeArguments="x:Object" ExpressionText="&quot;[EmailEscalationBot][GEH] Retry limit reached (&quot; &amp; errorInfo.RetryCount.ToString() &amp; &quot; attempts). Aborting job. Activity=&quot; &amp; If(errorInfo.ActivityInfo IsNot Nothing, errorInfo.ActivityInfo.Name, &quot;&lt;unknown&gt;&quot;)" />
+                          </InArgument>
+                        </ui:LogMessage.Message>
+                      </ui:LogMessage>
+                      <Assign DisplayName="Set result: Abort (retry exhausted)">
+                        <Assign.To>
+                          <OutArgument x:TypeArguments="uico:ErrorAction">[result]</OutArgument>
+                        </Assign.To>
+                        <Assign.Value>
+                          <InArgument x:TypeArguments="uico:ErrorAction">[ErrorAction.Abort]</InArgument>
+                        </Assign.Value>
+                      </Assign>
+                    </Sequence>
+                  </If.Else>
+                </If>
+              </Sequence>
+            </If.Else>
+          </If>
+        </Sequence>
+      </If.Else>
+    </If>
+
+  </Sequence>
+</Activity>

@@ -1,0 +1,62 @@
+[
+  {
+    "id": "inv_001",
+    "filename": "invoice_acme_tech_001.pdf",
+    "path": "/work/output/artifacts/skill-flow-ixp-invoice-extraction-simulated/docs/invoice_acme_tech_001.pdf",
+    "size_bytes": 3287,
+    "vendor_name": "Acme Technology Solutions Inc.",
+    "invoice_number": "ACM-2024-00891",
+    "invoice_date": "2024-03-15",
+    "due_date": "2024-04-14",
+    "total": 11175.5,
+    "currency": "USD"
+  },
+  {
+    "id": "inv_002",
+    "filename": "invoice_summit_supplies_002.pdf",
+    "path": "/work/output/artifacts/skill-flow-ixp-invoice-extraction-simulated/docs/invoice_summit_supplies_002.pdf",
+    "size_bytes": 3310,
+    "vendor_name": "Summit Office Supplies Ltd.",
+    "invoice_number": "SOS-INV-20240312",
+    "invoice_date": "2024-03-12",
+    "due_date": "2024-03-27",
+    "total": 4674.44,
+    "currency": "USD"
+  },
+  {
+    "id": "inv_003",
+    "filename": "invoice_rapid_logistics_003.pdf",
+    "path": "/work/output/artifacts/skill-flow-ixp-invoice-extraction-simulated/docs/invoice_rapid_logistics_003.pdf",
+    "size_bytes": 3228,
+    "vendor_name": "Rapid Logistics & Freight Co.",
+    "invoice_number": "RL-2024-8847",
+    "invoice_date": "2024-03-20",
+    "due_date": "2024-04-19",
+    "total": 4351.0,
+    "currency": "USD"
+  },
+  {
+    "id": "inv_004",
+    "filename": "invoice_cloudwave_004.pdf",
+    "path": "/work/output/artifacts/skill-flow-ixp-invoice-extraction-simulated/docs/invoice_cloudwave_004.pdf",
+    "size_bytes": 3420,
+    "vendor_name": "CloudWave Infrastructure LLC",
+    "invoice_number": "CW-0029541",
+    "invoice_date": "2024-03-01",
+    "due_date": "2024-03-31",
+    "total": 4302.71,
+    "currency": "USD"
+  },
+  {
+    "id": "inv_005",
+    "filename": "invoice_meridian_consulting_005.pdf",
+    "path": "/work/output/artifacts/skill-flow-ixp-invoice-extraction-simulated/docs/invoice_meridian_consulting_005.pdf",
+    "size_bytes": 3319,
+    "vendor_name": "Meridian Business Consulting Group",
+    "invoice_number": "MCG-2024-Q1-047",
+    "invoice_date": "2024-03-29",
+    "due_date": "2024-04-28",
+    "total": 33795.62,
+    "currency": "USD"
+  }
+]

@@ -1,0 +1,71 @@
+{
+  "version": "1.1.0",
+  "settings": {
+    "model": "gpt-4.1-2025-04-14",
+    "maxTokens": 16384,
+    "temperature": 0,
+    "engine": "basic-v2",
+    "maxIterations": 3,
+    "mode": "standard"
+  },
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "start__output__email": {
+        "type": "string",
+        "description": "Bound from $vars.start.output.email"
+      }
+    }
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "category": {
+        "type": "string",
+        "description": "The support category of the email (e.g. Account Access, Billing, Technical Support)"
+      },
+      "priority": {
+        "type": "string",
+        "description": "The urgency priority of the email (Critical, High, Medium, Low)"
+      }
+    },
+    "required": [
+      "category",
+      "priority"
+    ]
+  },
+  "metadata": {
+    "storageVersion": "50.0.0",
+    "isConversational": false,
+    "showProjectCreationExperience": false
+  },
+  "type": "lowCode",
+  "guardrails": [],
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are an email triage specialist. Classify the provided support email into a category and assign a priority level.\n\nCategories:\n- Account Access: login issues, password resets, account lockouts, permissions\n- Billing: payment failures, invoice disputes, subscription changes, refunds\n- Technical Support: bugs, errors, crashes, integration failures\n- General Inquiry: questions about features, how-to questions, documentation requests\n- Feature Request: requests for new functionality or enhancements\n- Bug Report: reproducible defects with steps to reproduce\n- Other: anything that does not fit the above categories\n\nPriority levels:\n- Critical: security breach, data loss, or complete service outage affecting production\n- High: user is completely blocked from a core task (cannot log in, payment failing, data inaccessible)\n- Medium: degraded functionality, significant slowness, billing dispute, or non-blocking error\n- Low: general question, minor cosmetic issue, feature request, or documentation gap\n\nOutput ONLY a JSON object with exactly two keys: category and priority. Do not include explanations or any other text.",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "You are an email triage specialist. Classify the provided support email into a category and assign a priority level.\n\nCategories:\n- Account Access: login issues, password resets, account lockouts, permissions\n- Billing: payment failures, invoice disputes, subscription changes, refunds\n- Technical Support: bugs, errors, crashes, integration failures\n- General Inquiry: questions about features, how-to questions, documentation requests\n- Feature Request: requests for new functionality or enhancements\n- Bug Report: reproducible defects with steps to reproduce\n- Other: anything that does not fit the above categories\n\nPriority levels:\n- Critical: security breach, data loss, or complete service outage affecting production\n- High: user is completely blocked from a core task (cannot log in, payment failing, data inaccessible)\n- Medium: degraded functionality, significant slowness, billing dispute, or non-blocking error\n- Low: general question, minor cosmetic issue, feature request, or documentation gap\n\nOutput ONLY a JSON object with exactly two keys: category and priority. Do not include explanations or any other text."
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "Classify this support email:\n\n{{input.start__output__email}}",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "Classify this support email:\n\n"
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__email"
+        }
+      ]
+    }
+  ],
+  "projectId": "57854d8e-bc1b-4c58-8e5b-088f6684793d"
+}

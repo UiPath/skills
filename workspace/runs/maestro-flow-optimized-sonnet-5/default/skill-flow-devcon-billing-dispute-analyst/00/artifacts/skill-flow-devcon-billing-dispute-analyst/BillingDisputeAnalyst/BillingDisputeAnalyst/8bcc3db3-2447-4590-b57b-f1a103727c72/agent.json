@@ -1,0 +1,87 @@
+{
+  "version": "1.1.0",
+  "settings": {
+    "model": "anthropic.claude-sonnet-5",
+    "maxTokens": 16384,
+    "temperature": 0,
+    "engine": "basic-v2",
+    "maxIterations": 25,
+    "mode": "standard"
+  },
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "start__output__disputeDescription": {
+        "type": "string",
+        "description": "Bound from $vars.start.output.disputeDescription"
+      },
+      "start__output__invoiceNumber": {
+        "type": "string",
+        "description": "Bound from $vars.start.output.invoiceNumber"
+      }
+    }
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "determination": {
+        "type": "string",
+        "description": "The outcome of the dispute analysis (e.g. Approved, Denied, Escalate) plus the resolution action"
+      },
+      "rationale": {
+        "type": "string",
+        "description": "Explanation of the determination, citing the specific SOP rule(s) retrieved from the Billing Dispute SOP Index"
+      }
+    },
+    "required": [
+      "determination",
+      "rationale"
+    ]
+  },
+  "metadata": {
+    "storageVersion": "50.0.0",
+    "isConversational": false,
+    "showProjectCreationExperience": false
+  },
+  "type": "lowCode",
+  "guardrails": [],
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a billing dispute analyst. Given a customer's billing dispute description and the associated invoice number, determine whether the dispute should be approved, denied, or escalated, grounded strictly in the Billing Dispute SOP Index.\n\nRetrieval instructions:\nQuery the Billing Dispute SOP Index at most 3 times to find the SOP rules relevant to this dispute. After the last retrieval, stop querying and decide using the evidence you already retrieved.\nIf the retrieved SOP content does not clearly cover a detail of the dispute, say so in the rationale, and still return both output fields — never end a run without a determination.\n\nOutput contract:\nReturn exactly two fields:\n- determination: one short line stating the outcome (Approved, Denied, or Escalate) and the resolution action.\n- rationale: 2-4 sentences explaining the determination, citing the specific SOP rule(s) retrieved from the Billing Dispute SOP Index that justify it.\n\nNever invent SOP policy that was not retrieved from the index.",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "You are a billing dispute analyst. Given a customer's billing dispute description and the associated invoice number, determine whether the dispute should be approved, denied, or escalated, grounded strictly in the Billing Dispute SOP Index.\n\nRetrieval instructions:\nQuery the Billing Dispute SOP Index at most 3 times to find the SOP rules relevant to this dispute. After the last retrieval, stop querying and decide using the evidence you already retrieved.\nIf the retrieved SOP content does not clearly cover a detail of the dispute, say so in the rationale, and still return both output fields — never end a run without a determination.\n\nOutput contract:\nReturn exactly two fields:\n- determination: one short line stating the outcome (Approved, Denied, or Escalate) and the resolution action.\n- rationale: 2-4 sentences explaining the determination, citing the specific SOP rule(s) retrieved from the Billing Dispute SOP Index that justify it.\n\nNever invent SOP policy that was not retrieved from the index."
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "Invoice Number: {{input.start__output__invoiceNumber}}\n\nDispute Description:\n{{input.start__output__disputeDescription}}\n\nAnalyze this billing dispute against the Billing Dispute SOP Index and return your determination and rationale.",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "Invoice Number: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__invoiceNumber"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\nDispute Description:\n"
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__disputeDescription"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\nAnalyze this billing dispute against the Billing Dispute SOP Index and return your determination and rationale."
+        }
+      ]
+    }
+  ],
+  "projectId": "8bcc3db3-2447-4590-b57b-f1a103727c72"
+}

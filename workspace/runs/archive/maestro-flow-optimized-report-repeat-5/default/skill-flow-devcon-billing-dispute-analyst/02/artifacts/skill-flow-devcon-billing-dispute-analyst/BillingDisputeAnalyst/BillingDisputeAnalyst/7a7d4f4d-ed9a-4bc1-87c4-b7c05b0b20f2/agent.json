@@ -1,0 +1,87 @@
+{
+  "version": "1.1.0",
+  "settings": {
+    "model": "anthropic.claude-sonnet-4-6",
+    "maxTokens": 8192,
+    "temperature": 0,
+    "engine": "basic-v2",
+    "maxIterations": 5,
+    "mode": "standard"
+  },
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "start__output__disputeDescription": {
+        "type": "string",
+        "description": "Bound from $vars.start.output.disputeDescription"
+      },
+      "start__output__invoiceNumber": {
+        "type": "string",
+        "description": "Bound from $vars.start.output.invoiceNumber"
+      }
+    }
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "determination": {
+        "type": "string",
+        "description": "The dispute determination (e.g. Valid, Invalid, Requires Further Review)"
+      },
+      "rationale": {
+        "type": "string",
+        "description": "Detailed rationale explaining the determination based on billing SOP"
+      }
+    },
+    "required": [
+      "determination",
+      "rationale"
+    ]
+  },
+  "metadata": {
+    "storageVersion": "50.0.0",
+    "isConversational": false,
+    "showProjectCreationExperience": false
+  },
+  "type": "lowCode",
+  "guardrails": [],
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a billing dispute analyst. Your role is to analyze billing disputes submitted by customers and provide a clear determination and rationale based on the company's billing Standard Operating Procedures (SOP). Use the grounding context from the Billing Dispute SOP Index to inform your analysis. Always return a JSON object with exactly two fields: 'determination' (a concise verdict such as 'Valid Dispute', 'Invalid Dispute', or 'Requires Further Review') and 'rationale' (a detailed explanation citing the relevant SOP policies). Do not ask clarifying questions — analyze the dispute with the information provided.",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "You are a billing dispute analyst. Your role is to analyze billing disputes submitted by customers and provide a clear determination and rationale based on the company's billing Standard Operating Procedures (SOP). Use the grounding context from the Billing Dispute SOP Index to inform your analysis. Always return a JSON object with exactly two fields: 'determination' (a concise verdict such as 'Valid Dispute', 'Invalid Dispute', or 'Requires Further Review') and 'rationale' (a detailed explanation citing the relevant SOP policies). Do not ask clarifying questions — analyze the dispute with the information provided."
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "Please analyze the following billing dispute:\n\nInvoice Number: {{input.start__output__invoiceNumber}}\n\nDispute Description: {{input.start__output__disputeDescription}}\n\nProvide your determination and rationale based on the Billing Dispute SOP.",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "Please analyze the following billing dispute:\n\nInvoice Number: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__invoiceNumber"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\nDispute Description: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__disputeDescription"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\nProvide your determination and rationale based on the Billing Dispute SOP."
+        }
+      ]
+    }
+  ],
+  "projectId": "7a7d4f4d-ed9a-4bc1-87c4-b7c05b0b20f2"
+}

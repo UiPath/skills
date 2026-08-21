@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+    xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+    xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+    xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+    xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:uipath="http://uipath.org/schema/bpmn"
+    id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn"
+    exporter="UiPath (https://bpmn.uipath.com)" exporterVersion="1.0">
+  <bpmn:process id="Process_1" isExecutable="true">
+    <bpmn:extensionElements>
+      <uipath:migrationVersion version="11.5" />
+      <uipath:variables version="v1">
+        <uipath:inputOutput id="Var_BranchBResult" name="BranchBResult" type="string" />
+      </uipath:variables>
+    </bpmn:extensionElements>
+    <bpmn:startEvent id="Start_1" name="Start">
+      <bpmn:outgoing>Flow_ToFork</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:parallelGateway id="Gw_Fork" name="Fork">
+      <bpmn:incoming>Flow_ToFork</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToTerminate</bpmn:outgoing>
+      <bpmn:outgoing>Flow_ToTaskB</bpmn:outgoing>
+    </bpmn:parallelGateway>
+    <bpmn:endEvent id="End_Terminate" name="Stop Instance">
+      <bpmn:incoming>Flow_ToTerminate</bpmn:incoming>
+      <bpmn:terminateEventDefinition id="TerminateEventDefinition_1" />
+    </bpmn:endEvent>
+    <bpmn:scriptTask id="Task_B" name="Branch B Task">
+      <bpmn:extensionElements>
+        <uipath:scriptVersion value="v3" />
+        <uipath:mapping version="v1">
+          <uipath:type value="BPMN.ScriptTask" version="v1" />
+          <uipath:input name="args" type="json" target="bodyField"><![CDATA[{}]]></uipath:input>
+          <uipath:output name="result" type="string" var="Var_BranchBResult" source="=result.response" />
+        </uipath:mapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_ToTaskB</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToEndB</bpmn:outgoing>
+      <bpmn:script><![CDATA[return { response: "done" };]]></bpmn:script>
+    </bpmn:scriptTask>
+    <bpmn:endEvent id="End_Normal" name="Branch B Complete">
+      <bpmn:incoming>Flow_ToEndB</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_ToFork" sourceRef="Start_1" targetRef="Gw_Fork" />
+    <bpmn:sequenceFlow id="Flow_ToTerminate" sourceRef="Gw_Fork" targetRef="End_Terminate" />
+    <bpmn:sequenceFlow id="Flow_ToTaskB" sourceRef="Gw_Fork" targetRef="Task_B" />
+    <bpmn:sequenceFlow id="Flow_ToEndB" sourceRef="Task_B" targetRef="End_Normal" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="Diagram_1">
+    <bpmndi:BPMNPlane id="Plane_1" bpmnElement="Process_1">
+      <bpmndi:BPMNShape id="S_Start_1" bpmnElement="Start_1">
+        <dc:Bounds x="160" y="142" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Gw_Fork" bpmnElement="Gw_Fork">
+        <dc:Bounds x="250" y="135" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_End_Terminate" bpmnElement="End_Terminate">
+        <dc:Bounds x="420" y="60" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Task_B" bpmnElement="Task_B">
+        <dc:Bounds x="400" y="200" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_End_Normal" bpmnElement="End_Normal">
+        <dc:Bounds x="570" y="222" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_ToFork" bpmnElement="Flow_ToFork">
+        <di:waypoint x="196" y="160" />
+        <di:waypoint x="250" y="160" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_ToTerminate" bpmnElement="Flow_ToTerminate">
+        <di:waypoint x="275" y="135" />
+        <di:waypoint x="275" y="78" />
+        <di:waypoint x="420" y="78" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_ToTaskB" bpmnElement="Flow_ToTaskB">
+        <di:waypoint x="275" y="185" />
+        <di:waypoint x="275" y="240" />
+        <di:waypoint x="400" y="240" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_ToEndB" bpmnElement="Flow_ToEndB">
+        <di:waypoint x="500" y="240" />
+        <di:waypoint x="570" y="240" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

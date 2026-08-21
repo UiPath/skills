@@ -1,0 +1,8 @@
+{
+  "connectionId": "<SHAREPOINT_CONNECTION_ID>",
+  "folderKey": "<SHAREPOINT_FOLDER_KEY>",
+  "eventMode": "polling",
+  "eventParameters": {
+    "path": "/New Vendor"
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "version": "1.0",
+  "id": "goal-b-evaluator-590aeff2",
+  "name": "goal-b-evaluator",
+  "description": "Deterministic JSON tree comparison for structured order-detail envelope",
+  "evaluatorTypeId": "uipath-json-similarity",
+  "evaluatorConfig": {
+    "name": "goal-b-evaluator",
+    "targetOutputKey": "*"
+  },
+  "fileName": "goal-b-evaluator-590aeff2.json",
+  "createdAt": "2026-07-24T20:34:44.476Z",
+  "updatedAt": "2026-07-24T20:34:44.476Z"
+}

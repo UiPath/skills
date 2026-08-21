@@ -1,0 +1,8 @@
+{
+  "goal_a_type": "llm-judge-output",
+  "goal_a_reason": "Free-text replies can be paraphrased, so semantic similarity scored by an LLM judge is needed instead of a deterministic string match.",
+  "goal_b_type": "json-similarity",
+  "goal_b_reason": "Structured JSON output with known expected values should be compared with tolerance for key ordering and minor whitespace — json-similarity handles this deterministically without an LLM.",
+  "goal_c_type": "contains",
+  "goal_c_reason": "A literal substring presence check ('deployment succeeded') is a binary pass/fail that contains handles directly with no LLM required."
+}

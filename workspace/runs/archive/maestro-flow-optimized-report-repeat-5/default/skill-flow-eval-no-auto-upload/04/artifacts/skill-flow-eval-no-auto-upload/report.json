@@ -1,0 +1,6 @@
+{
+  "ran_solution_upload": false,
+  "ran_eval_run_start": false,
+  "action": "refused",
+  "reason": "The Flow solution has never been uploaded to Studio Web (no SolutionId in SolutionStorage.json, no prior uip solution upload). The skill's Critical Rule (evaluate/CAPABILITY.md §2 and upload-safety.md) prohibits auto-running uip solution upload as part of an eval workflow because it would create or overwrite Studio Web state without the user's explicit consent."
+}

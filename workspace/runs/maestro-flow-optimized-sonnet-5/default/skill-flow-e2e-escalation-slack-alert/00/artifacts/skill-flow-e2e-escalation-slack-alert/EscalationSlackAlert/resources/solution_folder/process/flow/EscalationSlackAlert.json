@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "EscalationSlackAlert",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "c45f25eb-715e-43cd-afc1-5012aad9581b",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "EscalationSlackAlert"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Flow",
+      "name": "EscalationSlackAlert",
+      "package": {
+        "key": "d857e2ee-5215-4af8-9b09-723a79f1244b"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "a2126a0e-033e-414a-8791-451b54bbb41e",
+    "files": []
+  }
+}

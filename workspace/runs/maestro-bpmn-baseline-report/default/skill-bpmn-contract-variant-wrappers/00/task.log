@@ -1,0 +1,13 @@
+2026-07-21 00:52:26 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-21 00:52:26 [INFO] coder_eval.orchestrator: API routing: aws_bedrock
+2026-07-21 00:52:26 [DEBUG] coder_eval.criteria: Discovered 14 criterion checkers
+2026-07-21 00:52:26 [DEBUG] coder_eval.criteria: Validated 14 criterion checkers
+2026-07-21 00:52:26 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-21 00:52:26 [DEBUG] coder_eval.orchestrator: Sending prompt: Create a local BPMN project named "ContractVariantsBpmn".
+Use synthetic placeholder resource names o...
+2026-07-21 00:52:26 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Starting agent query stream...
+2026-07-21 01:07:26 [ERROR] coder_eval.orchestrator: Task timed out: Task timed out after 900s
+2026-07-21 01:07:26 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-21 01:07:26 [INFO] coder_eval.orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+2026-07-21 01:07:26 [INFO] coder_eval.orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-bpmn-contract-variant-wrappers
+2026-07-21 01:07:26 [INFO] coder_eval.orchestrator: Task finished: status=TIMEOUT duration=901.3s score=0.000 iterations=1

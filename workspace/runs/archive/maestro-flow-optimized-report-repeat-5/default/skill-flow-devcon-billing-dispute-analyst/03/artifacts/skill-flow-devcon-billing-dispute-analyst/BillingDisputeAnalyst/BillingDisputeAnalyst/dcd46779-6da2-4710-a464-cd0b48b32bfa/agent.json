@@ -1,0 +1,91 @@
+{
+  "version": "1.1.0",
+  "settings": {
+    "model": "anthropic.claude-sonnet-4-6",
+    "maxTokens": 64000,
+    "temperature": 0,
+    "engine": "basic-v2",
+    "maxIterations": 5,
+    "mode": "standard"
+  },
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "start__output__disputeDescription": {
+        "type": "string",
+        "description": "Description of the billing dispute submitted by the customer"
+      },
+      "start__output__invoiceNumber": {
+        "type": "string",
+        "description": "Invoice number associated with the billing dispute"
+      }
+    },
+    "required": [
+      "start__output__disputeDescription",
+      "start__output__invoiceNumber"
+    ]
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "determination": {
+        "type": "string",
+        "description": "The determination of the billing dispute (e.g., Valid, Invalid, Partially Valid, Requires Investigation)"
+      },
+      "rationale": {
+        "type": "string",
+        "description": "Detailed rationale explaining the determination based on billing SOP policies"
+      }
+    },
+    "required": [
+      "determination",
+      "rationale"
+    ]
+  },
+  "metadata": {
+    "storageVersion": "50.0.0",
+    "isConversational": false,
+    "showProjectCreationExperience": false
+  },
+  "type": "lowCode",
+  "guardrails": [],
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a Billing Dispute Analyst. Your role is to analyze billing disputes using the Standard Operating Procedures (SOP) provided in your knowledge base. For each dispute, you must:\n1. Review the dispute description and invoice number carefully\n2. Query the Billing Dispute SOP Index to retrieve relevant policies and procedures\n3. Apply the SOP guidelines to determine the validity of the dispute\n4. Provide a clear determination (Valid, Invalid, Partially Valid, or Requires Investigation)\n5. Write a concise rationale that references the relevant SOP policies\n\nAlways ground your analysis in the SOP knowledge base. Be objective, precise, and cite specific policies when applicable.",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "You are a Billing Dispute Analyst. Your role is to analyze billing disputes using the Standard Operating Procedures (SOP) provided in your knowledge base. For each dispute, you must:\n1. Review the dispute description and invoice number carefully\n2. Query the Billing Dispute SOP Index to retrieve relevant policies and procedures\n3. Apply the SOP guidelines to determine the validity of the dispute\n4. Provide a clear determination (Valid, Invalid, Partially Valid, or Requires Investigation)\n5. Write a concise rationale that references the relevant SOP policies\n\nAlways ground your analysis in the SOP knowledge base. Be objective, precise, and cite specific policies when applicable."
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "Please analyze the following billing dispute:\n\nInvoice Number: {{input.start__output__invoiceNumber}}\n\nDispute Description: {{input.start__output__disputeDescription}}\n\nUsing the Billing Dispute SOP Index, determine whether this dispute is valid and provide your rationale. Return your response with a 'determination' and 'rationale'.",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "Please analyze the following billing dispute:\n\nInvoice Number: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__invoiceNumber"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\nDispute Description: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__disputeDescription"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\nUsing the Billing Dispute SOP Index, determine whether this dispute is valid and provide your rationale. Return your response with a 'determination' and 'rationale'."
+        }
+      ]
+    }
+  ],
+  "projectId": "dcd46779-6da2-4710-a464-cd0b48b32bfa"
+}

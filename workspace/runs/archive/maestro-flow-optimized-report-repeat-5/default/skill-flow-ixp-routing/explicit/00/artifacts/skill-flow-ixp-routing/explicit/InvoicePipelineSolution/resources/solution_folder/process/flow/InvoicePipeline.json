@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "InvoicePipeline",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "a0e90a50-e0f4-453a-9a40-9913771de46b",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "InvoicePipeline"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Flow",
+      "name": "InvoicePipeline",
+      "package": {
+        "key": "de8c2a4b-40cb-4623-ab9d-0634e91a017b"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "787910b1-1029-4505-9a0a-1d7809879ad0",
+    "files": []
+  }
+}

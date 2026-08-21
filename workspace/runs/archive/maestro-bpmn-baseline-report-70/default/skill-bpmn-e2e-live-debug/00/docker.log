@@ -1,0 +1,7 @@
+06:05:39 [INFO   ] [default/skill-bpmn-e2e-live-debug/00] orchestrator: API routing: aws_bedrock
+06:36:47 [INFO   ] [default/skill-bpmn-e2e-live-debug/00] evaluation.checker: Criterion 'run_command' FAILED (score=0.00, threshold=1.00): Command: python3 $TASK_DIR/check_live_debug.py
+06:36:47 [INFO   ] [default/skill-bpmn-e2e-live-debug/00] orchestrator: Success criteria: 2/3 passed, weighted score: 0.333
+06:36:47 [WARNING] [default/skill-bpmn-e2e-live-debug/00] orchestrator: Visible turns (91) exceeded expected_turns (30) at iteration 1 for task skill-bpmn-e2e-live-debug. Run continues — max_turns remains the hard cap.
+06:36:47 [INFO   ] [default/skill-bpmn-e2e-live-debug/00] orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+06:36:47 [INFO   ] [default/skill-bpmn-e2e-live-debug/00] orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-bpmn-e2e-live-debug
+06:36:47 [INFO   ] [default/skill-bpmn-e2e-live-debug/00] orchestrator: Task finished: status=FAILURE duration=1877.9s score=0.333 iterations=1

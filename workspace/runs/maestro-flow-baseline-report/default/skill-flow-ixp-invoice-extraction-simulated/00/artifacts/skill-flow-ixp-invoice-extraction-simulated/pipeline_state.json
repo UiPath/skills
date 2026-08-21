@@ -1,0 +1,2800 @@
+{
+  "project": {
+    "Id": "proj-8f3a2c11-ixp",
+    "Name": "vendor-invoices-f8a3c211-ixp",
+    "Title": "Vendor Invoices",
+    "CreatedAt": "2024-03-30T09:00:00Z",
+    "Model": "gemini_2_5_flash",
+    "Preprocessing": "table_mini",
+    "Status": "Active"
+  },
+  "taxonomy": {
+    "entity_defs": [
+      {
+        "id": "et_exact",
+        "name": "Exact Text",
+        "kind": "text",
+        "input_value": "exact-match"
+      },
+      {
+        "id": "et_infer",
+        "name": "Inferred Text",
+        "kind": "text",
+        "input_value": "inferred"
+      },
+      {
+        "id": "et_number",
+        "name": "Number",
+        "kind": "number"
+      },
+      {
+        "id": "et_date",
+        "name": "Date",
+        "kind": "date"
+      },
+      {
+        "id": "et_money",
+        "name": "Monetary Quantity",
+        "kind": "money"
+      },
+      {
+        "id": "et_bool",
+        "name": "Boolean",
+        "kind": "boolean"
+      }
+    ],
+    "label_groups": [
+      {
+        "id": "lg_header",
+        "name": "Invoice Header",
+        "instructions": "Extract the top-level invoice metadata printed at the header of the document.",
+        "repeatable": false,
+        "fields": [
+          {
+            "id": "fld_inv_num",
+            "name": "Invoice Number",
+            "type_id": "et_exact",
+            "instructions": "The unique invoice identifier, usually prefixed with a vendor code (e.g. ACM-2024-00891)."
+          },
+          {
+            "id": "fld_inv_date",
+            "name": "Invoice Date",
+            "type_id": "et_date",
+            "instructions": "The date the invoice was issued. Return as YYYY-MM-DD."
+          },
+          {
+            "id": "fld_due_date",
+            "name": "Due Date",
+            "type_id": "et_date",
+            "instructions": "The payment due date. Return as YYYY-MM-DD."
+          },
+          {
+            "id": "fld_po_num",
+            "name": "PO Number",
+            "type_id": "et_exact",
+            "instructions": "The buyer purchase order number referenced on this invoice."
+          },
+          {
+            "id": "fld_pay_terms",
+            "name": "Payment Terms",
+            "type_id": "et_exact",
+            "instructions": "Terms such as Net 30, Net 15, or Due on Receipt."
+          },
+          {
+            "id": "fld_currency",
+            "name": "Currency",
+            "type_id": "et_exact",
+            "instructions": "Three-letter ISO currency code (e.g. USD, EUR)."
+          }
+        ]
+      },
+      {
+        "id": "lg_vendor",
+        "name": "Vendor Details",
+        "instructions": "Extract the vendor (seller) contact and identification details.",
+        "repeatable": false,
+        "fields": [
+          {
+            "id": "fld_vend_name",
+            "name": "Vendor Name",
+            "type_id": "et_exact",
+            "instructions": "Legal name of the vendor / supplier company."
+          },
+          {
+            "id": "fld_vend_addr",
+            "name": "Vendor Address",
+            "type_id": "et_exact",
+            "instructions": "Full mailing address of the vendor including street, city, state, ZIP."
+          },
+          {
+            "id": "fld_vend_email",
+            "name": "Vendor Email",
+            "type_id": "et_exact",
+            "instructions": "Billing or accounts-receivable email address of the vendor."
+          },
+          {
+            "id": "fld_vend_phone",
+            "name": "Vendor Phone",
+            "type_id": "et_exact",
+            "instructions": "Phone number of the vendor."
+          }
+        ]
+      },
+      {
+        "id": "lg_billto",
+        "name": "Bill To",
+        "instructions": "Extract the buyer / bill-to party name and address.",
+        "repeatable": false,
+        "fields": [
+          {
+            "id": "fld_bt_name",
+            "name": "Bill-To Name",
+            "type_id": "et_exact",
+            "instructions": "Name of the billing entity or department."
+          },
+          {
+            "id": "fld_bt_addr",
+            "name": "Bill-To Address",
+            "type_id": "et_exact",
+            "instructions": "Full mailing address of the bill-to party."
+          }
+        ]
+      },
+      {
+        "id": "lg_totals",
+        "name": "Invoice Totals",
+        "instructions": "Extract the financial summary fields from the totals section.",
+        "repeatable": false,
+        "fields": [
+          {
+            "id": "fld_subtotal",
+            "name": "Subtotal",
+            "type_id": "et_money",
+            "instructions": "Sum before tax. Normalise to decimal (e.g. 10,300.00 USD)."
+          },
+          {
+            "id": "fld_tax_rate",
+            "name": "Tax Rate",
+            "type_id": "et_number",
+            "instructions": "Tax percentage rate applied. Return as a plain number (e.g. 8.5)."
+          },
+          {
+            "id": "fld_tax_amount",
+            "name": "Tax Amount",
+            "type_id": "et_money",
+            "instructions": "Dollar amount of tax charged."
+          },
+          {
+            "id": "fld_total",
+            "name": "Total Due",
+            "type_id": "et_money",
+            "instructions": "Final amount due including tax. This is the amount to be paid."
+          }
+        ]
+      },
+      {
+        "id": "lg_lineitems",
+        "name": "Line Items",
+        "instructions": "Extract each individual product or service line from the invoice table.",
+        "repeatable": true,
+        "fields": [
+          {
+            "id": "fld_li_desc",
+            "name": "Description",
+            "type_id": "et_exact",
+            "instructions": "Description of the product or service on this line."
+          },
+          {
+            "id": "fld_li_qty",
+            "name": "Quantity",
+            "type_id": "et_number",
+            "instructions": "Number of units for this line item."
+          },
+          {
+            "id": "fld_li_price",
+            "name": "Unit Price",
+            "type_id": "et_money",
+            "instructions": "Price per unit for this line."
+          },
+          {
+            "id": "fld_li_total",
+            "name": "Line Total",
+            "type_id": "et_money",
+            "instructions": "Total for this line (qty \u00d7 unit price)."
+          }
+        ]
+      }
+    ]
+  },
+  "documents": [
+    {
+      "DocumentId": "baa83524f2e36559.be3c34e620e98487",
+      "Filename": "invoice_acme_tech_001.pdf",
+      "InvoiceId": "inv_001",
+      "AttachmentRef": "attach/baa83524f2e36559.be3c34e620e98487",
+      "UploadedAt": "2024-03-30T09:05:00Z"
+    },
+    {
+      "DocumentId": "cf44de3bb208e6b4.c9b682c631e620a7",
+      "Filename": "invoice_summit_supplies_002.pdf",
+      "InvoiceId": "inv_002",
+      "AttachmentRef": "attach/cf44de3bb208e6b4.c9b682c631e620a7",
+      "UploadedAt": "2024-03-30T09:05:00Z"
+    },
+    {
+      "DocumentId": "fc73280dda3f607d.3a4a9dc40959dd7b",
+      "Filename": "invoice_rapid_logistics_003.pdf",
+      "InvoiceId": "inv_003",
+      "AttachmentRef": "attach/fc73280dda3f607d.3a4a9dc40959dd7b",
+      "UploadedAt": "2024-03-30T09:05:00Z"
+    },
+    {
+      "DocumentId": "0335e10ceb19bcda.0e0ff33d9fa2fef0",
+      "Filename": "invoice_cloudwave_004.pdf",
+      "InvoiceId": "inv_004",
+      "AttachmentRef": "attach/0335e10ceb19bcda.0e0ff33d9fa2fef0",
+      "UploadedAt": "2024-03-30T09:05:00Z"
+    },
+    {
+      "DocumentId": "6303f815399fece0.91e26309e4a1e61b",
+      "Filename": "invoice_meridian_consulting_005.pdf",
+      "InvoiceId": "inv_005",
+      "AttachmentRef": "attach/6303f815399fece0.91e26309e4a1e61b",
+      "UploadedAt": "2024-03-30T09:05:00Z"
+    }
+  ],
+  "predictions": {
+    "baa83524f2e36559.be3c34e620e98487": {
+      "DocumentId": "baa83524f2e36559.be3c34e620e98487",
+      "Filename": "invoice_acme_tech_001.pdf",
+      "Labels": [
+        {
+          "Name": "Invoice Header",
+          "Occurrence": 0,
+          "Fields": [
+            {
+              "FieldId": "fld_inv_num",
+              "FieldName": "Invoice Number",
+              "FormattedValue": "ACM-2024-00891"
+            },
+            {
+              "FieldId": "fld_inv_date",
+              "FieldName": "Invoice Date",
+              "FormattedValue": "2024-03-15"
+            },
+            {
+              "FieldId": "fld_due_date",
+              "FieldName": "Due Date",
+              "FormattedValue": "2024-04-14"
+            },
+            {
+              "FieldId": "fld_po_num",
+              "FieldName": "PO Number",
+              "FormattedValue": "PO-GC-44720"
+            },
+            {
+              "FieldId": "fld_pay_terms",
+              "FieldName": "Payment Terms",
+              "FormattedValue": "Net 30"
+            },
+            {
+              "FieldId": "fld_currency",
+              "FieldName": "Currency",
+              "FormattedValue": "USD"
+            }
+          ]
+        },
+        {
+          "Name": "Vendor Details",
+          "Occurrence": 0,
+          "Fields": [
+            {
+              "FieldId": "fld_vend_name",
+              "FieldName": "Vendor Name",
+              "FormattedValue": "Acme Technology Solutions Inc."
+            },
+            {
+              "FieldId": "fld_vend_addr",
+              "FieldName": "Vendor Address",
+              "FormattedValue": "450 Silicon Valley Blvd, Suite 200, San Jose, CA 95110"
+            },
+            {
+              "FieldId": "fld_vend_email",
+              "FieldName": "Vendor Email",
+              "FormattedValue": "billing@acmetech.com"
+            },
+            {
+              "FieldId": "fld_vend_phone",
+              "FieldName": "Vendor Phone",
+              "FormattedValue": "+1 (408) 555-0192"
+            }
+          ]
+        },
+        {
+          "Name": "Bill To",
+          "Occurrence": 0,
+          "Fields": [
+            {
+              "FieldId": "fld_bt_name",
+              "FieldName": "Bill-To Name",
+              "FormattedValue": "GlobalCorp Procurement"
+            },
+            {
+              "FieldId": "fld_bt_addr",
+              "FieldName": "Bill-To Address",
+              "FormattedValue": "1200 Corporate Plaza, Floor 8, New York, NY 10001"
+            }
+          ]
+        },
+        {
+          "Name": "Invoice Totals",
+          "Occurrence": 0,
+          "Fields": [
+            {
+              "FieldId": "fld_subtotal",
+              "FieldName": "Subtotal",
+              "FormattedValue": "10,300.00 USD"
+            },
+            {
+              "FieldId": "fld_tax_rate",
+              "FieldName": "Tax Rate",
+              "FormattedValue": "8.5"
+            },
+            {
+              "FieldId": "fld_tax_amount",
+              "FieldName": "Tax Amount",
+              "FormattedValue": "875.50 USD"
+            },
+            {
+              "FieldId": "fld_total",
+              "FieldName": "Total Due",
+              "FormattedValue": "11,275.50 USD"
+            }
+          ]
+        },
+        {
+          "Name": "Line Items",
+          "Occurrence": 0,
+          "Fields": [
+            {
+              "FieldId": "fld_li_desc",
+              "FieldName": "Description",
+              "FormattedValue": "Enterprise SaaS License \u2014 Q2 2024"
+            },
+            {
+              "FieldId": "fld_li_qty",
+              "FieldName": "Quantity",
+              "FormattedValue": "50"
+            },
+            {
+              "FieldId": "fld_li_price",
+              "FieldName": "Unit Price",
+              "FormattedValue": "120.00 USD"
+            },
+            {
+              "FieldId": "fld_li_total",
+              "FieldName": "Line Total",
+              "FormattedValue": "6,000.00 USD"
+            }
+          ]
+        },
+        {
+          "Name": "Line Items",
+          "Occurrence": 1,
+          "Fields": [
+            {
+              "FieldId": "fld_li_desc",
+              "FieldName": "Description",
+              "FormattedValue": "Professional Services \u2014 System Integration"
+            },
+            {
+              "FieldId": "fld_li_qty",
+              "FieldName": "Quantity",
+              "FormattedValue": "8"
+            },
+            {
+              "FieldId": "fld_li_price",
+              "FieldName": "Unit Price",
+              "FormattedValue": "250.00 USD"
+            },
+            {
+              "FieldId": "fld_li_total",
+              "FieldName": "Line Total",
+              "FormattedValue": "2,000.00 USD"
+            }
+          ]
+        },
+        {
+          "Name": "Line Items",
+          "Occurrence": 2,
+          "Fields": [
+            {
+              "FieldId": "fld_li_desc",
+              "FieldName": "Description",
+              "FormattedValue": "24/7 Premium Support Package"
+            },
+            {
+              "FieldId": "fld_li_qty",
+              "FieldName": "Quantity",
+              "FormattedValue": "1"
+            },
+            {
+              "FieldId": "fld_li_price",
+              "FieldName": "Unit Price",
+              "FormattedValue": "1,500.00 USD"
+            },
+            {
+              "FieldId": "fld_li_total",
+              "FieldName": "Line Total",
+              "FormattedValue": "1,500.00 USD"
+            }
+          ]
+        },
+        {
+          "Name": "Line Items",
+          "Occurrence": 3,
+          "Fields": [
+            {
+              "FieldId": "fld_li_desc",
+              "FieldName": "Description",
+              "FormattedValue": "On-site Training (2 days)"
+            },
+            {
+              "FieldId": "fld_li_qty",
+              "FieldName": "Quantity",
+              "FormattedValue": "2"
+            },
+            {
+              "FieldId": "fld_li_price",
+              "FieldName": "Unit Price",
+              "FormattedValue": "400.00 USD"
+            },
+            {
+              "FieldId": "fld_li_total",
+              "FieldName": "Line Total",
+              "FormattedValue": "800.00 USD"
+            }
+          ]
+        }
+      ]
+    },
+    "cf44de3bb208e6b4.c9b682c631e620a7": {
+      "DocumentId": "cf44de3bb208e6b4.c9b682c631e620a7",
+      "Filename": "invoice_summit_supplies_002.pdf",
+      "Labels": [
+        {
+          "Name": "Invoice Header",
+          "Occurrence": 0,
+          "Fields": [
+            {
+              "FieldId": "fld_inv_num",
+              "FieldName": "Invoice Number",
+              "FormattedValue": "SOS-INV-20240312"
+            },
+            {
+              "FieldId": "fld_inv_date",
+              "FieldName": "Invoice Date",
+              "FormattedValue": "2024-03-12"
+            },
+            {
+              "FieldId": "fld_due_date",
+              "FieldName": "Due Date",
+              "FormattedValue": "2024-03-27"
+            },
+            {
+              "FieldId": "fld_po_num",
+              "FieldName": "PO Number",
+              "FormattedValue": "PO-GC-44650"
+            },
+            {
+              "FieldId": "fld_pay_terms",
+              "FieldName": "Payment Terms",
+              "FormattedValue": "Net 15"
+            },
+            {
+              "FieldId": "fld_currency",
+              "FieldName": "Currency",
+              "FormattedValue": "USD"
+            }
+          ]
+        },
+        {
+          "Name": "Vendor Details",
+          "Occurrence": 0,
+          "Fields": [
+            {
+              "FieldId": "fld_vend_name",
+              "FieldName": "Vendor Name",
+              "FormattedValue": "Summit Office Supplies Ltd."
+            },
+            {
+              "FieldId": "fld_vend_addr",
+              "FieldName": "Vendor Address",
+              "FormattedValue": "88 Commerce Street, Chicago, IL 60601"
+            },
+            {
+              "FieldId": "fld_vend_email",
+              "FieldName": "Vendor Email",
+              "FormattedValue": "accounts@summitsupplies.com"
+            },
+            {
+              "FieldId": "fld_vend_phone",
+              "FieldName": "Vendor Phone",
+              "FormattedValue": "+1 (312) 555-7834"
+            }
+          ]
+        },
+        {
+          "Name": "Bill To",
+          "Occurrence": 0,
+          "Fields": [
+            {
+              "FieldId": "fld_bt_name",
+              "FieldName": "Bill-To Name",
+              "FormattedValue": "GlobalCorp Facilities"
+            },
+            {
+              "FieldId": "fld_bt_addr",
+              "FieldName": "Bill-To Address",
+              "FormattedValue": "1200 Corporate Plaza, New York, NY 10001"
+            }
+          ]
+        },
+        {
+          "Name": "Invoice Totals",
+          "Occurrence": 0,
+          "Fields": [
+            {
+              "FieldId": "fld_subtotal",
+              "FieldName": "Subtotal",
+              "FormattedValue": "4,239.85 USD"
+            },
+            {
+              "FieldId": "fld_tax_rate",
+              "FieldName": "Tax Rate",
+              "FormattedValue": "10.25"
+            },
+            {
+              "FieldId": "fld_tax_amount",
+              "FieldName": "Tax Amount",
+              "FormattedValue": "434.59 USD"
+            },
+            {
+              "FieldId": "fld_total",
+              "FieldName": "Total Due",
+              "FormattedValue": "4,674.44 USD"
+            }
+          ]
+        },
+        {
+          "Name": "Line Items",
+          "Occurrence": 0,
+          "Fields": [
+            {
+              "FieldId": "fld_li_desc",
+              "FieldName": "Description",
+              "FormattedValue": "A4 Copy Paper (Case of 10 reams)"
+            },
+            {
+              "FieldId": "fld_li_qty",
+              "FieldName": "Quantity",
+              "FormattedValue": "20"
+            },
+            {
+              "FieldId": "fld_li_price",
+              "FieldName": "Unit Price",
+              "FormattedValue": "42.50 USD"
+            },
+            {
+              "FieldId": "fld_li_total",
+              "FieldName": "Line Total",
+              "FormattedValue": "850.00 USD"
+            }
+          ]
+        },
+        {
+          "Name": "Line Items",
+          "Occurrence": 1,
+          "Fields": [
+            {
+              "FieldId": "fld_li_desc",
+              "FieldName": "Description",
+              "FormattedValue": "Ergonomic Office Chair \u2014 Model EX500"
+            },
+            {
+              "FieldId": "fld_li_qty",
+              "FieldName": "Quantity",
+              "FormattedValue": "5"
+            },
+            {
+              "FieldId": "fld_li_price",
+              "FieldName": "Unit Price",
+              "FormattedValue": "389.00 USD"
+            },
+            {
+              "FieldId": "fld_li_total",
+              "FieldName": "Line Total",
+              "FormattedValue": "1,945.00 USD"
+            }
+          ]
+        },
+        {
+          "Name": "Line Items",
+          "Occurrence": 2,
+          "Fields": [
+            {
+              "FieldId": "fld_li_desc",
+              "FieldName": "Description",
+              "FormattedValue": "Standing Desk Converter"
+            },
+            {
+              "FieldId": "fld_li_qty",
+              "FieldName": "Quantity",
+              "FormattedValue": "3"
+            },
+            {
+              "FieldId": "fld_li_price",
+              "FieldName": "Unit Price",
+              "FormattedValue": "215.00 USD"
+            },
+            {
+              "FieldId": "fld_li_total",
+              "FieldName": "Line Total",
+              "FormattedValue": "645.00 USD"
+            }
+          ]
+        },
+        {
+          "Name": "Line Items",
+          "Occurrence": 3,
+          "Fields": [
+            {
+              "FieldId": "fld_li_desc",
+              "FieldName": "Description",
+              "FormattedValue": "Monitor Arm Dual Mount"
+            },
+            {
+              "FieldId": "fld_li_qty",
+              "FieldName": "Quantity",
+              "FormattedValue": "5"
+            },
+            {
+              "FieldId": "fld_li_price",
+              "FieldName": "Unit Price",
+              "FormattedValue": "89.99 USD"
+            },
+            {
+              "FieldId": "fld_li_total",
+              "FieldName": "Line Total",
+              "FormattedValue": "449.95 USD"
+            }
+          ]
+        },
+        {
+          "Name": "Line Items",
+          "Occurrence": 4,
+          "Fields": [
+            {
+              "FieldId": "fld_li_desc",
+              "FieldName": "Description",
+              "FormattedValue": "USB-C Hub 7-port"
+            },
+            {
+              "FieldId": "fld_li_qty",
+              "FieldName": "Quantity",
+              "FormattedValue": "10"
+            },
+            {
+              "FieldId": "fld_li_price",
+              "FieldName": "Unit Price",
+              "FormattedValue": "34.99 USD"
+            },
+            {
+              "FieldId": "fld_li_total",
+              "FieldName": "Line Total",
+              "FormattedValue": "349.90 USD"
+            }
+          ]
+        }
+      ]
+    },
+    "fc73280dda3f607d.3a4a9dc40959dd7b": {
+      "DocumentId": "fc73280dda3f607d.3a4a9dc40959dd7b",
+      "Filename": "invoice_rapid_logistics_003.pdf",
+      "Labels": [
+        {
+          "Name": "Invoice Header",
+          "Occurrence": 0,
+          "Fields": [
+            {
+              "FieldId": "fld_inv_num",
+              "FieldName": "Invoice Number",
+              "FormattedValue": "RL-2024-8847"
+            },
+            {
+              "FieldId": "fld_inv_date",
+              "FieldName": "Invoice Date",
+              "FormattedValue": "2024-03-20"
+            },
+            {
+              "FieldId": "fld_due_date",
+              "FieldName": "Due Date",
+              "FormattedValue": "2024-04-19"
+            },
+            {
+              "FieldId": "fld_po_num",
+              "FieldName": "PO Number",
+              "FormattedValue": "PO-GC-44801"
+            },
+            {
+              "FieldId": "fld_pay_terms",
+              "FieldName": "Payment Terms",
+              "FormattedValue": "Net 30"
+            },
+            {
+              "FieldId": "fld_currency",
+              "FieldName": "Currency",
+              "FormattedValue": "USD"
+            }
+          ]
+        },
+        {
+          "Name": "Vendor Details",
+          "Occurrence": 0,
+          "Fields": [
+            {
+              "FieldId": "fld_vend_name",
+              "FieldName": "Vendor Name",
+              "FormattedValue": "Rapid Logistics & Freight Co."
+            },
+            {
+              "FieldId": "fld_vend_addr",
+              "FieldName": "Vendor Address",
+              "FormattedValue": "7200 Industrial Park Way, Dallas, TX 75201"
+            },
+            {
+              "FieldId": "fld_vend_email",
+              "FieldName": "Vendor Email",
+              "FormattedValue": "invoices@rapidlogistics.com"
+            },
+            {
+              "FieldId": "fld_vend_phone",
+              "FieldName": "Vendor Phone",
+              "FormattedValue": "+1 (214) 555-3301"
+            }
+          ]
+        },
+        {
+          "Name": "Bill To",
+          "Occurrence": 0,
+          "Fields": [
+            {
+              "FieldId": "fld_bt_name",
+              "FieldName": "Bill-To Name",
+              "FormattedValue": "GlobalCorp Operations"
+            },
+            {
+              "FieldId": "fld_bt_addr",
+              "FieldName": "Bill-To Address",
+              "FormattedValue": "500 Warehouse Drive, Elizabeth, NJ 07201"
+            }
+          ]
+        },
+        {
+          "Name": "Invoice Totals",
+          "Occurrence": 0,
+          "Fields": [
+            {
+              "FieldId": "fld_subtotal",
+              "FieldName": "Subtotal",
+              "FormattedValue": "4,351.00 USD"
+            },
+            {
+              "FieldId": "fld_tax_rate",
+              "FieldName": "Tax Rate",
+              "FormattedValue": ""
+            },
+            {
+              "FieldId": "fld_tax_amount",
+              "FieldName": "Tax Amount",
+              "FormattedValue": ""
+            },
+            {
+              "FieldId": "fld_total",
+              "FieldName": "Total Due",
+              "FormattedValue": "4,351.00 USD"
+            }
+          ]
+        },
+        {
+          "Name": "Line Items",
+          "Occurrence": 0,
+          "Fields": [
+            {
+              "FieldId": "fld_li_desc",
+              "FieldName": "Description",
+              "FormattedValue": "Freight Shipment \u2014 Chicago to Newark (FTL)"
+            },
+            {
+              "FieldId": "fld_li_qty",
+              "FieldName": "Quantity",
+              "FormattedValue": "1"
+            },
+            {
+              "FieldId": "fld_li_price",
+              "FieldName": "Unit Price",
+              "FormattedValue": "3,200.00 USD"
+            },
+            {
+              "FieldId": "fld_li_total",
+              "FieldName": "Line Total",
+              "FormattedValue": "3,200.00 USD"
+            }
+          ]
+        },
+        {
+          "Name": "Line Items",
+          "Occurrence": 1,
+          "Fields": [
+            {
+              "FieldId": "fld_li_desc",
+              "FieldName": "Description",
+              "FormattedValue": "Hazmat Handling Surcharge"
+            },
+            {
+              "FieldId": "fld_li_qty",
+              "FieldName": "Quantity",
+              "FormattedValue": "1"
+            },
+            {
+              "FieldId": "fld_li_price",
+              "FieldName": "Unit Price",
+              "FormattedValue": "450.00 USD"
+            },
+            {
+              "FieldId": "fld_li_total",
+              "FieldName": "Line Total",
+              "FormattedValue": "450.00 USD"
+            }
+          ]
+        },
+        {
+          "Name": "Line Items",
+          "Occurrence": 2,
+          "Fields": [
+            {
+              "FieldId": "fld_li_desc",
+              "FieldName": "Description",
+              "FormattedValue": "Fuel Surcharge (18% of base freight)"
+            },
+            {
+              "FieldId": "fld_li_qty",
+              "FieldName": "Quantity",
+              "FormattedValue": "1"
+            },
+            {
+              "FieldId": "fld_li_price",
+              "FieldName": "Unit Price",
+              "FormattedValue": "576.00 USD"
+            },
+            {
+              "FieldId": "fld_li_total",
+              "FieldName": "Line Total",
+              "FormattedValue": "576.00 USD"
+            }
+          ]
+        },
+        {
+          "Name": "Line Items",
+          "Occurrence": 3,
+          "Fields": [
+            {
+              "FieldId": "fld_li_desc",
+              "FieldName": "Description",
+              "FormattedValue": "Liftgate Service"
+            },
+            {
+              "FieldId": "fld_li_qty",
+              "FieldName": "Quantity",
+              "FormattedValue": "1"
+            },
+            {
+              "FieldId": "fld_li_price",
+              "FieldName": "Unit Price",
+              "FormattedValue": "125.00 USD"
+            },
+            {
+              "FieldId": "fld_li_total",
+              "FieldName": "Line Total",
+              "FormattedValue": "125.00 USD"
+            }
+          ]
+        }
+      ]
+    },
+    "0335e10ceb19bcda.0e0ff33d9fa2fef0": {
+      "DocumentId": "0335e10ceb19bcda.0e0ff33d9fa2fef0",
+      "Filename": "invoice_cloudwave_004.pdf",
+      "Labels": [
+        {
+          "Name": "Invoice Header",
+          "Occurrence": 0,
+          "Fields": [
+            {
+              "FieldId": "fld_inv_num",
+              "FieldName": "Invoice Number",
+              "FormattedValue": "CW-0029541"
+            },
+            {
+              "FieldId": "fld_inv_date",
+              "FieldName": "Invoice Date",
+              "FormattedValue": "2024-03-01"
+            },
+            {
+              "FieldId": "fld_due_date",
+              "FieldName": "Due Date",
+              "FormattedValue": "2024-03-31"
+            },
+            {
+              "FieldId": "fld_po_num",
+              "FieldName": "PO Number",
+              "FormattedValue": "PO-GC-44501"
+            },
+            {
+              "FieldId": "fld_pay_terms",
+              "FieldName": "Payment Terms",
+              "FormattedValue": "Due on Receipt"
+            },
+            {
+              "FieldId": "fld_currency",
+              "FieldName": "Currency",
+              "FormattedValue": "USD"
+            }
+          ]
+        },
+        {
+          "Name": "Vendor Details",
+          "Occurrence": 0,
+          "Fields": [
+            {
+              "FieldId": "fld_vend_name",
+              "FieldName": "Vendor Name",
+              "FormattedValue": "CloudWave Infrastructure LLC"
+            },
+            {
+              "FieldId": "fld_vend_addr",
+              "FieldName": "Vendor Address",
+              "FormattedValue": "1 Cloud Campus Drive, Seattle, WA 98101"
+            },
+            {
+              "FieldId": "fld_vend_email",
+              "FieldName": "Vendor Email",
+              "FormattedValue": "billing@cloudwave.io"
+            },
+            {
+              "FieldId": "fld_vend_phone",
+              "FieldName": "Vendor Phone",
+              "FormattedValue": "+1 (206) 555-9020"
+            }
+          ]
+        },
+        {
+          "Name": "Bill To",
+          "Occurrence": 0,
+          "Fields": [
+            {
+              "FieldId": "fld_bt_name",
+              "FieldName": "Bill-To Name",
+              "FormattedValue": "GlobalCorp IT Department"
+            },
+            {
+              "FieldId": "fld_bt_addr",
+              "FieldName": "Bill-To Address",
+              "FormattedValue": "1200 Corporate Plaza, Floor 12, New York, NY 10001"
+            }
+          ]
+        },
+        {
+          "Name": "Invoice Totals",
+          "Occurrence": 0,
+          "Fields": [
+            {
+              "FieldId": "fld_subtotal",
+              "FieldName": "Subtotal",
+              "FormattedValue": "3,908.00 USD"
+            },
+            {
+              "FieldId": "fld_tax_rate",
+              "FieldName": "Tax Rate",
+              "FormattedValue": "10.1"
+            },
+            {
+              "FieldId": "fld_tax_amount",
+              "FieldName": "Tax Amount",
+              "FormattedValue": "394.71 USD"
+            },
+            {
+              "FieldId": "fld_total",
+              "FieldName": "Total Due",
+              "FormattedValue": "4,302.71 USD"
+            }
+          ]
+        },
+        {
+          "Name": "Line Items",
+          "Occurrence": 0,
+          "Fields": [
+            {
+              "FieldId": "fld_li_desc",
+              "FieldName": "Description",
+              "FormattedValue": "Cloud Compute \u2014 500 vCPU-hours"
+            },
+            {
+              "FieldId": "fld_li_qty",
+              "FieldName": "Quantity",
+              "FormattedValue": "500"
+            },
+            {
+              "FieldId": "fld_li_price",
+              "FieldName": "Unit Price",
+              "FormattedValue": "0.10 USD"
+            },
+            {
+              "FieldId": "fld_li_total",
+              "FieldName": "Line Total",
+              "FormattedValue": "48.00 USD"
+            }
+          ]
+        },
+        {
+          "Name": "Line Items",
+          "Occurrence": 1,
+          "Fields": [
+            {
+              "FieldId": "fld_li_desc",
+              "FieldName": "Description",
+              "FormattedValue": "Cloud Storage \u2014 50 TB (March 2024)"
+            },
+            {
+              "FieldId": "fld_li_qty",
+              "FieldName": "Quantity",
+              "FormattedValue": "50"
+            },
+            {
+              "FieldId": "fld_li_price",
+              "FieldName": "Unit Price",
+              "FormattedValue": "23.00 USD"
+            },
+            {
+              "FieldId": "fld_li_total",
+              "FieldName": "Line Total",
+              "FormattedValue": "1,150.00 USD"
+            }
+          ]
+        },
+        {
+          "Name": "Line Items",
+          "Occurrence": 2,
+          "Fields": [
+            {
+              "FieldId": "fld_li_desc",
+              "FieldName": "Description",
+              "FormattedValue": "Data Transfer Egress \u2014 12 TB"
+            },
+            {
+              "FieldId": "fld_li_qty",
+              "FieldName": "Quantity",
+              "FormattedValue": "12"
+            },
+            {
+              "FieldId": "fld_li_price",
+              "FieldName": "Unit Price",
+              "FormattedValue": "90.00 USD"
+            },
+            {
+              "FieldId": "fld_li_total",
+              "FieldName": "Line Total",
+              "FormattedValue": "1,130.00 USD"
+            }
+          ]
+        },
+        {
+          "Name": "Line Items",
+          "Occurrence": 3,
+          "Fields": [
+            {
+              "FieldId": "fld_li_desc",
+              "FieldName": "Description",
+              "FormattedValue": "Managed Kubernetes Service (3 clusters)"
+            },
+            {
+              "FieldId": "fld_li_qty",
+              "FieldName": "Quantity",
+              "FormattedValue": "3"
+            },
+            {
+              "FieldId": "fld_li_price",
+              "FieldName": "Unit Price",
+              "FormattedValue": "150.00 USD"
+            },
+            {
+              "FieldId": "fld_li_total",
+              "FieldName": "Line Total",
+              "FormattedValue": "450.00 USD"
+            }
+          ]
+        },
+        {
+          "Name": "Line Items",
+          "Occurrence": 4,
+          "Fields": [
+            {
+              "FieldId": "fld_li_desc",
+              "FieldName": "Description",
+              "FormattedValue": "CDN Bandwidth \u2014 8 TB"
+            },
+            {
+              "FieldId": "fld_li_qty",
+              "FieldName": "Quantity",
+              "FormattedValue": "8"
+            },
+            {
+              "FieldId": "fld_li_price",
+              "FieldName": "Unit Price",
+              "FormattedValue": "85.00 USD"
+            },
+            {
+              "FieldId": "fld_li_total",
+              "FieldName": "Line Total",
+              "FormattedValue": "680.00 USD"
+            }
+          ]
+        },
+        {
+          "Name": "Line Items",
+          "Occurrence": 5,
+          "Fields": [
+            {
+              "FieldId": "fld_li_desc",
+              "FieldName": "Description",
+              "FormattedValue": "DDoS Protection \u2014 Enterprise Tier"
+            },
+            {
+              "FieldId": "fld_li_qty",
+              "FieldName": "Quantity",
+              "FormattedValue": "1"
+            },
+            {
+              "FieldId": "fld_li_price",
+              "FieldName": "Unit Price",
+              "FormattedValue": "500.00 USD"
+            },
+            {
+              "FieldId": "fld_li_total",
+              "FieldName": "Line Total",
+              "FormattedValue": "500.00 USD"
+            }
+          ]
+        }
+      ]
+    },
+    "6303f815399fece0.91e26309e4a1e61b": {
+      "DocumentId": "6303f815399fece0.91e26309e4a1e61b",
+      "Filename": "invoice_meridian_consulting_005.pdf",
+      "Labels": [
+        {
+          "Name": "Invoice Header",
+          "Occurrence": 0,
+          "Fields": [
+            {
+              "FieldId": "fld_inv_num",
+              "FieldName": "Invoice Number",
+              "FormattedValue": "MCG-2024-Q1-047"
+            },
+            {
+              "FieldId": "fld_inv_date",
+              "FieldName": "Invoice Date",
+              "FormattedValue": "2024-03-29"
+            },
+            {
+              "FieldId": "fld_due_date",
+              "FieldName": "Due Date",
+              "FormattedValue": "2024-04-28"
+            },
+            {
+              "FieldId": "fld_po_num",
+              "FieldName": "PO Number",
+              "FormattedValue": "PO-GC-44900"
+            },
+            {
+              "FieldId": "fld_pay_terms",
+              "FieldName": "Payment Terms",
+              "FormattedValue": "Net 30"
+            },
+            {
+              "FieldId": "fld_currency",
+              "FieldName": "Currency",
+              "FormattedValue": "USD"
+            }
+          ]
+        },
+        {
+          "Name": "Vendor Details",
+          "Occurrence": 0,
+          "Fields": [
+            {
+              "FieldId": "fld_vend_name",
+              "FieldName": "Vendor Name",
+              "FormattedValue": "Meridian Business Consulting Group"
+            },
+            {
+              "FieldId": "fld_vend_addr",
+              "FieldName": "Vendor Address",
+              "FormattedValue": "333 Madison Avenue, 22nd Floor, New York, NY 10017"
+            },
+            {
+              "FieldId": "fld_vend_email",
+              "FieldName": "Vendor Email",
+              "FormattedValue": "finance@meridianconsulting.com"
+            },
+            {
+              "FieldId": "fld_vend_phone",
+              "FieldName": "Vendor Phone",
+              "FormattedValue": "+1 (212) 555-4400"
+            }
+          ]
+        },
+        {
+          "Name": "Bill To",
+          "Occurrence": 0,
+          "Fields": [
+            {
+              "FieldId": "fld_bt_name",
+              "FieldName": "Bill-To Name",
+              "FormattedValue": "GlobalCorp Executive Office"
+            },
+            {
+              "FieldId": "fld_bt_addr",
+              "FieldName": "Bill-To Address",
+              "FormattedValue": "1200 Corporate Plaza, Floor 20, New York, NY 10001"
+            }
+          ]
+        },
+        {
+          "Name": "Invoice Totals",
+          "Occurrence": 0,
+          "Fields": [
+            {
+              "FieldId": "fld_subtotal",
+              "FieldName": "Subtotal",
+              "FormattedValue": "31,040.75 USD"
+            },
+            {
+              "FieldId": "fld_tax_rate",
+              "FieldName": "Tax Rate",
+              "FormattedValue": "8.875"
+            },
+            {
+              "FieldId": "fld_tax_amount",
+              "FieldName": "Tax Amount",
+              "FormattedValue": "2,754.87 USD"
+            },
+            {
+              "FieldId": "fld_total",
+              "FieldName": "Total Due",
+              "FormattedValue": "33,795.62 USD"
+            }
+          ]
+        },
+        {
+          "Name": "Line Items",
+          "Occurrence": 0,
+          "Fields": [
+            {
+              "FieldId": "fld_li_desc",
+              "FieldName": "Description",
+              "FormattedValue": "Strategic Planning Workshops (Week of March 11)"
+            },
+            {
+              "FieldId": "fld_li_qty",
+              "FieldName": "Quantity",
+              "FormattedValue": "3"
+            },
+            {
+              "FieldId": "fld_li_price",
+              "FieldName": "Unit Price",
+              "FormattedValue": "4,500.00 USD"
+            },
+            {
+              "FieldId": "fld_li_total",
+              "FieldName": "Line Total",
+              "FormattedValue": "13,500.00 USD"
+            }
+          ]
+        },
+        {
+          "Name": "Line Items",
+          "Occurrence": 1,
+          "Fields": [
+            {
+              "FieldId": "fld_li_desc",
+              "FieldName": "Description",
+              "FormattedValue": "Market Analysis Report \u2014 APAC Expansion"
+            },
+            {
+              "FieldId": "fld_li_qty",
+              "FieldName": "Quantity",
+              "FormattedValue": "1"
+            },
+            {
+              "FieldId": "fld_li_price",
+              "FieldName": "Unit Price",
+              "FormattedValue": "8,000.00 USD"
+            },
+            {
+              "FieldId": "fld_li_total",
+              "FieldName": "Line Total",
+              "FormattedValue": "8,000.00 USD"
+            }
+          ]
+        },
+        {
+          "Name": "Line Items",
+          "Occurrence": 2,
+          "Fields": [
+            {
+              "FieldId": "fld_li_desc",
+              "FieldName": "Description",
+              "FormattedValue": "Executive Coaching Sessions \u2014 12 hours"
+            },
+            {
+              "FieldId": "fld_li_qty",
+              "FieldName": "Quantity",
+              "FormattedValue": "12"
+            },
+            {
+              "FieldId": "fld_li_price",
+              "FieldName": "Unit Price",
+              "FormattedValue": "600.00 USD"
+            },
+            {
+              "FieldId": "fld_li_total",
+              "FieldName": "Line Total",
+              "FormattedValue": "7,200.00 USD"
+            }
+          ]
+        },
+        {
+          "Name": "Line Items",
+          "Occurrence": 3,
+          "Fields": [
+            {
+              "FieldId": "fld_li_desc",
+              "FieldName": "Description",
+              "FormattedValue": "Travel & Expenses (receipts attached)"
+            },
+            {
+              "FieldId": "fld_li_qty",
+              "FieldName": "Quantity",
+              "FormattedValue": "1"
+            },
+            {
+              "FieldId": "fld_li_price",
+              "FieldName": "Unit Price",
+              "FormattedValue": "2,340.75 USD"
+            },
+            {
+              "FieldId": "fld_li_total",
+              "FieldName": "Line Total",
+              "FormattedValue": "2,340.75 USD"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "labellings": {
+    "baa83524f2e36559.be3c34e620e98487": {
+      "doc_id": "baa83524f2e36559.be3c34e620e98487",
+      "filename": "invoice_acme_tech_001.pdf",
+      "inv_id": "inv_001",
+      "confirmed": [
+        {
+          "field_id": "fld_inv_num",
+          "group": "Invoice Header",
+          "occurrence": 0,
+          "name": "Invoice Number"
+        },
+        {
+          "field_id": "fld_inv_date",
+          "group": "Invoice Header",
+          "occurrence": 0,
+          "name": "Invoice Date"
+        },
+        {
+          "field_id": "fld_due_date",
+          "group": "Invoice Header",
+          "occurrence": 0,
+          "name": "Due Date"
+        },
+        {
+          "field_id": "fld_po_num",
+          "group": "Invoice Header",
+          "occurrence": 0,
+          "name": "PO Number"
+        },
+        {
+          "field_id": "fld_pay_terms",
+          "group": "Invoice Header",
+          "occurrence": 0,
+          "name": "Payment Terms"
+        },
+        {
+          "field_id": "fld_currency",
+          "group": "Invoice Header",
+          "occurrence": 0,
+          "name": "Currency"
+        },
+        {
+          "field_id": "fld_vend_name",
+          "group": "Vendor Details",
+          "occurrence": 0,
+          "name": "Vendor Name"
+        },
+        {
+          "field_id": "fld_vend_addr",
+          "group": "Vendor Details",
+          "occurrence": 0,
+          "name": "Vendor Address"
+        },
+        {
+          "field_id": "fld_vend_email",
+          "group": "Vendor Details",
+          "occurrence": 0,
+          "name": "Vendor Email"
+        },
+        {
+          "field_id": "fld_vend_phone",
+          "group": "Vendor Details",
+          "occurrence": 0,
+          "name": "Vendor Phone"
+        },
+        {
+          "field_id": "fld_bt_name",
+          "group": "Bill To",
+          "occurrence": 0,
+          "name": "Bill-To Name"
+        },
+        {
+          "field_id": "fld_bt_addr",
+          "group": "Bill To",
+          "occurrence": 0,
+          "name": "Bill-To Address"
+        },
+        {
+          "field_id": "fld_subtotal",
+          "group": "Invoice Totals",
+          "occurrence": 0,
+          "name": "Subtotal"
+        },
+        {
+          "field_id": "fld_tax_rate",
+          "group": "Invoice Totals",
+          "occurrence": 0,
+          "name": "Tax Rate"
+        },
+        {
+          "field_id": "fld_tax_amount",
+          "group": "Invoice Totals",
+          "occurrence": 0,
+          "name": "Tax Amount"
+        },
+        {
+          "field_id": "fld_total",
+          "group": "Invoice Totals",
+          "occurrence": 0,
+          "name": "Total Due"
+        },
+        {
+          "field_id": "fld_li_desc",
+          "group": "Line Items",
+          "occurrence": 0,
+          "name": "Description"
+        },
+        {
+          "field_id": "fld_li_qty",
+          "group": "Line Items",
+          "occurrence": 0,
+          "name": "Quantity"
+        },
+        {
+          "field_id": "fld_li_price",
+          "group": "Line Items",
+          "occurrence": 0,
+          "name": "Unit Price"
+        },
+        {
+          "field_id": "fld_li_total",
+          "group": "Line Items",
+          "occurrence": 0,
+          "name": "Line Total"
+        },
+        {
+          "field_id": "fld_li_desc",
+          "group": "Line Items",
+          "occurrence": 1,
+          "name": "Description"
+        },
+        {
+          "field_id": "fld_li_qty",
+          "group": "Line Items",
+          "occurrence": 1,
+          "name": "Quantity"
+        },
+        {
+          "field_id": "fld_li_price",
+          "group": "Line Items",
+          "occurrence": 1,
+          "name": "Unit Price"
+        },
+        {
+          "field_id": "fld_li_total",
+          "group": "Line Items",
+          "occurrence": 1,
+          "name": "Line Total"
+        },
+        {
+          "field_id": "fld_li_desc",
+          "group": "Line Items",
+          "occurrence": 2,
+          "name": "Description"
+        },
+        {
+          "field_id": "fld_li_qty",
+          "group": "Line Items",
+          "occurrence": 2,
+          "name": "Quantity"
+        },
+        {
+          "field_id": "fld_li_price",
+          "group": "Line Items",
+          "occurrence": 2,
+          "name": "Unit Price"
+        },
+        {
+          "field_id": "fld_li_total",
+          "group": "Line Items",
+          "occurrence": 2,
+          "name": "Line Total"
+        },
+        {
+          "field_id": "fld_li_desc",
+          "group": "Line Items",
+          "occurrence": 3,
+          "name": "Description"
+        },
+        {
+          "field_id": "fld_li_qty",
+          "group": "Line Items",
+          "occurrence": 3,
+          "name": "Quantity"
+        },
+        {
+          "field_id": "fld_li_price",
+          "group": "Line Items",
+          "occurrence": 3,
+          "name": "Unit Price"
+        },
+        {
+          "field_id": "fld_li_total",
+          "group": "Line Items",
+          "occurrence": 3,
+          "name": "Line Total"
+        }
+      ],
+      "corrected": [
+        {
+          "field_id": "fld_total",
+          "group": "Invoice Totals",
+          "occurrence": 0,
+          "name": "Total Due",
+          "predicted": "11,275.50 USD",
+          "corrected": "11,175.50 USD"
+        }
+      ],
+      "missing": [],
+      "not_confirmed": []
+    },
+    "cf44de3bb208e6b4.c9b682c631e620a7": {
+      "doc_id": "cf44de3bb208e6b4.c9b682c631e620a7",
+      "filename": "invoice_summit_supplies_002.pdf",
+      "inv_id": "inv_002",
+      "confirmed": [
+        {
+          "field_id": "fld_inv_num",
+          "group": "Invoice Header",
+          "occurrence": 0,
+          "name": "Invoice Number"
+        },
+        {
+          "field_id": "fld_inv_date",
+          "group": "Invoice Header",
+          "occurrence": 0,
+          "name": "Invoice Date"
+        },
+        {
+          "field_id": "fld_due_date",
+          "group": "Invoice Header",
+          "occurrence": 0,
+          "name": "Due Date"
+        },
+        {
+          "field_id": "fld_po_num",
+          "group": "Invoice Header",
+          "occurrence": 0,
+          "name": "PO Number"
+        },
+        {
+          "field_id": "fld_pay_terms",
+          "group": "Invoice Header",
+          "occurrence": 0,
+          "name": "Payment Terms"
+        },
+        {
+          "field_id": "fld_currency",
+          "group": "Invoice Header",
+          "occurrence": 0,
+          "name": "Currency"
+        },
+        {
+          "field_id": "fld_vend_name",
+          "group": "Vendor Details",
+          "occurrence": 0,
+          "name": "Vendor Name"
+        },
+        {
+          "field_id": "fld_vend_addr",
+          "group": "Vendor Details",
+          "occurrence": 0,
+          "name": "Vendor Address"
+        },
+        {
+          "field_id": "fld_vend_email",
+          "group": "Vendor Details",
+          "occurrence": 0,
+          "name": "Vendor Email"
+        },
+        {
+          "field_id": "fld_vend_phone",
+          "group": "Vendor Details",
+          "occurrence": 0,
+          "name": "Vendor Phone"
+        },
+        {
+          "field_id": "fld_bt_name",
+          "group": "Bill To",
+          "occurrence": 0,
+          "name": "Bill-To Name"
+        },
+        {
+          "field_id": "fld_bt_addr",
+          "group": "Bill To",
+          "occurrence": 0,
+          "name": "Bill-To Address"
+        },
+        {
+          "field_id": "fld_subtotal",
+          "group": "Invoice Totals",
+          "occurrence": 0,
+          "name": "Subtotal"
+        },
+        {
+          "field_id": "fld_tax_rate",
+          "group": "Invoice Totals",
+          "occurrence": 0,
+          "name": "Tax Rate"
+        },
+        {
+          "field_id": "fld_tax_amount",
+          "group": "Invoice Totals",
+          "occurrence": 0,
+          "name": "Tax Amount"
+        },
+        {
+          "field_id": "fld_total",
+          "group": "Invoice Totals",
+          "occurrence": 0,
+          "name": "Total Due"
+        },
+        {
+          "field_id": "fld_li_desc",
+          "group": "Line Items",
+          "occurrence": 0,
+          "name": "Description"
+        },
+        {
+          "field_id": "fld_li_qty",
+          "group": "Line Items",
+          "occurrence": 0,
+          "name": "Quantity"
+        },
+        {
+          "field_id": "fld_li_price",
+          "group": "Line Items",
+          "occurrence": 0,
+          "name": "Unit Price"
+        },
+        {
+          "field_id": "fld_li_total",
+          "group": "Line Items",
+          "occurrence": 0,
+          "name": "Line Total"
+        },
+        {
+          "field_id": "fld_li_desc",
+          "group": "Line Items",
+          "occurrence": 1,
+          "name": "Description"
+        },
+        {
+          "field_id": "fld_li_qty",
+          "group": "Line Items",
+          "occurrence": 1,
+          "name": "Quantity"
+        },
+        {
+          "field_id": "fld_li_price",
+          "group": "Line Items",
+          "occurrence": 1,
+          "name": "Unit Price"
+        },
+        {
+          "field_id": "fld_li_total",
+          "group": "Line Items",
+          "occurrence": 1,
+          "name": "Line Total"
+        },
+        {
+          "field_id": "fld_li_desc",
+          "group": "Line Items",
+          "occurrence": 2,
+          "name": "Description"
+        },
+        {
+          "field_id": "fld_li_qty",
+          "group": "Line Items",
+          "occurrence": 2,
+          "name": "Quantity"
+        },
+        {
+          "field_id": "fld_li_price",
+          "group": "Line Items",
+          "occurrence": 2,
+          "name": "Unit Price"
+        },
+        {
+          "field_id": "fld_li_total",
+          "group": "Line Items",
+          "occurrence": 2,
+          "name": "Line Total"
+        },
+        {
+          "field_id": "fld_li_desc",
+          "group": "Line Items",
+          "occurrence": 3,
+          "name": "Description"
+        },
+        {
+          "field_id": "fld_li_qty",
+          "group": "Line Items",
+          "occurrence": 3,
+          "name": "Quantity"
+        },
+        {
+          "field_id": "fld_li_price",
+          "group": "Line Items",
+          "occurrence": 3,
+          "name": "Unit Price"
+        },
+        {
+          "field_id": "fld_li_total",
+          "group": "Line Items",
+          "occurrence": 3,
+          "name": "Line Total"
+        },
+        {
+          "field_id": "fld_li_desc",
+          "group": "Line Items",
+          "occurrence": 4,
+          "name": "Description"
+        },
+        {
+          "field_id": "fld_li_qty",
+          "group": "Line Items",
+          "occurrence": 4,
+          "name": "Quantity"
+        },
+        {
+          "field_id": "fld_li_price",
+          "group": "Line Items",
+          "occurrence": 4,
+          "name": "Unit Price"
+        },
+        {
+          "field_id": "fld_li_total",
+          "group": "Line Items",
+          "occurrence": 4,
+          "name": "Line Total"
+        }
+      ],
+      "corrected": [],
+      "missing": [],
+      "not_confirmed": []
+    },
+    "fc73280dda3f607d.3a4a9dc40959dd7b": {
+      "doc_id": "fc73280dda3f607d.3a4a9dc40959dd7b",
+      "filename": "invoice_rapid_logistics_003.pdf",
+      "inv_id": "inv_003",
+      "confirmed": [
+        {
+          "field_id": "fld_inv_num",
+          "group": "Invoice Header",
+          "occurrence": 0,
+          "name": "Invoice Number"
+        },
+        {
+          "field_id": "fld_inv_date",
+          "group": "Invoice Header",
+          "occurrence": 0,
+          "name": "Invoice Date"
+        },
+        {
+          "field_id": "fld_due_date",
+          "group": "Invoice Header",
+          "occurrence": 0,
+          "name": "Due Date"
+        },
+        {
+          "field_id": "fld_po_num",
+          "group": "Invoice Header",
+          "occurrence": 0,
+          "name": "PO Number"
+        },
+        {
+          "field_id": "fld_pay_terms",
+          "group": "Invoice Header",
+          "occurrence": 0,
+          "name": "Payment Terms"
+        },
+        {
+          "field_id": "fld_currency",
+          "group": "Invoice Header",
+          "occurrence": 0,
+          "name": "Currency"
+        },
+        {
+          "field_id": "fld_vend_name",
+          "group": "Vendor Details",
+          "occurrence": 0,
+          "name": "Vendor Name"
+        },
+        {
+          "field_id": "fld_vend_addr",
+          "group": "Vendor Details",
+          "occurrence": 0,
+          "name": "Vendor Address"
+        },
+        {
+          "field_id": "fld_vend_email",
+          "group": "Vendor Details",
+          "occurrence": 0,
+          "name": "Vendor Email"
+        },
+        {
+          "field_id": "fld_vend_phone",
+          "group": "Vendor Details",
+          "occurrence": 0,
+          "name": "Vendor Phone"
+        },
+        {
+          "field_id": "fld_bt_name",
+          "group": "Bill To",
+          "occurrence": 0,
+          "name": "Bill-To Name"
+        },
+        {
+          "field_id": "fld_bt_addr",
+          "group": "Bill To",
+          "occurrence": 0,
+          "name": "Bill-To Address"
+        },
+        {
+          "field_id": "fld_subtotal",
+          "group": "Invoice Totals",
+          "occurrence": 0,
+          "name": "Subtotal"
+        },
+        {
+          "field_id": "fld_total",
+          "group": "Invoice Totals",
+          "occurrence": 0,
+          "name": "Total Due"
+        },
+        {
+          "field_id": "fld_li_desc",
+          "group": "Line Items",
+          "occurrence": 0,
+          "name": "Description"
+        },
+        {
+          "field_id": "fld_li_qty",
+          "group": "Line Items",
+          "occurrence": 0,
+          "name": "Quantity"
+        },
+        {
+          "field_id": "fld_li_price",
+          "group": "Line Items",
+          "occurrence": 0,
+          "name": "Unit Price"
+        },
+        {
+          "field_id": "fld_li_total",
+          "group": "Line Items",
+          "occurrence": 0,
+          "name": "Line Total"
+        },
+        {
+          "field_id": "fld_li_desc",
+          "group": "Line Items",
+          "occurrence": 1,
+          "name": "Description"
+        },
+        {
+          "field_id": "fld_li_qty",
+          "group": "Line Items",
+          "occurrence": 1,
+          "name": "Quantity"
+        },
+        {
+          "field_id": "fld_li_price",
+          "group": "Line Items",
+          "occurrence": 1,
+          "name": "Unit Price"
+        },
+        {
+          "field_id": "fld_li_total",
+          "group": "Line Items",
+          "occurrence": 1,
+          "name": "Line Total"
+        },
+        {
+          "field_id": "fld_li_desc",
+          "group": "Line Items",
+          "occurrence": 2,
+          "name": "Description"
+        },
+        {
+          "field_id": "fld_li_qty",
+          "group": "Line Items",
+          "occurrence": 2,
+          "name": "Quantity"
+        },
+        {
+          "field_id": "fld_li_price",
+          "group": "Line Items",
+          "occurrence": 2,
+          "name": "Unit Price"
+        },
+        {
+          "field_id": "fld_li_total",
+          "group": "Line Items",
+          "occurrence": 2,
+          "name": "Line Total"
+        },
+        {
+          "field_id": "fld_li_desc",
+          "group": "Line Items",
+          "occurrence": 3,
+          "name": "Description"
+        },
+        {
+          "field_id": "fld_li_qty",
+          "group": "Line Items",
+          "occurrence": 3,
+          "name": "Quantity"
+        },
+        {
+          "field_id": "fld_li_price",
+          "group": "Line Items",
+          "occurrence": 3,
+          "name": "Unit Price"
+        },
+        {
+          "field_id": "fld_li_total",
+          "group": "Line Items",
+          "occurrence": 3,
+          "name": "Line Total"
+        }
+      ],
+      "corrected": [],
+      "missing": [
+        {
+          "field_id": "fld_tax_rate",
+          "group": "Invoice Totals",
+          "occurrence": 0,
+          "name": "Tax Rate"
+        },
+        {
+          "field_id": "fld_tax_amount",
+          "group": "Invoice Totals",
+          "occurrence": 0,
+          "name": "Tax Amount"
+        }
+      ],
+      "not_confirmed": []
+    },
+    "0335e10ceb19bcda.0e0ff33d9fa2fef0": {
+      "doc_id": "0335e10ceb19bcda.0e0ff33d9fa2fef0",
+      "filename": "invoice_cloudwave_004.pdf",
+      "inv_id": "inv_004",
+      "confirmed": [
+        {
+          "field_id": "fld_inv_num",
+          "group": "Invoice Header",
+          "occurrence": 0,
+          "name": "Invoice Number"
+        },
+        {
+          "field_id": "fld_inv_date",
+          "group": "Invoice Header",
+          "occurrence": 0,
+          "name": "Invoice Date"
+        },
+        {
+          "field_id": "fld_due_date",
+          "group": "Invoice Header",
+          "occurrence": 0,
+          "name": "Due Date"
+        },
+        {
+          "field_id": "fld_po_num",
+          "group": "Invoice Header",
+          "occurrence": 0,
+          "name": "PO Number"
+        },
+        {
+          "field_id": "fld_pay_terms",
+          "group": "Invoice Header",
+          "occurrence": 0,
+          "name": "Payment Terms"
+        },
+        {
+          "field_id": "fld_currency",
+          "group": "Invoice Header",
+          "occurrence": 0,
+          "name": "Currency"
+        },
+        {
+          "field_id": "fld_vend_name",
+          "group": "Vendor Details",
+          "occurrence": 0,
+          "name": "Vendor Name"
+        },
+        {
+          "field_id": "fld_vend_addr",
+          "group": "Vendor Details",
+          "occurrence": 0,
+          "name": "Vendor Address"
+        },
+        {
+          "field_id": "fld_vend_email",
+          "group": "Vendor Details",
+          "occurrence": 0,
+          "name": "Vendor Email"
+        },
+        {
+          "field_id": "fld_vend_phone",
+          "group": "Vendor Details",
+          "occurrence": 0,
+          "name": "Vendor Phone"
+        },
+        {
+          "field_id": "fld_bt_name",
+          "group": "Bill To",
+          "occurrence": 0,
+          "name": "Bill-To Name"
+        },
+        {
+          "field_id": "fld_bt_addr",
+          "group": "Bill To",
+          "occurrence": 0,
+          "name": "Bill-To Address"
+        },
+        {
+          "field_id": "fld_subtotal",
+          "group": "Invoice Totals",
+          "occurrence": 0,
+          "name": "Subtotal"
+        },
+        {
+          "field_id": "fld_tax_rate",
+          "group": "Invoice Totals",
+          "occurrence": 0,
+          "name": "Tax Rate"
+        },
+        {
+          "field_id": "fld_tax_amount",
+          "group": "Invoice Totals",
+          "occurrence": 0,
+          "name": "Tax Amount"
+        },
+        {
+          "field_id": "fld_total",
+          "group": "Invoice Totals",
+          "occurrence": 0,
+          "name": "Total Due"
+        },
+        {
+          "field_id": "fld_li_desc",
+          "group": "Line Items",
+          "occurrence": 0,
+          "name": "Description"
+        },
+        {
+          "field_id": "fld_li_qty",
+          "group": "Line Items",
+          "occurrence": 0,
+          "name": "Quantity"
+        },
+        {
+          "field_id": "fld_li_price",
+          "group": "Line Items",
+          "occurrence": 0,
+          "name": "Unit Price"
+        },
+        {
+          "field_id": "fld_li_total",
+          "group": "Line Items",
+          "occurrence": 0,
+          "name": "Line Total"
+        },
+        {
+          "field_id": "fld_li_desc",
+          "group": "Line Items",
+          "occurrence": 1,
+          "name": "Description"
+        },
+        {
+          "field_id": "fld_li_qty",
+          "group": "Line Items",
+          "occurrence": 1,
+          "name": "Quantity"
+        },
+        {
+          "field_id": "fld_li_price",
+          "group": "Line Items",
+          "occurrence": 1,
+          "name": "Unit Price"
+        },
+        {
+          "field_id": "fld_li_total",
+          "group": "Line Items",
+          "occurrence": 1,
+          "name": "Line Total"
+        },
+        {
+          "field_id": "fld_li_desc",
+          "group": "Line Items",
+          "occurrence": 2,
+          "name": "Description"
+        },
+        {
+          "field_id": "fld_li_qty",
+          "group": "Line Items",
+          "occurrence": 2,
+          "name": "Quantity"
+        },
+        {
+          "field_id": "fld_li_price",
+          "group": "Line Items",
+          "occurrence": 2,
+          "name": "Unit Price"
+        },
+        {
+          "field_id": "fld_li_total",
+          "group": "Line Items",
+          "occurrence": 2,
+          "name": "Line Total"
+        },
+        {
+          "field_id": "fld_li_desc",
+          "group": "Line Items",
+          "occurrence": 3,
+          "name": "Description"
+        },
+        {
+          "field_id": "fld_li_qty",
+          "group": "Line Items",
+          "occurrence": 3,
+          "name": "Quantity"
+        },
+        {
+          "field_id": "fld_li_price",
+          "group": "Line Items",
+          "occurrence": 3,
+          "name": "Unit Price"
+        },
+        {
+          "field_id": "fld_li_total",
+          "group": "Line Items",
+          "occurrence": 3,
+          "name": "Line Total"
+        },
+        {
+          "field_id": "fld_li_desc",
+          "group": "Line Items",
+          "occurrence": 4,
+          "name": "Description"
+        },
+        {
+          "field_id": "fld_li_qty",
+          "group": "Line Items",
+          "occurrence": 4,
+          "name": "Quantity"
+        },
+        {
+          "field_id": "fld_li_price",
+          "group": "Line Items",
+          "occurrence": 4,
+          "name": "Unit Price"
+        },
+        {
+          "field_id": "fld_li_total",
+          "group": "Line Items",
+          "occurrence": 4,
+          "name": "Line Total"
+        },
+        {
+          "field_id": "fld_li_desc",
+          "group": "Line Items",
+          "occurrence": 5,
+          "name": "Description"
+        },
+        {
+          "field_id": "fld_li_qty",
+          "group": "Line Items",
+          "occurrence": 5,
+          "name": "Quantity"
+        },
+        {
+          "field_id": "fld_li_price",
+          "group": "Line Items",
+          "occurrence": 5,
+          "name": "Unit Price"
+        },
+        {
+          "field_id": "fld_li_total",
+          "group": "Line Items",
+          "occurrence": 5,
+          "name": "Line Total"
+        }
+      ],
+      "corrected": [
+        {
+          "field_id": "fld_li_total",
+          "group": "Line Items",
+          "occurrence": 2,
+          "name": "Line Total",
+          "predicted": "1,130.00 USD",
+          "corrected": "1,080.00 USD"
+        }
+      ],
+      "missing": [],
+      "not_confirmed": []
+    },
+    "6303f815399fece0.91e26309e4a1e61b": {
+      "doc_id": "6303f815399fece0.91e26309e4a1e61b",
+      "filename": "invoice_meridian_consulting_005.pdf",
+      "inv_id": "inv_005",
+      "confirmed": [
+        {
+          "field_id": "fld_inv_num",
+          "group": "Invoice Header",
+          "occurrence": 0,
+          "name": "Invoice Number"
+        },
+        {
+          "field_id": "fld_inv_date",
+          "group": "Invoice Header",
+          "occurrence": 0,
+          "name": "Invoice Date"
+        },
+        {
+          "field_id": "fld_due_date",
+          "group": "Invoice Header",
+          "occurrence": 0,
+          "name": "Due Date"
+        },
+        {
+          "field_id": "fld_po_num",
+          "group": "Invoice Header",
+          "occurrence": 0,
+          "name": "PO Number"
+        },
+        {
+          "field_id": "fld_pay_terms",
+          "group": "Invoice Header",
+          "occurrence": 0,
+          "name": "Payment Terms"
+        },
+        {
+          "field_id": "fld_currency",
+          "group": "Invoice Header",
+          "occurrence": 0,
+          "name": "Currency"
+        },
+        {
+          "field_id": "fld_vend_name",
+          "group": "Vendor Details",
+          "occurrence": 0,
+          "name": "Vendor Name"
+        },
+        {
+          "field_id": "fld_vend_addr",
+          "group": "Vendor Details",
+          "occurrence": 0,
+          "name": "Vendor Address"
+        },
+        {
+          "field_id": "fld_vend_email",
+          "group": "Vendor Details",
+          "occurrence": 0,
+          "name": "Vendor Email"
+        },
+        {
+          "field_id": "fld_vend_phone",
+          "group": "Vendor Details",
+          "occurrence": 0,
+          "name": "Vendor Phone"
+        },
+        {
+          "field_id": "fld_bt_name",
+          "group": "Bill To",
+          "occurrence": 0,
+          "name": "Bill-To Name"
+        },
+        {
+          "field_id": "fld_bt_addr",
+          "group": "Bill To",
+          "occurrence": 0,
+          "name": "Bill-To Address"
+        },
+        {
+          "field_id": "fld_subtotal",
+          "group": "Invoice Totals",
+          "occurrence": 0,
+          "name": "Subtotal"
+        },
+        {
+          "field_id": "fld_tax_rate",
+          "group": "Invoice Totals",
+          "occurrence": 0,
+          "name": "Tax Rate"
+        },
+        {
+          "field_id": "fld_tax_amount",
+          "group": "Invoice Totals",
+          "occurrence": 0,
+          "name": "Tax Amount"
+        },
+        {
+          "field_id": "fld_total",
+          "group": "Invoice Totals",
+          "occurrence": 0,
+          "name": "Total Due"
+        },
+        {
+          "field_id": "fld_li_desc",
+          "group": "Line Items",
+          "occurrence": 0,
+          "name": "Description"
+        },
+        {
+          "field_id": "fld_li_qty",
+          "group": "Line Items",
+          "occurrence": 0,
+          "name": "Quantity"
+        },
+        {
+          "field_id": "fld_li_price",
+          "group": "Line Items",
+          "occurrence": 0,
+          "name": "Unit Price"
+        },
+        {
+          "field_id": "fld_li_total",
+          "group": "Line Items",
+          "occurrence": 0,
+          "name": "Line Total"
+        },
+        {
+          "field_id": "fld_li_desc",
+          "group": "Line Items",
+          "occurrence": 1,
+          "name": "Description"
+        },
+        {
+          "field_id": "fld_li_qty",
+          "group": "Line Items",
+          "occurrence": 1,
+          "name": "Quantity"
+        },
+        {
+          "field_id": "fld_li_price",
+          "group": "Line Items",
+          "occurrence": 1,
+          "name": "Unit Price"
+        },
+        {
+          "field_id": "fld_li_total",
+          "group": "Line Items",
+          "occurrence": 1,
+          "name": "Line Total"
+        },
+        {
+          "field_id": "fld_li_desc",
+          "group": "Line Items",
+          "occurrence": 2,
+          "name": "Description"
+        },
+        {
+          "field_id": "fld_li_qty",
+          "group": "Line Items",
+          "occurrence": 2,
+          "name": "Quantity"
+        },
+        {
+          "field_id": "fld_li_price",
+          "group": "Line Items",
+          "occurrence": 2,
+          "name": "Unit Price"
+        },
+        {
+          "field_id": "fld_li_total",
+          "group": "Line Items",
+          "occurrence": 2,
+          "name": "Line Total"
+        },
+        {
+          "field_id": "fld_li_desc",
+          "group": "Line Items",
+          "occurrence": 3,
+          "name": "Description"
+        },
+        {
+          "field_id": "fld_li_qty",
+          "group": "Line Items",
+          "occurrence": 3,
+          "name": "Quantity"
+        },
+        {
+          "field_id": "fld_li_price",
+          "group": "Line Items",
+          "occurrence": 3,
+          "name": "Unit Price"
+        },
+        {
+          "field_id": "fld_li_total",
+          "group": "Line Items",
+          "occurrence": 3,
+          "name": "Line Total"
+        }
+      ],
+      "corrected": [],
+      "missing": [],
+      "not_confirmed": []
+    }
+  },
+  "metrics": {
+    "ModelVersion": 1,
+    "TrainedTime": "2024-03-30T09:45:00Z",
+    "ProjectScore": 1.0,
+    "ProjectScoreQuality": "Good",
+    "ValidatedDocuments": 5,
+    "FieldGroups": [
+      {
+        "FieldGroup": "Invoice Header",
+        "F1": 1.0,
+        "Precision": 1.0,
+        "Recall": 1.0,
+        "Documents": 5,
+        "TP": 30,
+        "FP": 0,
+        "FN": 0
+      },
+      {
+        "FieldGroup": "Vendor Details",
+        "F1": 1.0,
+        "Precision": 1.0,
+        "Recall": 1.0,
+        "Documents": 5,
+        "TP": 20,
+        "FP": 0,
+        "FN": 0
+      },
+      {
+        "FieldGroup": "Bill To",
+        "F1": 1.0,
+        "Precision": 1.0,
+        "Recall": 1.0,
+        "Documents": 5,
+        "TP": 10,
+        "FP": 0,
+        "FN": 0
+      },
+      {
+        "FieldGroup": "Invoice Totals",
+        "F1": 1.0,
+        "Precision": 1.0,
+        "Recall": 1.0,
+        "Documents": 5,
+        "TP": 18,
+        "FP": 0,
+        "FN": 0
+      },
+      {
+        "FieldGroup": "Line Items",
+        "F1": 1.0,
+        "Precision": 1.0,
+        "Recall": 1.0,
+        "Documents": 5,
+        "TP": 92,
+        "FP": 0,
+        "FN": 0
+      }
+    ],
+    "Fields": [
+      {
+        "FieldId": "fld_inv_num",
+        "FieldName": "Invoice Number",
+        "FieldGroup": "Invoice Header",
+        "F1": 1.0,
+        "Precision": 1.0,
+        "Recall": 1.0,
+        "Annotations": 5,
+        "TP": 5,
+        "FP": 0,
+        "FN": 0
+      },
+      {
+        "FieldId": "fld_inv_date",
+        "FieldName": "Invoice Date",
+        "FieldGroup": "Invoice Header",
+        "F1": 1.0,
+        "Precision": 1.0,
+        "Recall": 1.0,
+        "Annotations": 5,
+        "TP": 5,
+        "FP": 0,
+        "FN": 0
+      },
+      {
+        "FieldId": "fld_due_date",
+        "FieldName": "Due Date",
+        "FieldGroup": "Invoice Header",
+        "F1": 1.0,
+        "Precision": 1.0,
+        "Recall": 1.0,
+        "Annotations": 5,
+        "TP": 5,
+        "FP": 0,
+        "FN": 0
+      },
+      {
+        "FieldId": "fld_po_num",
+        "FieldName": "PO Number",
+        "FieldGroup": "Invoice Header",
+        "F1": 1.0,
+        "Precision": 1.0,
+        "Recall": 1.0,
+        "Annotations": 5,
+        "TP": 5,
+        "FP": 0,
+        "FN": 0
+      },
+      {
+        "FieldId": "fld_pay_terms",
+        "FieldName": "Payment Terms",
+        "FieldGroup": "Invoice Header",
+        "F1": 1.0,
+        "Precision": 1.0,
+        "Recall": 1.0,
+        "Annotations": 5,
+        "TP": 5,
+        "FP": 0,
+        "FN": 0
+      },
+      {
+        "FieldId": "fld_currency",
+        "FieldName": "Currency",
+        "FieldGroup": "Invoice Header",
+        "F1": 1.0,
+        "Precision": 1.0,
+        "Recall": 1.0,
+        "Annotations": 5,
+        "TP": 5,
+        "FP": 0,
+        "FN": 0
+      },
+      {
+        "FieldId": "fld_vend_name",
+        "FieldName": "Vendor Name",
+        "FieldGroup": "Vendor Details",
+        "F1": 1.0,
+        "Precision": 1.0,
+        "Recall": 1.0,
+        "Annotations": 5,
+        "TP": 5,
+        "FP": 0,
+        "FN": 0
+      },
+      {
+        "FieldId": "fld_vend_addr",
+        "FieldName": "Vendor Address",
+        "FieldGroup": "Vendor Details",
+        "F1": 1.0,
+        "Precision": 1.0,
+        "Recall": 1.0,
+        "Annotations": 5,
+        "TP": 5,
+        "FP": 0,
+        "FN": 0
+      },
+      {
+        "FieldId": "fld_vend_email",
+        "FieldName": "Vendor Email",
+        "FieldGroup": "Vendor Details",
+        "F1": 1.0,
+        "Precision": 1.0,
+        "Recall": 1.0,
+        "Annotations": 5,
+        "TP": 5,
+        "FP": 0,
+        "FN": 0
+      },
+      {
+        "FieldId": "fld_vend_phone",
+        "FieldName": "Vendor Phone",
+        "FieldGroup": "Vendor Details",
+        "F1": 1.0,
+        "Precision": 1.0,
+        "Recall": 1.0,
+        "Annotations": 5,
+        "TP": 5,
+        "FP": 0,
+        "FN": 0
+      },
+      {
+        "FieldId": "fld_bt_name",
+        "FieldName": "Bill-To Name",
+        "FieldGroup": "Bill To",
+        "F1": 1.0,
+        "Precision": 1.0,
+        "Recall": 1.0,
+        "Annotations": 5,
+        "TP": 5,
+        "FP": 0,
+        "FN": 0
+      },
+      {
+        "FieldId": "fld_bt_addr",
+        "FieldName": "Bill-To Address",
+        "FieldGroup": "Bill To",
+        "F1": 1.0,
+        "Precision": 1.0,
+        "Recall": 1.0,
+        "Annotations": 5,
+        "TP": 5,
+        "FP": 0,
+        "FN": 0
+      },
+      {
+        "FieldId": "fld_subtotal",
+        "FieldName": "Subtotal",
+        "FieldGroup": "Invoice Totals",
+        "F1": 1.0,
+        "Precision": 1.0,
+        "Recall": 1.0,
+        "Annotations": 5,
+        "TP": 5,
+        "FP": 0,
+        "FN": 0
+      },
+      {
+        "FieldId": "fld_tax_rate",
+        "FieldName": "Tax Rate",
+        "FieldGroup": "Invoice Totals",
+        "F1": 1.0,
+        "Precision": 1.0,
+        "Recall": 1.0,
+        "Annotations": 5,
+        "TP": 4,
+        "FP": 0,
+        "FN": 0
+      },
+      {
+        "FieldId": "fld_tax_amount",
+        "FieldName": "Tax Amount",
+        "FieldGroup": "Invoice Totals",
+        "F1": 1.0,
+        "Precision": 1.0,
+        "Recall": 1.0,
+        "Annotations": 5,
+        "TP": 4,
+        "FP": 0,
+        "FN": 0
+      },
+      {
+        "FieldId": "fld_total",
+        "FieldName": "Total Due",
+        "FieldGroup": "Invoice Totals",
+        "F1": 1.0,
+        "Precision": 1.0,
+        "Recall": 1.0,
+        "Annotations": 5,
+        "TP": 5,
+        "FP": 0,
+        "FN": 0
+      },
+      {
+        "FieldId": "fld_li_desc",
+        "FieldName": "Description",
+        "FieldGroup": "Line Items",
+        "F1": 1.0,
+        "Precision": 1.0,
+        "Recall": 1.0,
+        "Annotations": 23,
+        "TP": 23,
+        "FP": 0,
+        "FN": 0
+      },
+      {
+        "FieldId": "fld_li_qty",
+        "FieldName": "Quantity",
+        "FieldGroup": "Line Items",
+        "F1": 1.0,
+        "Precision": 1.0,
+        "Recall": 1.0,
+        "Annotations": 23,
+        "TP": 23,
+        "FP": 0,
+        "FN": 0
+      },
+      {
+        "FieldId": "fld_li_price",
+        "FieldName": "Unit Price",
+        "FieldGroup": "Line Items",
+        "F1": 1.0,
+        "Precision": 1.0,
+        "Recall": 1.0,
+        "Annotations": 23,
+        "TP": 23,
+        "FP": 0,
+        "FN": 0
+      },
+      {
+        "FieldId": "fld_li_total",
+        "FieldName": "Line Total",
+        "FieldGroup": "Line Items",
+        "F1": 1.0,
+        "Precision": 1.0,
+        "Recall": 1.0,
+        "Annotations": 23,
+        "TP": 23,
+        "FP": 0,
+        "FN": 0
+      }
+    ]
+  }
+}

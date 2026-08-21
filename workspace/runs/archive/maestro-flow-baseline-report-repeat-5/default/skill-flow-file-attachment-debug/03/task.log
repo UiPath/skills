@@ -1,0 +1,48 @@
+2026-07-24 20:33:07 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-24 20:33:07 [INFO] coder_eval.orchestrator: API routing: aws_bedrock
+2026-07-24 20:33:07 [DEBUG] coder_eval.criteria: Discovered 14 criterion checkers
+2026-07-24 20:33:07 [DEBUG] coder_eval.criteria: Validated 14 criterion checkers
+2026-07-24 20:33:07 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-24 20:33:07 [DEBUG] coder_eval.orchestrator: Sending prompt: Create a UiPath Flow project named "AttachmentEcho" that accepts a file as
+input and echoes the uplo...
+2026-07-24 20:33:07 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Starting agent query stream...
+2026-07-24 20:36:28 [DEBUG] coder_eval.agents.claude_code_agent: [coder] session_id changed: None -> 39afa3b0-42c8-4efb-9539-f514971d3de7
+2026-07-24 20:36:28 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Agent query stream ended
+2026-07-24 20:36:28 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-24 20:36:28 [DEBUG] coder_eval.orchestrator: Agent response received (3629 chars)
+2026-07-24 20:36:28 [DEBUG] coder_eval.orchestrator: Checking success criteria
+2026-07-24 20:36:28 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'uip maestro flow validate passes on the flow file': uip maestro flow validate AttachmentEcho/AttachmentEcho/AttachmentEcho.flow
+2026-07-24 20:36:34 [DEBUG] coder_eval.sandbox: Command 'uip maestro flow validate AttachmentEcho/AttachmentEcho/AttachmentEcho.flow' exited with code 0
+2026-07-24 20:36:34 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+{
+  "Result": "Success",
+  "Code": "FlowValidate",
+  "Data": {
+    "File": "/work/output/artifacts/skill-flow-file-attachment-debug/AttachmentEcho/AttachmentEcho/AttachmentEcho.flow",
+    "Status": "Valid"
+  }
+}
+---
+2026-07-24 20:36:34 [DEBUG] coder_eval.sandbox: STDERR:
+---
+[ManifestClient] fetchDynamicNodes ok: total=207 agent context nodes=2 external agent nodes=6 orchestrator nodes=158 IXP nodes=41
+---
+2026-07-24 20:36:34 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-07-24 20:36:34 [DEBUG] coder_eval.evaluation.checker: Criterion 'command_executed' score: 1.00
+2026-07-24 20:36:34 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'Debug with --attachment completes and the uploaded file name appears in the output': python3 $TASK_DIR/check_file_attachment_flow.py
+2026-07-24 20:36:51 [DEBUG] coder_eval.sandbox: Command 'python3 $TASK_DIR/check_file_attachment_flow.py' exited with code 0
+2026-07-24 20:36:51 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+Binding --attachment inputDoc=/tmp/tmp_5u3ajs5/evidence-cc24200d9117.txt
+OK: Script node present; flow completed; output surfaced attachment FullName 'evidence-cc24200d9117.txt'
+---
+2026-07-24 20:36:51 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-07-24 20:36:51 [INFO] coder_eval.orchestrator: Success criteria: 3/3 passed, weighted score: 1.000
+2026-07-24 20:36:51 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-24 20:36:51 [INFO] coder_eval.orchestrator: Running post-run command: python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/cleanup_solutions.py
+2026-07-24 20:36:53 [WARNING] coder_eval.orchestrator: [post_run stderr] cleanup_solutions: deleted 24c804c2-ea83-472a-75d9-08dee9b21193 (from AttachmentEcho/AttachmentEcho.uipx)
+2026-07-24 20:36:53 [WARNING] coder_eval.orchestrator: [post_run stderr] cleanup_solutions: summary policy=always deleted=1 preserved=0 skipped=0 not_uploaded=0 failed=0
+2026-07-24 20:36:53 [INFO] coder_eval.orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+2026-07-24 20:36:53 [INFO] coder_eval.orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-file-attachment-debug
+2026-07-24 20:36:53 [INFO] coder_eval.orchestrator: Task finished: status=SUCCESS duration=227.3s score=1.000 iterations=1

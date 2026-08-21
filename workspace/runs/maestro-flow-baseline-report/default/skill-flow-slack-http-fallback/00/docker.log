@@ -1,0 +1,6 @@
+20:54:47 [INFO   ] [default/skill-flow-slack-http-fallback/00] orchestrator: API routing: aws_bedrock
+20:59:21 [INFO   ] [default/skill-flow-slack-http-fallback/00] orchestrator: Success criteria: 4/4 passed, weighted score: 1.000
+20:59:21 [WARNING] [default/skill-flow-slack-http-fallback/00] orchestrator: Visible turns (37) exceeded expected_turns (32) at iteration 1 for task skill-flow-slack-http-fallback. Run continues — max_turns remains the hard cap.
+20:59:21 [INFO   ] [default/skill-flow-slack-http-fallback/00] orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+20:59:21 [INFO   ] [default/skill-flow-slack-http-fallback/00] orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-slack-http-fallback
+20:59:21 [INFO   ] [default/skill-flow-slack-http-fallback/00] orchestrator: Task finished: status=SUCCESS duration=275.2s score=1.000 iterations=1

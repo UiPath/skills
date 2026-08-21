@@ -1,0 +1,175 @@
+task_id: skill-ixp-integration-labelling-correctness
+description: >
+  Integration: labelling correctness on a live trained project with a repeatable
+  field group (Line Items). Verifies per-occurrence confirm targeting (only the
+  chosen occurrences are confirmed), OCR-correction forwarding across occurrences
+  under `--group`, unconfirm rollback, and mark-missing — each checked by
+  re-reading `get-predictions`. These are CLI payload-construction behaviors, not
+  backend semantics.
+tags: [uipath-ixp, integration, mode:operate]
+
+run_limits:
+  max_turns: 68
+  task_timeout: 3600
+  turn_timeout: 1800
+
+sandbox:
+  # driver: docker (NOT tempdir) so `uip ixp` resolves the migrated in-image
+  # ixp-tool, not the BYOS host's stale pre-migration plugin.
+  driver: docker
+  python: {}
+  template_sources:
+    - type: template_dir
+      path: ../_shared/fixtures
+
+initial_prompt: |
+  Set up a trained invoice project. Use the tenant I'm already signed into
+  (check I'm logged in; don't re-authenticate): create a blank project (give it a unique title
+  `codereval-integ-labelling-<random-suffix>` so concurrent runs don't collide) and upload
+  `./fixtures/csi_tower_invoice.png`. Work only on the project you create; other
+  runs share this tenant, so never list, read, or modify any other project.
+  Right after the project is created, write `report.json` for cleanup: {"project_name": "<the ProjectName from the create response>"}.
+  Then set up the taxonomy yourself — add a
+  "Line Items" field group with three fields: "Description" (text), "Amount"
+  (monetary), and "Tax" (monetary).
+
+  Training takes a few minutes. Poll the project's training status on a fixed
+  interval — wait 2 min between checks, up to 5 checks. Do NOT use a single
+  long sleep or escalating waits. Read predictions only once training has
+  completed; if it's still training after 5 checks, stop and report rather
+  than waiting longer.
+
+  Then, on that invoice's line items:
+  - Line 1 (the first line item) is extracted correctly — confirm just that one
+    line on its own, leaving every other row untouched.
+  - Separately, the OCR mangled the "Amount" on line 2 and line 3 — correct both
+    of those Amounts in a single batched call (line 2 to `500.00`, line 3 to
+    `105.42`). Save that command's response to `confirm_result.json`.
+  - Actually, scrap that — roll back everything you just confirmed on this document,
+    and save that command's response to `unconfirm_result.json`.
+  - These line items have no tax column, so "Tax" doesn't apply here — mark it
+    missing, and save that response to `mark_missing_result.json`.
+
+success_criteria:
+  - type: command_executed
+    description: "Built the Line Items field group by hand"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+ixp\s+groups\s+add\b(?=.*Line Items)'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Fetched predictions to resolve occurrences and field ids before mutating"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+ixp\s+labellings\s+get-predictions'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Confirmed the first occurrence via --group + --occurrence 0"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+ixp\s+labellings\s+confirm\b(?=.*--group)(?=.*--occurrence(?:\s+|=)0\b)'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Batched confirm with --updates carrying a corrections entry across occurrences"
+    tool_name: "Bash"
+    command_pattern: '(?s)(?=.*(uip|\$UIP)\s+ixp\s+labellings\s+confirm\b)(?=.*--group)(?=.*--updates)(?=.*corrections)'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Rolled back with unconfirm"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+ixp\s+labellings\s+unconfirm'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Marked a genuinely-absent field missing"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+ixp\s+labellings\s+mark-missing\b.*--fields'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "report.json written for post-run cleanup"
+    path: "report.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # --- Outcome verification ---
+  # TODO: add a CLI command to read annotation state back, so we can validate the
+  # ACTUAL confirmed/corrected/missing values on the document — true outcome
+  # verification. No such command exists today, so for now we assert on the write
+  # response instead: the operation `Code`, a count of items affected, and
+  # `Unmatched == []` (the targeted field/occurrence existed and was hit, not
+  # silently skipped). (Result/Code are root-level, present because the agent
+  # saves the full CLI response.)
+  - type: json_check
+    description: "Batched correction confirm ran (right Code) and confirmed predictions"
+    path: "confirm_result.json"
+    assertions:
+      - expression: "Result"
+        operator: equals
+        expected: "Success"
+      - expression: "Code"
+        operator: equals
+        expected: "IxpLabellingsConfirm"
+      - expression: "Data.PredictionsConfirmed"
+        operator: gte
+        expected: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "unconfirm rolled back real annotations (count >= 1, nothing unmatched)"
+    path: "unconfirm_result.json"
+    assertions:
+      - expression: "Result"
+        operator: equals
+        expected: "Success"
+      - expression: "Code"
+        operator: equals
+        expected: "IxpLabellingsUnconfirm"
+      - expression: "Data.FieldsUnconfirmed"
+        operator: gte
+        expected: 1
+      - expression: "length(Data.Unmatched)"
+        operator: equals
+        expected: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "mark-missing hit the real Tax field (>=1 marked, none unmatched)"
+    path: "mark_missing_result.json"
+    assertions:
+      - expression: "Result"
+        operator: equals
+        expected: "Success"
+      - expression: "Code"
+        operator: equals
+        expected: "IxpLabellingsMarkMissing"
+      - expression: "Data.FieldsMarked"
+        operator: gte
+        expected: 1
+      - expression: "length(Data.Unmatched)"
+        operator: equals
+        expected: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+# Safety net: delete the project even if the agent's in-band cleanup never ran
+# (crash / MAX_TURNS before the final delete). Reads report.json; idempotent;
+# always exits 0 so it never fails the test.
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-ixp/_shared/cleanup_project.py"
+    timeout: 60

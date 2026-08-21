@@ -1,0 +1,12 @@
+{
+  "_comment": "PLANNED — not yet applied via `node configure`. Missing business input: which SharePoint folder to read invoices from.",
+  "connectionId": "ae311606-25b7-43ef-9cd0-f3dc0b3a9b58",
+  "folderKey": "c4359cde-55f0-4f0e-9322-c6cdce74ab4c",
+  "method": "GET",
+  "endpoint": "/GetFilesFolders",
+  "queryParameters": {
+    "referenceID": "<SHAREPOINT_FOLDER_REFERENCE_ID>",
+    "return": "file",
+    "simpleSearch": ".pdf"
+  }
+}

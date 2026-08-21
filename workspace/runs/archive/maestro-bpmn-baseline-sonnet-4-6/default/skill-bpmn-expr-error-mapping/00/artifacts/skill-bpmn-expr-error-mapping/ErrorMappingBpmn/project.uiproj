@@ -1,0 +1,8 @@
+{
+  "name": "ErrorMappingBpmn",
+  "description": "Error mapping demo: service task with uipath:errorMapping on SERVICE_UNAVAILABLE",
+  "main": "ErrorMappingBpmn.bpmn",
+  "contentType": "ProcessOrchestration",
+  "projectVersion": "1.0.0",
+  "runtimeOptions": {}
+}

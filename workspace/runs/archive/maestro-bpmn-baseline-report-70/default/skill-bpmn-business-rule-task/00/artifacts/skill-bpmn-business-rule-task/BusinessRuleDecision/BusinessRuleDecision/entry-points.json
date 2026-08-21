@@ -1,0 +1,21 @@
+{
+  "entryPoints": [
+    {
+      "id": "Entry_LoanPrecheck",
+      "filePath": "/content/BusinessRuleDecision.bpmn#Start_Manual",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "applicantScore": { "type": "number" },
+          "requestedAmount": { "type": "number" }
+        }
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "eligibilityDecision": { "type": "string" }
+        }
+      }
+    }
+  ]
+}

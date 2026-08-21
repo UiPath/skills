@@ -1,0 +1,15 @@
+{
+  "connectionId": "<PLACEHOLDER_CONNECTION_ID>",
+  "folderKey": "<PLACEHOLDER_FOLDER_KEY>",
+  "method": "POST",
+  "endpoint": "/normalised-teams/{team_id}/channels/{channel_id}/messages/{message_id}/replies-v2/drive/item",
+  "pathParameters": {
+    "team_id": "<PLACEHOLDER_TEAM_ID>",
+    "channel_id": "<PLACEHOLDER_CHANNEL_ID>",
+    "message_id": "<PLACEHOLDER_MESSAGE_ID>"
+  },
+  "bodyParameters": {
+    "body.content": "Here are the requested file attachments.",
+    "attachmentIds": "=js:(['<PLACEHOLDER_SHAREPOINT_FILE_ID_1>', '<PLACEHOLDER_SHAREPOINT_FILE_ID_2>'])"
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "name": "EmployeeAccessBpmn",
+  "description": "Employee access provisioning process with HITL approval and RPA job.",
+  "projectVersion": "1.0.0",
+  "main": "EmployeeAccessBpmn.bpmn",
+  "contentType": "ProcessOrchestration",
+  "targetFramework": "Portable",
+  "studioVersion": "24.10.0"
+}

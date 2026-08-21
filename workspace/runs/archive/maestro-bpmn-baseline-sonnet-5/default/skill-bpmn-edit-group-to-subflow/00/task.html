@@ -1,0 +1,2815 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>coder_eval · skill-bpmn-edit-group-to-subflow · default</title>
+<style>
+:root {
+  --bg-page: #0f1419;
+  --bg-card: #1a2129;
+  --bg-card-2: #232d38;
+  --bg-code: #0b0f14;
+  --fg: #e6edf3;
+  --fg-muted: #8b98a5;
+  --fg-dim: #6e7681;
+  --border: #30363d;
+  --accent: #58a6ff;
+  --score-high: #22c55e;
+  --score-mid: #f59e0b;
+  --score-low: #ef4444;
+  --status-success: #22c55e;
+  --status-failure: #f59e0b;
+  --status-error: #ef4444;
+  --status-neutral: #6e7681;
+  --shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+.light {
+  --bg-page: #ffffff;
+  --bg-card: #f6f8fa;
+  --bg-card-2: #eaeef2;
+  --bg-code: #f6f8fa;
+  --fg: #1f2328;
+  --fg-muted: #636c76;
+  --fg-dim: #8b949e;
+  --border: #d0d7de;
+  --accent: #0969da;
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial,
+               sans-serif;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--fg);
+  background: var(--bg-page);
+}
+.container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+h1, h2, h3, h4 { margin: 0 0 12px 0; line-height: 1.25; }
+h1 { font-size: 22px; font-weight: 600; }
+h2 { font-size: 18px; font-weight: 600; margin-top: 28px;
+     padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+h3 { font-size: 15px; font-weight: 600; color: var(--fg-muted); }
+h4 { font-size: 13px; font-weight: 600; color: var(--fg-muted); }
+p { margin: 0 0 8px 0; }
+.muted { color: var(--fg-muted); }
+.dim { color: var(--fg-dim); }
+.mono { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+        monospace; font-size: 12.5px; }
+code { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+       monospace; font-size: 12.5px; background: var(--bg-code);
+       border: 1px solid var(--border); padding: 1px 5px; border-radius: 3px; }
+pre { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+      monospace; font-size: 12.5px; background: var(--bg-code);
+      border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px;
+      margin: 6px 0; overflow-x: auto; white-space: pre-wrap;
+      word-wrap: break-word; }
+.header-bar { display: flex; align-items: center; justify-content: space-between;
+              margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+.title-group { flex: 1; min-width: 0; }
+.title-group .subtitle { color: var(--fg-muted); font-size: 13px;
+                         margin-top: 2px; word-break: break-all; }
+.badges { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.badge { display: inline-flex; align-items: center; gap: 6px;
+         padding: 4px 10px; border-radius: 12px; font-size: 12px;
+         font-weight: 600; background: var(--bg-card-2);
+         border: 1px solid var(--border); color: var(--fg); }
+.badge.success { background: color-mix(in srgb, var(--status-success) 20%, var(--bg-card-2));
+                 border-color: var(--status-success); color: var(--status-success); }
+.badge.failure { background: color-mix(in srgb, var(--status-failure) 20%, var(--bg-card-2));
+                 border-color: var(--status-failure); color: var(--status-failure); }
+.badge.error { background: color-mix(in srgb, var(--status-error) 20%, var(--bg-card-2));
+               border-color: var(--status-error); color: var(--status-error); }
+.badge.warning { background: color-mix(in srgb, #f4a52810 20%, var(--bg-card-2));
+                 border-color: #f4a528; color: #f4a528; }
+.badge.neutral { color: var(--fg-muted); }
+.score-pill { display: inline-block; padding: 2px 8px; border-radius: 10px;
+              font-size: 12px; font-weight: 700; min-width: 42px;
+              text-align: center; color: #0b0f14; }
+.score-high { background: var(--score-high); }
+.score-mid { background: var(--score-mid); }
+.score-low { background: var(--score-low); }
+.card { background: var(--bg-card); border: 1px solid var(--border);
+        border-radius: 8px; padding: 16px 20px; margin-bottom: 16px;
+        box-shadow: var(--shadow); }
+.card.highlight { border-left: 4px solid var(--accent); }
+.grid { display: grid; gap: 12px;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+.stat { background: var(--bg-card-2); padding: 10px 12px; border-radius: 6px;
+        border: 1px solid var(--border); }
+.stat .label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;
+               color: var(--fg-muted); margin-bottom: 4px; }
+.stat .value { font-size: 16px; font-weight: 600; }
+table { width: 100%; border-collapse: collapse; margin: 4px 0 12px 0; }
+th, td { text-align: left; padding: 8px 10px;
+         border-bottom: 1px solid var(--border); vertical-align: top;
+         font-size: 13px; }
+th { color: var(--fg-muted); font-weight: 600; font-size: 12px;
+     text-transform: uppercase; letter-spacing: 0.3px; }
+tr:last-child td { border-bottom: none; }
+details { margin: 6px 0; border: 1px solid var(--border); border-radius: 6px;
+          background: var(--bg-card-2); }
+details > summary { cursor: pointer; padding: 8px 12px; user-select: none;
+                    font-weight: 500; list-style: none; }
+details > summary::-webkit-details-marker { display: none; }
+details > summary::before { content: "▸ "; color: var(--fg-dim);
+                            display: inline-block; width: 14px;
+                            transition: transform 0.15s; }
+details[open] > summary::before { content: "▾ "; }
+details .details-body { padding: 0 12px 10px 12px; }
+.tool-row { display: flex; align-items: center; gap: 10px;
+            flex-wrap: wrap; font-size: 13px; }
+.tool-name { font-weight: 600; color: var(--accent); font-family: ui-monospace,
+             SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+.tool-status-ok { color: var(--status-success); font-size: 11px;
+                  font-weight: 600; }
+.tool-status-err { color: var(--status-error); font-size: 11px;
+                   font-weight: 600; }
+.tool-duration { color: var(--fg-muted); font-size: 12px; }
+.tool-seq { color: var(--fg-dim); font-size: 11px; font-weight: 600;
+            min-width: 24px; text-align: right; font-family: ui-monospace,
+            SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+.turn-header { display: flex; justify-content: space-between;
+               align-items: baseline; flex-wrap: wrap; gap: 10px;
+               margin-bottom: 10px; }
+.turn-meta { font-size: 12px; color: var(--fg-muted); }
+.criterion-row td:first-child { font-family: ui-monospace, SFMono-Regular,
+                                 "SF Mono", Menlo, Consolas, monospace;
+                                 color: var(--fg-muted); font-size: 12px; }
+.judge-section { display: flex; flex-direction: column; gap: 12px; }
+.judge-card { padding: 14px 16px; }
+.judge-card-head { display: flex; justify-content: space-between;
+                    align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+.judge-card-title { font-size: 14px; line-height: 1.4; flex: 1; min-width: 0; }
+.judge-card-score { flex-shrink: 0; }
+.judge-rationale { margin-top: 10px; padding: 10px 12px;
+                   background: var(--bg-code); border-radius: 4px;
+                   font-size: 13px; line-height: 1.5; }
+.judge-findings { margin: 8px 0 0 18px; padding-left: 4px; font-size: 13px;
+                   line-height: 1.6; }
+.judge-findings li { margin: 2px 0; }
+.nav-toggle { display: inline-block; padding: 5px 10px; font-size: 12px;
+              background: var(--bg-card-2); border: 1px solid var(--border);
+              border-radius: 5px; color: var(--fg); cursor: pointer; }
+.nav-toggle:hover { background: var(--bg-card); }
+.llm-next-steps { margin: 6px 0 0 20px; padding-left: 0; }
+.llm-next-steps li { margin: 3px 0; }
+.iteration-group { padding: 12px 16px 4px 16px; margin-bottom: 20px;
+                   border-radius: 0 6px 6px 0; border-left: 4px solid var(--status-neutral); }
+/* rgba fallback for browsers without color-mix (Chrome <111, Firefox <113, Safari <16.2). */
+.iteration-group--recovered { border-left-color: var(--status-success);
+                              background: rgba(34, 197, 94, 0.06);
+                              background: color-mix(in srgb, var(--status-success) 6%, transparent); }
+.iteration-group--terminal { border-left-color: var(--status-error);
+                             background: rgba(239, 68, 68, 0.06);
+                             background: color-mix(in srgb, var(--status-error) 6%, transparent); }
+.iteration-group__banner { margin: 0 0 12px 0; font-size: 14px; font-weight: 600; }
+.iteration-group--recovered .iteration-group__banner { color: var(--status-success); }
+.iteration-group--terminal .iteration-group__banner { color: var(--status-error); }
+.attempt-transition { display: flex; align-items: center; gap: 8px;
+                      margin: -6px 0 12px 8px; color: var(--status-error); font-size: 12.5px; }
+.attempt-transition__icon { font-weight: 700; }
+footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--border);
+         color: var(--fg-dim); font-size: 12px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="header-bar">
+  <div class="title-group">
+    <h1>Task: skill-bpmn-edit-group-to-subflow</h1>
+    <div class="subtitle">Brownfield edit: extract a contiguous group of tasks from a valid Maestro BPMN into an embedded subprocess (with its own start/end and a diagram shape), keeping the remaining tail node in the main flow and behavior intact.</div>
+  </div>
+  <div class="badges">
+    <span class="badge error">ERROR</span>
+    <span class="score-pill score-low">0.00</span>
+    <span class="badge neutral">claude-code · claude-sonnet-5</span>
+    <span class="badge neutral">15m 9s</span>
+    <span class="badge neutral">$3.2508</span>
+    <span class="badge warning">expected_turns exceeded (68/26)</span>
+    
+    <span class="nav-toggle" onclick="toggleTheme()">Toggle theme</span>
+  </div>
+</div>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Variant</div><div class="value">default</div></div>
+    <div class="stat"><div class="label">Started</div><div class="value mono">2026-08-14T21:48:21</div></div>
+    <div class="stat"><div class="label">Duration</div><div class="value">15m 9s</div></div>
+    <div class="stat"><div class="label">Turns (SDK)</div><div class="value">136</div></div>
+    <div class="stat"><div class="label">Commands</div><div class="value">68</div></div>
+  </div>
+</div>
+
+<div class="card">
+  <h2 style="margin-top:0;border:none;padding:0">Success Criteria</h2>
+  <p class="muted">No criteria were evaluated (task may have errored before
+  the checker ran).</p>
+</div>
+
+<h2>Error</h2>
+<div class="card" style="border-left:4px solid var(--status-error)">
+  <div class="badges" style="margin-bottom:10px">
+    <span class="badge error">agent_timeout</span>
+    <span class="badge neutral">orchestrator.iteration_1</span>
+    <span class="badge neutral">non-retryable</span>
+  </div>
+  <h4>Message</h4>
+  <pre>Agent turn timed out after 900s (iteration 1)</pre>
+  <details><summary>Logs</summary><div class="details-body"><pre>2026-08-14 21:48:29 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-08-14 21:48:29 [INFO] coder_eval.orchestrator: API routing: aws_bedrock
+2026-08-14 21:48:29 [DEBUG] coder_eval.criteria: Discovered 14 criterion checkers
+2026-08-14 21:48:29 [DEBUG] coder_eval.criteria: Validated 14 criterion checkers
+2026-08-14 21:48:29 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-08-14 21:48:30 [DEBUG] coder_eval.orchestrator: Sending prompt: Load and follow the uipath-maestro-bpmn skill.
+
+A valid Maestro BPMN file `Fulfillment.bpmn` is in t...
+2026-08-14 21:48:30 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Starting agent query stream...
+2026-08-14 22:03:30 [DEBUG] coder_eval.orchestrator: [skill-bpmn-edit-group-to-subflow] Drained partial turn record (attempt 1, iteration 1): 68 commands
+2026-08-14 22:03:30 [ERROR] coder_eval.errors.executor: [skill-bpmn-edit-group-to-subflow] Agent communication failed (non-retryable): agent_timeout - Agent turn timed out after 900s (iteration 1)
+2026-08-14 22:03:30 [ERROR] coder_eval.orchestrator: Evaluation failed: Agent turn timed out after 900s (iteration 1)
+Traceback (most recent call last):
+  File &quot;/usr/local/lib/python3.13/site-packages/anyio/streams/memory.py&quot;, line 117, in receive
+    return self.receive_nowait()
+           ~~~~~~~~~~~~~~~~~~~^^
+  File &quot;/usr/local/lib/python3.13/site-packages/anyio/streams/memory.py&quot;, line 112, in receive_nowait
+    raise WouldBlock
+anyio.WouldBlock
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File &quot;/opt/coder_eval/src/coder_eval/agents/claude_code_agent.py&quot;, line 915, in communicate
+    await self._pump_messages(state, query_kwargs, deadline, should_stop)
+  File &quot;/opt/coder_eval/src/coder_eval/agents/claude_code_agent.py&quot;, line 1025, in _pump_messages
+    async for message in query(**query_kwargs):
+    ...&lt;8 lines&gt;...
+            break
+  File &quot;/usr/local/lib/python3.13/site-packages/claude_agent_sdk/query.py&quot;, line 123, in query
+    async for message in client.process_query(
+    ...&lt;2 lines&gt;...
+        yield message
+  File &quot;/usr/local/lib/python3.13/site-packages/claude_agent_sdk/_internal/client.py&quot;, line 75, in process_query
+    async for msg in inner:
+        yield msg
+  File &quot;/usr/local/lib/python3.13/site-packages/claude_agent_sdk/_internal/client.py&quot;, line 227, in _process_query_inner
+    async for data in query.receive_messages():
+    ...&lt;2 lines&gt;...
+            yield message
+  File &quot;/usr/local/lib/python3.13/site-packages/claude_agent_sdk/_internal/query.py&quot;, line 847, in receive_messages
+    async for message in self._message_receive:
+    ...&lt;6 lines&gt;...
+        yield message
+  File &quot;/usr/local/lib/python3.13/site-packages/anyio/abc/_streams.py&quot;, line 35, in __anext__
+    return await self.receive()
+           ^^^^^^^^^^^^^^^^^^^^
+  File &quot;/usr/local/lib/python3.13/site-packages/anyio/streams/memory.py&quot;, line 125, in receive
+    await receive_event.wait()
+  File &quot;/usr/local/lib/python3.13/site-packages/anyio/_backends/_asyncio.py&quot;, line 1804, in wait
+    await self._event.wait()
+  File &quot;/usr/local/lib/python3.13/asyncio/locks.py&quot;, line 213, in wait
+    await fut
+asyncio.exceptions.CancelledError
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File &quot;/opt/coder_eval/src/coder_eval/orchestrator.py&quot;, line 475, in run
+    success = await self._evaluation_loop()
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File &quot;/opt/coder_eval/src/coder_eval/orchestrator.py&quot;, line 1387, in _evaluation_loop
+    turn_record = await self._communicate_with_retry(
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...&lt;3 lines&gt;...
+    )
+    ^
+  File &quot;/opt/coder_eval/src/coder_eval/orchestrator.py&quot;, line 1263, in _communicate_with_retry
+    turn_record = await execute_with_retry(
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...&lt;8 lines&gt;...
+    )
+    ^
+  File &quot;/opt/coder_eval/src/coder_eval/errors/executor.py&quot;, line 71, in execute_with_retry
+    return await operation()
+           ^^^^^^^^^^^^^^^^^
+  File &quot;/opt/coder_eval/src/coder_eval/orchestrator.py&quot;, line 1245, in _communicate_attempt
+    return await asyncio.wait_for(coro, timeout=outer_timeout)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File &quot;/usr/local/lib/python3.13/asyncio/tasks.py&quot;, line 507, in wait_for
+    return await fut
+           ^^^^^^^^^
+  File &quot;/opt/coder_eval/src/coder_eval/agents/claude_code_agent.py&quot;, line 927, in communicate
+    self._finalize_and_raise_timeout(state.finalize, timeout)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+  File &quot;/opt/coder_eval/src/coder_eval/agent.py&quot;, line 130, in _finalize_and_raise_timeout
+    raise TurnTimeoutError(timeout, iteration=self._iteration)
+coder_eval.errors.timeout.TurnTimeoutError: Agent turn timed out after 900s (iteration 1)
+2026-08-14 22:03:30 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-08-14 22:03:30 [INFO] coder_eval.orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+2026-08-14 22:03:30 [INFO] coder_eval.orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-bpmn-edit-group-to-subflow
+</pre></div></details>
+</div>
+<h2>Conversation Trace (1 iteration, 1 attempt)</h2>
+<div class="card">
+  <div class="turn-header">
+    <h3>Iteration 1</h3>
+    <div class="badges">
+      <span class="badge neutral">136 assistant turns</span>
+      <span class="badge neutral">in 136 · out 73868 · cache 5626759</span>
+      <span class="badge neutral">15m 0s</span>
+      
+      <span class="badge error">crashed (partial)</span>
+      
+    </div>
+  </div>
+  <details>
+    <summary>Prompt to agent</summary>
+    <div class="details-body"><pre>Your working directory is: /work/output/artifacts/skill-bpmn-edit-group-to-subflow
+
+Load and follow the uipath-maestro-bpmn skill.
+
+A valid Maestro BPMN file `Fulfillment.bpmn` is in the working directory. Its
+flow is: &quot;Pick Items&quot; (Task_Pick) -&gt; &quot;Pack Box&quot; (Task_Pack) -&gt; &quot;Ship Parcel&quot;
+(Task_Ship).
+
+Extract &quot;Pick Items&quot; and &quot;Pack Box&quot; into a single embedded subprocess named
+&quot;Prepare&quot;, preserving their behavior. &quot;Ship Parcel&quot; must stay in the main flow
+and still run after the subprocess. Give the subprocess its own start/end
+events and a diagram shape so it renders.
+
+Make a SURGICAL edit: &quot;Ship Parcel&quot;&#x27;s payload and id, uipath:migrationVersion,
+and the process-level preserve-only content must round-trip untouched.
+
+Validate the edited file locally before finishing. Do not upload, publish,
+deploy, debug, run, or pack anything, and do not pause for approval — make the
+edit end to end in one pass.
+</pre></div>
+  </details>
+  <details>
+    <summary>Agent response</summary>
+    <div class="details-body"><pre>[ASSISTANT] Now I understand the structure needed. Let me make the surgical edits.
+[ASSISTANT] Now update the remaining sequence flows: Flow_SP should point to the subprocess, and Flow_PS (main flow, subprocess to Task_Ship) needs to be added at process level since the old Flow_PP and Flow_PS were removed from main scope.
+[ASSISTANT] The moddle schema shows `BPMNDiagram` has a single `plane` property — so multiple planes require multiple sibling `&lt;bpmndi:BPMNDiagram&gt;` elements, not two `&lt;bpmndi:BPMNPlane&gt;` under one `&lt;bpmndi:BPMNDiagram&gt;`. Let me fix that.
+[ASSISTANT] Now let&#x27;s validate the file well-formedness and run the CLI validator.
+[ASSISTANT] This confirms this is a pre-existing quirk in the original file (not something I introduced) — the original `Task_Pick`/`Task_Pack`/`Task_Ship` `uipath:input name=&quot;args&quot;` templates lack `type=&quot;json&quot; target=&quot;bodyField&quot;`, which the CLI validator flags as errors even in the pristine original file. Let me check more of the validator logic to confirm expected behavior.
+[ASSISTANT] Let me check if fixing Task_Pick/Task_Pack (which are being restructured into the subprocess anyway) to match the registry&#x27;s own template shape resolves errors, while leaving Task_Ship&#x27;s mapping completely untouched per the explicit preserve constraint.</pre></div>
+  </details>
+  <h4 style="margin-top:12px">Tool Calls (68)</h4>
+  
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#0</span>
+      <span class="tool-name">Skill</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">18ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;skill&quot;: &quot;uipath:uipath-maestro-bpmn&quot;,
+  &quot;args&quot;: &quot;Extract \&quot;Pick Items\&quot; (Task_Pick) and \&quot;Pack Box\&quot; (Task_Pack) from Fulfillment.bpmn into a single embedded subprocess named \&quot;Prepare\&quot;, preserving their behavior and order. \&quot;Ship Parcel\&quot; (Task_Ship) must stay in the main flow and run after the subprocess. The subprocess needs its own start/end events and a BPMNDI diagram shape. Surgical edit: Ship Parcel&#x27;s payload/id, uipath:migrationVersion, and pro… (117 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Launching skill: uipath:uipath-maestro-bpmn</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#1</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">10ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-bpmn-edit-group-to-subflow/Fulfillment.bpmn&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;
+2	&lt;bpmn:definitions
+3	    xmlns:bpmn=&quot;http://www.omg.org/spec/BPMN/20100524/MODEL&quot;
+4	    xmlns:bpmndi=&quot;http://www.omg.org/spec/BPMN/20100524/DI&quot;
+5	    xmlns:dc=&quot;http://www.omg.org/spec/DD/20100524/DC&quot;
+6	    xmlns:di=&quot;http://www.omg.org/spec/DD/20100524/DI&quot;
+7	    xmlns:uipath=&quot;http://uipath.org/schema/bpmn&quot;
+8	    id=&quot;Definitions_Fulfillment&quot; targetNamespace=&quot;http://bpmn.io/schema/bpmn&quot;
+9	    exporter=&quot;UiPath (https://bpmn.uipath.com)&quot; exporterVersion=&quot;1.0&quot;&gt;
+10	  &lt;bpmn:process id=&quot;Process_Fulfillment&quot; isExecutable=&quot;true&quot;&gt;
+11	    &lt;bpmn:extensionElements&gt;
+12	      &lt;uipath:migrationVersion version=&quot;11.5&quot; /&gt;
+13	      &lt;uipath:caseManagement version=&quot;v1&quot;&gt;&lt;![CDATA[{&quot;owner&quot;:&quot;warehouse&quot;,&quot;opaque&quot;:&quot;preserve-only-do-not-touch&quot;}]]&gt;&lt;/uipath:caseManagement&gt;
+14	      &lt;uipath:variables version=&quot;v1&quot;&gt;
+15	        &lt;uipath:inputOutput id=&quot;Var_OrderId&quot; name=&quot;OrderId&quot; type=&quot;string&quot; /&gt;
+16	        &lt;uipath:inputOutput id=&quot;Var_Label&quot; name=&quot;Label&quot; type=&quot;string&quot; /&gt;
+17	      &lt;/uipath:variables&gt;
+18	    &lt;/bpmn:extensionElements&gt;
+19	    &lt;bpmn:startEvent id=&quot;Start_1&quot; name=&quot;Start&quot;&gt;&lt;bpmn:outgoing&gt;Flow_SP&lt;/bpmn:outgoing&gt;&lt;/bpmn:startEvent&gt;
+20	    &lt;bpmn:scriptTask id=&quot;Task_Pick&quot; nam
+
+… (truncated, 3852 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#2</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">67ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -n -i \&quot;subprocess\&quot; -A 40 /home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/structural-bpmn.md | head -150&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>349:## Subprocess, call activity, event subprocess (REGISTRY GAP for structure)
+350-
+351:- **SubProcess** (`bpmn:SubProcess`): a container with its own nested
+352-  `flowElements` (start event, nodes, end event) and its own scoped
+353:  `&lt;uipath:variables&gt;`. Variants: `collapsed`, `expanded`, `eventSubprocess`.
+354-  The shape carries `isExpanded` for the collapsed/expanded distinction.
+355:- **Event subprocess**: a `bpmn:SubProcess` with `triggeredByEvent=&quot;true&quot;`. It
+356-  must have **exactly one** start event, and that start event **must carry an
+357-  event definition** (with `isInterrupting`) — a blank start event is invalid for
+358:  an event subprocess.
+359-- **Call activity** (`bpmn:CallActivity`): invokes a *separate* Maestro
+360-  instance. The registry provides the `uipath:activity` payload for the
+361-  Orchestrator agentic/case-management call-activity types
+362-  (`Orchestrator.StartAgenticProcess[Async]`, `…CaseMgmtProcess[Async]`). A
+363-  plain BPMN `calledElement` round-trips but is not specially authored by the
+364-  canvas layer.
+365-- Each scope (process or sub-process) may have at most one blank (untyped) start
+366-  event (`MULTIPLE_BLANK_START_EVENTS`).
+367-
+
+
+… (truncated, 7636 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#3</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">21ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -n \&quot;isExpanded\\|BPMNPlane\\|subProcess\\|SubProcess\&quot; /home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/structural-bpmn.md | head -60&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>49:    &lt;bpmndi:BPMNPlane id=&quot;Plane_1&quot; bpmnElement=&quot;Process_1&quot;&gt;
+51:    &lt;/bpmndi:BPMNPlane&gt;
+124:    &lt;bpmndi:BPMNPlane id=&quot;Plane_1&quot; bpmnElement=&quot;Process_1&quot;&gt;
+134:    &lt;/bpmndi:BPMNPlane&gt;
+351:- **SubProcess** (`bpmn:SubProcess`): a container with its own nested
+354:  The shape carries `isExpanded` for the collapsed/expanded distinction.
+355:- **Event subprocess**: a `bpmn:SubProcess` with `triggeredByEvent=&quot;true&quot;`. It
+368:&gt; SubProcess scopes operations *within the same instance*; CallActivity invokes
+414:- Tasks / containers: `bpmn:manualTask`, `bpmn:adHocSubProcess`,
+459:  `&lt;dc:Bounds x= y= width= height= /&gt;`. SubProcess shapes carry `isExpanded`.</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#4</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">28ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;sed -n &#x27;1,140p&#x27; /home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/structural-bpmn.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre># Structural BPMN (what the registry does not emit)
+
+The registry&#x27;s `xmlTemplate`s give you the `uipath:*` payload for each node
+(see [registry-workflow.md](registry-workflow.md)). They do **not** give you the
+structural BPMN that holds those nodes together. This file is the ground truth
+for everything you author by hand around the templates.
+
+Two sources define the contract:
+
+- the registry spec `bpmn-spec.json` — enumerates which BPMN element types and
+  event definitions exist, via its `bpmnElements` section;
+- the Studio Web canvas serializer
+  (`PO.Frontend/src/services/serialization/`) — defines how that XML must be
+  shaped to import and round-trip.
+
+Where the registry stops, the canvas serializer is authoritative. Each
+gap below is labelled **REGISTRY GAP** — the registry exposes no template for
+it, so author it from this reference.
+
+BPMN XML element names are case-sensitive. Use the exact lower-camel BPMN tag
+names the serializer emits, such as `&lt;bpmn:startEvent&gt;`,
+`&lt;bpmn:intermediateCatchEvent&gt;`, `&lt;bpmn:scriptTask&gt;`, and `&lt;bpmn:endEvent&gt;`.
+Do not use PascalCase variants like `&lt;bpmn:IntermediateCatchEvent&gt;`; XML accepts
+them syntactically, but BPMN tools do not treat them 
+
+… (truncated, 6540 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#5</span>
+      <span class="tool-name">Grep</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">272ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;pattern&quot;: &quot;isExpanded|BPMNPlane.*bpmnElement=\\\&quot;Sub|subProcess\&quot;&quot;,
+  &quot;path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-bpmn&quot;,
+  &quot;output_mode&quot;: &quot;content&quot;,
+  &quot;-n&quot;: true
+}</pre>
+    <h4>Result</h4>
+    <pre>/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/structural-bpmn.md:354:  The shape carries `isExpanded` for the collapsed/expanded distinction.
+/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/structural-bpmn.md:459:  `&lt;dc:Bounds x= y= width= height= /&gt;`. SubProcess shapes carry `isExpanded`.</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#6</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">79ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -rn \&quot;subProcess\&quot; /home/azureuser/projects/skills/skills/uipath-maestro-bpmn/validator/*.json | head -30&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>(Bash completed with no output)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#7</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">331ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -n \&quot;container\\|Container\&quot; -i /home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/structural-bpmn.md | head -30&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>351:- **SubProcess** (`bpmn:SubProcess`): a container with its own nested
+414:- Tasks / containers: `bpmn:manualTask`, `bpmn:adHocSubProcess`,</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#8</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">45ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;sed -n &#x27;495,560p&#x27; /home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/structural-bpmn.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>  `uipath:entryPointId`, and declare input/output variables whose `elementId`
+  matches that start event.
+
+Do not patch generated JSON to fix source behavior — change the `.bpmn` and
+regenerate. For `Intsvc.*` activities/triggers, hand editing to CLI enrichment.
+
+### Edit red-flags
+
+Re-check after any edit:
+
+- A diagram plane references a missing process, collaboration, or subprocess.
+- A rendered element lacks a shape or its flow lacks an edge/waypoint.
+- An entry-point variable points at the wrong start event.
+- A `uipath:context` value references a missing binding.
+- A topology edit rewrote unrelated `uipath:*` extension XML.
+- An Integration Service element carries hand-authored connection details.
+
+## Validation
+
+Validate with the CLI — it runs the full PO.Frontend canvas rule set offline
+(the same Node/Edge/CanvasState reconstruction and every canvas rule), plus the
+deploy-readiness checks:
+
+```bash
+uip maestro bpmn validate &lt;file.bpmn&gt; --output json
+```
+
+Exit 0 means the document passes all rules. Exit 1 lists the blocking errors,
+each with its rule code (gateway/condition, fake-join, superfluous-gateway,
+error end/boundary event, timer-duration/required-field, single-blank-
+
+… (truncated, 1241 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#9</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">24ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -rln \&quot;subProcess\\|SubProcess\&quot; /home/azureuser/projects/skills/skills/uipath-maestro-bpmn --include=*.bpmn 2&gt;/dev/null | head -20\necho \&quot;---\&quot;\ngrep -rln \&quot;subProcess\\|SubProcess\&quot; /home/azureuser/projects/skills/skills/uipath-maestro-bpmn 2&gt;/dev/null | head -20&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>---
+/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/validator/bpmn-spec.json
+/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/structural-bpmn.md</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#10</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">22ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -n \&quot;subProcess\\|SubProcess\&quot; -A 5 -B 5 /home/azureuser/projects/skills/skills/uipath-maestro-bpmn/validator/bpmn-spec.json | head -100&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>2216-      },
+2217-      &quot;bpmn:CallActivity&quot;: {
+2218-        &quot;bpmnElement&quot;: &quot;bpmn:CallActivity&quot;,
+2219-        &quot;category&quot;: &quot;task&quot;
+2220-      },
+2221:      &quot;bpmn:SubProcess&quot;: {
+2222:        &quot;bpmnElement&quot;: &quot;bpmn:SubProcess&quot;,
+2223-        &quot;category&quot;: &quot;task&quot;,
+2224-        &quot;variants&quot;: [
+2225-          &quot;collapsed&quot;,
+2226-          &quot;expanded&quot;,
+2227-          &quot;eventSubprocess&quot;
+--
+2449-    &quot;extensionTagResolution&quot;: {
+2450-      &quot;description&quot;: &quot;How the frontend determines which XML extension tag to use&quot;,
+2451-      &quot;rules&quot;: [
+2452-        &quot;If serviceType is in isEvents array [Intsvc.WaitForEvent, Intsvc.EventTrigger, Maestro.ReceiveMessageEvent, Maestro.SendMessageEvent] =&gt; uipath:event&quot;,
+2453-        &quot;If serviceType is BPMN.Variables on bpmn:StartEvent, bpmn:EndEvent, or bpmn:Task =&gt; uipath:mapping&quot;,
+2454:        &quot;If nodeType is bpmn:ScriptTask or bpmn:SubProcess =&gt; uipath:mapping&quot;,
+2455-        &quot;Otherwise =&gt; uipath:activity&quot;
+2456-      ]
+2457-    },
+2458-    &quot;isEventsArray&quot;: [
+2459-      &quot;Intsvc.WaitForEvent&quot;,</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#11</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">25ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -n \&quot;BPMN.SubProcess\\|BPMN\\.Sub\\|subProcess\&quot; -i /home/azureuser/projects/skills/skills/uipath-maestro-bpmn/validator/bpmn-spec.json&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>2221:      &quot;bpmn:SubProcess&quot;: {
+2222:        &quot;bpmnElement&quot;: &quot;bpmn:SubProcess&quot;,
+2227:          &quot;eventSubprocess&quot;
+2454:        &quot;If nodeType is bpmn:ScriptTask or bpmn:SubProcess =&gt; uipath:mapping&quot;,</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#12</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">3.83s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro bpmn registry search subprocess --output json 2&gt;&amp;1 | head -100&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;RegistrySearchSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;ExtensionTypes&quot;: [],
+    &quot;Connectors&quot;: [],
+    &quot;Processes&quot;: [],
+    &quot;ProcessesByType&quot;: {
+      &quot;Process&quot;: 0,
+      &quot;ProcessOrchestration&quot;: 0,
+      &quot;Agent&quot;: 0,
+      &quot;Flow&quot;: 0,
+      &quot;Api&quot;: 0,
+      &quot;Function&quot;: 0,
+      &quot;CaseManagement&quot;: 0,
+      &quot;BusinessRules&quot;: 0
+    }
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#13</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">24ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;sed -n &#x27;2400,2470p&#x27; /home/azureuser/projects/skills/skills/uipath-maestro-bpmn/validator/bpmn-spec.json&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>      &quot;uipath.agent&quot;: {
+        &quot;bpmnElement&quot;: &quot;uipath.agent&quot;,
+        &quot;category&quot;: &quot;uipathShortcut&quot;
+      },
+      &quot;uipath.human-in-the-loop.quick-form&quot;: {
+        &quot;bpmnElement&quot;: &quot;uipath.human-in-the-loop.quick-form&quot;,
+        &quot;category&quot;: &quot;uipathShortcut&quot;
+      },
+      &quot;uipath.human-in-the-loop.coded-action-app&quot;: {
+        &quot;bpmnElement&quot;: &quot;uipath.human-in-the-loop.coded-action-app&quot;,
+        &quot;category&quot;: &quot;uipathShortcut&quot;
+      },
+      &quot;uipath.api-workflow&quot;: {
+        &quot;bpmnElement&quot;: &quot;uipath.api-workflow&quot;,
+        &quot;category&quot;: &quot;uipathShortcut&quot;
+      },
+      &quot;uipath.process-orchestration&quot;: {
+        &quot;bpmnElement&quot;: &quot;uipath.process-orchestration&quot;,
+        &quot;category&quot;: &quot;uipathShortcut&quot;
+      },
+      &quot;uipath.rpa-workflow&quot;: {
+        &quot;bpmnElement&quot;: &quot;uipath.rpa-workflow&quot;,
+        &quot;category&quot;: &quot;uipathShortcut&quot;
+      },
+      &quot;uipath.connector-activity&quot;: {
+        &quot;bpmnElement&quot;: &quot;uipath.connector-activity&quot;,
+        &quot;category&quot;: &quot;uipathShortcut&quot;
+      },
+      &quot;uipath.connector-trigger&quot;: {
+        &quot;bpmnElement&quot;: &quot;uipath.connector-trigger&quot;,
+        &quot;category&quot;: &quot;uipathShortcut&quot;
+      },
+      &quot;uipath.http-request&quot;: {
+        &quot;bpmnElement&quot;: &quot;uipath.http-request&quot;,
+        &quot;category&quot;: &quot;uipathShortcut&quot;
+
+
+… (truncated, 1341 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#14</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.23s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro bpmn registry get BPMN.SubProcess --output json 2&gt;&amp;1 | head -60\necho \&quot;---list---\&quot;\nuip maestro bpmn registry list --limit -1 --output json 2&gt;&amp;1 | grep -i \&quot;sub\&quot; &quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Failure&quot;,
+  &quot;Message&quot;: &quot;Extension type not found&quot;,
+  &quot;Instructions&quot;: &quot;No extension type found matching: BPMN.SubProcess. Use &#x27;uip maestro bpmn registry search&#x27; to find available types.&quot;,
+  &quot;ErrorCode&quot;: &quot;unknown_error&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}
+---list---</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#15</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">12ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -n \&quot;\\\&quot;BPMN\\.\&quot; /home/azureuser/projects/skills/skills/uipath-maestro-bpmn/validator/bpmn-spec.json | head -40&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1828:    &quot;BPMN.Variables&quot;: {
+1829:      &quot;extensionType&quot;: &quot;BPMN.Variables&quot;,
+1841:      &quot;xmlTemplate&quot;: &quot;&lt;bpmn:Task id=\&quot;{id}\&quot; name=\&quot;{name}\&quot;&gt;\n  &lt;bpmn:extensionElements&gt;\n    &lt;uipath:mapping version=\&quot;v1\&quot;&gt;\n      &lt;uipath:type value=\&quot;BPMN.Variables\&quot; version=\&quot;v1\&quot; /&gt;\n    &lt;/uipath:mapping&gt;\n  &lt;/bpmn:extensionElements&gt;\n  &lt;bpmn:incoming&gt;{incomingEdge}&lt;/bpmn:incoming&gt;\n  &lt;bpmn:outgoing&gt;{outgoingEdge}&lt;/bpmn:outgoing&gt;\n&lt;/bpmn:Task&gt;&quot;,
+1846:    &quot;BPMN.ScriptTask&quot;: {
+1847:      &quot;extensionType&quot;: &quot;BPMN.ScriptTask&quot;,
+1861:      &quot;xmlTemplate&quot;: &quot;&lt;bpmn:ScriptTask id=\&quot;{id}\&quot; name=\&quot;{name}\&quot;&gt;\n  &lt;bpmn:extensionElements&gt;\n    &lt;uipath:mapping version=\&quot;v1\&quot;&gt;\n      &lt;uipath:type value=\&quot;BPMN.ScriptTask\&quot; version=\&quot;v1\&quot; /&gt;\n      &lt;uipath:input name=\&quot;args\&quot; type=\&quot;json\&quot; target=\&quot;bodyField\&quot;&gt;&lt;![CDATA[{}]]&gt;&lt;/uipath:input&gt;\n    &lt;/uipath:mapping&gt;\n  &lt;/bpmn:extensionElements&gt;\n  &lt;bpmn:incoming&gt;{incomingEdge}&lt;/bpmn:incoming&gt;\n  &lt;bpmn:outgoing&gt;{outgoingEdge}&lt;/bpmn:outgoing&gt;\n&lt;/bpmn:ScriptTask&gt;&quot;,</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#16</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">13ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;sed -n &#x27;2190,2240p&#x27; /home/azureuser/projects/skills/skills/uipath-maestro-bpmn/validator/bpmn-spec.json&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>        &quot;bpmnElement&quot;: &quot;bpmn:UserTask&quot;,
+        &quot;category&quot;: &quot;task&quot;
+      },
+      &quot;bpmn:ServiceTask&quot;: {
+        &quot;bpmnElement&quot;: &quot;bpmn:ServiceTask&quot;,
+        &quot;category&quot;: &quot;task&quot;
+      },
+      &quot;bpmn:SendTask&quot;: {
+        &quot;bpmnElement&quot;: &quot;bpmn:SendTask&quot;,
+        &quot;category&quot;: &quot;task&quot;
+      },
+      &quot;bpmn:ReceiveTask&quot;: {
+        &quot;bpmnElement&quot;: &quot;bpmn:ReceiveTask&quot;,
+        &quot;category&quot;: &quot;task&quot;
+      },
+      &quot;bpmn:ManualTask&quot;: {
+        &quot;bpmnElement&quot;: &quot;bpmn:ManualTask&quot;,
+        &quot;category&quot;: &quot;task&quot;
+      },
+      &quot;bpmn:BusinessRuleTask&quot;: {
+        &quot;bpmnElement&quot;: &quot;bpmn:BusinessRuleTask&quot;,
+        &quot;category&quot;: &quot;task&quot;
+      },
+      &quot;bpmn:ScriptTask&quot;: {
+        &quot;bpmnElement&quot;: &quot;bpmn:ScriptTask&quot;,
+        &quot;category&quot;: &quot;task&quot;
+      },
+      &quot;bpmn:CallActivity&quot;: {
+        &quot;bpmnElement&quot;: &quot;bpmn:CallActivity&quot;,
+        &quot;category&quot;: &quot;task&quot;
+      },
+      &quot;bpmn:SubProcess&quot;: {
+        &quot;bpmnElement&quot;: &quot;bpmn:SubProcess&quot;,
+        &quot;category&quot;: &quot;task&quot;,
+        &quot;variants&quot;: [
+          &quot;collapsed&quot;,
+          &quot;expanded&quot;,
+          &quot;eventSubprocess&quot;
+        ]
+      },
+      &quot;bpmn:Transaction&quot;: {
+        &quot;bpmnElement&quot;: &quot;bpmn:Transaction&quot;,
+        &quot;category&quot;: &quot;task&quot;
+      }
+    },
+    &quot;events&quot;: {
+      &quot;bpmn:StartEvent&quot;: {
+      
+
+… (truncated, 106 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#17</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">24ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -n \&quot;second diagram plane\\|BPMNPlane\&quot; -B3 -A10 /home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/structural-bpmn.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>46-    &lt;!-- variables, flow nodes, sequence flows --&gt;
+47-  &lt;/bpmn:process&gt;
+48-  &lt;bpmndi:BPMNDiagram id=&quot;Diagram_1&quot;&gt;
+49:    &lt;bpmndi:BPMNPlane id=&quot;Plane_1&quot; bpmnElement=&quot;Process_1&quot;&gt;
+50-      &lt;!-- one BPMNShape per node, one BPMNEdge per flow --&gt;
+51:    &lt;/bpmndi:BPMNPlane&gt;
+52-  &lt;/bpmndi:BPMNDiagram&gt;
+53-&lt;/bpmn:definitions&gt;
+54-```
+55-
+56-The `uipath:` namespace URI is exactly `http://uipath.org/schema/bpmn`. All
+57-`uipath:*` tags inside `extensionElements` are lower-camelCase
+58-(`uipath:activity`, `uipath:variables`, `uipath:loopCharacteristics`, …).
+59-
+60-Every `uipath:activity` / `uipath:event` / `uipath:mapping` carries its node
+61-type as a **child** element — `&lt;uipath:type value=&quot;&lt;Type&gt;&quot; version=&quot;v1&quot; /&gt;` —
+--
+121-    &lt;bpmn:sequenceFlow id=&quot;Flow_Low&quot; sourceRef=&quot;Gw_1&quot; targetRef=&quot;End_Low&quot; /&gt;
+122-  &lt;/bpmn:process&gt;
+123-  &lt;bpmndi:BPMNDiagram id=&quot;Diagram_1&quot;&gt;
+124:    &lt;bpmndi:BPMNPlane id=&quot;Plane_1&quot; bpmnElement=&quot;Process_1&quot;&gt;
+125-      &lt;bpmndi:BPMNShape id=&quot;S_Start&quot; bpmnElement=&quot;Start_1&quot;&gt;&lt;dc:Bounds x=&quot;160&quot; y=&quot;100&quot; width=&quot;36&quot; height=&quot;36&quot; /&gt;&lt;/bpmndi:BPMNShape&gt;
+126-      &lt;bpmndi:BPMNShape id=&quot;S_Task&quot; bpmnElement=&quot;Task_Tier&quot;&gt;&lt;dc:Bounds x=&quot;250&quot; y=&quot;78&quot; width=&quot;100&quot; height=&quot;80&quot; /&gt;&lt;/bpmndi:BPMNShape&gt;
+
+… (truncated, 2190 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#18</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">10ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -n \&quot;isExpanded\\|BPMNPlane\\|expanded\\|collapsed\&quot; /home/azureuser/projects/skills/skills/uipath-maestro-bpmn/validator/bpmn-spec.json&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>2225:          &quot;collapsed&quot;,
+2226:          &quot;expanded&quot;,</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#19</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">613ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro bpmn registry list --limit -1 --output json 2&gt;&amp;1 | python3 -c \&quot;\nimport json,sys\nd=json.load(sys.stdin)\nprint(json.dumps(d, indent=2)[:3000])\n\&quot;&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;RegistryListSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;ExtensionTypes&quot;: [
+      {
+        &quot;ExtensionType&quot;: &quot;uipath:Activity&quot;,
+        &quot;Label&quot;: &quot;Canvas activity&quot;,
+        &quot;BpmnElement&quot;: &quot;bpmn:ServiceTask&quot;,
+        &quot;ExtensionTag&quot;: &quot;uipath:activity&quot;,
+        &quot;InputPattern&quot;: &quot;none&quot;,
+        &quot;BindingPattern&quot;: &quot;none&quot;,
+        &quot;RequiresDiscovery&quot;: &quot;No&quot;
+      },
+      {
+        &quot;ExtensionType&quot;: &quot;Actions.HITL&quot;,
+        &quot;Label&quot;: &quot;Create action app task&quot;,
+        &quot;BpmnElement&quot;: &quot;bpmn:UserTask&quot;,
+        &quot;ExtensionTag&quot;: &quot;uipath:activity&quot;,
+        &quot;InputPattern&quot;: &quot;mergedBody&quot;,
+        &quot;BindingPattern&quot;: &quot;none&quot;,
+        &quot;RequiresDiscovery&quot;: &quot;Yes&quot;
+      },
+      {
+        &quot;ExtensionType&quot;: &quot;Orchestrator.StartJob&quot;,
+        &quot;Label&quot;: &quot;Start and wait for RPA workflow&quot;,
+        &quot;BpmnElement&quot;: &quot;bpmn:ServiceTask&quot;,
+        &quot;ExtensionTag&quot;: &quot;uipath:activity&quot;,
+        &quot;InputPattern&quot;: &quot;mergedBody&quot;,
+        &quot;BindingPattern&quot;: &quot;process&quot;,
+        &quot;RequiresDiscovery&quot;: &quot;Yes&quot;
+      },
+      {
+        &quot;ExtensionType&quot;: &quot;Orchestrator.StartAgentJob&quot;,
+        &quot;Label&quot;: &quot;Start and wait for agent&quot;,
+        &quot;BpmnElement&quot;: &quot;bpmn:ServiceTask&quot;,
+        &quot;ExtensionTag&quot;: &quot;uipath:activity&quot;,
+        &quot;InputPattern&quot;:
+
+… (truncated, 1800 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#20</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">17ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;find /home/azureuser/projects/skills/skills/uipath-maestro-bpmn -iname \&quot;*.bpmn\&quot; 2&gt;/dev/null\necho \&quot;---\&quot;\nfind /home/azureuser/projects/skills/skills/uipath-maestro-bpmn -iname \&quot;*subprocess*\&quot; 2&gt;/dev/null&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>---</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#21</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">20ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -rn \&quot;isExpanded\\|bpmn:subProcess\\|bpmn:SubProcess\&quot; /home/azureuser/projects/skills/skills/uipath-maestro-bpmn 2&gt;/dev/null&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/validator/bpmn-spec.json:2221:      &quot;bpmn:SubProcess&quot;: {
+/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/validator/bpmn-spec.json:2222:        &quot;bpmnElement&quot;: &quot;bpmn:SubProcess&quot;,
+/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/validator/bpmn-spec.json:2454:        &quot;If nodeType is bpmn:ScriptTask or bpmn:SubProcess =&gt; uipath:mapping&quot;,
+/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/structural-bpmn.md:351:- **SubProcess** (`bpmn:SubProcess`): a container with its own nested
+/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/structural-bpmn.md:354:  The shape carries `isExpanded` for the collapsed/expanded distinction.
+/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/structural-bpmn.md:355:- **Event subprocess**: a `bpmn:SubProcess` with `triggeredByEvent=&quot;true&quot;`. It
+/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/structural-bpmn.md:459:  `&lt;dc:Bounds x= y= width= height= /&gt;`. SubProcess shapes carry `isExpanded`.</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#22</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">14ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -n \&quot;bpmn:subProcess\\|bpmn:SubProcess\&quot; -A5 -B5 /home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/*.md 2&gt;/dev/null | head -60&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/structural-bpmn.md-346-  `vars.error` and contain no assignments. Do not put `code=` on `uipath:error`;
+/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/structural-bpmn.md-347-  model the code on `bpmn:error errorCode` and reference via `errorRef`.
+/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/structural-bpmn.md-348-
+/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/structural-bpmn.md-349-## Subprocess, call activity, event subprocess (REGISTRY GAP for structure)
+/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/structural-bpmn.md-350-
+/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/structural-bpmn.md:351:- **SubProcess** (`bpmn:SubProcess`): a container with its own nested
+/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/structural-bpmn.md-352-  `flowElements` (start event, nodes, end event) and its own scoped
+/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/structural-bpmn.md-353-  `&lt;uipath:variables&gt;`. Variants: `collapsed`, `expanded`, `eventSubprocess`.
+/home/az
+
+… (truncated, 1121 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#23</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">13ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -n \&quot;BPMNDiagram\\b\&quot; -B2 -A2 /home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/structural-bpmn.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>30-(`exporter.ts`) requires: a root `&lt;…:definitions&gt;` carrying a BPMN-spec
+31-namespace, at least one `&lt;bpmn:process&gt;`, and (to render) a
+32:`&lt;bpmndi:BPMNDiagram&gt;`.
+33-
+34-```xml
+--
+46-    &lt;!-- variables, flow nodes, sequence flows --&gt;
+47-  &lt;/bpmn:process&gt;
+48:  &lt;bpmndi:BPMNDiagram id=&quot;Diagram_1&quot;&gt;
+49-    &lt;bpmndi:BPMNPlane id=&quot;Plane_1&quot; bpmnElement=&quot;Process_1&quot;&gt;
+50-      &lt;!-- one BPMNShape per node, one BPMNEdge per flow --&gt;
+51-    &lt;/bpmndi:BPMNPlane&gt;
+52:  &lt;/bpmndi:BPMNDiagram&gt;
+53-&lt;/bpmn:definitions&gt;
+54-```
+--
+121-    &lt;bpmn:sequenceFlow id=&quot;Flow_Low&quot; sourceRef=&quot;Gw_1&quot; targetRef=&quot;End_Low&quot; /&gt;
+122-  &lt;/bpmn:process&gt;
+123:  &lt;bpmndi:BPMNDiagram id=&quot;Diagram_1&quot;&gt;
+124-    &lt;bpmndi:BPMNPlane id=&quot;Plane_1&quot; bpmnElement=&quot;Process_1&quot;&gt;
+125-      &lt;bpmndi:BPMNShape id=&quot;S_Start&quot; bpmnElement=&quot;Start_1&quot;&gt;&lt;dc:Bounds x=&quot;160&quot; y=&quot;100&quot; width=&quot;36&quot; height=&quot;36&quot; /&gt;&lt;/bpmndi:BPMNShape&gt;
+--
+133-      &lt;bpmndi:BPMNEdge id=&quot;E_Low&quot; bpmnElement=&quot;Flow_Low&quot;&gt;&lt;di:waypoint x=&quot;435&quot; y=&quot;143&quot; /&gt;&lt;di:waypoint x=&quot;435&quot; y=&quot;178&quot; /&gt;&lt;di:waypoint x=&quot;520&quot; y=&quot;178&quot; /&gt;&lt;/bpmndi:BPMNEdge&gt;
+134-    &lt;/bpmndi:BPMNPlane&gt;
+135:  &lt;/bpmndi:BPMNDiagram&gt;
+136-&lt;/bpmn:definitions&gt;
+137-```
+--
+454-nodes from `BPMNShape`s and edges from `BPMNEdge`s, not by walking
+455-`f
+
+… (truncated, 561 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#24</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">18ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -n \&quot;plane\\|Plane\&quot; -i /home/azureuser/projects/skills/skills/uipath-maestro-bpmn/validator/bpmn-spec.json | head -30&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>(Bash completed with no output)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#25</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">13ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -rn \&quot;second diagram plane\\|nested content\\|BPMNPlane\&quot; /home/azureuser/projects/skills/skills/uipath-maestro-bpmn 2&gt;/dev/null&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/diagnose/references/failure-modes.md:6:Add `bpmndi:BPMNDiagram`, `bpmndi:BPMNPlane`, shapes for nodes, and edges for sequence flows.
+/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/structural-bpmn.md:49:    &lt;bpmndi:BPMNPlane id=&quot;Plane_1&quot; bpmnElement=&quot;Process_1&quot;&gt;
+/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/structural-bpmn.md:51:    &lt;/bpmndi:BPMNPlane&gt;
+/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/structural-bpmn.md:124:    &lt;bpmndi:BPMNPlane id=&quot;Plane_1&quot; bpmnElement=&quot;Process_1&quot;&gt;
+/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/structural-bpmn.md:134:    &lt;/bpmndi:BPMNPlane&gt;
+/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/structural-bpmn.md:493:  second diagram plane for the subprocess so nested content renders.</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#26</span>
+      <span class="tool-name">Grep</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">15ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;pattern&quot;: &quot;Diagram_2|Plane_2|multiple.*plane|one plane per|BPMNDiagram.*subProcess|planeElement&quot;,
+  &quot;path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-bpmn&quot;,
+  &quot;-i&quot;: true,
+  &quot;output_mode&quot;: &quot;content&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>No matches found</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#27</span>
+      <span class="tool-name">Grep</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">13ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;pattern&quot;: &quot;BPMNDiagram|BPMNPlane|isExpanded&quot;,
+  &quot;path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references&quot;,
+  &quot;-n&quot;: true,
+  &quot;output_mode&quot;: &quot;content&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/registry-workflow.md:183:5. Generate the `bpmndi:BPMNDiagram` (shape per node, edge per flow).
+/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/structural-bpmn.md:32:`&lt;bpmndi:BPMNDiagram&gt;`.
+/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/structural-bpmn.md:48:  &lt;bpmndi:BPMNDiagram id=&quot;Diagram_1&quot;&gt;
+/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/structural-bpmn.md:49:    &lt;bpmndi:BPMNPlane id=&quot;Plane_1&quot; bpmnElement=&quot;Process_1&quot;&gt;
+/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/structural-bpmn.md:51:    &lt;/bpmndi:BPMNPlane&gt;
+/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/structural-bpmn.md:52:  &lt;/bpmndi:BPMNDiagram&gt;
+/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/structural-bpmn.md:123:  &lt;bpmndi:BPMNDiagram id=&quot;Diagram_1&quot;&gt;
+/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/structural-bpmn.md:124:    &lt;bpmndi:BPMNPlane id=&quot;Plane_1&quot; bpmnElement=&quot;Process_1&quot;&gt;
+/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/structural-bpmn.md:134:    &lt;/bpmndi:BPMNPlane&gt;
+/hom
+
+… (truncated, 982 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#28</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">3.23s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;which uip; uip --version 2&gt;&amp;1 | head -5\nfind / -iname \&quot;*canvas*serial*\&quot; 2&gt;/dev/null | grep -v proc | head\nfind / -iname \&quot;*PO.Frontend*\&quot; 2&gt;/dev/null | head\nnpm ls -g 2&gt;/dev/null | grep -i uipath\nfind / -path \&quot;*/node_modules/*maestro*\&quot; 2&gt;/dev/null | head&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/usr/bin/uip
+1.201.0-dev.8272
+├── @uipath/admin-tool@1.201.0-dev.8272
+├── @uipath/agent-tool@1.201.0-dev.8272
+├── @uipath/agenthub-tool@1.201.0-dev.8272
+├── @uipath/aops-tool@1.201.0-dev.8272
+├── @uipath/api-workflow-tool@1.201.0-dev.8272
+├── @uipath/automation-hub-tool@1.201.0-dev.8272
+├── @uipath/cli@1.201.0-dev.8272
+├── @uipath/codedagent-tool@1.201.0-dev.8272
+├── @uipath/codedapp-tool@1.201.0-dev.8272
+├── @uipath/coder-tool@1.201.0-dev.8272
+├── @uipath/context-grounding-tool@1.201.0-dev.8272
+├── @uipath/conversational-tool@1.201.0-dev.8272
+├── @uipath/data-fabric-tool@1.201.0-dev.8272
+├── @uipath/docsai-tool@1.201.0-dev.8272
+├── @uipath/function-tool@1.201.0-dev.8272
+├── @uipath/gov-tool@1.201.0-dev.8272
+├── @uipath/guardrails-tool@1.201.0-dev.8272
+├── @uipath/insights-tool@1.201.0-dev.8276
+├── @uipath/integrationservice-tool@1.201.0-dev.8272
+├── @uipath/ixp-tool@1.201.0-dev.8272
+├── @uipath/llm-gateway-tool@1.201.0-dev.8272
+├── @uipath/llmgw-tool@1.201.0-dev.8272
+├── @uipath/maestro-tool@1.201.0-dev.8275
+├── @uipath/model-hub-tool@1.201.0-dev.8272
+├── @uipath/orchestrator-tool@1.201.0-dev.8272
+├── @uipath/platform-tool@1.201.0-dev.8272
+├── @uipath/pm-tool@1.201.0-dev.8272
+├── 
+
+… (truncated, 959 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#29</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">47ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -rl \&quot;isExpanded\\|SubProcess\&quot; /usr/lib/node_modules/@uipath/maestro-tool/dist/*.js 2&gt;/dev/null | head&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/usr/lib/node_modules/@uipath/maestro-tool/dist/index-2dvhe3at.js
+/usr/lib/node_modules/@uipath/maestro-tool/dist/index-8bsngk9y.js
+/usr/lib/node_modules/@uipath/maestro-tool/dist/packager-tool-2y3cxgtc.js
+/usr/lib/node_modules/@uipath/maestro-tool/dist/packager-tool-bnqptw8n.js
+/usr/lib/node_modules/@uipath/maestro-tool/dist/packager-tool-c0n5jv07.js
+/usr/lib/node_modules/@uipath/maestro-tool/dist/packager-tool-jbn5qa2n.js
+/usr/lib/node_modules/@uipath/maestro-tool/dist/packager-tool-x8d8fpse.js</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#30</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">28ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -o &#x27;.\\{80\\}isExpanded.\\{80\\}&#x27; /usr/lib/node_modules/@uipath/maestro-tool/dist/index-2dvhe3at.js 2&gt;/dev/null | head -5\necho \&quot;---\&quot;\ngrep -o &#x27;.\\{120\\}SubProcess.\\{80\\}&#x27; /usr/lib/node_modules/@uipath/maestro-tool/dist/index-2dvhe3at.js 2&gt;/dev/null | head -10&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>---</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#31</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">129ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;for f in /usr/lib/node_modules/@uipath/maestro-tool/dist/*.js; do\n  if grep -q \&quot;isExpanded\&quot; \&quot;$f\&quot; 2&gt;/dev/null; then echo \&quot;$f\&quot;; fi\ndone&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/usr/lib/node_modules/@uipath/maestro-tool/dist/index-2dvhe3at.js
+/usr/lib/node_modules/@uipath/maestro-tool/dist/index-8bsngk9y.js
+/usr/lib/node_modules/@uipath/maestro-tool/dist/packager-tool-c0n5jv07.js
+/usr/lib/node_modules/@uipath/maestro-tool/dist/packager-tool-jbn5qa2n.js
+/usr/lib/node_modules/@uipath/maestro-tool/dist/packager-tool-x8d8fpse.js</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#32</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">88ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;wc -l /usr/lib/node_modules/@uipath/maestro-tool/dist/index-2dvhe3at.js\npython3 -c \&quot;\nimport re\ndata = open(&#x27;/usr/lib/node_modules/@uipath/maestro-tool/dist/index-2dvhe3at.js&#x27;).read()\nidx = data.find(&#x27;isExpanded&#x27;)\nprint(data[max(0,idx-300):idx+500])\n\&quot;&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>18409 /usr/lib/node_modules/@uipath/maestro-tool/dist/index-2dvhe3at.js
+ [
+      {
+        name: &quot;bpmnElement&quot;,
+        isAttr: true,
+        isReference: true,
+        type: &quot;bpmn:BaseElement&quot;,
+        redefines: &quot;di:DiagramElement#modelElement&quot;
+      },
+      {
+        name: &quot;isHorizontal&quot;,
+        isAttr: true,
+        type: &quot;Boolean&quot;
+      },
+      {
+        name: &quot;isExpanded&quot;,
+        isAttr: true,
+        type: &quot;Boolean&quot;
+      },
+      {
+        name: &quot;isMarkerVisible&quot;,
+        isAttr: true,
+        type: &quot;Boolean&quot;
+      },
+      {
+        name: &quot;label&quot;,
+        type: &quot;BPMNLabel&quot;
+      },
+      {
+        name: &quot;isMessageVisible&quot;,
+        isAttr: true,
+        type: &quot;Boolean&quot;
+      },
+      {
+        name: &quot;participantBandKind&quot;,
+        type: &quot;ParticipantBandKind&quot;,
+        isAttr: true
+      },
+      {
+        name: &quot;choreographyActivityShape&quot;,
+        ty</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#33</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">86ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 -c \&quot;\nimport re\ndata = open(&#x27;/usr/lib/node_modules/@uipath/maestro-tool/dist/index-2dvhe3at.js&#x27;).read()\nfor m in re.finditer(&#x27;BPMNPlane&#x27;, data):\n    idx = m.start()\n    print(&#x27;---&#x27;, idx)\n    print(data[max(0,idx-200):idx+400])\n    print()\n\&quot; | head -150&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>--- 411750
+&quot;BPMNDI&quot;;
+var uri$4 = &quot;http://www.omg.org/spec/BPMN/20100524/DI&quot;;
+var prefix$4 = &quot;bpmndi&quot;;
+var types$4 = [
+  {
+    name: &quot;BPMNDiagram&quot;,
+    properties: [
+      {
+        name: &quot;plane&quot;,
+        type: &quot;BPMNPlane&quot;,
+        redefines: &quot;di:Diagram#rootElement&quot;
+      },
+      {
+        name: &quot;labelStyle&quot;,
+        type: &quot;BPMNLabelStyle&quot;,
+        isMany: true
+      }
+    ],
+    superClass: [
+      &quot;di:Diagram&quot;
+    ]
+  },
+  {
+    name: &quot;BPMNPlane&quot;,
+    properties: [
+      {
+        name: &quot;bpmnElement&quot;,
+        isAttr: true,
+        isReference: true,
+        type: &quot;bpmn:BaseElement&quot;,
+        redefines:
+
+--- 411982
+di:Diagram#rootElement&quot;
+      },
+      {
+        name: &quot;labelStyle&quot;,
+        type: &quot;BPMNLabelStyle&quot;,
+        isMany: true
+      }
+    ],
+    superClass: [
+      &quot;di:Diagram&quot;
+    ]
+  },
+  {
+    name: &quot;BPMNPlane&quot;,
+    properties: [
+      {
+        name: &quot;bpmnElement&quot;,
+        isAttr: true,
+        isReference: true,
+        type: &quot;bpmn:BaseElement&quot;,
+        redefines: &quot;di:DiagramElement#modelElement&quot;
+      }
+    ],
+    superClass: [
+      &quot;di:Plane&quot;
+    ]
+  },
+  {
+    name: &quot;BPMNShape&quot;,
+    properties: [
+      {
+        name: &quot;bpmnElement&quot;,
+        isAttr: true,
+        i
+
+… (truncated, 17 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#34</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">98ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 -c \&quot;\nimport re\ndata = open(&#x27;/usr/lib/node_modules/@uipath/maestro-tool/dist/index-2dvhe3at.js&#x27;).read()\nidx = data.find(&#x27;BPMNDiagram\\\&quot;,&#x27;)\nprint(data[max(0,idx-2000):idx+200])\n\&quot;&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>   },
+      {
+        name: &quot;Private&quot;
+      }
+    ]
+  },
+  {
+    name: &quot;GatewayDirection&quot;,
+    literalValues: [
+      {
+        name: &quot;Unspecified&quot;
+      },
+      {
+        name: &quot;Converging&quot;
+      },
+      {
+        name: &quot;Diverging&quot;
+      },
+      {
+        name: &quot;Mixed&quot;
+      }
+    ]
+  },
+  {
+    name: &quot;EventBasedGatewayType&quot;,
+    literalValues: [
+      {
+        name: &quot;Parallel&quot;
+      },
+      {
+        name: &quot;Exclusive&quot;
+      }
+    ]
+  },
+  {
+    name: &quot;RelationshipDirection&quot;,
+    literalValues: [
+      {
+        name: &quot;None&quot;
+      },
+      {
+        name: &quot;Forward&quot;
+      },
+      {
+        name: &quot;Backward&quot;
+      },
+      {
+        name: &quot;Both&quot;
+      }
+    ]
+  },
+  {
+    name: &quot;ItemKind&quot;,
+    literalValues: [
+      {
+        name: &quot;Physical&quot;
+      },
+      {
+        name: &quot;Information&quot;
+      }
+    ]
+  },
+  {
+    name: &quot;ChoreographyLoopType&quot;,
+    literalValues: [
+      {
+        name: &quot;None&quot;
+      },
+      {
+        name: &quot;Standard&quot;
+      },
+      {
+        name: &quot;MultiInstanceSequential&quot;
+      },
+      {
+        name: &quot;MultiInstanceParallel&quot;
+      }
+    ]
+  },
+  {
+    name: &quot;AssociationDirection&quot;,
+    literalValues: [
+      {
+        name: &quot;None&quot;
+      },
+      {
+        name:
+
+… (truncated, 1000 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#35</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.27s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -rl \&quot;isExpanded=\\\&quot;true\\\&quot;\\|bpmn:subProcess\&quot; /usr/lib/node_modules/@uipath/ 2&gt;/dev/null | grep -v \&quot;\\.js$\&quot; | head -20&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>(Bash completed with no output)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#36</span>
+      <span class="tool-name">Edit</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">43ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;replace_all&quot;: false,
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-bpmn-edit-group-to-subflow/Fulfillment.bpmn&quot;,
+  &quot;old_string&quot;: &quot;    &lt;bpmn:startEvent id=\&quot;Start_1\&quot; name=\&quot;Start\&quot;&gt;&lt;bpmn:outgoing&gt;Flow_SP&lt;/bpmn:outgoing&gt;&lt;/bpmn:startEvent&gt;\n    &lt;bpmn:scriptTask id=\&quot;Task_Pick\&quot; name=\&quot;Pick Items\&quot; scriptFormat=\&quot;JavaScript\&quot;&gt;\n      &lt;bpmn:extensionElements&gt;\n        &lt;uipath:scriptVersion value=\&quot;v3\&quot; /&gt;\n        &lt;uipath:mapping version=\&quot;v1\&quot;&gt;\n          &lt;uipath:type value=\&quot;BPMN.ScriptTask\&quot; version=\&quot;v1\&quot; /&gt;\n          &lt;uipath:input name=\&quot;args\&quot;&gt;&lt;![… (967 more chars)&quot;,
+  &quot;new_string&quot;: &quot;    &lt;bpmn:startEvent id=\&quot;Start_1\&quot; name=\&quot;Start\&quot;&gt;&lt;bpmn:outgoing&gt;Flow_SP&lt;/bpmn:outgoing&gt;&lt;/bpmn:startEvent&gt;\n    &lt;bpmn:subProcess id=\&quot;SubProcess_Prepare\&quot; name=\&quot;Prepare\&quot; isExpanded=\&quot;false\&quot;&gt;\n      &lt;bpmn:incoming&gt;Flow_SP&lt;/bpmn:incoming&gt;&lt;bpmn:outgoing&gt;Flow_PS&lt;/bpmn:outgoing&gt;\n      &lt;bpmn:startEvent id=\&quot;Start_Prepare\&quot; name=\&quot;Start\&quot;&gt;&lt;bpmn:outgoing&gt;Flow_PrepStart&lt;/bpmn:outgoing&gt;&lt;/bpmn:startEvent&gt;\n      &lt;bpmn:sc… (1711 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>The file /work/output/artifacts/skill-bpmn-edit-group-to-subflow/Fulfillment.bpmn has been updated successfully. (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#37</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">5ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-bpmn-edit-group-to-subflow/Fulfillment.bpmn&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;
+2	&lt;bpmn:definitions
+3	    xmlns:bpmn=&quot;http://www.omg.org/spec/BPMN/20100524/MODEL&quot;
+4	    xmlns:bpmndi=&quot;http://www.omg.org/spec/BPMN/20100524/DI&quot;
+5	    xmlns:dc=&quot;http://www.omg.org/spec/DD/20100524/DC&quot;
+6	    xmlns:di=&quot;http://www.omg.org/spec/DD/20100524/DI&quot;
+7	    xmlns:uipath=&quot;http://uipath.org/schema/bpmn&quot;
+8	    id=&quot;Definitions_Fulfillment&quot; targetNamespace=&quot;http://bpmn.io/schema/bpmn&quot;
+9	    exporter=&quot;UiPath (https://bpmn.uipath.com)&quot; exporterVersion=&quot;1.0&quot;&gt;
+10	  &lt;bpmn:process id=&quot;Process_Fulfillment&quot; isExecutable=&quot;true&quot;&gt;
+11	    &lt;bpmn:extensionElements&gt;
+12	      &lt;uipath:migrationVersion version=&quot;11.5&quot; /&gt;
+13	      &lt;uipath:caseManagement version=&quot;v1&quot;&gt;&lt;![CDATA[{&quot;owner&quot;:&quot;warehouse&quot;,&quot;opaque&quot;:&quot;preserve-only-do-not-touch&quot;}]]&gt;&lt;/uipath:caseManagement&gt;
+14	      &lt;uipath:variables version=&quot;v1&quot;&gt;
+15	        &lt;uipath:inputOutput id=&quot;Var_OrderId&quot; name=&quot;OrderId&quot; type=&quot;string&quot; /&gt;
+16	        &lt;uipath:inputOutput id=&quot;Var_Label&quot; name=&quot;Label&quot; type=&quot;string&quot; /&gt;
+17	      &lt;/uipath:variables&gt;
+18	    &lt;/bpmn:extensionElements&gt;
+19	    &lt;bpmn:startEvent id=&quot;Start_1&quot; name=&quot;Start&quot;&gt;&lt;bpmn:outgoing&gt;Flow_SP&lt;/bpmn:outgoing&gt;&lt;/bpmn:startEvent&gt;
+20	    &lt;bpmn:subProcess id=&quot;SubProcess_Pre
+
+… (truncated, 4620 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#38</span>
+      <span class="tool-name">Edit</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">23ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;replace_all&quot;: false,
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-bpmn-edit-group-to-subflow/Fulfillment.bpmn&quot;,
+  &quot;old_string&quot;: &quot;    &lt;bpmn:endEvent id=\&quot;End_1\&quot; name=\&quot;Done\&quot;&gt;&lt;bpmn:incoming&gt;Flow_SE&lt;/bpmn:incoming&gt;&lt;/bpmn:endEvent&gt;\n    &lt;bpmn:sequenceFlow id=\&quot;Flow_SP\&quot; sourceRef=\&quot;Start_1\&quot; targetRef=\&quot;Task_Pick\&quot; /&gt;\n    &lt;bpmn:sequenceFlow id=\&quot;Flow_PP\&quot; sourceRef=\&quot;Task_Pick\&quot; targetRef=\&quot;Task_Pack\&quot; /&gt;\n    &lt;bpmn:sequenceFlow id=\&quot;Flow_PS\&quot; sourceRef=\&quot;Task_Pack\&quot; targetRef=\&quot;Task_Ship\&quot; /&gt;\n    &lt;bpmn:sequenceFlow id=\&quot;Flow_SE\&quot; sourceRef=\&quot;Task_Ship… (1433 more chars)&quot;,
+  &quot;new_string&quot;: &quot;    &lt;bpmn:endEvent id=\&quot;End_1\&quot; name=\&quot;Done\&quot;&gt;&lt;bpmn:incoming&gt;Flow_SE&lt;/bpmn:incoming&gt;&lt;/bpmn:endEvent&gt;\n    &lt;bpmn:sequenceFlow id=\&quot;Flow_SP\&quot; sourceRef=\&quot;Start_1\&quot; targetRef=\&quot;SubProcess_Prepare\&quot; /&gt;\n    &lt;bpmn:sequenceFlow id=\&quot;Flow_PS\&quot; sourceRef=\&quot;SubProcess_Prepare\&quot; targetRef=\&quot;Task_Ship\&quot; /&gt;\n    &lt;bpmn:sequenceFlow id=\&quot;Flow_SE\&quot; sourceRef=\&quot;Task_Ship\&quot; targetRef=\&quot;End_1\&quot; /&gt;\n  &lt;/bpmn:process&gt;\n  &lt;bpmndi:BPMNDiagram id… (2233 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>The file /work/output/artifacts/skill-bpmn-edit-group-to-subflow/Fulfillment.bpmn has been updated successfully. (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#39</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">79ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 -c \&quot;\nimport re\ndata = open(&#x27;/usr/lib/node_modules/@uipath/maestro-tool/dist/index-2dvhe3at.js&#x27;).read()\nidx = data.find(&#x27;\\\&quot;isMany\\\&quot;&#x27;)\n# find plane property specifically\nidx2 = data.find(&#x27;name: \\\&quot;plane\\\&quot;&#x27;)\nprint(data[max(0,idx2-100):idx2+300])\n\&quot;&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>prefix$4 = &quot;bpmndi&quot;;
+var types$4 = [
+  {
+    name: &quot;BPMNDiagram&quot;,
+    properties: [
+      {
+        name: &quot;plane&quot;,
+        type: &quot;BPMNPlane&quot;,
+        redefines: &quot;di:Diagram#rootElement&quot;
+      },
+      {
+        name: &quot;labelStyle&quot;,
+        type: &quot;BPMNLabelStyle&quot;,
+        isMany: true
+      }
+    ],
+    superClass: [
+      &quot;di:Diagram&quot;
+    ]
+  },
+  {
+    name: &quot;BPMNPlane&quot;,
+    properties: [
+      {</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#40</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">199ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 -c \&quot;\nimport re\ndata = open(&#x27;/usr/lib/node_modules/@uipath/maestro-tool/dist/index-2dvhe3at.js&#x27;).read()\nidx2 = data.find(&#x27;planeElement&#x27;)\nprint(data[max(0,idx2-300):idx2+500])\n\&quot;&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+    name: &quot;Shape&quot;,
+    isAbstract: true,
+    superClass: [
+      &quot;Node&quot;
+    ],
+    properties: [
+      {
+        name: &quot;bounds&quot;,
+        type: &quot;dc:Bounds&quot;
+      }
+    ]
+  },
+  {
+    name: &quot;Plane&quot;,
+    isAbstract: true,
+    superClass: [
+      &quot;Node&quot;
+    ],
+    properties: [
+      {
+        name: &quot;planeElement&quot;,
+        type: &quot;DiagramElement&quot;,
+        subsettedProperty: &quot;DiagramElement-ownedElement&quot;,
+        isMany: true
+      }
+    ]
+  },
+  {
+    name: &quot;LabeledEdge&quot;,
+    isAbstract: true,
+    superClass: [
+      &quot;Edge&quot;
+    ],
+    properties: [
+      {
+        name: &quot;ownedLabel&quot;,
+        type: &quot;Label&quot;,
+        isReadOnly: true,
+        subsettedProperty: &quot;DiagramElement-ownedElement&quot;,
+        isMany: true,
+        isVirtual: true
+      }
+    ]
+  },
+  {
+    name: &quot;LabeledShape&quot;,
+    isAbst</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#41</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">5ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-bpmn-edit-group-to-subflow/Fulfillment.bpmn&quot;,
+  &quot;offset&quot;: 64
+}</pre>
+    <h4>Result</h4>
+    <pre>64	    &lt;bpmn:sequenceFlow id=&quot;Flow_PS&quot; sourceRef=&quot;SubProcess_Prepare&quot; targetRef=&quot;Task_Ship&quot; /&gt;
+65	    &lt;bpmn:sequenceFlow id=&quot;Flow_SE&quot; sourceRef=&quot;Task_Ship&quot; targetRef=&quot;End_1&quot; /&gt;
+66	  &lt;/bpmn:process&gt;
+67	  &lt;bpmndi:BPMNDiagram id=&quot;Diagram_1&quot;&gt;
+68	    &lt;bpmndi:BPMNPlane id=&quot;Plane_1&quot; bpmnElement=&quot;Process_Fulfillment&quot;&gt;
+69	      &lt;bpmndi:BPMNShape id=&quot;S_Start_1&quot; bpmnElement=&quot;Start_1&quot;&gt;&lt;dc:Bounds x=&quot;160&quot; y=&quot;100&quot; width=&quot;36&quot; height=&quot;36&quot; /&gt;&lt;/bpmndi:BPMNShape&gt;
+70	      &lt;bpmndi:BPMNShape id=&quot;S_SubProcess_Prepare&quot; bpmnElement=&quot;SubProcess_Prepare&quot; isExpanded=&quot;false&quot;&gt;&lt;dc:Bounds x=&quot;250&quot; y=&quot;78&quot; width=&quot;150&quot; height=&quot;80&quot; /&gt;&lt;/bpmndi:BPMNShape&gt;
+71	      &lt;bpmndi:BPMNShape id=&quot;S_Task_Ship&quot; bpmnElement=&quot;Task_Ship&quot;&gt;&lt;dc:Bounds x=&quot;570&quot; y=&quot;78&quot; width=&quot;100&quot; height=&quot;80&quot; /&gt;&lt;/bpmndi:BPMNShape&gt;
+72	      &lt;bpmndi:BPMNShape id=&quot;S_End_1&quot; bpmnElement=&quot;End_1&quot;&gt;&lt;dc:Bounds x=&quot;730&quot; y=&quot;100&quot; width=&quot;36&quot; height=&quot;36&quot; /&gt;&lt;/bpmndi:BPMNShape&gt;
+73	      &lt;bpmndi:BPMNEdge id=&quot;E_Flow_SP&quot; bpmnElement=&quot;Flow_SP&quot;&gt;&lt;di:waypoint x=&quot;196&quot; y=&quot;118&quot; /&gt;&lt;di:waypoint x=&quot;250&quot; y=&quot;118&quot; /&gt;&lt;/bpmndi:BPMNEdge&gt;
+74	      &lt;bpmndi:BPMNEdge id=&quot;E_Flow_PS&quot; bpmnElement=&quot;Flow_PS&quot;&gt;&lt;di:waypoint x=&quot;400&quot; y=&quot;118&quot; /&gt;&lt;di:waypoint x=&quot;570&quot; y=&quot;118&quot; /&gt;&lt;/bpmndi:BPMNEdge&gt;
+75	      &lt;bpmnd
+
+… (truncated, 1342 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#42</span>
+      <span class="tool-name">Edit</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">44ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;replace_all&quot;: false,
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-bpmn-edit-group-to-subflow/Fulfillment.bpmn&quot;,
+  &quot;old_string&quot;: &quot;      &lt;bpmndi:BPMNEdge id=\&quot;E_Flow_SE\&quot; bpmnElement=\&quot;Flow_SE\&quot;&gt;&lt;di:waypoint x=\&quot;670\&quot; y=\&quot;118\&quot; /&gt;&lt;di:waypoint x=\&quot;730\&quot; y=\&quot;118\&quot; /&gt;&lt;/bpmndi:BPMNEdge&gt;\n    &lt;/bpmndi:BPMNPlane&gt;\n    &lt;bpmndi:BPMNPlane id=\&quot;Plane_Prepare\&quot; bpmnElement=\&quot;SubProcess_Prepare\&quot;&gt;\n      &lt;bpmndi:BPMNShape id=\&quot;S_Start_Prepare\&quot; bpmnElement=\&quot;Start_Prepare\&quot;&gt;&lt;dc:Bounds x=\&quot;160\&quot; y=\&quot;100\&quot; width=\&quot;36\&quot; height=\&quot;36\&quot; /&gt;&lt;/bpmndi:BPMNShape&gt;\n      &lt;bpmndi:B… (894 more chars)&quot;,
+  &quot;new_string&quot;: &quot;      &lt;bpmndi:BPMNEdge id=\&quot;E_Flow_SE\&quot; bpmnElement=\&quot;Flow_SE\&quot;&gt;&lt;di:waypoint x=\&quot;670\&quot; y=\&quot;118\&quot; /&gt;&lt;di:waypoint x=\&quot;730\&quot; y=\&quot;118\&quot; /&gt;&lt;/bpmndi:BPMNEdge&gt;\n    &lt;/bpmndi:BPMNPlane&gt;\n  &lt;/bpmndi:BPMNDiagram&gt;\n  &lt;bpmndi:BPMNDiagram id=\&quot;Diagram_Prepare\&quot;&gt;\n    &lt;bpmndi:BPMNPlane id=\&quot;Plane_Prepare\&quot; bpmnElement=\&quot;SubProcess_Prepare\&quot;&gt;\n      &lt;bpmndi:BPMNShape id=\&quot;S_Start_Prepare\&quot; bpmnElement=\&quot;Start_Prepare\&quot;&gt;&lt;dc:Bounds x=\&quot;160\&quot; … (962 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>The file /work/output/artifacts/skill-bpmn-edit-group-to-subflow/Fulfillment.bpmn has been updated successfully. (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#43</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">113ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 -c \&quot;import xml.etree.ElementTree as ET; ET.parse(&#x27;Fulfillment.bpmn&#x27;); print(&#x27;well-formed OK&#x27;)\&quot;&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>well-formed OK</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#44</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-err">ERROR</span>
+      <span class="tool-duration">766ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro bpmn validate Fulfillment.bpmn --output json&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Exit code 1
+{
+  &quot;Result&quot;: &quot;Failure&quot;,
+  &quot;Message&quot;: &quot;Validation failed for /work/output/artifacts/skill-bpmn-edit-group-to-subflow/Fulfillment.bpmn&quot;,
+  &quot;Instructions&quot;: &quot;Found 6 error(s):\n  - [warning] [(xml)] unknown attribute &lt;isExpanded&gt;\n  - [error] [uipath:input \&quot;args\&quot;] Input payload \&quot;args\&quot; must declare type=\&quot;json\&quot;.\n  - [error] [uipath:input \&quot;args\&quot;] Input payload \&quot;args\&quot; must target \&quot;bodyField\&quot;.\n  - [error] [uipath:input \&quot;args\&quot;] Input payload \&quot;args\&quot; must declare type=\&quot;json\&quot;.\n  - [error] [uipath:input \&quot;args\&quot;] Input payload \&quot;args\&quot; must target \&quot;bodyField\&quot;.\n  - [error] [uipath:input \&quot;args\&quot;] Input payload \&quot;args\&quot; must declare type=\&quot;json\&quot;.\n  - [error] [uipath:input \&quot;args\&quot;] Input payload \&quot;args\&quot; must target \&quot;bodyField\&quot;.&quot;,
+  &quot;ErrorCode&quot;: &quot;unknown_error&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}</pre>
+    <h4>Error</h4><pre>Exit code 1
+{
+  &quot;Result&quot;: &quot;Failure&quot;,
+  &quot;Message&quot;: &quot;Validation failed for /work/output/artifacts/skill-bpmn-edit-group-to-subflow/Fulfillment.bpmn&quot;,
+  &quot;Instructions&quot;: &quot;Found 6 error(s):\n  - [warning] [(xml)] unknown attribute &lt;isExpanded&gt;\n  - [error] [uipath:input \&quot;args\&quot;] Input payload \&quot;args\&quot; must declare type=\&quot;json\&quot;.\n  - [error] [uipath:input \&quot;args\&quot;] Input payload \&quot;args\&quot; must target \&quot;bodyField\&quot;.\n  - [error] [uipath:input \&quot;args\&quot;] Input payload \&quot;args\&quot; must declare type=\&quot;json\&quot;.\n  - [error] [uipath:input \&quot;args\&quot;] Input payload \&quot;args\&quot; must target \&quot;bodyField\&quot;.\n  - [error] [uipath:input \&quot;args\&quot;] Input payload \&quot;args\&quot; must declare type=\&quot;json\&quot;.\n  - [error] [uipath:input \&quot;args\&quot;] Input payload \&quot;args\&quot; must target \&quot;bodyField\&quot;.&quot;,
+  &quot;ErrorCode&quot;: &quot;unknown_error&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}</pre>
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#45</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">19ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;git status 2&gt;&amp;1 | head -5; git diff 2&gt;&amp;1 | head -100&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>fatal: not a git repository (or any parent up to mount point /work)
+Stopping at filesystem boundary (GIT_DISCOVERY_ACROSS_FILESYSTEM not set).
+warning: Not a git repository. Use --no-index to compare two paths outside a working tree
+usage: git diff --no-index [&lt;options&gt;] &lt;path&gt; &lt;path&gt;
+
+Diff output format options
+    -p, --patch           generate patch
+    -s, --no-patch        suppress diff output
+    -u                    generate patch
+    -U, --unified[=&lt;n&gt;]   generate diffs with &lt;n&gt; lines context
+    -W, --[no-]function-context
+                          generate diffs with &lt;n&gt; lines context
+    --raw                 generate the diff in raw format
+    --patch-with-raw      synonym for &#x27;-p --raw&#x27;
+    --patch-with-stat     synonym for &#x27;-p --stat&#x27;
+    --numstat             machine friendly --stat
+    --shortstat           output only the last line of --stat
+    -X, --dirstat[=&lt;param1&gt;,&lt;param2&gt;...]
+                          output the distribution of relative amount of changes for each sub-directory
+    --cumulative          synonym for --dirstat=cumulative
+    --dirstat-by-file[=&lt;param1&gt;,&lt;param2&gt;...]
+                          synonym for --dirstat=files,&lt;param1&gt;,&lt;param2&gt;...
+    -
+
+… (truncated, 4463 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#46</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">20ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -n &#x27;type=\&quot;json\&quot;\\|target=\&quot;bodyField\&quot;\\|bodyField&#x27; /home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/structural-bpmn.md | head -20&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>102:          &lt;uipath:input name=&quot;args&quot; type=&quot;json&quot; target=&quot;bodyField&quot;&gt;&lt;![CDATA[{&quot;amount&quot;:&quot;=vars.Var_Amount&quot;}]]&gt;&lt;/uipath:input&gt;
+164:  with `type=&quot;json&quot;` and `target=&quot;bodyField&quot;`, and maps each field by variable
+165:  id (`=vars.Var_Amount`). Include `&lt;uipath:input name=&quot;args&quot; type=&quot;json&quot;
+166:  target=&quot;bodyField&quot;&gt;&lt;![CDATA[{}]]&gt;&lt;/uipath:input&gt;` even when there are no
+196:      &lt;uipath:input name=&quot;args&quot; type=&quot;json&quot; target=&quot;bodyField&quot;&gt;&lt;![CDATA[{&quot;amount&quot;:&quot;=vars.Var_Amount&quot;,&quot;daysOverdue&quot;:&quot;=vars.Var_DaysOverdue&quot;}]]&gt;&lt;/uipath:input&gt;</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#47</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">11ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;ls -la; find . -name \&quot;*.orig\&quot; -o -name \&quot;*.bak\&quot; 2&gt;/dev/null&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>total 44
+drwxr-xr-x 5 root root  4096 Aug 14 21:56 .
+drwxr-xr-x 3 root root  4096 Aug 14 21:48 ..
+drwxr-xr-x 4 root root  4096 Aug 14 21:48 .venv
+-rw-rw-r-- 1 root root  6451 Aug 14 21:56 Fulfillment.bpmn
+-rw-rw-r-- 1 root root 16371 Aug 14 16:40 SKILL.md
+drwxr-xr-x 5 root root  4096 Aug 14 21:48 references
+drwxr-xr-x 2 root root  4096 Aug 14 21:48 validator</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#48</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-err">ERROR</span>
+      <span class="tool-duration">690ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /tmp &amp;&amp; cat &gt; orig_test.bpmn &lt;&lt; &#x27;EOF&#x27;\n&lt;?xml version=\&quot;1.0\&quot; encoding=\&quot;UTF-8\&quot;?&gt;\n&lt;bpmn:definitions\n    xmlns:bpmn=\&quot;http://www.omg.org/spec/BPMN/20100524/MODEL\&quot;\n    xmlns:bpmndi=\&quot;http://www.omg.org/spec/BPMN/20100524/DI\&quot;\n    xmlns:dc=\&quot;http://www.omg.org/spec/DD/20100524/DC\&quot;\n    xmlns:di=\&quot;http://www.omg.org/spec/DD/20100524/DI\&quot;\n    xmlns:uipath=\&quot;http://uipath.org/schema/bpmn\&quot;\n    id=\&quot;Definitions_Fulf… (4538 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Exit code 1
+{
+  &quot;Result&quot;: &quot;Failure&quot;,
+  &quot;Message&quot;: &quot;Validation failed for /tmp/orig_test.bpmn&quot;,
+  &quot;Instructions&quot;: &quot;Found 6 error(s):\n  - [error] [uipath:input \&quot;args\&quot;] Input payload \&quot;args\&quot; must declare type=\&quot;json\&quot;.\n  - [error] [uipath:input \&quot;args\&quot;] Input payload \&quot;args\&quot; must target \&quot;bodyField\&quot;.\n  - [error] [uipath:input \&quot;args\&quot;] Input payload \&quot;args\&quot; must declare type=\&quot;json\&quot;.\n  - [error] [uipath:input \&quot;args\&quot;] Input payload \&quot;args\&quot; must target \&quot;bodyField\&quot;.\n  - [error] [uipath:input \&quot;args\&quot;] Input payload \&quot;args\&quot; must declare type=\&quot;json\&quot;.\n  - [error] [uipath:input \&quot;args\&quot;] Input payload \&quot;args\&quot; must target \&quot;bodyField\&quot;.&quot;,
+  &quot;ErrorCode&quot;: &quot;unknown_error&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}</pre>
+    <h4>Error</h4><pre>Exit code 1
+{
+  &quot;Result&quot;: &quot;Failure&quot;,
+  &quot;Message&quot;: &quot;Validation failed for /tmp/orig_test.bpmn&quot;,
+  &quot;Instructions&quot;: &quot;Found 6 error(s):\n  - [error] [uipath:input \&quot;args\&quot;] Input payload \&quot;args\&quot; must declare type=\&quot;json\&quot;.\n  - [error] [uipath:input \&quot;args\&quot;] Input payload \&quot;args\&quot; must target \&quot;bodyField\&quot;.\n  - [error] [uipath:input \&quot;args\&quot;] Input payload \&quot;args\&quot; must declare type=\&quot;json\&quot;.\n  - [error] [uipath:input \&quot;args\&quot;] Input payload \&quot;args\&quot; must target \&quot;bodyField\&quot;.\n  - [error] [uipath:input \&quot;args\&quot;] Input payload \&quot;args\&quot; must declare type=\&quot;json\&quot;.\n  - [error] [uipath:input \&quot;args\&quot;] Input payload \&quot;args\&quot; must target \&quot;bodyField\&quot;.&quot;,
+  &quot;ErrorCode&quot;: &quot;unknown_error&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}</pre>
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#49</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">12ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -n \&quot;must declare type\\|must target\\|bodyField\&quot; /home/azureuser/projects/skills/skills/uipath-maestro-bpmn/validator/bpmn-spec.json&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>71:      &quot;inputTarget&quot;: &quot;bodyField&quot;,
+79:      &quot;xmlTemplate&quot;: &quot;&lt;bpmn:UserTask id=\&quot;{id}\&quot; name=\&quot;{name}\&quot;&gt;\n  &lt;bpmn:extensionElements&gt;\n    &lt;uipath:activity version=\&quot;v1\&quot;&gt;\n      &lt;uipath:type value=\&quot;Actions.HITL\&quot; version=\&quot;v1\&quot; /&gt;\n      &lt;uipath:context&gt;\n        &lt;uipath:input name=\&quot;appId\&quot; value=\&quot;{appId}\&quot; /&gt;\n        &lt;uipath:input name=\&quot;appVersion\&quot; value=\&quot;{appVersion}\&quot; /&gt;\n        &lt;uipath:input name=\&quot;actions\&quot; value=\&quot;{actions}\&quot; /&gt;\n        &lt;uipath:input name=\&quot;key\&quot; value=\&quot;{key}\&quot; /&gt;\n        &lt;uipath:input name=\&quot;taskTitle\&quot; value=\&quot;{taskTitle}\&quot; /&gt;\n      &lt;/uipath:context&gt;\n      &lt;uipath:input name=\&quot;HitlTaskArguments\&quot; type=\&quot;json\&quot; target=\&quot;bodyField\&quot;&gt;&lt;![CDATA[{}]]&gt;&lt;/uipath:input&gt;\n      &lt;uipath:output name=\&quot;Process response\&quot; type=\&quot;Actions.HITL\&quot; var=\&quot;{varId}\&quot; /&gt;\n    &lt;/uipath:activity&gt;\n  &lt;/bpmn:extensionElements&gt;\n  &lt;bpmn:incoming&gt;{incomingEdge}&lt;/bpmn:incoming&gt;\n  &lt;bpmn:outgoing&gt;{outgoingEdge}&lt;/bpmn:outgoing&gt;\n&lt;/bpmn:UserTask&gt;&quot;,
+139:      &quot;inputTarget&quot;: &quot;bodyField&quot;,
+153:      &quot;xmlTemplate&quot;: &quot;&lt;bpmn:ServiceTask id=\&quot;{id}\&quot; name=\&quot;{name}\&quot;&gt;\n  &lt;bpmn:extensionElements&gt;\n    &lt;uipath:activity version=\&quot;v1\&quot;&gt;\n      &lt;uipath:type value=\&quot;Orchestrator.StartJob\&quot; ver
+
+… (truncated, 8082 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#50</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">573ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro bpmn registry get BPMN.ScriptTask --output json 2&gt;&amp;1 | head -30&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;RegistryGetSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;ExtensionType&quot;: {
+      &quot;ExtensionType&quot;: &quot;BPMN.ScriptTask&quot;,
+      &quot;Label&quot;: &quot;Execute script&quot;,
+      &quot;BpmnElement&quot;: &quot;bpmn:ScriptTask&quot;,
+      &quot;Placements&quot;: {},
+      &quot;ExtensionTag&quot;: &quot;uipath:mapping&quot;,
+      &quot;ContextFields&quot;: [],
+      &quot;InputPattern&quot;: &quot;scriptArgs&quot;,
+      &quot;InputName&quot;: &quot;args&quot;,
+      &quot;InputTarget&quot;: &quot;bodyField&quot;,
+      &quot;OutputSource&quot;: null,
+      &quot;OutputType&quot;: null,
+      &quot;BindingPattern&quot;: &quot;none&quot;,
+      &quot;RequiresDiscovery&quot;: false,
+      &quot;IsDynamic&quot;: false,
+      &quot;XmlTemplate&quot;: &quot;&lt;bpmn:ScriptTask id=\&quot;{id}\&quot; name=\&quot;{name}\&quot;&gt;\n  &lt;bpmn:extensionElements&gt;\n    &lt;uipath:mapping version=\&quot;v1\&quot;&gt;\n      &lt;uipath:type value=\&quot;BPMN.ScriptTask\&quot; version=\&quot;v1\&quot; /&gt;\n      &lt;uipath:input name=\&quot;args\&quot; type=\&quot;json\&quot; target=\&quot;bodyField\&quot;&gt;&lt;![CDATA[{}]]&gt;&lt;/uipath:input&gt;\n    &lt;/uipath:mapping&gt;\n  &lt;/bpmn:extensionElements&gt;\n  &lt;bpmn:incoming&gt;{incomingEdge}&lt;/bpmn:incoming&gt;\n  &lt;bpmn:outgoing&gt;{outgoingEdge}&lt;/bpmn:outgoing&gt;\n&lt;/bpmn:ScriptTask&gt;&quot;,
+      &quot;InputNotes&quot;: &quot;Inputs are merged into a single json input named &#x27;args&#x27; with target &#x27;bodyField&#x27;. An inputSchema is created from the input variables.&quot;,
+      &quot;ExtensionTagNotes&quot;: &quot;bpmn:S
+
+… (truncated, 170 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#51</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">40ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -rl \&quot;unknown attribute\&quot; /usr/lib/node_modules/@uipath/maestro-tool/dist/*.js 2&gt;/dev/null&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/usr/lib/node_modules/@uipath/maestro-tool/dist/index-2dvhe3at.js
+/usr/lib/node_modules/@uipath/maestro-tool/dist/index-8bsngk9y.js
+/usr/lib/node_modules/@uipath/maestro-tool/dist/packager-tool-x8d8fpse.js</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#52</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">18ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -n \&quot;unknown attribute\\|allowedAttributes\\|BPMNShape\&quot; /home/azureuser/projects/skills/skills/uipath-maestro-bpmn/validator/bpmn-spec.json | head -30&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>(Bash completed with no output)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#53</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">69ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -rn \&quot;must declare type\\|must target\&quot; /usr/lib/node_modules/@uipath/maestro-tool/dist/*.js 2&gt;/dev/null | head -5&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/usr/lib/node_modules/@uipath/maestro-tool/dist/bpmn-refresh-service-meprbm0a.js:287:        throw new Error(`Process output &quot;${required(output.name, &quot;Process output name&quot;)}&quot; must target a root end event.`);
+/usr/lib/node_modules/@uipath/maestro-tool/dist/packager-tool-bnqptw8n.js:3620:          message: `Orchestrator.StartAgentJob binding &quot;${bindingId}&quot; must target Agent ${expected}.`,
+/usr/lib/node_modules/@uipath/maestro-tool/dist/packager-tool-bnqptw8n.js:3897:      message: `Input payload &quot;${expectedName}&quot; must declare type=&quot;json&quot;.`,
+/usr/lib/node_modules/@uipath/maestro-tool/dist/packager-tool-bnqptw8n.js:3906:      message: `Input payload &quot;${expectedName}&quot; must target &quot;${expectedTarget}&quot;.`,</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#54</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">12ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;sed -n &#x27;3850,3920p&#x27; /usr/lib/node_modules/@uipath/maestro-tool/dist/packager-tool-bnqptw8n.js&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>  return `${node.name}${id}${name}`;
+}
+function hasAttributeValue(node, attribute) {
+  return Boolean(node?.attributes[attribute]?.trim());
+}
+function usesCanvasOwnedDynamicPayload(contract) {
+  return contract.isDynamic === true || contract.extensionType.startsWith(&quot;Intsvc.&quot;) &amp;&amp; contract.requiresDiscovery;
+}
+function getAllowedOwnerTypes(contract) {
+  if (contract.extensionType === &quot;BPMN.Variables&quot;) {
+    return [
+      &quot;bpmn:StartEvent&quot;,
+      &quot;bpmn:EndEvent&quot;,
+      &quot;bpmn:Task&quot;,
+      &quot;bpmn:ScriptTask&quot;,
+      &quot;bpmn:SubProcess&quot;
+    ];
+  }
+  const placementTypes = Object.values(contract.placements).map((placement) =&gt; placement.type);
+  return placementTypes.length &gt; 0 ? placementTypes : [contract.bpmnElement];
+}
+function inferImplicitExtensionType(payload, owner) {
+  return isImplicitVariablesMapping(payload, owner) ? &quot;BPMN.Variables&quot; : undefined;
+}
+function isImplicitVariablesMapping(payload, owner) {
+  return payload.name === &quot;uipath:mapping&quot; &amp;&amp; !payload.attributes.type &amp;&amp; childElements(payload, &quot;uipath:type&quot;).length === 0 &amp;&amp; hasLocalName(owner, &quot;task&quot;);
+}
+function getExpectedInputName(contract) {
+  if (contract.inputPattern === &quot;splitInputsItemData&quot;) {
+    return &quot;ItemData&quot;;
+  }
+
+… (truncated, 1344 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#55</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">5ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-bpmn-edit-group-to-subflow/Fulfillment.bpmn&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;
+2	&lt;bpmn:definitions
+3	    xmlns:bpmn=&quot;http://www.omg.org/spec/BPMN/20100524/MODEL&quot;
+4	    xmlns:bpmndi=&quot;http://www.omg.org/spec/BPMN/20100524/DI&quot;
+5	    xmlns:dc=&quot;http://www.omg.org/spec/DD/20100524/DC&quot;
+6	    xmlns:di=&quot;http://www.omg.org/spec/DD/20100524/DI&quot;
+7	    xmlns:uipath=&quot;http://uipath.org/schema/bpmn&quot;
+8	    id=&quot;Definitions_Fulfillment&quot; targetNamespace=&quot;http://bpmn.io/schema/bpmn&quot;
+9	    exporter=&quot;UiPath (https://bpmn.uipath.com)&quot; exporterVersion=&quot;1.0&quot;&gt;
+10	  &lt;bpmn:process id=&quot;Process_Fulfillment&quot; isExecutable=&quot;true&quot;&gt;
+11	    &lt;bpmn:extensionElements&gt;
+12	      &lt;uipath:migrationVersion version=&quot;11.5&quot; /&gt;
+13	      &lt;uipath:caseManagement version=&quot;v1&quot;&gt;&lt;![CDATA[{&quot;owner&quot;:&quot;warehouse&quot;,&quot;opaque&quot;:&quot;preserve-only-do-not-touch&quot;}]]&gt;&lt;/uipath:caseManagement&gt;
+14	      &lt;uipath:variables version=&quot;v1&quot;&gt;
+15	        &lt;uipath:inputOutput id=&quot;Var_OrderId&quot; name=&quot;OrderId&quot; type=&quot;string&quot; /&gt;
+16	        &lt;uipath:inputOutput id=&quot;Var_Label&quot; name=&quot;Label&quot; type=&quot;string&quot; /&gt;
+17	      &lt;/uipath:variables&gt;
+18	    &lt;/bpmn:extensionElements&gt;
+19	    &lt;bpmn:startEvent id=&quot;Start_1&quot; name=&quot;Start&quot;&gt;&lt;bpmn:outgoing&gt;Flow_SP&lt;/bpmn:outgoing&gt;&lt;/bpmn:startEvent&gt;
+20	    &lt;bpmn:subProcess id=&quot;SubProcess_Pre
+
+… (truncated, 5512 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#56</span>
+      <span class="tool-name">Edit</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">15ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;replace_all&quot;: false,
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-bpmn-edit-group-to-subflow/Fulfillment.bpmn&quot;,
+  &quot;old_string&quot;: &quot;    &lt;bpmn:subProcess id=\&quot;SubProcess_Prepare\&quot; name=\&quot;Prepare\&quot; isExpanded=\&quot;false\&quot;&gt;&quot;,
+  &quot;new_string&quot;: &quot;    &lt;bpmn:subProcess id=\&quot;SubProcess_Prepare\&quot; name=\&quot;Prepare\&quot;&gt;&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>The file /work/output/artifacts/skill-bpmn-edit-group-to-subflow/Fulfillment.bpmn has been updated successfully. (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#57</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-err">ERROR</span>
+      <span class="tool-duration">584ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro bpmn validate Fulfillment.bpmn --output json&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Exit code 1
+{
+  &quot;Result&quot;: &quot;Failure&quot;,
+  &quot;Message&quot;: &quot;Validation failed for /work/output/artifacts/skill-bpmn-edit-group-to-subflow/Fulfillment.bpmn&quot;,
+  &quot;Instructions&quot;: &quot;Found 6 error(s):\n  - [error] [uipath:input \&quot;args\&quot;] Input payload \&quot;args\&quot; must declare type=\&quot;json\&quot;.\n  - [error] [uipath:input \&quot;args\&quot;] Input payload \&quot;args\&quot; must target \&quot;bodyField\&quot;.\n  - [error] [uipath:input \&quot;args\&quot;] Input payload \&quot;args\&quot; must declare type=\&quot;json\&quot;.\n  - [error] [uipath:input \&quot;args\&quot;] Input payload \&quot;args\&quot; must target \&quot;bodyField\&quot;.\n  - [error] [uipath:input \&quot;args\&quot;] Input payload \&quot;args\&quot; must declare type=\&quot;json\&quot;.\n  - [error] [uipath:input \&quot;args\&quot;] Input payload \&quot;args\&quot; must target \&quot;bodyField\&quot;.&quot;,
+  &quot;ErrorCode&quot;: &quot;unknown_error&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}</pre>
+    <h4>Error</h4><pre>Exit code 1
+{
+  &quot;Result&quot;: &quot;Failure&quot;,
+  &quot;Message&quot;: &quot;Validation failed for /work/output/artifacts/skill-bpmn-edit-group-to-subflow/Fulfillment.bpmn&quot;,
+  &quot;Instructions&quot;: &quot;Found 6 error(s):\n  - [error] [uipath:input \&quot;args\&quot;] Input payload \&quot;args\&quot; must declare type=\&quot;json\&quot;.\n  - [error] [uipath:input \&quot;args\&quot;] Input payload \&quot;args\&quot; must target \&quot;bodyField\&quot;.\n  - [error] [uipath:input \&quot;args\&quot;] Input payload \&quot;args\&quot; must declare type=\&quot;json\&quot;.\n  - [error] [uipath:input \&quot;args\&quot;] Input payload \&quot;args\&quot; must target \&quot;bodyField\&quot;.\n  - [error] [uipath:input \&quot;args\&quot;] Input payload \&quot;args\&quot; must declare type=\&quot;json\&quot;.\n  - [error] [uipath:input \&quot;args\&quot;] Input payload \&quot;args\&quot; must target \&quot;bodyField\&quot;.&quot;,
+  &quot;ErrorCode&quot;: &quot;unknown_error&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}</pre>
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#58</span>
+      <span class="tool-name">Edit</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">52ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;replace_all&quot;: false,
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-bpmn-edit-group-to-subflow/Fulfillment.bpmn&quot;,
+  &quot;old_string&quot;: &quot;            &lt;uipath:type value=\&quot;BPMN.ScriptTask\&quot; version=\&quot;v1\&quot; /&gt;\n            &lt;uipath:input name=\&quot;args\&quot;&gt;&lt;![CDATA[{\&quot;orderId\&quot;:\&quot;=vars.Var_OrderId\&quot;}]]&gt;&lt;/uipath:input&gt;\n          &lt;/uipath:mapping&gt;\n        &lt;/bpmn:extensionElements&gt;\n        &lt;bpmn:incoming&gt;Flow_PrepStart&lt;/bpmn:incoming&gt;&lt;bpmn:outgoing&gt;Flow_PP&lt;/bpmn:outgoing&gt;&quot;,
+  &quot;new_string&quot;: &quot;            &lt;uipath:type value=\&quot;BPMN.ScriptTask\&quot; version=\&quot;v1\&quot; /&gt;\n            &lt;uipath:input name=\&quot;args\&quot; type=\&quot;json\&quot; target=\&quot;bodyField\&quot;&gt;&lt;![CDATA[{\&quot;orderId\&quot;:\&quot;=vars.Var_OrderId\&quot;}]]&gt;&lt;/uipath:input&gt;\n          &lt;/uipath:mapping&gt;\n        &lt;/bpmn:extensionElements&gt;\n        &lt;bpmn:incoming&gt;Flow_PrepStart&lt;/bpmn:incoming&gt;&lt;bpmn:outgoing&gt;Flow_PP&lt;/bpmn:outgoing&gt;&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>The file /work/output/artifacts/skill-bpmn-edit-group-to-subflow/Fulfillment.bpmn has been updated successfully. (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#59</span>
+      <span class="tool-name">Edit</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">17ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;replace_all&quot;: false,
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-bpmn-edit-group-to-subflow/Fulfillment.bpmn&quot;,
+  &quot;old_string&quot;: &quot;            &lt;uipath:type value=\&quot;BPMN.ScriptTask\&quot; version=\&quot;v1\&quot; /&gt;\n            &lt;uipath:input name=\&quot;args\&quot;&gt;&lt;![CDATA[{\&quot;orderId\&quot;:\&quot;=vars.Var_OrderId\&quot;}]]&gt;&lt;/uipath:input&gt;\n          &lt;/uipath:mapping&gt;\n        &lt;/bpmn:extensionElements&gt;\n        &lt;bpmn:incoming&gt;Flow_PP&lt;/bpmn:incoming&gt;&lt;bpmn:outgoing&gt;Flow_PrepEnd&lt;/bpmn:outgoing&gt;&quot;,
+  &quot;new_string&quot;: &quot;            &lt;uipath:type value=\&quot;BPMN.ScriptTask\&quot; version=\&quot;v1\&quot; /&gt;\n            &lt;uipath:input name=\&quot;args\&quot; type=\&quot;json\&quot; target=\&quot;bodyField\&quot;&gt;&lt;![CDATA[{\&quot;orderId\&quot;:\&quot;=vars.Var_OrderId\&quot;}]]&gt;&lt;/uipath:input&gt;\n          &lt;/uipath:mapping&gt;\n        &lt;/bpmn:extensionElements&gt;\n        &lt;bpmn:incoming&gt;Flow_PP&lt;/bpmn:incoming&gt;&lt;bpmn:outgoing&gt;Flow_PrepEnd&lt;/bpmn:outgoing&gt;&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>The file /work/output/artifacts/skill-bpmn-edit-group-to-subflow/Fulfillment.bpmn has been updated successfully. (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#60</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-err">ERROR</span>
+      <span class="tool-duration">605ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro bpmn validate Fulfillment.bpmn --output json&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Exit code 1
+{
+  &quot;Result&quot;: &quot;Failure&quot;,
+  &quot;Message&quot;: &quot;Validation failed for /work/output/artifacts/skill-bpmn-edit-group-to-subflow/Fulfillment.bpmn&quot;,
+  &quot;Instructions&quot;: &quot;Found 2 error(s):\n  - [error] [uipath:input \&quot;args\&quot;] Input payload \&quot;args\&quot; must declare type=\&quot;json\&quot;.\n  - [error] [uipath:input \&quot;args\&quot;] Input payload \&quot;args\&quot; must target \&quot;bodyField\&quot;.&quot;,
+  &quot;ErrorCode&quot;: &quot;unknown_error&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}</pre>
+    <h4>Error</h4><pre>Exit code 1
+{
+  &quot;Result&quot;: &quot;Failure&quot;,
+  &quot;Message&quot;: &quot;Validation failed for /work/output/artifacts/skill-bpmn-edit-group-to-subflow/Fulfillment.bpmn&quot;,
+  &quot;Instructions&quot;: &quot;Found 2 error(s):\n  - [error] [uipath:input \&quot;args\&quot;] Input payload \&quot;args\&quot; must declare type=\&quot;json\&quot;.\n  - [error] [uipath:input \&quot;args\&quot;] Input payload \&quot;args\&quot; must target \&quot;bodyField\&quot;.&quot;,
+  &quot;ErrorCode&quot;: &quot;unknown_error&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}</pre>
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#61</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-err">ERROR</span>
+      <span class="tool-duration">600ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /tmp\ncat &gt; ship_only_test.bpmn &lt;&lt; &#x27;EOF&#x27;\n&lt;?xml version=\&quot;1.0\&quot; encoding=\&quot;UTF-8\&quot;?&gt;\n&lt;bpmn:definitions\n    xmlns:bpmn=\&quot;http://www.omg.org/spec/BPMN/20100524/MODEL\&quot;\n    xmlns:bpmndi=\&quot;http://www.omg.org/spec/BPMN/20100524/DI\&quot;\n    xmlns:dc=\&quot;http://www.omg.org/spec/DD/20100524/DC\&quot;\n    xmlns:di=\&quot;http://www.omg.org/spec/DD/20100524/DI\&quot;\n    xmlns:uipath=\&quot;http://uipath.org/schema/bpmn\&quot;\n    id=\&quot;Definitions_Fu… (2503 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Exit code 1
+{
+  &quot;Result&quot;: &quot;Failure&quot;,
+  &quot;Message&quot;: &quot;Validation failed for /tmp/ship_only_test.bpmn&quot;,
+  &quot;Instructions&quot;: &quot;Found 2 error(s):\n  - [error] [uipath:input \&quot;args\&quot;] Input payload \&quot;args\&quot; must declare type=\&quot;json\&quot;.\n  - [error] [uipath:input \&quot;args\&quot;] Input payload \&quot;args\&quot; must target \&quot;bodyField\&quot;.&quot;,
+  &quot;ErrorCode&quot;: &quot;unknown_error&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}</pre>
+    <h4>Error</h4><pre>Exit code 1
+{
+  &quot;Result&quot;: &quot;Failure&quot;,
+  &quot;Message&quot;: &quot;Validation failed for /tmp/ship_only_test.bpmn&quot;,
+  &quot;Instructions&quot;: &quot;Found 2 error(s):\n  - [error] [uipath:input \&quot;args\&quot;] Input payload \&quot;args\&quot; must declare type=\&quot;json\&quot;.\n  - [error] [uipath:input \&quot;args\&quot;] Input payload \&quot;args\&quot; must target \&quot;bodyField\&quot;.&quot;,
+  &quot;ErrorCode&quot;: &quot;unknown_error&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}</pre>
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#62</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-err">ERROR</span>
+      <span class="tool-duration">595ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro bpmn validate Fulfillment.bpmn --output json&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Exit code 1
+{
+  &quot;Result&quot;: &quot;Failure&quot;,
+  &quot;Message&quot;: &quot;Validation failed for /work/output/artifacts/skill-bpmn-edit-group-to-subflow/Fulfillment.bpmn&quot;,
+  &quot;Instructions&quot;: &quot;Found 2 error(s):\n  - [error] [uipath:input \&quot;args\&quot;] Input payload \&quot;args\&quot; must declare type=\&quot;json\&quot;.\n  - [error] [uipath:input \&quot;args\&quot;] Input payload \&quot;args\&quot; must target \&quot;bodyField\&quot;.&quot;,
+  &quot;ErrorCode&quot;: &quot;unknown_error&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}</pre>
+    <h4>Error</h4><pre>Exit code 1
+{
+  &quot;Result&quot;: &quot;Failure&quot;,
+  &quot;Message&quot;: &quot;Validation failed for /work/output/artifacts/skill-bpmn-edit-group-to-subflow/Fulfillment.bpmn&quot;,
+  &quot;Instructions&quot;: &quot;Found 2 error(s):\n  - [error] [uipath:input \&quot;args\&quot;] Input payload \&quot;args\&quot; must declare type=\&quot;json\&quot;.\n  - [error] [uipath:input \&quot;args\&quot;] Input payload \&quot;args\&quot; must target \&quot;bodyField\&quot;.&quot;,
+  &quot;ErrorCode&quot;: &quot;unknown_error&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}</pre>
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#63</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">11ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-bpmn-edit-group-to-subflow/Fulfillment.bpmn&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;
+2	&lt;bpmn:definitions
+3	    xmlns:bpmn=&quot;http://www.omg.org/spec/BPMN/20100524/MODEL&quot;
+4	    xmlns:bpmndi=&quot;http://www.omg.org/spec/BPMN/20100524/DI&quot;
+5	    xmlns:dc=&quot;http://www.omg.org/spec/DD/20100524/DC&quot;
+6	    xmlns:di=&quot;http://www.omg.org/spec/DD/20100524/DI&quot;
+7	    xmlns:uipath=&quot;http://uipath.org/schema/bpmn&quot;
+8	    id=&quot;Definitions_Fulfillment&quot; targetNamespace=&quot;http://bpmn.io/schema/bpmn&quot;
+9	    exporter=&quot;UiPath (https://bpmn.uipath.com)&quot; exporterVersion=&quot;1.0&quot;&gt;
+10	  &lt;bpmn:process id=&quot;Process_Fulfillment&quot; isExecutable=&quot;true&quot;&gt;
+11	    &lt;bpmn:extensionElements&gt;
+12	      &lt;uipath:migrationVersion version=&quot;11.5&quot; /&gt;
+13	      &lt;uipath:caseManagement version=&quot;v1&quot;&gt;&lt;![CDATA[{&quot;owner&quot;:&quot;warehouse&quot;,&quot;opaque&quot;:&quot;preserve-only-do-not-touch&quot;}]]&gt;&lt;/uipath:caseManagement&gt;
+14	      &lt;uipath:variables version=&quot;v1&quot;&gt;
+15	        &lt;uipath:inputOutput id=&quot;Var_OrderId&quot; name=&quot;OrderId&quot; type=&quot;string&quot; /&gt;
+16	        &lt;uipath:inputOutput id=&quot;Var_Label&quot; name=&quot;Label&quot; type=&quot;string&quot; /&gt;
+17	      &lt;/uipath:variables&gt;
+18	    &lt;/bpmn:extensionElements&gt;
+19	    &lt;bpmn:startEvent id=&quot;Start_1&quot; name=&quot;Start&quot;&gt;&lt;bpmn:outgoing&gt;Flow_SP&lt;/bpmn:outgoing&gt;&lt;/bpmn:startEvent&gt;
+20	    &lt;bpmn:subProcess id=&quot;SubProcess_Pre
+
+… (truncated, 5555 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#64</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">17ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -n \&quot;scriptVersion\&quot; /usr/lib/node_modules/@uipath/maestro-tool/dist/packager-tool-bnqptw8n.js | head -20&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>2988:  &quot;scriptVersion&quot;,</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#65</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">623ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /tmp\npython3 -c \&quot;\ndata = open(&#x27;/work/output/artifacts/skill-bpmn-edit-group-to-subflow/Fulfillment.bpmn&#x27;).read()\ndata2 = data.replace(&#x27;&lt;uipath:input name=\\\&quot;args\\\&quot;&gt;&lt;![CDATA[{\\\&quot;orderId\\\&quot;:\\\&quot;=vars.Var_OrderId\\\&quot;}]]&gt;&lt;/uipath:input&gt;\\n          &lt;uipath:output&#x27;, &#x27;&lt;uipath:input name=\\\&quot;args\\\&quot; type=\\\&quot;json\\\&quot; target=\\\&quot;bodyField\\\&quot;&gt;&lt;![CDATA[{\\\&quot;orderId\\\&quot;:\\\&quot;=vars.Var_OrderId\\\&quot;}]]&gt;&lt;/uipath:input&gt;\\n          &lt;uipa… (222 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>55c55
+&lt;           &lt;uipath:input name=&quot;args&quot;&gt;&lt;![CDATA[{&quot;orderId&quot;:&quot;=vars.Var_OrderId&quot;}]]&gt;&lt;/uipath:input&gt;
+---
+&gt;           &lt;uipath:input name=&quot;args&quot; type=&quot;json&quot; target=&quot;bodyField&quot;&gt;&lt;![CDATA[{&quot;orderId&quot;:&quot;=vars.Var_OrderId&quot;}]]&gt;&lt;/uipath:input&gt;
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;BpmnValidate&quot;,
+  &quot;Data&quot;: {
+    &quot;File&quot;: &quot;/tmp/probe_ship_fixed.bpmn&quot;,
+    &quot;Status&quot;: &quot;Valid&quot;,
+    &quot;ProcessCount&quot;: 1,
+    &quot;StartEventCount&quot;: 1,
+    &quot;UiPathExtensionCount&quot;: 9
+  }
+}
+Shell cwd was reset to /work/output/artifacts/skill-bpmn-edit-group-to-subflow</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#66</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-err">ERROR</span>
+      <span class="tool-duration">584ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-bpmn-edit-group-to-subflow\nuip maestro bpmn validate Fulfillment.bpmn --output json&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Exit code 1
+{
+  &quot;Result&quot;: &quot;Failure&quot;,
+  &quot;Message&quot;: &quot;Validation failed for /work/output/artifacts/skill-bpmn-edit-group-to-subflow/Fulfillment.bpmn&quot;,
+  &quot;Instructions&quot;: &quot;Found 2 error(s):\n  - [error] [uipath:input \&quot;args\&quot;] Input payload \&quot;args\&quot; must declare type=\&quot;json\&quot;.\n  - [error] [uipath:input \&quot;args\&quot;] Input payload \&quot;args\&quot; must target \&quot;bodyField\&quot;.&quot;,
+  &quot;ErrorCode&quot;: &quot;unknown_error&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}</pre>
+    <h4>Error</h4><pre>Exit code 1
+{
+  &quot;Result&quot;: &quot;Failure&quot;,
+  &quot;Message&quot;: &quot;Validation failed for /work/output/artifacts/skill-bpmn-edit-group-to-subflow/Fulfillment.bpmn&quot;,
+  &quot;Instructions&quot;: &quot;Found 2 error(s):\n  - [error] [uipath:input \&quot;args\&quot;] Input payload \&quot;args\&quot; must declare type=\&quot;json\&quot;.\n  - [error] [uipath:input \&quot;args\&quot;] Input payload \&quot;args\&quot; must target \&quot;bodyField\&quot;.&quot;,
+  &quot;ErrorCode&quot;: &quot;unknown_error&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}</pre>
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#67</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">98ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-bpmn-edit-group-to-subflow\npython3 -c \&quot;import xml.etree.ElementTree as ET; ET.parse(&#x27;Fulfillment.bpmn&#x27;); print(&#x27;well-formed OK&#x27;)\&quot;&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>well-formed OK</pre>
+    
+  </div>
+</details>
+
+</div>
+
+<h2>Command Telemetry</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Total</div><div class="value">68</div></div>
+    <div class="stat"><div class="label">Successful</div><div class="value">61 (90%)</div></div>
+    <div class="stat"><div class="label">Failed</div><div class="value">7</div></div>
+    <div class="stat"><div class="label">Avg / cmd</div><div class="value">270ms</div></div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 2fr;gap:16px;margin-top:12px">
+    <div>
+      <h4>By Tool</h4>
+      <table>
+        <thead><tr><th>Tool</th><th>Count</th></tr></thead>
+        <tbody><tr><td class='mono'>Bash</td><td>53</td></tr><tr><td class='mono'>Edit</td><td>6</td></tr><tr><td class='mono'>Read</td><td>5</td></tr><tr><td class='mono'>Grep</td><td>3</td></tr><tr><td class='mono'>Skill</td><td>1</td></tr></tbody>
+      </table>
+    </div>
+    <div>
+      <h4>Slowest</h4>
+      <table>
+        <thead><tr><th>Tool</th><th>Duration</th><th>Parameters</th></tr></thead>
+        <tbody><tr><td class='mono'>Bash</td><td>3.83s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro bpmn registry search subp...</td></tr><tr><td class='mono'>Bash</td><td>3.23s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;which uip; uip --version 2&gt;&amp;1 | head ...</td></tr><tr><td class='mono'>Bash</td><td>1.27s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;grep -rl &quot;isExpanded=\\&quot;true\\&quot;\\|bpm...</td></tr><tr><td class='mono'>Bash</td><td>1.23s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro bpmn registry get BPMN.Su...</td></tr><tr><td class='mono'>Bash</td><td>766ms</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro bpmn validate Fulfillment...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+  <p><strong>Most Common Pattern:</strong> <code>Bash → Bash → Bash</code></p><p><strong>Skill Tool Invoked:</strong> 1 time(s)</p>
+</div>
+
+<h2>Generation Metrics</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Total Latency</div><div class="value">15m 9s</div></div>
+    <div class="stat"><div class="label">Turns</div><div class="value">1</div></div>
+    <div class="stat"><div class="label">Assistant Turns</div><div class="value">136</div></div>
+    <div class="stat"><div class="label">Avg Turn Latency</div><div class="value">15m 0s</div></div>
+    <div class="stat"><div class="label">Crashed Partials</div><div class="value">1 (0 recovered, 1 terminal)</div></div>
+  </div>
+</div>
+
+<h2>Token Usage</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Input (uncached)</div><div class="value">136</div></div>
+    <div class="stat"><div class="label">Output</div><div class="value">73,868</div></div>
+    <div class="stat"><div class="label">Cache Write</div><div class="value">121,158</div></div>
+    <div class="stat"><div class="label">Cache Read</div><div class="value">5,626,759</div></div>
+    <div class="stat"><div class="label">Total</div><div class="value">5,821,921</div></div>
+    <div class="stat"><div class="label">Cost</div><div class="value">$3.2508</div></div>
+  </div>
+</div>
+
+<h2>Agent Settings</h2>
+<div class="card" style="padding:0">
+  <table>
+    <tbody><tr><td class='mono dim'>Permission Mode</td><td>acceptEdits</td></tr><tr><td class='mono dim'>Allowed Tools</td><td>Skill, Bash, Read, Write, Edit, Glob, Grep</td></tr><tr><td class='mono dim'>Model</td><td>us.anthropic.claude-sonnet-5</td></tr><tr><td class='mono dim'>Max Turns</td><td>90</td></tr><tr><td class='mono dim'>System Prompt</td><td>You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted. </td></tr><tr><td class='mono dim'>Plugins</td><td>/home/azureuser/projects/skills</td></tr></tbody>
+  </table>
+</div>
+
+<h2>Environment</h2>
+<div class="card" style="padding:0">
+  <table>
+    <tbody><tr><td class='mono dim'>git_commit</td><td>unknown</td></tr><tr><td class='mono dim'>skills_git_commit</td><td>unknown</td></tr><tr><td class='mono dim'>cli_version</td><td>1.201.0-dev.8272</td></tr><tr><td class='mono dim'>tool_plugins</td><td>{&#x27;admin-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;agent-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;agenthub-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;aops-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;api-workflow-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;automation-hub-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;codedagent-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;codedapp-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;coder-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;context-grounding-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;conversational-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;data-fabric-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;docsai-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;function-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;gov-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;guardrails-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;insights-tool&#x27;: &#x27;1.201.0-dev.8276&#x27;, &#x27;integrationservice-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;ixp-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;llm-gateway-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;llmgw-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;maestro-tool&#x27;: &#x27;1.201.0-dev.8275&#x27;, &#x27;model-hub-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;orchestrator-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;platform-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;pm-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;rpa-legacy-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;rpa-tool&#x27;: &#x27;1.201.0-dev.20260809.3&#x27;, &#x27;solution-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;tasks-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;test-manager-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;traces-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;vertical-solutions-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;}</td></tr><tr><td class='mono dim'>coder_eval</td><td>0.8.8</td></tr><tr><td class='mono dim'>claude_code_cli</td><td>2.1.177 (Claude Code)</td></tr><tr><td class='mono dim'>uv</td><td>uv 0.11.28 (x86_64-unknown-linux-gnu)</td></tr><tr><td class='mono dim'>anthropic</td><td>0.122.0</td></tr><tr><td class='mono dim'>openai</td><td>3.0.0</td></tr><tr><td class='mono dim'>pydantic</td><td>2.12.5</td></tr><tr><td class='mono dim'>api_routing</td><td>aws_bedrock</td></tr><tr><td class='mono dim'>aws_region</td><td>us-east-2</td></tr><tr><td class='mono dim'>bedrock_model</td><td>us.anthropic.claude-sonnet-4-6</td></tr></tbody>
+  </table>
+</div>
+
+<footer>Generated by coder_eval · 2026-08-14T22:03:30</footer>
+</div>
+<script>
+function toggleTheme() {
+  document.documentElement.classList.toggle('light');
+  try {
+    const mode = document.documentElement.classList.contains('light') ? 'light' : 'dark';
+    localStorage.setItem('coder-eval-theme', mode);
+  } catch (e) { /* ignore */ }
+}
+(function() {
+  try {
+    if (localStorage.getItem('coder-eval-theme') === 'light') {
+      document.documentElement.classList.add('light');
+    }
+  } catch (e) { /* ignore */ }
+})();
+</script>
+</body>
+</html>

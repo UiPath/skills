@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+    xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+    xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+    xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+    xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:uipath="http://uipath.org/schema/bpmn"
+    id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn"
+    exporter="UiPath (https://bpmn.uipath.com)" exporterVersion="1.0">
+
+  <bpmn:process id="Process_1" isExecutable="true">
+
+    <bpmn:extensionElements>
+      <uipath:migrationVersion version="11.5" />
+      <uipath:variables version="v1">
+        <uipath:inputOutput id="Var_InvoiceId" name="invoiceId" type="string" />
+        <uipath:inputOutput id="Var_Amount"    name="amount"    type="number" />
+      </uipath:variables>
+    </bpmn:extensionElements>
+
+    <!-- ═══ START ═══ -->
+    <bpmn:startEvent id="Start_1" name="Manual Start">
+      <bpmn:extensionElements>
+        <uipath:entryPointId value="entry-invoice-triage" />
+      </bpmn:extensionElements>
+      <bpmn:outgoing>Flow_StartToRecord</bpmn:outgoing>
+    </bpmn:startEvent>
+
+    <!-- ═══ RECORD INTAKE ═══ -->
+    <bpmn:task id="Task_RecordIntake" name="Record Invoice Intake">
+      <bpmn:incoming>Flow_StartToRecord</bpmn:incoming>
+      <bpmn:outgoing>Flow_RecordToRoute</bpmn:outgoing>
+    </bpmn:task>
+
+    <!-- ═══ EXCLUSIVE GATEWAY: route by amount ═══ -->
+    <bpmn:exclusiveGateway id="Gw_Route" name="High-Value Invoice?"
+                           default="Flow_AutoApproval">
+      <bpmn:incoming>Flow_RecordToRoute</bpmn:incoming>
+      <bpmn:outgoing>Flow_HighValue</bpmn:outgoing>
+      <bpmn:outgoing>Flow_AutoApproval</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+
+    <!-- ═══ MANAGER REVIEW branch ═══ -->
+    <bpmn:task id="Task_ManagerReview" name="Manager Review">
+      <bpmn:incoming>Flow_HighValue</bpmn:incoming>
+      <bpmn:outgoing>Flow_ManagerToMerge</bpmn:outgoing>
+    </bpmn:task>
+
+    <!-- ═══ AUTO APPROVAL branch ═══ -->
+    <bpmn:task id="Task_AutoApproval" name="Auto Approval">
+      <bpmn:incoming>Flow_AutoApproval</bpmn:incoming>
+      <bpmn:outgoing>Flow_AutoToMerge</bpmn:outgoing>
+    </bpmn:task>
+
+    <!-- ═══ EXCLUSIVE MERGE ═══ -->
+    <bpmn:exclusiveGateway id="Gw_Merge" name="Decision Merge">
+      <bpmn:incoming>Flow_ManagerToMerge</bpmn:incoming>
+      <bpmn:incoming>Flow_AutoToMerge</bpmn:incoming>
+      <bpmn:outgoing>Flow_MergeToFork</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+
+    <!-- ═══ PARALLEL FORK ═══ -->
+    <bpmn:parallelGateway id="Gw_ParallelFork" name="Start Follow-ups">
+      <bpmn:incoming>Flow_MergeToFork</bpmn:incoming>
+      <bpmn:outgoing>Flow_ForkToNotify</bpmn:outgoing>
+      <bpmn:outgoing>Flow_ForkToArchive</bpmn:outgoing>
+    </bpmn:parallelGateway>
+
+    <!-- ═══ NOTIFY REQUESTER branch ═══ -->
+    <bpmn:task id="Task_NotifyRequester" name="Notify Requester">
+      <bpmn:incoming>Flow_ForkToNotify</bpmn:incoming>
+      <bpmn:outgoing>Flow_NotifyToJoin</bpmn:outgoing>
+    </bpmn:task>
+
+    <!-- ═══ ARCHIVE DECISION branch ═══ -->
+    <bpmn:task id="Task_ArchiveDecision" name="Archive Decision">
+      <bpmn:incoming>Flow_ForkToArchive</bpmn:incoming>
+      <bpmn:outgoing>Flow_ArchiveToJoin</bpmn:outgoing>
+    </bpmn:task>
+
+    <!-- ═══ PARALLEL JOIN ═══ -->
+    <bpmn:parallelGateway id="Gw_ParallelJoin" name="Follow-ups Complete">
+      <bpmn:incoming>Flow_NotifyToJoin</bpmn:incoming>
+      <bpmn:incoming>Flow_ArchiveToJoin</bpmn:incoming>
+      <bpmn:outgoing>Flow_JoinToEnd</bpmn:outgoing>
+    </bpmn:parallelGateway>
+
+    <!-- ═══ END ═══ -->
+    <bpmn:endEvent id="End_1" name="Invoice Processed">
+      <bpmn:incoming>Flow_JoinToEnd</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <!-- ═══ SEQUENCE FLOWS ═══ -->
+    <bpmn:sequenceFlow id="Flow_StartToRecord"
+                       sourceRef="Start_1" targetRef="Task_RecordIntake" />
+
+    <bpmn:sequenceFlow id="Flow_RecordToRoute"
+                       sourceRef="Task_RecordIntake" targetRef="Gw_Route" />
+
+    <!-- Conditional route: high-value invoices -->
+    <bpmn:sequenceFlow id="Flow_HighValue"
+                       sourceRef="Gw_Route" targetRef="Task_ManagerReview">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=vars.Var_Amount >= 1000</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+
+    <!-- Default route: all other invoices (no condition — gateway default) -->
+    <bpmn:sequenceFlow id="Flow_AutoApproval"
+                       sourceRef="Gw_Route" targetRef="Task_AutoApproval" />
+
+    <bpmn:sequenceFlow id="Flow_ManagerToMerge"
+                       sourceRef="Task_ManagerReview" targetRef="Gw_Merge" />
+
+    <bpmn:sequenceFlow id="Flow_AutoToMerge"
+                       sourceRef="Task_AutoApproval" targetRef="Gw_Merge" />
+
+    <bpmn:sequenceFlow id="Flow_MergeToFork"
+                       sourceRef="Gw_Merge" targetRef="Gw_ParallelFork" />
+
+    <bpmn:sequenceFlow id="Flow_ForkToNotify"
+                       sourceRef="Gw_ParallelFork" targetRef="Task_NotifyRequester" />
+
+    <bpmn:sequenceFlow id="Flow_ForkToArchive"
+                       sourceRef="Gw_ParallelFork" targetRef="Task_ArchiveDecision" />
+
+    <bpmn:sequenceFlow id="Flow_NotifyToJoin"
+                       sourceRef="Task_NotifyRequester" targetRef="Gw_ParallelJoin" />
+
+    <bpmn:sequenceFlow id="Flow_ArchiveToJoin"
+                       sourceRef="Task_ArchiveDecision" targetRef="Gw_ParallelJoin" />
+
+    <bpmn:sequenceFlow id="Flow_JoinToEnd"
+                       sourceRef="Gw_ParallelJoin" targetRef="End_1" />
+
+  </bpmn:process>
+
+  <!-- Diagram placeholder — replaced by generate_diagram.py -->
+
+
+  <bpmndi:BPMNDiagram id="Diagram_1">
+    <bpmndi:BPMNPlane id="Plane_1" bpmnElement="Process_1">
+      <bpmndi:BPMNShape id="S_End_1" bpmnElement="End_1"><dc:Bounds x="1176" y="100" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Gw_Merge" bpmnElement="Gw_Merge"><dc:Bounds x="686" y="100" width="50" height="50" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Gw_ParallelFork" bpmnElement="Gw_ParallelFork"><dc:Bounds x="796" y="100" width="50" height="50" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Gw_ParallelJoin" bpmnElement="Gw_ParallelJoin"><dc:Bounds x="1066" y="100" width="50" height="50" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Gw_Route" bpmnElement="Gw_Route"><dc:Bounds x="416" y="100" width="50" height="50" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Start_1" bpmnElement="Start_1"><dc:Bounds x="160" y="100" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Task_ArchiveDecision" bpmnElement="Task_ArchiveDecision"><dc:Bounds x="906" y="100" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Task_AutoApproval" bpmnElement="Task_AutoApproval"><dc:Bounds x="526" y="100" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Task_ManagerReview" bpmnElement="Task_ManagerReview"><dc:Bounds x="526" y="210" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Task_NotifyRequester" bpmnElement="Task_NotifyRequester"><dc:Bounds x="906" y="210" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Task_RecordIntake" bpmnElement="Task_RecordIntake"><dc:Bounds x="256" y="100" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="E_Flow_ArchiveToJoin" bpmnElement="Flow_ArchiveToJoin"><di:waypoint x="956" y="140" /><di:waypoint x="1091" y="125" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_AutoApproval" bpmnElement="Flow_AutoApproval"><di:waypoint x="441" y="125" /><di:waypoint x="576" y="140" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_AutoToMerge" bpmnElement="Flow_AutoToMerge"><di:waypoint x="576" y="140" /><di:waypoint x="711" y="125" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_ForkToArchive" bpmnElement="Flow_ForkToArchive"><di:waypoint x="821" y="125" /><di:waypoint x="956" y="140" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_ForkToNotify" bpmnElement="Flow_ForkToNotify"><di:waypoint x="821" y="125" /><di:waypoint x="956" y="250" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_HighValue" bpmnElement="Flow_HighValue"><di:waypoint x="441" y="125" /><di:waypoint x="576" y="250" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_JoinToEnd" bpmnElement="Flow_JoinToEnd"><di:waypoint x="1091" y="125" /><di:waypoint x="1194" y="118" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_ManagerToMerge" bpmnElement="Flow_ManagerToMerge"><di:waypoint x="576" y="250" /><di:waypoint x="711" y="125" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_MergeToFork" bpmnElement="Flow_MergeToFork"><di:waypoint x="711" y="125" /><di:waypoint x="821" y="125" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_NotifyToJoin" bpmnElement="Flow_NotifyToJoin"><di:waypoint x="956" y="250" /><di:waypoint x="1091" y="125" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_RecordToRoute" bpmnElement="Flow_RecordToRoute"><di:waypoint x="306" y="140" /><di:waypoint x="441" y="125" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_StartToRecord" bpmnElement="Flow_StartToRecord"><di:waypoint x="178" y="118" /><di:waypoint x="306" y="140" /></bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

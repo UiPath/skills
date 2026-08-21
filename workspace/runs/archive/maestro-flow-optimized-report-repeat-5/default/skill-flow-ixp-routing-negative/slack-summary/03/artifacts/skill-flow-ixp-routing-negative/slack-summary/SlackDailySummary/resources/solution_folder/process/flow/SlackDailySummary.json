@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "SlackDailySummary",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "ced658c6-b160-4d9b-b095-3d5c7f06bbb4",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "SlackDailySummary"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Flow",
+      "name": "SlackDailySummary",
+      "package": {
+        "key": "7784eeed-808a-447c-bccb-2c458a078766"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "c3296921-4c4f-43da-8d94-01578f0fa384",
+    "files": []
+  }
+}

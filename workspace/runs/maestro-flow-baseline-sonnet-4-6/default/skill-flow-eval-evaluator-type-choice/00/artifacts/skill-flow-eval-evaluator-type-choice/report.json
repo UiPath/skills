@@ -1,0 +1,8 @@
+{
+  "goal_a_type": "llm-judge-output",
+  "goal_a_reason": "Free-text chatbot replies require semantic similarity scoring that tolerates paraphrasing, which only an LLM judge can assess; no tool-call inspection is needed, so the basic output variant suffices.",
+  "goal_b_type": "json-similarity",
+  "goal_b_reason": "Structured JSON with a known expected object should be compared deterministically using tree-based similarity that tolerates key ordering and minor whitespace differences without invoking an LLM.",
+  "goal_c_type": "contains",
+  "goal_c_reason": "A pass/fail check for the literal substring 'deployment succeeded' is exactly what the contains evaluator provides — binary, deterministic, no LLM needed."
+}

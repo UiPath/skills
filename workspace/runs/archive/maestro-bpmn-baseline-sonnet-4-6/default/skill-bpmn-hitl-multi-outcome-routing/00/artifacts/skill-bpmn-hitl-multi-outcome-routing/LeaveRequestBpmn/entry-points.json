@@ -1,0 +1,21 @@
+{
+  "entryPoints": [
+    {
+      "id": "61f8c313-f0c1-429e-a95b-d3339b5e236c",
+      "filePath": "/content/LeaveRequestBpmn.bpmn#Start_Manual",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "EmployeeName":   { "type": "string" },
+          "DaysRequested":  { "type": "number" }
+        }
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "ManagerDecision": { "type": "string" }
+        }
+      }
+    }
+  ]
+}

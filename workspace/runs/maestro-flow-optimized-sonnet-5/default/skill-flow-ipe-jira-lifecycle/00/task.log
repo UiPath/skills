@@ -1,0 +1,39 @@
+2026-08-19 00:18:09 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-08-19 00:18:09 [INFO] coder_eval.orchestrator: API routing: aws_bedrock
+2026-08-19 00:18:10 [DEBUG] coder_eval.criteria: Discovered 15 criterion checkers
+2026-08-19 00:18:10 [DEBUG] coder_eval.criteria: Validated 15 criterion checkers
+2026-08-19 00:18:10 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-08-19 00:18:10 [INFO] coder_eval.orchestrator: Running pre-run command: python3 $EXPERIMENT_TASKS_PATH/uipath-maestro-flow/e2e/jira_lifecycle/seed_jira.py
+2026-08-19 00:18:10 [INFO] coder_eval.orchestrator: [pre_run stdout] OK: wrote 3 seed issues (2 High / 1 other), tag=325c4fa9
+2026-08-19 00:18:10 [DEBUG] coder_eval.orchestrator: Sending prompt: Create a new Flow project called "JiraLifecycle" with a manual trigger.
+
+Read `seed.json` in the cur...
+2026-08-19 00:18:10 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Starting agent query stream...
+2026-08-19 00:29:37 [DEBUG] coder_eval.agents.claude_code_agent: [coder] session_id changed: None -> 1b371a98-124f-4c55-b82e-de25a241d3a0
+2026-08-19 00:29:37 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Agent query stream ended
+2026-08-19 00:29:37 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-08-19 00:29:37 [DEBUG] coder_eval.orchestrator: Agent response received (6074 chars)
+2026-08-19 00:29:37 [DEBUG] coder_eval.orchestrator: Checking success criteria
+2026-08-19 00:29:37 [DEBUG] coder_eval.evaluation.checker: Criterion 'command_executed' score: 1.00
+2026-08-19 00:29:37 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'JiraLifecycle checks: valid flow with a loop + switch over the Jira connector, debug creates every seeded issue, and each carries the comment its priority branch should have posted': python3 $TASK_DIR/check_jira_lifecycle.py
+2026-08-19 00:30:16 [DEBUG] coder_eval.sandbox: Command 'python3 $TASK_DIR/check_jira_lifecycle.py' exited with code 0
+2026-08-19 00:30:16 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+OK: flow references uipath-atlassian-jira
+OK: flow contains a loop node and a switch/decision node
+OK: flow debug completed
+OK: candidate keys from debug: ['CE-653', 'CE-654', 'CE-655']
+OK: all 3 issues created and each carries its correct branch comment
+PASS: all JiraLifecycle checks passed
+---
+2026-08-19 00:30:16 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-08-19 00:30:16 [INFO] coder_eval.orchestrator: Success criteria: 2/2 passed, weighted score: 1.000
+2026-08-19 00:30:16 [WARNING] coder_eval.orchestrator: Visible turns (72) exceeded expected_turns (55) at iteration 1 for task skill-flow-ipe-jira-lifecycle. Run continues — max_turns remains the hard cap.
+2026-08-19 00:30:16 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-08-19 00:30:16 [INFO] coder_eval.orchestrator: Running post-run command: python3 $EXPERIMENT_TASKS_PATH/uipath-maestro-flow/e2e/jira_lifecycle/teardown_jira.py
+2026-08-19 00:30:17 [INFO] coder_eval.orchestrator: [post_run stdout] OK: deleted CE-653
+2026-08-19 00:30:18 [INFO] coder_eval.orchestrator: [post_run stdout] OK: deleted CE-654
+2026-08-19 00:30:18 [INFO] coder_eval.orchestrator: [post_run stdout] OK: deleted CE-655
+2026-08-19 00:30:18 [INFO] coder_eval.orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+2026-08-19 00:30:18 [INFO] coder_eval.orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-ipe-jira-lifecycle
+2026-08-19 00:30:18 [INFO] coder_eval.orchestrator: Task finished: status=SUCCESS duration=729.7s score=1.000 iterations=1

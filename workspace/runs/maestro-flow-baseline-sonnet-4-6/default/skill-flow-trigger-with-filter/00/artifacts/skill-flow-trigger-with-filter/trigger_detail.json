@@ -1,0 +1,41 @@
+{
+  "_comment": "Pass this object as the --detail argument to: uip maestro flow node configure <FLOW>.flow <TRIGGER_NODE_ID> --detail '<JSON>'",
+  "_placeholders": {
+    "CONNECTION_ID": "UUID of the Microsoft Office 365 IS connection — obtain with: uip is connections list \"microsoft-office-365\" --all-folders --output json",
+    "FOLDER_KEY": "Orchestrator folder key where the connection lives — from the same connections list response",
+    "EVENT_MODE": "Either \"webhooks\" or \"polling\" — read from: uip maestro flow registry get uipath.connector.trigger.microsoft-office-365.email-received --connection-id <CONNECTION_ID> --output json (field: eventMode)",
+    "INBOX_FOLDER_ID": "Resolved ID of the Inbox mail folder — obtain with: uip is resources run list \"microsoft-office-365\" \"MailFolder\" --connection-id <CONNECTION_ID> --output json, then match displayName \"Inbox\"",
+    "FILTER_FIELD_from": "Verify the exact field name for the sender address by checking filterFields.fields[].name in the registry get response; commonly \"from\" or \"fromAddress\"",
+    "FILTER_FIELD_subject": "Verify the exact field name for email subject by checking filterFields.fields[].name in the registry get response; commonly \"subject\""
+  },
+  "connectionId": "<CONNECTION_ID>",
+  "folderKey": "<FOLDER_KEY>",
+  "eventMode": "<EVENT_MODE>",
+  "eventParameters": {
+    "parentFolderId": "<INBOX_FOLDER_ID>"
+  },
+  "filter": {
+    "groupOperator": 0,
+    "index": 0,
+    "filters": [
+      {
+        "id": "from",
+        "operator": "Equals",
+        "value": {
+          "value": "abc@xyz.com",
+          "rawString": "\"abc@xyz.com\"",
+          "isLiteral": true
+        }
+      },
+      {
+        "id": "subject",
+        "operator": "Contains",
+        "value": {
+          "value": "good day",
+          "rawString": "\"good day\"",
+          "isLiteral": true
+        }
+      }
+    ]
+  }
+}

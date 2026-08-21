@@ -1,0 +1,45 @@
+{
+  "$schema": "https://cloud.uipath.com/draft/2024-12/entry-point",
+  "$id": "entry-points.json",
+  "entryPoints": [
+    {
+      "filePath": "/content/WikiPageviews.bpmn#Start_Manual",
+      "uniqueId": "a1e2f3b4-5c6d-4e7f-8a9b-0c1d2e3f4a5b",
+      "type": "ProcessOrchestration",
+      "input": {
+        "type": "object",
+        "properties": {
+          "article": {
+            "type": "string"
+          },
+          "date1": {
+            "type": "string"
+          },
+          "date2": {
+            "type": "string"
+          }
+        }
+      },
+      "output": {
+        "type": "object",
+        "properties": {
+          "records": {
+            "type": "object"
+          },
+          "valid": {
+            "type": "boolean"
+          },
+          "filteredRecords": {
+            "type": "object"
+          },
+          "total": {
+            "type": "number"
+          },
+          "result": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  ]
+}

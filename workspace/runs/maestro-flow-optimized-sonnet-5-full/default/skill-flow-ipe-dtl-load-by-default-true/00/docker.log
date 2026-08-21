@@ -1,0 +1,7 @@
+15:34:27 [INFO   ] [default/skill-flow-ipe-dtl-load-by-default-true/00] orchestrator: API routing: aws_bedrock
+15:40:54 [INFO   ] [default/skill-flow-ipe-dtl-load-by-default-true/00] evaluation.checker: Criterion 'command_executed' FAILED (score=0.00, threshold=1.00): Matched 0/1 required commands (filters: tool_name=Bash, pattern=/(uip|\$UIP)\s+(maestro\s+)?flow\s+validate/)
+15:40:54 [INFO   ] [default/skill-flow-ipe-dtl-load-by-default-true/00] orchestrator: Success criteria: 2/3 passed, weighted score: 0.750
+15:40:54 [WARNING] [default/skill-flow-ipe-dtl-load-by-default-true/00] orchestrator: Visible turns (48) exceeded expected_turns (40) at iteration 1 for task skill-flow-ipe-dtl-load-by-default-true. Run continues — max_turns remains the hard cap.
+15:40:54 [INFO   ] [default/skill-flow-ipe-dtl-load-by-default-true/00] orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+15:40:54 [INFO   ] [default/skill-flow-ipe-dtl-load-by-default-true/00] orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-ipe-dtl-load-by-default-true
+15:40:54 [INFO   ] [default/skill-flow-ipe-dtl-load-by-default-true/00] orchestrator: Task finished: status=FAILURE duration=393.2s score=0.750 iterations=1

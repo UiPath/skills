@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+    xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+    xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+    xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+    xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:uipath="http://uipath.org/schema/bpmn"
+    id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn"
+    exporter="UiPath (https://bpmn.uipath.com)" exporterVersion="1.0">
+
+  <bpmn:error id="Error_PaymentFailed" name="PaymentFailed" errorCode="PAYMENT_FAILED" />
+
+  <bpmn:process id="Process_1" isExecutable="true">
+    <bpmn:extensionElements>
+      <uipath:migrationVersion version="11.5" />
+      <uipath:variables version="v1">
+        <uipath:inputOutput id="Var_PaymentSuccess" name="PaymentSuccess" type="boolean" />
+      </uipath:variables>
+    </bpmn:extensionElements>
+
+    <bpmn:startEvent id="StartEvent_Manual" name="Start">
+      <bpmn:outgoing>Flow_StartToTask</bpmn:outgoing>
+    </bpmn:startEvent>
+
+    <bpmn:task id="Task_Payment" name="Attempt Payment">
+      <bpmn:incoming>Flow_StartToTask</bpmn:incoming>
+      <bpmn:outgoing>Flow_TaskToGw</bpmn:outgoing>
+    </bpmn:task>
+
+    <bpmn:exclusiveGateway id="Gw_PaymentResult" name="Payment OK?" default="Flow_GwToError">
+      <bpmn:incoming>Flow_TaskToGw</bpmn:incoming>
+      <bpmn:outgoing>Flow_GwToNormal</bpmn:outgoing>
+      <bpmn:outgoing>Flow_GwToError</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+
+    <bpmn:endEvent id="EndEvent_Error" name="Payment Failed">
+      <bpmn:incoming>Flow_GwToError</bpmn:incoming>
+      <bpmn:errorEventDefinition errorRef="Error_PaymentFailed" />
+    </bpmn:endEvent>
+
+    <bpmn:endEvent id="EndEvent_Normal" name="Payment Complete">
+      <bpmn:incoming>Flow_GwToNormal</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <bpmn:sequenceFlow id="Flow_StartToTask" sourceRef="StartEvent_Manual" targetRef="Task_Payment" />
+    <bpmn:sequenceFlow id="Flow_TaskToGw" sourceRef="Task_Payment" targetRef="Gw_PaymentResult" />
+    <bpmn:sequenceFlow id="Flow_GwToNormal" sourceRef="Gw_PaymentResult" targetRef="EndEvent_Normal">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=vars.Var_PaymentSuccess == true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_GwToError" sourceRef="Gw_PaymentResult" targetRef="EndEvent_Error" />
+
+    <bpmn:subProcess id="SubProcess_ErrorHandler" name="Payment Error Handler" triggeredByEvent="true">
+
+      <bpmn:startEvent id="StartEvent_ErrorCatch" name="Payment Error Caught" isInterrupting="true">
+        <bpmn:outgoing>Flow_CatchToHandler</bpmn:outgoing>
+        <bpmn:errorEventDefinition errorRef="Error_PaymentFailed" />
+      </bpmn:startEvent>
+
+      <bpmn:task id="Task_Handler" name="Handle Payment Error">
+        <bpmn:incoming>Flow_CatchToHandler</bpmn:incoming>
+        <bpmn:outgoing>Flow_HandlerToEnd</bpmn:outgoing>
+      </bpmn:task>
+
+      <bpmn:endEvent id="EndEvent_SubEnd" name="Handler Complete">
+        <bpmn:incoming>Flow_HandlerToEnd</bpmn:incoming>
+      </bpmn:endEvent>
+
+      <bpmn:sequenceFlow id="Flow_CatchToHandler" sourceRef="StartEvent_ErrorCatch" targetRef="Task_Handler" />
+      <bpmn:sequenceFlow id="Flow_HandlerToEnd" sourceRef="Task_Handler" targetRef="EndEvent_SubEnd" />
+
+    </bpmn:subProcess>
+
+  </bpmn:process>
+
+  <bpmndi:BPMNDiagram id="Diagram_1">
+    <bpmndi:BPMNPlane id="Plane_1" bpmnElement="Process_1">
+
+      <bpmndi:BPMNShape id="S_StartEvent_Manual" bpmnElement="StartEvent_Manual">
+        <dc:Bounds x="162" y="100" width="36" height="36" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="S_Task_Payment" bpmnElement="Task_Payment">
+        <dc:Bounds x="260" y="78" width="100" height="80" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="S_Gw_PaymentResult" bpmnElement="Gw_PaymentResult">
+        <dc:Bounds x="425" y="93" width="50" height="50" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="S_EndEvent_Error" bpmnElement="EndEvent_Error">
+        <dc:Bounds x="547" y="60" width="36" height="36" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="S_EndEvent_Normal" bpmnElement="EndEvent_Normal">
+        <dc:Bounds x="547" y="160" width="36" height="36" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="S_SubProcess_ErrorHandler" bpmnElement="SubProcess_ErrorHandler" isExpanded="true">
+        <dc:Bounds x="130" y="260" width="420" height="160" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="S_StartEvent_ErrorCatch" bpmnElement="StartEvent_ErrorCatch">
+        <dc:Bounds x="182" y="322" width="36" height="36" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="S_Task_Handler" bpmnElement="Task_Handler">
+        <dc:Bounds x="280" y="300" width="100" height="80" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="S_EndEvent_SubEnd" bpmnElement="EndEvent_SubEnd">
+        <dc:Bounds x="452" y="322" width="36" height="36" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNEdge id="E_Flow_StartToTask" bpmnElement="Flow_StartToTask">
+        <di:waypoint x="198" y="118" />
+        <di:waypoint x="260" y="118" />
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="E_Flow_TaskToGw" bpmnElement="Flow_TaskToGw">
+        <di:waypoint x="360" y="118" />
+        <di:waypoint x="425" y="118" />
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="E_Flow_GwToError" bpmnElement="Flow_GwToError">
+        <di:waypoint x="450" y="93" />
+        <di:waypoint x="450" y="78" />
+        <di:waypoint x="547" y="78" />
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="E_Flow_GwToNormal" bpmnElement="Flow_GwToNormal">
+        <di:waypoint x="450" y="143" />
+        <di:waypoint x="450" y="178" />
+        <di:waypoint x="547" y="178" />
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="E_Flow_CatchToHandler" bpmnElement="Flow_CatchToHandler">
+        <di:waypoint x="218" y="340" />
+        <di:waypoint x="280" y="340" />
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="E_Flow_HandlerToEnd" bpmnElement="Flow_HandlerToEnd">
+        <di:waypoint x="380" y="340" />
+        <di:waypoint x="452" y="340" />
+      </bpmndi:BPMNEdge>
+
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

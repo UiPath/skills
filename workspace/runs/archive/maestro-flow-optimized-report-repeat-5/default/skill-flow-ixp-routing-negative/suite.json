@@ -1,0 +1,48 @@
+{
+  "suite_id": "skill-flow-ixp-routing-negative",
+  "variant_id": "default",
+  "rows_total": 40,
+  "rows_passed": 40,
+  "rows_failed": 0,
+  "rows_error": 0,
+  "pass_rate": 1.0,
+  "average_weighted_score": 1.0,
+  "criterion_stats": [
+    {
+      "criterion_type": "run_command",
+      "rows_evaluated": 40,
+      "average_score": 1.0,
+      "error_count": 0
+    }
+  ],
+  "failed_samples": [],
+  "criterion_aggregates": [
+    {
+      "criterion_type": "run_command",
+      "description": "No uipath.ixp.* node landed in any .flow file (negative IxP routing)",
+      "rows_total": 40,
+      "rows_excluded": 0,
+      "metrics": {
+        "count": 40.0,
+        "mean": 1.0,
+        "median": 1.0,
+        "std": 0.0,
+        "min": 1.0,
+        "max": 1.0,
+        "completion_rate": 1.0
+      },
+      "threshold_checks": [
+        {
+          "metric": "mean",
+          "min_value": 0.85,
+          "actual_value": 1.0,
+          "passed": true
+        }
+      ],
+      "passed": true,
+      "details": {},
+      "error": null
+    }
+  ],
+  "passed": true
+}

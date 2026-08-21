@@ -1,0 +1,61 @@
+2026-07-23 20:56:15 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/home/azureuser/.npm-global/lib/node_modules/@uipath from `uip` at /home/azureuser/.npm-global/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-23 20:56:15 [INFO] coder_eval.orchestrator: API routing: aws_bedrock
+2026-07-23 20:56:15 [DEBUG] coder_eval.criteria: Discovered 14 criterion checkers
+2026-07-23 20:56:15 [DEBUG] coder_eval.criteria: Validated 14 criterion checkers
+2026-07-23 20:56:15 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/home/azureuser/.npm-global/lib/node_modules/@uipath from `uip` at /home/azureuser/.npm-global/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-23 20:56:15 [INFO] coder_eval.orchestrator: Running pre-run command: python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/interactive/customer_escalation_triage/seed.py
+2026-07-23 20:56:15 [INFO] coder_eval.orchestrator: [pre_run stdout] seeded seed.json
+2026-07-23 20:56:15 [INFO] coder_eval.simulation.user_simulator: User simulator: Claude Code agent backend (route=BedrockRoute)
+2026-07-23 20:56:15 [DEBUG] coder_eval.agents.claude_code_agent: [simulator] Starting agent query stream...
+2026-07-23 20:56:21 [DEBUG] coder_eval.agents.claude_code_agent: [simulator] session_id changed: None -> dff910a8-58e3-4c59-9b39-4792030526b7
+2026-07-23 20:56:21 [DEBUG] coder_eval.agents.claude_code_agent: [simulator] Agent query stream ended
+2026-07-23 20:56:21 [INFO] coder_eval.orchestrator: Simulation turn 1/10
+2026-07-23 20:56:21 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Starting agent query stream...
+2026-07-23 20:59:44 [DEBUG] coder_eval.agents.claude_code_agent: [coder] session_id changed: None -> 22bbae7f-f973-435b-9f11-ebbb91a18af6
+2026-07-23 20:59:44 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Agent query stream ended
+2026-07-23 20:59:44 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/home/azureuser/.npm-global/lib/node_modules/@uipath from `uip` at /home/azureuser/.npm-global/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-23 20:59:44 [DEBUG] coder_eval.agents.claude_code_agent: [simulator] Starting agent query stream...
+2026-07-23 21:00:00 [DEBUG] coder_eval.agents.claude_code_agent: [simulator] Agent query stream ended
+2026-07-23 21:00:00 [INFO] coder_eval.orchestrator: Simulation turn 2/10
+2026-07-23 21:00:00 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Starting agent query stream...
+2026-07-23 21:00:48 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Agent query stream ended
+2026-07-23 21:00:48 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/home/azureuser/.npm-global/lib/node_modules/@uipath from `uip` at /home/azureuser/.npm-global/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-23 21:00:48 [DEBUG] coder_eval.agents.claude_code_agent: [simulator] Starting agent query stream...
+2026-07-23 21:01:11 [DEBUG] coder_eval.agents.claude_code_agent: [simulator] Agent query stream ended
+2026-07-23 21:01:11 [DEBUG] coder_eval.evaluation.checker: Criterion 'skill_triggered' score: 1.00
+2026-07-23 21:01:11 [DEBUG] coder_eval.evaluation.checker: Criterion 'command_executed' score: 1.00
+2026-07-23 21:01:11 [DEBUG] coder_eval.evaluation.checker: Criterion 'command_executed' score: 1.00
+2026-07-23 21:01:11 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'Generated customer-escalation Flow validates without errors': uip maestro flow validate CustomerEscalationTriage/CustomerEscalationTriage/CustomerEscalationTriage.flow --output json
+2026-07-23 21:01:14 [DEBUG] coder_eval.sandbox: Command 'uip maestro flow validate CustomerEscalationTriage/CustomerEscalationTriage/CustomerEscalationTriage.flow --output json' exited with code 0
+2026-07-23 21:01:14 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+{
+  "Result": "Success",
+  "Code": "FlowValidate",
+  "Data": {
+    "File": "/tmp/coder_eval_skill-flow-interactive-customer-escalation-triage_rdurivzu/CustomerEscalationTriage/CustomerEscalationTriage/CustomerEscalationTriage.flow",
+    "Status": "Valid"
+  }
+}
+---
+2026-07-23 21:01:14 [DEBUG] coder_eval.sandbox: STDERR:
+---
+[ManifestClient] fetchDynamicNodes ok: total=206 agent context nodes=2 external agent nodes=6 orchestrator nodes=159 IXP nodes=39
+---
+2026-07-23 21:01:14 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-07-23 21:01:14 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'Seeded Sev1 and Sev3 runs produce the elicited severity, engineering, draft-response, and correlation outcomes': python3 $TASK_DIR/check_customer_escalation_triage.py
+2026-07-23 21:01:46 [DEBUG] coder_eval.sandbox: Command 'python3 $TASK_DIR/check_customer_escalation_triage.py' exited with code 0
+2026-07-23 21:01:46 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+OK: enterprise-production-down produced the expected business outcomes
+OK: informational-follow-up produced the expected business outcomes
+---
+2026-07-23 21:01:46 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-07-23 21:01:46 [INFO] coder_eval.orchestrator: Simulation dialog ended: stop_reason=stop_token turns=2 criteria_passed=True
+2026-07-23 21:01:46 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/home/azureuser/.npm-global/lib/node_modules/@uipath from `uip` at /home/azureuser/.npm-global/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-23 21:01:46 [INFO] coder_eval.orchestrator: Running post-run command: python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/cleanup_solutions.py
+2026-07-23 21:01:48 [WARNING] coder_eval.orchestrator: [post_run stderr] cleanup_solutions: deleted 91b38ad6-d5e0-494a-32d7-08dee8fa7fa1 (from CustomerEscalationTriage/CustomerEscalationTriage.uipx)
+2026-07-23 21:01:48 [WARNING] coder_eval.orchestrator: [post_run stderr] cleanup_solutions: summary policy=always deleted=1 preserved=0 skipped=0 not_uploaded=0 failed=0
+2026-07-23 21:01:48 [INFO] coder_eval.orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+2026-07-23 21:01:48 [INFO] coder_eval.orchestrator: Sandbox preserved to: runs/maestro-flow-baseline-report-1/default/skill-flow-interactive-customer-escalation-triage/00/artifacts/skill-flow-interactive-customer-escalation-triage
+2026-07-23 21:01:48 [INFO] coder_eval.orchestrator: Task finished: status=SUCCESS duration=333.3s score=1.000 iterations=2

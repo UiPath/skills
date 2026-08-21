@@ -1,0 +1,8 @@
+{
+  "goal_a_type": "llm-judge-output",
+  "goal_a_reason": "Free-text paraphrasing requires semantic similarity judgment; an LLM judge tolerates valid rephrasings like 'Hi Alice!' vs 'Hello, Alice!' without needing tool-call inspection.",
+  "goal_b_type": "json-similarity",
+  "goal_b_reason": "Structured JSON comparison with tolerance for key ordering and minor whitespace is exactly what the deterministic tree-based json-similarity evaluator provides — no LLM needed.",
+  "goal_c_type": "contains",
+  "goal_c_reason": "Pass/fail on the presence of a literal substring ('deployment succeeded') anywhere in the output is the exact use case for the contains evaluator."
+}

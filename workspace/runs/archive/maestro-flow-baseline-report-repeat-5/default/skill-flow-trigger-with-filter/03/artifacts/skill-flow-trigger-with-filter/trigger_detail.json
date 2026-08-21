@@ -1,0 +1,68 @@
+{
+  "_comment": "Trigger configuration for uip maestro flow node configure applied to node 'outlookEmailReceived1' in GoodDayFlow/GoodDayFlow/GoodDayFlow.flow. Cannot be executed in this sandbox (no live UiPath tenant). Fill in the three PLACEHOLDER values before running.",
+
+  "nodeType": "uipath.connector.trigger.uipath-microsoft-outlook365.email-received",
+  "nodeId": "outlookEmailReceived1",
+  "activityType": "CuratedTrigger",
+
+  "detail": {
+    "connectionId": "<CONNECTION_ID_PLACEHOLDER>",
+    "folderKey": "<FOLDER_KEY_PLACEHOLDER>",
+    "eventMode": "polling",
+
+    "eventParameters": {
+      "parentFolderId": "<INBOX_FOLDER_ID_PLACEHOLDER>"
+    },
+
+    "filter": {
+      "groupOperator": 0,
+      "index": 0,
+      "filters": [
+        {
+          "id": "subject",
+          "operator": "Contains",
+          "value": {
+            "value": "good day",
+            "rawString": "\"good day\"",
+            "isLiteral": true
+          }
+        },
+        {
+          "id": "from",
+          "operator": "Equals",
+          "value": {
+            "value": "abc@xyz.com",
+            "rawString": "\"abc@xyz.com\"",
+            "isLiteral": true
+          }
+        }
+      ]
+    }
+  },
+
+  "_placeholders": {
+    "CONNECTION_ID_PLACEHOLDER": {
+      "how_to_resolve": "uip is connections list uipath-microsoft-outlook365 --all-folders --output json",
+      "pick": "The Id field of any enabled connection (prefer IsDefault: Yes)"
+    },
+    "FOLDER_KEY_PLACEHOLDER": {
+      "how_to_resolve": "uip is connections list uipath-microsoft-outlook365 --all-folders --output json",
+      "pick": "The FolderKey (Orchestrator folder key) associated with the chosen connection"
+    },
+    "INBOX_FOLDER_ID_PLACEHOLDER": {
+      "how_to_resolve": "uip is resources run list uipath-microsoft-outlook365 MailFolder --connection-id <CONNECTION_ID> --output json",
+      "pick": "The id of the 'Inbox' MailFolder returned by the resource list"
+    }
+  },
+
+  "_configure_command": "uip maestro flow node configure GoodDayFlow/GoodDayFlow/GoodDayFlow.flow outlookEmailReceived1 --output json --detail \"$(cat trigger_detail_arg.json)\"",
+
+  "_notes": [
+    "activityType=CuratedTrigger — objectName is baked into the manifest (Message); do NOT pass objectName in --detail.",
+    "eventMode=polling — debug with 'uip maestro flow debug .' after ensuring a matching email was received in the past ~1 hour.",
+    "groupOperator 0 = AND — both conditions must match: subject contains 'good day' AND sender equals abc@xyz.com.",
+    "The filter tree is the structured form; the CLI computes filterExpression automatically — do NOT pass filterExpression directly.",
+    "parentFolderId must be resolved freshly from the chosen connection's MailFolder resource list — do not reuse IDs from other flows.",
+    "If the tenant uses a shared/delegated mailbox, add 'sharedMailboxAddress' under queryParameters: { \"sharedMailboxAddress\": \"<shared-mbx@domain.com>\" }."
+  ]
+}

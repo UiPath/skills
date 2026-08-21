@@ -1,0 +1,16 @@
+{
+  "version": "1.0",
+  "id": "greeting-match-bb0736a8",
+  "name": "greeting-match",
+  "description": "greeting-match evaluator",
+  "evaluatorTypeId": "uipath-exact-match",
+  "evaluatorConfig": {
+    "name": "greeting-match",
+    "caseSensitive": false,
+    "negated": false,
+    "targetOutputKey": "*"
+  },
+  "fileName": "greeting-match-bb0736a8.json",
+  "createdAt": "2026-07-23T20:43:47.445Z",
+  "updatedAt": "2026-07-23T20:43:47.445Z"
+}

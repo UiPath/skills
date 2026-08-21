@@ -1,0 +1,12 @@
+21:47:10 [INFO   ] [default/skill-flow-ixp-invoice-extraction-simulated/00] orchestrator: API routing: aws_bedrock
+21:47:11 [INFO   ] [default/skill-flow-ixp-invoice-extraction-simulated/00] simulation.user_simulator: User simulator: Claude Code agent backend (route=BedrockRoute, model=us.anthropic.claude-sonnet-4-6)
+21:47:20 [INFO   ] [default/skill-flow-ixp-invoice-extraction-simulated/00] orchestrator: Simulation turn 1/8
+21:47:42 [INFO   ] [default/skill-flow-ixp-invoice-extraction-simulated/00] orchestrator: Simulation turn 2/8
+21:49:36 [INFO   ] [default/skill-flow-ixp-invoice-extraction-simulated/00] orchestrator: Simulation turn 3/8
+22:09:36 [WARNING] agents.watchdog: Turn timeout (1200s) fired after 1200.0s — hard-killing subprocess
+22:09:36 [WARNING] agents.claude_code_agent: Hard-killing Claude CLI subprocess (pid=1496)
+22:09:36 [ERROR  ] [default/skill-flow-ixp-invoice-extraction-simulated/00] errors.executor: [skill-flow-ixp-invoice-extraction-simulated] Agent communication (sim turn 3) failed (non-retryable): agent_timeout - Agent turn timed out after 1200s (iteration 3)
+22:09:36 [ERROR  ] [default/skill-flow-ixp-invoice-extraction-simulated/00] orchestrator: Evaluation failed: Agent turn timed out after 1200s (iteration 3)
+22:09:36 [INFO   ] [default/skill-flow-ixp-invoice-extraction-simulated/00] orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+22:09:36 [INFO   ] [default/skill-flow-ixp-invoice-extraction-simulated/00] orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-ixp-invoice-extraction-simulated
+22:09:36 [INFO   ] [default/skill-flow-ixp-invoice-extraction-simulated/00] orchestrator: Task finished: status=ERROR duration=1348.4s score=0.000 iterations=3

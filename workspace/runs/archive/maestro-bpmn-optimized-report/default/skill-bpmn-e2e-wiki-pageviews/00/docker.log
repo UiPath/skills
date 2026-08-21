@@ -1,0 +1,6 @@
+23:29:56 [INFO   ] [default/skill-bpmn-e2e-wiki-pageviews/00] orchestrator: API routing: aws_bedrock
+23:35:08 [INFO   ] [default/skill-bpmn-e2e-wiki-pageviews/00] orchestrator: Success criteria: 5/5 passed, weighted score: 1.000
+23:35:08 [WARNING] [default/skill-bpmn-e2e-wiki-pageviews/00] orchestrator: Visible turns (29) exceeded expected_turns (28) at iteration 1 for task skill-bpmn-e2e-wiki-pageviews. Run continues — max_turns remains the hard cap.
+23:35:08 [INFO   ] [default/skill-bpmn-e2e-wiki-pageviews/00] orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+23:35:08 [INFO   ] [default/skill-bpmn-e2e-wiki-pageviews/00] orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-bpmn-e2e-wiki-pageviews
+23:35:08 [INFO   ] [default/skill-bpmn-e2e-wiki-pageviews/00] orchestrator: Task finished: status=SUCCESS duration=313.5s score=1.000 iterations=1

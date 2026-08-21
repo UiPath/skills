@@ -1,0 +1,8 @@
+{
+  "goal_a_type": "llm-judge-output",
+  "goal_a_reason": "It's free-text judged for semantic equivalence to an expected greeting without needing to inspect tool calls, so an LLM judge on final output (not trajectory) fits best.",
+  "goal_b_type": "json-similarity",
+  "goal_b_reason": "The output is structured JSON that must match an expected object on values while tolerating key order and whitespace, which is exactly what a deterministic JSON-aware comparator (not a literal exact-match) provides.",
+  "goal_c_type": "contains",
+  "goal_c_reason": "It's a simple deterministic pass-fail check for a literal substring anywhere in the output, which is precisely what the contains evaluator does."
+}

@@ -1,0 +1,92 @@
+{
+  "Result": "Success",
+  "Code": "RegistryGetSuccess",
+  "Data": {
+    "ExtensionType": {
+      "ExtensionType": "Intsvc.UnifiedHttpRequest",
+      "Label": "Execute HTTP request",
+      "BpmnElement": "bpmn:SendTask",
+      "Placements": {
+        "Activity": {
+          "Type": "bpmn:SendTask"
+        }
+      },
+      "ExtensionTag": "uipath:activity",
+      "ContextFields": [
+        {
+          "Name": "mode",
+          "DisplayName": "Mode",
+          "Type": "string",
+          "Required": true,
+          "Hidden": true,
+          "IsPrimaryKey": false,
+          "Binding": false,
+          "DefaultValue": "manual"
+        },
+        {
+          "Name": "method",
+          "DisplayName": "HTTP Method",
+          "Type": "string",
+          "Required": true,
+          "Hidden": false,
+          "IsPrimaryKey": false,
+          "Binding": false,
+          "DefaultValue": "GET"
+        },
+        {
+          "Name": "url",
+          "DisplayName": "URL",
+          "Type": "string",
+          "Required": true,
+          "Hidden": false,
+          "IsPrimaryKey": false,
+          "Binding": true,
+          "DefaultValue": ""
+        },
+        {
+          "Name": "headers",
+          "DisplayName": "Headers",
+          "Type": "json",
+          "Required": false,
+          "Hidden": false,
+          "IsPrimaryKey": false,
+          "Binding": true,
+          "DefaultValue": "{}"
+        },
+        {
+          "Name": "parameters",
+          "DisplayName": "Query Parameters",
+          "Type": "json",
+          "Required": false,
+          "Hidden": false,
+          "IsPrimaryKey": false,
+          "Binding": true,
+          "DefaultValue": "{}"
+        },
+        {
+          "Name": "body",
+          "DisplayName": "Request Body",
+          "Type": "json",
+          "Required": false,
+          "Hidden": false,
+          "IsPrimaryKey": false,
+          "Binding": true,
+          "DefaultValue": "null"
+        }
+      ],
+      "InputPattern": "separateInputs",
+      "OutputSource": "=response",
+      "OutputType": "jsonSchema",
+      "OutputName": "response",
+      "UseRelativeSource": false,
+      "BindingPattern": "none",
+      "RequiresDiscovery": false,
+      "IsDynamic": false,
+      "DesignSchemaSharedWith": "Intsvc.HttpExecution",
+      "XmlTemplate": "<bpmn:SendTask id=\"{id}\" name=\"{name}\">\n  <bpmn:extensionElements>\n    <uipath:activity version=\"v1\">\n      <uipath:type value=\"Intsvc.UnifiedHttpRequest\" version=\"v1\" />\n      <uipath:context>\n        <uipath:input name=\"mode\" value=\"manual\" />\n        <uipath:input name=\"method\" value=\"GET\" />\n        <uipath:input name=\"url\" value=\"=bindings.{bindingId}\" />\n        <uipath:input name=\"headers\" value=\"=bindings.{bindingId}\" />\n        <uipath:input name=\"parameters\" value=\"=bindings.{bindingId}\" />\n        <uipath:input name=\"body\" value=\"=bindings.{bindingId}\" />\n      </uipath:context>\n      <uipath:output name=\"response\" type=\"jsonSchema\" source=\"=response\" var=\"{varId}\" />\n    </uipath:activity>\n  </bpmn:extensionElements>\n  <bpmn:incoming>{incomingEdge}</bpmn:incoming>\n  <bpmn:outgoing>{outgoingEdge}</bpmn:outgoing>\n</bpmn:SendTask>",
+      "InputNotes": "In the isExecution array. Despite the design schema having no jsonBody, inputs are managed by the IS connector framework and serialized as separate <uipath:input> elements. The design schema context fields (mode, method, url, headers, parameters, body) are used for the HttpRequestV2Properties panel.",
+      "ContextFieldNotes": "Context fields above come from the legacy design schema (shared with Intsvc.HttpExecution). In the FPS ImplementationSection, this type is routed through IntsvcActivityProperties (IS connector framework), NOT HttpRequestProperties. The IS connector auto-initializes with HTTP_ACTIVITY_CONFIG and manages context dynamically. When used via the uipath.http-request shortcut node, it uses HttpRequestV2Properties which manages these context fields directly.",
+      "ExtensionTagNotes": "In isExecution array, uses uipath:activity. Shares design schema with Intsvc.HttpExecution but uses IS connector framework at runtime."
+    }
+  }
+}

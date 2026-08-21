@@ -1,0 +1,14 @@
+{
+  "version": "1.0",
+  "id": "goal-b-evaluator-392fe1eb",
+  "name": "goal-b-evaluator",
+  "description": "Score structured JSON order details envelope with tolerance for key ordering and minor whitespace",
+  "evaluatorTypeId": "uipath-json-similarity",
+  "evaluatorConfig": {
+    "name": "goal-b-evaluator",
+    "targetOutputKey": "*"
+  },
+  "fileName": "goal-b-evaluator-392fe1eb.json",
+  "createdAt": "2026-07-24T19:31:38.601Z",
+  "updatedAt": "2026-07-24T19:31:38.601Z"
+}

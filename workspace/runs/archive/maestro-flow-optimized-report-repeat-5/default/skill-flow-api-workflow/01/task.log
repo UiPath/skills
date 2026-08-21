@@ -1,0 +1,56 @@
+2026-07-24 17:28:56 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-24 17:28:56 [INFO] coder_eval.orchestrator: API routing: aws_bedrock
+2026-07-24 17:28:56 [DEBUG] coder_eval.criteria: Discovered 14 criterion checkers
+2026-07-24 17:28:56 [DEBUG] coder_eval.criteria: Validated 14 criterion checkers
+2026-07-24 17:28:56 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-24 17:28:58 [DEBUG] coder_eval.orchestrator: Sending prompt: Create a UiPath Flow project named "NameToAge" that invokes the name-to-age
+API workflow with the na...
+2026-07-24 17:28:58 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Starting agent query stream...
+2026-07-24 17:31:29 [DEBUG] coder_eval.agents.claude_code_agent: [coder] session_id changed: None -> 5f422440-4ea1-4985-8775-13f9e178d66b
+2026-07-24 17:31:29 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Agent query stream ended
+2026-07-24 17:31:29 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-24 17:31:29 [DEBUG] coder_eval.orchestrator: Agent response received (3719 chars)
+2026-07-24 17:31:29 [DEBUG] coder_eval.orchestrator: Checking success criteria
+2026-07-24 17:31:29 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'uip maestro flow validate passes on the flow file': uip maestro flow validate NameToAge/NameToAge/NameToAge.flow
+2026-07-24 17:31:32 [DEBUG] coder_eval.sandbox: Command 'uip maestro flow validate NameToAge/NameToAge/NameToAge.flow' exited with code 1
+2026-07-24 17:31:32 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+{
+  "Result": "Failure",
+  "Message": "Flow validation failed",
+  "Instructions": "File not found: /work/output/artifacts/skill-flow-api-workflow/NameToAge/NameToAge/NameToAge.flow",
+  "ErrorCode": "unknown_error",
+  "Retry": "RetryWillNotFix"
+}
+---
+2026-07-24 17:31:32 [DEBUG] coder_eval.sandbox: STDERR:
+---
+[ERROR] Stack trace:
+[ERROR] Error: File not found: /work/output/artifacts/skill-flow-api-workflow/NameToAge/NameToAge/NameToAge.flow
+    at FlowValidateService.validateFile (file:///usr/lib/node_modules/@uipath/maestro-tool/dist/tool.js:431637:13)
+    at async FlowValidateService.execute (file:///usr/lib/node_modules/@uipath/maestro-tool/dist/tool.js:431561:31)
+    at async file:///usr/lib/node_modules/@uipath/maestro-tool/dist/tool.js:433290:22
+    at async Command.<anonymous> (file:///usr/lib/node_modules/@uipath/cli/dist/index.js:69372:23)
+    at async Command.parseAsync (file:///usr/lib/node_modules/@uipath/cli/dist/index.js:25598:7)
+    at async Command.<anonymous> (file:///usr/lib/node_modules/@uipath/cli/dist/index.js:140546:7)
+    at async Command.parseAsync (file:///usr/lib/node_modules/@uipath/cli/dist/index.js:25598:7)
+    at async parseAndExit (file:///usr/lib/node_modules/@uipath/cli/dist/index.js:106994:24)
+    at async runNode (file:///usr/lib/node_modules/@uipath/cli/dist/index.js:140687:3)
+    at async file:///usr/lib/node_modules/@uipath/cli/dist/index.js:140836:3
+---
+2026-07-24 17:31:32 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 0.00
+2026-07-24 17:31:32 [INFO] coder_eval.evaluation.checker: Criterion 'run_command' FAILED (score=0.00, threshold=1.00): Command: uip maestro flow validate NameToAge/NameToAge/NameToAge.flow
+2026-07-24 17:31:32 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'Flow has an API workflow node and debug returns an age': python3 $TASK_DIR/check_api_workflow_flow.py
+2026-07-24 17:31:33 [DEBUG] coder_eval.sandbox: Command 'python3 $TASK_DIR/check_api_workflow_flow.py' exited with code 1
+2026-07-24 17:31:33 [DEBUG] coder_eval.sandbox: STDERR:
+---
+FAIL: No Flow project.uiproj found matching **/project.uiproj — candidates exist but none declare ProjectType="Flow":
+  - NameToAgeSolution/NameToAge/project.uiproj
+---
+2026-07-24 17:31:33 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 0.00
+2026-07-24 17:31:33 [INFO] coder_eval.evaluation.checker: Criterion 'run_command' FAILED (score=0.00, threshold=1.00): Command: python3 $TASK_DIR/check_api_workflow_flow.py
+2026-07-24 17:31:33 [INFO] coder_eval.orchestrator: Success criteria: 0/2 passed, weighted score: 0.000
+2026-07-24 17:31:33 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-24 17:31:33 [INFO] coder_eval.orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+2026-07-24 17:31:33 [INFO] coder_eval.orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-api-workflow
+2026-07-24 17:31:33 [INFO] coder_eval.orchestrator: Task finished: status=FAILURE duration=163.1s score=0.000 iterations=1

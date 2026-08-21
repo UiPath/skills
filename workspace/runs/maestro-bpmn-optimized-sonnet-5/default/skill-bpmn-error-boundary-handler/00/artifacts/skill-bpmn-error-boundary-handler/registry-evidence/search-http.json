@@ -1,0 +1,53 @@
+{
+  "Result": "Success",
+  "Code": "RegistrySearchSuccess",
+  "Data": {
+    "ExtensionTypes": [
+      {
+        "ExtensionType": "Intsvc.HttpExecution",
+        "Label": "Execute HTTP request (Legacy)",
+        "BpmnElement": "bpmn:SendTask",
+        "ExtensionTag": "uipath:activity",
+        "InputPattern": "none",
+        "BindingPattern": "none",
+        "RequiresDiscovery": "No"
+      },
+      {
+        "ExtensionType": "Intsvc.UnifiedHttpRequest",
+        "Label": "Execute HTTP request",
+        "BpmnElement": "bpmn:SendTask",
+        "ExtensionTag": "uipath:activity",
+        "InputPattern": "separateInputs",
+        "BindingPattern": "none",
+        "RequiresDiscovery": "No"
+      }
+    ],
+    "Connectors": [
+      {
+        "Key": "uipath-http-webhook",
+        "Name": "HTTP Webhook",
+        "Connections": 3,
+        "Activities": 0,
+        "Triggers": 0
+      },
+      {
+        "Key": "uipath-uipath-http",
+        "Name": "HTTP",
+        "Connections": 2,
+        "Activities": 0,
+        "Triggers": 0
+      }
+    ],
+    "Processes": [],
+    "ProcessesByType": {
+      "Process": 0,
+      "ProcessOrchestration": 0,
+      "Agent": 0,
+      "Flow": 0,
+      "Api": 0,
+      "Function": 0,
+      "CaseManagement": 0,
+      "BusinessRules": 0
+    }
+  }
+}

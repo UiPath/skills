@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+    xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+    xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+    xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+    xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:uipath="http://uipath.org/schema/bpmn"
+    id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn"
+    exporter="UiPath (https://bpmn.uipath.com)" exporterVersion="1.0">
+
+  <bpmn:process id="Process_1" isExecutable="true">
+    <bpmn:extensionElements>
+      <uipath:migrationVersion version="11.5" />
+    </bpmn:extensionElements>
+
+    <!-- Manual start: blank start event with no event definition -->
+    <bpmn:startEvent id="Start_1" name="Start">
+      <bpmn:outgoing>Flow_Start_Approve</bpmn:outgoing>
+    </bpmn:startEvent>
+
+    <!-- Human review and approval task (Actions.HITL from registry template) -->
+    <bpmn:userTask id="Task_Approve" name="Review and Approve Request">
+      <bpmn:extensionElements>
+        <uipath:activity version="v1">
+          <uipath:type value="Actions.HITL" version="v1" />
+          <uipath:context>
+            <uipath:input name="appId" value="" />
+            <uipath:input name="appVersion" value="" />
+            <uipath:input name="actions" value="" />
+            <uipath:input name="key" value="" />
+            <uipath:input name="taskTitle" value="Review and Approve Request" />
+          </uipath:context>
+          <uipath:input name="HitlTaskArguments" type="json" target="bodyField"><![CDATA[{}]]></uipath:input>
+          <uipath:output name="Process response" type="Actions.HITL" var="" />
+        </uipath:activity>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_Start_Approve</bpmn:incoming>
+      <bpmn:outgoing>Flow_Approve_End</bpmn:outgoing>
+    </bpmn:userTask>
+
+    <!-- Non-interrupting timer boundary event: fires after PT1H without cancelling the userTask -->
+    <bpmn:boundaryEvent id="Boundary_Timer" attachedToRef="Task_Approve" cancelActivity="false">
+      <bpmn:timerEventDefinition>
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT1H</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+      <bpmn:outgoing>Flow_Timer_Reminder</bpmn:outgoing>
+    </bpmn:boundaryEvent>
+
+    <!-- Reminder task: plain service task reached only via the timer boundary -->
+    <bpmn:serviceTask id="Task_Reminder" name="Send Reminder">
+      <bpmn:incoming>Flow_Timer_Reminder</bpmn:incoming>
+      <bpmn:outgoing>Flow_Reminder_End</bpmn:outgoing>
+    </bpmn:serviceTask>
+
+    <!-- Normal end after userTask completes -->
+    <bpmn:endEvent id="End_Approved" name="Request Processed">
+      <bpmn:incoming>Flow_Approve_End</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <!-- End for the reminder path (userTask continues independently) -->
+    <bpmn:endEvent id="End_Reminded" name="Reminder Sent">
+      <bpmn:incoming>Flow_Reminder_End</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <!-- Sequence flows -->
+    <bpmn:sequenceFlow id="Flow_Start_Approve" sourceRef="Start_1" targetRef="Task_Approve" />
+    <bpmn:sequenceFlow id="Flow_Approve_End" sourceRef="Task_Approve" targetRef="End_Approved" />
+    <bpmn:sequenceFlow id="Flow_Timer_Reminder" sourceRef="Boundary_Timer" targetRef="Task_Reminder" />
+    <bpmn:sequenceFlow id="Flow_Reminder_End" sourceRef="Task_Reminder" targetRef="End_Reminded" />
+  </bpmn:process>
+
+  <bpmndi:BPMNDiagram id="Diagram_1">
+    <bpmndi:BPMNPlane id="Plane_1" bpmnElement="Process_1">
+
+      <!-- Main path (y=100 centerline) -->
+      <bpmndi:BPMNShape id="S_Start_1" bpmnElement="Start_1">
+        <dc:Bounds x="160" y="82" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Task_Approve" bpmnElement="Task_Approve">
+        <dc:Bounds x="260" y="60" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_End_Approved" bpmnElement="End_Approved">
+        <dc:Bounds x="500" y="82" width="36" height="36" />
+      </bpmndi:BPMNShape>
+
+      <!-- Boundary event: centered on the bottom edge of Task_Approve (x=310, y=140) -->
+      <bpmndi:BPMNShape id="S_Boundary_Timer" bpmnElement="Boundary_Timer">
+        <dc:Bounds x="292" y="122" width="36" height="36" />
+      </bpmndi:BPMNShape>
+
+      <!-- Reminder path (y=250 centerline) -->
+      <bpmndi:BPMNShape id="S_Task_Reminder" bpmnElement="Task_Reminder">
+        <dc:Bounds x="410" y="210" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_End_Reminded" bpmnElement="End_Reminded">
+        <dc:Bounds x="560" y="232" width="36" height="36" />
+      </bpmndi:BPMNShape>
+
+      <!-- Edges -->
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_Start_Approve" bpmnElement="Flow_Start_Approve">
+        <di:waypoint x="196" y="100" />
+        <di:waypoint x="260" y="100" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_Approve_End" bpmnElement="Flow_Approve_End">
+        <di:waypoint x="360" y="100" />
+        <di:waypoint x="500" y="100" />
+      </bpmndi:BPMNEdge>
+      <!-- Timer fires, drops down then right to the reminder task -->
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_Timer_Reminder" bpmnElement="Flow_Timer_Reminder">
+        <di:waypoint x="310" y="158" />
+        <di:waypoint x="310" y="250" />
+        <di:waypoint x="410" y="250" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_Reminder_End" bpmnElement="Flow_Reminder_End">
+        <di:waypoint x="510" y="250" />
+        <di:waypoint x="560" y="250" />
+      </bpmndi:BPMNEdge>
+
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

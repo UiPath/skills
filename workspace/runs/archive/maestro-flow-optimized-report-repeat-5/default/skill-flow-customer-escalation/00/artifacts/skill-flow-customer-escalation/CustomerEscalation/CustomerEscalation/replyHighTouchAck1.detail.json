@@ -1,0 +1,11 @@
+{
+  "_note": "PENDING CONFIGURATION: Replace connection IDs and run `uip maestro flow node configure CustomerEscalation.flow replyHighTouchAck1 --detail \"$(cat replyHighTouchAck1.detail.json)\"`",
+  "connectionId": "<OUTLOOK_CONNECTION_ID>",
+  "folderKey": "<OUTLOOK_FOLDER_KEY>",
+  "method": "POST",
+  "endpoint": "/ReplyToEmail",
+  "bodyParameters": {
+    "messageId": "=js:$vars.emailReceived1.output.id",
+    "comment": "=js:`Dear customer,\\n\\nThank you for reaching out. Your message has been flagged as HIGH PRIORITY. A dedicated support specialist will contact you within 30 minutes.\\n\\nWe appreciate your patience.\\n\\nBest regards,\\nSupport Team`"
+  }
+}

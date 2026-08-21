@@ -1,0 +1,14 @@
+{
+  "_comment": "Planned node configure payload for createResourceGroup1. Run the command below once a 'uipath-microsoft-azure' IS connection is available.",
+  "_command": "uip maestro flow node configure DTLLoadByDefaultTrueTest.flow createResourceGroup1 --detail \"$(cat createResourceGroup1.detail.json)\" --output json",
+  "connectionId": "<PASTE_CONNECTION_UUID_HERE>",
+  "folderKey": "<PASTE_FOLDER_KEY_HERE>",
+  "method": "POST",
+  "endpoint": "/resourceGroup/resource/{resourceGroupName}",
+  "bodyParameters": {
+    "location": "=js:$vars.start.output.location"
+  },
+  "pathParameters": {
+    "resourceGroupName": "=js:$vars.start.output.resourceGroupName"
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "BirthCertificateExtraction",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "4e791a33-f801-42ae-90bd-36ff2b33e051",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "BirthCertificateExtraction"
+    },
+    "locks": [],
+    "key": "fa913501-e7b2-49a2-aa37-3a81f821dc3c",
+    "files": []
+  }
+}

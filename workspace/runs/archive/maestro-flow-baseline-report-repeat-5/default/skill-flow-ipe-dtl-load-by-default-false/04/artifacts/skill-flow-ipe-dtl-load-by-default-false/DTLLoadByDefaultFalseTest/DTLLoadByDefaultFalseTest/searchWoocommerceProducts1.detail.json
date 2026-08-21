@@ -1,0 +1,9 @@
+{
+  "connectionId": "<REPLACE_WITH_CONNECTION_ID>",
+  "folderKey": "<REPLACE_WITH_FOLDER_KEY>",
+  "method": "GET",
+  "endpoint": "/search_products",
+  "queryParameters": {
+    "attribute_term": "=js:$vars.start.output.attributeTermId"
+  }
+}

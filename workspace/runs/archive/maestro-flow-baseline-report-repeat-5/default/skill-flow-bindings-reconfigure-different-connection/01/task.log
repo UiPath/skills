@@ -1,0 +1,60 @@
+2026-07-24 19:59:46 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-24 19:59:46 [INFO] coder_eval.orchestrator: API routing: aws_bedrock
+2026-07-24 19:59:47 [DEBUG] coder_eval.criteria: Discovered 14 criterion checkers
+2026-07-24 19:59:47 [DEBUG] coder_eval.criteria: Validated 14 criterion checkers
+2026-07-24 19:59:47 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-24 19:59:47 [DEBUG] coder_eval.orchestrator: Sending prompt: PRECONDITION CHECK — do this FIRST, before any flow work:
+Run `uip is connections list --all-folders...
+2026-07-24 19:59:47 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Starting agent query stream...
+2026-07-24 20:03:36 [DEBUG] coder_eval.agents.claude_code_agent: [coder] session_id changed: None -> f2d90b94-b94b-4d29-bc48-9eed49aa4236
+2026-07-24 20:03:36 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Agent query stream ended
+2026-07-24 20:03:36 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-24 20:03:36 [DEBUG] coder_eval.orchestrator: Agent response received (3902 chars)
+2026-07-24 20:03:36 [DEBUG] coder_eval.orchestrator: Checking success criteria
+2026-07-24 20:03:36 [DEBUG] coder_eval.evaluation.checker: Criterion 'command_executed' score: 1.00
+2026-07-24 20:03:36 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'Snapshots and conn_ids.json exist with two distinct ids': python3 -c "import json; d=json.load(open('conn_ids.json')); a,b=d['a'],d['b']; assert a and b and a!=b, f'Expected two distinct connection ids, got a={a} b={b}'"
+2026-07-24 20:03:37 [DEBUG] coder_eval.sandbox: Command 'python3 -c "import json; d=json.load(open('conn_ids.json')); a,b=d['a'],d['b']; assert a and b and a!=b, f'Expected two distinct connection ids, got a={a} b={b}'"' exited with code 0
+2026-07-24 20:03:37 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-07-24 20:03:37 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'after_a.flow references connection A': python3 $TASK_DIR/check_bindings.py has_connection_key_from_json after_a.flow conn_ids.json a
+2026-07-24 20:03:37 [DEBUG] coder_eval.sandbox: Command 'python3 $TASK_DIR/check_bindings.py has_connection_key_from_json after_a.flow conn_ids.json a' exited with code 0
+2026-07-24 20:03:37 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+OK: after_a.flow references connection '971fc639-5b3d-4921-aa16-3a8fa2e69948'
+---
+2026-07-24 20:03:37 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-07-24 20:03:37 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'after_b.flow has zero references to connection A (no stale rows)': python3 $TASK_DIR/check_bindings.py no_connection_leak_from_json after_b.flow conn_ids.json a
+2026-07-24 20:03:37 [DEBUG] coder_eval.sandbox: Command 'python3 $TASK_DIR/check_bindings.py no_connection_leak_from_json after_b.flow conn_ids.json a' exited with code 0
+2026-07-24 20:03:37 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+OK: after_b.flow has no references to old connection '971fc639-5b3d-4921-aa16-3a8fa2e69948'
+---
+2026-07-24 20:03:37 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-07-24 20:03:37 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'after_b.flow ConnectionId binding points at connection B': python3 $TASK_DIR/check_bindings.py connection_id_is_from_json after_b.flow conn_ids.json b
+2026-07-24 20:03:37 [DEBUG] coder_eval.sandbox: Command 'python3 $TASK_DIR/check_bindings.py connection_id_is_from_json after_b.flow conn_ids.json b' exited with code 0
+2026-07-24 20:03:37 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+OK: after_b.flow all ConnectionId bindings point at '5a1a639e-8395-4dc8-b043-6dc7d82de499'
+---
+2026-07-24 20:03:37 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-07-24 20:03:37 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'Reconfigure did not grow bindings count': python3 $TASK_DIR/check_bindings.py count_equal 'after_a.flow' 'after_b.flow'
+2026-07-24 20:03:38 [DEBUG] coder_eval.sandbox: Command 'python3 $TASK_DIR/check_bindings.py count_equal 'after_a.flow' 'after_b.flow'' exited with code 0
+2026-07-24 20:03:38 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+OK: after_a.flow and after_b.flow have equal bindings count = 2
+---
+2026-07-24 20:03:38 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-07-24 20:03:38 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'No empty-keyed Connection bindings in final snapshot': python3 $TASK_DIR/check_bindings.py no_empty_stubs 'after_b.flow'
+2026-07-24 20:03:38 [DEBUG] coder_eval.sandbox: Command 'python3 $TASK_DIR/check_bindings.py no_empty_stubs 'after_b.flow'' exited with code 0
+2026-07-24 20:03:38 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+OK: after_b.flow has no empty-keyed Connection bindings
+---
+2026-07-24 20:03:38 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-07-24 20:03:38 [INFO] coder_eval.orchestrator: Success criteria: 7/7 passed, weighted score: 1.000
+2026-07-24 20:03:38 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-24 20:03:38 [INFO] coder_eval.orchestrator: Running post-run command: python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/cleanup_solutions.py
+2026-07-24 20:03:40 [WARNING] coder_eval.orchestrator: [post_run stderr] cleanup_solutions: solution 79226cf3-ce9f-4518-86cc-463898429005 not uploaded (from BindingsReconfigure/BindingsReconfigure.uipx); nothing to clean up
+2026-07-24 20:03:40 [WARNING] coder_eval.orchestrator: [post_run stderr] cleanup_solutions: summary policy=always deleted=0 preserved=0 skipped=0 not_uploaded=1 failed=0
+2026-07-24 20:03:40 [INFO] coder_eval.orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+2026-07-24 20:03:40 [INFO] coder_eval.orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-bindings-reconfigure-different-connection
+2026-07-24 20:03:40 [INFO] coder_eval.orchestrator: Task finished: status=SUCCESS duration=236.0s score=1.000 iterations=1

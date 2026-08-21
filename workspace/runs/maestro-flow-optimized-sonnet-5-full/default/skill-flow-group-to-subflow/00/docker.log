@@ -1,0 +1,11 @@
+15:34:27 [INFO   ] [default/skill-flow-group-to-subflow/00] orchestrator: API routing: aws_bedrock
+15:49:28 [WARNING] agents.watchdog: task_timeout (skill-flow-group-to-subflow) fired after 900.0s — hard-killing subprocess
+15:49:28 [WARNING] agents.claude_code_agent: Hard-killing Claude CLI subprocess (pid=53)
+15:49:28 [ERROR  ] [default/skill-flow-group-to-subflow/00] orchestrator: Task timed out: Task timed out after 900s
+15:49:28 [INFO   ] [default/skill-flow-group-to-subflow/00] orchestrator: [skill-flow-group-to-subflow] Recovered the hard-killed turn: 3074393 tokens, $2.1851
+15:49:28 [INFO   ] [default/skill-flow-group-to-subflow/00] orchestrator: Running post-run command: python3 $EXPERIMENT_TASKS_PATH/uipath-maestro-flow/_shared/cleanup_solutions.py
+15:49:29 [WARNING] [default/skill-flow-group-to-subflow/00] orchestrator: [post_run stderr] cleanup_solutions: solution d214b451-1bc8-420f-a0df-08de9b243934 not uploaded (from BellevueWeather/BellevueWeather.uipx); nothing to clean up
+15:49:29 [WARNING] [default/skill-flow-group-to-subflow/00] orchestrator: [post_run stderr] cleanup_solutions: summary policy=always deleted=0 preserved=0 skipped=0 not_uploaded=1 failed=0
+15:49:29 [INFO   ] [default/skill-flow-group-to-subflow/00] orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+15:49:29 [INFO   ] [default/skill-flow-group-to-subflow/00] orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-group-to-subflow
+15:49:29 [INFO   ] [default/skill-flow-group-to-subflow/00] orchestrator: Task finished: status=TIMEOUT duration=908.7s score=0.000 iterations=1

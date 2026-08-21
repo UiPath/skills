@@ -1,0 +1,12 @@
+{
+    "DocVersion": "1.0.0",
+    "StudioMinVersion": "2025.10.0",
+    "SolutionId": "21675d5d-ae99-4dcf-74bd-08dee9b21193",
+    "Projects": [
+        {
+            "Type": "Flow",
+            "ProjectRelativePath": "SlackBellevueFlow/project.uiproj",
+            "Id": "07296b26-b129-4eb8-b048-5889abfdcf2d"
+        }
+    ]
+}

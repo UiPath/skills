@@ -1,0 +1,30 @@
+{"ts": 1785218743.4153533, "args": "track", "matched_rule": null, "fixture": null, "exit_code": 0, "error": "unmocked_default"}
+{"ts": 1785218745.4301243, "args": "--help", "matched_rule": null, "fixture": null, "exit_code": 0, "error": "unmocked_default"}
+{"ts": 1785218745.769103, "args": "track", "matched_rule": null, "fixture": null, "exit_code": 0, "error": "unmocked_default"}
+{"ts": 1785218747.6643128, "args": "maestro bpmn --help", "matched_rule": null, "fixture": null, "exit_code": 0, "error": "unmocked_default"}
+{"ts": 1785218747.948691, "args": "track", "matched_rule": null, "fixture": null, "exit_code": 0, "error": "unmocked_default"}
+{"ts": 1785218749.457377, "args": "maestro --help", "matched_rule": null, "fixture": null, "exit_code": 0, "error": "unmocked_default"}
+{"ts": 1785218749.8801982, "args": "track", "matched_rule": null, "fixture": null, "exit_code": 0, "error": "unmocked_default"}
+{"ts": 1785218751.6562083, "args": "--help", "matched_rule": null, "fixture": null, "exit_code": 0, "error": "unmocked_default"}
+{"ts": 1785218751.8605957, "args": "maestro bpmn debug --help", "matched_rule": "maestro bpmn debug ", "fixture": "debug-run.json", "exit_code": 0}
+{"ts": 1785218752.1584513, "args": "track", "matched_rule": null, "fixture": null, "exit_code": 0, "error": "unmocked_default"}
+{"ts": 1785218755.2763836, "args": "maestro bpmn debug ./OrderApproval --input {\"orderId\": \"ORD-9001\", \"amount\": 1875} --output json", "matched_rule": "maestro bpmn debug ", "fixture": "debug-run.json", "exit_code": 0}
+{"ts": 1785218755.5429134, "args": "track", "matched_rule": null, "fixture": null, "exit_code": 0, "error": "unmocked_default"}
+{"ts": 1785218758.530599, "args": "maestro bpmn debug-instance debug-run-042 --output json", "matched_rule": null, "fixture": null, "exit_code": 0, "error": "unmocked_default"}
+{"ts": 1785218758.7686608, "args": "track", "matched_rule": null, "fixture": null, "exit_code": 0, "error": "unmocked_default"}
+{"ts": 1785218761.4461863, "args": "maestro bpmn debug-instance --help", "matched_rule": null, "fixture": null, "exit_code": 0, "error": "unmocked_default"}
+{"ts": 1785218761.6093926, "args": "maestro bpmn debug-instance debug-run-042 --output json", "matched_rule": null, "fixture": null, "exit_code": 0, "error": "unmocked_default"}
+{"ts": 1785218761.8765368, "args": "track", "matched_rule": null, "fixture": null, "exit_code": 0, "error": "unmocked_default"}
+{"ts": 1785218763.9249988, "args": "maestro bpmn get-instance debug-run-042 --output json", "matched_rule": null, "fixture": null, "exit_code": 0, "error": "unmocked_default"}
+{"ts": 1785218764.1497085, "args": "maestro bpmn instance debug-run-042 --output json", "matched_rule": null, "fixture": null, "exit_code": 0, "error": "unmocked_default"}
+{"ts": 1785218764.5225894, "args": "track", "matched_rule": null, "fixture": null, "exit_code": 0, "error": "unmocked_default"}
+{"ts": 1785218766.7603807, "args": "maestro bpmn debug-instance --instanceId debug-run-042 --output json", "matched_rule": null, "fixture": null, "exit_code": 0, "error": "unmocked_default"}
+{"ts": 1785218767.2997334, "args": "maestro bpmn debug-instance --instance-id debug-run-042 --output json", "matched_rule": null, "fixture": null, "exit_code": 0, "error": "unmocked_default"}
+{"ts": 1785218767.7855163, "args": "track", "matched_rule": null, "fixture": null, "exit_code": 0, "error": "unmocked_default"}
+{"ts": 1785218778.0060399, "args": "maestro bpmn debug ./OrderApproval --input {\"orderId\": \"ORD-9001\", \"amount\": 1875} --output json", "matched_rule": "maestro bpmn debug ", "fixture": "debug-run.json", "exit_code": 0}
+{"ts": 1785218778.303124, "args": "track", "matched_rule": null, "fixture": null, "exit_code": 0, "error": "unmocked_default"}
+{"ts": 1785218780.1390193, "args": "maestro bpmn debug-instance variables debug-run-042 --output json", "matched_rule": "maestro bpmn debug-instance variables debug-run-042", "fixture": "debug-variables.json", "exit_code": 0}
+{"ts": 1785218780.4494476, "args": "track", "matched_rule": null, "fixture": null, "exit_code": 0, "error": "unmocked_default"}
+{"ts": 1785218782.8571749, "args": "maestro bpmn debug-instance variables-all debug-run-042 --output json", "matched_rule": "maestro bpmn debug-instance variables-all debug-run-042", "fixture": "debug-variables-all.json", "exit_code": 0}
+{"ts": 1785218783.243312, "args": "track", "matched_rule": null, "fixture": null, "exit_code": 0, "error": "unmocked_default"}
+{"ts": 1785218793.8266926, "args": "--version", "matched_rule": null, "fixture": null, "exit_code": 0, "error": "unmocked_default"}

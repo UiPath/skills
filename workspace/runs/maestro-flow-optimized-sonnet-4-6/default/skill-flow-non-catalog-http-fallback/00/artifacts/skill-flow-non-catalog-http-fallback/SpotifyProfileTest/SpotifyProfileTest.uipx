@@ -1,0 +1,12 @@
+{
+  "DocVersion": "1.0.0",
+  "StudioMinVersion": "2025.10.0",
+  "SolutionId": "7999da60-257d-46ef-b31e-88434b638a4c",
+  "Projects": [
+    {
+      "Type": "Flow",
+      "ProjectRelativePath": "SpotifyProfileTest/project.uiproj",
+      "Id": "64137965-a5b4-4060-ba6a-6850eb86b6e6"
+    }
+  ]
+}

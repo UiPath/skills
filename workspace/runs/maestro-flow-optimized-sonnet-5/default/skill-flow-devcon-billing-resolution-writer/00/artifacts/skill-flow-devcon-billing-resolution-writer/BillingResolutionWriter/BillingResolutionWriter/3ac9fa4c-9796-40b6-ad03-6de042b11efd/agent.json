@@ -1,0 +1,99 @@
+{
+  "version": "1.1.0",
+  "settings": {
+    "model": "gpt-5.4",
+    "maxTokens": 128000,
+    "temperature": 0,
+    "engine": "basic-v2",
+    "maxIterations": 5,
+    "mode": "standard"
+  },
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "start__output__customerName": {
+        "type": "string",
+        "description": "Bound from $vars.start.output.customerName"
+      },
+      "start__output__invoiceNumber": {
+        "type": "string",
+        "description": "Bound from $vars.start.output.invoiceNumber"
+      },
+      "start__output__creditAmount": {
+        "type": "number",
+        "description": "Bound from $vars.start.output.creditAmount"
+      }
+    }
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "subject": {
+        "type": "string",
+        "description": "The email subject line for the billing dispute resolution notice"
+      },
+      "body": {
+        "type": "string",
+        "description": "The full email body. Must explicitly state the invoice number and the approved credit amount."
+      }
+    },
+    "required": [
+      "subject",
+      "body"
+    ]
+  },
+  "metadata": {
+    "storageVersion": "50.0.0",
+    "isConversational": false,
+    "showProjectCreationExperience": false
+  },
+  "type": "lowCode",
+  "guardrails": [],
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a billing support assistant that drafts customer-facing billing-dispute resolution emails.\n\nYour job: given a customer name, an invoice number, and an approved credit amount, write a short, professional, empathetic email that informs the customer their billing dispute has been resolved in their favor.\n\nRules:\n- Address the customer by name.\n- Explicitly state the invoice number in the body, exactly as given.\n- Explicitly state the approved credit amount in the body, formatted as currency with two decimal places (e.g. 42.50 -> \"$42.50\"), exactly matching the given amount.\n- Keep the tone courteous, concise, and reassuring. Do not invent additional facts (dates, reasons for the dispute, policy details) that were not provided.\n- This is a single-shot drafting task — do not call any tools, do not ask clarifying questions, and do not iterate. Produce your best answer from the given input on the first pass.\n- Always return both output fields, even if an input value is unusual — never leave a field empty.\n\nReturn only the structured output fields defined by the output schema: subject and body.",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "You are a billing support assistant that drafts customer-facing billing-dispute resolution emails.\n\nYour job: given a customer name, an invoice number, and an approved credit amount, write a short, professional, empathetic email that informs the customer their billing dispute has been resolved in their favor.\n\nRules:\n- Address the customer by name.\n- Explicitly state the invoice number in the body, exactly as given.\n- Explicitly state the approved credit amount in the body, formatted as currency with two decimal places (e.g. 42.50 -> \"$42.50\"), exactly matching the given amount.\n- Keep the tone courteous, concise, and reassuring. Do not invent additional facts (dates, reasons for the dispute, policy details) that were not provided.\n- This is a single-shot drafting task — do not call any tools, do not ask clarifying questions, and do not iterate. Produce your best answer from the given input on the first pass.\n- Always return both output fields, even if an input value is unusual — never leave a field empty.\n\nReturn only the structured output fields defined by the output schema: subject and body."
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "Draft the billing dispute resolution email for the following case:\n\nCustomer name: {{input.start__output__customerName}}\nInvoice number: {{input.start__output__invoiceNumber}}\nApproved credit amount: {{input.start__output__creditAmount}}\n\nWrite the email subject and body now.",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "Draft the billing dispute resolution email for the following case:\n\nCustomer name: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__customerName"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\nInvoice number: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__invoiceNumber"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\nApproved credit amount: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__creditAmount"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\nWrite the email subject and body now."
+        }
+      ]
+    }
+  ],
+  "projectId": "3ac9fa4c-9796-40b6-ad03-6de042b11efd"
+}

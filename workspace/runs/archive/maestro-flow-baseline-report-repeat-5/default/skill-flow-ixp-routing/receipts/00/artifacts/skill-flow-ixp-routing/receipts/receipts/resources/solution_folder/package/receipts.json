@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "receipts",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "63bc811e-b26e-4bf0-a8a5-90763d3f0544",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "receipts"
+    },
+    "locks": [],
+    "key": "ebd26ee0-a9fb-4132-b419-28ba40f81c30",
+    "files": []
+  }
+}

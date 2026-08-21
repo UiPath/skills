@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "RiskScoreScriptBpmn",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "c9db0334-0be5-4a10-bc7c-b7a9bbffa1fa",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "RiskScoreScriptBpmn"
+    },
+    "locks": [],
+    "key": "301cd9dd-8eec-4bd6-91c2-70ef3ee7e110",
+    "files": []
+  }
+}

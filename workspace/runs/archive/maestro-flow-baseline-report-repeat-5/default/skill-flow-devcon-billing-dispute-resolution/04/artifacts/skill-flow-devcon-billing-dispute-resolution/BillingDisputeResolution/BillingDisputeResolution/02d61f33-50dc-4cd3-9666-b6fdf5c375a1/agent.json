@@ -1,0 +1,123 @@
+{
+  "version": "1.1.0",
+  "settings": {
+    "model": "gpt-5.4",
+    "maxTokens": 128000,
+    "temperature": 0,
+    "engine": "basic-v2",
+    "maxIterations": 3,
+    "mode": "standard"
+  },
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "normalizeData1__output__invoiceNumber": {
+        "type": "string",
+        "description": "Invoice number for the resolved dispute"
+      },
+      "disputeAnalyst1__output__creditAmount": {
+        "type": "number",
+        "description": "Approved credit amount"
+      },
+      "disputeAnalyst1__output__determination": {
+        "type": "string",
+        "description": "Analyst determination summary"
+      },
+      "disputeAnalyst1__output__rationale": {
+        "type": "string",
+        "description": "Rationale for the determination"
+      },
+      "start__output__webhookPayload": {
+        "type": "object",
+        "description": "Customer and invoice details from the original webhook"
+      }
+    }
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "subject": {
+        "type": "string",
+        "description": "Email subject line for the customer resolution notification"
+      },
+      "body": {
+        "type": "string",
+        "description": "Full email body for the customer resolution notification"
+      }
+    },
+    "required": [
+      "subject",
+      "body"
+    ]
+  },
+  "metadata": {
+    "storageVersion": "50.0.0",
+    "isConversational": false,
+    "showProjectCreationExperience": false
+  },
+  "type": "lowCode",
+  "guardrails": [],
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a customer communication specialist for a billing department. Your task is to draft professional, empathetic, and clear resolution emails for customers whose billing disputes have been reviewed and approved for credit.\n\nGuidelines:\n- Be professional, courteous, and empathetic\n- Clearly state the outcome: a credit of the specified amount has been applied to the account\n- Reference the invoice number in the subject and body\n- Briefly explain the reason for the credit based on the determination and rationale\n- Include a closing statement inviting further questions\n- Keep the email concise (3-5 paragraphs)\n- Do NOT include any placeholder brackets like [NAME] — use the data provided\n\nYour output MUST be a JSON object with 'subject' and 'body' fields.",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "You are a customer communication specialist for a billing department. Your task is to draft professional, empathetic, and clear resolution emails for customers whose billing disputes have been reviewed and approved for credit.\n\nGuidelines:\n- Be professional, courteous, and empathetic\n- Clearly state the outcome: a credit of the specified amount has been applied to the account\n- Reference the invoice number in the subject and body\n- Briefly explain the reason for the credit based on the determination and rationale\n- Include a closing statement inviting further questions\n- Keep the email concise (3-5 paragraphs)\n- Do NOT include any placeholder brackets like [NAME] — use the data provided\n\nYour output MUST be a JSON object with 'subject' and 'body' fields."
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "Please draft a resolution email for the following approved billing dispute.\n\n**Invoice Number:** {{input.normalizeData1__output__invoiceNumber}}\n**Credit Amount Approved:** ${{input.disputeAnalyst1__output__creditAmount}}\n**Determination:** {{input.disputeAnalyst1__output__determination}}\n**Rationale:** {{input.disputeAnalyst1__output__rationale}}\n**Customer Details:** {{input.start__output__webhookPayload}}\n\nDraft a professional customer-facing email confirming the credit has been approved and will be applied to their account.",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "Please draft a resolution email for the following approved billing dispute.\n\n**Invoice Number:** "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.normalizeData1__output__invoiceNumber"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n**Credit Amount Approved:** $"
+        },
+        {
+          "type": "variable",
+          "rawString": "input.disputeAnalyst1__output__creditAmount"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n**Determination:** "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.disputeAnalyst1__output__determination"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n**Rationale:** "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.disputeAnalyst1__output__rationale"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n**Customer Details:** "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__webhookPayload"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\nDraft a professional customer-facing email confirming the credit has been approved and will be applied to their account."
+        }
+      ]
+    }
+  ],
+  "projectId": "02d61f33-50dc-4cd3-9666-b6fdf5c375a1"
+}

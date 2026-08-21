@@ -1,0 +1,7 @@
+15:42:58 [INFO   ] [default/skill-flow-expense-approval-simulated/00] orchestrator: API routing: aws_bedrock
+15:42:59 [INFO   ] [default/skill-flow-expense-approval-simulated/00] simulation.user_simulator: User simulator: Claude Code agent backend (route=BedrockRoute, model=us.anthropic.claude-sonnet-4-6)
+15:43:06 [INFO   ] [default/skill-flow-expense-approval-simulated/00] orchestrator: Simulation turn 1/8
+15:51:23 [INFO   ] [default/skill-flow-expense-approval-simulated/00] orchestrator: Simulation dialog ended: stop_reason=stop_token turns=1 criteria_passed=True
+15:51:23 [INFO   ] [default/skill-flow-expense-approval-simulated/00] orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+15:51:23 [INFO   ] [default/skill-flow-expense-approval-simulated/00] orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-expense-approval-simulated
+15:51:23 [INFO   ] [default/skill-flow-expense-approval-simulated/00] orchestrator: Task finished: status=SUCCESS duration=505.7s score=1.000 iterations=1

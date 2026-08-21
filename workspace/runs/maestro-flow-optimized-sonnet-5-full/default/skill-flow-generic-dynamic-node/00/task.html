@@ -1,0 +1,2356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>coder_eval · skill-flow-generic-dynamic-node · default</title>
+<style>
+:root {
+  --bg-page: #0f1419;
+  --bg-card: #1a2129;
+  --bg-card-2: #232d38;
+  --bg-code: #0b0f14;
+  --fg: #e6edf3;
+  --fg-muted: #8b98a5;
+  --fg-dim: #6e7681;
+  --border: #30363d;
+  --accent: #58a6ff;
+  --score-high: #22c55e;
+  --score-mid: #f59e0b;
+  --score-low: #ef4444;
+  --status-success: #22c55e;
+  --status-failure: #f59e0b;
+  --status-error: #ef4444;
+  --status-neutral: #6e7681;
+  --shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+.light {
+  --bg-page: #ffffff;
+  --bg-card: #f6f8fa;
+  --bg-card-2: #eaeef2;
+  --bg-code: #f6f8fa;
+  --fg: #1f2328;
+  --fg-muted: #636c76;
+  --fg-dim: #8b949e;
+  --border: #d0d7de;
+  --accent: #0969da;
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial,
+               sans-serif;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--fg);
+  background: var(--bg-page);
+}
+.container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+h1, h2, h3, h4 { margin: 0 0 12px 0; line-height: 1.25; }
+h1 { font-size: 22px; font-weight: 600; }
+h2 { font-size: 18px; font-weight: 600; margin-top: 28px;
+     padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+h3 { font-size: 15px; font-weight: 600; color: var(--fg-muted); }
+h4 { font-size: 13px; font-weight: 600; color: var(--fg-muted); }
+p { margin: 0 0 8px 0; }
+.muted { color: var(--fg-muted); }
+.dim { color: var(--fg-dim); }
+.mono { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+        monospace; font-size: 12.5px; }
+code { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+       monospace; font-size: 12.5px; background: var(--bg-code);
+       border: 1px solid var(--border); padding: 1px 5px; border-radius: 3px; }
+pre { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+      monospace; font-size: 12.5px; background: var(--bg-code);
+      border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px;
+      margin: 6px 0; overflow-x: auto; white-space: pre-wrap;
+      word-wrap: break-word; }
+.header-bar { display: flex; align-items: center; justify-content: space-between;
+              margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+.title-group { flex: 1; min-width: 0; }
+.title-group .subtitle { color: var(--fg-muted); font-size: 13px;
+                         margin-top: 2px; word-break: break-all; }
+.badges { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.badge { display: inline-flex; align-items: center; gap: 6px;
+         padding: 4px 10px; border-radius: 12px; font-size: 12px;
+         font-weight: 600; background: var(--bg-card-2);
+         border: 1px solid var(--border); color: var(--fg); }
+.badge.success { background: color-mix(in srgb, var(--status-success) 20%, var(--bg-card-2));
+                 border-color: var(--status-success); color: var(--status-success); }
+.badge.failure { background: color-mix(in srgb, var(--status-failure) 20%, var(--bg-card-2));
+                 border-color: var(--status-failure); color: var(--status-failure); }
+.badge.error { background: color-mix(in srgb, var(--status-error) 20%, var(--bg-card-2));
+               border-color: var(--status-error); color: var(--status-error); }
+.badge.warning { background: color-mix(in srgb, #f4a52810 20%, var(--bg-card-2));
+                 border-color: #f4a528; color: #f4a528; }
+.badge.neutral { color: var(--fg-muted); }
+.score-pill { display: inline-block; padding: 2px 8px; border-radius: 10px;
+              font-size: 12px; font-weight: 700; min-width: 42px;
+              text-align: center; color: #0b0f14; }
+.score-high { background: var(--score-high); }
+.score-mid { background: var(--score-mid); }
+.score-low { background: var(--score-low); }
+.card { background: var(--bg-card); border: 1px solid var(--border);
+        border-radius: 8px; padding: 16px 20px; margin-bottom: 16px;
+        box-shadow: var(--shadow); }
+.card.highlight { border-left: 4px solid var(--accent); }
+.grid { display: grid; gap: 12px;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+.stat { background: var(--bg-card-2); padding: 10px 12px; border-radius: 6px;
+        border: 1px solid var(--border); }
+.stat .label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;
+               color: var(--fg-muted); margin-bottom: 4px; }
+.stat .value { font-size: 16px; font-weight: 600; }
+table { width: 100%; border-collapse: collapse; margin: 4px 0 12px 0; }
+th, td { text-align: left; padding: 8px 10px;
+         border-bottom: 1px solid var(--border); vertical-align: top;
+         font-size: 13px; }
+th { color: var(--fg-muted); font-weight: 600; font-size: 12px;
+     text-transform: uppercase; letter-spacing: 0.3px; }
+tr:last-child td { border-bottom: none; }
+details { margin: 6px 0; border: 1px solid var(--border); border-radius: 6px;
+          background: var(--bg-card-2); }
+details > summary { cursor: pointer; padding: 8px 12px; user-select: none;
+                    font-weight: 500; list-style: none; }
+details > summary::-webkit-details-marker { display: none; }
+details > summary::before { content: "▸ "; color: var(--fg-dim);
+                            display: inline-block; width: 14px;
+                            transition: transform 0.15s; }
+details[open] > summary::before { content: "▾ "; }
+details .details-body { padding: 0 12px 10px 12px; }
+.tool-row { display: flex; align-items: center; gap: 10px;
+            flex-wrap: wrap; font-size: 13px; }
+.tool-name { font-weight: 600; color: var(--accent); font-family: ui-monospace,
+             SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+.tool-status-ok { color: var(--status-success); font-size: 11px;
+                  font-weight: 600; }
+.tool-status-err { color: var(--status-error); font-size: 11px;
+                   font-weight: 600; }
+.tool-duration { color: var(--fg-muted); font-size: 12px; }
+.tool-seq { color: var(--fg-dim); font-size: 11px; font-weight: 600;
+            min-width: 24px; text-align: right; font-family: ui-monospace,
+            SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+.turn-header { display: flex; justify-content: space-between;
+               align-items: baseline; flex-wrap: wrap; gap: 10px;
+               margin-bottom: 10px; }
+.turn-meta { font-size: 12px; color: var(--fg-muted); }
+.criterion-row td:first-child { font-family: ui-monospace, SFMono-Regular,
+                                 "SF Mono", Menlo, Consolas, monospace;
+                                 color: var(--fg-muted); font-size: 12px; }
+.judge-section { display: flex; flex-direction: column; gap: 12px; }
+.judge-card { padding: 14px 16px; }
+.judge-card-head { display: flex; justify-content: space-between;
+                    align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+.judge-card-title { font-size: 14px; line-height: 1.4; flex: 1; min-width: 0; }
+.judge-card-score { flex-shrink: 0; }
+.judge-rationale { margin-top: 10px; padding: 10px 12px;
+                   background: var(--bg-code); border-radius: 4px;
+                   font-size: 13px; line-height: 1.5; }
+.judge-findings { margin: 8px 0 0 18px; padding-left: 4px; font-size: 13px;
+                   line-height: 1.6; }
+.judge-findings li { margin: 2px 0; }
+.nav-toggle { display: inline-block; padding: 5px 10px; font-size: 12px;
+              background: var(--bg-card-2); border: 1px solid var(--border);
+              border-radius: 5px; color: var(--fg); cursor: pointer; }
+.nav-toggle:hover { background: var(--bg-card); }
+.llm-next-steps { margin: 6px 0 0 20px; padding-left: 0; }
+.llm-next-steps li { margin: 3px 0; }
+.iteration-group { padding: 12px 16px 4px 16px; margin-bottom: 20px;
+                   border-radius: 0 6px 6px 0; border-left: 4px solid var(--status-neutral); }
+/* rgba fallback for browsers without color-mix (Chrome <111, Firefox <113, Safari <16.2). */
+.iteration-group--recovered { border-left-color: var(--status-success);
+                              background: rgba(34, 197, 94, 0.06);
+                              background: color-mix(in srgb, var(--status-success) 6%, transparent); }
+.iteration-group--terminal { border-left-color: var(--status-error);
+                             background: rgba(239, 68, 68, 0.06);
+                             background: color-mix(in srgb, var(--status-error) 6%, transparent); }
+.iteration-group__banner { margin: 0 0 12px 0; font-size: 14px; font-weight: 600; }
+.iteration-group--recovered .iteration-group__banner { color: var(--status-success); }
+.iteration-group--terminal .iteration-group__banner { color: var(--status-error); }
+.attempt-transition { display: flex; align-items: center; gap: 8px;
+                      margin: -6px 0 12px 8px; color: var(--status-error); font-size: 12.5px; }
+.attempt-transition__icon { font-weight: 700; }
+footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--border);
+         color: var(--fg-dim); font-size: 12px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="header-bar">
+  <div class="title-group">
+    <h1>Task: skill-flow-generic-dynamic-node</h1>
+    <div class="subtitle">Connector feature: validate a generic (dynamic) connector node end-to-end. A generic activity encodes only the operation in its node type; the object is supplied dynamically at configure time, so the agent must resolve the object name and set it on the node. Uses ServiceNow&#x27;s generic &quot;List All Records&quot; activity (API `objectName: &quot;acr_user&quot;`) as the concrete generic activity, bound to the tenant&#x27;s ServiceNow connection, then runs `flow debug`. Exercises connector discovery (including connections in non-default folders), generic-activity object-name resolution, connection binding, and live execution. The `acr_user` table is empty in the codereval tenant, so the call legitimately returns `[]`; the checker asserts the node is a generic list activity (Generic-type `list` operation, whatever the registry&#x27;s current node-type slug) on `objectName: &quot;acr_user&quot;`, `finalStatus: &quot;Completed&quot;`, and an array-typed output (empty allowed) rather than requiring rows. Connection note: ServiceNow developer instances hibernate after inactivity. If a run fails with a connection error, log into the ServiceNow account to wake the instance, then re-run.</div>
+  </div>
+  <div class="badges">
+    <span class="badge success">SUCCESS</span>
+    <span class="score-pill score-high">1.00</span>
+    <span class="badge neutral">claude-code · claude-sonnet-5</span>
+    <span class="badge neutral">5m 32s</span>
+    <span class="badge neutral">$1.6939</span>
+    
+    
+    <span class="nav-toggle" onclick="toggleTheme()">Toggle theme</span>
+  </div>
+</div>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Variant</div><div class="value">default</div></div>
+    <div class="stat"><div class="label">Started</div><div class="value mono">2026-08-19T15:34:21</div></div>
+    <div class="stat"><div class="label">Duration</div><div class="value">5m 32s</div></div>
+    <div class="stat"><div class="label">Turns (SDK)</div><div class="value">93</div></div>
+    <div class="stat"><div class="label">Commands</div><div class="value">55</div></div>
+  </div>
+</div>
+
+<h2>Success Criteria <span class="muted" style="font-weight:400">(3/3 passed)</span></h2>
+<div class="card" style="padding:0">
+<table>
+  <thead>
+    <tr>
+      <th style="width:15%">Type</th>
+      <th style="width:35%">Description</th>
+      <th style="width:10%">Score</th>
+      <th>Details</th>
+    </tr>
+  </thead>
+  <tbody>
+    
+<tr class="criterion-row">
+  <td>run_command</td>
+  <td>uip maestro flow validate passes on the flow file</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Command: python3 $EXPERIMENT_TASKS_PATH/uipath-maestro-flow/_shared/validate_flow.py</summary><div class="details-body"><pre style="margin:6px 0 0 0">Command: python3 $EXPERIMENT_TASKS_PATH/uipath-maestro-flow/_shared/validate_flow.py
+Exit code: 0 (expected: 0)
+Stdout:
+Validating AcrUserList/AcrUserList/AcrUserList.flow
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FlowValidate&quot;,
+  &quot;Data&quot;: {
+    &quot;File&quot;: &quot;/work/output/artifacts/skill-flow-generic-dynamic-node/AcrUserList/AcrUserList/AcrUserList.flow&quot;,
+    &quot;Status&quot;: &quot;Valid&quot;
+  }
+}
+
+Stderr:
+[ManifestClient] fetchDynamicNodes ok: total=317 agent context nodes=2 external agent nodes=7 orchestrator nodes=263 IXP nodes=45</pre></div></details></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>command_executed</td>
+  <td>Agent ran flow debug</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Matched 1/1 required commands (filters: tool_name=Bash, pattern=/(uip|\$UIP|\$\{?UIP\}?)\s+(maestro\s+)?flow\s+debug/)</summary><div class="details-body"><pre style="margin:6px 0 0 0">Matched 1/1 required commands (filters: tool_name=Bash, pattern=/(uip|\$UIP|\$\{?UIP\}?)\s+(maestro\s+)?flow\s+debug/)
+Examples: [&#x27;UIPCLI_LOG_LEVEL=info uip maestro flow debug AcrUserList --output json 2&gt;&amp;1 | tail -150&#x27;]</pre></div></details></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>run_command</td>
+  <td>ServiceNow list-all-records node on acr_user executes and surfaces an array output</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Command: python3 $TASK_DIR/check_generic_dynamic_node.py</summary><div class="details-body"><pre style="margin:6px 0 0 0">Command: python3 $TASK_DIR/check_generic_dynamic_node.py
+Exit code: 0 (expected: 0)
+Stdout:
+OK: connector completed and surfaced an array output &#x27;acrUsers&#x27; (0 record(s)). Empty is expected — the acr_user table is empty in this tenant.
+
+Stderr: (empty)</pre></div></details></td>
+</tr>
+
+  </tbody>
+</table>
+</div>
+<h2>Conversation Trace (1 iteration)</h2>
+<div class="card">
+  <div class="turn-header">
+    <h3>Iteration 1</h3>
+    <div class="badges">
+      <span class="badge neutral">93 assistant turns</span>
+      <span class="badge neutral">in 9768 · out 13755 · cache 3504146</span>
+      <span class="badge neutral">4m 52s</span>
+      
+      
+      
+    </div>
+  </div>
+  <details>
+    <summary>Prompt to agent</summary>
+    <div class="details-body"><pre>Your working directory is: /work/output/artifacts/skill-flow-generic-dynamic-node
+
+Create a UiPath Flow project named &quot;AcrUserList&quot; with a manual trigger.
+The process must call ServiceNow to list all records in the Acr User
+object, then surface the returned records as a flow output variable.
+
+Bind it to the tenant&#x27;s ServiceNow connection. Then run the flow with
+`uip maestro flow debug` to confirm the connector call completes.
+
+Use the connection present in Shared/uipath-maestro-flow.
+
+Do NOT ask for approval, confirmation, or feedback. Do NOT pause between
+planning and implementation. Build, validate, and run end-to-end in a single
+pass. Do NOT substitute a mock for the
+connector.
+</pre></div>
+  </details>
+  <details>
+    <summary>Agent response</summary>
+    <div class="details-body"><pre>[ASSISTANT] Scaffold created at `AcrUserList/AcrUserList/AcrUserList.flow`. Let me inspect it and look up node registry details in parallel.
+[ASSISTANT] Found it: `acr_user` object, DisplayName &quot;Account Recovery Enrolled User&quot;, Path `/acr_user`. Now let&#x27;s describe it to get the List operation&#x27;s method/path, then configure the node.
+[ASSISTANT] Node configured. Now let&#x27;s inspect the flow&#x27;s current state, add edges, End node, and output variable.
+[ASSISTANT] Now let&#x27;s add the edges wiring start→listRecords1→endSuccess, declare the output variable, and add the output mapping.
+[ASSISTANT] Now let&#x27;s audit, validate, and format the flow.
+[ASSISTANT] Validation passed. Now let&#x27;s re-run the audit to confirm the layout warnings are resolved, then run `flow debug`.
+[ASSISTANT] The two `UNUSED_BINDING` info messages are a known false-positive pattern for connector-type bindings (matching is name-only, not resourceKey-scoped) — informational only, audit is clean. Now resources refresh, then debug.
+[ASSISTANT] Resources refreshed and the ServiceNow connection was synced. Now let&#x27;s run the flow debug.
+[ASSISTANT] Flow debug completed end-to-end successfully.
+
+**Studio Web URL:** https://alpha.uipath.com/codereval/studio_/designer/1093dedb-beb5-4c87-a475-579a86d23828?solutionId=10e2191c-f28c-4234-5b36-08defdfbd63a
+**Instance ID:** 659862e9-a11a-4d23-b0df-32f3681031a3
+
+Summary:
+- Created solution+project `AcrUserList/AcrUserList/AcrUserList.flow` with a Manual trigger → ServiceNow `List Records` (`acr_user` object) → End.
+- Bound the connector to the tenant&#x27;s default `Shared` ServiceNow connection (`dev225223`, id `4c517348-3c4e-4f05-8d8e-2dfc666410c2`, folder `Shared`).
+- Declared an `out` flow variable `acrUsers` (array), mapped from `=js:$vars.listRecords1.output` on the End node.
+- Audit, validate, and format all passed clean; `flow debug` ran for real (`finalStatus: &quot;Completed&quot;`, all three elements — start, listRecords1, endSuccess — completed with no errors).
+- The connector call itself succeeded; the returned record set was empty (`acrUsers: []`), meaning the tenant&#x27;s `acr_user` table currently has zero rows for this connection/folder — not a wiring or connector failure.
+[RESULT - SUCCESS] Flow debug completed end-to-end successfully.
+
+**Studio Web URL:** https://alpha.uipath.com/codereval/studio_/designer/1093dedb-beb5-4c87-a475-579a86d23828?solutionId=10e2191c-f28c-4234-5b36-08defdfbd63a
+**Instance ID:** 659862e9-a11a-4d23-b0df-32f3681031a3
+
+Summary:
+- Created solution+project `AcrUserList/AcrUserList/AcrUserList.flow` with a Manual trigger → ServiceNow `List Records` (`acr_user` object) → End.
+- Bound the connector to the tenant&#x27;s default `Shared` ServiceNow connection (`dev225223`, id `4c517348-3c4e-4f05-8d8e-2dfc666410c2`, folder `Shared`).
+- Declared an `out` flow variable `acrUsers` (array), mapped from `=js:$vars.listRecords1.output` on the End node.
+- Audit, validate, and format all passed clean; `flow debug` ran for real (`finalStatus: &quot;Completed&quot;`, all three elements — start, listRecords1, endSuccess — completed with no errors).
+- The connector call itself succeeded; the returned record set was empty (`acrUsers: []`), meaning the tenant&#x27;s `acr_user` table currently has zero rows for this connection/folder — not a wiring or connector failure.</pre></div>
+  </details>
+  <h4 style="margin-top:12px">Tool Calls (55)</h4>
+  
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#0</span>
+      <span class="tool-name">Skill</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">10ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;skill&quot;: &quot;tmp:uipath-maestro-flow&quot;,
+  &quot;args&quot;: &quot;Create a UiPath Flow project named \&quot;AcrUserList\&quot; with a manual trigger. The process must call ServiceNow to list all records in the Acr User object, then surface the returned records as a flow output variable. Bind it to the tenant&#x27;s ServiceNow connection found in Shared/uipath-maestro-flow. Then run the flow with `uip maestro flow debug` to confirm the connector call completes end-to-end. Do NOT … (150 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Launching skill: tmp:uipath-maestro-flow</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#1</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.28s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;pwd &amp;&amp; ls -la &amp;&amp; find . -maxdepth 3 -type f -name &#x27;*.uipx&#x27; -print 2&gt;/dev/null; echo \&quot;---Shared---\&quot;; find / -maxdepth 4 -iname \&quot;*Shared*\&quot; -type d 2&gt;/dev/null | grep -v proc; echo \&quot;---search uipath-maestro-flow---\&quot;; find / -iname \&quot;*uipath-maestro-flow*\&quot; -not -path \&quot;*/node_modules/*\&quot; 2&gt;/dev/null | head -50&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/work/output/artifacts/skill-flow-generic-dynamic-node
+total 12
+drwxr-xr-x 3 root root 4096 Aug 19 15:34 .
+drwxr-xr-x 3 root root 4096 Aug 19 15:34 ..
+drwxr-xr-x 4 root root 4096 Aug 19 15:34 .venv
+---Shared---
+/usr/share/dotnet/shared
+---search uipath-maestro-flow---
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow
+/home/azureuser/projects/skills/tmp/original-skills/uipath-maestro-flow
+/home/azureuser/projects/skills/tmp/experiments/classification/flow/classification-uipath-maestro-flow.json
+/home/azureuser/projects/skills/tmp/experiments/classification/flow/archive/classification-uipath-maestro-flow.json
+/home/azureuser/projects/skills/tmp/experiments/classification/flow/archive/classification-details-uipath-maestro-flow.md
+/home/azureuser/projects/skills/tmp/experiments/classification/flow/script-source-map-uipath-maestro-flow.md
+/home/azureuser/projects/skills/tmp/experiments/classification/flow/classification-details-uipath-maestro-flow.md
+/home/azureuser/projects/skills/tmp/experiments/skills/archive/uipath-maestro-flow
+/home/azureuser/projects/skills/tmp/experiments/skills/uipath-maestro-flow
+/home/azureuser/projects/skills/tmp/experiments/tasks/uipath-maestro-
+
+… (truncated, 177 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#2</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">375ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;echo \&quot;---look in /work---\&quot;; find /work -maxdepth 6 -iname \&quot;*Shared*\&quot; 2&gt;/dev/null; echo \&quot;---look for .uipx files anywhere in /work---\&quot;; find /work -iname \&quot;*.uipx\&quot; 2&gt;/dev/null; echo \&quot;---check home dir---\&quot;; find /home -maxdepth 6 -iname \&quot;*Shared*\&quot; 2&gt;/dev/null; echo \&quot;---uip cli available---\&quot;; which uip; uip --version 2&gt;&amp;1 | head -5&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>---look in /work---
+---look for .uipx files anywhere in /work---
+---check home dir---
+---uip cli available---
+/usr/bin/uip
+1.201.0-dev.8272</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#3</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">481ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip login status --output json 2&gt;&amp;1 | head -50&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;LoginStatus&quot;,
+  &quot;Data&quot;: {
+    &quot;Status&quot;: &quot;Logged in&quot;,
+    &quot;Identity&quot;: &quot;zhongyi.shi@uipath.com&quot;,
+    &quot;IdentityType&quot;: &quot;User&quot;,
+    &quot;AuthFlow&quot;: &quot;Interactive&quot;,
+    &quot;CredentialSource&quot;: &quot;SavedLogin&quot;,
+    &quot;Provider&quot;: &quot;File&quot;,
+    &quot;UserId&quot;: &quot;bfda820f-4ddb-4af7-a5ec-3c332b403271&quot;,
+    &quot;UserEmail&quot;: &quot;zhongyi.shi@uipath.com&quot;,
+    &quot;UserName&quot;: &quot;zhongyi.shi@uipath.com&quot;,
+    &quot;BaseUrl&quot;: &quot;https://alpha.uipath.com&quot;,
+    &quot;Organization&quot;: &quot;codereval&quot;,
+    &quot;OrganizationId&quot;: &quot;311c6049-4966-4ef2-a6f3-8ceccaf38d54&quot;,
+    &quot;Tenant&quot;: &quot;DefaultTenant&quot;,
+    &quot;TenantId&quot;: &quot;69d43765-6ede-4575-88b7-9db601a2c056&quot;,
+    &quot;ExpirationDate&quot;: &quot;2026-08-19T16:34:30.000Z&quot;
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#4</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">4.04s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow &amp;&amp; uip maestro flow registry pull --force --output json 2&gt;&amp;1 | tail -20&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>[ManifestClient] fetchDynamicNodes ok: total=4881 connector nodes=3654 integration trigger nodes=896 agent context nodes=2 external agent nodes=7 orchestrator nodes=264 IXP nodes=45 IXP Models nodes=13
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodePullSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;NodesCount&quot;: 4764,
+    &quot;FromCache&quot;: false,
+    &quot;Source&quot;: &quot;authenticated&quot;,
+    &quot;CacheWritten&quot;: true,
+    &quot;Message&quot;: &quot;Synced fresh nodes&quot;
+  }
+}
+Shell cwd was reset to /work/output/artifacts/skill-flow-generic-dynamic-node</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#5</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">903ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow &amp;&amp; uip maestro flow registry search \&quot;servicenow\&quot; --output json --output-filter \&quot;[*].{NodeType:NodeType,DisplayName:DisplayName,Description:Description,AvailableOnTenant:AvailableOnTenant}\&quot; 2&gt;&amp;1 | tail -100&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>      &quot;AvailableOnTenant&quot;: true
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.agent.resource.tool.connector.uipath-servicenow-servicenow.get-record&quot;,
+      &quot;DisplayName&quot;: &quot;Get Record&quot;,
+      &quot;Description&quot;: &quot;Retrieves a record in ServiceNow&quot;,
+      &quot;AvailableOnTenant&quot;: true
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.agent.resource.tool.connector.uipath-servicenow-servicenow.create-incident-task&quot;,
+      &quot;DisplayName&quot;: &quot;Create Incident Task&quot;,
+      &quot;Description&quot;: &quot;Create an incident task to request work from different assignment groups in ServiceNow.&quot;,
+      &quot;AvailableOnTenant&quot;: true
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.agent.resource.tool.connector.uipath-servicenow-servicenow.update-incident-task&quot;,
+      &quot;DisplayName&quot;: &quot;Update Incident Task&quot;,
+      &quot;Description&quot;: &quot;Update an incident task in ServiceNow.&quot;,
+      &quot;AvailableOnTenant&quot;: true
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.agent.resource.tool.connector.uipath-servicenow-servicenow.delete-record&quot;,
+      &quot;DisplayName&quot;: &quot;Delete Record&quot;,
+      &quot;Description&quot;: &quot;Deletes a record in ServiceNow&quot;,
+      &quot;AvailableOnTenant&quot;: true
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.trigger.uipath-servicenow-servicenow.record-updated&quot;,
+      &quot;DisplayName&quot;:
+
+… (truncated, 3054 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#6</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.38s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow &amp;&amp; uip maestro flow registry search \&quot;servicenow\&quot; --output json --output-filter \&quot;[*].{NodeType:NodeType,DisplayName:DisplayName,Description:Description,AvailableOnTenant:AvailableOnTenant}\&quot; 2&gt;&amp;1 &gt; /tmp/sn_search.json; grep -i -E \&quot;list|search|query\&quot; /tmp/sn_search.json -B2 -A2&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeSearchSuccess&quot;,
+  &quot;Data&quot;: [
+    {
+--
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-servicenow-servicenow.list-incident-tasks&quot;,
+      &quot;DisplayName&quot;: &quot;List Incident Tasks&quot;,
+      &quot;Description&quot;: &quot;Retrieve a list of all incident tasks in ServiceNow.&quot;,
+      &quot;AvailableOnTenant&quot;: true
+    },
+--
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-servicenow-servicenow.search-incidents-by-incident-number&quot;,
+      &quot;DisplayName&quot;: &quot;Search Incidents by Incident Number&quot;,
+      &quot;Description&quot;: &quot;Search for incidents in ServiceNow using the incident number.&quot;,
+      &quot;AvailableOnTenant&quot;: true
+    },
+--
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-servicenow-servicenow.list-records&quot;,
+      &quot;DisplayName&quot;: &quot;List Records&quot;,
+      &quot;Description&quot;: &quot;List records in ServiceNow&quot;,
+      &quot;AvailableOnTenant&quot;: true
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-servicenow-servicenow.list-attachments&quot;,
+      &quot;DisplayName&quot;: &quot;List Attachments&quot;,
+      &quot;Description&quot;: &quot;Retrieve all attachment metadata from a ServiceNow record.&quot;,
+      &quot;AvailableOnTenant&quot;: true
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-servicenow-servicenow.list-inciden
+
+… (truncated, 2221 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#7</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.15s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip is connections list \&quot;uipath-servicenow-servicenow\&quot; --all-folders --output json 2&gt;&amp;1 | tail -100&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>      &quot;ByoaConnection&quot;: &quot;No&quot;,
+      &quot;ElementInstanceId&quot;: 354399,
+      &quot;Folder&quot;: &quot;AcrUserListRun&quot;,
+      &quot;FolderKey&quot;: &quot;b5787f0c-6779-468b-94e6-bf4353f87e1d&quot;,
+      &quot;Created&quot;: &quot;2026-06-28T02:12:41.110Z&quot;,
+      &quot;Updated&quot;: &quot;2026-07-30T01:50:37.633Z&quot;
+    },
+    {
+      &quot;Id&quot;: &quot;e3e256f0-aeae-4cef-add0-8268d6d65b8a&quot;,
+      &quot;Name&quot;: &quot;dev225223&quot;,
+      &quot;ConnectorKey&quot;: &quot;uipath-servicenow-servicenow&quot;,
+      &quot;ConnectorName&quot;: &quot;ServiceNow&quot;,
+      &quot;State&quot;: &quot;Failed&quot;,
+      &quot;Owner&quot;: &quot;System&quot;,
+      &quot;IsDefault&quot;: &quot;No&quot;,
+      &quot;ByoaConnection&quot;: &quot;No&quot;,
+      &quot;ElementInstanceId&quot;: 356168,
+      &quot;Folder&quot;: &quot;AcrUserList&quot;,
+      &quot;FolderKey&quot;: &quot;b492b712-bfe0-44fc-bbbf-3ed8c697e621&quot;,
+      &quot;Created&quot;: &quot;2026-07-01T20:19:26.813Z&quot;,
+      &quot;Updated&quot;: &quot;2026-07-30T01:50:38.746Z&quot;
+    },
+    {
+      &quot;Id&quot;: &quot;6a93c94d-1bc9-4d45-beab-e406a6b374af&quot;,
+      &quot;Name&quot;: &quot;dev225223&quot;,
+      &quot;ConnectorKey&quot;: &quot;uipath-servicenow-servicenow&quot;,
+      &quot;ConnectorName&quot;: &quot;ServiceNow&quot;,
+      &quot;State&quot;: &quot;Failed&quot;,
+      &quot;Owner&quot;: &quot;b9f28ba6-3c37-4706-a8fb-e31b82fc4eec&quot;,
+      &quot;IsDefault&quot;: &quot;No&quot;,
+      &quot;ByoaConnection&quot;: &quot;No&quot;,
+      &quot;ElementInstanceId&quot;: 356198,
+      &quot;Folder&quot;: &quot;AcrUserList-new&quot;,
+      &quot;FolderKey&quot;: &quot;d2efd423-8980-4c21-a78f-5aa150aa1d4f&quot;,
+    
+
+… (truncated, 2400 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#8</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">25ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;find . -maxdepth 3 -type f 2&gt;/dev/null; echo \&quot;---\&quot;; ls -la .venv 2&gt;/dev/null | head&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>./.venv/CACHEDIR.TAG
+./.venv/pyvenv.cfg
+./.venv/bin/activate.csh
+./.venv/bin/activate.bat
+./.venv/bin/activate_this.py
+./.venv/bin/pydoc.bat
+./.venv/bin/activate.ps1
+./.venv/bin/activate.xsh
+./.venv/bin/activate.nu
+./.venv/bin/activate
+./.venv/bin/activate.fish
+./.venv/bin/deactivate.bat
+./.venv/.gitignore
+---
+total 28
+drwxr-xr-x 4 root root 4096 Aug 19 15:34 .
+drwxr-xr-x 3 root root 4096 Aug 19 15:34 ..
+-rw-r--r-- 1 root root    1 Aug 19 15:34 .gitignore
+-rw-r--r-- 1 root root   43 Aug 19 15:34 CACHEDIR.TAG
+drwxr-xr-x 2 root root 4096 Aug 19 15:34 bin
+drwxr-xr-x 3 root root 4096 Aug 19 15:34 lib
+lrwxrwxrwx 1 root root    3 Aug 19 15:34 lib64 -&gt; lib
+-rw-r--r-- 1 root root  119 Aug 19 15:34 pyvenv.cfg</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#9</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">452ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip solution init \&quot;AcrUserList\&quot; --output json 2&gt;&amp;1 | tail -30&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;SolutionInit&quot;,
+  &quot;Data&quot;: {
+    &quot;Status&quot;: &quot;Created successfully&quot;,
+    &quot;Path&quot;: &quot;/work/output/artifacts/skill-flow-generic-dynamic-node/AcrUserList/AcrUserList.uipx&quot;,
+    &quot;NextSteps&quot;: &quot;Read /work/output/artifacts/skill-flow-generic-dynamic-node/AcrUserList/AGENTS.md or /work/output/artifacts/skill-flow-generic-dynamic-node/AcrUserList/CLAUDE.md to understand the solution lifecycle, project types that can be used inside a solution, and related uip command references.&quot;
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#10</span>
+      <span class="tool-name">TaskCreate</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">0ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;subject&quot;: &quot;Scaffold AcrUserList Flow project (solution+flow init)&quot;,
+  &quot;description&quot;: &quot;uip solution init AcrUserList, cd into it, uip maestro flow init AcrUserList&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Task #1 created successfully: Scaffold AcrUserList Flow project (solution+flow init)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#11</span>
+      <span class="tool-name">TaskCreate</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">4ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;subject&quot;: &quot;Add manual trigger node&quot;,
+  &quot;description&quot;: &quot;Author the manual trigger as entry point of the flow&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Task #2 created successfully: Add manual trigger node</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#12</span>
+      <span class="tool-name">TaskCreate</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">5ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;subject&quot;: &quot;Add ServiceNow list-records connector node for Acr User object&quot;,
+  &quot;description&quot;: &quot;Use uip maestro flow node add + node configure for uipath.connector.uipath-servicenow-servicenow.list-records, bind to Shared connection (id 4c517348-3c4e-4f05-8d8e-2dfc666410c2, folder Shared/c4359cde-55f0-4f0e-9322-c6cdce74ab4c), object = Acr User&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Task #3 created successfully: Add ServiceNow list-records connector node for Acr User object</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#13</span>
+      <span class="tool-name">TaskCreate</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">3ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;subject&quot;: &quot;Add End node with flow output variable exposing records&quot;,
+  &quot;description&quot;: &quot;Wire list-records output to a flow output variable, add End node&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Task #4 created successfully: Add End node with flow output variable exposing records</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#14</span>
+      <span class="tool-name">TaskCreate</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">0ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;subject&quot;: &quot;Validate, audit, format flow&quot;,
+  &quot;description&quot;: &quot;Run audit_flow.py, uip maestro flow validate, uip maestro flow format&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Task #5 created successfully: Validate, audit, format flow</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#15</span>
+      <span class="tool-name">TaskCreate</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">11ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;subject&quot;: &quot;Run uip maestro flow debug end-to-end&quot;,
+  &quot;description&quot;: &quot;Execute the flow for real against ServiceNow connector, confirm records returned&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Task #6 created successfully: Run uip maestro flow debug end-to-end</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#16</span>
+      <span class="tool-name">TaskUpdate</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">61ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;taskId&quot;: &quot;1&quot;,
+  &quot;status&quot;: &quot;in_progress&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Updated task #1 status</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#17</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">7.23s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-generic-dynamic-node/AcrUserList &amp;&amp; uip maestro flow init \&quot;AcrUserList\&quot; --output json 2&gt;&amp;1 | tail -30&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>2026-08-19 15:35:59 INFO  [ResourceBuilder:ProjectCreateCommandHandler] Creating project [object Object]
+2026-08-19 15:35:59 INFO  [ResourceBuilder:MultiFileSolutionDefinitionProvider] Reading multi-file solution definition for solution %s /work/output/artifacts/skill-flow-generic-dynamic-node/AcrUserList
+2026-08-19 15:35:59 INFO  [ResourceBuilder:ProjectCreateCommandHandler] Generate artefact resources for project [object Object]
+2026-08-19 15:35:59 INFO  [ResourceBuilder:SolutionsMetadataReader] Reading metadata from %s. SolutionsMetadataReader
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FlowInit&quot;,
+  &quot;Data&quot;: {
+    &quot;Status&quot;: &quot;Created successfully&quot;,
+    &quot;Path&quot;: &quot;/work/output/artifacts/skill-flow-generic-dynamic-node/AcrUserList/AcrUserList&quot;,
+    &quot;SolutionRegistration&quot;: {
+      &quot;Status&quot;: &quot;Registered&quot;,
+      &quot;Message&quot;: &quot;Project registered in parent solution.&quot;,
+      &quot;Solution&quot;: &quot;/work/output/artifacts/skill-flow-generic-dynamic-node/AcrUserList/AcrUserList.uipx&quot;,
+      &quot;Project&quot;: &quot;AcrUserList/project.uiproj&quot;,
+      &quot;ProjectId&quot;: &quot;5b06662a-8972-44e5-a9fe-b82be8211b8e&quot;,
+      &quot;Instructions&quot;: &quot;The project is listed in the parent solution manifest.\nPacking or uploading the solution will sync sol
+
+… (truncated, 580 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#18</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">13ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-generic-dynamic-node/AcrUserList/AcrUserList &amp;&amp; cat AcrUserList.flow&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;id&quot;: &quot;25384589-2acf-4727-acee-5e8c0cbf1658&quot;,
+  &quot;version&quot;: &quot;1.9&quot;,
+  &quot;name&quot;: &quot;AcrUserList&quot;,
+  &quot;nodes&quot;: [
+    {
+      &quot;id&quot;: &quot;start&quot;,
+      &quot;type&quot;: &quot;core.trigger.manual&quot;,
+      &quot;typeVersion&quot;: &quot;1.0&quot;,
+      &quot;display&quot;: {
+        &quot;label&quot;: &quot;Manual trigger&quot;
+      },
+      &quot;inputs&quot;: {
+        &quot;entryPointId&quot;: &quot;a8fa7f76-45b0-4ccf-9152-4849d92a966d&quot;,
+        &quot;isDefaultEntryPoint&quot;: true
+      }
+    }
+  ],
+  &quot;edges&quot;: [],
+  &quot;definitions&quot;: [
+    {
+      &quot;nodeType&quot;: &quot;core.trigger.manual&quot;,
+      &quot;version&quot;: &quot;1.0&quot;,
+      &quot;category&quot;: &quot;trigger&quot;,
+      &quot;description&quot;: &quot;Start the process manually&quot;,
+      &quot;tags&quot;: [
+        &quot;trigger&quot;,
+        &quot;start&quot;,
+        &quot;manual&quot;
+      ],
+      &quot;sortOrder&quot;: 80,
+      &quot;display&quot;: {
+        &quot;label&quot;: &quot;Manual trigger&quot;,
+        &quot;icon&quot;: &quot;play&quot;,
+        &quot;shape&quot;: &quot;circle&quot;
+      },
+      &quot;handleConfiguration&quot;: [
+        {
+          &quot;position&quot;: &quot;right&quot;,
+          &quot;handles&quot;: [
+            {
+              &quot;id&quot;: &quot;output&quot;,
+              &quot;type&quot;: &quot;source&quot;,
+              &quot;handleType&quot;: &quot;output&quot;,
+              &quot;showButton&quot;: true,
+              &quot;constraints&quot;: {
+                &quot;forbiddenTargetCategories&quot;: [
+                  &quot;trigger&quot;
+                ]
+              }
+            }
+     
+
+… (truncated, 781 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#19</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">888ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow &amp;&amp; uip maestro flow registry get uipath.connector.uipath-servicenow-servicenow.list-records --output json &gt; /tmp/list_records.json 2&gt;&amp;1; cat /tmp/list_records.json&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeGetSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;Node&quot;: {
+      &quot;nodeType&quot;: &quot;uipath.connector.uipath-servicenow-servicenow.list-records&quot;,
+      &quot;version&quot;: &quot;1.0.0&quot;,
+      &quot;category&quot;: &quot;connector.196599&quot;,
+      &quot;tags&quot;: [
+        &quot;connector&quot;,
+        &quot;activity&quot;
+      ],
+      &quot;sortOrder&quot;: 520,
+      &quot;supportsErrorHandling&quot;: true,
+      &quot;description&quot;: &quot;List records in ServiceNow&quot;,
+      &quot;display&quot;: {
+        &quot;label&quot;: &quot;List Records&quot;,
+        &quot;description&quot;: &quot;List records in ServiceNow&quot;,
+        &quot;icon&quot;: &quot;https://alpha.uipath.com/311c6049-4966-4ef2-a6f3-8ceccaf38d54/studio_/typecache/icons/c47d791851296199b6f1676a0622d84e659de92ef57373bcc67e7456fd529568.svg&quot;,
+        &quot;sourceDisplayName&quot;: &quot;ServiceNow&quot;
+      },
+      &quot;handleConfiguration&quot;: [
+        {
+          &quot;position&quot;: &quot;left&quot;,
+          &quot;handles&quot;: [
+            {
+              &quot;id&quot;: &quot;input&quot;,
+              &quot;type&quot;: &quot;target&quot;,
+              &quot;handleType&quot;: &quot;input&quot;,
+              &quot;label&quot;: &quot;&quot;
+            }
+          ]
+        },
+        {
+          &quot;position&quot;: &quot;right&quot;,
+          &quot;handles&quot;: [
+            {
+              &quot;id&quot;: &quot;output&quot;,
+              &quot;type&quot;: &quot;source&quot;,
+              &quot;handleType&quot;: &quot;output&quot;,
+              &quot;label&quot;: 
+
+… (truncated, 5797 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#20</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.81s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow &amp;&amp; uip maestro flow registry get core.control.trigger.manual --output json &gt; /tmp/manual_trigger.json 2&gt;&amp;1; cat /tmp/manual_trigger.json; echo \&quot;---end---\&quot;; uip maestro flow registry get core.control.end --output json &gt; /tmp/end.json 2&gt;&amp;1; cat /tmp/end.json&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Failure&quot;,
+  &quot;Message&quot;: &quot;Node not found&quot;,
+  &quot;Instructions&quot;: &quot;No node found with node type: core.control.trigger.manual&quot;,
+  &quot;ErrorCode&quot;: &quot;unknown_error&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}
+---end---
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeGetSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;Node&quot;: {
+      &quot;nodeType&quot;: &quot;core.control.end&quot;,
+      &quot;version&quot;: &quot;1.0&quot;,
+      &quot;category&quot;: &quot;control-flow&quot;,
+      &quot;description&quot;: &quot;Mark the end of a process path&quot;,
+      &quot;tags&quot;: [
+        &quot;control-flow&quot;,
+        &quot;end&quot;,
+        &quot;finish&quot;,
+        &quot;complete&quot;
+      ],
+      &quot;sortOrder&quot;: 65,
+      &quot;display&quot;: {
+        &quot;label&quot;: &quot;End&quot;,
+        &quot;icon&quot;: &quot;circle-check&quot;,
+        &quot;shape&quot;: &quot;circle&quot;
+      },
+      &quot;handleConfiguration&quot;: [
+        {
+          &quot;position&quot;: &quot;left&quot;,
+          &quot;handles&quot;: [
+            {
+              &quot;id&quot;: &quot;input&quot;,
+              &quot;type&quot;: &quot;target&quot;,
+              &quot;handleType&quot;: &quot;input&quot;
+            }
+          ]
+        }
+      ],
+      &quot;model&quot;: {
+        &quot;type&quot;: &quot;bpmn:EndEvent&quot;
+      },
+      &quot;runtimeConstraints&quot;: {
+        &quot;exclude&quot;: [
+          &quot;api-function&quot;
+        ]
+      }
+    }
+  }
+}
+Shell cwd was reset to /work/output/artifacts/skill-flow-generic-dynamic-node</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#21</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">459ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/plugins/connector/impl.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Connector Activity Nodes — Implementation
+2	
+3	How to configure connector activity nodes: connection binding, enriched metadata, reference field resolution, and debugging. Connection bindings are emitted by `uip maestro flow node configure` into the flow&#x27;s top-level `bindings[]`; `bindings_v2.json` is regenerated from them at debug/pack time and should never be hand-edited.
+4	
+5	For generic node/edge add, remove, and wiring procedures, see [editing-operations.md](../../editing-operations.md). This guide covers the connector-specific configuration workflow that must follow the generic node add.
+6	
+7	## How Connector Nodes Differ from OOTB
+8	
+9	1. **Connection binding required** — every connector node needs an IS connection (OAuth, API key, etc.) authored in the flow&#x27;s top-level `bindings[]` (which the CLI regenerates into `bindings_v2.json` at debug/pack time). Without it, the node cannot authenticate.
+10	2. **Enriched metadata via `--connection-id`** — call `registry get` with `--connection-id` to get connection-aware field metadata. Without it, only base fields are returned — custom fields, dynamic enums, and reference resolution are missing.
+11	3. **`inputs.detail` object** —
+
+… (truncated, 66612 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#22</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">5ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/shared/cli-commands.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# uip maestro flow — CLI Command Reference
+2	
+3	All commands output `{ &quot;Result&quot;: &quot;Success&quot;|&quot;Failure&quot;, &quot;Code&quot;: &quot;...&quot;, &quot;Data&quot;: { ... } }`. Use `--output json` for programmatic use.
+4	
+5	&gt; For node and edge commands (`node add/remove/list/configure`, `edge add/remove/list`), see the [Author CLI editing strategy](../author/references/editing-operations-cli.md). This file covers project setup, validation, registry, debug, and publishing commands.
+6	
+7	&lt;!--skill-flavor:flow-init-command:start--&gt;
+8	## uip maestro flow init
+9	
+10	Scaffold a new Flow project directory. Outside a solution, `flow init` auto-scaffolds `&lt;ProjectName&gt;Solution/` and nests the project in it. **Prefer creating the solution first** so its name matches the project name (see the [Author greenfield journey — Step 2](../author/references/greenfield.md)).
+11	
+12	```bash
+13	# 1. Create solution first (for naming control)
+14	uip solution init &quot;&lt;SolutionName&gt;&quot; --output json
+15	
+16	# 2. Init the flow project inside the solution folder.
+17	#    Inside a solution directory, `flow init` auto-registers the project with
+18	#    the parent `.uipx`. Outside any solution, it auto-scaffolds
+19	#    `&lt;ProjectName&gt;Solution/&lt;ProjectNa
+
+… (truncated, 21723 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#23</span>
+      <span class="tool-name">TaskUpdate</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">5ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;taskId&quot;: &quot;1&quot;,
+  &quot;status&quot;: &quot;completed&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Updated task #1 status</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#24</span>
+      <span class="tool-name">TaskUpdate</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">5ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;taskId&quot;: &quot;2&quot;,
+  &quot;status&quot;: &quot;completed&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Updated task #2 status</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#25</span>
+      <span class="tool-name">TaskUpdate</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">4ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;taskId&quot;: &quot;3&quot;,
+  &quot;status&quot;: &quot;in_progress&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Updated task #3 status</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#26</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.58s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-generic-dynamic-node/AcrUserList/AcrUserList &amp;&amp; uip maestro flow node add AcrUserList.flow uipath.connector.uipath-servicenow-servicenow.list-records --output json 2&gt;&amp;1 | tail -40&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeAddSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;Node&quot;: {
+      &quot;Id&quot;: &quot;listRecords1&quot;,
+      &quot;Type&quot;: &quot;uipath.connector.uipath-servicenow-servicenow.list-records&quot;,
+      &quot;TypeVersion&quot;: &quot;1.0.0&quot;,
+      &quot;Ui&quot;: {
+        &quot;Position&quot;: {
+          &quot;X&quot;: 0,
+          &quot;Y&quot;: 0
+        }
+      },
+      &quot;Display&quot;: {
+        &quot;Label&quot;: &quot;List Records&quot;
+      },
+      &quot;Inputs&quot;: {}
+    },
+    &quot;DefinitionAdded&quot;: true,
+    &quot;BindingsCreated&quot;: 0,
+    &quot;VariableCount&quot;: 3
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#27</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">3.89s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip is resources list \&quot;uipath-servicenow-servicenow\&quot; --connection-id \&quot;4c517348-3c4e-4f05-8d8e-2dfc666410c2\&quot; --output json --output-filter \&quot;[?contains(DisplayName,&#x27;Acr&#x27;) || contains(DisplayName,&#x27;User&#x27;)].{Name:Name,Path:Path,Custom:Custom,DisplayName:DisplayName}\&quot; 2&gt;&amp;1 | tail -60&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>      &quot;Path&quot;: &quot;/user_allocation_data&quot;,
+      &quot;Custom&quot;: &quot;no&quot;,
+      &quot;DisplayName&quot;: &quot;User Allocation Data&quot;
+    },
+    {
+      &quot;Name&quot;: &quot;sn_bm_client_user_profile&quot;,
+      &quot;Path&quot;: &quot;/sn_bm_client_user_profile&quot;,
+      &quot;Custom&quot;: &quot;no&quot;,
+      &quot;DisplayName&quot;: &quot;User Profile&quot;
+    },
+    {
+      &quot;Name&quot;: &quot;sys_analytics_detection_policy_provider&quot;,
+      &quot;Path&quot;: &quot;/sys_analytics_detection_policy_provider&quot;,
+      &quot;Custom&quot;: &quot;no&quot;,
+      &quot;DisplayName&quot;: &quot;User Experience Analytics Detection Policy Provider&quot;
+    },
+    {
+      &quot;Name&quot;: &quot;sc_category_user_no_mtom&quot;,
+      &quot;Path&quot;: &quot;/sc_category_user_no_mtom&quot;,
+      &quot;Custom&quot;: &quot;no&quot;,
+      &quot;DisplayName&quot;: &quot;Not Available for Users - /sc_category_user_no_mtom&quot;
+    },
+    {
+      &quot;Name&quot;: &quot;sys_analytics_long_inactive_users_login_data&quot;,
+      &quot;Path&quot;: &quot;/sys_analytics_long_inactive_users_login_data&quot;,
+      &quot;Custom&quot;: &quot;no&quot;,
+      &quot;DisplayName&quot;: &quot;User Experience Analytics Long Inactive Users Login&quot;
+    },
+    {
+      &quot;Name&quot;: &quot;cert_user_rel_cond&quot;,
+      &quot;Path&quot;: &quot;/cert_user_rel_cond&quot;,
+      &quot;Custom&quot;: &quot;no&quot;,
+      &quot;DisplayName&quot;: &quot;Certification User Relationship Condition&quot;
+    },
+    {
+      &quot;Name&quot;: &quot;sn_wn_user_content_activity&quot;,
+      &quot;Path&quot;: &quot;/sn_wn_user_content_activity&quot;,
+     
+
+… (truncated, 572 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#28</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">523ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip is resources list \&quot;uipath-servicenow-servicenow\&quot; --connection-id \&quot;4c517348-3c4e-4f05-8d8e-2dfc666410c2\&quot; --output json --output-filter \&quot;[?contains(DisplayName,&#x27;Acr&#x27;) || contains(Name,&#x27;acr&#x27;)]\&quot; 2&gt;&amp;1&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;ResourceList&quot;,
+  &quot;Data&quot;: [
+    {
+      &quot;Name&quot;: &quot;sys_ux_macroponent_rule&quot;,
+      &quot;DisplayName&quot;: &quot;Sys Ux Macroponent Rule&quot;,
+      &quot;Path&quot;: &quot;/sys_ux_macroponent_rule&quot;,
+      &quot;Type&quot;: &quot;standard&quot;,
+      &quot;SubType&quot;: &quot;standard&quot;,
+      &quot;Custom&quot;: &quot;no&quot;,
+      &quot;ElementKey&quot;: &quot;uipath-servicenow-servicenow&quot;
+    },
+    {
+      &quot;Name&quot;: &quot;sys_ux_macroponent_type&quot;,
+      &quot;DisplayName&quot;: &quot;UX Macroponent Type&quot;,
+      &quot;Path&quot;: &quot;/sys_ux_macroponent_type&quot;,
+      &quot;Type&quot;: &quot;standard&quot;,
+      &quot;SubType&quot;: &quot;standard&quot;,
+      &quot;Custom&quot;: &quot;no&quot;,
+      &quot;ElementKey&quot;: &quot;uipath-servicenow-servicenow&quot;
+    },
+    {
+      &quot;Name&quot;: &quot;acr_user&quot;,
+      &quot;DisplayName&quot;: &quot;Account Recovery Enrolled User&quot;,
+      &quot;Path&quot;: &quot;/acr_user&quot;,
+      &quot;Type&quot;: &quot;standard&quot;,
+      &quot;SubType&quot;: &quot;standard&quot;,
+      &quot;Custom&quot;: &quot;no&quot;,
+      &quot;ElementKey&quot;: &quot;uipath-servicenow-servicenow&quot;
+    },
+    {
+      &quot;Name&quot;: &quot;sys_allowlist_macro_template&quot;,
+      &quot;DisplayName&quot;: &quot;Permitted Macro Template&quot;,
+      &quot;Path&quot;: &quot;/sys_allowlist_macro_template&quot;,
+      &quot;Type&quot;: &quot;standard&quot;,
+      &quot;SubType&quot;: &quot;standard&quot;,
+      &quot;Custom&quot;: &quot;no&quot;,
+      &quot;ElementKey&quot;: &quot;uipath-servicenow-servicenow&quot;
+    },
+    {
+      &quot;Name&quot;: &quot;sys_ux_macroponent_data_element_attribute&quot;,
+
+
+… (truncated, 1552 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#29</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.02s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip is resources describe \&quot;uipath-servicenow-servicenow\&quot; \&quot;acr_user\&quot; --connection-id \&quot;4c517348-3c4e-4f05-8d8e-2dfc666410c2\&quot; --operation List --output json 2&gt;&amp;1 | tail -60&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>        &quot;DisplayName&quot;: &quot;Account Recovery Enabled&quot;,
+        &quot;Description&quot;: &quot;Account Recovery Enabled&quot;,
+        &quot;Searchable&quot;: true,
+        &quot;SearchableOperators&quot;: [
+          &quot;in&quot;,
+          &quot;!=&quot;,
+          &quot;=&quot;
+        ],
+        &quot;SearchableNames&quot;: [
+          &quot;account_recovery_enabled&quot;
+        ]
+      },
+      {
+        &quot;Name&quot;: &quot;sys_updated_on&quot;,
+        &quot;Type&quot;: &quot;string&quot;,
+        &quot;DisplayName&quot;: &quot;Sys updated on&quot;,
+        &quot;Description&quot;: &quot;Updated&quot;,
+        &quot;Searchable&quot;: true,
+        &quot;SearchableOperators&quot;: [
+          &quot;&lt;=&quot;,
+          &quot;&lt;&quot;,
+          &quot;&gt;&quot;,
+          &quot;&gt;=&quot;
+        ],
+        &quot;SearchableNames&quot;: [
+          &quot;sys_updated_on&quot;
+        ]
+      },
+      {
+        &quot;Name&quot;: &quot;sys_created_by&quot;,
+        &quot;Type&quot;: &quot;string&quot;,
+        &quot;DisplayName&quot;: &quot;Sys created by&quot;,
+        &quot;Description&quot;: &quot;Created by&quot;,
+        &quot;Searchable&quot;: true,
+        &quot;SearchableOperators&quot;: [
+          &quot;LIKE&quot;,
+          &quot;in&quot;,
+          &quot;!=&quot;,
+          &quot;=&quot;
+        ],
+        &quot;SearchableNames&quot;: [
+          &quot;sys_created_by&quot;
+        ]
+      },
+      {
+        &quot;Name&quot;: &quot;acr_user&quot;,
+        &quot;Type&quot;: &quot;string&quot;,
+        &quot;DisplayName&quot;: &quot;ACR User&quot;,
+        &quot;Description&quot;: &quot;ACR User Value&quot;,
+        &quot;Searchable&quot;: true,
+        &quot;SearchableOp
+
+… (truncated, 4341 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#30</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">9.76s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow node configure AcrUserList.flow listRecords1 \\\n  --detail &#x27;{\&quot;connectionId\&quot;: \&quot;4c517348-3c4e-4f05-8d8e-2dfc666410c2\&quot;, \&quot;folderKey\&quot;: \&quot;c4359cde-55f0-4f0e-9322-c6cdce74ab4c\&quot;, \&quot;method\&quot;: \&quot;GET\&quot;, \&quot;endpoint\&quot;: \&quot;/acr_user\&quot;, \&quot;objectName\&quot;: \&quot;acr_user\&quot;}&#x27; \\\n  --output json 2&gt;&amp;1 | tail -40&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeConfigureSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;NodeId&quot;: &quot;listRecords1&quot;,
+    &quot;BindingsCreated&quot;: 2,
+    &quot;DetailPopulated&quot;: true
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#31</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">16ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cat AcrUserList.flow&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;id&quot;: &quot;25384589-2acf-4727-acee-5e8c0cbf1658&quot;,
+  &quot;version&quot;: &quot;1.9&quot;,
+  &quot;name&quot;: &quot;AcrUserList&quot;,
+  &quot;nodes&quot;: [
+    {
+      &quot;id&quot;: &quot;start&quot;,
+      &quot;type&quot;: &quot;core.trigger.manual&quot;,
+      &quot;typeVersion&quot;: &quot;1.0&quot;,
+      &quot;display&quot;: {
+        &quot;label&quot;: &quot;Manual trigger&quot;
+      },
+      &quot;inputs&quot;: {
+        &quot;entryPointId&quot;: &quot;a8fa7f76-45b0-4ccf-9152-4849d92a966d&quot;,
+        &quot;isDefaultEntryPoint&quot;: true
+      }
+    },
+    {
+      &quot;id&quot;: &quot;listRecords1&quot;,
+      &quot;type&quot;: &quot;uipath.connector.uipath-servicenow-servicenow.list-records&quot;,
+      &quot;typeVersion&quot;: &quot;1.0.0&quot;,
+      &quot;display&quot;: {
+        &quot;label&quot;: &quot;List Records&quot;
+      },
+      &quot;inputs&quot;: {
+        &quot;detail&quot;: {
+          &quot;connector&quot;: &quot;uipath-servicenow-servicenow&quot;,
+          &quot;connectionId&quot;: &quot;4c517348-3c4e-4f05-8d8e-2dfc666410c2&quot;,
+          &quot;connectionResourceId&quot;: &quot;4c517348-3c4e-4f05-8d8e-2dfc666410c2&quot;,
+          &quot;connectionFolderKey&quot;: &quot;c4359cde-55f0-4f0e-9322-c6cdce74ab4c&quot;,
+          &quot;method&quot;: &quot;GET&quot;,
+          &quot;endpoint&quot;: &quot;/acr_user&quot;,
+          &quot;uiPathActivityTypeId&quot;: &quot;7650845b-6301-302f-a03d-887f0334ce07&quot;,
+          &quot;errorState&quot;: {
+            &quot;issues&quot;: []
+          },
+          &quot;configuration&quot;: &quot;=jsonString:{\&quot;essentialConfiguration\&quot;:{\&quot;connectorVersion\&quot;:\&quot;1.5.0\&quot;
+
+… (truncated, 11466 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#32</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">302ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow &amp;&amp; python3 scripts/flow_edit.py add-output-mapping --help 2&gt;&amp;1; echo \&quot;---add-variable---\&quot;; python3 scripts/flow_edit.py add-variable --help 2&gt;&amp;1&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>usage: flow_edit.py add-output-mapping [-h] --flow FLOW --end-node END_NODE
+                                       --var VAR --source SOURCE
+
+options:
+  -h, --help           show this help message and exit
+  --flow FLOW
+  --end-node END_NODE
+  --var VAR
+  --source SOURCE      e.g. =js:$vars.calc.output.amount
+---add-variable---
+usage: flow_edit.py add-variable [-h] --flow FLOW --id ID
+                                 --direction {in,out,inout}
+                                 [--type {string,number,boolean,object,array,file}]
+                                 [--sub-type SUB_TYPE] [--default DEFAULT]
+                                 [--description DESCRIPTION]
+                                 [--trigger-node-id TRIGGER_NODE_ID]
+
+options:
+  -h, --help            show this help message and exit
+  --flow FLOW
+  --id ID
+  --direction {in,out,inout}
+  --type {string,number,boolean,object,array,file}
+  --sub-type SUB_TYPE
+  --default DEFAULT     JSON literal
+  --description DESCRIPTION
+  --trigger-node-id TRIGGER_NODE_ID
+Shell cwd was reset to /work/output/artifacts/skill-flow-generic-dynamic-node</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#33</span>
+      <span class="tool-name">Grep</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">17ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;pattern&quot;: &quot;globals|output variable|direction.*out|flow output&quot;,
+  &quot;path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/shared/variables-and-expressions.md&quot;,
+  &quot;-n&quot;: true,
+  &quot;-i&quot;: true
+}</pre>
+    <h4>Result</h4>
+    <pre>Found 1 file
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/shared/variables-and-expressions.md</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#34</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">11ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/shared/node-output-wiring.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Wiring Node Outputs to Downstream Inputs
+2	
+3	How to reference one node&#x27;s output (or any `$vars.*` value) from another node&#x27;s input fields. This is the **single source of truth** for `=js:` expression rules in `.flow` JSON. All node-type plugins (connector, http, script, decision, end, etc.) defer to this file.
+4	
+5	&gt; **Read this before** writing any field that needs to reference a previous node&#x27;s output, a workflow variable, or any other `$vars.*` / `$metadata.*` value. Skipping `=js:` is the #1 cause of &quot;the value at runtime was the literal string `vars.X.output.Id`&quot; failures (MST-9107).
+6	
+7	---
+8	
+9	## The Rule (one sentence)
+10	
+11	**Any string that references `$vars.*`, `$metadata.*`, or `$self.*` MUST start with `=js:`. Otherwise it is a literal string at runtime.**
+12	
+13	---
+14	
+15	## What Goes Wrong Without `=js:`
+16	
+17	The Flow runtime serializes string fields into BPMN. The serializer rewrites the canvas-form tokens (`$vars` → `vars`) **whether or not the `=js:` prefix is present**. This means a missing prefix is silent — `flow validate` passes, the file looks plausible, but at runtime the BPMN engine sees a plain string and never evaluates it.
+18	
+19	Three failure
+
+… (truncated, 8495 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#35</span>
+      <span class="tool-name">Grep</span>
+      <span class="tool-status-err">ERROR</span>
+      <span class="tool-duration">1ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;pattern&quot;: &quot;core.control.end|outputs\\.|End node&quot;,
+  &quot;path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author&quot;,
+  &quot;-l&quot;: &quot;true&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>&lt;tool_use_error&gt;InputValidationError: Grep failed due to the following issue:
+An unexpected parameter `-l` was provided&lt;/tool_use_error&gt;</pre>
+    <h4>Error</h4><pre>&lt;tool_use_error&gt;InputValidationError: Grep failed due to the following issue:
+An unexpected parameter `-l` was provided&lt;/tool_use_error&gt;</pre>
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#36</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">300ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow &amp;&amp; python3 scripts/flow_edit.py add-node --help 2&gt;&amp;1; echo \&quot;---add-edge---\&quot;; python3 scripts/flow_edit.py add-edge --help 2&gt;&amp;1&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>usage: flow_edit.py add-node [-h] --flow FLOW --id ID --type TYPE
+                             [--type-version TYPE_VERSION] [--label LABEL]
+                             [--definition-file DEFINITION_FILE]
+                             [--inputs INPUTS] [--outputs OUTPUTS]
+                             [--allow-cli-owned]
+
+options:
+  -h, --help            show this help message and exit
+  --flow FLOW
+  --id ID               camelCase, must start with a letter
+  --type TYPE
+  --type-version TYPE_VERSION
+                        omit when --definition-file supplies it
+  --label LABEL
+  --definition-file DEFINITION_FILE
+                        `uip maestro flow registry get &lt;type&gt; --output json`
+                        saved to a file
+  --inputs INPUTS       JSON object for inputs
+  --outputs OUTPUTS     auto | none | comma-separated output ids
+  --allow-cli-owned     override the CLI-owned refusal
+---add-edge---
+usage: flow_edit.py add-edge [-h] --flow FLOW --source SOURCE
+                             --source-port SOURCE_PORT --target TARGET
+                             --target-port TARGET_PORT [--id ID]
+
+options:
+  -h, --help            show this help message and exit
+  --flow FLOW
+ 
+
+… (truncated, 273 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#37</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">35ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;sed -n &#x27;1,400p&#x27; /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/scripts/flow_edit.py | grep -n \&quot;add_output_mapping\\|add-output-mapping\\|def cmd_add_output\&quot; -A 40 | head -80&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>266:        hint = &quot;; map it on every reachable End node (add-output-mapping)&quot;
+267-    print(&quot;declared %s variable %s%s&quot; % (args.direction, args.id, hint))
+268-    return 0
+269-
+270-
+271:def add_output_mapping(args):
+272-    flow = fl.load(args.flow)
+273-    nodes = fl.node_map(flow)
+274-    if args.end_node not in nodes:
+275-        fl.die(&quot;no node with id %r&quot; % args.end_node)
+276-    node = nodes[args.end_node]
+277-    if not fl.is_terminal(node.get(&quot;type&quot;, &quot;&quot;)):
+278-        fl.die(&quot;%s is %s, not an End/terminate node&quot; % (args.end_node, node.get(&quot;type&quot;)))
+279-    node.setdefault(&quot;outputs&quot;, {})[args.var] = {&quot;source&quot;: args.source}
+280-    fl.save(args.flow, flow)
+281-    print(&quot;mapped %s on %s&quot; % (args.var, args.end_node))
+282-    return 0
+283-
+284-
+285-def add_variable_update(args):
+286-    flow = fl.load(args.flow)
+287-    nodes = fl.node_map(flow)
+288-    if args.node not in nodes:
+289-        fl.die(&quot;no node with id %r&quot; % args.node)
+290-    declared = {v.get(&quot;id&quot;): v for v in flow[&quot;variables&quot;][&quot;globals&quot;] if isinstance(v, dict)}
+291-    var = declared.get(args.variable)
+292-    if var is None:
+293-        fl.die(&quot;variable %r is not declared in variables.globals&quot; % args.variable)
+
+… (truncated, 2015 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#38</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">23ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;sed -n &#x27;200,270p&#x27; /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/scripts/flow_edit.py&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>    print(&quot;added edge %s%s&quot; % (eid, &quot;; set inputs.errorHandlingEnabled on &quot; + args.source if flagged else &quot;&quot;))
+    return 0
+
+
+def delete_edge(args):
+    flow = fl.load(args.flow)
+    if args.id:
+        keep = [e for e in flow[&quot;edges&quot;] if e.get(&quot;id&quot;) != args.id]
+    elif args.source and args.target:
+        keep = [
+            e for e in flow[&quot;edges&quot;]
+            if not (e.get(&quot;sourceNodeId&quot;) == args.source and e.get(&quot;targetNodeId&quot;) == args.target
+                    and (args.source_port is None or e.get(&quot;sourcePort&quot;) == args.source_port))
+        ]
+    else:
+        fl.die(&quot;pass --id, or both --source and --target&quot;)
+    removed = len(flow[&quot;edges&quot;]) - len(keep)
+    if removed == 0:
+        fl.die(&quot;no matching edge found&quot;)
+    flow[&quot;edges&quot;] = keep
+    fl.save(args.flow, flow)
+    print(&quot;deleted %d edge(s)&quot; % removed)
+    return 0
+
+
+def set_input(args):
+    flow = fl.load(args.flow)
+    nodes = fl.node_map(flow)
+    if args.node not in nodes:
+        fl.die(&quot;no node with id %r&quot; % args.node)
+    node = nodes[args.node]
+    if fl.is_cli_owned(node.get(&quot;type&quot;, &quot;&quot;)) and args.key.split(&quot;.&quot;)[0] == &quot;detail&quot; and not args.allow_cli_owned:
+        fl.die(&quot;inputs.detail on %s is CLI-owned: us
+
+… (truncated, 1359 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#39</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">20ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -n \&quot;globals\&quot; /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/scripts/flow_edit.py /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/scripts/flowlib.py 2&gt;/dev/null | head -30; echo \&quot;---\&quot;; find /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/scripts -iname \&quot;*.py\&quot; | xargs grep -ln \&quot;def load\&quot; &quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/scripts/flow_edit.py:250:    globs = flow[&quot;variables&quot;][&quot;globals&quot;]
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/scripts/flow_edit.py:290:    declared = {v.get(&quot;id&quot;): v for v in flow[&quot;variables&quot;][&quot;globals&quot;] if isinstance(v, dict)}
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/scripts/flow_edit.py:293:        fl.die(&quot;variable %r is not declared in variables.globals&quot; % args.variable)
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/scripts/flow_edit.py:350:    v = sub.add_parser(&quot;add-variable&quot;, help=&quot;declare a workflow variable in variables.globals&quot;)
+---
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/scripts/flow_lib.py</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#40</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">14ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -n \&quot;globals\\|def load\\|def save\\|variables\&quot; /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/scripts/flow_lib.py | head -40&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>25:def load(path):
+38:    data.setdefault(&quot;variables&quot;, {})
+39:    data[&quot;variables&quot;].setdefault(&quot;globals&quot;, [])
+40:    data[&quot;variables&quot;].setdefault(&quot;nodes&quot;, [])
+46:def save(path, flow):</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#41</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">200ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow &amp;&amp; python3 scripts/node_ownership.py --type core.control.end 2&gt;&amp;1&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>EDIT core.control.end                               user-owned: author the .flow JSON with Edit (or Write when no CLI-owned node is present)
+tools: user-owned -&gt; Edit / Write on &lt;Project&gt;.flow; CLI-owned -&gt; uip maestro flow node add + uip maestro flow node configure
+Shell cwd was reset to /work/output/artifacts/skill-flow-generic-dynamic-node</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#42</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">147ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow &amp;&amp; \\\npython3 scripts/flow_edit.py add-node \\\n  --flow /work/output/artifacts/skill-flow-generic-dynamic-node/AcrUserList/AcrUserList/AcrUserList.flow \\\n  --id endSuccess --type core.control.end --definition-file /tmp/end.json --label \&quot;End\&quot; \\\n  --outputs none 2&gt;&amp;1&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>added node endSuccess (core.control.end v1.0); definition added; variables.nodes +0
+Shell cwd was reset to /work/output/artifacts/skill-flow-generic-dynamic-node</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#43</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">754ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;FLOW=/work/output/artifacts/skill-flow-generic-dynamic-node/AcrUserList/AcrUserList/AcrUserList.flow\ncd /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow &amp;&amp; \\\npython3 scripts/flow_edit.py add-edge --flow \&quot;$FLOW\&quot; --source start --source-port output --target listRecords1 --target-port input &amp;&amp; \\\npython3 scripts/flow_edit.py add-edge --flow \&quot;$FLOW\&quot; --source listRecords1 --source-port out… (364 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>added edge edge_start_output_listRecords1_input
+added edge edge_listRecords1_output_endSuccess_input
+declared out variable acrUsers; map it on every reachable End node (add-output-mapping)
+mapped acrUsers on endSuccess
+Shell cwd was reset to /work/output/artifacts/skill-flow-generic-dynamic-node</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#44</span>
+      <span class="tool-name">TaskUpdate</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">3ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;taskId&quot;: &quot;3&quot;,
+  &quot;status&quot;: &quot;completed&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Updated task #3 status</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#45</span>
+      <span class="tool-name">TaskUpdate</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">3ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;taskId&quot;: &quot;4&quot;,
+  &quot;status&quot;: &quot;completed&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Updated task #4 status</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#46</span>
+      <span class="tool-name">TaskUpdate</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">3ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;taskId&quot;: &quot;5&quot;,
+  &quot;status&quot;: &quot;in_progress&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Updated task #5 status</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#47</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">140ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;FLOW=/work/output/artifacts/skill-flow-generic-dynamic-node/AcrUserList/AcrUserList/AcrUserList.flow\ncd /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow &amp;&amp; python3 scripts/audit_flow.py \&quot;$FLOW\&quot; 2&gt;&amp;1&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>topology      0 error(s), 0 warning(s), 0 info
+expressions   0 error(s), 0 warning(s), 0 info
+jint          0 error(s), 0 warning(s), 0 info
+bindings      0 error(s), 0 warning(s), 2 info
+    info    UNUSED_BINDING             bindings                                 no resource node needs (resourceKey=4c517348-3c4e-4f05-8d8e-2dfc666410c2, name=FolderKey)
+    info    UNUSED_BINDING             bindings                                 no resource node needs (resourceKey=4c517348-3c4e-4f05-8d8e-2dfc666410c2, name=uipath-servicenow-servicenow connection)
+runtime-gaps  0 error(s), 2 warning(s), 0 info
+    warning LAYOUT_SIZE_MISMATCH       listRecords1                             size NonexNone disagrees with this node&#x27;s shape (96x96); Studio Web renders it misshapen until `flow format` runs
+    warning LAYOUT_SIZE_MISMATCH       start                                    size NonexNone disagrees with this node&#x27;s shape (96x96); Studio Web renders it misshapen until `flow format` runs
+audit: clean
+Shell cwd was reset to /work/output/artifacts/skill-flow-generic-dynamic-node</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#48</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">8.08s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;FLOW=/work/output/artifacts/skill-flow-generic-dynamic-node/AcrUserList/AcrUserList/AcrUserList.flow\nuip maestro flow format \&quot;$FLOW\&quot; --output json 2&gt;&amp;1\necho \&quot;---validate---\&quot;\nuip maestro flow validate \&quot;$FLOW\&quot; --output json 2&gt;&amp;1&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FlowFormat&quot;,
+  &quot;Data&quot;: {
+    &quot;File&quot;: &quot;/work/output/artifacts/skill-flow-generic-dynamic-node/AcrUserList/AcrUserList/AcrUserList.flow&quot;,
+    &quot;NodesTotal&quot;: 3,
+    &quot;EdgesTotal&quot;: 2,
+    &quot;NodesRepositioned&quot;: 2,
+    &quot;NodesResized&quot;: 2,
+    &quot;SubflowsTidied&quot;: 0,
+    &quot;VariableCount&quot;: 4
+  },
+  &quot;Instructions&quot;: &quot;Repositioned 2 of 3 nodes. Set canonical size on 2 node(s)&quot;
+}
+---validate---
+[ManifestClient] fetchDynamicNodes ok: total=317 agent context nodes=2 external agent nodes=7 orchestrator nodes=263 IXP nodes=45
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FlowValidate&quot;,
+  &quot;Data&quot;: {
+    &quot;File&quot;: &quot;/work/output/artifacts/skill-flow-generic-dynamic-node/AcrUserList/AcrUserList/AcrUserList.flow&quot;,
+    &quot;Status&quot;: &quot;Valid&quot;
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#49</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">207ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;FLOW=/work/output/artifacts/skill-flow-generic-dynamic-node/AcrUserList/AcrUserList/AcrUserList.flow\ncd /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow &amp;&amp; python3 scripts/audit_flow.py \&quot;$FLOW\&quot; 2&gt;&amp;1&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>topology      0 error(s), 0 warning(s), 0 info
+expressions   0 error(s), 0 warning(s), 0 info
+jint          0 error(s), 0 warning(s), 0 info
+bindings      0 error(s), 0 warning(s), 2 info
+    info    UNUSED_BINDING             bindings                                 no resource node needs (resourceKey=4c517348-3c4e-4f05-8d8e-2dfc666410c2, name=FolderKey)
+    info    UNUSED_BINDING             bindings                                 no resource node needs (resourceKey=4c517348-3c4e-4f05-8d8e-2dfc666410c2, name=uipath-servicenow-servicenow connection)
+runtime-gaps  0 error(s), 0 warning(s), 0 info
+audit: clean
+Shell cwd was reset to /work/output/artifacts/skill-flow-generic-dynamic-node</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#50</span>
+      <span class="tool-name">TaskUpdate</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">3ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;taskId&quot;: &quot;5&quot;,
+  &quot;status&quot;: &quot;completed&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Updated task #5 status</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#51</span>
+      <span class="tool-name">TaskUpdate</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">2ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;taskId&quot;: &quot;6&quot;,
+  &quot;status&quot;: &quot;in_progress&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Updated task #6 status</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#52</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">8.98s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-generic-dynamic-node/AcrUserList &amp;&amp; uip solution resources refresh --solution-folder . --output json 2&gt;&amp;1 | tail -60&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>2026-08-19 15:38:40 INFO  [ResourceBuilder:SolutionsMetadataReader] Reading metadata from %s. SolutionsMetadataReader
+2026-08-19 15:38:40 INFO  [ResourceBuilder:MultiFileSolutionDefinitionProvider] Reading multi-file solution definition for solution %s /work/output/artifacts/skill-flow-generic-dynamic-node/AcrUserList
+2026-08-19 15:38:41 INFO  [ResourceBuilder:AddOrUpdateResourceToSolutionCommandHandler] Add or update resource 4c517348-3c4e-4f05-8d8e-2dfc666410c2 of type connection to solution.
+2026-08-19 15:38:41 INFO  [ResourceBuilder:SolutionsMetadataReader] Reading metadata from %s. SolutionsMetadataReader
+2026-08-19 15:38:41 INFO  [ResourceBuilder:ImportResourceHelper] ExportResourceAsync: Exporting resource 4c517348-3c4e-4f05-8d8e-2dfc666410c2 from integrationservice.uipath.com
+2026-08-19 15:38:41 INFO  [ResourceBuilder:ImportResourceHelper] ExportResourceAsync: Resource reference: {
+  &quot;kind&quot;: &quot;connection&quot;,
+  &quot;type&quot;: &quot;uipath-servicenow-servicenow&quot;,
+  &quot;key&quot;: &quot;4c517348-3c4e-4f05-8d8e-2dfc666410c2&quot;,
+  &quot;name&quot;: &quot;dev225223&quot;,
+  &quot;folder&quot;: {
+    &quot;fullyQualifiedName&quot;: &quot;Shared&quot;,
+    &quot;folderKey&quot;: &quot;c4359cde-55f0-4f0e-9322-c6cdce74ab4c&quot;,
+    &quot;path&quot;: &quot;c4359cde-55f0-4f0e-9322-c6cdce74ab4c&quot;
+ 
+
+… (truncated, 4936 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#53</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">16.35s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;UIPCLI_LOG_LEVEL=info uip maestro flow debug AcrUserList --output json 2&gt;&amp;1 | tail -150&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>2026-08-19 15:38:53 INFO  [ResourceBuilder:ReconcileProjectsCommandHandler] Reconcile projects for solution {solutionKey} [object Object]
+2026-08-19 15:38:53 INFO  [ResourceBuilder:MultiFileSolutionDefinitionProvider] Reading multi-file solution definition for solution %s /tmp/.flow-debug-staging-AcrUserList-1787153933189
+2026-08-19 15:38:53 INFO  [ResourceBuilder:SolutionsMetadataReader] Reading metadata from %s. SolutionsMetadataReader
+2026-08-19 15:38:53 INFO  [ResourceBuilder:MultiFileSolutionDefinitionProvider] Reading multi-file solution definition for solution %s /tmp/.flow-debug-staging-AcrUserList-1787153933189
+2026-08-19 15:38:54 INFO  [ResourceBuilder:AddOrUpdateResourceToSolutionCommandHandler] Add or update resource 4c517348-3c4e-4f05-8d8e-2dfc666410c2 of type connection to solution.
+2026-08-19 15:38:54 INFO  [ResourceBuilder:SolutionsMetadataReader] Reading metadata from %s. SolutionsMetadataReader
+2026-08-19 15:38:54 INFO  [ResourceBuilder:ImportResourceHelper] ExportResourceAsync: Exporting resource 4c517348-3c4e-4f05-8d8e-2dfc666410c2 from integrationservice.uipath.com
+2026-08-19 15:38:54 INFO  [ResourceBuilder:ImportResourceHelper] ExportResourceAsync: Resource re
+
+… (truncated, 7474 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#54</span>
+      <span class="tool-name">TaskUpdate</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">3ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;taskId&quot;: &quot;6&quot;,
+  &quot;status&quot;: &quot;completed&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Updated task #6 status</pre>
+    
+  </div>
+</details>
+
+</div>
+
+<h2>Command Telemetry</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Total</div><div class="value">55</div></div>
+    <div class="stat"><div class="label">Successful</div><div class="value">54 (98%)</div></div>
+    <div class="stat"><div class="label">Failed</div><div class="value">1</div></div>
+    <div class="stat"><div class="label">Avg / cmd</div><div class="value">1.33s</div></div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 2fr;gap:16px;margin-top:12px">
+    <div>
+      <h4>By Tool</h4>
+      <table>
+        <thead><tr><th>Tool</th><th>Count</th></tr></thead>
+        <tbody><tr><td class='mono'>Bash</td><td>33</td></tr><tr><td class='mono'>TaskUpdate</td><td>10</td></tr><tr><td class='mono'>TaskCreate</td><td>6</td></tr><tr><td class='mono'>Read</td><td>3</td></tr><tr><td class='mono'>Grep</td><td>2</td></tr><tr><td class='mono'>Skill</td><td>1</td></tr></tbody>
+      </table>
+    </div>
+    <div>
+      <h4>Slowest</h4>
+      <table>
+        <thead><tr><th>Tool</th><th>Duration</th><th>Parameters</th></tr></thead>
+        <tbody><tr><td class='mono'>Bash</td><td>16.35s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;UIPCLI_LOG_LEVEL=info uip maestro flo...</td></tr><tr><td class='mono'>Bash</td><td>9.76s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro flow node configure AcrUs...</td></tr><tr><td class='mono'>Bash</td><td>8.98s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;cd /work/output/artifacts/skill-flow-...</td></tr><tr><td class='mono'>Bash</td><td>8.08s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;FLOW=/work/output/artifacts/skill-flo...</td></tr><tr><td class='mono'>Bash</td><td>7.23s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;cd /work/output/artifacts/skill-flow-...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+  <p><strong>Most Common Pattern:</strong> <code>Bash → Bash → Bash</code></p><p><strong>Skill Tool Invoked:</strong> 1 time(s)</p>
+</div>
+
+<h2>Generation Metrics</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Total Latency</div><div class="value">5m 32s</div></div>
+    <div class="stat"><div class="label">Turns</div><div class="value">1</div></div>
+    <div class="stat"><div class="label">Assistant Turns</div><div class="value">93</div></div>
+    <div class="stat"><div class="label">Avg Turn Latency</div><div class="value">4m 52s</div></div>
+    
+  </div>
+</div>
+
+<h2>Token Usage</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Input (uncached)</div><div class="value">9,768</div></div>
+    <div class="stat"><div class="label">Output</div><div class="value">13,755</div></div>
+    <div class="stat"><div class="label">Cache Write</div><div class="value">108,528</div></div>
+    <div class="stat"><div class="label">Cache Read</div><div class="value">3,504,146</div></div>
+    <div class="stat"><div class="label">Total</div><div class="value">3,636,197</div></div>
+    <div class="stat"><div class="label">Cost</div><div class="value">$1.6939</div></div>
+  </div>
+</div>
+
+<h2>Agent Settings</h2>
+<div class="card" style="padding:0">
+  <table>
+    <tbody><tr><td class='mono dim'>Permission Mode</td><td>acceptEdits</td></tr><tr><td class='mono dim'>Allowed Tools</td><td>Skill, Bash, Read, Write, Edit, Glob, Grep</td></tr><tr><td class='mono dim'>Model</td><td>us.anthropic.claude-sonnet-5</td></tr><tr><td class='mono dim'>Max Turns</td><td>120</td></tr><tr><td class='mono dim'>System Prompt</td><td>You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted. </td></tr><tr><td class='mono dim'>System Prompt Mode</td><td>append</td></tr><tr><td class='mono dim'>Plugins</td><td>/home/azureuser/projects/skills/tmp</td></tr></tbody>
+  </table>
+</div>
+
+<h2>Environment</h2>
+<div class="card" style="padding:0">
+  <table>
+    <tbody><tr><td class='mono dim'>git_commit</td><td>unknown</td></tr><tr><td class='mono dim'>skills_git_commit</td><td>unknown</td></tr><tr><td class='mono dim'>cli_version</td><td>1.201.0-dev.8272</td></tr><tr><td class='mono dim'>tool_plugins</td><td>{&#x27;admin-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;agent-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;agenthub-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;aops-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;api-workflow-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;automation-hub-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;codedagent-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;codedapp-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;coder-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;context-grounding-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;conversational-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;data-fabric-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;docsai-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;function-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;gov-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;guardrails-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;insights-tool&#x27;: &#x27;1.201.0-dev.8276&#x27;, &#x27;integrationservice-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;ixp-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;llm-gateway-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;llmgw-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;maestro-tool&#x27;: &#x27;1.201.0-dev.8275&#x27;, &#x27;model-hub-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;orchestrator-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;platform-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;pm-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;rpa-legacy-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;rpa-tool&#x27;: &#x27;1.201.0-dev.20260809.3&#x27;, &#x27;solution-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;tasks-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;test-manager-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;traces-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;vertical-solutions-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;}</td></tr><tr><td class='mono dim'>coder_eval</td><td>0.9.6</td></tr><tr><td class='mono dim'>claude_code_cli</td><td>2.1.177 (Claude Code)</td></tr><tr><td class='mono dim'>uv</td><td>uv 0.12.5 (x86_64-unknown-linux-gnu)</td></tr><tr><td class='mono dim'>anthropic</td><td>0.122.0</td></tr><tr><td class='mono dim'>openai</td><td>3.2.0</td></tr><tr><td class='mono dim'>pydantic</td><td>2.12.5</td></tr><tr><td class='mono dim'>api_routing</td><td>aws_bedrock</td></tr><tr><td class='mono dim'>eval_routing</td><td>aws_bedrock</td></tr><tr><td class='mono dim'>aws_region</td><td>us-east-2</td></tr><tr><td class='mono dim'>bedrock_model</td><td>us.anthropic.claude-sonnet-4-6</td></tr><tr><td class='mono dim'>system_prompt_semantics</td><td>append</td></tr></tbody>
+  </table>
+</div>
+
+<footer>Generated by coder_eval · 2026-08-19T15:39:53</footer>
+</div>
+<script>
+function toggleTheme() {
+  document.documentElement.classList.toggle('light');
+  try {
+    const mode = document.documentElement.classList.contains('light') ? 'light' : 'dark';
+    localStorage.setItem('coder-eval-theme', mode);
+  } catch (e) { /* ignore */ }
+}
+(function() {
+  try {
+    if (localStorage.getItem('coder-eval-theme') === 'light') {
+      document.documentElement.classList.add('light');
+    }
+  } catch (e) { /* ignore */ }
+})();
+</script>
+</body>
+</html>

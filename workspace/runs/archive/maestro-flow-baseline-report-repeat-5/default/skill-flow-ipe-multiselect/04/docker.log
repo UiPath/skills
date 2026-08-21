@@ -1,0 +1,6 @@
+20:53:20 [INFO   ] [default/skill-flow-ipe-multiselect/04] orchestrator: API routing: aws_bedrock
+21:00:52 [INFO   ] [default/skill-flow-ipe-multiselect/04] orchestrator: Success criteria: 4/4 passed, weighted score: 1.000
+21:00:52 [WARNING] [default/skill-flow-ipe-multiselect/04] orchestrator: Visible turns (38) exceeded expected_turns (37) at iteration 1 for task skill-flow-ipe-multiselect. Run continues — max_turns remains the hard cap.
+21:00:52 [INFO   ] [default/skill-flow-ipe-multiselect/04] orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+21:00:52 [INFO   ] [default/skill-flow-ipe-multiselect/04] orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-ipe-multiselect
+21:00:52 [INFO   ] [default/skill-flow-ipe-multiselect/04] orchestrator: Task finished: status=SUCCESS duration=456.3s score=1.000 iterations=1

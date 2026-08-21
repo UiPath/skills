@@ -1,0 +1,5002 @@
+{
+ "meta": {
+  "opt_run": "/home/azureuser/projects/skills/tmp/coder_eval/runs/maestro-bpmn-optimized-inline-sonnet-5",
+  "base_run": "/home/azureuser/projects/skills/tmp/coder_eval/runs/maestro-bpmn-baseline-sonnet-5",
+  "recon_max_err_usd": 2.6645352591003757e-15,
+  "recon_files": 140,
+  "rates": {
+   "output": 1.5e-05,
+   "cache_read": 3e-07,
+   "cache_create": 3.75e-06,
+   "uncached": 3e-06
+  },
+  "floors": {
+   "tool_calls": 6,
+   "turns": 6,
+   "tr_tok": 20000,
+   "output_tok": 20000
+  },
+  "real_thresholds": {
+   "tool_calls": 3,
+   "turns": 3,
+   "tr_tok": 5000,
+   "output_tok": 5000
+  },
+  "n_both_solved": 57,
+  "opt_tasks": 70,
+  "base_tasks": 70
+ },
+ "rows": [
+  {
+   "task": "skill-bpmn-http-weather",
+   "task_description": "HTTP activity eval: agent uses the uipath-maestro-bpmn skill to model a connectionless HTTP call to a public weather API (Open-Meteo) as a bpmn:sendTask with the registry Intsvc.HttpExecution wrapper in manual mode, capturing the response into a declared variable. Ports the Flow Open-Meteo weather single-node test to a connectionless BPMN HTTP node. Authoring only \u2014 no cloud effects, no live call.",
+   "opt": {
+    "n": 1,
+    "thk_tok": 0.0,
+    "tr_tok": 25494.0,
+    "tool_calls": 39.0,
+    "turns": 39.0,
+    "cost": 1.2649815,
+    "time": 265.0589551925659,
+    "output_tok": 17980.0,
+    "thk_sec": 165.21799246100272,
+    "cache_read": 2513850.0,
+    "cache_create": 63646.0,
+    "uncached": 818.0,
+    "inline_py": 4.0,
+    "uip_verbs": {
+     "--version 2": 1.0,
+     "maestro bpmn registry": 1.0,
+     "maestro bpmn init": 1.0,
+     "maestro bpmn validate": 2.0,
+     "maestro bpmn format": 1.0
+    },
+    "bundled_scripts": {},
+    "reps": [
+     "00"
+    ]
+   },
+   "base": {
+    "n": 1,
+    "thk_tok": 26.0,
+    "tr_tok": 60980.0,
+    "tool_calls": 83.0,
+    "turns": 83.0,
+    "cost": 3.6081166500000004,
+    "time": 674.6098079681396,
+    "output_tok": 57921.0,
+    "thk_sec": 504.043179366001,
+    "cache_read": 6939198.0,
+    "cache_create": 175223.0,
+    "uncached": 152.0,
+    "inline_py": 15.0,
+    "uip_verbs": {
+     "maestro bpmn registry": 4.0,
+     "maestro bpmn validate": 1.0
+    },
+    "bundled_scripts": {
+     "check_http_weather": 1.0
+    },
+    "reps": [
+     "00"
+    ]
+   },
+   "delta": {
+    "thk_tok": -26.0,
+    "thk_sec": -338.8251869049983,
+    "tr_tok": -35486.0,
+    "tool_calls": -44.0,
+    "turns": -44.0,
+    "cost": -2.34313515,
+    "time": -409.55085277557373,
+    "output_tok": -39941.0,
+    "cache_read": -4425348.0,
+    "cache_create": -111577.0,
+    "uncached": 666.0
+   },
+   "real_levers": [
+    "tool_calls",
+    "turns",
+    "tr_tok",
+    "output_tok"
+   ],
+   "is_real": true,
+   "opt_success_reps": 1,
+   "base_success_reps": 1,
+   "opt_kept": 1,
+   "base_kept": 1,
+   "opt_dropped": 0,
+   "base_dropped": 0,
+   "opt_bursts": [
+    []
+   ],
+   "base_bursts": [
+    []
+   ]
+  },
+  {
+   "task": "skill-bpmn-hitl-completed-wired",
+   "task_description": "Smoke test (ported from flow hitl/smoke_02): agent places an Actions.HITL user task and wires its completion outcome to a downstream step that reaches an end event \u2014 the BPMN equivalent of wiring the flow HITL \"completed\" port to the next node.",
+   "opt": {
+    "n": 1,
+    "thk_tok": 0.0,
+    "tr_tok": 32104.0,
+    "tool_calls": 41.0,
+    "turns": 41.0,
+    "cost": 1.7004957,
+    "time": 515.5555763244629,
+    "output_tok": 39460.0,
+    "thk_sec": 371.3808136830031,
+    "cache_read": 2295904.0,
+    "cache_create": 111342.0,
+    "uncached": 764.0,
+    "inline_py": 5.0,
+    "uip_verbs": {
+     "--version 2": 1.0,
+     "maestro bpmn registry": 3.0,
+     "maestro bpmn format": 2.0,
+     "maestro bpmn validate": 3.0
+    },
+    "bundled_scripts": {},
+    "reps": [
+     "00"
+    ]
+   },
+   "base": {
+    "n": 1,
+    "thk_tok": 0.0,
+    "tr_tok": 52292.0,
+    "tool_calls": 58.0,
+    "turns": 58.0,
+    "cost": 3.4339648500000006,
+    "time": 904.3449928760529,
+    "output_tok": 77093.0,
+    "thk_sec": 757.8517401560011,
+    "cache_read": 5629157.0,
+    "cache_create": 156941.0,
+    "uncached": 98.0,
+    "inline_py": 9.0,
+    "uip_verbs": {
+     "maestro bpmn registry": 4.0,
+     "maestro bpmn init": 2.0,
+     "maestro bpmn --help": 1.0,
+     "maestro bpmn validate": 2.0,
+     "maestro bpmn update-metadata": 1.0
+    },
+    "bundled_scripts": {},
+    "reps": [
+     "00"
+    ]
+   },
+   "delta": {
+    "thk_tok": 0.0,
+    "thk_sec": -386.47092647299803,
+    "tr_tok": -20188.0,
+    "tool_calls": -17.0,
+    "turns": -17.0,
+    "cost": -1.7334691500000006,
+    "time": -388.78941655158997,
+    "output_tok": -37633.0,
+    "cache_read": -3333253.0,
+    "cache_create": -45599.0,
+    "uncached": 666.0
+   },
+   "real_levers": [
+    "tool_calls",
+    "turns",
+    "tr_tok",
+    "output_tok"
+   ],
+   "is_real": true,
+   "opt_success_reps": 1,
+   "base_success_reps": 1,
+   "opt_kept": 1,
+   "base_kept": 1,
+   "opt_dropped": 0,
+   "base_dropped": 0,
+   "opt_bursts": [
+    []
+   ],
+   "base_bursts": [
+    []
+   ]
+  },
+  {
+   "task": "skill-bpmn-inclusive-gateway-forkjoin",
+   "task_description": "Structural advanced-event eval: agent uses the uipath-maestro-bpmn skill to author an INCLUSIVE (OR) gateway fork with conditioned branches and a real inclusive join. Exercises the FAKE_JOIN / SUPERFLUOUS_GATEWAY rules (join with a gateway, not by pointing two flows at one activity). Authoring only \u2014 no cloud effects.",
+   "opt": {
+    "n": 1,
+    "thk_tok": 0.0,
+    "tr_tok": 14381.0,
+    "tool_calls": 12.0,
+    "turns": 12.0,
+    "cost": 0.548907,
+    "time": 139.58521270751953,
+    "output_tok": 12090.0,
+    "thk_sec": 77.21579790999931,
+    "cache_read": 636950.0,
+    "cache_create": 46360.0,
+    "uncached": 874.0,
+    "inline_py": 1.0,
+    "uip_verbs": {
+     "--version 2": 1.0,
+     "maestro bpmn registry": 3.0,
+     "maestro bpmn format": 1.0,
+     "maestro bpmn validate": 1.0
+    },
+    "bundled_scripts": {},
+    "reps": [
+     "00"
+    ]
+   },
+   "base": {
+    "n": 1,
+    "thk_tok": 0.0,
+    "tr_tok": 21128.0,
+    "tool_calls": 35.0,
+    "turns": 35.0,
+    "cost": 2.0078140500000003,
+    "time": 629.1879556179047,
+    "output_tok": 55496.0,
+    "thk_sec": 517.7286209210042,
+    "cache_read": 2675001.0,
+    "cache_create": 99377.0,
+    "uncached": 70.0,
+    "inline_py": 7.0,
+    "uip_verbs": {
+     "--version 2": 1.0,
+     "maestro bpmn registry": 5.0,
+     "is connections list": 2.0,
+     "maestro bpmn validate": 2.0
+    },
+    "bundled_scripts": {},
+    "reps": [
+     "00"
+    ]
+   },
+   "delta": {
+    "thk_tok": 0.0,
+    "thk_sec": -440.5128230110049,
+    "tr_tok": -6747.0,
+    "tool_calls": -23.0,
+    "turns": -23.0,
+    "cost": -1.4589070500000003,
+    "time": -489.60274291038513,
+    "output_tok": -43406.0,
+    "cache_read": -2038051.0,
+    "cache_create": -53017.0,
+    "uncached": 804.0
+   },
+   "real_levers": [
+    "tool_calls",
+    "turns",
+    "tr_tok",
+    "output_tok"
+   ],
+   "is_real": true,
+   "opt_success_reps": 1,
+   "base_success_reps": 1,
+   "opt_kept": 1,
+   "base_kept": 1,
+   "opt_dropped": 0,
+   "base_dropped": 0,
+   "opt_bursts": [
+    []
+   ],
+   "base_bursts": [
+    []
+   ]
+  },
+  {
+   "task": "skill-bpmn-callactivity-agentic-process",
+   "task_description": "Node eval: agent uses the uipath-maestro-bpmn skill to invoke a separate agentic Maestro instance via Orchestrator.StartAgenticProcess, correctly hosted on a bpmn:callActivity (a CallActivity invokes a SEPARATE instance) rather than an in-instance serviceTask. Authoring only \u2014 no cloud effects.",
+   "opt": {
+    "n": 1,
+    "thk_tok": 0.0,
+    "tr_tok": 12251.0,
+    "tool_calls": 14.0,
+    "turns": 14.0,
+    "cost": 0.4978690499999999,
+    "time": 117.38098001480103,
+    "output_tok": 7088.0,
+    "thk_sec": 45.733370886995544,
+    "cache_read": 818951.0,
+    "cache_create": 38265.0,
+    "uncached": 790.0,
+    "inline_py": 3.0,
+    "uip_verbs": {
+     "maestro bpmn registry": 3.0,
+     "maestro bpmn validate": 2.0,
+     "maestro bpmn format": 1.0
+    },
+    "bundled_scripts": {},
+    "reps": [
+     "00"
+    ]
+   },
+   "base": {
+    "n": 1,
+    "thk_tok": 0.0,
+    "tr_tok": 25301.0,
+    "tool_calls": 46.0,
+    "turns": 46.0,
+    "cost": 1.9335847500000003,
+    "time": 443.63226675987244,
+    "output_tok": 33079.0,
+    "thk_sec": 321.21072007000106,
+    "cache_read": 3881430.0,
+    "cache_create": 72717.0,
+    "uncached": 94.0,
+    "inline_py": 3.0,
+    "uip_verbs": {
+     "maestro bpmn registry": 3.0,
+     "maestro bpmn validate": 2.0
+    },
+    "bundled_scripts": {},
+    "reps": [
+     "00"
+    ]
+   },
+   "delta": {
+    "thk_tok": 0.0,
+    "thk_sec": -275.4773491830055,
+    "tr_tok": -13050.0,
+    "tool_calls": -32.0,
+    "turns": -32.0,
+    "cost": -1.4357157000000003,
+    "time": -326.2512867450714,
+    "output_tok": -25991.0,
+    "cache_read": -3062479.0,
+    "cache_create": -34452.0,
+    "uncached": 696.0
+   },
+   "real_levers": [
+    "tool_calls",
+    "turns",
+    "tr_tok",
+    "output_tok"
+   ],
+   "is_real": true,
+   "opt_success_reps": 1,
+   "base_success_reps": 1,
+   "opt_kept": 1,
+   "base_kept": 1,
+   "opt_dropped": 0,
+   "base_dropped": 0,
+   "opt_bursts": [
+    []
+   ],
+   "base_bursts": [
+    []
+   ]
+  },
+  {
+   "task": "skill-bpmn-script-jint-guidance",
+   "task_description": "Script task eval: agent authors a BPMN script task that follows the Jint runtime boundary instead of Node.js, browser, filesystem, or network APIs.",
+   "opt": {
+    "n": 1,
+    "thk_tok": 0.0,
+    "tr_tok": 31475.0,
+    "tool_calls": 48.0,
+    "turns": 48.0,
+    "cost": 1.8215590499999998,
+    "time": 414.14563822746277,
+    "output_tok": 32500.0,
+    "thk_sec": 292.3179388230056,
+    "cache_read": 3412621.0,
+    "cache_create": 81997.0,
+    "uncached": 928.0,
+    "inline_py": 6.0,
+    "uip_verbs": {
+     "--version 2": 1.0,
+     "maestro bpmn registry": 4.0,
+     "maestro bpmn init": 2.0,
+     "maestro bpmn validate": 2.0,
+     "maestro bpmn format": 1.0
+    },
+    "bundled_scripts": {},
+    "reps": [
+     "00"
+    ]
+   },
+   "base": {
+    "n": 1,
+    "thk_tok": 0.0,
+    "tr_tok": 41051.0,
+    "tool_calls": 71.0,
+    "turns": 71.0,
+    "cost": 3.07467855,
+    "time": 755.3405764102936,
+    "output_tok": 63697.0,
+    "thk_sec": 615.1172022400015,
+    "cache_read": 5371021.0,
+    "cache_create": 135363.0,
+    "uncached": 102.0,
+    "inline_py": 10.0,
+    "uip_verbs": {
+     "--version 2": 1.0,
+     "maestro bpmn registry": 3.0,
+     "maestro bpmn init": 2.0,
+     "maestro bpmn validate": 5.0,
+     "maestro bpmn --help": 1.0,
+     "maestro bpmn update-metadata": 3.0,
+     "maestro bpmn format": 1.0,
+     "maestro bpmn check": 1.0
+    },
+    "bundled_scripts": {},
+    "reps": [
+     "00"
+    ]
+   },
+   "delta": {
+    "thk_tok": 0.0,
+    "thk_sec": -322.79926341699587,
+    "tr_tok": -9576.0,
+    "tool_calls": -23.0,
+    "turns": -23.0,
+    "cost": -1.2531195,
+    "time": -341.1949381828308,
+    "output_tok": -31197.0,
+    "cache_read": -1958400.0,
+    "cache_create": -53366.0,
+    "uncached": 826.0
+   },
+   "real_levers": [
+    "tool_calls",
+    "turns",
+    "tr_tok",
+    "output_tok"
+   ],
+   "is_real": true,
+   "opt_success_reps": 1,
+   "base_success_reps": 1,
+   "opt_kept": 1,
+   "base_kept": 1,
+   "opt_dropped": 0,
+   "base_dropped": 0,
+   "opt_bursts": [
+    []
+   ],
+   "base_bursts": [
+    []
+   ]
+  },
+  {
+   "task": "skill-bpmn-rpa-job",
+   "task_description": "Resource-node eval: agent uses the uipath-maestro-bpmn skill to model an RPA job invocation as a bpmn:serviceTask with the registry Orchestrator.StartJob wrapper, binding job arguments as input and capturing the job response into a declared variable. Differentiates from the hitl/rpa wrapper-presence eval by grading input/output variable binding. Authoring only \u2014 no cloud effects.",
+   "opt": {
+    "n": 1,
+    "thk_tok": 0.0,
+    "tr_tok": 21281.0,
+    "tool_calls": 25.0,
+    "turns": 25.0,
+    "cost": 0.9166690500000001,
+    "time": 198.3961296081543,
+    "output_tok": 14444.0,
+    "thk_sec": 98.3771476689999,
+    "cache_read": 1613476.0,
+    "cache_create": 56991.0,
+    "uncached": 750.0,
+    "inline_py": 6.0,
+    "uip_verbs": {
+     "--version 2": 1.0,
+     "maestro bpmn registry": 2.0,
+     "maestro bpmn format": 1.0,
+     "maestro bpmn validate": 1.0
+    },
+    "bundled_scripts": {},
+    "reps": [
+     "00"
+    ]
+   },
+   "base": {
+    "n": 1,
+    "thk_tok": 0.0,
+    "tr_tok": 22708.0,
+    "tool_calls": 39.0,
+    "turns": 39.0,
+    "cost": 1.8575239499999998,
+    "time": 608.458004951477,
+    "output_tok": 50203.0,
+    "thk_sec": 494.87978593300153,
+    "cache_read": 2847164.0,
+    "cache_create": 66697.0,
+    "uncached": 72.0,
+    "inline_py": 10.0,
+    "uip_verbs": {
+     "--version 2": 1.0,
+     "maestro bpmn registry": 6.0,
+     "maestro bpmn validate": 1.0
+    },
+    "bundled_scripts": {},
+    "reps": [
+     "00"
+    ]
+   },
+   "delta": {
+    "thk_tok": 0.0,
+    "thk_sec": -396.50263826400163,
+    "tr_tok": -1427.0,
+    "tool_calls": -14.0,
+    "turns": -14.0,
+    "cost": -0.9408548999999997,
+    "time": -410.06187534332275,
+    "output_tok": -35759.0,
+    "cache_read": -1233688.0,
+    "cache_create": -9706.0,
+    "uncached": 678.0
+   },
+   "real_levers": [
+    "tool_calls",
+    "turns",
+    "output_tok"
+   ],
+   "is_real": true,
+   "opt_success_reps": 1,
+   "base_success_reps": 1,
+   "opt_kept": 1,
+   "base_kept": 1,
+   "opt_dropped": 0,
+   "base_dropped": 0,
+   "opt_bursts": [
+    []
+   ],
+   "base_bursts": [
+    []
+   ]
+  },
+  {
+   "task": "skill-bpmn-e2e-customer-escalation",
+   "task_description": "Skill-guided e2e evaluation (ported from the Flow customer_escalation eval): agent uses the uipath-maestro-bpmn skill to author a synthetic BPMN process that classifies an inbound request with two script tasks, routes on the combined signal through an exclusive gateway, and escalates via a human user task on the high-touch path while a standard path generates a ticket in a script task. Includes full package metadata. Authoring only, public-safe, no cloud effects and no live connector.",
+   "opt": {
+    "n": 1,
+    "thk_tok": 0.0,
+    "tr_tok": 28614.0,
+    "tool_calls": 46.0,
+    "turns": 46.0,
+    "cost": 2.2395260999999995,
+    "time": 704.3484606742859,
+    "output_tok": 61207.0,
+    "thk_sec": 512.4269244980022,
+    "cache_read": 2972682.0,
+    "cache_create": 109506.0,
+    "uncached": 6323.0,
+    "inline_py": 4.0,
+    "uip_verbs": {
+     "--version 2": 1.0,
+     "maestro bpmn registry": 3.0,
+     "maestro bpmn init": 1.0,
+     "maestro bpmn validate": 2.0,
+     "maestro bpmn update-metadata": 1.0,
+     "maestro bpmn pack": 1.0
+    },
+    "bundled_scripts": {},
+    "reps": [
+     "00"
+    ]
+   },
+   "base": {
+    "n": 1,
+    "thk_tok": 0.0,
+    "tr_tok": 54511.0,
+    "tool_calls": 64.0,
+    "turns": 64.0,
+    "cost": 3.1181537999999995,
+    "time": 606.9883210659027,
+    "output_tok": 49582.0,
+    "thk_sec": 390.897805681001,
+    "cache_read": 6158701.0,
+    "cache_create": 140402.0,
+    "uncached": 102.0,
+    "inline_py": 4.0,
+    "uip_verbs": {
+     "--version 2": 1.0,
+     "maestro bpmn registry": 5.0,
+     "maestro bpmn init": 1.0,
+     "maestro bpmn --help": 1.0,
+     "maestro bpmn update-metadata": 2.0,
+     "maestro bpmn validate": 3.0,
+     "maestro bpmn pack": 1.0
+    },
+    "bundled_scripts": {},
+    "reps": [
+     "00"
+    ]
+   },
+   "delta": {
+    "thk_tok": 0.0,
+    "thk_sec": 121.52911881700123,
+    "tr_tok": -25897.0,
+    "tool_calls": -18.0,
+    "turns": -18.0,
+    "cost": -0.8786277,
+    "time": 97.36013960838318,
+    "output_tok": 11625.0,
+    "cache_read": -3186019.0,
+    "cache_create": -30896.0,
+    "uncached": 6221.0
+   },
+   "real_levers": [
+    "tool_calls",
+    "turns",
+    "tr_tok",
+    "output_tok"
+   ],
+   "is_real": true,
+   "opt_success_reps": 1,
+   "base_success_reps": 1,
+   "opt_kept": 1,
+   "base_kept": 1,
+   "opt_dropped": 0,
+   "base_dropped": 0,
+   "opt_bursts": [
+    []
+   ],
+   "base_bursts": [
+    []
+   ]
+  },
+  {
+   "task": "skill-bpmn-expr-computed-js",
+   "task_description": "Expression-authoring eval: agent uses the uipath-maestro-bpmn skill to author a computed inline-JavaScript expression with the exact case-sensitive `=js:` prefix (no space after the colon) inside a json-typed mapping that still emits valid JSON. Grades the `=js:` escape-hatch rules from references/expression-authoring.md. Authoring only \u2014 no cloud effects.",
+   "opt": {
+    "n": 1,
+    "thk_tok": 0.0,
+    "tr_tok": 29673.0,
+    "tool_calls": 53.0,
+    "turns": 53.0,
+    "cost": 2.1282129000000007,
+    "time": 535.7431921958923,
+    "output_tok": 37656.0,
+    "thk_sec": 369.9413835210034,
+    "cache_read": 4237653.0,
+    "cache_create": 77144.0,
+    "uncached": 929.0,
+    "inline_py": 16.0,
+    "uip_verbs": {
+     "--version 2": 1.0,
+     "maestro bpmn registry": 3.0,
+     "maestro bpmn validate": 2.0
+    },
+    "bundled_scripts": {},
+    "reps": [
+     "00"
+    ]
+   },
+   "base": {
+    "n": 1,
+    "thk_tok": 0.0,
+    "tr_tok": 53178.0,
+    "tool_calls": 56.0,
+    "turns": 56.0,
+    "cost": 2.8101168,
+    "time": 575.7404072284698,
+    "output_tok": 44111.0,
+    "thk_sec": 436.9150747759977,
+    "cache_read": 5154066.0,
+    "cache_create": 160520.0,
+    "uncached": 94.0,
+    "inline_py": 10.0,
+    "uip_verbs": {
+     "maestro bpmn registry": 5.0,
+     "maestro bpmn validate": 1.0
+    },
+    "bundled_scripts": {
+     "check_computed_js": 1.0
+    },
+    "reps": [
+     "00"
+    ]
+   },
+   "delta": {
+    "thk_tok": 0.0,
+    "thk_sec": -66.97369125499432,
+    "tr_tok": -23505.0,
+    "tool_calls": -3.0,
+    "turns": -3.0,
+    "cost": -0.6819038999999991,
+    "time": -39.997215032577515,
+    "output_tok": -6455.0,
+    "cache_read": -916413.0,
+    "cache_create": -83376.0,
+    "uncached": 835.0
+   },
+   "real_levers": [
+    "tool_calls",
+    "turns",
+    "tr_tok",
+    "output_tok"
+   ],
+   "is_real": true,
+   "opt_success_reps": 1,
+   "base_success_reps": 1,
+   "opt_kept": 1,
+   "base_kept": 1,
+   "opt_dropped": 0,
+   "base_dropped": 0,
+   "opt_bursts": [
+    []
+   ],
+   "base_bursts": [
+    []
+   ]
+  },
+  {
+   "task": "skill-bpmn-feet-inches",
+   "task_description": "Skill-guided evaluation (ported from the Flow feet_inches eval): agent uses the uipath-maestro-bpmn skill to author a BPMN process as a sequential pipeline of script tasks that pass a value through parse, convert, and format steps. Exercises a linear script-task chain with variable passing between nodes. Authoring only \u2014 no cloud effects.",
+   "opt": {
+    "n": 1,
+    "thk_tok": 0.0,
+    "tr_tok": 40381.0,
+    "tool_calls": 62.0,
+    "turns": 62.0,
+    "cost": 2.17614855,
+    "time": 537.5490710735321,
+    "output_tok": 40626.0,
+    "thk_sec": 388.49423033000494,
+    "cache_read": 3606531.0,
+    "cache_create": 128607.0,
+    "uncached": 841.0,
+    "inline_py": 6.0,
+    "uip_verbs": {
+     "--version 2": 1.0,
+     "maestro bpmn registry": 4.0,
+     "maestro bpmn init": 1.0,
+     "maestro bpmn format": 1.0,
+     "maestro bpmn validate": 3.0,
+     "maestro bpmn update-metadata": 1.0
+    },
+    "bundled_scripts": {},
+    "reps": [
+     "00"
+    ]
+   },
+   "base": {
+    "n": 1,
+    "thk_tok": 0.0,
+    "tr_tok": 29816.0,
+    "tool_calls": 59.0,
+    "turns": 59.0,
+    "cost": 2.8542861000000004,
+    "time": 867.1706187725067,
+    "output_tok": 66364.0,
+    "thk_sec": 598.6407649809972,
+    "cache_read": 4744067.0,
+    "cache_create": 116080.0,
+    "uncached": 102.0,
+    "inline_py": 10.0,
+    "uip_verbs": {
+     "2": 1.0,
+     "maestro bpmn registry": 4.0,
+     "maestro bpmn validate": 1.0
+    },
+    "bundled_scripts": {},
+    "reps": [
+     "00"
+    ]
+   },
+   "delta": {
+    "thk_tok": 0.0,
+    "thk_sec": -210.1465346509923,
+    "tr_tok": 10565.0,
+    "tool_calls": 3.0,
+    "turns": 3.0,
+    "cost": -0.6781375500000002,
+    "time": -329.6215476989746,
+    "output_tok": -25738.0,
+    "cache_read": -1137536.0,
+    "cache_create": 12527.0,
+    "uncached": 739.0
+   },
+   "real_levers": [
+    "tool_calls",
+    "turns",
+    "tr_tok",
+    "output_tok"
+   ],
+   "is_real": true,
+   "opt_success_reps": 1,
+   "base_success_reps": 1,
+   "opt_kept": 1,
+   "base_kept": 1,
+   "opt_dropped": 0,
+   "base_dropped": 0,
+   "opt_bursts": [
+    []
+   ],
+   "base_bursts": [
+    []
+   ]
+  },
+  {
+   "task": "skill-bpmn-script-task-group-by",
+   "task_description": "Skill-guided evaluation: agent uses the uipath-maestro-bpmn skill to author a Jint-safe script task that runs a group-by with aggregation (grouping rows by a field and producing an aggregate value). Script tasks are how BPMN processes reshape data. Authoring only \u2014 no cloud effects.",
+   "opt": {
+    "n": 1,
+    "thk_tok": 0.0,
+    "tr_tok": 26125.0,
+    "tool_calls": 31.0,
+    "turns": 31.0,
+    "cost": 0.9024817500000001,
+    "time": 205.8881402015686,
+    "output_tok": 11010.0,
+    "thk_sec": 92.73310523500186,
+    "cache_read": 1588190.0,
+    "cache_create": 67125.0,
+    "uncached": 3052.0,
+    "inline_py": 5.0,
+    "uip_verbs": {
+     "--version 2": 1.0,
+     "maestro bpmn registry": 3.0,
+     "maestro bpmn validate": 2.0,
+     "maestro bpmn format": 1.0
+    },
+    "bundled_scripts": {},
+    "reps": [
+     "00"
+    ]
+   },
+   "base": {
+    "n": 1,
+    "thk_tok": 0.0,
+    "tr_tok": 18466.0,
+    "tool_calls": 43.0,
+    "turns": 43.0,
+    "cost": 1.5236488499999996,
+    "time": 342.8004095554352,
+    "output_tok": 23936.0,
+    "thk_sec": 255.74315029000257,
+    "cache_read": 3096437.0,
+    "cache_create": 62777.0,
+    "uncached": 88.0,
+    "inline_py": 14.0,
+    "uip_verbs": {
+     "--version 2": 1.0,
+     "maestro bpmn registry": 4.0,
+     "maestro bpmn validate": 1.0
+    },
+    "bundled_scripts": {},
+    "reps": [
+     "00"
+    ]
+   },
+   "delta": {
+    "thk_tok": 0.0,
+    "thk_sec": -163.01004505500072,
+    "tr_tok": 7659.0,
+    "tool_calls": -12.0,
+    "turns": -12.0,
+    "cost": -0.6211670999999995,
+    "time": -136.91226935386658,
+    "output_tok": -12926.0,
+    "cache_read": -1508247.0,
+    "cache_create": 4348.0,
+    "uncached": 2964.0
+   },
+   "real_levers": [
+    "tool_calls",
+    "turns",
+    "tr_tok",
+    "output_tok"
+   ],
+   "is_real": true,
+   "opt_success_reps": 1,
+   "base_success_reps": 1,
+   "opt_kept": 1,
+   "base_kept": 1,
+   "opt_dropped": 0,
+   "base_dropped": 0,
+   "opt_bursts": [
+    []
+   ],
+   "base_bursts": [
+    []
+   ]
+  },
+  {
+   "task": "skill-bpmn-edit-update-node",
+   "task_description": "Brownfield edit: change one script task's logic (a threshold constant) in an existing, valid Maestro BPMN without restructuring the process or touching any sibling node, ids, or preserve-only payloads.",
+   "opt": {
+    "n": 1,
+    "thk_tok": 0.0,
+    "tr_tok": 4911.0,
+    "tool_calls": 9.0,
+    "turns": 9.0,
+    "cost": 0.29927999999999993,
+    "time": 93.25335669517517,
+    "output_tok": 5679.0,
+    "thk_sec": 57.13342374400054,
+    "cache_read": 439685.0,
+    "cache_create": 21414.0,
+    "uncached": 629.0,
+    "inline_py": 1.0,
+    "uip_verbs": {
+     "maestro bpmn validate": 2.0,
+     "--version 2": 1.0
+    },
+    "bundled_scripts": {},
+    "reps": [
+     "00"
+    ]
+   },
+   "base": {
+    "n": 1,
+    "thk_tok": 0.0,
+    "tr_tok": 9152.0,
+    "tool_calls": 22.0,
+    "turns": 22.0,
+    "cost": 0.9193972499999999,
+    "time": 336.39920377731323,
+    "output_tok": 25760.0,
+    "thk_sec": 291.0402071140015,
+    "cache_read": 1318870.0,
+    "cache_create": 36587.0,
+    "uncached": 45.0,
+    "inline_py": 1.0,
+    "uip_verbs": {
+     "maestro bpmn validate": 4.0,
+     "--version 2": 1.0,
+     "uip maestro bpmn": 1.0,
+     "maestro bpmn check": 1.0,
+     "maestro bpmn registry": 1.0
+    },
+    "bundled_scripts": {},
+    "reps": [
+     "00"
+    ]
+   },
+   "delta": {
+    "thk_tok": 0.0,
+    "thk_sec": -233.90678337000094,
+    "tr_tok": -4241.0,
+    "tool_calls": -13.0,
+    "turns": -13.0,
+    "cost": -0.6201172500000001,
+    "time": -243.14584708213806,
+    "output_tok": -20081.0,
+    "cache_read": -879185.0,
+    "cache_create": -15173.0,
+    "uncached": 584.0
+   },
+   "real_levers": [
+    "tool_calls",
+    "turns",
+    "output_tok"
+   ],
+   "is_real": true,
+   "opt_success_reps": 1,
+   "base_success_reps": 1,
+   "opt_kept": 1,
+   "base_kept": 1,
+   "opt_dropped": 0,
+   "base_dropped": 0,
+   "opt_bursts": [
+    []
+   ],
+   "base_bursts": [
+    []
+   ]
+  },
+  {
+   "task": "skill-bpmn-event-trigger-start",
+   "task_description": "Connector trigger start-event eval: agent uses the uipath-maestro-bpmn skill to start a process from an Integration Service connector event (e.g. an email received) using the registry Intsvc.EventTrigger wrapper on a bpmn:startEvent, kept as a public-safe draft because connection binding and trigger properties are CLI-owned enrichment. Ports the Flow connector-trigger inbox test to a BPMN connector-trigger start event. Authoring only \u2014 no cloud effects.",
+   "opt": {
+    "n": 1,
+    "thk_tok": 0.0,
+    "tr_tok": 18214.0,
+    "tool_calls": 22.0,
+    "turns": 22.0,
+    "cost": 0.7444429499999999,
+    "time": 166.44230914115906,
+    "output_tok": 9813.0,
+    "thk_sec": 67.81830893400183,
+    "cache_read": 1358579.0,
+    "cache_create": 49831.0,
+    "uncached": 936.0,
+    "inline_py": 5.0,
+    "uip_verbs": {
+     "--version 2": 1.0,
+     "maestro bpmn registry": 4.0,
+     "is connections list": 1.0,
+     "maestro bpmn format": 1.0
+    },
+    "bundled_scripts": {},
+    "reps": [
+     "00"
+    ]
+   },
+   "base": {
+    "n": 1,
+    "thk_tok": 0.0,
+    "tr_tok": 18877.0,
+    "tool_calls": 39.0,
+    "turns": 39.0,
+    "cost": 1.31545335,
+    "time": 260.03795742988586,
+    "output_tok": 15781.0,
+    "thk_sec": 159.54167085799867,
+    "cache_read": 2856557.0,
+    "cache_create": 59075.0,
+    "uncached": 80.0,
+    "inline_py": 4.0,
+    "uip_verbs": {
+     "--version 2": 1.0,
+     "maestro bpmn registry": 5.0
+    },
+    "bundled_scripts": {},
+    "reps": [
+     "00"
+    ]
+   },
+   "delta": {
+    "thk_tok": 0.0,
+    "thk_sec": -91.72336192399683,
+    "tr_tok": -663.0,
+    "tool_calls": -17.0,
+    "turns": -17.0,
+    "cost": -0.5710104000000001,
+    "time": -93.5956482887268,
+    "output_tok": -5968.0,
+    "cache_read": -1497978.0,
+    "cache_create": -9244.0,
+    "uncached": 856.0
+   },
+   "real_levers": [
+    "tool_calls",
+    "turns",
+    "output_tok"
+   ],
+   "is_real": true,
+   "opt_success_reps": 1,
+   "base_success_reps": 1,
+   "opt_kept": 1,
+   "base_kept": 1,
+   "opt_dropped": 0,
+   "base_dropped": 0,
+   "opt_bursts": [
+    []
+   ],
+   "base_bursts": [
+    []
+   ]
+  },
+  {
+   "task": "skill-bpmn-loop-multiply",
+   "task_description": "Skill-guided evaluation (ported from the Flow loop_multiply eval): agent uses the uipath-maestro-bpmn skill to author a BPMN process that multiplies a collection of numbers using a sequential multi-instance marker over a script task. Exercises the multi-instance / loop-characteristics registry gap (sequential accumulation). Authoring only \u2014 no cloud effects.",
+   "opt": {
+    "n": 1,
+    "thk_tok": 0.0,
+    "tr_tok": 44787.0,
+    "tool_calls": 48.0,
+    "turns": 48.0,
+    "cost": 2.2045683000000005,
+    "time": 437.81487345695496,
+    "output_tok": 32654.0,
+    "thk_sec": 321.30532927600143,
+    "cache_read": 4356566.0,
+    "cache_create": 108054.0,
+    "uncached": 862.0,
+    "inline_py": 6.0,
+    "uip_verbs": {
+     "--version 2": 1.0,
+     "maestro bpmn registry": 3.0,
+     "maestro bpmn validate": 2.0
+    },
+    "bundled_scripts": {},
+    "reps": [
+     "00"
+    ]
+   },
+   "base": {
+    "n": 1,
+    "thk_tok": 0.0,
+    "tr_tok": 39156.0,
+    "tool_calls": 60.0,
+    "turns": 60.0,
+    "cost": 2.728355100000001,
+    "time": 704.3825628757477,
+    "output_tok": 57391.0,
+    "thk_sec": 588.6796276110018,
+    "cache_read": 4957587.0,
+    "cache_create": 101312.0,
+    "uncached": 98.0,
+    "inline_py": 17.0,
+    "uip_verbs": {
+     "--version 2": 1.0,
+     "maestro bpmn registry": 3.0,
+     "maestro bpmn validate": 1.0
+    },
+    "bundled_scripts": {},
+    "reps": [
+     "00"
+    ]
+   },
+   "delta": {
+    "thk_tok": 0.0,
+    "thk_sec": -267.3742983350004,
+    "tr_tok": 5631.0,
+    "tool_calls": -12.0,
+    "turns": -12.0,
+    "cost": -0.5237868000000003,
+    "time": -266.5676894187927,
+    "output_tok": -24737.0,
+    "cache_read": -601021.0,
+    "cache_create": 6742.0,
+    "uncached": 764.0
+   },
+   "real_levers": [
+    "tool_calls",
+    "turns",
+    "tr_tok",
+    "output_tok"
+   ],
+   "is_real": true,
+   "opt_success_reps": 1,
+   "base_success_reps": 1,
+   "opt_kept": 1,
+   "base_kept": 1,
+   "opt_dropped": 0,
+   "base_dropped": 0,
+   "opt_bursts": [
+    []
+   ],
+   "base_bursts": [
+    []
+   ]
+  },
+  {
+   "task": "skill-bpmn-gateway-sequence-flows",
+   "task_description": "Authoring eval: agent creates a BPMN skeleton with gateway branching, joining, default routing, sequence-flow conditions, and BPMN DI.",
+   "opt": {
+    "n": 1,
+    "thk_tok": 0.0,
+    "tr_tok": 36543.0,
+    "tool_calls": 39.0,
+    "turns": 39.0,
+    "cost": 2.2468436999999994,
+    "time": 731.7922241687775,
+    "output_tok": 61871.0,
+    "thk_sec": 561.4077448730003,
+    "cache_read": 2822279.0,
+    "cache_create": 125348.0,
+    "uncached": 680.0,
+    "inline_py": 2.0,
+    "uip_verbs": {
+     "2": 1.0,
+     "maestro bpmn registry": 4.0,
+     "maestro bpmn init": 2.0,
+     "maestro bpmn format": 2.0,
+     "maestro bpmn validate": 1.0
+    },
+    "bundled_scripts": {},
+    "reps": [
+     "00"
+    ]
+   },
+   "base": {
+    "n": 1,
+    "thk_tok": 0.0,
+    "tr_tok": 38754.0,
+    "tool_calls": 40.0,
+    "turns": 40.0,
+    "cost": 2.6613366000000003,
+    "time": 839.3714783191681,
+    "output_tok": 81935.0,
+    "thk_sec": 727.9965789670014,
+    "cache_read": 3092987.0,
+    "cache_create": 134458.0,
+    "uncached": 66.0,
+    "inline_py": 5.0,
+    "uip_verbs": {
+     "--version 2": 1.0,
+     "maestro bpmn registry": 3.0,
+     "maestro bpmn validate": 1.0
+    },
+    "bundled_scripts": {},
+    "reps": [
+     "00"
+    ]
+   },
+   "delta": {
+    "thk_tok": 0.0,
+    "thk_sec": -166.58883409400107,
+    "tr_tok": -2211.0,
+    "tool_calls": -1.0,
+    "turns": -1.0,
+    "cost": -0.41449290000000083,
+    "time": -107.57925415039062,
+    "output_tok": -20064.0,
+    "cache_read": -270708.0,
+    "cache_create": -9110.0,
+    "uncached": 614.0
+   },
+   "real_levers": [
+    "output_tok"
+   ],
+   "is_real": true,
+   "opt_success_reps": 1,
+   "base_success_reps": 1,
+   "opt_kept": 1,
+   "base_kept": 1,
+   "opt_dropped": 0,
+   "base_dropped": 0,
+   "opt_bursts": [
+    []
+   ],
+   "base_bursts": [
+    []
+   ]
+  },
+  {
+   "task": "skill-bpmn-author-validate",
+   "task_description": "Skill-guided evaluation: agent uses the uipath-maestro-bpmn skill to author a small registry-driven Maestro BPMN process (start -> exclusive gateway with two conditioned branches -> end), with a BPMN diagram, then validates it with a local well-formed-XML / structural check. Authoring only \u2014 no cloud effects.",
+   "opt": {
+    "n": 1,
+    "thk_tok": 0.0,
+    "tr_tok": 13551.0,
+    "tool_calls": 15.0,
+    "turns": 15.0,
+    "cost": 0.6553506,
+    "time": 162.39341020584106,
+    "output_tok": 7583.0,
+    "thk_sec": 65.66340976100037,
+    "cache_read": 905402.0,
+    "cache_create": 71380.0,
+    "uncached": 770.0,
+    "inline_py": 2.0,
+    "uip_verbs": {
+     "2": 1.0,
+     "maestro bpmn registry": 3.0,
+     "maestro bpmn format": 1.0,
+     "maestro bpmn validate": 1.0
+    },
+    "bundled_scripts": {},
+    "reps": [
+     "00"
+    ]
+   },
+   "base": {
+    "n": 1,
+    "thk_tok": 0.0,
+    "tr_tok": 18714.0,
+    "tool_calls": 21.0,
+    "turns": 21.0,
+    "cost": 1.0049487000000001,
+    "time": 273.5061810016632,
+    "output_tok": 21189.0,
+    "thk_sec": 206.94776897999782,
+    "cache_read": 1582264.0,
+    "cache_create": 56614.0,
+    "uncached": 44.0,
+    "inline_py": 1.0,
+    "uip_verbs": {
+     "--version 2": 1.0,
+     "maestro bpmn registry": 2.0,
+     "maestro bpmn validate": 1.0
+    },
+    "bundled_scripts": {},
+    "reps": [
+     "00"
+    ]
+   },
+   "delta": {
+    "thk_tok": 0.0,
+    "thk_sec": -141.28435921899745,
+    "tr_tok": -5163.0,
+    "tool_calls": -6.0,
+    "turns": -6.0,
+    "cost": -0.34959810000000013,
+    "time": -111.11277079582214,
+    "output_tok": -13606.0,
+    "cache_read": -676862.0,
+    "cache_create": 14766.0,
+    "uncached": 726.0
+   },
+   "real_levers": [
+    "tool_calls",
+    "turns",
+    "tr_tok",
+    "output_tok"
+   ],
+   "is_real": true,
+   "opt_success_reps": 1,
+   "base_success_reps": 1,
+   "opt_kept": 1,
+   "base_kept": 1,
+   "opt_dropped": 0,
+   "base_dropped": 0,
+   "opt_bursts": [
+    []
+   ],
+   "base_bursts": [
+    []
+   ]
+  },
+  {
+   "task": "skill-bpmn-edit-add-node",
+   "task_description": "Brownfield edit: insert a new script task into an existing, valid Maestro BPMN between two adjacent tasks, rewiring the sequence flow and diagram while preserving element ids, uipath:* payloads, and uipath:migrationVersion.",
+   "opt": {
+    "n": 1,
+    "thk_tok": 0.0,
+    "tr_tok": 1956.0,
+    "tool_calls": 9.0,
+    "turns": 9.0,
+    "cost": 0.35248575,
+    "time": 167.60348844528198,
+    "output_tok": 9744.0,
+    "thk_sec": 82.81598353300433,
+    "cache_read": 442760.0,
+    "cache_create": 19081.0,
+    "uncached": 648.0,
+    "inline_py": 1.0,
+    "uip_verbs": {
+     "maestro bpmn registry": 1.0,
+     "maestro bpmn validate": 2.0
+    },
+    "bundled_scripts": {},
+    "reps": [
+     "00"
+    ]
+   },
+   "base": {
+    "n": 1,
+    "thk_tok": 0.0,
+    "tr_tok": 3217.0,
+    "tool_calls": 13.0,
+    "turns": 13.0,
+    "cost": 0.6157914,
+    "time": 196.50405359268188,
+    "output_tok": 17640.0,
+    "thk_sec": 131.84986033299904,
+    "cache_read": 765608.0,
+    "cache_create": 32380.0,
+    "uncached": 28.0,
+    "inline_py": 2.0,
+    "uip_verbs": {
+     "maestro bpmn registry": 1.0,
+     "maestro bpmn validate": 4.0
+    },
+    "bundled_scripts": {},
+    "reps": [
+     "00"
+    ]
+   },
+   "delta": {
+    "thk_tok": 0.0,
+    "thk_sec": -49.033876799994715,
+    "tr_tok": -1261.0,
+    "tool_calls": -4.0,
+    "turns": -4.0,
+    "cost": -0.26330565,
+    "time": -28.900565147399902,
+    "output_tok": -7896.0,
+    "cache_read": -322848.0,
+    "cache_create": -13299.0,
+    "uncached": 620.0
+   },
+   "real_levers": [
+    "tool_calls",
+    "turns",
+    "output_tok"
+   ],
+   "is_real": true,
+   "opt_success_reps": 1,
+   "base_success_reps": 1,
+   "opt_kept": 1,
+   "base_kept": 1,
+   "opt_dropped": 0,
+   "base_dropped": 0,
+   "opt_bursts": [
+    []
+   ],
+   "base_bursts": [
+    []
+   ]
+  },
+  {
+   "task": "skill-bpmn-edit-remove-node",
+   "task_description": "Brownfield edit: delete a middle task from an existing, valid Maestro BPMN and heal the sequence flow (source connects directly to the former successor), removing orphaned diagram interchange and preserving untouched content.",
+   "opt": {
+    "n": 1,
+    "thk_tok": 0.0,
+    "tr_tok": 5323.0,
+    "tool_calls": 11.0,
+    "turns": 11.0,
+    "cost": 0.4655691,
+    "time": 163.9974718093872,
+    "output_tok": 13051.0,
+    "thk_sec": 84.794450683994,
+    "cache_read": 556932.0,
+    "cache_create": 26862.0,
+    "uncached": 664.0,
+    "inline_py": 0.0,
+    "uip_verbs": {
+     "maestro bpmn validate": 2.0,
+     "--version 2": 1.0
+    },
+    "bundled_scripts": {},
+    "reps": [
+     "00"
+    ]
+   },
+   "base": {
+    "n": 1,
+    "thk_tok": 0.0,
+    "tr_tok": 7414.0,
+    "tool_calls": 16.0,
+    "turns": 16.0,
+    "cost": 0.7198864500000001,
+    "time": 204.97958135604858,
+    "output_tok": 18014.0,
+    "thk_sec": 140.63465678599914,
+    "cache_read": 984594.0,
+    "cache_create": 41119.0,
+    "uncached": 34.0,
+    "inline_py": 1.0,
+    "uip_verbs": {
+     "maestro bpmn validate": 2.0
+    },
+    "bundled_scripts": {},
+    "reps": [
+     "00"
+    ]
+   },
+   "delta": {
+    "thk_tok": 0.0,
+    "thk_sec": -55.84020610200514,
+    "tr_tok": -2091.0,
+    "tool_calls": -5.0,
+    "turns": -5.0,
+    "cost": -0.25431735000000005,
+    "time": -40.98210954666138,
+    "output_tok": -4963.0,
+    "cache_read": -427662.0,
+    "cache_create": -14257.0,
+    "uncached": 630.0
+   },
+   "real_levers": [
+    "tool_calls",
+    "turns"
+   ],
+   "is_real": true,
+   "opt_success_reps": 1,
+   "base_success_reps": 1,
+   "opt_kept": 1,
+   "base_kept": 1,
+   "opt_dropped": 0,
+   "base_dropped": 0,
+   "opt_bursts": [
+    []
+   ],
+   "base_bursts": [
+    []
+   ]
+  },
+  {
+   "task": "skill-bpmn-script-task-map",
+   "task_description": "Skill-guided evaluation: agent uses the uipath-maestro-bpmn skill to author a Jint-safe script task that runs a map operation (uppercasing a field over a collection). Script tasks are how BPMN processes reshape data. Authoring only \u2014 no cloud effects.",
+   "opt": {
+    "n": 1,
+    "thk_tok": 0.0,
+    "tr_tok": 14849.0,
+    "tool_calls": 57.0,
+    "turns": 57.0,
+    "cost": 1.4613434999999997,
+    "time": 297.37230920791626,
+    "output_tok": 18032.0,
+    "thk_sec": 190.27909431499575,
+    "cache_read": 3352315.0,
+    "cache_create": 48700.0,
+    "uncached": 848.0,
+    "inline_py": 13.0,
+    "uip_verbs": {
+     "maestro bpmn registry": 3.0
+    },
+    "bundled_scripts": {},
+    "reps": [
+     "00"
+    ]
+   },
+   "base": {
+    "n": 1,
+    "thk_tok": 0.0,
+    "tr_tok": 35488.0,
+    "tool_calls": 44.0,
+    "turns": 44.0,
+    "cost": 1.7049591,
+    "time": 296.2856569290161,
+    "output_tok": 20067.0,
+    "thk_sec": 211.29090864799943,
+    "cache_read": 3501052.0,
+    "cache_create": 94238.0,
+    "uncached": 82.0,
+    "inline_py": 11.0,
+    "uip_verbs": {
+     "maestro bpmn registry": 4.0,
+     "--version 2": 1.0,
+     "maestro bpmn validate": 1.0
+    },
+    "bundled_scripts": {},
+    "reps": [
+     "00"
+    ]
+   },
+   "delta": {
+    "thk_tok": 0.0,
+    "thk_sec": -21.011814333003684,
+    "tr_tok": -20639.0,
+    "tool_calls": 13.0,
+    "turns": 13.0,
+    "cost": -0.24361560000000027,
+    "time": 1.0866522789001465,
+    "output_tok": -2035.0,
+    "cache_read": -148737.0,
+    "cache_create": -45538.0,
+    "uncached": 766.0
+   },
+   "real_levers": [
+    "tool_calls",
+    "turns",
+    "tr_tok"
+   ],
+   "is_real": true,
+   "opt_success_reps": 1,
+   "base_success_reps": 1,
+   "opt_kept": 1,
+   "base_kept": 1,
+   "opt_dropped": 0,
+   "base_dropped": 0,
+   "opt_bursts": [
+    []
+   ],
+   "base_bursts": [
+    []
+   ]
+  },
+  {
+   "task": "skill-bpmn-hitl-brownfield-insert",
+   "task_description": "Quality test (ported from flow hitl/quality_04): agent inserts a HITL approval gate into an EXISTING .bpmn (shipped as a fixture) with a surgical edit \u2014 preserving every original element ID and script, removing only the one edge it splices, and adding the HITL node with a diagram shape.",
+   "opt": {
+    "n": 1,
+    "thk_tok": 0.0,
+    "tr_tok": 13573.0,
+    "tool_calls": 23.0,
+    "turns": 23.0,
+    "cost": 0.7884748500000003,
+    "time": 213.11437511444092,
+    "output_tok": 17476.0,
+    "thk_sec": 131.30877725499886,
+    "cache_read": 1200687.0,
+    "cache_create": 43661.0,
+    "uncached": 800.0,
+    "inline_py": 3.0,
+    "uip_verbs": {
+     "--version 2": 1.0,
+     "maestro bpmn registry": 2.0,
+     "maestro bpmn validate": 2.0
+    },
+    "bundled_scripts": {},
+    "reps": [
+     "00"
+    ]
+   },
+   "base": {
+    "n": 1,
+    "thk_tok": 0.0,
+    "tr_tok": 13026.0,
+    "tool_calls": 26.0,
+    "turns": 26.0,
+    "cost": 1.01504865,
+    "time": 245.49513220787048,
+    "output_tok": 19979.0,
+    "thk_sec": 150.05726394900103,
+    "cache_read": 1729618.0,
+    "cache_create": 52351.0,
+    "uncached": 54.0,
+    "inline_py": 3.0,
+    "uip_verbs": {
+     "--version 2": 1.0,
+     "maestro bpmn registry": 2.0,
+     "maestro bpmn validate": 2.0
+    },
+    "bundled_scripts": {},
+    "reps": [
+     "00"
+    ]
+   },
+   "delta": {
+    "thk_tok": 0.0,
+    "thk_sec": -18.748486694002167,
+    "tr_tok": 547.0,
+    "tool_calls": -3.0,
+    "turns": -3.0,
+    "cost": -0.22657379999999971,
+    "time": -32.380757093429565,
+    "output_tok": -2503.0,
+    "cache_read": -528931.0,
+    "cache_create": -8690.0,
+    "uncached": 746.0
+   },
+   "real_levers": [
+    "tool_calls",
+    "turns"
+   ],
+   "is_real": true,
+   "opt_success_reps": 1,
+   "base_success_reps": 1,
+   "opt_kept": 1,
+   "base_kept": 1,
+   "opt_dropped": 0,
+   "base_dropped": 0,
+   "opt_bursts": [
+    []
+   ],
+   "base_bursts": [
+    []
+   ]
+  },
+  {
+   "task": "skill-bpmn-parallel-fork-join",
+   "task_description": "Skill-guided evaluation: agent uses the uipath-maestro-bpmn skill to author a parallel gateway fork into two concurrent branches that a parallel gateway synchronizes (join) before the end \u2014 the BPMN analogue of a Flow parallel-sync merge. Authoring only \u2014 no cloud effects.",
+   "opt": {
+    "n": 1,
+    "thk_tok": 0.0,
+    "tr_tok": 8685.0,
+    "tool_calls": 5.0,
+    "turns": 5.0,
+    "cost": 0.2515356,
+    "time": 69.09596633911133,
+    "output_tok": 3959.0,
+    "thk_sec": 22.175280966001083,
+    "cache_read": 269787.0,
+    "cache_create": 29034.0,
+    "uncached": 779.0,
+    "inline_py": 0.0,
+    "uip_verbs": {
+     "maestro bpmn validate": 1.0
+    },
+    "bundled_scripts": {},
+    "reps": [
+     "00"
+    ]
+   },
+   "base": {
+    "n": 1,
+    "thk_tok": 0.0,
+    "tr_tok": 8288.0,
+    "tool_calls": 7.0,
+    "turns": 7.0,
+    "cost": 0.4597407,
+    "time": 74.01772165298462,
+    "output_tok": 5208.0,
+    "thk_sec": 29.54871156000081,
+    "cache_read": 421819.0,
+    "cache_create": 68008.0,
+    "uncached": 15.0,
+    "inline_py": 1.0,
+    "uip_verbs": {
+     "2": 1.0
+    },
+    "bundled_scripts": {},
+    "reps": [
+     "00"
+    ]
+   },
+   "delta": {
+    "thk_tok": 0.0,
+    "thk_sec": -7.373430593999728,
+    "tr_tok": 397.0,
+    "tool_calls": -2.0,
+    "turns": -2.0,
+    "cost": -0.20820509999999998,
+    "time": -4.921755313873291,
+    "output_tok": -1249.0,
+    "cache_read": -152032.0,
+    "cache_create": -38974.0,
+    "uncached": 764.0
+   },
+   "real_levers": [],
+   "is_real": false,
+   "opt_success_reps": 1,
+   "base_success_reps": 1,
+   "opt_kept": 1,
+   "base_kept": 1,
+   "opt_dropped": 0,
+   "base_dropped": 0,
+   "opt_bursts": [
+    []
+   ],
+   "base_bursts": [
+    []
+   ]
+  },
+  {
+   "task": "skill-bpmn-registry-discovery",
+   "task_description": "Registry discovery eval: agent uses the Maestro BPMN registry surface to discover documented agent, queue, and connector wrapper types and to save public-safe CLI evidence for the skill's supported-element map without inventing private resource metadata. Requires the `uip` CLI on PATH.",
+   "opt": {
+    "n": 1,
+    "thk_tok": 0.0,
+    "tr_tok": 3583.0,
+    "tool_calls": 11.0,
+    "turns": 11.0,
+    "cost": 0.38664765000000006,
+    "time": 134.91465091705322,
+    "output_tok": 3435.0,
+    "thk_sec": 20.78863166300107,
+    "cache_read": 489393.0,
+    "cache_create": 49725.0,
+    "uncached": 612.0,
+    "inline_py": 2.0,
+    "uip_verbs": {
+     "--version 2": 1.0,
+     "maestro bpmn registry": 7.0
+    },
+    "bundled_scripts": {},
+    "reps": [
+     "00"
+    ]
+   },
+   "base": {
+    "n": 1,
+    "thk_tok": 0.0,
+    "tr_tok": 5712.0,
+    "tool_calls": 17.0,
+    "turns": 17.0,
+    "cost": 0.5894877000000001,
+    "time": 111.7758846282959,
+    "output_tok": 5230.0,
+    "thk_sec": 28.204580956998143,
+    "cache_read": 909249.0,
+    "cache_create": 63508.0,
+    "uncached": 36.0,
+    "inline_py": 7.0,
+    "uip_verbs": {
+     "--version": 1.0,
+     "maestro bpmn registry": 7.0
+    },
+    "bundled_scripts": {},
+    "reps": [
+     "00"
+    ]
+   },
+   "delta": {
+    "thk_tok": 0.0,
+    "thk_sec": -7.415949293997073,
+    "tr_tok": -2129.0,
+    "tool_calls": -6.0,
+    "turns": -6.0,
+    "cost": -0.20284005,
+    "time": 23.138766288757324,
+    "output_tok": -1795.0,
+    "cache_read": -419856.0,
+    "cache_create": -13783.0,
+    "uncached": 576.0
+   },
+   "real_levers": [
+    "tool_calls",
+    "turns"
+   ],
+   "is_real": true,
+   "opt_success_reps": 1,
+   "base_success_reps": 1,
+   "opt_kept": 1,
+   "base_kept": 1,
+   "opt_dropped": 0,
+   "base_dropped": 0,
+   "opt_bursts": [
+    []
+   ],
+   "base_bursts": [
+    []
+   ]
+  },
+  {
+   "task": "skill-bpmn-timer-start",
+   "task_description": "Timer start-event eval: agent uses the uipath-maestro-bpmn skill to author a scheduled (timer) start event that fires on a recurring hourly cycle, using the registry Intsvc.TimerTrigger wrapper on a bpmn:startEvent with a bpmn:timerEventDefinition. Ports the Flow scheduled-trigger smoke test to a BPMN timer start event. Authoring only \u2014 a timer only fires in a live engine, so this validates the structure locally.",
+   "opt": {
+    "n": 1,
+    "thk_tok": 0.0,
+    "tr_tok": 16268.0,
+    "tool_calls": 18.0,
+    "turns": 18.0,
+    "cost": 0.61700025,
+    "time": 128.9655797481537,
+    "output_tok": 8034.0,
+    "thk_sec": 57.315119905002575,
+    "cache_read": 1072650.0,
+    "cache_create": 45931.0,
+    "uncached": 818.0,
+    "inline_py": 1.0,
+    "uip_verbs": {
+     "--version 2": 1.0,
+     "maestro bpmn registry": 2.0,
+     "maestro bpmn format": 1.0,
+     "maestro bpmn validate": 1.0
+    },
+    "bundled_scripts": {},
+    "reps": [
+     "00"
+    ]
+   },
+   "base": {
+    "n": 1,
+    "thk_tok": 0.0,
+    "tr_tok": 17184.0,
+    "tool_calls": 27.0,
+    "turns": 27.0,
+    "cost": 0.8092117499999999,
+    "time": 155.37628364562988,
+    "output_tok": 11780.0,
+    "thk_sec": 90.54728047299885,
+    "cache_read": 1429240.0,
+    "cache_create": 54297.0,
+    "uncached": 42.0,
+    "inline_py": 6.0,
+    "uip_verbs": {
+     "--version 2": 1.0,
+     "maestro bpmn registry": 5.0,
+     "maestro bpmn validate": 1.0
+    },
+    "bundled_scripts": {},
+    "reps": [
+     "00"
+    ]
+   },
+   "delta": {
+    "thk_tok": 0.0,
+    "thk_sec": -33.232160567996274,
+    "tr_tok": -916.0,
+    "tool_calls": -9.0,
+    "turns": -9.0,
+    "cost": -0.19221149999999987,
+    "time": -26.410703897476196,
+    "output_tok": -3746.0,
+    "cache_read": -356590.0,
+    "cache_create": -8366.0,
+    "uncached": 776.0
+   },
+   "real_levers": [
+    "tool_calls",
+    "turns"
+   ],
+   "is_real": true,
+   "opt_success_reps": 1,
+   "base_success_reps": 1,
+   "opt_kept": 1,
+   "base_kept": 1,
+   "opt_dropped": 0,
+   "base_dropped": 0,
+   "opt_bursts": [
+    []
+   ],
+   "base_bursts": [
+    []
+   ]
+  },
+  {
+   "task": "skill-bpmn-debug-instance-inspect",
+   "task_description": "Skill-guided diagnosis of a FAULTED Maestro BPMN debug instance against a mocked `uip` CLI. Given a debug-session instance id, the agent must use the `debug-instance` inspection ladder (incidents, then variables/variables-all) rather than the production `instance` verbs, and must not operate (retry / cancel) a debug instance. It identifies the faulting element id and the offending variable value in a written summary; both are only obtainable from the mocked CLI JSON.",
+   "opt": {
+    "n": 1,
+    "thk_tok": 0.0,
+    "tr_tok": 4305.0,
+    "tool_calls": 12.0,
+    "turns": 12.0,
+    "cost": 0.30584249999999996,
+    "time": 89.24761509895325,
+    "output_tok": 3591.0,
+    "thk_sec": 46.438899532002324,
+    "cache_read": 589365.0,
+    "cache_create": 19516.0,
+    "uncached": 661.0,
+    "inline_py": 0.0,
+    "uip_verbs": {
+     "maestro bpmn --help": 1.0,
+     "maestro bpmn debug-instance": 4.0,
+     "maestro bpmn -h": 1.0,
+     "--help 2": 1.0,
+     "2": 1.0
+    },
+    "bundled_scripts": {},
+    "reps": [
+     "00"
+    ]
+   },
+   "base": {
+    "n": 1,
+    "thk_tok": 0.0,
+    "tr_tok": 4727.0,
+    "tool_calls": 13.0,
+    "turns": 13.0,
+    "cost": 0.4923903,
+    "time": 80.50806498527527,
+    "output_tok": 3588.0,
+    "thk_sec": 44.38704353399953,
+    "cache_read": 714046.0,
+    "cache_create": 59806.0,
+    "uncached": 28.0,
+    "inline_py": 0.0,
+    "uip_verbs": {
+     "maestro bpmn --help": 1.0,
+     "maestro bpmn debug": 1.0,
+     "--help 2": 1.0,
+     "--version 2": 1.0,
+     "maestro bpmn debug-instance": 3.0
+    },
+    "bundled_scripts": {},
+    "reps": [
+     "00"
+    ]
+   },
+   "delta": {
+    "thk_tok": 0.0,
+    "thk_sec": 2.051855998002793,
+    "tr_tok": -422.0,
+    "tool_calls": -1.0,
+    "turns": -1.0,
+    "cost": -0.18654780000000004,
+    "time": 8.739550113677979,
+    "output_tok": 3.0,
+    "cache_read": -124681.0,
+    "cache_create": -40290.0,
+    "uncached": 633.0
+   },
+   "real_levers": [],
+   "is_real": false,
+   "opt_success_reps": 1,
+   "base_success_reps": 1,
+   "opt_kept": 1,
+   "base_kept": 1,
+   "opt_dropped": 0,
+   "base_dropped": 0,
+   "opt_bursts": [
+    []
+   ],
+   "base_bursts": [
+    []
+   ]
+  },
+  {
+   "task": "skill-bpmn-edit-add-output",
+   "task_description": "Brownfield edit: add a new output mapping to an existing script task in a valid Maestro BPMN and declare the backing variable in BPMN.Variables, without disturbing the existing output, variables, or preserve-only payloads.",
+   "opt": {
+    "n": 1,
+    "thk_tok": 0.0,
+    "tr_tok": 5658.0,
+    "tool_calls": 10.0,
+    "turns": 10.0,
+    "cost": 0.37006395,
+    "time": 115.5513801574707,
+    "output_tok": 8458.0,
+    "thk_sec": 71.91288984399762,
+    "cache_read": 499094.0,
+    "cache_create": 24413.0,
+    "uncached": 639.0,
+    "inline_py": 1.0,
+    "uip_verbs": {
+     "maestro bpmn validate": 2.0
+    },
+    "bundled_scripts": {},
+    "reps": [
+     "00"
+    ]
+   },
+   "base": {
+    "n": 1,
+    "thk_tok": 0.0,
+    "tr_tok": 11613.0,
+    "tool_calls": 12.0,
+    "turns": 12.0,
+    "cost": 0.5097012,
+    "time": 109.38930916786194,
+    "output_tok": 8254.0,
+    "thk_sec": 64.20215630199891,
+    "cache_read": 744619.0,
+    "cache_create": 43314.0,
+    "uncached": 26.0,
+    "inline_py": 0.0,
+    "uip_verbs": {
+     "maestro bpmn validate": 3.0
+    },
+    "bundled_scripts": {},
+    "reps": [
+     "00"
+    ]
+   },
+   "delta": {
+    "thk_tok": 0.0,
+    "thk_sec": 7.710733541998707,
+    "tr_tok": -5955.0,
+    "tool_calls": -2.0,
+    "turns": -2.0,
+    "cost": -0.13963725,
+    "time": 6.162070989608765,
+    "output_tok": 204.0,
+    "cache_read": -245525.0,
+    "cache_create": -18901.0,
+    "uncached": 613.0
+   },
+   "real_levers": [
+    "tr_tok"
+   ],
+   "is_real": true,
+   "opt_success_reps": 1,
+   "base_success_reps": 1,
+   "opt_kept": 1,
+   "base_kept": 1,
+   "opt_dropped": 0,
+   "base_dropped": 0,
+   "opt_bursts": [
+    []
+   ],
+   "base_bursts": [
+    []
+   ]
+  },
+  {
+   "task": "skill-bpmn-debug-not-validation",
+   "task_description": "Discipline guard for the skill's \"never run `uip maestro bpmn debug` as validation\" rule. Given a small greenfield authoring task with a \"make sure it's correct\" bar, the agent must confirm correctness with LOCAL validation (`uip maestro bpmn validate`, or a well-formed-XML parse if the CLI is unavailable) and must NOT reach for a cloud debug session to prove correctness. Authoring only \u2014 no cloud side effects.",
+   "opt": {
+    "n": 1,
+    "thk_tok": 0.0,
+    "tr_tok": 8166.0,
+    "tool_calls": 5.0,
+    "turns": 5.0,
+    "cost": 0.3364563,
+    "time": 67.04520416259766,
+    "output_tok": 3698.0,
+    "thk_sec": 25.925005898001473,
+    "cache_read": 192596.0,
+    "cache_create": 59042.0,
+    "uncached": 600.0,
+    "inline_py": 0.0,
+    "uip_verbs": {
+     "maestro bpmn validate": 1.0
+    },
+    "bundled_scripts": {},
+    "reps": [
+     "00"
+    ]
+   },
+   "base": {
+    "n": 1,
+    "thk_tok": 0.0,
+    "tr_tok": 9207.0,
+    "tool_calls": 8.0,
+    "turns": 8.0,
+    "cost": 0.4737393,
+    "time": 72.79348087310791,
+    "output_tok": 4491.0,
+    "thk_sec": 30.089216661001046,
+    "cache_read": 490801.0,
+    "cache_create": 69088.0,
+    "uncached": 18.0,
+    "inline_py": 0.0,
+    "uip_verbs": {
+     "--version 2": 1.0,
+     "maestro bpmn validate": 1.0
+    },
+    "bundled_scripts": {},
+    "reps": [
+     "00"
+    ]
+   },
+   "delta": {
+    "thk_tok": 0.0,
+    "thk_sec": -4.1642107629995735,
+    "tr_tok": -1041.0,
+    "tool_calls": -3.0,
+    "turns": -3.0,
+    "cost": -0.137283,
+    "time": -5.748276710510254,
+    "output_tok": -793.0,
+    "cache_read": -298205.0,
+    "cache_create": -10046.0,
+    "uncached": 582.0
+   },
+   "real_levers": [
+    "tool_calls",
+    "turns"
+   ],
+   "is_real": true,
+   "opt_success_reps": 1,
+   "base_success_reps": 1,
+   "opt_kept": 1,
+   "base_kept": 1,
+   "opt_dropped": 0,
+   "base_dropped": 0,
+   "opt_bursts": [
+    []
+   ],
+   "base_bursts": [
+    []
+   ]
+  },
+  {
+   "task": "skill-bpmn-safety-sanitize",
+   "task_description": "Public-safety negative eval: a fixture .bpmn is seeded with fake-but-realistic private values (a tenant URL, a folder key, a connection id, and person names). The agent must use the uipath-maestro-bpmn skill's public-safety rules to scrub every private value to synthetic placeholders before the file could be shared or committed, while keeping the graph valid. Grades removal of every seeded string and adoption of synthetic placeholders. Authoring only \u2014 no cloud effects.",
+   "opt": {
+    "n": 1,
+    "thk_tok": 0.0,
+    "tr_tok": 3263.0,
+    "tool_calls": 10.0,
+    "turns": 10.0,
+    "cost": 0.21307695,
+    "time": 51.26348066329956,
+    "output_tok": 3374.0,
+    "thk_sec": 22.50246068100023,
+    "cache_read": 294334.0,
+    "cache_create": 19233.0,
+    "uncached": 681.0,
+    "inline_py": 1.0,
+    "uip_verbs": {},
+    "bundled_scripts": {},
+    "reps": [
+     "00"
+    ]
+   },
+   "base": {
+    "n": 1,
+    "thk_tok": 0.0,
+    "tr_tok": 2007.0,
+    "tool_calls": 9.0,
+    "turns": 9.0,
+    "cost": 0.33315135,
+    "time": 59.73234415054321,
+    "output_tok": 3211.0,
+    "thk_sec": 32.69077860800098,
+    "cache_read": 257472.0,
+    "cache_create": 55389.0,
+    "uncached": 12.0,
+    "inline_py": 1.0,
+    "uip_verbs": {},
+    "bundled_scripts": {},
+    "reps": [
+     "00"
+    ]
+   },
+   "delta": {
+    "thk_tok": 0.0,
+    "thk_sec": -10.188317927000753,
+    "tr_tok": 1256.0,
+    "tool_calls": 1.0,
+    "turns": 1.0,
+    "cost": -0.12007440000000003,
+    "time": -8.468863487243652,
+    "output_tok": 163.0,
+    "cache_read": 36862.0,
+    "cache_create": -36156.0,
+    "uncached": 669.0
+   },
+   "real_levers": [],
+   "is_real": false,
+   "opt_success_reps": 1,
+   "base_success_reps": 1,
+   "opt_kept": 1,
+   "base_kept": 1,
+   "opt_dropped": 0,
+   "base_dropped": 0,
+   "opt_bursts": [
+    []
+   ],
+   "base_bursts": [
+    []
+   ]
+  },
+  {
+   "task": "skill-bpmn-dice-roller",
+   "task_description": "Skill-guided evaluation (ported from the Flow dice_roller eval): agent uses the uipath-maestro-bpmn skill to author a BPMN process with a script task that produces a random die value and an exclusive gateway that classifies the result. Exercises script-task randomness and gateway-on-result routing. Authoring only \u2014 no cloud effects.",
+   "opt": {
+    "n": 1,
+    "thk_tok": 0.0,
+    "tr_tok": 13953.0,
+    "tool_calls": 16.0,
+    "turns": 16.0,
+    "cost": 0.5641060499999999,
+    "time": 139.1881618499756,
+    "output_tok": 9165.0,
+    "thk_sec": 65.81304309699772,
+    "cache_read": 871426.0,
+    "cache_create": 43467.0,
+    "uncached": 734.0,
+    "inline_py": 0.0,
+    "uip_verbs": {
+     "2": 1.0,
+     "maestro bpmn registry": 3.0,
+     "maestro bpmn init": 1.0,
+     "maestro bpmn format": 1.0,
+     "maestro bpmn validate": 1.0
+    },
+    "bundled_scripts": {},
+    "reps": [
+     "00"
+    ]
+   },
+   "base": {
+    "n": 1,
+    "thk_tok": 0.0,
+    "tr_tok": 13801.0,
+    "tool_calls": 18.0,
+    "turns": 18.0,
+    "cost": 0.6815348999999999,
+    "time": 160.11280012130737,
+    "output_tok": 10653.0,
+    "thk_sec": 89.90805880699918,
+    "cache_read": 1145693.0,
+    "cache_create": 47448.0,
+    "uncached": 34.0,
+    "inline_py": 2.0,
+    "uip_verbs": {
+     "--version 2": 1.0,
+     "maestro bpmn registry": 3.0,
+     "maestro bpmn validate": 1.0
+    },
+    "bundled_scripts": {},
+    "reps": [
+     "00"
+    ]
+   },
+   "delta": {
+    "thk_tok": 0.0,
+    "thk_sec": -24.095015710001462,
+    "tr_tok": 152.0,
+    "tool_calls": -2.0,
+    "turns": -2.0,
+    "cost": -0.11742885000000003,
+    "time": -20.924638271331787,
+    "output_tok": -1488.0,
+    "cache_read": -274267.0,
+    "cache_create": -3981.0,
+    "uncached": 700.0
+   },
+   "real_levers": [],
+   "is_real": false,
+   "opt_success_reps": 1,
+   "base_success_reps": 1,
+   "opt_kept": 1,
+   "base_kept": 1,
+   "opt_dropped": 0,
+   "base_dropped": 0,
+   "opt_bursts": [
+    []
+   ],
+   "base_bursts": [
+    []
+   ]
+  },
+  {
+   "task": "skill-bpmn-diagnose-job-traces",
+   "task_description": "Diagnose coverage for the uipath-maestro-bpmn skill: a job faulted with no incident and no faulting element on the job summary. The agent follows the diagnostic priority ladder \u2014 cheaper reads (job status / incidents) first \u2014 and only then uses `job traces` as the last resort to recover the faulting element and its timing. Read-only mocked CLI; no lifecycle mutations.",
+   "opt": {
+    "n": 1,
+    "thk_tok": 0.0,
+    "tr_tok": 3555.0,
+    "tool_calls": 8.0,
+    "turns": 8.0,
+    "cost": 0.24618344999999997,
+    "time": 81.35925507545471,
+    "output_tok": 3625.0,
+    "thk_sec": 32.43309612999656,
+    "cache_read": 397454.0,
+    "cache_create": 18799.0,
+    "uncached": 692.0,
+    "inline_py": 0.0,
+    "uip_verbs": {
+     "maestro bpmn job": 2.0,
+     "maestro bpmn instance": 1.0,
+     "maestro bpmn incident": 1.0
+    },
+    "bundled_scripts": {},
+    "reps": [
+     "00"
+    ]
+   },
+   "base": {
+    "n": 1,
+    "thk_tok": 0.0,
+    "tr_tok": 3642.0,
+    "tool_calls": 11.0,
+    "turns": 11.0,
+    "cost": 0.35621459999999994,
+    "time": 72.00792741775513,
+    "output_tok": 4423.0,
+    "thk_sec": 39.413315782999234,
+    "cache_read": 629442.0,
+    "cache_create": 26924.0,
+    "uncached": 24.0,
+    "inline_py": 0.0,
+    "uip_verbs": {
+     "maestro bpmn job": 2.0,
+     "maestro bpmn instance": 4.0,
+     "maestro bpmn incident": 1.0
+    },
+    "bundled_scripts": {},
+    "reps": [
+     "00"
+    ]
+   },
+   "delta": {
+    "thk_tok": 0.0,
+    "thk_sec": -6.980219653002678,
+    "tr_tok": -87.0,
+    "tool_calls": -3.0,
+    "turns": -3.0,
+    "cost": -0.11003114999999997,
+    "time": 9.351327657699585,
+    "output_tok": -798.0,
+    "cache_read": -231988.0,
+    "cache_create": -8125.0,
+    "uncached": 668.0
+   },
+   "real_levers": [
+    "tool_calls",
+    "turns"
+   ],
+   "is_real": true,
+   "opt_success_reps": 1,
+   "base_success_reps": 1,
+   "opt_kept": 1,
+   "base_kept": 1,
+   "opt_dropped": 0,
+   "base_dropped": 0,
+   "opt_bursts": [
+    []
+   ],
+   "base_bursts": [
+    []
+   ]
+  },
+  {
+   "task": "skill-bpmn-timer-boundary-noninterrupting",
+   "task_description": "Structural advanced-event eval: agent uses the uipath-maestro-bpmn skill to attach a NON-INTERRUPTING timer boundary event (cancelActivity=\"false\") to a userTask \u2014 a reminder/escalation timer that fires without cancelling the task. Exercises the boundary attachedToRef/cancelActivity contract and timer duration validity. Authoring only \u2014 no cloud effects.",
+   "opt": {
+    "n": 1,
+    "thk_tok": 0.0,
+    "tr_tok": 14811.0,
+    "tool_calls": 16.0,
+    "turns": 16.0,
+    "cost": 0.6093693,
+    "time": 177.7958972454071,
+    "output_tok": 14096.0,
+    "thk_sec": 120.46063467300155,
+    "cache_read": 782871.0,
+    "cache_create": 42824.0,
+    "uncached": 826.0,
+    "inline_py": 2.0,
+    "uip_verbs": {
+     "--version 2": 1.0,
+     "maestro bpmn registry": 2.0,
+     "maestro bpmn validate": 1.0
+    },
+    "bundled_scripts": {},
+    "reps": [
+     "00"
+    ]
+   },
+   "base": {
+    "n": 1,
+    "thk_tok": 0.0,
+    "tr_tok": 18223.0,
+    "tool_calls": 15.0,
+    "turns": 15.0,
+    "cost": 0.7184706,
+    "time": 218.31078577041626,
+    "output_tok": 15811.0,
+    "thk_sec": 136.84785216199995,
+    "cache_read": 894442.0,
+    "cache_create": 56772.0,
+    "uncached": 26.0,
+    "inline_py": 2.0,
+    "uip_verbs": {
+     "--version 2": 1.0,
+     "maestro bpmn registry": 7.0,
+     "maestro bpmn validate": 1.0
+    },
+    "bundled_scripts": {},
+    "reps": [
+     "00"
+    ]
+   },
+   "delta": {
+    "thk_tok": 0.0,
+    "thk_sec": -16.387217488998402,
+    "tr_tok": -3412.0,
+    "tool_calls": 1.0,
+    "turns": 1.0,
+    "cost": -0.10910129999999996,
+    "time": -40.514888525009155,
+    "output_tok": -1715.0,
+    "cache_read": -111571.0,
+    "cache_create": -13948.0,
+    "uncached": 800.0
+   },
+   "real_levers": [],
+   "is_real": false,
+   "opt_success_reps": 1,
+   "base_success_reps": 1,
+   "opt_kept": 1,
+   "base_kept": 1,
+   "opt_dropped": 0,
+   "base_dropped": 0,
+   "opt_bursts": [
+    []
+   ],
+   "base_bursts": [
+    []
+   ]
+  },
+  {
+   "task": "skill-bpmn-queue-create-and-wait",
+   "task_description": "Node eval: agent uses the uipath-maestro-bpmn skill to model the synchronous queue wrapper Orchestrator.CreateAndWaitForQueueItem on a bpmn:serviceTask with a bound request input and a captured output \u2014 distinct from the fire-and-forget Orchestrator.CreateQueueItem that rides a bpmn:sendTask. Authoring only \u2014 no cloud effects.",
+   "opt": {
+    "n": 1,
+    "thk_tok": 0.0,
+    "tr_tok": 30635.0,
+    "tool_calls": 44.0,
+    "turns": 44.0,
+    "cost": 2.0013490500000004,
+    "time": 614.2467293739319,
+    "output_tok": 51436.0,
+    "thk_sec": 488.15764019299786,
+    "cache_read": 3114026.0,
+    "cache_create": 78119.0,
+    "uncached": 885.0,
+    "inline_py": 10.0,
+    "uip_verbs": {
+     "maestro bpmn registry": 4.0,
+     "maestro bpmn format": 1.0,
+     "maestro bpmn validate": 1.0
+    },
+    "bundled_scripts": {},
+    "reps": [
+     "00"
+    ]
+   },
+   "base": {
+    "n": 1,
+    "thk_tok": 0.0,
+    "tr_tok": 34951.0,
+    "tool_calls": 41.0,
+    "turns": 41.0,
+    "cost": 2.0971604999999998,
+    "time": 501.88200855255127,
+    "output_tok": 41380.0,
+    "thk_sec": 393.6737992929985,
+    "cache_read": 3800265.0,
+    "cache_create": 89636.0,
+    "uncached": 82.0,
+    "inline_py": 8.0,
+    "uip_verbs": {
+     "maestro bpmn registry": 5.0,
+     "maestro bpmn validate": 2.0
+    },
+    "bundled_scripts": {},
+    "reps": [
+     "00"
+    ]
+   },
+   "delta": {
+    "thk_tok": 0.0,
+    "thk_sec": 94.48384089999934,
+    "tr_tok": -4316.0,
+    "tool_calls": 3.0,
+    "turns": 3.0,
+    "cost": -0.09581144999999935,
+    "time": 112.36472082138062,
+    "output_tok": 10056.0,
+    "cache_read": -686239.0,
+    "cache_create": -11517.0,
+    "uncached": 803.0
+   },
+   "real_levers": [
+    "tool_calls",
+    "turns",
+    "output_tok"
+   ],
+   "is_real": true,
+   "opt_success_reps": 1,
+   "base_success_reps": 1,
+   "opt_kept": 1,
+   "base_kept": 1,
+   "opt_dropped": 0,
+   "base_dropped": 0,
+   "opt_bursts": [
+    []
+   ],
+   "base_bursts": [
+    []
+   ]
+  },
+  {
+   "task": "skill-bpmn-diagnose-deployed-drift",
+   "task_description": "Diagnose coverage for the uipath-maestro-bpmn skill: the deployed BPMN asset that actually ran differs from the local `.bpmn` source. The agent fetches the deployed asset with `instance asset`, diffs it against the local file, and reports the drifted element as the root cause instead of assuming local source is what ran. Read-only mocked CLI; no lifecycle mutations.",
+   "opt": {
+    "n": 1,
+    "thk_tok": 0.0,
+    "tr_tok": 3297.0,
+    "tool_calls": 7.0,
+    "turns": 7.0,
+    "cost": 0.21801765,
+    "time": 78.00129771232605,
+    "output_tok": 3781.0,
+    "thk_sec": 39.348040417997254,
+    "cache_read": 299253.0,
+    "cache_create": 18505.0,
+    "uncached": 711.0,
+    "inline_py": 1.0,
+    "uip_verbs": {
+     "maestro bpmn instance": 1.0
+    },
+    "bundled_scripts": {},
+    "reps": [
+     "00"
+    ]
+   },
+   "base": {
+    "n": 1,
+    "thk_tok": 0.0,
+    "tr_tok": 2431.0,
+    "tool_calls": 5.0,
+    "turns": 5.0,
+    "cost": 0.30959190000000003,
+    "time": 52.24204993247986,
+    "output_tok": 2640.0,
+    "thk_sec": 21.730449038999723,
+    "cache_read": 202623.0,
+    "cache_create": 55780.0,
+    "uncached": 10.0,
+    "inline_py": 0.0,
+    "uip_verbs": {
+     "maestro bpmn instance": 1.0
+    },
+    "bundled_scripts": {},
+    "reps": [
+     "00"
+    ]
+   },
+   "delta": {
+    "thk_tok": 0.0,
+    "thk_sec": 17.61759137899753,
+    "tr_tok": 866.0,
+    "tool_calls": 2.0,
+    "turns": 2.0,
+    "cost": -0.09157425000000002,
+    "time": 25.75924777984619,
+    "output_tok": 1141.0,
+    "cache_read": 96630.0,
+    "cache_create": -37275.0,
+    "uncached": 701.0
+   },
+   "real_levers": [],
+   "is_real": false,
+   "opt_success_reps": 1,
+   "base_success_reps": 1,
+   "opt_kept": 1,
+   "base_kept": 1,
+   "opt_dropped": 0,
+   "base_dropped": 0,
+   "opt_bursts": [
+    []
+   ],
+   "base_bursts": [
+    []
+   ]
+  },
+  {
+   "task": "skill-bpmn-operate-diagnose-minimal-fault-triage",
+   "task_description": "Minimal lifecycle coverage for the uipath-maestro-bpmn skill's Operate and Diagnose guidance. The agent inspects a mocked failed BPMN run, follows the diagnostic priority ladder, and recommends the safe next operate action without performing lifecycle mutations.",
+   "opt": {
+    "n": 1,
+    "thk_tok": 0.0,
+    "tr_tok": 4262.0,
+    "tool_calls": 10.0,
+    "turns": 10.0,
+    "cost": 0.3032707499999999,
+    "time": 82.77939939498901,
+    "output_tok": 4942.0,
+    "thk_sec": 36.31451310799639,
+    "cache_read": 499060.0,
+    "cache_create": 20633.0,
+    "uncached": 683.0,
+    "inline_py": 0.0,
+    "uip_verbs": {
+     "maestro bpmn job": 2.0,
+     "maestro bpmn instance": 2.0,
+     "maestro bpmn incident": 1.0,
+     "maestro bpmn --help": 1.0
+    },
+    "bundled_scripts": {},
+    "reps": [
+     "00"
+    ]
+   },
+   "base": {
+    "n": 1,
+    "thk_tok": 0.0,
+    "tr_tok": 3895.0,
+    "tool_calls": 10.0,
+    "turns": 10.0,
+    "cost": 0.37465065,
+    "time": 122.29722809791565,
+    "output_tok": 6641.0,
+    "thk_sec": 60.0600803010002,
+    "cache_read": 571653.0,
+    "cache_create": 27593.0,
+    "uncached": 22.0,
+    "inline_py": 0.0,
+    "uip_verbs": {
+     "maestro bpmn job": 2.0,
+     "maestro bpmn instance": 2.0,
+     "maestro bpmn incident": 1.0
+    },
+    "bundled_scripts": {},
+    "reps": [
+     "00"
+    ]
+   },
+   "delta": {
+    "thk_tok": 0.0,
+    "thk_sec": -23.745567193003808,
+    "tr_tok": 367.0,
+    "tool_calls": 0.0,
+    "turns": 0.0,
+    "cost": -0.07137990000000005,
+    "time": -39.517828702926636,
+    "output_tok": -1699.0,
+    "cache_read": -72593.0,
+    "cache_create": -6960.0,
+    "uncached": 661.0
+   },
+   "real_levers": [],
+   "is_real": false,
+   "opt_success_reps": 1,
+   "base_success_reps": 1,
+   "opt_kept": 1,
+   "base_kept": 1,
+   "opt_dropped": 0,
+   "base_dropped": 0,
+   "opt_bursts": [
+    []
+   ],
+   "base_bursts": [
+    []
+   ]
+  },
+  {
+   "task": "skill-bpmn-diagnose-scoped-variables",
+   "task_description": "Diagnose coverage for the uipath-maestro-bpmn skill: a run completed but a downstream value is semantically wrong. The agent inspects subprocess-scoped runtime state with `instance variables --parent-element-id <id>` to find the offending variable inside the child scope, proving that \"completed\" does not mean \"semantically correct\". Read-only mocked CLI; no lifecycle mutations.",
+   "opt": {
+    "n": 1,
+    "thk_tok": 0.0,
+    "tr_tok": 3280.0,
+    "tool_calls": 10.0,
+    "turns": 10.0,
+    "cost": 0.22514009999999995,
+    "time": 54.955796241760254,
+    "output_tok": 3464.0,
+    "thk_sec": 23.994602418000795,
+    "cache_read": 345182.0,
+    "cache_create": 18006.0,
+    "uncached": 701.0,
+    "inline_py": 0.0,
+    "uip_verbs": {
+     "maestro bpmn instance": 5.0
+    },
+    "bundled_scripts": {},
+    "reps": [
+     "00"
+    ]
+   },
+   "base": {
+    "n": 1,
+    "thk_tok": 0.0,
+    "tr_tok": 3480.0,
+    "tool_calls": 9.0,
+    "turns": 9.0,
+    "cost": 0.2709996,
+    "time": 65.00030994415283,
+    "output_tok": 3384.0,
+    "thk_sec": 27.501145569000983,
+    "cache_read": 403097.0,
+    "cache_create": 26470.0,
+    "uncached": 16.0,
+    "inline_py": 0.0,
+    "uip_verbs": {
+     "maestro bpmn instance": 5.0
+    },
+    "bundled_scripts": {},
+    "reps": [
+     "00"
+    ]
+   },
+   "delta": {
+    "thk_tok": 0.0,
+    "thk_sec": -3.506543151000187,
+    "tr_tok": -200.0,
+    "tool_calls": 1.0,
+    "turns": 1.0,
+    "cost": -0.04585950000000005,
+    "time": -10.044513702392578,
+    "output_tok": 80.0,
+    "cache_read": -57915.0,
+    "cache_create": -8464.0,
+    "uncached": 685.0
+   },
+   "real_levers": [],
+   "is_real": false,
+   "opt_success_reps": 1,
+   "base_success_reps": 1,
+   "opt_kept": 1,
+   "base_kept": 1,
+   "opt_dropped": 0,
+   "base_dropped": 0,
+   "opt_bursts": [
+    []
+   ],
+   "base_bursts": [
+    []
+   ]
+  },
+  {
+   "task": "skill-bpmn-calculator",
+   "task_description": "Skill-guided evaluation (ported from the Flow calculator eval): agent uses the uipath-maestro-bpmn skill to author a BPMN process that routes on an operator variable through a multi-way exclusive gateway to one script task per arithmetic operation. Exercises multi-branch exclusive-gateway routing, script tasks, and BPMN DI. Authoring only \u2014 no cloud effects.",
+   "opt": {
+    "n": 1,
+    "thk_tok": 0.0,
+    "tr_tok": 26848.0,
+    "tool_calls": 51.0,
+    "turns": 51.0,
+    "cost": 1.7442407999999998,
+    "time": 508.46675634384155,
+    "output_tok": 39872.0,
+    "thk_sec": 350.1558016809995,
+    "cache_read": 2826291.0,
+    "cache_create": 74886.0,
+    "uncached": 5817.0,
+    "inline_py": 8.0,
+    "uip_verbs": {
+     "--version 2": 1.0,
+     "maestro bpmn registry": 5.0,
+     "maestro bpmn format": 1.0,
+     "maestro bpmn validate": 1.0
+    },
+    "bundled_scripts": {},
+    "reps": [
+     "00"
+    ]
+   },
+   "base": {
+    "n": 1,
+    "thk_tok": 0.0,
+    "tr_tok": 32854.0,
+    "tool_calls": 37.0,
+    "turns": 37.0,
+    "cost": 1.7895135,
+    "time": 360.09106492996216,
+    "output_tok": 29718.0,
+    "thk_sec": 252.45198523000178,
+    "cache_read": 2948035.0,
+    "cache_create": 122436.0,
+    "uncached": 66.0,
+    "inline_py": 1.0,
+    "uip_verbs": {
+     "--version 2": 1.0,
+     "maestro bpmn registry": 4.0,
+     "maestro bpmn validate": 1.0
+    },
+    "bundled_scripts": {},
+    "reps": [
+     "00"
+    ]
+   },
+   "delta": {
+    "thk_tok": 0.0,
+    "thk_sec": 97.70381645099772,
+    "tr_tok": -6006.0,
+    "tool_calls": 14.0,
+    "turns": 14.0,
+    "cost": -0.045272700000000166,
+    "time": 148.3756914138794,
+    "output_tok": 10154.0,
+    "cache_read": -121744.0,
+    "cache_create": -47550.0,
+    "uncached": 5751.0
+   },
+   "real_levers": [
+    "tool_calls",
+    "turns",
+    "tr_tok",
+    "output_tok"
+   ],
+   "is_real": true,
+   "opt_success_reps": 1,
+   "base_success_reps": 1,
+   "opt_kept": 1,
+   "base_kept": 1,
+   "opt_dropped": 0,
+   "base_dropped": 0,
+   "opt_bursts": [
+    []
+   ],
+   "base_bursts": [
+    []
+   ]
+  },
+  {
+   "task": "skill-bpmn-debug-workflow-mocked",
+   "task_description": "Skill-guided evaluation of the correct Maestro BPMN debug workflow against a mocked `uip` CLI. The agent debugs an existing local project with inputs, captures the instance id the debug command returns, then inspects the run via the `debug-instance` commands and summarizes the runtime variable values. The summary values are only discoverable from the mocked CLI JSON, so a prose guess cannot pass. No cloud side effects \u2014 the CLI is backed by a local fixture harness.",
+   "opt": {
+    "n": 1,
+    "thk_tok": 0.0,
+    "tr_tok": 3333.0,
+    "tool_calls": 8.0,
+    "turns": 8.0,
+    "cost": 0.21689775,
+    "time": 64.32052659988403,
+    "output_tok": 2220.0,
+    "thk_sec": 23.390286791998733,
+    "cache_read": 390670.0,
+    "cache_create": 17177.0,
+    "uncached": 661.0,
+    "inline_py": 0.0,
+    "uip_verbs": {
+     "--version 2": 1.0,
+     "maestro bpmn debug": 1.0,
+     "maestro bpmn debug-instance": 1.0
+    },
+    "bundled_scripts": {},
+    "reps": [
+     "00"
+    ]
+   },
+   "base": {
+    "n": 1,
+    "thk_tok": 0.0,
+    "tr_tok": 3444.0,
+    "tool_calls": 8.0,
+    "turns": 8.0,
+    "cost": 0.26167560000000006,
+    "time": 41.31313681602478,
+    "output_tok": 2039.0,
+    "thk_sec": 14.103856249999808,
+    "cache_read": 454922.0,
+    "cache_create": 25216.0,
+    "uncached": 18.0,
+    "inline_py": 0.0,
+    "uip_verbs": {
+     "maestro bpmn debug": 1.0,
+     "maestro bpmn debug-instance": 1.0
+    },
+    "bundled_scripts": {},
+    "reps": [
+     "00"
+    ]
+   },
+   "delta": {
+    "thk_tok": 0.0,
+    "thk_sec": 9.286430541998925,
+    "tr_tok": -111.0,
+    "tool_calls": 0.0,
+    "turns": 0.0,
+    "cost": -0.04477785000000006,
+    "time": 23.007389783859253,
+    "output_tok": 181.0,
+    "cache_read": -64252.0,
+    "cache_create": -8039.0,
+    "uncached": 643.0
+   },
+   "real_levers": [],
+   "is_real": false,
+   "opt_success_reps": 1,
+   "base_success_reps": 1,
+   "opt_kept": 1,
+   "base_kept": 1,
+   "opt_dropped": 0,
+   "base_dropped": 0,
+   "opt_bursts": [
+    []
+   ],
+   "base_bursts": [
+    []
+   ]
+  },
+  {
+   "task": "skill-bpmn-timer",
+   "task_description": "Skill-guided evaluation: agent uses the uipath-maestro-bpmn skill to author an intermediate timer catch event (the BPMN analogue of a Flow Delay) that waits a fixed ISO-8601 duration between the start and end. Authoring only \u2014 no cloud effects.",
+   "opt": {
+    "n": 1,
+    "thk_tok": 0.0,
+    "tr_tok": 8116.0,
+    "tool_calls": 4.0,
+    "turns": 4.0,
+    "cost": 0.1999011,
+    "time": 50.0411741733551,
+    "output_tok": 2097.0,
+    "thk_sec": 15.39665763999983,
+    "cache_read": 222752.0,
+    "cache_create": 26518.0,
+    "uncached": 726.0,
+    "inline_py": 0.0,
+    "uip_verbs": {
+     "maestro bpmn validate": 1.0
+    },
+    "bundled_scripts": {},
+    "reps": [
+     "00"
+    ]
+   },
+   "base": {
+    "n": 1,
+    "thk_tok": 0.0,
+    "tr_tok": 7590.0,
+    "tool_calls": 4.0,
+    "turns": 4.0,
+    "cost": 0.24116655,
+    "time": 34.700433015823364,
+    "output_tok": 2657.0,
+    "thk_sec": 15.087622125000053,
+    "cache_read": 253051.0,
+    "cache_create": 33431.0,
+    "uncached": 10.0,
+    "inline_py": 0.0,
+    "uip_verbs": {
+     "maestro bpmn validate": 1.0
+    },
+    "bundled_scripts": {},
+    "reps": [
+     "00"
+    ]
+   },
+   "delta": {
+    "thk_tok": 0.0,
+    "thk_sec": 0.30903551499977766,
+    "tr_tok": 526.0,
+    "tool_calls": 0.0,
+    "turns": 0.0,
+    "cost": -0.04126545000000001,
+    "time": 15.340741157531738,
+    "output_tok": -560.0,
+    "cache_read": -30299.0,
+    "cache_create": -6913.0,
+    "uncached": 716.0
+   },
+   "real_levers": [],
+   "is_real": false,
+   "opt_success_reps": 1,
+   "base_success_reps": 1,
+   "opt_kept": 1,
+   "base_kept": 1,
+   "opt_dropped": 0,
+   "base_dropped": 0,
+   "opt_bursts": [
+    []
+   ],
+   "base_bursts": [
+    []
+   ]
+  },
+  {
+   "task": "skill-bpmn-error-boundary-handler",
+   "task_description": "Structural error-handling eval: agent uses the uipath-maestro-bpmn skill to attach an INTERRUPTING error boundary event (cancelActivity=\"true\") with a configured error code to a service-call task, routing the caught error to a recovery path. Exercises the ERROR_BOUNDARY_EVENT_REQUIRES_ERROR_CODE and duplicate catch-all boundary rules. Authoring only \u2014 no cloud effects.",
+   "opt": {
+    "n": 1,
+    "thk_tok": 0.0,
+    "tr_tok": 21079.0,
+    "tool_calls": 18.0,
+    "turns": 18.0,
+    "cost": 0.8229339,
+    "time": 244.1633152961731,
+    "output_tok": 17529.0,
+    "thk_sec": 149.28530217600203,
+    "cache_read": 1137523.0,
+    "cache_create": 57632.0,
+    "uncached": 874.0,
+    "inline_py": 1.0,
+    "uip_verbs": {
+     "--version 2": 1.0,
+     "maestro bpmn registry": 4.0,
+     "maestro bpmn format": 1.0,
+     "maestro bpmn validate": 1.0
+    },
+    "bundled_scripts": {},
+    "reps": [
+     "00"
+    ]
+   },
+   "base": {
+    "n": 1,
+    "thk_tok": 0.0,
+    "tr_tok": 16988.0,
+    "tool_calls": 20.0,
+    "turns": 20.0,
+    "cost": 0.8583947999999999,
+    "time": 221.60037469863892,
+    "output_tok": 16337.0,
+    "thk_sec": 121.64835809499802,
+    "cache_read": 1346221.0,
+    "cache_create": 55826.0,
+    "uncached": 42.0,
+    "inline_py": 8.0,
+    "uip_verbs": {
+     "--version 2": 1.0,
+     "maestro bpmn registry": 4.0,
+     "maestro bpmn validate": 1.0
+    },
+    "bundled_scripts": {},
+    "reps": [
+     "00"
+    ]
+   },
+   "delta": {
+    "thk_tok": 0.0,
+    "thk_sec": 27.636944081004017,
+    "tr_tok": 4091.0,
+    "tool_calls": -2.0,
+    "turns": -2.0,
+    "cost": -0.035460899999999906,
+    "time": 22.56294059753418,
+    "output_tok": 1192.0,
+    "cache_read": -208698.0,
+    "cache_create": 1806.0,
+    "uncached": 832.0
+   },
+   "real_levers": [],
+   "is_real": false,
+   "opt_success_reps": 1,
+   "base_success_reps": 1,
+   "opt_kept": 1,
+   "base_kept": 1,
+   "opt_dropped": 0,
+   "base_dropped": 0,
+   "opt_bursts": [
+    []
+   ],
+   "base_bursts": [
+    []
+   ]
+  },
+  {
+   "task": "skill-bpmn-diagnose-validate-fix-loop",
+   "task_description": "Diagnose-and-repair loop for the uipath-maestro-bpmn skill. A pre-broken Maestro BPMN file ships two blocking defects (an exclusive-gateway branch with no condition expression, and a condition expression that references an undeclared variable). The agent runs `uip maestro bpmn validate`, reads the reported findings, fixes the root causes in BPMN source, and re-validates until the file is clean. Pure local \u2014 no cloud or mocked CLI.",
+   "opt": {
+    "n": 1,
+    "thk_tok": 0.0,
+    "tr_tok": 1426.0,
+    "tool_calls": 5.0,
+    "turns": 5.0,
+    "cost": 0.15383190000000002,
+    "time": 46.60396647453308,
+    "output_tok": 1583.0,
+    "thk_sec": 13.904617859001519,
+    "cache_read": 243043.0,
+    "cache_create": 14720.0,
+    "uncached": 658.0,
+    "inline_py": 0.0,
+    "uip_verbs": {
+     "maestro bpmn validate": 2.0
+    },
+    "bundled_scripts": {},
+    "reps": [
+     "00"
+    ]
+   },
+   "base": {
+    "n": 1,
+    "thk_tok": 0.0,
+    "tr_tok": 1429.0,
+    "tool_calls": 5.0,
+    "turns": 5.0,
+    "cost": 0.17670840000000002,
+    "time": 28.05808138847351,
+    "output_tok": 1528.0,
+    "thk_sec": 10.346956208000847,
+    "cache_read": 231728.0,
+    "cache_create": 22464.0,
+    "uncached": 10.0,
+    "inline_py": 0.0,
+    "uip_verbs": {
+     "maestro bpmn validate": 2.0
+    },
+    "bundled_scripts": {},
+    "reps": [
+     "00"
+    ]
+   },
+   "delta": {
+    "thk_tok": 0.0,
+    "thk_sec": 3.5576616510006716,
+    "tr_tok": -3.0,
+    "tool_calls": 0.0,
+    "turns": 0.0,
+    "cost": -0.022876499999999994,
+    "time": 18.54588508605957,
+    "output_tok": 55.0,
+    "cache_read": 11315.0,
+    "cache_create": -7744.0,
+    "uncached": 648.0
+   },
+   "real_levers": [],
+   "is_real": false,
+   "opt_success_reps": 1,
+   "base_success_reps": 1,
+   "opt_kept": 1,
+   "base_kept": 1,
+   "opt_dropped": 0,
+   "base_dropped": 0,
+   "opt_bursts": [
+    []
+   ],
+   "base_bursts": [
+    []
+   ]
+  },
+  {
+   "task": "skill-bpmn-edit-move-node",
+   "task_description": "Brownfield edit: reorder two adjacent tasks in an existing, valid Maestro BPMN by rewiring the sequence flows (BPMN has no positional move \u2014 the edit is a pure rewiring), keeping both node payloads and the diagram consistent.",
+   "opt": {
+    "n": 1,
+    "thk_tok": 0.0,
+    "tr_tok": 4272.0,
+    "tool_calls": 11.0,
+    "turns": 11.0,
+    "cost": 0.4022155499999999,
+    "time": 116.02761602401733,
+    "output_tok": 9889.0,
+    "thk_sec": 68.75823036700058,
+    "cache_read": 548856.0,
+    "cache_create": 23281.0,
+    "uncached": 640.0,
+    "inline_py": 0.0,
+    "uip_verbs": {
+     "maestro bpmn validate": 2.0
+    },
+    "bundled_scripts": {},
+    "reps": [
+     "00"
+    ]
+   },
+   "base": {
+    "n": 1,
+    "thk_tok": 0.0,
+    "tr_tok": 3859.0,
+    "tool_calls": 9.0,
+    "turns": 9.0,
+    "cost": 0.42470654999999996,
+    "time": 106.2719624042511,
+    "output_tok": 10141.0,
+    "thk_sec": 55.976830050999524,
+    "cache_read": 520026.0,
+    "cache_create": 31073.0,
+    "uncached": 20.0,
+    "inline_py": 0.0,
+    "uip_verbs": {
+     "maestro bpmn validate": 2.0
+    },
+    "bundled_scripts": {},
+    "reps": [
+     "00"
+    ]
+   },
+   "delta": {
+    "thk_tok": 0.0,
+    "thk_sec": 12.781400316001054,
+    "tr_tok": 413.0,
+    "tool_calls": 2.0,
+    "turns": 2.0,
+    "cost": -0.02249100000000004,
+    "time": 9.755653619766235,
+    "output_tok": -252.0,
+    "cache_read": 28830.0,
+    "cache_create": -7792.0,
+    "uncached": 620.0
+   },
+   "real_levers": [],
+   "is_real": false,
+   "opt_success_reps": 1,
+   "base_success_reps": 1,
+   "opt_kept": 1,
+   "base_kept": 1,
+   "opt_dropped": 0,
+   "base_dropped": 0,
+   "opt_bursts": [
+    []
+   ],
+   "base_bursts": [
+    []
+   ]
+  },
+  {
+   "task": "skill-bpmn-diagnose-stuck-gateway",
+   "task_description": "Diagnose coverage for the uipath-maestro-bpmn skill: a BPMN run is stuck (not faulted) at an exclusive gateway. The agent reads element-executions and cursors, identifies the blocking element, and explains why the token cannot advance (no outgoing condition matched and no default flow). Read-only mocked CLI; no lifecycle mutations.",
+   "opt": {
+    "n": 1,
+    "thk_tok": 0.0,
+    "tr_tok": 4330.0,
+    "tool_calls": 14.0,
+    "turns": 14.0,
+    "cost": 0.3923345999999999,
+    "time": 104.0812840461731,
+    "output_tok": 6627.0,
+    "thk_sec": 55.781284985998354,
+    "cache_read": 697852.0,
+    "cache_create": 21756.0,
+    "uncached": 663.0,
+    "inline_py": 0.0,
+    "uip_verbs": {
+     "maestro bpmn instance": 5.0,
+     "--help 2": 1.0,
+     "maestro bpmn": 1.0,
+     "2": 1.0
+    },
+    "bundled_scripts": {},
+    "reps": [
+     "00"
+    ]
+   },
+   "base": {
+    "n": 1,
+    "thk_tok": 0.0,
+    "tr_tok": 5148.0,
+    "tool_calls": 9.0,
+    "turns": 9.0,
+    "cost": 0.40022250000000004,
+    "time": 68.81437993049622,
+    "output_tok": 3817.0,
+    "thk_sec": 25.351644881001448,
+    "cache_read": 380165.0,
+    "cache_create": 61032.0,
+    "uncached": 16.0,
+    "inline_py": 0.0,
+    "uip_verbs": {
+     "maestro bpmn instance": 4.0
+    },
+    "bundled_scripts": {},
+    "reps": [
+     "00"
+    ]
+   },
+   "delta": {
+    "thk_tok": 0.0,
+    "thk_sec": 30.429640104996906,
+    "tr_tok": -818.0,
+    "tool_calls": 5.0,
+    "turns": 5.0,
+    "cost": -0.007887900000000114,
+    "time": 35.26690411567688,
+    "output_tok": 2810.0,
+    "cache_read": 317687.0,
+    "cache_create": -39276.0,
+    "uncached": 647.0
+   },
+   "real_levers": [
+    "tool_calls",
+    "turns"
+   ],
+   "is_real": true,
+   "opt_success_reps": 1,
+   "base_success_reps": 1,
+   "opt_kept": 1,
+   "base_kept": 1,
+   "opt_dropped": 0,
+   "base_dropped": 0,
+   "opt_bursts": [
+    []
+   ],
+   "base_bursts": [
+    []
+   ]
+  },
+  {
+   "task": "skill-bpmn-hitl-boolean-decision",
+   "task_description": "Quality test (ported from flow hitl/quality_03): agent models the approval decision as a genuine boolean \u2014 a boolean-typed HITL output bound to a boolean-typed variable \u2014 and the gateway condition treats it as a boolean (not compared to a quoted string literal / stringly-typed).",
+   "opt": {
+    "n": 1,
+    "thk_tok": 0.0,
+    "tr_tok": 38824.0,
+    "tool_calls": 44.0,
+    "turns": 44.0,
+    "cost": 2.2506352499999998,
+    "time": 681.9016354084015,
+    "output_tok": 59983.0,
+    "thk_sec": 532.2065235940044,
+    "cache_read": 3265290.0,
+    "cache_create": 98299.0,
+    "uncached": 894.0,
+    "inline_py": 7.0,
+    "uip_verbs": {
+     "--version 2": 1.0,
+     "maestro bpmn registry": 3.0,
+     "maestro bpmn validate": 1.0
+    },
+    "bundled_scripts": {},
+    "reps": [
+     "00"
+    ]
+   },
+   "base": {
+    "n": 1,
+    "thk_tok": 0.0,
+    "tr_tok": 41690.0,
+    "tool_calls": 37.0,
+    "turns": 37.0,
+    "cost": 2.18791455,
+    "time": 531.4806654453278,
+    "output_tok": 46160.0,
+    "thk_sec": 411.46806802399715,
+    "cache_read": 3662201.0,
+    "cache_create": 105767.0,
+    "uncached": 76.0,
+    "inline_py": 6.0,
+    "uip_verbs": {
+     "--version 2": 1.0,
+     "maestro bpmn registry": 4.0,
+     "maestro bpmn validate": 3.0
+    },
+    "bundled_scripts": {},
+    "reps": [
+     "00"
+    ]
+   },
+   "delta": {
+    "thk_tok": 0.0,
+    "thk_sec": 120.7384555700072,
+    "tr_tok": -2866.0,
+    "tool_calls": 7.0,
+    "turns": 7.0,
+    "cost": 0.06272069999999985,
+    "time": 150.42096996307373,
+    "output_tok": 13823.0,
+    "cache_read": -396911.0,
+    "cache_create": -7468.0,
+    "uncached": 818.0
+   },
+   "real_levers": [
+    "tool_calls",
+    "turns",
+    "output_tok"
+   ],
+   "is_real": true,
+   "opt_success_reps": 1,
+   "base_success_reps": 1,
+   "opt_kept": 1,
+   "base_kept": 1,
+   "opt_dropped": 0,
+   "base_dropped": 0,
+   "opt_bursts": [
+    []
+   ],
+   "base_bursts": [
+    []
+   ]
+  },
+  {
+   "task": "skill-bpmn-diagnose-incident-root-cause",
+   "task_description": "Diagnose coverage for the uipath-maestro-bpmn skill: given multiple incidents on one failed BPMN instance, the agent distinguishes the FIRST root fault from downstream cancellation noise using `incident get` and `incident summary`, and names the true faulting element. Read-only mocked CLI; no lifecycle mutations.",
+   "opt": {
+    "n": 1,
+    "thk_tok": 0.0,
+    "tr_tok": 3718.0,
+    "tool_calls": 10.0,
+    "turns": 10.0,
+    "cost": 0.3474465,
+    "time": 71.77100563049316,
+    "output_tok": 3078.0,
+    "thk_sec": 28.7886748899964,
+    "cache_read": 366335.0,
+    "cache_create": 50488.0,
+    "uncached": 682.0,
+    "inline_py": 0.0,
+    "uip_verbs": {
+     "maestro bpmn instance": 3.0,
+     "maestro bpmn incident": 2.0
+    },
+    "bundled_scripts": {},
+    "reps": [
+     "00"
+    ]
+   },
+   "base": {
+    "n": 1,
+    "thk_tok": 0.0,
+    "tr_tok": 3710.0,
+    "tool_calls": 9.0,
+    "turns": 9.0,
+    "cost": 0.27007755,
+    "time": 46.12391686439514,
+    "output_tok": 3174.0,
+    "thk_sec": 16.59972524300065,
+    "cache_read": 404586.0,
+    "cache_create": 26945.0,
+    "uncached": 16.0,
+    "inline_py": 0.0,
+    "uip_verbs": {
+     "maestro bpmn instance": 3.0,
+     "maestro bpmn incident": 2.0
+    },
+    "bundled_scripts": {},
+    "reps": [
+     "00"
+    ]
+   },
+   "delta": {
+    "thk_tok": 0.0,
+    "thk_sec": 12.188949646995752,
+    "tr_tok": 8.0,
+    "tool_calls": 1.0,
+    "turns": 1.0,
+    "cost": 0.07736894999999999,
+    "time": 25.647088766098022,
+    "output_tok": -96.0,
+    "cache_read": -38251.0,
+    "cache_create": 23543.0,
+    "uncached": 666.0
+   },
+   "real_levers": [],
+   "is_real": false,
+   "opt_success_reps": 1,
+   "base_success_reps": 1,
+   "opt_kept": 1,
+   "base_kept": 1,
+   "opt_dropped": 0,
+   "base_dropped": 0,
+   "opt_bursts": [
+    []
+   ],
+   "base_bursts": [
+    []
+   ]
+  },
+  {
+   "task": "skill-bpmn-smoke-registry-discovery",
+   "task_description": "Skill-guided evaluation: agent uses the uipath-maestro-bpmn skill to discover Maestro BPMN extension types via the registry CLI (pull, list/search, get) before authoring anything. Tests that the skill teaches the registry-driven discovery loop instead of hand-authoring uipath:* XML from prose.",
+   "opt": {
+    "n": 1,
+    "thk_tok": 0.0,
+    "tr_tok": 1757.0,
+    "tool_calls": 9.0,
+    "turns": 9.0,
+    "cost": 0.33959445,
+    "time": 103.54345536231995,
+    "output_tok": 2860.0,
+    "thk_sec": 18.079111764998743,
+    "cache_read": 387569.0,
+    "cache_create": 47545.0,
+    "uncached": 710.0,
+    "inline_py": 2.0,
+    "uip_verbs": {
+     "--version 2": 1.0,
+     "maestro bpmn registry": 3.0
+    },
+    "bundled_scripts": {},
+    "reps": [
+     "00"
+    ]
+   },
+   "base": {
+    "n": 1,
+    "thk_tok": 0.0,
+    "tr_tok": 2641.0,
+    "tool_calls": 8.0,
+    "turns": 8.0,
+    "cost": 0.2587686,
+    "time": 44.380555868148804,
+    "output_tok": 2396.0,
+    "thk_sec": 9.888356327999645,
+    "cache_read": 436282.0,
+    "cache_create": 24504.0,
+    "uncached": 18.0,
+    "inline_py": 0.0,
+    "uip_verbs": {
+     "maestro bpmn registry": 3.0
+    },
+    "bundled_scripts": {},
+    "reps": [
+     "00"
+    ]
+   },
+   "delta": {
+    "thk_tok": 0.0,
+    "thk_sec": 8.190755436999098,
+    "tr_tok": -884.0,
+    "tool_calls": 1.0,
+    "turns": 1.0,
+    "cost": 0.08082584999999998,
+    "time": 59.16289949417114,
+    "output_tok": 464.0,
+    "cache_read": -48713.0,
+    "cache_create": 23041.0,
+    "uncached": 692.0
+   },
+   "real_levers": [],
+   "is_real": false,
+   "opt_success_reps": 1,
+   "base_success_reps": 1,
+   "opt_kept": 1,
+   "base_kept": 1,
+   "opt_dropped": 0,
+   "base_dropped": 0,
+   "opt_bursts": [
+    []
+   ],
+   "base_bursts": [
+    []
+   ]
+  },
+  {
+   "task": "skill-bpmn-simple-approval-bpmn",
+   "task_description": "Authoring eval: agent composes a model-authored simple approval BPMN that combines StartAgentJob, an exclusive gateway, CreateQueueItem, a script task, declared root variables, numeric migration metadata, and BPMN DI. Mirrors the manual smoke \"simple approval\" scenario.",
+   "opt": {
+    "n": 1,
+    "thk_tok": 0.0,
+    "tr_tok": 52400.0,
+    "tool_calls": 78.0,
+    "turns": 78.0,
+    "cost": 3.9516418499999997,
+    "time": 903.2463531494141,
+    "output_tok": 72349.0,
+    "thk_sec": 629.1795999610058,
+    "cache_read": 7574102.0,
+    "cache_create": 157703.0,
+    "uncached": 930.0,
+    "inline_py": 11.0,
+    "uip_verbs": {
+     "--version 2": 1.0,
+     "maestro bpmn registry": 3.0,
+     "maestro bpmn init": 2.0,
+     "maestro bpmn format": 1.0,
+     "maestro bpmn validate": 6.0,
+     "maestro bpmn update-metadata": 3.0
+    },
+    "bundled_scripts": {},
+    "reps": [
+     "00"
+    ]
+   },
+   "base": {
+    "n": 1,
+    "thk_tok": 0.0,
+    "tr_tok": 39767.0,
+    "tool_calls": 76.0,
+    "turns": 76.0,
+    "cost": 3.8671956000000005,
+    "time": 831.403037071228,
+    "output_tok": 69566.0,
+    "thk_sec": 628.3811491609966,
+    "cache_read": 8022032.0,
+    "cache_create": 109316.0,
+    "uncached": 2387.0,
+    "inline_py": 10.0,
+    "uip_verbs": {
+     "--version 2": 1.0,
+     "maestro bpmn registry": 5.0,
+     "uip maestro bpmn": 1.0,
+     "maestro bpmn validate": 2.0
+    },
+    "bundled_scripts": {},
+    "reps": [
+     "00"
+    ]
+   },
+   "delta": {
+    "thk_tok": 0.0,
+    "thk_sec": 0.7984508000091637,
+    "tr_tok": 12633.0,
+    "tool_calls": 2.0,
+    "turns": 2.0,
+    "cost": 0.08444624999999917,
+    "time": 71.84331607818604,
+    "output_tok": 2783.0,
+    "cache_read": -447930.0,
+    "cache_create": 48387.0,
+    "uncached": -1457.0
+   },
+   "real_levers": [
+    "tr_tok"
+   ],
+   "is_real": true,
+   "opt_success_reps": 1,
+   "base_success_reps": 1,
+   "opt_kept": 1,
+   "base_kept": 1,
+   "opt_dropped": 0,
+   "base_dropped": 0,
+   "opt_bursts": [
+    []
+   ],
+   "base_bursts": [
+    []
+   ]
+  },
+  {
+   "task": "skill-bpmn-terminate",
+   "task_description": "Skill-guided evaluation: agent uses the uipath-maestro-bpmn skill to author a process where one branch ends in a terminate end event (a hard stop of the whole instance) while a parallel branch ends normally. Authoring only \u2014 no cloud effects.",
+   "opt": {
+    "n": 1,
+    "thk_tok": 0.0,
+    "tr_tok": 9175.0,
+    "tool_calls": 10.0,
+    "turns": 10.0,
+    "cost": 0.4818143999999999,
+    "time": 131.64647841453552,
+    "output_tok": 6387.0,
+    "thk_sec": 50.43465028799983,
+    "cache_read": 484528.0,
+    "cache_create": 63584.0,
+    "uncached": 737.0,
+    "inline_py": 0.0,
+    "uip_verbs": {
+     "--version 2": 1.0,
+     "maestro bpmn registry": 1.0,
+     "maestro bpmn format": 1.0,
+     "maestro bpmn validate": 1.0
+    },
+    "bundled_scripts": {},
+    "reps": [
+     "00"
+    ]
+   },
+   "base": {
+    "n": 1,
+    "thk_tok": 0.0,
+    "tr_tok": 8660.0,
+    "tool_calls": 8.0,
+    "turns": 8.0,
+    "cost": 0.38991644999999997,
+    "time": 87.29771113395691,
+    "output_tok": 6289.0,
+    "thk_sec": 46.820108687000356,
+    "cache_read": 519329.0,
+    "cache_create": 37261.0,
+    "uncached": 18.0,
+    "inline_py": 0.0,
+    "uip_verbs": {
+     "--version 2": 1.0,
+     "maestro bpmn registry": 2.0,
+     "maestro bpmn validate": 1.0
+    },
+    "bundled_scripts": {},
+    "reps": [
+     "00"
+    ]
+   },
+   "delta": {
+    "thk_tok": 0.0,
+    "thk_sec": 3.6145416009994733,
+    "tr_tok": 515.0,
+    "tool_calls": 2.0,
+    "turns": 2.0,
+    "cost": 0.09189794999999995,
+    "time": 44.34876728057861,
+    "output_tok": 98.0,
+    "cache_read": -34801.0,
+    "cache_create": 26323.0,
+    "uncached": 719.0
+   },
+   "real_levers": [],
+   "is_real": false,
+   "opt_success_reps": 1,
+   "base_success_reps": 1,
+   "opt_kept": 1,
+   "base_kept": 1,
+   "opt_dropped": 0,
+   "base_dropped": 0,
+   "opt_bursts": [
+    []
+   ],
+   "base_bursts": [
+    []
+   ]
+  },
+  {
+   "task": "skill-bpmn-multi-city-weather",
+   "task_description": "Skill-guided evaluation (ported from the Flow multi_city_weather eval): agent uses the uipath-maestro-bpmn skill to author a BPMN process that classifies a list of cities using a PARALLEL multi-instance marker over a per-item script task. Exercises the multi-instance / loop-characteristics registry gap (parallel fan-out with a collection output). Authoring only \u2014 no cloud effects and no live connector (the per-item work is a script task).",
+   "opt": {
+    "n": 1,
+    "thk_tok": 0.0,
+    "tr_tok": 33113.0,
+    "tool_calls": 55.0,
+    "turns": 55.0,
+    "cost": 2.1331061999999994,
+    "time": 586.1206212043762,
+    "output_tok": 32621.0,
+    "thk_sec": 342.53689367100384,
+    "cache_read": 3972339.0,
+    "cache_create": 116802.0,
+    "uncached": 4694.0,
+    "inline_py": 6.0,
+    "uip_verbs": {
+     "2": 1.0,
+     "maestro bpmn registry": 2.0,
+     "maestro bpmn init": 1.0,
+     "maestro bpmn format": 1.0,
+     "maestro bpmn validate": 1.0
+    },
+    "bundled_scripts": {},
+    "reps": [
+     "00"
+    ]
+   },
+   "base": {
+    "n": 1,
+    "thk_tok": 0.0,
+    "tr_tok": 39406.0,
+    "tool_calls": 55.0,
+    "turns": 55.0,
+    "cost": 2.0305842,
+    "time": 631.3004593849182,
+    "output_tok": 39617.0,
+    "thk_sec": 396.76394222199997,
+    "cache_read": 3551354.0,
+    "cache_create": 98852.0,
+    "uncached": 76.0,
+    "inline_py": 10.0,
+    "uip_verbs": {
+     "maestro bpmn registry": 4.0,
+     "--version 2": 1.0,
+     "maestro bpmn validate": 1.0
+    },
+    "bundled_scripts": {},
+    "reps": [
+     "00"
+    ]
+   },
+   "delta": {
+    "thk_tok": 0.0,
+    "thk_sec": -54.22704855099613,
+    "tr_tok": -6293.0,
+    "tool_calls": 0.0,
+    "turns": 0.0,
+    "cost": 0.10252199999999956,
+    "time": -45.17983818054199,
+    "output_tok": -6996.0,
+    "cache_read": 420985.0,
+    "cache_create": 17950.0,
+    "uncached": 4618.0
+   },
+   "real_levers": [
+    "tr_tok",
+    "output_tok"
+   ],
+   "is_real": true,
+   "opt_success_reps": 1,
+   "base_success_reps": 1,
+   "opt_kept": 1,
+   "base_kept": 1,
+   "opt_dropped": 0,
+   "base_dropped": 0,
+   "opt_bursts": [
+    []
+   ],
+   "base_bursts": [
+    []
+   ]
+  },
+  {
+   "task": "skill-bpmn-switch",
+   "task_description": "Skill-guided evaluation: agent uses the uipath-maestro-bpmn skill to author a multi-way exclusive gateway (the BPMN analogue of a Flow Switch) that maps a quarter number to a season name across 3+ conditioned branches plus a default. Authoring only \u2014 no cloud effects.",
+   "opt": {
+    "n": 1,
+    "thk_tok": 0.0,
+    "tr_tok": 11742.0,
+    "tool_calls": 11.0,
+    "turns": 11.0,
+    "cost": 0.4646565,
+    "time": 128.9166955947876,
+    "output_tok": 7572.0,
+    "thk_sec": 57.543654679999236,
+    "cache_read": 684585.0,
+    "cache_create": 38228.0,
+    "uncached": 782.0,
+    "inline_py": 0.0,
+    "uip_verbs": {
+     "--version 2": 1.0,
+     "maestro bpmn format": 1.0,
+     "maestro bpmn validate": 1.0
+    },
+    "bundled_scripts": {},
+    "reps": [
+     "00"
+    ]
+   },
+   "base": {
+    "n": 1,
+    "thk_tok": 0.0,
+    "tr_tok": 8238.0,
+    "tool_calls": 7.0,
+    "turns": 7.0,
+    "cost": 0.3614962499999999,
+    "time": 69.86563491821289,
+    "output_tok": 5730.0,
+    "thk_sec": 29.610875065998698,
+    "cache_read": 456340.0,
+    "cache_create": 36959.0,
+    "uncached": 16.0,
+    "inline_py": 1.0,
+    "uip_verbs": {
+     "--version 2": 1.0,
+     "maestro bpmn validate": 1.0
+    },
+    "bundled_scripts": {},
+    "reps": [
+     "00"
+    ]
+   },
+   "delta": {
+    "thk_tok": 0.0,
+    "thk_sec": 27.932779614000538,
+    "tr_tok": 3504.0,
+    "tool_calls": 4.0,
+    "turns": 4.0,
+    "cost": 0.10316025000000006,
+    "time": 59.05106067657471,
+    "output_tok": 1842.0,
+    "cache_read": 228245.0,
+    "cache_create": 1269.0,
+    "uncached": 766.0
+   },
+   "real_levers": [
+    "tool_calls",
+    "turns"
+   ],
+   "is_real": true,
+   "opt_success_reps": 1,
+   "base_success_reps": 1,
+   "opt_kept": 1,
+   "base_kept": 1,
+   "opt_dropped": 0,
+   "base_dropped": 0,
+   "opt_bursts": [
+    []
+   ],
+   "base_bursts": [
+    []
+   ]
+  },
+  {
+   "task": "skill-bpmn-event-based-gateway",
+   "task_description": "Structural advanced-event eval: agent uses the uipath-maestro-bpmn skill to author an EVENT-BASED gateway racing a message catch against a timer catch (first-catcher-wins). Exercises the event-based gateway target contract (outgoing flows target intermediate catch events). Authoring only \u2014 no cloud effects.",
+   "opt": {
+    "n": 1,
+    "thk_tok": 0.0,
+    "tr_tok": 19132.0,
+    "tool_calls": 19.0,
+    "turns": 19.0,
+    "cost": 0.8228181000000001,
+    "time": 240.92532181739807,
+    "output_tok": 18611.0,
+    "thk_sec": 144.74199610300462,
+    "cache_read": 1103682.0,
+    "cache_create": 55994.0,
+    "uncached": 857.0,
+    "inline_py": 2.0,
+    "uip_verbs": {
+     "--version 2": 1.0,
+     "maestro bpmn registry": 3.0,
+     "maestro bpmn format": 2.0,
+     "maestro bpmn validate": 2.0
+    },
+    "bundled_scripts": {},
+    "reps": [
+     "00"
+    ]
+   },
+   "base": {
+    "n": 1,
+    "thk_tok": 0.0,
+    "tr_tok": 16460.0,
+    "tool_calls": 14.0,
+    "turns": 14.0,
+    "cost": 0.7042762499999999,
+    "time": 157.6180567741394,
+    "output_tok": 13697.0,
+    "thk_sec": 91.87094595500183,
+    "cache_read": 979050.0,
+    "cache_create": 54671.0,
+    "uncached": 30.0,
+    "inline_py": 0.0,
+    "uip_verbs": {
+     "--version 2": 1.0,
+     "maestro bpmn registry": 5.0,
+     "maestro bpmn validate": 2.0
+    },
+    "bundled_scripts": {},
+    "reps": [
+     "00"
+    ]
+   },
+   "delta": {
+    "thk_tok": 0.0,
+    "thk_sec": 52.871050148002794,
+    "tr_tok": 2672.0,
+    "tool_calls": 5.0,
+    "turns": 5.0,
+    "cost": 0.11854185000000017,
+    "time": 83.30726504325867,
+    "output_tok": 4914.0,
+    "cache_read": 124632.0,
+    "cache_create": 1323.0,
+    "uncached": 827.0
+   },
+   "real_levers": [
+    "tool_calls",
+    "turns"
+   ],
+   "is_real": true,
+   "opt_success_reps": 1,
+   "base_success_reps": 1,
+   "opt_kept": 1,
+   "base_kept": 1,
+   "opt_dropped": 0,
+   "base_dropped": 0,
+   "opt_bursts": [
+    []
+   ],
+   "base_bursts": [
+    []
+   ]
+  },
+  {
+   "task": "skill-bpmn-message-catch",
+   "task_description": "Intermediate catch-event eval: agent uses the uipath-maestro-bpmn skill to add a mid-flow wait step that pauses the process until a message arrives, using the registry Maestro.ReceiveMessageEvent wrapper on a bpmn:intermediateCatchEvent while preserving the process start. Ports the Flow wait-for-email test to a BPMN intermediate catch event (internal message). Authoring only \u2014 a wait only resolves in a live engine, so this validates the structure locally.",
+   "opt": {
+    "n": 1,
+    "thk_tok": 0.0,
+    "tr_tok": 16074.0,
+    "tool_calls": 26.0,
+    "turns": 26.0,
+    "cost": 0.8453225999999999,
+    "time": 257.01638317108154,
+    "output_tok": 12171.0,
+    "thk_sec": 102.84978685000351,
+    "cache_read": 1620402.0,
+    "cache_create": 46500.0,
+    "uncached": 754.0,
+    "inline_py": 0.0,
+    "uip_verbs": {
+     "maestro bpmn registry": 3.0,
+     "maestro bpmn format": 1.0,
+     "maestro bpmn validate": 2.0
+    },
+    "bundled_scripts": {},
+    "reps": [
+     "00"
+    ]
+   },
+   "base": {
+    "n": 1,
+    "thk_tok": 0.0,
+    "tr_tok": 17585.0,
+    "tool_calls": 16.0,
+    "turns": 16.0,
+    "cost": 0.69621555,
+    "time": 141.5575726032257,
+    "output_tok": 10472.0,
+    "thk_sec": 78.17533941600233,
+    "cache_read": 1129716.0,
+    "cache_create": 53365.0,
+    "uncached": 34.0,
+    "inline_py": 0.0,
+    "uip_verbs": {
+     "maestro bpmn registry": 3.0,
+     "maestro bpmn validate": 2.0
+    },
+    "bundled_scripts": {},
+    "reps": [
+     "00"
+    ]
+   },
+   "delta": {
+    "thk_tok": 0.0,
+    "thk_sec": 24.67444743400118,
+    "tr_tok": -1511.0,
+    "tool_calls": 10.0,
+    "turns": 10.0,
+    "cost": 0.1491070499999999,
+    "time": 115.45881056785583,
+    "output_tok": 1699.0,
+    "cache_read": 490686.0,
+    "cache_create": -6865.0,
+    "uncached": 720.0
+   },
+   "real_levers": [
+    "tool_calls",
+    "turns"
+   ],
+   "is_real": true,
+   "opt_success_reps": 1,
+   "base_success_reps": 1,
+   "opt_kept": 1,
+   "base_kept": 1,
+   "opt_dropped": 0,
+   "base_dropped": 0,
+   "opt_bursts": [
+    []
+   ],
+   "base_bursts": [
+    []
+   ]
+  },
+  {
+   "task": "skill-bpmn-error-event-subprocess",
+   "task_description": "Structural error-handling eval: agent uses the uipath-maestro-bpmn skill to author a process that throws a configured error END event and catches it in an EVENT subprocess (triggeredByEvent=\"true\") whose single interrupting error start event handles it. Exercises the ERROR_END_EVENT_MISSING_EXCEPTION and event-subprocess start-event rules. Authoring only \u2014 no cloud effects.",
+   "opt": {
+    "n": 1,
+    "thk_tok": 0.0,
+    "tr_tok": 14175.0,
+    "tool_calls": 18.0,
+    "turns": 18.0,
+    "cost": 0.90543975,
+    "time": 343.57674384117126,
+    "output_tok": 27384.0,
+    "thk_sec": 259.278305423999,
+    "cache_read": 1106095.0,
+    "cache_create": 42727.0,
+    "uncached": 875.0,
+    "inline_py": 5.0,
+    "uip_verbs": {
+     "--version 2": 1.0,
+     "maestro bpmn registry": 3.0,
+     "maestro bpmn validate": 1.0
+    },
+    "bundled_scripts": {},
+    "reps": [
+     "00"
+    ]
+   },
+   "base": {
+    "n": 1,
+    "thk_tok": 0.0,
+    "tr_tok": 11828.0,
+    "tool_calls": 13.0,
+    "turns": 13.0,
+    "cost": 0.7221747000000002,
+    "time": 216.11437892913818,
+    "output_tok": 18820.0,
+    "thk_sec": 158.39681674300124,
+    "cache_read": 891269.0,
+    "cache_create": 45976.0,
+    "uncached": 28.0,
+    "inline_py": 3.0,
+    "uip_verbs": {
+     "--version 2": 1.0,
+     "maestro bpmn registry": 5.0,
+     "maestro bpmn validate": 1.0
+    },
+    "bundled_scripts": {},
+    "reps": [
+     "00"
+    ]
+   },
+   "delta": {
+    "thk_tok": 0.0,
+    "thk_sec": 100.88148868099773,
+    "tr_tok": 2347.0,
+    "tool_calls": 5.0,
+    "turns": 5.0,
+    "cost": 0.18326504999999982,
+    "time": 127.46236491203308,
+    "output_tok": 8564.0,
+    "cache_read": 214826.0,
+    "cache_create": -3249.0,
+    "uncached": 847.0
+   },
+   "real_levers": [
+    "tool_calls",
+    "turns",
+    "output_tok"
+   ],
+   "is_real": true,
+   "opt_success_reps": 1,
+   "base_success_reps": 1,
+   "opt_kept": 1,
+   "base_kept": 1,
+   "opt_dropped": 0,
+   "base_dropped": 0,
+   "opt_bursts": [
+    []
+   ],
+   "base_bursts": [
+    []
+   ]
+  },
+  {
+   "task": "skill-bpmn-subprocess",
+   "task_description": "Skill-guided evaluation: agent uses the uipath-maestro-bpmn skill to encapsulate logic inside a container (an embedded bpmn:subProcess or a bpmn:callActivity) \u2014 the BPMN analogue of a Flow Subflow. Authoring only \u2014 no cloud effects.",
+   "opt": {
+    "n": 1,
+    "thk_tok": 0.0,
+    "tr_tok": 24187.0,
+    "tool_calls": 33.0,
+    "turns": 33.0,
+    "cost": 1.7554788,
+    "time": 582.81489610672,
+    "output_tok": 45819.0,
+    "thk_sec": 464.4444269119995,
+    "cache_read": 2368301.0,
+    "cache_create": 94734.0,
+    "uncached": 817.0,
+    "inline_py": 6.0,
+    "uip_verbs": {
+     "2": 1.0,
+     "maestro bpmn registry": 2.0,
+     "maestro bpmn format": 1.0,
+     "maestro bpmn validate": 2.0
+    },
+    "bundled_scripts": {},
+    "reps": [
+     "00"
+    ]
+   },
+   "base": {
+    "n": 1,
+    "thk_tok": 0.0,
+    "tr_tok": 18887.0,
+    "tool_calls": 32.0,
+    "turns": 32.0,
+    "cost": 1.5425566499999999,
+    "time": 402.8146104812622,
+    "output_tok": 32071.0,
+    "thk_sec": 325.0869643530003,
+    "cache_read": 2432283.0,
+    "cache_create": 88429.0,
+    "uncached": 66.0,
+    "inline_py": 3.0,
+    "uip_verbs": {
+     "maestro bpmn registry": 3.0,
+     "maestro bpmn validate": 1.0
+    },
+    "bundled_scripts": {},
+    "reps": [
+     "00"
+    ]
+   },
+   "delta": {
+    "thk_tok": 0.0,
+    "thk_sec": 139.3574625589992,
+    "tr_tok": 5300.0,
+    "tool_calls": 1.0,
+    "turns": 1.0,
+    "cost": 0.21292215000000003,
+    "time": 180.00028562545776,
+    "output_tok": 13748.0,
+    "cache_read": -63982.0,
+    "cache_create": 6305.0,
+    "uncached": 751.0
+   },
+   "real_levers": [
+    "tr_tok",
+    "output_tok"
+   ],
+   "is_real": true,
+   "opt_success_reps": 1,
+   "base_success_reps": 1,
+   "opt_kept": 1,
+   "base_kept": 1,
+   "opt_dropped": 0,
+   "base_dropped": 0,
+   "opt_bursts": [
+    []
+   ],
+   "base_bursts": [
+    []
+   ]
+  },
+  {
+   "task": "skill-bpmn-hitl-result-downstream",
+   "task_description": "Quality test (ported from flow hitl/quality_02): agent makes the human's decision actually drive downstream flow \u2014 an exclusive gateway condition references the HITL activity's output variable via a vars.<id> expression, and that variable is declared.",
+   "opt": {
+    "n": 1,
+    "thk_tok": 0.0,
+    "tr_tok": 24123.0,
+    "tool_calls": 37.0,
+    "turns": 37.0,
+    "cost": 1.94023335,
+    "time": 654.7599737644196,
+    "output_tok": 56386.0,
+    "thk_sec": 523.351889585001,
+    "cache_read": 2767847.0,
+    "cache_create": 69763.0,
+    "uncached": 826.0,
+    "inline_py": 11.0,
+    "uip_verbs": {
+     "--version 2": 1.0,
+     "maestro bpmn registry": 4.0,
+     "maestro bpmn format": 2.0,
+     "maestro bpmn init": 1.0,
+     "maestro bpmn validate": 1.0
+    },
+    "bundled_scripts": {},
+    "reps": [
+     "00"
+    ]
+   },
+   "base": {
+    "n": 1,
+    "thk_tok": 0.0,
+    "tr_tok": 25567.0,
+    "tool_calls": 27.0,
+    "turns": 27.0,
+    "cost": 1.7244999,
+    "time": 633.9835171699524,
+    "output_tok": 58676.0,
+    "thk_sec": 554.3025534350018,
+    "cache_read": 1907203.0,
+    "cache_create": 72548.0,
+    "uncached": 48.0,
+    "inline_py": 5.0,
+    "uip_verbs": {
+     "maestro bpmn registry": 5.0,
+     "maestro bpmn init": 1.0,
+     "maestro bpmn validate": 1.0
+    },
+    "bundled_scripts": {},
+    "reps": [
+     "00"
+    ]
+   },
+   "delta": {
+    "thk_tok": 0.0,
+    "thk_sec": -30.95066385000075,
+    "tr_tok": -1444.0,
+    "tool_calls": 10.0,
+    "turns": 10.0,
+    "cost": 0.21573344999999988,
+    "time": 20.776456594467163,
+    "output_tok": -2290.0,
+    "cache_read": 860644.0,
+    "cache_create": -2785.0,
+    "uncached": 778.0
+   },
+   "real_levers": [
+    "tool_calls",
+    "turns"
+   ],
+   "is_real": true,
+   "opt_success_reps": 1,
+   "base_success_reps": 1,
+   "opt_kept": 1,
+   "base_kept": 1,
+   "opt_dropped": 0,
+   "base_dropped": 0,
+   "opt_bursts": [
+    []
+   ],
+   "base_bursts": [
+    []
+   ]
+  },
+  {
+   "task": "skill-bpmn-hitl-rpa-wrappers",
+   "task_description": "Node wrapper eval: agent models HITL and RPA as BPMN-native wrappers using documented non-Integration-Service UiPath activity shells.",
+   "opt": {
+    "n": 1,
+    "thk_tok": 0.0,
+    "tr_tok": 21469.0,
+    "tool_calls": 28.0,
+    "turns": 28.0,
+    "cost": 1.0620163499999997,
+    "time": 348.01965141296387,
+    "output_tok": 26732.0,
+    "thk_sec": 223.9200522800002,
+    "cache_read": 1475707.0,
+    "cache_create": 57715.0,
+    "uncached": 631.0,
+    "inline_py": 5.0,
+    "uip_verbs": {
+     "--version 2": 1.0,
+     "maestro bpmn registry": 2.0,
+     "maestro bpmn validate": 2.0,
+     "maestro bpmn format": 1.0
+    },
+    "bundled_scripts": {},
+    "reps": [
+     "00"
+    ]
+   },
+   "base": {
+    "n": 1,
+    "thk_tok": 0.0,
+    "tr_tok": 16981.0,
+    "tool_calls": 20.0,
+    "turns": 20.0,
+    "cost": 0.7926231000000001,
+    "time": 139.3892092704773,
+    "output_tok": 9867.0,
+    "thk_sec": 40.832615103000535,
+    "cache_read": 1404232.0,
+    "cache_create": 59526.0,
+    "uncached": 42.0,
+    "inline_py": 1.0,
+    "uip_verbs": {
+     "--version 2": 1.0,
+     "maestro bpmn registry": 4.0,
+     "maestro bpmn init": 3.0,
+     "maestro bpmn validate": 1.0
+    },
+    "bundled_scripts": {},
+    "reps": [
+     "00"
+    ]
+   },
+   "delta": {
+    "thk_tok": 0.0,
+    "thk_sec": 183.08743717699966,
+    "tr_tok": 4488.0,
+    "tool_calls": 8.0,
+    "turns": 8.0,
+    "cost": 0.2693932499999996,
+    "time": 208.63044214248657,
+    "output_tok": 16865.0,
+    "cache_read": 71475.0,
+    "cache_create": -1811.0,
+    "uncached": 589.0
+   },
+   "real_levers": [
+    "tool_calls",
+    "turns",
+    "output_tok"
+   ],
+   "is_real": true,
+   "opt_success_reps": 1,
+   "base_success_reps": 1,
+   "opt_kept": 1,
+   "base_kept": 1,
+   "opt_dropped": 0,
+   "base_dropped": 0,
+   "opt_bursts": [
+    []
+   ],
+   "base_bursts": [
+    []
+   ]
+  },
+  {
+   "task": "skill-bpmn-hitl-multi-outcome-routing",
+   "task_description": "Smoke test (ported from flow hitl/smoke_03): agent routes an Actions.HITL user task's outcome through an exclusive gateway into three distinct paths (approve / reject / escalate), with conditioned branches plus a default and a BPMN diagram.",
+   "opt": {
+    "n": 1,
+    "thk_tok": 0.0,
+    "tr_tok": 22044.0,
+    "tool_calls": 31.0,
+    "turns": 31.0,
+    "cost": 1.30949355,
+    "time": 404.8900034427643,
+    "output_tok": 34877.0,
+    "thk_sec": 296.46120583999624,
+    "cache_read": 1857191.0,
+    "cache_create": 60475.0,
+    "uncached": 800.0,
+    "inline_py": 8.0,
+    "uip_verbs": {
+     "--version 2": 1.0,
+     "maestro bpmn registry": 4.0,
+     "maestro bpmn format": 1.0,
+     "maestro bpmn init": 2.0,
+     "maestro bpmn validate": 1.0
+    },
+    "bundled_scripts": {},
+    "reps": [
+     "00"
+    ]
+   },
+   "base": {
+    "n": 1,
+    "thk_tok": 0.0,
+    "tr_tok": 20572.0,
+    "tool_calls": 20.0,
+    "turns": 20.0,
+    "cost": 0.9664961999999998,
+    "time": 223.2932891845703,
+    "output_tok": 21390.0,
+    "thk_sec": 133.4350243960007,
+    "cache_read": 1313839.0,
+    "cache_create": 67038.0,
+    "uncached": 34.0,
+    "inline_py": 1.0,
+    "uip_verbs": {
+     "--version": 1.0,
+     "maestro bpmn registry": 4.0,
+     "maestro bpmn validate": 1.0
+    },
+    "bundled_scripts": {},
+    "reps": [
+     "00"
+    ]
+   },
+   "delta": {
+    "thk_tok": 0.0,
+    "thk_sec": 163.02618144399554,
+    "tr_tok": 1472.0,
+    "tool_calls": 11.0,
+    "turns": 11.0,
+    "cost": 0.3429973500000002,
+    "time": 181.59671425819397,
+    "output_tok": 13487.0,
+    "cache_read": 543352.0,
+    "cache_create": -6563.0,
+    "uncached": 766.0
+   },
+   "real_levers": [
+    "tool_calls",
+    "turns",
+    "output_tok"
+   ],
+   "is_real": true,
+   "opt_success_reps": 1,
+   "base_success_reps": 1,
+   "opt_kept": 1,
+   "base_kept": 1,
+   "opt_dropped": 0,
+   "base_dropped": 0,
+   "opt_bursts": [
+    []
+   ],
+   "base_bursts": [
+    []
+   ]
+  },
+  {
+   "task": "skill-bpmn-reading-list",
+   "task_description": "Skill-guided evaluation (ported from the Flow reading_list eval): agent uses the uipath-maestro-bpmn skill to author a BPMN process that curates a book catalog through a filter script task then a map script task. Exercises a list-processing script composition with a hardcoded collection and staged transforms. Authoring only \u2014 no cloud effects.",
+   "opt": {
+    "n": 1,
+    "thk_tok": 0.0,
+    "tr_tok": 26543.0,
+    "tool_calls": 50.0,
+    "turns": 50.0,
+    "cost": 2.47399965,
+    "time": 796.3111045360565,
+    "output_tok": 63056.0,
+    "thk_sec": 648.8533716950042,
+    "cache_read": 3801608.0,
+    "cache_create": 102627.0,
+    "uncached": 942.0,
+    "inline_py": 19.0,
+    "uip_verbs": {
+     "2": 1.0,
+     "maestro bpmn registry": 2.0,
+     "maestro bpmn validate": 2.0,
+     "maestro bpmn format": 1.0
+    },
+    "bundled_scripts": {},
+    "reps": [
+     "00"
+    ]
+   },
+   "base": {
+    "n": 1,
+    "thk_tok": 0.0,
+    "tr_tok": 37603.0,
+    "tool_calls": 39.0,
+    "turns": 39.0,
+    "cost": 1.8143872500000002,
+    "time": 399.9860863685608,
+    "output_tok": 34040.0,
+    "thk_sec": 313.9372185439988,
+    "cache_read": 3160410.0,
+    "cache_create": 94791.0,
+    "uncached": 66.0,
+    "inline_py": 7.0,
+    "uip_verbs": {
+     "--version 2": 1.0,
+     "maestro bpmn registry": 3.0,
+     "maestro bpmn validate": 1.0
+    },
+    "bundled_scripts": {},
+    "reps": [
+     "00"
+    ]
+   },
+   "delta": {
+    "thk_tok": 0.0,
+    "thk_sec": 334.91615315100535,
+    "tr_tok": -11060.0,
+    "tool_calls": 11.0,
+    "turns": 11.0,
+    "cost": 0.6596123999999999,
+    "time": 396.3250181674957,
+    "output_tok": 29016.0,
+    "cache_read": 641198.0,
+    "cache_create": 7836.0,
+    "uncached": 876.0
+   },
+   "real_levers": [
+    "tool_calls",
+    "turns",
+    "tr_tok",
+    "output_tok"
+   ],
+   "is_real": true,
+   "opt_success_reps": 1,
+   "base_success_reps": 1,
+   "opt_kept": 1,
+   "base_kept": 1,
+   "opt_dropped": 0,
+   "base_dropped": 0,
+   "opt_bursts": [
+    []
+   ],
+   "base_bursts": [
+    []
+   ]
+  },
+  {
+   "task": "skill-bpmn-e2e-live-debug",
+   "task_description": "First Maestro BPMN eval that EXECUTES a process. The agent authors a tiny, deterministic BPMN project (manual start, one Jint script task that computes the product of the constants 6 and 7 into a `product` variable, an end event), runs a live `uip maestro bpmn debug` session against Studio Web, and inspects runtime variables via `debug-instance variables-all`. The agent saves the raw variables-all output to `debug-evidence/`, and the check asserts the debug run reached finalStatus Completed, the variables API exposed the `product` output definition, and the authored BPMN computes 42 through a script task mapped to that output. Live: no mocks; auth comes from the experiment environment. Deliberately computes from in-script constants rather than `--inputs`: CI iteration 2 showed `bpmn debug --inputs` values are not transmitted to the runtime (Start event Inputs arrive empty), so external-input grading would test that CLI gap, not the debug workflow. `--inputs` usage is covered by the mocked debug-workflow task.",
+   "opt": {
+    "n": 1,
+    "thk_tok": 0.0,
+    "tr_tok": 40364.0,
+    "tool_calls": 82.0,
+    "turns": 82.0,
+    "cost": 3.3920543999999997,
+    "time": 1873.9257814884186,
+    "output_tok": 29924.0,
+    "thk_sec": 317.2051205030021,
+    "cache_read": 7421318.0,
+    "cache_create": 190060.0,
+    "uncached": 1358.0,
+    "inline_py": 2.0,
+    "uip_verbs": {
+     "--version 2": 1.0,
+     "maestro bpmn registry": 4.0,
+     "maestro bpmn init": 2.0,
+     "maestro bpmn format": 1.0,
+     "maestro bpmn validate": 2.0,
+     "maestro bpmn update-metadata": 2.0,
+     "maestro bpmn debug": 5.0,
+     "solution init": 1.0,
+     "solution projects import": 3.0,
+     "solution projects add": 1.0,
+     "solution resources refresh": 1.0,
+     "maestro bpmn job": 2.0,
+     "maestro bpmn debug-instance": 8.0,
+     "maestro bpmn instance": 1.0
+    },
+    "bundled_scripts": {},
+    "reps": [
+     "00"
+    ]
+   },
+   "base": {
+    "n": 1,
+    "thk_tok": 0.0,
+    "tr_tok": 30796.0,
+    "tool_calls": 63.0,
+    "turns": 63.0,
+    "cost": 2.189808300000001,
+    "time": 380.1574788093567,
+    "output_tok": 20893.0,
+    "thk_sec": 187.9641289420042,
+    "cache_read": 5231001.0,
+    "cache_create": 81804.0,
+    "uncached": 116.0,
+    "inline_py": 2.0,
+    "uip_verbs": {
+     "--version 2": 1.0,
+     "auth status --output": 1.0,
+     "maestro bpmn registry": 3.0,
+     "maestro bpmn validate": 3.0,
+     "solution init": 2.0,
+     "solution projects import": 3.0,
+     "solution resources refresh": 1.0,
+     "maestro bpmn debug": 5.0,
+     "maestro bpmn --help": 1.0,
+     "maestro bpmn update-metadata": 3.0,
+     "maestro bpmn init": 1.0,
+     "maestro bpmn debug-instance": 3.0,
+     "solution projects add": 1.0,
+     "solution init --help": 1.0
+    },
+    "bundled_scripts": {},
+    "reps": [
+     "00"
+    ]
+   },
+   "delta": {
+    "thk_tok": 0.0,
+    "thk_sec": 129.24099156099788,
+    "tr_tok": 9568.0,
+    "tool_calls": 19.0,
+    "turns": 19.0,
+    "cost": 1.2022460999999987,
+    "time": 1493.768302679062,
+    "output_tok": 9031.0,
+    "cache_read": 2190317.0,
+    "cache_create": 108256.0,
+    "uncached": 1242.0
+   },
+   "real_levers": [
+    "tool_calls",
+    "turns",
+    "tr_tok",
+    "output_tok"
+   ],
+   "is_real": true,
+   "opt_success_reps": 1,
+   "base_success_reps": 1,
+   "opt_kept": 1,
+   "base_kept": 1,
+   "opt_dropped": 0,
+   "base_dropped": 0,
+   "opt_bursts": [
+    []
+   ],
+   "base_bursts": [
+    []
+   ]
+  },
+  {
+   "task": "skill-bpmn-expr-error-mapping",
+   "task_description": "Expression-authoring eval: agent uses the uipath-maestro-bpmn skill to author a uipath:errorMapping block whose condition branches on the runtime error object via `=vars.error.code == \"...\"` after a failed activity. Grades the error-mapping expression shape from references/expression-authoring.md. Authoring only \u2014 no cloud effects.",
+   "opt": {
+    "n": 1,
+    "thk_tok": 0.0,
+    "tr_tok": 30921.0,
+    "tool_calls": 61.0,
+    "turns": 61.0,
+    "cost": 2.7930174,
+    "time": 912.7064974308014,
+    "output_tok": 72834.0,
+    "thk_sec": 664.4577782670023,
+    "cache_read": 4602663.0,
+    "cache_create": 84502.0,
+    "uncached": 942.0,
+    "inline_py": 11.0,
+    "uip_verbs": {
+     "maestro bpmn registry": 7.0,
+     "is connections list": 1.0,
+     "maestro bpmn validate": 3.0,
+     "maestro bpmn format": 1.0
+    },
+    "bundled_scripts": {},
+    "reps": [
+     "00"
+    ]
+   },
+   "base": {
+    "n": 1,
+    "thk_tok": 0.0,
+    "tr_tok": 21887.0,
+    "tool_calls": 24.0,
+    "turns": 24.0,
+    "cost": 1.2746146499999997,
+    "time": 342.8747763633728,
+    "output_tok": 28801.0,
+    "thk_sec": 252.10187729100102,
+    "cache_read": 1622958.0,
+    "cache_create": 94823.0,
+    "uncached": 42.0,
+    "inline_py": 2.0,
+    "uip_verbs": {
+     "maestro bpmn registry": 7.0,
+     "is connections list": 1.0,
+     "maestro bpmn validate": 1.0
+    },
+    "bundled_scripts": {},
+    "reps": [
+     "00"
+    ]
+   },
+   "delta": {
+    "thk_tok": 0.0,
+    "thk_sec": 412.35590097600124,
+    "tr_tok": 9034.0,
+    "tool_calls": 37.0,
+    "turns": 37.0,
+    "cost": 1.5184027500000004,
+    "time": 569.8317210674286,
+    "output_tok": 44033.0,
+    "cache_read": 2979705.0,
+    "cache_create": -10321.0,
+    "uncached": 900.0
+   },
+   "real_levers": [
+    "tool_calls",
+    "turns",
+    "tr_tok",
+    "output_tok"
+   ],
+   "is_real": true,
+   "opt_success_reps": 1,
+   "base_success_reps": 1,
+   "opt_kept": 1,
+   "base_kept": 1,
+   "opt_dropped": 0,
+   "base_dropped": 0,
+   "opt_bursts": [
+    []
+   ],
+   "base_bursts": [
+    []
+   ]
+  }
+ ],
+ "excluded": [
+  {
+   "task": "skill-bpmn-author-validate",
+   "opt_dropped": [],
+   "base_dropped": []
+  },
+  {
+   "task": "skill-bpmn-calculator",
+   "opt_dropped": [],
+   "base_dropped": []
+  },
+  {
+   "task": "skill-bpmn-callactivity-agentic-process",
+   "opt_dropped": [],
+   "base_dropped": []
+  },
+  {
+   "task": "skill-bpmn-debug-instance-inspect",
+   "opt_dropped": [],
+   "base_dropped": []
+  },
+  {
+   "task": "skill-bpmn-debug-not-validation",
+   "opt_dropped": [],
+   "base_dropped": []
+  },
+  {
+   "task": "skill-bpmn-debug-workflow-mocked",
+   "opt_dropped": [],
+   "base_dropped": []
+  },
+  {
+   "task": "skill-bpmn-diagnose-deployed-drift",
+   "opt_dropped": [],
+   "base_dropped": []
+  },
+  {
+   "task": "skill-bpmn-diagnose-incident-root-cause",
+   "opt_dropped": [],
+   "base_dropped": []
+  },
+  {
+   "task": "skill-bpmn-diagnose-job-traces",
+   "opt_dropped": [],
+   "base_dropped": []
+  },
+  {
+   "task": "skill-bpmn-diagnose-scoped-variables",
+   "opt_dropped": [],
+   "base_dropped": []
+  },
+  {
+   "task": "skill-bpmn-diagnose-stuck-gateway",
+   "opt_dropped": [],
+   "base_dropped": []
+  },
+  {
+   "task": "skill-bpmn-diagnose-validate-fix-loop",
+   "opt_dropped": [],
+   "base_dropped": []
+  },
+  {
+   "task": "skill-bpmn-dice-roller",
+   "opt_dropped": [],
+   "base_dropped": []
+  },
+  {
+   "task": "skill-bpmn-e2e-customer-escalation",
+   "opt_dropped": [],
+   "base_dropped": []
+  },
+  {
+   "task": "skill-bpmn-e2e-live-debug",
+   "opt_dropped": [],
+   "base_dropped": []
+  },
+  {
+   "task": "skill-bpmn-edit-add-node",
+   "opt_dropped": [],
+   "base_dropped": []
+  },
+  {
+   "task": "skill-bpmn-edit-add-output",
+   "opt_dropped": [],
+   "base_dropped": []
+  },
+  {
+   "task": "skill-bpmn-edit-move-node",
+   "opt_dropped": [],
+   "base_dropped": []
+  },
+  {
+   "task": "skill-bpmn-edit-remove-node",
+   "opt_dropped": [],
+   "base_dropped": []
+  },
+  {
+   "task": "skill-bpmn-edit-update-node",
+   "opt_dropped": [],
+   "base_dropped": []
+  },
+  {
+   "task": "skill-bpmn-error-boundary-handler",
+   "opt_dropped": [],
+   "base_dropped": []
+  },
+  {
+   "task": "skill-bpmn-error-event-subprocess",
+   "opt_dropped": [],
+   "base_dropped": []
+  },
+  {
+   "task": "skill-bpmn-event-based-gateway",
+   "opt_dropped": [],
+   "base_dropped": []
+  },
+  {
+   "task": "skill-bpmn-event-trigger-start",
+   "opt_dropped": [],
+   "base_dropped": []
+  },
+  {
+   "task": "skill-bpmn-expr-computed-js",
+   "opt_dropped": [],
+   "base_dropped": []
+  },
+  {
+   "task": "skill-bpmn-expr-error-mapping",
+   "opt_dropped": [],
+   "base_dropped": []
+  },
+  {
+   "task": "skill-bpmn-feet-inches",
+   "opt_dropped": [],
+   "base_dropped": []
+  },
+  {
+   "task": "skill-bpmn-gateway-sequence-flows",
+   "opt_dropped": [],
+   "base_dropped": []
+  },
+  {
+   "task": "skill-bpmn-hitl-boolean-decision",
+   "opt_dropped": [],
+   "base_dropped": []
+  },
+  {
+   "task": "skill-bpmn-hitl-brownfield-insert",
+   "opt_dropped": [],
+   "base_dropped": []
+  },
+  {
+   "task": "skill-bpmn-hitl-completed-wired",
+   "opt_dropped": [],
+   "base_dropped": []
+  },
+  {
+   "task": "skill-bpmn-hitl-multi-outcome-routing",
+   "opt_dropped": [],
+   "base_dropped": []
+  },
+  {
+   "task": "skill-bpmn-hitl-result-downstream",
+   "opt_dropped": [],
+   "base_dropped": []
+  },
+  {
+   "task": "skill-bpmn-hitl-rpa-wrappers",
+   "opt_dropped": [],
+   "base_dropped": []
+  },
+  {
+   "task": "skill-bpmn-http-weather",
+   "opt_dropped": [],
+   "base_dropped": []
+  },
+  {
+   "task": "skill-bpmn-inclusive-gateway-forkjoin",
+   "opt_dropped": [],
+   "base_dropped": []
+  },
+  {
+   "task": "skill-bpmn-loop-multiply",
+   "opt_dropped": [],
+   "base_dropped": []
+  },
+  {
+   "task": "skill-bpmn-message-catch",
+   "opt_dropped": [],
+   "base_dropped": []
+  },
+  {
+   "task": "skill-bpmn-multi-city-weather",
+   "opt_dropped": [],
+   "base_dropped": []
+  },
+  {
+   "task": "skill-bpmn-operate-diagnose-minimal-fault-triage",
+   "opt_dropped": [],
+   "base_dropped": []
+  },
+  {
+   "task": "skill-bpmn-parallel-fork-join",
+   "opt_dropped": [],
+   "base_dropped": []
+  },
+  {
+   "task": "skill-bpmn-queue-create-and-wait",
+   "opt_dropped": [],
+   "base_dropped": []
+  },
+  {
+   "task": "skill-bpmn-reading-list",
+   "opt_dropped": [],
+   "base_dropped": []
+  },
+  {
+   "task": "skill-bpmn-registry-discovery",
+   "opt_dropped": [],
+   "base_dropped": []
+  },
+  {
+   "task": "skill-bpmn-rpa-job",
+   "opt_dropped": [],
+   "base_dropped": []
+  },
+  {
+   "task": "skill-bpmn-safety-sanitize",
+   "opt_dropped": [],
+   "base_dropped": []
+  },
+  {
+   "task": "skill-bpmn-script-jint-guidance",
+   "opt_dropped": [],
+   "base_dropped": []
+  },
+  {
+   "task": "skill-bpmn-script-task-group-by",
+   "opt_dropped": [],
+   "base_dropped": []
+  },
+  {
+   "task": "skill-bpmn-script-task-map",
+   "opt_dropped": [],
+   "base_dropped": []
+  },
+  {
+   "task": "skill-bpmn-simple-approval-bpmn",
+   "opt_dropped": [],
+   "base_dropped": []
+  },
+  {
+   "task": "skill-bpmn-smoke-registry-discovery",
+   "opt_dropped": [],
+   "base_dropped": []
+  },
+  {
+   "task": "skill-bpmn-subprocess",
+   "opt_dropped": [],
+   "base_dropped": []
+  },
+  {
+   "task": "skill-bpmn-switch",
+   "opt_dropped": [],
+   "base_dropped": []
+  },
+  {
+   "task": "skill-bpmn-terminate",
+   "opt_dropped": [],
+   "base_dropped": []
+  },
+  {
+   "task": "skill-bpmn-timer",
+   "opt_dropped": [],
+   "base_dropped": []
+  },
+  {
+   "task": "skill-bpmn-timer-boundary-noninterrupting",
+   "opt_dropped": [],
+   "base_dropped": []
+  },
+  {
+   "task": "skill-bpmn-timer-start",
+   "opt_dropped": [],
+   "base_dropped": []
+  }
+ ]
+}

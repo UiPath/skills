@@ -1,0 +1,45 @@
+{
+  "Result": "Success",
+  "Data": {
+    "Documents": [
+      {
+        "DocumentId": "baa83524f2e36559.be3c34e620e98487",
+        "Filename": "invoice_acme_tech_001.pdf",
+        "InvoiceId": "inv_001",
+        "AttachmentRef": "attach/baa83524f2e36559.be3c34e620e98487",
+        "UploadedAt": "2024-03-30T09:05:00Z"
+      },
+      {
+        "DocumentId": "cf44de3bb208e6b4.c9b682c631e620a7",
+        "Filename": "invoice_summit_supplies_002.pdf",
+        "InvoiceId": "inv_002",
+        "AttachmentRef": "attach/cf44de3bb208e6b4.c9b682c631e620a7",
+        "UploadedAt": "2024-03-30T09:05:00Z"
+      },
+      {
+        "DocumentId": "fc73280dda3f607d.3a4a9dc40959dd7b",
+        "Filename": "invoice_rapid_logistics_003.pdf",
+        "InvoiceId": "inv_003",
+        "AttachmentRef": "attach/fc73280dda3f607d.3a4a9dc40959dd7b",
+        "UploadedAt": "2024-03-30T09:05:00Z"
+      },
+      {
+        "DocumentId": "0335e10ceb19bcda.0e0ff33d9fa2fef0",
+        "Filename": "invoice_cloudwave_004.pdf",
+        "InvoiceId": "inv_004",
+        "AttachmentRef": "attach/0335e10ceb19bcda.0e0ff33d9fa2fef0",
+        "UploadedAt": "2024-03-30T09:05:00Z"
+      },
+      {
+        "DocumentId": "6303f815399fece0.91e26309e4a1e61b",
+        "Filename": "invoice_meridian_consulting_005.pdf",
+        "InvoiceId": "inv_005",
+        "AttachmentRef": "attach/6303f815399fece0.91e26309e4a1e61b",
+        "UploadedAt": "2024-03-30T09:05:00Z"
+      }
+    ],
+    "Total": 5,
+    "Offset": 0,
+    "Limit": 50
+  }
+}

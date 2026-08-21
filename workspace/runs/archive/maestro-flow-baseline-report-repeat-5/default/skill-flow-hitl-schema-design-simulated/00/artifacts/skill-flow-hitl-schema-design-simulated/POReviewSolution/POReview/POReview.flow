@@ -1,0 +1,361 @@
+{
+  "id": "7ef449c7-6b79-4686-b4ce-ffc63cab88c8",
+  "version": "1.8",
+  "name": "POReview",
+  "nodes": [
+    {
+      "id": "start",
+      "type": "core.trigger.manual",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Manual trigger"
+      },
+      "inputs": {
+        "entryPointId": "d73ef987-0bd4-497b-bcd0-a7ccacb4ef62",
+        "isDefaultEntryPoint": true
+      }
+    },
+    {
+      "id": "loadPOData1",
+      "type": "core.script",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Load mock PO data"
+      },
+      "inputs": {
+        "language": "javascript",
+        "code": "return {\n  poNumber: \"PO-2024-0042\",\n  vendorName: \"Acme Corp\",\n  totalAmount: 14750.00\n};"
+      }
+    },
+    {
+      "id": "poReview1",
+      "type": "uipath.human-in-the-loop.quick-form",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "PO Review"
+      },
+      "inputs": {
+        "title": "Purchase Order Review",
+        "recipient": {
+          "channels": ["Email", "ActionCenter"],
+          "connections": {},
+          "assignee": { "type": "group" }
+        },
+        "priority": "High",
+        "schema": {
+          "schemaId": "f8e17b3c-3cee-4290-9980-9489499fbf1d",
+          "fields": [
+            {
+              "id": "ponumber",
+              "label": "PO Number",
+              "type": "string",
+              "direction": "input",
+              "binding": "vars.loadPOData1.output.poNumber"
+            },
+            {
+              "id": "vendorname",
+              "label": "Vendor Name",
+              "type": "string",
+              "direction": "input",
+              "binding": "vars.loadPOData1.output.vendorName"
+            },
+            {
+              "id": "totalamount",
+              "label": "Total Amount",
+              "type": "number",
+              "direction": "input",
+              "binding": "vars.loadPOData1.output.totalAmount"
+            },
+            {
+              "id": "notes",
+              "label": "Notes",
+              "type": "string",
+              "direction": "output",
+              "variable": "vars.notes",
+              "required": false
+            }
+          ],
+          "outcomes": [
+            {
+              "id": "approve",
+              "name": "Approve",
+              "type": "string",
+              "isPrimary": true,
+              "action": "Continue"
+            },
+            {
+              "id": "reject",
+              "name": "Reject",
+              "type": "string",
+              "isPrimary": false,
+              "action": "End"
+            }
+          ]
+        }
+      },
+      "outputs": {
+        "output": {
+          "type": "object",
+          "description": "Task result data",
+          "source": "=result",
+          "var": "output",
+          "properties": {
+            "notes": { "type": "string" },
+            "Action": { "type": "string", "enum": ["Approve", "Reject"], "default": "Approve" }
+          }
+        },
+        "status": {
+          "type": "string",
+          "description": "Task completion status",
+          "source": "=result.Action",
+          "var": "status",
+          "enum": ["Approve", "Reject"],
+          "default": "Approve"
+        }
+      }
+    },
+    {
+      "id": "logApproval1",
+      "type": "core.script",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Log approval"
+      },
+      "inputs": {
+        "language": "javascript",
+        "code": "const poNumber = $vars.loadPOData1.output.poNumber;\nconst vendorName = $vars.loadPOData1.output.vendorName;\nconst totalAmount = $vars.loadPOData1.output.totalAmount;\nconst notes = $vars.poReview1.output.notes;\nconsole.log(`PO APPROVED: ${poNumber} | Vendor: ${vendorName} | Amount: $${totalAmount} | Notes: ${notes || 'none'}`);\nreturn { logged: true, poNumber, vendorName, totalAmount, notes };"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "start-output-loadPOData1-input",
+      "sourceNodeId": "start",
+      "sourcePort": "output",
+      "targetNodeId": "loadPOData1",
+      "targetPort": "input"
+    },
+    {
+      "id": "loadPOData1-output-poReview1-input",
+      "sourceNodeId": "loadPOData1",
+      "sourcePort": "output",
+      "targetNodeId": "poReview1",
+      "targetPort": "input"
+    },
+    {
+      "id": "poReview1-completed-logApproval1-input",
+      "sourceNodeId": "poReview1",
+      "sourcePort": "completed",
+      "targetNodeId": "logApproval1",
+      "targetPort": "input"
+    }
+  ],
+  "definitions": [
+    {
+      "nodeType": "core.trigger.manual",
+      "version": "1.0",
+      "category": "trigger",
+      "description": "Start workflow manually",
+      "tags": ["trigger", "start", "manual"],
+      "sortOrder": 40,
+      "display": {
+        "label": "Manual trigger",
+        "icon": "play",
+        "shape": "circle"
+      },
+      "handleConfiguration": [
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "output",
+              "type": "source",
+              "handleType": "output",
+              "showButton": true,
+              "constraints": {
+                "forbiddenTargetCategories": ["trigger"]
+              }
+            }
+          ],
+          "visible": true
+        }
+      ],
+      "model": {
+        "type": "bpmn:StartEvent",
+        "entryPointId": true
+      },
+      "outputDefinition": {
+        "output": {
+          "type": "object",
+          "description": "Data passed when manually triggering the workflow.",
+          "source": "null",
+          "var": "output"
+        }
+      },
+      "toolbarExtensions": {
+        "design": {
+          "actions": [
+            {
+              "id": "change-trigger-type",
+              "icon": "square-mouse-pointer",
+              "label": "Change trigger type"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "nodeType": "core.script",
+      "version": "1.0",
+      "category": "action",
+      "description": "Run a JavaScript or Python script",
+      "tags": ["script", "code", "javascript", "python"],
+      "sortOrder": 10,
+      "display": {
+        "label": "Script",
+        "icon": "code",
+        "shape": "square"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            { "id": "input", "type": "target", "handleType": "input" }
+          ],
+          "visible": true
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "output",
+              "type": "source",
+              "handleType": "output",
+              "showButton": true,
+              "constraints": {
+                "forbiddenTargetCategories": ["trigger"]
+              }
+            }
+          ],
+          "visible": true
+        }
+      ],
+      "model": { "type": "bpmn:ScriptTask" },
+      "outputDefinition": {
+        "output": {
+          "type": "object",
+          "description": "Value returned by the script.",
+          "source": "=result",
+          "var": "output"
+        }
+      }
+    },
+    {
+      "nodeType": "uipath.human-in-the-loop.quick-form",
+      "version": "1.0",
+      "category": "human-task",
+      "description": "Fast inline approvals with inline debug",
+      "tags": ["human-task", "hitl", "human-in-the-loop", "quick-form", "approval"],
+      "sortOrder": 27,
+      "display": {
+        "label": "Quick Form",
+        "icon": "users",
+        "shape": "square"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            { "id": "input", "type": "target", "handleType": "input" }
+          ],
+          "visible": true
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "completed",
+              "label": "Completed",
+              "type": "source",
+              "handleType": "output",
+              "showButton": true,
+              "constraints": {
+                "forbiddenTargetCategories": ["trigger"]
+              }
+            }
+          ],
+          "visible": true
+        }
+      ],
+      "model": { "type": "bpmn:UserTask", "serviceType": "Actions.HITL" },
+      "inputDefaults": {
+        "schema": {
+          "fields": [],
+          "outcomes": [
+            { "id": "submit", "name": "Submit", "type": "string", "isPrimary": true, "action": "Continue" }
+          ]
+        },
+        "recipient": {
+          "channels": ["Email", "ActionCenter"],
+          "connections": {},
+          "assignee": { "type": "group" }
+        }
+      },
+      "outputDefinition": {
+        "output": { "type": "object", "description": "Task result data", "source": "=result", "var": "output" },
+        "status": { "type": "string", "description": "Task completion status", "source": "=result.Action", "var": "status" }
+      }
+    }
+  ],
+  "layout": {
+    "nodes": {
+      "start": {
+        "position": { "x": 256, "y": 144 }
+      },
+      "loadPOData1": {
+        "position": { "x": 480, "y": 144 }
+      },
+      "poReview1": {
+        "position": { "x": 704, "y": 144 }
+      },
+      "logApproval1": {
+        "position": { "x": 928, "y": 144 }
+      }
+    }
+  },
+  "variables": {
+    "globals": [],
+    "nodes": [
+      {
+        "id": "start.output",
+        "type": "object",
+        "description": "Data passed when manually triggering the workflow.",
+        "binding": { "nodeId": "start", "outputId": "output" }
+      },
+      {
+        "id": "loadPOData1.output",
+        "type": "object",
+        "description": "Value returned by the script.",
+        "binding": { "nodeId": "loadPOData1", "outputId": "output" }
+      },
+      {
+        "id": "poReview1.output",
+        "type": "object",
+        "description": "Task result data",
+        "binding": { "nodeId": "poReview1", "outputId": "output" }
+      },
+      {
+        "id": "poReview1.status",
+        "type": "string",
+        "description": "Task completion status",
+        "binding": { "nodeId": "poReview1", "outputId": "status" }
+      },
+      {
+        "id": "logApproval1.output",
+        "type": "object",
+        "description": "Value returned by the script.",
+        "binding": { "nodeId": "logApproval1", "outputId": "output" }
+      }
+    ]
+  }
+}

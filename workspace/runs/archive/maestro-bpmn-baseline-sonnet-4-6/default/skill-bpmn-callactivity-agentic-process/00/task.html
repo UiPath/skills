@@ -1,0 +1,1052 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>coder_eval · skill-bpmn-callactivity-agentic-process · default</title>
+<style>
+:root {
+  --bg-page: #0f1419;
+  --bg-card: #1a2129;
+  --bg-card-2: #232d38;
+  --bg-code: #0b0f14;
+  --fg: #e6edf3;
+  --fg-muted: #8b98a5;
+  --fg-dim: #6e7681;
+  --border: #30363d;
+  --accent: #58a6ff;
+  --score-high: #22c55e;
+  --score-mid: #f59e0b;
+  --score-low: #ef4444;
+  --status-success: #22c55e;
+  --status-failure: #f59e0b;
+  --status-error: #ef4444;
+  --status-neutral: #6e7681;
+  --shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+.light {
+  --bg-page: #ffffff;
+  --bg-card: #f6f8fa;
+  --bg-card-2: #eaeef2;
+  --bg-code: #f6f8fa;
+  --fg: #1f2328;
+  --fg-muted: #636c76;
+  --fg-dim: #8b949e;
+  --border: #d0d7de;
+  --accent: #0969da;
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial,
+               sans-serif;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--fg);
+  background: var(--bg-page);
+}
+.container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+h1, h2, h3, h4 { margin: 0 0 12px 0; line-height: 1.25; }
+h1 { font-size: 22px; font-weight: 600; }
+h2 { font-size: 18px; font-weight: 600; margin-top: 28px;
+     padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+h3 { font-size: 15px; font-weight: 600; color: var(--fg-muted); }
+h4 { font-size: 13px; font-weight: 600; color: var(--fg-muted); }
+p { margin: 0 0 8px 0; }
+.muted { color: var(--fg-muted); }
+.dim { color: var(--fg-dim); }
+.mono { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+        monospace; font-size: 12.5px; }
+code { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+       monospace; font-size: 12.5px; background: var(--bg-code);
+       border: 1px solid var(--border); padding: 1px 5px; border-radius: 3px; }
+pre { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+      monospace; font-size: 12.5px; background: var(--bg-code);
+      border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px;
+      margin: 6px 0; overflow-x: auto; white-space: pre-wrap;
+      word-wrap: break-word; }
+.header-bar { display: flex; align-items: center; justify-content: space-between;
+              margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+.title-group { flex: 1; min-width: 0; }
+.title-group .subtitle { color: var(--fg-muted); font-size: 13px;
+                         margin-top: 2px; word-break: break-all; }
+.badges { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.badge { display: inline-flex; align-items: center; gap: 6px;
+         padding: 4px 10px; border-radius: 12px; font-size: 12px;
+         font-weight: 600; background: var(--bg-card-2);
+         border: 1px solid var(--border); color: var(--fg); }
+.badge.success { background: color-mix(in srgb, var(--status-success) 20%, var(--bg-card-2));
+                 border-color: var(--status-success); color: var(--status-success); }
+.badge.failure { background: color-mix(in srgb, var(--status-failure) 20%, var(--bg-card-2));
+                 border-color: var(--status-failure); color: var(--status-failure); }
+.badge.error { background: color-mix(in srgb, var(--status-error) 20%, var(--bg-card-2));
+               border-color: var(--status-error); color: var(--status-error); }
+.badge.warning { background: color-mix(in srgb, #f4a52810 20%, var(--bg-card-2));
+                 border-color: #f4a528; color: #f4a528; }
+.badge.neutral { color: var(--fg-muted); }
+.score-pill { display: inline-block; padding: 2px 8px; border-radius: 10px;
+              font-size: 12px; font-weight: 700; min-width: 42px;
+              text-align: center; color: #0b0f14; }
+.score-high { background: var(--score-high); }
+.score-mid { background: var(--score-mid); }
+.score-low { background: var(--score-low); }
+.card { background: var(--bg-card); border: 1px solid var(--border);
+        border-radius: 8px; padding: 16px 20px; margin-bottom: 16px;
+        box-shadow: var(--shadow); }
+.card.highlight { border-left: 4px solid var(--accent); }
+.grid { display: grid; gap: 12px;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+.stat { background: var(--bg-card-2); padding: 10px 12px; border-radius: 6px;
+        border: 1px solid var(--border); }
+.stat .label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;
+               color: var(--fg-muted); margin-bottom: 4px; }
+.stat .value { font-size: 16px; font-weight: 600; }
+table { width: 100%; border-collapse: collapse; margin: 4px 0 12px 0; }
+th, td { text-align: left; padding: 8px 10px;
+         border-bottom: 1px solid var(--border); vertical-align: top;
+         font-size: 13px; }
+th { color: var(--fg-muted); font-weight: 600; font-size: 12px;
+     text-transform: uppercase; letter-spacing: 0.3px; }
+tr:last-child td { border-bottom: none; }
+details { margin: 6px 0; border: 1px solid var(--border); border-radius: 6px;
+          background: var(--bg-card-2); }
+details > summary { cursor: pointer; padding: 8px 12px; user-select: none;
+                    font-weight: 500; list-style: none; }
+details > summary::-webkit-details-marker { display: none; }
+details > summary::before { content: "▸ "; color: var(--fg-dim);
+                            display: inline-block; width: 14px;
+                            transition: transform 0.15s; }
+details[open] > summary::before { content: "▾ "; }
+details .details-body { padding: 0 12px 10px 12px; }
+.tool-row { display: flex; align-items: center; gap: 10px;
+            flex-wrap: wrap; font-size: 13px; }
+.tool-name { font-weight: 600; color: var(--accent); font-family: ui-monospace,
+             SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+.tool-status-ok { color: var(--status-success); font-size: 11px;
+                  font-weight: 600; }
+.tool-status-err { color: var(--status-error); font-size: 11px;
+                   font-weight: 600; }
+.tool-duration { color: var(--fg-muted); font-size: 12px; }
+.tool-seq { color: var(--fg-dim); font-size: 11px; font-weight: 600;
+            min-width: 24px; text-align: right; font-family: ui-monospace,
+            SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+.turn-header { display: flex; justify-content: space-between;
+               align-items: baseline; flex-wrap: wrap; gap: 10px;
+               margin-bottom: 10px; }
+.turn-meta { font-size: 12px; color: var(--fg-muted); }
+.criterion-row td:first-child { font-family: ui-monospace, SFMono-Regular,
+                                 "SF Mono", Menlo, Consolas, monospace;
+                                 color: var(--fg-muted); font-size: 12px; }
+.judge-section { display: flex; flex-direction: column; gap: 12px; }
+.judge-card { padding: 14px 16px; }
+.judge-card-head { display: flex; justify-content: space-between;
+                    align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+.judge-card-title { font-size: 14px; line-height: 1.4; flex: 1; min-width: 0; }
+.judge-card-score { flex-shrink: 0; }
+.judge-rationale { margin-top: 10px; padding: 10px 12px;
+                   background: var(--bg-code); border-radius: 4px;
+                   font-size: 13px; line-height: 1.5; }
+.judge-findings { margin: 8px 0 0 18px; padding-left: 4px; font-size: 13px;
+                   line-height: 1.6; }
+.judge-findings li { margin: 2px 0; }
+.nav-toggle { display: inline-block; padding: 5px 10px; font-size: 12px;
+              background: var(--bg-card-2); border: 1px solid var(--border);
+              border-radius: 5px; color: var(--fg); cursor: pointer; }
+.nav-toggle:hover { background: var(--bg-card); }
+.llm-next-steps { margin: 6px 0 0 20px; padding-left: 0; }
+.llm-next-steps li { margin: 3px 0; }
+.iteration-group { padding: 12px 16px 4px 16px; margin-bottom: 20px;
+                   border-radius: 0 6px 6px 0; border-left: 4px solid var(--status-neutral); }
+/* rgba fallback for browsers without color-mix (Chrome <111, Firefox <113, Safari <16.2). */
+.iteration-group--recovered { border-left-color: var(--status-success);
+                              background: rgba(34, 197, 94, 0.06);
+                              background: color-mix(in srgb, var(--status-success) 6%, transparent); }
+.iteration-group--terminal { border-left-color: var(--status-error);
+                             background: rgba(239, 68, 68, 0.06);
+                             background: color-mix(in srgb, var(--status-error) 6%, transparent); }
+.iteration-group__banner { margin: 0 0 12px 0; font-size: 14px; font-weight: 600; }
+.iteration-group--recovered .iteration-group__banner { color: var(--status-success); }
+.iteration-group--terminal .iteration-group__banner { color: var(--status-error); }
+.attempt-transition { display: flex; align-items: center; gap: 8px;
+                      margin: -6px 0 12px 8px; color: var(--status-error); font-size: 12.5px; }
+.attempt-transition__icon { font-weight: 700; }
+footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--border);
+         color: var(--fg-dim); font-size: 12px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="header-bar">
+  <div class="title-group">
+    <h1>Task: skill-bpmn-callactivity-agentic-process</h1>
+    <div class="subtitle">Node eval: agent uses the uipath-maestro-bpmn skill to invoke a separate agentic Maestro instance via Orchestrator.StartAgenticProcess, correctly hosted on a bpmn:callActivity (a CallActivity invokes a SEPARATE instance) rather than an in-instance serviceTask. Authoring only — no cloud effects.</div>
+  </div>
+  <div class="badges">
+    <span class="badge success">SUCCESS</span>
+    <span class="score-pill score-high">1.00</span>
+    <span class="badge neutral">claude-code · claude-sonnet-4-6</span>
+    <span class="badge neutral">3m 2s</span>
+    <span class="badge neutral">$0.4671</span>
+    
+    
+    <span class="nav-toggle" onclick="toggleTheme()">Toggle theme</span>
+  </div>
+</div>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Variant</div><div class="value">default</div></div>
+    <div class="stat"><div class="label">Started</div><div class="value mono">2026-08-15T00:32:33</div></div>
+    <div class="stat"><div class="label">Duration</div><div class="value">3m 2s</div></div>
+    <div class="stat"><div class="label">Turns (SDK)</div><div class="value">31</div></div>
+    <div class="stat"><div class="label">Commands</div><div class="value">16</div></div>
+  </div>
+</div>
+
+<h2>Success Criteria <span class="muted" style="font-weight:400">(3/3 passed)</span></h2>
+<div class="card" style="padding:0">
+<table>
+  <thead>
+    <tr>
+      <th style="width:15%">Type</th>
+      <th style="width:35%">Description</th>
+      <th style="width:10%">Score</th>
+      <th>Details</th>
+    </tr>
+  </thead>
+  <tbody>
+    
+<tr class="criterion-row">
+  <td>file_exists</td>
+  <td>BPMN source was authored</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><div class="dim mono" style="white-space:pre-wrap">File &#x27;CallActivityAgenticBpmn/CallActivityAgenticBpmn.bpmn&#x27; exists</div></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>command_executed</td>
+  <td>Agent did not run any cloud-side Maestro BPMN lifecycle command</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><div class="dim mono" style="white-space:pre-wrap">Matched 0 matches (allowed range 0..0) commands (filters: tool_name=Bash, pattern=/(uip|\$UIP)\s+maestro\s+bpmn\s+(upload|publish|deploy|debug|run|pack)/)</div></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>run_command</td>
+  <td>StartAgenticProcess hosted on a bpmn:callActivity (not a serviceTask) and the graph is sound</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Command: python3 $TASK_DIR/check_callactivity_agentic.py</summary><div class="details-body"><pre style="margin:6px 0 0 0">Command: python3 $TASK_DIR/check_callactivity_agentic.py
+Exit code: 0 (expected: 0)
+Stdout:
+OK: CallActivityAgenticBpmn/CallActivityAgenticBpmn.bpmn hosts Orchestrator.StartAgenticProcess on a bpmn:callActivity
+
+Stderr: (empty)</pre></div></details></td>
+</tr>
+
+  </tbody>
+</table>
+</div>
+<h2>Conversation Trace (1 iteration)</h2>
+<div class="card">
+  <div class="turn-header">
+    <h3>Iteration 1</h3>
+    <div class="badges">
+      <span class="badge neutral">31 assistant turns</span>
+      <span class="badge neutral">in 18 · out 9287 · cache 692686</span>
+      <span class="badge neutral">2m 55s</span>
+      
+      
+      
+    </div>
+  </div>
+  <details>
+    <summary>Prompt to agent</summary>
+    <div class="details-body"><pre>Your working directory is: /work/output/artifacts/skill-bpmn-callactivity-agentic-process
+
+Load and follow the uipath-maestro-bpmn skill.
+
+Author a local Maestro BPMN project named &quot;CallActivityAgenticBpmn&quot; with the
+main file at `CallActivityAgenticBpmn/CallActivityAgenticBpmn.bpmn` for this
+process:
+- Manual start -&gt; invoke a published agentic process as a SEPARATE Maestro
+  instance -&gt; end.
+
+Requirements:
+- Invoking a separate Maestro instance is a call activity, so model the
+  invocation with `Orchestrator.StartAgenticProcess` hosted on a
+  `bpmn:callActivity` — NOT a `bpmn:serviceTask` (a serviceTask scopes work
+  within the same instance).
+- Discover the wrapper via the registry (`uip maestro bpmn registry`) and author
+  its `uipath:*` payload from the served template. Do not hand-author
+  registry-owned XML from prose.
+- Use synthetic placeholder resource/binding values only. Do not invent or paste
+  real tenant URLs, folder keys, connection IDs, release keys, or process names.
+- Include a bpmndi:BPMNDiagram with a BPMNShape for every node and a BPMNEdge
+  for every sequence flow.
+- Validate locally by parsing the BPMN and walking the skill&#x27;s structural
+  checklist. Do NOT upload, publish, deploy, debug, run, or pack anything, and
+  do NOT pause for approval — build the complete local project in one pass.
+</pre></div>
+  </details>
+  <details>
+    <summary>Agent response</summary>
+    <div class="details-body"><pre>[ASSISTANT] Registry pulled successfully. Now let me get the template for the agentic process call activity.
+[ASSISTANT] `Orchestrator.StartAgenticProcess` is on `bpmn:CallActivity` — exactly what the requirement asks for. Now let me get its template.
+[ASSISTANT] I have everything I need. Let me now read the project layout reference briefly, then assemble the file.
+[ASSISTANT] Now I have all the information I need. Let me build the project:
+[ASSISTANT] Now let me write the BPMN file using the registry template for `Orchestrator.StartAgenticProcess`, the structural skeleton from the reference, and the manual-start → call-activity → end process:
+[ASSISTANT] Now write the `project.uiproj` file:
+[ASSISTANT] Now validate:
+[ASSISTANT] CLI validator reports **Status: Valid**. Now run the structural checklist as a final manual walk-through:
+[ASSISTANT] That&#x27;s a false positive — the namespace URI is just wrapping the tag in ElementTree&#x27;s Clark notation `{uri}callActivity`. The element IS a `callActivity`. Let me fix the check and re-run:
+[ASSISTANT] All checks pass. Let me verify the final file tree:
+[ASSISTANT] The project is complete. Here is a summary of what was built and how:
+
+---
+
+## `CallActivityAgenticBpmn` — Done
+
+**Project layout**
+```
+CallActivityAgenticBpmn/
+  CallActivityAgenticBpmn.bpmn   ← main process file
+  project.uiproj                 ← project metadata
+```
+
+---
+
+### Process topology
+
+```
+[Manual Start] ──Flow_1──▶ [CallActivity: Start Agentic Process] ──Flow_2──▶ [End]
+```
+
+A linear three-node process: one plain `bpmn:startEvent` (manual / no event-definition = manual start), one `bpmn:callActivity` hosting the agentic-process invocation, one `bpmn:endEvent`.
+
+---
+
+### Why `bpmn:callActivity` (not `bpmn:serviceTask`)
+
+- A **callActivity** invokes a *separate* Maestro process instance. It is the correct element for &quot;invoke a published agentic process as a separate Maestro instance.&quot;  
+- A **serviceTask** scopes work *within the same instance* — wrong for cross-instance invocation.  
+- The registry confirms this: `Orchestrator.StartAgenticProcess` is listed with `&quot;BpmnElement&quot;: &quot;bpmn:CallActivity&quot;`.
+
+---
+
+### Registry-driven `uipath:*` payload
+
+`Orchestrator.StartAgenticProcess` template was fetched via:
+```
+uip maestro bpmn registry get Orchestrator.StartAgenticProcess --output json
+```
+The `xmlTemplate` was used verbatim. Placeholders were filled with XML-safe synthetic values (`&amp;lt;AGENTIC_PROCESS_RELEASE_KEY&amp;gt;`, `&amp;lt;FOLDER_ID&amp;gt;`, etc.). Nothing was hand-authored from prose.
+
+---
+
+### Validation results
+
+| Check | Result |
+|---|---|
+| CLI validator (`uip maestro bpmn validate`) | ✅ **Status: Valid** |
+| Well-formed XML (`ET.parse`) | ✅ Pass |
+| 1 diagram, shape-per-node, edge-per-flow | ✅ 3 shapes / 3 nodes, 2 edges / 2 flows |
+| All `bpmnElement`/`sourceRef`/`targetRef` refs resolve | ✅ Pass |
+| `uipath:type` is a child element, not an attribute | ✅ Pass |
+| No double-hyphen in XML comments | ✅ Pass |
+| Output `var` resolves to declared variable | ✅ `Var_AgenticResult` declared and matched |
+[RESULT - SUCCESS] The project is complete. Here is a summary of what was built and how:
+
+---
+
+## `CallActivityAgenticBpmn` — Done
+
+**Project layout**
+```
+CallActivityAgenticBpmn/
+  CallActivityAgenticBpmn.bpmn   ← main process file
+  project.uiproj                 ← project metadata
+```
+
+---
+
+### Process topology
+
+```
+[Manual Start] ──Flow_1──▶ [CallActivity: Start Agentic Process] ──Flow_2──▶ [End]
+```
+
+A linear three-node process: one plain `bpmn:startEvent` (manual / no event-definition = manual start), one `bpmn:callActivity` hosting the agentic-process invocation, one `bpmn:endEvent`.
+
+---
+
+### Why `bpmn:callActivity` (not `bpmn:serviceTask`)
+
+- A **callActivity** invokes a *separate* Maestro process instance. It is the correct element for &quot;invoke a published agentic process as a separate Maestro instance.&quot;  
+- A **serviceTask** scopes work *within the same instance* — wrong for cross-instance invocation.  
+- The r</pre></div>
+  </details>
+  <h4 style="margin-top:12px">Tool Calls (16)</h4>
+  
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#0</span>
+      <span class="tool-name">Skill</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">32ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;skill&quot;: &quot;uipath:uipath-maestro-bpmn&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Launching skill: uipath:uipath-maestro-bpmn</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#1</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">371ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/structural-bpmn.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Structural BPMN (what the registry does not emit)
+2	
+3	The registry&#x27;s `xmlTemplate`s give you the `uipath:*` payload for each node
+4	(see [registry-workflow.md](registry-workflow.md)). They do **not** give you the
+5	structural BPMN that holds those nodes together. This file is the ground truth
+6	for everything you author by hand around the templates.
+7	
+8	Two sources define the contract:
+9	
+10	- the registry spec `bpmn-spec.json` — enumerates which BPMN element types and
+11	  event definitions exist, via its `bpmnElements` section;
+12	- the Studio Web canvas serializer
+13	  (`PO.Frontend/src/services/serialization/`) — defines how that XML must be
+14	  shaped to import and round-trip.
+15	
+16	Where the registry stops, the canvas serializer is authoritative. Each
+17	gap below is labelled **REGISTRY GAP** — the registry exposes no template for
+18	it, so author it from this reference.
+19	
+20	BPMN XML element names are case-sensitive. Use the exact lower-camel BPMN tag
+21	names the serializer emits, such as `&lt;bpmn:startEvent&gt;`,
+22	`&lt;bpmn:intermediateCatchEvent&gt;`, `&lt;bpmn:scriptTask&gt;`, and `&lt;bpmn:endEvent&gt;`.
+23	Do not use PascalCase variants like `&lt;bpmn:IntermediateCatchEvent&gt;`; XML a
+
+… (truncated, 30791 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#2</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">23.57s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro bpmn registry pull --output json 2&gt;&amp;1 | head -20&quot;,
+  &quot;description&quot;: &quot;Pull registry cache once&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;RegistryPullSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;ExtensionTypeCount&quot;: 30,
+    &quot;ConnectorCount&quot;: 27,
+    &quot;ProcessCount&quot;: 138,
+    &quot;ProcessCountsByType&quot;: {
+      &quot;Process&quot;: 24,
+      &quot;ProcessOrchestration&quot;: 21,
+      &quot;Agent&quot;: 15,
+      &quot;Flow&quot;: 38,
+      &quot;Api&quot;: 23,
+      &quot;Function&quot;: 6,
+      &quot;CaseManagement&quot;: 11,
+      &quot;BusinessRules&quot;: 0
+    },
+    &quot;FromCache&quot;: false,
+    &quot;CacheWritten&quot;: true,
+    &quot;Message&quot;: &quot;Synced fresh registry&quot;</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#3</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">2.29s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro bpmn registry list --output json 2&gt;&amp;1 | python3 -c \&quot;import json,sys; data=json.load(sys.stdin); [print(item.get(&#x27;type&#x27;,&#x27;&#x27;), item.get(&#x27;bpmnElement&#x27;,&#x27;&#x27;), item.get(&#x27;description&#x27;,&#x27;&#x27;)[:60]) for item in data.get(&#x27;Data&#x27;,{}).get(&#x27;Items&#x27;,[]) if &#x27;agentic&#x27; in item.get(&#x27;type&#x27;,&#x27;&#x27;).lower() or &#x27;agentic&#x27; in item.get(&#x27;description&#x27;,&#x27;&#x27;).lower() or &#x27;StartAgentic&#x27; in item.get(&#x27;type&#x27;,&#x27;&#x27;)]\&quot;&quot;,
+  &quot;description&quot;: &quot;List registry items containing agentic&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>(Bash completed with no output)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#4</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">4.85s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro bpmn registry list --output json 2&gt;&amp;1 | python3 -c \&quot;import json,sys; data=json.load(sys.stdin); items=data.get(&#x27;Data&#x27;,{}).get(&#x27;Items&#x27;,[]); [print(item.get(&#x27;type&#x27;,&#x27;&#x27;), &#x27;|&#x27;, item.get(&#x27;bpmnElement&#x27;,&#x27;&#x27;), &#x27;|&#x27;, item.get(&#x27;description&#x27;,&#x27;&#x27;)[:80]) for item in items]\&quot;&quot;,
+  &quot;description&quot;: &quot;List all registry extension types&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>(Bash completed with no output)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#5</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">4.12s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro bpmn registry list --output json 2&gt;&amp;1 | head -100&quot;,
+  &quot;description&quot;: &quot;Raw registry list output&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;RegistryListSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;ExtensionTypes&quot;: [
+      {
+        &quot;ExtensionType&quot;: &quot;uipath:Activity&quot;,
+        &quot;Label&quot;: &quot;Canvas activity&quot;,
+        &quot;BpmnElement&quot;: &quot;bpmn:ServiceTask&quot;,
+        &quot;ExtensionTag&quot;: &quot;uipath:activity&quot;,
+        &quot;InputPattern&quot;: &quot;none&quot;,
+        &quot;BindingPattern&quot;: &quot;none&quot;,
+        &quot;RequiresDiscovery&quot;: &quot;No&quot;
+      },
+      {
+        &quot;ExtensionType&quot;: &quot;Actions.HITL&quot;,
+        &quot;Label&quot;: &quot;Create action app task&quot;,
+        &quot;BpmnElement&quot;: &quot;bpmn:UserTask&quot;,
+        &quot;ExtensionTag&quot;: &quot;uipath:activity&quot;,
+        &quot;InputPattern&quot;: &quot;mergedBody&quot;,
+        &quot;BindingPattern&quot;: &quot;none&quot;,
+        &quot;RequiresDiscovery&quot;: &quot;Yes&quot;
+      },
+      {
+        &quot;ExtensionType&quot;: &quot;Orchestrator.StartJob&quot;,
+        &quot;Label&quot;: &quot;Start and wait for RPA workflow&quot;,
+        &quot;BpmnElement&quot;: &quot;bpmn:ServiceTask&quot;,
+        &quot;ExtensionTag&quot;: &quot;uipath:activity&quot;,
+        &quot;InputPattern&quot;: &quot;mergedBody&quot;,
+        &quot;BindingPattern&quot;: &quot;process&quot;,
+        &quot;RequiresDiscovery&quot;: &quot;Yes&quot;
+      },
+      {
+        &quot;ExtensionType&quot;: &quot;Orchestrator.StartAgentJob&quot;,
+        &quot;Label&quot;: &quot;Start and wait for agent&quot;,
+        &quot;BpmnElement&quot;: &quot;bpmn:ServiceTask&quot;,
+        &quot;ExtensionTag&quot;: &quot;uipath:activity&quot;,
+        &quot;InputPattern&quot;:
+
+… (truncated, 2173 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#6</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">2.63s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro bpmn registry list --output json 2&gt;&amp;1 | python3 -c \&quot;\nimport json,sys\ndata=json.load(sys.stdin)\nitems=data.get(&#x27;Data&#x27;,{}).get(&#x27;ExtensionTypes&#x27;,[])\nfor item in items:\n    t=item.get(&#x27;ExtensionType&#x27;,&#x27;&#x27;)\n    if &#x27;Agentic&#x27; in t or &#x27;agentic&#x27; in t or &#x27;CallActivity&#x27; in t or &#x27;callactivity&#x27; in t:\n        print(t, &#x27;|&#x27;, item.get(&#x27;BpmnElement&#x27;,&#x27;&#x27;), &#x27;|&#x27;, item.get(&#x27;Label&#x27;,&#x27;&#x27;))\nprint(&#x27;---ALL---&#x27;)\nfor i… (88 more chars)&quot;,
+  &quot;description&quot;: &quot;Search for agentic process types in registry&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Orchestrator.StartAgenticProcess | bpmn:CallActivity | Start and wait for agentic process
+Orchestrator.StartAgenticProcessAsync | bpmn:CallActivity | Start agentic process
+---ALL---
+uipath:Activity | bpmn:ServiceTask
+Actions.HITL | bpmn:UserTask
+Orchestrator.StartJob | bpmn:ServiceTask
+Orchestrator.StartAgentJob | bpmn:ServiceTask
+Orchestrator.BusinessRules | bpmn:BusinessRuleTask
+Intsvc.ActivityExecution | bpmn:SendTask
+Intsvc.HttpExecution | bpmn:SendTask
+Intsvc.UnifiedHttpRequest | bpmn:SendTask
+Intsvc.WaitForEvent | bpmn:ReceiveTask
+Intsvc.EventTrigger | bpmn:StartEvent
+Intsvc.AsyncExecution | bpmn:ServiceTask
+Intsvc.SyncAgentExecution | bpmn:ServiceTask
+Intsvc.AsyncAgentExecution | bpmn:ServiceTask
+Intsvc.SyncWorkflowExecution | bpmn:ServiceTask
+Intsvc.AsyncWorkflowExecution | bpmn:ServiceTask
+Orchestrator.ExecuteApiWorkflowAsync | bpmn:ServiceTask
+Orchestrator.CreateQueueItem | bpmn:SendTask
+Orchestrator.CreateAndWaitForQueueItem | bpmn:ServiceTask
+Orchestrator.StartAgenticProcess | bpmn:CallActivity
+Orchestrator.StartAgenticProcessAsync | bpmn:CallActivity
+Orchestrator.StartCaseMgmtProcess | bpmn:CallActivity
+Orchestrator.StartCaseMgmtProcessAsync | bpmn:CallActivity
+A2A.Age
+
+… (truncated, 337 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#7</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">2.17s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro bpmn registry get Orchestrator.StartAgenticProcess --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Get template for Orchestrator.StartAgenticProcess&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;RegistryGetSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;ExtensionType&quot;: {
+      &quot;ExtensionType&quot;: &quot;Orchestrator.StartAgenticProcess&quot;,
+      &quot;Label&quot;: &quot;Start and wait for agentic process&quot;,
+      &quot;BpmnElement&quot;: &quot;bpmn:CallActivity&quot;,
+      &quot;Placements&quot;: {
+        &quot;Activity&quot;: {
+          &quot;Type&quot;: &quot;bpmn:CallActivity&quot;
+        }
+      },
+      &quot;ExtensionTag&quot;: &quot;uipath:activity&quot;,
+      &quot;ContextFields&quot;: [
+        {
+          &quot;Name&quot;: &quot;releaseKey&quot;,
+          &quot;DisplayName&quot;: &quot;Process&quot;,
+          &quot;Type&quot;: &quot;string&quot;,
+          &quot;Required&quot;: false,
+          &quot;Hidden&quot;: true,
+          &quot;IsPrimaryKey&quot;: false,
+          &quot;Binding&quot;: false,
+          &quot;DefaultValue&quot;: null,
+          &quot;BindingInfo&quot;: {
+            &quot;Resource&quot;: &quot;process&quot;,
+            &quot;ResourceKeyPattern&quot;: &quot;${metadata.key}&quot;,
+            &quot;PropertyAttribute&quot;: &quot;Key&quot;
+          }
+        },
+        {
+          &quot;Name&quot;: &quot;folderId&quot;,
+          &quot;Type&quot;: &quot;string&quot;,
+          &quot;Required&quot;: false,
+          &quot;Hidden&quot;: true,
+          &quot;IsPrimaryKey&quot;: false,
+          &quot;Binding&quot;: false,
+          &quot;DefaultValue&quot;: null
+        },
+        {
+          &quot;Name&quot;: &quot;folderPath&quot;,
+          &quot;Type&quot;: &quot;string&quot;,
+          &quot;Required&quot;: false,
+          &quot;Hidden&quot;: true,
+     
+
+… (truncated, 1914 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#8</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">12ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-bpmn/references/shared/project-layout.md&quot;,
+  &quot;limit&quot;: 60
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Project Layout
+2	
+3	Maestro BPMN Process Orchestration projects use BPMN XML as source and generated JSON files as package/runtime metadata.
+4	
+5	## Canonical source files
+6	
+7	- `&lt;project&gt;.bpmn` - BPMN process source and UiPath extension XML. For a new
+8	  project, keep the BPMN source basename exactly aligned with the project
+9	  directory/name. For example, `InvoiceTriageBpmn/InvoiceTriageBpmn.bpmn`, not
+10	  `InvoiceTriageBpmn/invoice-triage-bpmn.bpmn`.
+11	- `project.uiproj` - UiPath project metadata. Keep it in the same project
+12	  directory as the main BPMN file: `InvoiceTriageBpmn/project.uiproj`, not next
+13	  to the project directory.
+14	
+15	For a new local project, place source files under a single project directory.
+16	`uip maestro bpmn init &lt;ProjectName&gt; --output json` nests that directory inside
+17	a solution. Inside a solution it registers the project with the parent `.uipx`;
+18	outside any solution it auto-scaffolds `&lt;ProjectName&gt;Solution/` and nests the
+19	project inside (the response adds `Data.AutoCreatedSolution` =
+20	`{ Name, Path, SolutionFile }` and reports `SolutionRegistration.Status:
+21	Registered`; re-running is idempotent and reports `AlreadyRegister
+
+… (truncated, 1643 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#9</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">40ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;mkdir -p /work/output/artifacts/skill-bpmn-callactivity-agentic-process/CallActivityAgenticBpmn&quot;,
+  &quot;description&quot;: &quot;Create project directory&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>(Bash completed with no output)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#10</span>
+      <span class="tool-name">Write</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">21ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-bpmn-callactivity-agentic-process/CallActivityAgenticBpmn/CallActivityAgenticBpmn.bpmn&quot;,
+  &quot;content&quot;: &quot;&lt;?xml version=\&quot;1.0\&quot; encoding=\&quot;UTF-8\&quot;?&gt;\n&lt;bpmn:definitions\n    xmlns:bpmn=\&quot;http://www.omg.org/spec/BPMN/20100524/MODEL\&quot;\n    xmlns:bpmndi=\&quot;http://www.omg.org/spec/BPMN/20100524/DI\&quot;\n    xmlns:dc=\&quot;http://www.omg.org/spec/DD/20100524/DC\&quot;\n    xmlns:di=\&quot;http://www.omg.org/spec/DD/20100524/DI\&quot;\n    xmlns:xsi=\&quot;http://www.w3.org/2001/XMLSchema-instance\&quot;\n    xmlns:uipath=\&quot;http://uipath.org/schema/bpmn\&quot;\n    id=… (3282 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>File created successfully at: /work/output/artifacts/skill-bpmn-callactivity-agentic-process/CallActivityAgenticBpmn/CallActivityAgenticBpmn.bpmn (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#11</span>
+      <span class="tool-name">Write</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">26ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-bpmn-callactivity-agentic-process/CallActivityAgenticBpmn/project.uiproj&quot;,
+  &quot;content&quot;: &quot;{\n  \&quot;name\&quot;: \&quot;CallActivityAgenticBpmn\&quot;,\n  \&quot;description\&quot;: \&quot;Manual start, invoke a published agentic process as a separate Maestro instance via CallActivity, then end.\&quot;,\n  \&quot;projectVersion\&quot;: \&quot;1.0.0\&quot;,\n  \&quot;runtimeOptions\&quot;: {\n    \&quot;autoDispose\&quot;: false\n  },\n  \&quot;entryPoints\&quot;: [\n    \&quot;CallActivityAgenticBpmn.bpmn\&quot;\n  ],\n  \&quot;targetFramework\&quot;: \&quot;Portable\&quot;,\n  \&quot;expressionLanguage\&quot;: \&quot;VisualBasic\&quot;,\n  \&quot;designOptions\&quot;: {\n… (168 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>File created successfully at: /work/output/artifacts/skill-bpmn-callactivity-agentic-process/CallActivityAgenticBpmn/project.uiproj (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#12</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">3.36s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro bpmn validate /work/output/artifacts/skill-bpmn-callactivity-agentic-process/CallActivityAgenticBpmn/CallActivityAgenticBpmn.bpmn --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Run CLI validator on the BPMN file&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;BpmnValidate&quot;,
+  &quot;Data&quot;: {
+    &quot;File&quot;: &quot;/work/output/artifacts/skill-bpmn-callactivity-agentic-process/CallActivityAgenticBpmn/CallActivityAgenticBpmn.bpmn&quot;,
+    &quot;Status&quot;: &quot;Valid&quot;,
+    &quot;ProcessCount&quot;: 1,
+    &quot;StartEventCount&quot;: 1,
+    &quot;UiPathExtensionCount&quot;: 7
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#13</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-err">ERROR</span>
+      <span class="tool-duration">558ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 -c \&quot;\nimport xml.etree.ElementTree as ET\ntree = ET.parse(&#x27;/work/output/artifacts/skill-bpmn-callactivity-agentic-process/CallActivityAgenticBpmn/CallActivityAgenticBpmn.bpmn&#x27;)\nroot = tree.getroot()\n\nns = {\n    &#x27;bpmn&#x27;: &#x27;http://www.omg.org/spec/BPMN/20100524/MODEL&#x27;,\n    &#x27;bpmndi&#x27;: &#x27;http://www.omg.org/spec/BPMN/20100524/DI&#x27;,\n    &#x27;uipath&#x27;: &#x27;http://uipath.org/schema/bpmn&#x27;,\n}\n\n# 1. Root is definit… (3820 more chars)&quot;,
+  &quot;description&quot;: &quot;Walk the structural checklist against the authored BPMN&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Exit code 1
+CHECK 1 PASS: root is definitions with correct namespace
+CHECK 2 PASS: 1 BPMNDiagram, 3 shapes, 2 edges
+  Nodes: 3, Flows: 2
+CHECK 2 PASS: shape-per-node and edge-per-flow
+CHECK 3 PASS: all BPMNShape/BPMNEdge refs resolve
+CHECK 3b PASS: all sourceRef/targetRef resolve
+CHECK 4 PASS: 0 exclusive gateways (none expected)
+CHECK 5 PASS: no activity/event has more than one incoming flow: {&#x27;StartEvent_1&#x27;: 0, &#x27;EndEvent_1&#x27;: 1, &#x27;CallActivity_AgenticProcess&#x27;: 1}
+CHECK 6 PASS: callActivity has uipath:type child element value=Orchestrator.StartAgenticProcess
+Traceback (most recent call last):
+  File &quot;&lt;string&gt;&quot;, line 81, in &lt;module&gt;
+    assert &#x27;callActivity&#x27; in c.tag.lower(), f&#x27;Host element is not callActivity: {c.tag}&#x27;
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: Host element is not callActivity: {http://www.omg.org/spec/BPMN/20100524/MODEL}callActivity</pre>
+    <h4>Error</h4><pre>Exit code 1
+CHECK 1 PASS: root is definitions with correct namespace
+CHECK 2 PASS: 1 BPMNDiagram, 3 shapes, 2 edges
+  Nodes: 3, Flows: 2
+CHECK 2 PASS: shape-per-node and edge-per-flow
+CHECK 3 PASS: all BPMNShape/BPMNEdge refs resolve
+CHECK 3b PASS: all sourceRef/targetRef resolve
+CHECK 4 PASS: 0 exclusive gateways (none expected)
+CHECK 5 PASS: no activity/event has more than one incoming flow: {&#x27;StartEvent_1&#x27;: 0, &#x27;EndEvent_1&#x27;: 1, &#x27;CallActivity_AgenticProcess&#x27;: 1}
+CHECK 6 PASS: callActivity has uipath:type child element value=Orchestrator.StartAgenticProcess
+Traceback (most recent call last):
+  File &quot;&lt;string&gt;&quot;, line 81, in &lt;module&gt;
+    assert &#x27;callActivity&#x27; in c.tag.lower(), f&#x27;Host element is not callActivity: {c.tag}&#x27;
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: Host element is not callActivity: {http://www.omg.org/spec/BPMN/20100524/MODEL}callActivity</pre>
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#14</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">524ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 -c \&quot;\nimport xml.etree.ElementTree as ET\ntree = ET.parse(&#x27;/work/output/artifacts/skill-bpmn-callactivity-agentic-process/CallActivityAgenticBpmn/CallActivityAgenticBpmn.bpmn&#x27;)\nroot = tree.getroot()\n\nns = {\n    &#x27;bpmn&#x27;: &#x27;http://www.omg.org/spec/BPMN/20100524/MODEL&#x27;,\n    &#x27;bpmndi&#x27;: &#x27;http://www.omg.org/spec/BPMN/20100524/DI&#x27;,\n    &#x27;uipath&#x27;: &#x27;http://uipath.org/schema/bpmn&#x27;,\n}\n\n# 1. Root is definit… (3912 more chars)&quot;,
+  &quot;description&quot;: &quot;Re-run corrected structural checklist&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>CHECK 1 PASS: root is bpmn:definitions with correct namespace
+CHECK 2 PASS: 1 diagram, 3 shapes/3 nodes, 2 edges/2 flows
+CHECK 3 PASS: all BPMNShape/BPMNEdge bpmnElement refs resolve
+CHECK 3b PASS: all sourceRef/targetRef resolve
+CHECK 4 PASS: 0 exclusive gateways (0 expected for linear flow)
+CHECK 5 PASS: no node has multiple incoming flows
+CHECK 6 PASS: callActivity hosts uipath:type child value=Orchestrator.StartAgenticProcess (not attribute)
+CHECK 7 PASS: output var refs {&#x27;Var_AgenticResult&#x27;} resolve to declared variables {&#x27;Var_AgenticResult&#x27;}
+CHECK 8 PASS: no double-hyphen in XML comments (6 comments checked)
+CHECK 9 PASS: file is well-formed XML (ET.parse succeeded)
+
+ALL STRUCTURAL CHECKS PASSED</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#15</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">132ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;find /work/output/artifacts/skill-bpmn-callactivity-agentic-process -type f | sort&quot;,
+  &quot;description&quot;: &quot;List all project files&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/work/output/artifacts/skill-bpmn-callactivity-agentic-process/.venv/.gitignore
+/work/output/artifacts/skill-bpmn-callactivity-agentic-process/.venv/CACHEDIR.TAG
+/work/output/artifacts/skill-bpmn-callactivity-agentic-process/.venv/bin/activate
+/work/output/artifacts/skill-bpmn-callactivity-agentic-process/.venv/bin/activate.bat
+/work/output/artifacts/skill-bpmn-callactivity-agentic-process/.venv/bin/activate.csh
+/work/output/artifacts/skill-bpmn-callactivity-agentic-process/.venv/bin/activate.fish
+/work/output/artifacts/skill-bpmn-callactivity-agentic-process/.venv/bin/activate.nu
+/work/output/artifacts/skill-bpmn-callactivity-agentic-process/.venv/bin/activate.ps1
+/work/output/artifacts/skill-bpmn-callactivity-agentic-process/.venv/bin/activate_this.py
+/work/output/artifacts/skill-bpmn-callactivity-agentic-process/.venv/bin/deactivate.bat
+/work/output/artifacts/skill-bpmn-callactivity-agentic-process/.venv/bin/pydoc.bat
+/work/output/artifacts/skill-bpmn-callactivity-agentic-process/.venv/lib/python3.13/site-packages/_virtualenv.pth
+/work/output/artifacts/skill-bpmn-callactivity-agentic-process/.venv/lib/python3.13/site-packages/_virtualenv.py
+/work/output/artifacts/skill-bpmn-call
+
+… (truncated, 1833 more chars)</pre>
+    
+  </div>
+</details>
+
+</div>
+
+<h2>Command Telemetry</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Total</div><div class="value">16</div></div>
+    <div class="stat"><div class="label">Successful</div><div class="value">15 (94%)</div></div>
+    <div class="stat"><div class="label">Failed</div><div class="value">1</div></div>
+    <div class="stat"><div class="label">Avg / cmd</div><div class="value">2.79s</div></div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 2fr;gap:16px;margin-top:12px">
+    <div>
+      <h4>By Tool</h4>
+      <table>
+        <thead><tr><th>Tool</th><th>Count</th></tr></thead>
+        <tbody><tr><td class='mono'>Bash</td><td>11</td></tr><tr><td class='mono'>Read</td><td>2</td></tr><tr><td class='mono'>Write</td><td>2</td></tr><tr><td class='mono'>Skill</td><td>1</td></tr></tbody>
+      </table>
+    </div>
+    <div>
+      <h4>Slowest</h4>
+      <table>
+        <thead><tr><th>Tool</th><th>Duration</th><th>Parameters</th></tr></thead>
+        <tbody><tr><td class='mono'>Bash</td><td>23.57s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro bpmn registry pull --outp...</td></tr><tr><td class='mono'>Bash</td><td>4.85s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro bpmn registry list --outp...</td></tr><tr><td class='mono'>Bash</td><td>4.12s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro bpmn registry list --outp...</td></tr><tr><td class='mono'>Bash</td><td>3.36s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro bpmn validate /work/outpu...</td></tr><tr><td class='mono'>Bash</td><td>2.63s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro bpmn registry list --outp...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+  <p><strong>Most Common Pattern:</strong> <code>Bash → Bash → Bash</code></p><p><strong>Skill Tool Invoked:</strong> 1 time(s)</p>
+</div>
+
+<h2>Generation Metrics</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Total Latency</div><div class="value">3m 2s</div></div>
+    <div class="stat"><div class="label">Turns</div><div class="value">1</div></div>
+    <div class="stat"><div class="label">Assistant Turns</div><div class="value">31</div></div>
+    <div class="stat"><div class="label">Avg Turn Latency</div><div class="value">2m 55s</div></div>
+    
+  </div>
+</div>
+
+<h2>Token Usage</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Input (uncached)</div><div class="value">18</div></div>
+    <div class="stat"><div class="label">Output</div><div class="value">9,287</div></div>
+    <div class="stat"><div class="label">Cache Write</div><div class="value">31,994</div></div>
+    <div class="stat"><div class="label">Cache Read</div><div class="value">692,686</div></div>
+    <div class="stat"><div class="label">Total</div><div class="value">733,985</div></div>
+    <div class="stat"><div class="label">Cost</div><div class="value">$0.4671</div></div>
+  </div>
+</div>
+
+<h2>Agent Settings</h2>
+<div class="card" style="padding:0">
+  <table>
+    <tbody><tr><td class='mono dim'>Permission Mode</td><td>acceptEdits</td></tr><tr><td class='mono dim'>Allowed Tools</td><td>Skill, Bash, Read, Write, Edit, Glob, Grep</td></tr><tr><td class='mono dim'>Model</td><td>us.anthropic.claude-sonnet-4-6</td></tr><tr><td class='mono dim'>Max Turns</td><td>80</td></tr><tr><td class='mono dim'>System Prompt</td><td>You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted. </td></tr><tr><td class='mono dim'>Plugins</td><td>/home/azureuser/projects/skills</td></tr></tbody>
+  </table>
+</div>
+
+<h2>Environment</h2>
+<div class="card" style="padding:0">
+  <table>
+    <tbody><tr><td class='mono dim'>git_commit</td><td>unknown</td></tr><tr><td class='mono dim'>skills_git_commit</td><td>unknown</td></tr><tr><td class='mono dim'>cli_version</td><td>1.201.0-dev.8272</td></tr><tr><td class='mono dim'>tool_plugins</td><td>{&#x27;admin-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;agent-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;agenthub-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;aops-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;api-workflow-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;automation-hub-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;codedagent-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;codedapp-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;coder-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;context-grounding-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;conversational-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;data-fabric-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;docsai-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;function-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;gov-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;guardrails-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;insights-tool&#x27;: &#x27;1.201.0-dev.8276&#x27;, &#x27;integrationservice-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;ixp-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;llm-gateway-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;llmgw-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;maestro-tool&#x27;: &#x27;1.201.0-dev.8275&#x27;, &#x27;model-hub-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;orchestrator-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;platform-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;pm-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;rpa-legacy-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;rpa-tool&#x27;: &#x27;1.201.0-dev.20260809.3&#x27;, &#x27;solution-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;tasks-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;test-manager-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;traces-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;vertical-solutions-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;}</td></tr><tr><td class='mono dim'>coder_eval</td><td>0.8.8</td></tr><tr><td class='mono dim'>claude_code_cli</td><td>2.1.177 (Claude Code)</td></tr><tr><td class='mono dim'>uv</td><td>uv 0.11.28 (x86_64-unknown-linux-gnu)</td></tr><tr><td class='mono dim'>anthropic</td><td>0.122.0</td></tr><tr><td class='mono dim'>openai</td><td>3.0.0</td></tr><tr><td class='mono dim'>pydantic</td><td>2.12.5</td></tr><tr><td class='mono dim'>api_routing</td><td>aws_bedrock</td></tr><tr><td class='mono dim'>aws_region</td><td>us-east-2</td></tr><tr><td class='mono dim'>bedrock_model</td><td>us.anthropic.claude-sonnet-4-6</td></tr></tbody>
+  </table>
+</div>
+
+<footer>Generated by coder_eval · 2026-08-15T00:35:35</footer>
+</div>
+<script>
+function toggleTheme() {
+  document.documentElement.classList.toggle('light');
+  try {
+    const mode = document.documentElement.classList.contains('light') ? 'light' : 'dark';
+    localStorage.setItem('coder-eval-theme', mode);
+  } catch (e) { /* ignore */ }
+}
+(function() {
+  try {
+    if (localStorage.getItem('coder-eval-theme') === 'light') {
+      document.documentElement.classList.add('light');
+    }
+  } catch (e) { /* ignore */ }
+})();
+</script>
+</body>
+</html>

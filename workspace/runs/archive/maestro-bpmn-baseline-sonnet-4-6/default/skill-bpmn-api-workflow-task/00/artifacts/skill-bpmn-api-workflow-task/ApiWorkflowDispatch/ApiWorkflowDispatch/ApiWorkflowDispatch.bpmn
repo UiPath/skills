@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+    xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+    xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+    xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+    xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:uipath="http://uipath.org/schema/bpmn"
+    id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn"
+    exporter="UiPath (https://bpmn.uipath.com)" exporterVersion="1.0">
+
+  <bpmn:error id="Error_SyncFailed" name="SyncFailed" errorCode="SYNC_FAILED" />
+
+  <bpmn:process id="Process_1" isExecutable="true">
+    <bpmn:extensionElements>
+      <uipath:migrationVersion version="11.5" />
+      <uipath:variables version="v1">
+        <!-- Input variables bound to the manual start event -->
+        <uipath:input id="Var_CustomerId" name="customerId" type="string" elementId="Start_Manual" />
+        <uipath:input id="Var_RequestedBy" name="requestedBy" type="string" elementId="Start_Manual" />
+        <!-- Working variables -->
+        <uipath:inputOutput id="Var_SyncRequest" name="syncRequest" type="json" />
+        <!-- Outputs from the API workflow service task -->
+        <uipath:output id="Var_Invocation" name="invocation" type="json" />
+        <uipath:output id="Var_SyncStatus" name="syncStatus" type="string" />
+        <uipath:output id="Var_SyncResult" name="syncResult" type="json" />
+      </uipath:variables>
+      <uipath:bindings version="v1">
+        <uipath:binding id="Binding_CustomerSyncApi" resource="process"
+                        propertyAttribute="Key" default="&lt;CUSTOMER_SYNC_API_RELEASE_KEY&gt;" />
+      </uipath:bindings>
+    </bpmn:extensionElements>
+
+    <!-- Start event: manual trigger with customerId and requestedBy inputs -->
+    <bpmn:startEvent id="Start_Manual" name="Customer Sync Requested">
+      <bpmn:extensionElements>
+        <uipath:entryPointId value="0e4da1c9-dc39-46a4-b90e-c0b7d9693ebe" />
+      </bpmn:extensionElements>
+      <bpmn:outgoing>Flow_StartToSync</bpmn:outgoing>
+    </bpmn:startEvent>
+
+    <!-- Service task: Run Customer Sync API Workflow -->
+    <!-- Registry template: Orchestrator.ExecuteApiWorkflowAsync -->
+    <bpmn:serviceTask id="Task_RunCustomerSync" name="Run Customer Sync API Workflow">
+      <bpmn:extensionElements>
+        <uipath:activity version="v1">
+          <uipath:type value="Orchestrator.ExecuteApiWorkflowAsync" version="v1" />
+          <uipath:context>
+            <uipath:input name="releaseKey" value="=bindings.Binding_CustomerSyncApi" />
+            <uipath:input name="folderId" value="" />
+            <uipath:input name="folderPath" value="&lt;FOLDER_PATH&gt;" />
+            <uipath:input name="name" value="CustomerSyncApiWorkflow" />
+          </uipath:context>
+          <uipath:input name="JobArguments" type="json" target="bodyField"><![CDATA[{"customerId":"=vars.Var_CustomerId","requestedBy":"=vars.Var_RequestedBy"}]]></uipath:input>
+          <uipath:output name="invocation" type="json" var="Var_Invocation" source="=invocation" />
+          <uipath:output name="syncStatus" type="string" var="Var_SyncStatus" source="=status" />
+          <uipath:output name="syncResult" type="json" var="Var_SyncResult" source="=result" />
+        </uipath:activity>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_StartToSync</bpmn:incoming>
+      <bpmn:outgoing>Flow_SyncToEnd</bpmn:outgoing>
+    </bpmn:serviceTask>
+
+    <!-- Boundary error event: catches any error thrown by the API workflow task -->
+    <bpmn:boundaryEvent id="Boundary_SyncError" attachedToRef="Task_RunCustomerSync" cancelActivity="true">
+      <bpmn:errorEventDefinition errorRef="Error_SyncFailed" />
+      <bpmn:outgoing>Flow_ErrorToFail</bpmn:outgoing>
+    </bpmn:boundaryEvent>
+
+    <!-- Success end event -->
+    <bpmn:endEvent id="End_Success" name="Sync Completed">
+      <bpmn:incoming>Flow_SyncToEnd</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <!-- Failure end event -->
+    <bpmn:endEvent id="End_Failure" name="Sync Failed">
+      <bpmn:errorEventDefinition errorRef="Error_SyncFailed" />
+      <bpmn:incoming>Flow_ErrorToFail</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <!-- Sequence flows -->
+    <bpmn:sequenceFlow id="Flow_StartToSync" sourceRef="Start_Manual" targetRef="Task_RunCustomerSync" />
+    <bpmn:sequenceFlow id="Flow_SyncToEnd"   sourceRef="Task_RunCustomerSync" targetRef="End_Success" />
+    <bpmn:sequenceFlow id="Flow_ErrorToFail" sourceRef="Boundary_SyncError"   targetRef="End_Failure" />
+  </bpmn:process>
+
+  <!-- BPMN Diagram Interchange -->
+  <bpmndi:BPMNDiagram id="Diagram_1">
+    <bpmndi:BPMNPlane id="Plane_1" bpmnElement="Process_1">
+
+      <!-- Start event -->
+      <bpmndi:BPMNShape id="S_Start_Manual" bpmnElement="Start_Manual">
+        <dc:Bounds x="160" y="102" width="36" height="36" />
+      </bpmndi:BPMNShape>
+
+      <!-- API workflow service task -->
+      <bpmndi:BPMNShape id="S_Task_RunCustomerSync" bpmnElement="Task_RunCustomerSync">
+        <dc:Bounds x="260" y="80" width="160" height="80" />
+      </bpmndi:BPMNShape>
+
+      <!-- Boundary error event (sits on bottom edge of service task) -->
+      <bpmndi:BPMNShape id="S_Boundary_SyncError" bpmnElement="Boundary_SyncError">
+        <dc:Bounds x="322" y="142" width="36" height="36" />
+      </bpmndi:BPMNShape>
+
+      <!-- Success end event -->
+      <bpmndi:BPMNShape id="S_End_Success" bpmnElement="End_Success">
+        <dc:Bounds x="490" y="102" width="36" height="36" />
+      </bpmndi:BPMNShape>
+
+      <!-- Failure end event -->
+      <bpmndi:BPMNShape id="S_End_Failure" bpmnElement="End_Failure">
+        <dc:Bounds x="490" y="222" width="36" height="36" />
+      </bpmndi:BPMNShape>
+
+      <!-- Flow: Start -> Service task -->
+      <bpmndi:BPMNEdge id="E_Flow_StartToSync" bpmnElement="Flow_StartToSync">
+        <di:waypoint x="196" y="120" />
+        <di:waypoint x="260" y="120" />
+      </bpmndi:BPMNEdge>
+
+      <!-- Flow: Service task -> Success end -->
+      <bpmndi:BPMNEdge id="E_Flow_SyncToEnd" bpmnElement="Flow_SyncToEnd">
+        <di:waypoint x="420" y="120" />
+        <di:waypoint x="490" y="120" />
+      </bpmndi:BPMNEdge>
+
+      <!-- Flow: Boundary error -> Failure end -->
+      <bpmndi:BPMNEdge id="E_Flow_ErrorToFail" bpmnElement="Flow_ErrorToFail">
+        <di:waypoint x="340" y="178" />
+        <di:waypoint x="340" y="240" />
+        <di:waypoint x="490" y="240" />
+      </bpmndi:BPMNEdge>
+
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+
+</bpmn:definitions>

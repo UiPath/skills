@@ -1,0 +1,23 @@
+{
+  "_comment": "Planned --detail payload for 'listGroups1' (uipath.connector.uipath-microsoft-azureactivedirectory.list-groups). Cannot be applied with uip maestro flow node configure until a live Azure AD connection exists. To apply: uip maestro flow node configure CeqlWhereTest.flow listGroups1 --detail \"$(cat listGroups1.detail.json)\" --output json",
+  "connectionId": "<AZURE_AD_CONNECTION_UUID>",
+  "folderKey": "<ORCHESTRATOR_FOLDER_KEY>",
+  "method": "GET",
+  "endpoint": "/groups",
+  "filter": {
+    "groupOperator": 0,
+    "index": 0,
+    "filters": [
+      {
+        "id": "displayName",
+        "operator": "Equals",
+        "value": {
+          "value": "active",
+          "rawString": "\"active\"",
+          "isLiteral": true
+        }
+      }
+    ],
+    "groups": []
+  }
+}

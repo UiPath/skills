@@ -1,0 +1,78 @@
+2026-07-24 19:24:29 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-24 19:24:29 [INFO] coder_eval.orchestrator: API routing: aws_bedrock
+2026-07-24 19:24:29 [DEBUG] coder_eval.criteria: Discovered 14 criterion checkers
+2026-07-24 19:24:29 [DEBUG] coder_eval.criteria: Validated 14 criterion checkers
+2026-07-24 19:24:29 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-24 19:24:30 [INFO] coder_eval.orchestrator: Running pre-run command: python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/e2e/jira_get_issue/seed_jira.py
+2026-07-24 19:24:41 [INFO] coder_eval.orchestrator: [pre_run stdout] OK: seeded live issue CE-181 (summary='coder-eval jira flow e2e 257f6907')
+2026-07-24 19:24:41 [DEBUG] coder_eval.orchestrator: Sending prompt: Create a new Flow project called "JiraGetIssue" with a manual trigger.
+It should read a single Jira ...
+2026-07-24 19:24:41 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Starting agent query stream...
+2026-07-24 19:30:53 [DEBUG] coder_eval.agents.claude_code_agent: [coder] session_id changed: None -> 011810b9-bf66-442b-b350-94d796e6cc8d
+2026-07-24 19:30:53 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Agent query stream ended
+2026-07-24 19:30:53 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-24 19:30:53 [DEBUG] coder_eval.orchestrator: Agent response received (6300 chars)
+2026-07-24 19:30:53 [DEBUG] coder_eval.orchestrator: Checking success criteria
+2026-07-24 19:30:53 [DEBUG] coder_eval.evaluation.checker: Criterion 'command_executed' score: 1.00
+2026-07-24 19:30:53 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'JiraGetIssue checks: valid flow with Jira Get-Issue node referencing the seeded key, debug completes, and outputs carry the seeded summary': python3 $TASK_DIR/check_jira_get_issue.py
+2026-07-24 19:31:40 [DEBUG] coder_eval.sandbox: Command 'python3 $TASK_DIR/check_jira_get_issue.py' exited with code 1
+2026-07-24 19:31:40 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+OK: flow references uipath-atlassian-jira
+OK: flow references a Get-Issue op and the seeded key CE-181
+OK: flow debug completed
+---
+2026-07-24 19:31:40 [DEBUG] coder_eval.sandbox: STDERR:
+---
+=== FLOW_DEBUG_RAW_CAPTURE BEGIN (Outputs missing all of ['coder-eval jira flow e2e 257f6907']; present=[]; missing=['coder-eval jira flow e2e 257f6907']) ===
+SUMMARY: {"finalStatus": "Completed", "globals": null, "globalVariables": null, "elementOutputs": [], "elementExecutions": [{"id": "start", "type": "StartEvent", "status": "Completed"}, {"id": "getIssue1", "type": "SendTask", "status": "Completed"}, {"id": "end1", "type": "EndEvent", "status": "Completed"}], "incidents": null}
+RAW: {
+  "Result": "Success",
+  "Code": "FlowDebug",
+  "Data": {
+    "jobKey": "3c1563db-f22c-41fd-8d72-ad38f542e8ee",
+    "instanceId": "3c1563db-f22c-41fd-8d72-ad38f542e8ee",
+    "runId": "019f959c-183f-7272-b816-43306d46f89e",
+    "folderKey": "410fae2d-89b3-4cd1-a991-7359bda90c0b",
+    "finalStatus": "Completed",
+    "solutionId": "499cda6f-dd93-43dc-476c-08dee9b1ed35",
+    "studioWebUrl": "https://alpha.uipath.com/codereval/studio_/designer/ced17c96-78ed-453b-9863-a7648bba619e?solutionId=499cda6f-dd93-43dc-476c-08dee9b1ed35",
+    "elementExecutions": [
+      {
+        "elementId": "start",
+        "elementType": "StartEvent",
+        "status": "Completed",
+        "startedAt": "2026-07-24T19:31:06.6155304Z",
+        "completedAt": "2026-07-24T19:31:06.8103731Z"
+      },
+      {
+        "elementId": "getIssue1",
+        "elementType": "SendTask",
+        "status": "Completed",
+        "startedAt": "2026-07-24T19:31:07.0132738Z",
+        "completedAt": "2026-07-24T19:31:08.0948262Z"
+      },
+      {
+        "elementId": "end1",
+        "elementType": "EndEvent",
+        "status": "Completed",
+        "startedAt": "2026-07-24T19:31:08.4262861Z",
+        "completedAt": "2026-07-24T19:31:08.6875549Z"
+      }
+    ]
+  },
+  "Instructions": "Debug completed with status: Completed"
+}
+=== FLOW_DEBUG_RAW_CAPTURE END ===
+FAIL: Outputs missing all of ['coder-eval jira flow e2e 257f6907']; present=[]; missing=['coder-eval jira flow e2e 257f6907']
+Outputs: []
+---
+2026-07-24 19:31:40 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 0.00
+2026-07-24 19:31:40 [INFO] coder_eval.evaluation.checker: Criterion 'run_command' FAILED (score=0.00, threshold=1.00): Command: python3 $TASK_DIR/check_jira_get_issue.py
+2026-07-24 19:31:40 [INFO] coder_eval.orchestrator: Success criteria: 1/2 passed, weighted score: 0.286
+2026-07-24 19:31:40 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-24 19:31:40 [INFO] coder_eval.orchestrator: Running post-run command: python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/e2e/jira_get_issue/teardown_jira.py
+2026-07-24 19:31:46 [INFO] coder_eval.orchestrator: [post_run stdout] OK: deleted CE-181
+2026-07-24 19:31:46 [INFO] coder_eval.orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+2026-07-24 19:31:46 [INFO] coder_eval.orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-ipe-jira-get-issue
+2026-07-24 19:31:46 [INFO] coder_eval.orchestrator: Task finished: status=FAILURE duration=445.4s score=0.286 iterations=1

@@ -1,0 +1,462 @@
+{
+  "id": "21bc0e57-31f9-458c-a64e-0689268bb642",
+  "version": "1.9",
+  "name": "CustomerEscalationTriage",
+  "nodes": [
+    {
+      "id": "start",
+      "type": "core.trigger.manual",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Manual trigger"
+      },
+      "inputs": {
+        "entryPointId": "a78c1f95-6a45-4a06-b003-80804cc6e59c",
+        "isDefaultEntryPoint": true
+      }
+    },
+    {
+      "id": "triageDecision",
+      "type": "core.action.script",
+      "typeVersion": "1.1",
+      "display": {
+        "label": "Determine Severity"
+      },
+      "inputs": {
+        "script": "const productionDown = $vars.start.output.productionDown;\nconst workaroundAvailable = $vars.start.output.workaroundAvailable;\nconst customerTier = $vars.start.output.customerTier;\nconst correlationId = $vars.start.output.correlationId;\n\nlet severity;\nif (productionDown === true && workaroundAvailable === false && customerTier === \"Enterprise\") {\n  severity = \"Sev1\";\n} else if (productionDown === true) {\n  severity = \"Sev2\";\n} else {\n  severity = \"Sev3\";\n}\n\nconst engineeringNeeded = severity === \"Sev1\" || severity === \"Sev2\";\n\nreturn {\n  severity: severity,\n  engineeringNeeded: engineeringNeeded,\n  responseMode: \"Draft\",\n  caseKey: correlationId\n};"
+      },
+      "outputs": {
+        "output": {
+          "type": "any",
+          "description": "The return value of the script",
+          "source": "=result.response",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails",
+          "source": "=Error",
+          "var": "error"
+        }
+      }
+    },
+    {
+      "id": "end",
+      "type": "core.control.end",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "End"
+      },
+      "inputs": {},
+      "outputs": {
+        "severity": {
+          "source": "=js:$vars.triageDecision.output.severity"
+        },
+        "engineeringNeeded": {
+          "source": "=js:$vars.triageDecision.output.engineeringNeeded"
+        },
+        "responseMode": {
+          "source": "=js:$vars.triageDecision.output.responseMode"
+        },
+        "caseKey": {
+          "source": "=js:$vars.triageDecision.output.caseKey"
+        }
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge_start_output_triageDecision_input",
+      "sourceNodeId": "start",
+      "sourcePort": "output",
+      "targetNodeId": "triageDecision",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge_triageDecision_success_end_input",
+      "sourceNodeId": "triageDecision",
+      "sourcePort": "success",
+      "targetNodeId": "end",
+      "targetPort": "input"
+    }
+  ],
+  "definitions": [
+    {
+      "nodeType": "core.trigger.manual",
+      "version": "1.0",
+      "category": "trigger",
+      "description": "Start the process manually",
+      "tags": [
+        "trigger",
+        "start",
+        "manual"
+      ],
+      "sortOrder": 80,
+      "display": {
+        "label": "Manual trigger",
+        "icon": "play",
+        "shape": "circle"
+      },
+      "handleConfiguration": [
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "output",
+              "type": "source",
+              "handleType": "output",
+              "showButton": true,
+              "constraints": {
+                "forbiddenTargetCategories": [
+                  "trigger"
+                ]
+              }
+            }
+          ],
+          "visible": true
+        }
+      ],
+      "model": {
+        "type": "bpmn:StartEvent",
+        "entryPointId": true
+      },
+      "outputDefinition": {
+        "output": {
+          "type": "object",
+          "description": "Data passed when manually triggering the process.",
+          "source": "null",
+          "var": "output"
+        }
+      },
+      "toolbarExtensions": {
+        "design": {
+          "actions": [
+            {
+              "id": "change-trigger-type",
+              "icon": "square-mouse-pointer",
+              "label": "Change trigger type"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "nodeType": "core.action.script",
+      "version": "1.1",
+      "category": "data-operations",
+      "description": "Run custom JavaScript code",
+      "tags": [
+        "code",
+        "javascript",
+        "python"
+      ],
+      "sortOrder": 70,
+      "supportsErrorHandling": true,
+      "display": {
+        "label": "Script",
+        "icon": "code"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "success",
+              "type": "source",
+              "handleType": "output"
+            },
+            {
+              "id": "error",
+              "label": "Error",
+              "type": "source",
+              "handleType": "output",
+              "visible": "{inputs.errorHandlingEnabled}",
+              "constraints": {
+                "maxConnections": 1
+              }
+            }
+          ]
+        }
+      ],
+      "debug": {
+        "runtime": "clientScript"
+      },
+      "model": {
+        "type": "bpmn:ScriptTask"
+      },
+      "inputDefinition": {
+        "type": "object",
+        "properties": {
+          "script": {
+            "type": "string",
+            "minLength": 1,
+            "errorMessage": "Add a script function",
+            "validationSeverity": "warning"
+          }
+        },
+        "required": [
+          "script"
+        ]
+      },
+      "inputDefaults": {
+        "script": ""
+      },
+      "outputDefinition": {
+        "output": {
+          "type": "any",
+          "description": "The return value of the script",
+          "source": "=result.response",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails",
+          "source": "=Error",
+          "var": "error",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "required": [
+              "code",
+              "message",
+              "detail",
+              "category",
+              "status"
+            ],
+            "properties": {
+              "code": {
+                "type": "string",
+                "description": "Error code as a string"
+              },
+              "message": {
+                "type": "string",
+                "description": "High-level error message"
+              },
+              "detail": {
+                "type": "string",
+                "description": "Detailed error description"
+              },
+              "category": {
+                "type": "string",
+                "description": "Error category"
+              },
+              "status": {
+                "type": "integer",
+                "description": "HTTP status code"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      }
+    },
+    {
+      "nodeType": "core.control.end",
+      "version": "1.0",
+      "category": "control-flow",
+      "description": "Mark the end of a process path",
+      "tags": [
+        "control-flow",
+        "end",
+        "finish",
+        "complete"
+      ],
+      "sortOrder": 65,
+      "display": {
+        "label": "End",
+        "icon": "circle-check",
+        "shape": "circle"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        }
+      ],
+      "model": {
+        "type": "bpmn:EndEvent"
+      },
+      "runtimeConstraints": {
+        "exclude": [
+          "api-function"
+        ]
+      }
+    }
+  ],
+  "variables": {
+    "globals": [
+      {
+        "id": "customerTier",
+        "direction": "in",
+        "type": "string",
+        "description": "Customer's contract tier: Enterprise, Business, or Standard",
+        "triggerNodeId": "start"
+      },
+      {
+        "id": "productionDown",
+        "direction": "in",
+        "type": "boolean",
+        "description": "Whether the customer's production system is currently down",
+        "triggerNodeId": "start"
+      },
+      {
+        "id": "workaroundAvailable",
+        "direction": "in",
+        "type": "boolean",
+        "description": "Whether a viable workaround is available while production is down",
+        "triggerNodeId": "start"
+      },
+      {
+        "id": "businessImpact",
+        "direction": "in",
+        "type": "string",
+        "description": "Free-form text describing the business impact, as typed by the requester. Context/logging only — not used in severity logic.",
+        "triggerNodeId": "start"
+      },
+      {
+        "id": "correlationId",
+        "direction": "in",
+        "type": "string",
+        "description": "Correlation ID supplied by the requester; carried through unchanged as the case key",
+        "triggerNodeId": "start"
+      },
+      {
+        "id": "severity",
+        "direction": "out",
+        "type": "string",
+        "description": "Sev1, Sev2, or Sev3"
+      },
+      {
+        "id": "engineeringNeeded",
+        "direction": "out",
+        "type": "boolean",
+        "description": "True for Sev1/Sev2, false for Sev3"
+      },
+      {
+        "id": "responseMode",
+        "direction": "out",
+        "type": "string",
+        "description": "Always \"Draft\" — acknowledgements are always staged for human review"
+      },
+      {
+        "id": "caseKey",
+        "direction": "out",
+        "type": "string",
+        "description": "Pass-through of correlationId, used by downstream systems to correlate the case"
+      }
+    ],
+    "nodes": [
+      {
+        "id": "start.output",
+        "type": "object",
+        "description": "Data passed when manually triggering the process.",
+        "binding": {
+          "nodeId": "start",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "triageDecision.output",
+        "type": "any",
+        "description": "The return value of the script",
+        "binding": {
+          "nodeId": "triageDecision",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "triageDecision.error",
+        "type": "object",
+        "description": "Error information if the node fails",
+        "binding": {
+          "nodeId": "triageDecision",
+          "outputId": "error"
+        }
+      },
+      {
+        "id": "end.severity",
+        "type": "string",
+        "binding": {
+          "nodeId": "end",
+          "outputId": "severity"
+        }
+      },
+      {
+        "id": "end.engineeringNeeded",
+        "type": "string",
+        "binding": {
+          "nodeId": "end",
+          "outputId": "engineeringNeeded"
+        }
+      },
+      {
+        "id": "end.responseMode",
+        "type": "string",
+        "binding": {
+          "nodeId": "end",
+          "outputId": "responseMode"
+        }
+      },
+      {
+        "id": "end.caseKey",
+        "type": "string",
+        "binding": {
+          "nodeId": "end",
+          "outputId": "caseKey"
+        }
+      }
+    ],
+    "variableUpdates": {}
+  },
+  "runtime": "maestro",
+  "layout": {
+    "nodes": {
+      "start": {
+        "position": {
+          "x": 256,
+          "y": 144
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        }
+      },
+      "triageDecision": {
+        "position": {
+          "x": 448,
+          "y": 144
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        }
+      },
+      "end": {
+        "position": {
+          "x": 640,
+          "y": 144
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        }
+      }
+    }
+  }
+}

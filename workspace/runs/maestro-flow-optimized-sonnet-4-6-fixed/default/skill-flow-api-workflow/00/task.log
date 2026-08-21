@@ -1,0 +1,240 @@
+2026-08-19 21:03:23 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-08-19 21:03:23 [INFO] coder_eval.orchestrator: API routing: aws_bedrock
+2026-08-19 21:03:23 [DEBUG] coder_eval.criteria: Discovered 15 criterion checkers
+2026-08-19 21:03:23 [DEBUG] coder_eval.criteria: Validated 15 criterion checkers
+2026-08-19 21:03:23 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-08-19 21:03:24 [DEBUG] coder_eval.orchestrator: Sending prompt: Create a UiPath Flow project named "NameToAge" that invokes the name-to-age
+API workflow with the na...
+2026-08-19 21:03:24 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Starting agent query stream...
+2026-08-19 21:07:21 [DEBUG] coder_eval.agents.claude_code_agent: [coder] session_id changed: None -> d591dc06-80c4-4791-883a-a9e229746e44
+2026-08-19 21:07:21 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Agent query stream ended
+2026-08-19 21:07:21 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-08-19 21:07:21 [DEBUG] coder_eval.orchestrator: Agent response received (2495 chars)
+2026-08-19 21:07:21 [DEBUG] coder_eval.orchestrator: Checking success criteria
+2026-08-19 21:07:21 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'uip maestro flow validate passes on the flow file': python3 $EXPERIMENT_TASKS_PATH/uipath-maestro-flow/_shared/validate_flow.py
+2026-08-19 21:07:24 [DEBUG] coder_eval.sandbox: Command 'python3 $EXPERIMENT_TASKS_PATH/uipath-maestro-flow/_shared/validate_flow.py' exited with code 0
+2026-08-19 21:07:24 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+Validating NameToAge/NameToAge/NameToAge.flow
+{
+  "Result": "Success",
+  "Code": "FlowValidate",
+  "Data": {
+    "File": "/work/output/artifacts/skill-flow-api-workflow/NameToAge/NameToAge/NameToAge.flow",
+    "Status": "Valid"
+  }
+}
+---
+2026-08-19 21:07:24 [DEBUG] coder_eval.sandbox: STDERR:
+---
+[ManifestClient] fetchDynamicNodes ok: total=318 agent context nodes=2 external agent nodes=7 orchestrator nodes=263 IXP nodes=46
+---
+2026-08-19 21:07:24 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-08-19 21:07:24 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'Flow has an API workflow node and debug returns an age': python3 $TASK_DIR/check_api_workflow_flow.py
+2026-08-19 21:07:47 [DEBUG] coder_eval.sandbox: Command 'python3 $TASK_DIR/check_api_workflow_flow.py' exited with code 1
+2026-08-19 21:07:47 [DEBUG] coder_eval.sandbox: STDERR:
+---
+FAIL: flow debug exit 1
+stdout: {
+  "Result": "Failure",
+  "Code": "FlowDebug",
+  "Message": "Debug session Faulted. [170002] Failure in the Orchestrator Job (element nameToAgeFixed)",
+  "Instructions": "Incident(s):\n  - [170002] Failure in the Orchestrator Job (element nameToAgeFixed)\nRun 'uip maestro flow debug-instance incidents e8bacafd-b96e-4008-ad61-d082792aef23' for the full backend payload (incidentId, errorDetails, AI summary). traceId=e8bacafdb96e4008ad61d082792aef23.",
+  "Context": {
+    "ErrorCode": "170002",
+    "TraceId": "e8bacafdb96e4008ad61d082792aef23"
+  },
+  "Data": {
+    "jobKey": "e8bacafd-b96e-4008-ad61-d082792aef23",
+    "instanceId": "e8bacafd-b96e-4008-ad61-d082792aef23",
+    "runId": "01a01bd9-d381-75fb-aafb-ffe02e6cb0cf",
+    "folderKey": "410fae2d-89b3-4cd1-a991-7359bda90c0b",
+    "finalStatus": "Faulted",
+    "solutionId": "b7766222-91f3-42ec-e47e-08defe2b894a",
+    "studioWebUrl": "https://alpha.uipath.com/codereval/studio_/designer/154fc88c-ce68-4a04-8a49-9d562ef54525?solutionId=b7766222-91f3-42ec-e47e-08defe2b894a",
+    "elementExecutions": [
+      {
+        "elementId": "start",
+        "elementType": "StartEvent",
+        "status": "Completed",
+        "startedAt": "2026-08-19T21:07:38.8621852Z",
+        "completedAt": "2026-08-19T21:07:39.1595353Z"
+      },
+      {
+        "elementId": "nameToAgeFixed",
+        "elementType": "ServiceTask",
+        "status": "Failed",
+        "startedAt": "2026-08-19T21:07:39.6185798Z"
+      }
+    ],
+    "variables": {
+      "elements": [
+        {
+          "elementId": "start",
+          "elementRunId": "237397ff-c195-460d-8f21-f8910d4aba96",
+          "isMarker": false,
+          "inputs": {},
+          "inputDefinitions": {},
+          "outputs": {}
+        },
+        {
+          "elementId": "nameToAgeFixed",
+          "elementRunId": "0f57d88f-12d7-421c-bf43-ece134d3b57f",
+          "isMarker": false,
+          "inputs": {
+            "JobArguments": {
+              "name": "tomasz"
+            }
+          },
+          "inputDefinitions": {},
+          "outputs": {
+            "Error": {
+              "code": "502",
+              "message": "Failure in the Orchestrator Job",
+              "detail": "Failed to execute HTTP call to https://api.agify.io/: HTTP Status: 429 - Too Many Requests. {\"error\":\"Request limit reached\"}",
+              "category": "System",
+              "status": 502,
+              "response": null,
+              "element": null
+            }
+          }
+        }
+      ],
+      "globals": {
+        "nameToAgeFixed.output": {
+          "Error": {
+            "code": "502",
+            "message": "Failure in the Orchestrator Job",
+            "detail": "Failed to execute HTTP call to https://api.agify.io/: HTTP Status: 429 - Too Many Requests. {\"error\":\"Request limit reached\"}",
+            "category": "System",
+            "status": 502,
+            "response": null,
+            "element": "NameToAgeFixed"
+          }
+        },
+        "age": null,
+        "nameToAgeFixed.error": {
+          "code": "502",
+          "message": "Failure in the Orchestrator Job",
+          "detail": "Failed to execute HTTP call to https://api.agify.io/: HTTP Status: 429 - Too Many Requests. {\"error\":\"Request limit reached\"}",
+          "category": "System",
+          "status": 502,
+          "response": null,
+          "element": "NameToAgeFixed"
+        }
+      },
+      "instanceId": "e8bacafd-b96e-4008-ad61-d082792aef23",
+      "workflowId": "e8bacafd-b96e-4008-ad61-d082792aef23/BpmnGenericWorkflow",
+      "parentElementId": null,
+      "globalDefinitions": {
+        "nameToAgeFixed.output": {
+          "name": "output",
+          "type": "jsonSchema"
+        },
+        "age": {
+          "name": "age",
+          "type": "number"
+        },
+        "nameToAgeFixed.error": {
+          "name": "error",
+          "type": "object"
+        }
+      }
+    },
+    "incidents": [
+      {
+        "id": "e0d146ad-f60f-4c4d-bb66-88a62b79d048",
+        "tenantId": "69d43765-6ede-4575-88b7-9db601a2c056",
+        "organizationId": "311c6049-4966-4ef2-a6f3-8ceccaf38d54",
+        "instanceId": "e8bacafd-b96e-4008-ad61-d082792aef23",
+        "runId": "01a01bd9-dbe5-7697-af3d-8fc0313d02aa",
+        "elementId": "nameToAgeFixed",
+        "elementRunId": "0f57d88f-12d7-421c-bf43-ece134d3b57f",
+        "folderKey": "410fae2d-89b3-4cd1-a991-7359bda90c0b",
+        "processKey": null,
+        "packageVersion": "",
+        "incidentId": "0f57d88f-12d7-421c-bf43-ece134d3b57f",
+        "incidentStatus": "Open",
+        "incidentType": "System",
+        "errorCode": "170002",
+        "errorMessage": "Failure in the Orchestrator Job",
+        "errorTimeUtc": "2026-08-19T21:07:44.5703727Z",
+        "errorDetails": "Failed to execute HTTP call to https://api.agify.io/: HTTP Status: 429 - Too Many Requests. {\"error\":\"Request limit reached\"}",
+        "comment": null,
+        "userUpdated": null,
+        "debugMode": "Default",
+        "incidentUpdateTimeUtc": null,
+        "traceId": "e8bacafdb96e4008ad61d082792aef23",
+        "dependentFaultCode": null,
+        "incidentSeverity": "Error",
+        "aiSummary": null,
+        "aiRecommendations": null,
+        "processType": null,
+        "sourceElementId": null
+      }
+    ]
+  },
+  "ErrorCode": "unknown_error",
+  "Retry": "RetryWillNotFix"
+}
+
+stderr: 2026-08-19 21:07:27 INFO  [ResourceBuilder:ReconcileProjectsCommandHandler] Reconcile projects for solution {solutionKey} [object Object]
+2026-08-19 21:07:27 INFO  [ResourceBuilder:MultiFileSolutionDefinitionProvider] Reading multi-file solution definition for solution %s /tmp/.flow-debug-staging-NameToAge-1787173647614
+2026-08-19 21:07:27 INFO  [ResourceBuilder:SolutionsMetadataReader] Reading metadata from %s. SolutionsMetadataReader
+2026-08-19 21:07:28 INFO  [ResourceBuilder:MultiFileSolutionDefinitionProvider] Reading multi-file solution definition for solution %s /tmp/.flow-debug-staging-NameToAge-1787173647614
+2026-08-19 21:07:28 INFO  [ResourceBuilder:AddOrUpdateResourceToSolutionCommandHandler] Add or update resource ce857908-ee1d-4392-b552-38bcea0be29c of type process to solution.
+2026-08-19 21:07:28 INFO  [ResourceBuilder:SolutionsMetadataReader] Reading metadata from %s. SolutionsMetadataReader
+2026-08-19 21:07:29 INFO  [ResourceBuilder:ImportResourceHelper] ExportResourceAsync: Exporting resource ce857908-ee1d-4392-b552-38bcea0be29c from orchestrator.uipath.com
+2026-08-19 21:07:29 INFO  [ResourceBuilder:ImportResourceHelper] ExportResourceAsync: Resource reference: {
+  "kind": "process",
+  "type": "api",
+  "key": "ce857908-ee1d-4392-b552-38bcea0be29c",
+  "name": "NameToAgeFixed",
+  "folder": {
+    "fullyQualifiedName": "Shared",
+    "folderKey": "c4359cde-55f0-4f0e-9322-c6cdce74ab4c",
+    "path": "c4359cde-55f0-4f0e-9322-c6cdce74ab4c"
+  }
+}
+2026-08-19 21:07:29 INFO  [ResourceBuilder:ImportResourceHelper] ExportResourceAsync: Export model: {
+  "key": "ce857908-ee1d-4392-b552-38bcea0be29c",
+  "kind": "process",
+  "type": "api",
+  "folderKey": "c4359cde-55f0-4f0e-9322-c6cdce74ab4c",
+  "folderKeys": [
+    "c4359cde-55f0-4f0e-9322-c6cdce74ab4c"
+  ]
+}
+2026-08-19 21:07:29 INFO  [ResourceBuilder:FirstPartyServiceClientProxy] Creating FPS client for service: orchestrator.uipath.com at https://alpha.uipath.com/codereval/DefaultTenant/orchestrator_/api
+2026-08-19 21:07:29 INFO  [ResourceBuilder:ImportResourceHelper] ExportResourceAsync: FPS response - 2 resources returned
+2026-08-19 21:07:29 INFO  [ResourceBuilder:SolutionsMetadataReader] Reading metadata from %s. SolutionsMetadataReader
+2026-08-19 21:07:29 INFO  [ResourceBuilder:SolutionsMetadataReader] Reading metadata from %s. SolutionsMetadataReader
+2026-08-19 21:07:30 INFO  [ResourceBuilder:AddOrUpdateResourceToSolutionCommandHandler] New resource definition ce857908-ee1d-4392-b552-38bcea0be29c of type Process.
+2026-08-19 21:07:30 WARN  [ResourceBuilder:AddOrUpdateResourceToSolutionCommandHandler] Try add resource with key ce857908-ee1d-4392-b552-38bcea0be29c in solution 1e9c94f0-1e9c-4e9c-8e9c-1e9c94f00000.
+2026-08-19 21:07:30 WARN  [ResourceBuilder:AddOrUpdateResourceToSolutionCommandHandler] Processing resource dependencies for resource with key ce857908-ee1d-4392-b552-38bcea0be29c.
+2026-08-19 21:07:30 WARN  [ResourceBuilder:AddOrUpdateResourceToSolutionCommandHandler] Resource with key ce857908-ee1d-4392-b552-38bcea0be29c was added in solution 1e9c94f0-1e9c-4e9c-8e9c-1e9c94f00000.
+2026-08-19 21:07:30 INFO  [ResourceBuilder:AddOrUpdateResourceToSolutionCommandHandler] New resource definition NameToAgeFixed.api.NameToAgeFixed:1.0.2 of type Package.
+2026-08-19 21:07:30 WARN  [ResourceBuilder:AddOrUpdateResourceToSolutionCommandHandler] Try add resource with key NameToAgeFixed.api.NameToAgeFixed:1.0.2 in solution 1e9c94f0-1e9c-4e9c-8e9c-1e9c94f00000.
+2026-08-19 21:07:30 WARN  [ResourceBuilder:AddOrUpdateResourceToSolutionCommandHandler] Processing resource dependencies for resource with key NameToAgeFixed.api.NameToAgeFixed:1.0.2.
+2026-08-19 21:07:30 WARN  [ResourceBuilder:AddOrUpdateResourceToSolutionCommandHandler] Resource ce857908-ee1d-4392-b552-38bcea0be29c had dependencies updated via ProcessResourceDependencies.
+2026-08-19 21:07:30 WARN  [ResourceBuilder:AddOrUpdateResourceToSolutionCommandHandler] Resource with key NameToAgeFixed.api.NameToAgeFixed:1.0.2 was added in solution 1e9c94f0-1e9c-4e9c-8e9c-1e9c94f00000.
+2026-08-19 21:07:30 INFO  [ResourceBuilder:AddOrUpdateResourceToSolutionCommandHandler] Saving changes to solution 1e9c94f0-1e9c-4e9c-8e9c-1e9c94f00000. Resource status is Added
+2026-08-19 21:07:30 INFO  [ResourceBuilder:SolutionsMetadataReader] Reading metadata from %s. SolutionsMetadataReader
+2026-08-19 21:07:30 INFO  [ResourceBuilder:SolutionsMetadataReader] Reading metadata from %s. SolutionsMetadataReader
+2026-08-19 21:07:31 INFO  [ResourceBuilder:ResourceOverwritesService] Read debug overwrites for solution /tmp/.flow-debug-staging-NameToAge-1787173647614
+2026-08-19 21:07:31 INFO  [ResourceBuilder:ResourceOverwritesService] Getting file storage provider for solution /tmp/.flow-debug-staging-NameToAge-1787173647614
+2026-08-19 21:07:31 INFO  [ResourceBuilder:ResourceOverwritesService] Using user profile provider for user bfda820f-4ddb-4af7-a5ec-3c332b403271 solution /tmp/.flow-debug-staging-NameToAge-1787173647614
+2026-08-19 21:07:31 INFO  [ResourceBuilder:ResourceOverwritesService] Debug overwrites file is empty for solution /tmp/.flow-debug-staging-NameToAge-1787173647614 returning default overwrites
+2026-08-19 21:07:31 INFO  [ResourceBuilder:ResourceOverwritesService] ManageSolutionOverwrite - read 0 overwrites for tenant 69d43765-6ede-4575-88b7-9db601a2c056 user bfda820f-4ddb-4af7-a5ec-3c332b403271 for solution /tmp/.flow-debug-staging-NameToAge-1787173647614
+2026-08-19 21:07:31 INFO  [ResourceBuilder:ResourceOverwritesService] ManageSolutionOverwrite - save 1 overwrites for tenant 69d43765-6ede-4575-88b7-9db601a2c056 user bfda820f-4ddb-4af7-a5ec-3c332b403271 for solution /tmp/.flow-debug-staging-NameToAge-1787173647614
+2026-08-19 21:07:31 INFO  [ResourceBuilder:ResourceOverwritesService] Save debug overwrites for solution /tmp/.flow-debug-staging-NameToAge-1787173647614
+2026-08-19 21:07:31 INFO  [ResourceBuilder:ResourceOverwritesService] Getting file storage provider for solution /tmp/.flow-debug-staging-NameToAge-1787173647614
+2026-08-19 21:07:31 INFO  [ResourceBuilder:ResourceOverwritesService] Using user profile provider for user bfda820f-4ddb-4af7-a5ec-3c332b403271 solution /tmp/.flow-debug-staging-NameToAge-1787173647614
+---
+2026-08-19 21:07:47 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 0.00
+2026-08-19 21:07:47 [INFO] coder_eval.evaluation.checker: Criterion 'run_command' FAILED (score=0.00, threshold=1.00): Command: python3 $TASK_DIR/check_api_workflow_flow.py
+2026-08-19 21:07:47 [INFO] coder_eval.orchestrator: Success criteria: 1/2 passed, weighted score: 0.375
+2026-08-19 21:07:47 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-08-19 21:07:47 [INFO] coder_eval.orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+2026-08-19 21:07:47 [INFO] coder_eval.orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-api-workflow
+2026-08-19 21:07:47 [INFO] coder_eval.orchestrator: Task finished: status=FAILURE duration=267.4s score=0.375 iterations=1

@@ -1,0 +1,143 @@
+{
+  "version": "1.1.0",
+  "settings": {
+    "model": "anthropic.claude-sonnet-5",
+    "maxTokens": 4096,
+    "temperature": 0,
+    "engine": "basic-v2",
+    "maxIterations": 25,
+    "mode": "standard"
+  },
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "normalizeData1__output__normalizedFields": {
+        "type": "array",
+        "description": "Bound from $vars.normalizeData1.output.normalizedFields"
+      },
+      "crmLookup1__output": {
+        "type": "array",
+        "description": "Bound from $vars.crmLookup1.output"
+      },
+      "erpLookup1__output": {
+        "type": "array",
+        "description": "Bound from $vars.erpLookup1.output"
+      },
+      "discrepancyDetection1__output": {
+        "type": "object",
+        "description": "Bound from $vars.discrepancyDetection1.output"
+      },
+      "start__output__webhookPayload": {
+        "type": "object",
+        "description": "Bound from $vars.start.output.webhookPayload"
+      }
+    }
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "determination": {
+        "type": "string",
+        "description": "A concise statement of what the analyst found — whether the dispute is valid, partially valid, or invalid, and why."
+      },
+      "recommendedAction": {
+        "type": "string",
+        "description": "One of: escalate_to_manager | auto_resolve | reject"
+      },
+      "autoResolutionEligible": {
+        "type": "boolean",
+        "description": "true if the dispute qualifies for automatic resolution without manager approval per the SOP"
+      },
+      "creditAmount": {
+        "type": "number",
+        "description": "The dollar amount to credit the customer, based on the confirmed overcharge. 0 if no credit is due."
+      },
+      "confidence": {
+        "type": "number",
+        "description": "Confidence score between 0 and 1 in the determination"
+      },
+      "rationale": {
+        "type": "string",
+        "description": "The reasoning behind the determination and recommended action, citing the SOP and the discrepancy data"
+      }
+    },
+    "required": [
+      "determination",
+      "recommendedAction",
+      "autoResolutionEligible",
+      "creditAmount",
+      "confidence",
+      "rationale"
+    ]
+  },
+  "metadata": {
+    "storageVersion": "50.0.0",
+    "isConversational": false,
+    "showProjectCreationExperience": false
+  },
+  "type": "lowCode",
+  "guardrails": [],
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a billing dispute analyst for a B2B services company. You review a customer's disputed invoice line items against the company's own ERP contract records and CRM account history, then produce a determination and a recommended next action.\n\nScope:\n- In scope: comparing disputed line items to ERP contract data, weighing CRM account signals (payment history, prior dispute record), applying the billing dispute SOP, and producing a determination with a recommended action.\n- Out of scope: contacting the customer, issuing credits, or posting financial transactions — only decide and recommend.\n\nTools:\n- Context (Billing Dispute SOP Index): query it at most 3 times to retrieve the applicable policy thresholds and escalation rules (e.g. auto-resolution dollar limits, account-tier rules, repeat-dispute handling). After the last call, stop retrieving and decide with the evidence you already have. If the retrieved content does not cover a detail, say so in rationale, lower confidence, and still return every outputSchema field.\n\nOutput:\n- Return a result conforming to the output schema.\n- determination: a concise statement of whether the dispute is valid, partially valid, or invalid, grounded in the discrepancy data provided.\n- recommendedAction MUST be exactly one of: escalate_to_manager, auto_resolve, reject. Use the SOP's stated thresholds (e.g. credit amount limits, account tier, prior dispute history) to choose between auto_resolve and escalate_to_manager when the dispute is valid; use reject when the dispute is not supported by the ERP contract data.\n- autoResolutionEligible: true only when the SOP's auto-resolution criteria are fully met.\n- creditAmount: the dollar amount to credit — derived from the discrepancy data's confirmed overcharge, never invented. 0 when recommendedAction is reject.\n- confidence: 0 to 1, lowered when SOP guidance or ERP/CRM data is incomplete.\n- rationale: cite the specific SOP rule and the specific line-item discrepancies that drove the decision.\n- Never invent fields or values not grounded in the input data or the SOP context.\n\nUncertainty:\n- If the SOP does not clearly cover a scenario, say so in rationale, lower confidence, and default to escalate_to_manager rather than auto_resolve.\n- If you cannot complete the task, still return every outputSchema field with your best-supported determination — never omit fields.",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "You are a billing dispute analyst for a B2B services company. You review a customer's disputed invoice line items against the company's own ERP contract records and CRM account history, then produce a determination and a recommended next action.\n\nScope:\n- In scope: comparing disputed line items to ERP contract data, weighing CRM account signals (payment history, prior dispute record), applying the billing dispute SOP, and producing a determination with a recommended action.\n- Out of scope: contacting the customer, issuing credits, or posting financial transactions — only decide and recommend.\n\nTools:\n- Context (Billing Dispute SOP Index): query it at most 3 times to retrieve the applicable policy thresholds and escalation rules (e.g. auto-resolution dollar limits, account-tier rules, repeat-dispute handling). After the last call, stop retrieving and decide with the evidence you already have. If the retrieved content does not cover a detail, say so in rationale, lower confidence, and still return every outputSchema field.\n\nOutput:\n- Return a result conforming to the output schema.\n- determination: a concise statement of whether the dispute is valid, partially valid, or invalid, grounded in the discrepancy data provided.\n- recommendedAction MUST be exactly one of: escalate_to_manager, auto_resolve, reject. Use the SOP's stated thresholds (e.g. credit amount limits, account tier, prior dispute history) to choose between auto_resolve and escalate_to_manager when the dispute is valid; use reject when the dispute is not supported by the ERP contract data.\n- autoResolutionEligible: true only when the SOP's auto-resolution criteria are fully met.\n- creditAmount: the dollar amount to credit — derived from the discrepancy data's confirmed overcharge, never invented. 0 when recommendedAction is reject.\n- confidence: 0 to 1, lowered when SOP guidance or ERP/CRM data is incomplete.\n- rationale: cite the specific SOP rule and the specific line-item discrepancies that drove the decision.\n- Never invent fields or values not grounded in the input data or the SOP context.\n\nUncertainty:\n- If the SOP does not clearly cover a scenario, say so in rationale, lower confidence, and default to escalate_to_manager rather than auto_resolve.\n- If you cannot complete the task, still return every outputSchema field with your best-supported determination — never omit fields."
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "Analyze this billing dispute and produce your determination.\n\nCustomer / dispute submission:\n{{input.start__output__webhookPayload}}\n\nNormalized invoice fields (extracted from the disputed invoice PDF):\n{{input.normalizeData1__output__normalizedFields}}\n\nCRM account records for this customer:\n{{input.crmLookup1__output}}\n\nERP contract records for this invoice's line items:\n{{input.erpLookup1__output}}\n\nDiscrepancy analysis (computed by comparing disputed line items to ERP contract data):\n{{input.discrepancyDetection1__output}}\n\nUsing the Billing Dispute SOP Index for policy guidance, return determination, recommendedAction, autoResolutionEligible, creditAmount, confidence, and rationale.",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "Analyze this billing dispute and produce your determination.\n\nCustomer / dispute submission:\n"
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__webhookPayload"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\nNormalized invoice fields (extracted from the disputed invoice PDF):\n"
+        },
+        {
+          "type": "variable",
+          "rawString": "input.normalizeData1__output__normalizedFields"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\nCRM account records for this customer:\n"
+        },
+        {
+          "type": "variable",
+          "rawString": "input.crmLookup1__output"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\nERP contract records for this invoice's line items:\n"
+        },
+        {
+          "type": "variable",
+          "rawString": "input.erpLookup1__output"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\nDiscrepancy analysis (computed by comparing disputed line items to ERP contract data):\n"
+        },
+        {
+          "type": "variable",
+          "rawString": "input.discrepancyDetection1__output"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\nUsing the Billing Dispute SOP Index for policy guidance, return determination, recommendedAction, autoResolutionEligible, creditAmount, confidence, and rationale."
+        }
+      ]
+    }
+  ],
+  "projectId": "8e1e601c-f2ca-4490-bc1d-6a846f11eb84"
+}

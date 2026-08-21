@@ -1,0 +1,72 @@
+=== USER (turn 1) — simulator-generated opener ===
+Hey! I need your help automating how we handle support emails. Here's what I'm after:
+
+Whenever a new email drops into my Outlook inbox, I want the system to kick in automatically and figure out what to do with it based on two things — how urgent it seems and whether the sender is one of our VIP customers. If an email checks both boxes (urgent AND from a VIP), I want a heads-up posted in Slack and a quick acknowledgment reply sent straight back to that sender. For anything else, I just want a support ticket created and a reply sent to the sender with their ticket info.
+
+One hard requirement: this has to be built as a UiPath Maestro Flow — not some API workflow or standalone script. A proper Maestro Flow, full stop.
+
+Before you go off and build, please make sure it gets validated too — I want to feel confident it's solid before I sign off.
+
+Happy to answer any questions you have before you dive in. What do you need from me?
+
+=== AGENT (turn 1) — 356.0s, in=30 out=16712, 49 tool calls ===
+**Validation passes** (`Status: Valid`). The one warning is expected and harmless: all three Outlook nodes (trigger, two reply nodes) share the same Outlook 365 connection — this is intentional since they're all operating on behalf of the same mailbox. The warning is about shared connection state, which is fine for this use case.
+
+The flow is complete, validated, and formatted. Here's a summary:
+
+---
+
+## CustomerEscalationFlow — Build Complete
+
+**File:** `CustomerEscalationSolution/CustomerEscalationFlow/CustomerEscalationFlow.flow`
+
+### What was built
+
+```
+Email Received (Outlook trigger)
+  └─▶ Classify Email [Script]
+        ├─ checks subject/body for urgent keywords
+        └─ checks sender against VIP list
+  └─▶ Urgent AND VIP? [Decision]
+        │
+      true ──▶ Post Slack Notification [Slack: send-message-to-channel]
+                └─▶ Send VIP Ack Reply [Outlook: reply-to-email]
+                      └─▶ Done - VIP Escalation [End]
+        │
+      false ──▶ Create Support Ticket [Script]
+                 └─▶ Send Ticket Reply [Outlook: reply-to-email]
+                       └─▶ Done - Ticket Created [End]
+```
+
+**9 nodes total** | **8 edges** | All connector nodes configured with live connections
+
+### Validation
+- ✅ `flow validate` → **Valid**
+- ⚠️ 1 warning: three nodes share the same Outlook connection (trigger + 2 reply nodes) — intentional and safe for a single-mailbox flow
+- ✅ `flow format` → all nodes repositioned, canonical sizes applied
+
+### Connections bound
+| Node | Connector | Connection |
+|------|-----------|------------|
+| Email Received (trigger) | Microsoft Outlook 365 | `is-sandboxes-test@uipathsandboxes.onmicrosoft.com` (uipath-maestro-flow folder) |
+| Post Slack Notification | Slack | `is-sandboxes` (uipath-maestro-flow folder, BYOA) |
+| Send VIP Ack Reply | Microsoft Outlook 365 | same as trigger |
+| Send Ticket Reply | Microsoft Outlook 365 | same as trigger |
+
+### Notes
+- The **VIP list** is seeded with placeholder emails (`ceo@example.com`, `vip@example.com`, etc.) — update the `classifyEmail1` script node with your real VIP sender addresses
+- **Urgency detection** is keyword-based (subject + body): "urgent", "critical", "asap", "emergency", "high priority"
+- **Slack channel**: currently set to `#general` (`C01G1P7CU58`) — update the Slack node's `channel` bodyParameter if you want a dedicated support channel
+
+### What's next?
+
+Which step would you like to take?
+
+1. **Publish to Studio Web** — push the solution to Studio Web to visualize and edit in the browser
+2. **Debug the flow** — execute end-to-end against real systems (⚠️ will send real emails and Slack messages)
+3. **Deploy to Orchestrator** — pack and publish directly for production
+4. **Something else** — tell me what you need
+
+=== USER (turn 2) — stop token — dialog ending ===
+That's exactly what I needed — a proper Maestro Flow, validated and working. Thanks for getting that done!
+

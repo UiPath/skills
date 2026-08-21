@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "BellevueChannelDescription",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "c7a9c51a-a5ad-4aec-8f04-8f01533ec862",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "BellevueChannelDescription"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Flow",
+      "name": "BellevueChannelDescription",
+      "package": {
+        "key": "e0a7f8b5-dc74-4b0e-b153-c9a6cf0f5902"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "2ed5856f-03ac-49d7-a807-2d4777774f8a",
+    "files": []
+  }
+}

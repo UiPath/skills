@@ -1,0 +1,8 @@
+18:02:27 [INFO   ] [default/skill-flow-devcon-billing-invoice-lookup/00] orchestrator: API routing: aws_bedrock
+18:09:43 [INFO   ] [default/skill-flow-devcon-billing-invoice-lookup/00] orchestrator: Success criteria: 5/5 passed, weighted score: 0.909
+18:09:43 [INFO   ] [default/skill-flow-devcon-billing-invoice-lookup/00] orchestrator: Running post-run command: python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/cleanup_solutions.py
+18:09:44 [WARNING] [default/skill-flow-devcon-billing-invoice-lookup/00] orchestrator: [post_run stderr] cleanup_solutions: deleted 4331fe5e-d64b-43fd-9ca7-08defdfbf8f4 (from BillingInvoiceLookup/BillingInvoiceLookup.uipx)
+18:09:44 [WARNING] [default/skill-flow-devcon-billing-invoice-lookup/00] orchestrator: [post_run stderr] cleanup_solutions: summary policy=always deleted=1 preserved=0 skipped=0 not_uploaded=0 failed=0
+18:09:44 [INFO   ] [default/skill-flow-devcon-billing-invoice-lookup/00] orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+18:09:44 [INFO   ] [default/skill-flow-devcon-billing-invoice-lookup/00] orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-devcon-billing-invoice-lookup
+18:09:44 [INFO   ] [default/skill-flow-devcon-billing-invoice-lookup/00] orchestrator: Task finished: status=SUCCESS duration=439.7s score=0.909 iterations=1

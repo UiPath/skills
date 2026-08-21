@@ -1,0 +1,10 @@
+{
+  "_comment": "Planned node configure payload — run after a WooCommerce IS connection is created",
+  "connectionId": "<PLACEHOLDER: WooCommerce connection UUID from uip is connections list uipath-automattic-woocommerce --all-folders>",
+  "folderKey": "<PLACEHOLDER: FolderKey from the same connection>",
+  "method": "GET",
+  "endpoint": "/search_product_review",
+  "queryParameters": {
+    "order": "=js:$vars.resolveOrder.output.order"
+  }
+}

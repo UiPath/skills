@@ -1,0 +1,3242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>coder_eval · skill-flow-ipe-enum · default</title>
+<style>
+:root {
+  --bg-page: #0f1419;
+  --bg-card: #1a2129;
+  --bg-card-2: #232d38;
+  --bg-code: #0b0f14;
+  --fg: #e6edf3;
+  --fg-muted: #8b98a5;
+  --fg-dim: #6e7681;
+  --border: #30363d;
+  --accent: #58a6ff;
+  --score-high: #22c55e;
+  --score-mid: #f59e0b;
+  --score-low: #ef4444;
+  --status-success: #22c55e;
+  --status-failure: #f59e0b;
+  --status-error: #ef4444;
+  --status-neutral: #6e7681;
+  --shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+.light {
+  --bg-page: #ffffff;
+  --bg-card: #f6f8fa;
+  --bg-card-2: #eaeef2;
+  --bg-code: #f6f8fa;
+  --fg: #1f2328;
+  --fg-muted: #636c76;
+  --fg-dim: #8b949e;
+  --border: #d0d7de;
+  --accent: #0969da;
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial,
+               sans-serif;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--fg);
+  background: var(--bg-page);
+}
+.container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+h1, h2, h3, h4 { margin: 0 0 12px 0; line-height: 1.25; }
+h1 { font-size: 22px; font-weight: 600; }
+h2 { font-size: 18px; font-weight: 600; margin-top: 28px;
+     padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+h3 { font-size: 15px; font-weight: 600; color: var(--fg-muted); }
+h4 { font-size: 13px; font-weight: 600; color: var(--fg-muted); }
+p { margin: 0 0 8px 0; }
+.muted { color: var(--fg-muted); }
+.dim { color: var(--fg-dim); }
+.mono { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+        monospace; font-size: 12.5px; }
+code { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+       monospace; font-size: 12.5px; background: var(--bg-code);
+       border: 1px solid var(--border); padding: 1px 5px; border-radius: 3px; }
+pre { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+      monospace; font-size: 12.5px; background: var(--bg-code);
+      border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px;
+      margin: 6px 0; overflow-x: auto; white-space: pre-wrap;
+      word-wrap: break-word; }
+.header-bar { display: flex; align-items: center; justify-content: space-between;
+              margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+.title-group { flex: 1; min-width: 0; }
+.title-group .subtitle { color: var(--fg-muted); font-size: 13px;
+                         margin-top: 2px; word-break: break-all; }
+.badges { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.badge { display: inline-flex; align-items: center; gap: 6px;
+         padding: 4px 10px; border-radius: 12px; font-size: 12px;
+         font-weight: 600; background: var(--bg-card-2);
+         border: 1px solid var(--border); color: var(--fg); }
+.badge.success { background: color-mix(in srgb, var(--status-success) 20%, var(--bg-card-2));
+                 border-color: var(--status-success); color: var(--status-success); }
+.badge.failure { background: color-mix(in srgb, var(--status-failure) 20%, var(--bg-card-2));
+                 border-color: var(--status-failure); color: var(--status-failure); }
+.badge.error { background: color-mix(in srgb, var(--status-error) 20%, var(--bg-card-2));
+               border-color: var(--status-error); color: var(--status-error); }
+.badge.warning { background: color-mix(in srgb, #f4a52810 20%, var(--bg-card-2));
+                 border-color: #f4a528; color: #f4a528; }
+.badge.neutral { color: var(--fg-muted); }
+.score-pill { display: inline-block; padding: 2px 8px; border-radius: 10px;
+              font-size: 12px; font-weight: 700; min-width: 42px;
+              text-align: center; color: #0b0f14; }
+.score-high { background: var(--score-high); }
+.score-mid { background: var(--score-mid); }
+.score-low { background: var(--score-low); }
+.card { background: var(--bg-card); border: 1px solid var(--border);
+        border-radius: 8px; padding: 16px 20px; margin-bottom: 16px;
+        box-shadow: var(--shadow); }
+.card.highlight { border-left: 4px solid var(--accent); }
+.grid { display: grid; gap: 12px;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+.stat { background: var(--bg-card-2); padding: 10px 12px; border-radius: 6px;
+        border: 1px solid var(--border); }
+.stat .label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;
+               color: var(--fg-muted); margin-bottom: 4px; }
+.stat .value { font-size: 16px; font-weight: 600; }
+table { width: 100%; border-collapse: collapse; margin: 4px 0 12px 0; }
+th, td { text-align: left; padding: 8px 10px;
+         border-bottom: 1px solid var(--border); vertical-align: top;
+         font-size: 13px; }
+th { color: var(--fg-muted); font-weight: 600; font-size: 12px;
+     text-transform: uppercase; letter-spacing: 0.3px; }
+tr:last-child td { border-bottom: none; }
+details { margin: 6px 0; border: 1px solid var(--border); border-radius: 6px;
+          background: var(--bg-card-2); }
+details > summary { cursor: pointer; padding: 8px 12px; user-select: none;
+                    font-weight: 500; list-style: none; }
+details > summary::-webkit-details-marker { display: none; }
+details > summary::before { content: "▸ "; color: var(--fg-dim);
+                            display: inline-block; width: 14px;
+                            transition: transform 0.15s; }
+details[open] > summary::before { content: "▾ "; }
+details .details-body { padding: 0 12px 10px 12px; }
+.tool-row { display: flex; align-items: center; gap: 10px;
+            flex-wrap: wrap; font-size: 13px; }
+.tool-name { font-weight: 600; color: var(--accent); font-family: ui-monospace,
+             SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+.tool-status-ok { color: var(--status-success); font-size: 11px;
+                  font-weight: 600; }
+.tool-status-err { color: var(--status-error); font-size: 11px;
+                   font-weight: 600; }
+.tool-duration { color: var(--fg-muted); font-size: 12px; }
+.tool-seq { color: var(--fg-dim); font-size: 11px; font-weight: 600;
+            min-width: 24px; text-align: right; font-family: ui-monospace,
+            SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+.turn-header { display: flex; justify-content: space-between;
+               align-items: baseline; flex-wrap: wrap; gap: 10px;
+               margin-bottom: 10px; }
+.turn-meta { font-size: 12px; color: var(--fg-muted); }
+.criterion-row td:first-child { font-family: ui-monospace, SFMono-Regular,
+                                 "SF Mono", Menlo, Consolas, monospace;
+                                 color: var(--fg-muted); font-size: 12px; }
+.judge-section { display: flex; flex-direction: column; gap: 12px; }
+.judge-card { padding: 14px 16px; }
+.judge-card-head { display: flex; justify-content: space-between;
+                    align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+.judge-card-title { font-size: 14px; line-height: 1.4; flex: 1; min-width: 0; }
+.judge-card-score { flex-shrink: 0; }
+.judge-rationale { margin-top: 10px; padding: 10px 12px;
+                   background: var(--bg-code); border-radius: 4px;
+                   font-size: 13px; line-height: 1.5; }
+.judge-findings { margin: 8px 0 0 18px; padding-left: 4px; font-size: 13px;
+                   line-height: 1.6; }
+.judge-findings li { margin: 2px 0; }
+.nav-toggle { display: inline-block; padding: 5px 10px; font-size: 12px;
+              background: var(--bg-card-2); border: 1px solid var(--border);
+              border-radius: 5px; color: var(--fg); cursor: pointer; }
+.nav-toggle:hover { background: var(--bg-card); }
+.llm-next-steps { margin: 6px 0 0 20px; padding-left: 0; }
+.llm-next-steps li { margin: 3px 0; }
+.iteration-group { padding: 12px 16px 4px 16px; margin-bottom: 20px;
+                   border-radius: 0 6px 6px 0; border-left: 4px solid var(--status-neutral); }
+/* rgba fallback for browsers without color-mix (Chrome <111, Firefox <113, Safari <16.2). */
+.iteration-group--recovered { border-left-color: var(--status-success);
+                              background: rgba(34, 197, 94, 0.06);
+                              background: color-mix(in srgb, var(--status-success) 6%, transparent); }
+.iteration-group--terminal { border-left-color: var(--status-error);
+                             background: rgba(239, 68, 68, 0.06);
+                             background: color-mix(in srgb, var(--status-error) 6%, transparent); }
+.iteration-group__banner { margin: 0 0 12px 0; font-size: 14px; font-weight: 600; }
+.iteration-group--recovered .iteration-group__banner { color: var(--status-success); }
+.iteration-group--terminal .iteration-group__banner { color: var(--status-error); }
+.attempt-transition { display: flex; align-items: center; gap: 8px;
+                      margin: -6px 0 12px 8px; color: var(--status-error); font-size: 12.5px; }
+.attempt-transition__icon { font-weight: 700; }
+footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--border);
+         color: var(--fg-dim); font-size: 12px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="header-bar">
+  <div class="title-group">
+    <h1>Task: skill-flow-ipe-enum</h1>
+    <div class="subtitle">Tests the enum IS feature — configures a connector node with an enum importance field on the Gmail &quot;Send Mail&quot; activity. Recipient, subject, and body are fixed so the test can verify the enum value wiring.</div>
+  </div>
+  <div class="badges">
+    <span class="badge failure">MAX_TURNS_EXHAUSTED</span>
+    <span class="score-pill score-mid">0.57</span>
+    <span class="badge neutral">claude-code · claude-sonnet-5</span>
+    <span class="badge neutral">15m 23s</span>
+    <span class="badge neutral">$3.5305</span>
+    <span class="badge warning">expected_turns exceeded (64/46)</span>
+    
+    <span class="nav-toggle" onclick="toggleTheme()">Toggle theme</span>
+  </div>
+</div>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Variant</div><div class="value">default</div></div>
+    <div class="stat"><div class="label">Started</div><div class="value mono">2026-08-19T00:24:35</div></div>
+    <div class="stat"><div class="label">Duration</div><div class="value">15m 23s</div></div>
+    <div class="stat"><div class="label">Turns (SDK)</div><div class="value">104</div></div>
+    <div class="stat"><div class="label">Commands</div><div class="value">64</div></div>
+  </div>
+</div>
+
+<h2>Success Criteria <span class="muted" style="font-weight:400">(4/7 passed)</span></h2>
+<div class="card" style="padding:0">
+<table>
+  <thead>
+    <tr>
+      <th style="width:15%">Type</th>
+      <th style="width:35%">Description</th>
+      <th style="width:10%">Score</th>
+      <th>Details</th>
+    </tr>
+  </thead>
+  <tbody>
+    
+<tr class="criterion-row">
+  <td>command_executed</td>
+  <td>Agent invoked `uip is connections list` to discover available connections</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Matched 1/1 required commands (filters: tool_name=Bash, pattern=/(uip|\$UIP)\s+is\s+connections\s+list/)</summary><div class="details-body"><pre style="margin:6px 0 0 0">Matched 1/1 required commands (filters: tool_name=Bash, pattern=/(uip|\$UIP)\s+is\s+connections\s+list/)
+Examples: [&#x27;uip is connections list &quot;uipath-google-gmail&quot; --all-folders --output json 2&gt;&amp;1&#x27;]</pre></div></details></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>run_command</td>
+  <td>Tenant has at least one Gmail connection (precondition for `node configure`)</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Command: python3 $TASK_DIR/check_connection_available.py uipath-google-gmail</summary><div class="details-body"><pre style="margin:6px 0 0 0">Command: python3 $TASK_DIR/check_connection_available.py uipath-google-gmail
+Exit code: 0 (expected: 0)
+Stdout:
+OK: 5 connection(s) available for &#x27;uipath-google-gmail&#x27; (first: is.sandboxes.test@gmail.com)
+
+Stderr: (empty)</pre></div></details></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>run_command</td>
+  <td>Flow file exists and is valid JSON</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Command: python3 $TASK_DIR/check_enum_flow.py &#x27;**/EnumTest*.flow&#x27; structure</summary><div class="details-body"><pre style="margin:6px 0 0 0">Command: python3 $TASK_DIR/check_enum_flow.py &#x27;**/EnumTest*.flow&#x27; structure
+Exit code: 0 (expected: 0)
+Stdout:
+OK: EnumTest/EnumTest/EnumTest.flow valid JSON with 2 nodes, 0 edges
+
+Stderr: (empty)</pre></div></details></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>run_command</td>
+  <td>Flow uses Gmail connector or task-specific managed HTTP fallback</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Command: python3 $TASK_DIR/check_managed_http_fallback.py &#x27;**/EnumTest*.flow&#x27; uipath-google-gmail enum</summary><div class="details-body"><pre style="margin:6px 0 0 0">Command: python3 $TASK_DIR/check_managed_http_fallback.py &#x27;**/EnumTest*.flow&#x27; uipath-google-gmail enum
+Exit code: 0 (expected: 0)
+Stdout:
+OK: native connector present (uipath-google-gmail)
+
+Stderr: (empty)</pre></div></details></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>run_command</td>
+  <td>Connector node has inputs.detail.bodyParameters with to and importance</td>
+  <td style="text-align:center"><span class="score-pill score-low">0.00</span></td>
+  <td><details><summary class="mono dim">Command: python3 $TASK_DIR/check_enum_flow.py &#x27;**/EnumTest*.flow&#x27; body_params</summary><div class="details-body"><pre style="margin:6px 0 0 0">Command: python3 $TASK_DIR/check_enum_flow.py &#x27;**/EnumTest*.flow&#x27; body_params
+Exit code: 1 (expected: 0)
+Stdout: (empty)
+Stderr:
+FAIL: No node in EnumTest/EnumTest/EnumTest.flow has `inputs.detail.bodyParameters`. Hand-authored connector nodes must keep `inputs.detail` as a JSON object with raw bodyParameters keys.</pre></div></details></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>run_command</td>
+  <td>Flow has Decision and Terminate nodes</td>
+  <td style="text-align:center"><span class="score-pill score-low">0.00</span></td>
+  <td><details><summary class="mono dim">Command: python3 $TASK_DIR/check_enum_flow.py &#x27;**/EnumTest*.flow&#x27; control</summary><div class="details-body"><pre style="margin:6px 0 0 0">Command: python3 $TASK_DIR/check_enum_flow.py &#x27;**/EnumTest*.flow&#x27; control
+Exit code: 1 (expected: 0)
+Stdout: (empty)
+Stderr:
+FAIL: No Decision node found in EnumTest/EnumTest/EnumTest.flow</pre></div></details></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>command_executed</td>
+  <td>uip maestro flow validate was called</td>
+  <td style="text-align:center"><span class="score-pill score-low">0.00</span></td>
+  <td><div class="dim mono" style="white-space:pre-wrap">Matched 0/1 required commands (filters: tool_name=Bash, pattern=/(uip|\$UIP)\s+(maestro\s+)?flow\s+validate/)</div></td>
+</tr>
+
+  </tbody>
+</table>
+</div>
+<h2>Conversation Trace (1 iteration)</h2>
+<div class="card">
+  <div class="turn-header">
+    <h3>Iteration 1</h3>
+    <div class="badges">
+      <span class="badge neutral">104 assistant turns</span>
+      <span class="badge neutral">in 633 · out 74953 · cache 5896438</span>
+      <span class="badge neutral">15m 21s</span>
+      <span class="badge failure">max_turns exhausted</span>
+      
+      
+    </div>
+  </div>
+  <details>
+    <summary>Prompt to agent</summary>
+    <div class="details-body"><pre>Your working directory is: /work/output/artifacts/skill-flow-ipe-enum
+
+Create a new Flow project called &quot;EnumTest&quot; with a manual trigger.
+Build a flow that sends an email via the Gmail &quot;Send Mail&quot; connector
+activity. Use these exact values:
+  - to:        &quot;baishali13@gmail.com&quot;
+  - subject:   &quot;weather today&quot;
+  - body:      &quot;Weather update for today.&quot;
+  - importance: &quot;high&quot;
+Add a Decision node to check whether the call succeeded.
+Route failure to a Terminate node with error message &quot;Enum test failed&quot;.
+Route success to a final action that logs &quot;Enum test passed&quot;.
+Validate the final flow file.
+Use the connection present in Shared/uipath-maestro-flow.
+</pre></div>
+  </details>
+  <details>
+    <summary>Agent response</summary>
+    <div class="details-body"><pre>[ASSISTANT] Good — no ObjectActions, no reference fields to resolve. This is a concrete curated activity (`activityType: &quot;Curated&quot;`), all fields are plain strings. Now let&#x27;s scaffold the project.
+[ASSISTANT] Node added with id `sendMail1`. Now let&#x27;s verify the layout and read the flow file.
+[RESULT - ERROR] </pre></div>
+  </details>
+  <h4 style="margin-top:12px">Tool Calls (64)</h4>
+  
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#0</span>
+      <span class="tool-name">Skill</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">10ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;skill&quot;: &quot;tmp:uipath-maestro-flow&quot;,
+  &quot;args&quot;: &quot;Create a new Flow project called \&quot;EnumTest\&quot; with a manual trigger. Build a flow that sends an email via the Gmail \&quot;Send Mail\&quot; connector activity. Use these exact values: to: \&quot;baishali13@gmail.com\&quot;, subject: \&quot;weather today\&quot;, body: \&quot;Weather update for today.\&quot;, importance: \&quot;high\&quot;. Use the connection present in Shared/uipath-maestro-flow. Add a Decision node to check whether the call succeeded. Route … (158 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Launching skill: tmp:uipath-maestro-flow</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#1</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">63ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;find . -maxdepth 3 -type f -name &#x27;*.uipx&#x27; -print; echo \&quot;---\&quot;; find . -maxdepth 2 -type d -print; echo \&quot;---ls---\&quot;; ls -la&quot;,
+  &quot;description&quot;: &quot;Check for existing solution files and directory contents&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>---
+.
+./.venv
+./.venv/lib
+./.venv/bin
+---ls---
+total 12
+drwxr-xr-x 3 root root 4096 Aug 19 00:24 .
+drwxr-xr-x 3 root root 4096 Aug 19 00:24 ..
+drwxr-xr-x 4 root root 4096 Aug 19 00:24 .venv</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#2</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">430ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/CAPABILITY.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Author — Create and edit `.flow` files
+2	
+3	Capability index for building new flows (greenfield) and editing existing flows (brownfield). Author owns everything that happens on disk, locally, without `uip login`. Authoring journeys terminate at `validate` + `format`; from there, hand off to [operate/CAPABILITY.md](../operate/CAPABILITY.md) to publish, run, or debug.
+4	
+5	&gt; **Where you came from / where to go next.** Author is upstream of Operate (build the flow → ship it) and upstream of Diagnose only via Operate (build → run → diagnose). Publish/run/lifecycle lives in [operate/CAPABILITY.md](../operate/CAPABILITY.md); fault triage lives in [diagnose/CAPABILITY.md](../diagnose/CAPABILITY.md).
+6	&gt;
+7	&gt; **Inherits universal rules from [SKILL.md](../../SKILL.md)** — `--output json` + prefer `--output-filter` for extraction, no `flow debug` without consent, resource discovery order, never invoke other skills automatically, dropdown question pattern, solution layout, **plain-English narration + granular progress list (opt-in — silent by default; engage when the user asks for verbosity)**. The rules below are author-scoped and apply on top.
+8	
+9	## When to use this capability
+10	
+11	&lt;
+
+… (truncated, 30449 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#3</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">835ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;which uip &amp;&amp; uip --version 2&gt;&amp;1 | head -5; echo \&quot;---login---\&quot;; uip auth status --output json 2&gt;&amp;1 | head -20 || uip login --status 2&gt;&amp;1 | head -20&quot;,
+  &quot;description&quot;: &quot;Check uip CLI availability and login status&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/usr/bin/uip
+1.201.0-dev.8272
+---login---
+{
+  &quot;Result&quot;: &quot;ValidationError&quot;,
+  &quot;ErrorCode&quot;: &quot;invalid_argument&quot;,
+  &quot;Message&quot;: &quot;error: unknown command &#x27;auth&#x27;\n(Did you mean ah?)&quot;,
+  &quot;Instructions&quot;: &quot;Run &#x27;uip --help&#x27; to list available commands.&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#4</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">465ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/greenfield.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Greenfield — Create a New Flow
+2	
+3	End-to-end journey for creating a Flow project from scratch. Author terminates at `validate` + `format`. To publish, run, or debug after this, see [operate/CAPABILITY.md](../../operate/CAPABILITY.md).
+4	
+5	&gt; **Brownfield edits use a different journey.** If the `.flow` file already exists, see [brownfield.md](brownfield.md) instead.
+6	
+7	## Should you plan first?
+8	
+9	For complex flows, produce a plan before building. Reference [planning-arch.md](planning-arch.md) and [planning-impl.md](planning-impl.md) for the node type catalog, port reference, wiring rules, and topology patterns.
+10	
+11	**Plan when:**
+12	- The flow has 5+ nodes with branching or parallel paths
+13	- The flow uses connectors or resources that need discovery
+14	- The user&#x27;s requirements are ambiguous and you need to confirm the approach
+15	
+16	**Don&#x27;t plan when:**
+17	- Adding/editing a single node in an existing flow (use [brownfield.md](brownfield.md))
+18	- The flow is a straightforward linear pipeline (trigger → action → action → end)
+19	- The user has already described the exact topology they want
+20	
+21	### Examples
+22	
+23	**Plan:** &quot;Build a flow that receives a Jira ticke
+
+… (truncated, 34831 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#5</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">453ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip login status --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Check uip login status&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;LoginStatus&quot;,
+  &quot;Data&quot;: {
+    &quot;Status&quot;: &quot;Logged in&quot;,
+    &quot;Identity&quot;: &quot;zhongyi.shi@uipath.com&quot;,
+    &quot;IdentityType&quot;: &quot;User&quot;,
+    &quot;AuthFlow&quot;: &quot;Interactive&quot;,
+    &quot;CredentialSource&quot;: &quot;SavedLogin&quot;,
+    &quot;Provider&quot;: &quot;File&quot;,
+    &quot;UserId&quot;: &quot;bfda820f-4ddb-4af7-a5ec-3c332b403271&quot;,
+    &quot;UserEmail&quot;: &quot;zhongyi.shi@uipath.com&quot;,
+    &quot;UserName&quot;: &quot;zhongyi.shi@uipath.com&quot;,
+    &quot;BaseUrl&quot;: &quot;https://alpha.uipath.com&quot;,
+    &quot;Organization&quot;: &quot;codereval&quot;,
+    &quot;OrganizationId&quot;: &quot;311c6049-4966-4ef2-a6f3-8ceccaf38d54&quot;,
+    &quot;Tenant&quot;: &quot;DefaultTenant&quot;,
+    &quot;TenantId&quot;: &quot;69d43765-6ede-4575-88b7-9db601a2c056&quot;,
+    &quot;ExpirationDate&quot;: &quot;2026-08-19T01:07:32.000Z&quot;
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#6</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">138ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/plugins/connector/impl.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Connector Activity Nodes — Implementation
+2	
+3	How to configure connector activity nodes: connection binding, enriched metadata, reference field resolution, and debugging. Connection bindings are emitted by `uip maestro flow node configure` into the flow&#x27;s top-level `bindings[]`; `bindings_v2.json` is regenerated from them at debug/pack time and should never be hand-edited.
+4	
+5	For generic node/edge add, remove, and wiring procedures, see [editing-operations.md](../../editing-operations.md). This guide covers the connector-specific configuration workflow that must follow the generic node add.
+6	
+7	## How Connector Nodes Differ from OOTB
+8	
+9	1. **Connection binding required** — every connector node needs an IS connection (OAuth, API key, etc.) authored in the flow&#x27;s top-level `bindings[]` (which the CLI regenerates into `bindings_v2.json` at debug/pack time). Without it, the node cannot authenticate.
+10	2. **Enriched metadata via `--connection-id`** — call `registry get` with `--connection-id` to get connection-aware field metadata. Without it, only base fields are returned — custom fields, dynamic enums, and reference resolution are missing.
+11	3. **`inputs.detail` object** —
+
+… (truncated, 66612 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#7</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">8.51s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry pull --force --output json 2&gt;&amp;1 | tail -20; echo \&quot;---search---\&quot;; uip maestro flow registry search \&quot;gmail\&quot; --output json --output-filter \&quot;[*].{NodeType:NodeType,DisplayName:DisplayName,Description:Description,AvailableOnTenant:AvailableOnTenant}\&quot; 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Pull registry and search for Gmail connector nodes&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>&lt;persisted-output&gt;
+Output too large (33.4KB). Full output saved to: /home/azureuser/.claude/projects/-work-output-artifacts-skill-flow-ipe-enum/39692710-5a11-45ca-a71e-6506aea00647/tool-results/bf80y04iu.txt
+
+Preview (first 2KB):
+[ManifestClient] fetchDynamicNodes ok: total=4878 connector nodes=3654 integration trigger nodes=896 agent context nodes=2 external agent nodes=7 orchestrator nodes=261 IXP nodes=45 IXP Models nodes=13
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodePullSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;NodesCount&quot;: 4761,
+    &quot;FromCache&quot;: false,
+    &quot;Source&quot;: &quot;authenticated&quot;,
+    &quot;CacheWritten&quot;: true,
+    &quot;Message&quot;: &quot;Synced fresh nodes&quot;
+  }
+}
+---search---
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeSearchSuccess&quot;,
+  &quot;Data&quot;: [
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-google-gmailcustom.get-newest-email&quot;,
+      &quot;DisplayName&quot;: &quot;Get Newest Email&quot;,
+      &quot;Description&quot;: &quot;Fetch newest email from the list of emails in specified folder&quot;,
+      &quot;AvailableOnTenant&quot;: true
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-google-gmailcustom.get-calendars&quot;,
+      &quot;DisplayName&quot;: &quot;Get Calendars&quot;,
+      &quot;Description&quot;: &quot;Get list of calendars accessbile to user&quot;,
+      &quot;AvailableOnTenant&quot;: true
+ 
+
+… (truncated, 1015 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#8</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">8.74s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip is connections list \&quot;uipath-google-gmail\&quot; --all-folders --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;List Gmail connections across all folders&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;ConnectionList&quot;,
+  &quot;Data&quot;: [
+    {
+      &quot;Id&quot;: &quot;971fc639-5b3d-4921-aa16-3a8fa2e69948&quot;,
+      &quot;Name&quot;: &quot;is.sandboxes.test@gmail.com&quot;,
+      &quot;ConnectorKey&quot;: &quot;uipath-google-gmail&quot;,
+      &quot;ConnectorName&quot;: &quot;Gmail&quot;,
+      &quot;State&quot;: &quot;Enabled&quot;,
+      &quot;Owner&quot;: &quot;sanjeet.manna@uipath.com&quot;,
+      &quot;IsDefault&quot;: &quot;No&quot;,
+      &quot;ByoaConnection&quot;: &quot;No&quot;,
+      &quot;ElementInstanceId&quot;: 340366,
+      &quot;Folder&quot;: &quot;uipath-maestro-flow&quot;,
+      &quot;FolderKey&quot;: &quot;5da18ec0-7de1-4e57-aaf1-ddc8a369c199&quot;,
+      &quot;Created&quot;: &quot;2026-05-15T09:36:38.773Z&quot;,
+      &quot;Updated&quot;: &quot;2026-08-18T23:53:19.690Z&quot;
+    },
+    {
+      &quot;Id&quot;: &quot;5a1a639e-8395-4dc8-b043-6dc7d82de499&quot;,
+      &quot;Name&quot;: &quot;nikhilmaryala@gmail.com&quot;,
+      &quot;ConnectorKey&quot;: &quot;uipath-google-gmail&quot;,
+      &quot;ConnectorName&quot;: &quot;Gmail&quot;,
+      &quot;State&quot;: &quot;Enabled&quot;,
+      &quot;Owner&quot;: &quot;nikhil.maryala@uipath.com&quot;,
+      &quot;IsDefault&quot;: &quot;No&quot;,
+      &quot;ByoaConnection&quot;: &quot;No&quot;,
+      &quot;ElementInstanceId&quot;: 345059,
+      &quot;Folder&quot;: &quot;Shared&quot;,
+      &quot;FolderKey&quot;: &quot;c4359cde-55f0-4f0e-9322-c6cdce74ab4c&quot;,
+      &quot;Created&quot;: &quot;2026-06-01T18:50:05.863Z&quot;,
+      &quot;Updated&quot;: &quot;2026-08-18T23:53:19.746Z&quot;
+    },
+    {
+      &quot;Id&quot;: &quot;28717c8b-e16d-45e3-a0e8-318e1134a108&quot;,
+      &quot;Name&quot;: &quot;gmail-202606
+
+… (truncated, 1490 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#9</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.26s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip orchestrator folders list --output json 2&gt;&amp;1 | head -100 || uip folders list --output json 2&gt;&amp;1 | head -100 || uip org folders list --output json 2&gt;&amp;1 | head -100&quot;,
+  &quot;description&quot;: &quot;List orchestrator folders to check nesting under Shared&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FolderList&quot;,
+  &quot;Pagination&quot;: {
+    &quot;Returned&quot;: 50,
+    &quot;Limit&quot;: 50,
+    &quot;Offset&quot;: 0,
+    &quot;HasMore&quot;: true
+  },
+  &quot;Data&quot;: [
+    {
+      &quot;Key&quot;: &quot;410fae2d-89b3-4cd1-a991-7359bda90c0b&quot;,
+      &quot;Name&quot;: &quot;zhongyi.shi@uipath.com&#x27;s workspace&quot;,
+      &quot;Path&quot;: &quot;zhongyi.shi@uipath.com&#x27;s workspace&quot;,
+      &quot;Description&quot;: &quot;&quot;,
+      &quot;Type&quot;: &quot;Personal&quot;,
+      &quot;ParentKey&quot;: &quot;&quot;
+    },
+    {
+      &quot;Key&quot;: &quot;45972b24-e93c-49a6-8f33-a40dc2fff44f&quot;,
+      &quot;Name&quot;: &quot;Debug_AcrUserList&quot;,
+      &quot;Path&quot;: &quot;zhongyi.shi@uipath.com&#x27;s workspace/Debug_AcrUserList&quot;,
+      &quot;Description&quot;: &quot;&quot;,
+      &quot;Type&quot;: &quot;DebugSolution&quot;,
+      &quot;ParentKey&quot;: &quot;410fae2d-89b3-4cd1-a991-7359bda90c0b&quot;
+    },
+    {
+      &quot;Key&quot;: &quot;7420ce0c-3c3e-4d59-8d79-2cf20e01b832&quot;,
+      &quot;Name&quot;: &quot;Debug_AcrUserList 1&quot;,
+      &quot;Path&quot;: &quot;zhongyi.shi@uipath.com&#x27;s workspace/Debug_AcrUserList 1&quot;,
+      &quot;Description&quot;: &quot;&quot;,
+      &quot;Type&quot;: &quot;DebugSolution&quot;,
+      &quot;ParentKey&quot;: &quot;410fae2d-89b3-4cd1-a991-7359bda90c0b&quot;
+    },
+    {
+      &quot;Key&quot;: &quot;d28398c8-0da9-4e63-8152-76f7421fc524&quot;,
+      &quot;Name&quot;: &quot;Debug_AcrUserList 2&quot;,
+      &quot;Path&quot;: &quot;zhongyi.shi@uipath.com&#x27;s workspace/Debug_AcrUserList 2&quot;,
+      &quot;Description&quot;: &quot;&quot;,
+      &quot;Type&quot;: &quot;DebugSolution&quot;,
+ 
+
+… (truncated, 2195 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#10</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.34s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip --help 2&gt;&amp;1 | grep -i folder; echo \&quot;---\&quot;; uip is --help 2&gt;&amp;1 | head -30&quot;,
+  &quot;description&quot;: &quot;Find folder-related CLI commands&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>│ or                  Manage Orchestrator folders, jobs, processes, and        │
+---
+                                     uip is                                     
+  Manage Integration Service connectors, connections, triggers, and webhooks.   
+                Use --help with nested commands for more detail.                
+
+┌─ Usage ──────────────────────────────────────────────────────────────────────┐
+│ uip is [options] [command]                                                   │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Commands ───────────────────────────────────────────────────────────────────┐
+│ activities    Manage UiPath Integration Service activities                   │
+│ connections   Manage UiPath Integration Service connections                  │
+│ connectors    Manage UiPath Integration Service connectors                   │
+│ help          display help for command                                       │
+│ resources     Manage UiPath Integration Service resources                    │
+│ triggers      Manage UiPath Integration Service trigger metadata             │
+│ typecache     Fetch connectors and activities from the Stu
+
+… (truncated, 1074 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#11</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.05s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip or folders list --output json 2&gt;&amp;1 | python3 -c \&quot;\nimport json,sys\ndata=json.load(sys.stdin)\nfor f in data.get(&#x27;Data&#x27;,[]):\n    if &#x27;uipath-maestro-flow&#x27; in f[&#x27;Path&#x27;] or f[&#x27;Path&#x27;]==&#x27;Shared&#x27;:\n        print(f[&#x27;Path&#x27;], &#x27;|&#x27;, f[&#x27;Key&#x27;])\n\&quot;\n&quot;,
+  &quot;description&quot;: &quot;Search folder list for Shared/uipath-maestro-flow path&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>(Bash completed with no output)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#12</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-err">ERROR</span>
+      <span class="tool-duration">556ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip or folders list --output json --output-filter \&quot;[?contains(Path,&#x27;Shared&#x27;)].{Path:Path,Key:Key}\&quot; 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Filter folder list for Shared path via output-filter&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Exit code 3
+{
+  &quot;Result&quot;: &quot;ValidationError&quot;,
+  &quot;ErrorCode&quot;: &quot;invalid_argument&quot;,
+  &quot;Message&quot;: &quot;--output-filter requires an explicit --limit: this command defaults to --limit 50, so the filter would silently apply to only the first 50 records.&quot;,
+  &quot;Instructions&quot;: &quot;Pass --limit &lt;n&gt; to choose how many records the filter applies to. To filter over all records, pass the command&#x27;s maximum accepted --limit (see the option&#x27;s description in --help).&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}</pre>
+    <h4>Error</h4><pre>Exit code 3
+{
+  &quot;Result&quot;: &quot;ValidationError&quot;,
+  &quot;ErrorCode&quot;: &quot;invalid_argument&quot;,
+  &quot;Message&quot;: &quot;--output-filter requires an explicit --limit: this command defaults to --limit 50, so the filter would silently apply to only the first 50 records.&quot;,
+  &quot;Instructions&quot;: &quot;Pass --limit &lt;n&gt; to choose how many records the filter applies to. To filter over all records, pass the command&#x27;s maximum accepted --limit (see the option&#x27;s description in --help).&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}</pre>
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#13</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.53s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip or folders list --output json --limit 1000 --output-filter \&quot;[?contains(Path,&#x27;Shared&#x27;)].{Path:Path,Key:Key,Type:Type}\&quot; 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Filter folder list for Shared path with explicit limit&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>&lt;persisted-output&gt;
+Output too large (83.2KB). Full output saved to: /home/azureuser/.claude/projects/-work-output-artifacts-skill-flow-ipe-enum/39692710-5a11-45ca-a71e-6506aea00647/tool-results/bw0ybpl04.txt
+
+Preview (first 2KB):
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FolderList&quot;,
+  &quot;Pagination&quot;: {
+    &quot;Returned&quot;: 792,
+    &quot;Limit&quot;: 1000,
+    &quot;Offset&quot;: 0,
+    &quot;HasMore&quot;: false
+  },
+  &quot;Data&quot;: [
+    {
+      &quot;Path&quot;: &quot;Shared&quot;,
+      &quot;Key&quot;: &quot;c4359cde-55f0-4f0e-9322-c6cdce74ab4c&quot;,
+      &quot;Type&quot;: &quot;Standard&quot;
+    },
+    {
+      &quot;Path&quot;: &quot;Shared/AcrUserList&quot;,
+      &quot;Key&quot;: &quot;b492b712-bfe0-44fc-bbbf-3ed8c697e621&quot;,
+      &quot;Type&quot;: &quot;Solution&quot;
+    },
+    {
+      &quot;Path&quot;: &quot;Shared/AcrUserList 1&quot;,
+      &quot;Key&quot;: &quot;f2fb783e-c370-44f1-9799-4d51911ea75b&quot;,
+      &quot;Type&quot;: &quot;Solution&quot;
+    },
+    {
+      &quot;Path&quot;: &quot;Shared/AcrUserListRun&quot;,
+      &quot;Key&quot;: &quot;10c0d1a5-d9f5-4c83-b866-6a079749db11&quot;,
+      &quot;Type&quot;: &quot;Solution&quot;
+    },
+    {
+      &quot;Path&quot;: &quot;Shared/AttachmentEcho&quot;,
+      &quot;Key&quot;: &quot;9748f817-3e9f-4846-9cd1-770a45fe2970&quot;,
+      &quot;Type&quot;: &quot;Solution&quot;
+    },
+    {
+      &quot;Path&quot;: &quot;Shared/BillingDisputeResolution&quot;,
+      &quot;Key&quot;: &quot;bb5927da-df8f-4bf1-bde2-f2ba8636c77f&quot;,
+      &quot;Type&quot;: &quot;Solution&quot;
+    },
+    {
+      &quot;Path&quot;: &quot;Shared/BillingIn
+
+… (truncated, 1053 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#14</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">17ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -A2 \&quot;uipath-maestro-flow\&quot; /home/azureuser/.claude/projects/-work-output-artifacts-skill-flow-ipe-enum/39692710-5a11-45ca-a71e-6506aea00647/tool-results/bw0ybpl04.txt&quot;,
+  &quot;description&quot;: &quot;Find uipath-maestro-flow folder entry in saved output&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>      &quot;Path&quot;: &quot;Shared/uipath-maestro-flow&quot;,
+      &quot;Key&quot;: &quot;5da18ec0-7de1-4e57-aaf1-ddc8a369c199&quot;,
+      &quot;Type&quot;: &quot;Standard&quot;
+--
+      &quot;Path&quot;: &quot;Shared/uipath-maestro-flow/AcrUserList&quot;,
+      &quot;Key&quot;: &quot;d50fa561-206a-40a2-b50a-775d95054a2a&quot;,
+      &quot;Type&quot;: &quot;Solution&quot;
+--
+      &quot;Path&quot;: &quot;Shared/uipath-maestro-flow/AcrUserList 1&quot;,
+      &quot;Key&quot;: &quot;f7c58d61-de10-4465-a647-7dd033832258&quot;,
+      &quot;Type&quot;: &quot;Solution&quot;
+--
+      &quot;Path&quot;: &quot;Shared/uipath-maestro-flow/AcrUserList 2&quot;,
+      &quot;Key&quot;: &quot;f442dcf4-dbb4-4f63-bd83-0cd6c5772cfb&quot;,
+      &quot;Type&quot;: &quot;Solution&quot;
+--
+      &quot;Path&quot;: &quot;Shared/uipath-maestro-flow/AcrUserList 3&quot;,
+      &quot;Key&quot;: &quot;5dad650e-89cb-4d78-ab4a-6cc852550ef8&quot;,
+      &quot;Type&quot;: &quot;Solution&quot;
+--
+      &quot;Path&quot;: &quot;Shared/uipath-maestro-flow/AcrUserList-new&quot;,
+      &quot;Key&quot;: &quot;d2efd423-8980-4c21-a78f-5aa150aa1d4f&quot;,
+      &quot;Type&quot;: &quot;Solution&quot;
+--
+      &quot;Path&quot;: &quot;Shared/uipath-maestro-flow/AcrUserListDeploy&quot;,
+      &quot;Key&quot;: &quot;04f7f4a6-c463-42a9-bfc8-01d4c2970aac&quot;,
+      &quot;Type&quot;: &quot;Solution&quot;
+--
+      &quot;Path&quot;: &quot;Shared/uipath-maestro-flow/AcrUserListRun&quot;,
+      &quot;Key&quot;: &quot;b5787f0c-6779-468b-94e6-bf4353f87e1d&quot;,
+      &quot;Type&quot;: &quot;Solution&quot;
+--
+      &quot;Path&quot;: &quot;Shared/uipath-maestro-flow/AcrUserListRun 1&quot;,
+      &quot;Key&quot;: &quot;47ef0e2d-1fea-4d89-a19
+
+… (truncated, 1914 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#15</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">699ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry search \&quot;gmail\&quot; --output json --output-filter \&quot;[*].{NodeType:NodeType,DisplayName:DisplayName}\&quot; 2&gt;&amp;1 | grep -i \&quot;send\\|mail\&quot; &quot;,
+  &quot;description&quot;: &quot;Search gmail nodes for send mail activity&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>      &quot;NodeType&quot;: &quot;uipath.connector.uipath-google-gmailcustom.get-newest-email&quot;,
+      &quot;DisplayName&quot;: &quot;Get Newest Email&quot;
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-google-gmailcustom.get-calendars&quot;,
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-google-gmailcustom.get-event-by-id-calendar-event-&quot;,
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-google-gmailcustom.list-records&quot;,
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-google-gmailcustom.mark-email-as-read-or-unread&quot;,
+      &quot;DisplayName&quot;: &quot;Mark Email As Read or Unread&quot;
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-google-gmailcustom.replace-record&quot;,
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-google-gmailcustom.remove-gmail-labels&quot;,
+      &quot;DisplayName&quot;: &quot;Remove Gmail Labels&quot;
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-google-gmailcustom.get-event-list&quot;,
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-google-gmailcustom.respond-to-event-invitation-calendar-event-&quot;,
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-google-gmailcustom.get-gmail-labels&quot;,
+      &quot;DisplayName&quot;: &quot;Get Gmail Labels&quot;
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-google-gmailcustom.get-email-list&quot;,
+      &quot;DisplayName&quot;: &quot;Get Email List&quot;
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-google-gm
+
+… (truncated, 13451 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#16</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">760ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry search \&quot;send mail\&quot; --output json --output-filter \&quot;[*].{NodeType:NodeType,DisplayName:DisplayName,AvailableOnTenant:AvailableOnTenant}\&quot; 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Search for Send Mail activity directly&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeSearchSuccess&quot;,
+  &quot;Data&quot;: []
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#17</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.12s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry get uipath.connector.uipath-google-gmail.send-email --connection-id 971fc639-5b3d-4921-aa16-3a8fa2e69948 --output json &gt; /tmp/gmail_send_email.json 2&gt;/tmp/gmail_send_email.err\necho \&quot;exit: $?\&quot;\npython3 -c \&quot;\nimport json\nd = json.load(open(&#x27;/tmp/gmail_send_email.json&#x27;))\nnode = d[&#x27;Data&#x27;] if &#x27;Node&#x27; not in d.get(&#x27;Data&#x27;,{}) else d[&#x27;Data&#x27;][&#x27;Node&#x27;]\nimport sys\nprint(json.dumps(d, in… (18 more chars)&quot;,
+  &quot;description&quot;: &quot;Fetch enriched Gmail Send Email node definition with connection&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>exit: 0
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeGetSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;Node&quot;: {
+      &quot;nodeType&quot;: &quot;uipath.connector.uipath-google-gmail.send-email&quot;,
+      &quot;version&quot;: &quot;1.0.0&quot;,
+      &quot;category&quot;: &quot;connector.196556&quot;,
+      &quot;tags&quot;: [
+        &quot;connector&quot;,
+        &quot;activity&quot;,
+        &quot;API.File.Upload.Optional&quot;
+      ],
+      &quot;sortOrder&quot;: 520,
+      &quot;supportsErrorHandling&quot;: true,
+      &quot;description&quot;: &quot;Sends an email message&quot;,
+      &quot;display&quot;: {
+        &quot;label&quot;: &quot;Send Email&quot;,
+        &quot;description&quot;: &quot;Sends an email message&quot;,
+        &quot;icon&quot;: &quot;https://alpha.uipath.com/311c6049-4966-4ef2-a6f3-8ceccaf38d54/studio_/typecache/icons/70091673b4573a26ec5090fa697c3bf61a0bedf4c77a302986b69d53bea30191.svg&quot;,
+        &quot;sourceDisplayName&quot;: &quot;Gmail&quot;
+      },
+      &quot;handleConfiguration&quot;: [
+        {
+          &quot;position&quot;: &quot;left&quot;,
+          &quot;handles&quot;: [
+            {
+              &quot;id&quot;: &quot;input&quot;,
+              &quot;type&quot;: &quot;target&quot;,
+              &quot;handleType&quot;: &quot;input&quot;,
+              &quot;label&quot;: &quot;&quot;
+            }
+          ]
+        },
+        {
+          &quot;position&quot;: &quot;right&quot;,
+          &quot;handles&quot;: [
+            {
+              &quot;id&quot;: &quot;output&quot;,
+              &quot;type&quot;: &quot;source&quot;,
+              &quot;handleType&quot;: &quot;output&quot;,
+     
+
+… (truncated, 1806 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#18</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">99ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 -c \&quot;\nimport json\nd = json.load(open(&#x27;/tmp/gmail_send_email.json&#x27;))\nnode = d[&#x27;Data&#x27;][&#x27;Node&#x27;]\nprint(&#x27;connectorMethodInfo:&#x27;, json.dumps(node.get(&#x27;connectorMethodInfo&#x27;), indent=2))\nprint()\nprint(&#x27;inputDefinition fields:&#x27;)\nfor f in node.get(&#x27;inputDefinition&#x27;,{}).get(&#x27;fields&#x27;,[]):\n    print(&#x27;-&#x27;, f.get(&#x27;name&#x27;), &#x27;| type:&#x27;, f.get(&#x27;dataType&#x27;), &#x27;| required:&#x27;, f.get(&#x27;required&#x27;), &#x27;| desc:&#x27;, f.get(&#x27;desc… (13 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>connectorMethodInfo: {
+  &quot;operation&quot;: &quot;Create&quot;,
+  &quot;description&quot;: &quot;Sends an email message&quot;,
+  &quot;method&quot;: &quot;POST&quot;,
+  &quot;reference&quot;: &quot;/SendEmail&quot;,
+  &quot;parameters&quot;: [
+    {
+      &quot;name&quot;: &quot;file&quot;,
+      &quot;description&quot;: &quot;The attachment to be sent with the email&quot;,
+      &quot;type&quot;: &quot;multipart&quot;,
+      &quot;dataType&quot;: &quot;file&quot;,
+      &quot;required&quot;: false,
+      &quot;displayName&quot;: &quot;Attachment&quot;,
+      &quot;curated&quot;: true,
+      &quot;design&quot;: {
+        &quot;loadByDefault&quot;: false,
+        &quot;isMultiSelect&quot;: false,
+        &quot;enableUserOverride&quot;: false,
+        &quot;isHidden&quot;: false,
+        &quot;position&quot;: &quot;primary&quot;,
+        &quot;validation&quot;: false
+      },
+      &quot;sortOrder&quot;: 6
+    },
+    {
+      &quot;name&quot;: &quot;SaveAsDraft&quot;,
+      &quot;description&quot;: &quot;Send an email message. By default, the email will be saved as draft.&quot;,
+      &quot;type&quot;: &quot;query&quot;,
+      &quot;dataType&quot;: &quot;boolean&quot;,
+      &quot;required&quot;: false,
+      &quot;defaultValue&quot;: false,
+      &quot;displayName&quot;: &quot;Save as draft&quot;,
+      &quot;curated&quot;: true,
+      &quot;design&quot;: {
+        &quot;loadByDefault&quot;: false,
+        &quot;isMultiSelect&quot;: false,
+        &quot;enableUserOverride&quot;: false,
+        &quot;isHidden&quot;: false,
+        &quot;position&quot;: &quot;primary&quot;,
+        &quot;validation&quot;: false
+      },
+      &quot;sortOrder&quot;: 2
+    },
+    {
+      &quot;name&quot;: &quot;body&quot;,
+      
+
+… (truncated, 1127 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#19</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">87ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 -c \&quot;\nimport json\nd = json.load(open(&#x27;/tmp/gmail_send_email.json&#x27;))\nnode = d[&#x27;Data&#x27;][&#x27;Node&#x27;]\nfor f in node.get(&#x27;inputDefinition&#x27;,{}).get(&#x27;fields&#x27;,[]):\n    if f.get(&#x27;name&#x27;)==&#x27;Importance&#x27;:\n        print(json.dumps(f, indent=2))\n\&quot;\n&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;name&quot;: &quot;Importance&quot;,
+  &quot;displayName&quot;: &quot;Importance&quot;,
+  &quot;type&quot;: &quot;string&quot;,
+  &quot;dataType&quot;: &quot;string&quot;,
+  &quot;required&quot;: false,
+  &quot;description&quot;: &quot;The importance of the mail&quot;,
+  &quot;enum&quot;: [
+    {
+      &quot;name&quot;: &quot;Normal&quot;,
+      &quot;value&quot;: &quot;normal&quot;
+    },
+    {
+      &quot;name&quot;: &quot;High&quot;,
+      &quot;value&quot;: &quot;high&quot;
+    },
+    {
+      &quot;name&quot;: &quot;Low&quot;,
+      &quot;value&quot;: &quot;low&quot;
+    }
+  ]
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#20</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">98ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 -c \&quot;\nimport json\nd = json.load(open(&#x27;/tmp/gmail_send_email.json&#x27;))\nnode = d[&#x27;Data&#x27;][&#x27;Node&#x27;]\nprint(json.dumps(node.get(&#x27;form&#x27;), indent=2)[:1500])\nprint(&#x27;---outputDefinition---&#x27;)\nprint(json.dumps(node.get(&#x27;outputDefinition&#x27;), indent=2)[:1500])\n\&quot;\n&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;id&quot;: &quot;connector-properties&quot;,
+  &quot;title&quot;: &quot;Connector configuration&quot;,
+  &quot;sections&quot;: [
+    {
+      &quot;id&quot;: &quot;connector&quot;,
+      &quot;title&quot;: &quot;Connector&quot;,
+      &quot;collapsible&quot;: true,
+      &quot;defaultExpanded&quot;: true,
+      &quot;fields&quot;: [
+        {
+          &quot;label&quot;: &quot;&quot;,
+          &quot;name&quot;: &quot;inputs.detail&quot;,
+          &quot;type&quot;: &quot;custom&quot;,
+          &quot;component&quot;: &quot;dap-config&quot;,
+          &quot;componentProps&quot;: {
+            &quot;connectorDetail&quot;: {
+              &quot;isAppActivity&quot;: false,
+              &quot;packageId&quot;: &quot;196556&quot;,
+              &quot;svgIconUrl&quot;: &quot;icons/70091673b4573a26ec5090fa697c3bf61a0bedf4c77a302986b69d53bea30191.svg&quot;,
+              &quot;displayName&quot;: &quot;Send Email&quot;,
+              &quot;assemblyQualifiedName&quot;: &quot;UiPath.IntegrationService.Activities.Runtime.Activities.ConnectorActivity, UiPath.IntegrationService.Activities.Runtime, Version=1.31.0.0, Culture=neutral, PublicKeyToken=null&quot;,
+              &quot;description&quot;: &quot;Sends an email message&quot;,
+              &quot;category&quot;: &quot;&quot;,
+              &quot;activityColor&quot;: &quot;#E56D5C&quot;,
+              &quot;configuration&quot;: &quot;{\&quot;connectorKey\&quot;:\&quot;uipath-google-gmail\&quot;,\&quot;objectName\&quot;:\&quot;SendEmail\&quot;,\&quot;httpMethod\&quot;:\&quot;POST\&quot;,\&quot;activityType\&quot;:\&quot;Curated\&quot;,\&quot;version\&quot;:\&quot;1.0.0\&quot;,\&quot;supportsStreaming\&quot;:false,\&quot;subT
+
+… (truncated, 1450 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#21</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">7ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/plugins/decision/impl.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Decision Node — Implementation
+2	
+3	## Node Type
+4	
+5	`core.logic.decision`
+6	
+7	## Registry Validation
+8	
+9	```bash
+10	uip maestro flow registry get core.logic.decision --output json
+11	```
+12	
+13	Confirm: input port `input`, output ports `true` and `false`, required input `expression`. Set the node instance `typeVersion` to the `version` field from this response — do not hardcode it.
+14	
+15	## JSON Structure
+16	
+17	```json
+18	{
+19	  &quot;id&quot;: &quot;checkStatus&quot;,
+20	  &quot;type&quot;: &quot;core.logic.decision&quot;,
+21	  &quot;typeVersion&quot;: &quot;&lt;DEFINITION_VERSION&gt;&quot;,
+22	  &quot;display&quot;: { &quot;label&quot;: &quot;Check Status&quot; },
+23	  &quot;inputs&quot;: {
+24	    &quot;expression&quot;: &quot;$vars.fetchData.output.statusCode === 200&quot;
+25	  }
+26	}
+27	```
+28	
+29	## Adding / Editing
+30	
+31	For step-by-step add, delete, and wiring procedures, see [editing-operations.md](../../editing-operations.md). Use the JSON structure above for the node-specific `inputs`.
+32	
+33	## Expression Examples
+34	
+35	```javascript
+36	// Simple comparison
+37	$vars.fetchData.output.statusCode === 200
+38	
+39	// Boolean field
+40	$vars.processData.output.isValid
+41	
+42	// Compound condition
+43	$vars.httpCall.output.statusCode === 200 &amp;&amp; $vars.httpCall.output.body.count &gt; 0
+44	
+45	// S
+
+… (truncated, 735 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#22</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">5ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/plugins/terminate/impl.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Terminate Node — Implementation
+2	
+3	## Node Type
+4	
+5	`core.logic.terminate`
+6	
+7	## Registry Validation
+8	
+9	```bash
+10	uip maestro flow registry get core.logic.terminate --output json
+11	```
+12	
+13	Confirm: input port `input`, no output ports. Set the node instance `typeVersion` to the `version` field from this response — do not hardcode it.
+14	
+15	## JSON Structure
+16	
+17	```json
+18	{
+19	  &quot;id&quot;: &quot;abortOnError&quot;,
+20	  &quot;type&quot;: &quot;core.logic.terminate&quot;,
+21	  &quot;typeVersion&quot;: &quot;&lt;DEFINITION_VERSION&gt;&quot;,
+22	  &quot;display&quot;: { &quot;label&quot;: &quot;Abort&quot; },
+23	  &quot;inputs&quot;: {}
+24	}
+25	```
+26	
+27	## Adding / Editing
+28	
+29	For step-by-step add, delete, and wiring procedures, see [editing-operations.md](../../editing-operations.md). Use the JSON structure above for the node-specific `inputs`.
+30	
+31	## Common Pattern — Error Handler
+32	
+33	```text
+34	HTTP Request
+35	  |-- default -&gt; Process -&gt; End
+36	  |-- error   -&gt; Log Error (Script) -&gt; Terminate
+37	```
+38	
+39	Wire the action node&#x27;s implicit `error` source port straight to the handler; the Script logs `$vars.httpCall.error`, then Terminate aborts the flow. Do **not** put a Decision downstream to test for an error — a failing node has already faulted the f
+
+… (truncated, 753 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#23</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">17ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;ls /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/shared/&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>action-nodes.md
+cli-commands.md
+cli-conventions.md
+file-format.md
+node-output-wiring.md
+ux-narration-and-todos.md
+variables-and-expressions.md</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#24</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">522ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip is resources describe \&quot;uipath-google-gmail\&quot; \&quot;SendEmail\&quot; --connection-id \&quot;971fc639-5b3d-4921-aa16-3a8fa2e69948\&quot; --operation Create --output json 2&gt;&amp;1 | tee /tmp/gmail_describe.json | python3 -c \&quot;\nimport json,sys\nd=json.load(sys.stdin)\nprint(json.dumps(d,indent=2)[:1500])\n\&quot;&quot;,
+  &quot;description&quot;: &quot;Describe Gmail SendEmail resource for response field metadata&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;ResourceMetadata&quot;,
+  &quot;Data&quot;: {
+    &quot;Name&quot;: &quot;SendEmail&quot;,
+    &quot;DisplayName&quot;: &quot;Send Email&quot;,
+    &quot;ElementKey&quot;: &quot;uipath-google-gmail&quot;,
+    &quot;Operation&quot;: {
+      &quot;Method&quot;: &quot;POST&quot;,
+      &quot;Name&quot;: &quot;Create&quot;,
+      &quot;Description&quot;: &quot;Sends an email message&quot;,
+      &quot;Path&quot;: &quot;/SendEmail&quot;,
+      &quot;Curated&quot;: &quot;Send Email&quot;
+    },
+    &quot;Parameters&quot;: [
+      {
+        &quot;Name&quot;: &quot;file&quot;,
+        &quot;Type&quot;: &quot;multipart&quot;,
+        &quot;DataType&quot;: &quot;file&quot;,
+        &quot;Required&quot;: false,
+        &quot;DisplayName&quot;: &quot;Attachment&quot;,
+        &quot;Description&quot;: &quot;The attachment to be sent with the email&quot;
+      },
+      {
+        &quot;Name&quot;: &quot;SaveAsDraft&quot;,
+        &quot;Type&quot;: &quot;query&quot;,
+        &quot;DataType&quot;: &quot;boolean&quot;,
+        &quot;Required&quot;: false,
+        &quot;DisplayName&quot;: &quot;Save as draft&quot;,
+        &quot;Description&quot;: &quot;Send an email message. By default, the email will be saved as draft.&quot;,
+        &quot;DefaultValue&quot;: false
+      },
+      {
+        &quot;Name&quot;: &quot;body&quot;,
+        &quot;Type&quot;: &quot;multipart&quot;,
+        &quot;DataType&quot;: &quot;string&quot;,
+        &quot;Required&quot;: true,
+        &quot;DisplayName&quot;: &quot;Body&quot;,
+        &quot;Description&quot;: &quot;The message body\n&quot;
+      }
+    ],
+    &quot;RequestFields&quot;: [
+      {
+        &quot;Name&quot;: &quot;BCC&quot;,
+        &quot;Type&quot;: &quot;string&quot;,
+        &quot;DisplayName&quot;: &quot;
+
+… (truncated, 297 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#25</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">201ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 -c \&quot;\nimport json\nd = json.load(open(&#x27;/tmp/gmail_describe.json&#x27;))\ndata = d[&#x27;Data&#x27;]\nfor f in data.get(&#x27;RequestFields&#x27;,[]):\n    print(f.get(&#x27;Name&#x27;), &#x27;| required:&#x27;, f.get(&#x27;Required&#x27;), &#x27;| reference:&#x27;, f.get(&#x27;Reference&#x27;))\nprint(&#x27;---objectActions---&#x27;)\nprint(data.get(&#x27;ObjectActions&#x27;))\n\&quot;\necho \&quot;---registry get objectActions---\&quot;\npython3 -c \&quot;\nimport json\nd = json.load(open(&#x27;/tmp/gmail_send_email.json&#x27;… (155 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>BCC | required: False | reference: None
+Body | required: False | reference: None
+CC | required: False | reference: None
+Importance | required: False | reference: None
+ReplyTo | required: False | reference: None
+Subject | required: False | reference: None
+To | required: True | reference: None
+---objectActions---
+None
+---registry get objectActions---
+objectActions: None
+design.actions: None</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#26</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">9.05s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;\\\nuip solution init \&quot;EnumTest\&quot; --output json \\\n  &amp;&amp; cd \&quot;EnumTest\&quot; \\\n  &amp;&amp; uip maestro flow init \&quot;EnumTest\&quot; --output json \\\n  &amp;&amp; cd \&quot;EnumTest\&quot; \\\n  &amp;&amp; uip maestro flow registry pull \\\n  &amp;&amp; uip maestro flow node add \&quot;EnumTest.flow\&quot; uipath.connector.uipath-google-gmail.send-email --label \&quot;Send Mail\&quot; --output json&quot;,
+  &quot;description&quot;: &quot;Scaffold solution + flow project and add Gmail Send Email node&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;SolutionInit&quot;,
+  &quot;Data&quot;: {
+    &quot;Status&quot;: &quot;Created successfully&quot;,
+    &quot;Path&quot;: &quot;/work/output/artifacts/skill-flow-ipe-enum/EnumTest/EnumTest.uipx&quot;,
+    &quot;NextSteps&quot;: &quot;Read /work/output/artifacts/skill-flow-ipe-enum/EnumTest/AGENTS.md or /work/output/artifacts/skill-flow-ipe-enum/EnumTest/CLAUDE.md to understand the solution lifecycle, project types that can be used inside a solution, and related uip command references.&quot;
+  }
+}
+2026-08-19 00:27:19 INFO  [ResourceBuilder:ProjectCreateCommandHandler] Creating project [object Object]
+2026-08-19 00:27:19 INFO  [ResourceBuilder:MultiFileSolutionDefinitionProvider] Reading multi-file solution definition for solution %s /work/output/artifacts/skill-flow-ipe-enum/EnumTest
+2026-08-19 00:27:19 INFO  [ResourceBuilder:ProjectCreateCommandHandler] Generate artefact resources for project [object Object]
+2026-08-19 00:27:19 INFO  [ResourceBuilder:SolutionsMetadataReader] Reading metadata from %s. SolutionsMetadataReader
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FlowInit&quot;,
+  &quot;Data&quot;: {
+    &quot;Status&quot;: &quot;Created successfully&quot;,
+    &quot;Path&quot;: &quot;/work/output/artifacts/skill-flow-ipe-enum/EnumTest/EnumTest&quot;,
+    &quot;SolutionRegistration&quot;
+
+… (truncated, 1601 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#27</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">11.89s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry get core.control.end --output json &gt; /tmp/end_def.json\nuip maestro flow registry get core.logic.decision --output json &gt; /tmp/decision_def.json\nuip maestro flow registry get core.logic.terminate --output json &gt; /tmp/terminate_def.json\nuip maestro flow registry get core.action.script --output json &gt; /tmp/script_def.json\necho done&quot;,
+  &quot;description&quot;: &quot;Fetch registry definitions for End, Decision, Terminate, Script nodes&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>done</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#28</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">15ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;ls \&quot;$(pwd)\&quot;; echo \&quot;cwd: $(pwd)\&quot;; ls \&quot;$(pwd)/EnumTest.flow\&quot;&quot;,
+  &quot;description&quot;: &quot;Verify flow file exists at expected path&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>EnumTest.flow
+operate.json
+project.uiproj
+cwd: /work/output/artifacts/skill-flow-ipe-enum/EnumTest/EnumTest
+/work/output/artifacts/skill-flow-ipe-enum/EnumTest/EnumTest/EnumTest.flow</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#29</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">6ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-ipe-enum/EnumTest/EnumTest/EnumTest.flow&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	{
+2	  &quot;id&quot;: &quot;e8fad16d-a855-4053-a6d7-6ae6a6f6a0eb&quot;,
+3	  &quot;version&quot;: &quot;1.9&quot;,
+4	  &quot;name&quot;: &quot;EnumTest&quot;,
+5	  &quot;nodes&quot;: [
+6	    {
+7	      &quot;id&quot;: &quot;start&quot;,
+8	      &quot;type&quot;: &quot;core.trigger.manual&quot;,
+9	      &quot;typeVersion&quot;: &quot;1.0&quot;,
+10	      &quot;display&quot;: {
+11	        &quot;label&quot;: &quot;Manual trigger&quot;
+12	      },
+13	      &quot;inputs&quot;: {
+14	        &quot;entryPointId&quot;: &quot;02ec9fe1-2a99-4bf6-9841-0efcdc95150f&quot;,
+15	        &quot;isDefaultEntryPoint&quot;: true
+16	      }
+17	    },
+18	    {
+19	      &quot;id&quot;: &quot;sendMail1&quot;,
+20	      &quot;type&quot;: &quot;uipath.connector.uipath-google-gmail.send-email&quot;,
+21	      &quot;typeVersion&quot;: &quot;1.0.0&quot;,
+22	      &quot;display&quot;: {
+23	        &quot;label&quot;: &quot;Send Mail&quot;
+24	      },
+25	      &quot;inputs&quot;: {}
+26	    }
+27	  ],
+28	  &quot;edges&quot;: [],
+29	  &quot;definitions&quot;: [
+30	    {
+31	      &quot;nodeType&quot;: &quot;core.trigger.manual&quot;,
+32	      &quot;version&quot;: &quot;1.0&quot;,
+33	      &quot;category&quot;: &quot;trigger&quot;,
+34	      &quot;description&quot;: &quot;Start the process manually&quot;,
+35	      &quot;tags&quot;: [
+36	        &quot;trigger&quot;,
+37	        &quot;start&quot;,
+38	        &quot;manual&quot;
+39	      ],
+40	      &quot;sortOrder&quot;: 80,
+41	      &quot;display&quot;: {
+42	        &quot;label&quot;: &quot;Manual trigger&quot;,
+43	        &quot;icon&quot;: &quot;play&quot;,
+44	        &quot;shape&quot;: &quot;circle&quot;
+45	      },
+46	      &quot;handleConfiguration&quot;: [
+47	        {
+48	          &quot;position&quot;
+
+… (truncated, 11667 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#30</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">3ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/plugins/script/impl.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Script Node — Implementation
+2	
+3	## Node Type
+4	
+5	`core.action.script`
+6	
+7	## Registry validation
+8	
+9	```bash
+10	uip maestro flow registry get core.action.script --output json
+11	```
+12	
+13	Confirm: input port `input`, output port `success`, required input `script` (string, non-empty). See [Action Node Structure — Registry validation](../../../../shared/action-nodes.md#registry-validation) for the shared pattern.
+14	
+15	## JSON structure
+16	
+17	Follow the [Action Node Structure — Standard JSON skeleton](../../../../shared/action-nodes.md#standard-json-skeleton). The script-specific input is a single `script` string:
+18	
+19	```json
+20	{
+21	  &quot;inputs&quot;: {
+22	    &quot;script&quot;: &quot;const items = $vars.fetchData.output.body.items;\nconst total = items.reduce((sum, i) =&gt; sum + i.amount, 0);\nreturn { total, count: items.length };&quot;
+23	  }
+24	}
+25	```
+26	
+27	## Adding and editing
+28	
+29	See [Action Node Structure — Adding and editing procedures](../../../../shared/action-nodes.md#adding-and-editing-procedures). The script node uses the standard input port `input` and output port `success`; no plugin-specific wiring.
+30	
+31	## Script rules
+32	
+33	1. **Top-level body — no `function main()` w
+
+… (truncated, 4329 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#31</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">3ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/plugins/end/impl.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# End Node — Implementation
+2	
+3	## Node Type
+4	
+5	`core.control.end`
+6	
+7	## Registry Validation
+8	
+9	```bash
+10	uip maestro flow registry get core.control.end --output json
+11	```
+12	
+13	Confirm: input port `input`, no output ports. Set the node instance `typeVersion` to the `version` field from this response — do not hardcode it.
+14	
+15	## JSON Structure
+16	
+17	### Without Output Mapping
+18	
+19	```json
+20	{
+21	  &quot;id&quot;: &quot;doneSuccess&quot;,
+22	  &quot;type&quot;: &quot;core.control.end&quot;,
+23	  &quot;typeVersion&quot;: &quot;&lt;DEFINITION_VERSION&gt;&quot;,
+24	  &quot;display&quot;: { &quot;label&quot;: &quot;Done&quot; },
+25	  &quot;inputs&quot;: {}
+26	}
+27	```
+28	
+29	### With Output Mapping
+30	
+31	When the workflow declares `out` variables, every End node must map all of them:
+32	
+33	```json
+34	{
+35	  &quot;id&quot;: &quot;doneSuccess&quot;,
+36	  &quot;type&quot;: &quot;core.control.end&quot;,
+37	  &quot;typeVersion&quot;: &quot;&lt;DEFINITION_VERSION&gt;&quot;,
+38	  &quot;display&quot;: { &quot;label&quot;: &quot;Done&quot; },
+39	  &quot;inputs&quot;: {},
+40	  &quot;outputs&quot;: {
+41	    &quot;processedCount&quot;: {
+42	      &quot;source&quot;: &quot;=js:$vars.processData.output.count&quot;
+43	    },
+44	    &quot;resultSummary&quot;: {
+45	      &quot;source&quot;: &quot;=js:$vars.formatOutput.output.summary&quot;
+46	    }
+47	  }
+48	}
+49	```
+50	
+51	Each key in `outputs` must match a variable `id` from `variables.globals` where `dire
+
+… (truncated, 904 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#32</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">228ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/shared/file-format.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# UiPath Flow File Format
+2	
+3	The `.flow` file is a JSON document at `&lt;ProjectName&gt;.flow` in the project root. It is the **only file you should edit** — other generated files will be overwritten.
+4	
+5	## Table of contents
+6	
+7	- [Top-level structure](#top-level-structure)
+8	- [Project structure (generated scaffold)](#project-structure-generated-scaffold)
+9	- [Node instance](#node-instance)
+10	- [Layout](#layout)
+11	- [Edge — both ports required](#edge--both-ports-required)
+12	- [Definition entry](#definition-entry)
+13	- [Common node types](#common-node-types)
+14	- [Standard ports by node type](#standard-ports-by-node-type)
+15	- [Implicit error port on action nodes](#implicit-error-port-on-action-nodes)
+16	- [Minimal working example — dice roller](#minimal-working-example--dice-roller)
+17	- [entry-points.json — auto-generated, do not edit](#entry-pointsjson--auto-generated-do-not-edit)
+18	- [Bindings — Orchestrator resource bindings (top-level `bindings[]`)](#bindings--orchestrator-resource-bindings-top-level-bindings)
+19	- [Bindings — connector connection binding](#bindings--connector-connection-binding)
+20	
+21	## Top-level structure
+22	
+23	```json
+24	{
+25	  &quot;id&quot;: &quot;&lt;uuid&gt;&quot;,
+26	 
+
+… (truncated, 35296 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#33</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">87ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 -c \&quot;\nimport json\nd = json.load(open(&#x27;/tmp/terminate_def.json&#x27;))\nprint(json.dumps(d, indent=2))\n\&quot;&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeGetSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;Node&quot;: {
+      &quot;nodeType&quot;: &quot;core.logic.terminate&quot;,
+      &quot;version&quot;: &quot;1.0&quot;,
+      &quot;category&quot;: &quot;control-flow&quot;,
+      &quot;description&quot;: &quot;Stop the entire process immediately&quot;,
+      &quot;tags&quot;: [
+        &quot;control-flow&quot;,
+        &quot;end&quot;,
+        &quot;stop&quot;,
+        &quot;terminate&quot;
+      ],
+      &quot;sortOrder&quot;: 66,
+      &quot;display&quot;: {
+        &quot;label&quot;: &quot;Terminate&quot;,
+        &quot;icon&quot;: &quot;circle-x&quot;,
+        &quot;shape&quot;: &quot;circle&quot;
+      },
+      &quot;handleConfiguration&quot;: [
+        {
+          &quot;position&quot;: &quot;left&quot;,
+          &quot;handles&quot;: [
+            {
+              &quot;id&quot;: &quot;input&quot;,
+              &quot;type&quot;: &quot;target&quot;,
+              &quot;handleType&quot;: &quot;input&quot;
+            }
+          ]
+        }
+      ],
+      &quot;model&quot;: {
+        &quot;type&quot;: &quot;bpmn:EndEvent&quot;,
+        &quot;eventDefinition&quot;: &quot;bpmn:TerminateEventDefinition&quot;
+      },
+      &quot;runtimeConstraints&quot;: {
+        &quot;exclude&quot;: [
+          &quot;api-function&quot;
+        ]
+      }
+    }
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#34</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">83ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 -c \&quot;\nimport json\nd = json.load(open(&#x27;/tmp/decision_def.json&#x27;))\nprint(json.dumps(d, indent=2))\n\&quot;&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeGetSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;Node&quot;: {
+      &quot;nodeType&quot;: &quot;core.logic.decision&quot;,
+      &quot;version&quot;: &quot;1.2&quot;,
+      &quot;category&quot;: &quot;control-flow&quot;,
+      &quot;description&quot;: &quot;Branch on a true or false condition&quot;,
+      &quot;tags&quot;: [
+        &quot;control-flow&quot;,
+        &quot;if&quot;,
+        &quot;loop&quot;,
+        &quot;switch&quot;
+      ],
+      &quot;sortOrder&quot;: 61,
+      &quot;display&quot;: {
+        &quot;label&quot;: &quot;Decision&quot;,
+        &quot;icon&quot;: &quot;trending-up-down&quot;
+      },
+      &quot;handleConfiguration&quot;: [
+        {
+          &quot;position&quot;: &quot;left&quot;,
+          &quot;handles&quot;: [
+            {
+              &quot;id&quot;: &quot;input&quot;,
+              &quot;type&quot;: &quot;target&quot;,
+              &quot;handleType&quot;: &quot;input&quot;
+            }
+          ],
+          &quot;visible&quot;: true
+        },
+        {
+          &quot;position&quot;: &quot;right&quot;,
+          &quot;handles&quot;: [
+            {
+              &quot;id&quot;: &quot;true&quot;,
+              &quot;type&quot;: &quot;source&quot;,
+              &quot;handleType&quot;: &quot;output&quot;,
+              &quot;label&quot;: &quot;{inputs.trueLabel}&quot;,
+              &quot;constraints&quot;: {
+                &quot;minConnections&quot;: 1
+              }
+            },
+            {
+              &quot;id&quot;: &quot;false&quot;,
+              &quot;type&quot;: &quot;source&quot;,
+              &quot;handleType&quot;: &quot;output&quot;,
+              &quot;label&quot;: &quot;{inputs.falseLabel}&quot;
+     
+
+… (truncated, 2610 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#35</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">6ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/editing-operations.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Flow Editing Operations
+2	
+3	Strategy selection and shared concepts for modifying `.flow` files. Direct `.flow` authoring is required for non-carve-out structural edits; CLI is reserved for the documented product-managed configuration carve-outs.
+4	
+5	## Tool Selection Ladder
+6	
+7	&gt; **Pick the lowest-numbered tool that fits the operation.** If no rung fits, stop and ask the user. Scripting languages (`python`, `node`, `jq`, `sed`, `awk`, shell heredocs) are a last resort and require explicit user approval — see rung 4.
+8	&gt;
+9	&gt; 1. **CLI-managed carve-outs only** → use the relevant plugin workflow for connector activity, connector-trigger, or managed HTTP operations when the CLI populates product-managed state (`inputs.detail`, `bindings_v2.json`, connection resources).
+10	&gt; 2. **Any structural `.flow` mutation** (add/delete OOTB nodes, add/delete edges, add/edit variables, in-place value tweaks, output mapping, subflows, scheduled triggers, non-connector resources, inline-agent node/wiring) → `Edit`.
+11	&gt; 3. **Wholesale file rewrite** (only when ≥70% of nodes change, e.g., scaffolding from a template) → `Write` — but never on a flow that already contains CLI-owned nodes (connect
+
+… (truncated, 12279 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#36</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">5ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/shared/cli-commands.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# uip maestro flow — CLI Command Reference
+2	
+3	All commands output `{ &quot;Result&quot;: &quot;Success&quot;|&quot;Failure&quot;, &quot;Code&quot;: &quot;...&quot;, &quot;Data&quot;: { ... } }`. Use `--output json` for programmatic use.
+4	
+5	&gt; For node and edge commands (`node add/remove/list/configure`, `edge add/remove/list`), see the [Author CLI editing strategy](../author/references/editing-operations-cli.md). This file covers project setup, validation, registry, debug, and publishing commands.
+6	
+7	&lt;!--skill-flavor:flow-init-command:start--&gt;
+8	## uip maestro flow init
+9	
+10	Scaffold a new Flow project directory. Outside a solution, `flow init` auto-scaffolds `&lt;ProjectName&gt;Solution/` and nests the project in it. **Prefer creating the solution first** so its name matches the project name (see the [Author greenfield journey — Step 2](../author/references/greenfield.md)).
+11	
+12	```bash
+13	# 1. Create solution first (for naming control)
+14	uip solution init &quot;&lt;SolutionName&gt;&quot; --output json
+15	
+16	# 2. Init the flow project inside the solution folder.
+17	#    Inside a solution directory, `flow init` auto-registers the project with
+18	#    the parent `.uipx`. Outside any solution, it auto-scaffolds
+19	#    `&lt;ProjectName&gt;Solution/&lt;ProjectNa
+
+… (truncated, 21723 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#37</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">22ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -rn -i \&quot;terminate\&quot; /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/ | grep -iv \&quot;impl.md:\&quot; | grep -i \&quot;message\\|reason\\|inputs\&quot;&quot;,
+  &quot;description&quot;: &quot;Search skill docs for terminate node message/inputs conventions&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/editing-operations-cli.md:32:| `--input` | No | JSON object of node-specific inputs (expression, script, URL, etc.). Omit for nodes with no inputs (merge, end, terminate). |
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/planning-arch.md:218:**Script:** `python3 scripts/check_topology.py &lt;flow&gt;` checks a built `.flow` against this table and the wiring rules below — port names that do not exist for the type, triggers used as targets, End/terminate used as sources, dangling nodes, unbalanced decision/switch branches, cycles that do not go through `loopBack`, and error edges without `inputs.errorHandlingEnabled`. `--format json` for machine-readable findings.</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#38</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">83ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 -c \&quot;\nimport json\nd = json.load(open(&#x27;/tmp/terminate_def.json&#x27;))\nprint(json.dumps(d[&#x27;Data&#x27;][&#x27;Node&#x27;], indent=2))\n\&quot; | grep -A5 \&quot;inputDefinition\\|errorMessage\\|reason\&quot;&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>(Bash completed with no output)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#39</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">16ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -rn -B3 -A10 \&quot;core.logic.terminate\&quot; /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/planning-arch.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>153-| `core.logic.loop` | [loop](plugins/loop/planning.md) | Iterate over a collection of items |
+154-| `core.logic.merge` | [merge](plugins/merge/planning.md) | Synchronize parallel branches before continuing |
+155-| `core.control.end` | [end](plugins/end/planning.md) | Graceful flow completion (one per terminal path) |
+156:| `core.logic.terminate` | [terminate](plugins/terminate/planning.md) | Abort entire flow immediately on fatal error |
+157-| `core.subflow` | [subflow](plugins/subflow/planning.md) | Group related steps into a reusable container with isolated scope |
+158-
+159-### Connector Nodes
+160-
+161-Connector nodes call external services via Integration Service. They are **not** built-in — they come from the registry after `uip login` + `uip maestro flow registry pull`.
+162-
+163-| When to Select | Plugin |
+164-| --- | --- |
+165-| A pre-built connector exists for the target service (Jira, Slack, Salesforce, etc.) | [connector](plugins/connector/planning.md) |
+166-
+--
+234-| `core.logic.loop` | `input`, `loopBack` | `success`, `output`, `error` |
+235-| `core.logic.merge` | `input` (multiple) | `output` |
+236-| `core.control.end` | `input` | — |
+237:| `core.logic.terminate` | 
+
+… (truncated, 2352 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#40</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">22ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -rln \&quot;terminate\&quot; /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/ ; echo \&quot;---\&quot;; grep -rn \&quot;errorMessage\\|inputs.message\\|\\\&quot;message\\\&quot;\&quot; /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/plugins/terminate/&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/diagnose/references/failure-modes.md
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/shared/action-nodes.md
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/shared/file-format.md
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/CAPABILITY.md
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/editing-operations-json.md
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/editing-operations-cli.md
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/planning-arch.md
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/brownfield.md
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/planning-impl.md
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/greenfield.md
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/plugins/http/impl.md
+/home/azureuser/proje
+
+… (truncated, 338 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#41</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">3ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/plugins/terminate/planning.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Terminate Node — Planning
+2	
+3	## Node Type
+4	
+5	`core.logic.terminate`
+6	
+7	## When to Use
+8	
+9	Use a Terminate node to abort the entire flow immediately on a fatal error. Unlike End, Terminate kills all branches.
+10	
+11	### Selection Heuristics
+12	
+13	| Situation | Use Terminate? |
+14	| --- | --- |
+15	| Fatal error — continuing other branches would be harmful | Yes |
+16	| Normal completion of one execution path | No — use [End](../end/planning.md) |
+17	
+18	## Ports
+19	
+20	| Input Port | Output Port(s) |
+21	| --- | --- |
+22	| `input` | — (none) |
+23	
+24	## Key Rules
+25	
+26	- Terminate stops the entire workflow immediately — all parallel branches are killed
+27	- No output mapping — Terminate does not produce workflow outputs
+28	- Use for error paths where recovery is not possible
+29	- **End vs Terminate:** End = graceful completion of one path. Terminate = abort everything.
+30	</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#42</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">7ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/shared/action-nodes.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Action Node Structure
+2	
+3	Reference for the boilerplate shared by every action-node `impl.md` in this skill. Plugin docs should link here for the standard parts and only spell out what is plugin-specific: the registry type string, plugin-specific input fields, plugin-specific rules, debug entries, and node-type configuration workflows.
+4	
+5	## Registry validation
+6	
+7	Every action node should validate its registry contract before authoring:
+8	
+9	```bash
+10	uip maestro flow registry get &lt;node-type&gt; --output json
+11	```
+12	
+13	`registry get` returns the manifest at `Data.Node`. Do **not** inspect `Data` directly as if it were the node manifest.
+14	
+15	```json
+16	{
+17	  &quot;Data&quot;: {
+18	    &quot;Node&quot;: {
+19	      &quot;nodeType&quot;: &quot;core.action.script&quot;,
+20	      &quot;version&quot;: &quot;1.0&quot;,
+21	      &quot;handleConfiguration&quot;: [
+22	        { &quot;position&quot;: &quot;left&quot;, &quot;handles&quot;: [{ &quot;id&quot;: &quot;input&quot;, &quot;type&quot;: &quot;target&quot; }] },
+23	        { &quot;position&quot;: &quot;right&quot;, &quot;handles&quot;: [{ &quot;id&quot;: &quot;success&quot;, &quot;type&quot;: &quot;source&quot; }] }
+24	      ],
+25	      &quot;inputDefinition&quot;: {},
+26	      &quot;outputDefinition&quot;: {}
+27	    }
+28	  }
+29	}
+30	```
+31	
+32	Inspect:
+33	
+34	- `Data.Node.handleConfiguration` — input port name and output port name(s). Array of pos
+
+… (truncated, 3863 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#43</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">77ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 -c \&quot;\nimport json\nd = json.load(open(&#x27;/tmp/terminate_def.json&#x27;))\nnode = d[&#x27;Data&#x27;][&#x27;Node&#x27;]\nprint(list(node.keys()))\nprint(json.dumps(node, indent=2))\n\&quot;&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>[&#x27;nodeType&#x27;, &#x27;version&#x27;, &#x27;category&#x27;, &#x27;description&#x27;, &#x27;tags&#x27;, &#x27;sortOrder&#x27;, &#x27;display&#x27;, &#x27;handleConfiguration&#x27;, &#x27;model&#x27;, &#x27;runtimeConstraints&#x27;]
+{
+  &quot;nodeType&quot;: &quot;core.logic.terminate&quot;,
+  &quot;version&quot;: &quot;1.0&quot;,
+  &quot;category&quot;: &quot;control-flow&quot;,
+  &quot;description&quot;: &quot;Stop the entire process immediately&quot;,
+  &quot;tags&quot;: [
+    &quot;control-flow&quot;,
+    &quot;end&quot;,
+    &quot;stop&quot;,
+    &quot;terminate&quot;
+  ],
+  &quot;sortOrder&quot;: 66,
+  &quot;display&quot;: {
+    &quot;label&quot;: &quot;Terminate&quot;,
+    &quot;icon&quot;: &quot;circle-x&quot;,
+    &quot;shape&quot;: &quot;circle&quot;
+  },
+  &quot;handleConfiguration&quot;: [
+    {
+      &quot;position&quot;: &quot;left&quot;,
+      &quot;handles&quot;: [
+        {
+          &quot;id&quot;: &quot;input&quot;,
+          &quot;type&quot;: &quot;target&quot;,
+          &quot;handleType&quot;: &quot;input&quot;
+        }
+      ]
+    }
+  ],
+  &quot;model&quot;: {
+    &quot;type&quot;: &quot;bpmn:EndEvent&quot;,
+    &quot;eventDefinition&quot;: &quot;bpmn:TerminateEventDefinition&quot;
+  },
+  &quot;runtimeConstraints&quot;: {
+    &quot;exclude&quot;: [
+      &quot;api-function&quot;
+    ]
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#44</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">3ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/plugins/merge/planning.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Merge Node — Planning
+2	
+3	## Node Type
+4	
+5	`core.logic.merge`
+6	
+7	## When to Use
+8	
+9	Use a Merge node to synchronize parallel branches before continuing. It waits for all incoming paths to complete.
+10	
+11	### Selection Heuristics
+12	
+13	| Situation | Use Merge? |
+14	| --- | --- |
+15	| Two or more parallel branches need to join before continuing | Yes |
+16	| Sequential pipeline (no parallel branches) | No — wire nodes directly |
+17	
+18	## Ports
+19	
+20	| Input Port | Output Port(s) |
+21	| --- | --- |
+22	| `input` (accepts multiple connections) | `output` |
+23	
+24	## Wiring Rules
+25	
+26	- Connect each parallel branch&#x27;s terminal node to the Merge node&#x27;s `input` port
+27	- Merge accepts multiple incoming edges on the same `input` port
+28	- Execution continues from `output` only after all incoming paths complete
+29	- Use after forking from a single node to multiple downstream nodes
+30	</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#45</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">14ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -n \&quot;multiple incoming\\|incoming edges\\|join\\|fan-in\\|converge\&quot; /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/planning-arch.md /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/shared/file-format.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/planning-arch.md:270:9. Merge nodes accept multiple incoming edges (one per parallel path being synchronized)
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/planning-arch.md:324:**The error path must end somewhere the caller can tell apart from success.** Routing `error` into the next happy-path node, or into the same End node the success path reaches, makes every failure look like a completed run — the flow &quot;always looks successful&quot; while the API call it depended on never succeeded. Terminal options: a distinct End node mapping an error/status `out` variable, a `core.logic.terminate` when recovery is impossible, or a recovery branch that rejoins the happy path only after obtaining valid data (a retry that succeeded, a fallback source that returned data).
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/planning-arch.md:536:6. **Parallel branches** must visually fork from one node and converge at a Merge node
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/shared/file-format.md:3
+
+… (truncated, 513 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#46</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">11ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -rn \&quot;terminate\&quot; /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/diagnose/references/failure-modes.md | head -30&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>93:One entry per declared output (trigger nodes: `output` only; action nodes: `output` + `error`; end / terminate: none).
+180:- **`ERROR_REJOINS_HAPPY_PATH`** / **`ERROR_SHARES_SUCCESS_TERMINAL`** (shape 2) — repoint the `error` edge at a terminal the caller can distinguish from success: a distinct End node mapping an error/status `out` variable, or `core.logic.terminate` when recovery is impossible.</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#47</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">540ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry get core.logic.terminate --output json --output-filter \&quot;Node\&quot; 2&gt;&amp;1&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeGetSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;nodeType&quot;: &quot;core.logic.terminate&quot;,
+    &quot;version&quot;: &quot;1.0&quot;,
+    &quot;category&quot;: &quot;control-flow&quot;,
+    &quot;description&quot;: &quot;Stop the entire process immediately&quot;,
+    &quot;tags&quot;: [
+      &quot;control-flow&quot;,
+      &quot;end&quot;,
+      &quot;stop&quot;,
+      &quot;terminate&quot;
+    ],
+    &quot;sortOrder&quot;: 66,
+    &quot;display&quot;: {
+      &quot;label&quot;: &quot;Terminate&quot;,
+      &quot;icon&quot;: &quot;circle-x&quot;,
+      &quot;shape&quot;: &quot;circle&quot;
+    },
+    &quot;handleConfiguration&quot;: [
+      {
+        &quot;position&quot;: &quot;left&quot;,
+        &quot;handles&quot;: [
+          {
+            &quot;id&quot;: &quot;input&quot;,
+            &quot;type&quot;: &quot;target&quot;,
+            &quot;handleType&quot;: &quot;input&quot;
+          }
+        ]
+      }
+    ],
+    &quot;model&quot;: {
+      &quot;type&quot;: &quot;bpmn:EndEvent&quot;,
+      &quot;eventDefinition&quot;: &quot;bpmn:TerminateEventDefinition&quot;
+    },
+    &quot;runtimeConstraints&quot;: {
+      &quot;exclude&quot;: [
+        &quot;api-function&quot;
+      ]
+    }
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#48</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">12ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -rn \&quot;terminate\&quot; -A5 -B5 /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/editing-operations-cli.md | head -60&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>27-
+28-**Flags:**
+29-
+30-| Flag | Required | Description |
+31-|------|----------|-------------|
+32:| `--input` | No | JSON object of node-specific inputs (expression, script, URL, etc.). Omit for nodes with no inputs (merge, end, terminate). |
+33-| `--label` | No | Display label shown on the canvas |
+34-| `--position` | No | `x,y` coordinates. Any value is fine (e.g. `0,0`) — `flow format` rewrites positions on save. |
+35-| `--parent` | No | ID of an existing container node (e.g. a `core.logic.loop`). Sets `parentId` on the new node, placing it inside that container. Required for every node in a loop body — see [loop/impl.md](plugins/loop/impl.md). |
+36-| `--output json` | Yes (for parsing) | Structured JSON response with the assigned node `id` |
+37-</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#49</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">16ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -rln \&quot;logic.terminate\\|Terminate\&quot; /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/ 2&gt;/dev/null | xargs grep -ln \&quot;message\\|reason\&quot; 2&gt;/dev/null&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/scripts/flow_lib.py
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/diagnose/references/failure-modes.md
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/shared/file-format.md
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/CAPABILITY.md
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/planning-arch.md
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/planning-impl.md</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#50</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">9ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -n \&quot;terminate\\|Terminate\&quot; /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/scripts/flow_lib.py&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>7:TERMINAL_TYPES = {&quot;core.control.end&quot;, &quot;core.logic.terminate&quot;}
+132:    &quot;&quot;&quot;End/terminate nodes reachable from `start` following non-error ports.&quot;&quot;&quot;</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#51</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">10ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -n \&quot;terminate\&quot; -B3 -A15 /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/planning-impl.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>45-| `core.logic.loop`               | [loop/impl.md](plugins/loop/impl.md)                           |
+46-| `core.logic.merge`              | [merge/impl.md](plugins/merge/impl.md)                         |
+47-| `core.control.end`              | [end/impl.md](plugins/end/impl.md)                             |
+48:| `core.logic.terminate`          | [terminate/impl.md](plugins/terminate/impl.md)                 |
+49-| `core.subflow`                  | [subflow/impl.md](plugins/subflow/impl.md)                     |
+50-| `core.trigger.scheduled`        | [scheduled-trigger/impl.md](plugins/scheduled-trigger/impl.md) |
+51-| `core.action.queue.*`           | [queue/impl.md](plugins/queue/impl.md)                         |
+52-| `uipath.agent.autonomous`       | [inline-agent/impl.md](plugins/inline-agent/impl.md)           |
+53-| `uipath.core.agent.*`           | [agent/impl.md](plugins/agent/impl.md)                         |
+54-| `uipath.core.rpa-workflow.*`    | [rpa/impl.md](plugins/rpa/impl.md)                             |
+55-| `uipath.core.agentic-process.*` | [agentic-process/impl.md](plugins/agentic-process/impl.md)     |
+56-| `uipath.core.flow.*`            | [flow/impl.md](pl
+
+… (truncated, 602 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#52</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">3ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/editing-operations-cli.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Flow Editing Operations — CLI Carve-Outs
+2	
+3	This is **not** a structural editing guide. Use direct `.flow` authoring via [editing-operations-json.md](editing-operations-json.md) for OOTB node/edge/variable CRUD, trigger swaps, output mapping, subflows, inline-agent node/wiring, non-connector resources, and in-place updates.
+4	
+5	&gt; **When to use this file:** only for CLI-managed carve-outs documented by a plugin: connector activities, connector triggers, and managed HTTP nodes (both `node add` and `node configure`). If you landed here while adding/removing/wiring OOTB nodes, inline-agent nodes, non-connector resources, or other structural graph elements, go back to the Edit / Write guide.
+6	
+7	The primitive commands below are support commands for carve-out workflows only. They are not an opt-in path for non-carve-out structural edits.
+8	
+9	---
+10	
+11	## Primitive Commands for Carve-Out Workflows
+12	
+13	### Add a node
+14	
+15	```bash
+16	uip maestro flow node add &lt;ProjectName&gt;.flow &lt;node-type&gt; --output json \
+17	  --input &#x27;&lt;INPUT_JSON&gt;&#x27; \
+18	  --label &quot;&lt;LABEL&gt;&quot; \
+19	  --position &lt;X&gt;,&lt;Y&gt; \
+20	  --parent &lt;PARENT_NODE_ID&gt;
+21	```
+22	
+23	**What the CLI handles automatically:**
+24	- In
+
+… (truncated, 7260 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#53</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">11ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -rn -i \&quot;TerminateEventDefinition\\|terminate.*reason\\|terminate.*message\&quot; /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/ 2&gt;/dev/null&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>(Bash completed with no output)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#54</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">544ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow node add --help 2&gt;&amp;1 | head -40&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>                           uip maestro flow node add                            
+Add a node to a Flow file.
+For connector nodes (type uipath.connector), do NOT pass --input here — run &#x27;node configure&#x27; afterwards to supply connection and endpoint details.
+Example: uip maestro flow node add flow.flow uipath.connector.jira.createIssue --label &#x27;Create Jira Issue&#x27;
+                Use --help with nested commands for more detail.                
+
+┌─ Usage ──────────────────────────────────────────────────────────────────────┐
+│ uip maestro flow node add [options] &lt;file&gt; &lt;node-type&gt;                       │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Arguments ──────────────────────────────────────────────────────────────────┐
+│ file        Path to the .flow file                                           │
+│ node-type   Node type identifier (e.g. core.trigger.manual)                  │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Options ────────────────────────────────────────────────────────────────────┐
+│ -i, --input &lt;json&gt;             JSON object of input values to set on the     │
+│                        
+
+… (truncated, 1837 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#55</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">10ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -n \&quot;incoming\\|fan-in\\|multiple.*edge\\|single incoming\\|one incoming\&quot; /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/planning-arch.md /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/scripts/check_topology.py&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/planning-arch.md:265:4. Every non-trigger node must have at least one incoming edge
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/planning-arch.md:270:9. Merge nodes accept multiple incoming edges (one per parallel path being synchronized)
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/planning-arch.md:272:11. **No dangling nodes** — every node must be connected by at least one edge. A node with no incoming and no outgoing edges is invalid. Verify every node in the node table appears in the edge table as either a source or target.
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/scripts/check_topology.py:5:used as sources, missing incoming/outgoing edges, unbalanced decision/switch branches,
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/scripts/check_topology.py:129:            out.append(fl.finding(&quot;error&quot;, &quot;DANGLING_NODE&quot;, &quot;node has no incoming and no outgoing edge&quot;, node=nid))
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/scripts/check_topology.py:132:
+
+… (truncated, 109 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#56</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">3ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/scripts/check_topology.py&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	#!/usr/bin/env python3
+2	&quot;&quot;&quot;Check `.flow` wiring against the Standard Port Reference and the wiring rules.
+3	
+4	Reports port names that do not exist for a node type, triggers used as targets, End/terminate
+5	used as sources, missing incoming/outgoing edges, unbalanced decision/switch branches,
+6	dangling nodes, illegal cycles, and error edges without inputs.errorHandlingEnabled.
+7	&quot;&quot;&quot;
+8	import argparse
+9	import sys
+10	
+11	import flow_lib as fl
+12	
+13	EXACT = {
+14	    &quot;core.trigger.manual&quot;: ([], [&quot;output&quot;]),
+15	    &quot;core.trigger.scheduled&quot;: ([], [&quot;output&quot;]),
+16	    &quot;core.action.script&quot;: ([&quot;input&quot;], [&quot;success&quot;, &quot;error&quot;]),
+17	    &quot;core.action.http.v2&quot;: ([&quot;input&quot;], [&quot;default&quot;, &quot;error&quot;]),
+18	    &quot;core.action.http&quot;: ([&quot;input&quot;], [&quot;default&quot;, &quot;error&quot;]),
+19	    &quot;core.action.transform&quot;: ([&quot;input&quot;], [&quot;output&quot;, &quot;error&quot;]),
+20	    &quot;uipath.pattern.batch-transform&quot;: ([&quot;input&quot;], [&quot;output&quot;, &quot;error&quot;]),
+21	    &quot;uipath.pattern.deep-rag&quot;: ([&quot;input&quot;], [&quot;output&quot;, &quot;error&quot;]),
+22	    &quot;core.logic.delay&quot;: ([&quot;input&quot;], [&quot;output&quot;]),
+23	    &quot;core.logic.decision&quot;: ([&quot;input&quot;], [&quot;true&quot;, &quot;false&quot;]),
+24	    &quot;core.logic.switch&quot;: ([&quot;input&quot;], [&quot;default&quot;]),
+25	    &quot;core.logic.loop&quot;: ([&quot;input&quot;, &quot;loopBack&quot;], [&quot;success&quot;, &quot;out
+
+… (truncated, 8507 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#57</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">566ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry search \&quot;log\&quot; --output json --output-filter \&quot;[*].{NodeType:NodeType,DisplayName:DisplayName}\&quot; 2&gt;&amp;1 | grep -i \&quot;core\\.\\|log\&quot; | head -30&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>      &quot;NodeType&quot;: &quot;core.logic.mock&quot;,
+      &quot;NodeType&quot;: &quot;core.logic.decision&quot;,
+      &quot;NodeType&quot;: &quot;core.logic.loop&quot;,
+      &quot;NodeType&quot;: &quot;core.logic.merge&quot;,
+      &quot;NodeType&quot;: &quot;core.logic.switch&quot;,
+      &quot;NodeType&quot;: &quot;core.logic.delay&quot;,
+      &quot;NodeType&quot;: &quot;core.logic.terminate&quot;,
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-google-vision.logo-detection&quot;,
+      &quot;DisplayName&quot;: &quot;Logo Detection&quot;
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-logmein-gotowebinar.list-all-webinar-registrants&quot;,
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-logmein-gotowebinar.delete-webinar&quot;,
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-logmein-gotowebinar.list-all-records&quot;,
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-logmein-gotowebinar.delete-record&quot;,
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-logmein-gotowebinar.quick-update-webinar&quot;,
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-logmein-gotowebinar.list-all-in-session-webinars&quot;,
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-logmein-gotowebinar.insert-record&quot;,
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-logmein-gotowebinar.get-webinar-start-url&quot;,
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-logmein-gotowebinar.list-account-webinars&quot;,
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-logme
+
+… (truncated, 959 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#58</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.26s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry search \&quot;terminate\&quot; --output json 2&gt;&amp;1\necho \&quot;---list versions---\&quot;\nuip maestro flow registry list --output json --limit 5000 --output-filter \&quot;[?NodeType==&#x27;core.logic.terminate&#x27;]\&quot; 2&gt;&amp;1&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeSearchSuccess&quot;,
+  &quot;Data&quot;: [
+    {
+      &quot;NodeType&quot;: &quot;core.logic.terminate&quot;,
+      &quot;Category&quot;: &quot;control-flow&quot;,
+      &quot;DisplayName&quot;: &quot;Terminate&quot;,
+      &quot;Description&quot;: &quot;Stop the entire process immediately&quot;,
+      &quot;Version&quot;: &quot;1.0&quot;,
+      &quot;Tags&quot;: &quot;control-flow, end, stop, terminate&quot;,
+      &quot;AvailableOnTenant&quot;: true
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.trigger.uipath-workday-workdayrest.worker-terminated&quot;,
+      &quot;Category&quot;: &quot;trigger.196588&quot;,
+      &quot;DisplayName&quot;: &quot;Worker Terminated&quot;,
+      &quot;Description&quot;: &quot;Triggers when a worker is terminated&quot;,
+      &quot;Version&quot;: &quot;1.0.0&quot;,
+      &quot;Tags&quot;: &quot;connector, trigger, Trigger.Integrated&quot;,
+      &quot;AvailableOnTenant&quot;: true
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.event.uipath-workday-workdayrest.worker-terminated&quot;,
+      &quot;Category&quot;: &quot;connector.196588&quot;,
+      &quot;DisplayName&quot;: &quot;Worker Terminated&quot;,
+      &quot;Description&quot;: &quot;Triggers when a worker is terminated&quot;,
+      &quot;Version&quot;: &quot;1.0.0&quot;,
+      &quot;Tags&quot;: &quot;connector, event, Trigger.Integrated&quot;,
+      &quot;AvailableOnTenant&quot;: true
+    }
+  ]
+}
+---list versions---
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeListSuccess&quot;,
+  &quot;Data&quot;: [
+    {
+      &quot;NodeType&quot;: &quot;core.logic.te
+
+… (truncated, 257 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#59</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">616ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry get core.logic.merge --output json &gt; /tmp/merge_def.json\ncat /tmp/merge_def.json\necho \&quot;---responseFields---\&quot;\npython3 -c \&quot;\nimport json\nd = json.load(open(&#x27;/tmp/gmail_describe.json&#x27;))\ndata = d[&#x27;Data&#x27;]\nprint(json.dumps(data.get(&#x27;ResponseFields&#x27;), indent=2)[:1500])\n\&quot;&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeGetSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;Node&quot;: {
+      &quot;nodeType&quot;: &quot;core.logic.merge&quot;,
+      &quot;version&quot;: &quot;1.0&quot;,
+      &quot;category&quot;: &quot;control-flow&quot;,
+      &quot;description&quot;: &quot;Join parallel branches into one path&quot;,
+      &quot;tags&quot;: [
+        &quot;control-flow&quot;,
+        &quot;merge&quot;
+      ],
+      &quot;sortOrder&quot;: 64,
+      &quot;display&quot;: {
+        &quot;label&quot;: &quot;Merge&quot;,
+        &quot;icon&quot;: &quot;merge&quot;
+      },
+      &quot;handleConfiguration&quot;: [
+        {
+          &quot;position&quot;: &quot;left&quot;,
+          &quot;handles&quot;: [
+            {
+              &quot;id&quot;: &quot;input&quot;,
+              &quot;type&quot;: &quot;target&quot;,
+              &quot;handleType&quot;: &quot;input&quot;
+            }
+          ],
+          &quot;visible&quot;: true
+        },
+        {
+          &quot;position&quot;: &quot;right&quot;,
+          &quot;handles&quot;: [
+            {
+              &quot;id&quot;: &quot;output&quot;,
+              &quot;type&quot;: &quot;source&quot;,
+              &quot;handleType&quot;: &quot;output&quot;
+            }
+          ],
+          &quot;visible&quot;: true
+        }
+      ],
+      &quot;model&quot;: {
+        &quot;type&quot;: &quot;bpmn:ParallelGateway&quot;
+      },
+      &quot;runtimeConstraints&quot;: {
+        &quot;exclude&quot;: [
+          &quot;api-function&quot;
+        ]
+      }
+    }
+  }
+}
+---responseFields---
+[
+  {
+    &quot;Name&quot;: &quot;Importance&quot;,
+    &quot;Type&quot;: &quot;string&quot;,
+    &quot;DisplayName&quot;: &quot;Importance&quot;,
+ 
+
+… (truncated, 387 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#60</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">11ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -n \&quot;hasError\\|checkResult\\|decision.*error\\|error.*decision\&quot; /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/planning-arch.md /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/shared/file-format.md /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/plugins/decision/*.md 2&gt;/dev/null&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/planning-arch.md:218:**Script:** `python3 scripts/check_topology.py &lt;flow&gt;` checks a built `.flow` against this table and the wiring rules below — port names that do not exist for the type, triggers used as targets, End/terminate used as sources, dangling nodes, unbalanced decision/switch branches, cycles that do not go through `loopBack`, and error edges without `inputs.errorHandlingEnabled`. `--format json` for machine-readable findings.
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/planning-arch.md:254:&gt; **`error` is an implicit source port** on every action node (any node with `supportsErrorHandling: true`), and it is **off by default**. Wire it only when the requirements state what should happen if that node fails — a failed HTTP call, script exception, transform error, agent fault. With no error edge the node faults the flow, which is the correct default: a faulted run is visible, a swallowed failure is not. This is a **different mechanism** from content-based `inputs.branches` on HTTP. See [Implicit error port on action nodes](../../shared
+
+… (truncated, 154 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#61</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">10ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;sed -n &#x27;1,120p&#x27; /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/planning-arch.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre># Planning Phase 1: Discovery &amp; Architectural Design
+
+Discover available capabilities, then design the flow topology — select node types, define edges, and identify expected inputs and outputs. This phase produces a **mermaid diagram** and structured tables that can be reviewed before any implementation work begins.
+
+&gt; **Registry rules for this phase:**
+&gt; - **`registry search` and `registry list` are ALLOWED** — use them to discover what connectors, resources, and operations exist before committing to a topology.
+&gt; - **`registry get` IS REQUIRED for any OOTB action node** the flow will use — `core.action.http`, `core.action.http.v2`, `core.action.script`, `core.action.transform`, queue actions, etc. These nodes have no connection-id; their full input/output schema, port names, and required fields are only visible via `registry get &lt;node-type&gt; --output json`. Run `get` once per OOTB action node type during discovery so the topology and ports are grounded in real metadata.
+&gt; - **`registry get` is DEFERRED for connector and resource nodes** — those require a `--connection-id` (connector) or `--local` resolution that belongs to [Planning Phase 2: Implementation](planning-impl.md).
+
+---
+
+… (truncated, 10046 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#62</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">77ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 -c \&quot;\nimport json\nfor f in [&#x27;/tmp/script_def.json&#x27;,&#x27;/tmp/end_def.json&#x27;]:\n    d = json.load(open(f))\n    node = d[&#x27;Data&#x27;][&#x27;Node&#x27;]\n    print(f, &#x27;-&gt; version:&#x27;, node[&#x27;version&#x27;])\n    print(json.dumps(node, indent=2)[:1200])\n    print(&#x27;---&#x27;)\n\&quot;&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/tmp/script_def.json -&gt; version: 1.1
+{
+  &quot;nodeType&quot;: &quot;core.action.script&quot;,
+  &quot;version&quot;: &quot;1.1&quot;,
+  &quot;category&quot;: &quot;data-operations&quot;,
+  &quot;description&quot;: &quot;Run custom JavaScript code&quot;,
+  &quot;tags&quot;: [
+    &quot;code&quot;,
+    &quot;javascript&quot;,
+    &quot;python&quot;
+  ],
+  &quot;sortOrder&quot;: 70,
+  &quot;supportsErrorHandling&quot;: true,
+  &quot;display&quot;: {
+    &quot;label&quot;: &quot;Script&quot;,
+    &quot;icon&quot;: &quot;code&quot;
+  },
+  &quot;handleConfiguration&quot;: [
+    {
+      &quot;position&quot;: &quot;left&quot;,
+      &quot;handles&quot;: [
+        {
+          &quot;id&quot;: &quot;input&quot;,
+          &quot;type&quot;: &quot;target&quot;,
+          &quot;handleType&quot;: &quot;input&quot;
+        }
+      ]
+    },
+    {
+      &quot;position&quot;: &quot;right&quot;,
+      &quot;handles&quot;: [
+        {
+          &quot;id&quot;: &quot;success&quot;,
+          &quot;type&quot;: &quot;source&quot;,
+          &quot;handleType&quot;: &quot;output&quot;
+        },
+        {
+          &quot;id&quot;: &quot;error&quot;,
+          &quot;label&quot;: &quot;Error&quot;,
+          &quot;type&quot;: &quot;source&quot;,
+          &quot;handleType&quot;: &quot;output&quot;,
+          &quot;visible&quot;: &quot;{inputs.errorHandlingEnabled}&quot;,
+          &quot;constraints&quot;: {
+            &quot;maxConnections&quot;: 1
+          }
+        }
+      ]
+    }
+  ],
+  &quot;debug&quot;: {
+    &quot;runtime&quot;: &quot;clientScript&quot;
+  },
+  &quot;model&quot;: {
+    &quot;type&quot;: &quot;bpmn:ScriptTask&quot;
+  },
+  &quot;inputDefinition&quot;: {
+    &quot;type&quot;: &quot;object&quot;,
+    &quot;properties&quot;: {
+      &quot;script&quot;: {
+        &quot;type&quot;: &quot;string&quot;,
+        
+
+… (truncated, 726 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#63</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.24s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry search \&quot;log message\&quot; --output json --output-filter \&quot;[*].{NodeType:NodeType,DisplayName:DisplayName}\&quot; 2&gt;&amp;1\necho \&quot;---\&quot;\nuip maestro flow registry list --output json --limit 5000 --output-filter \&quot;[?starts_with(NodeType,&#x27;core.&#x27;)].{NodeType:NodeType,DisplayName:DisplayName}\&quot; 2&gt;&amp;1&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeSearchSuccess&quot;,
+  &quot;Data&quot;: []
+}
+---
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeListSuccess&quot;,
+  &quot;Data&quot;: [
+    {
+      &quot;NodeType&quot;: &quot;core.logic.mock&quot;,
+      &quot;DisplayName&quot;: &quot;Mock&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;core.logic.decision&quot;,
+      &quot;DisplayName&quot;: &quot;Decision&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;core.logic.loop&quot;,
+      &quot;DisplayName&quot;: &quot;Loop&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;core.logic.merge&quot;,
+      &quot;DisplayName&quot;: &quot;Merge&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;core.logic.switch&quot;,
+      &quot;DisplayName&quot;: &quot;Switch&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;core.logic.delay&quot;,
+      &quot;DisplayName&quot;: &quot;Delay&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;core.subflow&quot;,
+      &quot;DisplayName&quot;: &quot;Subflow&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;core.control.end&quot;,
+      &quot;DisplayName&quot;: &quot;End&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;core.logic.terminate&quot;,
+      &quot;DisplayName&quot;: &quot;Terminate&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;core.action.http.v2&quot;,
+      &quot;DisplayName&quot;: &quot;HTTP Request&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;core.action.script&quot;,
+      &quot;DisplayName&quot;: &quot;Script&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;core.action.transform&quot;,
+      &quot;DisplayName&quot;: &quot;Transform&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;core.action.transform.filter&quot;,
+      &quot;Displa
+
+… (truncated, 1083 more chars)</pre>
+    
+  </div>
+</details>
+
+</div>
+
+<h2>Command Telemetry</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Total</div><div class="value">64</div></div>
+    <div class="stat"><div class="label">Successful</div><div class="value">63 (98%)</div></div>
+    <div class="stat"><div class="label">Failed</div><div class="value">1</div></div>
+    <div class="stat"><div class="label">Avg / cmd</div><div class="value">868ms</div></div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 2fr;gap:16px;margin-top:12px">
+    <div>
+      <h4>By Tool</h4>
+      <table>
+        <thead><tr><th>Tool</th><th>Count</th></tr></thead>
+        <tbody><tr><td class='mono'>Bash</td><td>47</td></tr><tr><td class='mono'>Read</td><td>16</td></tr><tr><td class='mono'>Skill</td><td>1</td></tr></tbody>
+      </table>
+    </div>
+    <div>
+      <h4>Slowest</h4>
+      <table>
+        <thead><tr><th>Tool</th><th>Duration</th><th>Parameters</th></tr></thead>
+        <tbody><tr><td class='mono'>Bash</td><td>11.89s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro flow registry get core.co...</td></tr><tr><td class='mono'>Bash</td><td>9.05s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;\\\nuip solution init &quot;EnumTest&quot; --ou...</td></tr><tr><td class='mono'>Bash</td><td>8.74s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip is connections list &quot;uipath-googl...</td></tr><tr><td class='mono'>Bash</td><td>8.51s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro flow registry pull --forc...</td></tr><tr><td class='mono'>Bash</td><td>1.53s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip or folders list --output json --l...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+  <p><strong>Most Common Pattern:</strong> <code>Bash → Bash → Bash</code></p><p><strong>Skill Tool Invoked:</strong> 1 time(s)</p>
+</div>
+
+<h2>Generation Metrics</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Total Latency</div><div class="value">15m 23s</div></div>
+    <div class="stat"><div class="label">Turns</div><div class="value">1</div></div>
+    <div class="stat"><div class="label">Assistant Turns</div><div class="value">104</div></div>
+    <div class="stat"><div class="label">Avg Turn Latency</div><div class="value">15m 21s</div></div>
+    
+  </div>
+</div>
+
+<h2>Token Usage</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Input (uncached)</div><div class="value">633</div></div>
+    <div class="stat"><div class="label">Output</div><div class="value">74,953</div></div>
+    <div class="stat"><div class="label">Cache Write</div><div class="value">169,444</div></div>
+    <div class="stat"><div class="label">Cache Read</div><div class="value">5,896,438</div></div>
+    <div class="stat"><div class="label">Total</div><div class="value">6,141,468</div></div>
+    <div class="stat"><div class="label">Cost</div><div class="value">$3.5305</div></div>
+  </div>
+</div>
+
+<h2>Agent Settings</h2>
+<div class="card" style="padding:0">
+  <table>
+    <tbody><tr><td class='mono dim'>Permission Mode</td><td>acceptEdits</td></tr><tr><td class='mono dim'>Allowed Tools</td><td>Skill, Bash, Read, Write, Edit, Glob, Grep</td></tr><tr><td class='mono dim'>Model</td><td>us.anthropic.claude-sonnet-5</td></tr><tr><td class='mono dim'>Max Turns</td><td>40</td></tr><tr><td class='mono dim'>System Prompt</td><td>You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted. </td></tr><tr><td class='mono dim'>System Prompt Mode</td><td>append</td></tr><tr><td class='mono dim'>Plugins</td><td>/home/azureuser/projects/skills/tmp</td></tr></tbody>
+  </table>
+</div>
+
+<h2>Environment</h2>
+<div class="card" style="padding:0">
+  <table>
+    <tbody><tr><td class='mono dim'>git_commit</td><td>unknown</td></tr><tr><td class='mono dim'>skills_git_commit</td><td>unknown</td></tr><tr><td class='mono dim'>cli_version</td><td>1.201.0-dev.8272</td></tr><tr><td class='mono dim'>tool_plugins</td><td>{&#x27;admin-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;agent-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;agenthub-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;aops-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;api-workflow-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;automation-hub-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;codedagent-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;codedapp-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;coder-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;context-grounding-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;conversational-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;data-fabric-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;docsai-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;function-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;gov-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;guardrails-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;insights-tool&#x27;: &#x27;1.201.0-dev.8276&#x27;, &#x27;integrationservice-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;ixp-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;llm-gateway-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;llmgw-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;maestro-tool&#x27;: &#x27;1.201.0-dev.8275&#x27;, &#x27;model-hub-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;orchestrator-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;platform-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;pm-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;rpa-legacy-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;rpa-tool&#x27;: &#x27;1.201.0-dev.20260809.3&#x27;, &#x27;solution-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;tasks-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;test-manager-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;traces-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;vertical-solutions-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;}</td></tr><tr><td class='mono dim'>coder_eval</td><td>0.9.6</td></tr><tr><td class='mono dim'>claude_code_cli</td><td>2.1.177 (Claude Code)</td></tr><tr><td class='mono dim'>uv</td><td>uv 0.12.5 (x86_64-unknown-linux-gnu)</td></tr><tr><td class='mono dim'>anthropic</td><td>0.122.0</td></tr><tr><td class='mono dim'>openai</td><td>3.2.0</td></tr><tr><td class='mono dim'>pydantic</td><td>2.12.5</td></tr><tr><td class='mono dim'>api_routing</td><td>aws_bedrock</td></tr><tr><td class='mono dim'>eval_routing</td><td>aws_bedrock</td></tr><tr><td class='mono dim'>aws_region</td><td>us-east-2</td></tr><tr><td class='mono dim'>bedrock_model</td><td>us.anthropic.claude-sonnet-4-6</td></tr><tr><td class='mono dim'>system_prompt_semantics</td><td>append</td></tr></tbody>
+  </table>
+</div>
+
+<footer>Generated by coder_eval · 2026-08-19T00:39:59</footer>
+</div>
+<script>
+function toggleTheme() {
+  document.documentElement.classList.toggle('light');
+  try {
+    const mode = document.documentElement.classList.contains('light') ? 'light' : 'dark';
+    localStorage.setItem('coder-eval-theme', mode);
+  } catch (e) { /* ignore */ }
+}
+(function() {
+  try {
+    if (localStorage.getItem('coder-eval-theme') === 'light') {
+      document.documentElement.classList.add('light');
+    }
+  } catch (e) { /* ignore */ }
+})();
+</script>
+</body>
+</html>

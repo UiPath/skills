@@ -1,0 +1,14 @@
+{
+  "_comment": "PLANNED CONFIGURATION — run 'uip maestro flow node configure InvoiceProcessing.flow downloadInvoiceFile1 --detail \"$(cat downloadInvoiceFile1.detail.json | python3 -c import sys,json,d=json.load(sys.stdin);del d[\"_comment\"],d[\"_open_questions\"];print(json.dumps(d))')' once IT provisions the SharePoint connection. Shares the same connectionId/folderKey as the trigger.",
+  "connectionId": "<SHAREPOINT_CONNECTION_UUID>",
+  "folderKey": "<SHAREPOINT_FOLDER_KEY_UUID>",
+  "method": "GET",
+  "endpoint": "/drive/items/{id}/content",
+  "pathParameters": {
+    "id": "=js:$vars.newInvoiceInSharepoint1.output.id"
+  },
+  "_open_questions": [
+    "connectionId/folderKey: same values as newInvoiceInSharepoint1.detail.json — must match the SharePoint connection IT provisions",
+    "output.id: the trigger fires with the new file's metadata; 'id' is the OneDrive item ID — confirm field name from the trigger's outputResponseDefinition once IT runs 'flow debug'"
+  ]
+}

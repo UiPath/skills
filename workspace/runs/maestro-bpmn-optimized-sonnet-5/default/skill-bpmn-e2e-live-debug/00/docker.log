@@ -1,0 +1,6 @@
+21:08:27 [INFO   ] [default/skill-bpmn-e2e-live-debug/00] orchestrator: API routing: aws_bedrock
+21:12:29 [INFO   ] [default/skill-bpmn-e2e-live-debug/00] orchestrator: Success criteria: 3/3 passed, weighted score: 1.000
+21:12:29 [WARNING] [default/skill-bpmn-e2e-live-debug/00] orchestrator: Visible turns (46) exceeded expected_turns (30) at iteration 1 for task skill-bpmn-e2e-live-debug. Run continues — max_turns remains the hard cap.
+21:12:29 [INFO   ] [default/skill-bpmn-e2e-live-debug/00] orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+21:12:29 [INFO   ] [default/skill-bpmn-e2e-live-debug/00] orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-bpmn-e2e-live-debug
+21:12:29 [INFO   ] [default/skill-bpmn-e2e-live-debug/00] orchestrator: Task finished: status=SUCCESS duration=246.0s score=1.000 iterations=1

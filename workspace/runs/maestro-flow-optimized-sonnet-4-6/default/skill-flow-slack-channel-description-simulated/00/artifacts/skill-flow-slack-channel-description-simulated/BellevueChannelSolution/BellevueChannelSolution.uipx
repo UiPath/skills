@@ -1,0 +1,12 @@
+{
+    "DocVersion": "1.0.0",
+    "StudioMinVersion": "2025.10.0",
+    "SolutionId": "c2dfd215-8a59-4018-9c63-08defdfbf8f4",
+    "Projects": [
+        {
+            "Type": "Flow",
+            "ProjectRelativePath": "BellevueChannelDescription/project.uiproj",
+            "Id": "c7a9c51a-a5ad-4aec-8f04-8f01533ec862"
+        }
+    ]
+}

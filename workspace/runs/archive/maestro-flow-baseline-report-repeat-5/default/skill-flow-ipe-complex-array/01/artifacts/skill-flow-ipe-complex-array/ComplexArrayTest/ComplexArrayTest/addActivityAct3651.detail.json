@@ -1,0 +1,19 @@
+{
+  "connectionId": "<ACT365_CONNECTION_ID>",
+  "folderKey": "<ACT365_FOLDER_KEY>",
+  "method": "POST",
+  "endpoint": "/Interactions",
+  "bodyParameters": {
+    "subject": "Sales Interaction - Q3 Follow-up Call",
+    "type": "Call",
+    "startTime": "2026-07-24T09:00:00Z",
+    "endTime": "2026-07-24T09:30:00Z",
+    "timeZone": "Eastern Standard Time",
+    "details": "Follow-up sales call with multiple contacts",
+    "contacts": [
+      { "id": "contact-id-001" },
+      { "id": "contact-id-002" },
+      { "id": "contact-id-003" }
+    ]
+  }
+}

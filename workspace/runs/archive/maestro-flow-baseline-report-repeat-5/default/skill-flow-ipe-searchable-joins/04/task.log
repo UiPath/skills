@@ -1,0 +1,33 @@
+2026-07-24 20:52:55 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-24 20:52:55 [INFO] coder_eval.orchestrator: API routing: aws_bedrock
+2026-07-24 20:52:55 [DEBUG] coder_eval.criteria: Discovered 14 criterion checkers
+2026-07-24 20:52:55 [DEBUG] coder_eval.criteria: Validated 14 criterion checkers
+2026-07-24 20:52:55 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-24 20:52:56 [DEBUG] coder_eval.orchestrator: Sending prompt: Create a Flow project called "SearchableJoinsTest" with a manual trigger. 
+Build a flow that pulls S...
+2026-07-24 20:52:56 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Starting agent query stream...
+2026-07-24 20:58:38 [DEBUG] coder_eval.agents.claude_code_agent: [coder] session_id changed: None -> 842c530c-6a76-450e-9580-ecd605071efd
+2026-07-24 20:58:38 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Agent query stream ended
+2026-07-24 20:58:38 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-24 20:58:38 [DEBUG] coder_eval.orchestrator: Agent response received (5333 chars)
+2026-07-24 20:58:38 [DEBUG] coder_eval.orchestrator: Checking success criteria
+2026-07-24 20:58:38 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'Flow file exists and is valid JSON': python3 -c "import json,glob; flows=glob.glob('**/SearchableJoinsTest*.flow',recursive=True); assert flows, 'No flow found'; f=json.load(open(flows[0])); assert 'nodes' in f and 'edges' in f; nn=len(f['nodes']); ne=len(f['edges']); print('OK: %d nodes, %d edges'%(nn,ne))"
+2026-07-24 20:58:38 [DEBUG] coder_eval.sandbox: Command 'python3 -c "import json,glob; flows=glob.glob('**/SearchableJoinsTest*.flow',recursive=True); assert flows, 'No flow found'; f=json.load(open(flows[0])); assert 'nodes' in f and 'edges' in f; nn=len(f['nodes']); ne=len(f['edges']); print('OK: %d nodes, %d edges'%(nn,ne))"' exited with code 0
+2026-07-24 20:58:38 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+OK: 5 nodes, 4 edges
+---
+2026-07-24 20:58:38 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-07-24 20:58:38 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'Flow has a connector node referencing uipath-salesforce-sfdc': python3 -c "import json,glob; flows=glob.glob('**/SearchableJoinsTest*.flow',recursive=True); assert flows; content=open(flows[0]).read(); assert 'uipath-salesforce-sfdc' in content, 'Connector key not found'; print('OK: connector key present')"
+2026-07-24 20:58:38 [DEBUG] coder_eval.sandbox: Command 'python3 -c "import json,glob; flows=glob.glob('**/SearchableJoinsTest*.flow',recursive=True); assert flows; content=open(flows[0]).read(); assert 'uipath-salesforce-sfdc' in content, 'Connector key not found'; print('OK: connector key present')"' exited with code 0
+2026-07-24 20:58:38 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+OK: connector key present
+---
+2026-07-24 20:58:38 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-07-24 20:58:38 [DEBUG] coder_eval.evaluation.checker: Criterion 'command_executed' score: 1.00
+2026-07-24 20:58:38 [INFO] coder_eval.orchestrator: Success criteria: 3/3 passed, weighted score: 1.000
+2026-07-24 20:58:38 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-24 20:58:38 [INFO] coder_eval.orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+2026-07-24 20:58:38 [INFO] coder_eval.orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-ipe-searchable-joins
+2026-07-24 20:58:38 [INFO] coder_eval.orchestrator: Task finished: status=SUCCESS duration=345.9s score=1.000 iterations=1

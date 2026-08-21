@@ -1,0 +1,1477 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>coder_eval · skill-flow-devcon-billing-dispute-analyst · default</title>
+<style>
+:root {
+  --bg-page: #0f1419;
+  --bg-card: #1a2129;
+  --bg-card-2: #232d38;
+  --bg-code: #0b0f14;
+  --fg: #e6edf3;
+  --fg-muted: #8b98a5;
+  --fg-dim: #6e7681;
+  --border: #30363d;
+  --accent: #58a6ff;
+  --score-high: #22c55e;
+  --score-mid: #f59e0b;
+  --score-low: #ef4444;
+  --status-success: #22c55e;
+  --status-failure: #f59e0b;
+  --status-error: #ef4444;
+  --status-neutral: #6e7681;
+  --shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+.light {
+  --bg-page: #ffffff;
+  --bg-card: #f6f8fa;
+  --bg-card-2: #eaeef2;
+  --bg-code: #f6f8fa;
+  --fg: #1f2328;
+  --fg-muted: #636c76;
+  --fg-dim: #8b949e;
+  --border: #d0d7de;
+  --accent: #0969da;
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial,
+               sans-serif;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--fg);
+  background: var(--bg-page);
+}
+.container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+h1, h2, h3, h4 { margin: 0 0 12px 0; line-height: 1.25; }
+h1 { font-size: 22px; font-weight: 600; }
+h2 { font-size: 18px; font-weight: 600; margin-top: 28px;
+     padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+h3 { font-size: 15px; font-weight: 600; color: var(--fg-muted); }
+h4 { font-size: 13px; font-weight: 600; color: var(--fg-muted); }
+p { margin: 0 0 8px 0; }
+.muted { color: var(--fg-muted); }
+.dim { color: var(--fg-dim); }
+.mono { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+        monospace; font-size: 12.5px; }
+code { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+       monospace; font-size: 12.5px; background: var(--bg-code);
+       border: 1px solid var(--border); padding: 1px 5px; border-radius: 3px; }
+pre { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+      monospace; font-size: 12.5px; background: var(--bg-code);
+      border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px;
+      margin: 6px 0; overflow-x: auto; white-space: pre-wrap;
+      word-wrap: break-word; }
+.header-bar { display: flex; align-items: center; justify-content: space-between;
+              margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+.title-group { flex: 1; min-width: 0; }
+.title-group .subtitle { color: var(--fg-muted); font-size: 13px;
+                         margin-top: 2px; word-break: break-all; }
+.badges { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.badge { display: inline-flex; align-items: center; gap: 6px;
+         padding: 4px 10px; border-radius: 12px; font-size: 12px;
+         font-weight: 600; background: var(--bg-card-2);
+         border: 1px solid var(--border); color: var(--fg); }
+.badge.success { background: color-mix(in srgb, var(--status-success) 20%, var(--bg-card-2));
+                 border-color: var(--status-success); color: var(--status-success); }
+.badge.failure { background: color-mix(in srgb, var(--status-failure) 20%, var(--bg-card-2));
+                 border-color: var(--status-failure); color: var(--status-failure); }
+.badge.error { background: color-mix(in srgb, var(--status-error) 20%, var(--bg-card-2));
+               border-color: var(--status-error); color: var(--status-error); }
+.badge.warning { background: color-mix(in srgb, #f4a52810 20%, var(--bg-card-2));
+                 border-color: #f4a528; color: #f4a528; }
+.badge.neutral { color: var(--fg-muted); }
+.score-pill { display: inline-block; padding: 2px 8px; border-radius: 10px;
+              font-size: 12px; font-weight: 700; min-width: 42px;
+              text-align: center; color: #0b0f14; }
+.score-high { background: var(--score-high); }
+.score-mid { background: var(--score-mid); }
+.score-low { background: var(--score-low); }
+.card { background: var(--bg-card); border: 1px solid var(--border);
+        border-radius: 8px; padding: 16px 20px; margin-bottom: 16px;
+        box-shadow: var(--shadow); }
+.card.highlight { border-left: 4px solid var(--accent); }
+.grid { display: grid; gap: 12px;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+.stat { background: var(--bg-card-2); padding: 10px 12px; border-radius: 6px;
+        border: 1px solid var(--border); }
+.stat .label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;
+               color: var(--fg-muted); margin-bottom: 4px; }
+.stat .value { font-size: 16px; font-weight: 600; }
+table { width: 100%; border-collapse: collapse; margin: 4px 0 12px 0; }
+th, td { text-align: left; padding: 8px 10px;
+         border-bottom: 1px solid var(--border); vertical-align: top;
+         font-size: 13px; }
+th { color: var(--fg-muted); font-weight: 600; font-size: 12px;
+     text-transform: uppercase; letter-spacing: 0.3px; }
+tr:last-child td { border-bottom: none; }
+details { margin: 6px 0; border: 1px solid var(--border); border-radius: 6px;
+          background: var(--bg-card-2); }
+details > summary { cursor: pointer; padding: 8px 12px; user-select: none;
+                    font-weight: 500; list-style: none; }
+details > summary::-webkit-details-marker { display: none; }
+details > summary::before { content: "▸ "; color: var(--fg-dim);
+                            display: inline-block; width: 14px;
+                            transition: transform 0.15s; }
+details[open] > summary::before { content: "▾ "; }
+details .details-body { padding: 0 12px 10px 12px; }
+.tool-row { display: flex; align-items: center; gap: 10px;
+            flex-wrap: wrap; font-size: 13px; }
+.tool-name { font-weight: 600; color: var(--accent); font-family: ui-monospace,
+             SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+.tool-status-ok { color: var(--status-success); font-size: 11px;
+                  font-weight: 600; }
+.tool-status-err { color: var(--status-error); font-size: 11px;
+                   font-weight: 600; }
+.tool-duration { color: var(--fg-muted); font-size: 12px; }
+.tool-seq { color: var(--fg-dim); font-size: 11px; font-weight: 600;
+            min-width: 24px; text-align: right; font-family: ui-monospace,
+            SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+.turn-header { display: flex; justify-content: space-between;
+               align-items: baseline; flex-wrap: wrap; gap: 10px;
+               margin-bottom: 10px; }
+.turn-meta { font-size: 12px; color: var(--fg-muted); }
+.criterion-row td:first-child { font-family: ui-monospace, SFMono-Regular,
+                                 "SF Mono", Menlo, Consolas, monospace;
+                                 color: var(--fg-muted); font-size: 12px; }
+.judge-section { display: flex; flex-direction: column; gap: 12px; }
+.judge-card { padding: 14px 16px; }
+.judge-card-head { display: flex; justify-content: space-between;
+                    align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+.judge-card-title { font-size: 14px; line-height: 1.4; flex: 1; min-width: 0; }
+.judge-card-score { flex-shrink: 0; }
+.judge-rationale { margin-top: 10px; padding: 10px 12px;
+                   background: var(--bg-code); border-radius: 4px;
+                   font-size: 13px; line-height: 1.5; }
+.judge-findings { margin: 8px 0 0 18px; padding-left: 4px; font-size: 13px;
+                   line-height: 1.6; }
+.judge-findings li { margin: 2px 0; }
+.nav-toggle { display: inline-block; padding: 5px 10px; font-size: 12px;
+              background: var(--bg-card-2); border: 1px solid var(--border);
+              border-radius: 5px; color: var(--fg); cursor: pointer; }
+.nav-toggle:hover { background: var(--bg-card); }
+.llm-next-steps { margin: 6px 0 0 20px; padding-left: 0; }
+.llm-next-steps li { margin: 3px 0; }
+.iteration-group { padding: 12px 16px 4px 16px; margin-bottom: 20px;
+                   border-radius: 0 6px 6px 0; border-left: 4px solid var(--status-neutral); }
+/* rgba fallback for browsers without color-mix (Chrome <111, Firefox <113, Safari <16.2). */
+.iteration-group--recovered { border-left-color: var(--status-success);
+                              background: rgba(34, 197, 94, 0.06);
+                              background: color-mix(in srgb, var(--status-success) 6%, transparent); }
+.iteration-group--terminal { border-left-color: var(--status-error);
+                             background: rgba(239, 68, 68, 0.06);
+                             background: color-mix(in srgb, var(--status-error) 6%, transparent); }
+.iteration-group__banner { margin: 0 0 12px 0; font-size: 14px; font-weight: 600; }
+.iteration-group--recovered .iteration-group__banner { color: var(--status-success); }
+.iteration-group--terminal .iteration-group__banner { color: var(--status-error); }
+.attempt-transition { display: flex; align-items: center; gap: 8px;
+                      margin: -6px 0 12px 8px; color: var(--status-error); font-size: 12.5px; }
+.attempt-transition__icon { font-weight: 700; }
+footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--border);
+         color: var(--fg-dim); font-size: 12px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="header-bar">
+  <div class="title-group">
+    <h1>Task: skill-flow-devcon-billing-dispute-analyst</h1>
+    <div class="subtitle">Build a Maestro Flow whose single work node is an inline low-code agent (uipath.agent.autonomous, scaffolded with `uip agent init --inline-in-flow`) grounded on the existing &quot;Billing Dispute SOP Index&quot; semantic index via its context handle (a uipath.agent.resource.context.index node). Graded by flow validate plus one flow debug run: both nodes must be present and the agent must return a non-empty determination.</div>
+  </div>
+  <div class="badges">
+    <span class="badge failure">FAILURE</span>
+    <span class="score-pill score-low">0.38</span>
+    <span class="badge neutral">claude-code · claude-sonnet-4-6</span>
+    <span class="badge neutral">6m 39s</span>
+    <span class="badge neutral">$0.8368</span>
+    
+    
+    <span class="nav-toggle" onclick="toggleTheme()">Toggle theme</span>
+  </div>
+</div>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Variant</div><div class="value">default</div></div>
+    <div class="stat"><div class="label">Started</div><div class="value mono">2026-07-24T17:13:34</div></div>
+    <div class="stat"><div class="label">Duration</div><div class="value">6m 39s</div></div>
+    <div class="stat"><div class="label">Turns (SDK)</div><div class="value">43</div></div>
+    <div class="stat"><div class="label">Commands</div><div class="value">26</div></div>
+  </div>
+</div>
+
+<h2>Success Criteria <span class="muted" style="font-weight:400">(1/2 passed)</span></h2>
+<div class="card" style="padding:0">
+<table>
+  <thead>
+    <tr>
+      <th style="width:15%">Type</th>
+      <th style="width:35%">Description</th>
+      <th style="width:10%">Score</th>
+      <th>Details</th>
+    </tr>
+  </thead>
+  <tbody>
+    
+<tr class="criterion-row">
+  <td>run_command</td>
+  <td>uip maestro flow validate passes on the flow file</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Command: uip maestro flow validate BillingDisputeAnalyst/BillingDisputeAnalyst/BillingDisputeAnalyst.flow</summary><div class="details-body"><pre style="margin:6px 0 0 0">Command: uip maestro flow validate BillingDisputeAnalyst/BillingDisputeAnalyst/BillingDisputeAnalyst.flow
+Exit code: 0 (expected: 0)
+Stdout:
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FlowValidate&quot;,
+  &quot;Data&quot;: {
+    &quot;File&quot;: &quot;/work/output/artifacts/skill-flow-devcon-billing-dispute-analyst/BillingDisputeAnalyst/BillingDisputeAnalyst/BillingDisputeAnalyst.flow&quot;,
+    &quot;Status&quot;: &quot;Valid&quot;
+  }
+}
+
+Stderr:
+[ManifestClient] fetchDynamicNodes ok: total=206 agent context nodes=2 external agent nodes=6 orchestrator nodes=158 IXP nodes=40</pre></div></details></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>run_command</td>
+  <td>Check debugs the flow: an inline uipath.agent.autonomous node is wired to a context.index node, the flow completes, and the agent returns a non-empty determination</td>
+  <td style="text-align:center"><span class="score-pill score-low">0.00</span></td>
+  <td><details><summary class="mono dim">Command: python3 $TASK_DIR/check_billing_dispute_analyst.py</summary><div class="details-body"><pre style="margin:6px 0 0 0">Command: python3 $TASK_DIR/check_billing_dispute_analyst.py
+Exit code: 1 (expected: 0)
+Stdout:
+OK: flow wires an inline autonomous agent to a context.index node
+
+Stderr:
+Traceback (most recent call last):
+  File &quot;/home/azureuser/projects/skills/tests/tasks/uipath-maestro-flow/multi_node/billing_dispute_analyst/check_billing_dispute_analyst.py&quot;, line 62, in &lt;module&gt;
+    main()
+    ~~~~^^
+  File &quot;/home/azureuser/projects/skills/tests/tasks/uipath-maestro-flow/multi_node/billing_dispute_analyst/check_billing_dispute_analyst.py&quot;, line 49, in main
+    with open(trace_path, &quot;w&quot;) as fh:
+         ~~~~^^^^^^^^^^^^^^^^^
+OSError: [Errno 30] Read-only file system: &#x27;/home/azureuser/projects/skills/tests/tasks/uipath-maestro-flow/multi_node/billing_dispute_analyst/last_debug_trace.json&#x27;</pre></div></details></td>
+</tr>
+
+  </tbody>
+</table>
+</div>
+<h2>Conversation Trace (1 iteration)</h2>
+<div class="card">
+  <div class="turn-header">
+    <h3>Iteration 1</h3>
+    <div class="badges">
+      <span class="badge neutral">43 assistant turns</span>
+      <span class="badge neutral">in 13049 · out 18020 · cache 890326</span>
+      <span class="badge neutral">5m 29s</span>
+      
+      
+      
+    </div>
+  </div>
+  <details>
+    <summary>Prompt to agent</summary>
+    <div class="details-body"><pre>Your working directory is: /work/output/artifacts/skill-flow-devcon-billing-dispute-analyst
+
+Build a Maestro Flow &quot;BillingDisputeAnalyst&quot; (in a solution of the same name)
+whose single work node is an inline low-code agent embedded in the flow
+project that analyzes a billing dispute, grounded on tenant knowledge.
+
+- Trigger inputs: `disputeDescription` (string), `invoiceNumber` (string).
+- The inline agent must ground its analysis on the existing semantic index
+  named &quot;Billing Dispute SOP Index&quot; already deployed in the tenant (indexes
+  live outside the solution). Use the real folder and index name from the
+  tenant — do not hard-code or guess them.
+- The agent returns two strings: `determination` and `rationale`. Map them to
+  flow outputs of the same names.
+- The agent must be embedded in the flow project (inline), not a separate
+  published agent, and its context handle must be wired to the index.
+
+Validate the final flow file — the task is not complete until `uip maestro
+flow validate` passes. Grading then runs the flow under debug, so build it to
+actually run, not merely validate. Do not run debug yourself.
+
+Build the complete flow
+without stopping to ask me.
+</pre></div>
+  </details>
+  <details>
+    <summary>Agent response</summary>
+    <div class="details-body"><pre>[ASSISTANT] Now let me read the context index plugin and check the tenant&#x27;s available indexes and agent models in parallel:
+[ASSISTANT] Logged in, no existing solutions. Running the full T1 chain — scaffold + registry pull + discovery — in parallel:
+[ASSISTANT] Found the index: `uipath.agent.resource.context.index.billing-dispute-sop-index.cc45b9b4-dbf6-47b3-40ac-08debc0cec5b`. Now get its full registry definition and scaffold the inline agent:
+[ASSISTANT] Agent `ProjectId = 475b63c4-9fc2-49e1-9fd9-b7ced3e4ae77`. Now read the definitions and the scaffolded flow in parallel:
+[ASSISTANT] Good. I have all the data. Now I need to read the context resource.json shape and then do everything in one batch. Let me read the agents skill context reference:
+[ASSISTANT] Now I have all I need. Let me write the complete flow file, agent.json, and context resource.json in one batch:
+[ASSISTANT] Resources: 1 confirmed. Now validate the agent and run solution resources refresh, then validate the flow:
+[ASSISTANT] Solution resources refreshed successfully — the index and its backing bucket are wired. Now validate and format the flow:
+[ASSISTANT] `flow validate` passes with `Status: Valid` — no warnings. The flow is complete and validated.
+
+Here&#x27;s a summary of what was built:
+
+---
+
+**BillingDisputeAnalyst** — complete and validated ✅
+
+**File:** `BillingDisputeAnalyst/BillingDisputeAnalyst/BillingDisputeAnalyst.flow`
+
+**What was built:**
+
+| Node | Type | Role |
+|---|---|---|
+| Manual trigger (`start`) | `core.trigger.manual` | Accepts `disputeDescription` + `invoiceNumber` inputs |
+| Billing Dispute Analyst | `uipath.agent.autonomous` | Inline low-code agent; source = `475b63c4-9fc2-49e1-9fd9-b7ced3e4ae77` |
+| Billing Dispute SOP Index | `uipath.agent.resource.context.index.billing-dispute-sop-index.cc45b9b4-dbf6-47b3-40ac-08debc0cec5b` | Context node — wired to agent&#x27;s `context` port |
+| End | `core.control.end` | Maps `determination` + `rationale` from agent output to flow outputs |
+
+**Agent configuration:**
+- **Model:** `anthropic.claude-sonnet-4-6` (GA, non-preview)
+- **SOP Index:** `Billing Dispute SOP Index` in folder `Shared/uipath-maestro-flow/BillingDispute` — discovered from tenant and wired via context handle
+- **Inputs:** `start__output__disputeDescription`, `start__output__invoiceNumber` (bound from trigger via `agentInputVariables`)
+- **Outputs:** `determination`, `rationale` — typed in `outputSchema`, listed in `agentOutputVariables`, mapped on End node to flow `out` globals
+
+**Validation:** `uip maestro flow validate` → **Valid**, zero warnings  
+**Format:** run — 3 nodes repositioned, 1 resized  
+**Solution resources:** index + storage bucket resolved from ECS and wired into solution (`uip solution resources refresh` — 1 imported, 0 warnings)
+[RESULT - SUCCESS] `flow validate` passes with `Status: Valid` — no warnings. The flow is complete and validated.
+
+Here&#x27;s a summary of what was built:
+
+---
+
+**BillingDisputeAnalyst** — complete and validated ✅
+
+**File:** `BillingDisputeAnalyst/BillingDisputeAnalyst/BillingDisputeAnalyst.flow`
+
+**What was built:**
+
+| Node | Type | Role |
+|---|---|---|
+| Manual trigger (`start`) | `core.trigger.manual` | Accepts `disputeDescription` + `invoiceNumber` inputs |
+| Billing Dispute Analyst | `uipath.agent.autonomous` | Inline low-code agent; source = `475b63c4-9fc2-49e1-9fd9-b7ced3e4ae77` |
+| Billing Dispute SOP Index | `uipath.agent.resource.context.index.billing-dispute-sop-index.cc45b9b4-dbf6-47b3-40ac-08debc0cec5b` | Context node — wired to agent&#x27;s `context` port |
+| End | `core.control.end` | Maps `determination` + `rationale` from agent output to flow outputs |
+
+**Agent configuration:**
+- **Model:** `anthropic.claude-sonnet-4-6` (GA, non-preview)
+- **SOP Index:** `Billing Dispute SOP Index` in folder `Shared/uipath-maestro-flow/BillingDispute` — discovered from tenant and wired via context handle
+- **Inputs:** `start__output__disputeDescription`, `start__output__invoiceNumber` (bound from trig</pre></div>
+  </details>
+  <h4 style="margin-top:12px">Tool Calls (26)</h4>
+  
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#0</span>
+      <span class="tool-name">Skill</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">26ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;skill&quot;: &quot;uipath:uipath-maestro-flow&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Launching skill: uipath:uipath-maestro-flow</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#1</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">374ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/CAPABILITY.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Author — Create and edit `.flow` files
+2	
+3	Capability index for building new flows (greenfield) and editing existing flows (brownfield). Author owns everything that happens on disk, locally, without `uip login`. Authoring journeys terminate at `validate` + `format`; from there, hand off to [operate/CAPABILITY.md](../operate/CAPABILITY.md) to publish, run, or debug.
+4	
+5	&gt; **Where you came from / where to go next.** Author is upstream of Operate (build the flow → ship it) and upstream of Diagnose only via Operate (build → run → diagnose). Publish/run/lifecycle lives in [operate/CAPABILITY.md](../operate/CAPABILITY.md); fault triage lives in [diagnose/CAPABILITY.md](../diagnose/CAPABILITY.md).
+6	&gt;
+7	&gt; **Inherits universal rules from [SKILL.md](../../SKILL.md)** — `--output json` + prefer `--output-filter` for extraction, no `flow debug` without consent, resource discovery order, never invoke other skills automatically, dropdown question pattern, solution layout, **plain-English narration + granular progress list (opt-in — silent by default; engage when the user asks for verbosity)**. The rules below are author-scoped and apply on top.
+8	
+9	## When to use this capability
+10	
+11	-
+
+… (truncated, 25996 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#2</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">220ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/references/greenfield.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Greenfield — Create a New Flow
+2	
+3	End-to-end journey for creating a Flow project from scratch. Author terminates at `validate` + `format`. To publish, run, or debug after this, see [operate/CAPABILITY.md](../../operate/CAPABILITY.md).
+4	
+5	&gt; **Brownfield edits use a different journey.** If the `.flow` file already exists, see [brownfield.md](brownfield.md) instead.
+6	
+7	## Should you plan first?
+8	
+9	For complex flows, produce a plan before building. Reference [planning-arch.md](planning-arch.md) and [planning-impl.md](planning-impl.md) for the node type catalog, port reference, wiring rules, and topology patterns.
+10	
+11	**Plan when:**
+12	- The flow has 5+ nodes with branching or parallel paths
+13	- The flow uses connectors or resources that need discovery
+14	- The user&#x27;s requirements are ambiguous and you need to confirm the approach
+15	
+16	**Don&#x27;t plan when:**
+17	- Adding/editing a single node in an existing flow (use [brownfield.md](brownfield.md))
+18	- The flow is a straightforward linear pipeline (trigger → action → action → end)
+19	- The user has already described the exact topology they want
+20	
+21	### Examples
+22	
+23	**Plan:** &quot;Build a flow that receives a Jira ticke
+
+… (truncated, 30834 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#3</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">205ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/references/plugins/inline-agent/impl.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Inline Agent Node — Implementation
+2	
+3	This plugin covers **flow-specific** operations for inline agent nodes: adding the node, wiring edges, JSON structure, and flow validation. For agent-side concerns (agent.json configuration, resource.json authoring, solution resources, prompts), see the `uipath-agents` skill — specifically `lowcode/capabilities/inline-in-flow/inline-in-flow.md`.
+4	
+5	Node type: `uipath.agent.autonomous`. The agent is bound to a local subdirectory via `inputs.source = &lt;projectId&gt;`. The node&#x27;s BPMN type and `serviceType` (`Orchestrator.StartInlineAgentJob`) come from the definition in `definitions[]`.
+6	
+7	For coded (Python) agents, use the [`agent`](../agent/impl.md) plugin (`uipath.core.agent.{key}`) — inline agents are low-code only.
+8	
+9	## Prerequisite — Scaffold the Inline Agent
+10	
+11	```bash
+12	uip agent init &quot;&lt;FlowProjectDir&gt;&quot; --inline-in-flow --output json
+13	```
+14	
+15	This creates `&lt;FlowProjectDir&gt;/&lt;projectId-uuid&gt;/` with:
+16	
+17	- `agent.json` — agent definition (model, prompts, schemas)
+18	- `flow-layout.json` — empty `{}`
+19	- `evals/eval-sets/` — empty
+20	- `features/` — empty
+21	- `resources/` — empty (add tool resource files here later)
+22
+
+… (truncated, 41263 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#4</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">13ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/references/plugins/inline-agent/impl.md&quot;,
+  &quot;offset&quot;: 226,
+  &quot;limit&quot;: 100
+}</pre>
+    <h4>Result</h4>
+    <pre>226	
+227	An inline agent attaches resource nodes — tools (external or built-in), contexts, and escalations — to its three artifact ports. **All kinds wire into the `.flow` identically:** discover the node type, add a minimal node instance, copy its definition into `definitions[]`, add a placeholder layout entry, wire ONE artifact edge to the node&#x27;s `input` port, then hand-author `resource.json` and run refresh + validate. Three things vary per kind — the **artifact port** the edge leaves, the **node type**, and whether the resource needs **solution-level files**. The `resource.json` body is owned by the `uipath-agents` skill (linked per row).
+228	
+229	| Kind | Edge source port | Node type | `resource.json` discriminator | Needs `uip solution resources refresh`? | `resource.json` reference (uipath-agents) |
+230	|------|------------------|-----------|-------------------------------|------------------------------------------|--------------------------------------------|
+231	| RPA process tool | `tool` (bottom) | `uipath.agent.resource.tool.process.&lt;release-key&gt;` | `type: &quot;process&quot;` | Yes | `lowcode/capabilities/process/process.md` |
+232	| Agent tool | `tool` (bottom) | `uipath.agent.r
+
+… (truncated, 6933 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#5</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.47s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip login status --output json 2&gt;&amp;1 | head -5&quot;,
+  &quot;description&quot;: &quot;Check login status&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;LoginStatus&quot;,
+  &quot;Data&quot;: {
+    &quot;Status&quot;: &quot;Logged in&quot;,</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#6</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">88ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;ls /work/output/artifacts/skill-flow-devcon-billing-dispute-analyst/*.uipx /work/output/artifacts/skill-flow-devcon-billing-dispute-analyst/*/*.uipx 2&gt;/dev/null; ls /work/output/artifacts/skill-flow-devcon-billing-dispute-analyst/ 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Check for existing solutions&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>(Bash completed with no output)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#7</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">19.87s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-devcon-billing-dispute-analyst \\\n  &amp;&amp; uip solution init \&quot;BillingDisputeAnalyst\&quot; --output json \\\n  &amp;&amp; cd \&quot;BillingDisputeAnalyst\&quot; \\\n  &amp;&amp; uip maestro flow init \&quot;BillingDisputeAnalyst\&quot; --output json \\\n  &amp;&amp; cd \&quot;BillingDisputeAnalyst\&quot; \\\n  &amp;&amp; uip maestro flow registry pull \\\n  2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Scaffold solution + flow project + registry pull&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;SolutionInit&quot;,
+  &quot;Data&quot;: {
+    &quot;Status&quot;: &quot;Created successfully&quot;,
+    &quot;Path&quot;: &quot;/work/output/artifacts/skill-flow-devcon-billing-dispute-analyst/BillingDisputeAnalyst/BillingDisputeAnalyst.uipx&quot;,
+    &quot;NextSteps&quot;: &quot;Read /work/output/artifacts/skill-flow-devcon-billing-dispute-analyst/BillingDisputeAnalyst/AGENTS.md or /work/output/artifacts/skill-flow-devcon-billing-dispute-analyst/BillingDisputeAnalyst/CLAUDE.md to understand the solution lifecycle, project types that can be used inside a solution, and related uip command references.&quot;
+  }
+}
+2026-07-24 17:14:13 INFO  [ResourceBuilder:ProjectCreateCommandHandler] Creating project [object Object]
+2026-07-24 17:14:13 INFO  [ResourceBuilder:MultiFileSolutionDefinitionProvider] Reading multi-file solution definition for solution %s /work/output/artifacts/skill-flow-devcon-billing-dispute-analyst/BillingDisputeAnalyst
+2026-07-24 17:14:13 INFO  [ResourceBuilder:ProjectCreateCommandHandler] Generate artefact resources for project [object Object]
+2026-07-24 17:14:13 INFO  [ResourceBuilder:SolutionsMetadataReader] Reading metadata from %s. SolutionsMetadataReader
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FlowInit&quot;,
+
+… (truncated, 1706 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#8</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">25.32s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry search \&quot;uipath.agent.resource.context.index\&quot; --output json 2&gt;&amp;1 | head -80&quot;,
+  &quot;description&quot;: &quot;Discover context index node types from tenant&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeSearchSuccess&quot;,
+  &quot;Data&quot;: [
+    {
+      &quot;NodeType&quot;: &quot;uipath.agent.resource.context.index.billing-dispute-sop-index.cc45b9b4-dbf6-47b3-40ac-08debc0cec5b&quot;,
+      &quot;Category&quot;: &quot;agent&quot;,
+      &quot;DisplayName&quot;: &quot;Billing Dispute SOP Index&quot;,
+      &quot;Description&quot;: &quot;SOP grounding for the Billing Dispute Analyst agent.&quot;,
+      &quot;Version&quot;: &quot;1.0.0&quot;,
+      &quot;Tags&quot;: &quot;agent-context, index&quot;,
+      &quot;AvailableOnTenant&quot;: true
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.agent.resource.context.index.uipathagentsproductknowledge.de5819d5-a687-4059-988e-08dee2ae3999&quot;,
+      &quot;Category&quot;: &quot;agent&quot;,
+      &quot;DisplayName&quot;: &quot;UiPathAgentsProductKnowledge&quot;,
+      &quot;Description&quot;: &quot;&quot;,
+      &quot;Version&quot;: &quot;1.0.0&quot;,
+      &quot;Tags&quot;: &quot;agent-context, index&quot;,
+      &quot;AvailableOnTenant&quot;: true
+    }
+  ]
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#9</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">29.05s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip agent model list --output json 2&gt;&amp;1 | head -60&quot;,
+  &quot;description&quot;: &quot;List available agent models&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;AgentModelList&quot;,
+  &quot;Data&quot;: [
+    {
+      &quot;Provider&quot;: &quot;AwsBedrock&quot;,
+      &quot;Name&quot;: &quot;anthropic.claude-haiku-4-5-20251001-v1:0&quot;,
+      &quot;IsByo&quot;: false,
+      &quot;IsPreview&quot;: false,
+      &quot;MaxTokens&quot;: 64000
+    },
+    {
+      &quot;Provider&quot;: &quot;AwsBedrock&quot;,
+      &quot;Name&quot;: &quot;anthropic.claude-opus-4-6-v1&quot;,
+      &quot;IsByo&quot;: false,
+      &quot;IsPreview&quot;: false,
+      &quot;MaxTokens&quot;: 128000
+    },
+    {
+      &quot;Provider&quot;: &quot;AwsBedrock&quot;,
+      &quot;Name&quot;: &quot;anthropic.claude-opus-4-7&quot;,
+      &quot;IsByo&quot;: false,
+      &quot;IsPreview&quot;: true,
+      &quot;MaxTokens&quot;: 128000
+    },
+    {
+      &quot;Provider&quot;: &quot;AwsBedrock&quot;,
+      &quot;Name&quot;: &quot;anthropic.claude-opus-4-8&quot;,
+      &quot;IsByo&quot;: false,
+      &quot;IsPreview&quot;: true,
+      &quot;MaxTokens&quot;: 128000
+    },
+    {
+      &quot;Provider&quot;: &quot;AwsBedrock&quot;,
+      &quot;Name&quot;: &quot;anthropic.claude-sonnet-4-20250514-v1:0&quot;,
+      &quot;IsByo&quot;: false,
+      &quot;IsPreview&quot;: false,
+      &quot;MaxTokens&quot;: 64000
+    },
+    {
+      &quot;Provider&quot;: &quot;AwsBedrock&quot;,
+      &quot;Name&quot;: &quot;anthropic.claude-sonnet-4-5-20250929-v1:0&quot;,
+      &quot;IsByo&quot;: false,
+      &quot;IsPreview&quot;: false,
+      &quot;MaxTokens&quot;: 64000
+    },
+    {
+      &quot;Provider&quot;: &quot;AwsBedrock&quot;,
+      &quot;Name&quot;: &quot;anthropic.claude-sonnet-4-6&quot;,
+      &quot;IsByo&quot;: false,
+      &quot;IsPrevie
+
+… (truncated, 203 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#10</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">33.99s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry get uipath.agent.autonomous --output json 2&gt;&amp;1 &gt; /tmp/reg_autonomous.json &amp;&amp; echo \&quot;done\&quot;&quot;,
+  &quot;description&quot;: &quot;Get autonomous agent node definition&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>done</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#11</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">39.19s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry get core.control.end --output json 2&gt;&amp;1 &gt; /tmp/reg_end.json &amp;&amp; echo \&quot;done\&quot;&quot;,
+  &quot;description&quot;: &quot;Get end node definition&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>done</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#12</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">7.79s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry get \&quot;uipath.agent.resource.context.index.billing-dispute-sop-index.cc45b9b4-dbf6-47b3-40ac-08debc0cec5b\&quot; --output json &gt; /tmp/reg_context.json &amp;&amp; echo \&quot;done\&quot;&quot;,
+  &quot;description&quot;: &quot;Get context index node definition&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>done</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#13</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">10.00s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-devcon-billing-dispute-analyst/BillingDisputeAnalyst/BillingDisputeAnalyst \\\n  &amp;&amp; uip agent init \&quot;.\&quot; --inline-in-flow --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Scaffold inline agent in flow project dir&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;AgentInitInline&quot;,
+  &quot;Data&quot;: {
+    &quot;Status&quot;: &quot;Inline agent created inside flow project&quot;,
+    &quot;Path&quot;: &quot;/work/output/artifacts/skill-flow-devcon-billing-dispute-analyst/BillingDisputeAnalyst/BillingDisputeAnalyst/475b63c4-9fc2-49e1-9fd9-b7ced3e4ae77&quot;,
+    &quot;ProjectId&quot;: &quot;475b63c4-9fc2-49e1-9fd9-b7ced3e4ae77&quot;,
+    &quot;Model&quot;: &quot;gpt-5.4&quot;,
+    &quot;NextSteps&quot;: &quot;# Edit agent.json to configure prompts and settings\n# Add an inline agent node to the flow referencing this agent:\n# The node must have model.source = projectId in the .flow JSON\n# Use the uipath-flow skill for flow node wiring guidance\n# Run refresh to migrate and generate bindings_v2.json in the parent flow:\nuip agent refresh \&quot;/work/output/artifacts/skill-flow-devcon-billing-dispute-analyst/BillingDisputeAnalyst/BillingDisputeAnalyst/475b63c4-9fc2-49e1-9fd9-b7ced3e4ae77\&quot; --inline-in-flow\n# Then validate the inline agent is ready for upload:\nuip agent validate \&quot;/work/output/artifacts/skill-flow-devcon-billing-dispute-analyst/BillingDisputeAnalyst/BillingDisputeAnalyst/475b63c4-9fc2-49e1-9fd9-b7ced3e4ae77\&quot; --inline-in-flow&quot;
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#14</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">234ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 -c \&quot;import json; d=json.load(open(&#x27;/tmp/reg_autonomous.json&#x27;)); print(json.dumps(d[&#x27;Data&#x27;][&#x27;Node&#x27;], indent=2))\&quot; 2&gt;&amp;1 | head -120&quot;,
+  &quot;description&quot;: &quot;Print autonomous agent definition&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;nodeType&quot;: &quot;uipath.agent.autonomous&quot;,
+  &quot;version&quot;: &quot;1.2&quot;,
+  &quot;category&quot;: &quot;agent&quot;,
+  &quot;description&quot;: &quot;AI agent that completes tasks autonomously&quot;,
+  &quot;tags&quot;: [
+    &quot;agentic&quot;,
+    &quot;ai&quot;,
+    &quot;autonomous&quot;,
+    &quot;agent&quot;
+  ],
+  &quot;sortOrder&quot;: 5,
+  &quot;supportsErrorHandling&quot;: true,
+  &quot;display&quot;: {
+    &quot;label&quot;: &quot;Autonomous Agent&quot;,
+    &quot;icon&quot;: &quot;autonomous-agent&quot;,
+    &quot;shape&quot;: &quot;rectangle&quot;
+  },
+  &quot;handleConfiguration&quot;: [
+    {
+      &quot;position&quot;: &quot;top&quot;,
+      &quot;handles&quot;: [
+        {
+          &quot;id&quot;: &quot;escalation&quot;,
+          &quot;type&quot;: &quot;source&quot;,
+          &quot;handleType&quot;: &quot;artifact&quot;,
+          &quot;label&quot;: &quot;Escalations&quot;,
+          &quot;showButton&quot;: true,
+          &quot;constraints&quot;: {
+            &quot;allowedTargets&quot;: [
+              {
+                &quot;nodeType&quot;: &quot;uipath.agent.resource.escalation&quot;
+              },
+              {
+                &quot;nodeType&quot;: &quot;uipath.agent.resource.escalation.*&quot;
+              }
+            ],
+            &quot;validationMessage&quot;: &quot;Only Agent Escalation nodes can connect here&quot;,
+            &quot;addNodePanel&quot;: {
+              &quot;searchScope&quot;: &quot;deep&quot;,
+              &quot;searchProviders&quot;: []
+            }
+          }
+        }
+      ]
+    },
+    {
+      &quot;position&quot;: &quot;bottom&quot;,
+      &quot;handles&quot;: [
+        {
+        
+
+… (truncated, 2003 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#15</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">438ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 -c \&quot;import json; d=json.load(open(&#x27;/tmp/reg_end.json&#x27;)); print(json.dumps(d[&#x27;Data&#x27;][&#x27;Node&#x27;], indent=2))\&quot; 2&gt;&amp;1 | head -80&quot;,
+  &quot;description&quot;: &quot;Print end node definition&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;nodeType&quot;: &quot;core.control.end&quot;,
+  &quot;version&quot;: &quot;1.0&quot;,
+  &quot;category&quot;: &quot;control-flow&quot;,
+  &quot;description&quot;: &quot;Mark the end of a workflow path&quot;,
+  &quot;tags&quot;: [
+    &quot;control-flow&quot;,
+    &quot;end&quot;,
+    &quot;finish&quot;,
+    &quot;complete&quot;
+  ],
+  &quot;sortOrder&quot;: 20,
+  &quot;display&quot;: {
+    &quot;label&quot;: &quot;End&quot;,
+    &quot;icon&quot;: &quot;circle-check&quot;,
+    &quot;shape&quot;: &quot;circle&quot;
+  },
+  &quot;handleConfiguration&quot;: [
+    {
+      &quot;position&quot;: &quot;left&quot;,
+      &quot;handles&quot;: [
+        {
+          &quot;id&quot;: &quot;input&quot;,
+          &quot;type&quot;: &quot;target&quot;,
+          &quot;handleType&quot;: &quot;input&quot;
+        }
+      ]
+    }
+  ],
+  &quot;model&quot;: {
+    &quot;type&quot;: &quot;bpmn:EndEvent&quot;
+  },
+  &quot;runtimeConstraints&quot;: {
+    &quot;exclude&quot;: [
+      &quot;api-function&quot;
+    ]
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#16</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">240ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 -c \&quot;import json; d=json.load(open(&#x27;/tmp/reg_context.json&#x27;)); print(json.dumps(d[&#x27;Data&#x27;][&#x27;Node&#x27;], indent=2))\&quot; 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Print context index node definition&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;nodeType&quot;: &quot;uipath.agent.resource.context.index.billing-dispute-sop-index.cc45b9b4-dbf6-47b3-40ac-08debc0cec5b&quot;,
+  &quot;version&quot;: &quot;1.0.0&quot;,
+  &quot;category&quot;: &quot;agent&quot;,
+  &quot;tags&quot;: [
+    &quot;agent-context&quot;,
+    &quot;index&quot;
+  ],
+  &quot;description&quot;: &quot;SOP grounding for the Billing Dispute Analyst agent.&quot;,
+  &quot;sortOrder&quot;: 505,
+  &quot;display&quot;: {
+    &quot;label&quot;: &quot;Billing Dispute SOP Index&quot;,
+    &quot;description&quot;: &quot;SOP grounding for the Billing Dispute Analyst agent.&quot;,
+    &quot;icon&quot;: &quot;file-text&quot;,
+    &quot;shape&quot;: &quot;circle&quot;
+  },
+  &quot;handleConfiguration&quot;: [
+    {
+      &quot;position&quot;: &quot;top&quot;,
+      &quot;handles&quot;: [
+        {
+          &quot;id&quot;: &quot;input&quot;,
+          &quot;type&quot;: &quot;target&quot;,
+          &quot;handleType&quot;: &quot;artifact&quot;,
+          &quot;constraints&quot;: {
+            &quot;maxConnections&quot;: 1,
+            &quot;allowedSources&quot;: [
+              {
+                &quot;nodeType&quot;: &quot;uipath.agent.autonomous&quot;,
+                &quot;handleId&quot;: &quot;context&quot;
+              },
+              {
+                &quot;nodeType&quot;: &quot;uipath.agent.conversational&quot;,
+                &quot;handleId&quot;: &quot;context&quot;
+              }
+            ],
+            &quot;validationMessage&quot;: &quot;Only Agent&#x27;s context handle can connect here&quot;
+          }
+        }
+      ]
+    }
+  ],
+  &quot;model&quot;: {
+    &quot;source&quot;: true
+  },
+  &quot;form&quot;: {
+  
+
+… (truncated, 8494 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#17</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">7ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-devcon-billing-dispute-analyst/BillingDisputeAnalyst/BillingDisputeAnalyst/BillingDisputeAnalyst.flow&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	{
+2	  &quot;id&quot;: &quot;0c5c5b2d-b0aa-4bc3-8bae-935b35cc9dd1&quot;,
+3	  &quot;version&quot;: &quot;1.8&quot;,
+4	  &quot;name&quot;: &quot;BillingDisputeAnalyst&quot;,
+5	  &quot;nodes&quot;: [
+6	    {
+7	      &quot;id&quot;: &quot;start&quot;,
+8	      &quot;type&quot;: &quot;core.trigger.manual&quot;,
+9	      &quot;typeVersion&quot;: &quot;1.0&quot;,
+10	      &quot;display&quot;: {
+11	        &quot;label&quot;: &quot;Manual trigger&quot;
+12	      },
+13	      &quot;inputs&quot;: {
+14	        &quot;entryPointId&quot;: &quot;c5cf1a1a-552c-47cf-aee9-c2c5cfa38424&quot;,
+15	        &quot;isDefaultEntryPoint&quot;: true
+16	      }
+17	    }
+18	  ],
+19	  &quot;edges&quot;: [],
+20	  &quot;definitions&quot;: [
+21	    {
+22	      &quot;nodeType&quot;: &quot;core.trigger.manual&quot;,
+23	      &quot;version&quot;: &quot;1.0&quot;,
+24	      &quot;category&quot;: &quot;trigger&quot;,
+25	      &quot;description&quot;: &quot;Start workflow manually&quot;,
+26	      &quot;tags&quot;: [
+27	        &quot;trigger&quot;,
+28	        &quot;start&quot;,
+29	        &quot;manual&quot;
+30	      ],
+31	      &quot;sortOrder&quot;: 40,
+32	      &quot;display&quot;: {
+33	        &quot;label&quot;: &quot;Manual trigger&quot;,
+34	        &quot;icon&quot;: &quot;play&quot;,
+35	        &quot;shape&quot;: &quot;circle&quot;
+36	      },
+37	      &quot;handleConfiguration&quot;: [
+38	        {
+39	          &quot;position&quot;: &quot;right&quot;,
+40	          &quot;handles&quot;: [
+41	            {
+42	              &quot;id&quot;: &quot;output&quot;,
+43	              &quot;type&quot;: &quot;source&quot;,
+44	              &quot;handleType&quot;: &quot;output&quot;,
+45	              &quot;showButton&quot;: true,
+46	              &quot;constrai
+
+… (truncated, 1053 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#18</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">17ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-devcon-billing-dispute-analyst/BillingDisputeAnalyst/BillingDisputeAnalyst/475b63c4-9fc2-49e1-9fd9-b7ced3e4ae77/agent.json&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	{
+2	  &quot;version&quot;: &quot;1.1.0&quot;,
+3	  &quot;settings&quot;: {
+4	    &quot;model&quot;: &quot;gpt-5.4&quot;,
+5	    &quot;maxTokens&quot;: 128000,
+6	    &quot;temperature&quot;: 0,
+7	    &quot;engine&quot;: &quot;basic-v2&quot;,
+8	    &quot;maxIterations&quot;: 25,
+9	    &quot;mode&quot;: &quot;standard&quot;
+10	  },
+11	  &quot;inputSchema&quot;: {
+12	    &quot;type&quot;: &quot;object&quot;,
+13	    &quot;properties&quot;: {}
+14	  },
+15	  &quot;outputSchema&quot;: {
+16	    &quot;type&quot;: &quot;object&quot;,
+17	    &quot;properties&quot;: {
+18	      &quot;content&quot;: {
+19	        &quot;type&quot;: &quot;string&quot;,
+20	        &quot;description&quot;: &quot;Output content&quot;
+21	      }
+22	    }
+23	  },
+24	  &quot;metadata&quot;: {
+25	    &quot;storageVersion&quot;: &quot;50.0.0&quot;,
+26	    &quot;isConversational&quot;: false,
+27	    &quot;showProjectCreationExperience&quot;: false
+28	  },
+29	  &quot;type&quot;: &quot;lowCode&quot;,
+30	  &quot;guardrails&quot;: [],
+31	  &quot;messages&quot;: [
+32	    {
+33	      &quot;role&quot;: &quot;system&quot;,
+34	      &quot;content&quot;: &quot;&quot;,
+35	      &quot;contentTokens&quot;: []
+36	    },
+37	    {
+38	      &quot;role&quot;: &quot;user&quot;,
+39	      &quot;content&quot;: &quot;&quot;,
+40	      &quot;contentTokens&quot;: []
+41	    }
+42	  ],
+43	  &quot;projectId&quot;: &quot;475b63c4-9fc2-49e1-9fd9-b7ced3e4ae77&quot;
+44	}
+45	</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#19</span>
+      <span class="tool-name">Glob</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">13ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;pattern&quot;: &quot;**/context/index.md&quot;,
+  &quot;path&quot;: &quot;/home/azureuser/projects/skills/skills&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/home/azureuser/projects/skills/skills/uipath-agents/references/lowcode/capabilities/context/index.md</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#20</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">5ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-agents/references/lowcode/capabilities/context/index.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Index Context (Context Grounding RAG)
+2	
+3	Walkthrough for adding a context resource backed by an ECS Context Grounding index. Used for RAG (retrieval-augmented generation) — the agent issues queries against the index and gets back relevant chunks.
+4	
+5	For other context variants, see [context.md](context.md).
+6	
+7	## When to Use
+8	
+9	- Agent needs to retrieve from a knowledge base of indexed documents
+10	- The index already exists in Context Grounding and is backed by an Orchestrator storage bucket. To create or manage that index from the CLI, see [uipath-platform/references/context-grounding/index-management.md](../../../../../uipath-platform/references/context-grounding/index-management.md)
+11	
+12	`uip solution resources refresh` emits an `index` binding into `bindings_v2.json`, resolves the backing storage bucket via ECS + Orchestrator, and writes all three artifacts automatically: `resources/solution_folder/index/&lt;IndexName&gt;.json`, `resources/solution_folder/bucket/orchestratorBucket/&lt;BucketName&gt;.json`, and two `debug_overwrites.json` entries (`kind: &quot;index&quot;`, `kind: &quot;bucket&quot;`). No manual solution-level authoring is required.
+13	
+14	**Only `contextType: &quot;index&quot;` with a Sto
+
+… (truncated, 13483 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#21</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">215ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 - &lt;&lt;&#x27;PY&#x27;\nimport json\nimport uuid\nimport os\n\nFLOW_DIR = \&quot;/work/output/artifacts/skill-flow-devcon-billing-dispute-analyst/BillingDisputeAnalyst/BillingDisputeAnalyst\&quot;\nAGENT_PROJECT_ID = \&quot;475b63c4-9fc2-49e1-9fd9-b7ced3e4ae77\&quot;\nAGENT_DIR = os.path.join(FLOW_DIR, AGENT_PROJECT_ID)\nCONTEXT_INDEX_NODE_TYPE = \&quot;uipath.agent.resource.context.index.billing-dispute-sop-index.cc45b9b4-dbf6-47b3-40ac-08… (8722 more chars)&quot;,
+  &quot;description&quot;: &quot;Write complete flow JSON, agent.json, and context resource.json&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Flow written. Context UUID: c107a974-1e04-48ae-b65c-48a1f1126ff3
+agent.json written
+context resource.json written: c107a974-1e04-48ae-b65c-48a1f1126ff3</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#22</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.54s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-devcon-billing-dispute-analyst/BillingDisputeAnalyst/BillingDisputeAnalyst \\\n  &amp;&amp; uip agent refresh \&quot;475b63c4-9fc2-49e1-9fd9-b7ced3e4ae77\&quot; --inline-in-flow \\\n     --bindings-target \&quot;$(pwd)/bindings_v2.json\&quot; --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Refresh inline agent to generate entry-points and bindings&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;AgentRefresh&quot;,
+  &quot;Data&quot;: {
+    &quot;Status&quot;: &quot;Refreshed — storage schema already at 50.0.0; artifacts regenerated&quot;,
+    &quot;ProjectDir&quot;: &quot;/work/output/artifacts/skill-flow-devcon-billing-dispute-analyst/BillingDisputeAnalyst/BillingDisputeAnalyst/475b63c4-9fc2-49e1-9fd9-b7ced3e4ae77&quot;,
+    &quot;Model&quot;: &quot;anthropic.claude-sonnet-4-6&quot;,
+    &quot;StorageVersion&quot;: &quot;50.0.0&quot;,
+    &quot;MigrationApplied&quot;: false,
+    &quot;Validated&quot;: {
+      &quot;Agent&quot;: true,
+      &quot;Resources&quot;: 1,
+      &quot;EvalSets&quot;: 0,
+      &quot;Evaluators&quot;: 0
+    },
+    &quot;InlineInFlow&quot;: true,
+    &quot;DerivedFilesGenerated&quot;: true,
+    &quot;DerivedFiles&quot;: 1
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#23</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.83s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-devcon-billing-dispute-analyst/BillingDisputeAnalyst/BillingDisputeAnalyst \\\n  &amp;&amp; uip agent validate \&quot;475b63c4-9fc2-49e1-9fd9-b7ced3e4ae77\&quot; --inline-in-flow --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Validate inline agent&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;AgentValidation&quot;,
+  &quot;Data&quot;: {
+    &quot;Status&quot;: &quot;Valid&quot;,
+    &quot;ProjectDir&quot;: &quot;/work/output/artifacts/skill-flow-devcon-billing-dispute-analyst/BillingDisputeAnalyst/BillingDisputeAnalyst/475b63c4-9fc2-49e1-9fd9-b7ced3e4ae77&quot;,
+    &quot;Model&quot;: &quot;anthropic.claude-sonnet-4-6&quot;,
+    &quot;StorageVersion&quot;: &quot;50.0.0&quot;,
+    &quot;Validated&quot;: {
+      &quot;Agent&quot;: true,
+      &quot;Resources&quot;: 1,
+      &quot;EvalSets&quot;: 0,
+      &quot;Evaluators&quot;: 0
+    },
+    &quot;InlineInFlow&quot;: true
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#24</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">9.85s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-devcon-billing-dispute-analyst/BillingDisputeAnalyst \\\n  &amp;&amp; uip solution resources refresh --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Refresh solution resources to wire index bindings&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>2026-07-24 17:18:24 INFO  [ResourceBuilder:ReconcileProjectsCommandHandler] Reconcile projects for solution {solutionKey} [object Object]
+2026-07-24 17:18:24 INFO  [ResourceBuilder:MultiFileSolutionDefinitionProvider] Reading multi-file solution definition for solution %s /work/output/artifacts/skill-flow-devcon-billing-dispute-analyst/BillingDisputeAnalyst
+2026-07-24 17:18:24 INFO  [ResourceBuilder:SolutionsMetadataReader] Reading metadata from %s. SolutionsMetadataReader
+2026-07-24 17:18:25 INFO  [ResourceBuilder:MultiFileSolutionDefinitionProvider] Reading multi-file solution definition for solution %s /work/output/artifacts/skill-flow-devcon-billing-dispute-analyst/BillingDisputeAnalyst
+2026-07-24 17:18:25 INFO  [ResourceBuilder:AddOrUpdateResourceToSolutionCommandHandler] Add or update resource cc45b9b4-dbf6-47b3-40ac-08debc0cec5b of type index to solution.
+2026-07-24 17:18:25 INFO  [ResourceBuilder:SolutionsMetadataReader] Reading metadata from %s. SolutionsMetadataReader
+2026-07-24 17:18:25 INFO  [ResourceBuilder:ImportResourceHelper] ExportResourceAsync: Exporting resource cc45b9b4-dbf6-47b3-40ac-08debc0cec5b from ecs.uipath.com
+2026-07-24 17:18:25 INFO  [ResourceBuilder:Im
+
+… (truncated, 6389 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#25</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">14.78s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-devcon-billing-dispute-analyst/BillingDisputeAnalyst/BillingDisputeAnalyst \\\n  &amp;&amp; uip maestro flow validate BillingDisputeAnalyst.flow --output json 2&gt;&amp;1 \\\n  &amp;&amp; uip maestro flow format BillingDisputeAnalyst.flow --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Validate and format the flow&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>[ManifestClient] fetchDynamicNodes ok: total=206 agent context nodes=2 external agent nodes=6 orchestrator nodes=158 IXP nodes=40
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FlowValidate&quot;,
+  &quot;Data&quot;: {
+    &quot;File&quot;: &quot;/work/output/artifacts/skill-flow-devcon-billing-dispute-analyst/BillingDisputeAnalyst/BillingDisputeAnalyst/BillingDisputeAnalyst.flow&quot;,
+    &quot;Status&quot;: &quot;Valid&quot;
+  }
+}
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FlowFormat&quot;,
+  &quot;Data&quot;: {
+    &quot;File&quot;: &quot;BillingDisputeAnalyst.flow&quot;,
+    &quot;NodesTotal&quot;: 4,
+    &quot;EdgesTotal&quot;: 3,
+    &quot;NodesRepositioned&quot;: 3,
+    &quot;NodesResized&quot;: 1,
+    &quot;SubflowsTidied&quot;: 0,
+    &quot;VariableCount&quot;: 5
+  },
+  &quot;Instructions&quot;: &quot;Repositioned 3 of 4 nodes. Set canonical size on 1 node(s)&quot;
+}</pre>
+    
+  </div>
+</details>
+
+</div>
+
+<h2>Command Telemetry</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Total</div><div class="value">26</div></div>
+    <div class="stat"><div class="label">Successful</div><div class="value">26 (100%)</div></div>
+    <div class="stat"><div class="label">Failed</div><div class="value">0</div></div>
+    <div class="stat"><div class="label">Avg / cmd</div><div class="value">7.57s</div></div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 2fr;gap:16px;margin-top:12px">
+    <div>
+      <h4>By Tool</h4>
+      <table>
+        <thead><tr><th>Tool</th><th>Count</th></tr></thead>
+        <tbody><tr><td class='mono'>Bash</td><td>17</td></tr><tr><td class='mono'>Read</td><td>7</td></tr><tr><td class='mono'>Skill</td><td>1</td></tr><tr><td class='mono'>Glob</td><td>1</td></tr></tbody>
+      </table>
+    </div>
+    <div>
+      <h4>Slowest</h4>
+      <table>
+        <thead><tr><th>Tool</th><th>Duration</th><th>Parameters</th></tr></thead>
+        <tbody><tr><td class='mono'>Bash</td><td>39.19s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro flow registry get core.co...</td></tr><tr><td class='mono'>Bash</td><td>33.99s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro flow registry get uipath....</td></tr><tr><td class='mono'>Bash</td><td>29.05s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip agent model list --output json 2&gt;...</td></tr><tr><td class='mono'>Bash</td><td>25.32s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro flow registry search &quot;uip...</td></tr><tr><td class='mono'>Bash</td><td>19.87s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;cd /work/output/artifacts/skill-flow-...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+  <p><strong>Most Common Pattern:</strong> <code>Bash → Bash → Bash</code></p><p><strong>Skill Tool Invoked:</strong> 1 time(s)</p>
+</div>
+
+<h2>Generation Metrics</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Total Latency</div><div class="value">6m 39s</div></div>
+    <div class="stat"><div class="label">Turns</div><div class="value">1</div></div>
+    <div class="stat"><div class="label">Assistant Turns</div><div class="value">43</div></div>
+    <div class="stat"><div class="label">Avg Turn Latency</div><div class="value">5m 29s</div></div>
+    
+  </div>
+</div>
+
+<h2>Token Usage</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Input (uncached)</div><div class="value">13,049</div></div>
+    <div class="stat"><div class="label">Output</div><div class="value">18,020</div></div>
+    <div class="stat"><div class="label">Cache Write</div><div class="value">69,413</div></div>
+    <div class="stat"><div class="label">Cache Read</div><div class="value">890,326</div></div>
+    <div class="stat"><div class="label">Total</div><div class="value">990,808</div></div>
+    <div class="stat"><div class="label">Cost</div><div class="value">$0.8368</div></div>
+  </div>
+</div>
+
+<h2>Agent Settings</h2>
+<div class="card" style="padding:0">
+  <table>
+    <tbody><tr><td class='mono dim'>Permission Mode</td><td>acceptEdits</td></tr><tr><td class='mono dim'>Allowed Tools</td><td>Skill, Bash, Read, Write, Edit, Glob, Grep</td></tr><tr><td class='mono dim'>Model</td><td>us.anthropic.claude-sonnet-4-6</td></tr><tr><td class='mono dim'>Max Turns</td><td>120</td></tr><tr><td class='mono dim'>System Prompt</td><td>You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted. </td></tr><tr><td class='mono dim'>Plugins</td><td>/home/azureuser/projects/skills</td></tr></tbody>
+  </table>
+</div>
+
+<h2>Environment</h2>
+<div class="card" style="padding:0">
+  <table>
+    <tbody><tr><td class='mono dim'>git_commit</td><td>unknown</td></tr><tr><td class='mono dim'>skills_git_commit</td><td>unknown</td></tr><tr><td class='mono dim'>cli_version</td><td>1.199.0-dev.7970</td></tr><tr><td class='mono dim'>tool_plugins</td><td>{&#x27;admin-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;agent-tool&#x27;: &#x27;1.199.0-dev.7965&#x27;, &#x27;agenthub-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;aops-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;api-workflow-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;codedagent-tool&#x27;: &#x27;1.199.0-dev.7965&#x27;, &#x27;codedapp-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;coder-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;context-grounding-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;conversational-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;data-fabric-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;docsai-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;functions-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;gov-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;insights-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;integrationservice-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;ixp-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;llm-gateway-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;llmgw-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;maestro-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;orchestrator-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;platform-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;pm-tool&#x27;: &#x27;1.199.0-dev.7969&#x27;, &#x27;rpa-legacy-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;rpa-tool&#x27;: &#x27;1.199.0-dev.20260722.4&#x27;, &#x27;solution-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;tasks-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;test-manager-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;traces-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;vertical-solutions-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;}</td></tr><tr><td class='mono dim'>coder_eval</td><td>0.8.8</td></tr><tr><td class='mono dim'>claude_code_cli</td><td>2.1.177 (Claude Code)</td></tr><tr><td class='mono dim'>uv</td><td>uv 0.11.28 (x86_64-unknown-linux-gnu)</td></tr><tr><td class='mono dim'>anthropic</td><td>0.102.0</td></tr><tr><td class='mono dim'>openai</td><td>2.47.0</td></tr><tr><td class='mono dim'>pydantic</td><td>2.12.5</td></tr><tr><td class='mono dim'>api_routing</td><td>aws_bedrock</td></tr><tr><td class='mono dim'>aws_region</td><td>us-east-2</td></tr><tr><td class='mono dim'>bedrock_model</td><td>us.anthropic.claude-sonnet-4-6</td></tr></tbody>
+  </table>
+</div>
+
+<footer>Generated by coder_eval · 2026-07-24T17:20:13</footer>
+</div>
+<script>
+function toggleTheme() {
+  document.documentElement.classList.toggle('light');
+  try {
+    const mode = document.documentElement.classList.contains('light') ? 'light' : 'dark';
+    localStorage.setItem('coder-eval-theme', mode);
+  } catch (e) { /* ignore */ }
+}
+(function() {
+  try {
+    if (localStorage.getItem('coder-eval-theme') === 'light') {
+      document.documentElement.classList.add('light');
+    }
+  } catch (e) { /* ignore */ }
+})();
+</script>
+</body>
+</html>

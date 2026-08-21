@@ -1,0 +1,255 @@
+[
+  {
+    "id": "inv_001",
+    "filename": "invoice_acme_tech_001.pdf",
+    "vendor_name": "Acme Technology Solutions Inc.",
+    "vendor_address": "450 Silicon Valley Blvd, Suite 200\nSan Jose, CA 95110",
+    "vendor_email": "billing@acmetech.com",
+    "vendor_phone": "+1 (408) 555-0192",
+    "bill_to_name": "GlobalCorp Procurement",
+    "bill_to_address": "1200 Corporate Plaza, Floor 8\nNew York, NY 10001",
+    "invoice_number": "ACM-2024-00891",
+    "invoice_date": "2024-03-15",
+    "due_date": "2024-04-14",
+    "po_number": "PO-GC-44720",
+    "payment_terms": "Net 30",
+    "currency": "USD",
+    "line_items": [
+      {
+        "description": "Enterprise SaaS License \u2014 Q2 2024",
+        "qty": 50,
+        "unit_price": 120.0,
+        "total": 6000.0
+      },
+      {
+        "description": "Professional Services \u2014 System Integration",
+        "qty": 8,
+        "unit_price": 250.0,
+        "total": 2000.0
+      },
+      {
+        "description": "24/7 Premium Support Package",
+        "qty": 1,
+        "unit_price": 1500.0,
+        "total": 1500.0
+      },
+      {
+        "description": "On-site Training (2 days)",
+        "qty": 2,
+        "unit_price": 400.0,
+        "total": 800.0
+      }
+    ],
+    "subtotal": 10300.0,
+    "tax_rate": 8.5,
+    "tax_amount": 875.5,
+    "total": 11175.5,
+    "notes": "Please reference invoice number in payment. Wire transfer preferred."
+  },
+  {
+    "id": "inv_002",
+    "filename": "invoice_summit_supplies_002.pdf",
+    "vendor_name": "Summit Office Supplies Ltd.",
+    "vendor_address": "88 Commerce Street\nChicago, IL 60601",
+    "vendor_email": "accounts@summitsupplies.com",
+    "vendor_phone": "+1 (312) 555-7834",
+    "bill_to_name": "GlobalCorp Facilities",
+    "bill_to_address": "1200 Corporate Plaza\nNew York, NY 10001",
+    "invoice_number": "SOS-INV-20240312",
+    "invoice_date": "2024-03-12",
+    "due_date": "2024-03-27",
+    "po_number": "PO-GC-44650",
+    "payment_terms": "Net 15",
+    "currency": "USD",
+    "line_items": [
+      {
+        "description": "A4 Copy Paper (Case of 10 reams)",
+        "qty": 20,
+        "unit_price": 42.5,
+        "total": 850.0
+      },
+      {
+        "description": "Ergonomic Office Chair \u2014 Model EX500",
+        "qty": 5,
+        "unit_price": 389.0,
+        "total": 1945.0
+      },
+      {
+        "description": "Standing Desk Converter",
+        "qty": 3,
+        "unit_price": 215.0,
+        "total": 645.0
+      },
+      {
+        "description": "Monitor Arm Dual Mount",
+        "qty": 5,
+        "unit_price": 89.99,
+        "total": 449.95
+      },
+      {
+        "description": "USB-C Hub 7-port",
+        "qty": 10,
+        "unit_price": 34.99,
+        "total": 349.9
+      }
+    ],
+    "subtotal": 4239.85,
+    "tax_rate": 10.25,
+    "tax_amount": 434.59,
+    "total": 4674.44,
+    "notes": "Delivery within 5-7 business days. Shipping included."
+  },
+  {
+    "id": "inv_003",
+    "filename": "invoice_rapid_logistics_003.pdf",
+    "vendor_name": "Rapid Logistics & Freight Co.",
+    "vendor_address": "7200 Industrial Park Way\nDallas, TX 75201",
+    "vendor_email": "invoices@rapidlogistics.com",
+    "vendor_phone": "+1 (214) 555-3301",
+    "bill_to_name": "GlobalCorp Operations",
+    "bill_to_address": "500 Warehouse Drive\nElizabeth, NJ 07201",
+    "invoice_number": "RL-2024-8847",
+    "invoice_date": "2024-03-20",
+    "due_date": "2024-04-19",
+    "po_number": "PO-GC-44801",
+    "payment_terms": "Net 30",
+    "currency": "USD",
+    "line_items": [
+      {
+        "description": "Freight Shipment \u2014 Chicago to Newark (FTL)",
+        "qty": 1,
+        "unit_price": 3200.0,
+        "total": 3200.0
+      },
+      {
+        "description": "Hazmat Handling Surcharge",
+        "qty": 1,
+        "unit_price": 450.0,
+        "total": 450.0
+      },
+      {
+        "description": "Fuel Surcharge (18% of base freight)",
+        "qty": 1,
+        "unit_price": 576.0,
+        "total": 576.0
+      },
+      {
+        "description": "Liftgate Service",
+        "qty": 1,
+        "unit_price": 125.0,
+        "total": 125.0
+      }
+    ],
+    "subtotal": 4351.0,
+    "tax_rate": 0.0,
+    "tax_amount": 0.0,
+    "total": 4351.0,
+    "notes": "Freight services are tax-exempt per TX Code 151.335. Bill of Lading: BOL-2024-88471."
+  },
+  {
+    "id": "inv_004",
+    "filename": "invoice_cloudwave_004.pdf",
+    "vendor_name": "CloudWave Infrastructure LLC",
+    "vendor_address": "1 Cloud Campus Drive\nSeattle, WA 98101",
+    "vendor_email": "billing@cloudwave.io",
+    "vendor_phone": "+1 (206) 555-9020",
+    "bill_to_name": "GlobalCorp IT Department",
+    "bill_to_address": "1200 Corporate Plaza, Floor 12\nNew York, NY 10001",
+    "invoice_number": "CW-0029541",
+    "invoice_date": "2024-03-01",
+    "due_date": "2024-03-31",
+    "po_number": "PO-GC-44501",
+    "payment_terms": "Due on Receipt",
+    "currency": "USD",
+    "line_items": [
+      {
+        "description": "Cloud Compute \u2014 500 vCPU-hours",
+        "qty": 500,
+        "unit_price": 0.096,
+        "total": 48.0
+      },
+      {
+        "description": "Cloud Storage \u2014 50 TB (March 2024)",
+        "qty": 50,
+        "unit_price": 23.0,
+        "total": 1150.0
+      },
+      {
+        "description": "Data Transfer Egress \u2014 12 TB",
+        "qty": 12,
+        "unit_price": 90.0,
+        "total": 1080.0
+      },
+      {
+        "description": "Managed Kubernetes Service (3 clusters)",
+        "qty": 3,
+        "unit_price": 150.0,
+        "total": 450.0
+      },
+      {
+        "description": "CDN Bandwidth \u2014 8 TB",
+        "qty": 8,
+        "unit_price": 85.0,
+        "total": 680.0
+      },
+      {
+        "description": "DDoS Protection \u2014 Enterprise Tier",
+        "qty": 1,
+        "unit_price": 500.0,
+        "total": 500.0
+      }
+    ],
+    "subtotal": 3908.0,
+    "tax_rate": 10.1,
+    "tax_amount": 394.71,
+    "total": 4302.71,
+    "notes": "Usage-based billing. Detailed usage report attached. Auto-pay enabled."
+  },
+  {
+    "id": "inv_005",
+    "filename": "invoice_meridian_consulting_005.pdf",
+    "vendor_name": "Meridian Business Consulting Group",
+    "vendor_address": "333 Madison Avenue, 22nd Floor\nNew York, NY 10017",
+    "vendor_email": "finance@meridianconsulting.com",
+    "vendor_phone": "+1 (212) 555-4400",
+    "bill_to_name": "GlobalCorp Executive Office",
+    "bill_to_address": "1200 Corporate Plaza, Floor 20\nNew York, NY 10001",
+    "invoice_number": "MCG-2024-Q1-047",
+    "invoice_date": "2024-03-29",
+    "due_date": "2024-04-28",
+    "po_number": "PO-GC-44900",
+    "payment_terms": "Net 30",
+    "currency": "USD",
+    "line_items": [
+      {
+        "description": "Strategic Planning Workshops (Week of March 11)",
+        "qty": 3,
+        "unit_price": 4500.0,
+        "total": 13500.0
+      },
+      {
+        "description": "Market Analysis Report \u2014 APAC Expansion",
+        "qty": 1,
+        "unit_price": 8000.0,
+        "total": 8000.0
+      },
+      {
+        "description": "Executive Coaching Sessions \u2014 12 hours",
+        "qty": 12,
+        "unit_price": 600.0,
+        "total": 7200.0
+      },
+      {
+        "description": "Travel & Expenses (receipts attached)",
+        "qty": 1,
+        "unit_price": 2340.75,
+        "total": 2340.75
+      }
+    ],
+    "subtotal": 31040.75,
+    "tax_rate": 8.875,
+    "tax_amount": 2754.87,
+    "total": 33795.62,
+    "notes": "Engagement: GlobalCorp Q1 2024 Strategy Initiative. SOW ref: MCG-SOW-2024-003. Net 30 from invoice date."
+  }
+]

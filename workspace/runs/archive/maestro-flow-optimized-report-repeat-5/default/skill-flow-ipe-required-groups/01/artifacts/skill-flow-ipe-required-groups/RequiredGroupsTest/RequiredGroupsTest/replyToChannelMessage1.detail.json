@@ -1,0 +1,15 @@
+{
+  "connectionId": "<TEAMS_CONNECTION_ID>",
+  "folderKey": "<ORCHESTRATOR_FOLDER_KEY>",
+  "method": "POST",
+  "endpoint": "/normalised-teams/{team_id}/channels/{channel_id}/messages/{message_id}/replies-v2/drive/item",
+  "pathParameters": {
+    "team_id": "<TEAM_ID>",
+    "channel_id": "<CHANNEL_ID>",
+    "message_id": "<MESSAGE_ID>"
+  },
+  "bodyParameters": {
+    "body.content": "Reply with attachments",
+    "attachmentIds": ["<SHAREPOINT_FILE_ID_1>", "<SHAREPOINT_FILE_ID_2>"]
+  }
+}

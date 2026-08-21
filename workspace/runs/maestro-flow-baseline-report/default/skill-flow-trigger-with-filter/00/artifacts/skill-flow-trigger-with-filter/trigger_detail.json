@@ -1,0 +1,145 @@
+{
+  "_comment": [
+    "Outlook connector trigger configuration for UiPath Flow.",
+    "Node type  : uipath.connector.trigger.outlook.email-received",
+    "  (or the tenant-specific key returned by:",
+    "    uip maestro flow registry search 'outlook' trigger --output json)",
+    "",
+    "CLI ownership — this entire block is supplied to:",
+    "  uip maestro flow node configure <PROJECT>.flow <triggerId> --detail '<this JSON>' --output json",
+    "",
+    "Placeholder values that require a live tenant to resolve are marked <PLACEHOLDER>.",
+    "Steps that need a live connection are documented inline."
+  ],
+
+  "connectionId": "<OUTLOOK_CONNECTION_UUID>",
+  "_connectionId_note": [
+    "Resolve with:  uip is connections list 'outlook' --all-folders --output json",
+    "Pick the enabled connection (prefer IsDefault: Yes) and copy its Id.",
+    "If the trigger object's byoaConnection flag is true (check via",
+    "  uip is triggers objects 'outlook' 'EMAIL_RECEIVED' --connection-id <id>),",
+    "re-run with --byoa:  uip is connections list 'outlook' --byoa --all-folders --output json"
+  ],
+
+  "folderKey": "<ORCHESTRATOR_FOLDER_KEY>",
+  "_folderKey_note": [
+    "Orchestrator folder key scoping this connection.",
+    "Retrieve with:  uip is connections list 'outlook' --all-folders --output json",
+    "Use the FolderKey field from the same row as connectionId above."
+  ],
+
+  "eventMode": "<webhooks|polling>",
+  "_eventMode_note": [
+    "Read from:  uip maestro flow registry get uipath.connector.trigger.outlook.email-received",
+    "              --connection-id <id> --output json",
+    "Copy the eventMode field verbatim ('webhooks' or 'polling').",
+    "NOTE: webhook triggers cannot be tested with 'uip maestro flow debug' — they require",
+    "a full Orchestrator deploy. Polling triggers support local debug."
+  ],
+
+  "eventParameters": {
+    "parentFolderId": "<INBOX_FOLDER_ID>",
+    "_parentFolderId_note": [
+      "The Outlook mail folder to watch (typically the Inbox).",
+      "Resolve with:",
+      "  uip is resources run list 'outlook' 'MailFolder'",
+      "    --connection-id <OUTLOOK_CONNECTION_UUID> --output json",
+      "Find the entry whose displayName is 'Inbox' and copy its id.",
+      "Paginate (Data.Pagination.HasMore / --query 'nextPage=<token>') until found.",
+      "WARNING: this ID is scoped to the specific authenticated connection —",
+      "never reuse an ID from another flow or connection."
+    ]
+  },
+
+  "queryParameters": {
+    "sharedMailboxAddress": "",
+    "_sharedMailboxAddress_note": [
+      "Leave empty string for the authenticated user's own mailbox.",
+      "Set to a shared mailbox SMTP address (e.g. 'shared@contoso.com') to monitor",
+      "a delegated mailbox instead.  Resolve from:",
+      "  uip is triggers objects 'outlook' 'EMAIL_RECEIVED' --connection-id <id> --output json",
+      "and check parameters[].type == 'query' for this field."
+    ]
+  },
+
+  "filter": {
+    "_filter_note": [
+      "Structured filter tree compiled by the CLI into a JMESPath filterExpression.",
+      "Do NOT pass 'filterExpression' directly — the CLI rejects it.",
+      "Field ids come from filterFields.fields[].name returned by:",
+      "  uip maestro flow registry get uipath.connector.trigger.outlook.email-received",
+      "    --connection-id <id> --output json",
+      "Typical Outlook filterFields include: subject, from, hasAttachment, importance, …",
+      "groupOperator 0 = AND, 1 = OR."
+    ],
+    "groupOperator": 0,
+    "index": 0,
+    "filters": [
+      {
+        "id": "subject",
+        "operator": "Contains",
+        "value": {
+          "value": "good day",
+          "rawString": "\"good day\"",
+          "isLiteral": true
+        }
+      },
+      {
+        "id": "from",
+        "operator": "Equals",
+        "value": {
+          "value": "abc@xyz.com",
+          "rawString": "\"abc@xyz.com\"",
+          "isLiteral": true
+        }
+      }
+    ],
+    "groups": []
+  },
+
+  "_full_node_configure_command": [
+    "After resolving all placeholders above, run:",
+    "",
+    "  uip maestro flow node configure <PROJECT>.flow <triggerId> \\",
+    "    --detail \"$(cat trigger_detail_resolved.json)\" --output json",
+    "",
+    "Where trigger_detail_resolved.json is a copy of this file with every",
+    "<PLACEHOLDER> replaced by its live value and all '_*_note' / '_comment'",
+    "keys removed.  The minimal resolved shape is:",
+    "",
+    "  {",
+    "    \"connectionId\":    \"<UUID>\",",
+    "    \"folderKey\":       \"<KEY>\",",
+    "    \"eventMode\":       \"polling\",",
+    "    \"eventParameters\": { \"parentFolderId\": \"<ID>\" },",
+    "    \"queryParameters\": { \"sharedMailboxAddress\": \"\" },",
+    "    \"filter\": {",
+    "      \"groupOperator\": 0,",
+    "      \"index\": 0,",
+    "      \"filters\": [",
+    "        {",
+    "          \"id\": \"subject\",",
+    "          \"operator\": \"Contains\",",
+    "          \"value\": { \"value\": \"good day\", \"rawString\": \"\\\"good day\\\"\", \"isLiteral\": true }",
+    "        },",
+    "        {",
+    "          \"id\": \"from\",",
+    "          \"operator\": \"Equals\",",
+    "          \"value\": { \"value\": \"abc@xyz.com\", \"rawString\": \"\\\"abc@xyz.com\\\"\", \"isLiteral\": true }",
+    "        }",
+    "      ]",
+    "    }",
+    "  }"
+  ],
+
+  "_discovery_commands": {
+    "_note": "Run these commands (in order) against a live tenant to fill in the placeholders.",
+    "1_find_connector_trigger_node_type": "uip maestro flow registry search 'outlook' trigger --output json --output-filter \"[*].{NodeType:NodeType,DisplayName:DisplayName,Description:Description}\"",
+    "2_list_connections": "uip is connections list 'outlook' --all-folders --output json",
+    "3_check_trigger_object_and_byoa_flag": "uip is triggers objects 'outlook' 'EMAIL_RECEIVED' --connection-id <OUTLOOK_CONNECTION_UUID> --output json",
+    "4_describe_trigger_fields": "uip is triggers describe 'outlook' 'EMAIL_RECEIVED' 'Message' --connection-id <OUTLOOK_CONNECTION_UUID> --output json",
+    "5_get_enriched_registry_metadata": "uip maestro flow registry get uipath.connector.trigger.outlook.email-received --connection-id <OUTLOOK_CONNECTION_UUID> --output json",
+    "6_resolve_inbox_folder_id": "uip is resources run list 'outlook' 'MailFolder' --connection-id <OUTLOOK_CONNECTION_UUID> --output json",
+    "7_ping_connection_health": "uip is connections ping <OUTLOOK_CONNECTION_UUID> --output json"
+  }
+}

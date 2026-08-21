@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+    xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+    xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+    xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+    xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:uipath="http://uipath.org/schema/bpmn"
+    id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn"
+    exporter="UiPath (https://bpmn.uipath.com)" exporterVersion="1.0">
+
+  <bpmn:process id="Process_1" isExecutable="true">
+    <bpmn:extensionElements>
+      <uipath:migrationVersion version="11.5" />
+      <uipath:variables version="v1">
+        <!-- Output variable for the HITL approval task response -->
+        <uipath:inputOutput id="Var_ApprovalResponse" name="ApprovalResponse" type="object" />
+        <!-- Output variable for the RPA StartJob response -->
+        <uipath:inputOutput id="Var_ProvisioningJobResponse" name="ProvisioningJobResponse" type="object" />
+      </uipath:variables>
+    </bpmn:extensionElements>
+
+    <!-- Manual start event: a human actor kicks off the process -->
+    <bpmn:startEvent id="StartEvent_1" name="Employee Access Request">
+      <bpmn:outgoing>Flow_StartToHITL</bpmn:outgoing>
+    </bpmn:startEvent>
+
+    <!-- HITL approval task — Actions.HITL shell on bpmn:UserTask.
+         Context placeholders are synthetic; no real app/action keys are used.
+         appId:      placeholder App Id (resolved before publishing)
+         appVersion: placeholder App Version
+         actions:    placeholder comma-separated action names
+         key:        placeholder unique task key
+         taskTitle:  human-readable title shown to the approver -->
+    <bpmn:userTask id="Task_HITLApproval" name="Approve Access Request">
+      <bpmn:extensionElements>
+        <uipath:activity version="v1">
+          <uipath:type value="Actions.HITL" version="v1" />
+          <uipath:context>
+            <uipath:input name="appId" value="PLACEHOLDER_APP_ID" />
+            <uipath:input name="appVersion" value="1" />
+            <uipath:input name="actions" value="Approve,Reject" />
+            <uipath:input name="key" value="PLACEHOLDER_TASK_KEY" />
+            <uipath:input name="taskTitle" value="Review Employee Access Request" />
+          </uipath:context>
+          <uipath:input name="HitlTaskArguments" type="json" target="bodyField"><![CDATA[{}]]></uipath:input>
+          <uipath:output name="Process response" type="Actions.HITL" var="Var_ApprovalResponse" />
+        </uipath:activity>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_StartToHITL</bpmn:incoming>
+      <bpmn:outgoing>Flow_HITLToRPA</bpmn:outgoing>
+    </bpmn:userTask>
+
+    <!-- RPA provisioning task — Orchestrator.StartJob shell on bpmn:ServiceTask.
+         Context placeholders are synthetic; no real release keys or folder ids are used.
+         releaseKey:  placeholder process GUID (resolved before publishing)
+         folderId:    placeholder Orchestrator folder id
+         folderPath:  placeholder folder path string
+         name:        human-readable job label -->
+    <bpmn:serviceTask id="Task_RPAProvisioning" name="Provision Access (RPA Job)">
+      <bpmn:extensionElements>
+        <uipath:activity version="v1">
+          <uipath:type value="Orchestrator.StartJob" version="v1" />
+          <uipath:context>
+            <uipath:input name="releaseKey" value="PLACEHOLDER_RELEASE_KEY" />
+            <uipath:input name="folderId" value="PLACEHOLDER_FOLDER_ID" />
+            <uipath:input name="folderPath" value="PLACEHOLDER_FOLDER_PATH" />
+            <uipath:input name="name" value="ProvisionAccessJob" />
+          </uipath:context>
+          <uipath:input name="JobArguments" type="json" target="bodyField"><![CDATA[{}]]></uipath:input>
+          <uipath:output name="Process response" type="Orchestrator.RunJob" var="Var_ProvisioningJobResponse" />
+        </uipath:activity>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_HITLToRPA</bpmn:incoming>
+      <bpmn:outgoing>Flow_RPAToEnd</bpmn:outgoing>
+    </bpmn:serviceTask>
+
+    <bpmn:endEvent id="EndEvent_1" name="Access Provisioned">
+      <bpmn:incoming>Flow_RPAToEnd</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <!-- Sequence flows -->
+    <bpmn:sequenceFlow id="Flow_StartToHITL"  sourceRef="StartEvent_1"     targetRef="Task_HITLApproval" />
+    <bpmn:sequenceFlow id="Flow_HITLToRPA"    sourceRef="Task_HITLApproval" targetRef="Task_RPAProvisioning" />
+    <bpmn:sequenceFlow id="Flow_RPAToEnd"     sourceRef="Task_RPAProvisioning" targetRef="EndEvent_1" />
+  </bpmn:process>
+
+  <!-- BPMNDiagram placeholder — will be replaced by generate_diagram.py -->
+
+
+  <bpmndi:BPMNDiagram id="Diagram_1">
+    <bpmndi:BPMNPlane id="Plane_1" bpmnElement="Process_1">
+      <bpmndi:BPMNShape id="S_EndEvent_1" bpmnElement="EndEvent_1"><dc:Bounds x="576" y="100" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_StartEvent_1" bpmnElement="StartEvent_1"><dc:Bounds x="160" y="100" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Task_HITLApproval" bpmnElement="Task_HITLApproval"><dc:Bounds x="256" y="100" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Task_RPAProvisioning" bpmnElement="Task_RPAProvisioning"><dc:Bounds x="416" y="100" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="E_Flow_HITLToRPA" bpmnElement="Flow_HITLToRPA"><di:waypoint x="306" y="140" /><di:waypoint x="466" y="140" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_RPAToEnd" bpmnElement="Flow_RPAToEnd"><di:waypoint x="466" y="140" /><di:waypoint x="594" y="118" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_StartToHITL" bpmnElement="Flow_StartToHITL"><di:waypoint x="178" y="118" /><di:waypoint x="306" y="140" /></bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+    xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+    xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+    xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+    xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:uipath="http://uipath.org/schema/bpmn"
+    id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn"
+    exporter="UiPath (https://bpmn.uipath.com)" exporterVersion="1.0">
+  <bpmn:process id="Process_1" isExecutable="true">
+    <bpmn:extensionElements>
+      <uipath:migrationVersion version="11.5" />
+      <uipath:variables version="v1">
+        <uipath:inputOutput id="Var_OperandA" name="operandA" type="number" elementId="Start_1" />
+        <uipath:inputOutput id="Var_OperandB" name="operandB" type="number" elementId="Start_1" />
+        <uipath:inputOutput id="Var_Operator" name="operator" type="string" elementId="Start_1" />
+        <uipath:inputOutput id="Var_Result" name="result" type="number" />
+      </uipath:variables>
+    </bpmn:extensionElements>
+
+    <!-- Manual start with entry point -->
+    <bpmn:startEvent id="Start_1" name="Start">
+      <bpmn:extensionElements>
+        <uipath:entryPointId value="EntryPoint_1" />
+      </bpmn:extensionElements>
+      <bpmn:outgoing>Flow_StartToGw</bpmn:outgoing>
+    </bpmn:startEvent>
+
+    <!-- Exclusive gateway routing on operator -->
+    <bpmn:exclusiveGateway id="Gw_Route" name="operator?" default="Flow_GwToDivide">
+      <bpmn:incoming>Flow_StartToGw</bpmn:incoming>
+      <bpmn:outgoing>Flow_GwToAdd</bpmn:outgoing>
+      <bpmn:outgoing>Flow_GwToSubtract</bpmn:outgoing>
+      <bpmn:outgoing>Flow_GwToMultiply</bpmn:outgoing>
+      <bpmn:outgoing>Flow_GwToDivide</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+
+    <!-- Add branch -->
+    <bpmn:scriptTask id="Task_Add" name="Add" scriptFormat="JavaScript">
+      <bpmn:extensionElements>
+        <uipath:scriptVersion value="v3" />
+        <uipath:mapping version="v1">
+          <uipath:type value="BPMN.ScriptTask" version="v1" />
+          <uipath:input name="args" type="json" target="bodyField"><![CDATA[{"a":"=vars.Var_OperandA","b":"=vars.Var_OperandB"}]]></uipath:input>
+          <uipath:output name="result" type="number" var="Var_Result" source="=result.response" />
+        </uipath:mapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_GwToAdd</bpmn:incoming>
+      <bpmn:outgoing>Flow_AddToEnd</bpmn:outgoing>
+      <bpmn:script><![CDATA[return { response: a + b };]]></bpmn:script>
+    </bpmn:scriptTask>
+    <bpmn:endEvent id="End_Add" name="End Add">
+      <bpmn:incoming>Flow_AddToEnd</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <!-- Subtract branch -->
+    <bpmn:scriptTask id="Task_Subtract" name="Subtract" scriptFormat="JavaScript">
+      <bpmn:extensionElements>
+        <uipath:scriptVersion value="v3" />
+        <uipath:mapping version="v1">
+          <uipath:type value="BPMN.ScriptTask" version="v1" />
+          <uipath:input name="args" type="json" target="bodyField"><![CDATA[{"a":"=vars.Var_OperandA","b":"=vars.Var_OperandB"}]]></uipath:input>
+          <uipath:output name="result" type="number" var="Var_Result" source="=result.response" />
+        </uipath:mapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_GwToSubtract</bpmn:incoming>
+      <bpmn:outgoing>Flow_SubtractToEnd</bpmn:outgoing>
+      <bpmn:script><![CDATA[return { response: a - b };]]></bpmn:script>
+    </bpmn:scriptTask>
+    <bpmn:endEvent id="End_Subtract" name="End Subtract">
+      <bpmn:incoming>Flow_SubtractToEnd</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <!-- Multiply branch -->
+    <bpmn:scriptTask id="Task_Multiply" name="Multiply" scriptFormat="JavaScript">
+      <bpmn:extensionElements>
+        <uipath:scriptVersion value="v3" />
+        <uipath:mapping version="v1">
+          <uipath:type value="BPMN.ScriptTask" version="v1" />
+          <uipath:input name="args" type="json" target="bodyField"><![CDATA[{"a":"=vars.Var_OperandA","b":"=vars.Var_OperandB"}]]></uipath:input>
+          <uipath:output name="result" type="number" var="Var_Result" source="=result.response" />
+        </uipath:mapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_GwToMultiply</bpmn:incoming>
+      <bpmn:outgoing>Flow_MultiplyToEnd</bpmn:outgoing>
+      <bpmn:script><![CDATA[return { response: a * b };]]></bpmn:script>
+    </bpmn:scriptTask>
+    <bpmn:endEvent id="End_Multiply" name="End Multiply">
+      <bpmn:incoming>Flow_MultiplyToEnd</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <!-- Divide branch (default) -->
+    <bpmn:scriptTask id="Task_Divide" name="Divide" scriptFormat="JavaScript">
+      <bpmn:extensionElements>
+        <uipath:scriptVersion value="v3" />
+        <uipath:mapping version="v1">
+          <uipath:type value="BPMN.ScriptTask" version="v1" />
+          <uipath:input name="args" type="json" target="bodyField"><![CDATA[{"a":"=vars.Var_OperandA","b":"=vars.Var_OperandB"}]]></uipath:input>
+          <uipath:output name="result" type="number" var="Var_Result" source="=result.response" />
+        </uipath:mapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_GwToDivide</bpmn:incoming>
+      <bpmn:outgoing>Flow_DivideToEnd</bpmn:outgoing>
+      <bpmn:script><![CDATA[return { response: a / b };]]></bpmn:script>
+    </bpmn:scriptTask>
+    <bpmn:endEvent id="End_Divide" name="End Divide">
+      <bpmn:incoming>Flow_DivideToEnd</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <!-- Sequence flows -->
+    <bpmn:sequenceFlow id="Flow_StartToGw" sourceRef="Start_1" targetRef="Gw_Route" />
+
+    <bpmn:sequenceFlow id="Flow_GwToAdd" sourceRef="Gw_Route" targetRef="Task_Add">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=vars.Var_Operator == "add"</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_AddToEnd" sourceRef="Task_Add" targetRef="End_Add" />
+
+    <bpmn:sequenceFlow id="Flow_GwToSubtract" sourceRef="Gw_Route" targetRef="Task_Subtract">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=vars.Var_Operator == "subtract"</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_SubtractToEnd" sourceRef="Task_Subtract" targetRef="End_Subtract" />
+
+    <bpmn:sequenceFlow id="Flow_GwToMultiply" sourceRef="Gw_Route" targetRef="Task_Multiply">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=vars.Var_Operator == "multiply"</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_MultiplyToEnd" sourceRef="Task_Multiply" targetRef="End_Multiply" />
+
+    <!-- Default flow to Divide (no conditionExpression) -->
+    <bpmn:sequenceFlow id="Flow_GwToDivide" sourceRef="Gw_Route" targetRef="Task_Divide" />
+    <bpmn:sequenceFlow id="Flow_DivideToEnd" sourceRef="Task_Divide" targetRef="End_Divide" />
+
+  </bpmn:process>
+
+  <bpmndi:BPMNDiagram id="Diagram_1">
+    <bpmndi:BPMNPlane id="Plane_1" bpmnElement="Process_1">
+      <bpmndi:BPMNShape id="S_End_Add" bpmnElement="End_Add"><dc:Bounds x="526" y="100" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_End_Divide" bpmnElement="End_Divide"><dc:Bounds x="526" y="166" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_End_Multiply" bpmnElement="End_Multiply"><dc:Bounds x="526" y="232" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_End_Subtract" bpmnElement="End_Subtract"><dc:Bounds x="526" y="298" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Gw_Route" bpmnElement="Gw_Route"><dc:Bounds x="256" y="100" width="50" height="50" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Start_1" bpmnElement="Start_1"><dc:Bounds x="160" y="100" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Task_Add" bpmnElement="Task_Add"><dc:Bounds x="366" y="100" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Task_Divide" bpmnElement="Task_Divide"><dc:Bounds x="366" y="210" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Task_Multiply" bpmnElement="Task_Multiply"><dc:Bounds x="366" y="320" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Task_Subtract" bpmnElement="Task_Subtract"><dc:Bounds x="366" y="430" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="E_Flow_AddToEnd" bpmnElement="Flow_AddToEnd"><di:waypoint x="416" y="140" /><di:waypoint x="544" y="118" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_DivideToEnd" bpmnElement="Flow_DivideToEnd"><di:waypoint x="416" y="250" /><di:waypoint x="544" y="184" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_GwToAdd" bpmnElement="Flow_GwToAdd"><di:waypoint x="281" y="125" /><di:waypoint x="416" y="140" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_GwToDivide" bpmnElement="Flow_GwToDivide"><di:waypoint x="281" y="125" /><di:waypoint x="416" y="250" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_GwToMultiply" bpmnElement="Flow_GwToMultiply"><di:waypoint x="281" y="125" /><di:waypoint x="416" y="360" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_GwToSubtract" bpmnElement="Flow_GwToSubtract"><di:waypoint x="281" y="125" /><di:waypoint x="416" y="470" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_MultiplyToEnd" bpmnElement="Flow_MultiplyToEnd"><di:waypoint x="416" y="360" /><di:waypoint x="544" y="250" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_StartToGw" bpmnElement="Flow_StartToGw"><di:waypoint x="178" y="118" /><di:waypoint x="281" y="125" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_SubtractToEnd" bpmnElement="Flow_SubtractToEnd"><di:waypoint x="416" y="470" /><di:waypoint x="544" y="316" /></bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

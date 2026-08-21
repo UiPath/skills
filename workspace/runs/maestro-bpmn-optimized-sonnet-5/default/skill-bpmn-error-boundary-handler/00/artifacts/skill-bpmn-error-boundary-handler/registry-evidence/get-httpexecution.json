@@ -1,0 +1,89 @@
+{
+  "Result": "Success",
+  "Code": "RegistryGetSuccess",
+  "Data": {
+    "ExtensionType": {
+      "ExtensionType": "Intsvc.HttpExecution",
+      "Label": "Execute HTTP request (Legacy)",
+      "BpmnElement": "bpmn:SendTask",
+      "Placements": {
+        "Activity": {
+          "Type": "bpmn:SendTask"
+        }
+      },
+      "ExtensionTag": "uipath:activity",
+      "ContextFields": [
+        {
+          "Name": "mode",
+          "DisplayName": "Mode",
+          "Type": "string",
+          "Required": true,
+          "Hidden": true,
+          "IsPrimaryKey": false,
+          "Binding": false,
+          "DefaultValue": "manual"
+        },
+        {
+          "Name": "method",
+          "DisplayName": "HTTP Method",
+          "Type": "string",
+          "Required": true,
+          "Hidden": false,
+          "IsPrimaryKey": false,
+          "Binding": false,
+          "DefaultValue": "GET"
+        },
+        {
+          "Name": "url",
+          "DisplayName": "URL",
+          "Type": "string",
+          "Required": true,
+          "Hidden": false,
+          "IsPrimaryKey": false,
+          "Binding": true,
+          "DefaultValue": ""
+        },
+        {
+          "Name": "headers",
+          "DisplayName": "Headers",
+          "Type": "json",
+          "Required": false,
+          "Hidden": false,
+          "IsPrimaryKey": false,
+          "Binding": true,
+          "DefaultValue": "{}"
+        },
+        {
+          "Name": "parameters",
+          "DisplayName": "Query Parameters",
+          "Type": "json",
+          "Required": false,
+          "Hidden": false,
+          "IsPrimaryKey": false,
+          "Binding": true,
+          "DefaultValue": "{}"
+        },
+        {
+          "Name": "body",
+          "DisplayName": "Request Body",
+          "Type": "json",
+          "Required": false,
+          "Hidden": false,
+          "IsPrimaryKey": false,
+          "Binding": true,
+          "DefaultValue": "null"
+        }
+      ],
+      "InputPattern": "none",
+      "OutputSource": "=response",
+      "OutputType": "jsonSchema",
+      "OutputName": "response",
+      "UseRelativeSource": false,
+      "BindingPattern": "none",
+      "RequiresDiscovery": false,
+      "IsDynamic": false,
+      "XmlTemplate": "<bpmn:SendTask id=\"{id}\" name=\"{name}\">\n  <bpmn:extensionElements>\n    <uipath:activity version=\"v1\">\n      <uipath:type value=\"Intsvc.HttpExecution\" version=\"v1\" />\n      <uipath:context>\n        <uipath:input name=\"mode\" value=\"manual\" />\n        <uipath:input name=\"method\" value=\"GET\" />\n        <uipath:input name=\"url\" value=\"=bindings.{bindingId}\" />\n        <uipath:input name=\"headers\" value=\"=bindings.{bindingId}\" />\n        <uipath:input name=\"parameters\" value=\"=bindings.{bindingId}\" />\n        <uipath:input name=\"body\" value=\"=bindings.{bindingId}\" />\n      </uipath:context>\n      <uipath:output name=\"response\" type=\"jsonSchema\" source=\"=response\" var=\"{varId}\" />\n    </uipath:activity>\n  </bpmn:extensionElements>\n  <bpmn:incoming>{incomingEdge}</bpmn:incoming>\n  <bpmn:outgoing>{outgoingEdge}</bpmn:outgoing>\n</bpmn:SendTask>",
+      "InputNotes": "No jsonBody in design schema input section; all configuration is in context fields"
+    }
+  }
+}

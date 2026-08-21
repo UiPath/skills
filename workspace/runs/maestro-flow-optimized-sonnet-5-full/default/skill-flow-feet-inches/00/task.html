@@ -1,0 +1,2374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>coder_eval · skill-flow-feet-inches · default</title>
+<style>
+:root {
+  --bg-page: #0f1419;
+  --bg-card: #1a2129;
+  --bg-card-2: #232d38;
+  --bg-code: #0b0f14;
+  --fg: #e6edf3;
+  --fg-muted: #8b98a5;
+  --fg-dim: #6e7681;
+  --border: #30363d;
+  --accent: #58a6ff;
+  --score-high: #22c55e;
+  --score-mid: #f59e0b;
+  --score-low: #ef4444;
+  --status-success: #22c55e;
+  --status-failure: #f59e0b;
+  --status-error: #ef4444;
+  --status-neutral: #6e7681;
+  --shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+.light {
+  --bg-page: #ffffff;
+  --bg-card: #f6f8fa;
+  --bg-card-2: #eaeef2;
+  --bg-code: #f6f8fa;
+  --fg: #1f2328;
+  --fg-muted: #636c76;
+  --fg-dim: #8b949e;
+  --border: #d0d7de;
+  --accent: #0969da;
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial,
+               sans-serif;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--fg);
+  background: var(--bg-page);
+}
+.container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+h1, h2, h3, h4 { margin: 0 0 12px 0; line-height: 1.25; }
+h1 { font-size: 22px; font-weight: 600; }
+h2 { font-size: 18px; font-weight: 600; margin-top: 28px;
+     padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+h3 { font-size: 15px; font-weight: 600; color: var(--fg-muted); }
+h4 { font-size: 13px; font-weight: 600; color: var(--fg-muted); }
+p { margin: 0 0 8px 0; }
+.muted { color: var(--fg-muted); }
+.dim { color: var(--fg-dim); }
+.mono { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+        monospace; font-size: 12.5px; }
+code { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+       monospace; font-size: 12.5px; background: var(--bg-code);
+       border: 1px solid var(--border); padding: 1px 5px; border-radius: 3px; }
+pre { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+      monospace; font-size: 12.5px; background: var(--bg-code);
+      border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px;
+      margin: 6px 0; overflow-x: auto; white-space: pre-wrap;
+      word-wrap: break-word; }
+.header-bar { display: flex; align-items: center; justify-content: space-between;
+              margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+.title-group { flex: 1; min-width: 0; }
+.title-group .subtitle { color: var(--fg-muted); font-size: 13px;
+                         margin-top: 2px; word-break: break-all; }
+.badges { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.badge { display: inline-flex; align-items: center; gap: 6px;
+         padding: 4px 10px; border-radius: 12px; font-size: 12px;
+         font-weight: 600; background: var(--bg-card-2);
+         border: 1px solid var(--border); color: var(--fg); }
+.badge.success { background: color-mix(in srgb, var(--status-success) 20%, var(--bg-card-2));
+                 border-color: var(--status-success); color: var(--status-success); }
+.badge.failure { background: color-mix(in srgb, var(--status-failure) 20%, var(--bg-card-2));
+                 border-color: var(--status-failure); color: var(--status-failure); }
+.badge.error { background: color-mix(in srgb, var(--status-error) 20%, var(--bg-card-2));
+               border-color: var(--status-error); color: var(--status-error); }
+.badge.warning { background: color-mix(in srgb, #f4a52810 20%, var(--bg-card-2));
+                 border-color: #f4a528; color: #f4a528; }
+.badge.neutral { color: var(--fg-muted); }
+.score-pill { display: inline-block; padding: 2px 8px; border-radius: 10px;
+              font-size: 12px; font-weight: 700; min-width: 42px;
+              text-align: center; color: #0b0f14; }
+.score-high { background: var(--score-high); }
+.score-mid { background: var(--score-mid); }
+.score-low { background: var(--score-low); }
+.card { background: var(--bg-card); border: 1px solid var(--border);
+        border-radius: 8px; padding: 16px 20px; margin-bottom: 16px;
+        box-shadow: var(--shadow); }
+.card.highlight { border-left: 4px solid var(--accent); }
+.grid { display: grid; gap: 12px;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+.stat { background: var(--bg-card-2); padding: 10px 12px; border-radius: 6px;
+        border: 1px solid var(--border); }
+.stat .label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;
+               color: var(--fg-muted); margin-bottom: 4px; }
+.stat .value { font-size: 16px; font-weight: 600; }
+table { width: 100%; border-collapse: collapse; margin: 4px 0 12px 0; }
+th, td { text-align: left; padding: 8px 10px;
+         border-bottom: 1px solid var(--border); vertical-align: top;
+         font-size: 13px; }
+th { color: var(--fg-muted); font-weight: 600; font-size: 12px;
+     text-transform: uppercase; letter-spacing: 0.3px; }
+tr:last-child td { border-bottom: none; }
+details { margin: 6px 0; border: 1px solid var(--border); border-radius: 6px;
+          background: var(--bg-card-2); }
+details > summary { cursor: pointer; padding: 8px 12px; user-select: none;
+                    font-weight: 500; list-style: none; }
+details > summary::-webkit-details-marker { display: none; }
+details > summary::before { content: "▸ "; color: var(--fg-dim);
+                            display: inline-block; width: 14px;
+                            transition: transform 0.15s; }
+details[open] > summary::before { content: "▾ "; }
+details .details-body { padding: 0 12px 10px 12px; }
+.tool-row { display: flex; align-items: center; gap: 10px;
+            flex-wrap: wrap; font-size: 13px; }
+.tool-name { font-weight: 600; color: var(--accent); font-family: ui-monospace,
+             SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+.tool-status-ok { color: var(--status-success); font-size: 11px;
+                  font-weight: 600; }
+.tool-status-err { color: var(--status-error); font-size: 11px;
+                   font-weight: 600; }
+.tool-duration { color: var(--fg-muted); font-size: 12px; }
+.tool-seq { color: var(--fg-dim); font-size: 11px; font-weight: 600;
+            min-width: 24px; text-align: right; font-family: ui-monospace,
+            SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+.turn-header { display: flex; justify-content: space-between;
+               align-items: baseline; flex-wrap: wrap; gap: 10px;
+               margin-bottom: 10px; }
+.turn-meta { font-size: 12px; color: var(--fg-muted); }
+.criterion-row td:first-child { font-family: ui-monospace, SFMono-Regular,
+                                 "SF Mono", Menlo, Consolas, monospace;
+                                 color: var(--fg-muted); font-size: 12px; }
+.judge-section { display: flex; flex-direction: column; gap: 12px; }
+.judge-card { padding: 14px 16px; }
+.judge-card-head { display: flex; justify-content: space-between;
+                    align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+.judge-card-title { font-size: 14px; line-height: 1.4; flex: 1; min-width: 0; }
+.judge-card-score { flex-shrink: 0; }
+.judge-rationale { margin-top: 10px; padding: 10px 12px;
+                   background: var(--bg-code); border-radius: 4px;
+                   font-size: 13px; line-height: 1.5; }
+.judge-findings { margin: 8px 0 0 18px; padding-left: 4px; font-size: 13px;
+                   line-height: 1.6; }
+.judge-findings li { margin: 2px 0; }
+.nav-toggle { display: inline-block; padding: 5px 10px; font-size: 12px;
+              background: var(--bg-card-2); border: 1px solid var(--border);
+              border-radius: 5px; color: var(--fg); cursor: pointer; }
+.nav-toggle:hover { background: var(--bg-card); }
+.llm-next-steps { margin: 6px 0 0 20px; padding-left: 0; }
+.llm-next-steps li { margin: 3px 0; }
+.iteration-group { padding: 12px 16px 4px 16px; margin-bottom: 20px;
+                   border-radius: 0 6px 6px 0; border-left: 4px solid var(--status-neutral); }
+/* rgba fallback for browsers without color-mix (Chrome <111, Firefox <113, Safari <16.2). */
+.iteration-group--recovered { border-left-color: var(--status-success);
+                              background: rgba(34, 197, 94, 0.06);
+                              background: color-mix(in srgb, var(--status-success) 6%, transparent); }
+.iteration-group--terminal { border-left-color: var(--status-error);
+                             background: rgba(239, 68, 68, 0.06);
+                             background: color-mix(in srgb, var(--status-error) 6%, transparent); }
+.iteration-group__banner { margin: 0 0 12px 0; font-size: 14px; font-weight: 600; }
+.iteration-group--recovered .iteration-group__banner { color: var(--status-success); }
+.iteration-group--terminal .iteration-group__banner { color: var(--status-error); }
+.attempt-transition { display: flex; align-items: center; gap: 8px;
+                      margin: -6px 0 12px 8px; color: var(--status-error); font-size: 12.5px; }
+.attempt-transition__icon { font-weight: 700; }
+footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--border);
+         color: var(--fg-dim); font-size: 12px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="header-bar">
+  <div class="title-group">
+    <h1>Task: skill-flow-feet-inches</h1>
+    <div class="subtitle">Create a UiPath Flow that converts a value between feet and inches based on a direction input, using a Switch node to pick the conversion. Exercises switch branching, multi-case wiring, and branch convergence on End.</div>
+  </div>
+  <div class="badges">
+    <span class="badge success">SUCCESS</span>
+    <span class="score-pill score-high">1.00</span>
+    <span class="badge neutral">claude-code · claude-sonnet-5</span>
+    <span class="badge neutral">7m 37s</span>
+    <span class="badge neutral">$2.0682</span>
+    <span class="badge warning">expected_turns exceeded (47/23)</span>
+    
+    <span class="nav-toggle" onclick="toggleTheme()">Toggle theme</span>
+  </div>
+</div>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Variant</div><div class="value">default</div></div>
+    <div class="stat"><div class="label">Started</div><div class="value mono">2026-08-19T15:40:12</div></div>
+    <div class="stat"><div class="label">Duration</div><div class="value">7m 37s</div></div>
+    <div class="stat"><div class="label">Turns (SDK)</div><div class="value">78</div></div>
+    <div class="stat"><div class="label">Commands</div><div class="value">46</div></div>
+  </div>
+</div>
+
+<h2>Success Criteria <span class="muted" style="font-weight:400">(3/3 passed)</span></h2>
+<div class="card" style="padding:0">
+<table>
+  <thead>
+    <tr>
+      <th style="width:15%">Type</th>
+      <th style="width:35%">Description</th>
+      <th style="width:10%">Score</th>
+      <th>Details</th>
+    </tr>
+  </thead>
+  <tbody>
+    
+<tr class="criterion-row">
+  <td>run_command</td>
+  <td>uip maestro flow validate passes on the flow file</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Command: python3 $EXPERIMENT_TASKS_PATH/uipath-maestro-flow/_shared/validate_flow.py</summary><div class="details-body"><pre style="margin:6px 0 0 0">Command: python3 $EXPERIMENT_TASKS_PATH/uipath-maestro-flow/_shared/validate_flow.py
+Exit code: 0 (expected: 0)
+Stdout:
+Validating FeetInches/FeetInches/FeetInches.flow
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FlowValidate&quot;,
+  &quot;Data&quot;: {
+    &quot;File&quot;: &quot;/work/output/artifacts/skill-flow-feet-inches/FeetInches/FeetInches/FeetInches.flow&quot;,
+    &quot;Status&quot;: &quot;Valid&quot;
+  }
+}
+
+Stderr:
+[ManifestClient] fetchDynamicNodes ok: total=317 agent context nodes=2 external agent nodes=7 orchestrator nodes=263 IXP nodes=45</pre></div></details></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>run_command</td>
+  <td>Debug with (23, &quot;f2i&quot;) returns 276 via a Switch node</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Command: python3 $TASK_DIR/check_feet_inches_flow.py f2i</summary><div class="details-body"><pre style="margin:6px 0 0 0">Command: python3 $TASK_DIR/check_feet_inches_flow.py f2i
+Exit code: 0 (expected: 0)
+Stdout:
+[f2i] Injecting inputs: {&#x27;value&#x27;: 23, &#x27;direction&#x27;: &#x27;f2i&#x27;} (expect 276)
+OK: [f2i] {&#x27;value&#x27;: 23, &#x27;direction&#x27;: &#x27;f2i&#x27;} -&gt; 276
+
+Stderr: (empty)</pre></div></details></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>run_command</td>
+  <td>Debug with (276, &quot;i2f&quot;) returns 23 via a Switch node</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Command: python3 $TASK_DIR/check_feet_inches_flow.py i2f</summary><div class="details-body"><pre style="margin:6px 0 0 0">Command: python3 $TASK_DIR/check_feet_inches_flow.py i2f
+Exit code: 0 (expected: 0)
+Stdout:
+[i2f] Injecting inputs: {&#x27;value&#x27;: 276, &#x27;direction&#x27;: &#x27;i2f&#x27;} (expect 23)
+OK: [i2f] {&#x27;value&#x27;: 276, &#x27;direction&#x27;: &#x27;i2f&#x27;} -&gt; 23
+
+Stderr: (empty)</pre></div></details></td>
+</tr>
+
+  </tbody>
+</table>
+</div>
+<h2>Conversation Trace (1 iteration)</h2>
+<div class="card">
+  <div class="turn-header">
+    <h3>Iteration 1</h3>
+    <div class="badges">
+      <span class="badge neutral">78 assistant turns</span>
+      <span class="badge neutral">in 637 · out 34518 · cache 3623227</span>
+      <span class="badge neutral">7m 6s</span>
+      <span class="badge failure">max_turns exhausted</span>
+      
+      
+    </div>
+  </div>
+  <details>
+    <summary>Prompt to agent</summary>
+    <div class="details-body"><pre>Your working directory is: /work/output/artifacts/skill-flow-feet-inches
+
+Create a UiPath Flow project named &quot;FeetInches&quot; that takes `value` (number)
+and `direction` (string: &quot;f2i&quot;, &quot;i2f&quot;, or &quot;y2f&quot;) as inputs, converts feet
+to inches (× 12), inches to feet (÷ 12), or yards to feet (× 3) accordingly,
+and returns the converted number.
+
+Use a Switch node on `direction` to branch to one of three cases
+(&quot;f2i&quot;, &quot;i2f&quot;, &quot;y2f&quot;); each branch applies the corresponding conversion
+(in a Script node) and converges on a single End node that returns the result.
+
+Do NOT ask for approval, confirmation, or feedback. Do NOT pause between planning and implementation. Build the complete flow end-to-end in a single pass.
+</pre></div>
+  </details>
+  <details>
+    <summary>Agent response</summary>
+    <div class="details-body"><pre>[ASSISTANT] No existing solutions found — I&#x27;ll scaffold a new one. Now setting up the solution + Flow project and pulling the registry.
+[ASSISTANT] Layout confirmed: `FeetInches/FeetInches/FeetInches.flow`. Let&#x27;s verify it and inspect the registry definitions.
+[ASSISTANT] Now let&#x27;s add the nodes: switch, three script nodes, and end node.
+[ASSISTANT] Now wire the edges: start → switch, switch case ports → each script, each script → end.
+[ASSISTANT] Both flagged issues are self-healing via `flow format` per the docs. Let&#x27;s run validate and format now.
+[ASSISTANT] Validate passed with no warnings, and format completed. Let&#x27;s re-run the audit to confirm the runtime-gaps issue is now resolved.
+[ASSISTANT] All clean. Let me quickly review the final flow file for a sanity check.
+[ASSISTANT] The flow is built, validated, and formatted cleanly. Summary:
+
+**File:** `/work/output/artifacts/skill-flow-feet-inches/FeetInches/FeetInches/FeetInches.flow` (project `FeetInches` inside solution `FeetInches`)
+
+**What was built:**
+- Manual trigger (`start`) with two `in` variables: `value` (number) and `direction` (string)
+- `switchDirection` (Switch node) branching on `direction` with cases `f2i`, `i2f`, `y2f`
+- Three Script nodes, one per case:
+  - `scriptF2I`: `return { result: $vars.start.output.value * 12 }`
+  - `scriptI2F`: `return { result: $vars.start.output.value / 12 }`
+  - `scriptY2F`: `return { result: $vars.start.output.value * 3 }`
+- All three converge on a single `endResult` End node, which maps the `out` variable `result` from whichever branch executed (`=js:($vars.scriptF2I.output || $vars.scriptI2F.output || $vars.scriptY2F.output).result`)
+
+**Validation:** `flow validate` → `Valid`, no warnings.
+**Format:** `flow format` ran successfully (repositioned nodes, fixed layout sizing).
+**Audit:** `audit_flow.py` → clean across topology, expressions, Jint, bindings, and runtime-gaps checks.
+
+No mock placeholders, no connector connections needed — this is an entirely OOTB (script/switch/end) flow. Ready to publish to Studio Web, debug, or deploy to Orchestrator whenever you&#x27;d like — let me know which.
+[RESULT - SUCCESS] The flow is built, validated, and formatted cleanly. Summary:
+
+**File:** `/work/output/artifacts/skill-flow-feet-inches/FeetInches/FeetInches/FeetInches.flow` (project `FeetInches` inside solution `FeetInches`)
+
+**What was built:**
+- Manual trigger (`start`) with two `in` variables: `value` (number) and `direction` (string)
+- `switchDirection` (Switch node) branching on `direction` with cases `f2i`, `i2f`, `y2f`
+- Three Script nodes, one per case:
+  - `scriptF2I`: `return { result: $vars.start.output.value * 12 }`
+  - `scriptI2F`: `return { result: $vars.start.output.value / 12 }`
+  - `scriptY2F`: `return { result: $vars.start.output.value * 3 }`
+- All three converge on a single `endResult` End node, which maps the `out` variable `result` from whichever branch executed (`=js:($vars.scriptF2I.output || $vars.scriptI2F.output || $vars.scriptY2F.output).result`)
+
+**Validation:** `flow validate` → `Valid`, no warnings.
+**Format:** `flow format` ran successfully (repositioned nodes, fixed layout sizing).
+**Audit:** `audit_flow.py` → clean across topology, expressions, Jint, bindings, and runtime-gaps checks.
+
+No mock placeholders, no connector connections needed — this is an entirely OOTB (script/switch/end) flow. Ready to publish to Studio Web, debug, or deploy to Orchestrator whenever you&#x27;d like — let me know which.</pre></div>
+  </details>
+  <h4 style="margin-top:12px">Tool Calls (46)</h4>
+  
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#0</span>
+      <span class="tool-name">Skill</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">15ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;skill&quot;: &quot;tmp:uipath-maestro-flow&quot;,
+  &quot;args&quot;: &quot;Create a UiPath Flow project named \&quot;FeetInches\&quot; in /work/output/artifacts/skill-flow-feet-inches. Inputs: `value` (number), `direction` (string: \&quot;f2i\&quot;, \&quot;i2f\&quot;, or \&quot;y2f\&quot;). Use a Switch node on `direction` with three cases: \&quot;f2i\&quot; (multiply value by 12), \&quot;i2f\&quot; (divide value by 12), \&quot;y2f\&quot; (multiply value by 3), each in its own Script node. All three branches converge to a single End node that returns t… (93 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Launching skill: tmp:uipath-maestro-flow</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#1</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">52ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow &amp;&amp; cat references/author/CAPABILITY.md&quot;,
+  &quot;description&quot;: &quot;Read author capability doc&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>&lt;persisted-output&gt;
+Output too large (30.5KB). Full output saved to: /home/azureuser/.claude/projects/-work-output-artifacts-skill-flow-feet-inches/6b7d62aa-6641-4a75-bf69-601c9dc2e5e7/tool-results/biq7bxswt.txt
+
+Preview (first 2KB):
+# Author — Create and edit `.flow` files
+
+Capability index for building new flows (greenfield) and editing existing flows (brownfield). Author owns everything that happens on disk, locally, without `uip login`. Authoring journeys terminate at `validate` + `format`; from there, hand off to [operate/CAPABILITY.md](../operate/CAPABILITY.md) to publish, run, or debug.
+
+&gt; **Where you came from / where to go next.** Author is upstream of Operate (build the flow → ship it) and upstream of Diagnose only via Operate (build → run → diagnose). Publish/run/lifecycle lives in [operate/CAPABILITY.md](../operate/CAPABILITY.md); fault triage lives in [diagnose/CAPABILITY.md](../diagnose/CAPABILITY.md).
+&gt;
+&gt; **Inherits universal rules from [SKILL.md](../../SKILL.md)** — `--output json` + prefer `--output-filter` for extraction, no `flow debug` without consent, resource discovery order, never invoke other skills automatically, dropdown question pattern, solution layout, *
+
+… (truncated, 1117 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#2</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">23ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow &amp;&amp; cat references/author/references/greenfield.md&quot;,
+  &quot;description&quot;: &quot;Read greenfield doc&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>&lt;persisted-output&gt;
+Output too large (34.1KB). Full output saved to: /home/azureuser/.claude/projects/-work-output-artifacts-skill-flow-feet-inches/6b7d62aa-6641-4a75-bf69-601c9dc2e5e7/tool-results/bl5no3vhv.txt
+
+Preview (first 2KB):
+# Greenfield — Create a New Flow
+
+End-to-end journey for creating a Flow project from scratch. Author terminates at `validate` + `format`. To publish, run, or debug after this, see [operate/CAPABILITY.md](../../operate/CAPABILITY.md).
+
+&gt; **Brownfield edits use a different journey.** If the `.flow` file already exists, see [brownfield.md](brownfield.md) instead.
+
+## Should you plan first?
+
+For complex flows, produce a plan before building. Reference [planning-arch.md](planning-arch.md) and [planning-impl.md](planning-impl.md) for the node type catalog, port reference, wiring rules, and topology patterns.
+
+**Plan when:**
+- The flow has 5+ nodes with branching or parallel paths
+- The flow uses connectors or resources that need discovery
+- The user&#x27;s requirements are ambiguous and you need to confirm the approach
+
+**Don&#x27;t plan when:**
+- Adding/editing a single node in an existing flow (use [brownfield.md](brownfield.md))
+- The flow is a straightforward line
+
+… (truncated, 1047 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#3</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">435ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/.claude/projects/-work-output-artifacts-skill-flow-feet-inches/6b7d62aa-6641-4a75-bf69-601c9dc2e5e7/tool-results/biq7bxswt.txt&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Author — Create and edit `.flow` files
+2	
+3	Capability index for building new flows (greenfield) and editing existing flows (brownfield). Author owns everything that happens on disk, locally, without `uip login`. Authoring journeys terminate at `validate` + `format`; from there, hand off to [operate/CAPABILITY.md](../operate/CAPABILITY.md) to publish, run, or debug.
+4	
+5	&gt; **Where you came from / where to go next.** Author is upstream of Operate (build the flow → ship it) and upstream of Diagnose only via Operate (build → run → diagnose). Publish/run/lifecycle lives in [operate/CAPABILITY.md](../operate/CAPABILITY.md); fault triage lives in [diagnose/CAPABILITY.md](../diagnose/CAPABILITY.md).
+6	&gt;
+7	&gt; **Inherits universal rules from [SKILL.md](../../SKILL.md)** — `--output json` + prefer `--output-filter` for extraction, no `flow debug` without consent, resource discovery order, never invoke other skills automatically, dropdown question pattern, solution layout, **plain-English narration + granular progress list (opt-in — silent by default; engage when the user asks for verbosity)**. The rules below are author-scoped and apply on top.
+8	
+9	## When to use this capability
+10	
+11	&lt;
+
+… (truncated, 30449 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#4</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">90ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/.claude/projects/-work-output-artifacts-skill-flow-feet-inches/6b7d62aa-6641-4a75-bf69-601c9dc2e5e7/tool-results/bl5no3vhv.txt&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Greenfield — Create a New Flow
+2	
+3	End-to-end journey for creating a Flow project from scratch. Author terminates at `validate` + `format`. To publish, run, or debug after this, see [operate/CAPABILITY.md](../../operate/CAPABILITY.md).
+4	
+5	&gt; **Brownfield edits use a different journey.** If the `.flow` file already exists, see [brownfield.md](brownfield.md) instead.
+6	
+7	## Should you plan first?
+8	
+9	For complex flows, produce a plan before building. Reference [planning-arch.md](planning-arch.md) and [planning-impl.md](planning-impl.md) for the node type catalog, port reference, wiring rules, and topology patterns.
+10	
+11	**Plan when:**
+12	- The flow has 5+ nodes with branching or parallel paths
+13	- The flow uses connectors or resources that need discovery
+14	- The user&#x27;s requirements are ambiguous and you need to confirm the approach
+15	
+16	**Don&#x27;t plan when:**
+17	- Adding/editing a single node in an existing flow (use [brownfield.md](brownfield.md))
+18	- The flow is a straightforward linear pipeline (trigger → action → action → end)
+19	- The user has already described the exact topology they want
+20	
+21	### Examples
+22	
+23	**Plan:** &quot;Build a flow that receives a Jira ticke
+
+… (truncated, 34831 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#5</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">30ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;find . -maxdepth 2 -type f -name &#x27;*.uipx&#x27; -print; echo \&quot;---\&quot;; ls -la&quot;,
+  &quot;description&quot;: &quot;Check for existing solutions in working directory&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>---
+total 12
+drwxr-xr-x 3 root root 4096 Aug 19 15:40 .
+drwxr-xr-x 3 root root 4096 Aug 19 15:40 ..
+drwxr-xr-x 4 root root 4096 Aug 19 15:40 .venv</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#6</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">20ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow &amp;&amp; cat references/author/references/plugins/switch/impl.md&quot;,
+  &quot;description&quot;: &quot;Read switch plugin impl doc&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre># Switch Node — Implementation
+
+## Node Type
+
+`core.logic.switch`
+
+## Registry Validation
+
+```bash
+uip maestro flow registry get core.logic.switch --output json
+```
+
+Confirm: input port `input`, dynamic output ports `case-{id}` + `default`, required input `cases`. Set the node instance `typeVersion` to the `version` field from this response — do not hardcode it.
+
+## JSON Structure
+
+```json
+{
+  &quot;id&quot;: &quot;routeByPriority&quot;,
+  &quot;type&quot;: &quot;core.logic.switch&quot;,
+  &quot;typeVersion&quot;: &quot;&lt;DEFINITION_VERSION&gt;&quot;,
+  &quot;display&quot;: { &quot;label&quot;: &quot;Route by Priority&quot; },
+  &quot;inputs&quot;: {
+    &quot;cases&quot;: [
+      {
+        &quot;id&quot;: &quot;high&quot;,
+        &quot;label&quot;: &quot;High Priority&quot;,
+        &quot;expression&quot;: &quot;$vars.classify.output.priority === &#x27;high&#x27;&quot;
+      },
+      {
+        &quot;id&quot;: &quot;medium&quot;,
+        &quot;label&quot;: &quot;Medium Priority&quot;,
+        &quot;expression&quot;: &quot;$vars.classify.output.priority === &#x27;medium&#x27;&quot;
+      },
+      {
+        &quot;id&quot;: &quot;low&quot;,
+        &quot;label&quot;: &quot;Low Priority&quot;,
+        &quot;expression&quot;: &quot;$vars.classify.output.priority === &#x27;low&#x27;&quot;
+      }
+    ]
+  }
+}
+```
+
+## Adding / Editing
+
+For step-by-step add, delete, and wiring procedures, see [editing-operations.md](../../editing-operations.md). Use the JSON structure above for the node-specific `inputs`.
+
+
+
+… (truncated, 850 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#7</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">16ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow &amp;&amp; cat references/author/references/plugins/script/impl.md&quot;,
+  &quot;description&quot;: &quot;Read script plugin impl doc&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre># Script Node — Implementation
+
+## Node Type
+
+`core.action.script`
+
+## Registry validation
+
+```bash
+uip maestro flow registry get core.action.script --output json
+```
+
+Confirm: input port `input`, output port `success`, required input `script` (string, non-empty). See [Action Node Structure — Registry validation](../../../../shared/action-nodes.md#registry-validation) for the shared pattern.
+
+## JSON structure
+
+Follow the [Action Node Structure — Standard JSON skeleton](../../../../shared/action-nodes.md#standard-json-skeleton). The script-specific input is a single `script` string:
+
+```json
+{
+  &quot;inputs&quot;: {
+    &quot;script&quot;: &quot;const items = $vars.fetchData.output.body.items;\nconst total = items.reduce((sum, i) =&gt; sum + i.amount, 0);\nreturn { total, count: items.length };&quot;
+  }
+}
+```
+
+## Adding and editing
+
+See [Action Node Structure — Adding and editing procedures](../../../../shared/action-nodes.md#adding-and-editing-procedures). The script node uses the standard input port `input` and output port `success`; no plugin-specific wiring.
+
+## Script rules
+
+1. **Top-level body — no `function main()` wrapper.** Node runs the `script` text directly (as a function body); a wrapper is never ca
+
+… (truncated, 4105 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#8</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">20ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow &amp;&amp; cat references/author/references/plugins/end/impl.md&quot;,
+  &quot;description&quot;: &quot;Read end plugin impl doc&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre># End Node — Implementation
+
+## Node Type
+
+`core.control.end`
+
+## Registry Validation
+
+```bash
+uip maestro flow registry get core.control.end --output json
+```
+
+Confirm: input port `input`, no output ports. Set the node instance `typeVersion` to the `version` field from this response — do not hardcode it.
+
+## JSON Structure
+
+### Without Output Mapping
+
+```json
+{
+  &quot;id&quot;: &quot;doneSuccess&quot;,
+  &quot;type&quot;: &quot;core.control.end&quot;,
+  &quot;typeVersion&quot;: &quot;&lt;DEFINITION_VERSION&gt;&quot;,
+  &quot;display&quot;: { &quot;label&quot;: &quot;Done&quot; },
+  &quot;inputs&quot;: {}
+}
+```
+
+### With Output Mapping
+
+When the workflow declares `out` variables, every End node must map all of them:
+
+```json
+{
+  &quot;id&quot;: &quot;doneSuccess&quot;,
+  &quot;type&quot;: &quot;core.control.end&quot;,
+  &quot;typeVersion&quot;: &quot;&lt;DEFINITION_VERSION&gt;&quot;,
+  &quot;display&quot;: { &quot;label&quot;: &quot;Done&quot; },
+  &quot;inputs&quot;: {},
+  &quot;outputs&quot;: {
+    &quot;processedCount&quot;: {
+      &quot;source&quot;: &quot;=js:$vars.processData.output.count&quot;
+    },
+    &quot;resultSummary&quot;: {
+      &quot;source&quot;: &quot;=js:$vars.formatOutput.output.summary&quot;
+    }
+  }
+}
+```
+
+Each key in `outputs` must match a variable `id` from `variables.globals` where `direction: &quot;out&quot;`.
+
+## Adding / Editing
+
+For step-by-step add, delete, and wiring procedures, see [editing-operations.md](../../editing-operations.m
+
+… (truncated, 783 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#9</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">39ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow &amp;&amp; sed -n &#x27;1,400p&#x27; references/shared/file-format.md&quot;,
+  &quot;description&quot;: &quot;Read file-format doc&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre># UiPath Flow File Format
+
+The `.flow` file is a JSON document at `&lt;ProjectName&gt;.flow` in the project root. It is the **only file you should edit** — other generated files will be overwritten.
+
+## Table of contents
+
+- [Top-level structure](#top-level-structure)
+- [Project structure (generated scaffold)](#project-structure-generated-scaffold)
+- [Node instance](#node-instance)
+- [Layout](#layout)
+- [Edge — both ports required](#edge--both-ports-required)
+- [Definition entry](#definition-entry)
+- [Common node types](#common-node-types)
+- [Standard ports by node type](#standard-ports-by-node-type)
+- [Implicit error port on action nodes](#implicit-error-port-on-action-nodes)
+- [Minimal working example — dice roller](#minimal-working-example--dice-roller)
+- [entry-points.json — auto-generated, do not edit](#entry-pointsjson--auto-generated-do-not-edit)
+- [Bindings — Orchestrator resource bindings (top-level `bindings[]`)](#bindings--orchestrator-resource-bindings-top-level-bindings)
+- [Bindings — connector connection binding](#bindings--connector-connection-binding)
+
+## Top-level structure
+
+```json
+{
+  &quot;id&quot;: &quot;&lt;uuid&gt;&quot;,
+  &quot;version&quot;: &quot;&lt;scaffolded file-format version&gt;&quot;,
+  &quot;name&quot;: &quot;MyFlow&quot;,
+ 
+
+… (truncated, 24525 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#10</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">50ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow &amp;&amp; sed -n &#x27;1,300p&#x27; references/shared/variables-and-expressions.md&quot;,
+  &quot;description&quot;: &quot;Read variables and expressions doc&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre># Variables and Expressions
+
+Complete reference for declaring variables, writing expressions, and managing data flow in `.flow` files.
+
+&gt; **Read this before** adding variables or writing expressions in any flow.
+&gt;
+&gt; `flow validate` catches the structural expression-reference errors:
+&gt;
+&gt; - Missing `=js:` prefix on `$vars`/`$metadata`/`$self` (MST-9107)
+&gt; - Invented `nodes.&lt;id&gt;.output` syntax
+&gt; - References to unknown variables or node IDs
+&gt; - Output-path walks that descend into declared primitives or schemas closed with `additionalProperties: false`
+&gt;
+&gt; Errors against **open output schemas** (HTTP response bodies, script returns, free-text agent output) and **wrong-direction reads** (e.g. reading an `out`-only variable) still slip past validate and surface only at `flow debug` or in production.
+
+---
+
+## Table of contents
+
+- [Variables Overview](#variables-overview)
+- [Workflow Variables (`globals`)](#workflow-variables-globals)
+- [Node Variables (`nodes`)](#node-variables-nodes)
+- [Variable Updates (`variableUpdates`)](#variable-updates-variableupdates)
+- [Output Mapping on End Nodes](#output-mapping-on-end-nodes)
+- [Expression System](#expression-system)
+- [Available Globals](#avai
+
+… (truncated, 7521 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#11</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">413ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;which uip; uip --version 2&gt;&amp;1 | head -5&quot;,
+  &quot;description&quot;: &quot;Check uip CLI availability and version&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/usr/bin/uip
+1.201.0-dev.8272</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#12</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">12.34s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;\\\nuip solution init \&quot;FeetInches\&quot; --output json \\\n  &amp;&amp; cd \&quot;FeetInches\&quot; \\\n  &amp;&amp; uip maestro flow init \&quot;FeetInches\&quot; --output json \\\n  &amp;&amp; cd \&quot;FeetInches\&quot; \\\n  &amp;&amp; uip maestro flow registry pull \\\n  &amp;&amp; echo \&quot;PWD: $(pwd)\&quot;&quot;,
+  &quot;description&quot;: &quot;Scaffold solution and flow project, pull registry&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;SolutionInit&quot;,
+  &quot;Data&quot;: {
+    &quot;Status&quot;: &quot;Created successfully&quot;,
+    &quot;Path&quot;: &quot;/work/output/artifacts/skill-flow-feet-inches/FeetInches/FeetInches.uipx&quot;,
+    &quot;NextSteps&quot;: &quot;Read /work/output/artifacts/skill-flow-feet-inches/FeetInches/AGENTS.md or /work/output/artifacts/skill-flow-feet-inches/FeetInches/CLAUDE.md to understand the solution lifecycle, project types that can be used inside a solution, and related uip command references.&quot;
+  }
+}
+2026-08-19 15:40:57 INFO  [ResourceBuilder:ProjectCreateCommandHandler] Creating project [object Object]
+2026-08-19 15:40:57 INFO  [ResourceBuilder:MultiFileSolutionDefinitionProvider] Reading multi-file solution definition for solution %s /work/output/artifacts/skill-flow-feet-inches/FeetInches
+2026-08-19 15:40:57 INFO  [ResourceBuilder:ProjectCreateCommandHandler] Generate artefact resources for project [object Object]
+2026-08-19 15:40:57 INFO  [ResourceBuilder:SolutionsMetadataReader] Reading metadata from %s. SolutionsMetadataReader
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FlowInit&quot;,
+  &quot;Data&quot;: {
+    &quot;Status&quot;: &quot;Created successfully&quot;,
+    &quot;Path&quot;: &quot;/work/output/artifacts/skill-flow-feet-inches/FeetInches/FeetInches
+
+… (truncated, 1495 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#13</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">14.56s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry get core.control.end --output json &gt; /tmp/end.json\nuip maestro flow registry get core.logic.switch --output json &gt; /tmp/switch.json\nuip maestro flow registry get core.action.script --output json &gt; /tmp/script.json\necho done&quot;,
+  &quot;description&quot;: &quot;Fetch registry definitions for end, switch, script nodes&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>done</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#14</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">14ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;ls \&quot;$(pwd)\&quot;\nls -la\necho \&quot;--- flow file ---\&quot;\ncat FeetInches.flow&quot;,
+  &quot;description&quot;: &quot;List project dir and view scaffolded flow file&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>FeetInches.flow
+operate.json
+project.uiproj
+total 20
+drwxr-xr-x 2 root root 4096 Aug 19 15:40 .
+drwxr-xr-x 4 root root 4096 Aug 19 15:40 ..
+-rw-r--r-- 1 root root 1980 Aug 19 15:40 FeetInches.flow
+-rw-r--r-- 1 root root  268 Aug 19 15:40 operate.json
+-rw-r--r-- 1 root root   52 Aug 19 15:40 project.uiproj
+--- flow file ---
+{
+  &quot;id&quot;: &quot;a433d63e-ad07-496a-959c-85c4a94c0a3e&quot;,
+  &quot;version&quot;: &quot;1.9&quot;,
+  &quot;name&quot;: &quot;FeetInches&quot;,
+  &quot;nodes&quot;: [
+    {
+      &quot;id&quot;: &quot;start&quot;,
+      &quot;type&quot;: &quot;core.trigger.manual&quot;,
+      &quot;typeVersion&quot;: &quot;1.0&quot;,
+      &quot;display&quot;: {
+        &quot;label&quot;: &quot;Manual trigger&quot;
+      },
+      &quot;inputs&quot;: {
+        &quot;entryPointId&quot;: &quot;f03868b8-491d-40a7-9a98-b7b797acbf24&quot;,
+        &quot;isDefaultEntryPoint&quot;: true
+      }
+    }
+  ],
+  &quot;edges&quot;: [],
+  &quot;definitions&quot;: [
+    {
+      &quot;nodeType&quot;: &quot;core.trigger.manual&quot;,
+      &quot;version&quot;: &quot;1.0&quot;,
+      &quot;category&quot;: &quot;trigger&quot;,
+      &quot;description&quot;: &quot;Start the process manually&quot;,
+      &quot;tags&quot;: [
+        &quot;trigger&quot;,
+        &quot;start&quot;,
+        &quot;manual&quot;
+      ],
+      &quot;sortOrder&quot;: 80,
+      &quot;display&quot;: {
+        &quot;label&quot;: &quot;Manual trigger&quot;,
+        &quot;icon&quot;: &quot;play&quot;,
+        &quot;shape&quot;: &quot;circle&quot;
+      },
+      &quot;handleConfiguration&quot;: [
+        {
+          &quot;position&quot;: &quot;right&quot;,
+      
+
+… (truncated, 1105 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#15</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">8ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/tmp/end.json&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	{
+2	  &quot;Result&quot;: &quot;Success&quot;,
+3	  &quot;Code&quot;: &quot;NodeGetSuccess&quot;,
+4	  &quot;Data&quot;: {
+5	    &quot;Node&quot;: {
+6	      &quot;nodeType&quot;: &quot;core.control.end&quot;,
+7	      &quot;version&quot;: &quot;1.0&quot;,
+8	      &quot;category&quot;: &quot;control-flow&quot;,
+9	      &quot;description&quot;: &quot;Mark the end of a process path&quot;,
+10	      &quot;tags&quot;: [
+11	        &quot;control-flow&quot;,
+12	        &quot;end&quot;,
+13	        &quot;finish&quot;,
+14	        &quot;complete&quot;
+15	      ],
+16	      &quot;sortOrder&quot;: 65,
+17	      &quot;display&quot;: {
+18	        &quot;label&quot;: &quot;End&quot;,
+19	        &quot;icon&quot;: &quot;circle-check&quot;,
+20	        &quot;shape&quot;: &quot;circle&quot;
+21	      },
+22	      &quot;handleConfiguration&quot;: [
+23	        {
+24	          &quot;position&quot;: &quot;left&quot;,
+25	          &quot;handles&quot;: [
+26	            {
+27	              &quot;id&quot;: &quot;input&quot;,
+28	              &quot;type&quot;: &quot;target&quot;,
+29	              &quot;handleType&quot;: &quot;input&quot;
+30	            }
+31	          ]
+32	        }
+33	      ],
+34	      &quot;model&quot;: {
+35	        &quot;type&quot;: &quot;bpmn:EndEvent&quot;
+36	      },
+37	      &quot;runtimeConstraints&quot;: {
+38	        &quot;exclude&quot;: [
+39	          &quot;api-function&quot;
+40	        ]
+41	      }
+42	    }
+43	  }
+44	}
+45	</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#16</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">3ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/tmp/switch.json&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	{
+2	  &quot;Result&quot;: &quot;Success&quot;,
+3	  &quot;Code&quot;: &quot;NodeGetSuccess&quot;,
+4	  &quot;Data&quot;: {
+5	    &quot;Node&quot;: {
+6	      &quot;nodeType&quot;: &quot;core.logic.switch&quot;,
+7	      &quot;version&quot;: &quot;1.1&quot;,
+8	      &quot;category&quot;: &quot;control-flow&quot;,
+9	      &quot;description&quot;: &quot;Route to one of many branches by condition&quot;,
+10	      &quot;tags&quot;: [
+11	        &quot;control-flow&quot;,
+12	        &quot;switch&quot;,
+13	        &quot;case&quot;,
+14	        &quot;when&quot;
+15	      ],
+16	      &quot;sortOrder&quot;: 62,
+17	      &quot;display&quot;: {
+18	        &quot;label&quot;: &quot;Switch&quot;,
+19	        &quot;icon&quot;: &quot;between-horizontal-start&quot;
+20	      },
+21	      &quot;handleConfiguration&quot;: [
+22	        {
+23	          &quot;position&quot;: &quot;left&quot;,
+24	          &quot;handles&quot;: [
+25	            {
+26	              &quot;id&quot;: &quot;input&quot;,
+27	              &quot;type&quot;: &quot;target&quot;,
+28	              &quot;handleType&quot;: &quot;input&quot;
+29	            }
+30	          ],
+31	          &quot;visible&quot;: true
+32	        },
+33	        {
+34	          &quot;position&quot;: &quot;right&quot;,
+35	          &quot;handles&quot;: [
+36	            {
+37	              &quot;id&quot;: &quot;case-{item.id}&quot;,
+38	              &quot;type&quot;: &quot;source&quot;,
+39	              &quot;handleType&quot;: &quot;output&quot;,
+40	              &quot;label&quot;: &quot;{item.label || &#x27;Case &#x27; + (index + 1)}&quot;,
+41	              &quot;repeat&quot;: &quot;inputs.cases&quot;
+42	            },
+43	            {
+44	              &quot;id&quot;: &quot;default
+
+… (truncated, 3451 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#17</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">6ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/tmp/script.json&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	{
+2	  &quot;Result&quot;: &quot;Success&quot;,
+3	  &quot;Code&quot;: &quot;NodeGetSuccess&quot;,
+4	  &quot;Data&quot;: {
+5	    &quot;Node&quot;: {
+6	      &quot;nodeType&quot;: &quot;core.action.script&quot;,
+7	      &quot;version&quot;: &quot;1.1&quot;,
+8	      &quot;category&quot;: &quot;data-operations&quot;,
+9	      &quot;description&quot;: &quot;Run custom JavaScript code&quot;,
+10	      &quot;tags&quot;: [
+11	        &quot;code&quot;,
+12	        &quot;javascript&quot;,
+13	        &quot;python&quot;
+14	      ],
+15	      &quot;sortOrder&quot;: 70,
+16	      &quot;supportsErrorHandling&quot;: true,
+17	      &quot;display&quot;: {
+18	        &quot;label&quot;: &quot;Script&quot;,
+19	        &quot;icon&quot;: &quot;code&quot;
+20	      },
+21	      &quot;handleConfiguration&quot;: [
+22	        {
+23	          &quot;position&quot;: &quot;left&quot;,
+24	          &quot;handles&quot;: [
+25	            {
+26	              &quot;id&quot;: &quot;input&quot;,
+27	              &quot;type&quot;: &quot;target&quot;,
+28	              &quot;handleType&quot;: &quot;input&quot;
+29	            }
+30	          ]
+31	        },
+32	        {
+33	          &quot;position&quot;: &quot;right&quot;,
+34	          &quot;handles&quot;: [
+35	            {
+36	              &quot;id&quot;: &quot;success&quot;,
+37	              &quot;type&quot;: &quot;source&quot;,
+38	              &quot;handleType&quot;: &quot;output&quot;
+39	            },
+40	            {
+41	              &quot;id&quot;: &quot;error&quot;,
+42	              &quot;label&quot;: &quot;Error&quot;,
+43	              &quot;type&quot;: &quot;source&quot;,
+44	              &quot;handleType&quot;: &quot;output&quot;,
+45	              &quot;visible&quot;: &quot;{inputs.errorHandli
+
+… (truncated, 3429 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#18</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">133ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow &amp;&amp; python3 scripts/flow_edit.py --help 2&gt;&amp;1 | head -100&quot;,
+  &quot;description&quot;: &quot;Check flow_edit.py CLI help&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>usage: flow_edit.py [-h]
+                    {add-node,delete-node,add-edge,delete-edge,set-input,add-variable,add-output-mapping,add-variable-update} ...
+
+Primitive `.flow` mutations: node/edge CRUD, variables, output mappings.
+
+Each subcommand touches every array the operation implies (nodes, edges, definitions,
+variables.nodes, variables.variableUpdates, layout.nodes) in one pass and writes the file
+back with 2-space indent.
+
+positional arguments:
+  {add-node,delete-node,add-edge,delete-edge,set-input,add-variable,add-output-mapping,add-variable-update}
+    add-node            insert a node + definition + variables.nodes + layout
+                        entry
+    delete-node         remove a node and cascade
+                        edges/variables/updates/layout/definition
+    add-edge            add an edge with both ports; sets errorHandlingEnabled
+                        for error edges
+    delete-edge         remove an edge by id or by endpoints
+    set-input           in-place inputs update (dotted key path), preserves
+                        node id
+    add-variable        declare a workflow variable in variables.globals
+    add-output-mapping  map an out variable on an En
+
+… (truncated, 249 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#19</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">784ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow &amp;&amp; python3 scripts/flow_edit.py add-node --help 2&gt;&amp;1; echo ---; python3 scripts/flow_edit.py add-edge --help 2&gt;&amp;1; echo ---; python3 scripts/flow_edit.py add-variable --help 2&gt;&amp;1; echo ---; python3 scripts/flow_edit.py add-variable-update --help 2&gt;&amp;1; echo ---; python3 scripts/flow_edit.py add-output-mapping --help 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Check subcommand help for flow_edit.py&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>usage: flow_edit.py add-node [-h] --flow FLOW --id ID --type TYPE
+                             [--type-version TYPE_VERSION] [--label LABEL]
+                             [--definition-file DEFINITION_FILE]
+                             [--inputs INPUTS] [--outputs OUTPUTS]
+                             [--allow-cli-owned]
+
+options:
+  -h, --help            show this help message and exit
+  --flow FLOW
+  --id ID               camelCase, must start with a letter
+  --type TYPE
+  --type-version TYPE_VERSION
+                        omit when --definition-file supplies it
+  --label LABEL
+  --definition-file DEFINITION_FILE
+                        `uip maestro flow registry get &lt;type&gt; --output json`
+                        saved to a file
+  --inputs INPUTS       JSON object for inputs
+  --outputs OUTPUTS     auto | none | comma-separated output ids
+  --allow-cli-owned     override the CLI-owned refusal
+---
+usage: flow_edit.py add-edge [-h] --flow FLOW --source SOURCE
+                             --source-port SOURCE_PORT --target TARGET
+                             --target-port TARGET_PORT [--id ID]
+
+options:
+  -h, --help            show this help message and exit
+  --flow FLOW
+  --source S
+
+… (truncated, 1611 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#20</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">13ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow &amp;&amp; sed -n &#x27;300,500p&#x27; references/shared/variables-and-expressions.md&quot;,
+  &quot;description&quot;: &quot;Read more of variables-and-expressions doc: expression system, contexts, complete example&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>          &quot;variableId&quot;: &quot;counter&quot;,
+          &quot;expression&quot;: &quot;=js:$vars.counter + 1&quot;
+        },
+        {
+          &quot;variableId&quot;: &quot;lastStatus&quot;,
+          &quot;expression&quot;: &quot;=js:$vars.processItem.output.status&quot;
+        }
+      ]
+    }
+  }
+}
+```
+
+&gt; **Only `inout` variables can be updated.** Updating an `in` or `out` variable is invalid.
+
+&gt; **Inside loops:** variableUpdate expressions cannot access loop iteration variables like `$vars.&lt;loopId&gt;.currentItem`. Those are only available inside the body node&#x27;s script. The variableUpdate must reference the body node&#x27;s output (e.g., `=js:$vars.bodyNode.output`).
+
+---
+
+## Output Mapping on End Nodes
+
+Workflow output variables (`direction: &quot;out&quot;`) must be mapped on End nodes. The End node&#x27;s `outputs` object maps each output variable ID to a source expression.
+
+### Structure
+
+```json
+{
+  &quot;id&quot;: &quot;end1&quot;,
+  &quot;type&quot;: &quot;core.control.end&quot;,
+  &quot;typeVersion&quot;: &quot;1.0&quot;,
+  &quot;display&quot;: { &quot;label&quot;: &quot;End&quot; },
+  &quot;inputs&quot;: {},
+  &quot;outputs&quot;: {
+    &quot;totalAmount&quot;: {
+      &quot;source&quot;: &quot;=js:$vars.calculateTotal.output.amount&quot;
+    },
+    &quot;summary&quot;: {
+      &quot;source&quot;: &quot;=js:$vars.formatResult.output.text&quot;
+    }
+  }
+}
+```
+
+&gt; **Every `out` variable must have a mapping on every End node** t
+
+… (truncated, 6499 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#21</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">15ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow &amp;&amp; grep -n -A 40 \&quot;Jint Engine Constraints\&quot; references/shared/variables-and-expressions.md | head -80&quot;,
+  &quot;description&quot;: &quot;Read Jint engine constraints section&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>28:- [Jint Engine Constraints](#jint-engine-constraints)
+29-- [Scoping Rules](#scoping-rules)
+30-- [Variable Management via CLI](#variable-management-via-cli)
+31-- [Complete Example](#complete-example)
+32-
+33----
+34-
+35-## Variables Overview
+36-
+37-Every flow has a `variables` object at the top level of the `.flow` file. It contains three sections:
+38-
+39-```json
+40-{
+41-  &quot;variables&quot;: {
+42-    &quot;globals&quot;: [],
+43-    &quot;nodes&quot;: [],
+44-    &quot;variableUpdates&quot;: {}
+45-  }
+46-}
+47-```
+48-
+49-| Section | Purpose |
+50-| --- | --- |
+51-| `globals` | Workflow-level variables: inputs, outputs, and state |
+52-| `nodes` | Node output variables (auto-generated when using CLI `node add`) |
+53-| `variableUpdates` | Per-node expressions that update state variables |
+54-
+55----
+56-
+57-## Workflow Variables (`globals`)
+58-
+59-Workflow variables are declared in `variables.globals`. Each has a **direction** that determines its role.
+60-
+61-### Directions
+62-
+63-| Direction | Role | Readable | Writable | Use case |
+64-| --- | --- | --- | --- | --- |
+65-| `in` | External input | Yes | No | Values passed when the flow is triggered or called |
+66-| `out` | Workflow output | Yes | Mapped on End node | Values r
+
+… (truncated, 2340 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#22</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">16ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow &amp;&amp; cat references/shared/node-output-wiring.md 2&gt;&amp;1 | head -150&quot;,
+  &quot;description&quot;: &quot;Read node-output-wiring doc for convergent branch pattern guidance&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre># Wiring Node Outputs to Downstream Inputs
+
+How to reference one node&#x27;s output (or any `$vars.*` value) from another node&#x27;s input fields. This is the **single source of truth** for `=js:` expression rules in `.flow` JSON. All node-type plugins (connector, http, script, decision, end, etc.) defer to this file.
+
+&gt; **Read this before** writing any field that needs to reference a previous node&#x27;s output, a workflow variable, or any other `$vars.*` / `$metadata.*` value. Skipping `=js:` is the #1 cause of &quot;the value at runtime was the literal string `vars.X.output.Id`&quot; failures (MST-9107).
+
+---
+
+## The Rule (one sentence)
+
+**Any string that references `$vars.*`, `$metadata.*`, or `$self.*` MUST start with `=js:`. Otherwise it is a literal string at runtime.**
+
+---
+
+## What Goes Wrong Without `=js:`
+
+The Flow runtime serializes string fields into BPMN. The serializer rewrites the canvas-form tokens (`$vars` → `vars`) **whether or not the `=js:` prefix is present**. This means a missing prefix is silent — `flow validate` passes, the file looks plausible, but at runtime the BPMN engine sees a plain string and never evaluates it.
+
+Three failure modes observed in agent-generated `.flow` files
+
+… (truncated, 8119 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#23</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">28ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow &amp;&amp; grep -n -i \&quot;switch\&quot; -r references/author/references/plugins/switch/ references/shared/*.md references/author/references/planning-impl.md 2&gt;/dev/null | grep -i \&quot;converg\\|merge\\|end node\\|multiple branch\&quot; &quot;,
+  &quot;description&quot;: &quot;Search for guidance on switch branches converging to one end node&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>(Bash completed with no output)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#24</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">24ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow &amp;&amp; sed -n &#x27;1,400p&#x27; scripts/flow_edit.py&quot;,
+  &quot;description&quot;: &quot;Read flow_edit.py source to understand add-node/add-edge/add-variable behavior&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>#!/usr/bin/env python3
+&quot;&quot;&quot;Primitive `.flow` mutations: node/edge CRUD, variables, output mappings.
+
+Each subcommand touches every array the operation implies (nodes, edges, definitions,
+variables.nodes, variables.variableUpdates, layout.nodes) in one pass and writes the file
+back with 2-space indent.
+&quot;&quot;&quot;
+import argparse
+import json
+import re
+import sys
+
+import flow_lib as fl
+
+ID_RE = re.compile(r&quot;^[A-Za-z]&quot;)
+
+
+def _check_id(kind, value):
+    if not ID_RE.match(value or &quot;&quot;):
+        fl.die(&quot;%s id %r must start with a letter (XML NCName); never a bare UUID or leading digit&quot; % (kind, value))
+
+
+def _load_definition(path):
+    with open(path) as fh:
+        payload = json.load(fh)
+    return fl.unwrap_definition(payload)
+
+
+def _skeleton_outputs(ntype, outputs):
+    if fl.is_terminal(ntype) or not outputs:
+        return {}
+    if fl.is_trigger(ntype):
+        return {
+            &quot;output&quot;: {
+                &quot;type&quot;: &quot;object&quot;,
+                &quot;description&quot;: &quot;Data passed when triggering the process.&quot;,
+                &quot;source&quot;: &quot;null&quot;,
+                &quot;var&quot;: &quot;output&quot;,
+            }
+        }
+    if fl.is_orch_job(ntype):
+        return {
+            &quot;error&quot;: {
+                &quot;type&quot;: &quot;objec
+
+… (truncated, 14119 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#25</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">15ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow &amp;&amp; sed -n &#x27;400,700p&#x27; references/shared/file-format.md&quot;,
+  &quot;description&quot;: &quot;Read entry-points.json section and rest of file-format doc&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>  &quot;nodes&quot;: [
+    {
+      &quot;id&quot;: &quot;start&quot;,
+      &quot;type&quot;: &quot;core.trigger.manual&quot;,
+      &quot;typeVersion&quot;: &quot;1.0&quot;,
+      &quot;display&quot;: { &quot;label&quot;: &quot;Manual trigger&quot; },
+      &quot;inputs&quot;: {
+        &quot;entryPointId&quot;: &quot;&lt;uuid&gt;&quot;
+      },
+      &quot;outputs&quot;: {
+        &quot;output&quot;: {
+          &quot;type&quot;: &quot;object&quot;,
+          &quot;description&quot;: &quot;Data passed when manually triggering the process.&quot;,
+          &quot;source&quot;: &quot;null&quot;,
+          &quot;var&quot;: &quot;output&quot;
+        }
+      }
+    },
+    {
+      &quot;id&quot;: &quot;rollDice&quot;,
+      &quot;type&quot;: &quot;core.action.script&quot;,
+      &quot;typeVersion&quot;: &quot;1.0&quot;,
+      &quot;display&quot;: { &quot;label&quot;: &quot;Roll Dice&quot; },
+      &quot;inputs&quot;: {
+        &quot;script&quot;: &quot;return { roll: Math.floor(Math.random() * 6) + 1 };&quot;
+      },
+      &quot;outputs&quot;: {
+        &quot;output&quot;: {
+          &quot;type&quot;: &quot;object&quot;,
+          &quot;description&quot;: &quot;The return value of the script&quot;,
+          &quot;source&quot;: &quot;=result.response&quot;,
+          &quot;var&quot;: &quot;output&quot;
+        },
+        &quot;error&quot;: {
+          &quot;type&quot;: &quot;object&quot;,
+          &quot;description&quot;: &quot;Error information if the script fails&quot;,
+          &quot;source&quot;: &quot;=Error&quot;,
+          &quot;var&quot;: &quot;error&quot;
+        }
+      }
+    },
+    {
+      &quot;id&quot;: &quot;end&quot;,
+      &quot;type&quot;: &quot;core.logic.terminate&quot;,
+      &quot;typeVersion&quot;: &quot;1.0&quot;,
+      &quot;display&quot;: { &quot;label&quot;: &quot;End&quot; },
+   
+
+… (truncated, 7548 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#26</span>
+      <span class="tool-name">Write</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">6ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/tmp/switch_inputs.json&quot;,
+  &quot;content&quot;: &quot;{\n  \&quot;cases\&quot;: [\n    { \&quot;id\&quot;: \&quot;f2i\&quot;, \&quot;label\&quot;: \&quot;Feet to Inches\&quot;, \&quot;expression\&quot;: \&quot;$vars.start.output.direction === &#x27;f2i&#x27;\&quot; },\n    { \&quot;id\&quot;: \&quot;i2f\&quot;, \&quot;label\&quot;: \&quot;Inches to Feet\&quot;, \&quot;expression\&quot;: \&quot;$vars.start.output.direction === &#x27;i2f&#x27;\&quot; },\n    { \&quot;id\&quot;: \&quot;y2f\&quot;, \&quot;label\&quot;: \&quot;Yards to Feet\&quot;, \&quot;expression\&quot;: \&quot;$vars.start.output.direction === &#x27;y2f&#x27;\&quot; }\n  ]\n}\n&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>File created successfully at: /tmp/switch_inputs.json (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#27</span>
+      <span class="tool-name">Write</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">3ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/tmp/scriptF2I_inputs.json&quot;,
+  &quot;content&quot;: &quot;{ \&quot;script\&quot;: \&quot;return { result: $vars.start.output.value * 12 };\&quot; }\n&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>File created successfully at: /tmp/scriptF2I_inputs.json (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#28</span>
+      <span class="tool-name">Write</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">7ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/tmp/scriptI2F_inputs.json&quot;,
+  &quot;content&quot;: &quot;{ \&quot;script\&quot;: \&quot;return { result: $vars.start.output.value / 12 };\&quot; }\n&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>File created successfully at: /tmp/scriptI2F_inputs.json (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#29</span>
+      <span class="tool-name">Write</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">11ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/tmp/scriptY2F_inputs.json&quot;,
+  &quot;content&quot;: &quot;{ \&quot;script\&quot;: \&quot;return { result: $vars.start.output.value * 3 };\&quot; }\n&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>File created successfully at: /tmp/scriptY2F_inputs.json (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#30</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">28ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow &amp;&amp; cat references/author/references/plugins/merge/impl.md 2&gt;&amp;1 | head -150&quot;,
+  &quot;description&quot;: &quot;Read merge plugin impl doc for converging branch output pattern&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre># Merge Node — Implementation
+
+## Node Type
+
+`core.logic.merge`
+
+## Registry Validation
+
+```bash
+uip maestro flow registry get core.logic.merge --output json
+```
+
+Confirm: input port `input` (accepts multiple connections), output port `output`. Set the node instance `typeVersion` to the `version` field from this response — do not hardcode it.
+
+## JSON Structure
+
+```json
+{
+  &quot;id&quot;: &quot;joinBranches&quot;,
+  &quot;type&quot;: &quot;core.logic.merge&quot;,
+  &quot;typeVersion&quot;: &quot;&lt;DEFINITION_VERSION&gt;&quot;,
+  &quot;display&quot;: { &quot;label&quot;: &quot;Join Branches&quot; },
+  &quot;inputs&quot;: {}
+}
+```
+
+## Adding / Editing
+
+For step-by-step add, delete, and wiring procedures, see [editing-operations.md](../../editing-operations.md). Use the JSON structure above for the node-specific `inputs`.
+
+## Wiring
+
+- `input` — accepts multiple incoming edges (one per parallel branch). All branches must reach the merge before it continues.
+- `output` — single outgoing edge to the next downstream node.
+
+See [editing-operations.md](../../editing-operations.md) for edge add procedures.
+
+## Debug
+
+| Error | Cause | Fix |
+| --- | --- | --- |
+| Merge never completes | One parallel branch has no path to the merge node | Ensure all forked branches reach the merge |
+| Unexpect
+
+… (truncated, 183 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#31</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">24ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow &amp;&amp; grep -n -B2 -A 20 \&quot;converg\\|multiple incoming\\|multiple branch.*end\\|branches.*end node\\|single End node\&quot; references/author/references/plugins/decision/impl.md references/author/references/planning-arch.md references/author/references/planning-impl.md 2&gt;/dev/null | head -150&quot;,
+  &quot;description&quot;: &quot;Search for guidance on branches converging to a single End node&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>references/author/references/planning-arch.md-268-7. Switch nodes produce one outgoing edge per case + optionally one from `default`
+references/author/references/planning-arch.md-269-8. Loop nodes: the `loopBack` port receives the edge returning from the last node inside the loop body; `success` fires after all iterations
+references/author/references/planning-arch.md:270:9. Merge nodes accept multiple incoming edges (one per parallel path being synchronized)
+references/author/references/planning-arch.md-271-10. Do not create cycles except through Loop&#x27;s `loopBack` mechanism
+references/author/references/planning-arch.md-272-11. **No dangling nodes** — every node must be connected by at least one edge. A node with no incoming and no outgoing edges is invalid. Verify every node in the node table appears in the edge table as either a source or target.
+references/author/references/planning-arch.md-273-12. **Wire the `error` source port only when the requirements specify a failure fallback** — e.g., &quot;if the call fails&quot;, &quot;return X for invalid input&quot;, &quot;if the article doesn&#x27;t exist&quot;, &quot;handle timeouts&quot;. Without an `error` edge the failure faults the whole flow, which is what should happen wh
+
+… (truncated, 8142 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#32</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">21ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow &amp;&amp; grep -n -i \&quot;optional chaining\\|typeof\\|unreached\\|not executed\\|did not run\\|hasn&#x27;t run\\|unexecuted\\|skipped branch\\|node that did not\\|undefined.*node\\|node.*undefined\&quot; references/shared/*.md references/author/references/plugins/*/impl.md 2&gt;/dev/null&quot;,
+  &quot;description&quot;: &quot;Search docs for behavior of unexecuted node outputs&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>references/shared/file-format.md:147:Skipping `variables.nodes[]` produces a flow that passes `flow validate` but resolves `$vars.&lt;sourceNodeId&gt;.output` to `undefined` at runtime (MST-9972). `uip maestro flow format` regenerates `variables.nodes[]` from `nodes[]` + `definitions[]`, so always run it after structural edits — the omission becomes self-healing.
+references/shared/variables-and-expressions.md:380:The serializer rewrites `$vars` → `vars` whether or not `=js:` is present, so a missing prefix yields a confusing failure: the runtime field is bound to the literal string `&quot;vars.X.output.Id&quot;` (which looks like an unevaluated expression). The last row above is the opposite mistake — `=js:` is present but the `$vars.` prefix on the node reference is missing, so the expression evaluates a bare (undefined) identifier instead of the node&#x27;s output. `flow validate` catches this (cli-side `expression-prefix-validator`, error with remediation hint) — older cli versions without the validator still let it through to `flow debug`. See [node-output-wiring.md](node-output-wiring.md) for the full per-node-type field reference (MST-9107).
+references/shared/variables-and-expressions.md:549:A no
+
+… (truncated, 5683 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#33</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">24ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow &amp;&amp; grep -n -B3 -A 15 \&quot;Conditional Branch\&quot; -A 40 references/author/references/planning-arch.md | head -80&quot;,
+  &quot;description&quot;: &quot;Read Conditional Branch pattern example in planning-arch doc&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>284-Trigger -&gt; Action A -&gt; Action B -&gt; Action C -&gt; End
+285-```
+286-
+287:### Conditional Branch
+288-
+289-```
+290-Trigger -&gt; Fetch Data -&gt; Decision
+291-  |-- true -&gt; Process -&gt; End
+292-  |-- false -&gt; Log Skip -&gt; End
+293-```
+294-
+295-### Parallel Execution with Merge
+296-
+297-```
+298-Trigger -&gt; Prepare
+299-  |-- Call API A --+
+300-  |-- Call API B --+
+301-                   +-- Merge -&gt; Combine -&gt; End
+302-```
+303-
+304-### Loop Over Collection
+305-
+306-```
+307-Trigger -&gt; Fetch List -&gt; Loop
+308-  |-- [loop body] Process Item -&gt; (loopBack)
+309-  |-- success -&gt; Summarize -&gt; End
+310-```
+311-
+312-### Error Handling (implicit `error` port)
+313-
+314-**Default: no error edge, and `inputs.errorHandlingEnabled` left unset.** An unhandled node failure should fault the flow — that is the visible, correct outcome. Add error handling only where the requirements say what the failure should do.
+315-
+316-When they do, wire the action node&#x27;s implicit `error` source port directly to a handler — this catches node-level failures (network errors, timeouts, non-2xx HTTP responses, script exceptions, transform faults). Do NOT put a Decision downstream to check for errors — by the time execution reaches the De
+
+… (truncated, 1304 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#34</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">18ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow &amp;&amp; sed -n &#x27;1,250p&#x27; scripts/flow_lib.py&quot;,
+  &quot;description&quot;: &quot;Read flow_lib.py to understand definition dedup and helper functions&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>&quot;&quot;&quot;Shared loader and graph helpers for `.flow` JSON. Internal — imported by the other scripts.&quot;&quot;&quot;
+import json
+import sys
+
+TRIGGER_TYPES = {&quot;core.trigger.manual&quot;, &quot;core.trigger.scheduled&quot;}
+TRIGGER_PREFIXES = (&quot;uipath.connector.trigger.&quot;,)
+TERMINAL_TYPES = {&quot;core.control.end&quot;, &quot;core.logic.terminate&quot;}
+CLI_OWNED_PREFIXES = (&quot;uipath.connector.trigger.&quot;, &quot;uipath.connector.event.&quot;, &quot;uipath.connector.&quot;)
+CLI_OWNED_TYPES = {&quot;core.action.http.v2&quot;}
+RESOURCE_PREFIXES = (
+    &quot;uipath.core.rpa-workflow.&quot;,
+    &quot;uipath.core.agent.&quot;,
+    &quot;uipath.core.flow.&quot;,
+    &quot;uipath.core.agentic-process.&quot;,
+    &quot;uipath.core.api-workflow.&quot;,
+    &quot;uipath.core.human-task.&quot;,
+)
+
+
+def die(msg, code=2):
+    sys.stderr.write(&quot;error: %s\n&quot; % msg)
+    raise SystemExit(code)
+
+
+def load(path):
+    try:
+        with open(path) as fh:
+            data = json.load(fh)
+    except FileNotFoundError:
+        die(&quot;flow file not found: %s&quot; % path)
+    except json.JSONDecodeError as exc:
+        die(&quot;%s is not valid JSON: %s&quot; % (path, exc))
+    if not isinstance(data, dict):
+        die(&quot;%s does not contain a flow object&quot; % path)
+    data.setdefault(&quot;nodes&quot;, [])
+    data.setdefault(&quot;edges&quot;, [])
+    data.setdefault(&quot;definitions&quot;, [])
+ 
+
+… (truncated, 5190 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#35</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-err">ERROR</span>
+      <span class="tool-duration">381ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;SKILL=/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow\nFLOW=\&quot;$(pwd)/FeetInches.flow\&quot;\necho \&quot;FLOW=$FLOW\&quot;\npython3 \&quot;$SKILL/scripts/flow_edit.py\&quot; add-variable --flow \&quot;$FLOW\&quot; --id value --direction in --type number --trigger-node-id start --description \&quot;Numeric value to convert\&quot;\npython3 \&quot;$SKILL/scripts/flow_edit.py\&quot; add-variable --flow \&quot;$FLOW\&quot; --id direction --direction in --type string --… (225 more chars)&quot;,
+  &quot;description&quot;: &quot;Declare in/out workflow variables on the flow&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Exit code 2
+FLOW=/work/output/artifacts/skill-flow-feet-inches/FeetInches.flow
+error: flow file not found: /work/output/artifacts/skill-flow-feet-inches/FeetInches.flow
+error: flow file not found: /work/output/artifacts/skill-flow-feet-inches/FeetInches.flow
+error: flow file not found: /work/output/artifacts/skill-flow-feet-inches/FeetInches.flow</pre>
+    <h4>Error</h4><pre>Exit code 2
+FLOW=/work/output/artifacts/skill-flow-feet-inches/FeetInches.flow
+error: flow file not found: /work/output/artifacts/skill-flow-feet-inches/FeetInches.flow
+error: flow file not found: /work/output/artifacts/skill-flow-feet-inches/FeetInches.flow
+error: flow file not found: /work/output/artifacts/skill-flow-feet-inches/FeetInches.flow</pre>
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#36</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">12ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;find /work/output/artifacts/skill-flow-feet-inches -maxdepth 4 -name \&quot;*.flow\&quot;&quot;,
+  &quot;description&quot;: &quot;Locate the .flow file since bash cwd resets between calls&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/work/output/artifacts/skill-flow-feet-inches/FeetInches/FeetInches/FeetInches.flow</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#37</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">429ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;SKILL=/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow\nFLOW=/work/output/artifacts/skill-flow-feet-inches/FeetInches/FeetInches/FeetInches.flow\npython3 \&quot;$SKILL/scripts/flow_edit.py\&quot; add-variable --flow \&quot;$FLOW\&quot; --id value --direction in --type number --trigger-node-id start --description \&quot;Numeric value to convert\&quot;\npython3 \&quot;$SKILL/scripts/flow_edit.py\&quot; add-variable --flow \&quot;$FLOW\&quot; --id … (266 more chars)&quot;,
+  &quot;description&quot;: &quot;Declare in/out workflow variables using absolute paths&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>declared in variable value
+declared in variable direction
+declared out variable result; map it on every reachable End node (add-output-mapping)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#38</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">694ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;SKILL=/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow\nFLOW=/work/output/artifacts/skill-flow-feet-inches/FeetInches/FeetInches/FeetInches.flow\n\npython3 \&quot;$SKILL/scripts/flow_edit.py\&quot; add-node --flow \&quot;$FLOW\&quot; --id switchDirection --type core.logic.switch \\\n  --definition-file /tmp/switch.json --label \&quot;Switch on Direction\&quot; \\\n  --inputs \&quot;$(cat /tmp/switch_inputs.json)\&quot; --outputs none\n\npy… (814 more chars)&quot;,
+  &quot;description&quot;: &quot;Add switch, three script nodes, and end node&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>added node switchDirection (core.logic.switch v1.1); definition added; variables.nodes +0
+added node scriptF2I (core.action.script v1.1); definition added; variables.nodes +2
+added node scriptI2F (core.action.script v1.1); definition reused/absent; variables.nodes +2
+added node scriptY2F (core.action.script v1.1); definition reused/absent; variables.nodes +2
+added node endResult (core.control.end v1.0); definition added; variables.nodes +0</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#39</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">908ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;SKILL=/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow\nFLOW=/work/output/artifacts/skill-flow-feet-inches/FeetInches/FeetInches/FeetInches.flow\n\npython3 \&quot;$SKILL/scripts/flow_edit.py\&quot; add-edge --flow \&quot;$FLOW\&quot; --source start --source-port output --target switchDirection --target-port input\n\npython3 \&quot;$SKILL/scripts/flow_edit.py\&quot; add-edge --flow \&quot;$FLOW\&quot; --source switchDirection --source-p… (777 more chars)&quot;,
+  &quot;description&quot;: &quot;Wire edges: trigger to switch, switch cases to scripts, scripts to end&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>added edge edge_start_output_switchDirection_input
+added edge edge_switchDirection_case-f2i_scriptF2I_input
+added edge edge_switchDirection_case-i2f_scriptI2F_input
+added edge edge_switchDirection_case-y2f_scriptY2F_input
+added edge edge_scriptF2I_success_endResult_input
+added edge edge_scriptI2F_success_endResult_input
+added edge edge_scriptY2F_success_endResult_input</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#40</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">127ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;SKILL=/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow\nFLOW=/work/output/artifacts/skill-flow-feet-inches/FeetInches/FeetInches/FeetInches.flow\n\npython3 \&quot;$SKILL/scripts/flow_edit.py\&quot; add-output-mapping --flow \&quot;$FLOW\&quot; --end-node endResult --var result \\\n  --source &#x27;=js:($vars.scriptF2I.output || $vars.scriptI2F.output || $vars.scriptY2F.output).result&#x27;\n&quot;,
+  &quot;description&quot;: &quot;Map result output variable on End node from whichever branch executed&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>mapped result on endResult</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#41</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">28ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow &amp;&amp; grep -rn \&quot;optional chaining\\|?\\.\\|nullish\&quot; references/ scripts/lint_jint.py 2&gt;/dev/null | head -30&quot;,
+  &quot;description&quot;: &quot;Search for optional chaining support/mentions in docs and lint script&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>references/author/references/plugins/ixp/impl.md:282:const total = fields.find(f =&gt; f.FieldName === &#x27;invoiceTotal&#x27;)?.Values?.[0];
+references/author/references/plugins/ixp/impl.md:283:const vendor = fields.find(f =&gt; f.FieldName === &#x27;vendor&#x27;)?.Values?.[0];
+references/author/references/plugins/ixp/impl.md:339:4. Author downstream consumers with `$vars.&lt;id&gt;.output.ExtractionResult.ResultsDocument.Fields.find(f =&gt; f.FieldName === &#x27;&lt;fieldName from step 3&gt;&#x27;)?.Values?.[0]`.
+references/author/references/plugins/ixp/impl.md:360:5. **Wire downstream consumers against the mock with `$vars` references, not static values.** Scripts, decisions, and end-node mappings that follow the mock MUST reference `$vars.{mockNodeId}.output` (the mock&#x27;s only port) instead of hard-coded returns. Example: a script that summarises the (future) extraction writes `return { vendor: $vars.extractInvoiceFieldsMock.output.vendorName };`, not `return { ok: &quot;OK&quot; };`. This keeps the **node-graph** swap-ready — node IDs, edge shapes, and the `output` port name stay intact when the mock is replaced. **Field-access paths inside downstream scripts WILL need rewriting at swap time** — the real IxP `output` is shaped as `{ Ext
+
+… (truncated, 389 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#42</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">143ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;SKILL=/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow\nFLOW=/work/output/artifacts/skill-flow-feet-inches/FeetInches/FeetInches/FeetInches.flow\ncd /work/output/artifacts/skill-flow-feet-inches/FeetInches/FeetInches\npython3 \&quot;$SKILL/scripts/audit_flow.py\&quot; \&quot;$FLOW\&quot; --json-out /tmp/findings.json\necho \&quot;AUDIT_EXIT=$?\&quot;\ncat /tmp/findings.json | head -100&quot;,
+  &quot;description&quot;: &quot;Run flow audit before validate&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>topology      0 error(s), 0 warning(s), 0 info
+expressions   0 error(s), 0 warning(s), 0 info
+jint          0 error(s), 0 warning(s), 0 info
+bindings      0 error(s), 0 warning(s), 0 info
+runtime-gaps  1 error(s), 1 warning(s), 0 info
+    error   MISSING_NODE_VARIABLE      start                                    no variables.nodes[] entry &#x27;start.output&#x27;; $vars.start.output resolves to undefined at runtime even though validate passes. `uip maestro flow format` regenerates it
+    warning LAYOUT_SIZE_MISMATCH       start                                    size NonexNone disagrees with this node&#x27;s shape (96x96); Studio Web renders it misshapen until `flow format` runs
+full findings: /tmp/findings.json
+audit: FAIL (1 error(s))
+AUDIT_EXIT=1
+{
+  &quot;flow&quot;: &quot;/work/output/artifacts/skill-flow-feet-inches/FeetInches/FeetInches/FeetInches.flow&quot;,
+  &quot;checks&quot;: {
+    &quot;topology&quot;: [],
+    &quot;expressions&quot;: [],
+    &quot;jint&quot;: [],
+    &quot;bindings&quot;: [],
+    &quot;runtime-gaps&quot;: [
+      {
+        &quot;severity&quot;: &quot;error&quot;,
+        &quot;code&quot;: &quot;MISSING_NODE_VARIABLE&quot;,
+        &quot;message&quot;: &quot;no variables.nodes[] entry &#x27;start.output&#x27;; $vars.start.output resolves to undefined at runtime even though validate passes. `uip maestro flow 
+
+… (truncated, 316 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#43</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">3.84s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-feet-inches/FeetInches/FeetInches\nuip maestro flow validate \&quot;FeetInches.flow\&quot; --output json\necho \&quot;VALIDATE_EXIT=$?\&quot;\nuip maestro flow format \&quot;FeetInches.flow\&quot; --output json\necho \&quot;FORMAT_EXIT=$?\&quot;&quot;,
+  &quot;description&quot;: &quot;Validate and format the flow&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>[ManifestClient] fetchDynamicNodes ok: total=317 agent context nodes=2 external agent nodes=7 orchestrator nodes=263 IXP nodes=45
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FlowValidate&quot;,
+  &quot;Data&quot;: {
+    &quot;File&quot;: &quot;/work/output/artifacts/skill-flow-feet-inches/FeetInches/FeetInches/FeetInches.flow&quot;,
+    &quot;Status&quot;: &quot;Valid&quot;
+  }
+}
+VALIDATE_EXIT=0
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FlowFormat&quot;,
+  &quot;Data&quot;: {
+    &quot;File&quot;: &quot;FeetInches.flow&quot;,
+    &quot;NodesTotal&quot;: 6,
+    &quot;EdgesTotal&quot;: 7,
+    &quot;NodesRepositioned&quot;: 5,
+    &quot;NodesResized&quot;: 1,
+    &quot;SubflowsTidied&quot;: 0,
+    &quot;VariableCount&quot;: 10
+  },
+  &quot;Instructions&quot;: &quot;Repositioned 5 of 6 nodes. Set canonical size on 1 node(s)&quot;
+}
+FORMAT_EXIT=0</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#44</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">156ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;SKILL=/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow\nFLOW=/work/output/artifacts/skill-flow-feet-inches/FeetInches/FeetInches/FeetInches.flow\npython3 \&quot;$SKILL/scripts/audit_flow.py\&quot; \&quot;$FLOW\&quot; --json-out /tmp/findings2.json\necho \&quot;AUDIT_EXIT=$?\&quot;&quot;,
+  &quot;description&quot;: &quot;Re-run audit after format to confirm all clear&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>topology      0 error(s), 0 warning(s), 0 info
+expressions   0 error(s), 0 warning(s), 0 info
+jint          0 error(s), 0 warning(s), 0 info
+bindings      0 error(s), 0 warning(s), 0 info
+runtime-gaps  0 error(s), 0 warning(s), 0 info
+full findings: /tmp/findings2.json
+audit: clean
+AUDIT_EXIT=0</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#45</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">5ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-feet-inches/FeetInches/FeetInches/FeetInches.flow&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	{
+2	  &quot;id&quot;: &quot;a433d63e-ad07-496a-959c-85c4a94c0a3e&quot;,
+3	  &quot;version&quot;: &quot;1.9&quot;,
+4	  &quot;name&quot;: &quot;FeetInches&quot;,
+5	  &quot;nodes&quot;: [
+6	    {
+7	      &quot;id&quot;: &quot;start&quot;,
+8	      &quot;type&quot;: &quot;core.trigger.manual&quot;,
+9	      &quot;typeVersion&quot;: &quot;1.0&quot;,
+10	      &quot;display&quot;: {
+11	        &quot;label&quot;: &quot;Manual trigger&quot;
+12	      },
+13	      &quot;inputs&quot;: {
+14	        &quot;entryPointId&quot;: &quot;f03868b8-491d-40a7-9a98-b7b797acbf24&quot;,
+15	        &quot;isDefaultEntryPoint&quot;: true
+16	      }
+17	    },
+18	    {
+19	      &quot;id&quot;: &quot;switchDirection&quot;,
+20	      &quot;type&quot;: &quot;core.logic.switch&quot;,
+21	      &quot;typeVersion&quot;: &quot;1.1&quot;,
+22	      &quot;display&quot;: {
+23	        &quot;label&quot;: &quot;Switch on Direction&quot;
+24	      },
+25	      &quot;inputs&quot;: {
+26	        &quot;cases&quot;: [
+27	          {
+28	            &quot;id&quot;: &quot;f2i&quot;,
+29	            &quot;label&quot;: &quot;Feet to Inches&quot;,
+30	            &quot;expression&quot;: &quot;$vars.start.output.direction === &#x27;f2i&#x27;&quot;
+31	          },
+32	          {
+33	            &quot;id&quot;: &quot;i2f&quot;,
+34	            &quot;label&quot;: &quot;Inches to Feet&quot;,
+35	            &quot;expression&quot;: &quot;$vars.start.output.direction === &#x27;i2f&#x27;&quot;
+36	          },
+37	          {
+38	            &quot;id&quot;: &quot;y2f&quot;,
+39	            &quot;label&quot;: &quot;Yards to Feet&quot;,
+40	            &quot;expression&quot;: &quot;$vars.start.output.direction === &#x27;y2f&#x27;&quot;
+41	          }
+42	        ]
+43	      
+
+… (truncated, 21064 more chars)</pre>
+    
+  </div>
+</details>
+
+</div>
+
+<h2>Command Telemetry</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Total</div><div class="value">46</div></div>
+    <div class="stat"><div class="label">Successful</div><div class="value">45 (98%)</div></div>
+    <div class="stat"><div class="label">Failed</div><div class="value">1</div></div>
+    <div class="stat"><div class="label">Avg / cmd</div><div class="value">783ms</div></div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 2fr;gap:16px;margin-top:12px">
+    <div>
+      <h4>By Tool</h4>
+      <table>
+        <thead><tr><th>Tool</th><th>Count</th></tr></thead>
+        <tbody><tr><td class='mono'>Bash</td><td>35</td></tr><tr><td class='mono'>Read</td><td>6</td></tr><tr><td class='mono'>Write</td><td>4</td></tr><tr><td class='mono'>Skill</td><td>1</td></tr></tbody>
+      </table>
+    </div>
+    <div>
+      <h4>Slowest</h4>
+      <table>
+        <thead><tr><th>Tool</th><th>Duration</th><th>Parameters</th></tr></thead>
+        <tbody><tr><td class='mono'>Bash</td><td>14.56s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro flow registry get core.co...</td></tr><tr><td class='mono'>Bash</td><td>12.34s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;\\\nuip solution init &quot;FeetInches&quot; --...</td></tr><tr><td class='mono'>Bash</td><td>3.84s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;cd /work/output/artifacts/skill-flow-...</td></tr><tr><td class='mono'>Bash</td><td>908ms</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;SKILL=/home/azureuser/projects/skills...</td></tr><tr><td class='mono'>Bash</td><td>784ms</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;cd /home/azureuser/projects/skills/tm...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+  <p><strong>Most Common Pattern:</strong> <code>Bash → Bash → Bash</code></p><p><strong>Skill Tool Invoked:</strong> 1 time(s)</p>
+</div>
+
+<h2>Generation Metrics</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Total Latency</div><div class="value">7m 37s</div></div>
+    <div class="stat"><div class="label">Turns</div><div class="value">1</div></div>
+    <div class="stat"><div class="label">Assistant Turns</div><div class="value">78</div></div>
+    <div class="stat"><div class="label">Avg Turn Latency</div><div class="value">7m 6s</div></div>
+    
+  </div>
+</div>
+
+<h2>Token Usage</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Input (uncached)</div><div class="value">637</div></div>
+    <div class="stat"><div class="label">Output</div><div class="value">34,518</div></div>
+    <div class="stat"><div class="label">Cache Write</div><div class="value">123,087</div></div>
+    <div class="stat"><div class="label">Cache Read</div><div class="value">3,623,227</div></div>
+    <div class="stat"><div class="label">Total</div><div class="value">3,781,469</div></div>
+    <div class="stat"><div class="label">Cost</div><div class="value">$2.0682</div></div>
+  </div>
+</div>
+
+<h2>Agent Settings</h2>
+<div class="card" style="padding:0">
+  <table>
+    <tbody><tr><td class='mono dim'>Permission Mode</td><td>acceptEdits</td></tr><tr><td class='mono dim'>Allowed Tools</td><td>Skill, Bash, Read, Write, Edit, Glob, Grep</td></tr><tr><td class='mono dim'>Model</td><td>us.anthropic.claude-sonnet-5</td></tr><tr><td class='mono dim'>Max Turns</td><td>40</td></tr><tr><td class='mono dim'>System Prompt</td><td>You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted. </td></tr><tr><td class='mono dim'>System Prompt Mode</td><td>append</td></tr><tr><td class='mono dim'>Plugins</td><td>/home/azureuser/projects/skills/tmp</td></tr></tbody>
+  </table>
+</div>
+
+<h2>Environment</h2>
+<div class="card" style="padding:0">
+  <table>
+    <tbody><tr><td class='mono dim'>git_commit</td><td>unknown</td></tr><tr><td class='mono dim'>skills_git_commit</td><td>unknown</td></tr><tr><td class='mono dim'>cli_version</td><td>1.201.0-dev.8272</td></tr><tr><td class='mono dim'>tool_plugins</td><td>{&#x27;admin-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;agent-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;agenthub-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;aops-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;api-workflow-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;automation-hub-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;codedagent-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;codedapp-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;coder-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;context-grounding-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;conversational-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;data-fabric-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;docsai-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;function-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;gov-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;guardrails-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;insights-tool&#x27;: &#x27;1.201.0-dev.8276&#x27;, &#x27;integrationservice-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;ixp-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;llm-gateway-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;llmgw-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;maestro-tool&#x27;: &#x27;1.201.0-dev.8275&#x27;, &#x27;model-hub-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;orchestrator-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;platform-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;pm-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;rpa-legacy-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;rpa-tool&#x27;: &#x27;1.201.0-dev.20260809.3&#x27;, &#x27;solution-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;tasks-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;test-manager-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;traces-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;vertical-solutions-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;}</td></tr><tr><td class='mono dim'>coder_eval</td><td>0.9.6</td></tr><tr><td class='mono dim'>claude_code_cli</td><td>2.1.177 (Claude Code)</td></tr><tr><td class='mono dim'>uv</td><td>uv 0.12.5 (x86_64-unknown-linux-gnu)</td></tr><tr><td class='mono dim'>anthropic</td><td>0.122.0</td></tr><tr><td class='mono dim'>openai</td><td>3.2.0</td></tr><tr><td class='mono dim'>pydantic</td><td>2.12.5</td></tr><tr><td class='mono dim'>api_routing</td><td>aws_bedrock</td></tr><tr><td class='mono dim'>eval_routing</td><td>aws_bedrock</td></tr><tr><td class='mono dim'>aws_region</td><td>us-east-2</td></tr><tr><td class='mono dim'>bedrock_model</td><td>us.anthropic.claude-sonnet-4-6</td></tr><tr><td class='mono dim'>system_prompt_semantics</td><td>append</td></tr></tbody>
+  </table>
+</div>
+
+<footer>Generated by coder_eval · 2026-08-19T15:47:49</footer>
+</div>
+<script>
+function toggleTheme() {
+  document.documentElement.classList.toggle('light');
+  try {
+    const mode = document.documentElement.classList.contains('light') ? 'light' : 'dark';
+    localStorage.setItem('coder-eval-theme', mode);
+  } catch (e) { /* ignore */ }
+}
+(function() {
+  try {
+    if (localStorage.getItem('coder-eval-theme') === 'light') {
+      document.documentElement.classList.add('light');
+    }
+  } catch (e) { /* ignore */ }
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+    xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+    xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+    xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+    xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:uipath="http://uipath.org/schema/bpmn"
+    id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn"
+    exporter="UiPath (https://bpmn.uipath.com)" exporterVersion="1.0">
+  <bpmn:process id="Process_QueueCreateAndWait" isExecutable="true" name="QueueCreateAndWaitBpmn">
+    <bpmn:extensionElements>
+      <uipath:migrationVersion version="11.5" />
+      <uipath:variables version="v1">
+        <uipath:inputOutput id="Var_TransactionPayload" name="TransactionPayload" type="json" />
+        <uipath:inputOutput id="Var_ProcessedItem" name="ProcessedItem" type="json" />
+      </uipath:variables>
+      <uipath:bindings version="v1">
+        <uipath:binding id="Binding_TransactionQueue" resource="queue" propertyAttribute="Key" default="&lt;QUEUE_NAME&gt;" />
+      </uipath:bindings>
+    </bpmn:extensionElements>
+
+    <bpmn:startEvent id="Start_Manual" name="Manual start">
+      <bpmn:extensionElements>
+        <uipath:entryPointId value="605f4609-0252-42a4-99c4-13c377842c93" />
+      </bpmn:extensionElements>
+      <bpmn:outgoing>Flow_ToEnqueueAndWait</bpmn:outgoing>
+    </bpmn:startEvent>
+
+    <bpmn:serviceTask id="Task_CreateAndWaitForQueueItem" name="Enqueue and wait for transaction item">
+      <bpmn:extensionElements>
+        <uipath:activity version="v1">
+          <uipath:type value="Orchestrator.CreateAndWaitForQueueItem" version="v1" />
+          <uipath:context>
+            <uipath:input name="queueName" value="=bindings.Binding_TransactionQueue" />
+            <uipath:input name="folderId" value="&lt;FOLDER_ID&gt;" />
+            <uipath:input name="folderPath" value="&lt;FOLDER_PATH&gt;" />
+          </uipath:context>
+          <uipath:input name="ItemData" type="json" target="body"><![CDATA[{"Content":"=vars.Var_TransactionPayload"}]]></uipath:input>
+          <uipath:output name="response" type="Orchestrator.CreateQueueItem" var="Var_ProcessedItem" />
+        </uipath:activity>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_ToEnqueueAndWait</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToEnd</bpmn:outgoing>
+    </bpmn:serviceTask>
+
+    <bpmn:endEvent id="End_Process" name="End">
+      <bpmn:incoming>Flow_ToEnd</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <bpmn:sequenceFlow id="Flow_ToEnqueueAndWait" sourceRef="Start_Manual" targetRef="Task_CreateAndWaitForQueueItem" />
+    <bpmn:sequenceFlow id="Flow_ToEnd" sourceRef="Task_CreateAndWaitForQueueItem" targetRef="End_Process" />
+  </bpmn:process>
+
+  <bpmndi:BPMNDiagram id="Diagram_1">
+    <bpmndi:BPMNPlane id="Plane_1" bpmnElement="Process_QueueCreateAndWait">
+      <bpmndi:BPMNShape id="S_Start_Manual" bpmnElement="Start_Manual">
+        <dc:Bounds x="160" y="100" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Task_CreateAndWaitForQueueItem" bpmnElement="Task_CreateAndWaitForQueueItem">
+        <dc:Bounds x="260" y="78" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_End_Process" bpmnElement="End_Process">
+        <dc:Bounds x="440" y="100" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_ToEnqueueAndWait" bpmnElement="Flow_ToEnqueueAndWait">
+        <di:waypoint x="196" y="118" />
+        <di:waypoint x="260" y="118" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_Flow_ToEnd" bpmnElement="Flow_ToEnd">
+        <di:waypoint x="380" y="118" />
+        <di:waypoint x="440" y="118" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

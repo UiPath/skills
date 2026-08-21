@@ -1,0 +1,113 @@
+{
+  "Result": "Success",
+  "Code": "FlowDebug",
+  "Data": {
+    "jobKey": "700ffea7-8ca8-4bb8-8273-3607ec46e606",
+    "instanceId": "700ffea7-8ca8-4bb8-8273-3607ec46e606",
+    "runId": "01a01ab4-c744-72bd-adae-f1ac19eaf242",
+    "folderKey": "410fae2d-89b3-4cd1-a991-7359bda90c0b",
+    "finalStatus": "Completed",
+    "solutionId": "f2f5ec99-4cba-469b-c7e5-08defdfbb4a7",
+    "studioWebUrl": "https://alpha.uipath.com/codereval/studio_/designer/49474c46-87c5-4db3-85b4-1cc865b5351a?solutionId=f2f5ec99-4cba-469b-c7e5-08defdfbb4a7",
+    "elementExecutions": [
+      {
+        "elementId": "start",
+        "elementType": "StartEvent",
+        "status": "Completed",
+        "startedAt": "2026-08-19T15:47:33.5596917Z",
+        "completedAt": "2026-08-19T15:47:33.9208532Z"
+      },
+      {
+        "elementId": "billingDisputeAgent",
+        "elementType": "ServiceTask",
+        "status": "Completed",
+        "startedAt": "2026-08-19T15:47:34.3156583Z",
+        "completedAt": "2026-08-19T15:48:01.3537432Z"
+      },
+      {
+        "elementId": "end",
+        "elementType": "EndEvent",
+        "status": "Completed",
+        "startedAt": "2026-08-19T15:48:01.5627883Z",
+        "completedAt": "2026-08-19T15:48:01.8931753Z"
+      }
+    ],
+    "variables": {
+      "elements": [
+        {
+          "elementId": "start",
+          "elementRunId": "5fc7496d-93be-4d9a-9789-37f99a076256",
+          "isMarker": false,
+          "inputs": {},
+          "inputDefinitions": {},
+          "outputs": {}
+        },
+        {
+          "elementId": "billingDisputeAgent",
+          "elementRunId": "f6108894-ea82-4b9c-8ee4-fd72aeafc279",
+          "isMarker": false,
+          "inputs": {
+            "JobArguments": {
+              "start__output__disputeDescription": "Charged 14 units at $300 but the contracted unit price is $290.",
+              "start__output__invoiceNumber": "MCS-2026-04872"
+            }
+          },
+          "inputDefinitions": {},
+          "outputs": {
+            "determination": "needs-more-information",
+            "rationale": "This dispute is classified under SOP §5.4 \"Incorrect rate\" — the customer claims the billed unit price ($300) disagrees with their contracted rate ($290) for 14 units, with quantity not in dispute. Per the SOP procedure: (1) locate the matching sowReference for the disputed line via description keyword match, (2) read the contractedRate from the ERP record for that line, (3) if unitPrice ≠ contractedRate, determination = valid with credit = (unitPrice − contractedRate) × quantity = ($300 − $290) × 14 = $140; if unitPrice = contractedRate, determination = invalid.\n\nHowever, I cannot render a final valid/invalid determination because the SOP requires this check to be grounded in the ERP system-of-record data — specifically the sowReference and contractedRate fields for the disputed line on invoice MCS-2026-04872 (per SOP §4.2, ERP is \"Source of truth\" for sowReference, sowStatus, and contractedRate used in incorrect-rate checks). No ERP lookup tool/data was provided to this agent, and the dispute submission itself does not include a SOW reference or independently verifiable contracted rate record beyond the customer's own assertion of \"$290.\"\n\nThe SOP also explicitly states: \"Always cite the SOW reference and the rate delta... Generic rate explanations are not acceptable.\" Without an ERP-sourced SOW reference and contractedRate value to cite, I cannot produce a compliant valid/invalid determination — doing so would require inventing a SOW reference or accepting the customer's stated rate as ground truth, which is not permitted.\n\nTherefore, determination is set to \"needs-more-information\": the underlying ERP record (sowReference and contractedRate for the disputed line on invoice MCS-2026-04872) is required before a valid/invalid call and credit calculation (potentially $140 credit at 14 units × $10/unit delta) can be issued per §5.4."
+          }
+        },
+        {
+          "elementId": "end",
+          "elementRunId": "66440e7a-9080-48f7-ab71-8e760f0af8c2",
+          "isMarker": false,
+          "inputs": {},
+          "inputDefinitions": {},
+          "outputs": {}
+        }
+      ],
+      "globals": {
+        "determination": "needs-more-information",
+        "start.output.disputeDescription": "Charged 14 units at $300 but the contracted unit price is $290.",
+        "billingDisputeAgent.error": null,
+        "rationale": "This dispute is classified under SOP §5.4 \"Incorrect rate\" — the customer claims the billed unit price ($300) disagrees with their contracted rate ($290) for 14 units, with quantity not in dispute. Per the SOP procedure: (1) locate the matching sowReference for the disputed line via description keyword match, (2) read the contractedRate from the ERP record for that line, (3) if unitPrice ≠ contractedRate, determination = valid with credit = (unitPrice − contractedRate) × quantity = ($300 − $290) × 14 = $140; if unitPrice = contractedRate, determination = invalid.\n\nHowever, I cannot render a final valid/invalid determination because the SOP requires this check to be grounded in the ERP system-of-record data — specifically the sowReference and contractedRate fields for the disputed line on invoice MCS-2026-04872 (per SOP §4.2, ERP is \"Source of truth\" for sowReference, sowStatus, and contractedRate used in incorrect-rate checks). No ERP lookup tool/data was provided to this agent, and the dispute submission itself does not include a SOW reference or independently verifiable contracted rate record beyond the customer's own assertion of \"$290.\"\n\nThe SOP also explicitly states: \"Always cite the SOW reference and the rate delta... Generic rate explanations are not acceptable.\" Without an ERP-sourced SOW reference and contractedRate value to cite, I cannot produce a compliant valid/invalid determination — doing so would require inventing a SOW reference or accepting the customer's stated rate as ground truth, which is not permitted.\n\nTherefore, determination is set to \"needs-more-information\": the underlying ERP record (sowReference and contractedRate for the disputed line on invoice MCS-2026-04872) is required before a valid/invalid call and credit calculation (potentially $140 credit at 14 units × $10/unit delta) can be issued per §5.4.",
+        "billingDisputeAgent.output": {
+          "determination": "needs-more-information",
+          "rationale": "This dispute is classified under SOP §5.4 \"Incorrect rate\" — the customer claims the billed unit price ($300) disagrees with their contracted rate ($290) for 14 units, with quantity not in dispute. Per the SOP procedure: (1) locate the matching sowReference for the disputed line via description keyword match, (2) read the contractedRate from the ERP record for that line, (3) if unitPrice ≠ contractedRate, determination = valid with credit = (unitPrice − contractedRate) × quantity = ($300 − $290) × 14 = $140; if unitPrice = contractedRate, determination = invalid.\n\nHowever, I cannot render a final valid/invalid determination because the SOP requires this check to be grounded in the ERP system-of-record data — specifically the sowReference and contractedRate fields for the disputed line on invoice MCS-2026-04872 (per SOP §4.2, ERP is \"Source of truth\" for sowReference, sowStatus, and contractedRate used in incorrect-rate checks). No ERP lookup tool/data was provided to this agent, and the dispute submission itself does not include a SOW reference or independently verifiable contracted rate record beyond the customer's own assertion of \"$290.\"\n\nThe SOP also explicitly states: \"Always cite the SOW reference and the rate delta... Generic rate explanations are not acceptable.\" Without an ERP-sourced SOW reference and contractedRate value to cite, I cannot produce a compliant valid/invalid determination — doing so would require inventing a SOW reference or accepting the customer's stated rate as ground truth, which is not permitted.\n\nTherefore, determination is set to \"needs-more-information\": the underlying ERP record (sowReference and contractedRate for the disputed line on invoice MCS-2026-04872) is required before a valid/invalid call and credit calculation (potentially $140 credit at 14 units × $10/unit delta) can be issued per §5.4."
+        },
+        "start.output.invoiceNumber": "MCS-2026-04872"
+      },
+      "instanceId": "700ffea7-8ca8-4bb8-8273-3607ec46e606",
+      "workflowId": "700ffea7-8ca8-4bb8-8273-3607ec46e606/BpmnGenericWorkflow",
+      "parentElementId": null,
+      "globalDefinitions": {
+        "determination": {
+          "name": "determination",
+          "type": "string"
+        },
+        "start.output.disputeDescription": {
+          "name": "disputeDescription",
+          "type": "string"
+        },
+        "billingDisputeAgent.error": {
+          "name": "error",
+          "type": "object"
+        },
+        "rationale": {
+          "name": "rationale",
+          "type": "string"
+        },
+        "billingDisputeAgent.output": {
+          "name": "output",
+          "type": "object"
+        },
+        "start.output.invoiceNumber": {
+          "name": "invoiceNumber",
+          "type": "string"
+        }
+      }
+    }
+  },
+  "Instructions": "Debug completed with status: Completed"
+}

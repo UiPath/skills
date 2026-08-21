@@ -1,0 +1,20 @@
+{
+  "entryPoints": [
+    {
+      "id": "00000000-0000-0000-0000-000000000001",
+      "filePath": "/content/InvoiceExtractionRpa.bpmn#Start_Manual",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "InvoiceDocPath": { "type": "string" }
+        }
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "ExtractedTitle": { "type": "string" }
+        }
+      }
+    }
+  ]
+}

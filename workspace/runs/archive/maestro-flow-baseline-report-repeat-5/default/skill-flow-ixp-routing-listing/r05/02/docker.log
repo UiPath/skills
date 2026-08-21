@@ -1,0 +1,6 @@
+20:08:28 [INFO   ] [default/skill-flow-ixp-routing-listing/r05/02] orchestrator: API routing: aws_bedrock
+20:09:17 [INFO   ] [default/skill-flow-ixp-routing-listing/r05/02] evaluation.checker: Criterion 'command_executed' FAILED (score=0.00, threshold=0.90): Matched 0/1 required commands (filters: tool_name=Bash, pattern=/(?i)uip\s+maestro\s+flow\s+registry\s+(list\b|(search|list)\b[^\n]*\b(ixp|document|extract))/)
+20:09:17 [INFO   ] [default/skill-flow-ixp-routing-listing/r05/02] orchestrator: Success criteria: 1/2 passed, weighted score: 0.500
+20:09:17 [INFO   ] [default/skill-flow-ixp-routing-listing/r05/02] orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+20:09:17 [INFO   ] [default/skill-flow-ixp-routing-listing/r05/02] orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-ixp-routing-listing/r05
+20:09:17 [INFO   ] [default/skill-flow-ixp-routing-listing/r05/02] orchestrator: Task finished: status=FAILURE duration=54.9s score=0.500 iterations=1

@@ -1,0 +1,2639 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>coder_eval · skill-flow-ixp-e2e-project-selection/birth-certificate · default</title>
+<style>
+:root {
+  --bg-page: #0f1419;
+  --bg-card: #1a2129;
+  --bg-card-2: #232d38;
+  --bg-code: #0b0f14;
+  --fg: #e6edf3;
+  --fg-muted: #8b98a5;
+  --fg-dim: #6e7681;
+  --border: #30363d;
+  --accent: #58a6ff;
+  --score-high: #22c55e;
+  --score-mid: #f59e0b;
+  --score-low: #ef4444;
+  --status-success: #22c55e;
+  --status-failure: #f59e0b;
+  --status-error: #ef4444;
+  --status-neutral: #6e7681;
+  --shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+.light {
+  --bg-page: #ffffff;
+  --bg-card: #f6f8fa;
+  --bg-card-2: #eaeef2;
+  --bg-code: #f6f8fa;
+  --fg: #1f2328;
+  --fg-muted: #636c76;
+  --fg-dim: #8b949e;
+  --border: #d0d7de;
+  --accent: #0969da;
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial,
+               sans-serif;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--fg);
+  background: var(--bg-page);
+}
+.container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+h1, h2, h3, h4 { margin: 0 0 12px 0; line-height: 1.25; }
+h1 { font-size: 22px; font-weight: 600; }
+h2 { font-size: 18px; font-weight: 600; margin-top: 28px;
+     padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+h3 { font-size: 15px; font-weight: 600; color: var(--fg-muted); }
+h4 { font-size: 13px; font-weight: 600; color: var(--fg-muted); }
+p { margin: 0 0 8px 0; }
+.muted { color: var(--fg-muted); }
+.dim { color: var(--fg-dim); }
+.mono { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+        monospace; font-size: 12.5px; }
+code { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+       monospace; font-size: 12.5px; background: var(--bg-code);
+       border: 1px solid var(--border); padding: 1px 5px; border-radius: 3px; }
+pre { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+      monospace; font-size: 12.5px; background: var(--bg-code);
+      border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px;
+      margin: 6px 0; overflow-x: auto; white-space: pre-wrap;
+      word-wrap: break-word; }
+.header-bar { display: flex; align-items: center; justify-content: space-between;
+              margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+.title-group { flex: 1; min-width: 0; }
+.title-group .subtitle { color: var(--fg-muted); font-size: 13px;
+                         margin-top: 2px; word-break: break-all; }
+.badges { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.badge { display: inline-flex; align-items: center; gap: 6px;
+         padding: 4px 10px; border-radius: 12px; font-size: 12px;
+         font-weight: 600; background: var(--bg-card-2);
+         border: 1px solid var(--border); color: var(--fg); }
+.badge.success { background: color-mix(in srgb, var(--status-success) 20%, var(--bg-card-2));
+                 border-color: var(--status-success); color: var(--status-success); }
+.badge.failure { background: color-mix(in srgb, var(--status-failure) 20%, var(--bg-card-2));
+                 border-color: var(--status-failure); color: var(--status-failure); }
+.badge.error { background: color-mix(in srgb, var(--status-error) 20%, var(--bg-card-2));
+               border-color: var(--status-error); color: var(--status-error); }
+.badge.warning { background: color-mix(in srgb, #f4a52810 20%, var(--bg-card-2));
+                 border-color: #f4a528; color: #f4a528; }
+.badge.neutral { color: var(--fg-muted); }
+.score-pill { display: inline-block; padding: 2px 8px; border-radius: 10px;
+              font-size: 12px; font-weight: 700; min-width: 42px;
+              text-align: center; color: #0b0f14; }
+.score-high { background: var(--score-high); }
+.score-mid { background: var(--score-mid); }
+.score-low { background: var(--score-low); }
+.card { background: var(--bg-card); border: 1px solid var(--border);
+        border-radius: 8px; padding: 16px 20px; margin-bottom: 16px;
+        box-shadow: var(--shadow); }
+.card.highlight { border-left: 4px solid var(--accent); }
+.grid { display: grid; gap: 12px;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+.stat { background: var(--bg-card-2); padding: 10px 12px; border-radius: 6px;
+        border: 1px solid var(--border); }
+.stat .label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;
+               color: var(--fg-muted); margin-bottom: 4px; }
+.stat .value { font-size: 16px; font-weight: 600; }
+table { width: 100%; border-collapse: collapse; margin: 4px 0 12px 0; }
+th, td { text-align: left; padding: 8px 10px;
+         border-bottom: 1px solid var(--border); vertical-align: top;
+         font-size: 13px; }
+th { color: var(--fg-muted); font-weight: 600; font-size: 12px;
+     text-transform: uppercase; letter-spacing: 0.3px; }
+tr:last-child td { border-bottom: none; }
+details { margin: 6px 0; border: 1px solid var(--border); border-radius: 6px;
+          background: var(--bg-card-2); }
+details > summary { cursor: pointer; padding: 8px 12px; user-select: none;
+                    font-weight: 500; list-style: none; }
+details > summary::-webkit-details-marker { display: none; }
+details > summary::before { content: "▸ "; color: var(--fg-dim);
+                            display: inline-block; width: 14px;
+                            transition: transform 0.15s; }
+details[open] > summary::before { content: "▾ "; }
+details .details-body { padding: 0 12px 10px 12px; }
+.tool-row { display: flex; align-items: center; gap: 10px;
+            flex-wrap: wrap; font-size: 13px; }
+.tool-name { font-weight: 600; color: var(--accent); font-family: ui-monospace,
+             SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+.tool-status-ok { color: var(--status-success); font-size: 11px;
+                  font-weight: 600; }
+.tool-status-err { color: var(--status-error); font-size: 11px;
+                   font-weight: 600; }
+.tool-duration { color: var(--fg-muted); font-size: 12px; }
+.tool-seq { color: var(--fg-dim); font-size: 11px; font-weight: 600;
+            min-width: 24px; text-align: right; font-family: ui-monospace,
+            SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+.turn-header { display: flex; justify-content: space-between;
+               align-items: baseline; flex-wrap: wrap; gap: 10px;
+               margin-bottom: 10px; }
+.turn-meta { font-size: 12px; color: var(--fg-muted); }
+.criterion-row td:first-child { font-family: ui-monospace, SFMono-Regular,
+                                 "SF Mono", Menlo, Consolas, monospace;
+                                 color: var(--fg-muted); font-size: 12px; }
+.judge-section { display: flex; flex-direction: column; gap: 12px; }
+.judge-card { padding: 14px 16px; }
+.judge-card-head { display: flex; justify-content: space-between;
+                    align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+.judge-card-title { font-size: 14px; line-height: 1.4; flex: 1; min-width: 0; }
+.judge-card-score { flex-shrink: 0; }
+.judge-rationale { margin-top: 10px; padding: 10px 12px;
+                   background: var(--bg-code); border-radius: 4px;
+                   font-size: 13px; line-height: 1.5; }
+.judge-findings { margin: 8px 0 0 18px; padding-left: 4px; font-size: 13px;
+                   line-height: 1.6; }
+.judge-findings li { margin: 2px 0; }
+.nav-toggle { display: inline-block; padding: 5px 10px; font-size: 12px;
+              background: var(--bg-card-2); border: 1px solid var(--border);
+              border-radius: 5px; color: var(--fg); cursor: pointer; }
+.nav-toggle:hover { background: var(--bg-card); }
+.llm-next-steps { margin: 6px 0 0 20px; padding-left: 0; }
+.llm-next-steps li { margin: 3px 0; }
+.iteration-group { padding: 12px 16px 4px 16px; margin-bottom: 20px;
+                   border-radius: 0 6px 6px 0; border-left: 4px solid var(--status-neutral); }
+/* rgba fallback for browsers without color-mix (Chrome <111, Firefox <113, Safari <16.2). */
+.iteration-group--recovered { border-left-color: var(--status-success);
+                              background: rgba(34, 197, 94, 0.06);
+                              background: color-mix(in srgb, var(--status-success) 6%, transparent); }
+.iteration-group--terminal { border-left-color: var(--status-error);
+                             background: rgba(239, 68, 68, 0.06);
+                             background: color-mix(in srgb, var(--status-error) 6%, transparent); }
+.iteration-group__banner { margin: 0 0 12px 0; font-size: 14px; font-weight: 600; }
+.iteration-group--recovered .iteration-group__banner { color: var(--status-success); }
+.iteration-group--terminal .iteration-group__banner { color: var(--status-error); }
+.attempt-transition { display: flex; align-items: center; gap: 8px;
+                      margin: -6px 0 12px 8px; color: var(--status-error); font-size: 12.5px; }
+.attempt-transition__icon { font-weight: 700; }
+footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--border);
+         color: var(--fg-dim); font-size: 12px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="header-bar">
+  <div class="title-group">
+    <h1>Task: skill-flow-ixp-e2e-project-selection/birth-certificate</h1>
+    <div class="subtitle">E2E (project selection): on a tenant where the demo IxP project set is published (one model per zip in scripts/ixp-demo-projects/packages/), the agent must pick the published model that matches the user&#x27;s document domain — not fall back to core.logic.mock and not pick a different domain&#x27;s model.</div>
+  </div>
+  <div class="badges">
+    <span class="badge success">SUCCESS</span>
+    <span class="score-pill score-high">1.00</span>
+    <span class="badge neutral">claude-code · claude-sonnet-5</span>
+    <span class="badge neutral">10m 58s</span>
+    <span class="badge neutral">$3.0751</span>
+    
+    
+    <span class="nav-toggle" onclick="toggleTheme()">Toggle theme</span>
+  </div>
+</div>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Variant</div><div class="value">default</div></div>
+    <div class="stat"><div class="label">Started</div><div class="value mono">2026-08-19T15:40:16</div></div>
+    <div class="stat"><div class="label">Duration</div><div class="value">10m 58s</div></div>
+    <div class="stat"><div class="label">Turns (SDK)</div><div class="value">107</div></div>
+    <div class="stat"><div class="label">Commands</div><div class="value">54</div></div>
+  </div>
+</div>
+
+<h2>Success Criteria <span class="muted" style="font-weight:400">(6/6 passed)</span></h2>
+<div class="card" style="padding:0">
+<table>
+  <thead>
+    <tr>
+      <th style="width:15%">Type</th>
+      <th style="width:35%">Description</th>
+      <th style="width:10%">Score</th>
+      <th>Details</th>
+    </tr>
+  </thead>
+  <tbody>
+    
+<tr class="criterion-row">
+  <td>skill_triggered</td>
+  <td>Agent invoked the uipath-maestro-flow Skill</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><div class="dim mono" style="white-space:pre-wrap">observed=&#x27;yes&#x27;, expected=&#x27;yes&#x27; (skill_name=&#x27;uipath-maestro-flow&#x27;)</div></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>command_executed</td>
+  <td>Agent searched the registry for IxP node types</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Matched 2/1 required commands (filters: tool_name=Bash, pattern=/uip\s+maestro\s+flow\s+registry\s+(search|list|get)\b[^\n]*ixp/)</summary><div class="details-body"><pre style="margin:6px 0 0 0">Matched 2/1 required commands (filters: tool_name=Bash, pattern=/uip\s+maestro\s+flow\s+registry\s+(search|list|get)\b[^\n]*ixp/)
+Examples: [&#x27;uip maestro flow registry search &quot;uipath.ixp&quot; --output json &gt; /tmp/ixp_search.json 2&gt;&amp;1; cat /tmp/ixp_search.json | pyth&#x27;, &quot;NODE=&#x27;uipath.ixp.birth-certificates-oob-6252526a-ixp.a05c7655-1a1c-80a5-94a0-b1609d34dc10-c4359cde-55f0-4f0e-9322-c6cdce&quot;]</pre></div></details></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>run_command</td>
+  <td>uip maestro flow validate passes on the generated flow</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Command: f=$(find ../.. -name &quot;*.flow&quot; -print -quit); [ -n &quot;$f&quot; ] &amp;&amp; uip maestro flow validate &quot;$f&quot; --output json</summary><div class="details-body"><pre style="margin:6px 0 0 0">Command: f=$(find ../.. -name &quot;*.flow&quot; -print -quit); [ -n &quot;$f&quot; ] &amp;&amp; uip maestro flow validate &quot;$f&quot; --output json
+Exit code: 0 (expected: 0)
+Stdout:
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FlowValidate&quot;,
+  &quot;Data&quot;: {
+    &quot;File&quot;: &quot;/work/output/artifacts/skill-flow-ixp-e2e-project-selection/birth-certificate/BirthCertificateExtraction/BirthCertificateExtraction/BirthCertificateExtraction.flow&quot;,
+    &quot;Status&quot;: &quot;Valid&quot;
+  }
+}
+
+Stderr:
+[ManifestClient] fetchDynamicNodes ok: total=317 agent context nodes=2 external agent nodes=7 orchestrator nodes=263 IXP nodes=45</pre></div></details></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>run_command</td>
+  <td>Generated flow contains a real uipath.ixp.* node</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Command: grep -rqE &quot;\&quot;type\&quot;[[:space:]]*:[[:space:]]*\&quot;uipath\.ixp\.&quot; --include=&quot;*.flow&quot; ../..</summary><div class="details-body"><pre style="margin:6px 0 0 0">Command: grep -rqE &quot;\&quot;type\&quot;[[:space:]]*:[[:space:]]*\&quot;uipath\.ixp\.&quot; --include=&quot;*.flow&quot; ../..
+Exit code: 0 (expected: 0)
+Stdout: (empty)
+Stderr: (empty)</pre></div></details></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>run_command</td>
+  <td>Generated flow does NOT contain a core.logic.mock fallback</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Command: ! grep -rqE &quot;\&quot;type\&quot;[[:space:]]*:[[:space:]]*\&quot;core\.logic\.mock\&quot;&quot; --include=&quot;*.flow&quot; ../..</summary><div class="details-body"><pre style="margin:6px 0 0 0">Command: ! grep -rqE &quot;\&quot;type\&quot;[[:space:]]*:[[:space:]]*\&quot;core\.logic\.mock\&quot;&quot; --include=&quot;*.flow&quot; ../..
+Exit code: 0 (expected: 0)
+Stdout: (empty)
+Stderr: (empty)</pre></div></details></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>run_command</td>
+  <td>IxP node references the exact published model for this row&#x27;s domain (strict)</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Command: case &quot;$(pwd)&quot; in</summary><div class="details-body"><pre style="margin:6px 0 0 0">Command: case &quot;$(pwd)&quot; in
+  *aviation*)
+    model=&#x27;aviation-investigation-final-report-demo-a42b1d4d-ixp&#x27;
+    nt=&#x27;uipath\.ixp\.aviation-investigation-final-report-demo-a42b1d4d-ixp\.&#x27;
+    ;;
+  *birth*)
+    model=&#x27;birth_certificates_oob-6252526a-ixp&#x27;
+    nt=&#x27;uipath\.ixp\.birth-certificates-oob-6252526a-ixp\.&#x27;
+    ;;
+  *)
+    echo &quot;Unknown row in pwd: $(pwd)&quot; &gt;&amp;2
+    exit 2
+    ;;
+esac
+f=$(find ../.. -name &quot;*.flow&quot; -print -quit)
+if [ -z &quot;$f&quot; ]; then
+  echo &quot;no .flow file under ../..&quot; &gt;&amp;2
+  exit 1
+fi
+if ! grep -qF &quot;\&quot;modelName\&quot;: \&quot;${model}\&quot;&quot; &quot;$f&quot;; then
+  echo &quot;modelName mismatch — expected &#x27;${model}&#x27; in $f&quot; &gt;&amp;2
+  grep -E &#x27;&quot;modelName&quot;&#x27; &quot;$f&quot; &gt;&amp;2 || true
+  exit 1
+fi
+if ! grep -qE &quot;\&quot;type\&quot;[[:space:]]*:[[:space:]]*\&quot;${nt}&quot; &quot;$f&quot;; then
+  echo &quot;NodeType mismatch — expected prefix &#x27;${nt}&#x27; in $f&quot; &gt;&amp;2
+  grep -E &#x27;&quot;type&quot;[[:space:]]*:[[:space:]]*&quot;uipath\.ixp&#x27; &quot;$f&quot; &gt;&amp;2 || true
+  exit 1
+fi
+
+Exit code: 0 (expected: 0)
+Stdout: (empty)
+Stderr: (empty)</pre></div></details></td>
+</tr>
+
+  </tbody>
+</table>
+</div>
+<h2>Conversation Trace (1 iteration)</h2>
+<div class="card">
+  <div class="turn-header">
+    <h3>Iteration 1</h3>
+    <div class="badges">
+      <span class="badge neutral">107 assistant turns</span>
+      <span class="badge neutral">in 672 · out 49873 · cache 6030328</span>
+      <span class="badge neutral">10m 53s</span>
+      
+      
+      
+    </div>
+  </div>
+  <details>
+    <summary>Prompt to agent</summary>
+    <div class="details-body"><pre>Your working directory is: /work/output/artifacts/skill-flow-ixp-e2e-project-selection/birth-certificate
+
+Build a Maestro flow that reads scanned birth certificates and extracts the child&#x27;s full name, date of birth, place of birth, and parents&#x27; names. Trigger manually; the downstream script logs the child&#x27;s full name.
+
+Important:
+- The `uip` CLI is already available and the runner is logged in.
+- Use `--output json` on all uip commands.
+- Work inside the stated working directory — do NOT `cd` to a parent.
+- Do NOT run `uip maestro flow debug` or `uip maestro flow deploy`.
+- Run `uip maestro flow validate` at most 3 times. If it reports errors, fix
+  the `.flow` and re-run it. Do not exceed 3 validation runs.
+</pre></div>
+  </details>
+  <details>
+    <summary>Agent response</summary>
+    <div class="details-body"><pre>[ASSISTANT] I&#x27;ll start by checking the working directory and reading the Author capability doc to plan this build.
+[ASSISTANT] The working directory is empty (no `.uipx` solution yet). Let me read the greenfield build guide and the IXP plugin doc since this flow needs document extraction.
+[ASSISTANT] Logged in, and no existing solution. Now let me search for a published IxP model for birth certificates.
+[ASSISTANT] There&#x27;s an exact match: `uipath.ixp.birth-certificates-oob-6252526a-ixp.*`. Let me fetch its full definition, get the taxonomy for field names, and get the End/Script/manual trigger definitions in parallel.
+[ASSISTANT] No IxP training-project taxonomy is retrievable via `get-taxonomy` (the OOB model isn&#x27;t in the trainable-projects list — expected for out-of-box deployed models). Per the impl.md fallback, I&#x27;ll proceed with defensive `find`-by-`FieldName` field-name assumptions and surface them as an open question. Now scaffolding the solution and project.
+[ASSISTANT] Layout confirmed: `BirthCertificateExtraction/BirthCertificateExtraction/BirthCertificateExtraction.flow`. Let me verify the file and read it.
+[ASSISTANT] Now I have all node definitions needed. Let me write the complete flow file with the IxP extraction node, script node, and end node.
+[ASSISTANT] Now I need to add the required `outputs.output`/`outputs.error` literal block to the IxP node (required per impl.md, but `--outputs none` skipped it), and add its `variables.nodes` entry so `$vars.extractBirthCertificateFields.output` resolves.
+[ASSISTANT] Now I need to add the required `outputs` literal block to the IxP node instance and its `variables.nodes[]` entries (rule #14/IxP Authoring rule #4).
+[ASSISTANT] Now add the `variables.nodes[]` entry for the IxP node&#x27;s output (needed for `$vars.extractBirthCertificateFields.output` to resolve, per Author rule #14).
+[ASSISTANT] Now let&#x27;s run the local audit script before validate, per rule #8.
+[ASSISTANT] The script&#x27;s newlines got double-escaped into literal `\n` text instead of real newlines. Let me fix it with `set-input` using a properly constructed JSON payload.
+[ASSISTANT] Bash quoting is fighting me. Let me write the script to a Python file instead and avoid shell quoting entirely.
+[ASSISTANT] Good, that&#x27;s a proper JSON with real `\n` escapes (single-level, correct). Now use `set-input` to fix the node.
+[ASSISTANT] The script content now has proper newlines. Let&#x27;s re-run the audit to confirm both issues are resolved, then run `flow format` and `flow validate`.
+[ASSISTANT] Audit is clean. Now run `flow validate` (validation run 1 of 3 allowed).
+[ASSISTANT] Validation passes cleanly with no warnings on the first attempt. Let&#x27;s run `flow format` once more to ensure the final layout is settled, then do a final review of the flow file.
+[ASSISTANT] The flow is built, validated, and formatted. Here&#x27;s the summary:
+
+**File:** `BirthCertificateExtraction/BirthCertificateExtraction/BirthCertificateExtraction.flow`
+
+**What was built** — a 4-node linear flow:
+1. **Manual trigger** (`start`) — with an `in` file variable `birthCertificateScan`
+2. **Extract Birth Certificate Fields** (`extractBirthCertificateFields`) — real IxP node bound to the published `birth_certificates_oob-6252526a-ixp` model (found via registry search, exact match for this document type)
+3. **Log Child Full Name** (`logChildName`) — script node that reads `ExtractionResult.ResultsDocument.Fields[]`, finds the child&#x27;s full name by trying several likely field names, and returns it as a message
+4. **Done** (`done`) — End node
+
+**Validation status:** `uip maestro flow validate` passed clean (`&quot;Status&quot;: &quot;Valid&quot;`) on the first of 3 allowed attempts, no warnings.
+
+**Format status:** `flow format` ran twice; final run confirmed all nodes already optimally positioned.
+
+**Open question:** the birth-certificate model isn&#x27;t a trainable IxP project on this tenant (`uip ixp deployments get-taxonomy` 404s — it&#x27;s an OOB deployed model, not in `uip ixp projects </pre></div>
+  </details>
+  <h4 style="margin-top:12px">Tool Calls (54)</h4>
+  
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#0</span>
+      <span class="tool-name">Skill</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">16ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;skill&quot;: &quot;tmp:uipath-maestro-flow&quot;,
+  &quot;args&quot;: &quot;Build a Maestro flow in the current working directory that reads scanned birth certificates and extracts: child&#x27;s full name, date of birth, place of birth, and parents&#x27; names. Trigger: manual. After extraction, a downstream script node should log the child&#x27;s full name. Use `--output json` on all uip commands. Do not run `uip maestro flow debug` or `uip maestro flow deploy`. Run `uip maestro flow v… (85 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Launching skill: tmp:uipath-maestro-flow</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#1</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">42ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;pwd &amp;&amp; find . -maxdepth 3 -print&quot;,
+  &quot;description&quot;: &quot;Check working directory contents&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/work/output/artifacts/skill-flow-ixp-e2e-project-selection/birth-certificate
+.
+./.venv
+./.venv/CACHEDIR.TAG
+./.venv/lib64
+./.venv/pyvenv.cfg
+./.venv/lib
+./.venv/lib/python3.13
+./.venv/bin
+./.venv/bin/activate.csh
+./.venv/bin/activate.bat
+./.venv/bin/activate_this.py
+./.venv/bin/python
+./.venv/bin/pydoc.bat
+./.venv/bin/activate.ps1
+./.venv/bin/activate.xsh
+./.venv/bin/activate.nu
+./.venv/bin/python3.13
+./.venv/bin/activate
+./.venv/bin/activate.fish
+./.venv/bin/python3
+./.venv/bin/deactivate.bat
+./.venv/.gitignore</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#2</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">274ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/CAPABILITY.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Author — Create and edit `.flow` files
+2	
+3	Capability index for building new flows (greenfield) and editing existing flows (brownfield). Author owns everything that happens on disk, locally, without `uip login`. Authoring journeys terminate at `validate` + `format`; from there, hand off to [operate/CAPABILITY.md](../operate/CAPABILITY.md) to publish, run, or debug.
+4	
+5	&gt; **Where you came from / where to go next.** Author is upstream of Operate (build the flow → ship it) and upstream of Diagnose only via Operate (build → run → diagnose). Publish/run/lifecycle lives in [operate/CAPABILITY.md](../operate/CAPABILITY.md); fault triage lives in [diagnose/CAPABILITY.md](../diagnose/CAPABILITY.md).
+6	&gt;
+7	&gt; **Inherits universal rules from [SKILL.md](../../SKILL.md)** — `--output json` + prefer `--output-filter` for extraction, no `flow debug` without consent, resource discovery order, never invoke other skills automatically, dropdown question pattern, solution layout, **plain-English narration + granular progress list (opt-in — silent by default; engage when the user asks for verbosity)**. The rules below are author-scoped and apply on top.
+8	
+9	## When to use this capability
+10	
+11	&lt;
+
+… (truncated, 30449 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#3</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">211ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/greenfield.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Greenfield — Create a New Flow
+2	
+3	End-to-end journey for creating a Flow project from scratch. Author terminates at `validate` + `format`. To publish, run, or debug after this, see [operate/CAPABILITY.md](../../operate/CAPABILITY.md).
+4	
+5	&gt; **Brownfield edits use a different journey.** If the `.flow` file already exists, see [brownfield.md](brownfield.md) instead.
+6	
+7	## Should you plan first?
+8	
+9	For complex flows, produce a plan before building. Reference [planning-arch.md](planning-arch.md) and [planning-impl.md](planning-impl.md) for the node type catalog, port reference, wiring rules, and topology patterns.
+10	
+11	**Plan when:**
+12	- The flow has 5+ nodes with branching or parallel paths
+13	- The flow uses connectors or resources that need discovery
+14	- The user&#x27;s requirements are ambiguous and you need to confirm the approach
+15	
+16	**Don&#x27;t plan when:**
+17	- Adding/editing a single node in an existing flow (use [brownfield.md](brownfield.md))
+18	- The flow is a straightforward linear pipeline (trigger → action → action → end)
+19	- The user has already described the exact topology they want
+20	
+21	### Examples
+22	
+23	**Plan:** &quot;Build a flow that receives a Jira ticke
+
+… (truncated, 34831 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#4</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">87ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/plugins/ixp/impl.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# IxP Extraction Node — Implementation
+2	
+3	IxP Extraction nodes invoke a published UiPath Intelligent eXtraction Platform (IxP) model. They are tenant-specific resources with pattern `uipath.ixp.{sanitized-modelName}.{sanitized-fullyQualifiedName}`.
+4	
+5	Sanitization rule (applied to both tail segments, in this order):
+6	
+7	1. Lowercase.
+8	2. Replace runs of any character outside `[a-z0-9]` with a single `-`. Slashes, spaces, underscores, and runs of dashes (e.g. `---`) all collapse to a single `-`. Dots in the FQN are NOT preserved — they also collapse to `-`.
+9	
+10	The dot in `uipath.ixp.{model}.{fqn}` is the segment separator the registry adds *after* sanitizing each tail segment, not part of the sanitization itself.
+11	
+12	Examples (verified against the live registry):
+13	
+14	- `&quot;birth_certificates_oob-6252526a-ixp&quot;` + FQN `Shared/birth_certificates_oob-6252526a-ixp` → `uipath.ixp.birth-certificates-oob-6252526a-ixp.shared-birth-certificates-oob-6252526a-ixp` (underscores and slash both → `-`).
+15	- `&quot;idp-benchmark---invoices-c735405a-ixp&quot;` + FQN `Shared/idp-benchmark---invoices-c735405a-ixp` → `uipath.ixp.idp-benchmark-invoices-c735405a-ixp.shared-idp-benchmark-invoices-c73
+
+… (truncated, 32766 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#5</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">6ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/plugins/ixp/planning.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# IxP Extraction Node — Planning
+2	
+3	IxP Extraction nodes invoke a **trained, published** UiPath Intelligent eXtraction Platform (IxP) model to pull structured fields out of unstructured or semi-structured documents (PDFs, photos, scanned forms). They are tenant-specific resources that appear in the registry after `uip login` + `uip maestro flow registry pull`.
+4	
+5	In the IxP product these published models are also called **runtime projects** — the bundle published to the tenant runtime and callable from a flow. Treat &quot;what IxP models do I have&quot;, &quot;what runtime projects do I have access to in flow&quot;, and &quot;list published extractors&quot; as the same listing question — see [Listing Available Models / Runtime Projects](#listing-available-models--runtime-projects).
+6	
+7	## Node Type Pattern
+8	
+9	`uipath.ixp.{modelName}.{fullyQualifiedName}`
+10	
+11	Unlike other resource plugins that use the `uipath.core.*` prefix, IxP nodes use `uipath.ixp.*` and a **two-segment tail**: `{modelName}` is the model&#x27;s display name, and `{fullyQualifiedName}` is the model&#x27;s fully-qualified name on the tenant (e.g. `Shared/invoice-model`). Both segments are sanitized — see [impl.md](impl.md) for the rule and co
+
+… (truncated, 6753 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#6</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">8.29s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;find . -maxdepth 2 -type f -name &#x27;*.uipx&#x27; -print; echo \&quot;---login---\&quot;; uip login status --output json; echo \&quot;---pull---\&quot;; uip maestro flow registry pull --force --output json 2&gt;&amp;1 | tail -20&quot;,
+  &quot;description&quot;: &quot;Check for existing solutions and login status, refresh registry&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>---login---
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;LoginStatus&quot;,
+  &quot;Data&quot;: {
+    &quot;Status&quot;: &quot;Logged in&quot;,
+    &quot;Identity&quot;: &quot;zhongyi.shi@uipath.com&quot;,
+    &quot;IdentityType&quot;: &quot;User&quot;,
+    &quot;AuthFlow&quot;: &quot;Interactive&quot;,
+    &quot;CredentialSource&quot;: &quot;SavedLogin&quot;,
+    &quot;Provider&quot;: &quot;File&quot;,
+    &quot;UserId&quot;: &quot;bfda820f-4ddb-4af7-a5ec-3c332b403271&quot;,
+    &quot;UserEmail&quot;: &quot;zhongyi.shi@uipath.com&quot;,
+    &quot;UserName&quot;: &quot;zhongyi.shi@uipath.com&quot;,
+    &quot;BaseUrl&quot;: &quot;https://alpha.uipath.com&quot;,
+    &quot;Organization&quot;: &quot;codereval&quot;,
+    &quot;OrganizationId&quot;: &quot;311c6049-4966-4ef2-a6f3-8ceccaf38d54&quot;,
+    &quot;Tenant&quot;: &quot;DefaultTenant&quot;,
+    &quot;TenantId&quot;: &quot;69d43765-6ede-4575-88b7-9db601a2c056&quot;,
+    &quot;ExpirationDate&quot;: &quot;2026-08-19T16:34:30.000Z&quot;
+  }
+}
+---pull---
+[ManifestClient] fetchDynamicNodes ok: total=4880 connector nodes=3654 integration trigger nodes=896 agent context nodes=2 external agent nodes=7 orchestrator nodes=263 IXP nodes=45 IXP Models nodes=13
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodePullSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;NodesCount&quot;: 4763,
+    &quot;FromCache&quot;: false,
+    &quot;Source&quot;: &quot;authenticated&quot;,
+    &quot;CacheWritten&quot;: true,
+    &quot;Message&quot;: &quot;Synced fresh nodes&quot;
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#7</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">7.20s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/plugins/script/impl.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Script Node — Implementation
+2	
+3	## Node Type
+4	
+5	`core.action.script`
+6	
+7	## Registry validation
+8	
+9	```bash
+10	uip maestro flow registry get core.action.script --output json
+11	```
+12	
+13	Confirm: input port `input`, output port `success`, required input `script` (string, non-empty). See [Action Node Structure — Registry validation](../../../../shared/action-nodes.md#registry-validation) for the shared pattern.
+14	
+15	## JSON structure
+16	
+17	Follow the [Action Node Structure — Standard JSON skeleton](../../../../shared/action-nodes.md#standard-json-skeleton). The script-specific input is a single `script` string:
+18	
+19	```json
+20	{
+21	  &quot;inputs&quot;: {
+22	    &quot;script&quot;: &quot;const items = $vars.fetchData.output.body.items;\nconst total = items.reduce((sum, i) =&gt; sum + i.amount, 0);\nreturn { total, count: items.length };&quot;
+23	  }
+24	}
+25	```
+26	
+27	## Adding and editing
+28	
+29	See [Action Node Structure — Adding and editing procedures](../../../../shared/action-nodes.md#adding-and-editing-procedures). The script node uses the standard input port `input` and output port `success`; no plugin-specific wiring.
+30	
+31	## Script rules
+32	
+33	1. **Top-level body — no `function main()` w
+
+… (truncated, 4329 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#8</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">6.93s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/plugins/end/impl.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# End Node — Implementation
+2	
+3	## Node Type
+4	
+5	`core.control.end`
+6	
+7	## Registry Validation
+8	
+9	```bash
+10	uip maestro flow registry get core.control.end --output json
+11	```
+12	
+13	Confirm: input port `input`, no output ports. Set the node instance `typeVersion` to the `version` field from this response — do not hardcode it.
+14	
+15	## JSON Structure
+16	
+17	### Without Output Mapping
+18	
+19	```json
+20	{
+21	  &quot;id&quot;: &quot;doneSuccess&quot;,
+22	  &quot;type&quot;: &quot;core.control.end&quot;,
+23	  &quot;typeVersion&quot;: &quot;&lt;DEFINITION_VERSION&gt;&quot;,
+24	  &quot;display&quot;: { &quot;label&quot;: &quot;Done&quot; },
+25	  &quot;inputs&quot;: {}
+26	}
+27	```
+28	
+29	### With Output Mapping
+30	
+31	When the workflow declares `out` variables, every End node must map all of them:
+32	
+33	```json
+34	{
+35	  &quot;id&quot;: &quot;doneSuccess&quot;,
+36	  &quot;type&quot;: &quot;core.control.end&quot;,
+37	  &quot;typeVersion&quot;: &quot;&lt;DEFINITION_VERSION&gt;&quot;,
+38	  &quot;display&quot;: { &quot;label&quot;: &quot;Done&quot; },
+39	  &quot;inputs&quot;: {},
+40	  &quot;outputs&quot;: {
+41	    &quot;processedCount&quot;: {
+42	      &quot;source&quot;: &quot;=js:$vars.processData.output.count&quot;
+43	    },
+44	    &quot;resultSummary&quot;: {
+45	      &quot;source&quot;: &quot;=js:$vars.formatOutput.output.summary&quot;
+46	    }
+47	  }
+48	}
+49	```
+50	
+51	Each key in `outputs` must match a variable `id` from `variables.globals` where `dire
+
+… (truncated, 904 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#9</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.29s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry search \&quot;uipath.ixp\&quot; --output json &gt; /tmp/ixp_search.json 2&gt;&amp;1; cat /tmp/ixp_search.json | python3 -c \&quot;\nimport json,sys\nd=json.load(sys.stdin)\nfor n in d.get(&#x27;Data&#x27;,[]):\n    print(n.get(&#x27;NodeType&#x27;), &#x27;|&#x27;, n.get(&#x27;DisplayName&#x27;), &#x27;|&#x27;, n.get(&#x27;Version&#x27;))\n\&quot;&quot;,
+  &quot;description&quot;: &quot;List published IxP models&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>uipath.ixp.aviation-investigation-final-report-demo-a42b1d4d-ixp.937c414b-7879-8059-8b29-e8401d2dd3ba-c4359cde-55f0-4f0e-9322-c6cdce74ab4c | aviation-investigation-final-report-demo-a42b1d4d-ixp | 1.0.0
+uipath.ixp.birth-certificates-oob-6252526a-ixp.a05c7655-1a1c-80a5-94a0-b1609d34dc10-c4359cde-55f0-4f0e-9322-c6cdce74ab4c | birth_certificates_oob-6252526a-ixp | 1.0.0
+uipath.ixp.death-certificates-oob-56f11e28-ixp.fb2bf1b7-2e43-80ec-9d87-f380183f3550-c4359cde-55f0-4f0e-9322-c6cdce74ab4c | death_certificates_oob-56f11e28-ixp | 1.0.0
+uipath.ixp.employment-agreements-d4ee40a0-ixp.97f6f1c4-2b0d-8044-8892-c8809e742924-c4359cde-55f0-4f0e-9322-c6cdce74ab4c | employment-agreements-d4ee40a0-ixp | 1.0.0
+uipath.ixp.health-insurance-cards-oob-c28ec12f-ixp.e0290ca9-2150-8041-8834-8b00e74c60ab-c4359cde-55f0-4f0e-9322-c6cdce74ab4c | health_insurance_cards_oob-c28ec12f-ixp | 1.0.0
+uipath.ixp.idp-benchmark-bank-statements-819106fb-ixp.193ec581-7710-8092-9259-2320edf184e8-c4359cde-55f0-4f0e-9322-c6cdce74ab4c | idp-benchmark---bank-statements-819106fb-ixp | 1.0.0
+uipath.ixp.idp-benchmark-invoices-c735405a-ixp.f6df6382-0af4-80b4-9690-e540cf2af19a-c4359cde-55f0-4f0e-9322-c6cdce74ab4c | idp-benchmark---i
+
+… (truncated, 1134 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#10</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">2.20s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;NODE=&#x27;uipath.ixp.birth-certificates-oob-6252526a-ixp.a05c7655-1a1c-80a5-94a0-b1609d34dc10-c4359cde-55f0-4f0e-9322-c6cdce74ab4c&#x27;\nuip maestro flow registry get \&quot;$NODE\&quot; --output json &gt; /tmp/ixp_def.json\necho \&quot;---inputDefaults---\&quot;\npython3 -c \&quot;\nimport json\nd=json.load(open(&#x27;/tmp/ixp_def.json&#x27;))\nnode=d[&#x27;Data&#x27;][&#x27;Node&#x27;]\nprint(json.dumps(node.get(&#x27;inputDefaults&#x27;), indent=2))\n\&quot;&quot;,
+  &quot;description&quot;: &quot;Get full IxP node definition and inputDefaults&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>---inputDefaults---
+{
+  &quot;model&quot;: {
+    &quot;id&quot;: &quot;a05c7655-1a1c-80a5-94a0-b1609d34dc10&quot;,
+    &quot;modelName&quot;: null,
+    &quot;modelDisplayName&quot;: &quot;birth_certificates_oob-6252526a-ixp&quot;,
+    &quot;folderKey&quot;: &quot;c4359cde-55f0-4f0e-9322-c6cdce74ab4c&quot;,
+    &quot;folderName&quot;: &quot;Shared&quot;,
+    &quot;folderPath&quot;: &quot;c4359cde-55f0-4f0e-9322-c6cdce74ab4c&quot;,
+    &quot;description&quot;: &quot;&quot;
+  },
+  &quot;modelName&quot;: &quot;birth_certificates_oob-6252526a-ixp&quot;,
+  &quot;description&quot;: &quot;&quot;,
+  &quot;projectName&quot;: &quot;birth_certificates_oob-6252526a-ixp&quot;,
+  &quot;versionTag&quot;: &quot;&quot;,
+  &quot;folderKey&quot;: &quot;c4359cde-55f0-4f0e-9322-c6cdce74ab4c&quot;,
+  &quot;folderName&quot;: &quot;Shared&quot;,
+  &quot;fileRef&quot;: &quot;&quot;,
+  &quot;pageRange&quot;: &quot;&quot;
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#11</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">4.67s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry get core.control.end --output json &gt; /tmp/end_def.json\nuip maestro flow registry get core.action.script --output json &gt; /tmp/script_def.json\nuip maestro flow registry get core.trigger.manual --output json &gt; /tmp/manual_def.json\necho done&quot;,
+  &quot;description&quot;: &quot;Fetch End, Script, manual trigger definitions&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>done</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#12</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-err">ERROR</span>
+      <span class="tool-duration">487ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip ixp deployments get-taxonomy --folder-key \&quot;c4359cde-55f0-4f0e-9322-c6cdce74ab4c\&quot; \&quot;birth_certificates_oob-6252526a-ixp\&quot; --output json &gt; /tmp/taxonomy.json 2&gt;&amp;1\ncat /tmp/taxonomy.json | python3 -c \&quot;\nimport json,sys\nd=json.load(sys.stdin)\ndef walk(fields, indent=0):\n    for f in fields:\n        print(&#x27; &#x27;*indent, f.get(&#x27;fieldName&#x27;), &#x27;|&#x27;, f.get(&#x27;type&#x27;))\n        if f.get(&#x27;components&#x27;):\n            w… (193 more chars)&quot;,
+  &quot;description&quot;: &quot;Fetch field taxonomy for birth certificate model&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Exit code 1
+Traceback (most recent call last):
+  File &quot;&lt;string&gt;&quot;, line 9, in &lt;module&gt;
+    dt = d[&#x27;Data&#x27;][&#x27;documentTaxonomy&#x27;][&#x27;documentTypes&#x27;]
+         ~^^^^^^^^
+KeyError: &#x27;Data&#x27;</pre>
+    <h4>Error</h4><pre>Exit code 1
+Traceback (most recent call last):
+  File &quot;&lt;string&gt;&quot;, line 9, in &lt;module&gt;
+    dt = d[&#x27;Data&#x27;][&#x27;documentTaxonomy&#x27;][&#x27;documentTypes&#x27;]
+         ~^^^^^^^^
+KeyError: &#x27;Data&#x27;</pre>
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#13</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">12ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cat /tmp/taxonomy.json&quot;,
+  &quot;description&quot;: &quot;Inspect raw taxonomy response&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;ValidationError&quot;,
+  &quot;ErrorCode&quot;: &quot;invalid_argument&quot;,
+  &quot;Message&quot;: &quot;error: required option &#x27;--version &lt;number&gt;&#x27; not specified&quot;,
+  &quot;Instructions&quot;: &quot;Run &#x27;uip ixp deployments get-taxonomy birth_certificates_oob-6252526a-ixp --help&#x27; for usage information.&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#14</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">513ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip ixp deployments get-taxonomy --help 2&gt;&amp;1 | head -40&quot;,
+  &quot;description&quot;: &quot;Check get-taxonomy CLI usage for required version flag&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>                        uip ixp deployments get-taxonomy                        
+Get the project taxonomy (data types + field groups) at a specific trained model version
+                Use --help with nested commands for more detail.                
+
+┌─ Usage ──────────────────────────────────────────────────────────────────────┐
+│ uip ixp deployments get-taxonomy [options] &lt;project-name&gt;                    │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Arguments ──────────────────────────────────────────────────────────────────┐
+│ project-name   Project name                                                  │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Options ────────────────────────────────────────────────────────────────────┐
+│ --version &lt;number&gt;             Trained model version (non-negative integer). │
+│                                Get available versions from `uip ixp projects │
+│                                list-models &lt;project-name&gt; --output json`.    │
+│ -h, --help                     display help for command                      │
+│ --output                       Output format (default
+
+… (truncated, 1484 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#15</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-err">ERROR</span>
+      <span class="tool-duration">729ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip ixp projects list-models \&quot;birth_certificates_oob-6252526a-ixp\&quot; --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;List trained model versions for birth certificate project&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Exit code 1
+{
+  &quot;Result&quot;: &quot;Failure&quot;,
+  &quot;ErrorCode&quot;: &quot;not_found&quot;,
+  &quot;Message&quot;: &quot;Failed to list models&quot;,
+  &quot;Instructions&quot;: &quot;Project with name &#x27;birth_certificates_oob-6252526a-ixp&#x27; was not found.&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;,
+  &quot;Context&quot;: {
+    &quot;HttpStatus&quot;: 404,
+    &quot;ErrorCode&quot;: &quot;[ProjectNotFoundError]&quot;
+  }
+}</pre>
+    <h4>Error</h4><pre>Exit code 1
+{
+  &quot;Result&quot;: &quot;Failure&quot;,
+  &quot;ErrorCode&quot;: &quot;not_found&quot;,
+  &quot;Message&quot;: &quot;Failed to list models&quot;,
+  &quot;Instructions&quot;: &quot;Project with name &#x27;birth_certificates_oob-6252526a-ixp&#x27; was not found.&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;,
+  &quot;Context&quot;: {
+    &quot;HttpStatus&quot;: 404,
+    &quot;ErrorCode&quot;: &quot;[ProjectNotFoundError]&quot;
+  }
+}</pre>
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#16</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">322ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip ixp projects list --help 2&gt;&amp;1 | head -30&quot;,
+  &quot;description&quot;: &quot;Check ixp projects list options&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>                             uip ixp projects list                              
+                         List all IXP training projects                         
+                Use --help with nested commands for more detail.                
+
+┌─ Usage ──────────────────────────────────────────────────────────────────────┐
+│ uip ixp projects list [options]                                              │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Options ────────────────────────────────────────────────────────────────────┐
+│ -l, --limit &lt;number&gt;           Number of items to return (1-10000)           │
+│ --offset &lt;number&gt;              Number of items to skip (0-1000000)           │
+│ -h, --help                     display help for command                      │
+│ --output                       Output format (default: json)                 │
+│ &lt;table|json|yaml|plain&gt;                                                      │
+│ --output-filter &lt;expression&gt;   JMESPath expression applied to the Data field │
+│                                of the response envelope                      │
+│ --log-level                    Log level threshold (default: i
+
+… (truncated, 989 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#17</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.22s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip ixp projects list --limit 200 --output json &gt; /tmp/ixp_projects.json 2&gt;&amp;1\npython3 -c \&quot;\nimport json\nd=json.load(open(&#x27;/tmp/ixp_projects.json&#x27;))\nfor p in d.get(&#x27;Data&#x27;,{}).get(&#x27;Projects&#x27;, d.get(&#x27;Data&#x27;,[]) if isinstance(d.get(&#x27;Data&#x27;), list) else []):\n    print(p)\n\&quot; 2&gt;&amp;1 | head -50\necho \&quot;---raw keys---\&quot;\npython3 -c \&quot;\nimport json\nd=json.load(open(&#x27;/tmp/ixp_projects.json&#x27;))\nprint(type(d.get(&#x27;Data&#x27;)))\n… (80 more chars)&quot;,
+  &quot;description&quot;: &quot;List all IXP projects and inspect shape&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{&#x27;Id&#x27;: &#x27;b8d3ea65-59c5-8021-8427-a0406ce6218b&#x27;, &#x27;Name&#x27;: &#x27;vendor_invoices-3e19dd82-ixp&#x27;, &#x27;Title&#x27;: &#x27;Vendor Invoices&#x27;, &#x27;CreatedAt&#x27;: &#x27;2026-07-24T17:03:52.973749+00:00&#x27;, &#x27;ProjectUrl&#x27;: &#x27;https://alpha.uipath.com/codereval/defaulttenant/reinfer_/ixp/vendor_invoices-3e19dd82-ixp/vendor_invoices-3e19dd82&#x27;}
+{&#x27;Id&#x27;: &#x27;ae342ddb-1574-8073-8e71-478002ef6515&#x27;, &#x27;Name&#x27;: &#x27;codereval-integ-publish-444cb85e5e-ed030ecc-ixp&#x27;, &#x27;Title&#x27;: &#x27;codereval-integ-publish-444cb85e5e&#x27;, &#x27;CreatedAt&#x27;: &#x27;2026-08-17T05:22:23.576987+00:00&#x27;, &#x27;ProjectUrl&#x27;: &#x27;https://alpha.uipath.com/codereval/defaulttenant/reinfer_/ixp/codereval-integ-publish-444cb85e5e-ed030ecc-ixp/codereval-integ-publish-444cb85e5e-ed030ecc&#x27;}
+---raw keys---
+&lt;class &#x27;dict&#x27;&gt;
+{&#x27;Projects&#x27;: [{&#x27;Id&#x27;: &#x27;b8d3ea65-59c5-8021-8427-a0406ce6218b&#x27;, &#x27;Name&#x27;: &#x27;vendor_invoices-3e19dd82-ixp&#x27;, &#x27;Title&#x27;: &#x27;Vendor Invoices&#x27;, &#x27;CreatedAt&#x27;: &#x27;2026-07-24T17:03:52.973749+00:00&#x27;, &#x27;ProjectUrl&#x27;: &#x27;https://alpha.uipath.com/codereval/defaulttenant/reinfer_/ixp/vendor_invoices-3e19dd82-ixp/vendor_invoices-3e19dd82&#x27;}, {&#x27;Id&#x27;: &#x27;ae342ddb-1574-8073-8e71-478002ef6515&#x27;, &#x27;Name&#x27;: &#x27;codereval-integ-publish-444cb85e5e-ed030ecc-ixp&#x27;, &#x27;Title&#x27;: &#x27;codereval-integ-publish-444cb85e5e&#x27;, &#x27;CreatedAt&#x27;: &#x27;2026-08-17T05:22:23.5
+
+… (truncated, 225 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#18</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">149ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 -c \&quot;\nimport json\nfor f in [&#x27;/tmp/manual_def.json&#x27;,&#x27;/tmp/end_def.json&#x27;,&#x27;/tmp/script_def.json&#x27;]:\n    d=json.load(open(f))\n    n=d[&#x27;Data&#x27;][&#x27;Node&#x27;]\n    print(f, n.get(&#x27;type&#x27;), n.get(&#x27;version&#x27;), &#x27;ports=&#x27;, n.get(&#x27;inputDefinition&#x27;,{}).get(&#x27;required&#x27;))\n    print(&#x27;  &#x27;)\n\&quot;\npython3 -c \&quot;\nimport json\nd=json.load(open(&#x27;/tmp/manual_def.json&#x27;))\nprint(json.dumps(d[&#x27;Data&#x27;][&#x27;Node&#x27;], indent=2)[:3000])\n\&quot;&quot;,
+  &quot;description&quot;: &quot;Inspect manual trigger, end, script node definitions&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/tmp/manual_def.json None 1.0 ports= None
+  
+/tmp/end_def.json None 1.0 ports= None
+  
+/tmp/script_def.json None 1.1 ports= [&#x27;script&#x27;]
+  
+{
+  &quot;nodeType&quot;: &quot;core.trigger.manual&quot;,
+  &quot;version&quot;: &quot;1.0&quot;,
+  &quot;category&quot;: &quot;trigger&quot;,
+  &quot;description&quot;: &quot;Start the process manually&quot;,
+  &quot;tags&quot;: [
+    &quot;trigger&quot;,
+    &quot;start&quot;,
+    &quot;manual&quot;
+  ],
+  &quot;sortOrder&quot;: 80,
+  &quot;display&quot;: {
+    &quot;label&quot;: &quot;Manual trigger&quot;,
+    &quot;icon&quot;: &quot;play&quot;,
+    &quot;shape&quot;: &quot;circle&quot;
+  },
+  &quot;handleConfiguration&quot;: [
+    {
+      &quot;position&quot;: &quot;right&quot;,
+      &quot;handles&quot;: [
+        {
+          &quot;id&quot;: &quot;output&quot;,
+          &quot;type&quot;: &quot;source&quot;,
+          &quot;handleType&quot;: &quot;output&quot;,
+          &quot;showButton&quot;: true,
+          &quot;constraints&quot;: {
+            &quot;forbiddenTargetCategories&quot;: [
+              &quot;trigger&quot;
+            ]
+          }
+        }
+      ],
+      &quot;visible&quot;: true
+    }
+  ],
+  &quot;model&quot;: {
+    &quot;type&quot;: &quot;bpmn:StartEvent&quot;,
+    &quot;entryPointId&quot;: true
+  },
+  &quot;outputDefinition&quot;: {
+    &quot;output&quot;: {
+      &quot;type&quot;: &quot;object&quot;,
+      &quot;description&quot;: &quot;Data passed when manually triggering the process.&quot;,
+      &quot;source&quot;: &quot;null&quot;,
+      &quot;var&quot;: &quot;output&quot;
+    }
+  },
+  &quot;toolbarExtensions&quot;: {
+    &quot;design&quot;: {
+      &quot;actions&quot;: [
+        {
+          &quot;id&quot;: &quot;change-trigger-type&quot;,
+    
+
+… (truncated, 108 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#19</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">421ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip ixp deployments --help 2&gt;&amp;1 | head -40&quot;,
+  &quot;description&quot;: &quot;Check ixp deployments subcommands&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>                              uip ixp deployments                               
+Inspect IXP deployments — project taxonomy pinned to a specific trained model version
+                Use --help with nested commands for more detail.                
+
+┌─ Usage ──────────────────────────────────────────────────────────────────────┐
+│ uip ixp deployments [options] [command]                                      │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Commands ───────────────────────────────────────────────────────────────────┐
+│ get-taxonomy   Get the project taxonomy (data types + field groups) at a     │
+│                specific trained model version                                │
+│ help           display help for command                                      │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Options ────────────────────────────────────────────────────────────────────┐
+│ -h, --help                     display help for command                      │
+│ --output                       Output format (default: json)                 │
+│ &lt;table|json|yaml|plain&gt;                                 
+
+… (truncated, 589 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#20</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">703ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip ixp projects list --help 2&gt;&amp;1 | grep -i folder\nuip ixp projects list-models --help 2&gt;&amp;1 | head -30&quot;,
+  &quot;description&quot;: &quot;Check if ixp projects list supports folder scoping&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>                          uip ixp projects list-models                          
+                 List all model versions and tags for a project                 
+                Use --help with nested commands for more detail.                
+
+┌─ Usage ──────────────────────────────────────────────────────────────────────┐
+│ uip ixp projects list-models [options] &lt;project-name&gt;                        │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Arguments ──────────────────────────────────────────────────────────────────┐
+│ project-name   Project name                                                  │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Options ────────────────────────────────────────────────────────────────────┐
+│ -h, --help                     display help for command                      │
+│ --output                       Output format (default: json)                 │
+│ &lt;table|json|yaml|plain&gt;                                                      │
+│ --output-filter &lt;expression&gt;   JMESPath expression applied to the Data field │
+│                                of the response envelope      
+
+… (truncated, 909 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#21</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">394ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip ixp --help 2&gt;&amp;1 | head -40&quot;,
+  &quot;description&quot;: &quot;List top-level ixp subcommands&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>                                    uip ixp                                     
+UiPath IXP Tool for managing projects, prompts, predictions and model publishing
+                Use --help with nested commands for more detail.                
+
+┌─ Usage ──────────────────────────────────────────────────────────────────────┐
+│ uip ixp [options] [command]                                                  │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Commands ───────────────────────────────────────────────────────────────────┐
+│ data-types    Manage data types (entity_defs) — the reusable type            │
+│               definitions fields reference via field_type_id                 │
+│ deployments   Inspect IXP deployments — project taxonomy pinned to a         │
+│               specific trained model version                                 │
+│ documents     Read IXP document content                                      │
+│ fields        Edit fields within a project&#x27;s field groups (label_defs)       │
+│ groups        Manage field groups (label_defs) — the document type           │
+│               containers for fields                           
+
+… (truncated, 1232 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#22</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-err">ERROR</span>
+      <span class="tool-duration">1.82s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip ixp projects list --limit 200 --output json --output-filter \&quot;Projects[].Name\&quot; 2&gt;&amp;1\necho \&quot;---try version 1 anyway---\&quot;\nuip ixp deployments get-taxonomy --folder-key \&quot;c4359cde-55f0-4f0e-9322-c6cdce74ab4c\&quot; \&quot;birth_certificates_oob-6252526a-ixp\&quot; --version 1 --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Confirm project list and try taxonomy with version 1&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Exit code 3
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;IxpProjectsList&quot;,
+  &quot;Data&quot;: [
+    {
+      &quot;Name&quot;: &quot;vendor_invoices-3e19dd82-ixp&quot;
+    },
+    {
+      &quot;Name&quot;: &quot;codereval-integ-publish-444cb85e5e-ed030ecc-ixp&quot;
+    }
+  ]
+}
+---try version 1 anyway---
+{
+  &quot;Result&quot;: &quot;ValidationError&quot;,
+  &quot;ErrorCode&quot;: &quot;invalid_argument&quot;,
+  &quot;Message&quot;: &quot;error: unknown option &#x27;--folder-key&#x27;&quot;,
+  &quot;Instructions&quot;: &quot;Run &#x27;uip ixp deployments get-taxonomy birth_certificates_oob-6252526a-ixp --help&#x27; for usage information.&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}</pre>
+    <h4>Error</h4><pre>Exit code 3
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;IxpProjectsList&quot;,
+  &quot;Data&quot;: [
+    {
+      &quot;Name&quot;: &quot;vendor_invoices-3e19dd82-ixp&quot;
+    },
+    {
+      &quot;Name&quot;: &quot;codereval-integ-publish-444cb85e5e-ed030ecc-ixp&quot;
+    }
+  ]
+}
+---try version 1 anyway---
+{
+  &quot;Result&quot;: &quot;ValidationError&quot;,
+  &quot;ErrorCode&quot;: &quot;invalid_argument&quot;,
+  &quot;Message&quot;: &quot;error: unknown option &#x27;--folder-key&#x27;&quot;,
+  &quot;Instructions&quot;: &quot;Run &#x27;uip ixp deployments get-taxonomy birth_certificates_oob-6252526a-ixp --help&#x27; for usage information.&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}</pre>
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#23</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">3.51s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;for v in 0 1 2 3; do\necho \&quot;=== version $v ===\&quot;\nuip ixp deployments get-taxonomy \&quot;birth_certificates_oob-6252526a-ixp\&quot; --version $v --output json 2&gt;&amp;1 | head -5\ndone&quot;,
+  &quot;description&quot;: &quot;Try get-taxonomy with various version numbers, no folder-key flag&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>=== version 0 ===
+{
+  &quot;Result&quot;: &quot;Failure&quot;,
+  &quot;ErrorCode&quot;: &quot;not_found&quot;,
+  &quot;Message&quot;: &quot;Failed to get deployment taxonomy&quot;,
+  &quot;Instructions&quot;: &quot;Project with name &#x27;birth_certificates_oob-6252526a-ixp&#x27; was not found.&quot;,
+=== version 1 ===
+{
+  &quot;Result&quot;: &quot;Failure&quot;,
+  &quot;ErrorCode&quot;: &quot;not_found&quot;,
+  &quot;Message&quot;: &quot;Failed to get deployment taxonomy&quot;,
+  &quot;Instructions&quot;: &quot;Project with name &#x27;birth_certificates_oob-6252526a-ixp&#x27; was not found.&quot;,
+=== version 2 ===
+{
+  &quot;Result&quot;: &quot;Failure&quot;,
+  &quot;ErrorCode&quot;: &quot;not_found&quot;,
+  &quot;Message&quot;: &quot;Failed to get deployment taxonomy&quot;,
+  &quot;Instructions&quot;: &quot;Project with name &#x27;birth_certificates_oob-6252526a-ixp&#x27; was not found.&quot;,
+=== version 3 ===
+{
+  &quot;Result&quot;: &quot;Failure&quot;,
+  &quot;ErrorCode&quot;: &quot;not_found&quot;,
+  &quot;Message&quot;: &quot;Failed to get deployment taxonomy&quot;,
+  &quot;Instructions&quot;: &quot;Project with name &#x27;birth_certificates_oob-6252526a-ixp&#x27; was not found.&quot;,</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#24</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-err">ERROR</span>
+      <span class="tool-duration">1.45s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip ixp deployments get-taxonomy \&quot;a05c7655-1a1c-80a5-94a0-b1609d34dc10\&quot; --version 1 --output json 2&gt;&amp;1\necho \&quot;---try 0---\&quot;\nuip ixp deployments get-taxonomy \&quot;a05c7655-1a1c-80a5-94a0-b1609d34dc10\&quot; --version 0 --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Try get-taxonomy using the model GUID as project identifier&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Exit code 1
+{
+  &quot;Result&quot;: &quot;Failure&quot;,
+  &quot;ErrorCode&quot;: &quot;not_found&quot;,
+  &quot;Message&quot;: &quot;Failed to get deployment taxonomy&quot;,
+  &quot;Instructions&quot;: &quot;Project with name &#x27;a05c7655-1a1c-80a5-94a0-b1609d34dc10&#x27; was not found.&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;,
+  &quot;Context&quot;: {
+    &quot;HttpStatus&quot;: 404,
+    &quot;ErrorCode&quot;: &quot;[ProjectNotFoundError]&quot;
+  }
+}
+---try 0---
+{
+  &quot;Result&quot;: &quot;Failure&quot;,
+  &quot;ErrorCode&quot;: &quot;not_found&quot;,
+  &quot;Message&quot;: &quot;Failed to get deployment taxonomy&quot;,
+  &quot;Instructions&quot;: &quot;Project with name &#x27;a05c7655-1a1c-80a5-94a0-b1609d34dc10&#x27; was not found.&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;,
+  &quot;Context&quot;: {
+    &quot;HttpStatus&quot;: 404,
+    &quot;ErrorCode&quot;: &quot;[ProjectNotFoundError]&quot;
+  }
+}</pre>
+    <h4>Error</h4><pre>Exit code 1
+{
+  &quot;Result&quot;: &quot;Failure&quot;,
+  &quot;ErrorCode&quot;: &quot;not_found&quot;,
+  &quot;Message&quot;: &quot;Failed to get deployment taxonomy&quot;,
+  &quot;Instructions&quot;: &quot;Project with name &#x27;a05c7655-1a1c-80a5-94a0-b1609d34dc10&#x27; was not found.&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;,
+  &quot;Context&quot;: {
+    &quot;HttpStatus&quot;: 404,
+    &quot;ErrorCode&quot;: &quot;[ProjectNotFoundError]&quot;
+  }
+}
+---try 0---
+{
+  &quot;Result&quot;: &quot;Failure&quot;,
+  &quot;ErrorCode&quot;: &quot;not_found&quot;,
+  &quot;Message&quot;: &quot;Failed to get deployment taxonomy&quot;,
+  &quot;Instructions&quot;: &quot;Project with name &#x27;a05c7655-1a1c-80a5-94a0-b1609d34dc10&#x27; was not found.&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;,
+  &quot;Context&quot;: {
+    &quot;HttpStatus&quot;: 404,
+    &quot;ErrorCode&quot;: &quot;[ProjectNotFoundError]&quot;
+  }
+}</pre>
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#25</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">7.51s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;set -e\nuip solution init \&quot;BirthCertificateExtraction\&quot; --output json \\\n  &amp;&amp; cd \&quot;BirthCertificateExtraction\&quot; \\\n  &amp;&amp; uip maestro flow init \&quot;BirthCertificateExtraction\&quot; --output json \\\n  &amp;&amp; cd \&quot;BirthCertificateExtraction\&quot; \\\n  &amp;&amp; uip maestro flow registry pull --output json \\\n  &amp;&amp; pwd&quot;,
+  &quot;description&quot;: &quot;Scaffold solution and flow project, refresh registry&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;SolutionInit&quot;,
+  &quot;Data&quot;: {
+    &quot;Status&quot;: &quot;Created successfully&quot;,
+    &quot;Path&quot;: &quot;/work/output/artifacts/skill-flow-ixp-e2e-project-selection/birth-certificate/BirthCertificateExtraction/BirthCertificateExtraction.uipx&quot;,
+    &quot;NextSteps&quot;: &quot;Read /work/output/artifacts/skill-flow-ixp-e2e-project-selection/birth-certificate/BirthCertificateExtraction/AGENTS.md or /work/output/artifacts/skill-flow-ixp-e2e-project-selection/birth-certificate/BirthCertificateExtraction/CLAUDE.md to understand the solution lifecycle, project types that can be used inside a solution, and related uip command references.&quot;
+  }
+}
+2026-08-19 15:43:43 INFO  [ResourceBuilder:ProjectCreateCommandHandler] Creating project [object Object]
+2026-08-19 15:43:43 INFO  [ResourceBuilder:MultiFileSolutionDefinitionProvider] Reading multi-file solution definition for solution %s /work/output/artifacts/skill-flow-ixp-e2e-project-selection/birth-certificate/BirthCertificateExtraction
+2026-08-19 15:43:43 INFO  [ResourceBuilder:ProjectCreateCommandHandler] Generate artefact resources for project [object Object]
+2026-08-19 15:43:43 INFO  [ResourceBuilder:SolutionsMetadataReader] Reading metadata fr
+
+… (truncated, 1773 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#26</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">14ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;ls -la \&quot;/work/output/artifacts/skill-flow-ixp-e2e-project-selection/birth-certificate/BirthCertificateExtraction/BirthCertificateExtraction/BirthCertificateExtraction.flow\&quot;&quot;,
+  &quot;description&quot;: &quot;Verify flow file exists at double-nested path&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>-rw-r--r-- 1 root root 1996 Aug 19 15:43 /work/output/artifacts/skill-flow-ixp-e2e-project-selection/birth-certificate/BirthCertificateExtraction/BirthCertificateExtraction/BirthCertificateExtraction.flow</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#27</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">7ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-ixp-e2e-project-selection/birth-certificate/BirthCertificateExtraction/BirthCertificateExtraction/BirthCertificateExtraction.flow&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	{
+2	  &quot;id&quot;: &quot;4f92150d-5fd7-49f9-8327-0d081f1f97df&quot;,
+3	  &quot;version&quot;: &quot;1.9&quot;,
+4	  &quot;name&quot;: &quot;BirthCertificateExtraction&quot;,
+5	  &quot;nodes&quot;: [
+6	    {
+7	      &quot;id&quot;: &quot;start&quot;,
+8	      &quot;type&quot;: &quot;core.trigger.manual&quot;,
+9	      &quot;typeVersion&quot;: &quot;1.0&quot;,
+10	      &quot;display&quot;: {
+11	        &quot;label&quot;: &quot;Manual trigger&quot;
+12	      },
+13	      &quot;inputs&quot;: {
+14	        &quot;entryPointId&quot;: &quot;57d474b5-133d-4a4f-ba63-7775b6dccb39&quot;,
+15	        &quot;isDefaultEntryPoint&quot;: true
+16	      }
+17	    }
+18	  ],
+19	  &quot;edges&quot;: [],
+20	  &quot;definitions&quot;: [
+21	    {
+22	      &quot;nodeType&quot;: &quot;core.trigger.manual&quot;,
+23	      &quot;version&quot;: &quot;1.0&quot;,
+24	      &quot;category&quot;: &quot;trigger&quot;,
+25	      &quot;description&quot;: &quot;Start the process manually&quot;,
+26	      &quot;tags&quot;: [
+27	        &quot;trigger&quot;,
+28	        &quot;start&quot;,
+29	        &quot;manual&quot;
+30	      ],
+31	      &quot;sortOrder&quot;: 80,
+32	      &quot;display&quot;: {
+33	        &quot;label&quot;: &quot;Manual trigger&quot;,
+34	        &quot;icon&quot;: &quot;play&quot;,
+35	        &quot;shape&quot;: &quot;circle&quot;
+36	      },
+37	      &quot;handleConfiguration&quot;: [
+38	        {
+39	          &quot;position&quot;: &quot;right&quot;,
+40	          &quot;handles&quot;: [
+41	            {
+42	              &quot;id&quot;: &quot;output&quot;,
+43	              &quot;type&quot;: &quot;source&quot;,
+44	              &quot;handleType&quot;: &quot;output&quot;,
+45	              &quot;showButton&quot;: true,
+46	              &quot;
+
+… (truncated, 1060 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#28</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">160ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 -c \&quot;\nimport json\nd=json.load(open(&#x27;/tmp/ixp_def.json&#x27;))\nn=d[&#x27;Data&#x27;][&#x27;Node&#x27;]\nprint(&#x27;version:&#x27;, n.get(&#x27;version&#x27;))\nprint(&#x27;nodeType:&#x27;, n.get(&#x27;nodeType&#x27;))\nprint(&#x27;category:&#x27;, n.get(&#x27;category&#x27;))\nprint(&#x27;model:&#x27;, n.get(&#x27;model&#x27;))\nprint(&#x27;handleConfiguration:&#x27;, json.dumps(n.get(&#x27;handleConfiguration&#x27;), indent=2))\nprint(&#x27;sortOrder:&#x27;, n.get(&#x27;sortOrder&#x27;))\n\&quot;\n&quot;,
+  &quot;description&quot;: &quot;Check IxP node version, type, model, handles&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>version: 1.0.0
+nodeType: uipath.ixp.birth-certificates-oob-6252526a-ixp.a05c7655-1a1c-80a5-94a0-b1609d34dc10-c4359cde-55f0-4f0e-9322-c6cdce74ab4c
+category: document-extraction
+model: {&#x27;type&#x27;: &#x27;bpmn:ServiceTask&#x27;, &#x27;serviceType&#x27;: &#x27;IXP.Extraction&#x27;, &#x27;section&#x27;: &#x27;Published&#x27;, &#x27;bindings&#x27;: {&#x27;resource&#x27;: &#x27;ixpDeployment&#x27;, &#x27;entityType&#x27;: &#x27;ixpDeployment&#x27;, &#x27;resourceSubType&#x27;: None, &#x27;resourceKey&#x27;: &#x27;a05c7655-1a1c-80a5-94a0-b1609d34dc10&#x27;, &#x27;name&#x27;: &#x27;birth_certificates_oob-6252526a-ixp&#x27;, &#x27;values&#x27;: [{&#x27;name&#x27;: &#x27;name&#x27;, &#x27;propertyAttribute&#x27;: &#x27;name&#x27;, &#x27;default&#x27;: &#x27;birth_certificates_oob-6252526a-ixp&#x27;}, {&#x27;name&#x27;: &#x27;folderPath&#x27;, &#x27;propertyAttribute&#x27;: &#x27;folderPath&#x27;, &#x27;default&#x27;: &#x27;Shared&#x27;}]}}
+handleConfiguration: [
+  {
+    &quot;position&quot;: &quot;left&quot;,
+    &quot;handles&quot;: [
+      {
+        &quot;id&quot;: &quot;input&quot;,
+        &quot;type&quot;: &quot;target&quot;,
+        &quot;handleType&quot;: &quot;input&quot;
+      }
+    ]
+  },
+  {
+    &quot;position&quot;: &quot;right&quot;,
+    &quot;handles&quot;: [
+      {
+        &quot;id&quot;: &quot;success&quot;,
+        &quot;type&quot;: &quot;source&quot;,
+        &quot;handleType&quot;: &quot;output&quot;
+      },
+      {
+        &quot;id&quot;: &quot;error&quot;,
+        &quot;label&quot;: &quot;Error&quot;,
+        &quot;type&quot;: &quot;source&quot;,
+        &quot;handleType&quot;: &quot;output&quot;,
+        &quot;visible&quot;: &quot;{inputs.errorHandlingEnabled}&quot;,
+        &quot;constraints&quot;: {
+          &quot;maxConnections&quot;: 1
+
+
+… (truncated, 44 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#29</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">189ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 -c \&quot;\nimport json\nd=json.load(open(&#x27;/tmp/end_def.json&#x27;))\nn=d[&#x27;Data&#x27;][&#x27;Node&#x27;]\nprint(&#x27;version:&#x27;, n.get(&#x27;version&#x27;))\nd2=json.load(open(&#x27;/tmp/script_def.json&#x27;))\nn2=d2[&#x27;Data&#x27;][&#x27;Node&#x27;]\nprint(&#x27;script version:&#x27;, n2.get(&#x27;version&#x27;))\nprint(json.dumps(n2.get(&#x27;handleConfiguration&#x27;), indent=2))\n\&quot;&quot;,
+  &quot;description&quot;: &quot;Check End and Script node versions&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>version: 1.0
+script version: 1.1
+[
+  {
+    &quot;position&quot;: &quot;left&quot;,
+    &quot;handles&quot;: [
+      {
+        &quot;id&quot;: &quot;input&quot;,
+        &quot;type&quot;: &quot;target&quot;,
+        &quot;handleType&quot;: &quot;input&quot;
+      }
+    ]
+  },
+  {
+    &quot;position&quot;: &quot;right&quot;,
+    &quot;handles&quot;: [
+      {
+        &quot;id&quot;: &quot;success&quot;,
+        &quot;type&quot;: &quot;source&quot;,
+        &quot;handleType&quot;: &quot;output&quot;
+      },
+      {
+        &quot;id&quot;: &quot;error&quot;,
+        &quot;label&quot;: &quot;Error&quot;,
+        &quot;type&quot;: &quot;source&quot;,
+        &quot;handleType&quot;: &quot;output&quot;,
+        &quot;visible&quot;: &quot;{inputs.errorHandlingEnabled}&quot;,
+        &quot;constraints&quot;: {
+          &quot;maxConnections&quot;: 1
+        }
+      }
+    ]
+  }
+]</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#30</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">101ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 -c \&quot;\nimport json\nd=json.load(open(&#x27;/tmp/ixp_def.json&#x27;))\nprint(json.dumps(d[&#x27;Data&#x27;][&#x27;Node&#x27;]))\n\&quot; &gt; /tmp/ixp_def_node.json\nwc -c /tmp/ixp_def_node.json&quot;,
+  &quot;description&quot;: &quot;Extract bare Node definition for IxP as single-line JSON&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>22447 /tmp/ixp_def_node.json</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#31</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">152ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;SKILL_DIR=/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow\npython3 \&quot;$SKILL_DIR/scripts/flow_edit.py\&quot; --help 2&gt;&amp;1 | head -60&quot;,
+  &quot;description&quot;: &quot;Check flow_edit.py CLI help&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>usage: flow_edit.py [-h]
+                    {add-node,delete-node,add-edge,delete-edge,set-input,add-variable,add-output-mapping,add-variable-update} ...
+
+Primitive `.flow` mutations: node/edge CRUD, variables, output mappings.
+
+Each subcommand touches every array the operation implies (nodes, edges, definitions,
+variables.nodes, variables.variableUpdates, layout.nodes) in one pass and writes the file
+back with 2-space indent.
+
+positional arguments:
+  {add-node,delete-node,add-edge,delete-edge,set-input,add-variable,add-output-mapping,add-variable-update}
+    add-node            insert a node + definition + variables.nodes + layout
+                        entry
+    delete-node         remove a node and cascade
+                        edges/variables/updates/layout/definition
+    add-edge            add an edge with both ports; sets errorHandlingEnabled
+                        for error edges
+    delete-edge         remove an edge by id or by endpoints
+    set-input           in-place inputs update (dotted key path), preserves
+                        node id
+    add-variable        declare a workflow variable in variables.globals
+    add-output-mapping  map an out variable on an En
+
+… (truncated, 180 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#32</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">394ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;SKILL_DIR=/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow\npython3 \&quot;$SKILL_DIR/scripts/flow_edit.py\&quot; add-node --help 2&gt;&amp;1\necho \&quot;---add-edge---\&quot;\npython3 \&quot;$SKILL_DIR/scripts/flow_edit.py\&quot; add-edge --help 2&gt;&amp;1\necho \&quot;---add-variable---\&quot;\npython3 \&quot;$SKILL_DIR/scripts/flow_edit.py\&quot; add-variable --help 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Check add-node, add-edge, add-variable syntax&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>usage: flow_edit.py add-node [-h] --flow FLOW --id ID --type TYPE
+                             [--type-version TYPE_VERSION] [--label LABEL]
+                             [--definition-file DEFINITION_FILE]
+                             [--inputs INPUTS] [--outputs OUTPUTS]
+                             [--allow-cli-owned]
+
+options:
+  -h, --help            show this help message and exit
+  --flow FLOW
+  --id ID               camelCase, must start with a letter
+  --type TYPE
+  --type-version TYPE_VERSION
+                        omit when --definition-file supplies it
+  --label LABEL
+  --definition-file DEFINITION_FILE
+                        `uip maestro flow registry get &lt;type&gt; --output json`
+                        saved to a file
+  --inputs INPUTS       JSON object for inputs
+  --outputs OUTPUTS     auto | none | comma-separated output ids
+  --allow-cli-owned     override the CLI-owned refusal
+---add-edge---
+usage: flow_edit.py add-edge [-h] --flow FLOW --source SOURCE
+                             --source-port SOURCE_PORT --target TARGET
+                             --target-port TARGET_PORT [--id ID]
+
+options:
+  -h, --help            show this help message and exit
+  --flow FLOW
+ 
+
+… (truncated, 914 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#33</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">15ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;SKILL_DIR=/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow\nsed -n &#x27;1,400p&#x27; \&quot;$SKILL_DIR/scripts/flow_edit.py\&quot; | grep -n \&quot;def cmd_add_node\\|outputs\\|def build_outputs\\|auto\&quot; | head -60&quot;,
+  &quot;description&quot;: &quot;Inspect flow_edit.py add-node implementation for outputs handling&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>29:def _skeleton_outputs(ntype, outputs):
+30:    if fl.is_terminal(ntype) or not outputs:
+51:    for out in outputs:
+69:def _sync_node_variables(flow, nid, outputs):
+71:    for out in outputs:
+110:    if args.outputs == &quot;auto&quot;:
+111:        outputs = fl.declared_outputs(definition) if definition else []
+112:        if not outputs and not fl.is_terminal(args.type):
+113:            outputs = [&quot;output&quot;] if fl.is_trigger(args.type) else [&quot;output&quot;, &quot;error&quot;]
+114:    elif args.outputs == &quot;none&quot;:
+115:        outputs = []
+117:        outputs = [o.strip() for o in args.outputs.split(&quot;,&quot;) if o.strip()]
+118:    block = _skeleton_outputs(args.type, outputs)
+120:        node[&quot;outputs&quot;] = block
+128:        _sync_node_variables(flow, args.id, outputs)
+136:        args.id, args.type, version, &quot;added&quot; if added_def else &quot;reused/absent&quot;, len(outputs)))
+279:    node.setdefault(&quot;outputs&quot;, {})[args.var] = {&quot;source&quot;: args.source}
+315:    a.add_argument(&quot;--outputs&quot;, default=&quot;auto&quot;, help=&quot;auto | none | comma-separated output ids&quot;)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#34</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">5ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/scripts/flow_edit.py&quot;,
+  &quot;offset&quot;: 1,
+  &quot;limit&quot;: 140
+}</pre>
+    <h4>Result</h4>
+    <pre>1	#!/usr/bin/env python3
+2	&quot;&quot;&quot;Primitive `.flow` mutations: node/edge CRUD, variables, output mappings.
+3	
+4	Each subcommand touches every array the operation implies (nodes, edges, definitions,
+5	variables.nodes, variables.variableUpdates, layout.nodes) in one pass and writes the file
+6	back with 2-space indent.
+7	&quot;&quot;&quot;
+8	import argparse
+9	import json
+10	import re
+11	import sys
+12	
+13	import flow_lib as fl
+14	
+15	ID_RE = re.compile(r&quot;^[A-Za-z]&quot;)
+16	
+17	
+18	def _check_id(kind, value):
+19	    if not ID_RE.match(value or &quot;&quot;):
+20	        fl.die(&quot;%s id %r must start with a letter (XML NCName); never a bare UUID or leading digit&quot; % (kind, value))
+21	
+22	
+23	def _load_definition(path):
+24	    with open(path) as fh:
+25	        payload = json.load(fh)
+26	    return fl.unwrap_definition(payload)
+27	
+28	
+29	def _skeleton_outputs(ntype, outputs):
+30	    if fl.is_terminal(ntype) or not outputs:
+31	        return {}
+32	    if fl.is_trigger(ntype):
+33	        return {
+34	            &quot;output&quot;: {
+35	                &quot;type&quot;: &quot;object&quot;,
+36	                &quot;description&quot;: &quot;Data passed when triggering the process.&quot;,
+37	                &quot;source&quot;: &quot;null&quot;,
+38	                &quot;var&quot;: &quot;output&quot;,
+39	            }
+40
+
+… (truncated, 3978 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#35</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">163ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 -c \&quot;\nimport json\nd=json.load(open(&#x27;/tmp/script_def.json&#x27;))\nprint(json.dumps(d[&#x27;Data&#x27;][&#x27;Node&#x27;]))\n\&quot; &gt; /tmp/script_def_node.json\npython3 -c \&quot;\nimport json\nd=json.load(open(&#x27;/tmp/end_def.json&#x27;))\nprint(json.dumps(d[&#x27;Data&#x27;][&#x27;Node&#x27;]))\n\&quot; &gt; /tmp/end_def_node.json\nwc -c /tmp/script_def_node.json /tmp/end_def_node.json&quot;,
+  &quot;description&quot;: &quot;Extract bare Node definitions for script and end nodes&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>2330 /tmp/script_def_node.json
+ 479 /tmp/end_def_node.json
+2809 total</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#36</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">85ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 -c \&quot;\nimport json\nd=json.load(open(&#x27;/tmp/script_def.json&#x27;))\nn=d[&#x27;Data&#x27;][&#x27;Node&#x27;]\nprint(json.dumps(n.get(&#x27;outputDefinition&#x27;), indent=2))\nprint(&#x27;inputDefinition:&#x27;, json.dumps(n.get(&#x27;inputDefinition&#x27;), indent=2))\n\&quot;&quot;,
+  &quot;description&quot;: &quot;Check script node outputDefinition and inputDefinition&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;output&quot;: {
+    &quot;type&quot;: &quot;any&quot;,
+    &quot;description&quot;: &quot;The return value of the script&quot;,
+    &quot;source&quot;: &quot;=result.response&quot;,
+    &quot;var&quot;: &quot;output&quot;
+  },
+  &quot;error&quot;: {
+    &quot;type&quot;: &quot;object&quot;,
+    &quot;description&quot;: &quot;Error information if the node fails&quot;,
+    &quot;source&quot;: &quot;=Error&quot;,
+    &quot;var&quot;: &quot;error&quot;,
+    &quot;schema&quot;: {
+      &quot;$schema&quot;: &quot;http://json-schema.org/draft-07/schema#&quot;,
+      &quot;type&quot;: &quot;object&quot;,
+      &quot;required&quot;: [
+        &quot;code&quot;,
+        &quot;message&quot;,
+        &quot;detail&quot;,
+        &quot;category&quot;,
+        &quot;status&quot;
+      ],
+      &quot;properties&quot;: {
+        &quot;code&quot;: {
+          &quot;type&quot;: &quot;string&quot;,
+          &quot;description&quot;: &quot;Error code as a string&quot;
+        },
+        &quot;message&quot;: {
+          &quot;type&quot;: &quot;string&quot;,
+          &quot;description&quot;: &quot;High-level error message&quot;
+        },
+        &quot;detail&quot;: {
+          &quot;type&quot;: &quot;string&quot;,
+          &quot;description&quot;: &quot;Detailed error description&quot;
+        },
+        &quot;category&quot;: {
+          &quot;type&quot;: &quot;string&quot;,
+          &quot;description&quot;: &quot;Error category&quot;
+        },
+        &quot;status&quot;: {
+          &quot;type&quot;: &quot;integer&quot;,
+          &quot;description&quot;: &quot;HTTP status code&quot;
+        }
+      },
+      &quot;additionalProperties&quot;: false
+    }
+  }
+}
+inputDefinition: {
+  &quot;type&quot;: &quot;object&quot;,
+  &quot;properties&quot;: {
+    &quot;script&quot;: {
+      &quot;
+
+… (truncated, 169 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#37</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.02s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip ixp groups --help 2&gt;&amp;1 | head -20\necho \&quot;---fields---\&quot;\nuip ixp fields --help 2&gt;&amp;1 | head -20\necho \&quot;---documents---\&quot;\nuip ixp documents --help 2&gt;&amp;1 | head -20&quot;,
+  &quot;description&quot;: &quot;Check ixp groups/fields/documents subcommands for taxonomy access without a trainable project&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>                                 uip ixp groups                                 
+   Manage field groups (label_defs) — the document type containers for fields   
+                Use --help with nested commands for more detail.                
+
+┌─ Usage ──────────────────────────────────────────────────────────────────────┐
+│ uip ixp groups [options] [command]                                           │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Commands ───────────────────────────────────────────────────────────────────┐
+│ add              Create a new field group with instructions and at least one │
+│                  field                                                       │
+│ delete           Delete a field group. IRREVERSIBLE: all annotations on all  │
+│                  fields in the group are deleted.                            │
+│ help             display help for command                                    │
+│ rename           Rename a field group. Preserves all fields and annotations. │
+│ update-prompts   Bulk-update field group (label_def) extraction              │
+│                  instructions. Match by group name; existing f
+
+… (truncated, 2968 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#38</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">6ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/scripts/flow_lib.py&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	&quot;&quot;&quot;Shared loader and graph helpers for `.flow` JSON. Internal — imported by the other scripts.&quot;&quot;&quot;
+2	import json
+3	import sys
+4	
+5	TRIGGER_TYPES = {&quot;core.trigger.manual&quot;, &quot;core.trigger.scheduled&quot;}
+6	TRIGGER_PREFIXES = (&quot;uipath.connector.trigger.&quot;,)
+7	TERMINAL_TYPES = {&quot;core.control.end&quot;, &quot;core.logic.terminate&quot;}
+8	CLI_OWNED_PREFIXES = (&quot;uipath.connector.trigger.&quot;, &quot;uipath.connector.event.&quot;, &quot;uipath.connector.&quot;)
+9	CLI_OWNED_TYPES = {&quot;core.action.http.v2&quot;}
+10	RESOURCE_PREFIXES = (
+11	    &quot;uipath.core.rpa-workflow.&quot;,
+12	    &quot;uipath.core.agent.&quot;,
+13	    &quot;uipath.core.flow.&quot;,
+14	    &quot;uipath.core.agentic-process.&quot;,
+15	    &quot;uipath.core.api-workflow.&quot;,
+16	    &quot;uipath.core.human-task.&quot;,
+17	)
+18	
+19	
+20	def die(msg, code=2):
+21	    sys.stderr.write(&quot;error: %s\n&quot; % msg)
+22	    raise SystemExit(code)
+23	
+24	
+25	def load(path):
+26	    try:
+27	        with open(path) as fh:
+28	            data = json.load(fh)
+29	    except FileNotFoundError:
+30	        die(&quot;flow file not found: %s&quot; % path)
+31	    except json.JSONDecodeError as exc:
+32	        die(&quot;%s is not valid JSON: %s&quot; % (path, exc))
+33	    if not isinstance(data, dict):
+34	        die(&quot;%s does not contain a flow object&quot; % path)
+35	    data.s
+
+… (truncated, 5814 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#39</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">4ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/shared/action-nodes.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Action Node Structure
+2	
+3	Reference for the boilerplate shared by every action-node `impl.md` in this skill. Plugin docs should link here for the standard parts and only spell out what is plugin-specific: the registry type string, plugin-specific input fields, plugin-specific rules, debug entries, and node-type configuration workflows.
+4	
+5	## Registry validation
+6	
+7	Every action node should validate its registry contract before authoring:
+8	
+9	```bash
+10	uip maestro flow registry get &lt;node-type&gt; --output json
+11	```
+12	
+13	`registry get` returns the manifest at `Data.Node`. Do **not** inspect `Data` directly as if it were the node manifest.
+14	
+15	```json
+16	{
+17	  &quot;Data&quot;: {
+18	    &quot;Node&quot;: {
+19	      &quot;nodeType&quot;: &quot;core.action.script&quot;,
+20	      &quot;version&quot;: &quot;1.0&quot;,
+21	      &quot;handleConfiguration&quot;: [
+22	        { &quot;position&quot;: &quot;left&quot;, &quot;handles&quot;: [{ &quot;id&quot;: &quot;input&quot;, &quot;type&quot;: &quot;target&quot; }] },
+23	        { &quot;position&quot;: &quot;right&quot;, &quot;handles&quot;: [{ &quot;id&quot;: &quot;success&quot;, &quot;type&quot;: &quot;source&quot; }] }
+24	      ],
+25	      &quot;inputDefinition&quot;: {},
+26	      &quot;outputDefinition&quot;: {}
+27	    }
+28	  }
+29	}
+30	```
+31	
+32	Inspect:
+33	
+34	- `Data.Node.handleConfiguration` — input port name and output port name(s). Array of pos
+
+… (truncated, 3863 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#40</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">21ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cat /tmp/end_def_node.json; echo; echo \&quot;---\&quot;; cat /tmp/script_def_node.json&quot;,
+  &quot;description&quot;: &quot;Print End and Script node definitions&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{&quot;nodeType&quot;: &quot;core.control.end&quot;, &quot;version&quot;: &quot;1.0&quot;, &quot;category&quot;: &quot;control-flow&quot;, &quot;description&quot;: &quot;Mark the end of a process path&quot;, &quot;tags&quot;: [&quot;control-flow&quot;, &quot;end&quot;, &quot;finish&quot;, &quot;complete&quot;], &quot;sortOrder&quot;: 65, &quot;display&quot;: {&quot;label&quot;: &quot;End&quot;, &quot;icon&quot;: &quot;circle-check&quot;, &quot;shape&quot;: &quot;circle&quot;}, &quot;handleConfiguration&quot;: [{&quot;position&quot;: &quot;left&quot;, &quot;handles&quot;: [{&quot;id&quot;: &quot;input&quot;, &quot;type&quot;: &quot;target&quot;, &quot;handleType&quot;: &quot;input&quot;}]}], &quot;model&quot;: {&quot;type&quot;: &quot;bpmn:EndEvent&quot;}, &quot;runtimeConstraints&quot;: {&quot;exclude&quot;: [&quot;api-function&quot;]}}
+
+---
+{&quot;nodeType&quot;: &quot;core.action.script&quot;, &quot;version&quot;: &quot;1.1&quot;, &quot;category&quot;: &quot;data-operations&quot;, &quot;description&quot;: &quot;Run custom JavaScript code&quot;, &quot;tags&quot;: [&quot;code&quot;, &quot;javascript&quot;, &quot;python&quot;], &quot;sortOrder&quot;: 70, &quot;supportsErrorHandling&quot;: true, &quot;display&quot;: {&quot;label&quot;: &quot;Script&quot;, &quot;icon&quot;: &quot;code&quot;}, &quot;handleConfiguration&quot;: [{&quot;position&quot;: &quot;left&quot;, &quot;handles&quot;: [{&quot;id&quot;: &quot;input&quot;, &quot;type&quot;: &quot;target&quot;, &quot;handleType&quot;: &quot;input&quot;}]}, {&quot;position&quot;: &quot;right&quot;, &quot;handles&quot;: [{&quot;id&quot;: &quot;success&quot;, &quot;type&quot;: &quot;source&quot;, &quot;handleType&quot;: &quot;output&quot;}, {&quot;id&quot;: &quot;error&quot;, &quot;label&quot;: &quot;Error&quot;, &quot;type&quot;: &quot;source&quot;, &quot;handleType&quot;: &quot;output&quot;, &quot;visible&quot;: &quot;{inputs.errorHandlingEnabled}&quot;, &quot;constraints&quot;: {&quot;maxConnections&quot;: 1}}]}], &quot;debug&quot;: {&quot;runtime&quot;: &quot;clientScript&quot;}, &quot;model&quot;: {&quot;type&quot;: &quot;bpmn:ScriptTask&quot;},
+
+… (truncated, 1613 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#41</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.12s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-ixp-e2e-project-selection/birth-certificate/BirthCertificateExtraction/BirthCertificateExtraction\nSKILL_DIR=/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow\nFLOW=BirthCertificateExtraction.flow\n\nIXP_INPUTS=&#x27;{\&quot;model\&quot;:{\&quot;id\&quot;:\&quot;a05c7655-1a1c-80a5-94a0-b1609d34dc10\&quot;,\&quot;modelName\&quot;:\&quot;birth_certificates_oob-6252526a-ixp\&quot;,\&quot;modelDisplayName\&quot;:\&quot;birth_certificates… (2396 more chars)&quot;,
+  &quot;description&quot;: &quot;Add variable, nodes (IxP, script, end), and edges via flow_edit.py&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>declared in variable birthCertificateScan
+added node extractBirthCertificateFields (uipath.ixp.birth-certificates-oob-6252526a-ixp.a05c7655-1a1c-80a5-94a0-b1609d34dc10-c4359cde-55f0-4f0e-9322-c6cdce74ab4c v1.0.0); definition added; variables.nodes +0
+added node logChildName (core.action.script v1.1); definition added; variables.nodes +2
+added node done (core.control.end v1.0); definition added; variables.nodes +0
+added edge edge_start_output_extractBirthCertificateFields_input
+added edge edge_extractBirthCertificateFields_success_logChildName_input
+added edge edge_logChildName_success_done_input</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#42</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">120ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-ixp-e2e-project-selection/birth-certificate/BirthCertificateExtraction/BirthCertificateExtraction/BirthCertificateExtraction.flow&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	{
+2	  &quot;id&quot;: &quot;4f92150d-5fd7-49f9-8327-0d081f1f97df&quot;,
+3	  &quot;version&quot;: &quot;1.9&quot;,
+4	  &quot;name&quot;: &quot;BirthCertificateExtraction&quot;,
+5	  &quot;nodes&quot;: [
+6	    {
+7	      &quot;id&quot;: &quot;start&quot;,
+8	      &quot;type&quot;: &quot;core.trigger.manual&quot;,
+9	      &quot;typeVersion&quot;: &quot;1.0&quot;,
+10	      &quot;display&quot;: {
+11	        &quot;label&quot;: &quot;Manual trigger&quot;
+12	      },
+13	      &quot;inputs&quot;: {
+14	        &quot;entryPointId&quot;: &quot;57d474b5-133d-4a4f-ba63-7775b6dccb39&quot;,
+15	        &quot;isDefaultEntryPoint&quot;: true
+16	      }
+17	    },
+18	    {
+19	      &quot;id&quot;: &quot;extractBirthCertificateFields&quot;,
+20	      &quot;type&quot;: &quot;uipath.ixp.birth-certificates-oob-6252526a-ixp.a05c7655-1a1c-80a5-94a0-b1609d34dc10-c4359cde-55f0-4f0e-9322-c6cdce74ab4c&quot;,
+21	      &quot;typeVersion&quot;: &quot;1.0.0&quot;,
+22	      &quot;display&quot;: {
+23	        &quot;label&quot;: &quot;Extract Birth Certificate Fields&quot;
+24	      },
+25	      &quot;inputs&quot;: {
+26	        &quot;model&quot;: {
+27	          &quot;id&quot;: &quot;a05c7655-1a1c-80a5-94a0-b1609d34dc10&quot;,
+28	          &quot;modelName&quot;: &quot;birth_certificates_oob-6252526a-ixp&quot;,
+29	          &quot;modelDisplayName&quot;: &quot;birth_certificates_oob-6252526a-ixp&quot;,
+30	          &quot;folderKey&quot;: &quot;c4359cde-55f0-4f0e-9322-c6cdce74ab4c&quot;,
+31	          &quot;folderName&quot;: &quot;Shared&quot;,
+32	          &quot;folderPath&quot;: &quot;c4359cde-55f0-4f0e-9322-c6cdce74ab4c&quot;,
+33	          &quot;descr
+
+… (truncated, 106196 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#43</span>
+      <span class="tool-name">Edit</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">28ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;replace_all&quot;: false,
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-ixp-e2e-project-selection/birth-certificate/BirthCertificateExtraction/BirthCertificateExtraction/BirthCertificateExtraction.flow&quot;,
+  &quot;old_string&quot;: &quot;        \&quot;fileRef\&quot;: \&quot;=js:$vars.start.output.birthCertificateScan\&quot;,\n        \&quot;pageRange\&quot;: \&quot;\&quot;\n      }\n    },\n    {\n      \&quot;id\&quot;: \&quot;logChildName\&quot;,&quot;,
+  &quot;new_string&quot;: &quot;        \&quot;fileRef\&quot;: \&quot;=js:$vars.start.output.birthCertificateScan\&quot;,\n        \&quot;pageRange\&quot;: \&quot;\&quot;\n      },\n      \&quot;outputs\&quot;: {\n        \&quot;output\&quot;: {\n          \&quot;name\&quot;: \&quot;output\&quot;,\n          \&quot;type\&quot;: \&quot;object\&quot;,\n          \&quot;source\&quot;: \&quot;=this\&quot;,\n          \&quot;var\&quot;: \&quot;output\&quot;\n        },\n        \&quot;error\&quot;: {\n          \&quot;type\&quot;: \&quot;object\&quot;,\n          \&quot;description\&quot;: \&quot;Error information if the node fails\&quot;,\n          \&quot;source\&quot;: \&quot;=Error\&quot;,… (84 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>The file /work/output/artifacts/skill-flow-ixp-e2e-project-selection/birth-certificate/BirthCertificateExtraction/BirthCertificateExtraction/BirthCertificateExtraction.flow has been updated successfully. (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#44</span>
+      <span class="tool-name">Edit</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">18ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;replace_all&quot;: false,
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-ixp-e2e-project-selection/birth-certificate/BirthCertificateExtraction/BirthCertificateExtraction/BirthCertificateExtraction.flow&quot;,
+  &quot;old_string&quot;: &quot;    \&quot;nodes\&quot;: [\n      {\n        \&quot;id\&quot;: \&quot;logChildName.error\&quot;,&quot;,
+  &quot;new_string&quot;: &quot;    \&quot;nodes\&quot;: [\n      {\n        \&quot;id\&quot;: \&quot;extractBirthCertificateFields.output\&quot;,\n        \&quot;type\&quot;: \&quot;object\&quot;,\n        \&quot;binding\&quot;: {\n          \&quot;nodeId\&quot;: \&quot;extractBirthCertificateFields\&quot;,\n          \&quot;outputId\&quot;: \&quot;output\&quot;\n        }\n      },\n      {\n        \&quot;id\&quot;: \&quot;logChildName.error\&quot;,&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>The file /work/output/artifacts/skill-flow-ixp-e2e-project-selection/birth-certificate/BirthCertificateExtraction/BirthCertificateExtraction/BirthCertificateExtraction.flow has been updated successfully. (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#45</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">174ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-ixp-e2e-project-selection/birth-certificate/BirthCertificateExtraction/BirthCertificateExtraction\nSKILL_DIR=/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow\npython3 \&quot;$SKILL_DIR/scripts/audit_flow.py\&quot; BirthCertificateExtraction.flow --json-out /tmp/audit1.json 2&gt;&amp;1\necho \&quot;EXIT: $?\&quot;&quot;,
+  &quot;description&quot;: &quot;Run local flow audit before validate&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>topology      0 error(s), 0 warning(s), 0 info
+expressions   0 error(s), 0 warning(s), 0 info
+jint          1 error(s), 0 warning(s), 0 info
+    error   SCRIPT_NO_RETURN           logChildName:inputs.script               script must end with a top-level return of an object
+bindings      0 error(s), 0 warning(s), 0 info
+runtime-gaps  1 error(s), 1 warning(s), 0 info
+    error   MISSING_NODE_VARIABLE      start                                    no variables.nodes[] entry &#x27;start.output&#x27;; $vars.start.output resolves to undefined at runtime even though validate passes. `uip maestro flow format` regenerates it
+    warning LAYOUT_SIZE_MISMATCH       start                                    size NonexNone disagrees with this node&#x27;s shape (96x96); Studio Web renders it misshapen until `flow format` runs
+full findings: /tmp/audit1.json
+audit: FAIL (2 error(s))
+EXIT: 1</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#46</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">133ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-ixp-e2e-project-selection/birth-certificate/BirthCertificateExtraction/BirthCertificateExtraction\npython3 -c \&quot;\nimport json\nd=json.load(open(&#x27;BirthCertificateExtraction.flow&#x27;))\nfor n in d[&#x27;nodes&#x27;]:\n    if n[&#x27;id&#x27;]==&#x27;logChildName&#x27;:\n        print(repr(n[&#x27;inputs&#x27;][&#x27;script&#x27;]))\n\&quot;&quot;,
+  &quot;description&quot;: &quot;Inspect the actual script string stored in the flow&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>&#x27;const fields = (($vars.extractBirthCertificateFields.output.ExtractionResult || {}).ResultsDocument || {}).Fields || [];\\nconst findField = (name) =&gt; fields.find(f =&gt; f.FieldName === name)?.Values?.[0];\\nconst childFullName = findField(&quot;Child Full Name&quot;) || findField(&quot;Child\&#x27;s Full Name&quot;) || findField(&quot;Full Name&quot;) || findField(&quot;Child Name&quot;);\\nreturn { message: &quot;Child full name: &quot; + childFullName, childFullName };&#x27;</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#47</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-err">ERROR</span>
+      <span class="tool-duration">14ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-ixp-e2e-project-selection/birth-certificate/BirthCertificateExtraction/BirthCertificateExtraction\npython3 -c \&quot;\nimport json\nscript = &#x27;&#x27;&#x27;const fields = ((\\$vars.extractBirthCertificateFields.output.ExtractionResult || {}).ResultsDocument || {}).Fields || [];\nconst findField = (name) =&gt; fields.find(f =&gt; f.FieldName === name)?.Values?.[0];\nconst childFullName = fin… (296 more chars)&quot;,
+  &quot;description&quot;: &quot;Build correctly-newlined script inputs JSON&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Exit code 2
+/bin/bash: eval: line 15: syntax error near unexpected token `)&#x27;
+/bin/bash: eval: line 15: `const childFullName = findField(\&quot;Child Full Name\&quot;) || findField(\&quot;Child&#x27;&quot;&#x27;&quot;&#x27;s Full Name\&quot;) || findField(\&quot;Full Name\&quot;) || findField(\&quot;Child Name\&quot;);&#x27;</pre>
+    <h4>Error</h4><pre>Exit code 2
+/bin/bash: eval: line 15: syntax error near unexpected token `)&#x27;
+/bin/bash: eval: line 15: `const childFullName = findField(\&quot;Child Full Name\&quot;) || findField(\&quot;Child&#x27;&quot;&#x27;&quot;&#x27;s Full Name\&quot;) || findField(\&quot;Full Name\&quot;) || findField(\&quot;Child Name\&quot;);&#x27;</pre>
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#48</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">99ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cat &gt; /tmp/build_script_input.py &lt;&lt; &#x27;PYEOF&#x27;\nimport json\n\nscript = \&quot;\&quot;\&quot;const fields = (($vars.extractBirthCertificateFields.output.ExtractionResult || {}).ResultsDocument || {}).Fields || [];\nconst findField = (name) =&gt; fields.find(f =&gt; f.FieldName === name)?.Values?.[0];\nconst childFullName = findField(\&quot;Child Full Name\&quot;) || findField(\&quot;Child&#x27;s Full Name\&quot;) || findField(\&quot;Full Name\&quot;) || findField(\&quot;Chil… (271 more chars)&quot;,
+  &quot;description&quot;: &quot;Build script input JSON via a python file, avoiding shell quoting issues&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>const fields = (($vars.extractBirthCertificateFields.output.ExtractionResult || {}).ResultsDocument || {}).Fields || [];
+const findField = (name) =&gt; fields.find(f =&gt; f.FieldName === name)?.Values?.[0];
+const childFullName = findField(&quot;Child Full Name&quot;) || findField(&quot;Child&#x27;s Full Name&quot;) || findField(&quot;Full Name&quot;) || findField(&quot;Child Name&quot;);
+return { message: &quot;Child full name: &quot; + childFullName, childFullName };
+---json---
+{&quot;script&quot;: &quot;const fields = (($vars.extractBirthCertificateFields.output.ExtractionResult || {}).ResultsDocument || {}).Fields || [];\nconst findField = (name) =&gt; fields.find(f =&gt; f.FieldName === name)?.Values?.[0];\nconst childFullName = findField(\&quot;Child Full Name\&quot;) || findField(\&quot;Child&#x27;s Full Name\&quot;) || findField(\&quot;Full Name\&quot;) || findField(\&quot;Child Name\&quot;);\nreturn { message: \&quot;Child full name: \&quot; + childFullName, childFullName };&quot;}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#49</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">173ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;SKILL_DIR=/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow\npython3 \&quot;$SKILL_DIR/scripts/flow_edit.py\&quot; set-input --help 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Check set-input syntax&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>usage: flow_edit.py set-input [-h] --flow FLOW --node NODE --key KEY
+                              --value VALUE [--json] [--allow-cli-owned]
+
+options:
+  -h, --help         show this help message and exit
+  --flow FLOW
+  --node NODE
+  --key KEY          e.g. expression or detail.queryParameters.recordId
+  --value VALUE
+  --json             parse --value as JSON
+  --allow-cli-owned</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#50</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">324ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-ixp-e2e-project-selection/birth-certificate/BirthCertificateExtraction/BirthCertificateExtraction\npython3 &lt;&lt; &#x27;PYEOF&#x27;\nimport subprocess, json\n\nwith open(&#x27;/tmp/script_inputs.json&#x27;) as f:\n    script = json.load(f)[&#x27;script&#x27;]\n\nSKILL_DIR = \&quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow\&quot;\nr = subprocess.run(\n    [\&quot;python3\&quot;, f\&quot;{SKILL_DIR}/scripts/flow_e… (246 more chars)&quot;,
+  &quot;description&quot;: &quot;Use python subprocess to pass the multi-line script safely as an argument&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>set inputs.script on logChildName
+
+
+0</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#51</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.29s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-ixp-e2e-project-selection/birth-certificate/BirthCertificateExtraction/BirthCertificateExtraction\nSKILL_DIR=/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow\nuip maestro flow format BirthCertificateExtraction.flow --output json \\\n  &amp;&amp; python3 \&quot;$SKILL_DIR/scripts/audit_flow.py\&quot; BirthCertificateExtraction.flow --json-out /tmp/audit2.json\necho \&quot;AUDIT … (9 more chars)&quot;,
+  &quot;description&quot;: &quot;Run format then re-audit&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FlowFormat&quot;,
+  &quot;Data&quot;: {
+    &quot;File&quot;: &quot;BirthCertificateExtraction.flow&quot;,
+    &quot;NodesTotal&quot;: 4,
+    &quot;EdgesTotal&quot;: 3,
+    &quot;NodesRepositioned&quot;: 3,
+    &quot;NodesResized&quot;: 1,
+    &quot;SubflowsTidied&quot;: 0,
+    &quot;VariableCount&quot;: 5
+  },
+  &quot;Instructions&quot;: &quot;Repositioned 3 of 4 nodes. Set canonical size on 1 node(s)&quot;
+}
+topology      0 error(s), 0 warning(s), 0 info
+expressions   0 error(s), 0 warning(s), 0 info
+jint          0 error(s), 0 warning(s), 0 info
+bindings      0 error(s), 0 warning(s), 0 info
+runtime-gaps  0 error(s), 0 warning(s), 0 info
+full findings: /tmp/audit2.json
+audit: clean
+AUDIT EXIT: 0</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#52</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">4.87s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-ixp-e2e-project-selection/birth-certificate/BirthCertificateExtraction/BirthCertificateExtraction\nuip maestro flow validate BirthCertificateExtraction.flow --output json&quot;,
+  &quot;description&quot;: &quot;Run flow validate (attempt 1 of 3)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>[ManifestClient] fetchDynamicNodes ok: total=317 agent context nodes=2 external agent nodes=7 orchestrator nodes=263 IXP nodes=45
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FlowValidate&quot;,
+  &quot;Data&quot;: {
+    &quot;File&quot;: &quot;/work/output/artifacts/skill-flow-ixp-e2e-project-selection/birth-certificate/BirthCertificateExtraction/BirthCertificateExtraction/BirthCertificateExtraction.flow&quot;,
+    &quot;Status&quot;: &quot;Valid&quot;
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#53</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">957ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-ixp-e2e-project-selection/birth-certificate/BirthCertificateExtraction/BirthCertificateExtraction\nuip maestro flow format BirthCertificateExtraction.flow --output json&quot;,
+  &quot;description&quot;: &quot;Run flow format once more to finalize layout after validate passed&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FlowFormat&quot;,
+  &quot;Data&quot;: {
+    &quot;File&quot;: &quot;BirthCertificateExtraction.flow&quot;,
+    &quot;NodesTotal&quot;: 4,
+    &quot;EdgesTotal&quot;: 3,
+    &quot;NodesRepositioned&quot;: 0,
+    &quot;NodesResized&quot;: 0,
+    &quot;SubflowsTidied&quot;: 0,
+    &quot;VariableCount&quot;: 5
+  },
+  &quot;Instructions&quot;: &quot;All nodes already in optimal positions&quot;
+}</pre>
+    
+  </div>
+</details>
+
+</div>
+
+<h2>Command Telemetry</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Total</div><div class="value">54</div></div>
+    <div class="stat"><div class="label">Successful</div><div class="value">49 (91%)</div></div>
+    <div class="stat"><div class="label">Failed</div><div class="value">5</div></div>
+    <div class="stat"><div class="label">Avg / cmd</div><div class="value">1.15s</div></div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 2fr;gap:16px;margin-top:12px">
+    <div>
+      <h4>By Tool</h4>
+      <table>
+        <thead><tr><th>Tool</th><th>Count</th></tr></thead>
+        <tbody><tr><td class='mono'>Bash</td><td>40</td></tr><tr><td class='mono'>Read</td><td>11</td></tr><tr><td class='mono'>Edit</td><td>2</td></tr><tr><td class='mono'>Skill</td><td>1</td></tr></tbody>
+      </table>
+    </div>
+    <div>
+      <h4>Slowest</h4>
+      <table>
+        <thead><tr><th>Tool</th><th>Duration</th><th>Parameters</th></tr></thead>
+        <tbody><tr><td class='mono'>Bash</td><td>8.29s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;find . -maxdepth 2 -type f -name \&#x27;*....</td></tr><tr><td class='mono'>Bash</td><td>7.51s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;set -e\nuip solution init &quot;BirthCerti...</td></tr><tr><td class='mono'>Read</td><td>7.20s</td><td class='mono dim'>{&#x27;file_path&#x27;: &#x27;/home/azureuser/projects/skills/tmp...</td></tr><tr><td class='mono'>Read</td><td>6.93s</td><td class='mono dim'>{&#x27;file_path&#x27;: &#x27;/home/azureuser/projects/skills/tmp...</td></tr><tr><td class='mono'>Bash</td><td>4.87s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;cd /work/output/artifacts/skill-flow-...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+  <p><strong>Most Common Pattern:</strong> <code>Bash → Bash → Bash</code></p><p><strong>Skill Tool Invoked:</strong> 1 time(s)</p>
+</div>
+
+<h2>Generation Metrics</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Total Latency</div><div class="value">10m 58s</div></div>
+    <div class="stat"><div class="label">Turns</div><div class="value">1</div></div>
+    <div class="stat"><div class="label">Assistant Turns</div><div class="value">107</div></div>
+    <div class="stat"><div class="label">Avg Turn Latency</div><div class="value">10m 53s</div></div>
+    
+  </div>
+</div>
+
+<h2>Token Usage</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Input (uncached)</div><div class="value">672</div></div>
+    <div class="stat"><div class="label">Output</div><div class="value">49,873</div></div>
+    <div class="stat"><div class="label">Cache Write</div><div class="value">137,577</div></div>
+    <div class="stat"><div class="label">Cache Read</div><div class="value">6,030,328</div></div>
+    <div class="stat"><div class="label">Total</div><div class="value">6,218,450</div></div>
+    <div class="stat"><div class="label">Cost</div><div class="value">$3.0751</div></div>
+  </div>
+</div>
+
+<h2>Agent Settings</h2>
+<div class="card" style="padding:0">
+  <table>
+    <tbody><tr><td class='mono dim'>Permission Mode</td><td>acceptEdits</td></tr><tr><td class='mono dim'>Allowed Tools</td><td>Skill, Bash, Read, Write, Edit, Glob, Grep</td></tr><tr><td class='mono dim'>Model</td><td>us.anthropic.claude-sonnet-5</td></tr><tr><td class='mono dim'>Max Turns</td><td>60</td></tr><tr><td class='mono dim'>System Prompt</td><td>You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted. </td></tr><tr><td class='mono dim'>System Prompt Mode</td><td>append</td></tr><tr><td class='mono dim'>Plugins</td><td>/home/azureuser/projects/skills/tmp</td></tr></tbody>
+  </table>
+</div>
+
+<h2>Environment</h2>
+<div class="card" style="padding:0">
+  <table>
+    <tbody><tr><td class='mono dim'>git_commit</td><td>unknown</td></tr><tr><td class='mono dim'>skills_git_commit</td><td>unknown</td></tr><tr><td class='mono dim'>cli_version</td><td>1.201.0-dev.8272</td></tr><tr><td class='mono dim'>tool_plugins</td><td>{&#x27;admin-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;agent-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;agenthub-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;aops-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;api-workflow-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;automation-hub-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;codedagent-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;codedapp-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;coder-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;context-grounding-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;conversational-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;data-fabric-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;docsai-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;function-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;gov-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;guardrails-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;insights-tool&#x27;: &#x27;1.201.0-dev.8276&#x27;, &#x27;integrationservice-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;ixp-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;llm-gateway-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;llmgw-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;maestro-tool&#x27;: &#x27;1.201.0-dev.8275&#x27;, &#x27;model-hub-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;orchestrator-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;platform-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;pm-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;rpa-legacy-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;rpa-tool&#x27;: &#x27;1.201.0-dev.20260809.3&#x27;, &#x27;solution-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;tasks-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;test-manager-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;traces-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;vertical-solutions-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;}</td></tr><tr><td class='mono dim'>coder_eval</td><td>0.9.6</td></tr><tr><td class='mono dim'>claude_code_cli</td><td>2.1.177 (Claude Code)</td></tr><tr><td class='mono dim'>uv</td><td>uv 0.12.5 (x86_64-unknown-linux-gnu)</td></tr><tr><td class='mono dim'>anthropic</td><td>0.122.0</td></tr><tr><td class='mono dim'>openai</td><td>3.2.0</td></tr><tr><td class='mono dim'>pydantic</td><td>2.12.5</td></tr><tr><td class='mono dim'>api_routing</td><td>aws_bedrock</td></tr><tr><td class='mono dim'>eval_routing</td><td>aws_bedrock</td></tr><tr><td class='mono dim'>aws_region</td><td>us-east-2</td></tr><tr><td class='mono dim'>bedrock_model</td><td>us.anthropic.claude-sonnet-4-6</td></tr><tr><td class='mono dim'>system_prompt_semantics</td><td>append</td></tr></tbody>
+  </table>
+</div>
+
+<footer>Generated by coder_eval · 2026-08-19T15:51:14</footer>
+</div>
+<script>
+function toggleTheme() {
+  document.documentElement.classList.toggle('light');
+  try {
+    const mode = document.documentElement.classList.contains('light') ? 'light' : 'dark';
+    localStorage.setItem('coder-eval-theme', mode);
+  } catch (e) { /* ignore */ }
+}
+(function() {
+  try {
+    if (localStorage.getItem('coder-eval-theme') === 'light') {
+      document.documentElement.classList.add('light');
+    }
+  } catch (e) { /* ignore */ }
+})();
+</script>
+</body>
+</html>

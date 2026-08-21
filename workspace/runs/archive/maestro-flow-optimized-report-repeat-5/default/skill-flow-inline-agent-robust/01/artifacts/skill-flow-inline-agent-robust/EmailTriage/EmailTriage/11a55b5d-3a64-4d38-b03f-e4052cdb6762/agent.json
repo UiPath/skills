@@ -1,0 +1,96 @@
+{
+  "version": "1.1.0",
+  "settings": {
+    "model": "gpt-5.4",
+    "maxTokens": 2048,
+    "temperature": 0,
+    "engine": "basic-v2",
+    "maxIterations": 1,
+    "mode": "standard"
+  },
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "start__output__emailSubject": {
+        "type": "string",
+        "description": "Subject line of the inbound support email"
+      },
+      "start__output__emailBody": {
+        "type": "string",
+        "description": "Full body text of the inbound support email"
+      }
+    }
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "category": {
+        "type": "string",
+        "enum": [
+          "billing",
+          "technical",
+          "account",
+          "sales",
+          "general"
+        ],
+        "description": "Support category for the email"
+      },
+      "priority": {
+        "type": "string",
+        "enum": [
+          "critical",
+          "high",
+          "medium",
+          "low"
+        ],
+        "description": "Response priority for the email"
+      }
+    },
+    "required": [
+      "category",
+      "priority"
+    ]
+  },
+  "metadata": {
+    "storageVersion": "50.0.0",
+    "isConversational": false,
+    "showProjectCreationExperience": false
+  },
+  "type": "lowCode",
+  "guardrails": [],
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are an expert customer support triage specialist. Your task is to classify inbound support emails into a category and priority level.\n\nCategories (pick exactly one):\n- billing: Payment issues, invoices, refunds, subscription charges, pricing disputes\n- technical: Bugs, errors, performance issues, integration failures, API problems\n- account: Login issues, access permissions, profile settings, user management, 2FA\n- sales: Pricing questions, upgrade inquiries, demo requests, new purchase interest\n- general: General questions, feedback, feature requests, documentation, how-to\n\nPriority levels (pick exactly one):\n- critical: Service completely down, data loss, security breach — requires immediate escalation\n- high: Major feature broken, significant business impact, SLA risk — respond within 2 hours\n- medium: Non-blocking issue, workaround available, moderate business impact — respond within 24 hours\n- low: General inquiry, cosmetic issue, feature request, no urgency — respond within 72 hours\n\nReturn a JSON object with exactly two fields:\n- \"category\": one of [billing, technical, account, sales, general]\n- \"priority\": one of [critical, high, medium, low]\n\nReturn only the JSON object with no explanation or additional text.",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "You are an expert customer support triage specialist. Your task is to classify inbound support emails into a category and priority level.\n\nCategories (pick exactly one):\n- billing: Payment issues, invoices, refunds, subscription charges, pricing disputes\n- technical: Bugs, errors, performance issues, integration failures, API problems\n- account: Login issues, access permissions, profile settings, user management, 2FA\n- sales: Pricing questions, upgrade inquiries, demo requests, new purchase interest\n- general: General questions, feedback, feature requests, documentation, how-to\n\nPriority levels (pick exactly one):\n- critical: Service completely down, data loss, security breach — requires immediate escalation\n- high: Major feature broken, significant business impact, SLA risk — respond within 2 hours\n- medium: Non-blocking issue, workaround available, moderate business impact — respond within 24 hours\n- low: General inquiry, cosmetic issue, feature request, no urgency — respond within 72 hours\n\nReturn a JSON object with exactly two fields:\n- \"category\": one of [billing, technical, account, sales, general]\n- \"priority\": one of [critical, high, medium, low]\n\nReturn only the JSON object with no explanation or additional text."
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "Subject: {{input.start__output__emailSubject}}\n\nBody:\n{{input.start__output__emailBody}}",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "Subject: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__emailSubject"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\nBody:\n"
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__emailBody"
+        }
+      ]
+    }
+  ],
+  "projectId": "11a55b5d-3a64-4d38-b03f-e4052cdb6762"
+}

@@ -1,0 +1,67 @@
+{
+  "version": "2.0",
+  "resources": [
+    {
+      "resource": "connection",
+      "key": "00000000-0000-0000-0000-000000000000",
+      "id": "connection00000000-0000-0000-0000-000000000000",
+      "value": {
+        "ConnectionId": {
+          "defaultValue": "00000000-0000-0000-0000-000000000000",
+          "isExpression": false,
+          "displayName": "uipath-mock-outlook connection"
+        }
+      },
+      "metadata": {
+        "ActivityName": "Email Received",
+        "BindingsVersion": "2.2",
+        "DisplayLabel": "uipath-mock-outlook connection",
+        "UseConnectionService": "true",
+        "Connector": "uipath-mock-outlook"
+      }
+    },
+    {
+      "resource": "connection",
+      "key": "e03f734e-0f80-4e8a-a7c1-0ece309b0ca4",
+      "id": "connectione03f734e-0f80-4e8a-a7c1-0ece309b0ca4",
+      "value": {
+        "ConnectionId": {
+          "defaultValue": "e03f734e-0f80-4e8a-a7c1-0ece309b0ca4",
+          "isExpression": false,
+          "displayName": "uipath-salesforce-slack connection"
+        }
+      },
+      "metadata": {
+        "ActivityName": "Notify Slack High-Touch",
+        "BindingsVersion": "2.2",
+        "DisplayLabel": "uipath-salesforce-slack connection",
+        "UseConnectionService": "true",
+        "Connector": "uipath-salesforce-slack"
+      }
+    },
+    {
+      "resource": "EventTrigger",
+      "key": "00000000-0000-0000-0000-000000000000_emailReceived1",
+      "id": "EventTrigger00000000-0000-0000-0000-000000000000_emailReceived1",
+      "value": {
+        "ConnectionId": {
+          "defaultValue": "00000000-0000-0000-0000-000000000000",
+          "isExpression": false
+        },
+        "EntryPointUniqueId": {
+          "defaultValue": "1590e33a-b2d4-4d2d-b558-992f65ea533c",
+          "isExpression": false
+        }
+      },
+      "metadata": {
+        "UseConnectionService": "true",
+        "Connector": "uipath-mock-outlook",
+        "ActivityName": "Email Received",
+        "BindingsVersion": "2.2",
+        "ObjectName": "Message",
+        "Operation": "EMAIL_RECEIVED",
+        "FilterExpression": ""
+      }
+    }
+  ]
+}

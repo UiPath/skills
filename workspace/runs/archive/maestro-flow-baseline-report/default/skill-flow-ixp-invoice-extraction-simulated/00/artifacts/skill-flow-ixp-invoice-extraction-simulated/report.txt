@@ -1,0 +1,354 @@
+════════════════════════════════════════════════════════════════════════
+  UIPATH IXP — VENDOR INVOICE EXTRACTION PIPELINE
+  Simulated End-to-End Run  |  Anthropic Claude Code
+════════════════════════════════════════════════════════════════════════
+
+┌─  1. PROJECT OVERVIEW  ────────────────────────────────────────────────
+│   Project Title  : Vendor Invoices
+│   Project Name   : vendor-invoices-f8a3c211-ixp
+│   Extraction Model : gemini_2_5_flash
+│   Pre-processing   : table_mini
+│   Documents        : 5
+│   Created          : 2024-03-30T09:00:00Z
+└───────────────────────────────────────────────────────────────────────
+
+┌─  2. TAXONOMY — FIELD GROUPS & FIELDS  ───────────────────────────────
+│
+│  ▸ Invoice Header
+│    Instructions: Extract the top-level invoice metadata printed at the header of the do...
+│      • Invoice Number               [Exact Text]
+│      • Invoice Date                 [Date]
+│      • Due Date                     [Date]
+│      • PO Number                    [Exact Text]
+│      • Payment Terms                [Exact Text]
+│      • Currency                     [Exact Text]
+│
+│  ▸ Vendor Details
+│    Instructions: Extract the vendor (seller) contact and identification details....
+│      • Vendor Name                  [Exact Text]
+│      • Vendor Address               [Exact Text]
+│      • Vendor Email                 [Exact Text]
+│      • Vendor Phone                 [Exact Text]
+│
+│  ▸ Bill To
+│    Instructions: Extract the buyer / bill-to party name and address....
+│      • Bill-To Name                 [Exact Text]
+│      • Bill-To Address              [Exact Text]
+│
+│  ▸ Invoice Totals
+│    Instructions: Extract the financial summary fields from the totals section....
+│      • Subtotal                     [Monetary Quantity]
+│      • Tax Rate                     [Number]
+│      • Tax Amount                   [Monetary Quantity]
+│      • Total Due                    [Monetary Quantity]
+│
+│  ▸ Line Items  [repeatable]
+│    Instructions: Extract each individual product or service line from the invoice table...
+│      • Description                  [Exact Text]
+│      • Quantity                     [Number]
+│      • Unit Price                   [Monetary Quantity]
+│      • Line Total                   [Monetary Quantity]
+│
+│   Total: 5 field groups  ·  20 fields
+└───────────────────────────────────────────────────────────────────────
+
+┌─  3. DOCUMENT UPLOAD  ────────────────────────────────────────────────
+│   [baa83524f2e3...]  invoice_acme_tech_001.pdf
+│   [cf44de3bb208...]  invoice_summit_supplies_002.pdf
+│   [fc73280dda3f...]  invoice_rapid_logistics_003.pdf
+│   [0335e10ceb19...]  invoice_cloudwave_004.pdf
+│   [6303f815399f...]  invoice_meridian_consulting_005.pdf
+└───────────────────────────────────────────────────────────────────────
+
+┌─  4. EXTRACTION PREDICTIONS & REVIEW  ───────────────────────────────
+│   For each document: IXP generates predictions → reviewer validates field-by-field
+│
+│  ┌─ Document: invoice_acme_tech_001.pdf
+│  │  Doc ID : baa83524f2e36559.b...
+│  │
+│  │  Field                               Verdict          Notes
+│  │  ─────────────────────────────────── ──────────────── ──────────────────
+│  │  Invoice Number                      CONFIRMED        "ACM-2024-00891"
+│  │  Invoice Date                        CONFIRMED        "2024-03-15"
+│  │  Due Date                            CONFIRMED        "2024-04-14"
+│  │  PO Number                           CONFIRMED        "PO-GC-44720"
+│  │  Payment Terms                       CONFIRMED        "Net 30"
+│  │  Currency                            CONFIRMED        "USD"
+│  │  Vendor Name                         CONFIRMED        "Acme Technology Solutions Inc."
+│  │  Vendor Address                      CONFIRMED        "450 Silicon Valley Blvd, Suite 200,"
+│  │  Vendor Email                        CONFIRMED        "billing@acmetech.com"
+│  │  Vendor Phone                        CONFIRMED        "+1 (408) 555-0192"
+│  │  Bill-To Name                        CONFIRMED        "GlobalCorp Procurement"
+│  │  Bill-To Address                     CONFIRMED        "1200 Corporate Plaza, Floor 8, New "
+│  │  Subtotal                            CONFIRMED        "10,300.00 USD"
+│  │  Tax Rate                            CONFIRMED        "8.5"
+│  │  Tax Amount                          CONFIRMED        "875.50 USD"
+│  │  Total Due                           CORRECTED        OCR: "11,275.50 USD" → "11,175.50 USD"
+│  │  Description (occ 0)                 CONFIRMED        "Enterprise SaaS License — Q2 2024"
+│  │  Quantity (occ 0)                    CONFIRMED        "50"
+│  │  Unit Price (occ 0)                  CONFIRMED        "120.00 USD"
+│  │  Line Total (occ 0)                  CONFIRMED        "6,000.00 USD"
+│  │  Description (occ 1)                 CONFIRMED        "Professional Services — System Inte"
+│  │  Quantity (occ 1)                    CONFIRMED        "8"
+│  │  Unit Price (occ 1)                  CONFIRMED        "250.00 USD"
+│  │  Line Total (occ 1)                  CONFIRMED        "2,000.00 USD"
+│  │  Description (occ 2)                 CONFIRMED        "24/7 Premium Support Package"
+│  │  Quantity (occ 2)                    CONFIRMED        "1"
+│  │  Unit Price (occ 2)                  CONFIRMED        "1,500.00 USD"
+│  │  Line Total (occ 2)                  CONFIRMED        "1,500.00 USD"
+│  │  Description (occ 3)                 CONFIRMED        "On-site Training (2 days)"
+│  │  Quantity (occ 3)                    CONFIRMED        "2"
+│  │  Unit Price (occ 3)                  CONFIRMED        "400.00 USD"
+│  │  Line Total (occ 3)                  CONFIRMED        "800.00 USD"
+│  │
+│  │  Summary: 32 confirmed  ·  1 corrected  ·  0 missing  ·  0 not-confirmed
+│  └─────────────────────────────────────────────────────────────────────
+│
+│  ┌─ Document: invoice_summit_supplies_002.pdf
+│  │  Doc ID : cf44de3bb208e6b4.c...
+│  │
+│  │  Field                               Verdict          Notes
+│  │  ─────────────────────────────────── ──────────────── ──────────────────
+│  │  Invoice Number                      CONFIRMED        "SOS-INV-20240312"
+│  │  Invoice Date                        CONFIRMED        "2024-03-12"
+│  │  Due Date                            CONFIRMED        "2024-03-27"
+│  │  PO Number                           CONFIRMED        "PO-GC-44650"
+│  │  Payment Terms                       CONFIRMED        "Net 15"
+│  │  Currency                            CONFIRMED        "USD"
+│  │  Vendor Name                         CONFIRMED        "Summit Office Supplies Ltd."
+│  │  Vendor Address                      CONFIRMED        "88 Commerce Street, Chicago, IL 606"
+│  │  Vendor Email                        CONFIRMED        "accounts@summitsupplies.com"
+│  │  Vendor Phone                        CONFIRMED        "+1 (312) 555-7834"
+│  │  Bill-To Name                        CONFIRMED        "GlobalCorp Facilities"
+│  │  Bill-To Address                     CONFIRMED        "1200 Corporate Plaza, New York, NY "
+│  │  Subtotal                            CONFIRMED        "4,239.85 USD"
+│  │  Tax Rate                            CONFIRMED        "10.25"
+│  │  Tax Amount                          CONFIRMED        "434.59 USD"
+│  │  Total Due                           CONFIRMED        "4,674.44 USD"
+│  │  Description (occ 0)                 CONFIRMED        "A4 Copy Paper (Case of 10 reams)"
+│  │  Quantity (occ 0)                    CONFIRMED        "20"
+│  │  Unit Price (occ 0)                  CONFIRMED        "42.50 USD"
+│  │  Line Total (occ 0)                  CONFIRMED        "850.00 USD"
+│  │  Description (occ 1)                 CONFIRMED        "Ergonomic Office Chair — Model EX50"
+│  │  Quantity (occ 1)                    CONFIRMED        "5"
+│  │  Unit Price (occ 1)                  CONFIRMED        "389.00 USD"
+│  │  Line Total (occ 1)                  CONFIRMED        "1,945.00 USD"
+│  │  Description (occ 2)                 CONFIRMED        "Standing Desk Converter"
+│  │  Quantity (occ 2)                    CONFIRMED        "3"
+│  │  Unit Price (occ 2)                  CONFIRMED        "215.00 USD"
+│  │  Line Total (occ 2)                  CONFIRMED        "645.00 USD"
+│  │  Description (occ 3)                 CONFIRMED        "Monitor Arm Dual Mount"
+│  │  Quantity (occ 3)                    CONFIRMED        "5"
+│  │  Unit Price (occ 3)                  CONFIRMED        "89.99 USD"
+│  │  Line Total (occ 3)                  CONFIRMED        "449.95 USD"
+│  │  Description (occ 4)                 CONFIRMED        "USB-C Hub 7-port"
+│  │  Quantity (occ 4)                    CONFIRMED        "10"
+│  │  Unit Price (occ 4)                  CONFIRMED        "34.99 USD"
+│  │  Line Total (occ 4)                  CONFIRMED        "349.90 USD"
+│  │
+│  │  Summary: 36 confirmed  ·  0 corrected  ·  0 missing  ·  0 not-confirmed
+│  └─────────────────────────────────────────────────────────────────────
+│
+│  ┌─ Document: invoice_rapid_logistics_003.pdf
+│  │  Doc ID : fc73280dda3f607d.3...
+│  │
+│  │  Field                               Verdict          Notes
+│  │  ─────────────────────────────────── ──────────────── ──────────────────
+│  │  Invoice Number                      CONFIRMED        "RL-2024-8847"
+│  │  Invoice Date                        CONFIRMED        "2024-03-20"
+│  │  Due Date                            CONFIRMED        "2024-04-19"
+│  │  PO Number                           CONFIRMED        "PO-GC-44801"
+│  │  Payment Terms                       CONFIRMED        "Net 30"
+│  │  Currency                            CONFIRMED        "USD"
+│  │  Vendor Name                         CONFIRMED        "Rapid Logistics & Freight Co."
+│  │  Vendor Address                      CONFIRMED        "7200 Industrial Park Way, Dallas, T"
+│  │  Vendor Email                        CONFIRMED        "invoices@rapidlogistics.com"
+│  │  Vendor Phone                        CONFIRMED        "+1 (214) 555-3301"
+│  │  Bill-To Name                        CONFIRMED        "GlobalCorp Operations"
+│  │  Bill-To Address                     CONFIRMED        "500 Warehouse Drive, Elizabeth, NJ "
+│  │  Subtotal                            CONFIRMED        "4,351.00 USD"
+│  │  Tax Rate                            MISSING          (absent from document)
+│  │  Tax Amount                          MISSING          (absent from document)
+│  │  Total Due                           CONFIRMED        "4,351.00 USD"
+│  │  Description (occ 0)                 CONFIRMED        "Freight Shipment — Chicago to Newar"
+│  │  Quantity (occ 0)                    CONFIRMED        "1"
+│  │  Unit Price (occ 0)                  CONFIRMED        "3,200.00 USD"
+│  │  Line Total (occ 0)                  CONFIRMED        "3,200.00 USD"
+│  │  Description (occ 1)                 CONFIRMED        "Hazmat Handling Surcharge"
+│  │  Quantity (occ 1)                    CONFIRMED        "1"
+│  │  Unit Price (occ 1)                  CONFIRMED        "450.00 USD"
+│  │  Line Total (occ 1)                  CONFIRMED        "450.00 USD"
+│  │  Description (occ 2)                 CONFIRMED        "Fuel Surcharge (18% of base freight"
+│  │  Quantity (occ 2)                    CONFIRMED        "1"
+│  │  Unit Price (occ 2)                  CONFIRMED        "576.00 USD"
+│  │  Line Total (occ 2)                  CONFIRMED        "576.00 USD"
+│  │  Description (occ 3)                 CONFIRMED        "Liftgate Service"
+│  │  Quantity (occ 3)                    CONFIRMED        "1"
+│  │  Unit Price (occ 3)                  CONFIRMED        "125.00 USD"
+│  │  Line Total (occ 3)                  CONFIRMED        "125.00 USD"
+│  │
+│  │  Summary: 30 confirmed  ·  0 corrected  ·  2 missing  ·  0 not-confirmed
+│  └─────────────────────────────────────────────────────────────────────
+│
+│  ┌─ Document: invoice_cloudwave_004.pdf
+│  │  Doc ID : 0335e10ceb19bcda.0...
+│  │
+│  │  Field                               Verdict          Notes
+│  │  ─────────────────────────────────── ──────────────── ──────────────────
+│  │  Invoice Number                      CONFIRMED        "CW-0029541"
+│  │  Invoice Date                        CONFIRMED        "2024-03-01"
+│  │  Due Date                            CONFIRMED        "2024-03-31"
+│  │  PO Number                           CONFIRMED        "PO-GC-44501"
+│  │  Payment Terms                       CONFIRMED        "Due on Receipt"
+│  │  Currency                            CONFIRMED        "USD"
+│  │  Vendor Name                         CONFIRMED        "CloudWave Infrastructure LLC"
+│  │  Vendor Address                      CONFIRMED        "1 Cloud Campus Drive, Seattle, WA 9"
+│  │  Vendor Email                        CONFIRMED        "billing@cloudwave.io"
+│  │  Vendor Phone                        CONFIRMED        "+1 (206) 555-9020"
+│  │  Bill-To Name                        CONFIRMED        "GlobalCorp IT Department"
+│  │  Bill-To Address                     CONFIRMED        "1200 Corporate Plaza, Floor 12, New"
+│  │  Subtotal                            CONFIRMED        "3,908.00 USD"
+│  │  Tax Rate                            CONFIRMED        "10.1"
+│  │  Tax Amount                          CONFIRMED        "394.71 USD"
+│  │  Total Due                           CONFIRMED        "4,302.71 USD"
+│  │  Description (occ 0)                 CONFIRMED        "Cloud Compute — 500 vCPU-hours"
+│  │  Quantity (occ 0)                    CONFIRMED        "500"
+│  │  Unit Price (occ 0)                  CONFIRMED        "0.10 USD"
+│  │  Line Total (occ 0)                  CONFIRMED        "48.00 USD"
+│  │  Description (occ 1)                 CONFIRMED        "Cloud Storage — 50 TB (March 2024)"
+│  │  Quantity (occ 1)                    CONFIRMED        "50"
+│  │  Unit Price (occ 1)                  CONFIRMED        "23.00 USD"
+│  │  Line Total (occ 1)                  CONFIRMED        "1,150.00 USD"
+│  │  Description (occ 2)                 CONFIRMED        "Data Transfer Egress — 12 TB"
+│  │  Quantity (occ 2)                    CONFIRMED        "12"
+│  │  Unit Price (occ 2)                  CONFIRMED        "90.00 USD"
+│  │  Line Total (occ 2)                  CORRECTED        OCR: "1,130.00 USD" → "1,080.00 USD"
+│  │  Description (occ 3)                 CONFIRMED        "Managed Kubernetes Service (3 clust"
+│  │  Quantity (occ 3)                    CONFIRMED        "3"
+│  │  Unit Price (occ 3)                  CONFIRMED        "150.00 USD"
+│  │  Line Total (occ 3)                  CONFIRMED        "450.00 USD"
+│  │  Description (occ 4)                 CONFIRMED        "CDN Bandwidth — 8 TB"
+│  │  Quantity (occ 4)                    CONFIRMED        "8"
+│  │  Unit Price (occ 4)                  CONFIRMED        "85.00 USD"
+│  │  Line Total (occ 4)                  CONFIRMED        "680.00 USD"
+│  │  Description (occ 5)                 CONFIRMED        "DDoS Protection — Enterprise Tier"
+│  │  Quantity (occ 5)                    CONFIRMED        "1"
+│  │  Unit Price (occ 5)                  CONFIRMED        "500.00 USD"
+│  │  Line Total (occ 5)                  CONFIRMED        "500.00 USD"
+│  │
+│  │  Summary: 40 confirmed  ·  1 corrected  ·  0 missing  ·  0 not-confirmed
+│  └─────────────────────────────────────────────────────────────────────
+│
+│  ┌─ Document: invoice_meridian_consulting_005.pdf
+│  │  Doc ID : 6303f815399fece0.9...
+│  │
+│  │  Field                               Verdict          Notes
+│  │  ─────────────────────────────────── ──────────────── ──────────────────
+│  │  Invoice Number                      CONFIRMED        "MCG-2024-Q1-047"
+│  │  Invoice Date                        CONFIRMED        "2024-03-29"
+│  │  Due Date                            CONFIRMED        "2024-04-28"
+│  │  PO Number                           CONFIRMED        "PO-GC-44900"
+│  │  Payment Terms                       CONFIRMED        "Net 30"
+│  │  Currency                            CONFIRMED        "USD"
+│  │  Vendor Name                         CONFIRMED        "Meridian Business Consulting Group"
+│  │  Vendor Address                      CONFIRMED        "333 Madison Avenue, 22nd Floor, New"
+│  │  Vendor Email                        CONFIRMED        "finance@meridianconsulting.com"
+│  │  Vendor Phone                        CONFIRMED        "+1 (212) 555-4400"
+│  │  Bill-To Name                        CONFIRMED        "GlobalCorp Executive Office"
+│  │  Bill-To Address                     CONFIRMED        "1200 Corporate Plaza, Floor 20, New"
+│  │  Subtotal                            CONFIRMED        "31,040.75 USD"
+│  │  Tax Rate                            CONFIRMED        "8.875"
+│  │  Tax Amount                          CONFIRMED        "2,754.87 USD"
+│  │  Total Due                           CONFIRMED        "33,795.62 USD"
+│  │  Description (occ 0)                 CONFIRMED        "Strategic Planning Workshops (Week "
+│  │  Quantity (occ 0)                    CONFIRMED        "3"
+│  │  Unit Price (occ 0)                  CONFIRMED        "4,500.00 USD"
+│  │  Line Total (occ 0)                  CONFIRMED        "13,500.00 USD"
+│  │  Description (occ 1)                 CONFIRMED        "Market Analysis Report — APAC Expan"
+│  │  Quantity (occ 1)                    CONFIRMED        "1"
+│  │  Unit Price (occ 1)                  CONFIRMED        "8,000.00 USD"
+│  │  Line Total (occ 1)                  CONFIRMED        "8,000.00 USD"
+│  │  Description (occ 2)                 CONFIRMED        "Executive Coaching Sessions — 12 ho"
+│  │  Quantity (occ 2)                    CONFIRMED        "12"
+│  │  Unit Price (occ 2)                  CONFIRMED        "600.00 USD"
+│  │  Line Total (occ 2)                  CONFIRMED        "7,200.00 USD"
+│  │  Description (occ 3)                 CONFIRMED        "Travel & Expenses (receipts attache"
+│  │  Quantity (occ 3)                    CONFIRMED        "1"
+│  │  Unit Price (occ 3)                  CONFIRMED        "2,340.75 USD"
+│  │  Line Total (occ 3)                  CONFIRMED        "2,340.75 USD"
+│  │
+│  │  Summary: 32 confirmed  ·  0 corrected  ·  0 missing  ·  0 not-confirmed
+│  └─────────────────────────────────────────────────────────────────────
+│
+└───────────────────────────────────────────────────────────────────────
+
+┌─  5. EXTRACTION METRICS  ─────────────────────────────────────────────
+│   Model Version    : v1  (trained 2024-03-30T09:45:00Z)
+│   Validated Docs   : 5
+│   Overall F1       : 1.0000   [Good]
+│
+│   Per Field Group:
+│   Field Group                      F1    Prec  Recall    TP   FP   FN
+│   ──────────────────────────── ──────  ──────  ──────  ──── ──── ────
+│   Invoice Header               1.0000  1.0000  1.0000    30    0    0  ████████████████████
+│   Vendor Details               1.0000  1.0000  1.0000    20    0    0  ████████████████████
+│   Bill To                      1.0000  1.0000  1.0000    10    0    0  ████████████████████
+│   Invoice Totals               1.0000  1.0000  1.0000    18    0    0  ████████████████████
+│   Line Items                   1.0000  1.0000  1.0000    92    0    0  ████████████████████
+│
+│   Per Field (sorted lowest F1 first):
+│   Field Name                   Group                      F1    Prec  Recall  Annot
+│   ──────────────────────────── ────────────────────── ──────  ──────  ──────  ─────
+│   Invoice Number               Invoice Header         1.0000  1.0000  1.0000      5
+│   Invoice Date                 Invoice Header         1.0000  1.0000  1.0000      5
+│   Due Date                     Invoice Header         1.0000  1.0000  1.0000      5
+│   PO Number                    Invoice Header         1.0000  1.0000  1.0000      5
+│   Payment Terms                Invoice Header         1.0000  1.0000  1.0000      5
+│   Currency                     Invoice Header         1.0000  1.0000  1.0000      5
+│   Vendor Name                  Vendor Details         1.0000  1.0000  1.0000      5
+│   Vendor Address               Vendor Details         1.0000  1.0000  1.0000      5
+│   Vendor Email                 Vendor Details         1.0000  1.0000  1.0000      5
+│   Vendor Phone                 Vendor Details         1.0000  1.0000  1.0000      5
+│   Bill-To Name                 Bill To                1.0000  1.0000  1.0000      5
+│   Bill-To Address              Bill To                1.0000  1.0000  1.0000      5
+│   Subtotal                     Invoice Totals         1.0000  1.0000  1.0000      5
+│   Tax Rate                     Invoice Totals         1.0000  1.0000  1.0000      5
+│   Tax Amount                   Invoice Totals         1.0000  1.0000  1.0000      5
+│   Total Due                    Invoice Totals         1.0000  1.0000  1.0000      5
+│   Description                  Line Items             1.0000  1.0000  1.0000     23
+│   Quantity                     Line Items             1.0000  1.0000  1.0000     23
+│   Unit Price                   Line Items             1.0000  1.0000  1.0000     23
+│   Line Total                   Line Items             1.0000  1.0000  1.0000     23
+└───────────────────────────────────────────────────────────────────────
+
+┌─  6. LABELLING SUMMARY  ──────────────────────────────────────────────
+│   Documents processed : 5
+│   Fields confirmed    :  170  (exact matches + OCR corrections)
+│   OCR corrections     :    2  (right location, garbled characters)
+│   Marked missing      :    2  (genuinely absent from document)
+│   Not confirmed       :    0  (wrong value — left unannotated for retraining)
+│
+│   OCR Corrections Applied:
+│     • invoice_acme_tech_001.pdf
+│       Total Due: "11,275.50 USD" → "11,175.50 USD"
+│     • invoice_cloudwave_004.pdf
+│       Line Total: "1,130.00 USD" → "1,080.00 USD"
+│
+│   Fields Marked Missing:
+│     • invoice_rapid_logistics_003.pdf  ·  Tax Rate
+│     • invoice_rapid_logistics_003.pdf  ·  Tax Amount
+└───────────────────────────────────────────────────────────────────────
+
+┌─  7. NEXT STEPS  ─────────────────────────────────────────────────────
+│
+│   ② PUBLISH MODEL
+│     uip ixp projects publish vendor-invoices-f8a3c211-ixp --tag live --output json
+│
+│   ③ DEPLOY TO ORCHESTRATOR FOLDER
+│     In-product step — bind the published model to a folder/environment.
+│     See: https://docs.uipath.com/ixp/automation-cloud/latest/user-guide/building-and-deploying-models
+│
+│   ④ CONSUME IN A WORKFLOW OR MAESTRO FLOW
+│     Reference the deployed model from an UiPath automation, robot, or
+│     Maestro Flow to process invoices automatically end-to-end.
+└───────────────────────────────────────────────────────────────────────

@@ -1,0 +1,6 @@
+17:44:14 [INFO   ] [default/skill-flow-ixp-scaffold-multinode/02] orchestrator: API routing: aws_bedrock
+17:50:24 [INFO   ] [default/skill-flow-ixp-scaffold-multinode/02] orchestrator: Success criteria: 7/7 passed, weighted score: 1.000
+17:50:24 [WARNING] [default/skill-flow-ixp-scaffold-multinode/02] orchestrator: Visible turns (27) exceeded expected_turns (24) at iteration 1 for task skill-flow-ixp-scaffold-multinode. Run continues — max_turns remains the hard cap.
+17:50:24 [INFO   ] [default/skill-flow-ixp-scaffold-multinode/02] orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+17:50:24 [INFO   ] [default/skill-flow-ixp-scaffold-multinode/02] orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-ixp-scaffold-multinode
+17:50:24 [INFO   ] [default/skill-flow-ixp-scaffold-multinode/02] orchestrator: Task finished: status=SUCCESS duration=372.0s score=1.000 iterations=1

@@ -1,0 +1,12 @@
+{
+  "DocVersion": "1.0.0",
+  "StudioMinVersion": "2025.10.0",
+  "SolutionId": "f89c3db6-79c4-4653-8556-67e40a115d07",
+  "Projects": [
+    {
+      "Type": "Flow",
+      "ProjectRelativePath": "ReceiptIntake/project.uiproj",
+      "Id": "aa46d62e-ee6b-4ae7-9392-6a6ec49873f9"
+    }
+  ]
+}

@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "ContractRouting",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "29ef7cbe-2a0a-47c0-889c-bb7e342f0ed1",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "ContractRouting"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Flow",
+      "name": "ContractRouting",
+      "package": {
+        "key": "5e641a02-b4d3-4b8f-bbf5-d4d4983bdea3"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "6d2d8382-1a51-417f-95b1-300da3acc910",
+    "files": []
+  }
+}

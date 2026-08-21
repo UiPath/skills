@@ -1,0 +1,6 @@
+04:35:06 [INFO   ] [default/skill-bpmn-event-based-gateway/01] orchestrator: API routing: aws_bedrock
+04:40:40 [INFO   ] [default/skill-bpmn-event-based-gateway/01] orchestrator: Success criteria: 4/4 passed, weighted score: 1.000
+04:40:40 [WARNING] [default/skill-bpmn-event-based-gateway/01] orchestrator: Visible turns (38) exceeded expected_turns (20) at iteration 1 for task skill-bpmn-event-based-gateway. Run continues — max_turns remains the hard cap.
+04:40:40 [INFO   ] [default/skill-bpmn-event-based-gateway/01] orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+04:40:40 [INFO   ] [default/skill-bpmn-event-based-gateway/01] orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-bpmn-event-based-gateway
+04:40:40 [INFO   ] [default/skill-bpmn-event-based-gateway/01] orchestrator: Task finished: status=SUCCESS duration=336.1s score=1.000 iterations=1

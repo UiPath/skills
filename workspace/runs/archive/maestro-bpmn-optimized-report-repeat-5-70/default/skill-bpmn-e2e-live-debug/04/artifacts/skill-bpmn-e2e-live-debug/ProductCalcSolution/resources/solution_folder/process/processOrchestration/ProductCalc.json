@@ -1,0 +1,38 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "ProductCalc",
+    "kind": "process",
+    "type": "processOrchestration",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "2fac9546-855d-45e1-b7d3-6a782b64341e",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "ProductCalc"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "ProcessOrchestration",
+      "name": "ProductCalc",
+      "package": {
+        "key": "85e12451-35e6-4d58-920e-8759f80dc83a"
+      },
+      "inputArguments": "{}",
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "0f435c77-6a94-4547-bbb2-01c203a0284a",
+    "files": []
+  }
+}

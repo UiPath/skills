@@ -1,0 +1,43 @@
+2026-07-24 18:08:38 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-24 18:08:38 [INFO] coder_eval.orchestrator: API routing: aws_bedrock
+2026-07-24 18:08:38 [DEBUG] coder_eval.criteria: Discovered 14 criterion checkers
+2026-07-24 18:08:38 [DEBUG] coder_eval.criteria: Validated 14 criterion checkers
+2026-07-24 18:08:38 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-24 18:08:38 [DEBUG] coder_eval.orchestrator: Sending prompt: Create a UiPath Flow project named "NameToAge" that invokes the name-to-age
+API workflow with the na...
+2026-07-24 18:08:38 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Starting agent query stream...
+2026-07-24 18:12:17 [DEBUG] coder_eval.agents.claude_code_agent: [coder] session_id changed: None -> bc7339eb-58f9-493a-87d8-ac2889fd0725
+2026-07-24 18:12:17 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Agent query stream ended
+2026-07-24 18:12:17 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-24 18:12:17 [DEBUG] coder_eval.orchestrator: Agent response received (4537 chars)
+2026-07-24 18:12:17 [DEBUG] coder_eval.orchestrator: Checking success criteria
+2026-07-24 18:12:17 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'uip maestro flow validate passes on the flow file': uip maestro flow validate NameToAge/NameToAge/NameToAge.flow
+2026-07-24 18:12:22 [DEBUG] coder_eval.sandbox: Command 'uip maestro flow validate NameToAge/NameToAge/NameToAge.flow' exited with code 0
+2026-07-24 18:12:22 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+{
+  "Result": "Success",
+  "Code": "FlowValidate",
+  "Data": {
+    "File": "/work/output/artifacts/skill-flow-api-workflow/NameToAge/NameToAge/NameToAge.flow",
+    "Status": "Valid"
+  }
+}
+---
+2026-07-24 18:12:22 [DEBUG] coder_eval.sandbox: STDERR:
+---
+[ManifestClient] fetchDynamicNodes ok: total=207 agent context nodes=2 external agent nodes=6 orchestrator nodes=158 IXP nodes=41
+---
+2026-07-24 18:12:22 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-07-24 18:12:22 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'Flow has an API workflow node and debug returns an age': python3 $TASK_DIR/check_api_workflow_flow.py
+2026-07-24 18:12:38 [DEBUG] coder_eval.sandbox: Command 'python3 $TASK_DIR/check_api_workflow_flow.py' exited with code 0
+2026-07-24 18:12:38 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+OK: API workflow node present; age = 46
+---
+2026-07-24 18:12:38 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-07-24 18:12:38 [INFO] coder_eval.orchestrator: Success criteria: 2/2 passed, weighted score: 1.000
+2026-07-24 18:12:38 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-24 18:12:38 [INFO] coder_eval.orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+2026-07-24 18:12:38 [INFO] coder_eval.orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-api-workflow
+2026-07-24 18:12:38 [INFO] coder_eval.orchestrator: Task finished: status=SUCCESS duration=241.9s score=1.000 iterations=1

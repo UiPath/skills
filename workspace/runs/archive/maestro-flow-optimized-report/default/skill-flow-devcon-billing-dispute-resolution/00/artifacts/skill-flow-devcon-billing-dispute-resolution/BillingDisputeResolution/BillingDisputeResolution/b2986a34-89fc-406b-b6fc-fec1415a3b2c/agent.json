@@ -1,0 +1,179 @@
+{
+  "version": "1.1.0",
+  "settings": {
+    "model": "anthropic.claude-sonnet-4-5-20250929-v1:0",
+    "maxTokens": 8096,
+    "temperature": 0,
+    "engine": "basic-v2",
+    "maxIterations": 5,
+    "mode": "standard"
+  },
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "start__output__webhookPayload": {
+        "type": "object",
+        "description": "Webhook payload from trigger"
+      },
+      "normalizeData__output__fields": {
+        "type": "object",
+        "description": "Normalized invoice fields"
+      },
+      "normalizeData__output__normalizedInvoiceNumber": {
+        "type": "string",
+        "description": "Normalized invoice number"
+      },
+      "crmLookup1__output__value": {
+        "type": "object",
+        "description": "CRM lookup results"
+      },
+      "erpLookup1__output__value": {
+        "type": "object",
+        "description": "ERP lookup results"
+      },
+      "detectDiscrepancies__output__mismatches": {
+        "type": "object",
+        "description": "Discrepancy mismatches"
+      },
+      "detectDiscrepancies__output__totalOvercharge": {
+        "type": "number",
+        "description": "Total overcharge"
+      },
+      "detectDiscrepancies__output__totalUndercharge": {
+        "type": "number",
+        "description": "Total undercharge"
+      }
+    }
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "determination": {
+        "type": "string",
+        "description": "Agent determination text"
+      },
+      "recommendedAction": {
+        "type": "string",
+        "description": "One of: escalate_to_manager | auto_resolve | reject"
+      },
+      "autoResolutionEligible": {
+        "type": "boolean",
+        "description": "Whether auto-resolution is eligible"
+      },
+      "creditAmount": {
+        "type": "number",
+        "description": "Approved credit amount"
+      },
+      "confidence": {
+        "type": "number",
+        "description": "Agent confidence score 0-1"
+      },
+      "rationale": {
+        "type": "string",
+        "description": "Full rationale for determination"
+      }
+    },
+    "required": [
+      "determination",
+      "recommendedAction",
+      "autoResolutionEligible",
+      "creditAmount",
+      "confidence",
+      "rationale"
+    ]
+  },
+  "metadata": {
+    "storageVersion": "50.0.0",
+    "isConversational": false,
+    "showProjectCreationExperience": false
+  },
+  "type": "lowCode",
+  "guardrails": [],
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a billing dispute analyst. Analyze the invoice data, CRM account records, ERP contract data, and discrepancy summary provided. Produce a structured determination with a recommended action (escalate_to_manager, auto_resolve, or reject), whether auto-resolution is eligible, the credit amount if applicable, your confidence (0-1), and a rationale. Always return all required output fields.",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "You are a billing dispute analyst. Analyze the invoice data, CRM account records, ERP contract data, and discrepancy summary provided. Produce a structured determination with a recommended action (escalate_to_manager, auto_resolve, or reject), whether auto-resolution is eligible, the credit amount if applicable, your confidence (0-1), and a rationale. Always return all required output fields."
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "Analyze this billing dispute:\n\nWebhook Payload: {{input.start__output__webhookPayload}}\n\nNormalized Invoice Fields: {{input.normalizeData__output__fields}}\n\nNormalized Invoice Number: {{input.normalizeData__output__normalizedInvoiceNumber}}\n\nCRM Account Records: {{input.crmLookup1__output__value}}\n\nERP Contract Records: {{input.erpLookup1__output__value}}\n\nDiscrepancy Mismatches: {{input.detectDiscrepancies__output__mismatches}}\n\nTotal Overcharge: {{input.detectDiscrepancies__output__totalOvercharge}}\n\nTotal Undercharge: {{input.detectDiscrepancies__output__totalUndercharge}}\n\nReturn JSON with: determination (string), recommendedAction (one of: escalate_to_manager|auto_resolve|reject), autoResolutionEligible (boolean), creditAmount (number), confidence (number 0-1), rationale (string).",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "Analyze this billing dispute:\n\nWebhook Payload: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__webhookPayload"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\nNormalized Invoice Fields: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.normalizeData__output__fields"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\nNormalized Invoice Number: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.normalizeData__output__normalizedInvoiceNumber"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\nCRM Account Records: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.crmLookup1__output__value"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\nERP Contract Records: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.erpLookup1__output__value"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\nDiscrepancy Mismatches: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.detectDiscrepancies__output__mismatches"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\nTotal Overcharge: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.detectDiscrepancies__output__totalOvercharge"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\nTotal Undercharge: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.detectDiscrepancies__output__totalUndercharge"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\nReturn JSON with: determination (string), recommendedAction (one of: escalate_to_manager|auto_resolve|reject), autoResolutionEligible (boolean), creditAmount (number), confidence (number 0-1), rationale (string)."
+        }
+      ]
+    }
+  ],
+  "projectId": "b2986a34-89fc-406b-b6fc-fec1415a3b2c"
+}

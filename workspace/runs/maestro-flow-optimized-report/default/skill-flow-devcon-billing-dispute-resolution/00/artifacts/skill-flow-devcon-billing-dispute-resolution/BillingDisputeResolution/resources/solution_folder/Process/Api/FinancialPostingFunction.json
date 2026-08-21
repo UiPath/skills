@@ -1,0 +1,49 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "FinancialPostingFunction",
+    "kind": "Process",
+    "type": "Api",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "isOverridable": true,
+    "dependencies": [
+      {
+        "kind": "Package",
+        "name": "FinancialPostingFunction.api.FinancialPostingFunction.1"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Api",
+      "name": "FinancialPostingFunction",
+      "package": {
+        "name": "FinancialPostingFunction.api.FinancialPostingFunction.1",
+        "key": "FinancialPostingFunction.api.FinancialPostingFunction.1:1.0.0"
+      },
+      "packageName": "FinancialPostingFunction.api.FinancialPostingFunction.1",
+      "packageVersion": "1.0.0",
+      "entryPointUniqueId": "2a07e1b1-47fb-4bcd-9461-9e04f4486d19",
+      "entryPointName": "content/Workflow.json",
+      "inputArgumentsSchemaV2": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"invoiceNumber\": {\n      \"type\": \"string\"\n    }\n  },\n  \"title\": \"Inputs\",\n  \"required\": [\n    \"invoiceNumber\"\n  ]\n}",
+      "outputArgumentsSchemaV2": "",
+      "hiddenForAttendedUser": false,
+      "alwaysRunning": false,
+      "autoStartProcess": false,
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180,
+      "entryPoints": "[{\"UniqueId\":\"2a07e1b1-47fb-4bcd-9461-9e04f4486d19\",\"Path\":\"content/Workflow.json\",\"DisplayName\":null,\"InputArguments\":\"{\\n  \\\"type\\\": \\\"object\\\",\\n  \\\"properties\\\": {\\n    \\\"invoiceNumber\\\": {\\n      \\\"type\\\": \\\"string\\\"\\n    }\\n  },\\n  \\\"title\\\": \\\"Inputs\\\",\\n  \\\"required\\\": [\\n    \\\"invoiceNumber\\\"\\n  ]\\n}\",\"OutputArguments\":\"\",\"Type\":6,\"TargetRuntime\":null,\"ContentRoot\":null,\"DataVariation\":null,\"Id\":852183}]",
+      "tags": []
+    },
+    "locks": [],
+    "key": "07d45a91-9413-4dad-82ff-28306c2d85ea",
+    "files": []
+  }
+}

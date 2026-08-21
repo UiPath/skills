@@ -1,0 +1,22 @@
+{
+  "Result": "Success",
+  "Code": "RegistryPullSuccess",
+  "Data": {
+    "ExtensionTypeCount": 30,
+    "ConnectorCount": 0,
+    "ProcessCount": 0,
+    "ProcessCountsByType": {
+      "Process": 0,
+      "ProcessOrchestration": 0,
+      "Agent": 0,
+      "Flow": 0,
+      "Api": 0,
+      "Function": 0,
+      "CaseManagement": 0,
+      "BusinessRules": 0
+    },
+    "FromCache": false,
+    "CacheWritten": true,
+    "Message": "Synced fresh registry. Only built-in (OOTB) extension types synced. Run 'uip login' to discover connectors and processes."
+  }
+}

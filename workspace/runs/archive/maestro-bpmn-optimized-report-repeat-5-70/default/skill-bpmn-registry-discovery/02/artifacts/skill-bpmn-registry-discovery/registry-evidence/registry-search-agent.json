@@ -1,0 +1,83 @@
+{
+  "Result": "Success",
+  "Code": "RegistrySearchSuccess",
+  "Data": {
+    "ExtensionTypes": [
+      {
+        "ExtensionType": "Orchestrator.StartAgentJob",
+        "Label": "Start and wait for agent",
+        "BpmnElement": "bpmn:ServiceTask",
+        "ExtensionTag": "uipath:activity",
+        "InputPattern": "mergedBody",
+        "BindingPattern": "process",
+        "RequiresDiscovery": "Yes"
+      },
+      {
+        "ExtensionType": "Intsvc.AsyncExecution",
+        "Label": "Start and wait for external agent",
+        "BpmnElement": "bpmn:ServiceTask",
+        "ExtensionTag": "uipath:activity",
+        "InputPattern": "separateInputs",
+        "BindingPattern": "connection",
+        "RequiresDiscovery": "Yes"
+      },
+      {
+        "ExtensionType": "Intsvc.SyncAgentExecution",
+        "Label": "Start and wait for external agent",
+        "BpmnElement": "bpmn:ServiceTask",
+        "ExtensionTag": "uipath:activity",
+        "InputPattern": "separateInputs",
+        "BindingPattern": "connection",
+        "RequiresDiscovery": "Yes"
+      },
+      {
+        "ExtensionType": "Intsvc.AsyncAgentExecution",
+        "Label": "Start and wait for external agent",
+        "BpmnElement": "bpmn:ServiceTask",
+        "ExtensionTag": "uipath:activity",
+        "InputPattern": "separateInputs",
+        "BindingPattern": "connection",
+        "RequiresDiscovery": "Yes"
+      },
+      {
+        "ExtensionType": "Orchestrator.StartAgenticProcess",
+        "Label": "Start and wait for agentic process",
+        "BpmnElement": "bpmn:CallActivity",
+        "ExtensionTag": "uipath:activity",
+        "InputPattern": "mergedBody",
+        "BindingPattern": "process",
+        "RequiresDiscovery": "Yes"
+      },
+      {
+        "ExtensionType": "Orchestrator.StartAgenticProcessAsync",
+        "Label": "Start agentic process",
+        "BpmnElement": "bpmn:CallActivity",
+        "ExtensionTag": "uipath:activity",
+        "InputPattern": "mergedBody",
+        "BindingPattern": "process",
+        "RequiresDiscovery": "Yes"
+      },
+      {
+        "ExtensionType": "A2A.AgentExecution",
+        "Label": "Start and wait for A2A agent",
+        "BpmnElement": "bpmn:ServiceTask",
+        "ExtensionTag": "uipath:activity",
+        "InputPattern": "mergedBody",
+        "BindingPattern": "none",
+        "RequiresDiscovery": "No"
+      }
+    ],
+    "Connectors": [],
+    "Processes": [],
+    "ProcessesByType": {
+      "Process": 0,
+      "ProcessOrchestration": 0,
+      "Agent": 0,
+      "Flow": 0,
+      "Api": 0,
+      "Function": 0,
+      "CaseManagement": 0,
+      "BusinessRules": 0
+    }
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "tag": "cb51525e",
+  "project_key": "CE",
+  "issuetype_id": "11457",
+  "correlationId": "ESC-JIRA-cb51525e",
+  "inputs": {
+    "senderEmail": "jane.doe@acmecorp.com",
+    "senderDomain": "acmecorp.com",
+    "subject": "Production down: checkout API returning 500s",
+    "body": "Critical urgent outage, all users blocked.",
+    "customerTier": "Enterprise",
+    "productionDown": true,
+    "workaroundAvailable": false,
+    "hasAttachments": false,
+    "customerMatchStatus": "single",
+    "isDuplicate": false,
+    "correlationId": "ESC-JIRA-cb51525e"
+  },
+  "expected": {
+    "severity": "Sev1",
+    "caseKey": "ESC-JIRA-cb51525e"
+  },
+  "expected_script": {
+    "engineeringNeeded": true
+  }
+}

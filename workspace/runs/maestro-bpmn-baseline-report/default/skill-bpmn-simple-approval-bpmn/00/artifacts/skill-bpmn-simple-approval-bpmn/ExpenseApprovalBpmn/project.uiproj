@@ -1,0 +1,14 @@
+{
+  "name": "ExpenseApprovalBpmn",
+  "description": "Expense approval process: triages expenses via an agent job, routes high-value requests to a queue, and auto-approves low-value requests via script.",
+  "projectVersion": "1.0.0",
+  "runtimeOptions": {
+    "autoDispose": false
+  },
+  "targetFramework": "Portable",
+  "projectType": "ProcessOrchestration",
+  "expressionLanguage": "VisualBasic",
+  "entryPoints": [
+    "ExpenseApprovalBpmn.bpmn"
+  ]
+}

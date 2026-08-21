@@ -1,0 +1,82 @@
+=== USER (turn 1) — simulator-generated opener ===
+I need a UiPath Flow project built — the project and solution should both be named **CustomerEscalationTriage**.
+
+The flow should take these inputs:
+- `customerTier`
+- `productionDown`
+- `workaroundAvailable`
+- `businessImpact`
+- `correlationId`
+
+And return these outputs:
+- `severity`
+- `engineeringNeeded`
+- `responseMode`
+- `caseKey`
+
+The purpose is to classify incoming customer escalations so our support team knows how to route and respond. Once it's built and validates cleanly, we're good — the grader will run it with test cases.
+
+What do you need from me to get started?
+
+=== AGENT (turn 1) — 162.6s, in=13 out=9604, 15 tool calls ===
+Validation passes cleanly (`Status: "Valid"`, no warnings) and format completed successfully (2 nodes repositioned, 7 variables counted). The flow is ready.
+
+---
+
+**CustomerEscalationTriage** is built and ready for test execution.
+
+### What was built
+
+**File:** `CustomerEscalationTriage/CustomerEscalationTriage/CustomerEscalationTriage.flow`
+
+**Topology:** `Manual trigger → Classify Escalation (Script) → End` — a 3-node linear pipeline.
+
+**Inputs** (declared as `in` globals bound to the trigger, read via `$vars.start.output.*`):
+- `customerTier` (string), `productionDown` (boolean), `workaroundAvailable` (boolean), `businessImpact` (string), `correlationId` (string)
+
+**Outputs** (declared as `out` globals, mapped on the End node from the script's return):
+- `severity`, `responseMode` (string), `engineeringNeeded` (boolean), `caseKey` (string)
+
+**Classification logic in the script node:**
+| Condition | severity |
+|---|---|
+| `productionDown=true` AND tier is Enterprise/Premier | Critical |
+| `productionDown=true` OR (Enterprise/Premier AND `businessImpact=High`) | High |
+| `workaroundAvailable=false` AND `businessImpact=Medium` | Medium |
+| otherwise | Low |
+
+- `engineeringNeeded` = `true` when severity is Critical or High
+- `responseMode` = Immediate / SameDay / NextBusinessDay / Standard
+- `caseKey` = `"CASE-" + correlationId`
+
+**Validation:** ✅ `Status: Valid`, zero warnings  
+**Format:** ✅ Run — layout normalized, 7 variables registered
+
+=== USER (turn 2) ===
+A few things don't line up with how we actually operate, so this isn't quite right yet.
+
+**Severity labels** — we don't use Critical/High/Medium/Low. Our tiers are **Sev1**, **Sev2**, and **Sev3**. The agent never asked me what those mean, so let me clarify now: Sev1 is an Enterprise customer with production fully down and no workaround. Sev2 is production degraded or down but a workaround exists. Everything else — routine or informational — is Sev3.
+
+**responseMode** — "Immediate," "SameDay," etc. are not valid values for us. All customer acknowledgements must go through human review before anything is sent, so `responseMode` should always be **Draft**. No exceptions.
+
+**caseKey** — the whole point of that field is correlation with downstream systems. It should carry the `correlationId` value directly, unchanged. Please don't prefix it with "CASE-" or anything else.
+
+Can you rebuild the logic with those corrections?
+
+=== AGENT (turn 2) — 57.5s, in=6 out=2984, 3 tool calls ===
+Clean — `Status: Valid`, no warnings. Here's what changed in the script:
+
+| Field | Before | After |
+|---|---|---|
+| **severity** | Critical / High / Medium / Low | **Sev1** — Enterprise + production down + no workaround<br>**Sev2** — production down but workaround exists<br>**Sev3** — everything else |
+| **engineeringNeeded** | true when Critical or High | true when **Sev1 or Sev2** |
+| **responseMode** | Immediate / SameDay / NextBusinessDay / Standard | Always **`"Draft"`** |
+| **caseKey** | `"CASE-" + correlationId` | `correlationId` verbatim |
+
+The `businessImpact` input variable is still declared and available in case it's useful for future routing logic, but it's no longer read by the classification script.
+
+=== USER (turn 3) — stop token — dialog ending ===
+That all lines up with how we operate. The severity logic is correct, `responseMode` is always Draft, and `caseKey` passes the `correlationId` through unchanged. Validation is clean.
+
+We're good here — the grader can take it from this point.
+

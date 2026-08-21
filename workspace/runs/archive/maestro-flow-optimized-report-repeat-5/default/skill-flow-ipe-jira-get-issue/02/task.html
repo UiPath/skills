@@ -1,0 +1,1694 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>coder_eval · skill-flow-ipe-jira-get-issue · default</title>
+<style>
+:root {
+  --bg-page: #0f1419;
+  --bg-card: #1a2129;
+  --bg-card-2: #232d38;
+  --bg-code: #0b0f14;
+  --fg: #e6edf3;
+  --fg-muted: #8b98a5;
+  --fg-dim: #6e7681;
+  --border: #30363d;
+  --accent: #58a6ff;
+  --score-high: #22c55e;
+  --score-mid: #f59e0b;
+  --score-low: #ef4444;
+  --status-success: #22c55e;
+  --status-failure: #f59e0b;
+  --status-error: #ef4444;
+  --status-neutral: #6e7681;
+  --shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+.light {
+  --bg-page: #ffffff;
+  --bg-card: #f6f8fa;
+  --bg-card-2: #eaeef2;
+  --bg-code: #f6f8fa;
+  --fg: #1f2328;
+  --fg-muted: #636c76;
+  --fg-dim: #8b949e;
+  --border: #d0d7de;
+  --accent: #0969da;
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial,
+               sans-serif;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--fg);
+  background: var(--bg-page);
+}
+.container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+h1, h2, h3, h4 { margin: 0 0 12px 0; line-height: 1.25; }
+h1 { font-size: 22px; font-weight: 600; }
+h2 { font-size: 18px; font-weight: 600; margin-top: 28px;
+     padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+h3 { font-size: 15px; font-weight: 600; color: var(--fg-muted); }
+h4 { font-size: 13px; font-weight: 600; color: var(--fg-muted); }
+p { margin: 0 0 8px 0; }
+.muted { color: var(--fg-muted); }
+.dim { color: var(--fg-dim); }
+.mono { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+        monospace; font-size: 12.5px; }
+code { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+       monospace; font-size: 12.5px; background: var(--bg-code);
+       border: 1px solid var(--border); padding: 1px 5px; border-radius: 3px; }
+pre { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+      monospace; font-size: 12.5px; background: var(--bg-code);
+      border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px;
+      margin: 6px 0; overflow-x: auto; white-space: pre-wrap;
+      word-wrap: break-word; }
+.header-bar { display: flex; align-items: center; justify-content: space-between;
+              margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+.title-group { flex: 1; min-width: 0; }
+.title-group .subtitle { color: var(--fg-muted); font-size: 13px;
+                         margin-top: 2px; word-break: break-all; }
+.badges { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.badge { display: inline-flex; align-items: center; gap: 6px;
+         padding: 4px 10px; border-radius: 12px; font-size: 12px;
+         font-weight: 600; background: var(--bg-card-2);
+         border: 1px solid var(--border); color: var(--fg); }
+.badge.success { background: color-mix(in srgb, var(--status-success) 20%, var(--bg-card-2));
+                 border-color: var(--status-success); color: var(--status-success); }
+.badge.failure { background: color-mix(in srgb, var(--status-failure) 20%, var(--bg-card-2));
+                 border-color: var(--status-failure); color: var(--status-failure); }
+.badge.error { background: color-mix(in srgb, var(--status-error) 20%, var(--bg-card-2));
+               border-color: var(--status-error); color: var(--status-error); }
+.badge.warning { background: color-mix(in srgb, #f4a52810 20%, var(--bg-card-2));
+                 border-color: #f4a528; color: #f4a528; }
+.badge.neutral { color: var(--fg-muted); }
+.score-pill { display: inline-block; padding: 2px 8px; border-radius: 10px;
+              font-size: 12px; font-weight: 700; min-width: 42px;
+              text-align: center; color: #0b0f14; }
+.score-high { background: var(--score-high); }
+.score-mid { background: var(--score-mid); }
+.score-low { background: var(--score-low); }
+.card { background: var(--bg-card); border: 1px solid var(--border);
+        border-radius: 8px; padding: 16px 20px; margin-bottom: 16px;
+        box-shadow: var(--shadow); }
+.card.highlight { border-left: 4px solid var(--accent); }
+.grid { display: grid; gap: 12px;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+.stat { background: var(--bg-card-2); padding: 10px 12px; border-radius: 6px;
+        border: 1px solid var(--border); }
+.stat .label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;
+               color: var(--fg-muted); margin-bottom: 4px; }
+.stat .value { font-size: 16px; font-weight: 600; }
+table { width: 100%; border-collapse: collapse; margin: 4px 0 12px 0; }
+th, td { text-align: left; padding: 8px 10px;
+         border-bottom: 1px solid var(--border); vertical-align: top;
+         font-size: 13px; }
+th { color: var(--fg-muted); font-weight: 600; font-size: 12px;
+     text-transform: uppercase; letter-spacing: 0.3px; }
+tr:last-child td { border-bottom: none; }
+details { margin: 6px 0; border: 1px solid var(--border); border-radius: 6px;
+          background: var(--bg-card-2); }
+details > summary { cursor: pointer; padding: 8px 12px; user-select: none;
+                    font-weight: 500; list-style: none; }
+details > summary::-webkit-details-marker { display: none; }
+details > summary::before { content: "▸ "; color: var(--fg-dim);
+                            display: inline-block; width: 14px;
+                            transition: transform 0.15s; }
+details[open] > summary::before { content: "▾ "; }
+details .details-body { padding: 0 12px 10px 12px; }
+.tool-row { display: flex; align-items: center; gap: 10px;
+            flex-wrap: wrap; font-size: 13px; }
+.tool-name { font-weight: 600; color: var(--accent); font-family: ui-monospace,
+             SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+.tool-status-ok { color: var(--status-success); font-size: 11px;
+                  font-weight: 600; }
+.tool-status-err { color: var(--status-error); font-size: 11px;
+                   font-weight: 600; }
+.tool-duration { color: var(--fg-muted); font-size: 12px; }
+.tool-seq { color: var(--fg-dim); font-size: 11px; font-weight: 600;
+            min-width: 24px; text-align: right; font-family: ui-monospace,
+            SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+.turn-header { display: flex; justify-content: space-between;
+               align-items: baseline; flex-wrap: wrap; gap: 10px;
+               margin-bottom: 10px; }
+.turn-meta { font-size: 12px; color: var(--fg-muted); }
+.criterion-row td:first-child { font-family: ui-monospace, SFMono-Regular,
+                                 "SF Mono", Menlo, Consolas, monospace;
+                                 color: var(--fg-muted); font-size: 12px; }
+.judge-section { display: flex; flex-direction: column; gap: 12px; }
+.judge-card { padding: 14px 16px; }
+.judge-card-head { display: flex; justify-content: space-between;
+                    align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+.judge-card-title { font-size: 14px; line-height: 1.4; flex: 1; min-width: 0; }
+.judge-card-score { flex-shrink: 0; }
+.judge-rationale { margin-top: 10px; padding: 10px 12px;
+                   background: var(--bg-code); border-radius: 4px;
+                   font-size: 13px; line-height: 1.5; }
+.judge-findings { margin: 8px 0 0 18px; padding-left: 4px; font-size: 13px;
+                   line-height: 1.6; }
+.judge-findings li { margin: 2px 0; }
+.nav-toggle { display: inline-block; padding: 5px 10px; font-size: 12px;
+              background: var(--bg-card-2); border: 1px solid var(--border);
+              border-radius: 5px; color: var(--fg); cursor: pointer; }
+.nav-toggle:hover { background: var(--bg-card); }
+.llm-next-steps { margin: 6px 0 0 20px; padding-left: 0; }
+.llm-next-steps li { margin: 3px 0; }
+.iteration-group { padding: 12px 16px 4px 16px; margin-bottom: 20px;
+                   border-radius: 0 6px 6px 0; border-left: 4px solid var(--status-neutral); }
+/* rgba fallback for browsers without color-mix (Chrome <111, Firefox <113, Safari <16.2). */
+.iteration-group--recovered { border-left-color: var(--status-success);
+                              background: rgba(34, 197, 94, 0.06);
+                              background: color-mix(in srgb, var(--status-success) 6%, transparent); }
+.iteration-group--terminal { border-left-color: var(--status-error);
+                             background: rgba(239, 68, 68, 0.06);
+                             background: color-mix(in srgb, var(--status-error) 6%, transparent); }
+.iteration-group__banner { margin: 0 0 12px 0; font-size: 14px; font-weight: 600; }
+.iteration-group--recovered .iteration-group__banner { color: var(--status-success); }
+.iteration-group--terminal .iteration-group__banner { color: var(--status-error); }
+.attempt-transition { display: flex; align-items: center; gap: 8px;
+                      margin: -6px 0 12px 8px; color: var(--status-error); font-size: 12.5px; }
+.attempt-transition__icon { font-weight: 700; }
+footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--border);
+         color: var(--fg-dim); font-size: 12px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="header-bar">
+  <div class="title-group">
+    <h1>Task: skill-flow-ipe-jira-get-issue</h1>
+    <div class="subtitle">E2E live Jira coverage — builds a Flow with a manual trigger and an Atlassian Jira &quot;Get Issue&quot; connector node that reads a pre-seeded issue by key, then grades by executing the flow against a real Jira sandbox connection (`flow debug`) and asserting the fetched summary appears in the flow outputs. The issue is created by pre_run (its key + summary are unique per run and land in `seed.json`), so the agent must read the key from the fixture rather than inventing one, and cleanup happens in post_run.</div>
+  </div>
+  <div class="badges">
+    <span class="badge success">SUCCESS</span>
+    <span class="score-pill score-high">1.00</span>
+    <span class="badge neutral">claude-code · claude-sonnet-4-6</span>
+    <span class="badge neutral">6m 43s</span>
+    <span class="badge neutral">$1.1060</span>
+    
+    
+    <span class="nav-toggle" onclick="toggleTheme()">Toggle theme</span>
+  </div>
+</div>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Variant</div><div class="value">default</div></div>
+    <div class="stat"><div class="label">Started</div><div class="value mono">2026-07-24T17:41:12</div></div>
+    <div class="stat"><div class="label">Duration</div><div class="value">6m 43s</div></div>
+    <div class="stat"><div class="label">Turns (SDK)</div><div class="value">50</div></div>
+    <div class="stat"><div class="label">Commands</div><div class="value">31</div></div>
+  </div>
+</div>
+
+<h2>Success Criteria <span class="muted" style="font-weight:400">(2/2 passed)</span></h2>
+<div class="card" style="padding:0">
+<table>
+  <thead>
+    <tr>
+      <th style="width:15%">Type</th>
+      <th style="width:35%">Description</th>
+      <th style="width:10%">Score</th>
+      <th>Details</th>
+    </tr>
+  </thead>
+  <tbody>
+    
+<tr class="criterion-row">
+  <td>command_executed</td>
+  <td>uip maestro flow validate was called</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Matched 3/1 required commands (filters: tool_name=Bash, pattern=/(uip|\$UIP)\s+(maestro\s+)?flow\s+validate/)</summary><div class="details-body"><pre style="margin:6px 0 0 0">Matched 3/1 required commands (filters: tool_name=Bash, pattern=/(uip|\$UIP)\s+(maestro\s+)?flow\s+validate/)
+Examples: [&#x27;\\\nuip maestro flow node configure &quot;JiraGetIssue.flow&quot; &quot;getIssue1&quot; --detail &quot;$(cat &lt;&lt;\&#x27;JSON\&#x27;\n{\n  &quot;connectionId&quot;: &quot;f5273a4d&#x27;, &#x27;uip maestro flow validate &quot;JiraGetIssue.flow&quot; --output json 2&gt;/dev/null &amp;&amp; \\\nuip maestro flow format &quot;JiraGetIssue.flow&quot;&#x27;, &#x27;uip maestro flow validate &quot;JiraGetIssue.flow&quot; --output json 2&gt;/dev/null &amp;&amp; \\\nuip maestro flow format &quot;JiraGetIssue.flow&quot;&#x27;]</pre></div></details></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>run_command</td>
+  <td>JiraGetIssue checks: valid flow with Jira Get-Issue node referencing the seeded key, debug completes, and outputs carry the seeded summary</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Command: python3 $TASK_DIR/check_jira_get_issue.py</summary><div class="details-body"><pre style="margin:6px 0 0 0">Command: python3 $TASK_DIR/check_jira_get_issue.py
+Exit code: 0 (expected: 0)
+Stdout:
+OK: flow references uipath-atlassian-jira
+OK: flow references a Get-Issue op and the seeded key CE-164
+OK: flow debug completed
+OK: flow outputs contain the seeded issue summary
+PASS: all JiraGetIssue checks passed
+
+Stderr: (empty)</pre></div></details></td>
+</tr>
+
+  </tbody>
+</table>
+</div>
+<h2>Conversation Trace (1 iteration)</h2>
+<div class="card">
+  <div class="turn-header">
+    <h3>Iteration 1</h3>
+    <div class="badges">
+      <span class="badge neutral">50 assistant turns</span>
+      <span class="badge neutral">in 23 · out 18765 · cache 1671214</span>
+      <span class="badge neutral">6m 13s</span>
+      
+      
+      
+    </div>
+  </div>
+  <details>
+    <summary>Prompt to agent</summary>
+    <div class="details-body"><pre>Your working directory is: /work/output/artifacts/skill-flow-ipe-jira-get-issue
+
+Create a new Flow project called &quot;JiraGetIssue&quot; with a manual trigger.
+It should read a single Jira issue using the Atlassian Jira &quot;Get Issue&quot;
+connector activity, and expose the retrieved issue&#x27;s summary (and status) as
+flow outputs.
+
+Read `seed.json` in the current directory for the issue to fetch: use the
+`issue_key`, `project_key`, and `issuetype_id` exactly as given.
+
+Use the Atlassian Jira connection available in the `Shared/uipath-maestro-flow`
+folder. If the Atlassian Jira connector isn&#x27;t available in your registry,
+stop rather than falling back to a generic HTTP request.
+
+Validate the final flow file.
+</pre></div>
+  </details>
+  <details>
+    <summary>Agent response</summary>
+    <div class="details-body"><pre>[ASSISTANT] Now I have enough context. Let me plan the full execution path:
+
+1. **T1**: Check solutions + login + registry search for Jira Get Issue node type + scaffold + connections list + registry get core.control.end (all parallelized)
+2. **T2**: Read .flow + registry get with connection-id + is resources describe + author nodes/edges/variables
+3. **T3**: node configure (with customFieldsRequestDetails per Step 6c table) + validate + format
+
+The Step 6c table confirms `uipath-atlassian-jira` `curated_get_issue` uses `GETBYID` method and has an api-type ObjectAction. Let me start T1.
+[ASSISTANT] The node type is `uipath.connector.uipath-atlassian-jira.get-issue`. Now I&#x27;ll add it and get the enriched metadata in parallel:
+[ASSISTANT] Node ID is `getIssue1`. Now I need to run `is resources describe` (Step 3) and read the scaffolded flow file in parallel:
+[ASSISTANT] I have everything I need. The `connectorMethodInfo.design.actions` confirms `GenerateSchema` is the api-type action with tokens `{project}` and `{issuetype}`. Now T2 — batch edits to wire up the flow with `out` variables and End node:
+[ASSISTANT] Now T3 — node configure with the full detail (including `customFieldsRequestDetails` per Step 6c), then validate and format:
+[ASSISTANT] Two fixes needed: edges use `sourcePortId` but schema wants `sourcePort`, and `variables.globals` should be an array. Let me check the file-format quickly and fix:
+[ASSISTANT] Now I see the correct structure. `variables.globals` is a flat **array** (not an object with `out`), and edges use `sourcePort` (not `sourcePortId`). Let me fix both:
+[ASSISTANT] Now I can see both issues clearly. Fix them:
+[ASSISTANT] The outputs are mapped and globals look correct. The validator is flagging `MISSING_OUTPUT_MAPPING` — let me check the exact required format for End node output mappings from the variables doc:
+[ASSISTANT] The End node outputs must be objects with a `source` key, not bare expression strings. Fix that:
+[ASSISTANT] **Validation passes with no warnings and format is clean.** Here&#x27;s the complete summary:
+
+---
+
+## JiraGetIssue Flow — Complete ✅
+
+**File path:** `JiraGetIssue/JiraGetIssue/JiraGetIssue.flow`  
+(solution: `JiraGetIssue/JiraGetIssue.uipx`)
+
+### What was built
+
+| Node | Type | Role |
+|---|---|---|
+| `start` | `core.trigger.manual` | Manual trigger — flow entry point |
+| `getIssue1` | `uipath.connector.uipath-atlassian-jira.get-issue` | Fetches issue `CE-164` from the Jira connection in `Shared/uipath-maestro-flow` |
+| `end1` | `core.control.end` | Maps `fields.summary` → `issueSummary` and `fields.status.name` → `issueStatus` as flow outputs |
+
+**Edges:** `start → getIssue1 → end1`
+
+**Connector configuration:**
+- Connection: `is-sandboxes-test@uipath.com-uipath-sandbox-380` (folder `uipath-maestro-flow`)
+- `pathParameters.issueId`: `CE-164`
+- `queryParameters.project`: `CE`, `issuetype`: `11457`
+- `customFieldsRequestDetails.objectActionName`: `GenerateSchema` with encoded parent-field tokens for project + issuetype (required for the dynamic schema cache)
+
+**Flow outputs (`variables.globals`):**
+- `issueSummary` (`out`, string) — `=js:$vars.getIssue1.output.fields.summary`
+- `issueStatus` (`out`, string) — `=js:$vars.getIssue1.output.fields.status.name`
+
+### Validation ✅
+`uip maestro flow validate` — **Status: Valid**, no warnings.
+
+### Format ✅
+`uip maestro flow format` — 3 nodes, 2 edges, all nodes in optimal positions.
+
+---
+
+**What&#x27;s next?** Choose an option:
+
+1. **Publish to Studio Web** — push the solution so you can visualize and edit it in the browser
+2. **Debug the solution** — execute the flow end-to-end against real Jira (has real side effects — will read from the live tenant)
+3. **Deploy to Orchestrator** — pack and publish directly
+4. **Something else** — free-form (e.g. &quot;just leave it&quot;, &quot;pack only&quot;, &quot;upload to a different tenant&quot;)
+[RESULT - SUCCESS] **Validation passes with no warnings and format is clean.** Here&#x27;s the complete summary:
+
+---
+
+## JiraGetIssue Flow —</pre></div>
+  </details>
+  <h4 style="margin-top:12px">Tool Calls (31)</h4>
+  
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#0</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">20ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-ipe-jira-get-issue/seed.json&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	{
+2	  &quot;tag&quot;: &quot;a9c6dbe9&quot;,
+3	  &quot;summary&quot;: &quot;coder-eval jira flow e2e a9c6dbe9&quot;,
+4	  &quot;issue_key&quot;: &quot;CE-164&quot;,
+5	  &quot;project_key&quot;: &quot;CE&quot;,
+6	  &quot;issuetype_id&quot;: &quot;11457&quot;
+7	}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#1</span>
+      <span class="tool-name">Skill</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">11ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;skill&quot;: &quot;uipath:uipath-maestro-flow&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Launching skill: uipath:uipath-maestro-flow</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#2</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">481ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/CAPABILITY.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Author — Create and edit `.flow` files
+2	
+3	Capability index for building new flows (greenfield) and editing existing flows (brownfield). Author owns everything that happens on disk, locally, without `uip login`. Authoring journeys terminate at `validate` + `format`; from there, hand off to [operate/CAPABILITY.md](../operate/CAPABILITY.md) to publish, run, or debug.
+4	
+5	&gt; **Where you came from / where to go next.** Author is upstream of Operate (build the flow → ship it) and upstream of Diagnose only via Operate (build → run → diagnose). Publish/run/lifecycle lives in [operate/CAPABILITY.md](../operate/CAPABILITY.md); fault triage lives in [diagnose/CAPABILITY.md](../diagnose/CAPABILITY.md).
+6	&gt;
+7	&gt; **Inherits universal rules from [SKILL.md](../../SKILL.md)** — `--output json` + prefer `--output-filter` for extraction, no `flow debug` without consent, resource discovery order, never invoke other skills automatically, dropdown question pattern, solution layout, **plain-English narration + granular progress list (opt-in — silent by default; engage when the user asks for verbosity)**. The rules below are author-scoped and apply on top.
+8	
+9	## When to use this capability
+10	
+11	-
+
+… (truncated, 25996 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#3</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">152ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/references/greenfield.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Greenfield — Create a New Flow
+2	
+3	End-to-end journey for creating a Flow project from scratch. Author terminates at `validate` + `format`. To publish, run, or debug after this, see [operate/CAPABILITY.md](../../operate/CAPABILITY.md).
+4	
+5	&gt; **Brownfield edits use a different journey.** If the `.flow` file already exists, see [brownfield.md](brownfield.md) instead.
+6	
+7	## Should you plan first?
+8	
+9	For complex flows, produce a plan before building. Reference [planning-arch.md](planning-arch.md) and [planning-impl.md](planning-impl.md) for the node type catalog, port reference, wiring rules, and topology patterns.
+10	
+11	**Plan when:**
+12	- The flow has 5+ nodes with branching or parallel paths
+13	- The flow uses connectors or resources that need discovery
+14	- The user&#x27;s requirements are ambiguous and you need to confirm the approach
+15	
+16	**Don&#x27;t plan when:**
+17	- Adding/editing a single node in an existing flow (use [brownfield.md](brownfield.md))
+18	- The flow is a straightforward linear pipeline (trigger → action → action → end)
+19	- The user has already described the exact topology they want
+20	
+21	### Examples
+22	
+23	**Plan:** &quot;Build a flow that receives a Jira ticke
+
+… (truncated, 30834 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#4</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">138ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/references/plugins/connector/impl.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Connector Activity Nodes — Implementation
+2	
+3	How to configure connector activity nodes: connection binding, enriched metadata, reference field resolution, and debugging. Connection bindings are emitted by `uip maestro flow node configure` into the flow&#x27;s top-level `bindings[]`; `bindings_v2.json` is regenerated from them at debug/pack time and should never be hand-edited.
+4	
+5	For generic node/edge add, remove, and wiring procedures, see [editing-operations.md](../../editing-operations.md). This guide covers the connector-specific configuration workflow that must follow the generic node add.
+6	
+7	## How Connector Nodes Differ from OOTB
+8	
+9	1. **Connection binding required** — every connector node needs an IS connection (OAuth, API key, etc.) authored in the flow&#x27;s top-level `bindings[]` (which the CLI regenerates into `bindings_v2.json` at debug/pack time). Without it, the node cannot authenticate.
+10	2. **Enriched metadata via `--connection-id`** — call `registry get` with `--connection-id` to get connection-aware field metadata. Without it, only base fields are returned — custom fields, dynamic enums, and reference resolution are missing.
+11	3. **`inputs.detail` object** —
+
+… (truncated, 59526 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#5</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">11ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/references/plugins/connector/planning.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Connector Activity Nodes — Planning
+2	
+3	Connector activity nodes call external services (Jira, Slack, Salesforce, Outlook, etc.) via UiPath Integration Service. They are dynamically loaded — not built-in — and appear in the registry after `uip login` + `uip maestro flow registry pull`.
+4	
+5	## When to Use
+6	
+7	Use a connector activity node when the flow needs to **call an external service that has a pre-built UiPath connector**. Connectors handle auth (OAuth, API keys), token refresh, and error formatting automatically at runtime. Note: design-time reference resolution (looking up records by name during authoring) still requires the agent to paginate — see [impl.md](impl.md).
+8	
+9	### Decision Order
+10	
+11	Prefer higher tiers when connecting to external services:
+12	
+13	| Tier | Approach | When to Use |
+14	| --- | --- | --- |
+15	| 1 | **IS connector activity** (this node type) | A connector exists and its activities cover the use case |
+16	| 2 | **Managed HTTP Request** (`core.action.http.v2`) | A connector exists but lacks the specific curated activity — uses the connector&#x27;s IS connection for auth |
+17	| 3 | **Managed HTTP Request — manual mode** (`core.action.http.v2`) | No 
+
+… (truncated, 8594 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#6</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-err">ERROR</span>
+      <span class="tool-duration">18.95s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;\\\nls *.uipx */*.uipx 2&gt;/dev/null &amp;&amp; echo \&quot;SOLUTIONS_FOUND\&quot; || echo \&quot;NO_SOLUTIONS\&quot; &amp;&amp; \\\nuip solution init \&quot;JiraGetIssue\&quot; --output json &amp;&amp; \\\ncd JiraGetIssue &amp;&amp; \\\nuip maestro flow init \&quot;JiraGetIssue\&quot; --output json &amp;&amp; \\\ncd JiraGetIssue &amp;&amp; \\\nuip maestro flow registry pull &amp;&amp; \\\nuip maestro flow node add \&quot;JiraGetIssue.flow\&quot; \&quot;uipath.connector.uipath-atlassian-jira.curated_get_issue\&quot; --label \&quot;Get Issue\&quot; --… (11 more chars)&quot;,
+  &quot;description&quot;: &quot;Scaffold solution + flow + registry pull + add Jira Get Issue connector node&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Exit code 1
+NO_SOLUTIONS
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;SolutionInit&quot;,
+  &quot;Data&quot;: {
+    &quot;Status&quot;: &quot;Created successfully&quot;,
+    &quot;Path&quot;: &quot;/work/output/artifacts/skill-flow-ipe-jira-get-issue/JiraGetIssue/JiraGetIssue.uipx&quot;,
+    &quot;NextSteps&quot;: &quot;Read /work/output/artifacts/skill-flow-ipe-jira-get-issue/JiraGetIssue/AGENTS.md or /work/output/artifacts/skill-flow-ipe-jira-get-issue/JiraGetIssue/CLAUDE.md to understand the solution lifecycle, project types that can be used inside a solution, and related uip command references.&quot;
+  }
+}
+2026-07-24 17:42:53 INFO  [ResourceBuilder:ProjectCreateCommandHandler] Creating project [object Object]
+2026-07-24 17:42:53 INFO  [ResourceBuilder:MultiFileSolutionDefinitionProvider] Reading multi-file solution definition for solution %s /work/output/artifacts/skill-flow-ipe-jira-get-issue/JiraGetIssue
+2026-07-24 17:42:53 INFO  [ResourceBuilder:ProjectCreateCommandHandler] Generate artefact resources for project [object Object]
+2026-07-24 17:42:53 INFO  [ResourceBuilder:SolutionsMetadataReader] Reading metadata from %s. SolutionsMetadataReader
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FlowInit&quot;,
+  &quot;Data&quot;: {
+    &quot;Status&quot;: &quot;Created successfully&quot;,
+    &quot;Path&quot;: &quot;/wor
+
+… (truncated, 2059 more chars)</pre>
+    <h4>Error</h4><pre>Exit code 1
+NO_SOLUTIONS
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;SolutionInit&quot;,
+  &quot;Data&quot;: {
+    &quot;Status&quot;: &quot;Created successfully&quot;,
+    &quot;Path&quot;: &quot;/work/output/artifacts/skill-flow-ipe-jira-get-issue/JiraGetIssue/JiraGetIssue.uipx&quot;,
+    &quot;NextSteps&quot;: &quot;Read /work/output/artifacts/skill-flow-ipe-jira-get-issue/JiraGetIssue/AGENTS.md or /work/output/artifacts/skill-flow-ipe-jira-get-issue/JiraGetIssue/CLAUDE.md to understand the solution lifecycle, project types that can be used inside a solution, and related uip command references.&quot;
+  }
+}
+2026-07-24 17:42:53 INFO  [ResourceBuilder:ProjectCreateCommandHandler] Creating project [object Object]
+2026-07-24 17:42:53 INFO  [ResourceBuilder:MultiFileSolutionDefinitionProvider] Reading multi-file solution definition for solution %s /work/output/artifacts/skill-flow-ipe-jira-get-issue/JiraGetIssue
+2026-07-24 17:42:53 INFO  [ResourceBuilder:ProjectCreateCommandHandler] Generate artefact resources for project [object Object]
+2026-07-24 17:42:53 INFO  [ResourceBuilder:SolutionsMetadataReader] Reading metadata from %s. SolutionsMetadataReader
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FlowInit&quot;,
+  &quot;Data&quot;: {
+    &quot;Status&quot;: &quot;Created successfully&quot;,
+    &quot;Path&quot;: &quot;/work/output/artifacts/skill-flow-ipe-jira-get-issue/JiraGetIssue/JiraGetIssue&quot;,
+    &quot;SolutionRegistration&quot;: {
+      &quot;Status&quot;: &quot;Registered&quot;,
+      &quot;Message&quot;: &quot;Project registered in parent solution.&quot;,
+      &quot;Solution&quot;: &quot;/work/output/artifacts/skill-flow-ipe-jira-get-issue/JiraGetIssue/JiraGetIssue.uipx&quot;,
+      &quot;Project&quot;: &quot;JiraGetIssue/project.uiproj&quot;,
+      &quot;ProjectId&quot;: &quot;d0896105-24e6-4339-a24c-4219bc19ca03&quot;,
+      &quot;Instructions&quot;: &quot;The project is listed in the parent solution manifest.\nPacking or uploading the solution will sync solution resources automatically.\nTo sync resources before packaging, run &#x27;uip solution resources refresh --solution-folder \&quot;/work/output/artifacts/skill-flow-ipe-jira-get-issue/JiraGetIssue\&quot;&#x27;.&quot;
+    },
+    &quot;ProjectArtifacts&quot;: {
+      &quot;Created&quot;: true
+    },
+    &quot;Next</pre>
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#7</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">22.37s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip login status --output json 2&gt;/dev/null &amp;&amp; \\\necho \&quot;---CONNECTIONS---\&quot; &amp;&amp; \\\nuip is connections list \&quot;uipath-atlassian-jira\&quot; --all-folders --output json 2&gt;/dev/null &amp;&amp; \\\necho \&quot;---SEARCH---\&quot; &amp;&amp; \\\nuip maestro flow registry search \&quot;jira\&quot; --output json --output-filter \&quot;[*].{NodeType:NodeType,DisplayName:DisplayName}\&quot; 2&gt;/dev/null&quot;,
+  &quot;description&quot;: &quot;Check login status, connections for Jira, and registry search&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;LoginStatus&quot;,
+  &quot;Data&quot;: {
+    &quot;Status&quot;: &quot;Logged in&quot;,
+    &quot;Provider&quot;: &quot;File&quot;,
+    &quot;BaseUrl&quot;: &quot;https://alpha.uipath.com&quot;,
+    &quot;Organization&quot;: &quot;codereval&quot;,
+    &quot;OrganizationId&quot;: &quot;311c6049-4966-4ef2-a6f3-8ceccaf38d54&quot;,
+    &quot;Tenant&quot;: &quot;DefaultTenant&quot;,
+    &quot;TenantId&quot;: &quot;69d43765-6ede-4575-88b7-9db601a2c056&quot;,
+    &quot;ExpirationDate&quot;: &quot;2026-07-24T18:02:54.000Z&quot;
+  }
+}
+---CONNECTIONS---
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;ConnectionList&quot;,
+  &quot;Data&quot;: [
+    {
+      &quot;Id&quot;: &quot;f5273a4d-d492-4bcd-a106-5a20bf89a3ef&quot;,
+      &quot;Name&quot;: &quot;is-sandboxes-test@uipath.com-uipath-sandbox-380&quot;,
+      &quot;ConnectorKey&quot;: &quot;uipath-atlassian-jira&quot;,
+      &quot;ConnectorName&quot;: &quot;Jira&quot;,
+      &quot;State&quot;: &quot;Enabled&quot;,
+      &quot;Owner&quot;: &quot;sanjeet.manna@uipath.com&quot;,
+      &quot;IsDefault&quot;: &quot;Yes&quot;,
+      &quot;ByoaConnection&quot;: &quot;No&quot;,
+      &quot;ElementInstanceId&quot;: 336882,
+      &quot;Folder&quot;: &quot;uipath-maestro-flow&quot;,
+      &quot;FolderKey&quot;: &quot;5da18ec0-7de1-4e57-aaf1-ddc8a369c199&quot;,
+      &quot;Created&quot;: &quot;2026-05-07T14:56:28.873Z&quot;,
+      &quot;Updated&quot;: &quot;2026-07-24T17:27:03.380Z&quot;
+    }
+  ]
+}
+---SEARCH---
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeSearchSuccess&quot;,
+  &quot;Data&quot;: [
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-atlassian-jira.update-issue-status
+
+… (truncated, 13138 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#8</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">24.87s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry get core.control.end --output json 2&gt;/dev/null&quot;,
+  &quot;description&quot;: &quot;Get core.control.end definition for T2 wiring&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeGetSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;Node&quot;: {
+      &quot;nodeType&quot;: &quot;core.control.end&quot;,
+      &quot;version&quot;: &quot;1.0&quot;,
+      &quot;category&quot;: &quot;control-flow&quot;,
+      &quot;description&quot;: &quot;Mark the end of a workflow path&quot;,
+      &quot;tags&quot;: [
+        &quot;control-flow&quot;,
+        &quot;end&quot;,
+        &quot;finish&quot;,
+        &quot;complete&quot;
+      ],
+      &quot;sortOrder&quot;: 20,
+      &quot;display&quot;: {
+        &quot;label&quot;: &quot;End&quot;,
+        &quot;icon&quot;: &quot;circle-check&quot;,
+        &quot;shape&quot;: &quot;circle&quot;
+      },
+      &quot;handleConfiguration&quot;: [
+        {
+          &quot;position&quot;: &quot;left&quot;,
+          &quot;handles&quot;: [
+            {
+              &quot;id&quot;: &quot;input&quot;,
+              &quot;type&quot;: &quot;target&quot;,
+              &quot;handleType&quot;: &quot;input&quot;
+            }
+          ]
+        }
+      ],
+      &quot;model&quot;: {
+        &quot;type&quot;: &quot;bpmn:EndEvent&quot;
+      },
+      &quot;runtimeConstraints&quot;: {
+        &quot;exclude&quot;: [
+          &quot;api-function&quot;
+        ]
+      }
+    }
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#9</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">4.81s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-ipe-jira-get-issue/JiraGetIssue/JiraGetIssue &amp;&amp; \\\nuip maestro flow node add \&quot;JiraGetIssue.flow\&quot; \&quot;uipath.connector.uipath-atlassian-jira.get-issue\&quot; --label \&quot;Get Issue\&quot; --output json&quot;,
+  &quot;description&quot;: &quot;Add Jira get-issue connector node to the flow&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeAddSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;Node&quot;: {
+      &quot;Id&quot;: &quot;getIssue1&quot;,
+      &quot;Type&quot;: &quot;uipath.connector.uipath-atlassian-jira.get-issue&quot;,
+      &quot;TypeVersion&quot;: &quot;1.0.0&quot;,
+      &quot;Ui&quot;: {
+        &quot;Position&quot;: {
+          &quot;X&quot;: 0,
+          &quot;Y&quot;: 0
+        }
+      },
+      &quot;Display&quot;: {
+        &quot;Label&quot;: &quot;Get Issue&quot;
+      },
+      &quot;Inputs&quot;: {}
+    },
+    &quot;DefinitionAdded&quot;: true,
+    &quot;BindingsCreated&quot;: 0,
+    &quot;VariableCount&quot;: 3
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#10</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">4.98s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry get uipath.connector.uipath-atlassian-jira.get-issue --connection-id f5273a4d-d492-4bcd-a106-5a20bf89a3ef --output json 2&gt;/dev/null &gt; /tmp/jira_get_issue_registry.json &amp;&amp; \\\necho \&quot;saved\&quot; &amp;&amp; \\\npython3 -c \&quot;\nimport json\nwith open(&#x27;/tmp/jira_get_issue_registry.json&#x27;) as f:\n    d = json.load(f)\nnode = d[&#x27;Data&#x27;][&#x27;Node&#x27;]\nprint(&#x27;=== connectorMethodInfo ===&#x27;)\nprint(json.dumps(node.… (793 more chars)&quot;,
+  &quot;description&quot;: &quot;Get enriched Jira get-issue registry with connection-id and extract key metadata&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>saved
+=== connectorMethodInfo ===
+{
+  &quot;operation&quot;: &quot;Retrieve&quot;,
+  &quot;description&quot;: &quot;Get Issue&quot;,
+  &quot;method&quot;: &quot;GET&quot;,
+  &quot;parameters&quot;: [
+    {
+      &quot;name&quot;: &quot;project&quot;,
+      &quot;description&quot;: &quot;The unique key of the project&quot;,
+      &quot;type&quot;: &quot;query&quot;,
+      &quot;dataType&quot;: &quot;string&quot;,
+      &quot;required&quot;: true,
+      &quot;displayName&quot;: &quot;Project&quot;,
+      &quot;reference&quot;: {
+        &quot;objectName&quot;: &quot;project&quot;,
+        &quot;lookupNames&quot;: [
+          &quot;name&quot;,
+          &quot;key&quot;
+        ],
+        &quot;lookupValue&quot;: &quot;key&quot;,
+        &quot;path&quot;: &quot;/project/search&quot;,
+        &quot;filterPattern&quot;: &quot;query={filter}&quot;
+      },
+      &quot;curated&quot;: false,
+      &quot;design&quot;: {
+        &quot;loadByDefault&quot;: true,
+        &quot;isMultiSelect&quot;: false,
+        &quot;enableUserOverride&quot;: false,
+        &quot;displayPattern&quot;: &quot;{name} - {key}&quot;,
+        &quot;isHidden&quot;: false,
+        &quot;fieldActions&quot;: [
+          {
+            &quot;actionType&quot;: &quot;showMessages&quot;,
+            &quot;rules&quot;: [
+              {
+                &quot;refFieldName&quot;: &quot;project&quot;,
+                &quot;refFieldValues&quot;: [
+                  &quot;*&quot;
+                ],
+                &quot;isCleared&quot;: true,
+                &quot;isVariable&quot;: false,
+                &quot;isWorkflowExpression&quot;: true,
+                &quot;isConstantValue&quot;: true
+              }
+            
+
+… (truncated, 5935 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#11</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.82s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;\\\nuip is resources describe \&quot;uipath-atlassian-jira\&quot; \&quot;curated_get_issue\&quot; \\\n  --connection-id \&quot;f5273a4d-d492-4bcd-a106-5a20bf89a3ef\&quot; --operation Retrieve --output json 2&gt;/dev/null &gt; /tmp/jira_describe.json &amp;&amp; \\\necho \&quot;describe done\&quot; &amp;&amp; \\\npython3 -c \&quot;\nimport json\nwith open(&#x27;/tmp/jira_describe.json&#x27;) as f:\n    d = json.load(f)\ndata = d.get(&#x27;Data&#x27;, {})\nprint(&#x27;=== availableOperations ===&#x27;)\nprint(json.dum… (779 more chars)&quot;,
+  &quot;description&quot;: &quot;Run is resources describe for curated_get_issue to get method/endpoint/fields&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>describe done
+=== availableOperations ===
+[]
+metadataFile: None</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#12</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.22s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-ipe-jira-get-issue/JiraGetIssue/JiraGetIssue/JiraGetIssue.flow&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	{
+2	  &quot;id&quot;: &quot;9064e995-f1e1-465f-a1df-db2663236f9b&quot;,
+3	  &quot;version&quot;: &quot;1.8&quot;,
+4	  &quot;name&quot;: &quot;JiraGetIssue&quot;,
+5	  &quot;nodes&quot;: [
+6	    {
+7	      &quot;id&quot;: &quot;start&quot;,
+8	      &quot;type&quot;: &quot;core.trigger.manual&quot;,
+9	      &quot;typeVersion&quot;: &quot;1.0&quot;,
+10	      &quot;display&quot;: {
+11	        &quot;label&quot;: &quot;Manual trigger&quot;
+12	      },
+13	      &quot;inputs&quot;: {
+14	        &quot;entryPointId&quot;: &quot;bf8aac60-7f5f-430e-8c25-742d971aa3ef&quot;,
+15	        &quot;isDefaultEntryPoint&quot;: true
+16	      }
+17	    },
+18	    {
+19	      &quot;id&quot;: &quot;getIssue1&quot;,
+20	      &quot;type&quot;: &quot;uipath.connector.uipath-atlassian-jira.get-issue&quot;,
+21	      &quot;typeVersion&quot;: &quot;1.0.0&quot;,
+22	      &quot;display&quot;: {
+23	        &quot;label&quot;: &quot;Get Issue&quot;
+24	      },
+25	      &quot;inputs&quot;: {}
+26	    }
+27	  ],
+28	  &quot;edges&quot;: [],
+29	  &quot;definitions&quot;: [
+30	    {
+31	      &quot;nodeType&quot;: &quot;core.trigger.manual&quot;,
+32	      &quot;version&quot;: &quot;1.0&quot;,
+33	      &quot;category&quot;: &quot;trigger&quot;,
+34	      &quot;description&quot;: &quot;Start workflow manually&quot;,
+35	      &quot;tags&quot;: [
+36	        &quot;trigger&quot;,
+37	        &quot;start&quot;,
+38	        &quot;manual&quot;
+39	      ],
+40	      &quot;sortOrder&quot;: 40,
+41	      &quot;display&quot;: {
+42	        &quot;label&quot;: &quot;Manual trigger&quot;,
+43	        &quot;icon&quot;: &quot;play&quot;,
+44	        &quot;shape&quot;: &quot;circle&quot;
+45	      },
+46	      &quot;handleConfiguration&quot;: [
+47	        {
+48	          &quot;positio
+
+… (truncated, 11813 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#13</span>
+      <span class="tool-name">Edit</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">41ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;replace_all&quot;: false,
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-ipe-jira-get-issue/JiraGetIssue/JiraGetIssue/JiraGetIssue.flow&quot;,
+  &quot;old_string&quot;: &quot;  \&quot;nodes\&quot;: [\n    {\n      \&quot;id\&quot;: \&quot;start\&quot;,&quot;,
+  &quot;new_string&quot;: &quot;  \&quot;nodes\&quot;: [\n    {\n      \&quot;id\&quot;: \&quot;end1\&quot;,\n      \&quot;type\&quot;: \&quot;core.control.end\&quot;,\n      \&quot;typeVersion\&quot;: \&quot;1.0\&quot;,\n      \&quot;display\&quot;: {\n        \&quot;label\&quot;: \&quot;End\&quot;\n      },\n      \&quot;outputs\&quot;: {\n        \&quot;issueSummary\&quot;: \&quot;=js:$vars.getIssue1.output.fields.summary\&quot;,\n        \&quot;issueStatus\&quot;: \&quot;=js:$vars.getIssue1.output.fields.status.name\&quot;\n      }\n    },\n    {\n      \&quot;id\&quot;: \&quot;start\&quot;,&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>The file /work/output/artifacts/skill-flow-ipe-jira-get-issue/JiraGetIssue/JiraGetIssue/JiraGetIssue.flow has been updated successfully. (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#14</span>
+      <span class="tool-name">Edit</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">21ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;replace_all&quot;: false,
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-ipe-jira-get-issue/JiraGetIssue/JiraGetIssue/JiraGetIssue.flow&quot;,
+  &quot;old_string&quot;: &quot;  \&quot;edges\&quot;: [],&quot;,
+  &quot;new_string&quot;: &quot;  \&quot;edges\&quot;: [\n    {\n      \&quot;id\&quot;: \&quot;e-start-get\&quot;,\n      \&quot;sourceNodeId\&quot;: \&quot;start\&quot;,\n      \&quot;sourcePortId\&quot;: \&quot;output\&quot;,\n      \&quot;targetNodeId\&quot;: \&quot;getIssue1\&quot;,\n      \&quot;targetPort\&quot;: \&quot;input\&quot;\n    },\n    {\n      \&quot;id\&quot;: \&quot;e-get-end\&quot;,\n      \&quot;sourceNodeId\&quot;: \&quot;getIssue1\&quot;,\n      \&quot;sourcePortId\&quot;: \&quot;output\&quot;,\n      \&quot;targetNodeId\&quot;: \&quot;end1\&quot;,\n      \&quot;targetPort\&quot;: \&quot;input\&quot;\n    }\n  ],&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>The file /work/output/artifacts/skill-flow-ipe-jira-get-issue/JiraGetIssue/JiraGetIssue/JiraGetIssue.flow has been updated successfully. (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#15</span>
+      <span class="tool-name">Edit</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">23ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;replace_all&quot;: false,
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-ipe-jira-get-issue/JiraGetIssue/JiraGetIssue/JiraGetIssue.flow&quot;,
+  &quot;old_string&quot;: &quot;  \&quot;definitions\&quot;: [\n    {\n      \&quot;nodeType\&quot;: \&quot;core.trigger.manual\&quot;,&quot;,
+  &quot;new_string&quot;: &quot;  \&quot;definitions\&quot;: [\n    {\n      \&quot;nodeType\&quot;: \&quot;core.control.end\&quot;,\n      \&quot;version\&quot;: \&quot;1.0\&quot;,\n      \&quot;category\&quot;: \&quot;control-flow\&quot;,\n      \&quot;description\&quot;: \&quot;Mark the end of a workflow path\&quot;,\n      \&quot;tags\&quot;: [\n        \&quot;control-flow\&quot;,\n        \&quot;end\&quot;,\n        \&quot;finish\&quot;,\n        \&quot;complete\&quot;\n      ],\n      \&quot;sortOrder\&quot;: 20,\n      \&quot;display\&quot;: {\n        \&quot;label\&quot;: \&quot;End\&quot;,\n        \&quot;icon\&quot;: \&quot;circle-check\&quot;,\n        \&quot;shape\&quot;: \&quot;circle… (466 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>The file /work/output/artifacts/skill-flow-ipe-jira-get-issue/JiraGetIssue/JiraGetIssue/JiraGetIssue.flow has been updated successfully. (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#16</span>
+      <span class="tool-name">Edit</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">27ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;replace_all&quot;: false,
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-ipe-jira-get-issue/JiraGetIssue/JiraGetIssue/JiraGetIssue.flow&quot;,
+  &quot;old_string&quot;: &quot;  \&quot;variables\&quot;: {\n    \&quot;nodes\&quot;: [&quot;,
+  &quot;new_string&quot;: &quot;  \&quot;variables\&quot;: {\n    \&quot;globals\&quot;: {\n      \&quot;out\&quot;: [\n        {\n          \&quot;id\&quot;: \&quot;issueSummary\&quot;,\n          \&quot;type\&quot;: \&quot;string\&quot;,\n          \&quot;description\&quot;: \&quot;The summary of the retrieved Jira issue\&quot;\n        },\n        {\n          \&quot;id\&quot;: \&quot;issueStatus\&quot;,\n          \&quot;type\&quot;: \&quot;string\&quot;,\n          \&quot;description\&quot;: \&quot;The status of the retrieved Jira issue\&quot;\n        }\n      ]\n    },\n    \&quot;nodes\&quot;: [&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>The file /work/output/artifacts/skill-flow-ipe-jira-get-issue/JiraGetIssue/JiraGetIssue/JiraGetIssue.flow has been updated successfully. (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#17</span>
+      <span class="tool-name">Edit</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">76ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;replace_all&quot;: false,
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-ipe-jira-get-issue/JiraGetIssue/JiraGetIssue/JiraGetIssue.flow&quot;,
+  &quot;old_string&quot;: &quot;    \&quot;nodes\&quot;: {\n      \&quot;start\&quot;: {&quot;,
+  &quot;new_string&quot;: &quot;    \&quot;nodes\&quot;: {\n      \&quot;end1\&quot;: {\n        \&quot;position\&quot;: {\n          \&quot;x\&quot;: 0,\n          \&quot;y\&quot;: 0\n        },\n        \&quot;size\&quot;: {\n          \&quot;width\&quot;: 96,\n          \&quot;height\&quot;: 96\n        },\n        \&quot;collapsed\&quot;: false\n      },\n      \&quot;start\&quot;: {&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>The file /work/output/artifacts/skill-flow-ipe-jira-get-issue/JiraGetIssue/JiraGetIssue/JiraGetIssue.flow has been updated successfully. (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#18</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-err">ERROR</span>
+      <span class="tool-duration">11.44s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;\\\nuip maestro flow node configure \&quot;JiraGetIssue.flow\&quot; \&quot;getIssue1\&quot; --detail \&quot;$(cat &lt;&lt;&#x27;JSON&#x27;\n{\n  \&quot;connectionId\&quot;: \&quot;f5273a4d-d492-4bcd-a106-5a20bf89a3ef\&quot;,\n  \&quot;folderKey\&quot;: \&quot;5da18ec0-7de1-4e57-aaf1-ddc8a369c199\&quot;,\n  \&quot;method\&quot;: \&quot;GETBYID\&quot;,\n  \&quot;endpoint\&quot;: \&quot;/curated_get_issue/{issueId}\&quot;,\n  \&quot;pathParameters\&quot;: {\n    \&quot;issueId\&quot;: \&quot;CE-164\&quot;\n  },\n  \&quot;queryParameters\&quot;: {\n    \&quot;project\&quot;: \&quot;CE\&quot;,\n    \&quot;issuetype\&quot;: \&quot;11457\&quot;\n  },\n… (352 more chars)&quot;,
+  &quot;description&quot;: &quot;Configure Jira Get Issue node, validate, and format the flow&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Exit code 1
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeConfigureSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;NodeId&quot;: &quot;getIssue1&quot;,
+    &quot;BindingsCreated&quot;: 2,
+    &quot;DetailPopulated&quot;: true
+  }
+}
+{
+  &quot;Result&quot;: &quot;Failure&quot;,
+  &quot;Message&quot;: &quot;Validation failed for /work/output/artifacts/skill-flow-ipe-jira-get-issue/JiraGetIssue/JiraGetIssue/JiraGetIssue.flow&quot;,
+  &quot;Instructions&quot;: &quot;Found 3 error(s):\n  - [error] [edges[0].sourcePort] Invalid input: expected string, received undefined\n  - [error] [edges[1].sourcePort] Invalid input: expected string, received undefined\n  - [error] [variables.globals] Invalid input: expected array, received object&quot;,
+  &quot;ErrorCode&quot;: &quot;unknown_error&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}</pre>
+    <h4>Error</h4><pre>Exit code 1
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeConfigureSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;NodeId&quot;: &quot;getIssue1&quot;,
+    &quot;BindingsCreated&quot;: 2,
+    &quot;DetailPopulated&quot;: true
+  }
+}
+{
+  &quot;Result&quot;: &quot;Failure&quot;,
+  &quot;Message&quot;: &quot;Validation failed for /work/output/artifacts/skill-flow-ipe-jira-get-issue/JiraGetIssue/JiraGetIssue/JiraGetIssue.flow&quot;,
+  &quot;Instructions&quot;: &quot;Found 3 error(s):\n  - [error] [edges[0].sourcePort] Invalid input: expected string, received undefined\n  - [error] [edges[1].sourcePort] Invalid input: expected string, received undefined\n  - [error] [variables.globals] Invalid input: expected array, received object&quot;,
+  &quot;ErrorCode&quot;: &quot;unknown_error&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}</pre>
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#19</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">42ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -n \&quot;sourcePort\\|globals\&quot; /home/azureuser/projects/skills/skills/uipath-maestro-flow/references/shared/file-format.md | head -60&quot;,
+  &quot;description&quot;: &quot;Check file-format for sourcePort and globals structure&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>230:  &quot;sourcePort&quot;: &quot;output&quot;,
+238:&gt; **Gotcha**: the source field is `sourcePort`, not `sourceHandle`. If you write `sourceHandle`, validation fails with `[error] [edges[N].sourcePort] Invalid input: expected string, received undefined` — the path identifies the offending edge entry exactly.
+304:The port is **not** listed in the registry&#x27;s `handleConfiguration`. Studio Web only exposes it when the source node has `inputs.errorHandlingEnabled: true`; when the flow contains an outgoing edge with `sourcePort: &quot;error&quot;` from that node, the serializer emits a BPMN boundary error event attached to the node. Because of this gate, `uip maestro flow validate` reports an error when a node has an outgoing `sourcePort: &quot;error&quot;` edge but `inputs.errorHandlingEnabled` is not `true` — so the inconsistency is caught before publish rather than surfacing as a hidden edge in Studio Web.
+323:# Add an outgoing edge with sourcePort: &quot;error&quot;
+416:      &quot;sourcePort&quot;: &quot;output&quot;,
+423:      &quot;sourcePort&quot;: &quot;success&quot;,</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#20</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">95ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -n \&quot;globals\\|\\\&quot;out\\\&quot;\&quot; /home/azureuser/projects/skills/skills/uipath-maestro-flow/references/shared/variables-and-expressions.md | head -40&quot;,
+  &quot;description&quot;: &quot;Check variable globals structure in variables doc&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>21:- [Workflow Variables (`globals`)](#workflow-variables-globals)
+26:- [Available Globals](#available-globals)
+42:    &quot;globals&quot;: [],
+51:| `globals` | Workflow-level variables: inputs, outputs, and state |
+57:## Workflow Variables (`globals`)
+59:Workflow variables are declared in `variables.globals`. Each has a **direction** that determines its role.
+74:  direction: &quot;in&quot; | &quot;out&quot; | &quot;inout&quot;
+101:  &quot;direction&quot;: &quot;out&quot;,
+283:    &quot;globals&quot;: [
+321:Workflow output variables (`direction: &quot;out&quot;`) must be mapped on End nodes. The End node&#x27;s `outputs` object maps each output variable ID to a source expression.
+533:- `document`, `window`, `console` — no DOM or browser globals
+576:2. Add the variable object to `variables.globals`
+619:    &quot;globals&quot;: [
+636:        &quot;direction&quot;: &quot;out&quot;,</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#21</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">7ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-ipe-jira-get-issue/JiraGetIssue/JiraGetIssue/JiraGetIssue.flow&quot;,
+  &quot;offset&quot;: 55,
+  &quot;limit&quot;: 60
+}</pre>
+    <h4>Result</h4>
+    <pre>55	          },
+56	          &quot;configuration&quot;: &quot;=jsonString:{\&quot;essentialConfiguration\&quot;:{\&quot;instanceParameters\&quot;:{\&quot;connectorKey\&quot;:\&quot;uipath-atlassian-jira\&quot;,\&quot;objectName\&quot;:\&quot;curated_get_issue\&quot;,\&quot;httpMethod\&quot;:\&quot;GETBYID\&quot;,\&quot;activityType\&quot;:\&quot;Curated\&quot;,\&quot;version\&quot;:\&quot;1.0.0\&quot;,\&quot;supportsStreaming\&quot;:false,\&quot;subType\&quot;:\&quot;standard\&quot;},\&quot;objectName\&quot;:\&quot;curated_get_issue\&quot;,\&quot;operation\&quot;:\&quot;retrieve\&quot;,\&quot;httpMethod\&quot;:\&quot;GET\&quot;,\&quot;path\&quot;:\&quot;/curated_get_issue/{issueId}\&quot;,\&quot;packageVersion\&quot;:\&quot;1.0.0\&quot;,\&quot;connectorVersion\&quot;:null,\&quot;executionType\&quot;:null,\&quot;customFieldsRequestDetails\&quot;:{\&quot;objectActionName\&quot;:\&quot;GenerateSchema\&quot;,\&quot;parameterValues\&quot;:[[\&quot;project\&quot;,\&quot;CE\&quot;],[\&quot;issuetype\&quot;,\&quot;11457\&quot;]]},\&quot;unifiedTypesCompatible\&quot;:true}}&quot;
+57	        }
+58	      }
+59	    }
+60	  ],
+61	  &quot;edges&quot;: [
+62	    {
+63	      &quot;id&quot;: &quot;e-start-get&quot;,
+64	      &quot;sourceNodeId&quot;: &quot;start&quot;,
+65	      &quot;sourcePortId&quot;: &quot;output&quot;,
+66	      &quot;targetNodeId&quot;: &quot;getIssue1&quot;,
+67	      &quot;targetPort&quot;: &quot;input&quot;
+68	    },
+69	    {
+70	      &quot;id&quot;: &quot;e-get-end&quot;,
+71	      &quot;sourceNodeId&quot;: &quot;getIssue1&quot;,
+72	      &quot;sourcePortId&quot;: &quot;output&quot;,
+73	      &quot;targetNodeId&quot;: &quot;end1&quot;,
+74	      &quot;targetPort&quot;: &quot;input&quot;
+75	    }
+76	  ],
+77	  &quot;definitions&quot;: [
+78	    {
+79	      &quot;nodeType&quot;: &quot;core
+
+… (truncated, 884 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#22</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">8ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-ipe-jira-get-issue/JiraGetIssue/JiraGetIssue/JiraGetIssue.flow&quot;,
+  &quot;offset&quot;: 295,
+  &quot;limit&quot;: 50
+}</pre>
+    <h4>Result</h4>
+    <pre>295	        &quot;title&quot;: &quot;Connector configuration&quot;,
+296	        &quot;sections&quot;: [
+297	          {
+298	            &quot;id&quot;: &quot;connector&quot;,
+299	            &quot;title&quot;: &quot;Connector&quot;,
+300	            &quot;collapsible&quot;: true,
+301	            &quot;defaultExpanded&quot;: true,
+302	            &quot;fields&quot;: [
+303	              {
+304	                &quot;label&quot;: &quot;&quot;,
+305	                &quot;name&quot;: &quot;inputs.detail&quot;,
+306	                &quot;type&quot;: &quot;custom&quot;,
+307	                &quot;component&quot;: &quot;dap-config&quot;,
+308	                &quot;componentProps&quot;: {
+309	                  &quot;connectorDetail&quot;: {
+310	                    &quot;isAppActivity&quot;: false,
+311	                    &quot;packageId&quot;: &quot;196560&quot;,
+312	                    &quot;svgIconUrl&quot;: &quot;icons/34ef2aa2837dd167dab37718dbff7bb5eb83f8c210be71fc25ac55a67aa6de1b.svg&quot;,
+313	                    &quot;displayName&quot;: &quot;Get Issue&quot;,
+314	                    &quot;assemblyQualifiedName&quot;: &quot;UiPath.IntegrationService.Activities.Runtime.Activities.ConnectorActivity, UiPath.IntegrationService.Activities.Runtime, Version=1.30.0.0, Culture=neutral, PublicKeyToken=null&quot;,
+315	                    &quot;description&quot;: &quot;Retrieve detailed information of a Jira issue, including assignee, reporter, and project.&quot;,
+316	                    &quot;category&quot;: &quot;&quot;,
+31
+
+… (truncated, 1349 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#23</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">17ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-ipe-jira-get-issue/JiraGetIssue/JiraGetIssue/JiraGetIssue.flow&quot;,
+  &quot;offset&quot;: 380,
+  &quot;limit&quot;: 80
+}</pre>
+    <h4>Result</h4>
+    <pre>380	                &quot;description&quot;: &quot;HTTP status code&quot;
+381	              }
+382	            },
+383	            &quot;additionalProperties&quot;: false
+384	          }
+385	        }
+386	      },
+387	      &quot;debug&quot;: {
+388	        &quot;runtime&quot;: &quot;bpmnEngine&quot;
+389	      }
+390	    }
+391	  ],
+392	  &quot;runtime&quot;: &quot;maestro&quot;,
+393	  &quot;bindings&quot;: [
+394	    {
+395	      &quot;id&quot;: &quot;bdAlRqFl0&quot;,
+396	      &quot;name&quot;: &quot;uipath-atlassian-jira connection&quot;,
+397	      &quot;type&quot;: &quot;string&quot;,
+398	      &quot;resource&quot;: &quot;connection&quot;,
+399	      &quot;resourceKey&quot;: &quot;f5273a4d-d492-4bcd-a106-5a20bf89a3ef&quot;,
+400	      &quot;propertyAttribute&quot;: &quot;ConnectionId&quot;,
+401	      &quot;default&quot;: &quot;f5273a4d-d492-4bcd-a106-5a20bf89a3ef&quot;
+402	    },
+403	    {
+404	      &quot;id&quot;: &quot;bHKZ41u0Y&quot;,
+405	      &quot;name&quot;: &quot;FolderKey&quot;,
+406	      &quot;type&quot;: &quot;string&quot;,
+407	      &quot;resource&quot;: &quot;connection&quot;,
+408	      &quot;resourceKey&quot;: &quot;f5273a4d-d492-4bcd-a106-5a20bf89a3ef&quot;,
+409	      &quot;propertyAttribute&quot;: &quot;FolderKey&quot;,
+410	      &quot;default&quot;: &quot;5da18ec0-7de1-4e57-aaf1-ddc8a369c199&quot;
+411	    }
+412	  ],
+413	  &quot;variables&quot;: {
+414	    &quot;globals&quot;: {
+415	      &quot;out&quot;: [
+416	        {
+417	          &quot;id&quot;: &quot;issueSummary&quot;,
+418	          &quot;type&quot;: &quot;string&quot;,
+419	          &quot;description&quot;: &quot;The summary of the retrieved Jira issue&quot;
+420	  
+
+… (truncated, 1188 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#24</span>
+      <span class="tool-name">Edit</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">18ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;replace_all&quot;: false,
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-ipe-jira-get-issue/JiraGetIssue/JiraGetIssue/JiraGetIssue.flow&quot;,
+  &quot;old_string&quot;: &quot;    {\n      \&quot;id\&quot;: \&quot;e-start-get\&quot;,\n      \&quot;sourceNodeId\&quot;: \&quot;start\&quot;,\n      \&quot;sourcePortId\&quot;: \&quot;output\&quot;,\n      \&quot;targetNodeId\&quot;: \&quot;getIssue1\&quot;,\n      \&quot;targetPort\&quot;: \&quot;input\&quot;\n    },\n    {\n      \&quot;id\&quot;: \&quot;e-get-end\&quot;,\n      \&quot;sourceNodeId\&quot;: \&quot;getIssue1\&quot;,\n      \&quot;sourcePortId\&quot;: \&quot;output\&quot;,\n      \&quot;targetNodeId\&quot;: \&quot;end1\&quot;,\n      \&quot;targetPort\&quot;: \&quot;input\&quot;\n    }&quot;,
+  &quot;new_string&quot;: &quot;    {\n      \&quot;id\&quot;: \&quot;e-start-get\&quot;,\n      \&quot;sourceNodeId\&quot;: \&quot;start\&quot;,\n      \&quot;sourcePort\&quot;: \&quot;output\&quot;,\n      \&quot;targetNodeId\&quot;: \&quot;getIssue1\&quot;,\n      \&quot;targetPort\&quot;: \&quot;input\&quot;\n    },\n    {\n      \&quot;id\&quot;: \&quot;e-get-end\&quot;,\n      \&quot;sourceNodeId\&quot;: \&quot;getIssue1\&quot;,\n      \&quot;sourcePort\&quot;: \&quot;output\&quot;,\n      \&quot;targetNodeId\&quot;: \&quot;end1\&quot;,\n      \&quot;targetPort\&quot;: \&quot;input\&quot;\n    }&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>The file /work/output/artifacts/skill-flow-ipe-jira-get-issue/JiraGetIssue/JiraGetIssue/JiraGetIssue.flow has been updated successfully. (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#25</span>
+      <span class="tool-name">Edit</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">61ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;replace_all&quot;: false,
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-ipe-jira-get-issue/JiraGetIssue/JiraGetIssue/JiraGetIssue.flow&quot;,
+  &quot;old_string&quot;: &quot;    \&quot;globals\&quot;: {\n      \&quot;out\&quot;: [\n        {\n          \&quot;id\&quot;: \&quot;issueSummary\&quot;,\n          \&quot;type\&quot;: \&quot;string\&quot;,\n          \&quot;description\&quot;: \&quot;The summary of the retrieved Jira issue\&quot;\n        },\n        {\n          \&quot;id\&quot;: \&quot;issueStatus\&quot;,\n          \&quot;type\&quot;: \&quot;string\&quot;,\n          \&quot;description\&quot;: \&quot;The status of the retrieved Jira issue\&quot;\n        }\n      ]\n    },&quot;,
+  &quot;new_string&quot;: &quot;    \&quot;globals\&quot;: [\n      {\n        \&quot;id\&quot;: \&quot;issueSummary\&quot;,\n        \&quot;type\&quot;: \&quot;string\&quot;,\n        \&quot;direction\&quot;: \&quot;out\&quot;,\n        \&quot;description\&quot;: \&quot;The summary of the retrieved Jira issue\&quot;\n      },\n      {\n        \&quot;id\&quot;: \&quot;issueStatus\&quot;,\n        \&quot;type\&quot;: \&quot;string\&quot;,\n        \&quot;direction\&quot;: \&quot;out\&quot;,\n        \&quot;description\&quot;: \&quot;The status of the retrieved Jira issue\&quot;\n      }\n    ],&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>The file /work/output/artifacts/skill-flow-ipe-jira-get-issue/JiraGetIssue/JiraGetIssue/JiraGetIssue.flow has been updated successfully. (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#26</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">11.35s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow validate \&quot;JiraGetIssue.flow\&quot; --output json 2&gt;/dev/null &amp;&amp; \\\nuip maestro flow format \&quot;JiraGetIssue.flow\&quot; --output json 2&gt;/dev/null&quot;,
+  &quot;description&quot;: &quot;Validate and format the flow after fixes&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FlowValidate&quot;,
+  &quot;Data&quot;: {
+    &quot;File&quot;: &quot;/work/output/artifacts/skill-flow-ipe-jira-get-issue/JiraGetIssue/JiraGetIssue/JiraGetIssue.flow&quot;,
+    &quot;Status&quot;: &quot;Valid&quot;,
+    &quot;Warnings&quot;: &quot;2 warning(s):\n  - [nodes[end1].outputs.issueSummary.source] [MISSING_OUTPUT_MAPPING] \&quot;End\&quot; is missing output mapping for \&quot;issueSummary\&quot;\n  - [nodes[end1].outputs.issueStatus.source] [MISSING_OUTPUT_MAPPING] \&quot;End\&quot; is missing output mapping for \&quot;issueStatus\&quot;&quot;
+  }
+}
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FlowFormat&quot;,
+  &quot;Data&quot;: {
+    &quot;File&quot;: &quot;JiraGetIssue.flow&quot;,
+    &quot;NodesTotal&quot;: 3,
+    &quot;EdgesTotal&quot;: 2,
+    &quot;NodesRepositioned&quot;: 2,
+    &quot;NodesResized&quot;: 2,
+    &quot;SubflowsTidied&quot;: 0,
+    &quot;VariableCount&quot;: 3
+  },
+  &quot;Instructions&quot;: &quot;Repositioned 2 of 3 nodes. Set canonical size on 2 node(s)&quot;
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#27</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">156ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 -c \&quot;\nimport json\ndata = json.loads(open(&#x27;/work/output/artifacts/skill-flow-ipe-jira-get-issue/JiraGetIssue/JiraGetIssue/JiraGetIssue.flow&#x27;).read())\nend_node = next(n for n in data[&#x27;nodes&#x27;] if n[&#x27;id&#x27;] == &#x27;end1&#x27;)\nprint(&#x27;End node outputs:&#x27;, json.dumps(end_node.get(&#x27;outputs&#x27;, {}), indent=2))\nprint(&#x27;Globals:&#x27;, json.dumps(data[&#x27;variables&#x27;][&#x27;globals&#x27;], indent=2))\n\&quot;&quot;,
+  &quot;description&quot;: &quot;Check what outputs the End node has vs what globals expect&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>End node outputs: {
+  &quot;issueSummary&quot;: &quot;=js:$vars.getIssue1.output.fields.summary&quot;,
+  &quot;issueStatus&quot;: &quot;=js:$vars.getIssue1.output.fields.status.name&quot;
+}
+Globals: [
+  {
+    &quot;id&quot;: &quot;issueSummary&quot;,
+    &quot;type&quot;: &quot;string&quot;,
+    &quot;direction&quot;: &quot;out&quot;,
+    &quot;description&quot;: &quot;The summary of the retrieved Jira issue&quot;
+  },
+  {
+    &quot;id&quot;: &quot;issueStatus&quot;,
+    &quot;type&quot;: &quot;string&quot;,
+    &quot;direction&quot;: &quot;out&quot;,
+    &quot;description&quot;: &quot;The status of the retrieved Jira issue&quot;
+  }
+]</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#28</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">34ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -A 30 \&quot;End node.*output\\|outputs.*End\\|outputs.*mapping\\|end.*outputs\&quot; /home/azureuser/projects/skills/skills/uipath-maestro-flow/references/shared/variables-and-expressions.md | head -60&quot;,
+  &quot;description&quot;: &quot;Check End node outputs format requirements&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Workflow output variables (`direction: &quot;out&quot;`) must be mapped on End nodes. The End node&#x27;s `outputs` object maps each output variable ID to a source expression.
+
+### Structure
+
+```json
+{
+  &quot;id&quot;: &quot;end1&quot;,
+  &quot;type&quot;: &quot;core.control.end&quot;,
+  &quot;typeVersion&quot;: &quot;1.0&quot;,
+  &quot;display&quot;: { &quot;label&quot;: &quot;End&quot; },
+  &quot;inputs&quot;: {},
+  &quot;outputs&quot;: {
+    &quot;totalAmount&quot;: {
+      &quot;source&quot;: &quot;=js:$vars.calculateTotal.output.amount&quot;
+    },
+    &quot;summary&quot;: {
+      &quot;source&quot;: &quot;=js:$vars.formatResult.output.text&quot;
+    }
+  }
+}
+```
+
+&gt; **Every `out` variable must have a mapping on every End node** that the flow can reach. Missing mappings cause runtime errors.
+
+---
+
+## Expression System
+
+Flow uses a **Jint-based JavaScript engine** (ES2020 subset) for expressions. There are two expression formats.
+
+### `=js:` Expressions (Full JavaScript)
+--
+### Mapping outputs on End nodes
+
+For every `out` variable, add a mapping in each End node&#x27;s `outputs`:
+
+```json
+&quot;outputs&quot;: {
+  &quot;result&quot;: {
+    &quot;source&quot;: &quot;=js:$vars.processData.output&quot;
+  }
+}
+```
+
+---
+
+## Complete Example
+
+A flow with input, state, and output variables:
+
+```json
+{
+  &quot;variables&quot;: {
+    &quot;globals&quot;: [
+      {
+        &quot;id&quot;: &quot;inputItems&quot;,
+        &quot;direction&quot;: &quot;in&quot;,
+        &quot;type&quot;:
+
+… (truncated, 66 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#29</span>
+      <span class="tool-name">Edit</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">24ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;replace_all&quot;: false,
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-ipe-jira-get-issue/JiraGetIssue/JiraGetIssue/JiraGetIssue.flow&quot;,
+  &quot;old_string&quot;: &quot;      \&quot;outputs\&quot;: {\n        \&quot;issueSummary\&quot;: \&quot;=js:$vars.getIssue1.output.fields.summary\&quot;,\n        \&quot;issueStatus\&quot;: \&quot;=js:$vars.getIssue1.output.fields.status.name\&quot;\n      }&quot;,
+  &quot;new_string&quot;: &quot;      \&quot;outputs\&quot;: {\n        \&quot;issueSummary\&quot;: {\n          \&quot;source\&quot;: \&quot;=js:$vars.getIssue1.output.fields.summary\&quot;\n        },\n        \&quot;issueStatus\&quot;: {\n          \&quot;source\&quot;: \&quot;=js:$vars.getIssue1.output.fields.status.name\&quot;\n        }\n      }&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>The file /work/output/artifacts/skill-flow-ipe-jira-get-issue/JiraGetIssue/JiraGetIssue/JiraGetIssue.flow has been updated successfully. (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#30</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">11.31s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow validate \&quot;JiraGetIssue.flow\&quot; --output json 2&gt;/dev/null &amp;&amp; \\\nuip maestro flow format \&quot;JiraGetIssue.flow\&quot; --output json 2&gt;/dev/null&quot;,
+  &quot;description&quot;: &quot;Validate and format after End node output mapping fix&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FlowValidate&quot;,
+  &quot;Data&quot;: {
+    &quot;File&quot;: &quot;/work/output/artifacts/skill-flow-ipe-jira-get-issue/JiraGetIssue/JiraGetIssue/JiraGetIssue.flow&quot;,
+    &quot;Status&quot;: &quot;Valid&quot;
+  }
+}
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FlowFormat&quot;,
+  &quot;Data&quot;: {
+    &quot;File&quot;: &quot;JiraGetIssue.flow&quot;,
+    &quot;NodesTotal&quot;: 3,
+    &quot;EdgesTotal&quot;: 2,
+    &quot;NodesRepositioned&quot;: 0,
+    &quot;NodesResized&quot;: 0,
+    &quot;SubflowsTidied&quot;: 0,
+    &quot;VariableCount&quot;: 5
+  },
+  &quot;Instructions&quot;: &quot;All nodes already in optimal positions&quot;
+}</pre>
+    
+  </div>
+</details>
+
+</div>
+
+<h2>Command Telemetry</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Total</div><div class="value">31</div></div>
+    <div class="stat"><div class="label">Successful</div><div class="value">29 (94%)</div></div>
+    <div class="stat"><div class="label">Failed</div><div class="value">2</div></div>
+    <div class="stat"><div class="label">Avg / cmd</div><div class="value">3.70s</div></div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 2fr;gap:16px;margin-top:12px">
+    <div>
+      <h4>By Tool</h4>
+      <table>
+        <thead><tr><th>Tool</th><th>Count</th></tr></thead>
+        <tbody><tr><td class='mono'>Bash</td><td>13</td></tr><tr><td class='mono'>Read</td><td>9</td></tr><tr><td class='mono'>Edit</td><td>8</td></tr><tr><td class='mono'>Skill</td><td>1</td></tr></tbody>
+      </table>
+    </div>
+    <div>
+      <h4>Slowest</h4>
+      <table>
+        <thead><tr><th>Tool</th><th>Duration</th><th>Parameters</th></tr></thead>
+        <tbody><tr><td class='mono'>Bash</td><td>24.87s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro flow registry get core.co...</td></tr><tr><td class='mono'>Bash</td><td>22.37s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip login status --output json 2&gt;/dev...</td></tr><tr><td class='mono'>Bash</td><td>18.95s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;\\\nls *.uipx */*.uipx 2&gt;/dev/null &amp;&amp;...</td></tr><tr><td class='mono'>Bash</td><td>11.44s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;\\\nuip maestro flow node configure &quot;...</td></tr><tr><td class='mono'>Bash</td><td>11.35s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro flow validate &quot;JiraGetIss...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+  <p><strong>Most Common Pattern:</strong> <code>Bash → Bash → Bash</code></p><p><strong>Skill Tool Invoked:</strong> 1 time(s)</p>
+</div>
+
+<h2>Generation Metrics</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Total Latency</div><div class="value">6m 43s</div></div>
+    <div class="stat"><div class="label">Turns</div><div class="value">1</div></div>
+    <div class="stat"><div class="label">Assistant Turns</div><div class="value">50</div></div>
+    <div class="stat"><div class="label">Avg Turn Latency</div><div class="value">6m 13s</div></div>
+    
+  </div>
+</div>
+
+<h2>Token Usage</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Input (uncached)</div><div class="value">23</div></div>
+    <div class="stat"><div class="label">Output</div><div class="value">18,765</div></div>
+    <div class="stat"><div class="label">Cache Write</div><div class="value">86,166</div></div>
+    <div class="stat"><div class="label">Cache Read</div><div class="value">1,671,214</div></div>
+    <div class="stat"><div class="label">Total</div><div class="value">1,776,168</div></div>
+    <div class="stat"><div class="label">Cost</div><div class="value">$1.1060</div></div>
+  </div>
+</div>
+
+<h2>Agent Settings</h2>
+<div class="card" style="padding:0">
+  <table>
+    <tbody><tr><td class='mono dim'>Permission Mode</td><td>acceptEdits</td></tr><tr><td class='mono dim'>Allowed Tools</td><td>Skill, Bash, Read, Write, Edit, Glob, Grep</td></tr><tr><td class='mono dim'>Model</td><td>us.anthropic.claude-sonnet-4-6</td></tr><tr><td class='mono dim'>Max Turns</td><td>120</td></tr><tr><td class='mono dim'>System Prompt</td><td>You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted. </td></tr><tr><td class='mono dim'>Plugins</td><td>/home/azureuser/projects/skills</td></tr></tbody>
+  </table>
+</div>
+
+<h2>Environment</h2>
+<div class="card" style="padding:0">
+  <table>
+    <tbody><tr><td class='mono dim'>git_commit</td><td>unknown</td></tr><tr><td class='mono dim'>skills_git_commit</td><td>unknown</td></tr><tr><td class='mono dim'>cli_version</td><td>1.199.0-dev.7970</td></tr><tr><td class='mono dim'>tool_plugins</td><td>{&#x27;admin-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;agent-tool&#x27;: &#x27;1.199.0-dev.7965&#x27;, &#x27;agenthub-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;aops-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;api-workflow-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;codedagent-tool&#x27;: &#x27;1.199.0-dev.7965&#x27;, &#x27;codedapp-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;coder-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;context-grounding-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;conversational-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;data-fabric-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;docsai-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;functions-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;gov-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;insights-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;integrationservice-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;ixp-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;llm-gateway-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;llmgw-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;maestro-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;orchestrator-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;platform-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;pm-tool&#x27;: &#x27;1.199.0-dev.7969&#x27;, &#x27;rpa-legacy-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;rpa-tool&#x27;: &#x27;1.199.0-dev.20260722.4&#x27;, &#x27;solution-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;tasks-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;test-manager-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;traces-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;vertical-solutions-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;}</td></tr><tr><td class='mono dim'>coder_eval</td><td>0.8.8</td></tr><tr><td class='mono dim'>claude_code_cli</td><td>2.1.177 (Claude Code)</td></tr><tr><td class='mono dim'>uv</td><td>uv 0.11.28 (x86_64-unknown-linux-gnu)</td></tr><tr><td class='mono dim'>anthropic</td><td>0.102.0</td></tr><tr><td class='mono dim'>openai</td><td>2.47.0</td></tr><tr><td class='mono dim'>pydantic</td><td>2.12.5</td></tr><tr><td class='mono dim'>api_routing</td><td>aws_bedrock</td></tr><tr><td class='mono dim'>aws_region</td><td>us-east-2</td></tr><tr><td class='mono dim'>bedrock_model</td><td>us.anthropic.claude-sonnet-4-6</td></tr></tbody>
+  </table>
+</div>
+
+<footer>Generated by coder_eval · 2026-07-24T17:47:55</footer>
+</div>
+<script>
+function toggleTheme() {
+  document.documentElement.classList.toggle('light');
+  try {
+    const mode = document.documentElement.classList.contains('light') ? 'light' : 'dark';
+    localStorage.setItem('coder-eval-theme', mode);
+  } catch (e) { /* ignore */ }
+}
+(function() {
+  try {
+    if (localStorage.getItem('coder-eval-theme') === 'light') {
+      document.documentElement.classList.add('light');
+    }
+  } catch (e) { /* ignore */ }
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,12 @@
+{
+    "DocVersion": "1.0.0",
+    "StudioMinVersion": "2025.10.0",
+    "SolutionId": "e92a6007-0ce9-4a97-5baf-08defdfbd63a",
+    "Projects": [
+        {
+            "Type": "Flow",
+            "ProjectRelativePath": "EscalationSlackAlert/project.uiproj",
+            "Id": "ba753c61-addf-4483-b59c-e50965f757dc"
+        }
+    ]
+}

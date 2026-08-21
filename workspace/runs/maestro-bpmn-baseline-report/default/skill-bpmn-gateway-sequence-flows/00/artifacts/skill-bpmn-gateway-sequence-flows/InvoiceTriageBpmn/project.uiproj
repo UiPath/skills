@@ -1,0 +1,11 @@
+{
+  "name": "InvoiceTriageBpmn",
+  "description": "Invoice triage process: routes high-value invoices to manager review and low-value invoices to auto approval, then runs parallel follow-up tasks.",
+  "projectVersion": "1.0.0",
+  "runtimeOptions": {
+    "autoDispose": false
+  },
+  "targetFramework": "Windows",
+  "projectType": "ProcessOrchestration",
+  "main": "InvoiceTriageBpmn.bpmn"
+}

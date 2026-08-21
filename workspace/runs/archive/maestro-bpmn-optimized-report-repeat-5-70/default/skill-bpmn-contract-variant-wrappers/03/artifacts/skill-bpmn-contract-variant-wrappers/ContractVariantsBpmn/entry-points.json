@@ -1,0 +1,65 @@
+{
+  "entryPoints": [
+    {
+      "id": "EP_Main",
+      "filePath": "/content/ContractVariantsBpmn.bpmn#Start_1",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "ScriptResult": {
+            "type": "string"
+          },
+          "AgentJobResult": {
+            "type": "string"
+          },
+          "A2AResponse": {
+            "type": "string"
+          },
+          "ApiJobResult": {
+            "type": "string"
+          },
+          "BizRulesResult": {
+            "type": "string"
+          },
+          "QueueItem": {
+            "type": "string"
+          },
+          "QueueItemWait": {
+            "type": "string"
+          },
+          "AgenticResult": {
+            "type": "string"
+          },
+          "AgenticAsyncResult": {
+            "type": "string"
+          },
+          "CaseResult": {
+            "type": "string"
+          },
+          "CaseAsyncResult": {
+            "type": "string"
+          },
+          "WaitEventResult": {
+            "type": "string"
+          },
+          "SendMsgResult": {
+            "type": "string"
+          },
+          "CaseSchedResult": {
+            "type": "string"
+          },
+          "CaseGuardResult": {
+            "type": "string"
+          },
+          "CaseRulesResult": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  ]
+}

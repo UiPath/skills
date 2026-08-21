@@ -1,0 +1,1690 @@
+{
+  "task_id": "skill-flow-hitl-quality-result-downstream",
+  "task_description": "Quality test: agent correctly references the HITL node's output via $vars.<nodeId>.output in a downstream node. Tests that the agent knows the output variable path and wires it into a decision or script node.\n",
+  "variant_id": "default",
+  "agent_type": "claude-code",
+  "model_used": "claude-sonnet-4-6",
+  "started_at": "2026-07-24T17:36:59.188562",
+  "completed_at": "2026-07-24T17:40:04.943306",
+  "duration_seconds": 185.75476694107056,
+  "final_status": "SUCCESS",
+  "max_turns_exhausted": false,
+  "weighted_score": 1.0,
+  "iteration_count": 1,
+  "success_criteria_results": [
+    {
+      "result_kind": "basic",
+      "criterion_type": "run_command",
+      "description": "uip flow validate passes",
+      "score": 1.0,
+      "details": "Command: uip maestro flow validate ExpenseApproval/ExpenseApproval/ExpenseApproval.flow --output json\nExit code: 0 (expected: 0)\nStdout:\n{\n  \"Result\": \"Success\",\n  \"Code\": \"FlowValidate\",\n  \"Data\": {\n    \"File\": \"/work/output/artifacts/skill-flow-hitl-quality-result-downstream/ExpenseApproval/ExpenseApproval/ExpenseApproval.flow\",\n    \"Status\": \"Valid\"\n  }\n}\n\nStderr:\n[ManifestClient] fetchDynamicNodes ok: total=207 agent context nodes=2 external agent nodes=6 orchestrator nodes=158 IXP nodes=41\n",
+      "error": null,
+      "pass_threshold": 1.0,
+      "gating": true
+    },
+    {
+      "result_kind": "basic",
+      "criterion_type": "file_contains",
+      "description": "Flow contains inline HITL node",
+      "score": 1.0,
+      "details": "Includes: 1/1 found; Score: 1.00",
+      "error": null,
+      "pass_threshold": 1.0,
+      "gating": true
+    },
+    {
+      "result_kind": "basic",
+      "criterion_type": "file_contains",
+      "description": "Flow references the HITL output variable",
+      "score": 1.0,
+      "details": "Includes: 2/2 found; Score: 1.00",
+      "error": null,
+      "pass_threshold": 1.0,
+      "gating": true
+    },
+    {
+      "result_kind": "basic",
+      "criterion_type": "file_contains",
+      "description": "Flow has a boolean output field for approved",
+      "score": 1.0,
+      "details": "Includes: 1/1 found; Score: 1.00",
+      "error": null,
+      "pass_threshold": 1.0,
+      "gating": true
+    }
+  ],
+  "iterations": [
+    {
+      "iteration": 1,
+      "user_input": "Your working directory is: /work/output/artifacts/skill-flow-hitl-quality-result-downstream\n\nBuild a UiPath Flow named \"ExpenseApproval\" that:\n\n1. Manual trigger starts the flow\n2. HITL node — expense review:\n     - Reviewer sees: expense amount, requester name, category (all read-only)\n     - Reviewer fills in: approved (boolean), comments (text, optional)\n     - Outcomes: Approve (primary), Reject\n3. Script node — reads the reviewer's decision from the HITL output and\n   logs: \"Decision: <approved value>, Comments: <comments value>\"\n   The script must reference the HITL output via $vars.<nodeId>.output —\n   e.g. $vars.<nodeId>.output.approved and $vars.<nodeId>.output.comments,\n   where <nodeId> is the HITL node's id.\n4. End node\n\nWire: Trigger -> HITL ->|completed| Script -> End\n\nUse the inline quickform node (uipath.human-in-the-loop.quick-form).\nValidate the flow after building.\n",
+      "agent_output": "[ASSISTANT] I'll follow the skill steps in order. Let me start by resolving the `uip` binary and reading the QuickForm reference — both in parallel.\n[ASSISTANT] Good. Now let me find the `uip` binary properly and check if there's an existing `.flow` file in the working directory:\n[ASSISTANT] The solution and flow project are scaffolded. Now let me read the generated `.flow` file:\n[ASSISTANT] Now I have all the context I need. Let me build the complete flow JSON with all four nodes — manual trigger (existing), HITL QuickForm, script, and end — then wire them up and validate.\n[ASSISTANT] Now I'll write the complete `.flow` file. Let me carefully construct it:\n\n- **HITL node id:** `expenseReview1`  \n- **Script node id:** `logDecision1`  \n- **End node id:** `end1`  \n- HITL fields: `amount` (number, input), `requestername` (string, input), `category` (string, input), `approved` (boolean, output, required), `comments` (string, output, optional)  \n- Outcomes: `Approve` (primary), `Reject`  \n- Script references: `$vars.expenseReview1.output.approved` and `$vars.expenseReview1.output.comments`\n[ASSISTANT] Now validate:\n[ASSISTANT] ✅ **Validation passed — `Status: \"Valid\"`**\n[ASSISTANT] The **ExpenseApproval** flow is built and validated. Here's a full summary:\n\n---\n\n## What Was Built\n\n### Flow: `ExpenseApproval`\n**File:** `ExpenseApproval/ExpenseApproval/ExpenseApproval.flow`  \n**Validation:** ✅ `Status: \"Valid\"`\n\n---\n\n### Nodes\n\n| # | ID | Type | Label |\n|---|---|---|---|\n| 1 | `start` | `core.trigger.manual` | Manual trigger |\n| 2 | `expenseReview1` | `uipath.human-in-the-loop.quick-form` | Expense Review |\n| 3 | `logDecision1` | `core.script` | Log Decision |\n| 4 | `end1` | `core.end` | End |\n\n---\n\n### HITL Schema — `expenseReview1`\n\n**What the reviewer sees (read-only inputs):**\n\n| Field ID | Label | Type | Bound to |\n|---|---|---|---|\n| `amount` | Expense Amount | number | `vars.start.output.amount` |\n| `requestername` | Requester Name | string | `vars.start.output.requesterName` |\n| `category` | Category | string | `vars.start.output.category` |\n\n**What the reviewer fills in (outputs):**\n\n| Field ID | Label | Type | Required |\n|---|---|---|---|\n| `approved` | Approved | boolean | ✅ required |\n| `comments` | Comments | string | optional |\n\n**Outcomes:**\n- **Approve** (primary, `action: Continue`)\n- **Reject** (`action: End`)\n\n---\n\n### Edges\n\n```\nstart  --[output]-->    expenseReview1  --[completed]-->  logDecision1  --[output]-->  end1\n```\n\nThe HITL node is wired on the `completed` handle — the only valid handle for QuickForm nodes.\n\n---\n\n### Script Node (`logDecision1`)\n\n```javascript\nconst approved  = $vars.expenseReview1.output.approved;\nconst comments  = $vars.expenseReview1.output.comments;\nconsole.log(`Decision: ${approved}, Comments: ${comments}`);\nreturn { approved, comments };\n```\n\nBoth fields are accessed via `$vars.<nodeId>.output.<fieldId>` — the correct runtime path using field IDs, not variable alias names.\n\n---\n\n### Runtime Variables Available Downstream\n\n| Variable | Type | Contents |\n|---|---|---|\n| `$vars.expenseReview1.output` | object | Full task result (`approved`, `comments`, `Action`) |\n| `$vars.expenseReview1.output.approved` | boolean | Reviewer's approval decision |\n| `$vars.expenseReview1.output.comments` | string | Reviewer's optional comments |\n| `$vars.expenseReview1.status` | string | Selected outcome name (`\"Approve\"` or `\"Reject\"`) |\n\n---\n\n**Production readiness:** QuickForm is inline — no additional build steps. Once the solution is packaged with `uip solution pack . ./out` and published with `uip solution publish`, the flow is ready to deploy.\n[RESULT - SUCCESS] The **ExpenseApproval** flow is built and validated. Here's a full summary:\n\n---\n\n## What Was Built\n\n### Flow: `ExpenseApproval`\n**File:** `ExpenseApproval/ExpenseApproval/ExpenseApproval.flow`  \n**Validation:** ✅ `Status: \"Valid\"`\n\n---\n\n### Nodes\n\n| # | ID | Type | Label |\n|---|---|---|---|\n| 1 | `start` | `core.trigger.manual` | Manual trigger |\n| 2 | `expenseReview1` | `uipath.human-in-the-loop.quick-form` | Expense Review |\n| 3 | `logDecision1` | `core.script` | Log Decision |\n| 4 | `end1` | `core.end` | End |\n\n---\n\n### HITL Schema — `expenseReview1`\n\n**What the reviewer sees (read-only inputs):**\n\n| Field ID | Label | Type | Bound to |\n|---|---|---|---|\n| `amount` | Expense Amount | number | `vars.start.output.amount` |\n| `requestername` | Requester Name | string | `vars.start.output.requesterName` |\n| `category` | Category | string | `vars.start.output.category` |\n\n**What the reviewer fills in (outputs):**\n\n| Field ID | Label | Type | Required |\n|---|---|---|---|\n| `approved` | Approved | boolean | ✅ required |\n| `comments` | Comments | string | optional |\n\n**Outcomes:**\n- **Approve** (primary, `action: Continue`)\n- **Reject** (`action: End`)\n\n---\n\n### Edges\n\n```\nstart  --[output]-->    expenseReview1  --[completed]-->  logDecision1  --[output]-->  end1\n```\n\nThe HITL node is wired on the `completed` handle — the only valid handle for QuickForm nodes.\n\n---\n\n### Script Node (`logDecision1`)\n\n```javascript\nconst approved  = $vars.expenseReview1.output.approved;\nconst comments  = $vars.expenseReview1.output.comments;\nconsole.log(`Decision: ${approved}, Comments: ${comments}`);\nreturn { approved, comments };\n```\n\nBoth fields are accessed via `$vars.<nodeId>.output.<fieldId>` — the correct runtime path using field IDs, not variable alias names.\n\n---\n\n### Runtime Variables Available Downstream\n\n| Variable | Type | Contents |\n|---|---|---|\n| `$vars.expenseReview1.output` | object | Full task result (`approved`, `comments`, `Action`) |\n| `$vars.expenseReview1.output.approved` | boolean | Reviewer's approval decision |\n| `$vars.expenseReview1.output.comments` | string | Reviewer's optional comments |\n| `$vars.expenseReview1.status` | string | Selected outcome name (`\"Approve\"` or `\"Reject\"`) |\n\n---\n\n**Production readiness:** QuickForm is inline — no additional build steps. Once the solution is packaged with `uip solution pack . ./out` and published with `uip solution publish`, the flow is ready to deploy.",
+      "commands": [
+        {
+          "tool_name": "Skill",
+          "tool_id": "toolu_bdrk_016ySUbEY33hvJTWxge7NgEH",
+          "assistant_turn_index": 1,
+          "timestamp": "2026-07-24T17:37:09.149054",
+          "duration_ms": 97.87423501256853,
+          "generation_completed_at": "2026-07-24T17:37:09.149054",
+          "execution_started_at": "2026-07-24T17:37:09.149305",
+          "execution_completed_at": "2026-07-24T17:37:09.247179",
+          "parameters": {
+            "skill": "uipath:uipath-human-in-the-loop"
+          },
+          "result_status": "success",
+          "result_summary": "Launching skill: uipath:uipath-human-in-the-loop",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 0,
+          "result_tokens": 12
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_01YA4kx8T682ejSxZznbfiZY",
+          "assistant_turn_index": 4,
+          "timestamp": "2026-07-24T17:37:16.625176",
+          "duration_ms": 235.24995998013765,
+          "generation_completed_at": "2026-07-24T17:37:16.625176",
+          "execution_started_at": "2026-07-24T17:37:16.625239",
+          "execution_completed_at": "2026-07-24T17:37:16.860489",
+          "parameters": {
+            "command": "UIP=$(command -v uip 2>/dev/null || npm root -g 2>/dev/null | sed 's|/node_modules$||')/bin/uip && $UIP --version && echo \"UIP=$UIP\"",
+            "description": "Resolve uip binary and check version"
+          },
+          "result_status": "error",
+          "result_summary": "Exit code 126\n/bin/bash: line 2: /usr/bin/uip/bin/uip: Not a directory",
+          "error_message": "Exit code 126\n/bin/bash: line 2: /usr/bin/uip/bin/uip: Not a directory",
+          "result_data": null,
+          "sequence_number": 1,
+          "result_tokens": 18
+        },
+        {
+          "tool_name": "Read",
+          "tool_id": "toolu_bdrk_01MVVGdqxJ7ccUUM59UVUtPr",
+          "assistant_turn_index": 5,
+          "timestamp": "2026-07-24T17:37:17.438951",
+          "duration_ms": 15.515657956711948,
+          "generation_completed_at": "2026-07-24T17:37:17.438951",
+          "execution_started_at": "2026-07-24T17:37:17.439014",
+          "execution_completed_at": "2026-07-24T17:37:17.454530",
+          "parameters": {
+            "file_path": "/home/azureuser/projects/skills/skills/uipath-human-in-the-loop/references/hitl-node-quickform.md"
+          },
+          "result_status": "success",
+          "result_summary": "1\t# HITL QuickForm Node — Direct JSON Reference\n2\t\n3\tThe agent writes the `uipath.human-in-the-loop.quick-form` node directly into the `.flow` file as JSON. **Direct JSON is the default.** A CLI opt-in is available when the user explicitly requests it, or as a fallback if direct JSON writing fails — see [CLI reference: uip maestro flow hitl add](../../uipath-maestro-flow/references/shared/cli-commands.md#uip-maestro-flow-hitl-add).\n4\t\n5\t---\n6\t\n7\t## Step 1 — Extract the Schema Through Conversation\n8\t\n9\tBefore designing the schema, ask these focused questions if the business description doesn't answer them. **Ask all missing ones in a single message — never one at a time.**\n10\t\n11\t| What you need to know | Question to ask |\n12\t|---|---|\n13\t| What the reviewer sees | \"What information does the reviewer need to make their decision?\" |\n14\t| What they fill in | \"Does the reviewer need to enter any data, or just click Approve/Reject?\" |\n15\t| What actions they take | \"What are the named actions — e.g. Approve/Reject, or something domain-specific like Accept/Negotiate/Decline?\" |\n16\t\n17\t**Common business descriptions → schema translations:**\n18\t\n19\t| Business description | Schema shape |\n20\t|---|---|\n21\t| \"Human reviews and approves/rejects an invoice\" | `inputs: [invoiceId, amount]`, `outcomes: [Approve, Reject]` |\n22\t| \"Reviewer checks agent-drafted email before sending\" | `inputs: [draftEmail, recipientName]`, `inOuts: [emailBody]`, `outcomes: [Approve, Reject]` |\n23\t| \"Escalate to human when confidence < 0.7\" | `inputs: [agentReasoning, confidenceScore]`, `outputs: [action, notes]`, `outcomes: [Retry, Skip, Escalate]` |\n24\t| \"Human fills in missing vendor data\" | `inputs: [rawExtract]`, `outputs: [vendorName, costCenter]`, `outcomes: [Submit]` |\n25\t| \"Approve before writing to ServiceNow\" | `inputs: [proposedChange, targetSystem]`, `inOuts: [finalValue]`, `outcomes: [Approve, Reject]` |\n26\t\n27\t---\n28\t\n29\t## Step 1b — Discover Upstream Variables\n30\t\n31\tBefore designing input field bindings, read **both** `workflow.variables.nodes` and `workflow.variables.globals` from the `.flow` file.\n32\t\n33\t### Node outputs (`variables.nodes`)\n34\t\n35\tEach entry exposes exactly what `$vars` paths are available:\n36\t\n37\t```json\n38\t{ \"id\": \"fetchInvoice.output\", \"type\": \"object\", \"binding\": { \"nodeId\": \"fetchInvoice\", \"outputId\": \"output\" } }\n39\t```\n40\t\n41\tThe `id` field is the `$vars` path — `fetchInvoice.output` → `$vars.fetchInvoice.output`. Nested field access appends `.fieldName` (e.g., `$vars.fetchInvoice.output.invoiceId`).\n42\t\n43\t> **Binding path key = upstream script output key, not the HITL field `id`.** The HITL field `id` identifies the form field (lowercase, used for rendering). The binding path key is the property name in the upstream script's `return` statement. These are different things. If the script returns `{ supplierName: \"Acme\" }` and you give the HITL field `\"id\": \"suppliername\"`, the correct binding is `vars.fetchSupplier.output.supplierName` — NOT `vars.fetchSupplier.output.suppliername`. The field `id` is irrelevant to the binding path. Always look at the upstream script source to derive the key, never at the HITL field schema you are writing.\n44\t\n45\t**outputId by node type:**\n46\t\n47\t| Node type | outputId | Access pattern |\n48\t|---|---|---|\n49\t| HTTP node | `output` | `$vars.{nodeId}.output.body.{field}` |\n50\t| Script node | `output` | `$vars.{nodeId}.output.{field}` |\n51\t| Prior HITL node | `output`, `status` | `$vars.{nodeId}.output.{field}` |\n52\t| Agent node | `output` | `$vars.{nodeId}.output.content` |\n53\t| Trigger (manual) | `output` | `$vars.start.output.{field}` |\n54\t\n55\t### Flow-level globals (`variables.globals`)\n56\t\n57\tAlso read `workflow.variables.globals`. Each entry has an `id` that maps directly to a `$vars` reference — no node prefix, no `.output` segment:\n58\t\n59\t```json\n60\t{ \"id\": \"customerName\", \"direction\": \"in\", \"type\": \"string\" }\n61\t```\n62\t\n63\t→ HITL binding: `\"vars.customerName\"` (no `=js:$` prefix — HITL binding is a raw path)\n64\t\n65\t**When to use globals instead of node outputs:** When data was declared as a flow-level input variable (e.g. the trigger passes it as a named parameter via `triggerNodeId`), it lives in `globals` with `direction: \"in\"`. Bind directly to `vars.<globalId>` — do not add `.output` or a node prefix.\n66\t\n67\t| Source | HITL `binding` format | Expression format (other nodes) |\n68\t|---|---|---|\n69\t| Node output | `vars.<nodeId>.output.<field>` | `=js:$vars.<nodeId>.output.<field>` |\n70\t| Flow global (`direction: \"in\"`) | `vars.<globalId>` | `=js:$vars.<globalId>` |\n71\t\n72\t> **`binding` vs `variable` prefix rule:** `binding` (input/inOut fields) uses the full path starting with `vars.` because it references an existing variable path. `variable` (output/inOut fields) uses `vars.<name>` — the `vars.` prefix is required; it declares the global variable name.\n73\t\n74\tFor the full variable system, see → [How $vars paths are constructed in Flow](../../uipath-maestro-flow/references/shared/variables-and-expressions.md)\n75\t\n76\t---\n77\t\n78\t## Step 2 — Design the Schema\n79\t\n80\tThe node schema uses `fields[]` entries inside `inputs.schema`. Use these conceptual roles to plan the fields before writing the node JSON:\n81\t\n82\t| Role | `direction` value | Human can… | Use for |\n83\t|---|---|---|---|\n84\t| Input field | `\"input\"` | Read only | Context the human needs to make a decision |\n85\t| Output field | `\"output\"` | Write | Data the automation needs back |\n86\t| InOut field | `\"inOut\"` | Read + modify | Data the human can see and optionally correct |\n87\t\n88\t**Supported field types:** `string`, `number`, `boolean`, `date`, `file`\n89\t\n90\t**Design rules:**\n91\t- Input fields: everything the human needs to decide — IDs, amounts, context; bind to upstream node output via `binding`\n92\t- Output fields: only what downstream nodes actually use; set `required: true` for mandatory outputs\n93\t- `outcomes`: use domain-specific names (Approve/Reject, not just Submit)\n94\t- Keep it focused — don't add fields the automation won't use\n95\t\n96\t**Show the designed schema to the user and confirm before writing the node.**\n97\t\n98\t---\n99\t\n100\t## Full Node JSON\n101\t\n102\t```json\n103\t{\n104\t  \"id\": \"invoiceReview1\",\n105\t  \"type\": \"uipath.human-in-the-loop.quick-form\",\n106\t  \"typeVersion\": \"1.0\",\n107\t  \"display\": { \"label\": \"Invoice Review\" },\n108\t  \"inputs\": {\n109\t    \"title\": \"Invoice Review\",\n110\t    \"recipient\": {\n111\t      \"channels\": [\"Email\", \"ActionCenter\"],\n112\t      \"connections\": {},\n113\t      \"assignee\": { \"type\": \"group\" }\n114\t    },\n115\t    \"priority\": \"Low\",\n116\t    \"schema\": {\n117\t      \"schemaId\": \"a3f7c2d1-8b4e-4f9a-b2c5-6d8e1f3a7b9c\",\n118\t      \"fields\": [\n119\t        {\n120\t          \"id\": \"invoiceid\",\n121\t          \"label\": \"Invoice ID\",\n122\t          \"type\": \"string\",\n123\t          \"direction\": \"input\",\n124\t          \"binding\": \"vars.fetchInvoice.output.invoiceId\"\n125\t        },\n126\t        {\n127\t          \"id\": \"amount\",\n128\t          \"label\": \"Amount\",\n129\t          \"type\": \"number\",\n130\t          \"direction\": \"input\",\n131\t          \"binding\": \"vars.fetchInvoice.output.amount\"\n132\t        },\n133\t        {\n134\t          \"id\": \"notes\",\n135\t          \"label\": \"Notes\",\n136\t          \"type\": \"string\",\n137\t          \"direction\": \"output\",\n138\t          \"variable\": \"vars.notes\",\n139\t          \"required\": false\n140\t        },\n141\t        {\n142\t          \"id\": \"decision\",\n143\t          \"label\": \"Decision\",\n144\t          \"type\": \"string\",\n145\t          \"direction\": \"output\",\n146\t          \"variable\": \"vars.decision\",\n147\t          \"required\": true\n148\t        }\n149\t      ],\n150\t      \"outcomes\": [\n151\t        { \"id\": \"approve\", \"name\": \"Approve\", \"type\": \"string\", \"isPrimary\": true,  \"action\": \"Continue\" },\n152\t        { \"id\": \"reject\",  \"name\": \"Reject\",  \"type\": \"string\", \"isPrimary\": false, \"action\": \"End\" }\n153\t      ]\n154\t    }\n155\t  },\n156\t  \"outputs\": {\n157\t    \"output\": {\n158\t      \"type\": \"object\",\n159\t      \"description\": \"Task result data\",\n160\t      \"source\": \"=result\",\n161\t      \"var\": \"output\",\n162\t      \"properties\": {\n163\t        \"notes\":    { \"type\": \"string\" },\n164\t        \"decision\": { \"type\": \"string\" },\n165\t        \"Action\":   { \"type\": \"string\", \"enum\": [\"Approve\", \"Reject\"], \"default\": \"Approve\" }\n166\t      }\n167\t    },\n168\t    \"status\": {\n169\t      \"type\": \"string\",\n170\t      \"description\": \"Task completion status\",\n171\t      \"source\": \"=result.Action\",\n172\t      \"var\": \"status\",\n173\t      \"enum\": [\"Approve\", \"Reject\"],\n174\t      \"default\": \"Approve\"\n175\t    }\n176\t  }\n177\t}\n178\t```\n179\t\n180\t**Required fields:** `id`, `type`, `typeVersion`. Position goes in the top-level `layout.nodes` object (keyed by node id), not on the node itself.\n181\t\n182\t**Node ID rule:** camelCase from the label, strip non-alphanumeric, append `1` (increment to `2`, `3`... until unique among existing node IDs). Example: `\"Invoice Review\"` → `invoiceReview1`.\n183\t\n184\t---\n185\t\n186\t## Definition Entry\n187\t\n188\tEvery `.flow` file must have one definition entry for `uipath.human-in-the-loop.quick-form` in `workflow.definitions`. Add it exactly once — deduplicate by `nodeType`.\n189\t\n190\t```json\n191\t{\n192\t  \"nodeType\": \"uipath.human-in-the-loop.quick-form\",\n193\t  \"version\": \"1.0\",\n194\t  \"category\": \"human-task\",\n195\t  \"description\": \"Fast inline approvals with inline debug\",\n196\t  \"tags\": [\"human-task\", \"hitl\", \"human-in-the-loop\", \"quick-form\", \"approval\"],\n197\t  \"sortOrder\": 27,\n198\t  \"display\": {\n199\t    \"label\": \"Quick Form\",\n200\t    \"icon\": \"users\",\n201\t    \"shape\": \"square\"\n202\t  },\n203\t  \"handleConfiguration\": [\n204\t    {\n205\t      \"position\": \"left\",\n206\t      \"handles\": [\n207\t        {\n208\t          \"id\": \"input\",\n209\t          \"type\": \"target\",\n210\t          \"handleType\": \"input\"\n211\t        }\n212\t      ],\n213\t      \"visible\": true\n214\t    },\n215\t    {\n216\t      \"position\": \"right\",\n217\t      \"handles\": [\n218\t        { \"id\": \"completed\", \"label\": \"Completed\", \"type\": \"source\", \"handleType\": \"output\", \"showButton\": true, \"constraints\": { \"forbiddenTargetCategories\": [\"trigger\"] } }\n219\t      ],\n220\t      \"visible\": true\n221\t    }\n222\t  ],\n223\t  \"model\": { \"type\": \"bpmn:UserTask\", \"serviceType\": \"Actions.HITL\" },\n224\t  \"inputDefaults\": {\n225\t    \"schema\": {\n226\t      \"fields\": [],\n227\t      \"outcomes\": [{ \"id\": \"submit\", \"name\": \"Submit\", \"type\": \"string\", \"isPrimary\": true, \"action\": \"Continue\" }]\n228\t    },\n229\t    \"recipient\": {\n230\t      \"channels\": [\"Email\", \"ActionCenter\"],\n231\t      \"connections\": {},\n232\t      \"assignee\": { \"type\": \"group\" }\n233\t    }\n234\t  },\n235\t  \"outputDefinition\": {\n236\t    \"output\": { \"type\": \"object\", \"description\": \"Task result data\", \"source\": \"=result\", \"var\": \"output\" },\n237\t    \"status\": { \"type\": \"string\", \"description\": \"Task completion status\", \"source\": \"=result.Action\", \"var\": \"status\" }\n238\t  }\n239\t}\n240\t```\n241\t\n242\t---\n243\t\n244\t## Edge Wiring\n245\t\n246\tWire the `completed` output handle to the downstream node. Edge ID format: `{sourceNodeId}-{sourcePort}-{targetNodeId}-{targetPort}` (append `-2`, `-3` on collision).\n247\t\n248\t```json\n249\t{ \"id\": \"invoiceReview1-completed-processApproval1-input\", \"sourceNodeId\": \"invoiceReview1\", \"sourcePort\": \"completed\", \"targetNodeId\": \"processApproval1\", \"targetPort\": \"input\" }\n250\t```\n251\t\n252\t**Always wire `completed`.** A HITL node with no edge on `completed` blocks the flow forever.\n253\t\n254\t---\n255\t\n256\t## `variables.nodes` — Regenerate After Every Node Add/Remove\n257\t\n258\tThe HITL node exposes two outputs (`output`, `status`). After adding it, **completely replace** `workflow.variables.nodes` by iterating all nodes and collecting their outputs:\n259\t\n260\t```json\n261\t\"variables\": {\n262\t  \"nodes\": [\n263\t    {\n264\t      \"id\": \"invoiceReview1.output\",\n265\t      \"type\": \"object\",\n266\t      \"description\": \"Task result data\",\n267\t      \"binding\": { \"nodeId\": \"invoiceReview1\", \"outputId\": \"output\" }\n268\t    },\n269\t    {\n270\t      \"id\": \"invoiceReview1.status\",\n271\t      \"type\": \"string\",\n272\t      \"description\": \"Task completion status\",\n273\t      \"binding\": { \"nodeId\": \"invoiceReview1\", \"outputId\": \"status\" }\n274\t    }\n275\t  ]\n276\t}\n277\t```\n278\t\n279\tInclude entries for **all** nodes in the flow, not just the HITL node. Replace the entire array — do not append. Add one `output` entry and one `status` entry per HITL node — no per-field entries. Output and inOut field values from the task are accessible via `$vars.<nodeId>.output.<fieldId>` at runtime (fields are embedded in the output object, not exposed as separate node variables).\n280\t\n281\t> **Scripts must always use `$vars.<nodeId>.output.<fieldId>`.** The `field.variable` property declares a name for the global alias — do NOT use that name directly in scripts. `$vars.decision` (global alias) and `$vars.<nodeId>.output.decision` (field ID access) are different paths and only the field ID path is reliable in script nodes. See Critical Rule 10 in SKILL.md.\n282\t\n283\t---\n284\t\n285\t## Canonical Field Shape (reference)\n286\t\n287\tThis is the exact JSON a correctly authored QuickForm `fields[]` entry looks like for each direction. Use this as ground truth when writing or reviewing HITL nodes.\n288\t\n289\t```json\n290\t{\n291\t  \"fields\": [\n292\t    {\n293\t      \"id\": \"invoiceid\",\n294\t      \"type\": \"number\",\n295\t      \"label\": \"Invoice ID\",\n296\t      \"direction\": \"input\",\n297\t      \"binding\": \"vars.fetchInvoice1.output.invoiceId\"\n298\t    },\n299\t    {\n300\t      \"id\": \"vendorname\",\n301\t      \"type\": \"string\",\n302\t      \"label\": \"Vendor Name\",\n303\t      \"direction\": \"input\",\n304\t      \"binding\": \"vars.fetchInvoice1.output.vendorName\"\n305\t    },\n306\t    {\n307\t      \"id\": \"approveddate\",\n308\t      \"type\": \"date\",\n309\t      \"label\": \"Approved Date\",\n310\t      \"direction\": \"output\",\n311\t      \"variable\": \"vars.approvedDate\"\n312\t    },\n313\t    {\n314\t      \"id\": \"approved\",\n315\t      \"type\": \"boolean\",\n316\t      \"label\": \"Approved\",\n317\t      \"direction\": \"output\",\n318\t      \"variable\": \"vars.approved\"\n319\t    }\n320\t  ],\n321\t  \"outcomes\": [\n322\t    {\n323\t      \"id\": \"submit\",\n324\t      \"name\": \"Submit\",\n325\t      \"type\": \"string\",\n326\t      \"action\": \"Continue\",\n327\t      \"isPrimary\": true\n328\t    }\n329\t  ]\n330\t}\n331\t```\n332\t\n333\t**Key rules this sample encodes:**\n334\t- `type`: always a JS/JSON type — `string`, `number`, `boolean`, `date`, or `file`. Never `\"text\"`.\n335\t- `variable`: always `\"vars.<name>\"` — the `vars.` prefix is required.\n336\t- `binding`: input/inOut fields only; raw path (`vars.<nodeId>.output.<field>`), no `=js:$` prefix.\n337\t- Output/inOut fields have `variable`; input fields do not.\n338\t\n339\t---\n340\t\n341\t## Schema Conversion — Examples\n342\t\n343\tThe agent translates the user's business description into the `fields[]` and `outcomes[]` arrays. No CLI needed — apply these rules directly.\n344\t\n345\t### Rules\n346\t\n347\t| What | Rule |\n348\t|---|---|\n349\t| field `id` | lowercase label, spaces→`-`, strip non-alphanumeric. `\"Invoice ID\"` → `\"invoiceid\"`, `\"Due Date\"` → `\"due-date\"` |\n350\t| `direction` | `inputs[]` items → `\"input\"`, `outputs[]` → `\"output\"`, `inOuts[]` → `\"inOut\"` |\n351\t| field `type` | Use the JS/JSON type: `string`, `number`, `boolean`, `date`, or `file` |\n352\t| `binding` | **Input / inOut fields only.** Format: `\"vars.<nodeId>.output.<field>\"` for node outputs; `\"vars.<globalId>\"` for flow globals. **No `=js:$` prefix** — HITL binding is a raw path, not an expression. |\n353\t| `variable` | **Output / inOut fields only** — absent on input fields. Format: `\"vars.<name>\"` (always include the `vars.` prefix). Defaults to `\"vars.<camelCase id>\"` if not specified. |\n354\t| `required` | omit if false; set `true` for mandatory outputs |\n355\t| `outcomes[0]` | `isPrimary: true`, `action: \"Continue\"` |\n356\t| `outcomes[1+]` | `isPrimary: false`, `action: \"End\"` |\n357\t| `schema.schemaId` | Generate a fresh UUID (e.g. `crypto.randomUUID()` or any UUID v4) |\n358\t\n359\t### Example 1 — Simple approval (inputs only + outcomes)\n360\t\n361\tBusiness description: *\"Reviewer sees invoice ID and amount, clicks Approve or Reject\"*\n362\t\n363\t```json\n364\t\"fields\": [\n365\t  { \"id\": \"invoiceid\", \"label\": \"Invoice ID\", \"type\": \"string\",   \"direction\": \"input\", \"binding\": \"vars.fetchData1.output.invoiceId\" },\n366\t  { \"id\": \"amount\",    \"label\": \"Amount\",     \"type\": \"number\", \"direction\": \"input\", \"binding\": \"vars.fetchData1.output.amount\" }\n367\t],\n368\t\"outcomes\": [\n369\t  { \"id\": \"approve\", \"name\": \"Approve\", \"type\": \"string\", \"isPrimary\": true,  \"action\": \"Continue\" },\n370\t  { \"id\": \"reject\",  \"name\": \"Reject\",  \"type\": \"string\", \"isPrimary\": false, \"action\": \"End\" }\n371\t]\n372\t```\n373\t\n374\t### Example 2 — Write-back validation (inOut — human can edit before confirming)\n375\t\n376\tBusiness description: *\"Human sees the AI-drafted email, can edit it, then clicks Send or Discard\"*\n377\t\n378\t```json\n379\t\"fields\": [\n380\t  { \"id\": \"recipient\",  \"label\": \"Recipient\",  \"type\": \"string\", \"direction\": \"input\", \"binding\": \"vars.draft1.output.recipient\" },\n381\t  { \"id\": \"emailbody\",  \"label\": \"Email Body\", \"type\": \"string\", \"direction\": \"inOut\", \"binding\": \"vars.draft1.output.body\", \"variable\": \"vars.emailBody\" }\n382\t],\n383\t\"outcomes\": [\n384\t  { \"id\": \"send\",    \"name\": \"Send\",    \"type\": \"string\", \"isPrimary\": true,  \"action\": \"Continue\" },\n385\t  { \"id\": \"discard\", \"name\": \"Discard\", \"type\": \"string\", \"isPrimary\": false, \"action\": \"End\" }\n386\t]\n387\t```\n388\t\n389\t### Example 3 — Data enrichment (output — human fills in missing fields)\n390\t\n391\tBusiness description: *\"Agent couldn't extract vendor name or cost center. Human fills them in and clicks Submit.\"*\n392\t\n393\t```json\n394\t\"fields\": [\n395\t  { \"id\": \"rawextract\",  \"label\": \"Raw Extract\",  \"type\": \"string\", \"direction\": \"input\",  \"binding\": \"vars.extract1.output.rawText\" },\n396\t  { \"id\": \"vendorname\",  \"label\": \"Vendor Name\",  \"type\": \"string\", \"direction\": \"output\", \"variable\": \"vars.vendorName\",  \"required\": true },\n397\t  { \"id\": \"costcenter\",  \"label\": \"Cost Center\",  \"type\": \"string\", \"direction\": \"output\", \"variable\": \"vars.costCenter\", \"required\": true }\n398\t],\n399\t\"outcomes\": [\n400\t  { \"id\": \"submit\", \"name\": \"Submit\", \"type\": \"string\", \"isPrimary\": true, \"action\": \"Continue\" }\n401\t]\n402\t```\n403\t\n404\t### Example 4 — Exception escalation (multiple outcomes + notes output)\n405\t\n406\tBusiness description: *\"If agent confidence is low, escalate. Human sees reasoning and score, can Retry, Skip, or Escalate further.\"*\n407\t\n408\t```json\n409\t\"fields\": [\n410\t  { \"id\": \"reasoning\",       \"label\": \"Agent Reasoning\",  \"type\": \"string\",   \"direction\": \"input\",  \"binding\": \"vars.classify1.output.reasoning\" },\n411\t  { \"id\": \"confidencescore\", \"label\": \"Confidence Score\", \"type\": \"number\", \"direction\": \"input\",  \"binding\": \"vars.classify1.output.score\" },\n412\t  { \"id\": \"notes\",           \"label\": \"Notes\",            \"type\": \"string\",   \"direction\": \"output\", \"variable\": \"vars.notes\" }\n413\t],\n414\t\"outcomes\": [\n415\t  { \"id\": \"retry\",    \"name\": \"Retry\",    \"type\": \"string\", \"isPrimary\": true,  \"action\": \"Continue\" },\n416\t  { \"id\": \"skip\",     \"name\": \"Skip\",     \"type\": \"string\", \"isPrimary\": false, \"action\": \"End\" },\n417\t  { \"id\": \"escalate\", \"name\": \"Escalate\", \"type\": \"string\", \"isPrimary\": false, \"action\": \"End\" }\n418\t]\n419\t```\n420\t\n421\t> **`outcomeType` for middle outcomes:** Use `\"Neutral\"` when the outcome is neither clearly positive nor negative (e.g., Skip, Defer, Hold).\n422\t\n423\t---\n424\t\n425\t## Runtime Variables\n426\t\n427\tAfter the HITL node, downstream nodes can reference:\n428\t\n429\t| Variable | Type | What it contains |\n430\t|---|---|---|\n431\t| `$vars.<nodeId>.output` | object | All `output` and `inOut` field values keyed by **field `id`** |\n432\t| `$vars.<nodeId>.output.<fieldId>` | varies | Individual field value using the field's `id` (e.g. `$vars.invoiceReview1.output.decision`) |\n433\t| `$vars.<nodeId>.status` | string | Selected outcome name (e.g. `\"Approve\"`, `\"Reject\"`) |\n434\t| `$vars.<globalId>` | varies | Workflow-global variable for output/inOut fields. `globalId` is `field.variable` with `vars.` stripped (e.g. `variable: \"vars.notes\"` → `$vars.notes`). **Do not use this path in scripts — use `$vars.<nodeId>.output.<fieldId>` instead.** |\n435\t\n436\t> **`fieldId` not `variable`**: The output object properties are keyed by the field's `id` (e.g. `\"decision\"`), not by the `variable` property. The `variable` property (`\"approvalResult\"`) creates a separate workflow-global variable (`$vars.approvalResult`) — it does not change the key used in the output object. If a field has `\"id\": \"dec1\"` and `\"variable\": \"vars.approvalResult\"`, access it via the object as `$vars.nodeId.output.dec1`, or directly as `$vars.approvalResult`.\n437\t>\n438\t> **Common mistake:** A field with `\"id\": \"approved\"` and `\"variable\": \"vars.legalApproval\"` must be read as `$vars.<nodeId>.output.approved` — **not** `$vars.<nodeId>.output.legalApproval`. Using the `variable` name as the key produces `undefined` at runtime; `flow validate` does not catch it.\n439\t\n440\t**In a downstream script node** — always access inline using `$vars.<nodeId>.output.<fieldId>`, not by destructuring:\n441\t```javascript\n442\t// Correct — field ID inline access\n443\tconst vendorName = $vars.invoiceReview1.output.vendorName;\n444\tconst costCenter = $vars.invoiceReview1.output.costCenter;\n445\tif ($vars.invoiceReview1.status === \"approve\") {\n446\t  await updateSystem(vendorName, costCenter);\n447\t}\n448\t// Wrong — do NOT destructure first:\n449\t// const output = $vars.invoiceReview1.output;  // then output.vendorName misses the node path\n450\t```\n451\t",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 2,
+          "result_tokens": 5385
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_015YEEEBAQh3Y6KKp2gB2n1W",
+          "assistant_turn_index": 8,
+          "timestamp": "2026-07-24T17:37:21.672391",
+          "duration_ms": 49.54810196068138,
+          "generation_completed_at": "2026-07-24T17:37:21.672391",
+          "execution_started_at": "2026-07-24T17:37:21.672442",
+          "execution_completed_at": "2026-07-24T17:37:21.721990",
+          "parameters": {
+            "command": "which uip 2>/dev/null || find /usr /home /opt -name \"uip\" -type f 2>/dev/null | head -5; echo \"---\"; ls /work/output/artifacts/skill-flow-hitl-quality-result-downstream/",
+            "description": "Find uip binary and list working directory"
+          },
+          "result_status": "success",
+          "result_summary": "/usr/bin/uip\n---",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 3,
+          "result_tokens": 4
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_019ri3xRJLKV8CaSEngyZPBT",
+          "assistant_turn_index": 9,
+          "timestamp": "2026-07-24T17:37:24.004463",
+          "duration_ms": 826.7942030215636,
+          "generation_completed_at": "2026-07-24T17:37:24.004463",
+          "execution_started_at": "2026-07-24T17:37:24.004759",
+          "execution_completed_at": "2026-07-24T17:37:24.831553",
+          "parameters": {
+            "command": "uip --version",
+            "description": "Check uip version"
+          },
+          "result_status": "success",
+          "result_summary": "1.199.0-dev.7970",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 4,
+          "result_tokens": 4
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_01351DzALCWCkCCkxmT7yLhf",
+          "assistant_turn_index": 10,
+          "timestamp": "2026-07-24T17:37:26.666653",
+          "duration_ms": 1118.320542969741,
+          "generation_completed_at": "2026-07-24T17:37:26.666653",
+          "execution_started_at": "2026-07-24T17:37:26.666934",
+          "execution_completed_at": "2026-07-24T17:37:27.785255",
+          "parameters": {
+            "command": "uip solution init --help --output json 2>&1 | head -20",
+            "description": "Check solution init command availability"
+          },
+          "result_status": "success",
+          "result_summary": "{\n  \"Result\": \"Success\",\n  \"Code\": \"Help\",\n  \"Data\": {\n    \"Command\": \"init\",\n    \"Description\": \"Initialize a new empty UiPath solution. Creates a directory named after the solution containing a .uipx manifest file with an empty Projects array, plus AGENTS.md and CLAUDE.md briefing files that orient AI coding agents to the solution. Use 'solution projects add' to add projects afterward.\",\n    \"Usage\": \"uip solution init [options] <solutionName>\",\n    \"Arguments\": [\n      {\n        \"Name\": \"solutionName\",\n        \"Description\": \"Solution name or path. Creates a directory with this name containing a .uipx manifest file.\",\n        \"Required\": true\n      }\n    ],\n    \"Options\": [\n      {\n        \"Flags\": \"-h, --help\",\n        \"Description\": \"display help for command\"\n      }\n    ],",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 5,
+          "result_tokens": 198
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_01Kiw1KPYXzmApicMPnw1xbi",
+          "assistant_turn_index": 11,
+          "timestamp": "2026-07-24T17:37:29.650033",
+          "duration_ms": 997.3592900205404,
+          "generation_completed_at": "2026-07-24T17:37:29.650033",
+          "execution_started_at": "2026-07-24T17:37:29.651076",
+          "execution_completed_at": "2026-07-24T17:37:30.648435",
+          "parameters": {
+            "command": "uip solution init ExpenseApproval --output json 2>&1",
+            "description": "Initialize the ExpenseApproval solution"
+          },
+          "result_status": "success",
+          "result_summary": "{\n  \"Result\": \"Success\",\n  \"Code\": \"SolutionInit\",\n  \"Data\": {\n    \"Status\": \"Created successfully\",\n    \"Path\": \"/work/output/artifacts/skill-flow-hitl-quality-result-downstream/ExpenseApproval/ExpenseApproval.uipx\",\n    \"NextSteps\": \"Read /work/output/artifacts/skill-flow-hitl-quality-result-downstream/ExpenseApproval/AGENTS.md or /work/output/artifacts/skill-flow-hitl-quality-result-downstream/ExpenseApproval/CLAUDE.md to understand the solution lifecycle, project types that can be used inside a solution, and related uip command references.\"\n  }\n}",
+          "error_message": null,
+          "result_data": {
+            "Result": "Success",
+            "Code": "SolutionInit",
+            "Data": {
+              "Status": "Created successfully",
+              "Path": "/work/output/artifacts/skill-flow-hitl-quality-result-downstream/ExpenseApproval/ExpenseApproval.uipx",
+              "NextSteps": "Read /work/output/artifacts/skill-flow-hitl-quality-result-downstream/ExpenseApproval/AGENTS.md or /work/output/artifacts/skill-flow-hitl-quality-result-downstream/ExpenseApproval/CLAUDE.md to understand the solution lifecycle, project types that can be used inside a solution, and related uip command references."
+            }
+          },
+          "sequence_number": 6,
+          "result_tokens": 139
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_01UtkZrtegkiR3KUAREbkbRc",
+          "assistant_turn_index": 12,
+          "timestamp": "2026-07-24T17:37:32.676956",
+          "duration_ms": 7696.071600075811,
+          "generation_completed_at": "2026-07-24T17:37:32.676956",
+          "execution_started_at": "2026-07-24T17:37:32.677197",
+          "execution_completed_at": "2026-07-24T17:37:40.373269",
+          "parameters": {
+            "command": "cd /work/output/artifacts/skill-flow-hitl-quality-result-downstream/ExpenseApproval && uip maestro flow init ExpenseApproval --output json 2>&1",
+            "description": "Initialize ExpenseApproval flow project inside the solution"
+          },
+          "result_status": "success",
+          "result_summary": "2026-07-24 17:37:34 INFO  [ResourceBuilder:ProjectCreateCommandHandler] Creating project [object Object]\n2026-07-24 17:37:34 INFO  [ResourceBuilder:MultiFileSolutionDefinitionProvider] Reading multi-file solution definition for solution %s /work/output/artifacts/skill-flow-hitl-quality-result-downstream/ExpenseApproval\n2026-07-24 17:37:34 INFO  [ResourceBuilder:ProjectCreateCommandHandler] Generate artefact resources for project [object Object]\n2026-07-24 17:37:34 INFO  [ResourceBuilder:SolutionsMetadataReader] Reading metadata from %s. SolutionsMetadataReader\n{\n  \"Result\": \"Success\",\n  \"Code\": \"FlowInit\",\n  \"Data\": {\n    \"Status\": \"Created successfully\",\n    \"Path\": \"/work/output/artifacts/skill-flow-hitl-quality-result-downstream/ExpenseApproval/ExpenseApproval\",\n    \"SolutionRegistration\": {\n      \"Status\": \"Registered\",\n      \"Message\": \"Project registered in parent solution.\",\n      \"Solution\": \"/work/output/artifacts/skill-flow-hitl-quality-result-downstream/ExpenseApproval/ExpenseApproval.uipx\",\n      \"Project\": \"ExpenseApproval/project.uiproj\",\n      \"ProjectId\": \"c972a0a7-44ff-47a6-8d3e-cf49071e3dc2\",\n      \"Instructions\": \"The project is listed in the parent solution manifest.\\nPacking or uploading the solution will sync solution resources automatically.\\nTo sync resources before packaging, run 'uip solution resources refresh --solution-folder \\\"/work/output/artifacts/skill-flow-hitl-quality-result-downstream/ExpenseApproval\\\"'.\"\n    },\n    \"ProjectArtifacts\": {\n      \"Created\": true\n    },\n    \"NextSteps\": \"The project is listed in the parent solution manifest.\\nPacking or uploading the solution will sync solution resources automatically.\\nTo sync resources before packaging, run 'uip solution resources refresh --solution-folder \\\"/work/output/artifacts/skill-flow-hitl-quality-result-downstream/ExpenseApproval\\\"'.\"\n  }\n}",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 7,
+          "result_tokens": 466
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_012dTs953fbma5RrZHmsQJcu",
+          "assistant_turn_index": 14,
+          "timestamp": "2026-07-24T17:37:42.829425",
+          "duration_ms": 40.43206200003624,
+          "generation_completed_at": "2026-07-24T17:37:42.829425",
+          "execution_started_at": "2026-07-24T17:37:42.829477",
+          "execution_completed_at": "2026-07-24T17:37:42.869909",
+          "parameters": {
+            "command": "find /work/output/artifacts/skill-flow-hitl-quality-result-downstream/ExpenseApproval -name \"*.flow\" 2>/dev/null",
+            "description": "Locate the generated .flow file"
+          },
+          "result_status": "success",
+          "result_summary": "/work/output/artifacts/skill-flow-hitl-quality-result-downstream/ExpenseApproval/ExpenseApproval/ExpenseApproval.flow",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 8,
+          "result_tokens": 30
+        },
+        {
+          "tool_name": "Read",
+          "tool_id": "toolu_bdrk_01KEe5R8Vy4pGTi6HD2otVdi",
+          "assistant_turn_index": 15,
+          "timestamp": "2026-07-24T17:37:44.404905",
+          "duration_ms": 12.91603094432503,
+          "generation_completed_at": "2026-07-24T17:37:44.404905",
+          "execution_started_at": "2026-07-24T17:37:44.405160",
+          "execution_completed_at": "2026-07-24T17:37:44.418076",
+          "parameters": {
+            "file_path": "/work/output/artifacts/skill-flow-hitl-quality-result-downstream/ExpenseApproval/ExpenseApproval/ExpenseApproval.flow"
+          },
+          "result_status": "success",
+          "result_summary": "1\t{\n2\t  \"id\": \"cf1649bc-6b79-46be-bdb7-13c7f248dfdd\",\n3\t  \"version\": \"1.8\",\n4\t  \"name\": \"ExpenseApproval\",\n5\t  \"nodes\": [\n6\t    {\n7\t      \"id\": \"start\",\n8\t      \"type\": \"core.trigger.manual\",\n9\t      \"typeVersion\": \"1.0\",\n10\t      \"display\": {\n11\t        \"label\": \"Manual trigger\"\n12\t      },\n13\t      \"inputs\": {\n14\t        \"entryPointId\": \"d95d16a2-d333-4664-8518-09d03bb6fa1c\",\n15\t        \"isDefaultEntryPoint\": true\n16\t      }\n17\t    }\n18\t  ],\n19\t  \"edges\": [],\n20\t  \"definitions\": [\n21\t    {\n22\t      \"nodeType\": \"core.trigger.manual\",\n23\t      \"version\": \"1.0\",\n24\t      \"category\": \"trigger\",\n25\t      \"description\": \"Start workflow manually\",\n26\t      \"tags\": [\n27\t        \"trigger\",\n28\t        \"start\",\n29\t        \"manual\"\n30\t      ],\n31\t      \"sortOrder\": 40,\n32\t      \"display\": {\n33\t        \"label\": \"Manual trigger\",\n34\t        \"icon\": \"play\",\n35\t        \"shape\": \"circle\"\n36\t      },\n37\t      \"handleConfiguration\": [\n38\t        {\n39\t          \"position\": \"right\",\n40\t          \"handles\": [\n41\t            {\n42\t              \"id\": \"output\",\n43\t              \"type\": \"source\",\n44\t              \"handleType\": \"output\",\n45\t              \"showButton\": true,\n46\t              \"constraints\": {\n47\t                \"forbiddenTargetCategories\": [\n48\t                  \"trigger\"\n49\t                ]\n50\t              }\n51\t            }\n52\t          ],\n53\t          \"visible\": true\n54\t        }\n55\t      ],\n56\t      \"model\": {\n57\t        \"type\": \"bpmn:StartEvent\",\n58\t        \"entryPointId\": true\n59\t      },\n60\t      \"outputDefinition\": {\n61\t        \"output\": {\n62\t          \"type\": \"object\",\n63\t          \"description\": \"Data passed when manually triggering the workflow.\",\n64\t          \"source\": \"null\",\n65\t          \"var\": \"output\"\n66\t        }\n67\t      },\n68\t      \"toolbarExtensions\": {\n69\t        \"design\": {\n70\t          \"actions\": [\n71\t            {\n72\t              \"id\": \"change-trigger-type\",\n73\t              \"icon\": \"square-mouse-pointer\",\n74\t              \"label\": \"Change trigger type\"\n75\t            }\n76\t          ]\n77\t        }\n78\t      }\n79\t    }\n80\t  ],\n81\t  \"layout\": {\n82\t    \"nodes\": {\n83\t      \"start\": {\n84\t        \"position\": {\n85\t          \"x\": 256,\n86\t          \"y\": 144\n87\t        }\n88\t      }\n89\t    }\n90\t  }\n91\t}",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 9,
+          "result_tokens": 562
+        },
+        {
+          "tool_name": "TaskCreate",
+          "tool_id": "toolu_bdrk_012nb3TkFNPkr4RuNBRpWFS8",
+          "assistant_turn_index": 18,
+          "timestamp": "2026-07-24T17:38:55.948232",
+          "duration_ms": 9.271912043914199,
+          "generation_completed_at": "2026-07-24T17:38:55.948232",
+          "execution_started_at": "2026-07-24T17:38:55.948281",
+          "execution_completed_at": "2026-07-24T17:38:55.957553",
+          "parameters": {
+            "subject": "Build ExpenseApproval flow with HITL QuickForm + Script + End",
+            "description": "Write complete .flow JSON: manual trigger → HITL expense-review QuickForm → script that logs decision → end node. Wire edges on completed handle. Regenerate variables.nodes. Validate."
+          },
+          "result_status": "success",
+          "result_summary": "Task #1 created successfully: Build ExpenseApproval flow with HITL QuickForm + Script + End",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 10,
+          "result_tokens": 23
+        },
+        {
+          "tool_name": "TaskUpdate",
+          "tool_id": "toolu_bdrk_014b3UVBLzxdmieXtRtCKQa1",
+          "assistant_turn_index": 19,
+          "timestamp": "2026-07-24T17:38:57.563630",
+          "duration_ms": 8.665887988172472,
+          "generation_completed_at": "2026-07-24T17:38:57.563630",
+          "execution_started_at": "2026-07-24T17:38:57.563913",
+          "execution_completed_at": "2026-07-24T17:38:57.572579",
+          "parameters": {
+            "taskId": "1",
+            "status": "in_progress"
+          },
+          "result_status": "success",
+          "result_summary": "Updated task #1 status",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 11,
+          "result_tokens": 6
+        },
+        {
+          "tool_name": "Write",
+          "tool_id": "toolu_bdrk_01EgvamGnobdQbM3Huv96krF",
+          "assistant_turn_index": 21,
+          "timestamp": "2026-07-24T17:39:34.160378",
+          "duration_ms": 89.17141892015934,
+          "generation_completed_at": "2026-07-24T17:39:34.160378",
+          "execution_started_at": "2026-07-24T17:39:34.160481",
+          "execution_completed_at": "2026-07-24T17:39:34.249652",
+          "parameters": {
+            "file_path": "/work/output/artifacts/skill-flow-hitl-quality-result-downstream/ExpenseApproval/ExpenseApproval/ExpenseApproval.flow",
+            "content": "{\n  \"id\": \"cf1649bc-6b79-46be-bdb7-13c7f248dfdd\",\n  \"version\": \"1.8\",\n  \"name\": \"ExpenseApproval\",\n  \"nodes\": [\n    {\n      \"id\": \"start\",\n      \"type\": \"core.trigger.manual\",\n      \"typeVersion\": \"1.0\",\n      \"display\": {\n        \"label\": \"Manual trigger\"\n      },\n      \"inputs\": {\n        \"entryPointId\": \"d95d16a2-d333-4664-8518-09d03bb6fa1c\",\n        \"isDefaultEntryPoint\": true\n      }\n    },\n    {\n      \"id\": \"expenseReview1\",\n      \"type\": \"uipath.human-in-the-loop.quick-form\",\n      \"typeVersion\": \"1.0\",\n      \"display\": {\n        \"label\": \"Expense Review\"\n      },\n      \"inputs\": {\n        \"title\": \"Expense Review\",\n        \"recipient\": {\n          \"channels\": [\"Email\", \"ActionCenter\"],\n          \"connections\": {},\n          \"assignee\": { \"type\": \"group\" }\n        },\n        \"priority\": \"Low\",\n        \"schema\": {\n          \"schemaId\": \"b4e2a1f7-3c6d-4e8b-a9d0-7f2c5e1b3a6d\",\n          \"fields\": [\n            {\n              \"id\": \"amount\",\n              \"label\": \"Expense Amount\",\n              \"type\": \"number\",\n              \"direction\": \"input\",\n              \"binding\": \"vars.start.output.amount\"\n            },\n            {\n              \"id\": \"requestername\",\n              \"label\": \"Requester Name\",\n              \"type\": \"string\",\n              \"direction\": \"input\",\n              \"binding\": \"vars.start.output.requesterName\"\n            },\n            {\n              \"id\": \"category\",\n              \"label\": \"Category\",\n              \"type\": \"string\",\n              \"direction\": \"input\",\n              \"binding\": \"vars.start.output.category\"\n            },\n            {\n              \"id\": \"approved\",\n              \"label\": \"Approved\",\n              \"type\": \"boolean\",\n              \"direction\": \"output\",\n              \"variable\": \"vars.approved\",\n              \"required\": true\n            },\n            {\n              \"id\": \"comments\",\n              \"label\": \"Comments\",\n              \"type\": \"string\",\n              \"direction\": \"output\",\n              \"variable\": \"vars.comments\"\n            }\n          ],\n          \"outcomes\": [\n            {\n              \"id\": \"approve\",\n              \"name\": \"Approve\",\n              \"type\": \"string\",\n              \"isPrimary\": true,\n              \"action\": \"Continue\"\n            },\n            {\n              \"id\": \"reject\",\n              \"name\": \"Reject\",\n              \"type\": \"string\",\n              \"isPrimary\": false,\n              \"action\": \"End\"\n            }\n          ]\n        }\n      },\n      \"outputs\": {\n        \"output\": {\n          \"type\": \"object\",\n          \"description\": \"Task result data\",\n          \"source\": \"=result\",\n          \"var\": \"output\",\n          \"properties\": {\n            \"approved\":  { \"type\": \"boolean\" },\n            \"comments\":  { \"type\": \"string\" },\n            \"Action\":    { \"type\": \"string\", \"enum\": [\"Approve\", \"Reject\"], \"default\": \"Approve\" }\n          }\n        },\n        \"status\": {\n          \"type\": \"string\",\n          \"description\": \"Task completion status\",\n          \"source\": \"=result.Action\",\n          \"var\": \"status\",\n          \"enum\": [\"Approve\", \"Reject\"],\n          \"default\": \"Approve\"\n        }\n      }\n    },\n    {\n      \"id\": \"logDecision1\",\n      \"type\": \"core.script\",\n      \"typeVersion\": \"1.0\",\n      \"display\": {\n        \"label\": \"Log Decision\"\n      },\n      \"inputs\": {\n        \"script\": \"const approved = $vars.expenseReview1.output.approved;\\nconst comments = $vars.expenseReview1.output.comments;\\nconsole.log(`Decision: ${approved}, Comments: ${comments}`);\\nreturn { approved, comments };\"\n      }\n    },\n    {\n      \"id\": \"end1\",\n      \"type\": \"core.end\",\n      \"typeVersion\": \"1.0\",\n      \"display\": {\n        \"label\": \"End\"\n      },\n      \"inputs\": {}\n    }\n  ],\n  \"edges\": [\n    {\n      \"id\": \"start-output-expenseReview1-input\",\n      \"sourceNodeId\": \"start\",\n      \"sourcePort\": \"output\",\n      \"targetNodeId\": \"expenseReview1\",\n      \"targetPort\": \"input\"\n    },\n    {\n      \"id\": \"expenseReview1-completed-logDecision1-input\",\n      \"sourceNodeId\": \"expenseReview1\",\n      \"sourcePort\": \"completed\",\n      \"targetNodeId\": \"logDecision1\",\n      \"targetPort\": \"input\"\n    },\n    {\n      \"id\": \"logDecision1-output-end1-input\",\n      \"sourceNodeId\": \"logDecision1\",\n      \"sourcePort\": \"output\",\n      \"targetNodeId\": \"end1\",\n      \"targetPort\": \"input\"\n    }\n  ],\n  \"definitions\": [\n    {\n      \"nodeType\": \"core.trigger.manual\",\n      \"version\": \"1.0\",\n      \"category\": \"trigger\",\n      \"description\": \"Start workflow manually\",\n      \"tags\": [\"trigger\", \"start\", \"manual\"],\n      \"sortOrder\": 40,\n      \"display\": {\n        \"label\": \"Manual trigger\",\n        \"icon\": \"play\",\n        \"shape\": \"circle\"\n      },\n      \"handleConfiguration\": [\n        {\n          \"position\": \"right\",\n          \"handles\": [\n            {\n              \"id\": \"output\",\n              \"type\": \"source\",\n              \"handleType\": \"output\",\n              \"showButton\": true,\n              \"constraints\": {\n                \"forbiddenTargetCategories\": [\"trigger\"]\n              }\n            }\n          ],\n          \"visible\": true\n        }\n      ],\n      \"model\": {\n        \"type\": \"bpmn:StartEvent\",\n        \"entryPointId\": true\n      },\n      \"outputDefinition\": {\n        \"output\": {\n          \"type\": \"object\",\n          \"description\": \"Data passed when manually triggering the workflow.\",\n          \"source\": \"null\",\n          \"var\": \"output\"\n        }\n      },\n      \"toolbarExtensions\": {\n        \"design\": {\n          \"actions\": [\n            {\n              \"id\": \"change-trigger-type\",\n              \"icon\": \"square-mouse-pointer\",\n              \"label\": \"Change trigger type\"\n            }\n          ]\n        }\n      }\n    },\n    {\n      \"nodeType\": \"uipath.human-in-the-loop.quick-form\",\n      \"version\": \"1.0\",\n      \"category\": \"human-task\",\n      \"description\": \"Fast inline approvals with inline debug\",\n      \"tags\": [\"human-task\", \"hitl\", \"human-in-the-loop\", \"quick-form\", \"approval\"],\n      \"sortOrder\": 27,\n      \"display\": {\n        \"label\": \"Quick Form\",\n        \"icon\": \"users\",\n        \"shape\": \"square\"\n      },\n      \"handleConfiguration\": [\n        {\n          \"position\": \"left\",\n          \"handles\": [\n            {\n              \"id\": \"input\",\n              \"type\": \"target\",\n              \"handleType\": \"input\"\n            }\n          ],\n          \"visible\": true\n        },\n        {\n          \"position\": \"right\",\n          \"handles\": [\n            {\n              \"id\": \"completed\",\n              \"label\": \"Completed\",\n              \"type\": \"source\",\n              \"handleType\": \"output\",\n              \"showButton\": true,\n              \"constraints\": {\n                \"forbiddenTargetCategories\": [\"trigger\"]\n              }\n            }\n          ],\n          \"visible\": true\n        }\n      ],\n      \"model\": { \"type\": \"bpmn:UserTask\", \"serviceType\": \"Actions.HITL\" },\n      \"inputDefaults\": {\n        \"schema\": {\n          \"fields\": [],\n          \"outcomes\": [\n            {\n              \"id\": \"submit\",\n              \"name\": \"Submit\",\n              \"type\": \"string\",\n              \"isPrimary\": true,\n              \"action\": \"Continue\"\n            }\n          ]\n        },\n        \"recipient\": {\n          \"channels\": [\"Email\", \"ActionCenter\"],\n          \"connections\": {},\n          \"assignee\": { \"type\": \"group\" }\n        }\n      },\n      \"outputDefinition\": {\n        \"output\": {\n          \"type\": \"object\",\n          \"description\": \"Task result data\",\n          \"source\": \"=result\",\n          \"var\": \"output\"\n        },\n        \"status\": {\n          \"type\": \"string\",\n          \"description\": \"Task completion status\",\n          \"source\": \"=result.Action\",\n          \"var\": \"status\"\n        }\n      }\n    },\n    {\n      \"nodeType\": \"core.script\",\n      \"version\": \"1.0\",\n      \"category\": \"action\",\n      \"description\": \"Execute a JavaScript snippet\",\n      \"tags\": [\"script\", \"code\", \"js\"],\n      \"sortOrder\": 10,\n      \"display\": {\n        \"label\": \"Script\",\n        \"icon\": \"code\",\n        \"shape\": \"square\"\n      },\n      \"handleConfiguration\": [\n        {\n          \"position\": \"left\",\n          \"handles\": [\n            {\n              \"id\": \"input\",\n              \"type\": \"target\",\n              \"handleType\": \"input\"\n            }\n          ],\n          \"visible\": true\n        },\n        {\n          \"position\": \"right\",\n          \"handles\": [\n            {\n              \"id\": \"output\",\n              \"type\": \"source\",\n              \"handleType\": \"output\",\n              \"showButton\": true,\n              \"constraints\": {\n                \"forbiddenTargetCategories\": [\"trigger\"]\n              }\n            }\n          ],\n          \"visible\": true\n        }\n      ],\n      \"model\": { \"type\": \"bpmn:ScriptTask\" },\n      \"outputDefinition\": {\n        \"output\": {\n          \"type\": \"object\",\n          \"description\": \"Script return value\",\n          \"source\": \"=result\",\n          \"var\": \"output\"\n        }\n      }\n    },\n    {\n      \"nodeType\": \"core.end\",\n      \"version\": \"1.0\",\n      \"category\": \"end\",\n      \"description\": \"End the workflow\",\n      \"tags\": [\"end\", \"stop\", \"finish\"],\n      \"sortOrder\": 99,\n      \"display\": {\n        \"label\": \"End\",\n        \"icon\": \"stop-circle\",\n        \"shape\": \"circle\"\n      },\n      \"handleConfiguration\": [\n        {\n          \"position\": \"left\",\n          \"handles\": [\n            {\n              \"id\": \"input\",\n              \"type\": \"target\",\n              \"handleType\": \"input\"\n            }\n          ],\n          \"visible\": true\n        }\n      ],\n      \"model\": { \"type\": \"bpmn:EndEvent\" }\n    }\n  ],\n  \"layout\": {\n    \"nodes\": {\n      \"start\": {\n        \"position\": { \"x\": 100, \"y\": 200 }\n      },\n      \"expenseReview1\": {\n        \"position\": { \"x\": 400, \"y\": 200 }\n      },\n      \"logDecision1\": {\n        \"position\": { \"x\": 700, \"y\": 200 }\n      },\n      \"end1\": {\n        \"position\": { \"x\": 1000, \"y\": 200 }\n      }\n    }\n  },\n  \"variables\": {\n    \"globals\": [],\n    \"nodes\": [\n      {\n        \"id\": \"start.output\",\n        \"type\": \"object\",\n        \"description\": \"Data passed when manually triggering the workflow.\",\n        \"binding\": { \"nodeId\": \"start\", \"outputId\": \"output\" }\n      },\n      {\n        \"id\": \"expenseReview1.output\",\n        \"type\": \"object\",\n        \"description\": \"Task result data\",\n        \"binding\": { \"nodeId\": \"expenseReview1\", \"outputId\": \"output\" }\n      },\n      {\n        \"id\": \"expenseReview1.status\",\n        \"type\": \"string\",\n        \"description\": \"Task completion status\",\n        \"binding\": { \"nodeId\": \"expenseReview1\", \"outputId\": \"status\" }\n      },\n      {\n        \"id\": \"logDecision1.output\",\n        \"type\": \"object\",\n        \"description\": \"Script return value\",\n        \"binding\": { \"nodeId\": \"logDecision1\", \"outputId\": \"output\" }\n      }\n    ]\n  }\n}\n"
+          },
+          "result_status": "success",
+          "result_summary": "The file /work/output/artifacts/skill-flow-hitl-quality-result-downstream/ExpenseApproval/ExpenseApproval/ExpenseApproval.flow has been updated successfully. (file state is current in your context — no need to Read it back)",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 12,
+          "result_tokens": 56
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_01VB6NiMx2KJ26du6BvpegKP",
+          "assistant_turn_index": 23,
+          "timestamp": "2026-07-24T17:39:36.723330",
+          "duration_ms": 5947.425251011737,
+          "generation_completed_at": "2026-07-24T17:39:36.723330",
+          "execution_started_at": "2026-07-24T17:39:36.723416",
+          "execution_completed_at": "2026-07-24T17:39:42.670841",
+          "parameters": {
+            "command": "uip maestro flow validate /work/output/artifacts/skill-flow-hitl-quality-result-downstream/ExpenseApproval/ExpenseApproval/ExpenseApproval.flow --output json 2>&1",
+            "description": "Validate the ExpenseApproval flow"
+          },
+          "result_status": "success",
+          "result_summary": "[ManifestClient] fetchDynamicNodes ok: total=207 agent context nodes=2 external agent nodes=6 orchestrator nodes=158 IXP nodes=41\n{\n  \"Result\": \"Success\",\n  \"Code\": \"FlowValidate\",\n  \"Data\": {\n    \"File\": \"/work/output/artifacts/skill-flow-hitl-quality-result-downstream/ExpenseApproval/ExpenseApproval/ExpenseApproval.flow\",\n    \"Status\": \"Valid\"\n  }\n}",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 13,
+          "result_tokens": 89
+        },
+        {
+          "tool_name": "TaskUpdate",
+          "tool_id": "toolu_bdrk_01PwuavnL9DKXXwHTGqqsQ7y",
+          "assistant_turn_index": 25,
+          "timestamp": "2026-07-24T17:39:44.855347",
+          "duration_ms": 7.251428090967238,
+          "generation_completed_at": "2026-07-24T17:39:44.855347",
+          "execution_started_at": "2026-07-24T17:39:44.855398",
+          "execution_completed_at": "2026-07-24T17:39:44.862649",
+          "parameters": {
+            "taskId": "1",
+            "status": "completed"
+          },
+          "result_status": "success",
+          "result_summary": "Updated task #1 status",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 14,
+          "result_tokens": 6
+        }
+      ],
+      "timestamp": "2026-07-24T17:39:57.727258",
+      "duration_seconds": 174.55510834197048,
+      "token_usage": {
+        "uncached_input_tokens": 17,
+        "output_tokens": 11409,
+        "cache_creation_input_tokens": 28686,
+        "cache_read_input_tokens": 610361,
+        "total_cost_usd": 0.4618668,
+        "input_tokens": 639064
+      },
+      "model_used": "claude-sonnet-4-6",
+      "assistant_turn_count": 27,
+      "messages": [
+        {
+          "role": "assistant",
+          "started_at": "2026-07-24T17:37:03.171062",
+          "completed_at": "2026-07-24T17:37:08.683726",
+          "generation_duration_ms": 5512.69045798108,
+          "content_blocks": [
+            {
+              "block_type": "thinking",
+              "sequence": 0,
+              "text": null,
+              "thinking": "The user wants me to build a UiPath Flow named \"ExpenseApproval\" with specific requirements. Let me invoke the UiPath HITL skill to handle this task properly.",
+              "signature": "EukCCmcIEBABGAIqQIx+B9bz7cNP/DQAiLeayoJO81uI4sGzeXVjFQ786opy6EbKuLhJUHXOmOsH90zqDseGNE5kM/Tzqj2FxEPUphsyEWNsYXVkZS1zb25uZXQtNC02OABCCHRoaW5raW5nEgx0OzPmFpFJOBH7B50aDDltyaFenHMJcyf5hCIwLqiczNGR2T4JUFn7Zy9xKL/9tbWqXnBgJWtvI8fIVBuUtFkDa3DbxSKodh2V5iI5Kq8BBtUQayZjoKVhu+DY3poL8UrUynkyIUaPYY9SeYcz1HQS9xmLsDr64rXDbtc3YiQLbpwXP/yeIrkHo26kzRs5JYjbnouoV16UDYqRXwQb9V35N2j9hSZqn8Oz0YLL6FWrTHkYw0dmz0nQ+qFpHwurYpk+pFS0eGtatIm2D3EQN5EDrCCeWOFmDi2miH74SzI6NdUTP4s1LFnp2YDZ76Z2knJB0+fNT3w61gBfXdbAmxgB",
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 2,
+          "output_tokens": 92,
+          "cache_creation_tokens": 3422,
+          "cache_read_tokens": 22982,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01XVpoV5MVrgv5byra9Bpkbo",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-24T17:37:08.683726",
+          "completed_at": "2026-07-24T17:37:09.149054",
+          "generation_duration_ms": 465.3273420408368,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_016ySUbEY33hvJTWxge7NgEH",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_016ySUbEY33hvJTWxge7NgEH"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 29,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01XVpoV5MVrgv5byra9Bpkbo",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-24T17:37:09.249119",
+          "completed_at": "2026-07-24T17:37:14.306508",
+          "generation_duration_ms": 5057.388779008761,
+          "content_blocks": [
+            {
+              "block_type": "thinking",
+              "sequence": 0,
+              "text": null,
+              "thinking": "Let me follow the skill instructions step by step.\n\n**Step 0** — Resolve the `uip` binary\n**Step 1** — Detect the surface and find the flow file\n**Step 3** — The user explicitly asked for QuickForm (inline quickform node `uipath.human-in-the-loop.quick-form`), so I can skip asking.\n\nThe user wants:\n- A UiPath Flow named \"ExpenseApproval\"\n- Manual trigger starts the flow\n- HITL node with QuickForm\n- Script node\n- End node\n\nSince no `.flow` file exists yet, I need to scaffold a solution first.\n\nLet me read the QuickForm reference doc before proceeding.",
+              "signature": "Ev0FCmcIEBABGAIqQHdGhLOQRB9GGZlXNn6L4jzXVYnrozW6dkGQ+l71LfZEfEYMDWe5L5pFM2ZWpnMZP7SD/d5bo0cg0K3co+tQ9xoyEWNsYXVkZS1zb25uZXQtNC02OABCCHRoaW5raW5nEgzo/HEazdjTQBLATuMaDEvNOydZC8OJOghxjSIwkB7NrWyCQDf7ynm52VdUdaJyeVlo1YJ76NJmm4vM0Zf5iodTZ4le1co+m3a+uD5jKsMERX7tnFDQKR4cA8jl4xidC8mFRAZGKAGXgjk34eCKz/P7zOWAnbTZ2e3pqs4TFLzqAllS0nCin4m7MEFd+gOMyGA+sr+AkBv4QBhDlIMgmg3iAlktvgpBNuD7qTcw6H+2Q48XIWnKu/m0sqzY4br+FDltuIrm2uoSPJJso7LkbPOtDyDY/z08NGgfVfT3VdcfQbnoOYB6mzwOyttnQc7fr5++tYsfS0ZiXW34c0YjWcXBBs7/cOuo33q2wdeM669He93FCPnyB4W2Y6zUlE87cLZkCqM5w1pJNm+c44Rnq4SKZKRT8lGCP8AgPEehaH567OTd02RltTUooRY3sul8n4XRK8mP0ZXez5+BxT2dxmZtndNpulmfh3coF4ULgimudv9B+FxuLmfU/JIY96d6TslY8hjTdYMapctJtG0kdDG+PlJjeo5NiYndWMFmEU3U2wl8ukn/YJxLoZqvMCGc17Ep/KgxKiieqWIB4vwkA+2q+DlOSoqkFwhxqLZ8ex7Gf4hxSYf3RdCxEbTZmq1RFqR+4v6vfGUHJq1lJ386O598Q6f9WSsSLm8g3qVmON+FqBMDXqq04/XawewVdcxVub7+eHw4BTSvphfDMv9Dms4EmA0gX4wrFqFxYllRXCVgr6GF2NYunHh13l4oGYD1xBuB1seTCD6rjH1fETjpck2vFwAhDY/6Vs7kq5uRqH57JrBqIqgFpVEQJavuZ0Nwip0D8mP47rFfM6YSwMR5874s0JyUZuynLdmeYoN1pPVJlgyKGAE=",
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 2,
+          "output_tokens": 226,
+          "cache_creation_tokens": 5776,
+          "cache_read_tokens": 26404,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01PKTNxf8Xk63TWLVXx4CGYM",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-24T17:37:14.306508",
+          "completed_at": "2026-07-24T17:37:14.977635",
+          "generation_duration_ms": 671.1260499432683,
+          "content_blocks": [
+            {
+              "block_type": "text",
+              "sequence": 0,
+              "text": "I'll follow the skill steps in order. Let me start by resolving the `uip` binary and reading the QuickForm reference — both in parallel.",
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 0,
+          "output_tokens": 55,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01PKTNxf8Xk63TWLVXx4CGYM",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-24T17:37:14.977635",
+          "completed_at": "2026-07-24T17:37:16.625176",
+          "generation_duration_ms": 1647.5411140127108,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01YA4kx8T682ejSxZznbfiZY",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01YA4kx8T682ejSxZznbfiZY"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 85,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01PKTNxf8Xk63TWLVXx4CGYM",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-24T17:37:16.860446",
+          "completed_at": "2026-07-24T17:37:17.438951",
+          "generation_duration_ms": 578.5049250116572,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01MVVGdqxJ7ccUUM59UVUtPr",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01MVVGdqxJ7ccUUM59UVUtPr"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 48,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01PKTNxf8Xk63TWLVXx4CGYM",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-24T17:37:17.454489",
+          "completed_at": "2026-07-24T17:37:19.240865",
+          "generation_duration_ms": 1786.3743889611214,
+          "content_blocks": [
+            {
+              "block_type": "thinking",
+              "sequence": 0,
+              "text": null,
+              "thinking": "Now let me find the uip binary properly and check the working directory for existing .flow files.",
+              "signature": "EqsCCmcIEBABGAIqQNpKzsfbtSvJO42h+HKi+HPjgmxCpZ1BbUhIPtd0GAOliJyUcpYCDedHPpuNDj3T+pKh4hzoxJQ9ojNlIZriE1syEWNsYXVkZS1zb25uZXQtNC02OABCCHRoaW5raW5nEgxs3KXv/iA6w4yV3u4aDKWBsORVVjHIXeMZICIwgBdDWzyjldlDc4HNHxUmn9aWzDTY+ijPqiKtamz9U/5WzllaBV9y6fZu86hVLzOaKnLt4fSdXtar/wcZz8cOmuNaoO+rxRASVKFtSqi+E7rINkF5iFCrlwIXGz7TbTORVCracg8zi3oyCVu6neD0aWyx1yYT+Vc5QKuKv1Lm/ABYkfU9/LLflnwDYcMF/sm5u9R/Z0xP8lJzQlVV2bS9SBBKHWsYAQ==",
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 1,
+          "output_tokens": 42,
+          "cache_creation_tokens": 7484,
+          "cache_read_tokens": 32180,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_013AMwG7uCL8QWZauGvabebc",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-24T17:37:19.240865",
+          "completed_at": "2026-07-24T17:37:19.754645",
+          "generation_duration_ms": 513.7800310039893,
+          "content_blocks": [
+            {
+              "block_type": "text",
+              "sequence": 0,
+              "text": "Good. Now let me find the `uip` binary properly and check if there's an existing `.flow` file in the working directory:",
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 0,
+          "output_tokens": 51,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_013AMwG7uCL8QWZauGvabebc",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-24T17:37:19.754645",
+          "completed_at": "2026-07-24T17:37:21.672391",
+          "generation_duration_ms": 1917.746526072733,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_015YEEEBAQh3Y6KKp2gB2n1W",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_015YEEEBAQh3Y6KKp2gB2n1W"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 109,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_013AMwG7uCL8QWZauGvabebc",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-24T17:37:21.721958",
+          "completed_at": "2026-07-24T17:37:24.004463",
+          "generation_duration_ms": 2282.5048440136015,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_019ri3xRJLKV8CaSEngyZPBT",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_019ri3xRJLKV8CaSEngyZPBT"
+          ],
+          "input_tokens": 1,
+          "output_tokens": 75,
+          "cache_creation_tokens": 187,
+          "cache_read_tokens": 39664,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_012sUFoBZX3qr78LVtMzS3Ep",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-24T17:37:24.831524",
+          "completed_at": "2026-07-24T17:37:26.666653",
+          "generation_duration_ms": 1835.1281000068411,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01351DzALCWCkCCkxmT7yLhf",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01351DzALCWCkCCkxmT7yLhf"
+          ],
+          "input_tokens": 1,
+          "output_tokens": 111,
+          "cache_creation_tokens": 97,
+          "cache_read_tokens": 39851,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01DqeP1uZQKyvXXhi4ie51Ke",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-24T17:37:27.785165",
+          "completed_at": "2026-07-24T17:37:29.650033",
+          "generation_duration_ms": 1864.8669800022617,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01Kiw1KPYXzmApicMPnw1xbi",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01Kiw1KPYXzmApicMPnw1xbi"
+          ],
+          "input_tokens": 1,
+          "output_tokens": 112,
+          "cache_creation_tokens": 318,
+          "cache_read_tokens": 39948,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01W59RdEwXKEB1R2czstB5to",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-24T17:37:30.648375",
+          "completed_at": "2026-07-24T17:37:32.676956",
+          "generation_duration_ms": 2028.5816990071908,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01UtkZrtegkiR3KUAREbkbRc",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01UtkZrtegkiR3KUAREbkbRc"
+          ],
+          "input_tokens": 1,
+          "output_tokens": 123,
+          "cache_creation_tokens": 275,
+          "cache_read_tokens": 40266,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01CRVQX2F1fwnMR7BJ3VrnDm",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-24T17:37:40.373233",
+          "completed_at": "2026-07-24T17:37:42.122038",
+          "generation_duration_ms": 1748.8044949714094,
+          "content_blocks": [
+            {
+              "block_type": "text",
+              "sequence": 0,
+              "text": "The solution and flow project are scaffolded. Now let me read the generated `.flow` file:",
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 1,
+          "output_tokens": 44,
+          "cache_creation_tokens": 786,
+          "cache_read_tokens": 40541,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_016vveUgJhdzv7XbNYm1SZ5i",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-24T17:37:42.122038",
+          "completed_at": "2026-07-24T17:37:42.829425",
+          "generation_duration_ms": 707.3877980001271,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_012dTs953fbma5RrZHmsQJcu",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_012dTs953fbma5RrZHmsQJcu"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 90,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_016vveUgJhdzv7XbNYm1SZ5i",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-24T17:37:42.869876",
+          "completed_at": "2026-07-24T17:37:44.404905",
+          "generation_duration_ms": 1535.0280069978908,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01KEe5R8Vy4pGTi6HD2otVdi",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01KEe5R8Vy4pGTi6HD2otVdi"
+          ],
+          "input_tokens": 1,
+          "output_tokens": 91,
+          "cache_creation_tokens": 184,
+          "cache_read_tokens": 41327,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01FCfgu1EfZa7ZAybZzSn4vX",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-24T17:37:44.418044",
+          "completed_at": "2026-07-24T17:38:54.430323",
+          "generation_duration_ms": 70012.2788780136,
+          "content_blocks": [
+            {
+              "block_type": "thinking",
+              "sequence": 0,
+              "text": null,
+              "thinking": "Now I have a clear picture of the scaffolded flow. I need to:\n\n1. Build the full flow with:\n   - Manual trigger (already exists: `start`)\n   - HITL node (`expenseReview1`) with QuickForm\n   - Script node (`logDecision1`) that reads `$vars.expenseReview1.output.approved` and `$vars.expenseReview1.output.comments`\n   - End node (`end1`)\n\n2. Wire: start -> expenseReview1 (completed) -> logDecision1 -> end1\n\nLet me plan the complete `.flow` JSON:\nThe HITL node will display the expense details as read-only fields (amount, requester name, category) and let the reviewer provide an approval decision and optional comments. The script node will then log that decision with the reviewer's feedback, pulling from the HITL output. I'm identifying the standard node types I need — `core.end` for the end node and `core.script` for the script node — and now I'm building out the complete flow JSON with all the necessary variable outputs from each node, including the trigger, HITL review, and script nodes. For the input fields in the HITL node, I'll bind them to the manual trigger's output variables—`vars.start.output.amount`, `vars.start.output.requesterName`, and `vars.start.output.category`—so the reviewer sees the expense details passed when the flow is triggered. The field IDs will map to these bindings in lowercase.\n\nFor the output fields, I'm setting up `approved` as a boolean and `comments` as a string that the reviewer will provide. The outcomes are Approve (which continues the flow) and Reject (which ends it).\n\nIn the script node, I'm extracting the approval decision and comments from the HITL node's output and logging them for debugging purposes.\n\nNow I need to determine the correct node type identifiers and structure the complete flow JSON, including the layout section that positions each node visually. Finishing the node positions and now I need to figure out the exact format for the script and end node definitions—I'll check the UiPath Flow documentation or examine what the CLI scaffold generates to get the right structure. I'll validate the format by running it and fixing any errors iteratively. Script nodes in UiPath Flow follow a standard pattern with id, type, typeVersion, display label, and inputs containing the code—the output is whatever the script returns. End nodes are simpler with just id, type, and display. I'm thinking through the handle structure for these nodes too, where the script node has a left input handle.\n\nWriting node definitions... Writing the flow JSON... Writing form fields... Writing config schema... Completing the workflow connections and layout positioning... Writing config JSON... Writing node definitions... I need to figure out where `variables` sits in the top-level structure of the flow file, since it's not wrapped in a `workflow` object like the skill docs suggest. Let me write out the complete flow file now and see what validation tells me.",
+              "signature": "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",
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 1,
+          "output_tokens": 4695,
+          "cache_creation_tokens": 5928,
+          "cache_read_tokens": 41511,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01JnPUmC16wY2d6qGNosyB9C",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-24T17:38:54.430323",
+          "completed_at": "2026-07-24T17:38:54.439489",
+          "generation_duration_ms": 9.16665606200695,
+          "content_blocks": [
+            {
+              "block_type": "text",
+              "sequence": 0,
+              "text": "Now I have all the context I need. Let me build the complete flow JSON with all four nodes — manual trigger (existing), HITL QuickForm, script, and end — then wire them up and validate.",
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 0,
+          "output_tokens": 298,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01JnPUmC16wY2d6qGNosyB9C",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-24T17:38:54.439489",
+          "completed_at": "2026-07-24T17:38:55.948232",
+          "generation_duration_ms": 1508.7422999786213,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_012nb3TkFNPkr4RuNBRpWFS8",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_012nb3TkFNPkr4RuNBRpWFS8"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 487,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01JnPUmC16wY2d6qGNosyB9C",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-24T17:38:55.957521",
+          "completed_at": "2026-07-24T17:38:57.563630",
+          "generation_duration_ms": 1606.109327985905,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_014b3UVBLzxdmieXtRtCKQa1",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_014b3UVBLzxdmieXtRtCKQa1"
+          ],
+          "input_tokens": 1,
+          "output_tokens": 72,
+          "cache_creation_tokens": 210,
+          "cache_read_tokens": 47439,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_011AjBoxczkpJrwPHNjFcDP2",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-24T17:38:57.572548",
+          "completed_at": "2026-07-24T17:39:01.638001",
+          "generation_duration_ms": 4065.4522540280595,
+          "content_blocks": [
+            {
+              "block_type": "text",
+              "sequence": 0,
+              "text": "Now I'll write the complete `.flow` file. Let me carefully construct it:\n\n- **HITL node id:** `expenseReview1`  \n- **Script node id:** `logDecision1`  \n- **End node id:** `end1`  \n- HITL fields: `amount` (number, input), `requestername` (string, input), `category` (string, input), `approved` (boolean, output, required), `comments` (string, output, optional)  \n- Outcomes: `Approve` (primary), `Reject`  \n- Script references: `$vars.expenseReview1.output.approved` and `$vars.expenseReview1.output.comments`",
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 1,
+          "output_tokens": 138,
+          "cache_creation_tokens": 90,
+          "cache_read_tokens": 47649,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01DwYDLuvzbiXizpqK3DpnsA",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-24T17:39:01.638001",
+          "completed_at": "2026-07-24T17:39:34.160378",
+          "generation_duration_ms": 32522.376699955203,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01EgvamGnobdQbM3Huv96krF",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01EgvamGnobdQbM3Huv96krF"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 3346,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01DwYDLuvzbiXizpqK3DpnsA",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-24T17:39:34.249618",
+          "completed_at": "2026-07-24T17:39:35.658607",
+          "generation_duration_ms": 1408.9890810428187,
+          "content_blocks": [
+            {
+              "block_type": "text",
+              "sequence": 0,
+              "text": "Now validate:",
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 1,
+          "output_tokens": 7,
+          "cache_creation_tokens": 3557,
+          "cache_read_tokens": 47739,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01AtxJtzKd3r4aJQ61nijfJH",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-24T17:39:35.658607",
+          "completed_at": "2026-07-24T17:39:36.723330",
+          "generation_duration_ms": 1064.7229140158743,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01VB6NiMx2KJ26du6BvpegKP",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01VB6NiMx2KJ26du6BvpegKP"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 125,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01AtxJtzKd3r4aJQ61nijfJH",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-24T17:39:42.670782",
+          "completed_at": "2026-07-24T17:39:44.453992",
+          "generation_duration_ms": 1783.2099269144237,
+          "content_blocks": [
+            {
+              "block_type": "text",
+              "sequence": 0,
+              "text": "✅ **Validation passed — `Status: \"Valid\"`**",
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 1,
+          "output_tokens": 41,
+          "cache_creation_tokens": 268,
+          "cache_read_tokens": 51296,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_011KdDS4VKbRefE3nNt9LGJd",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-24T17:39:44.453992",
+          "completed_at": "2026-07-24T17:39:44.855347",
+          "generation_duration_ms": 401.3545720372349,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01PwuavnL9DKXXwHTGqqsQ7y",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01PwuavnL9DKXXwHTGqqsQ7y"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 45,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_011KdDS4VKbRefE3nNt9LGJd",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-24T17:39:44.862618",
+          "completed_at": "2026-07-24T17:39:57.637986",
+          "generation_duration_ms": 12775.366849033162,
+          "content_blocks": [
+            {
+              "block_type": "text",
+              "sequence": 0,
+              "text": "The **ExpenseApproval** flow is built and validated. Here's a full summary:\n\n---\n\n## What Was Built\n\n### Flow: `ExpenseApproval`\n**File:** `ExpenseApproval/ExpenseApproval/ExpenseApproval.flow`  \n**Validation:** ✅ `Status: \"Valid\"`\n\n---\n\n### Nodes\n\n| # | ID | Type | Label |\n|---|---|---|---|\n| 1 | `start` | `core.trigger.manual` | Manual trigger |\n| 2 | `expenseReview1` | `uipath.human-in-the-loop.quick-form` | Expense Review |\n| 3 | `logDecision1` | `core.script` | Log Decision |\n| 4 | `end1` | `core.end` | End |\n\n---\n\n### HITL Schema — `expenseReview1`\n\n**What the reviewer sees (read-only inputs):**\n\n| Field ID | Label | Type | Bound to |\n|---|---|---|---|\n| `amount` | Expense Amount | number | `vars.start.output.amount` |\n| `requestername` | Requester Name | string | `vars.start.output.requesterName` |\n| `category` | Category | string | `vars.start.output.category` |\n\n**What the reviewer fills in (outputs):**\n\n| Field ID | Label | Type | Required |\n|---|---|---|---|\n| `approved` | Approved | boolean | ✅ required |\n| `comments` | Comments | string | optional |\n\n**Outcomes:**\n- **Approve** (primary, `action: Continue`)\n- **Reject** (`action: End`)\n\n---\n\n### Edges\n\n```\nstart  --[output]-->    expenseReview1  --[completed]-->  logDecision1  --[output]-->  end1\n```\n\nThe HITL node is wired on the `completed` handle — the only valid handle for QuickForm nodes.\n\n---\n\n### Script Node (`logDecision1`)\n\n```javascript\nconst approved  = $vars.expenseReview1.output.approved;\nconst comments  = $vars.expenseReview1.output.comments;\nconsole.log(`Decision: ${approved}, Comments: ${comments}`);\nreturn { approved, comments };\n```\n\nBoth fields are accessed via `$vars.<nodeId>.output.<fieldId>` — the correct runtime path using field IDs, not variable alias names.\n\n---\n\n### Runtime Variables Available Downstream\n\n| Variable | Type | Contents |\n|---|---|---|\n| `$vars.expenseReview1.output` | object | Full task result (`approved`, `comments`, `Action`) |\n| `$vars.expenseReview1.output.approved` | boolean | Reviewer's approval decision |\n| `$vars.expenseReview1.output.comments` | string | Reviewer's optional comments |\n| `$vars.expenseReview1.status` | string | Selected outcome name (`\"Approve\"` or `\"Reject\"`) |\n\n---\n\n**Production readiness:** QuickForm is inline — no additional build steps. Once the solution is packaged with `uip solution pack . ./out` and published with `uip solution publish`, the flow is ready to deploy.",
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 1,
+          "output_tokens": 772,
+          "cache_creation_tokens": 104,
+          "cache_read_tokens": 51564,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01K1eHUwjW1kaPmPtrPBysoV",
+          "parent_tool_use_id": null
+        }
+      ],
+      "num_turns": 17,
+      "max_turns_exhausted": false,
+      "result_summary": {
+        "is_error": false,
+        "subtype": "success",
+        "stop_reason": "end_turn",
+        "result": "The **ExpenseApproval** flow is built and validated. Here's a full summary:\n\n---\n\n## What Was Built\n\n### Flow: `ExpenseApproval`\n**File:** `ExpenseApproval/ExpenseApproval/ExpenseApproval.flow`  \n**Validation:** ✅ `Status: \"Valid\"`\n\n---\n\n### Nodes\n\n| # | ID | Type | Label |\n|---|---|---|---|\n| 1 | `start` | `core.trigger.manual` | Manual trigger |\n| 2 | `expenseReview1` | `uipath.human-in-the-loop.quick-form` | Expense Review |\n| 3 | `logDecision1` | `core.script` | Log Decision |\n| 4 | `end1` | `core.end` | End |\n\n---\n\n### HITL Schema — `expenseReview1`\n\n**What the reviewer sees (read-only inputs):**\n\n| Field ID | Label | Type | Bound to |\n|---|---|---|---|\n| `amount` | Expense Amount | number | `vars.start.output.amount` |\n| `requestername` | Requester Name | string | `vars.start.output.requesterName` |\n| `category` | Category | string | `vars.start.output.category` |\n\n**What the reviewer fills in (outputs):**\n\n| Field ID | Label | Type | Required |\n|---|---|---|---|\n| `approved` | Approved | boolean | ✅ required |\n| `comments` | Comments | string | optional |\n\n**Outcomes:**\n- **Approve** (primary, `action: Continue`)\n- **Reject** (`action: End`)\n\n---\n\n### Edges\n\n```\nstart  --[output]-->    expenseReview1  --[completed]-->  logDecision1  --[output]-->  end1\n```\n\nThe HITL node is wired on the `completed` handle — the only valid handle for QuickForm nodes.\n\n---\n\n### Script Node (`logDecision1`)\n\n```javascript\nconst approved  = $vars.expenseReview1.output.approved;\nconst comments  = $vars.expenseReview1.output.comments;\nconsole.log(`Decision: ${approved}, Comments: ${comments}`);\nreturn { approved, comments };\n```\n\nBoth fields are accessed via `$vars.<nodeId>.output.<fieldId>` — the correct runtime path using field IDs, not variable alias names.\n\n---\n\n### Runtime Variables Available Downstream\n\n| Variable | Type | Contents |\n|---|---|---|\n| `$vars.expenseReview1.output` | object | Full task result (`approved`, `comments`, `Action`) |\n| `$vars.expenseReview1.output.approved` | boolean | Reviewer's approval decision |\n| `$vars.expenseReview1.output.comments` | string | Reviewer's optional comments |\n| `$vars.expenseReview1.status` | string | Selected outcome name (`\"Approve\"` or `\"Reject\"`) |\n\n---\n\n**Production readiness:** QuickForm is inline — no additional build steps. Once the solution is packaged with `uip solution pack . ./out` and published with `uip solution publish`, the flow is ready to deploy."
+      },
+      "crashed": false,
+      "crash_reason": null
+    }
+  ],
+  "error_message": null,
+  "error_details": null,
+  "error_log_tail": null,
+  "environment_info": {
+    "git_commit": "unknown",
+    "skills_git_commit": "unknown",
+    "cli_version": "1.199.0-dev.7970",
+    "tool_plugins": {
+      "admin-tool": "1.199.0-dev.7962",
+      "agent-tool": "1.199.0-dev.7965",
+      "agenthub-tool": "1.199.0-dev.7962",
+      "aops-tool": "1.199.0-dev.7962",
+      "api-workflow-tool": "1.199.0-dev.7962",
+      "codedagent-tool": "1.199.0-dev.7965",
+      "codedapp-tool": "1.199.0-dev.7962",
+      "coder-tool": "1.199.0-dev.7962",
+      "context-grounding-tool": "1.199.0-dev.7962",
+      "conversational-tool": "1.199.0-dev.7962",
+      "data-fabric-tool": "1.199.0-dev.7962",
+      "docsai-tool": "1.199.0-dev.7962",
+      "functions-tool": "1.199.0-dev.7962",
+      "gov-tool": "1.199.0-dev.7962",
+      "insights-tool": "1.199.0-dev.7962",
+      "integrationservice-tool": "1.199.0-dev.7962",
+      "ixp-tool": "1.199.0-dev.7962",
+      "llm-gateway-tool": "1.199.0-dev.7962",
+      "llmgw-tool": "1.199.0-dev.7962",
+      "maestro-tool": "1.199.0-dev.7962",
+      "orchestrator-tool": "1.199.0-dev.7962",
+      "platform-tool": "1.199.0-dev.7962",
+      "pm-tool": "1.199.0-dev.7969",
+      "rpa-legacy-tool": "1.199.0-dev.7962",
+      "rpa-tool": "1.199.0-dev.20260722.4",
+      "solution-tool": "1.199.0-dev.7962",
+      "tasks-tool": "1.199.0-dev.7962",
+      "test-manager-tool": "1.199.0-dev.7962",
+      "traces-tool": "1.199.0-dev.7962",
+      "vertical-solutions-tool": "1.199.0-dev.7962"
+    },
+    "coder_eval": "0.8.8",
+    "claude_code_cli": "2.1.177 (Claude Code)",
+    "uv": "uv 0.11.28 (x86_64-unknown-linux-gnu)",
+    "anthropic": "0.102.0",
+    "openai": "2.47.0",
+    "pydantic": "2.12.5",
+    "api_routing": "aws_bedrock",
+    "aws_region": "us-east-2",
+    "bedrock_model": "us.anthropic.claude-sonnet-4-6"
+  },
+  "agent_config": {
+    "type": "claude-code",
+    "model": "claude-sonnet-4-6",
+    "permission_mode": "acceptEdits",
+    "allowed_tools": [
+      "Skill",
+      "Bash",
+      "Read",
+      "Write",
+      "Edit",
+      "Glob",
+      "Grep"
+    ],
+    "disallowed_tools": null,
+    "plugins": [
+      {
+        "type": "local",
+        "path": "/home/azureuser/projects/skills/"
+      }
+    ],
+    "system_prompt": "You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted.\n",
+    "system_prompt_file": null,
+    "ignore_patterns": [],
+    "claude_settings": null,
+    "sdk_options": {},
+    "setting_sources": null
+  },
+  "sdk_options": {
+    "tools": null,
+    "allowed_tools": [
+      "Skill",
+      "Bash",
+      "Read",
+      "Write",
+      "Edit",
+      "Glob",
+      "Grep"
+    ],
+    "system_prompt": "You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted.\n",
+    "mcp_servers": {},
+    "strict_mcp_config": false,
+    "permission_mode": "acceptEdits",
+    "continue_conversation": false,
+    "resume": null,
+    "session_id": null,
+    "max_turns": 65,
+    "max_budget_usd": null,
+    "disallowed_tools": [
+      "ToolSearch"
+    ],
+    "model": "us.anthropic.claude-sonnet-4-6",
+    "fallback_model": null,
+    "betas": [],
+    "permission_prompt_tool_name": null,
+    "cwd": "/work/output/artifacts/skill-flow-hitl-quality-result-downstream",
+    "cli_path": null,
+    "settings": null,
+    "add_dirs": [],
+    "env": {
+      "PATH": "/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+      "PLUGIN_TOOLS_DIR": "/usr/lib/node_modules/@uipath",
+      "CLAUDE_CODE_USE_BEDROCK": "1",
+      "AWS_BEARER_TOKEN_BEDROCK": "***REDACTED***",
+      "AWS_REGION": "us-east-2",
+      "CLAUDE_CODE_ATTRIBUTION_HEADER": "0",
+      "ANTHROPIC_MODEL": "us.anthropic.claude-sonnet-4-6",
+      "ANTHROPIC_SMALL_FAST_MODEL": "us.anthropic.claude-sonnet-4-6"
+    },
+    "extra_args": {},
+    "max_buffer_size": null,
+    "can_use_tool": null,
+    "hooks": null,
+    "user": null,
+    "include_partial_messages": true,
+    "include_hook_events": false,
+    "fork_session": false,
+    "agents": null,
+    "setting_sources": [
+      "project"
+    ],
+    "skills": null,
+    "sandbox": null,
+    "plugins": [
+      {
+        "type": "local",
+        "path": "/home/azureuser/projects/skills"
+      }
+    ],
+    "max_thinking_tokens": null,
+    "thinking": null,
+    "effort": null,
+    "output_format": null,
+    "enable_file_checkpointing": false,
+    "session_store": null,
+    "session_store_flush": "batched",
+    "load_timeout_ms": 60000,
+    "task_budget": null
+  },
+  "sandbox_path": "/work/output/artifacts/skill-flow-hitl-quality-result-downstream",
+  "task_config": {
+    "resolved": {
+      "task_id": "skill-flow-hitl-quality-result-downstream",
+      "description": "Quality test: agent correctly references the HITL node's output via $vars.<nodeId>.output in a downstream node. Tests that the agent knows the output variable path and wires it into a decision or script node.\n",
+      "initial_prompt": "Build a UiPath Flow named \"ExpenseApproval\" that:\n\n1. Manual trigger starts the flow\n2. HITL node — expense review:\n     - Reviewer sees: expense amount, requester name, category (all read-only)\n     - Reviewer fills in: approved (boolean), comments (text, optional)\n     - Outcomes: Approve (primary), Reject\n3. Script node — reads the reviewer's decision from the HITL output and\n   logs: \"Decision: <approved value>, Comments: <comments value>\"\n   The script must reference the HITL output via $vars.<nodeId>.output —\n   e.g. $vars.<nodeId>.output.approved and $vars.<nodeId>.output.comments,\n   where <nodeId> is the HITL node's id.\n4. End node\n\nWire: Trigger -> HITL ->|completed| Script -> End\n\nUse the inline quickform node (uipath.human-in-the-loop.quick-form).\nValidate the flow after building.\n",
+      "initial_prompt_file": null,
+      "tags": [
+        "uipath-maestro-flow",
+        "uipath-human-in-the-loop",
+        "integration",
+        "lifecycle:generate",
+        "shape:multi-node",
+        "node:hitl"
+      ],
+      "skip": false,
+      "agent": {
+        "type": "claude-code",
+        "model": "claude-sonnet-4-6",
+        "permission_mode": "acceptEdits",
+        "allowed_tools": [
+          "Skill",
+          "Bash",
+          "Read",
+          "Write",
+          "Edit",
+          "Glob",
+          "Grep"
+        ],
+        "disallowed_tools": null,
+        "plugins": [
+          {
+            "type": "local",
+            "path": "/home/azureuser/projects/skills/"
+          }
+        ],
+        "system_prompt": "You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted.\n",
+        "system_prompt_file": null,
+        "ignore_patterns": [],
+        "claude_settings": null,
+        "sdk_options": {},
+        "setting_sources": null
+      },
+      "sandbox": {
+        "driver": "tempdir",
+        "docker": {
+          "image": "skills-image:latest",
+          "dockerfile_path": null,
+          "build": {
+            "buildkit": null,
+            "args": {},
+            "secrets": [],
+            "extra_args": []
+          },
+          "network": "bridge",
+          "working_dir": null,
+          "env_passthrough": [
+            "ANTHROPIC_API_KEY",
+            "API_BACKEND",
+            "UIPATH_LLM_BACKEND",
+            "UIPATH_ACCESS_TOKEN",
+            "UIPATH_URL",
+            "UIPATH_TENANT_ID",
+            "UIPATH_ORGANIZATION_ID",
+            "UIPATH_CLI_DISABLE_VERSION_SYNC",
+            "AWS_BEARER_TOKEN_BEDROCK",
+            "AWS_REGION",
+            "BEDROCK_MODEL",
+            "CLAUDE_CODE_USE_BEDROCK",
+            "ANTHROPIC_MODEL",
+            "CODEX_API_KEY",
+            "CODEX_BASE_URL",
+            "CODEX_MODEL",
+            "GEMINI_API_KEY",
+            "ANTIGRAVITY_MODEL",
+            "HOME"
+          ],
+          "env_passthrough_extra": [
+            "SKILLS_REPO_PATH",
+            "BEDROCK_MODEL",
+            "TASK_PARALLELISM",
+            "UIPATH_CLI_ENABLE_ENV_AUTH",
+            "UIPATH_CLI_AUTH_TOKEN",
+            "UIPATH_CLI_ORGANIZATION_NAME",
+            "UIPATH_CLI_ORGANIZATION_ID",
+            "UIPATH_CLI_TENANT_NAME",
+            "UIPATH_CLI_TENANT_ID",
+            "TRACES_SMOKE_PROCESS_KEY",
+            "CODEX_API_KEY",
+            "CODEX_BASE_URL"
+          ],
+          "extra_mounts": [
+            "~/.uipath:/.uipath:rw"
+          ]
+        },
+        "python": {
+          "env_packages": []
+        },
+        "node": null,
+        "limits": {
+          "timeout": 300,
+          "max_memory_mb": null,
+          "max_cpus": null,
+          "max_pids": null,
+          "max_disk_mb": null
+        },
+        "template_sources": null,
+        "mock_path_dirs": null,
+        "ignore_patterns": []
+      },
+      "success_criteria": [
+        {
+          "type": "run_command",
+          "description": "uip flow validate passes",
+          "weight": 3.0,
+          "pass_threshold": 1.0,
+          "suite_thresholds": null,
+          "stop_when": null,
+          "command": "uip maestro flow validate ExpenseApproval/ExpenseApproval/ExpenseApproval.flow --output json",
+          "timeout": 30,
+          "expected_exit_code": 0,
+          "expected_stdout": null,
+          "stdout_match": "exact",
+          "score_from_stdout": false
+        },
+        {
+          "type": "file_contains",
+          "description": "Flow contains inline HITL node",
+          "weight": 2.0,
+          "pass_threshold": 1.0,
+          "suite_thresholds": null,
+          "stop_when": null,
+          "path": "ExpenseApproval/ExpenseApproval/ExpenseApproval.flow",
+          "includes": [
+            "\"uipath.human-in-the-loop.quick-form\""
+          ],
+          "excludes": null
+        },
+        {
+          "type": "file_contains",
+          "description": "Flow references the HITL output variable",
+          "weight": 3.0,
+          "pass_threshold": 1.0,
+          "suite_thresholds": null,
+          "stop_when": null,
+          "path": "ExpenseApproval/ExpenseApproval/ExpenseApproval.flow",
+          "includes": [
+            "$vars.",
+            ".output"
+          ],
+          "excludes": null
+        },
+        {
+          "type": "file_contains",
+          "description": "Flow has a boolean output field for approved",
+          "weight": 1.5,
+          "pass_threshold": 1.0,
+          "suite_thresholds": null,
+          "stop_when": null,
+          "path": "ExpenseApproval/ExpenseApproval/ExpenseApproval.flow",
+          "includes": [
+            "\"boolean\""
+          ],
+          "excludes": null
+        }
+      ],
+      "run_limits": {
+        "max_turns": 65,
+        "expected_turns": 30,
+        "task_timeout": 900,
+        "turn_timeout": 900,
+        "max_input_tokens": null,
+        "max_output_tokens": null,
+        "max_total_tokens": null,
+        "max_usd": null,
+        "count_cached_input": false,
+        "count_cache_creation": false,
+        "stop_early": false
+      },
+      "reference": null,
+      "expected_commands": null,
+      "pre_run": [],
+      "post_run": [
+        {
+          "command": "find . -maxdepth 5 -type d \\( -name node_modules -o -name .npm-prefix -o -name .venv \\) -prune -exec rm -rf {} +",
+          "timeout": 30
+        }
+      ],
+      "dataset": null,
+      "suite_id": null,
+      "row_id": null,
+      "simulation": null
+    },
+    "source_yaml": "task_id: skill-flow-hitl-quality-result-downstream\ndescription: >\n  Quality test: agent correctly references the HITL node's output via\n  $vars.<nodeId>.output in a downstream node. Tests that the agent knows\n  the output variable path and wires it into a decision or script node.\ntags: [uipath-maestro-flow, uipath-human-in-the-loop, integration, lifecycle:generate, shape:multi-node, node:hitl]\n\nrun_limits:\n  expected_turns: 30\n  max_turns: 65\ninitial_prompt: |\n  Build a UiPath Flow named \"ExpenseApproval\" that:\n\n  1. Manual trigger starts the flow\n  2. HITL node — expense review:\n       - Reviewer sees: expense amount, requester name, category (all read-only)\n       - Reviewer fills in: approved (boolean), comments (text, optional)\n       - Outcomes: Approve (primary), Reject\n  3. Script node — reads the reviewer's decision from the HITL output and\n     logs: \"Decision: <approved value>, Comments: <comments value>\"\n     The script must reference the HITL output via $vars.<nodeId>.output —\n     e.g. $vars.<nodeId>.output.approved and $vars.<nodeId>.output.comments,\n     where <nodeId> is the HITL node's id.\n  4. End node\n\n  Wire: Trigger -> HITL ->|completed| Script -> End\n\n  Use the inline quickform node (uipath.human-in-the-loop.quick-form).\n  Validate the flow after building.\n\nsuccess_criteria:\n  - type: run_command\n    description: \"uip flow validate passes\"\n    command: \"uip maestro flow validate ExpenseApproval/ExpenseApproval/ExpenseApproval.flow --output json\"\n    timeout: 30\n    expected_exit_code: 0\n    weight: 3.0\n    pass_threshold: 1.0\n\n  - type: file_contains\n    description: \"Flow contains inline HITL node\"\n    path: \"ExpenseApproval/ExpenseApproval/ExpenseApproval.flow\"\n    includes:\n      - '\"uipath.human-in-the-loop.quick-form\"'\n    weight: 2.0\n    pass_threshold: 1.0\n\n  - type: file_contains\n    description: \"Flow references the HITL output variable\"\n    path: \"ExpenseApproval/ExpenseApproval/ExpenseApproval.flow\"\n    includes:\n      - \"$vars.\"\n      - \".output\"\n    weight: 3.0\n    pass_threshold: 1.0\n\n  - type: file_contains\n    description: \"Flow has a boolean output field for approved\"\n    path: \"ExpenseApproval/ExpenseApproval/ExpenseApproval.flow\"\n    includes:\n      - '\"boolean\"'\n    weight: 1.5\n    pass_threshold: 1.0\n\n",
+    "source_file": "/home/azureuser/projects/skills/tests/tasks/uipath-maestro-flow/hitl/task.yaml",
+    "lineage": {
+      "agent.type": {
+        "value": "claude-code",
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.permission_mode": {
+        "value": "acceptEdits",
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.model": {
+        "value": "claude-sonnet-4-6",
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.allowed_tools": {
+        "value": [
+          "Skill",
+          "Bash",
+          "Read",
+          "Write",
+          "Edit",
+          "Glob",
+          "Grep"
+        ],
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.plugins": {
+        "value": [
+          {
+            "type": "local",
+            "path": "/home/azureuser/projects/skills/"
+          }
+        ],
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.ignore_patterns": {
+        "value": [],
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.system_prompt": {
+        "value": "You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted.\n",
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "run_limits.max_turns": {
+        "value": 65,
+        "source": "task",
+        "source_detail": null
+      },
+      "run_limits.task_timeout": {
+        "value": 900,
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "run_limits.turn_timeout": {
+        "value": 900,
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "run_limits.expected_turns": {
+        "value": 30,
+        "source": "task",
+        "source_detail": null
+      },
+      "sandbox.driver": {
+        "value": "docker",
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "sandbox.docker": {
+        "value": {
+          "image": "skills-image:latest",
+          "env_passthrough_extra": [
+            "SKILLS_REPO_PATH",
+            "BEDROCK_MODEL",
+            "TASK_PARALLELISM",
+            "UIPATH_CLI_ENABLE_ENV_AUTH",
+            "UIPATH_CLI_AUTH_TOKEN",
+            "UIPATH_CLI_ORGANIZATION_NAME",
+            "UIPATH_CLI_ORGANIZATION_ID",
+            "UIPATH_CLI_TENANT_NAME",
+            "UIPATH_CLI_TENANT_ID",
+            "TRACES_SMOKE_PROCESS_KEY",
+            "CODEX_API_KEY",
+            "CODEX_BASE_URL"
+          ],
+          "extra_mounts": [
+            "~/.uipath:/.uipath:rw"
+          ]
+        },
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "repeats": {
+        "value": 5,
+        "source": "cli",
+        "source_detail": null
+      }
+    }
+  },
+  "command_stats": {
+    "total_commands": 15,
+    "commands_by_tool": {
+      "Skill": 1,
+      "Bash": 8,
+      "Read": 2,
+      "TaskCreate": 1,
+      "TaskUpdate": 2,
+      "Write": 1
+    },
+    "total_command_time_ms": 17151.867581997067,
+    "avg_command_time_ms": 1143.4578387998044,
+    "slowest_commands": [
+      {
+        "tool": "Bash",
+        "duration_ms": 7696.071600075811,
+        "parameters": {
+          "command": "cd /work/output/artifacts/skill-flow-hitl-quality-result-downstream/ExpenseApproval && uip maestro flow init ExpenseApproval --output json 2>&1",
+          "description": "Initialize ExpenseApproval flow project inside the solution"
+        },
+        "tool_id": "toolu_bdrk_01UtkZrtegkiR3KUAREbkbRc"
+      },
+      {
+        "tool": "Bash",
+        "duration_ms": 5947.425251011737,
+        "parameters": {
+          "command": "uip maestro flow validate /work/output/artifacts/skill-flow-hitl-quality-result-downstream/ExpenseApproval/ExpenseApproval/ExpenseApproval.flow --output json 2>&1",
+          "description": "Validate the ExpenseApproval flow"
+        },
+        "tool_id": "toolu_bdrk_01VB6NiMx2KJ26du6BvpegKP"
+      },
+      {
+        "tool": "Bash",
+        "duration_ms": 1118.320542969741,
+        "parameters": {
+          "command": "uip solution init --help --output json 2>&1 | head -20",
+          "description": "Check solution init command availability"
+        },
+        "tool_id": "toolu_bdrk_01351DzALCWCkCCkxmT7yLhf"
+      },
+      {
+        "tool": "Bash",
+        "duration_ms": 997.3592900205404,
+        "parameters": {
+          "command": "uip solution init ExpenseApproval --output json 2>&1",
+          "description": "Initialize the ExpenseApproval solution"
+        },
+        "tool_id": "toolu_bdrk_01Kiw1KPYXzmApicMPnw1xbi"
+      },
+      {
+        "tool": "Bash",
+        "duration_ms": 826.7942030215636,
+        "parameters": {
+          "command": "uip --version",
+          "description": "Check uip version"
+        },
+        "tool_id": "toolu_bdrk_019ri3xRJLKV8CaSEngyZPBT"
+      }
+    ],
+    "successful_commands": 14,
+    "failed_commands": 1,
+    "unknown_commands": 0,
+    "success_rate": 93.33333333333333,
+    "most_common_sequence": "Bash → Bash → Bash"
+  },
+  "total_token_usage": {
+    "uncached_input_tokens": 17,
+    "output_tokens": 11409,
+    "cache_creation_input_tokens": 28686,
+    "cache_read_input_tokens": 610361,
+    "total_cost_usd": 0.4618668,
+    "input_tokens": 639064
+  },
+  "total_assistant_turns": 27,
+  "expected_commands": null,
+  "actual_commands": 15,
+  "commands_efficiency": null,
+  "pre_run_results": [],
+  "post_run_results": [
+    {
+      "command": "find . -maxdepth 5 -type d \\( -name node_modules -o -name .npm-prefix -o -name .venv \\) -prune -exec rm -rf {} +",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "",
+      "duration_seconds": 0.006422519683837891,
+      "error": null
+    }
+  ],
+  "simulation": null,
+  "early_stop": null
+}

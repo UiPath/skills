@@ -1,0 +1,8 @@
+{
+  "goal_a_type": "llm-judge-output",
+  "goal_a_reason": "Free-text replies with paraphrasing require semantic similarity scoring via an LLM judge, with no need to inspect tool calls.",
+  "goal_b_type": "json-similarity",
+  "goal_b_reason": "Structured JSON output with tolerance for key ordering and minor whitespace is exactly the tree-based deterministic comparison json-similarity provides, with no LLM needed.",
+  "goal_c_type": "contains",
+  "goal_c_reason": "A pass/fail check on whether a literal substring appears anywhere in the output is the definition of the contains evaluator."
+}

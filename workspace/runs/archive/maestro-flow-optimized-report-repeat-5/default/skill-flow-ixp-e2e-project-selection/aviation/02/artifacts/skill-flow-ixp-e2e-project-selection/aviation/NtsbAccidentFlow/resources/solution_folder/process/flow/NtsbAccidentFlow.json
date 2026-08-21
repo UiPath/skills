@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "NtsbAccidentFlow",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "4ad4d7b3-f582-4e30-b3d3-b4f0d4736e4f",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "NtsbAccidentFlow"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Flow",
+      "name": "NtsbAccidentFlow",
+      "package": {
+        "key": "a4b6ee51-655d-44f0-9578-c0831325b57e"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "5dd2de39-021a-43ce-a42c-c86e15a20805",
+    "files": []
+  }
+}

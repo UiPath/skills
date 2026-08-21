@@ -1,0 +1,15 @@
+{
+  "id": "22222222-2222-2222-2222-222222222222",
+  "name": "greeting-quality",
+  "description": "Score greeting tone and completeness",
+  "version": "1.0",
+  "evaluatorTypeId": "uipath-llm-judge-output-semantic-similarity",
+  "evaluatorConfig": {
+    "name": "greeting-quality",
+    "model": "gpt-4.1-2025-04-14",
+    "temperature": 0,
+    "maxTokens": 4096,
+    "targetOutputKey": "*",
+    "prompt": "Score 0-1 the semantic similarity of {{ActualOutput}} vs {{ExpectedOutput}}. Return JSON {\"score\": N, \"reason\": \"...\"}."
+  }
+}

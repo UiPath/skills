@@ -1,0 +1,5 @@
+04:35:14 [INFO   ] [default/skill-bpmn-event-trigger-start/01] orchestrator: API routing: aws_bedrock
+04:37:44 [INFO   ] [default/skill-bpmn-event-trigger-start/01] orchestrator: Success criteria: 4/4 passed, weighted score: 1.000
+04:37:44 [INFO   ] [default/skill-bpmn-event-trigger-start/01] orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+04:37:44 [INFO   ] [default/skill-bpmn-event-trigger-start/01] orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-bpmn-event-trigger-start
+04:37:44 [INFO   ] [default/skill-bpmn-event-trigger-start/01] orchestrator: Task finished: status=SUCCESS duration=151.8s score=1.000 iterations=1

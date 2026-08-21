@@ -1,0 +1,15 @@
+{
+  "version": 2,
+  "_doc": "Mocked public-safe BPMN job status + empty incidents + traces (last resort).",
+  "rules": [
+    { "match": "job traces job-triage-001", "file": "job-traces.json", "exit_code": 0 },
+    { "match": "job status job-triage-001", "file": "job-status.json", "exit_code": 0 },
+    { "match": "instance incidents inst-triage-001 -f folder-public", "file": "instance-incidents.json", "exit_code": 0 },
+    { "match": "instance incidents inst-triage-001 --folder-key folder-public", "file": "instance-incidents.json", "exit_code": 0 },
+    { "match": "instance incidents inst-triage-001", "file": "instance-incidents.json", "exit_code": 0 }
+  ],
+  "unmocked_default": {
+    "response": "{\"error\":\"unmocked public-safe BPMN command\"}\n",
+    "exit_code": 1
+  }
+}

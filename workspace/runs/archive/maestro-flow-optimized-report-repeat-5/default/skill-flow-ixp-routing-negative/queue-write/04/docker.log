@@ -1,0 +1,5 @@
+18:20:32 [INFO   ] [default/skill-flow-ixp-routing-negative/queue-write/04] orchestrator: API routing: aws_bedrock
+18:23:26 [INFO   ] [default/skill-flow-ixp-routing-negative/queue-write/04] orchestrator: Success criteria: 1/1 passed, weighted score: 1.000
+18:23:26 [INFO   ] [default/skill-flow-ixp-routing-negative/queue-write/04] orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+18:23:26 [INFO   ] [default/skill-flow-ixp-routing-negative/queue-write/04] orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-ixp-routing-negative/queue-write
+18:23:26 [INFO   ] [default/skill-flow-ixp-routing-negative/queue-write/04] orchestrator: Task finished: status=SUCCESS duration=175.7s score=1.000 iterations=1

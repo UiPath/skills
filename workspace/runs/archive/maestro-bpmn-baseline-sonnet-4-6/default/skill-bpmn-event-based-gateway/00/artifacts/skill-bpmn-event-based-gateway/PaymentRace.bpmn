@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+    xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+    xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+    xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+    xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:uipath="http://uipath.org/schema/bpmn"
+    id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn"
+    exporter="UiPath (https://bpmn.uipath.com)" exporterVersion="1.0">
+
+  <bpmn:process id="Process_1" isExecutable="true">
+    <bpmn:extensionElements>
+      <uipath:migrationVersion version="11.5" />
+      <uipath:variables version="v1">
+        <uipath:output id="Var_ConfirmationResponse" name="ConfirmationResponse" type="Maestro.ReceiveMessageEvent" />
+      </uipath:variables>
+    </bpmn:extensionElements>
+
+    <bpmn:startEvent id="Start_1" name="Manual Start">
+      <bpmn:outgoing>Flow_Start_Submit</bpmn:outgoing>
+    </bpmn:startEvent>
+
+    <bpmn:scriptTask id="Task_SubmitPayment" name="Submit Payment" scriptFormat="JavaScript">
+      <bpmn:extensionElements>
+        <uipath:scriptVersion value="v3" />
+        <uipath:mapping version="v1">
+          <uipath:type value="BPMN.ScriptTask" version="v1" />
+          <uipath:input name="args" type="json" target="bodyField"><![CDATA[{}]]></uipath:input>
+        </uipath:mapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_Start_Submit</bpmn:incoming>
+      <bpmn:outgoing>Flow_Submit_Gw</bpmn:outgoing>
+      <bpmn:script><![CDATA[return { response: "payment submitted" };]]></bpmn:script>
+    </bpmn:scriptTask>
+
+    <bpmn:eventBasedGateway id="Gw_EventBased" name="Await Event">
+      <bpmn:incoming>Flow_Submit_Gw</bpmn:incoming>
+      <bpmn:outgoing>Flow_Gw_Confirmed</bpmn:outgoing>
+      <bpmn:outgoing>Flow_Gw_Timeout</bpmn:outgoing>
+    </bpmn:eventBasedGateway>
+
+    <bpmn:intermediateCatchEvent id="Catch_PaymentConfirmed" name="Payment Confirmed">
+      <bpmn:extensionElements>
+        <uipath:event version="v1">
+          <uipath:type value="Maestro.ReceiveMessageEvent" version="v1" />
+          <uipath:context>
+            <uipath:input name="name" value="PaymentConfirmed" />
+            <uipath:input name="_label" value="" />
+          </uipath:context>
+          <uipath:input name="Reference" type="string" target="bodyField"><![CDATA[payment-ref]]></uipath:input>
+          <uipath:output name="response" type="Maestro.ReceiveMessageEvent" var="Var_ConfirmationResponse" />
+        </uipath:event>
+      </bpmn:extensionElements>
+      <bpmn:messageEventDefinition />
+      <bpmn:incoming>Flow_Gw_Confirmed</bpmn:incoming>
+      <bpmn:outgoing>Flow_Confirmed_Handle</bpmn:outgoing>
+    </bpmn:intermediateCatchEvent>
+
+    <bpmn:intermediateCatchEvent id="Catch_Timeout" name="Confirmation Timeout">
+      <bpmn:timerEventDefinition>
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT30M</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+      <bpmn:incoming>Flow_Gw_Timeout</bpmn:incoming>
+      <bpmn:outgoing>Flow_Timeout_Handle</bpmn:outgoing>
+    </bpmn:intermediateCatchEvent>
+
+    <bpmn:scriptTask id="Task_HandleConfirmed" name="Process Confirmation" scriptFormat="JavaScript">
+      <bpmn:extensionElements>
+        <uipath:scriptVersion value="v3" />
+        <uipath:mapping version="v1">
+          <uipath:type value="BPMN.ScriptTask" version="v1" />
+          <uipath:input name="args" type="json" target="bodyField"><![CDATA[{}]]></uipath:input>
+        </uipath:mapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_Confirmed_Handle</bpmn:incoming>
+      <bpmn:outgoing>Flow_Handle_End_Confirmed</bpmn:outgoing>
+      <bpmn:script><![CDATA[return { response: "payment confirmed and processed" };]]></bpmn:script>
+    </bpmn:scriptTask>
+
+    <bpmn:scriptTask id="Task_HandleTimeout" name="Handle Timeout" scriptFormat="JavaScript">
+      <bpmn:extensionElements>
+        <uipath:scriptVersion value="v3" />
+        <uipath:mapping version="v1">
+          <uipath:type value="BPMN.ScriptTask" version="v1" />
+          <uipath:input name="args" type="json" target="bodyField"><![CDATA[{}]]></uipath:input>
+        </uipath:mapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_Timeout_Handle</bpmn:incoming>
+      <bpmn:outgoing>Flow_Handle_End_Timeout</bpmn:outgoing>
+      <bpmn:script><![CDATA[return { response: "confirmation timed out" };]]></bpmn:script>
+    </bpmn:scriptTask>
+
+    <bpmn:endEvent id="End_Confirmed" name="Payment Processed">
+      <bpmn:incoming>Flow_Handle_End_Confirmed</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <bpmn:endEvent id="End_Timeout" name="Payment Timed Out">
+      <bpmn:incoming>Flow_Handle_End_Timeout</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <bpmn:sequenceFlow id="Flow_Start_Submit" sourceRef="Start_1" targetRef="Task_SubmitPayment" />
+    <bpmn:sequenceFlow id="Flow_Submit_Gw" sourceRef="Task_SubmitPayment" targetRef="Gw_EventBased" />
+    <bpmn:sequenceFlow id="Flow_Gw_Confirmed" sourceRef="Gw_EventBased" targetRef="Catch_PaymentConfirmed" />
+    <bpmn:sequenceFlow id="Flow_Gw_Timeout" sourceRef="Gw_EventBased" targetRef="Catch_Timeout" />
+    <bpmn:sequenceFlow id="Flow_Confirmed_Handle" sourceRef="Catch_PaymentConfirmed" targetRef="Task_HandleConfirmed" />
+    <bpmn:sequenceFlow id="Flow_Timeout_Handle" sourceRef="Catch_Timeout" targetRef="Task_HandleTimeout" />
+    <bpmn:sequenceFlow id="Flow_Handle_End_Confirmed" sourceRef="Task_HandleConfirmed" targetRef="End_Confirmed" />
+    <bpmn:sequenceFlow id="Flow_Handle_End_Timeout" sourceRef="Task_HandleTimeout" targetRef="End_Timeout" />
+  </bpmn:process>
+
+  <bpmndi:BPMNDiagram id="Diagram_1">
+    <bpmndi:BPMNPlane id="Plane_1" bpmnElement="Process_1">
+      <bpmndi:BPMNShape id="S_Start_1" bpmnElement="Start_1">
+        <dc:Bounds x="162" y="252" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Task_SubmitPayment" bpmnElement="Task_SubmitPayment">
+        <dc:Bounds x="280" y="230" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Gw_EventBased" bpmnElement="Gw_EventBased">
+        <dc:Bounds x="440" y="245" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Catch_PaymentConfirmed" bpmnElement="Catch_PaymentConfirmed">
+        <dc:Bounds x="570" y="162" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Catch_Timeout" bpmnElement="Catch_Timeout">
+        <dc:Bounds x="570" y="342" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Task_HandleConfirmed" bpmnElement="Task_HandleConfirmed">
+        <dc:Bounds x="670" y="140" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Task_HandleTimeout" bpmnElement="Task_HandleTimeout">
+        <dc:Bounds x="670" y="320" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_End_Confirmed" bpmnElement="End_Confirmed">
+        <dc:Bounds x="830" y="162" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_End_Timeout" bpmnElement="End_Timeout">
+        <dc:Bounds x="830" y="342" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="E_Flow_Start_Submit" bpmnElement="Flow_Start_Submit">
+        <di:waypoint x="198" y="270" />
+        <di:waypoint x="280" y="270" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_Submit_Gw" bpmnElement="Flow_Submit_Gw">
+        <di:waypoint x="380" y="270" />
+        <di:waypoint x="440" y="270" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_Gw_Confirmed" bpmnElement="Flow_Gw_Confirmed">
+        <di:waypoint x="465" y="245" />
+        <di:waypoint x="465" y="180" />
+        <di:waypoint x="570" y="180" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_Gw_Timeout" bpmnElement="Flow_Gw_Timeout">
+        <di:waypoint x="465" y="295" />
+        <di:waypoint x="465" y="360" />
+        <di:waypoint x="570" y="360" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_Confirmed_Handle" bpmnElement="Flow_Confirmed_Handle">
+        <di:waypoint x="606" y="180" />
+        <di:waypoint x="670" y="180" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_Timeout_Handle" bpmnElement="Flow_Timeout_Handle">
+        <di:waypoint x="606" y="360" />
+        <di:waypoint x="670" y="360" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_Handle_End_Confirmed" bpmnElement="Flow_Handle_End_Confirmed">
+        <di:waypoint x="770" y="180" />
+        <di:waypoint x="830" y="180" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_Handle_End_Timeout" bpmnElement="Flow_Handle_End_Timeout">
+        <di:waypoint x="770" y="360" />
+        <di:waypoint x="830" y="360" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

@@ -1,0 +1,6 @@
+19:45:52 [INFO   ] [default/skill-flow-ipe-enum/01] orchestrator: API routing: aws_bedrock
+19:53:35 [INFO   ] [default/skill-flow-ipe-enum/01] evaluation.checker: Criterion 'run_command' FAILED (score=0.00, threshold=1.00): Command: python3 $TASK_DIR/check_enum_flow.py '**/EnumTest*.flow' body_params
+19:53:35 [INFO   ] [default/skill-flow-ipe-enum/01] orchestrator: Success criteria: 6/7 passed, weighted score: 0.857
+19:53:35 [INFO   ] [default/skill-flow-ipe-enum/01] orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+19:53:35 [INFO   ] [default/skill-flow-ipe-enum/01] orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-ipe-enum
+19:53:35 [INFO   ] [default/skill-flow-ipe-enum/01] orchestrator: Task finished: status=FAILURE duration=464.8s score=0.857 iterations=1

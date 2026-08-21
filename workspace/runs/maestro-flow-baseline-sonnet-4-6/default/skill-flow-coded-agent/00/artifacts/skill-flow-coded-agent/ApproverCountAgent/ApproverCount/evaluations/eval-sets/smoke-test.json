@@ -1,0 +1,50 @@
+{
+  "version": "1.0",
+  "id": "smoke-test",
+  "name": "Smoke Test",
+  "evaluatorRefs": ["ExactMatchEvaluator"],
+  "evaluations": [
+    {
+      "id": "test-all-approve",
+      "name": "All three reviewers approved",
+      "inputs": {
+        "sentence": "Alice approved, Bob approved, and Carol approved the proposal."
+      },
+      "evaluationCriterias": {
+        "ExactMatchEvaluator": {
+          "expectedOutput": {
+            "approver_count": 3
+          }
+        }
+      }
+    },
+    {
+      "id": "test-mixed",
+      "name": "Two approved, one requested changes",
+      "inputs": {
+        "sentence": "Dave approved the proposal, Eve requested changes, and Frank also approved."
+      },
+      "evaluationCriterias": {
+        "ExactMatchEvaluator": {
+          "expectedOutput": {
+            "approver_count": 2
+          }
+        }
+      }
+    },
+    {
+      "id": "test-recusal",
+      "name": "One approved, one recused, one requested changes",
+      "inputs": {
+        "sentence": "Grace approved, Henry recused himself due to a conflict of interest, and Iris requested changes."
+      },
+      "evaluationCriterias": {
+        "ExactMatchEvaluator": {
+          "expectedOutput": {
+            "approver_count": 1
+          }
+        }
+      }
+    }
+  ]
+}

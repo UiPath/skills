@@ -1,0 +1,105 @@
+{
+  "Result": "Success",
+  "Code": "RegistryGetSuccess",
+  "Data": {
+    "ExtensionType": {
+      "ExtensionType": "Intsvc.ActivityExecution",
+      "Label": "Execute connector activity",
+      "BpmnElement": "bpmn:SendTask",
+      "Placements": {
+        "Activity": {
+          "Type": "bpmn:SendTask"
+        },
+        "IntermediateEvent": {
+          "Type": "bpmn:IntermediateThrowEvent",
+          "EventDefinition": {
+            "Type": "bpmn:MessageEventDefinition"
+          }
+        },
+        "EndEvent": {
+          "Type": "bpmn:EndEvent",
+          "EventDefinition": {
+            "Type": "bpmn:MessageEventDefinition"
+          }
+        }
+      },
+      "ExtensionTag": "uipath:activity",
+      "ContextFields": [
+        {
+          "Name": "activity",
+          "DisplayName": "Activity",
+          "Type": "string",
+          "Required": true,
+          "Hidden": false,
+          "IsPrimaryKey": true,
+          "Binding": false,
+          "DefaultValue": null
+        },
+        {
+          "Name": "connectorKey",
+          "DisplayName": "Connector key",
+          "Type": "string",
+          "Required": false,
+          "Hidden": true,
+          "IsPrimaryKey": false,
+          "Binding": false,
+          "DefaultValue": null
+        },
+        {
+          "Name": "connection",
+          "DisplayName": "Connection",
+          "Type": "string",
+          "Required": false,
+          "Hidden": true,
+          "IsPrimaryKey": false,
+          "Binding": true,
+          "DefaultValue": null
+        },
+        {
+          "Name": "folderKey",
+          "DisplayName": "Folder key",
+          "Type": "string",
+          "Required": false,
+          "Hidden": true,
+          "IsPrimaryKey": false,
+          "Binding": false,
+          "DefaultValue": null
+        },
+        {
+          "Name": "method",
+          "DisplayName": "Method",
+          "Type": "string",
+          "Required": false,
+          "Hidden": true,
+          "IsPrimaryKey": false,
+          "Binding": false,
+          "DefaultValue": null
+        },
+        {
+          "Name": "path",
+          "DisplayName": "Path",
+          "Type": "string",
+          "Required": false,
+          "Hidden": true,
+          "IsPrimaryKey": false,
+          "Binding": false,
+          "DefaultValue": null
+        }
+      ],
+      "InputPattern": "separateInputs",
+      "InputName": "body",
+      "InputTarget": "body",
+      "OutputSource": ".",
+      "OutputType": "custom",
+      "OutputName": "result",
+      "UseRelativeSource": false,
+      "BindingPattern": "connection",
+      "RequiresDiscovery": true,
+      "IsDynamic": true,
+      "XmlTemplate": "<bpmn:SendTask id=\"{id}\" name=\"{name}\">\n  <bpmn:extensionElements>\n    <uipath:activity version=\"v1\">\n      <uipath:type value=\"Intsvc.ActivityExecution\" version=\"v1\" />\n      <uipath:context>\n        <uipath:input name=\"activity\" value=\"{activity}\" />\n        <uipath:input name=\"connectorKey\" value=\"{connectorKey}\" />\n        <uipath:input name=\"connection\" value=\"=bindings.{bindingId}\" />\n        <uipath:input name=\"folderKey\" value=\"{folderKey}\" />\n        <uipath:input name=\"method\" value=\"{method}\" />\n        <uipath:input name=\"path\" value=\"{path}\" />\n      </uipath:context>\n      <uipath:input name=\"body\" type=\"json\" target=\"body\"><![CDATA[{}]]></uipath:input>\n      <uipath:output name=\"result\" type=\"custom\" source=\".\" var=\"{varId}\" />\n    </uipath:activity>\n  </bpmn:extensionElements>\n  <bpmn:incoming>{incomingEdge}</bpmn:incoming>\n  <bpmn:outgoing>{outgoingEdge}</bpmn:outgoing>\n</bpmn:SendTask>",
+      "DiscoveryNotes": "Uses getConnectorConnections(connectorKey) to list available connections. Activity/connector metadata comes from Integration Service catalog.",
+      "InputNotes": "isSplitInputs=false in design schema; inputs are sent as separate <uipath:input> elements, not merged into a single JSON body",
+      "ExtensionTagNotes": "In isExecution array, NOT in isEvents array, so uses uipath:activity"
+    }
+  }
+}

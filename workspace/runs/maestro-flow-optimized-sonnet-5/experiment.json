@@ -1,0 +1,3205 @@
+{
+  "experiment_id": "skill-tests-smoke",
+  "description": "Linux PR-gate smoke tests — docker isolation, fast turn budget",
+  "variant_ids": [
+    "default"
+  ],
+  "task_summaries": [
+    {
+      "task_id": "skill-flow-bellevue-weather-simulated",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-flow-bellevue-weather-simulated",
+          "weighted_score": 0.8888888888888888,
+          "final_status": "SUCCESS",
+          "duration_seconds": 531.0938873291016,
+          "total_tokens": 6235927,
+          "iteration_count": 3,
+          "total_assistant_turns": 90,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-flow-group-to-subflow",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-flow-group-to-subflow",
+          "weighted_score": 0.0,
+          "final_status": "TIMEOUT",
+          "duration_seconds": 909.994891166687,
+          "total_tokens": 2738309,
+          "iteration_count": 1,
+          "total_assistant_turns": 61,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-flow-ixp-invoice-extraction-simulated",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-flow-ixp-invoice-extraction-simulated",
+          "weighted_score": 0.9,
+          "final_status": "SUCCESS",
+          "duration_seconds": 1341.0513515472412,
+          "total_tokens": 13481903,
+          "iteration_count": 3,
+          "total_assistant_turns": 139,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-flow-trigger-with-filter",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-flow-trigger-with-filter",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 59.75095462799072,
+          "total_tokens": 342168,
+          "iteration_count": 1,
+          "total_assistant_turns": 12,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-flow-slack-http-fallback",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-flow-slack-http-fallback",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 303.1749210357666,
+          "total_tokens": 2838801,
+          "iteration_count": 1,
+          "total_assistant_turns": 69,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-flow-customer-escalation",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-flow-customer-escalation",
+          "weighted_score": 0.3333333333333333,
+          "final_status": "FAILURE",
+          "duration_seconds": 868.9140450954437,
+          "total_tokens": 14567250,
+          "iteration_count": 1,
+          "total_assistant_turns": 161,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-flow-hitl-schema-design-simulated",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-flow-hitl-schema-design-simulated",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 672.545538187027,
+          "total_tokens": 3562369,
+          "iteration_count": 3,
+          "total_assistant_turns": 76,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-flow-add-output",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-flow-add-output",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 225.15488815307617,
+          "total_tokens": 606891,
+          "iteration_count": 1,
+          "total_assistant_turns": 18,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-flow-ipe-jira-get-issue",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-flow-ipe-jira-get-issue",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 289.38420486450195,
+          "total_tokens": 3422078,
+          "iteration_count": 1,
+          "total_assistant_turns": 66,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-flow-ixp-scaffold-multinode",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-flow-ixp-scaffold-multinode",
+          "weighted_score": 0.4827586206896552,
+          "final_status": "MAX_TURNS_EXHAUSTED",
+          "duration_seconds": 584.6564717292786,
+          "total_tokens": 4845180,
+          "iteration_count": 1,
+          "total_assistant_turns": 107,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-flow-hitl-smoke-completed-port",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-flow-hitl-smoke-completed-port",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 322.14421916007996,
+          "total_tokens": 2217586,
+          "iteration_count": 1,
+          "total_assistant_turns": 50,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-flow-ipe-jira-create-issue",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-flow-ipe-jira-create-issue",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 302.1103012561798,
+          "total_tokens": 4057346,
+          "iteration_count": 1,
+          "total_assistant_turns": 68,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-flow-ipe-jira-search-triage",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-flow-ipe-jira-search-triage",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 429.9199686050415,
+          "total_tokens": 4782613,
+          "iteration_count": 1,
+          "total_assistant_turns": 75,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-flow-ipe-dtl-load-by-default-true",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-flow-ipe-dtl-load-by-default-true",
+          "weighted_score": 0.75,
+          "final_status": "FAILURE",
+          "duration_seconds": 463.595862865448,
+          "total_tokens": 6086768,
+          "iteration_count": 1,
+          "total_assistant_turns": 109,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-flow-delay",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-flow-delay",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 135.80108070373535,
+          "total_tokens": 1422304,
+          "iteration_count": 1,
+          "total_assistant_turns": 36,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-flow-hitl-quality-result-downstream",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-flow-hitl-quality-result-downstream",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 451.53355836868286,
+          "total_tokens": 2816634,
+          "iteration_count": 1,
+          "total_assistant_turns": 55,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-flow-hitl-smoke-node-placed",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-flow-hitl-smoke-node-placed",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 324.92496514320374,
+          "total_tokens": 2008275,
+          "iteration_count": 1,
+          "total_assistant_turns": 40,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-flow-generic-dynamic-node",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-flow-generic-dynamic-node",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 311.2733676433563,
+          "total_tokens": 3236364,
+          "iteration_count": 1,
+          "total_assistant_turns": 78,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-flow-eval-simulation-crud",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-flow-eval-simulation-crud",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 112.38445496559143,
+          "total_tokens": 1378758,
+          "iteration_count": 1,
+          "total_assistant_turns": 37,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-flow-feet-inches",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-flow-feet-inches",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 391.5749044418335,
+          "total_tokens": 2603767,
+          "iteration_count": 1,
+          "total_assistant_turns": 56,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-flow-ixp-integration-handle-routing",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-flow-ixp-integration-handle-routing",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 781.0034122467041,
+          "total_tokens": 8107833,
+          "iteration_count": 1,
+          "total_assistant_turns": 123,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-flow-file-attachment-debug",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-flow-file-attachment-debug",
+          "weighted_score": 0.5,
+          "final_status": "FAILURE",
+          "duration_seconds": 187.91750192642212,
+          "total_tokens": 2103161,
+          "iteration_count": 1,
+          "total_assistant_turns": 52,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-flow-devcon-billing-discrepancy-detector",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-flow-devcon-billing-discrepancy-detector",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 1326.1006593704224,
+          "total_tokens": 15482070,
+          "iteration_count": 1,
+          "total_assistant_turns": 168,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-flow-hitl-smoke-multi-outcome-routing",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-flow-hitl-smoke-multi-outcome-routing",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 341.5156970024109,
+          "total_tokens": 1810123,
+          "iteration_count": 1,
+          "total_assistant_turns": 44,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-flow-remove-node",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-flow-remove-node",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 142.86461067199707,
+          "total_tokens": 1462488,
+          "iteration_count": 1,
+          "total_assistant_turns": 33,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-flow-calculator",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-flow-calculator",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 150.5816719532013,
+          "total_tokens": 1600045,
+          "iteration_count": 1,
+          "total_assistant_turns": 35,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-flow-e2e-escalation-jira-ticket",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-flow-e2e-escalation-jira-ticket",
+          "weighted_score": 0.6842105263157895,
+          "final_status": "FAILURE",
+          "duration_seconds": 494.12012791633606,
+          "total_tokens": 5758071,
+          "iteration_count": 1,
+          "total_assistant_turns": 86,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-flow-bindings-reconfigure-different-connection",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-flow-bindings-reconfigure-different-connection",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 326.4683153629303,
+          "total_tokens": 4911518,
+          "iteration_count": 1,
+          "total_assistant_turns": 76,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-flow-move-node",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-flow-move-node",
+          "weighted_score": 0.375,
+          "final_status": "MAX_TURNS_EXHAUSTED",
+          "duration_seconds": 633.181497335434,
+          "total_tokens": 4270051,
+          "iteration_count": 1,
+          "total_assistant_turns": 80,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-flow-customer-escalation-simulated",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-flow-customer-escalation-simulated",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 1693.404245376587,
+          "total_tokens": 23319572,
+          "iteration_count": 3,
+          "total_assistant_turns": 234,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-flow-ipe-enhanced-enum",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-flow-ipe-enhanced-enum",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 561.1777274608612,
+          "total_tokens": 5177849,
+          "iteration_count": 1,
+          "total_assistant_turns": 77,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-flow-eval-inline-agent",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-flow-eval-inline-agent",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 356.4137153625488,
+          "total_tokens": 5472722,
+          "iteration_count": 1,
+          "total_assistant_turns": 97,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-flow-ipe-required-groups",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-flow-ipe-required-groups",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 1025.1560356616974,
+          "total_tokens": 8009591,
+          "iteration_count": 1,
+          "total_assistant_turns": 172,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-flow-hitl-quality-schema-design",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-flow-hitl-quality-schema-design",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 345.57997035980225,
+          "total_tokens": 2894523,
+          "iteration_count": 1,
+          "total_assistant_turns": 57,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-flow-decision",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-flow-decision",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 248.17433834075928,
+          "total_tokens": 1098084,
+          "iteration_count": 1,
+          "total_assistant_turns": 33,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-flow-switch",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-flow-switch",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 203.98110103607178,
+          "total_tokens": 1288123,
+          "iteration_count": 1,
+          "total_assistant_turns": 34,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-flow-ixp-e2e-invoice-extraction-greenfield",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-flow-ixp-e2e-invoice-extraction-greenfield",
+          "weighted_score": 0.0,
+          "final_status": "ERROR",
+          "duration_seconds": 0.0,
+          "total_tokens": 12759780,
+          "iteration_count": 1,
+          "total_assistant_turns": 155,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-flow-ipe-searchable-joins",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-flow-ipe-searchable-joins",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 660.7433414459229,
+          "total_tokens": 6380114,
+          "iteration_count": 1,
+          "total_assistant_turns": 100,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-flow-multi-city-weather",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-flow-multi-city-weather",
+          "weighted_score": 0.0,
+          "final_status": "MAX_TURNS_EXHAUSTED",
+          "duration_seconds": 832.5086929798126,
+          "total_tokens": 5805740,
+          "iteration_count": 1,
+          "total_assistant_turns": 94,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-flow-eval-local-crud",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-flow-eval-local-crud",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 84.65294432640076,
+          "total_tokens": 1212152,
+          "iteration_count": 1,
+          "total_assistant_turns": 34,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-flow-ixp-routing-negative/stripe-http",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-flow-ixp-routing-negative/stripe-http",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 170.4467327594757,
+          "total_tokens": 1937488,
+          "iteration_count": 1,
+          "total_assistant_turns": 43,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-flow-ixp-routing-negative/slack-summary",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-flow-ixp-routing-negative/slack-summary",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 132.0463948249817,
+          "total_tokens": 1905795,
+          "iteration_count": 1,
+          "total_assistant_turns": 38,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-flow-ixp-routing-negative/sf-update",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-flow-ixp-routing-negative/sf-update",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 291.79589319229126,
+          "total_tokens": 2755192,
+          "iteration_count": 1,
+          "total_assistant_turns": 52,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-flow-ixp-routing-negative/http-webhook",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-flow-ixp-routing-negative/http-webhook",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 260.31032824516296,
+          "total_tokens": 2587370,
+          "iteration_count": 1,
+          "total_assistant_turns": 62,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-flow-ixp-routing-negative/gsheet-loop",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-flow-ixp-routing-negative/gsheet-loop",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 327.9128499031067,
+          "total_tokens": 3276856,
+          "iteration_count": 1,
+          "total_assistant_turns": 60,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-flow-ixp-routing-negative/queue-write",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-flow-ixp-routing-negative/queue-write",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 257.7237505912781,
+          "total_tokens": 2198663,
+          "iteration_count": 1,
+          "total_assistant_turns": 59,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-flow-ixp-routing-negative/teams-decision",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-flow-ixp-routing-negative/teams-decision",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 186.46935963630676,
+          "total_tokens": 1725522,
+          "iteration_count": 1,
+          "total_assistant_turns": 52,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-flow-ixp-routing-negative/delay-email",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-flow-ixp-routing-negative/delay-email",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 200.57943725585938,
+          "total_tokens": 1832793,
+          "iteration_count": 1,
+          "total_assistant_turns": 49,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-flow-ipe-ceql-where",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-flow-ipe-ceql-where",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 412.5439863204956,
+          "total_tokens": 5176848,
+          "iteration_count": 1,
+          "total_assistant_turns": 106,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-flow-bindings-no-duplicates",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-flow-bindings-no-duplicates",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 205.7657310962677,
+          "total_tokens": 3408201,
+          "iteration_count": 1,
+          "total_assistant_turns": 62,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-flow-e2e-devcon-expense-approval",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-flow-e2e-devcon-expense-approval",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 460.75387716293335,
+          "total_tokens": 2867175,
+          "iteration_count": 1,
+          "total_assistant_turns": 59,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-flow-ixp-scaffold-minimal",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-flow-ixp-scaffold-minimal",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 366.5546064376831,
+          "total_tokens": 3458889,
+          "iteration_count": 1,
+          "total_assistant_turns": 63,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-flow-add-node",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-flow-add-node",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 159.82390904426575,
+          "total_tokens": 1473045,
+          "iteration_count": 1,
+          "total_assistant_turns": 37,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-flow-transform-group-by",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-flow-transform-group-by",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 162.78457164764404,
+          "total_tokens": 1191949,
+          "iteration_count": 1,
+          "total_assistant_turns": 28,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-flow-e2e-escalation-orchestrator-paths",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-flow-e2e-escalation-orchestrator-paths",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 1098.300954580307,
+          "total_tokens": 11491140,
+          "iteration_count": 1,
+          "total_assistant_turns": 149,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-flow-eval-evaluator-type-choice",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-flow-eval-evaluator-type-choice",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 85.38328123092651,
+          "total_tokens": 1196922,
+          "iteration_count": 1,
+          "total_assistant_turns": 31,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-flow-openmeteo-weather",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-flow-openmeteo-weather",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 216.6214897632599,
+          "total_tokens": 2790093,
+          "iteration_count": 1,
+          "total_assistant_turns": 53,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-flow-devcon-billing-dispute-resolution",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-flow-devcon-billing-dispute-resolution",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 2219.1253168582916,
+          "total_tokens": 27844015,
+          "iteration_count": 1,
+          "total_assistant_turns": 255,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-flow-devcon-billing-dispute-analyst",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-flow-devcon-billing-dispute-analyst",
+          "weighted_score": 0.5,
+          "final_status": "FAILURE",
+          "duration_seconds": 662.0312874317169,
+          "total_tokens": 6360356,
+          "iteration_count": 1,
+          "total_assistant_turns": 111,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-flow-outlook-trigger-inbox",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-flow-outlook-trigger-inbox",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 265.7212188243866,
+          "total_tokens": 3088910,
+          "iteration_count": 1,
+          "total_assistant_turns": 64,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-flow-api-workflow",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-flow-api-workflow",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 218.04627895355225,
+          "total_tokens": 2407160,
+          "iteration_count": 1,
+          "total_assistant_turns": 49,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-flow-bindings-idempotent-reconfigure",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-flow-bindings-idempotent-reconfigure",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 353.06434202194214,
+          "total_tokens": 4292238,
+          "iteration_count": 1,
+          "total_assistant_turns": 85,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-flow-e2e-escalation-slack-alert",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-flow-e2e-escalation-slack-alert",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 530.0620517730713,
+          "total_tokens": 9132289,
+          "iteration_count": 1,
+          "total_assistant_turns": 126,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-flow-jdbc-databricks-query",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-flow-jdbc-databricks-query",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 607.4193487167358,
+          "total_tokens": 9199195,
+          "iteration_count": 1,
+          "total_assistant_turns": 138,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-flow-scheduled-trigger",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-flow-scheduled-trigger",
+          "weighted_score": 0.375,
+          "final_status": "FAILURE",
+          "duration_seconds": 185.63675689697266,
+          "total_tokens": 1268898,
+          "iteration_count": 1,
+          "total_assistant_turns": 37,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-flow-webhook-waitfor-parallel",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-flow-webhook-waitfor-parallel",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 204.1465289592743,
+          "total_tokens": 2996592,
+          "iteration_count": 1,
+          "total_assistant_turns": 61,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-flow-dice-roller",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-flow-dice-roller",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 150.32553672790527,
+          "total_tokens": 1515147,
+          "iteration_count": 1,
+          "total_assistant_turns": 35,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-flow-hitl-quality-boolean-decision",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-flow-hitl-quality-boolean-decision",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 741.9178078174591,
+          "total_tokens": 6675815,
+          "iteration_count": 1,
+          "total_assistant_turns": 110,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-flow-loop-multiply",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-flow-loop-multiply",
+          "weighted_score": 0.625,
+          "final_status": "MAX_TURNS_EXHAUSTED",
+          "duration_seconds": 562.2788193225861,
+          "total_tokens": 4958723,
+          "iteration_count": 1,
+          "total_assistant_turns": 88,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-flow-coded-agent",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-flow-coded-agent",
+          "weighted_score": 0.375,
+          "final_status": "FAILURE",
+          "duration_seconds": 676.6535446643829,
+          "total_tokens": 11544370,
+          "iteration_count": 1,
+          "total_assistant_turns": 153,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-flow-transform-map",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-flow-transform-map",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 180.60036826133728,
+          "total_tokens": 2210307,
+          "iteration_count": 1,
+          "total_assistant_turns": 44,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-flow-reading-list",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-flow-reading-list",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 215.58661937713623,
+          "total_tokens": 1952418,
+          "iteration_count": 1,
+          "total_assistant_turns": 40,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-flow-ixp-routing/explicit",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-flow-ixp-routing/explicit",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 755.7792234420776,
+          "total_tokens": 9752774,
+          "iteration_count": 1,
+          "total_assistant_turns": 130,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-flow-ixp-routing/invoice-extraction",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-flow-ixp-routing/invoice-extraction",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 571.1105842590332,
+          "total_tokens": 9838068,
+          "iteration_count": 1,
+          "total_assistant_turns": 122,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-flow-ixp-routing/receipts",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-flow-ixp-routing/receipts",
+          "weighted_score": 0.0,
+          "final_status": "FAILURE",
+          "duration_seconds": 56.80714297294617,
+          "total_tokens": 494546,
+          "iteration_count": 1,
+          "total_assistant_turns": 20,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-flow-ixp-routing/contracts",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-flow-ixp-routing/contracts",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 511.02863931655884,
+          "total_tokens": 3953922,
+          "iteration_count": 1,
+          "total_assistant_turns": 69,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-flow-ixp-routing/forms-classify",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-flow-ixp-routing/forms-classify",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 677.5626728534698,
+          "total_tokens": 4276422,
+          "iteration_count": 1,
+          "total_assistant_turns": 76,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-flow-ipe-jira-lifecycle",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-flow-ipe-jira-lifecycle",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 729.7020182609558,
+          "total_tokens": 8165997,
+          "iteration_count": 1,
+          "total_assistant_turns": 123,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-flow-hitl-quality-brownfield-insert",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-flow-hitl-quality-brownfield-insert",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 436.2631359100342,
+          "total_tokens": 3053339,
+          "iteration_count": 1,
+          "total_assistant_turns": 68,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-flow-ipe-complex-array",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-flow-ipe-complex-array",
+          "weighted_score": 0.875,
+          "final_status": "SUCCESS",
+          "duration_seconds": 285.7337739467621,
+          "total_tokens": 4258586,
+          "iteration_count": 1,
+          "total_assistant_turns": 92,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-flow-ipe-drive-to-slack",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-flow-ipe-drive-to-slack",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 341.4621126651764,
+          "total_tokens": 5133190,
+          "iteration_count": 1,
+          "total_assistant_turns": 82,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-flow-bellevue-weather",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-flow-bellevue-weather",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 335.00837445259094,
+          "total_tokens": 2835414,
+          "iteration_count": 1,
+          "total_assistant_turns": 54,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-flow-solution-select-ask",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-flow-solution-select-ask",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 71.91734027862549,
+          "total_tokens": 432805,
+          "iteration_count": 4,
+          "total_assistant_turns": 11,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-flow-summarize",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-flow-summarize",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 139.4455771446228,
+          "total_tokens": 1898578,
+          "iteration_count": 1,
+          "total_assistant_turns": 38,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-flow-interactive-customer-escalation-triage",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-flow-interactive-customer-escalation-triage",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 295.9627056121826,
+          "total_tokens": 1360147,
+          "iteration_count": 2,
+          "total_assistant_turns": 33,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-flow-lowcode-agent",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-flow-lowcode-agent",
+          "weighted_score": 0.0,
+          "final_status": "MAX_TURNS_EXHAUSTED",
+          "duration_seconds": 552.968020439148,
+          "total_tokens": 3633291,
+          "iteration_count": 1,
+          "total_assistant_turns": 89,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-flow-ixp-e2e-project-selection/aviation",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-flow-ixp-e2e-project-selection/aviation",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 833.4357335567474,
+          "total_tokens": 7213895,
+          "iteration_count": 1,
+          "total_assistant_turns": 119,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-flow-ixp-e2e-project-selection/birth-certificate",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-flow-ixp-e2e-project-selection/birth-certificate",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 581.850029706955,
+          "total_tokens": 8064095,
+          "iteration_count": 1,
+          "total_assistant_turns": 114,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-flow-cli-dice-roller-simulated",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-flow-cli-dice-roller-simulated",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 278.8062889575958,
+          "total_tokens": 2166499,
+          "iteration_count": 2,
+          "total_assistant_turns": 63,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-flow-merge-parallel-sync",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-flow-merge-parallel-sync",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 96.63091564178467,
+          "total_tokens": 859029,
+          "iteration_count": 1,
+          "total_assistant_turns": 30,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-flow-subflow",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-flow-subflow",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 228.90610432624817,
+          "total_tokens": 1695314,
+          "iteration_count": 1,
+          "total_assistant_turns": 43,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-flow-ixp-routing-listing/r01",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-flow-ixp-routing-listing/r01",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 42.93855357170105,
+          "total_tokens": 375610,
+          "iteration_count": 1,
+          "total_assistant_turns": 11,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-flow-ixp-routing-listing/r02",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-flow-ixp-routing-listing/r02",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 139.08874773979187,
+          "total_tokens": 1126109,
+          "iteration_count": 1,
+          "total_assistant_turns": 38,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-flow-ixp-routing-listing/r03",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-flow-ixp-routing-listing/r03",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 53.56300616264343,
+          "total_tokens": 489801,
+          "iteration_count": 1,
+          "total_assistant_turns": 14,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-flow-ixp-routing-listing/r04",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-flow-ixp-routing-listing/r04",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 47.61321687698364,
+          "total_tokens": 450109,
+          "iteration_count": 1,
+          "total_assistant_turns": 14,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-flow-ixp-routing-listing/r05",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-flow-ixp-routing-listing/r05",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 40.003106117248535,
+          "total_tokens": 373811,
+          "iteration_count": 1,
+          "total_assistant_turns": 13,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-flow-ixp-routing-listing/r06",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-flow-ixp-routing-listing/r06",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 51.07615041732788,
+          "total_tokens": 447100,
+          "iteration_count": 1,
+          "total_assistant_turns": 12,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-flow-ixp-routing-listing/r07",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-flow-ixp-routing-listing/r07",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 42.24871349334717,
+          "total_tokens": 499071,
+          "iteration_count": 1,
+          "total_assistant_turns": 15,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-flow-ixp-routing-listing/r08",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-flow-ixp-routing-listing/r08",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 35.130308628082275,
+          "total_tokens": 374308,
+          "iteration_count": 1,
+          "total_assistant_turns": 12,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-flow-ixp-routing-listing/r09",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-flow-ixp-routing-listing/r09",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 44.09833812713623,
+          "total_tokens": 501071,
+          "iteration_count": 1,
+          "total_assistant_turns": 13,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-flow-ixp-routing-listing/r10",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-flow-ixp-routing-listing/r10",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 57.919742822647095,
+          "total_tokens": 505407,
+          "iteration_count": 1,
+          "total_assistant_turns": 14,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-flow-inline-agent-robust",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-flow-inline-agent-robust",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 264.2271182537079,
+          "total_tokens": 2565329,
+          "iteration_count": 1,
+          "total_assistant_turns": 62,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-flow-slack-weather-pipeline",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-flow-slack-weather-pipeline",
+          "weighted_score": 0.625,
+          "final_status": "MAX_TURNS_EXHAUSTED",
+          "duration_seconds": 708.0110423564911,
+          "total_tokens": 5815687,
+          "iteration_count": 1,
+          "total_assistant_turns": 93,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-flow-expense-approval-simulated",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-flow-expense-approval-simulated",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 839.7370438575745,
+          "total_tokens": 4341216,
+          "iteration_count": 1,
+          "total_assistant_turns": 78,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-flow-slack-channel-description-simulated",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-flow-slack-channel-description-simulated",
+          "weighted_score": 0.9166666666666666,
+          "final_status": "SUCCESS",
+          "duration_seconds": 365.0976345539093,
+          "total_tokens": 4856054,
+          "iteration_count": 2,
+          "total_assistant_turns": 86,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-flow-devcon-billing-resolution-writer",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-flow-devcon-billing-resolution-writer",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 344.04584670066833,
+          "total_tokens": 3952881,
+          "iteration_count": 1,
+          "total_assistant_turns": 82,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-flow-eval-no-auto-upload",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-flow-eval-no-auto-upload",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 90.77404642105103,
+          "total_tokens": 1170789,
+          "iteration_count": 1,
+          "total_assistant_turns": 37,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-flow-rpa",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-flow-rpa",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 222.95186710357666,
+          "total_tokens": 1733188,
+          "iteration_count": 1,
+          "total_assistant_turns": 44,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-flow-update-node",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-flow-update-node",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 79.90798878669739,
+          "total_tokens": 668908,
+          "iteration_count": 1,
+          "total_assistant_turns": 19,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-flow-outlook-waitfor-email",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-flow-outlook-waitfor-email",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 172.83196878433228,
+          "total_tokens": 2262532,
+          "iteration_count": 1,
+          "total_assistant_turns": 50,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-flow-init-validate",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-flow-init-validate",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 33.067914724349976,
+          "total_tokens": 267763,
+          "iteration_count": 1,
+          "total_assistant_turns": 9,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-flow-ipe-multiselect",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-flow-ipe-multiselect",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 281.084184885025,
+          "total_tokens": 4287739,
+          "iteration_count": 1,
+          "total_assistant_turns": 87,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-flow-bindings-multi-connector-independence",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-flow-bindings-multi-connector-independence",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 309.5675139427185,
+          "total_tokens": 4857770,
+          "iteration_count": 1,
+          "total_assistant_turns": 82,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-flow-paginated-reference-lookup",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-flow-paginated-reference-lookup",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 189.19799137115479,
+          "total_tokens": 3051726,
+          "iteration_count": 1,
+          "total_assistant_turns": 65,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-flow-ipe-enum",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-flow-ipe-enum",
+          "weighted_score": 0.5714285714285714,
+          "final_status": "MAX_TURNS_EXHAUSTED",
+          "duration_seconds": 923.3603520393372,
+          "total_tokens": 6141468,
+          "iteration_count": 1,
+          "total_assistant_turns": 104,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-flow-ipe-dtl-load-by-default-false",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-flow-ipe-dtl-load-by-default-false",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 355.688099861145,
+          "total_tokens": 3320686,
+          "iteration_count": 1,
+          "total_assistant_turns": 63,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-flow-transform-filter",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-flow-transform-filter",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 145.86398601531982,
+          "total_tokens": 1157686,
+          "iteration_count": 1,
+          "total_assistant_turns": 31,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-flow-registry-discovery",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-flow-registry-discovery",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 63.511914014816284,
+          "total_tokens": 407888,
+          "iteration_count": 1,
+          "total_assistant_turns": 14,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-flow-slack-channel-description",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-flow-slack-channel-description",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 259.2823233604431,
+          "total_tokens": 4319805,
+          "iteration_count": 1,
+          "total_assistant_turns": 74,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-flow-wiki-pageviews",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-flow-wiki-pageviews",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 480.5710508823395,
+          "total_tokens": 3006516,
+          "iteration_count": 1,
+          "total_assistant_turns": 60,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-flow-batch-transform",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-flow-batch-transform",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 133.82616591453552,
+          "total_tokens": 1143158,
+          "iteration_count": 1,
+          "total_assistant_turns": 31,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-flow-non-catalog-http-fallback",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-flow-non-catalog-http-fallback",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 390.56031036376953,
+          "total_tokens": 5208970,
+          "iteration_count": 1,
+          "total_assistant_turns": 78,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-flow-ipe-path-params",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-flow-ipe-path-params",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 169.40684342384338,
+          "total_tokens": 2463767,
+          "iteration_count": 1,
+          "total_assistant_turns": 48,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-flow-ipe-generate-schema",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-flow-ipe-generate-schema",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 240.06837463378906,
+          "total_tokens": 3685547,
+          "iteration_count": 1,
+          "total_assistant_turns": 81,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-flow-devcon-billing-invoice-lookup",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-flow-devcon-billing-invoice-lookup",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 1110.3600418567657,
+          "total_tokens": 12025124,
+          "iteration_count": 1,
+          "total_assistant_turns": 152,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-flow-ipe-query-params",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-flow-ipe-query-params",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 313.91203689575195,
+          "total_tokens": 3781036,
+          "iteration_count": 1,
+          "total_assistant_turns": 73,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    },
+    {
+      "task_id": "skill-flow-terminate",
+      "variant_results": [
+        {
+          "variant_id": "default",
+          "task_id": "skill-flow-terminate",
+          "weighted_score": 1.0,
+          "final_status": "SUCCESS",
+          "duration_seconds": 201.7373402118683,
+          "total_tokens": 2220151,
+          "iteration_count": 1,
+          "total_assistant_turns": 50,
+          "reference_similarity": null,
+          "replicate_index": 0,
+          "replicate_count": 1
+        }
+      ],
+      "best_variant": "default",
+      "is_tie": false,
+      "score_spread": 0.0,
+      "replicate_count": 1
+    }
+  ],
+  "variant_aggregates": {
+    "default": {
+      "variant_id": "default",
+      "tasks_run": 127,
+      "tasks_succeeded": 110,
+      "tasks_failed": 16,
+      "tasks_error": 1,
+      "average_score": 0.9116321780104166,
+      "average_duration": 387.54073781291333,
+      "total_tokens": 521836967,
+      "replicate_count": 1,
+      "tasks_token_budget_exceeded": 0,
+      "tasks_cost_budget_exceeded": 0,
+      "pass_rate": 0.8661417322834646
+    }
+  },
+  "total_duration_seconds": 2620.886048,
+  "per_replicate_scores": {
+    "default": {
+      "skill-flow-bellevue-weather-simulated": [
+        0.8888888888888888
+      ],
+      "skill-flow-group-to-subflow": [
+        0.0
+      ],
+      "skill-flow-ixp-invoice-extraction-simulated": [
+        0.9
+      ],
+      "skill-flow-trigger-with-filter": [
+        1.0
+      ],
+      "skill-flow-slack-http-fallback": [
+        1.0
+      ],
+      "skill-flow-customer-escalation": [
+        0.3333333333333333
+      ],
+      "skill-flow-hitl-schema-design-simulated": [
+        1.0
+      ],
+      "skill-flow-add-output": [
+        1.0
+      ],
+      "skill-flow-ipe-jira-get-issue": [
+        1.0
+      ],
+      "skill-flow-ixp-scaffold-multinode": [
+        0.4827586206896552
+      ],
+      "skill-flow-hitl-smoke-completed-port": [
+        1.0
+      ],
+      "skill-flow-ipe-jira-create-issue": [
+        1.0
+      ],
+      "skill-flow-ipe-jira-search-triage": [
+        1.0
+      ],
+      "skill-flow-ipe-dtl-load-by-default-true": [
+        0.75
+      ],
+      "skill-flow-delay": [
+        1.0
+      ],
+      "skill-flow-hitl-quality-result-downstream": [
+        1.0
+      ],
+      "skill-flow-hitl-smoke-node-placed": [
+        1.0
+      ],
+      "skill-flow-generic-dynamic-node": [
+        1.0
+      ],
+      "skill-flow-eval-simulation-crud": [
+        1.0
+      ],
+      "skill-flow-feet-inches": [
+        1.0
+      ],
+      "skill-flow-ixp-integration-handle-routing": [
+        1.0
+      ],
+      "skill-flow-file-attachment-debug": [
+        0.5
+      ],
+      "skill-flow-devcon-billing-discrepancy-detector": [
+        1.0
+      ],
+      "skill-flow-hitl-smoke-multi-outcome-routing": [
+        1.0
+      ],
+      "skill-flow-remove-node": [
+        1.0
+      ],
+      "skill-flow-calculator": [
+        1.0
+      ],
+      "skill-flow-e2e-escalation-jira-ticket": [
+        0.6842105263157895
+      ],
+      "skill-flow-bindings-reconfigure-different-connection": [
+        1.0
+      ],
+      "skill-flow-move-node": [
+        0.375
+      ],
+      "skill-flow-customer-escalation-simulated": [
+        1.0
+      ],
+      "skill-flow-ipe-enhanced-enum": [
+        1.0
+      ],
+      "skill-flow-eval-inline-agent": [
+        1.0
+      ],
+      "skill-flow-ipe-required-groups": [
+        1.0
+      ],
+      "skill-flow-hitl-quality-schema-design": [
+        1.0
+      ],
+      "skill-flow-decision": [
+        1.0
+      ],
+      "skill-flow-switch": [
+        1.0
+      ],
+      "skill-flow-ixp-e2e-invoice-extraction-greenfield": [
+        0.0
+      ],
+      "skill-flow-ipe-searchable-joins": [
+        1.0
+      ],
+      "skill-flow-multi-city-weather": [
+        0.0
+      ],
+      "skill-flow-eval-local-crud": [
+        1.0
+      ],
+      "skill-flow-ixp-routing-negative/stripe-http": [
+        1.0
+      ],
+      "skill-flow-ixp-routing-negative/slack-summary": [
+        1.0
+      ],
+      "skill-flow-ixp-routing-negative/sf-update": [
+        1.0
+      ],
+      "skill-flow-ixp-routing-negative/http-webhook": [
+        1.0
+      ],
+      "skill-flow-ixp-routing-negative/gsheet-loop": [
+        1.0
+      ],
+      "skill-flow-ixp-routing-negative/queue-write": [
+        1.0
+      ],
+      "skill-flow-ixp-routing-negative/teams-decision": [
+        1.0
+      ],
+      "skill-flow-ixp-routing-negative/delay-email": [
+        1.0
+      ],
+      "skill-flow-ipe-ceql-where": [
+        1.0
+      ],
+      "skill-flow-bindings-no-duplicates": [
+        1.0
+      ],
+      "skill-flow-e2e-devcon-expense-approval": [
+        1.0
+      ],
+      "skill-flow-ixp-scaffold-minimal": [
+        1.0
+      ],
+      "skill-flow-add-node": [
+        1.0
+      ],
+      "skill-flow-transform-group-by": [
+        1.0
+      ],
+      "skill-flow-e2e-escalation-orchestrator-paths": [
+        1.0
+      ],
+      "skill-flow-eval-evaluator-type-choice": [
+        1.0
+      ],
+      "skill-flow-openmeteo-weather": [
+        1.0
+      ],
+      "skill-flow-devcon-billing-dispute-resolution": [
+        1.0
+      ],
+      "skill-flow-devcon-billing-dispute-analyst": [
+        0.5
+      ],
+      "skill-flow-outlook-trigger-inbox": [
+        1.0
+      ],
+      "skill-flow-api-workflow": [
+        1.0
+      ],
+      "skill-flow-bindings-idempotent-reconfigure": [
+        1.0
+      ],
+      "skill-flow-e2e-escalation-slack-alert": [
+        1.0
+      ],
+      "skill-flow-jdbc-databricks-query": [
+        1.0
+      ],
+      "skill-flow-scheduled-trigger": [
+        0.375
+      ],
+      "skill-flow-webhook-waitfor-parallel": [
+        1.0
+      ],
+      "skill-flow-dice-roller": [
+        1.0
+      ],
+      "skill-flow-hitl-quality-boolean-decision": [
+        1.0
+      ],
+      "skill-flow-loop-multiply": [
+        0.625
+      ],
+      "skill-flow-coded-agent": [
+        0.375
+      ],
+      "skill-flow-transform-map": [
+        1.0
+      ],
+      "skill-flow-reading-list": [
+        1.0
+      ],
+      "skill-flow-ixp-routing/explicit": [
+        1.0
+      ],
+      "skill-flow-ixp-routing/invoice-extraction": [
+        1.0
+      ],
+      "skill-flow-ixp-routing/receipts": [
+        0.0
+      ],
+      "skill-flow-ixp-routing/contracts": [
+        1.0
+      ],
+      "skill-flow-ixp-routing/forms-classify": [
+        1.0
+      ],
+      "skill-flow-ipe-jira-lifecycle": [
+        1.0
+      ],
+      "skill-flow-hitl-quality-brownfield-insert": [
+        1.0
+      ],
+      "skill-flow-ipe-complex-array": [
+        0.875
+      ],
+      "skill-flow-ipe-drive-to-slack": [
+        1.0
+      ],
+      "skill-flow-bellevue-weather": [
+        1.0
+      ],
+      "skill-flow-solution-select-ask": [
+        1.0
+      ],
+      "skill-flow-summarize": [
+        1.0
+      ],
+      "skill-flow-interactive-customer-escalation-triage": [
+        1.0
+      ],
+      "skill-flow-lowcode-agent": [
+        0.0
+      ],
+      "skill-flow-ixp-e2e-project-selection/aviation": [
+        1.0
+      ],
+      "skill-flow-ixp-e2e-project-selection/birth-certificate": [
+        1.0
+      ],
+      "skill-flow-cli-dice-roller-simulated": [
+        1.0
+      ],
+      "skill-flow-merge-parallel-sync": [
+        1.0
+      ],
+      "skill-flow-subflow": [
+        1.0
+      ],
+      "skill-flow-ixp-routing-listing/r01": [
+        1.0
+      ],
+      "skill-flow-ixp-routing-listing/r02": [
+        1.0
+      ],
+      "skill-flow-ixp-routing-listing/r03": [
+        1.0
+      ],
+      "skill-flow-ixp-routing-listing/r04": [
+        1.0
+      ],
+      "skill-flow-ixp-routing-listing/r05": [
+        1.0
+      ],
+      "skill-flow-ixp-routing-listing/r06": [
+        1.0
+      ],
+      "skill-flow-ixp-routing-listing/r07": [
+        1.0
+      ],
+      "skill-flow-ixp-routing-listing/r08": [
+        1.0
+      ],
+      "skill-flow-ixp-routing-listing/r09": [
+        1.0
+      ],
+      "skill-flow-ixp-routing-listing/r10": [
+        1.0
+      ],
+      "skill-flow-inline-agent-robust": [
+        1.0
+      ],
+      "skill-flow-slack-weather-pipeline": [
+        0.625
+      ],
+      "skill-flow-expense-approval-simulated": [
+        1.0
+      ],
+      "skill-flow-slack-channel-description-simulated": [
+        0.9166666666666666
+      ],
+      "skill-flow-devcon-billing-resolution-writer": [
+        1.0
+      ],
+      "skill-flow-eval-no-auto-upload": [
+        1.0
+      ],
+      "skill-flow-rpa": [
+        1.0
+      ],
+      "skill-flow-update-node": [
+        1.0
+      ],
+      "skill-flow-outlook-waitfor-email": [
+        1.0
+      ],
+      "skill-flow-init-validate": [
+        1.0
+      ],
+      "skill-flow-ipe-multiselect": [
+        1.0
+      ],
+      "skill-flow-bindings-multi-connector-independence": [
+        1.0
+      ],
+      "skill-flow-paginated-reference-lookup": [
+        1.0
+      ],
+      "skill-flow-ipe-enum": [
+        0.5714285714285714
+      ],
+      "skill-flow-ipe-dtl-load-by-default-false": [
+        1.0
+      ],
+      "skill-flow-transform-filter": [
+        1.0
+      ],
+      "skill-flow-registry-discovery": [
+        1.0
+      ],
+      "skill-flow-slack-channel-description": [
+        1.0
+      ],
+      "skill-flow-wiki-pageviews": [
+        1.0
+      ],
+      "skill-flow-batch-transform": [
+        1.0
+      ],
+      "skill-flow-non-catalog-http-fallback": [
+        1.0
+      ],
+      "skill-flow-ipe-path-params": [
+        1.0
+      ],
+      "skill-flow-ipe-generate-schema": [
+        1.0
+      ],
+      "skill-flow-devcon-billing-invoice-lookup": [
+        1.0
+      ],
+      "skill-flow-ipe-query-params": [
+        1.0
+      ],
+      "skill-flow-terminate": [
+        1.0
+      ]
+    }
+  }
+}

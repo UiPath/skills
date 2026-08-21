@@ -1,0 +1,11 @@
+{
+  "_comment": "Planned configuration for uipath.connector.uipath-automattic-woocommerce.get-product-reviews — no live WooCommerce connection exists on this tenant (`uip is connections list uipath-automattic-woocommerce --all-folders` returned no results). Run this via `uip maestro flow node configure EnhancedEnumTest.flow getProductReviews1 --detail '<this JSON minus this comment>'` once a connection is created, substituting the real connectionId/folderKey.",
+  "connectionId": "<PENDING_CONNECTION_ID>",
+  "folderKey": "<PENDING_FOLDER_KEY>",
+  "method": "GET",
+  "endpoint": "/search_product_review",
+  "objectName": "search_product_review",
+  "queryParameters": {
+    "order": "=js:$vars.mapSortOrder.output.order"
+  }
+}

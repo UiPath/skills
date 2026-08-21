@@ -1,0 +1,9 @@
+21:58:43 [INFO   ] [default/skill-flow-customer-escalation-simulated/00] orchestrator: API routing: aws_bedrock
+21:58:43 [INFO   ] [default/skill-flow-customer-escalation-simulated/00] simulation.user_simulator: User simulator: Claude Code agent backend (route=BedrockRoute, model=us.anthropic.claude-sonnet-4-6)
+21:58:51 [INFO   ] [default/skill-flow-customer-escalation-simulated/00] orchestrator: Simulation turn 1/8
+21:59:19 [INFO   ] [default/skill-flow-customer-escalation-simulated/00] orchestrator: Simulation turn 2/8
+22:01:23 [INFO   ] [default/skill-flow-customer-escalation-simulated/00] orchestrator: Simulation turn 3/8
+22:09:07 [INFO   ] [default/skill-flow-customer-escalation-simulated/00] orchestrator: Simulation dialog ended: stop_reason=stop_token turns=3 criteria_passed=True
+22:09:07 [INFO   ] [default/skill-flow-customer-escalation-simulated/00] orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+22:09:07 [INFO   ] [default/skill-flow-customer-escalation-simulated/00] orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-customer-escalation-simulated
+22:09:07 [INFO   ] [default/skill-flow-customer-escalation-simulated/00] orchestrator: Task finished: status=SUCCESS duration=625.6s score=0.938 iterations=3

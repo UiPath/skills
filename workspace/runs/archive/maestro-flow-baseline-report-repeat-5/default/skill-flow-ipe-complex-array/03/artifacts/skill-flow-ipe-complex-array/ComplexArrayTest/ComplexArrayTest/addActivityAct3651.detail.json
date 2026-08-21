@@ -1,0 +1,20 @@
+{
+  "_comment": "Planned --detail for node configure. Replace CONNECTION_ID and FOLDER_KEY with real values from: uip is connections list uipath-act-act365 --all-folders --output json",
+  "_command": "uip maestro flow node configure ComplexArrayTest.flow addActivityAct3651 --detail \"$(cat addActivityAct3651.detail.json | python3 -c 'import sys,json; d=json.load(sys.stdin); [d.pop(k) for k in list(d) if k.startswith(\"_\")]; print(json.dumps(d))')\" --output json",
+  "connectionId": "<CONNECTION_ID>",
+  "folderKey": "<FOLDER_KEY>",
+  "method": "POST",
+  "endpoint": "/Interactions",
+  "bodyParameters": {
+    "subject": "Sales Interaction - Multi-Contact",
+    "details": "Recorded via ComplexArrayTest flow",
+    "startTime": "2026-07-24T09:00:00",
+    "endTime": "2026-07-24T10:00:00",
+    "timeZone": "Eastern Standard Time",
+    "contacts": [
+      { "id": "<CONTACT_ID_1>", "displayName": "Contact One" },
+      { "id": "<CONTACT_ID_2>", "displayName": "Contact Two" },
+      { "id": "<CONTACT_ID_3>", "displayName": "Contact Three" }
+    ]
+  }
+}

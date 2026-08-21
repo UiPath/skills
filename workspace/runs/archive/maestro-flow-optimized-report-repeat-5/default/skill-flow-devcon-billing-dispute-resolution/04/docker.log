@@ -1,0 +1,9 @@
+18:33:03 [INFO   ] [default/skill-flow-devcon-billing-dispute-resolution/04] orchestrator: API routing: aws_bedrock
+18:48:21 [INFO   ] [default/skill-flow-devcon-billing-dispute-resolution/04] evaluation.checker: Criterion 'run_command' FAILED (score=0.00, threshold=1.00): Command: python3 $TASK_DIR/check_e2e_billing_dispute_resolution.py
+18:48:21 [INFO   ] [default/skill-flow-devcon-billing-dispute-resolution/04] orchestrator: Success criteria: 2/3 passed, weighted score: 0.500
+18:48:21 [INFO   ] [default/skill-flow-devcon-billing-dispute-resolution/04] orchestrator: Running post-run command: python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/cleanup_solutions.py
+18:48:22 [WARNING] [default/skill-flow-devcon-billing-dispute-resolution/04] orchestrator: [post_run stderr] cleanup_solutions: deleted 94818dc8-ca82-49eb-749d-08dee9b21193 (from BillingDisputeResolution/BillingDisputeResolution.uipx)
+18:48:22 [WARNING] [default/skill-flow-devcon-billing-dispute-resolution/04] orchestrator: [post_run stderr] cleanup_solutions: summary policy=always deleted=1 preserved=0 skipped=0 not_uploaded=0 failed=0
+18:48:22 [INFO   ] [default/skill-flow-devcon-billing-dispute-resolution/04] orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+18:48:22 [INFO   ] [default/skill-flow-devcon-billing-dispute-resolution/04] orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-devcon-billing-dispute-resolution
+18:48:22 [INFO   ] [default/skill-flow-devcon-billing-dispute-resolution/04] orchestrator: Task finished: status=FAILURE duration=921.9s score=0.500 iterations=1

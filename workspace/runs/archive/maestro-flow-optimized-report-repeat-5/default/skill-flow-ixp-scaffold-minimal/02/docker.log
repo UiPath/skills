@@ -1,0 +1,8 @@
+17:49:53 [INFO   ] [default/skill-flow-ixp-scaffold-minimal/02] orchestrator: API routing: aws_bedrock
+17:59:54 [WARNING] agents.watchdog: task_timeout (skill-flow-ixp-scaffold-minimal) fired after 600.0s — hard-killing subprocess
+17:59:54 [WARNING] agents.claude_code_agent: Hard-killing Claude CLI subprocess (pid=53)
+17:59:54 [ERROR  ] [default/skill-flow-ixp-scaffold-minimal/02] errors.executor: [skill-flow-ixp-scaffold-minimal] Agent communication failed (non-retryable): agent_timeout - Agent turn timed out after 600s (iteration 1)
+17:59:54 [ERROR  ] [default/skill-flow-ixp-scaffold-minimal/02] orchestrator: Evaluation failed: Agent turn timed out after 600s (iteration 1)
+17:59:54 [INFO   ] [default/skill-flow-ixp-scaffold-minimal/02] orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+17:59:54 [INFO   ] [default/skill-flow-ixp-scaffold-minimal/02] orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-ixp-scaffold-minimal
+17:59:54 [INFO   ] [default/skill-flow-ixp-scaffold-minimal/02] orchestrator: Task finished: status=ERROR duration=603.7s score=0.000 iterations=1

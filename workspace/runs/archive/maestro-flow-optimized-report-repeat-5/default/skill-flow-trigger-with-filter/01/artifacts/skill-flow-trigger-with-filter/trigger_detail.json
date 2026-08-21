@@ -1,0 +1,67 @@
+{
+  "_comment": "Configuration for uip maestro flow node configure <PROJECT>.flow <triggerId> --detail '<this payload>'",
+  "_node_type": "uipath.connector.trigger.microsoft-office-365.email-received",
+  "_cli_command": "uip maestro flow node configure <PROJECT>.flow <triggerId> --output json --detail '<this payload>'",
+
+  "connectionId": "<OUTLOOK_CONNECTION_UUID>",
+  "folderKey": "<ORCHESTRATOR_FOLDER_KEY>",
+  "eventMode": "webhooks",
+
+  "eventParameters": {
+    "parentFolderId": "<INBOX_FOLDER_ID>"
+  },
+
+  "queryParameters": {
+    "sharedMailboxAddress": ""
+  },
+
+  "filter": {
+    "groupOperator": 0,
+    "index": 0,
+    "filters": [
+      {
+        "id": "from",
+        "operator": "Equals",
+        "value": {
+          "value": "abc@xyz.com",
+          "rawString": "\"abc@xyz.com\"",
+          "isLiteral": true
+        }
+      },
+      {
+        "id": "subject",
+        "operator": "Contains",
+        "value": {
+          "value": "good day",
+          "rawString": "\"good day\"",
+          "isLiteral": true
+        }
+      }
+    ],
+    "groups": []
+  },
+
+  "_placeholders": {
+    "connectionId": "UUID of the Outlook / Microsoft 365 IS connection — obtain with: uip is connections list microsoft-office-365 --all-folders --output json",
+    "folderKey": "Orchestrator folder key for the connection — from the same connections list response",
+    "eventMode": "'webhooks' for Microsoft 365 email-received (connector-managed registration, isWebhookUrlVisible=false); confirm from: uip maestro flow registry get uipath.connector.trigger.microsoft-office-365.email-received --connection-id <id> --output json",
+    "parentFolderId": "ID of the Outlook mailbox folder to watch (e.g. Inbox) — resolve with: uip is resources run list microsoft-office-365 MailFolder --connection-id <id> --output json",
+    "sharedMailboxAddress": "Leave empty string for the primary mailbox; set to the shared mailbox SMTP address if monitoring a shared mailbox",
+    "filter.filters[0].id": "'from' — exact field name from filterFields.fields[].name as returned by uip maestro flow registry get or uip is triggers describe",
+    "filter.filters[1].id": "'subject' — exact field name from filterFields.fields[].name",
+    "groupOperator": "0 = AND — both conditions (from + subject) must match for the trigger to fire"
+  },
+
+  "_resolution_steps": [
+    "1a. uip is connections list microsoft-office-365 --all-folders --output json  →  pick enabled connection, capture Id",
+    "1b. uip is triggers objects microsoft-office-365 EMAIL_RECEIVED --connection-id <id> --output json  →  check byoaConnection, isWebhookUrlVisible, parameters[]",
+    "1b-2. uip is triggers describe microsoft-office-365 EMAIL_RECEIVED Message --connection-id <id> --output json  →  EventParameters (merge with parameters[]), FilterFields, OutputFields",
+    "1c. uip is connections ping <id> --output json  →  confirm Healthy=true",
+    "2. uip maestro flow registry get uipath.connector.trigger.microsoft-office-365.email-received --connection-id <id> --output json  →  confirm eventMode, filterFields, outputResponseDefinition",
+    "3. uip is resources run list microsoft-office-365 MailFolder --connection-id <id> --output json  →  resolve parentFolderId for the target inbox",
+    "4. All required params resolved (parentFolderId + filter fields from + subject); sharedMailboxAddress optional — omit or empty for primary mailbox",
+    "5. uip maestro flow node remove <PROJECT>.flow start --output json  →  remove manual trigger",
+    "   uip maestro flow node add <PROJECT>.flow uipath.connector.trigger.microsoft-office-365.email-received --label 'Email Received' --position 200,144 --output json  →  note <triggerId>",
+    "6. uip maestro flow node configure <PROJECT>.flow <triggerId> --output json --detail '<this file minus _comment/_node_type/_cli_command/_placeholders/_resolution_steps keys>'"
+  ]
+}

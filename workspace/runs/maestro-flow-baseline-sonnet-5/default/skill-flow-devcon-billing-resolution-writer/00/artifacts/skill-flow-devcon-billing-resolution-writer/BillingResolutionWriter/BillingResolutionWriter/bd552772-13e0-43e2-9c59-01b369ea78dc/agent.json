@@ -1,0 +1,95 @@
+{
+  "version": "1.1.0",
+  "settings": {
+    "model": "anthropic.claude-sonnet-5",
+    "maxTokens": 4096,
+    "temperature": 0,
+    "engine": "basic-v2",
+    "maxIterations": 5,
+    "mode": "standard"
+  },
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "start__output__customerName": {
+        "type": "string",
+        "description": "Bound from $vars.start.output.customerName"
+      },
+      "start__output__invoiceNumber": {
+        "type": "string",
+        "description": "Bound from $vars.start.output.invoiceNumber"
+      },
+      "start__output__creditAmount": {
+        "type": "number",
+        "description": "Bound from $vars.start.output.creditAmount"
+      }
+    }
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "subject": {
+        "type": "string",
+        "description": "The email subject line for the billing dispute resolution"
+      },
+      "body": {
+        "type": "string",
+        "description": "The full email body, addressed to the customer, stating the invoice number and the approved credit amount"
+      }
+    },
+    "required": [
+      "subject",
+      "body"
+    ]
+  },
+  "metadata": {
+    "storageVersion": "50.0.0",
+    "isConversational": false,
+    "showProjectCreationExperience": false
+  },
+  "type": "lowCode",
+  "guardrails": [],
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a billing support specialist who drafts customer-facing billing-dispute resolution emails.\n\nYou call no tools. You have all the information you need in the user message. Do not ask for more information and do not attempt to look anything up — decide immediately from the given inputs.\n\nTask: write one resolution email that informs the customer their billing dispute has been resolved and a credit has been approved.\n\nOutput contract: return exactly two fields, `subject` and `body`.\n- `subject`: a short, professional email subject line referencing the billing dispute resolution.\n- `body`: a complete, professional, courteous email body addressed to the customer by name. It MUST explicitly state the invoice number and the approved credit amount (formatted as currency, e.g. $123.45). Explain that the dispute has been reviewed and resolved, thank the customer for their patience, and close with a professional sign-off.\n\nNever end a run without returning both fields.",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "You are a billing support specialist who drafts customer-facing billing-dispute resolution emails.\n\nYou call no tools. You have all the information you need in the user message. Do not ask for more information and do not attempt to look anything up — decide immediately from the given inputs.\n\nTask: write one resolution email that informs the customer their billing dispute has been resolved and a credit has been approved.\n\nOutput contract: return exactly two fields, `subject` and `body`.\n- `subject`: a short, professional email subject line referencing the billing dispute resolution.\n- `body`: a complete, professional, courteous email body addressed to the customer by name. It MUST explicitly state the invoice number and the approved credit amount (formatted as currency, e.g. $123.45). Explain that the dispute has been reviewed and resolved, thank the customer for their patience, and close with a professional sign-off.\n\nNever end a run without returning both fields."
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "Draft the billing-dispute resolution email for the following case:\n\nCustomer name: {{input.start__output__customerName}}\nInvoice number: {{input.start__output__invoiceNumber}}\nApproved credit amount: {{input.start__output__creditAmount}}",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "Draft the billing-dispute resolution email for the following case:\n\nCustomer name: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__customerName"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\nInvoice number: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__invoiceNumber"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\nApproved credit amount: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__creditAmount"
+        }
+      ]
+    }
+  ],
+  "projectId": "bd552772-13e0-43e2-9c59-01b369ea78dc"
+}

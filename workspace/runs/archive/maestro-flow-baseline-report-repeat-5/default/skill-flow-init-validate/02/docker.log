@@ -1,0 +1,6 @@
+20:14:03 [INFO   ] [default/skill-flow-init-validate/02] orchestrator: API routing: aws_bedrock
+20:16:17 [INFO   ] [default/skill-flow-init-validate/02] orchestrator: Success criteria: 5/5 passed, weighted score: 1.000
+20:16:17 [WARNING] [default/skill-flow-init-validate/02] orchestrator: Visible turns (14) exceeded expected_turns (9) at iteration 1 for task skill-flow-init-validate. Run continues — max_turns remains the hard cap.
+20:16:17 [INFO   ] [default/skill-flow-init-validate/02] orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+20:16:17 [INFO   ] [default/skill-flow-init-validate/02] orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-init-validate
+20:16:17 [INFO   ] [default/skill-flow-init-validate/02] orchestrator: Task finished: status=SUCCESS duration=136.7s score=1.000 iterations=1

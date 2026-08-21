@@ -1,0 +1,229 @@
+---
+name: uipath-maestro-flow
+description: "TRIGGER for `.flow` files, UiPath Flow / Maestro Flow build or edit requests, adding or listing IXP model/document-extraction nodes for a Flow. UiPath Maestro Flow (.flow) — build, edit, run, debug, fix, evaluate. Create, connect nodes; connector, approval, script, subflow, ixp; triggers, schedules; validate. Upload, publish, manage runs, instances. Diagnose errors, incidents, traces. Design eval sets, evaluators, run Studio Web evals via `uip maestro flow eval`. `uip maestro flow` CLI. DO NOT TRIGGER for raw IXP project labelling/prediction review/prompt tuning outside Flow→uipath-ixp; C#/XAML→uipath-rpa; standalone agents→uipath-agents."
+allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
+---
+
+# UiPath Flow Skill
+
+Comprehensive guide for creating, editing, validating, debugging, publishing, diagnosing, and evaluating UiPath Flow projects using the `uip` CLI and `.flow` file format. The skill is organized into four capabilities — **Author**, **Operate**, **Diagnose**, **Evaluate** — each with its own index doc.
+
+## When to use this skill
+
+**Author** — building or editing a `.flow` file. Read [references/author/CAPABILITY.md](references/author/CAPABILITY.md).
+
+<!--skill-flavor:project-creation-scope:start-->
+- Create a new Flow project (`uip maestro flow init`)
+<!--skill-flavor:project-creation-scope:end-->
+- Edit a `.flow` file — add nodes, edges, variables, subflows, transforms, triggers
+- Explore available node types via the registry
+- Validate or format a Flow file locally
+- Apply Node ownership — Edit/Write for user-owned nodes, CLI for CLI-owned nodes (see Author capability)
+- Configure connector, connector-trigger, or managed HTTP nodes; scaffold inline-agent projects
+- Add IxP / document-extraction nodes to a flow, or list IxP models available to Maestro Flow through the flow registry
+- Plan a complex flow before building
+
+**Operate** — publishing, running, or managing a deployed flow. Read [references/operate/CAPABILITY.md](references/operate/CAPABILITY.md).
+
+<!--skill-flavor:upload-scope-bullets:start-->
+- Push a flow to Studio Web (`uip solution upload`)
+- Deploy a flow to Orchestrator (`uip maestro flow pack` + `uip solution publish`)
+<!--skill-flavor:upload-scope-bullets:end-->
+- Debug a flow end-to-end against real systems
+- Trigger a deployed process
+- Check job status or stream traces
+- Pause, resume, cancel, or retry a running instance
+
+**Diagnose** — investigating a failed or misbehaving run. Read [references/diagnose/CAPABILITY.md](references/diagnose/CAPABILITY.md).
+
+- Triage a failed `flow debug` or deployed process run
+- Read incidents, runtime variables, deployed BPMN
+- Recognize known failure modes (MST-9107, MST-9061, HITL-stuck, reused reference IDs, single-nested layout)
+
+**Evaluate** — designing and running evaluations against a deployed flow. Read [references/evaluate/CAPABILITY.md](references/evaluate/CAPABILITY.md).
+
+- Create evaluators (`exact-match`, `json-similarity`, `contains`, `llm-judge-*`) for a Flow project
+- Create eval sets, add data points (test cases), pin entry points
+- Start Studio Web eval runs, poll status, fetch results, compare runs
+<!--skill-flavor:upload-eval-scope-bullet:start-->
+- Decide whether to call `uip solution upload` (almost always: don't auto-run; ask first)
+<!--skill-flavor:upload-eval-scope-bullet:end-->
+
+## Capability router
+
+| I want to...                                                 | Read                                                                                             |
+| ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------ |
+| Create a new flow or edit an existing one                    | [references/author/CAPABILITY.md](references/author/CAPABILITY.md)                               |
+| Publish, deploy, debug, or manage a flow's lifecycle         | [references/operate/CAPABILITY.md](references/operate/CAPABILITY.md)                             |
+| Diagnose a failed or misbehaving flow run                    | [references/diagnose/CAPABILITY.md](references/diagnose/CAPABILITY.md)                           |
+| Design and run evaluations (`uip maestro flow eval`)         | [references/evaluate/CAPABILITY.md](references/evaluate/CAPABILITY.md)                           |
+| Look up CLI command syntax                                   | [references/shared/cli-commands.md](references/shared/cli-commands.md)                           |
+| Look up CLI conventions (`--output json`, `--output-filter`, login, FOLDER_KEY) | [references/shared/cli-conventions.md](references/shared/cli-conventions.md)                     |
+| Understand the `.flow` JSON format                           | [references/shared/file-format.md](references/shared/file-format.md)                             |
+| Understand variables and `=js:` expressions                  | [references/shared/variables-and-expressions.md](references/shared/variables-and-expressions.md) |
+| Wire one node's output into another node's input             | [references/shared/node-output-wiring.md](references/shared/node-output-wiring.md)               |
+| Look up action-node boilerplate shared across plugin `impl.md`s | [references/shared/action-nodes.md](references/shared/action-nodes.md)                           |
+| Narrate progress + maintain todos (opt-in — when user wants verbosity) | [references/shared/ux-narration-and-todos.md](references/shared/ux-narration-and-todos.md)       |
+
+## Scripts
+
+`scripts/` holds the deterministic parts of this skill: applying `.flow` mutations, auditing a
+`.flow` for the defects `uip maestro flow validate` does not catch, and walking the diagnostic
+ladder. What stays yours: which node type fits a requirement, what a connector's fields mean,
+whether an error path is the right design, what a plan should say, and how to read an incident.
+
+There are three commands — `flow_edit.py`, `audit_flow.py`, `diagnose_run.py`. Everything else
+under `scripts/_flow/` is an imported module with no command line; you never need to open it.
+Python 3, standard library only. Every path, id, and constant is an argument. The examples assume
+this skill directory is the working directory; from anywhere else invoke by path
+(`python3 <skill-dir>/scripts/<name>.py …`).
+
+> **Turn budget.** Each tool call is billed the whole conversation again, so a call costs far more
+> than the few hundred tokens it returns. Batch accordingly: **one `flow_edit.py apply` call per
+> build phase.** If you are about to invoke a script more than twice for one artifact, stop and
+> write a plan file instead. The same applies to your own shell steps — chain them.
+
+### Edit a flow — `flow_edit.py`
+
+Write one plan file, apply it in one call. Every op is applied in memory and the file is written
+once; if any op fails, nothing is written and the exit code names the failing op.
+
+```bash
+uip maestro flow registry get core.action.script --output json > /tmp/script.json
+uip maestro flow registry get core.control.end   --output json > /tmp/end.json
+cat > /tmp/plan.json <<'JSON'
+{"ops":[
+ {"op":"add-node","id":"rollDice","type":"core.action.script","definitionFile":"/tmp/script.json",
+  "label":"Roll dice","inputs":{"script":"return { roll: 1 + Math.floor(Math.random()*6) };"}},
+ {"op":"add-node","id":"done","type":"core.control.end","definitionFile":"/tmp/end.json","outputs":"none"},
+ {"op":"add-edge","source":"start","sourcePort":"output","target":"rollDice","targetPort":"input"},
+ {"op":"add-edge","source":"rollDice","sourcePort":"success","target":"done","targetPort":"input"},
+ {"op":"add-variable","id":"roll","direction":"out","type":"number"},
+ {"op":"add-output-mapping","endNode":"done","var":"roll","source":"=js:$vars.rollDice.output.roll"}
+]}
+JSON
+python3 scripts/flow_edit.py apply --flow MyFlow.flow --plan /tmp/plan.json
+```
+
+Each `add-node` op writes `nodes[]`, the `definitions[]` entry (from `definitionFile`, which takes
+`registry get` output as-is — `Data.Node` or a bare manifest), the `variables.nodes[]` entries for
+its declared outputs, and a placeholder `layout.nodes` entry. `uip maestro flow format` still owns
+final layout.
+
+**Op vocabulary** (`python3 scripts/flow_edit.py plan-schema` prints this):
+
+| op | required keys | notes |
+|---|---|---|
+| `add-node` | `id`, `type`, and `typeVersion` or `definitionFile` | `label`, `inputs`, `outputs` (`auto` \| `none` \| `"a,b"`). Refuses CLI-owned types (exit 3) and ids not starting with a letter |
+| `delete-node` | `id` | cascades edges, `variables.nodes[]`, `variableUpdates`, `layout`, and the definition if last of its type |
+| `add-edge` | `source`, `sourcePort`, `target`, `targetPort` | derives `edge_<src>_<sp>_<tgt>_<tp>`; `sourcePort:"error"` also sets `inputs.errorHandlingEnabled` |
+| `delete-edge` | `id`, or `source` + `target` (+ optional `sourcePort`) | |
+| `set-input` | `node`, `key` (dotted path), `value` | in place; refuses `detail.*` on CLI-owned nodes |
+| `add-variable` | `id`, `direction` | `type`, `subType`, `default`, `description`, `triggerNodeId` |
+| `add-output-mapping` | `endNode`, `var`, `source` | End/terminate nodes only |
+| `add-variable-update` | `node`, `variable`, `expression` | `inout` variables only |
+| `insert-between` | `upstream`, `downstream`, plus the `add-node` keys | splits the edge and rewires, keeping its ports |
+| `insert-decision` | `upstream`, `id`, `expression`, `trueTarget`, `falseTarget` | writes the raw condition (no `=js:`) and both branches |
+| `remove-reconnect` | `id` | deletes the node and bridges upstream → downstream |
+| `replace-trigger-scheduled` | `node`, `definitionFile`, `timerPreset` | in-place swap, keeps `entryPointId` |
+| `agent-inputs` | `node`, `sources` (`["$vars.start.output.x:string", …]`) | writes `agentInputVariables[]` with the flatten rule applied |
+
+`--dry-run` reports what would apply and writes nothing. Single-op subcommands (`add-node`,
+`add-edge`, `set-input`, `add-variable`, `add-output-mapping`, `add-variable-update`,
+`delete-node`, `delete-edge`) exist for a genuine one-off tweak and go through the same applier —
+use them only when there is exactly one change to make; `Edit` remains right when you want a
+reviewable in-place diff of one value.
+
+Inline-agent wiring also has a standalone pair:
+
+```bash
+python3 scripts/flow_edit.py agent-inputs emit --source '$vars.start.output.invoiceNumber'
+python3 scripts/flow_edit.py agent-inputs check --flow MyFlow.flow --agent-json agent/agent.json
+```
+
+`emit` prints the three aligned artifacts (node `agentInputVariables[]`, `agent.json` `inputSchema`
+properties, `{{input.<key>}}` prompt tokens); `check` compares the three sides. Neither writes
+`contentTokens` — `uip agent refresh` regenerates those.
+
+### Audit and repair a flow — `audit_flow.py`
+
+```bash
+python3 scripts/audit_flow.py MyFlow.flow --json-out /tmp/findings.json   # report
+python3 scripts/audit_flow.py MyFlow.flow --apply                        # repair, then re-audit
+python3 scripts/audit_flow.py MyFlow.flow --fix-plan /tmp/fixes.json     # repairs as a flow_edit plan
+```
+
+Runs five checks in one call — topology (port names and the wiring rules), expressions (the `=js:`
+contract), Jint constructs, resource `bindings[]`, runtime gaps (error-handling shapes, layout
+sizes, `variables.nodes[]`, HITL completion port, id format, End-node output mappings). Exit 0 when
+no error-severity finding remains, 1 otherwise. Run it before `uip maestro flow validate`, and
+again before publish or debug.
+
+`--apply` fixes only what is mechanical — `MISSING_NODE_VARIABLE`, `MISSING_LAYOUT`,
+`LAYOUT_SIZE_MISMATCH`, `MISSING_BINDING` (when the definition supplies `resource` /
+`resourceSubType`), `FLAG_WITHOUT_ERROR_EDGE`, `ERROR_EDGE_WITHOUT_FLAG` — then re-audits and
+reports what is left. Everything else needs a decision and is reported, never auto-changed: an
+error path that rejoins the happy path, a wrong port for a node type, a missing `=js:` prefix, a
+banned Jint construct, a binding whose shape must come from the resource plugin's `impl.md`.
+`--only topology,expressions,jint,bindings,runtime-gaps` narrows the run; `--max-print N` caps
+stdout; `--reference-fields` adds an informational list of connector fields that look like
+connection-scoped reference ids.
+
+### Diagnose a failed run — `diagnose_run.py`
+
+```bash
+python3 scripts/diagnose_run.py --job-key <JOB_KEY> --flow MyFlow.flow --out /tmp/diag.json
+```
+
+Walks the ladder in order (`job status` → `instance incidents` → `incident get` →
+`instance variables`) and correlates the faulting element to a node in the local `.flow`, printing
+its inputs and upstream edges. Read-only — it never runs `flow debug`. Requires `uip login`. Exit 0
+report produced, 4 a CLI call failed, 5 no incident found. `--traces` and `--asset` are opt-in
+last-resort steps; `--dry-run` prints the ladder without calling anything; `--cli "uip flow"` for
+CLI < 0.3.4. Matching the incident to a failure mode and choosing the fix is yours.
+
+## Critical rules (universal)
+
+These rules apply across all three capabilities. Each capability index adds capability-scoped rules on top.
+
+> **Tool vocabulary.** Tool names in this skill use Claude Code conventions: `Edit` = in-place string replacement, `Write` = full-file write, `Read`/`Glob`/`Grep` = file read/search, `Bash` = shell, progress list = the harness's task list. On another harness, map each to its equivalent — the semantics (reviewable in-place diff vs wholesale rewrite, shell as last resort for file edits) carry unchanged.
+
+1. **ALWAYS use `--output json` and prefer `--output-filter` for extraction** on all `uip` commands when parsing output programmatically. `--output-filter <jmespath>` is a global CLI flag applied to the `Data` envelope before printing — write expressions starting at `Data` (no `Data.` prefix). Canonical recipe: `uip maestro flow registry search <keyword> --output json --output-filter "[*].{NodeType:NodeType,DisplayName:DisplayName,Description:Description,AvailableOnTenant:AvailableOnTenant}"`. `registry search` returns `Data` as a **flat array of PascalCase objects** (`NodeType`, `DisplayName`, `Description`, `AvailableOnTenant`) — NOT `Data.Nodes`, lowercase `type`, or lowercase `category`. With `--local`, `AvailableOnTenant` is omitted (no tenant lookup) — drop it from the projection. External parsers (`python3 -c`, `jq`) remain valid for transforms JMESPath cannot express; reach for them only after the shape is verified. Full mechanics, fall-back guidance, and shape-inspection probes: [cli-conventions.md §3](references/shared/cli-conventions.md#3-prefer---output-filter-for-extraction).
+2. **Do NOT run `flow debug` without explicit user consent** — debug executes the flow for real (sends emails, posts messages, calls APIs).
+3. **Resource discovery order — search before creating.** When the prompt references an existing resource by name ("use the X agent", "call the Y API workflow", "invoke the Z RPA process"), follow this order strictly before deciding the resource doesn't exist:
+   1. **Pull, then search the tenant registry** — `uip maestro flow registry pull --force && uip maestro flow registry search "<name>" --output json`. Always pull first: `search` reads the local cache (populated by `pull`, expires after 30 min), so a search before a fresh pull can return empty for a resource that exists. Requires `uip login`; returns published resources.
+   2. **In-solution local discovery** — `uip maestro flow registry list --local --output json`, or `uip maestro flow registry search "<name>" --local --output json` for keyword match. No login required; returns sibling projects in the same `.uipx` solution. An empty `search --local` is not proof of absence (the keyword may not match the project's naming) — confirm with `list --local` before concluding the resource is not in the solution.
+   3. **Only then create/scaffold** — scaffold an inline agent, mock, or create-new-resource only when both searches return no match AND either the user explicitly asks to embed/inline/create, or no published resource can satisfy the requirement.
+
+   The words "coded" and "low-code" describe the _implementation style_ of a published agent — they are NOT synonyms for "inline". `uipath.agent.autonomous` (inline) is only correct when the user explicitly asks to embed/inline/create a new agent inside this flow. Only use `core.logic.mock` when the resource is **not** in the same solution and not yet published. See the relevant resource plugin's `impl.md` (e.g., [rpa](references/author/references/plugins/rpa/impl.md), [agent](references/author/references/plugins/agent/impl.md)).
+
+   **The same "search before deciding it doesn't exist" discipline applies to connector connections.** The connector key MUST come from a `registry search` node type (`uipath.connector.<connector-key>.<activity>`) — never inferred from the service's brand name. The registry key is frequently prefixed or qualified differently than the product name, so a guessed key silently misses the real connector. Any `uip is connections list` used for discovery MUST pass `--all-folders`. An empty result from an unverified key or without `--all-folders` is a false negative, never authoritative — do not conclude "no connection exists" or ask the user to create one until both hold.
+
+   **It also applies to ANY external service named in the prompt — not just in-tenant resources.** Before picking a node type for a named service (Slack, open-meteo, Stripe, any REST API), run `uip maestro flow registry search "<service>" --output json` and follow the [Selecting External Service Nodes](references/author/references/planning-arch.md#selecting-external-service-nodes) ladder (connector → managed HTTP → RPA). Manual `core.action.http.v2` is the bottom of that ladder, chosen only after a search finds no connector — never a first guess from the brand name. This holds even when full planning is skipped (see [greenfield.md — Select the node type for each external service](references/author/references/greenfield.md#select-the-node-type-for-each-external-service-runs-even-when-full-planning-is-skipped)).
+
+   **Two tells that you skipped the search and took the brand-name shortcut — both are build defects, not valid manual-mode HTTP:** (a) you authored a manual-mode `core.action.http.v2` node whose `url` targets a well-known SaaS API domain that has a connector (`slack.com/api/*`, `api.github.com`, `*.salesforce.com`, `graph.microsoft.com`, …); (b) you declared an `in` variable to hold that service's API token or secret (e.g. a `slackToken` holding an `xoxb-…` bot token, an `apiKey`, a bearer token). A connector-backed flow never carries the raw credential — the IS connection does. If you find yourself writing either, **stop**: run `uip maestro flow registry search "<service>"` and `uip is connections list "<connector-key>" --all-folders`, then use the connector activity (or connector-mode HTTP: `authentication:"connector"` + `targetConnector` + a bound `connectionId`/`folderKey`). Manual mode is legitimate only for a service the search proves has no connector.
+
+4. **Never invoke other skills automatically** — when a flow needs an RPA process, agent, or app, identify the gap and provide handoff instructions. Let the user decide when to switch skills.
+5. **Always present user questions as a dropdown with a "Something else" escape hatch** — Whenever this skill needs a decision from the user (which solution to use, publish vs debug vs deploy, which connector to pick, which trigger type, which resource to bind, etc.), ask the user a question with the enumerated choices as options AND include **"Something else"** as the last option so the user can supply free-form string input. Never ask open-ended questions in chat when a finite set of sensible defaults exists. If the user picks "Something else", parse their string answer and continue. No structured-question facility on the harness → ask in chat as a numbered list with "Something else" last. Running non-interactively (CI/headless — no user available to answer) → take the pre-selected/recommended option, proceed, and record the decision prominently in the final report; if no option is marked recommended, stop and report the open decision instead of guessing. Exception: consent gates (`flow debug`, destructive operations) are never auto-answered — in non-interactive mode, stop and report the blocked step instead. These fallbacks define "ask the user" / "confirm with the user" wherever this skill's references require it.
+<!--skill-flavor:project-creation:start-->
+6. **Discover the target solution before you scaffold — a Flow project MUST live inside a solution** (layout is **always** double-nested: `<Solution>/<Project>/<Project>.flow`). Before any `uip solution init` or `uip maestro flow init` for a NEW Flow, run `find . -maxdepth 2 -type f -name '*.uipx' -print`. **If it lists one or more solutions, STOP** — do not scaffold, initialize, delete, or repair anything. Ask which solution to use (dropdown per rule #5): one option per discovered solution, **"Create a new solution"**, then **"Something else"** last; continue only after the answer. This holds even when the user says they want a new solution or supplies only a Flow-project name — never silently adopt an existing solution, and when they pick "Create a new solution", **ask for its name** rather than defaulting to the Flow-project name. **If none are found, create one automatically** (default its name to the Flow name unless the user specifies otherwise). **Prefer solution-first** — it works on every CLI version and lets you set the two names independently: `uip solution init "<SolutionName>" --output json && cd "<SolutionName>" && uip maestro flow init "<FlowName>" --output json` → `<SolutionName>/<FlowName>/<FlowName>.flow`, with the project auto-registered in the parent `.uipx` (`Data.SolutionRegistration.Status: "Registered"`); `<SolutionName>` and `<FlowName>` are independent and need not match. On a current CLI, running `uip maestro flow init "<FlowName>"` **outside** any solution instead auto-scaffolds `<FlowName>Solution/<FlowName>Solution.uipx` with the project at `<FlowName>Solution/<FlowName>/` (response carries `Data.AutoCreatedSolution`) — convenient, but it forces the `<FlowName>Solution` name, so use it only when the solution name doesn't matter. `--skip-solution-registration` opts out of both auto-scaffold and registration, leaving a bare single-nested `<Flow>/<Flow>.flow` that fails Studio Web upload and packaging. If a **non-empty** directory already exists at the path you typed, init warns and leaves it untouched. **Never drop the `cd` between `solution init` and `flow init`** — `flow init` in the old directory auto-scaffolds a duplicate `<FlowName>Solution/`. One `project.uiproj` at finish; delete strays. See [author/greenfield.md](references/author/references/greenfield.md) Step 2.
+<!--skill-flavor:project-creation:end-->
+7. **Narrate progress in plain English only when the user has opted into verbosity — silent by default.** Engage when the user asks for narration / progress ("walk me through it", "show your steps", "verbose", "be detailed") or signals a verbosity preference; otherwise work quietly and surface only decisions, failures, consent gates, and the final result. When engaged: one short line per logical step, in user terms ("checking your tenant login", "adding the Slack node and wiring its inputs", "running validate") — no flag-level or JSON-structure-level detail, applied uniformly across `uip` CLI calls, shell builtins, file edits, and bulk searches. See [shared/ux-narration-and-todos.md](references/shared/ux-narration-and-todos.md) §When to engage.
+8. **Maintain a user-facing progress list only when the user has opted into progress tracking / verbosity.** In silent mode there is no user-facing todo list (the agent MAY track privately). When engaged: any journey above the trivial threshold gets a granular list — one logical step ≈ one todo, granularity per-step not per-phase. The count emerges from the journey's actual steps; do not target a number. Bash plumbing inside a step (registry lookups, JSON parsing, intermediate file reads) is invisible — do not surface as todos. See [shared/ux-narration-and-todos.md](references/shared/ux-narration-and-todos.md) for the engage triggers, granularity rules, threshold table, and pivot rules.
+9. **Every node has exactly one author — Edit/Write or CLI, never both.** Connector activities (`uipath.connector.<key>.<op>`), connector triggers (`uipath.connector.trigger.<key>.<trigger>`), wait for events (`uipath.connector.event.<key>.<event>` — a mid-flow event wait, configured exactly like a trigger), and managed HTTP (`core.action.http.v2`) are CLI-owned — use `uip maestro flow node add` + `uip maestro flow node configure`. Every other node type — triggers, control flow, logic, HITL, patterns, agents, resource nodes, queue — is user-owned: author the `.flow` JSON directly with `Edit` — or `Write`, but never a full-file `Write` on a flow that *also* contains CLI-owned nodes (it clobbers their CLI-set `bindings[]`/`inputs.detail`; `Edit` in place, or re-run `node configure` as the last step). `inputs.detail` on CLI-owned nodes is a `=jsonString:essentialConfiguration` envelope that the validator rejects when hand-authored. Inline-agent CLI is limited to agent project lifecycle (`uip agent init / refresh / validate --inline-in-flow`); the `uipath.agent.autonomous` flow node itself is user-owned. Scripting languages (`python`, `node`, `jq`, `sed`, `awk`, inline shell heredocs) are a last resort for user-owned edits and require explicit user approval after the trade-offs (state bypass, opaque diff, no interruption point) are surfaced. **Canonical source of truth:** [author/CAPABILITY.md — Node ownership](references/author/CAPABILITY.md#node-ownership--who-authors-the-node) (full table); [author/editing-operations.md — Tool Selection Ladder](references/author/references/editing-operations.md#tool-selection-ladder) (per-operation ladder). `scripts/flow_edit.py` refuses a CLI-owned node type (exit 3) rather than authoring it, so the ownership split is enforced at the point of edit; the tables above remain the reference for planning.
+10. **Batch tool calls into one assistant turn whenever data dependencies allow — minimize wall-clock round-trips.** A typical greenfield build is **3 turns**, not 10+: (T1) one chained `Bash` for scaffold + registry pull + CLI-owned `node add`, in parallel with `registry get` and `Read` calls for any extra discovery; (T2) one `Read` of the scaffolded `.flow` in parallel with **one** `scripts/flow_edit.py apply --plan` call carrying every node, edge, variable and mapping (or the `Edit` / `Write` calls, when a reviewable diff matters more); (T3) one chained `Bash` for `node configure && audit_flow.py --apply && validate && format`. Within an assistant message: chain sequential `uip` calls with `&&` in a single `Bash`, and emit independent `Bash` / `Read` / `Edit` calls as parallel tool uses. Only split turns where a later call truly depends on an earlier call's stdout or on a file mutation. See [author/references/greenfield.md — Three-turn execution map](references/author/references/greenfield.md#three-turn-execution-map) for the canonical pattern.
+11. **Cross-node bindings inside `=js:` need the `$vars.` prefix — a bare node reference resolves to `undefined` at runtime.** `"recordId": "=js:$vars.createEntityRecord1.output.Id"` is correct; `"recordId": "=js:createEntityRecord1.output.Id"` (missing `$vars.`) silently resolves to `undefined`. Pattern: `=js:$vars.<nodeId>.output...`, never `=js:<nodeId>.output...`. See [variables-and-expressions.md — IS Activity Inputs Require `=js:`](references/shared/variables-and-expressions.md#is-activity-inputs-require-js-critical). `scripts/audit_flow.py <flow>` reports every field that breaks this rule, including the inverse (`=js:` on a condition field).
+12. **Node and edge `id`s MUST start with a letter — never a bare UUID.** Edges: `edge_<sourceNodeId>_<sourcePort>_<targetNodeId>_<targetPort>`. Nodes: descriptive camelCase. UUIDs only for the top-level flow `id`/`entryPointId`. `scripts/flow_edit.py` applies this id pattern and refuses a bad id; `scripts/audit_flow.py <flow>` reports existing ones.
+
+## Anti-patterns (universal)
+
+- **Never use `--format json` on any `uip` command** — the flag is `--output json` (rule #1). `--format` produces `error: unknown option '--format'` and exit code 3 on every `uip` subcommand, not a helpful message pointing you at `--output`.
+- **Avoid piping `uip ... --output json` to `python3 -c` / `jq` for simple field extraction** — use `--output-filter` instead (rule #1). The common failure mode: the agent assumes `Data.Nodes` (or another nested shape) and the external parser silently returns `[]` against `Data`'s actual flat array, prompting a second and third retry with different access paths. `--output-filter` does not rescue a wrong-shape guess by itself — a valid expression that doesn't match (e.g. `"Nodes"` against the flat array) still returns `Data: []` with exit 0; only an *invalid* expression (bad syntax, or a type error like `keys(@)` on an array) exits non-zero. The fix is the pinned shape in rule #1, so you write the right expression on call #1. Reserve external parsers for transforms JMESPath cannot express (multi-step joins, format conversion); when in doubt, verify the shape first — see [cli-conventions.md §3](references/shared/cli-conventions.md#3-prefer---output-filter-for-extraction) for the `type(@)` first-probe sequence (note: `keys(@)` throws on arrays, so use `type(@)` first).
+- **Never run `flow debug` as a validation step** — debug executes the flow with real side effects (rule #2). Use `flow validate` for checking correctness.
+- **Never silently pick the first match from `uip maestro flow registry search`.** When a search returns multiple connectors for the same intent, apply the canonical Connector Disambiguation ladder via [connector/planning.md — Disambiguation](references/author/references/plugins/connector/planning.md#disambiguation--when-search-returns-multiple-connectors-for-the-same-intent), which defers to the Integration Service rules.
+- **Never conclude "no connection exists" from a bare `uip is connections list`** — discovery requires `--all-folders` and a connector key derived from `registry search`, not a brand name (rule #3). Without both, "No connections found" is a false negative; do not surface it as an Open Question or ask the user to create one.
+- **Never write `customFieldsRequestDetails.parameterValues` as a JSON object map** — Studio Web's TS port emits `Map<string,string|null>` via `Array.from(entries())`, so the on-wire shape is `[[key, value], ...]` tuples. Object-form `{key: value}` is rejected by the CLI at validate time. Inner keys are camelCase (`objectActionName`, `parameterValues`), not PascalCase. See [connector/impl.md Step 6c](references/author/references/plugins/connector/impl.md).
+- **Never treat a `flow validate` exit code of 0 as "done" when it printed warnings.** Warnings are build defects the validator chose not to hard-fail — read every one and resolve it before declaring the flow complete. The connector-keyword warning (`node "…" mentions the "<connector>" connector keyword but uses the generic Managed HTTP type core.action.http.v2 with no connection binding`) means you took the brand-name shortcut (rule #3) — fix it by binding the connector, do not ship past it. A green exit with an unresolved connector warning still fails downstream connector checks and runs against an undefined endpoint at debug time. `scripts/audit_flow.py <flow>` covers the separate set of defects `validate` does not report at all.
+- **Never issue setup or finalization CLI calls one-per-turn.** Each separate Bash call adds a model round-trip — the dominant wall-clock cost. Chain them per rule #10 and the [Three-turn execution map](references/author/references/greenfield.md#three-turn-execution-map).
+
+> **Trouble?** If something didn't work as expected, use `/uipath-feedback` to send a report.

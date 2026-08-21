@@ -1,0 +1,87 @@
+{
+  "version": "1.1.0",
+  "settings": {
+    "model": "anthropic.claude-sonnet-4-6",
+    "maxTokens": 64000,
+    "temperature": 0,
+    "engine": "basic-v2",
+    "maxIterations": 5,
+    "mode": "standard"
+  },
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "start__output__disputeDescription": {
+        "type": "string",
+        "description": "The description of the billing dispute to analyze."
+      },
+      "start__output__invoiceNumber": {
+        "type": "string",
+        "description": "The invoice number associated with the billing dispute."
+      }
+    }
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "determination": {
+        "type": "string",
+        "description": "The determination of the billing dispute (e.g., Valid, Invalid, Requires Further Review)."
+      },
+      "rationale": {
+        "type": "string",
+        "description": "The detailed rationale explaining the determination."
+      }
+    },
+    "required": [
+      "determination",
+      "rationale"
+    ]
+  },
+  "metadata": {
+    "storageVersion": "50.0.0",
+    "isConversational": false,
+    "showProjectCreationExperience": false
+  },
+  "type": "lowCode",
+  "guardrails": [],
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are an expert billing dispute analyst with deep knowledge of billing policies and standard operating procedures. Your role is to analyze billing disputes submitted by customers and provide a clear determination and rationale based on the relevant SOPs retrieved from the knowledge base.\n\nWhen analyzing a dispute:\n1. Review the dispute description carefully.\n2. Use the retrieved SOP context to ground your analysis in established procedures.\n3. Provide a clear determination: one of 'Valid', 'Invalid', or 'Requires Further Review'.\n4. Provide a detailed rationale explaining how the SOP supports your determination.\n5. Be concise, objective, and professional.\n\nAlways return your response as a JSON object with exactly two fields: 'determination' and 'rationale'.",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "You are an expert billing dispute analyst with deep knowledge of billing policies and standard operating procedures. Your role is to analyze billing disputes submitted by customers and provide a clear determination and rationale based on the relevant SOPs retrieved from the knowledge base.\n\nWhen analyzing a dispute:\n1. Review the dispute description carefully.\n2. Use the retrieved SOP context to ground your analysis in established procedures.\n3. Provide a clear determination: one of 'Valid', 'Invalid', or 'Requires Further Review'.\n4. Provide a detailed rationale explaining how the SOP supports your determination.\n5. Be concise, objective, and professional.\n\nAlways return your response as a JSON object with exactly two fields: 'determination' and 'rationale'."
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "Please analyze the following billing dispute:\n\nInvoice Number: {{input.start__output__invoiceNumber}}\n\nDispute Description: {{input.start__output__disputeDescription}}\n\nBased on the standard operating procedures available in the knowledge base, provide your determination and rationale.",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "Please analyze the following billing dispute:\n\nInvoice Number: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__invoiceNumber"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\nDispute Description: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__disputeDescription"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\nBased on the standard operating procedures available in the knowledge base, provide your determination and rationale."
+        }
+      ]
+    }
+  ],
+  "projectId": "d14d9fa2-f941-4cc5-a45b-0c3d24bdead8"
+}

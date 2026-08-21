@@ -1,0 +1,74 @@
+{
+  "version": "1.1.0",
+  "settings": {
+    "model": "gpt-4.1-2025-04-14",
+    "maxTokens": 4096,
+    "temperature": 0,
+    "engine": "basic-v2",
+    "maxIterations": 1,
+    "mode": "standard"
+  },
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "start__output__email": {
+        "type": "string",
+        "description": "Bound from $vars.start.output.email"
+      }
+    },
+    "required": [
+      "start__output__email"
+    ]
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "category": {
+        "type": "string",
+        "description": "The support category for the email (e.g. Account Access, Billing, Technical Support, General Inquiry)"
+      },
+      "priority": {
+        "type": "string",
+        "description": "The urgency priority for the email (High, Medium, or Low)"
+      }
+    },
+    "required": [
+      "category",
+      "priority"
+    ]
+  },
+  "metadata": {
+    "storageVersion": "50.0.0",
+    "isConversational": false,
+    "showProjectCreationExperience": false
+  },
+  "type": "lowCode",
+  "guardrails": [],
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a customer-support triage assistant. Your sole job is to read an inbound support email and classify it into exactly one category and one priority level.\n\nCategories (choose the single best match):\n- Account Access — password resets, login failures, locked accounts, MFA issues\n- Billing — invoices, charges, refunds, subscription changes\n- Technical Support — product bugs, errors, performance issues, integration failures\n- Feature Request — suggestions for new functionality or improvements\n- General Inquiry — questions that do not fit any other category\n\nPriority levels:\n- High — the user is blocked and cannot work; urgent language or severe business impact\n- Medium — the user is affected but can work around the issue\n- Low — informational, minor inconvenience, or future request\n\nRules:\n1. Read the full email text provided in the user message.\n2. Output ONLY a JSON object with keys \"category\" and \"priority\". Do not include any explanation or extra text.\n3. Use exactly the category and priority strings listed above — no variations.\n4. Stop after producing the JSON object (maxIterations is already 1).",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "You are a customer-support triage assistant. Your sole job is to read an inbound support email and classify it into exactly one category and one priority level.\n\nCategories (choose the single best match):\n- Account Access — password resets, login failures, locked accounts, MFA issues\n- Billing — invoices, charges, refunds, subscription changes\n- Technical Support — product bugs, errors, performance issues, integration failures\n- Feature Request — suggestions for new functionality or improvements\n- General Inquiry — questions that do not fit any other category\n\nPriority levels:\n- High — the user is blocked and cannot work; urgent language or severe business impact\n- Medium — the user is affected but can work around the issue\n- Low — informational, minor inconvenience, or future request\n\nRules:\n1. Read the full email text provided in the user message.\n2. Output ONLY a JSON object with keys \"category\" and \"priority\". Do not include any explanation or extra text.\n3. Use exactly the category and priority strings listed above — no variations.\n4. Stop after producing the JSON object (maxIterations is already 1)."
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "Classify the following support email and return a JSON object with \"category\" and \"priority\" keys.\n\nEmail:\n{{input.start__output__email}}",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "Classify the following support email and return a JSON object with \"category\" and \"priority\" keys.\n\nEmail:\n"
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__email"
+        }
+      ]
+    }
+  ],
+  "projectId": "61fbc8c4-8ca4-4eac-927a-dc4ad6444cd7"
+}

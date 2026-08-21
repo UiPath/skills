@@ -1,0 +1,8 @@
+21:45:57 [INFO   ] [default/skill-flow-webhook-waitfor-parallel/00] orchestrator: API routing: aws_bedrock
+21:50:06 [WARNING] [default/skill-flow-webhook-waitfor-parallel/00] agents.claude_code_agent: [coder] Agent exhausted max_turns (40); turn ended without completing
+21:50:06 [INFO   ] [default/skill-flow-webhook-waitfor-parallel/00] orchestrator: Success criteria: 5/5 passed, weighted score: 1.000
+21:50:06 [WARNING] [default/skill-flow-webhook-waitfor-parallel/00] orchestrator: Agent exhausted max_turns (40) without passing criteria.
+21:50:06 [WARNING] [default/skill-flow-webhook-waitfor-parallel/00] orchestrator: Visible turns (43) exceeded expected_turns (35) at iteration 1 for task skill-flow-webhook-waitfor-parallel. Run continues — max_turns remains the hard cap.
+21:50:06 [INFO   ] [default/skill-flow-webhook-waitfor-parallel/00] orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+21:50:06 [INFO   ] [default/skill-flow-webhook-waitfor-parallel/00] orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-webhook-waitfor-parallel
+21:50:06 [INFO   ] [default/skill-flow-webhook-waitfor-parallel/00] orchestrator: Task finished: status=SUCCESS duration=259.1s score=1.000 iterations=1

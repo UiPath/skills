@@ -1,0 +1,6 @@
+{
+  "Name": "SupportEmailTriage",
+  "ProjectType": "Process",
+  "Description": "Automatically triage incoming support emails by urgency and customer importance",
+  "MainFile": "Main.xaml"
+}

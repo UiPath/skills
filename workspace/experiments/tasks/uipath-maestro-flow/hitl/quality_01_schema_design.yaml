@@ -1,0 +1,69 @@
+task_id: skill-flow-hitl-quality-schema-design
+description: >
+  Quality test: agent correctly maps a business description to a quickform
+  schema — right field directions (input/output/inOut), correct outcomes,
+  and priority. Tests C1 (field design) and C2 (outcome design).
+tags: [uipath-maestro-flow, uipath-human-in-the-loop, integration, lifecycle:generate, shape:multi-node, node:hitl]
+
+run_limits:
+  expected_turns: 29
+  max_turns: 75
+initial_prompt: |
+  Build a UiPath Flow named "VendorPOReview" for purchase order review:
+
+  - A manual trigger starts the flow
+  - A script node fetches PO data (mock it — just set variables)
+  - A HITL node lets the procurement officer review the PO:
+      - They can SEE (read-only): PO number, vendor name, total amount
+      - They must FILL IN: their decision (Approve/Reject) and optional notes
+      - They click: Approve (primary) or Reject
+  - A decision node routes on the officer's decision:
+      - Approve → Script node that logs "PO approved"
+      - Reject  → End node
+
+  Use the inline quickform node (uipath.human-in-the-loop.quick-form).
+  Set priority to High.
+  Wire completed → decision node.
+  Validate the flow after building.
+
+success_criteria:
+  - type: run_command
+    description: "uip flow validate passes"
+    command: "python3 $EXPERIMENT_TASKS_PATH/uipath-maestro-flow/_shared/validate_flow.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "HITL node has input-direction fields (read-only context for reviewer)"
+    command: "python3 $EXPERIMENT_TASKS_PATH/uipath-maestro-flow/_shared/flow_contains.py --flow-name VendorPOReview '\"direction\": \"input\"'"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "HITL node has output-direction fields (reviewer fills in)"
+    command: "python3 $EXPERIMENT_TASKS_PATH/uipath-maestro-flow/_shared/flow_contains.py --flow-name VendorPOReview '\"direction\": \"output\"'"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Flow has Approve and Reject outcomes"
+    command: "python3 $EXPERIMENT_TASKS_PATH/uipath-maestro-flow/_shared/flow_contains.py --flow-name VendorPOReview 'Approve' 'Reject'"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Priority is set to High"
+    command: "python3 $EXPERIMENT_TASKS_PATH/uipath-maestro-flow/_shared/flow_contains.py --flow-name VendorPOReview '\"High\"'"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+

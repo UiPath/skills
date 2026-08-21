@@ -1,0 +1,80 @@
+{
+  "Result": "Success",
+  "Code": "RegistryGetSuccess",
+  "Data": {
+    "ExtensionType": {
+      "ExtensionType": "Maestro.ReceiveMessageEvent",
+      "Label": "Receive internal message",
+      "BpmnElement": "bpmn:IntermediateCatchEvent",
+      "Placements": {
+        "StartEvent": {
+          "Type": "bpmn:StartEvent",
+          "EventDefinition": {
+            "Type": "bpmn:MessageEventDefinition"
+          }
+        },
+        "IntermediateEvent": {
+          "Type": "bpmn:IntermediateCatchEvent",
+          "EventDefinition": {
+            "Type": "bpmn:MessageEventDefinition"
+          }
+        },
+        "BoundaryEvent": {
+          "Type": "bpmn:BoundaryEvent",
+          "EventDefinition": {
+            "Type": "bpmn:MessageEventDefinition"
+          }
+        }
+      },
+      "ExtensionTag": "uipath:event",
+      "ContextFields": [
+        {
+          "Name": "name",
+          "DisplayName": "Message name",
+          "Type": "string",
+          "Required": true,
+          "Hidden": false,
+          "IsPrimaryKey": false,
+          "Binding": false,
+          "DefaultValue": null
+        },
+        {
+          "Name": "_label",
+          "Type": "string",
+          "Required": false,
+          "Hidden": true,
+          "IsPrimaryKey": false,
+          "Binding": false,
+          "DefaultValue": null
+        }
+      ],
+      "InputPattern": "separateInputs",
+      "InputName": "ItemData",
+      "InputTarget": "body",
+      "OutputSource": null,
+      "OutputType": "Maestro.ReceiveMessageEvent",
+      "OutputName": "response",
+      "UseRelativeSource": true,
+      "BindingPattern": "none",
+      "RequiresDiscovery": false,
+      "IsDynamic": false,
+      "XmlTemplate": "<bpmn:IntermediateCatchEvent id=\"{id}\" name=\"{name}\">\n  <bpmn:extensionElements>\n    <uipath:event version=\"v1\">\n      <uipath:type value=\"Maestro.ReceiveMessageEvent\" version=\"v1\" />\n      <uipath:context>\n        <uipath:input name=\"name\" value=\"{name}\" />\n        <uipath:input name=\"_label\" value=\"{_label}\" />\n      </uipath:context>\n      <uipath:input name=\"ItemData\" type=\"json\" target=\"body\"><![CDATA[{}]]></uipath:input>\n      <uipath:output name=\"response\" type=\"Maestro.ReceiveMessageEvent\" var=\"{varId}\" />\n    </uipath:event>\n  </bpmn:extensionElements>\n  <bpmn:messageEventDefinition />\n  <bpmn:incoming>{incomingEdge}</bpmn:incoming>\n  <bpmn:outgoing>{outgoingEdge}</bpmn:outgoing>\n</bpmn:IntermediateCatchEvent>",
+      "InputNotes": "isSplitInputs=true in design schema but NOT in isSplitInputsEvents code array, so inputs are NOT merged into ItemData for this type. They remain separate.",
+      "ExtensionTagNotes": "In isEvents array, uses uipath:event",
+      "InputFields": [
+        {
+          "Name": "Reference",
+          "DisplayName": "Reference",
+          "Type": "string",
+          "Required": true,
+          "Hidden": false,
+          "IsPrimaryKey": false,
+          "Binding": false,
+          "DefaultValue": null,
+          "Target": "bodyField",
+          "Description": "Correlation reference to match this receive event to its sender"
+        }
+      ]
+    }
+  }
+}

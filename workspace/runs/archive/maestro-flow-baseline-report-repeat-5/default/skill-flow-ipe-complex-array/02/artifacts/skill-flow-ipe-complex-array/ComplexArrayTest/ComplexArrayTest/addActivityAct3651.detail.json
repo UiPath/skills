@@ -1,0 +1,22 @@
+{
+  "_comment": "Planned --detail payload for node addActivityAct3651 (uipath.connector.uipath-act-act365.add-activity). Run the configure command below once a live Act! 365 IS connection is available. Replace PLACEHOLDER_CONNECTION_ID and PLACEHOLDER_FOLDER_KEY with real values from: uip is connections list uipath-act-act365 --all-folders --output json",
+  "_configureCommand": "uip maestro flow node configure ComplexArrayTest.flow addActivityAct3651 --detail \"$(cat addActivityAct3651.detail.json | python3 -c 'import sys,json; d=json.load(sys.stdin); del d[\"_comment\"]; del d[\"_configureCommand\"]; print(json.dumps(d))')\" --output json",
+  "connectionId": "PLACEHOLDER_CONNECTION_ID",
+  "folderKey": "PLACEHOLDER_FOLDER_KEY",
+  "method": "POST",
+  "endpoint": "/Interactions",
+  "bodyParameters": {
+    "subject": "Sales call with multiple contacts",
+    "type": "Call",
+    "startTime": "2026-07-24T10:00:00Z",
+    "endTime": "2026-07-24T11:00:00Z",
+    "timeZone": "UTC",
+    "isCompleted": true,
+    "details": "Discussed Q3 pipeline, product demos and pricing with three key contacts",
+    "contacts": [
+      { "id": "contact-id-001" },
+      { "id": "contact-id-002" },
+      { "id": "contact-id-003" }
+    ]
+  }
+}

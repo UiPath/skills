@@ -1,0 +1,3111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>coder_eval · skill-flow-ixp-invoice-extraction-simulated · default</title>
+<style>
+:root {
+  --bg-page: #0f1419;
+  --bg-card: #1a2129;
+  --bg-card-2: #232d38;
+  --bg-code: #0b0f14;
+  --fg: #e6edf3;
+  --fg-muted: #8b98a5;
+  --fg-dim: #6e7681;
+  --border: #30363d;
+  --accent: #58a6ff;
+  --score-high: #22c55e;
+  --score-mid: #f59e0b;
+  --score-low: #ef4444;
+  --status-success: #22c55e;
+  --status-failure: #f59e0b;
+  --status-error: #ef4444;
+  --status-neutral: #6e7681;
+  --shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+.light {
+  --bg-page: #ffffff;
+  --bg-card: #f6f8fa;
+  --bg-card-2: #eaeef2;
+  --bg-code: #f6f8fa;
+  --fg: #1f2328;
+  --fg-muted: #636c76;
+  --fg-dim: #8b949e;
+  --border: #d0d7de;
+  --accent: #0969da;
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial,
+               sans-serif;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--fg);
+  background: var(--bg-page);
+}
+.container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+h1, h2, h3, h4 { margin: 0 0 12px 0; line-height: 1.25; }
+h1 { font-size: 22px; font-weight: 600; }
+h2 { font-size: 18px; font-weight: 600; margin-top: 28px;
+     padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+h3 { font-size: 15px; font-weight: 600; color: var(--fg-muted); }
+h4 { font-size: 13px; font-weight: 600; color: var(--fg-muted); }
+p { margin: 0 0 8px 0; }
+.muted { color: var(--fg-muted); }
+.dim { color: var(--fg-dim); }
+.mono { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+        monospace; font-size: 12.5px; }
+code { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+       monospace; font-size: 12.5px; background: var(--bg-code);
+       border: 1px solid var(--border); padding: 1px 5px; border-radius: 3px; }
+pre { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+      monospace; font-size: 12.5px; background: var(--bg-code);
+      border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px;
+      margin: 6px 0; overflow-x: auto; white-space: pre-wrap;
+      word-wrap: break-word; }
+.header-bar { display: flex; align-items: center; justify-content: space-between;
+              margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+.title-group { flex: 1; min-width: 0; }
+.title-group .subtitle { color: var(--fg-muted); font-size: 13px;
+                         margin-top: 2px; word-break: break-all; }
+.badges { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.badge { display: inline-flex; align-items: center; gap: 6px;
+         padding: 4px 10px; border-radius: 12px; font-size: 12px;
+         font-weight: 600; background: var(--bg-card-2);
+         border: 1px solid var(--border); color: var(--fg); }
+.badge.success { background: color-mix(in srgb, var(--status-success) 20%, var(--bg-card-2));
+                 border-color: var(--status-success); color: var(--status-success); }
+.badge.failure { background: color-mix(in srgb, var(--status-failure) 20%, var(--bg-card-2));
+                 border-color: var(--status-failure); color: var(--status-failure); }
+.badge.error { background: color-mix(in srgb, var(--status-error) 20%, var(--bg-card-2));
+               border-color: var(--status-error); color: var(--status-error); }
+.badge.warning { background: color-mix(in srgb, #f4a52810 20%, var(--bg-card-2));
+                 border-color: #f4a528; color: #f4a528; }
+.badge.neutral { color: var(--fg-muted); }
+.score-pill { display: inline-block; padding: 2px 8px; border-radius: 10px;
+              font-size: 12px; font-weight: 700; min-width: 42px;
+              text-align: center; color: #0b0f14; }
+.score-high { background: var(--score-high); }
+.score-mid { background: var(--score-mid); }
+.score-low { background: var(--score-low); }
+.card { background: var(--bg-card); border: 1px solid var(--border);
+        border-radius: 8px; padding: 16px 20px; margin-bottom: 16px;
+        box-shadow: var(--shadow); }
+.card.highlight { border-left: 4px solid var(--accent); }
+.grid { display: grid; gap: 12px;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+.stat { background: var(--bg-card-2); padding: 10px 12px; border-radius: 6px;
+        border: 1px solid var(--border); }
+.stat .label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;
+               color: var(--fg-muted); margin-bottom: 4px; }
+.stat .value { font-size: 16px; font-weight: 600; }
+table { width: 100%; border-collapse: collapse; margin: 4px 0 12px 0; }
+th, td { text-align: left; padding: 8px 10px;
+         border-bottom: 1px solid var(--border); vertical-align: top;
+         font-size: 13px; }
+th { color: var(--fg-muted); font-weight: 600; font-size: 12px;
+     text-transform: uppercase; letter-spacing: 0.3px; }
+tr:last-child td { border-bottom: none; }
+details { margin: 6px 0; border: 1px solid var(--border); border-radius: 6px;
+          background: var(--bg-card-2); }
+details > summary { cursor: pointer; padding: 8px 12px; user-select: none;
+                    font-weight: 500; list-style: none; }
+details > summary::-webkit-details-marker { display: none; }
+details > summary::before { content: "▸ "; color: var(--fg-dim);
+                            display: inline-block; width: 14px;
+                            transition: transform 0.15s; }
+details[open] > summary::before { content: "▾ "; }
+details .details-body { padding: 0 12px 10px 12px; }
+.tool-row { display: flex; align-items: center; gap: 10px;
+            flex-wrap: wrap; font-size: 13px; }
+.tool-name { font-weight: 600; color: var(--accent); font-family: ui-monospace,
+             SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+.tool-status-ok { color: var(--status-success); font-size: 11px;
+                  font-weight: 600; }
+.tool-status-err { color: var(--status-error); font-size: 11px;
+                   font-weight: 600; }
+.tool-duration { color: var(--fg-muted); font-size: 12px; }
+.tool-seq { color: var(--fg-dim); font-size: 11px; font-weight: 600;
+            min-width: 24px; text-align: right; font-family: ui-monospace,
+            SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+.turn-header { display: flex; justify-content: space-between;
+               align-items: baseline; flex-wrap: wrap; gap: 10px;
+               margin-bottom: 10px; }
+.turn-meta { font-size: 12px; color: var(--fg-muted); }
+.criterion-row td:first-child { font-family: ui-monospace, SFMono-Regular,
+                                 "SF Mono", Menlo, Consolas, monospace;
+                                 color: var(--fg-muted); font-size: 12px; }
+.judge-section { display: flex; flex-direction: column; gap: 12px; }
+.judge-card { padding: 14px 16px; }
+.judge-card-head { display: flex; justify-content: space-between;
+                    align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+.judge-card-title { font-size: 14px; line-height: 1.4; flex: 1; min-width: 0; }
+.judge-card-score { flex-shrink: 0; }
+.judge-rationale { margin-top: 10px; padding: 10px 12px;
+                   background: var(--bg-code); border-radius: 4px;
+                   font-size: 13px; line-height: 1.5; }
+.judge-findings { margin: 8px 0 0 18px; padding-left: 4px; font-size: 13px;
+                   line-height: 1.6; }
+.judge-findings li { margin: 2px 0; }
+.nav-toggle { display: inline-block; padding: 5px 10px; font-size: 12px;
+              background: var(--bg-card-2); border: 1px solid var(--border);
+              border-radius: 5px; color: var(--fg); cursor: pointer; }
+.nav-toggle:hover { background: var(--bg-card); }
+.llm-next-steps { margin: 6px 0 0 20px; padding-left: 0; }
+.llm-next-steps li { margin: 3px 0; }
+.iteration-group { padding: 12px 16px 4px 16px; margin-bottom: 20px;
+                   border-radius: 0 6px 6px 0; border-left: 4px solid var(--status-neutral); }
+/* rgba fallback for browsers without color-mix (Chrome <111, Firefox <113, Safari <16.2). */
+.iteration-group--recovered { border-left-color: var(--status-success);
+                              background: rgba(34, 197, 94, 0.06);
+                              background: color-mix(in srgb, var(--status-success) 6%, transparent); }
+.iteration-group--terminal { border-left-color: var(--status-error);
+                             background: rgba(239, 68, 68, 0.06);
+                             background: color-mix(in srgb, var(--status-error) 6%, transparent); }
+.iteration-group__banner { margin: 0 0 12px 0; font-size: 14px; font-weight: 600; }
+.iteration-group--recovered .iteration-group__banner { color: var(--status-success); }
+.iteration-group--terminal .iteration-group__banner { color: var(--status-error); }
+.attempt-transition { display: flex; align-items: center; gap: 8px;
+                      margin: -6px 0 12px 8px; color: var(--status-error); font-size: 12.5px; }
+.attempt-transition__icon { font-weight: 700; }
+footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--border);
+         color: var(--fg-dim); font-size: 12px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="header-bar">
+  <div class="title-group">
+    <h1>Task: skill-flow-ixp-invoice-extraction-simulated</h1>
+    <div class="subtitle">Invoice-processing flow (SharePoint trigger → IxP extraction → HTTP POST to SAP), driven by a simulated non-technical AP clerk who describes the outcome but withholds the folder, fields, model, and destination until asked. Tests whether the agent elicits the IxP model / extraction fields / downstream endpoint before building. Validate-only — IxP + SharePoint need a live tenant.</div>
+  </div>
+  <div class="badges">
+    <span class="badge error">ERROR</span>
+    <span class="score-pill score-low">0.00</span>
+    <span class="badge neutral">claude-code · claude-sonnet-4-6</span>
+    <span class="badge neutral">22m 59s</span>
+    <span class="badge neutral">$2.5920</span>
+    
+    
+    <span class="nav-toggle" onclick="toggleTheme()">Toggle theme</span>
+  </div>
+</div>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Variant</div><div class="value">default</div></div>
+    <div class="stat"><div class="label">Started</div><div class="value mono">2026-07-24T17:42:31</div></div>
+    <div class="stat"><div class="label">Duration</div><div class="value">22m 59s</div></div>
+    <div class="stat"><div class="label">Turns (SDK)</div><div class="value">100</div></div>
+    <div class="stat"><div class="label">Commands</div><div class="value">66</div></div>
+  </div>
+</div>
+
+<h2>Simulation</h2>
+<div class="card" style="padding:0">
+  <table>
+    <tbody>
+      <tr><td class='mono dim'>Stop reason</td>
+          <td><span class="badge failure">simulator error</span>
+              <span class="mono dim"> (error)</span></td></tr>
+      <tr><td class='mono dim'>Total turns</td><td>4</td></tr>
+      
+      <tr><td class='mono dim'>Simulator tokens</td>
+          <td>in 405 · out 1563</td></tr>
+      
+    </tbody>
+  </table>
+</div>
+
+<div class="card">
+  <h2 style="margin-top:0;border:none;padding:0">Success Criteria</h2>
+  <p class="muted">No criteria were evaluated (task may have errored before
+  the checker ran).</p>
+</div>
+
+<h2>Error</h2>
+<div class="card" style="border-left:4px solid var(--status-error)">
+  <div class="badges" style="margin-bottom:10px">
+    <span class="badge error">agent_timeout</span>
+    <span class="badge neutral">orchestrator.iteration_4</span>
+    <span class="badge neutral">non-retryable</span>
+  </div>
+  <h4>Message</h4>
+  <pre>Agent turn timed out after 1200s (iteration 4)</pre>
+  <details><summary>Logs</summary><div class="details-body"><pre>2026-07-24 17:42:33 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-24 17:42:33 [INFO] coder_eval.orchestrator: API routing: aws_bedrock
+2026-07-24 17:42:33 [DEBUG] coder_eval.criteria: Discovered 14 criterion checkers
+2026-07-24 17:42:33 [DEBUG] coder_eval.criteria: Validated 14 criterion checkers
+2026-07-24 17:42:33 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-24 17:42:33 [INFO] coder_eval.simulation.user_simulator: User simulator: Claude Code agent backend (route=BedrockRoute)
+2026-07-24 17:42:33 [DEBUG] coder_eval.agents.claude_code_agent: [simulator] Starting agent query stream...
+2026-07-24 17:42:40 [DEBUG] coder_eval.agents.claude_code_agent: [simulator] session_id changed: None -&gt; 25a9bd29-d957-4f3f-a55a-f635070d7b03
+2026-07-24 17:42:40 [DEBUG] coder_eval.agents.claude_code_agent: [simulator] Agent query stream ended
+2026-07-24 17:42:40 [INFO] coder_eval.orchestrator: Simulation turn 1/16
+2026-07-24 17:42:40 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Starting agent query stream...
+2026-07-24 17:43:26 [DEBUG] coder_eval.agents.claude_code_agent: [coder] session_id changed: None -&gt; cdbf2253-958f-45b7-a2f1-6e503bdc1240
+2026-07-24 17:43:26 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Agent query stream ended
+2026-07-24 17:43:26 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-24 17:43:26 [DEBUG] coder_eval.agents.claude_code_agent: [simulator] Starting agent query stream...
+2026-07-24 17:43:33 [DEBUG] coder_eval.agents.claude_code_agent: [simulator] Agent query stream ended
+2026-07-24 17:43:33 [INFO] coder_eval.orchestrator: Simulation turn 2/16
+2026-07-24 17:43:33 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Starting agent query stream...
+2026-07-24 17:44:08 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Agent query stream ended
+2026-07-24 17:44:08 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-24 17:44:08 [DEBUG] coder_eval.agents.claude_code_agent: [simulator] Starting agent query stream...
+2026-07-24 17:44:34 [DEBUG] coder_eval.agents.claude_code_agent: [simulator] Agent query stream ended
+2026-07-24 17:44:34 [INFO] coder_eval.orchestrator: Simulation turn 3/16
+2026-07-24 17:44:34 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Starting agent query stream...
+2026-07-24 17:45:16 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Agent query stream ended
+2026-07-24 17:45:17 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-24 17:45:17 [DEBUG] coder_eval.agents.claude_code_agent: [simulator] Starting agent query stream...
+2026-07-24 17:45:29 [DEBUG] coder_eval.agents.claude_code_agent: [simulator] Agent query stream ended
+2026-07-24 17:45:29 [INFO] coder_eval.orchestrator: Simulation turn 4/16
+2026-07-24 17:45:29 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Starting agent query stream...
+2026-07-24 18:05:30 [DEBUG] coder_eval.orchestrator: [skill-flow-ixp-invoice-extraction-simulated] Drained partial turn record (attempt 1, iteration 4): 58 commands
+2026-07-24 18:05:30 [ERROR] coder_eval.errors.executor: [skill-flow-ixp-invoice-extraction-simulated] Agent communication (sim turn 4) failed (non-retryable): agent_timeout - Agent turn timed out after 1200s (iteration 4)
+2026-07-24 18:05:30 [ERROR] coder_eval.orchestrator: Evaluation failed: Agent turn timed out after 1200s (iteration 4)
+Traceback (most recent call last):
+  File &quot;/usr/local/lib/python3.13/site-packages/anyio/streams/memory.py&quot;, line 117, in receive
+    return self.receive_nowait()
+           ~~~~~~~~~~~~~~~~~~~^^
+  File &quot;/usr/local/lib/python3.13/site-packages/anyio/streams/memory.py&quot;, line 112, in receive_nowait
+    raise WouldBlock
+anyio.WouldBlock
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File &quot;/opt/coder_eval/src/coder_eval/agents/claude_code_agent.py&quot;, line 915, in communicate
+    await self._pump_messages(state, query_kwargs, deadline, should_stop)
+  File &quot;/opt/coder_eval/src/coder_eval/agents/claude_code_agent.py&quot;, line 1025, in _pump_messages
+    async for message in query(**query_kwargs):
+    ...&lt;8 lines&gt;...
+            break
+  File &quot;/usr/local/lib/python3.13/site-packages/claude_agent_sdk/query.py&quot;, line 123, in query
+    async for message in client.process_query(
+    ...&lt;2 lines&gt;...
+        yield message
+  File &quot;/usr/local/lib/python3.13/site-packages/claude_agent_sdk/_internal/client.py&quot;, line 75, in process_query
+    async for msg in inner:
+        yield msg
+  File &quot;/usr/local/lib/python3.13/site-packages/claude_agent_sdk/_internal/client.py&quot;, line 227, in _process_query_inner
+    async for data in query.receive_messages():
+    ...&lt;2 lines&gt;...
+            yield message
+  File &quot;/usr/local/lib/python3.13/site-packages/claude_agent_sdk/_internal/query.py&quot;, line 847, in receive_messages
+    async for message in self._message_receive:
+    ...&lt;6 lines&gt;...
+        yield message
+  File &quot;/usr/local/lib/python3.13/site-packages/anyio/abc/_streams.py&quot;, line 35, in __anext__
+    return await self.receive()
+           ^^^^^^^^^^^^^^^^^^^^
+  File &quot;/usr/local/lib/python3.13/site-packages/anyio/streams/memory.py&quot;, line 125, in receive
+    await receive_event.wait()
+  File &quot;/usr/local/lib/python3.13/site-packages/anyio/_backends/_asyncio.py&quot;, line 1804, in wait
+    await self._event.wait()
+  File &quot;/usr/local/lib/python3.13/asyncio/locks.py&quot;, line 213, in wait
+    await fut
+asyncio.exceptions.CancelledError
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File &quot;/opt/coder_eval/src/coder_eval/orchestrator.py&quot;, line 475, in run
+    success = await self._evaluation_loop()
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File &quot;/opt/coder_eval/src/coder_eval/orchestrator.py&quot;, line 1371, in _evaluation_loop
+    return await self._simulation_dialog_loop(self.task.initial_prompt, sandbox_dir)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File &quot;/opt/coder_eval/src/coder_eval/orchestrator.py&quot;, line 1734, in _simulation_dialog_loop
+    turn_record = await self._communicate_with_retry(
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...&lt;3 lines&gt;...
+    )
+    ^
+  File &quot;/opt/coder_eval/src/coder_eval/orchestrator.py&quot;, line 1263, in _communicate_with_retry
+    turn_record = await execute_with_retry(
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...&lt;8 lines&gt;...
+    )
+    ^
+  File &quot;/opt/coder_eval/src/coder_eval/errors/executor.py&quot;, line 71, in execute_with_retry
+    return await operation()
+           ^^^^^^^^^^^^^^^^^
+  File &quot;/opt/coder_eval/src/coder_eval/orchestrator.py&quot;, line 1245, in _communicate_attempt
+    return await asyncio.wait_for(coro, timeout=outer_timeout)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File &quot;/usr/local/lib/python3.13/asyncio/tasks.py&quot;, line 507, in wait_for
+    return await fut
+           ^^^^^^^^^
+  File &quot;/opt/coder_eval/src/coder_eval/agents/claude_code_agent.py&quot;, line 927, in communicate
+    self._finalize_and_raise_timeout(state.finalize, timeout)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+  File &quot;/opt/coder_eval/src/coder_eval/agent.py&quot;, line 130, in _finalize_and_raise_timeout
+    raise TurnTimeoutError(timeout, iteration=self._iteration)
+coder_eval.errors.timeout.TurnTimeoutError: Agent turn timed out after 1200s (iteration 4)
+2026-07-24 18:05:30 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-24 18:05:30 [INFO] coder_eval.orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+2026-07-24 18:05:30 [INFO] coder_eval.orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-ixp-invoice-extraction-simulated
+</pre></div></details>
+</div>
+<h2>Conversation Trace (4 iterations, 5 attempts)</h2>
+<div class="card">
+  <div class="turn-header">
+    <h3>Iteration 1</h3>
+    <div class="badges">
+      <span class="badge neutral">12 assistant turns</span>
+      <span class="badge neutral">in 8 · out 1829 · cache 150262</span>
+      <span class="badge neutral">46.0s</span>
+      
+      
+      
+    </div>
+  </div>
+  <details>
+    <summary>Prompt to agent</summary>
+    <div class="details-body"><pre>Your working directory is: /work/output/artifacts/skill-flow-ixp-invoice-extraction-simulated
+
+[ASSISTANT] Hey there! I&#x27;m hoping you can help me out. I deal with vendor invoices all day and right now everything is super manual — I get PDFs and I have to key everything into SAP by hand. It&#x27;s a nightmare. I heard you can build an automation for this kind of thing. Can you help me set something up?
+[RESULT - SUCCESS] Hey there! I&#x27;m hoping you can help me out. I deal with vendor invoices all day and right now everything is super manual — I get PDFs and I have to key everything into SAP by hand. It&#x27;s a nightmare. I heard you can build an automation for this kind of thing. Can you help me set something up?</pre></div>
+  </details>
+  <details>
+    <summary>Agent response</summary>
+    <div class="details-body"><pre>[ASSISTANT] Absolutely, this is a great use case for UiPath IXP (Intelligent eXtraction Platform)! It can read your invoice PDFs, pull out all the key fields automatically, and then that data can flow into SAP — no more manual keying.
+
+Let me first check what&#x27;s already set up in your environment, then we&#x27;ll get everything configured.
+[ASSISTANT] Great news — there&#x27;s already a **&quot;Vendor Invoices&quot;** project set up. Let me take a look at what&#x27;s in it.
+[ASSISTANT] You&#x27;re in fantastic shape — you actually already have a fully trained and live IXP model ready to go! Here&#x27;s the complete picture:
+
+---
+
+## 🎉 Your &quot;Vendor Invoices&quot; IXP Model Is Ready
+
+**Model:** Version 5 · Powered by Gemini 2.5 Flash · Tagged as **`live`**
+**Quality:** ⭐ **F1 = 1.00 (100%) across every single field** — trained on 5 documents
+
+---
+
+### What it extracts from every invoice PDF:
+
+| Group | Fields |
+|---|---|
+| **Vendor Invoice** (header) | Invoice Number, Invoice Date, Due Date, PO Number, Payment Terms, Currency, Subtotal, Tax Rate, Tax Amount, Total Due |
+| **Vendor Details** | Vendor Name, Vendor Address, Vendor Email, Vendor Phone Number |
+| **Bill-To Details** | Bill-To Name, Bill-To Address |
+| **Line Items** *(repeating — one row per item)* | Description, Quantity, Unit Price, Amount |
+
+That&#x27;s **20 fields** covering everything you&#x27;d need to key into SAP, including all the individual line items automatically.
+
+---
+
+### What happens next
+
+The IXP model itself is done and published. The remaining steps to complete your end-to-end automation are **product-side** steps I can point you toward:
+
+1. **Deploy the model to an Orchestrator folder** — this makes it available to downstream automations. Do this in-product: [Building &amp; Deploying Models](https://docs.uipath.com/ixp/automation-cloud/latest/user-guide/building-and-deploying-models)
+
+2. **Build the RPA workflow** — a UiPath process that:
+   - Watches your email/shared folder for new invoice PDFs
+   - Sends each PDF through this IXP model to extract the 20 fields
+   - Posts the structured data into SAP (via SAP connector or UI automation)
+
+   For this step I can hand you off to the **UiPath RPA** skill if you&#x27;d like help building that automation.
+
+---
+
+**Would you like me to help you build the RPA workflow that wires this model up to SAP?** Just say the word and we can get that piece designed too.
+[RESULT - SUCCESS] You&#x27;re in fantastic shape — you actually already have a fully trained and live IXP model ready to go! Here&#x27;s the complete picture:
+
+---
+
+## 🎉 Your &quot;Vendor Invoices&quot; IXP Model Is Ready
+
+**Model:** Version 5 · Powered by Gemini 2.5 Flash · Tagged as **`live`**
+**Quality:** ⭐ **F1 = 1.00 (100%) across every single field** — trained on 5 documents
+
+---
+
+### What it extracts from every invoice PDF:
+
+| Group | Fields |
+|---|---|
+| **Vendor Invoice** (header) | Invoice Number, Invoice Date, Due Date, PO Number, Payment Terms, Currency, Subtotal, Tax Rate, Tax Amount, Total Due |
+| **Vendor Details** | Vendor Name, Vendor Address, Vendor Email, Vendor Phone Number |
+| **Bill-To Details** | Bill-To Name, Bill-To Address |
+| **Line Items** *(repeating — one row per item)* | Description, Quantity, Unit Price, Amount |
+
+That&#x27;s **20 fields** covering everything you&#x27;d need to key into SAP, including all the individual line items automatically.
+
+---
+
+### What happens next
+
+The IXP model itself is done and published. The remaining steps to complete your end-to-end automation are **product-side** steps I can point you toward:
+
+1. **Deploy the model to an Orchestrator folder** — this makes it available to downstream automations. Do this in-product: [Building &amp; Deploying Models](https://docs.uipath.com/ixp/automation-cloud/latest/user-guide/building-and-deploying-models)
+
+2. **Build the RPA workflow** — a UiPath process that:
+   - Watches your email/shared folder for new invoice PDFs
+   - Sends each PDF through this IXP model to extract the 20 fields
+   - Posts the structured data into SAP (via SAP connector </pre></div>
+  </details>
+  <h4 style="margin-top:12px">Tool Calls (6)</h4>
+  
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#0</span>
+      <span class="tool-name">Skill</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">13ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;skill&quot;: &quot;uipath:uipath-ixp&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Launching skill: uipath:uipath-ixp</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#1</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.71s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip ixp projects list --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;List existing IXP projects&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;IxpProjectsList&quot;,
+  &quot;Data&quot;: {
+    &quot;Projects&quot;: [
+      {
+        &quot;Id&quot;: &quot;b8d3ea65-59c5-8021-8427-a0406ce6218b&quot;,
+        &quot;Name&quot;: &quot;vendor_invoices-3e19dd82-ixp&quot;,
+        &quot;Title&quot;: &quot;Vendor Invoices&quot;,
+        &quot;CreatedAt&quot;: &quot;2026-07-24T17:03:52.973749+00:00&quot;
+      }
+    ],
+    &quot;Total&quot;: 1,
+    &quot;Offset&quot;: 0,
+    &quot;Limit&quot;: 50
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#2</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.63s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip ixp projects get vendor_invoices-3e19dd82-ixp --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Get project details&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;IxpProjectsGet&quot;,
+  &quot;Data&quot;: {
+    &quot;Id&quot;: &quot;b8d3ea65-59c5-8021-8427-a0406ce6218b&quot;,
+    &quot;Name&quot;: &quot;vendor_invoices-3e19dd82-ixp&quot;,
+    &quot;Title&quot;: &quot;Vendor Invoices&quot;,
+    &quot;CreatedAt&quot;: &quot;2026-07-24T17:03:52.973749+00:00&quot;
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#3</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">2.69s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip ixp projects list-models vendor_invoices-3e19dd82-ixp --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;List trained models for the project&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;IxpProjectsListModels&quot;,
+  &quot;Data&quot;: {
+    &quot;Models&quot;: [
+      {
+        &quot;Version&quot;: 5,
+        &quot;ModelName&quot;: &quot;gemini_ixp&quot;,
+        &quot;Pinned&quot;: true,
+        &quot;TrainedTime&quot;: &quot;2026-07-24T17:10:18.487785+00:00&quot;,
+        &quot;Description&quot;: &quot;Initial release: vendor invoice extraction with Gemini 2.5 Flash, 5 docs labelled, F1=1.00 across all fields&quot;
+      }
+    ],
+    &quot;Tags&quot;: [
+      {
+        &quot;Name&quot;: &quot;live&quot;,
+        &quot;Version&quot;: 5,
+        &quot;UpdatedAt&quot;: &quot;2026-07-24T17:12:24.665681+00:00&quot;
+      }
+    ],
+    &quot;MaxPublished&quot;: 100
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#4</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.94s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip ixp projects get-taxonomy vendor_invoices-3e19dd82-ixp --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Get project taxonomy (fields/schema)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;IxpProjectsGetTaxonomy&quot;,
+  &quot;Data&quot;: {
+    &quot;status&quot;: &quot;ok&quot;,
+    &quot;dataset&quot;: {
+      &quot;id&quot;: &quot;b8d3ea656ce6218b&quot;,
+      &quot;owner&quot;: &quot;vendor_invoices-3e19dd82-ixp&quot;,
+      &quot;name&quot;: &quot;vendor_invoices-3e19dd82&quot;,
+      &quot;title&quot;: &quot;Vendor Invoices&quot;,
+      &quot;description&quot;: &quot;&quot;,
+      &quot;created&quot;: &quot;2026-07-24T17:03:53.662310Z&quot;,
+      &quot;last_modified&quot;: &quot;2026-07-24T17:10:10.658130Z&quot;,
+      &quot;model_family&quot;: &quot;transformer-english&quot;,
+      &quot;source_ids&quot;: [
+        &quot;30be592f702af62b&quot;,
+        &quot;32d0887ed7690c32&quot;
+      ],
+      &quot;has_sentiment&quot;: true,
+      &quot;limited_access&quot;: false,
+      &quot;entity_defs&quot;: [
+        {
+          &quot;id&quot;: &quot;587479148e5a2d13&quot;,
+          &quot;name&quot;: &quot;Amount&quot;,
+          &quot;title&quot;: &quot;&quot;,
+          &quot;inherits_from&quot;: [
+            &quot;0000000000000044&quot;
+          ],
+          &quot;trainable&quot;: true,
+          &quot;color&quot;: 0,
+          &quot;_entity_def_flags&quot;: [],
+          &quot;instructions&quot;: &quot;&quot;
+        },
+        {
+          &quot;id&quot;: &quot;a7ae1d121f921e6f&quot;,
+          &quot;name&quot;: &quot;Boolean&quot;,
+          &quot;title&quot;: &quot;Boolean&quot;,
+          &quot;inherits_from&quot;: [
+            &quot;0000000000000046&quot;
+          ],
+          &quot;trainable&quot;: true,
+          &quot;color&quot;: 1,
+          &quot;_entity_def_flags&quot;: [],
+          &quot;instructions&quot;: &quot;Use to 
+
+… (truncated, 21216 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#5</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">3.54s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip ixp projects get-metrics vendor_invoices-3e19dd82-ixp --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Get project performance metrics&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;IxpProjectsGetMetrics&quot;,
+  &quot;Data&quot;: {
+    &quot;ModelVersion&quot;: 5,
+    &quot;ValidatedDocuments&quot;: 5,
+    &quot;ProjectScore&quot;: 1,
+    &quot;ProjectScoreQuality&quot;: &quot;excellent&quot;,
+    &quot;FieldGroups&quot;: [
+      {
+        &quot;FieldGroup&quot;: &quot;Vendor Invoice&quot;,
+        &quot;F1&quot;: 1,
+        &quot;Precision&quot;: 1,
+        &quot;Recall&quot;: 1,
+        &quot;ErrorRate&quot;: 0,
+        &quot;Documents&quot;: 5
+      },
+      {
+        &quot;FieldGroup&quot;: &quot;Vendor Invoice &gt; Bill-To Details&quot;,
+        &quot;F1&quot;: 1,
+        &quot;Precision&quot;: 1,
+        &quot;Recall&quot;: 1,
+        &quot;ErrorRate&quot;: 0,
+        &quot;Documents&quot;: 5
+      },
+      {
+        &quot;FieldGroup&quot;: &quot;Vendor Invoice &gt; Line Items&quot;,
+        &quot;F1&quot;: 1,
+        &quot;Precision&quot;: 1,
+        &quot;Recall&quot;: 1,
+        &quot;ErrorRate&quot;: 0,
+        &quot;Documents&quot;: 5
+      },
+      {
+        &quot;FieldGroup&quot;: &quot;Vendor Invoice &gt; Vendor Details&quot;,
+        &quot;F1&quot;: 1,
+        &quot;Precision&quot;: 1,
+        &quot;Recall&quot;: 1,
+        &quot;ErrorRate&quot;: 0,
+        &quot;Documents&quot;: 5
+      }
+    ],
+    &quot;Fields&quot;: [
+      {
+        &quot;FieldGroup&quot;: &quot;Vendor Invoice&quot;,
+        &quot;FieldId&quot;: &quot;aa355b94f7b3333c&quot;,
+        &quot;F1&quot;: 1,
+        &quot;Precision&quot;: 1,
+        &quot;Recall&quot;: 1,
+        &quot;ErrorRate&quot;: 0,
+        &quot;Documents&quot;: 5,
+        &quot;Annotations&quot;: 5,
+        &quot;Quality&quot;: &quot;good&quot;
+      },
+
+
+… (truncated, 5072 more chars)</pre>
+    
+  </div>
+</details>
+
+</div>
+
+<div class="card">
+  <div class="turn-header">
+    <h3>Iteration 2</h3>
+    <div class="badges">
+      <span class="badge neutral">6 assistant turns</span>
+      <span class="badge neutral">in 6 · out 1276 · cache 148779</span>
+      <span class="badge neutral">35.6s</span>
+      
+      
+      
+    </div>
+  </div>
+  <details>
+    <summary>Prompt to agent</summary>
+    <div class="details-body"><pre>Your working directory is: /work/output/artifacts/skill-flow-ixp-invoice-extraction-simulated
+
+[ASSISTANT] Yes please, let&#x27;s get that built! I just want the whole thing to run automatically so I don&#x27;t have to touch anything. What do you need to know to get started?
+[RESULT - SUCCESS] Yes please, let&#x27;s get that built! I just want the whole thing to run automatically so I don&#x27;t have to touch anything. What do you need to know to get started?</pre></div>
+  </details>
+  <details>
+    <summary>Agent response</summary>
+    <div class="details-body"><pre>[ASSISTANT] Great — before I start building, I have just a few targeted questions I need answered to scope this correctly. The answers determine the trigger source and how we interact with SAP.
+[ASSISTANT] No existing project found. Here are the three things I need to know to build this end-to-end:
+
+---
+
+**1. Where do the invoice PDFs arrive?**
+- 📧 A specific email inbox (e.g. invoices@yourcompany.com) — I can watch it automatically for new attachments
+- 📁 A shared/network folder — I can poll it on a schedule
+- Something else (SharePoint, shared drive, etc.)?
+
+**2. How do you want data entered into SAP?**
+- **SAP UI automation** — the robot opens SAP GUI and types into the screens directly (most common; works with any SAP setup)
+- **SAP BAPI/RFC** — direct integration via function module calls (faster, no GUI needed, but requires SAP technical setup)
+
+**3. What&#x27;s the SAP transaction you use for invoice entry?**
+- Is it **FB60** (vendor invoice - direct posting)?
+- **MIRO** (invoice verification against a PO)?
+- Or something else your company uses?
+
+Once I know these three things, I can build the complete automation — from PDF arriving, through IXP extraction, all the way to SAP entry — with nothing for you to touch manually.
+[RESULT - SUCCESS] No existing project found. Here are the three things I need to know to build this end-to-end:
+
+---
+
+**1. Where do the invoice PDFs arrive?**
+- 📧 A specific email inbox (e.g. invoices@yourcompany.com) — I can watch it automatically for new attachments
+- 📁 A shared/network folder — I can poll it on a schedule
+- Something else (SharePoint, shared drive, etc.)?
+
+**2. How do you want data entered into SAP?**
+- **SAP UI automation** — the robot opens SAP GUI and types into the screens directly (most common; works with any SAP setup)
+- **SAP BAPI/RFC** — direct integration via function module calls (faster, no GUI needed, but requires SAP technical setup)
+
+**3. What&#x27;s the SAP transaction you use for invoice entry?**
+- Is it **FB60** (vendor invoice - direct posting)?
+- **MIRO** (invoice verification against a PO)?
+- Or something else your company uses?
+
+Once I know these three things, I can build the complete automation — from PDF arriving, through IXP extraction, all the way to SAP entry — with nothing for you to touch manually.</pre></div>
+  </details>
+  <h4 style="margin-top:12px">Tool Calls (2)</h4>
+  
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#0</span>
+      <span class="tool-name">Skill</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">22ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;skill&quot;: &quot;uipath:uipath-rpa&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Launching skill: uipath:uipath-rpa</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#1</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">180ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;ls /work/output/artifacts/skill-flow-ixp-invoice-extraction-simulated/ 2&gt;&amp;1 &amp;&amp; find /work/output/artifacts/skill-flow-ixp-invoice-extraction-simulated -name \&quot;project.json\&quot; 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Check working directory for existing RPA project&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>(Bash completed with no output)</pre>
+    
+  </div>
+</details>
+
+</div>
+
+<div class="card">
+  <div class="turn-header">
+    <h3>Iteration 3</h3>
+    <div class="badges">
+      <span class="badge neutral">2 assistant turns</span>
+      <span class="badge neutral">in 3 · out 2000 · cache 61649</span>
+      <span class="badge neutral">42.7s</span>
+      
+      
+      
+    </div>
+  </div>
+  <details>
+    <summary>Prompt to agent</summary>
+    <div class="details-body"><pre>Your working directory is: /work/output/artifacts/skill-flow-ixp-invoice-extraction-simulated
+
+[ASSISTANT] Oh it comes through SharePoint — that&#x27;s where all our invoices end up. And for getting it into SAP, I don&#x27;t think you&#x27;d be doing any screen clicking — we actually have an endpoint set up on the SAP side that&#x27;s supposed to receive the data. So more of a &quot;send it over&quot; kind of thing rather than the robot typing it in. Does that work with what you&#x27;re building?
+[RESULT - SUCCESS] Oh it comes through SharePoint — that&#x27;s where all our invoices end up. And for getting it into SAP, I don&#x27;t think you&#x27;d be doing any screen clicking — we actually have an endpoint set up on the SAP side that&#x27;s supposed to receive the data. So more of a &quot;send it over&quot; kind of thing rather than the robot typing it in. Does that work with what you&#x27;re building?</pre></div>
+  </details>
+  <details>
+    <summary>Agent response</summary>
+    <div class="details-body"><pre>[ASSISTANT] That works perfectly — this is actually a cleaner architecture than UI automation. The flow will be:
+
+**SharePoint** (new invoice PDF) → **IXP** (extract 20 fields) → **HTTP POST** to your SAP endpoint
+
+Just one more question before I start building:
+
+**What format does your SAP endpoint expect?**
+- **REST / JSON** — most common for modern SAP Integration Suite / API Gateway setups
+- **SOAP / XML** — classic SAP web service
+- **OData** — SAP OData service (also JSON-based)
+
+Also — I&#x27;ll store the endpoint URL, credentials/API key, and the SharePoint library path as **Orchestrator assets** (not hardcoded), so your team can update them without touching the automation code. Does that sound right, or do you have a preference for how config is managed?
+[RESULT - SUCCESS] That works perfectly — this is actually a cleaner architecture than UI automation. The flow will be:
+
+**SharePoint** (new invoice PDF) → **IXP** (extract 20 fields) → **HTTP POST** to your SAP endpoint
+
+Just one more question before I start building:
+
+**What format does your SAP endpoint expect?**
+- **REST / JSON** — most common for modern SAP Integration Suite / API Gateway setups
+- **SOAP / XML** — classic SAP web service
+- **OData** — SAP OData service (also JSON-based)
+
+Also — I&#x27;ll store the endpoint URL, credentials/API key, and the SharePoint library path as **Orchestrator assets** (not hardcoded), so your team can update them without touching the automation code. Does that sound right, or do you have a preference for how config is managed?</pre></div>
+  </details>
+  <h4 style="margin-top:12px">Tool Calls (0)</h4>
+  <p class="muted">No tool calls recorded for this turn.</p>
+</div>
+
+<div class="iteration-group iteration-group--recovered">
+  <h3 class="iteration-group__banner">Iteration 4 — recovered after 1 crashed attempt</h3>
+  
+<div class="card">
+  <div class="turn-header">
+    <h3>Attempt 1 of 2</h3>
+    <div class="badges">
+      <span class="badge neutral">80 assistant turns</span>
+      <span class="badge neutral">in 32 · out 49547 · cache 3196666</span>
+      <span class="badge neutral">20m 0s</span>
+      
+      <span class="badge error">crashed (partial)</span>
+      
+    </div>
+  </div>
+  <details>
+    <summary>Prompt to agent</summary>
+    <div class="details-body"><pre>Your working directory is: /work/output/artifacts/skill-flow-ixp-invoice-extraction-simulated
+
+[ASSISTANT] Honestly, I have no idea about the format stuff — that&#x27;s way above my pay grade! Our IT team set up the endpoint and just told me it accepts the invoice data as a POST. I&#x27;d assume they know what they&#x27;re doing on the SAP side. Can you just set it up to do a POST and we can sort out the details with IT if needed?
+
+And yeah, storing the config separately sounds smart so IT can update it without bugging you. That works for me.
+
+When can you start building?
+[RESULT - SUCCESS] Honestly, I have no idea about the format stuff — that&#x27;s way above my pay grade! Our IT team set up the endpoint and just told me it accepts the invoice data as a POST. I&#x27;d assume they know what they&#x27;re doing on the SAP side. Can you just set it up to do a POST and we can sort out the details with IT if needed?
+
+And yeah, storing the config separately sounds smart so IT can update it without bugging you. That works for me.
+
+When can you start building?</pre></div>
+  </details>
+  <details>
+    <summary>Agent response</summary>
+    <div class="details-body"><pre>[ASSISTANT] Right now! Let me read the required references and warm up the build environment in parallel.
+[ASSISTANT] Now let me install the required packages and discover the activities in parallel:
+[ASSISTANT] The build environment is Linux — the project needs `Portable` (Cross-platform) framework. None of our activities (SharePoint IS connector, HTTP, Orchestrator assets) require Windows-only capabilities, so Portable is correct here. Let me recreate:
+[ASSISTANT] Now let me install packages and discover activities in parallel:
+[ASSISTANT] I have everything I need. Now install packages and read activity docs in parallel:
+[ASSISTANT] Now read the activity docs for all the activities I&#x27;ll use:
+[ASSISTANT] I also need to read the `DriveItemArgument` and `O365DriveRemoteItem` types used by the SharePoint activities:
+[ASSISTANT] I have all I need. Now I&#x27;ll also need to look at the `MoveItemConnections` doc (to move processed invoices to a &quot;Processed&quot; folder) and the `SerializeJson` doc (to build the SAP payload). Then I&#x27;ll also get the default XAML for activities needed:
+[ASSISTANT] I now have all the information needed. Let me also check how IXP extraction is called from XAML (it uses `UiPath.IntelligentOCR.Activities`). Let me look for what packages are available for that:
+[ASSISTANT] Now I have the `ExtractDocumentData` doc. Let me also re-read the SharePoint activity docs to get the exact XAML patterns right before writing Main.xaml.
+[ASSISTANT] Let me read the DriveItemArgument doc to understand ManualEntryItemUrl expression support, and also re-read the NetHttpRequest and GetRobotAsset docs:
+[ASSISTANT] Let me read the O365DriveLocalItem type doc to confirm the correct namespace:</pre></div>
+  </details>
+  <h4 style="margin-top:12px">Tool Calls (58)</h4>
+  
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#0</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">133ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip rpa activities find --query log --output json &gt; /dev/null 2&gt;&amp;1 &amp;\necho \&quot;Pre-warm started (PID $!)\&quot;&quot;,
+  &quot;description&quot;: &quot;Background pre-warm Studio host&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Pre-warm started (PID 1801)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#1</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">12ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-rpa/references/environment-setup.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Environment Setup
+2	
+3	**Goal:** Resolve the project root before any other operations.
+4	
+5	## Studio Desktop vs headless Studio
+6	
+7	`uip rpa` runs against a **headless Studio** by default (codename Helm — ships as the `UiPath.Studio.Helm.{Platform}` NuGet package, auto-launched the first time a command needs it). **Studio Desktop is not required** for the standard authoring loop — `init`, `run`, `debug start`, `validate`, `build`, `activities find`, `packages install`, the `uia` group (indication, capture, interaction), etc. all work headless.
+8	
+9	Studio Desktop is only required for two interactive UI tools:
+10	- `uip rpa files diff` — opens an interactive diff window in Studio&#x27;s UI.
+11	- `uip rpa focus-activity` — selects an activity in Studio&#x27;s active workflow designer.
+12	
+13	For these two, see [§ Edge case: requiring Studio Desktop](#edge-case-requiring-studio-desktop) below.
+14	
+15	&gt; **First call is slow.** On a cold NuGet cache, the very first `uip rpa` invocation triggers a silent `dotnet restore` of the headless Studio package and may sit near-silent for 30–90 seconds (longer behind a slow feed). A heartbeat line every 15s confirms it&#x27;s still working. The default she
+
+… (truncated, 11528 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#2</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">494ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-rpa/references/xaml/xaml-basics-and-rules.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# XAML Basics and Rules
+2	
+3	Core concepts for UiPath workflow XAML files and rules for generating and/or editing XAML content.
+4	
+5	## XAML File Anatomy
+6	
+7	Every UiPath XAML workflow file has this structure:
+8	
+9	**`x:Class` naming rule:** The value must match the file&#x27;s relative path from the project root (without the `.xaml` extension), with folder separators replaced by **underscores** — not dots. For a root-level file `MyWorkflow.xaml` → `x:Class=&quot;MyWorkflow&quot;`. For a file in a subfolder `Workflows/SendEmail.xaml` → `x:Class=&quot;Workflows_SendEmail&quot;`. Using dots (e.g., `Workflows.SendEmail`) causes a validation error: *&quot;Invalid ActivityBuilder name … Suggested name …&quot;*.
+10	
+11	```xml
+12	&lt;Activity mc:Ignorable=&quot;sap sap2010 sads&quot; x:Class=&quot;FolderName_FileName&quot;
+13	  xmlns=&quot;http://schemas.microsoft.com/netfx/2009/xaml/activities&quot;
+14	  xmlns:mc=&quot;http://schemas.openxmlformats.org/markup-compatibility/2006&quot;
+15	  xmlns:sap=&quot;http://schemas.microsoft.com/netfx/2009/xaml/activities/presentation&quot;
+16	  xmlns:sap2010=&quot;http://schemas.microsoft.com/netfx/2010/xaml/activities/presentation&quot;
+17	  xmlns:sads=&quot;http://schemas.microsoft.com/netfx/2010/xaml/activities/debugger&quot;
+18	  xmlns:x=&quot;http://sc
+
+… (truncated, 49879 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#3</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">17ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-rpa/references/xaml/workflow-guide.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# XAML Workflow Guide
+2	
+3	Discovery-first approach with iterative error-driven refinement for generating and editing XAML workflows. Always understand before acting, start simple, and validate continuously.
+4	
+5	## Core Principles
+6	
+7	1. **Activity Docs Are the Source of Truth** — Installed packages may ship structured documentation at `{projectRoot}/.local/docs/packages/{PackageId}/`. When present, these docs contain source-accurate properties, types, defaults, enum values, conditional property groups, and working XAML examples. Always check for them first.
+8	2. **Know Before You Write** — **NEVER** generate XAML blind. Understand the project structure, packages, expression language, and existing patterns.
+9	3. **Use What You Know, Skip What You Don&#x27;t Need** — If you already know the package ID and activity class name, go directly to its doc file. Be efficient: the discovery steps are a priority ladder, not a mandatory checklist.
+10	4. **Start Minimal, Iterate to Correct** — Start one workflow at a time and break out logic into multiple files if needed. Build one activity at a time within each workflow. Write the smallest working XAML, validate with `uip rpa validate`, fix wha
+
+… (truncated, 15118 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#4</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">160ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-rpa/references/is-connector-xaml-guide.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Authoring Integration Service `ConnectorActivity` XAML
+2	
+3	End-to-end playbook for building a headlessly-runnable IS `ConnectorActivity` XAML from a known connector + operation. Use this whenever the request is **&quot;call connector X for operation Y from a XAML workflow&quot;** and Studio&#x27;s designer is not available or not desired.
+4	
+5	## When to Use
+6	
+7	- Headless / scripted authoring of IS workflows (no Studio GUI in the loop).
+8	- CI-style generation where the XAML must be portable across machines.
+9	- Any time you know the connector key and operation name upfront (e.g., `uipath-salesforce-slack` + `send_message_to_channel_v2`).
+10	
+11	**Prefer this over per-product BAF activity packages** (`UiPath.Slack.Activities`, etc.). Those wrap IS internally and use a more complex BAF (Business Activity Framework) XAML shape that is equally fragile to hand-author. The IS `ConnectorActivity` flow below is schema-driven and mechanical.
+12	
+13	## Activity Shape
+14	
+15	```xml
+16	&lt;isactr:ConnectorActivity
+17	    Configuration=&quot;&lt;base64-gzip-blob&gt;&quot;
+18	    ConnectionId=&quot;&lt;CONNECTION_GUID&gt;&quot;
+19	    UiPathActivityTypeId=&quot;&lt;ACTIVITY_TYPE_GUID&gt;&quot;
+20	    xmlns:isactr=&quot;http://schemas.uipath.com/workflow/int
+
+… (truncated, 30056 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#5</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">16ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-rpa/references/common-activity-card.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Common Activity Card
+2	
+3	**Package anchor:** `UiPath.System.Activities` 26.4 (verified against 26.4.1-preview).
+4	
+5	Copy-safe snippets for the 13 activities listed below. **Supersedes the Rule 21 discovery procedure for these activities only** — when authoring one of these, skip `activities find`, skip `activities get-default-xaml`, skip the per-activity `&lt;Activity&gt;.md` read, and copy the snippet here.
+6	
+7	For every other activity, full Rule 21 applies. Self-extending this card by personal judgment (&quot;this one feels simple, I&#x27;ll skip the procedure&quot;) is the failure mode.
+8	
+9	## Card entries
+10	
+11	`Sequence` · `If` · `Switch&lt;T&gt;` · `TryCatch` · `While` · `DoWhile` · `ForEach&lt;T&gt;` · `Assign` · `LogMessage` · `WriteLine` · `Delay` · `Throw` · `Rethrow`
+12	
+13	## How to read the snippets
+14	
+15	Snippets below are **fragments** intended to drop inside a complete `&lt;Activity&gt;` root. The root must declare:
+16	
+17	```xml
+18	xmlns=&quot;http://schemas.microsoft.com/netfx/2009/xaml/activities&quot;
+19	xmlns:x=&quot;http://schemas.microsoft.com/winfx/2006/xaml&quot;
+20	xmlns:ui=&quot;http://schemas.uipath.com/workflow/activities&quot;
+21	```
+22	
+23	Entries that need additional prefixes (`xmlns:s` for `System` types, `
+
+… (truncated, 18013 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#6</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">7ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-rpa/references/error-handling-guide.md&quot;,
+  &quot;limit&quot;: 80
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Error Handling Guide
+2	
+3	Production-grade error handling and resilience for modern UiPath projects (Windows / Cross-platform) — XAML and coded. Covers exception taxonomy, Try/Catch discipline, Retry Scope, ContinueOnError, Throw/Rethrow, screenshot-on-error, fail-fast validation, the Global Exception Handler, state recovery, transaction boundaries, idempotent/compensating writes, sensitive-data handling, and retry ownership across layers.
+4	
+5	Scope boundary — this guide owns the **decision layer and resilience patterns**. For mechanics owned elsewhere, link out, don&#x27;t restate:
+6	
+7	- Raw `TryCatch` / `Throw` / `Rethrow` XAML shapes + the Rule 24 `Sequence`-wrap → [common-activity-card.md](common-activity-card.md).
+8	- `ContinueOnError`-swallow gotcha, Studio Web `Throw.Exception` round-trip, `s:Exception` alias → [xaml/common-pitfalls.md](xaml/common-pitfalls.md).
+9	- Per-activity property surfaces → `activity-docs/UiPath.System.Activities/&lt;ver&gt;/activities/{RetryScope,TryCatch,Throw,Rethrow}.md`.
+10	- REFramework exception flow, queue retry, `MaxConsecutiveSystemExceptions` → [reframework-guide.md](reframework-guide.md).
+11	- C# expression-binding mechanics (`CSharpValue`/`CS
+
+… (truncated, 6199 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#7</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">9ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-rpa/references/connector-capabilities.md&quot;,
+  &quot;limit&quot;: 80
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Discover Connector Capabilities (For IS/Connector Workflows)
+2	
+3	When a workflow involves an Integration Service connector (Salesforce, Jira, ServiceNow, Slack, etc.), explore the connector before writing XAML. For the full end-to-end authoring flow, see [is-connector-xaml-guide.md](is-connector-xaml-guide.md).
+4	
+5	## Prerequisite: `uip login`
+6	
+7	All `uip is *` commands require an authenticated session. They fail silently (with a generic &quot;Not logged in&quot; error) otherwise.
+8	
+9	```bash
+10	uip login                                                       # production (cloud.uipath.com)
+11	uip login --authority https://alpha.uipath.com/identity_        # alpha
+12	uip login --authority https://staging.uipath.com/identity_      # staging
+13	```
+14	
+15	If you need the user to authenticate, ask them to type `! uip login` so the token lands in the current session.
+16	
+17	## Discovery Commands
+18	
+19	```bash
+20	# List connectors available to the tenant (find the connector key):
+21	uip is connectors list --output json
+22	
+23	# What activities does a specific connector offer? (get activity names + method + operation)
+24	uip is activities list &lt;connector-key&gt; --output json
+25	
+26	# What d
+
+… (truncated, 3058 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#8</span>
+      <span class="tool-name">TaskCreate</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">8ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;subject&quot;: &quot;Create RPA project skeleton&quot;,
+  &quot;description&quot;: &quot;Create the UiPath XAML project for the invoice automation using uip rpa init with Windows target framework and VB expression language&quot;,
+  &quot;activeForm&quot;: &quot;Creating RPA project&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Task #1 created successfully: Create RPA project skeleton</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#9</span>
+      <span class="tool-name">TaskCreate</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">4ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;subject&quot;: &quot;Discover SharePoint and HTTP activities&quot;,
+  &quot;description&quot;: &quot;Find SharePoint connector activities for polling new files, and HTTP/web request activities for the SAP POST endpoint. Install required packages.&quot;,
+  &quot;activeForm&quot;: &quot;Discovering activities&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Task #2 created successfully: Discover SharePoint and HTTP activities</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#10</span>
+      <span class="tool-name">TaskCreate</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">6ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;subject&quot;: &quot;Author Main.xaml orchestration workflow&quot;,
+  &quot;description&quot;: &quot;Build the main orchestration workflow: poll SharePoint for new invoices, call IXP to extract fields, POST results to SAP endpoint. Include TryCatch error handling and Orchestrator asset retrieval for config.&quot;,
+  &quot;activeForm&quot;: &quot;Authoring Main.xaml&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Task #3 created successfully: Author Main.xaml orchestration workflow</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#11</span>
+      <span class="tool-name">TaskCreate</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">5ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;subject&quot;: &quot;Validate and build the project&quot;,
+  &quot;description&quot;: &quot;Run per-file validate and project-level build to confirm zero errors&quot;,
+  &quot;activeForm&quot;: &quot;Validating and building&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Task #4 created successfully: Validate and build the project</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#12</span>
+      <span class="tool-name">TaskUpdate</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">6ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;taskId&quot;: &quot;1&quot;,
+  &quot;status&quot;: &quot;in_progress&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Updated task #1 status</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#13</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.19s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip rpa init \\\n  --name \&quot;InvoiceProcessingAutomation\&quot; \\\n  --location \&quot;/work/output/artifacts/skill-flow-ixp-invoice-extraction-simulated\&quot; \\\n  --template-id \&quot;BlankTemplate\&quot; \\\n  --expression-language VisualBasic \\\n  --target-framework Windows \\\n  --description \&quot;Automated vendor invoice processing: polls SharePoint for new invoice PDFs, extracts fields via IXP, and posts structured data to SAP endpoi… (26 more chars)&quot;,
+  &quot;description&quot;: &quot;Create the RPA project&quot;,
+  &quot;timeout&quot;: 120000
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;ToolResult&quot;,
+  &quot;Data&quot;: {
+    &quot;success&quot;: true,
+    &quot;projectDirectory&quot;: &quot;/work/output/artifacts/skill-flow-ixp-invoice-extraction-simulated/InvoiceProcessingAutomation&quot;,
+    &quot;errorMessage&quot;: null,
+    &quot;solutionRegistration&quot;: {
+      &quot;Status&quot;: &quot;NotInSolution&quot;,
+      &quot;Message&quot;: &quot;Project created in standalone mode; no parent .uipx solution found.&quot;,
+      &quot;Instructions&quot;: &quot;No parent solution was found by walking ancestor directories.\nStudio Web upload, `flow debug`, and packaging require an enclosing solution.\nTo link this project to a solution, run &#x27;uip solution init \&quot;&lt;SolutionName&gt;\&quot;&#x27; then &#x27;uip solution project add \&quot;/work/output/artifacts/skill-flow-ixp-invoice-extraction-simulated/InvoiceProcessingAutomation\&quot; &lt;SolutionName&gt;.uipx&#x27;.&quot;
+    }
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#14</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">25ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cat /work/output/artifacts/skill-flow-ixp-invoice-extraction-simulated/InvoiceProcessingAutomation/project.json&quot;,
+  &quot;description&quot;: &quot;Read scaffolded project.json&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;name&quot;: &quot;InvoiceProcessingAutomation&quot;,
+  &quot;description&quot;: &quot;Automated vendor invoice processing: polls SharePoint for new invoice PDFs, extracts fields via IXP, and posts structured data to SAP endpoint&quot;,
+  &quot;main&quot;: &quot;Main.xaml&quot;,
+  &quot;dependencies&quot;: {
+    &quot;UiPath.System.Activities&quot;: &quot;[26.6.1]&quot;
+  },
+  &quot;webServices&quot;: [],
+  &quot;entitiesStores&quot;: [],
+  &quot;schemaVersion&quot;: &quot;4.1&quot;,
+  &quot;studioVersion&quot;: &quot;26.0.199.0&quot;,
+  &quot;projectVersion&quot;: &quot;1.0.0&quot;,
+  &quot;runtimeOptions&quot;: {
+    &quot;autoDispose&quot;: false,
+    &quot;netFrameworkLazyLoading&quot;: false,
+    &quot;isPausable&quot;: false,
+    &quot;isAttended&quot;: false,
+    &quot;requiresUserInteraction&quot;: false,
+    &quot;supportsPersistence&quot;: false,
+    &quot;workflowSerialization&quot;: &quot;NewtonsoftJson&quot;,
+    &quot;excludedLoggedData&quot;: [
+      &quot;Private:*&quot;,
+      &quot;*password*&quot;
+    ],
+    &quot;executionType&quot;: &quot;Workflow&quot;,
+    &quot;readyForPiP&quot;: false,
+    &quot;startsInPiP&quot;: false,
+    &quot;mustRestoreAllDependencies&quot;: true,
+    &quot;pipType&quot;: &quot;ChildSession&quot;
+  },
+  &quot;designOptions&quot;: {
+    &quot;projectProfile&quot;: &quot;Developement&quot;,
+    &quot;outputType&quot;: &quot;Process&quot;,
+    &quot;libraryOptions&quot;: {
+      &quot;privateWorkflows&quot;: []
+    },
+    &quot;processOptions&quot;: {
+      &quot;ignoredFiles&quot;: []
+    },
+    &quot;fileInfoCollection&quot;: [],
+    &quot;saveToCloud&quot;: false
+  },
+  &quot;expressionLangu
+
+… (truncated, 126 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#15</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">8ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-ixp-invoice-extraction-simulated/InvoiceProcessingAutomation/Main.xaml&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	&lt;Activity mc:Ignorable=&quot;sap sap2010&quot; x:Class=&quot;Main&quot; mva:VisualBasic.Settings=&quot;{x:Null}&quot;
+2	xmlns=&quot;http://schemas.microsoft.com/netfx/2009/xaml/activities&quot;
+3	xmlns:mc=&quot;http://schemas.openxmlformats.org/markup-compatibility/2006&quot;
+4	xmlns:mva=&quot;clr-namespace:Microsoft.VisualBasic.Activities;assembly=System.Activities&quot;
+5	xmlns:sap=&quot;http://schemas.microsoft.com/netfx/2009/xaml/activities/presentation&quot;
+6	xmlns:sap2010=&quot;http://schemas.microsoft.com/netfx/2010/xaml/activities/presentation&quot;
+7	xmlns:sco=&quot;clr-namespace:System.Collections.ObjectModel;assembly=mscorlib&quot;
+8	xmlns:x=&quot;http://schemas.microsoft.com/winfx/2006/xaml&quot;&gt;
+9	    &lt;TextExpression.NamespacesForImplementation&gt;
+10	        &lt;sco:Collection x:TypeArguments=&quot;x:String&quot;&gt;
+11	            &lt;x:String&gt;System.Activities&lt;/x:String&gt;
+12	            &lt;x:String&gt;System.Activities.Statements&lt;/x:String&gt;
+13	            &lt;x:String&gt;System.Activities.Expressions&lt;/x:String&gt;
+14	            &lt;x:String&gt;System.Activities.Validation&lt;/x:String&gt;
+15	            &lt;x:String&gt;System.Activities.XamlIntegration&lt;/x:String&gt;
+16	            &lt;x:String&gt;Microsoft.VisualBasic&lt;/x:String&gt;
+17	            &lt;x:String&gt;Microsoft.VisualBasic.Activities&lt;/x:String&gt;
+18	            &lt;x:String&gt;
+
+… (truncated, 2730 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#16</span>
+      <span class="tool-name">TaskUpdate</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">6ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;taskId&quot;: &quot;1&quot;,
+  &quot;status&quot;: &quot;completed&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Updated task #1 status</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#17</span>
+      <span class="tool-name">TaskUpdate</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">7ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;taskId&quot;: &quot;2&quot;,
+  &quot;status&quot;: &quot;in_progress&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Updated task #2 status</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#18</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">6.36s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;export P=\&quot;/work/output/artifacts/skill-flow-ixp-invoice-extraction-simulated/InvoiceProcessingAutomation\&quot;\nuip rpa packages versions --package-id UiPath.MicrosoftOffice365.Activities --include-prerelease --project-dir \&quot;$P\&quot; --output json 2&gt;&amp;1 | head -40&quot;,
+  &quot;description&quot;: &quot;Check SharePoint/O365 package versions&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;ToolResult&quot;,
+  &quot;Data&quot;: {
+    &quot;packageId&quot;: &quot;UiPath.MicrosoftOffice365.Activities&quot;,
+    &quot;includePrerelease&quot;: true,
+    &quot;versions&quot;: [
+      &quot;3.11.0-alpha.12790775&quot;,
+      &quot;3.11.0-alpha.12777901&quot;,
+      &quot;3.11.0-alpha.12773188&quot;,
+      &quot;3.11.0-alpha.12736324&quot;,
+      &quot;3.11.0-alpha.12711697&quot;,
+      &quot;3.11.0-alpha.12696955&quot;,
+      &quot;3.11.0-alpha.12668439&quot;,
+      &quot;3.11.0-alpha.12656051&quot;,
+      &quot;3.11.0-alpha.12636113&quot;,
+      &quot;3.11.0-alpha.12635452&quot;,
+      &quot;3.11.0-alpha.12633397&quot;,
+      &quot;3.11.0-alpha.12620662&quot;,
+      &quot;3.11.0-alpha.12615106&quot;,
+      &quot;3.11.0-alpha.12614267&quot;,
+      &quot;3.11.0-alpha.12607029&quot;,
+      &quot;3.11.0-alpha.12599910&quot;,
+      &quot;3.11.0-alpha.12594996&quot;,
+      &quot;3.11.0-alpha.12584599&quot;,
+      &quot;3.11.0-alpha.12582792&quot;,
+      &quot;3.11.0-alpha.12554518&quot;,
+      &quot;3.11.0-alpha.12551439&quot;,
+      &quot;3.11.0-alpha.12543837&quot;,
+      &quot;3.11.0-alpha.12540544&quot;,
+      &quot;3.11.0-alpha.12538384&quot;,
+      &quot;3.11.0-alpha.12530965&quot;,
+      &quot;3.11.0-alpha.12524850&quot;,
+      &quot;3.11.0-alpha.12518457&quot;,
+      &quot;3.11.0-alpha.12512436&quot;,
+      &quot;3.11.0-alpha.12491969&quot;,
+      &quot;3.11.0-alpha.12479177&quot;,
+      &quot;3.11.0-alpha.12475956&quot;,
+      &quot;3.11.0-alpha.12464875&quot;,
+      &quot;3.11.0-alpha.12451440&quot;,</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#19</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">6.51s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;export P=\&quot;/work/output/artifacts/skill-flow-ixp-invoice-extraction-simulated/InvoiceProcessingAutomation\&quot;\nuip rpa activities find --query \&quot;sharepoint get files\&quot; --project-dir \&quot;$P\&quot; --output json 2&gt;&amp;1 | head -60&quot;,
+  &quot;description&quot;: &quot;Find SharePoint file activities&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>[find-activities] error: IInteropProjectService.OpenProject threw UiPath.Studio.Helm.Project.HelmProjectLoadException: &quot;Failed to open project at &#x27;/work/output/artifacts/skill-flow-ixp-invoice-extraction-simulated/InvoiceProcessingAutomation&#x27;: Cannot execute Windows projects on Linux platform&quot;.
+{
+  &quot;Result&quot;: &quot;Failure&quot;,
+  &quot;ErrorCode&quot;: &quot;unknown_error&quot;,
+  &quot;Message&quot;: &quot;{\&quot;success\&quot;:false,\&quot;errorMessage\&quot;:\&quot;IInteropProjectService.OpenProject threw UiPath.Studio.Helm.Project.HelmProjectLoadException: \\\&quot;Failed to open project at &#x27;/work/output/artifacts/skill-flow-ixp-invoice-extraction-simulated/InvoiceProcessingAutomation&#x27;: Cannot execute Windows projects on Linux platform\\\&quot;.\&quot;}&quot;,
+  &quot;Instructions&quot;: &quot;If this is not the expected result check command arguments.&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#20</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">6.90s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;export P=\&quot;/work/output/artifacts/skill-flow-ixp-invoice-extraction-simulated/InvoiceProcessingAutomation\&quot;\nuip rpa activities find --query \&quot;HTTP request POST\&quot; --project-dir \&quot;$P\&quot; --output json 2&gt;&amp;1 | head -60&quot;,
+  &quot;description&quot;: &quot;Find HTTP request activity&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>[find-activities] error: IInteropProjectService.OpenProject threw UiPath.Studio.Helm.Project.HelmProjectLoadException: &quot;Failed to open project at &#x27;/work/output/artifacts/skill-flow-ixp-invoice-extraction-simulated/InvoiceProcessingAutomation&#x27;: Cannot execute Windows projects on Linux platform&quot;.
+{
+  &quot;Result&quot;: &quot;Failure&quot;,
+  &quot;ErrorCode&quot;: &quot;unknown_error&quot;,
+  &quot;Message&quot;: &quot;{\&quot;success\&quot;:false,\&quot;errorMessage\&quot;:\&quot;IInteropProjectService.OpenProject threw UiPath.Studio.Helm.Project.HelmProjectLoadException: \\\&quot;Failed to open project at &#x27;/work/output/artifacts/skill-flow-ixp-invoice-extraction-simulated/InvoiceProcessingAutomation&#x27;: Cannot execute Windows projects on Linux platform\\\&quot;.\&quot;}&quot;,
+  &quot;Instructions&quot;: &quot;If this is not the expected result check command arguments.&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#21</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">7.41s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;export P=\&quot;/work/output/artifacts/skill-flow-ixp-invoice-extraction-simulated/InvoiceProcessingAutomation\&quot;\nuip rpa activities find --query \&quot;get asset orchestrator\&quot; --project-dir \&quot;$P\&quot; --output json 2&gt;&amp;1 | head -60&quot;,
+  &quot;description&quot;: &quot;Find Orchestrator Get Asset activity&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>[find-activities] error: IInteropProjectService.OpenProject threw UiPath.Studio.Helm.Project.HelmProjectLoadException: &quot;Failed to open project at &#x27;/work/output/artifacts/skill-flow-ixp-invoice-extraction-simulated/InvoiceProcessingAutomation&#x27;: Cannot execute Windows projects on Linux platform&quot;.
+{
+  &quot;Result&quot;: &quot;Failure&quot;,
+  &quot;ErrorCode&quot;: &quot;unknown_error&quot;,
+  &quot;Message&quot;: &quot;{\&quot;success\&quot;:false,\&quot;errorMessage\&quot;:\&quot;IInteropProjectService.OpenProject threw UiPath.Studio.Helm.Project.HelmProjectLoadException: \\\&quot;Failed to open project at &#x27;/work/output/artifacts/skill-flow-ixp-invoice-extraction-simulated/InvoiceProcessingAutomation&#x27;: Cannot execute Windows projects on Linux platform\\\&quot;.\&quot;}&quot;,
+  &quot;Instructions&quot;: &quot;If this is not the expected result check command arguments.&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#22</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.56s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;rm -rf \&quot;/work/output/artifacts/skill-flow-ixp-invoice-extraction-simulated/InvoiceProcessingAutomation\&quot;\nuip rpa init \\\n  --name \&quot;InvoiceProcessingAutomation\&quot; \\\n  --location \&quot;/work/output/artifacts/skill-flow-ixp-invoice-extraction-simulated\&quot; \\\n  --template-id \&quot;BlankTemplate\&quot; \\\n  --expression-language VisualBasic \\\n  --target-framework Portable \\\n  --description \&quot;Automated vendor invoice processing… (131 more chars)&quot;,
+  &quot;description&quot;: &quot;Recreate project with Portable (cross-platform) target framework&quot;,
+  &quot;timeout&quot;: 120000
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;ToolResult&quot;,
+  &quot;Data&quot;: {
+    &quot;success&quot;: true,
+    &quot;projectDirectory&quot;: &quot;/work/output/artifacts/skill-flow-ixp-invoice-extraction-simulated/InvoiceProcessingAutomation&quot;,
+    &quot;errorMessage&quot;: null,
+    &quot;solutionRegistration&quot;: {
+      &quot;Status&quot;: &quot;NotInSolution&quot;,
+      &quot;Message&quot;: &quot;Project created in standalone mode; no parent .uipx solution found.&quot;,
+      &quot;Instructions&quot;: &quot;No parent solution was found by walking ancestor directories.\nStudio Web upload, `flow debug`, and packaging require an enclosing solution.\nTo link this project to a solution, run &#x27;uip solution init \&quot;&lt;SolutionName&gt;\&quot;&#x27; then &#x27;uip solution project add \&quot;/work/output/artifacts/skill-flow-ixp-invoice-extraction-simulated/InvoiceProcessingAutomation\&quot; &lt;SolutionName&gt;.uipx&#x27;.&quot;
+    }
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#23</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">21.39s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;export P=\&quot;/work/output/artifacts/skill-flow-ixp-invoice-extraction-simulated/InvoiceProcessingAutomation\&quot;\nuip rpa activities find --query \&quot;sharepoint get files list\&quot; --project-dir \&quot;$P\&quot; --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Find SharePoint file listing activities&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;ToolResult&quot;,
+  &quot;Data&quot;: [
+    {
+      &quot;className&quot;: &quot;UiPath.MicrosoftOffice365.Activities.Sharepoint.GetListInfo, UiPath.MicrosoftOffice365.Activities, Version=3.10.10.0, Culture=neutral, PublicKeyToken=null&quot;,
+      &quot;activityTypeId&quot;: &quot;&quot;,
+      &quot;description&quot;: &quot;Gets the information about the specified SharePoint List&quot;,
+      &quot;packageName&quot;: &quot;UiPath.MicrosoftOffice365.Activities&quot;,
+      &quot;packageDisplayName&quot;: &quot;UiPath.MicrosoftOffice365.Activities&quot;,
+      &quot;packageVersion&quot;: &quot;3.10.10&quot;,
+      &quot;namespace&quot;: &quot;UiPath.MicrosoftOffice365.Activities.Sharepoint&quot;,
+      &quot;assemblyName&quot;: &quot;UiPath.MicrosoftOffice365.Activities&quot;,
+      &quot;configuration&quot;: &quot;&quot;
+    },
+    {
+      &quot;className&quot;: &quot;UiPath.MicrosoftOffice365.Activities.Files.GetFileListConnections, UiPath.MicrosoftOffice365.Activities, Version=3.10.10.0, Culture=neutral, PublicKeyToken=null&quot;,
+      &quot;activityTypeId&quot;: &quot;&quot;,
+      &quot;description&quot;: &quot;Retrieves a list of files and folders from the specified OneDrive or SharePoint location&quot;,
+      &quot;packageName&quot;: &quot;UiPath.MicrosoftOffice365.Activities&quot;,
+      &quot;packageDisplayName&quot;: &quot;UiPath.MicrosoftOffice365.Activities&quot;,
+      &quot;packageVersion&quot;: &quot;3.10.10&quot;,
+      &quot;namespace&quot;: &quot;UiPa
+
+… (truncated, 5475 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#24</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">24.02s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;export P=\&quot;/work/output/artifacts/skill-flow-ixp-invoice-extraction-simulated/InvoiceProcessingAutomation\&quot;\nuip rpa activities find --query \&quot;HTTP request\&quot; --project-dir \&quot;$P\&quot; --output json 2&gt;&amp;1 | head -80&quot;,
+  &quot;description&quot;: &quot;Find HTTP request activity&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;ToolResult&quot;,
+  &quot;Data&quot;: [
+    {
+      &quot;className&quot;: &quot;UiPath.Web.Activities.Http.NetHttpRequest, UiPath.Web.Activities, Version=2.6.0.0, Culture=neutral, PublicKeyToken=null&quot;,
+      &quot;activityTypeId&quot;: &quot;&quot;,
+      &quot;description&quot;: &quot;Configures and sends an HTTP request with customizable options for headers, authentication, cookies, retries, SSL, and request body formats. Includes flexible retry mechanisms and graceful handling of errors, with optional continuation on failure.&quot;,
+      &quot;packageName&quot;: &quot;UiPath.WebAPI.Activities&quot;,
+      &quot;packageDisplayName&quot;: &quot;UiPath.WebAPI.Activities&quot;,
+      &quot;packageVersion&quot;: &quot;2.6.0-alpha.12498191&quot;,
+      &quot;namespace&quot;: &quot;UiPath.Web.Activities.Http&quot;,
+      &quot;assemblyName&quot;: &quot;UiPath.Web.Activities&quot;,
+      &quot;configuration&quot;: &quot;&quot;
+    },
+    {
+      &quot;className&quot;: &quot;UiPath.GSuite.Activities.HttpRequestConnections, UiPath.GSuite.Activities, Version=3.10.10.0, Culture=neutral, PublicKeyToken=null&quot;,
+      &quot;activityTypeId&quot;: &quot;&quot;,
+      &quot;description&quot;: &quot;Run HTTP calls in Google Workspace&quot;,
+      &quot;packageName&quot;: &quot;UiPath.GSuite.Activities&quot;,
+      &quot;packageDisplayName&quot;: &quot;UiPath.GSuite.Activities&quot;,
+      &quot;packageVersion&quot;: &quot;3.10.10&quot;,
+      &quot;namespace&quot;: &quot;UiP
+
+… (truncated, 3667 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#25</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">25.37s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;export P=\&quot;/work/output/artifacts/skill-flow-ixp-invoice-extraction-simulated/InvoiceProcessingAutomation\&quot;\nuip rpa activities find --query \&quot;get asset\&quot; --project-dir \&quot;$P\&quot; --output json 2&gt;&amp;1 | head -60&quot;,
+  &quot;description&quot;: &quot;Find Get Asset (Orchestrator) activity&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;ToolResult&quot;,
+  &quot;Data&quot;: [
+    {
+      &quot;className&quot;: &quot;UiPath.Core.Activities.SetAsset&quot;,
+      &quot;activityTypeId&quot;: &quot;&quot;,
+      &quot;description&quot;: &quot;&quot;,
+      &quot;packageName&quot;: &quot;UiPath.System.Activities&quot;,
+      &quot;packageDisplayName&quot;: &quot;UiPath.System.Activities&quot;,
+      &quot;packageVersion&quot;: &quot;26.6.1&quot;,
+      &quot;namespace&quot;: &quot;UiPath.Core.Activities&quot;,
+      &quot;assemblyName&quot;: &quot;UiPath.System.Activities&quot;,
+      &quot;configuration&quot;: &quot;&quot;
+    },
+    {
+      &quot;className&quot;: &quot;UiPath.Core.Activities.GetRobotAsset&quot;,
+      &quot;activityTypeId&quot;: &quot;&quot;,
+      &quot;description&quot;: &quot;&quot;,
+      &quot;packageName&quot;: &quot;UiPath.System.Activities&quot;,
+      &quot;packageDisplayName&quot;: &quot;UiPath.System.Activities&quot;,
+      &quot;packageVersion&quot;: &quot;26.6.1&quot;,
+      &quot;namespace&quot;: &quot;UiPath.Core.Activities&quot;,
+      &quot;assemblyName&quot;: &quot;UiPath.System.Activities&quot;,
+      &quot;configuration&quot;: &quot;&quot;
+    },
+    {
+      &quot;className&quot;: &quot;UiPath.Core.Activities.SetCredential, UiPath.System.Activities, Version=26.8.0.0, Culture=neutral, PublicKeyToken=null&quot;,
+      &quot;activityTypeId&quot;: &quot;&quot;,
+      &quot;description&quot;: &quot;Updates the value of an indicated credential asset, that is already available in Orchestrator, be it a global or a Per Robot asset.&quot;,
+      &quot;packageName&quot;: &quot;UiPath.System.Activit
+
+… (truncated, 1488 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#26</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">27.01s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;export P=\&quot;/work/output/artifacts/skill-flow-ixp-invoice-extraction-simulated/InvoiceProcessingAutomation\&quot;\nuip rpa activities find --query \&quot;download file sharepoint\&quot; --project-dir \&quot;$P\&quot; --output json 2&gt;&amp;1 | head -80&quot;,
+  &quot;description&quot;: &quot;Find SharePoint download file activity&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;ToolResult&quot;,
+  &quot;Data&quot;: [
+    {
+      &quot;className&quot;: &quot;UiPath.MicrosoftOffice365.Activities.Files.DownloadFileConnections, UiPath.MicrosoftOffice365.Activities, Version=3.10.10.0, Culture=neutral, PublicKeyToken=null&quot;,
+      &quot;activityTypeId&quot;: &quot;&quot;,
+      &quot;description&quot;: &quot;Downloads the specified file&quot;,
+      &quot;packageName&quot;: &quot;UiPath.MicrosoftOffice365.Activities&quot;,
+      &quot;packageDisplayName&quot;: &quot;UiPath.MicrosoftOffice365.Activities&quot;,
+      &quot;packageVersion&quot;: &quot;3.10.10&quot;,
+      &quot;namespace&quot;: &quot;UiPath.MicrosoftOffice365.Activities.Files&quot;,
+      &quot;assemblyName&quot;: &quot;UiPath.MicrosoftOffice365.Activities&quot;,
+      &quot;configuration&quot;: &quot;&quot;
+    },
+    {
+      &quot;className&quot;: &quot;UiPath.MicrosoftOffice365.Activities.Mail.DownloadEmailConnections, UiPath.MicrosoftOffice365.Activities, Version=3.10.10.0, Culture=neutral, PublicKeyToken=null&quot;,
+      &quot;activityTypeId&quot;: &quot;&quot;,
+      &quot;description&quot;: &quot;Downloads the Outlook email message for further use&quot;,
+      &quot;packageName&quot;: &quot;UiPath.MicrosoftOffice365.Activities&quot;,
+      &quot;packageDisplayName&quot;: &quot;UiPath.MicrosoftOffice365.Activities&quot;,
+      &quot;packageVersion&quot;: &quot;3.10.10&quot;,
+      &quot;namespace&quot;: &quot;UiPath.MicrosoftOffice365.Activities.Mail&quot;,
+      &quot;assemblyName&quot;: 
+
+… (truncated, 3270 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#27</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">21.57s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;export P=\&quot;/work/output/artifacts/skill-flow-ixp-invoice-extraction-simulated/InvoiceProcessingAutomation\&quot;\n# Install both packages in one call\nuip rpa packages install \\\n  --packages \&quot;id=UiPath.MicrosoftOffice365.Activities,version=3.10.10\&quot; \\\n  --project-dir \&quot;$P\&quot; --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Install Office365 (SharePoint) activities package&quot;,
+  &quot;timeout&quot;: 120000
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;ToolResult&quot;,
+  &quot;Data&quot;: {
+    &quot;success&quot;: true
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#28</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">68.56s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;export P=\&quot;/work/output/artifacts/skill-flow-ixp-invoice-extraction-simulated/InvoiceProcessingAutomation\&quot;\nuip rpa packages versions --package-id UiPath.WebAPI.Activities --include-prerelease --project-dir \&quot;$P\&quot; --output json 2&gt;&amp;1 | head -20&quot;,
+  &quot;description&quot;: &quot;Check WebAPI (HTTP request) package versions&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;ToolResult&quot;,
+  &quot;Data&quot;: {
+    &quot;packageId&quot;: &quot;UiPath.WebAPI.Activities&quot;,
+    &quot;includePrerelease&quot;: true,
+    &quot;versions&quot;: [
+      &quot;2.6.0-alpha.12792369&quot;,
+      &quot;2.6.0-alpha.12736718&quot;,
+      &quot;2.6.0-alpha.12706446&quot;,
+      &quot;2.6.0-alpha.12683924&quot;,
+      &quot;2.6.0-alpha.12677642&quot;,
+      &quot;2.6.0-alpha.12676196&quot;,
+      &quot;2.6.0-alpha.12600072&quot;,
+      &quot;2.6.0-alpha.12599168&quot;,
+      &quot;2.6.0-alpha.12543175&quot;,
+      &quot;2.6.0-alpha.12498191&quot;,
+      &quot;2.6.0-alpha.12495630&quot;,
+      &quot;2.6.0-alpha.12475949&quot;,
+      &quot;2.6.0-alpha.12439243&quot;,</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#29</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">6.03s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;export P=\&quot;/work/output/artifacts/skill-flow-ixp-invoice-extraction-simulated/InvoiceProcessingAutomation\&quot;\nuip rpa packages install \\\n  --packages \&quot;id=UiPath.WebAPI.Activities,version=2.6.0-alpha.12792369\&quot; \\\n  --project-dir \&quot;$P\&quot; --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Install WebAPI.Activities (HTTP request) package&quot;,
+  &quot;timeout&quot;: 120000
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;ToolResult&quot;,
+  &quot;Data&quot;: {
+    &quot;success&quot;: true
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#30</span>
+      <span class="tool-name">Glob</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">14ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;pattern&quot;: &quot;**/*.md&quot;,
+  &quot;path&quot;: &quot;/work/output/artifacts/skill-flow-ixp-invoice-extraction-simulated/InvoiceProcessingAutomation/.local/docs/packages/UiPath.MicrosoftOffice365.Activities/activities&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>InvoiceProcessingAutomation/.local/docs/packages/UiPath.MicrosoftOffice365.Activities/activities/GetEventByIdConnections.md
+InvoiceProcessingAutomation/.local/docs/packages/UiPath.MicrosoftOffice365.Activities/activities/CreateEventConnections.md
+InvoiceProcessingAutomation/.local/docs/packages/UiPath.MicrosoftOffice365.Activities/activities/ForEachListConnections.md
+InvoiceProcessingAutomation/.local/docs/packages/UiPath.MicrosoftOffice365.Activities/activities/ForEachSheetConnections.md
+InvoiceProcessingAutomation/.local/docs/packages/UiPath.MicrosoftOffice365.Activities/activities/SendMailConnections.md
+InvoiceProcessingAutomation/.local/docs/packages/UiPath.MicrosoftOffice365.Activities/activities/CreateWorkbookConnections.md
+InvoiceProcessingAutomation/.local/docs/packages/UiPath.MicrosoftOffice365.Activities/activities/WaitForEventCreated.md
+InvoiceProcessingAutomation/.local/docs/packages/UiPath.MicrosoftOffice365.Activities/activities/MoveEmailConnections.md
+InvoiceProcessingAutomation/.local/docs/packages/UiPath.MicrosoftOffice365.Activities/activities/ModifyEventConnections.md
+InvoiceProcessingAutomation/.local/docs/packages/UiPath.MicrosoftOffice365.Activities/activities
+
+… (truncated, 11336 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#31</span>
+      <span class="tool-name">Glob</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">6ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;pattern&quot;: &quot;**/*.md&quot;,
+  &quot;path&quot;: &quot;/work/output/artifacts/skill-flow-ixp-invoice-extraction-simulated/InvoiceProcessingAutomation/.local/docs/packages/UiPath.WebAPI.Activities/activities&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>InvoiceProcessingAutomation/.local/docs/packages/UiPath.WebAPI.Activities/activities/DeserializeXml.md
+InvoiceProcessingAutomation/.local/docs/packages/UiPath.WebAPI.Activities/activities/HttpClient.md
+InvoiceProcessingAutomation/.local/docs/packages/UiPath.WebAPI.Activities/activities/NetHttpRequest.md
+InvoiceProcessingAutomation/.local/docs/packages/UiPath.WebAPI.Activities/activities/GetXMLNodeAttributes.md
+InvoiceProcessingAutomation/.local/docs/packages/UiPath.WebAPI.Activities/activities/GetXMLNodes.md
+InvoiceProcessingAutomation/.local/docs/packages/UiPath.WebAPI.Activities/activities/ExecuteXPath.md
+InvoiceProcessingAutomation/.local/docs/packages/UiPath.WebAPI.Activities/activities/DeserializeJsonArray.md
+InvoiceProcessingAutomation/.local/docs/packages/UiPath.WebAPI.Activities/activities/SerializeJson.md
+InvoiceProcessingAutomation/.local/docs/packages/UiPath.WebAPI.Activities/activities/DeserializeJson.md</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#32</span>
+      <span class="tool-name">Glob</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">12ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;pattern&quot;: &quot;**/*.md&quot;,
+  &quot;path&quot;: &quot;/work/output/artifacts/skill-flow-ixp-invoice-extraction-simulated/InvoiceProcessingAutomation/.local/docs/packages/UiPath.System.Activities/activities&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>InvoiceProcessingAutomation/.local/docs/packages/UiPath.System.Activities/activities/StopJob.md
+InvoiceProcessingAutomation/.local/docs/packages/UiPath.System.Activities/activities/Matches.md
+InvoiceProcessingAutomation/.local/docs/packages/UiPath.System.Activities/activities/OrchestratorHttpRequest.md
+InvoiceProcessingAutomation/.local/docs/packages/UiPath.System.Activities/activities/GetSecret.md
+InvoiceProcessingAutomation/.local/docs/packages/UiPath.System.Activities/activities/ExtractDateTime.md
+InvoiceProcessingAutomation/.local/docs/packages/UiPath.System.Activities/activities/KillProcess.md
+InvoiceProcessingAutomation/.local/docs/packages/UiPath.System.Activities/activities/LookupDataTable.md
+InvoiceProcessingAutomation/.local/docs/packages/UiPath.System.Activities/activities/GetEnvironmentVariable.md
+InvoiceProcessingAutomation/.local/docs/packages/UiPath.System.Activities/activities/InvokeComMethod.md
+InvoiceProcessingAutomation/.local/docs/packages/UiPath.System.Activities/activities/StartTimer.md
+InvoiceProcessingAutomation/.local/docs/packages/UiPath.System.Activities/activities/AddLogFields.md
+InvoiceProcessingAutomation/.local/docs/packages/UiPath.System.Activities/a
+
+… (truncated, 9091 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#33</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">18ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-ixp-invoice-extraction-simulated/InvoiceProcessingAutomation/.local/docs/packages/UiPath.MicrosoftOffice365.Activities/activities/GetFileListConnections.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Get File List
+2	
+3	&gt; **Agent instruction — read all linked docs before proceeding:** Follow and read every hyperlinked reference document on this page in full before generating XAML. XAML structural patterns (BackupSlots, StoredValue, x:Reference, all-null attributes, namespace declarations) are defined in the linked component, type, and filter docs — not repeated here. If those linked docs also contain hyperlinks to other reference docs, follow those too.
+4	
+5	&gt; **Agent instruction — connection:** Before writing XAML, use the available tooling to resolve or search for a connection ID for the connector listed in this doc. If the connection ID cannot be resolved, leave ConnectionId=&quot;{x:Null}&quot;.
+6	
+7	`UiPath.MicrosoftOffice365.Activities.Files.GetFileListConnections`
+8	
+9	Returns a collection of files and/or folders from OneDrive or SharePoint.
+10	
+11	**Connector:** `uipath-microsoft-onedrive`
+12	
+13	## Properties
+14	
+15	### Input
+16	
+17	| Name | Display Name | Kind | Type | Required | Default | Description |
+18	|------|-------------|------|------|----------|---------|-------------|
+19	| `ConnectionId` | Connection ID | `InArgument` | `String` | Yes | | The Microsoft 365 connectio
+
+… (truncated, 5207 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#34</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">5ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-ixp-invoice-extraction-simulated/InvoiceProcessingAutomation/.local/docs/packages/UiPath.MicrosoftOffice365.Activities/activities/DownloadFileConnections.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Download File
+2	
+3	&gt; **Agent instruction — read all linked docs before proceeding:** Follow and read every hyperlinked reference document on this page in full before generating XAML. XAML structural patterns (BackupSlots, StoredValue, x:Reference, all-null attributes, namespace declarations) are defined in the linked component, type, and filter docs — not repeated here. If those linked docs also contain hyperlinks to other reference docs, follow those too.
+4	
+5	&gt; **Agent instruction — connection:** Before writing XAML, use the available tooling to resolve or search for a connection ID for the connector listed in this doc. If the connection ID cannot be resolved, leave ConnectionId=&quot;{x:Null}&quot;.
+6	
+7	`UiPath.MicrosoftOffice365.Activities.Files.DownloadFileConnections`
+8	
+9	Downloads a file from OneDrive or SharePoint to the local file system.
+10	
+11	**Connector:** `uipath-microsoft-onedrive`
+12	
+13	## Properties
+14	
+15	### Input
+16	
+17	| Name | Display Name | Kind | Type | Required | Default | Description |
+18	|------|-------------|------|------|----------|---------|-------------|
+19	| `ConnectionId` | Connection ID | `InArgument` | `String` | Yes | | The Microsoft 365 connection 
+
+… (truncated, 3410 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#35</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">147ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-ixp-invoice-extraction-simulated/InvoiceProcessingAutomation/.local/docs/packages/UiPath.WebAPI.Activities/activities/NetHttpRequest.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# HTTP Request
+2	
+3	`UiPath.Web.Activities.Http.NetHttpRequest`
+4	
+5	Configures and sends an HTTP request with customizable options for headers, authentication, cookies, retries, SSL, and request body formats. Supports Basic, OAuth bearer token, Windows/negotiated, AWS SigV4, and Integration Service **connector** authentication. Includes flexible retry mechanisms and graceful handling of errors, with optional continuation on failure.
+6	
+7	&gt; This activity has extensive runtime logic. For full understanding of defaults, side-effects, retry mechanics, and edge cases, read the [Observable Behavior](#nethttprequest--observable-behavior) section at the bottom of this document.
+8	
+9	**Package:** `UiPath.WebAPI.Activities`
+10	**Category:** Web
+11	**Platform:** Cross-platform
+12	
+13	&gt; **XAML references.** This activity&#x27;s class is `UiPath.Web.Activities.Http.NetHttpRequest`. Its assembly **and** namespace root are `UiPath.Web.Activities` (the `Web.Activities` form, without &quot;API&quot;). The `UiPath.WebAPI.Activities` package name belongs only in `project.json` — never in `assembly=`/`clr-namespace:`. In XAML, declare:
+14	&gt; ```xml
+15	&gt; xmlns:uwah=&quot;clr-namespace:UiPath.Web.Activities.Http;assembly
+
+… (truncated, 53301 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#36</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">10ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-ixp-invoice-extraction-simulated/InvoiceProcessingAutomation/.local/docs/packages/UiPath.System.Activities/activities/GetRobotAsset.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Get Asset
+2	
+3	`UiPath.Core.Activities.GetRobotAsset`
+4	
+5	Gets a specified asset by using a provided AssetName. If the asset is not global, it must be assigned to the local robot in order to be retrieved.
+6	
+7	**Package:** `UiPath.System.Activities`
+8	**Category:** Assets
+9	
+10	## Properties
+11	
+12	### Input
+13	
+14	| Name | Display Name | Kind | Type | Required | Default | Description |
+15	|------|-------------|------|------|----------|---------|-------------|
+16	| `AssetName` | Asset Name | InArgument | `string` | No | — | The name of the Orchestrator asset to retrieve. |
+17	
+18	### Configuration
+19	
+20	| Name | Display Name | Type | Default | Description |
+21	|------|-------------|------|---------|-------------|
+22	| `CacheStrategy` | Cache Strategy | `CacheStrategyEnum` | — | Controls whether and how the retrieved asset value is cached locally during robot execution. |
+23	
+24	### Output
+25	
+26	| Name | Display Name | Kind | Type | Description |
+27	|------|-------------|------|------|-------------|
+28	| `Value` | Value | OutArgument | `object` | The value of the asset. The runtime type depends on the asset type configured in Orchestrator (text, integer, boolean, or credentia
+
+… (truncated, 1016 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#37</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">5ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-ixp-invoice-extraction-simulated/InvoiceProcessingAutomation/.local/docs/packages/UiPath.MicrosoftOffice365.Activities/activities/types/O365DriveRemoteItem.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# O365DriveRemoteItem
+2	
+3	&gt; **Agent instruction — read all linked docs before proceeding:** Follow and read every hyperlinked reference document on this page in full before generating XAML. XAML structural patterns (BackupSlots, StoredValue, x:Reference, all-null attributes, namespace declarations) are defined in the linked component, type, and filter docs — not repeated here. If those linked docs also contain hyperlinks to other reference docs, follow those too.
+4	
+5	**Namespace:** `UiPath.MicrosoftOffice365.Files.Models`
+6	**Implements:** `IRemoteResource`
+7	
+8	Represents a remote file or folder in OneDrive or SharePoint. Returned as output by file/folder activities such as GetFileListConnections, GetFileFolderConnections, ForEachFileFolderConnections, CopyItemConnections, etc. Can be passed into [DriveItemArgument](../components/DriveItemArgument.md) in `UseExisting` mode.
+9	
+10	## Properties
+11	
+12	| Property | Type | Description |
+13	|----------|------|-------------|
+14	| `Name` | `String` | Name of the resource (without extension for files). |
+15	| `FullName` | `String` | Full name of the resource including extension. |
+16	| `Extension` | `String` | File extension (e.g., `
+
+… (truncated, 2883 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#38</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">6ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-ixp-invoice-extraction-simulated/InvoiceProcessingAutomation/.local/docs/packages/UiPath.MicrosoftOffice365.Activities/activities/components/DriveItemArgument.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# DriveItemArgument
+2	
+3	&gt; **Agent instruction — read all linked docs before proceeding:** Follow and read every hyperlinked reference document on this page in full before generating XAML. XAML structural patterns (BackupSlots, StoredValue, x:Reference, all-null attributes, namespace declarations) are defined in the linked component, type, and filter docs — not repeated here. If those linked docs also contain hyperlinks to other reference docs, follow those too.
+4	
+5	**Namespace:** `UiPath.MicrosoftOffice365.Activities.Files.Models`
+6	
+7	A composition argument object used by OneDrive and SharePoint file activities to specify a file or folder. The `ItemSelectionMode` property determines which sub-properties are required.
+8	
+9	## InputMode — ItemSelectionMode (EDriveItemMode)
+10	
+11	| Mode | Description | Required Properties | AI-XAML Suitable |
+12	|------|-------------|--------------------|--------------------|
+13	| `Browse` | Select a file/folder via the Studio designer browser widget. | `BrowserItemId`, `BrowserDriveId`, `BrowserDriveName`, `BrowserSiteUrl` | **Not suitable for AI-generated XAML** |
+14	| `ItemId` | Specify a file/folder by its OneDrive/SharePoint item ID. | `Man
+
+… (truncated, 9613 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#39</span>
+      <span class="tool-name">TaskUpdate</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">19ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;taskId&quot;: &quot;2&quot;,
+  &quot;status&quot;: &quot;completed&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Updated task #2 status</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#40</span>
+      <span class="tool-name">TaskUpdate</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">7ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;taskId&quot;: &quot;3&quot;,
+  &quot;status&quot;: &quot;in_progress&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Updated task #3 status</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#41</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">5ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-ixp-invoice-extraction-simulated/InvoiceProcessingAutomation/.local/docs/packages/UiPath.MicrosoftOffice365.Activities/activities/MoveItemConnections.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Move Item
+2	
+3	&gt; **Agent instruction — read all linked docs before proceeding:** Follow and read every hyperlinked reference document on this page in full before generating XAML. XAML structural patterns (BackupSlots, StoredValue, x:Reference, all-null attributes, namespace declarations) are defined in the linked component, type, and filter docs — not repeated here. If those linked docs also contain hyperlinks to other reference docs, follow those too.
+4	
+5	&gt; **Agent instruction — connection:** Before writing XAML, use the available tooling to resolve or search for a connection ID for the connector listed in this doc. If the connection ID cannot be resolved, leave ConnectionId=&quot;{x:Null}&quot;.
+6	
+7	`UiPath.MicrosoftOffice365.Activities.Files.MoveItemConnections`
+8	
+9	Moves a file or folder to the specified destination folder in OneDrive or SharePoint.
+10	
+11	**Connector:** `uipath-microsoft-onedrive`
+12	
+13	## Properties
+14	
+15	### Input
+16	
+17	| Name | Display Name | Kind | Type | Required | Default | Description |
+18	|------|-------------|------|------|----------|---------|-------------|
+19	| `ConnectionId` | Connection ID | `InArgument` | `String` | Yes | | The Microsoft 365 conn
+
+… (truncated, 4385 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#42</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">8ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-ixp-invoice-extraction-simulated/InvoiceProcessingAutomation/.local/docs/packages/UiPath.WebAPI.Activities/activities/SerializeJson.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Serialize JSON
+2	
+3	`UiPath.Web.Activities.JSON.SerializeJson`
+4	
+5	Serializes the given object to a JSON string, optionally using custom serializer settings.
+6	
+7	**Package:** `UiPath.WebAPI.Activities`
+8	**Category:** JSON
+9	
+10	## When to use
+11	
+12	Use when you need to send or store JSON derived from an object.
+13	
+14	## Properties
+15	
+16	### Input
+17	
+18	| Name | Display Name | Kind | Type | Required | Default | Placeholder | Description |
+19	|------|-------------|------|------|----------|---------|-------------|-------------|
+20	| `InputObject` | Input object | InArgument | `object` | Yes | | | The object to serialize to JSON |
+21	| `Settings` | Serializer settings | InArgument | `JsonSerializationSettings` | | | | Custom serialization settings (date format, null handling, etc.) |
+22	
+23	### Output
+24	
+25	| Name | Display Name | Kind | Type | Description |
+26	|------|-------------|------|------|-------------|
+27	| `Result` | Result | OutArgument | `string` | The serialized JSON string |
+28	
+29	## XAML Example
+30	
+31	&gt; **XAML reference.** Class `UiPath.Web.Activities.JSON.SerializeJson`. Assembly is `UiPath.Web.Activities` and the namespace is `UiPath.Web.Activities.JSON` 
+
+… (truncated, 742 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#43</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">47.69s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;export P=\&quot;/work/output/artifacts/skill-flow-ixp-invoice-extraction-simulated/InvoiceProcessingAutomation\&quot;\nuip rpa activities find --query \&quot;IXP extract document\&quot; --project-dir \&quot;$P\&quot; --output json 2&gt;&amp;1 | head -80&quot;,
+  &quot;description&quot;: &quot;Find IXP document extraction activity&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;ToolResult&quot;,
+  &quot;Data&quot;: [
+    {
+      &quot;className&quot;: &quot;UiPath.IntelligentOCR.StudioWeb.Activities.ExtractDocumentDataWithDocumentData`1, UiPath.IntelligentOCR.StudioWeb.Activities, Version=3.4.0.0, Culture=neutral, PublicKeyToken=null&quot;,
+      &quot;activityTypeId&quot;: &quot;&quot;,
+      &quot;description&quot;: &quot;Extracts data from a document and stores the results into automatically generated variables&quot;,
+      &quot;packageName&quot;: &quot;UiPath.DocumentUnderstanding.Activities&quot;,
+      &quot;packageDisplayName&quot;: &quot;UiPath.DocumentUnderstanding.Activities&quot;,
+      &quot;packageVersion&quot;: &quot;3.4.0-preview&quot;,
+      &quot;namespace&quot;: &quot;UiPath.IntelligentOCR.StudioWeb.Activities&quot;,
+      &quot;assemblyName&quot;: &quot;UiPath.IntelligentOCR.StudioWeb.Activities&quot;,
+      &quot;configuration&quot;: &quot;&quot;
+    },
+    {
+      &quot;className&quot;: &quot;UiPath.IntegrationService.Activities.Runtime.Activities.ConnectorActivity, UiPath.IntegrationService.Activities.Runtime, Version=1.30.0.0, Culture=neutral, PublicKeyToken=null&quot;,
+      &quot;activityTypeId&quot;: &quot;dc71f4a5-bc66-3213-8610-ec0052c5784b&quot;,
+      &quot;description&quot;: &quot;Asynchronously analyze or extract data from a document using Azure AI Document Intelligence.&quot;,
+      &quot;packageName&quot;: &quot;UiPath.IntegrationService.Activities&quot;,
+
+… (truncated, 3995 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#44</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">3.38s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;export P=\&quot;/work/output/artifacts/skill-flow-ixp-invoice-extraction-simulated/InvoiceProcessingAutomation\&quot;\nuip rpa packages versions --package-id UiPath.DocumentUnderstanding.Activities --include-prerelease --project-dir \&quot;$P\&quot; --output json 2&gt;&amp;1 | head -20&quot;,
+  &quot;description&quot;: &quot;Check Document Understanding package versions&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;ToolResult&quot;,
+  &quot;Data&quot;: {
+    &quot;packageId&quot;: &quot;UiPath.DocumentUnderstanding.Activities&quot;,
+    &quot;includePrerelease&quot;: true,
+    &quot;versions&quot;: [
+      &quot;3.5.0-alpha.12781113&quot;,
+      &quot;3.5.0-alpha.12777519&quot;,
+      &quot;3.5.0-alpha.12761945&quot;,
+      &quot;3.5.0-alpha.12759707&quot;,
+      &quot;3.5.0-alpha.12748645&quot;,
+      &quot;3.5.0-alpha.12733413&quot;,
+      &quot;3.5.0-alpha.12704308&quot;,
+      &quot;3.5.0-alpha.12684977&quot;,
+      &quot;3.5.0-alpha.12672464&quot;,
+      &quot;3.5.0-alpha.12637929&quot;,
+      &quot;3.5.0-alpha.12629195&quot;,
+      &quot;3.4.0-preview&quot;,
+      &quot;3.4.0-beta.12791189&quot;,</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#45</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">39.79s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;export P=\&quot;/work/output/artifacts/skill-flow-ixp-invoice-extraction-simulated/InvoiceProcessingAutomation\&quot;\nuip rpa packages install \\\n  --packages \&quot;id=UiPath.DocumentUnderstanding.Activities,version=3.5.0-alpha.12781113\&quot; \\\n  --project-dir \&quot;$P\&quot; --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Install Document Understanding Activities package&quot;,
+  &quot;timeout&quot;: 120000
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;ToolResult&quot;,
+  &quot;Data&quot;: {
+    &quot;success&quot;: true
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#46</span>
+      <span class="tool-name">Glob</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">23ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;pattern&quot;: &quot;**/*.md&quot;,
+  &quot;path&quot;: &quot;/work/output/artifacts/skill-flow-ixp-invoice-extraction-simulated/InvoiceProcessingAutomation/.local/docs/packages/UiPath.DocumentUnderstanding.Activities/activities&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>InvoiceProcessingAutomation/.local/docs/packages/UiPath.DocumentUnderstanding.Activities/activities/CreateClassificationValidationTask.md
+InvoiceProcessingAutomation/.local/docs/packages/UiPath.DocumentUnderstanding.Activities/activities/WaitForClassificationValidationTaskAndResume.md
+InvoiceProcessingAutomation/.local/docs/packages/UiPath.DocumentUnderstanding.Activities/activities/WaitForValidationTaskAndResume.md
+InvoiceProcessingAutomation/.local/docs/packages/UiPath.DocumentUnderstanding.Activities/activities/ExtractDocumentData.md
+InvoiceProcessingAutomation/.local/docs/packages/UiPath.DocumentUnderstanding.Activities/activities/CreateValidationTaskAndWait.md
+InvoiceProcessingAutomation/.local/docs/packages/UiPath.DocumentUnderstanding.Activities/activities/CreateValidationTask.md
+InvoiceProcessingAutomation/.local/docs/packages/UiPath.DocumentUnderstanding.Activities/activities/RetrieveDocumentValidationArtifacts.md
+InvoiceProcessingAutomation/.local/docs/packages/UiPath.DocumentUnderstanding.Activities/activities/ExtractDocumentData/data-type-patterns.md
+InvoiceProcessingAutomation/.local/docs/packages/UiPath.DocumentUnderstanding.Activities/activities/CreateDocumentValidat
+
+… (truncated, 280 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#47</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">225ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-ixp-invoice-extraction-simulated/InvoiceProcessingAutomation/.local/docs/packages/UiPath.DocumentUnderstanding.Activities/activities/ExtractDocumentData.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Extract Document Data
+2	
+3	`UiPath.IntelligentOCR.StudioWeb.Activities.ExtractDocumentDataWithDocumentData`
+4	
+5	**XAML element:** `&lt;du:ExtractDocumentDataWithDocumentData x:TypeArguments=&quot;dux:DictionaryData&quot; …&gt;` *(generic — `x:TypeArguments` is required; `dux:DictionaryData` for agent-generated workflows)*
+6	**xmlns prefixes:** `du` → `clr-namespace:UiPath.IntelligentOCR.StudioWeb.Activities;assembly=UiPath.IntelligentOCR.StudioWeb.Activities` (the activity itself), `dux` → `clr-namespace:UiPath.IntelligentOCR.StudioWeb.Activities.DataExtraction;assembly=UiPath.IntelligentOCR.StudioWeb.Activities` (the type argument)
+7	**Pairs with:** `FileInput` accepts a `DocumentData` from `ClassifyDocument` (or its validated form) directly. Output `ExtractionResults` (`IDocumentData&lt;T&gt;`) feeds `CreateValidationAction&lt;T&gt;` / `ValidateDocumentDataWithDocumentData&lt;T&gt;` / `CreateDocumentValidationArtifacts&lt;T&gt;` for validation, **or** is read in-place via `extractionResults.Data.GetFieldValue(&quot;…&quot;)` / `…Data.Handler.GetTableValue(&quot;…&quot;)` — see [Reading Extraction Results](../overview.md#reading-extraction-results).
+8	
+9	Extracts data from a document and stores the results into automatically generated
+
+… (truncated, 27759 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#48</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">7ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-ixp-invoice-extraction-simulated/InvoiceProcessingAutomation/.local/docs/packages/UiPath.MicrosoftOffice365.Activities/activities/GetFileListConnections.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Get File List
+2	
+3	&gt; **Agent instruction — read all linked docs before proceeding:** Follow and read every hyperlinked reference document on this page in full before generating XAML. XAML structural patterns (BackupSlots, StoredValue, x:Reference, all-null attributes, namespace declarations) are defined in the linked component, type, and filter docs — not repeated here. If those linked docs also contain hyperlinks to other reference docs, follow those too.
+4	
+5	&gt; **Agent instruction — connection:** Before writing XAML, use the available tooling to resolve or search for a connection ID for the connector listed in this doc. If the connection ID cannot be resolved, leave ConnectionId=&quot;{x:Null}&quot;.
+6	
+7	`UiPath.MicrosoftOffice365.Activities.Files.GetFileListConnections`
+8	
+9	Returns a collection of files and/or folders from OneDrive or SharePoint.
+10	
+11	**Connector:** `uipath-microsoft-onedrive`
+12	
+13	## Properties
+14	
+15	### Input
+16	
+17	| Name | Display Name | Kind | Type | Required | Default | Description |
+18	|------|-------------|------|------|----------|---------|-------------|
+19	| `ConnectionId` | Connection ID | `InArgument` | `String` | Yes | | The Microsoft 365 connectio
+
+… (truncated, 5207 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#49</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">14ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-ixp-invoice-extraction-simulated/InvoiceProcessingAutomation/.local/docs/packages/UiPath.MicrosoftOffice365.Activities/activities/DownloadFileConnections.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Download File
+2	
+3	&gt; **Agent instruction — read all linked docs before proceeding:** Follow and read every hyperlinked reference document on this page in full before generating XAML. XAML structural patterns (BackupSlots, StoredValue, x:Reference, all-null attributes, namespace declarations) are defined in the linked component, type, and filter docs — not repeated here. If those linked docs also contain hyperlinks to other reference docs, follow those too.
+4	
+5	&gt; **Agent instruction — connection:** Before writing XAML, use the available tooling to resolve or search for a connection ID for the connector listed in this doc. If the connection ID cannot be resolved, leave ConnectionId=&quot;{x:Null}&quot;.
+6	
+7	`UiPath.MicrosoftOffice365.Activities.Files.DownloadFileConnections`
+8	
+9	Downloads a file from OneDrive or SharePoint to the local file system.
+10	
+11	**Connector:** `uipath-microsoft-onedrive`
+12	
+13	## Properties
+14	
+15	### Input
+16	
+17	| Name | Display Name | Kind | Type | Required | Default | Description |
+18	|------|-------------|------|------|----------|---------|-------------|
+19	| `ConnectionId` | Connection ID | `InArgument` | `String` | Yes | | The Microsoft 365 connection 
+
+… (truncated, 3410 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#50</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">27ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-ixp-invoice-extraction-simulated/InvoiceProcessingAutomation/.local/docs/packages/UiPath.MicrosoftOffice365.Activities/activities/MoveItemConnections.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Move Item
+2	
+3	&gt; **Agent instruction — read all linked docs before proceeding:** Follow and read every hyperlinked reference document on this page in full before generating XAML. XAML structural patterns (BackupSlots, StoredValue, x:Reference, all-null attributes, namespace declarations) are defined in the linked component, type, and filter docs — not repeated here. If those linked docs also contain hyperlinks to other reference docs, follow those too.
+4	
+5	&gt; **Agent instruction — connection:** Before writing XAML, use the available tooling to resolve or search for a connection ID for the connector listed in this doc. If the connection ID cannot be resolved, leave ConnectionId=&quot;{x:Null}&quot;.
+6	
+7	`UiPath.MicrosoftOffice365.Activities.Files.MoveItemConnections`
+8	
+9	Moves a file or folder to the specified destination folder in OneDrive or SharePoint.
+10	
+11	**Connector:** `uipath-microsoft-onedrive`
+12	
+13	## Properties
+14	
+15	### Input
+16	
+17	| Name | Display Name | Kind | Type | Required | Default | Description |
+18	|------|-------------|------|------|----------|---------|-------------|
+19	| `ConnectionId` | Connection ID | `InArgument` | `String` | Yes | | The Microsoft 365 conn
+
+… (truncated, 4385 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#51</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">7ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-ixp-invoice-extraction-simulated/InvoiceProcessingAutomation/.local/docs/packages/UiPath.MicrosoftOffice365.Activities/activities/components/DriveItemArgument.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# DriveItemArgument
+2	
+3	&gt; **Agent instruction — read all linked docs before proceeding:** Follow and read every hyperlinked reference document on this page in full before generating XAML. XAML structural patterns (BackupSlots, StoredValue, x:Reference, all-null attributes, namespace declarations) are defined in the linked component, type, and filter docs — not repeated here. If those linked docs also contain hyperlinks to other reference docs, follow those too.
+4	
+5	**Namespace:** `UiPath.MicrosoftOffice365.Activities.Files.Models`
+6	
+7	A composition argument object used by OneDrive and SharePoint file activities to specify a file or folder. The `ItemSelectionMode` property determines which sub-properties are required.
+8	
+9	## InputMode — ItemSelectionMode (EDriveItemMode)
+10	
+11	| Mode | Description | Required Properties | AI-XAML Suitable |
+12	|------|-------------|--------------------|--------------------|
+13	| `Browse` | Select a file/folder via the Studio designer browser widget. | `BrowserItemId`, `BrowserDriveId`, `BrowserDriveName`, `BrowserSiteUrl` | **Not suitable for AI-generated XAML** |
+14	| `ItemId` | Specify a file/folder by its OneDrive/SharePoint item ID. | `Man
+
+… (truncated, 9613 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#52</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">184ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-ixp-invoice-extraction-simulated/InvoiceProcessingAutomation/.local/docs/packages/UiPath.WebAPI.Activities/activities/NetHttpRequest.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# HTTP Request
+2	
+3	`UiPath.Web.Activities.Http.NetHttpRequest`
+4	
+5	Configures and sends an HTTP request with customizable options for headers, authentication, cookies, retries, SSL, and request body formats. Supports Basic, OAuth bearer token, Windows/negotiated, AWS SigV4, and Integration Service **connector** authentication. Includes flexible retry mechanisms and graceful handling of errors, with optional continuation on failure.
+6	
+7	&gt; This activity has extensive runtime logic. For full understanding of defaults, side-effects, retry mechanics, and edge cases, read the [Observable Behavior](#nethttprequest--observable-behavior) section at the bottom of this document.
+8	
+9	**Package:** `UiPath.WebAPI.Activities`
+10	**Category:** Web
+11	**Platform:** Cross-platform
+12	
+13	&gt; **XAML references.** This activity&#x27;s class is `UiPath.Web.Activities.Http.NetHttpRequest`. Its assembly **and** namespace root are `UiPath.Web.Activities` (the `Web.Activities` form, without &quot;API&quot;). The `UiPath.WebAPI.Activities` package name belongs only in `project.json` — never in `assembly=`/`clr-namespace:`. In XAML, declare:
+14	&gt; ```xml
+15	&gt; xmlns:uwah=&quot;clr-namespace:UiPath.Web.Activities.Http;assembly
+
+… (truncated, 53301 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#53</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">18ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-ixp-invoice-extraction-simulated/InvoiceProcessingAutomation/.local/docs/packages/UiPath.System.Activities/activities/GetRobotAsset.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Get Asset
+2	
+3	`UiPath.Core.Activities.GetRobotAsset`
+4	
+5	Gets a specified asset by using a provided AssetName. If the asset is not global, it must be assigned to the local robot in order to be retrieved.
+6	
+7	**Package:** `UiPath.System.Activities`
+8	**Category:** Assets
+9	
+10	## Properties
+11	
+12	### Input
+13	
+14	| Name | Display Name | Kind | Type | Required | Default | Description |
+15	|------|-------------|------|------|----------|---------|-------------|
+16	| `AssetName` | Asset Name | InArgument | `string` | No | — | The name of the Orchestrator asset to retrieve. |
+17	
+18	### Configuration
+19	
+20	| Name | Display Name | Type | Default | Description |
+21	|------|-------------|------|---------|-------------|
+22	| `CacheStrategy` | Cache Strategy | `CacheStrategyEnum` | — | Controls whether and how the retrieved asset value is cached locally during robot execution. |
+23	
+24	### Output
+25	
+26	| Name | Display Name | Kind | Type | Description |
+27	|------|-------------|------|------|-------------|
+28	| `Value` | Value | OutArgument | `object` | The value of the asset. The runtime type depends on the asset type configured in Orchestrator (text, integer, boolean, or credentia
+
+… (truncated, 1016 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#54</span>
+      <span class="tool-name">Glob</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">8ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;pattern&quot;: &quot;**/*.md&quot;,
+  &quot;path&quot;: &quot;/work/output/artifacts/skill-flow-ixp-invoice-extraction-simulated/InvoiceProcessingAutomation/.local/docs/packages/UiPath.MicrosoftOffice365.Activities/activities/types&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>InvoiceProcessingAutomation/.local/docs/packages/UiPath.MicrosoftOffice365.Activities/activities/types/Office365SharepointList.md
+InvoiceProcessingAutomation/.local/docs/packages/UiPath.MicrosoftOffice365.Activities/activities/types/DateTimeTimeZone.md
+InvoiceProcessingAutomation/.local/docs/packages/UiPath.MicrosoftOffice365.Activities/activities/types/Office365Message.md
+InvoiceProcessingAutomation/.local/docs/packages/UiPath.MicrosoftOffice365.Activities/activities/types/EventAttendee.md
+InvoiceProcessingAutomation/.local/docs/packages/UiPath.MicrosoftOffice365.Activities/activities/types/O365EventItem.md
+InvoiceProcessingAutomation/.local/docs/packages/UiPath.MicrosoftOffice365.Activities/activities/types/O365DriveRemoteItem.md
+InvoiceProcessingAutomation/.local/docs/packages/UiPath.MicrosoftOffice365.Activities/activities/types/O365CalendarItem.md
+InvoiceProcessingAutomation/.local/docs/packages/UiPath.MicrosoftOffice365.Activities/activities/types/OnlineMeeting.md
+InvoiceProcessingAutomation/.local/docs/packages/UiPath.MicrosoftOffice365.Activities/activities/types/Office365SharepointListItem.md
+InvoiceProcessingAutomation/.local/docs/packages/UiPath.MicrosoftOffice365.Activi
+
+… (truncated, 155 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#55</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">10ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-ixp-invoice-extraction-simulated/InvoiceProcessingAutomation/.local/docs/packages/UiPath.MicrosoftOffice365.Activities/activities/types/O365DriveRemoteItem.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# O365DriveRemoteItem
+2	
+3	&gt; **Agent instruction — read all linked docs before proceeding:** Follow and read every hyperlinked reference document on this page in full before generating XAML. XAML structural patterns (BackupSlots, StoredValue, x:Reference, all-null attributes, namespace declarations) are defined in the linked component, type, and filter docs — not repeated here. If those linked docs also contain hyperlinks to other reference docs, follow those too.
+4	
+5	**Namespace:** `UiPath.MicrosoftOffice365.Files.Models`
+6	**Implements:** `IRemoteResource`
+7	
+8	Represents a remote file or folder in OneDrive or SharePoint. Returned as output by file/folder activities such as GetFileListConnections, GetFileFolderConnections, ForEachFileFolderConnections, CopyItemConnections, etc. Can be passed into [DriveItemArgument](../components/DriveItemArgument.md) in `UseExisting` mode.
+9	
+10	## Properties
+11	
+12	| Property | Type | Description |
+13	|----------|------|-------------|
+14	| `Name` | `String` | Name of the resource (without extension for files). |
+15	| `FullName` | `String` | Full name of the resource including extension. |
+16	| `Extension` | `String` | File extension (e.g., `
+
+… (truncated, 2883 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#56</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">11ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-ixp-invoice-extraction-simulated/InvoiceProcessingAutomation/.local/docs/packages/UiPath.DocumentUnderstanding.Activities/activities/ExtractDocumentData/data-type-patterns.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Data Type Patterns for Document Understanding Pipelines
+2	
+3	When using `ExtractDocumentDataWithDocumentData&lt;T&gt;`, the type argument `T` determines how extraction results are accessed and how downstream validation activities must be typed. This document covers the two patterns and their pipeline-wide implications.
+4	
+5	## Overview
+6	
+7	| Pattern | Type Argument | `GenerateData` | Field Access | Agent-Compatible |
+8	|---------|--------------|-----------------|--------------|------------------|
+9	| **DictionaryData** | `dux:DictionaryData` | `False` | `GetField(&quot;fieldName&quot;)`, `GetFieldValue(&quot;fieldName&quot;)` | Yes (recommended) |
+10	| **Generated Type** | Studio-generated subclass | `True` | `extractionResults.Data.FieldName` | No (requires Studio JIT compilation) |
+11	
+12	**For agent-generated workflows, always use `DictionaryData` with `GenerateData=&quot;False&quot;`.** The generated type pattern requires Studio&#x27;s design-time code generation, which is not available when an LLM agent produces XAML directly. Additionally, `GenerateData=True` is incompatible with `ModernDocumentTypeId=&quot;use_classification_result&quot;`.
+13	
+14	## DictionaryData API Reference
+15	
+16	`UiPath.IntelligentOCR.StudioWeb.Ac
+
+… (truncated, 15200 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#57</span>
+      <span class="tool-name">TaskUpdate</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">16ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;taskId&quot;: &quot;3&quot;,
+  &quot;status&quot;: &quot;in_progress&quot;,
+  &quot;activeForm&quot;: &quot;Writing Main.xaml orchestration workflow&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Updated task #3 activeForm</pre>
+    
+  </div>
+</details>
+
+</div>
+
+<div class="attempt-transition">
+  <span class="attempt-transition__icon">⚠</span>
+  <span><strong>Agent turn timed out after 1200s</strong> · resuming ↓</span>
+</div>
+
+<div class="card">
+  <div class="turn-header">
+    <h3>Attempt 2 of 2</h3>
+    <div class="badges">
+      <span class="badge neutral">0 assistant turns</span>
+      
+      <span class="badge neutral">0.0s</span>
+      
+      
+      <span class="badge success">recovered</span>
+    </div>
+  </div>
+  <details>
+    <summary>Prompt to agent</summary>
+    <div class="details-body"><pre>[ASSISTANT] Honestly, I have no idea about the format stuff — that&#x27;s way above my pay grade! Our IT team set up the endpoint and just told me it accepts the invoice data as a POST. I&#x27;d assume they know what they&#x27;re doing on the SAP side. Can you just set it up to do a POST and we can sort out the details with IT if needed?
+
+And yeah, storing the config separately sounds smart so IT can update it without bugging you. That works for me.
+
+When can you start building?
+[RESULT - SUCCESS] Honestly, I have no idea about the format stuff — that&#x27;s way above my pay grade! Our IT team set up the endpoint and just told me it accepts the invoice data as a POST. I&#x27;d assume they know what they&#x27;re doing on the SAP side. Can you just set it up to do a POST and we can sort out the details with IT if needed?
+
+And yeah, storing the config separately sounds smart so IT can update it without bugging you. That works for me.
+
+When can you start building?</pre></div>
+  </details>
+  <h4 style="margin-top:12px">Tool Calls (0)</h4>
+  <p class="muted">No tool calls recorded for this turn.</p>
+</div>
+
+</div>
+
+<h2>Command Telemetry</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Total</div><div class="value">66</div></div>
+    <div class="stat"><div class="label">Successful</div><div class="value">66 (100%)</div></div>
+    <div class="stat"><div class="label">Failed</div><div class="value">0</div></div>
+    <div class="stat"><div class="label">Avg / cmd</div><div class="value">4.97s</div></div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 2fr;gap:16px;margin-top:12px">
+    <div>
+      <h4>By Tool</h4>
+      <table>
+        <thead><tr><th>Tool</th><th>Count</th></tr></thead>
+        <tbody><tr><td class='mono'>Read</td><td>25</td></tr><tr><td class='mono'>Bash</td><td>24</td></tr><tr><td class='mono'>TaskUpdate</td><td>6</td></tr><tr><td class='mono'>Glob</td><td>5</td></tr><tr><td class='mono'>TaskCreate</td><td>4</td></tr><tr><td class='mono'>Skill</td><td>2</td></tr></tbody>
+      </table>
+    </div>
+    <div>
+      <h4>Slowest</h4>
+      <table>
+        <thead><tr><th>Tool</th><th>Duration</th><th>Parameters</th></tr></thead>
+        <tbody><tr><td class='mono'>Bash</td><td>68.56s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;export P=&quot;/work/output/artifacts/skil...</td></tr><tr><td class='mono'>Bash</td><td>47.69s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;export P=&quot;/work/output/artifacts/skil...</td></tr><tr><td class='mono'>Bash</td><td>39.79s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;export P=&quot;/work/output/artifacts/skil...</td></tr><tr><td class='mono'>Bash</td><td>27.01s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;export P=&quot;/work/output/artifacts/skil...</td></tr><tr><td class='mono'>Bash</td><td>25.37s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;export P=&quot;/work/output/artifacts/skil...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+  <p><strong>Most Common Pattern:</strong> <code>Bash → Bash → Bash</code></p><p><strong>Skill Tool Invoked:</strong> 2 time(s)</p>
+</div>
+
+<h2>Generation Metrics</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Total Latency</div><div class="value">22m 59s</div></div>
+    <div class="stat"><div class="label">Turns</div><div class="value">5</div></div>
+    <div class="stat"><div class="label">Assistant Turns</div><div class="value">100</div></div>
+    <div class="stat"><div class="label">Avg Turn Latency</div><div class="value">4m 25s</div></div>
+    <div class="stat"><div class="label">Crashed Partials</div><div class="value">1 (1 recovered, 0 terminal)</div></div>
+  </div>
+</div>
+
+<h2>Token Usage</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Input (uncached)</div><div class="value">49</div></div>
+    <div class="stat"><div class="label">Output</div><div class="value">54,652</div></div>
+    <div class="stat"><div class="label">Cache Write</div><div class="value">187,975</div></div>
+    <div class="stat"><div class="label">Cache Read</div><div class="value">3,557,356</div></div>
+    <div class="stat"><div class="label">Total</div><div class="value">3,800,032</div></div>
+    <div class="stat"><div class="label">Cost</div><div class="value">$2.5920</div></div>
+  </div>
+</div>
+
+<h2>Agent Settings</h2>
+<div class="card" style="padding:0">
+  <table>
+    <tbody><tr><td class='mono dim'>Permission Mode</td><td>acceptEdits</td></tr><tr><td class='mono dim'>Allowed Tools</td><td>Skill, Bash, Read, Write, Edit, Glob, Grep</td></tr><tr><td class='mono dim'>Model</td><td>us.anthropic.claude-sonnet-4-6</td></tr><tr><td class='mono dim'>Max Turns</td><td>80</td></tr><tr><td class='mono dim'>System Prompt</td><td>You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted. </td></tr><tr><td class='mono dim'>Plugins</td><td>/home/azureuser/projects/skills</td></tr></tbody>
+  </table>
+</div>
+
+<h2>Environment</h2>
+<div class="card" style="padding:0">
+  <table>
+    <tbody><tr><td class='mono dim'>git_commit</td><td>unknown</td></tr><tr><td class='mono dim'>skills_git_commit</td><td>unknown</td></tr><tr><td class='mono dim'>cli_version</td><td>1.199.0-dev.7970</td></tr><tr><td class='mono dim'>tool_plugins</td><td>{&#x27;admin-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;agent-tool&#x27;: &#x27;1.199.0-dev.7965&#x27;, &#x27;agenthub-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;aops-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;api-workflow-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;codedagent-tool&#x27;: &#x27;1.199.0-dev.7965&#x27;, &#x27;codedapp-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;coder-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;context-grounding-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;conversational-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;data-fabric-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;docsai-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;functions-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;gov-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;insights-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;integrationservice-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;ixp-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;llm-gateway-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;llmgw-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;maestro-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;orchestrator-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;platform-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;pm-tool&#x27;: &#x27;1.199.0-dev.7969&#x27;, &#x27;rpa-legacy-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;rpa-tool&#x27;: &#x27;1.199.0-dev.20260722.4&#x27;, &#x27;solution-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;tasks-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;test-manager-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;traces-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;vertical-solutions-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;}</td></tr><tr><td class='mono dim'>coder_eval</td><td>0.8.8</td></tr><tr><td class='mono dim'>claude_code_cli</td><td>2.1.177 (Claude Code)</td></tr><tr><td class='mono dim'>uv</td><td>uv 0.11.28 (x86_64-unknown-linux-gnu)</td></tr><tr><td class='mono dim'>anthropic</td><td>0.102.0</td></tr><tr><td class='mono dim'>openai</td><td>2.47.0</td></tr><tr><td class='mono dim'>pydantic</td><td>2.12.5</td></tr><tr><td class='mono dim'>api_routing</td><td>aws_bedrock</td></tr><tr><td class='mono dim'>aws_region</td><td>us-east-2</td></tr><tr><td class='mono dim'>bedrock_model</td><td>us.anthropic.claude-sonnet-4-6</td></tr></tbody>
+  </table>
+</div>
+
+<footer>Generated by coder_eval · 2026-07-24T18:05:30</footer>
+</div>
+<script>
+function toggleTheme() {
+  document.documentElement.classList.toggle('light');
+  try {
+    const mode = document.documentElement.classList.contains('light') ? 'light' : 'dark';
+    localStorage.setItem('coder-eval-theme', mode);
+  } catch (e) { /* ignore */ }
+}
+(function() {
+  try {
+    if (localStorage.getItem('coder-eval-theme') === 'light') {
+      document.documentElement.classList.add('light');
+    }
+  } catch (e) { /* ignore */ }
+})();
+</script>
+</body>
+</html>

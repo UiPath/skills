@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "WebhookValidation",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "8a21267d-b4a1-4563-96e3-224c118a7366",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "WebhookValidation"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Flow",
+      "name": "WebhookValidation",
+      "package": {
+        "key": "818b5a1e-2f11-4f09-926a-58644f184742"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "862b3505-d423-410c-8cbe-36cf27a6fa5b",
+    "files": []
+  }
+}

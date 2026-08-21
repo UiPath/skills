@@ -1,0 +1,2851 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>coder_eval · skill-flow-loop-multiply · default</title>
+<style>
+:root {
+  --bg-page: #0f1419;
+  --bg-card: #1a2129;
+  --bg-card-2: #232d38;
+  --bg-code: #0b0f14;
+  --fg: #e6edf3;
+  --fg-muted: #8b98a5;
+  --fg-dim: #6e7681;
+  --border: #30363d;
+  --accent: #58a6ff;
+  --score-high: #22c55e;
+  --score-mid: #f59e0b;
+  --score-low: #ef4444;
+  --status-success: #22c55e;
+  --status-failure: #f59e0b;
+  --status-error: #ef4444;
+  --status-neutral: #6e7681;
+  --shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+.light {
+  --bg-page: #ffffff;
+  --bg-card: #f6f8fa;
+  --bg-card-2: #eaeef2;
+  --bg-code: #f6f8fa;
+  --fg: #1f2328;
+  --fg-muted: #636c76;
+  --fg-dim: #8b949e;
+  --border: #d0d7de;
+  --accent: #0969da;
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial,
+               sans-serif;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--fg);
+  background: var(--bg-page);
+}
+.container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+h1, h2, h3, h4 { margin: 0 0 12px 0; line-height: 1.25; }
+h1 { font-size: 22px; font-weight: 600; }
+h2 { font-size: 18px; font-weight: 600; margin-top: 28px;
+     padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+h3 { font-size: 15px; font-weight: 600; color: var(--fg-muted); }
+h4 { font-size: 13px; font-weight: 600; color: var(--fg-muted); }
+p { margin: 0 0 8px 0; }
+.muted { color: var(--fg-muted); }
+.dim { color: var(--fg-dim); }
+.mono { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+        monospace; font-size: 12.5px; }
+code { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+       monospace; font-size: 12.5px; background: var(--bg-code);
+       border: 1px solid var(--border); padding: 1px 5px; border-radius: 3px; }
+pre { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+      monospace; font-size: 12.5px; background: var(--bg-code);
+      border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px;
+      margin: 6px 0; overflow-x: auto; white-space: pre-wrap;
+      word-wrap: break-word; }
+.header-bar { display: flex; align-items: center; justify-content: space-between;
+              margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+.title-group { flex: 1; min-width: 0; }
+.title-group .subtitle { color: var(--fg-muted); font-size: 13px;
+                         margin-top: 2px; word-break: break-all; }
+.badges { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.badge { display: inline-flex; align-items: center; gap: 6px;
+         padding: 4px 10px; border-radius: 12px; font-size: 12px;
+         font-weight: 600; background: var(--bg-card-2);
+         border: 1px solid var(--border); color: var(--fg); }
+.badge.success { background: color-mix(in srgb, var(--status-success) 20%, var(--bg-card-2));
+                 border-color: var(--status-success); color: var(--status-success); }
+.badge.failure { background: color-mix(in srgb, var(--status-failure) 20%, var(--bg-card-2));
+                 border-color: var(--status-failure); color: var(--status-failure); }
+.badge.error { background: color-mix(in srgb, var(--status-error) 20%, var(--bg-card-2));
+               border-color: var(--status-error); color: var(--status-error); }
+.badge.warning { background: color-mix(in srgb, #f4a52810 20%, var(--bg-card-2));
+                 border-color: #f4a528; color: #f4a528; }
+.badge.neutral { color: var(--fg-muted); }
+.score-pill { display: inline-block; padding: 2px 8px; border-radius: 10px;
+              font-size: 12px; font-weight: 700; min-width: 42px;
+              text-align: center; color: #0b0f14; }
+.score-high { background: var(--score-high); }
+.score-mid { background: var(--score-mid); }
+.score-low { background: var(--score-low); }
+.card { background: var(--bg-card); border: 1px solid var(--border);
+        border-radius: 8px; padding: 16px 20px; margin-bottom: 16px;
+        box-shadow: var(--shadow); }
+.card.highlight { border-left: 4px solid var(--accent); }
+.grid { display: grid; gap: 12px;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+.stat { background: var(--bg-card-2); padding: 10px 12px; border-radius: 6px;
+        border: 1px solid var(--border); }
+.stat .label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;
+               color: var(--fg-muted); margin-bottom: 4px; }
+.stat .value { font-size: 16px; font-weight: 600; }
+table { width: 100%; border-collapse: collapse; margin: 4px 0 12px 0; }
+th, td { text-align: left; padding: 8px 10px;
+         border-bottom: 1px solid var(--border); vertical-align: top;
+         font-size: 13px; }
+th { color: var(--fg-muted); font-weight: 600; font-size: 12px;
+     text-transform: uppercase; letter-spacing: 0.3px; }
+tr:last-child td { border-bottom: none; }
+details { margin: 6px 0; border: 1px solid var(--border); border-radius: 6px;
+          background: var(--bg-card-2); }
+details > summary { cursor: pointer; padding: 8px 12px; user-select: none;
+                    font-weight: 500; list-style: none; }
+details > summary::-webkit-details-marker { display: none; }
+details > summary::before { content: "▸ "; color: var(--fg-dim);
+                            display: inline-block; width: 14px;
+                            transition: transform 0.15s; }
+details[open] > summary::before { content: "▾ "; }
+details .details-body { padding: 0 12px 10px 12px; }
+.tool-row { display: flex; align-items: center; gap: 10px;
+            flex-wrap: wrap; font-size: 13px; }
+.tool-name { font-weight: 600; color: var(--accent); font-family: ui-monospace,
+             SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+.tool-status-ok { color: var(--status-success); font-size: 11px;
+                  font-weight: 600; }
+.tool-status-err { color: var(--status-error); font-size: 11px;
+                   font-weight: 600; }
+.tool-duration { color: var(--fg-muted); font-size: 12px; }
+.tool-seq { color: var(--fg-dim); font-size: 11px; font-weight: 600;
+            min-width: 24px; text-align: right; font-family: ui-monospace,
+            SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+.turn-header { display: flex; justify-content: space-between;
+               align-items: baseline; flex-wrap: wrap; gap: 10px;
+               margin-bottom: 10px; }
+.turn-meta { font-size: 12px; color: var(--fg-muted); }
+.criterion-row td:first-child { font-family: ui-monospace, SFMono-Regular,
+                                 "SF Mono", Menlo, Consolas, monospace;
+                                 color: var(--fg-muted); font-size: 12px; }
+.judge-section { display: flex; flex-direction: column; gap: 12px; }
+.judge-card { padding: 14px 16px; }
+.judge-card-head { display: flex; justify-content: space-between;
+                    align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+.judge-card-title { font-size: 14px; line-height: 1.4; flex: 1; min-width: 0; }
+.judge-card-score { flex-shrink: 0; }
+.judge-rationale { margin-top: 10px; padding: 10px 12px;
+                   background: var(--bg-code); border-radius: 4px;
+                   font-size: 13px; line-height: 1.5; }
+.judge-findings { margin: 8px 0 0 18px; padding-left: 4px; font-size: 13px;
+                   line-height: 1.6; }
+.judge-findings li { margin: 2px 0; }
+.nav-toggle { display: inline-block; padding: 5px 10px; font-size: 12px;
+              background: var(--bg-card-2); border: 1px solid var(--border);
+              border-radius: 5px; color: var(--fg); cursor: pointer; }
+.nav-toggle:hover { background: var(--bg-card); }
+.llm-next-steps { margin: 6px 0 0 20px; padding-left: 0; }
+.llm-next-steps li { margin: 3px 0; }
+.iteration-group { padding: 12px 16px 4px 16px; margin-bottom: 20px;
+                   border-radius: 0 6px 6px 0; border-left: 4px solid var(--status-neutral); }
+/* rgba fallback for browsers without color-mix (Chrome <111, Firefox <113, Safari <16.2). */
+.iteration-group--recovered { border-left-color: var(--status-success);
+                              background: rgba(34, 197, 94, 0.06);
+                              background: color-mix(in srgb, var(--status-success) 6%, transparent); }
+.iteration-group--terminal { border-left-color: var(--status-error);
+                             background: rgba(239, 68, 68, 0.06);
+                             background: color-mix(in srgb, var(--status-error) 6%, transparent); }
+.iteration-group__banner { margin: 0 0 12px 0; font-size: 14px; font-weight: 600; }
+.iteration-group--recovered .iteration-group__banner { color: var(--status-success); }
+.iteration-group--terminal .iteration-group__banner { color: var(--status-error); }
+.attempt-transition { display: flex; align-items: center; gap: 8px;
+                      margin: -6px 0 12px 8px; color: var(--status-error); font-size: 12.5px; }
+.attempt-transition__icon { font-weight: 700; }
+footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--border);
+         color: var(--fg-dim); font-size: 12px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="header-bar">
+  <div class="title-group">
+    <h1>Task: skill-flow-loop-multiply</h1>
+    <div class="subtitle">Create a UiPath Flow that uses a Loop node to multiply the numbers [13, 15, 17] together and return the product (3315). Exercises loop node wiring, variable updates, and state accumulation.</div>
+  </div>
+  <div class="badges">
+    <span class="badge failure">MAX_TURNS_EXHAUSTED</span>
+    <span class="score-pill score-mid">0.62</span>
+    <span class="badge neutral">claude-code · claude-sonnet-5</span>
+    <span class="badge neutral">8m 6s</span>
+    <span class="badge neutral">$2.8833</span>
+    <span class="badge warning">expected_turns exceeded (72/22)</span>
+    
+    <span class="nav-toggle" onclick="toggleTheme()">Toggle theme</span>
+  </div>
+</div>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Variant</div><div class="value">default</div></div>
+    <div class="stat"><div class="label">Started</div><div class="value mono">2026-08-18T21:47:44</div></div>
+    <div class="stat"><div class="label">Duration</div><div class="value">8m 6s</div></div>
+    <div class="stat"><div class="label">Turns (SDK)</div><div class="value">125</div></div>
+    <div class="stat"><div class="label">Commands</div><div class="value">72</div></div>
+  </div>
+</div>
+
+<h2>Success Criteria <span class="muted" style="font-weight:400">(1/2 passed)</span></h2>
+<div class="card" style="padding:0">
+<table>
+  <thead>
+    <tr>
+      <th style="width:15%">Type</th>
+      <th style="width:35%">Description</th>
+      <th style="width:10%">Score</th>
+      <th>Details</th>
+    </tr>
+  </thead>
+  <tbody>
+    
+<tr class="criterion-row">
+  <td>run_command</td>
+  <td>uip maestro flow validate passes on the flow file</td>
+  <td style="text-align:center"><span class="score-pill score-low">0.00</span></td>
+  <td><details><summary class="mono dim">Command: python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py</summary><div class="details-body"><pre style="margin:6px 0 0 0">Command: python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py
+Exit code: 1 (expected: 0)
+Stdout:
+Validating LoopMultiply/LoopMultiply/LoopMultiply.flow
+{
+  &quot;Result&quot;: &quot;Failure&quot;,
+  &quot;Message&quot;: &quot;Validation failed for /work/output/artifacts/skill-flow-loop-multiply/LoopMultiply/LoopMultiply/LoopMultiply.flow&quot;,
+  &quot;Instructions&quot;: &quot;Found 1 error(s):\n  - [error] [version] [MIGRATION] Workflow migration failed at 1.9→1.10: Invalid input for migration 1.9 → 1.10. Offending field(s): variables.variableUpdates.multiplyItem.0.expression. Fix the flagged field(s) or re-scaffold the affected node, then re-run.\n  - [warning] [nodes[end1].outputs.runningProduct.source] [MISSING_OUTPUT_MAPPING] \&quot;End\&quot; is missing output mapping for \&quot;runningProduct\&quot;&quot;,
+  &quot;ErrorCode&quot;: &quot;unknown_error&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}
+
+Stderr:
+[ManifestClient] fetchDynamicNodes ok: total=315 agent context nodes=2 external agent nodes=7 orchestrator nodes=261 IXP nodes=45</pre></div></details></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>run_command</td>
+  <td>Flow has a loop node and debug returns 3315 (13*15*17)</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Command: python3 $TASK_DIR/check_loop_multiply.py</summary><div class="details-body"><pre style="margin:6px 0 0 0">Command: python3 $TASK_DIR/check_loop_multiply.py
+Exit code: 0 (expected: 0)
+Stdout:
+OK: Loop node present; output contains 3315
+
+Stderr: (empty)</pre></div></details></td>
+</tr>
+
+  </tbody>
+</table>
+</div>
+<h2>Conversation Trace (1 iteration)</h2>
+<div class="card">
+  <div class="turn-header">
+    <h3>Iteration 1</h3>
+    <div class="badges">
+      <span class="badge neutral">125 assistant turns</span>
+      <span class="badge neutral">in 112 · out 41785 · cache 5504077</span>
+      <span class="badge neutral">7m 33s</span>
+      <span class="badge failure">max_turns exhausted</span>
+      
+      
+    </div>
+  </div>
+  <details>
+    <summary>Prompt to agent</summary>
+    <div class="details-body"><pre>Your working directory is: /work/output/artifacts/skill-flow-loop-multiply
+
+Create a UiPath Flow project named &quot;LoopMultiply&quot; that multiplies the
+numbers [13, 15, 17] together using a Loop node and returns the product.
+
+Validate the flow.
+Do NOT ask for approval, confirmation, or feedback. Do NOT pause between planning and implementation. Build the complete flow end-to-end in a single pass.
+</pre></div>
+  </details>
+  <details>
+    <summary>Agent response</summary>
+    <div class="details-body"><pre>[ASSISTANT] Now let&#x27;s validate and format.
+[ASSISTANT] I&#x27;ve done a thorough search across the entire skill directory. Let me do one final check for the exact &quot;1.9&quot;/&quot;1.10&quot; migration numbering and any &quot;value&quot; field mentions to be exhaustive.
+[ASSISTANT] Based on a thorough search of the entire skill directory, here is what I found — and did not find.
+
+## What I found
+
+The `.flow` file format has a schema-versioned migration chain, documented only in one place:
+
+**`/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/references/brownfield.md`, lines 59–67** (&quot;Refusing to serialize a vX workflow&quot; — migrate first):
+
+&gt; `migrate` is lossless — it walks the per-version migration chain (e.g. `=js:` expression strings become rich expression objects) and bumps the file to the current version.
+
+This is the only place in the skill docs that hints at what changes across a migration step, and it names a `migrate` command:
+
+```bash
+uip maestro flow migrate &lt;ProjectName&gt;.flow --output json
+```
+
+That one line — &quot;`=js:` expression strings become rich expression objects&quot; — is directly relevant to your error, since `variableUpdates.multiplyItem.0.expression` is currently authored as an `=js:`-prefixed string. It strongly suggests the 1.9→1.10 step is exactly this transformation: converting the plain string `&quot;expression&quot;: &quot;=js:...` into some structured/object form (a &quot;rich expression object&quot;) rather than a bare string. But the docs do **not** spell out the object&#x27;s exact shape (no `kind`/`value`/`type` field names are given anywhere in the skill).
+
+## What I did NOT find
+
+- No file in the skill (`references/diagnose/failure-modes.md`, `references/diagnose/troubleshooting-guide.md`, `references/shared/file-format.md`, `references/shared/variables-and-expressions.md`, `references/shared/cli-commands.md`, `references/shared/cli-conventions.md`, or any `author/references/plugins/*` doc) mentions &quot;1.9&quot; or &quot;1.10&quot; as version numbers, or documents a `variableUpdates[].expression` shape other than the plain string form:
+  ```json
+  { &quot;variableId&quot;: &quot;counter&quot;, &quot;expression&quot;: &quot;=js:$vars.counter + 1&quot; }
+  ```
+  (from `references/shared/variables-and-expressions.md`, lines 267–275 and 297–307 — this is the exact pattern you used, and it&#x27;s the only shape documented anywhere in the skill).
+- No JSON example anywhere shows a &quot;rich expression object&quot; — no `value`, `kind`, `type`, or wrapper-object shape is given for `expression` fields in `variableUpdates`.
+- No migration changelog, versioned schema spec, or MST/DNA ticket in `failure-modes.md` covers this specific migration step (the tickets that do exist — MST-9107, MST-9972, MST-9061 — are about expression prefixes, `variables.nodes[]` regeneration, and layout rendering, not this migration).
+
+## Conclusion and recommendation
+
+The skill docs confirm this is a real, expected migration step (string expressions → &quot;rich expression objects&quot; per brownfield.md) but do not give the target JSON shape for `variableUpdates[].expression`. Rather than guess the shape (`value` vs. wrapping object vs. additional field), I&#x27;d recommend:
+
+1. **Run the documented recovery command directly** — since the skill explicitly says this is lossless and handles exactly this kind of string→object migration:
+   ```bash
+   uip maestro flow migrate &lt;ProjectName&gt;.flow --output json
+   ```
+   Then diff the file before/after to see the exact new shape it writes for `variableUpdates.multiplyItem[0].expression`.
+2. If you want to see the shape without touching your file, **scaffold a throwaway flow** with a loop/accumulator pattern via `uip maestro flow init` (or `node add`/`node configure` for a loop node) and inspect its `variableUpdates` JSON directly — per `file-format.md` line 44&#x27;s convention: &quot;To see the current value, scaffold a throwaway flow with `init` and read its top-level `version`, or read it from an existing `init`-generated `.flow`.&quot; The same logic applies to inspecting the current expected shape for any field, i</pre></div>
+  </details>
+  <h4 style="margin-top:12px">Tool Calls (72)</h4>
+  
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#0</span>
+      <span class="tool-name">Skill</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">27ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;skill&quot;: &quot;uipath:uipath-maestro-flow&quot;,
+  &quot;args&quot;: &quot;Create a new UiPath Flow project named \&quot;LoopMultiply\&quot; in the current working directory (/work/output/artifacts/skill-flow-loop-multiply). The flow should multiply the numbers [13, 15, 17] together using a Loop node, accumulating the product, and return the final product as the output. Build the complete flow end-to-end (init project, author the .flow file with variables, a Loop node iterating over… (217 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Launching skill: uipath:uipath-maestro-flow</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#1</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">110ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;find . -maxdepth 2 -type f -name &#x27;*.uipx&#x27; -print; echo \&quot;---\&quot;; ls -la&quot;,
+  &quot;description&quot;: &quot;Check for existing UiPath solutions in working directory&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>---
+total 12
+drwxr-xr-x 3 root root 4096 Aug 18 21:47 .
+drwxr-xr-x 3 root root 4096 Aug 18 21:47 ..
+drwxr-xr-x 4 root root 4096 Aug 18 21:47 .venv</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#2</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">600ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/CAPABILITY.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Author — Create and edit `.flow` files
+2	
+3	Capability index for building new flows (greenfield) and editing existing flows (brownfield). Author owns everything that happens on disk, locally, without `uip login`. Authoring journeys terminate at `validate` + `format`; from there, hand off to [operate/CAPABILITY.md](../operate/CAPABILITY.md) to publish, run, or debug.
+4	
+5	&gt; **Where you came from / where to go next.** Author is upstream of Operate (build the flow → ship it) and upstream of Diagnose only via Operate (build → run → diagnose). Publish/run/lifecycle lives in [operate/CAPABILITY.md](../operate/CAPABILITY.md); fault triage lives in [diagnose/CAPABILITY.md](../diagnose/CAPABILITY.md).
+6	&gt;
+7	&gt; **Inherits universal rules from [SKILL.md](../../SKILL.md)** — `--output json` + prefer `--output-filter` for extraction, no `flow debug` without consent, resource discovery order, never invoke other skills automatically, dropdown question pattern, solution layout, **plain-English narration + granular progress list (opt-in — silent by default; engage when the user asks for verbosity)**. The rules below are author-scoped and apply on top.
+8	
+9	## When to use this capability
+10	
+11	&lt;
+
+… (truncated, 29463 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#3</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">304ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/references/greenfield.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Greenfield — Create a New Flow
+2	
+3	End-to-end journey for creating a Flow project from scratch. Author terminates at `validate` + `format`. To publish, run, or debug after this, see [operate/CAPABILITY.md](../../operate/CAPABILITY.md).
+4	
+5	&gt; **Brownfield edits use a different journey.** If the `.flow` file already exists, see [brownfield.md](brownfield.md) instead.
+6	
+7	## Should you plan first?
+8	
+9	For complex flows, produce a plan before building. Reference [planning-arch.md](planning-arch.md) and [planning-impl.md](planning-impl.md) for the node type catalog, port reference, wiring rules, and topology patterns.
+10	
+11	**Plan when:**
+12	- The flow has 5+ nodes with branching or parallel paths
+13	- The flow uses connectors or resources that need discovery
+14	- The user&#x27;s requirements are ambiguous and you need to confirm the approach
+15	
+16	**Don&#x27;t plan when:**
+17	- Adding/editing a single node in an existing flow (use [brownfield.md](brownfield.md))
+18	- The flow is a straightforward linear pipeline (trigger → action → action → end)
+19	- The user has already described the exact topology they want
+20	
+21	### Examples
+22	
+23	**Plan:** &quot;Build a flow that receives a Jira ticke
+
+… (truncated, 34151 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#4</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">131ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/references/plugins/loop/impl.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Loop Node — Implementation
+2	
+3	## Node Type
+4	
+5	`core.logic.loop`
+6	
+7	## Registry Validation
+8	
+9	```bash
+10	uip maestro flow registry get core.logic.loop --output json
+11	```
+12	
+13	Confirm: input ports `input` and `loopBack`, output ports `success` and `output`, required input `collection`. Set the node instance `typeVersion` to the `version` field from this response — do not hardcode it.
+14	
+15	## JSON Structure
+16	
+17	### Loop node
+18	
+19	```json
+20	{
+21	  &quot;id&quot;: &quot;loop1&quot;,
+22	  &quot;type&quot;: &quot;core.logic.loop&quot;,
+23	  &quot;typeVersion&quot;: &quot;&lt;DEFINITION_VERSION&gt;&quot;,
+24	  &quot;display&quot;: { &quot;label&quot;: &quot;Loop over items&quot; },
+25	  &quot;inputs&quot;: {
+26	    &quot;collection&quot;: &quot;=js:$vars.fetchData.output.body.items&quot;,
+27	    &quot;parallel&quot;: false
+28	  }
+29	}
+30	```
+31	
+32	&gt; **Collection source shape depends on the node type.** Connector `list` activities return the bare array — `&quot;collection&quot;: &quot;=js:$vars.searchIssuesByJql1.output&quot;`, NOT `.output.issues` / `.output.items`. HTTP nodes differ — envelope preserved: `.output.body.&lt;key&gt;` as above. See [connector/impl.md — Connector output shape](../connector/impl.md).
+33	
+34	Set `&quot;parallel&quot;: true` to execute all iterations concurrently.
+35	
+36	### Loop body nodes — `parentId` req
+
+… (truncated, 13499 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#5</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">18.28s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;\\\nuip solution init \&quot;LoopMultiply\&quot; --output json \\\n  &amp;&amp; cd \&quot;LoopMultiply\&quot; \\\n  &amp;&amp; uip maestro flow init \&quot;LoopMultiply\&quot; --output json \\\n  &amp;&amp; cd \&quot;LoopMultiply\&quot; \\\n  &amp;&amp; uip maestro flow registry pull&quot;,
+  &quot;description&quot;: &quot;Create solution and flow project, refresh registry&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;SolutionInit&quot;,
+  &quot;Data&quot;: {
+    &quot;Status&quot;: &quot;Created successfully&quot;,
+    &quot;Path&quot;: &quot;/work/output/artifacts/skill-flow-loop-multiply/LoopMultiply/LoopMultiply.uipx&quot;,
+    &quot;NextSteps&quot;: &quot;Read /work/output/artifacts/skill-flow-loop-multiply/LoopMultiply/AGENTS.md or /work/output/artifacts/skill-flow-loop-multiply/LoopMultiply/CLAUDE.md to understand the solution lifecycle, project types that can be used inside a solution, and related uip command references.&quot;
+  }
+}
+2026-08-18 21:48:24 INFO  [ResourceBuilder:ProjectCreateCommandHandler] Creating project [object Object]
+2026-08-18 21:48:24 INFO  [ResourceBuilder:MultiFileSolutionDefinitionProvider] Reading multi-file solution definition for solution %s /work/output/artifacts/skill-flow-loop-multiply/LoopMultiply
+2026-08-18 21:48:24 INFO  [ResourceBuilder:ProjectCreateCommandHandler] Generate artefact resources for project [object Object]
+2026-08-18 21:48:24 INFO  [ResourceBuilder:SolutionsMetadataReader] Reading metadata from %s. SolutionsMetadataReader
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FlowInit&quot;,
+  &quot;Data&quot;: {
+    &quot;Status&quot;: &quot;Created successfully&quot;,
+    &quot;Path&quot;: &quot;/work/output/artifacts/skill-flow-loop-multiply/L
+
+… (truncated, 1462 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#6</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">20.74s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry get core.control.end --output json&quot;,
+  &quot;description&quot;: &quot;Get End node definition&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeGetSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;Node&quot;: {
+      &quot;nodeType&quot;: &quot;core.control.end&quot;,
+      &quot;version&quot;: &quot;1.0&quot;,
+      &quot;category&quot;: &quot;control-flow&quot;,
+      &quot;description&quot;: &quot;Mark the end of a process path&quot;,
+      &quot;tags&quot;: [
+        &quot;control-flow&quot;,
+        &quot;end&quot;,
+        &quot;finish&quot;,
+        &quot;complete&quot;
+      ],
+      &quot;sortOrder&quot;: 65,
+      &quot;display&quot;: {
+        &quot;label&quot;: &quot;End&quot;,
+        &quot;icon&quot;: &quot;circle-check&quot;,
+        &quot;shape&quot;: &quot;circle&quot;
+      },
+      &quot;handleConfiguration&quot;: [
+        {
+          &quot;position&quot;: &quot;left&quot;,
+          &quot;handles&quot;: [
+            {
+              &quot;id&quot;: &quot;input&quot;,
+              &quot;type&quot;: &quot;target&quot;,
+              &quot;handleType&quot;: &quot;input&quot;
+            }
+          ]
+        }
+      ],
+      &quot;model&quot;: {
+        &quot;type&quot;: &quot;bpmn:EndEvent&quot;
+      },
+      &quot;runtimeConstraints&quot;: {
+        &quot;exclude&quot;: [
+          &quot;api-function&quot;
+        ]
+      }
+    }
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#7</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">22.41s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry get core.logic.loop --output json&quot;,
+  &quot;description&quot;: &quot;Get Loop node definition&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeGetSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;Node&quot;: {
+      &quot;nodeType&quot;: &quot;core.logic.loop&quot;,
+      &quot;supportsErrorHandling&quot;: true,
+      &quot;version&quot;: &quot;2.4&quot;,
+      &quot;category&quot;: &quot;control-flow&quot;,
+      &quot;description&quot;: &quot;Iterate over a collection of items&quot;,
+      &quot;tags&quot;: [
+        &quot;control-flow&quot;,
+        &quot;loop&quot;,
+        &quot;iteration&quot;
+      ],
+      &quot;sortOrder&quot;: 63,
+      &quot;display&quot;: {
+        &quot;label&quot;: &quot;Loop&quot;,
+        &quot;icon&quot;: &quot;repeat&quot;,
+        &quot;shape&quot;: &quot;container&quot;,
+        &quot;description&quot;: &quot;Execute a sequence of actions repeatedly for each item in a collection&quot;
+      },
+      &quot;handleConfiguration&quot;: [
+        {
+          &quot;position&quot;: &quot;left&quot;,
+          &quot;boundary&quot;: &quot;outer&quot;,
+          &quot;handles&quot;: [
+            {
+              &quot;id&quot;: &quot;input&quot;,
+              &quot;type&quot;: &quot;target&quot;,
+              &quot;handleType&quot;: &quot;input&quot;
+            }
+          ]
+        },
+        {
+          &quot;position&quot;: &quot;right&quot;,
+          &quot;boundary&quot;: &quot;outer&quot;,
+          &quot;handles&quot;: [
+            {
+              &quot;id&quot;: &quot;success&quot;,
+              &quot;type&quot;: &quot;source&quot;,
+              &quot;handleType&quot;: &quot;output&quot;
+            },
+            {
+              &quot;id&quot;: &quot;error&quot;,
+              &quot;label&quot;: &quot;Error&quot;,
+              &quot;type&quot;: &quot;source&quot;,
+             
+
+… (truncated, 6059 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#8</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">24.75s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry get core.action.script --output json&quot;,
+  &quot;description&quot;: &quot;Get Script node definition&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeGetSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;Node&quot;: {
+      &quot;nodeType&quot;: &quot;core.action.script&quot;,
+      &quot;version&quot;: &quot;1.1&quot;,
+      &quot;category&quot;: &quot;data-operations&quot;,
+      &quot;description&quot;: &quot;Run custom JavaScript code&quot;,
+      &quot;tags&quot;: [
+        &quot;code&quot;,
+        &quot;javascript&quot;,
+        &quot;python&quot;
+      ],
+      &quot;sortOrder&quot;: 70,
+      &quot;supportsErrorHandling&quot;: true,
+      &quot;display&quot;: {
+        &quot;label&quot;: &quot;Script&quot;,
+        &quot;icon&quot;: &quot;code&quot;
+      },
+      &quot;handleConfiguration&quot;: [
+        {
+          &quot;position&quot;: &quot;left&quot;,
+          &quot;handles&quot;: [
+            {
+              &quot;id&quot;: &quot;input&quot;,
+              &quot;type&quot;: &quot;target&quot;,
+              &quot;handleType&quot;: &quot;input&quot;
+            }
+          ]
+        },
+        {
+          &quot;position&quot;: &quot;right&quot;,
+          &quot;handles&quot;: [
+            {
+              &quot;id&quot;: &quot;success&quot;,
+              &quot;type&quot;: &quot;source&quot;,
+              &quot;handleType&quot;: &quot;output&quot;
+            },
+            {
+              &quot;id&quot;: &quot;error&quot;,
+              &quot;label&quot;: &quot;Error&quot;,
+              &quot;type&quot;: &quot;source&quot;,
+              &quot;handleType&quot;: &quot;output&quot;,
+              &quot;visible&quot;: &quot;{inputs.errorHandlingEnabled}&quot;,
+              &quot;constraints&quot;: {
+                &quot;maxConnections&quot;: 1
+              }
+            }
+          ]
+    
+
+… (truncated, 2916 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#9</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">8ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-loop-multiply/LoopMultiply/LoopMultiply/LoopMultiply.flow&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	{
+2	  &quot;id&quot;: &quot;6206660f-8b8f-4784-a6cd-ac19d00ab8d2&quot;,
+3	  &quot;version&quot;: &quot;1.9&quot;,
+4	  &quot;name&quot;: &quot;LoopMultiply&quot;,
+5	  &quot;nodes&quot;: [
+6	    {
+7	      &quot;id&quot;: &quot;start&quot;,
+8	      &quot;type&quot;: &quot;core.trigger.manual&quot;,
+9	      &quot;typeVersion&quot;: &quot;1.0&quot;,
+10	      &quot;display&quot;: {
+11	        &quot;label&quot;: &quot;Manual trigger&quot;
+12	      },
+13	      &quot;inputs&quot;: {
+14	        &quot;entryPointId&quot;: &quot;0b400ce2-9f03-4faa-82b7-4387cef6f70a&quot;,
+15	        &quot;isDefaultEntryPoint&quot;: true
+16	      }
+17	    }
+18	  ],
+19	  &quot;edges&quot;: [],
+20	  &quot;definitions&quot;: [
+21	    {
+22	      &quot;nodeType&quot;: &quot;core.trigger.manual&quot;,
+23	      &quot;version&quot;: &quot;1.0&quot;,
+24	      &quot;category&quot;: &quot;trigger&quot;,
+25	      &quot;description&quot;: &quot;Start the process manually&quot;,
+26	      &quot;tags&quot;: [
+27	        &quot;trigger&quot;,
+28	        &quot;start&quot;,
+29	        &quot;manual&quot;
+30	      ],
+31	      &quot;sortOrder&quot;: 80,
+32	      &quot;display&quot;: {
+33	        &quot;label&quot;: &quot;Manual trigger&quot;,
+34	        &quot;icon&quot;: &quot;play&quot;,
+35	        &quot;shape&quot;: &quot;circle&quot;
+36	      },
+37	      &quot;handleConfiguration&quot;: [
+38	        {
+39	          &quot;position&quot;: &quot;right&quot;,
+40	          &quot;handles&quot;: [
+41	            {
+42	              &quot;id&quot;: &quot;output&quot;,
+43	              &quot;type&quot;: &quot;source&quot;,
+44	              &quot;handleType&quot;: &quot;output&quot;,
+45	              &quot;showButton&quot;: true,
+46	              &quot;constraints&quot;: 
+
+… (truncated, 1046 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#10</span>
+      <span class="tool-name">Write</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">45ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-loop-multiply/LoopMultiply/LoopMultiply/LoopMultiply.flow&quot;,
+  &quot;content&quot;: &quot;{\n  \&quot;id\&quot;: \&quot;6206660f-8b8f-4784-a6cd-ac19d00ab8d2\&quot;,\n  \&quot;version\&quot;: \&quot;1.9\&quot;,\n  \&quot;name\&quot;: \&quot;LoopMultiply\&quot;,\n  \&quot;nodes\&quot;: [\n    {\n      \&quot;id\&quot;: \&quot;start\&quot;,\n      \&quot;type\&quot;: \&quot;core.trigger.manual\&quot;,\n      \&quot;typeVersion\&quot;: \&quot;1.0\&quot;,\n      \&quot;display\&quot;: {\n        \&quot;label\&quot;: \&quot;Manual trigger\&quot;\n      },\n      \&quot;inputs\&quot;: {\n        \&quot;entryPointId\&quot;: \&quot;0b400ce2-9f03-4faa-82b7-4387cef6f70a\&quot;,\n        \&quot;isDefaultEntryPoint\&quot;: true\n      }\n    },\n    … (17545 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>The file /work/output/artifacts/skill-flow-loop-multiply/LoopMultiply/LoopMultiply/LoopMultiply.flow has been updated successfully. (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#11</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-err">ERROR</span>
+      <span class="tool-duration">8.15s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow validate \&quot;LoopMultiply.flow\&quot; --output json &amp;&amp; uip maestro flow format \&quot;LoopMultiply.flow\&quot; --output json&quot;,
+  &quot;description&quot;: &quot;Validate and format the flow&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Exit code 1
+[ManifestClient] fetchDynamicNodes ok: total=315 agent context nodes=2 external agent nodes=7 orchestrator nodes=261 IXP nodes=45
+{
+  &quot;Result&quot;: &quot;Failure&quot;,
+  &quot;Message&quot;: &quot;Validation failed for /work/output/artifacts/skill-flow-loop-multiply/LoopMultiply/LoopMultiply/LoopMultiply.flow&quot;,
+  &quot;Instructions&quot;: &quot;Found 1 error(s):\n  - [error] [version] [MIGRATION] Workflow migration failed at 1.9→1.10: Invalid input for migration 1.9 → 1.10. Offending field(s): variables.variableUpdates.multiplyItem.0.expression. Fix the flagged field(s) or re-scaffold the affected node, then re-run.\n  - [warning] [nodes[end1].outputs.runningProduct.source] [MISSING_OUTPUT_MAPPING] \&quot;End\&quot; is missing output mapping for \&quot;runningProduct\&quot;&quot;,
+  &quot;ErrorCode&quot;: &quot;unknown_error&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}</pre>
+    <h4>Error</h4><pre>Exit code 1
+[ManifestClient] fetchDynamicNodes ok: total=315 agent context nodes=2 external agent nodes=7 orchestrator nodes=261 IXP nodes=45
+{
+  &quot;Result&quot;: &quot;Failure&quot;,
+  &quot;Message&quot;: &quot;Validation failed for /work/output/artifacts/skill-flow-loop-multiply/LoopMultiply/LoopMultiply/LoopMultiply.flow&quot;,
+  &quot;Instructions&quot;: &quot;Found 1 error(s):\n  - [error] [version] [MIGRATION] Workflow migration failed at 1.9→1.10: Invalid input for migration 1.9 → 1.10. Offending field(s): variables.variableUpdates.multiplyItem.0.expression. Fix the flagged field(s) or re-scaffold the affected node, then re-run.\n  - [warning] [nodes[end1].outputs.runningProduct.source] [MISSING_OUTPUT_MAPPING] \&quot;End\&quot; is missing output mapping for \&quot;runningProduct\&quot;&quot;,
+  &quot;ErrorCode&quot;: &quot;unknown_error&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}</pre>
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#12</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">21ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/shared/variables-and-expressions.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Variables and Expressions
+2	
+3	Complete reference for declaring variables, writing expressions, and managing data flow in `.flow` files.
+4	
+5	&gt; **Read this before** adding variables or writing expressions in any flow.
+6	&gt;
+7	&gt; `flow validate` catches the structural expression-reference errors:
+8	&gt;
+9	&gt; - Missing `=js:` prefix on `$vars`/`$metadata`/`$self` (MST-9107)
+10	&gt; - Invented `nodes.&lt;id&gt;.output` syntax
+11	&gt; - References to unknown variables or node IDs
+12	&gt; - Output-path walks that descend into declared primitives or schemas closed with `additionalProperties: false`
+13	&gt;
+14	&gt; Errors against **open output schemas** (HTTP response bodies, script returns, free-text agent output) and **wrong-direction reads** (e.g. reading an `out`-only variable) still slip past validate and surface only at `flow debug` or in production.
+15	
+16	---
+17	
+18	## Table of contents
+19	
+20	- [Variables Overview](#variables-overview)
+21	- [Workflow Variables (`globals`)](#workflow-variables-globals)
+22	- [Node Variables (`nodes`)](#node-variables-nodes)
+23	- [Variable Updates (`variableUpdates`)](#variable-updates-variableupdates)
+24	- [Output Mapping on End Nodes](#output-mapping-on-end-nodes)
+25	- [
+
+… (truncated, 24508 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#13</span>
+      <span class="tool-name">Agent</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">18ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;description&quot;: &quot;Look up migration 1.9→1.10 variableUpdates failure&quot;,
+  &quot;prompt&quot;: &quot;I&#x27;m building a UiPath .flow file and got this validation error from `uip maestro flow validate`:\n\n```\n[error] [version] [MIGRATION] Workflow migration failed at 1.9→1.10: Invalid input for migration 1.9 → 1.10. Offending field(s): variables.variableUpdates.multiplyItem.0.expression. Fix the flagged field(s) or re-scaffold the affected node, then re-run.\n```\n\nThe relevant part of my .flow file&#x27;s va… (1213 more chars)&quot;,
+  &quot;subagent_type&quot;: &quot;Explore&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>[{&#x27;type&#x27;: &#x27;text&#x27;, &#x27;text&#x27;: &quot;Async agent launched successfully. (This tool result is internal metadata — never quote or paste any part of it, including the agentId below, into a user-facing reply.)\nagentId: a52b177a6c08500f5 (internal ID - do not mention to user. Use SendMessage with to: &#x27;a52b177a6c08500f5&#x27;, summary: &#x27;&lt;5-10 word recap&gt;&#x27; to continue this agent.)\nThe agent is working in the background. You will be notified automatically when it completes. You know nothing about its results until that notification arrives — do not report, assume, or predict them; continue other work or respond to the user in the meantime.\nDo not duplicate this agent&#x27;s work — avoid working with the same files or topics it is using.\noutput_file: /tmp/claude-0/-work-output-artifacts-skill-flow-loop-multiply/fcea45c1-3402-48e4-a6bc-61bd0b11e09c/tasks/a52b177a6c08500f5.output\nDo NOT Read or tail this file via the shell tool — it is the full subagent JSONL transcript and reading it will overflow your context. If the user asks for progress, say the agent is still running; you&#x27;ll get a completion notification.&quot;}]</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#14</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">171ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;ls /home/azureuser/projects/skills/skills/uipath-maestro-flow/ 2&gt;&amp;1; echo \&quot;---\&quot;; ls /home/azureuser/projects/skills/skills/uipath-maestro-flow/references/ 2&gt;&amp;1&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>SKILL.md
+references
+---
+author
+diagnose
+evaluate
+operate
+shared</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#15</span>
+      <span class="tool-name">Grep</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">144ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;pattern&quot;: &quot;1\\.9|1\\.10|migration|MIGRATION&quot;,
+  &quot;path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-flow&quot;,
+  &quot;output_mode&quot;: &quot;files_with_matches&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Found 1 file
+/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/references/brownfield.md</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#16</span>
+      <span class="tool-name">Grep</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">92ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;pattern&quot;: &quot;1\\.9|1\\.10|migration|MIGRATION|variableUpdates&quot;,
+  &quot;path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/references/brownfield.md&quot;,
+  &quot;-n&quot;: true,
+  &quot;-C&quot;: 4
+}</pre>
+    <h4>Result</h4>
+    <pre>Found 1 file
+/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/references/brownfield.md</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#17</span>
+      <span class="tool-name">Grep</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">560ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;pattern&quot;: &quot;MISSING_OUTPUT_MAPPING&quot;,
+  &quot;path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-flow&quot;,
+  &quot;output_mode&quot;: &quot;content&quot;,
+  &quot;-C&quot;: 5
+}</pre>
+    <h4>Result</h4>
+    <pre>/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/diagnose/references/failure-modes.md-330-
+/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/diagnose/references/failure-modes.md-331-- Missing `=js:` prefix on `$vars`/`$metadata`/`$self` (MST-9107) — emitted by cli-side `expression-prefix-validator`
+/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/diagnose/references/failure-modes.md-332-- Invented `nodes.&lt;id&gt;.output.&lt;...&gt;` syntax (MST-9107 variant) — same validator, suggests `=js:$vars.&lt;id&gt;.output.&lt;...&gt;` as the fix
+/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/diagnose/references/failure-modes.md-333-- References to unknown variable IDs or node IDs in `=js:` expressions (`EXPR_UNRESOLVED_REF`) — flow-schema `expression-ref` rule
+/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/diagnose/references/failure-modes.md-334-- Output-path walks that descend into a declared primitive (`type: &quot;string&quot;` etc.) or a schema closed with `additionalProperties: false` (`EXPR_INVALID_OUTPUT_PATH`) — flow-schema `expression-ref` rule
+/home/azureuser/projects/skills/skills/uipath-maestro-flow/ref
+
+… (truncated, 1221 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#18</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">599ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;ls -la /home/azureuser/projects/skills/skills/uipath-maestro-flow/references/diagnose/ 2&gt;&amp;1; echo \&quot;---shared---\&quot;; ls -la /home/azureuser/projects/skills/skills/uipath-maestro-flow/references/shared/ 2&gt;&amp;1; echo \&quot;---author---\&quot;; ls -la /home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/ 2&gt;&amp;1; find /home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/r… (14 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>total 20
+drwxrwxr-x 3 1000 1000 4096 Aug 18 18:27 .
+drwxrwxr-x 7 1000 1000 4096 Jul 24 19:22 ..
+-rw-rw-r-- 1 1000 1000 7418 Aug 18 18:27 CAPABILITY.md
+drwxrwxr-x 2 1000 1000 4096 Aug 18 18:27 references
+---shared---
+total 136
+drwxrwxr-x 2 1000 1000  4096 Aug 18 18:27 .
+drwxrwxr-x 7 1000 1000  4096 Jul 24 19:22 ..
+-rw-rw-r-- 1 1000 1000  4813 Aug 14 16:40 action-nodes.md
+-rw-rw-r-- 1 1000 1000 21559 Aug 18 18:27 cli-commands.md
+-rw-rw-r-- 1 1000 1000 10523 Aug 18 18:27 cli-conventions.md
+-rw-rw-r-- 1 1000 1000 33762 Aug 18 18:27 file-format.md
+-rw-rw-r-- 1 1000 1000  8833 Jul 24 19:22 node-output-wiring.md
+-rw-rw-r-- 1 1000 1000 10413 Aug 18 18:27 ux-narration-and-todos.md
+-rw-rw-r-- 1 1000 1000 22954 Aug 14 16:40 variables-and-expressions.md
+---author---
+total 44
+drwxrwxr-x 3 1000 1000  4096 Aug 18 18:27 .
+drwxrwxr-x 7 1000 1000  4096 Jul 24 19:22 ..
+-rw-rw-r-- 1 1000 1000 30277 Aug 18 18:27 CAPABILITY.md
+drwxrwxr-x 3 1000 1000  4096 Aug 18 18:27 references
+/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/references
+/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/references/editing-operations-json.md
+/home/azureuser/projects/
+
+… (truncated, 9306 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#19</span>
+      <span class="tool-name">Grep</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">142ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;pattern&quot;: &quot;1\\.9.*1\\.10|1\\.10.*migration|MIGRATION&quot;,
+  &quot;path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-flow&quot;,
+  &quot;output_mode&quot;: &quot;content&quot;,
+  &quot;-C&quot;: 3
+}</pre>
+    <h4>Result</h4>
+    <pre>No matches found</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#20</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">92ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -n \&quot;1\\.9\\|1\\.10\\|migration\\|MIGRATION\&quot; -i -A6 -B6 /home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/references/brownfield.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>61-If `flow format`, `flow debug`, or `flow pack` fails with `[inMemoryWorkflowToFileFormat] Refusing to serialize a vX workflow to the v&lt;current&gt; file format`, the `.flow` file predates the current schema version. Recover with one command:
+62-
+63-```bash
+64-uip maestro flow migrate &lt;ProjectName&gt;.flow --output json
+65-```
+66-
+67:`migrate` is lossless — it walks the per-version migration chain (e.g. `=js:` expression strings become rich expression objects) and bumps the file to the current version. Re-run `flow format` and `flow validate` afterward; both should now pass. **A passing `flow validate` does NOT imply `format`/`debug`/`pack` will pass** — `validate` never re-serializes the workflow, so it skips the version guard those commands enforce. When you see the refusal, always migrate; never assume the edit was wrong.
+68-
+69-## Completion Output
+70-
+71-When you finish editing the flow, report to the user:
+72-
+73-1. **File path** of the `.flow` file edited</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#21</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">75ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;find /home/azureuser/projects/skills/skills/uipath-maestro-flow/references/diagnose -type f 2&gt;&amp;1&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/diagnose/CAPABILITY.md
+/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/diagnose/references/troubleshooting-guide.md
+/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/diagnose/references/failure-modes.md</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#22</span>
+      <span class="tool-name">Grep</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">109ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;pattern&quot;: &quot;rich expression|expression object|kind.*expression|\&quot;kind\&quot;|ExpressionValue|expressionType&quot;,
+  &quot;path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-flow&quot;,
+  &quot;-n&quot;: true,
+  &quot;-C&quot;: 3
+}</pre>
+    <h4>Result</h4>
+    <pre>Found 1 file
+/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/references/brownfield.md</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#23</span>
+      <span class="tool-name">Grep</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">287ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;pattern&quot;: &quot;variableUpdates&quot;,
+  &quot;path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-flow&quot;,
+  &quot;output_mode&quot;: &quot;files_with_matches&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Found 9 files
+/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/references/plugins/loop/impl.md
+/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/CAPABILITY.md
+/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/references/editing-operations-cli.md
+/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/references/editing-operations-json.md
+/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/references/planning-impl.md
+/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/shared/variables-and-expressions.md
+/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/shared/node-output-wiring.md
+/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/references/plugins/loop/planning.md
+/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/references/brownfield.md</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#24</span>
+      <span class="tool-name">Grep</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">54ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;pattern&quot;: &quot;\&quot;version\&quot;: \&quot;1\\.\\d+\&quot;&quot;,
+  &quot;path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-flow&quot;,
+  &quot;output_mode&quot;: &quot;content&quot;,
+  &quot;-n&quot;: true
+}</pre>
+    <h4>Result</h4>
+    <pre>/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/shared/file-format.md:95:[Omitted long matching line]
+/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/shared/action-nodes.md:20:      &quot;version&quot;: &quot;1.0&quot;,
+/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/evaluate/references/eval-sets-guide.md:138:  &quot;version&quot;: &quot;1.0&quot;,
+/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/evaluate/references/evaluators-guide.md:67:  &quot;version&quot;: &quot;1.0&quot;,
+/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/evaluate/references/evaluators-guide.md:87:  &quot;version&quot;: &quot;1.0&quot;,</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#25</span>
+      <span class="tool-name">Grep</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">35ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;pattern&quot;: &quot;variableUpdates|multiplyItem|variable.*expression|expression.*variable&quot;,
+  &quot;path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/shared/variables-and-expressions.md&quot;,
+  &quot;-n&quot;: true,
+  &quot;-C&quot;: 5
+}</pre>
+    <h4>Result</h4>
+    <pre>Found 1 file
+/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/shared/variables-and-expressions.md</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#26</span>
+      <span class="tool-name">Grep</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">69ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;pattern&quot;: &quot;variableUpdates&quot;,
+  &quot;path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/references/editing-operations-json.md&quot;,
+  &quot;output_mode&quot;: &quot;content&quot;,
+  &quot;-C&quot;: 15
+}</pre>
+    <h4>Result</h4>
+    <pre>175-&quot;layout&quot;: {
+176-  &quot;nodes&quot;: {
+177-    &quot;&lt;UNIQUE_NODE_ID&gt;&quot;: {
+178-      &quot;position&quot;: { &quot;x&quot;: 0, &quot;y&quot;: 0 },
+179-      &quot;size&quot;: { &quot;width&quot;: 96, &quot;height&quot;: 96 },
+180-      &quot;collapsed&quot;: false
+181-    }
+182-  }
+183-}
+184-```
+185-
+186-**Layout rule:** Don&#x27;t compute coordinates by hand — run `uip maestro flow format &lt;ProjectName&gt;.flow` after edits. Format arranges nodes horizontally, sets each node&#x27;s size by its canvas shape (inline agents → 288×96, containers → 560×320, everything else → 96×96), and recurses into subflows.
+187-
+188-### Delete a node
+189-
+190:**Tool:** `Edit` (remove from `nodes[]` + dependent edges + orphaned definitions + `variables.nodes` + `variableUpdates`)
+191-
+192-1. Use `Edit` to remove the node object from `nodes`
+193-2. Remove **all edges** where `sourceNodeId` or `targetNodeId` equals the node&#x27;s `id`
+194-3. If no other node uses the same `type`, remove the definition from `definitions`
+195-4. Remove the node&#x27;s entry from `variables.nodes`
+196:5. Remove any `variableUpdates` entries keyed by the node&#x27;s `id`
+197-6. If the node is a connector node, remove its binding from `bindings_v2.json` **only if no other node in the flow uses the same connector**. Bindings are sha
+
+… (truncated, 2434 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#27</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">491ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -n \&quot;bodyScript\\|variableUpdates\\|expression\&quot; /home/azureuser/projects/skills/skills/uipath-maestro-flow/references/shared/variables-and-expressions.md | head -80&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>3:Complete reference for declaring variables, writing expressions, and managing data flow in `.flow` files.
+5:&gt; **Read this before** adding variables or writing expressions in any flow.
+7:&gt; `flow validate` catches the structural expression-reference errors:
+23:- [Variable Updates (`variableUpdates`)](#variable-updates-variableupdates)
+25:- [Expression System](#expression-system)
+27:- [Expression Contexts](#expression-contexts)
+44:    &quot;variableUpdates&quot;: {}
+53:| `variableUpdates` | Per-node expressions that update state variables |
+67:| `inout` | Internal state | Yes | Yes (via `variableUpdates`) | Counters, accumulators, flags shared across nodes |
+73:  id: string              // Unique identifier, used in expressions as $vars.{id}
+159:Accessed in expressions as `$vars.{triggerNodeId}.output.{id}` (the variable is nested under the trigger node&#x27;s output — NOT `$vars.{id}`).
+259:## Variable Updates (`variableUpdates`)
+267:  &quot;variableUpdates&quot;: {
+271:        &quot;expression&quot;: string     // =js: expression to evaluate and assign
+297:    &quot;variableUpdates&quot;: {
+301:          &quot;expression&quot;: &quot;=js:$vars.counter + 1&quot;
+305:          &quot;expression&quot;: &quot;=js:$vars.processItem.output.status&quot;
+315:&gt; **Inside loo
+
+… (truncated, 2879 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#28</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">35ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -n \&quot;1\\.9\\|1\\.10\\|migrat\&quot; -i /home/azureuser/projects/skills/skills/uipath-maestro-flow/references/diagnose/references/failure-modes.md /home/azureuser/projects/skills/skills/uipath-maestro-flow/references/diagnose/references/troubleshooting-guide.md /home/azureuser/projects/skills/skills/uipath-maestro-flow/references/shared/file-format.md /home/azureuser/projects/skills/skills/uipath-maestro… (135 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>(Bash completed with no output)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#29</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">7.84s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;which uip; uip --version 2&gt;/dev/null; npm ls -g 2&gt;/dev/null | grep -i uip; find / -iname \&quot;*migration*1.10*\&quot; 2&gt;/dev/null | head -20&quot;,
+  &quot;description&quot;: &quot;Locate uip CLI installation and any migration files&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/usr/bin/uip
+1.201.0-dev.8272
+├── @uipath/admin-tool@1.201.0-dev.8272
+├── @uipath/agent-tool@1.201.0-dev.8272
+├── @uipath/agenthub-tool@1.201.0-dev.8272
+├── @uipath/aops-tool@1.201.0-dev.8272
+├── @uipath/api-workflow-tool@1.201.0-dev.8272
+├── @uipath/automation-hub-tool@1.201.0-dev.8272
+├── @uipath/cli@1.201.0-dev.8272
+├── @uipath/codedagent-tool@1.201.0-dev.8272
+├── @uipath/codedapp-tool@1.201.0-dev.8272
+├── @uipath/coder-tool@1.201.0-dev.8272
+├── @uipath/context-grounding-tool@1.201.0-dev.8272
+├── @uipath/conversational-tool@1.201.0-dev.8272
+├── @uipath/data-fabric-tool@1.201.0-dev.8272
+├── @uipath/docsai-tool@1.201.0-dev.8272
+├── @uipath/function-tool@1.201.0-dev.8272
+├── @uipath/gov-tool@1.201.0-dev.8272
+├── @uipath/guardrails-tool@1.201.0-dev.8272
+├── @uipath/insights-tool@1.201.0-dev.8276
+├── @uipath/integrationservice-tool@1.201.0-dev.8272
+├── @uipath/ixp-tool@1.201.0-dev.8272
+├── @uipath/llm-gateway-tool@1.201.0-dev.8272
+├── @uipath/llmgw-tool@1.201.0-dev.8272
+├── @uipath/maestro-tool@1.201.0-dev.8275
+├── @uipath/model-hub-tool@1.201.0-dev.8272
+├── @uipath/orchestrator-tool@1.201.0-dev.8272
+├── @uipath/platform-tool@1.201.0-dev.8272
+├── @uipath/pm-tool@1.201.0-dev.8272
+├── 
+
+… (truncated, 308 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#30</span>
+      <span class="tool-name">Grep</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">59ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;pattern&quot;: &quot;Offending field|rescaffold|re-scaffold|MIGRATION|schema version|serialize a v&quot;,
+  &quot;path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-flow&quot;,
+  &quot;-n&quot;: true,
+  &quot;output_mode&quot;: &quot;content&quot;,
+  &quot;-C&quot;: 3
+}</pre>
+    <h4>Result</h4>
+    <pre>/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/references/plugins/inline-agent/planning.md-27-
+/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/references/plugins/inline-agent/planning.md-28-### Anti-Pattern
+/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/references/plugins/inline-agent/planning.md-29-
+/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/references/plugins/inline-agent/planning.md:30:Do not inline an agent you intend to reuse. Inline agents are private to the flow project — if you later need to call the same agent from another flow, you must re-scaffold and re-configure it, diverging over time. Use a published agent for shared logic.
+/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/references/plugins/inline-agent/planning.md-31-
+/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/references/plugins/inline-agent/planning.md-32-[Omitted long context line]
+/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/references/plugins/inline-agent/planning.md-33-
+--
+/home/azureuser/projects/
+
+… (truncated, 4221 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#31</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">162ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -n \&quot;version\\|schema\&quot; -i /home/azureuser/projects/skills/skills/uipath-maestro-flow/references/diagnose/references/failure-modes.md | head -50&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>31:`flow validate` flags this as an error today (cli-side `expression-prefix-validator`, emitted with a remediation hint pointing at the `=js:`-prefixed form). Pre-validator cli versions miss it and the failure surfaces only at `flow debug` or in deployed runs — if you see the symptom without a corresponding validate error, your cli is older than the fix.
+74:Run `uip maestro flow format &lt;ProjectName&gt;.flow --output json`. Post-MST-9972 the format command regenerates `variables.nodes[]` from `nodes[]` + `definitions[]` (matching `node add` and canvas behavior). On older CLI versions, add the entries manually:
+307:`flow validate` checks JSON schema and cross-references; it does not validate that resource-node `model.context[]` entries are matched by top-level `bindings[]` entries.
+327:Multiple. `flow validate` runs a JSON schema check, cross-reference checks, expression-reference linting, and a small set of structural rules.
+333:- References to unknown variable IDs or node IDs in `=js:` expressions (`EXPR_UNRESOLVED_REF`) — flow-schema `expression-ref` rule
+334:- Output-path walks that descend into a declared primitive (`type: &quot;string&quot;` etc.) or a schema closed with `additionalPropert
+
+… (truncated, 698 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#32</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">177ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -n \&quot;version\\|schema\&quot; -i /home/azureuser/projects/skills/skills/uipath-maestro-flow/references/diagnose/references/troubleshooting-guide.md | head -50&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>(Bash completed with no output)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#33</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">68ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -n \&quot;migrate\\|migration\&quot; -ri /home/azureuser/projects/skills/skills/uipath-maestro-flow/references/shared/cli-commands.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>(Bash completed with no output)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#34</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">333ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;MAESTRO_DIR=$(npm root -g)/@uipath/maestro-tool; echo $MAESTRO_DIR; find \&quot;$MAESTRO_DIR\&quot; -iname \&quot;*migrat*\&quot; 2&gt;/dev/null | head -30&quot;,
+  &quot;description&quot;: &quot;Find maestro-tool migration files&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/usr/lib/node_modules/@uipath/maestro-tool</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#35</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">118ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -n \&quot;migrate\&quot; -ri -A10 -B5 /home/azureuser/projects/skills/skills/uipath-maestro-flow/references/shared/cli-commands.md | head -100&quot;,
+  &quot;description&quot;: &quot;Search cli-commands.md for migrate command docs&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>(Bash completed with no output)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#36</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">112ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -rn \&quot;schemaVersion\\|\\\&quot;version\\\&quot;\\|fileVersion\\|formatVersion\&quot; /home/azureuser/projects/skills/skills/uipath-maestro-flow/references/shared/file-format.md | head -30&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>26:  &quot;version&quot;: &quot;&lt;scaffolded file-format version&gt;&quot;,
+95:`typeVersion` must match the corresponding `definitions[].version` exactly. The registry often returns versions such as `&quot;1.0&quot;` while older examples or scaffolded files may show `&quot;1.0.0&quot;`. If a node uses `typeVersion: &quot;1.0.0&quot;` but the copied definition is `&quot;version&quot;: &quot;1.0&quot;`, validation reports &quot;Node type `&lt;type&gt;:1.0.0` has no matching definition.&quot; When direct-authoring a new node from `registry get`, set `typeVersion` to the copied definition&#x27;s `version`; when preserving an existing node, preserve its existing node/definition pair unless you intentionally update both together. &lt;!-- version-check-skip --&gt; (explains the x.y vs x.y.z mismatch mechanic; literals are illustrative, not pinned)
+396:  &quot;version&quot;: &quot;&lt;scaffolded file-format version&gt;&quot;,</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#37</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">285ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;MAESTRO_DIR=/usr/lib/node_modules/@uipath/maestro-tool; grep -rl \&quot;1.9.*1.10\\|migration\&quot; \&quot;$MAESTRO_DIR\&quot; --include=\&quot;*.js\&quot; 2&gt;/dev/null | grep -i migrat | head -20&quot;,
+  &quot;description&quot;: &quot;Search maestro-tool JS files for migration logic&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>(Bash completed with no output)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#38</span>
+      <span class="tool-name">Grep</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">42ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;pattern&quot;: &quot;migrate&quot;,
+  &quot;path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-flow&quot;,
+  &quot;-n&quot;: true,
+  &quot;output_mode&quot;: &quot;content&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/references/brownfield.md:20:&gt; **Migrate when** the project has long waits, human approvals, parallel branches, or needs per-case visibility. **Don&#x27;t migrate** a short, fully-automated, fire-once script — Maestro adds orchestration overhead it won&#x27;t repay. Apply the [Is Maestro the Right Home?](planning-arch.md#before-you-build-is-maestro-the-right-home) gate first.
+/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/references/brownfield.md:59:## &quot;Refusing to serialize a vX workflow&quot; — migrate first
+/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/references/brownfield.md:64:uip maestro flow migrate &lt;ProjectName&gt;.flow --output json
+/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/references/brownfield.md:67:[Omitted long matching line]</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#39</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">309ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;MAESTRO_DIR=/usr/lib/node_modules/@uipath/maestro-tool; grep -rl \&quot;MIGRATION\\|migrateTo\\|1\\.10\&quot; \&quot;$MAESTRO_DIR\&quot; 2&gt;/dev/null | head -20&quot;,
+  &quot;description&quot;: &quot;Broader search for migration references&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/usr/lib/node_modules/@uipath/maestro-tool/dist/packager-tool-54pn8ghz.js.map
+/usr/lib/node_modules/@uipath/maestro-tool/dist/index-8bsngk9y.js
+/usr/lib/node_modules/@uipath/maestro-tool/dist/index-8bsngk9y.js.map
+/usr/lib/node_modules/@uipath/maestro-tool/dist/tool-2ab1nank.js.map
+/usr/lib/node_modules/@uipath/maestro-tool/dist/packager-tool-6fg7sf04.js.map
+/usr/lib/node_modules/@uipath/maestro-tool/dist/tool-fawd6t08.js
+/usr/lib/node_modules/@uipath/maestro-tool/dist/tool-fawd6t08.js.map
+/usr/lib/node_modules/@uipath/maestro-tool/dist/tool-2ab1nank.js
+/usr/lib/node_modules/@uipath/maestro-tool/dist/packager-tool-6fg7sf04.js
+/usr/lib/node_modules/@uipath/maestro-tool/dist/packager-tool-54pn8ghz.js</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#40</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">11ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/references/brownfield.md&quot;,
+  &quot;offset&quot;: 1,
+  &quot;limit&quot;: 75
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Brownfield — Edit an Existing Flow
+2	
+3	Recipe-driven journey for targeted changes to an existing `.flow` file. Author terminates at `validate` + `format`. To publish, run, or debug after edits, see [operate/CAPABILITY.md](../../operate/CAPABILITY.md).
+4	
+5	&gt; **Greenfield (creating a new flow) uses a different journey.** If the `.flow` file does not yet exist, see [greenfield.md](greenfield.md) instead.
+6	
+7	## Converting an existing project to Maestro
+8	
+9	A frequent request: *&quot;Can my existing project — e.g. a low-code agent plus a coded (C#) RPA rule engine — become a Maestro flow, and what would the structure look like?&quot;*
+10	
+11	There is **no automatic &quot;turn this project into a flow&quot; conversion, and you shouldn&#x27;t want one.** You don&#x27;t rewrite the project into a flow — you **re-host the orchestration and keep the parts**:
+12	
+13	1. **Keep the executors as-is.** Existing coded/RPA components and any existing agent stay their own artifacts. They are **not** rewritten into Maestro — they become **resource nodes** the flow calls (`uipath.core.rpa-workflow.*`, `uipath.core.agent.*`). See the relevant plugin&#x27;s `planning.md`.
+14	2. **Lift only the orchestration into Maestro.** The c
+
+… (truncated, 8385 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#41</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">121ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;MAESTRO_DIR=/usr/lib/node_modules/@uipath/maestro-tool\nfor f in \&quot;$MAESTRO_DIR\&quot;/dist/tool-fawd6t08.js \&quot;$MAESTRO_DIR\&quot;/dist/tool-2ab1nank.js \&quot;$MAESTRO_DIR\&quot;/dist/packager-tool-6fg7sf04.js \&quot;$MAESTRO_DIR\&quot;/dist/packager-tool-54pn8ghz.js \&quot;$MAESTRO_DIR\&quot;/dist/index-8bsngk9y.js; do\n  echo \&quot;=== $f ===\&quot;\n  grep -o &#x27;\&quot;1\\.9\&quot;[^}]\\{0,200\\}\&quot;1\\.10\&quot;\\|1\\.9.\\{0,10\\}1\\.10&#x27; \&quot;$f\&quot; 2&gt;/dev/null | head -5\ndone&quot;,
+  &quot;description&quot;: &quot;Search for 1.9 to 1.10 migration version markers&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>=== /usr/lib/node_modules/@uipath/maestro-tool/dist/tool-fawd6t08.js ===
+=== /usr/lib/node_modules/@uipath/maestro-tool/dist/tool-2ab1nank.js ===
+=== /usr/lib/node_modules/@uipath/maestro-tool/dist/packager-tool-6fg7sf04.js ===
+&quot;1.9&quot;, &quot;1.10&quot;
+=== /usr/lib/node_modules/@uipath/maestro-tool/dist/packager-tool-54pn8ghz.js ===
+=== /usr/lib/node_modules/@uipath/maestro-tool/dist/index-8bsngk9y.js ===</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#42</span>
+      <span class="tool-name">Grep</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">36ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;pattern&quot;: &quot;rich expression|expression object|kind.*:.*js|\&quot;js\&quot;|type.*expression&quot;,
+  &quot;path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-flow&quot;,
+  &quot;-n&quot;: true,
+  &quot;output_mode&quot;: &quot;content&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/home/azureuser/projects/skills/skills/uipath-maestro-flow/SKILL.md:104:[Omitted long matching line]
+/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/references/plugins/connector/impl.md:337:&gt; **Expression values.** The serializer is purely structural (dot-expansion only; no expression evaluation, no type coercion). Choose the authoring shape based on what the expression returns at runtime:
+/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/CAPABILITY.md:73:[Omitted long matching line]
+/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/shared/cli-commands.md:134:`add` is idempotent on `(kind, name, folder)` for local and on resource key for remote; a retry returns `Status: &quot;Unchanged&quot;`. `edit` is the only command that mutates an existing resource&#x27;s spec — `refresh` never overwrites; it skips resources already in the solution. None of these touch `bindings_v2.json` — if a flow node still binds the resource, the next `refresh` will re-import it. See [uipath-solution Step 9–11](/uipath:uipath-solution) for the full contract.
+/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/references/p
+
+… (truncated, 2672 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#43</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">26ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;sed -n &#x27;250,330p&#x27; /home/azureuser/projects/skills/skills/uipath-maestro-flow/references/shared/variables-and-expressions.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>        }
+      }
+    ]
+  }
+}
+```
+
+---
+
+## Variable Updates (`variableUpdates`)
+
+Variable updates assign new values to `inout` (state) variables at specific nodes. They execute when the node completes.
+
+### Schema
+
+```typescript
+{
+  &quot;variableUpdates&quot;: {
+    &quot;{nodeId}&quot;: [
+      {
+        &quot;variableId&quot;: string,    // ID of the inout variable to update
+        &quot;expression&quot;: string     // =js: expression to evaluate and assign
+      }
+    ]
+  }
+}
+```
+
+### Example
+
+```json
+{
+  &quot;variables&quot;: {
+    &quot;globals&quot;: [
+      {
+        &quot;id&quot;: &quot;counter&quot;,
+        &quot;direction&quot;: &quot;inout&quot;,
+        &quot;type&quot;: &quot;number&quot;,
+        &quot;defaultValue&quot;: 0
+      },
+      {
+        &quot;id&quot;: &quot;lastStatus&quot;,
+        &quot;direction&quot;: &quot;inout&quot;,
+        &quot;type&quot;: &quot;string&quot;,
+        &quot;defaultValue&quot;: &quot;pending&quot;
+      }
+    ],
+    &quot;variableUpdates&quot;: {
+      &quot;processItem&quot;: [
+        {
+          &quot;variableId&quot;: &quot;counter&quot;,
+          &quot;expression&quot;: &quot;=js:$vars.counter + 1&quot;
+        },
+        {
+          &quot;variableId&quot;: &quot;lastStatus&quot;,
+          &quot;expression&quot;: &quot;=js:$vars.processItem.output.status&quot;
+        }
+      ]
+    }
+  }
+}
+```
+
+&gt; **Only `inout` variables can be updated.** Updating an `in` or `out` variable is invalid.
+
+&gt; **Inside loops:** variableUpdate ex
+
+… (truncated, 561 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#44</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">564ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;f=/usr/lib/node_modules/@uipath/maestro-tool/dist/packager-tool-6fg7sf04.js\npython3 - \&quot;$f\&quot; &lt;&lt;&#x27;EOF&#x27;\nimport sys,re\ndata = open(sys.argv[1]).read()\nidx = data.find(&#x27;\&quot;1.9\&quot;, \&quot;1.10\&quot;&#x27;)\nprint(data[max(0,idx-3000):idx+3000])\nEOF&quot;,
+  &quot;description&quot;: &quot;Extract context around 1.9 to 1.10 migration code&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>ptional(),
+  layout: layoutSchema.optional()
+});
+var workflowSchemaV1_3 = exports_external.object({
+  id: idSchema,
+  version: exports_external.literal(&quot;1.3&quot;),
+  name: exports_external.string().min(1),
+  description: exports_external.string().optional(),
+  runtime: workflowRuntimeSchema.optional(),
+  nodes: exports_external.array(fileFormatNodeSchema3),
+  edges: exports_external.array(edgeSchema),
+  definitions: exports_external.array(nodeManifestSchema2),
+  bindings: exports_external.array(bindingSchema).optional(),
+  variables: v1_3WorkflowVariablesSchema.optional(),
+  connection: workflowConnectionSchema.optional(),
+  subflows: exports_external.record(exports_external.string(), subflowFileSchema3).optional(),
+  layout: layoutSchema.optional()
+});
+var fileFormatNodeSchema4 = exports_external.lazy(() =&gt; nodeSchema2.extend({
+  ui: nodeSchema2.shape.ui.optional()
+}));
+var v1_4VariableUpdateSchema = exports_external.object({
+  variableId: exports_external.string(),
+  expression: expressionValueSchema
+});
+var v1_4WorkflowVariablesSchema = exports_external.object({
+  globals: exports_external.array(workflowVariableSchema).optional(),
+  nodes: exports_external.array(nodeVariableSchema).
+
+… (truncated, 4800 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#45</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">52ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;sed -n &#x27;300,400p&#x27; /home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/references/plugins/connector/impl.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>  --detail &#x27;{&quot;connectionId&quot;: &quot;&lt;id&gt;&quot;, &quot;folderKey&quot;: &quot;&lt;key&gt;&quot;, &quot;method&quot;: &quot;GET&quot;, &quot;endpoint&quot;: &quot;/Opportunity&quot;, &quot;objectName&quot;: &quot;Opportunity&quot;}&#x27; \
+  --output json
+```
+
+**Generic activity, retrieve-by-id** (Salesforce `get-record` against Account — object plus a path parameter for the record ID):
+
+```bash
+uip maestro flow node configure &lt;file&gt; &lt;nodeId&gt; \
+  --detail &#x27;{&quot;connectionId&quot;: &quot;&lt;id&gt;&quot;, &quot;folderKey&quot;: &quot;&lt;key&gt;&quot;, &quot;method&quot;: &quot;GETBYID&quot;, &quot;endpoint&quot;: &quot;/Account/{accountId}&quot;, &quot;objectName&quot;: &quot;Account&quot;, &quot;pathParameters&quot;: {&quot;accountId&quot;: &quot;001KY000007uI02YAE&quot;}}&#x27; \
+  --output json
+```
+
+Path-parameterized GETs are a distinct shape from list/query: `endpoint` carries `{&lt;placeholder&gt;}` tokens and `pathParameters` supplies the values. Resolve the ID via `is resources run list &lt;connector-key&gt; &lt;objectName&gt;` (Step 4) — never paste IDs across connections (see [reference-resolution.md](../../../../../../uipath-platform/references/integration-service/reference-resolution.md#reference-ids-are-connection-scoped-critical)).
+
+The `objectName` field is required for generic nodes (see &quot;Generic vs Concrete Activities&quot; above). The CLI fails fast with a runnable hint when it&#x27;s missing on a generic node. For concrete nodes the f
+
+… (truncated, 9003 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#46</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">103ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -rn \&quot;1\\.9\\b\\|1\\.10\\b\&quot; /home/azureuser/projects/skills/skills/uipath-maestro-flow 2&gt;&amp;1\necho \&quot;---\&quot;\ngrep -n \&quot;multiplyItem\\|runningProduct\&quot; -r /home/azureuser/projects/skills/skills/uipath-maestro-flow 2&gt;&amp;1&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>---</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#47</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">79ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -n \&quot;current version\\|schema version\\|file-format version\\|CURRENT_VERSION\\|latest version\&quot; -i -r /home/azureuser/projects/skills/skills/uipath-maestro-flow 2&gt;&amp;1 | head -30&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/home/azureuser/projects/skills/skills/uipath-maestro-flow/.maintenance/README.md:222:Add `&lt;!-- version-check-skip --&gt;` anywhere on a line to suppress it — for intentional references such as an anti-pattern example (`typeVersion: &quot;1.0.0&quot;` shown as the *wrong* value) or a fixed non-`.flow` schema version (eval-set files). Same marker convention as `check-uip-commands.sh`; for table rows, place it inside a cell.
+/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/evaluate/references/eval-sets-guide.md:159:- `version: &quot;1.0&quot;` distinguishes the new eval format from any legacy variants. Keep this. &lt;!-- version-check-skip --&gt; (eval-set file schema version, CLI-emitted by `eval set add` — not a `.flow` version)
+/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/shared/file-format.md:26:  &quot;version&quot;: &quot;&lt;scaffolded file-format version&gt;&quot;,
+/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/shared/file-format.md:44:**Top-level `version`** = workflow file-format version. **Use the exact value `uip maestro flow init` scaffolds** — do not hand-pick, hardcode, or downgrade it. It is not a semver string; the schema gates on an exact literal for t
+
+… (truncated, 1433 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#48</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">34ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;f=/usr/lib/node_modules/@uipath/maestro-tool/dist/packager-tool-6fg7sf04.js\ngrep -n \&quot;migrate.*1\\.10\\|1\\.9.*to.*1\\.10\\|migrateV1_9\\|Migration.*1\\.9\\|1_9_TO_1_10\\|MIGRATION\&quot; \&quot;$f\&quot; | head -40&quot;,
+  &quot;description&quot;: &quot;Search for migration function names&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>(Bash completed with no output)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#49</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">25ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -n \&quot;rich expression\\|expression object\\|kind\\\&quot;:\\|\\\&quot;js\\\&quot;:\\|ExpressionValue\\|{ *\\\&quot;js\\\&quot;\\|expression\\\&quot;:\\s*{\&quot; -i /home/azureuser/projects/skills/skills/uipath-maestro-flow/references/shared/file-format.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>(Bash completed with no output)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#50</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">882ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;for f in /usr/lib/node_modules/@uipath/maestro-tool/dist/*.js; do\n  n=$(grep -c \&quot;migrat\&quot; \&quot;$f\&quot; 2&gt;/dev/null)\n  if [ \&quot;$n\&quot; -gt 0 ] 2&gt;/dev/null; then echo \&quot;$f: $n\&quot;; fi\ndone&quot;,
+  &quot;description&quot;: &quot;Count migration mentions per file&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/usr/lib/node_modules/@uipath/maestro-tool/dist/de-CS2KUCZ6-j5a38g9p.js: 4
+/usr/lib/node_modules/@uipath/maestro-tool/dist/en-P6PNWNTO-g1f6cjh5.js: 2
+/usr/lib/node_modules/@uipath/maestro-tool/dist/en-UNT7BE26-rhh65jry.js: 2
+/usr/lib/node_modules/@uipath/maestro-tool/dist/es-MX-3MRZG6V4-9z56akxp.js: 4
+/usr/lib/node_modules/@uipath/maestro-tool/dist/es-QBAGOKHO-b2azze22.js: 4
+/usr/lib/node_modules/@uipath/maestro-tool/dist/fr-HVOCQCNI-1zn75qzy.js: 6
+/usr/lib/node_modules/@uipath/maestro-tool/dist/index-2dvhe3at.js: 1
+/usr/lib/node_modules/@uipath/maestro-tool/dist/index-2z4ezqvh.js: 8
+/usr/lib/node_modules/@uipath/maestro-tool/dist/index-8bsngk9y.js: 912
+/usr/lib/node_modules/@uipath/maestro-tool/dist/ja-VYAZOLWC-nbagzgre.js: 4
+/usr/lib/node_modules/@uipath/maestro-tool/dist/ko-EZTVBPMZ-9qq2mrrz.js: 4
+/usr/lib/node_modules/@uipath/maestro-tool/dist/packager-tool-3wf3tkrc.js: 3
+/usr/lib/node_modules/@uipath/maestro-tool/dist/packager-tool-54pn8ghz.js: 164
+/usr/lib/node_modules/@uipath/maestro-tool/dist/packager-tool-6fg7sf04.js: 421
+/usr/lib/node_modules/@uipath/maestro-tool/dist/packager-tool-bnqptw8n.js: 1
+/usr/lib/node_modules/@uipath/maestro-tool/dist/packager-tool-c0n5jv07.js: 1
+
+… (truncated, 906 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#51</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">64ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -n \&quot;MST-\\|DNA-\\|JIRA\\|ticket\&quot; -i /home/azureuser/projects/skills/skills/uipath-maestro-flow/references/shared/variables-and-expressions.md /home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/references/brownfield.md /home/azureuser/projects/skills/skills/uipath-maestro-flow/references/diagnose/references/failure-modes.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/shared/variables-and-expressions.md:9:&gt; - Missing `=js:` prefix on `$vars`/`$metadata`/`$self` (MST-9107)
+/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/shared/variables-and-expressions.md:380:The serializer rewrites `$vars` → `vars` whether or not `=js:` is present, so a missing prefix yields a confusing failure: the runtime field is bound to the literal string `&quot;vars.X.output.Id&quot;` (which looks like an unevaluated expression). The last row above is the opposite mistake — `=js:` is present but the `$vars.` prefix on the node reference is missing, so the expression evaluates a bare (undefined) identifier instead of the node&#x27;s output. `flow validate` catches this (cli-side `expression-prefix-validator`, error with remediation hint) — older cli versions without the validator still let it through to `flow debug`. See [node-output-wiring.md](node-output-wiring.md) for the full per-node-type field reference (MST-9107).
+/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/diagnose/references/failure-modes.md:11:| [MST-9107](#mst-9107--js-prefix-missing) | Activity input bound to l
+
+… (truncated, 3361 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#52</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">40ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -rn \&quot;\\\&quot;value\\\&quot;\&quot; /home/azureuser/projects/skills/skills/uipath-maestro-flow/references/shared/variables-and-expressions.md /home/azureuser/projects/skills/skills/uipath-maestro-flow/references/shared/file-format.md 2&gt;&amp;1 | head -20\necho \&quot;---any mention of migrate command output shape---\&quot;\ngrep -n \&quot;migrate\&quot; -A20 /home/azureuser/projects/skills/skills/uipath-maestro-flow/references/shared/cli-comm… (233 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>---any mention of migrate command output shape---
+---CAPABILITY files for migrate---</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#53</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">46ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;for f in /usr/lib/node_modules/@uipath/maestro-tool/dist/packager-tool-c0n5jv07.js /usr/lib/node_modules/@uipath/maestro-tool/dist/packager-tool-jbn5qa2n.js /usr/lib/node_modules/@uipath/maestro-tool/dist/packager-tool-54pn8ghz.js; do\n  echo \&quot;=== $f ===\&quot;\n  grep -n \&quot;1\\.9.*1\\.10\\|1_9.*1_10\\|migrateTo1_10\\|v1_10\\|V1_10\&quot; \&quot;$f\&quot; | head -20\ndone&quot;,
+  &quot;description&quot;: &quot;Look for 1.9 to 1.10 migration function in candidate files&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>=== /usr/lib/node_modules/@uipath/maestro-tool/dist/packager-tool-c0n5jv07.js ===
+=== /usr/lib/node_modules/@uipath/maestro-tool/dist/packager-tool-jbn5qa2n.js ===
+=== /usr/lib/node_modules/@uipath/maestro-tool/dist/packager-tool-54pn8ghz.js ===
+63:  workflowSchemaV1_10,
+13233:var migrationV1_10 = createMigration({
+13235:  to: { version: &quot;1.10&quot;, schema: workflowSchemaV1_10.loose() },
+13264:  migrationV1_10</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#54</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">29ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;f=/usr/lib/node_modules/@uipath/maestro-tool/dist/packager-tool-54pn8ghz.js\nsed -n &#x27;13180,13265p&#x27; \&quot;$f\&quot;&quot;,
+  &quot;description&quot;: &quot;View migrationV1_10 implementation&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>  label: &quot;Evaluate extraction&quot;
+};
+var EVALUATION_TARGET = {
+  kind: &quot;documentExtraction&quot;,
+  nodeType: DYNAMIC_EXTRACT_NODE_TYPE,
+  fileInputId: &quot;fileRef&quot;,
+  inputs: [{ id: &quot;fileRef&quot;, direction: &quot;in&quot;, type: &quot;file&quot; }],
+  outputs: [{ id: &quot;ExtractionResult&quot;, direction: &quot;out&quot;, type: &quot;object&quot; }],
+  runCapability: &quot;unsupported&quot;,
+  attachmentPolicy: { acceptedExtensions: [&quot;.pdf&quot;, &quot;.png&quot;, &quot;.jpg&quot;, &quot;.jpeg&quot;, &quot;.tif&quot;, &quot;.tiff&quot;] }
+};
+function updateDynamicExtractDefinition(definition) {
+  if (definition.nodeType !== DYNAMIC_EXTRACT_NODE_TYPE)
+    return;
+  definition.model = { ...definition.model, evaluationTarget: EVALUATION_TARGET };
+  const existingEvaluation = definition.toolbarExtensions?.evaluation ?? {};
+  const actions = existingEvaluation.actions ?? [];
+  definition.toolbarExtensions = {
+    ...definition.toolbarExtensions,
+    evaluation: {
+      ...existingEvaluation,
+      actions: actions.some((action) =&gt; action.id === OPEN_EXTRACTION_DATASET_ACTION.id) ? actions : [...actions, OPEN_EXTRACTION_DATASET_ACTION]
+    }
+  };
+}
+var migrationV1_9 = createMigration({
+  from: { version: &quot;1.8&quot;, schema: workflowSchemaV1_8.loose() },
+  to: { version: &quot;1.9&quot;, schema: workflowSchemaV1_9.loose() },
+ 
+
+… (truncated, 1978 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#55</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">29ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;f=/usr/lib/node_modules/@uipath/maestro-tool/dist/packager-tool-54pn8ghz.js\ngrep -n \&quot;expressionValueSchema\\b\&quot; \&quot;$f\&quot; | head -10&quot;,
+  &quot;description&quot;: &quot;Find expressionValueSchema definition&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>(Bash completed with no output)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#56</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">167ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;f=/usr/lib/node_modules/@uipath/maestro-tool/dist/packager-tool-6fg7sf04.js\ngrep -n \&quot;var workflowVariablesSchema\\|var expressionValueSchema\\|var v1_4VariableUpdateSchema\\|var workflowVariableSchema\\b\\|var nodeVariableSchema\\b\&quot; \&quot;$f\&quot;&quot;,
+  &quot;description&quot;: &quot;Find variable schema definitions&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>45669:var expressionValueSchema = exports_external.object({
+48440:var workflowVariableSchema = exports_external.object({
+48454:var nodeVariableSchema = exports_external.object({
+48462:var workflowVariablesSchema = exports_external.object({
+48845:var v1_4VariableUpdateSchema = exports_external.object({</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#57</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">26ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;f=/usr/lib/node_modules/@uipath/maestro-tool/dist/packager-tool-6fg7sf04.js\nsed -n &#x27;45660,45700p&#x27; \&quot;$f\&quot;\necho \&quot;---\&quot;\nsed -n &#x27;48430,48480p&#x27; \&quot;$f\&quot;&quot;,
+  &quot;description&quot;: &quot;Inspect expressionValueSchema and workflowVariablesSchema&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>  maxTokens: exports_external.number().nullable(),
+  maxTemperature: exports_external.number().nullable(),
+  policyName: exports_external.string(),
+  shouldEnforceHumanInTheLoop: exports_external.boolean().optional(),
+  maxIterations: exports_external.number().nullable().optional()
+});
+var JS_EXPRESSION_PREFIX = &quot;=js:&quot;;
+var expressionFieldTypeSchema = exports_external.enum([&quot;string&quot;, &quot;number&quot;, &quot;boolean&quot;, &quot;object&quot;, &quot;array&quot;, &quot;null&quot;]);
+var expressionModeSchema = exports_external.enum([&quot;literal&quot;, &quot;jsExpression&quot;]);
+var expressionValueSchema = exports_external.object({
+  type: expressionModeSchema,
+  expression: exports_external.string(),
+  fieldType: expressionFieldTypeSchema
+}).strict();
+var expressionLikeSchema = exports_external.union([exports_external.string(), expressionValueSchema]);
+function isExpressionValue(v) {
+  return expressionValueSchema.safeParse(v).success;
+}
+function isEmptyExpressionValue(ev) {
+  return ev.expression.trim() === &quot;&quot;;
+}
+function inferFieldType(value) {
+  if (Array.isArray(value))
+    return &quot;array&quot;;
+  if (value === null)
+    return &quot;null&quot;;
+  const t12 = typeof value;
+  if (t12 === &quot;string&quot; || t12 === &quot;number&quot; || t12 === &quot;boolean&quot; || t12 === &quot;object&quot;)
+    
+
+… (truncated, 2891 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#58</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">84ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;f=/usr/lib/node_modules/@uipath/maestro-tool/dist/packager-tool-6fg7sf04.js\ngrep -n \&quot;function decodeLiteral\\|function toExpressionValue\\|function toExpressionLike\\|function normalizeExpression\\|function encodeExpression\\|jsExpression\\|function migrateV1_3\\|migrationV1_4 \&quot; \&quot;$f\&quot; | head -40&quot;,
+  &quot;description&quot;: &quot;Find expression encode/decode helper functions&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>45668:var expressionModeSchema = exports_external.enum([&quot;literal&quot;, &quot;jsExpression&quot;]);
+45716:function decodeLiteral(ev) {
+45717:  if (ev.type === &quot;jsExpression&quot;)
+45746:        type: &quot;jsExpression&quot;,
+45757:    return value.type === &quot;jsExpression&quot; ? value.expression : undefined;
+45849:    return value.type === &quot;jsExpression&quot;;
+45859:function decodeLiteralForValidation(value) {
+45863:    if (value.type === &quot;jsExpression&quot;)
+45878:function decodeLiteralsForValidation(inputs) {
+46282:    return callContext.type === &quot;jsExpression&quot; &amp;&amp; !isEmptyExpressionValue(callContext);
+49430:    return value.type === &quot;jsExpression&quot; ? true : Boolean(decodeLiteral(value));</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#59</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">432ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;for f in /usr/lib/node_modules/@uipath/maestro-tool/dist/*.js; do\n  if grep -q \&quot;Offending field\&quot; \&quot;$f\&quot; 2&gt;/dev/null; then echo \&quot;$f\&quot;; fi\ndone&quot;,
+  &quot;description&quot;: &quot;Find file containing the error message template&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/usr/lib/node_modules/@uipath/maestro-tool/dist/tool-fawd6t08.js</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#60</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">20ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;f=/usr/lib/node_modules/@uipath/maestro-tool/dist/tool-fawd6t08.js\ngrep -n \&quot;Offending field\&quot; \&quot;$f\&quot;&quot;,
+  &quot;description&quot;: &quot;Find line with offending field message&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>7100:    parts.push(`Offending field(s): ${shown.join(&quot;, &quot;)}${extra}.`);</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#61</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">55ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;f=/usr/lib/node_modules/@uipath/maestro-tool/dist/tool-fawd6t08.js\nsed -n &#x27;7050,7110p&#x27; \&quot;$f\&quot;&quot;,
+  &quot;description&quot;: &quot;View context around migration error formatting&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>      robotName: status.robot?.name,
+      hostMachineName: status.hostMachineName
+    };
+    OutputFormatter.success({
+      Result: RESULTS.Success,
+      Code: &quot;FlowJobStatus&quot;,
+      Data: outputData
+    });
+  });
+}
+
+// ../flow-tool/src/services/flow-migration-check.ts
+if (!instance.isInitialized) {
+  instance.init({
+    lng: &quot;en&quot;,
+    fallbackLng: &quot;en&quot;,
+    defaultNS: &quot;validation&quot;,
+    resources: {},
+    interpolation: { escapeValue: false }
+  });
+}
+registerFlowMigrationsI18n(instance);
+function captureMigrationIssues() {
+  const paths = [];
+  const tracker = {
+    trackError: (_error, _severity, details) =&gt; {
+      if (!(&quot;issues&quot; in details))
+        return;
+      const issues = details.issues;
+      if (!Array.isArray(issues))
+        return;
+      for (const issue of issues) {
+        if (!issue || typeof issue !== &quot;object&quot;)
+          continue;
+        if (!(&quot;path&quot; in issue))
+          continue;
+        const path = issue.path;
+        if (Array.isArray(path) &amp;&amp; path.length &gt; 0) {
+          paths.push(path.map(String).join(&quot;.&quot;));
+        }
+      }
+    }
+  };
+  return { tracker, fieldPaths: () =&gt; [...new Set(paths)] };
+}
+function formatMigrationFailureMessage(step, rawMessage
+
+… (truncated, 645 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#62</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">30ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;f=/usr/lib/node_modules/@uipath/maestro-tool/dist/packager-tool-6fg7sf04.js\ngrep -n \&quot;^var expressionValueSchema\\|expressionValueSchema =\&quot; \&quot;$f\&quot; | head -20&quot;,
+  &quot;description&quot;: &quot;Find all assignments to expressionValueSchema&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>45669:var expressionValueSchema = exports_external.object({</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#63</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">23ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;f=/usr/lib/node_modules/@uipath/maestro-tool/dist/packager-tool-6fg7sf04.js\nsed -n &#x27;45700,45870p&#x27; \&quot;$f\&quot;&quot;,
+  &quot;description&quot;: &quot;View expression encode/decode logic in detail&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>          return JSON.stringify(raw);
+        } catch {
+          return String(raw);
+        }
+      }
+      return String(raw);
+    case &quot;number&quot;:
+    case &quot;boolean&quot;:
+      return raw == null ? &quot;&quot; : String(raw);
+    case &quot;null&quot;:
+      return &quot;null&quot;;
+    case &quot;object&quot;:
+    case &quot;array&quot;:
+      return JSON.stringify(raw ?? null);
+  }
+}
+function decodeLiteral(ev) {
+  if (ev.type === &quot;jsExpression&quot;)
+    return ev.expression;
+  switch (ev.fieldType) {
+    case &quot;string&quot;:
+      return ev.expression;
+    case &quot;number&quot;:
+      return ev.expression === &quot;&quot; ? undefined : Number(ev.expression);
+    case &quot;boolean&quot;:
+      return ev.expression === &quot;&quot; ? undefined : ev.expression === &quot;true&quot;;
+    case &quot;null&quot;:
+      return null;
+    case &quot;object&quot;:
+    case &quot;array&quot;:
+      if (ev.expression === &quot;&quot;)
+        return;
+      try {
+        return JSON.parse(ev.expression);
+      } catch {
+        return;
+      }
+  }
+}
+function coerceToExpressionValue(value, fieldType) {
+  if (isExpressionValue(value))
+    return value;
+  const resolvedFieldType = fieldType ?? inferFieldType(value);
+  if (typeof value === &quot;string&quot;) {
+    if (value.startsWith(JS_EXPRESSION_PREFIX)) {
+      return {
+        type: &quot;jsExpression&quot;,
+
+… (truncated, 3586 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#64</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">18ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;f=/usr/lib/node_modules/@uipath/maestro-tool/dist/packager-tool-6fg7sf04.js\ngrep -n \&quot;function createMigration\&quot; \&quot;$f\&quot;&quot;,
+  &quot;description&quot;: &quot;Find createMigration function to understand validation order&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>(Bash completed with no output)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#65</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">9ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-loop-multiply/LoopMultiply/LoopMultiply/LoopMultiply.flow&quot;,
+  &quot;offset&quot;: 560,
+  &quot;limit&quot;: 40
+}</pre>
+    <h4>Result</h4>
+    <pre>560	              &quot;type&quot;: &quot;target&quot;,
+561	              &quot;handleType&quot;: &quot;input&quot;
+562	            }
+563	          ]
+564	        }
+565	      ],
+566	      &quot;model&quot;: {
+567	        &quot;type&quot;: &quot;bpmn:EndEvent&quot;
+568	      },
+569	      &quot;runtimeConstraints&quot;: {
+570	        &quot;exclude&quot;: [
+571	          &quot;api-function&quot;
+572	        ]
+573	      }
+574	    }
+575	  ],
+576	  &quot;variables&quot;: {
+577	    &quot;globals&quot;: [
+578	      {
+579	        &quot;id&quot;: &quot;numbers&quot;,
+580	        &quot;direction&quot;: &quot;in&quot;,
+581	        &quot;type&quot;: &quot;array&quot;,
+582	        &quot;defaultValue&quot;: [13, 15, 17]
+583	      },
+584	      {
+585	        &quot;id&quot;: &quot;runningProduct&quot;,
+586	        &quot;direction&quot;: &quot;inout&quot;,
+587	        &quot;type&quot;: &quot;number&quot;,
+588	        &quot;defaultValue&quot;: 1
+589	      },
+590	      {
+591	        &quot;id&quot;: &quot;product&quot;,
+592	        &quot;direction&quot;: &quot;out&quot;,
+593	        &quot;type&quot;: &quot;number&quot;
+594	      }
+595	    ],
+596	    &quot;nodes&quot;: [
+597	      {
+598	        &quot;id&quot;: &quot;loop1.currentItem&quot;,
+599	        &quot;type&quot;: &quot;any&quot;,</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#66</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">44ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;f=/usr/lib/node_modules/@uipath/maestro-tool/dist/tool-fawd6t08.js\ngrep -n \&quot;MISSING_OUTPUT_MAPPING\\|output-mapping\&quot; \&quot;$f\&quot; | head -20&quot;,
+  &quot;description&quot;: &quot;Find output-mapping validation rule logic&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>(Bash completed with no output)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#67</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">184ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;for f in /usr/lib/node_modules/@uipath/maestro-tool/dist/*.js; do\n  if grep -q \&quot;MISSING_OUTPUT_MAPPING\&quot; \&quot;$f\&quot; 2&gt;/dev/null; then echo \&quot;$f\&quot;; fi\ndone&quot;,
+  &quot;description&quot;: &quot;Find file with MISSING_OUTPUT_MAPPING rule&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/usr/lib/node_modules/@uipath/maestro-tool/dist/packager-tool-6fg7sf04.js</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#68</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">29ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;f=/usr/lib/node_modules/@uipath/maestro-tool/dist/packager-tool-6fg7sf04.js\ngrep -n \&quot;MISSING_OUTPUT_MAPPING\\|output-mapping\&quot; \&quot;$f\&quot;&quot;,
+  &quot;description&quot;: &quot;Locate output mapping rule context&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>46614:  id: &quot;output-mapping&quot;,
+46631:            code: &quot;MISSING_OUTPUT_MAPPING&quot;,</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#69</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">34ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;f=/usr/lib/node_modules/@uipath/maestro-tool/dist/packager-tool-6fg7sf04.js\nsed -n &#x27;46590,46650p&#x27; \&quot;$f\&quot;&quot;,
+  &quot;description&quot;: &quot;View output-mapping validation rule full logic&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>          code: &quot;DATA_TRANSFORM_INCOMPLETE&quot;,
+          ...localized3(&quot;dataTransform_noOperations_message&quot;, { nodeLabel }, &#x27;&quot;{{nodeLabel}}&quot; has no operations configured&#x27;),
+          severity: &quot;error&quot;,
+          nodeId: node.id,
+          fieldPath: &quot;inputs.operations&quot;,
+          layer: &quot;field&quot;
+        });
+        continue;
+      }
+      for (const op of operations) {
+        errors5.push(...validateOperation(op, nodeLabel, node.id));
+      }
+    }
+    return errors5;
+  }
+};
+var t5 = instance.getFixedT(null, VALIDATION_NAMESPACE);
+function localized4(key, params, defaultValue) {
+  return {
+    message: t5(key, { ...params, defaultValue }),
+    i18n: { key, params, ns: VALIDATION_NAMESPACE }
+  };
+}
+var outputMappingRule = {
+  id: &quot;output-mapping&quot;,
+  severity: &quot;warning&quot;,
+  validate(ctx) {
+    const outputVarIds = ctx.outputVariableIds;
+    if (!outputVarIds || outputVarIds.length === 0)
+      return [];
+    const errors5 = [];
+    const endNodes = ctx.nodes.filter((n) =&gt; isEndNodeType(n.type));
+    if (endNodes.length === 0)
+      return [];
+    for (const node of endNodes) {
+      const manifest = getManifestForNode(node, ctx.manifests);
+      const nodeLabel = getNodeLabel(node, mani
+
+… (truncated, 822 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#70</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">34ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;f=/usr/lib/node_modules/@uipath/maestro-tool/dist/packager-tool-6fg7sf04.js\ngrep -n \&quot;outputVariableIds\&quot; \&quot;$f\&quot;&quot;,
+  &quot;description&quot;: &quot;Find outputVariableIds computation&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>46617:    const outputVarIds = ctx.outputVariableIds;</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#71</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">32ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;f=/usr/lib/node_modules/@uipath/maestro-tool/dist/packager-tool-6fg7sf04.js\ngrep -n \&quot;outputVariableIds:\&quot; \&quot;$f\&quot;&quot;,
+  &quot;description&quot;: &quot;Find where outputVariableIds field is populated&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>(Bash completed with no output)</pre>
+    
+  </div>
+</details>
+
+</div>
+
+<h2>Command Telemetry</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Total</div><div class="value">72</div></div>
+    <div class="stat"><div class="label">Successful</div><div class="value">71 (99%)</div></div>
+    <div class="stat"><div class="label">Failed</div><div class="value">1</div></div>
+    <div class="stat"><div class="label">Avg / cmd</div><div class="value">1.55s</div></div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 2fr;gap:16px;margin-top:12px">
+    <div>
+      <h4>By Tool</h4>
+      <table>
+        <thead><tr><th>Tool</th><th>Count</th></tr></thead>
+        <tbody><tr><td class='mono'>Bash</td><td>50</td></tr><tr><td class='mono'>Grep</td><td>12</td></tr><tr><td class='mono'>Read</td><td>7</td></tr><tr><td class='mono'>Skill</td><td>1</td></tr><tr><td class='mono'>Write</td><td>1</td></tr><tr><td class='mono'>Agent</td><td>1</td></tr></tbody>
+      </table>
+    </div>
+    <div>
+      <h4>Slowest</h4>
+      <table>
+        <thead><tr><th>Tool</th><th>Duration</th><th>Parameters</th></tr></thead>
+        <tbody><tr><td class='mono'>Bash</td><td>24.75s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro flow registry get core.ac...</td></tr><tr><td class='mono'>Bash</td><td>22.41s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro flow registry get core.lo...</td></tr><tr><td class='mono'>Bash</td><td>20.74s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro flow registry get core.co...</td></tr><tr><td class='mono'>Bash</td><td>18.28s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;\\\nuip solution init &quot;LoopMultiply&quot; ...</td></tr><tr><td class='mono'>Bash</td><td>8.15s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro flow validate &quot;LoopMultip...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+  <p><strong>Most Common Pattern:</strong> <code>Bash → Bash → Bash</code></p><p><strong>Skill Tool Invoked:</strong> 1 time(s)</p>
+</div>
+
+<h2>Generation Metrics</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Total Latency</div><div class="value">8m 6s</div></div>
+    <div class="stat"><div class="label">Turns</div><div class="value">1</div></div>
+    <div class="stat"><div class="label">Assistant Turns</div><div class="value">125</div></div>
+    <div class="stat"><div class="label">Avg Turn Latency</div><div class="value">7m 33s</div></div>
+    
+  </div>
+</div>
+
+<h2>Token Usage</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Input (uncached)</div><div class="value">112</div></div>
+    <div class="stat"><div class="label">Output</div><div class="value">41,785</div></div>
+    <div class="stat"><div class="label">Cache Write</div><div class="value">161,325</div></div>
+    <div class="stat"><div class="label">Cache Read</div><div class="value">5,504,077</div></div>
+    <div class="stat"><div class="label">Total</div><div class="value">5,707,299</div></div>
+    <div class="stat"><div class="label">Cost</div><div class="value">$2.8833</div></div>
+  </div>
+</div>
+
+<h2>Agent Settings</h2>
+<div class="card" style="padding:0">
+  <table>
+    <tbody><tr><td class='mono dim'>Permission Mode</td><td>acceptEdits</td></tr><tr><td class='mono dim'>Allowed Tools</td><td>Skill, Bash, Read, Write, Edit, Glob, Grep</td></tr><tr><td class='mono dim'>Model</td><td>us.anthropic.claude-sonnet-5</td></tr><tr><td class='mono dim'>Max Turns</td><td>40</td></tr><tr><td class='mono dim'>System Prompt</td><td>You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted. </td></tr><tr><td class='mono dim'>System Prompt Mode</td><td>append</td></tr><tr><td class='mono dim'>Plugins</td><td>/home/azureuser/projects/skills</td></tr></tbody>
+  </table>
+</div>
+
+<h2>Environment</h2>
+<div class="card" style="padding:0">
+  <table>
+    <tbody><tr><td class='mono dim'>git_commit</td><td>unknown</td></tr><tr><td class='mono dim'>skills_git_commit</td><td>unknown</td></tr><tr><td class='mono dim'>cli_version</td><td>1.201.0-dev.8272</td></tr><tr><td class='mono dim'>tool_plugins</td><td>{&#x27;admin-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;agent-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;agenthub-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;aops-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;api-workflow-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;automation-hub-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;codedagent-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;codedapp-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;coder-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;context-grounding-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;conversational-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;data-fabric-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;docsai-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;function-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;gov-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;guardrails-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;insights-tool&#x27;: &#x27;1.201.0-dev.8276&#x27;, &#x27;integrationservice-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;ixp-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;llm-gateway-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;llmgw-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;maestro-tool&#x27;: &#x27;1.201.0-dev.8275&#x27;, &#x27;model-hub-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;orchestrator-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;platform-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;pm-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;rpa-legacy-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;rpa-tool&#x27;: &#x27;1.201.0-dev.20260809.3&#x27;, &#x27;solution-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;tasks-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;test-manager-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;traces-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;vertical-solutions-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;}</td></tr><tr><td class='mono dim'>coder_eval</td><td>0.9.6</td></tr><tr><td class='mono dim'>claude_code_cli</td><td>2.1.177 (Claude Code)</td></tr><tr><td class='mono dim'>uv</td><td>uv 0.12.5 (x86_64-unknown-linux-gnu)</td></tr><tr><td class='mono dim'>anthropic</td><td>0.122.0</td></tr><tr><td class='mono dim'>openai</td><td>3.2.0</td></tr><tr><td class='mono dim'>pydantic</td><td>2.12.5</td></tr><tr><td class='mono dim'>api_routing</td><td>aws_bedrock</td></tr><tr><td class='mono dim'>eval_routing</td><td>aws_bedrock</td></tr><tr><td class='mono dim'>aws_region</td><td>us-east-2</td></tr><tr><td class='mono dim'>bedrock_model</td><td>us.anthropic.claude-sonnet-4-6</td></tr><tr><td class='mono dim'>system_prompt_semantics</td><td>append</td></tr></tbody>
+  </table>
+</div>
+
+<footer>Generated by coder_eval · 2026-08-18T21:55:50</footer>
+</div>
+<script>
+function toggleTheme() {
+  document.documentElement.classList.toggle('light');
+  try {
+    const mode = document.documentElement.classList.contains('light') ? 'light' : 'dark';
+    localStorage.setItem('coder-eval-theme', mode);
+  } catch (e) { /* ignore */ }
+}
+(function() {
+  try {
+    if (localStorage.getItem('coder-eval-theme') === 'light') {
+      document.documentElement.classList.add('light');
+    }
+  } catch (e) { /* ignore */ }
+})();
+</script>
+</body>
+</html>

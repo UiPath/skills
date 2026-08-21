@@ -1,0 +1,591 @@
+{
+  "id": "ce8f8a73-29eb-4164-8c85-f3a8f2242e27",
+  "version": "1.9",
+  "name": "SummarizeDemo",
+  "variables": {
+    "globals": [
+      {
+        "id": "documentFile",
+        "direction": "in",
+        "type": "file",
+        "triggerNodeId": "start",
+        "description": "Document attached at trigger time to be summarized."
+      },
+      {
+        "id": "summary",
+        "direction": "out",
+        "type": "string",
+        "description": "Synthesized executive summary text."
+      },
+      {
+        "id": "citations",
+        "direction": "out",
+        "type": "array",
+        "subType": "object",
+        "description": "Citations backing the synthesized summary."
+      }
+    ],
+    "nodes": [
+      {
+        "id": "start.output",
+        "type": "object",
+        "description": "Data passed when manually triggering the process.",
+        "binding": {
+          "nodeId": "start",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "summarizeContract.output",
+        "type": "object",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "content": {
+              "type": [
+                "object",
+                "null"
+              ],
+              "properties": {
+                "Text": {
+                  "type": "string"
+                },
+                "Citations": {
+                  "type": [
+                    "array",
+                    "null"
+                  ],
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "Ordinal": {
+                        "type": "integer"
+                      },
+                      "PageNumber": {
+                        "type": "integer"
+                      },
+                      "Source": {
+                        "type": "string"
+                      },
+                      "Reference": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "binding": {
+          "nodeId": "summarizeContract",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "summarizeContract.error",
+        "type": "object",
+        "description": "Error information if the node fails",
+        "binding": {
+          "nodeId": "summarizeContract",
+          "outputId": "error"
+        }
+      },
+      {
+        "id": "end.summary",
+        "type": "string",
+        "binding": {
+          "nodeId": "end",
+          "outputId": "summary"
+        }
+      },
+      {
+        "id": "end.citations",
+        "type": "string",
+        "binding": {
+          "nodeId": "end",
+          "outputId": "citations"
+        }
+      }
+    ]
+  },
+  "nodes": [
+    {
+      "id": "start",
+      "type": "core.trigger.manual",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Manual trigger"
+      },
+      "inputs": {
+        "entryPointId": "efb0f482-65e0-450c-b349-c862c5458688",
+        "isDefaultEntryPoint": true
+      }
+    },
+    {
+      "id": "summarizeContract",
+      "type": "uipath.pattern.deep-rag",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Summarize"
+      },
+      "inputs": {
+        "attachment": "=js:$vars.start.output.documentFile",
+        "prompt": "Write a 5-bullet executive summary covering scope, term, SLAs, penalties, and termination.",
+        "returnCitations": true
+      },
+      "outputs": {
+        "output": {
+          "type": "object",
+          "source": "=response",
+          "var": "output",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "content": {
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "properties": {
+                  "Text": {
+                    "type": "string"
+                  },
+                  "Citations": {
+                    "type": [
+                      "array",
+                      "null"
+                    ],
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "Ordinal": {
+                          "type": "integer"
+                        },
+                        "PageNumber": {
+                          "type": "integer"
+                        },
+                        "Source": {
+                          "type": "string"
+                        },
+                        "Reference": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails",
+          "source": "=Error",
+          "var": "error"
+        }
+      }
+    },
+    {
+      "id": "end",
+      "type": "core.control.end",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "End"
+      },
+      "inputs": {},
+      "outputs": {
+        "summary": {
+          "source": "=js:$vars.summarizeContract.output.content.Text"
+        },
+        "citations": {
+          "source": "=js:$vars.summarizeContract.output.content.Citations"
+        }
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge_start_output_summarizeContract_input",
+      "sourceNodeId": "start",
+      "sourcePort": "output",
+      "targetNodeId": "summarizeContract",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge_summarizeContract_output_end_input",
+      "sourceNodeId": "summarizeContract",
+      "sourcePort": "output",
+      "targetNodeId": "end",
+      "targetPort": "input"
+    }
+  ],
+  "definitions": [
+    {
+      "nodeType": "core.trigger.manual",
+      "version": "1.0",
+      "category": "trigger",
+      "description": "Start the process manually",
+      "tags": [
+        "trigger",
+        "start",
+        "manual"
+      ],
+      "sortOrder": 80,
+      "display": {
+        "label": "Manual trigger",
+        "icon": "play",
+        "shape": "circle"
+      },
+      "handleConfiguration": [
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "output",
+              "type": "source",
+              "handleType": "output",
+              "showButton": true,
+              "constraints": {
+                "forbiddenTargetCategories": [
+                  "trigger"
+                ]
+              }
+            }
+          ],
+          "visible": true
+        }
+      ],
+      "model": {
+        "type": "bpmn:StartEvent",
+        "entryPointId": true
+      },
+      "outputDefinition": {
+        "output": {
+          "type": "object",
+          "description": "Data passed when manually triggering the process.",
+          "source": "null",
+          "var": "output"
+        }
+      },
+      "toolbarExtensions": {
+        "design": {
+          "actions": [
+            {
+              "id": "change-trigger-type",
+              "icon": "square-mouse-pointer",
+              "label": "Change trigger type"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "nodeType": "uipath.pattern.deep-rag",
+      "version": "1.0",
+      "category": "document-processing",
+      "tags": [
+        "synthesis",
+        "citation",
+        "reasoning"
+      ],
+      "sortOrder": 1,
+      "supportsErrorHandling": true,
+      "description": "Create a complex summary of a document",
+      "display": {
+        "label": "Summarize",
+        "icon": "sigma"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "output",
+              "type": "source",
+              "handleType": "output"
+            },
+            {
+              "id": "error",
+              "label": "Error",
+              "type": "source",
+              "handleType": "output",
+              "visible": "{inputs.errorHandlingEnabled}",
+              "constraints": {
+                "maxConnections": 1
+              }
+            }
+          ]
+        }
+      ],
+      "model": {
+        "type": "bpmn:ServiceTask",
+        "serviceType": "ECS.DeepRag"
+      },
+      "inputDefinition": {
+        "type": "object",
+        "properties": {
+          "attachment": {
+            "type": "string"
+          },
+          "prompt": {
+            "type": "string"
+          },
+          "returnCitations": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "attachment",
+          "prompt"
+        ]
+      },
+      "inputDefaults": {
+        "attachment": "",
+        "prompt": "",
+        "returnCitations": false
+      },
+      "outputDefinition": {
+        "output": {
+          "type": "object",
+          "source": "=response",
+          "var": "output",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "content": {
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "properties": {
+                  "Text": {
+                    "type": "string"
+                  },
+                  "Citations": {
+                    "type": [
+                      "array",
+                      "null"
+                    ],
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "Ordinal": {
+                          "type": "integer"
+                        },
+                        "PageNumber": {
+                          "type": "integer"
+                        },
+                        "Source": {
+                          "type": "string"
+                        },
+                        "Reference": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails",
+          "source": "=Error",
+          "var": "error",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "required": [
+              "code",
+              "message",
+              "detail",
+              "category",
+              "status"
+            ],
+            "properties": {
+              "code": {
+                "type": "string",
+                "description": "Error code as a string"
+              },
+              "message": {
+                "type": "string",
+                "description": "High-level error message"
+              },
+              "detail": {
+                "type": "string",
+                "description": "Detailed error description"
+              },
+              "category": {
+                "type": "string",
+                "description": "Error category"
+              },
+              "status": {
+                "type": "integer",
+                "description": "HTTP status code"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "form": {
+        "id": "deep-rag-properties",
+        "title": "Summarize Configuration",
+        "sections": [
+          {
+            "id": "source",
+            "title": "Data source",
+            "collapsible": true,
+            "defaultExpanded": true,
+            "fields": [
+              {
+                "name": "inputs.attachment",
+                "type": "file",
+                "label": "Attachment",
+                "description": "The summary is generated from this file or document.",
+                "validation": {
+                  "required": true,
+                  "messages": {
+                    "required": "Attachment is required"
+                  }
+                }
+              },
+              {
+                "name": "inputs.prompt",
+                "type": "custom",
+                "component": "prompt-editor",
+                "label": "Prompt",
+                "description": "The prompt defines what the summary should focus on.",
+                "componentProps": {
+                  "multiline": true,
+                  "minRows": 4,
+                  "maxRows": 20,
+                  "placeholder": "Summarize the key findings and risks"
+                },
+                "validation": {
+                  "required": true,
+                  "messages": {
+                    "required": "Prompt is required"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "id": "citations",
+            "title": "Citations",
+            "collapsible": true,
+            "defaultExpanded": false,
+            "fields": [
+              {
+                "name": "inputs.returnCitations",
+                "type": "checkbox",
+                "label": "Include citations",
+                "description": "Citations link generated summaries to source material."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "nodeType": "core.control.end",
+      "version": "1.0",
+      "category": "control-flow",
+      "description": "Mark the end of a process path",
+      "tags": [
+        "control-flow",
+        "end",
+        "finish",
+        "complete"
+      ],
+      "sortOrder": 65,
+      "display": {
+        "label": "End",
+        "icon": "circle-check",
+        "shape": "circle"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        }
+      ],
+      "model": {
+        "type": "bpmn:EndEvent"
+      },
+      "runtimeConstraints": {
+        "exclude": [
+          "api-function"
+        ]
+      }
+    }
+  ],
+  "runtime": "maestro",
+  "layout": {
+    "nodes": {
+      "start": {
+        "position": {
+          "x": 256,
+          "y": 144
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        }
+      },
+      "summarizeContract": {
+        "position": {
+          "x": 448,
+          "y": 144
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        }
+      },
+      "end": {
+        "position": {
+          "x": 640,
+          "y": 144
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,2843 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>coder_eval · skill-flow-ixp-routing/invoice-extraction · default</title>
+<style>
+:root {
+  --bg-page: #0f1419;
+  --bg-card: #1a2129;
+  --bg-card-2: #232d38;
+  --bg-code: #0b0f14;
+  --fg: #e6edf3;
+  --fg-muted: #8b98a5;
+  --fg-dim: #6e7681;
+  --border: #30363d;
+  --accent: #58a6ff;
+  --score-high: #22c55e;
+  --score-mid: #f59e0b;
+  --score-low: #ef4444;
+  --status-success: #22c55e;
+  --status-failure: #f59e0b;
+  --status-error: #ef4444;
+  --status-neutral: #6e7681;
+  --shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+.light {
+  --bg-page: #ffffff;
+  --bg-card: #f6f8fa;
+  --bg-card-2: #eaeef2;
+  --bg-code: #f6f8fa;
+  --fg: #1f2328;
+  --fg-muted: #636c76;
+  --fg-dim: #8b949e;
+  --border: #d0d7de;
+  --accent: #0969da;
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial,
+               sans-serif;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--fg);
+  background: var(--bg-page);
+}
+.container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+h1, h2, h3, h4 { margin: 0 0 12px 0; line-height: 1.25; }
+h1 { font-size: 22px; font-weight: 600; }
+h2 { font-size: 18px; font-weight: 600; margin-top: 28px;
+     padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+h3 { font-size: 15px; font-weight: 600; color: var(--fg-muted); }
+h4 { font-size: 13px; font-weight: 600; color: var(--fg-muted); }
+p { margin: 0 0 8px 0; }
+.muted { color: var(--fg-muted); }
+.dim { color: var(--fg-dim); }
+.mono { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+        monospace; font-size: 12.5px; }
+code { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+       monospace; font-size: 12.5px; background: var(--bg-code);
+       border: 1px solid var(--border); padding: 1px 5px; border-radius: 3px; }
+pre { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+      monospace; font-size: 12.5px; background: var(--bg-code);
+      border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px;
+      margin: 6px 0; overflow-x: auto; white-space: pre-wrap;
+      word-wrap: break-word; }
+.header-bar { display: flex; align-items: center; justify-content: space-between;
+              margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+.title-group { flex: 1; min-width: 0; }
+.title-group .subtitle { color: var(--fg-muted); font-size: 13px;
+                         margin-top: 2px; word-break: break-all; }
+.badges { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.badge { display: inline-flex; align-items: center; gap: 6px;
+         padding: 4px 10px; border-radius: 12px; font-size: 12px;
+         font-weight: 600; background: var(--bg-card-2);
+         border: 1px solid var(--border); color: var(--fg); }
+.badge.success { background: color-mix(in srgb, var(--status-success) 20%, var(--bg-card-2));
+                 border-color: var(--status-success); color: var(--status-success); }
+.badge.failure { background: color-mix(in srgb, var(--status-failure) 20%, var(--bg-card-2));
+                 border-color: var(--status-failure); color: var(--status-failure); }
+.badge.error { background: color-mix(in srgb, var(--status-error) 20%, var(--bg-card-2));
+               border-color: var(--status-error); color: var(--status-error); }
+.badge.warning { background: color-mix(in srgb, #f4a52810 20%, var(--bg-card-2));
+                 border-color: #f4a528; color: #f4a528; }
+.badge.neutral { color: var(--fg-muted); }
+.score-pill { display: inline-block; padding: 2px 8px; border-radius: 10px;
+              font-size: 12px; font-weight: 700; min-width: 42px;
+              text-align: center; color: #0b0f14; }
+.score-high { background: var(--score-high); }
+.score-mid { background: var(--score-mid); }
+.score-low { background: var(--score-low); }
+.card { background: var(--bg-card); border: 1px solid var(--border);
+        border-radius: 8px; padding: 16px 20px; margin-bottom: 16px;
+        box-shadow: var(--shadow); }
+.card.highlight { border-left: 4px solid var(--accent); }
+.grid { display: grid; gap: 12px;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+.stat { background: var(--bg-card-2); padding: 10px 12px; border-radius: 6px;
+        border: 1px solid var(--border); }
+.stat .label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;
+               color: var(--fg-muted); margin-bottom: 4px; }
+.stat .value { font-size: 16px; font-weight: 600; }
+table { width: 100%; border-collapse: collapse; margin: 4px 0 12px 0; }
+th, td { text-align: left; padding: 8px 10px;
+         border-bottom: 1px solid var(--border); vertical-align: top;
+         font-size: 13px; }
+th { color: var(--fg-muted); font-weight: 600; font-size: 12px;
+     text-transform: uppercase; letter-spacing: 0.3px; }
+tr:last-child td { border-bottom: none; }
+details { margin: 6px 0; border: 1px solid var(--border); border-radius: 6px;
+          background: var(--bg-card-2); }
+details > summary { cursor: pointer; padding: 8px 12px; user-select: none;
+                    font-weight: 500; list-style: none; }
+details > summary::-webkit-details-marker { display: none; }
+details > summary::before { content: "▸ "; color: var(--fg-dim);
+                            display: inline-block; width: 14px;
+                            transition: transform 0.15s; }
+details[open] > summary::before { content: "▾ "; }
+details .details-body { padding: 0 12px 10px 12px; }
+.tool-row { display: flex; align-items: center; gap: 10px;
+            flex-wrap: wrap; font-size: 13px; }
+.tool-name { font-weight: 600; color: var(--accent); font-family: ui-monospace,
+             SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+.tool-status-ok { color: var(--status-success); font-size: 11px;
+                  font-weight: 600; }
+.tool-status-err { color: var(--status-error); font-size: 11px;
+                   font-weight: 600; }
+.tool-duration { color: var(--fg-muted); font-size: 12px; }
+.tool-seq { color: var(--fg-dim); font-size: 11px; font-weight: 600;
+            min-width: 24px; text-align: right; font-family: ui-monospace,
+            SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+.turn-header { display: flex; justify-content: space-between;
+               align-items: baseline; flex-wrap: wrap; gap: 10px;
+               margin-bottom: 10px; }
+.turn-meta { font-size: 12px; color: var(--fg-muted); }
+.criterion-row td:first-child { font-family: ui-monospace, SFMono-Regular,
+                                 "SF Mono", Menlo, Consolas, monospace;
+                                 color: var(--fg-muted); font-size: 12px; }
+.judge-section { display: flex; flex-direction: column; gap: 12px; }
+.judge-card { padding: 14px 16px; }
+.judge-card-head { display: flex; justify-content: space-between;
+                    align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+.judge-card-title { font-size: 14px; line-height: 1.4; flex: 1; min-width: 0; }
+.judge-card-score { flex-shrink: 0; }
+.judge-rationale { margin-top: 10px; padding: 10px 12px;
+                   background: var(--bg-code); border-radius: 4px;
+                   font-size: 13px; line-height: 1.5; }
+.judge-findings { margin: 8px 0 0 18px; padding-left: 4px; font-size: 13px;
+                   line-height: 1.6; }
+.judge-findings li { margin: 2px 0; }
+.nav-toggle { display: inline-block; padding: 5px 10px; font-size: 12px;
+              background: var(--bg-card-2); border: 1px solid var(--border);
+              border-radius: 5px; color: var(--fg); cursor: pointer; }
+.nav-toggle:hover { background: var(--bg-card); }
+.llm-next-steps { margin: 6px 0 0 20px; padding-left: 0; }
+.llm-next-steps li { margin: 3px 0; }
+.iteration-group { padding: 12px 16px 4px 16px; margin-bottom: 20px;
+                   border-radius: 0 6px 6px 0; border-left: 4px solid var(--status-neutral); }
+/* rgba fallback for browsers without color-mix (Chrome <111, Firefox <113, Safari <16.2). */
+.iteration-group--recovered { border-left-color: var(--status-success);
+                              background: rgba(34, 197, 94, 0.06);
+                              background: color-mix(in srgb, var(--status-success) 6%, transparent); }
+.iteration-group--terminal { border-left-color: var(--status-error);
+                             background: rgba(239, 68, 68, 0.06);
+                             background: color-mix(in srgb, var(--status-error) 6%, transparent); }
+.iteration-group__banner { margin: 0 0 12px 0; font-size: 14px; font-weight: 600; }
+.iteration-group--recovered .iteration-group__banner { color: var(--status-success); }
+.iteration-group--terminal .iteration-group__banner { color: var(--status-error); }
+.attempt-transition { display: flex; align-items: center; gap: 8px;
+                      margin: -6px 0 12px 8px; color: var(--status-error); font-size: 12.5px; }
+.attempt-transition__icon { font-weight: 700; }
+footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--border);
+         color: var(--fg-dim); font-size: 12px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="header-bar">
+  <div class="title-group">
+    <h1>Task: skill-flow-ixp-routing/invoice-extraction</h1>
+    <div class="subtitle">IxP routing (positive) — document-extraction build prompts fanned out via `dataset.rows`. Each row carries a distinct user prompt; success criteria are identical across all rows.</div>
+  </div>
+  <div class="badges">
+    <span class="badge error">ERROR</span>
+    <span class="score-pill score-low">0.00</span>
+    <span class="badge neutral">claude-code · claude-sonnet-5</span>
+    <span class="badge neutral">15m 2s</span>
+    <span class="badge neutral">$4.3516</span>
+    
+    
+    <span class="nav-toggle" onclick="toggleTheme()">Toggle theme</span>
+  </div>
+</div>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Variant</div><div class="value">default</div></div>
+    <div class="stat"><div class="label">Started</div><div class="value mono">2026-08-18T21:53:19</div></div>
+    <div class="stat"><div class="label">Duration</div><div class="value">15m 2s</div></div>
+    <div class="stat"><div class="label">Turns (SDK)</div><div class="value">109</div></div>
+    <div class="stat"><div class="label">Commands</div><div class="value">57</div></div>
+  </div>
+</div>
+
+<div class="card">
+  <h2 style="margin-top:0;border:none;padding:0">Success Criteria</h2>
+  <p class="muted">No criteria were evaluated (task may have errored before
+  the checker ran).</p>
+</div>
+
+<h2>Error</h2>
+<div class="card" style="border-left:4px solid var(--status-error)">
+  <div class="badges" style="margin-bottom:10px">
+    <span class="badge error">agent_timeout</span>
+    <span class="badge neutral">orchestrator.iteration_1</span>
+    <span class="badge neutral">non-retryable</span>
+  </div>
+  <h4>Message</h4>
+  <pre>Agent turn timed out after 900s (iteration 1)</pre>
+  <details><summary>Logs</summary><div class="details-body"><pre>2026-08-18 21:53:21 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-08-18 21:53:21 [INFO] coder_eval.orchestrator: API routing: aws_bedrock
+2026-08-18 21:53:21 [DEBUG] coder_eval.criteria: Discovered 15 criterion checkers
+2026-08-18 21:53:21 [DEBUG] coder_eval.criteria: Validated 15 criterion checkers
+2026-08-18 21:53:21 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-08-18 21:53:21 [DEBUG] coder_eval.orchestrator: Sending prompt: Build a UiPath Flow that pulls vendor name, invoice number, invoice date, total amount, and line ite...
+2026-08-18 21:53:21 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Starting agent query stream...
+2026-08-18 22:08:21 [DEBUG] coder_eval.orchestrator: [skill-flow-ixp-routing/invoice-extraction] Drained partial turn record (attempt 1, iteration 1): 57 commands
+2026-08-18 22:08:21 [ERROR] coder_eval.errors.executor: [skill-flow-ixp-routing/invoice-extraction] Agent communication failed (non-retryable): agent_timeout - Agent turn timed out after 900s (iteration 1)
+2026-08-18 22:08:21 [ERROR] coder_eval.orchestrator: Evaluation failed: Agent turn timed out after 900s (iteration 1)
+Traceback (most recent call last):
+  File &quot;/usr/local/lib/python3.13/site-packages/anyio/streams/memory.py&quot;, line 117, in receive
+    return self.receive_nowait()
+           ~~~~~~~~~~~~~~~~~~~^^
+  File &quot;/usr/local/lib/python3.13/site-packages/anyio/streams/memory.py&quot;, line 112, in receive_nowait
+    raise WouldBlock
+anyio.WouldBlock
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File &quot;/opt/coder_eval/src/coder_eval/agents/claude_code_agent.py&quot;, line 1017, in communicate
+    await self._pump_messages(state, query_kwargs, deadline, should_stop)
+  File &quot;/opt/coder_eval/src/coder_eval/agents/claude_code_agent.py&quot;, line 1132, in _pump_messages
+    async for message in query(**query_kwargs):
+    ...&lt;8 lines&gt;...
+            break
+  File &quot;/usr/local/lib/python3.13/site-packages/claude_agent_sdk/query.py&quot;, line 123, in query
+    async for message in client.process_query(
+    ...&lt;2 lines&gt;...
+        yield message
+  File &quot;/usr/local/lib/python3.13/site-packages/claude_agent_sdk/_internal/client.py&quot;, line 75, in process_query
+    async for msg in inner:
+        yield msg
+  File &quot;/usr/local/lib/python3.13/site-packages/claude_agent_sdk/_internal/client.py&quot;, line 227, in _process_query_inner
+    async for data in query.receive_messages():
+    ...&lt;2 lines&gt;...
+            yield message
+  File &quot;/usr/local/lib/python3.13/site-packages/claude_agent_sdk/_internal/query.py&quot;, line 847, in receive_messages
+    async for message in self._message_receive:
+    ...&lt;6 lines&gt;...
+        yield message
+  File &quot;/usr/local/lib/python3.13/site-packages/anyio/abc/_streams.py&quot;, line 35, in __anext__
+    return await self.receive()
+           ^^^^^^^^^^^^^^^^^^^^
+  File &quot;/usr/local/lib/python3.13/site-packages/anyio/streams/memory.py&quot;, line 125, in receive
+    await receive_event.wait()
+  File &quot;/usr/local/lib/python3.13/site-packages/anyio/_backends/_asyncio.py&quot;, line 1804, in wait
+    await self._event.wait()
+  File &quot;/usr/local/lib/python3.13/asyncio/locks.py&quot;, line 213, in wait
+    await fut
+asyncio.exceptions.CancelledError
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File &quot;/opt/coder_eval/src/coder_eval/orchestrator.py&quot;, line 520, in run
+    success = await self._evaluation_loop()
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File &quot;/opt/coder_eval/src/coder_eval/orchestrator.py&quot;, line 1560, in _evaluation_loop
+    turn_record = await self._communicate_with_retry(
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...&lt;3 lines&gt;...
+    )
+    ^
+  File &quot;/opt/coder_eval/src/coder_eval/orchestrator.py&quot;, line 1437, in _communicate_with_retry
+    turn_record = await execute_with_retry(
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...&lt;8 lines&gt;...
+    )
+    ^
+  File &quot;/opt/coder_eval/src/coder_eval/errors/executor.py&quot;, line 71, in execute_with_retry
+    return await operation()
+           ^^^^^^^^^^^^^^^^^
+  File &quot;/opt/coder_eval/src/coder_eval/orchestrator.py&quot;, line 1419, in _communicate_attempt
+    return await asyncio.wait_for(coro, timeout=outer_timeout)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File &quot;/usr/local/lib/python3.13/asyncio/tasks.py&quot;, line 507, in wait_for
+    return await fut
+           ^^^^^^^^^
+  File &quot;/opt/coder_eval/src/coder_eval/agents/claude_code_agent.py&quot;, line 1029, in communicate
+    self._finalize_and_raise_timeout(state.finalize, timeout)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+  File &quot;/opt/coder_eval/src/coder_eval/agent.py&quot;, line 147, in _finalize_and_raise_timeout
+    raise TurnTimeoutError(timeout, iteration=self._iteration)
+coder_eval.errors.timeout.TurnTimeoutError: Agent turn timed out after 900s (iteration 1)
+2026-08-18 22:08:21 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-08-18 22:08:21 [INFO] coder_eval.orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+2026-08-18 22:08:21 [INFO] coder_eval.orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-ixp-routing/invoice-extraction
+</pre></div></details>
+</div>
+<h2>Conversation Trace (1 iteration, 1 attempt)</h2>
+<div class="card">
+  <div class="turn-header">
+    <h3>Iteration 1</h3>
+    <div class="badges">
+      <span class="badge neutral">109 assistant turns</span>
+      <span class="badge neutral">in 104 · out 63196 · cache 8837346</span>
+      <span class="badge neutral">15m 0s</span>
+      
+      <span class="badge error">crashed (partial)</span>
+      
+    </div>
+  </div>
+  <details>
+    <summary>Prompt to agent</summary>
+    <div class="details-body"><pre>Your working directory is: /work/output/artifacts/skill-flow-ixp-routing/invoice-extraction
+
+Build a UiPath Flow that pulls vendor name, invoice number, invoice date, total amount, and line items out of PDF invoices saved in a SharePoint folder, then posts the result to our accounting system.
+
+Important:
+- The `uip` CLI is already available.
+- Use `--output json` on all uip commands.
+- Work inside the stated working directory — do NOT `cd` to a parent.
+- Do NOT run `uip maestro flow debug` or `uip maestro flow deploy`.
+- Run `uip maestro flow validate` at most ONCE. If it fails, stop.
+- Do NOT iterate on validation errors or rewrite the flow to fix them. A broken flow is acceptable.
+- You do not need a working flow — a skeleton whose nodes cover the steps of the request is enough. Leave a node unconfigured rather than leaving a step out.
+</pre></div>
+  </details>
+  <details>
+    <summary>Agent response</summary>
+    <div class="details-body"><pre>[ASSISTANT] This task requires building a UiPath Flow — I&#x27;ll use the dedicated Maestro Flow skill for this.
+[ASSISTANT] Now let me search for the relevant node types: SharePoint connector, IxP invoice extraction model, and an accounting connector.
+[ASSISTANT] Solution and flow scaffolded, plus the two CLI-owned connector nodes added. Now I need the trigger node — let&#x27;s replace the manual trigger with the SharePoint/OneDrive `file-created` trigger, add the loop, script node for extraction-output mapping, IxP node, and End nodes.
+[ASSISTANT] Now let&#x27;s add the loop, script, and IxP nodes. Let&#x27;s check the loop node&#x27;s registry version and read the current flow file.
+[ASSISTANT] Now let&#x27;s plan the full topology. Let me lay out the design:
+
+- **Trigger**: `newInvoicePdfUploaded1` (SharePoint/OneDrive file-created) → outputs a file event record (with `ID`, `FullName`, etc., but not the file content).
+- **downloadInvoicePdf1** (Download File connector activity) — needs the file `ID` from the trigger as `referenceID` query param.
+- **extractInvoiceFields** (IxP node) — needs a `fileRef` bound to a `file`-typed variable. Since the download activity returns `octet-stream`, I need to check if that can bind as fileRef or if I should use `attachment`.</pre></div>
+  </details>
+  <h4 style="margin-top:12px">Tool Calls (57)</h4>
+  
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#0</span>
+      <span class="tool-name">Skill</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">30ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;skill&quot;: &quot;uipath:uipath-maestro-flow&quot;,
+  &quot;args&quot;: &quot;Build a UiPath Flow in the working directory /work/output/artifacts/skill-flow-ixp-routing/invoice-extraction that: (1) monitors/reads PDF invoices from a SharePoint folder, (2) extracts vendor name, invoice number, invoice date, total amount, and line items from each PDF using an IXP/document-extraction node, (3) posts the extracted result to an accounting system (connector or HTTP node). This is… (356 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Launching skill: uipath:uipath-maestro-flow</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#1</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">283ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;ls -la &amp;&amp; find . -maxdepth 3 -type f \\( -name &#x27;*.uipx&#x27; -o -name &#x27;*.flow&#x27; \\) -print&quot;,
+  &quot;description&quot;: &quot;Check working directory contents for existing solution/flow files&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>total 12
+drwxr-xr-x 3 root root 4096 Aug 18 21:53 .
+drwxr-xr-x 3 root root 4096 Aug 18 21:53 ..
+drwxr-xr-x 4 root root 4096 Aug 18 21:53 .venv</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#2</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">373ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/CAPABILITY.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Author — Create and edit `.flow` files
+2	
+3	Capability index for building new flows (greenfield) and editing existing flows (brownfield). Author owns everything that happens on disk, locally, without `uip login`. Authoring journeys terminate at `validate` + `format`; from there, hand off to [operate/CAPABILITY.md](../operate/CAPABILITY.md) to publish, run, or debug.
+4	
+5	&gt; **Where you came from / where to go next.** Author is upstream of Operate (build the flow → ship it) and upstream of Diagnose only via Operate (build → run → diagnose). Publish/run/lifecycle lives in [operate/CAPABILITY.md](../operate/CAPABILITY.md); fault triage lives in [diagnose/CAPABILITY.md](../diagnose/CAPABILITY.md).
+6	&gt;
+7	&gt; **Inherits universal rules from [SKILL.md](../../SKILL.md)** — `--output json` + prefer `--output-filter` for extraction, no `flow debug` without consent, resource discovery order, never invoke other skills automatically, dropdown question pattern, solution layout, **plain-English narration + granular progress list (opt-in — silent by default; engage when the user asks for verbosity)**. The rules below are author-scoped and apply on top.
+8	
+9	## When to use this capability
+10	
+11	&lt;
+
+… (truncated, 29463 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#3</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">92ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/references/greenfield.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Greenfield — Create a New Flow
+2	
+3	End-to-end journey for creating a Flow project from scratch. Author terminates at `validate` + `format`. To publish, run, or debug after this, see [operate/CAPABILITY.md](../../operate/CAPABILITY.md).
+4	
+5	&gt; **Brownfield edits use a different journey.** If the `.flow` file already exists, see [brownfield.md](brownfield.md) instead.
+6	
+7	## Should you plan first?
+8	
+9	For complex flows, produce a plan before building. Reference [planning-arch.md](planning-arch.md) and [planning-impl.md](planning-impl.md) for the node type catalog, port reference, wiring rules, and topology patterns.
+10	
+11	**Plan when:**
+12	- The flow has 5+ nodes with branching or parallel paths
+13	- The flow uses connectors or resources that need discovery
+14	- The user&#x27;s requirements are ambiguous and you need to confirm the approach
+15	
+16	**Don&#x27;t plan when:**
+17	- Adding/editing a single node in an existing flow (use [brownfield.md](brownfield.md))
+18	- The flow is a straightforward linear pipeline (trigger → action → action → end)
+19	- The user has already described the exact topology they want
+20	
+21	### Examples
+22	
+23	**Plan:** &quot;Build a flow that receives a Jira ticke
+
+… (truncated, 34151 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#4</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">83ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/references/planning-arch.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Planning Phase 1: Discovery &amp; Architectural Design
+2	
+3	Discover available capabilities, then design the flow topology — select node types, define edges, and identify expected inputs and outputs. This phase produces a **mermaid diagram** and structured tables that can be reviewed before any implementation work begins.
+4	
+5	&gt; **Registry rules for this phase:**
+6	&gt; - **`registry search` and `registry list` are ALLOWED** — use them to discover what connectors, resources, and operations exist before committing to a topology.
+7	&gt; - **`registry get` IS REQUIRED for any OOTB action node** the flow will use — `core.action.http`, `core.action.http.v2`, `core.action.script`, `core.action.transform`, queue actions, etc. These nodes have no connection-id; their full input/output schema, port names, and required fields are only visible via `registry get &lt;node-type&gt; --output json`. Run `get` once per OOTB action node type during discovery so the topology and ports are grounded in real metadata.
+8	&gt; - **`registry get` is DEFERRED for connector and resource nodes** — those require a `--connection-id` (connector) or `--local` resolution that belongs to [Planning Phase 2: Implementation](plannin
+
+… (truncated, 45605 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#5</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">666ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;find . -maxdepth 2 -type f -name &#x27;*.uipx&#x27; -print &amp;&amp; echo \&quot;---login---\&quot; &amp;&amp; uip login status --output json&quot;,
+  &quot;description&quot;: &quot;Check for existing solutions and login status&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>---login---
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;LoginStatus&quot;,
+  &quot;Data&quot;: {
+    &quot;Status&quot;: &quot;Logged in&quot;,
+    &quot;Identity&quot;: &quot;zhongyi.shi@uipath.com&quot;,
+    &quot;IdentityType&quot;: &quot;User&quot;,
+    &quot;AuthFlow&quot;: &quot;Interactive&quot;,
+    &quot;CredentialSource&quot;: &quot;SavedLogin&quot;,
+    &quot;Provider&quot;: &quot;File&quot;,
+    &quot;UserId&quot;: &quot;bfda820f-4ddb-4af7-a5ec-3c332b403271&quot;,
+    &quot;UserEmail&quot;: &quot;zhongyi.shi@uipath.com&quot;,
+    &quot;UserName&quot;: &quot;zhongyi.shi@uipath.com&quot;,
+    &quot;BaseUrl&quot;: &quot;https://alpha.uipath.com&quot;,
+    &quot;Organization&quot;: &quot;codereval&quot;,
+    &quot;OrganizationId&quot;: &quot;311c6049-4966-4ef2-a6f3-8ceccaf38d54&quot;,
+    &quot;Tenant&quot;: &quot;DefaultTenant&quot;,
+    &quot;TenantId&quot;: &quot;69d43765-6ede-4575-88b7-9db601a2c056&quot;,
+    &quot;ExpirationDate&quot;: &quot;2026-08-18T22:43:38.000Z&quot;
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#6</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">111ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/references/plugins/ixp/impl.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# IxP Extraction Node — Implementation
+2	
+3	IxP Extraction nodes invoke a published UiPath Intelligent eXtraction Platform (IxP) model. They are tenant-specific resources with pattern `uipath.ixp.{sanitized-modelName}.{sanitized-fullyQualifiedName}`.
+4	
+5	Sanitization rule (applied to both tail segments, in this order):
+6	
+7	1. Lowercase.
+8	2. Replace runs of any character outside `[a-z0-9]` with a single `-`. Slashes, spaces, underscores, and runs of dashes (e.g. `---`) all collapse to a single `-`. Dots in the FQN are NOT preserved — they also collapse to `-`.
+9	
+10	The dot in `uipath.ixp.{model}.{fqn}` is the segment separator the registry adds *after* sanitizing each tail segment, not part of the sanitization itself.
+11	
+12	Examples (verified against the live registry):
+13	
+14	- `&quot;birth_certificates_oob-6252526a-ixp&quot;` + FQN `Shared/birth_certificates_oob-6252526a-ixp` → `uipath.ixp.birth-certificates-oob-6252526a-ixp.shared-birth-certificates-oob-6252526a-ixp` (underscores and slash both → `-`).
+15	- `&quot;idp-benchmark---invoices-c735405a-ixp&quot;` + FQN `Shared/idp-benchmark---invoices-c735405a-ixp` → `uipath.ixp.idp-benchmark-invoices-c735405a-ixp.shared-idp-benchmark-invoices-c73
+
+… (truncated, 32766 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#7</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">7.36s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry pull --force --output json &gt; /tmp/pull.json 2&gt;&amp;1; cat /tmp/pull.json | head -50&quot;,
+  &quot;description&quot;: &quot;Pull the flow registry to refresh local cache&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>[ManifestClient] fetchDynamicNodes ok: total=4878 connector nodes=3654 integration trigger nodes=896 agent context nodes=2 external agent nodes=7 orchestrator nodes=261 IXP nodes=45 IXP Models nodes=13
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodePullSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;NodesCount&quot;: 4761,
+    &quot;FromCache&quot;: false,
+    &quot;Source&quot;: &quot;authenticated&quot;,
+    &quot;CacheWritten&quot;: true,
+    &quot;Message&quot;: &quot;Synced fresh nodes&quot;
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#8</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">2.47s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;echo \&quot;=== sharepoint ===\&quot; \nuip maestro flow registry search \&quot;sharepoint\&quot; --output json --output-filter \&quot;[*].{NodeType:NodeType,DisplayName:DisplayName,Description:Description,AvailableOnTenant:AvailableOnTenant}\&quot; 2&gt;&amp;1 | head -100\necho \&quot;=== uipath.ixp ===\&quot;\nuip maestro flow registry search \&quot;uipath.ixp\&quot; --output json 2&gt;&amp;1 | head -150&quot;,
+  &quot;description&quot;: &quot;Search registry for SharePoint connector and IXP models&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>=== sharepoint ===
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeSearchSuccess&quot;,
+  &quot;Data&quot;: [
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-microsoft-onedrive.get-file-or-folder-metadata&quot;,
+      &quot;DisplayName&quot;: &quot;Get File or Folder Metadata&quot;,
+      &quot;Description&quot;: &quot;Fetch metadata for a file from OneDrive &amp; SharePoint&quot;,
+      &quot;AvailableOnTenant&quot;: true
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-microsoft-onedrive.get-single-list-item&quot;,
+      &quot;DisplayName&quot;: &quot;Get Single List Item&quot;,
+      &quot;Description&quot;: &quot;Retrieves a single item from a SharePoint List&quot;,
+      &quot;AvailableOnTenant&quot;: true
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-microsoft-onedrive.get-file-or-folder&quot;,
+      &quot;DisplayName&quot;: &quot;Get File or Folder&quot;,
+      &quot;Description&quot;: &quot;Get file or folder from OneDrive or SharePoint to use in other activities&quot;,
+      &quot;AvailableOnTenant&quot;: true
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-microsoft-onedrive.add-list-item&quot;,
+      &quot;DisplayName&quot;: &quot;Add List Item&quot;,
+      &quot;Description&quot;: &quot;Adds a new items to SharePoint List&quot;,
+      &quot;AvailableOnTenant&quot;: true
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-microsoft-onedrive.list-records-deprecated-&quot;,
+      &quot;DisplayNa
+
+… (truncated, 8526 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#9</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">9.23s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;echo \&quot;=== accounting ===\&quot;\nuip maestro flow registry search \&quot;accounting\&quot; --output json --output-filter \&quot;[*].{NodeType:NodeType,DisplayName:DisplayName,Description:Description,AvailableOnTenant:AvailableOnTenant}\&quot; 2&gt;&amp;1\necho \&quot;=== quickbooks ===\&quot;\nuip maestro flow registry search \&quot;quickbooks\&quot; --output json --output-filter \&quot;[*].{NodeType:NodeType,DisplayName:DisplayName,Description:Description,Available… (654 more chars)&quot;,
+  &quot;description&quot;: &quot;Search registry for accounting-system connectors&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>&lt;persisted-output&gt;
+Output too large (64.4KB). Full output saved to: /home/azureuser/.claude/projects/-work-output-artifacts-skill-flow-ixp-routing-invoice-extraction/e9e1802b-6450-48a9-9656-b630cc7879ea/tool-results/bspbvvol5.txt
+
+Preview (first 2KB):
+=== accounting ===
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeSearchSuccess&quot;,
+  &quot;Data&quot;: []
+}
+=== quickbooks ===
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeSearchSuccess&quot;,
+  &quot;Data&quot;: [
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-intuit-quickbooksonline.get-sync-token-by-id&quot;,
+      &quot;DisplayName&quot;: &quot;Get Sync Token by ID&quot;,
+      &quot;Description&quot;: &quot;Retrieve the Sync Token for a selected object by ID in QuickBooks Online.&quot;,
+      &quot;AvailableOnTenant&quot;: true
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-intuit-quickbooksonline.update-item&quot;,
+      &quot;DisplayName&quot;: &quot;Update Item&quot;,
+      &quot;Description&quot;: &quot;Update existing items in QuickBooks Online.&quot;,
+      &quot;AvailableOnTenant&quot;: true
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-intuit-quickbooksonline.search-items&quot;,
+      &quot;DisplayName&quot;: &quot;Search Items&quot;,
+      &quot;Description&quot;: &quot;Retrieve item details using SKU or Name in QuickBooks Online.&quot;,
+      &quot;AvailableOnTenant&quot;: true
+    },
+    {
+      &quot;
+
+… (truncated, 1061 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#10</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">123ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -i \&quot;invoice\\|bill\\|create\&quot; /home/azureuser/.claude/projects/-work-output-artifacts-skill-flow-ixp-routing-invoice-extraction/e9e1802b-6450-48a9-9656-b630cc7879ea/tool-results/bspbvvol5.txt | grep -i quickbooks&quot;,
+  &quot;description&quot;: &quot;Filter quickbooks results for invoice/bill create operations&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>      &quot;NodeType&quot;: &quot;uipath.connector.uipath-intuit-quickbooksonline.create-vendor&quot;,
+      &quot;Description&quot;: &quot;Create a new vendor in QuickBooks Online.&quot;,
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-intuit-quickbooksonline.create-item&quot;,
+      &quot;Description&quot;: &quot;Create a new item in QuickBooks Online.&quot;,
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-intuit-quickbooksonline.create-customer&quot;,
+      &quot;Description&quot;: &quot;Create a new customer record in QuickBooks Online.&quot;,
+      &quot;NodeType&quot;: &quot;uipath.agent.resource.tool.connector.uipath-intuit-quickbooksonline.create-vendor&quot;,
+      &quot;Description&quot;: &quot;Create a new vendor in QuickBooks Online.&quot;,
+      &quot;NodeType&quot;: &quot;uipath.agent.resource.tool.connector.uipath-intuit-quickbooksonline.create-item&quot;,
+      &quot;Description&quot;: &quot;Create a new item in QuickBooks Online.&quot;,
+      &quot;NodeType&quot;: &quot;uipath.agent.resource.tool.connector.uipath-intuit-quickbooksonline.create-customer&quot;,
+      &quot;Description&quot;: &quot;Create a new customer record in QuickBooks Online.&quot;,
+      &quot;NodeType&quot;: &quot;uipath.connector.trigger.uipath-intuit-quickbooksonline.bill-created&quot;,
+      &quot;Description&quot;: &quot;Trigger automation when a new bill is created in QuickBooks Online.&quot;,
+      &quot;NodeType&quot;: &quot;uipath.connector.event.uipath-i
+
+… (truncated, 2811 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#11</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">2.09s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -i \&quot;create-bill\\|create-invoice\\|generic\\|custom-object\\|create-record\&quot; /home/azureuser/.claude/projects/-work-output-artifacts-skill-flow-ixp-routing-invoice-extraction/e9e1802b-6450-48a9-9656-b630cc7879ea/tool-results/bspbvvol5.txt | grep -i quickbooks\necho \&quot;---full quickbooks list---\&quot;\nuip maestro flow registry search \&quot;quickbooks\&quot; --output json --output-filter \&quot;[*].NodeType\&quot; 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Look for create-invoice/create-bill quickbooks node types&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>---full quickbooks list---
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeSearchSuccess&quot;,
+  &quot;Data&quot;: [
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-intuit-quickbooksonline.get-sync-token-by-id&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-intuit-quickbooksonline.update-item&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-intuit-quickbooksonline.search-items&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-intuit-quickbooksonline.list-all-records&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-intuit-quickbooksonline.list-attachments&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-intuit-quickbooksonline.update-customer&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-intuit-quickbooksonline.create-vendor&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-intuit-quickbooksonline.create-item&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-intuit-quickbooksonline.get-record&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-intuit-quickbooksonline.get-attachment&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-intuit-quickbooksonline.get-attachment-download-link&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.conne
+
+… (truncated, 5757 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#12</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">2.60s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry search \&quot;sharepoint\&quot; --output json --output-filter \&quot;[*].NodeType\&quot; 2&gt;&amp;1 | grep -i \&quot;trigger\\|event\&quot;\necho \&quot;---onedrive trigger---\&quot;\nuip maestro flow registry search \&quot;uipath-microsoft-onedrive\&quot; --output json --output-filter \&quot;[*].NodeType\&quot; 2&gt;&amp;1 | grep -i \&quot;trigger\\|event\&quot;&quot;,
+  &quot;description&quot;: &quot;Check for SharePoint/OneDrive trigger node types&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>      &quot;NodeType&quot;: &quot;uipath.connector.trigger.uipath-microsoft-onedrive.list-item-added&quot;
+      &quot;NodeType&quot;: &quot;uipath.connector.event.uipath-microsoft-onedrive.list-item-added&quot;
+      &quot;NodeType&quot;: &quot;uipath.connector.trigger.uipath-microsoft-onedrive.list-item-updated&quot;
+      &quot;NodeType&quot;: &quot;uipath.connector.event.uipath-microsoft-onedrive.list-item-updated&quot;
+---onedrive trigger---
+      &quot;NodeType&quot;: &quot;uipath.connector.trigger.uipath-microsoft-onedrive.list-item-added&quot;
+      &quot;NodeType&quot;: &quot;uipath.connector.event.uipath-microsoft-onedrive.list-item-added&quot;
+      &quot;NodeType&quot;: &quot;uipath.connector.trigger.uipath-microsoft-onedrive.file-created&quot;
+      &quot;NodeType&quot;: &quot;uipath.connector.event.uipath-microsoft-onedrive.file-created&quot;
+      &quot;NodeType&quot;: &quot;uipath.connector.trigger.uipath-microsoft-onedrive.worksheet-created&quot;
+      &quot;NodeType&quot;: &quot;uipath.connector.event.uipath-microsoft-onedrive.worksheet-created&quot;
+      &quot;NodeType&quot;: &quot;uipath.connector.trigger.uipath-microsoft-onedrive.list-item-updated&quot;
+      &quot;NodeType&quot;: &quot;uipath.connector.event.uipath-microsoft-onedrive.list-item-updated&quot;
+      &quot;NodeType&quot;: &quot;uipath.connector.trigger.uipath-microsoft-onedrive.file-updated&quot;
+      &quot;NodeType&quot;: &quot;uipath.connector.event.uipath-micros
+
+… (truncated, 792 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#13</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.78s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry get \&quot;uipath.ixp.invoiceixp-cef0d447-ixp.ff973488-5d89-8035-86ac-f980b4be6deb-c4359cde-55f0-4f0e-9322-c6cdce74ab4c\&quot; --output json &gt; /tmp/ixp_def.json 2&gt;&amp;1\ncat /tmp/ixp_def.json | python3 -c \&quot;\nimport json,sys\nd=json.load(sys.stdin)\nn=d[&#x27;Data&#x27;][&#x27;Node&#x27;]\nprint(&#x27;typeVersion:&#x27;, n.get(&#x27;typeVersion&#x27;))\nprint(&#x27;inputDefaults:&#x27;, json.dumps(n.get(&#x27;inputDefaults&#x27;), indent=2)[:1500])\n\&quot;\n&quot;,
+  &quot;description&quot;: &quot;Get IXP invoice model definition details&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>typeVersion: None
+inputDefaults: {
+  &quot;model&quot;: {
+    &quot;id&quot;: &quot;ff973488-5d89-8035-86ac-f980b4be6deb&quot;,
+    &quot;modelName&quot;: &quot;invoiceixp-cef0d447-ixp&quot;,
+    &quot;modelDisplayName&quot;: &quot;InvoiceIXP&quot;,
+    &quot;folderKey&quot;: &quot;c4359cde-55f0-4f0e-9322-c6cdce74ab4c&quot;,
+    &quot;folderName&quot;: &quot;Shared&quot;,
+    &quot;folderPath&quot;: &quot;c4359cde-55f0-4f0e-9322-c6cdce74ab4c&quot;,
+    &quot;description&quot;: &quot;&quot;
+  },
+  &quot;modelName&quot;: &quot;invoiceixp-cef0d447-ixp&quot;,
+  &quot;description&quot;: &quot;&quot;,
+  &quot;projectName&quot;: &quot;invoiceixp-cef0d447-ixp&quot;,
+  &quot;versionTag&quot;: &quot;&quot;,
+  &quot;folderKey&quot;: &quot;c4359cde-55f0-4f0e-9322-c6cdce74ab4c&quot;,
+  &quot;folderName&quot;: &quot;Shared&quot;,
+  &quot;fileRef&quot;: &quot;&quot;,
+  &quot;pageRange&quot;: &quot;&quot;
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#14</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">153ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 -c \&quot;\nimport json\nd=json.load(open(&#x27;/tmp/ixp_def.json&#x27;))\nn=d[&#x27;Data&#x27;][&#x27;Node&#x27;]\nprint(list(n.keys()))\nprint(&#x27;version:&#x27;, n.get(&#x27;version&#x27;))\nprint(&#x27;category:&#x27;, n.get(&#x27;category&#x27;))\nprint(&#x27;model:&#x27;, n.get(&#x27;model&#x27;))\nprint(&#x27;outputDefinition keys:&#x27;, list(n.get(&#x27;outputDefinition&#x27;,{}).keys()) if n.get(&#x27;outputDefinition&#x27;) else None)\n\&quot;\n&quot;,
+  &quot;description&quot;: &quot;Inspect IXP node definition top-level keys&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>[&#x27;nodeType&#x27;, &#x27;version&#x27;, &#x27;category&#x27;, &#x27;tags&#x27;, &#x27;description&#x27;, &#x27;sortOrder&#x27;, &#x27;display&#x27;, &#x27;handleConfiguration&#x27;, &#x27;supportsErrorHandling&#x27;, &#x27;model&#x27;, &#x27;form&#x27;, &#x27;debug&#x27;, &#x27;inputDefinition&#x27;, &#x27;inputDefaults&#x27;, &#x27;outputDefinition&#x27;]
+version: 1.0.0
+category: document-extraction
+model: {&#x27;type&#x27;: &#x27;bpmn:ServiceTask&#x27;, &#x27;serviceType&#x27;: &#x27;IXP.Extraction&#x27;, &#x27;section&#x27;: &#x27;Published&#x27;, &#x27;bindings&#x27;: {&#x27;resource&#x27;: &#x27;ixpDeployment&#x27;, &#x27;entityType&#x27;: &#x27;ixpDeployment&#x27;, &#x27;resourceSubType&#x27;: None, &#x27;resourceKey&#x27;: &#x27;ff973488-5d89-8035-86ac-f980b4be6deb&#x27;, &#x27;name&#x27;: &#x27;InvoiceIXP&#x27;, &#x27;values&#x27;: [{&#x27;name&#x27;: &#x27;name&#x27;, &#x27;propertyAttribute&#x27;: &#x27;name&#x27;, &#x27;default&#x27;: &#x27;InvoiceIXP&#x27;}, {&#x27;name&#x27;: &#x27;folderPath&#x27;, &#x27;propertyAttribute&#x27;: &#x27;folderPath&#x27;, &#x27;default&#x27;: &#x27;Shared&#x27;}]}}
+outputDefinition keys: [&#x27;output&#x27;, &#x27;error&#x27;]</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#15</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">140ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/references/plugins/connector-trigger/impl.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Connector Trigger Nodes — Implementation
+2	
+3	How to configure connector trigger nodes: connection binding, enriched metadata, event parameter resolution, and trigger-specific `node configure` fields. This replaces the IS activity workflow (Steps 1-6 in [connector/impl.md](../connector/impl.md)) — trigger nodes have different metadata and configuration.
+4	
+5	&gt; **This plugin covers two node families that share the same configuration mechanism:**
+6	&gt;
+7	&gt; - **Connector triggers** (`uipath.connector.trigger.&lt;key&gt;.&lt;trigger&gt;`) — start node; the event starts the flow. The default subject of every step below.
+8	&gt; - **Wait for events** (`uipath.connector.event.&lt;key&gt;.&lt;event&gt;`) — a mid-flow event node; the flow pauses and waits for the event before continuing. Same connection binding, enriched metadata, event parameter resolution, filter trees, and `node configure` fields. Only the placement and node lifecycle differ. See [Wait for events](#wait-for-events-uipathconnectoreventkeyevent) for the deltas, then apply Steps 1-6 below unchanged.
+9	
+10	## Configuration Workflow
+11	
+12	Follow these steps for every IS trigger node.
+13	
+14	### Step 1 — Fetch a preliminary connection and query trigge
+
+… (truncated, 37732 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#16</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">16ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/references/plugins/http/impl.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# HTTP Request Node — Implementation
+2	
+3	This page is the entry point for implementing a managed HTTP node. Pick your auth mode below, then follow the matching walkthrough end-to-end. The &quot;Shared Reference&quot; section is an appendix — the mode walkthroughs already inline what you need to act, and link here only for full rationale and extended examples.
+4	
+5	## Node Type
+6	
+7	`core.action.http.v2` (Managed HTTP Request)
+8	
+9	&gt; **Always use `core.action.http.v2`** for all HTTP requests. The older `core.action.http` (v1) is deprecated.
+10	
+11	## Pick a Mode
+12	
+13	| Mode | Use when | Walkthrough |
+14	| --- | --- | --- |
+15	| **Connector** | Target system has an IS connector — auth via an existing IS connection (OAuth/API key) | [impl-connector.md](impl-connector.md) |
+16	| **Manual** | No connector exists, public/no-auth API, or quick prototyping | [impl-manual.md](impl-manual.md) |
+17	
+18	&gt; **Mode fallback — auto-try, then confirm.** Prefer a curated connector activity first; if none, use connector mode; if connector mode cannot be configured (connector lacks HTTP request support — `HasHttpRequest` false — or no usable IS connection), fall through to manual mode automatically. Manual
+
+… (truncated, 11166 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#17</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">36ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/references/plugins/end/planning.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# End Node — Planning
+2	
+3	## Node Type
+4	
+5	`core.control.end`
+6	
+7	## When to Use
+8	
+9	Use an End node for graceful workflow completion. Each terminal path in the flow needs its own End node.
+10	
+11	### Selection Heuristics
+12	
+13	| Situation | Use End? |
+14	| --- | --- |
+15	| Normal completion of an execution path | Yes |
+16	| Fatal error — abort everything immediately | No — use [Terminate](../terminate/planning.md) |
+17	
+18	## Ports
+19	
+20	| Input Port | Output Port(s) |
+21	| --- | --- |
+22	| `input` | — (none) |
+23	
+24	## Key Rules
+25	
+26	- A flow can have multiple End nodes (one per terminal path)
+27	- Every `out` variable in `variables.globals` **must** be mapped on **every** reachable End node via `outputs`
+28	- End nodes only terminate their own path — other parallel branches continue
+29	</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#18</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">4.31s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;echo \&quot;=== onedrive connections ===\&quot; \nuip is connections list \&quot;uipath-microsoft-onedrive\&quot; --all-folders --output json 2&gt;&amp;1\necho \&quot;=== quickbooks connections ===\&quot;\nuip is connections list \&quot;uipath-intuit-quickbooksonline\&quot; --all-folders --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Check for existing IS connections for SharePoint/OneDrive and QuickBooks&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>=== onedrive connections ===
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;ConnectionList&quot;,
+  &quot;Data&quot;: [
+    {
+      &quot;Id&quot;: &quot;ae311606-25b7-43ef-9cd0-f3dc0b3a9b58&quot;,
+      &quot;Name&quot;: &quot;Productivity O365 OneDrive&quot;,
+      &quot;ConnectorKey&quot;: &quot;uipath-microsoft-onedrive&quot;,
+      &quot;ConnectorName&quot;: &quot;Microsoft OneDrive &amp; SharePoint&quot;,
+      &quot;State&quot;: &quot;Enabled&quot;,
+      &quot;Owner&quot;: &quot;toma.alexandru@uipath.com&quot;,
+      &quot;IsDefault&quot;: &quot;Yes&quot;,
+      &quot;ByoaConnection&quot;: &quot;No&quot;,
+      &quot;ElementInstanceId&quot;: 345860,
+      &quot;Folder&quot;: &quot;Shared&quot;,
+      &quot;FolderKey&quot;: &quot;c4359cde-55f0-4f0e-9322-c6cdce74ab4c&quot;,
+      &quot;Created&quot;: &quot;2026-06-04T17:28:48.500Z&quot;,
+      &quot;Updated&quot;: &quot;2026-08-18T21:22:40.903Z&quot;
+    }
+  ]
+}
+=== quickbooks connections ===
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;Message&quot;,
+  &quot;Data&quot;: {
+    &quot;Message&quot;: &quot;No connections found for connector &#x27;uipath-intuit-quickbooksonline&#x27;.&quot;
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#19</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">3.21s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry get \&quot;uipath.connector.trigger.uipath-microsoft-onedrive.file-created\&quot; --connection-id \&quot;ae311606-25b7-43ef-9cd0-f3dc0b3a9b58\&quot; --output json &gt; /tmp/trigger_def.json 2&gt;&amp;1\npython3 -c \&quot;\nimport json\nd=json.load(open(&#x27;/tmp/trigger_def.json&#x27;))\nn=d[&#x27;Data&#x27;][&#x27;Node&#x27;]\nprint(&#x27;keys:&#x27;, list(n.keys()))\nprint(&#x27;eventMode:&#x27;, n.get(&#x27;eventMode&#x27;))\nprint(&#x27;model.context:&#x27;, json.dumps(n.get(&#x27;model… (249 more chars)&quot;,
+  &quot;description&quot;: &quot;Inspect the SharePoint/OneDrive file-created trigger definition&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>keys: [&#x27;nodeType&#x27;, &#x27;version&#x27;, &#x27;category&#x27;, &#x27;tags&#x27;, &#x27;sortOrder&#x27;, &#x27;description&#x27;, &#x27;display&#x27;, &#x27;handleConfiguration&#x27;, &#x27;model&#x27;, &#x27;form&#x27;, &#x27;inputDefinition&#x27;, &#x27;outputDefinition&#x27;, &#x27;toolbarExtensions&#x27;, &#x27;eventMode&#x27;, &#x27;byoaConnection&#x27;, &#x27;elementInstanceId&#x27;, &#x27;eventParameters&#x27;, &#x27;filterFields&#x27;, &#x27;outputResponseDefinition&#x27;]
+eventMode: polling
+model.context: [
+  {
+    &quot;name&quot;: &quot;connectorKey&quot;,
+    &quot;type&quot;: &quot;string&quot;,
+    &quot;value&quot;: &quot;uipath-microsoft-onedrive&quot;
+  },
+  {
+    &quot;name&quot;: &quot;operation&quot;,
+    &quot;value&quot;: &quot;FILE_CREATED&quot;,
+    &quot;type&quot;: &quot;string&quot;
+  },
+  {
+    &quot;name&quot;: &quot;objectName&quot;,
+    &quot;value&quot;: &quot;File&quot;,
+    &quot;type&quot;: &quot;string&quot;
+  },
+  {
+    &quot;name&quot;: &quot;method&quot;,
+    &quot;type&quot;: &quot;string&quot;
+  },
+  {
+    &quot;name&quot;: &quot;connection&quot;,
+    &quot;type&quot;: &quot;string&quot;,
+    &quot;value&quot;: &quot;&lt;bindings.uipath-microsoft-onedrive connection&gt;&quot;
+  },
+  {
+    &quot;name&quot;: &quot;folderKey&quot;,
+    &quot;type&quot;: &quot;string&quot;,
+    &quot;value&quot;: &quot;&lt;bindings.FolderKey&gt;&quot;
+  },
+  {
+    &quot;name&quot;: &quot;activityConfigurationVersion&quot;,
+    &quot;type&quot;: &quot;string&quot;,
+    &quot;value&quot;: &quot;v1&quot;
+  },
+  {
+    &quot;name&quot;: &quot;metadata&quot;,
+    &quot;body&quot;: {
+      &quot;telemetryData&quot;: {
+        &quot;connectorKey&quot;: &quot;uipath-microsoft-onedrive&quot;,
+        &quot;connectorName&quot;: &quot;File Created&quot;
+      },
+      &quot;inpu
+outputResponseDefinition keys: [&#x27;fields&#x27;]
+{
+  &quot;fields&quot;: [
+   
+
+… (truncated, 1981 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#20</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">525ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip is triggers objects \&quot;uipath-microsoft-onedrive\&quot; \&quot;FILE_CREATED\&quot; --connection-id \&quot;ae311606-25b7-43ef-9cd0-f3dc0b3a9b58\&quot; --output json 2&gt;&amp;1 &gt; /tmp/trig_obj.json\npython3 -c \&quot;\nimport json\nd=json.load(open(&#x27;/tmp/trig_obj.json&#x27;))\nprint(json.dumps(d, indent=2)[:3000])\n\&quot;&quot;,
+  &quot;description&quot;: &quot;Query trigger objects for FILE_CREATED operation&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;TriggerObjectList&quot;,
+  &quot;Data&quot;: [
+    {
+      &quot;HideEventIDField&quot;: false,
+      &quot;DebugDisabled&quot;: false,
+      &quot;Name&quot;: &quot;File&quot;,
+      &quot;Parameters&quot;: [
+        {
+          &quot;Reference&quot;: {
+            &quot;LookupNames&quot;: [
+              &quot;FullName&quot;
+            ],
+            &quot;ChildPath&quot;: &quot;/EventFolderPicker?parentReference={ReferenceID}&quot;,
+            &quot;Path&quot;: &quot;/EventFolderPicker&quot;,
+            &quot;Hydration&quot;: {
+              &quot;Method&quot;: &quot;GETBYID&quot;,
+              &quot;Url&quot;: &quot;/EventFolderPicker/{ReferenceID}?parentReference={ParentDriveID}&quot;
+            },
+            &quot;ObjectName&quot;: &quot;EventFolderPicker&quot;,
+            &quot;LookupValue&quot;: &quot;ReferenceID&quot;
+          },
+          &quot;DefaultValue&quot;: &quot;me&quot;,
+          &quot;DisplayName&quot;: &quot;In location&quot;,
+          &quot;Curated&quot;: false,
+          &quot;DataType&quot;: &quot;string&quot;,
+          &quot;Design&quot;: {
+            &quot;Component&quot;: &quot;FolderPicker&quot;,
+            &quot;Validation&quot;: true
+          },
+          &quot;Name&quot;: &quot;ParentDriveID&quot;,
+          &quot;Description&quot;: &quot;The location where file is created&quot;,
+          &quot;Type&quot;: &quot;path&quot;,
+          &quot;Required&quot;: true
+        }
+      ],
+      &quot;IsHidden&quot;: false,
+      &quot;SupportedAuths&quot;: [],
+      &quot;IsWebhookUrlVisible&quot;: false,
+      &quot;ByoaConnection&quot;: false,
+ 
+
+… (truncated, 59 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#21</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">35ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -n \&quot;Replace manual trigger\&quot; -A 40 /home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/references/editing-operations-cli.md | head -80&quot;,
+  &quot;description&quot;: &quot;Find the replace-manual-trigger-with-connector-trigger recipe&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>151:### Replace manual trigger with connector trigger
+152-
+153-1. Remove the manual trigger (also removes its edges and orphaned definition):
+154-   ```bash
+155-   uip maestro flow node remove &lt;ProjectName&gt;.flow start --output json
+156-   ```
+157-2. Add the connector trigger node:
+158-   ```bash
+159-   uip maestro flow node add &lt;ProjectName&gt;.flow &lt;TRIGGER_NODE_TYPE&gt; \
+160-     --label &quot;&lt;LABEL&gt;&quot; --position 200,144 --output json
+161-   ```
+162-3. Re-wire edge from the new trigger to the next node:
+163-   ```bash
+164-   uip maestro flow edge add &lt;ProjectName&gt;.flow &lt;NEW_TRIGGER_ID&gt; &lt;NEXT_NODE_ID&gt; \
+165-     --source-port output --target-port input --output json
+166-   ```
+167-4. Configure the trigger with connection and event parameters:
+168-   ```bash
+169-   uip maestro flow node configure &lt;ProjectName&gt;.flow &lt;NEW_TRIGGER_ID&gt; --detail &#x27;&lt;TRIGGER_DETAIL_JSON&gt;&#x27;
+170-   ```
+171-
+172-See [connector-trigger/impl.md](plugins/connector-trigger/impl.md) for the full `--detail` schema.
+173-
+174----
+175-
+176-## Operations Not Supported by CLI
+177-
+178-These operations require the `Edit` tool. Use the [Edit / Write strategy guide](editing-operations-json.md) for:
+179-
+180-1. **Any non-carve-out str
+
+… (truncated, 601 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#22</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">23ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -n \&quot;No-Live-Tenant\\|Planned Configuration\&quot; -A 40 /home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/references/plugins/connector/impl.md | head -90&quot;,
+  &quot;description&quot;: &quot;Read the No-Live-Tenant / Planned Configuration procedure for connector nodes&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>41:## No-Live-Tenant / Planned Configuration
+42-
+43-If you cannot run `node configure` (no live connection, sandbox forbids it, the user asked for planning only):
+44-
+45-1. Confirm the connector operation exists: `uip maestro flow registry search &lt;keyword&gt;` and `registry get &lt;node-type&gt;` (see [cli-commands.md — registry](../../../../shared/cli-commands.md#uip-maestro-flow-registry) for the `search` output shape).
+46-2. Add the connector node with `uip maestro flow node add &lt;file&gt; &lt;node-type&gt; --output json`. This is still required — it inserts the node and copies the definition into `definitions[]`. **Inside a loop body?** Add `--parent &lt;LOOP_NODE_ID&gt;` — see [loop/impl.md](../loop/impl.md).
+47-3. Write the planned `--detail` payload to a separate file (e.g. `&lt;nodeId&gt;.detail.json`) with placeholder values for missing connection/folder UUIDs. Do **not** put a partial `inputs.detail` on the node.
+48-4. **The node will not pass `flow validate` until `node configure` is run.** Surface this explicitly in your completion report under &quot;Missing connections&quot; or &quot;Open questions&quot; — do not let the user discover it via a validation failure later.
+49-
+50-Do not replace a registered connector opera
+
+… (truncated, 5703 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#23</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">2.85s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;echo \&quot;=== scheduled trigger ===\&quot; \nuip maestro flow registry get core.trigger.scheduled --output json 2&gt;&amp;1 | python3 -c \&quot;\nimport json,sys\nd=json.load(sys.stdin)\nn=d[&#x27;Data&#x27;][&#x27;Node&#x27;]\nprint(&#x27;inputDefinition:&#x27;, json.dumps(n.get(&#x27;inputDefinition&#x27;), indent=2)[:1500])\nprint(&#x27;inputDefaults:&#x27;, json.dumps(n.get(&#x27;inputDefaults&#x27;), indent=2)[:800])\n\&quot;\necho \&quot;=== loop ===\&quot;\nuip maestro flow registry get core.logic.… (505 more chars)&quot;,
+  &quot;description&quot;: &quot;Fetch schemas for scheduled trigger, loop, and end node&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>=== scheduled trigger ===
+inputDefinition: {
+  &quot;type&quot;: &quot;object&quot;,
+  &quot;properties&quot;: {
+    &quot;timerType&quot;: {
+      &quot;type&quot;: &quot;string&quot;,
+      &quot;minLength&quot;: 1
+    },
+    &quot;timerValue&quot;: {
+      &quot;type&quot;: &quot;string&quot;,
+      &quot;minLength&quot;: 1,
+      &quot;pattern&quot;: &quot;^(?:R\\d*\\/(?:P(?:[1-9][0-9]{0,3}Y|(?:[1-9]|1[0-2])M|(?:[1-9]|[1-4][0-9]|5[0-2])W|(?:[1-9]|[12][0-9]|3[01])D|T(?:(?:[1-9]|1[0-9]|2[0-3])H|(?:[1-9]|[1-5][0-9])M|(?:[1-9]|[1-5][0-9])S))(?:\\/\\d{4}-\\d{2}-\\d{2}(?:T\\d{2}:\\d{2}(?::\\d{2}(?:\\.\\d+)?)?(?:Z|[+-]\\d{2}:\\d{2})?)?)?|\\d{4}-\\d{2}-\\d{2}(?:T\\d{2}:\\d{2}(?::\\d{2}(?:\\.\\d+)?)?(?:Z|[+-]\\d{2}:\\d{2})?)?\\/P(?:[1-9][0-9]{0,3}Y|(?:[1-9]|1[0-2])M|(?:[1-9]|[1-4][0-9]|5[0-2])W|(?:[1-9]|[12][0-9]|3[01])D|T(?:(?:[1-9]|1[0-9]|2[0-3])H|(?:[1-9]|[1-5][0-9])M|(?:[1-9]|[1-5][0-9])S)))|(?:\\d+[LW]?|[A-Z]{3}|LW|L|W|\\?|\\*)(?:[,/#-](?:\\d+[LW]?|[A-Z]{3}|LW|L|W|\\?|\\*))*(?:\\s+(?:\\d+[LW]?|[A-Z]{3}|LW|L|W|\\?|\\*)(?:[,/#-](?:\\d+[LW]?|[A-Z]{3}|LW|L|W|\\?|\\*))*){5,6})$&quot;,
+      &quot;errorMessage&quot;: {
+        &quot;minLength&quot;: &quot;Cycle expression is required&quot;,
+        &quot;pattern&quot;: &quot;Cycle expression must be either an ISO 8601 repeating interval (e.g., R/PT1H, R/P1D, R/2026-05-14T09:00:00Z/P1W) or a Quartz cron expres
+
+… (truncated, 2338 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#24</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">13ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/references/plugins/loop/impl.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Loop Node — Implementation
+2	
+3	## Node Type
+4	
+5	`core.logic.loop`
+6	
+7	## Registry Validation
+8	
+9	```bash
+10	uip maestro flow registry get core.logic.loop --output json
+11	```
+12	
+13	Confirm: input ports `input` and `loopBack`, output ports `success` and `output`, required input `collection`. Set the node instance `typeVersion` to the `version` field from this response — do not hardcode it.
+14	
+15	## JSON Structure
+16	
+17	### Loop node
+18	
+19	```json
+20	{
+21	  &quot;id&quot;: &quot;loop1&quot;,
+22	  &quot;type&quot;: &quot;core.logic.loop&quot;,
+23	  &quot;typeVersion&quot;: &quot;&lt;DEFINITION_VERSION&gt;&quot;,
+24	  &quot;display&quot;: { &quot;label&quot;: &quot;Loop over items&quot; },
+25	  &quot;inputs&quot;: {
+26	    &quot;collection&quot;: &quot;=js:$vars.fetchData.output.body.items&quot;,
+27	    &quot;parallel&quot;: false
+28	  }
+29	}
+30	```
+31	
+32	&gt; **Collection source shape depends on the node type.** Connector `list` activities return the bare array — `&quot;collection&quot;: &quot;=js:$vars.searchIssuesByJql1.output&quot;`, NOT `.output.issues` / `.output.items`. HTTP nodes differ — envelope preserved: `.output.body.&lt;key&gt;` as above. See [connector/impl.md — Connector output shape](../connector/impl.md).
+33	
+34	Set `&quot;parallel&quot;: true` to execute all iterations concurrently.
+35	
+36	### Loop body nodes — `parentId` req
+
+… (truncated, 13499 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#25</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">791ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry search \&quot;uipath-microsoft-onedrive\&quot; --output json --output-filter \&quot;[*].{NodeType:NodeType,DisplayName:DisplayName,Description:Description}\&quot; 2&gt;&amp;1 | grep -B2 -A2 -i \&quot;download\\|get-file-or-folder\\b\&quot;&quot;,
+  &quot;description&quot;: &quot;Look for a download/get-file activity in the OneDrive/SharePoint connector&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>  &quot;Data&quot;: [
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-microsoft-onedrive.get-file-or-folder-metadata&quot;,
+      &quot;DisplayName&quot;: &quot;Get File or Folder Metadata&quot;,
+      &quot;Description&quot;: &quot;Fetch metadata for a file from OneDrive &amp; SharePoint&quot;
+--
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-microsoft-onedrive.get-file-or-folder&quot;,
+      &quot;DisplayName&quot;: &quot;Get File or Folder&quot;,
+      &quot;Description&quot;: &quot;Get file or folder from OneDrive or SharePoint to use in other activities&quot;
+--
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-microsoft-onedrive.get-file-or-folder-list&quot;,
+      &quot;DisplayName&quot;: &quot;Get File or Folder List&quot;,
+      &quot;Description&quot;: &quot;Retrieves a list of files and folders from the specified OneDrive or SharePoint location&quot;
+--
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-microsoft-onedrive.download-file&quot;,
+      &quot;DisplayName&quot;: &quot;Download File&quot;,
+      &quot;Description&quot;: &quot;Downloads a file or folder from OneDrive &amp; SharePoint&quot;
+    },
+    {
+--
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-microsoft-onedrive.get-file-or-folder-by-sharing-url&quot;,
+      &quot;DisplayName&quot;: &quot;Get File or Folder by Sharing Url&quot;,
+      &quot;Description&quot;: &quot;Resolve a OneDrive or SharePoint URL into a
+
+… (truncated, 1205 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#26</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">3.23s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry get \&quot;uipath.connector.uipath-microsoft-onedrive.download-file\&quot; --connection-id \&quot;ae311606-25b7-43ef-9cd0-f3dc0b3a9b58\&quot; --output json &gt; /tmp/download_def.json 2&gt;&amp;1\npython3 -c \&quot;\nimport json\nd=json.load(open(&#x27;/tmp/download_def.json&#x27;))\nn=d[&#x27;Data&#x27;][&#x27;Node&#x27;]\nprint(&#x27;keys:&#x27;, list(n.keys()))\nprint(&#x27;inputDefinition:&#x27;, json.dumps(n.get(&#x27;inputDefinition&#x27;), indent=2)[:2000])\nprint(&#x27;outp… (161 more chars)&quot;,
+  &quot;description&quot;: &quot;Inspect download-file connector activity schema&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>keys: [&#x27;nodeType&#x27;, &#x27;version&#x27;, &#x27;category&#x27;, &#x27;tags&#x27;, &#x27;sortOrder&#x27;, &#x27;supportsErrorHandling&#x27;, &#x27;description&#x27;, &#x27;display&#x27;, &#x27;handleConfiguration&#x27;, &#x27;model&#x27;, &#x27;form&#x27;, &#x27;inputDefinition&#x27;, &#x27;inputDefaults&#x27;, &#x27;outputDefinition&#x27;, &#x27;debug&#x27;, &#x27;connectorMethodInfo&#x27;, &#x27;outputResponseDefinition&#x27;]
+inputDefinition: {
+  &quot;fields&quot;: []
+}
+outputDefinition: {
+  &quot;output&quot;: {
+    &quot;type&quot;: &quot;object&quot;,
+    &quot;description&quot;: &quot;The return value of the connector.&quot;,
+    &quot;source&quot;: &quot;=result.response&quot;,
+    &quot;var&quot;: &quot;output&quot;
+  },
+  &quot;error&quot;: {
+    &quot;type&quot;: &quot;object&quot;,
+    &quot;description&quot;: &quot;Error information if the node fails&quot;,
+    &quot;source&quot;: &quot;=Error&quot;,
+    &quot;var&quot;: &quot;error&quot;,
+    &quot;schema&quot;: {
+      &quot;$schema&quot;: &quot;http://json-schema.org/draft-07/schema#&quot;,
+      &quot;type&quot;: &quot;object&quot;,
+      &quot;required&quot;: [
+        &quot;code&quot;,
+        &quot;message&quot;,
+        &quot;detail&quot;,
+        &quot;category&quot;,
+        &quot;status&quot;
+      ],
+      &quot;properties&quot;: {
+        &quot;code&quot;: {
+          &quot;type&quot;: &quot;string&quot;,
+          &quot;description&quot;: &quot;Error code as a string&quot;
+        },
+        &quot;message&quot;: {
+          &quot;type&quot;: &quot;string&quot;,
+          &quot;description&quot;: &quot;High-level error message&quot;
+        },
+        &quot;detail&quot;: {
+          &quot;type&quot;: &quot;string&quot;,
+          &quot;description&quot;: &quot;Detailed error description&quot;
+        },
+        &quot;cat
+
+… (truncated, 1168 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#27</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.73s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry get \&quot;uipath.connector.uipath-intuit-quickbooksonline.insert-record\&quot; --output json &gt; /tmp/insert_record.json 2&gt;&amp;1\npython3 -c \&quot;\nimport json\nd=json.load(open(&#x27;/tmp/insert_record.json&#x27;))\nn=d[&#x27;Data&#x27;][&#x27;Node&#x27;]\nprint(&#x27;keys:&#x27;, list(n.keys()))\nprint(&#x27;inputDefinition:&#x27;, json.dumps(n.get(&#x27;inputDefinition&#x27;), indent=2)[:1500])\nprint(&#x27;model.context:&#x27;, json.dumps(n.get(&#x27;model&#x27;,{}).get(&#x27;c… (29 more chars)&quot;,
+  &quot;description&quot;: &quot;Check insert-record schema for QuickBooks connector (no connection-id since not needed for this generic activity)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>keys: [&#x27;nodeType&#x27;, &#x27;version&#x27;, &#x27;category&#x27;, &#x27;tags&#x27;, &#x27;sortOrder&#x27;, &#x27;supportsErrorHandling&#x27;, &#x27;description&#x27;, &#x27;display&#x27;, &#x27;handleConfiguration&#x27;, &#x27;model&#x27;, &#x27;form&#x27;, &#x27;inputDefinition&#x27;, &#x27;inputDefaults&#x27;, &#x27;outputDefinition&#x27;, &#x27;debug&#x27;]
+inputDefinition: {}
+model.context: [
+  {
+    &quot;name&quot;: &quot;connectorKey&quot;,
+    &quot;type&quot;: &quot;string&quot;,
+    &quot;value&quot;: &quot;uipath-intuit-quickbooksonline&quot;
+  },
+  {
+    &quot;name&quot;: &quot;operation&quot;,
+    &quot;type&quot;: &quot;string&quot;
+  },
+  {
+    &quot;name&quot;: &quot;objectName&quot;,
+    &quot;type&quot;: &quot;string&quot;
+  },
+  {
+    &quot;name&quot;: &quot;method&quot;,
+    &quot;type&quot;: &quot;string&quot;
+  },
+  {
+    &quot;name&quot;: &quot;connection&quot;,
+    &quot;type&quot;: &quot;string&quot;,
+    &quot;value&quot;: &quot;&lt;bindings.uipath-intuit-quickbooksonline connection&gt;&quot;
+  },
+  {
+    &quot;name&quot;: &quot;folderKey&quot;,
+    &quot;type&quot;: &quot;string&quot;,
+    &quot;value&quot;: &quot;&lt;bindings.FolderKey&gt;&quot;
+  },
+  {
+    &quot;name&quot;: &quot;activityConfigurationVersion&quot;,
+    &quot;type&quot;: &quot;string&quot;,
+    &quot;value&quot;: &quot;v1&quot;
+  },
+  {
+    &quot;name&quot;: &quot;metadata&quot;,
+    &quot;body&quot;: {
+      &quot;telemetryData&quot;: {
+        &quot;connectorKey&quot;: &quot;uipath-intuit-quickbooksonline&quot;,
+        &quot;connectorName&quot;: &quot;Insert Record&quot;
+      },
+      &quot;inputMetadata&quot;: {},
+      &quot;errorState&quot;: {
+        &quot;hasError&quot;: true
+      }
+    },
+    &quot;type&quot;: &quot;json&quot;
+  }
+]</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#28</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">218ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 -c \&quot;\nimport json\nd=json.load(open(&#x27;/tmp/download_def.json&#x27;))\nn=d[&#x27;Data&#x27;][&#x27;Node&#x27;]\nprint(&#x27;connectorMethodInfo:&#x27;, json.dumps(n.get(&#x27;connectorMethodInfo&#x27;), indent=2)[:2000])\nprint(&#x27;debug:&#x27;, json.dumps(n.get(&#x27;debug&#x27;), indent=2)[:800])\nprint(&#x27;form:&#x27;, json.dumps(n.get(&#x27;form&#x27;), indent=2)[:2000])\n\&quot;&quot;,
+  &quot;description&quot;: &quot;Inspect connectorMethodInfo and form for download-file activity&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>connectorMethodInfo: {
+  &quot;operation&quot;: &quot;Retrieve&quot;,
+  &quot;description&quot;: &quot;Downloads a file or folder from OneDrive &amp; SharePoint&quot;,
+  &quot;method&quot;: &quot;GET&quot;,
+  &quot;parameters&quot;: [
+    {
+      &quot;name&quot;: &quot;convertToPDF&quot;,
+      &quot;description&quot;: &quot;Indicates whether to convert the file to PDF format. Only files of the following types can be converted: csv, doc, docx, odp, ods, odt, pot, potm, potx, pps, ppsx, ppsxm, ppt, pptm, pptx, rtf, xls, xlsx&quot;,
+      &quot;type&quot;: &quot;query&quot;,
+      &quot;dataType&quot;: &quot;boolean&quot;,
+      &quot;required&quot;: false,
+      &quot;defaultValue&quot;: false,
+      &quot;displayName&quot;: &quot;Convert to PDF format&quot;,
+      &quot;curated&quot;: true,
+      &quot;design&quot;: {
+        &quot;loadByDefault&quot;: false,
+        &quot;isMultiSelect&quot;: false,
+        &quot;enableUserOverride&quot;: false,
+        &quot;isHidden&quot;: false,
+        &quot;position&quot;: &quot;secondary&quot;,
+        &quot;textBlocks&quot;: [
+          {
+            &quot;name&quot;: &quot;defaultMessage&quot;,
+            &quot;text&quot;: &quot;If toggled yes, the file will be converted to PDF format.&quot;
+          }
+        ],
+        &quot;validation&quot;: false
+      },
+      &quot;sortOrder&quot;: 1
+    },
+    {
+      &quot;name&quot;: &quot;referenceID&quot;,
+      &quot;description&quot;: &quot;The file to download&quot;,
+      &quot;type&quot;: &quot;query&quot;,
+      &quot;dataType&quot;: &quot;string&quot;,
+      &quot;required&quot;: true,
+      &quot;displayName&quot;: &quot;Fil
+
+… (truncated, 2722 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#29</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.04s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry search \&quot;uipath-intuit-quickbooksonline\&quot; --output json --output-filter \&quot;[*].NodeType\&quot; 2&gt;&amp;1 | grep -v \&quot;agent.resource\&quot; | grep -v \&quot;trigger\\|event\&quot;&quot;,
+  &quot;description&quot;: &quot;List QuickBooks activity node types excluding triggers/agent-tools&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeSearchSuccess&quot;,
+  &quot;Data&quot;: [
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-intuit-quickbooksonline.get-sync-token-by-id&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-intuit-quickbooksonline.update-item&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-intuit-quickbooksonline.search-items&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-intuit-quickbooksonline.list-all-records&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-intuit-quickbooksonline.list-attachments&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-intuit-quickbooksonline.update-customer&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-intuit-quickbooksonline.create-vendor&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-intuit-quickbooksonline.create-item&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-intuit-quickbooksonline.get-record&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-intuit-quickbooksonline.get-attachment&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-intuit-quickbooksonline.get-attachment-download-link&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-intuit-quickboo
+
+… (truncated, 1222 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#30</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">845ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip is triggers describe \&quot;uipath-microsoft-onedrive\&quot; \&quot;FILE_CREATED\&quot; \&quot;File\&quot; --connection-id \&quot;ae311606-25b7-43ef-9cd0-f3dc0b3a9b58\&quot; --output json &gt; /tmp/trig_desc.json 2&gt;&amp;1\npython3 -c \&quot;\nimport json\nd=json.load(open(&#x27;/tmp/trig_desc.json&#x27;))\nprint(json.dumps(d, indent=2)[:3000])\n\&quot;&quot;,
+  &quot;description&quot;: &quot;Describe FILE_CREATED trigger object fields&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;TriggerMetadata&quot;,
+  &quot;Data&quot;: {
+    &quot;Name&quot;: &quot;FileEventField&quot;,
+    &quot;DisplayName&quot;: &quot;FileEventField&quot;,
+    &quot;ElementKey&quot;: &quot;uipath-microsoft-onedrive&quot;,
+    &quot;Operation&quot;: &quot;FILE_CREATED&quot;,
+    &quot;EventMode&quot;: &quot;polling&quot;,
+    &quot;ByoaConnection&quot;: false,
+    &quot;IsWebhookUrlVisible&quot;: false,
+    &quot;EventParameters&quot;: [],
+    &quot;FilterFields&quot;: [
+      {
+        &quot;Name&quot;: &quot;ParentID&quot;,
+        &quot;Type&quot;: &quot;string&quot;,
+        &quot;DisplayName&quot;: &quot;Exact folder&quot;,
+        &quot;Reference&quot;: {
+          &quot;ObjectName&quot;: &quot;EventFolderPicker&quot;,
+          &quot;LookupNames&quot;: [
+            &quot;FullName&quot;
+          ],
+          &quot;LookupValue&quot;: &quot;ID&quot;,
+          &quot;Path&quot;: &quot;/EventFolderPicker&quot;,
+          &quot;ChildPath&quot;: &quot;/EventFolderPicker?parentReference={ReferenceID}&quot;,
+          &quot;Hydration&quot;: {
+            &quot;Url&quot;: &quot;/CuratedFolders/{ID}?driveID={ParentDriveID}&quot;,
+            &quot;Method&quot;: &quot;GETBYID&quot;
+          }
+        }
+      },
+      {
+        &quot;Name&quot;: &quot;ParentDriveID&quot;,
+        &quot;Type&quot;: &quot;string&quot;,
+        &quot;DisplayName&quot;: &quot;Parent drive ID&quot;,
+        &quot;Reference&quot;: {
+          &quot;ObjectName&quot;: &quot;EventDrivePicker&quot;,
+          &quot;LookupNames&quot;: [
+            &quot;FullName&quot;
+          ],
+          &quot;LookupValue&quot;: &quot;ParentDriveID&quot;,
+          &quot;Path&quot;: &quot;/EventDrivePic
+
+… (truncated, 1800 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#31</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">130ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 -c \&quot;\nimport json\nd=json.load(open(&#x27;/tmp/download_def.json&#x27;))\nn=d[&#x27;Data&#x27;][&#x27;Node&#x27;]\ncmi = n.get(&#x27;connectorMethodInfo&#x27;, {})\nprint(json.dumps(cmi, indent=2))\n\&quot; | tail -100&quot;,
+  &quot;description&quot;: &quot;Full connectorMethodInfo for download-file to check response schema&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;operation&quot;: &quot;Retrieve&quot;,
+  &quot;description&quot;: &quot;Downloads a file or folder from OneDrive &amp; SharePoint&quot;,
+  &quot;method&quot;: &quot;GET&quot;,
+  &quot;parameters&quot;: [
+    {
+      &quot;name&quot;: &quot;convertToPDF&quot;,
+      &quot;description&quot;: &quot;Indicates whether to convert the file to PDF format. Only files of the following types can be converted: csv, doc, docx, odp, ods, odt, pot, potm, potx, pps, ppsx, ppsxm, ppt, pptm, pptx, rtf, xls, xlsx&quot;,
+      &quot;type&quot;: &quot;query&quot;,
+      &quot;dataType&quot;: &quot;boolean&quot;,
+      &quot;required&quot;: false,
+      &quot;defaultValue&quot;: false,
+      &quot;displayName&quot;: &quot;Convert to PDF format&quot;,
+      &quot;curated&quot;: true,
+      &quot;design&quot;: {
+        &quot;loadByDefault&quot;: false,
+        &quot;isMultiSelect&quot;: false,
+        &quot;enableUserOverride&quot;: false,
+        &quot;isHidden&quot;: false,
+        &quot;position&quot;: &quot;secondary&quot;,
+        &quot;textBlocks&quot;: [
+          {
+            &quot;name&quot;: &quot;defaultMessage&quot;,
+            &quot;text&quot;: &quot;If toggled yes, the file will be converted to PDF format.&quot;
+          }
+        ],
+        &quot;validation&quot;: false
+      },
+      &quot;sortOrder&quot;: 1
+    },
+    {
+      &quot;name&quot;: &quot;referenceID&quot;,
+      &quot;description&quot;: &quot;The file to download&quot;,
+      &quot;type&quot;: &quot;query&quot;,
+      &quot;dataType&quot;: &quot;string&quot;,
+      &quot;required&quot;: true,
+      &quot;displayName&quot;: &quot;File to download&quot;,
+     
+
+… (truncated, 1043 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#32</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">21ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -n \&quot;generic\\|Generic\\|insert-record\\|objectName\&quot; /home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/references/plugins/connector/impl.md | head -60&quot;,
+  &quot;description&quot;: &quot;Search connector impl.md for generic-activity / objectName handling&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>5:For generic node/edge add, remove, and wiring procedures, see [editing-operations.md](../../editing-operations.md). This guide covers the connector-specific configuration workflow that must follow the generic node add.
+16:   - `objectName` — required for generic activities (see below). The API object name (e.g. `&quot;Opportunity&quot;`); ignored for concrete nodes.
+27:## Generic vs Concrete Activities
+32:- **Generic** — the node type encodes only the operation (e.g. `uipath.connector.uipath-salesforce-sfdc.list-records`, `…insert-record`, `…update-record`). `inputDefinition` is `{}`; the node needs an extra `objectName` in `--detail`, and `method` / `endpoint` come from `is resources describe`.
+34:To classify a node, read `Node.form.sections[0].fields[0].componentProps.connectorDetail.configuration` from the `registry get` response, parse it as JSON, and check `activityType`. `&quot;Generic&quot;` → run Step 2a to discover `objectName` (and capture `operation` from the same marker for the `--operation` flag in Step 3). Anything else → skip Step 2a.
+103:&gt; **For generic activities, `connectorMethodInfo` is empty.** Method and endpoint are object-specific and only resolve once Step 2a picks an `object
+
+… (truncated, 5437 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#33</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">123ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 -c \&quot;\nimport json\nd=json.load(open(&#x27;/tmp/download_def.json&#x27;))\nn=d[&#x27;Data&#x27;][&#x27;Node&#x27;]\nprint(json.dumps(n.get(&#x27;outputResponseDefinition&#x27;), indent=2)[:3000])\n\&quot;&quot;,
+  &quot;description&quot;: &quot;Check download-file outputResponseDefinition for file object shape&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;fields&quot;: [
+    {
+      &quot;name&quot;: &quot;Response&quot;,
+      &quot;displayName&quot;: &quot;Download file&quot;,
+      &quot;type&quot;: &quot;octet-stream&quot;,
+      &quot;dataType&quot;: &quot;octet-stream&quot;,
+      &quot;required&quot;: false,
+      &quot;description&quot;: &quot;Final output file&quot;,
+      &quot;responseOnly&quot;: true
+    }
+  ]
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#34</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">8.93s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;pwd\nuip solution init \&quot;InvoiceExtractionSolution\&quot; --output json \\\n  &amp;&amp; cd \&quot;InvoiceExtractionSolution\&quot; \\\n  &amp;&amp; uip maestro flow init \&quot;InvoiceExtraction\&quot; --output json \\\n  &amp;&amp; cd \&quot;InvoiceExtraction\&quot; \\\n  &amp;&amp; uip maestro flow registry pull --output json \\\n  &amp;&amp; uip maestro flow node add \&quot;InvoiceExtraction.flow\&quot; uipath.connector.uipath-microsoft-onedrive.download-file --label \&quot;Download Invoice PDF\&quot; --outpu… (177 more chars)&quot;,
+  &quot;description&quot;: &quot;Scaffold solution + flow project, pull registry, add CLI-owned connector nodes&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/work/output/artifacts/skill-flow-ixp-routing/invoice-extraction
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;SolutionInit&quot;,
+  &quot;Data&quot;: {
+    &quot;Status&quot;: &quot;Created successfully&quot;,
+    &quot;Path&quot;: &quot;/work/output/artifacts/skill-flow-ixp-routing/invoice-extraction/InvoiceExtractionSolution/InvoiceExtractionSolution.uipx&quot;,
+    &quot;NextSteps&quot;: &quot;Read /work/output/artifacts/skill-flow-ixp-routing/invoice-extraction/InvoiceExtractionSolution/AGENTS.md or /work/output/artifacts/skill-flow-ixp-routing/invoice-extraction/InvoiceExtractionSolution/CLAUDE.md to understand the solution lifecycle, project types that can be used inside a solution, and related uip command references.&quot;
+  }
+}
+2026-08-18 22:02:50 INFO  [ResourceBuilder:ProjectCreateCommandHandler] Creating project [object Object]
+2026-08-18 22:02:50 INFO  [ResourceBuilder:MultiFileSolutionDefinitionProvider] Reading multi-file solution definition for solution %s /work/output/artifacts/skill-flow-ixp-routing/invoice-extraction/InvoiceExtractionSolution
+2026-08-18 22:02:50 INFO  [ResourceBuilder:ProjectCreateCommandHandler] Generate artefact resources for project [object Object]
+2026-08-18 22:02:50 INFO  [ResourceBuilder:SolutionsMetadataReader] Reading met
+
+… (truncated, 2562 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#35</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.57s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-ixp-routing/invoice-extraction/InvoiceExtractionSolution/InvoiceExtraction\nuip maestro flow registry get core.action.script --output json &gt; /tmp/script_def.json 2&gt;&amp;1\npython3 -c \&quot;\nimport json\nd=json.load(open(&#x27;/tmp/script_def.json&#x27;))\nn=d[&#x27;Data&#x27;][&#x27;Node&#x27;]\nprint(&#x27;version:&#x27;, n.get(&#x27;version&#x27;))\nprint(json.dumps(n.get(&#x27;inputDefinition&#x27;), indent=2)[:600])\n\&quot;\nuip maestro … (224 more chars)&quot;,
+  &quot;description&quot;: &quot;Fetch script node definition, re-confirm IXP node definition&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>version: 1.1
+{
+  &quot;type&quot;: &quot;object&quot;,
+  &quot;properties&quot;: {
+    &quot;script&quot;: {
+      &quot;type&quot;: &quot;string&quot;,
+      &quot;minLength&quot;: 1,
+      &quot;errorMessage&quot;: &quot;Add a script function&quot;,
+      &quot;validationSeverity&quot;: &quot;warning&quot;
+    }
+  },
+  &quot;required&quot;: [
+    &quot;script&quot;
+  ]
+}
+{
+    &quot;Result&quot;: &quot;Success&quot;,
+    &quot;Code&quot;: &quot;NodeGetSuccess&quot;,
+    &quot;Data&quot;: {
+        &quot;Node&quot;: {</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#36</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">87ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 -c \&quot;\nimport json\nd=json.load(open(&#x27;/tmp/download_def.json&#x27;))\nn=d[&#x27;Data&#x27;][&#x27;Node&#x27;]\nprint(json.dumps(n.get(&#x27;outputDefinition&#x27;), indent=2))\n\&quot;&quot;,
+  &quot;description&quot;: &quot;Full outputDefinition of download-file node to check for attachment schema&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;output&quot;: {
+    &quot;type&quot;: &quot;object&quot;,
+    &quot;description&quot;: &quot;The return value of the connector.&quot;,
+    &quot;source&quot;: &quot;=result.response&quot;,
+    &quot;var&quot;: &quot;output&quot;
+  },
+  &quot;error&quot;: {
+    &quot;type&quot;: &quot;object&quot;,
+    &quot;description&quot;: &quot;Error information if the node fails&quot;,
+    &quot;source&quot;: &quot;=Error&quot;,
+    &quot;var&quot;: &quot;error&quot;,
+    &quot;schema&quot;: {
+      &quot;$schema&quot;: &quot;http://json-schema.org/draft-07/schema#&quot;,
+      &quot;type&quot;: &quot;object&quot;,
+      &quot;required&quot;: [
+        &quot;code&quot;,
+        &quot;message&quot;,
+        &quot;detail&quot;,
+        &quot;category&quot;,
+        &quot;status&quot;
+      ],
+      &quot;properties&quot;: {
+        &quot;code&quot;: {
+          &quot;type&quot;: &quot;string&quot;,
+          &quot;description&quot;: &quot;Error code as a string&quot;
+        },
+        &quot;message&quot;: {
+          &quot;type&quot;: &quot;string&quot;,
+          &quot;description&quot;: &quot;High-level error message&quot;
+        },
+        &quot;detail&quot;: {
+          &quot;type&quot;: &quot;string&quot;,
+          &quot;description&quot;: &quot;Detailed error description&quot;
+        },
+        &quot;category&quot;: {
+          &quot;type&quot;: &quot;string&quot;,
+          &quot;description&quot;: &quot;Error category&quot;
+        },
+        &quot;status&quot;: {
+          &quot;type&quot;: &quot;integer&quot;,
+          &quot;description&quot;: &quot;HTTP status code&quot;
+        }
+      },
+      &quot;additionalProperties&quot;: false
+    }
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#37</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">9ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/shared/cli-commands.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# uip maestro flow — CLI Command Reference
+2	
+3	All commands output `{ &quot;Result&quot;: &quot;Success&quot;|&quot;Failure&quot;, &quot;Code&quot;: &quot;...&quot;, &quot;Data&quot;: { ... } }`. Use `--output json` for programmatic use.
+4	
+5	&gt; For node and edge commands (`node add/remove/list/configure`, `edge add/remove/list`), see the [Author CLI editing strategy](../author/references/editing-operations-cli.md). This file covers project setup, validation, registry, debug, and publishing commands.
+6	
+7	&lt;!--skill-flavor:flow-init-command:start--&gt;
+8	## uip maestro flow init
+9	
+10	Scaffold a new Flow project directory. Outside a solution, `flow init` auto-scaffolds `&lt;ProjectName&gt;Solution/` and nests the project in it. **Prefer creating the solution first** so its name matches the project name (see the [Author greenfield journey — Step 2](../author/references/greenfield.md)).
+11	
+12	```bash
+13	# 1. Create solution first (for naming control)
+14	uip solution init &quot;&lt;SolutionName&gt;&quot; --output json
+15	
+16	# 2. Init the flow project inside the solution folder.
+17	#    Inside a solution directory, `flow init` auto-registers the project with
+18	#    the parent `.uipx`. Outside any solution, it auto-scaffolds
+19	#    `&lt;ProjectName&gt;Solution/&lt;ProjectNa
+
+… (truncated, 21723 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#38</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.45s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-ixp-routing/invoice-extraction/InvoiceExtractionSolution/InvoiceExtraction\nuip maestro flow node remove \&quot;InvoiceExtraction.flow\&quot; start --output json\nuip maestro flow node add \&quot;InvoiceExtraction.flow\&quot; uipath.connector.trigger.uipath-microsoft-onedrive.file-created --label \&quot;New Invoice PDF Uploaded\&quot; --position 40,144 --output json&quot;,
+  &quot;description&quot;: &quot;Remove manual trigger and add SharePoint/OneDrive file-created connector trigger&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeRemoveSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;DeletedNode&quot;: {
+      &quot;Id&quot;: &quot;start&quot;,
+      &quot;Type&quot;: &quot;core.trigger.manual&quot;,
+      &quot;Label&quot;: &quot;Manual trigger&quot;,
+      &quot;Position&quot;: {
+        &quot;X&quot;: 256,
+        &quot;Y&quot;: 144
+      }
+    },
+    &quot;EdgesRemoved&quot;: 0,
+    &quot;BindingsRemoved&quot;: 0,
+    &quot;DefinitionsRemoved&quot;: 1,
+    &quot;VariablesRemoved&quot;: 1,
+    &quot;VariableUpdatesRemoved&quot;: 0
+  }
+}
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeAddSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;Node&quot;: {
+      &quot;Id&quot;: &quot;newInvoicePdfUploaded1&quot;,
+      &quot;Type&quot;: &quot;uipath.connector.trigger.uipath-microsoft-onedrive.file-created&quot;,
+      &quot;TypeVersion&quot;: &quot;1.0.0&quot;,
+      &quot;Ui&quot;: {
+        &quot;Position&quot;: {
+          &quot;X&quot;: 40,
+          &quot;Y&quot;: 144
+        }
+      },
+      &quot;Display&quot;: {
+        &quot;Label&quot;: &quot;New Invoice PDF Uploaded&quot;
+      },
+      &quot;Inputs&quot;: {
+        &quot;EntryPointId&quot;: &quot;bc6d0e50-6782-47f0-a69c-915623a89beb&quot;,
+        &quot;IsDefaultEntryPoint&quot;: true
+      }
+    },
+    &quot;DefinitionAdded&quot;: true,
+    &quot;BindingsCreated&quot;: 0,
+    &quot;VariableCount&quot;: 5
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#39</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">2.31s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-ixp-routing/invoice-extraction/InvoiceExtractionSolution/InvoiceExtraction\nuip maestro flow registry get core.logic.loop --output json --output-filter \&quot;Node.version\&quot;\nuip maestro flow registry get core.control.end --output json --output-filter \&quot;Node.version\&quot;\nuip maestro flow registry get core.action.script --output json --output-filter \&quot;Node.version\&quot;&quot;,
+  &quot;description&quot;: &quot;Get version numbers for loop, end, script node types&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeGetSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;Value&quot;: &quot;2.4&quot;
+  }
+}
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeGetSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;Value&quot;: &quot;1.0&quot;
+  }
+}
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeGetSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;Value&quot;: &quot;1.1&quot;
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#40</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-err">ERROR</span>
+      <span class="tool-duration">21ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;sed -n &#x27;280,340&#x27; /home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/references/plugins/connector/impl.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Exit code 1
+sed: -e expression #1, char 7: missing command</pre>
+    <h4>Error</h4><pre>Exit code 1
+sed: -e expression #1, char 7: missing command</pre>
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#41</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">21ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -n \&quot;octet-stream\\|attachment\\|fileRef\&quot; -r /home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/references/plugins/ixp/impl.md /home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/references/plugins/connector/impl.md 2&gt;&amp;1 | head -40&quot;,
+  &quot;description&quot;: &quot;Search for octet-stream / attachment binding guidance in ixp and connector docs&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/references/plugins/ixp/impl.md:103:- `inputDefinition.properties` — `model` (object), `modelName`, `projectName`, `projectId`, `versionTag`, `folderKey`, `folderName`, `fileRef`, `pageRange`, `attachmentConfig`, `guardrails`, `attachment`. `inputDefinition.required` — `[&quot;fileRef&quot;]`.
+/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/references/plugins/ixp/impl.md:139:| `inputs.fileRef` | `&quot;=js:$vars.&lt;upstream&gt;.output.&lt;field&gt;&quot;` — the file/attachment OBJECT itself, never its `.ID` (author this) | YES |
+/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/references/plugins/ixp/impl.md:147:- `attachmentId` — attachments bind through `inputs.fileRef` as the whole object. Never route the object into `inputs.attachment` and its `.ID` into `fileRef`: a bare ID in `fileRef` passes `flow validate` but faults debug with `[430002] Invalid input on document extraction`
+/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/references/plugins/ixp/impl.md:148:- `fileName` — derived from `fileRef` upstream
+/home/azureuser/projects/skills/skills/uipat
+
+… (truncated, 7196 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#42</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">160ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-ixp-routing/invoice-extraction/InvoiceExtractionSolution/InvoiceExtraction/InvoiceExtraction.flow&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	{
+2	  &quot;id&quot;: &quot;3445fed5-70f7-42b5-bd8d-2cba3cce9812&quot;,
+3	  &quot;version&quot;: &quot;1.9&quot;,
+4	  &quot;name&quot;: &quot;InvoiceExtraction&quot;,
+5	  &quot;nodes&quot;: [
+6	    {
+7	      &quot;id&quot;: &quot;downloadInvoicePdf1&quot;,
+8	      &quot;type&quot;: &quot;uipath.connector.uipath-microsoft-onedrive.download-file&quot;,
+9	      &quot;typeVersion&quot;: &quot;1.0.0&quot;,
+10	      &quot;display&quot;: {
+11	        &quot;label&quot;: &quot;Download Invoice PDF&quot;
+12	      },
+13	      &quot;inputs&quot;: {}
+14	    },
+15	    {
+16	      &quot;id&quot;: &quot;postInvoiceToAccounting1&quot;,
+17	      &quot;type&quot;: &quot;uipath.connector.uipath-intuit-quickbooksonline.insert-record&quot;,
+18	      &quot;typeVersion&quot;: &quot;1.0.0&quot;,
+19	      &quot;display&quot;: {
+20	        &quot;label&quot;: &quot;Post Invoice to Accounting&quot;
+21	      },
+22	      &quot;inputs&quot;: {}
+23	    },
+24	    {
+25	      &quot;id&quot;: &quot;newInvoicePdfUploaded1&quot;,
+26	      &quot;type&quot;: &quot;uipath.connector.trigger.uipath-microsoft-onedrive.file-created&quot;,
+27	      &quot;typeVersion&quot;: &quot;1.0.0&quot;,
+28	      &quot;display&quot;: {
+29	        &quot;label&quot;: &quot;New Invoice PDF Uploaded&quot;
+30	      },
+31	      &quot;inputs&quot;: {
+32	        &quot;entryPointId&quot;: &quot;bc6d0e50-6782-47f0-a69c-915623a89beb&quot;,
+33	        &quot;isDefaultEntryPoint&quot;: true
+34	      }
+35	    }
+36	  ],
+37	  &quot;edges&quot;: [],
+38	  &quot;definitions&quot;: [
+39	    {
+40	      &quot;nodeType&quot;: &quot;uipath.connector.uipath-microsoft-onedrive.download-file&quot;,
+
+… (truncated, 27051 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#43</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">25ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -n \&quot;queryParameters\\|Step 6\\|--detail\&quot; /home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/references/plugins/connector/impl.md | head -60&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>13:   - `connectionFolderKey` — the Orchestrator folder key in the authored `.flow` file. `node configure --detail` accepts `folderKey` as input and writes it back as `connectionFolderKey`.
+18:   - `queryParameters` — field-value pairs for query string parameters. Read from `connectorMethodInfo.parameters[]` where `type: query` (`registry get`) or `parameters[]` (`is resources describe`).
+20:   - `filter` — structured FilterBuilder tree for list/query operations. See Step 6a.
+21:   - `customFieldsRequestDetails` — design-time cache for connectors with an api-type ObjectAction at top-level `objectActions[]` OR `connectorMethodInfo.design.actions[]` (e.g. Jira `GenerateSchema`, Dataservice V3 `FetchObjectMetadataTenant`). camelCase keys; `parameterValues` as `[key, value]` tuples. See Step 6c.
+22:   - `multipartParameters` — derived from IS metadata params where `type === &quot;multipart&quot;`. Array of `{name, dataType, value?}`. Pass file values via `--detail.bodyParameters.&lt;name&gt;`; `node configure` moves file-typed values into the matching `multipartParameters[i].value` slot (matched by `name`). String-typed entries — including the body aggregator field whose name is given by `inputMetadat
+
+… (truncated, 15533 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#44</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">309ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip ixp deployments get-taxonomy --folder-key c4359cde-55f0-4f0e-9322-c6cdce74ab4c \&quot;invoiceixp-cef0d447-ixp\&quot; --output json 2&gt;&amp;1 | head -150&quot;,
+  &quot;description&quot;: &quot;Fetch taxonomy for InvoiceIXP model to get real field names&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;ValidationError&quot;,
+  &quot;ErrorCode&quot;: &quot;invalid_argument&quot;,
+  &quot;Message&quot;: &quot;error: required option &#x27;--version &lt;number&gt;&#x27; not specified&quot;,
+  &quot;Instructions&quot;: &quot;Run &#x27;uip ixp deployments get-taxonomy invoiceixp-cef0d447-ixp --help&#x27; for usage information.&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#45</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">305ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip ixp deployments get-taxonomy --help 2&gt;&amp;1 | head -40&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>                        uip ixp deployments get-taxonomy                        
+Get the project taxonomy (data types + field groups) at a specific trained model version
+                Use --help with nested commands for more detail.                
+
+┌─ Usage ──────────────────────────────────────────────────────────────────────┐
+│ uip ixp deployments get-taxonomy [options] &lt;project-name&gt;                    │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Arguments ──────────────────────────────────────────────────────────────────┐
+│ project-name   Project name                                                  │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Options ────────────────────────────────────────────────────────────────────┐
+│ --version &lt;number&gt;             Trained model version (non-negative integer). │
+│                                Get available versions from `uip ixp projects │
+│                                list-models &lt;project-name&gt; --output json`.    │
+│ -h, --help                     display help for command                      │
+│ --output                       Output format (default
+
+… (truncated, 1484 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#46</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">634ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip ixp projects list-models \&quot;invoiceixp-cef0d447-ixp\&quot; --output json 2&gt;&amp;1 | head -60&quot;,
+  &quot;description&quot;: &quot;List trained model versions for InvoiceIXP&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Failure&quot;,
+  &quot;ErrorCode&quot;: &quot;not_found&quot;,
+  &quot;Message&quot;: &quot;Failed to list models&quot;,
+  &quot;Instructions&quot;: &quot;Project with name &#x27;invoiceixp-cef0d447-ixp&#x27; was not found.&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;,
+  &quot;Context&quot;: {
+    &quot;HttpStatus&quot;: 404,
+    &quot;ErrorCode&quot;: &quot;[ProjectNotFoundError]&quot;
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#47</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">324ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip ixp projects list-models --help 2&gt;&amp;1 | head -30&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>                          uip ixp projects list-models                          
+                 List all model versions and tags for a project                 
+                Use --help with nested commands for more detail.                
+
+┌─ Usage ──────────────────────────────────────────────────────────────────────┐
+│ uip ixp projects list-models [options] &lt;project-name&gt;                        │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Arguments ──────────────────────────────────────────────────────────────────┐
+│ project-name   Project name                                                  │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Options ────────────────────────────────────────────────────────────────────┐
+│ -h, --help                     display help for command                      │
+│ --output                       Output format (default: json)                 │
+│ &lt;table|json|yaml|plain&gt;                                                      │
+│ --output-filter &lt;expression&gt;   JMESPath expression applied to the Data field │
+│                                of the response envelope      
+
+… (truncated, 909 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#48</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.22s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip ixp projects list --output json 2&gt;&amp;1 | python3 -c \&quot;\nimport json,sys\nd=json.load(sys.stdin)\nfor p in d.get(&#x27;Data&#x27;,[]):\n    print(p.get(&#x27;name&#x27;), &#x27;|&#x27;, p.get(&#x27;id&#x27;), &#x27;|&#x27;, p.get(&#x27;folderKey&#x27;) if &#x27;folderKey&#x27; in p else p.get(&#x27;FolderKey&#x27;,&#x27;&#x27;))\n\&quot; 2&gt;&amp;1 | grep -i invoice&quot;,
+  &quot;description&quot;: &quot;Find InvoiceIXP project by listing all IXP projects and filtering for invoice&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>(Bash completed with no output)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#49</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">981ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip ixp projects list --output json 2&gt;&amp;1 | python3 -m json.tool | head -60&quot;,
+  &quot;description&quot;: &quot;Inspect raw structure of ixp projects list&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+    &quot;Result&quot;: &quot;Success&quot;,
+    &quot;Code&quot;: &quot;IxpProjectsList&quot;,
+    &quot;Data&quot;: {
+        &quot;Projects&quot;: [
+            {
+                &quot;Id&quot;: &quot;b8d3ea65-59c5-8021-8427-a0406ce6218b&quot;,
+                &quot;Name&quot;: &quot;vendor_invoices-3e19dd82-ixp&quot;,
+                &quot;Title&quot;: &quot;Vendor Invoices&quot;,
+                &quot;CreatedAt&quot;: &quot;2026-07-24T17:03:52.973749+00:00&quot;,
+                &quot;ProjectUrl&quot;: &quot;https://alpha.uipath.com/codereval/defaulttenant/reinfer_/ixp/vendor_invoices-3e19dd82-ixp/vendor_invoices-3e19dd82&quot;
+            },
+            {
+                &quot;Id&quot;: &quot;ae342ddb-1574-8073-8e71-478002ef6515&quot;,
+                &quot;Name&quot;: &quot;codereval-integ-publish-444cb85e5e-ed030ecc-ixp&quot;,
+                &quot;Title&quot;: &quot;codereval-integ-publish-444cb85e5e&quot;,
+                &quot;CreatedAt&quot;: &quot;2026-08-17T05:22:23.576987+00:00&quot;,
+                &quot;ProjectUrl&quot;: &quot;https://alpha.uipath.com/codereval/defaulttenant/reinfer_/ixp/codereval-integ-publish-444cb85e5e-ed030ecc-ixp/codereval-integ-publish-444cb85e5e-ed030ecc&quot;
+            }
+        ],
+        &quot;Total&quot;: 2,
+        &quot;Offset&quot;: 0,
+        &quot;Limit&quot;: 50
+    }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#50</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">87ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 -c \&quot;\nimport json\nd=json.load(open(&#x27;/tmp/trig_desc.json&#x27;))\nof = d[&#x27;Data&#x27;][&#x27;OutputFields&#x27;]\nfor f in of:\n    print(f[&#x27;Name&#x27;], &#x27;|&#x27;, f.get(&#x27;DisplayName&#x27;), &#x27;|&#x27;, f.get(&#x27;Type&#x27;))\n\&quot;&quot;,
+  &quot;description&quot;: &quot;List all OutputFields for the FILE_CREATED trigger&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>ParentID | Exact folder | string
+Owner.Name | Owner name | string
+ParentDriveID | Parent drive ID | string
+Owner.ID | Owner ID | string
+URL | URL | string
+Extension | File extension | string
+Type | Type | string
+isFolder | Is folder | string
+MIMEType | MIME type | string
+ReferenceID | Reference ID | string
+FullName | Name | string
+Owner.Email | Created by(email) | string
+ID | ID | string</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#51</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">2.18s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-ixp-routing/invoice-extraction/InvoiceExtractionSolution/InvoiceExtraction\nuip maestro flow node configure \&quot;InvoiceExtraction.flow\&quot; \&quot;newInvoicePdfUploaded1\&quot; --output json --detail &#x27;{\n  \&quot;connectionId\&quot;: \&quot;ae311606-25b7-43ef-9cd0-f3dc0b3a9b58\&quot;,\n  \&quot;folderKey\&quot;: \&quot;c4359cde-55f0-4f0e-9322-c6cdce74ab4c\&quot;,\n  \&quot;eventMode\&quot;: \&quot;polling\&quot;,\n  \&quot;pathParameters\&quot;: { \&quot;ParentDriveID\&quot;: \&quot;m… (7 more chars)&quot;,
+  &quot;description&quot;: &quot;Configure the SharePoint/OneDrive file-created trigger node&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeConfigureSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;NodeId&quot;: &quot;newInvoicePdfUploaded1&quot;,
+    &quot;BindingsCreated&quot;: 3,
+    &quot;DetailPopulated&quot;: true
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#52</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.39s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-ixp-routing/invoice-extraction/InvoiceExtractionSolution/InvoiceExtraction\nuip maestro flow node configure \&quot;InvoiceExtraction.flow\&quot; \&quot;downloadInvoicePdf1\&quot; --output json --detail &#x27;{\n  \&quot;connectionId\&quot;: \&quot;ae311606-25b7-43ef-9cd0-f3dc0b3a9b58\&quot;,\n  \&quot;folderKey\&quot;: \&quot;c4359cde-55f0-4f0e-9322-c6cdce74ab4c\&quot;,\n  \&quot;method\&quot;: \&quot;GET\&quot;,\n  \&quot;endpoint\&quot;: \&quot;/DownloadFile\&quot;,\n  \&quot;queryParameters\&quot;:… (82 more chars)&quot;,
+  &quot;description&quot;: &quot;Configure the Download File connector activity&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeConfigureSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;NodeId&quot;: &quot;downloadInvoicePdf1&quot;,
+    &quot;BindingsCreated&quot;: 3,
+    &quot;DetailPopulated&quot;: true
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#53</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">148ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 -c \&quot;\nimport json\nd=json.load(open(&#x27;/tmp/ixp_def.json&#x27;))\nn=d[&#x27;Data&#x27;][&#x27;Node&#x27;]\nprint(json.dumps(n, indent=2))\n\&quot; &gt; /tmp/ixp_full_dump.json\nwc -l /tmp/ixp_full_dump.json\npython3 -c \&quot;\nimport json\nd=json.load(open(&#x27;/tmp/ixp_def.json&#x27;))\nn=d[&#x27;Data&#x27;][&#x27;Node&#x27;]\nprint(&#x27;nodeType:&#x27;, n[&#x27;nodeType&#x27;])\nprint(&#x27;version:&#x27;, n[&#x27;version&#x27;])\n\&quot;&quot;,
+  &quot;description&quot;: &quot;Prepare IXP node full definition and check version/nodeType&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1954 /tmp/ixp_full_dump.json
+nodeType: uipath.ixp.invoiceixp-cef0d447-ixp.ff973488-5d89-8035-86ac-f980b4be6deb-c4359cde-55f0-4f0e-9322-c6cdce74ab4c
+version: 1.0.0</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#54</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">153ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-ixp-routing/invoice-extraction/InvoiceExtractionSolution/InvoiceExtraction/InvoiceExtraction.flow&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	{
+2	  &quot;id&quot;: &quot;3445fed5-70f7-42b5-bd8d-2cba3cce9812&quot;,
+3	  &quot;version&quot;: &quot;1.9&quot;,
+4	  &quot;name&quot;: &quot;InvoiceExtraction&quot;,
+5	  &quot;nodes&quot;: [
+6	    {
+7	      &quot;id&quot;: &quot;downloadInvoicePdf1&quot;,
+8	      &quot;type&quot;: &quot;uipath.connector.uipath-microsoft-onedrive.download-file&quot;,
+9	      &quot;typeVersion&quot;: &quot;1.0.0&quot;,
+10	      &quot;display&quot;: {
+11	        &quot;label&quot;: &quot;Download Invoice PDF&quot;
+12	      },
+13	      &quot;inputs&quot;: {
+14	        &quot;detail&quot;: {
+15	          &quot;connector&quot;: &quot;uipath-microsoft-onedrive&quot;,
+16	          &quot;connectionId&quot;: &quot;ae311606-25b7-43ef-9cd0-f3dc0b3a9b58&quot;,
+17	          &quot;connectionResourceId&quot;: &quot;ae311606-25b7-43ef-9cd0-f3dc0b3a9b58&quot;,
+18	          &quot;connectionFolderKey&quot;: &quot;c4359cde-55f0-4f0e-9322-c6cdce74ab4c&quot;,
+19	          &quot;method&quot;: &quot;GET&quot;,
+20	          &quot;endpoint&quot;: &quot;/DownloadFile&quot;,
+21	          &quot;queryParameters&quot;: {
+22	            &quot;referenceID&quot;: &quot;=js:$vars.newInvoicePdfUploaded1.output.ReferenceID&quot;
+23	          },
+24	          &quot;uiPathActivityTypeId&quot;: &quot;c0ed899b-e170-3111-bda7-fdae448fa4e5&quot;,
+25	          &quot;errorState&quot;: {
+26	            &quot;issues&quot;: []
+27	          },
+28	          &quot;configuration&quot;: &quot;=jsonString:{\&quot;essentialConfiguration\&quot;:{\&quot;connectorVersion\&quot;:\&quot;1.40.0\&quot;,\&quot;customFieldsRequestDetails\&quot;:null,\&quot;instanceParameters\&quot;:{\&quot;con
+
+… (truncated, 29752 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#55</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">608ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip is connections list \&quot;uipath-intuit-quickbooksonline\&quot; --all-folders --refresh --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Retry QuickBooks connections list with refresh to rule out cache staleness&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;Message&quot;,
+  &quot;Data&quot;: {
+    &quot;Message&quot;: &quot;No connections found for connector &#x27;uipath-intuit-quickbooksonline&#x27;.&quot;
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#56</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">86ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 -c \&quot;\nimport json\nd=json.load(open(&#x27;/tmp/ixp_def.json&#x27;))\nn=d[&#x27;Data&#x27;][&#x27;Node&#x27;]\nmodel = n[&#x27;inputDefaults&#x27;][&#x27;model&#x27;]\nprint(json.dumps(model, indent=2))\nprint(&#x27;flat modelName:&#x27;, n[&#x27;inputDefaults&#x27;][&#x27;modelName&#x27;])\nprint(&#x27;flat projectName:&#x27;, n[&#x27;inputDefaults&#x27;][&#x27;projectName&#x27;])\nprint(&#x27;flat folderKey:&#x27;, n[&#x27;inputDefaults&#x27;][&#x27;folderKey&#x27;])\nprint(&#x27;flat folderName:&#x27;, n[&#x27;inputDefaults&#x27;][&#x27;folderName&#x27;])\n\&quot;&quot;,
+  &quot;description&quot;: &quot;Extract exact inputDefaults.model fields for IXP node authoring&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;id&quot;: &quot;ff973488-5d89-8035-86ac-f980b4be6deb&quot;,
+  &quot;modelName&quot;: &quot;invoiceixp-cef0d447-ixp&quot;,
+  &quot;modelDisplayName&quot;: &quot;InvoiceIXP&quot;,
+  &quot;folderKey&quot;: &quot;c4359cde-55f0-4f0e-9322-c6cdce74ab4c&quot;,
+  &quot;folderName&quot;: &quot;Shared&quot;,
+  &quot;folderPath&quot;: &quot;c4359cde-55f0-4f0e-9322-c6cdce74ab4c&quot;,
+  &quot;description&quot;: &quot;&quot;
+}
+flat modelName: invoiceixp-cef0d447-ixp
+flat projectName: invoiceixp-cef0d447-ixp
+flat folderKey: c4359cde-55f0-4f0e-9322-c6cdce74ab4c
+flat folderName: Shared</pre>
+    
+  </div>
+</details>
+
+</div>
+
+<h2>Command Telemetry</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Total</div><div class="value">57</div></div>
+    <div class="stat"><div class="label">Successful</div><div class="value">56 (98%)</div></div>
+    <div class="stat"><div class="label">Failed</div><div class="value">1</div></div>
+    <div class="stat"><div class="label">Avg / cmd</div><div class="value">1.22s</div></div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 2fr;gap:16px;margin-top:12px">
+    <div>
+      <h4>By Tool</h4>
+      <table>
+        <thead><tr><th>Tool</th><th>Count</th></tr></thead>
+        <tbody><tr><td class='mono'>Bash</td><td>45</td></tr><tr><td class='mono'>Read</td><td>11</td></tr><tr><td class='mono'>Skill</td><td>1</td></tr></tbody>
+      </table>
+    </div>
+    <div>
+      <h4>Slowest</h4>
+      <table>
+        <thead><tr><th>Tool</th><th>Duration</th><th>Parameters</th></tr></thead>
+        <tbody><tr><td class='mono'>Bash</td><td>9.23s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;echo &quot;=== accounting ===&quot;\nuip maestr...</td></tr><tr><td class='mono'>Bash</td><td>8.93s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;pwd\nuip solution init &quot;InvoiceExtrac...</td></tr><tr><td class='mono'>Bash</td><td>7.36s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro flow registry pull --forc...</td></tr><tr><td class='mono'>Bash</td><td>4.31s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;echo &quot;=== onedrive connections ===&quot; \...</td></tr><tr><td class='mono'>Bash</td><td>3.23s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro flow registry get &quot;uipath...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+  <p><strong>Most Common Pattern:</strong> <code>Bash → Bash → Bash</code></p><p><strong>Skill Tool Invoked:</strong> 1 time(s)</p>
+</div>
+
+<h2>Generation Metrics</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Total Latency</div><div class="value">15m 2s</div></div>
+    <div class="stat"><div class="label">Turns</div><div class="value">1</div></div>
+    <div class="stat"><div class="label">Assistant Turns</div><div class="value">109</div></div>
+    <div class="stat"><div class="label">Avg Turn Latency</div><div class="value">15m 0s</div></div>
+    <div class="stat"><div class="label">Crashed Partials</div><div class="value">1 (0 recovered, 1 terminal)</div></div>
+  </div>
+</div>
+
+<h2>Token Usage</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Input (uncached)</div><div class="value">104</div></div>
+    <div class="stat"><div class="label">Output</div><div class="value">63,196</div></div>
+    <div class="stat"><div class="label">Cache Write</div><div class="value">200,580</div></div>
+    <div class="stat"><div class="label">Cache Read</div><div class="value">8,837,346</div></div>
+    <div class="stat"><div class="label">Total</div><div class="value">9,101,226</div></div>
+    <div class="stat"><div class="label">Cost</div><div class="value">$4.3516</div></div>
+  </div>
+</div>
+
+<h2>Agent Settings</h2>
+<div class="card" style="padding:0">
+  <table>
+    <tbody><tr><td class='mono dim'>Permission Mode</td><td>acceptEdits</td></tr><tr><td class='mono dim'>Allowed Tools</td><td>Skill, Bash, Read, Write, Edit, Glob, Grep</td></tr><tr><td class='mono dim'>Model</td><td>us.anthropic.claude-sonnet-5</td></tr><tr><td class='mono dim'>Max Turns</td><td>80</td></tr><tr><td class='mono dim'>System Prompt</td><td>You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted. </td></tr><tr><td class='mono dim'>System Prompt Mode</td><td>append</td></tr><tr><td class='mono dim'>Plugins</td><td>/home/azureuser/projects/skills</td></tr></tbody>
+  </table>
+</div>
+
+<h2>Environment</h2>
+<div class="card" style="padding:0">
+  <table>
+    <tbody><tr><td class='mono dim'>git_commit</td><td>unknown</td></tr><tr><td class='mono dim'>skills_git_commit</td><td>unknown</td></tr><tr><td class='mono dim'>cli_version</td><td>1.201.0-dev.8272</td></tr><tr><td class='mono dim'>tool_plugins</td><td>{&#x27;admin-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;agent-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;agenthub-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;aops-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;api-workflow-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;automation-hub-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;codedagent-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;codedapp-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;coder-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;context-grounding-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;conversational-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;data-fabric-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;docsai-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;function-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;gov-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;guardrails-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;insights-tool&#x27;: &#x27;1.201.0-dev.8276&#x27;, &#x27;integrationservice-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;ixp-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;llm-gateway-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;llmgw-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;maestro-tool&#x27;: &#x27;1.201.0-dev.8275&#x27;, &#x27;model-hub-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;orchestrator-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;platform-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;pm-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;rpa-legacy-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;rpa-tool&#x27;: &#x27;1.201.0-dev.20260809.3&#x27;, &#x27;solution-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;tasks-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;test-manager-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;traces-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;vertical-solutions-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;}</td></tr><tr><td class='mono dim'>coder_eval</td><td>0.9.6</td></tr><tr><td class='mono dim'>claude_code_cli</td><td>2.1.177 (Claude Code)</td></tr><tr><td class='mono dim'>uv</td><td>uv 0.12.5 (x86_64-unknown-linux-gnu)</td></tr><tr><td class='mono dim'>anthropic</td><td>0.122.0</td></tr><tr><td class='mono dim'>openai</td><td>3.2.0</td></tr><tr><td class='mono dim'>pydantic</td><td>2.12.5</td></tr><tr><td class='mono dim'>api_routing</td><td>aws_bedrock</td></tr><tr><td class='mono dim'>eval_routing</td><td>aws_bedrock</td></tr><tr><td class='mono dim'>aws_region</td><td>us-east-2</td></tr><tr><td class='mono dim'>bedrock_model</td><td>us.anthropic.claude-sonnet-4-6</td></tr><tr><td class='mono dim'>system_prompt_semantics</td><td>append</td></tr></tbody>
+  </table>
+</div>
+
+<footer>Generated by coder_eval · 2026-08-18T22:08:21</footer>
+</div>
+<script>
+function toggleTheme() {
+  document.documentElement.classList.toggle('light');
+  try {
+    const mode = document.documentElement.classList.contains('light') ? 'light' : 'dark';
+    localStorage.setItem('coder-eval-theme', mode);
+  } catch (e) { /* ignore */ }
+}
+(function() {
+  try {
+    if (localStorage.getItem('coder-eval-theme') === 'light') {
+      document.documentElement.classList.add('light');
+    }
+  } catch (e) { /* ignore */ }
+})();
+</script>
+</body>
+</html>

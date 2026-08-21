@@ -1,0 +1,10 @@
+{
+  "_comment": "Planned --detail payload for node getProductReviews1 (uipath.connector.uipath-automattic-woocommerce.get-product-reviews). Run `uip maestro flow node configure EnhancedEnumTest.flow getProductReviews1 --detail \"$(cat getProductReviews1.detail.json | python3 -c 'import sys,json; d=json.load(sys.stdin); del d[\"_comment\"]; print(json.dumps(d))')\" --output json` once a live WooCommerce connection exists.",
+  "connectionId": "<REPLACE_WITH_CONNECTION_UUID>",
+  "folderKey": "<REPLACE_WITH_FOLDER_KEY>",
+  "method": "GET",
+  "endpoint": "/search_product_review",
+  "queryParameters": {
+    "order": "=js:$vars.mapSortOrder1.output.orderCode"
+  }
+}

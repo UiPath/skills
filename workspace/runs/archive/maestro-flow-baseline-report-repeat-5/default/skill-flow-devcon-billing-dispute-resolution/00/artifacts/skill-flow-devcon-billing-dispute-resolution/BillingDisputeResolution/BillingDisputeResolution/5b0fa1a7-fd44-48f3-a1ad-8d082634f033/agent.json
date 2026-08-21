@@ -1,0 +1,111 @@
+{
+  "version": "1.1.0",
+  "settings": {
+    "model": "anthropic.claude-sonnet-4-6",
+    "maxTokens": 64000,
+    "temperature": 0.3,
+    "engine": "basic-v2",
+    "maxIterations": 3,
+    "mode": "standard"
+  },
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "start__output__webhookPayload": {
+        "type": "object",
+        "description": "Webhook payload with customer and invoice info"
+      },
+      "disputeAnalyst__output__determination": {
+        "type": "string",
+        "description": "Analyst determination"
+      },
+      "disputeAnalyst__output__creditAmount": {
+        "type": "number",
+        "description": "Approved credit amount"
+      },
+      "disputeAnalyst__output__rationale": {
+        "type": "string",
+        "description": "Analyst rationale"
+      }
+    }
+  },
+  "outputSchema": {
+    "type": "object",
+    "required": [
+      "subject",
+      "body"
+    ],
+    "properties": {
+      "subject": {
+        "type": "string",
+        "description": "Email subject line"
+      },
+      "body": {
+        "type": "string",
+        "description": "Email body with resolution details, citing invoice number and credit amount"
+      }
+    }
+  },
+  "metadata": {
+    "storageVersion": "50.0.0",
+    "isConversational": false,
+    "showProjectCreationExperience": false
+  },
+  "type": "lowCode",
+  "guardrails": [],
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a professional customer communications specialist for a billing department. Your role is to draft clear, empathetic, and professional resolution emails for billing disputes. The email must:\n1. Address the customer professionally\n2. Reference the specific invoice number\n3. Clearly state the approved credit amount\n4. Explain the resolution outcome\n5. Be concise and actionable\n\nReturn only subject and body fields as structured output.",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "You are a professional customer communications specialist for a billing department. Your role is to draft clear, empathetic, and professional resolution emails for billing disputes. The email must:\n1. Address the customer professionally\n2. Reference the specific invoice number\n3. Clearly state the approved credit amount\n4. Explain the resolution outcome\n5. Be concise and actionable\n\nReturn only subject and body fields as structured output."
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "Draft a resolution email for the following billing dispute:\n\nCustomer/Invoice Information: {{input.start__output__webhookPayload}}\n\nAnalyst Determination: {{input.disputeAnalyst__output__determination}}\n\nApproved Credit Amount: {{input.disputeAnalyst__output__creditAmount}}\n\nRationale: {{input.disputeAnalyst__output__rationale}}\n\nPlease draft a professional resolution email that cites the invoice number and the approved credit amount.",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "Draft a resolution email for the following billing dispute:\n\nCustomer/Invoice Information: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__webhookPayload"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\nAnalyst Determination: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.disputeAnalyst__output__determination"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\nApproved Credit Amount: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.disputeAnalyst__output__creditAmount"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\nRationale: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.disputeAnalyst__output__rationale"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\nPlease draft a professional resolution email that cites the invoice number and the approved credit amount."
+        }
+      ]
+    }
+  ],
+  "projectId": "5b0fa1a7-fd44-48f3-a1ad-8d082634f033"
+}

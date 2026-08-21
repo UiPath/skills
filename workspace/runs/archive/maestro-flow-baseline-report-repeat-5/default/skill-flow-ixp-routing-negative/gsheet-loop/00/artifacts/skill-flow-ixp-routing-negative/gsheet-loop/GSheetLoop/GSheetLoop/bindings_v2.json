@@ -1,0 +1,23 @@
+{
+  "version": "2.0",
+  "resources": [
+    {
+      "resource": "connection",
+      "key": "",
+      "id": "connection",
+      "value": {
+        "ConnectionId": {
+          "isExpression": false,
+          "displayName": "uipath-google-sheets connection"
+        }
+      },
+      "metadata": {
+        "ActivityName": "Read Sheet Rows",
+        "BindingsVersion": "2.2",
+        "DisplayLabel": "uipath-google-sheets connection",
+        "UseConnectionService": "true",
+        "Connector": "uipath-google-sheets"
+      }
+    }
+  ]
+}

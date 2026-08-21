@@ -1,0 +1,60 @@
+2026-07-23 23:57:54 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-23 23:57:54 [INFO] coder_eval.orchestrator: API routing: aws_bedrock
+2026-07-23 23:57:54 [DEBUG] coder_eval.criteria: Discovered 14 criterion checkers
+2026-07-23 23:57:54 [DEBUG] coder_eval.criteria: Validated 14 criterion checkers
+2026-07-23 23:57:54 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-23 23:57:55 [DEBUG] coder_eval.orchestrator: Sending prompt: Create a UiPath Flow project named "WikiPageviews" that takes `article`
+(string) and `date1`, `date2...
+2026-07-23 23:57:55 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Starting agent query stream...
+2026-07-24 00:11:46 [DEBUG] coder_eval.agents.claude_code_agent: [coder] session_id changed: None -> 6b479a42-2f86-4ebd-acdb-db1dbb15dafa
+2026-07-24 00:11:46 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Agent query stream ended
+2026-07-24 00:11:46 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-24 00:11:46 [DEBUG] coder_eval.orchestrator: Agent response received (5243 chars)
+2026-07-24 00:11:46 [DEBUG] coder_eval.orchestrator: Checking success criteria
+2026-07-24 00:11:46 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'uip maestro flow validate passes on the flow file': uip maestro flow validate WikiPageviews/WikiPageviews/WikiPageviews.flow
+2026-07-24 00:11:51 [DEBUG] coder_eval.sandbox: Command 'uip maestro flow validate WikiPageviews/WikiPageviews/WikiPageviews.flow' exited with code 0
+2026-07-24 00:11:51 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+{
+  "Result": "Success",
+  "Code": "FlowValidate",
+  "Data": {
+    "File": "/work/output/artifacts/skill-flow-wiki-pageviews/WikiPageviews/WikiPageviews/WikiPageviews.flow",
+    "Status": "Valid"
+  }
+}
+---
+2026-07-24 00:11:51 [DEBUG] coder_eval.sandbox: STDERR:
+---
+[ManifestClient] fetchDynamicNodes ok: total=206 agent context nodes=2 external agent nodes=6 orchestrator nodes=159 IXP nodes=39
+---
+2026-07-24 00:11:51 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-07-24 00:11:51 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'UiPath 2024-01-01..15: debug returns numeric sum of pageviews on days above 500 (range-tolerant of Wikimedia recomputes)': python3 $TASK_DIR/check_wiki_pageviews_flow.py uipath_success
+2026-07-24 00:12:12 [DEBUG] coder_eval.sandbox: Command 'python3 $TASK_DIR/check_wiki_pageviews_flow.py uipath_success' exited with code 1
+2026-07-24 00:12:12 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+[uipath_success] Injecting inputs: {'article': 'UiPath', 'date1': '20240101', 'date2': '20240115'} (expect numeric leaf in [1000, 20000])
+---
+2026-07-24 00:12:12 [DEBUG] coder_eval.sandbox: STDERR:
+---
+FAIL: No numeric output in [1000, 20000]
+Outputs: [None, None, '20240101', None, 0, 0, 200, 'Thu, 23 Jul 2026 22:27:04 GMT', 'W/"20-da39a3ee5e6b4b0d3255bfef95601890afd80709"', 'max-age=14400, s-maxage=14400', 'ATS/9.2.13', "default-src 'none'; frame-ancestors 'none'", '*', 'GET,HEAD', 'accept, content-type, content-length, cache-control, accept-language, api-user-agent, if-match, if-modified-since, if-none-match, dnt, accept-encoding', 'etag', 'nosniff', 'SAMEORIGIN', 'origin-when-cross-origin', '1; mode=block', '6301', 'bytes', 'cp1100 miss, cp1100 hit/1', 'hit-front', 'max-age=106384710; includeSubDomains; preload', '{ "group": "wm_nel", "max_age": 604800, "endpoints": [{ "url": "https://intake-logging.wikimedia.org/v1/events?stream=w3c.reportingapi.network_error&schema_uri=/w3c/reportingapi/network_error/1.0.0" }] }', '{ "report_to": "wm_nel", "max_age": 604800, "failure_fraction": 0.05, "success_fraction": 0.0}', 'WMF-Last-Access=24-Jul-2026;Path=/;HttpOnly;secure;Expires=Tue, 25 Aug 2026 00:00:00 GMT, WMF-Last-Access-Global=24-Jul-2026;Path=/;Domain=.wikimedia.org;HttpOnly;secure;Expires=Tue, 25 Aug 2026 00:00:00 GMT, GeoIP=US:::37.75:-97.82:v4; Path=/; secure; Domain=.wikimedia.org, NetworkProbeLimit=0.001;Path=/;Secure;SameSite=None;Max-Age=3600', '20.42.14.122', '8194af17-cb75-4ee5-bd58-b94c78011429', '', 'cache;desc="hit-front", host;desc="cp1100",co_id;desc="3437297662"', 'en.wikipedia', 'UiPath', 'daily', '2024010100', 'all-access', 'user', 239, 'en.wikipedia', 'UiPath', 'daily', '2024010200', 'all-access', 'user', 406, 'en.wikipedia', 'UiPath', 'daily', '2024010300', 'all-access', 'user', 456, 'en.wikipedia', 'UiPath', 'daily', '2024010400', 'all-access', 'user', 468, 'en.wikipedia', 'UiPath', 'daily', '2024010500', 'all-access', 'user', 437, 'en.wikipedia', 'UiPath', 'daily', '2024010600', 'all-access', 'user', 256, 'en.wikipedia', 'UiPath', 'daily', '2024010700', 'all-access', 'user', 306, 'en.wikipedia', 'UiPath', 'daily', '2024010800', 'all-access', 'user', 520, 'en.wikipedia', 'UiPath', 'daily', '2024010900', 'all-access', 'user', 806, 'en.wikipedia', 'UiPath', 'daily', '2024011000', 'all-access', 'user', 736, 'en.wikipedia', 'UiPath', 'daily', '2024011100', 'all-access', 'user', 747, 'en.wikipedia', 'UiPath', 'daily', '2024011200', 'all-access', 'user', 663, 'en.wikipedia', 'UiPath', 'daily', '2024011300', 'all-access', 'user', 352, 'en.wikipedia', 'UiPath', 'daily', '2024011400', 'all-access', 'user', 376, 'en.wikipedia', 'UiPath', 'daily', '2024011500', 'all-access', 'user', 658, '20240115', 'en.wikipedia', 'UiPath', 'daily', '2024010800', 'all-access', 'user', 520, 'en.wikipedia', 'UiPath', 'daily', '2024010900', 'all-access', 'user', 806, 'en.wikipedia', 'UiPath', 'daily', '2024011000', 'all-access', 'user', 736, 'en.wikipedia', 'UiPath', 'daily', '2024011100', 'all-access', 'user', 747, 'en.wikipedia', 'UiPath', 'daily', '2024011200', 'all-access', 'user', 663, 'en.wikipedia', 'UiPath', 'daily', '2024011500', 'all-access', 'user', 658, 'UiPath', None, 200, 'Thu, 23 Jul 2026 22:27:04 GMT', 'W/"20-da39a3ee5e6b4b0d3255bfef95601890afd80709"', 'max-age=14400, s-maxage=14400', 'ATS/9.2.13', "default-src 'none'; frame-ancestors 'none'", '*', 'GET,HEAD', 'accept, content-type, content-length, cache-control, accept-language, api-user-agent, if-match, if-modified-since, if-none-match, dnt, accept-encoding', 'etag', 'nosniff', 'SAMEORIGIN', 'origin-when-cross-origin', '1; mode=block', '6301', 'bytes', 'cp1100 miss, cp1100 hit/1', 'hit-front', 'max-age=106384710; includeSubDomains; preload', '{ "group": "wm_nel", "max_age": 604800, "endpoints": [{ "url": "https://intake-logging.wikimedia.org/v1/events?stream=w3c.reportingapi.network_error&schema_uri=/w3c/reportingapi/network_error/1.0.0" }] }', '{ "report_to": "wm_nel", "max_age": 604800, "failure_fraction": 0.05, "success_fraction": 0.0}', 'WMF-Last-Access=24-Jul-2026;Path=/;HttpOnly;secure;Expires=Tue, 25 Aug 2026 00:00:00 GMT, WMF-Last-Access-Global=24-Jul-2026;Path=/;Domain=.wikimedia.org;HttpOnly;secure;Expires=Tue, 25 Aug 2026 00:00:00 GMT, GeoIP=US:::37.75:-97.82:v4; Path=/; secure; Domain=.wikimedia.org, NetworkProbeLimit=0.001;Path=/;Secure;SameSite=None;Max-Age=3600', '20.42.14.122', '8194af17-cb75-4ee5-bd58-b94c78011429', '', 'cache;desc="hit-front", host;desc="cp1100",co_id;desc="3437297662"', 'en.wikipedia', 'UiPath', 'daily', '2024010100', 'all-access', 'user', 239, 'en.wikipedia', 'UiPath', 'daily', '2024010200', 'all-access', 'user', 406, 'en.wikipedia', 'UiPath', 'daily', '2024010300', 'all-access', 'user', 456, 'en.wikipedia', 'UiPath', 'daily', '2024010400', 'all-access', 'user', 468, 'en.wikipedia', 'UiPath', 'daily', '2024010500', 'all-access', 'user', 437, 'en.wikipedia', 'UiPath', 'daily', '2024010600', 'all-access', 'user', 256, 'en.wikipedia', 'UiPath', 'daily', '2024010700', 'all-access', 'user', 306, 'en.wikipedia', 'UiPath', 'daily', '2024010800', 'all-access', 'user', 520, 'en.wikipedia', 'UiPath', 'daily', '2024010900', 'all-access', 'user', 806, 'en.wikipedia', 'UiPath', 'daily', '2024011000', 'all-access', 'user', 736, 'en.wikipedia', 'UiPath', 'daily', '2024011100', 'all-access', 'user', 747, 'en.wikipedia', 'UiPath', 'daily', '2024011200', 'all-access', 'user', 663, 'en.wikipedia', 'UiPath', 'daily', '2024011300', 'all-access', 'user', 352, 'en.wikipedia', 'UiPath', 'daily', '2024011400', 'all-access', 'user', 376, 'en.wikipedia', 'UiPath', 'daily', '2024011500', 'all-access', 'user', 658, 'en.wikipedia', 'UiPath', 'daily', '2024010800', 'all-access', 'user', 520, 'en.wikipedia', 'UiPath', 'daily', '2024010900', 'all-access', 'user', 806, 'en.wikipedia', 'UiPath', 'daily', '2024011000', 'all-access', 'user', 736, 'en.wikipedia', 'UiPath', 'daily', '2024011100', 'all-access', 'user', 747, 'en.wikipedia', 'UiPath', 'daily', '2024011200', 'all-access', 'user', 663, 'en.wikipedia', 'UiPath', 'daily', '2024011500', 'all-access', 'user', 658, 0]
+---
+2026-07-24 00:12:12 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 0.00
+2026-07-24 00:12:12 [INFO] coder_eval.evaluation.checker: Criterion 'run_command' FAILED (score=0.00, threshold=1.00): Command: python3 $TASK_DIR/check_wiki_pageviews_flow.py uipath_success
+2026-07-24 00:12:12 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'Invalid article: HTTP error output port returns the string 'Article not found'': python3 $TASK_DIR/check_wiki_pageviews_flow.py invalid_error
+2026-07-24 00:12:38 [DEBUG] coder_eval.sandbox: Command 'python3 $TASK_DIR/check_wiki_pageviews_flow.py invalid_error' exited with code 0
+2026-07-24 00:12:38 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+[invalid_error] Injecting inputs: {'article': 'ThisArticleDefinitelyDoesNotExist999', 'date1': '20240101', 'date2': '20240115'} (expect 'Article not found')
+OK: [invalid_error] output contains 'Article not found'
+---
+2026-07-24 00:12:38 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-07-24 00:12:38 [INFO] coder_eval.orchestrator: Success criteria: 2/3 passed, weighted score: 0.615
+2026-07-24 00:12:38 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-24 00:12:38 [INFO] coder_eval.orchestrator: Running post-run command: python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/cleanup_solutions.py
+2026-07-24 00:12:40 [WARNING] coder_eval.orchestrator: [post_run stderr] cleanup_solutions: deleted be827d70-51f2-4bd9-34a5-08dee8fa7fa1 (from WikiPageviews/WikiPageviews.uipx)
+2026-07-24 00:12:40 [WARNING] coder_eval.orchestrator: [post_run stderr] cleanup_solutions: summary policy=always deleted=1 preserved=0 skipped=0 not_uploaded=0 failed=0
+2026-07-24 00:12:40 [INFO] coder_eval.orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+2026-07-24 00:12:40 [INFO] coder_eval.orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-wiki-pageviews
+2026-07-24 00:12:40 [INFO] coder_eval.orchestrator: Task finished: status=FAILURE duration=894.7s score=0.615 iterations=1

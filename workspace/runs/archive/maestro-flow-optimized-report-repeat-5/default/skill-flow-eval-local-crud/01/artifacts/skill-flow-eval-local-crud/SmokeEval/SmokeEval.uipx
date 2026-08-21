@@ -1,0 +1,12 @@
+{
+  "DocVersion": "1.0.0",
+  "StudioMinVersion": "2025.10.0",
+  "SolutionId": "6bfd3ba1-6032-4cfa-9826-2dd4cdc4c495",
+  "Projects": [
+    {
+      "Type": "Flow",
+      "ProjectRelativePath": "SmokeEval/project.uiproj",
+      "Id": "d6c3f5a2-a9bc-47b0-ab35-355fb19e6c45"
+    }
+  ]
+}

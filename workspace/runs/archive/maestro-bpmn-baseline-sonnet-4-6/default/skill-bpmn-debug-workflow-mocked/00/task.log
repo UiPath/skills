@@ -1,0 +1,22 @@
+2026-08-15 00:31:12 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-08-15 00:31:12 [INFO] coder_eval.orchestrator: API routing: aws_bedrock
+2026-08-15 00:31:12 [DEBUG] coder_eval.criteria: Discovered 14 criterion checkers
+2026-08-15 00:31:12 [DEBUG] coder_eval.criteria: Validated 14 criterion checkers
+2026-08-15 00:31:12 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-08-15 00:31:13 [DEBUG] coder_eval.orchestrator: Sending prompt: A local Maestro BPMN project already exists at `./OrderApproval`. Debug it
+and report what the run p...
+2026-08-15 00:31:13 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Starting agent query stream...
+2026-08-15 00:31:52 [DEBUG] coder_eval.agents.claude_code_agent: [coder] session_id changed: None -> 8aadf9d6-40c8-4c3d-911a-ae9b2fb9ceb4
+2026-08-15 00:31:52 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Agent query stream ended
+2026-08-15 00:31:52 [DEBUG] coder_eval.utils: `uip` at /work/output/artifacts/skill-bpmn-debug-workflow-mocked/mocks/uip is not inside a recognizable node_modules/@uipath tree
+2026-08-15 00:31:52 [DEBUG] coder_eval.orchestrator: Agent response received (2709 chars)
+2026-08-15 00:31:52 [DEBUG] coder_eval.orchestrator: Checking success criteria
+2026-08-15 00:31:52 [DEBUG] coder_eval.evaluation.checker: Criterion 'command_executed' score: 1.00
+2026-08-15 00:31:52 [DEBUG] coder_eval.evaluation.checker: Criterion 'command_executed' score: 1.00
+2026-08-15 00:31:52 [DEBUG] coder_eval.evaluation.checker: Criterion 'file_contains' score: 1.00
+2026-08-15 00:31:52 [DEBUG] coder_eval.evaluation.checker: Criterion 'command_executed' score: 1.00
+2026-08-15 00:31:52 [INFO] coder_eval.orchestrator: Success criteria: 4/4 passed, weighted score: 1.000
+2026-08-15 00:31:52 [DEBUG] coder_eval.utils: `uip` at /work/output/artifacts/skill-bpmn-debug-workflow-mocked/mocks/uip is not inside a recognizable node_modules/@uipath tree
+2026-08-15 00:31:53 [INFO] coder_eval.orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+2026-08-15 00:31:53 [INFO] coder_eval.orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-bpmn-debug-workflow-mocked
+2026-08-15 00:31:53 [INFO] coder_eval.orchestrator: Task finished: status=SUCCESS duration=50.6s score=1.000 iterations=1

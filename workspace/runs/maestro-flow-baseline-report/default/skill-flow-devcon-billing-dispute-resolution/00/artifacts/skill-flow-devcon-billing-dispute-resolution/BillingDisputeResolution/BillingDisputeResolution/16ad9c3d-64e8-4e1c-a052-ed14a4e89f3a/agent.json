@@ -1,0 +1,123 @@
+{
+  "version": "1.1.0",
+  "settings": {
+    "model": "anthropic.claude-sonnet-4-6",
+    "maxTokens": 64000,
+    "temperature": 0,
+    "engine": "basic-v2",
+    "maxIterations": 3,
+    "mode": "standard"
+  },
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "start__output__webhookPayload": {
+        "type": "object",
+        "description": "The billing dispute webhook payload with customer and invoice details"
+      },
+      "disputeAnalyst1__output__determination": {
+        "type": "string",
+        "description": "The dispute determination from the analyst"
+      },
+      "disputeAnalyst1__output__recommendedAction": {
+        "type": "string",
+        "description": "The recommended action: auto_resolve, escalate_to_manager, or reject"
+      },
+      "disputeAnalyst1__output__creditAmount": {
+        "type": "number",
+        "description": "The credit amount to apply if resolving in customer's favor"
+      },
+      "disputeAnalyst1__output__rationale": {
+        "type": "string",
+        "description": "The rationale for the dispute determination"
+      }
+    }
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "subject": {
+        "type": "string",
+        "description": "Email subject line for the resolution notification"
+      },
+      "body": {
+        "type": "string",
+        "description": "Full email body for the resolution notification to the customer"
+      }
+    },
+    "required": [
+      "subject",
+      "body"
+    ]
+  },
+  "metadata": {
+    "storageVersion": "50.0.0",
+    "isConversational": false,
+    "showProjectCreationExperience": false
+  },
+  "type": "lowCode",
+  "guardrails": [],
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a professional customer communications specialist. Your task is to write clear, empathetic, and professional resolution letters for billing disputes.\n\nYour letters must:\n1. Be addressed appropriately to the customer\n2. Clearly state the outcome of their dispute review\n3. Explain what action is being taken (credit applied, escalation, or rejection)\n4. Include the credit amount if applicable\n5. Provide a brief, customer-friendly explanation of the decision\n6. Include next steps and contact information for follow-up\n7. Maintain a professional, empathetic tone throughout\n\nKeep the body under 300 words and ensure it is ready to send without further editing.",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "You are a professional customer communications specialist. Your task is to write clear, empathetic, and professional resolution letters for billing disputes.\n\nYour letters must:\n1. Be addressed appropriately to the customer\n2. Clearly state the outcome of their dispute review\n3. Explain what action is being taken (credit applied, escalation, or rejection)\n4. Include the credit amount if applicable\n5. Provide a brief, customer-friendly explanation of the decision\n6. Include next steps and contact information for follow-up\n7. Maintain a professional, empathetic tone throughout\n\nKeep the body under 300 words and ensure it is ready to send without further editing."
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "Write a resolution communication for the following billing dispute.\n\nCustomer/Invoice Info:\n{{input.start__output__webhookPayload}}\n\nDetermination: {{input.disputeAnalyst1__output__determination}}\nRecommended Action: {{input.disputeAnalyst1__output__recommendedAction}}\nCredit Amount: {{input.disputeAnalyst1__output__creditAmount}}\nRationale: {{input.disputeAnalyst1__output__rationale}}\n\nPlease write a professional resolution email with subject and body.",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "Write a resolution communication for the following billing dispute.\n\nCustomer/Invoice Info:\n"
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__webhookPayload"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\nDetermination: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.disputeAnalyst1__output__determination"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\nRecommended Action: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.disputeAnalyst1__output__recommendedAction"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\nCredit Amount: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.disputeAnalyst1__output__creditAmount"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\nRationale: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.disputeAnalyst1__output__rationale"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\nPlease write a professional resolution email with subject and body."
+        }
+      ]
+    }
+  ],
+  "projectId": "16ad9c3d-64e8-4e1c-a052-ed14a4e89f3a"
+}

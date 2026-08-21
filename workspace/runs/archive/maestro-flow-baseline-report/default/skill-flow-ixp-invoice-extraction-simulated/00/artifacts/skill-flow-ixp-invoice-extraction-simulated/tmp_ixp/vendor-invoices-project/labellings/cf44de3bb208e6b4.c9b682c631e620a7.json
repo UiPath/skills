@@ -1,0 +1,226 @@
+{
+  "doc_id": "cf44de3bb208e6b4.c9b682c631e620a7",
+  "filename": "invoice_summit_supplies_002.pdf",
+  "inv_id": "inv_002",
+  "confirmed": [
+    {
+      "field_id": "fld_inv_num",
+      "group": "Invoice Header",
+      "occurrence": 0,
+      "name": "Invoice Number"
+    },
+    {
+      "field_id": "fld_inv_date",
+      "group": "Invoice Header",
+      "occurrence": 0,
+      "name": "Invoice Date"
+    },
+    {
+      "field_id": "fld_due_date",
+      "group": "Invoice Header",
+      "occurrence": 0,
+      "name": "Due Date"
+    },
+    {
+      "field_id": "fld_po_num",
+      "group": "Invoice Header",
+      "occurrence": 0,
+      "name": "PO Number"
+    },
+    {
+      "field_id": "fld_pay_terms",
+      "group": "Invoice Header",
+      "occurrence": 0,
+      "name": "Payment Terms"
+    },
+    {
+      "field_id": "fld_currency",
+      "group": "Invoice Header",
+      "occurrence": 0,
+      "name": "Currency"
+    },
+    {
+      "field_id": "fld_vend_name",
+      "group": "Vendor Details",
+      "occurrence": 0,
+      "name": "Vendor Name"
+    },
+    {
+      "field_id": "fld_vend_addr",
+      "group": "Vendor Details",
+      "occurrence": 0,
+      "name": "Vendor Address"
+    },
+    {
+      "field_id": "fld_vend_email",
+      "group": "Vendor Details",
+      "occurrence": 0,
+      "name": "Vendor Email"
+    },
+    {
+      "field_id": "fld_vend_phone",
+      "group": "Vendor Details",
+      "occurrence": 0,
+      "name": "Vendor Phone"
+    },
+    {
+      "field_id": "fld_bt_name",
+      "group": "Bill To",
+      "occurrence": 0,
+      "name": "Bill-To Name"
+    },
+    {
+      "field_id": "fld_bt_addr",
+      "group": "Bill To",
+      "occurrence": 0,
+      "name": "Bill-To Address"
+    },
+    {
+      "field_id": "fld_subtotal",
+      "group": "Invoice Totals",
+      "occurrence": 0,
+      "name": "Subtotal"
+    },
+    {
+      "field_id": "fld_tax_rate",
+      "group": "Invoice Totals",
+      "occurrence": 0,
+      "name": "Tax Rate"
+    },
+    {
+      "field_id": "fld_tax_amount",
+      "group": "Invoice Totals",
+      "occurrence": 0,
+      "name": "Tax Amount"
+    },
+    {
+      "field_id": "fld_total",
+      "group": "Invoice Totals",
+      "occurrence": 0,
+      "name": "Total Due"
+    },
+    {
+      "field_id": "fld_li_desc",
+      "group": "Line Items",
+      "occurrence": 0,
+      "name": "Description"
+    },
+    {
+      "field_id": "fld_li_qty",
+      "group": "Line Items",
+      "occurrence": 0,
+      "name": "Quantity"
+    },
+    {
+      "field_id": "fld_li_price",
+      "group": "Line Items",
+      "occurrence": 0,
+      "name": "Unit Price"
+    },
+    {
+      "field_id": "fld_li_total",
+      "group": "Line Items",
+      "occurrence": 0,
+      "name": "Line Total"
+    },
+    {
+      "field_id": "fld_li_desc",
+      "group": "Line Items",
+      "occurrence": 1,
+      "name": "Description"
+    },
+    {
+      "field_id": "fld_li_qty",
+      "group": "Line Items",
+      "occurrence": 1,
+      "name": "Quantity"
+    },
+    {
+      "field_id": "fld_li_price",
+      "group": "Line Items",
+      "occurrence": 1,
+      "name": "Unit Price"
+    },
+    {
+      "field_id": "fld_li_total",
+      "group": "Line Items",
+      "occurrence": 1,
+      "name": "Line Total"
+    },
+    {
+      "field_id": "fld_li_desc",
+      "group": "Line Items",
+      "occurrence": 2,
+      "name": "Description"
+    },
+    {
+      "field_id": "fld_li_qty",
+      "group": "Line Items",
+      "occurrence": 2,
+      "name": "Quantity"
+    },
+    {
+      "field_id": "fld_li_price",
+      "group": "Line Items",
+      "occurrence": 2,
+      "name": "Unit Price"
+    },
+    {
+      "field_id": "fld_li_total",
+      "group": "Line Items",
+      "occurrence": 2,
+      "name": "Line Total"
+    },
+    {
+      "field_id": "fld_li_desc",
+      "group": "Line Items",
+      "occurrence": 3,
+      "name": "Description"
+    },
+    {
+      "field_id": "fld_li_qty",
+      "group": "Line Items",
+      "occurrence": 3,
+      "name": "Quantity"
+    },
+    {
+      "field_id": "fld_li_price",
+      "group": "Line Items",
+      "occurrence": 3,
+      "name": "Unit Price"
+    },
+    {
+      "field_id": "fld_li_total",
+      "group": "Line Items",
+      "occurrence": 3,
+      "name": "Line Total"
+    },
+    {
+      "field_id": "fld_li_desc",
+      "group": "Line Items",
+      "occurrence": 4,
+      "name": "Description"
+    },
+    {
+      "field_id": "fld_li_qty",
+      "group": "Line Items",
+      "occurrence": 4,
+      "name": "Quantity"
+    },
+    {
+      "field_id": "fld_li_price",
+      "group": "Line Items",
+      "occurrence": 4,
+      "name": "Unit Price"
+    },
+    {
+      "field_id": "fld_li_total",
+      "group": "Line Items",
+      "occurrence": 4,
+      "name": "Line Total"
+    }
+  ],
+  "corrected": [],
+  "missing": [],
+  "not_confirmed": []
+}

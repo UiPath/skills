@@ -1,0 +1,247 @@
+2026-07-24 00:01:32 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-24 00:01:32 [INFO] coder_eval.orchestrator: API routing: aws_bedrock
+2026-07-24 00:01:32 [DEBUG] coder_eval.criteria: Discovered 14 criterion checkers
+2026-07-24 00:01:32 [DEBUG] coder_eval.criteria: Validated 14 criterion checkers
+2026-07-24 00:01:32 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-24 00:01:32 [DEBUG] coder_eval.orchestrator: Sending prompt: Build a Maestro Flow "BillingDiscrepancyDetector" (in a solution of the same
+name) that checks a dis...
+2026-07-24 00:01:32 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Starting agent query stream...
+2026-07-24 00:12:20 [DEBUG] coder_eval.agents.claude_code_agent: [coder] session_id changed: None -> cee869bc-0043-47fc-bc9a-6852254e911d
+2026-07-24 00:12:20 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Agent query stream ended
+2026-07-24 00:12:20 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-24 00:12:20 [DEBUG] coder_eval.orchestrator: Agent response received (7686 chars)
+2026-07-24 00:12:20 [DEBUG] coder_eval.orchestrator: Checking success criteria
+2026-07-24 00:12:20 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'uip maestro flow validate passes on the flow file': uip maestro flow validate BillingDiscrepancyDetector/BillingDiscrepancyDetector/BillingDiscrepancyDetector.flow
+2026-07-24 00:12:25 [DEBUG] coder_eval.sandbox: Command 'uip maestro flow validate BillingDiscrepancyDetector/BillingDiscrepancyDetector/BillingDiscrepancyDetector.flow' exited with code 0
+2026-07-24 00:12:25 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+{
+  "Result": "Success",
+  "Code": "FlowValidate",
+  "Data": {
+    "File": "/work/output/artifacts/skill-flow-devcon-billing-discrepancy-detector/BillingDiscrepancyDetector/BillingDiscrepancyDetector/BillingDiscrepancyDetector.flow",
+    "Status": "Valid",
+    "Warnings": "1 warning(s):\n  - [nodes[queryErpRecords1].inputs.detail.connectionResourceId] Connection \"d61e5d0e-04af-4f93-95cc-151d81fa08dc\" is referenced by 2 nodes (nodes[queryErpRecords1], nodes[queryCrmRecords1]). Shared connections cause cross-node state leakage at runtime. If this is intentional (e.g. two connectors on the same SaaS account), ignore this warning; otherwise create a separate connection per node."
+  }
+}
+---
+2026-07-24 00:12:25 [DEBUG] coder_eval.sandbox: STDERR:
+---
+[ManifestClient] fetchDynamicNodes ok: total=206 agent context nodes=2 external agent nodes=6 orchestrator nodes=159 IXP nodes=39
+---
+2026-07-24 00:12:25 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-07-24 00:12:25 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'Check requires a merge node (parallel branches) and debugs once; flow computed overcharge=1610, count=1, invoice MCS-2026-04872, tier Enterprise': python3 $TASK_DIR/check_billing_discrepancy_detector.py
+2026-07-24 00:12:48 [DEBUG] coder_eval.sandbox: Command 'python3 $TASK_DIR/check_billing_discrepancy_detector.py' exited with code 1
+2026-07-24 00:12:48 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+debug inputs: {'invoiceNumber': 'MCS-2026-04872', 'accountNumber': 'ACCT-98201-NE', 'disputedLineNumber': 5, 'disputedUnitPrice': 300, 'disputedQuantity': 14}
+---
+2026-07-24 00:12:48 [DEBUG] coder_eval.sandbox: STDERR:
+---
+FAIL: flow debug exit 1
+stdout: {
+  "Result": "Failure",
+  "Code": "FlowDebug",
+  "Message": "Debug session Faulted. [102003] Integration Services bad request (element queryErpRecords1)",
+  "Instructions": "Incident(s):\n  - [102003] Integration Services bad request (element queryErpRecords1)\n  - [102003] Integration Services bad request (element queryCrmRecords1)\nRun 'uip maestro flow debug-instance incidents 9a589e6e-101e-4e9e-9c5e-4265de39b660' for the full backend payload (incidentId, errorDetails, AI summary). traceId=9a589e6e101e4e9e9c5e4265de39b660.",
+  "Context": {
+    "ErrorCode": "102003",
+    "TraceId": "9a589e6e101e4e9e9c5e4265de39b660"
+  },
+  "Data": {
+    "jobKey": "9a589e6e-101e-4e9e-9c5e-4265de39b660",
+    "instanceId": "9a589e6e-101e-4e9e-9c5e-4265de39b660",
+    "runId": "019f9177-7f97-7750-968b-6b8a752153d5",
+    "folderKey": "410fae2d-89b3-4cd1-a991-7359bda90c0b",
+    "finalStatus": "Faulted",
+    "solutionId": "cfb73f15-027f-4deb-38e0-08dee8fa7d3e",
+    "studioWebUrl": "https://alpha.uipath.com/codereval/studio_/designer/42aad94a-6016-4aa3-a462-035506dc5393?solutionId=cfb73f15-027f-4deb-38e0-08dee8fa7d3e",
+    "elementExecutions": [
+      {
+        "elementId": "start",
+        "elementType": "StartEvent",
+        "status": "Completed",
+        "startedAt": "2026-07-24T00:12:38.7057464Z",
+        "completedAt": "2026-07-24T00:12:38.9803316Z"
+      },
+      {
+        "elementId": "queryErpRecords1",
+        "elementType": "SendTask",
+        "status": "Failed",
+        "startedAt": "2026-07-24T00:12:39.4138162Z"
+      },
+      {
+        "elementId": "queryCrmRecords1",
+        "elementType": "SendTask",
+        "status": "Failed",
+        "startedAt": "2026-07-24T00:12:39.42623Z"
+      }
+    ],
+    "variables": {
+      "elements": [
+        {
+          "elementId": "start",
+          "elementRunId": "d6041e39-c5cc-461a-bb5c-5853d562f7f3",
+          "isMarker": false,
+          "inputs": {},
+          "inputDefinitions": {},
+          "outputs": {}
+        },
+        {
+          "elementId": "queryErpRecords1",
+          "elementRunId": "456f00a1-bc9e-48ff-885a-1f35abd7142b",
+          "isMarker": false,
+          "inputs": {
+            "queryParameters": {
+              "queryExpression": "'invoiceNumber' = 'MCS-2026-04872'"
+            },
+            "pathParameters": {
+              "entityName": "BillingDisputeERP"
+            }
+          },
+          "inputDefinitions": {},
+          "outputs": {}
+        },
+        {
+          "elementId": "queryCrmRecords1",
+          "elementRunId": "41ff4c37-8d49-4084-a1d6-f14bb4dadd27",
+          "isMarker": false,
+          "inputs": {
+            "queryParameters": {
+              "queryExpression": "'accountNumber' = 'ACCT-98201-NE'"
+            },
+            "pathParameters": {
+              "entityName": "BillingDisputeCRM"
+            }
+          },
+          "inputDefinitions": {},
+          "outputs": {}
+        }
+      ],
+      "globals": {
+        "matchedInvoiceNumber": null,
+        "computeDiscrepancy.error": null,
+        "queryErpRecords1.output": null,
+        "accountTier": null,
+        "discrepancyCount": null,
+        "queryCrmRecords1.output": null,
+        "totalOvercharge": null,
+        "computeDiscrepancy.output": null
+      },
+      "instanceId": "9a589e6e-101e-4e9e-9c5e-4265de39b660",
+      "workflowId": "9a589e6e-101e-4e9e-9c5e-4265de39b660/BpmnGenericWorkflow",
+      "parentElementId": null,
+      "globalDefinitions": {
+        "matchedInvoiceNumber": {
+          "name": "matchedInvoiceNumber",
+          "type": "string"
+        },
+        "computeDiscrepancy.error": {
+          "name": "error",
+          "type": "object"
+        },
+        "queryErpRecords1.output": {
+          "name": "output",
+          "type": "jsonSchema"
+        },
+        "accountTier": {
+          "name": "accountTier",
+          "type": "string"
+        },
+        "discrepancyCount": {
+          "name": "discrepancyCount",
+          "type": "number"
+        },
+        "queryCrmRecords1.output": {
+          "name": "output",
+          "type": "jsonSchema"
+        },
+        "totalOvercharge": {
+          "name": "totalOvercharge",
+          "type": "number"
+        },
+        "computeDiscrepancy.output": {
+          "name": "output",
+          "type": "object"
+        }
+      }
+    },
+    "incidents": [
+      {
+        "id": "09852c70-4b77-449a-a38b-a9e6c9d57295",
+        "tenantId": "69d43765-6ede-4575-88b7-9db601a2c056",
+        "organizationId": "311c6049-4966-4ef2-a6f3-8ceccaf38d54",
+        "instanceId": "9a589e6e-101e-4e9e-9c5e-4265de39b660",
+        "runId": "019f9177-86ac-7210-b731-b5d5389d3de7",
+        "elementId": "queryErpRecords1",
+        "elementRunId": "456f00a1-bc9e-48ff-885a-1f35abd7142b",
+        "folderKey": "410fae2d-89b3-4cd1-a991-7359bda90c0b",
+        "processKey": null,
+        "packageVersion": "",
+        "incidentId": "456f00a1-bc9e-48ff-885a-1f35abd7142b",
+        "incidentStatus": "Open",
+        "incidentType": "User",
+        "errorCode": "102003",
+        "errorMessage": "Integration Services bad request",
+        "errorTimeUtc": "2026-07-24T00:12:45.4347452Z",
+        "errorDetails": "Request to Integration Services failed with status code '400', message:  {\"requestId\":\"6a62adfce4b0171b31e884aa\",\"message\":\"Expected a field name expression but got 'StringValue'\"}",
+        "comment": null,
+        "userUpdated": null,
+        "debugMode": "Default",
+        "incidentUpdateTimeUtc": null,
+        "traceId": "9a589e6e101e4e9e9c5e4265de39b660",
+        "dependentFaultCode": null,
+        "incidentSeverity": "Error",
+        "aiSummary": null,
+        "aiRecommendations": null,
+        "processType": null,
+        "sourceElementId": null
+      },
+      {
+        "id": "7320c2fe-45e8-4c1a-96dc-bbccf82e577e",
+        "tenantId": "69d43765-6ede-4575-88b7-9db601a2c056",
+        "organizationId": "311c6049-4966-4ef2-a6f3-8ceccaf38d54",
+        "instanceId": "9a589e6e-101e-4e9e-9c5e-4265de39b660",
+        "runId": "019f9177-86ac-7210-b731-b5d5389d3de7",
+        "elementId": "queryCrmRecords1",
+        "elementRunId": "41ff4c37-8d49-4084-a1d6-f14bb4dadd27",
+        "folderKey": "410fae2d-89b3-4cd1-a991-7359bda90c0b",
+        "processKey": null,
+        "packageVersion": "",
+        "incidentId": "41ff4c37-8d49-4084-a1d6-f14bb4dadd27",
+        "incidentStatus": "Open",
+        "incidentType": "User",
+        "errorCode": "102003",
+        "errorMessage": "Integration Services bad request",
+        "errorTimeUtc": "2026-07-24T00:12:46.2858772Z",
+        "errorDetails": "Request to Integration Services failed with status code '400', message:  {\"requestId\":\"6a62adfde4b035d6aa4f71e5\",\"message\":\"Expected a field name expression but got 'StringValue'\"}",
+        "comment": null,
+        "userUpdated": null,
+        "debugMode": "Default",
+        "incidentUpdateTimeUtc": null,
+        "traceId": "9a589e6e101e4e9e9c5e4265de39b660",
+        "dependentFaultCode": null,
+        "incidentSeverity": "Error",
+        "aiSummary": null,
+        "aiRecommendations": null,
+        "processType": null,
+        "sourceElementId": null
+      }
+    ]
+  },
+  "ErrorCode": "unknown_error",
+  "Retry": "RetryWillNotFix"
+}
+
+stderr:
+---
+2026-07-24 00:12:48 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 0.00
+2026-07-24 00:12:48 [INFO] coder_eval.evaluation.checker: Criterion 'run_command' FAILED (score=0.00, threshold=1.00): Command: python3 $TASK_DIR/check_billing_discrepancy_detector.py
+2026-07-24 00:12:48 [INFO] coder_eval.orchestrator: Success criteria: 1/2 passed, weighted score: 0.375
+2026-07-24 00:12:48 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-24 00:12:48 [INFO] coder_eval.orchestrator: Running post-run command: python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/cleanup_solutions.py
+2026-07-24 00:12:50 [WARNING] coder_eval.orchestrator: [post_run stderr] cleanup_solutions: deleted cfb73f15-027f-4deb-38e0-08dee8fa7d3e (from BillingDiscrepancyDetector/BillingDiscrepancyDetector.uipx)
+2026-07-24 00:12:50 [WARNING] coder_eval.orchestrator: [post_run stderr] cleanup_solutions: summary policy=always deleted=1 preserved=0 skipped=0 not_uploaded=0 failed=0
+2026-07-24 00:12:50 [INFO] coder_eval.orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+2026-07-24 00:12:50 [INFO] coder_eval.orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-devcon-billing-discrepancy-detector
+2026-07-24 00:12:50 [INFO] coder_eval.orchestrator: Task finished: status=FAILURE duration=680.2s score=0.375 iterations=1

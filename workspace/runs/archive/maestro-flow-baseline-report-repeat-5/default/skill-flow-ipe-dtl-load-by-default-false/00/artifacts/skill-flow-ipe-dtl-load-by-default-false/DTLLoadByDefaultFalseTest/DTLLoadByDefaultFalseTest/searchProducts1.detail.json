@@ -1,0 +1,16 @@
+{
+  "_comment": "Planned node configure detail for searchProducts1. Run the command below once a live WooCommerce connection is available.",
+  "_command": "uip maestro flow node configure DTLLoadByDefaultFalseTest.flow searchProducts1 --detail \"$(cat searchProducts1.detail.json | python3 -c 'import json,sys; d=json.load(sys.stdin); del d[\"_comment\"]; del d[\"_command\"]; print(json.dumps(d))')\" --output json",
+  "connectionId": "<REPLACE_WITH_CONNECTION_UUID>",
+  "folderKey": "<REPLACE_WITH_FOLDER_KEY>",
+  "method": "GET",
+  "endpoint": "/search_products",
+  "queryParameters": {
+    "attribute": "=js:$vars.start.output.attribute",
+    "attribute_term": "=js:$vars.start.output.attributeTerm"
+  },
+  "_field_notes": {
+    "attribute": "Dropdown with loadByDefault:true — resolves against /attributes (objectName: /attributes). Pass attribute ID chosen by the caller.",
+    "attribute_term": "Dropdown with loadByDefault:FALSE — loads on demand only after 'attribute' has a value. Reference path: /attributes/terms?attribute_ID={attribute}. displayPattern: {name} - {id}. Design shows this field only when 'attribute' is set (fieldActions: show when attribute has any value, hide when attribute is cleared). The caller passes the term ID selected from the on-demand dropdown."
+  }
+}

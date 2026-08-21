@@ -1,0 +1,24 @@
+{
+  "version": "2.0",
+  "resources": [
+    {
+      "resource": "connection",
+      "key": "1bf4e408-fff6-4382-a9a3-fd305038650c",
+      "id": "connection1bf4e408-fff6-4382-a9a3-fd305038650c",
+      "value": {
+        "ConnectionId": {
+          "defaultValue": "1bf4e408-fff6-4382-a9a3-fd305038650c",
+          "isExpression": false,
+          "displayName": "uipath-uipath-http connection"
+        }
+      },
+      "metadata": {
+        "ActivityName": "Get Current User's Profile",
+        "BindingsVersion": "2.2",
+        "DisplayLabel": "uipath-uipath-http connection",
+        "UseConnectionService": "true",
+        "Connector": "uipath-uipath-http"
+      }
+    }
+  ]
+}

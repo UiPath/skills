@@ -1,0 +1,12 @@
+{
+  "id": "inc-root-001",
+  "instanceId": "inst-triage-001",
+  "elementId": "ServiceTask_FetchInvoice",
+  "category": "BindingResolution",
+  "message": "Resource binding failed to resolve; the element could not start.",
+  "occurredAt": "2026-05-01T12:00:03Z",
+  "safeDetails": {
+    "bindingName": "invoiceSource",
+    "redacted": true
+  }
+}

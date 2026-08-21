@@ -1,0 +1,2197 @@
+{
+  "id": "85bc2e89-9d33-41a6-9e4b-f25fee03a92a",
+  "version": "1.8",
+  "name": "BillingDisputeResolution",
+  "nodes": [
+    {
+      "id": "start",
+      "type": "core.trigger.manual",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Manual trigger"
+      },
+      "inputs": {
+        "entryPointId": "77eaf135-71c3-4bd0-ba55-b12ddf6675ee",
+        "isDefaultEntryPoint": true
+      },
+      "outputs": {
+        "output": {
+          "type": "object",
+          "description": "The return value of the trigger.",
+          "source": "=result.response",
+          "var": "output"
+        }
+      }
+    },
+    {
+      "id": "extractInvoice",
+      "type": "uipath.ixp.invoices-billing-f0c606f9-ixp.99f5bbfa-5f29-8033-8662-25001b6bb18e-79a7d12e-da84-4bf4-ab60-7f34b44dd178",
+      "typeVersion": "1.0.0",
+      "display": {
+        "label": "Invoice Extraction (IxP)"
+      },
+      "inputs": {
+        "model": {
+          "id": "99f5bbfa-5f29-8033-8662-25001b6bb18e",
+          "modelName": "invoices-billing-f0c606f9-ixp",
+          "modelDisplayName": "invoices-billing",
+          "folderKey": "79a7d12e-da84-4bf4-ab60-7f34b44dd178",
+          "folderName": "Shared/uipath-maestro-flow/BillingDispute",
+          "folderPath": "c4359cde-55f0-4f0e-9322-c6cdce74ab4c.5da18ec0-7de1-4e57-aaf1-ddc8a369c199.79a7d12e-da84-4bf4-ab60-7f34b44dd178",
+          "description": ""
+        },
+        "modelName": "invoices-billing-f0c606f9-ixp",
+        "projectName": "invoices-billing-f0c606f9-ixp",
+        "folderKey": "79a7d12e-da84-4bf4-ab60-7f34b44dd178",
+        "folderName": "Shared/uipath-maestro-flow/BillingDispute",
+        "versionTag": "",
+        "pageRange": "",
+        "fileRef": "=js:$vars.start.output.disputedInvoice"
+      },
+      "outputs": {
+        "output": {
+          "type": "object",
+          "description": "Extraction result",
+          "source": "=this.result",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if extraction fails",
+          "source": "=result.Error",
+          "var": "error"
+        }
+      }
+    },
+    {
+      "id": "normalizeData",
+      "type": "core.action.script",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Normalize Data"
+      },
+      "inputs": {
+        "script": "var fields = ($vars.extractInvoice.output && $vars.extractInvoice.output.ExtractionResult && $vars.extractInvoice.output.ExtractionResult.ResultsDocument && $vars.extractInvoice.output.ExtractionResult.ResultsDocument.Fields) ? $vars.extractInvoice.output.ExtractionResult.ResultsDocument.Fields : [];\nvar normalized = fields.map(function(f) {\n  return {\n    Id: f.FieldId || '',\n    Name: f.FieldName || '',\n    Value: (f.Values && f.Values.length > 0) ? f.Values[0] : null,\n    Type: f.FieldType || '',\n    IsMissing: f.IsMissing || false,\n    Confidence: f.Confidence || 0\n  };\n});\nreturn { fields: normalized };"
+      },
+      "outputs": {
+        "output": {
+          "type": "object",
+          "description": "Normalized field projection",
+          "source": "=result.response",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the script fails",
+          "source": "=result.Error",
+          "var": "error"
+        }
+      }
+    },
+    {
+      "id": "crmLookup1",
+      "type": "uipath.connector.uipath-uipath-dataservice.query-entity-records",
+      "typeVersion": "1.0.0",
+      "display": {
+        "label": "CRM Lookup"
+      },
+      "inputs": {
+        "detail": {
+          "connector": "uipath-uipath-dataservice",
+          "connectionId": "d61e5d0e-04af-4f93-95cc-151d81fa08dc",
+          "connectionResourceId": "d61e5d0e-04af-4f93-95cc-151d81fa08dc",
+          "connectionFolderKey": "c4359cde-55f0-4f0e-9322-c6cdce74ab4c",
+          "method": "POST",
+          "endpoint": "/v2/{entityName}/qer",
+          "pathParameters": {
+            "entityName": "BillingDisputeCRM"
+          },
+          "uiPathActivityTypeId": "703065b9-a310-33b8-9d4d-12df0a6f520b",
+          "errorState": {
+            "issues": []
+          },
+          "configuration": "=jsonString:{\"essentialConfiguration\":{\"instanceParameters\":{\"connectorKey\":\"uipath-uipath-dataservice\",\"objectName\":\"QueryEntityRecordsCurated\",\"httpMethod\":\"POST\",\"activityType\":\"Curated\",\"version\":\"1.0.0\",\"supportsStreaming\":false,\"subType\":\"standard\"},\"objectName\":\"QueryEntityRecordsCurated\",\"operation\":\"list\",\"httpMethod\":\"POST\",\"path\":\"/v2/{entityName}/qer\",\"packageVersion\":\"1.0.0\",\"connectorVersion\":null,\"executionType\":null,\"customFieldsRequestDetails\":null,\"unifiedTypesCompatible\":true,\"savedFilterTrees\":{\"queryExpression\":{\"filters\":[{\"id\":\"accountNumber\",\"operator\":\"Equals\",\"value\":{\"value\":\"$vars.start.output.webhookPayload.customer.accountNumber\",\"isLiteral\":false}}],\"groupOperator\":0}}}}",
+          "inputMetadata": {
+            "operation": "list",
+            "pagination": {
+              "maxPageSize": 1000
+            }
+          },
+          "queryParameters": {
+            "queryExpression": "=js:`accountNumber = '${($vars.start.output.webhookPayload && $vars.start.output.webhookPayload.customer && $vars.start.output.webhookPayload.customer.accountNumber) ? $vars.start.output.webhookPayload.customer.accountNumber : ''}'`"
+          }
+        }
+      }
+    },
+    {
+      "id": "erpLookup1",
+      "type": "uipath.connector.uipath-uipath-dataservice.query-entity-records",
+      "typeVersion": "1.0.0",
+      "display": {
+        "label": "ERP Lookup"
+      },
+      "inputs": {
+        "detail": {
+          "connector": "uipath-uipath-dataservice",
+          "connectionId": "d61e5d0e-04af-4f93-95cc-151d81fa08dc",
+          "connectionResourceId": "d61e5d0e-04af-4f93-95cc-151d81fa08dc",
+          "connectionFolderKey": "c4359cde-55f0-4f0e-9322-c6cdce74ab4c",
+          "method": "POST",
+          "endpoint": "/v2/{entityName}/qer",
+          "pathParameters": {
+            "entityName": "BillingDisputeERP"
+          },
+          "uiPathActivityTypeId": "703065b9-a310-33b8-9d4d-12df0a6f520b",
+          "errorState": {
+            "issues": []
+          },
+          "configuration": "=jsonString:{\"essentialConfiguration\":{\"instanceParameters\":{\"connectorKey\":\"uipath-uipath-dataservice\",\"objectName\":\"QueryEntityRecordsCurated\",\"httpMethod\":\"POST\",\"activityType\":\"Curated\",\"version\":\"1.0.0\",\"supportsStreaming\":false,\"subType\":\"standard\"},\"objectName\":\"QueryEntityRecordsCurated\",\"operation\":\"list\",\"httpMethod\":\"POST\",\"path\":\"/v2/{entityName}/qer\",\"packageVersion\":\"1.0.0\",\"connectorVersion\":null,\"executionType\":null,\"customFieldsRequestDetails\":null,\"unifiedTypesCompatible\":true,\"savedFilterTrees\":{\"queryExpression\":{\"filters\":[{\"id\":\"invoiceNumber\",\"operator\":\"Equals\",\"value\":{\"value\":\"(() => { var inv = ($vars.start.output.webhookPayload && $vars.start.output.webhookPayload.invoice && $vars.start.output.webhookPayload.invoice.invoiceNumber) ? String($vars.start.output.webhookPayload.invoice.invoiceNumber) : ''; var norm = inv.trim().toUpperCase(); if (!norm.startsWith('MCS-')) norm = 'MCS-' + norm; return norm; })()\",\"isLiteral\":false}}],\"groupOperator\":0}}}}",
+          "inputMetadata": {
+            "operation": "list",
+            "pagination": {
+              "maxPageSize": 1000
+            }
+          },
+          "queryParameters": {
+            "queryExpression": "=js:(() => { var inv = ($vars.start.output.webhookPayload && $vars.start.output.webhookPayload.invoice && $vars.start.output.webhookPayload.invoice.invoiceNumber) ? String($vars.start.output.webhookPayload.invoice.invoiceNumber) : ''; var norm = inv.trim().toUpperCase(); if (!norm.startsWith('MCS-')) norm = 'MCS-' + norm; return `invoiceNumber = '${norm}'`; })()"
+          }
+        }
+      }
+    },
+    {
+      "id": "mergeLookups",
+      "type": "core.logic.merge",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Merge"
+      },
+      "inputs": {}
+    },
+    {
+      "id": "detectDiscrepancies",
+      "type": "core.action.script",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Discrepancy Detection"
+      },
+      "inputs": {
+        "script": "var disputedItems = ($vars.start.output.webhookPayload && $vars.start.output.webhookPayload.dispute && $vars.start.output.webhookPayload.dispute.disputedLineItems) ? $vars.start.output.webhookPayload.dispute.disputedLineItems : [];\nvar erpRecords = ($vars.erpLookup1.output && $vars.erpLookup1.output.value) ? $vars.erpLookup1.output.value : [];\nvar mismatches = [];\nvar totalOvercharge = 0;\nvar totalUndercharge = 0;\ndisputedItems.forEach(function(item) {\n  var erpRow = erpRecords.find(function(r) { return String(r.lineNumber) === String(item.lineNumber); });\n  if (erpRow) {\n    var contractPrice = erpRow.unitPrice || 0;\n    var billedPrice = item.unitPrice || 0;\n    var diff = (billedPrice - contractPrice) * (item.quantity || 1);\n    if (diff !== 0) {\n      mismatches.push({\n        lineNumber: item.lineNumber,\n        description: item.description,\n        quantity: item.quantity,\n        billedUnitPrice: billedPrice,\n        contractUnitPrice: contractPrice,\n        billedAmount: item.amount,\n        contractAmount: contractPrice * (item.quantity || 1),\n        variance: diff\n      });\n      if (diff > 0) totalOvercharge += diff;\n      else totalUndercharge += Math.abs(diff);\n    }\n  }\n});\nreturn { mismatches: mismatches, totalOvercharge: totalOvercharge, totalUndercharge: totalUndercharge };"
+      },
+      "outputs": {
+        "output": {
+          "type": "object",
+          "description": "Discrepancy detection results",
+          "source": "=result.response",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the script fails",
+          "source": "=result.Error",
+          "var": "error"
+        }
+      }
+    },
+    {
+      "id": "disputeAnalystAgent",
+      "type": "uipath.agent.autonomous",
+      "typeVersion": "1.2",
+      "display": {
+        "label": "Dispute Analyst Agent"
+      },
+      "inputs": {
+        "systemPrompt": "You are a billing dispute analyst. Analyze the invoice data, CRM and ERP records, and discrepancy summary to produce a structured determination.",
+        "userPrompt": "Analyze the billing dispute and return a structured JSON determination.",
+        "source": "9115702c-f03e-4fae-85d1-f3037172a364",
+        "agentInputVariables": [
+          {
+            "id": "start__output__webhookPayload",
+            "type": "object",
+            "binding": "=$vars.start.output.webhookPayload",
+            "description": "Billing dispute webhook payload"
+          },
+          {
+            "id": "normalizeData__output__fields",
+            "type": "array",
+            "binding": "=$vars.normalizeData.output.fields",
+            "description": "Normalized invoice fields from IxP extraction"
+          },
+          {
+            "id": "crmLookup1__output__value",
+            "type": "object",
+            "binding": "=$vars.crmLookup1.output",
+            "description": "CRM customer account records"
+          },
+          {
+            "id": "erpLookup1__output__value",
+            "type": "object",
+            "binding": "=$vars.erpLookup1.output",
+            "description": "ERP contract/invoice records"
+          },
+          {
+            "id": "detectDiscrepancies__output__mismatches",
+            "type": "array",
+            "binding": "=$vars.detectDiscrepancies.output.mismatches",
+            "description": "Detected line item pricing discrepancies"
+          },
+          {
+            "id": "detectDiscrepancies__output__totalOvercharge",
+            "type": "number",
+            "binding": "=$vars.detectDiscrepancies.output.totalOvercharge",
+            "description": "Total overcharge amount"
+          },
+          {
+            "id": "detectDiscrepancies__output__totalUndercharge",
+            "type": "number",
+            "binding": "=$vars.detectDiscrepancies.output.totalUndercharge",
+            "description": "Total undercharge amount"
+          }
+        ],
+        "agentOutputVariables": [
+          {
+            "id": "determination",
+            "type": "string"
+          },
+          {
+            "id": "recommendedAction",
+            "type": "string"
+          },
+          {
+            "id": "autoResolutionEligible",
+            "type": "boolean"
+          },
+          {
+            "id": "creditAmount",
+            "type": "number"
+          },
+          {
+            "id": "confidence",
+            "type": "number"
+          },
+          {
+            "id": "rationale",
+            "type": "string"
+          }
+        ]
+      },
+      "outputs": {
+        "output": {
+          "type": "object",
+          "description": "Agent determination output",
+          "source": "=result.response",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the agent fails",
+          "source": "=Error",
+          "var": "error"
+        }
+      }
+    },
+    {
+      "id": "contextBillingDisputeSOP",
+      "type": "uipath.agent.resource.context.index.billing-dispute-sop-index.cc45b9b4-dbf6-47b3-40ac-08debc0cec5b",
+      "typeVersion": "1.0.0",
+      "display": {
+        "label": "Billing Dispute SOP Index"
+      },
+      "inputs": {
+        "source": "b7f2a3c1-4e8d-4f9a-8b2e-c1d3e5f7a9b2"
+      }
+    },
+    {
+      "id": "routeOnAction",
+      "type": "core.logic.switch",
+      "typeVersion": "1.1",
+      "display": {
+        "label": "Switch on recommendedAction"
+      },
+      "inputs": {
+        "cases": [
+          {
+            "id": "escalate",
+            "label": "escalate_to_manager",
+            "expression": "$vars.disputeAnalystAgent.output.recommendedAction === 'escalate_to_manager'"
+          },
+          {
+            "id": "autoResolve",
+            "label": "auto_resolve",
+            "expression": "$vars.disputeAnalystAgent.output.recommendedAction === 'auto_resolve'"
+          },
+          {
+            "id": "reject",
+            "label": "reject",
+            "expression": "$vars.disputeAnalystAgent.output.recommendedAction === 'reject'"
+          }
+        ]
+      }
+    },
+    {
+      "id": "approvalDecision",
+      "type": "core.logic.decision",
+      "typeVersion": "1.1",
+      "display": {
+        "label": "Approval Decision"
+      },
+      "inputs": {
+        "expression": "=js:false",
+        "trueLabel": "Rejected",
+        "falseLabel": "Approved"
+      }
+    },
+    {
+      "id": "logCreditAmount",
+      "type": "core.action.script",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Log Credit Amount"
+      },
+      "inputs": {
+        "script": "var credit = $vars.disputeAnalystAgent.output.creditAmount;\nreturn { creditAmount: credit };"
+      },
+      "outputs": {
+        "output": {
+          "type": "object",
+          "description": "Credit amount for auto-resolve path",
+          "source": "=result.response",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the script fails",
+          "source": "=result.Error",
+          "var": "error"
+        }
+      }
+    },
+    {
+      "id": "financialPosting",
+      "type": "uipath.core.api-workflow.07d45a91-9413-4dad-82ff-28306c2d85ea",
+      "typeVersion": "1.0.0",
+      "display": {
+        "label": "FinancialPostingFunction"
+      },
+      "inputs": {
+        "invoiceNumber": "=js:$vars.start.output.webhookPayload && $vars.start.output.webhookPayload.invoice ? $vars.start.output.webhookPayload.invoice.invoiceNumber : ''"
+      },
+      "outputs": {
+        "output": {
+          "type": "object",
+          "description": "The return value of the API workflow",
+          "source": "=result.response",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the API workflow fails",
+          "source": "=result.Error",
+          "var": "error"
+        }
+      }
+    },
+    {
+      "id": "resolutionWriterAgent",
+      "type": "uipath.agent.autonomous",
+      "typeVersion": "1.2",
+      "display": {
+        "label": "Resolution Writer Agent"
+      },
+      "inputs": {
+        "systemPrompt": "You are a customer resolution specialist. Draft professional customer-facing resolution emails for billing disputes.",
+        "userPrompt": "Draft the resolution email for this billing dispute.",
+        "source": "0504529f-562c-4ba3-9c34-89e3c53e67bb",
+        "agentInputVariables": [
+          {
+            "id": "start__output__webhookPayload",
+            "type": "object",
+            "binding": "=$vars.start.output.webhookPayload",
+            "description": "Billing dispute webhook payload with customer and invoice details"
+          },
+          {
+            "id": "disputeAnalystAgent__output__determination",
+            "type": "string",
+            "binding": "=$vars.disputeAnalystAgent.output.determination",
+            "description": "Analyst determination"
+          },
+          {
+            "id": "disputeAnalystAgent__output__creditAmount",
+            "type": "number",
+            "binding": "=$vars.disputeAnalystAgent.output.creditAmount",
+            "description": "Approved credit amount"
+          },
+          {
+            "id": "disputeAnalystAgent__output__rationale",
+            "type": "string",
+            "binding": "=$vars.disputeAnalystAgent.output.rationale",
+            "description": "Analyst rationale"
+          }
+        ],
+        "agentOutputVariables": [
+          {
+            "id": "subject",
+            "type": "string"
+          },
+          {
+            "id": "body",
+            "type": "string"
+          }
+        ]
+      },
+      "outputs": {
+        "output": {
+          "type": "object",
+          "description": "Resolution email subject and body",
+          "source": "=result.response",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the agent fails",
+          "source": "=Error",
+          "var": "error"
+        }
+      }
+    },
+    {
+      "id": "endResolution",
+      "type": "core.control.end",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Return Resolution"
+      },
+      "inputs": {},
+      "outputs": {
+        "determination": {
+          "source": "=js:$vars.disputeAnalystAgent.output.determination"
+        },
+        "recommendedAction": {
+          "source": "=js:$vars.disputeAnalystAgent.output.recommendedAction"
+        },
+        "creditAmount": {
+          "source": "=js:$vars.disputeAnalystAgent.output.creditAmount"
+        },
+        "rationale": {
+          "source": "=js:$vars.disputeAnalystAgent.output.rationale"
+        },
+        "resolutionEmailBody": {
+          "source": "=js:$vars.resolutionWriterAgent.output.body"
+        }
+      }
+    },
+    {
+      "id": "endManagerRejection",
+      "type": "core.control.end",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Return Manager Rejection"
+      },
+      "inputs": {},
+      "outputs": {
+        "determination": {
+          "source": "=js:$vars.disputeAnalystAgent.output.determination"
+        },
+        "recommendedAction": {
+          "source": "=js:$vars.disputeAnalystAgent.output.recommendedAction"
+        },
+        "creditAmount": {
+          "source": "=js:$vars.disputeAnalystAgent.output.creditAmount"
+        },
+        "rationale": {
+          "source": "=js:$vars.disputeAnalystAgent.output.rationale"
+        },
+        "resolutionEmailBody": {
+          "source": "=js:'No resolution email drafted — dispute rejected by manager.'"
+        }
+      }
+    },
+    {
+      "id": "endRejection",
+      "type": "core.control.end",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Return Rejection"
+      },
+      "inputs": {},
+      "outputs": {
+        "determination": {
+          "source": "=js:$vars.disputeAnalystAgent.output.determination"
+        },
+        "recommendedAction": {
+          "source": "=js:$vars.disputeAnalystAgent.output.recommendedAction"
+        },
+        "creditAmount": {
+          "source": "=js:$vars.disputeAnalystAgent.output.creditAmount"
+        },
+        "rationale": {
+          "source": "=js:$vars.disputeAnalystAgent.output.rationale"
+        },
+        "resolutionEmailBody": {
+          "source": "=js:'No resolution email drafted — dispute rejected.'"
+        }
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e-start-extract",
+      "sourceNodeId": "start",
+      "sourcePort": "output",
+      "targetNodeId": "extractInvoice",
+      "targetPort": "input"
+    },
+    {
+      "id": "e-extract-normalize",
+      "sourceNodeId": "extractInvoice",
+      "sourcePort": "success",
+      "targetNodeId": "normalizeData",
+      "targetPort": "input"
+    },
+    {
+      "id": "e-normalize-crm",
+      "sourceNodeId": "normalizeData",
+      "sourcePort": "success",
+      "targetNodeId": "crmLookup1",
+      "targetPort": "input"
+    },
+    {
+      "id": "e-normalize-erp",
+      "sourceNodeId": "normalizeData",
+      "sourcePort": "success",
+      "targetNodeId": "erpLookup1",
+      "targetPort": "input"
+    },
+    {
+      "id": "e-crm-merge",
+      "sourceNodeId": "crmLookup1",
+      "sourcePort": "output",
+      "targetNodeId": "mergeLookups",
+      "targetPort": "input"
+    },
+    {
+      "id": "e-erp-merge",
+      "sourceNodeId": "erpLookup1",
+      "sourcePort": "output",
+      "targetNodeId": "mergeLookups",
+      "targetPort": "input"
+    },
+    {
+      "id": "e-merge-detect",
+      "sourceNodeId": "mergeLookups",
+      "sourcePort": "output",
+      "targetNodeId": "detectDiscrepancies",
+      "targetPort": "input"
+    },
+    {
+      "id": "e-detect-analyst",
+      "sourceNodeId": "detectDiscrepancies",
+      "sourcePort": "success",
+      "targetNodeId": "disputeAnalystAgent",
+      "targetPort": "input"
+    },
+    {
+      "id": "e-analyst-context",
+      "sourceNodeId": "disputeAnalystAgent",
+      "sourcePort": "context",
+      "targetNodeId": "contextBillingDisputeSOP",
+      "targetPort": "input"
+    },
+    {
+      "id": "e-analyst-switch",
+      "sourceNodeId": "disputeAnalystAgent",
+      "sourcePort": "success",
+      "targetNodeId": "routeOnAction",
+      "targetPort": "input"
+    },
+    {
+      "id": "e-switch-escalate",
+      "sourceNodeId": "routeOnAction",
+      "sourcePort": "case-escalate",
+      "targetNodeId": "approvalDecision",
+      "targetPort": "input"
+    },
+    {
+      "id": "e-switch-autoresolve",
+      "sourceNodeId": "routeOnAction",
+      "sourcePort": "case-autoResolve",
+      "targetNodeId": "logCreditAmount",
+      "targetPort": "input"
+    },
+    {
+      "id": "e-switch-reject",
+      "sourceNodeId": "routeOnAction",
+      "sourcePort": "case-reject",
+      "targetNodeId": "endRejection",
+      "targetPort": "input"
+    },
+    {
+      "id": "e-decision-approved",
+      "sourceNodeId": "approvalDecision",
+      "sourcePort": "false",
+      "targetNodeId": "financialPosting",
+      "targetPort": "input"
+    },
+    {
+      "id": "e-decision-rejected",
+      "sourceNodeId": "approvalDecision",
+      "sourcePort": "true",
+      "targetNodeId": "endManagerRejection",
+      "targetPort": "input"
+    },
+    {
+      "id": "e-logcredit-posting",
+      "sourceNodeId": "logCreditAmount",
+      "sourcePort": "success",
+      "targetNodeId": "financialPosting",
+      "targetPort": "input"
+    },
+    {
+      "id": "e-posting-writer",
+      "sourceNodeId": "financialPosting",
+      "sourcePort": "output",
+      "targetNodeId": "resolutionWriterAgent",
+      "targetPort": "input"
+    },
+    {
+      "id": "e-writer-end",
+      "sourceNodeId": "resolutionWriterAgent",
+      "sourcePort": "success",
+      "targetNodeId": "endResolution",
+      "targetPort": "input"
+    }
+  ],
+  "definitions": [
+    {
+      "nodeType": "core.trigger.manual",
+      "version": "1.0",
+      "category": "trigger",
+      "description": "Start workflow manually",
+      "tags": [
+        "trigger",
+        "start",
+        "manual"
+      ],
+      "sortOrder": 40,
+      "display": {
+        "label": "Manual trigger",
+        "icon": "play",
+        "shape": "circle"
+      },
+      "handleConfiguration": [
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "output",
+              "type": "source",
+              "handleType": "output",
+              "showButton": true,
+              "constraints": {
+                "forbiddenTargetCategories": [
+                  "trigger"
+                ]
+              }
+            }
+          ],
+          "visible": true
+        }
+      ],
+      "model": {
+        "type": "bpmn:StartEvent",
+        "entryPointId": true
+      },
+      "outputDefinition": {
+        "output": {
+          "type": "object",
+          "description": "Data passed when manually triggering the workflow.",
+          "source": "null",
+          "var": "output"
+        }
+      },
+      "toolbarExtensions": {
+        "design": {
+          "actions": [
+            {
+              "id": "change-trigger-type",
+              "icon": "square-mouse-pointer",
+              "label": "Change trigger type"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "nodeType": "uipath.ixp.invoices-billing-f0c606f9-ixp.99f5bbfa-5f29-8033-8662-25001b6bb18e-79a7d12e-da84-4bf4-ab60-7f34b44dd178",
+      "version": "1.0.0",
+      "category": "document-extraction",
+      "tags": [
+        "ixp",
+        "document-understanding",
+        "extraction"
+      ],
+      "description": "(Shared/uipath-maestro-flow/BillingDispute)",
+      "sortOrder": 537,
+      "display": {
+        "canvasLabel": "Extract",
+        "label": "invoices-billing",
+        "description": "(Shared/uipath-maestro-flow/BillingDispute)",
+        "icon": "file-text"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "success",
+              "type": "source",
+              "handleType": "output"
+            },
+            {
+              "id": "error",
+              "label": "Error",
+              "type": "source",
+              "handleType": "output",
+              "visible": "{inputs.errorHandlingEnabled}",
+              "constraints": {
+                "maxConnections": 1
+              }
+            }
+          ]
+        }
+      ],
+      "supportsErrorHandling": true,
+      "model": {
+        "type": "bpmn:ServiceTask",
+        "serviceType": "IXP.Extraction",
+        "bindings": {
+          "resource": "ixpDeployment",
+          "entityType": "ixpDeployment",
+          "resourceSubType": null,
+          "resourceKey": "99f5bbfa-5f29-8033-8662-25001b6bb18e",
+          "name": "invoices-billing",
+          "values": [
+            {
+              "name": "name",
+              "propertyAttribute": "name",
+              "default": "invoices-billing"
+            },
+            {
+              "name": "folderPath",
+              "propertyAttribute": "folderPath",
+              "default": "Shared/uipath-maestro-flow/BillingDispute"
+            }
+          ]
+        }
+      },
+      "debug": {
+        "runtime": "bpmnEngine"
+      },
+      "inputDefaults": {
+        "model": {
+          "id": "99f5bbfa-5f29-8033-8662-25001b6bb18e",
+          "modelName": "invoices-billing-f0c606f9-ixp",
+          "modelDisplayName": "invoices-billing",
+          "folderKey": "79a7d12e-da84-4bf4-ab60-7f34b44dd178",
+          "folderName": "Shared/uipath-maestro-flow/BillingDispute",
+          "folderPath": "c4359cde-55f0-4f0e-9322-c6cdce74ab4c.5da18ec0-7de1-4e57-aaf1-ddc8a369c199.79a7d12e-da84-4bf4-ab60-7f34b44dd178",
+          "description": ""
+        },
+        "modelName": "invoices-billing-f0c606f9-ixp",
+        "projectName": "invoices-billing-f0c606f9-ixp",
+        "folderKey": "79a7d12e-da84-4bf4-ab60-7f34b44dd178",
+        "folderName": "Shared/uipath-maestro-flow/BillingDispute",
+        "versionTag": "",
+        "pageRange": ""
+      },
+      "outputDefinition": {
+        "output": {
+          "name": "output",
+          "type": "object",
+          "source": "=this.result",
+          "var": "output"
+        },
+        "error": {
+          "name": "error",
+          "type": "object",
+          "source": "=result.Error",
+          "var": "error"
+        }
+      }
+    },
+    {
+      "nodeType": "core.action.script",
+      "version": "1.0",
+      "category": "action",
+      "description": "Run a JavaScript script",
+      "tags": [
+        "script",
+        "javascript"
+      ],
+      "sortOrder": 100,
+      "display": {
+        "label": "Script",
+        "icon": "code",
+        "shape": "rectangle"
+      },
+      "supportsErrorHandling": true,
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "success",
+              "type": "source",
+              "handleType": "output"
+            },
+            {
+              "id": "error",
+              "label": "Error",
+              "type": "source",
+              "handleType": "output",
+              "visible": "{inputs.errorHandlingEnabled}",
+              "constraints": {
+                "maxConnections": 1
+              }
+            }
+          ]
+        }
+      ],
+      "model": {
+        "type": "bpmn:ScriptTask"
+      },
+      "inputDefinition": {
+        "type": "object",
+        "required": [
+          "script"
+        ],
+        "properties": {
+          "script": {
+            "type": "string"
+          }
+        }
+      },
+      "outputDefinition": {
+        "output": {
+          "type": "object",
+          "description": "The return value of the script",
+          "source": "=result.response",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the script fails",
+          "source": "=result.Error",
+          "var": "error"
+        }
+      }
+    },
+    {
+      "nodeType": "uipath.connector.uipath-uipath-dataservice.query-entity-records",
+      "version": "1.0.0",
+      "category": "connector.196550",
+      "tags": [
+        "connector",
+        "activity"
+      ],
+      "sortOrder": 515,
+      "supportsErrorHandling": true,
+      "description": "(UiPath Data Fabric) Retrieves a list of records for the selected Entity from Data Fabric, according to specified filters.",
+      "display": {
+        "label": "Query Entity Records",
+        "description": "(UiPath Data Fabric) Retrieves a list of records for the selected Entity from Data Fabric, according to specified filters.",
+        "icon": "https://alpha.uipath.com/311c6049-4966-4ef2-a6f3-8ceccaf38d54/studio_/typecache/icons/98381fa079bbcf73264f551006d6ef7580fb53992f3d9f94361eb5d9e06040cb.svg"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input",
+              "label": ""
+            }
+          ]
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "output",
+              "type": "source",
+              "handleType": "output",
+              "label": ""
+            },
+            {
+              "id": "error",
+              "label": "Error",
+              "type": "source",
+              "handleType": "output",
+              "visible": "{inputs.errorHandlingEnabled}",
+              "constraints": {
+                "maxConnections": 1
+              }
+            }
+          ]
+        }
+      ],
+      "model": {
+        "type": "bpmn:SendTask",
+        "serviceType": "Intsvc.ActivityExecution",
+        "bindings": {
+          "resource": "connection",
+          "resourceKey": "",
+          "values": [
+            {
+              "name": "uipath-uipath-dataservice connection",
+              "propertyAttribute": "ConnectionId"
+            },
+            {
+              "name": "FolderKey",
+              "propertyAttribute": "FolderKey"
+            }
+          ]
+        },
+        "context": [
+          {
+            "name": "connectorKey",
+            "type": "string",
+            "value": "uipath-uipath-dataservice"
+          },
+          {
+            "name": "operation",
+            "type": "string"
+          },
+          {
+            "name": "objectName",
+            "value": "QueryEntityRecordsCurated",
+            "type": "string"
+          },
+          {
+            "name": "method",
+            "type": "string",
+            "value": "POST"
+          },
+          {
+            "name": "connection",
+            "type": "string",
+            "value": "<bindings.uipath-uipath-dataservice connection>"
+          },
+          {
+            "name": "folderKey",
+            "type": "string",
+            "value": "<bindings.FolderKey>"
+          },
+          {
+            "name": "activityConfigurationVersion",
+            "type": "string",
+            "value": "v1"
+          },
+          {
+            "name": "metadata",
+            "body": {
+              "telemetryData": {
+                "connectorKey": "uipath-uipath-dataservice",
+                "connectorName": "Query Entity Records"
+              },
+              "inputMetadata": {},
+              "errorState": {
+                "hasError": true
+              }
+            },
+            "type": "json"
+          }
+        ]
+      },
+      "form": {
+        "id": "connector-properties",
+        "title": "Connector configuration",
+        "sections": [
+          {
+            "id": "connector",
+            "title": "Connector",
+            "collapsible": true,
+            "defaultExpanded": true,
+            "fields": [
+              {
+                "label": "",
+                "name": "inputs.detail",
+                "type": "custom",
+                "component": "dap-config",
+                "componentProps": {
+                  "connectorDetail": {
+                    "isAppActivity": false,
+                    "packageId": "196550",
+                    "svgIconUrl": "icons/98381fa079bbcf73264f551006d6ef7580fb53992f3d9f94361eb5d9e06040cb.svg",
+                    "displayName": "Query Entity Records",
+                    "assemblyQualifiedName": "UiPath.IntegrationService.Activities.Runtime.Activities.ConnectorActivity, UiPath.IntegrationService.Activities.Runtime, Version=1.30.0.0, Culture=neutral, PublicKeyToken=null",
+                    "description": "Retrieves a list of records for the selected Entity from Data Fabric, according to specified filters.",
+                    "category": "",
+                    "activityColor": "#E56D5C",
+                    "configuration": "{\"connectorKey\":\"uipath-uipath-dataservice\",\"objectName\":\"QueryEntityRecordsCurated\",\"httpMethod\":\"POST\",\"activityType\":\"Curated\",\"version\":\"1.0.0\",\"supportsStreaming\":false,\"subType\":\"standard\"}",
+                    "uiPathActivityTypeId": "703065b9-a310-33b8-9d4d-12df0a6f520b",
+                    "isExperimental": false,
+                    "helpUrlTemplate": "https://docs.uipath.com/{0}/activities/other/latest/integration-service/uipath-uipath-dataservice-Query-Entity-Records",
+                    "isEnabled": true,
+                    "targetPlatform": "CrossPlatform",
+                    "isAdvanced": false,
+                    "isRestricted": false,
+                    "hasWpfOnlyDesigner": false,
+                    "tags": [
+                      ""
+                    ]
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "inputDefinition": {},
+      "inputDefaults": {},
+      "outputDefinition": {
+        "output": {
+          "type": "object",
+          "description": "The return value of the connector.",
+          "source": "=result.response",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails",
+          "source": "=Error",
+          "var": "error",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "required": [
+              "code",
+              "message",
+              "detail",
+              "category",
+              "status"
+            ],
+            "properties": {
+              "code": {
+                "type": "string"
+              },
+              "message": {
+                "type": "string"
+              },
+              "detail": {
+                "type": "string"
+              },
+              "category": {
+                "type": "string"
+              },
+              "status": {
+                "type": "integer"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "debug": {
+        "runtime": "bpmnEngine"
+      }
+    },
+    {
+      "nodeType": "core.logic.merge",
+      "version": "1.0",
+      "category": "logic",
+      "description": "Synchronize parallel branches",
+      "tags": [
+        "merge",
+        "parallel",
+        "sync"
+      ],
+      "sortOrder": 200,
+      "display": {
+        "label": "Merge",
+        "icon": "merge"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "output",
+              "type": "source",
+              "handleType": "output"
+            }
+          ]
+        }
+      ],
+      "model": {
+        "type": "bpmn:ParallelGateway"
+      }
+    },
+    {
+      "nodeType": "uipath.agent.autonomous",
+      "version": "1.2",
+      "category": "agent",
+      "description": "Run an autonomous AI agent",
+      "tags": [
+        "agent",
+        "ai",
+        "autonomous"
+      ],
+      "sortOrder": 300,
+      "display": {
+        "label": "Autonomous Agent",
+        "icon": "agent",
+        "shape": "rectangle"
+      },
+      "supportsErrorHandling": true,
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "success",
+              "type": "source",
+              "handleType": "output"
+            },
+            {
+              "id": "error",
+              "label": "Error",
+              "type": "source",
+              "handleType": "output",
+              "visible": "{inputs.errorHandlingEnabled}",
+              "constraints": {
+                "maxConnections": 1
+              }
+            }
+          ]
+        },
+        {
+          "position": "bottom",
+          "handles": [
+            {
+              "id": "tool",
+              "type": "source",
+              "handleType": "artifact"
+            },
+            {
+              "id": "context",
+              "type": "source",
+              "handleType": "artifact"
+            }
+          ]
+        },
+        {
+          "position": "top",
+          "handles": [
+            {
+              "id": "escalation",
+              "type": "source",
+              "handleType": "artifact"
+            }
+          ]
+        }
+      ],
+      "model": {
+        "type": "bpmn:ServiceTask",
+        "serviceType": "Orchestrator.StartInlineAgentJob",
+        "version": "v2",
+        "source": true
+      }
+    },
+    {
+      "nodeType": "uipath.agent.resource.context.index.billing-dispute-sop-index.cc45b9b4-dbf6-47b3-40ac-08debc0cec5b",
+      "version": "1.0.0",
+      "category": "agent-resource",
+      "description": "SOP grounding for the Billing Dispute Analyst agent.",
+      "tags": [
+        "context",
+        "index",
+        "rag"
+      ],
+      "sortOrder": 350,
+      "display": {
+        "label": "Billing Dispute SOP Index",
+        "icon": "database"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "artifact"
+            }
+          ]
+        }
+      ],
+      "model": {
+        "type": "bpmn:ServiceTask",
+        "serviceType": "Orchestrator.StartInlineAgentJob",
+        "source": true
+      }
+    },
+    {
+      "nodeType": "core.logic.switch",
+      "version": "1.1",
+      "category": "logic",
+      "description": "Multi-way branch based on conditions",
+      "tags": [
+        "switch",
+        "branch",
+        "route"
+      ],
+      "sortOrder": 210,
+      "display": {
+        "label": "Switch",
+        "icon": "split"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "default",
+              "label": "Default",
+              "type": "source",
+              "handleType": "output"
+            },
+            {
+              "id": "case-escalate",
+              "label": "escalate_to_manager",
+              "type": "source",
+              "handleType": "output"
+            },
+            {
+              "id": "case-autoResolve",
+              "label": "auto_resolve",
+              "type": "source",
+              "handleType": "output"
+            },
+            {
+              "id": "case-reject",
+              "label": "reject",
+              "type": "source",
+              "handleType": "output"
+            }
+          ]
+        }
+      ],
+      "model": {
+        "type": "bpmn:ExclusiveGateway"
+      },
+      "inputDefinition": {
+        "type": "object",
+        "required": [
+          "cases"
+        ],
+        "properties": {
+          "cases": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "label": {
+                  "type": "string"
+                },
+                "expression": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "nodeType": "core.logic.decision",
+      "version": "1.1",
+      "category": "logic",
+      "description": "Binary if/else branch",
+      "tags": [
+        "decision",
+        "if",
+        "else",
+        "branch"
+      ],
+      "sortOrder": 205,
+      "display": {
+        "label": "Decision",
+        "icon": "split"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "true",
+              "label": "True",
+              "type": "source",
+              "handleType": "output"
+            },
+            {
+              "id": "false",
+              "label": "False",
+              "type": "source",
+              "handleType": "output"
+            }
+          ]
+        }
+      ],
+      "model": {
+        "type": "bpmn:ExclusiveGateway"
+      },
+      "inputDefinition": {
+        "type": "object",
+        "required": [
+          "expression"
+        ],
+        "properties": {
+          "expression": {
+            "type": "string"
+          },
+          "trueLabel": {
+            "type": "string"
+          },
+          "falseLabel": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    {
+      "nodeType": "uipath.core.api-workflow.07d45a91-9413-4dad-82ff-28306c2d85ea",
+      "version": "1.0.0",
+      "category": "api-workflow",
+      "description": "(Shared/uipath-maestro-flow/BillingDispute)",
+      "tags": [],
+      "sortOrder": 510,
+      "supportsErrorHandling": true,
+      "display": {
+        "label": "FinancialPostingFunction",
+        "icon": "api"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "output",
+              "type": "source",
+              "handleType": "output"
+            },
+            {
+              "id": "error",
+              "label": "Error",
+              "type": "source",
+              "handleType": "output",
+              "visible": "{inputs.errorHandlingEnabled}",
+              "constraints": {
+                "maxConnections": 1
+              }
+            }
+          ]
+        }
+      ],
+      "model": {
+        "type": "bpmn:ServiceTask",
+        "serviceType": "Orchestrator.ExecuteApiWorkflowAsync",
+        "version": "v2",
+        "section": "Published",
+        "bindings": {
+          "resource": "process",
+          "resourceSubType": "Api",
+          "resourceKey": "Shared/uipath-maestro-flow/BillingDispute.FinancialPostingFunction",
+          "orchestratorType": "api",
+          "values": [
+            {
+              "name": "name",
+              "propertyAttribute": "name",
+              "default": "FinancialPostingFunction"
+            },
+            {
+              "name": "folderPath",
+              "propertyAttribute": "folderPath",
+              "default": "Shared/uipath-maestro-flow/BillingDispute"
+            }
+          ]
+        },
+        "context": [
+          {
+            "name": "name",
+            "type": "string",
+            "value": "<bindings.name>"
+          },
+          {
+            "name": "folderPath",
+            "type": "string",
+            "value": "<bindings.folderPath>"
+          },
+          {
+            "name": "_label",
+            "type": "string",
+            "value": "FinancialPostingFunction"
+          }
+        ]
+      },
+      "inputDefinition": {
+        "type": "object",
+        "properties": {
+          "invoiceNumber": {
+            "type": "string"
+          }
+        }
+      },
+      "outputDefinition": {
+        "output": {
+          "type": "object",
+          "description": "The return value of the API workflow",
+          "source": "=result.response",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the API workflow fails",
+          "source": "=result.Error",
+          "var": "error"
+        }
+      }
+    },
+    {
+      "nodeType": "core.control.end",
+      "version": "1.0",
+      "category": "control",
+      "description": "End the workflow",
+      "tags": [
+        "end",
+        "complete",
+        "finish"
+      ],
+      "sortOrder": 900,
+      "display": {
+        "label": "End",
+        "icon": "stop",
+        "shape": "circle"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        }
+      ],
+      "model": {
+        "type": "bpmn:EndEvent"
+      }
+    }
+  ],
+  "runtime": "maestro",
+  "bindings": [
+    {
+      "id": "b0dmeDcr7",
+      "name": "uipath-uipath-dataservice connection",
+      "type": "string",
+      "resource": "connection",
+      "resourceKey": "d61e5d0e-04af-4f93-95cc-151d81fa08dc",
+      "propertyAttribute": "ConnectionId",
+      "default": "d61e5d0e-04af-4f93-95cc-151d81fa08dc"
+    },
+    {
+      "id": "bVd5plz3z",
+      "name": "FolderKey",
+      "type": "string",
+      "resource": "connection",
+      "resourceKey": "d61e5d0e-04af-4f93-95cc-151d81fa08dc",
+      "propertyAttribute": "FolderKey",
+      "default": "c4359cde-55f0-4f0e-9322-c6cdce74ab4c"
+    },
+    {
+      "id": "bFinancialPostingName",
+      "name": "name",
+      "type": "string",
+      "resource": "process",
+      "resourceKey": "Shared/uipath-maestro-flow/BillingDispute.FinancialPostingFunction",
+      "default": "FinancialPostingFunction",
+      "propertyAttribute": "name",
+      "resourceSubType": "Api"
+    },
+    {
+      "id": "bFinancialPostingFolderPath",
+      "name": "folderPath",
+      "type": "string",
+      "resource": "process",
+      "resourceKey": "Shared/uipath-maestro-flow/BillingDispute.FinancialPostingFunction",
+      "default": "Shared/uipath-maestro-flow/BillingDispute",
+      "propertyAttribute": "folderPath",
+      "resourceSubType": "Api"
+    }
+  ],
+  "variables": {
+    "globals": [
+      {
+        "id": "disputedInvoice",
+        "direction": "in",
+        "type": "file",
+        "description": "The disputed invoice PDF",
+        "triggerNodeId": "start"
+      },
+      {
+        "id": "webhookPayload",
+        "direction": "in",
+        "type": "object",
+        "description": "The billing-dispute submission event payload",
+        "triggerNodeId": "start"
+      },
+      {
+        "id": "determination",
+        "direction": "out",
+        "type": "string",
+        "description": "Analyst determination"
+      },
+      {
+        "id": "recommendedAction",
+        "direction": "out",
+        "type": "string",
+        "description": "Recommended action: escalate_to_manager | auto_resolve | reject"
+      },
+      {
+        "id": "creditAmount",
+        "direction": "out",
+        "type": "number",
+        "description": "Credit amount from analyst"
+      },
+      {
+        "id": "rationale",
+        "direction": "out",
+        "type": "string",
+        "description": "Analyst rationale"
+      },
+      {
+        "id": "resolutionEmailBody",
+        "direction": "out",
+        "type": "string",
+        "description": "Customer-facing resolution email body"
+      }
+    ],
+    "nodes": [
+      {
+        "id": "start.output",
+        "type": "object",
+        "description": "The return value of the trigger.",
+        "binding": {
+          "nodeId": "start",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "extractInvoice.output",
+        "type": "object",
+        "description": "Extraction result",
+        "binding": {
+          "nodeId": "extractInvoice",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "extractInvoice.error",
+        "type": "object",
+        "description": "Error information if extraction fails",
+        "binding": {
+          "nodeId": "extractInvoice",
+          "outputId": "error"
+        }
+      },
+      {
+        "id": "normalizeData.output",
+        "type": "object",
+        "description": "Normalized field projection",
+        "binding": {
+          "nodeId": "normalizeData",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "normalizeData.error",
+        "type": "object",
+        "description": "Error information if the script fails",
+        "binding": {
+          "nodeId": "normalizeData",
+          "outputId": "error"
+        }
+      },
+      {
+        "id": "crmLookup1.output",
+        "type": "object",
+        "description": "The return value of the connector.",
+        "binding": {
+          "nodeId": "crmLookup1",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "crmLookup1.error",
+        "type": "object",
+        "description": "Error information if the node fails",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "required": [
+            "code",
+            "message",
+            "detail",
+            "category",
+            "status"
+          ],
+          "properties": {
+            "code": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "detail": {
+              "type": "string"
+            },
+            "category": {
+              "type": "string"
+            },
+            "status": {
+              "type": "integer"
+            }
+          },
+          "additionalProperties": false
+        },
+        "binding": {
+          "nodeId": "crmLookup1",
+          "outputId": "error"
+        }
+      },
+      {
+        "id": "erpLookup1.output",
+        "type": "object",
+        "description": "The return value of the connector.",
+        "binding": {
+          "nodeId": "erpLookup1",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "erpLookup1.error",
+        "type": "object",
+        "description": "Error information if the node fails",
+        "schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "required": [
+            "code",
+            "message",
+            "detail",
+            "category",
+            "status"
+          ],
+          "properties": {
+            "code": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "detail": {
+              "type": "string"
+            },
+            "category": {
+              "type": "string"
+            },
+            "status": {
+              "type": "integer"
+            }
+          },
+          "additionalProperties": false
+        },
+        "binding": {
+          "nodeId": "erpLookup1",
+          "outputId": "error"
+        }
+      },
+      {
+        "id": "detectDiscrepancies.output",
+        "type": "object",
+        "description": "Discrepancy detection results",
+        "binding": {
+          "nodeId": "detectDiscrepancies",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "detectDiscrepancies.error",
+        "type": "object",
+        "description": "Error information if the script fails",
+        "binding": {
+          "nodeId": "detectDiscrepancies",
+          "outputId": "error"
+        }
+      },
+      {
+        "id": "disputeAnalystAgent.output",
+        "type": "object",
+        "description": "Agent determination output",
+        "binding": {
+          "nodeId": "disputeAnalystAgent",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "disputeAnalystAgent.error",
+        "type": "object",
+        "description": "Error information if the agent fails",
+        "binding": {
+          "nodeId": "disputeAnalystAgent",
+          "outputId": "error"
+        }
+      },
+      {
+        "id": "logCreditAmount.output",
+        "type": "object",
+        "description": "Credit amount for auto-resolve path",
+        "binding": {
+          "nodeId": "logCreditAmount",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "logCreditAmount.error",
+        "type": "object",
+        "description": "Error information if the script fails",
+        "binding": {
+          "nodeId": "logCreditAmount",
+          "outputId": "error"
+        }
+      },
+      {
+        "id": "financialPosting.output",
+        "type": "object",
+        "description": "The return value of the API workflow",
+        "binding": {
+          "nodeId": "financialPosting",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "financialPosting.error",
+        "type": "object",
+        "description": "Error information if the API workflow fails",
+        "binding": {
+          "nodeId": "financialPosting",
+          "outputId": "error"
+        }
+      },
+      {
+        "id": "resolutionWriterAgent.output",
+        "type": "object",
+        "description": "Resolution email subject and body",
+        "binding": {
+          "nodeId": "resolutionWriterAgent",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "resolutionWriterAgent.error",
+        "type": "object",
+        "description": "Error information if the agent fails",
+        "binding": {
+          "nodeId": "resolutionWriterAgent",
+          "outputId": "error"
+        }
+      },
+      {
+        "id": "endResolution.determination",
+        "type": "string",
+        "binding": {
+          "nodeId": "endResolution",
+          "outputId": "determination"
+        }
+      },
+      {
+        "id": "endResolution.recommendedAction",
+        "type": "string",
+        "binding": {
+          "nodeId": "endResolution",
+          "outputId": "recommendedAction"
+        }
+      },
+      {
+        "id": "endResolution.creditAmount",
+        "type": "string",
+        "binding": {
+          "nodeId": "endResolution",
+          "outputId": "creditAmount"
+        }
+      },
+      {
+        "id": "endResolution.rationale",
+        "type": "string",
+        "binding": {
+          "nodeId": "endResolution",
+          "outputId": "rationale"
+        }
+      },
+      {
+        "id": "endResolution.resolutionEmailBody",
+        "type": "string",
+        "binding": {
+          "nodeId": "endResolution",
+          "outputId": "resolutionEmailBody"
+        }
+      },
+      {
+        "id": "endManagerRejection.determination",
+        "type": "string",
+        "binding": {
+          "nodeId": "endManagerRejection",
+          "outputId": "determination"
+        }
+      },
+      {
+        "id": "endManagerRejection.recommendedAction",
+        "type": "string",
+        "binding": {
+          "nodeId": "endManagerRejection",
+          "outputId": "recommendedAction"
+        }
+      },
+      {
+        "id": "endManagerRejection.creditAmount",
+        "type": "string",
+        "binding": {
+          "nodeId": "endManagerRejection",
+          "outputId": "creditAmount"
+        }
+      },
+      {
+        "id": "endManagerRejection.rationale",
+        "type": "string",
+        "binding": {
+          "nodeId": "endManagerRejection",
+          "outputId": "rationale"
+        }
+      },
+      {
+        "id": "endManagerRejection.resolutionEmailBody",
+        "type": "string",
+        "binding": {
+          "nodeId": "endManagerRejection",
+          "outputId": "resolutionEmailBody"
+        }
+      },
+      {
+        "id": "endRejection.determination",
+        "type": "string",
+        "binding": {
+          "nodeId": "endRejection",
+          "outputId": "determination"
+        }
+      },
+      {
+        "id": "endRejection.recommendedAction",
+        "type": "string",
+        "binding": {
+          "nodeId": "endRejection",
+          "outputId": "recommendedAction"
+        }
+      },
+      {
+        "id": "endRejection.creditAmount",
+        "type": "string",
+        "binding": {
+          "nodeId": "endRejection",
+          "outputId": "creditAmount"
+        }
+      },
+      {
+        "id": "endRejection.rationale",
+        "type": "string",
+        "binding": {
+          "nodeId": "endRejection",
+          "outputId": "rationale"
+        }
+      },
+      {
+        "id": "endRejection.resolutionEmailBody",
+        "type": "string",
+        "binding": {
+          "nodeId": "endRejection",
+          "outputId": "resolutionEmailBody"
+        }
+      }
+    ]
+  },
+  "layout": {
+    "nodes": {
+      "start": {
+        "position": {
+          "x": 0,
+          "y": 0
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "extractInvoice": {
+        "position": {
+          "x": 192,
+          "y": 0
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "normalizeData": {
+        "position": {
+          "x": 384,
+          "y": 0
+        },
+        "size": {
+          "width": 288,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "crmLookup1": {
+        "position": {
+          "x": 768,
+          "y": -96
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "erpLookup1": {
+        "position": {
+          "x": 768,
+          "y": 96
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "mergeLookups": {
+        "position": {
+          "x": 960,
+          "y": -96
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "detectDiscrepancies": {
+        "position": {
+          "x": 1152,
+          "y": -96
+        },
+        "size": {
+          "width": 288,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "disputeAnalystAgent": {
+        "position": {
+          "x": 1536,
+          "y": -192
+        },
+        "size": {
+          "width": 288,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "contextBillingDisputeSOP": {
+        "position": {
+          "x": 1680,
+          "y": 0
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "routeOnAction": {
+        "position": {
+          "x": 1920,
+          "y": -96
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "approvalDecision": {
+        "position": {
+          "x": 2208,
+          "y": -288
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "logCreditAmount": {
+        "position": {
+          "x": 2112,
+          "y": -96
+        },
+        "size": {
+          "width": 288,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "financialPosting": {
+        "position": {
+          "x": 2496,
+          "y": -192
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "resolutionWriterAgent": {
+        "position": {
+          "x": 2688,
+          "y": -192
+        },
+        "size": {
+          "width": 288,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "endResolution": {
+        "position": {
+          "x": 3072,
+          "y": -192
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "endManagerRejection": {
+        "position": {
+          "x": 2496,
+          "y": -384
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "endRejection": {
+        "position": {
+          "x": 2208,
+          "y": 96
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      }
+    }
+  }
+}

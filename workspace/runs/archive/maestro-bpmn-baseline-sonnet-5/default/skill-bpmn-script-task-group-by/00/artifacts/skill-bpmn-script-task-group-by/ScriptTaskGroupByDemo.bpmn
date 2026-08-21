@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+    xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+    xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+    xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+    xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:uipath="http://uipath.org/schema/bpmn"
+    id="Definitions_ScriptTaskGroupByDemo" targetNamespace="http://bpmn.io/schema/bpmn"
+    exporter="UiPath (https://bpmn.uipath.com)" exporterVersion="1.0">
+  <bpmn:process id="Process_ScriptTaskGroupByDemo" name="ScriptTaskGroupByDemo" isExecutable="true">
+    <bpmn:extensionElements>
+      <uipath:migrationVersion version="11.5" />
+      <uipath:variables version="v1">
+        <uipath:inputOutput id="Var_GroupedByDepartment" name="GroupedByDepartment" type="json" />
+      </uipath:variables>
+    </bpmn:extensionElements>
+    <bpmn:startEvent id="Start_1" name="Start">
+      <bpmn:outgoing>Flow_Start_Group</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:scriptTask id="Task_GroupByDepartment" name="Group Employees By Department" scriptFormat="JavaScript">
+      <bpmn:extensionElements>
+        <uipath:scriptVersion value="v3" />
+        <uipath:mapping version="v1">
+          <uipath:type value="BPMN.ScriptTask" version="v1" />
+          <uipath:input name="args" type="json" target="bodyField"><![CDATA[{"employees":[{"name":"Alice","department":"Engineering","salary":95000},{"name":"Bob","department":"Engineering","salary":88000},{"name":"Carol","department":"Sales","salary":72000},{"name":"Dave","department":"Sales","salary":69000},{"name":"Eve","department":"Marketing","salary":81000},{"name":"Frank","department":"Sales","salary":75500}]}]]></uipath:input>
+          <uipath:output name="groupedByDepartment" type="json" var="Var_GroupedByDepartment" source="=result.response" />
+        </uipath:mapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_Start_Group</bpmn:incoming>
+      <bpmn:outgoing>Flow_Group_End</bpmn:outgoing>
+      <bpmn:script><![CDATA[
+var groups = employees.reduce(function (acc, employee) {
+  var department = employee.department;
+  if (!acc[department]) {
+    acc[department] = { department: department, count: 0, totalSalary: 0 };
+  }
+  acc[department].count += 1;
+  acc[department].totalSalary += employee.salary;
+  return acc;
+}, {});
+
+var summary = Object.keys(groups).map(function (department) {
+  var group = groups[department];
+  return {
+    department: group.department,
+    count: group.count,
+    totalSalary: group.totalSalary,
+    averageSalary: group.totalSalary / group.count
+  };
+});
+
+return { response: summary };
+]]></bpmn:script>
+    </bpmn:scriptTask>
+    <bpmn:endEvent id="End_1" name="End">
+      <bpmn:incoming>Flow_Group_End</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_Start_Group" sourceRef="Start_1" targetRef="Task_GroupByDepartment" />
+    <bpmn:sequenceFlow id="Flow_Group_End" sourceRef="Task_GroupByDepartment" targetRef="End_1" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="Diagram_1">
+    <bpmndi:BPMNPlane id="Plane_1" bpmnElement="Process_ScriptTaskGroupByDemo">
+      <bpmndi:BPMNShape id="S_Start_1" bpmnElement="Start_1">
+        <dc:Bounds x="160" y="100" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Task_GroupByDepartment" bpmnElement="Task_GroupByDepartment">
+        <dc:Bounds x="250" y="78" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_End_1" bpmnElement="End_1">
+        <dc:Bounds x="410" y="100" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="E_Flow_Start_Group" bpmnElement="Flow_Start_Group">
+        <di:waypoint x="196" y="118" />
+        <di:waypoint x="250" y="118" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_Group_End" bpmnElement="Flow_Group_End">
+        <di:waypoint x="350" y="118" />
+        <di:waypoint x="410" y="118" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

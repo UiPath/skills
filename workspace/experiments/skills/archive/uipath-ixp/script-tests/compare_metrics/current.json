@@ -1,0 +1,13 @@
+{
+  "Data": {
+    "ProjectScore": 0.71,
+    "ModelVersion": 4,
+    "ValidatedDocuments": 5,
+    "Fields": [
+      {"FieldGroup": "Invoice", "FieldId": "f-001", "F1": 0.90, "Precision": 0.91, "Recall": 0.89, "Documents": 5},
+      {"FieldGroup": "Invoice", "FieldId": "f-002", "F1": 0.75, "Precision": 0.76, "Recall": 0.74, "Documents": 5},
+      {"FieldGroup": "Invoice", "FieldId": "f-003", "F1": 0.28, "Precision": 0.30, "Recall": 0.26, "Documents": 5},
+      {"FieldGroup": "Invoice", "FieldId": "f-004", "F1": 0.60, "Precision": 0.62, "Recall": 0.58, "Documents": 5}
+    ]
+  }
+}

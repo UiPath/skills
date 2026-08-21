@@ -1,0 +1,6 @@
+00:31:05 [INFO   ] [default/skill-bpmn-edit-add-node/00] orchestrator: API routing: aws_bedrock
+00:33:13 [INFO   ] [default/skill-bpmn-edit-add-node/00] evaluation.checker: Criterion 'run_command' FAILED (score=0.00, threshold=1.00): Command: python3 $TASK_DIR/check_add_node.py
+00:33:13 [INFO   ] [default/skill-bpmn-edit-add-node/00] orchestrator: Success criteria: 2/3 passed, weighted score: 0.333
+00:33:13 [INFO   ] [default/skill-bpmn-edit-add-node/00] orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+00:33:13 [INFO   ] [default/skill-bpmn-edit-add-node/00] orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-bpmn-edit-add-node
+00:33:13 [INFO   ] [default/skill-bpmn-edit-add-node/00] orchestrator: Task finished: status=FAILURE duration=138.7s score=0.333 iterations=1

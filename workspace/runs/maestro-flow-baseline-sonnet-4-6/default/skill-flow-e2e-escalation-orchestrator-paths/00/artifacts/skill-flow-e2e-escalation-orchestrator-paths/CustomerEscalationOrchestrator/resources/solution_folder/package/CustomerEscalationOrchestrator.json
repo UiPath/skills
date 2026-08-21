@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "CustomerEscalationOrchestrator",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "43a8d9c9-96e1-46bb-8ce2-ec163e7f8ceb",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "CustomerEscalationOrchestrator"
+    },
+    "locks": [],
+    "key": "476e6061-ccf1-44a6-ba30-a42652f2a4e8",
+    "files": []
+  }
+}

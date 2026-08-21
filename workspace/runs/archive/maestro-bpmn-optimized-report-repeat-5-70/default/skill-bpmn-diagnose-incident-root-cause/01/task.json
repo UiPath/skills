@@ -1,0 +1,1237 @@
+{
+  "task_id": "skill-bpmn-diagnose-incident-root-cause",
+  "task_description": "Diagnose coverage for the uipath-maestro-bpmn skill: given multiple incidents on one failed BPMN instance, the agent distinguishes the FIRST root fault from downstream cancellation noise using `incident get` and `incident summary`, and names the true faulting element. Read-only mocked CLI; no lifecycle mutations.\n",
+  "variant_id": "default",
+  "agent_type": "claude-code",
+  "model_used": "claude-sonnet-4-6",
+  "started_at": "2026-07-22T04:29:53.524539",
+  "completed_at": "2026-07-22T04:30:32.982943",
+  "duration_seconds": 39.458430767059326,
+  "final_status": "SUCCESS",
+  "max_turns_exhausted": false,
+  "weighted_score": 1.0,
+  "iteration_count": 1,
+  "success_criteria_results": [
+    {
+      "result_kind": "basic",
+      "criterion_type": "command_executed",
+      "description": "Agent listed the instance incidents with folder context",
+      "score": 1.0,
+      "details": "Matched 1/1 required commands (filters: tool_name=Bash, pattern=/(uip|\\$UIP)\\s+maestro\\s+bpmn\\s+instance\\s+incidents\\s+inst-triage-001\\b.*folder-public/)\nExamples: ['uip maestro bpmn instance incidents inst-triage-001 -f folder-public --output json 2>&1']",
+      "error": null,
+      "pass_threshold": 1.0
+    },
+    {
+      "result_kind": "basic",
+      "criterion_type": "command_executed",
+      "description": "Agent fetched the root incident detail",
+      "score": 1.0,
+      "details": "Matched 1/1 required commands (filters: tool_name=Bash, pattern=/(uip|\\$UIP)\\s+maestro\\s+bpmn\\s+incident\\s+get\\s+inc-root-001/)\nExamples: ['uip maestro bpmn incident get inc-root-001 --folder-key folder-public --output json 2>&1']",
+      "error": null,
+      "pass_threshold": 1.0
+    },
+    {
+      "result_kind": "basic",
+      "criterion_type": "command_executed",
+      "description": "Agent read the incident summary to confirm ordering",
+      "score": 1.0,
+      "details": "Matched 1/1 required commands (filters: tool_name=Bash, pattern=/(uip|\\$UIP)\\s+maestro\\s+bpmn\\s+incident\\s+summary/)\nExamples: ['uip maestro bpmn incident summary --output json 2>&1']",
+      "error": null,
+      "pass_threshold": 1.0
+    },
+    {
+      "result_kind": "basic",
+      "criterion_type": "file_contains",
+      "description": "Diagnosis names the true root fault and does not mislabel the downstream element as root cause",
+      "score": 1.0,
+      "details": "Includes: 2/2 found; Excludes: 1/1 absent; Score: 1.00",
+      "error": null,
+      "pass_threshold": 1.0
+    }
+  ],
+  "iterations": [
+    {
+      "iteration": 1,
+      "user_input": "Your working directory is: /work/output/artifacts/skill-bpmn-diagnose-incident-root-cause\n\nA UiPath Maestro BPMN instance failed with more than one incident. Diagnose it\nusing the mocked `uip` CLI already on PATH. Public-safe identifiers:\n- instance id: inst-triage-001\n- folder key: folder-public\n\nTwo incidents were raised. Exactly one is the ROOT fault; the other is\ndownstream noise caused by it. Read the incidents, use `incident get` on the\ncandidate root and `incident summary` to confirm ordering, then decide which\nelement is the true root cause.\n\nWrite your conclusion to diagnosis.md. Include these EXACT labeled lines:\n  ROOT_CAUSE_ELEMENT: <the element id of the true first/root fault>\n  ROOT_CAUSE_CATEGORY: <the incident category of that root fault>\nThen add a short prose explanation of why the other incident is downstream\nnoise, not the root cause.\n\nUse `uip maestro bpmn ...` reads with folder context; do not read `mocks/`,\n`fixtures/`, or any response JSON files directly. Do NOT retry, cancel,\nmigrate, move a cursor, debug, run, upload, publish, or deploy anything.\n",
+      "agent_output": "[ASSISTANT] Now I have the full plan. Execute in order:\n1. List incidents for the instance\n2. `incident get` on the candidate root\n3. `incident summary` to confirm ordering\n4. Write `diagnosis.md`\n[ASSISTANT] All diagnostic data is in hand. Now write `diagnosis.md`.\n[ASSISTANT] The diagnosis is complete. Here is a summary of what the investigation found:\n\n---\n\n## Diagnosis summary\n\n**Two incidents, one root fault.**\n\n| | Incident | Element | Category | Sequence |\n|---|---|---|---|---|\n| ✅ Root fault | `inc-root-001` | `ServiceTask_FetchInvoice` | `BindingResolution` | 1 (first) |\n| ❌ Noise | `inc-noise-002` | `ServiceTask_PostToLedger` | `UpstreamDependencyFailed` | 2 (downstream) |\n\n**Root cause:** `ServiceTask_FetchInvoice` failed with `BindingResolution` — its `invoiceSource` resource binding could not resolve at runtime, so the element never started. This is the self-originated, first-sequence fault confirmed by both `incident get` and `incident summary` (`firstFaultElementId`).\n\n**Why the other incident is noise:** `ServiceTask_PostToLedger` was cancelled purely as a consequence (`causedBy: inc-root-001`). The runtime's `UpstreamDependencyFailed` category is a propagation signal — it fires whenever a downstream element is cancelled because its predecessor never completed. There is no independent defect in `ServiceTask_PostToLedger`; fix the binding on `ServiceTask_FetchInvoice` and this incident disappears automatically.\n\n**Fix area:** BPMN source / CLI enrichment — re-run `registry get` with the correct `--connection-id` / `--object-name`, regenerate `bindings_v2.json`, and repackage. No lifecycle mutation is needed before the binding defect is resolved.\n[RESULT - SUCCESS] The diagnosis is complete. Here is a summary of what the investigation found:\n\n---\n\n## Diagnosis summary\n\n**Two incidents, one root fault.**\n\n| | Incident | Element | Category | Sequence |\n|---|---|---|---|---|\n| ✅ Root fault | `inc-root-001` | `ServiceTask_FetchInvoice` | `BindingResolution` | 1 (first) |\n| ❌ Noise | `inc-noise-002` | `ServiceTask_PostToLedger` | `UpstreamDependencyFailed` | 2 (downstream) |\n\n**Root cause:** `ServiceTask_FetchInvoice` failed with `BindingResolution` — its `invoiceSource` resource binding could not resolve at runtime, so the element never started. This is the self-originated, first-sequence fault confirmed by both `incident get` and `incident summary` (`firstFaultElementId`).\n\n**Why the other incident is noise:** `ServiceTask_PostToLedger` was cancelled purely as a consequence (`causedBy: inc-root-001`). The runtime's `UpstreamDependencyFailed` category is a propagation signal — it fires whenever a downstream element is cancelled because its predecessor never completed. There is no independent defect in `ServiceTask_PostToLedger`; fix the binding on `ServiceTask_FetchInvoice` and this incident disappears automatically.\n\n**Fix area:** BPMN source / CLI enrichment — re-run `registry get` with the correct `--connection-id` / `--object-name`, regenerate `bindings_v2.json`, and repackage. No lifecycle mutation is needed before the binding defect is resolved.",
+      "commands": [
+        {
+          "tool_name": "Skill",
+          "tool_id": "toolu_bdrk_015pWHHK36Siti9HzqVNL7vY",
+          "assistant_turn_index": 1,
+          "timestamp": "2026-07-22T04:29:58.069880",
+          "duration_ms": 11.563359992578626,
+          "generation_completed_at": "2026-07-22T04:29:58.069880",
+          "execution_started_at": "2026-07-22T04:29:58.070148",
+          "execution_completed_at": "2026-07-22T04:29:58.081711",
+          "parameters": {
+            "skill": "tmp:uipath-maestro-bpmn"
+          },
+          "result_status": "success",
+          "result_summary": "Launching skill: tmp:uipath-maestro-bpmn",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 0,
+          "result_tokens": 10
+        },
+        {
+          "tool_name": "Read",
+          "tool_id": "toolu_bdrk_01SrURaEMVpj5vLq3yFq9gfy",
+          "assistant_turn_index": 3,
+          "timestamp": "2026-07-22T04:30:01.896498",
+          "duration_ms": 8.633843041025102,
+          "generation_completed_at": "2026-07-22T04:30:01.896498",
+          "execution_started_at": "2026-07-22T04:30:01.896556",
+          "execution_completed_at": "2026-07-22T04:30:01.905190",
+          "parameters": {
+            "file_path": "/home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn/references/diagnose/CAPABILITY.md"
+          },
+          "result_status": "success",
+          "result_summary": "1\t# Diagnose - Investigate failed BPMN runs\n2\t\n3\tCapability index for post-run investigation.\n4\tDiagnose owns the diagnostic priority ladder for BPMN Process Orchestration runs: incidents, runtime variables,\n5\tdeployed BPMN asset correlation, element executions, cursors, generated package metadata, and traces.\n6\t\n7\t> **Where you came from / where to go next.** Diagnose is downstream of Operate (a debug or deployed run failed, hung,\n8\t> or behaved unexpectedly) and points back to Author for source fixes.\n9\t> Running and lifecycle live in [operate/CAPABILITY.md](../operate/CAPABILITY.md);\n10\t> source fixes live in [registry-workflow.md](../registry-workflow.md).\n11\t>\n12\t> **Inherits universal rules from [SKILL.md](../../SKILL.md).** BPMN source is model-authored; generated package files\n13\t> and Integration Service enrichment are CLI-owned.\n14\t> Use `uip maestro bpmn ... --output json` for diagnostic reads and redact private runtime data in summaries.\n15\t\n16\t## When to use this capability\n17\t\n18\t- Triage a failed debug or deployed process run.\n19\t- Read incidents and faulting element IDs.\n20\t- Inspect runtime variables and element executions.\n21\t- Fetch the deployed BPMN asset when local files may differ.\n22\t- Map runtime failures back to BPMN source and generated package metadata.\n23\t- Identify failures caused by unresolved Integration Service enrichment, bad bindings, missing diagrams, invalid mappings,\n24\t  or stale package files.\n25\t- Decide whether the safe next action is retry, cancel, migrate, cursor movement, re-authoring, package regeneration,\n26\t  or cloud configuration repair.\n27\t\n28\t## Critical rules\n29\t\n30\t1. **Investigate in priority order** - context, incidents, runtime variables, deployed BPMN asset,\n31\t   element executions/cursors, generated package files, then traces.\n32\t2. **Always include folder context on instance and incident reads** - `instance` commands require `--folder-key` or `-f`,\n33\t   and `incident get` requires `--folder-key`.\n34\t3. **Use the CLI as the diagnostic interface** - run `uip maestro bpmn ... --output json` reads. When mock or fixture\n35\t   files are present in a test harness, treat them as CLI backing data and do not read those files directly unless you\n36\t   are explicitly debugging the mock harness.\n37\t4. **Fetch deployed BPMN when local source may differ** - do not assume the working tree matches what ran.\n38\t5. **Map failures to BPMN element IDs** - use IDs to identify the source node, gateway, event, sequence flow,\n39\t   or extension that needs Author work.\n40\t6. **Separate runtime symptoms from ownership of the fix** - BPMN structure and mappings belong in Author;\n41\t   Integration Service enrichment and generated JSON come from CLI generation;\n42\t   folder/process/release choices belong to cloud configuration.\n43\t7. **Do not expose private runtime data** - redact tenant, user, connection, folder, URL, payload,\n44\t   and secret values in summaries.\n45\t8. **Do not mutate while diagnosing** - retry, cancel, migrate, and cursor movement are Operate actions and require\n46\t   explicit user consent after root cause analysis.\n47\t\n48\t## Workflow\n49\t\n50\t| Journey | Read |\n51\t| --- | --- |\n52\t| Triage a failed run | [references/troubleshooting-guide.md](references/troubleshooting-guide.md) |\n53\t| Recognize recurring failure patterns | [references/failure-modes.md](references/failure-modes.md) |\n54\t\n55\t## Common tasks\n56\t\n57\t| I need to... | Read these |\n58\t| --- | --- |\n59\t| Find the faulting element | [references/troubleshooting-guide.md](references/troubleshooting-guide.md) |\n60\t| Compare local and deployed BPMN | [references/troubleshooting-guide.md](references/troubleshooting-guide.md) |\n61\t| Inspect runtime variables, cursors, or element executions | [references/troubleshooting-guide.md](references/troubleshooting-guide.md) |\n62\t| Diagnose binding or generated JSON issues | [failure modes](references/failure-modes.md), [project layout](../shared/project-layout.md) |\n63\t| Diagnose Integration Service runtime issues | [failure modes](references/failure-modes.md) |\n64\t| Decide whether retry is safe | [troubleshooting guide](references/troubleshooting-guide.md), [manage guide](../operate/references/manage.md) |\n65\t| Fix the source | [registry-workflow.md](../registry-workflow.md) |\n66\t\n67\tFor Integration Service enrichment details, read\n68\t[registry-workflow.md](../registry-workflow.md).\n69\t\n70\t## Anti-patterns\n71\t\n72\t- **Never start with verbose traces when incidents are available.**\n73\t- **Never call runtime lifecycle commands while diagnosing.** Diagnose reads; Operate mutates after explicit consent.\n74\t- **Never assume local BPMN is the deployed asset.**\n75\t- **Never retry before root cause is known.**\n76\t- **Never paste private incident payloads or connection details into docs, commits, or issue comments.**\n77\t- **Never patch generated package files as the only fix for a BPMN source defect.**\n78\t\n79\t## References\n80\t\n81\t### Diagnose-scoped\n82\t\n83\t- [troubleshooting-guide.md](references/troubleshooting-guide.md) - diagnostic priority ladder\n84\t- [failure-modes.md](references/failure-modes.md) - recurring failure patterns\n85\t\n86\t### Cross-capability\n87\t\n88\t- [shared/bpmn-xml-contract.md](../structural-bpmn.md) - XML authoring and validation boundaries\n89\t- [shared/project-layout.md](../shared/project-layout.md) - generated files and package shape\n90\t- [shared/variables-bindings-expressions.md](../expression-authoring.md) - mappings and binding expressions\n91\t- [shared/public-safety.md](../public-safety.md) - redaction and sanitization\n92\t",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 1,
+          "result_tokens": 1396
+        },
+        {
+          "tool_name": "Read",
+          "tool_id": "toolu_bdrk_01RMtnjMweEiGdKMZFkZ4wKK",
+          "assistant_turn_index": 4,
+          "timestamp": "2026-07-22T04:30:03.341885",
+          "duration_ms": 5.899996031075716,
+          "generation_completed_at": "2026-07-22T04:30:03.341885",
+          "execution_started_at": "2026-07-22T04:30:03.342145",
+          "execution_completed_at": "2026-07-22T04:30:03.348045",
+          "parameters": {
+            "file_path": "/home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn/references/diagnose/references/troubleshooting-guide.md"
+          },
+          "result_status": "success",
+          "result_summary": "1\t# Troubleshooting Guide\n2\t\n3\tUse this priority ladder for failed or misbehaving BPMN runs.\n4\t\n5\t> **Read-only boundary:** this guide diagnoses.\n6\t> Retry, cancel, migrate, and cursor movement are Operate actions and require explicit user consent after root cause is known.\n7\t>\n8\t> **Folder context:** `uip maestro bpmn instance ...` commands require `--folder-key <FOLDER_KEY>` or\n9\t> `-f <FOLDER_KEY>`.\n10\t> `uip maestro bpmn incident get` requires `--folder-key <FOLDER_KEY>`.\n11\t\n12\t## Step 1 - Confirm context\n13\t\n14\tCollect public-safe identifiers:\n15\t\n16\t- Process or package name.\n17\t- Instance/job ID.\n18\t- Folder/context label.\n19\t- Approximate run time.\n20\t- Local commit or package version, if known.\n21\t- Whether the run came from `uip maestro bpmn debug` or `uip maestro bpmn process run`.\n22\t\n23\tDo not record secrets, tenant URLs, connection IDs, or payload data in public notes.\n24\t\n25\tIf you only have a deployed-process job key, start with:\n26\t\n27\t```bash\n28\tuip maestro bpmn job status <JOB_KEY> --folder-key <FOLDER_KEY> --output json\n29\t```\n30\t\n31\tParse the instance ID, folder context, process key, final status, and any trace/run identifiers from the JSON output.\n32\tFor debug runs, prefer the `instanceId` returned by\n33\t`uip maestro bpmn debug` and inspect it with `debug-instance` commands. Keep\n34\tdeployed-instance status reads and debug-session inspection separate.\n35\t\n36\t## Step 2 - Read incidents\n37\t\n38\tFind the incident category, message, and faulting BPMN element ID.\n39\tIf multiple incidents exist, start with the first root fault and avoid chasing downstream cancellation noise.\n40\t\n41\t```bash\n42\tuip maestro bpmn instance incidents <INSTANCE_ID> -f <FOLDER_KEY> --output json\n43\tuip maestro bpmn incident get <INCIDENT_ID> --folder-key <FOLDER_KEY> --output json\n44\tuip maestro bpmn incident summary --output json\n45\t```\n46\t\n47\tFor process-level incident overview:\n48\t\n49\t```bash\n50\tuip maestro bpmn processes incidents <PROCESS_KEY> --output json\n51\t```\n52\t\n53\t## Step 3 - Inspect runtime variables\n54\t\n55\tInspect variables around the faulting element.\n56\tRedact private payloads.\n57\tCheck whether expected outputs were missing, malformed, or literal strings instead of evaluated expressions.\n58\tIf the user reports a behavioral mismatch, inspect variables even when the final\n59\trun status is `Completed`; a completed run only proves control-flow completion,\n60\tnot semantic correctness.\n61\t\n62\t```bash\n63\tuip maestro bpmn instance variables <INSTANCE_ID> -f <FOLDER_KEY> --output json\n64\tuip maestro bpmn instance variables <INSTANCE_ID> -f <FOLDER_KEY> --parent-element-id <ELEMENT_ID> --output json\n65\t```\n66\t\n67\tFor affected elements, confirm runtime inputs and outputs match the modeled\n68\tcontract before changing source.\n69\t\n70\t## Step 4 - Correlate deployed BPMN\n71\t\n72\tFetch the deployed BPMN asset when local source may differ. Compare:\n73\t\n74\t- Faulting element ID.\n75\t- Root variables and mappings.\n76\t- Binding expressions.\n77\t- Integration Service extension content.\n78\t- Diagram and sequence-flow structure when the failure is import or package related.\n79\t\n80\t```bash\n81\tuip maestro bpmn instance asset <INSTANCE_ID> -f <FOLDER_KEY> --output json\n82\t```\n83\t\n84\tUse the incident's faulting element ID to locate the BPMN element in the deployed asset first, then compare to local\n85\t`.bpmn`.\n86\tIf they differ, diagnose what actually ran and treat local edits as a future fix, not as the executed definition.\n87\t\n88\t## Step 5 - Inspect element executions and cursors\n89\t\n90\tElement executions and cursors show where the runtime moved before it faulted or hung:\n91\t\n92\t```bash\n93\tuip maestro bpmn instance element-executions <INSTANCE_ID> -f <FOLDER_KEY> --output json\n94\tuip maestro bpmn instance cursors <INSTANCE_ID> -f <FOLDER_KEY> --output json\n95\t```\n96\t\n97\tUse these to distinguish a modeling problem from a runtime-state problem:\n98\t\n99\t- Activity fault: inspect the activity's inputs, mappings, extension payload, and upstream variables.\n100\t- Gateway stall: inspect outgoing sequence-flow conditions, default flow, and variable values.\n101\t- Event wait: inspect message/timer configuration, subscriptions, and whether the expected external signal exists.\n102\t- Subprocess or call activity fault: identify the child dependency, but do not invoke sibling skills automatically.\n103\t\n104\t## Step 6 - Check generated package files\n105\t\n106\tIf the failure is binding, entry point, package, or runtime metadata related, inspect generated JSON:\n107\t\n108\t- `bindings_v2.json`\n109\t- `entry-points.json`\n110\t- `operate.json`\n111\t- `package-descriptor.json`\n112\t\n113\tGenerated-file mismatch usually means Author should fix BPMN or rerun CLI generation/enrichment.\n114\t\n115\tCorrelate package files to the deployed BPMN:\n116\t\n117\t- `entry-points.json` should reference the intended BPMN file and start event.\n118\t- `bindings_v2.json` should contain generated resources required by executable resource and connector elements.\n119\t- `operate.json` should identify the intended main file/runtime metadata.\n120\t- `package-descriptor.json` should include BPMN and generated JSON files under `content/`.\n121\t\n122\t## Step 7 - Pull traces last\n123\t\n124\tUse verbose traces only when incidents, variables, deployed asset, and package files do not explain the issue.\n125\t\n126\t```bash\n127\tuip maestro bpmn job traces <JOB_KEY> --output json\n128\t```\n129\t\n130\t## Output\n131\t\n132\tReturn a concise diagnosis:\n133\t\n134\t- Faulting element ID.\n135\t- User-visible symptom.\n136\t- Likely root cause.\n137\t- Whether the fix belongs in BPMN source, CLI enrichment, generated package files, or cloud configuration.\n138\t- Safe next action.\n139\t\n140\t## CLI command reference\n141\t\n142\t```bash\n143\tuip maestro bpmn job status <JOB_KEY> --output json\n144\tuip maestro bpmn job traces <JOB_KEY> --output json\n145\tuip maestro bpmn instance get <INSTANCE_ID> -f <FOLDER_KEY> --output json\n146\tuip maestro bpmn instance incidents <INSTANCE_ID> -f <FOLDER_KEY> --output json\n147\tuip maestro bpmn instance variables <INSTANCE_ID> -f <FOLDER_KEY> --output json\n148\tuip maestro bpmn instance variables <INSTANCE_ID> -f <FOLDER_KEY> --parent-element-id <ELEMENT_ID> --output json\n149\tuip maestro bpmn instance asset <INSTANCE_ID> -f <FOLDER_KEY> --output json\n150\tuip maestro bpmn instance element-executions <INSTANCE_ID> -f <FOLDER_KEY> --output json\n151\tuip maestro bpmn instance cursors <INSTANCE_ID> -f <FOLDER_KEY> --output json\n152\tuip maestro bpmn incident get <INCIDENT_ID> --folder-key <FOLDER_KEY> --output json\n153\tuip maestro bpmn incident summary --output json\n154\tuip maestro bpmn processes incidents <PROCESS_KEY> --output json\n155\t```\n156\t\n157\tLifecycle commands are intentionally absent from this diagnostic command list.\n158\tUse [operate/references/manage.md](../../operate/references/manage.md) only after the diagnosis supports a\n159\tside-effecting action and the user consents.\n160\t",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 2,
+          "result_tokens": 1729
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_015Q9VymepLaNZ1yaSMr3YpJ",
+          "assistant_turn_index": 7,
+          "timestamp": "2026-07-22T04:30:08.056338",
+          "duration_ms": 189.13355597760528,
+          "generation_completed_at": "2026-07-22T04:30:08.056338",
+          "execution_started_at": "2026-07-22T04:30:08.056406",
+          "execution_completed_at": "2026-07-22T04:30:08.245540",
+          "parameters": {
+            "command": "uip maestro bpmn instance incidents inst-triage-001 -f folder-public --output json 2>&1",
+            "description": "List all incidents for the failed instance"
+          },
+          "result_status": "success",
+          "result_summary": "[\n  {\n    \"id\": \"inc-root-001\",\n    \"instanceId\": \"inst-triage-001\",\n    \"elementId\": \"ServiceTask_FetchInvoice\",\n    \"category\": \"BindingResolution\",\n    \"message\": \"Resource binding failed to resolve; the element could not start.\",\n    \"occurredAt\": \"2026-05-01T12:00:03Z\",\n    \"sequence\": 1\n  },\n  {\n    \"id\": \"inc-noise-002\",\n    \"instanceId\": \"inst-triage-001\",\n    \"elementId\": \"ServiceTask_PostToLedger\",\n    \"category\": \"UpstreamDependencyFailed\",\n    \"message\": \"Element was cancelled because an upstream element (inc-root-001) never completed.\",\n    \"occurredAt\": \"2026-05-01T12:00:07Z\",\n    \"sequence\": 2,\n    \"causedBy\": \"inc-root-001\"\n  }\n]",
+          "error_message": null,
+          "result_data": [
+            {
+              "id": "inc-root-001",
+              "instanceId": "inst-triage-001",
+              "elementId": "ServiceTask_FetchInvoice",
+              "category": "BindingResolution",
+              "message": "Resource binding failed to resolve; the element could not start.",
+              "occurredAt": "2026-05-01T12:00:03Z",
+              "sequence": 1
+            },
+            {
+              "id": "inc-noise-002",
+              "instanceId": "inst-triage-001",
+              "elementId": "ServiceTask_PostToLedger",
+              "category": "UpstreamDependencyFailed",
+              "message": "Element was cancelled because an upstream element (inc-root-001) never completed.",
+              "occurredAt": "2026-05-01T12:00:07Z",
+              "sequence": 2,
+              "causedBy": "inc-root-001"
+            }
+          ],
+          "sequence_number": 3,
+          "result_tokens": 164
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_01W5bagyyEPWceSAwu672Cie",
+          "assistant_turn_index": 8,
+          "timestamp": "2026-07-22T04:30:09.914729",
+          "duration_ms": 701.8504700390622,
+          "generation_completed_at": "2026-07-22T04:30:09.914729",
+          "execution_started_at": "2026-07-22T04:30:09.914968",
+          "execution_completed_at": "2026-07-22T04:30:10.616818",
+          "parameters": {
+            "command": "uip maestro bpmn incident get inc-root-001 --folder-key folder-public --output json 2>&1",
+            "description": "Get full details of the candidate root incident"
+          },
+          "result_status": "success",
+          "result_summary": "{\n  \"id\": \"inc-root-001\",\n  \"instanceId\": \"inst-triage-001\",\n  \"elementId\": \"ServiceTask_FetchInvoice\",\n  \"category\": \"BindingResolution\",\n  \"message\": \"Resource binding failed to resolve; the element could not start.\",\n  \"occurredAt\": \"2026-05-01T12:00:03Z\",\n  \"safeDetails\": {\n    \"bindingName\": \"invoiceSource\",\n    \"redacted\": true\n  }\n}",
+          "error_message": null,
+          "result_data": {
+            "id": "inc-root-001",
+            "instanceId": "inst-triage-001",
+            "elementId": "ServiceTask_FetchInvoice",
+            "category": "BindingResolution",
+            "message": "Resource binding failed to resolve; the element could not start.",
+            "occurredAt": "2026-05-01T12:00:03Z",
+            "safeDetails": {
+              "bindingName": "invoiceSource",
+              "redacted": true
+            }
+          },
+          "sequence_number": 4,
+          "result_tokens": 86
+        },
+        {
+          "tool_name": "Bash",
+          "tool_id": "toolu_bdrk_01RwDhGUt7d75rgdELSB6gUq",
+          "assistant_turn_index": 9,
+          "timestamp": "2026-07-22T04:30:10.443926",
+          "duration_ms": 335.17177996691316,
+          "generation_completed_at": "2026-07-22T04:30:10.443926",
+          "execution_started_at": "2026-07-22T04:30:10.443991",
+          "execution_completed_at": "2026-07-22T04:30:10.779163",
+          "parameters": {
+            "command": "uip maestro bpmn incident summary --output json 2>&1",
+            "description": "Get incident summary to confirm ordering"
+          },
+          "result_status": "success",
+          "result_summary": "{\n  \"instanceId\": \"inst-triage-001\",\n  \"total\": 2,\n  \"firstFaultElementId\": \"ServiceTask_FetchInvoice\",\n  \"firstFaultCategory\": \"BindingResolution\",\n  \"byCategory\": [\n    { \"category\": \"BindingResolution\", \"count\": 1, \"earliestSequence\": 1 },\n    { \"category\": \"UpstreamDependencyFailed\", \"count\": 1, \"earliestSequence\": 2 }\n  ],\n  \"note\": \"UpstreamDependencyFailed incidents are downstream consequences of the first fault.\"\n}",
+          "error_message": null,
+          "result_data": {
+            "instanceId": "inst-triage-001",
+            "total": 2,
+            "firstFaultElementId": "ServiceTask_FetchInvoice",
+            "firstFaultCategory": "BindingResolution",
+            "byCategory": [
+              {
+                "category": "BindingResolution",
+                "count": 1,
+                "earliestSequence": 1
+              },
+              {
+                "category": "UpstreamDependencyFailed",
+                "count": 1,
+                "earliestSequence": 2
+              }
+            ],
+            "note": "UpstreamDependencyFailed incidents are downstream consequences of the first fault."
+          },
+          "sequence_number": 5,
+          "result_tokens": 107
+        },
+        {
+          "tool_name": "Write",
+          "tool_id": "toolu_bdrk_01VhvXXxMH1SfqL1AcqET5f6",
+          "assistant_turn_index": 12,
+          "timestamp": "2026-07-22T04:30:26.158309",
+          "duration_ms": 30.716344015672803,
+          "generation_completed_at": "2026-07-22T04:30:26.158309",
+          "execution_started_at": "2026-07-22T04:30:26.158375",
+          "execution_completed_at": "2026-07-22T04:30:26.189091",
+          "parameters": {
+            "file_path": "/work/output/artifacts/skill-bpmn-diagnose-incident-root-cause/diagnosis.md",
+            "content": "ROOT_CAUSE_ELEMENT: ServiceTask_FetchInvoice\nROOT_CAUSE_CATEGORY: BindingResolution\n\n## Diagnosis\n\n### Root fault — `ServiceTask_FetchInvoice` (BindingResolution)\n\nIncident `inc-root-001` fired at sequence 1 (2026-05-01T12:00:03Z).  The element\n`ServiceTask_FetchInvoice` could not start because its resource binding\n(`invoiceSource`) failed to resolve at runtime.  This is the first and only\nself-originated fault in the instance: no upstream element triggered it; it\nfailed on its own missing/invalid binding configuration.\n\n`uip maestro bpmn incident get inc-root-001` and `incident summary` both confirm\nthis element as `firstFaultElementId` with the earliest sequence number (1) and\ncategory `BindingResolution`.\n\n### Downstream noise — `ServiceTask_PostToLedger` (UpstreamDependencyFailed)\n\nIncident `inc-noise-002` fired at sequence 2 (2026-05-01T12:00:07Z), four\nseconds after the root fault.  Its message explicitly states: *\"Element was\ncancelled because an upstream element (inc-root-001) never completed.\"*  The\n`causedBy` field references `inc-root-001` directly.\n\n`UpstreamDependencyFailed` is a propagation category: the runtime cancelled\n`ServiceTask_PostToLedger` solely because its data-flow or control-flow\npredecessor (`ServiceTask_FetchInvoice`) never produced output.  There is no\nindependent defect in `ServiceTask_PostToLedger`; if the binding on\n`ServiceTask_FetchInvoice` is fixed, this downstream cancellation disappears\nautomatically.  Treating `inc-noise-002` as a root cause would be incorrect and\nwould lead to investigating an element that has nothing wrong with it.\n\n### Recommended fix area\n\nThe fix belongs in **BPMN source / CLI enrichment**: the `invoiceSource` binding\nin `ServiceTask_FetchInvoice` needs a valid Integration Service connection ID\nand resource enrichment (re-run `uip maestro bpmn registry get` with\n`--connection-id` / `--object-name`, regenerate `bindings_v2.json`, and\nrepackage).  No lifecycle action should be taken until the binding defect is\nresolved.\n"
+          },
+          "result_status": "success",
+          "result_summary": "File created successfully at: /work/output/artifacts/skill-bpmn-diagnose-incident-root-cause/diagnosis.md (file state is current in your context — no need to Read it back)",
+          "error_message": null,
+          "result_data": null,
+          "sequence_number": 6,
+          "result_tokens": 43
+        }
+      ],
+      "timestamp": "2026-07-22T04:30:32.810379",
+      "duration_seconds": 37.76392947300337,
+      "token_usage": {
+        "uncached_input_tokens": 593,
+        "output_tokens": 2190,
+        "cache_creation_input_tokens": 11502,
+        "cache_read_input_tokens": 178870,
+        "total_cost_usd": 0.1314225,
+        "input_tokens": 190965
+      },
+      "model_used": "claude-sonnet-4-6",
+      "assistant_turn_count": 14,
+      "messages": [
+        {
+          "role": "assistant",
+          "started_at": "2026-07-22T04:29:55.045850",
+          "completed_at": "2026-07-22T04:29:57.702140",
+          "generation_duration_ms": 2656.3116419129074,
+          "content_blocks": [
+            {
+              "block_type": "thinking",
+              "sequence": 0,
+              "text": null,
+              "thinking": "The user wants me to diagnose a UiPath Maestro BPMN instance failure using the `uip` CLI. Let me use the UiPath Maestro BPMN skill to help with this task.\n\nLet me start by invoking the skill and then using the CLI to diagnose the incident.",
+              "signature": "EroDCmcIEBABGAIqQEF38TLrdjFn/oOo+uWku1MxgYdVQqr2N+WGUuFaelG8cPOi6P7oHUA0HdgmUxceW1sLcQUDk3WFEMDpdwV/iR8yEWNsYXVkZS1zb25uZXQtNC02OABCCHRoaW5raW5nEgxcvnGpB3GGX/WIEvYaDCSuMkqpLGYk/1A8FyIwX2kpgLYONAtR1HUMUq1L//xf8W4vDs1dpbfnsFr1qYWMh2dmgYpXkLDy8utW4k6RKoACKWzziqfjrNlCLE3oHRWYxUjfMqVn+9NJSjbb++uPPRXgIC/b7VwZBkc1HTQlBkUj3UQabkiah74X5njMumczkLObDYQPuk6wXwloHU4wHvC0PmdYTDAf/+SM5CdAaEYb89x99TCK1kN0uwaD0HZsQbNYf9NE7gYJfT2PnJ/Vc2IWHsV1uk8AvnU/KOA4ozO2AifB8N2Us7MNxCeLDR5iyoGcC9iCsyEGX5CKEDB74VVVAYOadpTj/mTFzAAOTJFX81q7Yluxu0B0DtkafV9hFjCJXCg7oZN7rPRdCsg1Prnl6EXIq8W8v+gVXKhUSSfPphKdl7EnHdQXv+XoP4DKkRgB",
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 2,
+          "output_tokens": 125,
+          "cache_creation_tokens": 1796,
+          "cache_read_tokens": 18954,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01AKSMkKzJJX6ZgeM6FMgB83",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-22T04:29:57.702140",
+          "completed_at": "2026-07-22T04:29:58.069880",
+          "generation_duration_ms": 367.7394170081243,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_015pWHHK36Siti9HzqVNL7vY",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_015pWHHK36Siti9HzqVNL7vY"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 22,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01AKSMkKzJJX6ZgeM6FMgB83",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-22T04:29:58.082376",
+          "completed_at": "2026-07-22T04:30:00.090251",
+          "generation_duration_ms": 2007.8745819628239,
+          "content_blocks": [
+            {
+              "block_type": "thinking",
+              "sequence": 0,
+              "text": null,
+              "thinking": "Let me start by reading the SKILL.md and the diagnose capability reference to understand what tools are available for diagnosing incidents.",
+              "signature": "EtYCCmcIEBABGAIqQAicsI7gq9OMmJ1suMPkCsbkCKzPGuRwFBjbCyeKr6LgCSloK05XNKCyvVZEn13IzM8cIy29dtc4VvtpZsvzpnwyEWNsYXVkZS1zb25uZXQtNC02OABCCHRoaW5raW5nEgypGApCgI4QhUxdf0oaDMj/boClCFpiMxrCUSIwigYBCwbMgeWWgVHnsEo+SYCV4fBDQkqHNNZc/pfPfaM/V7GFeqi94zSd7E5zXG+EKpwBQpAR4aL806UNhVRW3fNgUR5N3clNqlX78DvNG1rRQwcFZx51R4IyAd61Sz3ktpcjVnCCD4oRb4bDZEa+g2je+RgAjYZtcwAJBfpp7u2kSrOcwuP4WMQyAfAwoojHRikMbUrjKOue1qD8as+IHtUYGzrZhdhbdB0Y6zBjl/J3GhkXoP6ADEJfcPQV8Q81RglB0ETi9a0r/bo04CqEGAE=",
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 2,
+          "output_tokens": 71,
+          "cache_creation_tokens": 4131,
+          "cache_read_tokens": 20750,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01RRYZs6E7ug7pjV44r3aKcQ",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-22T04:30:00.090251",
+          "completed_at": "2026-07-22T04:30:01.896498",
+          "generation_duration_ms": 1806.2476019840688,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01SrURaEMVpj5vLq3yFq9gfy",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01SrURaEMVpj5vLq3yFq9gfy"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 59,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01RRYZs6E7ug7pjV44r3aKcQ",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-22T04:30:01.905148",
+          "completed_at": "2026-07-22T04:30:03.341885",
+          "generation_duration_ms": 1436.7366989608854,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01RMtnjMweEiGdKMZFkZ4wKK",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01RMtnjMweEiGdKMZFkZ4wKK"
+          ],
+          "input_tokens": 1,
+          "output_tokens": 93,
+          "cache_creation_tokens": 1684,
+          "cache_read_tokens": 24881,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01BMpouQTaXWNjgs8eR897LK",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-22T04:30:03.348014",
+          "completed_at": "2026-07-22T04:30:06.233245",
+          "generation_duration_ms": 2885.22983295843,
+          "content_blocks": [
+            {
+              "block_type": "thinking",
+              "sequence": 0,
+              "text": null,
+              "thinking": "Now I understand the diagnostic workflow. Let me plan the steps:\n\n1. List incidents for the instance: `uip maestro bpmn instance incidents inst-triage-001 -f folder-public --output json`\n2. Get details on the candidate root incident: `uip maestro bpmn incident get <INCIDENT_ID> --folder-key folder-public --output json`\n3. Get incident summary: `uip maestro bpmn incident summary --output json`\n\nLet me start with step 1 - listing all incidents for the instance.",
+              "signature": "EpoFCmcIEBABGAIqQDUCU3IgAXGLDR0Uz+9FZerPsuxvsCph+4gGXuEELhtSzlYA7pJb4rgcreIHDv13GzijJ7IeYFW2ZUIGTuZZWbQyEWNsYXVkZS1zb25uZXQtNC02OABCCHRoaW5raW5nEgwJZ6rmNs93KicwSK0aDL1I4YTSudU+PaLrMSIwZwKpyEtOu8QtVqSfd4aTTue1FH8z1yE21gN5pjl6XxkMy1gcTYQpBCasdPdWAI1MKuADvQi4/dqSFREZCm9ZdBMKFYpMpy7/YCziRn002FHepVGGso91I5WsYW59pBvwC1hvaHBgx51QeCLD25f2c2sY3xOewGBYF2yc51ugIouSYihavlwfXmIHK04GwsBz7mRWsW4Yp2q1ZrZ2pA7DMD00SXhAXQYaFK/crrFy6GDffDgdqsN5BfQSEvvqsvYAiu1VfptgoF1i29efuYlAsgYJYqJd4yeZz7s+NcdLB+CavCh8YWs4l37PhIB9062x8JZIFnFRROUueaoA83i5a2K86OCWpG9m74p0xoYH9xh5r34QKWbInHrh4EhDPCMJLKUcjODWwwiwZ+cWawovR9sHzK5NnFdR87HHrkIZWChuLZiDXqRsEH0XHj5Ks5b0eUaJ71Vslrf+v61HgWEeKROVOAPdsriqxBVYT1LdECwaFWZiM1shq3aCXXCfCUpbEnxZAFrSTS7wBRmYHUIDsQ3/raZB9LLCCD/c5e6PA5flWsucbCLqKnNSwXp4prKAByPv1Dtv0au/YVov4K44wsm0Bxqqtd/mcP17jwhCZd1dQSnVR501wJnwHfc0n8ufeelOUIu+O1ggbJDz/skpEX09NJR/kpUuLDDGT0JsyleRnLUXYWIP/zskeEfKeyrqF3QkGAE=",
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 1,
+          "output_tokens": 165,
+          "cache_creation_tokens": 2234,
+          "cache_read_tokens": 26565,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_017TrjpDe2GCujL15L5QHCDw",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-22T04:30:06.233245",
+          "completed_at": "2026-07-22T04:30:07.375856",
+          "generation_duration_ms": 1142.611879040487,
+          "content_blocks": [
+            {
+              "block_type": "text",
+              "sequence": 0,
+              "text": "Now I have the full plan. Execute in order:\n1. List incidents for the instance\n2. `incident get` on the candidate root\n3. `incident summary` to confirm ordering\n4. Write `diagnosis.md`",
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 0,
+          "output_tokens": 66,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_017TrjpDe2GCujL15L5QHCDw",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-22T04:30:07.375856",
+          "completed_at": "2026-07-22T04:30:08.056338",
+          "generation_duration_ms": 680.4821490077302,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_015Q9VymepLaNZ1yaSMr3YpJ",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_015Q9VymepLaNZ1yaSMr3YpJ"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 60,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_017TrjpDe2GCujL15L5QHCDw",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-22T04:30:08.245486",
+          "completed_at": "2026-07-22T04:30:09.914729",
+          "generation_duration_ms": 1669.2437219899148,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01W5bagyyEPWceSAwu672Cie",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01W5bagyyEPWceSAwu672Cie"
+          ],
+          "input_tokens": 1,
+          "output_tokens": 100,
+          "cache_creation_tokens": 404,
+          "cache_read_tokens": 28799,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01Kww1LTnR75Na6D9WPuMwLV",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-22T04:30:09.914729",
+          "completed_at": "2026-07-22T04:30:10.443926",
+          "generation_duration_ms": 529.1961589828134,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01RwDhGUt7d75rgdELSB6gUq",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01RwDhGUt7d75rgdELSB6gUq"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 76,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01Kww1LTnR75Na6D9WPuMwLV",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-22T04:30:10.779113",
+          "completed_at": "2026-07-22T04:30:15.460716",
+          "generation_duration_ms": 4681.602798053063,
+          "content_blocks": [
+            {
+              "block_type": "thinking",
+              "sequence": 0,
+              "text": null,
+              "thinking": "I now have all the information needed to write the diagnosis.md file.\n\nRoot cause:\n- Element: `ServiceTask_FetchInvoice`\n- Category: `BindingResolution`\n- Incident ID: `inc-root-001`\n- Sequence: 1\n- Occurred at: `2026-05-01T12:00:03Z`\n\nDownstream noise:\n- Element: `ServiceTask_PostToLedger`\n- Category: `UpstreamDependencyFailed`\n- Incident ID: `inc-noise-002`\n- Sequence: 2\n- Occurred at: `2026-05-01T12:00:07Z`\n- Caused by: `inc-root-001`\n\nThe summary confirms that `ServiceTask_FetchInvoice` with `BindingResolution` is the first fault at sequence 1, and the `UpstreamDependencyFailed` incident is a downstream consequence. Now I'll write the diagnosis.md file.",
+              "signature": "EuoGCmcIEBABGAIqQFwJkS5gSRwA0wQ2QtLI+u03P19YTPFp9A6+j7WM+ZedgfwTUm4DWcXwWqvEOh5VmsBikEGczyt6JFn0fprTXZEyEWNsYXVkZS1zb25uZXQtNC02OABCCHRoaW5raW5nEgwOj+xEJWJb6eEJYFQaDMDRUGxCeYBuUCFv0SIw0GD8M+jqQ6J+r+0RBkPlZeg56Yo1crU+pVpVCoYBU+vr+HlR3aK982hWXsmwnxATKrAFI3Qomfdv6tGFxnPhfDMZ22ZylDLE4nbb5jZ0FtOFxEq8znVo0iNI99rO+6XcOFtuJJ9x9DL+J1OacT3NEyYiQHR7qyvU72fyQ9bTNUcbBFERtnaStOaqp9xm3U8Z1I1nCKs4AWNF/eXvDpek8EhuIh9a/QfwjYDVHPAqxj+4M3hvnj3JVO/5N5eRa6rAxwPXnfi5GnXwNmPlk/SWxgFfH0KrbSIDeF3yQdgT7J16Ez1hGhgnQ78ihACV6dPjh6hQvhZ8NO4ciOz+QFxfeyluWDLhDaCy5lVIMUuLyPhSlYdV044HWdE/mRYnhEvvWk25jnNVrsXWnEruB64ZINMGwuq9OpRClovVb8L5WDlrn9npue4T3sd8YLopKnSOPO3cT8omXaOXbm8vLHqc9ZiwExXq3f+CwOXoP6WzFxLU569mmBsHqKoul086sBN/eFt3le6Ecg8SV08swLLGP5QBf+7UvxAy0SYGleHKqxxCUR7oTLH1kmGKHKRaR4vOHjc+dkY46dcYGiqWzr1Mgq+JTyFoGaDF1MkIBwDXIPFj6fT3jD1OjcEUBafRViQA+2SUB7a7hi13TQlwZRfLKNlm/QIo9Kevw13EgUaCWGGnsgANTmCmabChQhsJEgGeTQ7y5eELOXADn/2H5KFOv/GI09qfNIqTiP2tt1snbhKtpZ4A26MX46+yfhYoj0+2h5zSTU020V4Z2jl7YTkOrTG9h9ar2GvyPXIIx3IjpKl+ZBnwZcmT6Hep2P5rJXogEmvNxfrE/JQrByLvsfpldSc0+oEZinJ2ljj/1CFTqk5OJXMBgxyx09MZFDP6xgdUrR7qw/XQaSUmAkq+b206AoZjHo/STA4o4GRYw2Dk1eHNwt5aN9h0o7BDy1z9B9lFspZPNeDTA6a0GE7fiCvXI8m5WRgB",
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 1,
+          "output_tokens": 214,
+          "cache_creation_tokens": 515,
+          "cache_read_tokens": 29203,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01AxoMz6WyaBnS1NkjKhfb6v",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-22T04:30:15.460716",
+          "completed_at": "2026-07-22T04:30:15.466449",
+          "generation_duration_ms": 5.734039004892111,
+          "content_blocks": [
+            {
+              "block_type": "text",
+              "sequence": 0,
+              "text": "All diagnostic data is in hand. Now write `diagnosis.md`.",
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 0,
+          "output_tokens": 18,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01AxoMz6WyaBnS1NkjKhfb6v",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-22T04:30:15.466449",
+          "completed_at": "2026-07-22T04:30:26.158309",
+          "generation_duration_ms": 10691.859724000096,
+          "content_blocks": [
+            {
+              "block_type": "tool_use",
+              "sequence": 0,
+              "text": null,
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": "toolu_bdrk_01VhvXXxMH1SfqL1AcqET5f6",
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [
+            "toolu_bdrk_01VhvXXxMH1SfqL1AcqET5f6"
+          ],
+          "input_tokens": 0,
+          "output_tokens": 700,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_01AxoMz6WyaBnS1NkjKhfb6v",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "assistant",
+          "started_at": "2026-07-22T04:30:26.189056",
+          "completed_at": "2026-07-22T04:30:32.782362",
+          "generation_duration_ms": 6593.30679802224,
+          "content_blocks": [
+            {
+              "block_type": "text",
+              "sequence": 0,
+              "text": "The diagnosis is complete. Here is a summary of what the investigation found:\n\n---\n\n## Diagnosis summary\n\n**Two incidents, one root fault.**\n\n| | Incident | Element | Category | Sequence |\n|---|---|---|---|---|\n| ✅ Root fault | `inc-root-001` | `ServiceTask_FetchInvoice` | `BindingResolution` | 1 (first) |\n| ❌ Noise | `inc-noise-002` | `ServiceTask_PostToLedger` | `UpstreamDependencyFailed` | 2 (downstream) |\n\n**Root cause:** `ServiceTask_FetchInvoice` failed with `BindingResolution` — its `invoiceSource` resource binding could not resolve at runtime, so the element never started. This is the self-originated, first-sequence fault confirmed by both `incident get` and `incident summary` (`firstFaultElementId`).\n\n**Why the other incident is noise:** `ServiceTask_PostToLedger` was cancelled purely as a consequence (`causedBy: inc-root-001`). The runtime's `UpstreamDependencyFailed` category is a propagation signal — it fires whenever a downstream element is cancelled because its predecessor never completed. There is no independent defect in `ServiceTask_PostToLedger`; fix the binding on `ServiceTask_FetchInvoice` and this incident disappears automatically.\n\n**Fix area:** BPMN source / CLI enrichment — re-run `registry get` with the correct `--connection-id` / `--object-name`, regenerate `bindings_v2.json`, and repackage. No lifecycle mutation is needed before the binding defect is resolved.",
+              "thinking": null,
+              "signature": null,
+              "tool_use_id": null,
+              "is_error": false
+            }
+          ],
+          "tool_use_ids": [],
+          "input_tokens": 1,
+          "output_tokens": 398,
+          "cache_creation_tokens": 738,
+          "cache_read_tokens": 29718,
+          "reasoning_tokens": 0,
+          "stop_reason": null,
+          "model": "claude-sonnet-4-6",
+          "message_id": "msg_bdrk_014K74zAg2A4Xi9aykDHrAX3",
+          "parent_tool_use_id": null
+        },
+        {
+          "role": "reconciliation",
+          "input_tokens": 584,
+          "output_tokens": 23,
+          "cache_creation_tokens": 0,
+          "cache_read_tokens": 0,
+          "note": "Tokens the agent billed but never surfaced as a generation (fixed prompt overhead + sub-agent input/cache the stream doesn't bubble up). Booked here so the transcript reconciles to the turn total."
+        }
+      ],
+      "num_turns": 9,
+      "max_turns_exhausted": false,
+      "result_summary": {
+        "is_error": false,
+        "subtype": "success",
+        "stop_reason": "end_turn",
+        "result": "The diagnosis is complete. Here is a summary of what the investigation found:\n\n---\n\n## Diagnosis summary\n\n**Two incidents, one root fault.**\n\n| | Incident | Element | Category | Sequence |\n|---|---|---|---|---|\n| ✅ Root fault | `inc-root-001` | `ServiceTask_FetchInvoice` | `BindingResolution` | 1 (first) |\n| ❌ Noise | `inc-noise-002` | `ServiceTask_PostToLedger` | `UpstreamDependencyFailed` | 2 (downstream) |\n\n**Root cause:** `ServiceTask_FetchInvoice` failed with `BindingResolution` — its `invoiceSource` resource binding could not resolve at runtime, so the element never started. This is the self-originated, first-sequence fault confirmed by both `incident get` and `incident summary` (`firstFaultElementId`).\n\n**Why the other incident is noise:** `ServiceTask_PostToLedger` was cancelled purely as a consequence (`causedBy: inc-root-001`). The runtime's `UpstreamDependencyFailed` category is a propagation signal — it fires whenever a downstream element is cancelled because its predecessor never completed. There is no independent defect in `ServiceTask_PostToLedger`; fix the binding on `ServiceTask_FetchInvoice` and this incident disappears automatically.\n\n**Fix area:** BPMN source / CLI enrichment — re-run `registry get` with the correct `--connection-id` / `--object-name`, regenerate `bindings_v2.json`, and repackage. No lifecycle mutation is needed before the binding defect is resolved."
+      },
+      "crashed": false,
+      "crash_reason": null
+    }
+  ],
+  "error_message": null,
+  "error_details": null,
+  "error_log_tail": null,
+  "environment_info": {
+    "git_commit": "unknown",
+    "skills_git_commit": "unknown",
+    "cli_version": "1.197.0-alpha.20260626.7673",
+    "tool_plugins": {
+      "agent-tool": "1.197.0",
+      "agenthub-tool": "1.197.0",
+      "codedagent-tool": "1.197.0",
+      "data-fabric-tool": "1.197.0",
+      "functions-tool": "1.197.0",
+      "gov-tool": "1.197.0",
+      "insights-tool": "1.197.0",
+      "integrationservice-tool": "1.197.0",
+      "ixp-tool": "1.197.0",
+      "maestro-tool": "1.197.0",
+      "orchestrator-tool": "1.197.0",
+      "solution-tool": "1.197.0",
+      "tasks-tool": "1.197.0",
+      "test-manager-tool": "1.197.0"
+    },
+    "coder_eval": "0.8.4",
+    "claude_code_cli": "2.1.177 (Claude Code)",
+    "uv": "uv 0.11.28 (x86_64-unknown-linux-gnu)",
+    "anthropic": "0.102.0",
+    "openai": "2.46.0",
+    "pydantic": "2.12.5",
+    "api_routing": "aws_bedrock",
+    "aws_region": "us-east-2",
+    "bedrock_model": "us.anthropic.claude-sonnet-4-6"
+  },
+  "agent_config": {
+    "type": "claude-code",
+    "model": "claude-sonnet-4-6",
+    "permission_mode": "acceptEdits",
+    "allowed_tools": [
+      "Skill",
+      "Bash",
+      "Read",
+      "Write",
+      "Edit",
+      "Glob",
+      "Grep"
+    ],
+    "disallowed_tools": null,
+    "plugins": [
+      {
+        "type": "local",
+        "path": "/home/azureuser/projects/skills/tmp/"
+      }
+    ],
+    "system_prompt": "You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted.\n",
+    "system_prompt_file": null,
+    "ignore_patterns": [],
+    "claude_settings": null,
+    "sdk_options": {},
+    "setting_sources": null
+  },
+  "sdk_options": {
+    "tools": null,
+    "allowed_tools": [
+      "Skill",
+      "Bash",
+      "Read",
+      "Write",
+      "Edit",
+      "Glob",
+      "Grep"
+    ],
+    "system_prompt": "You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted.\n",
+    "mcp_servers": {},
+    "strict_mcp_config": false,
+    "permission_mode": "acceptEdits",
+    "continue_conversation": false,
+    "resume": null,
+    "session_id": null,
+    "max_turns": 40,
+    "max_budget_usd": null,
+    "disallowed_tools": [
+      "ToolSearch"
+    ],
+    "model": "us.anthropic.claude-sonnet-4-6",
+    "fallback_model": null,
+    "betas": [],
+    "permission_prompt_tool_name": null,
+    "cwd": "/work/output/artifacts/skill-bpmn-diagnose-incident-root-cause",
+    "cli_path": null,
+    "settings": null,
+    "add_dirs": [],
+    "env": {
+      "PATH": "/work/output/artifacts/skill-bpmn-diagnose-incident-root-cause/mocks:/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+      "PLUGIN_TOOLS_DIR": "/usr/lib/node_modules/@uipath",
+      "CLAUDE_CODE_USE_BEDROCK": "1",
+      "AWS_BEARER_TOKEN_BEDROCK": "***REDACTED***",
+      "AWS_REGION": "us-east-2",
+      "CLAUDE_CODE_ATTRIBUTION_HEADER": "0",
+      "ANTHROPIC_MODEL": "us.anthropic.claude-sonnet-4-6",
+      "ANTHROPIC_SMALL_FAST_MODEL": "us.anthropic.claude-sonnet-4-6"
+    },
+    "extra_args": {},
+    "max_buffer_size": null,
+    "can_use_tool": null,
+    "hooks": null,
+    "user": null,
+    "include_partial_messages": true,
+    "include_hook_events": false,
+    "fork_session": false,
+    "agents": null,
+    "setting_sources": [
+      "project"
+    ],
+    "skills": null,
+    "sandbox": null,
+    "plugins": [
+      {
+        "type": "local",
+        "path": "/home/azureuser/projects/skills/tmp"
+      }
+    ],
+    "max_thinking_tokens": null,
+    "thinking": null,
+    "effort": null,
+    "output_format": null,
+    "enable_file_checkpointing": false,
+    "session_store": null,
+    "session_store_flush": "batched",
+    "load_timeout_ms": 60000,
+    "task_budget": null
+  },
+  "sandbox_path": "/work/output/artifacts/skill-bpmn-diagnose-incident-root-cause",
+  "task_config": {
+    "resolved": {
+      "task_id": "skill-bpmn-diagnose-incident-root-cause",
+      "description": "Diagnose coverage for the uipath-maestro-bpmn skill: given multiple incidents on one failed BPMN instance, the agent distinguishes the FIRST root fault from downstream cancellation noise using `incident get` and `incident summary`, and names the true faulting element. Read-only mocked CLI; no lifecycle mutations.\n",
+      "initial_prompt": "A UiPath Maestro BPMN instance failed with more than one incident. Diagnose it\nusing the mocked `uip` CLI already on PATH. Public-safe identifiers:\n- instance id: inst-triage-001\n- folder key: folder-public\n\nTwo incidents were raised. Exactly one is the ROOT fault; the other is\ndownstream noise caused by it. Read the incidents, use `incident get` on the\ncandidate root and `incident summary` to confirm ordering, then decide which\nelement is the true root cause.\n\nWrite your conclusion to diagnosis.md. Include these EXACT labeled lines:\n  ROOT_CAUSE_ELEMENT: <the element id of the true first/root fault>\n  ROOT_CAUSE_CATEGORY: <the incident category of that root fault>\nThen add a short prose explanation of why the other incident is downstream\nnoise, not the root cause.\n\nUse `uip maestro bpmn ...` reads with folder context; do not read `mocks/`,\n`fixtures/`, or any response JSON files directly. Do NOT retry, cancel,\nmigrate, move a cursor, debug, run, upload, publish, or deploy anything.\n",
+      "initial_prompt_file": null,
+      "tags": [
+        "uipath-maestro-bpmn",
+        "integration",
+        "mode:diagnose",
+        "lifecycle:discover"
+      ],
+      "skip": false,
+      "agent": {
+        "type": "claude-code",
+        "model": "claude-sonnet-4-6",
+        "permission_mode": "acceptEdits",
+        "allowed_tools": [
+          "Skill",
+          "Bash",
+          "Read",
+          "Write",
+          "Edit",
+          "Glob",
+          "Grep"
+        ],
+        "disallowed_tools": null,
+        "plugins": [
+          {
+            "type": "local",
+            "path": "/home/azureuser/projects/skills/tmp/"
+          }
+        ],
+        "system_prompt": "You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted.\n",
+        "system_prompt_file": null,
+        "ignore_patterns": [],
+        "claude_settings": null,
+        "sdk_options": {},
+        "setting_sources": null
+      },
+      "sandbox": {
+        "driver": "tempdir",
+        "docker": {
+          "image": "skills-image:latest",
+          "dockerfile_path": null,
+          "build": {
+            "buildkit": null,
+            "args": {},
+            "secrets": [],
+            "extra_args": []
+          },
+          "network": "bridge",
+          "working_dir": null,
+          "env_passthrough": [
+            "ANTHROPIC_API_KEY",
+            "API_BACKEND",
+            "UIPATH_LLM_BACKEND",
+            "UIPATH_ACCESS_TOKEN",
+            "UIPATH_URL",
+            "UIPATH_TENANT_ID",
+            "UIPATH_ORGANIZATION_ID",
+            "UIPATH_CLI_DISABLE_VERSION_SYNC",
+            "AWS_BEARER_TOKEN_BEDROCK",
+            "AWS_REGION",
+            "BEDROCK_MODEL",
+            "CLAUDE_CODE_USE_BEDROCK",
+            "ANTHROPIC_MODEL",
+            "CODEX_API_KEY",
+            "CODEX_BASE_URL",
+            "CODEX_MODEL",
+            "GEMINI_API_KEY",
+            "ANTIGRAVITY_MODEL",
+            "HOME"
+          ],
+          "env_passthrough_extra": [
+            "SKILLS_REPO_PATH",
+            "BEDROCK_MODEL",
+            "TASK_PARALLELISM",
+            "UIPATH_CLI_ENABLE_ENV_AUTH",
+            "UIPATH_CLI_AUTH_TOKEN",
+            "UIPATH_CLI_ORGANIZATION_NAME",
+            "UIPATH_CLI_ORGANIZATION_ID",
+            "UIPATH_CLI_TENANT_NAME",
+            "UIPATH_CLI_TENANT_ID",
+            "TRACES_SMOKE_PROCESS_KEY",
+            "CODEX_API_KEY",
+            "CODEX_BASE_URL"
+          ],
+          "extra_mounts": [
+            "~/.uipath:/.uipath:rw"
+          ]
+        },
+        "python": {
+          "env_packages": []
+        },
+        "node": null,
+        "limits": {
+          "timeout": 300,
+          "max_memory_mb": null,
+          "max_cpus": null,
+          "max_pids": null,
+          "max_disk_mb": null
+        },
+        "template_sources": [
+          {
+            "type": "template_dir",
+            "path": "/home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn",
+            "mount_point": ".",
+            "include_patterns": []
+          },
+          {
+            "type": "template_dir",
+            "path": "/home/azureuser/projects/skills/tmp/experiments/tasks/uipath-maestro-bpmn/_shared/mock_template",
+            "mount_point": ".",
+            "include_patterns": []
+          },
+          {
+            "type": "template_dir",
+            "path": "/home/azureuser/projects/skills/tmp/experiments/tasks/uipath-maestro-bpmn/diagnose/incident_root_cause/fixtures",
+            "mount_point": ".",
+            "include_patterns": []
+          }
+        ],
+        "mock_path_dirs": [
+          "mocks"
+        ],
+        "ignore_patterns": []
+      },
+      "success_criteria": [
+        {
+          "type": "command_executed",
+          "description": "Agent listed the instance incidents with folder context",
+          "weight": 1.0,
+          "pass_threshold": 1.0,
+          "suite_thresholds": null,
+          "stop_when": null,
+          "tool_name": "Bash",
+          "command_pattern": "(uip|\\$UIP)\\s+maestro\\s+bpmn\\s+instance\\s+incidents\\s+inst-triage-001\\b.*folder-public",
+          "min_count": 1,
+          "max_count": null,
+          "require_success": false,
+          "exclude_pattern": null
+        },
+        {
+          "type": "command_executed",
+          "description": "Agent fetched the root incident detail",
+          "weight": 1.5,
+          "pass_threshold": 1.0,
+          "suite_thresholds": null,
+          "stop_when": null,
+          "tool_name": "Bash",
+          "command_pattern": "(uip|\\$UIP)\\s+maestro\\s+bpmn\\s+incident\\s+get\\s+inc-root-001",
+          "min_count": 1,
+          "max_count": null,
+          "require_success": false,
+          "exclude_pattern": null
+        },
+        {
+          "type": "command_executed",
+          "description": "Agent read the incident summary to confirm ordering",
+          "weight": 1.0,
+          "pass_threshold": 1.0,
+          "suite_thresholds": null,
+          "stop_when": null,
+          "tool_name": "Bash",
+          "command_pattern": "(uip|\\$UIP)\\s+maestro\\s+bpmn\\s+incident\\s+summary",
+          "min_count": 1,
+          "max_count": null,
+          "require_success": false,
+          "exclude_pattern": null
+        },
+        {
+          "type": "file_contains",
+          "description": "Diagnosis names the true root fault and does not mislabel the downstream element as root cause",
+          "weight": 3.0,
+          "pass_threshold": 1.0,
+          "suite_thresholds": null,
+          "stop_when": null,
+          "path": "diagnosis.md",
+          "includes": [
+            "ROOT_CAUSE_ELEMENT: ServiceTask_FetchInvoice",
+            "ROOT_CAUSE_CATEGORY: BindingResolution"
+          ],
+          "excludes": [
+            "ROOT_CAUSE_ELEMENT: ServiceTask_PostToLedger"
+          ]
+        }
+      ],
+      "run_limits": {
+        "max_turns": 40,
+        "expected_turns": 16,
+        "task_timeout": 900,
+        "turn_timeout": 900,
+        "max_input_tokens": null,
+        "max_output_tokens": null,
+        "max_total_tokens": null,
+        "max_usd": null,
+        "count_cached_input": false,
+        "count_cache_creation": false,
+        "stop_early": false
+      },
+      "reference": null,
+      "expected_commands": null,
+      "pre_run": [],
+      "post_run": [
+        {
+          "command": "find . -maxdepth 5 -type d \\( -name node_modules -o -name .npm-prefix -o -name .venv \\) -prune -exec rm -rf {} +",
+          "timeout": 30
+        }
+      ],
+      "dataset": null,
+      "suite_id": null,
+      "row_id": null,
+      "simulation": null
+    },
+    "source_yaml": "task_id: skill-bpmn-diagnose-incident-root-cause\ndescription: >\n  Diagnose coverage for the uipath-maestro-bpmn skill: given multiple incidents\n  on one failed BPMN instance, the agent distinguishes the FIRST root fault from\n  downstream cancellation noise using `incident get` and `incident summary`, and\n  names the true faulting element. Read-only mocked CLI; no lifecycle mutations.\ntags: [uipath-maestro-bpmn, integration, \"mode:diagnose\", \"lifecycle:discover\"]\n\nrun_limits:\n  expected_turns: 16\n  max_turns: 40\n\nsandbox:\n  template_sources:\n    - type: template_dir\n      path: ../../../../../skills/uipath-maestro-bpmn\n    - type: template_dir\n      path: ../../_shared/mock_template\n    - type: template_dir\n      path: fixtures\n  mock_path_dirs:\n    - mocks\n\ninitial_prompt: |\n  A UiPath Maestro BPMN instance failed with more than one incident. Diagnose it\n  using the mocked `uip` CLI already on PATH. Public-safe identifiers:\n  - instance id: inst-triage-001\n  - folder key: folder-public\n\n  Two incidents were raised. Exactly one is the ROOT fault; the other is\n  downstream noise caused by it. Read the incidents, use `incident get` on the\n  candidate root and `incident summary` to confirm ordering, then decide which\n  element is the true root cause.\n\n  Write your conclusion to diagnosis.md. Include these EXACT labeled lines:\n    ROOT_CAUSE_ELEMENT: <the element id of the true first/root fault>\n    ROOT_CAUSE_CATEGORY: <the incident category of that root fault>\n  Then add a short prose explanation of why the other incident is downstream\n  noise, not the root cause.\n\n  Use `uip maestro bpmn ...` reads with folder context; do not read `mocks/`,\n  `fixtures/`, or any response JSON files directly. Do NOT retry, cancel,\n  migrate, move a cursor, debug, run, upload, publish, or deploy anything.\n\nsuccess_criteria:\n  - type: command_executed\n    description: \"Agent listed the instance incidents with folder context\"\n    tool_name: \"Bash\"\n    command_pattern: '(uip|\\$UIP)\\s+maestro\\s+bpmn\\s+instance\\s+incidents\\s+inst-triage-001\\b.*folder-public'\n    min_count: 1\n    weight: 1.0\n    pass_threshold: 1.0\n\n  - type: command_executed\n    description: \"Agent fetched the root incident detail\"\n    tool_name: \"Bash\"\n    command_pattern: '(uip|\\$UIP)\\s+maestro\\s+bpmn\\s+incident\\s+get\\s+inc-root-001'\n    min_count: 1\n    weight: 1.5\n    pass_threshold: 1.0\n\n  - type: command_executed\n    description: \"Agent read the incident summary to confirm ordering\"\n    tool_name: \"Bash\"\n    command_pattern: '(uip|\\$UIP)\\s+maestro\\s+bpmn\\s+incident\\s+summary'\n    min_count: 1\n    weight: 1.0\n    pass_threshold: 1.0\n\n  - type: file_contains\n    description: \"Diagnosis names the true root fault and does not mislabel the downstream element as root cause\"\n    path: \"diagnosis.md\"\n    includes:\n      - \"ROOT_CAUSE_ELEMENT: ServiceTask_FetchInvoice\"\n      - \"ROOT_CAUSE_CATEGORY: BindingResolution\"\n    excludes:\n      - \"ROOT_CAUSE_ELEMENT: ServiceTask_PostToLedger\"\n    weight: 3.0\n    pass_threshold: 1.0\n",
+    "source_file": "/home/azureuser/projects/skills/tmp/experiments/tasks/uipath-maestro-bpmn/diagnose/incident_root_cause/task.yaml",
+    "lineage": {
+      "agent.type": {
+        "value": "claude-code",
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.permission_mode": {
+        "value": "acceptEdits",
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.model": {
+        "value": "claude-sonnet-4-6",
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.allowed_tools": {
+        "value": [
+          "Skill",
+          "Bash",
+          "Read",
+          "Write",
+          "Edit",
+          "Glob",
+          "Grep"
+        ],
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.plugins": {
+        "value": [
+          {
+            "type": "local",
+            "path": "/home/azureuser/projects/skills/tmp/"
+          }
+        ],
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.ignore_patterns": {
+        "value": [],
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "agent.system_prompt": {
+        "value": "You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted.\n",
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "run_limits.max_turns": {
+        "value": 40,
+        "source": "task",
+        "source_detail": null
+      },
+      "run_limits.task_timeout": {
+        "value": 900,
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "run_limits.turn_timeout": {
+        "value": 900,
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "run_limits.expected_turns": {
+        "value": 16,
+        "source": "task",
+        "source_detail": null
+      },
+      "sandbox.driver": {
+        "value": "docker",
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "sandbox.docker": {
+        "value": {
+          "image": "skills-image:latest",
+          "env_passthrough_extra": [
+            "SKILLS_REPO_PATH",
+            "BEDROCK_MODEL",
+            "TASK_PARALLELISM",
+            "UIPATH_CLI_ENABLE_ENV_AUTH",
+            "UIPATH_CLI_AUTH_TOKEN",
+            "UIPATH_CLI_ORGANIZATION_NAME",
+            "UIPATH_CLI_ORGANIZATION_ID",
+            "UIPATH_CLI_TENANT_NAME",
+            "UIPATH_CLI_TENANT_ID",
+            "TRACES_SMOKE_PROCESS_KEY",
+            "CODEX_API_KEY",
+            "CODEX_BASE_URL"
+          ],
+          "extra_mounts": [
+            "~/.uipath:/.uipath:rw"
+          ]
+        },
+        "source": "experiment-defaults",
+        "source_detail": null
+      },
+      "sandbox.mock_path_dirs": {
+        "value": [
+          "mocks"
+        ],
+        "source": "task",
+        "source_detail": null
+      },
+      "sandbox.template_sources": {
+        "value": [
+          {
+            "type": "template_dir",
+            "path": "/home/azureuser/projects/skills/tmp/skills/uipath-maestro-bpmn"
+          },
+          {
+            "type": "template_dir",
+            "path": "/home/azureuser/projects/skills/tmp/experiments/tasks/uipath-maestro-bpmn/_shared/mock_template"
+          },
+          {
+            "type": "template_dir",
+            "path": "/home/azureuser/projects/skills/tmp/experiments/tasks/uipath-maestro-bpmn/diagnose/incident_root_cause/fixtures"
+          }
+        ],
+        "source": "task",
+        "source_detail": null
+      },
+      "repeats": {
+        "value": 5,
+        "source": "cli",
+        "source_detail": null
+      }
+    }
+  },
+  "command_stats": {
+    "total_commands": 7,
+    "commands_by_tool": {
+      "Skill": 1,
+      "Read": 2,
+      "Bash": 3,
+      "Write": 1
+    },
+    "total_command_time_ms": 1282.969349063933,
+    "avg_command_time_ms": 183.28133558056183,
+    "slowest_commands": [
+      {
+        "tool": "Bash",
+        "duration_ms": 701.8504700390622,
+        "parameters": {
+          "command": "uip maestro bpmn incident get inc-root-001 --folder-key folder-public --output json 2>&1",
+          "description": "Get full details of the candidate root incident"
+        },
+        "tool_id": "toolu_bdrk_01W5bagyyEPWceSAwu672Cie"
+      },
+      {
+        "tool": "Bash",
+        "duration_ms": 335.17177996691316,
+        "parameters": {
+          "command": "uip maestro bpmn incident summary --output json 2>&1",
+          "description": "Get incident summary to confirm ordering"
+        },
+        "tool_id": "toolu_bdrk_01RwDhGUt7d75rgdELSB6gUq"
+      },
+      {
+        "tool": "Bash",
+        "duration_ms": 189.13355597760528,
+        "parameters": {
+          "command": "uip maestro bpmn instance incidents inst-triage-001 -f folder-public --output json 2>&1",
+          "description": "List all incidents for the failed instance"
+        },
+        "tool_id": "toolu_bdrk_015Q9VymepLaNZ1yaSMr3YpJ"
+      },
+      {
+        "tool": "Write",
+        "duration_ms": 30.716344015672803,
+        "parameters": {
+          "file_path": "/work/output/artifacts/skill-bpmn-diagnose-incident-root-cause/diagnosis.md",
+          "content": "ROOT_CAUSE_ELEMENT: ServiceTask_FetchInvoice\nROOT_CAUSE_CATEGORY: BindingResolution\n\n## Diagnosis\n\n### Root fault — `ServiceTask_FetchInvoice` (BindingResolution)\n\nIncident `inc-root-001` fired at sequence 1 (2026-05-01T12:00:03Z).  The element\n`ServiceTask_FetchInvoice` could not start because its resource binding\n(`invoiceSource`) failed to resolve at runtime.  This is the first and only\nself-originated fault in the instance: no upstream element triggered it; it\nfailed on its own missing/invalid binding configuration.\n\n`uip maestro bpmn incident get inc-root-001` and `incident summary` both confirm\nthis element as `firstFaultElementId` with the earliest sequence number (1) and\ncategory `BindingResolution`.\n\n### Downstream noise — `ServiceTask_PostToLedger` (UpstreamDependencyFailed)\n\nIncident `inc-noise-002` fired at sequence 2 (2026-05-01T12:00:07Z), four\nseconds after the root fault.  Its message explicitly states: *\"Element was\ncancelled because an upstream element (inc-root-001) never completed.\"*  The\n`causedBy` field references `inc-root-001` directly.\n\n`UpstreamDependencyFailed` is a propagation category: the runtime cancelled\n`ServiceTask_PostToLedger` solely because its data-flow or control-flow\npredecessor (`ServiceTask_FetchInvoice`) never produced output.  There is no\nindependent defect in `ServiceTask_PostToLedger`; if the binding on\n`ServiceTask_FetchInvoice` is fixed, this downstream cancellation disappears\nautomatically.  Treating `inc-noise-002` as a root cause would be incorrect and\nwould lead to investigating an element that has nothing wrong with it.\n\n### Recommended fix area\n\nThe fix belongs in **BPMN source / CLI enrichment**: the `invoiceSource` binding\nin `ServiceTask_FetchInvoice` needs a valid Integration Service connection ID\nand resource enrichment (re-run `uip maestro bpmn registry get` with\n`--connection-id` / `--object-name`, regenerate `bindings_v2.json`, and\nrepackage).  No lifecycle action should be taken until the binding defect is\nresolved.\n"
+        },
+        "tool_id": "toolu_bdrk_01VhvXXxMH1SfqL1AcqET5f6"
+      },
+      {
+        "tool": "Skill",
+        "duration_ms": 11.563359992578626,
+        "parameters": {
+          "skill": "tmp:uipath-maestro-bpmn"
+        },
+        "tool_id": "toolu_bdrk_015pWHHK36Siti9HzqVNL7vY"
+      }
+    ],
+    "successful_commands": 7,
+    "failed_commands": 0,
+    "unknown_commands": 0,
+    "success_rate": 100.0,
+    "most_common_sequence": "Skill → Read → Read"
+  },
+  "total_token_usage": {
+    "uncached_input_tokens": 593,
+    "output_tokens": 2190,
+    "cache_creation_input_tokens": 11502,
+    "cache_read_input_tokens": 178870,
+    "total_cost_usd": 0.1314225,
+    "input_tokens": 190965
+  },
+  "total_assistant_turns": 14,
+  "expected_commands": null,
+  "actual_commands": 7,
+  "commands_efficiency": null,
+  "pre_run_results": [],
+  "post_run_results": [
+    {
+      "command": "find . -maxdepth 5 -type d \\( -name node_modules -o -name .npm-prefix -o -name .venv \\) -prune -exec rm -rf {} +",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "",
+      "duration_seconds": 0.0031011104583740234,
+      "error": null
+    }
+  ],
+  "simulation": null,
+  "early_stop": null
+}

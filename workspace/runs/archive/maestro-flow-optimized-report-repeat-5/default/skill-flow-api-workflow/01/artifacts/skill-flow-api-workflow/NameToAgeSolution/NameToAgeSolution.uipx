@@ -1,0 +1,12 @@
+{
+  "DocVersion": "1.0.0",
+  "StudioMinVersion": "2025.10.0",
+  "SolutionId": "a3702eea-baa7-486e-84bd-2a1a94673dd5",
+  "Projects": [
+    {
+      "Type": "Api",
+      "ProjectRelativePath": "NameToAge/project.uiproj",
+      "Id": "17934ab9-07ec-4d44-a4bd-790edd6403cc"
+    }
+  ]
+}

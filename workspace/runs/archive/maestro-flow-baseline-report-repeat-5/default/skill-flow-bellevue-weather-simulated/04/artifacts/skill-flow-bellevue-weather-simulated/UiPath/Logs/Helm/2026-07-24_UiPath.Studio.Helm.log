@@ -1,0 +1,178 @@
+2026-07-24 21:04:05.200 +00:00 [Information] [UiPath.Studio.Helm] Helm 26.0.199-alpha.24372+Branch.develop.Sha.05660bd2185c0821fdfb3327f4ca46f1101af69e, PID=570
+2026-07-24 21:04:05.207 +00:00 [Information] [UiPath.Studio.Helm] Startup: OS=Debian GNU/Linux 13 (trixie), OSArch=X64, ProcArch=X64, Config=Release, LogLevel=Warning (from --log-level), RobotDir=(none), NoDap=False
+2026-07-24 21:04:05.410 +00:00 [Warning] [UiPath.Studio.Helm] [Trace:UiPath.Studio.Helm] Robot is not running and --robot-dir was not specified. Start UiPath Assistant or pass --robot-dir to Helm.
+2026-07-24 21:04:05.413 +00:00 [Error] [UiPath.Studio.Helm] [Trace:UiPath.Studio.Helm] Robot installation directory not found; falling back to the app's own directory: /home/azureuser/.cache/uipath/helm/1.199.0-dev.20260722.4/
+2026-07-24 21:04:05.473 +00:00 [Error] [UiPath.Studio.Helm] [Trace:UiPath.Studio.Helm] '/tmp/UiPathUserServices_root' pipe not found. Make sure the service host is started.
+2026-07-24 21:04:45.489 +00:00 [Warning] [UiPath.Studio.Helm] Failed to resolve connection settings
+  Exception: System.TimeoutException: GetResourceUrl timed out.
+ ---> System.OperationCanceledException: The operation was canceled.
+   at System.Threading.CancellationToken.ThrowOperationCanceledException()
+   at System.Threading.CancellationToken.ThrowIfCancellationRequested()
+   at System.IO.Pipes.NamedPipeClientStream.ConnectInternal(Int32 timeout, CancellationToken cancellationToken, Int32 startTime)
+   at System.Threading.ExecutionContext.RunFromThreadPoolDispatchLoop(Thread threadPoolThread, ExecutionContext executionContext, ContextCallback callback, Object state)
+--- End of stack trace from previous location ---
+   at System.Threading.ExecutionContext.RunFromThreadPoolDispatchLoop(Thread threadPoolThread, ExecutionContext executionContext, ContextCallback callback, Object state)
+   at System.Threading.Tasks.Task.ExecuteWithThreadLocal(Task& currentTaskSlot, Thread threadPoolThread)
+--- End of stack trace from previous location ---
+   at UiPath.Ipc.Transport.NamedPipe.NamedPipeClientState.Connect(IpcClient client, CancellationToken ct)
+   at UiPath.Ipc.ServiceClientProper.Connect(CancellationToken ct)
+   at UiPath.Ipc.ServiceClientProper.EnsureConnection(CancellationToken ct)
+   at UiPath.Ipc.ServiceClient.<>c__DisplayClass17_0`1.<<Invoke>g__Invoke|0>d.MoveNext()
+   --- End of inner exception stack trace ---
+   at UiPath.Ipc.TimeoutHelper.ThrowTimeout(Exception exception, String message)
+   at UiPath.Ipc.ServiceClient.<>c__DisplayClass17_0`1.<<Invoke>g__Invoke|0>d.MoveNext()
+--- End of stack trace from previous location ---
+   at UiPath.Studio.Helm.Activities.HelmAccessProvider.GetResourceUrl(String scope, CancellationToken cancellationToken)
+   at UiPath.Studio.Helm.Cloud.HelmConnectionSettingsService.GetFreshSettings(CancellationToken cancellationToken)
+2026-07-24 21:04:47.774 +00:00 [Error] [UiPath.Studio.Helm] [Trace:UiPath.Studio.Helm] UiPath.Ipc.ServerConnection 12547953 IInteropProjectService OpenProject 1. # UiPath.Studio.Helm.Project.HelmProjectLoadException: Not a UiPath project at '/work/output/artifacts/skill-flow-bellevue-weather-simulated': project.json is missing. Pass a directory containing a UiPath project.
+ ---> System.IO.FileNotFoundException: Could not find file '/work/output/artifacts/skill-flow-bellevue-weather-simulated/project.json'.
+File name: '/work/output/artifacts/skill-flow-bellevue-weather-simulated/project.json'
+   at Interop.ThrowExceptionForIoErrno(ErrorInfo errorInfo, String path, Boolean isDirError)
+   at Microsoft.Win32.SafeHandles.SafeFileHandle.Open(String path, OpenFlags flags, Int32 mode, Boolean failForSymlink, Boolean& wasSymlink, Func`4 createOpenException)
+   at Microsoft.Win32.SafeHandles.SafeFileHandle.Open(String fullPath, FileMode mode, FileAccess access, FileShare share, FileOptions options, Int64 preallocationSize, UnixFileMode openPermissions, Int64& fileLength, UnixFileMode& filePermissions, Boolean failForSymlink, Boolean& wasSymlink, Func`4 createOpenException)
+   at System.IO.Strategies.OSFileStreamStrategy..ctor(String path, FileMode mode, FileAccess access, FileShare share, FileOptions options, Int64 preallocationSize, Nullable`1 unixCreateMode)
+   at System.IO.StreamReader.ValidateArgsAndOpenPath(String path, Encoding encoding, Int32 bufferSize)
+   at System.IO.File.ReadAllText(String path, Encoding encoding)
+   at UiPath.Project.WorkflowProjectRepository.OpenProjectFromPath(String projectPath)
+   at UiPath.WorkflowCompiler.WorkflowCompilerExecutorFactory.CreateExecutor(IExecutorCommand command)
+   at UiPath.Studio.Helm.Project.HelmProjectSession.CreateExecutorContext(IServiceLocator serviceLocator, String projectDir)
+   at UiPath.Studio.Helm.Project.HelmProjectSession.LoadAsync(String projectDir, CancellationToken ct)
+   at UiPath.Studio.Helm.Interop.HelmProjectService.OpenProject(String projectDir)
+   --- End of inner exception stack trace ---
+   at UiPath.Studio.Helm.Interop.HelmProjectService.OpenProject(String projectDir)
+   at UiPath.Studio.Helm.Hosting.HelmCallScopeProxy`1.AwaitAndDisposeGeneric[TResult](Task task, IDisposable scope)
+   at UiPath.Studio.Helm.Entitlements.HelmEntitlementProxy`1.WrapGenericAsync[TResult](MethodInfo method, Object[] args)
+   at UiPath.Ipc.Server.<>c__DisplayClass19_1.<<HandleRequest>g__MethodCall|3>d.MoveNext()
+--- End of stack trace from previous location ---
+   at UiPath.Ipc.Server.<>c__DisplayClass19_0.<<HandleRequest>g__InvokeMethod|0>d.MoveNext()
+--- End of stack trace from previous location ---
+   at System.Runtime.CompilerServices.PoolingAsyncValueTaskMethodBuilder`1.StateMachineBox`1.System.Threading.Tasks.Sources.IValueTaskSource<TResult>.GetResult(Int16 token)
+   at UiPath.Ipc.Server.HandleRequest(Method method, Route route, Request request, CancellationToken cancellationToken)
+   at System.Runtime.CompilerServices.PoolingAsyncValueTaskMethodBuilder`1.StateMachineBox`1.System.Threading.Tasks.Sources.IValueTaskSource<TResult>.GetResult(Int16 token)
+   at UiPath.Ipc.Server.OnRequestReceived(Request request)
+2026-07-24 21:04:47.811 +00:00 [Error] [UiPath.Studio.Helm] [Trace:UiPath.Studio.Helm] UiPath.Ipc.ServerConnection 36600967 IInteropProjectService OpenProject 0. # UiPath.Studio.Helm.Project.HelmProjectLoadException: Not a UiPath project at '/work/output/artifacts/skill-flow-bellevue-weather-simulated': project.json is missing. Pass a directory containing a UiPath project.
+ ---> System.IO.FileNotFoundException: Could not find file '/work/output/artifacts/skill-flow-bellevue-weather-simulated/project.json'.
+File name: '/work/output/artifacts/skill-flow-bellevue-weather-simulated/project.json'
+   at Interop.ThrowExceptionForIoErrno(ErrorInfo errorInfo, String path, Boolean isDirError)
+   at Microsoft.Win32.SafeHandles.SafeFileHandle.Open(String path, OpenFlags flags, Int32 mode, Boolean failForSymlink, Boolean& wasSymlink, Func`4 createOpenException)
+   at Microsoft.Win32.SafeHandles.SafeFileHandle.Open(String fullPath, FileMode mode, FileAccess access, FileShare share, FileOptions options, Int64 preallocationSize, UnixFileMode openPermissions, Int64& fileLength, UnixFileMode& filePermissions, Boolean failForSymlink, Boolean& wasSymlink, Func`4 createOpenException)
+   at System.IO.Strategies.OSFileStreamStrategy..ctor(String path, FileMode mode, FileAccess access, FileShare share, FileOptions options, Int64 preallocationSize, Nullable`1 unixCreateMode)
+   at System.IO.StreamReader.ValidateArgsAndOpenPath(String path, Encoding encoding, Int32 bufferSize)
+   at System.IO.File.ReadAllText(String path, Encoding encoding)
+   at UiPath.Project.WorkflowProjectRepository.OpenProjectFromPath(String projectPath)
+   at UiPath.WorkflowCompiler.WorkflowCompilerExecutorFactory.CreateExecutor(IExecutorCommand command)
+   at UiPath.Studio.Helm.Project.HelmProjectSession.CreateExecutorContext(IServiceLocator serviceLocator, String projectDir)
+   at UiPath.Studio.Helm.Project.HelmProjectSession.LoadAsync(String projectDir, CancellationToken ct)
+   at UiPath.Studio.Helm.Interop.HelmProjectService.OpenProject(String projectDir)
+   --- End of inner exception stack trace ---
+   at UiPath.Studio.Helm.Interop.HelmProjectService.OpenProject(String projectDir)
+   at UiPath.Studio.Helm.Hosting.HelmCallScopeProxy`1.AwaitAndDisposeGeneric[TResult](Task task, IDisposable scope)
+   at UiPath.Studio.Helm.Entitlements.HelmEntitlementProxy`1.WrapGenericAsync[TResult](MethodInfo method, Object[] args)
+   at UiPath.Ipc.Server.<>c__DisplayClass19_1.<<HandleRequest>g__MethodCall|3>d.MoveNext()
+--- End of stack trace from previous location ---
+   at UiPath.Ipc.Server.<>c__DisplayClass19_0.<<HandleRequest>g__InvokeMethod|0>d.MoveNext()
+--- End of stack trace from previous location ---
+   at System.Runtime.CompilerServices.PoolingAsyncValueTaskMethodBuilder`1.StateMachineBox`1.System.Threading.Tasks.Sources.IValueTaskSource<TResult>.GetResult(Int16 token)
+   at UiPath.Ipc.Server.HandleRequest(Method method, Route route, Request request, CancellationToken cancellationToken)
+   at System.Runtime.CompilerServices.PoolingAsyncValueTaskMethodBuilder`1.StateMachineBox`1.System.Threading.Tasks.Sources.IValueTaskSource<TResult>.GetResult(Int16 token)
+   at UiPath.Ipc.Server.OnRequestReceived(Request request)
+2026-07-24 21:05:02.827 +00:00 [Error] [UiPath.Studio.Helm] [Trace:UiPath.Studio.Helm] UiPath.Ipc.ServerConnection 37931818 IInteropProjectService OpenProject 1. # UiPath.Studio.Helm.Project.HelmProjectLoadException: Not a UiPath project at '/work/output/artifacts/skill-flow-bellevue-weather-simulated': project.json is missing. Pass a directory containing a UiPath project.
+ ---> System.IO.FileNotFoundException: Could not find file '/work/output/artifacts/skill-flow-bellevue-weather-simulated/project.json'.
+File name: '/work/output/artifacts/skill-flow-bellevue-weather-simulated/project.json'
+   at Interop.ThrowExceptionForIoErrno(ErrorInfo errorInfo, String path, Boolean isDirError)
+   at Microsoft.Win32.SafeHandles.SafeFileHandle.Open(String path, OpenFlags flags, Int32 mode, Boolean failForSymlink, Boolean& wasSymlink, Func`4 createOpenException)
+   at Microsoft.Win32.SafeHandles.SafeFileHandle.Open(String fullPath, FileMode mode, FileAccess access, FileShare share, FileOptions options, Int64 preallocationSize, UnixFileMode openPermissions, Int64& fileLength, UnixFileMode& filePermissions, Boolean failForSymlink, Boolean& wasSymlink, Func`4 createOpenException)
+   at System.IO.Strategies.OSFileStreamStrategy..ctor(String path, FileMode mode, FileAccess access, FileShare share, FileOptions options, Int64 preallocationSize, Nullable`1 unixCreateMode)
+   at System.IO.StreamReader.ValidateArgsAndOpenPath(String path, Encoding encoding, Int32 bufferSize)
+   at System.IO.File.ReadAllText(String path, Encoding encoding)
+   at UiPath.Project.WorkflowProjectRepository.OpenProjectFromPath(String projectPath)
+   at UiPath.WorkflowCompiler.WorkflowCompilerExecutorFactory.CreateExecutor(IExecutorCommand command)
+   at UiPath.Studio.Helm.Project.HelmProjectSession.CreateExecutorContext(IServiceLocator serviceLocator, String projectDir)
+   at UiPath.Studio.Helm.Project.HelmProjectSession.LoadAsync(String projectDir, CancellationToken ct)
+   at UiPath.Studio.Helm.Interop.HelmProjectService.OpenProject(String projectDir)
+   --- End of inner exception stack trace ---
+   at UiPath.Studio.Helm.Interop.HelmProjectService.OpenProject(String projectDir)
+   at UiPath.Studio.Helm.Hosting.HelmCallScopeProxy`1.AwaitAndDisposeGeneric[TResult](Task task, IDisposable scope)
+   at UiPath.Studio.Helm.Entitlements.HelmEntitlementProxy`1.WrapGenericAsync[TResult](MethodInfo method, Object[] args)
+   at UiPath.Ipc.Server.<>c__DisplayClass19_1.<<HandleRequest>g__MethodCall|3>d.MoveNext()
+--- End of stack trace from previous location ---
+   at UiPath.Ipc.Server.<>c__DisplayClass19_0.<<HandleRequest>g__InvokeMethod|0>d.MoveNext()
+--- End of stack trace from previous location ---
+   at System.Runtime.CompilerServices.PoolingAsyncValueTaskMethodBuilder`1.StateMachineBox`1.System.Threading.Tasks.Sources.IValueTaskSource<TResult>.GetResult(Int16 token)
+   at UiPath.Ipc.Server.HandleRequest(Method method, Route route, Request request, CancellationToken cancellationToken)
+   at System.Runtime.CompilerServices.PoolingAsyncValueTaskMethodBuilder`1.StateMachineBox`1.System.Threading.Tasks.Sources.IValueTaskSource<TResult>.GetResult(Int16 token)
+   at UiPath.Ipc.Server.OnRequestReceived(Request request)
+2026-07-24 21:06:56.567 +00:00 [Error] [UiPath.Studio.Helm] [Trace:UiPath.Studio.Helm] UiPath.Ipc.ServerConnection 47638389 IInteropProjectService OpenProject 1. # UiPath.Studio.Helm.Project.HelmProjectLoadException: Failed to open project at '/work/output/artifacts/skill-flow-bellevue-weather-simulated/BellevueWeatherCheck': Cannot execute Windows projects on Linux platform
+ ---> System.InvalidOperationException: Cannot execute Windows projects on Linux platform
+   at UiPath.WorkflowCompiler.WorkflowCompilerExecutorFactory.CreateExecutor(IExecutorCommand command)
+   at UiPath.Studio.Helm.Project.HelmProjectSession.CreateExecutorContext(IServiceLocator serviceLocator, String projectDir)
+   at UiPath.Studio.Helm.Project.HelmProjectSession.LoadAsync(String projectDir, CancellationToken ct)
+   at UiPath.Studio.Helm.Interop.HelmProjectService.OpenProject(String projectDir)
+   --- End of inner exception stack trace ---
+   at UiPath.Studio.Helm.Interop.HelmProjectService.OpenProject(String projectDir)
+   at UiPath.Studio.Helm.Hosting.HelmCallScopeProxy`1.AwaitAndDisposeGeneric[TResult](Task task, IDisposable scope)
+   at UiPath.Studio.Helm.Entitlements.HelmEntitlementProxy`1.WrapGenericAsync[TResult](MethodInfo method, Object[] args)
+   at UiPath.Ipc.Server.<>c__DisplayClass19_1.<<HandleRequest>g__MethodCall|3>d.MoveNext()
+--- End of stack trace from previous location ---
+   at UiPath.Ipc.Server.<>c__DisplayClass19_0.<<HandleRequest>g__InvokeMethod|0>d.MoveNext()
+--- End of stack trace from previous location ---
+   at System.Runtime.CompilerServices.PoolingAsyncValueTaskMethodBuilder`1.StateMachineBox`1.System.Threading.Tasks.Sources.IValueTaskSource<TResult>.GetResult(Int16 token)
+   at UiPath.Ipc.Server.HandleRequest(Method method, Route route, Request request, CancellationToken cancellationToken)
+   at System.Runtime.CompilerServices.PoolingAsyncValueTaskMethodBuilder`1.StateMachineBox`1.System.Threading.Tasks.Sources.IValueTaskSource<TResult>.GetResult(Int16 token)
+   at UiPath.Ipc.Server.OnRequestReceived(Request request)
+2026-07-24 21:06:56.597 +00:00 [Error] [UiPath.Studio.Helm] [Trace:UiPath.Studio.Helm] UiPath.Ipc.ServerConnection 49228735 IInteropProjectService OpenProject 0. # UiPath.Studio.Helm.Project.HelmProjectLoadException: Failed to open project at '/work/output/artifacts/skill-flow-bellevue-weather-simulated/BellevueWeatherCheck': Cannot execute Windows projects on Linux platform
+ ---> System.InvalidOperationException: Cannot execute Windows projects on Linux platform
+   at UiPath.WorkflowCompiler.WorkflowCompilerExecutorFactory.CreateExecutor(IExecutorCommand command)
+   at UiPath.Studio.Helm.Project.HelmProjectSession.CreateExecutorContext(IServiceLocator serviceLocator, String projectDir)
+   at UiPath.Studio.Helm.Project.HelmProjectSession.LoadAsync(String projectDir, CancellationToken ct)
+   at UiPath.Studio.Helm.Interop.HelmProjectService.OpenProject(String projectDir)
+   --- End of inner exception stack trace ---
+   at UiPath.Studio.Helm.Interop.HelmProjectService.OpenProject(String projectDir)
+   at UiPath.Studio.Helm.Hosting.HelmCallScopeProxy`1.AwaitAndDisposeGeneric[TResult](Task task, IDisposable scope)
+   at UiPath.Studio.Helm.Entitlements.HelmEntitlementProxy`1.WrapGenericAsync[TResult](MethodInfo method, Object[] args)
+   at UiPath.Ipc.Server.<>c__DisplayClass19_1.<<HandleRequest>g__MethodCall|3>d.MoveNext()
+--- End of stack trace from previous location ---
+   at UiPath.Ipc.Server.<>c__DisplayClass19_0.<<HandleRequest>g__InvokeMethod|0>d.MoveNext()
+--- End of stack trace from previous location ---
+   at System.Runtime.CompilerServices.PoolingAsyncValueTaskMethodBuilder`1.StateMachineBox`1.System.Threading.Tasks.Sources.IValueTaskSource<TResult>.GetResult(Int16 token)
+   at UiPath.Ipc.Server.HandleRequest(Method method, Route route, Request request, CancellationToken cancellationToken)
+   at System.Runtime.CompilerServices.PoolingAsyncValueTaskMethodBuilder`1.StateMachineBox`1.System.Threading.Tasks.Sources.IValueTaskSource<TResult>.GetResult(Int16 token)
+   at UiPath.Ipc.Server.OnRequestReceived(Request request)
+2026-07-24 21:07:03.635 +00:00 [Error] [UiPath.Studio.Helm] [Trace:UiPath.Studio.Helm] UiPath.Ipc.ServerConnection 38798159 IInteropProjectService OpenProject 1. # UiPath.Studio.Helm.Project.HelmProjectLoadException: Not a UiPath project at '/work/output/artifacts/skill-flow-bellevue-weather-simulated': project.json is missing. Pass a directory containing a UiPath project.
+ ---> System.IO.FileNotFoundException: Could not find file '/work/output/artifacts/skill-flow-bellevue-weather-simulated/project.json'.
+File name: '/work/output/artifacts/skill-flow-bellevue-weather-simulated/project.json'
+   at Interop.ThrowExceptionForIoErrno(ErrorInfo errorInfo, String path, Boolean isDirError)
+   at Microsoft.Win32.SafeHandles.SafeFileHandle.Open(String path, OpenFlags flags, Int32 mode, Boolean failForSymlink, Boolean& wasSymlink, Func`4 createOpenException)
+   at Microsoft.Win32.SafeHandles.SafeFileHandle.Open(String fullPath, FileMode mode, FileAccess access, FileShare share, FileOptions options, Int64 preallocationSize, UnixFileMode openPermissions, Int64& fileLength, UnixFileMode& filePermissions, Boolean failForSymlink, Boolean& wasSymlink, Func`4 createOpenException)
+   at System.IO.Strategies.OSFileStreamStrategy..ctor(String path, FileMode mode, FileAccess access, FileShare share, FileOptions options, Int64 preallocationSize, Nullable`1 unixCreateMode)
+   at System.IO.StreamReader.ValidateArgsAndOpenPath(String path, Encoding encoding, Int32 bufferSize)
+   at System.IO.File.ReadAllText(String path, Encoding encoding)
+   at UiPath.Project.WorkflowProjectRepository.OpenProjectFromPath(String projectPath)
+   at UiPath.WorkflowCompiler.WorkflowCompilerExecutorFactory.CreateExecutor(IExecutorCommand command)
+   at UiPath.Studio.Helm.Project.HelmProjectSession.CreateExecutorContext(IServiceLocator serviceLocator, String projectDir)
+   at UiPath.Studio.Helm.Project.HelmProjectSession.LoadAsync(String projectDir, CancellationToken ct)
+   at UiPath.Studio.Helm.Interop.HelmProjectService.OpenProject(String projectDir)
+   --- End of inner exception stack trace ---
+   at UiPath.Studio.Helm.Interop.HelmProjectService.OpenProject(String projectDir)
+   at UiPath.Studio.Helm.Hosting.HelmCallScopeProxy`1.AwaitAndDisposeGeneric[TResult](Task task, IDisposable scope)
+   at UiPath.Studio.Helm.Entitlements.HelmEntitlementProxy`1.WrapGenericAsync[TResult](MethodInfo method, Object[] args)
+   at UiPath.Ipc.Server.<>c__DisplayClass19_1.<<HandleRequest>g__MethodCall|3>d.MoveNext()
+--- End of stack trace from previous location ---
+   at UiPath.Ipc.Server.<>c__DisplayClass19_0.<<HandleRequest>g__InvokeMethod|0>d.MoveNext()
+--- End of stack trace from previous location ---
+   at System.Runtime.CompilerServices.PoolingAsyncValueTaskMethodBuilder`1.StateMachineBox`1.System.Threading.Tasks.Sources.IValueTaskSource<TResult>.GetResult(Int16 token)
+   at UiPath.Ipc.Server.HandleRequest(Method method, Route route, Request request, CancellationToken cancellationToken)
+   at System.Runtime.CompilerServices.PoolingAsyncValueTaskMethodBuilder`1.StateMachineBox`1.System.Threading.Tasks.Sources.IValueTaskSource<TResult>.GetResult(Int16 token)
+   at UiPath.Ipc.Server.OnRequestReceived(Request request)
+2026-07-24 21:07:41.446 +00:00 [Error] [UiPath.Studio.Helm] [Load > Load] [Trace:UiPath.Studio.Helm] Robot installation directory not found; falling back to the app's own directory: /home/azureuser/.cache/uipath/helm/1.199.0-dev.20260722.4/
+2026-07-24 21:07:54.827 +00:00 [Error] [UiPath.Studio.Helm] [Load > Load] [Trace:UiPath.Studio.Helm] [SAV-TRACE] AddAssemblies kept for System.Activities.ViewModels: '/home/azureuser/.cache/uipath/helm/1.199.0-dev.20260722.4/Platform/net8.0/System.Activities.ViewModels.dll'
+2026-07-24 21:07:54.827 +00:00 [Error] [UiPath.Studio.Helm] [Load > Load] [Trace:UiPath.Studio.Helm] Duplicate assembly: /home/azureuser/.nuget/packages/system.activities.viewmodels/1.20260514.1/lib/net6.0/System.Activities.ViewModels.dll
+2026-07-24 21:07:54.827 +00:00 [Error] [UiPath.Studio.Helm] [Load > Load] [Trace:UiPath.Studio.Helm] [SAV-TRACE] AddAssemblies dup for System.Activities.ViewModels: kept='/home/azureuser/.cache/uipath/helm/1.199.0-dev.20260722.4/Platform/net8.0/System.Activities.ViewModels.dll' skipped='/home/azureuser/.nuget/packages/system.activities.viewmodels/1.20260514.1/lib/net6.0/System.Activities.ViewModels.dll'
+2026-07-24 21:07:54.830 +00:00 [Error] [UiPath.Studio.Helm] [Load > Load] [Trace:UiPath.Studio.Helm] [SAV-TRACE] runtime dir = '/usr/share/dotnet/shared/Microsoft.NETCore.App/8.0.29/'
+2026-07-24 21:07:54.830 +00:00 [Error] [UiPath.Studio.Helm] [Load > Load] [Trace:UiPath.Studio.Helm] [SAV-TRACE] resolver path [project(_assemblyPaths)]: '/home/azureuser/.cache/uipath/helm/1.199.0-dev.20260722.4/Platform/net8.0/System.Activities.ViewModels.dll'
+2026-07-24 21:07:54.830 +00:00 [Error] [UiPath.Studio.Helm] [Load > Load] [Trace:UiPath.Studio.Helm] [SAV-TRACE] resolver path [project(_assemblyPaths)]: '/home/azureuser/.nuget/packages/uipath.system.activities/26.6.1/lib/net6.0/UiPath.System.Activities.ViewModels.dll'
+2026-07-24 21:07:54.874 +00:00 [Error] [UiPath.Studio.Helm] [Load > Load] [Trace:UiPath.Studio.Helm] System.IO.FileLoadException: The assembly 'System.Activities.ViewModels, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null' has already loaded been loaded into this MetadataLoadContext.
+   at System.Reflection.MetadataLoadContext.LoadFromStreamCore(Stream peStream)
+   at UiPath.WorkflowCompiler.Executor.LoadContext.ProjectAssembliesMetadata.GetAssemblyInfo(String assemblyPath), HResult -2146232799
+2026-07-24 21:07:55.224 +00:00 [Warning] [UiPath.Studio.Helm] [Load > Load] [Trace:UiPath.Studio.Helm] [AccessLock] ACQUIRED '/work/output/artifacts/skill-flow-bellevue-weather-simulated/BellevueWeatherCheck/.local/db/references-8dc4bb5e.db'
+2026-07-24 21:08:52.941 +00:00 [Error] [UiPath.Studio.Helm] [Trace:UiPath.Studio.Helm] '/tmp/UiPathUserServices_root' pipe not found. Make sure the service host is started.

@@ -1,0 +1,14 @@
+{
+  "version": "1.0",
+  "id": "goal-b-evaluator-ebe4922a",
+  "name": "goal-b-evaluator",
+  "description": "Tree-based comparison of order-details JSON envelope; tolerates key ordering and minor whitespace",
+  "evaluatorTypeId": "uipath-json-similarity",
+  "evaluatorConfig": {
+    "name": "goal-b-evaluator",
+    "targetOutputKey": "*"
+  },
+  "fileName": "goal-b-evaluator-ebe4922a.json",
+  "createdAt": "2026-08-19T21:10:38.678Z",
+  "updatedAt": "2026-08-19T21:10:38.678Z"
+}

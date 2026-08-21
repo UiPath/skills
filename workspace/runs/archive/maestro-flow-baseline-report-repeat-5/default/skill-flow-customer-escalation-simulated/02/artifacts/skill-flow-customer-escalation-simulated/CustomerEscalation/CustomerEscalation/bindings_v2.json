@@ -1,0 +1,86 @@
+{
+  "version": "2.0",
+  "resources": [
+    {
+      "resource": "connection",
+      "key": "00000000-0000-0000-0000-000000000000",
+      "id": "connection00000000-0000-0000-0000-000000000000",
+      "value": {
+        "ConnectionId": {
+          "defaultValue": "00000000-0000-0000-0000-000000000000",
+          "isExpression": false,
+          "displayName": "uipath-mock-outlook connection"
+        }
+      },
+      "metadata": {
+        "ActivityName": "Email Received",
+        "BindingsVersion": "2.2",
+        "DisplayLabel": "uipath-mock-outlook connection",
+        "UseConnectionService": "true",
+        "Connector": "uipath-mock-outlook"
+      }
+    },
+    {
+      "resource": "connection",
+      "key": "849e85d8-1aa9-4d52-8bbd-20041c8f05d8",
+      "id": "connection849e85d8-1aa9-4d52-8bbd-20041c8f05d8",
+      "value": {
+        "ConnectionId": {
+          "defaultValue": "849e85d8-1aa9-4d52-8bbd-20041c8f05d8",
+          "isExpression": false,
+          "displayName": "uipath-salesforce-slack connection"
+        }
+      },
+      "metadata": {
+        "ActivityName": "Slack Alert to Team",
+        "BindingsVersion": "2.2",
+        "DisplayLabel": "uipath-salesforce-slack connection",
+        "UseConnectionService": "true",
+        "Connector": "uipath-salesforce-slack"
+      }
+    },
+    {
+      "resource": "connection",
+      "key": "f5273a4d-d492-4bcd-a106-5a20bf89a3ef",
+      "id": "connectionf5273a4d-d492-4bcd-a106-5a20bf89a3ef",
+      "value": {
+        "ConnectionId": {
+          "defaultValue": "f5273a4d-d492-4bcd-a106-5a20bf89a3ef",
+          "isExpression": false,
+          "displayName": "uipath-atlassian-jira connection"
+        }
+      },
+      "metadata": {
+        "ActivityName": "Create Jira Ticket",
+        "BindingsVersion": "2.2",
+        "DisplayLabel": "uipath-atlassian-jira connection",
+        "UseConnectionService": "true",
+        "Connector": "uipath-atlassian-jira"
+      }
+    },
+    {
+      "resource": "EventTrigger",
+      "key": "00000000-0000-0000-0000-000000000000",
+      "id": "EventTrigger00000000-0000-0000-0000-000000000000",
+      "value": {
+        "ConnectionId": {
+          "defaultValue": "00000000-0000-0000-0000-000000000000",
+          "isExpression": false
+        },
+        "EntryPointUniqueId": {
+          "defaultValue": "bf2377fe-0910-4b66-821d-2a30e2175f1a",
+          "isExpression": false
+        }
+      },
+      "metadata": {
+        "UseConnectionService": "true",
+        "Connector": "uipath-mock-outlook",
+        "ActivityName": "Email Received",
+        "BindingsVersion": "2.2",
+        "ObjectName": "Message",
+        "Operation": "EMAIL_RECEIVED",
+        "FilterExpression": ""
+      }
+    }
+  ]
+}

@@ -1,0 +1,6 @@
+{
+  "ProjectType": "Agent",
+  "Name": "ApproverCount",
+  "Description": "ApproverCount - analyzes a proposal review sentence and counts approvers",
+  "MainFile": null
+}

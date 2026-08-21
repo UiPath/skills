@@ -1,0 +1,403 @@
+{
+  "id": "8fa08d69-9303-4c01-8476-7216ed1309fb",
+  "version": "1.9",
+  "name": "BatchTransformDemo",
+  "variables": {
+    "globals": [
+      {
+        "id": "csvFile",
+        "direction": "in",
+        "type": "file",
+        "triggerNodeId": "start"
+      },
+      {
+        "id": "result",
+        "direction": "out",
+        "type": "file"
+      }
+    ],
+    "nodes": [
+      {
+        "id": "categorizeRows.output",
+        "type": "file",
+        "binding": {
+          "nodeId": "categorizeRows",
+          "outputId": "output"
+        }
+      },
+      {
+        "id": "categorizeRows.error",
+        "type": "object",
+        "description": "Error information if the node fails",
+        "binding": {
+          "nodeId": "categorizeRows",
+          "outputId": "error"
+        }
+      },
+      {
+        "id": "end.result",
+        "type": "string",
+        "binding": {
+          "nodeId": "end",
+          "outputId": "result"
+        }
+      },
+      {
+        "id": "start.output",
+        "type": "object",
+        "description": "Data passed when manually triggering the process.",
+        "binding": {
+          "nodeId": "start",
+          "outputId": "output"
+        }
+      }
+    ]
+  },
+  "nodes": [
+    {
+      "id": "categorizeRows",
+      "type": "uipath.pattern.batch-transform",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Batch transform"
+      },
+      "inputs": {
+        "attachment": "=js:$vars.start.output.csvFile",
+        "prompt": "Classify each row by category and write a one-line summary.",
+        "outputColumns": [
+          {
+            "name": "Category",
+            "description": "One of: Utility, Software, Travel, Other"
+          },
+          {
+            "name": "Summary",
+            "description": "Plain-English one-line summary of the row"
+          }
+        ]
+      },
+      "outputs": {
+        "output": {
+          "type": "file",
+          "source": "=response",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails",
+          "source": "=Error",
+          "var": "error"
+        }
+      }
+    },
+    {
+      "id": "end",
+      "type": "core.control.end",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "End"
+      },
+      "inputs": {},
+      "outputs": {
+        "result": {
+          "source": "=js:$vars.categorizeRows.output"
+        }
+      }
+    },
+    {
+      "id": "start",
+      "type": "core.trigger.manual",
+      "typeVersion": "1.0",
+      "display": {
+        "label": "Manual trigger"
+      },
+      "inputs": {
+        "entryPointId": "67cd6100-c396-4906-b64f-9924ae20f863",
+        "isDefaultEntryPoint": true
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge_start_output_categorizeRows_input",
+      "sourceNodeId": "start",
+      "sourcePort": "output",
+      "targetNodeId": "categorizeRows",
+      "targetPort": "input"
+    },
+    {
+      "id": "edge_categorizeRows_output_end_input",
+      "sourceNodeId": "categorizeRows",
+      "sourcePort": "output",
+      "targetNodeId": "end",
+      "targetPort": "input"
+    }
+  ],
+  "definitions": [
+    {
+      "nodeType": "uipath.pattern.batch-transform",
+      "version": "1.0",
+      "category": "data",
+      "tags": [
+        "batch",
+        "transform",
+        "csv"
+      ],
+      "sortOrder": 30,
+      "supportsErrorHandling": true,
+      "description": "Add AI-generated columns to a CSV",
+      "display": {
+        "label": "Batch transform",
+        "icon": "grid-2x2-plus"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        },
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "output",
+              "type": "source",
+              "handleType": "output"
+            },
+            {
+              "id": "error",
+              "label": "Error",
+              "type": "source",
+              "handleType": "output",
+              "visible": "{inputs.errorHandlingEnabled}",
+              "constraints": {
+                "maxConnections": 1
+              }
+            }
+          ]
+        }
+      ],
+      "model": {
+        "type": "bpmn:ServiceTask",
+        "serviceType": "ECS.BatchTransform"
+      },
+      "inputDefinition": {
+        "type": "object",
+        "properties": {
+          "attachment": {
+            "type": "string"
+          },
+          "prompt": {
+            "type": "string"
+          },
+          "enableWebSearchGrounding": {
+            "type": "boolean"
+          },
+          "outputColumns": {
+            "type": "array"
+          }
+        },
+        "required": [
+          "attachment",
+          "prompt"
+        ]
+      },
+      "inputDefaults": {
+        "attachment": "",
+        "prompt": "",
+        "enableWebSearchGrounding": false,
+        "outputColumns": [
+          {
+            "name": "OutputColumn1",
+            "description": "Describe what this new column should contain"
+          }
+        ]
+      },
+      "outputDefinition": {
+        "output": {
+          "type": "file",
+          "source": "=response",
+          "var": "output"
+        },
+        "error": {
+          "type": "object",
+          "description": "Error information if the node fails",
+          "source": "=Error",
+          "var": "error",
+          "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "required": [
+              "code",
+              "message",
+              "detail",
+              "category",
+              "status"
+            ],
+            "properties": {
+              "code": {
+                "type": "string",
+                "description": "Error code as a string"
+              },
+              "message": {
+                "type": "string",
+                "description": "High-level error message"
+              },
+              "detail": {
+                "type": "string",
+                "description": "Detailed error description"
+              },
+              "category": {
+                "type": "string",
+                "description": "Error category"
+              },
+              "status": {
+                "type": "integer",
+                "description": "HTTP status code"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      }
+    },
+    {
+      "nodeType": "core.control.end",
+      "version": "1.0",
+      "category": "control-flow",
+      "description": "Mark the end of a process path",
+      "tags": [
+        "control-flow",
+        "end",
+        "finish",
+        "complete"
+      ],
+      "sortOrder": 65,
+      "display": {
+        "label": "End",
+        "icon": "circle-check",
+        "shape": "circle"
+      },
+      "handleConfiguration": [
+        {
+          "position": "left",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "input"
+            }
+          ]
+        }
+      ],
+      "model": {
+        "type": "bpmn:EndEvent"
+      },
+      "runtimeConstraints": {
+        "exclude": [
+          "api-function"
+        ]
+      }
+    },
+    {
+      "nodeType": "core.trigger.manual",
+      "version": "1.0",
+      "category": "trigger",
+      "description": "Start the process manually",
+      "tags": [
+        "trigger",
+        "start",
+        "manual"
+      ],
+      "sortOrder": 80,
+      "display": {
+        "label": "Manual trigger",
+        "icon": "play",
+        "shape": "circle"
+      },
+      "handleConfiguration": [
+        {
+          "position": "right",
+          "handles": [
+            {
+              "id": "output",
+              "type": "source",
+              "handleType": "output",
+              "showButton": true,
+              "constraints": {
+                "forbiddenTargetCategories": [
+                  "trigger"
+                ]
+              }
+            }
+          ],
+          "visible": true
+        }
+      ],
+      "model": {
+        "type": "bpmn:StartEvent",
+        "entryPointId": true
+      },
+      "outputDefinition": {
+        "output": {
+          "type": "object",
+          "description": "Data passed when manually triggering the process.",
+          "source": "null",
+          "var": "output"
+        }
+      },
+      "toolbarExtensions": {
+        "design": {
+          "actions": [
+            {
+              "id": "change-trigger-type",
+              "icon": "square-mouse-pointer",
+              "label": "Change trigger type"
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "runtime": "maestro",
+  "layout": {
+    "nodes": {
+      "categorizeRows": {
+        "position": {
+          "x": 0,
+          "y": 0
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "end": {
+        "position": {
+          "x": 192,
+          "y": 0
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        },
+        "collapsed": false
+      },
+      "start": {
+        "position": {
+          "x": -192,
+          "y": 0
+        },
+        "size": {
+          "width": 96,
+          "height": 96
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,6 @@
+00:12:50 [INFO   ] [default/skill-flow-e2e-devcon-expense-approval/00] orchestrator: API routing: aws_bedrock
+00:20:29 [INFO   ] [default/skill-flow-e2e-devcon-expense-approval/00] orchestrator: Success criteria: 6/6 passed, weighted score: 1.000
+00:20:29 [WARNING] [default/skill-flow-e2e-devcon-expense-approval/00] orchestrator: Visible turns (36) exceeded expected_turns (29) at iteration 1 for task skill-flow-e2e-devcon-expense-approval. Run continues — max_turns remains the hard cap.
+00:20:29 [INFO   ] [default/skill-flow-e2e-devcon-expense-approval/00] orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+00:20:29 [INFO   ] [default/skill-flow-e2e-devcon-expense-approval/00] orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-e2e-devcon-expense-approval
+00:20:29 [INFO   ] [default/skill-flow-e2e-devcon-expense-approval/00] orchestrator: Task finished: status=SUCCESS duration=460.8s score=1.000 iterations=1

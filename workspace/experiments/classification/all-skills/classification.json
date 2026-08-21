@@ -1,0 +1,33 @@
+{
+  "Strong": [
+    "uipath-admin",
+    "uipath-api-workflow",
+    "uipath-automationhub",
+    "uipath-connector-builder",
+    "uipath-feedback",
+    "uipath-ixp",
+    "uipath-maestro-case",
+    "uipath-platform",
+    "uipath-process-mining",
+    "uipath-review",
+    "uipath-solution",
+    "uipath-tasks",
+    "uipath-test"
+  ],
+  "Partial": [
+    "uipath-agents",
+    "uipath-automation-discovery",
+    "uipath-coded-apps",
+    "uipath-functions",
+    "uipath-governance",
+    "uipath-human-in-the-loop",
+    "uipath-insights",
+    "uipath-maestro-bpmn",
+    "uipath-maestro-flow",
+    "uipath-mcp-servers",
+    "uipath-planner",
+    "uipath-rpa",
+    "uipath-troubleshoot"
+  ],
+  "None": []
+}

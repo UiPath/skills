@@ -1,0 +1,29 @@
+2026-08-20 21:07:25 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-08-20 21:07:25 [INFO] coder_eval.orchestrator: API routing: aws_bedrock
+2026-08-20 21:07:25 [DEBUG] coder_eval.criteria: Discovered 15 criterion checkers
+2026-08-20 21:07:25 [DEBUG] coder_eval.criteria: Validated 15 criterion checkers
+2026-08-20 21:07:25 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-08-20 21:07:26 [DEBUG] coder_eval.orchestrator: Sending prompt: Load and follow the uipath-maestro-bpmn skill.
+
+Author a local Maestro BPMN project named "QueueCrea...
+2026-08-20 21:07:26 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Starting agent query stream...
+2026-08-20 21:13:52 [DEBUG] coder_eval.agents.claude_code_agent: [coder] session_id changed: None -> 21aff743-6e59-4835-9687-8a59981d1d66
+2026-08-20 21:13:52 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Agent query stream ended
+2026-08-20 21:13:52 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-08-20 21:13:52 [DEBUG] coder_eval.orchestrator: Agent response received (5933 chars)
+2026-08-20 21:13:52 [DEBUG] coder_eval.orchestrator: Checking success criteria
+2026-08-20 21:13:52 [DEBUG] coder_eval.evaluation.checker: Criterion 'file_exists' score: 1.00
+2026-08-20 21:13:52 [DEBUG] coder_eval.evaluation.checker: Criterion 'command_executed' score: 1.00
+2026-08-20 21:13:52 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'CreateAndWaitForQueueItem hosted on a serviceTask with bound input + captured output': python3 $TASK_DIR/check_queue_create_and_wait.py
+2026-08-20 21:13:52 [DEBUG] coder_eval.sandbox: Command 'python3 $TASK_DIR/check_queue_create_and_wait.py' exited with code 0
+2026-08-20 21:13:52 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+OK: QueueCreateAndWaitBpmn/QueueCreateAndWaitBpmn.bpmn hosts Orchestrator.CreateAndWaitForQueueItem on a serviceTask with bound input and captured output
+---
+2026-08-20 21:13:52 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-08-20 21:13:52 [INFO] coder_eval.orchestrator: Success criteria: 3/3 passed, weighted score: 1.000
+2026-08-20 21:13:52 [WARNING] coder_eval.orchestrator: Visible turns (36) exceeded expected_turns (18) at iteration 1 for task skill-bpmn-queue-create-and-wait. Run continues — max_turns remains the hard cap.
+2026-08-20 21:13:52 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-08-20 21:13:52 [INFO] coder_eval.orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+2026-08-20 21:13:52 [INFO] coder_eval.orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-bpmn-queue-create-and-wait
+2026-08-20 21:13:52 [INFO] coder_eval.orchestrator: Task finished: status=SUCCESS duration=393.5s score=1.000 iterations=1

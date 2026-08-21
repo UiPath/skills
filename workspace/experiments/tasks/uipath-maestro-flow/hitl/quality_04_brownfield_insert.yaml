@@ -1,0 +1,73 @@
+task_id: skill-flow-hitl-quality-brownfield-insert
+description: >
+  Quality test: agent inserts a HITL node into an existing flow without
+  breaking the existing nodes or wiring. Tests that the agent can correctly
+  remove an existing edge and re-wire it through a new HITL node.
+tags: [uipath-maestro-flow, uipath-human-in-the-loop, integration, lifecycle:generate, shape:multi-node, node:hitl]
+
+run_limits:
+  expected_turns: 34
+  max_turns: 150
+initial_prompt: |
+  You are working on an existing UiPath Flow named "ContractReview".
+
+  Step 1 — Build the base flow:
+  Create ContractReview as a 3-node flow:
+    Manual Trigger → Script (id: "extractMeta", logs "Extracting contract metadata") → End
+
+  Step 2 — Insert HITL into the existing flow:
+  Between the extractMeta Script node and the End node, insert a HITL node
+  where a legal reviewer approves the contract:
+    - Reviewer sees (read-only): contract_id (text), contract_value (number)
+    - Reviewer fills in: approved (boolean, required), legal_notes (text, optional)
+    - Outcomes: Approve (primary), Reject
+
+  After insertion the wiring must be:
+    Trigger → extractMeta →|output| HITL →|completed| End
+
+  The original extractMeta → End edge must be removed.
+  The extractMeta → HITL edge and HITL → End edge must be added.
+
+  Validate the flow after building.
+
+success_criteria:
+  - type: run_command
+    description: "uip maestro flow validate passes after brownfield insert"
+    command: "python3 $EXPERIMENT_TASKS_PATH/uipath-maestro-flow/_shared/validate_flow.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Flow contains the original script node"
+    command: "python3 $EXPERIMENT_TASKS_PATH/uipath-maestro-flow/_shared/flow_contains.py --flow-name ContractReview '\"extractMeta\"'"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Flow contains the inserted HITL node"
+    command: "python3 $EXPERIMENT_TASKS_PATH/uipath-maestro-flow/_shared/flow_contains.py --flow-name ContractReview '\"uipath.human-in-the-loop.quick-form\"'"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "HITL completed handle is wired"
+    command: "python3 $EXPERIMENT_TASKS_PATH/uipath-maestro-flow/_shared/flow_contains.py --flow-name ContractReview 'completed'"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "HITL has a boolean output field for the approval decision"
+    command: "python3 $EXPERIMENT_TASKS_PATH/uipath-maestro-flow/_shared/flow_contains.py --flow-name ContractReview '\"boolean\"'"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+

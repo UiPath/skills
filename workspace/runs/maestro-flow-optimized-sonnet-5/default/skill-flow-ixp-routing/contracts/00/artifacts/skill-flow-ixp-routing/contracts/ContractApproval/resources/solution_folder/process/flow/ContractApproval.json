@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "ContractApproval",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "6b49f74f-8243-42dc-9437-30a62d5befa8",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "ContractApproval"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Flow",
+      "name": "ContractApproval",
+      "package": {
+        "key": "98836756-3801-4fa4-a970-06a85fb1d304"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "4eb57918-5bad-44e4-bcb6-ba6993233807",
+    "files": []
+  }
+}

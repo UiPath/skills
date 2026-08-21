@@ -1,0 +1,92 @@
+{
+  "Result": "Success",
+  "Code": "RegistrySearchSuccess",
+  "Data": {
+    "ExtensionTypes": [
+      {
+        "ExtensionType": "Intsvc.ActivityExecution",
+        "Label": "Execute connector activity",
+        "BpmnElement": "bpmn:SendTask",
+        "ExtensionTag": "uipath:activity",
+        "InputPattern": "separateInputs",
+        "BindingPattern": "connection",
+        "RequiresDiscovery": "Yes"
+      },
+      {
+        "ExtensionType": "Intsvc.WaitForEvent",
+        "Label": "Wait for connector event",
+        "BpmnElement": "bpmn:ReceiveTask",
+        "ExtensionTag": "uipath:event",
+        "InputPattern": "separateInputs",
+        "BindingPattern": "connection",
+        "RequiresDiscovery": "Yes"
+      },
+      {
+        "ExtensionType": "Intsvc.EventTrigger",
+        "Label": "Wait for connector event (trigger)",
+        "BpmnElement": "bpmn:StartEvent",
+        "ExtensionTag": "uipath:event",
+        "InputPattern": "separateInputs",
+        "BindingPattern": "connection",
+        "RequiresDiscovery": "Yes"
+      },
+      {
+        "ExtensionType": "Intsvc.AsyncExecution",
+        "Label": "Start and wait for external agent",
+        "BpmnElement": "bpmn:ServiceTask",
+        "ExtensionTag": "uipath:activity",
+        "InputPattern": "separateInputs",
+        "BindingPattern": "connection",
+        "RequiresDiscovery": "Yes"
+      },
+      {
+        "ExtensionType": "Intsvc.SyncAgentExecution",
+        "Label": "Start and wait for external agent",
+        "BpmnElement": "bpmn:ServiceTask",
+        "ExtensionTag": "uipath:activity",
+        "InputPattern": "separateInputs",
+        "BindingPattern": "connection",
+        "RequiresDiscovery": "Yes"
+      },
+      {
+        "ExtensionType": "Intsvc.AsyncAgentExecution",
+        "Label": "Start and wait for external agent",
+        "BpmnElement": "bpmn:ServiceTask",
+        "ExtensionTag": "uipath:activity",
+        "InputPattern": "separateInputs",
+        "BindingPattern": "connection",
+        "RequiresDiscovery": "Yes"
+      },
+      {
+        "ExtensionType": "Intsvc.SyncWorkflowExecution",
+        "Label": "Start and wait for external workflow",
+        "BpmnElement": "bpmn:ServiceTask",
+        "ExtensionTag": "uipath:activity",
+        "InputPattern": "separateInputs",
+        "BindingPattern": "connection",
+        "RequiresDiscovery": "Yes"
+      },
+      {
+        "ExtensionType": "Intsvc.AsyncWorkflowExecution",
+        "Label": "Start and wait for external workflow",
+        "BpmnElement": "bpmn:ServiceTask",
+        "ExtensionTag": "uipath:activity",
+        "InputPattern": "separateInputs",
+        "BindingPattern": "connection",
+        "RequiresDiscovery": "Yes"
+      }
+    ],
+    "Connectors": [],
+    "Processes": [],
+    "ProcessesByType": {
+      "Process": 0,
+      "ProcessOrchestration": 0,
+      "Agent": 0,
+      "Flow": 0,
+      "Api": 0,
+      "Function": 0,
+      "CaseManagement": 0,
+      "BusinessRules": 0
+    }
+  }
+}

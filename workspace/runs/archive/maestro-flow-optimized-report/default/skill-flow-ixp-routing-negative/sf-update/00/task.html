@@ -1,0 +1,1409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>coder_eval · skill-flow-ixp-routing-negative/sf-update · default</title>
+<style>
+:root {
+  --bg-page: #0f1419;
+  --bg-card: #1a2129;
+  --bg-card-2: #232d38;
+  --bg-code: #0b0f14;
+  --fg: #e6edf3;
+  --fg-muted: #8b98a5;
+  --fg-dim: #6e7681;
+  --border: #30363d;
+  --accent: #58a6ff;
+  --score-high: #22c55e;
+  --score-mid: #f59e0b;
+  --score-low: #ef4444;
+  --status-success: #22c55e;
+  --status-failure: #f59e0b;
+  --status-error: #ef4444;
+  --status-neutral: #6e7681;
+  --shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+.light {
+  --bg-page: #ffffff;
+  --bg-card: #f6f8fa;
+  --bg-card-2: #eaeef2;
+  --bg-code: #f6f8fa;
+  --fg: #1f2328;
+  --fg-muted: #636c76;
+  --fg-dim: #8b949e;
+  --border: #d0d7de;
+  --accent: #0969da;
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial,
+               sans-serif;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--fg);
+  background: var(--bg-page);
+}
+.container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+h1, h2, h3, h4 { margin: 0 0 12px 0; line-height: 1.25; }
+h1 { font-size: 22px; font-weight: 600; }
+h2 { font-size: 18px; font-weight: 600; margin-top: 28px;
+     padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+h3 { font-size: 15px; font-weight: 600; color: var(--fg-muted); }
+h4 { font-size: 13px; font-weight: 600; color: var(--fg-muted); }
+p { margin: 0 0 8px 0; }
+.muted { color: var(--fg-muted); }
+.dim { color: var(--fg-dim); }
+.mono { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+        monospace; font-size: 12.5px; }
+code { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+       monospace; font-size: 12.5px; background: var(--bg-code);
+       border: 1px solid var(--border); padding: 1px 5px; border-radius: 3px; }
+pre { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+      monospace; font-size: 12.5px; background: var(--bg-code);
+      border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px;
+      margin: 6px 0; overflow-x: auto; white-space: pre-wrap;
+      word-wrap: break-word; }
+.header-bar { display: flex; align-items: center; justify-content: space-between;
+              margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+.title-group { flex: 1; min-width: 0; }
+.title-group .subtitle { color: var(--fg-muted); font-size: 13px;
+                         margin-top: 2px; word-break: break-all; }
+.badges { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.badge { display: inline-flex; align-items: center; gap: 6px;
+         padding: 4px 10px; border-radius: 12px; font-size: 12px;
+         font-weight: 600; background: var(--bg-card-2);
+         border: 1px solid var(--border); color: var(--fg); }
+.badge.success { background: color-mix(in srgb, var(--status-success) 20%, var(--bg-card-2));
+                 border-color: var(--status-success); color: var(--status-success); }
+.badge.failure { background: color-mix(in srgb, var(--status-failure) 20%, var(--bg-card-2));
+                 border-color: var(--status-failure); color: var(--status-failure); }
+.badge.error { background: color-mix(in srgb, var(--status-error) 20%, var(--bg-card-2));
+               border-color: var(--status-error); color: var(--status-error); }
+.badge.warning { background: color-mix(in srgb, #f4a52810 20%, var(--bg-card-2));
+                 border-color: #f4a528; color: #f4a528; }
+.badge.neutral { color: var(--fg-muted); }
+.score-pill { display: inline-block; padding: 2px 8px; border-radius: 10px;
+              font-size: 12px; font-weight: 700; min-width: 42px;
+              text-align: center; color: #0b0f14; }
+.score-high { background: var(--score-high); }
+.score-mid { background: var(--score-mid); }
+.score-low { background: var(--score-low); }
+.card { background: var(--bg-card); border: 1px solid var(--border);
+        border-radius: 8px; padding: 16px 20px; margin-bottom: 16px;
+        box-shadow: var(--shadow); }
+.card.highlight { border-left: 4px solid var(--accent); }
+.grid { display: grid; gap: 12px;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+.stat { background: var(--bg-card-2); padding: 10px 12px; border-radius: 6px;
+        border: 1px solid var(--border); }
+.stat .label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;
+               color: var(--fg-muted); margin-bottom: 4px; }
+.stat .value { font-size: 16px; font-weight: 600; }
+table { width: 100%; border-collapse: collapse; margin: 4px 0 12px 0; }
+th, td { text-align: left; padding: 8px 10px;
+         border-bottom: 1px solid var(--border); vertical-align: top;
+         font-size: 13px; }
+th { color: var(--fg-muted); font-weight: 600; font-size: 12px;
+     text-transform: uppercase; letter-spacing: 0.3px; }
+tr:last-child td { border-bottom: none; }
+details { margin: 6px 0; border: 1px solid var(--border); border-radius: 6px;
+          background: var(--bg-card-2); }
+details > summary { cursor: pointer; padding: 8px 12px; user-select: none;
+                    font-weight: 500; list-style: none; }
+details > summary::-webkit-details-marker { display: none; }
+details > summary::before { content: "▸ "; color: var(--fg-dim);
+                            display: inline-block; width: 14px;
+                            transition: transform 0.15s; }
+details[open] > summary::before { content: "▾ "; }
+details .details-body { padding: 0 12px 10px 12px; }
+.tool-row { display: flex; align-items: center; gap: 10px;
+            flex-wrap: wrap; font-size: 13px; }
+.tool-name { font-weight: 600; color: var(--accent); font-family: ui-monospace,
+             SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+.tool-status-ok { color: var(--status-success); font-size: 11px;
+                  font-weight: 600; }
+.tool-status-err { color: var(--status-error); font-size: 11px;
+                   font-weight: 600; }
+.tool-duration { color: var(--fg-muted); font-size: 12px; }
+.tool-seq { color: var(--fg-dim); font-size: 11px; font-weight: 600;
+            min-width: 24px; text-align: right; font-family: ui-monospace,
+            SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+.turn-header { display: flex; justify-content: space-between;
+               align-items: baseline; flex-wrap: wrap; gap: 10px;
+               margin-bottom: 10px; }
+.turn-meta { font-size: 12px; color: var(--fg-muted); }
+.criterion-row td:first-child { font-family: ui-monospace, SFMono-Regular,
+                                 "SF Mono", Menlo, Consolas, monospace;
+                                 color: var(--fg-muted); font-size: 12px; }
+.judge-section { display: flex; flex-direction: column; gap: 12px; }
+.judge-card { padding: 14px 16px; }
+.judge-card-head { display: flex; justify-content: space-between;
+                    align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+.judge-card-title { font-size: 14px; line-height: 1.4; flex: 1; min-width: 0; }
+.judge-card-score { flex-shrink: 0; }
+.judge-rationale { margin-top: 10px; padding: 10px 12px;
+                   background: var(--bg-code); border-radius: 4px;
+                   font-size: 13px; line-height: 1.5; }
+.judge-findings { margin: 8px 0 0 18px; padding-left: 4px; font-size: 13px;
+                   line-height: 1.6; }
+.judge-findings li { margin: 2px 0; }
+.nav-toggle { display: inline-block; padding: 5px 10px; font-size: 12px;
+              background: var(--bg-card-2); border: 1px solid var(--border);
+              border-radius: 5px; color: var(--fg); cursor: pointer; }
+.nav-toggle:hover { background: var(--bg-card); }
+.llm-next-steps { margin: 6px 0 0 20px; padding-left: 0; }
+.llm-next-steps li { margin: 3px 0; }
+.iteration-group { padding: 12px 16px 4px 16px; margin-bottom: 20px;
+                   border-radius: 0 6px 6px 0; border-left: 4px solid var(--status-neutral); }
+/* rgba fallback for browsers without color-mix (Chrome <111, Firefox <113, Safari <16.2). */
+.iteration-group--recovered { border-left-color: var(--status-success);
+                              background: rgba(34, 197, 94, 0.06);
+                              background: color-mix(in srgb, var(--status-success) 6%, transparent); }
+.iteration-group--terminal { border-left-color: var(--status-error);
+                             background: rgba(239, 68, 68, 0.06);
+                             background: color-mix(in srgb, var(--status-error) 6%, transparent); }
+.iteration-group__banner { margin: 0 0 12px 0; font-size: 14px; font-weight: 600; }
+.iteration-group--recovered .iteration-group__banner { color: var(--status-success); }
+.iteration-group--terminal .iteration-group__banner { color: var(--status-error); }
+.attempt-transition { display: flex; align-items: center; gap: 8px;
+                      margin: -6px 0 12px 8px; color: var(--status-error); font-size: 12.5px; }
+.attempt-transition__icon { font-weight: 700; }
+footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--border);
+         color: var(--fg-dim); font-size: 12px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="header-bar">
+  <div class="title-group">
+    <h1>Task: skill-flow-ixp-routing-negative/sf-update</h1>
+    <div class="subtitle">Negative IxP routing — verifies the agent does NOT add a uipath.ixp.* node when the user asks for a Maestro flow with no document-extraction scope. Parent uipath-maestro-flow Skill must still fire (this is in-skill plugin-routing coverage; &quot;should not fire maestro-flow at all&quot; is upstream in coder_eval/tasks/uipath_flow/triggering/triggering.jsonl).</div>
+  </div>
+  <div class="badges">
+    <span class="badge success">SUCCESS</span>
+    <span class="score-pill score-high">1.00</span>
+    <span class="badge neutral">claude-code · claude-sonnet-4-6</span>
+    <span class="badge neutral">4m 28s</span>
+    <span class="badge neutral">$0.7812</span>
+    
+    
+    <span class="nav-toggle" onclick="toggleTheme()">Toggle theme</span>
+  </div>
+</div>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Variant</div><div class="value">default</div></div>
+    <div class="stat"><div class="label">Started</div><div class="value mono">2026-07-24T00:11:54</div></div>
+    <div class="stat"><div class="label">Duration</div><div class="value">4m 28s</div></div>
+    <div class="stat"><div class="label">Turns (SDK)</div><div class="value">49</div></div>
+    <div class="stat"><div class="label">Commands</div><div class="value">26</div></div>
+  </div>
+</div>
+
+<h2>Success Criteria <span class="muted" style="font-weight:400">(1/1 passed)</span></h2>
+<div class="card" style="padding:0">
+<table>
+  <thead>
+    <tr>
+      <th style="width:15%">Type</th>
+      <th style="width:35%">Description</th>
+      <th style="width:10%">Score</th>
+      <th>Details</th>
+    </tr>
+  </thead>
+  <tbody>
+    
+<tr class="criterion-row">
+  <td>run_command</td>
+  <td>No uipath.ixp.* node landed in any .flow file (negative IxP routing)</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Command: ! grep -rqE &quot;\&quot;type\&quot;[[:space:]]*:[[:space:]]*\&quot;uipath\.ixp&quot; --include=&quot;*.flow&quot; .</summary><div class="details-body"><pre style="margin:6px 0 0 0">Command: ! grep -rqE &quot;\&quot;type\&quot;[[:space:]]*:[[:space:]]*\&quot;uipath\.ixp&quot; --include=&quot;*.flow&quot; .
+Exit code: 0 (expected: 0)
+Stdout: (empty)
+Stderr: (empty)</pre></div></details></td>
+</tr>
+
+  </tbody>
+</table>
+</div>
+<h2>Conversation Trace (1 iteration)</h2>
+<div class="card">
+  <div class="turn-header">
+    <h3>Iteration 1</h3>
+    <div class="badges">
+      <span class="badge neutral">49 assistant turns</span>
+      <span class="badge neutral">in 21 · out 12486 · cache 1175201</span>
+      <span class="badge neutral">4m 25s</span>
+      <span class="badge failure">max_turns exhausted</span>
+      
+      
+    </div>
+  </div>
+  <details>
+    <summary>Prompt to agent</summary>
+    <div class="details-body"><pre>Your working directory is: /work/output/artifacts/skill-flow-ixp-routing-negative/sf-update
+
+Build a flow that reads open Salesforce opportunities and updates the stage field on each one.
+
+Important:
+- The `uip` CLI is already available.
+- Use `--output json` on all uip commands.
+- Work inside the stated working directory — do NOT `cd` to a parent.
+- Do NOT run `uip maestro flow debug` or `uip maestro flow deploy`.
+- Run `uip maestro flow validate` at most ONCE. If it fails, stop.
+- Do NOT iterate on validation errors or rewrite the flow to fix them. A broken flow is acceptable.
+- Exploration + an attempted node-add is enough — you do not need to build a working flow.
+</pre></div>
+  </details>
+  <details>
+    <summary>Agent response</summary>
+    <div class="details-body"><pre>[ASSISTANT] Now I have the full plan. Let me start with T1: check the working directory for existing solutions, check login, and search for Salesforce connector — all in parallel.
+[ASSISTANT] Good. The connector key is `uipath-salesforce-sfdc`. I need:
+- `uipath.connector.uipath-salesforce-sfdc.list-records` — to query open opportunities
+- `uipath.connector.uipath-salesforce-sfdc.update-record` — to update stage on each
+
+Now let me check for connections, then scaffold the solution + project and add CLI-owned nodes in one chained T1 bash:
+[ASSISTANT] Good. A healthy Salesforce connection exists: `0fddf20e-f229-4ee9-acb3-c5be50034839` in folder `uipath-maestro-flow` (folderKey: `5da18ec0-7de1-4e57-aaf1-ddc8a369c199`).
+
+Now run the T1 chain: scaffold solution + project, pull registry, add the two CLI-owned connector nodes (list-records + update-record):
+[ASSISTANT] T1 done. Node IDs:
+- `listOpenOpportunities1`  
+- `updateOpportunityStage1`
+
+Now T2: read the flow file, then author user-owned nodes (loop + end) and wire edges:
+[ASSISTANT] Now I need to read the loop and end definitions, then add user-owned nodes (loop + end) and wire edges:
+[ASSISTANT] Now I&#x27;ll write the four parallel Edits to add the loop + end nodes, definitions, edges, and layout entries:
+[ASSISTANT] Now I also need to add `loop1` and `end` to `variables.nodes`. Then run T3: `node configure` for both connector nodes + `validate` + `format`.
+
+First, let me check the connector impl.md to understand the `--detail` for list-records and update-record:
+[ASSISTANT] Now I need to run the generic activity steps: discover the object name for Opportunity and describe operations. These are generic activities so I need `is resources list` and `is resources describe`:
+[ASSISTANT] The generic object name is `Opportunity`. Now describe List and Update operations:
+[ASSISTANT] Good. Now I have all I need. Let me also add the loop1 variables to `variables.nodes` before running T3. Then configure + validate + format:
+[ASSISTANT] Now run T3: configure both connector nodes + validate + format:
+[ASSISTANT] Validation failed with edge field errors (`sourcePort` vs `sourcePortId` mismatch). Per task instructions, I stop here — validate runs at most once.
+
+---
+
+Here&#x27;s a summary of what was built:
+
+**Flow file:** `/work/output/artifacts/skill-flow-ixp-routing-negative/sf-update/SfUpdateSolution/SfUpdate/SfUpdate.flow`
+
+**What was built:**
+- **Solution:** `SfUpdateSolution/SfUpdateSolution.uipx`
+- **Project:** `SfUpdateSolution/SfUpdate/SfUpdate.flow`
+- **Nodes:**
+  1. `start` — Manual trigger (scaffolded by `flow init`)
+  2. `listOpenOpportunities1` — `uipath.connector.uipath-salesforce-sfdc.list-records` (CLI-owned, configured with `GET /Opportunity` filter for open records, bound to connection `0fddf20e`)
+  3. `loop1` — `core.logic.loop` iterating over `$vars.listOpenOpportunities1.output.records`
+  4. `updateOpportunityStage1` — `uipath.connector.uipath-salesforce-sfdc.update-record` (CLI-owned, configured with `PATCH /Opportunity/{opportunityId}`, sets `StageName: &quot;Closed Won&quot;`, bound to same connection)
+  5. `end` — `core.control.end`
+- **Edges wired:** start → list → loop (outer input), loop inner start → update → loop continue, loop success → end
+- **Salesforce connection used:** `qa+churros@cloud-elements.com` (Enabled, folder `uipath-maestro-flow`)
+
+**Validation status:** Failed — 5 errors: `edges[x].sourcePort` expected string but received undefined (I authored edges with `sourcePortId`; the validator schema requires `sourcePort`). Per task instructions, no iteration on validation errors was performed.
+
+**Format:** Not run (chained after validate which failed).
+[RESULT - SUCCESS] Validation failed with edge field errors (`sourcePort` vs `sourcePortId` mismatch). Per task instructions, I stop here — validate runs at most once.
+
+---
+
+Here&#x27;s a summary of what was built:
+
+**Flow file:** `/work/output/artifacts/skill-flow-ixp-routing-negative/sf-update/SfUpdateSolution/SfUpdate/SfUpd</pre></div>
+  </details>
+  <h4 style="margin-top:12px">Tool Calls (26)</h4>
+  
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#0</span>
+      <span class="tool-name">Skill</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">15ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;skill&quot;: &quot;uipath:uipath-maestro-flow&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Launching skill: uipath:uipath-maestro-flow</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#1</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">391ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/CAPABILITY.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Author — Create and edit `.flow` files
+2	
+3	Capability index for building new flows (greenfield) and editing existing flows (brownfield). Author owns everything that happens on disk, locally, without `uip login`. Authoring journeys terminate at `validate` + `format`; from there, hand off to [operate/CAPABILITY.md](../operate/CAPABILITY.md) to publish, run, or debug.
+4	
+5	&gt; **Where you came from / where to go next.** Author is upstream of Operate (build the flow → ship it) and upstream of Diagnose only via Operate (build → run → diagnose). Publish/run/lifecycle lives in [operate/CAPABILITY.md](../operate/CAPABILITY.md); fault triage lives in [diagnose/CAPABILITY.md](../diagnose/CAPABILITY.md).
+6	&gt;
+7	&gt; **Inherits universal rules from [SKILL.md](../../SKILL.md)** — `--output json` + prefer `--output-filter` for extraction, no `flow debug` without consent, resource discovery order, never invoke other skills automatically, dropdown question pattern, solution layout, **plain-English narration + granular progress list (opt-in — silent by default; engage when the user asks for verbosity)**. The rules below are author-scoped and apply on top.
+8	
+9	## When to use this capability
+10	
+11	-
+
+… (truncated, 25996 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#2</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">150ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/references/greenfield.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Greenfield — Create a New Flow
+2	
+3	End-to-end journey for creating a Flow project from scratch. Author terminates at `validate` + `format`. To publish, run, or debug after this, see [operate/CAPABILITY.md](../../operate/CAPABILITY.md).
+4	
+5	&gt; **Brownfield edits use a different journey.** If the `.flow` file already exists, see [brownfield.md](brownfield.md) instead.
+6	
+7	## Should you plan first?
+8	
+9	For complex flows, produce a plan before building. Reference [planning-arch.md](planning-arch.md) and [planning-impl.md](planning-impl.md) for the node type catalog, port reference, wiring rules, and topology patterns.
+10	
+11	**Plan when:**
+12	- The flow has 5+ nodes with branching or parallel paths
+13	- The flow uses connectors or resources that need discovery
+14	- The user&#x27;s requirements are ambiguous and you need to confirm the approach
+15	
+16	**Don&#x27;t plan when:**
+17	- Adding/editing a single node in an existing flow (use [brownfield.md](brownfield.md))
+18	- The flow is a straightforward linear pipeline (trigger → action → action → end)
+19	- The user has already described the exact topology they want
+20	
+21	### Examples
+22	
+23	**Plan:** &quot;Build a flow that receives a Jira ticke
+
+… (truncated, 30834 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#3</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">245ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;ls /work/output/artifacts/skill-flow-ixp-routing-negative/sf-update/ &amp;&amp; ls /work/output/artifacts/skill-flow-ixp-routing-negative/sf-update/*.uipx /work/output/artifacts/skill-flow-ixp-routing-negative/sf-update/*/*.uipx 2&gt;/dev/null || echo \&quot;NO_UIPX_FOUND\&quot;&quot;,
+  &quot;description&quot;: &quot;Check working directory for existing solutions&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>NO_UIPX_FOUND</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#4</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.33s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip login status --output json 2&gt;&amp;1 | head -20&quot;,
+  &quot;description&quot;: &quot;Check login status&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;LoginStatus&quot;,
+  &quot;Data&quot;: {
+    &quot;Status&quot;: &quot;Logged in&quot;,
+    &quot;Provider&quot;: &quot;File&quot;,
+    &quot;BaseUrl&quot;: &quot;https://alpha.uipath.com&quot;,
+    &quot;Organization&quot;: &quot;codereval&quot;,
+    &quot;OrganizationId&quot;: &quot;311c6049-4966-4ef2-a6f3-8ceccaf38d54&quot;,
+    &quot;Tenant&quot;: &quot;DefaultTenant&quot;,
+    &quot;TenantId&quot;: &quot;69d43765-6ede-4575-88b7-9db601a2c056&quot;,
+    &quot;ExpirationDate&quot;: &quot;2026-07-24T00:24:21.000Z&quot;
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#5</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">7.02s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry search \&quot;salesforce\&quot; --output json --output-filter \&quot;[*].{NodeType:NodeType,DisplayName:DisplayName,Description:Description,AvailableOnTenant:AvailableOnTenant}\&quot; 2&gt;&amp;1 | head -80&quot;,
+  &quot;description&quot;: &quot;Search registry for Salesforce connector nodes&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>[ManifestClient] fetchDynamicNodes ok: total=4683 connector nodes=3572 integration trigger nodes=892 agent context nodes=2 external agent nodes=6 orchestrator nodes=159 IXP nodes=39 IXP Models nodes=13
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeSearchSuccess&quot;,
+  &quot;Data&quot;: [
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-salesforce-quip.upload-attachment-to-thread&quot;,
+      &quot;DisplayName&quot;: &quot;Upload Attachment to Thread&quot;,
+      &quot;Description&quot;: &quot;(Quip) Upload a file to a Quip thread for use in subsequent messages within the same thread.&quot;,
+      &quot;AvailableOnTenant&quot;: true
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-salesforce-quip.create-document-in-private-folder&quot;,
+      &quot;DisplayName&quot;: &quot;Create Document in Private Folder&quot;,
+      &quot;Description&quot;: &quot;(Quip) Create a document as a thread in a private folder in Quip.&quot;,
+      &quot;AvailableOnTenant&quot;: true
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-salesforce-quip.search-threads&quot;,
+      &quot;DisplayName&quot;: &quot;Search Threads&quot;,
+      &quot;Description&quot;: &quot;(Quip) Retrieve threads in Quip by entering a search string.&quot;,
+      &quot;AvailableOnTenant&quot;: true
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-salesforce-quip.create-chat-room&quot;,
+      &quot;Dis
+
+… (truncated, 2367 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#6</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">3.96s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry search \&quot;salesforce\&quot; --output json --output-filter \&quot;[*].{NodeType:NodeType,DisplayName:DisplayName}\&quot; 2&gt;&amp;1 | python3 -c \&quot;import sys,json; d=json.load(sys.stdin); [print(x[&#x27;NodeType&#x27;], &#x27;-&#x27;, x[&#x27;DisplayName&#x27;]) for x in d[&#x27;Data&#x27;] if &#x27;sfdc&#x27; in x[&#x27;NodeType&#x27;]]\&quot;&quot;,
+  &quot;description&quot;: &quot;List all Salesforce SFDC connector node types&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>uipath.connector.uipath-salesforce-sfdc.get-report - Get Report
+uipath.connector.uipath-salesforce-sfdc.create-opportunity - Create Opportunity
+uipath.connector.uipath-salesforce-sfdc.create-bulk-upload-job - Create Bulk Upload Job
+uipath.connector.uipath-salesforce-sfdc.create-account - Create Account
+uipath.connector.uipath-salesforce-sfdc.submit-a-record-for-approval-process - Submit a record for Approval Process
+uipath.connector.uipath-salesforce-sfdc.search-records - Search Records
+uipath.connector.uipath-salesforce-sfdc.upload-file - Upload File
+uipath.connector.uipath-salesforce-sfdc.update-contact - Update Contact
+uipath.connector.uipath-salesforce-sfdc.get-bulk-job-info - Get Bulk Job Info
+uipath.connector.uipath-salesforce-sfdc.update-lead - Update Lead
+uipath.connector.uipath-salesforce-sfdc.get-lead - Get Lead
+uipath.connector.uipath-salesforce-sfdc.download-soql-bulk-job-results - Download SOQL Bulk Job Results
+uipath.connector.uipath-salesforce-sfdc.add-file-to-record - Add File to Record
+uipath.connector.uipath-salesforce-sfdc.starts-or-aborts-bulk-job - Starts or Aborts Bulk Job
+uipath.connector.uipath-salesforce-sfdc.get-account - Get Account
+uipath.connector.uipat
+
+… (truncated, 5555 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#7</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.86s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip is connections list \&quot;uipath-salesforce-sfdc\&quot; --all-folders --output json 2&gt;&amp;1 | head -40&quot;,
+  &quot;description&quot;: &quot;Check for Salesforce connections&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;ConnectionList&quot;,
+  &quot;Data&quot;: [
+    {
+      &quot;Id&quot;: &quot;0fddf20e-f229-4ee9-acb3-c5be50034839&quot;,
+      &quot;Name&quot;: &quot;qa+churros@cloud-elements.com&quot;,
+      &quot;ConnectorKey&quot;: &quot;uipath-salesforce-sfdc&quot;,
+      &quot;ConnectorName&quot;: &quot;Salesforce&quot;,
+      &quot;State&quot;: &quot;Enabled&quot;,
+      &quot;Owner&quot;: &quot;jiyang.zhou@uipath.com&quot;,
+      &quot;IsDefault&quot;: &quot;No&quot;,
+      &quot;ByoaConnection&quot;: &quot;No&quot;,
+      &quot;ElementInstanceId&quot;: 338085,
+      &quot;Folder&quot;: &quot;uipath-maestro-flow&quot;,
+      &quot;FolderKey&quot;: &quot;5da18ec0-7de1-4e57-aaf1-ddc8a369c199&quot;,
+      &quot;Created&quot;: &quot;2026-05-11T18:06:12.390Z&quot;,
+      &quot;Updated&quot;: &quot;2026-07-23T23:16:01.456Z&quot;
+    },
+    {
+      &quot;Id&quot;: &quot;f4f880b6-8148-42e4-a7f8-cd7de72a5141&quot;,
+      &quot;Name&quot;: &quot;is.sandboxes@gmail.com&quot;,
+      &quot;ConnectorKey&quot;: &quot;uipath-salesforce-sfdc&quot;,
+      &quot;ConnectorName&quot;: &quot;Salesforce&quot;,
+      &quot;State&quot;: &quot;Failed&quot;,
+      &quot;Owner&quot;: &quot;baishali.ghosh@uipath.com&quot;,
+      &quot;IsDefault&quot;: &quot;Yes&quot;,
+      &quot;ByoaConnection&quot;: &quot;No&quot;,
+      &quot;ElementInstanceId&quot;: 358154,
+      &quot;Folder&quot;: &quot;uipath-maestro-case&quot;,
+      &quot;FolderKey&quot;: &quot;def71452-bad1-40fa-be08-da175e89bd1a&quot;,
+      &quot;Created&quot;: &quot;2026-07-06T13:22:23.500Z&quot;,
+      &quot;Updated&quot;: &quot;2026-07-22T05:53:07.280Z&quot;
+    }
+  ],
+  &quot;Warning&quot;: &quot;Connection(s) not enabled: is.sandboxes
+
+… (truncated, 133 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#8</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">4.24s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry get core.control.end --output json 2&gt;&amp;1 | python3 -c \&quot;import sys,json; d=json.load(sys.stdin); print(json.dumps(d[&#x27;Data&#x27;], indent=2))\&quot; &gt; /tmp/def_end.json &amp;&amp; echo \&quot;DONE\&quot;&quot;,
+  &quot;description&quot;: &quot;Get core.control.end definition&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>DONE</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#9</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">10.21s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry get core.logic.loop --output json 2&gt;&amp;1 | python3 -c \&quot;import sys,json; d=json.load(sys.stdin); print(json.dumps(d[&#x27;Data&#x27;], indent=2))\&quot; &gt; /tmp/def_loop.json &amp;&amp; echo \&quot;DONE\&quot;&quot;,
+  &quot;description&quot;: &quot;Get core.logic.loop definition&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>DONE</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#10</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">30.47s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-ixp-routing-negative/sf-update \\\n  &amp;&amp; uip solution init \&quot;SfUpdateSolution\&quot; --output json \\\n  &amp;&amp; cd \&quot;SfUpdateSolution\&quot; \\\n  &amp;&amp; uip maestro flow init \&quot;SfUpdate\&quot; --output json \\\n  &amp;&amp; cd \&quot;SfUpdate\&quot; \\\n  &amp;&amp; uip maestro flow registry pull \\\n  &amp;&amp; uip maestro flow node add \&quot;SfUpdate.flow\&quot; uipath.connector.uipath-salesforce-sfdc.list-records --label \&quot;List Open Opportuniti… (169 more chars)&quot;,
+  &quot;description&quot;: &quot;Scaffold solution, init flow project, pull registry, add two Salesforce connector nodes&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;SolutionInit&quot;,
+  &quot;Data&quot;: {
+    &quot;Status&quot;: &quot;Created successfully&quot;,
+    &quot;Path&quot;: &quot;/work/output/artifacts/skill-flow-ixp-routing-negative/sf-update/SfUpdateSolution/SfUpdateSolution.uipx&quot;,
+    &quot;NextSteps&quot;: &quot;Read /work/output/artifacts/skill-flow-ixp-routing-negative/sf-update/SfUpdateSolution/AGENTS.md or /work/output/artifacts/skill-flow-ixp-routing-negative/sf-update/SfUpdateSolution/CLAUDE.md to understand the solution lifecycle, project types that can be used inside a solution, and related uip command references.&quot;
+  }
+}
+2026-07-24 00:13:05 INFO  [ResourceBuilder:ProjectCreateCommandHandler] Creating project [object Object]
+2026-07-24 00:13:05 INFO  [ResourceBuilder:MultiFileSolutionDefinitionProvider] Reading multi-file solution definition for solution %s /work/output/artifacts/skill-flow-ixp-routing-negative/sf-update/SfUpdateSolution
+2026-07-24 00:13:05 INFO  [ResourceBuilder:ProjectCreateCommandHandler] Generate artefact resources for project [object Object]
+2026-07-24 00:13:05 INFO  [ResourceBuilder:SolutionsMetadataReader] Reading metadata from %s. SolutionsMetadataReader
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FlowInit&quot;,
+  &quot;Data&quot;: {
+    &quot;Status&quot;
+
+… (truncated, 2380 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#11</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">5ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-ixp-routing-negative/sf-update/SfUpdateSolution/SfUpdate/SfUpdate.flow&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	{
+2	  &quot;id&quot;: &quot;ce71d023-c7e4-4268-98d9-780123d7a740&quot;,
+3	  &quot;version&quot;: &quot;1.8&quot;,
+4	  &quot;name&quot;: &quot;SfUpdate&quot;,
+5	  &quot;nodes&quot;: [
+6	    {
+7	      &quot;id&quot;: &quot;start&quot;,
+8	      &quot;type&quot;: &quot;core.trigger.manual&quot;,
+9	      &quot;typeVersion&quot;: &quot;1.0&quot;,
+10	      &quot;display&quot;: {
+11	        &quot;label&quot;: &quot;Manual trigger&quot;
+12	      },
+13	      &quot;inputs&quot;: {
+14	        &quot;entryPointId&quot;: &quot;48a71d1f-8a89-4fd4-9ed3-508dd8aa62fb&quot;,
+15	        &quot;isDefaultEntryPoint&quot;: true
+16	      }
+17	    },
+18	    {
+19	      &quot;id&quot;: &quot;listOpenOpportunities1&quot;,
+20	      &quot;type&quot;: &quot;uipath.connector.uipath-salesforce-sfdc.list-records&quot;,
+21	      &quot;typeVersion&quot;: &quot;1.0.0&quot;,
+22	      &quot;display&quot;: {
+23	        &quot;label&quot;: &quot;List Open Opportunities&quot;
+24	      },
+25	      &quot;inputs&quot;: {}
+26	    },
+27	    {
+28	      &quot;id&quot;: &quot;updateOpportunityStage1&quot;,
+29	      &quot;type&quot;: &quot;uipath.connector.uipath-salesforce-sfdc.update-record&quot;,
+30	      &quot;typeVersion&quot;: &quot;1.0.0&quot;,
+31	      &quot;display&quot;: {
+32	        &quot;label&quot;: &quot;Update Opportunity Stage&quot;
+33	      },
+34	      &quot;inputs&quot;: {}
+35	    }
+36	  ],
+37	  &quot;edges&quot;: [],
+38	  &quot;definitions&quot;: [
+39	    {
+40	      &quot;nodeType&quot;: &quot;core.trigger.manual&quot;,
+41	      &quot;version&quot;: &quot;1.0&quot;,
+42	      &quot;category&quot;: &quot;trigger&quot;,
+43	      &quot;description&quot;: &quot;Start workflow manually&quot;,
+44	      &quot;tags&quot;: 
+
+… (truncated, 21391 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#12</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">6ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/tmp/def_end.json&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	{
+2	  &quot;Node&quot;: {
+3	    &quot;nodeType&quot;: &quot;core.control.end&quot;,
+4	    &quot;version&quot;: &quot;1.0&quot;,
+5	    &quot;category&quot;: &quot;control-flow&quot;,
+6	    &quot;description&quot;: &quot;Mark the end of a workflow path&quot;,
+7	    &quot;tags&quot;: [
+8	      &quot;control-flow&quot;,
+9	      &quot;end&quot;,
+10	      &quot;finish&quot;,
+11	      &quot;complete&quot;
+12	    ],
+13	    &quot;sortOrder&quot;: 20,
+14	    &quot;display&quot;: {
+15	      &quot;label&quot;: &quot;End&quot;,
+16	      &quot;icon&quot;: &quot;circle-check&quot;,
+17	      &quot;shape&quot;: &quot;circle&quot;
+18	    },
+19	    &quot;handleConfiguration&quot;: [
+20	      {
+21	        &quot;position&quot;: &quot;left&quot;,
+22	        &quot;handles&quot;: [
+23	          {
+24	            &quot;id&quot;: &quot;input&quot;,
+25	            &quot;type&quot;: &quot;target&quot;,
+26	            &quot;handleType&quot;: &quot;input&quot;
+27	          }
+28	        ]
+29	      }
+30	    ],
+31	    &quot;model&quot;: {
+32	      &quot;type&quot;: &quot;bpmn:EndEvent&quot;
+33	    },
+34	    &quot;runtimeConstraints&quot;: {
+35	      &quot;exclude&quot;: [
+36	        &quot;api-function&quot;
+37	      ]
+38	    }
+39	  }
+40	}
+41	</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#13</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">9ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/tmp/def_loop.json&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	{
+2	  &quot;Node&quot;: {
+3	    &quot;nodeType&quot;: &quot;core.logic.loop&quot;,
+4	    &quot;supportsErrorHandling&quot;: true,
+5	    &quot;version&quot;: &quot;2.4&quot;,
+6	    &quot;category&quot;: &quot;control-flow&quot;,
+7	    &quot;description&quot;: &quot;Iterate over a collection of items&quot;,
+8	    &quot;tags&quot;: [
+9	      &quot;control-flow&quot;,
+10	      &quot;loop&quot;,
+11	      &quot;iteration&quot;
+12	    ],
+13	    &quot;sortOrder&quot;: 20,
+14	    &quot;display&quot;: {
+15	      &quot;label&quot;: &quot;Loop&quot;,
+16	      &quot;icon&quot;: &quot;repeat&quot;,
+17	      &quot;shape&quot;: &quot;container&quot;,
+18	      &quot;description&quot;: &quot;Execute a sequence of actions repeatedly for each item in a collection&quot;
+19	    },
+20	    &quot;handleConfiguration&quot;: [
+21	      {
+22	        &quot;position&quot;: &quot;left&quot;,
+23	        &quot;boundary&quot;: &quot;outer&quot;,
+24	        &quot;handles&quot;: [
+25	          {
+26	            &quot;id&quot;: &quot;input&quot;,
+27	            &quot;type&quot;: &quot;target&quot;,
+28	            &quot;handleType&quot;: &quot;input&quot;
+29	          }
+30	        ]
+31	      },
+32	      {
+33	        &quot;position&quot;: &quot;right&quot;,
+34	        &quot;boundary&quot;: &quot;outer&quot;,
+35	        &quot;handles&quot;: [
+36	          {
+37	            &quot;id&quot;: &quot;success&quot;,
+38	            &quot;type&quot;: &quot;source&quot;,
+39	            &quot;handleType&quot;: &quot;output&quot;
+40	          },
+41	          {
+42	            &quot;id&quot;: &quot;error&quot;,
+43	            &quot;label&quot;: &quot;Error&quot;,
+44	            &quot;type&quot;: &quot;source&quot;,
+45	            &quot;handleType&quot;: &quot;output&quot;,
+
+
+… (truncated, 6417 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#14</span>
+      <span class="tool-name">Edit</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">26ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;replace_all&quot;: false,
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-ixp-routing-negative/sf-update/SfUpdateSolution/SfUpdate/SfUpdate.flow&quot;,
+  &quot;old_string&quot;: &quot;  \&quot;nodes\&quot;: [\n    {\n      \&quot;id\&quot;: \&quot;start\&quot;,&quot;,
+  &quot;new_string&quot;: &quot;  \&quot;nodes\&quot;: [\n    {\n      \&quot;id\&quot;: \&quot;loop1\&quot;,\n      \&quot;type\&quot;: \&quot;core.logic.loop\&quot;,\n      \&quot;typeVersion\&quot;: \&quot;2.4\&quot;,\n      \&quot;display\&quot;: {\n        \&quot;label\&quot;: \&quot;For Each Opportunity\&quot;\n      },\n      \&quot;inputs\&quot;: {\n        \&quot;collection\&quot;: \&quot;=js:$vars.listOpenOpportunities1.output.records\&quot;,\n        \&quot;parallel\&quot;: false,\n        \&quot;completionCondition\&quot;: \&quot;\&quot;,\n        \&quot;breakEnabled\&quot;: false\n      }\n    },\n    {\n      \&quot;id\&quot;: \&quot;end\&quot;,\n      \&quot;t… (157 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>The file /work/output/artifacts/skill-flow-ixp-routing-negative/sf-update/SfUpdateSolution/SfUpdate/SfUpdate.flow has been updated successfully. (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#15</span>
+      <span class="tool-name">Edit</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">25ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;replace_all&quot;: false,
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-ixp-routing-negative/sf-update/SfUpdateSolution/SfUpdate/SfUpdate.flow&quot;,
+  &quot;old_string&quot;: &quot;  \&quot;edges\&quot;: [],&quot;,
+  &quot;new_string&quot;: &quot;  \&quot;edges\&quot;: [\n    {\n      \&quot;id\&quot;: \&quot;e1\&quot;,\n      \&quot;sourceNodeId\&quot;: \&quot;start\&quot;,\n      \&quot;sourcePortId\&quot;: \&quot;output\&quot;,\n      \&quot;targetNodeId\&quot;: \&quot;listOpenOpportunities1\&quot;,\n      \&quot;targetPort\&quot;: \&quot;input\&quot;\n    },\n    {\n      \&quot;id\&quot;: \&quot;e2\&quot;,\n      \&quot;sourceNodeId\&quot;: \&quot;listOpenOpportunities1\&quot;,\n      \&quot;sourcePortId\&quot;: \&quot;output\&quot;,\n      \&quot;targetNodeId\&quot;: \&quot;loop1\&quot;,\n      \&quot;targetPort\&quot;: \&quot;input\&quot;\n    },\n    {\n      \&quot;id\&quot;: \&quot;e3\&quot;,\n      \&quot;sourceNodeId\&quot;: \&quot;… (452 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>The file /work/output/artifacts/skill-flow-ixp-routing-negative/sf-update/SfUpdateSolution/SfUpdate/SfUpdate.flow has been updated successfully. (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#16</span>
+      <span class="tool-name">Edit</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">22ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;replace_all&quot;: false,
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-ixp-routing-negative/sf-update/SfUpdateSolution/SfUpdate/SfUpdate.flow&quot;,
+  &quot;old_string&quot;: &quot;  \&quot;definitions\&quot;: [\n    {\n      \&quot;nodeType\&quot;: \&quot;core.trigger.manual\&quot;,&quot;,
+  &quot;new_string&quot;: &quot;  \&quot;definitions\&quot;: [\n    {\n      \&quot;nodeType\&quot;: \&quot;core.logic.loop\&quot;,\n      \&quot;supportsErrorHandling\&quot;: true,\n      \&quot;version\&quot;: \&quot;2.4\&quot;,\n      \&quot;category\&quot;: \&quot;control-flow\&quot;,\n      \&quot;description\&quot;: \&quot;Iterate over a collection of items\&quot;,\n      \&quot;tags\&quot;: [\&quot;control-flow\&quot;, \&quot;loop\&quot;, \&quot;iteration\&quot;],\n      \&quot;sortOrder\&quot;: 20,\n      \&quot;display\&quot;: {\n        \&quot;label\&quot;: \&quot;Loop\&quot;,\n        \&quot;icon\&quot;: \&quot;repeat\&quot;,\n        \&quot;shape\&quot;: \&quot;container\&quot;,\n        … (3161 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>The file /work/output/artifacts/skill-flow-ixp-routing-negative/sf-update/SfUpdateSolution/SfUpdate/SfUpdate.flow has been updated successfully. (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#17</span>
+      <span class="tool-name">Edit</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">27ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;replace_all&quot;: false,
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-ixp-routing-negative/sf-update/SfUpdateSolution/SfUpdate/SfUpdate.flow&quot;,
+  &quot;old_string&quot;: &quot;    \&quot;nodes\&quot;: {\n      \&quot;start\&quot;: {&quot;,
+  &quot;new_string&quot;: &quot;    \&quot;nodes\&quot;: {\n      \&quot;loop1\&quot;: {\n        \&quot;position\&quot;: {\&quot;x\&quot;: 0, \&quot;y\&quot;: 0},\n        \&quot;size\&quot;: {\&quot;width\&quot;: 560, \&quot;height\&quot;: 320},\n        \&quot;collapsed\&quot;: false\n      },\n      \&quot;end\&quot;: {\n        \&quot;position\&quot;: {\&quot;x\&quot;: 0, \&quot;y\&quot;: 0},\n        \&quot;size\&quot;: {\&quot;width\&quot;: 96, \&quot;height\&quot;: 96},\n        \&quot;collapsed\&quot;: false\n      },\n      \&quot;start\&quot;: {&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>The file /work/output/artifacts/skill-flow-ixp-routing-negative/sf-update/SfUpdateSolution/SfUpdate/SfUpdate.flow has been updated successfully. (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#18</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">12ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/references/plugins/connector/impl.md&quot;,
+  &quot;limit&quot;: 120
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Connector Activity Nodes — Implementation
+2	
+3	How to configure connector activity nodes: connection binding, enriched metadata, reference field resolution, and debugging. Connection bindings are emitted by `uip maestro flow node configure` into the flow&#x27;s top-level `bindings[]`; `bindings_v2.json` is regenerated from them at debug/pack time and should never be hand-edited.
+4	
+5	For generic node/edge add, remove, and wiring procedures, see [editing-operations.md](../../editing-operations.md). This guide covers the connector-specific configuration workflow that must follow the generic node add.
+6	
+7	## How Connector Nodes Differ from OOTB
+8	
+9	1. **Connection binding required** — every connector node needs an IS connection (OAuth, API key, etc.) authored in the flow&#x27;s top-level `bindings[]` (which the CLI regenerates into `bindings_v2.json` at debug/pack time). Without it, the node cannot authenticate.
+10	2. **Enriched metadata via `--connection-id`** — call `registry get` with `--connection-id` to get connection-aware field metadata. Without it, only base fields are returned — custom fields, dynamic enums, and reference resolution are missing.
+11	3. **`inputs.detail` object** —
+
+… (truncated, 9803 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#19</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">10ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/skills/uipath-maestro-flow/references/author/references/plugins/connector/impl.md&quot;,
+  &quot;limit&quot;: 100,
+  &quot;offset&quot;: 120
+}</pre>
+    <h4>Result</h4>
+    <pre>120	Run `is resources describe` to fetch and cache the full operation metadata, then **read the cached metadata file** for complete field details including descriptions, types, references, and query/path parameters. The describe summary omits some of this.
+121	
+122	**Read `&lt;objectName&gt;` from the node definition in `definitions[]` (written by `node add`) — do not guess it from the node-type suffix.**
+123	
+124	```bash
+125	# 1. Describe to trigger fetch + cache (objectName = the activity&#x27;s API object, NOT the node-type suffix)
+126	#    Read &lt;objectName&gt; from the node definition FIRST (see note below) — do not batch this
+127	#    call with `node add` / `registry get`; those calls PRODUCE the objectName this one consumes.
+128	uip is resources describe &quot;&lt;connector-key&gt;&quot; &quot;&lt;objectName&gt;&quot; \
+129	  --connection-id &quot;&lt;id&gt;&quot; --operation Create --output json
+130	# -&gt; response includes metadataFile path
+131	
+132	# 2. Read the full cached metadata
+133	cat &lt;metadataFile path from response&gt;
+134	```
+135	
+136	&gt; **`&lt;objectName&gt;` is the activity&#x27;s API object name, not the node-type&#x27;s trailing segment — and NOT a case-conversion of it.** Read it from the node definition copied into `definitions[]` by `node 
+
+… (truncated, 10098 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#20</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">3.66s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-ixp-routing-negative/sf-update/SfUpdateSolution/SfUpdate \\\n  &amp;&amp; uip is resources list \&quot;uipath-salesforce-sfdc\&quot; --connection-id \&quot;0fddf20e-f229-4ee9-acb3-c5be50034839\&quot; --output json --output-filter \&quot;[?contains(DisplayName,&#x27;Opportunity&#x27;)].{Name:Name,DisplayName:DisplayName,Path:Path}\&quot; 2&gt;/dev/null&quot;,
+  &quot;description&quot;: &quot;List Salesforce resources to find Opportunity object name&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;ResourceList&quot;,
+  &quot;Data&quot;: [
+    {
+      &quot;Name&quot;: &quot;curated_opportunity&quot;,
+      &quot;DisplayName&quot;: &quot;Opportunity - /curated_opportunity&quot;,
+      &quot;Path&quot;: &quot;/curated_opportunity&quot;
+    },
+    {
+      &quot;Name&quot;: &quot;Opportunity&quot;,
+      &quot;DisplayName&quot;: &quot;Opportunity - /Opportunity&quot;,
+      &quot;Path&quot;: &quot;/Opportunity&quot;
+    }
+  ]
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#21</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-err">ERROR</span>
+      <span class="tool-duration">1.34s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-ixp-routing-negative/sf-update/SfUpdateSolution/SfUpdate \\\n  &amp;&amp; uip is resources describe \&quot;uipath-salesforce-sfdc\&quot; \&quot;Opportunity\&quot; \\\n    --connection-id \&quot;0fddf20e-f229-4ee9-acb3-c5be50034839\&quot; --operation List --output json 2&gt;/dev/null \\\n  | python3 -c \&quot;import sys,json; d=json.load(sys.stdin); print(d[&#x27;Data&#x27;][&#x27;MetadataFile&#x27;])\&quot;&quot;,
+  &quot;description&quot;: &quot;Describe Salesforce Opportunity List operation and get metadata file path&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Exit code 1
+Traceback (most recent call last):
+  File &quot;&lt;string&gt;&quot;, line 1, in &lt;module&gt;
+    import sys,json; d=json.load(sys.stdin); print(d[&#x27;Data&#x27;][&#x27;MetadataFile&#x27;])
+                                                   ~~~~~~~~~^^^^^^^^^^^^^^^^
+KeyError: &#x27;MetadataFile&#x27;</pre>
+    <h4>Error</h4><pre>Exit code 1
+Traceback (most recent call last):
+  File &quot;&lt;string&gt;&quot;, line 1, in &lt;module&gt;
+    import sys,json; d=json.load(sys.stdin); print(d[&#x27;Data&#x27;][&#x27;MetadataFile&#x27;])
+                                                   ~~~~~~~~~^^^^^^^^^^^^^^^^
+KeyError: &#x27;MetadataFile&#x27;</pre>
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#22</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">870ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-ixp-routing-negative/sf-update/SfUpdateSolution/SfUpdate \\\n  &amp;&amp; uip is resources describe \&quot;uipath-salesforce-sfdc\&quot; \&quot;Opportunity\&quot; \\\n    --connection-id \&quot;0fddf20e-f229-4ee9-acb3-c5be50034839\&quot; --operation List --output json 2&gt;/dev/null \\\n  | python3 -c \&quot;import sys,json; d=json.load(sys.stdin); print(json.dumps(d[&#x27;Data&#x27;], indent=2))\&quot; | head -60&quot;,
+  &quot;description&quot;: &quot;Show full describe response for Opportunity List&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Name&quot;: &quot;Opportunity&quot;,
+  &quot;DisplayName&quot;: &quot;Opportunity&quot;,
+  &quot;ElementKey&quot;: &quot;uipath-salesforce-sfdc&quot;,
+  &quot;Operation&quot;: {
+    &quot;Method&quot;: &quot;GET&quot;,
+    &quot;Name&quot;: &quot;List&quot;,
+    &quot;Description&quot;: &quot;Search for Opportunity&quot;,
+    &quot;Path&quot;: &quot;/Opportunity&quot;
+  },
+  &quot;Parameters&quot;: [
+    {
+      &quot;Name&quot;: &quot;fields&quot;,
+      &quot;Type&quot;: &quot;query&quot;,
+      &quot;DataType&quot;: &quot;string&quot;,
+      &quot;Required&quot;: false,
+      &quot;DisplayName&quot;: &quot;Fields&quot;,
+      &quot;Description&quot;: &quot;A comma-separated list of one or more fields to return in the response for the object selected. For example, if Contact object is selected, fields can be &#x27;id,FirstName,LastName&#x27;. We can also use FIELDS(ALL), FIELDS(STANDARD), FIELDS(CUSTOM)&quot;
+    },
+    {
+      &quot;Name&quot;: &quot;orderBy&quot;,
+      &quot;Type&quot;: &quot;query&quot;,
+      &quot;DataType&quot;: &quot;string&quot;,
+      &quot;Required&quot;: false,
+      &quot;DisplayName&quot;: &quot;Order by&quot;,
+      &quot;Description&quot;: &quot;The field(s) to order by. For example to order by Id ascending use &#x27;Id asc&#x27;. A unique value (such as ID) must be provided to support pagination above 1000 records&quot;
+    },
+    {
+      &quot;Name&quot;: &quot;pageSize&quot;,
+      &quot;Type&quot;: &quot;query&quot;,
+      &quot;DataType&quot;: &quot;integer&quot;,
+      &quot;Required&quot;: false,
+      &quot;DisplayName&quot;: &quot;Page size&quot;,
+      &quot;Description&quot;: &quot;The page size for pagination, which defa
+
+… (truncated, 732 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#23</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">801ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-ixp-routing-negative/sf-update/SfUpdateSolution/SfUpdate \\\n  &amp;&amp; uip is resources describe \&quot;uipath-salesforce-sfdc\&quot; \&quot;Opportunity\&quot; \\\n    --connection-id \&quot;0fddf20e-f229-4ee9-acb3-c5be50034839\&quot; --operation Update --output json 2&gt;/dev/null \\\n  | python3 -c \&quot;import sys,json; d=json.load(sys.stdin); print(json.dumps(d[&#x27;Data&#x27;], indent=2))\&quot; | head -80&quot;,
+  &quot;description&quot;: &quot;Describe Salesforce Opportunity Update operation&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Name&quot;: &quot;Opportunity&quot;,
+  &quot;DisplayName&quot;: &quot;Opportunity&quot;,
+  &quot;ElementKey&quot;: &quot;uipath-salesforce-sfdc&quot;,
+  &quot;Operation&quot;: {
+    &quot;Method&quot;: &quot;PATCH&quot;,
+    &quot;Name&quot;: &quot;Update&quot;,
+    &quot;Description&quot;: &quot;Update Opportunity by id&quot;,
+    &quot;Path&quot;: &quot;/Opportunity/{opportunityId}&quot;
+  },
+  &quot;Parameters&quot;: [
+    {
+      &quot;Name&quot;: &quot;Sforce-Auto-Assign&quot;,
+      &quot;Type&quot;: &quot;query&quot;,
+      &quot;DataType&quot;: &quot;string&quot;,
+      &quot;Required&quot;: false,
+      &quot;DisplayName&quot;: &quot;Assignment rule id&quot;,
+      &quot;Description&quot;: &quot;Leave empty to apply the default assignment rules; the special value `false` to not apply assignment rules; or pass specific rule ID&quot;
+    },
+    {
+      &quot;Name&quot;: &quot;opportunityId&quot;,
+      &quot;Type&quot;: &quot;path&quot;,
+      &quot;DataType&quot;: &quot;string&quot;,
+      &quot;Required&quot;: true,
+      &quot;DisplayName&quot;: &quot;Opportunity ID&quot;,
+      &quot;Description&quot;: &quot;The opportunity id&quot;
+    }
+  ],
+  &quot;RequestFields&quot;: [],
+  &quot;ResponseFields&quot;: []
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#24</span>
+      <span class="tool-name">Edit</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">15ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;replace_all&quot;: false,
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-ixp-routing-negative/sf-update/SfUpdateSolution/SfUpdate/SfUpdate.flow&quot;,
+  &quot;old_string&quot;: &quot;    \&quot;nodes\&quot;: [\n      {\n        \&quot;id\&quot;: \&quot;start.output\&quot;,&quot;,
+  &quot;new_string&quot;: &quot;    \&quot;nodes\&quot;: [\n      {\n        \&quot;id\&quot;: \&quot;loop1.currentItem\&quot;,\n        \&quot;type\&quot;: \&quot;any\&quot;,\n        \&quot;description\&quot;: \&quot;The current item being iterated in the loop\&quot;,\n        \&quot;binding\&quot;: {\n          \&quot;nodeId\&quot;: \&quot;loop1\&quot;,\n          \&quot;outputId\&quot;: \&quot;currentItem\&quot;\n        }\n      },\n      {\n        \&quot;id\&quot;: \&quot;loop1.output\&quot;,\n        \&quot;type\&quot;: \&quot;array\&quot;,\n        \&quot;description\&quot;: \&quot;Aggregated results from all loop iterations\&quot;,\n        \&quot;bi… (126 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>The file /work/output/artifacts/skill-flow-ixp-routing-negative/sf-update/SfUpdateSolution/SfUpdate/SfUpdate.flow has been updated successfully. (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#25</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-err">ERROR</span>
+      <span class="tool-duration">8.08s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-ixp-routing-negative/sf-update/SfUpdateSolution/SfUpdate \\\n  &amp;&amp; uip maestro flow node configure \&quot;SfUpdate.flow\&quot; \&quot;listOpenOpportunities1\&quot; \\\n    --detail &#x27;{\n      \&quot;connectionId\&quot;: \&quot;0fddf20e-f229-4ee9-acb3-c5be50034839\&quot;,\n      \&quot;folderKey\&quot;: \&quot;5da18ec0-7de1-4e57-aaf1-ddc8a369c199\&quot;,\n      \&quot;objectName\&quot;: \&quot;Opportunity\&quot;,\n      \&quot;method\&quot;: \&quot;GET\&quot;,\n      \&quot;endpoint\&quot;: \&quot;/Opportuni… (831 more chars)&quot;,
+  &quot;description&quot;: &quot;Configure both connector nodes, validate, and format the flow&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Exit code 1
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeConfigureSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;NodeId&quot;: &quot;listOpenOpportunities1&quot;,
+    &quot;BindingsCreated&quot;: 2,
+    &quot;DetailPopulated&quot;: true
+  }
+}
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeConfigureSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;NodeId&quot;: &quot;updateOpportunityStage1&quot;,
+    &quot;BindingsCreated&quot;: 2,
+    &quot;DetailPopulated&quot;: true
+  }
+}
+{
+  &quot;Result&quot;: &quot;Failure&quot;,
+  &quot;Message&quot;: &quot;Validation failed for /work/output/artifacts/skill-flow-ixp-routing-negative/sf-update/SfUpdateSolution/SfUpdate/SfUpdate.flow&quot;,
+  &quot;Instructions&quot;: &quot;Found 5 error(s):\n  - [error] [edges[0].sourcePort] Invalid input: expected string, received undefined\n  - [error] [edges[1].sourcePort] Invalid input: expected string, received undefined\n  - [error] [edges[2].sourcePort] Invalid input: expected string, received undefined\n  - [error] [edges[3].sourcePort] Invalid input: expected string, received undefined\n  - [error] [edges[4].sourcePort] Invalid input: expected string, received undefined&quot;,
+  &quot;ErrorCode&quot;: &quot;unknown_error&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}</pre>
+    <h4>Error</h4><pre>Exit code 1
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeConfigureSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;NodeId&quot;: &quot;listOpenOpportunities1&quot;,
+    &quot;BindingsCreated&quot;: 2,
+    &quot;DetailPopulated&quot;: true
+  }
+}
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeConfigureSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;NodeId&quot;: &quot;updateOpportunityStage1&quot;,
+    &quot;BindingsCreated&quot;: 2,
+    &quot;DetailPopulated&quot;: true
+  }
+}
+{
+  &quot;Result&quot;: &quot;Failure&quot;,
+  &quot;Message&quot;: &quot;Validation failed for /work/output/artifacts/skill-flow-ixp-routing-negative/sf-update/SfUpdateSolution/SfUpdate/SfUpdate.flow&quot;,
+  &quot;Instructions&quot;: &quot;Found 5 error(s):\n  - [error] [edges[0].sourcePort] Invalid input: expected string, received undefined\n  - [error] [edges[1].sourcePort] Invalid input: expected string, received undefined\n  - [error] [edges[2].sourcePort] Invalid input: expected string, received undefined\n  - [error] [edges[3].sourcePort] Invalid input: expected string, received undefined\n  - [error] [edges[4].sourcePort] Invalid input: expected string, received undefined&quot;,
+  &quot;ErrorCode&quot;: &quot;unknown_error&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}</pre>
+  </div>
+</details>
+
+</div>
+
+<h2>Command Telemetry</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Total</div><div class="value">26</div></div>
+    <div class="stat"><div class="label">Successful</div><div class="value">24 (92%)</div></div>
+    <div class="stat"><div class="label">Failed</div><div class="value">2</div></div>
+    <div class="stat"><div class="label">Avg / cmd</div><div class="value">2.88s</div></div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 2fr;gap:16px;margin-top:12px">
+    <div>
+      <h4>By Tool</h4>
+      <table>
+        <thead><tr><th>Tool</th><th>Count</th></tr></thead>
+        <tbody><tr><td class='mono'>Bash</td><td>13</td></tr><tr><td class='mono'>Read</td><td>7</td></tr><tr><td class='mono'>Edit</td><td>5</td></tr><tr><td class='mono'>Skill</td><td>1</td></tr></tbody>
+      </table>
+    </div>
+    <div>
+      <h4>Slowest</h4>
+      <table>
+        <thead><tr><th>Tool</th><th>Duration</th><th>Parameters</th></tr></thead>
+        <tbody><tr><td class='mono'>Bash</td><td>30.47s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;cd /work/output/artifacts/skill-flow-...</td></tr><tr><td class='mono'>Bash</td><td>10.21s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro flow registry get core.lo...</td></tr><tr><td class='mono'>Bash</td><td>8.08s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;cd /work/output/artifacts/skill-flow-...</td></tr><tr><td class='mono'>Bash</td><td>7.02s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro flow registry search &quot;sal...</td></tr><tr><td class='mono'>Bash</td><td>4.24s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro flow registry get core.co...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+  <p><strong>Most Common Pattern:</strong> <code>Bash → Bash → Bash</code></p><p><strong>Skill Tool Invoked:</strong> 1 time(s)</p>
+</div>
+
+<h2>Generation Metrics</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Total Latency</div><div class="value">4m 28s</div></div>
+    <div class="stat"><div class="label">Turns</div><div class="value">1</div></div>
+    <div class="stat"><div class="label">Assistant Turns</div><div class="value">49</div></div>
+    <div class="stat"><div class="label">Avg Turn Latency</div><div class="value">4m 25s</div></div>
+    
+  </div>
+</div>
+
+<h2>Token Usage</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Input (uncached)</div><div class="value">21</div></div>
+    <div class="stat"><div class="label">Output</div><div class="value">12,486</div></div>
+    <div class="stat"><div class="label">Cache Write</div><div class="value">64,336</div></div>
+    <div class="stat"><div class="label">Cache Read</div><div class="value">1,175,201</div></div>
+    <div class="stat"><div class="label">Total</div><div class="value">1,252,044</div></div>
+    <div class="stat"><div class="label">Cost</div><div class="value">$0.7812</div></div>
+  </div>
+</div>
+
+<h2>Agent Settings</h2>
+<div class="card" style="padding:0">
+  <table>
+    <tbody><tr><td class='mono dim'>Permission Mode</td><td>acceptEdits</td></tr><tr><td class='mono dim'>Allowed Tools</td><td>Skill, Bash, Read, Write, Edit, Glob, Grep</td></tr><tr><td class='mono dim'>Model</td><td>us.anthropic.claude-sonnet-4-6</td></tr><tr><td class='mono dim'>Max Turns</td><td>25</td></tr><tr><td class='mono dim'>System Prompt</td><td>You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted. </td></tr><tr><td class='mono dim'>Plugins</td><td>/home/azureuser/projects/skills</td></tr></tbody>
+  </table>
+</div>
+
+<h2>Environment</h2>
+<div class="card" style="padding:0">
+  <table>
+    <tbody><tr><td class='mono dim'>git_commit</td><td>unknown</td></tr><tr><td class='mono dim'>skills_git_commit</td><td>unknown</td></tr><tr><td class='mono dim'>cli_version</td><td>1.199.0-dev.7970</td></tr><tr><td class='mono dim'>tool_plugins</td><td>{&#x27;admin-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;agent-tool&#x27;: &#x27;1.199.0-dev.7965&#x27;, &#x27;agenthub-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;aops-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;api-workflow-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;codedagent-tool&#x27;: &#x27;1.199.0-dev.7965&#x27;, &#x27;codedapp-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;coder-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;context-grounding-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;conversational-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;data-fabric-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;docsai-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;functions-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;gov-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;insights-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;integrationservice-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;ixp-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;llm-gateway-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;llmgw-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;maestro-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;orchestrator-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;platform-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;pm-tool&#x27;: &#x27;1.199.0-dev.7969&#x27;, &#x27;rpa-legacy-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;rpa-tool&#x27;: &#x27;1.199.0-dev.20260722.4&#x27;, &#x27;solution-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;tasks-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;test-manager-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;traces-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;, &#x27;vertical-solutions-tool&#x27;: &#x27;1.199.0-dev.7962&#x27;}</td></tr><tr><td class='mono dim'>coder_eval</td><td>0.8.8</td></tr><tr><td class='mono dim'>claude_code_cli</td><td>2.1.177 (Claude Code)</td></tr><tr><td class='mono dim'>uv</td><td>uv 0.11.28 (x86_64-unknown-linux-gnu)</td></tr><tr><td class='mono dim'>anthropic</td><td>0.102.0</td></tr><tr><td class='mono dim'>openai</td><td>2.47.0</td></tr><tr><td class='mono dim'>pydantic</td><td>2.12.5</td></tr><tr><td class='mono dim'>api_routing</td><td>aws_bedrock</td></tr><tr><td class='mono dim'>aws_region</td><td>us-east-2</td></tr><tr><td class='mono dim'>bedrock_model</td><td>us.anthropic.claude-sonnet-4-6</td></tr></tbody>
+  </table>
+</div>
+
+<footer>Generated by coder_eval · 2026-07-24T00:16:22</footer>
+</div>
+<script>
+function toggleTheme() {
+  document.documentElement.classList.toggle('light');
+  try {
+    const mode = document.documentElement.classList.contains('light') ? 'light' : 'dark';
+    localStorage.setItem('coder-eval-theme', mode);
+  } catch (e) { /* ignore */ }
+}
+(function() {
+  try {
+    if (localStorage.getItem('coder-eval-theme') === 'light') {
+      document.documentElement.classList.add('light');
+    }
+  } catch (e) { /* ignore */ }
+})();
+</script>
+</body>
+</html>

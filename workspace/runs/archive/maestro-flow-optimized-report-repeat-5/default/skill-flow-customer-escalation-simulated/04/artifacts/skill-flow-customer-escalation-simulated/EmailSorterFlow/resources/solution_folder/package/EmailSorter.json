@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "EmailSorter",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "9efae0da-7d8c-413f-8db6-9d657ee07e2c",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "EmailSorter"
+    },
+    "locks": [],
+    "key": "22791e7e-4a99-436b-ba63-fff35ff4d356",
+    "files": []
+  }
+}

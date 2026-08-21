@@ -1,0 +1,26 @@
+2026-07-24 17:37:23 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-24 17:37:23 [INFO] coder_eval.orchestrator: API routing: aws_bedrock
+2026-07-24 17:37:23 [DEBUG] coder_eval.criteria: Discovered 14 criterion checkers
+2026-07-24 17:37:23 [DEBUG] coder_eval.criteria: Validated 14 criterion checkers
+2026-07-24 17:37:23 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-24 17:37:23 [DEBUG] coder_eval.orchestrator: Sending prompt: This sandbox has no UiPath tenant, so you can't run the live node-configuration 
+step. Instead, capt...
+2026-07-24 17:37:23 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Starting agent query stream...
+2026-07-24 17:42:48 [DEBUG] coder_eval.agents.claude_code_agent: [coder] session_id changed: None -> 2a867795-1d2e-41f2-ac4b-98ad7a320b78
+2026-07-24 17:42:48 [DEBUG] coder_eval.agents.claude_code_agent: [coder] Agent query stream ended
+2026-07-24 17:42:48 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-24 17:42:48 [DEBUG] coder_eval.orchestrator: Agent response received (7137 chars)
+2026-07-24 17:42:48 [DEBUG] coder_eval.orchestrator: Checking success criteria
+2026-07-24 17:42:48 [DEBUG] coder_eval.criteria.run_command: Running command for criterion 'where_detail.json (found anywhere under the solution) has a canonical CEQL filter tree on displayName='active'; flow references the registered Azure AD / Entra connector key with List Groups + Terminate nodes': python3 $TASK_DIR/check_ceql_where_flow.py
+2026-07-24 17:42:49 [DEBUG] coder_eval.sandbox: Command 'python3 $TASK_DIR/check_ceql_where_flow.py' exited with code 0
+2026-07-24 17:42:49 [DEBUG] coder_eval.sandbox: STDOUT:
+---
+OK: where_detail.json carries canonical CEQL filter tree on displayName='active'; flow targets uipath-microsoft-azureactivedirectory List Groups; Terminate node present
+---
+2026-07-24 17:42:49 [DEBUG] coder_eval.evaluation.checker: Criterion 'run_command' score: 1.00
+2026-07-24 17:42:49 [DEBUG] coder_eval.evaluation.checker: Criterion 'command_executed' score: 1.00
+2026-07-24 17:42:49 [INFO] coder_eval.orchestrator: Success criteria: 2/2 passed, weighted score: 1.000
+2026-07-24 17:42:49 [DEBUG] coder_eval.utils: Resolved @uipath plugin-tools dir=/usr/lib/node_modules/@uipath from `uip` at /usr/lib/node_modules/@uipath/cli/dist/index.js
+2026-07-24 17:42:49 [INFO] coder_eval.orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+2026-07-24 17:42:49 [INFO] coder_eval.orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-ipe-ceql-where
+2026-07-24 17:42:49 [INFO] coder_eval.orchestrator: Task finished: status=SUCCESS duration=328.0s score=1.000 iterations=1

@@ -1,0 +1,89 @@
+task_id: skill-flow-outlook-trigger-inbox
+description: >
+  Regression test for PR #348: verifies the agent freshly resolves the
+  Outlook email-received trigger's `parentFolderId` reference field
+  against the currently-bound connection, instead of reusing a cached
+  or remembered ID from an earlier flow. The `command_executed` check
+  catches the skip-the-resolve pathology; the folder-ID post-hoc check
+  catches the resolved-but-stale pathology. A `flow debug` step is
+  intentionally omitted — seeding a self-addressed email through the
+  test-tenant Outlook connection is not reliable (the receiving mailbox
+  may route self-sends via inbox rules that bypass the connector's
+  trigger lookback). Adding a debug E2E requires a dedicated service
+  mailbox with no rules; tracked as follow-up.
+tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:single-node, feature:trigger, connector, mode:build, ipe]
+
+run_limits:
+  expected_turns: 61
+  turn_timeout: 1200
+
+initial_prompt: |
+  Create a UiPath Flow named "OutlookTriggerInbox" with a Microsoft Outlook 365
+  email-received trigger on the **Inbox** folder.
+
+  When the trigger fires, run a Script node that returns `{ subject: $vars.<triggerId>.output.subject }`,
+  then End the flow with a single `out` variable named `matchedSubject` mapped
+  from that Script node's output.
+
+  Validate the flow.
+  Do NOT ask for approval, confirmation, or feedback. Do NOT pause between
+  planning and implementation. Build the complete flow end-to-end in a single pass.
+
+  Do not reuse any folder ID you may have seen before.
+
+  Use the connection in Shared/uipath-maestro-flow folder.
+
+success_criteria:
+  # ── Structural: flow builds and validates ──────────────────────────────
+  - type: run_command
+    description: "uip maestro flow validate passes on the flow file"
+    command: "python3 $EXPERIMENT_TASKS_PATH/uipath-maestro-flow/_shared/validate_flow.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Flow has a uipath-microsoft-outlook365 email-received trigger node"
+    command: "python3 $TASK_DIR/check_outlook_trigger_inbox.py check_trigger_node"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Advisory: agent queried trigger objects for the connector's EMAIL_RECEIVED operation (connector-trigger Step 1b)"
+    tool_name: "Bash"
+    command_pattern: '(?s)\A(?=.*uipath-microsoft-outlook365)(?=.*uip\s+is\s+triggers\s+objects).*EMAIL_RECEIVED'
+    min_count: 1
+    weight: 0
+    pass_threshold: 0
+
+  - type: command_executed
+    description: "Advisory: agent described the trigger object for EMAIL_RECEIVED (connector-trigger Step 1b-2) — required event params (e.g. parentFolderId) live in describe's EventParameters, not in triggers objects' parameters[]"
+    tool_name: "Bash"
+    command_pattern: '(?s)\A(?=.*uipath-microsoft-outlook365)(?=.*uip\s+is\s+triggers\s+describe).*EMAIL_RECEIVED'
+    min_count: 1
+    weight: 0
+    pass_threshold: 0
+
+  - type: command_executed
+    description: "Agent resolved MailFolder against the current --connection-id (PR #348 regression)"
+    tool_name: "Bash"
+    # `[\s\S]` matches across newlines — agents often split `uip` commands with
+    # backslash line-continuation, which `.*` would miss.
+    # Verb alternation tolerates both the post-rename verb ("run", current)
+    # and the legacy "execute" verb that older CLIs in the sandbox PATH may
+    # still expose (MST-9674).
+    command_pattern: 'uip\s+is\s+resources\s+(?:run|execute)\s+list[\s\S]+?MailFolder[\s\S]+?--connection-id'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Flow's parentFolderId is a live MailFolder ID on the bound Outlook connection"
+    command: "python3 $TASK_DIR/check_outlook_trigger_inbox.py check_folder_id_fresh"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0

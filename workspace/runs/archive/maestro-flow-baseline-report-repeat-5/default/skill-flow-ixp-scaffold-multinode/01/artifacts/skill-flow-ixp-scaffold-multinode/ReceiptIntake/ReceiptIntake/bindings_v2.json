@@ -1,0 +1,11 @@
+{
+  "resources": [
+    {
+      "name": "ReceiptBucket",
+      "kind": "Bucket",
+      "default": {
+        "name": "ReceiptBucket"
+      }
+    }
+  ]
+}

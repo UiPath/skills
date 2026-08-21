@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "BirthCertificateExtraction",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "8abc1e6e-0624-472f-bd31-9c1cfbeaa74b",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "BirthCertificateExtraction"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Flow",
+      "name": "BirthCertificateExtraction",
+      "package": {
+        "key": "8414575c-4de0-47c1-9bc9-d2aad34d7e21"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "0bdb3dd6-d903-49ce-975b-48e7945fd5cd",
+    "files": []
+  }
+}

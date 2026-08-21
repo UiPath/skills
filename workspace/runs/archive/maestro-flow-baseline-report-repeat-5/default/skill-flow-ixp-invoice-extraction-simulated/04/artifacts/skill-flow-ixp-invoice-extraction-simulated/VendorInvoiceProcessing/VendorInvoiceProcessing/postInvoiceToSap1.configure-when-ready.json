@@ -1,0 +1,19 @@
+{
+  "_comment": "Run this command once you have created a SAP BAPI connection in Integration Service and know your BAPI name.",
+  "_command": "uip maestro flow node configure VendorInvoiceProcessing.flow postInvoiceToSap1 --detail '<json below>'",
+  "connectionId": "<REPLACE: paste the connection ID from 'uip is connections list uipath-sap-bapi --all-folders'>",
+  "folderKey": "<REPLACE: paste the Orchestrator folder key where the connection lives>",
+  "method": "POST",
+  "endpoint": "/bapis/execute",
+  "objectName": "bapis::execute",
+  "bodyParameters": {
+    "BapiName": "<REPLACE: e.g. BAPI_ACC_DOCUMENT_POST for AP invoice posting>",
+    "CompanyCode": "<REPLACE: your SAP company code, e.g. 1000>",
+    "DocumentDate": "=js:$vars.mapFields.output.invoiceDate",
+    "PostingDate": "=js:$vars.mapFields.output.invoiceDate",
+    "Reference": "=js:$vars.mapFields.output.invoiceNumber",
+    "HeaderText": "=js:$vars.mapFields.output.vendorName",
+    "Amount": "=js:$vars.mapFields.output.totalAmount",
+    "Currency": "=js:$vars.mapFields.output.currencyCode || 'USD'"
+  }
+}

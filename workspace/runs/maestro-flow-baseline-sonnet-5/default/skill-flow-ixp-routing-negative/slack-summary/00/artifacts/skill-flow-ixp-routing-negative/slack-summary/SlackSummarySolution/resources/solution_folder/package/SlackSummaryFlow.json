@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "SlackSummaryFlow",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "71c23766-a248-4921-a201-3ba708a0ec39",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "SlackSummaryFlow"
+    },
+    "locks": [],
+    "key": "a80c9584-d247-4550-be55-1edbb7b1e52d",
+    "files": []
+  }
+}

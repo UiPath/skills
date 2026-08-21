@@ -1,0 +1,12 @@
+21:57:09 [INFO   ] [default/skill-flow-ipe-jira-lifecycle/00] orchestrator: API routing: aws_bedrock
+21:57:09 [INFO   ] [default/skill-flow-ipe-jira-lifecycle/00] orchestrator: Running pre-run command: python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/e2e/jira_lifecycle/seed_jira.py
+21:57:09 [INFO   ] [default/skill-flow-ipe-jira-lifecycle/00] orchestrator: [pre_run stdout] OK: wrote 3 seed issues (2 High / 1 other), tag=744e7f3e
+22:08:06 [INFO   ] [default/skill-flow-ipe-jira-lifecycle/00] orchestrator: Success criteria: 2/2 passed, weighted score: 1.000
+22:08:06 [WARNING] [default/skill-flow-ipe-jira-lifecycle/00] orchestrator: Visible turns (62) exceeded expected_turns (55) at iteration 1 for task skill-flow-ipe-jira-lifecycle. Run continues — max_turns remains the hard cap.
+22:08:06 [INFO   ] [default/skill-flow-ipe-jira-lifecycle/00] orchestrator: Running post-run command: python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/e2e/jira_lifecycle/teardown_jira.py
+22:08:07 [INFO   ] [default/skill-flow-ipe-jira-lifecycle/00] orchestrator: [post_run stdout] OK: deleted CE-645
+22:08:07 [INFO   ] [default/skill-flow-ipe-jira-lifecycle/00] orchestrator: [post_run stdout] OK: deleted CE-646
+22:08:08 [INFO   ] [default/skill-flow-ipe-jira-lifecycle/00] orchestrator: [post_run stdout] OK: deleted CE-647
+22:08:08 [INFO   ] [default/skill-flow-ipe-jira-lifecycle/00] orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+22:08:08 [INFO   ] [default/skill-flow-ipe-jira-lifecycle/00] orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-ipe-jira-lifecycle
+22:08:08 [INFO   ] [default/skill-flow-ipe-jira-lifecycle/00] orchestrator: Task finished: status=SUCCESS duration=660.6s score=1.000 iterations=1

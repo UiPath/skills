@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "StripeHttpFlow",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "d807ffb4-1ba2-46d7-a285-b6e79d9aca6f",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "StripeHttpFlow"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Flow",
+      "name": "StripeHttpFlow",
+      "package": {
+        "key": "79e95108-6434-4a70-8982-a8cbf9e229e1"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "df6f8936-fd52-4047-b59e-ba399a7291d6",
+    "files": []
+  }
+}

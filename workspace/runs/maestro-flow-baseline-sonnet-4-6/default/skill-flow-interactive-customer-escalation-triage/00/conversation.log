@@ -1,0 +1,68 @@
+=== USER (turn 1) — simulator-generated opener ===
+Hi — I need your help building a UiPath Maestro Flow that our team can use to triage customer escalations. It needs to be validated before we can sign off on it, so please make sure it passes validation before telling me it's done.
+
+Here's what I need: a project called **CustomerEscalationTriage** inside a solution of the same name.
+
+**The flow's inputs and outputs must use these exact names — downstream systems consume them by name and any variation will break things.**
+
+Inputs:
+- `customerTier`
+- `productionDown`
+- `workaroundAvailable`
+- `businessImpact`
+- `correlationId`
+
+Outputs:
+- `severity`
+- `engineeringNeeded`
+- `responseMode`
+- `caseKey`
+
+Here's the business policy it needs to encode:
+
+- An **Enterprise** customer with production unavailable and no workaround is our most critical situation — **Sev1**.
+- An informational or routine follow-up with no production impact is low-urgency — **Sev3**.
+- Engineering gets pulled in for Sev1 but not for Sev3.
+- We never auto-send acknowledgements to customers — they always go through a human review first. So the response mode should always be **Draft**.
+- The `correlationId` coming in must be passed through unchanged as the `caseKey` so our downstream systems can correlate the run.
+
+One important note on `businessImpact`: that field is free-form text the requester types in themselves — a short phrase or sentence in their own words describing the impact. It won't be a fixed code or keyword, so don't try to parse or match on it.
+
+Let me know if you have any questions before you start building and I'll answer them all at once.
+
+=== AGENT (turn 1) — 331.3s, in=13 out=19472, 17 tool calls ===
+`flow validate` passed with `Status: "Valid"` and no warnings. `flow format` ran cleanly.
+
+The **CustomerEscalationTriage** flow is built, validated, and formatted. Here's a summary:
+
+**File:** `CustomerEscalationTriage/CustomerEscalationTriage/CustomerEscalationTriage.flow`
+
+**What was built:**
+- **Manual Trigger** (`start`) — declares all 5 inputs as trigger-associated flow variables: `customerTier`, `productionDown`, `workaroundAvailable`, `businessImpact`, `correlationId`
+- **Script Node** (`triageScript` — "Triage Classification") — encodes the business policy:
+  - `Enterprise` + `productionDown=true` + `workaroundAvailable=false` → **Sev1**, `engineeringNeeded=true`
+  - `productionDown=false` → **Sev3**, `engineeringNeeded=false`
+  - All other cases → Sev2, `engineeringNeeded=false` (middle-ground default)
+  - `responseMode` is always hardcoded to `"Draft"` — no auto-send, ever
+  - `caseKey` is `correlationId` passed through unchanged
+- **End Node** — maps all 4 outputs (`severity`, `engineeringNeeded`, `responseMode`, `caseKey`) with `=js:` expressions from the script's output
+
+**Validation:** `Status: "Valid"` — no errors, no warnings.
+
+**Format:** Run — all 3 nodes at optimal positions.
+
+**Note on `businessImpact`:** The field is declared as a flow input (free-form `string`) but intentionally not read inside the triage logic, per your spec that it is unstructured text the downstream systems receive but the flow does not parse.
+
+---
+
+What would you like to do next?
+
+1. **Publish to Studio Web** — push the solution so you can visualize and edit it in the browser
+2. **Deploy to Orchestrator** — pack and publish directly for production use
+3. **Debug the solution** — execute the flow end-to-end against real systems (requires your confirmation — this has real side effects)
+4. **Something else**
+
+=== USER (turn 2) — stop token — dialog ending ===
+[ASSISTANT] 
+[RESULT - SUCCESS]
+

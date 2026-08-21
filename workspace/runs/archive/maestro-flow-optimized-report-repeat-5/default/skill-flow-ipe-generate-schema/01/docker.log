@@ -1,0 +1,6 @@
+17:29:06 [INFO   ] [default/skill-flow-ipe-generate-schema/01] orchestrator: API routing: aws_bedrock
+17:32:29 [INFO   ] [default/skill-flow-ipe-generate-schema/01] evaluation.checker: Criterion 'command_executed' FAILED (score=0.00, threshold=1.00): Matched 0/1 required commands (filters: tool_name=Bash, pattern=/(uip|\$UIP)\s+is\s+resources\s+describe.+(-f|--field)[=\s]+["']?fields\.project\.key/)
+17:32:29 [INFO   ] [default/skill-flow-ipe-generate-schema/01] orchestrator: Success criteria: 2/3 passed, weighted score: 0.800
+17:32:29 [INFO   ] [default/skill-flow-ipe-generate-schema/01] orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+17:32:29 [INFO   ] [default/skill-flow-ipe-generate-schema/01] orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-ipe-generate-schema
+17:32:29 [INFO   ] [default/skill-flow-ipe-generate-schema/01] orchestrator: Task finished: status=FAILURE duration=210.4s score=0.800 iterations=1

@@ -1,0 +1,3874 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>coder_eval · skill-flow-devcon-billing-invoice-lookup · default</title>
+<style>
+:root {
+  --bg-page: #0f1419;
+  --bg-card: #1a2129;
+  --bg-card-2: #232d38;
+  --bg-code: #0b0f14;
+  --fg: #e6edf3;
+  --fg-muted: #8b98a5;
+  --fg-dim: #6e7681;
+  --border: #30363d;
+  --accent: #58a6ff;
+  --score-high: #22c55e;
+  --score-mid: #f59e0b;
+  --score-low: #ef4444;
+  --status-success: #22c55e;
+  --status-failure: #f59e0b;
+  --status-error: #ef4444;
+  --status-neutral: #6e7681;
+  --shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+.light {
+  --bg-page: #ffffff;
+  --bg-card: #f6f8fa;
+  --bg-card-2: #eaeef2;
+  --bg-code: #f6f8fa;
+  --fg: #1f2328;
+  --fg-muted: #636c76;
+  --fg-dim: #8b949e;
+  --border: #d0d7de;
+  --accent: #0969da;
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial,
+               sans-serif;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--fg);
+  background: var(--bg-page);
+}
+.container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+h1, h2, h3, h4 { margin: 0 0 12px 0; line-height: 1.25; }
+h1 { font-size: 22px; font-weight: 600; }
+h2 { font-size: 18px; font-weight: 600; margin-top: 28px;
+     padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+h3 { font-size: 15px; font-weight: 600; color: var(--fg-muted); }
+h4 { font-size: 13px; font-weight: 600; color: var(--fg-muted); }
+p { margin: 0 0 8px 0; }
+.muted { color: var(--fg-muted); }
+.dim { color: var(--fg-dim); }
+.mono { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+        monospace; font-size: 12.5px; }
+code { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+       monospace; font-size: 12.5px; background: var(--bg-code);
+       border: 1px solid var(--border); padding: 1px 5px; border-radius: 3px; }
+pre { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+      monospace; font-size: 12.5px; background: var(--bg-code);
+      border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px;
+      margin: 6px 0; overflow-x: auto; white-space: pre-wrap;
+      word-wrap: break-word; }
+.header-bar { display: flex; align-items: center; justify-content: space-between;
+              margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+.title-group { flex: 1; min-width: 0; }
+.title-group .subtitle { color: var(--fg-muted); font-size: 13px;
+                         margin-top: 2px; word-break: break-all; }
+.badges { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.badge { display: inline-flex; align-items: center; gap: 6px;
+         padding: 4px 10px; border-radius: 12px; font-size: 12px;
+         font-weight: 600; background: var(--bg-card-2);
+         border: 1px solid var(--border); color: var(--fg); }
+.badge.success { background: color-mix(in srgb, var(--status-success) 20%, var(--bg-card-2));
+                 border-color: var(--status-success); color: var(--status-success); }
+.badge.failure { background: color-mix(in srgb, var(--status-failure) 20%, var(--bg-card-2));
+                 border-color: var(--status-failure); color: var(--status-failure); }
+.badge.error { background: color-mix(in srgb, var(--status-error) 20%, var(--bg-card-2));
+               border-color: var(--status-error); color: var(--status-error); }
+.badge.warning { background: color-mix(in srgb, #f4a52810 20%, var(--bg-card-2));
+                 border-color: #f4a528; color: #f4a528; }
+.badge.neutral { color: var(--fg-muted); }
+.score-pill { display: inline-block; padding: 2px 8px; border-radius: 10px;
+              font-size: 12px; font-weight: 700; min-width: 42px;
+              text-align: center; color: #0b0f14; }
+.score-high { background: var(--score-high); }
+.score-mid { background: var(--score-mid); }
+.score-low { background: var(--score-low); }
+.card { background: var(--bg-card); border: 1px solid var(--border);
+        border-radius: 8px; padding: 16px 20px; margin-bottom: 16px;
+        box-shadow: var(--shadow); }
+.card.highlight { border-left: 4px solid var(--accent); }
+.grid { display: grid; gap: 12px;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+.stat { background: var(--bg-card-2); padding: 10px 12px; border-radius: 6px;
+        border: 1px solid var(--border); }
+.stat .label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;
+               color: var(--fg-muted); margin-bottom: 4px; }
+.stat .value { font-size: 16px; font-weight: 600; }
+table { width: 100%; border-collapse: collapse; margin: 4px 0 12px 0; }
+th, td { text-align: left; padding: 8px 10px;
+         border-bottom: 1px solid var(--border); vertical-align: top;
+         font-size: 13px; }
+th { color: var(--fg-muted); font-weight: 600; font-size: 12px;
+     text-transform: uppercase; letter-spacing: 0.3px; }
+tr:last-child td { border-bottom: none; }
+details { margin: 6px 0; border: 1px solid var(--border); border-radius: 6px;
+          background: var(--bg-card-2); }
+details > summary { cursor: pointer; padding: 8px 12px; user-select: none;
+                    font-weight: 500; list-style: none; }
+details > summary::-webkit-details-marker { display: none; }
+details > summary::before { content: "▸ "; color: var(--fg-dim);
+                            display: inline-block; width: 14px;
+                            transition: transform 0.15s; }
+details[open] > summary::before { content: "▾ "; }
+details .details-body { padding: 0 12px 10px 12px; }
+.tool-row { display: flex; align-items: center; gap: 10px;
+            flex-wrap: wrap; font-size: 13px; }
+.tool-name { font-weight: 600; color: var(--accent); font-family: ui-monospace,
+             SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+.tool-status-ok { color: var(--status-success); font-size: 11px;
+                  font-weight: 600; }
+.tool-status-err { color: var(--status-error); font-size: 11px;
+                   font-weight: 600; }
+.tool-duration { color: var(--fg-muted); font-size: 12px; }
+.tool-seq { color: var(--fg-dim); font-size: 11px; font-weight: 600;
+            min-width: 24px; text-align: right; font-family: ui-monospace,
+            SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+.turn-header { display: flex; justify-content: space-between;
+               align-items: baseline; flex-wrap: wrap; gap: 10px;
+               margin-bottom: 10px; }
+.turn-meta { font-size: 12px; color: var(--fg-muted); }
+.criterion-row td:first-child { font-family: ui-monospace, SFMono-Regular,
+                                 "SF Mono", Menlo, Consolas, monospace;
+                                 color: var(--fg-muted); font-size: 12px; }
+.judge-section { display: flex; flex-direction: column; gap: 12px; }
+.judge-card { padding: 14px 16px; }
+.judge-card-head { display: flex; justify-content: space-between;
+                    align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+.judge-card-title { font-size: 14px; line-height: 1.4; flex: 1; min-width: 0; }
+.judge-card-score { flex-shrink: 0; }
+.judge-rationale { margin-top: 10px; padding: 10px 12px;
+                   background: var(--bg-code); border-radius: 4px;
+                   font-size: 13px; line-height: 1.5; }
+.judge-findings { margin: 8px 0 0 18px; padding-left: 4px; font-size: 13px;
+                   line-height: 1.6; }
+.judge-findings li { margin: 2px 0; }
+.nav-toggle { display: inline-block; padding: 5px 10px; font-size: 12px;
+              background: var(--bg-card-2); border: 1px solid var(--border);
+              border-radius: 5px; color: var(--fg); cursor: pointer; }
+.nav-toggle:hover { background: var(--bg-card); }
+.llm-next-steps { margin: 6px 0 0 20px; padding-left: 0; }
+.llm-next-steps li { margin: 3px 0; }
+.iteration-group { padding: 12px 16px 4px 16px; margin-bottom: 20px;
+                   border-radius: 0 6px 6px 0; border-left: 4px solid var(--status-neutral); }
+/* rgba fallback for browsers without color-mix (Chrome <111, Firefox <113, Safari <16.2). */
+.iteration-group--recovered { border-left-color: var(--status-success);
+                              background: rgba(34, 197, 94, 0.06);
+                              background: color-mix(in srgb, var(--status-success) 6%, transparent); }
+.iteration-group--terminal { border-left-color: var(--status-error);
+                             background: rgba(239, 68, 68, 0.06);
+                             background: color-mix(in srgb, var(--status-error) 6%, transparent); }
+.iteration-group__banner { margin: 0 0 12px 0; font-size: 14px; font-weight: 600; }
+.iteration-group--recovered .iteration-group__banner { color: var(--status-success); }
+.iteration-group--terminal .iteration-group__banner { color: var(--status-error); }
+.attempt-transition { display: flex; align-items: center; gap: 8px;
+                      margin: -6px 0 12px 8px; color: var(--status-error); font-size: 12.5px; }
+.attempt-transition__icon { font-weight: 700; }
+footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--border);
+         color: var(--fg-dim); font-size: 12px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="header-bar">
+  <div class="title-group">
+    <h1>Task: skill-flow-devcon-billing-invoice-lookup</h1>
+    <div class="subtitle">E2E greenfield (DevCon BillingDisputeResolution scenario): build a ~4-node Flow that normalizes a messy invoice number and queries the BillingDisputeERP Data Service entity; graded by validate plus three flow debug runs over malformed inputs.</div>
+  </div>
+  <div class="badges">
+    <span class="badge success">SUCCESS</span>
+    <span class="score-pill score-high">1.00</span>
+    <span class="badge neutral">claude-code · claude-sonnet-5</span>
+    <span class="badge neutral">15m 29s</span>
+    <span class="badge neutral">$5.7179</span>
+    
+    
+    <span class="nav-toggle" onclick="toggleTheme()">Toggle theme</span>
+  </div>
+</div>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Variant</div><div class="value">default</div></div>
+    <div class="stat"><div class="label">Started</div><div class="value mono">2026-08-19T15:39:27</div></div>
+    <div class="stat"><div class="label">Duration</div><div class="value">15m 29s</div></div>
+    <div class="stat"><div class="label">Turns (SDK)</div><div class="value">167</div></div>
+    <div class="stat"><div class="label">Commands</div><div class="value">87</div></div>
+  </div>
+</div>
+
+<h2>Success Criteria <span class="muted" style="font-weight:400">(5/5 passed)</span></h2>
+<div class="card" style="padding:0">
+<table>
+  <thead>
+    <tr>
+      <th style="width:15%">Type</th>
+      <th style="width:35%">Description</th>
+      <th style="width:10%">Score</th>
+      <th>Details</th>
+    </tr>
+  </thead>
+  <tbody>
+    
+<tr class="criterion-row">
+  <td>run_command</td>
+  <td>uip maestro flow validate passes on the flow file</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Command: python3 $EXPERIMENT_TASKS_PATH/uipath-maestro-flow/_shared/validate_flow.py</summary><div class="details-body"><pre style="margin:6px 0 0 0">Command: python3 $EXPERIMENT_TASKS_PATH/uipath-maestro-flow/_shared/validate_flow.py
+Exit code: 0 (expected: 0)
+Stdout:
+Validating BillingInvoiceLookup/BillingInvoiceLookup/BillingInvoiceLookup.flow
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FlowValidate&quot;,
+  &quot;Data&quot;: {
+    &quot;File&quot;: &quot;/work/output/artifacts/skill-flow-devcon-billing-invoice-lookup/BillingInvoiceLookup/BillingInvoiceLookup/BillingInvoiceLookup.flow&quot;,
+    &quot;Status&quot;: &quot;Valid&quot;
+  }
+}
+
+Stderr:
+[ManifestClient] fetchDynamicNodes ok: total=317 agent context nodes=2 external agent nodes=7 orchestrator nodes=263 IXP nodes=45</pre></div></details></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>run_command</td>
+  <td>Check script debugs three malformed inputs (fail-fast); every exercised input must resolve to MCS-2026-04872 with 8 line items</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Command: python3 $TASK_DIR/check_billing_invoice_lookup.py</summary><div class="details-body"><pre style="margin:6px 0 0 0">Command: python3 $TASK_DIR/check_billing_invoice_lookup.py
+Exit code: 0 (expected: 0)
+Stdout:
+[missing MCS- prefix] debug inputs: {&#x27;invoiceNumber&#x27;: &#x27;2026-04872&#x27;}
+OK: [missing MCS- prefix] -&gt; MCS-2026-04872, 8 line items
+[wrong casing] debug inputs: {&#x27;invoiceNumber&#x27;: &#x27;mcs-2026-04872&#x27;}
+OK: [wrong casing] -&gt; MCS-2026-04872, 8 line items
+[leading whitespace] debug inputs: {&#x27;invoiceNumber&#x27;: &#x27; MCS-2026-04872&#x27;}
+OK: [leading whitespace] -&gt; MCS-2026-04872, 8 line items
+OK: all 3 malformed forms normalized and queried correctly
+
+Stderr: (empty)</pre></div></details></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>run_command</td>
+  <td>Advisory: Data Service query filters server-side (whole-entity fetch + client-side filter breaks silently past the page limit)</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Command: python3 $TASK_DIR/check_server_side_filter.py</summary><div class="details-body"><pre style="margin:6px 0 0 0">Command: python3 $TASK_DIR/check_server_side_filter.py
+Exit code: 0 (expected: 0)
+Stdout:
+OK: query filters server-side
+
+Stderr: (empty)</pre></div></details></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>run_command</td>
+  <td>Advisory: generated bindings exist and carry no stub UUIDs</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Command: python3 $EXPERIMENT_TASKS_PATH/uipath-maestro-flow/_shared/check_bindings_no_stubs.py</summary><div class="details-body"><pre style="margin:6px 0 0 0">Command: python3 $EXPERIMENT_TASKS_PATH/uipath-maestro-flow/_shared/check_bindings_no_stubs.py
+Exit code: 0 (expected: 0)
+Stdout:
+1 bindings across 1 file(s), all populated with non-stub values
+
+Stderr: (empty)</pre></div></details></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>run_command</td>
+  <td>Advisory: STRUCTURAL (covering): one DS query node, entityName in the PATH slot, the filter COMPUTED from the input, no canonical/test-input literals, both outputs read from the query, and a connection/folder pair of distinct uuids</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Command: python3 $EXPERIMENT_TASKS_PATH/uipath-maestro-flow/_shared/advisory_billing_invoice_lookup.py</summary><div class="details-body"><pre style="margin:6px 0 0 0">Command: python3 $EXPERIMENT_TASKS_PATH/uipath-maestro-flow/_shared/advisory_billing_invoice_lookup.py
+Exit code: 0 (expected: 0)
+Stdout:
+5 nodes; DS query queryBillingdisputeerp1 entityName=&#x27;BillingDisputeERP&#x27; (path) queryExpression computed from $vars; outputs read from queryBillingdisputeerp1; connection=d61e5d0e… folder=c4359cde…
+
+Stderr: (empty)</pre></div></details></td>
+</tr>
+
+  </tbody>
+</table>
+</div>
+<h2>Conversation Trace (1 iteration)</h2>
+<div class="card">
+  <div class="turn-header">
+    <h3>Iteration 1</h3>
+    <div class="badges">
+      <span class="badge neutral">167 assistant turns</span>
+      <span class="badge neutral">in 797 · out 56969 · cache 13999307</span>
+      <span class="badge neutral">14m 13s</span>
+      
+      
+      
+    </div>
+  </div>
+  <details>
+    <summary>Prompt to agent</summary>
+    <div class="details-body"><pre>Your working directory is: /work/output/artifacts/skill-flow-devcon-billing-invoice-lookup
+
+Build a Maestro Flow &quot;BillingInvoiceLookup&quot; (in a solution of the same name)
+that looks up a disputed invoice&#x27;s line items, tolerating messy input.
+
+- Input: trigger variable `invoiceNumber` (string). Callers may omit the
+  &quot;MCS-&quot; prefix, use wrong casing, or add whitespace.
+- Normalize the input (trim, uppercase, prepend `MCS-` if absent), then look
+  up the matching rows in the existing `BillingDisputeERP` Data Service
+  entity.
+- Outputs: `matchedInvoiceNumber` (string, first matched row&#x27;s invoiceNumber)
+  and `lineItemCount` (number of rows returned).
+
+Validate the final flow file — the task is not complete until `uip maestro
+flow validate` passes. Grading then runs the flow under debug against live
+tenant data, so build it to actually run, not merely validate.
+
+Build the complete flow
+without stopping to ask me.
+</pre></div>
+  </details>
+  <details>
+    <summary>Agent response</summary>
+    <div class="details-body"><pre>[ASSISTANT] Found `BillingDisputeERP` entity (Id `ded91391-ec59-f111-8fcb-000d3a32b519`). Let me get its field schema and check the connection.
+[ASSISTANT] Now I have enough info. Let me plan: normalize invoiceNumber in a script node, then Query Entity Records node with a CEQL filter on invoiceNumber, then a script node to extract output, then End node. Let&#x27;s start the build.
+[ASSISTANT] Layout confirmed: `BillingInvoiceLookup/BillingInvoiceLookup/BillingInvoiceLookup.flow`. Node added with id `queryBillingdisputeerp1`. Now let&#x27;s read the flow file to see the current state.
+[ASSISTANT] Now I have what I need. Let me design the flow: `start` → `normalizeInvoice` (script) → `queryBillingdisputeerp1` (Data Service query, already added) → `end`. Let me build the node/edge/variable edits.
+[ASSISTANT] This tool handles nodes, definitions, variables.nodes, and layout automatically. Let&#x27;s use it to add the script nodes and end node.
+[ASSISTANT] That&#x27;s better — variables.nodes +2 this time (output, error). Let me verify.
+[ASSISTANT] Now add the End node and edges. Let&#x27;s check flow_edit.py&#x27;s add-node for terminal type (End node has no outputs, but we need output mapping via add-output-mapping).
+[ASSISTANT] Now add the workflow variables: `invoiceNumber` (in), `matchedInvoiceNumber` (out), `lineItemCount` (out).
+[ASSISTANT] Now map outputs on the End node, and wire edges.
+[ASSISTANT] The script node&#x27;s actual source port is `success`, not `output` — I need to fix the edges.
+[ASSISTANT] Now let&#x27;s fix the `buildResult` script&#x27;s input reference to use `normalizeInvoice` output correctly, and double check the query connector output shape (list operation → bare array).
+[ASSISTANT] Now let&#x27;s check whether the &quot;searchable&quot; requirement for `invoiceNumber` was actually valid (since the CLI check dropped unmatched leaves silently). Let&#x27;s inspect the resulting inputs.detail.
+[ASSISTANT] The filter compiled correctly — `queryExpression`: `invoiceNumber = &#x27;{var_6fce49f0}&#x27;` with `filterVariables` resolving the dynamic value. Now let&#x27;s run the audit script and validate.
+[ASSISTANT] This flagged finding is inside the CLI-generated `=jsonString:` design-time cache blob (`savedFilterTrees`), which is CLI-owned and matches the documented Step 6a behavior exactly — not something to hand-edit. Let me confirm `flow validate` doesn&#x27;t also flag it, then run format.
+[ASSISTANT] `flow validate` passes with no warnings. The audit&#x27;s MISSING_JS_PREFIX finding is a false positive on the CLI-generated `savedFilterTrees` cache inside the `=jsonString:` envelope — that&#x27;s exactly the documented shape from Step 6a (dynamic operand `{&quot;value&quot;: &quot;=js:$vars...&quot;, &quot;isLiteral&quot;: false}`), which the CLI compiled correctly into `filterVariables`. Now run format.
+[ASSISTANT] Everything&#x27;s wired correctly: Manual trigger → Normalize Invoice Number (script) → Query BillingDisputeERP (Data Fabric connector with CEQL filter) → Build Result (script) → End (mapping both outputs). `flow validate` passes cleanly with no warnings, and layout is formatted. Let me do one final full validate + audit pass to confirm everything&#x27;s stable, and double check the connection health.
+[ASSISTANT] Connection is healthy and validate passes with `Status: &quot;Valid&quot;` and no warnings. The flow is complete.
+
+## Summary
+
+Built **BillingInvoiceLookup** at `/work/output/artifacts/skill-flow-devcon-billing-invoice-lookup/BillingInvoiceLookup/BillingInvoiceLookup/BillingInvoiceLookup.flow` (double-nested solution layout, project registered in the parent `.uipx`).
+
+**Pipeline:** Manual trigger (`invoiceNumber` in) → **Normalize Invoice Number** (script: trim, uppercase, prepend `MCS-` if absent) → **Query BillingDisputeERP** (UiPath Data Fabric connector, CEQL filter `invoiceNumber = &#x27;&lt;normalized&gt;&#x27;` bound dynamically via `filterVariables`) → **Build Result** (script: takes first matched row&#x27;s `invoiceNumber` and the row count) → **End**, mapping `matchedInvoiceNumber` (string) and `lineItemCount` (number).
+
+Key implementa</pre></div>
+  </details>
+  <h4 style="margin-top:12px">Tool Calls (87)</h4>
+  
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#0</span>
+      <span class="tool-name">Skill</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">11ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;skill&quot;: &quot;tmp:uipath-maestro-flow&quot;,
+  &quot;args&quot;: &quot;Build a new Maestro Flow named \&quot;BillingInvoiceLookup\&quot; in a solution of the same name, in working directory /work/output/artifacts/skill-flow-devcon-billing-invoice-lookup.\n\nRequirements:\n- Trigger variable: `invoiceNumber` (string).\n- Normalize invoiceNumber: trim whitespace, uppercase, and prepend \&quot;MCS-\&quot; prefix if not already present (case-insensitive check).\n- Look up matching rows in the existi… (836 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Launching skill: tmp:uipath-maestro-flow</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#1</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">87ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;find . -maxdepth 2 -type f -name &#x27;*.uipx&#x27; -print; echo \&quot;---\&quot;; ls -la&quot;,
+  &quot;description&quot;: &quot;Check for existing solutions in working directory&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>---
+total 12
+drwxr-xr-x 3 root root 4096 Aug 19 15:39 .
+drwxr-xr-x 3 root root 4096 Aug 19 15:39 ..
+drwxr-xr-x 4 root root 4096 Aug 19 15:39 .venv</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#2</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">375ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/CAPABILITY.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Author — Create and edit `.flow` files
+2	
+3	Capability index for building new flows (greenfield) and editing existing flows (brownfield). Author owns everything that happens on disk, locally, without `uip login`. Authoring journeys terminate at `validate` + `format`; from there, hand off to [operate/CAPABILITY.md](../operate/CAPABILITY.md) to publish, run, or debug.
+4	
+5	&gt; **Where you came from / where to go next.** Author is upstream of Operate (build the flow → ship it) and upstream of Diagnose only via Operate (build → run → diagnose). Publish/run/lifecycle lives in [operate/CAPABILITY.md](../operate/CAPABILITY.md); fault triage lives in [diagnose/CAPABILITY.md](../diagnose/CAPABILITY.md).
+6	&gt;
+7	&gt; **Inherits universal rules from [SKILL.md](../../SKILL.md)** — `--output json` + prefer `--output-filter` for extraction, no `flow debug` without consent, resource discovery order, never invoke other skills automatically, dropdown question pattern, solution layout, **plain-English narration + granular progress list (opt-in — silent by default; engage when the user asks for verbosity)**. The rules below are author-scoped and apply on top.
+8	
+9	## When to use this capability
+10	
+11	&lt;
+
+… (truncated, 30449 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#3</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">88ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/greenfield.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Greenfield — Create a New Flow
+2	
+3	End-to-end journey for creating a Flow project from scratch. Author terminates at `validate` + `format`. To publish, run, or debug after this, see [operate/CAPABILITY.md](../../operate/CAPABILITY.md).
+4	
+5	&gt; **Brownfield edits use a different journey.** If the `.flow` file already exists, see [brownfield.md](brownfield.md) instead.
+6	
+7	## Should you plan first?
+8	
+9	For complex flows, produce a plan before building. Reference [planning-arch.md](planning-arch.md) and [planning-impl.md](planning-impl.md) for the node type catalog, port reference, wiring rules, and topology patterns.
+10	
+11	**Plan when:**
+12	- The flow has 5+ nodes with branching or parallel paths
+13	- The flow uses connectors or resources that need discovery
+14	- The user&#x27;s requirements are ambiguous and you need to confirm the approach
+15	
+16	**Don&#x27;t plan when:**
+17	- Adding/editing a single node in an existing flow (use [brownfield.md](brownfield.md))
+18	- The flow is a straightforward linear pipeline (trigger → action → action → end)
+19	- The user has already described the exact topology they want
+20	
+21	### Examples
+22	
+23	**Plan:** &quot;Build a flow that receives a Jira ticke
+
+… (truncated, 34831 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#4</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">8ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/plugins/connector/planning.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Connector Activity Nodes — Planning
+2	
+3	Connector activity nodes call external services (Jira, Slack, Salesforce, Outlook, etc.) via UiPath Integration Service. They are dynamically loaded — not built-in — and appear in the registry after `uip login` + `uip maestro flow registry pull`.
+4	
+5	## When to Use
+6	
+7	Use a connector activity node when the flow needs to **call an external service that has a pre-built UiPath connector**. Connectors handle auth (OAuth, API keys), token refresh, and error formatting automatically at runtime. Note: design-time reference resolution (looking up records by name during authoring) still requires the agent to paginate — see [impl.md](impl.md).
+8	
+9	### Decision Order
+10	
+11	Prefer higher tiers when connecting to external services:
+12	
+13	| Tier | Approach | When to Use |
+14	| --- | --- | --- |
+15	| 1 | **IS connector activity** (this node type) | A connector exists and its activities cover the use case |
+16	| 2 | **Managed HTTP Request** (`core.action.http.v2`) | A connector exists but lacks the specific curated activity — uses the connector&#x27;s IS connection for auth |
+17	| 3 | **Managed HTTP Request — manual mode** (`core.action.http.v2`) | No 
+
+… (truncated, 8594 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#5</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.33s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip login status --output json 2&gt;&amp;1; echo \&quot;---uipver---\&quot;; uip --version 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Check login status and CLI version&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;LoginStatus&quot;,
+  &quot;Data&quot;: {
+    &quot;Status&quot;: &quot;Logged in&quot;,
+    &quot;Identity&quot;: &quot;zhongyi.shi@uipath.com&quot;,
+    &quot;IdentityType&quot;: &quot;User&quot;,
+    &quot;AuthFlow&quot;: &quot;Interactive&quot;,
+    &quot;CredentialSource&quot;: &quot;SavedLogin&quot;,
+    &quot;Provider&quot;: &quot;File&quot;,
+    &quot;UserId&quot;: &quot;bfda820f-4ddb-4af7-a5ec-3c332b403271&quot;,
+    &quot;UserEmail&quot;: &quot;zhongyi.shi@uipath.com&quot;,
+    &quot;UserName&quot;: &quot;zhongyi.shi@uipath.com&quot;,
+    &quot;BaseUrl&quot;: &quot;https://alpha.uipath.com&quot;,
+    &quot;Organization&quot;: &quot;codereval&quot;,
+    &quot;OrganizationId&quot;: &quot;311c6049-4966-4ef2-a6f3-8ceccaf38d54&quot;,
+    &quot;Tenant&quot;: &quot;DefaultTenant&quot;,
+    &quot;TenantId&quot;: &quot;69d43765-6ede-4575-88b7-9db601a2c056&quot;,
+    &quot;ExpirationDate&quot;: &quot;2026-08-19T16:34:30.000Z&quot;
+  }
+}
+---uipver---
+1.201.0-dev.8272</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#6</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">622ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/plugins/connector/impl.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Connector Activity Nodes — Implementation
+2	
+3	How to configure connector activity nodes: connection binding, enriched metadata, reference field resolution, and debugging. Connection bindings are emitted by `uip maestro flow node configure` into the flow&#x27;s top-level `bindings[]`; `bindings_v2.json` is regenerated from them at debug/pack time and should never be hand-edited.
+4	
+5	For generic node/edge add, remove, and wiring procedures, see [editing-operations.md](../../editing-operations.md). This guide covers the connector-specific configuration workflow that must follow the generic node add.
+6	
+7	## How Connector Nodes Differ from OOTB
+8	
+9	1. **Connection binding required** — every connector node needs an IS connection (OAuth, API key, etc.) authored in the flow&#x27;s top-level `bindings[]` (which the CLI regenerates into `bindings_v2.json` at debug/pack time). Without it, the node cannot authenticate.
+10	2. **Enriched metadata via `--connection-id`** — call `registry get` with `--connection-id` to get connection-aware field metadata. Without it, only base fields are returned — custom fields, dynamic enums, and reference resolution are missing.
+11	3. **`inputs.detail` object** —
+
+… (truncated, 66612 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#7</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">10.38s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry pull --force 2&gt;&amp;1 | tail -5\necho \&quot;---search dataservice---\&quot;\nuip maestro flow registry search \&quot;dataservice\&quot; --output json --output-filter \&quot;[*].{NodeType:NodeType,DisplayName:DisplayName,Description:Description,AvailableOnTenant:AvailableOnTenant}\&quot; 2&gt;&amp;1\necho \&quot;---df entities list---\&quot;\nuip df entities list --output json 2&gt;&amp;1 | head -c 3000\n&quot;,
+  &quot;description&quot;: &quot;Search registry for Data Service connector nodes and list Data Fabric entities&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>    &quot;Source&quot;: &quot;authenticated&quot;,
+    &quot;CacheWritten&quot;: true,
+    &quot;Message&quot;: &quot;Synced fresh nodes&quot;
+  }
+}
+---search dataservice---
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeSearchSuccess&quot;,
+  &quot;Data&quot;: [
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-uipath-dataservice.delete-file-from-record-field&quot;,
+      &quot;DisplayName&quot;: &quot;Delete File from Record Field&quot;,
+      &quot;Description&quot;: &quot;Delete a file from a specified field of an entity record in UiPath Data Fabric.&quot;,
+      &quot;AvailableOnTenant&quot;: true
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-uipath-dataservice.upload-file-to-record-field&quot;,
+      &quot;DisplayName&quot;: &quot;Upload File to Record Field&quot;,
+      &quot;Description&quot;: &quot;Upload a file to a specified field of an entity record in Data Fabric, replacing existing file if any&quot;,
+      &quot;AvailableOnTenant&quot;: true
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-uipath-dataservice.query-entity-records&quot;,
+      &quot;DisplayName&quot;: &quot;Query Entity Records&quot;,
+      &quot;Description&quot;: &quot;Retrieves a list of records for the selected Entity from Data Fabric, according to specified filters.&quot;,
+      &quot;AvailableOnTenant&quot;: true
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-uipath-dataservice.update-entity-record&quot;,
+    
+
+… (truncated, 7369 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#8</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">3.57s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip df entities list --output json --output-filter \&quot;[?contains(Name,&#x27;Billing&#x27;) || contains(DisplayName,&#x27;Billing&#x27;)].{Name:Name,DisplayName:DisplayName,Id:Id}\&quot; 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Find BillingDisputeERP entity id&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;EntityList&quot;,
+  &quot;Data&quot;: [
+    {
+      &quot;Name&quot;: &quot;BillingDisputeCRM&quot;,
+      &quot;DisplayName&quot;: &quot;BillingDispute-CRM&quot;,
+      &quot;Id&quot;: &quot;eb7da683-ec59-f111-8fcb-000d3a32b519&quot;
+    },
+    {
+      &quot;Name&quot;: &quot;BillingDisputeERP&quot;,
+      &quot;DisplayName&quot;: &quot;BillingDispute-ERP&quot;,
+      &quot;Id&quot;: &quot;ded91391-ec59-f111-8fcb-000d3a32b519&quot;
+    }
+  ]
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#9</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">3.47s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip df entities get ded91391-ec59-f111-8fcb-000d3a32b519 --output json --output-filter \&quot;Fields[*].{Name:Name,DisplayName:DisplayName,Type:FieldDataType.Name,IsPrimaryKey:IsPrimaryKey}\&quot; 2&gt;&amp;1\necho \&quot;---connections---\&quot;\nuip is connections list \&quot;uipath-uipath-dataservice\&quot; --all-folders --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Get BillingDisputeERP field schema and check dataservice connection&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;EntitySchema&quot;,
+  &quot;Data&quot;: [
+    {
+      &quot;Name&quot;: &quot;lineItemId&quot;,
+      &quot;DisplayName&quot;: &quot;lineItemId&quot;,
+      &quot;Type&quot;: &quot;STRING&quot;,
+      &quot;IsPrimaryKey&quot;: false
+    },
+    {
+      &quot;Name&quot;: &quot;invoiceNumber&quot;,
+      &quot;DisplayName&quot;: &quot;invoiceNumber&quot;,
+      &quot;Type&quot;: &quot;STRING&quot;,
+      &quot;IsPrimaryKey&quot;: false
+    },
+    {
+      &quot;Name&quot;: &quot;lineNumber&quot;,
+      &quot;DisplayName&quot;: &quot;lineNumber&quot;,
+      &quot;Type&quot;: &quot;DECIMAL&quot;,
+      &quot;IsPrimaryKey&quot;: false
+    },
+    {
+      &quot;Name&quot;: &quot;accountNumber&quot;,
+      &quot;DisplayName&quot;: &quot;accountNumber&quot;,
+      &quot;Type&quot;: &quot;STRING&quot;,
+      &quot;IsPrimaryKey&quot;: false
+    },
+    {
+      &quot;Name&quot;: &quot;description&quot;,
+      &quot;DisplayName&quot;: &quot;description&quot;,
+      &quot;Type&quot;: &quot;STRING&quot;,
+      &quot;IsPrimaryKey&quot;: false
+    },
+    {
+      &quot;Name&quot;: &quot;quantity&quot;,
+      &quot;DisplayName&quot;: &quot;quantity&quot;,
+      &quot;Type&quot;: &quot;DECIMAL&quot;,
+      &quot;IsPrimaryKey&quot;: false
+    },
+    {
+      &quot;Name&quot;: &quot;unitPrice&quot;,
+      &quot;DisplayName&quot;: &quot;unitPrice&quot;,
+      &quot;Type&quot;: &quot;DECIMAL&quot;,
+      &quot;IsPrimaryKey&quot;: false
+    },
+    {
+      &quot;Name&quot;: &quot;amount&quot;,
+      &quot;DisplayName&quot;: &quot;amount&quot;,
+      &quot;Type&quot;: &quot;DECIMAL&quot;,
+      &quot;IsPrimaryKey&quot;: false
+    },
+    {
+      &quot;Name&quot;: &quot;projectCode&quot;,
+      &quot;DisplayName&quot;: &quot;projectCode&quot;,
+      &quot;Type&quot;: &quot;STRING&quot;,
+      &quot;IsPrima
+
+… (truncated, 2359 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#10</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">5.70s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry get uipath.connector.uipath-uipath-dataservice.query-entity-records --connection-id d61e5d0e-04af-4f93-95cc-151d81fa08dc --output json &gt; /tmp/qer_registry.json 2&gt;&amp;1\nwc -l /tmp/qer_registry.json\npython3 -c \&quot;\nimport json\nd = json.load(open(&#x27;/tmp/qer_registry.json&#x27;))\nnode = d[&#x27;Data&#x27;] if &#x27;Data&#x27; in d else d\nprint(json.dumps(node, indent=2)[:3000])\n\&quot;&quot;,
+  &quot;description&quot;: &quot;Get enriched query-entity-records node definition&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>597 /tmp/qer_registry.json
+{
+  &quot;Node&quot;: {
+    &quot;nodeType&quot;: &quot;uipath.connector.uipath-uipath-dataservice.query-entity-records&quot;,
+    &quot;version&quot;: &quot;1.0.0&quot;,
+    &quot;category&quot;: &quot;connector.196550&quot;,
+    &quot;tags&quot;: [
+      &quot;connector&quot;,
+      &quot;activity&quot;
+    ],
+    &quot;sortOrder&quot;: 520,
+    &quot;supportsErrorHandling&quot;: true,
+    &quot;description&quot;: &quot;Retrieves a list of records for the selected Entity from Data Fabric, according to specified filters.&quot;,
+    &quot;display&quot;: {
+      &quot;label&quot;: &quot;Query Entity Records&quot;,
+      &quot;description&quot;: &quot;Retrieves a list of records for the selected Entity from Data Fabric, according to specified filters.&quot;,
+      &quot;icon&quot;: &quot;https://alpha.uipath.com/311c6049-4966-4ef2-a6f3-8ceccaf38d54/studio_/typecache/icons/98381fa079bbcf73264f551006d6ef7580fb53992f3d9f94361eb5d9e06040cb.svg&quot;,
+      &quot;sourceDisplayName&quot;: &quot;UiPath Data Fabric&quot;
+    },
+    &quot;handleConfiguration&quot;: [
+      {
+        &quot;position&quot;: &quot;left&quot;,
+        &quot;handles&quot;: [
+          {
+            &quot;id&quot;: &quot;input&quot;,
+            &quot;type&quot;: &quot;target&quot;,
+            &quot;handleType&quot;: &quot;input&quot;,
+            &quot;label&quot;: &quot;&quot;
+          }
+        ]
+      },
+      {
+        &quot;position&quot;: &quot;right&quot;,
+        &quot;handles&quot;: [
+          {
+            &quot;id&quot;: &quot;output&quot;,
+            &quot;type&quot;: &quot;sourc
+
+… (truncated, 1827 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#11</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">102ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 -c \&quot;\nimport json\nd = json.load(open(&#x27;/tmp/qer_registry.json&#x27;))\nnode = d[&#x27;Data&#x27;][&#x27;Node&#x27;]\nprint(&#x27;activityType check:&#x27;)\ntry:\n    cfg = node[&#x27;form&#x27;][&#x27;sections&#x27;][0][&#x27;fields&#x27;][0][&#x27;componentProps&#x27;][&#x27;connectorDetail&#x27;][&#x27;configuration&#x27;]\n    cfgd = json.loads(cfg)\n    print(&#x27;activityType:&#x27;, cfgd.get(&#x27;activityType&#x27;))\nexcept Exception as e:\n    print(&#x27;err&#x27;, e)\nprint()\nprint(&#x27;connectorMethodInfo:&#x27;, json… (174 more chars)&quot;,
+  &quot;description&quot;: &quot;Inspect activityType, connectorMethodInfo, inputDefinition of query-entity-records node&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>activityType check:
+activityType: Curated
+
+connectorMethodInfo: {
+  &quot;operation&quot;: &quot;List&quot;,
+  &quot;description&quot;: &quot;Retrieves a list of records for the selected Entity from Data Fabric, according to specified filters.&quot;,
+  &quot;method&quot;: &quot;POST&quot;,
+  &quot;parameters&quot;: [
+    {
+      &quot;name&quot;: &quot;entityName&quot;,
+      &quot;description&quot;: &quot;Enter entity name&quot;,
+      &quot;type&quot;: &quot;path&quot;,
+      &quot;dataType&quot;: &quot;string&quot;,
+      &quot;required&quot;: true,
+      &quot;displayName&quot;: &quot;Entity&quot;,
+      &quot;reference&quot;: {
+        &quot;objectName&quot;: &quot;system&quot;,
+        &quot;lookupNames&quot;: [
+          &quot;displayName&quot;
+        ],
+        &quot;lookupValue&quot;: &quot;name&quot;,
+        &quot;path&quot;: &quot;/standard-objects&quot;
+      },
+      &quot;curated&quot;: true,
+      &quot;design&quot;: {
+        &quot;loadByDefault&quot;: true,
+        &quot;isMultiSelect&quot;: false,
+        &quot;enableUserOverride&quot;: false,
+        &quot;isHidden&quot;: false,
+        &quot;position&quot;: &quot;primary&quot;,
+        &quot;validation&quot;: false
+      },
+      &quot;sortOrder&quot;: 1
+    },
+    {
+      &quot;name&quot;: &quot;queryExpression&quot;,
+      &quot;description&quot;: &quot;Enter CEQL query to filter entity records&quot;,
+      &quot;type&quot;: &quot;query&quot;,
+      &quot;dataType&quot;: &quot;string&quot;,
+      &quot;required&quot;: false,
+
+
+inputDefinition: {
+  &quot;fields&quot;: [
+    {
+      &quot;name&quot;: &quot;_sortFieldName&quot;,
+      &quot;displayName&quot;: &quot;Sort by field&quot;,
+      &quot;type&quot;: &quot;string&quot;,
+ 
+
+… (truncated, 127 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#12</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">126ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 -c \&quot;\nimport json\nd = json.load(open(&#x27;/tmp/qer_registry.json&#x27;))\nnode = d[&#x27;Data&#x27;][&#x27;Node&#x27;]\ncmi = node.get(&#x27;connectorMethodInfo&#x27;, {})\nprint(&#x27;path:&#x27;, cmi.get(&#x27;path&#x27;))\nfor p in cmi.get(&#x27;parameters&#x27;, []):\n    print(&#x27;-&#x27;, p.get(&#x27;name&#x27;), &#x27;| type:&#x27;, p.get(&#x27;type&#x27;), &#x27;| required:&#x27;, p.get(&#x27;required&#x27;), &#x27;| design.component:&#x27;, p.get(&#x27;design&#x27;,{}).get(&#x27;component&#x27;))\nprint()\n# check for design.actions on connec… (116 more chars)&quot;,
+  &quot;description&quot;: &quot;List query-entity-records parameters and check for FilterBuilder/objectActions&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>path: /v2/{entityName}/qer
+- entityName | type: path | required: True | design.component: None
+- queryExpression | type: query | required: False | design.component: FilterBuilder
+- start | type: query | required: False | design.component: None
+- limit | type: query | required: False | design.component: None
+- expansionLevel | type: query | required: False | design.component: None
+- isAscending | type: query | required: False | design.component: None
+
+design.actions: [
+  {
+    &quot;actionType&quot;: &quot;api&quot;,
+    &quot;rules&quot;: [
+      {
+        &quot;type&quot;: &quot;path&quot;,
+        &quot;refFieldName&quot;: &quot;entityName&quot;,
+        &quot;refFieldValues&quot;: [
+          &quot;*&quot;
+        ],
+        &quot;isCleared&quot;: false,
+        &quot;isVariable&quot;: false
+      }
+    ],
+    &quot;name&quot;: &quot;GenerateSchema&quot;,
+    &quot;apiConfiguration&quot;: {
+      &quot;url&quot;: &quot;/standard-objects/{entityName}/qer/metadata&quot;,
+      &quot;method&quot;: &quot;GET&quot;
+    },
+    &quot;onSuccess&quot;: {
+      &quot;type&quot;: &quot;remap&quot;,
+      &quot;remapConfiguration&quot;: {
+        &quot;input&quot;: &quot;replace&quot;,
+        &quot;output&quot;: &quot;replace&quot;
+      }
+    },
+    &quot;onFailure&quot;: {
+      &quot;type&quot;: &quot;remap&quot;,
+      &quot;remapConfiguration&quot;: {
+        &quot;input&quot;: &quot;noop&quot;,
+        &quot;output&quot;: &quot;noop&quot;
+      },
+      &quot;actions&quot;: [
+        {
+          &quot;actionType&quot;: &quot;showMessages&quot;,
+ 
+
+… (truncated, 358 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#13</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">4.46s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip is resources describe \&quot;uipath-uipath-dataservice\&quot; \&quot;QueryEntityRecordsCurated\&quot; --connection-id \&quot;d61e5d0e-04af-4f93-95cc-151d81fa08dc\&quot; --operation List -f entityName=BillingDisputeERP --output json 2&gt;&amp;1 | tee /tmp/qer_describe.json | head -c 2000&quot;,
+  &quot;description&quot;: &quot;Describe QueryEntityRecordsCurated with entityName field to get live schema&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Failure&quot;,
+  &quot;Message&quot;: &quot;No api-type ObjectAction matched for fields [entityName] on operation &#x27;List&#x27;&quot;,
+  &quot;Instructions&quot;: &quot;Verify the connector exposes a design-time action (objectActions[] or connectorMethodInfo.design.actions[]) whose rules reference the supplied fields. Pass --action &lt;name&gt; to disambiguate when multiple actions match.&quot;,
+  &quot;ErrorCode&quot;: &quot;unknown_error&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#14</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">425ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip is resources describe --help 2&gt;&amp;1 | head -50&quot;,
+  &quot;description&quot;: &quot;Check is resources describe help for field flag usage&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>                           uip is resources describe                            
+                     Describe object fields and operations                      
+                Use --help with nested commands for more detail.                
+
+┌─ Usage ──────────────────────────────────────────────────────────────────────┐
+│ uip is resources describe [options] &lt;connector-key&gt; &lt;object-name&gt;            │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Arguments ──────────────────────────────────────────────────────────────────┐
+│ connector-key   Connector key                                                │
+│ object-name     Object name                                                  │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Options ────────────────────────────────────────────────────────────────────┐
+│ --connection-id &lt;id&gt;           Connection/Instance ID                        │
+│ --operation &lt;operation&gt;        Filter to a single operation (List, Retrieve, │
+│                                Create, Update, Delete, Replace)              │
+│ --refresh                      Force re-fetch from API, ignor
+
+… (truncated, 2529 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#15</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">4.53s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip is resources describe \&quot;uipath-uipath-dataservice\&quot; \&quot;QueryEntityRecordsCurated\&quot; --connection-id \&quot;d61e5d0e-04af-4f93-95cc-151d81fa08dc\&quot; --operation List --action GenerateSchema -f entityName=BillingDisputeERP --output json 2&gt;&amp;1 | tee /tmp/qer_describe.json | head -c 3000&quot;,
+  &quot;description&quot;: &quot;Retry describe with explicit action name&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Failure&quot;,
+  &quot;Message&quot;: &quot;No api-type ObjectAction matched for fields [entityName] on operation &#x27;List&#x27;&quot;,
+  &quot;Instructions&quot;: &quot;Verify the connector exposes a design-time action (objectActions[] or connectorMethodInfo.design.actions[]) whose rules reference the supplied fields. Pass --action &lt;name&gt; to disambiguate when multiple actions match.&quot;,
+  &quot;ErrorCode&quot;: &quot;unknown_error&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#16</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">4.21s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip is resources describe \&quot;uipath-uipath-dataservice\&quot; \&quot;QueryEntityRecordsCurated\&quot; --connection-id \&quot;d61e5d0e-04af-4f93-95cc-151d81fa08dc\&quot; --operation List --output json 2&gt;&amp;1 | tee /tmp/qer_describe_base.json | head -c 3000&quot;,
+  &quot;description&quot;: &quot;Describe without field param to see base output&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Failure&quot;,
+  &quot;Message&quot;: &quot;Operation &#x27;List&#x27; not found. Available: Create&quot;,
+  &quot;Instructions&quot;: &quot;Run the command without --operation to list available operations for the resource.&quot;,
+  &quot;ErrorCode&quot;: &quot;unknown_error&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#17</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">525ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip is resources describe \&quot;uipath-uipath-dataservice\&quot; \&quot;QueryEntityRecordsCurated\&quot; --connection-id \&quot;d61e5d0e-04af-4f93-95cc-151d81fa08dc\&quot; --output json 2&gt;&amp;1 | head -c 3000&quot;,
+  &quot;description&quot;: &quot;Describe without operation flag&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;ResourceMetadata&quot;,
+  &quot;Data&quot;: {
+    &quot;Name&quot;: &quot;QueryEntityRecordsCurated&quot;,
+    &quot;DisplayName&quot;: &quot;Query Entity Records&quot;,
+    &quot;ElementKey&quot;: &quot;uipath-uipath-dataservice&quot;,
+    &quot;AvailableOperations&quot;: [
+      {
+        &quot;Method&quot;: &quot;POST&quot;,
+        &quot;Name&quot;: &quot;Create&quot;,
+        &quot;Description&quot;: &quot;Retrieves a list of records for the selected Entity from Data Fabric, according to specified filters.&quot;,
+        &quot;Path&quot;: &quot;/v2/{entityName}/qer&quot;,
+        &quot;Curated&quot;: &quot;Query Entity Records&quot;
+      }
+    ],
+    &quot;Hint&quot;: &quot;Use --operation &lt;Create|List|Retrieve|Update|Delete|Replace&gt; to see fields for a specific operation.&quot;
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#18</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">6.68s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip is resources describe \&quot;uipath-uipath-dataservice\&quot; \&quot;QueryEntityRecordsCurated\&quot; --connection-id \&quot;d61e5d0e-04af-4f93-95cc-151d81fa08dc\&quot; --operation Create -f entityName=BillingDisputeERP --output json 2&gt;&amp;1 &gt; /tmp/qer_describe.json\ncat /tmp/qer_describe.json | head -c 3000&quot;,
+  &quot;description&quot;: &quot;Describe with operation Create and entityName field&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;ResourceMetadata&quot;,
+  &quot;Data&quot;: {
+    &quot;Name&quot;: &quot;QueryEntityRecordsCurated&quot;,
+    &quot;DisplayName&quot;: &quot;Query Entity Records&quot;,
+    &quot;ElementKey&quot;: &quot;uipath-uipath-dataservice&quot;,
+    &quot;Operation&quot;: {
+      &quot;Method&quot;: &quot;POST&quot;,
+      &quot;Name&quot;: &quot;Create&quot;,
+      &quot;Description&quot;: &quot;Retrieves a list of records for the selected Entity from Data Fabric, according to specified filters.&quot;,
+      &quot;Path&quot;: &quot;/v2/{entityName}/qer&quot;,
+      &quot;Curated&quot;: &quot;Query Entity Records&quot;
+    },
+    &quot;Parameters&quot;: [
+      {
+        &quot;Name&quot;: &quot;entityName&quot;,
+        &quot;Type&quot;: &quot;path&quot;,
+        &quot;DataType&quot;: &quot;string&quot;,
+        &quot;Required&quot;: true,
+        &quot;DisplayName&quot;: &quot;Entity&quot;,
+        &quot;Description&quot;: &quot;Enter entity name&quot;,
+        &quot;Reference&quot;: {
+          &quot;ObjectName&quot;: &quot;system&quot;,
+          &quot;LookupNames&quot;: [
+            &quot;displayName&quot;
+          ],
+          &quot;LookupValue&quot;: &quot;name&quot;,
+          &quot;Path&quot;: &quot;/standard-objects&quot;
+        }
+      },
+      {
+        &quot;Name&quot;: &quot;queryExpression&quot;,
+        &quot;Type&quot;: &quot;query&quot;,
+        &quot;DataType&quot;: &quot;string&quot;,
+        &quot;Required&quot;: false,
+        &quot;DisplayName&quot;: &quot;Query&quot;,
+        &quot;Description&quot;: &quot;Enter CEQL query to filter entity records&quot;
+      },
+      {
+        &quot;Name&quot;: &quot;start&quot;,
+        &quot;Type&quot;: &quot;query&quot;,
+     
+
+… (truncated, 1800 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#19</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">99ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cat /tmp/qer_describe.json | python3 -c \&quot;\nimport json,sys\nd = json.load(sys.stdin)\nprint(json.dumps(d[&#x27;Data&#x27;].get(&#x27;ResponseFields&#x27;, &#x27;NONE&#x27;), indent=2)[:3000])\nprint(&#x27;---keys---&#x27;)\nprint(list(d[&#x27;Data&#x27;].keys()))\n\&quot;\n&quot;,
+  &quot;description&quot;: &quot;Inspect response fields and metadata file path&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>[]
+---keys---
+[&#x27;Name&#x27;, &#x27;DisplayName&#x27;, &#x27;ElementKey&#x27;, &#x27;Operation&#x27;, &#x27;Parameters&#x27;, &#x27;RequestFields&#x27;, &#x27;ResponseFields&#x27;, &#x27;Method&#x27;]</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#20</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">5ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/shared/variables-and-expressions.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Variables and Expressions
+2	
+3	Complete reference for declaring variables, writing expressions, and managing data flow in `.flow` files.
+4	
+5	&gt; **Read this before** adding variables or writing expressions in any flow.
+6	&gt;
+7	&gt; `flow validate` catches the structural expression-reference errors:
+8	&gt;
+9	&gt; - Missing `=js:` prefix on `$vars`/`$metadata`/`$self` (MST-9107)
+10	&gt; - Invented `nodes.&lt;id&gt;.output` syntax
+11	&gt; - References to unknown variables or node IDs
+12	&gt; - Output-path walks that descend into declared primitives or schemas closed with `additionalProperties: false`
+13	&gt;
+14	&gt; Errors against **open output schemas** (HTTP response bodies, script returns, free-text agent output) and **wrong-direction reads** (e.g. reading an `out`-only variable) still slip past validate and surface only at `flow debug` or in production.
+15	
+16	---
+17	
+18	## Table of contents
+19	
+20	- [Variables Overview](#variables-overview)
+21	- [Workflow Variables (`globals`)](#workflow-variables-globals)
+22	- [Node Variables (`nodes`)](#node-variables-nodes)
+23	- [Variable Updates (`variableUpdates`)](#variable-updates-variableupdates)
+24	- [Output Mapping on End Nodes](#output-mapping-on-end-nodes)
+25	- [
+
+… (truncated, 24870 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#21</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">3ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/plugins/script/impl.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Script Node — Implementation
+2	
+3	## Node Type
+4	
+5	`core.action.script`
+6	
+7	## Registry validation
+8	
+9	```bash
+10	uip maestro flow registry get core.action.script --output json
+11	```
+12	
+13	Confirm: input port `input`, output port `success`, required input `script` (string, non-empty). See [Action Node Structure — Registry validation](../../../../shared/action-nodes.md#registry-validation) for the shared pattern.
+14	
+15	## JSON structure
+16	
+17	Follow the [Action Node Structure — Standard JSON skeleton](../../../../shared/action-nodes.md#standard-json-skeleton). The script-specific input is a single `script` string:
+18	
+19	```json
+20	{
+21	  &quot;inputs&quot;: {
+22	    &quot;script&quot;: &quot;const items = $vars.fetchData.output.body.items;\nconst total = items.reduce((sum, i) =&gt; sum + i.amount, 0);\nreturn { total, count: items.length };&quot;
+23	  }
+24	}
+25	```
+26	
+27	## Adding and editing
+28	
+29	See [Action Node Structure — Adding and editing procedures](../../../../shared/action-nodes.md#adding-and-editing-procedures). The script node uses the standard input port `input` and output port `success`; no plugin-specific wiring.
+30	
+31	## Script rules
+32	
+33	1. **Top-level body — no `function main()` w
+
+… (truncated, 4329 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#22</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.24s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;find / -path /proc -prune -o -type d -name \&quot;uipath-platform\&quot; -print 2&gt;/dev/null&quot;,
+  &quot;description&quot;: &quot;Locate uipath-platform reference skill directory&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/.uipath/.skills/skills/uipath-platform</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#23</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">8.20s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;\\\nuip solution init \&quot;BillingInvoiceLookup\&quot; --output json \\\n  &amp;&amp; cd \&quot;BillingInvoiceLookup\&quot; \\\n  &amp;&amp; uip maestro flow init \&quot;BillingInvoiceLookup\&quot; --output json \\\n  &amp;&amp; cd \&quot;BillingInvoiceLookup\&quot; \\\n  &amp;&amp; uip maestro flow registry pull \\\n  &amp;&amp; uip maestro flow node add \&quot;BillingInvoiceLookup.flow\&quot; uipath.connector.uipath-uipath-dataservice.query-entity-records --label \&quot;Query BillingDisputeERP\&quot; --output json\n&quot;,
+  &quot;description&quot;: &quot;Create solution, flow project, pull registry, add Data Service query node&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;SolutionInit&quot;,
+  &quot;Data&quot;: {
+    &quot;Status&quot;: &quot;Created successfully&quot;,
+    &quot;Path&quot;: &quot;/work/output/artifacts/skill-flow-devcon-billing-invoice-lookup/BillingInvoiceLookup/BillingInvoiceLookup.uipx&quot;,
+    &quot;NextSteps&quot;: &quot;Read /work/output/artifacts/skill-flow-devcon-billing-invoice-lookup/BillingInvoiceLookup/AGENTS.md or /work/output/artifacts/skill-flow-devcon-billing-invoice-lookup/BillingInvoiceLookup/CLAUDE.md to understand the solution lifecycle, project types that can be used inside a solution, and related uip command references.&quot;
+  }
+}
+2026-08-19 15:42:28 INFO  [ResourceBuilder:ProjectCreateCommandHandler] Creating project [object Object]
+2026-08-19 15:42:28 INFO  [ResourceBuilder:MultiFileSolutionDefinitionProvider] Reading multi-file solution definition for solution %s /work/output/artifacts/skill-flow-devcon-billing-invoice-lookup/BillingInvoiceLookup
+2026-08-19 15:42:28 INFO  [ResourceBuilder:ProjectCreateCommandHandler] Generate artefact resources for project [object Object]
+2026-08-19 15:42:28 INFO  [ResourceBuilder:SolutionsMetadataReader] Reading metadata from %s. SolutionsMetadataReader
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FlowInit&quot;,
+  &quot;Data&quot;
+
+… (truncated, 1957 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#24</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">8.80s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro flow registry get core.control.end --output json &gt; /tmp/end_def.json 2&gt;&amp;1\nuip maestro flow registry get core.action.script --output json &gt; /tmp/script_def.json 2&gt;&amp;1\necho done&quot;,
+  &quot;description&quot;: &quot;Fetch End and Script node definitions in parallel&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>done</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#25</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">14ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;pwd &amp;&amp; ls -la&quot;,
+  &quot;description&quot;: &quot;Confirm cwd and list flow project files&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/work/output/artifacts/skill-flow-devcon-billing-invoice-lookup/BillingInvoiceLookup/BillingInvoiceLookup
+total 28
+drwxr-xr-x 2 root root  4096 Aug 19 15:42 .
+drwxr-xr-x 4 root root  4096 Aug 19 15:42 ..
+-rw-r--r-- 1 root root 11789 Aug 19 15:42 BillingInvoiceLookup.flow
+-rw-r--r-- 1 root root   268 Aug 19 15:42 operate.json
+-rw-r--r-- 1 root root    62 Aug 19 15:42 project.uiproj</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#26</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">3ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-devcon-billing-invoice-lookup/BillingInvoiceLookup/BillingInvoiceLookup/BillingInvoiceLookup.flow&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	{
+2	  &quot;id&quot;: &quot;a079cd25-f29d-4ddd-ab4e-8ce38dc0d4fa&quot;,
+3	  &quot;version&quot;: &quot;1.9&quot;,
+4	  &quot;name&quot;: &quot;BillingInvoiceLookup&quot;,
+5	  &quot;nodes&quot;: [
+6	    {
+7	      &quot;id&quot;: &quot;start&quot;,
+8	      &quot;type&quot;: &quot;core.trigger.manual&quot;,
+9	      &quot;typeVersion&quot;: &quot;1.0&quot;,
+10	      &quot;display&quot;: {
+11	        &quot;label&quot;: &quot;Manual trigger&quot;
+12	      },
+13	      &quot;inputs&quot;: {
+14	        &quot;entryPointId&quot;: &quot;2dcdf12e-4c07-43bb-a64c-5cf9d5c056e6&quot;,
+15	        &quot;isDefaultEntryPoint&quot;: true
+16	      }
+17	    },
+18	    {
+19	      &quot;id&quot;: &quot;queryBillingdisputeerp1&quot;,
+20	      &quot;type&quot;: &quot;uipath.connector.uipath-uipath-dataservice.query-entity-records&quot;,
+21	      &quot;typeVersion&quot;: &quot;1.0.0&quot;,
+22	      &quot;display&quot;: {
+23	        &quot;label&quot;: &quot;Query BillingDisputeERP&quot;
+24	      },
+25	      &quot;inputs&quot;: {}
+26	    }
+27	  ],
+28	  &quot;edges&quot;: [],
+29	  &quot;definitions&quot;: [
+30	    {
+31	      &quot;nodeType&quot;: &quot;core.trigger.manual&quot;,
+32	      &quot;version&quot;: &quot;1.0&quot;,
+33	      &quot;category&quot;: &quot;trigger&quot;,
+34	      &quot;description&quot;: &quot;Start the process manually&quot;,
+35	      &quot;tags&quot;: [
+36	        &quot;trigger&quot;,
+37	        &quot;start&quot;,
+38	        &quot;manual&quot;
+39	      ],
+40	      &quot;sortOrder&quot;: 80,
+41	      &quot;display&quot;: {
+42	        &quot;label&quot;: &quot;Manual trigger&quot;,
+43	        &quot;icon&quot;: &quot;play&quot;,
+44	        &quot;shape&quot;: &quot;circle&quot;
+45	      },
+46	      &quot;hand
+
+… (truncated, 12109 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#27</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">36ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;find /.uipath/.skills/skills/uipath-platform -iname \&quot;*activities*\&quot; -o -iname \&quot;*integration-service*\&quot; 2&gt;/dev/null | head -20&quot;,
+  &quot;description&quot;: &quot;Locate activities.md / integration-service reference docs&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/.uipath/.skills/skills/uipath-platform/references/integration-service
+/.uipath/.skills/skills/uipath-platform/references/integration-service/activities.md
+/.uipath/.skills/skills/uipath-platform/references/integration-service/integration-service.md</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#28</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">24ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -n \&quot;Filter Trees\\|CEQL\\|savedFilterTrees\\|filter tree\&quot; -A 60 /.uipath/.skills/skills/uipath-platform/references/integration-service/activities.md | head -200&quot;,
+  &quot;description&quot;: &quot;Read Filter Trees CEQL section from platform reference&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>65:## Filter Trees (CEQL)
+66-
+67:Some IS activities — most notably **List All Records** and other list/query operations — accept a server-side filter expressed in **CEQL** (Connector Expression Query Language). As with trigger filters (which compile to JMESPath), CEQL filters are authored as a **structured filter tree** and the CLI compiles them to a CEQL string. Authoring as a tree keeps the CLI and Studio Web in lockstep so the activity round-trips cleanly when re-opened in SW.
+68-
+69-### Contract — three signals from IS metadata
+70-
+71-The CLI reads the live IS metadata response and uses three signals to wire the filter:
+72-
+73:1. **The activity supports CEQL** when one of its `parameters` declares `design.component === &quot;FilterBuilder&quot;`. That parameter&#x27;s `name` is the connector-specific key the compiled CEQL string is sent under — most commonly `where`, but **not always** (e.g. Salesforce uses `q`). Activities with no such parameter do not support server-side filtering — pass no `filter` and filter downstream.
+74-2. **A field is filterable** when its IS metadata entry has `searchable: true`. Type alone does not gate it — the connector flags fields explicitly. Fields without `sea
+
+… (truncated, 9318 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#29</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">7.48s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip is resources describe \&quot;uipath-uipath-dataservice\&quot; \&quot;QueryEntityRecordsCurated\&quot; --connection-id \&quot;d61e5d0e-04af-4f93-95cc-151d81fa08dc\&quot; --operation Create -f entityName=BillingDisputeERP --output json 2&gt;&amp;1 &gt; /tmp/qer_full.json\npython3 -c \&quot;\nimport json\nd = json.load(open(&#x27;/tmp/qer_full.json&#x27;))\nprint(json.dumps(d, indent=2))\n\&quot; | grep -i \&quot;metadatafile\\|cache\&quot; \necho \&quot;---full dump size---\&quot;\ncat /tmp/qe… (19 more chars)&quot;,
+  &quot;description&quot;: &quot;Check for metadataFile path in describe response and dump size&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>---full dump size---
+109</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#30</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">10ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cat /tmp/qer_full.json&quot;,
+  &quot;description&quot;: &quot;View full describe response with entityName parent field&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;ResourceMetadata&quot;,
+  &quot;Data&quot;: {
+    &quot;Name&quot;: &quot;QueryEntityRecordsCurated&quot;,
+    &quot;DisplayName&quot;: &quot;Query Entity Records&quot;,
+    &quot;ElementKey&quot;: &quot;uipath-uipath-dataservice&quot;,
+    &quot;Operation&quot;: {
+      &quot;Method&quot;: &quot;POST&quot;,
+      &quot;Name&quot;: &quot;Create&quot;,
+      &quot;Description&quot;: &quot;Retrieves a list of records for the selected Entity from Data Fabric, according to specified filters.&quot;,
+      &quot;Path&quot;: &quot;/v2/{entityName}/qer&quot;,
+      &quot;Curated&quot;: &quot;Query Entity Records&quot;
+    },
+    &quot;Parameters&quot;: [
+      {
+        &quot;Name&quot;: &quot;entityName&quot;,
+        &quot;Type&quot;: &quot;path&quot;,
+        &quot;DataType&quot;: &quot;string&quot;,
+        &quot;Required&quot;: true,
+        &quot;DisplayName&quot;: &quot;Entity&quot;,
+        &quot;Description&quot;: &quot;Enter entity name&quot;,
+        &quot;Reference&quot;: {
+          &quot;ObjectName&quot;: &quot;system&quot;,
+          &quot;LookupNames&quot;: [
+            &quot;displayName&quot;
+          ],
+          &quot;LookupValue&quot;: &quot;name&quot;,
+          &quot;Path&quot;: &quot;/standard-objects&quot;
+        }
+      },
+      {
+        &quot;Name&quot;: &quot;queryExpression&quot;,
+        &quot;Type&quot;: &quot;query&quot;,
+        &quot;DataType&quot;: &quot;string&quot;,
+        &quot;Required&quot;: false,
+        &quot;DisplayName&quot;: &quot;Query&quot;,
+        &quot;Description&quot;: &quot;Enter CEQL query to filter entity records&quot;
+      },
+      {
+        &quot;Name&quot;: &quot;start&quot;,
+        &quot;Type&quot;: &quot;query&quot;,
+     
+
+… (truncated, 8219 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#31</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">133ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 -c \&quot;\nimport json\nd = json.load(open(&#x27;/tmp/qer_registry.json&#x27;))\nnode = d[&#x27;Data&#x27;][&#x27;Node&#x27;]\nprint(json.dumps(node.get(&#x27;outputDefinition&#x27;, &#x27;MISSING&#x27;), indent=2)[:3000])\nprint(&#x27;---&#x27;)\nprint(json.dumps(node.get(&#x27;outputResponseDefinition&#x27;, &#x27;MISSING&#x27;), indent=2)[:3000])\n\&quot;\n&quot;,
+  &quot;description&quot;: &quot;Check output definition shape for query-entity-records&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;output&quot;: {
+    &quot;type&quot;: &quot;object&quot;,
+    &quot;description&quot;: &quot;The return value of the connector.&quot;,
+    &quot;source&quot;: &quot;=result.response&quot;,
+    &quot;var&quot;: &quot;output&quot;
+  },
+  &quot;error&quot;: {
+    &quot;type&quot;: &quot;object&quot;,
+    &quot;description&quot;: &quot;Error information if the node fails&quot;,
+    &quot;source&quot;: &quot;=Error&quot;,
+    &quot;var&quot;: &quot;error&quot;,
+    &quot;schema&quot;: {
+      &quot;$schema&quot;: &quot;http://json-schema.org/draft-07/schema#&quot;,
+      &quot;type&quot;: &quot;object&quot;,
+      &quot;required&quot;: [
+        &quot;code&quot;,
+        &quot;message&quot;,
+        &quot;detail&quot;,
+        &quot;category&quot;,
+        &quot;status&quot;
+      ],
+      &quot;properties&quot;: {
+        &quot;code&quot;: {
+          &quot;type&quot;: &quot;string&quot;,
+          &quot;description&quot;: &quot;Error code as a string&quot;
+        },
+        &quot;message&quot;: {
+          &quot;type&quot;: &quot;string&quot;,
+          &quot;description&quot;: &quot;High-level error message&quot;
+        },
+        &quot;detail&quot;: {
+          &quot;type&quot;: &quot;string&quot;,
+          &quot;description&quot;: &quot;Detailed error description&quot;
+        },
+        &quot;category&quot;: {
+          &quot;type&quot;: &quot;string&quot;,
+          &quot;description&quot;: &quot;Error category&quot;
+        },
+        &quot;status&quot;: {
+          &quot;type&quot;: &quot;integer&quot;,
+          &quot;description&quot;: &quot;HTTP status code&quot;
+        }
+      },
+      &quot;additionalProperties&quot;: false
+    }
+  }
+}
+---
+{
+  &quot;fields&quot;: []
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#32</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">110ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -o &#x27;\&quot;outputResponseDefinition[^}]*}[^}]*}[^}]*}&#x27; /tmp/qer_registry.json | head -5\necho \&quot;---\&quot;\npython3 -c \&quot;\nimport json\nd = json.load(open(&#x27;/tmp/qer_registry.json&#x27;))\nnode = d[&#x27;Data&#x27;][&#x27;Node&#x27;]\nfor k in node.keys():\n    print(k)\n\&quot;&quot;,
+  &quot;description&quot;: &quot;Search for outputResponseDefinition keys in node registry&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>---
+nodeType
+version
+category
+tags
+sortOrder
+supportsErrorHandling
+description
+display
+handleConfiguration
+model
+form
+inputDefinition
+inputDefaults
+outputDefinition
+debug
+connectorMethodInfo
+outputResponseDefinition</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#33</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">128ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 -c \&quot;\nimport json\nd = json.load(open(&#x27;/tmp/script_def.json&#x27;))\nprint(json.dumps(d[&#x27;Data&#x27;][&#x27;Node&#x27;], indent=2))\n\&quot;&quot;,
+  &quot;description&quot;: &quot;View script node definition to copy into definitions[]&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;nodeType&quot;: &quot;core.action.script&quot;,
+  &quot;version&quot;: &quot;1.1&quot;,
+  &quot;category&quot;: &quot;data-operations&quot;,
+  &quot;description&quot;: &quot;Run custom JavaScript code&quot;,
+  &quot;tags&quot;: [
+    &quot;code&quot;,
+    &quot;javascript&quot;,
+    &quot;python&quot;
+  ],
+  &quot;sortOrder&quot;: 70,
+  &quot;supportsErrorHandling&quot;: true,
+  &quot;display&quot;: {
+    &quot;label&quot;: &quot;Script&quot;,
+    &quot;icon&quot;: &quot;code&quot;
+  },
+  &quot;handleConfiguration&quot;: [
+    {
+      &quot;position&quot;: &quot;left&quot;,
+      &quot;handles&quot;: [
+        {
+          &quot;id&quot;: &quot;input&quot;,
+          &quot;type&quot;: &quot;target&quot;,
+          &quot;handleType&quot;: &quot;input&quot;
+        }
+      ]
+    },
+    {
+      &quot;position&quot;: &quot;right&quot;,
+      &quot;handles&quot;: [
+        {
+          &quot;id&quot;: &quot;success&quot;,
+          &quot;type&quot;: &quot;source&quot;,
+          &quot;handleType&quot;: &quot;output&quot;
+        },
+        {
+          &quot;id&quot;: &quot;error&quot;,
+          &quot;label&quot;: &quot;Error&quot;,
+          &quot;type&quot;: &quot;source&quot;,
+          &quot;handleType&quot;: &quot;output&quot;,
+          &quot;visible&quot;: &quot;{inputs.errorHandlingEnabled}&quot;,
+          &quot;constraints&quot;: {
+            &quot;maxConnections&quot;: 1
+          }
+        }
+      ]
+    }
+  ],
+  &quot;debug&quot;: {
+    &quot;runtime&quot;: &quot;clientScript&quot;
+  },
+  &quot;model&quot;: {
+    &quot;type&quot;: &quot;bpmn:ScriptTask&quot;
+  },
+  &quot;inputDefinition&quot;: {
+    &quot;type&quot;: &quot;object&quot;,
+    &quot;properties&quot;: {
+      &quot;script&quot;: {
+        &quot;type&quot;: &quot;string&quot;,
+        &quot;minLength&quot;: 1,
+        &quot;errorMessage
+
+… (truncated, 2245 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#34</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">145ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 -c \&quot;\nimport json\nd = json.load(open(&#x27;/tmp/end_def.json&#x27;))\nprint(json.dumps(d[&#x27;Data&#x27;][&#x27;Node&#x27;], indent=2))\n\&quot;&quot;,
+  &quot;description&quot;: &quot;View end node definition to copy into definitions[]&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;nodeType&quot;: &quot;core.control.end&quot;,
+  &quot;version&quot;: &quot;1.0&quot;,
+  &quot;category&quot;: &quot;control-flow&quot;,
+  &quot;description&quot;: &quot;Mark the end of a process path&quot;,
+  &quot;tags&quot;: [
+    &quot;control-flow&quot;,
+    &quot;end&quot;,
+    &quot;finish&quot;,
+    &quot;complete&quot;
+  ],
+  &quot;sortOrder&quot;: 65,
+  &quot;display&quot;: {
+    &quot;label&quot;: &quot;End&quot;,
+    &quot;icon&quot;: &quot;circle-check&quot;,
+    &quot;shape&quot;: &quot;circle&quot;
+  },
+  &quot;handleConfiguration&quot;: [
+    {
+      &quot;position&quot;: &quot;left&quot;,
+      &quot;handles&quot;: [
+        {
+          &quot;id&quot;: &quot;input&quot;,
+          &quot;type&quot;: &quot;target&quot;,
+          &quot;handleType&quot;: &quot;input&quot;
+        }
+      ]
+    }
+  ],
+  &quot;model&quot;: {
+    &quot;type&quot;: &quot;bpmn:EndEvent&quot;
+  },
+  &quot;runtimeConstraints&quot;: {
+    &quot;exclude&quot;: [
+      &quot;api-function&quot;
+    ]
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#35</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">8.23s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip is resources describe \&quot;uipath-uipath-dataservice\&quot; \&quot;QueryEntityRecordsCurated\&quot; --connection-id \&quot;d61e5d0e-04af-4f93-95cc-151d81fa08dc\&quot; --operation Create --action GenerateSchema -f entityName=BillingDisputeERP --refresh --output json 2&gt;&amp;1 | tee /tmp/qer_full2.json | python3 -c \&quot;\nimport json,sys\nd = json.load(sys.stdin)\nprint(json.dumps(d, indent=2)[:3000])\n\&quot;&quot;,
+  &quot;description&quot;: &quot;Retry describe with explicit GenerateSchema action and refresh&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;ResourceMetadata&quot;,
+  &quot;Data&quot;: {
+    &quot;Name&quot;: &quot;QueryEntityRecordsCurated&quot;,
+    &quot;DisplayName&quot;: &quot;Query Entity Records&quot;,
+    &quot;ElementKey&quot;: &quot;uipath-uipath-dataservice&quot;,
+    &quot;Operation&quot;: {
+      &quot;Method&quot;: &quot;POST&quot;,
+      &quot;Name&quot;: &quot;Create&quot;,
+      &quot;Description&quot;: &quot;Retrieves a list of records for the selected Entity from Data Fabric, according to specified filters.&quot;,
+      &quot;Path&quot;: &quot;/v2/{entityName}/qer&quot;,
+      &quot;Curated&quot;: &quot;Query Entity Records&quot;
+    },
+    &quot;Parameters&quot;: [
+      {
+        &quot;Name&quot;: &quot;entityName&quot;,
+        &quot;Type&quot;: &quot;path&quot;,
+        &quot;DataType&quot;: &quot;string&quot;,
+        &quot;Required&quot;: true,
+        &quot;DisplayName&quot;: &quot;Entity&quot;,
+        &quot;Description&quot;: &quot;Enter entity name&quot;,
+        &quot;Reference&quot;: {
+          &quot;ObjectName&quot;: &quot;system&quot;,
+          &quot;LookupNames&quot;: [
+            &quot;displayName&quot;
+          ],
+          &quot;LookupValue&quot;: &quot;name&quot;,
+          &quot;Path&quot;: &quot;/standard-objects&quot;
+        }
+      },
+      {
+        &quot;Name&quot;: &quot;queryExpression&quot;,
+        &quot;Type&quot;: &quot;query&quot;,
+        &quot;DataType&quot;: &quot;string&quot;,
+        &quot;Required&quot;: false,
+        &quot;DisplayName&quot;: &quot;Query&quot;,
+        &quot;Description&quot;: &quot;Enter CEQL query to filter entity records&quot;
+      },
+      {
+        &quot;Name&quot;: &quot;start&quot;,
+        &quot;Type&quot;: &quot;query&quot;,
+     
+
+… (truncated, 1800 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#36</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">92ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 -c \&quot;\nimport json\nd = json.load(open(&#x27;/tmp/qer_full2.json&#x27;))\nprint(json.dumps(d[&#x27;Data&#x27;].get(&#x27;ResponseFields&#x27;), indent=2))\n\&quot;&quot;,
+  &quot;description&quot;: &quot;Check ResponseFields in full&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>[]</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#37</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">193ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -o \&quot;searchable[^,]*\&quot; /tmp/qer_full2.json | head -30\necho \&quot;---count---\&quot;\ngrep -c \&quot;searchable\&quot; /tmp/qer_full2.json\necho \&quot;---raw dump for RequestFields---\&quot;\npython3 -c \&quot;\nimport json\nd = json.load(open(&#x27;/tmp/qer_full2.json&#x27;))\nprint(json.dumps(d[&#x27;Data&#x27;][&#x27;RequestFields&#x27;], indent=2))\n\&quot;\necho \&quot;---Method field raw (search for invoiceNumber/searchable)---\&quot;\npython3 -c \&quot;\nimport json\nd = json.load(open(&#x27;/tmp… (119 more chars)&quot;,
+  &quot;description&quot;: &quot;Check for searchable field flags anywhere in describe response&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>---count---
+0
+---raw dump for RequestFields---
+[
+  {
+    &quot;Name&quot;: &quot;_sortFieldName&quot;,
+    &quot;Type&quot;: &quot;string&quot;,
+    &quot;DisplayName&quot;: &quot;Sort by field&quot;,
+    &quot;Enum&quot;: [
+      &quot;lineItemId&quot;,
+      &quot;invoiceNumber&quot;,
+      &quot;lineNumber&quot;,
+      &quot;accountNumber&quot;,
+      &quot;description&quot;,
+      &quot;quantity&quot;,
+      &quot;unitPrice&quot;,
+      &quot;amount&quot;,
+      &quot;projectCode&quot;,
+      &quot;timeSheetReference&quot;,
+      &quot;poNumber&quot;,
+      &quot;hoursLogged&quot;,
+      &quot;projectStatus&quot;,
+      &quot;sowReference&quot;,
+      &quot;sowStatus&quot;,
+      &quot;contractedRate&quot;,
+      &quot;UpdateTime&quot;,
+      &quot;CreateTime&quot;,
+      &quot;Id&quot;
+    ],
+    &quot;Required&quot;: false
+  }
+]
+---Method field raw (search for invoiceNumber/searchable)---
+{
+  &quot;POST&quot;: {
+    &quot;operation&quot;: &quot;List&quot;,
+    &quot;description&quot;: &quot;Retrieves a list of records for the selected Entity from Data Fabric, according to specified filters.&quot;,
+    &quot;method&quot;: &quot;POST&quot;,
+    &quot;parameters&quot;: [
+      {
+        &quot;name&quot;: &quot;entityName&quot;,
+        &quot;description&quot;: &quot;Enter entity name&quot;,
+        &quot;type&quot;: &quot;path&quot;,
+        &quot;dataType&quot;: &quot;string&quot;,
+        &quot;required&quot;: true,
+        &quot;displayName&quot;: &quot;Entity&quot;,
+        &quot;reference&quot;: {
+          &quot;objectName&quot;: &quot;system&quot;,
+          &quot;lookupNames&quot;: [
+            &quot;displayName&quot;
+          ],
+          &quot;lookupValue&quot;: &quot;name&quot;,
+      
+
+… (truncated, 1428 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#38</span>
+      <span class="tool-name">Grep</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">15ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;pattern&quot;: &quot;core.trigger.manual|triggerNodeId|entryPointId|trigger.*schema&quot;,
+  &quot;path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/shared/file-format.md&quot;,
+  &quot;output_mode&quot;: &quot;content&quot;,
+  &quot;-n&quot;: true
+}</pre>
+    <h4>Result</h4>
+    <pre>93:**Required fields on every node**: `id`, `type`, `typeVersion`, **`display`** (with at least a `label`). This applies to **every** node — triggers (`core.trigger.manual`, `core.trigger.scheduled`, connector triggers), action nodes, control-flow nodes (`core.control.end`, `core.logic.terminate`), and human-task nodes. The Zod `nodeSchema` declares `display: displayConfigSchema` without `.optional()`, so no node type is exempt — even ones that &quot;feel&quot; trivial.
+115:| `inputs.entryPointId` | All trigger nodes (`core.trigger.manual`, `core.trigger.scheduled`, connector triggers) | Stable UUID identifying the entry point |
+125:  &quot;type&quot;: &quot;core.trigger.manual&quot;,
+129:    &quot;entryPointId&quot;: &quot;3d4a8c34-5682-4ebe-a6bc-d92a18830bb5&quot;
+262:| `core.trigger.manual` | Entry point | `entryPointId` |
+263:| `core.trigger.scheduled` | Recurring schedule trigger | `entryPointId`, `timerType`, `timerPreset` |
+288:| `core.trigger.manual` | `output` | — |
+392:Replace `&lt;uuid&gt;` with any generated UUID (e.g. `crypto.randomUUID()` in Node.js, or any UUID v4 generator) — this applies ONLY to the top-level flow `id` and `entryPointId` (the same UUID must appear in `entry-points.json` as `uniqueId`). **Node and edge i
+
+… (truncated, 368 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#39</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">152ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/shared/file-format.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# UiPath Flow File Format
+2	
+3	The `.flow` file is a JSON document at `&lt;ProjectName&gt;.flow` in the project root. It is the **only file you should edit** — other generated files will be overwritten.
+4	
+5	## Table of contents
+6	
+7	- [Top-level structure](#top-level-structure)
+8	- [Project structure (generated scaffold)](#project-structure-generated-scaffold)
+9	- [Node instance](#node-instance)
+10	- [Layout](#layout)
+11	- [Edge — both ports required](#edge--both-ports-required)
+12	- [Definition entry](#definition-entry)
+13	- [Common node types](#common-node-types)
+14	- [Standard ports by node type](#standard-ports-by-node-type)
+15	- [Implicit error port on action nodes](#implicit-error-port-on-action-nodes)
+16	- [Minimal working example — dice roller](#minimal-working-example--dice-roller)
+17	- [entry-points.json — auto-generated, do not edit](#entry-pointsjson--auto-generated-do-not-edit)
+18	- [Bindings — Orchestrator resource bindings (top-level `bindings[]`)](#bindings--orchestrator-resource-bindings-top-level-bindings)
+19	- [Bindings — connector connection binding](#bindings--connector-connection-binding)
+20	
+21	## Top-level structure
+22	
+23	```json
+24	{
+25	  &quot;id&quot;: &quot;&lt;uuid&gt;&quot;,
+26	 
+
+… (truncated, 35296 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#40</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">147ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow &amp;&amp; python3 scripts/flow_edit.py --help 2&gt;&amp;1 | head -60&quot;,
+  &quot;description&quot;: &quot;Check flow_edit.py usage&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>usage: flow_edit.py [-h]
+                    {add-node,delete-node,add-edge,delete-edge,set-input,add-variable,add-output-mapping,add-variable-update} ...
+
+Primitive `.flow` mutations: node/edge CRUD, variables, output mappings.
+
+Each subcommand touches every array the operation implies (nodes, edges, definitions,
+variables.nodes, variables.variableUpdates, layout.nodes) in one pass and writes the file
+back with 2-space indent.
+
+positional arguments:
+  {add-node,delete-node,add-edge,delete-edge,set-input,add-variable,add-output-mapping,add-variable-update}
+    add-node            insert a node + definition + variables.nodes + layout
+                        entry
+    delete-node         remove a node and cascade
+                        edges/variables/updates/layout/definition
+    add-edge            add an edge with both ports; sets errorHandlingEnabled
+                        for error edges
+    delete-edge         remove an edge by id or by endpoints
+    set-input           in-place inputs update (dotted key path), preserves
+                        node id
+    add-variable        declare a workflow variable in variables.globals
+    add-output-mapping  map an out variable on an En
+
+… (truncated, 267 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#41</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">533ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow &amp;&amp; python3 scripts/flow_edit.py add-node --help 2&gt;&amp;1\necho \&quot;---add-edge---\&quot;\npython3 scripts/flow_edit.py add-edge --help 2&gt;&amp;1\necho \&quot;---add-variable---\&quot;\npython3 scripts/flow_edit.py add-variable --help 2&gt;&amp;1\necho \&quot;---add-output-mapping---\&quot;\npython3 scripts/flow_edit.py add-output-mapping --help 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Check flow_edit.py subcommand options&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>usage: flow_edit.py add-node [-h] --flow FLOW --id ID --type TYPE
+                             [--type-version TYPE_VERSION] [--label LABEL]
+                             [--definition-file DEFINITION_FILE]
+                             [--inputs INPUTS] [--outputs OUTPUTS]
+                             [--allow-cli-owned]
+
+options:
+  -h, --help            show this help message and exit
+  --flow FLOW
+  --id ID               camelCase, must start with a letter
+  --type TYPE
+  --type-version TYPE_VERSION
+                        omit when --definition-file supplies it
+  --label LABEL
+  --definition-file DEFINITION_FILE
+                        `uip maestro flow registry get &lt;type&gt; --output json`
+                        saved to a file
+  --inputs INPUTS       JSON object for inputs
+  --outputs OUTPUTS     auto | none | comma-separated output ids
+  --allow-cli-owned     override the CLI-owned refusal
+---add-edge---
+usage: flow_edit.py add-edge [-h] --flow FLOW --source SOURCE
+                             --source-port SOURCE_PORT --target TARGET
+                             --target-port TARGET_PORT [--id ID]
+
+options:
+  -h, --help            show this help message and exit
+  --flow FLOW
+ 
+
+… (truncated, 1337 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#42</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">31ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow &amp;&amp; sed -n &#x27;1,400p&#x27; scripts/flow_edit.py | grep -n \&quot;outputs\\|def add_node\\|def cmd_add_node\&quot; | head -60&quot;,
+  &quot;description&quot;: &quot;Inspect flow_edit.py add-node implementation for outputs handling&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>29:def _skeleton_outputs(ntype, outputs):
+30:    if fl.is_terminal(ntype) or not outputs:
+51:    for out in outputs:
+69:def _sync_node_variables(flow, nid, outputs):
+71:    for out in outputs:
+80:def add_node(args):
+110:    if args.outputs == &quot;auto&quot;:
+111:        outputs = fl.declared_outputs(definition) if definition else []
+112:        if not outputs and not fl.is_terminal(args.type):
+113:            outputs = [&quot;output&quot;] if fl.is_trigger(args.type) else [&quot;output&quot;, &quot;error&quot;]
+114:    elif args.outputs == &quot;none&quot;:
+115:        outputs = []
+117:        outputs = [o.strip() for o in args.outputs.split(&quot;,&quot;) if o.strip()]
+118:    block = _skeleton_outputs(args.type, outputs)
+120:        node[&quot;outputs&quot;] = block
+128:        _sync_node_variables(flow, args.id, outputs)
+136:        args.id, args.type, version, &quot;added&quot; if added_def else &quot;reused/absent&quot;, len(outputs)))
+279:    node.setdefault(&quot;outputs&quot;, {})[args.var] = {&quot;source&quot;: args.source}
+315:    a.add_argument(&quot;--outputs&quot;, default=&quot;auto&quot;, help=&quot;auto | none | comma-separated output ids&quot;)
+Shell cwd was reset to /work/output/artifacts/skill-flow-devcon-billing-invoice-lookup</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#43</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">208ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-devcon-billing-invoice-lookup/BillingInvoiceLookup/BillingInvoiceLookup\nFLOW=BillingInvoiceLookup.flow\nSKILL=/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow\n\nNORMALIZE_SCRIPT=&#x27;const raw = ($vars.start.output.invoiceNumber || \&quot;\&quot;).trim().toUpperCase();\nconst invoiceNumber = raw.startsWith(\&quot;MCS-\&quot;) ? raw : \&quot;MCS-\&quot; + raw;\nreturn { invoiceNumber };&#x27;\n\npy… (335 more chars)&quot;,
+  &quot;description&quot;: &quot;Add normalizeInvoice script node&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>added node normalizeInvoice (core.action.script v1.1); definition added; variables.nodes +1</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#44</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">101ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-devcon-billing-invoice-lookup/BillingInvoiceLookup/BillingInvoiceLookup\npython3 -c \&quot;\nimport json\nd = json.load(open(&#x27;BillingInvoiceLookup.flow&#x27;))\nfor n in d[&#x27;nodes&#x27;]:\n    if n[&#x27;id&#x27;]==&#x27;normalizeInvoice&#x27;:\n        print(json.dumps(n, indent=2))\nprint(&#x27;---vars.nodes---&#x27;)\nfor v in d[&#x27;variables&#x27;][&#x27;nodes&#x27;]:\n    if &#x27;normalize&#x27; in v[&#x27;id&#x27;]:\n        print(v)\n\&quot;\n&quot;,
+  &quot;description&quot;: &quot;Inspect normalizeInvoice node after add&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;id&quot;: &quot;normalizeInvoice&quot;,
+  &quot;type&quot;: &quot;core.action.script&quot;,
+  &quot;typeVersion&quot;: &quot;1.1&quot;,
+  &quot;display&quot;: {
+    &quot;label&quot;: &quot;Normalize Invoice Number&quot;
+  },
+  &quot;inputs&quot;: {
+    &quot;script&quot;: &quot;const raw = ($vars.start.output.invoiceNumber || \&quot;\&quot;).trim().toUpperCase();\nconst invoiceNumber = raw.startsWith(\&quot;MCS-\&quot;) ? raw : \&quot;MCS-\&quot; + raw;\nreturn { invoiceNumber };&quot;
+  },
+  &quot;outputs&quot;: {
+    &quot;json&quot;: {
+      &quot;type&quot;: &quot;object&quot;,
+      &quot;description&quot;: &quot;The return value of the node.&quot;,
+      &quot;source&quot;: &quot;=result.response&quot;,
+      &quot;var&quot;: &quot;json&quot;
+    }
+  }
+}
+---vars.nodes---
+{&#x27;id&#x27;: &#x27;normalizeInvoice.json&#x27;, &#x27;type&#x27;: &#x27;object&#x27;, &#x27;binding&#x27;: {&#x27;nodeId&#x27;: &#x27;normalizeInvoice&#x27;, &#x27;outputId&#x27;: &#x27;json&#x27;}}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#45</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">27ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow &amp;&amp; grep -n \&quot;declared_outputs\&quot; scripts/flow_lib.py scripts/*.py 2&gt;/dev/null | head -20&quot;,
+  &quot;description&quot;: &quot;Find declared_outputs implementation&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>scripts/flow_lib.py:119:def declared_outputs(definition):
+scripts/check_runtime_gaps.py:92:            outputs = fl.declared_outputs(definition) or ([&quot;output&quot;] if fl.is_trigger(ntype) else [&quot;output&quot;])
+scripts/flow_edit.py:111:        outputs = fl.declared_outputs(definition) if definition else []
+scripts/flow_lib.py:119:def declared_outputs(definition):
+Shell cwd was reset to /work/output/artifacts/skill-flow-devcon-billing-invoice-lookup</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#46</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">19ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow\nsed -n &#x27;1,140p&#x27; scripts/flow_lib.py&quot;,
+  &quot;description&quot;: &quot;Inspect flow_lib.py for declared_outputs and definition parsing&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>&quot;&quot;&quot;Shared loader and graph helpers for `.flow` JSON. Internal — imported by the other scripts.&quot;&quot;&quot;
+import json
+import sys
+
+TRIGGER_TYPES = {&quot;core.trigger.manual&quot;, &quot;core.trigger.scheduled&quot;}
+TRIGGER_PREFIXES = (&quot;uipath.connector.trigger.&quot;,)
+TERMINAL_TYPES = {&quot;core.control.end&quot;, &quot;core.logic.terminate&quot;}
+CLI_OWNED_PREFIXES = (&quot;uipath.connector.trigger.&quot;, &quot;uipath.connector.event.&quot;, &quot;uipath.connector.&quot;)
+CLI_OWNED_TYPES = {&quot;core.action.http.v2&quot;}
+RESOURCE_PREFIXES = (
+    &quot;uipath.core.rpa-workflow.&quot;,
+    &quot;uipath.core.agent.&quot;,
+    &quot;uipath.core.flow.&quot;,
+    &quot;uipath.core.agentic-process.&quot;,
+    &quot;uipath.core.api-workflow.&quot;,
+    &quot;uipath.core.human-task.&quot;,
+)
+
+
+def die(msg, code=2):
+    sys.stderr.write(&quot;error: %s\n&quot; % msg)
+    raise SystemExit(code)
+
+
+def load(path):
+    try:
+        with open(path) as fh:
+            data = json.load(fh)
+    except FileNotFoundError:
+        die(&quot;flow file not found: %s&quot; % path)
+    except json.JSONDecodeError as exc:
+        die(&quot;%s is not valid JSON: %s&quot; % (path, exc))
+    if not isinstance(data, dict):
+        die(&quot;%s does not contain a flow object&quot; % path)
+    data.setdefault(&quot;nodes&quot;, [])
+    data.setdefault(&quot;edges&quot;, [])
+    data.setdefault(&quot;definitions&quot;, [])
+ 
+
+… (truncated, 3225 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#47</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">19ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow\nsed -n &#x27;25,140p&#x27; scripts/flow_edit.py&quot;,
+  &quot;description&quot;: &quot;Inspect flow_edit.py skeleton outputs and add_node logic&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>        payload = json.load(fh)
+    return fl.unwrap_definition(payload)
+
+
+def _skeleton_outputs(ntype, outputs):
+    if fl.is_terminal(ntype) or not outputs:
+        return {}
+    if fl.is_trigger(ntype):
+        return {
+            &quot;output&quot;: {
+                &quot;type&quot;: &quot;object&quot;,
+                &quot;description&quot;: &quot;Data passed when triggering the process.&quot;,
+                &quot;source&quot;: &quot;null&quot;,
+                &quot;var&quot;: &quot;output&quot;,
+            }
+        }
+    if fl.is_orch_job(ntype):
+        return {
+            &quot;error&quot;: {
+                &quot;type&quot;: &quot;object&quot;,
+                &quot;description&quot;: &quot;Error information if the node fails.&quot;,
+                &quot;source&quot;: &quot;=Error&quot;,
+                &quot;var&quot;: &quot;error&quot;,
+            }
+        }
+    block = {}
+    for out in outputs:
+        if out == &quot;error&quot;:
+            block[&quot;error&quot;] = {
+                &quot;type&quot;: &quot;object&quot;,
+                &quot;description&quot;: &quot;Error information if the node fails.&quot;,
+                &quot;source&quot;: &quot;=Error&quot;,
+                &quot;var&quot;: &quot;error&quot;,
+            }
+        else:
+            block[out] = {
+                &quot;type&quot;: &quot;object&quot;,
+                &quot;description&quot;: &quot;The return value of the node.&quot;,
+                &quot;source&quot;: &quot;=result.response&quot;,
+                &quot;
+
+… (truncated, 2960 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#48</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">82ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 -c \&quot;\nimport json\nd = json.load(open(&#x27;/tmp/script_def.json&#x27;))\nprint(type(d), list(d.keys()) if isinstance(d,dict) else &#x27;not dict&#x27;)\nprint(json.dumps(d.get(&#x27;outputDefinition&#x27;,&#x27;MISSING&#x27;))[:500])\n\&quot;&quot;,
+  &quot;description&quot;: &quot;Check /tmp/script_def.json structure for outputDefinition&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>&lt;class &#x27;dict&#x27;&gt; [&#x27;Result&#x27;, &#x27;Code&#x27;, &#x27;Data&#x27;]
+&quot;MISSING&quot;</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#49</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">11ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow\ngrep -n \&quot;is_orch_job\\|expected_size\&quot; scripts/flow_lib.py&quot;,
+  &quot;description&quot;: &quot;Check is_orch_job function to see why output name became json&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>189:def expected_size(ntype):
+198:def is_orch_job(ntype):
+Shell cwd was reset to /work/output/artifacts/skill-flow-devcon-billing-invoice-lookup</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#50</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">120ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-devcon-billing-invoice-lookup/BillingInvoiceLookup/BillingInvoiceLookup\npython3 -c \&quot;\nimport json\nd = json.load(open(&#x27;BillingInvoiceLookup.flow&#x27;))\nfor defn in d[&#x27;definitions&#x27;]:\n    if defn.get(&#x27;nodeType&#x27;)==&#x27;core.action.script&#x27;:\n        print(json.dumps(defn.get(&#x27;outputDefinition&#x27;), indent=2))\n\&quot;&quot;,
+  &quot;description&quot;: &quot;Check the actual outputDefinition written into definitions[] for script node&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;output&quot;: {
+    &quot;type&quot;: &quot;any&quot;,
+    &quot;description&quot;: &quot;The return value of the script&quot;,
+    &quot;source&quot;: &quot;=result.response&quot;,
+    &quot;var&quot;: &quot;output&quot;
+  },
+  &quot;error&quot;: {
+    &quot;type&quot;: &quot;object&quot;,
+    &quot;description&quot;: &quot;Error information if the node fails&quot;,
+    &quot;source&quot;: &quot;=Error&quot;,
+    &quot;var&quot;: &quot;error&quot;,
+    &quot;schema&quot;: {
+      &quot;$schema&quot;: &quot;http://json-schema.org/draft-07/schema#&quot;,
+      &quot;type&quot;: &quot;object&quot;,
+      &quot;required&quot;: [
+        &quot;code&quot;,
+        &quot;message&quot;,
+        &quot;detail&quot;,
+        &quot;category&quot;,
+        &quot;status&quot;
+      ],
+      &quot;properties&quot;: {
+        &quot;code&quot;: {
+          &quot;type&quot;: &quot;string&quot;,
+          &quot;description&quot;: &quot;Error code as a string&quot;
+        },
+        &quot;message&quot;: {
+          &quot;type&quot;: &quot;string&quot;,
+          &quot;description&quot;: &quot;High-level error message&quot;
+        },
+        &quot;detail&quot;: {
+          &quot;type&quot;: &quot;string&quot;,
+          &quot;description&quot;: &quot;Detailed error description&quot;
+        },
+        &quot;category&quot;: {
+          &quot;type&quot;: &quot;string&quot;,
+          &quot;description&quot;: &quot;Error category&quot;
+        },
+        &quot;status&quot;: {
+          &quot;type&quot;: &quot;integer&quot;,
+          &quot;description&quot;: &quot;HTTP status code&quot;
+        }
+      },
+      &quot;additionalProperties&quot;: false
+    }
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#51</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">106ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow\npython3 -c \&quot;\nimport sys\nsys.path.insert(0,&#x27;scripts&#x27;)\nimport flow_lib as fl\nimport json\npayload = json.load(open(&#x27;/tmp/script_def.json&#x27;))\nd = fl.unwrap_definition(payload)\nprint(&#x27;nodeType&#x27;, d.get(&#x27;nodeType&#x27;))\nprint(&#x27;outputDefinition keys:&#x27;, list((d.get(&#x27;outputDefinition&#x27;) or {}).keys()))\nprint(fl.declared_outputs(d))\n\&quot;&quot;,
+  &quot;description&quot;: &quot;Debug declared_outputs behavior on script definition&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>nodeType core.action.script
+outputDefinition keys: [&#x27;output&#x27;, &#x27;error&#x27;]
+[&#x27;error&#x27;, &#x27;output&#x27;]
+Shell cwd was reset to /work/output/artifacts/skill-flow-devcon-billing-invoice-lookup</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#52</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">19ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow\nsed -n &#x27;1,30p&#x27; scripts/flow_edit.py&quot;,
+  &quot;description&quot;: &quot;Check _load_definition helper&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>#!/usr/bin/env python3
+&quot;&quot;&quot;Primitive `.flow` mutations: node/edge CRUD, variables, output mappings.
+
+Each subcommand touches every array the operation implies (nodes, edges, definitions,
+variables.nodes, variables.variableUpdates, layout.nodes) in one pass and writes the file
+back with 2-space indent.
+&quot;&quot;&quot;
+import argparse
+import json
+import re
+import sys
+
+import flow_lib as fl
+
+ID_RE = re.compile(r&quot;^[A-Za-z]&quot;)
+
+
+def _check_id(kind, value):
+    if not ID_RE.match(value or &quot;&quot;):
+        fl.die(&quot;%s id %r must start with a letter (XML NCName); never a bare UUID or leading digit&quot; % (kind, value))
+
+
+def _load_definition(path):
+    with open(path) as fh:
+        payload = json.load(fh)
+    return fl.unwrap_definition(payload)
+
+
+def _skeleton_outputs(ntype, outputs):
+    if fl.is_terminal(ntype) or not outputs:
+Shell cwd was reset to /work/output/artifacts/skill-flow-devcon-billing-invoice-lookup</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#53</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">256ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-devcon-billing-invoice-lookup/BillingInvoiceLookup/BillingInvoiceLookup\nSKILL=/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow\npython3 \&quot;$SKILL/scripts/flow_edit.py\&quot; delete-node --flow BillingInvoiceLookup.flow --id normalizeInvoice --output json 2&gt;&amp;1\npython3 \&quot;$SKILL/scripts/flow_edit.py\&quot; delete-node --help 2&gt;&amp;1 | head -20&quot;,
+  &quot;description&quot;: &quot;Delete the malformed normalizeInvoice node to redo it correctly&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>usage: flow_edit.py [-h]
+                    {add-node,delete-node,add-edge,delete-edge,set-input,add-variable,add-output-mapping,add-variable-update} ...
+flow_edit.py: error: unrecognized arguments: --output json
+usage: flow_edit.py delete-node [-h] --flow FLOW --id ID
+
+options:
+  -h, --help   show this help message and exit
+  --flow FLOW
+  --id ID</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#54</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">183ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-devcon-billing-invoice-lookup/BillingInvoiceLookup/BillingInvoiceLookup\nSKILL=/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow\npython3 \&quot;$SKILL/scripts/flow_edit.py\&quot; delete-node --flow BillingInvoiceLookup.flow --id normalizeInvoice 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Delete the malformed normalizeInvoice node without extraneous flags&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>deleted node normalizeInvoice; edges -0; variableUpdates -0; definition pruned</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#55</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">111ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 -c \&quot;\nimport json\nd = json.load(open(&#x27;/tmp/script_def.json&#x27;))\nprint(list(d.keys()))\nprint(list(d[&#x27;Data&#x27;].keys()))\n\&quot;&quot;,
+  &quot;description&quot;: &quot;Check top-level structure of script_def.json to trace outputs bug&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>[&#x27;Result&#x27;, &#x27;Code&#x27;, &#x27;Data&#x27;]
+[&#x27;Node&#x27;]</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#56</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">240ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-devcon-billing-invoice-lookup/BillingInvoiceLookup/BillingInvoiceLookup\nFLOW=BillingInvoiceLookup.flow\nSKILL=/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow\n\nNORMALIZE_SCRIPT=&#x27;const raw = ($vars.start.output.invoiceNumber || \&quot;\&quot;).trim().toUpperCase();\nconst invoiceNumber = raw.startsWith(\&quot;MCS-\&quot;) ? raw : \&quot;MCS-\&quot; + raw;\nreturn { invoiceNumber };&#x27;\n\nIN… (379 more chars)&quot;,
+  &quot;description&quot;: &quot;Re-add normalizeInvoice node with explicit inputs var and inspect&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>INPUTS_JSON={&quot;script&quot;: &quot;const raw = ($vars.start.output.invoiceNumber || \&quot;\&quot;).trim().toUpperCase();\nconst invoiceNumber = raw.startsWith(\&quot;MCS-\&quot;) ? raw : \&quot;MCS-\&quot; + raw;\nreturn { invoiceNumber };&quot;}
+added node normalizeInvoice (core.action.script v1.1); definition added; variables.nodes +2</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#57</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">88ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-devcon-billing-invoice-lookup/BillingInvoiceLookup/BillingInvoiceLookup\npython3 -c \&quot;\nimport json\nd = json.load(open(&#x27;BillingInvoiceLookup.flow&#x27;))\nfor n in d[&#x27;nodes&#x27;]:\n    if n[&#x27;id&#x27;]==&#x27;normalizeInvoice&#x27;:\n        print(json.dumps(n, indent=2))\nprint(&#x27;---vars.nodes---&#x27;)\nfor v in d[&#x27;variables&#x27;][&#x27;nodes&#x27;]:\n    if &#x27;normalize&#x27; in v[&#x27;id&#x27;]:\n        print(v)\n\&quot;&quot;,
+  &quot;description&quot;: &quot;Confirm normalizeInvoice node now correct&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;id&quot;: &quot;normalizeInvoice&quot;,
+  &quot;type&quot;: &quot;core.action.script&quot;,
+  &quot;typeVersion&quot;: &quot;1.1&quot;,
+  &quot;display&quot;: {
+    &quot;label&quot;: &quot;Normalize Invoice Number&quot;
+  },
+  &quot;inputs&quot;: {
+    &quot;script&quot;: &quot;const raw = ($vars.start.output.invoiceNumber || \&quot;\&quot;).trim().toUpperCase();\nconst invoiceNumber = raw.startsWith(\&quot;MCS-\&quot;) ? raw : \&quot;MCS-\&quot; + raw;\nreturn { invoiceNumber };&quot;
+  },
+  &quot;outputs&quot;: {
+    &quot;error&quot;: {
+      &quot;type&quot;: &quot;object&quot;,
+      &quot;description&quot;: &quot;Error information if the node fails.&quot;,
+      &quot;source&quot;: &quot;=Error&quot;,
+      &quot;var&quot;: &quot;error&quot;
+    },
+    &quot;output&quot;: {
+      &quot;type&quot;: &quot;object&quot;,
+      &quot;description&quot;: &quot;The return value of the node.&quot;,
+      &quot;source&quot;: &quot;=result.response&quot;,
+      &quot;var&quot;: &quot;output&quot;
+    }
+  }
+}
+---vars.nodes---
+{&#x27;id&#x27;: &#x27;normalizeInvoice.error&#x27;, &#x27;type&#x27;: &#x27;object&#x27;, &#x27;binding&#x27;: {&#x27;nodeId&#x27;: &#x27;normalizeInvoice&#x27;, &#x27;outputId&#x27;: &#x27;error&#x27;}}
+{&#x27;id&#x27;: &#x27;normalizeInvoice.output&#x27;, &#x27;type&#x27;: &#x27;object&#x27;, &#x27;binding&#x27;: {&#x27;nodeId&#x27;: &#x27;normalizeInvoice&#x27;, &#x27;outputId&#x27;: &#x27;output&#x27;}}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#58</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">216ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-devcon-billing-invoice-lookup/BillingInvoiceLookup/BillingInvoiceLookup\nFLOW=BillingInvoiceLookup.flow\nSKILL=/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow\n\nEXTRACT_SCRIPT=&#x27;const records = $vars.queryBillingdisputeerp1.output || [];\nconst matchedInvoiceNumber = records.length &gt; 0 ? records[0].invoiceNumber : \&quot;\&quot;;\nconst lineItemCount = records.len… (385 more chars)&quot;,
+  &quot;description&quot;: &quot;Add buildResult script node to extract matchedInvoiceNumber and lineItemCount&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>added node buildResult (core.action.script v1.1); definition reused/absent; variables.nodes +2</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#59</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">176ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-devcon-billing-invoice-lookup/BillingInvoiceLookup/BillingInvoiceLookup\nFLOW=BillingInvoiceLookup.flow\nSKILL=/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow\n\npython3 \&quot;$SKILL/scripts/flow_edit.py\&quot; add-node --flow \&quot;$FLOW\&quot; --id end --type core.control.end \\\n  --definition-file /tmp/end_def.json --label \&quot;End\&quot; --outputs none 2&gt;&amp;1\n&quot;,
+  &quot;description&quot;: &quot;Add End node&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>added node end (core.control.end v1.0); definition added; variables.nodes +0</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#60</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">369ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-devcon-billing-invoice-lookup/BillingInvoiceLookup/BillingInvoiceLookup\nFLOW=BillingInvoiceLookup.flow\nSKILL=/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow\n\npython3 \&quot;$SKILL/scripts/flow_edit.py\&quot; add-variable --flow \&quot;$FLOW\&quot; --id invoiceNumber --direction in --type string \\\n  --trigger-node-id start --description \&quot;Disputed invoice number, possibly… (466 more chars)&quot;,
+  &quot;description&quot;: &quot;Add invoiceNumber in-variable and two out-variables&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>declared in variable invoiceNumber
+declared out variable matchedInvoiceNumber; map it on every reachable End node (add-output-mapping)
+declared out variable lineItemCount; map it on every reachable End node (add-output-mapping)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#61</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.16s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-devcon-billing-invoice-lookup/BillingInvoiceLookup/BillingInvoiceLookup\nFLOW=BillingInvoiceLookup.flow\nSKILL=/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow\n\npython3 \&quot;$SKILL/scripts/flow_edit.py\&quot; add-output-mapping --flow \&quot;$FLOW\&quot; --end-node end --var matchedInvoiceNumber --source &#x27;=js:$vars.buildResult.output.matchedInvoiceNumber&#x27; 2&gt;&amp;1\npython3 \&quot;$… (777 more chars)&quot;,
+  &quot;description&quot;: &quot;Map end node outputs and wire edges for the full pipeline&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>mapped matchedInvoiceNumber on end
+mapped lineItemCount on end
+added edge edge_start_output_normalizeInvoice_input
+added edge edge_normalizeInvoice_output_queryBillingdisputeerp1_input
+added edge edge_queryBillingdisputeerp1_output_buildResult_input
+added edge edge_buildResult_output_end_input</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#62</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">89ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 -c \&quot;\nimport json\nd = json.load(open(&#x27;/tmp/script_def.json&#x27;))\nnode = d[&#x27;Data&#x27;][&#x27;Node&#x27;]\nprint(json.dumps(node[&#x27;handleConfiguration&#x27;], indent=2))\n\&quot;&quot;,
+  &quot;description&quot;: &quot;Check script node handleConfiguration for actual port ids&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>[
+  {
+    &quot;position&quot;: &quot;left&quot;,
+    &quot;handles&quot;: [
+      {
+        &quot;id&quot;: &quot;input&quot;,
+        &quot;type&quot;: &quot;target&quot;,
+        &quot;handleType&quot;: &quot;input&quot;
+      }
+    ]
+  },
+  {
+    &quot;position&quot;: &quot;right&quot;,
+    &quot;handles&quot;: [
+      {
+        &quot;id&quot;: &quot;success&quot;,
+        &quot;type&quot;: &quot;source&quot;,
+        &quot;handleType&quot;: &quot;output&quot;
+      },
+      {
+        &quot;id&quot;: &quot;error&quot;,
+        &quot;label&quot;: &quot;Error&quot;,
+        &quot;type&quot;: &quot;source&quot;,
+        &quot;handleType&quot;: &quot;output&quot;,
+        &quot;visible&quot;: &quot;{inputs.errorHandlingEnabled}&quot;,
+        &quot;constraints&quot;: {
+          &quot;maxConnections&quot;: 1
+        }
+      }
+    ]
+  }
+]</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#63</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">93ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-devcon-billing-invoice-lookup/BillingInvoiceLookup/BillingInvoiceLookup\npython3 -c \&quot;\nimport json\nd = json.load(open(&#x27;BillingInvoiceLookup.flow&#x27;))\nfor e in d[&#x27;edges&#x27;]:\n    print(e)\n\&quot;&quot;,
+  &quot;description&quot;: &quot;List current edges to check correctness&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{&#x27;id&#x27;: &#x27;edge_start_output_normalizeInvoice_input&#x27;, &#x27;sourceNodeId&#x27;: &#x27;start&#x27;, &#x27;sourcePort&#x27;: &#x27;output&#x27;, &#x27;targetNodeId&#x27;: &#x27;normalizeInvoice&#x27;, &#x27;targetPort&#x27;: &#x27;input&#x27;}
+{&#x27;id&#x27;: &#x27;edge_normalizeInvoice_output_queryBillingdisputeerp1_input&#x27;, &#x27;sourceNodeId&#x27;: &#x27;normalizeInvoice&#x27;, &#x27;sourcePort&#x27;: &#x27;output&#x27;, &#x27;targetNodeId&#x27;: &#x27;queryBillingdisputeerp1&#x27;, &#x27;targetPort&#x27;: &#x27;input&#x27;}
+{&#x27;id&#x27;: &#x27;edge_queryBillingdisputeerp1_output_buildResult_input&#x27;, &#x27;sourceNodeId&#x27;: &#x27;queryBillingdisputeerp1&#x27;, &#x27;sourcePort&#x27;: &#x27;output&#x27;, &#x27;targetNodeId&#x27;: &#x27;buildResult&#x27;, &#x27;targetPort&#x27;: &#x27;input&#x27;}
+{&#x27;id&#x27;: &#x27;edge_buildResult_output_end_input&#x27;, &#x27;sourceNodeId&#x27;: &#x27;buildResult&#x27;, &#x27;sourcePort&#x27;: &#x27;output&#x27;, &#x27;targetNodeId&#x27;: &#x27;end&#x27;, &#x27;targetPort&#x27;: &#x27;input&#x27;}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#64</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">151ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-devcon-billing-invoice-lookup/BillingInvoiceLookup/BillingInvoiceLookup\nFLOW=BillingInvoiceLookup.flow\nSKILL=/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow\n\npython3 \&quot;$SKILL/scripts/flow_edit.py\&quot; delete-edge --help 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Check delete-edge usage&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>usage: flow_edit.py delete-edge [-h] --flow FLOW [--id ID] [--source SOURCE]
+                                [--source-port SOURCE_PORT] [--target TARGET]
+
+options:
+  -h, --help            show this help message and exit
+  --flow FLOW
+  --id ID
+  --source SOURCE
+  --source-port SOURCE_PORT
+  --target TARGET</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#65</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">668ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-devcon-billing-invoice-lookup/BillingInvoiceLookup/BillingInvoiceLookup\nFLOW=BillingInvoiceLookup.flow\nSKILL=/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow\n\npython3 \&quot;$SKILL/scripts/flow_edit.py\&quot; delete-edge --flow \&quot;$FLOW\&quot; --id edge_normalizeInvoice_output_queryBillingdisputeerp1_input 2&gt;&amp;1\npython3 \&quot;$SKILL/scripts/flow_edit.py\&quot; delete-edge --flow… (365 more chars)&quot;,
+  &quot;description&quot;: &quot;Fix edges to use correct &#x27;success&#x27; source port for script nodes&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>deleted 1 edge(s)
+deleted 1 edge(s)
+added edge edge_normalizeInvoice_success_queryBillingdisputeerp1_input
+added edge edge_buildResult_success_end_input</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#66</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">143ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-devcon-billing-invoice-lookup/BillingInvoiceLookup/BillingInvoiceLookup\npython3 -c \&quot;\nimport json\nd = json.load(open(&#x27;BillingInvoiceLookup.flow&#x27;))\nfor e in d[&#x27;edges&#x27;]:\n    print(e)\n\&quot;&quot;,
+  &quot;description&quot;: &quot;Verify edges after fix&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{&#x27;id&#x27;: &#x27;edge_start_output_normalizeInvoice_input&#x27;, &#x27;sourceNodeId&#x27;: &#x27;start&#x27;, &#x27;sourcePort&#x27;: &#x27;output&#x27;, &#x27;targetNodeId&#x27;: &#x27;normalizeInvoice&#x27;, &#x27;targetPort&#x27;: &#x27;input&#x27;}
+{&#x27;id&#x27;: &#x27;edge_queryBillingdisputeerp1_output_buildResult_input&#x27;, &#x27;sourceNodeId&#x27;: &#x27;queryBillingdisputeerp1&#x27;, &#x27;sourcePort&#x27;: &#x27;output&#x27;, &#x27;targetNodeId&#x27;: &#x27;buildResult&#x27;, &#x27;targetPort&#x27;: &#x27;input&#x27;}
+{&#x27;id&#x27;: &#x27;edge_normalizeInvoice_success_queryBillingdisputeerp1_input&#x27;, &#x27;sourceNodeId&#x27;: &#x27;normalizeInvoice&#x27;, &#x27;sourcePort&#x27;: &#x27;success&#x27;, &#x27;targetNodeId&#x27;: &#x27;queryBillingdisputeerp1&#x27;, &#x27;targetPort&#x27;: &#x27;input&#x27;}
+{&#x27;id&#x27;: &#x27;edge_buildResult_success_end_input&#x27;, &#x27;sourceNodeId&#x27;: &#x27;buildResult&#x27;, &#x27;sourcePort&#x27;: &#x27;success&#x27;, &#x27;targetNodeId&#x27;: &#x27;end&#x27;, &#x27;targetPort&#x27;: &#x27;input&#x27;}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#67</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">88ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-devcon-billing-invoice-lookup/BillingInvoiceLookup/BillingInvoiceLookup\npython3 -c \&quot;\nimport json\nd = json.load(open(&#x27;BillingInvoiceLookup.flow&#x27;))\nfor n in d[&#x27;nodes&#x27;]:\n    if n[&#x27;id&#x27;]==&#x27;buildResult&#x27;:\n        print(n[&#x27;inputs&#x27;][&#x27;script&#x27;])\n\&quot;&quot;,
+  &quot;description&quot;: &quot;Confirm buildResult script content&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>const records = $vars.queryBillingdisputeerp1.output || [];
+const matchedInvoiceNumber = records.length &gt; 0 ? records[0].invoiceNumber : &quot;&quot;;
+const lineItemCount = records.length;
+return { matchedInvoiceNumber, lineItemCount };</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#68</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">24ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;grep -n \&quot;filterVariables\\|isLiteral\&quot; /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/plugins/connector/impl.md&quot;,
+  &quot;description&quot;: &quot;Search connector impl.md for dynamic filter value handling&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>240:- **A dynamic operand in the tree works**: `&quot;value&quot;: {&quot;value&quot;: &quot;=js:$vars...&quot;, &quot;isLiteral&quot;: false}` — the CLI compiles it to a `{var_…}` placeholder plus `inputs.detail.filterVariables` the runtime resolves.</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#69</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">25ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cat &gt; /tmp/qer_detail.json &lt;&lt; &#x27;JSON&#x27;\n{\n  \&quot;connectionId\&quot;: \&quot;d61e5d0e-04af-4f93-95cc-151d81fa08dc\&quot;,\n  \&quot;folderKey\&quot;: \&quot;c4359cde-55f0-4f0e-9322-c6cdce74ab4c\&quot;,\n  \&quot;method\&quot;: \&quot;POST\&quot;,\n  \&quot;endpoint\&quot;: \&quot;/v2/{entityName}/qer\&quot;,\n  \&quot;pathParameters\&quot;: {\n    \&quot;entityName\&quot;: \&quot;BillingDisputeERP\&quot;\n  },\n  \&quot;filter\&quot;: {\n    \&quot;groupOperator\&quot;: 0,\n    \&quot;index\&quot;: 0,\n    \&quot;filters\&quot;: [\n      {\n        \&quot;id\&quot;: \&quot;invoiceNumber\&quot;,\n        \&quot;operat… (266 more chars)&quot;,
+  &quot;description&quot;: &quot;Write node configure detail JSON with dynamic filter on invoiceNumber&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;connectionId&quot;: &quot;d61e5d0e-04af-4f93-95cc-151d81fa08dc&quot;,
+  &quot;folderKey&quot;: &quot;c4359cde-55f0-4f0e-9322-c6cdce74ab4c&quot;,
+  &quot;method&quot;: &quot;POST&quot;,
+  &quot;endpoint&quot;: &quot;/v2/{entityName}/qer&quot;,
+  &quot;pathParameters&quot;: {
+    &quot;entityName&quot;: &quot;BillingDisputeERP&quot;
+  },
+  &quot;filter&quot;: {
+    &quot;groupOperator&quot;: 0,
+    &quot;index&quot;: 0,
+    &quot;filters&quot;: [
+      {
+        &quot;id&quot;: &quot;invoiceNumber&quot;,
+        &quot;operator&quot;: &quot;Equals&quot;,
+        &quot;value&quot;: {
+          &quot;value&quot;: &quot;=js:$vars.normalizeInvoice.output.invoiceNumber&quot;,
+          &quot;rawString&quot;: &quot;=js:$vars.normalizeInvoice.output.invoiceNumber&quot;,
+          &quot;isLiteral&quot;: false
+        }
+      }
+    ]
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#70</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">12.24s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-devcon-billing-invoice-lookup/BillingInvoiceLookup/BillingInvoiceLookup\nuip maestro flow node configure BillingInvoiceLookup.flow queryBillingdisputeerp1 --detail \&quot;$(cat /tmp/qer_detail.json)\&quot; --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Configure Data Service query node with connection and filter&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeConfigureSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;NodeId&quot;: &quot;queryBillingdisputeerp1&quot;,
+    &quot;BindingsCreated&quot;: 2,
+    &quot;DetailPopulated&quot;: true
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#71</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">86ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-devcon-billing-invoice-lookup/BillingInvoiceLookup/BillingInvoiceLookup\npython3 -c \&quot;\nimport json\nd = json.load(open(&#x27;BillingInvoiceLookup.flow&#x27;))\nfor n in d[&#x27;nodes&#x27;]:\n    if n[&#x27;id&#x27;]==&#x27;queryBillingdisputeerp1&#x27;:\n        print(json.dumps(n, indent=2))\n\&quot;&quot;,
+  &quot;description&quot;: &quot;Inspect queryBillingdisputeerp1 node after configure to verify filter compiled&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;id&quot;: &quot;queryBillingdisputeerp1&quot;,
+  &quot;type&quot;: &quot;uipath.connector.uipath-uipath-dataservice.query-entity-records&quot;,
+  &quot;typeVersion&quot;: &quot;1.0.0&quot;,
+  &quot;display&quot;: {
+    &quot;label&quot;: &quot;Query BillingDisputeERP&quot;
+  },
+  &quot;inputs&quot;: {
+    &quot;detail&quot;: {
+      &quot;connector&quot;: &quot;uipath-uipath-dataservice&quot;,
+      &quot;connectionId&quot;: &quot;d61e5d0e-04af-4f93-95cc-151d81fa08dc&quot;,
+      &quot;connectionResourceId&quot;: &quot;d61e5d0e-04af-4f93-95cc-151d81fa08dc&quot;,
+      &quot;connectionFolderKey&quot;: &quot;c4359cde-55f0-4f0e-9322-c6cdce74ab4c&quot;,
+      &quot;method&quot;: &quot;POST&quot;,
+      &quot;endpoint&quot;: &quot;/v2/{entityName}/qer&quot;,
+      &quot;pathParameters&quot;: {
+        &quot;entityName&quot;: &quot;BillingDisputeERP&quot;
+      },
+      &quot;uiPathActivityTypeId&quot;: &quot;703065b9-a310-33b8-9d4d-12df0a6f520b&quot;,
+      &quot;errorState&quot;: {
+        &quot;issues&quot;: []
+      },
+      &quot;queryParameters&quot;: {
+        &quot;queryExpression&quot;: &quot;invoiceNumber = &#x27;{var_6fce49f0}&#x27;&quot;
+      },
+      &quot;filterVariables&quot;: {
+        &quot;var_6fce49f0&quot;: &quot;=js:$vars.normalizeInvoice.output.invoiceNumber&quot;
+      },
+      &quot;configuration&quot;: &quot;=jsonString:{\&quot;essentialConfiguration\&quot;:{\&quot;connectorVersion\&quot;:\&quot;1.73.0-dev.2\&quot;,\&quot;customFieldsRequestDetails\&quot;:{\&quot;objectActionName\&quot;:\&quot;GenerateSchema\&quot;,\&quot;parameterValues\&quot;:[[\&quot;entityName\&quot;,\&quot;BillingDisputeERP\&quot;]]},\&quot;instancePa
+
+… (truncated, 956 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#72</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-err">ERROR</span>
+      <span class="tool-duration">133ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-devcon-billing-invoice-lookup/BillingInvoiceLookup/BillingInvoiceLookup\nSKILL=/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow\npython3 \&quot;$SKILL/scripts/audit_flow.py\&quot; BillingInvoiceLookup.flow 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Run the local audit script before validate&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Exit code 1
+topology      0 error(s), 0 warning(s), 0 info
+expressions   1 error(s), 0 warning(s), 0 info
+    error   MISSING_JS_PREFIX          queryBillingdisputeerp1:inputs.detail.configuration value references $vars without =js:; it ships as a literal string
+jint          0 error(s), 0 warning(s), 0 info
+bindings      0 error(s), 0 warning(s), 2 info
+    info    UNUSED_BINDING             bindings                                 no resource node needs (resourceKey=d61e5d0e-04af-4f93-95cc-151d81fa08dc, name=FolderKey)
+    info    UNUSED_BINDING             bindings                                 no resource node needs (resourceKey=d61e5d0e-04af-4f93-95cc-151d81fa08dc, name=uipath-uipath-dataservice connection)
+runtime-gaps  0 error(s), 2 warning(s), 0 info
+    warning LAYOUT_SIZE_MISMATCH       queryBillingdisputeerp1                  size NonexNone disagrees with this node&#x27;s shape (96x96); Studio Web renders it misshapen until `flow format` runs
+    warning LAYOUT_SIZE_MISMATCH       start                                    size NonexNone disagrees with this node&#x27;s shape (96x96); Studio Web renders it misshapen until `flow format` runs
+audit: FAIL (1 error(s))</pre>
+    <h4>Error</h4><pre>Exit code 1
+topology      0 error(s), 0 warning(s), 0 info
+expressions   1 error(s), 0 warning(s), 0 info
+    error   MISSING_JS_PREFIX          queryBillingdisputeerp1:inputs.detail.configuration value references $vars without =js:; it ships as a literal string
+jint          0 error(s), 0 warning(s), 0 info
+bindings      0 error(s), 0 warning(s), 2 info
+    info    UNUSED_BINDING             bindings                                 no resource node needs (resourceKey=d61e5d0e-04af-4f93-95cc-151d81fa08dc, name=FolderKey)
+    info    UNUSED_BINDING             bindings                                 no resource node needs (resourceKey=d61e5d0e-04af-4f93-95cc-151d81fa08dc, name=uipath-uipath-dataservice connection)
+runtime-gaps  0 error(s), 2 warning(s), 0 info
+    warning LAYOUT_SIZE_MISMATCH       queryBillingdisputeerp1                  size NonexNone disagrees with this node&#x27;s shape (96x96); Studio Web renders it misshapen until `flow format` runs
+    warning LAYOUT_SIZE_MISMATCH       start                                    size NonexNone disagrees with this node&#x27;s shape (96x96); Studio Web renders it misshapen until `flow format` runs
+audit: FAIL (1 error(s))</pre>
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#73</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">20ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow\ngrep -n \&quot;MISSING_JS_PREFIX\\|configuration\\|jsonString\&quot; scripts/audit_expressions.py | head -40&quot;,
+  &quot;description&quot;: &quot;Inspect audit_expressions.py logic around MISSING_JS_PREFIX and jsonString handling&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>96:                    out.append(fl.finding(&quot;error&quot;, &quot;MISSING_JS_PREFIX&quot;,
+112:                    out.append(fl.finding(&quot;error&quot;, &quot;MISSING_JS_PREFIX&quot;,
+Shell cwd was reset to /work/output/artifacts/skill-flow-devcon-billing-invoice-lookup</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#74</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">21ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow\nsed -n &#x27;1,130p&#x27; scripts/audit_expressions.py&quot;,
+  &quot;description&quot;: &quot;Read audit_expressions.py fully to understand the MISSING_JS_PREFIX check&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>#!/usr/bin/env python3
+&quot;&quot;&quot;Audit `=js:` usage in a `.flow` file against the per-node-type field matrix.
+
+Flags: $vars/$metadata/$self references in value fields without the =js: prefix, the invented
+nodes.X.output.Y syntax, =js: wrongly applied to condition fields or a script body, brace
+interpolation in connector/HTTP inputs, and a quoted =js: prefix.
+&quot;&quot;&quot;
+import argparse
+import re
+import sys
+
+import flow_lib as fl
+
+REF = re.compile(r&quot;\$(vars|metadata|self)\.&quot;)
+INVENTED = re.compile(r&quot;(?&lt;![.$\w])nodes\.[A-Za-z_]\w*\.(output|error)\b&quot;)
+BRACES = re.compile(r&quot;\{\s*\$?vars\.|\{\{&quot;)
+CONNECTOR_HTTP = (&quot;uipath.connector.&quot;, &quot;core.action.http&quot;)
+
+
+def _walk(value, path, out):
+    if isinstance(value, dict):
+        for k in sorted(value):
+            _walk(value[k], &quot;%s.%s&quot; % (path, k), out)
+    elif isinstance(value, list):
+        for i, v in enumerate(value):
+            _walk(v, &quot;%s[%d]&quot; % (path, i), out)
+    elif isinstance(value, str):
+        out.append((path, value))
+
+
+def _strings(node):
+    out = []
+    _walk(node.get(&quot;inputs&quot;, {}), &quot;inputs&quot;, out)
+    _walk(node.get(&quot;outputs&quot;, {}), &quot;outputs&quot;, out)
+    return out
+
+
+def _needs_js(ntype, path):
+    if ntype.startswith(&quot;uipath.connector
+
+… (truncated, 4904 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#75</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">20ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow\ngrep -n \&quot;jsonString\&quot; scripts/*.py references/shared/*.md 2&gt;/dev/null&quot;,
+  &quot;description&quot;: &quot;Search for jsonString handling anywhere in skill scripts/docs&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>scripts/node_ownership.py:14:    &quot;uipath.connector.trigger.&quot;: &quot;connector trigger: =jsonString:essentialConfiguration envelope + product-managed bindings_v2.json&quot;,
+scripts/node_ownership.py:16:    &quot;uipath.connector.&quot;: &quot;connector activity: inputs.detail is a =jsonString:essentialConfiguration envelope&quot;,
+Shell cwd was reset to /work/output/artifacts/skill-flow-devcon-billing-invoice-lookup</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#76</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">5.10s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-devcon-billing-invoice-lookup/BillingInvoiceLookup/BillingInvoiceLookup\nuip maestro flow validate BillingInvoiceLookup.flow --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Run flow validate&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>[ManifestClient] fetchDynamicNodes ok: total=317 agent context nodes=2 external agent nodes=7 orchestrator nodes=263 IXP nodes=45
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FlowValidate&quot;,
+  &quot;Data&quot;: {
+    &quot;File&quot;: &quot;/work/output/artifacts/skill-flow-devcon-billing-invoice-lookup/BillingInvoiceLookup/BillingInvoiceLookup/BillingInvoiceLookup.flow&quot;,
+    &quot;Status&quot;: &quot;Valid&quot;
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#77</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.34s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-devcon-billing-invoice-lookup/BillingInvoiceLookup/BillingInvoiceLookup\nuip maestro flow format BillingInvoiceLookup.flow --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Run flow format to fix layout&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FlowFormat&quot;,
+  &quot;Data&quot;: {
+    &quot;File&quot;: &quot;BillingInvoiceLookup.flow&quot;,
+    &quot;NodesTotal&quot;: 5,
+    &quot;EdgesTotal&quot;: 4,
+    &quot;NodesRepositioned&quot;: 4,
+    &quot;NodesResized&quot;: 2,
+    &quot;SubflowsTidied&quot;: 0,
+    &quot;VariableCount&quot;: 9
+  },
+  &quot;Instructions&quot;: &quot;Repositioned 4 of 5 nodes. Set canonical size on 2 node(s)&quot;
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#78</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">3.18s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-devcon-billing-invoice-lookup/BillingInvoiceLookup/BillingInvoiceLookup\nSKILL=/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow\npython3 \&quot;$SKILL/scripts/audit_flow.py\&quot; BillingInvoiceLookup.flow 2&gt;&amp;1\necho \&quot;---validate again---\&quot;\nuip maestro flow validate BillingInvoiceLookup.flow --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Re-run audit and validate after format&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>topology      0 error(s), 0 warning(s), 0 info
+expressions   1 error(s), 0 warning(s), 0 info
+    error   MISSING_JS_PREFIX          queryBillingdisputeerp1:inputs.detail.configuration value references $vars without =js:; it ships as a literal string
+jint          0 error(s), 0 warning(s), 0 info
+bindings      0 error(s), 0 warning(s), 2 info
+    info    UNUSED_BINDING             bindings                                 no resource node needs (resourceKey=d61e5d0e-04af-4f93-95cc-151d81fa08dc, name=FolderKey)
+    info    UNUSED_BINDING             bindings                                 no resource node needs (resourceKey=d61e5d0e-04af-4f93-95cc-151d81fa08dc, name=uipath-uipath-dataservice connection)
+runtime-gaps  0 error(s), 0 warning(s), 0 info
+audit: FAIL (1 error(s))
+---validate again---
+[ManifestClient] fetchDynamicNodes ok: total=317 agent context nodes=2 external agent nodes=7 orchestrator nodes=263 IXP nodes=45
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FlowValidate&quot;,
+  &quot;Data&quot;: {
+    &quot;File&quot;: &quot;/work/output/artifacts/skill-flow-devcon-billing-invoice-lookup/BillingInvoiceLookup/BillingInvoiceLookup/BillingInvoiceLookup.flow&quot;,
+    &quot;Status&quot;: &quot;Valid&quot;
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#79</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">123ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-devcon-billing-invoice-lookup/BillingInvoiceLookup/BillingInvoiceLookup\npython3 -c \&quot;\nimport json\nd = json.load(open(&#x27;BillingInvoiceLookup.flow&#x27;))\nprint(json.dumps(d.get(&#x27;bindings&#x27;), indent=2))\n\&quot;&quot;,
+  &quot;description&quot;: &quot;Inspect top-level bindings array after configure&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>[
+  {
+    &quot;id&quot;: &quot;bHZ6GwAPp&quot;,
+    &quot;name&quot;: &quot;uipath-uipath-dataservice connection&quot;,
+    &quot;type&quot;: &quot;string&quot;,
+    &quot;resource&quot;: &quot;connection&quot;,
+    &quot;resourceKey&quot;: &quot;d61e5d0e-04af-4f93-95cc-151d81fa08dc&quot;,
+    &quot;propertyAttribute&quot;: &quot;ConnectionId&quot;,
+    &quot;default&quot;: &quot;d61e5d0e-04af-4f93-95cc-151d81fa08dc&quot;
+  },
+  {
+    &quot;id&quot;: &quot;bUA2Wtpgy&quot;,
+    &quot;name&quot;: &quot;FolderKey&quot;,
+    &quot;type&quot;: &quot;string&quot;,
+    &quot;resource&quot;: &quot;connection&quot;,
+    &quot;resourceKey&quot;: &quot;d61e5d0e-04af-4f93-95cc-151d81fa08dc&quot;,
+    &quot;propertyAttribute&quot;: &quot;FolderKey&quot;,
+    &quot;default&quot;: &quot;c4359cde-55f0-4f0e-9322-c6cdce74ab4c&quot;
+  }
+]</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#80</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">121ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-devcon-billing-invoice-lookup/BillingInvoiceLookup/BillingInvoiceLookup\npython3 -c \&quot;\nimport json\nd = json.load(open(&#x27;BillingInvoiceLookup.flow&#x27;))\nprint(&#x27;--- globals ---&#x27;)\nfor v in d[&#x27;variables&#x27;][&#x27;globals&#x27;]:\n    print(v)\nprint(&#x27;--- nodes.ids ---&#x27;)\nfor n in d[&#x27;nodes&#x27;]:\n    print(n[&#x27;id&#x27;], n[&#x27;type&#x27;])\nprint(&#x27;--- end outputs ---&#x27;)\nfor n in d[&#x27;nodes&#x27;]:\n    if n[&#x27;id&#x27;]=… (63 more chars)&quot;,
+  &quot;description&quot;: &quot;Final sanity check of globals, node list, and end outputs&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>--- globals ---
+{&#x27;id&#x27;: &#x27;invoiceNumber&#x27;, &#x27;direction&#x27;: &#x27;in&#x27;, &#x27;type&#x27;: &#x27;string&#x27;, &#x27;description&#x27;: &#x27;Disputed invoice number, possibly missing MCS- prefix, wrong casing, or whitespace&#x27;, &#x27;triggerNodeId&#x27;: &#x27;start&#x27;}
+{&#x27;id&#x27;: &#x27;matchedInvoiceNumber&#x27;, &#x27;direction&#x27;: &#x27;out&#x27;, &#x27;type&#x27;: &#x27;string&#x27;, &#x27;description&#x27;: &quot;First matched row&#x27;s invoiceNumber, or empty string if no match&quot;}
+{&#x27;id&#x27;: &#x27;lineItemCount&#x27;, &#x27;direction&#x27;: &#x27;out&#x27;, &#x27;type&#x27;: &#x27;number&#x27;, &#x27;description&#x27;: &#x27;Number of BillingDisputeERP rows returned for the invoice&#x27;}
+--- nodes.ids ---
+start core.trigger.manual
+queryBillingdisputeerp1 uipath.connector.uipath-uipath-dataservice.query-entity-records
+normalizeInvoice core.action.script
+buildResult core.action.script
+end core.control.end
+--- end outputs ---
+{
+  &quot;matchedInvoiceNumber&quot;: {
+    &quot;source&quot;: &quot;=js:$vars.buildResult.output.matchedInvoiceNumber&quot;
+  },
+  &quot;lineItemCount&quot;: {
+    &quot;source&quot;: &quot;=js:$vars.buildResult.output.lineItemCount&quot;
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#81</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">122ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-devcon-billing-invoice-lookup/BillingInvoiceLookup/BillingInvoiceLookup\npython3 -c \&quot;\nimport json\nd = json.load(open(&#x27;BillingInvoiceLookup.flow&#x27;))\nfor n in d[&#x27;nodes&#x27;]:\n    if n[&#x27;id&#x27;]==&#x27;start&#x27;:\n        print(json.dumps(n, indent=2))\n\&quot;&quot;,
+  &quot;description&quot;: &quot;Check start node full content&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;id&quot;: &quot;start&quot;,
+  &quot;type&quot;: &quot;core.trigger.manual&quot;,
+  &quot;typeVersion&quot;: &quot;1.0&quot;,
+  &quot;display&quot;: {
+    &quot;label&quot;: &quot;Manual trigger&quot;
+  },
+  &quot;inputs&quot;: {
+    &quot;entryPointId&quot;: &quot;2dcdf12e-4c07-43bb-a64c-5cf9d5c056e6&quot;,
+    &quot;isDefaultEntryPoint&quot;: true
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#82</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">119ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-devcon-billing-invoice-lookup/BillingInvoiceLookup/BillingInvoiceLookup\npython3 -c \&quot;\nimport json\nd = json.load(open(&#x27;BillingInvoiceLookup.flow&#x27;))\nfor v in d[&#x27;variables&#x27;][&#x27;nodes&#x27;]:\n    print(v)\n\&quot;&quot;,
+  &quot;description&quot;: &quot;List all node output variables to confirm full wiring&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{&#x27;id&#x27;: &#x27;start.output&#x27;, &#x27;type&#x27;: &#x27;object&#x27;, &#x27;description&#x27;: &#x27;Data passed when manually triggering the process.&#x27;, &#x27;binding&#x27;: {&#x27;nodeId&#x27;: &#x27;start&#x27;, &#x27;outputId&#x27;: &#x27;output&#x27;}}
+{&#x27;id&#x27;: &#x27;queryBillingdisputeerp1.output&#x27;, &#x27;type&#x27;: &#x27;object&#x27;, &#x27;description&#x27;: &#x27;The return value of the connector.&#x27;, &#x27;binding&#x27;: {&#x27;nodeId&#x27;: &#x27;queryBillingdisputeerp1&#x27;, &#x27;outputId&#x27;: &#x27;output&#x27;}}
+{&#x27;id&#x27;: &#x27;queryBillingdisputeerp1.error&#x27;, &#x27;type&#x27;: &#x27;object&#x27;, &#x27;description&#x27;: &#x27;Error information if the node fails&#x27;, &#x27;schema&#x27;: {&#x27;$schema&#x27;: &#x27;http://json-schema.org/draft-07/schema#&#x27;, &#x27;type&#x27;: &#x27;object&#x27;, &#x27;required&#x27;: [&#x27;code&#x27;, &#x27;message&#x27;, &#x27;detail&#x27;, &#x27;category&#x27;, &#x27;status&#x27;], &#x27;properties&#x27;: {&#x27;code&#x27;: {&#x27;type&#x27;: &#x27;string&#x27;, &#x27;description&#x27;: &#x27;Error code as a string&#x27;}, &#x27;message&#x27;: {&#x27;type&#x27;: &#x27;string&#x27;, &#x27;description&#x27;: &#x27;High-level error message&#x27;}, &#x27;detail&#x27;: {&#x27;type&#x27;: &#x27;string&#x27;, &#x27;description&#x27;: &#x27;Detailed error description&#x27;}, &#x27;category&#x27;: {&#x27;type&#x27;: &#x27;string&#x27;, &#x27;description&#x27;: &#x27;Error category&#x27;}, &#x27;status&#x27;: {&#x27;type&#x27;: &#x27;integer&#x27;, &#x27;description&#x27;: &#x27;HTTP status code&#x27;}}, &#x27;additionalProperties&#x27;: False}, &#x27;binding&#x27;: {&#x27;nodeId&#x27;: &#x27;queryBillingdisputeerp1&#x27;, &#x27;outputId&#x27;: &#x27;error&#x27;}}
+{&#x27;id&#x27;: &#x27;normalizeInvoice.error&#x27;, &#x27;type&#x27;: &#x27;object&#x27;, &#x27;description&#x27;: &#x27;Error information if the node fails.&#x27;, &#x27;binding&#x27;: {&#x27;nodeId
+
+… (truncated, 748 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#83</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">19ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-devcon-billing-invoice-lookup/BillingInvoiceLookup/BillingInvoiceLookup\ncat entry-points.json 2&gt;/dev/null | head -60&quot;,
+  &quot;description&quot;: &quot;Check entry-points.json for accurate input/output schema&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>(Bash completed with no output)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#84</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">22ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow\nsed -n &#x27;260,290p&#x27; scripts/flow_edit.py&quot;,
+  &quot;description&quot;: &quot;Check add_output_mapping implementation for variables.nodes creation&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>    if args.trigger_node_id:
+        var[&quot;triggerNodeId&quot;] = args.trigger_node_id
+    globs.append(var)
+    fl.save(args.flow, flow)
+    hint = &quot;&quot;
+    if args.direction == &quot;out&quot;:
+        hint = &quot;; map it on every reachable End node (add-output-mapping)&quot;
+    print(&quot;declared %s variable %s%s&quot; % (args.direction, args.id, hint))
+    return 0
+
+
+def add_output_mapping(args):
+    flow = fl.load(args.flow)
+    nodes = fl.node_map(flow)
+    if args.end_node not in nodes:
+        fl.die(&quot;no node with id %r&quot; % args.end_node)
+    node = nodes[args.end_node]
+    if not fl.is_terminal(node.get(&quot;type&quot;, &quot;&quot;)):
+        fl.die(&quot;%s is %s, not an End/terminate node&quot; % (args.end_node, node.get(&quot;type&quot;)))
+    node.setdefault(&quot;outputs&quot;, {})[args.var] = {&quot;source&quot;: args.source}
+    fl.save(args.flow, flow)
+    print(&quot;mapped %s on %s&quot; % (args.var, args.end_node))
+    return 0
+
+
+def add_variable_update(args):
+    flow = fl.load(args.flow)
+    nodes = fl.node_map(flow)
+    if args.node not in nodes:
+        fl.die(&quot;no node with id %r&quot; % args.node)
+    declared = {v.get(&quot;id&quot;): v for v in flow[&quot;variables&quot;][&quot;globals&quot;] if isinstance(v, dict)}
+Shell cwd was reset to /work/output/artifacts/skill-flow-devcon-billing-in
+
+… (truncated, 12 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#85</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">118ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-devcon-billing-invoice-lookup/BillingInvoiceLookup/BillingInvoiceLookup\npython3 -c \&quot;\nimport json\nd = json.load(open(&#x27;BillingInvoiceLookup.flow&#x27;))\nprint(json.dumps(d[&#x27;layout&#x27;], indent=2))\n\&quot;&quot;,
+  &quot;description&quot;: &quot;Check final layout&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;nodes&quot;: {
+    &quot;start&quot;: {
+      &quot;position&quot;: {
+        &quot;x&quot;: -384,
+        &quot;y&quot;: 0
+      },
+      &quot;size&quot;: {
+        &quot;width&quot;: 96,
+        &quot;height&quot;: 96
+      }
+    },
+    &quot;queryBillingdisputeerp1&quot;: {
+      &quot;position&quot;: {
+        &quot;x&quot;: 0,
+        &quot;y&quot;: 0
+      },
+      &quot;size&quot;: {
+        &quot;width&quot;: 96,
+        &quot;height&quot;: 96
+      }
+    },
+    &quot;normalizeInvoice&quot;: {
+      &quot;position&quot;: {
+        &quot;x&quot;: -192,
+        &quot;y&quot;: 0
+      },
+      &quot;size&quot;: {
+        &quot;width&quot;: 96,
+        &quot;height&quot;: 96
+      },
+      &quot;collapsed&quot;: false
+    },
+    &quot;buildResult&quot;: {
+      &quot;position&quot;: {
+        &quot;x&quot;: 192,
+        &quot;y&quot;: 0
+      },
+      &quot;size&quot;: {
+        &quot;width&quot;: 96,
+        &quot;height&quot;: 96
+      },
+      &quot;collapsed&quot;: false
+    },
+    &quot;end&quot;: {
+      &quot;position&quot;: {
+        &quot;x&quot;: 384,
+        &quot;y&quot;: 0
+      },
+      &quot;size&quot;: {
+        &quot;width&quot;: 96,
+        &quot;height&quot;: 96
+      },
+      &quot;collapsed&quot;: false
+    }
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#86</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">5.35s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-devcon-billing-invoice-lookup/BillingInvoiceLookup/BillingInvoiceLookup\nuip is connections ping \&quot;d61e5d0e-04af-4f93-95cc-151d81fa08dc\&quot; --output json 2&gt;&amp;1\necho \&quot;---final validate---\&quot;\nuip maestro flow validate BillingInvoiceLookup.flow --output json 2&gt;&amp;1&quot;,
+  &quot;description&quot;: &quot;Ping the Data Fabric connection and re-confirm final validate passes&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;ConnectionPing&quot;,
+  &quot;Data&quot;: {
+    &quot;ConnectionId&quot;: &quot;d61e5d0e-04af-4f93-95cc-151d81fa08dc&quot;,
+    &quot;Status&quot;: &quot;Enabled&quot;,
+    &quot;Message&quot;: &quot;Connection is active.&quot;
+  }
+}
+---final validate---
+[ManifestClient] fetchDynamicNodes ok: total=317 agent context nodes=2 external agent nodes=7 orchestrator nodes=263 IXP nodes=45
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FlowValidate&quot;,
+  &quot;Data&quot;: {
+    &quot;File&quot;: &quot;/work/output/artifacts/skill-flow-devcon-billing-invoice-lookup/BillingInvoiceLookup/BillingInvoiceLookup/BillingInvoiceLookup.flow&quot;,
+    &quot;Status&quot;: &quot;Valid&quot;
+  }
+}</pre>
+    
+  </div>
+</details>
+
+</div>
+
+<h2>Command Telemetry</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Total</div><div class="value">87</div></div>
+    <div class="stat"><div class="label">Successful</div><div class="value">86 (99%)</div></div>
+    <div class="stat"><div class="label">Failed</div><div class="value">1</div></div>
+    <div class="stat"><div class="label">Avg / cmd</div><div class="value">1.33s</div></div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 2fr;gap:16px;margin-top:12px">
+    <div>
+      <h4>By Tool</h4>
+      <table>
+        <thead><tr><th>Tool</th><th>Count</th></tr></thead>
+        <tbody><tr><td class='mono'>Bash</td><td>77</td></tr><tr><td class='mono'>Read</td><td>8</td></tr><tr><td class='mono'>Skill</td><td>1</td></tr><tr><td class='mono'>Grep</td><td>1</td></tr></tbody>
+      </table>
+    </div>
+    <div>
+      <h4>Slowest</h4>
+      <table>
+        <thead><tr><th>Tool</th><th>Duration</th><th>Parameters</th></tr></thead>
+        <tbody><tr><td class='mono'>Bash</td><td>12.24s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;cd /work/output/artifacts/skill-flow-...</td></tr><tr><td class='mono'>Bash</td><td>10.38s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro flow registry pull --forc...</td></tr><tr><td class='mono'>Bash</td><td>8.80s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro flow registry get core.co...</td></tr><tr><td class='mono'>Bash</td><td>8.23s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip is resources describe &quot;uipath-uip...</td></tr><tr><td class='mono'>Bash</td><td>8.20s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;\\\nuip solution init &quot;BillingInvoice...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+  <p><strong>Most Common Pattern:</strong> <code>Bash → Bash → Bash</code></p><p><strong>Skill Tool Invoked:</strong> 1 time(s)</p>
+</div>
+
+<h2>Generation Metrics</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Total Latency</div><div class="value">15m 29s</div></div>
+    <div class="stat"><div class="label">Turns</div><div class="value">1</div></div>
+    <div class="stat"><div class="label">Assistant Turns</div><div class="value">167</div></div>
+    <div class="stat"><div class="label">Avg Turn Latency</div><div class="value">14m 13s</div></div>
+    
+  </div>
+</div>
+
+<h2>Token Usage</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Input (uncached)</div><div class="value">797</div></div>
+    <div class="stat"><div class="label">Output</div><div class="value">56,969</div></div>
+    <div class="stat"><div class="label">Cache Write</div><div class="value">176,307</div></div>
+    <div class="stat"><div class="label">Cache Read</div><div class="value">13,999,307</div></div>
+    <div class="stat"><div class="label">Total</div><div class="value">14,233,380</div></div>
+    <div class="stat"><div class="label">Cost</div><div class="value">$5.7179</div></div>
+  </div>
+</div>
+
+<h2>Agent Settings</h2>
+<div class="card" style="padding:0">
+  <table>
+    <tbody><tr><td class='mono dim'>Permission Mode</td><td>acceptEdits</td></tr><tr><td class='mono dim'>Allowed Tools</td><td>Skill, Bash, Read, Write, Edit, Glob, Grep</td></tr><tr><td class='mono dim'>Model</td><td>us.anthropic.claude-sonnet-5</td></tr><tr><td class='mono dim'>Max Turns</td><td>120</td></tr><tr><td class='mono dim'>System Prompt</td><td>You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted. </td></tr><tr><td class='mono dim'>System Prompt Mode</td><td>append</td></tr><tr><td class='mono dim'>Plugins</td><td>/home/azureuser/projects/skills/tmp</td></tr></tbody>
+  </table>
+</div>
+
+<h2>Environment</h2>
+<div class="card" style="padding:0">
+  <table>
+    <tbody><tr><td class='mono dim'>git_commit</td><td>unknown</td></tr><tr><td class='mono dim'>skills_git_commit</td><td>unknown</td></tr><tr><td class='mono dim'>cli_version</td><td>1.201.0-dev.8272</td></tr><tr><td class='mono dim'>tool_plugins</td><td>{&#x27;admin-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;agent-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;agenthub-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;aops-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;api-workflow-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;automation-hub-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;codedagent-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;codedapp-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;coder-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;context-grounding-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;conversational-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;data-fabric-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;docsai-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;function-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;gov-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;guardrails-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;insights-tool&#x27;: &#x27;1.201.0-dev.8276&#x27;, &#x27;integrationservice-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;ixp-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;llm-gateway-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;llmgw-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;maestro-tool&#x27;: &#x27;1.201.0-dev.8275&#x27;, &#x27;model-hub-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;orchestrator-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;platform-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;pm-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;rpa-legacy-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;rpa-tool&#x27;: &#x27;1.201.0-dev.20260809.3&#x27;, &#x27;solution-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;tasks-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;test-manager-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;traces-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;vertical-solutions-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;}</td></tr><tr><td class='mono dim'>coder_eval</td><td>0.9.6</td></tr><tr><td class='mono dim'>claude_code_cli</td><td>2.1.177 (Claude Code)</td></tr><tr><td class='mono dim'>uv</td><td>uv 0.12.5 (x86_64-unknown-linux-gnu)</td></tr><tr><td class='mono dim'>anthropic</td><td>0.122.0</td></tr><tr><td class='mono dim'>openai</td><td>3.2.0</td></tr><tr><td class='mono dim'>pydantic</td><td>2.12.5</td></tr><tr><td class='mono dim'>api_routing</td><td>aws_bedrock</td></tr><tr><td class='mono dim'>eval_routing</td><td>aws_bedrock</td></tr><tr><td class='mono dim'>aws_region</td><td>us-east-2</td></tr><tr><td class='mono dim'>bedrock_model</td><td>us.anthropic.claude-sonnet-4-6</td></tr><tr><td class='mono dim'>system_prompt_semantics</td><td>append</td></tr></tbody>
+  </table>
+</div>
+
+<footer>Generated by coder_eval · 2026-08-19T15:54:57</footer>
+</div>
+<script>
+function toggleTheme() {
+  document.documentElement.classList.toggle('light');
+  try {
+    const mode = document.documentElement.classList.contains('light') ? 'light' : 'dark';
+    localStorage.setItem('coder-eval-theme', mode);
+  } catch (e) { /* ignore */ }
+}
+(function() {
+  try {
+    if (localStorage.getItem('coder-eval-theme') === 'light') {
+      document.documentElement.classList.add('light');
+    }
+  } catch (e) { /* ignore */ }
+})();
+</script>
+</body>
+</html>

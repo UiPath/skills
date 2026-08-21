@@ -1,0 +1,73 @@
+task_id: skill-flow-hitl-smoke-multi-outcome-routing
+description: >
+  Smoke test: agent builds a flow where a Decision node reads the HITL
+  reviewer's boolean field and routes to two separate downstream branches.
+  Verifies both true and false edges of the Decision node are wired.
+tags: [uipath-maestro-flow, uipath-human-in-the-loop, smoke, lifecycle:generate, shape:multi-node, node:hitl]
+
+run_limits:
+  expected_turns: 31
+  max_turns: 80
+  turn_timeout: 900
+
+initial_prompt: |
+  Build a UiPath Flow named "LeaveRequest" with this structure:
+
+  1. Manual trigger
+  2. HITL node — manager reviews leave request:
+       - Reviewer sees (read-only): employee name, number of days
+       - Reviewer fills in: approved (boolean)
+       - Outcomes: Approve (primary), Reject
+  3. Decision node — branches on the reviewer's approved field from the HITL output
+  4. true branch  → Script node that logs "Leave approved" → End
+  5. false branch → Script node that logs "Leave rejected" → End
+
+  Use the inline quickform HITL node (uipath.human-in-the-loop.quick-form).
+  Wire: Trigger → HITL →|completed| Decision → both branches → Script → End
+
+  The Decision node condition must reference the HITL output using the
+  correct runtime variable path ($vars.<nodeId>.output.<fieldName>).
+
+  Validate the flow after building.
+
+success_criteria:
+  - type: run_command
+    description: "uip maestro flow validate passes"
+    command: "python3 $EXPERIMENT_TASKS_PATH/uipath-maestro-flow/_shared/validate_flow.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Flow contains inline HITL node"
+    command: "python3 $EXPERIMENT_TASKS_PATH/uipath-maestro-flow/_shared/flow_contains.py '\"uipath.human-in-the-loop.quick-form\"'"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Flow contains a Decision node"
+    command: "python3 $EXPERIMENT_TASKS_PATH/uipath-maestro-flow/_shared/flow_contains.py '\"core.logic.decision\"'"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Decision node references HITL output variable"
+    command: "python3 $EXPERIMENT_TASKS_PATH/uipath-maestro-flow/_shared/flow_contains.py '$vars.' '.output'"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Both Decision branches are wired (true and false handles present)"
+    command: "python3 $EXPERIMENT_TASKS_PATH/uipath-maestro-flow/_shared/flow_contains.py '\"true\"' '\"false\"'"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+

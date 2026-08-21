@@ -1,0 +1,8 @@
+18:00:02 [INFO   ] [default/skill-flow-ixp-invoice-extraction-simulated/00] orchestrator: API routing: aws_bedrock
+18:00:03 [INFO   ] [default/skill-flow-ixp-invoice-extraction-simulated/00] simulation.user_simulator: User simulator: Claude Code agent backend (route=BedrockRoute, model=us.anthropic.claude-sonnet-4-6)
+18:00:14 [INFO   ] [default/skill-flow-ixp-invoice-extraction-simulated/00] orchestrator: Simulation turn 1/8
+18:01:20 [INFO   ] [default/skill-flow-ixp-invoice-extraction-simulated/00] orchestrator: Simulation turn 2/8
+18:18:10 [INFO   ] [default/skill-flow-ixp-invoice-extraction-simulated/00] orchestrator: Simulation dialog ended: stop_reason=stop_token turns=2 criteria_passed=True
+18:18:10 [INFO   ] [default/skill-flow-ixp-invoice-extraction-simulated/00] orchestrator: Running post-run command: find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix -o -name .venv \) -prune -exec rm -rf {} +
+18:18:10 [INFO   ] [default/skill-flow-ixp-invoice-extraction-simulated/00] orchestrator: Sandbox preserved (in-place): /work/output/artifacts/skill-flow-ixp-invoice-extraction-simulated
+18:18:10 [INFO   ] [default/skill-flow-ixp-invoice-extraction-simulated/00] orchestrator: Task finished: status=SUCCESS duration=1090.4s score=1.000 iterations=2

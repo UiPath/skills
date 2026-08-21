@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "ContractProcessing",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "3291e198-61c0-46b3-b809-548f17f28988",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "ContractProcessing"
+    },
+    "locks": [],
+    "key": "7a2133d6-d107-47e3-9a87-ba42d9c2dc9b",
+    "files": []
+  }
+}

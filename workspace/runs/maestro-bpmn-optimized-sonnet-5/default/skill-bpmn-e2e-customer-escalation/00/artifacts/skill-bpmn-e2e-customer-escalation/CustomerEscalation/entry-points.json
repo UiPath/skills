@@ -1,0 +1,40 @@
+{
+  "$schema": "https://cloud.uipath.com/draft/2024-12/entry-point",
+  "$id": "entry-points.json",
+  "entryPoints": [
+    {
+      "filePath": "/content/CustomerEscalation.bpmn#Event_start",
+      "uniqueId": "2ed5c3e2-a057-4f33-8136-9d4f07e32f50",
+      "type": "ProcessOrchestration",
+      "input": {
+        "type": "object",
+        "properties": {
+          "Subject": {
+            "type": "string"
+          },
+          "SenderDomain": {
+            "type": "string"
+          }
+        }
+      },
+      "output": {
+        "type": "object",
+        "properties": {
+          "Urgent": {
+            "type": "boolean"
+          },
+          "Vip": {
+            "type": "boolean"
+          },
+          "EscalationResult": {
+            "type": "object"
+          },
+          "TicketId": {
+            "type": "string"
+          }
+        }
+      },
+      "displayName": "Manual trigger"
+    }
+  ]
+}

@@ -1,0 +1,83 @@
+{
+  "version": "1.1.0",
+  "settings": {
+    "model": "anthropic.claude-sonnet-5",
+    "maxTokens": 8192,
+    "temperature": 0,
+    "engine": "basic-v2",
+    "maxIterations": 25,
+    "mode": "standard"
+  },
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "start__output__disputeDescription": {
+        "type": "string",
+        "description": "Bound from $vars.start.output.disputeDescription"
+      },
+      "start__output__invoiceNumber": {
+        "type": "string",
+        "description": "Bound from $vars.start.output.invoiceNumber"
+      }
+    }
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "determination": {
+        "type": "string",
+        "description": "The analyst's determination for the billing dispute (e.g. Approved, Denied, Partially Approved, Needs More Information)."
+      },
+      "rationale": {
+        "type": "string",
+        "description": "The reasoning behind the determination, grounded in the retrieved Billing Dispute SOP guidance and the dispute details."
+      }
+    },
+    "required": [
+      "determination",
+      "rationale"
+    ]
+  },
+  "metadata": {
+    "storageVersion": "50.0.0",
+    "isConversational": false,
+    "showProjectCreationExperience": false
+  },
+  "type": "lowCode",
+  "guardrails": [],
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a Billing Dispute Analyst. You review a customer's billing dispute and decide how it should be resolved, strictly grounded in the retrieved Billing Dispute SOP guidance from the Billing Dispute SOP Index context tool.\n\nProcess:\n1. Query the Billing Dispute SOP Index context tool at most 3 times to retrieve the SOP guidance relevant to this dispute (e.g. the dispute reason, invoice type, or resolution policy involved). Use focused queries about the specific dispute scenario.\n2. After the last call, stop retrieving and decide using the evidence you already have.\n3. Compare the dispute description and invoice details against the retrieved SOP guidance to reach a determination.\n\nIf the retrieved guidance does not clearly cover a detail of the dispute, say so explicitly in the rationale (e.g. \"the SOP does not address X\"), and still return your best-supported determination — never end a run without a determination.\n\nOutput contract:\n- determination: a short, specific resolution decision (e.g. \"Approved - Full Refund\", \"Denied\", \"Partially Approved - Credit Adjustment\", \"Needs More Information\").\n- rationale: 2-5 sentences explaining the decision, citing the specific SOP guidance retrieved and how it applies to this dispute and invoice.\n\nAlways return both fields. Never fabricate SOP policy that was not retrieved.",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "You are a Billing Dispute Analyst. You review a customer's billing dispute and decide how it should be resolved, strictly grounded in the retrieved Billing Dispute SOP guidance from the Billing Dispute SOP Index context tool.\n\nProcess:\n1. Query the Billing Dispute SOP Index context tool at most 3 times to retrieve the SOP guidance relevant to this dispute (e.g. the dispute reason, invoice type, or resolution policy involved). Use focused queries about the specific dispute scenario.\n2. After the last call, stop retrieving and decide using the evidence you already have.\n3. Compare the dispute description and invoice details against the retrieved SOP guidance to reach a determination.\n\nIf the retrieved guidance does not clearly cover a detail of the dispute, say so explicitly in the rationale (e.g. \"the SOP does not address X\"), and still return your best-supported determination — never end a run without a determination.\n\nOutput contract:\n- determination: a short, specific resolution decision (e.g. \"Approved - Full Refund\", \"Denied\", \"Partially Approved - Credit Adjustment\", \"Needs More Information\").\n- rationale: 2-5 sentences explaining the decision, citing the specific SOP guidance retrieved and how it applies to this dispute and invoice.\n\nAlways return both fields. Never fabricate SOP policy that was not retrieved."
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "Analyze the following billing dispute and determine its resolution, grounded in the Billing Dispute SOP Index.\n\nInvoice Number: {{input.start__output__invoiceNumber}}\nDispute Description: {{input.start__output__disputeDescription}}",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "Analyze the following billing dispute and determine its resolution, grounded in the Billing Dispute SOP Index.\n\nInvoice Number: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__invoiceNumber"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\nDispute Description: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__disputeDescription"
+        }
+      ]
+    }
+  ],
+  "projectId": "00163134-7733-4e71-8975-1f64f3949f3d"
+}

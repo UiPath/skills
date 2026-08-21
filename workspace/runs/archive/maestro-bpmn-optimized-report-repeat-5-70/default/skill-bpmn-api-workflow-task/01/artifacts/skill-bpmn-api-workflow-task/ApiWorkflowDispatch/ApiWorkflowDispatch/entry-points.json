@@ -1,0 +1,36 @@
+{
+  "entryPoints": [
+    {
+      "id": "EP_CustomerSync",
+      "filePath": "/content/ApiWorkflowDispatch.bpmn#Start_CustomerSync",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "customerId": {
+            "type": "string"
+          },
+          "requestedBy": {
+            "type": "string"
+          }
+        }
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "syncRequest": {
+            "type": "object"
+          },
+          "invocationResult": {
+            "type": "object"
+          },
+          "jobStatus": {
+            "type": "string"
+          },
+          "jobResult": {
+            "type": "object"
+          }
+        }
+      }
+    }
+  ]
+}

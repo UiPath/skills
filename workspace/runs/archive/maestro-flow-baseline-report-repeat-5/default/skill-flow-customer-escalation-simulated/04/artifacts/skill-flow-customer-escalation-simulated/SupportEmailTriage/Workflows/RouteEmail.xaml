@@ -1,0 +1,281 @@
+<Activity mc:Ignorable="sap sap2010" x:Class="Workflows_RouteEmail"
+  xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities"
+  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+  xmlns:mva="clr-namespace:Microsoft.VisualBasic.Activities;assembly=System.Activities"
+  xmlns:sap="http://schemas.microsoft.com/netfx/2009/xaml/activities/presentation"
+  xmlns:sap2010="http://schemas.microsoft.com/netfx/2010/xaml/activities/presentation"
+  xmlns:scg="clr-namespace:System.Collections.Generic;assembly=System.Private.CoreLib"
+  xmlns:sco="clr-namespace:System.Collections.ObjectModel;assembly=mscorlib"
+  xmlns:ui="http://schemas.uipath.com/workflow/activities"
+  xmlns:umam="clr-namespace:UiPath.MicrosoftOffice365.Activities.Mail;assembly=UiPath.MicrosoftOffice365.Activities"
+  xmlns:umame="clr-namespace:UiPath.MicrosoftOffice365.Activities.Mail.Enums;assembly=UiPath.MicrosoftOffice365.Activities"
+  xmlns:umamm="clr-namespace:UiPath.MicrosoftOffice365.Activities.Mail.Models;assembly=UiPath.MicrosoftOffice365.Activities"
+  xmlns:umm="clr-namespace:UiPath.MicrosoftOffice365.Models;assembly=UiPath.MicrosoftOffice365"
+  xmlns:usau="clr-namespace:UiPath.Shared.Activities.Utils;assembly=UiPath.MicrosoftOffice365.Activities"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+  <x:Members>
+    <x:Property Name="in_Email" Type="InArgument(umm:Office365Message)" />
+    <x:Property Name="in_UrgencyLevel" Type="InArgument(x:String)" />
+    <x:Property Name="in_IsVIP" Type="InArgument(x:Boolean)" />
+    <!-- TODO: Replace with your real O365 Connection ID -->
+    <x:Property Name="in_ConnectionId" Type="InArgument(x:String)" />
+    <!-- TODO: Set to your support queue email, e.g. "support-queue@yourcompany.com" -->
+    <x:Property Name="in_SupportQueueEmail" Type="InArgument(x:String)" />
+    <x:Property Name="out_RouteDescription" Type="OutArgument(x:String)" />
+  </x:Members>
+
+  <mva:VisualBasic.Settings>
+    <x:Null />
+  </mva:VisualBasic.Settings>
+
+  <TextExpression.NamespacesForImplementation>
+    <sco:Collection x:TypeArguments="x:String">
+      <x:String>System</x:String>
+      <x:String>System.Collections.Generic</x:String>
+      <x:String>System.Linq</x:String>
+      <x:String>UiPath.Core</x:String>
+      <x:String>UiPath.Core.Activities</x:String>
+      <x:String>UiPath.MicrosoftOffice365.Models</x:String>
+      <x:String>UiPath.MicrosoftOffice365.Activities.Mail</x:String>
+      <x:String>UiPath.MicrosoftOffice365.Activities.Mail.Enums</x:String>
+      <x:String>UiPath.MicrosoftOffice365.Activities.Mail.Models</x:String>
+    </sco:Collection>
+  </TextExpression.NamespacesForImplementation>
+  <TextExpression.ReferencesForImplementation>
+    <sco:Collection x:TypeArguments="AssemblyReference">
+      <AssemblyReference>System.Activities</AssemblyReference>
+      <AssemblyReference>Microsoft.VisualBasic</AssemblyReference>
+      <AssemblyReference>System.Private.CoreLib</AssemblyReference>
+      <AssemblyReference>mscorlib</AssemblyReference>
+      <AssemblyReference>System</AssemblyReference>
+      <AssemblyReference>System.Linq</AssemblyReference>
+      <AssemblyReference>System.Core</AssemblyReference>
+      <AssemblyReference>UiPath.System.Activities</AssemblyReference>
+      <AssemblyReference>UiPath.MicrosoftOffice365.Activities</AssemblyReference>
+      <AssemblyReference>UiPath.MicrosoftOffice365</AssemblyReference>
+    </sco:Collection>
+  </TextExpression.ReferencesForImplementation>
+
+  <!-- Route the email based on urgency level.
+       Critical  → immediate escalation (caller handles AlertTeam)
+       Priority  → forward to support queue with [PRIORITY] flag
+       Standard  → forward to support queue with [STANDARD] tag -->
+  <Sequence DisplayName="Route Email" sap2010:WorkflowViewState.IdRef="Sequence_1">
+    <Sequence.Variables>
+      <Variable x:TypeArguments="x:String" Name="forwardSubject" />
+      <Variable x:TypeArguments="x:String" Name="forwardBody" />
+      <Variable x:TypeArguments="x:String" Name="categoryTag" />
+      <Variable x:TypeArguments="x:String" Name="vipBadge" />
+      <Variable x:TypeArguments="x:String" Name="senderAddress" />
+      <Variable x:TypeArguments="umame:Importance" Name="mailImportance" Default="Normal" />
+    </Sequence.Variables>
+
+    <!-- Get sender address safely -->
+    <Assign DisplayName="Get Sender Address" sap2010:WorkflowViewState.IdRef="Assign_0">
+      <Assign.To>
+        <OutArgument x:TypeArguments="x:String">[senderAddress]</OutArgument>
+      </Assign.To>
+      <Assign.Value>
+        <InArgument x:TypeArguments="x:String">[If(in_Email Is Nothing OrElse in_Email.From Is Nothing, "Unknown", in_Email.From.Address)]</InArgument>
+      </Assign.Value>
+    </Assign>
+
+    <!-- Build VIP badge -->
+    <Assign DisplayName="Build VIP Badge" sap2010:WorkflowViewState.IdRef="Assign_1">
+      <Assign.To>
+        <OutArgument x:TypeArguments="x:String">[vipBadge]</OutArgument>
+      </Assign.To>
+      <Assign.Value>
+        <InArgument x:TypeArguments="x:String">[If(in_IsVIP, " [VIP]", "")]</InArgument>
+      </Assign.Value>
+    </Assign>
+
+    <!-- Determine category tag and route description based on urgency -->
+    <If Condition="[String.Equals(in_UrgencyLevel, &quot;Critical&quot;, StringComparison.OrdinalIgnoreCase)]"
+        DisplayName="Is Critical?" sap2010:WorkflowViewState.IdRef="If_1">
+      <If.Then>
+        <Sequence DisplayName="Critical Track" sap2010:WorkflowViewState.IdRef="Seq_Crit">
+          <Assign DisplayName="Set Critical Tag" sap2010:WorkflowViewState.IdRef="Assign_2">
+            <Assign.To>
+              <OutArgument x:TypeArguments="x:String">[categoryTag]</OutArgument>
+            </Assign.To>
+            <Assign.Value>
+              <InArgument x:TypeArguments="x:String">["[CRITICAL" &amp; vipBadge &amp; "]"]</InArgument>
+            </Assign.Value>
+          </Assign>
+          <Assign DisplayName="Set Route Description" sap2010:WorkflowViewState.IdRef="Assign_3">
+            <Assign.To>
+              <OutArgument x:TypeArguments="x:String">[out_RouteDescription]</OutArgument>
+            </Assign.To>
+            <Assign.Value>
+              <InArgument x:TypeArguments="x:String">["Critical escalation — team lead alerted" &amp; vipBadge]</InArgument>
+            </Assign.Value>
+          </Assign>
+        </Sequence>
+      </If.Then>
+      <If.Else>
+        <Sequence DisplayName="Non-Critical Branch" sap2010:WorkflowViewState.IdRef="Seq_NonCrit">
+          <If Condition="[String.Equals(in_UrgencyLevel, &quot;Priority&quot;, StringComparison.OrdinalIgnoreCase)]"
+              DisplayName="Is Priority?" sap2010:WorkflowViewState.IdRef="If_2">
+            <If.Then>
+              <Sequence DisplayName="Priority Track" sap2010:WorkflowViewState.IdRef="Seq_Pri">
+                <Assign DisplayName="Set Priority Tag" sap2010:WorkflowViewState.IdRef="Assign_4">
+                  <Assign.To>
+                    <OutArgument x:TypeArguments="x:String">[categoryTag]</OutArgument>
+                  </Assign.To>
+                  <Assign.Value>
+                    <InArgument x:TypeArguments="x:String">["[PRIORITY" &amp; vipBadge &amp; "]"]</InArgument>
+                  </Assign.Value>
+                </Assign>
+                <Assign DisplayName="Set Route Description" sap2010:WorkflowViewState.IdRef="Assign_5">
+                  <Assign.To>
+                    <OutArgument x:TypeArguments="x:String">[out_RouteDescription]</OutArgument>
+                  </Assign.To>
+                  <Assign.Value>
+                    <InArgument x:TypeArguments="x:String">["Priority queue — handle within 2 hours" &amp; vipBadge]</InArgument>
+                  </Assign.Value>
+                </Assign>
+              </Sequence>
+            </If.Then>
+            <If.Else>
+              <Sequence DisplayName="Standard Track" sap2010:WorkflowViewState.IdRef="Seq_Std">
+                <Assign DisplayName="Set Standard Tag" sap2010:WorkflowViewState.IdRef="Assign_6">
+                  <Assign.To>
+                    <OutArgument x:TypeArguments="x:String">[categoryTag]</OutArgument>
+                  </Assign.To>
+                  <Assign.Value>
+                    <InArgument x:TypeArguments="x:String">["[STANDARD]"]</InArgument>
+                  </Assign.Value>
+                </Assign>
+                <Assign DisplayName="Set Route Description" sap2010:WorkflowViewState.IdRef="Assign_7">
+                  <Assign.To>
+                    <OutArgument x:TypeArguments="x:String">[out_RouteDescription]</OutArgument>
+                  </Assign.To>
+                  <Assign.Value>
+                    <InArgument x:TypeArguments="x:String">["Standard queue — handle within 24 hours"]</InArgument>
+                  </Assign.Value>
+                </Assign>
+              </Sequence>
+            </If.Else>
+          </If>
+        </Sequence>
+      </If.Else>
+    </If>
+
+    <!-- Build forwarded subject with category tag prefix -->
+    <Assign DisplayName="Build Forward Subject" sap2010:WorkflowViewState.IdRef="Assign_8">
+      <Assign.To>
+        <OutArgument x:TypeArguments="x:String">[forwardSubject]</OutArgument>
+      </Assign.To>
+      <Assign.Value>
+        <InArgument x:TypeArguments="x:String">[categoryTag &amp; " FWD: " &amp; in_Email.Subject]</InArgument>
+      </Assign.Value>
+    </Assign>
+
+    <!-- Build forwarded body with triage metadata header -->
+    <Assign DisplayName="Build Forward Body" sap2010:WorkflowViewState.IdRef="Assign_9">
+      <Assign.To>
+        <OutArgument x:TypeArguments="x:String">[forwardBody]</OutArgument>
+      </Assign.To>
+      <Assign.Value>
+        <InArgument x:TypeArguments="x:String">["&lt;div style='background:#fffbe6;border-left:4px solid #f0a800;padding:10px 14px;margin-bottom:16px;font-family:Arial,sans-serif;'&gt;&lt;strong&gt;Triage Bot Summary&lt;/strong&gt;&lt;br/&gt;Urgency: &lt;strong&gt;" &amp; in_UrgencyLevel &amp; "&lt;/strong&gt;" &amp; If(in_IsVIP, " &amp;nbsp;&lt;span style='background:#d32f2f;color:#fff;padding:2px 6px;border-radius:3px;font-size:11px;'&gt;VIP&lt;/span&gt;", "") &amp; "&lt;br/&gt;From: " &amp; senderAddress &amp; "&lt;br/&gt;Action: " &amp; out_RouteDescription &amp; "&lt;/div&gt;&lt;hr/&gt;" &amp; If(String.IsNullOrEmpty(in_Email.Body), "(no body)", in_Email.Body)]</InArgument>
+      </Assign.Value>
+    </Assign>
+
+    <!-- Set mail importance based on urgency level -->
+    <If Condition="[Not String.Equals(in_UrgencyLevel, &quot;Standard&quot;, StringComparison.OrdinalIgnoreCase)]"
+        DisplayName="Set Importance Level" sap2010:WorkflowViewState.IdRef="If_3">
+      <If.Then>
+        <Sequence DisplayName="High Importance" sap2010:WorkflowViewState.IdRef="Seq_HiImp">
+          <Assign DisplayName="Set High" sap2010:WorkflowViewState.IdRef="Assign_Imp1">
+            <Assign.To>
+              <OutArgument x:TypeArguments="umame:Importance">[mailImportance]</OutArgument>
+            </Assign.To>
+            <Assign.Value>
+              <InArgument x:TypeArguments="umame:Importance">[Importance.High]</InArgument>
+            </Assign.Value>
+          </Assign>
+        </Sequence>
+      </If.Then>
+      <If.Else>
+        <Sequence DisplayName="Normal Importance" sap2010:WorkflowViewState.IdRef="Seq_NormImp">
+          <Assign DisplayName="Set Normal" sap2010:WorkflowViewState.IdRef="Assign_Imp2">
+            <Assign.To>
+              <OutArgument x:TypeArguments="umame:Importance">[mailImportance]</OutArgument>
+            </Assign.To>
+            <Assign.Value>
+              <InArgument x:TypeArguments="umame:Importance">[Importance.Normal]</InArgument>
+            </Assign.Value>
+          </Assign>
+        </Sequence>
+      </If.Else>
+    </If>
+
+    <ui:LogMessage DisplayName="Log Routing" Level="Info"
+      Message="[&quot;Routing &quot; &amp; in_UrgencyLevel &amp; &quot; email to support queue: &quot; &amp; forwardSubject]"
+      sap2010:WorkflowViewState.IdRef="LogMessage_1" />
+
+    <!-- Forward tagged email to support queue inbox.
+         NOTE: Replace ConnectionId placeholder "00000000-0000-0000-0000-000000000000"
+         with your real O365 Integration Service Connection ID before running. -->
+    <umam:SendMailConnections
+      ArgumentAttachmentPaths="{x:Null}"
+      AttachmentList="{x:Null}"
+      AttachmentPaths="{x:Null}"
+      Attachments="{x:Null}"
+      Bcc="{x:Null}"
+      Body="[forwardBody]"
+      Cc="{x:Null}"
+      ConnectionAccountName="{x:Null}"
+      ConnectionId="00000000-0000-0000-0000-000000000000"
+      ContinueOnError="{x:Null}"
+      MailboxBackup="{x:Reference __ReferenceID1}"
+      ReplyTo="{x:Null}"
+      SensitivityLabelId="{x:Null}"
+      Subject="[forwardSubject]"
+      TextBody="{x:Null}"
+      To="[New String() {in_SupportQueueEmail}]"
+      AttachmentInputMode="Existing"
+      AuthScopesInvalid="False"
+      DisplayName="Forward to Support Queue"
+      Importance="[mailImportance]"
+      InputType="HTML"
+      IsDeliveryReceiptRequested="False"
+      IsReadReceiptRequested="False"
+      SaveAsDraft="False"
+      UseConnectionService="True"
+      UseSharedMailbox="False"
+      sap2010:WorkflowViewState.IdRef="SendMail_1">
+      <umam:SendMailConnections.AttachmentsBackup>
+        <usau:BackupSlot x:TypeArguments="umame:AttachmentInputMode" StoredValue="{x:Null}">
+          <usau:BackupSlot.BackupValues>
+            <scg:Dictionary x:TypeArguments="umame:AttachmentInputMode, scg:List(x:Object)" />
+          </usau:BackupSlot.BackupValues>
+        </usau:BackupSlot>
+      </umam:SendMailConnections.AttachmentsBackup>
+      <umam:SendMailConnections.InputTypeBackup>
+        <usau:BackupSlot x:TypeArguments="umame:BodyInputType" StoredValue="{x:Null}">
+          <usau:BackupSlot.BackupValues>
+            <scg:Dictionary x:TypeArguments="umame:BodyInputType, scg:List(x:Object)" />
+          </usau:BackupSlot.BackupValues>
+        </usau:BackupSlot>
+      </umam:SendMailConnections.InputTypeBackup>
+      <umam:SendMailConnections.Mailbox>
+        <InArgument x:TypeArguments="x:String" x:Name="__ReferenceID0" />
+      </umam:SendMailConnections.Mailbox>
+      <umam:SendMailConnections.MailboxArg>
+        <umamm:MailboxArgument SharedMailbox="{x:Reference __ReferenceID0}" UseSharedMailbox="False">
+          <umamm:MailboxArgument.Backup>
+            <usau:BackupSlot x:TypeArguments="umame:MailboxSelectionMode" StoredValue="{x:Null}" x:Name="__ReferenceID1">
+              <usau:BackupSlot.BackupValues>
+                <scg:Dictionary x:TypeArguments="umame:MailboxSelectionMode, scg:List(x:Object)" />
+              </usau:BackupSlot.BackupValues>
+            </usau:BackupSlot>
+          </umamm:MailboxArgument.Backup>
+        </umamm:MailboxArgument>
+      </umam:SendMailConnections.MailboxArg>
+    </umam:SendMailConnections>
+
+  </Sequence>
+</Activity>

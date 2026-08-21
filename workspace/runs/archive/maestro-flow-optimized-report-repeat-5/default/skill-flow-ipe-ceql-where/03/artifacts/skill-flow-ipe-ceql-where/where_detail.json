@@ -1,0 +1,53 @@
+{
+  "_comment": "Planned node configure --detail payload for listEntraGroups1. Cannot run uip maestro flow node configure without a live tenant. Placeholder UUIDs must be replaced with real values before running node configure.",
+  "_node_id": "listEntraGroups1",
+  "_node_type": "uipath.connector.uipath-microsoft-azureactivedirectory.list-groups",
+  "_connector_key": "uipath-microsoft-azureactivedirectory",
+  "_discovery": {
+    "registry_search_query": "azure",
+    "confirmed_activity": "uipath.connector.uipath-microsoft-azureactivedirectory.list-groups",
+    "connector_key_source": "NodeType prefix — not guessed from brand name",
+    "filter_builder_param": "where",
+    "filter_builder_param_source": "connectorMethodInfo.parameters[] where design.component == FilterBuilder",
+    "method": "GET",
+    "path": "/groups",
+    "has_ceql": true
+  },
+  "_ceql_filter_intent": "displayName equals 'active'",
+  "_ceql_compiled_string": "displayName = 'active'",
+  "detail": {
+    "connectionId": "<REPLACE_WITH_CONNECTION_UUID>",
+    "folderKey": "<REPLACE_WITH_FOLDER_KEY>",
+    "method": "GET",
+    "endpoint": "/groups",
+    "filter": {
+      "groupOperator": 0,
+      "index": 0,
+      "filters": [
+        {
+          "id": "displayName",
+          "operator": "Equals",
+          "value": {
+            "value": "active",
+            "rawString": "\"active\"",
+            "isLiteral": true
+          }
+        }
+      ],
+      "groups": []
+    }
+  },
+  "_configure_command": "uip maestro flow node configure CeqlWhereTest.flow listEntraGroups1 --detail '{\"connectionId\":\"<UUID>\",\"folderKey\":\"<FOLDER_KEY>\",\"method\":\"GET\",\"endpoint\":\"/groups\",\"filter\":{\"groupOperator\":0,\"index\":0,\"filters\":[{\"id\":\"displayName\",\"operator\":\"Equals\",\"value\":{\"value\":\"active\",\"rawString\":\"\\\"active\\\"\",\"isLiteral\":true}}],\"groups\":[]}}' --output json",
+  "_what_configure_does": [
+    "Populates inputs.detail on listEntraGroups1 with the =jsonString:essentialConfiguration envelope",
+    "Sets inputs.detail.queryParameters.where = \"displayName = 'active'\" (runtime CEQL string)",
+    "Sets inputs.detail.configuration.essentialConfiguration.savedFilterTrees.where = <filter tree> (Studio Web design-time render)",
+    "Appends two top-level bindings[] entries: one for ConnectionId, one for FolderKey",
+    "Regenerates bindings_v2.json from top-level bindings[] at next flow debug/pack"
+  ],
+  "_open_questions": [
+    "A healthy Microsoft Azure Active Directory IS connection must exist: run 'uip is connections list uipath-microsoft-azureactivedirectory --all-folders --output json' to find it.",
+    "The 'displayName' field must be searchable on the live tenant's list-groups metadata (confirmed by hasCEQL: true on connectorMethodInfo, but searchableOperators for displayName should be verified via 'uip is resources describe uipath-microsoft-azureactivedirectory groups --connection-id <UUID> --operation List').",
+    "node configure must run before flow validate will pass for this connector node."
+  ]
+}

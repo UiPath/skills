@@ -1,0 +1,12 @@
+{
+  "DocVersion": "1.0.0",
+  "StudioMinVersion": "2025.10.0",
+  "SolutionId": "3e1cca84-0d1e-44f7-a0ae-6d6348752147",
+  "Projects": [
+    {
+      "Type": "Flow",
+      "ProjectRelativePath": "SimEval/project.uiproj",
+      "Id": "32d49684-51c2-4181-a43b-91d59cbbb010"
+    }
+  ]
+}

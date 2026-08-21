@@ -1,0 +1,8 @@
+{
+  "goal_a_type": "llm-judge-output",
+  "goal_a_reason": "Free-text replies require semantic similarity scoring to tolerate paraphrasing (e.g. 'Hi Alice!' vs 'Hello, Alice!') without inspecting tool calls.",
+  "goal_b_type": "json-similarity",
+  "goal_b_reason": "Deterministic tree-based comparison handles JSON key-ordering and minor whitespace differences without any LLM.",
+  "goal_c_type": "contains",
+  "goal_c_reason": "Binary pass/fail on whether the literal substring 'deployment succeeded' appears anywhere in the output is exactly what the contains evaluator does."
+}

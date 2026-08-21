@@ -1,0 +1,9 @@
+[
+  {
+    "id": "inc-triage-001",
+    "instanceId": "inst-triage-001",
+    "elementId": "Task_InvokeLegacyRpa",
+    "category": "BindingResolution",
+    "message": "Resource binding 'folderPath' resolved to a folder the process cannot access."
+  }
+]

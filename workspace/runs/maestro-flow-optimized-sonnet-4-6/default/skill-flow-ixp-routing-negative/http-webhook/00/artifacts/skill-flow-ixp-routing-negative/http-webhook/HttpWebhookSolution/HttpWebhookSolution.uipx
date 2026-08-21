@@ -1,0 +1,12 @@
+{
+  "DocVersion": "1.0.0",
+  "StudioMinVersion": "2025.10.0",
+  "SolutionId": "b6fd57d4-3e5a-4ce3-8858-b07174261538",
+  "Projects": [
+    {
+      "Type": "Flow",
+      "ProjectRelativePath": "HttpWebhookFlow/project.uiproj",
+      "Id": "1b1a566b-bfc8-47db-8458-c07e4445d173"
+    }
+  ]
+}

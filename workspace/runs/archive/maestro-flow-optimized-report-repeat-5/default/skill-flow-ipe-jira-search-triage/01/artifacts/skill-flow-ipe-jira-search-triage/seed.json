@@ -1,0 +1,10 @@
+{
+  "tag": "eacf1d4f",
+  "project_key": "CE",
+  "jql": "project = CE AND summary ~ \"eacf1d4f\"",
+  "processed_comment": "TRIAGED eacf1d4f",
+  "issue_keys": [
+    "CE-162",
+    "CE-163"
+  ]
+}

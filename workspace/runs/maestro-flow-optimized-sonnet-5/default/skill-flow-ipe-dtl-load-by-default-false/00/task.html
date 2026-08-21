@@ -1,0 +1,1702 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>coder_eval · skill-flow-ipe-dtl-load-by-default-false · default</title>
+<style>
+:root {
+  --bg-page: #0f1419;
+  --bg-card: #1a2129;
+  --bg-card-2: #232d38;
+  --bg-code: #0b0f14;
+  --fg: #e6edf3;
+  --fg-muted: #8b98a5;
+  --fg-dim: #6e7681;
+  --border: #30363d;
+  --accent: #58a6ff;
+  --score-high: #22c55e;
+  --score-mid: #f59e0b;
+  --score-low: #ef4444;
+  --status-success: #22c55e;
+  --status-failure: #f59e0b;
+  --status-error: #ef4444;
+  --status-neutral: #6e7681;
+  --shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+.light {
+  --bg-page: #ffffff;
+  --bg-card: #f6f8fa;
+  --bg-card-2: #eaeef2;
+  --bg-code: #f6f8fa;
+  --fg: #1f2328;
+  --fg-muted: #636c76;
+  --fg-dim: #8b949e;
+  --border: #d0d7de;
+  --accent: #0969da;
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial,
+               sans-serif;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--fg);
+  background: var(--bg-page);
+}
+.container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+h1, h2, h3, h4 { margin: 0 0 12px 0; line-height: 1.25; }
+h1 { font-size: 22px; font-weight: 600; }
+h2 { font-size: 18px; font-weight: 600; margin-top: 28px;
+     padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+h3 { font-size: 15px; font-weight: 600; color: var(--fg-muted); }
+h4 { font-size: 13px; font-weight: 600; color: var(--fg-muted); }
+p { margin: 0 0 8px 0; }
+.muted { color: var(--fg-muted); }
+.dim { color: var(--fg-dim); }
+.mono { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+        monospace; font-size: 12.5px; }
+code { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+       monospace; font-size: 12.5px; background: var(--bg-code);
+       border: 1px solid var(--border); padding: 1px 5px; border-radius: 3px; }
+pre { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+      monospace; font-size: 12.5px; background: var(--bg-code);
+      border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px;
+      margin: 6px 0; overflow-x: auto; white-space: pre-wrap;
+      word-wrap: break-word; }
+.header-bar { display: flex; align-items: center; justify-content: space-between;
+              margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+.title-group { flex: 1; min-width: 0; }
+.title-group .subtitle { color: var(--fg-muted); font-size: 13px;
+                         margin-top: 2px; word-break: break-all; }
+.badges { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.badge { display: inline-flex; align-items: center; gap: 6px;
+         padding: 4px 10px; border-radius: 12px; font-size: 12px;
+         font-weight: 600; background: var(--bg-card-2);
+         border: 1px solid var(--border); color: var(--fg); }
+.badge.success { background: color-mix(in srgb, var(--status-success) 20%, var(--bg-card-2));
+                 border-color: var(--status-success); color: var(--status-success); }
+.badge.failure { background: color-mix(in srgb, var(--status-failure) 20%, var(--bg-card-2));
+                 border-color: var(--status-failure); color: var(--status-failure); }
+.badge.error { background: color-mix(in srgb, var(--status-error) 20%, var(--bg-card-2));
+               border-color: var(--status-error); color: var(--status-error); }
+.badge.warning { background: color-mix(in srgb, #f4a52810 20%, var(--bg-card-2));
+                 border-color: #f4a528; color: #f4a528; }
+.badge.neutral { color: var(--fg-muted); }
+.score-pill { display: inline-block; padding: 2px 8px; border-radius: 10px;
+              font-size: 12px; font-weight: 700; min-width: 42px;
+              text-align: center; color: #0b0f14; }
+.score-high { background: var(--score-high); }
+.score-mid { background: var(--score-mid); }
+.score-low { background: var(--score-low); }
+.card { background: var(--bg-card); border: 1px solid var(--border);
+        border-radius: 8px; padding: 16px 20px; margin-bottom: 16px;
+        box-shadow: var(--shadow); }
+.card.highlight { border-left: 4px solid var(--accent); }
+.grid { display: grid; gap: 12px;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+.stat { background: var(--bg-card-2); padding: 10px 12px; border-radius: 6px;
+        border: 1px solid var(--border); }
+.stat .label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;
+               color: var(--fg-muted); margin-bottom: 4px; }
+.stat .value { font-size: 16px; font-weight: 600; }
+table { width: 100%; border-collapse: collapse; margin: 4px 0 12px 0; }
+th, td { text-align: left; padding: 8px 10px;
+         border-bottom: 1px solid var(--border); vertical-align: top;
+         font-size: 13px; }
+th { color: var(--fg-muted); font-weight: 600; font-size: 12px;
+     text-transform: uppercase; letter-spacing: 0.3px; }
+tr:last-child td { border-bottom: none; }
+details { margin: 6px 0; border: 1px solid var(--border); border-radius: 6px;
+          background: var(--bg-card-2); }
+details > summary { cursor: pointer; padding: 8px 12px; user-select: none;
+                    font-weight: 500; list-style: none; }
+details > summary::-webkit-details-marker { display: none; }
+details > summary::before { content: "▸ "; color: var(--fg-dim);
+                            display: inline-block; width: 14px;
+                            transition: transform 0.15s; }
+details[open] > summary::before { content: "▾ "; }
+details .details-body { padding: 0 12px 10px 12px; }
+.tool-row { display: flex; align-items: center; gap: 10px;
+            flex-wrap: wrap; font-size: 13px; }
+.tool-name { font-weight: 600; color: var(--accent); font-family: ui-monospace,
+             SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+.tool-status-ok { color: var(--status-success); font-size: 11px;
+                  font-weight: 600; }
+.tool-status-err { color: var(--status-error); font-size: 11px;
+                   font-weight: 600; }
+.tool-duration { color: var(--fg-muted); font-size: 12px; }
+.tool-seq { color: var(--fg-dim); font-size: 11px; font-weight: 600;
+            min-width: 24px; text-align: right; font-family: ui-monospace,
+            SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+.turn-header { display: flex; justify-content: space-between;
+               align-items: baseline; flex-wrap: wrap; gap: 10px;
+               margin-bottom: 10px; }
+.turn-meta { font-size: 12px; color: var(--fg-muted); }
+.criterion-row td:first-child { font-family: ui-monospace, SFMono-Regular,
+                                 "SF Mono", Menlo, Consolas, monospace;
+                                 color: var(--fg-muted); font-size: 12px; }
+.judge-section { display: flex; flex-direction: column; gap: 12px; }
+.judge-card { padding: 14px 16px; }
+.judge-card-head { display: flex; justify-content: space-between;
+                    align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+.judge-card-title { font-size: 14px; line-height: 1.4; flex: 1; min-width: 0; }
+.judge-card-score { flex-shrink: 0; }
+.judge-rationale { margin-top: 10px; padding: 10px 12px;
+                   background: var(--bg-code); border-radius: 4px;
+                   font-size: 13px; line-height: 1.5; }
+.judge-findings { margin: 8px 0 0 18px; padding-left: 4px; font-size: 13px;
+                   line-height: 1.6; }
+.judge-findings li { margin: 2px 0; }
+.nav-toggle { display: inline-block; padding: 5px 10px; font-size: 12px;
+              background: var(--bg-card-2); border: 1px solid var(--border);
+              border-radius: 5px; color: var(--fg); cursor: pointer; }
+.nav-toggle:hover { background: var(--bg-card); }
+.llm-next-steps { margin: 6px 0 0 20px; padding-left: 0; }
+.llm-next-steps li { margin: 3px 0; }
+.iteration-group { padding: 12px 16px 4px 16px; margin-bottom: 20px;
+                   border-radius: 0 6px 6px 0; border-left: 4px solid var(--status-neutral); }
+/* rgba fallback for browsers without color-mix (Chrome <111, Firefox <113, Safari <16.2). */
+.iteration-group--recovered { border-left-color: var(--status-success);
+                              background: rgba(34, 197, 94, 0.06);
+                              background: color-mix(in srgb, var(--status-success) 6%, transparent); }
+.iteration-group--terminal { border-left-color: var(--status-error);
+                             background: rgba(239, 68, 68, 0.06);
+                             background: color-mix(in srgb, var(--status-error) 6%, transparent); }
+.iteration-group__banner { margin: 0 0 12px 0; font-size: 14px; font-weight: 600; }
+.iteration-group--recovered .iteration-group__banner { color: var(--status-success); }
+.iteration-group--terminal .iteration-group__banner { color: var(--status-error); }
+.attempt-transition { display: flex; align-items: center; gap: 8px;
+                      margin: -6px 0 12px 8px; color: var(--status-error); font-size: 12.5px; }
+.attempt-transition__icon { font-weight: 700; }
+footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--border);
+         color: var(--fg-dim); font-size: 12px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="header-bar">
+  <div class="title-group">
+    <h1>Task: skill-flow-ipe-dtl-load-by-default-false</h1>
+    <div class="subtitle">Tests the DTL loadByDefault=false IS feature — configures a connector node where dropdown values load only on user interaction on the WooCommerce connector.</div>
+  </div>
+  <div class="badges">
+    <span class="badge success">SUCCESS</span>
+    <span class="score-pill score-high">1.00</span>
+    <span class="badge neutral">claude-code · claude-sonnet-5</span>
+    <span class="badge neutral">5m 56s</span>
+    <span class="badge neutral">$1.6651</span>
+    
+    
+    <span class="nav-toggle" onclick="toggleTheme()">Toggle theme</span>
+  </div>
+</div>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Variant</div><div class="value">default</div></div>
+    <div class="stat"><div class="label">Started</div><div class="value mono">2026-08-19T00:24:58</div></div>
+    <div class="stat"><div class="label">Duration</div><div class="value">5m 56s</div></div>
+    <div class="stat"><div class="label">Turns (SDK)</div><div class="value">63</div></div>
+    <div class="stat"><div class="label">Commands</div><div class="value">32</div></div>
+  </div>
+</div>
+
+<h2>Success Criteria <span class="muted" style="font-weight:400">(3/3 passed)</span></h2>
+<div class="card" style="padding:0">
+<table>
+  <thead>
+    <tr>
+      <th style="width:15%">Type</th>
+      <th style="width:35%">Description</th>
+      <th style="width:10%">Score</th>
+      <th>Details</th>
+    </tr>
+  </thead>
+  <tbody>
+    
+<tr class="criterion-row">
+  <td>run_command</td>
+  <td>Flow file exists and is valid JSON</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Command: python3 -c &quot;import json,glob; flows=glob.glob(&#x27;**/DTLLoadByDefaultFalseTest*.flow&#x27;,recursive=True); assert flows, &#x27;No flow found&#x27;; f=json.load(open(flows[0])); assert &#x27;nodes&#x27; in f and &#x27;edges&#x27; in f; nn=len(f[&#x27;nodes&#x27;]); ne=len(f[&#x27;edges&#x27;]); print(&#x27;OK: %d nodes, %d edges&#x27;%(nn,ne))&quot;</summary><div class="details-body"><pre style="margin:6px 0 0 0">Command: python3 -c &quot;import json,glob; flows=glob.glob(&#x27;**/DTLLoadByDefaultFalseTest*.flow&#x27;,recursive=True); assert flows, &#x27;No flow found&#x27;; f=json.load(open(flows[0])); assert &#x27;nodes&#x27; in f and &#x27;edges&#x27; in f; nn=len(f[&#x27;nodes&#x27;]); ne=len(f[&#x27;edges&#x27;]); print(&#x27;OK: %d nodes, %d edges&#x27;%(nn,ne))&quot;
+Exit code: 0 (expected: 0)
+Stdout:
+OK: 3 nodes, 2 edges
+
+Stderr: (empty)</pre></div></details></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>run_command</td>
+  <td>Flow has a connector node referencing uipath-automattic-woocommerce</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Command: python3 -c &quot;import json,glob; flows=glob.glob(&#x27;**/DTLLoadByDefaultFalseTest*.flow&#x27;,recursive=True); assert flows; content=open(flows[0]).read(); assert &#x27;uipath-automattic-woocommerce&#x27; in content, &#x27;Connector key not found&#x27;; print(&#x27;OK: connector key present&#x27;)&quot;</summary><div class="details-body"><pre style="margin:6px 0 0 0">Command: python3 -c &quot;import json,glob; flows=glob.glob(&#x27;**/DTLLoadByDefaultFalseTest*.flow&#x27;,recursive=True); assert flows; content=open(flows[0]).read(); assert &#x27;uipath-automattic-woocommerce&#x27; in content, &#x27;Connector key not found&#x27;; print(&#x27;OK: connector key present&#x27;)&quot;
+Exit code: 0 (expected: 0)
+Stdout:
+OK: connector key present
+
+Stderr: (empty)</pre></div></details></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>command_executed</td>
+  <td>uip maestro flow validate was called</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Matched 1/1 required commands (filters: tool_name=Bash, pattern=/(uip|\$UIP)\s+(maestro\s+)?flow\s+validate/)</summary><div class="details-body"><pre style="margin:6px 0 0 0">Matched 1/1 required commands (filters: tool_name=Bash, pattern=/(uip|\$UIP)\s+(maestro\s+)?flow\s+validate/)
+Examples: [&#x27;SKILL_DIR=&quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow&quot;\ncd /work/output/artifacts/skill-flow-ipe-dtl-&#x27;]</pre></div></details></td>
+</tr>
+
+  </tbody>
+</table>
+</div>
+<h2>Conversation Trace (1 iteration)</h2>
+<div class="card">
+  <div class="turn-header">
+    <h3>Iteration 1</h3>
+    <div class="badges">
+      <span class="badge neutral">63 assistant turns</span>
+      <span class="badge neutral">in 547 · out 23702 · cache 3203977</span>
+      <span class="badge neutral">5m 54s</span>
+      
+      
+      
+    </div>
+  </div>
+  <details>
+    <summary>Prompt to agent</summary>
+    <div class="details-body"><pre>Your working directory is: /work/output/artifacts/skill-flow-ipe-dtl-load-by-default-false
+
+Create a new Flow project called &quot;DTLLoadByDefaultFalseTest&quot; with a manual trigger.
+You need a flow that lists WooCommerce products filtered by an attribute term
+the caller picks from a dropdown that loads on demand. Discover the
+list-products operation and configure its attribute-term field.
+Validate the final flow file.
+</pre></div>
+  </details>
+  <details>
+    <summary>Agent response</summary>
+    <div class="details-body"><pre>[ASSISTANT] No existing solutions found — I&#x27;ll create a new one automatically named after the flow, then scaffold the project and discover the WooCommerce connector.
+[ASSISTANT] Project scaffolded. Now let&#x27;s pull the registry and discover the WooCommerce list-products node.
+[ASSISTANT] Found it — `attribute_term` is exactly the dropdown-loads-on-demand field (`design.loadByDefault: false`), and it&#x27;s a reference into `attributes::terms` gated by the `attribute` field. This is the correct field for &quot;list products filtered by an attribute term picked from a dropdown that loads on demand.&quot; Now let&#x27;s find a live WooCommerce connection.
+[ASSISTANT] No live WooCommerce connection exists. Per the No-Live-Tenant workflow, I&#x27;ll add the node via `node add` (which is still required — it inserts the node and copies the definition) and proceed with planned configuration, clearly flagging the missing connection at the end.
+[ASSISTANT] No `--id` flag — the CLI auto-generates the id. I&#x27;ll add it then rename.
+[ASSISTANT] Node added as `searchProducts1`. Now let&#x27;s add an End node and wire the manual trigger → search products → end.
+[ASSISTANT] Now let&#x27;s configure the WooCommerce node. Since there&#x27;s no live connection, I&#x27;ll write the planned `--detail` to a sidecar file with placeholders, per the No-Live-Tenant workflow, and clearly flag this in the final report.
+[ASSISTANT] No WooCommerce connection exists anywhere in this tenant, and `uip is connectors list` shows the connector itself is `Active: No` / `CatalogActive: No` — it can&#x27;t be freshly connected either. I&#x27;ll follow the No-Live-Tenant workflow: keep the node as added, write the planned configuration to a sidecar file, and flag this clearly rather than faking a connection.
+[ASSISTANT] Now let&#x27;s run the audit and validate scripts on the flow.
+[ASSISTANT] Audit and validate are both clean (0 errors). Two info-level findings about unused empty bindings stubs are expected — they&#x27;ll resolve once the connection is configured. Let&#x27;s do a final look at the flow file for completeness.
+[ASSISTANT] Everything checks out. Here&#x27;s the summary.
+
+## Summary
+
+Created the `DTLLoadByDefaultFalseTest` solution and Flow project (`DTLLoadByDefaultFalseTest/DTLLoadByDefaultFalseTest/DTLLoadByDefaultFalseTest.flow`, no pre-existing `.uipx` was found) with:
+
+- **Manual trigger** → **WooCommerce Search Products** (`uipath.connector.uipath-automattic-woocommerce.search-products`, node id `searchProducts1`) → **End**.
+
+**Discovering the list-products operation:** WooCommerce has no dedicated &quot;list-products&quot; node — the registry&#x27;s list-style op is `search-products` (`connectorMethodInfo.operation: &quot;List&quot;`, `hasCEQL: false`, GET `/search_products`, curated display name &quot;Search Products&quot;). Its `attribute_term` query param is exactly the field the task describes: `displayName: &quot;Attribute terms&quot;`, a `reference` lookup into `attributes::terms`, and `design.loadByDefault: false` — meaning its dropdown options are **not preloaded** when the activity opens and instead resolve on demand (lazy-loaded), gated by `fieldActions` that only show it once a parent `attribute` value is picked.
+
+**Configuration status — flagged, not silently skipped:** No WooCommerce connection exists anywhere in this tenant (`uip is connections list --all-folders` empty even after `--refresh`), and the connector itself shows `Active: No` / `CatalogActive: No` in `uip is connectors list`, so a new connection can&#x27;t be created either. Following the skill&#x27;s No-Live-Tenant procedure, I added the real connector node (preserving its registered type) but left it unconfigured, and wrote the planned `--detail` payload to `searchProducts1.detail.json` alongside the flow — including the `attribute` / `attribute_term` field notes and the exact `node configure` shape to run once a connection is available.
+
+**Validation:**
+- `uip maestro flow format` + `uip maestro flow validate` → `Status: Valid`.
+- `audit_flow.py` → 0 errors across topology/expressions/jint/binding</pre></div>
+  </details>
+  <h4 style="margin-top:12px">Tool Calls (32)</h4>
+  
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#0</span>
+      <span class="tool-name">Skill</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">13ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;skill&quot;: &quot;tmp:uipath-maestro-flow&quot;,
+  &quot;args&quot;: &quot;Create a new Flow project called \&quot;DTLLoadByDefaultFalseTest\&quot; with a manual trigger. Build a flow that lists WooCommerce products filtered by an attribute term the caller picks from a dropdown that loads on demand. Discover the list-products operation and configure its attribute-term field accordingly. Validate the final flow file.&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Launching skill: tmp:uipath-maestro-flow</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#1</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">378ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;find . -maxdepth 2 -type f -name &#x27;*.uipx&#x27; -print; echo \&quot;---\&quot;; ls -la; echo \&quot;---login---\&quot;; uip login status --output json 2&gt;&amp;1 | head -50&quot;,
+  &quot;description&quot;: &quot;Check for existing solutions and login status&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>---
+total 12
+drwxr-xr-x 3 root root 4096 Aug 19 00:25 .
+drwxr-xr-x 3 root root 4096 Aug 19 00:25 ..
+drwxr-xr-x 4 root root 4096 Aug 19 00:25 .venv
+---login---
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;LoginStatus&quot;,
+  &quot;Data&quot;: {
+    &quot;Status&quot;: &quot;Logged in&quot;,
+    &quot;Identity&quot;: &quot;zhongyi.shi@uipath.com&quot;,
+    &quot;IdentityType&quot;: &quot;User&quot;,
+    &quot;AuthFlow&quot;: &quot;Interactive&quot;,
+    &quot;CredentialSource&quot;: &quot;SavedLogin&quot;,
+    &quot;Provider&quot;: &quot;File&quot;,
+    &quot;UserId&quot;: &quot;bfda820f-4ddb-4af7-a5ec-3c332b403271&quot;,
+    &quot;UserEmail&quot;: &quot;zhongyi.shi@uipath.com&quot;,
+    &quot;UserName&quot;: &quot;zhongyi.shi@uipath.com&quot;,
+    &quot;BaseUrl&quot;: &quot;https://alpha.uipath.com&quot;,
+    &quot;Organization&quot;: &quot;codereval&quot;,
+    &quot;OrganizationId&quot;: &quot;311c6049-4966-4ef2-a6f3-8ceccaf38d54&quot;,
+    &quot;Tenant&quot;: &quot;DefaultTenant&quot;,
+    &quot;TenantId&quot;: &quot;69d43765-6ede-4575-88b7-9db601a2c056&quot;,
+    &quot;ExpirationDate&quot;: &quot;2026-08-19T01:07:32.000Z&quot;
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#2</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">7.48s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;set -e\nuip solution init \&quot;DTLLoadByDefaultFalseTest\&quot; --output json\ncd \&quot;DTLLoadByDefaultFalseTest\&quot;\nuip maestro flow init \&quot;DTLLoadByDefaultFalseTest\&quot; --output json\n&quot;,
+  &quot;description&quot;: &quot;Create solution and Flow project&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;SolutionInit&quot;,
+  &quot;Data&quot;: {
+    &quot;Status&quot;: &quot;Created successfully&quot;,
+    &quot;Path&quot;: &quot;/work/output/artifacts/skill-flow-ipe-dtl-load-by-default-false/DTLLoadByDefaultFalseTest/DTLLoadByDefaultFalseTest.uipx&quot;,
+    &quot;NextSteps&quot;: &quot;Read /work/output/artifacts/skill-flow-ipe-dtl-load-by-default-false/DTLLoadByDefaultFalseTest/AGENTS.md or /work/output/artifacts/skill-flow-ipe-dtl-load-by-default-false/DTLLoadByDefaultFalseTest/CLAUDE.md to understand the solution lifecycle, project types that can be used inside a solution, and related uip command references.&quot;
+  }
+}
+2026-08-19 00:25:16 INFO  [ResourceBuilder:ProjectCreateCommandHandler] Creating project [object Object]
+2026-08-19 00:25:16 INFO  [ResourceBuilder:MultiFileSolutionDefinitionProvider] Reading multi-file solution definition for solution %s /work/output/artifacts/skill-flow-ipe-dtl-load-by-default-false/DTLLoadByDefaultFalseTest
+2026-08-19 00:25:16 INFO  [ResourceBuilder:ProjectCreateCommandHandler] Generate artefact resources for project [object Object]
+2026-08-19 00:25:16 INFO  [ResourceBuilder:SolutionsMetadataReader] Reading metadata from %s. SolutionsMetadataReader
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Co
+
+… (truncated, 1331 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#3</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">10.47s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd \&quot;DTLLoadByDefaultFalseTest/DTLLoadByDefaultFalseTest\&quot;\nuip maestro flow registry pull --force --output json | tail -20\necho \&quot;---search woocommerce---\&quot;\nuip maestro flow registry search \&quot;woocommerce\&quot; --output json --output-filter \&quot;[*].{NodeType:NodeType,DisplayName:DisplayName,Description:Description}\&quot;\n&quot;,
+  &quot;description&quot;: &quot;Pull registry and search for WooCommerce nodes&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/bin/bash: line 5: cd: DTLLoadByDefaultFalseTest/DTLLoadByDefaultFalseTest: No such file or directory
+[ManifestClient] fetchDynamicNodes ok: total=4878 connector nodes=3654 integration trigger nodes=896 agent context nodes=2 external agent nodes=7 orchestrator nodes=261 IXP nodes=45 IXP Models nodes=13
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodePullSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;NodesCount&quot;: 4761,
+    &quot;FromCache&quot;: false,
+    &quot;Source&quot;: &quot;authenticated&quot;,
+    &quot;CacheWritten&quot;: true,
+    &quot;Message&quot;: &quot;Synced fresh nodes&quot;
+  }
+}
+---search woocommerce---
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeSearchSuccess&quot;,
+  &quot;Data&quot;: [
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-automattic-woocommerce.get-product-reviews&quot;,
+      &quot;DisplayName&quot;: &quot;Get Product Reviews&quot;,
+      &quot;Description&quot;: &quot;Retrieve all product reviews for a specific product in WooCommerce.&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-automattic-woocommerce.search-customers&quot;,
+      &quot;DisplayName&quot;: &quot;Search Customers&quot;,
+      &quot;Description&quot;: &quot;Search for customers using filters like name or email in WooCommerce.&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-automattic-woocommerce.list-all-records&quot;,
+      &quot;DisplayName&quot;: &quot;List All 
+
+… (truncated, 6272 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#4</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.68s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd \&quot;DTLLoadByDefaultFalseTest/DTLLoadByDefaultFalseTest\&quot; 2&gt;/dev/null || cd \&quot;$(find /work/output/artifacts/skill-flow-ipe-dtl-load-by-default-false -maxdepth 2 -type d -name DTLLoadByDefaultFalseTest | head -1)\&quot;\npwd\necho \&quot;---search list-products---\&quot;\nuip maestro flow registry search \&quot;list products\&quot; --output json --output-filter \&quot;[*].{NodeType:NodeType,DisplayName:DisplayName}\&quot;\necho \&quot;---search list-a… (222 more chars)&quot;,
+  &quot;description&quot;: &quot;Locate flow project dir and inspect list-all-records definition&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/work/output/artifacts/skill-flow-ipe-dtl-load-by-default-false/DTLLoadByDefaultFalseTest
+---search list-products---
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeSearchSuccess&quot;,
+  &quot;Data&quot;: []
+}
+---search list-all-records def---
+{
+    &quot;Result&quot;: &quot;Success&quot;,
+    &quot;Code&quot;: &quot;NodeGetSuccess&quot;,
+    &quot;Data&quot;: {
+        &quot;Node&quot;: {
+            &quot;nodeType&quot;: &quot;uipath.connector.uipath-automattic-woocommerce.list-all-records&quot;,
+            &quot;version&quot;: &quot;1.0.0&quot;,
+            &quot;category&quot;: &quot;connector.196519&quot;,
+            &quot;tags&quot;: [
+                &quot;connector&quot;,
+                &quot;activity&quot;
+            ],
+            &quot;sortOrder&quot;: 520,
+            &quot;supportsErrorHandling&quot;: true,
+            &quot;description&quot;: &quot;List all records in WooCommerce&quot;,
+            &quot;display&quot;: {
+                &quot;label&quot;: &quot;List All Records&quot;,
+                &quot;description&quot;: &quot;List all records in WooCommerce&quot;,
+                &quot;icon&quot;: &quot;https://alpha.uipath.com/311c6049-4966-4ef2-a6f3-8ceccaf38d54/studio_/typecache/icons/5ea81447fc8282fe7c862082f2e7db3f676c63d255761a046e75e54db2ea541b.svg&quot;,
+                &quot;sourceDisplayName&quot;: &quot;WooCommerce&quot;
+            },
+            &quot;handleConfiguration&quot;: [
+                {
+                    &quot;position&quot;: &quot;left&quot;,
+               
+
+… (truncated, 2808 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#5</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">11ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/tmp/list_all_records.json&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	{
+2	  &quot;Result&quot;: &quot;Success&quot;,
+3	  &quot;Code&quot;: &quot;NodeGetSuccess&quot;,
+4	  &quot;Data&quot;: {
+5	    &quot;Node&quot;: {
+6	      &quot;nodeType&quot;: &quot;uipath.connector.uipath-automattic-woocommerce.list-all-records&quot;,
+7	      &quot;version&quot;: &quot;1.0.0&quot;,
+8	      &quot;category&quot;: &quot;connector.196519&quot;,
+9	      &quot;tags&quot;: [
+10	        &quot;connector&quot;,
+11	        &quot;activity&quot;
+12	      ],
+13	      &quot;sortOrder&quot;: 520,
+14	      &quot;supportsErrorHandling&quot;: true,
+15	      &quot;description&quot;: &quot;List all records in WooCommerce&quot;,
+16	      &quot;display&quot;: {
+17	        &quot;label&quot;: &quot;List All Records&quot;,
+18	        &quot;description&quot;: &quot;List all records in WooCommerce&quot;,
+19	        &quot;icon&quot;: &quot;https://alpha.uipath.com/311c6049-4966-4ef2-a6f3-8ceccaf38d54/studio_/typecache/icons/5ea81447fc8282fe7c862082f2e7db3f676c63d255761a046e75e54db2ea541b.svg&quot;,
+20	        &quot;sourceDisplayName&quot;: &quot;WooCommerce&quot;
+21	      },
+22	      &quot;handleConfiguration&quot;: [
+23	        {
+24	          &quot;position&quot;: &quot;left&quot;,
+25	          &quot;handles&quot;: [
+26	            {
+27	              &quot;id&quot;: &quot;input&quot;,
+28	              &quot;type&quot;: &quot;target&quot;,
+29	              &quot;handleType&quot;: &quot;input&quot;,
+30	              &quot;label&quot;: &quot;&quot;
+31	            }
+32	          ]
+33	        },
+34	        {
+35	          &quot;position&quot;: &quot;right&quot;,
+36	          &quot;handles&quot;: [
+37	            {
+3
+
+… (truncated, 6540 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#6</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">21ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;SKILL_DIR=\&quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow\&quot;\nfind \&quot;$SKILL_DIR/references/author/references/plugins/connector\&quot; -type f | head -50\n&quot;,
+  &quot;description&quot;: &quot;List connector plugin reference docs&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/plugins/connector/planning.md
+/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/plugins/connector/impl.md</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#7</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">381ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow/references/author/references/plugins/connector/impl.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Connector Activity Nodes — Implementation
+2	
+3	How to configure connector activity nodes: connection binding, enriched metadata, reference field resolution, and debugging. Connection bindings are emitted by `uip maestro flow node configure` into the flow&#x27;s top-level `bindings[]`; `bindings_v2.json` is regenerated from them at debug/pack time and should never be hand-edited.
+4	
+5	For generic node/edge add, remove, and wiring procedures, see [editing-operations.md](../../editing-operations.md). This guide covers the connector-specific configuration workflow that must follow the generic node add.
+6	
+7	## How Connector Nodes Differ from OOTB
+8	
+9	1. **Connection binding required** — every connector node needs an IS connection (OAuth, API key, etc.) authored in the flow&#x27;s top-level `bindings[]` (which the CLI regenerates into `bindings_v2.json` at debug/pack time). Without it, the node cannot authenticate.
+10	2. **Enriched metadata via `--connection-id`** — call `registry get` with `--connection-id` to get connection-aware field metadata. Without it, only base fields are returned — custom fields, dynamic enums, and reference resolution are missing.
+11	3. **`inputs.detail` object** —
+
+… (truncated, 66612 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#8</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">703ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-ipe-dtl-load-by-default-false/DTLLoadByDefaultFalseTest/DTLLoadByDefaultFalseTest 2&gt;/dev/null || cd /work/output/artifacts/skill-flow-ipe-dtl-load-by-default-false/DTLLoadByDefaultFalseTest\nfind . -maxdepth 3 -type d\necho \&quot;---\&quot;\nuip maestro flow registry search \&quot;product\&quot; --output json --output-filter \&quot;[?contains(NodeType,&#x27;woocommerce&#x27;)].{NodeType:NodeType,Displa… (44 more chars)&quot;,
+  &quot;description&quot;: &quot;Locate flow project directory and search product-related woocommerce nodes&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>.
+---
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeSearchSuccess&quot;,
+  &quot;Data&quot;: [
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-automattic-woocommerce.get-product-reviews&quot;,
+      &quot;DisplayName&quot;: &quot;Get Product Reviews&quot;,
+      &quot;Description&quot;: &quot;Retrieve all product reviews for a specific product in WooCommerce.&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-automattic-woocommerce.create-product&quot;,
+      &quot;DisplayName&quot;: &quot;Create Product&quot;,
+      &quot;Description&quot;: &quot;Create a product in WooCommerce, including details like price and stock quantity.&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-automattic-woocommerce.search-orders&quot;,
+      &quot;DisplayName&quot;: &quot;Search Orders&quot;,
+      &quot;Description&quot;: &quot;Search for orders using filters like name, customer, or product in WooCommerce.&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-automattic-woocommerce.update-product&quot;,
+      &quot;DisplayName&quot;: &quot;Update Product&quot;,
+      &quot;Description&quot;: &quot;Update product details such as price and stock quantity in WooCommerce.&quot;
+    },
+    {
+      &quot;NodeType&quot;: &quot;uipath.connector.uipath-automattic-woocommerce.search-products&quot;,
+      &quot;DisplayName&quot;: &quot;Search Products&quot;,
+      &quot;Description&quot;: &quot;Search for products using filter
+
+… (truncated, 2232 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#9</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">6.01s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-ipe-dtl-load-by-default-false/DTLLoadByDefaultFalseTest/DTLLoadByDefaultFalseTest\nuip maestro flow registry get uipath.connector.uipath-automattic-woocommerce.search-products --output json &gt; /tmp/search_products.json\npython3 -m json.tool /tmp/search_products.json | sed -n &#x27;1,250p&#x27;\n&quot;,
+  &quot;description&quot;: &quot;Inspect search-products node definition&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+    &quot;Result&quot;: &quot;Success&quot;,
+    &quot;Code&quot;: &quot;NodeGetSuccess&quot;,
+    &quot;Data&quot;: {
+        &quot;Node&quot;: {
+            &quot;nodeType&quot;: &quot;uipath.connector.uipath-automattic-woocommerce.search-products&quot;,
+            &quot;version&quot;: &quot;1.0.0&quot;,
+            &quot;category&quot;: &quot;connector.196519&quot;,
+            &quot;tags&quot;: [
+                &quot;connector&quot;,
+                &quot;activity&quot;
+            ],
+            &quot;sortOrder&quot;: 520,
+            &quot;supportsErrorHandling&quot;: true,
+            &quot;description&quot;: &quot;Search for products using filters like name or customer in WooCommerce.&quot;,
+            &quot;display&quot;: {
+                &quot;label&quot;: &quot;Search Products&quot;,
+                &quot;description&quot;: &quot;Search for products using filters like name or customer in WooCommerce.&quot;,
+                &quot;icon&quot;: &quot;https://alpha.uipath.com/311c6049-4966-4ef2-a6f3-8ceccaf38d54/studio_/typecache/icons/5ea81447fc8282fe7c862082f2e7db3f676c63d255761a046e75e54db2ea541b.svg&quot;,
+                &quot;sourceDisplayName&quot;: &quot;WooCommerce&quot;
+            },
+            &quot;handleConfiguration&quot;: [
+                {
+                    &quot;position&quot;: &quot;left&quot;,
+                    &quot;handles&quot;: [
+                        {
+                            &quot;id&quot;: &quot;input&quot;,
+                            &quot;type&quot;: &quot;target&quot;,
+           
+
+… (truncated, 9949 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#10</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">235ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 -m json.tool /tmp/search_products.json | sed -n &#x27;250,500p&#x27;&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>                        &quot;type&quot;: &quot;query&quot;,
+                        &quot;dataType&quot;: &quot;integer&quot;,
+                        &quot;required&quot;: false,
+                        &quot;displayName&quot;: &quot;Page&quot;,
+                        &quot;curated&quot;: false
+                    },
+                    {
+                        &quot;name&quot;: &quot;category&quot;,
+                        &quot;description&quot;: &quot;Limit result set to products assigned a specific category&quot;,
+                        &quot;type&quot;: &quot;query&quot;,
+                        &quot;dataType&quot;: &quot;string&quot;,
+                        &quot;required&quot;: false,
+                        &quot;displayName&quot;: &quot;Category&quot;,
+                        &quot;reference&quot;: {
+                            &quot;objectName&quot;: &quot;products::categories&quot;,
+                            &quot;lookupNames&quot;: [
+                                &quot;id&quot;,
+                                &quot;name&quot;
+                            ],
+                            &quot;lookupValue&quot;: &quot;id&quot;,
+                            &quot;path&quot;: &quot;/products/categories&quot;
+                        },
+                        &quot;curated&quot;: false,
+                        &quot;design&quot;: {
+                            &quot;loadByDefault&quot;: true,
+                            &quot;isMultiSelect&quot;: false,
+                            &quot;enableUs
+
+… (truncated, 10152 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#11</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">169ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 -m json.tool /tmp/search_products.json | sed -n &#x27;500,900p&#x27;&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>                        &quot;sortOrder&quot;: 12
+                    },
+                    {
+                        &quot;name&quot;: &quot;shipping_class&quot;,
+                        &quot;description&quot;: &quot;Limit result set to products assigned a specific shipping class&quot;,
+                        &quot;type&quot;: &quot;query&quot;,
+                        &quot;dataType&quot;: &quot;string&quot;,
+                        &quot;required&quot;: false,
+                        &quot;displayName&quot;: &quot;Shipping class&quot;,
+                        &quot;reference&quot;: {
+                            &quot;objectName&quot;: &quot;products::shipping_classes&quot;,
+                            &quot;lookupNames&quot;: [
+                                &quot;id&quot;,
+                                &quot;name&quot;
+                            ],
+                            &quot;lookupValue&quot;: &quot;id&quot;,
+                            &quot;path&quot;: &quot;/products/shipping_classes&quot;
+                        },
+                        &quot;curated&quot;: false,
+                        &quot;design&quot;: {
+                            &quot;loadByDefault&quot;: true,
+                            &quot;isMultiSelect&quot;: false,
+                            &quot;enableUserOverride&quot;: false,
+                            &quot;displayPattern&quot;: &quot;{name} - {id}&quot;,
+                            &quot;isHidden&quot;: false,
+                   
+
+… (truncated, 16510 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#12</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">748ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip is connections list \&quot;uipath-automattic-woocommerce\&quot; --all-folders --output json&quot;,
+  &quot;description&quot;: &quot;List WooCommerce connections across all folders&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;Message&quot;,
+  &quot;Data&quot;: {
+    &quot;Message&quot;: &quot;No connections found for connector &#x27;uipath-automattic-woocommerce&#x27;.&quot;
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#13</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-err">ERROR</span>
+      <span class="tool-duration">8ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/home/azureuser/projects/skills/tmp/skills/uipath-platform/references/integration-service/connections.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>File does not exist. Note: your current working directory is /work/output/artifacts/skill-flow-ipe-dtl-load-by-default-false/DTLLoadByDefaultFalseTest/DTLLoadByDefaultFalseTest.</pre>
+    <h4>Error</h4><pre>File does not exist. Note: your current working directory is /work/output/artifacts/skill-flow-ipe-dtl-load-by-default-false/DTLLoadByDefaultFalseTest/DTLLoadByDefaultFalseTest.</pre>
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#14</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">96ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;find / -maxdepth 6 -ipath \&quot;*uipath-platform*\&quot; -type d 2&gt;/dev/null&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/.uipath/.skills/skills/uipath-platform
+/.uipath/.skills/skills/uipath-platform/references
+/.uipath/.skills/skills/uipath-platform/references/data-fabric
+/.uipath/.skills/skills/uipath-platform/references/integration-service
+/.uipath/.skills/skills/uipath-platform/references/llmgateway
+/.uipath/.skills/skills/uipath-platform/references/context-grounding
+/.uipath/.skills/skills/uipath-platform/references/licensing
+/.uipath/.skills/skills/uipath-platform/references/orchestrator
+/.uipath/.skills/skills/uipath-platform/references/traces</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#15</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">5ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/.uipath/.skills/skills/uipath-platform/references/integration-service/connections.md&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	# Connections
+2	
+3	Connections are authenticated sessions for a specific connector. They store credentials and tokens, and can be shared across automations within a folder.
+4	
+5	&gt; Full command syntax and options: [uip-commands.md — Integration Service](../uip-commands.md#integration-service-is). Domain-specific usage patterns are shown inline below.
+6	
+7	---
+8	
+9	## Response Fields
+10	
+11	| Field | Show to user? | Description |
+12	|---|---|---|
+13	| **`Name`** | **Yes** | Display name — always use this as the primary identifier when presenting to the user (e.g., &quot;Salesforce Prod&quot;, &quot;bai.li&quot;) |
+14	| **`State`** | **Yes** | `Enabled` or other status. Only Enabled connections can be used. |
+15	| **`IsDefault`** | **Yes** | `Yes` or `No`. Recommend the default connection but always let the user confirm. |
+16	| **`Owner`** | **Yes** | Who created the connection (email) |
+17	| **`Folder`** | **Yes** | Folder name this connection belongs to (e.g., &quot;Shared&quot;, &quot;Personal&quot;) |
+18	| `ConnectorName` | **Yes** | Human-readable connector name (e.g., &quot;Slack&quot;, &quot;Salesforce&quot;) |
+19	| `ByoaConnection` | **Yes** | `Yes` or `No`. BYOA (Bring Your Own Account) connection — customer registered their own OAu
+
+… (truncated, 12228 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#16</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.01s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip is connections list \&quot;uipath-automattic-woocommerce\&quot; --all-folders --refresh --output json&quot;,
+  &quot;description&quot;: &quot;Retry connection list with cache refresh&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;Message&quot;,
+  &quot;Data&quot;: {
+    &quot;Message&quot;: &quot;No connections found for connector &#x27;uipath-automattic-woocommerce&#x27;.&quot;
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#17</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">37ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-ipe-dtl-load-by-default-false/DTLLoadByDefaultFalseTest/DTLLoadByDefaultFalseTest\nls -la\necho \&quot;---flow file---\&quot;\nfind . -name \&quot;*.flow\&quot;\n&quot;,
+  &quot;description&quot;: &quot;List scaffolded project files&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>total 20
+drwxr-xr-x 2 root root 4096 Aug 19 00:25 .
+drwxr-xr-x 4 root root 4096 Aug 19 00:25 ..
+-rw-r--r-- 1 root root 1995 Aug 19 00:25 DTLLoadByDefaultFalseTest.flow
+-rw-r--r-- 1 root root  268 Aug 19 00:25 operate.json
+-rw-r--r-- 1 root root   67 Aug 19 00:25 project.uiproj
+---flow file---
+./DTLLoadByDefaultFalseTest.flow</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#18</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">4ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-ipe-dtl-load-by-default-false/DTLLoadByDefaultFalseTest/DTLLoadByDefaultFalseTest/DTLLoadByDefaultFalseTest.flow&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	{
+2	  &quot;id&quot;: &quot;19f65714-1951-449f-9a94-aea832fc75da&quot;,
+3	  &quot;version&quot;: &quot;1.9&quot;,
+4	  &quot;name&quot;: &quot;DTLLoadByDefaultFalseTest&quot;,
+5	  &quot;nodes&quot;: [
+6	    {
+7	      &quot;id&quot;: &quot;start&quot;,
+8	      &quot;type&quot;: &quot;core.trigger.manual&quot;,
+9	      &quot;typeVersion&quot;: &quot;1.0&quot;,
+10	      &quot;display&quot;: {
+11	        &quot;label&quot;: &quot;Manual trigger&quot;
+12	      },
+13	      &quot;inputs&quot;: {
+14	        &quot;entryPointId&quot;: &quot;2dd1cc94-fc45-4b85-a483-fd92df16ecbd&quot;,
+15	        &quot;isDefaultEntryPoint&quot;: true
+16	      }
+17	    }
+18	  ],
+19	  &quot;edges&quot;: [],
+20	  &quot;definitions&quot;: [
+21	    {
+22	      &quot;nodeType&quot;: &quot;core.trigger.manual&quot;,
+23	      &quot;version&quot;: &quot;1.0&quot;,
+24	      &quot;category&quot;: &quot;trigger&quot;,
+25	      &quot;description&quot;: &quot;Start the process manually&quot;,
+26	      &quot;tags&quot;: [
+27	        &quot;trigger&quot;,
+28	        &quot;start&quot;,
+29	        &quot;manual&quot;
+30	      ],
+31	      &quot;sortOrder&quot;: 80,
+32	      &quot;display&quot;: {
+33	        &quot;label&quot;: &quot;Manual trigger&quot;,
+34	        &quot;icon&quot;: &quot;play&quot;,
+35	        &quot;shape&quot;: &quot;circle&quot;
+36	      },
+37	      &quot;handleConfiguration&quot;: [
+38	        {
+39	          &quot;position&quot;: &quot;right&quot;,
+40	          &quot;handles&quot;: [
+41	            {
+42	              &quot;id&quot;: &quot;output&quot;,
+43	              &quot;type&quot;: &quot;source&quot;,
+44	              &quot;handleType&quot;: &quot;output&quot;,
+45	              &quot;showButton&quot;: true,
+46	              &quot;c
+
+… (truncated, 1059 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#19</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-err">ERROR</span>
+      <span class="tool-duration">642ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-ipe-dtl-load-by-default-false/DTLLoadByDefaultFalseTest/DTLLoadByDefaultFalseTest\nuip maestro flow node add DTLLoadByDefaultFalseTest.flow uipath.connector.uipath-automattic-woocommerce.search-products --id listProducts --label \&quot;Search Products\&quot; --output json\n&quot;,
+  &quot;description&quot;: &quot;Add WooCommerce Search Products (list) node to the flow&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Exit code 3
+{
+  &quot;Result&quot;: &quot;ValidationError&quot;,
+  &quot;ErrorCode&quot;: &quot;invalid_argument&quot;,
+  &quot;Message&quot;: &quot;error: unknown option &#x27;--id&#x27;&quot;,
+  &quot;Instructions&quot;: &quot;Run &#x27;uip maestro flow node add DTLLoadByDefaultFalseTest.flow uipath.connector.uipath-automattic-woocommerce.search-products --help&#x27; for usage information.&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}</pre>
+    <h4>Error</h4><pre>Exit code 3
+{
+  &quot;Result&quot;: &quot;ValidationError&quot;,
+  &quot;ErrorCode&quot;: &quot;invalid_argument&quot;,
+  &quot;Message&quot;: &quot;error: unknown option &#x27;--id&#x27;&quot;,
+  &quot;Instructions&quot;: &quot;Run &#x27;uip maestro flow node add DTLLoadByDefaultFalseTest.flow uipath.connector.uipath-automattic-woocommerce.search-products --help&#x27; for usage information.&quot;,
+  &quot;Retry&quot;: &quot;RetryWillNotFix&quot;
+}</pre>
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#20</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">674ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-ipe-dtl-load-by-default-false/DTLLoadByDefaultFalseTest/DTLLoadByDefaultFalseTest\nuip maestro flow node add --help 2&gt;&amp;1 | head -60&quot;,
+  &quot;description&quot;: &quot;Check node add usage&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>                           uip maestro flow node add                            
+Add a node to a Flow file.
+For connector nodes (type uipath.connector), do NOT pass --input here — run &#x27;node configure&#x27; afterwards to supply connection and endpoint details.
+Example: uip maestro flow node add flow.flow uipath.connector.jira.createIssue --label &#x27;Create Jira Issue&#x27;
+                Use --help with nested commands for more detail.                
+
+┌─ Usage ──────────────────────────────────────────────────────────────────────┐
+│ uip maestro flow node add [options] &lt;file&gt; &lt;node-type&gt;                       │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Arguments ──────────────────────────────────────────────────────────────────┐
+│ file        Path to the .flow file                                           │
+│ node-type   Node type identifier (e.g. core.trigger.manual)                  │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Options ────────────────────────────────────────────────────────────────────┐
+│ -i, --input &lt;json&gt;             JSON object of input values to set on the     │
+│                        
+
+… (truncated, 2891 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#21</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">780ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-ipe-dtl-load-by-default-false/DTLLoadByDefaultFalseTest/DTLLoadByDefaultFalseTest\nuip maestro flow node add DTLLoadByDefaultFalseTest.flow uipath.connector.uipath-automattic-woocommerce.search-products --label \&quot;Search Products\&quot; --output json\n&quot;,
+  &quot;description&quot;: &quot;Add WooCommerce Search Products node to the flow&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;NodeAddSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;Node&quot;: {
+      &quot;Id&quot;: &quot;searchProducts1&quot;,
+      &quot;Type&quot;: &quot;uipath.connector.uipath-automattic-woocommerce.search-products&quot;,
+      &quot;TypeVersion&quot;: &quot;1.0.0&quot;,
+      &quot;Ui&quot;: {
+        &quot;Position&quot;: {
+          &quot;X&quot;: 0,
+          &quot;Y&quot;: 0
+        }
+      },
+      &quot;Display&quot;: {
+        &quot;Label&quot;: &quot;Search Products&quot;
+      },
+      &quot;Inputs&quot;: {}
+    },
+    &quot;DefinitionAdded&quot;: true,
+    &quot;BindingsCreated&quot;: 0,
+    &quot;VariableCount&quot;: 3
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#22</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">688ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-ipe-dtl-load-by-default-false/DTLLoadByDefaultFalseTest/DTLLoadByDefaultFalseTest\nuip maestro flow registry get core.control.end --output json &gt; /tmp/end.json\ncat /tmp/end.json | python3 -m json.tool | head -40\n&quot;,
+  &quot;description&quot;: &quot;Get end node definition&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+    &quot;Result&quot;: &quot;Success&quot;,
+    &quot;Code&quot;: &quot;NodeGetSuccess&quot;,
+    &quot;Data&quot;: {
+        &quot;Node&quot;: {
+            &quot;nodeType&quot;: &quot;core.control.end&quot;,
+            &quot;version&quot;: &quot;1.0&quot;,
+            &quot;category&quot;: &quot;control-flow&quot;,
+            &quot;description&quot;: &quot;Mark the end of a process path&quot;,
+            &quot;tags&quot;: [
+                &quot;control-flow&quot;,
+                &quot;end&quot;,
+                &quot;finish&quot;,
+                &quot;complete&quot;
+            ],
+            &quot;sortOrder&quot;: 65,
+            &quot;display&quot;: {
+                &quot;label&quot;: &quot;End&quot;,
+                &quot;icon&quot;: &quot;circle-check&quot;,
+                &quot;shape&quot;: &quot;circle&quot;
+            },
+            &quot;handleConfiguration&quot;: [
+                {
+                    &quot;position&quot;: &quot;left&quot;,
+                    &quot;handles&quot;: [
+                        {
+                            &quot;id&quot;: &quot;input&quot;,
+                            &quot;type&quot;: &quot;target&quot;,
+                            &quot;handleType&quot;: &quot;input&quot;
+                        }
+                    ]
+                }
+            ],
+            &quot;model&quot;: {
+                &quot;type&quot;: &quot;bpmn:EndEvent&quot;
+            },
+            &quot;runtimeConstraints&quot;: {
+                &quot;exclude&quot;: [
+                    &quot;api-function&quot;
+                ]</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#23</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">135ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;SKILL_DIR=\&quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow\&quot;\ncd /work/output/artifacts/skill-flow-ipe-dtl-load-by-default-false/DTLLoadByDefaultFalseTest/DTLLoadByDefaultFalseTest\npython3 \&quot;$SKILL_DIR/scripts/flow_edit.py\&quot; add-node --flow DTLLoadByDefaultFalseTest.flow --id done \\\n    --type core.control.end --definition-file /tmp/end.json --label Done\n&quot;,
+  &quot;description&quot;: &quot;Add End node to flow via flow_edit script&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>added node done (core.control.end v1.0); definition added; variables.nodes +0</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#24</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">257ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;SKILL_DIR=\&quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow\&quot;\ncd /work/output/artifacts/skill-flow-ipe-dtl-load-by-default-false/DTLLoadByDefaultFalseTest/DTLLoadByDefaultFalseTest\npython3 \&quot;$SKILL_DIR/scripts/flow_edit.py\&quot; add-edge --flow DTLLoadByDefaultFalseTest.flow \\\n    --source start --source-port output --target searchProducts1 --target-port input\npython3 \&quot;$SKILL_DIR/scripts/fl… (145 more chars)&quot;,
+  &quot;description&quot;: &quot;Wire start -&gt; searchProducts1 -&gt; done&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>added edge edge_start_output_searchProducts1_input
+added edge edge_searchProducts1_output_done_input</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#25</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">804ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-ipe-dtl-load-by-default-false/DTLLoadByDefaultFalseTest/DTLLoadByDefaultFalseTest\n# Double check no connection anywhere by listing all connectors matching woocommerce/automattic\nuip is connectors list --filter \&quot;woocommerce\&quot; --output json 2&gt;&amp;1 | head -40\n&quot;,
+  &quot;description&quot;: &quot;Verify connector key correctness via connectors list&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;ConnectorList&quot;,
+  &quot;Data&quot;: [
+    {
+      &quot;Id&quot;: 6714,
+      &quot;Name&quot;: &quot;WooCommerce&quot;,
+      &quot;Key&quot;: &quot;uipath-automattic-woocommerce&quot;,
+      &quot;Active&quot;: &quot;No&quot;,
+      &quot;CatalogActive&quot;: &quot;No&quot;,
+      &quot;DapCompatible&quot;: &quot;No&quot;
+    }
+  ]
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#26</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">141ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cd /work/output/artifacts/skill-flow-ipe-dtl-load-by-default-false/DTLLoadByDefaultFalseTest/DTLLoadByDefaultFalseTest\n# Confirm current node state\npython3 -m json.tool DTLLoadByDefaultFalseTest.flow | sed -n &#x27;1,40p&#x27;\n&quot;,
+  &quot;description&quot;: &quot;Inspect current flow state before configure attempt&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+    &quot;id&quot;: &quot;19f65714-1951-449f-9a94-aea832fc75da&quot;,
+    &quot;version&quot;: &quot;1.9&quot;,
+    &quot;name&quot;: &quot;DTLLoadByDefaultFalseTest&quot;,
+    &quot;nodes&quot;: [
+        {
+            &quot;id&quot;: &quot;start&quot;,
+            &quot;type&quot;: &quot;core.trigger.manual&quot;,
+            &quot;typeVersion&quot;: &quot;1.0&quot;,
+            &quot;display&quot;: {
+                &quot;label&quot;: &quot;Manual trigger&quot;
+            },
+            &quot;inputs&quot;: {
+                &quot;entryPointId&quot;: &quot;2dd1cc94-fc45-4b85-a483-fd92df16ecbd&quot;,
+                &quot;isDefaultEntryPoint&quot;: true
+            }
+        },
+        {
+            &quot;id&quot;: &quot;searchProducts1&quot;,
+            &quot;type&quot;: &quot;uipath.connector.uipath-automattic-woocommerce.search-products&quot;,
+            &quot;typeVersion&quot;: &quot;1.0.0&quot;,
+            &quot;display&quot;: {
+                &quot;label&quot;: &quot;Search Products&quot;
+            },
+            &quot;inputs&quot;: {}
+        },
+        {
+            &quot;id&quot;: &quot;done&quot;,
+            &quot;type&quot;: &quot;core.control.end&quot;,
+            &quot;typeVersion&quot;: &quot;1.0&quot;,
+            &quot;display&quot;: {
+                &quot;label&quot;: &quot;Done&quot;
+            },
+            &quot;inputs&quot;: {}
+        }
+    ],
+    &quot;edges&quot;: [
+        {
+            &quot;id&quot;: &quot;edge_start_output_searchProducts1_input&quot;,
+            &quot;sourceNodeId&quot;: &quot;start&quot;,</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#27</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">877ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip is connections list --all-folders --output json 2&gt;&amp;1 | python3 -c \&quot;\nimport json,sys\nd=json.load(sys.stdin)\nprint(type(d.get(&#x27;Data&#x27;)))\ndata = d.get(&#x27;Data&#x27;)\nif isinstance(data, list):\n    for c in data:\n        print(c.get(&#x27;Name&#x27;), c.get(&#x27;ConnectorKey&#x27;), c.get(&#x27;State&#x27;))\nelse:\n    print(data)\n\&quot;\n&quot;,
+  &quot;description&quot;: &quot;List all connections in tenant across folders to check for any WooCommerce-like connection&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>&lt;class &#x27;list&#x27;&gt;
+is-sandboxes-test@uipath.com-uipath-sandbox-380 uipath-atlassian-jira Enabled
+is.sandboxes.test@gmail.com uipath-google-drive Enabled
+is-sandboxes uipath-salesforce-slack Enabled
+qa+churros@cloud-elements.com uipath-salesforce-sfdc Failed
+is.sandboxes.test@gmail.com uipath-google-gmail Enabled
+aditi.goyal@uipath.com uipath-uipath-dataservice Enabled
+Coupa uipath-coupa-coupa Enabled
+uipath-presales uipath-workday-workday Enabled
+UiPath GenAI Activities uipath-uipath-airdk Enabled
+nikhilmaryala@gmail.com uipath-google-gmail Enabled
+gmail-20260601185119978 uipath-google-gmail Enabled
+Open-Meteo APIs custom-codereval-openmeteoapis Enabled
+Productivity Google Drive uipath-google-drive Enabled
+MCP Connection uipath-uipath-mcp Enabled
+Productivity Google Sheets uipath-google-sheets Enabled
+Productivity Google Gmail uipath-google-gmail Enabled
+Productivity O365 OneDrive uipath-microsoft-onedrive Enabled
+Productivity O365 Outlook uipath-microsoft-outlook365 Enabled
+Apify uipath-uipath-http Enabled
+Open Rest API (JSON Placeholder) custom-codereval-openrestapi Enabled
+dev225223 uipath-servicenow-servicenow Enabled
+UiPath Test Manager uipath-uipath-testmanager Enabled
+Spotify ui
+
+… (truncated, 1675 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#28</span>
+      <span class="tool-name">Write</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">13ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-ipe-dtl-load-by-default-false/DTLLoadByDefaultFalseTest/DTLLoadByDefaultFalseTest/searchProducts1.detail.json&quot;,
+  &quot;content&quot;: &quot;{\n  \&quot;_comment\&quot;: \&quot;PLANNED configuration — no live WooCommerce (uipath-automattic-woocommerce) connection exists in this tenant (uip is connections list returns none across all folders, and the connector itself is Active:No/CatalogActive:No in uip is connectors list). Run `uip maestro flow node configure` with real values once a connection is available; this node has NOT been configured on the .flow… (1126 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>File created successfully at: /work/output/artifacts/skill-flow-ipe-dtl-load-by-default-false/DTLLoadByDefaultFalseTest/DTLLoadByDefaultFalseTest/searchProducts1.detail.json (file state is current in your context — no need to Read it back)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#29</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">3.57s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;SKILL_DIR=\&quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow\&quot;\ncd /work/output/artifacts/skill-flow-ipe-dtl-load-by-default-false/DTLLoadByDefaultFalseTest/DTLLoadByDefaultFalseTest\nuip maestro flow format DTLLoadByDefaultFalseTest.flow --output json\necho \&quot;---validate---\&quot;\nuip maestro flow validate DTLLoadByDefaultFalseTest.flow --output json\n&quot;,
+  &quot;description&quot;: &quot;Format and validate the flow&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FlowFormat&quot;,
+  &quot;Data&quot;: {
+    &quot;File&quot;: &quot;DTLLoadByDefaultFalseTest.flow&quot;,
+    &quot;NodesTotal&quot;: 3,
+    &quot;EdgesTotal&quot;: 2,
+    &quot;NodesRepositioned&quot;: 2,
+    &quot;NodesResized&quot;: 2,
+    &quot;SubflowsTidied&quot;: 0,
+    &quot;VariableCount&quot;: 3
+  },
+  &quot;Instructions&quot;: &quot;Repositioned 2 of 3 nodes. Set canonical size on 2 node(s)&quot;
+}
+---validate---
+[ManifestClient] fetchDynamicNodes ok: total=315 agent context nodes=2 external agent nodes=7 orchestrator nodes=261 IXP nodes=45
+{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;FlowValidate&quot;,
+  &quot;Data&quot;: {
+    &quot;File&quot;: &quot;/work/output/artifacts/skill-flow-ipe-dtl-load-by-default-false/DTLLoadByDefaultFalseTest/DTLLoadByDefaultFalseTest/DTLLoadByDefaultFalseTest.flow&quot;,
+    &quot;Status&quot;: &quot;Valid&quot;
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#30</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">233ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;SKILL_DIR=\&quot;/home/azureuser/projects/skills/tmp/skills/uipath-maestro-flow\&quot;\ncd /work/output/artifacts/skill-flow-ipe-dtl-load-by-default-false/DTLLoadByDefaultFalseTest/DTLLoadByDefaultFalseTest\npython3 \&quot;$SKILL_DIR/scripts/audit_flow.py\&quot; DTLLoadByDefaultFalseTest.flow --json-out /tmp/findings.json\necho \&quot;exit=$?\&quot;\ncat /tmp/findings.json | python3 -m json.tool | head -100\n&quot;,
+  &quot;description&quot;: &quot;Run full audit on the flow&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>topology      0 error(s), 0 warning(s), 0 info
+expressions   0 error(s), 0 warning(s), 0 info
+jint          0 error(s), 0 warning(s), 0 info
+bindings      0 error(s), 0 warning(s), 2 info
+    info    UNUSED_BINDING             bindings                                 no resource node needs (resourceKey=, name=FolderKey)
+    info    UNUSED_BINDING             bindings                                 no resource node needs (resourceKey=, name=uipath-automattic-woocommerce connection)
+runtime-gaps  0 error(s), 0 warning(s), 0 info
+full findings: /tmp/findings.json
+audit: clean
+exit=0
+{
+    &quot;flow&quot;: &quot;DTLLoadByDefaultFalseTest.flow&quot;,
+    &quot;checks&quot;: {
+        &quot;topology&quot;: [],
+        &quot;expressions&quot;: [],
+        &quot;jint&quot;: [],
+        &quot;bindings&quot;: [
+            {
+                &quot;severity&quot;: &quot;info&quot;,
+                &quot;code&quot;: &quot;UNUSED_BINDING&quot;,
+                &quot;message&quot;: &quot;no resource node needs (resourceKey=, name=FolderKey)&quot;,
+                &quot;path&quot;: &quot;bindings&quot;
+            },
+            {
+                &quot;severity&quot;: &quot;info&quot;,
+                &quot;code&quot;: &quot;UNUSED_BINDING&quot;,
+                &quot;message&quot;: &quot;no resource node needs (resourceKey=, name=uipath-automattic-woocommerce connection)&quot;,
+                &quot;path&quot;
+
+… (truncated, 72 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#31</span>
+      <span class="tool-name">Read</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">5ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;file_path&quot;: &quot;/work/output/artifacts/skill-flow-ipe-dtl-load-by-default-false/DTLLoadByDefaultFalseTest/DTLLoadByDefaultFalseTest/DTLLoadByDefaultFalseTest.flow&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>1	{
+2	  &quot;id&quot;: &quot;19f65714-1951-449f-9a94-aea832fc75da&quot;,
+3	  &quot;version&quot;: &quot;1.9&quot;,
+4	  &quot;name&quot;: &quot;DTLLoadByDefaultFalseTest&quot;,
+5	  &quot;nodes&quot;: [
+6	    {
+7	      &quot;id&quot;: &quot;start&quot;,
+8	      &quot;type&quot;: &quot;core.trigger.manual&quot;,
+9	      &quot;typeVersion&quot;: &quot;1.0&quot;,
+10	      &quot;display&quot;: {
+11	        &quot;label&quot;: &quot;Manual trigger&quot;
+12	      },
+13	      &quot;inputs&quot;: {
+14	        &quot;entryPointId&quot;: &quot;2dd1cc94-fc45-4b85-a483-fd92df16ecbd&quot;,
+15	        &quot;isDefaultEntryPoint&quot;: true
+16	      }
+17	    },
+18	    {
+19	      &quot;id&quot;: &quot;searchProducts1&quot;,
+20	      &quot;type&quot;: &quot;uipath.connector.uipath-automattic-woocommerce.search-products&quot;,
+21	      &quot;typeVersion&quot;: &quot;1.0.0&quot;,
+22	      &quot;display&quot;: {
+23	        &quot;label&quot;: &quot;Search Products&quot;
+24	      },
+25	      &quot;inputs&quot;: {}
+26	    },
+27	    {
+28	      &quot;id&quot;: &quot;done&quot;,
+29	      &quot;type&quot;: &quot;core.control.end&quot;,
+30	      &quot;typeVersion&quot;: &quot;1.0&quot;,
+31	      &quot;display&quot;: {
+32	        &quot;label&quot;: &quot;Done&quot;
+33	      },
+34	      &quot;inputs&quot;: {}
+35	    }
+36	  ],
+37	  &quot;edges&quot;: [
+38	    {
+39	      &quot;id&quot;: &quot;edge_start_output_searchProducts1_input&quot;,
+40	      &quot;sourceNodeId&quot;: &quot;start&quot;,
+41	      &quot;sourcePort&quot;: &quot;output&quot;,
+42	      &quot;targetNodeId&quot;: &quot;searchProducts1&quot;,
+43	      &quot;targetPort&quot;: &quot;input&quot;
+44	    },
+45	    {
+46	      &quot;id&quot;: &quot;edge_searchProducts1_outpu
+
+… (truncated, 14000 more chars)</pre>
+    
+  </div>
+</details>
+
+</div>
+
+<h2>Command Telemetry</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Total</div><div class="value">32</div></div>
+    <div class="stat"><div class="label">Successful</div><div class="value">30 (94%)</div></div>
+    <div class="stat"><div class="label">Failed</div><div class="value">2</div></div>
+    <div class="stat"><div class="label">Avg / cmd</div><div class="value">1.20s</div></div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 2fr;gap:16px;margin-top:12px">
+    <div>
+      <h4>By Tool</h4>
+      <table>
+        <thead><tr><th>Tool</th><th>Count</th></tr></thead>
+        <tbody><tr><td class='mono'>Bash</td><td>24</td></tr><tr><td class='mono'>Read</td><td>6</td></tr><tr><td class='mono'>Skill</td><td>1</td></tr><tr><td class='mono'>Write</td><td>1</td></tr></tbody>
+      </table>
+    </div>
+    <div>
+      <h4>Slowest</h4>
+      <table>
+        <thead><tr><th>Tool</th><th>Duration</th><th>Parameters</th></tr></thead>
+        <tbody><tr><td class='mono'>Bash</td><td>10.47s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;cd &quot;DTLLoadByDefaultFalseTest/DTLLoad...</td></tr><tr><td class='mono'>Bash</td><td>7.48s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;set -e\nuip solution init &quot;DTLLoadByD...</td></tr><tr><td class='mono'>Bash</td><td>6.01s</td><td class='mono dim'>{&#x27;command&#x27;: &quot;cd /work/output/artifacts/skill-flow-...</td></tr><tr><td class='mono'>Bash</td><td>3.57s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;SKILL_DIR=&quot;/home/azureuser/projects/s...</td></tr><tr><td class='mono'>Bash</td><td>1.68s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;cd &quot;DTLLoadByDefaultFalseTest/DTLLoad...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+  <p><strong>Most Common Pattern:</strong> <code>Bash → Bash → Bash</code></p><p><strong>Skill Tool Invoked:</strong> 1 time(s)</p>
+</div>
+
+<h2>Generation Metrics</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Total Latency</div><div class="value">5m 56s</div></div>
+    <div class="stat"><div class="label">Turns</div><div class="value">1</div></div>
+    <div class="stat"><div class="label">Assistant Turns</div><div class="value">63</div></div>
+    <div class="stat"><div class="label">Avg Turn Latency</div><div class="value">5m 54s</div></div>
+    
+  </div>
+</div>
+
+<h2>Token Usage</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Input (uncached)</div><div class="value">547</div></div>
+    <div class="stat"><div class="label">Output</div><div class="value">23,702</div></div>
+    <div class="stat"><div class="label">Cache Write</div><div class="value">92,460</div></div>
+    <div class="stat"><div class="label">Cache Read</div><div class="value">3,203,977</div></div>
+    <div class="stat"><div class="label">Total</div><div class="value">3,320,686</div></div>
+    <div class="stat"><div class="label">Cost</div><div class="value">$1.6651</div></div>
+  </div>
+</div>
+
+<h2>Agent Settings</h2>
+<div class="card" style="padding:0">
+  <table>
+    <tbody><tr><td class='mono dim'>Permission Mode</td><td>acceptEdits</td></tr><tr><td class='mono dim'>Allowed Tools</td><td>Skill, Bash, Read, Write, Edit, Glob, Grep</td></tr><tr><td class='mono dim'>Model</td><td>us.anthropic.claude-sonnet-5</td></tr><tr><td class='mono dim'>Max Turns</td><td>120</td></tr><tr><td class='mono dim'>System Prompt</td><td>You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted. </td></tr><tr><td class='mono dim'>System Prompt Mode</td><td>append</td></tr><tr><td class='mono dim'>Plugins</td><td>/home/azureuser/projects/skills/tmp</td></tr></tbody>
+  </table>
+</div>
+
+<h2>Environment</h2>
+<div class="card" style="padding:0">
+  <table>
+    <tbody><tr><td class='mono dim'>git_commit</td><td>unknown</td></tr><tr><td class='mono dim'>skills_git_commit</td><td>unknown</td></tr><tr><td class='mono dim'>cli_version</td><td>1.201.0-dev.8272</td></tr><tr><td class='mono dim'>tool_plugins</td><td>{&#x27;admin-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;agent-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;agenthub-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;aops-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;api-workflow-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;automation-hub-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;codedagent-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;codedapp-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;coder-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;context-grounding-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;conversational-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;data-fabric-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;docsai-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;function-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;gov-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;guardrails-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;insights-tool&#x27;: &#x27;1.201.0-dev.8276&#x27;, &#x27;integrationservice-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;ixp-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;llm-gateway-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;llmgw-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;maestro-tool&#x27;: &#x27;1.201.0-dev.8275&#x27;, &#x27;model-hub-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;orchestrator-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;platform-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;pm-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;rpa-legacy-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;rpa-tool&#x27;: &#x27;1.201.0-dev.20260809.3&#x27;, &#x27;solution-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;tasks-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;test-manager-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;traces-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;vertical-solutions-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;}</td></tr><tr><td class='mono dim'>coder_eval</td><td>0.9.6</td></tr><tr><td class='mono dim'>claude_code_cli</td><td>2.1.177 (Claude Code)</td></tr><tr><td class='mono dim'>uv</td><td>uv 0.12.5 (x86_64-unknown-linux-gnu)</td></tr><tr><td class='mono dim'>anthropic</td><td>0.122.0</td></tr><tr><td class='mono dim'>openai</td><td>3.2.0</td></tr><tr><td class='mono dim'>pydantic</td><td>2.12.5</td></tr><tr><td class='mono dim'>api_routing</td><td>aws_bedrock</td></tr><tr><td class='mono dim'>eval_routing</td><td>aws_bedrock</td></tr><tr><td class='mono dim'>aws_region</td><td>us-east-2</td></tr><tr><td class='mono dim'>bedrock_model</td><td>us.anthropic.claude-sonnet-4-6</td></tr><tr><td class='mono dim'>system_prompt_semantics</td><td>append</td></tr></tbody>
+  </table>
+</div>
+
+<footer>Generated by coder_eval · 2026-08-19T00:30:54</footer>
+</div>
+<script>
+function toggleTheme() {
+  document.documentElement.classList.toggle('light');
+  try {
+    const mode = document.documentElement.classList.contains('light') ? 'light' : 'dark';
+    localStorage.setItem('coder-eval-theme', mode);
+  } catch (e) { /* ignore */ }
+}
+(function() {
+  try {
+    if (localStorage.getItem('coder-eval-theme') === 'light') {
+      document.documentElement.classList.add('light');
+    }
+  } catch (e) { /* ignore */ }
+})();
+</script>
+</body>
+</html>

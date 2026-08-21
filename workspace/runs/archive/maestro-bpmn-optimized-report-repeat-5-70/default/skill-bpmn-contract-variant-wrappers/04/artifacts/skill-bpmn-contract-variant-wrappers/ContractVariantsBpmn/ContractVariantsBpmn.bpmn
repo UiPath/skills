@@ -1,0 +1,419 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+    xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+    xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+    xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+    xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:uipath="http://uipath.org/schema/bpmn"
+    id="Definitions_ContractVariants"
+    targetNamespace="http://bpmn.io/schema/bpmn"
+    exporter="UiPath (https://bpmn.uipath.com)" exporterVersion="1.0">
+
+  <bpmn:process id="Process_ContractVariants" isExecutable="true">
+    <bpmn:extensionElements>
+      <!-- Preserved numeric migrationVersion values: 5, 11, and 11.5 -->
+      <uipath:migrationVersion version="5" />
+      <uipath:migrationVersion version="11" />
+      <uipath:migrationVersion version="11.5" />
+      <!-- Process-level bindings for Orchestrator.StartAgentJob context fields -->
+      <uipath:bindings version="v1">
+        <uipath:binding id="Binding_AgentName" resource="process" propertyAttribute="name" default="SyntheticAgentJob" />
+        <uipath:binding id="Binding_AgentFolder" resource="process" propertyAttribute="folderPath" default="Shared" />
+      </uipath:bindings>
+      <uipath:variables version="v1">
+        <uipath:inputOutput id="Var_AgentJobOut"      name="AgentJobOut"      type="json" />
+        <uipath:inputOutput id="Var_A2AOut"           name="A2AOut"           type="json" />
+        <uipath:inputOutput id="Var_ApiWorkflowOut"   name="ApiWorkflowOut"   type="json" />
+        <uipath:inputOutput id="Var_BizRulesOut"      name="BizRulesOut"      type="json" />
+        <uipath:inputOutput id="Var_QueueItemOut"     name="QueueItemOut"     type="json" />
+        <uipath:inputOutput id="Var_QueueWaitOut"     name="QueueWaitOut"     type="json" />
+        <uipath:inputOutput id="Var_AgenticOut"       name="AgenticOut"       type="json" />
+        <uipath:inputOutput id="Var_AgenticAsyncOut"  name="AgenticAsyncOut"  type="json" />
+        <uipath:inputOutput id="Var_CaseMgmtOut"      name="CaseMgmtOut"      type="json" />
+        <uipath:inputOutput id="Var_CaseMgmtAsyncOut" name="CaseMgmtAsyncOut" type="json" />
+        <uipath:inputOutput id="Var_WaitEventOut"     name="WaitEventOut"     type="json" />
+        <uipath:inputOutput id="Var_SendMsgOut"       name="SendMsgOut"       type="json" />
+        <uipath:inputOutput id="Var_CasePlanOut"      name="CasePlanOut"      type="json" />
+        <uipath:inputOutput id="Var_GuardrailsOut"    name="GuardrailsOut"    type="json" />
+        <uipath:inputOutput id="Var_RulesEvalOut"     name="RulesEvalOut"     type="json" />
+        <uipath:inputOutput id="Var_ScriptOut"        name="ScriptOut"        type="string" />
+      </uipath:variables>
+    </bpmn:extensionElements>
+
+    <!-- Manual start event (blank = no event definition) -->
+    <bpmn:startEvent id="StartEvent_1" name="Start">
+      <bpmn:extensionElements>
+        <uipath:entryPointId value="EntryPoint_Main" />
+      </bpmn:extensionElements>
+      <bpmn:outgoing>Flow_01</bpmn:outgoing>
+    </bpmn:startEvent>
+
+    <!-- 1. Orchestrator.StartAgentJob (bpmn:ServiceTask) -->
+    <!-- Registry template uses legacy inline type= attribute format; preserved as-is -->
+    <bpmn:serviceTask id="Task_StartAgentJob" name="Start Agent Job">
+      <uipath:activity type="Orchestrator.StartAgentJob" version="v1">
+        <uipath:context>
+          <uipath:input name="name"       value="=bindings.Binding_AgentName" />
+          <uipath:input name="folderPath" value="=bindings.Binding_AgentFolder" />
+        </uipath:context>
+        <uipath:input name="JobArguments" type="json" target="bodyField"><![CDATA[{}]]></uipath:input>
+        <uipath:output name="Process response" type="Orchestrator.RunJob" var="Var_AgentJobOut" />
+      </uipath:activity>
+      <bpmn:incoming>Flow_01</bpmn:incoming>
+      <bpmn:outgoing>Flow_02</bpmn:outgoing>
+    </bpmn:serviceTask>
+
+    <!-- 2. A2A.AgentExecution (bpmn:ServiceTask) -->
+    <bpmn:serviceTask id="Task_A2AExecution" name="A2A Agent Execution">
+      <bpmn:extensionElements>
+        <uipath:activity version="v1">
+          <uipath:type value="A2A.AgentExecution" version="v1" />
+          <uipath:input name="body" type="json" target="body"><![CDATA[{"task":"synthetic-task-placeholder","context":{}}]]></uipath:input>
+          <uipath:output name="a2aResponse" type="A2A.AgentExecution" var="Var_A2AOut" />
+        </uipath:activity>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_02</bpmn:incoming>
+      <bpmn:outgoing>Flow_03</bpmn:outgoing>
+    </bpmn:serviceTask>
+
+    <!-- 3. Orchestrator.ExecuteApiWorkflowAsync (bpmn:ServiceTask) -->
+    <bpmn:serviceTask id="Task_ApiWorkflow" name="Execute API Workflow Async">
+      <bpmn:extensionElements>
+        <uipath:activity version="v1">
+          <uipath:type value="Orchestrator.ExecuteApiWorkflowAsync" version="v1" />
+          <uipath:context>
+            <uipath:input name="releaseKey"  value="00000000-0000-0000-0000-000000000000" />
+            <uipath:input name="folderId"    value="0" />
+            <uipath:input name="folderPath"  value="Shared" />
+            <uipath:input name="name"        value="SyntheticApiWorkflow" />
+          </uipath:context>
+          <uipath:input name="JobArguments" type="json" target="bodyField"><![CDATA[{}]]></uipath:input>
+          <uipath:output name="Process response" type="Orchestrator.RunJob" var="Var_ApiWorkflowOut" />
+        </uipath:activity>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_03</bpmn:incoming>
+      <bpmn:outgoing>Flow_04</bpmn:outgoing>
+    </bpmn:serviceTask>
+
+    <!-- 4. Orchestrator.BusinessRules (bpmn:BusinessRuleTask) -->
+    <bpmn:businessRuleTask id="Task_BusinessRules" name="Evaluate Business Rules">
+      <bpmn:extensionElements>
+        <uipath:activity version="v1">
+          <uipath:type value="Orchestrator.BusinessRules" version="v1" />
+          <uipath:context>
+            <uipath:input name="releaseKey"  value="00000000-0000-0000-0000-000000000001" />
+            <uipath:input name="folderId"    value="0" />
+            <uipath:input name="folderPath"  value="Shared" />
+            <uipath:input name="name"        value="SyntheticBusinessRule" />
+          </uipath:context>
+          <uipath:input name="JobArguments" type="json" target="bodyField"><![CDATA[{}]]></uipath:input>
+          <uipath:output name="Execute business rule [Preview]" type="Orchestrator.BusinessRules" var="Var_BizRulesOut" />
+        </uipath:activity>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_04</bpmn:incoming>
+      <bpmn:outgoing>Flow_05</bpmn:outgoing>
+    </bpmn:businessRuleTask>
+
+    <!-- 5. Orchestrator.CreateQueueItem (bpmn:SendTask) -->
+    <bpmn:sendTask id="Task_CreateQueue" name="Create Queue Item">
+      <bpmn:extensionElements>
+        <uipath:activity version="v1">
+          <uipath:type value="Orchestrator.CreateQueueItem" version="v1" />
+          <uipath:context>
+            <uipath:input name="queueName"  value="SyntheticQueue" />
+            <uipath:input name="folderId"   value="0" />
+            <uipath:input name="folderPath" value="Shared" />
+          </uipath:context>
+          <uipath:input name="ItemData" type="json" target="body"><![CDATA[{"Reference":"synthetic-ref","SpecificContent":{}}]]></uipath:input>
+          <uipath:output name="response" type="Orchestrator.CreateQueueItem" var="Var_QueueItemOut" />
+        </uipath:activity>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_05</bpmn:incoming>
+      <bpmn:outgoing>Flow_06</bpmn:outgoing>
+    </bpmn:sendTask>
+
+    <!-- 6. Orchestrator.CreateAndWaitForQueueItem (bpmn:ServiceTask) -->
+    <bpmn:serviceTask id="Task_CreateWaitQueue" name="Create and Wait for Queue Item">
+      <bpmn:extensionElements>
+        <uipath:activity version="v1">
+          <uipath:type value="Orchestrator.CreateAndWaitForQueueItem" version="v1" />
+          <uipath:context>
+            <uipath:input name="queueName"  value="SyntheticQueue" />
+            <uipath:input name="folderId"   value="0" />
+            <uipath:input name="folderPath" value="Shared" />
+          </uipath:context>
+          <uipath:input name="ItemData" type="json" target="body"><![CDATA[{"Reference":"synthetic-wait-ref","SpecificContent":{}}]]></uipath:input>
+          <uipath:output name="response" type="Orchestrator.CreateQueueItem" var="Var_QueueWaitOut" />
+        </uipath:activity>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_06</bpmn:incoming>
+      <bpmn:outgoing>Flow_07</bpmn:outgoing>
+    </bpmn:serviceTask>
+
+    <!-- 7. Orchestrator.StartAgenticProcess (bpmn:CallActivity) -->
+    <bpmn:callActivity id="Task_AgenticProcess" name="Start Agentic Process">
+      <bpmn:extensionElements>
+        <uipath:activity version="v1">
+          <uipath:type value="Orchestrator.StartAgenticProcess" version="v1" />
+          <uipath:context>
+            <uipath:input name="releaseKey"  value="00000000-0000-0000-0000-000000000002" />
+            <uipath:input name="folderId"    value="0" />
+            <uipath:input name="folderPath"  value="Shared" />
+            <uipath:input name="name"        value="SyntheticAgenticProcess" />
+          </uipath:context>
+          <uipath:input name="JobArguments" type="json" target="bodyField"><![CDATA[{}]]></uipath:input>
+          <uipath:output name="Process response" type="Orchestrator.RunJob" var="Var_AgenticOut" />
+        </uipath:activity>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_07</bpmn:incoming>
+      <bpmn:outgoing>Flow_08</bpmn:outgoing>
+    </bpmn:callActivity>
+
+    <!-- 8. Orchestrator.StartAgenticProcessAsync (bpmn:CallActivity) -->
+    <bpmn:callActivity id="Task_AgenticProcessAsync" name="Start Agentic Process Async">
+      <bpmn:extensionElements>
+        <uipath:activity version="v1">
+          <uipath:type value="Orchestrator.StartAgenticProcessAsync" version="v1" />
+          <uipath:context>
+            <uipath:input name="releaseKey"  value="00000000-0000-0000-0000-000000000003" />
+            <uipath:input name="folderId"    value="0" />
+            <uipath:input name="folderPath"  value="Shared" />
+            <uipath:input name="name"        value="SyntheticAgenticProcessAsync" />
+          </uipath:context>
+          <uipath:input name="JobArguments" type="json" target="bodyField"><![CDATA[{}]]></uipath:input>
+          <uipath:output name="Process response" type="Orchestrator.RunJob" var="Var_AgenticAsyncOut" />
+        </uipath:activity>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_08</bpmn:incoming>
+      <bpmn:outgoing>Flow_09</bpmn:outgoing>
+    </bpmn:callActivity>
+
+    <!-- 9. Orchestrator.StartCaseMgmtProcess (bpmn:CallActivity) -->
+    <!-- Preserve-only: includes synthetic uipath:caseManagement payload -->
+    <bpmn:callActivity id="Task_CaseMgmt" name="Start Case Mgmt Process">
+      <bpmn:extensionElements>
+        <uipath:activity version="v1">
+          <uipath:type value="Orchestrator.StartCaseMgmtProcess" version="v1" />
+          <uipath:context>
+            <uipath:input name="releaseKey"  value="00000000-0000-0000-0000-000000000004" />
+            <uipath:input name="folderId"    value="0" />
+            <uipath:input name="folderPath"  value="Shared" />
+            <uipath:input name="name"        value="SyntheticCaseMgmtProcess" />
+          </uipath:context>
+          <uipath:input name="JobArguments" type="json" target="bodyField"><![CDATA[{}]]></uipath:input>
+          <uipath:output name="Process response" type="Orchestrator.RunJob" var="Var_CaseMgmtOut" />
+        </uipath:activity>
+        <!-- Preserve-only: synthetic case-management payload; do not rewrite -->
+        <uipath:caseManagement version="v1"><![CDATA[{"caseDefinitionKey":"synthetic-case-def","synthetic":true}]]></uipath:caseManagement>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_09</bpmn:incoming>
+      <bpmn:outgoing>Flow_10</bpmn:outgoing>
+    </bpmn:callActivity>
+
+    <!-- 10. Orchestrator.StartCaseMgmtProcessAsync (bpmn:CallActivity) -->
+    <!-- Synthetic only; no deployment identifiers invented -->
+    <bpmn:callActivity id="Task_CaseMgmtAsync" name="Start Case Mgmt Process Async">
+      <bpmn:extensionElements>
+        <uipath:activity version="v1">
+          <uipath:type value="Orchestrator.StartCaseMgmtProcessAsync" version="v1" />
+          <uipath:context>
+            <uipath:input name="releaseKey"  value="00000000-0000-0000-0000-000000000005" />
+            <uipath:input name="folderId"    value="0" />
+            <uipath:input name="folderPath"  value="Shared" />
+            <uipath:input name="name"        value="SyntheticCaseMgmtProcessAsync" />
+          </uipath:context>
+          <uipath:input name="JobArguments" type="json" target="bodyField"><![CDATA[{}]]></uipath:input>
+          <uipath:output name="Process response" type="Orchestrator.RunJob" var="Var_CaseMgmtAsyncOut" />
+        </uipath:activity>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_10</bpmn:incoming>
+      <bpmn:outgoing>Flow_11</bpmn:outgoing>
+    </bpmn:callActivity>
+
+    <!-- 11. Intsvc.WaitForEvent (bpmn:ReceiveTask) -->
+    <!-- Draft: connector enrichment required before this node is executable. -->
+    <!-- Connection details are not hand-authored; placeholder-safe only. -->
+    <bpmn:receiveTask id="Task_WaitForEvent" name="Wait for Integration Event">
+      <bpmn:extensionElements>
+        <uipath:event version="v1">
+          <uipath:type value="Intsvc.WaitForEvent" version="v1" />
+          <uipath:output name="result" type="custom" source="." var="Var_WaitEventOut" />
+        </uipath:event>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_11</bpmn:incoming>
+      <bpmn:outgoing>Flow_12</bpmn:outgoing>
+    </bpmn:receiveTask>
+
+    <!-- 12. Maestro.SendMessageEvent (bpmn:IntermediateThrowEvent) -->
+    <!-- Synthetic message name and payload -->
+    <bpmn:intermediateThrowEvent id="Throw_SendMsg" name="Send Synthetic Message">
+      <bpmn:extensionElements>
+        <uipath:event version="v1">
+          <uipath:type value="Maestro.SendMessageEvent" version="v1" />
+          <uipath:context>
+            <uipath:input name="name"        value="SyntheticMessageEvent" />
+            <uipath:input name="_label"      value="Synthetic Message Label" />
+            <uipath:input name="inputSchema" value="{}" />
+          </uipath:context>
+          <uipath:input name="ItemData" type="json" target="body"><![CDATA[{"Reference":"synthetic-msg-ref","SpecificContent":{"key":"synthetic-value"},"Error":"","TimeToLive":""}]]></uipath:input>
+          <uipath:output name="response" type="Maestro.SendMessageEvent" var="Var_SendMsgOut" />
+        </uipath:event>
+      </bpmn:extensionElements>
+      <bpmn:messageEventDefinition />
+      <bpmn:incoming>Flow_12</bpmn:incoming>
+      <bpmn:outgoing>Flow_13</bpmn:outgoing>
+    </bpmn:intermediateThrowEvent>
+
+    <!-- 13. Maestro.CasePlanScheduler (bpmn:ServiceTask) -->
+    <!-- Preserve-only / draft-only: not served by the live registry. -->
+    <!-- Typed activity shell per preserve-only guidance; all payloads synthetic. -->
+    <bpmn:serviceTask id="Task_CasePlanScheduler" name="Case Plan Scheduler">
+      <bpmn:extensionElements>
+        <uipath:activity version="v1">
+          <uipath:type value="Maestro.CasePlanScheduler" version="v1" />
+          <uipath:context>
+            <uipath:input name="casePlanId"  value="synthetic-case-plan-id" />
+            <uipath:input name="_label"      value="Synthetic Case Plan Label" />
+          </uipath:context>
+          <uipath:input name="body" type="json" target="body"><![CDATA[{"synthetic":true}]]></uipath:input>
+          <uipath:output name="schedulerOutput" type="Maestro.CasePlanScheduler" var="Var_CasePlanOut" />
+        </uipath:activity>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_13</bpmn:incoming>
+      <bpmn:outgoing>Flow_14</bpmn:outgoing>
+    </bpmn:serviceTask>
+
+    <!-- 14. Maestro.CaseManagerGuardrails (bpmn:ServiceTask) -->
+    <!-- Preserve-only; all payloads synthetic -->
+    <bpmn:serviceTask id="Task_GuardRails" name="Case Manager Guardrails">
+      <bpmn:extensionElements>
+        <uipath:activity version="v1">
+          <uipath:type value="Maestro.CaseManagerGuardrails" version="v1" />
+          <uipath:context>
+            <uipath:input name="decisions" value="synthetic-decisions-placeholder" />
+            <uipath:input name="_label"    value="Synthetic Guardrails Label" />
+          </uipath:context>
+          <uipath:input name="body" type="json" target="body"><![CDATA[{"synthetic":true}]]></uipath:input>
+          <uipath:output name="guardrailsOutput" type="Maestro.CaseManagerGuardrails" var="Var_GuardrailsOut" />
+        </uipath:activity>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_14</bpmn:incoming>
+      <bpmn:outgoing>Flow_15</bpmn:outgoing>
+    </bpmn:serviceTask>
+
+    <!-- 15. Maestro.CaseRulesEvaluator (bpmn:ServiceTask) -->
+    <!-- Preserve-only; all payloads synthetic -->
+    <bpmn:serviceTask id="Task_RulesEval" name="Case Rules Evaluator">
+      <bpmn:extensionElements>
+        <uipath:activity version="v1">
+          <uipath:type value="Maestro.CaseRulesEvaluator" version="v1" />
+          <uipath:context>
+            <uipath:input name="caseDeterministicRules"    value="synthetic-rules-placeholder" />
+            <uipath:input name="caseCurrentExecutionState" value="synthetic-state-placeholder" />
+            <uipath:input name="_label"                    value="Synthetic Rules Label" />
+          </uipath:context>
+          <uipath:input name="caseManagerInput" type="json" target="body"><![CDATA[{"synthetic":true}]]></uipath:input>
+          <uipath:output name="schedulerOutput" type="Maestro.CaseRulesEvaluator" var="Var_RulesEvalOut" />
+        </uipath:activity>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_15</bpmn:incoming>
+      <bpmn:outgoing>Flow_16</bpmn:outgoing>
+    </bpmn:serviceTask>
+
+    <!-- 16. Script task with legacy uipath:scriptVersion v2 (preserved, not upgraded) -->
+    <!-- New scripts prefer v3; v2 is preserved here per preserve-only guidance. -->
+    <bpmn:scriptTask id="Task_ScriptV2" name="Legacy Script v2" scriptFormat="JavaScript">
+      <bpmn:extensionElements>
+        <uipath:scriptVersion value="v2" />
+        <uipath:mapping version="v1">
+          <uipath:type value="BPMN.ScriptTask" version="v1" />
+          <uipath:input name="args" type="json" target="bodyField"><![CDATA[{}]]></uipath:input>
+          <uipath:output name="scriptOut" type="string" var="Var_ScriptOut" source="=result.response" />
+        </uipath:mapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_16</bpmn:incoming>
+      <bpmn:outgoing>Flow_17</bpmn:outgoing>
+      <bpmn:script><![CDATA[return { response: "synthetic-legacy-v2-result" };]]></bpmn:script>
+    </bpmn:scriptTask>
+
+    <!-- 17. Generic unsupported uipath:Activity payload (preserved as-is) -->
+    <!-- The capital-A uipath:Activity element is a separate preserve-only generic -->
+    <!-- payload; it is not a typed activity shell and must not be rewritten. -->
+    <bpmn:serviceTask id="Task_LegacyActivity" name="Legacy Unsupported Activity">
+      <bpmn:extensionElements>
+        <uipath:Activity>
+          <uipath:LegacyPayload type="synthetic-unsupported-type" version="legacy">synthetic-payload-placeholder</uipath:LegacyPayload>
+        </uipath:Activity>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_17</bpmn:incoming>
+      <bpmn:outgoing>Flow_18</bpmn:outgoing>
+    </bpmn:serviceTask>
+
+    <bpmn:endEvent id="EndEvent_1" name="End">
+      <bpmn:incoming>Flow_18</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <!-- Sequence flows -->
+    <bpmn:sequenceFlow id="Flow_01" sourceRef="StartEvent_1"         targetRef="Task_StartAgentJob" />
+    <bpmn:sequenceFlow id="Flow_02" sourceRef="Task_StartAgentJob"   targetRef="Task_A2AExecution" />
+    <bpmn:sequenceFlow id="Flow_03" sourceRef="Task_A2AExecution"    targetRef="Task_ApiWorkflow" />
+    <bpmn:sequenceFlow id="Flow_04" sourceRef="Task_ApiWorkflow"     targetRef="Task_BusinessRules" />
+    <bpmn:sequenceFlow id="Flow_05" sourceRef="Task_BusinessRules"   targetRef="Task_CreateQueue" />
+    <bpmn:sequenceFlow id="Flow_06" sourceRef="Task_CreateQueue"     targetRef="Task_CreateWaitQueue" />
+    <bpmn:sequenceFlow id="Flow_07" sourceRef="Task_CreateWaitQueue" targetRef="Task_AgenticProcess" />
+    <bpmn:sequenceFlow id="Flow_08" sourceRef="Task_AgenticProcess"  targetRef="Task_AgenticProcessAsync" />
+    <bpmn:sequenceFlow id="Flow_09" sourceRef="Task_AgenticProcessAsync" targetRef="Task_CaseMgmt" />
+    <bpmn:sequenceFlow id="Flow_10" sourceRef="Task_CaseMgmt"        targetRef="Task_CaseMgmtAsync" />
+    <bpmn:sequenceFlow id="Flow_11" sourceRef="Task_CaseMgmtAsync"   targetRef="Task_WaitForEvent" />
+    <bpmn:sequenceFlow id="Flow_12" sourceRef="Task_WaitForEvent"    targetRef="Throw_SendMsg" />
+    <bpmn:sequenceFlow id="Flow_13" sourceRef="Throw_SendMsg"        targetRef="Task_CasePlanScheduler" />
+    <bpmn:sequenceFlow id="Flow_14" sourceRef="Task_CasePlanScheduler" targetRef="Task_GuardRails" />
+    <bpmn:sequenceFlow id="Flow_15" sourceRef="Task_GuardRails"      targetRef="Task_RulesEval" />
+    <bpmn:sequenceFlow id="Flow_16" sourceRef="Task_RulesEval"       targetRef="Task_ScriptV2" />
+    <bpmn:sequenceFlow id="Flow_17" sourceRef="Task_ScriptV2"        targetRef="Task_LegacyActivity" />
+    <bpmn:sequenceFlow id="Flow_18" sourceRef="Task_LegacyActivity"  targetRef="EndEvent_1" />
+  </bpmn:process>
+
+  <bpmndi:BPMNDiagram id="Diagram_1">
+    <bpmndi:BPMNPlane id="Plane_1" bpmnElement="Process_ContractVariants">
+      <bpmndi:BPMNShape id="S_EndEvent_1" bpmnElement="EndEvent_1"><dc:Bounds x="2912" y="100" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_StartEvent_1" bpmnElement="StartEvent_1"><dc:Bounds x="160" y="100" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Task_A2AExecution" bpmnElement="Task_A2AExecution"><dc:Bounds x="416" y="100" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Task_AgenticProcess" bpmnElement="Task_AgenticProcess"><dc:Bounds x="1216" y="100" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Task_AgenticProcessAsync" bpmnElement="Task_AgenticProcessAsync"><dc:Bounds x="1376" y="100" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Task_ApiWorkflow" bpmnElement="Task_ApiWorkflow"><dc:Bounds x="576" y="100" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Task_BusinessRules" bpmnElement="Task_BusinessRules"><dc:Bounds x="736" y="100" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Task_CaseMgmt" bpmnElement="Task_CaseMgmt"><dc:Bounds x="1536" y="100" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Task_CaseMgmtAsync" bpmnElement="Task_CaseMgmtAsync"><dc:Bounds x="1696" y="100" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Task_CasePlanScheduler" bpmnElement="Task_CasePlanScheduler"><dc:Bounds x="2112" y="100" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Task_CreateQueue" bpmnElement="Task_CreateQueue"><dc:Bounds x="896" y="100" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Task_CreateWaitQueue" bpmnElement="Task_CreateWaitQueue"><dc:Bounds x="1056" y="100" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Task_GuardRails" bpmnElement="Task_GuardRails"><dc:Bounds x="2272" y="100" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Task_LegacyActivity" bpmnElement="Task_LegacyActivity"><dc:Bounds x="2752" y="100" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Task_RulesEval" bpmnElement="Task_RulesEval"><dc:Bounds x="2432" y="100" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Task_ScriptV2" bpmnElement="Task_ScriptV2"><dc:Bounds x="2592" y="100" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Task_StartAgentJob" bpmnElement="Task_StartAgentJob"><dc:Bounds x="256" y="100" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Task_WaitForEvent" bpmnElement="Task_WaitForEvent"><dc:Bounds x="1856" y="100" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Throw_SendMsg" bpmnElement="Throw_SendMsg"><dc:Bounds x="2016" y="100" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="E_Flow_01" bpmnElement="Flow_01"><di:waypoint x="178" y="118" /><di:waypoint x="306" y="140" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_02" bpmnElement="Flow_02"><di:waypoint x="306" y="140" /><di:waypoint x="466" y="140" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_03" bpmnElement="Flow_03"><di:waypoint x="466" y="140" /><di:waypoint x="626" y="140" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_04" bpmnElement="Flow_04"><di:waypoint x="626" y="140" /><di:waypoint x="786" y="140" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_05" bpmnElement="Flow_05"><di:waypoint x="786" y="140" /><di:waypoint x="946" y="140" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_06" bpmnElement="Flow_06"><di:waypoint x="946" y="140" /><di:waypoint x="1106" y="140" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_07" bpmnElement="Flow_07"><di:waypoint x="1106" y="140" /><di:waypoint x="1266" y="140" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_08" bpmnElement="Flow_08"><di:waypoint x="1266" y="140" /><di:waypoint x="1426" y="140" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_09" bpmnElement="Flow_09"><di:waypoint x="1426" y="140" /><di:waypoint x="1586" y="140" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_10" bpmnElement="Flow_10"><di:waypoint x="1586" y="140" /><di:waypoint x="1746" y="140" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_11" bpmnElement="Flow_11"><di:waypoint x="1746" y="140" /><di:waypoint x="1906" y="140" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_12" bpmnElement="Flow_12"><di:waypoint x="1906" y="140" /><di:waypoint x="2034" y="118" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_13" bpmnElement="Flow_13"><di:waypoint x="2034" y="118" /><di:waypoint x="2162" y="140" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_14" bpmnElement="Flow_14"><di:waypoint x="2162" y="140" /><di:waypoint x="2322" y="140" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_15" bpmnElement="Flow_15"><di:waypoint x="2322" y="140" /><di:waypoint x="2482" y="140" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_16" bpmnElement="Flow_16"><di:waypoint x="2482" y="140" /><di:waypoint x="2642" y="140" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_17" bpmnElement="Flow_17"><di:waypoint x="2642" y="140" /><di:waypoint x="2802" y="140" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_18" bpmnElement="Flow_18"><di:waypoint x="2802" y="140" /><di:waypoint x="2930" y="118" /></bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

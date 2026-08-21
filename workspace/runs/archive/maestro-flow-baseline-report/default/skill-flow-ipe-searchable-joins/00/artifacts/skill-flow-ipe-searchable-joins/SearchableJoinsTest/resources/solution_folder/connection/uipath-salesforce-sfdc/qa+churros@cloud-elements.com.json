@@ -1,0 +1,29 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "qa+churros@cloud-elements.com",
+    "kind": "connection",
+    "type": "uipath-salesforce-sfdc",
+    "apiVersion": "integrationservice.uipath.com/v1",
+    "isOverridable": true,
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "files": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "connectorName": "Salesforce",
+      "name": "qa+churros@cloud-elements.com",
+      "description": null,
+      "authenticationType": "AuthenticateAfterDeployment",
+      "connectorVersion": "1.13.25",
+      "connectorKey": "uipath-salesforce-sfdc",
+      "pollingInterval": 5
+    },
+    "locks": [],
+    "key": "0fddf20e-f229-4ee9-acb3-c5be50034839"
+  }
+}

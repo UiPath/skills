@@ -1,0 +1,197 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+    xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+    xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+    xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+    xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:uipath="http://uipath.org/schema/bpmn"
+    id="Definitions_InvoiceTriage"
+    targetNamespace="http://bpmn.io/schema/bpmn"
+    exporter="UiPath (https://bpmn.uipath.com)" exporterVersion="1.0">
+
+  <bpmn:process id="Process_InvoiceTriage" isExecutable="true">
+
+    <bpmn:extensionElements>
+      <uipath:migrationVersion version="11.5" />
+      <uipath:variables version="v1">
+        <uipath:inputOutput id="Var_invoiceId" name="invoiceId" type="string" />
+        <uipath:inputOutput id="Var_amount"    name="amount"    type="number" />
+      </uipath:variables>
+    </bpmn:extensionElements>
+
+    <!-- Start event (manual, no event definition = none/blank) -->
+    <bpmn:startEvent id="Start_ManualTrigger" name="Invoice Received">
+      <bpmn:extensionElements>
+        <uipath:event version="v1">
+          <uipath:type value="Maestro.NoneStartEvent" version="v1" />
+          <uipath:entryPointId>ep_invoiceTriage</uipath:entryPointId>
+          <uipath:input name="invoiceId" var="Var_invoiceId" />
+          <uipath:input name="amount"    var="Var_amount"    />
+        </uipath:event>
+      </bpmn:extensionElements>
+      <bpmn:outgoing>Flow_StartToRecordIntake</bpmn:outgoing>
+    </bpmn:startEvent>
+
+    <!-- Task 1: Record invoice intake -->
+    <bpmn:userTask id="Task_RecordIntake" name="Record Invoice Intake">
+      <bpmn:extensionElements>
+        <uipath:activity version="v1">
+          <uipath:type value="Maestro.UserTask" version="v1" />
+        </uipath:activity>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_StartToRecordIntake</bpmn:incoming>
+      <bpmn:outgoing>Flow_RecordIntakeToXorFork</bpmn:outgoing>
+    </bpmn:userTask>
+
+    <!-- Exclusive gateway: route by amount -->
+    <bpmn:exclusiveGateway id="Gw_XorFork" name="High Value?" default="Flow_XorForkToAutoApproval">
+      <bpmn:incoming>Flow_RecordIntakeToXorFork</bpmn:incoming>
+      <bpmn:outgoing>Flow_XorForkToManagerReview</bpmn:outgoing>
+      <bpmn:outgoing>Flow_XorForkToAutoApproval</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+
+    <!-- Task 2a: Manager review (high-value branch) -->
+    <bpmn:userTask id="Task_ManagerReview" name="Manager Review">
+      <bpmn:extensionElements>
+        <uipath:activity version="v1">
+          <uipath:type value="Maestro.UserTask" version="v1" />
+        </uipath:activity>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_XorForkToManagerReview</bpmn:incoming>
+      <bpmn:outgoing>Flow_ManagerReviewToXorJoin</bpmn:outgoing>
+    </bpmn:userTask>
+
+    <!-- Task 2b: Auto approval (default branch) -->
+    <bpmn:userTask id="Task_AutoApproval" name="Auto Approval">
+      <bpmn:extensionElements>
+        <uipath:activity version="v1">
+          <uipath:type value="Maestro.UserTask" version="v1" />
+        </uipath:activity>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_XorForkToAutoApproval</bpmn:incoming>
+      <bpmn:outgoing>Flow_AutoApprovalToXorJoin</bpmn:outgoing>
+    </bpmn:userTask>
+
+    <!-- Exclusive gateway: merge the two review branches -->
+    <bpmn:exclusiveGateway id="Gw_XorJoin" name="Decision Made">
+      <bpmn:incoming>Flow_ManagerReviewToXorJoin</bpmn:incoming>
+      <bpmn:incoming>Flow_AutoApprovalToXorJoin</bpmn:incoming>
+      <bpmn:outgoing>Flow_XorJoinToParallelFork</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+
+    <!-- Parallel gateway: fork into two follow-up tasks -->
+    <bpmn:parallelGateway id="Gw_ParallelFork" name="Start Follow-ups">
+      <bpmn:incoming>Flow_XorJoinToParallelFork</bpmn:incoming>
+      <bpmn:outgoing>Flow_ParallelForkToNotify</bpmn:outgoing>
+      <bpmn:outgoing>Flow_ParallelForkToArchive</bpmn:outgoing>
+    </bpmn:parallelGateway>
+
+    <!-- Task 3a: Notify requester -->
+    <bpmn:userTask id="Task_NotifyRequester" name="Notify Requester">
+      <bpmn:extensionElements>
+        <uipath:activity version="v1">
+          <uipath:type value="Maestro.UserTask" version="v1" />
+        </uipath:activity>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_ParallelForkToNotify</bpmn:incoming>
+      <bpmn:outgoing>Flow_NotifyToParallelJoin</bpmn:outgoing>
+    </bpmn:userTask>
+
+    <!-- Task 3b: Archive decision -->
+    <bpmn:userTask id="Task_ArchiveDecision" name="Archive Decision">
+      <bpmn:extensionElements>
+        <uipath:activity version="v1">
+          <uipath:type value="Maestro.UserTask" version="v1" />
+        </uipath:activity>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_ParallelForkToArchive</bpmn:incoming>
+      <bpmn:outgoing>Flow_ArchiveToParallelJoin</bpmn:outgoing>
+    </bpmn:userTask>
+
+    <!-- Parallel gateway: join follow-up tasks -->
+    <bpmn:parallelGateway id="Gw_ParallelJoin" name="Follow-ups Complete">
+      <bpmn:incoming>Flow_NotifyToParallelJoin</bpmn:incoming>
+      <bpmn:incoming>Flow_ArchiveToParallelJoin</bpmn:incoming>
+      <bpmn:outgoing>Flow_ParallelJoinToEnd</bpmn:outgoing>
+    </bpmn:parallelGateway>
+
+    <!-- End event -->
+    <bpmn:endEvent id="End_ProcessComplete" name="Process Complete">
+      <bpmn:incoming>Flow_ParallelJoinToEnd</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <!-- Sequence flows -->
+    <bpmn:sequenceFlow id="Flow_StartToRecordIntake"
+        sourceRef="Start_ManualTrigger" targetRef="Task_RecordIntake" />
+
+    <bpmn:sequenceFlow id="Flow_RecordIntakeToXorFork"
+        sourceRef="Task_RecordIntake" targetRef="Gw_XorFork" />
+
+    <!-- Conditional: high-value route (amount >= 1000) -->
+    <bpmn:sequenceFlow id="Flow_XorForkToManagerReview"
+        sourceRef="Gw_XorFork" targetRef="Task_ManagerReview">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=vars.Var_amount >= 1000</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+
+    <!-- Default: auto-approval route (no condition required; gateway default) -->
+    <bpmn:sequenceFlow id="Flow_XorForkToAutoApproval"
+        sourceRef="Gw_XorFork" targetRef="Task_AutoApproval" />
+
+    <bpmn:sequenceFlow id="Flow_ManagerReviewToXorJoin"
+        sourceRef="Task_ManagerReview" targetRef="Gw_XorJoin" />
+
+    <bpmn:sequenceFlow id="Flow_AutoApprovalToXorJoin"
+        sourceRef="Task_AutoApproval" targetRef="Gw_XorJoin" />
+
+    <bpmn:sequenceFlow id="Flow_XorJoinToParallelFork"
+        sourceRef="Gw_XorJoin" targetRef="Gw_ParallelFork" />
+
+    <bpmn:sequenceFlow id="Flow_ParallelForkToNotify"
+        sourceRef="Gw_ParallelFork" targetRef="Task_NotifyRequester" />
+
+    <bpmn:sequenceFlow id="Flow_ParallelForkToArchive"
+        sourceRef="Gw_ParallelFork" targetRef="Task_ArchiveDecision" />
+
+    <bpmn:sequenceFlow id="Flow_NotifyToParallelJoin"
+        sourceRef="Task_NotifyRequester" targetRef="Gw_ParallelJoin" />
+
+    <bpmn:sequenceFlow id="Flow_ArchiveToParallelJoin"
+        sourceRef="Task_ArchiveDecision" targetRef="Gw_ParallelJoin" />
+
+    <bpmn:sequenceFlow id="Flow_ParallelJoinToEnd"
+        sourceRef="Gw_ParallelJoin" targetRef="End_ProcessComplete" />
+
+  </bpmn:process>
+
+  <!-- Diagram placeholder — will be replaced by generate_diagram.py -->
+
+
+  <bpmndi:BPMNDiagram id="Diagram_1">
+    <bpmndi:BPMNPlane id="Plane_1" bpmnElement="Process_InvoiceTriage">
+      <bpmndi:BPMNShape id="S_End_ProcessComplete" bpmnElement="End_ProcessComplete"><dc:Bounds x="1176" y="100" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Gw_ParallelFork" bpmnElement="Gw_ParallelFork"><dc:Bounds x="796" y="100" width="50" height="50" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Gw_ParallelJoin" bpmnElement="Gw_ParallelJoin"><dc:Bounds x="1066" y="100" width="50" height="50" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Gw_XorFork" bpmnElement="Gw_XorFork"><dc:Bounds x="416" y="100" width="50" height="50" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Gw_XorJoin" bpmnElement="Gw_XorJoin"><dc:Bounds x="686" y="100" width="50" height="50" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Start_ManualTrigger" bpmnElement="Start_ManualTrigger"><dc:Bounds x="160" y="100" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Task_ArchiveDecision" bpmnElement="Task_ArchiveDecision"><dc:Bounds x="906" y="100" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Task_AutoApproval" bpmnElement="Task_AutoApproval"><dc:Bounds x="526" y="100" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Task_ManagerReview" bpmnElement="Task_ManagerReview"><dc:Bounds x="526" y="210" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Task_NotifyRequester" bpmnElement="Task_NotifyRequester"><dc:Bounds x="906" y="210" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Task_RecordIntake" bpmnElement="Task_RecordIntake"><dc:Bounds x="256" y="100" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="E_Flow_ArchiveToParallelJoin" bpmnElement="Flow_ArchiveToParallelJoin"><di:waypoint x="956" y="140" /><di:waypoint x="1091" y="125" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_AutoApprovalToXorJoin" bpmnElement="Flow_AutoApprovalToXorJoin"><di:waypoint x="576" y="140" /><di:waypoint x="711" y="125" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_ManagerReviewToXorJoin" bpmnElement="Flow_ManagerReviewToXorJoin"><di:waypoint x="576" y="250" /><di:waypoint x="711" y="125" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_NotifyToParallelJoin" bpmnElement="Flow_NotifyToParallelJoin"><di:waypoint x="956" y="250" /><di:waypoint x="1091" y="125" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_ParallelForkToArchive" bpmnElement="Flow_ParallelForkToArchive"><di:waypoint x="821" y="125" /><di:waypoint x="956" y="140" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_ParallelForkToNotify" bpmnElement="Flow_ParallelForkToNotify"><di:waypoint x="821" y="125" /><di:waypoint x="956" y="250" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_ParallelJoinToEnd" bpmnElement="Flow_ParallelJoinToEnd"><di:waypoint x="1091" y="125" /><di:waypoint x="1194" y="118" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_RecordIntakeToXorFork" bpmnElement="Flow_RecordIntakeToXorFork"><di:waypoint x="306" y="140" /><di:waypoint x="441" y="125" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_StartToRecordIntake" bpmnElement="Flow_StartToRecordIntake"><di:waypoint x="178" y="118" /><di:waypoint x="306" y="140" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_XorForkToAutoApproval" bpmnElement="Flow_XorForkToAutoApproval"><di:waypoint x="441" y="125" /><di:waypoint x="576" y="140" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_XorForkToManagerReview" bpmnElement="Flow_XorForkToManagerReview"><di:waypoint x="441" y="125" /><di:waypoint x="576" y="250" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_XorJoinToParallelFork" bpmnElement="Flow_XorJoinToParallelFork"><di:waypoint x="711" y="125" /><di:waypoint x="821" y="125" /></bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

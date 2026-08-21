@@ -1,0 +1,954 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>coder_eval · skill-bpmn-registry-discovery · default</title>
+<style>
+:root {
+  --bg-page: #0f1419;
+  --bg-card: #1a2129;
+  --bg-card-2: #232d38;
+  --bg-code: #0b0f14;
+  --fg: #e6edf3;
+  --fg-muted: #8b98a5;
+  --fg-dim: #6e7681;
+  --border: #30363d;
+  --accent: #58a6ff;
+  --score-high: #22c55e;
+  --score-mid: #f59e0b;
+  --score-low: #ef4444;
+  --status-success: #22c55e;
+  --status-failure: #f59e0b;
+  --status-error: #ef4444;
+  --status-neutral: #6e7681;
+  --shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+.light {
+  --bg-page: #ffffff;
+  --bg-card: #f6f8fa;
+  --bg-card-2: #eaeef2;
+  --bg-code: #f6f8fa;
+  --fg: #1f2328;
+  --fg-muted: #636c76;
+  --fg-dim: #8b949e;
+  --border: #d0d7de;
+  --accent: #0969da;
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial,
+               sans-serif;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--fg);
+  background: var(--bg-page);
+}
+.container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+h1, h2, h3, h4 { margin: 0 0 12px 0; line-height: 1.25; }
+h1 { font-size: 22px; font-weight: 600; }
+h2 { font-size: 18px; font-weight: 600; margin-top: 28px;
+     padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+h3 { font-size: 15px; font-weight: 600; color: var(--fg-muted); }
+h4 { font-size: 13px; font-weight: 600; color: var(--fg-muted); }
+p { margin: 0 0 8px 0; }
+.muted { color: var(--fg-muted); }
+.dim { color: var(--fg-dim); }
+.mono { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+        monospace; font-size: 12.5px; }
+code { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+       monospace; font-size: 12.5px; background: var(--bg-code);
+       border: 1px solid var(--border); padding: 1px 5px; border-radius: 3px; }
+pre { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+      monospace; font-size: 12.5px; background: var(--bg-code);
+      border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px;
+      margin: 6px 0; overflow-x: auto; white-space: pre-wrap;
+      word-wrap: break-word; }
+.header-bar { display: flex; align-items: center; justify-content: space-between;
+              margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+.title-group { flex: 1; min-width: 0; }
+.title-group .subtitle { color: var(--fg-muted); font-size: 13px;
+                         margin-top: 2px; word-break: break-all; }
+.badges { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.badge { display: inline-flex; align-items: center; gap: 6px;
+         padding: 4px 10px; border-radius: 12px; font-size: 12px;
+         font-weight: 600; background: var(--bg-card-2);
+         border: 1px solid var(--border); color: var(--fg); }
+.badge.success { background: color-mix(in srgb, var(--status-success) 20%, var(--bg-card-2));
+                 border-color: var(--status-success); color: var(--status-success); }
+.badge.failure { background: color-mix(in srgb, var(--status-failure) 20%, var(--bg-card-2));
+                 border-color: var(--status-failure); color: var(--status-failure); }
+.badge.error { background: color-mix(in srgb, var(--status-error) 20%, var(--bg-card-2));
+               border-color: var(--status-error); color: var(--status-error); }
+.badge.warning { background: color-mix(in srgb, #f4a52810 20%, var(--bg-card-2));
+                 border-color: #f4a528; color: #f4a528; }
+.badge.neutral { color: var(--fg-muted); }
+.score-pill { display: inline-block; padding: 2px 8px; border-radius: 10px;
+              font-size: 12px; font-weight: 700; min-width: 42px;
+              text-align: center; color: #0b0f14; }
+.score-high { background: var(--score-high); }
+.score-mid { background: var(--score-mid); }
+.score-low { background: var(--score-low); }
+.card { background: var(--bg-card); border: 1px solid var(--border);
+        border-radius: 8px; padding: 16px 20px; margin-bottom: 16px;
+        box-shadow: var(--shadow); }
+.card.highlight { border-left: 4px solid var(--accent); }
+.grid { display: grid; gap: 12px;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+.stat { background: var(--bg-card-2); padding: 10px 12px; border-radius: 6px;
+        border: 1px solid var(--border); }
+.stat .label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;
+               color: var(--fg-muted); margin-bottom: 4px; }
+.stat .value { font-size: 16px; font-weight: 600; }
+table { width: 100%; border-collapse: collapse; margin: 4px 0 12px 0; }
+th, td { text-align: left; padding: 8px 10px;
+         border-bottom: 1px solid var(--border); vertical-align: top;
+         font-size: 13px; }
+th { color: var(--fg-muted); font-weight: 600; font-size: 12px;
+     text-transform: uppercase; letter-spacing: 0.3px; }
+tr:last-child td { border-bottom: none; }
+details { margin: 6px 0; border: 1px solid var(--border); border-radius: 6px;
+          background: var(--bg-card-2); }
+details > summary { cursor: pointer; padding: 8px 12px; user-select: none;
+                    font-weight: 500; list-style: none; }
+details > summary::-webkit-details-marker { display: none; }
+details > summary::before { content: "▸ "; color: var(--fg-dim);
+                            display: inline-block; width: 14px;
+                            transition: transform 0.15s; }
+details[open] > summary::before { content: "▾ "; }
+details .details-body { padding: 0 12px 10px 12px; }
+.tool-row { display: flex; align-items: center; gap: 10px;
+            flex-wrap: wrap; font-size: 13px; }
+.tool-name { font-weight: 600; color: var(--accent); font-family: ui-monospace,
+             SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+.tool-status-ok { color: var(--status-success); font-size: 11px;
+                  font-weight: 600; }
+.tool-status-err { color: var(--status-error); font-size: 11px;
+                   font-weight: 600; }
+.tool-duration { color: var(--fg-muted); font-size: 12px; }
+.tool-seq { color: var(--fg-dim); font-size: 11px; font-weight: 600;
+            min-width: 24px; text-align: right; font-family: ui-monospace,
+            SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+.turn-header { display: flex; justify-content: space-between;
+               align-items: baseline; flex-wrap: wrap; gap: 10px;
+               margin-bottom: 10px; }
+.turn-meta { font-size: 12px; color: var(--fg-muted); }
+.criterion-row td:first-child { font-family: ui-monospace, SFMono-Regular,
+                                 "SF Mono", Menlo, Consolas, monospace;
+                                 color: var(--fg-muted); font-size: 12px; }
+.judge-section { display: flex; flex-direction: column; gap: 12px; }
+.judge-card { padding: 14px 16px; }
+.judge-card-head { display: flex; justify-content: space-between;
+                    align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+.judge-card-title { font-size: 14px; line-height: 1.4; flex: 1; min-width: 0; }
+.judge-card-score { flex-shrink: 0; }
+.judge-rationale { margin-top: 10px; padding: 10px 12px;
+                   background: var(--bg-code); border-radius: 4px;
+                   font-size: 13px; line-height: 1.5; }
+.judge-findings { margin: 8px 0 0 18px; padding-left: 4px; font-size: 13px;
+                   line-height: 1.6; }
+.judge-findings li { margin: 2px 0; }
+.nav-toggle { display: inline-block; padding: 5px 10px; font-size: 12px;
+              background: var(--bg-card-2); border: 1px solid var(--border);
+              border-radius: 5px; color: var(--fg); cursor: pointer; }
+.nav-toggle:hover { background: var(--bg-card); }
+.llm-next-steps { margin: 6px 0 0 20px; padding-left: 0; }
+.llm-next-steps li { margin: 3px 0; }
+.iteration-group { padding: 12px 16px 4px 16px; margin-bottom: 20px;
+                   border-radius: 0 6px 6px 0; border-left: 4px solid var(--status-neutral); }
+/* rgba fallback for browsers without color-mix (Chrome <111, Firefox <113, Safari <16.2). */
+.iteration-group--recovered { border-left-color: var(--status-success);
+                              background: rgba(34, 197, 94, 0.06);
+                              background: color-mix(in srgb, var(--status-success) 6%, transparent); }
+.iteration-group--terminal { border-left-color: var(--status-error);
+                             background: rgba(239, 68, 68, 0.06);
+                             background: color-mix(in srgb, var(--status-error) 6%, transparent); }
+.iteration-group__banner { margin: 0 0 12px 0; font-size: 14px; font-weight: 600; }
+.iteration-group--recovered .iteration-group__banner { color: var(--status-success); }
+.iteration-group--terminal .iteration-group__banner { color: var(--status-error); }
+.attempt-transition { display: flex; align-items: center; gap: 8px;
+                      margin: -6px 0 12px 8px; color: var(--status-error); font-size: 12.5px; }
+.attempt-transition__icon { font-weight: 700; }
+footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--border);
+         color: var(--fg-dim); font-size: 12px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="header-bar">
+  <div class="title-group">
+    <h1>Task: skill-bpmn-registry-discovery</h1>
+    <div class="subtitle">Registry discovery eval: agent uses the Maestro BPMN registry surface to discover documented agent, queue, and connector wrapper types and to save public-safe CLI evidence for the skill&#x27;s supported-element map without inventing private resource metadata. Requires the `uip` CLI on PATH.</div>
+  </div>
+  <div class="badges">
+    <span class="badge success">SUCCESS</span>
+    <span class="score-pill score-high">1.00</span>
+    <span class="badge neutral">claude-code · claude-sonnet-5</span>
+    <span class="badge neutral">1m 52s</span>
+    <span class="badge neutral">$0.5895</span>
+    
+    
+    <span class="nav-toggle" onclick="toggleTheme()">Toggle theme</span>
+  </div>
+</div>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Variant</div><div class="value">default</div></div>
+    <div class="stat"><div class="label">Started</div><div class="value mono">2026-08-14T21:48:19</div></div>
+    <div class="stat"><div class="label">Duration</div><div class="value">1m 52s</div></div>
+    <div class="stat"><div class="label">Turns (SDK)</div><div class="value">30</div></div>
+    <div class="stat"><div class="label">Commands</div><div class="value">17</div></div>
+  </div>
+</div>
+
+<h2>Success Criteria <span class="muted" style="font-weight:400">(5/5 passed)</span></h2>
+<div class="card" style="padding:0">
+<table>
+  <thead>
+    <tr>
+      <th style="width:15%">Type</th>
+      <th style="width:35%">Description</th>
+      <th style="width:10%">Score</th>
+      <th>Details</th>
+    </tr>
+  </thead>
+  <tbody>
+    
+<tr class="criterion-row">
+  <td>file_exists</td>
+  <td>Registry discovery evidence directory was created</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><div class="dim mono" style="white-space:pre-wrap">File &#x27;registry-evidence&#x27; exists</div></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>command_executed</td>
+  <td>Agent ran a Maestro BPMN registry list call</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Matched 2/1 required commands (filters: tool_name=Bash, pattern=/(uip|\$UIP)\s+(maestro\s+)?bpmn\s+registry\s+list/)</summary><div class="details-body"><pre style="margin:6px 0 0 0">Matched 2/1 required commands (filters: tool_name=Bash, pattern=/(uip|\$UIP)\s+(maestro\s+)?bpmn\s+registry\s+list/)
+Examples: [&#x27;uip maestro bpmn registry list --limit -1 --output json &gt; registry-evidence/registry-list-all.json 2&gt;/tmp/list.err\necho &#x27;, &#x27;uip maestro bpmn registry search --help 2&gt;&amp;1 | head -50\necho &quot;---&quot;\nuip maestro bpmn registry list --help 2&gt;&amp;1 | head -50&#x27;]</pre></div></details></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>command_executed</td>
+  <td>Agent ran a Maestro BPMN registry search call</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Matched 4/1 required commands (filters: tool_name=Bash, pattern=/(uip|\$UIP)\s+(maestro\s+)?bpmn\s+registry\s+search/)</summary><div class="details-body"><pre style="margin:6px 0 0 0">Matched 4/1 required commands (filters: tool_name=Bash, pattern=/(uip|\$UIP)\s+(maestro\s+)?bpmn\s+registry\s+search/)
+Examples: [&#x27;uip maestro bpmn registry search --help 2&gt;&amp;1 | head -50\necho &quot;---&quot;\nuip maestro bpmn registry list --help 2&gt;&amp;1 | head -50&#x27;, &#x27;uip maestro bpmn registry search agent --output json &gt; registry-evidence/registry-search-agent.json 2&gt;/tmp/search-agent.&#x27;, &#x27;uip maestro bpmn registry search queue --output json &gt; registry-evidence/registry-search-queue.json 2&gt;/tmp/search-queue.&#x27;]</pre></div></details></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>command_executed</td>
+  <td>Agent ran a Maestro BPMN registry get call</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Matched 1/1 required commands (filters: tool_name=Bash, pattern=/(uip|\$UIP)\s+(maestro\s+)?bpmn\s+registry\s+get/)</summary><div class="details-body"><pre style="margin:6px 0 0 0">Matched 1/1 required commands (filters: tool_name=Bash, pattern=/(uip|\$UIP)\s+(maestro\s+)?bpmn\s+registry\s+get/)
+Examples: [&#x27;uip maestro bpmn registry get Orchestrator.StartAgentJob --output json &gt; registry-evidence/registry-get-Orchestrator.Sta&#x27;]</pre></div></details></td>
+</tr>
+
+<tr class="criterion-row">
+  <td>run_command</td>
+  <td>Registry evidence covers documented agent, queue, and connector wrapper types</td>
+  <td style="text-align:center"><span class="score-pill score-high">1.00</span></td>
+  <td><details><summary class="mono dim">Command: python3 $TASK_DIR/check_registry_discovery.py</summary><div class="details-body"><pre style="margin:6px 0 0 0">Command: python3 $TASK_DIR/check_registry_discovery.py
+Exit code: 0 (expected: 0)
+Stdout:
+OK: registry-evidence covers agent/queue/connector wrappers across 7 files
+
+Stderr: (empty)</pre></div></details></td>
+</tr>
+
+  </tbody>
+</table>
+</div>
+<h2>Conversation Trace (1 iteration)</h2>
+<div class="card">
+  <div class="turn-header">
+    <h3>Iteration 1</h3>
+    <div class="badges">
+      <span class="badge neutral">30 assistant turns</span>
+      <span class="badge neutral">in 36 · out 5230 · cache 909249</span>
+      <span class="badge neutral">1m 43s</span>
+      
+      
+      
+    </div>
+  </div>
+  <details>
+    <summary>Prompt to agent</summary>
+    <div class="details-body"><pre>Your working directory is: /work/output/artifacts/skill-bpmn-registry-discovery
+
+Use the installed `uip` CLI&#x27;s Maestro BPMN registry surface to discover the
+documented wrapper surface for agent, queue, and connector resource types.
+Save evidence locally without uploading, publishing, deploying, debugging, or
+running anything.
+
+Requirements:
+- Save outputs under a local `registry-evidence/` directory you create.
+- Capture raw JSON evidence for the overall registry catalog, a filtered
+  lookup for at least one documented agent or queue wrapper type, and the
+  detailed registry record for at least one documented wrapper type.
+- Use `--output json` for parsed CLI calls and write only the raw JSON output
+  files into `registry-evidence/`.
+- Do not invent connection IDs, folder keys, tenant URLs, real connector
+  keys, or release keys.
+- Do not upload, publish, deploy, debug, or run anything.
+</pre></div>
+  </details>
+  <details>
+    <summary>Agent response</summary>
+    <div class="details-body"><pre>[ASSISTANT] Registry pull succeeded. Now let&#x27;s list the full catalog and inspect it to find agent/queue/connector types.
+[ASSISTANT] Good, this covers the agent wrapper filtered lookup. Now let&#x27;s also do a queue search and a connector search for completeness, and get the detailed record for one documented type (e.g. `Orchestrator.StartAgentJob` and `Orchestrator.CreateQueueItem`).
+[ASSISTANT] Now let&#x27;s get detailed registry records for representative documented wrapper types — one agent type, one queue type, and one connector type.
+[ASSISTANT] All commands succeeded and returned valid, non-failure JSON. Let&#x27;s verify each file&#x27;s content quickly to confirm they contain real registry records (not error envelopes), then finalize.
+[ASSISTANT] All three detailed records contain real, well-formed registry data (Result: Success, full templates with XmlTemplate, ContextFields, BindingInfo — no fabricated IDs, all placeholders remain `{id}`, `{name}`, etc.). Let&#x27;s do a final listing and cleanup check.
+[ASSISTANT] All evidence collected successfully with the live `uip` CLI (no fallback needed — the registry synced fresh and every call returned real success payloads). Summary of `registry-evidence/`:
+
+| File | Command | Contents |
+|---|---|---|
+| `registry-list-all.json` | `uip maestro bpmn registry list --limit -1 --output json` | Full catalog: 30 extension types (`ExtensionTypes`), 27 `Connectors`, 138 `Processes` with `ProcessesByType` breakdown |
+| `registry-search-agent.json` | `uip maestro bpmn registry search agent --output json` | Filtered lookup surfacing agent wrapper types: `Orchestrator.StartAgentJob`, `Intsvc.AsyncExecution`/`SyncAgentExecution`/`AsyncAgentExecution`, `Orchestrator.StartAgenticProcess`, etc. |
+| `registry-search-queue.json` | `uip maestro bpmn registry search queue --output json` | Filtered lookup for queue wrapper types: `Orchestrator.CreateQueueItem`, `Orchestrator.CreateAndWaitForQueueItem` |
+| `registry-search-connector.json` | `uip maestro bpmn registry search connector --output json` | Filtered lookup for connector wrapper types (Integration Service `Intsvc.*` activities/events) |
+| `registry-get-Orchestrator.StartAgentJob.json` | `uip maestro bpmn registry get Orchestrator.StartAgentJob --output json` | Detailed record: BPMN placement, context fields, binding info, and full `xmlTemplate` for the agent wrapper |
+| `registry-get-Orchestrator.CreateQueueItem.json` | `uip maestro bpmn registry get Orchestrator.CreateQueueItem --output json` | Detailed record for the queue wrapper (binding pattern `queue`, `queueName` binding info, template) |
+| `registry-get-Intsvc.ActivityExecution.json` | `uip maestro bpmn registry get Intsvc.ActivityExecution --output json` | Detailed record for the generic connector-activity wrapper (connection/folderKey bindings, discovery notes, template) |
+
+All 7 files are raw, unmodified `--output json` CLI output, all valid JSON, all `&quot;Result&quot;: &quot;Success&quot;`. No connection IDs, folder keys, tenant URLs, connector keys, or release keys were invented — every identifier-like field in the templates is a placeholder (`{id}`, `{connectorKey}`, `{connectionBindingId}`, etc.) as returned by the registry itself. Nothing was uploaded, published, deployed, debugged, or run — this was pure discovery/evidence capture.
+[RESULT - SUCCESS] All evidence collected successfully with the live `uip` CLI (no fallback needed — the registry synced fresh and every call returned real success payloads). Summary of `registry-evidence/`:
+
+| File | Command | Contents |
+|---|---|---|
+| `registry-list-all.json` | `uip maestro bpmn registry list --limit -1 --output json` | Full catalog: 30 extension types (`ExtensionTypes`), 27 `Connectors`, 138 `Processes` with `ProcessesByType` breakdown |
+| `registry-search-agent.json` | `uip maestro bpmn registry search agent --output json` | Filtered lookup surfacing agent wrapper types: `Orchestrator.StartAgentJob`, `Intsvc.AsyncExecution`/`SyncAgentExecution`/`AsyncAgentExecu</pre></div>
+  </details>
+  <h4 style="margin-top:12px">Tool Calls (17)</h4>
+  
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#0</span>
+      <span class="tool-name">Skill</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">18ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;skill&quot;: &quot;uipath:uipath-maestro-bpmn&quot;,
+  &quot;args&quot;: &quot;Discover the documented wrapper surface for agent, queue, and connector resource types using the installed `uip` CLI&#x27;s Maestro BPMN registry commands. Save raw JSON evidence locally (no uploading/publishing/deploying/running) under a new `registry-evidence/` directory in the current working directory (/work/output/artifacts/skill-bpmn-registry-discovery). Requirements: (1) capture the overall regi… (513 more chars)&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>Launching skill: uipath:uipath-maestro-bpmn</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#1</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">630ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;mkdir -p registry-evidence &amp;&amp; pwd &amp;&amp; ls -la &amp;&amp; which uip &amp;&amp; uip --version&quot;,
+  &quot;description&quot;: &quot;Set up evidence directory and check uip CLI availability&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>/work/output/artifacts/skill-bpmn-registry-discovery
+total 16
+drwxr-xr-x 4 root root 4096 Aug 14 21:48 .
+drwxr-xr-x 3 root root 4096 Aug 14 21:48 ..
+drwxr-xr-x 4 root root 4096 Aug 14 21:48 .venv
+drwxr-xr-x 2 root root 4096 Aug 14 21:48 registry-evidence
+/usr/bin/uip
+1.201.0-dev.8272</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#2</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">7.25s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro bpmn registry pull --output json 2&gt;&amp;1 | tee /tmp/pull.log | head -c 2000&quot;,
+  &quot;description&quot;: &quot;Pull the Maestro BPMN registry cache once&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;RegistryPullSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;ExtensionTypeCount&quot;: 30,
+    &quot;ConnectorCount&quot;: 27,
+    &quot;ProcessCount&quot;: 138,
+    &quot;ProcessCountsByType&quot;: {
+      &quot;Process&quot;: 24,
+      &quot;ProcessOrchestration&quot;: 21,
+      &quot;Agent&quot;: 15,
+      &quot;Flow&quot;: 38,
+      &quot;Api&quot;: 23,
+      &quot;Function&quot;: 6,
+      &quot;CaseManagement&quot;: 11,
+      &quot;BusinessRules&quot;: 0
+    },
+    &quot;FromCache&quot;: false,
+    &quot;CacheWritten&quot;: true,
+    &quot;Message&quot;: &quot;Synced fresh registry&quot;
+  }
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#3</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">993ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro bpmn registry list --limit -1 --output json &gt; registry-evidence/registry-list-all.json 2&gt;/tmp/list.err\necho \&quot;exit=$?\&quot;\nwc -c registry-evidence/registry-list-all.json\ncat /tmp/list.err&quot;,
+  &quot;description&quot;: &quot;Capture the full registry catalog as raw JSON&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>exit=0
+83132 registry-evidence/registry-list-all.json</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#4</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">159ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 -c \&quot;\nimport json\nd = json.load(open(&#x27;registry-evidence/registry-list-all.json&#x27;))\nprint(type(d), list(d.keys()) if isinstance(d, dict) else len(d))\n\&quot;\n&quot;,
+  &quot;description&quot;: &quot;Inspect top-level shape of registry list JSON&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>&lt;class &#x27;dict&#x27;&gt; [&#x27;Result&#x27;, &#x27;Code&#x27;, &#x27;Data&#x27;]</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#5</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">238ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 -c \&quot;\nimport json\nd = json.load(open(&#x27;registry-evidence/registry-list-all.json&#x27;))\ndata = d[&#x27;Data&#x27;]\nprint(type(data))\nif isinstance(data, dict):\n    print(list(data.keys()))\nelif isinstance(data, list):\n    print(len(data))\n    print(json.dumps(data[0], indent=2)[:1000])\n\&quot;\n&quot;,
+  &quot;description&quot;: &quot;Inspect Data field structure&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>&lt;class &#x27;dict&#x27;&gt;
+[&#x27;ExtensionTypes&#x27;, &#x27;Connectors&#x27;, &#x27;Processes&#x27;, &#x27;ProcessesByType&#x27;]</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#6</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">145ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 -c \&quot;\nimport json\nd = json.load(open(&#x27;registry-evidence/registry-list-all.json&#x27;))\ndata = d[&#x27;Data&#x27;]\next = data[&#x27;ExtensionTypes&#x27;]\nprint(&#x27;ExtensionTypes count:&#x27;, len(ext))\nprint(json.dumps(ext[0], indent=2))\n\&quot;\n&quot;,
+  &quot;description&quot;: &quot;Inspect ExtensionTypes entries&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>ExtensionTypes count: 30
+{
+  &quot;ExtensionType&quot;: &quot;uipath:Activity&quot;,
+  &quot;Label&quot;: &quot;Canvas activity&quot;,
+  &quot;BpmnElement&quot;: &quot;bpmn:ServiceTask&quot;,
+  &quot;ExtensionTag&quot;: &quot;uipath:activity&quot;,
+  &quot;InputPattern&quot;: &quot;none&quot;,
+  &quot;BindingPattern&quot;: &quot;none&quot;,
+  &quot;RequiresDiscovery&quot;: &quot;No&quot;
+}</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#7</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">440ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 -c \&quot;\nimport json\nd = json.load(open(&#x27;registry-evidence/registry-list-all.json&#x27;))\next = d[&#x27;Data&#x27;][&#x27;ExtensionTypes&#x27;]\nfor e in ext:\n    print(e[&#x27;ExtensionType&#x27;], &#x27;|&#x27;, e[&#x27;Label&#x27;], &#x27;|&#x27;, e[&#x27;ExtensionTag&#x27;])\n\&quot;\n&quot;,
+  &quot;description&quot;: &quot;List all extension types with labels&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>uipath:Activity | Canvas activity | uipath:activity
+Actions.HITL | Create action app task | uipath:activity
+Orchestrator.StartJob | Start and wait for RPA workflow | uipath:activity
+Orchestrator.StartAgentJob | Start and wait for agent | uipath:activity
+Orchestrator.BusinessRules | Execute business rule [Preview] | uipath:activity
+Intsvc.ActivityExecution | Execute connector activity | uipath:activity
+Intsvc.HttpExecution | Execute HTTP request (Legacy) | uipath:activity
+Intsvc.UnifiedHttpRequest | Execute HTTP request | uipath:activity
+Intsvc.WaitForEvent | Wait for connector event | uipath:event
+Intsvc.EventTrigger | Wait for connector event (trigger) | uipath:event
+Intsvc.AsyncExecution | Start and wait for external agent | uipath:activity
+Intsvc.SyncAgentExecution | Start and wait for external agent | uipath:activity
+Intsvc.AsyncAgentExecution | Start and wait for external agent | uipath:activity
+Intsvc.SyncWorkflowExecution | Start and wait for external workflow | uipath:activity
+Intsvc.AsyncWorkflowExecution | Start and wait for external workflow | uipath:activity
+Orchestrator.ExecuteApiWorkflowAsync | Start and wait for API workflow [Preview] | uipath:activity
+Orchestrator.C
+
+… (truncated, 977 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#8</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">4.22s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro bpmn registry search --help 2&gt;&amp;1 | head -50\necho \&quot;---\&quot;\nuip maestro bpmn registry list --help 2&gt;&amp;1 | head -50&quot;,
+  &quot;description&quot;: &quot;Check available filter options for registry search/list&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>                        uip maestro bpmn registry search                        
+Search the registry by keyword across extension types, connectors, and processes
+                Use --help with nested commands for more detail.                
+
+┌─ Usage ──────────────────────────────────────────────────────────────────────┐
+│ uip maestro bpmn registry search [options] &lt;keyword&gt;                         │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Arguments ──────────────────────────────────────────────────────────────────┐
+│ keyword   Search term matched against extensionType, label, connector name,  │
+│           process name                                                       │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Options ────────────────────────────────────────────────────────────────────┐
+│ -h, --help                     display help for command                      │
+│ --output                       Output format (default: json)                 │
+│ &lt;table|json|yaml|plain&gt;                                                      │
+│ --output-filter &lt;expression&gt;   JMESPath expression applied to
+
+… (truncated, 4323 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#9</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.06s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro bpmn registry search agent --output json &gt; registry-evidence/registry-search-agent.json 2&gt;/tmp/search-agent.err\necho \&quot;exit=$?\&quot;; cat /tmp/search-agent.err\nwc -c registry-evidence/registry-search-agent.json&quot;,
+  &quot;description&quot;: &quot;Filtered registry lookup for agent wrapper types&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>exit=0
+22296 registry-evidence/registry-search-agent.json</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#10</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">102ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;python3 -c \&quot;\nimport json\nd = json.load(open(&#x27;registry-evidence/registry-search-agent.json&#x27;))\nprint(json.dumps(d, indent=2)[:1500])\n\&quot;&quot;,
+  &quot;description&quot;: &quot;Preview agent search evidence content&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;RegistrySearchSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;ExtensionTypes&quot;: [
+      {
+        &quot;ExtensionType&quot;: &quot;Orchestrator.StartAgentJob&quot;,
+        &quot;Label&quot;: &quot;Start and wait for agent&quot;,
+        &quot;BpmnElement&quot;: &quot;bpmn:ServiceTask&quot;,
+        &quot;ExtensionTag&quot;: &quot;uipath:activity&quot;,
+        &quot;InputPattern&quot;: &quot;mergedBody&quot;,
+        &quot;BindingPattern&quot;: &quot;process&quot;,
+        &quot;RequiresDiscovery&quot;: &quot;Yes&quot;
+      },
+      {
+        &quot;ExtensionType&quot;: &quot;Intsvc.AsyncExecution&quot;,
+        &quot;Label&quot;: &quot;Start and wait for external agent&quot;,
+        &quot;BpmnElement&quot;: &quot;bpmn:ServiceTask&quot;,
+        &quot;ExtensionTag&quot;: &quot;uipath:activity&quot;,
+        &quot;InputPattern&quot;: &quot;separateInputs&quot;,
+        &quot;BindingPattern&quot;: &quot;connection&quot;,
+        &quot;RequiresDiscovery&quot;: &quot;Yes&quot;
+      },
+      {
+        &quot;ExtensionType&quot;: &quot;Intsvc.SyncAgentExecution&quot;,
+        &quot;Label&quot;: &quot;Start and wait for external agent&quot;,
+        &quot;BpmnElement&quot;: &quot;bpmn:ServiceTask&quot;,
+        &quot;ExtensionTag&quot;: &quot;uipath:activity&quot;,
+        &quot;InputPattern&quot;: &quot;separateInputs&quot;,
+        &quot;BindingPattern&quot;: &quot;connection&quot;,
+        &quot;RequiresDiscovery&quot;: &quot;Yes&quot;
+      },
+      {
+        &quot;ExtensionType&quot;: &quot;Intsvc.AsyncAgentExecution&quot;,
+        &quot;Label&quot;: &quot;Start and wait for external agent&quot;,
+        &quot;BpmnElement&quot;:
+
+… (truncated, 300 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#11</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">905ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro bpmn registry search queue --output json &gt; registry-evidence/registry-search-queue.json 2&gt;/tmp/search-queue.err\necho \&quot;exit=$?\&quot;; cat /tmp/search-queue.err\nwc -c registry-evidence/registry-search-queue.json&quot;,
+  &quot;description&quot;: &quot;Filtered registry lookup for queue wrapper types&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>exit=0
+1451 registry-evidence/registry-search-queue.json</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#12</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">23ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;cat registry-evidence/registry-search-queue.json&quot;,
+  &quot;description&quot;: &quot;Preview queue search evidence&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>{
+  &quot;Result&quot;: &quot;Success&quot;,
+  &quot;Code&quot;: &quot;RegistrySearchSuccess&quot;,
+  &quot;Data&quot;: {
+    &quot;ExtensionTypes&quot;: [
+      {
+        &quot;ExtensionType&quot;: &quot;Orchestrator.CreateQueueItem&quot;,
+        &quot;Label&quot;: &quot;Create queue item&quot;,
+        &quot;BpmnElement&quot;: &quot;bpmn:SendTask&quot;,
+        &quot;ExtensionTag&quot;: &quot;uipath:activity&quot;,
+        &quot;InputPattern&quot;: &quot;mergedBody&quot;,
+        &quot;BindingPattern&quot;: &quot;queue&quot;,
+        &quot;RequiresDiscovery&quot;: &quot;Yes&quot;
+      },
+      {
+        &quot;ExtensionType&quot;: &quot;Orchestrator.CreateAndWaitForQueueItem&quot;,
+        &quot;Label&quot;: &quot;Create and wait for queue item&quot;,
+        &quot;BpmnElement&quot;: &quot;bpmn:ServiceTask&quot;,
+        &quot;ExtensionTag&quot;: &quot;uipath:activity&quot;,
+        &quot;InputPattern&quot;: &quot;mergedBody&quot;,
+        &quot;BindingPattern&quot;: &quot;queue&quot;,
+        &quot;RequiresDiscovery&quot;: &quot;Yes&quot;
+      }
+    ],
+    &quot;Connectors&quot;: [],
+    &quot;Processes&quot;: [
+      {
+        &quot;Name&quot;: &quot;OrchestratorQueueTransaction&quot;,
+        &quot;ProcessKey&quot;: &quot;OrchestratorQueueTransaction&quot;,
+        &quot;ProcessVersion&quot;: &quot;1.0.0&quot;,
+        &quot;PackageProcessKey&quot;: &quot;OrchestratorQueueTransaction:1.0.0&quot;,
+        &quot;ReleaseKey&quot;: &quot;EE03063B-B7BB-4C4D-A395-8F81BCA73B78&quot;,
+        &quot;Type&quot;: &quot;Process&quot;,
+        &quot;Folder&quot;: &quot;Shared&quot;,
+        &quot;FolderKey&quot;: &quot;c4359cde-55f0-4f0e-9322-c6cdce74ab4c&quot;,
+        &quot;FeedId&quot;: &quot;001c61d7-2108-41
+
+… (truncated, 250 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#13</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">1.01s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro bpmn registry search connector --output json &gt; registry-evidence/registry-search-connector.json 2&gt;/tmp/search-connector.err\necho \&quot;exit=$?\&quot;; cat /tmp/search-connector.err\nwc -c registry-evidence/registry-search-connector.json&quot;,
+  &quot;description&quot;: &quot;Filtered registry lookup for connector wrapper types&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>exit=0
+2955 registry-evidence/registry-search-connector.json</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#14</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">2.07s</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;uip maestro bpmn registry get Orchestrator.StartAgentJob --output json &gt; registry-evidence/registry-get-Orchestrator.StartAgentJob.json 2&gt;/tmp/get-agent.err\necho \&quot;agent exit=$?\&quot;; cat /tmp/get-agent.err\nwc -c registry-evidence/registry-get-Orchestrator.StartAgentJob.json\n\nuip maestro bpmn registry get Orchestrator.CreateQueueItem --output json &gt; registry-evidence/registry-get-Orchestrator.CreateQue… (426 more chars)&quot;,
+  &quot;description&quot;: &quot;Capture detailed registry records for agent, queue, connector wrapper types&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>agent exit=0
+2551 registry-evidence/registry-get-Orchestrator.StartAgentJob.json
+queue exit=0
+2726 registry-evidence/registry-get-Orchestrator.CreateQueueItem.json
+connector exit=0
+6505 registry-evidence/registry-get-Intsvc.ActivityExecution.json</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#15</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">262ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;for f in registry-evidence/registry-get-*.json; do\n  echo \&quot;=== $f ===\&quot;\n  python3 -c \&quot;\nimport json,sys\nd = json.load(open(&#x27;$f&#x27;))\nprint(&#x27;Result:&#x27;, d.get(&#x27;Result&#x27;), &#x27;| Code:&#x27;, d.get(&#x27;Code&#x27;))\ndata = d.get(&#x27;Data&#x27;, {})\nif isinstance(data, dict):\n    print(&#x27;Data keys:&#x27;, list(data.keys()))\n    print(&#x27;ExtensionType:&#x27;, data.get(&#x27;ExtensionType&#x27;))\n\&quot;\ndone&quot;,
+  &quot;description&quot;: &quot;Verify detailed get evidence files contain real data&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>=== registry-evidence/registry-get-Intsvc.ActivityExecution.json ===
+Result: Success | Code: RegistryGetSuccess
+Data keys: [&#x27;ExtensionType&#x27;]
+ExtensionType: {&#x27;ExtensionType&#x27;: &#x27;Intsvc.ActivityExecution&#x27;, &#x27;Label&#x27;: &#x27;Execute connector activity&#x27;, &#x27;BpmnElement&#x27;: &#x27;bpmn:SendTask&#x27;, &#x27;Placements&#x27;: {&#x27;Activity&#x27;: {&#x27;Type&#x27;: &#x27;bpmn:SendTask&#x27;}, &#x27;IntermediateEvent&#x27;: {&#x27;Type&#x27;: &#x27;bpmn:IntermediateThrowEvent&#x27;, &#x27;EventDefinition&#x27;: {&#x27;Type&#x27;: &#x27;bpmn:MessageEventDefinition&#x27;}}, &#x27;EndEvent&#x27;: {&#x27;Type&#x27;: &#x27;bpmn:EndEvent&#x27;, &#x27;EventDefinition&#x27;: {&#x27;Type&#x27;: &#x27;bpmn:MessageEventDefinition&#x27;}}}, &#x27;ExtensionTag&#x27;: &#x27;uipath:activity&#x27;, &#x27;ContextFields&#x27;: [{&#x27;Name&#x27;: &#x27;activityConfigurationVersion&#x27;, &#x27;DisplayName&#x27;: &#x27;Activity configuration version&#x27;, &#x27;Type&#x27;: &#x27;string&#x27;, &#x27;Required&#x27;: False, &#x27;Hidden&#x27;: True, &#x27;IsPrimaryKey&#x27;: False, &#x27;Binding&#x27;: False, &#x27;DefaultValue&#x27;: &#x27;v1&#x27;, &#x27;Enum&#x27;: [&#x27;v1&#x27;], &#x27;Description&#x27;: &#x27;Marks the Integration Service activity format used by this template&#x27;}, {&#x27;Name&#x27;: &#x27;connectorKey&#x27;, &#x27;DisplayName&#x27;: &#x27;Connector key&#x27;, &#x27;Type&#x27;: &#x27;string&#x27;, &#x27;Required&#x27;: True, &#x27;Hidden&#x27;: True, &#x27;IsPrimaryKey&#x27;: False, &#x27;Binding&#x27;: False, &#x27;DefaultValue&#x27;: None}, {&#x27;Name&#x27;: &#x27;connection&#x27;, &#x27;DisplayName&#x27;: &#x27;Connection&#x27;, &#x27;Type&#x27;: &#x27;string&#x27;, &#x27;Required&#x27;: False, &#x27;Hidden&#x27;: True, &#x27;IsPrimaryK
+
+… (truncated, 8195 more chars)</pre>
+    
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="tool-row">
+      <span class="tool-seq">#16</span>
+      <span class="tool-name">Bash</span>
+      <span class="tool-status-ok">SUCCESS</span>
+      <span class="tool-duration">537ms</span>
+    </span>
+  </summary>
+  <div class="details-body">
+    <h4>Parameters</h4>
+    <pre>{
+  &quot;command&quot;: &quot;ls -la registry-evidence/\necho \&quot;---\&quot;\necho \&quot;Checking for any accidental non-JSON / error content:\&quot;\nfor f in registry-evidence/*.json; do\n  python3 -c \&quot;import json; json.load(open(&#x27;$f&#x27;))\&quot; &amp;&amp; echo \&quot;$f: valid JSON\&quot; || echo \&quot;$f: INVALID JSON\&quot;\ndone&quot;,
+  &quot;description&quot;: &quot;Final listing and JSON validity check of all evidence files&quot;
+}</pre>
+    <h4>Result</h4>
+    <pre>total 140
+drwxr-xr-x 2 root root  4096 Aug 14 21:49 .
+drwxr-xr-x 4 root root  4096 Aug 14 21:48 ..
+-rw-r--r-- 1 root root  6505 Aug 14 21:49 registry-get-Intsvc.ActivityExecution.json
+-rw-r--r-- 1 root root  2726 Aug 14 21:49 registry-get-Orchestrator.CreateQueueItem.json
+-rw-r--r-- 1 root root  2551 Aug 14 21:49 registry-get-Orchestrator.StartAgentJob.json
+-rw-r--r-- 1 root root 83132 Aug 14 21:48 registry-list-all.json
+-rw-r--r-- 1 root root 22296 Aug 14 21:49 registry-search-agent.json
+-rw-r--r-- 1 root root  2955 Aug 14 21:49 registry-search-connector.json
+-rw-r--r-- 1 root root  1451 Aug 14 21:49 registry-search-queue.json
+---
+Checking for any accidental non-JSON / error content:
+registry-evidence/registry-get-Intsvc.ActivityExecution.json: valid JSON
+registry-evidence/registry-get-Orchestrator.CreateQueueItem.json: valid JSON
+registry-evidence/registry-get-Orchestrator.StartAgentJob.json: valid JSON
+registry-evidence/registry-list-all.json: valid JSON
+registry-evidence/registry-search-agent.json: valid JSON
+registry-evidence/registry-search-connector.json: valid JSON
+registry-evidence/registry-search-queue.json: valid JSON</pre>
+    
+  </div>
+</details>
+
+</div>
+
+<h2>Command Telemetry</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Total</div><div class="value">17</div></div>
+    <div class="stat"><div class="label">Successful</div><div class="value">17 (100%)</div></div>
+    <div class="stat"><div class="label">Failed</div><div class="value">0</div></div>
+    <div class="stat"><div class="label">Avg / cmd</div><div class="value">1.18s</div></div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 2fr;gap:16px;margin-top:12px">
+    <div>
+      <h4>By Tool</h4>
+      <table>
+        <thead><tr><th>Tool</th><th>Count</th></tr></thead>
+        <tbody><tr><td class='mono'>Bash</td><td>16</td></tr><tr><td class='mono'>Skill</td><td>1</td></tr></tbody>
+      </table>
+    </div>
+    <div>
+      <h4>Slowest</h4>
+      <table>
+        <thead><tr><th>Tool</th><th>Duration</th><th>Parameters</th></tr></thead>
+        <tbody><tr><td class='mono'>Bash</td><td>7.25s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro bpmn registry pull --outp...</td></tr><tr><td class='mono'>Bash</td><td>4.22s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro bpmn registry search --he...</td></tr><tr><td class='mono'>Bash</td><td>2.07s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro bpmn registry get Orchest...</td></tr><tr><td class='mono'>Bash</td><td>1.06s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro bpmn registry search agen...</td></tr><tr><td class='mono'>Bash</td><td>1.01s</td><td class='mono dim'>{&#x27;command&#x27;: &#x27;uip maestro bpmn registry search conn...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+  <p><strong>Most Common Pattern:</strong> <code>Bash → Bash → Bash</code></p><p><strong>Skill Tool Invoked:</strong> 1 time(s)</p>
+</div>
+
+<h2>Generation Metrics</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Total Latency</div><div class="value">1m 52s</div></div>
+    <div class="stat"><div class="label">Turns</div><div class="value">1</div></div>
+    <div class="stat"><div class="label">Assistant Turns</div><div class="value">30</div></div>
+    <div class="stat"><div class="label">Avg Turn Latency</div><div class="value">1m 43s</div></div>
+    
+  </div>
+</div>
+
+<h2>Token Usage</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="label">Input (uncached)</div><div class="value">36</div></div>
+    <div class="stat"><div class="label">Output</div><div class="value">5,230</div></div>
+    <div class="stat"><div class="label">Cache Write</div><div class="value">63,508</div></div>
+    <div class="stat"><div class="label">Cache Read</div><div class="value">909,249</div></div>
+    <div class="stat"><div class="label">Total</div><div class="value">978,023</div></div>
+    <div class="stat"><div class="label">Cost</div><div class="value">$0.5895</div></div>
+  </div>
+</div>
+
+<h2>Agent Settings</h2>
+<div class="card" style="padding:0">
+  <table>
+    <tbody><tr><td class='mono dim'>Permission Mode</td><td>acceptEdits</td></tr><tr><td class='mono dim'>Allowed Tools</td><td>Skill, Bash, Read, Write, Edit, Glob, Grep</td></tr><tr><td class='mono dim'>Model</td><td>us.anthropic.claude-sonnet-5</td></tr><tr><td class='mono dim'>Max Turns</td><td>60</td></tr><tr><td class='mono dim'>System Prompt</td><td>You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted. </td></tr><tr><td class='mono dim'>Plugins</td><td>/home/azureuser/projects/skills</td></tr></tbody>
+  </table>
+</div>
+
+<h2>Environment</h2>
+<div class="card" style="padding:0">
+  <table>
+    <tbody><tr><td class='mono dim'>git_commit</td><td>unknown</td></tr><tr><td class='mono dim'>skills_git_commit</td><td>unknown</td></tr><tr><td class='mono dim'>cli_version</td><td>1.201.0-dev.8272</td></tr><tr><td class='mono dim'>tool_plugins</td><td>{&#x27;admin-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;agent-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;agenthub-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;aops-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;api-workflow-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;automation-hub-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;codedagent-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;codedapp-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;coder-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;context-grounding-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;conversational-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;data-fabric-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;docsai-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;function-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;gov-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;guardrails-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;insights-tool&#x27;: &#x27;1.201.0-dev.8276&#x27;, &#x27;integrationservice-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;ixp-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;llm-gateway-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;llmgw-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;maestro-tool&#x27;: &#x27;1.201.0-dev.8275&#x27;, &#x27;model-hub-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;orchestrator-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;platform-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;pm-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;rpa-legacy-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;rpa-tool&#x27;: &#x27;1.201.0-dev.20260809.3&#x27;, &#x27;solution-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;tasks-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;test-manager-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;traces-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;, &#x27;vertical-solutions-tool&#x27;: &#x27;1.201.0-dev.8272&#x27;}</td></tr><tr><td class='mono dim'>coder_eval</td><td>0.8.8</td></tr><tr><td class='mono dim'>claude_code_cli</td><td>2.1.177 (Claude Code)</td></tr><tr><td class='mono dim'>uv</td><td>uv 0.11.28 (x86_64-unknown-linux-gnu)</td></tr><tr><td class='mono dim'>anthropic</td><td>0.122.0</td></tr><tr><td class='mono dim'>openai</td><td>3.0.0</td></tr><tr><td class='mono dim'>pydantic</td><td>2.12.5</td></tr><tr><td class='mono dim'>api_routing</td><td>aws_bedrock</td></tr><tr><td class='mono dim'>aws_region</td><td>us-east-2</td></tr><tr><td class='mono dim'>bedrock_model</td><td>us.anthropic.claude-sonnet-4-6</td></tr></tbody>
+  </table>
+</div>
+
+<footer>Generated by coder_eval · 2026-08-14T21:50:11</footer>
+</div>
+<script>
+function toggleTheme() {
+  document.documentElement.classList.toggle('light');
+  try {
+    const mode = document.documentElement.classList.contains('light') ? 'light' : 'dark';
+    localStorage.setItem('coder-eval-theme', mode);
+  } catch (e) { /* ignore */ }
+}
+(function() {
+  try {
+    if (localStorage.getItem('coder-eval-theme') === 'light') {
+      document.documentElement.classList.add('light');
+    }
+  } catch (e) { /* ignore */ }
+})();
+</script>
+</body>
+</html>

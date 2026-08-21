@@ -1,0 +1,87 @@
+{
+  "version": "1.1.0",
+  "settings": {
+    "model": "anthropic.claude-sonnet-4-6",
+    "maxTokens": 64000,
+    "temperature": 0,
+    "engine": "basic-v2",
+    "maxIterations": 10,
+    "mode": "standard"
+  },
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "start__output__disputeDescription": {
+        "type": "string",
+        "description": "Bound from $vars.start.output.disputeDescription"
+      },
+      "start__output__invoiceNumber": {
+        "type": "string",
+        "description": "Bound from $vars.start.output.invoiceNumber"
+      }
+    }
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "determination": {
+        "type": "string",
+        "description": "The determination of the billing dispute (e.g. Valid, Invalid, Partially Valid)"
+      },
+      "rationale": {
+        "type": "string",
+        "description": "The detailed rationale supporting the determination"
+      }
+    },
+    "required": [
+      "determination",
+      "rationale"
+    ]
+  },
+  "metadata": {
+    "storageVersion": "50.0.0",
+    "isConversational": false,
+    "showProjectCreationExperience": false
+  },
+  "type": "lowCode",
+  "guardrails": [],
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a billing dispute analyst. Your role is to analyze billing disputes objectively and provide a clear determination and rationale based on standard billing policies and procedures. Use the available context from the Billing Dispute SOP Index to ground your analysis in established procedures. Always provide:\n1. A clear determination: one of 'Valid', 'Invalid', or 'Partially Valid'\n2. A detailed rationale explaining the reasoning behind your determination, referencing relevant SOP guidelines where applicable.\nBe concise, professional, and factual. Output your result as a JSON object with 'determination' and 'rationale' fields.",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "You are a billing dispute analyst. Your role is to analyze billing disputes objectively and provide a clear determination and rationale based on standard billing policies and procedures. Use the available context from the Billing Dispute SOP Index to ground your analysis in established procedures. Always provide:\n1. A clear determination: one of 'Valid', 'Invalid', or 'Partially Valid'\n2. A detailed rationale explaining the reasoning behind your determination, referencing relevant SOP guidelines where applicable.\nBe concise, professional, and factual. Output your result as a JSON object with 'determination' and 'rationale' fields."
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "Please analyze the following billing dispute:\n\nInvoice Number: {{input.start__output__invoiceNumber}}\n\nDispute Description: {{input.start__output__disputeDescription}}\n\nProvide your determination and rationale based on the billing SOP policies.",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "Please analyze the following billing dispute:\n\nInvoice Number: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__invoiceNumber"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\nDispute Description: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__disputeDescription"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\nProvide your determination and rationale based on the billing SOP policies."
+        }
+      ]
+    }
+  ],
+  "projectId": "4e3f5ce4-efa7-4404-834e-70c4ba08a7ed"
+}
